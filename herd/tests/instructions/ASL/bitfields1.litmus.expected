@@ -6,5 +6,5 @@ Witnesses
 Positive: 1 Negative: 0
 Condition forall (0:main.0.b=1 /\ 0:main.0.d=1 /\ 0:main.0.e=1)
 Observation bitfields1 Always 1 0
-Hash=842b66cd735040dd0903385a60d28878
+Hash=07dc029fd6daa7640925654246d06198
 

@@ -604,15 +604,24 @@ module Make (C : Config) = struct
     (**************************************************************************)
 
     (* Helpers *)
-    let build_primitive ?(args = []) ?returns ?(parameters = []) name f :
-        AST.func * (_ -> primitive_t) =
+    let build_primitive ?(args = []) ?returns ?(parameters = []) ~side_effecting
+        name f : AST.func * (_ -> primitive_t) =
       let open AST in
       let subprogram_type =
         match returns with None -> ST_Procedure | _ -> ST_Function
-      and body = SB_Primitive
-      and recurse_limit = None;
+      and body = SB_Primitive side_effecting
+      and recurse_limit = None
       and return_type = returns in
-      ( { name; args; body; return_type; parameters; subprogram_type; recurse_limit; builtin = true }
+      ( {
+          name;
+          args;
+          body;
+          return_type;
+          parameters;
+          subprogram_type;
+          recurse_limit;
+          builtin = true;
+        }
         [@warning "-40-42"],
         f )
 
@@ -633,91 +642,91 @@ module Make (C : Config) = struct
      *)
 
     (** Build a primitive with arity 0 and no return value. *)
-    let p0 name ?parameters f =
+    let p0 name ?parameters ?(side_effecting = false) f =
       let f ii_env _ = function
         | [] -> f ii_env ()
         | _ :: _ -> Warn.fatal "Arity error for function %s." name
       in
-      build_primitive ?parameters name f
+      build_primitive ?parameters ~side_effecting name f
 
     (** Build a primitive with arity 0 and a return value. *)
-    let p0r name ~returns f =
+    let p0r name ~returns ?(side_effecting = false) f =
       let f ii_env _ = function
         | [] -> return [ f ii_env () ]
         | _ :: _ -> Warn.fatal "Arity error for function %s." name
       in
-      build_primitive ?returns:(Some returns) name f
+      build_primitive ?returns:(Some returns) ~side_effecting name f
 
     (** Build a primitive with arity 1 and no return value. *)
-    let p1 name arg ?parameters f =
+    let p1 name arg ?parameters ?(side_effecting = false) f =
       let f ii_env _ = function
         | [ v ] -> f ii_env v
         | [] | _ :: _ -> Warn.fatal "Arity error for function %s." name
       in
-      build_primitive ~args:[ arg ] ?parameters name f
+      build_primitive ~args:[ arg ] ~side_effecting ?parameters name f
 
     (** Build a primitive with arity 1 and a return value. *)
-    let p1r name arg ~returns ?parameters f =
+    let p1r name arg ~returns ?(side_effecting = false) ?parameters f =
       let f ii_env _ = function
         | [ v ] -> return [ f ii_env v ]
-        | [] | _::_::_ -> Warn.fatal "Arity error for function %s." name
+        | [] | _ :: _ :: _ -> Warn.fatal "Arity error for function %s." name
       in
-      build_primitive ?returns:(Some returns) ~args:[ arg ] ?parameters name f
+      build_primitive ?returns:(Some returns) ~args:[ arg ] ~side_effecting
+        ?parameters name f
 
     (** Build a primitive with arity 2 and no return value. *)
-    let p2 name arg1 arg2 ?parameters f =
+    let p2 name arg1 arg2 ?parameters ?(side_effecting = false) f =
       let f ii_env _ = function
         | [ v1; v2 ] -> f ii_env v1 v2
         | _ -> Warn.fatal "Arity error for function %s." name
       in
-      build_primitive ~args:[ arg1; arg2 ] ?parameters name f
+      build_primitive ~args:[ arg1; arg2 ] ~side_effecting ?parameters name f
 
     (** Build a primitive with arity 2 and a return value. *)
-    let p2r name arg1 arg2 ~returns ?parameters f =
+    let p2r name arg1 arg2 ~returns ?(side_effecting = false) ?parameters f =
       let f ii_env _ = function
         | [ v1; v2 ] -> return [ f ii_env v1 v2 ]
         | _ -> Warn.fatal "Arity error for function %s." name
       in
-      build_primitive ?returns:(Some returns) ~args:[ arg1; arg2 ] ?parameters
-        name f
+      build_primitive ?returns:(Some returns) ~args:[ arg1; arg2 ]
+        ~side_effecting ?parameters name f
 
     (** Build various primitives with 1 parameter. *)
-
-    let p1a1r name param1 arg1 ~returns  f =
+    let p1a1r name param1 arg1 ?(side_effecting = false) ~returns f =
       let f ii_env params args =
-        match params,args with
-        | [ v1; ], [ v2; ] -> return [ f ii_env v1 v2; ]
+        match (params, args) with
+        | [ v1 ], [ v2 ] -> return [ f ii_env v1 v2 ]
         | _ -> Warn.fatal "Arity error for function %s." name
       in
-      build_primitive
-        ?returns:(Some returns) ~args:[ arg1; ] ~parameters:[param1]
-        name f
+      build_primitive ?returns:(Some returns) ~args:[ arg1 ]
+        ~parameters:[ param1 ] ~side_effecting name f
 
-    let p1a2 name param1 arg1 arg2 f =
+    let p1a2 name param1 arg1 arg2 ?(side_effecting = false) f =
       let f ii_env params args =
-        match params,args with
-        | [v1],[v2; v3; ] -> f ii_env v1 v2 v3
+        match (params, args) with
+        | [ v1 ], [ v2; v3 ] -> f ii_env v1 v2 v3
         | _ -> Warn.fatal "Arity error for function %s." name
       in
-      build_primitive ~args:[ arg1; arg2; ] ~parameters:[param1;] name f
+      build_primitive ~args:[ arg1; arg2 ] ~parameters:[ param1 ]
+        ~side_effecting name f
 
-    let p1a2r name param1 arg1 arg2 ~returns  f =
+    let p1a2r name param1 arg1 arg2 ~returns ?(side_effecting = false) f =
       let f ii_env params args =
-        match params,args with
-        | [ v1; ], [ v2; v3; ] -> return [ f ii_env v1 v2 v3; ]
+        match (params, args) with
+        | [ v1 ], [ v2; v3 ] -> return [ f ii_env v1 v2 v3 ]
         | _ -> Warn.fatal "Arity error for function %s." name
       in
-      build_primitive ?returns:(Some returns)
-        ~args:[ arg1; arg2; ] ~parameters:[param1;]
-        name f
+      build_primitive ?returns:(Some returns) ~side_effecting
+        ~args:[ arg1; arg2 ] ~parameters:[ param1 ] name f
 
-    let p1a3 name param1 arg1 arg2 arg3 f =
+    let p1a3 name param1 arg1 arg2 arg3 ?(side_effecting = false) f =
       let f ii_env params args =
-        match params,args with
-        | [v1],[v2; v3; v4; ] -> f ii_env v1 v2 v3 v4
+        match (params, args) with
+        | [ v1 ], [ v2; v3; v4 ] -> f ii_env v1 v2 v3 v4
         | _ -> Warn.fatal "Arity error for function %s." name
       in
-      build_primitive ~args:[ arg1; arg2; arg3; ] ~parameters:[param1;] name f
+      build_primitive ~args:[ arg1; arg2; arg3 ] ~parameters:[ param1 ]
+        ~side_effecting name f
 
     (* Primitives *)
     let extra_funcs =
@@ -739,39 +748,40 @@ module Make (C : Config) = struct
       let minus_one e = binop MINUS e (lit 1) in
       let pow_2 = binop POW (lit 2) in
       let t_named x = T_Named x |> with_pos in
-      let uint_returns =
-        int_ctnt (lit 0) (minus_one (pow_2 (var "N")))
+      let side_effecting = true in
+      let uint_returns = int_ctnt (lit 0) (minus_one (pow_2 (var "N")))
       and sint_returns =
         let big_pow = pow_2 (minus_one (var "N")) in
-        int_ctnt (E_Unop(NEG, big_pow) |> with_pos) (minus_one big_pow)
+        int_ctnt (E_Unop (NEG, big_pow) |> with_pos) (minus_one big_pow)
       in
       [
         (* Fences *)
-        p0 "primitive_isb" primitive_isb;
-        p2 "primitive_dmb" ("d", integer) ("t", integer) primitive_dmb;
-        p2 "primitive_dsb" ("d", integer) ("t", integer) primitive_dsb;
+        p0 "primitive_isb" ~side_effecting primitive_isb;
+        p2 "primitive_dmb" ~side_effecting ("d", integer) ("t", integer)
+          primitive_dmb;
+        p2 "primitive_dsb" ~side_effecting ("d", integer) ("t", integer)
+          primitive_dsb;
         (* Registers *)
-        p1r "read_register" ("reg", reg) ~returns:bv_64 read_register;
-        p2 "write_register" ("data", bv_64) ("reg", reg) write_register;
-        p0r "read_pc" ~returns:bv_64 read_pc;
-        p1 "write_pc" ("data", bv_64) write_pc;
-        p0r "SP_EL0" ~returns:bv_64 read_sp;
-        p1 "SP_EL0" ("data", bv_64) write_sp;
+        p1r "read_register" ~side_effecting ("reg", reg) ~returns:bv_64
+          read_register;
+        p2 "write_register" ~side_effecting ("data", bv_64) ("reg", reg)
+          write_register;
+        p0r "read_pc" ~side_effecting ~returns:bv_64 read_pc;
+        p1 "write_pc" ~side_effecting ("data", bv_64) write_pc;
+        p0r "SP_EL0" ~side_effecting ~returns:bv_64 read_sp;
+        p1 "SP_EL0" ~side_effecting ("data", bv_64) write_sp;
         (* Memory *)
-        p1a1r "read_memory"  ("N", None) ("addr", bv_64)
-          ~returns:(bv_var "N")
-          read_memory;
-        p1a2r "read_memory_gen"  ("N", None) ("addr", bv_64)
+        p1a1r "read_memory" ("N", None) ("addr", bv_64) ~returns:(bv_var "N")
+          ~side_effecting read_memory;
+        p1a2r "read_memory_gen" ("N", None) ("addr", bv_64)
           ("accdesc", t_named "AccessDescriptor")
           ~returns:(bv_var "N") read_memory_gen;
-        p1a2 "write_memory"
-          ("size", None)
-          ("addr", bv_64) ("data", bv_var "size")
+        p1a2 "write_memory" ~side_effecting ("size", None) ("addr", bv_64)
+          ("data", bv_var "size")
           write_memory;
-        p1a3 "write_memory_gen"
-          ("size", None)
-          ("addr", bv_64)
-          ("data", bv_var "size") ("accdesc", t_named "AccessDescriptor")
+        p1a3 "write_memory_gen" ~side_effecting ("size", None) ("addr", bv_64)
+          ("data", bv_var "size")
+          ("accdesc", t_named "AccessDescriptor")
           write_memory_gen;
         (* Translations *)
         p1r "UInt"
@@ -783,14 +793,14 @@ module Make (C : Config) = struct
           ("x", bv_var "N")
           ~returns:sint_returns sint;
         (* Misc *)
-        p0r "ProcessorID" ~returns:integer processor_id;
-        p2r "CanPredictFrom"
+        p0r ~side_effecting "ProcessorID" ~returns:integer processor_id;
+        p2r ~side_effecting "CanPredictFrom"
           ~parameters:[ ("N", None) ]
           ("predicted", bv_var "N")
           ("from", bv_var "N")
           ~returns:(bv_var "N") can_predict_from;
-        p0r "SomeBoolean" ~returns:boolean somebool;
-        p1 "CheckProp" ("prop", boolean) checkprop;
+        p0r ~side_effecting "SomeBoolean" ~returns:boolean somebool;
+        p1 ~side_effecting "CheckProp" ("prop", boolean) checkprop;
       ]
 
     let make_extra_funcs ii_env =

@@ -30,6 +30,9 @@ open AST
 module ISet : sig
   include Set.S with type elt = identifier
 
+  val unions : t list -> t
+  (** Iterated union. *)
+
   val of_option : identifier option -> t
   val pp_print : Format.formatter -> t -> unit
 end
@@ -349,3 +352,12 @@ val uniq : 'a list -> 'a list
 
 val list_is_empty : 'a list -> bool
 (** [list_is_empty li] is [true] iff [li] is empty, [false] otherwise. *)
+
+val list_split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
+(** Generalisation of [List.split] for 3-uples. *)
+
+val list_map_split : ('a -> 'b * 'c) -> 'a list -> 'b list * 'c list
+(** Composition of [List.map] and [List.split]. *)
+
+val transitive_closure : ISet.t IMap.t -> ISet.t IMap.t
+(** Returns the transitive closure of the graph. *)

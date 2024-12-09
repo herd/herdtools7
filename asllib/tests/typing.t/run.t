@@ -88,11 +88,15 @@ Use of global vars in constraints
   [1]
   $ aslref --no-exec TNegative4.asl
   File TNegative4.asl, line 5, characters 25 to 41:
-  ASL Typing error: a pure expression was expected, found VAR_ALLOWED_NUMS.
+  ASL Typing error: a pure expression was expected, found VAR_ALLOWED_NUMS,
+    which produces the following side-effects:
+    [ReadsGlobal "VAR_ALLOWED_NUMS"].
   [1]
   $ aslref --no-exec TNegative4-bis.asl
   File TNegative4-bis.asl, line 5, characters 25 to 41:
-  ASL Typing error: a pure expression was expected, found VAR_ALLOWED_NUMS.
+  ASL Typing error: a pure expression was expected, found VAR_ALLOWED_NUMS,
+    which produces the following side-effects:
+    [ReadsGlobal "VAR_ALLOWED_NUMS"].
   [1]
 
 Asserted type conversions
@@ -178,7 +182,8 @@ Symbolic execution of bit vector widths expressions
   $ aslref --no-exec TPositive10-1.asl
   $ aslref --no-exec TNegative10.asl
   File TNegative10.asl, line 8, characters 32 to 38:
-  ASL Typing error: a pure expression was expected, found widthN.
+  ASL Typing error: a pure expression was expected, found widthN, which
+    produces the following side-effects: [ReadsLocal "widthN"].
   [1]
   $ aslref --no-exec TNegative10-0.asl
   File TNegative10-0.asl, line 16, characters 4 to 53:
@@ -187,7 +192,7 @@ Symbolic execution of bit vector widths expressions
   [1]
   $ aslref --no-exec TNegative10-1.asl
   File TNegative10-1.asl, line 28, characters 4 to 49:
-  ASL Typing error: a subtype of bits(tempC1) was expected,
+  ASL Typing error: a subtype of bits(tempC3A) was expected,
     provided bits(tempC3B).
   [1]
 
@@ -248,14 +253,15 @@ Bit slice expressions
   $ aslref --no-exec TPositive15.asl
   $ aslref --no-exec TReconsider15.asl
   $ aslref --no-exec TNegative15-0.asl
+  File TNegative15-0.asl, line 6, characters 20 to 37:
   ASL Typing error: constrained integer expected, provided integer.
   [1]
   $ aslref --no-exec TNegative15-1.asl
-  File TNegative15-1.asl, line 6, characters 36 to 37:
+  File TNegative15-1.asl, line 6, characters 20 to 38:
   ASL Typing error: constrained integer expected, provided integer.
   [1]
   $ aslref --no-exec TNegative15-2.asl
-  File TNegative15-2.asl, line 6, characters 36 to 37:
+  File TNegative15-2.asl, line 6, characters 20 to 38:
   ASL Typing error: constrained integer expected, provided integer.
   [1]
   $ aslref --no-exec TNegative15-3.asl

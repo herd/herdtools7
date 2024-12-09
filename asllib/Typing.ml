@@ -25,14 +25,26 @@ open ASTUtils
 open Infix
 open StaticEnv
 module TypingRule = Instrumentation.TypingRule
+module SES = SideEffect.SES
+module TimeFrame = SideEffect.TimeFrame
 
 let ( |: ) = Instrumentation.TypingNoInstr.use_with
-let fatal_from = Error.fatal_from
-let undefined_identifier pos x = fatal_from pos (Error.UndefinedIdentifier x)
-let invalid_expr e = fatal_from e (Error.InvalidExpr e)
+let fatal_from ~loc = Error.fatal_from loc
+let undefined_identifier ~loc x = fatal_from ~loc (Error.UndefinedIdentifier x)
+let invalid_expr e = fatal_from ~loc:e (Error.InvalidExpr e)
+let add_pos_from ~loc = add_pos_from loc
 
-let conflict pos expected provided =
-  fatal_from pos (Error.ConflictingTypes (expected, provided))
+let conflicting_side_effects_error ~loc (s1, s2) =
+  fatal_from ~loc Error.(ConflictingSideEffects (s1, s2))
+
+let ses_non_conflicting_union ~loc =
+  SES.non_conflicting_union ~fail:(conflicting_side_effects_error ~loc)
+
+let ses_non_conflicting_unions ~loc =
+  SES.non_conflicting_unions ~fail:(conflicting_side_effects_error ~loc)
+
+let conflict ~loc expected provided =
+  fatal_from ~loc (Error.ConflictingTypes (expected, provided))
 
 let plus = binop PLUS
 let t_bits_bitwidth e = T_Bits (e, [])
@@ -82,16 +94,17 @@ let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
   in
   let subst_constraints env eqs = List.map (subst_constraint env eqs) in
   let rec rename env eqs ty =
+    let here desc = add_pos_from ~loc:ty desc in
     match ty.desc with
     | T_Bits (e, fields) ->
-        T_Bits (subst_expr_normalize env eqs e, fields) |> add_pos_from_st ty
+        T_Bits (subst_expr_normalize env eqs e, fields) |> here
     | T_Int (WellConstrained constraints) ->
         let constraints = subst_constraints env eqs constraints in
-        T_Int (WellConstrained constraints) |> add_pos_from_st ty
+        T_Int (WellConstrained constraints) |> here
     | T_Int (Parameterized (_uid, name)) ->
-        let e = E_Var name |> add_pos_from ty |> subst_expr_normalize env eqs in
-        T_Int (WellConstrained [ Constraint_Exact e ]) |> add_pos_from ty
-    | T_Tuple tys -> T_Tuple (List.map (rename env eqs) tys) |> add_pos_from ty
+        let e = E_Var name |> here |> subst_expr_normalize env eqs in
+        T_Int (WellConstrained [ Constraint_Exact e ]) |> here
+    | T_Tuple tys -> T_Tuple (List.map (rename env eqs) tys) |> here
     | _ -> ty
   in
   rename |: TypingRule.RenameTyEqs
@@ -245,7 +258,7 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
     List.fold_left2 folder []
 
   (* Begin AddNewFunc *)
-  let add_new_func loc env name formals subpgm_type =
+  let add_new_func ~loc env name formals subpgm_type =
     match IMap.find_opt name env.global.overloaded_subprograms with
     | None ->
         let new_env = set_renamings name (ISet.singleton name) env in
@@ -257,7 +270,9 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
           (not (ISet.is_empty other_names))
           && ISet.exists
                (fun name' ->
-                 let other_func_sig = IMap.find name' env.global.subprograms in
+                 let other_func_sig, _ses =
+                   IMap.find name' env.global.subprograms
+                 in
                  has_subprogram_type_clash subpgm_type
                    other_func_sig.subprogram_type
                  && has_arg_clash env formal_types other_func_sig.args)
@@ -276,53 +291,55 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
                       PP.pp_typed_identifier)
                   formals
             in
-            Error.fatal_from loc (Error.AlreadyDeclaredIdentifier name)
+            fatal_from ~loc (Error.AlreadyDeclaredIdentifier name)
         in
         let new_env = set_renamings name (ISet.add new_name other_names) env in
         (new_env, new_name) |: TypingRule.AddNewFunc
   (* End *)
 
   (* Begin SubprogramForName *)
-  let subprogram_for_name loc env version name caller_arg_types =
+  let subprogram_for_name ~loc env version name caller_arg_types =
     let () =
       if false then Format.eprintf "Trying to rename call to %S@." name
     in
     let renaming_set =
       try IMap.find name env.global.overloaded_subprograms
-      with Not_found -> undefined_identifier loc name
+      with Not_found -> undefined_identifier ~loc name
     in
     let get_func_sig name' =
       match IMap.find_opt name' env.global.subprograms with
-      | Some func_sig when has_arg_clash env caller_arg_types func_sig.args ->
-          Some (name', func_sig)
+      | Some (func_sig, ses)
+        when has_arg_clash env caller_arg_types func_sig.args ->
+          Some (name', func_sig, ses)
       | _ -> None
     in
     let matching_renamings = set_filter_map get_func_sig renaming_set in
     match matching_renamings with
-    | [ (name', func_sig) ] -> (
+    | [ (name', func_sig, ses) ] -> (
         match version with
-        | V0 -> (deduce_eqs env caller_arg_types func_sig.args, name', func_sig)
-        | V1 -> ([], name', func_sig) |: TypingRule.SubprogramForName)
-    | [] -> fatal_from loc (Error.NoCallCandidate (name, caller_arg_types))
+        | V0 ->
+            (deduce_eqs env caller_arg_types func_sig.args, name', func_sig, ses)
+        | V1 -> ([], name', func_sig, ses) |: TypingRule.SubprogramForName)
+    | [] -> fatal_from ~loc (Error.NoCallCandidate (name, caller_arg_types))
     | _ :: _ ->
-        fatal_from loc (Error.TooManyCallCandidates (name, caller_arg_types))
+        fatal_from ~loc (Error.TooManyCallCandidates (name, caller_arg_types))
   (* End *)
 
   let try_subprogram_for_name =
     match C.check with
     | TypeCheckNoWarn | TypeCheck -> subprogram_for_name
     | Warn | Silence -> (
-        fun loc env version name caller_arg_types ->
-          try subprogram_for_name loc env version name caller_arg_types
+        fun ~loc env version name caller_arg_types ->
+          try subprogram_for_name ~loc env version name caller_arg_types
           with Error.ASLException _ as error -> (
             try
               match IMap.find_opt name env.global.subprograms with
-              | None -> undefined_identifier loc ("function " ^ name)
-              | Some func_sig ->
+              | None -> undefined_identifier ~loc ("function " ^ name)
+              | Some (func_sig, ses) ->
                   if false then
                     Format.eprintf "@[<2>%a:@ No extra arguments for %s@]@."
                       PP.pp_pos loc name;
-                  ([], name, func_sig)
+                  ([], name, func_sig, ses)
             with Error.ASLException _ -> raise error))
 end
 
@@ -341,6 +358,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let warn_from = warn_from
   end)
 
+  let ldk_is_immutable = function
+    | LDK_Constant | LDK_Let -> true
+    | LDK_Var -> false
+
+  let gdk_is_immutable = function
+    | GDK_Config | GDK_Constant | GDK_Let -> true
+    | GDK_Var -> false
+
   (* Begin ShouldReduceToCall *)
   let should_reduce_to_call env name st =
     match IMap.find_opt name env.global.overloaded_subprograms with
@@ -350,13 +375,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           (fun name' ->
             match IMap.find_opt name' env.global.subprograms with
             | None -> assert false
-            | Some func_sig -> func_sig.subprogram_type = st)
+            | Some (func_sig, _ses) -> func_sig.subprogram_type = st)
           set
         |: TypingRule.ShouldReduceToCall
   (* End *)
 
   (* Begin DisjointSlicesToPositions *)
-  let disjoint_slices_to_positions loc env slices =
+  let disjoint_slices_to_positions ~loc env slices =
     let module DI = Diet.Int in
     let exception NonStatic in
     let eval env e =
@@ -366,7 +391,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let interval_of_slice env slice =
       let make_interval x y =
-        if x > y then fatal_from loc @@ Error.(BadSlice slice)
+        if x > y then fatal_from ~loc @@ Error.(BadSlice slice)
         else DI.Interval.make x y
       in
       match slice with
@@ -384,23 +409,23 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           make_interval (x * y) ((x * (y + 1)) - 1)
           |: TypingRule.BitfieldSliceToPositions
     in
-    let bitfield_slice_to_positions loc env diet slice =
+    let bitfield_slice_to_positions ~loc env diet slice =
       try
         let interval = interval_of_slice env slice in
         let new_diet = DI.add interval DI.empty in
         if DI.is_empty (Diet.Int.inter new_diet diet) then DI.add interval diet
-        else fatal_from loc Error.(OverlappingSlices (slices, Static))
+        else fatal_from ~loc Error.(OverlappingSlices (slices, Static))
       with NonStatic -> diet
     in
-    List.fold_left (bitfield_slice_to_positions loc env) Diet.Int.empty slices
+    List.fold_left (bitfield_slice_to_positions ~loc env) Diet.Int.empty slices
     |: TypingRule.DisjointSlicesToPositions
   (* End *)
 
   (* Begin TypingRule.CheckDisjointSlices *)
-  let check_disjoint_slices loc env slices =
+  let check_disjoint_slices ~loc env slices =
     if List.length slices <= 1 then ok
     else fun () ->
-      let _ = disjoint_slices_to_positions loc env slices in
+      let _ = disjoint_slices_to_positions ~loc env slices in
       () |: TypingRule.CheckDisjointSlices
   (* End *)
 
@@ -484,101 +509,109 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Bits (n, _) -> n
     | _ -> assumption_failed ()
 
-  let get_bitvector_width loc env t =
+  let get_bitvector_width ~loc env t =
     try get_bitvector_width' env t
-    with TypingAssumptionFailed -> conflict loc [ default_t_bits ] t
+    with TypingAssumptionFailed -> conflict ~loc [ default_t_bits ] t
 
-  let get_bitvector_const_width loc env t =
-    let e_width = get_bitvector_width loc env t in
+  let get_bitvector_const_width ~loc env t =
+    let e_width = get_bitvector_width ~loc env t in
     match StaticInterpreter.static_eval env e_width with
     | L_Int z -> Z.to_int z
     | _ -> assert false
 
   (** [check_type_satisfies t1 t2] if [t1 <: t2]. *)
-  let check_type_satisfies loc env t1 t2 () =
+  let check_type_satisfies ~loc env t1 t2 () =
     let () =
       if false then
         Format.eprintf "@[<hv 2>Checking %a@ <: %a@]@." PP.pp_ty t1 PP.pp_ty t2
     in
-    if Types.type_satisfies env t1 t2 then () else conflict loc [ t2.desc ] t1
+    if Types.type_satisfies env t1 t2 then () else conflict ~loc [ t2.desc ] t1
 
   (* CheckStructureBoolean *)
 
   (** [check_structure_boolean env t1] checks that [t1] has the structure of a boolean. *)
-  let check_structure_boolean loc env t1 () =
+  let check_structure_boolean ~loc env t1 () =
     match (Types.get_structure env t1).desc with
     | T_Bool -> ()
-    | _ -> conflict loc [ T_Bool ] t1
+    | _ -> conflict ~loc [ T_Bool ] t1
   (* End *)
 
   (* CheckStructureBits *)
-  let check_structure_bits loc env t () =
+  let check_structure_bits ~loc env t () =
     match (Types.get_structure env t).desc with
     | T_Bits _ -> ()
-    | _ -> conflict loc [ default_t_bits ] t
+    | _ -> conflict ~loc [ default_t_bits ] t
   (* End *)
 
   (* Begin CheckStructureInteger *)
-  let check_structure_integer loc env t () =
+  let check_structure_integer ~loc env t () =
     let () =
       if false then
         Format.eprintf "Checking that %a is an integer.@." PP.pp_ty t
     in
     match (Types.make_anonymous env t).desc with
     | T_Int _ -> ()
-    | _ -> conflict loc [ integer' ] t
+    | _ -> conflict ~loc [ integer' ] t
   (* End *)
 
   (* Begin CheckConstrainedInteger *)
   let check_constrained_integer ~loc env t () =
     match (Types.make_anonymous env t).desc with
-    | T_Int UnConstrained -> fatal_from loc Error.(ConstrainedIntegerExpected t)
+    | T_Int UnConstrained ->
+        fatal_from ~loc Error.(ConstrainedIntegerExpected t)
     | T_Int (WellConstrained _ | Parameterized _) -> ()
-    | _ -> conflict loc [ integer' ] t
+    | _ -> conflict ~loc [ integer' ] t
   (* End *)
 
   (* Begin CheckStructureException *)
-  let check_structure_exception loc env t () =
+  let check_structure_exception ~loc env t () =
     let t_struct = Types.get_structure env t in
     match t_struct.desc with
     | T_Exception _ -> ()
-    | _ -> conflict loc [ T_Exception [] ] t_struct
-  (* End *)
-
-  (* Begin StorageIsPure *)
-  let storage_is_pure ~loc (env : env) s =
-    (* Definition DDYW:
-       Any expression consisting solely of an immutable storage element or a
-       literal value is a statically evaluable expression.
-    *)
-    match IMap.find_opt s env.local.storage_types with
-    | Some (_, (LDK_Constant | LDK_Let)) -> true
-    | Some (_, LDK_Var) -> false
-    | None -> (
-        match IMap.find_opt s env.global.storage_types with
-        | Some (_, (GDK_Constant | GDK_Config | GDK_Let)) -> true
-        | Some (_, GDK_Var) -> false
-        | None ->
-            if
-              IMap.mem s env.global.subprograms
-              || IMap.mem s env.global.declared_types
-            then false
-            else undefined_identifier loc s)
-  (* End *)
-
-  (* Begin IsStaticallyEvaluable *)
-  let is_statically_evaluable ~loc env e =
-    let use_set = use_e e ISet.empty in
-    ISet.for_all (storage_is_pure ~loc env) use_set
-    |: TypingRule.IsStaticallyEvaluable
+    | _ -> conflict ~loc [ T_Exception [] ] t_struct
   (* End *)
 
   (* Begin CheckStaticallyEvaluable *)
-  let check_statically_evaluable (env : env) e () =
-    if is_statically_evaluable ~loc:e env e then
+  let check_statically_evaluable expr_for_error ses () =
+    if SES.is_statically_evaluable ses then
       () |: TypingRule.CheckStaticallyEvaluable
-    else fatal_from e (Error.ImpureExpression e)
+    else
+      fatal_from ~loc:expr_for_error
+        (Error.ImpureExpression (expr_for_error, ses))
   (* End *)
+
+  let check_is_deterministic expr_for_error ses () =
+    if SES.is_deterministic ses then ()
+    else
+      fatal_from ~loc:expr_for_error
+        (Error.ImpureExpression (expr_for_error, ses))
+
+  let check_is_pure expr_for_error ses () =
+    if SES.is_pure ses then ()
+    else
+      fatal_from ~loc:expr_for_error
+        (Error.ImpureExpression (expr_for_error, SES.remove_pure ses))
+
+  let leq_config_time ses =
+    TimeFrame.is_before (SES.max_time_frame ses) TimeFrame.Config
+
+  let check_leq_config_time ~loc (_, e, ses_e) () =
+    if leq_config_time ses_e then ()
+    else fatal_from ~loc Error.(ConfigTimeBroken (e, ses_e))
+
+  let leq_constant_time ses =
+    TimeFrame.is_before (SES.max_time_frame ses) TimeFrame.Constant
+
+  let check_leq_constant_time ~loc (_, e, ses_e) () =
+    if leq_constant_time ses_e then ()
+    else fatal_from ~loc Error.(ConstantTimeBroken (e, ses_e))
+
+  let check_is_time_frame =
+    let open TimeFrame in
+    function
+    | TimeFrame.Constant -> check_leq_constant_time
+    | TimeFrame.Config -> check_leq_config_time
+    | TimeFrame.Execution -> fun ~loc:_ _ -> ok
 
   let check_bits_equal_width' env t1 t2 () =
     let n = get_bitvector_width' env t1 and m = get_bitvector_width' env t2 in
@@ -586,102 +619,109 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     else assumption_failed ()
 
   (* Begin CheckBitsEqualWidth *)
-  let check_bits_equal_width loc env t1 t2 () =
+  let check_bits_equal_width ~loc env t1 t2 () =
     try check_bits_equal_width' env t1 t2 ()
     with TypingAssumptionFailed ->
-      fatal_from loc (Error.UnreconciliableTypes (t1, t2))
+      fatal_from ~loc (Error.UnreconciliableTypes (t1, t2))
   (* End *)
+
+  let binop_is_ordered = function
+    | BAND | BOR | IMPL -> true
+    | AND | BEQ | DIV | DIVRM | EOR | EQ_OP | GT | GEQ | LT | LEQ | MOD | MINUS
+    | MUL | NEQ | OR | PLUS | POW | RDIV | SHL | SHR | BV_CONCAT ->
+        false
 
   (* Begin TypeOfArrayLength *)
   let type_of_array_length ~loc = function
-    | ArrayLength_Enum (s, _) -> T_Named s |> add_pos_from loc
+    | ArrayLength_Enum (s, _) -> T_Named s |> add_pos_from ~loc
     | ArrayLength_Expr _ -> integer |: TypingRule.TypeOfArrayLength
   (* End *)
 
   (* Begin ApplyBinopTypes *)
-  let rec apply_binop_types loc env op t1 t2 : ty =
+  let rec apply_binop_types ~loc env op t1 t2 : ty =
     let () =
       if false then
         Format.eprintf "Checking binop %s between %a and %a@."
           (PP.binop_to_string op) PP.pp_ty t1 PP.pp_ty t2
     in
-    let with_loc x = add_pos_from loc x in
+    let here x = add_pos_from ~loc x in
     (match (op, (t1.desc, t2.desc)) with
     | _, (T_Named _, _) | _, (_, T_Named _) ->
         let t1_anon = Types.make_anonymous env t1
         and t2_anon = Types.make_anonymous env t2 in
-        apply_binop_types loc env op t1_anon t2_anon
-    | (BAND | BOR | BEQ | IMPL), (T_Bool, T_Bool) -> T_Bool |> with_loc
+        apply_binop_types ~loc env op t1_anon t2_anon
+    | (BAND | BOR | BEQ | IMPL), (T_Bool, T_Bool) -> T_Bool |> here
     | (AND | OR | EOR | PLUS | MINUS), (T_Bits (w1, _), T_Bits (w2, _))
       when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
-        T_Bits (w1, []) |> with_loc
+        T_Bits (w1, []) |> here
     | BV_CONCAT, (T_Bits (w1, _), T_Bits (w2, _)) ->
-        T_Bits (width_plus env w1 w2, []) |> with_loc
-    | (PLUS | MINUS), (T_Bits (w, _), T_Int _) -> T_Bits (w, []) |> with_loc
+        T_Bits (width_plus env w1 w2, []) |> here
+    | (PLUS | MINUS), (T_Bits (w, _), T_Int _) -> T_Bits (w, []) |> here
     | (LEQ | GEQ | GT | LT), (T_Int _, T_Int _ | T_Real, T_Real)
     | ( (EQ_OP | NEQ),
         (T_Int _, T_Int _ | T_Bool, T_Bool | T_Real, T_Real | T_String, T_String)
       ) ->
-        T_Bool |> with_loc
+        T_Bool |> here
     | (EQ_OP | NEQ), (T_Bits (w1, _), T_Bits (w2, _))
       when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
-        T_Bool |> with_loc
+        T_Bool |> here
     | (EQ_OP | NEQ), (T_Enum li1, T_Enum li2)
       when list_equal String.equal li1 li2 ->
-        T_Bool |> with_loc
+        T_Bool |> here
     | ( (MUL | DIV | DIVRM | MOD | SHL | SHR | POW | PLUS | MINUS),
         (T_Int c1, T_Int c2) ) -> (
         match (c1, c2) with
         | PendingConstrained, _ | _, PendingConstrained -> assert false
-        | UnConstrained, _ | _, UnConstrained -> T_Int UnConstrained |> with_loc
+        | UnConstrained, _ | _, UnConstrained -> T_Int UnConstrained |> here
         | Parameterized _, _ | _, Parameterized _ ->
             let t1_well_constrained = Types.to_well_constrained t1
             and t2_well_constrained = Types.to_well_constrained t2 in
-            apply_binop_types loc env op t1_well_constrained t2_well_constrained
+            apply_binop_types ~loc env op t1_well_constrained
+              t2_well_constrained
         | WellConstrained cs1, WellConstrained cs2 -> (
             best_effort integer @@ fun _ ->
             try
               let cs = SOp.annotate_constraint_binop ~loc env op cs1 cs2 in
-              T_Int (WellConstrained cs) |> with_loc
+              T_Int (WellConstrained cs) |> here
             with TypingAssumptionFailed ->
-              fatal_from loc (Error.BadTypesForBinop (op, t1, t2))))
+              fatal_from ~loc (Error.BadTypesForBinop (op, t1, t2))))
     | (PLUS | MINUS | MUL), (T_Real, T_Real)
     | POW, (T_Real, T_Int _)
     | RDIV, (T_Real, T_Real) ->
-        T_Real |> with_loc
-    | _ -> fatal_from loc (Error.BadTypesForBinop (op, t1, t2)))
+        T_Real |> here
+    | _ -> fatal_from ~loc (Error.BadTypesForBinop (op, t1, t2)))
     |: TypingRule.ApplyBinopTypes
   (* End *)
 
   (* Begin ApplyUnopType *)
-  let apply_unop_type loc env op t =
+  let apply_unop_type ~loc env op t =
+    let here desc = add_pos_from ~loc desc in
     match op with
     | BNOT ->
-        let+ () = check_type_satisfies loc env t boolean in
-        T_Bool |> add_pos_from loc
+        let+ () = check_type_satisfies ~loc env t boolean in
+        T_Bool |> here
     | NEG -> (
         let+ () =
           either
-            (check_type_satisfies loc env t integer)
-            (check_type_satisfies loc env t real)
+            (check_type_satisfies ~loc env t integer)
+            (check_type_satisfies ~loc env t real)
         in
         let t_struct = Types.get_well_constrained_structure env t in
         match t_struct.desc with
-        | T_Int UnConstrained -> T_Int UnConstrained |> add_pos_from loc
+        | T_Int UnConstrained -> T_Int UnConstrained |> here
         | T_Int (WellConstrained cs) ->
-            let neg e = E_Unop (NEG, e) |> add_pos_from e in
+            let neg e = unop NEG e in
             let constraint_minus = function
               | Constraint_Exact e -> Constraint_Exact (neg e)
               | Constraint_Range (top, bot) ->
                   Constraint_Range (neg bot, neg top)
             in
-            T_Int (WellConstrained (List.map constraint_minus cs))
-            |> add_pos_from loc
+            T_Int (WellConstrained (List.map constraint_minus cs)) |> here
         | T_Int (Parameterized _) ->
             assert false (* We used to_well_constrained just before. *)
         | _ -> (* fail case *) t)
     | NOT ->
-        let+ () = check_structure_bits loc env t in
+        let+ () = check_structure_bits ~loc env t in
         t |: TypingRule.ApplyUnopType
   (* End *)
 
@@ -698,15 +738,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin CheckVarNotInEnv *)
-  let check_var_not_in_env loc env x () =
+  let check_var_not_in_env ~loc env x () =
     if is_undefined x env then () |: TypingRule.CheckVarNotInEnv
-    else fatal_from loc (Error.AlreadyDeclaredIdentifier x)
+    else fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
   (* End *)
 
   (* Begin CheckVarNotInGEnv *)
-  let check_var_not_in_genv loc genv x () =
+  let check_var_not_in_genv ~loc genv x () =
     if is_global_undefined x genv then () |: TypingRule.CheckVarNotInGEnv
-    else fatal_from loc (Error.AlreadyDeclaredIdentifier x)
+    else fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
   (* End *)
 
   (* Begin GetVariableEnum *)
@@ -714,7 +754,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     match e.desc with
     | E_Var x -> (
         match IMap.find_opt x env.global.declared_types with
-        | Some t -> (
+        | Some (t, _) -> (
             match (Types.make_anonymous env t).desc with
             | T_Enum li -> Some (x, List.length li)
             | _ -> None)
@@ -723,18 +763,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin CheckPositionsInWidth *)
-  let check_diet_in_width loc slices width diet () =
+  let check_diet_in_width ~loc slices width diet () =
     let min_pos = Diet.Int.min_elt diet |> Diet.Int.Interval.x
     and max_pos = Diet.Int.max_elt diet |> Diet.Int.Interval.y in
     if 0 <= min_pos && max_pos < width then
       () |: TypingRule.CheckPositionsInWidth
-    else fatal_from loc (BadSlices (Error.Static, slices, width))
+    else fatal_from ~loc (BadSlices (Error.Static, slices, width))
   (* End *)
 
   (* Begin CheckSlicesInWidth *)
-  let check_slices_in_width loc env width slices () =
-    let diet = disjoint_slices_to_positions loc env slices in
-    check_diet_in_width loc slices width diet ()
+  let check_slices_in_width ~loc env width slices () =
+    let diet = disjoint_slices_to_positions ~loc env slices in
+    check_diet_in_width ~loc slices width diet ()
     |: TypingRule.CheckSlicesInWidth
   (* End *)
 
@@ -743,7 +783,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       also define the same slice of the bitvector type.
   *)
   module CheckCommonBitfieldsAlign : sig
-    val check : ty -> StaticEnv.env -> bitfield list -> int -> unit
+    val check :
+      loc:'a annotated -> StaticEnv.env -> bitfield list -> int -> unit
   end = struct
     type interval = int * int
     (** [(i, j)] is the set of integers from [i] to [j], inclusive. *)
@@ -947,7 +988,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       else true
 
     (* Begin TypingRule.CheckCommonBitfieldsAlign *)
-    let check annot env bitfields width =
+    let check ~loc env bitfields width =
       (* define a fake absolute field representing the entire bitvector. *)
       let top_absolute =
         { name = ""; abs_scope = []; abs_slices = [ (0, width - 1) ] }
@@ -987,7 +1028,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let abs_name2_str = Format.asprintf "%a" pp_abs_name abs_name2 in
             let indices1_str = Format.asprintf "[%a]" pp_abs_slices indices1 in
             let indices2_str = Format.asprintf "[%a]" pp_abs_slices indices2 in
-            fatal_from annot
+            fatal_from ~loc
               (Error.BitfieldsDontAlign
                  {
                    field1_absname = abs_name1_str;
@@ -1027,36 +1068,46 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       && List.compare_lengths params func_sig.parameters < 0
       && not (list_is_empty arg_types)
     then
-      let width = get_bitvector_width loc env (List.hd arg_types) in
-      let param_type = integer_exact' width |> add_pos_from width in
-      params @ [ (param_type, width) ]
+      let width = get_bitvector_width ~loc env (List.hd arg_types) in
+      let param_type = integer_exact' width |> add_pos_from ~loc:width in
+      let ses_param =
+        (* This is enough as the bitvector width is statically evaluable and
+           its timeframe is earlier than the argument itself. *)
+        SES.empty
+      in
+      params @ [ (param_type, width, ses_param) ]
     else params
 
   (* Begin TBitField *)
-  let rec annotate_bitfield ~loc env width bitfield : bitfield =
+  let rec annotate_bitfield ~loc env width bitfield : bitfield * SES.t =
     match bitfield with
     | BitField_Simple (name, slices) ->
-        let slices1 = annotate_slices env slices in
-        let+ () = check_slices_in_width loc env width slices1 in
-        BitField_Simple (name, slices1) |: TypingRule.TBitField
+        let slices1, ses_slices = annotate_slices ~loc env slices in
+        let+ () = check_slices_in_width ~loc env width slices1 in
+        (BitField_Simple (name, slices1), ses_slices) |: TypingRule.TBitField
     | BitField_Nested (name, slices, bitfields') ->
-        let slices1 = annotate_slices env slices in
-        let diet = disjoint_slices_to_positions loc env slices1 in
-        let+ () = check_diet_in_width loc slices1 width diet in
+        let slices1, ses_slices = annotate_slices ~loc env slices in
+        let diet = disjoint_slices_to_positions ~loc env slices1 in
+        let+ () = check_diet_in_width ~loc slices1 width diet in
         let width' = Diet.Int.cardinal diet |> expr_of_int in
-        let bitfields'' = annotate_bitfields ~loc env width' bitfields' in
-        BitField_Nested (name, slices1, bitfields'') |: TypingRule.TBitField
+        let new_bitfields, ses_bitfields =
+          annotate_bitfields ~loc env width' bitfields'
+        in
+        let ses = SES.union ses_slices ses_bitfields in
+        (BitField_Nested (name, slices1, new_bitfields), ses)
+        |: TypingRule.TBitField
     | BitField_Type (name, slices, ty) ->
-        let ty' = annotate_type ~loc env ty in
-        let slices1 = annotate_slices env slices in
-        let diet = disjoint_slices_to_positions loc env slices1 in
-        let+ () = check_diet_in_width loc slices1 width diet in
+        let ty', ses_ty = annotate_type ~loc env ty in
+        let slices1, ses_slices = annotate_slices ~loc env slices in
+        let diet = disjoint_slices_to_positions ~loc env slices1 in
+        let+ () = check_diet_in_width ~loc slices1 width diet in
         let width' = Diet.Int.cardinal diet |> expr_of_int in
         let+ () =
           t_bits_bitwidth width' |> add_dummy_annotation
-          |> check_bits_equal_width loc env ty
+          |> check_bits_equal_width ~loc env ty
         in
-        BitField_Type (name, slices1, ty') |: TypingRule.TBitField
+        let ses = SES.union ses_ty ses_slices in
+        (BitField_Type (name, slices1, ty'), ses) |: TypingRule.TBitField
   (* End *)
 
   (* Begin TBitFields *)
@@ -1064,57 +1115,72 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let+ () =
       match get_first_duplicate bitfield_get_name bitfields with
       | None -> ok
-      | Some x -> fun () -> fatal_from loc (Error.AlreadyDeclaredIdentifier x)
+      | Some x -> fun () -> fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
     in
     let width =
       let v = StaticInterpreter.static_eval env e_width in
       match v with L_Int i -> Z.to_int i | _ -> assert false
     in
-    List.map (annotate_bitfield ~loc env width) bitfields
-    |: TypingRule.TBitFields
+    let new_bitfields, sess =
+      list_map_split (annotate_bitfield ~loc env width) bitfields
+    in
+    let ses = ses_non_conflicting_unions ~loc sess in
+    (new_bitfields, ses) |: TypingRule.TBitFields
   (* End *)
 
-  and annotate_type ?(decl = false) ~(loc : 'a annotated) env ty : ty =
+  and annotate_type ?(decl = false) ~(loc : 'a annotated) env ty : ty * SES.t =
     let () =
       if false then
         Format.eprintf "Annotating@ %a@ in env:@ %a@." PP.pp_ty ty pp_env env
     in
-    let here t = add_pos_from ty t in
-    best_effort ty @@ fun _ ->
+    let here t = add_pos_from ~loc:ty t in
+    best_effort (ty, SES.empty) @@ fun _ ->
     match ty.desc with
     (* Begin TString *)
-    | T_String -> ty |: TypingRule.TString
+    | T_String -> (ty, SES.empty) |: TypingRule.TString
     (* Begin TReal *)
-    | T_Real -> ty |: TypingRule.TReal
+    | T_Real -> (ty, SES.empty) |: TypingRule.TReal
     (* Begin TBool *)
-    | T_Bool -> ty |: TypingRule.TBool
+    | T_Bool -> (ty, SES.empty) |: TypingRule.TBool
     (* Begin TNamed *)
     | T_Named x ->
-        let+ () =
-          if IMap.mem x env.global.declared_types then ok
-          else fun () -> undefined_identifier loc x
+        let ses =
+          (* As expression on which types depend are statically evaluable,
+             using a named type is as reading a global immutable storage
+             element. *)
+          let time_frame =
+            match IMap.find_opt x env.global.declared_types with
+            | Some (_, t) -> t
+            | None -> undefined_identifier ~loc x
+          and immutable = true in
+          SES.reads_global x time_frame immutable
         in
-        ty |: TypingRule.TNamed
+        (ty, ses) |: TypingRule.TNamed
     (* Begin TInt *)
     | T_Int constraints ->
         (match constraints with
         | PendingConstrained ->
-            fatal_from loc Error.UnexpectedPendingConstrained
-        | WellConstrained [] -> fatal_from loc Error.EmptyConstraints
+            fatal_from ~loc Error.UnexpectedPendingConstrained
+        | WellConstrained [] -> fatal_from ~loc Error.EmptyConstraints
         | WellConstrained constraints ->
-            let new_constraints =
-              List.map (annotate_constraint ~loc env) constraints
+            let new_constraints, sess =
+              list_map_split (annotate_constraint ~loc env) constraints
             in
-            T_Int (WellConstrained new_constraints) |> here
-        | Parameterized _ | UnConstrained -> ty)
+            let ses = SES.unions sess in
+            (T_Int (WellConstrained new_constraints) |> here, ses)
+        | Parameterized (_, name) ->
+            (ty, SES.reads_local name TimeFrame.Constant true)
+        | UnConstrained -> (ty, SES.empty))
         |: TypingRule.TInt
     (* Begin TBits *)
     | T_Bits (e_width, bitfields) ->
-        let e_width' = annotate_static_constrained_integer ~loc env e_width in
-        let bitfields' =
-          if bitfields = [] then bitfields
+        let t_width, e_width', ses_width = annotate_expr env e_width in
+        let+ () = check_statically_evaluable e_width ses_width in
+        let+ () = check_constrained_integer ~loc:e_width env t_width in
+        let bitfields', ses_bitfields =
+          if bitfields = [] then (bitfields, SES.empty)
           else
-            let annotated_bitfields =
+            let annotated_bitfields, ses_bitfields =
               annotate_bitfields ~loc env e_width' bitfields
             in
             let () =
@@ -1123,47 +1189,57 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 | L_Int i -> Z.to_int i
                 | _ -> assert false
               in
-              CheckCommonBitfieldsAlign.check ty env annotated_bitfields width
+              CheckCommonBitfieldsAlign.check ~loc:ty env annotated_bitfields
+                width
               |: TypingRule.CheckCommonBitfieldsAlign
             in
-            annotated_bitfields
+            (annotated_bitfields, ses_bitfields)
         in
-        T_Bits (e_width', bitfields') |> here |: TypingRule.TBits
+        let ses = SES.union ses_width ses_bitfields in
+        (T_Bits (e_width', bitfields') |> here, ses) |: TypingRule.TBits
     (* Begin TTuple *)
     | T_Tuple tys ->
-        let tys' = List.map (annotate_type ~loc env) tys in
-        T_Tuple tys' |> here |: TypingRule.TTuple
+        let tys', sess = list_map_split (annotate_type ~loc env) tys in
+        let ses = SES.unions sess in
+        (T_Tuple tys' |> here, ses) |: TypingRule.TTuple
     (* Begin TArray *)
     | T_Array (index, t) ->
-        let t' = annotate_type ~loc env t
-        and index' =
+        let t', ses_t = annotate_type ~loc env t
+        and index', ses_index =
           match index with
           | ArrayLength_Expr e -> (
               match get_variable_enum' env e with
-              | Some (s, i) -> ArrayLength_Enum (s, i)
+              | Some (s, i) -> (ArrayLength_Enum (s, i), SES.empty)
               | None ->
-                  let e' = annotate_static_integer ~loc env e in
-                  ArrayLength_Expr e')
+                  let e', ses = annotate_static_integer ~loc env e in
+                  (ArrayLength_Expr e', ses))
           | ArrayLength_Enum (_, _) ->
               assert (* Enumerated indices only exist in the typed AST. *)
                      false
         in
-        T_Array (index', t') |> here |: TypingRule.TArray
+        let ses = SES.union ses_t ses_index in
+        (T_Array (index', t') |> here, ses) |: TypingRule.TArray
     (* Begin TStructuredDecl *)
     | (T_Record fields | T_Exception fields) when decl -> (
         let+ () =
           match get_first_duplicate fst fields with
           | None -> ok
           | Some x ->
-              fun () -> fatal_from loc (Error.AlreadyDeclaredIdentifier x)
+              fun () -> fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
         in
-        let fields' =
-          List.map (fun (x, ty) -> (x, annotate_type ~loc env ty)) fields
+        let fields', sess =
+          list_map_split
+            (fun (x, ty) ->
+              let ty', ses = annotate_type ~loc env ty in
+              ((x, ty'), ses))
+            fields
         in
+        let ses = SES.unions sess in
         match ty.desc with
-        | T_Record _ -> T_Record fields' |> here |: TypingRule.TStructuredDecl
+        | T_Record _ ->
+            (T_Record fields' |> here, ses) |: TypingRule.TStructuredDecl
         | T_Exception _ ->
-            T_Exception fields' |> here |: TypingRule.TStructuredDecl
+            (T_Exception fields' |> here, ses) |: TypingRule.TStructuredDecl
         | _ -> assert false
         (* Begin TEnumDecl *))
     | T_Enum li when decl ->
@@ -1171,52 +1247,56 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           match get_first_duplicate Fun.id li with
           | None -> ok
           | Some x ->
-              fun () -> fatal_from loc (Error.AlreadyDeclaredIdentifier x)
+              fun () -> fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
         in
         let+ () =
          fun () ->
-          List.iter (fun s -> check_var_not_in_genv ty env.global s ()) li
+          List.iter (fun s -> check_var_not_in_genv ~loc env.global s ()) li
         in
-        ty |: TypingRule.TEnumDecl
+        (ty, SES.empty) |: TypingRule.TEnumDecl
         (* Begin TNonDecl *)
     | T_Enum _ | T_Record _ | T_Exception _ ->
         if decl then assert false
         else
-          fatal_from loc
+          fatal_from ~loc
             (Error.NotYetImplemented
                " Cannot use non anonymous form of enumerations, record, or \
                 exception here.")
           |: TypingRule.TNonDecl
   (* End *)
 
+  and annotate_statically_evaluable_expr env e =
+    let t, e', ses = annotate_expr env e in
+    let+ () = check_statically_evaluable e ses in
+    (t, e', ses)
+
   (* Begin AnnotateStaticInteger *)
   and annotate_static_integer ~(loc : 'a annotated) env e =
-    let t, e' = annotate_expr env e in
-    let+ () = check_structure_integer loc env t in
-    let+ () = check_statically_evaluable env e in
-    StaticModel.try_normalize env e'
+    let t, e', ses = annotate_statically_evaluable_expr env e in
+    let+ () = check_structure_integer ~loc env t in
+    (StaticModel.try_normalize env e', ses)
   (* End *)
 
   (* Begin StaticConstrainedInteger *)
   and annotate_static_constrained_integer ~(loc : 'a annotated) env e =
-    let t, e' = annotate_expr_ env ~forbid_atcs:true e in
+    let t, e', ses = annotate_statically_evaluable_expr env e in
     let+ () = check_constrained_integer ~loc env t in
-    let+ () = check_statically_evaluable env e in
-    StaticModel.try_normalize env e'
+    (StaticModel.try_normalize env e', ses)
   (* End *)
 
   (* Begin AnnotateConstraint *)
   and annotate_constraint ~loc env = function
     | Constraint_Exact e ->
-        let e' = annotate_static_constrained_integer ~loc env e in
-        Constraint_Exact e'
+        let e', ses = annotate_static_constrained_integer ~loc env e in
+        (Constraint_Exact e', ses)
     | Constraint_Range (e1, e2) ->
-        let e1' = annotate_static_constrained_integer ~loc env e1
-        and e2' = annotate_static_constrained_integer ~loc env e2 in
-        Constraint_Range (e1', e2')
+        let e1', ses1 = annotate_static_constrained_integer ~loc env e1
+        and e2', ses2 = annotate_static_constrained_integer ~loc env e2 in
+        let ses = SES.union ses1 ses2 in
+        (Constraint_Range (e1', e2'), ses)
   (* End *)
 
-  and annotate_slices env =
+  and annotate_slices env ~loc =
     (* Rules:
        - Rule WZCS: The width of a bitslice must be any non-negative,
          statically evaluable integer expression (including zero).
@@ -1234,12 +1314,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           *)
           annotate_slice (Slice_Length (i, one_expr)) |: TypingRule.Slice
       | Slice_Length (offset, length) ->
-          let t_offset, offset' = annotate_expr env offset
-          and length' =
-            annotate_static_constrained_integer ~loc:(to_pos length) env length
+          let t_offset, offset', ses_offset = annotate_expr env offset
+          and length', ses_length =
+            annotate_static_constrained_integer ~loc env length
           in
-          let+ () = check_structure_integer offset' env t_offset in
-          Slice_Length (offset', length') |: TypingRule.Slice
+          let+ () = check_structure_integer ~loc:offset env t_offset in
+          let ses = SES.union ses_length ses_offset in
+          (Slice_Length (offset', length'), ses |: TypingRule.Slice)
       | Slice_Range (j, i) ->
           (* LRM R_GXKG:
              The notation b[j:i] is syntactic sugar for b[i +: j-i+1].
@@ -1255,27 +1336,35 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           |: TypingRule.Slice
       (* End *)
     in
-    List.map annotate_slice
+    fun slices ->
+      let slices, sess = list_map_split annotate_slice slices in
+      let ses = ses_non_conflicting_unions ~loc sess in
+      (slices, ses)
 
-  and annotate_pattern loc env t p =
-    let here = add_pos_from p in
+  and annotate_pattern ~loc env t p =
+    let here = add_pos_from ~loc:p in
     match p.desc with
     (* Begin PAll *)
-    | Pattern_All -> p |: TypingRule.PAll
+    | Pattern_All -> (p, SES.empty) |: TypingRule.PAll
     (* End *)
     (* Begin PAny *)
     | Pattern_Any li ->
-        let new_li = List.map (annotate_pattern loc env t) li in
-        Pattern_Any new_li |> here |: TypingRule.PAny
+        let new_li, sess = list_map_split (annotate_pattern ~loc env t) li in
+        let ses =
+          (* They can't be conflicting because they are statically evaluable *)
+          SES.unions sess
+        in
+        (Pattern_Any new_li |> here, ses) |: TypingRule.PAny
     (* End *)
     (* Begin PNot *)
     | Pattern_Not q ->
-        let new_q = annotate_pattern loc env t q in
-        Pattern_Not new_q |> here |: TypingRule.PNot
+        let new_q, ses = annotate_pattern ~loc env t q in
+        (Pattern_Not new_q |> here, ses) |: TypingRule.PNot
     (* End *)
     (* Begin PSingle *)
     | Pattern_Single e ->
-        let t_e, e' = annotate_expr env e in
+        let t_e, e', ses = annotate_expr env e in
+        let+ () = check_statically_evaluable e ses in
         let+ () =
          fun () ->
           let t_struct = Types.make_anonymous env t
@@ -1287,44 +1376,48 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | T_String, T_String ->
               ()
           | T_Bits _, T_Bits _ ->
-              check_bits_equal_width loc env t_struct t_e_struct ()
+              check_bits_equal_width ~loc env t_struct t_e_struct ()
           | T_Enum li1, T_Enum li2 when list_equal String.equal li1 li2 -> ()
-          | _ -> fatal_from loc (Error.BadPattern (p, t))
+          | _ -> fatal_from ~loc (Error.BadPattern (p, t))
         in
-        Pattern_Single e' |> here |: TypingRule.PSingle
+        (Pattern_Single e' |> here, ses) |: TypingRule.PSingle
     (* End *)
     (* Begin PGeq *)
     | Pattern_Geq e ->
-        let t_e, e' = annotate_expr env e in
-        let+ () = check_statically_evaluable env e' in
+        let t_e, e', ses = annotate_expr env e in
+        let+ () = check_statically_evaluable e ses in
         let+ () =
          fun () ->
           let t_struct = Types.get_structure env t
           and t_e_struct = Types.get_structure env t_e in
           match (t_struct.desc, t_e_struct.desc) with
           | T_Real, T_Real | T_Int _, T_Int _ -> ()
-          | _ -> fatal_from loc (Error.BadPattern (p, t))
+          | _ -> fatal_from ~loc (Error.BadPattern (p, t))
         in
-        Pattern_Geq e' |> here |: TypingRule.PGeq
+        (Pattern_Geq e' |> here, ses) |: TypingRule.PGeq
     (* End *)
     (* Begin PLeq *)
     | Pattern_Leq e ->
-        let t_e, e' = annotate_expr env e in
-        let+ () = check_statically_evaluable env e' in
+        let t_e, e', ses = annotate_expr env e in
+        let+ () = check_statically_evaluable e ses in
         let+ () =
          fun () ->
           let t_anon = Types.make_anonymous env t
           and t_e_anon = Types.make_anonymous env t_e in
           match (t_anon.desc, t_e_anon.desc) with
           | T_Real, T_Real | T_Int _, T_Int _ -> ()
-          | _ -> fatal_from loc (Error.BadPattern (p, t))
+          | _ -> fatal_from ~loc (Error.BadPattern (p, t))
         in
-        Pattern_Leq e' |> here |: TypingRule.PLeq
+        (Pattern_Leq e' |> here, ses) |: TypingRule.PLeq
     (* End *)
     (* Begin PRange *)
     | Pattern_Range (e1, e2) ->
-        let t_e1, e1' = annotate_expr env e1
-        and t_e2, e2' = annotate_expr env e2 in
+        let t_e1, e1', ses1 = annotate_statically_evaluable_expr env e1
+        and t_e2, e2', ses2 = annotate_statically_evaluable_expr env e2 in
+        let ses =
+          (* They can't be conflicting because they are statically evaluable *)
+          SES.union ses1 ses2
+        in
         let+ () =
          fun () ->
           let t_anon = Types.make_anonymous env t
@@ -1332,35 +1425,41 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           and t_e2_anon = Types.make_anonymous env t_e2 in
           match (t_anon.desc, t_e1_anon.desc, t_e2_anon.desc) with
           | T_Real, T_Real, T_Real | T_Int _, T_Int _, T_Int _ -> ()
-          | _ -> fatal_from loc (Error.BadPattern (p, t))
+          | _ -> fatal_from ~loc (Error.BadPattern (p, t))
         in
-        Pattern_Range (e1', e2') |> here |: TypingRule.PRange
+        (Pattern_Range (e1', e2') |> here, ses) |: TypingRule.PRange
     (* End *)
     (* Begin PMask *)
     | Pattern_Mask m ->
-        let+ () = check_structure_bits loc env t in
+        let+ () = check_structure_bits ~loc env t in
         let+ () =
           let n = !$(Bitvector.mask_length m) in
-          let t_m = T_Bits (n, []) |> add_pos_from loc in
-          check_type_satisfies loc env t t_m
+          let t_m = T_Bits (n, []) |> add_pos_from ~loc in
+          check_type_satisfies ~loc env t t_m
         in
-        p |: TypingRule.PMask
+        (p, SES.empty) |: TypingRule.PMask
     (* End *)
     (* Begin PTuple *)
     | Pattern_Tuple li -> (
         let t_struct = Types.get_structure env t in
         match t_struct.desc with
         | T_Tuple ts when List.compare_lengths li ts != 0 ->
-            Error.fatal_from loc
+            fatal_from ~loc
               (Error.BadArity
                  ( Static,
                    "pattern matching on tuples",
                    List.length li,
                    List.length ts ))
         | T_Tuple ts ->
-            let new_li = List.map2 (annotate_pattern loc env) ts li in
-            Pattern_Tuple new_li |> here |: TypingRule.PTuple
-        | _ -> conflict loc [ T_Tuple [] ] t
+            let new_li, sess =
+              List.map2 (annotate_pattern ~loc env) ts li |> List.split
+            in
+            let ses =
+              SES.unions
+                (* They can't be conflicting because they are static *) sess
+            in
+            (Pattern_Tuple new_li |> here, ses) |: TypingRule.PTuple
+        | _ -> conflict ~loc [ T_Tuple [] ] t
         (* End *))
 
   (* Begin AnnotateCall *)
@@ -1384,10 +1483,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   and annotate_call_v1 ~loc env name ~params ~args ~call_type =
-    let arg_types, args = List.split args in
-    let _, name, func_sig =
-      Fn.try_subprogram_for_name loc env V1 name arg_types
+    let arg_types, args, sess_args = list_split3 args in
+    let ses_args = ses_non_conflicting_unions ~loc sess_args in
+    let _, name, func_sig, ses_call =
+      Fn.try_subprogram_for_name ~loc env V1 name arg_types
     in
+    let ses = SES.union ses_args ses_call in
     (* Check call and subprogram types match *)
     let+ () =
       check_true
@@ -1395,14 +1496,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (* Getters are syntactically identical to functions in V1 - so what
            looks like a function call may really be a getter call *)
         || (func_sig.subprogram_type = ST_Getter && call_type = ST_Function))
-      @@ fun () -> fatal_from loc (MismatchedReturnValue name)
+      @@ fun () -> fatal_from ~loc (MismatchedReturnValue name)
     in
     (* Insert omitted parameter for standard library call *)
     let params = insert_stdlib_param ~loc env func_sig ~params ~arg_types in
     (* Check correct number of parameters/arguments supplied *)
     let () =
       if List.compare_lengths func_sig.parameters params != 0 then
-        fatal_from loc
+        fatal_from ~loc
         @@ Error.BadParameterArity
              ( Static,
                V1,
@@ -1410,7 +1511,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                List.length func_sig.parameters,
                List.length params )
       else if List.compare_lengths func_sig.args args != 0 then
-        fatal_from loc
+        fatal_from ~loc
         @@ Error.BadArity
              (Static, name, List.length func_sig.args, List.length args)
     in
@@ -1418,8 +1519,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
        declaration parameters *)
     let () =
       List.iter2
-        (fun (name, ty_declared_opt) (ty_actual, e_actual) ->
-          let+ () = check_statically_evaluable env e_actual in
+        (fun (name, ty_declared_opt) (ty_actual, e_actual, ses_actual) ->
+          let+ () = check_statically_evaluable e_actual ses_actual in
+          (* That's enough of a check on Side Effects for parameters:
+             - parameters can't conflict with anything once they are statically
+               evaluable;
+             - the time-frame of parameters has to be earlier than the
+               arguments that use their types.
+          *)
           let+ () = check_constrained_integer ~loc env ty_actual in
           match ty_declared_opt with
           | None ->
@@ -1429,19 +1536,21 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             when String.equal name name' ->
               ()
           | Some ty_declared ->
-              let+ () = check_type_satisfies loc env ty_actual ty_declared in
+              let+ () = check_type_satisfies ~loc env ty_actual ty_declared in
               ())
         func_sig.parameters params
     in
     (* Check that call arguments type-satisfy the declared arguments *)
     let eqs =
-      List.map2 (fun (name, _) (_, e) -> (name, e)) func_sig.parameters params
+      List.map2
+        (fun (name, _) (_, e, _) -> (name, e))
+        func_sig.parameters params
     in
     let () =
       List.iter2
         (fun (_, declared_ty) actual_ty ->
           let expected_ty = rename_ty_eqs env eqs declared_ty in
-          let+ () = check_type_satisfies loc env actual_ty expected_ty in
+          let+ () = check_type_satisfies ~loc env actual_ty expected_ty in
           ())
         func_sig.args arg_types
     in
@@ -1451,21 +1560,24 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       match (call_type, func_sig.return_type) with
       | (ST_Function | ST_Getter), Some ty -> Some (rename_ty_eqs env eqs ty)
       | (ST_Procedure | ST_Setter), None -> None
-      | _ -> fatal_from loc @@ Error.MismatchedReturnValue name
+      | _ -> fatal_from ~loc @@ Error.MismatchedReturnValue name
     in
     ( {
         name;
         args;
-        params = List.map snd params;
+        params = List.map (fun (_, e, _) -> e) params;
         call_type = func_sig.subprogram_type;
       },
-      return_type )
+      return_type,
+      ses )
 
   and annotate_call_v0 ~loc env name caller_args_typed call_type =
-    let caller_arg_types, args1 = List.split caller_args_typed in
-    let eqs1, name1, callee =
-      Fn.try_subprogram_for_name loc env V0 name caller_arg_types
+    let caller_arg_types, args1, sess = list_split3 caller_args_typed in
+    let ses1 = ses_non_conflicting_unions ~loc sess in
+    let eqs1, name1, callee, ses2 =
+      Fn.try_subprogram_for_name ~loc env V0 name caller_arg_types
     in
+    let ses3 = SES.union ses1 ses2 in
     let () =
       if false then
         Format.eprintf "@[Found candidate decl:@ @[%a@]@]@." PP.pp_t
@@ -1473,7 +1585,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let+ () =
       check_true (callee.subprogram_type = call_type) @@ fun () ->
-      fatal_from loc (MismatchedReturnValue name)
+      fatal_from ~loc (MismatchedReturnValue name)
     in
     let () =
       if false then
@@ -1498,12 +1610,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let () =
       if List.compare_lengths callee.args args1 != 0 then
-        fatal_from loc
+        fatal_from ~loc
         @@ Error.BadArity
              (Static, name, List.length callee.args, List.length args1)
     in
     let eqs2 =
-      let folder acc (_x, ty) (t_e, _e) =
+      let folder acc (_x, ty) (t_e, _e, _ses) =
         match ty.desc with
         | T_Bits ({ desc = E_Var param_name; _ }, _) -> (
             match (Types.make_anonymous env t_e).desc with
@@ -1533,14 +1645,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let eqs3 =
       (* Checking that all parameter-defining arguments are static constrained integers. *)
       List.fold_left2
-        (fun eqs (callee_x, _) (caller_ty, caller_e) ->
+        (fun eqs (callee_x, _) (caller_ty, caller_e, caller_ses) ->
           (* If [callee_x] is a parameter-defining argument. *)
           if
             List.exists
               (fun (p_name, _ty) -> String.equal callee_x p_name)
               callee.parameters
           then
-            let+ () = check_statically_evaluable env caller_e in
+            let+ () = check_statically_evaluable caller_e caller_ses in
             let+ () = check_constrained_integer ~loc env caller_ty in
             (callee_x, caller_e) :: eqs
           else eqs)
@@ -1566,7 +1678,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               Format.eprintf "Checking calling arg %s from %a to %a@."
                 callee_arg_name PP.pp_ty caller_arg PP.pp_ty callee_arg1
           in
-          let+ () = check_type_satisfies loc env caller_arg callee_arg1 in
+          let+ () = check_type_satisfies ~loc env caller_arg callee_arg1 in
           ())
         callee.args caller_arg_types
     in
@@ -1596,7 +1708,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                     (* Bad behaviour, there should be a defining expression *)
                 | Some e -> e
               in
-              let caller_param_t, _ = annotate_expr env caller_param_e in
+              let caller_param_t, _, _ =
+                annotate_statically_evaluable_expr env caller_param_e
+              in
               let () =
                 if false then
                   Format.eprintf
@@ -1605,7 +1719,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                     callee_param_t PP.pp_ty callee_param_t_renamed
               in
               let+ () =
-                check_type_satisfies loc env caller_param_t
+                check_type_satisfies ~loc env caller_param_t
                   callee_param_t_renamed
               in
               ())
@@ -1619,7 +1733,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | (ST_Function | ST_Getter | ST_EmptyGetter), Some ty ->
           Some (rename_ty_eqs env eqs3 ty)
       | (ST_Setter | ST_EmptySetter | ST_Procedure), None -> None
-      | _ -> fatal_from loc @@ Error.MismatchedReturnValue name
+      | _ -> fatal_from ~loc @@ Error.MismatchedReturnValue name
     in
     let () = if false then Format.eprintf "Annotated call to %S.@." name1 in
     let params =
@@ -1630,35 +1744,35 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let+ () =
       check_true (List.length params = List.length callee.parameters)
       @@ fun () ->
-      fatal_from loc
+      fatal_from ~loc
         (Error.BadParameterArity
            (Static, V0, name, List.length callee.parameters, List.length params))
     in
     ( { name = name1; args = args1; params; call_type = callee.subprogram_type },
-      ret_ty_opt )
+      ret_ty_opt,
+      ses3 )
 
-  and annotate_expr env e : ty * expr = annotate_expr_ env ~forbid_atcs:false e
-
-  and annotate_expr_ env ~forbid_atcs (e : expr) : ty * expr =
+  and annotate_expr env (e : expr) : ty * expr * SES.t =
     let () = if false then Format.eprintf "@[Annotating %a@]@." PP.pp_expr e in
-    let here x = add_pos_from e x and loc = to_pos e in
+    let here x = add_pos_from ~loc:e x and loc = to_pos e in
     match e.desc with
     (* Begin ELit *)
-    | E_Literal v -> (annotate_literal env v |> here, e) |: TypingRule.ELit
+    | E_Literal v ->
+        (annotate_literal env v |> here, e, SES.empty) |: TypingRule.ELit
     (* End *)
     (* Begin ATC *)
     | E_ATC (e', ty) ->
-        let t, e'' = annotate_expr_ ~forbid_atcs env e' in
+        let t, e'', ses_e = annotate_expr env e' in
         let t_struct = Types.get_structure env t in
-        let ty' = annotate_type ~loc env ty in
+        let ty', ses_ty = annotate_type ~loc env ty in
         let ty_struct = Types.get_structure env ty' in
         let+ () =
           check_atc env t_struct ty_struct ~fail:(fun () ->
-              fatal_from loc (BadATC (t, ty)))
+              fatal_from ~loc (BadATC (t, ty)))
         in
-        (if Types.subtype_satisfies env t_struct ty_struct then (ty', e'')
-         else if forbid_atcs then fatal_from loc Error.UnexpectedATC
-         else (ty', E_ATC (e'', ty_struct) |> here))
+        let ses = SES.union ses_ty @@ SES.add_assertion ses_e in
+        (if Types.subtype_satisfies env t_struct ty_struct then (ty', e'', ses_e)
+         else (ty', E_ATC (e'', ty_struct) |> here, ses))
         |: TypingRule.ATC
     (* End *)
     (* Begin EVar *)
@@ -1669,12 +1783,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             if false then
               Format.eprintf "@[Reducing getter %S@ at %a@]@." x PP.pp_pos e
           in
-          let call, ty =
+          let call_type = ST_EmptyGetter in
+          let call, ty, ses =
             annotate_call ~loc:(to_pos e) env
-              { name = x; params = []; args = []; call_type = ST_EmptyGetter }
+              { name = x; params = []; args = []; call_type }
           in
           let ty = match ty with Some ty -> ty | None -> assert false in
-          (ty, E_Call call |> here)
+          (ty, E_Call call |> here, ses)
         else
           let () =
             if false then
@@ -1683,73 +1798,83 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           in
           try
             match IMap.find x env.local.storage_types with
-            | ty, LDK_Constant ->
-                let e =
-                  try
-                    let v = lookup_constants env x in
-                    E_Literal v |> here
-                  with Not_found -> e
+            | ty, LDK_Constant when Storage.mem x env.local.constant_values ->
+                let v = Storage.find x env.local.constant_values in
+                (ty, E_Literal v |> here, SES.empty) |: TypingRule.EVar
+            | ty, ldk ->
+                let ses =
+                  SES.reads_local x (TimeFrame.of_ldk ldk)
+                    (ldk_is_immutable ldk)
                 in
-                (ty, e)
-            | ty, _ -> (ty, e) |: TypingRule.EVar
+                (ty, e, ses) |: TypingRule.EVar
           with Not_found -> (
             try
               match IMap.find x env.global.storage_types with
-              | ty, GDK_Constant -> (
-                  match Storage.find_opt x env.global.constant_values with
-                  | Some v -> (ty, E_Literal v |> here) |: TypingRule.EVar
-                  | None -> (ty, e) |: TypingRule.EVar)
-              | ty, _ -> (ty, e) |: TypingRule.EVar
+              | ty, GDK_Constant when Storage.mem x env.global.constant_values
+                ->
+                  let v = Storage.find x env.global.constant_values in
+                  (ty, E_Literal v |> here, SES.empty) |: TypingRule.EVar
+              | ty, gdk ->
+                  let ses =
+                    SES.reads_global x (TimeFrame.of_gdk gdk)
+                      (gdk_is_immutable gdk)
+                  in
+                  (ty, e, ses) |: TypingRule.EVar
             with Not_found ->
               let () =
                 if false then
                   Format.eprintf "@[Cannot find %s in env@ %a.@]@." x pp_env env
               in
-              undefined_identifier e x |: TypingRule.EVar))
+              undefined_identifier ~loc:e x |: TypingRule.EVar))
     (* End *)
     (* Begin Binop *)
     | E_Binop (op, e1, e2) ->
-        let t1, e1' = annotate_expr_ ~forbid_atcs env e1 in
-        let t2, e2' = annotate_expr_ ~forbid_atcs env e2 in
-        let t = apply_binop_types e env op t1 t2 in
-        (t, E_Binop (op, e1', e2') |> here) |: TypingRule.Binop
+        let t1, e1', ses1 = annotate_expr env e1 in
+        let t2, e2', ses2 = annotate_expr env e2 in
+        let t = apply_binop_types ~loc env op t1 t2 in
+        let ses =
+          if binop_is_ordered op then SES.union ses1 ses2
+          else ses_non_conflicting_union ~loc ses1 ses2
+        in
+        (t, E_Binop (op, e1', e2') |> here, ses) |: TypingRule.Binop
     (* End *)
     (* Begin Unop *)
     | E_Unop (op, e') ->
-        let t'', e'' = annotate_expr_ ~forbid_atcs env e' in
-        let t = apply_unop_type e env op t'' in
-        (t, E_Unop (op, e'') |> here) |: TypingRule.Unop
+        let t'', e'', ses = annotate_expr env e' in
+        let t = apply_unop_type ~loc env op t'' in
+        (t, E_Unop (op, e'') |> here, ses) |: TypingRule.Unop
     (* End *)
     (* Begin ECall *)
     | E_Call call ->
-        let call, ret_ty_opt = annotate_call ~loc:(to_pos e) env call in
+        let call, ret_ty_opt, ses = annotate_call ~loc:(to_pos e) env call in
         let t = match ret_ty_opt with Some ty -> ty | None -> assert false in
-        (t, E_Call call |> here) |: TypingRule.ECall
+        (t, E_Call call |> here, ses) |: TypingRule.ECall
     (* End *)
     (* Begin ECond *)
     | E_Cond (e_cond, e_true, e_false) ->
-        let t_cond, e_cond' = annotate_expr_ ~forbid_atcs env e_cond in
-        let+ () = check_structure_boolean e env t_cond in
-        let t_true, e_true' = annotate_expr_ ~forbid_atcs env e_true
-        and t_false, e_false' = annotate_expr_ ~forbid_atcs env e_false in
+        let t_cond, e_cond', ses_cond = annotate_expr env e_cond in
+        let+ () = check_structure_boolean ~loc env t_cond in
+        let t_true, e_true', ses_true = annotate_expr env e_true
+        and t_false, e_false', ses_false = annotate_expr env e_false in
         let t =
           best_effort t_true (fun _ ->
               match Types.lowest_common_ancestor env t_true t_false with
               | None ->
-                  fatal_from e (Error.UnreconciliableTypes (t_true, t_false))
+                  fatal_from ~loc (Error.UnreconciliableTypes (t_true, t_false))
               | Some t -> t)
         in
-        (t, E_Cond (e_cond', e_true', e_false') |> here) |: TypingRule.ECond
+        let ses = SES.union3 ses_cond ses_true ses_false in
+        (t, E_Cond (e_cond', e_true', e_false') |> here, ses)
+        |: TypingRule.ECond
     (* End *)
-    | E_Tuple [ e ] -> annotate_expr_ ~forbid_atcs env e
+    | E_Tuple [ e ] -> annotate_expr env e
     (* Begin ETuple *)
     | E_Tuple li ->
-        let ts, es =
-          List.map (annotate_expr_ ~forbid_atcs env) li |> List.split
-        in
-        (T_Tuple ts |> here, E_Tuple es |> here) |: TypingRule.ETuple
+        let ts, es, sess = List.map (annotate_expr env) li |> list_split3 in
+        let ses = ses_non_conflicting_unions ~loc sess in
+        (T_Tuple ts |> here, E_Tuple es |> here, ses) |: TypingRule.ETuple
     (* End *)
-    | E_Array _ -> fatal_from loc UnrespectedParserInvariant
+    | E_Array _ -> fatal_from ~loc UnrespectedParserInvariant
     (* Begin ERecord *)
     | E_Record (ty, fields) ->
         (* Rule WBCQ: The identifier in a record expression must be a named type
@@ -1763,48 +1888,48 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           check_true (Types.is_named ty) (fun () ->
               failwith "Typing error: should be a named type")
         in
+        best_effort (ty, e, SES.empty) @@ fun _ ->
         let field_types =
           match (Types.make_anonymous env ty).desc with
           | T_Exception fields | T_Record fields -> fields
-          | _ -> conflict e [ T_Record [] ] ty
+          | _ -> conflict ~loc [ T_Record [] ] ty
         in
-        let fields' =
-          best_effort fields (fun _ ->
-              (* Rule DYQZ: A record expression shall assign every field of the record. *)
-              let () =
-                if
-                  List.for_all
-                    (fun (name, _) -> List.mem_assoc name fields)
-                    field_types
-                then ()
-                else fatal_from e (Error.MissingField (List.map fst fields, ty))
-                (* and whose fields have the values given in the field_assignment_list. *)
-              in
-              let+ () =
-                match get_first_duplicate fst fields with
-                | None -> ok
-                | Some x ->
-                    fun () -> fatal_from loc (Error.AlreadyDeclaredIdentifier x)
-              in
-              List.map
-                (fun (name, e') ->
-                  let t', e'' = annotate_expr_ ~forbid_atcs env e' in
-                  let t_spec' =
-                    match List.assoc_opt name field_types with
-                    | None -> fatal_from e (Error.BadField (name, ty))
-                    | Some t_spec' -> t_spec'
-                  in
-                  let+ () = check_type_satisfies e env t' t_spec' in
-                  (name, e''))
-                fields)
+        (* Rule DYQZ: A record expression shall assign every field of the record. *)
+        let () =
+          if
+            List.for_all
+              (fun (name, _) -> List.mem_assoc name fields)
+              field_types
+          then ()
+          else fatal_from ~loc (Error.MissingField (List.map fst fields, ty))
+          (* and whose fields have the values given in the field_assignment_list. *)
         in
-        (ty, E_Record (ty, fields') |> here) |: TypingRule.ERecord
+        let+ () =
+          match get_first_duplicate fst fields with
+          | None -> ok
+          | Some x ->
+              fun () -> fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
+        in
+        let one_field (name, e') =
+          let t', e'', ses = annotate_expr env e' in
+          let t_spec' =
+            match List.assoc_opt name field_types with
+            | None -> fatal_from ~loc (Error.BadField (name, ty))
+            | Some t_spec' -> t_spec'
+          in
+          let+ () = check_type_satisfies ~loc env t' t_spec' in
+          ((name, e''), ses)
+        in
+        let fields', sess = list_map_split one_field fields in
+        let ses = ses_non_conflicting_unions ~loc sess in
+        (ty, E_Record (ty, fields') |> here, ses) |: TypingRule.ERecord
     (* End *)
     (* Begin EArbitrary *)
     | E_Arbitrary ty ->
-        let ty1 = annotate_type ~loc env ty in
+        let ty1, ses_ty = annotate_type ~loc env ty in
         let ty2 = Types.get_structure env ty1 in
-        (ty1, E_Arbitrary ty2 |> here) |: TypingRule.EArbitrary
+        let ses = SES.add_non_determinism ses_ty in
+        (ty1, E_Arbitrary ty2 |> here, ses) |: TypingRule.EArbitrary
     (* End *)
     | E_Slice (e', slices) -> (
         match e'.desc with
@@ -1816,164 +1941,166 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               try List.map slice_as_single slices
               with Invalid_argument _ -> assert false
             in
-            let call, ty =
+            let call, ty, ses =
               annotate_call ~loc:(to_pos e) env
                 { name; params = []; args; call_type = ST_Getter }
             in
             let ty = match ty with Some ty -> ty | None -> assert false in
-            (ty, E_Call call |> here)
+            (ty, E_Call call |> here, ses)
         | _ -> (
-            let t_e', e'' = annotate_expr_ ~forbid_atcs env e' in
+            let t_e', e'', ses1 = annotate_expr env e' in
             let struct_t_e' = Types.make_anonymous env t_e' in
             match struct_t_e'.desc with
             (* Begin ESlice *)
             | T_Int _ | T_Bits _ ->
                 let+ () =
                   check_true (not (list_is_empty slices)) @@ fun () ->
-                  fatal_from loc Error.EmptySlice
+                  fatal_from ~loc Error.EmptySlice
                 in
                 (* TODO: check that:
                    - Rule SNQJ: An expression or subexpression which
                      may result in a zero-length bitvector must not be
                      side-effecting.
                 *)
-                let slices' = best_effort slices (annotate_slices env) in
+                let slices', ses2 =
+                  best_effort (slices, SES.empty) (fun _ ->
+                      annotate_slices env slices ~loc)
+                in
                 let w = slices_width env slices' in
-                (T_Bits (w, []) |> here, E_Slice (e'', slices') |> here)
+                let ses = SES.union ses1 ses2 in
+                (T_Bits (w, []) |> here, E_Slice (e'', slices') |> here, ses)
                 |: TypingRule.ESlice
             (* End *)
             | T_Array (size, ty') when e'.version = V0 -> (
                 match slices with
                 | [ Slice_Single e_index ] ->
-                    annotate_get_array ~forbid_atcs ~loc env (size, ty')
-                      (e'', e_index)
-                | _ -> conflict loc [ integer'; default_t_bits ] t_e')
+                    annotate_get_array ~loc env (size, ty') (e'', ses1, e_index)
+                | _ -> conflict ~loc [ integer'; default_t_bits ] t_e')
             (* Begin ESliceError *)
             | _ ->
-                conflict e [ integer'; default_t_bits ] t_e'
+                conflict ~loc [ integer'; default_t_bits ] t_e'
                 |: TypingRule.ESliceError
             (* End *)))
     | E_GetField (e1, field_name) -> (
         let reduced =
           if e1.version = V0 && C.use_field_getter_extension then
-            reduce_getfields_to_slices env e1 [ field_name ] ~forbid_atcs
+            reduce_getfields_to_slices env e1 [ field_name ]
           else None
         in
         match reduced with
         | Some (name, args) ->
-            let call, ty =
+            let call, ty, ses =
               annotate_call ~loc:(to_pos e) env
                 { name; params = []; args; call_type = ST_Getter }
             in
             let ty = match ty with Some ty -> ty | None -> assert false in
-            (ty, E_Call call |> here)
+            (ty, E_Call call |> here, ses)
         | None -> (
-            let t_e2, e2 = annotate_expr_ ~forbid_atcs env e1 in
+            let t_e2, e2, ses = annotate_expr env e1 in
             match (Types.make_anonymous env t_e2).desc with
             | T_Exception fields | T_Record fields -> (
                 match List.assoc_opt field_name fields with
                 (* Begin EGetBadRecordField *)
                 | None ->
-                    fatal_from e (Error.BadField (field_name, t_e2))
+                    fatal_from ~loc (Error.BadField (field_name, t_e2))
                     |: TypingRule.EGetBadRecordField
                 (* End *)
                 (* Begin EGetRecordField *)
                 | Some t ->
-                    (t, E_GetField (e2, field_name) |> here)
+                    (t, E_GetField (e2, field_name) |> here, ses)
                     |: TypingRule.EGetRecordField
                     (* End *))
             | T_Bits (_, bitfields) -> (
                 match find_bitfield_opt field_name bitfields with
                 (* Begin EGetBadBitField *)
                 | None ->
-                    fatal_from e (Error.BadField (field_name, t_e2))
+                    fatal_from ~loc (Error.BadField (field_name, t_e2))
                     |: TypingRule.EGetBadBitField
                 (* End *)
                 (* Begin EGetBitField *)
                 | Some (BitField_Simple (_field, slices)) ->
                     let e3 = E_Slice (e1, slices) |> here in
-                    annotate_expr_ ~forbid_atcs env e3
-                    |: TypingRule.EGetBitField
+                    annotate_expr env e3 |: TypingRule.EGetBitField
                 (* End *)
                 (* Begin EGetBitFieldNested *)
                 | Some (BitField_Nested (_field, slices, bitfields')) ->
                     let e3 = E_Slice (e1, slices) |> here in
-                    let t_e4, new_e = annotate_expr_ ~forbid_atcs env e3 in
+                    let t_e4, new_e, ses_new = annotate_expr env e3 in
                     let t_e5 =
                       match t_e4.desc with
                       | T_Bits (width, _bitfields) ->
-                          T_Bits (width, bitfields') |> add_pos_from t_e2
+                          T_Bits (width, bitfields') |> add_pos_from ~loc:t_e2
                       | _ -> assert false
                     in
-                    (t_e5, new_e) |: TypingRule.EGetBitFieldNested
+                    (t_e5, new_e, ses_new) |: TypingRule.EGetBitFieldNested
                 (* End *)
                 (* Begin EGetBitFieldTyped *)
                 | Some (BitField_Type (_field, slices, t)) ->
                     let e3 = E_Slice (e1, slices) |> here in
-                    let t_e4, new_e = annotate_expr_ ~forbid_atcs env e3 in
-                    let+ () = check_type_satisfies new_e env t_e4 t in
-                    (t, new_e) |: TypingRule.EGetBitFieldTyped
+                    let t_e4, new_e, ses_new = annotate_expr env e3 in
+                    let+ () = check_type_satisfies ~loc env t_e4 t in
+                    (t, new_e, ses_new) |: TypingRule.EGetBitFieldTyped
                     (* End *))
             (* Begin EGetTupleItem *)
             | T_Tuple tys ->
                 let index =
                   try Scanf.sscanf field_name "item%u" Fun.id
                   with Scanf.Scan_failure _ | Failure _ | End_of_file ->
-                    fatal_from e (Error.BadField (field_name, t_e2))
+                    fatal_from ~loc (Error.BadField (field_name, t_e2))
                 in
                 if 0 <= index && index < List.length tys then
-                  (List.nth tys index, E_GetItem (e2, index) |> add_pos_from e)
+                  ( List.nth tys index,
+                    E_GetItem (e2, index) |> add_pos_from ~loc:e,
+                    ses )
                 else
-                  fatal_from e (Error.BadField (field_name, t_e2))
+                  fatal_from ~loc (Error.BadField (field_name, t_e2))
                   |: TypingRule.EGetTupleItem
             (* End *)
             (* Begin EGetBadField *)
             | _ ->
-                fatal_from e (Error.BadField (field_name, t_e2))
+                fatal_from ~loc (Error.BadField (field_name, t_e2))
                 |: TypingRule.EGetBadField)
         (* End *))
     | E_GetFields (e1, fields) -> (
         let reduced =
           if e1.version = V0 && C.use_field_getter_extension then
-            reduce_getfields_to_slices env e1 fields ~forbid_atcs
+            reduce_getfields_to_slices env e1 fields
           else None
         in
         match reduced with
         | Some (name, args) ->
-            let call, ret_ty_opt =
+            let call, ret_ty_opt, ses =
               annotate_call ~loc:(to_pos e) env
                 { name; params = []; args; call_type = ST_Getter }
             in
             let ty =
               match ret_ty_opt with Some ty -> ty | None -> assert false
             in
-            (ty, E_Call call |> here)
+            (ty, E_Call call |> here, ses)
         | None -> (
-            let t_e2, e2 = annotate_expr_ ~forbid_atcs env e1 in
+            let t_e2, e2, ses1 = annotate_expr env e1 in
             match (Types.make_anonymous env t_e2).desc with
             | T_Bits (_, bitfields) ->
                 let one_field field =
                   match find_bitfields_slices_opt field bitfields with
-                  | None -> fatal_from e (Error.BadField (field, t_e2))
+                  | None -> fatal_from ~loc (Error.BadField (field, t_e2))
                   | Some slices -> slices
                 in
                 E_Slice (e1, list_concat_map one_field fields)
-                |> here
-                |> annotate_expr_ ~forbid_atcs env
-                |: TypingRule.EGetBitFields
+                |> here |> annotate_expr env |: TypingRule.EGetBitFields
             | T_Record tfields ->
                 let one_field field =
                   match List.assoc_opt field tfields with
-                  | None -> fatal_from e (Error.BadField (field, t_e2))
-                  | Some t -> get_bitvector_width loc env t
+                  | None -> fatal_from ~loc (Error.BadField (field, t_e2))
+                  | Some t -> get_bitvector_width ~loc env t
                 in
                 let widths = List.map one_field fields in
                 let w =
                   let wh = List.hd widths and wts = List.tl widths in
                   List.fold_left (width_plus env) wh wts
                 in
-                (T_Bits (w, []) |> here, E_GetFields (e2, fields) |> here)
-            | _ -> conflict e [ default_t_bits ] t_e2))
+                (T_Bits (w, []) |> here, E_GetFields (e2, fields) |> here, ses1)
+            | _ -> conflict ~loc [ default_t_bits ] t_e2))
     (* End *)
     (* Begin EPattern *)
     | E_Pattern (e1, pat) ->
@@ -2002,28 +2129,37 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
          bad number of times), but we will apply the same typing rules as for
          those desugared expressions.
          *)
-        let t_e2, e2 = annotate_expr_ ~forbid_atcs env e1 in
-        let pat' = best_effort pat (annotate_pattern e env t_e2) in
-        (T_Bool |> here, E_Pattern (e2, pat') |> here) |: TypingRule.EPattern
+        let t_e2, e2, ses_e = annotate_expr env e1 in
+        let pat', ses_pat =
+          best_effort (pat, SES.empty) (fun _ ->
+              annotate_pattern ~loc env t_e2 pat)
+        in
+        let ses =
+          SES.union ses_pat ses_e
+          (* e is evaluated before the pattern, so they are not concurrent. *)
+        in
+        (T_Bool |> here, E_Pattern (e2, pat') |> here, ses)
+        |: TypingRule.EPattern
     (* End *)
     (* Begin EGetArray *)
     | E_GetArray (e_base, e_index) -> (
-        let t_base, e_base' = annotate_expr_ ~forbid_atcs env e_base in
+        let t_base, e_base', ses_base = annotate_expr env e_base in
         let t_anon_base = Types.make_anonymous env t_base in
         match t_anon_base.desc with
         | T_Array (size, t_elem) ->
-            annotate_get_array ~forbid_atcs ~loc env (size, t_elem)
-              (e_base', e_index)
-        | _ -> conflict loc [ default_array_ty ] t_base |: TypingRule.EGetArray)
+            annotate_get_array ~loc env (size, t_elem)
+              (e_base', ses_base, e_index)
+        | _ -> conflict ~loc [ default_array_ty ] t_base |: TypingRule.EGetArray
+        )
     (* End *)
     | E_GetItem _ -> assert false
 
-  and annotate_get_array ~forbid_atcs ~loc env (size, t_elem) (e_base, e_index)
-      =
-    let t_index', e_index' = annotate_expr_ ~forbid_atcs env e_index in
+  and annotate_get_array ~loc env (size, t_elem) (e_base, ses_base, e_index) =
+    let t_index', e_index', ses_index = annotate_expr env e_index in
     let wanted_t_index = type_of_array_length ~loc size in
-    let+ () = check_type_satisfies loc env t_index' wanted_t_index in
-    (t_elem, E_GetArray (e_base, e_index') |> add_pos_from loc)
+    let+ () = check_type_satisfies ~loc env t_index' wanted_t_index in
+    let ses = ses_non_conflicting_union ~loc ses_index ses_base in
+    (t_elem, E_GetArray (e_base, e_index') |> add_pos_from ~loc, ses)
 
   (** For an expression of the form [e1.[f1,...,fn]], if [e1] represents a call
       to a getter then this function returns a list of slices needed to read
@@ -2031,12 +2167,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
       It is an ASLRef extension, guarded by [C.use_field_getter_extension].
   *)
-  and reduce_getfields_to_slices env e1 fields ~forbid_atcs =
+  and reduce_getfields_to_slices env e1 fields =
     assert (e1.version = V0 && C.use_field_getter_extension);
     match e1.desc with
     | E_Var name when should_reduce_to_call env name ST_Getter ->
-        let empty_getter = E_Slice (e1, []) |> add_pos_from e1 in
-        let ty, _ = annotate_expr_ ~forbid_atcs env empty_getter in
+        let empty_getter = E_Slice (e1, []) |> add_pos_from ~loc:e1 in
+        let ty, _, _ = annotate_expr env empty_getter in
         should_fields_reduce_to_call env name ty fields
     | _ -> None
 
@@ -2063,13 +2199,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       in [env].
       This expression is side-effect free, and is a literal for singular types.
       If a base value cannot be statically determined (e.g. for parameterized
-      integer types), a type error is thrown, at the location [loc].
+      integer types), a type error is thrown, at the ~location [loc].
   *)
   let rec base_value_v1 ~loc env t : expr =
-    let add_pos = add_pos_from loc in
-    let lit v = add_pos (E_Literal v) in
-    let fatal_non_static e = fatal_from loc (Error.BaseValueNonStatic (t, e)) in
-    let fatal_is_empty () = fatal_from loc (Error.BaseValueEmptyType t) in
+    let here = add_pos_from ~loc in
+    let lit v = here (E_Literal v) in
+    let fatal_non_static e =
+      fatal_from ~loc (Error.BaseValueNonStatic (t, e))
+    in
+    let fatal_is_empty () = fatal_from ~loc (Error.BaseValueEmptyType t) in
     let reduce_to_z e =
       match StaticModel.reduce_to_z_opt env e with
       | None -> fatal_non_static e
@@ -2083,7 +2221,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Enum [] -> assert false
     | T_Enum (name :: _) -> lookup_constants env name |> lit
     | T_Int UnConstrained -> L_Int Z.zero |> lit
-    | T_Int (Parameterized (_, id)) -> E_Var id |> add_pos |> fatal_non_static
+    | T_Int (Parameterized (_, id)) -> E_Var id |> here |> fatal_non_static
     | T_Int PendingConstrained -> assert false
     | T_Int (WellConstrained cs) ->
         let constraint_abs_min = function
@@ -2109,11 +2247,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let one_field (name, t_field) =
           (name, base_value_v1 ~loc env t_field)
         in
-        E_Record (t, List.map one_field fields) |> add_pos
+        E_Record (t, List.map one_field fields) |> here
     | T_String -> L_String "" |> lit
     | T_Tuple li ->
         let exprs = List.map (base_value_v1 ~loc env) li in
-        E_Tuple exprs |> add_pos
+        E_Tuple exprs |> here
     | T_Array (length, ty) ->
         let value = base_value_v1 ~loc env ty in
         let length =
@@ -2121,38 +2259,41 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | ArrayLength_Enum (_, i) -> expr_of_int i
           | ArrayLength_Expr e -> e
         in
-        E_Array { length; value } |> add_pos
+        E_Array { length; value } |> here
   (* End *)
 
   let rec base_value_v0 ~loc env t : expr =
     assert (loc.version = V0);
-    let add_pos = add_pos_from loc in
+    let here = add_pos_from ~loc in
     match t.desc with
     | T_Bool | T_Int UnConstrained | T_Real | T_String | T_Enum _ ->
         base_value_v1 ~loc env t
     | T_Bits (width, _) ->
-        E_Call
-          {
-            name = "Zeros";
-            params = [];
-            args = [ width ];
-            call_type = ST_Function;
-          }
-        |> add_pos |> annotate_expr env |> snd
-    | T_Int (Parameterized (_, id)) -> E_Var id |> add_pos
+        let e =
+          E_Call
+            {
+              name = "Zeros";
+              params = [];
+              args = [ width ];
+              call_type = ST_Function;
+            }
+        in
+        let _, e', _ = annotate_expr env (here e) in
+        e'
+    | T_Int (Parameterized (_, id)) -> E_Var id |> here
     | T_Int (WellConstrained [] | PendingConstrained) -> assert false
     | T_Int
         (WellConstrained ((Constraint_Exact e | Constraint_Range (e, _)) :: _))
       ->
         e
-    | T_Tuple li -> E_Tuple (List.map (base_value_v0 ~loc env) li) |> add_pos
+    | T_Tuple li -> E_Tuple (List.map (base_value_v0 ~loc env) li) |> here
     | T_Exception fields | T_Record fields ->
         let fields =
           List.map
             (fun (name, t_field) -> (name, base_value_v0 ~loc env t_field))
             fields
         in
-        E_Record (t, fields) |> add_pos
+        E_Record (t, fields) |> here
     | T_Array (length, ty) ->
         let value = base_value_v0 ~loc env ty in
         let length =
@@ -2160,7 +2301,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | ArrayLength_Enum (_, i) -> expr_of_int i
           | ArrayLength_Expr e -> e
         in
-        E_Array { length; value } |> add_pos
+        E_Array { length; value } |> here
     | T_Named _id ->
         let t = Types.make_anonymous env t in
         base_value_v0 ~loc env t
@@ -2173,12 +2314,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | V0 -> base_value_v0 ~loc env e
     | V1 -> base_value_v1 ~loc env e
 
-  let annotate_set_array ~loc env (size, t_elem) rhs_ty (e_base, e_index) =
-    let+ () = check_type_satisfies loc env rhs_ty t_elem in
-    let t_index', e_index' = annotate_expr env e_index in
+  let annotate_set_array ~loc env (size, t_elem) rhs_ty
+      (e_base, ses_base, e_index) =
+    let+ () = check_type_satisfies ~loc env rhs_ty t_elem in
+    let t_index', e_index', ses_index = annotate_expr env e_index in
     let wanted_t_index = type_of_array_length ~loc:e_base size in
-    let+ () = check_type_satisfies e_base env t_index' wanted_t_index in
-    LE_SetArray (e_base, e_index') |> add_pos_from loc
+    let+ () = check_type_satisfies ~loc env t_index' wanted_t_index in
+    let ses = ses_non_conflicting_union ~loc ses_base ses_index in
+    (LE_SetArray (e_base, e_index') |> add_pos_from ~loc, ses)
 
   let rec annotate_lexpr env le t_e =
     let () =
@@ -2186,28 +2329,26 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         Format.eprintf "Typing lexpr: @[%a@] to @[%a@]@." PP.pp_lexpr le
           PP.pp_ty t_e
     in
-    let here x = add_pos_from le x in
+    let loc = to_pos le in
+    let here x = add_pos_from ~loc x in
     match le.desc with
     (* Begin LEDiscard *)
-    | LE_Discard -> le |: TypingRule.LEDiscard
+    | LE_Discard -> (le, SES.empty) |: TypingRule.LEDiscard
     (* End *)
     (* Begin LEVar *)
     | LE_Var x ->
-        let+ () =
-         fun () ->
-          let ty =
-            match IMap.find_opt x env.local.storage_types with
-            | Some (ty, LDK_Var) -> ty
-            | Some _ -> fatal_from le @@ Error.AssignToImmutable x
-            | None -> (
-                match IMap.find_opt x env.global.storage_types with
-                | Some (ty, GDK_Var) -> ty
-                | Some _ -> fatal_from le @@ Error.AssignToImmutable x
-                | None -> undefined_identifier le x)
-          in
-          check_type_satisfies le env t_e ty ()
+        let ty, ses =
+          match IMap.find_opt x env.local.storage_types with
+          | Some (ty, LDK_Var) -> (ty, SES.writes_local x)
+          | Some _ -> fatal_from ~loc @@ Error.AssignToImmutable x
+          | None -> (
+              match IMap.find_opt x env.global.storage_types with
+              | Some (ty, GDK_Var) -> (ty, SES.writes_global x)
+              | Some _ -> fatal_from ~loc @@ Error.AssignToImmutable x
+              | None -> undefined_identifier ~loc x)
         in
-        le |: TypingRule.LEVar
+        let+ () = check_type_satisfies ~loc env t_e ty in
+        (le, ses) |: TypingRule.LEVar
     (* End *)
     (* Begin LEDestructuring *)
     | LE_Destructuring les ->
@@ -2218,55 +2359,66 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 (Error.BadArity
                    (Static, "LEDestructuring", List.length tys, List.length les))
             else
-              let les' = List.map2 (annotate_lexpr env) les tys in
-              LE_Destructuring les' |> here
-        | _ -> conflict le [ T_Tuple [] ] t_e)
+              let les', sess =
+                List.map2 (annotate_lexpr env) les tys |> List.split
+              in
+              let ses =
+                (* TODO left-hand-side conflicting union *)
+                SES.unions sess
+              in
+              (LE_Destructuring les' |> here, ses)
+        | _ -> conflict ~loc [ T_Tuple [] ] t_e)
         |: TypingRule.LEDestructuring
     (* End *)
     | LE_Slice (le1, slices) -> (
-        let t_le1, _ = expr_of_lexpr le1 |> annotate_expr env in
+        let t_le1, _, _ = expr_of_lexpr le1 |> annotate_expr env in
         let struct_t_le1 = Types.make_anonymous env t_le1 in
         (* Begin LESlice *)
         match struct_t_le1.desc with
         | T_Bits _ ->
-            let le2 = annotate_lexpr env le1 t_le1 in
+            let le2, ses1 = annotate_lexpr env le1 t_le1 in
             let+ () =
              fun () ->
               let width =
                 slices_width env slices |> StaticModel.try_normalize env
               in
               let t = T_Bits (width, []) |> here in
-              check_type_satisfies le env t_e t ()
+              check_type_satisfies ~loc env t_e t ()
             in
-            let slices2 = best_effort slices (annotate_slices env) in
-            let+ () = check_disjoint_slices le env slices2 in
+            let slices2, ses2 =
+              best_effort (slices, SES.empty) @@ fun _ ->
+              annotate_slices env slices ~loc
+            in
+            let+ () = check_disjoint_slices ~loc env slices2 in
             let+ () =
               check_true (not (list_is_empty slices)) @@ fun () ->
-              fatal_from le Error.EmptySlice
+              fatal_from ~loc Error.EmptySlice
             in
-            LE_Slice (le2, slices2) |> here |: TypingRule.LESlice
+            let ses = ses_non_conflicting_union ~loc ses1 ses2 in
+            (LE_Slice (le2, slices2) |> here, ses |: TypingRule.LESlice)
         (* End *)
         | T_Array (size, t) when le.version = V0 -> (
             match slices with
             | [ Slice_Single e_index ] ->
-                let le2 = annotate_lexpr env le1 t_le1 in
-                annotate_set_array ~loc:le env (size, t) t_e (le2, e_index)
+                let le2, ses2 = annotate_lexpr env le1 t_le1 in
+                annotate_set_array ~loc:le env (size, t) t_e (le2, ses2, e_index)
             | _ -> invalid_expr (expr_of_lexpr le1))
-        | _ -> conflict le1 [ default_t_bits ] t_le1)
+        | _ -> conflict ~loc:le1 [ default_t_bits ] t_le1)
     | LE_SetField (le1, field) ->
-        (let t_le1, _ = expr_of_lexpr le1 |> annotate_expr env in
-         let le2 = annotate_lexpr env le1 t_le1 in
+        (let t_le1, _, _ = expr_of_lexpr le1 |> annotate_expr env in
+         let le2, ses = annotate_lexpr env le1 t_le1 in
          let t_le1_struct = Types.make_anonymous env t_le1 in
          match t_le1_struct.desc with
          (* Begin LESetStructuredField *)
          | T_Exception fields | T_Record fields ->
              let t =
                match List.assoc_opt field fields with
-               | None -> fatal_from le (Error.BadField (field, t_le1))
+               | None -> fatal_from ~loc (Error.BadField (field, t_le1))
                | Some t -> t
              in
-             let+ () = check_type_satisfies le env t_e t in
-             LE_SetField (le2, field) |> here |: TypingRule.LESetStructuredField
+             let+ () = check_type_satisfies ~loc env t_e t in
+             ( LE_SetField (le2, field) |> here,
+               ses |: TypingRule.LESetStructuredField )
          (* End *)
          (* Begin LESetBitField *)
          | T_Bits (_, bitfields) ->
@@ -2275,33 +2427,37 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
              in
              let t, slices =
                match find_bitfield_opt field bitfields with
-               | None -> fatal_from le1 (Error.BadField (field, t_le1_struct))
+               | None ->
+                   fatal_from ~loc:le1 (Error.BadField (field, t_le1_struct))
                | Some (BitField_Simple (_field, slices)) ->
                    (bits slices [], slices)
                | Some (BitField_Nested (_field, slices, bitfields')) ->
                    (bits slices bitfields', slices)
                | Some (BitField_Type (_field, slices, t)) ->
                    let t' = bits slices [] in
-                   let+ () = check_type_satisfies le env t' t in
+                   let+ () = check_type_satisfies ~loc env t' t in
                    (t, slices)
              in
-             let+ () = check_type_satisfies le1 env t_e t in
+             let+ () = check_type_satisfies ~loc:le1 env t_e t in
              let le3 = LE_Slice (le1, slices) |> here in
              annotate_lexpr env le3 t_e |: TypingRule.LESetBitField
          (* End *)
          (* Begin LESetBadField *)
-         | _ -> conflict le1 [ default_t_bits; T_Record []; T_Exception [] ] t_e)
+         | _ ->
+             conflict ~loc:le1
+               [ default_t_bits; T_Record []; T_Exception [] ]
+               t_e)
         |: TypingRule.LESetBadField
         (* End *)
     | LE_SetFields (le', fields, []) -> (
-        let t_le', _ = expr_of_lexpr le' |> annotate_expr env in
-        let le' = annotate_lexpr env le' t_le' in
+        let t_le', _, _ = expr_of_lexpr le' |> annotate_expr env in
+        let le', ses = annotate_lexpr env le' t_le' in
         let t_le'_struct = Types.make_anonymous env t_le' in
         match t_le'_struct.desc with
         | T_Bits (_, bitfields) ->
             let one_field field =
               match find_bitfields_slices_opt field bitfields with
-              | None -> fatal_from le (Error.BadField (field, t_le'_struct))
+              | None -> fatal_from ~loc (Error.BadField (field, t_le'_struct))
               | Some slices -> slices
             in
             let new_le =
@@ -2311,25 +2467,26 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | T_Record tfields ->
             let one_field field (start, slices) =
               match List.assoc_opt field tfields with
-              | None -> fatal_from le (Error.BadField (field, t_le'_struct))
+              | None -> fatal_from ~loc (Error.BadField (field, t_le'_struct))
               | Some t ->
-                  let w = get_bitvector_const_width le env t in
+                  let w = get_bitvector_const_width ~loc env t in
                   (start + w, (start, w) :: slices)
             in
             let length, slices = List.fold_right one_field fields (0, []) in
             let t = T_Bits (expr_of_int length, []) |> here in
-            let+ () = check_type_satisfies le env t_e t in
-            LE_SetFields (le', fields, slices) |> here
-        | _ -> conflict le [ default_t_bits ] t_le')
+            let+ () = check_type_satisfies ~loc env t_e t in
+            (LE_SetFields (le', fields, slices) |> here, ses)
+        | _ -> conflict ~loc [ default_t_bits ] t_le')
     (* Begin LESetArray *)
     | LE_SetArray (e_base, e_index) -> (
-        let t_base, _ = expr_of_lexpr e_base |> annotate_expr env in
+        let t_base, _, _ = expr_of_lexpr e_base |> annotate_expr env in
         let t_anon_base = Types.make_anonymous env t_base in
         match t_anon_base.desc with
         | T_Array (size, t_elem) ->
-            let e_base' = annotate_lexpr env e_base t_base in
-            annotate_set_array ~loc:le env (size, t_elem) t_e (e_base', e_index)
-        | _ -> conflict le [ default_array_ty ] t_base)
+            let e_base', ses_base = annotate_lexpr env e_base t_base in
+            annotate_set_array ~loc env (size, t_elem) t_e
+              (e_base', ses_base, e_index)
+        | _ -> conflict ~loc [ default_array_ty ] t_base)
     (* End *)
     | LE_SetFields (_, _, _ :: _) -> assert false
 
@@ -2354,17 +2511,23 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Int (Parameterized _) -> assert false
     | _ -> Types.type_satisfies env t s
 
-  let check_can_be_initialized_with loc env s t () =
-    if can_be_initialized_with env s t then () else conflict loc [ s.desc ] t
+  let check_can_be_initialized_with ~loc env s t () =
+    if can_be_initialized_with env s t then () else conflict ~loc [ s.desc ] t
   (* End *)
 
+  let should_remember_immutable_expression ses =
+    let ses_non_assert = SES.remove_assertions ses in
+    SES.is_statically_evaluable ses_non_assert
+
   (* Begin AddImmutableExpr *)
-  let add_immutable_expr ~loc env ldk e_opt x =
-    match (ldk, e_opt) with
-    | (LDK_Constant | LDK_Let), Some e when is_statically_evaluable ~loc env e
-      ->
-        let e' = StaticModel.try_normalize env e in
-        add_local_immutable_expr x e' env |: TypingRule.AddImmutableExpr
+  let add_immutable_expression env ldk typed_e_opt x =
+    match (ldk, typed_e_opt) with
+    | (LDK_Constant | LDK_Let), Some (_, e, ses_e)
+      when should_remember_immutable_expression ses_e -> (
+        match StaticModel.normalize_opt env e with
+        | Some e' ->
+            add_local_immutable_expr x e' env |: TypingRule.AddImmutableExpr
+        | None -> env)
     | _ -> env
   (* End *)
 
@@ -2372,10 +2535,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     match (lhs_ty.desc, rhs_ty.desc) with
     | T_Int PendingConstrained, T_Int (WellConstrained _) -> rhs_ty
     | T_Int PendingConstrained, _ ->
-        fatal_from loc (Error.ConstrainedIntegerExpected rhs_ty)
+        fatal_from ~loc (Error.ConstrainedIntegerExpected rhs_ty)
     | T_Tuple lhs_tys, T_Tuple rhs_tys ->
         if List.compare_lengths lhs_tys rhs_tys != 0 then
-          fatal_from loc
+          fatal_from ~loc
             (Error.BadArity
                ( Static,
                  "tuple initialization",
@@ -2387,36 +2550,37 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               (inherit_integer_constraints ~loc:(to_pos lhs_ty))
               lhs_tys rhs_tys
           in
-          T_Tuple lhs_tys' |> add_pos_from lhs_ty
+          T_Tuple lhs_tys' |> add_pos_from ~loc:lhs_ty
     | _ -> lhs_ty
 
-  let rec annotate_local_decl_item loc (env : env) ty ldk ?e ldi =
+  let rec annotate_local_decl_item ~loc (env : env) ty ldk ?e ldi =
     let () =
       if false then Format.eprintf "Annotating %a.@." PP.pp_local_decl_item ldi
     in
     match ldi with
     (* Begin LDDiscard *)
-    | LDI_Discard -> (env, ldi) |: TypingRule.LDDiscard
+    | LDI_Discard -> (env, ldi, SES.empty) |: TypingRule.LDDiscard
     (* End *)
     (* Begin LDTyped *)
     | LDI_Typed (ldi', t) ->
         let ty' = Types.get_structure env ty in
         let t = inherit_integer_constraints ~loc t ty' in
-        let t' = annotate_type ~loc env t in
-        let+ () = check_can_be_initialized_with loc env t' ty in
-        let new_env, new_ldi' =
-          annotate_local_decl_item loc env t' ldk ?e ldi'
+        let t', ses_t = annotate_type ~loc env t in
+        let+ () = check_can_be_initialized_with ~loc env t' ty in
+        let new_env, new_ldi', ses_ldi =
+          annotate_local_decl_item ~loc env t' ldk ?e ldi'
         in
-        (new_env, LDI_Typed (new_ldi', t')) |: TypingRule.LDTyped
+        let ses = SES.union ses_t ses_ldi in
+        (new_env, LDI_Typed (new_ldi', t'), ses) |: TypingRule.LDTyped
     (* End *)
     (* Begin LDVar *)
     | LDI_Var x ->
-        (* Rule LCFD: A local declaration shall not declare an identifier
+        (* Rule LCFD: A ~local declaration shall not declare an identifier
            which is already in scope at the point of declaration. *)
-        let+ () = check_var_not_in_env loc env x in
+        let+ () = check_var_not_in_env ~loc env x in
         let env2 = add_local x ty ldk env in
-        let new_env = add_immutable_expr ~loc env2 ldk e x in
-        (new_env, LDI_Var x) |: TypingRule.LDVar
+        let new_env = add_immutable_expression env2 ldk e x in
+        (new_env, LDI_Var x, SES.empty) |: TypingRule.LDVar
     (* End *)
     (* Begin LDTuple *)
     | LDI_Tuple ldis ->
@@ -2424,39 +2588,43 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           match (Types.make_anonymous env ty).desc with
           | T_Tuple tys when List.compare_lengths tys ldis = 0 -> tys
           | T_Tuple tys ->
-              fatal_from loc
+              fatal_from ~loc
                 (Error.BadArity
                    ( Static,
                      "tuple initialization",
                      List.length tys,
                      List.length ldis ))
-          | _ -> conflict loc [ T_Tuple [] ] ty
+          | _ -> conflict ~loc [ T_Tuple [] ] ty
         in
-        let new_env, new_ldis =
+        let new_env, new_ldis, sess =
           List.fold_right2
-            (fun ty' ldi' (env', les) ->
-              let env', le = annotate_local_decl_item loc env' ty' ldk ldi' in
-              (env', le :: les))
-            tys ldis (env, [])
+            (fun ty' ldi' (env', les, sess) ->
+              let env', le, ses =
+                annotate_local_decl_item ~loc env' ty' ldk ldi'
+              in
+              (env', le :: les, ses :: sess))
+            tys ldis (env, [], [])
         in
-        (new_env, LDI_Tuple new_ldis) |: TypingRule.LDTuple
+        let ses = SES.unions sess in
+        (new_env, LDI_Tuple new_ldis, ses) |: TypingRule.LDTuple
   (* End *)
 
   (* Begin AnnotateLocalDeclItemUninit *)
-  let annotate_local_decl_item_uninit loc (env : env) ldi =
+  let annotate_local_decl_item_uninit ~loc (env : env) ldi =
     (* Here implicitly ldk=LDK_Var *)
     match ldi with
     | LDI_Discard | LDI_Tuple _ | LDI_Var _ ->
         (* Here LDI_Tuple is never parsed containing any LDI_Typed, so we don't
            need to care about decalarations in it. *)
-        fatal_from loc (Error.BadLDI ldi) |: TypingRule.LDUninitialisedVar
+        fatal_from ~loc (Error.BadLDI ldi) |: TypingRule.LDUninitialisedVar
     | LDI_Typed (ldi', t) ->
-        let t' = annotate_type ~loc env t in
+        let t', ses_t' = annotate_type ~loc env t in
         let e_init = base_value ~loc env t' in
-        let new_env, new_ldi' =
-          annotate_local_decl_item loc env t' LDK_Var ldi'
+        let new_env, new_ldi', ses_ldi =
+          annotate_local_decl_item ~loc env t' LDK_Var ldi'
         in
-        (new_env, LDI_Typed (new_ldi', t'), e_init)
+        let ses = SES.union ses_t' ses_ldi in
+        (new_env, LDI_Typed (new_ldi', t'), e_init, ses)
         |: TypingRule.LDUninitialisedTyped
   (* End *)
 
@@ -2472,22 +2640,23 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     fun env v ldi -> add_constants v env ldi
   (* End *)
 
-  let rec annotate_stmt env s : stmt * env =
+  let rec annotate_stmt env s : stmt * env * SES.t =
     let () =
       if false then
         match s.desc with
         | S_Seq _ -> ()
         | _ -> Format.eprintf "@[<3>Annotating@ @[%a@]@]@." PP.pp_stmt s
     in
-    let here x = add_pos_from s x and loc = to_pos s in
+    let here x = add_pos_from ~loc:s x and loc = to_pos s in
     match s.desc with
     (* Begin SPass *)
-    | S_Pass -> (s, env) |: TypingRule.SPass
+    | S_Pass -> (s, env, SES.empty) |: TypingRule.SPass
     (* Begin SSeq *)
     | S_Seq (s1, s2) ->
-        let new_s1, env1 = try_annotate_stmt env s1 in
-        let new_s2, env2 = try_annotate_stmt env1 s2 in
-        (S_Seq (new_s1, new_s2) |> here, env2) |: TypingRule.SSeq
+        let new_s1, env1, ses1 = try_annotate_stmt env s1 in
+        let new_s2, env2, ses2 = try_annotate_stmt env1 s2 in
+        let ses = SES.union ses1 ses2 in
+        (S_Seq (new_s1, new_s2) |> here, env2, ses) |: TypingRule.SSeq
     (* Begin SAssign *)
     | S_Assign (le, re) ->
         (let () =
@@ -2495,15 +2664,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
              Format.eprintf "@[<3>Annotating assignment@ @[%a@]@]@." PP.pp_stmt
                s
          in
-         let t_re, re1 = annotate_expr env re in
+         let ((t_re, re1, ses_re) as typed_re) = annotate_expr env re in
          match s.version with
          | V1 ->
-             let le1 = annotate_lexpr env le t_re in
-             (S_Assign (le1, re1) |> here, env)
+             let le1, ses_le = annotate_lexpr env le t_re in
+             let ses = SES.union ses_re ses_le in
+             (S_Assign (le1, re1) |> here, env, ses)
          | V0 -> (
-             let reduced = setter_should_reduce_to_call_s env le (t_re, re1) in
+             let reduced = setter_should_reduce_to_call_s env le typed_re in
              match reduced with
-             | Some new_s -> (new_s, env)
+             | Some (new_s, ses_s) -> (new_s, env, ses_s)
              | None ->
                  let env1 =
                    (*
@@ -2530,21 +2700,22 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                                PP.pp_stmt s
                          in
                          let ldk = LDK_Var in
-                         let env2, _ldi =
-                           annotate_local_decl_item loc env t_re ldk ldi
+                         let env2, _ldi, _ses_ldi =
+                           annotate_local_decl_item ~loc env t_re ldk ldi
                          in
                          env2
                        else env
                  in
-                 let le1 = annotate_lexpr env1 le t_re in
-                 (S_Assign (le1, re1) |> here, env1)))
+                 let le1, ses_le = annotate_lexpr env1 le t_re in
+                 let ses = SES.union ses_re ses_le in
+                 (S_Assign (le1, re1) |> here, env1, ses)))
         |: TypingRule.SAssign
     (* End *)
     (* Begin SCall *)
     | S_Call call ->
-        let call, ty = annotate_call ~loc env call in
+        let call, ty, ses = annotate_call ~loc env call in
         let () = assert (ty = None) in
-        (S_Call call |> here, env) |: TypingRule.SCall
+        (S_Call call |> here, env, ses) |: TypingRule.SCall
     (* End *)
     (* Begin SReturn *)
     | S_Return e_opt ->
@@ -2555,64 +2726,77 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
            type of the subprogram. *)
         (match (env.local.return_type, e_opt) with
         | None, Some _ | Some _, None ->
-            fatal_from loc (Error.BadReturnStmt env.local.return_type)
+            fatal_from ~loc (Error.BadReturnStmt env.local.return_type)
             |: TypingRule.SReturn
-        | None, None -> (S_Return None |> here, env) |: TypingRule.SReturn
+        | None, None ->
+            (S_Return None |> here, env, SES.empty) |: TypingRule.SReturn
         | Some t, Some e ->
-            let t_e', e' = annotate_expr env e in
+            let t_e', e', ses = annotate_expr env e in
             let () =
               if false then
                 Format.eprintf
                   "Can I return %a(of type %a) when return_type = %a?@."
                   PP.pp_expr e PP.pp_ty t_e' PP.pp_ty t
             in
-            let+ () = check_type_satisfies s env t_e' t in
-            (S_Return (Some e') |> here, env))
+            let+ () = check_type_satisfies ~loc env t_e' t in
+            (S_Return (Some e') |> here, env, ses))
         |: TypingRule.SReturn
     (* End *)
     (* Begin SCond *)
     | S_Cond (e, s1, s2) ->
-        let t_cond, e_cond = annotate_expr env e in
-        let+ () = check_type_satisfies e_cond env t_cond boolean in
-        let s1' = try_annotate_block env s1 in
-        let s2' = try_annotate_block env s2 in
-        (S_Cond (e_cond, s1', s2') |> here, env) |: TypingRule.SCond
+        let t_cond, e_cond, ses_cond = annotate_expr env e in
+        let+ () = check_type_satisfies ~loc:e_cond env t_cond boolean in
+        let s1', ses1 = try_annotate_block env s1 in
+        let s2', ses2 = try_annotate_block env s2 in
+        let ses = SES.union3 ses_cond ses1 ses2 in
+        (S_Cond (e_cond, s1', s2') |> here, env, ses) |: TypingRule.SCond
     (* End *)
     (* Begin SCase *)
     | S_Case _ -> desugar_case_stmt s |> annotate_stmt env |: TypingRule.SCase
     (* End *)
     (* Begin SAssert *)
     | S_Assert e ->
-        let t_e', e' = annotate_expr env e in
-        let+ () = check_type_satisfies s env t_e' boolean in
-        (S_Assert e' |> here, env) |: TypingRule.SAssert
+        let t_e', e', ses = annotate_expr env e in
+        let+ () = check_is_pure e ses in
+        let+ () = check_type_satisfies ~loc env t_e' boolean in
+        let ses = SES.add_assertion ses in
+        (S_Assert e' |> here, env, ses) |: TypingRule.SAssert
     (* End *)
     (* Begin SWhile *)
     | S_While (e1, limit1, s1) ->
-        let t, e2 = annotate_expr env e1 in
-        let limit2 = annotate_limit_expr ~loc env limit1 in
-        let+ () = check_type_satisfies e2 env t boolean in
-        let s2 = try_annotate_block env s1 in
-        (S_While (e2, limit2, s2) |> here, env) |: TypingRule.SWhile
+        let t, e2, ses_e = annotate_expr env e1 in
+        let limit2, ses_limit = annotate_limit_expr ~loc env limit1 in
+        let+ () = check_type_satisfies ~loc:e2 env t boolean in
+        let s2, ses_block = try_annotate_block env s1 in
+        let ses = SES.union3 ses_e ses_block ses_limit in
+        (S_While (e2, limit2, s2) |> here, env, ses) |: TypingRule.SWhile
     (* End *)
     (* Begin SRepeat *)
     | S_Repeat (s1, e1, limit1) ->
-        let s2 = try_annotate_block env s1 in
-        let limit2 = annotate_limit_expr ~loc env limit1 in
-        let t, e2 = annotate_expr env e1 in
-        let+ () = check_type_satisfies e2 env t boolean in
-        (S_Repeat (s2, e2, limit2) |> here, env) |: TypingRule.SRepeat
+        let s2, ses_block = try_annotate_block env s1 in
+        let limit2, ses_limit = annotate_limit_expr ~loc env limit1 in
+        let t, e2, ses_e = annotate_expr env e1 in
+        let+ () = check_type_satisfies ~loc:e2 env t boolean in
+        let ses = SES.union3 ses_block ses_e ses_limit in
+        (S_Repeat (s2, e2, limit2) |> here, env, ses) |: TypingRule.SRepeat
     (* End *)
     (* Begin SFor *)
     | S_For { index_name; start_e; end_e; dir; body; limit } ->
-        let start_t, start_e' = annotate_expr env start_e
-        and end_t, end_e' = annotate_expr env end_e
-        and limit' = annotate_limit_expr ~warn:false ~loc env limit in
+        let start_t, start_e', ses_start = annotate_expr env start_e
+        and end_t, end_e', ses_end = annotate_expr env end_e
+        and limit', ses_limit =
+          annotate_limit_expr ~warn:false ~loc env limit
+        in
+        let+ () = check_is_pure start_e ses_start in
+        let+ () = check_is_deterministic start_e ses_start in
+        let+ () = check_is_pure end_e ses_end in
+        let+ () = check_is_deterministic end_e ses_end in
+        let ses_cond = SES.union3 ses_start ses_end ses_limit in
         let start_struct = Types.make_anonymous env start_t
-        and struct2 = Types.make_anonymous env end_t in
+        and end_struct = Types.make_anonymous env end_t in
         (* TypingRule.ForConstraint( *)
         let cs =
-          match (start_struct.desc, struct2.desc) with
+          match (start_struct.desc, end_struct.desc) with
           | T_Int UnConstrained, T_Int _ | T_Int _, T_Int UnConstrained ->
               UnConstrained
           | T_Int _, T_Int _ ->
@@ -2624,17 +2808,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 | Down -> (end_n, start_n)
               in
               WellConstrained [ Constraint_Range (e_bot, e_top) ]
-          | T_Int _, _ -> conflict s [ integer' ] end_t
-          | _, _ -> conflict s [ integer' ] start_t
+          | T_Int _, _ -> conflict ~loc [ integer' ] end_t
+          | _, _ -> conflict ~loc [ integer' ] start_t
           (* only happens in relaxed type-checking mode because of check_structure_integer earlier. *)
           (* TypingRule.ForConstraint) *)
         in
         let ty = T_Int cs |> here in
-        let body' =
-          let+ () = check_var_not_in_env loc env index_name in
+        let body', ses_block =
+          let+ () = check_var_not_in_env ~loc env index_name in
           let env' = add_local index_name ty LDK_Let env in
           try_annotate_block env' body
         in
+        let ses = ses_non_conflicting_union ~loc ses_cond ses_block in
         ( S_For
             {
               index_name;
@@ -2645,7 +2830,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               limit = limit';
             }
           |> here,
-          env )
+          env,
+          ses )
         |: TypingRule.SFor
     (* End *)
     (* Begin SDecl *)
@@ -2653,10 +2839,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         match (ldk, e_opt) with
         (* SDecl.Some( *)
         | _, Some e ->
-            let t_e, e' = annotate_expr env e in
-            let env1, ldi1 =
-              annotate_local_decl_item loc env t_e ldk ~e:e' ldi
+            let ((t_e, e', ses_e) as typed_e) = annotate_expr env e in
+            let () =
+              if false then
+                Format.eprintf "Found rhs side-effects: %a@." SES.pp_print ses_e
             in
+            let env1, ldi1, ses_ldi =
+              annotate_local_decl_item ~loc env t_e ldk ~e:typed_e ldi
+            in
+            let ses = SES.union ses_e ses_ldi in
             let ldi1 =
               if C.print_typed then
                 (* When [print_typed] is specified, wrap untyped items with their inferred type. *)
@@ -2669,167 +2860,225 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               match ldk with
               | LDK_Let | LDK_Var -> env1
               | LDK_Constant -> (
+                  let+ () = check_leq_constant_time ~loc:s typed_e in
                   try
                     let v = StaticInterpreter.static_eval env1 e in
                     declare_local_constant env1 v ldi1
                   with Error.(ASLException _) -> env1)
             in
-            (S_Decl (ldk, ldi1, Some e') |> here, new_env) |: TypingRule.SDecl
+            (S_Decl (ldk, ldi1, Some e') |> here, new_env, ses)
+            |: TypingRule.SDecl
         (* SDecl.Some) *)
         (* SDecl.None( *)
         | LDK_Var, None ->
-            let new_env, ldi1, e_init =
-              annotate_local_decl_item_uninit loc env ldi
+            let new_env, ldi1, e_init, ses_ldi =
+              annotate_local_decl_item_uninit ~loc env ldi
             in
-            (S_Decl (LDK_Var, ldi1, Some e_init) |> here, new_env)
+            (S_Decl (LDK_Var, ldi1, Some e_init) |> here, new_env, ses_ldi)
             |: TypingRule.SDecl
         | (LDK_Constant | LDK_Let), None ->
-            fatal_from s UnrespectedParserInvariant)
+            fatal_from ~loc UnrespectedParserInvariant)
     (* SDecl.None) *)
     (* End *)
     (* Begin SThrow *)
     | S_Throw (Some (e, _)) ->
-        let t_e, e' = annotate_expr env e in
-        let+ () = check_structure_exception s env t_e in
-        (S_Throw (Some (e', Some t_e)) |> here, env) |: TypingRule.SThrow
+        let t_e, e', ses1 = annotate_expr env e in
+        let+ () = check_structure_exception ~loc env t_e in
+        let exn_name =
+          match t_e.desc with T_Named s -> s | _ -> assert false
+        in
+        let ses2 = SES.add_thrown_exception exn_name ses1 in
+        (S_Throw (Some (e', Some t_e)) |> here, env, ses2) |: TypingRule.SThrow
     | S_Throw None ->
         (* TODO: verify that this is allowed? *)
-        (s, env) |: TypingRule.SThrow
-    (* End *)
-    (* Begin STry *)
+        (s, env, SES.throws_exception "TODO") |: TypingRule.SThrow
+        (* End *)
+        (* Begin STry *)
     | S_Try (s', catchers, otherwise) ->
-        let s'' = try_annotate_block env s' in
-        let otherwise' = Option.map (try_annotate_block env) otherwise in
-        let catchers' = List.map (annotate_catcher loc env) catchers in
-        (S_Try (s'', catchers', otherwise') |> here, env) |: TypingRule.STry
+        let s'', ses1 = try_annotate_block env s' in
+        let ses2, catchers_and_ses =
+          list_fold_left_map (annotate_catcher ~loc env) ses1 catchers
+        in
+        let () =
+          if false then
+            Format.eprintf "After catchers, I have side effects:@ %a@."
+              SES.pp_print ses2
+        in
+        let catchers', catchers_sess = List.split catchers_and_ses in
+        let ses_catchers = SES.unions catchers_sess in
+        let otherwise', ses3, ses_otherwise =
+          match otherwise with
+          | None -> (None, ses2, SES.empty)
+          | Some block ->
+              let block', ses_block = try_annotate_block env block in
+              (Some block', SES.remove_thrown_exceptions ses2, ses_block)
+        in
+        let ses = SES.union3 ses3 ses_catchers ses_otherwise in
+        (S_Try (s'', catchers', otherwise') |> here, env, ses)
+        |: TypingRule.STry
     (* End *)
     (* Begin SPrint *)
     | S_Print { args; newline; debug } ->
-        let check_supported_print_type loc env ty =
+        let check_supported_print_type ~loc env ty =
           let ty_anon = Types.make_anonymous env ty in
           match ty_anon.desc with
           | T_Int _ | T_Bits _ | T_Real | T_String | T_Bool | T_Enum _ -> ()
           | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _ ->
-              Error.fatal_from loc (Error.BadPrintType ty)
+              fatal_from ~loc (Error.BadPrintType ty)
           | T_Named _ -> assert false
         in
-        let args' =
+        let args', sess =
           List.map
             (fun e ->
-              let ty, annot_e = annotate_expr env e in
-              let () = check_supported_print_type (to_pos e) env ty in
-              annot_e)
+              let ty, annot_e, ses_e = annotate_expr env e in
+              let () = check_supported_print_type ~loc:e env ty in
+              (annot_e, ses_e))
             args
+          |> List.split
         in
-        (S_Print { args = args'; newline; debug } |> here, env)
+        let ses =
+          SES.non_conflicting_unions sess
+            ~fail:(conflicting_side_effects_error ~loc)
+        in
+        (S_Print { args = args'; newline; debug } |> here, env, ses)
         |: TypingRule.SPrint
     (* End *)
     (* Begin SPragma *)
     | S_Pragma (_, args) ->
-        let () = List.iter (fun e -> annotate_expr env e |> ignore) args in
-        (S_Pass |> here, env) |: TypingRule.SPragma
+        let _, _, sess = List.map (annotate_expr env) args |> list_split3 in
+        let ses =
+          SES.non_conflicting_unions sess
+            ~fail:(conflicting_side_effects_error ~loc)
+        in
+        (S_Pass |> here, env, ses) |: TypingRule.SPragma
     (* End *)
-    | S_Unreachable -> (s, env)
+    | S_Unreachable -> (s, env, SES.empty)
 
   (* Begin AnnotateLimitExpr *)
   and annotate_limit_expr ?(warn = true) ~loc env = function
     | None ->
         let () = if warn then warn_from ~loc Error.NoLoopLimit in
-        None
+        (None, SES.empty)
     | Some limit ->
-        let limit' = annotate_static_constrained_integer ~loc env limit in
-        Some limit' |: TypingRule.AnnotateLimitExpr
+        let new_limit, ses =
+          annotate_static_constrained_integer ~loc env limit
+        in
+        (Some new_limit, ses) |: TypingRule.AnnotateLimitExpr
   (* End *)
 
   (* Begin Catcher *)
-  and annotate_catcher loc env (name_opt, ty, stmt) =
-    let ty' = annotate_type ~loc env ty in
-    let+ () = check_structure_exception ty' env ty' in
-    let env' =
-      match name_opt with
-      | None -> env
-      | Some name ->
-          let+ () = check_var_not_in_env stmt env name in
-          add_local name ty LDK_Let env
+  and annotate_catcher ~loc env ses_in (name_opt, ty, stmt) =
+    let ty', ses_ty = annotate_type ~loc env ty in
+    let+ () = check_structure_exception ~loc:ty' env ty' in
+    let new_stmt, ses_block =
+      let env' =
+        match name_opt with
+        | None -> env
+        | Some name ->
+            let+ () = check_var_not_in_env ~loc:stmt env name in
+            add_local name ty LDK_Let env
+        (* End *)
+      in
+      try_annotate_block env' stmt
+    and ses_filtered =
+      let ty_name = match ty'.desc with T_Named s -> s | _ -> assert false in
+      SES.filter_thrown_exceptions
+        (fun s -> not (Types.subtypes_names env s ty_name))
+        ses_in
     in
-    let new_stmt = try_annotate_block env' stmt in
-    (name_opt, ty, new_stmt) |: TypingRule.Catcher
+    let ses = SES.union ses_block ses_ty in
+    (ses_filtered, ((name_opt, ty, new_stmt), ses)) |: TypingRule.Catcher
   (* End *)
 
   (* Begin Block *)
   and try_annotate_block env s =
     (*
         See rule JFRD:
-           A local identifier declared with var, let or constant
+           A ~local identifier declared with var, let or constant
            is in scope from the point immediately after its declaration
            until the end of the immediately enclosing block.
 
         From that follows that we can discard the environment at the end
         of an enclosing block.
     *)
-    best_effort s (fun _ -> annotate_stmt env s |> fst) |: TypingRule.Block
+    ( best_effort (s, SES.empty) @@ fun _ ->
+      let s, _env, ses = annotate_stmt env s in
+      (s, ses) )
+    |: TypingRule.Block
   (* End *)
 
   and try_annotate_stmt env s =
-    best_effort (s, env) (fun _ -> annotate_stmt env s)
+    best_effort (s, env, SES.empty) (fun _ -> annotate_stmt env s)
 
   (* ASLRef extension that allows reduction of a form
      [MyGetter.[fieldA, fieldB] to [MyGetter([sliceA], [sliceB])]].
 
      It is guarded by [C.use_getter_field_extension]. *)
-  and set_fields_should_reduce_to_call ~loc env x fields (t_e, e) =
+  and set_fields_should_reduce_to_call ~loc env x fields (t_e, e, ses_e) =
     (*
      * Field indices are extracted from the return type
      * of "associated" getter.
      *)
     assert (loc.version = V0 && C.use_field_getter_extension);
     let ( let* ) = Option.bind in
-    let _, _, callee =
-      try Fn.try_subprogram_for_name loc env V0 x []
+    let _, _, callee, _ =
+      try Fn.try_subprogram_for_name ~loc env V0 x []
       with Error.ASLException _ -> assert false
     in
     let* ty = callee.return_type in
     let ty = Types.make_anonymous env ty in
     let* name, args = should_fields_reduce_to_call env x ty fields in
-    let typed_args = (t_e, e) :: List.map (annotate_expr env) args in
-    let call, ret_ty = annotate_call_v0 ~loc env name typed_args ST_Setter in
+    let typed_args = (t_e, e, ses_e) :: List.map (annotate_expr env) args in
+    let call, ret_ty, ses_call =
+      annotate_call_v0 ~loc env name typed_args ST_Setter
+    in
+    let _, _, sess_args = list_split3 typed_args in
+    let ses = SES.union ses_call @@ ses_non_conflicting_unions ~loc sess_args in
     let () = assert (ret_ty = None) in
-    Some (S_Call call |> add_pos_from loc)
+    Some (S_Call call |> add_pos_from ~loc, ses)
 
-  and setter_should_reduce_to_call_recurse ~loc env (t_e, e) make_old_le sub_le
-      =
+  and setter_should_reduce_to_call_recurse ~loc env typed_e make_old_le sub_le =
     let () = assert (loc.version = V0) in
     let x = fresh_var "__setter_setfield" in
-    let here le = add_pos_from loc le in
-    let t_sub_re, sub_re = expr_of_lexpr sub_le |> annotate_expr env in
-    let env1, ldi_x =
-      annotate_local_decl_item loc env t_sub_re LDK_Var (LDI_Var x)
+    let here le = add_pos_from ~loc le in
+    let t_sub_re, sub_re, ses_sub_re =
+      expr_of_lexpr sub_le |> annotate_expr env
     in
-    let s1 = S_Decl (LDK_Var, ldi_x, Some sub_re) |> here in
-    let s2 =
+    let env1, ldi_x, ses_ldi =
+      annotate_local_decl_item ~loc env t_sub_re LDK_Var (LDI_Var x)
+    in
+    let s1, ses_s1 =
+      ( S_Decl (LDK_Var, ldi_x, Some sub_re) |> here,
+        SES.union ses_ldi ses_sub_re )
+    in
+    let s2, ses_s2 =
+      let t_e, e, ses_e = typed_e in
       let old_le = make_old_le (LE_Var x |> here) in
-      let old_le' = annotate_lexpr env1 old_le t_e in
-      S_Assign (old_le', e) |> here
+      let old_le', ses_old_le = annotate_lexpr env1 old_le t_e in
+      (S_Assign (old_le', e) |> here, SES.union ses_old_le ses_e)
     in
     let typed_e_x = annotate_expr env1 (E_Var x |> here) in
     match setter_should_reduce_to_call_s env1 sub_le typed_e_x with
     | None -> None
-    | Some s -> Some (s_then (s_then s1 s2) s)
+    | Some (s, ses_s) ->
+        Some (s_then (s_then s1 s2) s, SES.union3 ses_s1 ses_s2 ses_s)
 
-  and setter_should_reduce_to_call_s env le (t_e, e) : stmt option =
+  and setter_should_reduce_to_call_s env le typed_e : (stmt * SES.t) option =
     let () = assert (le.version = V0) in
+    let t_e, e, ses_e = typed_e in
     let () =
       if false then
         Format.eprintf "@[<2>setter_..._s@ @[%a@]@ @[%a@]@]@." PP.pp_lexpr le
           PP.pp_expr e
     in
     let loc = to_pos le in
-    let here d = add_pos_from loc d in
+    let here d = add_pos_from ~loc d in
     (if false then (fun o ->
        let none f () = Format.fprintf f "no reduction." in
+       let pp_fst pp f (x, _y) = pp f x in
        Format.eprintf "@[<2>Setter@ @[%a@ = %a@]@ gave @[%a@]@.@]" PP.pp_lexpr
          le PP.pp_expr e
-         (Format.pp_print_option ~none PP.pp_stmt)
+         (Format.pp_print_option ~none (pp_fst PP.pp_stmt))
          o;
        o)
      else Fun.id)
@@ -2841,21 +3090,19 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | LE_Var x
           when C.use_field_getter_extension
                && should_reduce_to_call env x ST_Setter ->
-            set_fields_should_reduce_to_call env ~loc x [ field ] (t_e, e)
+            set_fields_should_reduce_to_call env ~loc x [ field ] typed_e
         | _ ->
             let old_le le' = LE_SetField (le', field) |> here in
-            setter_should_reduce_to_call_recurse ~loc env (t_e, e) old_le sub_le
-        )
+            setter_should_reduce_to_call_recurse ~loc env typed_e old_le sub_le)
     | LE_SetFields (sub_le, fields, slices) -> (
         match sub_le.desc with
         | LE_Var x
           when C.use_field_getter_extension
                && should_reduce_to_call env x ST_Setter ->
-            set_fields_should_reduce_to_call env ~loc x fields (t_e, e)
+            set_fields_should_reduce_to_call env ~loc x fields typed_e
         | _ ->
             let old_le le' = LE_SetFields (le', fields, slices) |> here in
-            setter_should_reduce_to_call_recurse ~loc env (t_e, e) old_le sub_le
-        )
+            setter_should_reduce_to_call_recurse ~loc env typed_e old_le sub_le)
     | LE_Slice (sub_le, slices) -> (
         match sub_le.desc with
         | LE_Var x
@@ -2865,26 +3112,31 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               try List.map slice_as_single slices
               with Invalid_argument _ -> assert false
             in
-            let typed_args = (t_e, e) :: List.map (annotate_expr env) args in
-            let call, ret_ty =
+            let typed_args = typed_e :: List.map (annotate_expr env) args in
+            let call, ret_ty, ses_call =
               annotate_call_v0 ~loc env x typed_args ST_Setter
             in
+            let _, _, sess_args = list_split3 typed_args in
+            let ses =
+              SES.union ses_call @@ ses_non_conflicting_unions ~loc sess_args
+            in
             let () = assert (ret_ty = None) in
-            Some (S_Call call |> here)
+            Some (S_Call call |> here, ses)
         | _ ->
             let old_le le' = LE_Slice (le', slices) |> here in
-            setter_should_reduce_to_call_recurse ~loc env (t_e, e) old_le sub_le
-        )
+            setter_should_reduce_to_call_recurse ~loc env typed_e old_le sub_le)
     | LE_Destructuring les -> (
         match (Types.make_anonymous env t_e).desc with
         | T_Tuple t_es when List.compare_lengths les t_es = 0 ->
             let x = fresh_var "__setter_destructuring" in
-            let env1, ldi_x =
-              annotate_local_decl_item loc env t_e LDK_Let ~e (LDI_Var x)
+            let env1, ldi_x, ses_ldi =
+              annotate_local_decl_item ~loc env t_e LDK_Let ~e:typed_e
+                (LDI_Var x)
             in
             let sub_e i = E_GetItem (E_Var x |> here, i) |> here in
             let recurse_one i sub_le t_sub_e =
-              setter_should_reduce_to_call_s env1 sub_le (t_sub_e, sub_e i)
+              setter_should_reduce_to_call_s env1 sub_le
+                (t_sub_e, sub_e i, SES.empty)
             in
             let subs = list_mapi2 recurse_one 0 les t_es in
             if List.for_all Option.is_none subs then None
@@ -2892,20 +3144,27 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               let s0 = S_Decl (LDK_Let, ldi_x, Some e) |> here in
               let produce_one i sub_le t_sub_e_i = function
                 | None ->
-                    let sub_le' = annotate_lexpr env sub_le t_sub_e_i in
-                    S_Assign (sub_le', sub_e i) |> here
-                | Some s -> s
+                    let sub_le', sub_le_ses =
+                      annotate_lexpr env sub_le t_sub_e_i
+                    in
+                    (S_Assign (sub_le', sub_e i) |> here, sub_le_ses)
+                | Some (s, ses) -> (s, ses)
               in
-              list_mapi3 produce_one 0 les t_es subs
-              |> List.cons s0 |> stmt_from_list |> Option.some
+              let stmts, sess =
+                list_mapi3 produce_one 0 les t_es subs |> List.split
+              in
+              let s = stmt_from_list (s0 :: stmts)
+              and ses = SES.unions (ses_ldi :: ses_e :: sess) in
+              Some (s, ses)
         | _ -> None)
     | LE_Var x ->
         let st = ST_EmptySetter in
         if should_reduce_to_call env x st then
-          let args = [ (t_e, e) ] in
-          let call, ret_ty = annotate_call_v0 ~loc env x args st in
+          let args = [ typed_e ] in
+          let call, ret_ty, ses_call = annotate_call_v0 ~loc env x args st in
           let () = assert (ret_ty = None) in
-          Some (S_Call call |> here)
+          let ses = SES.union ses_call ses_e in
+          Some (S_Call call |> here, ses)
         else None
     | LE_SetArray _ -> assert false
 
@@ -2967,25 +3226,28 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let annotate_func_sig_v1 ~loc genv func_sig =
     let env = with_empty_local genv in
     (* Check recursion limit *)
-    let recurse_limit =
+    let recurse_limit, ses_recurse_limit =
       annotate_limit_expr ~warn:false ~loc env func_sig.recurse_limit
     in
     (* Annotate and declare parameters *)
-    let env_with_params, parameters =
-      let declare_parameter new_env (x, ty_opt) =
-        let ty =
+    let (env_with_params, ses_with_params), parameters =
+      let declare_parameter (new_env, new_ses) (x, ty_opt) =
+        let ty, ses_ty =
           match ty_opt with
           | None | Some { desc = T_Int UnConstrained; _ } ->
-              Types.parameterized_ty x
+              (Types.parameterized_ty x, SES.empty)
           | Some ty ->
               (* valid in environment which has no parameters declared *)
               annotate_type ~loc env ty
         in
         let+ () = check_constrained_integer ~loc env ty in
-        let+ () = check_var_not_in_env loc new_env x in
-        (add_local x ty LDK_Let new_env, (x, Some ty))
+        let+ () = check_var_not_in_env ~loc new_env x in
+        let new_env' = add_local x ty LDK_Let new_env
+        and ses = SES.union new_ses ses_ty in
+        ((new_env', ses), (x, Some ty))
       in
-      list_fold_left_map declare_parameter env func_sig.parameters
+      list_fold_left_map declare_parameter (env, ses_recurse_limit)
+        func_sig.parameters
     in
     (* Check parameters are declared correctly - in order and unique *)
     let+ () =
@@ -2995,38 +3257,45 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         list_equal String.equal inferred_parameters declared_parameters
       in
       check_true all_parameters_declared @@ fun () ->
-      fatal_from loc
+      fatal_from ~loc
         (BadParameterDecl
            (func_sig.name, inferred_parameters, declared_parameters))
     in
     (* Annotate and declare arguments *)
-    let env_with_args, args =
-      let declare_argument new_env (x, ty) =
+    let (env_with_args, ses_with_args), args =
+      let declare_argument (new_env, new_ses) (x, ty) =
         (* valid in environment with only parameters declared *)
-        let ty = annotate_type ~loc env_with_params ty in
-        let+ () = check_var_not_in_env loc new_env x in
-        let new_env = add_local x ty LDK_Let new_env in
-        (new_env, (x, ty))
+        let ty, ses_ty = annotate_type ~loc env_with_params ty in
+        let+ () = check_var_not_in_env ~loc new_env x in
+        let new_env = add_local x ty LDK_Let new_env
+        and ses = SES.union new_ses ses_ty in
+        ((new_env, ses), (x, ty))
       in
-      list_fold_left_map declare_argument env_with_params func_sig.args
+      list_fold_left_map declare_argument
+        (env_with_params, ses_with_params)
+        func_sig.args
     in
     (* Annotate return type *)
-    let env_with_return, return_type =
+    let env_with_return, return_type, ses_with_return =
       match func_sig.return_type with
-      | None -> (env_with_args, None)
+      | None -> (env_with_args, None, ses_with_args)
       | Some ty ->
           (* valid in environment with parameters declared *)
-          let return_type = Some (annotate_type ~loc env_with_params ty) in
+          let new_ty, ses_ty = annotate_type ~loc env_with_params ty in
+          let return_type = Some new_ty in
           let local_env = { env_with_args.local with return_type } in
-          ({ env_with_args with local = local_env }, return_type)
+          let new_ses = SES.union ses_ty ses_with_args in
+          ({ env_with_args with local = local_env }, return_type, new_ses)
     in
+    let ses = SES.remove_locals ses_with_return in
     ( env_with_return,
-      { func_sig with parameters; args; return_type; recurse_limit } )
+      { func_sig with parameters; args; return_type; recurse_limit },
+      ses )
 
   let annotate_func_sig_v0 ~loc genv func_sig =
     let env = with_empty_local genv in
     (* Check recursion limit *)
-    let recurse_limit =
+    let recurse_limit, ses_with_limit =
       annotate_limit_expr ~warn:false ~loc env func_sig.recurse_limit
     in
     (* Check parameters have defining arguments *)
@@ -3037,52 +3306,62 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         List.filter (fun x -> not (ISet.mem x defining)) inferred_parameters
       in
       check_true (list_is_empty undefined_parameters) @@ fun () ->
-      fatal_from loc (ParameterWithoutDecl (List.hd undefined_parameters))
+      fatal_from ~loc (ParameterWithoutDecl (List.hd undefined_parameters))
     in
     (* Annotate and declare parameters from arguments *)
-    let env_with_params, typed_parameters =
-      let declare_parameter new_env x =
-        let ty =
+    let (env_with_params, ses_with_params), typed_parameters =
+      let declare_parameter (new_env, new_ses) x =
+        let ty, ses_ty =
           match List.assoc_opt x func_sig.args with
           | None | Some { desc = T_Int UnConstrained } ->
-              Types.parameterized_ty x
+              (Types.parameterized_ty x, SES.empty)
           | Some ty ->
               (* valid in environment which has no parameters declared *)
               annotate_type ~loc env ty
         in
         let+ () = check_constrained_integer ~loc env ty in
-        let+ () = check_var_not_in_env loc new_env x in
-        (add_local x ty LDK_Let new_env, (x, ty))
+        let+ () = check_var_not_in_env ~loc new_env x in
+        let new_ses = SES.union new_ses ses_ty
+        and new_env = add_local x ty LDK_Let new_env in
+        ((new_env, new_ses), (x, ty))
       in
-      list_fold_left_map declare_parameter env inferred_parameters
+      list_fold_left_map declare_parameter (env, ses_with_limit)
+        inferred_parameters
     in
     let parameters = List.map (fun (x, ty) -> (x, Some ty)) typed_parameters in
     (* Annotate and declare remaining arguments *)
-    let env_with_args, args =
-      let declare_argument new_env (x, ty) =
+    let (env_with_args, ses_with_args), args =
+      let declare_argument (new_env, new_ses) (x, ty) =
         match List.assoc_opt x typed_parameters with
-        | Some ({ desc = T_Int (Parameterized _) } as ty) ->
-            (new_env, (x, T_Int UnConstrained |> add_pos_from ty))
-        | Some ty -> (new_env, (x, ty))
+        | Some ({ desc = T_Int (Parameterized _) } as loc) ->
+            ((new_env, new_ses), (x, T_Int UnConstrained |> add_pos_from ~loc))
+        | Some ty -> ((new_env, new_ses), (x, ty))
         | None ->
-            let ty = annotate_type ~loc env_with_params ty in
-            let+ () = check_var_not_in_env loc new_env x in
-            (add_local x ty LDK_Let new_env, (x, ty))
+            let ty, ses_ty = annotate_type ~loc env_with_params ty in
+            let+ () = check_var_not_in_env ~loc new_env x in
+            let new_ses = SES.union new_ses ses_ty
+            and new_env = add_local x ty LDK_Let new_env in
+            ((new_env, new_ses), (x, ty))
       in
-      list_fold_left_map declare_argument env_with_params func_sig.args
+      list_fold_left_map declare_argument
+        (env_with_params, ses_with_params)
+        func_sig.args
     in
     (* Annotate return type *)
-    let env_with_return, return_type =
+    let env_with_return, return_type, ses_with_return =
       match func_sig.return_type with
-      | None -> (env_with_args, None)
+      | None -> (env_with_args, None, ses_with_args)
       | Some ty ->
           (* valid in environment with parameters declared *)
-          let return_type = Some (annotate_type ~loc env_with_params ty) in
+          let new_ty, ses_ty = annotate_type ~loc env_with_params ty in
+          let return_type = Some new_ty in
           let local_env = { env_with_args.local with return_type } in
-          ({ env_with_args with local = local_env }, return_type)
+          let new_ses = SES.union ses_ty ses_with_args in
+          ({ env_with_args with local = local_env }, return_type, new_ses)
     in
     ( env_with_return,
-      { func_sig with parameters; args; return_type; recurse_limit } )
+      { func_sig with parameters; args; return_type; recurse_limit },
+      ses_with_return )
 
   let annotate_func_sig ~loc genv func_sig =
     match loc.version with
@@ -3152,29 +3431,38 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let check_stmt_returns_or_throws name s () =
       match from_stmt s with
       | AssertedNotInterrupt | Interrupt -> ()
-      | MayNotInterrupt -> fatal_from s (Error.NonReturningFunction name)
+      | MayNotInterrupt -> fatal_from ~loc:s (Error.NonReturningFunction name)
   end
 
   (* Begin Subprogram *)
-  let annotate_subprogram (env : env) (f : AST.func) : AST.func =
+  let annotate_subprogram (env : env) (f : AST.func) ses_func_sig :
+      AST.func * SES.t =
     let () =
       if false then
         Format.eprintf "@[<hov>Annotating body in env:@ %a@]@." pp_env env
     in
     (* Annotate body *)
     let body =
-      match f.body with SB_ASL body -> body | SB_Primitive -> assert false
+      match f.body with SB_ASL body -> body | SB_Primitive _ -> assert false
     in
-    let new_body = try_annotate_block env body in
+    let new_body, ses = try_annotate_block env body in
+    let ses' = SES.union ses_func_sig @@ SES.remove_locals ses in
+    let () =
+      if false then
+        Format.eprintf "@[<v 2>For program %s, I got side-effects:@ %a@]@."
+          f.name SES.pp_print ses'
+    in
     let+ () =
       match f.return_type with
       | None -> ok
       | Some _ -> ControlFlow.check_stmt_returns_or_throws f.name new_body
     in
-    { f with body = SB_ASL new_body } |: TypingRule.Subprogram
+    ({ f with body = SB_ASL new_body }, ses') |: TypingRule.Subprogram
   (* End *)
 
-  let try_annotate_subprogram env f = best_effort f (annotate_subprogram env)
+  let try_annotate_subprogram env f ses_func_sig =
+    best_effort (f, ses_func_sig) @@ fun _ ->
+    annotate_subprogram env f ses_func_sig
 
   (******************************************************************************)
   (*                                                                            *)
@@ -3185,7 +3473,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* Begin CheckSetterHasGetter *)
   let check_setter_has_getter ~loc env (func_sig : AST.func) =
     let fail () =
-      fatal_from loc (Error.SetterWithoutCorrespondingGetter func_sig)
+      fatal_from ~loc (Error.SetterWithoutCorrespondingGetter func_sig)
     in
     let check_true thing = check_true thing fail in
     match func_sig.subprogram_type with
@@ -3193,11 +3481,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | ST_EmptySetter | ST_Setter ->
         let ret_type, arg_types =
           match func_sig.args with
-          | [] -> fatal_from loc Error.UnrespectedParserInvariant
+          | [] -> fatal_from ~loc Error.UnrespectedParserInvariant
           | (_, ret_type) :: args -> (ret_type, List.map snd args)
         in
-        let _, _, func_sig' =
-          try Fn.subprogram_for_name loc env V1 func_sig.name arg_types
+        let _, _, func_sig', _ =
+          try Fn.subprogram_for_name ~loc env V1 func_sig.name arg_types
           with
           | Error.(
               ASLException
@@ -3233,10 +3521,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin DeclareOneFunc *)
-  let declare_one_func loc (func_sig : AST.func) env =
+  let declare_one_func ~loc (func_sig : AST.func) ses_func_sig env =
     let env1, name' =
       best_effort (env, func_sig.name) @@ fun _ ->
-      Fn.add_new_func loc env func_sig.name func_sig.args
+      Fn.add_new_func ~loc env func_sig.name func_sig.args
         func_sig.subprogram_type
     in
     let () =
@@ -3249,39 +3537,47 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           (pp_print_list ~pp_sep:pp_print_space PP.pp_typed_identifier)
           func_sig.args
     in
-    let+ () = check_var_not_in_genv loc env1.global name' in
+    let+ () = check_var_not_in_genv ~loc env1.global name' in
     let+ () = check_setter_has_getter ~loc env1 func_sig in
     let new_func_sig = { func_sig with name = name' } in
-    (add_subprogram name' new_func_sig env1, new_func_sig)
+    let init_ses =
+      match func_sig.body with
+      | SB_ASL _ | SB_Primitive true ->
+          SES.add_calls_recursive name' ses_func_sig
+      | SB_Primitive false -> ses_func_sig
+    in
+    (add_subprogram name' new_func_sig init_ses env1, new_func_sig)
     |: TypingRule.DeclareOneFunc
   (* End *)
 
   (* Begin AnnotateAndDeclareFunc *)
   let annotate_and_declare_func ~loc func_sig genv =
-    let env1, func_sig1 = annotate_func_sig ~loc genv func_sig in
-    declare_one_func loc func_sig1 env1 |: TypingRule.AnnotateAndDeclareFunc
+    let env1, func_sig1, ses_f1 = annotate_func_sig ~loc genv func_sig in
+    (declare_one_func ~loc func_sig1 ses_f1 env1, ses_f1)
+    |: TypingRule.AnnotateAndDeclareFunc
   (* End *)
 
   (* Begin AddGlobalStorage *)
-  let add_global_storage loc name keyword genv ty =
+  let add_global_storage ~loc name keyword genv ty =
     if is_global_ignored name then genv
     else
-      let+ () = check_var_not_in_genv loc genv name in
+      let+ () = check_var_not_in_genv ~loc genv name in
       add_global_storage name ty keyword genv |: TypingRule.AddGlobalStorage
   (* End *)
 
   (* Begin DeclareConst *)
-  let declare_const loc name t v genv =
-    add_global_storage loc name GDK_Constant genv t
+  let declare_const ~loc name t v genv =
+    add_global_storage ~loc name GDK_Constant genv t
     |> add_global_constant name v |: TypingRule.DeclareConst
   (* End *)
 
   (* Begin DeclareType *)
-  let declare_type loc name ty s genv =
+  let declare_type ~loc name ty s genv =
     let () =
       if false then Format.eprintf "Declaring type %s of %a@." name PP.pp_ty ty
     in
-    let+ () = check_var_not_in_genv loc genv name in
+    let here x = add_pos_from ~loc:ty x in
+    let+ () = check_var_not_in_genv ~loc genv name in
     let env = with_empty_local genv in
     let env1, t1 =
       match s with
@@ -3290,32 +3586,32 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | Some (super, extra_fields) ->
           let+ () =
            fun () ->
-            if Types.subtype_satisfies env ty (T_Named super |> add_pos_from loc)
-            then ()
-            else conflict loc [ T_Named super ] ty
+            if Types.subtype_satisfies env ty (T_Named super |> here) then ()
+            else conflict ~loc [ T_Named super ] ty
           in
           let new_ty =
             if extra_fields = [] then ty
             else
               match IMap.find_opt super genv.declared_types with
-              | Some { desc = T_Record fields; _ } ->
-                  T_Record (fields @ extra_fields) |> add_pos_from_st ty
-              | Some { desc = T_Exception fields; _ } ->
-                  T_Exception (fields @ extra_fields) |> add_pos_from_st ty
-              | Some _ -> conflict loc [ T_Record []; T_Exception [] ] ty
-              | None -> undefined_identifier loc super
+              | Some ({ desc = T_Record fields; _ }, _) ->
+                  T_Record (fields @ extra_fields) |> here
+              | Some ({ desc = T_Exception fields; _ }, _) ->
+                  T_Exception (fields @ extra_fields) |> here
+              | Some _ -> conflict ~loc [ T_Record []; T_Exception [] ] ty
+              | None -> undefined_identifier ~loc super
           and env = add_subtype name super env in
           (env, new_ty)
       (* AnnotateExtraFields) *)
     in
-    let t2 = annotate_type ~decl:true ~loc env1 t1 in
-    let env2 = add_type name t2 env1 in
+    let t2, ses_t = annotate_type ~decl:true ~loc env1 t1 in
+    let time_frame = SES.max_time_frame ses_t in
+    let env2 = add_type name t2 time_frame env1 in
     let new_tenv =
       match t2.desc with
       | T_Enum ids ->
-          let t = T_Named name |> add_pos_from ty in
+          let t = T_Named name |> here in
           let declare_one i env2 x =
-            declare_const loc x t (L_Label (x, i)) env2
+            declare_const ~loc x t (L_Label (x, i)) env2
           in
           let genv3 = list_fold_lefti declare_one env2.global ids in
           { env2 with global = genv3 }
@@ -3332,38 +3628,58 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     with Error.(ASLException { desc = UnsupportedExpr _; _ }) -> env
 
   (* Begin DeclareGlobalStorage *)
-  let declare_global_storage loc gsd genv =
+  let declare_global_storage ~loc gsd genv =
     let () = if false then Format.eprintf "Declaring %s@." gsd.name in
     best_effort (gsd, genv) @@ fun _ ->
+    let here x = add_pos_from ~loc x in
     let { keyword; initial_value; ty = ty_opt; name } = gsd in
-    let+ () = check_var_not_in_genv loc genv name in
+    let+ () = check_var_not_in_genv ~loc genv name in
     let env = with_empty_local genv in
-    let initial_value', ty_opt', declared_t =
+    let target_time_frame = TimeFrame.of_gdk keyword in
+    let typed_initial_value, ty_opt', declared_t =
       (* AnnotateTyOptInitialValue( *)
       match (ty_opt, initial_value) with
       | Some t, Some e ->
-          let t' = annotate_type ~loc env t and t_e, e' = annotate_expr env e in
-          let+ () = check_type_satisfies loc env t_e t' in
-          (e', Some t', t')
+          let t', ses_t = annotate_type ~loc env t
+          and ((t_e, _, _) as typed_e) = annotate_expr env e in
+          let+ () = check_type_satisfies ~loc env t_e t' in
+          let+ () =
+            let fake_e_for_error = E_ATC (e, t') |> here in
+            check_is_time_frame ~loc target_time_frame
+              (t', fake_e_for_error, ses_t)
+          in
+          (typed_e, Some t', t')
       | Some t, None ->
-          let t' = annotate_type ~loc env t in
+          let t', ses_t = annotate_type ~loc env t in
+          let+ () =
+            let fake_e_for_error = E_ATC (E_Var "-" |> here, t') |> here in
+            check_is_time_frame ~loc target_time_frame
+              (t', fake_e_for_error, ses_t)
+          in
           let e' = base_value ~loc env t' in
-          (e', Some t', t')
+          ((t', e', SES.empty), Some t', t')
       | None, Some e ->
-          let t_e, e' = annotate_expr env e in
-          (e', None, t_e)
-      | None, None -> Error.fatal_from loc UnrespectedParserInvariant
+          let ((t_e, _, _) as typed_e) = annotate_expr env e in
+          (typed_e, None, t_e)
+      | None, None -> fatal_from ~loc UnrespectedParserInvariant
       (* AnnotateTyOptInitialValue) *)
     in
-    let genv1 = add_global_storage loc name keyword genv declared_t in
+    let genv1 = add_global_storage ~loc name keyword genv declared_t in
     let env1 = with_empty_local genv1 in
+    let _, initial_value', ses_initial_value = typed_initial_value in
     (* UpdateGlobalStorage( *)
     let env2 =
       match keyword with
-      | GDK_Constant -> try_add_global_constant name env1 initial_value'
-      | GDK_Let when is_statically_evaluable ~loc env1 initial_value' ->
-          let e' = StaticModel.try_normalize env1 initial_value' in
-          add_global_immutable_expr name e' env1
+      | GDK_Constant ->
+          let+ () = check_leq_constant_time ~loc typed_initial_value in
+          try_add_global_constant name env1 initial_value'
+      | GDK_Let when should_remember_immutable_expression ses_initial_value -> (
+          match StaticModel.normalize_opt env1 initial_value' with
+          | Some e' -> add_global_immutable_expr name e' env1
+          | None -> env1)
+      | GDK_Config ->
+          let+ () = check_leq_config_time ~loc typed_initial_value in
+          env1
       | _ -> env1
       (* UpdateGlobalStorage) *)
     in
@@ -3392,21 +3708,25 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       match d.desc with
       (* Begin TypecheckDecl *)
       | D_Func ({ body = SB_ASL _; _ } as f) ->
-          let env1, f1 = annotate_and_declare_func ~loc f genv in
-          let f2 = try_annotate_subprogram env1 f1 in
-          let new_env = add_subprogram f2.name f2 env1
-          and new_d = D_Func f2 |> here in
+          let (env1, f1), ses_func_sig =
+            annotate_and_declare_func ~loc f genv
+          in
+          let new_f, ses_f = try_annotate_subprogram env1 f1 ses_func_sig in
+          let ses_f = SES.remove_calls_recursives ses_f in
+          (* TODO if recursive, check recursion annotation. *)
+          let new_d = D_Func new_f |> here
+          and new_env = StaticEnv.add_subprogram new_f.name new_f ses_f env1 in
           (new_d, new_env.global) |: TypingRule.TypecheckDecl
-      | D_Func ({ body = SB_Primitive; _ } as f) ->
-          let new_env, f2 = annotate_and_declare_func ~loc f genv in
-          let new_d = D_Func f2 |> here in
+      | D_Func ({ body = SB_Primitive _; _ } as f) ->
+          let (new_env, new_f), _ = annotate_and_declare_func ~loc f genv in
+          let new_d = D_Func new_f |> here in
           (new_d, new_env.global)
       | D_GlobalStorage gsd ->
-          let gsd', new_genv = declare_global_storage loc gsd genv in
+          let gsd', new_genv = declare_global_storage ~loc gsd genv in
           let new_d = D_GlobalStorage gsd' |> here in
           (new_d, new_genv) |: TypingRule.TypecheckDecl
       | D_TypeDecl (x, ty, s) ->
-          let new_genv = declare_type loc x ty s genv in
+          let new_genv = declare_type ~loc x ty s genv in
           (d, new_genv) |: TypingRule.TypecheckDecl
       (* End *)
       | D_Pragma _ -> assert false
@@ -3424,8 +3744,52 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | _ -> assert false
   (* End *)
 
+  let propagate_recursive_calls_sess (sess : (func * SES.t) list) :
+      (func * SES.t) list =
+    let () =
+      if false then
+        let open Format in
+        let pp_sep f () = fprintf f ";@ " in
+        let pp f ((func_sig : func), ses) =
+          fprintf f "@[<h 2>%s:@ %a@]" func_sig.name SES.pp_print ses
+        in
+        eprintf "@[<v 2>Propagating side-effects from:@ @[<v 2>[%a]@]@]@."
+          (pp_print_list ~pp_sep pp) sess
+    in
+    let map0 =
+      List.map (fun ((f : func), ses) -> (f.name, ses)) sess |> IMap.of_list
+    in
+    let call_graph = IMap.map (fun ses -> SES.get_calls_recursives ses) map0 in
+    let transitive_call_graph = transitive_closure call_graph in
+    let map0_without_recursive_calls =
+      IMap.map (fun ses -> SES.remove_calls_recursives ses) map0
+    in
+    let res =
+      List.map
+        (fun ((func : func), ses) ->
+          let callees =
+            IMap.find func.name transitive_call_graph |> ISet.elements
+          in
+          let sess =
+            List.map (fun x -> IMap.find x map0_without_recursive_calls) callees
+          in
+          (func, SES.unions (SES.remove_calls_recursives ses :: sess)))
+        sess
+    in
+    let () =
+      if false then
+        let open Format in
+        let pp_sep f () = fprintf f ";@ " in
+        let pp f ((func_sig : func), ses) =
+          fprintf f "@[<h 2>%s:@ %a@]" func_sig.name SES.pp_print ses
+        in
+        eprintf "@[<v 2>Propagating side-effects from:@ @[<v 2>[%a]@]@]@."
+          (pp_print_list ~pp_sep pp) res
+    in
+    res
+
   (* Begin TypeCheckMutuallyRec *)
-  let type_check_mutually_rec ds (acc, genv) =
+  let type_check_mutually_rec ds (acc, genv0) =
     let () =
       if false then
         let open Format in
@@ -3436,13 +3800,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let env_and_fs =
       List.map
         (fun d ->
+          let loc = to_pos d in
           match d.desc with
           | D_Func f ->
-              let loc = to_pos d in
-              let env', f = annotate_func_sig ~loc genv f in
-              (env'.local, f, loc)
+              let env', f, ses_f = annotate_func_sig ~loc genv0 f in
+              (env'.local, f, ses_f, loc)
           | _ ->
-              fatal_from d
+              fatal_from ~loc
                 (Error.BadRecursiveDecls
                    (List.map ASTUtils.identifier_of_decl ds)))
         ds
@@ -3451,7 +3815,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       (* Setters last as they need getters declared. *)
       let others, setters =
         List.partition
-          (fun (_, f, _) ->
+          (fun (_, f, _, _) ->
             match f.subprogram_type with
             | ST_Setter | ST_EmptySetter -> true
             | _ -> false)
@@ -3462,34 +3826,41 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* DeclareSubprograms( *)
     let genv2, env_and_fs2 =
       list_fold_left_map
-        (fun genv (lenv, f, loc) ->
+        (fun genv (lenv, f, ses_f, loc) ->
           let env = { global = genv; local = lenv } in
-          let env1, f1 = declare_one_func loc f env in
-          (env1.global, (env1.local, f1, loc)))
-        genv env_and_fs1
+          let env1, f1 = declare_one_func ~loc f ses_f env in
+          (env1.global, (env1.local, f1, ses_f, loc)))
+        genv0 env_and_fs1
       |: TypingRule.DeclareSubprograms
       (* DeclareSubprograms) *)
     in
-    let fs3 =
-      List.map
-        (fun (lenv2, f, loc) ->
+    let ds, sess =
+      list_map_split
+        (fun (lenv2, f, ses_f, loc) ->
           let env2 = { local = lenv2; global = genv2 } in
+          let here d = add_pos_from ~loc d in
           match f.body with
           | SB_ASL _ ->
               let () =
                 if false then Format.eprintf "@[Analysing decl %s.@]@." f.name
               in
-              (try_annotate_subprogram env2 f, loc)
-          | SB_Primitive -> (f, loc))
+              let new_f, ses_f = try_annotate_subprogram env2 f ses_f in
+              (D_Func new_f |> here, (new_f, ses_f))
+          | SB_Primitive side_effecting ->
+              let ses =
+                if side_effecting then SES.calls_recursive f.name else SES.empty
+              in
+              (D_Func f |> here, (f, ses)))
         env_and_fs2
     in
     (* AddSubprogramDecls( *)
-    let env3, ds =
-      list_fold_left_map
-        (fun env2 ((f : func), loc) ->
-          (add_subprogram f.name f env2, D_Func f |> add_pos_from loc))
-        { local = empty_local; global = genv2 }
-        fs3
+    let env3 =
+      let sess = propagate_recursive_calls_sess sess in
+      List.fold_left
+        (fun env2 ((new_f : func), ses_f) ->
+          StaticEnv.add_subprogram new_f.name new_f ses_f env2)
+        (StaticEnv.with_empty_local genv2)
+        sess
       (* AddSubprogramDecls) *)
     in
     (List.rev_append ds acc, env3.global) |: TypingRule.TypeCheckMutuallyRec

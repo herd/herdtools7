@@ -9,9 +9,11 @@ end;
 
 func main () => integer
 begin
-  assert f(0) == 1;
+  let f0 = f(0);
+  assert f0 == 1;
   for i = -1 to 20 do
-    assert f(i) == i + 1;
+    let fi = f(i);
+    assert fi == i + 1;
   end;
 
   return 0;

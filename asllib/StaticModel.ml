@@ -408,7 +408,7 @@ let rec make_anonymous (env : StaticEnv.env) (ty : ty) : ty =
   match ty.desc with
   | T_Named x -> (
       match IMap.find_opt x env.global.declared_types with
-      | Some ty' -> make_anonymous env ty'
+      | Some (ty', _) -> make_anonymous env ty'
       | None -> fatal_from ty (Error.UndefinedIdentifier x))
   | _ -> ty
 
@@ -506,6 +506,9 @@ let normalize env e =
 
 let try_normalize env e =
   try normalize env e with Error.ASLException _ | NotSupported -> e
+
+let normalize_opt env e =
+  try Some (normalize env e) with Error.ASLException _ | NotSupported -> None
 
 let equal_in_env env e1 e2 =
   let dbg = false in

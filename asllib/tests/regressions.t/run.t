@@ -274,6 +274,7 @@ Parameters bugs:
   ASL Typing error: constrained integer expected, provided integer.
   [1]
   $ aslref bug2.asl
+  File bug2.asl, line 5, characters 10 to 17:
   ASL Typing error: constrained integer expected, provided integer.
   [1]
   $ aslref bug3.asl
@@ -384,6 +385,10 @@ Getters/setters
   ASL Error: Undefined identifier: 'f1'
   [1]
   $ aslref setter_subfield.asl
+  $ aslref setter_subslice.asl
+  File setter_subslice.asl, line 15, characters 5 to 6:
+  ASL Error: Cannot parse.
+  [1]
   $ aslref getter_subfield.asl
   $ aslref getter_sub_tuple.asl
   $ aslref getter_subslice.asl
@@ -403,7 +408,8 @@ ASLRef Field getter extension
   $ aslref --use-field-getter-extension pstate-exp.asl
   $ aslref atc-in-types.asl
   File atc-in-types.asl, line 1, characters 14 to 29:
-  ASL Typing error: unexpected ATC.
+  ASL Typing error: a pure expression was expected, found 1 as integer {2},
+    which produces the following side-effects: [PerformsAssertions].
   [1]
   $ aslref single-slice.asl
 

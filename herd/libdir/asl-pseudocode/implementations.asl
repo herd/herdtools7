@@ -430,7 +430,7 @@ end;
 
 func ConstrainUnpredictableBool(which:Unpredictable) => boolean
 begin
-  return FALSE;
+  return ARBITRARY: boolean;
 end;
 
 // =============================================================================
