@@ -92,6 +92,7 @@ type error_desc =
   | BadPrintType of ty
   | ConfigTimeBroken of expr * SideEffect.SES.t
   | ConstantTimeBroken of expr * SideEffect.SES.t
+  | MultipleWrites of identifier
 
 type error = error_desc annotated
 
@@ -183,6 +184,7 @@ let error_label = function
   | ConflictingSideEffects _ -> "ConflictingSideEffects"
   | ConfigTimeBroken _ -> "ConfigTimeBroken"
   | ConstantTimeBroken _ -> "ConstantTimeBroken"
+  | MultipleWrites _ -> "MultipleWrites"
 
 let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
@@ -449,7 +451,9 @@ module PPrint = struct
           "ASL Typing error:@ bitfields `%s` and `%s` are in the same scope \
            but define different slices of the containing bitvector type: %s \
            and %s, respectively."
-          field1_absname field2_absname field1_absslices field2_absslices);
+          field1_absname field2_absname field1_absslices field2_absslices
+    | MultipleWrites id ->
+        fprintf f "ASL Typing error:@ multiple@ writes@ to@ %S." id);
     pp_close_box f ()
 
   let pp_warning_desc f w =
