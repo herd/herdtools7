@@ -57,19 +57,14 @@ type lhs_field = identifier annotated
 
 type lhs_access = {
   base : identifier annotated;
-  access : access;
-  slices : slice list annotated;
+  index : expr option;
+  fields : lhs_field list;  (** empty means no fields *)
+  slices : slice list annotated;  (** empty means no slices *)
 }
-(** An access [lhs_access] has a base variable [lhs_access.base], followed by an
-    access on the variable [lhs_access.access], and optional slices
-    [lhs_access.slices]. *)
-
-and access =
-  | Access_None  (** No access to the base variable. *)
-  | Access_Fields of lhs_field list  (** Access nested fields. *)
-  | Access_Array of expr  (** Access an array index. *)
-  | Access_ArrayFields of expr * lhs_field list
-      (** Access nested fields of an array index. *)
+(** An access has a [base] variable, optionally followed by an
+    array [index], nested field accesses [fields], and [slices]:
+    [base[[index]].field1.field2[slices]]
+*)
 
 val desugar_lhs_access : lhs_access -> lexpr
 (** Desugar an [lhs_access] to an [lexpr]. *)
@@ -80,3 +75,9 @@ val desugar_lhs_tuple : lhs_access option list annotated -> lexpr
     desugared using [desugar_lhs_access].
     Also check that none of the entries share a base variable, i.e. none of them
     attempt to write the the same variable. *)
+
+val desugar_lhs_fields_tuple :
+  identifier annotated -> lhs_field option list -> lexpr_desc
+(** [desugar_lhs_fields_tuple x flds] desugards a left-hand side of the form
+    [x.(fld1, ..., fldk)] to [(x.fld1, ..., x.fldk)], ensuring that the [flds]
+    are unique. *)

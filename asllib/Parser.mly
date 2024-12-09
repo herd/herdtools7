@@ -100,7 +100,7 @@ let e_call call = E_Call { call with call_type = ST_Function }
 let s_call call = S_Call { call with call_type = ST_Procedure }
 
 let le_var x = LE_Var x.desc |> add_pos_from x
-let lhs_access base access = { base; access; slices=add_dummy_annotation ~version [] }
+let lhs_access ~base ~index ~fields = { base; index; fields; slices=add_dummy_annotation ~version [] }
 
 %}
 
@@ -416,13 +416,13 @@ let implicit_t_int == annotated ( ~=constraint_kind ; <T_Int> )
 (* Left-hand-side expressions and helpers *)
 let basic_lexpr :=
   | base=annotated(IDENTIFIER);
-    { lhs_access base Access_None }
-  | base=annotated(IDENTIFIER); DOT; flds=nested_fields;
-    { lhs_access base (Access_Fields flds) }
-  | base=annotated(IDENTIFIER); LLBRACKET; e=expr; RRBRACKET;
-    { lhs_access base (Access_Array e) }
-  | base=annotated(IDENTIFIER); LLBRACKET; e=expr; RRBRACKET; flds=nested_fields;
-    { lhs_access base (Access_ArrayFields (e, flds)) }
+    { lhs_access ~base ~index:None ~fields:[] }
+  | base=annotated(IDENTIFIER); DOT; fields=nested_fields;
+    { lhs_access ~base ~index:None ~fields }
+  | base=annotated(IDENTIFIER); LLBRACKET; idx=expr; RRBRACKET;
+    { lhs_access ~base ~index:(Some idx) ~fields:[] }
+  | base=annotated(IDENTIFIER); LLBRACKET; idx=expr; RRBRACKET; fields=nested_fields;
+    { lhs_access ~base ~index:(Some idx) ~fields }
 
 let nested_fields :=
   | fld=annotated(IDENTIFIER); { [ fld ] }
@@ -436,6 +436,10 @@ let discard_or_sliced_basic_lexpr :=
   | MINUS;                { None }
   | ~=sliced_basic_lexpr; < Some >
 
+let discard_or_field :=
+  | MINUS;                   { None }
+  | ~=annotated(IDENTIFIER); < Some >
+
 let lexpr :=
   | ~=sliced_basic_lexpr; < desugar_lhs_access >
   | ~=annotated(pared(clist2(discard_or_sliced_basic_lexpr))); < desugar_lhs_tuple >
@@ -443,6 +447,8 @@ let lexpr :=
     | MINUS; { LE_Discard }
     | x=annotated(IDENTIFIER); DOT; flds=bracketed(clist2(IDENTIFIER));
       { LE_SetFields (le_var x, flds, []) }
+    | x=annotated(IDENTIFIER); DOT; flds=pared(clist2(discard_or_field));
+      { desugar_lhs_fields_tuple x flds }
   )
 
 (* Decl items are another kind of left-hand-side expressions, which appear only

@@ -79,34 +79,29 @@ type lhs_field = identifier annotated
 
 type lhs_access = {
   base : identifier annotated;
-  access : access;
-  slices : slice list annotated;
+  index : expr option;
+  fields : lhs_field list;  (** empty means no fields *)
+  slices : slice list annotated;  (** empty means no slices*)
 }
 
-and access =
-  | Access_None
-  | Access_Fields of lhs_field list
-  | Access_Array of expr
-  | Access_ArrayFields of expr * lhs_field list
-
-let desugar_lhs_access { base; access; slices } =
+let desugar_lhs_access { base; index; fields; slices } =
   let var = LE_Var base.desc |> add_pos_from base in
-  let nested_fields base fields =
+  let with_index =
+    match index with
+    | None -> var
+    | Some idx -> LE_SetArray (var, idx) |> add_pos_from idx
+  in
+  let with_fields =
     List.fold_left
       (fun acc field -> LE_SetField (acc, field.desc) |> add_pos_from field)
-      base fields
+      with_index fields
   in
-  let index_array base idx = LE_SetArray (base, idx) |> add_pos_from idx in
-  let var_access =
-    match access with
-    | Access_None -> var
-    | Access_Fields flds -> nested_fields var flds
-    | Access_Array idx -> index_array var idx
-    | Access_ArrayFields (idx, flds) -> nested_fields (index_array var idx) flds
+  let with_slices =
+    match slices.desc with
+    | [] -> with_fields
+    | _ -> LE_Slice (with_fields, slices.desc) |> add_pos_from slices
   in
-  match slices.desc with
-  | [] -> var_access
-  | _ -> LE_Slice (var_access, slices.desc) |> add_pos_from slices
+  with_slices
 
 let desugar_lhs_tuple laccess_opts =
   let bases =
@@ -121,3 +116,16 @@ let desugar_lhs_tuple laccess_opts =
       in
       LE_Destructuring (List.map desugar_one laccess_opts.desc)
       |> add_pos_from laccess_opts
+
+let desugar_lhs_fields_tuple base field_opts =
+  let fields = List.filter_map (Option.map (fun fld -> fld.desc)) field_opts in
+  match get_first_duplicate fields with
+  | Some dup ->
+      Error.fatal_from (to_pos base) (MultipleWrites (base.desc ^ "." ^ dup))
+  | None ->
+      let var = LE_Var base.desc |> add_pos_from base in
+      let desugar_one = function
+        | None -> LE_Discard |> add_pos_from base
+        | Some fld -> LE_SetField (var, fld.desc) |> add_pos_from fld
+      in
+      LE_Destructuring (List.map desugar_one field_opts)

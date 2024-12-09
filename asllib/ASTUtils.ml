@@ -157,15 +157,13 @@ let rec list_map_split f = function
       (x1 :: x2 :: xs, y1 :: y2 :: ys)
 
 let get_first_duplicate li =
-  let exception Duplicate of identifier in
-  let folder acc elt =
-    let acc' = ISet.add elt acc in
-    if acc' == acc then raise (Duplicate elt) else acc'
+  let rec scan_for_dup = function
+    | [] | [ _ ] -> None
+    | x :: y :: rest ->
+        if String.equal x y then Some x else scan_for_dup (y :: rest)
   in
-  try
-    let _ = List.fold_left folder ISet.empty li in
-    None
-  with Duplicate x -> Some x
+  let sorted = List.sort String.compare li in
+  scan_for_dup sorted
 
 let list_is_empty = function [] -> true | _ -> false
 let pair x y = (x, y)
