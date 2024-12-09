@@ -3071,27 +3071,106 @@ by composing the graphs in $\vms$ with Write Effects for the respective values.
 \section{Print Statements\label{sec:PrintStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derives \ & \Tprint \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &
+\Nstmt \derives \ & \Tprint \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon & \\
+\Nstmt \derives \ & \Tprintln \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon & \\
 \end{flalign*}
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\stmt \derives\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{debug}) &
+  \stmt \derives\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{newline}) &
 \end{flalign*}
 
 \subsubsection{ASTRule.SPrint}
 \begin{mathpar}
-\inferrule{
-  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
-}{
+\inferrule{%
+  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
+  \vnewline \eqdef \False \\
+}{%
   \buildstmt(\overname{\Nstmt(\Tprint, \namednode{\vargs}{\Plist{\Nexpr}}, \Tsemicolon)}{\vparsednode})
   \astarrow
-  \overname{\SPrint(\astversion{\vargs})}{\vastnode}
+  \overname{\SPrint(\astversion{\vargs}, \vnewline)}{\vastnode}
+}
+\\
+\inferrule{%
+  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
+  \vnewline \eqdef \True \\
+  \vdebug \eqdef \False \\
+}{%
+  \buildstmt(\overname{\Nstmt(\Tprintln, \namednode{\vargs}{\Plist{\Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \astarrow
+  \overname{\SPrint(\astversion{\vargs}, \vnewline)}{\vastnode}
 }
 \end{mathpar}
 
 \subsection{Typing}
+
+\subsubsection{TypingRule.SPrint\label{sec:TypingRule.SPrint}}
+
+\paragraph{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ denotes the print statement with arguments $\vargs$ and newline indicator $\vnewline$;
+  \item annotating each expression $\vargs_i$ in $\tenv$ yields $(\vt_i, \vargsp_i)$\ProseOrTypeError, for $i=1..k$;
+  \item checking that $\vt_i$ is a singular type yields $\True$\ProseOrTypeError, for each $i=1..k$;
+  \item $\news$ denotes the print statement with arguments $\vargsp$ and newline indicator $\vnewline$;
+  \item $\newtenv$ is $\tenv$.
+\end{itemize}
+
+\paragraph{Formally}
+\begin{mathpar}
+  \inferrule{%
+    \vi\in\listrange(\vargs): \annotateexpr{\vargs[i], \tenv} \typearrow (\vt_i, \vargsp[i])\OrTypeError \\
+    \vi\in\listrange(\vargs): \checktrans{\issingular(\vt_i)}{\BadPrintType} \typearrow \True \OrTypeError \\
+  }{%
+    \annotatestmt (\tenv, \overname{\SPrint(\vargs, \vnewline)}{\vs}) \typearrow (\SPrint(\vargsp, \vnewline), \tenv)
+  }
+\end{mathpar}
+
+\CodeSubsection{\SPrintBegin}{\SPrintEnd}{../Typing.ml}
+
 \subsection{Semantics}
+
+Not all ASL backends support printing to a console.
+%
+Therefore, the semantics is parameterized by the function $\outputtoconsole$,
+which takes a string and communicates it to a console, where one exists.%
+\footnote{%
+  Formally, the console can be modelled by adding a string-typed component to
+  the global dybamic environment, which concatenates all strings that were sent
+  to it. For brevity, and since it is only used for print statements, we omit
+  this component from our definition of a dynamic environment.%
+}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vs$ denotes a Print statement with arguments $\elist$ and newline indicator $\vnewline$;
+  \item the evaluation of $\elist$ in $\env$ is $\Normal((\vlist, \vg), \newenv)$\ProseOrAbnormal;
+  \item \hyperlink{def-outputtoconsole}{prints} all the elements in $\elist$, without separator;
+  \item if $\vnewline$ is $\True$, prints a newline character;
+  \item $\newenv$ is $\env$.
+\end{itemize}
+
+\subsubsection{Formally}
+
+\begin{mathpar}
+  \inferrule[Print]{%
+    \evalexprlist{\env, \elist} \evalarrow \Normal((\vlist, \vg), \newenv) \OrAbnormal\\
+    \vi\in\listrange(\vlist): \outputtoconsole(\vlist[i]) \\
+  }{%
+    \evalstmt{\env, \SPrint(\elist, \False)} \evalarrow \Continuing(\vg, \newenv)
+  }
+  \\
+  \inferrule[Println]{%
+    \evalexprlist{\env, \elist} \evalarrow \Normal((\vlist, \vg), \newenv) \OrAbnormal\\
+    \vi\in\listrange(\vlist): \outputtoconsole(\vlist[i]) \\
+    \outputtoconsole(\lstring(\texttt{"\char`\\n"})) \\
+  }{%
+    \evalstmt{\env, \SPrint(\elist, \True)} \evalarrow \Continuing(\vg, \newenv)
+  }
+\end{mathpar}
+
+\CodeSubsection{\EvalSPrintBegin}{\EvalSPrintEnd}{../Interpreter.ml}
 
 \section{The Unreachable Statement\label{sec:UnreachableStatement}}
 \subsection{Syntax}
