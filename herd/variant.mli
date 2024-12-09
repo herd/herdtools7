@@ -112,6 +112,8 @@ type t =
   | OldSolver
 (* Accept cyclic equation sets as being solvable *)
   | OOTA
+(* Pointer authentication code *)
+  | PAC
 
 
 val compare : t -> t -> int

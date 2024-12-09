@@ -1,0 +1,6 @@
+AArch64 swp instruction
+{ 0:x0=x; 0:x1=2; int x = 1; }
+
+P0               ;
+  swp x1,x2,[x0] ;
+forall ( [x]=2 /\ 0:x2=1 )

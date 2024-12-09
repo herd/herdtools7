@@ -1,8 +1,6 @@
-AArch64 example.litmus
-{
-  0:x0=x;
-}
-P0               ;
-  str x1,[x0]      ;
+AArch64 str failure
+{ 0:x0=pac(x, da, 0); int x = 42 }
+P0;
+  str x1,[x0];
 exists
-(~Fault(P0))
+( [x]=42 /\ Fault(P0, MMU:Translation) )

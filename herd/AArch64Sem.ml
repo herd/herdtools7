@@ -41,6 +41,7 @@ module Make
     let pte2 = kvm && C.variant Variant.PTE2
     let do_cu = C.variant Variant.ConstrainedUnpredictable
     let self = C.variant Variant.Ifetch
+    let pac = C.variant Variant.PAC
 
     let check_mixed ins =
       if not mixed then
@@ -1406,8 +1407,9 @@ module Make
  * +iico_data dependency between the event `ma` and `mop` or `mfault`, and an
  * iico_data dependency between `mv` and `mop` in case of a success.
  *)
-      let lift_pac_virt mop ma mv dir an ii =
-        let mok ma mv = mop Access.VIR ma mv >>= M.ignore >>= B.next1T in
+      let lift_pac_virt mop ma dir an ii =
+        let commit = commit_pred_txt (Some "pac") ii in
+        let mok ma = mop Access.VIR ma >>= M.ignore >>= B.next1T in
         let mfault ma =
           do_insert_commit ma (fun a ->
             mk_fault (Some a) dir an ii
@@ -1415,19 +1417,17 @@ module Make
               None) ii
           >>! B.Exit
         in
-        let mok2 ma mv =
-          M.bind_ctrldata_data
-            (ma >>== fun a -> commit_pred ii >>*== fun _ -> M.unitT a) mv
-            (fun a v -> mok (M.unitT a) (M.unitT v))
+        let ma_with_commit ma =
+          ma >>== fun a -> commit >>== fun _ -> M.unitT a
         in
-        let mcheck ma mv =
+        let mcheck ma =
           M.delay_kont "pac check" ma (fun a ma ->
             M.op1 Op.CheckCanonical a >>= fun c ->
-            M.choiceT c (mok2 ma mv) (mfault ma))
+            M.choiceT c (mok (ma_with_commit ma)) (mfault ma))
         in
         M.delay_kont "pac check virtual" ma (fun a ma ->
           M.op1 Op.IsVirtual a >>= fun virt ->
-          M.choiceT virt (mcheck ma mv) (mok ma mv)
+          M.choiceT virt (mcheck ma) (mok ma)
         )
 
       let lift_morello mop perms ma mv dir an ii =
@@ -1471,8 +1471,8 @@ module Make
         if morello then
           lift_morello mop perms ma mv dir an ii
         else
+          let mop = apply_mv mop mv in
           if kvm then
-            let mop = apply_mv mop mv in
             let mphy ma a_virt =
               let ma = get_oa a_virt ma in
               if pte2 then
@@ -1492,19 +1492,22 @@ module Make
             (* M.short will add an iico_data only if memtag is enabled *)
             M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
           else if checked then
-            lift_memtag_virt (apply_mv mop mv) ma dir an ii
+            if pac then
+              lift_pac_virt mop ma dir an ii
+            else
+              lift_memtag_virt mop ma dir an ii
           else
-            lift_pac_virt mop ma mv dir an ii
+            mop Access.VIR ma >>= M.ignore >>= B.next1T
 
       let do_ldr rA sz an mop ma ii =
 (* Generic load *)
-        lift_memop rA Dir.R true memtag
+        lift_memop rA Dir.R true (memtag || pac)
           (fun ac ma _mv -> (* value fake here *)
             let open Precision in
             let memtag_sync =
               memtag && (C.mte_precision = Synchronous ||
                          C.mte_precision = Asymmetric) in
-            if memtag_sync || Access.is_physical ac then
+            if memtag_sync || Access.is_physical ac || pac then
               M.bind_ctrldata ma (mop ac)
             else
               ma >>= mop ac)
@@ -1513,11 +1516,11 @@ module Make
 
 (* Generic store *)
       let do_str rA mop sz an ma mv ii =
-        lift_memop rA Dir.W true memtag
+        lift_memop rA Dir.W true (memtag || pac)
           (fun ac ma mv ->
             let open Precision in
             let memtag_sync = memtag && C.mte_precision = Synchronous in
-            if memtag_sync || (is_branching && Access.is_physical ac) then begin
+            if pac || memtag_sync || (is_branching && Access.is_physical ac) then begin
               (* additional ctrl dep on address *)
               M.bind_ctrldata_data ma mv
                 (fun a v -> mop ac a v ii)
@@ -1904,7 +1907,7 @@ module Make
         let an = match t with
           | YY -> Annot.X
           | LY -> Annot.XL in
-        lift_memop rd Dir.W true memtag
+        lift_memop rd Dir.W true (memtag || pac)
           (fun ac ma mv ->
             let must_fail =
               begin
@@ -1972,7 +1975,7 @@ module Make
 
       let swp sz rmw r1 r2 r3 ii =
         lift_memop r3 Dir.W true (* swp is a write for the purpose of DB *)
-          memtag
+          (memtag || pac)
           (fun ac ma mv ->
             let noret = match r2 with | AArch64.ZR -> true | _ -> false in
             let r2 = mv
@@ -1995,7 +1998,7 @@ module Make
         let an = rmw_to_read rmw in
         let read_rs = read_reg_data sz rs ii
         and write_rs v = write_reg_sz sz rs v ii in
-        lift_memop rn Dir.W true memtag
+        lift_memop rn Dir.W true (memtag || pac)
            (* mv is read new value from reg, not important
               as this code is not executed in morello mode *)
           (fun ac ma mv ->
@@ -2031,7 +2034,7 @@ module Make
           let cond = Printf.sprintf "[%s]=={%d:%s,%d:%s}" (V.pp_v a)
             ii.A.proc (A.pp_reg rs1) ii.A.proc (A.pp_reg rs1) in
           commit_pred_txt (Some cond) ii in
-        lift_memop rn Dir.W true memtag
+        lift_memop rn Dir.W true (memtag || pac)
           (fun ac ma _ ->
             let is_phy = Access.is_physical ac in
              M.altT
@@ -2105,7 +2108,7 @@ module Make
           |A_ADD|A_EOR|A_SET|A_CLR|A_UMAX|A_UMIN -> M.unitT in
 
         let an = rmw_to_read rmw in
-        lift_memop rn Dir.W true memtag
+        lift_memop rn Dir.W true (memtag || pac)
           (fun ac ma mv ->
             let noret = match rt with | ZR -> true | _ -> false in
             let op = match op with
@@ -3109,7 +3112,7 @@ module Make
             let dir = match op.AArch64Base.DC.funct with
               | AArch64Base.DC.I -> Dir.W
               | _ -> Dir.R in
-            lift_memop rd dir false memtag
+            lift_memop rd dir false (memtag || pac)
               (fun ac ma _mv -> (* value fake here *)
                 if Access.is_physical ac then
                   M.bind_ctrldata ma (mop ac)
