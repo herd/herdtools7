@@ -4235,7 +4235,7 @@ module Make
                read_reg_ord NZCV ii
                >>= M.op1 (Op.LeftShift 28)
                >>= fun v -> write_reg_dest xt v ii
-               >>= nextSet (SysReg sreg)
+               >>= nextSet xt
             | _ -> begin
               let sz = MachSize.Quad in
               let off = AArch64.sysreg_nv2off sreg in
@@ -4247,7 +4247,7 @@ module Make
               | _, _ ->
                 read_reg_ord_sz sz (SysReg sreg) ii
                 >>= fun v -> write_reg_dest xt v ii
-                >>= nextSet (SysReg sreg)
+                >>= nextSet xt
             end
           end
         | I_UDF _ ->
