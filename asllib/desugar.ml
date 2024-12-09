@@ -70,3 +70,54 @@ let desugar_elided_parameter ldk lhs ty (call : call annotated) =
   let params = bits_e :: call.desc.params in
   let rhs = E_Call { call.desc with params } |> add_pos_from call in
   S_Decl (ldk, lhs, None, Some rhs)
+
+(* -------------------------------------------------------------------------
+    Left-hand sides
+   ------------------------------------------------------------------------- *)
+
+type lhs_field = identifier annotated
+
+type lhs_access = {
+  base : identifier annotated;
+  access : access;
+  slices : slice list annotated;
+}
+
+and access =
+  | Access_None
+  | Access_Fields of lhs_field list
+  | Access_Array of expr
+  | Access_ArrayFields of expr * lhs_field list
+
+let desugar_lhs_access { base; access; slices } =
+  let var = LE_Var base.desc |> add_pos_from base in
+  let nested_fields base fields =
+    List.fold_left
+      (fun acc field -> LE_SetField (acc, field.desc) |> add_pos_from field)
+      base fields
+  in
+  let index_array base idx = LE_SetArray (base, idx) |> add_pos_from idx in
+  let var_access =
+    match access with
+    | Access_None -> var
+    | Access_Fields flds -> nested_fields var flds
+    | Access_Array idx -> index_array var idx
+    | Access_ArrayFields (idx, flds) -> nested_fields (index_array var idx) flds
+  in
+  match slices.desc with
+  | [] -> var_access
+  | _ -> LE_Slice (var_access, slices.desc) |> add_pos_from slices
+
+let desugar_lhs_tuple laccess_opts =
+  let bases =
+    List.filter_map (Option.map (fun { base } -> base.desc)) laccess_opts.desc
+  in
+  match get_first_duplicate bases with
+  | Some dup -> Error.fatal_from (to_pos laccess_opts) (MultipleWrites dup)
+  | None ->
+      let desugar_one = function
+        | None -> LE_Discard |> add_pos_from laccess_opts
+        | Some laccess -> desugar_lhs_access laccess
+      in
+      LE_Destructuring (List.map desugar_one laccess_opts.desc)
+      |> add_pos_from laccess_opts
