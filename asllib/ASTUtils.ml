@@ -156,6 +156,17 @@ let rec list_map_split f = function
       let xs, ys = list_map_split f l in
       (x1 :: x2 :: xs, y1 :: y2 :: ys)
 
+let get_first_duplicate li =
+  let exception Duplicate of identifier in
+  let folder acc elt =
+    let acc' = ISet.add elt acc in
+    if acc' == acc then raise (Duplicate elt) else acc'
+  in
+  try
+    let _ = List.fold_left folder ISet.empty li in
+    None
+  with Duplicate x -> Some x
+
 let list_is_empty = function [] -> true | _ -> false
 let pair x y = (x, y)
 let pair' y x = (x, y)

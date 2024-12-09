@@ -99,6 +99,9 @@ let e_binop (e1, op, e2) =
 let e_call call = E_Call { call with call_type = ST_Function }
 let s_call call = S_Call { call with call_type = ST_Procedure }
 
+let le_var x = LE_Var x.desc |> add_pos_from x
+let lhs_access base access = { base; access; slices=add_dummy_annotation ~version [] }
+
 %}
 
 (* ------------------------------------------------------------------------- *)
@@ -411,21 +414,40 @@ let implicit_t_int == annotated ( ~=constraint_kind ; <T_Int> )
   ------------------------------------------------------------------------- *)
 
 (* Left-hand-side expressions and helpers *)
+let basic_lexpr :=
+  | base=annotated(IDENTIFIER);
+    { lhs_access base Access_None }
+  | base=annotated(IDENTIFIER); DOT; flds=nested_fields;
+    { lhs_access base (Access_Fields flds) }
+  | base=annotated(IDENTIFIER); LLBRACKET; e=expr; RRBRACKET;
+    { lhs_access base (Access_Array e) }
+  | base=annotated(IDENTIFIER); LLBRACKET; e=expr; RRBRACKET; flds=nested_fields;
+    { lhs_access base (Access_ArrayFields (e, flds)) }
+
+let nested_fields :=
+  | fld=annotated(IDENTIFIER); { [ fld ] }
+  | h=annotated(IDENTIFIER); DOT; t=nested_fields; { h :: t }
+
+let sliced_basic_lexpr :=
+  | ~=basic_lexpr; <>
+  | basic=basic_lexpr; slices=annotated(slices); { {basic with slices} }
+
+let discard_or_sliced_basic_lexpr :=
+  | MINUS;                { None }
+  | ~=sliced_basic_lexpr; < Some >
+
+let discard_or_field :=
+  | MINUS;                   { None }
+  | ~=annotated(IDENTIFIER); < Some >
+
 let lexpr :=
-  | lexpr_atom
-  | annotated (MINUS; { LE_Discard })
-  | annotated (
-      ~=pared(clist2(lexpr)); <LE_Destructuring>
-    )
-
-let lexpr_atom_desc ==
-  | ~=IDENTIFIER ; <LE_Var>
-  | le=lexpr_atom; ~=slices; <LE_Slice>
-  | le=lexpr_atom; LLBRACKET; ~=expr; RRBRACKET; <LE_SetArray>
-  | le=lexpr_atom; DOT; field=IDENTIFIER; <LE_SetField>
-  | le=lexpr_atom; DOT; li=bracketed(clist(IDENTIFIER)); { LE_SetFields (le, li, []) }
-
-let lexpr_atom := annotated(lexpr_atom_desc)
+  | ~=sliced_basic_lexpr; < desugar_lhs_access >
+  | ~=annotated(pared(clist2(discard_or_sliced_basic_lexpr))); < desugar_lhs_tuple >
+  | annotated(
+    | MINUS; { LE_Discard }
+    | x=annotated(IDENTIFIER); DOT; flds=bracketed(clist2(IDENTIFIER));
+      { LE_SetFields (le_var x, flds, []) }
+  )
 
 (* Decl items are another kind of left-hand-side expressions, which appear only
    on declarations. They cannot have setter calls or set record fields, they

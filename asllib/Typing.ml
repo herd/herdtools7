@@ -122,18 +122,6 @@ let annotate_literal env = function
       with Not_found -> assert false)
 (* End *)
 
-let get_first_duplicate extractor li =
-  let exception Duplicate of identifier in
-  let folder acc elt =
-    let x = extractor elt in
-    let acc' = ISet.add x acc in
-    if acc' == acc then raise (Duplicate x) else acc'
-  in
-  try
-    let _ = List.fold_left folder ISet.empty li in
-    None
-  with Duplicate x -> Some x
-
 (** [set_filter_map f set] is the list of [y] such that [f x = Some y] for all
     elements [x] of [set]. *)
 let set_filter_map f set =
@@ -1113,7 +1101,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* Begin TBitFields *)
   and annotate_bitfields ~loc env e_width bitfields =
     let+ () =
-      match get_first_duplicate bitfield_get_name bitfields with
+      match get_first_duplicate (List.map bitfield_get_name bitfields) with
       | None -> ok
       | Some x -> fun () -> fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
     in
@@ -1222,7 +1210,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin TStructuredDecl *)
     | (T_Record fields | T_Exception fields) when decl -> (
         let+ () =
-          match get_first_duplicate fst fields with
+          match get_first_duplicate (List.map fst fields) with
           | None -> ok
           | Some x ->
               fun () -> fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
@@ -1244,7 +1232,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (* Begin TEnumDecl *))
     | T_Enum li when decl ->
         let+ () =
-          match get_first_duplicate Fun.id li with
+          match get_first_duplicate li with
           | None -> ok
           | Some x ->
               fun () -> fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
@@ -1905,7 +1893,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           (* and whose fields have the values given in the field_assignment_list. *)
         in
         let+ () =
-          match get_first_duplicate fst fields with
+          match get_first_duplicate (List.map fst fields) with
           | None -> ok
           | Some x ->
               fun () -> fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
