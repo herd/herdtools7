@@ -16,12 +16,14 @@ The semantics of a single global storage declarations is defined in \nameref{sec
 \begin{flalign*}
 \Ndecl  \derives \ & \Nstoragekeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
         & \wrappedline\ \Nexpr \parsesep \Tsemicolon &\\
+	|\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
+        & \wrappedline\ \Nexpr \parsesep \Tsemicolon &\\
         |\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&\\
         |\ & \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon&
 \end{flalign*}
 
 \begin{flalign*}
-\Nstoragekeyword \derivesinline\ & \Tlet \;|\; \Tconstant \;|\; \Tvar \;|\; \Tconfig&\\
+\Nstoragekeyword \derives \ & \Tlet \;|\; \Tconstant \;|\; \Tconfig&\\
 \Nignoredoridentifier \derives \ & \Tminus \;|\; \Tidentifier &
 \end{flalign*}
 
@@ -81,6 +83,36 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
+\hypertarget{build-globalstorage-var}{}
+\begin{mathpar}
+\inferrule[global\_storage\_var]{
+  \buildoption[\buildasty](\tty) \astarrow \ttyp\\
+  \buildexpr(\vinitialvalue) \typearrow \astof{\vinitialvalue}
+}
+{
+  {
+      \builddecl\left(\overname{\Ndecl\left(
+      \begin{array}{r}
+      \Tvar, \namednode{\name}{\Nignoredoridentifier},  \\
+  \wrappedline\ \namednode{\tty}{\option{\Nasty}}, \Teq, \namednode{\vinitialvalue}{\Nexpr}, \Tsemicolon
+      \end{array}
+  \right)}{\vparsednode}\right)
+  } \astarrow \\
+  {
+    \overname{
+  \DGlobalStorage\left(\left\{
+    \begin{array}{rcl}
+    \GDkeyword &:& \GDKVar,\\
+    \GDname &:& \astof{\name},\\
+    \GDty &:& \ttyp,\\
+    \GDinitialvalue &:& \astof{\vinitialvalue}
+  \end{array}
+  \right\}\right)
+  }{\vastnode}
+  }
+}
+\end{mathpar}
+
 \hypertarget{build-globaluninitvar}{}
 \begin{mathpar}
 \inferrule[global\_uninit\_var]{
@@ -114,12 +146,6 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \begin{mathpar}
 \inferrule[constant]{}{
   \buildstoragekeyword(\overname{\Nstoragekeyword(\Tconstant)}{\vparsednode}) \astarrow \overname{\GDKConstant}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[var]{}{
-  \buildstoragekeyword(\overname{\Nstoragekeyword(\Tvar)}{\vparsednode}) \astarrow \overname{\GDKVar}{\vastnode}
 }
 \end{mathpar}
 

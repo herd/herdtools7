@@ -2723,7 +2723,8 @@ Notice that this rule introduces non-determinism.
 \section{Structured Type Construction Expressions\label{sec:StructuredTypeConstructionExpressions}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nexpr \derives\  & \Tidentifier \parsesep \Tlbrace \parsesep \Clist{\Nfieldassign} \parsesep \Trbrace &\\
+\Nexpr \derives\  & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace &\\
+	       \| & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nfieldassign} \parsesep \Trbrace &\\
 \Nfieldassign \derives \ & \Tidentifier \parsesep \Teq \parsesep \Nexpr &
 \end{flalign*}
 
@@ -2734,7 +2735,22 @@ Notice that this rule introduces non-determinism.
 
 \subsubsection{ASTRule.ERecord}
 \begin{mathpar}
-  \inferrule{
+  \inferrule[empty]{}{
+    {
+      \begin{array}{r}
+    \buildexpr(\overname{\Nexpr(
+    \begin{array}{l}
+    \Tidentifier(\vt), \Tlbrace, \Trbrace
+    \end{array}
+    )}{\vparsednode}) \\
+    \astarrow\ \overname{\ERecord(\TNamed(\vt), \emptylist)}{\vastnode}
+\end{array}
+}
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[non\_empty]{
     \buildclist[\buildfieldassign](\vfieldassigns) \astarrow \vfieldassignasts
   }{
     {
@@ -2742,7 +2758,7 @@ Notice that this rule introduces non-determinism.
   \buildexpr\left(\overname{\Nexpr\left(
     \begin{array}{l}
     \Tidentifier(\vt), \Tlbrace, \\
-    \wrappedline\ \namednode{\vfieldassigns}{\Clist{\Nfieldassign}}, \\
+    \wrappedline\ \namednode{\vfieldassigns}{\NClist{\Nfieldassign}}, \\
     \wrappedline\ \Trbrace
     \end{array}
     \right)}{\vparsednode}\right) \\
