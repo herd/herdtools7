@@ -434,3 +434,14 @@ Inherit integer constraints on left-hand sides
     character 2:
   ASL Typing error: a pending constrained integer is illegal here.
   [1]
+
+Left-hand sides
+  $ aslref lhs-tuple-fields.asl
+  $ aslref lhs-tuple-fields-same-field.asl
+  File lhs-tuple-fields-same-field.asl, line 8, characters 2 to 4:
+  ASL Typing error: multiple writes to "bv.fld".
+  [1]
+  $ aslref lhs-tuple-same-var.asl
+  File lhs-tuple-same-var.asl, line 8, characters 2 to 20:
+  ASL Typing error: multiple writes to "bv".
+  [1]
