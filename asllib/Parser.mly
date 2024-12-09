@@ -148,7 +148,7 @@ let nclist(x) :=
   | h=x; COMMA; t=nclist(x); { h :: t }
 
 (* A comma separated list. *)
-let clist(x) == { [] } | nclist(x)
+let clist(x) := { [] } | nclist(x)
 
 (* A comma separated list with at least 2 elements. *)
 let clist2(x) := ~=x; COMMA; li=nclist(x); { x :: li }
@@ -274,7 +274,9 @@ let expr :=
     | ARBITRARY; colon_for_type; ~=ty;                        < E_Arbitrary        >
     | e=pared(expr);                                          { E_Tuple [ e ]        }
 
-    | t=annotated(IDENTIFIER); fields=braced(clist(field_assign));
+    | t=annotated(IDENTIFIER); LBRACE; RBRACE;
+        { E_Record (add_pos_from t (T_Named t.desc), []) }
+    | t=annotated(IDENTIFIER); fields=braced(nclist(field_assign));
         { E_Record (add_pos_from t (T_Named t.desc), fields) }
     (* Excluded from expr_pattern *)
     | ~=plist2(expr);                                             < E_Tuple              >
@@ -325,7 +327,9 @@ let expr_pattern :=
     | ARBITRARY; colon_for_type; ~=ty;                                < E_Arbitrary        >
     | e=pared(expr_pattern);                                          { E_Tuple [ e ]        }
 
-    | t=annotated(IDENTIFIER); fields=braced(clist(field_assign));
+    | t=annotated(IDENTIFIER); LBRACE; RBRACE;
+        { E_Record (add_pos_from t (T_Named t.desc), []) }
+    | t=annotated(IDENTIFIER); fields=braced(nclist(field_assign));
         { E_Record (add_pos_from t (T_Named t.desc), fields) }
   )
 
@@ -450,11 +454,13 @@ let local_decl_keyword :=
   | VAR       ; { LDK_Var       }
   *)
 
-let storage_keyword ==
+let storage_keyword :=
   | LET       ; { GDK_Let      }
   | CONSTANT  ; { GDK_Constant }
-  | VAR       ; { GDK_Var      }
   | CONFIG    ; { GDK_Config   }
+  (* We can't have VAR here otherwise there is a conflict (grammar is not LR1).
+  | VAR       ; { GDK_Var      }
+  *)
 
 let pass == { S_Pass }
 let assign(x, y) == ~=x ; EQ ; ~=y ; < S_Assign >
@@ -647,6 +653,9 @@ let decl :=
       | keyword=storage_keyword; name=ignored_or_identifier;
         ty=option(as_ty); EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword; name; ty; initial_value } }
+      | VAR; name=ignored_or_identifier;
+        ty=option(as_ty); EQ; initial_value=some(expr);
+        { D_GlobalStorage { keyword=GDK_Var; name; ty; initial_value } }
       (* End *)
       (* Begin global_uninit_var *)
       | VAR; name=ignored_or_identifier; ty=some(as_ty);
