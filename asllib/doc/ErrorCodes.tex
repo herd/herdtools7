@@ -242,6 +242,12 @@ different
 \hypertarget{def-badprinttype}{}
   This error indicates that an argument passed to the functions \Tprint{} or
   \Tprintln{} is not singular (see \nameref{sec:TypingRule.SingularType}).
+\hypertarget{def-cse}{}
+\item[$\ConflictingSideEffects$]
+This error indicates an attempt to combine two sets of \sideeffectdescriptorsterm\ where
+a \sideeffectconflictterm\ exists
+(see \nameref{sec:TypingRule.NonConflictingUnion}).
+
 \end{description}
 
 \section{Dynamic Error Codes}
@@ -249,4 +255,15 @@ different
 \hypertarget{def-unr}{}
 \item[$\UnreachableError$]
 This error results from evaluating an \texttt{Unreachable()} statement (see \nameref{sec:SemanticsRule.SUnreachable}).
+
+\hypertarget{def-daf}{}
+\item[$\DynamicAssertionFailure$]
+This error results from evaluating an \texttt{assert} statement whose
+conditions evaluates to $\False$ (see \nameref{sec:SemanticsRule.SAssert}).
+
+\hypertarget{def-datc}{}
+\item[$\DynamicTypeAssertionFailure$]
+This error results from a failing type assertion (\texttt{$e$ as $t$})
+(see \nameref{sec:SemanticsRule.ATC}).
+
 \end{description}

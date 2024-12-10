@@ -71,7 +71,7 @@ transforms a parse node $\vparsednode$ for $\Nvalue$ into an AST node $\vastnode
 \end{mathpar}
 
 \section{Typing}
-\subsection{TypingRule.Lit \label{sec:TypingRule.Lit}}
+\subsubsection{TypingRule.Lit \label{sec:TypingRule.Lit}}
 \hypertarget{def-annotateliteral}{}
 The function
 \[
@@ -79,7 +79,7 @@ The function
 \]
 annotates a literal $\vl$ in a static environment $\tenv$, resulting in a type $\vt$.
 
-\subsection{Prose}
+\subsubsection{Prose}
 The result of annotating a literal $\vl$ in a static environment $\tenv$ is $\vt$ and one of the following applies:
 \begin{itemize}
 \item (\texttt{int}): $\vl$ is an integer literal $\vn$ and $\vt$ is the well-constrained integer type, constraining
@@ -93,7 +93,7 @@ its set to the single value $\vn$;
 
 \CodeSubsection{\LitBegin}{\LitEnd}{../Typing.ml}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule[int]{}{\annotateliteral{\lint(n), \Ignore}\typearrow \TInt(\langle[\ConstraintExact(\ELInt{n})]\rangle)}
 \end{mathpar}
@@ -152,9 +152,8 @@ in $S$, so they will not be printed.
               & preceded by a ``\texttt{-}'' sign when $q$ is negative, \\
               & with the denominator omitted if it is equal to 1. \\
   $\lbitvector(b)$ & $b$ in hexadecimal, preceded by ``\texttt{0x}'', with enough leading zeros \\
-                   & to make the number of hexadecimal digits printed equal the width \\ 
+                   & to make the number of hexadecimal digits printed equal the width \\
                    & of $b$ divided by 4, and rounded up to the following integer. \\
   $\lstring(S)$ & $S$. \\
   $\llabel(s, \Ignore)$ & $s$. \\
 \end{tabular}
-

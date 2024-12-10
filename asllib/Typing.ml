@@ -358,13 +358,17 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let warn_from = warn_from
   end)
 
+  (* Begin LDKIsImmutable *)
   let ldk_is_immutable = function
     | LDK_Constant | LDK_Let -> true
     | LDK_Var -> false
+  (* End *)
 
+  (* Begin GDKIsImmutable *)
   let gdk_is_immutable = function
     | GDK_Config | GDK_Constant | GDK_Let -> true
     | GDK_Var -> false
+  (* End *)
 
   (* Begin ShouldReduceToCall *)
   let should_reduce_to_call env name st =
@@ -1265,10 +1269,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           |: TypingRule.TNonDecl
   (* End *)
 
+  (* Begin AnnotateStaticallyEvaluableExpr *)
   and annotate_statically_evaluable_expr env e =
     let t, e', ses = annotate_expr env e in
     let+ () = check_statically_evaluable e ses in
     (t, e', ses)
+  (* End *)
 
   (* Begin AnnotateStaticInteger *)
   and annotate_static_integer ~(loc : 'a annotated) env e =

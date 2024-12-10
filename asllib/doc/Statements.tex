@@ -1543,7 +1543,7 @@ All of the following apply:
     \begin{itemize}
       \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \newg), \newenv)$;
       \item $\vv$ is a native Boolean value for $\False$;
-      \item an AssertionFailed error is returned.
+      \item the result is a dynamic error indicating the assertion failure returned (\DynamicAssertionFailure).
     \end{itemize}
   \end{itemize}
 \end{itemize}
@@ -1562,7 +1562,7 @@ All of the following apply:
   \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \Ignore), \Ignore)\\
   \vv \eqname \nvbool(\False)
 }{
-  \evalstmt{\env, \SAssert(\ve)} \evalarrow \ErrorVal{AssertionFailed}
+  \evalstmt{\env, \SAssert(\ve)} \evalarrow \DynamicErrorVal{\DynamicAssertionFailure}
 }
 \end{mathpar}
 \CodeSubsection{\EvalSAssertBegin}{\EvalSAssertEnd}{../Interpreter.ml}
@@ -1771,7 +1771,7 @@ does not result in any Assertion Error and the specification terminates with exi
 code $0$.
 
 \CodeSubsection{\EvalLoopBegin}{\EvalLoopEnd}{../Interpreter.ml}
-\subsection{Prose}
+\subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
 \item all of the following apply (\textsc{exit}):
@@ -2441,7 +2441,7 @@ The helper relation
 executes one iteration of the loop body and then uses $\texttt{eval\_for}$ to execute the remaining
 iterations.
 
-\subsection{Prose}
+\subsubsection{Prose}
 \subsubsection{Stepping the Index Variable}
 All of the following apply:
 \begin{itemize}
@@ -2992,6 +2992,7 @@ One of the following applies:
 \CodeSubsubsection{\SReturnBegin}{\EvalSReturnEnd}{../Interpreter.ml}
 
 \subsubsection{SemanticsRule.EExprListM \label{sec:SemanticsRule.EExprListM}}
+\hypertarget{def-evalexprlistm}{}
 The helper relation
 \[
   \evalexprlistm(\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vEs}) \;\aslrel\;
