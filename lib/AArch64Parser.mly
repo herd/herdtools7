@@ -87,6 +87,7 @@ let check_op3 op e =
 %token TOK_CS TOK_CC TOK_MI TOK_PL TOK_VS TOK_VC TOK_HI TOK_LS TOK_AL
 %token BEQ BNE BGE BGT BLE BLT BCS BCC BMI BPL BVS BVC BHI BLS BAL
 %token BL BLR RET ERET
+%token SVC
 %token LDR LDRSW LDP LDNP LDPSW LDIAPP STP STNP STILP
 %token LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token LDRSB LDRSH
@@ -1549,6 +1550,8 @@ instr:
   { I_MRS ($2,$4) }
 | MSR SYSREG COMMA xreg
   { I_MSR ($2,$4) }
+| SVC NUM
+  { I_SVC (MetaConst.Int $2) }
 | UDF NUM
   { I_UDF (MetaConst.Int $2) }
 
