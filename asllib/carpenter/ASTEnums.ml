@@ -289,22 +289,15 @@ module Make (C : Config.S) = struct
   let ldks = scaled_finite [ LDK_Constant; LDK_Var; LDK_Let ]
 
   let ldis =
-    fix @@ fun ldis ->
-    let ldi_discard = just LDI_Discard
-    and ldi_var =
+    let ldi_var =
       let make_ldi_var s = LDI_Var s in
       vars |> map make_ldi_var
     and ldi_tuple =
       let make_ldi_tuple ldis = LDI_Tuple ldis in
-      list2 ldis |> map make_ldi_tuple
-    and ldi_typed =
-      let make_ldi_typed (ldi, ty) = LDI_Typed (ldi, ty) in
-      ldis ** tys |> map make_ldi_typed
+      list2 names |> map make_ldi_tuple
     in
     [
-      (if C.Syntax.ldi_discard then Some ldi_discard else None);
       (if C.Syntax.ldi_var then Some ldi_var else None);
-      (if C.Syntax.ldi_typed then Some ldi_typed else None);
       (if C.Syntax.ldi_tuple then Some ldi_tuple else None);
     ]
     |> filter_none |> oneof
@@ -359,8 +352,10 @@ module Make (C : Config.S) = struct
       let make_s_return expr = S_Return expr in
       option exprs |> map make_s_return
     and s_decl =
-      let make_s_decl (ldk, (ldi, expr_opt)) = S_Decl (ldk, ldi, expr_opt) in
-      ldks ** ldis ** option exprs |> map make_s_decl
+      let make_s_decl (ldk, (ldi, (ty_opt, expr_opt))) =
+        S_Decl (ldk, ldi, ty_opt, expr_opt)
+      in
+      ldks ** ldis ** option tys ** option exprs |> map make_s_decl
     and s_for =
       let make_s_for (index_name, (start_e, (dir, (end_e, body)))) =
         S_For { index_name; start_e; dir; end_e; body; limit = None }

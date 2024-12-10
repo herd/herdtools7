@@ -252,12 +252,9 @@ let pp_local_decl_keyword f k =
   | LDK_Constant -> "constant"
   | LDK_Let -> "let"
 
-let rec pp_local_decl_item f = function
-  | LDI_Discard -> pp_print_string f "-"
+let pp_local_decl_item f = function
   | LDI_Var x -> pp_print_string f x
-  | LDI_Tuple ldis ->
-      fprintf f "@[(%a)@]" (pp_comma_list pp_local_decl_item) ldis
-  | LDI_Typed (ldi, t) -> fprintf f "@[%a: %a@]" pp_local_decl_item ldi pp_ty t
+  | LDI_Tuple ldis -> fprintf f "@[(%a)@]" (pp_comma_list pp_print_string) ldis
 
 let rec pp_stmt f s =
   match s.desc with
@@ -309,11 +306,17 @@ let rec pp_stmt f s =
       fprintf f "@[<hv>@[<h>for %a = %a %s %a%a@ do@]@;<1 2>@[<hv>%a@]@ end@]"
         pp_print_string index_name pp_expr start_e (pp_for_direction dir)
         pp_expr end_e pp_loop_limit limit pp_stmt body
-  | S_Decl (ldk, ldi, None) ->
+  | S_Decl (ldk, ldi, None, None) ->
       fprintf f "@[<2>%a %a;@]" pp_local_decl_keyword ldk pp_local_decl_item ldi
-  | S_Decl (ldk, ldi, Some e) ->
+  | S_Decl (ldk, ldi, None, Some e) ->
       fprintf f "@[<2>%a %a =@ %a;@]" pp_local_decl_keyword ldk
         pp_local_decl_item ldi pp_expr e
+  | S_Decl (ldk, ldi, Some ty, None) ->
+      fprintf f "@[<2>%a %a:@ %a;@]" pp_local_decl_keyword ldk
+        pp_local_decl_item ldi pp_ty ty
+  | S_Decl (ldk, ldi, Some ty, Some e) ->
+      fprintf f "@[<2>%a %a:@ %a =@ %a;@]" pp_local_decl_keyword ldk
+        pp_local_decl_item ldi pp_ty ty pp_expr e
   | S_Throw (Some (e, _ty_annotation)) ->
       fprintf f "@[<2>throw@ %a;@]" pp_expr e
   | S_Throw None -> fprintf f "throw;"

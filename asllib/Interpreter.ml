@@ -857,32 +857,25 @@ module Make (B : Backend.S) (C : Config) = struct
   (* End *)
   (* Evaluation of Local Declarations *)
   (* -------------------------------- *)
-  and eval_local_decl pos ldi env m_init : env maybe_exception m =
+  and eval_local_decl ldi env m_init : env maybe_exception m =
     let () =
       if false then Format.eprintf "Evaluating %a.@." PP.pp_local_decl_item ldi
     in
     match ldi with
-    (* Begin EvalLDDiscard *)
-    | LDI_Discard -> return_normal env |: SemanticsRule.LDDiscard
-    (* End *)
     (* Begin EvalLDVar *)
     | LDI_Var x ->
         m_init
         >>= declare_local_identifier env x
         >>= return_normal |: SemanticsRule.LDVar
     (* End *)
-    (* Begin EvalLDTyped *)
-    | LDI_Typed (ldi1, _t) ->
-        eval_local_decl pos ldi1 env m_init |: SemanticsRule.LDTyped
-    (* End *)
     (* Begin EvalLDTuple *)
     | LDI_Tuple ldis ->
         let n = List.length ldis in
         let* vm = m_init in
         let liv = List.init n (fun i -> B.return vm >>= B.get_index i) in
-        let folder envm ldi1 vm =
+        let folder envm x vm =
           let**| env = envm in
-          eval_local_decl pos ldi1 env vm
+          vm >>= declare_local_identifier env x >>= return_normal
         in
         List.fold_left2 folder (return_normal env) ldis liv
         |: SemanticsRule.LDTuple
@@ -1017,11 +1010,11 @@ module Make (B : Backend.S) (C : Config) = struct
         eval_catchers env catchers otherwise_opt s_m |: SemanticsRule.STry
     (* End *)
     (* Begin EvalSDecl *)
-    | S_Decl (_ldk, ldi, Some e_init) ->
+    | S_Decl (_ldk, ldi, _ty_opt, Some e_init) ->
         let*^ m_init, env1 = eval_expr env e_init in
-        let**| new_env = eval_local_decl s ldi env1 m_init in
+        let**| new_env = eval_local_decl ldi env1 m_init in
         return_continue new_env |: SemanticsRule.SDecl
-    | S_Decl (_dlk, _ldi, None) -> fatal_from s TypeInferenceNeeded
+    | S_Decl (_ldk, _ldi, _ty_opt, None) -> fatal_from s TypeInferenceNeeded
     (* End *)
     (* Begin EvalSPrint *)
     | S_Print { args; newline; debug } ->

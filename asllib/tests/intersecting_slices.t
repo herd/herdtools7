@@ -25,7 +25,7 @@ Two intersecting slices...
   > EOF
 
   $ aslref intersecting_slices2.asl
-  File intersecting_slices2.asl, line 5, characters 2 to 9:
+  File intersecting_slices2.asl, line 5, characters 3 to 9:
   ASL Static error: overlapping slices i+:1, j+:1.
   [1]
 

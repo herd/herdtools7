@@ -37,7 +37,7 @@ val desugar_setter : call annotated -> identifier list -> expr -> stmt_desc
 *)
 
 val desugar_elided_parameter :
-  local_decl_keyword -> local_decl_item -> call annotated -> stmt_desc
+  local_decl_keyword -> local_decl_item -> ty -> call annotated -> stmt_desc
 (**
   Desugar an elided parameter, in particular:
   {[
@@ -46,3 +46,38 @@ val desugar_elided_parameter :
   ]}
   Similarly for [var] and [constant].
 *)
+
+(* -------------------------------------------------------------------------
+    Left-hand sides
+   ------------------------------------------------------------------------- *)
+
+(* Types to represent valid left-hand sides produced by parsing. *)
+
+type lhs_field = identifier annotated
+
+type lhs_access = {
+  base : identifier annotated;
+  index : expr option;
+  fields : lhs_field list;  (** empty means no fields *)
+  slices : slice list annotated;  (** empty means no slices *)
+}
+(** An access has a [base] variable, optionally followed by an
+    array [index], nested field accesses [fields], and [slices]:
+    [base[[index]].field1.field2[slices]]
+*)
+
+val desugar_lhs_access : lhs_access -> lexpr
+(** Desugar an [lhs_access] to an [lexpr]. *)
+
+val desugar_lhs_tuple : lhs_access option list annotated -> lexpr
+(** Desugar a list of [lhs_access] options to an [LE_Destructuring].
+    The [None] entries turn in to [LE_Discard], and the [Some] entries are
+    desugared using [desugar_lhs_access].
+    Also check that none of the entries share a base variable, i.e. none of them
+    attempt to write the the same variable. *)
+
+val desugar_lhs_fields_tuple :
+  identifier annotated -> lhs_field option list -> lexpr_desc
+(** [desugar_lhs_fields_tuple x flds] desugards a left-hand side of the form
+    [x.(fld1, ..., fldk)] to [(x.fld1, ..., x.fldk)], ensuring that the [flds]
+    are unique. *)

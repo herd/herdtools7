@@ -308,20 +308,14 @@ type local_decl_keyword = LDK_Var | LDK_Constant | LDK_Let
     v}
 *)
 type local_decl_item =
-  | LDI_Discard
-      (** [LDI_Discard] is the ignored [local_decl_item], for example used in:
-          {v let - = 42; v}. *)
   | LDI_Var of identifier
       (** [LDI_Var x] is the variable declaration of the variable [x], used for
           example in: {v let x = 42; v}. *)
-  | LDI_Tuple of local_decl_item list
-      (** [LDI_Tuple ldis] is the tuple declarations of the items in [ldis],
-          used for example in: {v let (x, y, -, z) = (1, 2, 3, 4); v}
-
-          Note that a the list here must be at least 2 items long.
+  | LDI_Tuple of identifier list
+      (** [LDI_Tuple names] is the tuple declarations of [names], for example:
+          {v let (x, y, z) = (1, 2, 3); v}
+          We expect the list to contain at least 2 items.
       *)
-  | LDI_Typed of local_decl_item * ty
-      (** [LDI_Typed (ldi, t)] declares the item [ldi] with type [t]. *)
 
 (** Statements. Parametric on the type of literals in expressions. *)
 type for_direction = Up | Down
@@ -329,7 +323,7 @@ type for_direction = Up | Down
 type stmt_desc =
   | S_Pass
   | S_Seq of stmt * stmt
-  | S_Decl of local_decl_keyword * local_decl_item * expr option
+  | S_Decl of local_decl_keyword * local_decl_item * ty option * expr option
   | S_Assign of lexpr * expr
   | S_Call of call
   | S_Return of expr option

@@ -250,12 +250,9 @@ let pp_local_decl_keyboard f k =
     | LDK_Constant -> "LDK_Constant"
     | LDK_Let -> "LDK_Let")
 
-let rec pp_local_decl_item f = function
-  | LDI_Discard -> addb f "LDI_Discard"
+let pp_local_decl_item f = function
   | LDI_Var s -> bprintf f "LDI_Var %S" s
-  | LDI_Typed (ldi, t) ->
-      bprintf f "LDI_Typed (%a, %a)" pp_local_decl_item ldi pp_ty t
-  | LDI_Tuple ldis -> bprintf f "LDI_Tuple %a" (pp_list pp_local_decl_item) ldis
+  | LDI_Tuple ldis -> bprintf f "LDI_Tuple %a" (pp_list pp_string) ldis
 
 let rec pp_stmt =
   let pp_desc f = function
@@ -286,9 +283,10 @@ let rec pp_stmt =
           index_name pp_expr start_e
           (match dir with Up -> "Up" | Down -> "Down")
           pp_expr end_e pp_stmt body (pp_option pp_expr) limit
-    | S_Decl (ldk, ldi, e_opt) ->
-        bprintf f "S_Decl (%a, %a, %a)" pp_local_decl_keyboard ldk
-          pp_local_decl_item ldi (pp_option pp_expr) e_opt
+    | S_Decl (ldk, ldi, ty_opt, e_opt) ->
+        bprintf f "S_Decl (%a, %a, %a, %a)" pp_local_decl_keyboard ldk
+          pp_local_decl_item ldi (pp_option pp_ty) ty_opt (pp_option pp_expr)
+          e_opt
     | S_Throw opt ->
         bprintf f "S_Throw (%a)"
           (pp_option (pp_pair pp_expr (pp_option pp_ty)))
