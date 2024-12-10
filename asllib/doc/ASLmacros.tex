@@ -262,6 +262,7 @@
 \newcommand\equalarrow[0]{\rightarrow}
 \newcommand\equallength[0]{\hyperlink{def-equallength}{\textfunc{equal\_length}}}
 \newcommand\listrange[0]{\hyperlink{def-listrange}{\textfunc{indices}}}
+\newcommand\Proselistrange[2]{\hyperlink{def-listrange}{index} #1 in the list of indices for #2}
 \newcommand\listlen[1]{\hyperlink{def-listlen}{|}#1\hyperlink{def-listlen}{|}}
 \newcommand\cardinality[1]{\hyperlink{def-cardinality}{|}#1\hyperlink{def-cardinality}{|}}
 \newcommand\filterlist[0]{\hyperlink{def-filterlist}{\textfunc{filter\_list}}}
@@ -296,13 +297,14 @@
 \newcommand\sign[0]{\hyperlink{def-sign}{\texttt{sign}}}
 \newcommand\graphtransitive[1]{#1^{\hyperlink{def-graphtransitive}{*}}}
 
-\newcommand\configdomain[1]{\hyperlink{def-configdomain}{\texttt{config\_domain}}({#1})}
+\newcommand\configdomain[1]{\hyperlink{def-configdomain}{\texttt{config\_dom}}({#1})}
 
 \newcommand\sslash[0]{\mathbin{/\mkern-6mu/}}
 \newcommand\terminateas[0]{\hyperlink{def-terminateas}{\sslash}\;}
 \newcommand\booltrans[1]{\hyperlink{def-booltrans}{\textfunc{bool\_transition}}(#1)}
 \newcommand\booltransarrow[0]{\longrightarrow}
 \newcommand\checktrans[2]{\hyperlink{def-checktrans}{\textfunc{check}}(#1, \texttt{#2})}
+\newcommand\checkassertion[2]{\hyperlink{def-checktrans}{\textfunc{check}}\ #1 \terminateas \texttt{#2}}
 \newcommand\Prosechecktrans[2]{\hyperlink{def-checktrans}{checking} #1 yields $\True$\ProseTerminateAs{#2}}
 \newcommand\checktransarrow[0]{\longrightarrow}
 
@@ -1144,6 +1146,8 @@
 \newcommand\unconstrainedinteger[0]{\hyperlink{def-unconstrainedinteger}{\textsf{unconstrained\_integer}}}
 
 \newcommand\checkconstrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{\textfunc{check\_constrained\_integer}}}
+\newcommand\Prosecheckconstrainedinteger[2]{\hyperlink{def-checkconstrainedinteger}{checking} that the type #2 is a \constrainedinteger\ in
+  the static environment #1 yields $\True$\ProseOrTypeError}
 
 \newcommand\Prosestaticeval[3]{\hyperlink{def-staticeval}{statically evaluating} the expression #2 in the static environment #1 yields the literal #3}
 \newcommand\staticeval[0]{\hyperlink{def-staticeval}{\textfunc{static\_eval}}}
@@ -1175,6 +1179,9 @@
 \newcommand\assocopt[0]{\hyperlink{def-assocopt}{\textfunc{assoc\_opt}}}
 \newcommand\annotatefieldinit[0]{\hyperlink{def-annotatefieldinit}{\textfunc{annotate\_field\_init}}}
 \newcommand\annotatestaticinteger[0]{\hyperlink{def-annotatestaticinteger}{\textfunc{annotate\_static\_integer}}}
+\newcommand\annotatestaticallyevaluableexpr[0]{\hyperlink{def-annotatestaticallyevaluableexpr}{\textfunc{annotate\_statically\_evaluable\_expr}}}
+\newcommand\Proseannotatestaticallyevaluableexpr[3]{\hyperlink{def-annotatestaticallyevaluableexpr}{annotating} the
+    \staticallyevaluable\ expression #2 in the static environment #1 yields #3}
 \newcommand\annotatestaticconstrainedinteger[0]{\hyperlink{def-annotatestaticconstrainedinteger}{\textfunc{annotate\_static\_constrained\_integer}}}
 \newcommand\checkatc[0]{\hyperlink{def-checkatc}{\textfunc{check\_atc}}}
 \newcommand\sliceswidth[0]{\hyperlink{def-sliceswidth}{\textfunc{slices\_width}}}
@@ -1183,6 +1190,7 @@
 \newcommand\checkstructureinteger[0]{\hyperlink{def-checkstructureinteger}{\textfunc{check\_structure\_integer}}}
 \newcommand\isstaticallyevaluable[0]{\hyperlink{def-isstaticallyevaluable}{\textfunc{is\_statically\_evaluable}}}
 \newcommand\checkstaticallyevaluable[0]{\hyperlink{def-checkstaticallyevaluable}{\textfunc{check\_statically\_evaluable}}}
+\newcommand\Prosecheckstaticallyevaluable[1]{\hyperlink{def-checkstaticallyevaluable}{checking} that #1 is \staticallyevaluable\ yields $\True$\ProseOrTypeError}
 \newcommand\storageispure[0]{\hyperlink{def-storageispure}{\textfunc{storage\_is\_pure}}}
 \newcommand\negateconstraint[0]{\hyperlink{def-negateconstraint}{\textfunc{negate\_constraint}}}
 \newcommand\getwellconstrainedstructure[0]{\hyperlink{def-getwellconstrainedstructure}{\textfunc{get\_well\_constrained\_structure}}}
@@ -1209,6 +1217,7 @@
 \newcommand\withemptylocal[0]{\hyperlink{def-withemptylocal}{\textfunc{with\_empty\_local}}}
 \newcommand\addnewfunc[0]{\hyperlink{def-addnewfunc}{\textfunc{add\_new\_func}}}
 \newcommand\addsubprogram[0]{\hyperlink{def-addsubprogram}{\textfunc{add\_subprogram}}}
+\newcommand\addtype[0]{\hyperlink{def-addtype}{\textfunc{add\_type}}}
 \newcommand\isglobalundefined[0]{\hyperlink{def-isglobalundefined}{\textfunc{is\_global\_undefined}}}
 \newcommand\islocalundefined[0]{\hyperlink{def-islocalundefined}{\textfunc{is\_local\_undefined}}}
 \newcommand\isundefined[0]{\hyperlink{def-isundefined}{\textfunc{is\_undefined}}}
@@ -1269,6 +1278,50 @@
 \newcommand\builddependencies[0]{\hyperlink{def-builddependencies}{\textfunc{build\_dependencies}}}
 \newcommand\Prosebuilddependencies[2]{\hyperlink{def-builddependencies}{building} the \dependencygraphterm\ of #1 yields #2}
 \newcommand\decldependencies[0]{\hyperlink{def-decldependencies}{\textfunc{decl\_dependencies}}}
+
+% Macros related to side effects
+\newcommand\assertionerror[0]{\hyperlink{def-assertionerror}{\textsf{assertion\_error}}}
+\newcommand\reversevals[0]{\hyperlink{def-reversevals}{\textsf{reverse\_vals}}}
+\newcommand\abstractdynerror[0]{\hyperlink{def-abstractdynerror}{\textsf{abstract\_dynerror}}}
+
+\newcommand\TTimeFrame[0]{\hyperlink{def-timeframetype}{\textsf{TimeFrame}}}
+\newcommand\timeframeconstant[0]{\hyperlink{def-timeframeconstant}{\textsf{Constant}}}
+\newcommand\timeframeconfig[0]{\hyperlink{def-timeframeconfig}{\textsf{Config}}}
+\newcommand\timeframeexecution[0]{\hyperlink{def-timeframeexecution}{\textsf{Execution}}}
+\newcommand\timeframeless[0]{\hyperlink{def-timeframeless}{<_{\text{time}}}}
+\newcommand\timeframeleq[0]{\hyperlink{def-timeframeleq}{\leq_{\text{time}}}}
+\newcommand\timeframemax[0]{\hyperlink{def-timeframemax}{\text{max}_{\text{time}}}}
+\newcommand\timeframeofldk[0]{\hyperlink{def-timeframeofldk}{\textfunc{time\_frame\_ldk}}}
+\newcommand\timeframeofgdk[0]{\hyperlink{def-timeframeofldk}{\textfunc{time\_frame\_gdk}}}
+
+\newcommand\TSideEffect[0]{\hyperlink{def-tsideeffect}{\textsf{TSideEffect}}}
+\newcommand\TSideEffectSet[0]{\pow{\TSideEffect}}
+\newcommand\ReadLocal[0]{\hyperlink{def-readlocal}{\textsf{ReadLocal}}}
+\newcommand\WriteLocal[0]{\hyperlink{def-writelocal}{\textsf{WriteLocal}}}
+\newcommand\ReadGlobal[0]{\hyperlink{def-readglobal}{\textsf{ReadGlobal}}}
+\newcommand\WriteGlobal[0]{\hyperlink{def-writeglobal}{\textsf{WriteGlobal}}}
+\newcommand\ThrowException[0]{\hyperlink{def-throwexception}{\textsf{ThrowException}}}
+\newcommand\RecursiveCall[0]{\hyperlink{def-recursivecall}{\textsf{RecursiveCall}}}
+\newcommand\PerformsAssertions[0]{\hyperlink{def-performsassertions}{\textsf{PerformsAssertions}}}
+\newcommand\NonDeterministic[0]{\hyperlink{def-nondeterministic}{\textsf{NonDeterministic}}}
+
+% sets of side effect descriptors
+\newcommand\timeframe[0]{\hyperlink{def-timeframe}{\textfunc{time\_frame}}}
+\newcommand\sideeffectispure[0]{\hyperlink{def-sideeffectispure}{\textfunc{side\_effect\_is\_pure}}}
+\newcommand\sideeffectisstaticallyevaluable[0]{\hyperlink{def-sideeffectisstaticallyevaluable}{\textfunc{side\_effect\_statically\_evaluable}}}
+\newcommand\sideeffectsispure[0]{\hyperlink{def-sideeffectsispure}{\textfunc{ses\_is\_pure}}}
+\newcommand\sideeffectconflict[0]{\hyperlink{def-sideeffectconflict}{\textfunc{side\_effect\_conflict}}}
+\newcommand\arenonconflicting[0]{\hyperlink{def-arenonconflicting}{\textfunc{are\_non\_conflicting}}}
+\newcommand\nonconflictingunion[0]{\hyperlink{def-nonconflictingunion}{\textfunc{non\_conflicting\_union}}}
+\newcommand\Prosenonconflictingunion[2]{\hyperlink{def-nonconflictingunion}{taking} the non-conflicting union of the list of \sideeffectdescriptorsterm\ #1 yields
+  the set of \sideeffectdescriptorsterm\ #2\ProseOrTypeError}
+\newcommand\ldkisimmutable[0]{\hyperlink{def-ldkisimmutable}{\textfunc{ldk\_is\_immutable}}}
+\newcommand\gdkisimmutable[0]{\hyperlink{def-lskisimmutable}{\textfunc{gdk\_is\_immutable}}}
+\newcommand\maxtimeframe[0]{\hyperlink{def-maxtimeframe}{\textfunc{max\_time\_frame}}}
+\newcommand\sesispure[0]{\hyperlink{def-sesispure}{\textfunc{ses\_is\_pure}}}
+\newcommand\sesisdeterministic[0]{\hyperlink{def-sesisdeterministic}{\textfunc{ses\_is\_deterministic}}}
+\newcommand\sesisbefore[0]{\hyperlink{def-sesisbefore}{\textfunc{ses\_is\_before}}}
+\newcommand\allreadsimmutable[0]{\hyperlink{def-allreadsimmutable}{\textfunc{all\_reads\_immutable}}}
 
 % Symbolic equivalence testing macros
 \newcommand\normalize[0]{\hyperlink{def-normalize}{\textfunc{normalize}}}
@@ -1372,7 +1425,6 @@
 
 % AST abbreviations
 \newcommand\abbrevfont[1]{\scriptscriptstyle{\textsf{#1}}}
-%\newcommand\ELInt[1]{\hyperlink{def-elint}{\texttt{ELInt}}(#1)}
 \newcommand\ELInt[1]{\overbracket{#1}^{\hyperlink{def-elint}{\ELiteral(\lint)}}}
 \newcommand\AbbrevConstraintExact[1]{\overbracket{#1}^{\hyperlink{def-abbrevconstraintexact}{\abbrevfont{Constraint\_Exact}}}}
 \newcommand\AbbrevConstraintRange[2]{\overbracket{#1..#2}^{\hyperlink{def-abbrevconstraintrange}{\abbrevfont{Constraint\_Range}}}}
@@ -1426,8 +1478,6 @@
 \newcommand\typeclash[0]{\hyperlink{def-typeclashes}{type-clash}}
 \newcommand\constrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{constrained integer}}
 \newcommand\structureofinteger[0]{\hyperlink{def-checkstructureinteger}{structure of an integer}}
-\newcommand\staticallyevaluable[0]{\hyperlink{def-staticallyevaluable}{statically evaluable}}
-\newcommand\pure[0]{\hyperlink{def-storageispure}{pure}}
 \newcommand\wellconstrainedstructure[0]{\hyperlink{def-getwellconstrainedstructure}{well-constrained structure}}
 \newcommand\wellconstrainedversion[0]{\hyperlink{def-towellconstrained}{well-constrained version}}
 \newcommand\namedlowestcommonancestor[0]{\hyperlink{def-namedlowestcommonancestor}{named lowest common ancestor}}
@@ -1457,6 +1507,8 @@
 \newcommand\defusedependenciesterm[0]{\hyperlink{def-builddependencies}{def-use dependencies}}
 \newcommand\dependencygraphterm[0]{\hyperlink{def-builddependencies}{def-use dependency graph}}
 
+% Side effect macros
+
 \newcommand\absolutenames[0]{\hyperlink{def-absolutename}{absolute names}}
 \newcommand\absolutename[0]{\hyperlink{def-absolutename}{absolute name}}
 \newcommand\absoluteslice[0]{\hyperlink{def-absoluteslice}{absolute slice}}
@@ -1464,6 +1516,24 @@
 \newcommand\absolutebitfield[0]{\hyperlink{def-absolutebitfield}{absolute bitfield}}
 \newcommand\absolutebitfields[0]{\hyperlink{def-absolutebitfield}{absolute bitfields}}
 \newcommand\bitfieldscope[0]{\hyperlink{def-bitfieldscope}{bitfield scope}}
+\newcommand\ReadLocalTerm[0]{\hyperlink{def-readlocalterm}{local read side effect descriptor}}
+\newcommand\WriteLocalTerm[0]{\hyperlink{def-writelocalterm}{local write side effect descriptor}}
+\newcommand\ReadGlobalTerm[0]{\hyperlink{def-readglobalterm}{global read side effect descriptor}}
+\newcommand\WriteGlobalTerm[0]{\hyperlink{def-writeglobalterm}{global write side effect descriptor}}
+\newcommand\ThrowExceptionTerm[0]{\hyperlink{def-throwexceptionterm}{exception side effect descriptor}}
+\newcommand\RecursiveCallTerm[0]{\hyperlink{def-recursivecallterm}{recursive call side effect  descriptor}}
+\newcommand\PerformsAssertionsTerm[0]{\hyperlink{def-performsassertionsterm}{assertion side effect descriptor}}
+\newcommand\NonDeterministicTerm[0]{\hyperlink{def-nondeterministicterm}{non-determinism side effect descriptor}}
+
+\newcommand\staticallyevaluable[0]{\hyperlink{def-staticallyevaluable}{statically evaluable}}
+\newcommand\pureterm[0]{\hyperlink{def-storageispure}{pure}}
+\newcommand\timeframeterm[0]{\hyperlink{def-timeframe}{time frame}}
+\newcommand\timeframesterm[0]{\hyperlink{def-timeframe}{time frames}}
+\newcommand\sideeffectdescriptorterm[0]{\hyperlink{def-sideeffectdescriptorterm}{side effect descriptor}}
+\newcommand\sideeffectdescriptorsterm[0]{\hyperlink{def-sideeffectdescriptorterm}{side effect descriptors}}
+\newcommand\sideeffectsetterm[0]{\hyperlink{def-sideeffectdescriptorterm}{set of side effect descriptors}}
+\newcommand\sideeffectconflictterm[0]{\hyperlink{def-sideeffectconflictterm}{side effect conflict}}
+\newcommand\sideeffectconflictsterm[0]{\hyperlink{def-sideeffectconflictterm}{side effect conflicts}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type functions
@@ -1653,11 +1723,14 @@
 \newcommand\NonReturningFunction[0]{\hyperlink{def-nrf}{\TypeErrorCode{NRF}}}
 \newcommand\BuiltinExpectedToBeFunction[0]{\hyperlink{def-bef}{\TypeErrorCode{BEF}}}
 \newcommand\UnexpectedPendingConstrained[0]{\hyperlink{def-upc}{\TypeErrorCode{UPC}}}
+\newcommand\ConflictingSideEffects[0]{\hyperlink{def-cse}{\TypeErrorCode{CSE}}}
 
 %% Dynamic Error Codes
 \newcommand\DynamicErrorVal[1]{\Error(\texttt{#1})}
 \newcommand\DynamicErrorCode[1]{\texttt{DE\_#1}}
 \newcommand\UnreachableError[0]{\hyperlink{def-unr}{\DynamicErrorCode{UNR}}}
+\newcommand\DynamicAssertionFailure[0]{\hyperlink{def-daf}{\DynamicErrorCode{DAF}}}
+\newcommand\DynamicTypeAssertionFailure[0]{\hyperlink{def-datc}{\DynamicErrorCode{ATC}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Semantics/Typing Shared macros
@@ -1982,6 +2055,7 @@
 \newcommand\newgenv[0]{\texttt{new\_genv}}
 \newcommand\newgsd[0]{\texttt{new\_gsd}}
 \newcommand\newids[0]{\texttt{new\_ids}}
+\newcommand\newl[0]{\texttt{new\_l}}
 \newcommand\newldi[0]{\texttt{new\_ldi}}
 \newcommand\newldip[0]{\texttt{new\_ldi'}}
 \newcommand\newldis[0]{\texttt{new\_ldis'}}
@@ -2014,6 +2088,7 @@
 \newcommand\optwo[0]{\texttt{op2}}
 \newcommand\ordereddecls[0]{\texttt{ordered\_decls}}
 \newcommand\orderedps[0]{\texttt{ordered\_ps}}
+\newcommand\otherfuncsig[0]{\texttt{other\_func\_sig}}
 \newcommand\othernames[0]{\texttt{other\_names}}
 \newcommand\others[0]{\texttt{others}}
 \newcommand\otherwise[0]{\texttt{otherwise}}
@@ -2394,6 +2469,7 @@
 \newcommand\vlt[0]{\texttt{l\_t}}
 \newcommand\vltwo[0]{\texttt{l2}}
 \newcommand\vlthree[0]{\texttt{l3}}
+\newcommand\vimmutable[0]{\texttt{immutable}}
 \newcommand\vm[0]{\texttt{m}}
 \newcommand\extpairs[0]{\texttt{extpairs}}
 \newcommand\extpairsab[0]{\texttt{extpairs\_a\_b}}
@@ -2451,6 +2527,9 @@
 \newcommand\vqtwo[0]{\texttt{q2}}
 \newcommand\vr[0]{\texttt{r}}
 \newcommand\vre[0]{\texttt{re}}
+\newcommand\vreads[0]{\texttt{reads}}
+\newcommand\vtimeframe[0]{\texttt{time\_frame}}
+\newcommand\vtimeframes[0]{\texttt{time\_frames}}
 \newcommand\vrecord[0]{\texttt{v\_record}}
 \newcommand\vrecurselimit[0]{\texttt{recurse\_limit}}
 \newcommand\vreone[0]{\texttt{re1}}
@@ -2461,7 +2540,19 @@
 \newcommand\vscopeone[0]{\texttt{scope1}}
 \newcommand\vscopetwo[0]{\texttt{scope2}}
 \newcommand\vscond[0]{\texttt{s\_cond}}
+\newcommand\vse[0]{\texttt{se}}
 \newcommand\vselse[0]{\texttt{s\_else}}
+\newcommand\vses[0]{\texttt{ses}}
+\newcommand\vsesone[0]{\texttt{ses1}}
+\newcommand\vsestwo[0]{\texttt{ses2}}
+\newcommand\vsesthree[0]{\texttt{ses3}}
+\newcommand\vsest[0]{\texttt{ses\_t}}
+\newcommand\vsesoffset[0]{\texttt{ses\_offset}}
+\newcommand\vseslength[0]{\texttt{ses\_length}}
+\newcommand\vsesindex[0]{\texttt{ses\_index}}
+\newcommand\vsesslices[0]{\texttt{ses\_slices}}
+\newcommand\vsesbitfields[0]{\texttt{ses\_bitfields}}
+\newcommand\vsesty[0]{\texttt{ses\_ty}}
 \newcommand\vslice[0]{\texttt{slice}}
 \newcommand\vsliceasts[0]{\texttt{slice\_asts}}
 \newcommand\vsliceone[0]{\texttt{slice1}}
@@ -2596,6 +2687,7 @@
 \newcommand\vwtwo[0]{\texttt{w2}}
 \newcommand\vwzero[0]{\texttt{w0}}
 \newcommand\vx[0]{\texttt{x}}
+\newcommand\vxs[0]{\texttt{xs}}
 \newcommand\vy[0]{\texttt{y}}
 \newcommand\vz[0]{\texttt{z}}
 \newcommand\vzminlist[0]{\texttt{z\_min\_list}}
@@ -2628,3 +2720,5 @@
 \newcommand\vesone[0]{\texttt{es1}}
 \newcommand\valueranges[0]{\texttt{value\_ranges}}
 \newcommand\vrange[0]{\texttt{range}}
+\newcommand\twidth[0]{\texttt{t\_width}}
+\newcommand\seswidth[0]{\texttt{ses\_width}}

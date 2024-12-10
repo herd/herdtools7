@@ -26,13 +26,17 @@ The function
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\call}{\vcall}
    ) \aslto
-  (\overname{\call}{\vcallp}
-  \overname{\langle \ty \rangle}{\rettyopt})
+  (\overname{\call}{\vcallp} \times
+  \overname{\langle \ty \rangle}{\rettyopt} \times
+  \overname{\TSideEffectSet}{\vses}
+  )
 \]
 annotates the call $\vcall$ to a subprogram with call type $\calltype$, resulting in the following:
 \begin{itemize}
-  \item $\vcallp$ --- the updated call, with all arguments/parameters annotated and $\vcall.\callname$ updated to uniquely identify the call among the set of overloading subprograms declared with the same name;
-  \item $\rettyopt$ --- the \optional\ annotated return type.
+  \item $\vcallp$ --- the updated call, with all arguments/parameters annotated and \\
+        $\vcall.\callname$ updated to uniquely identify the call among the set of overloading subprograms declared with the same name;
+  \item $\rettyopt$ --- the \optional\ annotated return type;
+  \item $\vses$ --- the \sideeffectsetterm\ inferred for $\vcall$.
 \end{itemize}
 \ProseOtherwiseTypeError
 
@@ -55,7 +59,7 @@ We also define helper functions via respective rules:
   \item TypingRule.ExpressionList (see \secref{TypingRule.ExpressionList})
 \end{itemize}
 
-\subsubsection{TypingRule.AnnotateCall \label{sec:TypingRule.AnnotateCall}}
+\subsubsection{TypingRule.AnnotateCall\label{sec:TypingRule.AnnotateCall}}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -66,8 +70,6 @@ All of the following apply:
   \item applying $\annotatecallactualstyped$ to $\vcall.\callname$, $\params$, $\args$, and $\vcall.\callcalltype$ in $\tenv$ yields
         $(\vcallp, \retty)$\ProseOrTypeError.
 \end{itemize}
-
-\CodeSubsection{\AnnotateCallBegin}{\AnnotateCallEnd}{../Typing.ml}
 
 \subsubsection{Formally}
 \begin{mathpar}
@@ -84,7 +86,9 @@ All of the following apply:
   \annotatecall(\tenv, \vcall) \typearrow
   (\vcallp, \retty)
 }
-\end{mathpar}\lrmcomment{
+\end{mathpar}
+\CodeSubsection{\AnnotateCallBegin}{\AnnotateCallEnd}{../Typing.ml}
+\lrmcomment{
   This is related to \identi{VFDP}, \identd{TRFW}, \identr{KMDB},
   \identi{YMHX}, \identr{CCVD}, \identr{QYBH}, \identr{PFWQ}, \identr{ZLWD},
   \identi{FLKF}, \identd{PMBL}, \identr{MWBN}, \identr{TZSP}, \identr{SBWR},
@@ -189,7 +193,7 @@ The function
   \overname{(\ty\times\expr)^*}{\params} \aslsep
   \overname{\ty^*}{\argtypes}
   ) \aslto \\
-  \overname{(\ty\times\expr)^*}{\paramsone}
+  \overname{(\ty\times\expr\times\TSideEffectSet)^*}{\paramsone}
 \]
 inserts the (optionally) omitted input parameter of a standard library function call.
 
@@ -210,21 +214,22 @@ All of the following applies:
   \item $\argtypes$ has a \head{} actual argument type of $\TBits(\ve)$\ProseTerminateAs{\params};
   \item $\funcsig.\funcbuiltin$ is $\True$\ProseTerminateAs{\params};
   \item the length of $\params$ is less than the length of $\funcsig.\funcparameters$\ProseTerminateAs{\params};
-  \item $\paramsone$ is the \constrainedinteger{} for $\ve$ appended to $\params$\ProseTerminateAs{\params}.
+  \item $\paramsone$ is the \constrainedinteger{} for $\ve$ with an empty set of \sideeffectdescriptorsterm,
+        appended to $\params$\ProseTerminateAs{\params}.
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \funcsig.\funcparameters \eqname [(\vx, \Ignore)] \;\lor\;
-  \funcsig.\funcparameters \eqname [\Ignore, (\vx, \Ignore)] \; \terminateas \params \\
-  \funcsig.\funcargs \eqname [(\Ignore, \TBits(\EVar(\vx)))] \concat \Ignore \; \terminateas \params \\
-  \argtypes \eqname [\TBits(\ve)] \concat \Ignore \; \terminateas \params \\
-  \funcsig.\funcbuiltin = \True \; \terminateas \params \\
-  \listlen{\params} < \listlen{\funcsig.\funcparameters} \; \terminateas \params \\
-  \paramsone \eqdef \params \concat [(\TInt(\wellconstrained(\AbbrevConstraintExact{\ve})), \ve)] \; \terminateas \params
+  \funcsig.\funcparameters \eqname [\Ignore, (\vx, \Ignore)] \; \terminateas \params \\\\
+  \funcsig.\funcargs \eqname [(\Ignore, \TBits(\EVar(\vx)))] \concat \Ignore \; \terminateas \params \\\\
+  \argtypes \eqname [\TBits(\ve)] \concat \Ignore \; \terminateas \params \\\\
+  \funcsig.\funcbuiltin = \True \; \terminateas \params \\\\
+  \listlen{\params} < \listlen{\funcsig.\funcparameters} \; \terminateas \params \\\\
+  \paramsone \eqdef \params \concat [(\TInt(\wellconstrained(\AbbrevConstraintExact{\ve})), \ve, \emptyset)] \; \terminateas \params
 }{
-\insertstdlibparam(\funcsig, \params, \argtypes) \aslto \paramsone
+  \insertstdlibparam(\funcsig, \params, \argtypes) \aslto \paramsone
 }
 \end{mathpar}
 
@@ -960,7 +965,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SubprogramForName \label{sec:TypingRule.SubprogramForName}}
+\subsubsection{TypingRule.SubprogramForName\label{sec:TypingRule.SubprogramForName}}
 \hypertarget{def-subprogramforname}{}
 The function
 \[
@@ -971,11 +976,15 @@ The function
     \overname{\ty^*}{\callerargtypes}
   )
   \aslto &
+  \begin{array}{l}
     (
     \overname{\Strings}{\namep} \aslsep
-    \overname{\func}{\callee}
-    )
-  \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+    \overname{\func}{\callee} \aslsep
+    \overname{\TSideEffectSet}{\vses}
+    )\
+  \cup\\
+   \overname{\TTypeError}{\TypeErrorConfig}
+  \end{array}
   \end{array}
 \]
 looks up the static environment $\tenv$ for a subprogram associated with $\name$
@@ -990,7 +999,8 @@ The first and last cases result in a type error.
 If the second case holds, the function returns a tuple which comprises:
 \begin{itemize}
 \item $\namep$ --- the string that uniquely identifies this subprogram;
-\item $\callee$ --- the AST node defining the called subprogram.
+\item $\callee$ --- the AST node defining the called subprogram; and
+\item $\vses$ --- the set of \sideeffectdescriptorsterm associated with $\name$.
 \end{itemize}
 \ProseOtherwiseTypeError
 
@@ -1006,7 +1016,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{no\_candidates}):
   \begin{itemize}
-    \item $\tenv$ binds $\name$ via $\overloadedsubprograms$ map to $\renamingset$;
+    \item $\tenv$ binds $\name$ via $\overloadedsubprograms$ map to $\renamingset$ and $\vses$;
     \item filtering the subprograms in $\renamingset$ with the caller argument types $\callerargtypes$
           in $\tenv$ (see \secref{TypingRule.FilterCallCandidates}) yields an empty set\ProseOrTypeError;
     \item the result is a type error indicating that the call given by $\name$ and \\ $\callerargtypes$
@@ -1015,7 +1025,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{too\_many\_candidates}):
   \begin{itemize}
-    \item $\tenv$ binds $\name$ via $\overloadedsubprograms$ map to $\renamingset$;
+    \item $\tenv$ binds $\name$ via $\overloadedsubprograms$ map to $\renamingset$ and $\vses$;
     \item filtering the subprograms in $\renamingset$ with the caller argument types $\callerargtypes$
           in $\tenv$ (see \secref{TypingRule.FilterCallCandidates}) yields $\matchingrenamings$\ProseOrTypeError;
     \item $\matchingrenamings$ contains at least two elements;
@@ -1025,13 +1035,12 @@ One of the following applies:
 
   \item All of the following apply (\textsc{one\_candidate}):
   \begin{itemize}
-    \item $\tenv$ binds $\name$ via $\overloadedsubprograms$ map to $\renamingset$;
+    \item $\tenv$ binds $\name$ via $\overloadedsubprograms$ map to $\renamingset$ and $\vses$;
     \item filtering the subprograms in $\renamingset$ with the caller argument types $\callerargtypes$
           in $\tenv$ (see \secref{TypingRule.FilterCallCandidates}) yields $\matchingrenamings$\ProseOrTypeError;
     \item $\matchingrenamings$ contains a single element --- $(\namep, \callee)$\ProseOrTypeError;
   \end{itemize}
 \end{itemize}
-\CodeSubsection{\SubprogramForNameBegin}{\SubprogramForNameEnd}{../Typing.ml}
 
 \subsubsection{Formally}
 \begin{mathpar}
@@ -1044,7 +1053,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[no\_candidates]{
-  G^\tenv.\overloadedsubprograms(\name) = \renamingset\\
+  G^\tenv.\overloadedsubprograms(\name) = (\renamingset, \vses)\\
   {
     \begin{array}{r}
       \filtercallcandidates(\tenv, \callerargtypes, \renamingset) \typearrow \emptyset \OrTypeError
@@ -1057,7 +1066,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[too\_many\_candidates]{
-  G^\tenv.\overloadedsubprograms(\name) = \renamingset\\
+  G^\tenv.\overloadedsubprograms(\name) = (\renamingset, \vses)\\
   {
     \begin{array}{r}
       \filtercallcandidates(\tenv, \callerargtypes, \renamingset) \typearrow \\ \matchingrenamings \OrTypeError
@@ -1071,7 +1080,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[one\_candidate]{
-  G^\tenv.\overloadedsubprograms(\name) = \renamingset\\
+  G^\tenv.\overloadedsubprograms(\name) = (\renamingset, \vses)\\
   {
     \begin{array}{r}
       \filtercallcandidates(\tenv, \callerargtypes, \renamingset) \typearrow \\ \matchingrenamings \OrTypeError
@@ -1081,11 +1090,12 @@ One of the following applies:
 }{
   {
     \begin{array}{r}
-  \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \\ (\namep, \callee)
+  \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \\ (\namep, \callee, \vses)
     \end{array}
   }
 }
 \end{mathpar}
+\CodeSubsection{\SubprogramForNameBegin}{\SubprogramForNameEnd}{../Typing.ml}
 
 \subsubsection{TypingRule.FilterCallCandidates \label{sec:TypingRule.FilterCallCandidates}}
 \hypertarget{def-filtercandidates}{}

@@ -179,7 +179,7 @@ annotates the global storage declaration $\gsd$ in the global static environment
 yielding a modified global static environment $\newgenv$ and annotated global storage declaration $\newgsd$.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item $\gsd$ is a global storage declaration with keyword $\keyword$, initial value \\ $\initialvalue$,
@@ -197,7 +197,7 @@ All of the following apply:
         ($\GDinitialvalue$) set to $\initialvaluep$;
   \item define $\newgenv$ as the global component of $\tenvtwo$.
 \end{itemize}
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \gsd \eqname \{
@@ -293,7 +293,7 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
 \begin{mathpar}
 \inferrule[some\_some]{
   \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep) \OrTypeError\\\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
   \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError
 }{
   \annotatetyoptinitialvalue(\tenv, \overname{\langle\vt\rangle}{\tyoptp}, \overname{\langle\ve\rangle}{\initialvalue})

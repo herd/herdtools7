@@ -1926,7 +1926,7 @@ One of the following applies:
 \end{mathpar}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.ATC \label{sec:SemanticsRule.ATC}}
+\subsubsection{SemanticsRule.ATC\label{sec:SemanticsRule.ATC}}
 \subsubsection{Example}
 \ASLExample{\semanticstests/SemanticsRule.ATCValue.asl}
 
@@ -1965,7 +1965,8 @@ All of the following apply:
       \item all of the following apply (\textsc{error}):
             \begin{itemize}
             \item $\vb$ is the native Boolean for \True;
-            \item an asserted type conversion error is returned.
+            \item the result is a dynamic error indicating that the type assertion failed
+                  (\DynamicTypeAssertionFailure).
             \end{itemize}
       \end{itemize}
 \end{itemize}
@@ -1985,7 +1986,7 @@ All of the following apply:
   \neg\isvaloftype(\env, \vv, \vt) \evalarrow (\vb, \Ignore)\\
   \vb \eqname \nvbool(\False)
 }{
-  \evalexpr{\env, \EATC(\veone, \vt)} \evalarrow \ErrorVal{ATC\_TypeMismatch}
+  \evalexpr{\env, \EATC(\veone, \vt)} \evalarrow \DynamicErrorVal{\DynamicTypeAssertionFailure}
 }
 \end{mathpar}
 \CodeSubsection{\EvalATCBegin}{\EvalATCEnd}{../Interpreter.ml}

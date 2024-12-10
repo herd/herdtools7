@@ -258,132 +258,6 @@ One of the following applies:
 }
 \end{mathpar}
 
-\hypertarget{def-storageispure}{}
-\subsubsection{TypingRule.StorageIsPure \label{sec:TypingRule.StorageIsPure}}
-The function
-\[
-  \storageispure(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\vs}) \aslto
-  \overname{\Bool}{\vb} \cup \TTypeError
-\]
-$\vb$ is true if and only if the identifier $\vs$ corresponds to a \pure\ storage element
-in the static environment $\tenv$.
-
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{local}):
-  \begin{itemize}
-    \item $\vs$ is a locally declared storage element;
-    \item $\vb$ is true if and only if $\vs$ is declared as a constant or as an immutable variable (\texttt{let}).
-  \end{itemize}
-
-  \item All of the following apply (\textsc{global}):
-  \begin{itemize}
-    \item $\vs$ is a globally declared storage element;
-    \item $\vb$ is true if and only if $\vs$ is declared as a constant, a configuration variable, or an immutable variable.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{subprogram\_or\_typename}):
-  \begin{itemize}
-    \item $\vs$ is not a storage element;
-    \item checking whether $\vs$ is the name of a subprogram or the name of a declared type yields $\True$\ProseTerminateAs{\UndefinedIdentifier};
-    \item $\vb$ is $\False$.
-  \end{itemize}
-\end{itemize}
-
-\CodeSubsection{\StorageIsPureBegin}{\StorageIsPureEnd}{../Typing.ml}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule[local]{
-  L^\tenv.\localstoragetypes(\vs) = (\Ignore, \ldk)\\
-  \vb \eqdef \ldk \in \{\LDKConstant, \LDKLet\}
-}{
-  \storageispure(\tenv, \vs) \typearrow \vb
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[global]{
-  L^\tenv.\localstoragetypes(\vs) = \bot\\
-  G^\tenv.\globalstoragetypes(\vs) = (\Ignore, \gdk)\\
-  \vb \eqdef \gdk \in \{\GDKConstant, \GDKConfig, \GDKLet\}
-}{
-  \storageispure(\tenv, \vs) \typearrow \vb
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[subprogram\_or\_typename]{
-  L^\tenv.\localstoragetypes(\vs) = \bot\\
-  G^\tenv.\globalstoragetypes(\vs) = \bot\\
-  \checktrans{G^\tenv.\subprograms \lor G^\tenv.\declaredtypes}{\UndefinedIdentifier} \checktransarrow \True \OrTypeError
-}{
-  \storageispure(\tenv, \vs) \typearrow \overname{\False}{\vb}
-}
-\end{mathpar}
-
-\hypertarget{def-isstaticallyevaluable}{}
-\hypertarget{def-staticallyevaluable}{}
-\subsubsection{TypingRule.IsStaticallyEvaluable\label{sec:TypingRule.IsStaticallyEvaluable}}
-The function
-\[
-  \isstaticallyevaluable(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-  \overname{\Bool}{\bv}
-\]
-returns in $\vb$ whether $\ve$ is a \staticallyevaluable\ expression in the static environment $\tenv$.
-
-\subsubsection{Prose}
-All of the following applies:
-\begin{itemize}
-  \item symbolically simplifying $\ve$ in $\tenv$ using $\normalize$ yields $\veone$;
-  \item determining the set of used identifiers in $\veone$ yields $\useset$;
-  \item $\vb$ is true if and only if every identifier in $\useset$ is pure.
-\end{itemize}
-
-\CodeSubsection{\IsStaticallyEvaluableBegin}{\IsStaticallyEvaluableEnd}{../Typing.ml}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \normalize(\tenv, \ve) \typearrow \veone\\
-  \useexpr(\veone) \typearrow \useset\\
-  \id\in\useset: \storageispure(\tenv, \id) \typearrow \vb_\id\\
-  \vb \eqdef \bigwedge_{\id\in\useset} \vb_\id
-}{
-  \isstaticallyevaluable(\tenv, \ve) \typearrow \True
-}
-\end{mathpar}
-
-\hypertarget{def-checkstaticallyevaluable}{}
-\subsubsection{TypingRule.CheckStaticallyEvaluable \label{sec:TypingRule.CheckStaticallyEvaluable}}
-The function
-\[
-  \checkstaticallyevaluable(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-  \{\True\} \cup \TTypeError
-\]
-returns $\True$ if $\ve$ is a \staticallyevaluable\ expression in the static environment $\tenv$ and a type error otherwise.
-
-\subsubsection{Prose}
-All of the following applies:
-\begin{itemize}
-  \item applying $\isstaticallyevaluable$ to $\ve$ in $\tenv$ yields $\vb$;
-  \item the result is $\True$ is $\vb$ is $\True$, otherwise it is a type error indicating that the expression
-  is not statically evaluable.
-\end{itemize}
-
-\CodeSubsection{\CheckStaticallyEvaluableBegin}{\CheckStaticallyEvaluableEnd}{../Typing.ml}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \isstaticallyevaluable(\tenv, \ve) \typearrow \vb\\
-  \checktrans{\vb}{NotStaticallyEvaluable} \checktransarrow \True \OrTypeError
-}{
-  \checkstaticallyevaluable(\tenv, \ve) \typearrow \True
-}
-\end{mathpar}
-
 \subsection{AssocOpt}
 \hypertarget{def-assocopt}{}
 The function
@@ -916,3 +790,60 @@ One of the following applies:
   \addimmutableexpr(\tenv, \ldk, \veopt, \vx) \typearrow \overname{\tenv}{\newtenv}
 }
 \end{mathpar}
+
+\subsubsection{TypingRule.AddSubprogram\label{sec:TypingRule.AddSubprogram}}
+\hypertarget{def-addsubprogram}{}
+The function
+\[
+  \addsubprogram(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\Strings}{\name} \aslsep
+    \overname{\func}{\funcdef} \aslsep
+    \overname{\TSideEffectSet}{\vs})
+   \aslto
+  \overname{\staticenvs}{\newtenv}
+\]
+updates the global environment of $\tenv$ by mapping the (unique) subprogram identifier $\name$
+to the function definition $\funcdef$ and \sideeffectdescriptorsterm\ $\vs$ in $\tenv$,
+resulting in a new static environment $\newtenv$.
+
+\subsubsection{Prose}
+Define $\newtenv$ is $\tenv$ the $\subprograms$ map in the global component is updated by
+binding $\name$ to $\funcdef$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \newtenv \eqdef (G^\tenv.\subprograms[\name\mapsto(\funcdef, \vs)], L^\tenv)
+}{
+  \addsubprogram(\tenv, \name, \funcdef, \vs) \typearrow \newtenv
+}
+\end{mathpar}
+\CodeSubsection{\AddSubprogramBegin}{\AddSubprogramEnd}{../StaticEnv.ml}
+
+\subsubsection{TypingRule.AddType\label{sec:TypingRule.AddType}}
+\hypertarget{def-addtype}{}
+The function
+\[
+  \addtype(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\identifier}{\name} \aslsep
+    \overname{\ty}{\tty} \aslsep
+    \overname{\TTimeFrame}{\vf})
+   \aslto
+  \overname{\staticenvs}{\newtenv}
+\]
+binds the type $\tty$ and \timeframeterm\ $\vf$ to the identifier $\name$ in the static environment $\tenv$,
+yielding the modified static environment $\newtenv$.
+
+\subsubsection{Prose}
+Define $\newtenv$ as $\tenv$ where the $\declaredtypes$ map of the global component is updated
+by binding $\name$ to $\tty$ and $\vf$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \addtype(\tenv, \name, \tty, \vf) \typearrow \overname{(G^\tenv.\declaredtypes[\name\mapsto(\tty, \vf)] , L^\tenv)}{\newtenv}
+}
+\end{mathpar}
+\CodeSubsection{\AddTypeBegin}{\AddTypeEnd}{../StaticEnv.ml}

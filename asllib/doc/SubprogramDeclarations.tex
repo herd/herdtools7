@@ -383,7 +383,7 @@ yielding a new subprogram definition $\newfuncsig$ and modified static environme
 $\newtenv$.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item annotating the signature of $\funcsig$ in $\genv$ as per
@@ -395,7 +395,7 @@ All of the following apply:
 \end{itemize}
 \CodeSubsection{\AnnotateAndDeclareFuncBegin}{\AnnotateAndDeclareFuncEnd}{../Typing.ml}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \annotatefuncsig(\genv, \funcsig) \typearrow (\tenvone, \funcsigone) \OrTypeError\\\\
@@ -418,7 +418,7 @@ yielding a new function definition $\newfuncsig$ and modified static environment
 $\newtenv$.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item $\tenv$ is the static environment which comprises of the global static environment $\genv$ and an empty local environment;
@@ -432,7 +432,7 @@ All of the following apply:
         and $\vrecurselimit$ as its recursion limit.
 \end{itemize}\CodeSubsection{\AnnotateFuncSigBegin}{\AnnotateFuncSigEnd}{../Typing.ml}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \withemptylocal(\genv) \typearrow \tenv\\
@@ -502,7 +502,7 @@ Therefore, $\tenvwithparams$ effectively reflects the added declarations \verb|l
 
 \VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
 
-\subsection{Prose}
+\subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -521,7 +521,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule[empty]{}{
   \annotateparams(\tenv, \overname{\emptylist}{\params}, (\newtenv, \acc)) \typearrow
@@ -557,7 +557,7 @@ with respect to $\tenv$ and then declares the parameter $\vx$ in environment $\n
 The updated environment $\newtenvp$ and annotated parameter type $\tty$ are returned.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item One of the following applies:
@@ -581,7 +581,7 @@ All of the following apply:
         $\LDKLet$ in $\newtenv$ yields $\newtenvp$.
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule[type\_parameterized]{
   (\tyopt = \None \lor \tyopt = \langle \unconstrainedinteger\rangle) \\
@@ -611,7 +611,7 @@ The function
 \]
 checks the parameters declared in $\funcsig$ for validity.
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item Finding the list of types in $\funcsig$ using $\typesinfuncsig$ yields $\tys$;
@@ -620,7 +620,7 @@ All of the following apply:
   \item Checking that the expected parameters $\paramsone$ and the declared parameters $\funcsig.\funcparameters$ are equal yields $\vb$\ProseOrTypeError.
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \typesinfuncsig(\funcsig) \typearrow \tys \\
@@ -642,10 +642,10 @@ The function
 returns the list of types $\tys$ in the function signature $\funcsig$.
 Their ordering is return type first (if any), followed by argument types left-to-right.
 
-\subsection{Prose}
+\subsubsection{Prose}
 Define $\tys$ as the return type (if any) concatenated with the argument types.
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   {
@@ -672,7 +672,7 @@ The function
 finds the list of parameters in the type $\tty$.
 It assumes that $\tty$ appears in a function signature.
 
-\subsection{Prose}
+\subsubsection{Prose}
 One of the following applies:
 
 \begin{itemize}
@@ -703,7 +703,7 @@ One of the following applies:
     \end{itemize}
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule[tbits]{
   \paramsofexpr(\tenv, \ve) \typearrow \ids
@@ -749,7 +749,7 @@ The function
 finds the list of parameters in the expression $\ve$.
 It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellconstrainedintegertype{} in a function signature.
 
-\subsection{Prose}
+\subsubsection{Prose}
 One of the following applies:
 
 \begin{itemize}
@@ -780,7 +780,7 @@ One of the following applies:
     \end{itemize}
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule[eval]{
   \isundefined(\tenv, \vx) \typearrow \vb\\
@@ -824,7 +824,7 @@ The function
 finds the list of parameters in the constraint $\vc$.
 It assumes that $\vc$ appears within a \wellconstrainedintegertype{} in a function signature.
 
-\subsection{Prose}
+\subsubsection{Prose}
 One of the following applies:
 
 \begin{itemize}
@@ -843,7 +843,7 @@ One of the following applies:
     \end{itemize}
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule[exact]{
   \paramsofexpr(\tenv, \ve) \typearrow \ids
@@ -906,7 +906,7 @@ and declares it in environment $\newtenv$.
 It returns the updated environment $\tenvwithargs$ and the annotated arguments $\vnewargs$, together with any annotated arguments already in the accumulator $\acc$.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -931,7 +931,7 @@ In the following specification, the annotated arguments are
 
 \VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule[empty]{}{
   \annotateargs(\tenv, \overname{\emptylist}{\args}, (\newtenv, \acc)) \typearrow
@@ -965,7 +965,7 @@ with respect to $\tenv$ and then declares the parameter $\vx$ in environment $\n
 The updated environment $\newtenvp$ and annotated argument type $\ttyp$ are returned.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item annotating the type $\tty$ in $\tenv$ yields $\ttyp$\ProseOrTypeError;
@@ -974,7 +974,7 @@ All of the following apply:
         $\LDKLet$ in $\newtenv$ yields $\newtenvp$.
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \annotatetype{\tenv, \tty} \typearrow \ttyp \OrTypeError \\
@@ -1005,7 +1005,7 @@ $\tenvwithparams$ where all parameters have been declared.
 It produces $\newtenv$, which is the input $\tenvwithargs$ (where all parameters and arguments have been declared) with the \optional{} annotated return type $\newreturntype$ added.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{no\_return\_type}):
@@ -1025,7 +1025,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule[no\_return\_type]{}
 {
@@ -1063,7 +1063,7 @@ checks that a subprogram defined by $\funcsig$ can be added to the static enviro
 resulting in an annotated function definition $\newfuncdef$ and new static environment $\newtenv$.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item $\funcsig$ has name $\name$, arguments $\vargs$, and type $\subprogramtype$, that is,
@@ -1090,7 +1090,7 @@ All of the following apply:
 \end{itemize}
 \CodeSubsection{\DeclareOneFuncBegin}{\DeclareOneFuncEnd}{../Typing.ml}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   {
@@ -1127,7 +1127,8 @@ All of the following apply:
 }{
   \declareonefunc(\tenv, \funcsig) \typearrow (\newtenv, \newfuncsig)
 }
-\end{mathpar}\lrmcomment{This relates to \identi{HJRD}, \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}, and \identr{PGFC}.}
+\end{mathpar}
+\lrmcomment{This relates to \identi{HJRD}, \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}, and \identr{PGFC}.}
 
 \subsubsection{TypingRule.SubprogramClash \label{sec:TypingRule.SubprogramClash}}
 \hypertarget{def-subprogramclash}{}
@@ -1151,20 +1152,21 @@ yielding a Boolean value in $\vb$.
 The function is only defined when there exists a binding for $\name$ in the
 $\subprograms$ map of $\tenv$.
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item the subprogram type associated with the unique subprogram named by $\name$ is $\namesubpgmtype$;
-  \item applying $\subprogramtypesclash$ to $\namesubpgmtype$ and $\subpgmtype$ yields \\
+  \item the identifier $\name$ is bound to the $\func$ AST node $\otherfuncsig$ in the \\
+        $\subprograms$ map
+        of the static global environment of $\tenv$ (ignoring the associated \sideeffectdescriptorsterm);
+  \item applying $\subprogramtypesclash$ to the subprogram type of $\otherfuncsig$ \\
+        ($\otherfuncsig.\subprogramtype$) and $\subpgmtype$ yields \\
         $\True$\ProseTerminateAs{\False}
-        (that is, if both $\namesubpgmtype$ and $\subpgmtype$ are $\STGetter$ or both are $\STSetter$ then the
+        (that is, if both subprogram types are $\STGetter$ or both are $\STSetter$ then the
         subprogram types are considered to be non-clashing and the entire rule short-circuits to $\False$);
-  \item $\nameargs$ is the list of pairs of types and identifiers associated with the function definition
-        of $\name$ in $\tenv$;
   \item determining whether there is an argument clash between $\formaltypes$ and \\
-        $\nameformals$ in $\tenv$ yields $\vb$\ProseOrTypeError.
+        the formal arguments of $\otherfuncsig$ ($\otherfuncsig.\funcargs$) in $\tenv$ yields $\vb$\ProseOrTypeError.
 \end{itemize}
-\subsection{Formally}
+\subsubsection{Formally}
 \hypertarget{def-subprogramtypeclash}{}
 We first introduce the helper predicate
 \[
@@ -1191,16 +1193,16 @@ which defines whether two subprogram types are considered to be clashing:
 
 \begin{mathpar}
 \inferrule{
-  \namesubpgmtype \eqdef G^\tenv.\subprograms(\name).\subprogramtype\\
-  \subprogramtypesclash(\namesubpgmtype, \subpgmtype) \typearrow \True \terminateas \False\\
-  \nameargs \eqdef G^\tenv.\subprograms(\name).\funcargs\\
-  \hasargclash(\formaltypes, \nameargs) \typearrow \vb
+  G^\tenv.\subprograms(\name) = (\otherfuncsig, \Ignore)\\
+  \subprogramtypesclash(\otherfuncsig.\subprogramtype, \subpgmtype) \typearrow \True \terminateas \False\\
+  \hasargclash(\formaltypes, \otherfuncsig.\funcargs) \typearrow \vb
 }{
   \subprogramclash(\tenv, \namep, \subpgmtype, \formaltypes) \typearrow \vb
 }
-\end{mathpar}\lrmcomment{This is related to \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}.}
+\end{mathpar}
+\lrmcomment{This is related to \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}.}
 
-\subsubsection{TypingRule.AddNewFunc \label{sec:TypingRule.AddNewFunc}}
+\subsubsection{TypingRule.AddNewFunc\label{sec:TypingRule.AddNewFunc}}
 \hypertarget{def-addnewfunc}{}
 The function
 \[
@@ -1223,7 +1225,7 @@ of overloaded subprograms (that is, other subprograms that share the same name)
 and the environment $\newtenv$, which is updated with $\newname$.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{first\_name}):
@@ -1249,9 +1251,9 @@ One of the following applies:
           $\{\newname\}$.
   \end{itemize}
 \end{itemize}
-\subsection{Formally}
+\subsubsection{Formally}
 \newcommand\stringconcat[0]{\hyperlink{def-stringconcat}{\texttt{+}}}
-\newcommand\stringofint[0]{\hyperlink{def-stringofnat}{\texttt{string\_of\_nat}}}
+\newcommand\stringofnat[0]{\hyperlink{def-stringofnat}{\texttt{string\_of\_nat}}}
 
 We use the following functions to construct a unique string for each subprogram:
 \begin{itemize}
@@ -1260,7 +1262,7 @@ We use the following functions to construct a unique string for each subprogram:
 concatenates two strings.
 
 \hypertarget{def-stringofnat}{}
-\item The function $\stringofint : \N \rightarrow \Strings$ converts a natural number
+\item The function $\stringofnat : \N \rightarrow \Strings$ converts a natural number
 to the corresponding string.
 \end{itemize}
 
@@ -1278,7 +1280,7 @@ to the corresponding string.
 \inferrule[name\_exists]{
   G^\tenv.\overloadedsubprograms(\name) = \othernames\\
   k \eqdef \cardinality{\othernames}\\
-  \newname \eqdef \name\ \stringconcat\ \texttt{"-"}\ \stringconcat\ \stringofint(k)\\
+  \newname \eqdef \name\ \stringconcat\ \texttt{"-"}\ \stringconcat\ \stringofnat(k)\\
   \formaltypes \eqdef [(\id,\vt) \in \formals : \vt]\\
   {
     \left(\begin{array}{l}
@@ -1292,8 +1294,8 @@ to the corresponding string.
   \addnewfunc(\tenv, \name, \formals, \subpgmtype) \typearrow
   (\newtenv, \newname)
 }
-\end{mathpar}\lrmcomment{This is related to \identr{PGFC}.}
-
+\end{mathpar}
+\lrmcomment{This is related to \identr{PGFC}.}
 \CodeSubsection{\AddNewFuncBegin}{\AddNewFuncEnd}{../Typing.ml}
 
 \subsubsection{TypingRule.CheckSetterHasGetter \label{sec:TypingRule.CheckSetterHasGetter}}
@@ -1306,7 +1308,7 @@ The function
 checks whether the setter procedure given by $\funcsig$ has a corresponding getter,
 returning $\True$ if this condition holds and a type error otherwise.
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item checking that the subprogram type of $\funcsig$ is $\STSetter$ has one of two outcomes:
@@ -1328,7 +1330,7 @@ All of the following apply:
 \end{itemize}
 \CodeSubsection{\CheckSetterHasGetterBegin}{\CheckSetterHasGetterEnd}{../Typing.ml}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \issetter \eqdef \funcsig.\subprogramtype = \STSetter\\
@@ -1344,31 +1346,5 @@ All of the following apply:
   \checktrans{\vb_\ret}{\SetterWithoutGetter} \typearrow \True \OrTypeError
 }{
   \checksetterhasgetter(\tenv, \funcsig) \typearrow \overname{\True}{\vb}
-}
-\end{mathpar}
-
-\subsubsection{TypingRule.AddSubprogram \label{sec:TypingRule.AddSubprogram}}
-\hypertarget{def-addsubprogram}{}
-The function
-\[
-  \addsubprogram(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\Strings}{\name} \aslsep
-    \overname{\func}{\funcdef})
-   \aslto
-  \overname{\staticenvs}{\newtenv}
-\]
-updates the global environment of $\tenv$ by mapping the (unique) subprogram identifier $\name$
-to the function definition $\funcdef$ in $\tenv$, resulting in a new static environment $\newtenv$.
-
-\subsection{Prose}
-$\newtenv$ is $\tenv$ with its $\subprograms$ component updated by binding $\name$ to $\funcdef$.
-
-\subsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \newtenv \eqdef (G^\tenv.\subprograms[\name\mapsto\funcdef], L^\tenv)
-}{
-  \addsubprogram(\tenv, \name, \funcdef) \typearrow \newtenv
 }
 \end{mathpar}

@@ -624,7 +624,7 @@ All of the following apply:
   \item $\mbv$ consists of the native bitvector $\vbv$ and the execution graph $\vgtwo$;
   \item writing to the bitvector $\vbv$ at indices $\sliceranges$ using the values from $\vv$
   results in the updated native bitvector $\vvone$\ProseOrError;
-  \item $\vgthree$ is the parallel composition of $\vg$, $\vgone$, and $\vgtwo$;
+  \item $\vgthree$ is the parallel composition of $\vgone$, and $\vgtwo$;
   \item $\newmbv$ is a pair consisting of $\vvone$ and the execution graph $\vgthree$;
   \item the steps so far computed the updated bitvector, but have not assigned it to the
   variable bound to the bitvector given by $\ebv$, which is achieved next.
@@ -640,7 +640,7 @@ All of the following apply:
   \mbv \eqname (\vbv, \vgtwo)\\\\
   \checknonoverlappingslices(\sliceranges) \evalarrow \True \OrDynError\\\\
   \writetobitvector(\sliceranges, \vv, \vbv) \evalarrow \vvone \OrDynError\\\\
-  \vgthree \eqdef \vg \parallelcomp \vgone \parallelcomp \vgtwo\\
+  \vgthree \eqdef \vgone \parallelcomp \vgtwo\\
   \newmbv \eqdef (\vvone, \vgthree)\\
   \evallexpr{\envtwo, \ebv, \newmbv} \evalarrow C
 }{

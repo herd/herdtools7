@@ -38,23 +38,28 @@ transforms a parse node for a list of slices $\vparsednode$ into an AST node for
 \hypertarget{def-annotateslices}{}
 The function
 \[
-\annotateslices(\overname{\staticenvs}{\tenv}, \overname{\slice^*}{\vslices}) \aslto \overname{\slice^*}{\slicesp}
+\annotateslices(\overname{\staticenvs}{\tenv}, \overname{\slice^*}{\vslices}) \aslto
+(\overname{\slice^*}{\slicesp} \times \overname{\TSideEffectSet}{\vses})
 \]
 annotates a list of slices $\vslices$ in the static environment $\tenv$, yielding a list of annotated slices (that is,
-slices in the \typedast). \ProseOtherwiseTypeError
-\subsection{Prose}
+slices in the \typedast) and \sideeffectsetterm\ $\vses$.
+\ProseOtherwiseTypeError
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item annotating the slice $\vslices[\vi]$ in $\tenv$, for each $\vi\in\listrange(\vslices)$, yields the slice $\vs_\vi$\ProseOrTypeError;
-  \item define $\slicesp$ as the list of slices $\vs_\vi$, for each $\vi\in\listrange(\vslices)$.
+  \item annotating the slice $\vslices[\vi]$ in $\tenv$, for each $\vi\in\listrange(\vslices)$, yields \\
+        $(\vs_\vi, \vxs_i)$\ProseOrTypeError;
+  \item define $\slicesp$ as the list of slices $\vs_\vi$, for each $\vi\in\listrange(\vslices)$;
+  \item define $\vses$ as the union of all $\vxs_i$, for every \Proselistrange{$i$}{$\vslices$}.
 \end{itemize}
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \vi\in\listrange(\vslices): \annotateslice(\tenv, \vslices[\vi]) \typearrow \vs_\vi \OrTypeError\\\\
-  \slicesp \eqdef [\vi\in\listrange(\vslices): \vs_\vi]
+  i\in\listrange(\vslices): \annotateslice(\tenv, \vslices[i]) \typearrow (\vs_i, \vxs_i) \OrTypeError\\\\
+  \slicesp \eqdef [i\in\listrange(\vslices): \vs_i]\\
+  \vses \eqdef \bigcup_{i\in\listrange(\vslices)} \vxs_i
 }{
-  \annotateslices(\tenv, \vslices) \typearrow \slicesp
+  \annotateslices(\tenv, \vslices) \typearrow (\slicesp, \vses)
 }
 \end{mathpar}
 
@@ -229,12 +234,14 @@ One of the following applies:
   \begin{itemize}
     \item $\vs$ is a \lengthslice\ of length $\elength$ and offset $\eoffset$, that is, \\
           $\SliceLength(\eoffset, \elength)$;
-    \item annotating the expression $\eoffset$ in $\tenv$ yields $(\toffset, \eoffsetp)$\ProseOrTypeError;
+    \item annotating the expression $\eoffset$ in $\tenv$ yields \\
+          $(\toffset, \eoffsetp, \vsesoffset)$\ProseOrTypeError;
     \item annotating the \staticallyevaluable\ \constrainedinteger\ expression $\elength$ in $\tenv$ yields
-    $\elength$\ProseOrTypeError;
+    $(\elengthp, \vseslength)$\ProseOrTypeError;
     \item determining whether $\toffset$ has the \structureofinteger\ yields $\True$\ProseOrTypeError;
     \item $\vsp$ is the slice at offset $\eoffsetp$ and length $\elength'$, that is,\\
-     $\SliceLength(\eoffsetp, \elength')$.
+     $\SliceLength(\eoffsetp, \elength')$;
+     \item define $\vses$ as the union of $\vsesoffset$ and $\vseslength$.
   \end{itemize}
 
   \item All of the following apply (\textsc{scaled}):
@@ -267,14 +274,15 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[length]{
-  \annotateexpr{\tenv, \eoffset} \typearrow (\toffset, \eoffsetp) \OrTypeError\\\\
-  \annotatestaticconstrainedinteger(\tenv, \elength) \typearrow \elengthp \OrTypeError\\\\
-  \checkstructureinteger(\tenv, \toffset) \typearrow \True \OrTypeError
+  \annotateexpr{\tenv, \eoffset} \typearrow (\toffset, \eoffsetp, \vsesoffset) \OrTypeError\\\\
+  \annotatestaticconstrainedinteger(\tenv, \elength) \typearrow (\elengthp, \vseslength) \OrTypeError\\\\
+  \checkstructureinteger(\tenv, \toffset) \typearrow \True \OrTypeError\\\\
+  \vses \eqdef \vsesoffset \cup \vseslength
 }{
   {
     \begin{array}{r}
   \annotateslice(\tenv, \overname{\SliceLength(\eoffset, \elength)}{\vs}) \typearrow \\
-    \overname{\SliceLength(\eoffsetp, \elength')}{\vsp}
+    (\overname{\SliceLength(\eoffsetp, \elength')}{\vsp}, \vses)
     \end{array}
   }
 }
@@ -391,16 +399,16 @@ One of the following applies:
 The function
 \[
   \annotatestaticconstrainedinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-  \overname{\expr}{\vepp} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  (\overname{\expr}{\vepp} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates a \staticallyevaluable\ integer expression $\ve$ of a constrained integer type in the static environment $\tenv$
-and returns the annotated expression $\vepp$.
+and returns the annotated expression $\vepp$ and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item annotating the expression $\ve$ in $\tenv$ yields $ (\vt, \vep)$\ProseOrTypeError;
+  \item \Proseannotatestaticallyevaluableexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$\ProseOrTypeError};
   \item determining whether $\vt$ is a statically \constrainedinteger\ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item determining whether $\vep$ is \staticallyevaluable\  in $\tenv$ yields $\True$\ProseOrTypeError;
   \item applying $\normalize$ to $\vep$ in $\tenv$ yields $\vepp$.
@@ -408,12 +416,12 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \ve} \typearrow (\vt, \vep) \OrTypeError\\\\
+  \annotatestaticallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \vt) \typearrow \True \OrTypeError\\\\
   \checkstaticallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
   \normalize(\tenv, \vep) \typearrow \vepp
 }{
-  \annotatestaticconstrainedinteger(\tenv, \ve) \typearrow \vepp
+  \annotatestaticconstrainedinteger(\tenv, \ve) \typearrow (\vepp, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\StaticConstrainedIntegerBegin}{\StaticConstrainedIntegerEnd}{../Typing.ml}
