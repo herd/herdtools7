@@ -3692,8 +3692,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             annotate_and_declare_func ~loc f genv
           in
           let new_f, ses_f = try_annotate_subprogram env1 f1 ses_func_sig in
+          let () =
+            if
+              ISet.mem f.name (SES.get_calls_recursives ses_f)
+              && Option.is_none f.recurse_limit
+            then warn_from ~loc Error.(NoRecursionLimit [ f.name ])
+          in
           let ses_f = SES.remove_calls_recursives ses_f in
-          (* TODO if recursive, check recursion annotation. *)
           let new_d = D_Func new_f |> here
           and new_env = StaticEnv.add_subprogram new_f.name new_f ses_f env1 in
           (new_d, new_env.global) |: TypingRule.TypecheckDecl
@@ -3770,6 +3775,31 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     res
   (* End *)
 
+  (** [check_recursive_limit_annotations locs sess] emits a warning if there a
+      cycle in the call-graph described by [sess] without static annotations.
+
+      The argument [locs] is only used for identifying an location in which to
+      print the error.
+  *)
+  let check_recursive_limit_annotations locs sess =
+    let call_graph_without_annotated_functions =
+      List.filter_map
+        (function
+          | { recurse_limit = None; body = SB_ASL _; name }, ses ->
+              Some (name, SES.get_calls_recursives ses)
+          | _ -> None)
+        sess
+      |> IMap.of_list
+    in
+    match get_cycle call_graph_without_annotated_functions with
+    | None -> ()
+    | Some [] -> assert false
+    | Some (x :: _ as cycle) ->
+        let loc =
+          List.find (fun d -> String.equal x (identifier_of_decl d)) locs
+        in
+        warn_from ~loc Error.(NoRecursionLimit cycle)
+
   (* Begin TypeCheckMutuallyRec *)
   let type_check_mutually_rec ds (acc, genv0) =
     let () =
@@ -3835,6 +3865,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               (D_Func f |> here, (f, ses)))
         env_and_fs2
     in
+    let () = check_recursive_limit_annotations ds sess in
     let env3 =
       let sess_prop = propagate_recursive_calls_sess sess in
       (* AddSubprogramDecls( *)

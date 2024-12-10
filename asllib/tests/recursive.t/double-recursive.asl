@@ -1,4 +1,4 @@
-func f (x: integer) => integer
+func f (x: integer) => integer recurselimit 1000
 begin
   if x >= 0 then
     return 1 + g (x - 1);
@@ -23,5 +23,3 @@ begin
 
   return 0;
 end;
-  
-
