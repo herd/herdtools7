@@ -1,0 +1,306 @@
+<h1 id="pointer-authentication-code">Pointer Authentication Code</h1>
+<p>This note focus on Pointer Authentication Code with the different
+extensions: - <code>FEAT_Pauth</code>: Basic pointer authentication
+extension - <code>FEAT_Pauth2</code>: Change the way we add an
+authentication to a pointer - <code>FEAT_FPAC</code>: Allow to generate
+a fault dirrectly at the autheutiation in case of a fail, instead of
+faulting at memory translation.</p>
+<h2 id="instructions">Instructions</h2>
+<p>Pointer authentication add some new instructions, the new one are -
+<code>pac* x,y</code> with <code>*</code>the correponding authentication
+key (may be <code>da</code>, <code>db</code>, <code>ia</code> or
+<code>ib</code>), and their is some special instruction for diffent
+specific values of <code>y</code>, like <code>pacdza x</code> for
+<code>y=XZR</code>. This instruction add a pac field (a cryptographic
+signature of <code>(x, y)</code> using the given key) in the most
+significant bits of the virtual address <code>x</code>. We call
+<code>y</code> the modifier. - <code>xpacd x</code> or
+<code>xpaci x</code>: remove the pac field of the virtual address
+<code>x</code>, in abscence of address tagging the two instruction have
+the same semantic. - <code>aut* x, y</code>: authenticate the pac field
+of a virtual address using a given key, a virtual address <code>x</code>
+and a modifier <code>y</code>. If the anthentication is a success then
+this instruction return the initial value of <code>x</code> (it remove
+it’s pac field), otherwise a fault is generated.</p>
+<p>To understand the sequencial behaviour of these instruction we can
+write the following simplified table (in abscence of hash
+collisions):</p>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 27%" />
+<col style="width: 27%" />
+<col style="width: 27%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: left;">x0:</th>
+<th style="text-align: left;">x</th>
+<th style="text-align: left;">pac(x,da,0)</th>
+<th style="text-align: left;">pac(x,ia,0)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">ldr x1,[x0]</td>
+<td style="text-align: left;"><code>x1 &lt;- mem[x]</code></td>
+<td style="text-align: left;">Fault(Translation)</td>
+<td style="text-align: left;">Fault(Translation)</td>
+</tr>
+<tr>
+<td style="text-align: left;">pacdza x0</td>
+<td style="text-align: left;">pad(x,da,0)</td>
+<td style="text-align: left;">non deterministic</td>
+<td style="text-align: left;">non deterministic</td>
+</tr>
+<tr>
+<td style="text-align: left;">autdza x0</td>
+<td style="text-align: left;">Fault(PacCheck:DA)</td>
+<td style="text-align: left;">x</td>
+<td style="text-align: left;">Fault(PacCheck:DA)</td>
+</tr>
+<tr>
+<td style="text-align: left;">xpacd x0</td>
+<td style="text-align: left;">x</td>
+<td style="text-align: left;">x</td>
+<td style="text-align: left;">x</td>
+</tr>
+</tbody>
+</table>
+<h2 id="hash-collisions">Hash collisions</h2>
+<p>The cryptographic signatures in PAC are small, because they must be
+in the most significant bits of a virtual address. As example according
+to the tests I did in <code>KVM-unit-tests</code>, they are
+<code>15</code> bits (the PAC field is <code>16</code> bits long but the
+bit <code>55</code> is reserved to know the virtual address range of the
+signed pointer), so the probability that two random pac fields are
+equals is <code>p=1 / 32768</code>. In particular this means that this
+litmus test:</p>
+<pre><code>AArch64 Collisions in loads
+{ 0:x0=pac(x, da, 0) }
+P0              ;
+  ldr x1, [x0]  ;
+exists ( ~Fault(P0, MMU:Translation) )</code></pre>
+<p>will succeed with a probability <code>p</code>, and this test
+too:</p>
+<pre><code>AArch64 Collisions in aut*
+{ 0:x0=pac(x, da, 0) }
+P0          ;
+  autdzb x0 ;
+exists ( ~Fault(P0, PacCheck:DB) )</code></pre>
+<p>It’s important to note that the number of bits of the pac field
+depend of the context of execution and in particular the size of the
+virtual addresses, in another context the pac field may be
+<code>8</code> or <code>31</code> bits…</p>
+<p>But their is also some collisions in the final state:</p>
+<pre><code>AArch64 Collisions with the final state
+{ 0:x0=pac(x, da, 0) }
+P0    ;
+  nop ;
+exists ( 0:x0=pac(x, da, 42) )</code></pre>
+<p>and</p>
+<pre><code>AArch64 Collisions with the final state 2
+{ 0:x0=pac(x, da, 0) }
+P0    ;
+  nop ;
+exists ( 0:x0=x )</code></pre>
+<p>may succeed with a probability <code>p</code>.</p>
+<p>The difficulty here is that the set of collisions we found must be
+coherent, as example:</p>
+<pre><code>AArch64 Incoherent collisions (aut*)
+{
+    0:x0=pac(x, da, 0);
+    0:x1=pac(x, db, 0)
+}
+P0          ;
+  autdzb x0 ;
+exists ( 0:x1=pac(x, da, 0) /\ Fault(P0, PacCheck:DB) )</code></pre>
+<p>and</p>
+<pre><code>AArch64 Incoherent collisions (final state)
+{
+    0:x0=pac(x, da, 0);
+    0:x1=pac(x, db, 0)
+}
+P0    ;
+  nop ;
+exists ( 0:x0=pac(x, db, 0) /\ ~(0:x1=pac(x, da, 0)) )</code></pre>
+<p>and</p>
+<pre><code>AArch64 Incoherent collisions (cmp and autdzb)
+{
+    0:x0=pac(x, da, 0);
+    0:x1=pac(x, db, 0)
+}
+P0            ;
+  cmp x0, x1  ;
+  b.eq finish ;
+  autdzb x0   ;
+  mov x2,#1   ;
+finish:       ;
+exists ( 0:x2=1 )</code></pre>
+<p>will never succeed because at two different points they require that
+a same collision (<code>pac(x, da, 0) = pac(x, db, 0)</code>) is
+observed and not observed in the same execution.</p>
+<h2 id="memory-ordering">Memory ordering</h2>
+<p>Pointer signature and authentication may add new ordering
+dependencies in the memory model, in particular data dependency because
+the output of <code>pac*</code>, <code>aut*</code> and
+<code>xpac*</code> depend syntacticly of their inputs. But also control
+dependencies because <code>aut*</code> may fail and memory operation may
+fail if the virtual address they use as input is not canonical.</p>
+<h3 id="pac-instruction"><code>pac*</code> instruction:</h3>
+<p>The <code>pac*</code> instruction must add two register read data
+dependencies, in particular it will read two register and use their
+value to write the output value <code>pacda(x, da, 0x0)</code> in the
+destination register (<code>x0</code> in this example).</p>
+<p>In herd7, as I doesn’t emulate <code>FEAT_CONSTPACFIELD</code> to
+reproduce the semantic of the Apple M3, calling <code>pac*</code> to a
+non canonical pointer (with a pac field different to <code>0...0</code>
+or <code>1...1</code>) raise an user error because the result si
+non-deterministic (it may forget the virtual address range of the
+original pointer).</p>
+<p>So here is an example of litmus test with the pacda instruction:</p>
+<pre><code>AArch64 pacda
+{
+  0:x0=x;
+}
+P0               ;
+  pacda x0,x1      ;
+exists
+(0:x0=pac(x, da, 0))</code></pre>
+<figure>
+<img src="pacda.png" alt="Expected event graph for pacda" />
+<figcaption aria-hidden="true">Expected event graph for
+<code>pacda</code></figcaption>
+</figure>
+<h3 id="xpac-instruction"><code>xpac*</code> instruction:</h3>
+<p>The <code>xpacd</code> and <code>xpaci</code> instructions take a
+register and clear it’s PAC field (set it to <code>0...0</code> or
+<code>1...1</code> pepending of the bit 55 of the virtual address). So
+it add a data dependency between the input event and the output
+event.</p>
+<p>So here is a litmus test with the <code>xpacd</code> instruction:</p>
+<pre><code>AArch64 xpacd
+{ 0:x0=pac(x, da, 42) }
+P0         ;
+  xpacd x0 ;
+exists
+( 0:x0=x )</code></pre>
+<figure>
+<img src="xpacd.png" alt="Expected event graph for xpacd" />
+<figcaption aria-hidden="true">Expected event graph for
+<code>xpacd</code></figcaption>
+</figure>
+<h3 id="autinstruction"><code>aut*</code>instruction:</h3>
+<p>In presence of <code>FEAT_FPAC</code>, the <code>aut*</code>
+instruction is different to the <code>pacd*</code> instruction because
+it can raise a fault, so it add some <code>iico_ctrl</code>
+dependencies, and the presence of data dependencies depend of the
+success of the operation because the fault handling doesn’t dirrectly
+use the output register of <code>aut*</code> but only set the error code
+and add to the <code>esr_el1</code> register the the key
+(<code>ia</code>, <code>da</code>, <code>ib</code>, or <code>db</code>)
+that generate the fail.</p>
+<p>Here is a litmus test with <code>aut*</code> that must succede:</p>
+<pre><code>AArch64 autda success
+{ 0:x0=pac(x, da, 0) }
+P0            ;
+  autda x0,x1 ;
+exists
+( 0:x0=x /\ ~Fault(P0) )</code></pre>
+<figure>
+<img src="autda_success.png"
+alt="Expected event graph for an autda success" />
+<figcaption aria-hidden="true">Expected event graph for an
+<code>autda</code> success</figcaption>
+</figure>
+<p>And here is a litmut test that may fail (in abscence of a hash
+collision):</p>
+<pre><code>AArch64 autdb failure
+{ 0:x0=pac(x, da, 0) }
+P0            ;
+  autdb x0,x1 ;
+exists
+( 0:x0=pac(x, da, 0) /\ Fault(P0, PacCheck:DB) )</code></pre>
+<figure>
+<img src="autdb_failure.png"
+alt="Expected event graph for an autdb failure" />
+<figcaption aria-hidden="true">Expected event graph for an
+<code>autdb</code> failure</figcaption>
+</figure>
+<p><strong><em>Observation:</em></strong> If my understanting of PAC is
+correct, the write event in the register <code>x0</code> has a data
+dependency in the read event in the register <code>x1</code> in the
+success case. Even if the value we write in <code>x0</code> doesn’t
+semantically depend of the value of <code>x1</code> (the value is
+<code>x</code> in case of success that doesn’t depend of the modifier,
+and nothing is write in case of failure). This is because according to
+the Arm ARM the output value in <code>x0</code> contains in it’s most
+significant bits the exclusive <code>OR</code> of the pac field of
+<code>x0</code> and the pac field of
+<code>ComputePAC(x, X[1, 64])</code>, so the output has a syntactic
+dependency even if the ASL code raise a fault if this pac field is not
+equal to a constant 7 lines after this EOR.</p>
+<h3 id="ldr-instruction"><code>ldr</code> instruction:</h3>
+<p>Load instruction, in case we use virtual addresses, may have some
+additional dependencies to check that the virtual address is canonical.
+These dependencies are present also without Pointer Authentication, but
+PAC allow to generate non canonical pointers. To do this we must add a
+branching exent at each load that depend of the input address, and an
+intrinsic control dependency between this event and the load event each
+times we see an <code>ldr</code> instruction.</p>
+<p>Here is an example of <code>ldr</code> success:</p>
+<pre><code>AArch64 load success
+{ 0:x0=x; int x = 42; }
+P0;
+  ldr x1,[x0];
+exists
+( 0:x1=42 /\ ~Fault(P0) )</code></pre>
+<figure>
+<img src="ldr_success.png"
+alt="Expected event graph for an ldr success" />
+<figcaption aria-hidden="true">Expected event graph for an
+<code>ldr</code> success</figcaption>
+</figure>
+<p>And here is an example of <code>ldr</code> failure:</p>
+<pre><code>AArch64 load failure
+{ 0:x0=pac(x, da, 0); int x = 42; }
+P0;
+  ldr x1,[x0];
+exists
+( 0:x1=0 /\ Fault(P0,MMU:Translation) )</code></pre>
+<figure>
+<img src="ldr_failure.png"
+alt="Expected event graph for an ldr failure" />
+<figcaption aria-hidden="true">Expected event graph for an
+<code>ldr</code> failure</figcaption>
+</figure>
+<h3 id="str-instruction"><code>str</code> instruction:</h3>
+<p>Like the load instruction, the <code>str</code> instruction may fail
+because of an address translation failure.</p>
+<p>Here an example of litmus test to illustrate a <code>str</code>
+success:</p>
+<pre><code>AArch64 str success
+{ 0:x0=x; 0:x1=42 }
+P0;
+  str x1,[x0];
+exists
+( [x]=42 /\ ~Fault(P0) )</code></pre>
+<figure>
+<img src="str_success.png"
+alt="Expected event graph for an str success" />
+<figcaption aria-hidden="true">Expected event graph for an
+<code>str</code> success</figcaption>
+</figure>
+<p>And here is an example of a <code>str</code> failure:</p>
+<pre><code>AArch64 str failure
+{ 0:x0=pac(x, da, 0); int x = 42 }
+P0;
+  str x1,[x0];
+exists
+( [x]=42 /\ Fault(P0, MMU:Translation) )</code></pre>
+<figure>
+<img src="str_failure.png"
+alt="Expected event graph for an str failure" />
+<figcaption aria-hidden="true">Expected event graph for an
+<code>str</code> failure</figcaption>
+</figure>

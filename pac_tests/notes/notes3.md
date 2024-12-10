@@ -40,7 +40,7 @@ bit `55` is reserved to know the virtual address range of the signed pointer),
 so the probability that two random pac fields are equals is `p=1 / 32768`. In
 particular this means that this litmus test:
 
-```asm
+```
 AArch64 Collisions in loads
 { 0:x0=pac(x, da, 0) }
 P0              ;
@@ -50,7 +50,7 @@ exists ( ~Fault(P0, MMU:Translation) )
 
 will succeed with a probability `p`, and this test too:
 
-```asm
+```
 AArch64 Collisions in aut*
 { 0:x0=pac(x, da, 0) }
 P0          ;
@@ -64,7 +64,7 @@ another context the pac field may be `8` or `31` bits...
 
 But their is also some collisions in the final state:
 
-```asm
+```
 AArch64 Collisions with the final state
 { 0:x0=pac(x, da, 0) }
 P0    ;
@@ -74,7 +74,7 @@ exists ( 0:x0=pac(x, da, 42) )
 
 and
 
-```asm
+```
 AArch64 Collisions with the final state 2
 { 0:x0=pac(x, da, 0) }
 P0    ;
@@ -88,7 +88,7 @@ may succeed with a probability `p`.
 The difficulty here is that the set of collisions we found must be coherent, as
 example:
 
-```asm
+```
 AArch64 Incoherent collisions (aut*)
 {
     0:x0=pac(x, da, 0);
@@ -101,7 +101,7 @@ exists ( 0:x1=pac(x, da, 0) /\ Fault(P0, PacCheck:DB) )
 
 and
 
-```asm
+```
 AArch64 Incoherent collisions (final state)
 {
     0:x0=pac(x, da, 0);
@@ -114,7 +114,7 @@ exists ( 0:x0=pac(x, db, 0) /\ ~(0:x1=pac(x, da, 0)) )
 
 and
 
-```asm
+```
 AArch64 Incoherent collisions (cmp and autdzb)
 {
     0:x0=pac(x, da, 0);
@@ -156,8 +156,8 @@ pointer).
 
 So here is an example of litmus test with the pacda instruction:
 
-```asm
-AArch64 example.litmus
+```
+AArch64 pacda
 {
   0:x0=x;
 }
@@ -167,20 +167,7 @@ exists
 (0:x0=pac(x, da, 0))
 ```
 
-And here is the expected event graph:
-
-```dot
-digraph G {
-    eiid0 [label="ix:W[x]=0", shape="none", fixedsize="false", height="0.194444", width="1.166667"];
-    subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
-        eiid1 [label="b: R0:X0q=x", shape="none", fixedsize="false", height="0.194444", width="1.555556"];
-        eiid2 [label="c: R0:X1q=0", shape="none", fixedsize="false", height="0.194444", width="1.555556"];
-        eiid3 [label="d: W0:X0q=pac(x, da, 0x0, 0)", shape="none", fixedsize="false", height="0.194444", width="4.861111"];
-    }
-    eiid1 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
-    eiid2 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
-}
-```
+![Expected event graph for `pacda`](pacda.png)
 
 ### `xpac*` instruction:
 
@@ -190,8 +177,8 @@ So it add a data dependency between the input event and the output event.
 
 So here is a litmus test with the `xpacd` instruction:
 
-```asm
-AArch64 example.litmus
+```
+AArch64 xpacd
 { 0:x0=pac(x, da, 42) }
 P0         ;
   xpacd x0 ;
@@ -199,20 +186,9 @@ exists
 ( 0:x0=x )
 ```
 
-and here is the expected event graph:
+![Expected event graph for `xpacd`](xpacd.png)
 
-```dot
-digraph G {
-    eiid0 [label="ix:W[x]=0", shape="none", fixedsize="false", height="0.194444", width="1.166667"];
-    subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
-        eiid1 [label="b: R0:X0q=pac(x, da, 0x2a, 0)", shape="none", fixedsize="false", height="0.194444", width="5.055556"];
-        eiid2 [label="c: W0:X0q=x", shape="none", fixedsize="false", height="0.194444", width="1.555556"];
-    }
-    eiid1 -> eiid2 [label="iico_data", color="black", fontcolor="black"];
-}
-```
-
-### `aut*`instruction:
+### `aut*` instruction:
 
 In presence of `FEAT_FPAC`, the `aut*` instruction is different to the `pacd*`
 instruction because it can raise a fault, so it add some `iico_ctrl`
@@ -223,7 +199,7 @@ the key (`ia`, `da`, `ib`, or `db`) that generate the fail.
 
 Here is a litmus test with `aut*` that must succede:
 
-```asm
+```
 AArch64 autda success
 { 0:x0=pac(x, da, 0) }
 P0            ;
@@ -232,29 +208,12 @@ exists
 ( 0:x0=x /\ ~Fault(P0) )
 ```
 
-and the expected event graph:
-
-```dot
-digraph G {
-    eiid0 [label="ix:W[x]=0", shape="none", fixedsize="false", height="0.194444", width="1.166667"];
-    subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
-        eiid1 [label="b: R0:X0q=pac(x, da, 0x0, 0)", shape="none", fixedsize="false", height="0.194444", width="4.861111"];
-        eiid2 [label="c: R0:X1q=0", shape="none", fixedsize="false", height="0.194444", width="1.555556"];
-        eiid3 [label="d: Branching(pred)", shape="none", fixedsize="false", height="0.194444", width="2.916667"];
-        eiid4 [label="e: W0:X0q=x", shape="none", fixedsize="false", height="0.194444", width="1.555556"];
-    }
-    eiid1 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
-    eiid1 -> eiid4 [label="iico_data", color="black", fontcolor="black"];
-    eiid2 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
-    eiid2 -> eiid4 [label="iico_data", color="black", fontcolor="black"];
-    eiid3 -> eiid4 [label="iico_ctrl", color="grey", fontcolor="grey"];
-}
-```
+![Expected event graph for an `autda` success](autda_success.png)
 
 And here is a litmut test that may fail (in abscence of a hash collision):
 
-```asm
-AArch64 autda success
+```
+AArch64 autdb failure
 { 0:x0=pac(x, da, 0) }
 P0            ;
   autdb x0,x1 ;
@@ -262,23 +221,8 @@ exists
 ( 0:x0=pac(x, da, 0) /\ Fault(P0, PacCheck:DB) )
 ```
 
-and the expected event graph:
+![Expected event graph for an `autdb` failure](autdb_failure.png)
 
-```dot
-digraph G {
-    eiid0 [label="ix:W[x]=0", shape="none", fixedsize="false", height="0.194444", width="1.166667"];
-    subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
-        eiid1 [label="b: R0:X0q=pac(x, da, 0x0, 0)", shape="none", fixedsize="false", height="0.194444", width="4.861111"];
-        eiid2 [label="c: R0:X1q=0", shape="none", fixedsize="false", height="0.194444", width="1.555556"];
-        eiid3 [label="d: Branching(pred)", shape="none", fixedsize="false", height="0.194444", width="2.916667"];
-        eiid4 [label="e: Fault(R,PacCheck:DB)", shape="none", fixedsize="false", height="0.194444", width="3.888889"];
-    }
-    eiid1 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
-    eiid2 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
-    eiid3 -> eiid4 [label="iico_ctrl", color="grey", fontcolor="grey"];
-}
-
-```
 
 ***Observation:*** If my understanting of PAC is correct, the write event in
 the register `x0` has a data dependency in the read event in the register `x1`
@@ -302,7 +246,7 @@ event and the load event each times we see an `ldr` instruction.
 
 Here is an example of `ldr` success:
 
-```asm
+```
 AArch64 load success
 { 0:x0=x; int x = 42; }
 P0;
@@ -311,28 +255,11 @@ exists
 ( 0:x1=42 /\ ~Fault(P0) )
 ```
 
-and here is it's expected event graph:
-
-```dot
-digraph G {
-    eiid1 [label="ix:W[x]=42", shape="none", fixedsize="false", height="0.194444", width="1.361111"];
-    subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
-        eiid0 [label="a: R[x]q=42", shape="none", fixedsize="false", height="0.194444", width="1.555556"];
-        eiid2 [label="c: R0:X0q=x", shape="none", fixedsize="false", height="0.194444", width="1.555556"];
-        eiid3 [label="d: Branching(pred)(pac)", shape="none", fixedsize="false", height="0.194444", width="3.888889"];
-        eiid4 [label="e: W0:X1q=42", shape="none", fixedsize="false", height="0.194444", width="1.750000"];
-    }
-    eiid0 -> eiid4 [label="iico_data", color="black", fontcolor="black"];
-    eiid2 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
-    eiid2 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
-    eiid1 -> eiid0 [label="rf", color="red", fontcolor="red"];
-    eiid3 -> eiid0 [label="iico_ctrl", color="grey", fontcolor="grey"];
-}
-```
+![Expected event graph for an `ldr` success](ldr_success.png)
 
 And here is an example of `ldr` failure:
 
-```asm
+```
 AArch64 load failure
 { 0:x0=pac(x, da, 0); int x = 42; }
 P0;
@@ -341,21 +268,7 @@ exists
 ( 0:x1=0 /\ Fault(P0,MMU:Translation) )
 ```
 
-and here is it's expected event graph:
-
-```dot
-digraph G {
-    eiid0 [label="ix:W[x]=42", shape="none", fixedsize="false", height="0.194444", width="1.361111"];
-    subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
-        eiid1 [label="b: R0:X0q=pac(x, da, 0x0, 0)", shape="none", fixedsize="false", height="0.194444", width="4.861111"];
-        eiid2 [label="c: Branching(pred)", shape="none", fixedsize="false", height="0.194444", width="2.916667"];
-        eiid3 [label="d: Fault(R,loc:pac(x, da, 0x0, 0),MMU:Translation)", shape="none", fixedsize="false", height="0.194444", width="9.138889"];
-    }
-    eiid1 -> eiid2 [label="iico_data", color="black", fontcolor="black"];
-    eiid1 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
-    eiid2 -> eiid3 [label="iico_ctrl", color="grey", fontcolor="grey"];
-}
-```
+![Expected event graph for an `ldr` failure](ldr_failure.png)
 
 ### `str` instruction:
 
@@ -364,7 +277,7 @@ translation failure.
 
 Here an example of litmus test to illustrate a `str` success:
 
-```asm
+```
 AArch64 str success
 { 0:x0=x; 0:x1=42 }
 P0;
@@ -373,28 +286,11 @@ exists
 ( [x]=42 /\ ~Fault(P0) )
 ```
 
-and here is it's expected event graph:
-
-```dot
-digraph G {
-    eiid1 [label="ix:W[x]=0", shape="none", fixedsize="false", height="0.194444", width="1.166667"];
-    subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
-        eiid0 [label="a: W[x]q=42", shape="none", fixedsize="false", height="0.194444", width="1.555556"];
-        eiid2 [label="c: R0:X0q=x", shape="none", fixedsize="false", height="0.194444", width="1.555556"];
-        eiid3 [label="d: Branching(pred)(pac)", shape="none", fixedsize="false", height="0.194444", width="3.888889"];
-        eiid4 [label="e: R0:X1q=42", shape="none", fixedsize="false", height="0.194444", width="1.750000"];
-    }
-    eiid2 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
-    eiid2 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
-    eiid4 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
-    eiid3 -> eiid0 [label="iico_ctrl", color="grey", fontcolor="grey"];
-    eiid1 -> eiid0 [label="ca", color="blue", fontcolor="blue"];
-}
-```
+![Expected event graph for an `str` success](str_success.png)
 
 And here is an example of a `str` failure:
 
-```asm
+```
 AArch64 str failure
 { 0:x0=pac(x, da, 0); int x = 42 }
 P0;
@@ -403,18 +299,4 @@ exists
 ( [x]=42 /\ Fault(P0, MMU:Translation) )
 ```
 
-and here is it's associated event graph:
-
-```dot
-digraph G {
-    eiid0 [label="ix:W[x]=42", shape="none", fixedsize="false", height="0.194444", width="1.361111"];
-    subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
-        eiid1 [label="b: R0:X0q=pac(x, da, 0x0, 0)", shape="none", fixedsize="false", height="0.194444", width="4.861111"];
-        eiid2 [label="c: Branching(pred)", shape="none", fixedsize="false", height="0.194444", width="2.916667"];
-        eiid3 [label="d: Fault(W,loc:pac(x, da, 0x0, 0),MMU:Translation)", shape="none", fixedsize="false", height="0.194444", width="9.138889"];
-    }
-    eiid1 -> eiid2 [label="iico_data", color="black", fontcolor="black"];
-    eiid1 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
-    eiid2 -> eiid3 [label="iico_ctrl", color="grey", fontcolor="grey"];
-}
-```
+![Expected event graph for an `str` failure](str_failure.png)
