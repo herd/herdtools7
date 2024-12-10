@@ -3707,8 +3707,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             annotate_and_declare_func ~loc f genv
           in
           let new_f, ses_f = try_annotate_subprogram env1 f1 ses_func_sig in
+          let () =
+            if
+              ISet.mem f.name (SES.get_calls_recursives ses_f)
+              && Option.is_none f.recurse_limit
+            then warn_from ~loc Error.(NoRecursionLimit [ f.name ])
+          in
           let ses_f = SES.remove_calls_recursives ses_f in
-          (* TODO if recursive, check recursion annotation. *)
           let new_d = D_Func new_f |> here
           and new_env = StaticEnv.add_subprogram new_f.name new_f ses_f env1 in
           (new_d, new_env.global) |: TypingRule.TypecheckDecl
@@ -3847,6 +3852,25 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               in
               (D_Func f |> here, (f, ses)))
         env_and_fs2
+    in
+    let () =
+      let call_graph_without_annotated_functions =
+        List.filter_map
+          (function
+            | { recurse_limit = None; body = SB_ASL _; name }, ses ->
+                Some (name, SES.get_calls_recursives ses)
+            | _ -> None)
+          sess
+        |> IMap.of_list
+      in
+      match get_cycle call_graph_without_annotated_functions with
+      | None -> ()
+      | Some [] -> assert false
+      | Some (x :: _ as cycle) ->
+          let loc =
+            List.find (fun d -> String.equal x (identifier_of_decl d)) ds
+          in
+          warn_from ~loc Error.(NoRecursionLimit cycle)
     in
     (* AddSubprogramDecls( *)
     let env3 =

@@ -7,7 +7,7 @@ begin
   end;
 end;
 
-func bar (n: integer) => integer
+func bar (n: integer) => integer recurselimit 1000
 begin
   return n * foo (n - 1);
 end;
