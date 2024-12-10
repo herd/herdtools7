@@ -5,7 +5,7 @@ x = 0;
 0:X1=x;
 }
 
-func T0(x::bits(64))
+func T0(x:bits(64))
 begin
   var s: integer = 0;
   var i = UInt(read_memory{32}(x));
@@ -16,7 +16,7 @@ begin
   until i <= 0;
 end;
 
-func T1(x::bits(64))
+func T1(x:bits(64))
 begin
   for k = 1 to 3 do
     write_memory{32}(x,k[31:0]);
