@@ -148,7 +148,7 @@ let nclist(x) :=
   | h=x; COMMA; t=nclist(x); { h :: t }
 
 (* A comma separated list. *)
-let clist(x) == { [] } | nclist(x)
+let clist(x) := { [] } | nclist(x)
 
 (* A comma separated list with at least 2 elements. *)
 let clist2(x) := ~=x; COMMA; li=nclist(x); { x :: li }
@@ -274,7 +274,10 @@ let expr :=
     | ARBITRARY; colon_for_type; ~=ty;                        < E_Arbitrary        >
     | e=pared(expr);                                          { E_Tuple [ e ]        }
 
-    | t=annotated(IDENTIFIER); fields=braced(clist(field_assign));
+    (* For E_Record we use an inlined clist to avoid a shift/reduce conflict with elided_param_call's empty case *)
+    | t=annotated(IDENTIFIER); LBRACE; RBRACE;
+        { E_Record (add_pos_from t (T_Named t.desc), []) }
+    | t=annotated(IDENTIFIER); fields=braced(nclist(field_assign));
         { E_Record (add_pos_from t (T_Named t.desc), fields) }
     (* Excluded from expr_pattern *)
     | ~=plist2(expr);                                             < E_Tuple              >
@@ -325,7 +328,10 @@ let expr_pattern :=
     | ARBITRARY; colon_for_type; ~=ty;                                < E_Arbitrary        >
     | e=pared(expr_pattern);                                          { E_Tuple [ e ]        }
 
-    | t=annotated(IDENTIFIER); fields=braced(clist(field_assign));
+    (* For E_Record we use an inlined clist to avoid a shift/reduce conflict with elided_param_call *)
+    | t=annotated(IDENTIFIER); LBRACE; RBRACE;
+        { E_Record (add_pos_from t (T_Named t.desc), []) }
+    | t=annotated(IDENTIFIER); fields=braced(nclist(field_assign));
         { E_Record (add_pos_from t (T_Named t.desc), fields) }
   )
 
@@ -443,18 +449,20 @@ let untyped_decl_item :=
 (* ------------------------------------------------------------------------- *)
 (* Statement helpers *)
 
-let local_decl_keyword :=
+let local_decl_keyword_non_var :=
   | LET       ; { LDK_Let       }
   | CONSTANT  ; { LDK_Constant  }
-  (* We can't have VAR here otherwise there is a conflict (grammar is not LR1).
+  (* Var is inlined inside stmt as it has differing production choices
   | VAR       ; { LDK_Var       }
   *)
 
-let storage_keyword ==
+let storage_keyword_non_var :=
   | LET       ; { GDK_Let      }
   | CONSTANT  ; { GDK_Constant }
-  | VAR       ; { GDK_Var      }
   | CONFIG    ; { GDK_Config   }
+  (* Var conflicts with global_uninit_var and as such is inlined in the decl production
+  | VAR       ; { GDK_Var      }
+  *)
 
 let pass == { S_Pass }
 let assign(x, y) == ~=x ; EQ ; ~=y ; < S_Assign >
@@ -500,7 +508,7 @@ let stmt :=
       | RETURN; ~=option(expr);                             < S_Return >
       | ~=call;                                              < s_call >
       | ASSERT; e=expr;                                      < S_Assert >
-      | ~=local_decl_keyword; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
+      | ~=local_decl_keyword_non_var; ~=decl_item; EQ; ~=some(expr); < S_Decl   >
       | le=lexpr; EQ; e=expr;                                < S_Assign >
       | call=annotated(call); EQ; rhs=expr;
         { desugar_setter call [] rhs }
@@ -508,7 +516,7 @@ let stmt :=
         { desugar_setter call [fld] rhs }
       | call=annotated(call); DOT; flds=bracketed(clist2(IDENTIFIER)); EQ; rhs=expr;
         { desugar_setter call flds rhs }
-      | ldk=local_decl_keyword; lhs=decl_item; EQ; call=annotated(elided_param_call);
+      | ldk=local_decl_keyword_non_var; lhs=decl_item; EQ; call=annotated(elided_param_call);
         { desugar_elided_parameter ldk lhs call}
       | VAR; ldi=decl_item; e=option_eq_expr;              { S_Decl (LDK_Var, ldi, e) }
       | VAR; ~=clist2(IDENTIFIER); ~=as_ty;                  < make_ldi_vars >
@@ -644,9 +652,12 @@ let decl :=
       | TYPE; x=IDENTIFIER; s=annotated(subtype);         < make_ty_decl_subtype >
       (* End *)
       (* Begin global_storage *)
-      | keyword=storage_keyword; name=ignored_or_identifier;
+      | keyword=storage_keyword_non_var; name=ignored_or_identifier;
         ty=option(as_ty); EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword; name; ty; initial_value } }
+      | VAR; name=ignored_or_identifier;
+        ty=option(as_ty); EQ; initial_value=some(expr);
+        { D_GlobalStorage { keyword=GDK_Var; name; ty; initial_value } }
       (* End *)
       (* Begin global_uninit_var *)
       | VAR; name=ignored_or_identifier; ty=some(as_ty);
