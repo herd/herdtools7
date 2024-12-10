@@ -3,7 +3,7 @@ begin
   return foo (n);
 end;
 
-func foo (n: integer) => integer
+func foo (n: integer) => integer recurselimit 1000
 begin
   if n <= 0 then return 0; end;
   let x = not_throwing (n - 1) * (ARBITRARY: integer);

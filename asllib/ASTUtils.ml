@@ -135,6 +135,15 @@ let list_take =
     if n < 0 then raise (Invalid_argument "list_take");
     aux [] n li
 
+let list_take_until =
+  let rec aux pred accu = function
+    | [] -> raise Not_found
+    | x :: xs ->
+        let accu' = x :: accu in
+        if pred x then List.rev accu' else aux pred accu' xs
+  in
+  fun pred li -> aux pred [] li
+
 let uniq l =
   List.fold_left (fun acc x -> if List.mem x acc then acc else x :: acc) [] l
   |> List.rev
@@ -875,3 +884,38 @@ let rec transitive_closure m0 =
       m0 m0
   in
   if IMap.equal ISet.equal m0 m1 then m0 else transitive_closure m1
+
+let get_cycle =
+  (* Depth first search for a cycle.
+
+     [m] is the graph represented as a Map from a node to its successors;
+     [seen] is the set of already seen nodes;
+     [path] is the set of nodes along the branch currently taken, with the
+       parent of the current node just on top, the starting point of the
+       algorithm being the lowest on the stack;
+     [above] is the set of nodes in path;
+
+     When a cycle is found, the exception [Cycle] is used for early return.
+  *)
+  let exception Cycle of identifier list in
+  let rec dfs m path above e seen =
+    if ISet.mem e above then
+      let cycle =
+        try list_take_until (String.equal e) path
+        with Not_found -> assert false
+      in
+      raise (Cycle cycle)
+    else if ISet.mem e seen then seen
+    else
+      let path' = e :: path
+      and above' = ISet.add e above
+      and seen' = ISet.add e seen
+      and succs = try IMap.find e m with Not_found -> ISet.empty in
+      ISet.fold (dfs m path' above') succs seen'
+  in
+  fun m ->
+    try
+      let above0 = ISet.empty and seen0 = ISet.empty and path0 = [] in
+      let _ = IMap.fold (fun x _ -> dfs m path0 above0 x) m seen0 in
+      None
+    with Cycle e -> Some (List.rev e)

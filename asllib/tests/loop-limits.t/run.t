@@ -89,6 +89,9 @@ Recursion limits:
 =================
 
   $ aslref recursion-no-limit.asl
+  File recursion-no-limit.asl, line 1, character 0 to line 5, character 4:
+  ASL Warning: the recursive function recurse has no recursive limit
+  annotation.
   Number of calls: 11
   Number of calls: 11
 

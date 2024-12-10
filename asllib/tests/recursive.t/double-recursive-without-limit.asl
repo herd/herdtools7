@@ -1,10 +1,15 @@
-func f (x: integer) => integer recurselimit 1000
+func f (x: integer) => integer
 begin
   if x >= 0 then
-    return 1 + f (x - 1);
+    return 1 + g (x - 1);
   else
     return 0;
   end;
+end;
+
+func g (x: integer) => integer
+begin
+  return f (x);
 end;
 
 func main () => integer
@@ -19,3 +24,4 @@ begin
   return 0;
 end;
   
+
