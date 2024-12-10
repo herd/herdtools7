@@ -112,7 +112,7 @@ Semantic evaluation binds values to storage elements when a specification is sem
 To formalize this, we define the set of \emph{\nativevalues}, denoted $\vals$
 (\texttt{NV} stands for Native Value).
 
-\subsection{Prose}
+\subsubsection{Prose}
 The set of \nativevalues\ $\vals$ is the minimal set satisfying all of the following rules:
 \begin{itemize}
   \item \textsc{basis set}: if $\vv$ is a literal then $\nvliteral{\vv}$ is a \nativevalue;
@@ -120,7 +120,7 @@ The set of \nativevalues\ $\vals$ is the minimal set satisfying all of the follo
   \item \textsc{record values}: if $\vr$ is a finite function from identifiers to \nativevalues\ then $\nvrecord{\vr}$ is a \nativevalue.
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \hypertarget{def-nvliteral}{}
 \hypertarget{def-nvvector}{}
 \hypertarget{def-nvrecord}{}

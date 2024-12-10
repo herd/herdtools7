@@ -4,7 +4,8 @@ Patterns are grammatically derived from $\Npattern$ and represented as an AST by
 \hypertarget{build-pattern}{}
 The function
 \[
-  \buildpattern(\overname{\parsenode{\Npattern}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
+  \buildpattern(\overname{\parsenode{\Npattern}}{\vparsednode}) \;\aslto\;
+  \overname{\pattern}{\vastnode}
 \]
 transforms a pattern parse node $\vparsednode$ into a pattern AST node $\vastnode$.
 
@@ -14,10 +15,13 @@ The function
   \annotatepattern(
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\ty}{\vt} \aslsep
-    \overname{\pattern}{\vp}) \aslto \overname{\pattern}{\newp} \cup \overname{\TTypeError}{\TypeErrorConfig}
+    \overname{\pattern}{\vp}) \aslto
+    (\overname{\pattern}{\newp} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates a pattern $\vp$ in a static environment $\tenv$ given a type $\vt$,
-resulting in $\newp$, which is the typed AST node for $\vp$. \ProseOtherwiseTypeError.
+resulting in $\newp$, which is the typed AST node for $\vp$
+and the inferred \sideeffectsetterm\ $\vses$.
+\ProseOtherwiseTypeError.
 
 The relation
 \hypertarget{def-evalpattern}{}
@@ -75,13 +79,14 @@ we list those in \secref{ASTRulesForPatternExpressions}.
 All of the following apply:
 \begin{itemize}
   \item $\vp$ is the pattern matching everything, that is, $\PatternAll$;
-  \item $\newp$ is $\vp$.
+  \item $\newp$ is $\vp$;
+  \item define $\vses$ to be the empty set.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{}
 {
-  \annotatepattern(\tenv, \vt, \overname{\PatternAll}{\vp}) \typearrow \overname{\PatternAll}{\newp}
+  \annotatepattern(\tenv, \vt, \overname{\PatternAll}{\vp}) \typearrow (\overname{\PatternAll}{\newp}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
 \CodeSubsection{\PAllBegin}{\PAllEnd}{../Typing.ml}
@@ -133,7 +138,8 @@ All of the following apply:
 All of the following apply:
 \begin{itemize}
   \item $\vp$ is the pattern that matches the expression $\ve$, that is, $\PatternSingle(\ve)$;
-  \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep)$\ProseOrTypeError;
+  \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vses)$\ProseOrTypeError;
+  \item \Prosecheckstaticallyevaluable{$\vses$};
   \item obtaining the \underlyingtype\ of $\vt$ yields $\vtstruct$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vte$ yields $\testruct$\ProseOrTypeError;
   \item One of the following holds:
@@ -170,14 +176,15 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[t\_bool, t\_real, t\_int, t\_string]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
+  \checkstaticallyevaluable(\vses) \typearrow \OrTypeError\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
   \commonprefixline\\\\
   \astlabel(\vtstruct) \in \{\TBool, \TReal, \TInt, \TString\}\\
   \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\InvalidOperandTypesForBinop} \checktransarrow \True \OrTypeError
 }{
-  \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow \overname{\PatternSingle(\vep)}{\newp}
+  \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow (\overname{\PatternSingle(\vep)}{\newp}, \vses)
 }
 \end{mathpar}
 
@@ -192,7 +199,7 @@ All of the following apply:
   \bitwidthequal(\tenv, \vtstruct, \testruct) \typearrow \vb\\
   \checktrans{\vb}{BitvectorsDifferentWidths} \checktransarrow \True \OrTypeError
 }{
-  \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow \overname{\PatternSingle(\vep)}{\newp}
+  \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow (\overname{\PatternSingle(\vep)}{\newp}, \vses)
 }
 \end{mathpar}
 
@@ -208,7 +215,7 @@ All of the following apply:
   \vtestruct \eqname \TEnum(\vlitwo)\\
   \checktrans{\vlione = \vlitwo}{EnumDifferentLabels} \checktransarrow \True \OrTypeError\\
 }{
-  \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow \overname{\PatternSingle(\vep)}{\newp}
+  \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow (\overname{\PatternSingle(\vep)}{\newp}, \vses)
 }
 \end{mathpar}
 
@@ -285,8 +292,9 @@ All of the following apply:
 \begin{itemize}
   \item $\vp$ is the pattern which matches anything within the range given by
   expressions $\veone$ and $\vetwo$, that is, $\PatternRange(\veone, \vetwo)$;
-  \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \veonep)$\ProseOrTypeError;
-  \item annotating the expression $\vetwo$ in $\tenv$ yields $(\vtetwo, \vetwop)$\ProseOrTypeError;
+  \item \Proseannotatestaticallyevaluableexpr{$\tenv$}{$\veone$}{$(\vteone, \veonep, \vsesone)$}\ProseOrTypeError;
+  \item \Proseannotatestaticallyevaluableexpr{$\tenv$}{$\vetwo$}{$(\vtetwo, \vetwop, \vsestwo)$}\ProseOrTypeError;
+  \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$ (which do not conflict since that are both \staticallyevaluable);
   \item determining whether both $\veonep$ and $\vetwop$ are compile-time constant expressions yields $\True$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ for $\vt$, $\vteone$, and $\vtetwo$ yields
         $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$, respectively\ProseOrTypeError;
@@ -299,8 +307,9 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \veonep) \OrTypeError\\\\
-  \annotateexpr{\tenv, \vetwo} \typearrow (\vtetwo, \vetwop) \OrTypeError\\\\
+  \annotatestaticallyevaluableexpr{\tenv, \veone} \typearrow (\vteone, \veonep, \vsesone) \OrTypeError\\\\
+  \annotatestaticallyevaluableexpr{\tenv, \vetwo} \typearrow (\vtetwo, \vetwop, \vsestwo) \OrTypeError\\\\
+  \vses \eqdef \vsesone \cup \vsestwo\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vteonestruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vtetwo) \typearrow \vtetwostruct \OrTypeError\\\\
@@ -312,7 +321,7 @@ All of the following apply:
   }\\
   \checktrans{\vb}{InvalidTypesForBinop} \checktransarrow \True \OrTypeError
 }{
-  \annotatepattern(\tenv, \vt, \overname{\PatternRange(\veone, \vetwo)}{\vp}) \typearrow \overname{\PatternRange(\veonep, \vetwop)}{\newp}
+  \annotatepattern(\tenv, \vt, \overname{\PatternRange(\veone, \vetwo)}{\vp}) \typearrow (\overname{\PatternRange(\veonep, \vetwop)}{\newp}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\PRangeBegin}{\PRangeEnd}{../Typing.ml}
@@ -382,8 +391,8 @@ All of the following apply:
 \begin{itemize}
 \item $\vp$ is the pattern which matches anything less than or equal to an expression $\ve$,
 that is, $\PatternLeq(\ve)$;
-\item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep)$\ProseOrTypeError;
-\item determining whether $\vep$ is a \staticallyevaluable\ expression yields $\True$\ProseOrTypeError;
+\item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vses)$\ProseOrTypeError;
+\item \Prosecheckstaticallyevaluable{$\vses$};
 \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
 \item obtaining the \underlyingtype\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
 \item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both real types;
@@ -395,8 +404,8 @@ which short-circuits the entire rule;
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
-  \checkstaticallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
+  \checkstaticallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
   {
@@ -407,7 +416,7 @@ which short-circuits the entire rule;
   }\\
   \checktrans{\vb}{InvalidTypesForBinop} \checktransarrow \True \OrTypeError
 }{
-  \annotatepattern(\tenv, \vt, \overname{\PatternLeq(\ve)}{\vp}) \typearrow \overname{\PatternLeq(\vep)}{\newp}
+  \annotatepattern(\tenv, \vt, \overname{\PatternLeq(\ve)}{\vp}) \typearrow (\overname{\PatternLeq(\vep)}{\newp}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\PLeqBegin}{\PLeqEnd}{../Typing.ml}
@@ -466,22 +475,22 @@ All of the following apply:
 All of the following apply:
 \begin{itemize}
 \item $\vp$ is the pattern which matches anything greater than or equal to an expression $\ve$,
-that is, $\PatternGeq(\ve)$;
-\item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep)$\ProseOrTypeError;
-\item determining whether $\vep$ is a \staticallyevaluable\ expression yields $\True$\ProseOrTypeError;
+      that is, $\PatternGeq(\ve)$;
+\item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vses)$\ProseOrTypeError;
+\item \Prosecheckstaticallyevaluable{$\vses$};
 \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
 \item obtaining the \underlyingtype\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
 \item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both real types;
 \item if $\vb$ is $\False$ a type error is returned (indicating that the types of $\vt$ and $\vte$
       are inappropriate for the $\GEQ$ operator),
-which short-circuits the entire rule;
+      which short-circuits the entire rule;
 \item $\newp$ is the pattern which matches anything greater than or equal to $\vep$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
-  \checkstaticallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
+  \checkstaticallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
   {
@@ -492,7 +501,7 @@ which short-circuits the entire rule;
   }\\
   \checktrans{\vb}{InvalidTypesForBinop} \checktransarrow \True \OrTypeError
 }{
-  \annotatepattern(\tenv, \vt, \overname{\PatternGeq(\ve)}{\vp}) \typearrow \overname{\PatternGeq(\vep)}{\newp}
+  \annotatepattern(\tenv, \vt, \overname{\PatternGeq(\ve)}{\vp}) \typearrow (\overname{\PatternGeq(\vep)}{\newp}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\PGeqBegin}{\PGeqEnd}{../Typing.ml}
@@ -555,7 +564,8 @@ All of the following apply:
   \item $\vn$ is the length of mask $\vm$;
   \item determining whether $\vt$ \typesatisfies\ the bitvector type of length $\vn$ \\
         (that is, $\TBits(\vn, \emptylist)$), yields $\True$\ProseOrTypeError;
-  \item $\newp$ is $\vp$.
+  \item $\newp$ is $\vp$;
+  \item define $\vses$ as the empty set.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
@@ -564,7 +574,7 @@ All of the following apply:
   \vn \eqdef \listlen{\vm}\\
   \checktypesat(\tenv, \vt, \TBits(\vn, \emptylist)) \typearrow \True \OrTypeError
 }{
-  \annotatepattern(\tenv, \vt, \overname{\PatternMask(\vm)}{\vp}) \typearrow \overname{\PatternMask(\vm)}{\newp}
+  \annotatepattern(\tenv, \vt, \overname{\PatternMask(\vm)}{\vp}) \typearrow (\overname{\PatternMask(\vm)}{\newp}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
 \CodeSubsection{\PMaskBegin}{\PMaskEnd}{../Typing.ml}
@@ -647,10 +657,11 @@ All of the following apply:
   \item determining whether $\vtstruct$ is a tuple type yields $\True$\ProseOrTypeError;
   \item $\vtstruct$ is a tuple type with list of tuple $\vts$;
   \item determining whether $\vts$ is a list of the same size as $\vli$ yields $\True$\ProseOrTypeError;
-  \item annotating each pattern in $\vli$ with the corresponding type in $\vts$ at each position $\vi$
-        yields a pattern $\vlip[\vi]$\ProseOrTypeError;
+  \item annotating each pattern in $\vli$ with the corresponding type in $\vts$ for each \Proselistrange{$i$}{$\vli$},
+        yields $(\vlip[i], \vxs_i)$\ProseOrTypeError;
   \item $\newli$ is the list of annotated patterns $\vlip[\vi]$ at the same positions those of $\vli$;
-  \item $\newp$ is the pattern which matches the tuple $\newli$, that is, $\PatternTuple(\newli)$.
+  \item $\newp$ is the pattern which matches the tuple $\newli$, that is, $\PatternTuple(\newli)$;
+  \item define $\vses$ as the union of all $\vxs_i$, for each \Proselistrange{$i$}{$\vli$}.
   \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
@@ -659,10 +670,11 @@ All of the following apply:
   \checktrans{\astlabel(\vtstruct) = \TTuple}{TypeConflict} \checktransarrow \True \OrTypeError\\\\
   \vtstruct \eqname \TTuple(\vts)\\
   \checktrans{\equallength(\vli, \vts)}{InvalidArity} \checktransarrow \True \OrTypeError\\\\
-  \vi\in\listrange(\vli): \annotatepattern(\tenv, \vts[\vi], \vli[\vi]) \typearrow \vlip[i] \OrTypeError\\\\
-  \newli \eqdef \vi\in\listrange(\vli): \vlip[\vi]
+  i\in\listrange(\vli): \annotatepattern(\tenv, \vts[i], \vli[i]) \typearrow (\vlip[i], \vxs_i) \OrTypeError\\\\
+  \newli \eqdef \vi\in\listrange(\vli): \vlip[\vi]\\
+  \vses \eqdef \bigcup_{i\in\listrange(\vli)} \vxs_i
 }{
-  \annotatepattern(\tenv, \vt, \overname{\PatternTuple(\vli)}{\vp}) \typearrow \overname{\PatternTuple(\newli)}{\newp}
+  \annotatepattern(\tenv, \vt, \overname{\PatternTuple(\vli)}{\vp}) \typearrow (\overname{\PatternTuple(\newli)}{\newp}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\PTupleBegin}{\PTupleEnd}{../Typing.ml}
@@ -727,21 +739,25 @@ All of the following apply:
 All of the following apply:
 \begin{itemize}
 \item $\vp$ is the pattern which matches anything in a list $\vli$, that is, $\PatternAny(\vli)$;
-\item annotating each pattern in $\vli$ yields the list of annotated pattern $\newli$\ProseOrTypeError;
-\item $\newp$ is the pattern which matches anything in $\newli$, that is, \\ $\PatternAny(\newli)$.
+\item annotating each pattern $\vl$ in $\vli$ yields $(\newl_\vl, \vxs_\vl)$\ProseOrTypeError;
+\item define $\newli$ as the list of patterns $\newl_\vl$, for each $\vl$ in $\vli$;
+\item $\newp$ is the pattern which matches anything in $\newli$, that is, \\ $\PatternAny(\newli)$;
+\item define $\vses$ as the union of all $\vxs_\vl$, for each $\vl$ in $\vli$.
+      (Checking for absence of conflicts is not required as all patterns are ensured to be
+      \staticallyevaluable. See, for example, \nameref{sec:TypingRule.PSingle}.)
 \end{itemize}
-\CodeSubsection{\PAnyBegin}{\PAnyEnd}{../Typing.ml}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \vl\in\vli: \annotatepattern(\tenv, \vt, \vl) \typearrow \vlp \OrTypeError\\\\
-  \newli \eqdef [\vl\in\vli: \vlp]
-}
-{
-  \annotatepattern(\tenv, \vt, \overname{\PatternAny(\vli)}{\vp}) \typearrow \overname{\PatternAny(\newli)}{\newp}
+  \vl\in\vli: \annotatepattern(\tenv, \vt, \vl) \typearrow (\newl_\vl, \vxs_\vl) \OrTypeError\\\\
+  \newli \eqdef [\vl\in\vli: \newl_\vl]\\
+  \vses \eqdef \bigcup_{\vl\in\vli} \vxs_\vl
+}{
+  \annotatepattern(\tenv, \vt, \overname{\PatternAny(\vli)}{\vp}) \typearrow (\overname{\PatternAny(\newli)}{\newp}, \vses)
 }
 \end{mathpar}
+\CodeSubsection{\PAnyBegin}{\PAnyEnd}{../Typing.ml}
 
 \subsection{Semantics}
 \subsubsection{SemanticsRule.PAny \label{sec:SemanticsRule.PAny}}
@@ -790,15 +806,15 @@ See \nameref{sec:ASTRule.PatternSet} (\textsc{NOT} case).
 All of the following apply:
 \begin{itemize}
   \item $\vp$ is the pattern which matches the negation of a pattern $\vq$, that is, $\PatternNot(\vq)$;
-  \item annotating $\vq$ in $\tenv$ yields $\newq$\ProseOrTypeError;
+  \item annotating $\vq$ in $\tenv$ yields $(\newq, \vses)$\ProseOrTypeError;
   \item $\newp$ is pattern which matches the negation of $\newq$, that is, $\PatternNot(\newq)$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatepattern(\tenv, \vq) \typearrow \newq \OrTypeError
+  \annotatepattern(\tenv, \vq) \typearrow (\newq, \vses) \OrTypeError
 }{
-  \annotatepattern(\tenv, \vt, \overname{\PatternNot(\vq)}{\vp}) \typearrow \overname{\PatternNot(\newq)}{\newp}
+  \annotatepattern(\tenv, \vt, \overname{\PatternNot(\vq)}{\vp}) \typearrow (\overname{\PatternNot(\newq)}{\newp}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\PNotBegin}{\PNotEnd}{../Typing.ml}

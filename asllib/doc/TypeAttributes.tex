@@ -16,13 +16,13 @@ functions that inspect the structure of types:
   \item Non-primitive types (\secref{TypingRule.NonPrimitiveType})
   \item Primitive types (\secref{TypingRule.PrimitiveType})
   \item The structure of a type (\secref{TypingRule.structure})
-  \item The underlying type of a type (\secref{anonymize})
+  \item The underlying type of a type (\secref{TypingRule.Anonymize})
   \item Checked constrained integers (\secref{TypingRule.CheckConstrainedInteger})
 \end{itemize}
 
 Finally, constrained types are defined in \secref{ConstrainedTypes}.
 
-\subsection{TypingRule.BuiltinSingularType \label{sec:TypingRule.BuiltinSingularType}}
+\subsubsection{TypingRule.BuiltinSingularType \label{sec:TypingRule.BuiltinSingularType}}
 \hypertarget{def-isbuiltinsingular}{}
 The predicate
 \[
@@ -67,7 +67,7 @@ The builtin singular type \texttt{Color} consists in two constants
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{PQCK} and \identd{NZWT}.}
 
-\subsection{TypingRule.BuiltinAggregateType \label{sec:TypingRule.BuiltinAggregateType}}
+\subsubsection{TypingRule.BuiltinAggregateType \label{sec:TypingRule.BuiltinAggregateType}}
 \hypertarget{def-isbuiltinaggregate}{}
 The predicate
 \[
@@ -127,7 +127,7 @@ omitted in type declarations, as is the case for \texttt{Not\_found}.
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{PQCK} and \identd{KNBD}.}
 
-\subsection{TypingRule.BuiltinSingularOrAggregate \label{sec:TypingRule.BuiltinSingularOrAggregate}}
+\subsubsection{TypingRule.BuiltinSingularOrAggregate \label{sec:TypingRule.BuiltinSingularOrAggregate}}
 \hypertarget{def-isbuiltin}{}
 The predicate
 \[
@@ -161,9 +161,7 @@ the type \texttt{integer} is a builtin type but the type of \texttt{ticks} is no
   }
 \end{mathpar}
 
-\isempty{\subsubsection{Comments}}
-
-\subsection{TypingRule.NamedType \label{sec:TypingRule.NamedType} }
+\subsubsection{TypingRule.NamedType \label{sec:TypingRule.NamedType} }
 \hypertarget{def-isnamed}{}
 The predicate
 \[
@@ -198,7 +196,7 @@ In the specification
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{vmzx}.}
 
-\subsection{TypingRule.AnonymousType \label{sec:TypingRule.AnonymousType}}
+\subsubsection{TypingRule.AnonymousType \label{sec:TypingRule.AnonymousType}}
 \hypertarget{def-isanonymous}{}
 The predicate
 \[
@@ -228,7 +226,7 @@ The tuple type \texttt{(integer, integer)} is an \anonymoustype.
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{VMZX}.}
 
-\subsection{TypingRule.SingularType \label{sec:TypingRule.SingularType}}
+\subsubsection{TypingRule.SingularType \label{sec:TypingRule.SingularType}}
 \hypertarget{def-issingular}{}
 The predicate
 \[
@@ -267,7 +265,7 @@ type C of B;
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identr{GVZK}.}
 
-\subsection{TypingRule.AggregateType \label{sec:TypingRule.AggregateType}}
+\subsubsection{TypingRule.AggregateType \label{sec:TypingRule.AggregateType}}
 \hypertarget{def-isbuiltinaggregate}{}
 The predicate
 \[
@@ -306,7 +304,7 @@ type C of B;
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identr{GVZK}.}
 
-\subsection{TypingRule.StructuredType\label{sec:TypingRule.StructuredType}}
+\subsubsection{TypingRule.StructuredType\label{sec:TypingRule.StructuredType}}
 \hypertarget{def-isstructured}{}
 \hypertarget{def-structuredtype}{}
 A \emph{\structuredtype} is any type that consists of a list of field identifiers
@@ -340,7 +338,7 @@ type PointRecord of Record {x : real, y: real, z: real};
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{WGQS}, \identd{QXYC}.}
 
-\subsection{TypingRule.NonPrimitiveType \label{sec:TypingRule.NonPrimitiveType}}
+\subsubsection{TypingRule.NonPrimitiveType \label{sec:TypingRule.NonPrimitiveType}}
 \hypertarget{def-isnonprimitive}{}
 The predicate
 \[
@@ -437,7 +435,7 @@ Boolean variables by using the types denoted by $\vt$ as a subscript.
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{GWXK}.}
 
-\subsection{TypingRule.PrimitiveType \label{sec:TypingRule.PrimitiveType}}
+\subsubsection{TypingRule.PrimitiveType \label{sec:TypingRule.PrimitiveType}}
 \hypertarget{def-isprimitive}{}
 The predicate
 \[
@@ -474,7 +472,7 @@ The following types are primitive:
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{GWXK}.}
 
-\subsection{TypingRule.Structure\label{sec:TypingRule.structure}}
+\subsubsection{TypingRule.Structure\label{sec:TypingRule.structure}}
 \hypertarget{def-structure}{}
 The function
 \[
@@ -590,7 +588,7 @@ the type of \texttt{z} is the anonymous non-primitive type
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{FXQV}.}
 
-\subsection{TypingRule.Anonymize \label{sec:anonymize}}
+\subsubsection{TypingRule.MakeAnonymous\label{sec:TypingRule.MakeAnonymous}}
 \hypertarget{def-makeanonymous}{}
 \hypertarget{def-underlyingtype}{}
 The function
@@ -601,6 +599,21 @@ returns the \emph{\underlyingtype} --- $\vt$ --- of the type $\tty$ in the stati
 Intuitively, $\tty$ is the first non-named type that is used to define $\tty$. Unlike $\tstruct$,
 $\makeanonymous$ replaces named types by their definition until the first non-named type is found but
 does not recurse further.
+
+\subsubsection{Example}
+Consider the following example:
+\begin{verbatim}
+type T1 of integer;
+type T2 of T1;
+type T3 of (integer, T2);
+\end{verbatim}
+
+The underlying types of \texttt{integer}, \texttt{T1}, and \texttt{T2} is \texttt{integer}.
+
+The underlying type of \texttt{(integer, T2)} and \texttt{T3} is
+\texttt{(integer, T2)}.  Notice how the underlying type does not replace
+\texttt{T2} with its own underlying type, in contrast to the structure of
+\texttt{T2}, which is \texttt{(integer, integer)}.
 
 \subsubsection{Prose}
 One of the following applies:
@@ -619,23 +632,6 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Example}
-Consider the following example:
-\begin{verbatim}
-type T1 of integer;
-type T2 of T1;
-type T3 of (integer, T2);
-\end{verbatim}
-
-The underlying types of \texttt{integer}, \texttt{T1}, and \texttt{T2} is \texttt{integer}.
-
-The underlying type of \texttt{(integer, T2)} and \texttt{T3} is
-\texttt{(integer, T2)}.  Notice how the underlying type does not replace
-\texttt{T2} with its own underlying type, in contrast to the structure of
-\texttt{T2}, which is \texttt{(integer, integer)}.
-
-\CodeSubsection{\AnonymizeBegin}{\AnonymizeEnd}{../types.ml}
-
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[named]{
@@ -652,10 +648,9 @@ The underlying type of \texttt{(integer, T2)} and \texttt{T3} is
   \makeanonymous(\tenv, \tty) \typearrow \tty
 }
 \end{mathpar}
+\CodeSubsection{\MakeAnonymousBegin}{\MakeAnonymousEnd}{../types.ml}
 
-\isempty{\subsubsection{Comments}}
-
-\subsection{TypingRule.CheckConstrainedInteger \label{sec:TypingRule.CheckConstrainedInteger}}
+\subsubsection{TypingRule.CheckConstrainedInteger \label{sec:TypingRule.CheckConstrainedInteger}}
 \hypertarget{def-checkconstrainedinteger}{}
 The function
 \[

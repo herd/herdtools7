@@ -14,12 +14,12 @@ transforms a statement parse node $\vparsednode$ into a statement AST node $\vas
 The function
 \[
   \annotatestmt(\overname{\staticenvs}{\tenv} \aslsep \overname{\stmt}{\vs}) \aslto
-  (\overname{\stmt}{\news}\aslsep \overname{\staticenvs}{\newtenv})
+  (\overname{\stmt}{\news} \times \overname{\staticenvs}{\newtenv} \times \overname{\TSideEffectSet}{\vses})
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates a statement $\vs$ in an environment $\tenv$, resulting in $\news$ ---
 the \typedast\ for $\vs$, which is also known as the \emph{annotated statement} ---
-and a modified environment $\newtenv$. \ProseOtherwiseTypeError
+a modified environment $\newtenv$, and \sideeffectsetterm\ $\vses$. \ProseOtherwiseTypeError
 
 The relation
 \hypertarget{def-evalstmt}{}
@@ -93,11 +93,12 @@ All of the following apply:
 \begin{itemize}
   \item $\vs$ is a pass statement, that is, $\SPass$;
   \item $\news$ is $\vs$;
-  \item $\newtenv$ is $\tenv$.
+  \item $\newtenv$ is $\tenv$;
+  \item \Proseeqdef{$\vses$}{the empty set}.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule{}{\annotatestmt(\tenv, \SPass) \typearrow (\SPass,\tenv)}
+\inferrule{}{\annotatestmt(\tenv, \SPass) \typearrow (\SPass, \tenv, \overname{\emptyset}{\vses})}
 \end{mathpar}
 \CodeSubsection{\SPassBegin}{\SPassEnd}{../Typing.ml}
 
@@ -150,18 +151,21 @@ All of the following apply:
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is an assignment \texttt{le = re}, that is, $\SAssign(\vle, \vre)$;
-  \item annotating the right-hand-side expression $\vre$ in $\tenv$ yields $(\vtre, \vreone)$\ProseOrTypeError;
-  \item annotating the \assignableexpression\ $\vle$ with the type $\vtre$ in $\tenv$ yields $\vleone$\ProseOrTypeError;
+  \item annotating the right-hand-side expression $\vre$ in $\tenv$ yields $(\vtre, \vreone, \vsesre)$\ProseOrTypeError;
+  \item annotating the \assignableexpression\ $\vle$ with the type $\vtre$ in $\tenv$ yields \\ $(\vleone, \vsesle)$\ProseOrTypeError;
   \item $\news$ is the assignment \texttt{le1 = re1}, that is, $\SAssign(\vleone, \vreone)$;
-  \item $\newtenv$ is $\tenv$.
+  \item $\newtenv$ is $\tenv$;
+  \item \Proseeqdef{$\vses$}{the union of $\vsesre$ and $\vsesle$}.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \vre} \typearrow (\vtre, \vreone) \OrTypeError\\\\
-  \annotatelexpr{\tenv, \vle, \vtre} \typearrow \vleone \OrTypeError
+  \annotateexpr{\tenv, \vre} \typearrow (\vtre, \vreone, \vsesre) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vle, \vtre} \typearrow (\vleone, \vsesle) \OrTypeError\\\\
+  \vses \eqdef \vsesre \cup \vsesle
 }{
-  \annotatestmt(\tenv, \overname{\SAssign(\vle, \vre)}{\vs}) \typearrow (\overname{\SAssign(\vleone, \vreone)}{\news},\overname{\tenv}{\newtenv})
+  \annotatestmt(\tenv, \overname{\SAssign(\vle, \vre)}{\vs}) \typearrow
+  (\overname{\SAssign(\vleone, \vreone)}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\SAssignBegin}{\SAssignEnd}{../Typing.ml}
@@ -441,15 +445,18 @@ One of the following applies:
   \begin{itemize}
     \item $\vs$ is a declaration with local declaration keyword $\ldk$, local identifiers $\ldi$, and an expression $\ve$,
           that is, $\SDecl(\ldk, \ldi, \langle\ve\rangle)$;
-    \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte,\vep)$\ProseOrTypeError;
+    \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte,\vep, \vsese)$\ProseOrTypeError;
     \item annotating the local declaration item $\ldi$ with local declaration keyword $\ldk$, the type $\vte$,
-          and the initializing expression $\vep$, in $\tenv$
-          yields $(\tenvone, \ldione)$\ProseOrTypeError;
+          the initializing expression $\vep$ and $\vsese$, in $\tenv$
+          yields \\
+          $(\tenvone, \ldione, \vsesldi)$\ProseOrTypeError;
+    \item \Proseeqdef{$\vses$}{the union of $\vsese$ and $\vsesldi$};
     \item One of the following applies:
     \begin{itemize}
       \item All of the following apply (\textsc{constant}):
       \begin{itemize}
         \item $\ldk$ indicates a local constant declaration, that is, $\LDKConstant$;
+        \item checking that all \timeframesterm\ in $\vsese$ are before \timeframeconstant\ yields $\True$\ProseOrTypeError;
         \item symbolically simplifying $\ve$ in $\tenvone$ yields the literal $\vv$\ProseOrTypeError;
         \item declaring a local constant of type $\vte$, literal $\vv$ and local declaration item $\ldione$ in $\tenvone$ yields $\newtenv$;
         \item $\news$ is a declaration with $\ldk$, $\ldione$ and an expression $\vep$.
@@ -470,45 +477,60 @@ One of the following applies:
         that is, $\SDecl(\LDKVar, \ldi, \None)$ (local declarations of \texttt{let} variables and constants require
         an initializing expression, otherwise they are rejected by an ASL parser);
   \item annotating the uninitialised local declarations $\ldi$ in $\tenv$ yields \\
-        $(\newtenv, \ldione, \veinit)$;
+        $(\newtenv, \ldione, \veinit, \vsesldi)$;
   \item $\news$ is a local declaration statement with variable keyword, local identifiers $\ldione$, and the initializing expression $\veinit$,
-        that is, $\SDecl(\LDKVar, \ldione, \langle\veinit\rangle)$.
+        that is, \\
+        $\SDecl(\LDKVar, \ldione, \langle\veinit\rangle)$;
+  \item \Proseeqdef{$\vses$}{$\vsesldi$}.
   \end{itemize}
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[constant]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vte, \ldk, \langle\vep\rangle, \ldi} \typearrow (\tenvone, \ldione) \OrTypeError\\\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
+  {
+  \begin{array}{r}
+    \annotatelocaldeclitem(\tenv, \vte, \ldk, \langle(\vep, \vsese)\rangle, \ldi) \typearrow \\
+    (\tenvone, \ldione, \vsesldi) \OrTypeError
+  \end{array}
+  }\\
+  \vses \eqdef \vsese \cup \vsesldi\\\\
   \commonprefixline\\\\
   \ldk = \LDKConstant\\
+  \checktrans{\sesisbefore(\vsese, \timeframeconstant)}{TimeFrameConstant} \typearrow \True \OrTypeError\\\\
   \staticeval(\tenvone, \ve) \typearrow \vv \OrTypeError\\\\
   \declarelocalconstant(\tenvone, \vv, \ldione) \typearrow \newtenv\\
   \news \eqdef \SDecl(\LDKConstant, \ldione, \langle\vep\rangle)
 }{
-  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \langle\ve\rangle)}{\vs}) \typearrow (\news, \newtenv)
+  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \langle\ve\rangle)}{\vs}) \typearrow (\news, \newtenv, \vses)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[non\_constant]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vte, \ldk, \langle\vep\rangle, \ldi} \typearrow (\tenvone, \ldione) \OrTypeError\\\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
+  {
+  \begin{array}{r}
+    \annotatelocaldeclitem(\tenv, \vte, \ldk, \langle(\vep, \vsese)\rangle, \ldi) \typearrow \\
+    (\tenvone, \ldione, \vsesldi) \OrTypeError
+  \end{array}
+  }\\
+  \vses \eqdef \vsese \cup \vsesldi\\\\
   \commonprefixline\\\\
   \ldk \neq \LDKConstant\\
   \news \eqdef \SDecl(\ldk, \ldione, \langle\vep\rangle)
 }{
-  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \langle\ve\rangle)}{\vs}) \typearrow (\news, \overname{\tenvone}{\newtenv})
+  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \langle\ve\rangle)}{\vs}) \typearrow (\news, \overname{\tenvone}{\newtenv}, \vses)
 }
 \end{mathpar}
 \lrmcomment{This is related to \identr{YSPM}.}
 
 \begin{mathpar}
 \inferrule[none]{
-  \annotatelocaldeclitemuninit(\tenv, \ldi) \typearrow (\newtenv, \ldione, \veinit) \OrTypeError\\\\
+  \annotatelocaldeclitemuninit(\tenv, \ldi) \typearrow (\newtenv, \ldione, \veinit, \vsesldi) \OrTypeError\\\\
   \news \eqdef \SDecl(\LDKVar, \ldione, \langle\veinit\rangle)
 }{
-  \annotatestmt(\tenv, \overname{\SDecl(\LDKVar, \ldi, \None)}{\vs}) \typearrow (\news, \newtenv)
+  \annotatestmt(\tenv, \overname{\SDecl(\LDKVar, \ldi, \None)}{\vs}) \typearrow (\news, \newtenv, \overname{\vsesldi}{\vses})
 }
 \end{mathpar}
 \CodeSubsection{\SDeclegin}{\SDeclEnd}{../Typing.ml}
@@ -587,13 +609,16 @@ The helper function
 \begin{array}{r}
 \annotatelocaldeclitemuninit(\overname{\staticenvs}{\tenv} \aslsep \overname{\localdeclitem}{\ldi})
 \typearrow \\
-(\overname{\staticenvs}{\newtenv} \times \overname{\localdeclitem}{\newldi} \times \overname{\expr}{\veinit})
+(\overname{\staticenvs}{\newtenv} \times \overname{\localdeclitem}{\newldi} \times \overname{\expr}{\veinit} \times \overname{\TSideEffectSet}{\vses})
 \cup \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
-annotates the local declaration for a variable declaration without an initializing expressions in the static environment $\tenv$,
-yielding a triple consisting of the annotated local declaration item $\newldi$, the modified static environment $\newtenv$,
-and an initializing expression $\veinit$.
+annotates the local declaration for a variable declaration without an initializing expression $\ldi$,
+in the static environment $\tenv$,
+yielding the annotated local declaration item $\newldi$,
+the modified static environment $\newtenv$,
+an initializing expression $\veinit$, and
+the inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 \subsubsection{Prose}
@@ -603,12 +628,13 @@ One of the following applies:
   \begin{itemize}
     \item $\ldi$ corresponds to a variable declaration via the local declaration item $\ldip$ and type annotation $\vt$,
           that is, $\LDITyped(\ldip, \vt)$;
-    \item applying $\basevalue$ to $\vtp$ in $\tenv$ yields $\veinit$\ProseOrTypeError;
-    \item annotating $\vt$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
+          \item annotating $\vt$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
+          \item applying $\basevalue$ to $\vtp$ in $\tenv$ yields $\veinit$\ProseOrTypeError;
     \item annotating the local declaration item $\ldip$ with the type $\vtp$ and local declaration keyword $\LDIVar$
-          yields $(\newtenv, \newldip)$\ProseOrTypeError;
+          yields $(\newtenv, \newldip, \vsesldi)$\ProseOrTypeError;
     \item define $\newldi$ as the typed local declaration item with local declaration item $\newldip$, type $\vtp$, and
-          $\veinit$.
+          $\veinit$;
+    \item \Proseeqdef{$\vses$}{the union of $\vsest$ and $\vsesldi$}.
   \end{itemize}
 
   \item All of the following apply (\textsc{error}):
@@ -621,17 +647,18 @@ One of the following applies:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[typed]{
-  \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
+  \annotatetype{\tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \basevalue(\tenv, \vtp) \typearrow \veinit \OrTypeError\\\\
   {
     \begin{array}{r}
-      \annotatelocaldeclitem{\tenv, \vtp, \LDKVar, \None, \ldip} \typearrow \\
-      (\newtenv, \newldip) \OrTypeError
+      \annotatelocaldeclitem(\tenv, \vtp, \LDKVar, \None, \ldip) \typearrow \\
+      (\newtenv, \newldip, \vsesldi) \OrTypeError
     \end{array}
   }\\
-  \newldi \eqdef \LDITyped(\newldip, \vtp, \veinit)
+  \newldi \eqdef \LDITyped(\newldip, \vtp, \veinit)\\
+  \vses \eqdef \vsest \cup \vsesldi
 }{
-  \annotatelocaldeclitemuninit(\tenv, \overname{\LDITyped(\ldip, \vt)}{\ldi}) \typearrow (\newtenv, \newldi)
+  \annotatelocaldeclitemuninit(\tenv, \overname{\LDITyped(\ldip, \vt)}{\ldi}) \typearrow (\newtenv, \newldi, \vses)
 }
 \end{mathpar}
 
@@ -907,17 +934,19 @@ instances of $\SPass$.
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is the AST node for the sequence of statements $\vsone$ and $\vstwo$, that is, $\SSeq(\vsone, \vstwo)$;
-  \item annotating $\vsone$ in $\tenv$ yields $(\newsone, \tenvone)$\ProseOrTypeError;
-  \item annotating $\vstwo$ in $\tenvone$ yields $(\newstwo, \newtenv)$\ProseOrTypeError;
-  \item $\news$ is the AST node for the sequence of statements $\newsone$ and $\newstwo$, that is, $\SSeq(\newsone, \newstwo)$.
+  \item annotating $\vsone$ in $\tenv$ yields $(\newsone, \tenvone, \vsesone)$\ProseOrTypeError;
+  \item annotating $\vstwo$ in $\tenvone$ yields $(\newstwo, \newtenv, \vsestwo)$\ProseOrTypeError;
+  \item $\news$ is the AST node for the sequence of statements $\newsone$ and $\newstwo$, that is, $\SSeq(\newsone, \newstwo)$;
+  \item \Proseeqdef{$\vses$}{the union of $\vsesone$ and $\vsestwo$}.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatestmt(\tenv, \vs1) \typearrow (\newsone, \tenvone) \OrTypeError\\\\
-  \annotatestmt(\tenvone, \vs2) \typearrow (\newstwo, \newtenv) \OrTypeError
+  \annotatestmt(\tenv, \vs1) \typearrow (\newsone, \tenvone, \vsesone) \OrTypeError\\\\
+  \annotatestmt(\tenvone, \vs2) \typearrow (\newstwo, \newtenv, \vsestwo) \OrTypeError\\\\
+  \vses \eqdef \vsesone \cup \vsestwo
 }{
-  \annotatestmt(\tenv, \overname{\SSeq(\vsone, \vstwo)}{\vs}) \typearrow (\overname{\SSeq(\newsone, \newstwo)}{\news}, \newtenv)
+  \annotatestmt(\tenv, \overname{\SSeq(\vsone, \vstwo)}{\vs}) \typearrow (\overname{\SSeq(\newsone, \newstwo)}{\news}, \newtenv, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\SSeqBegin}{\SSeqEnd}{../Typing.ml}
@@ -987,7 +1016,7 @@ All of the following apply:
 \begin{itemize}
   \item $\vs$ is a call to a subprogram, that is, $\SCall(\vcall)$;
   \item annotating the subprogram call $\vcall$ as per \chapref{SubprogramCalls}
-        yields $(\vcallp, \None)$\ProseOrTypeError;
+        yields $(\vcallp, \None, \vses)$\ProseOrTypeError;
   \item $\news$ is the call using $\vcallp$, that is, $\SCall(\vcallp)$;
   \item $\newtenv$ is $\tenv$.
 \end{itemize}
@@ -996,14 +1025,14 @@ All of the following apply:
 \inferrule{
   {
     \begin{array}{r}
-      \annotatecall(\vcall) \typearrow (\vcallp, \None) \OrTypeError
+      \annotatecall(\vcall) \typearrow (\vcallp, \None, \vses) \OrTypeError
     \end{array}
   }
 }{
   {
     \begin{array}{r}
   \annotatestmt(\tenv, \overname{\SCall(\vcall)}{\vs}) \typearrow
-  (\overname{\SCall(\vcallp)}{\news}, \tenv)
+  (\overname{\SCall(\vcallp)}{\news}, \tenv, \vses)
     \end{array}
   }
 }
@@ -1102,20 +1131,22 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a condition $\ve$ with the statements $\vsone$ and $\vstwo$, that is, $\SCond(\ve, \vsone, \vstwo)$;
-  \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\tcond, \econd)$\ProseOrTypeError;
+  \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\tcond, \econd, \vsescond)$\ProseOrTypeError;
   \item checking that $\tcond$ \typesatisfies\ $\TBool$ yields $\True$\ProseOrTypeError;
-  \item annotating the statement $\vsone$ in $\tenv$ yields $\vsonep$\ProseOrTypeError;
-  \item annotating the statement $\vstwo$ in $\tenv$ yields $\vstwop$\ProseOrTypeError;
+  \item annotating the statement $\vsone$ in $\tenv$ yields $(\vsonep, \vsesone)$\ProseOrTypeError;
+  \item annotating the statement $\vstwo$ in $\tenv$ yields $(\vstwop, \vsestwo)$\ProseOrTypeError;
   \item $\news$ is the condition $\econd$ with the statements $\vsonep$ and $\vstwop$, that is, \\ $\SCond(\econd, \vsonep, \vstwop)$;
-  \item $\newtenv$ is $\tenv$.
+  \item $\newtenv$ is $\tenv$;
+  \item \Proseeqdef{$\vses$}{the union of $\vsescond$, $\vsesone$, and $\vsestwo$}.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \ve} \typearrow (\tcond, \econd) \OrTypeError\\\\
+  \annotateexpr{\tenv, \ve} \typearrow (\tcond, \econd, \vsescond) \OrTypeError\\\\
   \checktypesat(\tenv, \tcond, \TBool) \typearrow \True \OrTypeError\\\\
-  \annotateblock{\tenv, \vsone} \typearrow \vsonep \OrTypeError\\\\
-  \annotateblock{\tenv, \vstwo} \typearrow \vstwop \OrTypeError
+  \annotateblock{\tenv, \vsone} \typearrow (\vsonep, \vsesone) \OrTypeError\\\\
+  \annotateblock{\tenv, \vstwo} \typearrow (\vstwop, \vsestwo) \OrTypeError\\\\
+  \vses \eqdef \vsescond \cup \vsesone \cup \vsestwo
 }{
   \annotatestmt(\tenv, \overname{\SCond(\ve, \vsone, \vstwo)}{\vs}) \typearrow
   (\overname{\SCond(\econd, \vsonep, \vstwop)}{\news}, \overname{\tenv}{\newtenv})
@@ -1453,16 +1484,16 @@ All of the following apply:
 \begin{itemize}
   \item $\vs$ is a case statement;
   \item applying $\desugarcasestmt$ to $\vs$ transforms $\vs$ to a conditional statement $\vsp$;
-  \item annotating $\vsp$ in $\tenv$ yields $(\news, \newtenv)$\ProseOrTypeError.
+  \item annotating $\vsp$ in $\tenv$ yields $(\news, \newtenv, \vses)$\ProseOrTypeError.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \astlabel(\vs) = \SCase\\
   \desugarcasestmt(\vs) \typearrow \vsp\\
-  \annotatestmt(\tenv, \vsp) \typearrow (\news, \newtenv) \OrTypeError
+  \annotatestmt(\tenv, \vsp) \typearrow (\news, \newtenv, \vses) \OrTypeError
 }{
-  \annotatestmt(\tenv,\vs) \typearrow (\news, \newtenv)
+  \annotatestmt(\tenv,\vs) \typearrow (\news, \newtenv, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\SCaseBegin}{\SCaseEnd}{../Typing.ml}
@@ -1498,18 +1529,22 @@ they do not appear in the typed AST and thus are not associated with a semantics
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is an assert statement with expression $\ve$, that is, $\SAssert(\ve)$;
-  \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\tep,\vep)$\ProseOrTypeError;
+  \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\tep,\vep, \vsese)$\ProseOrTypeError;
+  \item checking that $\vsese$ is pure via $\sesispure$ yields $\True$\ProseOrTypeError;
   \item checking that $\vtep$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item $\news$ is an assert statement with expression $\vep$, that is, $\SAssert(\vep)$;
-  \item $\newtenv$ is $\tenv$.
+  \item $\newtenv$ is $\tenv$;
+  \item \Proseeqdef{$\vses$}{the union of $\vsese$ and the singleton set for \PerformsAssertionsTerm}.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \ve} \typearrow (\vtep, \vep) \OrTypeError\\\\
-  \checktypesat(\tenv, \vtep, \TBool) \typearrow \True \OrTypeError
+  \annotateexpr{\tenv, \ve} \typearrow (\vtep, \vep, \vsese) \OrTypeError\\\\
+  \checktrans{\sesispure(\vsese) \typearrow \True}{ExpectedPureExpression}\\\\
+  \checktypesat(\tenv, \vtep, \TBool) \typearrow \True \OrTypeError\\\\
+  \vses \eqdef \vsese \cup \{\PerformsAssertions\}
 }{
-  \annotatestmt(\tenv, \overname{\SAssert(\ve)}{\vs}) \typearrow (\overname{\SAssert(\vep)}{\news}, \overname{\tenv}{\newtenv})
+  \annotatestmt(\tenv, \overname{\SAssert(\ve)}{\vs}) \typearrow (\overname{\SAssert(\vep)}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\SAssertBegin}{\SAssertEnd}{../Typing.ml}
@@ -1543,7 +1578,7 @@ All of the following apply:
     \begin{itemize}
       \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \newg), \newenv)$;
       \item $\vv$ is a native Boolean value for $\False$;
-      \item an AssertionFailed error is returned.
+      \item the result is a dynamic error indicating the assertion failure returned (\DynamicAssertionFailure).
     \end{itemize}
   \end{itemize}
 \end{itemize}
@@ -1562,7 +1597,7 @@ All of the following apply:
   \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \Ignore), \Ignore)\\
   \vv \eqname \nvbool(\False)
 }{
-  \evalstmt{\env, \SAssert(\ve)} \evalarrow \ErrorVal{AssertionFailed}
+  \evalstmt{\env, \SAssert(\ve)} \evalarrow \DynamicErrorVal{\DynamicAssertionFailure}
 }
 \end{mathpar}
 \CodeSubsection{\EvalSAssertBegin}{\EvalSAssertEnd}{../Interpreter.ml}
@@ -1625,29 +1660,33 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.SWhile \label{sec:TypingRule.SWhile}}
+\subsubsection{TypingRule.SWhile\label{sec:TypingRule.SWhile}}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
 \item $\vs$ is a \texttt{while} statement with expression $\veone$, optional limit expression $\vlimitone$,
       and statement block $\vsone$, that is, $\SWhile(\veone, \vsone)$;
-\item annotating the right-hand-side expression $\veone$ in $\tenv$ yields $(\vt, \vetwo)$\ProseOrTypeError;
-\item annotating the optional limit expression $\vlimitone$ via $\annotatelimitexpr$ in $\tenv$ yields $\vlimittwo$\ProseOrTypeError;
+\item annotating the right-hand-side expression $\veone$ in $\tenv$ yields $(\vt, \vetwo, \vsese)$\ProseOrTypeError;
+\item annotating the optional limit expression $\vlimitone$ via $\annotatelimitexpr$ in $\tenv$ yields $(\vlimittwo, \vseslimit)$\ProseOrTypeError;
 \item checking that $\vt$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
+\item annotating $\vsone$ as a block statement as per \nameref{sec:TypingRule.Block} in $\tenv$ yields \\
+      $(\vstwo, \vsesblock)$\ProseOrTypeError;
 \item $\news$ is a \texttt{while} statement with expression $\vetwo$, optional limit expression $\vlimittwo$,
       and statement block $\vstwo$, that is, $\SWhile(\vetwo, \vstwo)$;
-\item $\newtenv$ is $\tenv$.
+\item $\newtenv$ is $\tenv$;
+\item \Proseeqdef{$\vses$}{the union of $\vsesblock$, $\vsese$, and $\vseslimit$}.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vt, \vetwo) \OrTypeError\\\\
-  \annotatelimitexpr(\tenv, \vlimitone) \typearrow \vlimittwo \OrTypeError\\\\
+  \annotateexpr{\tenv, \veone} \typearrow (\vt, \vetwo, \vsese) \OrTypeError\\\\
+  \annotatelimitexpr(\tenv, \vlimitone) \typearrow (\vlimittwo, \vseslimit) \OrTypeError\\\\
   \checktypesat(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\\\\
-  \annotateblock{\tenv, \vsone} \typearrow \vstwo \OrTypeError
+  \annotateblock{\tenv, \vsone} \typearrow (\vstwo, \vsesblock) \OrTypeError\\\\
+  \vses \eqdef \vsesblock \cup \vsese \cup \vseslimit
 }{
   \annotatestmt(\tenv, \overname{\SWhile(\veone, \vlimitone, \vsone)}{\vs}) \typearrow
-  (\overname{\SWhile(\vetwo, \vlimittwo, \vstwo)}{\news}, \overname{\tenv}{\newtenv})
+  (\overname{\SWhile(\vetwo, \vlimittwo, \vstwo)}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\SWhileBegin}{\SWhileEnd}{../Typing.ml}
@@ -1661,10 +1700,10 @@ The function
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\langle\expr\rangle}{\ve} \aslsep
   ) \aslto
-  \overname{\expr}{\vep} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+  (\langle\overname{\expr}{\vep}\rangle \times \overname{\TSideEffectSet}{\vses}) \cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates an optional expression $\ve$ serving as the limit of a loop or a recursive subprogram in $\tenv$,
-yielding the optional expression $\vep$.
+yielding a pair consisting of an expression $\vep$ and a \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 \subsubsection{Prose}
@@ -1673,14 +1712,15 @@ One of the following applies:
   \item All of the following apply (\textsc{none}):
   \begin{itemize}
     \item $\ve$ is $\None$;
-    \item $\vep$ is $\None$.
+    \item $\vep$ is $\None$;
+    \item \Proseeqdef{$\vses$}{the empty set}.
   \end{itemize}
 
   \item All of the following apply (\textsc{some}):
   \begin{itemize}
     \item $\ve$ is $\langle\vlimit\rangle$;
     \item applying $\annotatestaticconstrainedinteger$ to $\vlimit$ in $\tenv$ yields \\
-          $\vlimitp$\ProseOrTypeError;
+          $(\vlimitp, \vses)$\ProseOrTypeError;
     \item $\vep$ is $\langle\vlimitp\rangle$.
   \end{itemize}
 \end{itemize}
@@ -1688,14 +1728,14 @@ One of the following applies:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[none]{}{
-  \annotatelimitexpr(\tenv, \overname{\None}{\ve}) \typearrow \overname{\None}{\vep}
+  \annotatelimitexpr(\tenv, \overname{\None}{\ve}) \typearrow (\overname{\None}{\vep}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
 \begin{mathpar}
 \inferrule[some]{
-  \annotatestaticconstrainedinteger(\tenv, \vlimit) \typearrow \vlimitp \OrTypeError
+  \annotatestaticconstrainedinteger(\tenv, \vlimit) \typearrow (\vlimitp, \vses) \OrTypeError
 }{
-  \annotatelimitexpr(\tenv, \overname{\langle\vlimit\rangle}{\ve}) \typearrow \overname{\langle\vlimitp\rangle}{\vep}
+  \annotatelimitexpr(\tenv, \overname{\langle\vlimit\rangle}{\ve}) \typearrow (\overname{\langle\vlimitp\rangle}{\vep}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\AnnotateLimitExprBegin}{\AnnotateLimitExprEnd}{../Typing.ml}
@@ -1771,7 +1811,7 @@ does not result in any Assertion Error and the specification terminates with exi
 code $0$.
 
 \CodeSubsection{\EvalLoopBegin}{\EvalLoopEnd}{../Interpreter.ml}
-\subsection{Prose}
+\subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
 \item all of the following apply (\textsc{exit}):
@@ -1971,24 +2011,26 @@ All of the following apply:
 \begin{itemize}
   \item $\vs$ is a \texttt{repeat} statement with statement block $\vsone$,
         optional limit expression $\vlimitone$, and expression $\veone$, that is, $\SRepeat(\vsone, \veone, \vlimitone)$;
-  \item annotating $\vsone$ as a block statement in $\tenv$ yields $\vstwo$\ProseOrTypeError;
-  \item annotating the optional limit expression $\vlimitone$ via $\annotatelimitexpr$ in $\tenv$ yields $\vlimittwo$\ProseOrTypeError;
-  \item annotating the right-hand-side expression $\veone$ in $\tenv$ yields $(\vt, \vetwo)$\ProseOrTypeError;
+  \item annotating $\vsone$ as a block statement per \nameref{sec:TypingRule.Block} in $\tenv$ yields $(\vstwo, \vsesblock)$\ProseOrTypeError;
+  \item annotating the optional limit expression $\vlimitone$ via $\annotatelimitexpr$ in $\tenv$ yields $(\vlimittwo, \vseslimit)$\ProseOrTypeError;
+  \item annotating the right-hand-side expression $\veone$ in $\tenv$ yields $(\vt, \vetwo, \vsese)$\ProseOrTypeError;
   \item checking that $\vt$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item $\news$ is a \texttt{repeat} statement with statement block $\vstwo$, optional limit expression $\vlimittwo$,
         and condition expression $\vetwo$ and , that is, $\SRepeat(\vstwo, \vetwo, \vlimittwo)$;
-  \item $\newtenv$ is $\tenv$.
+  \item $\newtenv$ is $\tenv$;
+  \item \Proseeqdef{$\vses$}{the union of $\vsesblock$, $\vsese$, and $\vseslimit$}.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateblock{\tenv, \vsone} \typearrow \vstwo \OrTypeError\\\\
-  \annotatelimitexpr(\tenv, \vlimitone) \typearrow \vlimittwo \OrTypeError\\\\
-  \annotateexpr{\tenv, \veone} \typearrow (\vt, \vetwo) \OrTypeError\\\\
-  \checktypesat(\tenv, \vt, \TBool) \typearrow \True \OrTypeError
+  \annotateblock{\tenv, \vsone} \typearrow (\vstwo, \vsesblock) \OrTypeError\\\\
+  \annotatelimitexpr(\tenv, \vlimitone) \typearrow (\vlimittwo, \vseslimit) \OrTypeError\\\\
+  \annotateexpr{\tenv, \veone} \typearrow (\vt, \vetwo, \vsese) \OrTypeError\\\\
+  \checktypesat(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\\\\
+  \vses \eqdef \vsesblock \cup \vsese \cup \vseslimit
 }{
   \annotatestmt(\tenv, \overname{\SRepeat(\vsone, \veone, \vlimitone)}{\vs}) \typearrow
-  (\overname{\SRepeat(\vstwo, \vetwo, \vlimittwo)}{\news}, \overname{\tenv}{\newtenv})
+  (\overname{\SRepeat(\vstwo, \vetwo, \vlimittwo)}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\SRepeatBegin}{\SRepeatEnd}{../Typing.ml}
@@ -2139,10 +2181,15 @@ All of the following apply:
           \Forlimit &:& \vlimit
         \end{array}\right\}$;
   \item annotating the right-hand-side expression $\vstarte$ in $\tenv$ yields \\
-        $(\vstartt, \vstartep)$\ProseOrTypeError;
-  \item annotating the right-hand-side expression $\vende$ in $\tenv$ yields $(\vendt, \vendep)$\ProseOrTypeError;
+        $(\vstartt, \vstartep, \vsesstart)$\ProseOrTypeError;
+  \item annotating the right-hand-side expression $\vende$ in $\tenv$ yields \\ $(\vendt, \vendep, \vsesend)$\ProseOrTypeError;
   \item annotating the optional loop limit expression $\vlimit$ via $\annotatelimitexpr$ in $\tenv$
-        yields $\vlimitp$\ProseOrTypeError;
+        yields $(\vlimitp, \vseslimit)$\ProseOrTypeError;
+  \item checking that $\vsesstart$ is pure via $\sesispure$ yields $\True$\ProseOrTypeError;
+  \item checking that $\vsesstart$ is deterministic via $\sesisdeterministic$ yields $\True$\ProseOrTypeError;
+  \item checking that $\vsesend$ is pure via $\sesispure$ yields $\True$\ProseOrTypeError;
+  \item checking that $\vsesend$ is deterministic via $\sesisdeterministic$ yields $\True$\ProseOrTypeError;
+  \item \Proseeqdef{$\vsescond$}{the union of $\vsesstart$, $\vsesend$, and $\vseslimit$};
   \item obtaining the \underlyingtype\ of $\vstartt$ in $\tenv$ yields $\vstartstruct$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vendt$ in $\tenv$ yields $\vendstruct$\ProseOrTypeError;
   \item applying $\getforconstraints$ to $\vstartstruct$, $\vendstruct$,
@@ -2152,21 +2199,27 @@ All of the following apply:
   \item $\tty$ is the integer type with constraints $\cs$;
   \item checking that $\vindexname$ is not already declared in $\tenv$ yields $\True$\ProseOrTypeError;
   \item adding $\vindexname$ as a local immutable variable with type $\tty$ to $\tenv$ yields $\tenvp$;
-  \item annotating $\vbody$ as a block statement in $\tenvp$ yields $\vbodyp$\ProseOrTypeError;
+  \item annotating $\vbody$ as a block statement in $\tenvp$ yields $(\vbodyp, \vsesblock)$\ProseOrTypeError;
   \item $\news$ is the \texttt{for} statement with index $\vindexname$,
         start expression $\vstartep$, direction $\dir$,
         end expression $\vendep$,
         body statement (block) $\vbodyp$, and
         optional limit expression $\vlimit$;
   \item $\newtenv$ is $\tenv$ (notice that this means $\vindexname$ is only declared for annotating $\vbodyp$ but then goes
-        out of scope).
+        out of scope);
+  \item \Prosenonconflictingunion{$\vsesblock$ and $\vsescond$}{$\vses$}.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \vstarte} \typearrow (\vstartt, \vstartep) \OrTypeError\\\\
-  \annotateexpr{\tenv, \vende} \typearrow (\vendt, \vendep) \OrTypeError\\\\
-  \annotatelimitexpr(\tenv, \vlimit) \typearrow \vlimitp \OrTypeError\\\\
+  \annotateexpr{\tenv, \vstarte} \typearrow (\vstartt, \vstartep, \vsesstart) \OrTypeError\\\\
+  \annotateexpr{\tenv, \vende} \typearrow (\vendt, \vendep, \vsesend) \OrTypeError\\\\
+  \annotatelimitexpr(\tenv, \vlimit) \typearrow (\vlimitp, \vseslimit) \OrTypeError\\\\
+  \checktrans{\sesispure(\vsesstart)}{ExpectedPureExpression} \typearrow \OrTypeError\\\\
+  \checktrans{\sesisdeterministic(\vsesstart)}{ExpectedDeterministic} \typearrow \OrTypeError\\\\
+  \checktrans{\sesispure(\vsesend)}{ExpectedPureExpression} \typearrow \OrTypeError\\\\
+  \checktrans{\sesisdeterministic(\vsesend)}{ExpectedDeterministic} \typearrow \OrTypeError\\\\
+  \vsescond \eqdef \vsesstart \cup \vsesend \cup \vseslimit\\
   \makeanonymous(\tenv, \vstartt) \typearrow \vstartstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vendt) \typearrow \vendstruct \OrTypeError\\\\
   {
@@ -2178,7 +2231,8 @@ All of the following apply:
   \tty \eqdef \TInt(\cs)\\
   \checkvarnotinenv{\tenv, \vindexname} \typearrow \True \OrTypeError\\\\
   \addlocal(\tenv, \tty, \vindexname, \LDKLet) \typearrow \tenvp\\
-  \annotateblock{\tenvp, \vbody} \typearrow \vbodyp \OrTypeError
+  \annotateblock{\tenvp, \vbody} \typearrow (\vbodyp, \vsesblock) \OrTypeError\\\\
+  \nonconflictingunion([\vsesblock, \vsescond]) \typearrow \vses \OrTypeError
 }{
   {
     \begin{array}{r}
@@ -2197,7 +2251,7 @@ All of the following apply:
     \Forende &:& \vendep\\
     \Forbody &:& \vbodyp\\
     \Forlimit &:& \vlimitp
-  \end{array}\right\}}{\news}, \overname{\tenv}{\newtenv}\right)
+  \end{array}\right\}}{\news}, \overname{\tenv}{\newtenv}, \vses\right)
 \end{array}
   }
 }
@@ -2441,7 +2495,7 @@ The helper relation
 executes one iteration of the loop body and then uses $\texttt{eval\_for}$ to execute the remaining
 iterations.
 
-\subsection{Prose}
+\subsubsection{Prose}
 \subsubsection{Stepping the Index Variable}
 All of the following apply:
 \begin{itemize}
@@ -2624,34 +2678,41 @@ One of the following applies:
   \begin{itemize}
     \item $\vs$ is a throw statement with no expression, that is, $\SThrow(\None)$;
     \item $\news$ is $\vs$;
-    \item $\newtenv$ is $\tenv$.
+    \item $\newtenv$ is $\tenv$;
+    \item \Proseeqdef{$\vses$}{the singleton set for $\ThrowException(\texttt{\_})$}
   \end{itemize}
 
   \item All of the following apply (\textsc{some}):
   \begin{itemize}
     \item $\vs$ is a throw statement with expression $\ve$, that is, $\SThrow(\langle\ve\rangle)$;
-    \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte, \vep)$\ProseOrTypeError;
+    \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vsesone)$\ProseOrTypeError;
     \item checking that $\vte$ has the structure of an exception type yields $\True$\ProseOrTypeError;
+    \item view $\vte$ as the named type for $\exnname$;
     \item $\news$ is a throw statement with expression $\vep$ and type $\vte$, that is, \\
           $\SThrow(\langle (\vep, \vte) \rangle)$;
-    \item $\newtenv$ is $\tenv$.
+    \item $\newtenv$ is $\tenv$;
+    \item \Proseeqdef{$\vses$}{the union of $\vsesone$ and the singleton set for \\
+          $\ThrowException(\exnname)$}.
   \end{itemize}
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[none]{}{
-  \annotatestmt(\tenv, \overname{\SThrow(\None)}{\vs}) \typearrow (\overname{\SThrow(\None)}{\news}, \overname{\tenv}{\newtenv})
+  \annotatestmt(\tenv, \overname{\SThrow(\None)}{\vs}) \typearrow
+  (\overname{\SThrow(\None)}{\news}, \overname{\tenv}{\newtenv}, \overname{\{\ThrowException(\texttt{\_})\}}{\vses})
 }
 \end{mathpar}
 \lrmcomment{Note that \identr{BRCJ} is done in~\cite[SemanticsRule.TopLevel]{ASLSemanticsReference}.}
 
 \begin{mathpar}
 \inferrule[some]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
-  \checkstructurelabel(\tenv, \vte, \TException) \typearrow \True \OrTypeError
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsesone) \OrTypeError\\\\
+  \checkstructurelabel(\tenv, \vte, \TException) \typearrow \True \OrTypeError\\\\
+  \vte \eqname \TNamed(\exnname)\\
+  \vses \eqdef \vsesone \cup \{\ThrowException(\exnname)\}
 }{
   \annotatestmt(\tenv, \overname{\SThrow(\langle\ve\rangle)}{\vs}) \typearrow
-  (\overname{\SThrow(\langle (\vep, \vte) \rangle)}{\news}, \overname{\tenv}{\newtenv})
+  (\overname{\SThrow(\langle (\vep, \vte) \rangle)}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
 \lrmcomment{This is related to \identr{NXRC}.}
@@ -2753,9 +2814,11 @@ One of the following applies:
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a try statement with statement $\vsp$, list of catchers $\catchers$ and an \optional\ \texttt{otherwise} block;
-  \item annotating the statement $\vsp$ as a block statement yields $\vspp$\ProseOrTypeError;
-  \item annotating each catcher $\catchers[\vi]$, for each $\vi$ in $\listrange(\catchers)$ in $\tenv$ yields $\vc\_\vi$\ProseOrTypeError;
+  \item annotating the statement $\vsp$ as a block statement yields $(\vspp, \vsesone)$\ProseOrTypeError;
+  \item annotating each catcher $\catchers[\vi]$, for each $\vi$ in $\listrange(\catchers)$ in $\tenv$ yields $\vc\_\vi$
+        and $\vxs_i$\ProseOrTypeError;
   \item $\catchersp$ is the list of annotated catchers $\vc\_\vi$ for each $\vi\in\listrange(\catchers)$;
+  \item \Proseeqdef{$\vsescatchers$}{the union of all $\vxs_\vi$, for \Proselistrange{$\vi$}{$\catchers$}};
   \item One of the following applies:
   \begin{itemize}
     \item All of the following apply (\textsc{no\_otherwise}):
@@ -2764,6 +2827,8 @@ All of the following apply:
       \item $\news$ is a try statement with statement $\vspp$, list catchers $\catchersp$ and no \texttt{otherwise} statement,
             that is \\
             $\STry(\vspp, \catchersp, \None)$;
+      \item \Proseeqdef{$\vsesotherwise$}{the empty set};
+      \item \Proseeqdef{$\vsesthree$}{$\vsestwo$}.
     \end{itemize}
 
     \item All of the following apply (\textsc{otherwise}):
@@ -2773,31 +2838,46 @@ All of the following apply:
       \item $\news$ is a try statement with statement $\vspp$, list catchers $\catchersp$ and \texttt{otherwise} statement
             $\otherwisep$, that is \\
             $\STry(\vspp, \catchersp, \langle\otherwisep\rangle)$;
+      \item \Proseeqdef{$\vsesotherwise$}{$\vsesblock$};
+      \item \Proseeqdef{$\vsesthree$}{$\vsestwo$, excluding any \ThrowExceptionTerm}.
     \end{itemize}
+
+    \item \Proseeqdef{$\vses$}{the union of $\vsesthree$, $\vsescatchers$, and $\vsesotherwise$}.
   \end{itemize}
   \item $\newtenv$ is $\tenv$.
 \end{itemize}
+
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[no\_otherwise]{
-  \annotateblock{\tenv, \vsp} \typearrow \vspp \OrTypeError\\\\
-  \vi\in\listrange(\catchers): \annotatecatcher{\tenv, \catchers[\vi]} \typearrow \vc_\vi \OrTypeError\\\\
+  \annotateblock{\tenv, \vsp} \typearrow (\vspp, \vsesone) \OrTypeError\\\\
+  \vi\in\listrange(\catchers): \annotatecatcher{\tenv, \catchers[\vi]} \typearrow (\vc_\vi, \vxs_vi) \OrTypeError\\\\
   \catchersp \eqdef [\vi\in\listrange(\catchers) : \vc_\vi]\\\\
+  \vsescatchers \eqdef \bigcup_{\vi\in\listrange(\catchers)} \vxs_vi\\\\
   \commonprefixline\\\\
-  \news \eqdef \STry(\vspp, \catchersp, \None)
+  \news \eqdef \STry(\vspp, \catchersp, \None)\\
+  \vsesotherwise \eqdef \emptyset\\
+  \vsesthree \eqdef \vsestwo\\\\
+  \commonsuffixline\\\\
+  \vses \eqdef \vsesthree \cup \vsescatchers \cup \vsesotherwise
 }{
-  \annotatestmt(\tenv, \overname{\STry(\vsp, \catchers, \None)}{\vs}) \typearrow (\news, \overname{\tenv}{\newtenv})
+  \annotatestmt(\tenv, \overname{\STry(\vsp, \catchers, \None)}{\vs}) \typearrow (\news, \overname{\tenv}{\newtenv}, \vses)
 }
 \and
 \inferrule[otherwise]{
-  \annotateblock{\tenv, \vsp} \typearrow \vspp \OrTypeError\\\\
-  \vi\in\listrange(\catchers): \annotatecatcher{\tenv, \catchers[\vi]} \typearrow \vc_\vi \OrTypeError\\\\
+  \annotateblock{\tenv, \vsp} \typearrow (\vspp, \vsesone) \OrTypeError\\\\
+  \vi\in\listrange(\catchers): \annotatecatcher{\tenv, \catchers[\vi]} \typearrow (\vc_\vi, \vxs_vi) \OrTypeError\\\\
   \catchersp \eqdef [\vi\in\listrange(\catchers) : \vc_\vi]\\\\
+  \vsescatchers \eqdef \bigcup_{\vi\in\listrange(\catchers)} \vxs_i\\\\
   \commonprefixline\\\\
-  \annotateblock{\tenv, \otherwise} \typearrow \otherwisep \OrTypeError\\\\
-  \news \eqdef \STry(\vspp, \catchersp, \otherwise')
+  \annotateblock{\tenv, \otherwise} \typearrow (\otherwisep, \vsesblock) \OrTypeError\\\\
+  \news \eqdef \STry(\vspp, \catchersp, \otherwise')\\
+  \vsesotherwise \eqdef \vsesblock\\
+  \vsesthree \eqdef \vsestwo \setminus \{ \vs \in \TSideEffectSet \;|\; \configdomain{\vs} = \ThrowException\} \\\\
+  \commonsuffixline\\\\
+  \vses \eqdef \vsescatchers \cup \vsesotherwise
 }{
-  \annotatestmt(\tenv, \overname{\STry(\vsp, \catchers, \langle\otherwise\rangle)}{\vs}) \typearrow (\news, \overname{\tenv}{\newtenv})
+  \annotatestmt(\tenv, \overname{\STry(\vsp, \catchers, \langle\otherwise\rangle)}{\vs}) \typearrow (\news, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\STryBegin}{\STryEnd}{../Typing.ml}
@@ -2873,14 +2953,15 @@ One of the following applies:
     \item the enclosing subprogram does not have a \texttt{return} type (it is either a setter
           or a procedure);
     \item $\news$ is a \texttt{return} statement with no expression, that is, $\SReturn(\None)$;
-    \item $\newtenv$ is $\tenv$.
+    \item $\newtenv$ is $\tenv$;
+    \item \Proseeqdef{$\vses$}{the empty set}.
   \end{itemize}
 
   \item All of the following apply (\textsc{some}):
   \begin{itemize}
     \item $\vs$ is a \texttt{return} statement with an expression $\ve$, that is, $\SReturn(\langle \vep \rangle)$;
     \item the enclosing subprogram has a return type $\vt$;
-    \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\tep,\vep)$\ProseOrTypeError;
+    \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\tep,\vep,\vses)$\ProseOrTypeError;
     \item checking whether $\vtep$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
     \item $\news$ is a \texttt{return} statement with value $\vep$, that is, $\SReturn(\langle \vep \rangle)$;
     \item $\newtenv$ is $\tenv$.
@@ -2899,18 +2980,19 @@ One of the following applies:
 \inferrule[none]{
   L^\tenv.\returntype = \None
 }{
-  \annotatestmt(\tenv, \overname{\SReturn(\None)}{\vs}) \typearrow (\overname{\SReturn(\None)}{\news}, \overname{\tenv}{\newtenv})
+  \annotatestmt(\tenv, \overname{\SReturn(\None)}{\vs}) \typearrow
+  (\overname{\SReturn(\None)}{\news}, \overname{\tenv}{\newtenv}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[some]{
   L^\tenv.\returntype = \langle \vt \rangle\\
-  \annotateexpr{\tenv, \ve} \typearrow (\vtep, \vep) \OrTypeError\\\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vtep, \vep, \vses) \OrTypeError\\\\
   \checktypesat(\tenv, \vtep, \vt) \typearrow \True \OrTypeError
 }{
   \annotatestmt(\tenv, \overname{\SReturn(\langle \ve \rangle)}{\vs}) \typearrow
-  (\overname{\SReturn(\langle \vep \rangle)}{\news}, \overname{\tenv}{\newtenv})
+  (\overname{\SReturn(\langle \vep \rangle)}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\SReturn}{\SReturnEnd}{../Typing.ml}
@@ -2992,6 +3074,7 @@ One of the following applies:
 \CodeSubsubsection{\SReturnBegin}{\EvalSReturnEnd}{../Interpreter.ml}
 
 \subsubsection{SemanticsRule.EExprListM \label{sec:SemanticsRule.EExprListM}}
+\hypertarget{def-evalexprlistm}{}
 The helper relation
 \[
   \evalexprlistm(\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vEs}) \;\aslrel\;
@@ -3105,27 +3188,27 @@ by composing the graphs in $\vms$ with Write Effects for the respective values.
 \subsection{Typing}
 
 \subsubsection{TypingRule.SPrint\label{sec:TypingRule.SPrint}}
-
 \paragraph{Prose}
 All of the following apply:
 \begin{itemize}
   \item $\vs$ denotes the print statement with arguments $\vargs$ and newline indicator $\vnewline$;
-  \item annotating each expression $\vargs_i$ in $\tenv$ yields $(\vt_i, \vargsp_i)$\ProseOrTypeError, for $i=1..k$;
-  \item checking that $\vt_i$ is a singular type yields $\True$\ProseOrTypeError, for each $i=1..k$;
+  \item annotating for each \Proselistrange{$i$}{$\vargs$}, the expression $\vargs_i$ in $\tenv$ yields $(\vt_i, \vargsp_i, \vxs_i)$\ProseOrTypeError;
+  \item checking for each \Proselistrange{$i$}{$\vargs$}, that $\vt_i$ is a singular type yields $\True$\ProseOrTypeError;
   \item $\news$ denotes the print statement with arguments $\vargsp$ and newline indicator $\vnewline$;
-  \item $\newtenv$ is $\tenv$.
+  \item $\newtenv$ is $\tenv$;
+  \item \Prosenonconflictingunion{$\vxs_i$, \Proselistrange{$i$}{$\vargs$}, }{$\vses$}\ProseOrTypeError.
 \end{itemize}
 
 \paragraph{Formally}
 \begin{mathpar}
   \inferrule{%
-    \vi\in\listrange(\vargs): \annotateexpr{\vargs[i], \tenv} \typearrow (\vt_i, \vargsp[i])\OrTypeError \\
-    \vi\in\listrange(\vargs): \checktrans{\issingular(\vt_i)}{\BadPrintType} \typearrow \True \OrTypeError \\
+    \vi\in\listrange(\vargs): \annotateexpr{\vargs[i], \tenv} \typearrow (\vt_i, \vargsp[i], \vxs_i)\OrTypeError \\\\
+    \vi\in\listrange(\vargs): \checktrans{\issingular(\vt_i)}{\BadPrintType} \typearrow \True \OrTypeError \\\\
+    \nonconflictingunion([\vi\in\listrange(\vargs): \vxs_i]) \typearrow \vses \OrTypeError
   }{%
-    \annotatestmt (\tenv, \overname{\SPrint(\vargs, \vnewline)}{\vs}) \typearrow (\SPrint(\vargsp, \vnewline), \tenv)
+    \annotatestmt (\tenv, \overname{\SPrint(\vargs, \vnewline)}{\vs}) \typearrow (\SPrint(\vargsp, \vnewline), \tenv, \vses)
   }
 \end{mathpar}
-
 \CodeSubsection{\SPrintBegin}{\SPrintEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -3195,12 +3278,12 @@ All of the following apply:
 \subsubsection{TypingRule.SUnreachable}
 \subsubsection{TypingRule.SUnreachable\label{sec:TypingRule.SUnreachable}}
 \subsubsection{Prose}
-Annotating $\SUnreachable$ in the static environment $\tenv$ yields $(\SUnreachable, \tenv)$.
+Annotating $\SUnreachable$ in the static environment $\tenv$ yields $(\SUnreachable, \tenv, \emptyset)$.
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{}{
-  \annotatestmt(\tenv, \SUnreachable) \typearrow (\SUnreachable, \tenv)
+  \annotatestmt(\tenv, \SUnreachable) \typearrow (\SUnreachable, \tenv, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
 
@@ -3241,16 +3324,19 @@ Evaluating $\SUnreachable$ in an environment $\env$ results in a dynamic error i
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a pragma statement with identifier $\id$ and expression list $\vargs$. that is, $\SPragma(\id, \vargs)$;
-  \item applying $\annotateexprlist$ to annotate the expression list $\vargs$ in $\tenv$ yields \\
-        $\vargsp$\ProseOrTypeError;
+  \item for each \Proselistrange{$i$}{$\vargs$}, \Proseannotateexpr{$\tenv$}{$\vargs[i]$}{$(\Ignore, \Ignore, \vxs_i)$}\ProseOrTypeError;
+  \item define $\vsess$ as the list of $\vxs_i$m \Proselistrange{$i$}{$\vargs$};
   \item define $\news$ as the \texttt{pass} statement, that is, $\SPass$
-  \item $\newtenv$ is $\tenv$.
+  \item $\newtenv$ is $\tenv$;
+  \item \Prosenonconflictingunion{$\vsess$}{$\vses$}\ProseOrTypeError.
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexprlist(\tenv, \vargs) \typearrow \vargsp \OrTypeError
+  i\in\listrange(\vargs): \annotateexpr{\tenv, \vargs[i]} \typearrow (\Ignore, \Ignore, \vxs_i) \OrTypeError\\\\
+  \vsess \eqdef [i\in\listrange(\vargs): \vxs_i]\\
+  \nonconflictingunion(\vsess) \typearrow \vses \OrTypeError
 }{
   \annotatestmt(\tenv, \overname{\SPragma(\id, \vargs)}{\vs}) \typearrow (\overname{\SPass}{\news}, \tenv)
 }

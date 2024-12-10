@@ -233,22 +233,23 @@ All of the following apply:
 \begin{itemize}
   \item checking that each declaration in $\vd$ is a subprogram declaration yields $\True$\ProseTerminateAs{\BadRecursiveDecls};
   \item applying $\annotatefuncsig$ to each node $\vf$ in $\genv$, where $\DFunc(\vf)$ is a declaration in $\decls$,
-        yields $(\tenv_\vf, \vd_\vf)$\ProseOrTypeError;
+        yields $(\tenv_\vf, \vd_\vf, \vses_f)$\ProseOrTypeError;
   \item define $\envandfs$ as the list of pairs, each consisting of the local environment component of $\tenv_\vf$
-        and the annotated subprogram $\vd_\vf$, for each subprogram declaration $\DFunc(\vf)$ in $\decls$;
+        the annotated subprogram $\vd_\vf$, and the \sideeffectsetterm\ $\vses_\vf$, for each subprogram declaration $\DFunc(\vf)$ in $\decls$;
   \item splitting $\envandfs$ into two sublists by testing each pair to check whether the subprogram declaration
         component is that of a setter (or an empty setter) yields $\setters$ and $\others$, respectively;
   \item define $\envandfsone$ as the concatenation of $\others$ and $\setters$;
   \item applying $\declaresubprograms$ to $\genv$ and $\envandfsone$ yields \\
         $(\genvtwo, \envandfstwo)$\ProseOrTypeError;
-  \item for each pair consisting of a local static environment and an element of $\func$, $(\lenvtwo, \vf)$,
+  \item for tuple in $\envandfstwo$ consisting of a local static environment, an element of $\func$,
+        and a \sideeffectsetterm, $(\lenvtwo, \vf, \vses_\vf)$,
         applying $\annotatesubprogram$ to the static environment \\
-        $(\genvtwo, \lenvtwo)$ and $\vf$ yields $\vfunc_\vf$\ProseOrTypeError;
-  \item define $\vfsthree$ as the list of elements $\vfunc_\vf$, for each pair $(\Ignore, \vf)$ in
-        $\envandfstwo$;
+        $(\genvtwo, \lenvtwo, \vses_\vf)$ and $\vf$ yields $(\vnew_\vf, \vses_\vf)$\ProseOrTypeError;
+  \item define $\vds$ as the list of $\DFunc(\vnew_\vf)$ for all $(\lenvtwo, \vf, \vses\_\vf)$ in $\envandfstwo$;
+  \item define $\vsess$ as the list of $(\vf, \vses_\vf)$ for all $(\lenvtwo, \vf, \vses\_\vf)$ in $\envandfstwo$;
   \item define $\tenvtwo$ as the environment with $\genvtwo$ as its static global environment
         and an empty static local environment;
-  \item applying $\addsubprogramdecls$ to $\tenvtwo$ and $\vfsthree$ yields $(\tenvthree, \newdecls)$;
+  \item applying $\addsubprogramdecls$ to $\tenvtwo$ and $\vsess$ yields $(\tenvthree, \newdecls)$;
   \item define $\newtenv$ as the global static environment of $\tenvthree$.
 \end{itemize}
 
@@ -256,17 +257,17 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \vd\in\decls: \checktrans{\astlabel(\vd) = \DFunc}{\BadRecursiveDecls} \typearrow \True\OrTypeError\\\\
-  \DFunc(\vf)\in\decls: \annotatefuncsig(\genv, \vf) \typearrow (\tenv_\vf, \vd_\vf)\OrTypeError\\\\
+  \DFunc(\vf)\in\decls: \annotatefuncsig(\genv, \vf) \typearrow (\tenv_\vf, \vd_\vf, \vses_f)\OrTypeError\\\\
   \envandfs \eqdef [\DFunc(\vf)\in\decls: (L^{\tenv_\vf}, \vd_\vf)]\\
   {
   \setters \eqdef \left[ \begin{array}{r|l}
-    (\lenv,\vd) & (\lenv, \DFunc(\vf)) \in \envandfs\ \land \\
+    (\lenv,\vd, \vses) & (\lenv, \DFunc(\vf), \vses) \in \envandfs\ \land \\
                 & \astlabel(\vf) = \STSetter
   \end{array}\right]
   }\\
   {
   \others \eqdef \left[ \begin{array}{r|l}
-    (\lenv,\vd) & (\lenv, \DFunc(\vf)) \in \envandfs\ \land \\
+    (\lenv,\vd, \vses) & (\lenv, \DFunc(\vf), \vses) \in \envandfs\ \land \\
                 & \astlabel(\vf) \neq \STSetter
   \end{array}\right]
   }\\
@@ -274,12 +275,15 @@ All of the following apply:
   \declaresubprograms(\genv, \envandfsone) \typearrow (\genvtwo, \envandfstwo) \OrTypeError\\\\
   {
     \begin{array}{r}
-  (\lenvtwo, \vf)\in\envandfstwo: \annotatesubprogram(\genvtwo, \lenvtwo), \vf) \typearrow \\ \vfunc_\vf \OrTypeError
+  (\lenvtwo, \vf, \vses\_\vf)\in\envandfstwo: \annotatesubprogram(\genvtwo, \lenvtwo, \vf, \vses\_vf) \typearrow \\
+      (\vnew_\vf, \vses_\vf) \OrTypeError
     \end{array}
   }\\\\
-  \vfsthree \eqdef [(\Ignore, \vf)\in\envandfstwo: \vfunc_\vf]\\
+  \vds \eqdef [(\lenvtwo, \vf, \vses\_\vf)\in\envandfstwo: \DFunc(\vnew_\vf)]\\
+  \vsess \eqdef [(\lenvtwo, \vf, \vses\_\vf)\in\envandfstwo: (\vf, \vses\_\vf)]\\
   \tenvtwo \eqdef (\genvtwo, \emptyfunc)\\
-  \addsubprogramdecls(\tenvtwo, \vfsthree) \typearrow (\tenvthree, \newdecls)
+  \propagaterecursivecallssess(\vsess) \typearrow \vsessprop\\
+  \addsubprogramdecls(\tenvtwo, \vsessprop) \typearrow (\tenvthree, \newdecls)
 }{
   \typecheckmutuallyrec(\genv, \decls) \typearrow (\newdecls, \overname{G^\tenvthree}{\newgenv})
 }
@@ -333,14 +337,15 @@ The function
     \overname{(\localstaticenvs\times\func)^*}{\envandfs}
   ) \aslto
   \overname{\globalstaticenvs}{\newgenv} \times
-  \overname{(\localstaticenvs\times\func)^*}{\newenvandfs}
+  \overname{(\localstaticenvs\times\func\times\TSideEffectSet)^*}{\newenvandfs}
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 processes a list of pairs, each consisting of a local static environment and a subprogram declaration, $\envandfs$,
 in the context of a global static environment $\genv$,
 declaring each subprogram in the environment consisting of $\genv$ and the static local environment associated with
 each subprogram.
-The result is a modified global static environment $\newgenv$ and list of pairs $\newenvandfs$.
+The result is a modified global static environment $\newgenv$ and list of tuples $\newenvandfs$
+consisting of local static environment, annotated $\func$ AST node, and \sideeffectdescriptorsetsterm.
 
 \subsubsection{Prose}
 One of the following applies:
@@ -354,28 +359,29 @@ One of the following applies:
 
   \item All of the following apply (\textsc{non\_empty}):
   \begin{itemize}
-    \item $\envandfs$ is the list with \head\ $(\lenv, \vf)$ and \tail\ $\envandfsone$;
+    \item $\envandfs$ is the list with \head\ $(\lenv, \vf, \vsesf)$ and \tail\ $\envandfsone$;
     \item define $\tenv$ as the environment where the global environment component is $\genv$ and the local environment component is $\lenv$;
     \item applying $\declareonefunc$ to $\vf$ in $\tenv$ yields $(\tenvone, \vfone)$\ProseOrTypeError;
     \item applying $\declaresubprograms$ to the global environment of $\tenvone$ and \\
           $\envandfsone$ yields $(\newgenv, \envandfstwo)$\ProseOrTypeError;
-    \item define $\newenvandfs$ as the list with \head\ $(\lenv, \vfone)$ and \tail\ $\envandfstwo$.
+    \item define $\newenvandfs$ as the list with \head\ $(\lenv, \vfone, \vsesf)$ and \tail\ $\envandfstwo$.
   \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[empty]{}{
-  \declaresubprograms(\genv, \overname{\emptylist}{\envandfs}) \typearrow (\overname{\genv}{\newgenv}, \overname{\emptylist}{\newenvandfs})
+  \declaresubprograms(\genv, \overname{\emptylist}{\envandfs}) \typearrow
+   (\overname{\genv}{\newgenv}, \overname{\emptylist}{\newenvandfs})
 }
 \and
 \inferrule[non\_empty]{
   \tenv \eqdef (\genv, \lenv)\\
   \declareonefunc(\tenv, \vf) \typearrow (\tenvone, \vfone) \OrTypeError\\\\
   \declaresubprograms(G^\tenvone, \envandfsone) \typearrow (\newgenv, \envandfstwo) \OrTypeError\\\\
-  \newenvandfs \eqdef [(\lenv, \vfone)] \concat \envandfstwo
+  \newenvandfs \eqdef [(\lenv, \vfone, \vsesf)] \concat \envandfstwo
 }{
-  \declaresubprograms(\genv, \overname{[(\lenv, \vf)]\concat\envandfsone}{\envandfs}) \typearrow (\overname{\genv}{\newgenv}, \newenvandfs)
+  \declaresubprograms(\genv, \overname{[(\lenv, \vf, \vsesf)]\concat\envandfsone}{\envandfs}) \typearrow (\overname{\genv}{\newgenv}, \newenvandfs)
 }
 \end{mathpar}
 
@@ -385,7 +391,7 @@ The function
 \[
   \addsubprogramdecls(
     \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\func^*}{\vfuncs}
+    \overname{(\func\times\TSideEffectSet)^*}{\vfuncs} \aslsep
   ) \aslto
   (\overname{\staticenvs}{\newtenv} \times \overname{\decl^*}{\decls})
 \]
@@ -403,8 +409,8 @@ One of the following applies:
 
   \item All of the following apply (\textsc{non\_empty}):
   \begin{itemize}
-    \item $\vfuncs$ is the list with \head\ $\vf$ and \tail\ $\vfuncsone$;
-    \item applying $\addsubprogram$ to $vf.\funcname$ and $\vf$ in $\tenv$ yields $\tenvone$;
+    \item $\vfuncs$ is the list with \head\ $(\vf, \vsesf)$ and \tail\ $\vfuncsone$;
+    \item applying $\addsubprogram$ to $vf.\funcname$, $\vf$, and $\vsesf$ in $\tenv$ yields $\tenvone$;
     \item applying $\addsubprogramdecls$ to $\tenvone$ and $\vfuncsone$ yields \\
           $(\newtenv, \vdeclsone)$;
     \item define $\decls$ as the list with $\DFunc(\vf)$ as its \head\ and $\vdeclsone$ as its tail.
@@ -420,11 +426,54 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \addsubprogram(\tenv, \vf.\funcname, \vf) \typearrow \tenvone\\
+  \addsubprogram(\tenv, \vf.\funcname, \vf, \vsesf) \typearrow \tenvone\\
   \addsubprogramdecls(\tenvone, \vfuncsone) \typearrow (\newtenv, \vdeclsone)
 }{
-  \addsubprogramdecls(\tenv, \overname{\vf \concat \vfuncsone}{\vfuncs}) \typearrow
+  \addsubprogramdecls(\tenv, \overname{(\vf, \vsesf) \concat \vfuncsone}{\vfuncs}) \typearrow
   (\newtenv, \overname{[\DFunc(\vf)] \concat \vdeclsone}{\decls})
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.PropagateRecursiveCallsSess\label{sec:TypingRule.PropagateRecursiveCallsSess}}
+\hypertarget{def-propagaterecursivecallssess}{}
+The helper relation
+\[
+\propagaterecursivecallssess(\overname{(\func\times\TSideEffectSet)^*}{\vsess})
+\aslrel
+\overname{(\func\times\TSideEffectSet)^*}{\vsessnew}
+\]
+accepts a list of $\func$ AST nodes and their associated \sideeffectdescriptorsetsterm\ and
+ensures that the \sideeffectdescriptorsterm\ of a given $\func$
+consists of the \sideeffectdescriptorsterm\ of all the $\func$ AST nodes of the
+recursive functions it may transitively call.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item define the set $V$ as the set that includes an AST node $\vf$ if and only if $(\vf, \Ignore)$ exists in $\vsess$.
+        Intuitively, this is the set of all function definitions in associated with \sideeffectconflictsterm\ in $\vsess$;
+  \item define the relation $E : \func \times \func$ as follows:
+        a pair $(\vfone, \vftwo)$ is included in $E$ if the pair $(\vfone, \vses_\vfone)$ exists in $\vsess$
+        and the \RecursiveCallTerm\ for $\vftwo.\funcname$ exists in $\vses_\vfone$.
+        Intuitively, there exists an edge $(\vfone, \vftwo)$ if the \sideeffectconflictsterm\ of $\vfone$ indicate that it
+        may call the recursive function $\vftwo$;
+  \item recall that $\graphtransitive{E}$ is the transitive closure of $E$, which intuitively means that
+        $(\vfone, \vftwo)$ is included in $\graphtransitive{E}$ if there exists a path of edges in $E$ connecting $\vfone$
+        to $\vftwo$;
+  \item define the function $\propagatedeffects : \func \aslto \TSideEffectSet$, which binds a function definition $\vfone$
+        to the set including any \sideeffectconflictterm\ $\vs$ such that $(\vfone, \vftwo) \in \graphtransitive{E}$ and
+        $\vs$ is associated with $\vftwo$ in $\vsess$;
+  \item define $\vsesnew$ as any listing of the set of pairs $(\vf, \propagatedeffects(\vf))$ such $\vf$ is a member of $V$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  V \eqdef \{ (\vf, \Ignore) \in \vsess\}\\
+  E \eqdef \{ (\vfone, \vftwo) \;|\; \exists (\vfone, \vses_\vfone) \in \vsess \text{ and } \RecursiveCall(\vftwo.\funcname) \in \vses_\vfone\}\\
+  \vfone\in V: \propagatedeffects(\vfone) \eqdef \bigcup \{ \vses_\vftwo \;|\; (\vfone, \vftwo) \in \graphtransitive{E} \text{ and } (\vftwo, \vses_\vftwo \in \vsess)\}\\
+}{
+  \propagaterecursivecallssess(\vsess) \typearrow \overname{[\vf\in V: (\vf, \propagatedeffects(\vf))]}{\vsessnew}
 }
 \end{mathpar}
 
@@ -1729,7 +1778,7 @@ every pair of nodes $u,v \in C$ reachable from one another.
 The \emph{strongly connected components} of a graph $(V, E)$ uniquely partitions its set of
 nodes $V$ into a set of strongly connected components:
 \[
-\SCC(V, E) \triangleq \{ C \subseteq V \;|\; \forall u,v\in C.\ (u,v), (v,u) \in E^* \} \enspace.
+\SCC(V, E) \triangleq \{ C \subseteq V \;|\; \forall u,v\in C.\ (u,v), (v,u) \in \graphtransitive{E} \} \enspace.
 \]
 \end{definition}
 

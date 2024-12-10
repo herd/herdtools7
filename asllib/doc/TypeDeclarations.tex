@@ -171,7 +171,7 @@ We also define the following helper rules:
   \item TypingRule.DeclareConst (see \secref{TypingRule.DeclareConst})
 \end{itemize}
 
-\subsection{TypingRule.DeclareType \label{sec:TypingRule.DeclareType}}
+\subsubsection{TypingRule.DeclareType \label{sec:TypingRule.DeclareType}}
 \hypertarget{def-declaretype}{}
 The function
 \[
@@ -195,7 +195,9 @@ All of the following apply:
         static environment;
   \item annotating the \optional\ extra fields $\vs$ for $\tty$ in $\tenv$ yields via \\ $\annotateextrafields$
         yields the modified environment $\tenvone$ and type $\vtone$\ProseOrTypeError;
-  \item annotating $\vtone$ in $\tenvone$ yields $\vttwo$\ProseOrTypeError;
+  \item annotating $\vtone$ in $\tenvone$ yields $(\vttwo, \vsest)$\ProseOrTypeError;
+  \item applying $\maxtimeframe$ to $\vsest$ yields $\vtimeframe$;
+  \item applying $\addtype$ to $\name$, $\vttwo$, and $\vtimeframe$ in $\tenv$ yields $\tenvtwo$;
   \item $\tenvtwo$ is $\tenvone$ with its $\declaredtypes$ component updated by binding $\name$ to $\vttwo$;
   \item One of the following applies:
   \begin{itemize}
@@ -212,17 +214,17 @@ All of the following apply:
     \end{itemize}
   \end{itemize}
 \end{itemize}
-\CodeSubsection{\DeclareTypeBegin}{\DeclareTypeEnd}{../Typing.ml}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[enum]{
   \checkvarnotingenv{\genv, \name} \typearrow \True \OrTypeError\\\\
   \withemptylocal(\genv) \typearrow \tenv\\\\
-  \commonprefixline\\\\
   \annotateextrafields(\tenv, \tty, \vs) \typearrow (\tenvone, \vtone)\\
-  \annotatetype{\True, \tenvone, \vtone} \typearrow \vttwo \OrTypeError\\\\
-  \tenvtwo \eqdef (G^\tenvone.\declaredtypes[\name\mapsto\vttwo], L^\tenvone)\\
+  \annotatetype{\True, \tenvone, \vtone} \typearrow (\vttwo, \vsest) \OrTypeError\\\\
+  \maxtimeframe(\vsest) \typearrow \vtimeframe\\
+  \addtype(\tenvone, \name, \vttwo, \vtimeframe) \typearrow \tenvtwo\\
+  \commonprefixline\\\\
   \vttwo = \TEnum(\ids)\\
   \declareenumlabels(\tenvtwo, \vttwo) \typearrow \newtenv \OrTypeError
 }{
@@ -234,17 +236,20 @@ All of the following apply:
 \inferrule[not\_enum]{
   \checkvarnotingenv{\genv, \name} \typearrow \True \OrTypeError\\\\
   \withemptylocal(\genv) \typearrow \tenv\\\\
-  \commonprefixline\\\\
   \annotateextrafields(\tenv, \tty, \vs) \typearrow (\tenvone, \vtone)\\
-  \annotatetype{\True, \tenvone, \vtone} \typearrow \vttwo \OrTypeError\\\\
-  \tenvtwo \eqdef (G^\tenvone.\declaredtypes[\name\mapsto\vttwo], L^\tenvone)\\
+  \annotatetype{\True, \tenvone, \vtone} \typearrow (\vttwo, \vsest) \OrTypeError\\\\
+  \maxtimeframe(\vsest) \typearrow \vtimeframe\\
+  \addtype(\tenvone, \name, \vttwo, \vtimeframe) \typearrow \tenvtwo\\
+  \commonprefixline\\\\
   \astlabel(\vttwo) \neq \TEnum
 }{
   \declaretype(\genv, \name, \tty, \vs) \typearrow \overname{\tenvtwo}{\newtenv}
 }
-\end{mathpar}\lrmcomment{This is related to \identr{DHRC}, \identd{YZBQ}, \identr{DWSP}, \identi{MZXL}, \identr{MDZD}, \identr{CHKR}.}
+\end{mathpar}
+\CodeSubsection{\DeclareTypeBegin}{\DeclareTypeEnd}{../Typing.ml}
+\lrmcomment{This is related to \identr{DHRC}, \identd{YZBQ}, \identr{DWSP}, \identi{MZXL}, \identr{MDZD}, \identr{CHKR}.}
 
-\subsection{TypingRule.AnnotateExtraFields \label{sec:TypingRule.AnnotateExtraFields}}
+\subsubsection{TypingRule.AnnotateExtraFields \label{sec:TypingRule.AnnotateExtraFields}}
 \hypertarget{def-annotateextrafields}{}
 The function
 \[
@@ -341,7 +346,7 @@ One of the following applies:
   \subtypesat(\tty, \TNamed(\vsuper)) \typearrow \vb\\
   \checktrans{\vb}{TypeConflict} \typearrow \True \OrTypeError\\\\
   \extrafields \neq \emptylist\\\\
-  G^\tenv.\declaredtypes(\vsuper) = \vt\\
+  G^\tenv.\declaredtypes(\vsuper) = (\vt, \Ignore)\\
   {
     \begin{array}{r}
   \checktrans{\astlabel(\vt) \in \{\TRecord, \TException\}}{ExpectedStructuredType} \typearrow \\ \True \OrTypeError
@@ -355,7 +360,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.AnnotateTypeOpt \label{sec:TypingRule.AnnotateTypeOpt}}
+\subsubsection{TypingRule.AnnotateTypeOpt \label{sec:TypingRule.AnnotateTypeOpt}}
 \hypertarget{def-annotatetypeopt}{}
 The function
 \[
@@ -396,7 +401,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.AnnotateExprOpt \label{sec:TypingRule.AnnotateExprOpt}}
+\subsubsection{TypingRule.AnnotateExprOpt \label{sec:TypingRule.AnnotateExprOpt}}
 \hypertarget{def-annotateexpropt}{}
 The function
 \[
@@ -438,7 +443,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.AnnotateInitType \label{sec:TypingRule.AnnotateInitType}}
+\subsubsection{TypingRule.AnnotateInitType \label{sec:TypingRule.AnnotateInitType}}
 \hypertarget{def-annotateinittype}{}
 The function
 \[
@@ -500,8 +505,7 @@ One of the following applies:
 \end{mathpar}
 
 \hypertarget{def-declaredtype}{}
-\subsection{TypingRule.DeclaredType \label{sec:TypingRule.DeclaredType}}
-
+\subsubsection{TypingRule.DeclaredType \label{sec:TypingRule.DeclaredType}}
 The function
 \[
   \declaredtype(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\id}) \aslto \overname{\ty}{\vt} \cup \TTypeError
@@ -520,28 +524,20 @@ One of the following applies:
   \item All of the following apply (\textsc{type\_not\_declared}):
   \begin{itemize}
     \item $\id$ is not bound in the global environment to any type;
-    \item the result is a type error indicating the lack of a type declaration for $\id$.
+    \item the result is a type error indicating the lack of a type declaration for $\id$ (\UndefinedIdentifier).
   \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[exists]{
-  G^\tenv.\declaredtypes(\id) = \vt
-}
-{
+  G^\tenv.\declaredtypes(\id) = (\vt, \Ignore)
+}{
   \declaredtype(\tenv, \id) \typearrow \vt
-}
-\and
-\inferrule[type\_not\_declared]{
-  G^\tenv.\declaredtypes(\id) = \bot
-}
-{
-  \declaredtype(\tenv, \id) \typearrow \TypeErrorVal{TypeNotDeclared}
 }
 \end{mathpar}
 
-\subsection{TypingRule.AnnotateEnumLabels \label{sec:TypingRule.AnnotateEnumLabels}}
+\subsubsection{TypingRule.AnnotateEnumLabels \label{sec:TypingRule.AnnotateEnumLabels}}
 \hypertarget{def-annotateenumlabels}{}
 The function
 \[
@@ -578,7 +574,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{TypingRule.DeclareConst \label{sec:TypingRule.DeclareConst}}
+\subsubsection{TypingRule.DeclareConst \label{sec:TypingRule.DeclareConst}}
 \hypertarget{def-declareconst}{}
 The function
 \[

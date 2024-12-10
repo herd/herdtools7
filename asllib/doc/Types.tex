@@ -40,9 +40,10 @@ transforms a \namedtype\ parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
   \annotatetype{\overname{\Bool}{\vdecl} \aslsep \overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}}
-  \aslto \overname{\ty}{\newty} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto (\overname{\ty}{\newty} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-typechecks a type $\tty$ in an environment $\tenv$, resulting in a \typedast\ $\newty$.
+typechecks a type $\tty$ in an environment $\tenv$, resulting in a \typedast\ $\newty$
+and a \sideeffectsetterm\ $\vses$.
 The flag $\decl$ indicates whether $\tty$ is a type currently being declared,
 and makes a difference only when $\tty$ is an enumeration type or a \structuredtype.
 \ProseOtherwiseTypeError
@@ -191,15 +192,15 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \subsection{Typing Integer Types\label{sec:TypingIntegerTypes}}
 \subsubsection{TypingRule.TInt\label{sec:TypingRule.TInt}}
+\subsubsection{Example}
+In the following examples, all the uses of integer types are well-typed:
+\ASLExample{\typingtests/TypingRule.TIntUnConstrained.asl}
+\ASLExample{\typingtests/TypingRule.TIntWellConstrained.asl}
+\ASLExample{\typingtests/TypingRule.TIntUnderConstrained.asl}
 
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{not\_well\_constrained}):
-    \begin{itemize}
-      \item $\tty$ is an integer type that is not well-constrained;
-      \item $\newty$ is the unconstrained integer type.
-    \end{itemize}
   \item All of the following apply (\textsc{pending\_constrained}):
     \begin{itemize}
       \item $\tty$ is a \pendingconstrainedintegertype;
@@ -210,32 +211,31 @@ One of the following applies:
       \item $\tty$ is the well-constrained integer type constrained by
         constraints $\vc_i$, for $u=1..k$;
       \item annotating each constraint $\vc_i$, for $i=1..k$,
-      yields $\newc_i$\ProseOrTypeError;
+      yields $(\newc_i, \vxs_i)$\ProseOrTypeError;
       \item $\newconstraints$ is the list of annotated constraints $\newc_i$,
       for $i=1..k$;
       \item $\newty$ is the well-constrained integer type constrained
-        by $\newconstraints$.
+        by $\newconstraints$;
+      \item define $\vses$ as the union of all $\vxs_i$, for $i=1..k$.
     \end{itemize}
-\end{itemize}
 
-\subsubsection{Example}
-In the following examples, all the uses of integer types are well-typed:
-\ASLExample{\typingtests/TypingRule.TIntUnConstrained.asl}
-\ASLExample{\typingtests/TypingRule.TIntWellConstrained.asl}
-\ASLExample{\typingtests/TypingRule.TIntUnderConstrained.asl}
+    \item All of the following apply (\textsc{parameterized}):
+    \begin{itemize}
+      \item $\tty$ is a \parameterizedintegertype\ for $\name$;
+      \item define $\vses$ as the singleton set for the singleton \sideeffectdescriptorterm,
+            \ReadLocalTerm\ for $\name$, \timeframeconstant, and $\True$ for immutability.
+      \item $\newty$ is the unconstrained integer type.
+    \end{itemize}
 
-\CodeSubsection{\TIntBegin}{\TIntEnd}{../Typing.ml}
+    \item All of the following apply (\textsc{unconstrained}):
+    \begin{itemize}
+      \item $\tty$ is an \unconstrainedintegertype;
+      \item $\newty$ is the unconstrained integer type;
+      \item define $\vses$ as the empty set.
+    \end{itemize}
+  \end{itemize}
 
 \subsubsection{Formally}
-\begin{mathpar}
-\inferrule[not\_well\_constrained]{
-  \tty \eqname \TInt(\vc)\\
-  \astlabel(\vc) \notin \{\wellconstrained,\pendingconstrained\}
-}{
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \tty} \typearrow \overname{\tty}{\newty}
-}
-\end{mathpar}
-
 \begin{mathpar}
 \inferrule[pending\_constrained]{}{
   {
@@ -250,27 +250,47 @@ In the following examples, all the uses of integer types are well-typed:
 \begin{mathpar}
 \inferrule[well\_constrained]{
   \constraints \eqname \vc_{1..k}\\
-  i=1..k: \annotateconstraint(\vc_i) \typearrow\newc_i \OrTypeError\\\\
-  \newconstraints \eqdef \newc_{1..k}
+  i=1..k: \annotateconstraint(\vc_i) \typearrow (\newc_i, \vxs_i) \OrTypeError\\\\
+  \newconstraints \eqdef \newc_{1..k}\\
+  \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
   {
     \begin{array}{r}
   \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TInt(\wellconstrained(\constraints))}{\tty}} \typearrow \\
-  \overname{\TInt(\wellconstrained(\newconstraints))}{\newty}
+  (\overname{\TInt(\wellconstrained(\newconstraints))}{\newty}, \vses)
     \end{array}
   }
 }
 \end{mathpar}
+
+\begin{mathpar}
+\inferrule[parameterized]{
+  \tty \eqname \TInt(\parameterized(\name))\\
+  \vses \eqdef \{\ \ReadLocal(\name, \timeframeconstant, \True)\ \}
+}{
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \tty} \typearrow (\overname{\tty}{\newty}, \vses)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[unconstrained]{
+  \tty \eqname \unconstrainedinteger
+}{
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \tty} \typearrow (\overname{\tty}{\newty}, \overname{\emptyset}{\vses})
+}
+\end{mathpar}
+
+\CodeSubsection{\TIntBegin}{\TIntEnd}{../Typing.ml}
 
 \subsubsection{TypingRule.AnnotateConstraint\label{sec:TypingRule.AnnotateConstraint}}
 \hypertarget{def-annotateconstraint}{}
 The function
 \[
 \annotateconstraint(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vc})
-\aslto \overname{\intconstraint}{\newc} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\aslto (\overname{\intconstraint}{\newc} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates an integer constraint $\vc$ in the static environment $\tenv$ yielding the annotated
-integer constraint $\newc$.
+integer constraint $\newc$ and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 \subsubsection{Prose}
@@ -279,30 +299,32 @@ One of the following applies:
   \item All of the following apply (\textsc{exact}):
   \begin{itemize}
     \item $\vc$ is the exact integer constraint for the expression $\ve$, that is, \\ $\ConstraintExact(\ve)$;
-    \item applying $\annotatestaticconstrainedinteger$ to $\ve$ in $\tenv$ yields $\vep$\ProseOrTypeError;
+    \item applying $\annotatestaticconstrainedinteger$ to $\ve$ in $\tenv$ yields $(\vep, \vses)$\ProseOrTypeError;
     \item define $\newc$ as the exact integer constraint for $\vep$, that is, $\ConstraintExact(\vep)$.
   \end{itemize}
 
   \item All of the following apply (\textsc{range}):
   \begin{itemize}
     \item $\vc$ is the range integer constraint for expressions $\veone$ and $\vetwo$, that is, \\ $\ConstraintRange(\veone, \vetwo)$;
-    \item applying $\annotatestaticconstrainedinteger$ to $\veone$ in $\tenv$ yields $\veonep$\ProseOrTypeError;
-    \item applying $\annotatestaticconstrainedinteger$ to $\vetwo$ in $\tenv$ yields $\vetwop$\ProseOrTypeError;
-    \item define $\newc$ as the range integer constraint for expressions $\veonep$ and $\vetwop$, that is, $\ConstraintRange(\veonep, \vetwop)$.
+    \item applying $\annotatestaticconstrainedinteger$ to $\veone$ in $\tenv$ yields\\ $(\veonep, \vsesone)$\ProseOrTypeError;
+    \item applying $\annotatestaticconstrainedinteger$ to $\vetwo$ in $\tenv$ yields\\ $(\vetwop, \vsestwo)$\ProseOrTypeError;
+    \item define $\newc$ as the range integer constraint for expressions $\veonep$ and $\vetwop$, that is, $\ConstraintRange(\veonep, \vetwop)$;
+    \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$.
   \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[exact]{
-  \annotatestaticconstrainedinteger(\tenv, \ve) \typearrow \vep \OrTypeError
+  \annotatestaticconstrainedinteger(\tenv, \ve) \typearrow (\vep, \vses) \OrTypeError
 }{
-  \annotateconstraint(\tenv, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{\ConstraintExact(\vep)}{\newc}
+  \annotateconstraint(\tenv, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow (\overname{\ConstraintExact(\vep)}{\newc}, \vses)
 }
 \and
 \inferrule[range]{
-  \annotatestaticconstrainedinteger(\tenv, \veone) \typearrow \veonep \OrTypeError\\\\
-  \annotatestaticconstrainedinteger(\tenv, \vetwo) \typearrow \vetwop \OrTypeError
+  \annotatestaticconstrainedinteger(\tenv, \veone) \typearrow (\veonep, \vsesone) \OrTypeError\\\\
+  \annotatestaticconstrainedinteger(\tenv, \vetwo) \typearrow (\vetwop, \vsestwo) \OrTypeError\\\\
+  \vses \eqdef \vsesone \cup \vsestwo
 }{
   \annotateconstraint(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
 }
@@ -329,25 +351,25 @@ One of the following applies:
 
 \subsection{Typing the Real Type\label{sec:TypingRealType}}
 \subsubsection{TypingRule.TReal\label{sec:TypingRule.TReal}}
+\subsubsection{Example}
+In the following example, all the uses of \texttt{real} are well-typed:
+\ASLExample{\typingtests/TypingRule.TReal.asl}
+
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item $\tty$ is the real type \TReal.
-  \item $\newty$ is the real type \TReal.
+  \item $\newty$ is the real type \TReal;
+  \item define $\vses$ as the empty set.
 \end{itemize}
-
-\subsubsection{Example}
-In the following example, all the uses of \texttt{real} are well-typed:
-\ASLExample{\typingtests/TypingRule.TReal.asl}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{}
 {
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TReal}{\tty}} \typearrow \overname{\TReal}{\newty}
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TReal}{\tty}} \typearrow (\overname{\TReal}{\newty}, \overname{\emptyset}{\vses}
 }
 \end{mathpar}
-
 \CodeSubsection{\TRealBegin}{\TRealEnd}{../Typing.ml}
 
 \section{The String Type\label{sec:StringType}}
@@ -371,26 +393,26 @@ In the following example, all the uses of \texttt{real} are well-typed:
 
 \subsection{Typing the String Type\label{sec:TypingStringType}}
 \subsubsection{TypingRule.TString\label{sec:TypingRule.TString}}
+\subsubsection{Example}
+In the following example, all the uses of \texttt{string} are well-typed:
+\ASLExample{\typingtests/TypingRule.TString.asl}
+
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item $\tty$ is the string type \TString.
   \item $\newty$ is the string type \TString.
+  \item $\vses$ is the empty set.
 \end{itemize}
-
-\subsubsection{Example}
-In the following example, all the uses of \texttt{string} are well-typed:
-\ASLExample{\typingtests/TypingRule.TString.asl}
-
-\CodeSubsection{\TStringBegin}{\TStringEnd}{../Typing.ml}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{}
 {
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TString}{\tty}} \typearrow \overname{\TString}{\newty}
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TString}{\tty}} \typearrow (\overname{\TString}{\newty}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
+\CodeSubsection{\TStringBegin}{\TStringEnd}{../Typing.ml}
 
 \section{The Boolean Type\label{sec:BooleanType}}
 \subsection{Syntax}
@@ -413,26 +435,26 @@ In the following example, all the uses of \texttt{string} are well-typed:
 
 \subsection{Typing the Boolean Type\label{sec:TypingBooleanType}}
 \subsubsection{TypingRule.TBool\label{sec:TypingRule.TBool}}
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item $\tty$ is the boolean type, \TBool;
-  \item $\newty$ is the boolean type, \TBool.
-\end{itemize}
-
 \subsubsection{Example}
 In the following example, all the uses of \texttt{boolean} are well-typed:
 \ASLExample{\typingtests/TypingRule.TBool.asl}
 
-\CodeSubsection{\TBoolBegin}{\TBoolEnd}{../Typing.ml}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\tty$ is the boolean type, \TBool;
+  \item $\newty$ is the boolean type, \TBool;
+  \item define $\vses$ as the empty set.
+\end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{}
 {
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TBool}{\tty}} \typearrow \overname{\TBool}{\newty}
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TBool}{\tty}} \typearrow (\overname{\TBool}{\newty}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
+\CodeSubsection{\TBoolBegin}{\TBoolEnd}{../Typing.ml}
 
 \section{Bitvector Types\label{sec:BitvectorTypes}}
 \subsection{Syntax}
@@ -472,41 +494,47 @@ In the following example, all the uses of \texttt{boolean} are well-typed:
 \end{mathpar}
 
 \subsection{Typing}
-\subsection{TypingRule.TBits\label{sec:TypingRule.TBits}}
+\subsubsection{TypingRule.TBits\label{sec:TypingRule.TBits}}
+\subsubsection{Example}
+In the following example, all the uses of bitvector types are well-typed:
+\ASLExample{\typingtests/TypingRule.TBits.asl}
+
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item $\tty$ is the bit-vector type with width given by the expression
     $\ewidth$ and the bitfields given by $\bitfields$, that is, $\TBits(\ewidth, \bitfields)$;
-  \item annotating the \staticallyevaluable\ integer expression $\ewidth$ yields $\ewidthp$\ProseOrTypeError;
-  \item annotating the bitfields $\bitfields$ yields $\bitfieldsp$\ProseOrTypeError;
+  \item annotating the expression $\ewidth$ yields $(\twidth, \ewidthp, \seswidth)$\ProseOrTypeError;
+  \item \Prosecheckstaticallyevaluable{\seswidth};
+  \item \Prosecheckconstrainedinteger{$\tenv$}{$\twidth$};
+  \item annotating the bitfields $\bitfields$ yields $(\bitfieldsp, \vsesbitfields)$\ProseOrTypeError;
   \item \Prosestaticeval{$\tenv$}{$\ewidthp$}{$\lint(\vwidth)$};
   \item \Prosecheckcommonbitfieldsalign{$\tenv$}{$\bitfieldsp$}{$\vwidth$}\ProseOrTypeError;
   \item $\newty$ is the bit-vector type with width given by the expression
-    $\ewidthp$ and the bitfields given by $\bitfieldsp$, that is, $\TBits(\ewidthp, \bitfieldsp)$
+    $\ewidthp$ and the bitfields given by $\bitfieldsp$, that is, $\TBits(\ewidthp, \bitfieldsp)$;
+  \item define $\vses$ as the union of $\seswidth$ and $\vsesbitfields$.
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatestaticconstrainedinteger(\tenv, \ewidth) \typearrow \ewidthp \OrTypeError\\\\
-  \annotatebitfields(\tenv, \ewidthp, \bitfields) \typearrow \bitfieldsp \OrTypeError\\\\
+  \annotateexpr{\tenv, \ewidth} \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\\\\
+  \checkstaticallyevaluable(\seswidth) \typearrow \True \OrTypeError\\\\
+  \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\\\\
+  \annotatebitfields(\tenv, \ewidthp, \bitfields) \typearrow (\bitfieldsp, \vsesbitfields) \OrTypeError\\\\
   \staticeval(\tenv, \ewidthp) \typearrow \lint(\vwidth)\\
-  \checkcommonbitfieldsalign(\tenv, \bitfieldsp, \vwidth) \typearrow \True \OrTypeError
+  \checkcommonbitfieldsalign(\tenv, \bitfieldsp, \vwidth) \typearrow \True \OrTypeError\\\\
+  \vses \eqdef \seswidth \cup \vsesbitfields
 }{
   {
     \begin{array}{r}
   \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \TBits(\ewidth, \bitfields)} \typearrow \\
-  \TBits(\ewidthp, \bitfieldsp)
+  (\overname{\TBits(\ewidthp, \bitfieldsp)}{\newty}, \vses)
     \end{array}
   }
 }
 \end{mathpar}
 \CodeSubsection{\TBitsBegin}{\TBitsEnd}{../Typing.ml}
-
-\subsubsection{Example}
-In the following example, all the uses of bitvector types are well-typed:
-\ASLExample{\typingtests/TypingRule.TBits.asl}
 
 \subsubsection{Comments}
 The width of a bitvector type $\TBits(\ewidth, \bitfields)$, given by the expression \\
@@ -542,8 +570,9 @@ All of the following apply:
   \item $\tty$ is the tuple type with member types $\tys$, that is, $\TTuple(\tys)$;
   \item $\tys$ is the list $\tty_i$, for $i=1..k$;
   \item annotating each type $\tty_i$ in $\tenv$, for $i=1..k$,
-  yields $\ttyp_i$\ProseOrTypeError;
-  \item $\newty$ is the tuple type with member types $\ttyp$, for $i=1..k$.
+  yields $(\ttyp_i, \vxs_i)$\ProseOrTypeError;
+  \item $\newty$ is the tuple type with member types $\ttyp$, for $i=1..k$;
+  \item define $\vses$ as the union of all $\vxs_i$, for $i=1..k$.
 \end{itemize}
 
 \subsubsection{Formally}
@@ -551,9 +580,10 @@ All of the following apply:
 \inferrule{
   k \geq 2\\
   \tys \eqname \tty_{1..k}\\
-  i=1..k: \annotatetype{\False, \tenv, \tty_i} \typearrow \ttyp_i \OrTypeError
+  i=1..k: \annotatetype{\False, \tenv, \tty_i} \typearrow (\ttyp_i, \vxs_i) \OrTypeError\\
+  \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \TTuple(\tys)} \typearrow \TTuple(\tysp)
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \TTuple(\tys)} \typearrow (\overname{\TTuple(\tysp)}{\newty}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\TTupleBegin}{\TTupleEnd}{../Typing.ml}
@@ -591,7 +621,7 @@ In the following example, all the uses of array types are well-typed:
 All of the following apply:
 \begin{itemize}
   \item $\tty$ is the array type with element type $\vt$;
-  \item Annotating the type $\vt$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
+  \item Annotating the type $\vt$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
   \item One of the following applies:
   \begin{itemize}
     \item All of the following apply (\textsc{expr\_is\_enum}):
@@ -600,7 +630,8 @@ All of the following apply:
       via $\getvariableenum$ yields the enumeration variable
       name $\vs$ of size $\vi$, that is, $\langle \vs, \vi \rangle$\ProseOrTypeError;
       \item $\newty$ is the array type indexed by an enumeration type
-      named $\vs$ of length $\vi$ and of elements of type $\vtp$, that is, $\TArray(\ArrayLengthEnum(\vs, \vi), \vtp)$.
+      named $\vs$ of length $\vi$ and of elements of type $\vtp$, that is, $\TArray(\ArrayLengthEnum(\vs, \vi), \vtp)$;
+      \item define $\vses$ as $\vsest$.
     \end{itemize}
 
     \item All of the following apply (\textsc{expr\_not\_enum}):
@@ -608,35 +639,37 @@ All of the following apply:
       \item the array index is $\ve$ and determining whether $\ve$ corresponds to an enumeration in $\tenv$
       via $\getvariableenum$ yields $\None$ (meaning it does not
       correspond to an enumeration)\ProseOrTypeError;
-      \item annotating the statically evaluable integer expression $\ve$ yields
-      $\vep$\ProseOrTypeError;
+      \item annotating the statically evaluable integer expression $\ve$ yields\\
+      $(\vep, \vsesindex)$\ProseOrTypeError;
       \item $\newty$ the array type indexed by integer bounded by
       the expression $\vep$ and of elements of type $\vtp$, that is,
-      $\TArray(\ArrayLengthExpr(\vep), \vtp)$.
+      $\TArray(\ArrayLengthExpr(\vep), \vtp)$;
+      \item define $\vses$ as the union of $\vsest$ and $\vsesindex$.
     \end{itemize}
   \end{itemize}
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[expr\_is\_enum]{
-  \annotatetype{\False, \tenv, \vt} \typearrow \vtp \OrTypeError\\\\
+  \annotatetype{\False, \tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \commonprefixline\\\\
   \getvariableenum(\tenv, \ve) \typearrow \langle \vs, \vi \rangle\OrTypeError
 }{
   \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\AbbrevTArrayLengthExpr{\ve}{\vt}}{\tty}} \typearrow
-  \overname{\AbbrevTArrayLengthEnum{\ve}{\vi}{\vtp}}{\newty}
+  (\overname{\AbbrevTArrayLengthEnum{\ve}{\vi}{\vtp}}{\newty}, \overname{\emptyset}{\vsest})
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[expr\_not\_enum]{
-  \annotatetype{\False, \tenv, \vt} \typearrow \vtp \OrTypeError\\\\
+  \annotatetype{\False, \tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \commonprefixline\\\\
   \getvariableenum(\tenv, \ve) \typearrow \None \OrTypeError\\\\
-  \annotatestaticinteger(\tenv, \ve) \typearrow \vep \OrTypeError
+  \annotatestaticinteger(\tenv, \ve) \typearrow (\vep, \vsesindex) \OrTypeError\\\\
+  \vses \eqdef \vsest \cup \vsesindex
 }{
   \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\AbbrevTArrayLengthExpr{\ve}{\vt}}{\tty}} \typearrow
-  \overname{\AbbrevTArrayLengthExpr{\vep}{\vtp}}{\newty}
+  (\overname{\AbbrevTArrayLengthExpr{\vep}{\vtp}}{\newty}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\TArrayBegin}{\TArrayEnd}{../Typing.ml}
@@ -696,7 +729,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[no\_declared\_type]{
-  G^\tenv.\declaredtypes(\vx) \typearrow \None
+  G^\tenv.\declaredtypes(\vx) = \bot
 }{
   \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \None
 }
@@ -704,7 +737,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[declared\_enum]{
-  G^\tenv.\declaredtypes(\vx) \typearrow \langle\vt\rangle\\
+  G^\tenv.\declaredtypes(\vx) = (\vt, \Ignore)\\
   \makeanonymous(\tenv, \vt) \typearrow \TEnum(\vli) \OrTypeError
 }{
   \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \langle(\vx, |\vli|)\rangle
@@ -713,7 +746,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[declared\_not\_enum]{
-  G^\tenv.\declaredtypes(\vx) \typearrow \langle\vt\rangle\\
+  G^\tenv.\declaredtypes(\vx) = (\vt, \Ignore)\\
   \makeanonymous(\tenv, \vt) \typearrow \vtone\\
   \astlabel(\vtone) \neq \TEnum
 }{
@@ -721,34 +754,65 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AnnotateStaticInteger\label{sec:TypingRule.AnnotateStaticInteger}}
-\hypertarget{def-annotatestaticinteger}{}
+\subsubsection{TypingRule.AnnotateStaticallyEvaluableExpr\label{sec:TypingRule.AnnotateStaticallyEvaluableExpr}}
+\hypertarget{def-annotatestaticallyevaluableexpr}{}
 The function
 \[
-  \annotatestaticinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-  \overname{\expr}{\vepp} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\begin{array}{r}
+  \annotatestaticallyevaluableexpr(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto \\
+  (\overname{\ty}{\vt}\times\overname{\expr}{\vep}\times\overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
 \]
-annotates a \staticallyevaluable\ integer expression $\ve$ in the static environment $\tenv$
-and returns the annotated expression $\vepp$.
+annotates the expression $\ve$ in the static environment $\tenv$ and checks that it is \staticallyevaluable,
+yielding the resulting type in $\vt$, the annotated expression in $\vep$ and the \sideeffectsetterm\ in $\vses$.
 \ProseOtherwiseTypeError
 
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item annotating the expression $\ve$ in $\tenv$ yields $ (\vt, \vep)$\ProseOrTypeError;
+  \item \Proseannotateexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$};
+  \item \Prosecheckstaticallyevaluable{$\vses$}.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \ve} \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
+  \checkstaticallyevaluable(\vses) \typearrow \True \OrTypeError
+}{
+  \annotatestaticallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses)
+}
+\end{mathpar}
+\CodeSubsection{\AnnotateStaticallyEvaluableExprBegin}{\AnnotateStaticallyEvaluableExprEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.AnnotateStaticInteger\label{sec:TypingRule.AnnotateStaticInteger}}
+\hypertarget{def-annotatestaticinteger}{}
+The function
+\[
+  \annotatestaticinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
+  (\overname{\expr}{\vepp} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a \staticallyevaluable\ integer expression $\ve$ in the static environment $\tenv$
+and returns the annotated expression $\vepp$ and \sideeffectsetterm\ $\vses$.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item \Proseannotatestaticallyevaluableexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$\ProseOrTypeError};
   \item determining whether $\vt$ has the structure of an integer yields $\True$\ProseOrTypeError;
-  \item determining whether $\vep$ is \staticallyevaluable\  in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item determining whether $\vep$ is \staticallyevaluable\ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item applying $\normalize$ to $\vep$ in $\tenv$ yields $\vepp$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \ve} \typearrow (\vt, \vep) \OrTypeError\\\\
+  \annotatestaticallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
   \checkstructureinteger(\tenv, \vt) \typearrow \True \OrTypeError\\\\
   \checkstaticallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
   \normalize(\tenv, \vep) \typearrow \vepp
 }{
-  \annotatestaticinteger(\tenv, \ve) \typearrow \vepp
+  \annotatestaticinteger(\tenv, \ve) \typearrow (\vepp, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\AnnotateStaticIntegerBegin}{\AnnotateStaticIntegerEnd}{../Typing.ml}
@@ -838,7 +902,8 @@ All of the following apply:
   \item determining that $\vli$ does not contain duplicates yields $\True$\ProseOrTypeError;
   \item determining that none of the labels in $\vli$ is declared in the global environment
   yields $\True$\ProseOrTypeError;
-  \item $\newty$ is the enumeration type $\tty$.
+  \item $\newty$ is the enumeration type $\tty$;
+  \item define $\vses$ as the empty set.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
@@ -846,7 +911,7 @@ All of the following apply:
   \checknoduplicates(\vli) \typearrow \True \OrTypeError\\\\
   \vl \in \vli: \checkvarnotingenv{G^\tenv, \vl} \typearrow \True \OrTypeError
 }{
-  \annotatetype{\True, \tenv, \TEnum(\vli)} \typearrow \TEnum(\vli)
+  \annotatetype{\True, \tenv, \TEnum(\vli)} \typearrow (\overname{\TEnum(\vli)}{\newty}, \overname{\emptyset}{\vses})
 }
 \CodeSubsection{\TEnumDeclBegin}{\TEnumDeclEnd}{../Typing.ml}
 
@@ -886,11 +951,12 @@ All of the following apply:
   \item $\fields$ is a list of pairs where the first element is an identifier and the second is a type --- $(\vx_i, \vt_i)$, for $i=1..k$;
   \item checking that the list of field identifiers $\vx_{1..k}$ does not contain duplicates
   yields $\True$\ProseOrTypeError;
-  \item annotating each field type $\vt_i$, for $i=1..k$, yields an annotated type $\vtp_i$
- \ProseOrTypeError;
+  \item annotating each field type $\vt_i$, for $i=1..k$, yields $(\vtp_i, \vxs_i)$
+        \ProseOrTypeError;
   \item $\fieldsp$ is the list with $(\vx_i, \vtp_i)$, for $i=1..k$;
   \item $\newty$ is the AST node with AST label $L$ (either record type or exception type,
-  corresponding to the type $\tty$) and fields $\fieldsp$.
+  corresponding to the type $\tty$) and fields $\fieldsp$;
+  \item define $\vses$ as the union of all $\vxs_i$, for $i=1..k$.
 \end{itemize}
 
 \subsubsection{Formally}
@@ -899,10 +965,11 @@ All of the following apply:
   L \in \{\TRecord, \TException\}\\
   \fields \eqname [i=1..k: (\vx_i, \vt_i)]\\
   \checknoduplicates(\vx_{1..k}) \typearrow \True \OrTypeError\\\\
-  i=1..k: \annotatetype{\False, \tenv, \vt_i} \typearrow \vtp_i \OrTypeError\\\\
-  \fieldsp \eqdef [i=1..k: (\vx_i, \vtp_i)]
+  i=1..k: \annotatetype{\False, \tenv, \vt_i} \typearrow (\vtp_i, \vxs_i) \OrTypeError\\\\
+  \fieldsp \eqdef [i=1..k: (\vx_i, \vtp_i)]\\
+  \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
-  \annotatetype{\True, \tenv, L(\fields)} \typearrow L(\fieldsp)
+  \annotatetype{\True, \tenv, L(\fields)} \typearrow (\overname{L(\fieldsp)}{\newty}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\TStructuredDeclBegin}{\TStructuredDeclEnd}{../Typing.ml}
@@ -958,15 +1025,19 @@ The rule for typing exception type is \nameref{sec:TypingRule.TStructuredDecl}.
 All of the following apply:
 \begin{itemize}
   \item $\tty$ is the named type $\vx$, that is $\TNamed(\vx)$;
-  \item checking whether $\vx$ is associated with a declared type in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item checking whether $\vx$ is bound to any declared type in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item $\vx$ is bound to a type with associated \timeframeterm\ $\vtimeframe$;
+  \item define $\vses$ as the singleton set for the \ReadGlobalTerm\ for $\vx$, $\vtimeframe$, and $\True$ for immutability;
   \item $\newty$ is $\tty$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \checktrans{G^\tenv(\vx) \neq \bot}{\UndefinedIdentifier} \typearrow \True \OrTypeError
+  \checktrans{G^\tenv.\declaredtypes(\vx) \neq \bot}{\UndefinedIdentifier} \typearrow \True \OrTypeError\\\\
+  G^\tenv.\declaredtypes(\vx) = (\Ignore, \vtimeframe)\\
+  \vses \eqdef \{\ \ReadGlobal(\vx, \vtimeframe, \True)\ \}
 }{
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TNamed(\vx)}{\tty}} \typearrow \overname{\TNamed(\vx)}{\newty}
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TNamed(\vx)}{\tty}} \typearrow (\overname{\TNamed(\vx)}{\newty}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\TNamedBegin}{\TNamedEnd}{../Typing.ml}

@@ -200,7 +200,7 @@ We employ the following rules:
   \item TypingRule.LiteralEqual (see \secref{TypingRule.LiteralEqual})
 \end{itemize}
 
-\subsection{TypingRule.Normalize \label{sec:TypingRule.Normalize}}
+\subsubsection{TypingRule.Normalize \label{sec:TypingRule.Normalize}}
 \hypertarget{def-normalize}{}
 The function
 \[
@@ -246,7 +246,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\NormalizeBegin}{\NormalizeEnd}{../StaticModel.ml}
 
-\subsection{TypingRule.ReduceConstraint \label{sec:TypingRule.ReduceConstraint}}
+\subsubsection{TypingRule.ReduceConstraint \label{sec:TypingRule.ReduceConstraint}}
 \hypertarget{def-reduceconstraint}{}
 The function
 \[
@@ -297,7 +297,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.ReduceConstraints \label{sec:TypingRule.ReduceConstraints}}
+\subsubsection{TypingRule.ReduceConstraints \label{sec:TypingRule.ReduceConstraints}}
 \hypertarget{def-reduceconstraints}{}
 The function
 \[
@@ -329,7 +329,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{TypingRule.ToIR \label{sec:TypingRule.ToIR}}
+\subsubsection{TypingRule.ToIR \label{sec:TypingRule.ToIR}}
 \hypertarget{def-toir}{}
 The function
 \[
@@ -774,7 +774,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\ToIRBegin}{\ToIREnd}{../StaticModel.ml}
 
-\subsection{TypingRule.ExprEqual \label{sec:TypingRule.ExprEqual}}
+\subsubsection{TypingRule.ExprEqual \label{sec:TypingRule.ExprEqual}}
 \hypertarget{def-exprequal}{}
 The function
 \[
@@ -816,7 +816,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.ExprEqualNorm \label{sec:TypingRule.ExprEqualNorm}}
+\subsubsection{TypingRule.ExprEqualNorm \label{sec:TypingRule.ExprEqualNorm}}
 \hypertarget{def-exprequalnorm}{}
 The helper function
 \[
@@ -875,7 +875,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.ExprEqualCase \label{sec:TypingRule.ExprEqualCase}}
+\subsubsection{TypingRule.ExprEqualCase \label{sec:TypingRule.ExprEqualCase}}
 \hypertarget{def-exprequalcase}{}
 The helper function
 \[
@@ -1264,7 +1264,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.TypeEqual \label{sec:TypingRule.TypeEqual}}
+\subsubsection{TypingRule.TypeEqual \label{sec:TypingRule.TypeEqual}}
 \hypertarget{def-typeequal}{}
 The function
 \[
@@ -1465,7 +1465,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.BitwidthEqual \label{sec:TypingRule.BitwidthEqual}}
+\subsubsection{TypingRule.BitwidthEqual \label{sec:TypingRule.BitwidthEqual}}
 \hypertarget{def-bitwidthequal}{}
 The function
 \[
@@ -1487,7 +1487,7 @@ Testing whether the expressions $\vwone$ and $\vwtwo$ are equivalent in $\tenv$ 
 }
 \end{mathpar}
 
-\subsection{TypingRule.BitFieldsEqual \label{sec:TypingRule.BitFieldsEqual}}
+\subsubsection{TypingRule.BitFieldsEqual \label{sec:TypingRule.BitFieldsEqual}}
 \hypertarget{def-bitfieldsequal}{}
 The function
 \[
@@ -1532,7 +1532,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.BitFieldEqual \label{sec:TypingRule.BitFieldEqual}}
+\subsubsection{TypingRule.BitFieldEqual \label{sec:TypingRule.BitFieldEqual}}
 The function
 \[
   \bitfieldequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\bitfield}{\bfone} \aslsep \overname{\bitfield}{\bftwo})
@@ -1623,7 +1623,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.ConstraintsEqual \label{sec:TypingRule.ConstraintsEqual}}
+\subsubsection{TypingRule.ConstraintsEqual \label{sec:TypingRule.ConstraintsEqual}}
 \hypertarget{def-constraintsequal}{}
 The function
 \[
@@ -1654,7 +1654,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsection{TypingRule.ConstraintEqual \label{sec:TypingRule.ConstraintEqual}}
+\subsubsection{TypingRule.ConstraintEqual \label{sec:TypingRule.ConstraintEqual}}
 \hypertarget{def-constraintequal}{}
 The function
 \[
@@ -1717,7 +1717,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.SlicesEqual \label{sec:TypingRule.SlicesEqual}}
+\subsubsection{TypingRule.SlicesEqual \label{sec:TypingRule.SlicesEqual}}
 \hypertarget{def-slicesequal}{}
 The function
 \[
@@ -1762,7 +1762,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.SliceEqual \label{sec:TypingRule.SliceEqual}}
+\subsubsection{TypingRule.SliceEqual \label{sec:TypingRule.SliceEqual}}
 \hypertarget{def-sliceequal}{}
 The function
 \[
@@ -1838,7 +1838,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.ArrayLengthEqual \label{sec:TypingRule.ArrayLengthEqual}}
+\subsubsection{TypingRule.ArrayLengthEqual \label{sec:TypingRule.ArrayLengthEqual}}
 \hypertarget{def-arraylengthequal}{}
 The function
 \[
@@ -1893,7 +1893,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.LiteralEqual \label{sec:TypingRule.LiteralEqual}}
+\subsubsection{TypingRule.LiteralEqual \label{sec:TypingRule.LiteralEqual}}
 \hypertarget{def-literalequal}{}
 The function
 \[
@@ -1913,7 +1913,7 @@ $\vb$ is $\True$ if and only if $\vvone$ is equal to $\vvtwo$.
 }
 \end{mathpar}
 
-\subsection{TypingRule.ReduceIR \label{sec:TypingRule.ReduceIR}}
+\subsubsection{TypingRule.ReduceIR \label{sec:TypingRule.ReduceIR}}
 \hypertarget{def-reduceir}{}
 The function
 \[
@@ -1923,7 +1923,7 @@ simplifies the polynomial $\vp$, yielding the simplified polynomial $\newp$.
 
 \subsubsection{Prose}
 \subsubsection{Formally}
-\subsection{TypingRule.PolynomialToExpr \label{sec:TypingRule.PolynomialToExpr}}
+\subsubsection{TypingRule.PolynomialToExpr \label{sec:TypingRule.PolynomialToExpr}}
 \hypertarget{def-polynomialtoexpr}{}
 The function
 \[
@@ -1978,7 +1978,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.CompareMonomialBindings \label{sec:TypingRule.CompareMonomialBindings}}
+\subsubsection{TypingRule.CompareMonomialBindings \label{sec:TypingRule.CompareMonomialBindings}}
 \hypertarget{def-comparemonomialbindings}{}
 The function
 \[
@@ -2047,7 +2047,7 @@ via the lexicographic ordering.
 }
 \end{mathpar}
 
-\subsection{TypingRule.MonomialsToExpr \label{sec:TypingRule.MonomialsToExpr}}
+\subsubsection{TypingRule.MonomialsToExpr \label{sec:TypingRule.MonomialsToExpr}}
 \hypertarget{def-monomialstoexpr}{}
 The function
 \[
@@ -2094,7 +2094,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.MonomialToExpr \label{sec:TypingRule.MonomialToExpr}}
+\subsubsection{TypingRule.MonomialToExpr \label{sec:TypingRule.MonomialToExpr}}
 \hypertarget{def-monomialtoexpr}{}
 The function
 \[
@@ -2172,7 +2172,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.SymAddExpr \label{sec:TypingRule.SymAddExpr}}
+\subsubsection{TypingRule.SymAddExpr \label{sec:TypingRule.SymAddExpr}}
 \hypertarget{def-symaddexpr}{}
 The function
 \[
@@ -2257,7 +2257,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.UnitaryMonomialsToExpr \label{sec:TypingRule.UnitaryMonomialsToExpr}}
+\subsubsection{TypingRule.UnitaryMonomialsToExpr \label{sec:TypingRule.UnitaryMonomialsToExpr}}
 \hypertarget{def-unitarymonomialstoexpr}{}
 The function
 \[
@@ -2356,7 +2356,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.SymMulExpr \label{sec:TypingRule.SymMulExpr}}
+\subsubsection{TypingRule.SymMulExpr \label{sec:TypingRule.SymMulExpr}}
 \hypertarget{def-symmulexpr}{}
 The function
 $
@@ -2448,3 +2448,49 @@ One of the following applies:
 }
 \end{mathpar}
 \CodeSubsection{\TypeOfBegin}{\TypeOfEnd}{../StaticModel.ml}
+
+\subsubsection{TypingRule.NormalizeOpt\label{sec:TypingRule.NormalizeOpt}}
+\hypertarget{def-normalizeopt}{}
+The helper function
+\[
+\normalizeopt(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
+\overname{\langle\expr\rangle}{\neweopt} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+is similar to $\normalize$, except that it returns $\None$ when $\ve$ is not an
+expression that can be symbolically simplified.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{normalizable})
+  \begin{itemize}
+    \item applying $\toir$ to $\ve$ in $\tenv$ to obtain a symbolic expression yields a symbolic expression $\vpone$
+    (that is, not $\CannotBeTransformed$)\ProseOrTypeError;
+    \item applying $\normalize$ to $\ve$ in $\tenv$ yields $\newe$;
+    \item \Proseeqdef{$\neweopt$}{$\langle\newe\rangle$}.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{not\_normalizable})
+  \begin{itemize}
+    \item applying $\toir$ to $\ve$ in $\tenv$ to obtain a symbolic expression yields $\CannotBeTransformed$;
+    \item \Proseeqdef{$\neweopt$}{$\None$}.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[normalizable]{
+  \toir(\tenv, \ve) \typearrow \vpone \OrTypeError\\\\
+  \vpone \neq \CannotBeTransformed\\
+  \normalize(\tenv, \ve) \typearrow \newe
+}{
+  \normalize(\tenv, \ve) \typearrow \overname{\langle\newe\rangle}{\neweopt}
+}
+\and
+\inferrule[not\_normalizable]{
+  \toir(\tenv, \ve) \typearrow \CannotBeTransformed
+}{
+  \normalize(\tenv, \ve) \typearrow \overname{\None}{\neweopt}
+}
+\end{mathpar}

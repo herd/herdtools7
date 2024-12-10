@@ -8,15 +8,17 @@ The function
 \begin{array}{r}
   \annotatecatcher{
     \overname{\staticenvs}{\tenv} \aslsep
-    (\overname{\langle\identifier\rangle}{\nameopt} \times \overname{\ty}{\tty} \times \overname{\stmt}{\vstmt})
+    \overname{\TSideEffectSet}{\vsesin} \aslsep
+    \overname{\catcher}{\vc}
   } \aslto \\
-  (\overname{\langle\identifier\rangle}{\nameopt} \times \overname{\ty}{\ttyp} \times \overname{\stmt}{\newstmt})
+  (\overname{\TSideEffectSet}{\vsesfiltered} \times (\overname{\catcher}{\newcatcher}, \overname{\TSideEffectSet}{\vses}))
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
-annotates a catcher given by the \optional\ name of the matched exception --- $\nameopt$ ---
-the exception type --- $\tty$ --- and the statement to execute upon catching the exception --- $\vstmt$.
-The result is the catcher with the same \optional\ name --- $\nameopt$, an annotated type $\ttyp$, and annotated statement $\newstmt$.
+annotates a catcher $\vc$ in the static environment $\tenv$
+and \sideeffectsetterm\ $\vsesin$.
+The result is the \sideeffectsetterm\ $\vsesfiltered$, the annotated catcher $\newcatcher$ and the
+\sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 The semantic relation for evaluating catchers employs an argument
@@ -121,51 +123,83 @@ One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{none}):
   \begin{itemize}
-    \item the catcher has no named identifier, that is, $(\None, \tty, \vstmt)$;
-    \item annotating the type $\tty$ in $\tenv$ yields $\ttyp$\ProseOrTypeError;
-    \item determining whether $\ttyp$ has the \structure\ of an exception type yields $\True$\ProseOrTypeError;
-    \item annotating the block $\vstmt$ in $\tenv$ yields $\newstmt$.
+    \item the catcher has no named identifier, that is, $\vc$ is $(\overname{\None}{\nameopt}, \tty, \vstmt)$;
+    \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
+    \item determining whether $\ttyp$ has the \structure\ of an exception type yields \\ $\True$\ProseOrTypeError;
+    \item annotating the block $\vstmt$ in $\tenv$ yields $\newstmt$;
+    \item \Proseeqdef{$\newcatcher$}{$(\overname{\None}{\nameopt}, \ttyp, \newstmt)$};
   \end{itemize}
 
-  \item All of the following apply:
+  \item All of the following apply (\textsc{some}):
   \begin{itemize}
-    \item the catcher has a named identifier, that is, $(\langle\name\rangle, \tty, \vstmt)$;
-    \item annotating the type $\tty$ in $\tenv$ yields $\ttyp$\ProseOrTypeError;
-    \item determining whether $\ttyp$ has the \structure\ of an exception type yields $\True$\ProseOrTypeError;
+    \item the catcher has a named identifier, that is, $\vc$ is $(\langle\name\rangle, \tty, \vstmt)$;
+    \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
+    \item determining whether $\ttyp$ has the \structure\ of an exception type yields \\ $\True$\ProseOrTypeError;
     \item the identifier $\name$ is not bound in $\tenv$;
     \item binding $\name$ in the local environment of $\tenv$ with the type $\ttyp$ as an immutable variable
           (that is, with the local declaration keyword $\LDKLet$), yields the static environment $\tenvp$;
-    \item annotating the block $\vstmt$ in $\tenvp$ yields $\newstmt$.
+    \item annotating the block $\vstmt$ in $\tenvp$ yields $\newstmt$;
+    \item \Proseeqdef{$\newcatcher$}{$(\overname{\langle\name\rangle}{\nameopt}, \ttyp, \newstmt)$};
   \end{itemize}
+  \item \Proseeqdef{$\vsesfiltered$}{$\vsesin$ where every \ThrowExceptionTerm\ with an exception $\name$ such that
+        $\subtypesrel(\tenv, \TNamed(\name), \ttyp)$ holds removed};
+  \item \Proseeqdef{$\vses$}{the union of $\vsesblock$ and $\vsesty$}.
 \end{itemize}
-\CodeSubsection{\CatcherNoneBegin}{\CatcherNoneEnd}{../Typing.ml}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[none]{
-  \annotatetype{\tenv, \vt} \typearrow \ttyp \OrTypeError\\\\
+  \vc = (\overname{\None}{\nameopt}, \tty, \vstmt)\\
+  \annotatetype{\tenv, \vt} \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
   \checkstructurelabel(\tenv, \ttyp, \TException) \typearrow \True \OrTypeError\\\\
-  \annotateblock{\tenv, \vstmt} \typearrow \newstmt \OrTypeError
+  \annotateblock{\tenv, \vstmt} \typearrow (\newstmt, \vsesblock) \OrTypeError\\\\
+  \newcatcher \eqdef (\overname{\None}{\nameopt}, \ttyp, \newstmt)\\\\
+  \commonsuffixline\\\\
+  {
+    \begin{array}{rl}
+  \vsesfiltered \eqdef  & \vsesin \setminus \\
+                        & \{ \ThrowException(\name) \;|\; \subtypesrel(\tenv, \TNamed(\name), \ttyp) \}
+    \end{array}
+  }\\
+  \vses \eqdef \vsesblock \cup \vsesty\\
 }{
-  \annotatecatcher{\tenv, (\overname{\None}{\nameopt}, \tty, \vstmt)} \typearrow (\overname{\None}{\nameopt}, \ttyp, \newstmt)
+  \annotatecatcher{\tenv, \vsesin, \vc} \typearrow (\vsesfiltered, \newcatcher, \vses)
 }
 \end{mathpar}
+\CodeSubsection{\CatcherNoneBegin}{\CatcherNoneEnd}{../Typing.ml}
 \lrmcomment{This is related to \identr{SDJK}.}
 
 \begin{mathpar}
 \inferrule[some]{
-  \annotatetype{\tenv, \vt} \typearrow \ttyp \OrTypeError\\\\
+  \vc = (\overname{\langle\name\rangle}{\nameopt}, \tty, \vstmt)\\
+  \annotatetype{\tenv, \vt} \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
   \checkstructurelabel(\tenv, \ttyp, \TException) \typearrow \True \OrTypeError\\\\
   \checkvarnotinenv{\tenv, \name} \typearrow \True \OrTypeError\\\\
   \addlocal(\tenv, \name, \ttyp, \LDKLet) \typearrow \tenvp\\
-  \annotateblock{\tenvp, \vstmt} \typearrow \newstmt \OrTypeError
+  \annotateblock{\tenvp, \vstmt} \typearrow (\newstmt, \vsesblock) \OrTypeError\\\\
+  \newcatcher \eqdef (\overname{\langle\name\rangle}{\nameopt}, \ttyp, \newstmt)\\\\
+  \commonsuffixline\\\\
+  {
+    \begin{array}{rl}
+  \vsesfiltered \eqdef  & \vsesin \setminus \\
+                        & \{ \ThrowException(\name) \;|\; \subtypesrel(\tenv, \TNamed(\name), \ttyp) \}
+    \end{array}
+  }\\
+  \vses \eqdef \vsesblock \cup \vsesty\\
 }{
-  \annotatecatcher{\tenv, (\overname{\langle\name\rangle}{\nameopt}, \tty, \vstmt)} \typearrow
-  (\overname{\langle\name\rangle}{\nameopt}, \ttyp, \newstmt)
+  \annotatecatcher{\tenv, \vsesin, \vc} \typearrow (\vsesfiltered, \newcatcher, \vses)
 }
 \end{mathpar}
-\lrmcomment{This is related to \identr{SDJK}, \identr{WVXS}, \identi{FCGK}.}
+% and ses_filtered =
+% let ty_name = match ty'.desc with T_Named s -> s | _ -> assert false in
+% SES.filter_thrown_exceptions
+%   (fun s -> not (Types.subtypes_names env s ty_name))
+%   ses_in
+% in
+% let ses = SES.union ses_block ses_ty in
+
 \CodeSubsection{\CatcherBegin}{\CatcherEnd}{../Typing.ml}
+\lrmcomment{This is related to \identr{SDJK}, \identr{WVXS}, \identi{FCGK}.}
 
 \section{Semantics}
 \subsubsection{SemanticsRule.Catch\label{sec:SemanticsRule.Catch}}

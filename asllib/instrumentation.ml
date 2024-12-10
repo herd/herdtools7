@@ -357,7 +357,7 @@ module TypingRule = struct
     | EGetBitFieldNested
     | EGetBitFieldTyped
     | EGetTupleItem
-    | EGetBitFields
+    | EGetFields
     | EConcat
     | ETuple
     | EArbitrary
@@ -467,7 +467,8 @@ module TypingRule = struct
     | ShouldReduceToCall
     | IsStaticallyEvaluable
     | CheckStaticallyEvaluable
-    | AddImmutableExpr
+    | ShouldRememberImmutableExpression
+    | AddImmutableExpression
     | SymIntSetSubset
     | SyDomIsSubset
     | LEBitSlice
@@ -497,6 +498,9 @@ module TypingRule = struct
     | ControlFlowSeq
     | ControlFlowJoin
     | CheckCommonBitfieldsAlign
+    | AnnotateFieldInit
+    | AnnotateGetArray
+    | AnnotateSetArray
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -538,7 +542,7 @@ module TypingRule = struct
     | EGetBitFieldNested -> "EGetBitFieldNested"
     | EGetBitFieldTyped -> "EGetBitFieldTyped"
     | EGetTupleItem -> "EGetTupleItem"
-    | EGetBitFields -> "EGetBitFields"
+    | EGetFields -> "EGetFields"
     | EConcat -> "EConcat"
     | ETuple -> "ETuple"
     | ECondSimple -> "ECondSimple"
@@ -651,7 +655,8 @@ module TypingRule = struct
     | ShouldReduceToCall -> "ShouldReduceToCall"
     | IsStaticallyEvaluable -> "IsStaticallyEvaluable"
     | CheckStaticallyEvaluable -> "CheckStaticallyEvaluable"
-    | AddImmutableExpr -> "AddImmutableExpr"
+    | ShouldRememberImmutableExpression -> "ShouldRememberImmutableExpression"
+    | AddImmutableExpression -> "AddImmutableExpression"
     | SymIntSetSubset -> "SymIntSetSubset"
     | SyDomIsSubset -> "SyDomIsSubset"
     | LEBitSlice -> "LEBitSlice"
@@ -681,6 +686,9 @@ module TypingRule = struct
     | ControlFlowSeq -> "ControlFlowSeq"
     | ControlFlowJoin -> "ControlFlowJoin"
     | CheckCommonBitfieldsAlign -> "CheckCommonBitfieldsAlign"
+    | AnnotateFieldInit -> "AnnotateFieldInit"
+    | AnnotateGetArray -> "AnnotateGetArray"
+    | AnnotateSetArray -> "AnnotateSetArray"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -725,7 +733,7 @@ module TypingRule = struct
       EGetBitFieldNested;
       EGetBitFieldTyped;
       EGetTupleItem;
-      EGetBitFields;
+      EGetFields;
       EArbitrary;
       EPattern;
       EGetArray;
@@ -817,7 +825,8 @@ module TypingRule = struct
       ShouldReduceToCall;
       IsStaticallyEvaluable;
       CheckStaticallyEvaluable;
-      AddImmutableExpr;
+      ShouldRememberImmutableExpression;
+      AddImmutableExpression;
       SymIntSetSubset;
       SyDomIsSubset;
       LEBitSlice;
@@ -847,6 +856,9 @@ module TypingRule = struct
       ControlFlowSeq;
       ControlFlowJoin;
       CheckCommonBitfieldsAlign;
+      AnnotateFieldInit;
+      AnnotateGetArray;
+      AnnotateSetArray;
     ]
 
   let all_nb = List.length all

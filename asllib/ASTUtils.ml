@@ -746,9 +746,11 @@ let has_name name bf = bitfield_get_name bf |> String.equal name
 let find_bitfield_opt name bitfields = List.find_opt (has_name name) bitfields
 (* End *)
 
+(* Begin FindBitFieldsSlices *)
 let find_bitfields_slices_opt name bitfields =
   try List.find (has_name name) bitfields |> bitfield_get_slices |> Option.some
   with Not_found -> None
+(* End *)
 
 let rename_locals map_name ast =
   let rec map_e e =
