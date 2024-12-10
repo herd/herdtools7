@@ -8,7 +8,10 @@ This note focus on Pointer Authentication Code with the different extensions:
 
 ## Instructions
 
-Pointer authentication add some new instructions, the new one are
+Pointer authentication add some new instructions, some basic instructions, and
+some combined instruction to do the `pac/aut` instruction and the associated
+memory operation (load, branch, store...) in one cycle, the basic instructions
+are:
 - `pac* x,y` with `*`the correponding authentication key (may be `da`, `db`,
     `ia` or `ib`), and their is some special instruction for diffent specific
     values of `y`, like `pacdza x` for `y=XZR`. This instruction add a pac field
@@ -31,14 +34,36 @@ following simplified table (in abscence of hash collisions):
 | autdza x0   | Fault(PacCheck:DA) | x                  | Fault(PacCheck:DA) |
 | xpacd x0    | x                  | x                  | x                  |
 
+Here the non-deterministic means that `pacda` apply to a non-canonical virtual
+address (most significant bits to `0...0` or `1...1`) can overwrite the bit 55
+by the bit 63, and "forget" the virtual address range of the original pointer:
+the `aut*` and `xpac*` use the bit 55 to deduce the virtual address range of the
+address but the `pac*` instruction use the bit 63 (but the bit 55 if
+`FEAT_CONSTPACFIELD` is implemented). In particular this means that this program
+
+```
+AArch64 switch VA range
+{ 0:x0=x }
+P0        ;
+pacdza x0 ;
+pacdza x0 ;
+xpacd x0  ;
+```
+
+can write `x` in `x0` with probability `0.5`, or `0b1...10...0 ^ x` with
+probability `0.5` (the number of `1` is the number of bits in the pac field).
+For this reason my implementation in herd7 will raise an user error if we try to
+add two pac field in a pointer using the `pac*` instruction.
+
 ## Hash collisions
 
 The cryptographic signatures in PAC are small, because they must be in the most
 significant bits of a virtual address. As example according to the tests I did
 in `KVM-unit-tests`, they are `15` bits (the PAC field is `16` bits long but the
 bit `55` is reserved to know the virtual address range of the signed pointer),
-so the probability that two random pac fields are equals is `p=1 / 32768`. In
-particular this means that this litmus test:
+so the probability that two random pac fields are equals is `p=1 / 32768` but
+this number depend of the size of the virutal address and may be lower or higher
+in another context. In particular this means that this litmus test:
 
 ```
 AArch64 Collisions in loads
@@ -58,11 +83,7 @@ P0          ;
 exists ( ~Fault(P0, PacCheck:DB) )
 ```
 
-It's important to note that the number of bits of the pac field depend of the
-context of execution and in particular the size of the virtual addresses, in
-another context the pac field may be `8` or `31` bits...
-
-But their is also some collisions in the final state:
+But their is also some collisions in the final state, as example
 
 ```
 AArch64 Collisions with the final state
@@ -84,6 +105,14 @@ exists ( 0:x0=x )
 
 may succeed with a probability `p`.
 
+This means that each times we see an equality test that compare two pac fields,
+if this test may fail, we must split the states in two because even if the pac
+fields use different key or modifiers, they may be equal because of a hash
+collusion. But `pac(x, da, 0)` wil always be different to `pac(y, da, 0)` in
+abscence of aliasing because the less significant bits of `pac(x, da, 0)` are
+equals to the less significant bits of `x` (and the bit 55), and these bits are
+enough to see the difference between `x` and `y` (because all the other bits
+replicate their bit 55).
 
 The difficulty here is that the set of collisions we found must be coherent, as
 example:
@@ -145,14 +174,8 @@ they use as input is not canonical.
 ### `pac*` instruction:
 
 The `pac*` instruction must add two register read data dependencies, in
-particular it will read two register and use their value to write the output
+particular it will read two registers and use their values to write the output
 value `pacda(x, da, 0x0)` in the destination register (`x0` in this example).
-
-In herd7, as I doesn't emulate `FEAT_CONSTPACFIELD` to reproduce the semantic
-of the Apple M3, calling `pac*` to a non canonical pointer (with a pac field
-different to `0...0` or `1...1`) raise an user error because the result si
-non-deterministic (it may forget the virtual address range of the original
-pointer).
 
 So here is an example of litmus test with the pacda instruction:
 
@@ -167,15 +190,17 @@ exists
 (0:x0=pac(x, da, 0))
 ```
 
+And here is the expected event graph for an execution of this litmus test:
+
 ![Expected event graph for `pacda`](pacda.png)
 
 ### `xpac*` instruction:
 
 The `xpacd` and `xpaci` instructions take a register and clear it's PAC field
-(set it to `0...0` or `1...1` pepending of the bit 55 of the virtual address).
+(set it to `0...0` or `1...1` depending of the bit 55 of the virtual address).
 So it add a data dependency between the input event and the output event.
 
-So here is a litmus test with the `xpacd` instruction:
+As example the `xpacd` instruction must generate these events:
 
 ```
 AArch64 xpacd
@@ -192,7 +217,7 @@ exists
 
 In presence of `FEAT_FPAC`, the `aut*` instruction is different to the `pacd*`
 instruction because it can raise a fault, so it add some `iico_ctrl`
-dependencies, and the presence of data dependencies depend of the success of the
+dependencies. And the presence of data dependencies depend of the success of the
 operation because the fault handling doesn't dirrectly use the output register
 of `aut*` but only set the error code and add to the `esr_el1` register the
 the key (`ia`, `da`, `ib`, or `db`) that generate the fail.
@@ -231,16 +256,16 @@ depend of the value of `x1` (the value is `x` in case of success that doesn't
 depend of the modifier, and nothing is write in case of failure). This is
 because according to the Arm ARM the output value in `x0` contains in it's most
 significant bits the exclusive `OR` of the pac field of `x0` and the pac field
-of `ComputePAC(x, X[1, 64])`, so the output has a syntactic dependency even if
-the ASL code raise a fault if this pac field is not equal to a constant 7 lines
-after this EOR.
+of `ComputePAC(x, X[1, 64], ...)`, so the output has a syntactic dependency even
+if the ASL code raise a fault if this pac field is not equal to a constant 7
+lines after this EOR.
 
 ### `ldr` instruction:
 
 Load instruction, in case we use virtual addresses, may have some additional
 dependencies to check that the virtual address is canonical. These dependencies
 are present also without Pointer Authentication, but PAC allow to generate non
-canonical pointers. To do this we must add a branching exent at each load that
+canonical pointers. To do this we must add a branching event at each load that
 depend of the input address, and an intrinsic control dependency between this
 event and the load event each times we see an `ldr` instruction.
 
