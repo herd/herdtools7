@@ -180,4 +180,6 @@ illustrative_tests = [
 	"tests/C-RW-r+RW-a+RW-B+RW-B+RW-B+RW-B+RW-B+RW-B-BPF.litmus",
     "tests/2+2W+release+fence.litmus",
     "tests/Z6.3+fence+fence+acquire.litmus",
+    "tests/amo-sequence-1.litmus",
+    "tests/amo-sequence-2.litmus",
 ]
