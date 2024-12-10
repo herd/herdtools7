@@ -14,7 +14,7 @@ The semantics of a single global storage declarations is defined in \nameref{sec
 \section{Syntax\label{sec:GlobalStorageDeclarationsSyntax}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
-\Ndecl  \derives \ & \Nstoragekeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
+\Ndecl  \derives \ & \Nglobaldeclkeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
         & \wrappedline\ \Nexpr \parsesep \Tsemicolon &\\
 	|\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
         & \wrappedline\ \Nexpr \parsesep \Tsemicolon &\\
@@ -23,7 +23,7 @@ The semantics of a single global storage declarations is defined in \nameref{sec
 \end{flalign*}
 
 \begin{flalign*}
-\Nstoragekeyword \derives \ & \Tlet \;|\; \Tconstant \;|\; \Tconfig&\\
+\Nglobaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant \;|\; \Tconfig&\\
 \Nignoredoridentifier \derives \ & \Tminus \;|\; \Tidentifier &
 \end{flalign*}
 
@@ -55,7 +55,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \hypertarget{build-globalstorage}{}
 \begin{mathpar}
 \inferrule[global\_storage]{
-  \buildstoragekeyword(\keyword) \astarrow \astof{\keyword}\\
+  \buildglobaldeclkeyword(\keyword) \astarrow \astof{\keyword}\\
   \buildoption[\buildasty](\tty) \astarrow \ttyp\\
   \buildexpr(\vinitialvalue) \typearrow \astof{\vinitialvalue}
 }
@@ -63,7 +63,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   {
       \builddecl\left(\overname{\Ndecl\left(
       \begin{array}{r}
-      \namednode{\vkeyword}{\Nstoragekeyword}, \namednode{\name}{\Nignoredoridentifier},  \\
+      \namednode{\vkeyword}{\Nglobaldeclkeyword}, \namednode{\name}{\Nignoredoridentifier},  \\
   \wrappedline\ \namednode{\tty}{\option{\Nasty}}, \Teq, \namednode{\vinitialvalue}{\Nexpr}, \Tsemicolon
       \end{array}
   \right)}{\vparsednode}\right)
@@ -128,30 +128,30 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.StorageKeyword \label{sec:ASTRule.StorageKeyword}}
-\hypertarget{build-storagekeyword}{}
+\subsubsection{ASTRule.GlobalDeclKeyword \label{sec:ASTRule.GlobalDeclKeyword}}
+\hypertarget{build-globaldeclkeyword}{}
 The function
 \[
-\buildstoragekeyword(\overname{\parsenode{\Nstoragekeyword}}{\vparsednode}) \;\aslto\;
+\buildglobaldeclkeyword(\overname{\parsenode{\Nglobaldeclkeyword}}{\vparsednode}) \;\aslto\;
   \overname{\globaldeclkeyword}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[let]{}{
-  \buildstoragekeyword(\overname{\Nstoragekeyword(\Tlet)}{\vparsednode}) \astarrow \overname{\GDKLet}{\vastnode}
+  \buildglobaldeclkeyword(\overname{\Nglobaldeclkeyword(\Tlet)}{\vparsednode}) \astarrow \overname{\GDKLet}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[constant]{}{
-  \buildstoragekeyword(\overname{\Nstoragekeyword(\Tconstant)}{\vparsednode}) \astarrow \overname{\GDKConstant}{\vastnode}
+  \buildglobaldeclkeyword(\overname{\Nglobaldeclkeyword(\Tconstant)}{\vparsednode}) \astarrow \overname{\GDKConstant}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[config]{}{
-  \buildstoragekeyword(\overname{\Nstoragekeyword(\Tconfig)}{\vparsednode}) \astarrow \overname{\GDKConfig}{\vastnode}
+  \buildglobaldeclkeyword(\overname{\Nglobaldeclkeyword(\Tconfig)}{\vparsednode}) \astarrow \overname{\GDKConfig}{\vastnode}
 }
 \end{mathpar}
 

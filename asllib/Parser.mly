@@ -466,14 +466,14 @@ let decl_item :=
 (* ------------------------------------------------------------------------- *)
 (* Statement helpers *)
 
-let local_decl_keyword :=
+let local_decl_keyword_non_var :=
   | LET       ; { LDK_Let       }
   | CONSTANT  ; { LDK_Constant  }
-  (* We can't have VAR here otherwise there is a conflict (grammar is not LR1).
+  (* Var is inlined inside stmt as it has differing production choices
   | VAR       ; { LDK_Var       }
   *)
 
-let storage_keyword :=
+let global_decl_keyword_non_var :=
   | LET       ; { GDK_Let      }
   | CONSTANT  ; { GDK_Constant }
   | CONFIG    ; { GDK_Config   }
@@ -525,7 +525,7 @@ let stmt :=
       | RETURN; ~=option(expr);                             < S_Return >
       | ~=call;                                              < s_call >
       | ASSERT; e=expr;                                      < S_Assert >
-      | ~=local_decl_keyword; ~=decl_item; ~=ty_opt; EQ; ~=some(expr); < S_Decl   >
+      | ~=local_decl_keyword_non_var; ~=decl_item; ~=ty_opt; EQ; ~=some(expr); < S_Decl   >
       | le=lexpr; EQ; e=expr;                                < S_Assign >
       | call=annotated(call); EQ; rhs=expr;
         { desugar_setter call [] rhs }
@@ -533,7 +533,7 @@ let stmt :=
         { desugar_setter call [fld] rhs }
       | call=annotated(call); DOT; flds=bracketed(clist2(IDENTIFIER)); EQ; rhs=expr;
         { desugar_setter call flds rhs }
-      | ldk=local_decl_keyword; lhs=decl_item; ty=as_ty; EQ; call=annotated(elided_param_call);
+      | ldk=local_decl_keyword_non_var; lhs=decl_item; ty=as_ty; EQ; call=annotated(elided_param_call);
         { desugar_elided_parameter ldk lhs ty call}
       | VAR; ldi=decl_item; ty=ty_opt; e=option_eq_expr;      { S_Decl (LDK_Var, ldi, ty, e) }
       | VAR; ~=clist2(IDENTIFIER); ~=as_ty;                  < make_ldi_vars >
@@ -669,7 +669,7 @@ let decl :=
       | TYPE; x=IDENTIFIER; s=annotated(subtype);         < make_ty_decl_subtype >
       (* End *)
       (* Begin global_storage *)
-      | keyword=storage_keyword; name=ignored_or_identifier;
+      | keyword=global_decl_keyword_non_var; name=ignored_or_identifier;
         ty=option(as_ty); EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword; name; ty; initial_value } }
       | VAR; name=ignored_or_identifier;

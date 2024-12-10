@@ -245,7 +245,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \hypertarget{def-subtypedecl}{}\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon&
 \hypertarget{def-globalstorage}{}\\
-|\ & \Nstoragekeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
+|\ & \Nglobaldeclkeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
    & \wrappedline\ \Nexpr \parsesep \Tsemicolon &
 |\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
    & \wrappedline\ \Nexpr \parsesep \Tsemicolon &
@@ -341,9 +341,9 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \Nlocaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant&
 \end{flalign*}
 
-\hypertarget{def-nstoragekeyword}{}
+\hypertarget{def-nglobaldeclkeyword}{}
 \begin{flalign*}
-\Nstoragekeyword \derives \ & \Tlet \;|\; \Tconstant \;|\; \Tconfig&
+\Nglobaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant \;|\; \Tconfig&
 \end{flalign*}
 
 \hypertarget{def-ndirection}{}
