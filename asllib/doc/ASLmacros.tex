@@ -492,7 +492,6 @@
 \newcommand\Nstmt[0]{\hyperlink{def-nstmt}{\nonterminal{stmt}}}
 \newcommand\Nselse[0]{\hyperlink{def-nselse}{\nonterminal{s\_else}}}
 \newcommand\Ndeclitem[0]{\hyperlink{def-ndeclitem}{\nonterminal{decl\_item}}}
-\newcommand\Nuntypeddeclitem[0]{\hyperlink{def-nuntypeddeclitem}{\nonterminal{untyped\_decl\_item}}}
 \newcommand\Nslice[0]{\hyperlink{def-nslice}{\nonterminal{slice}}}
 \newcommand\Nslices[0]{\hyperlink{def-nslices}{\nonterminal{slices}}}
 \newcommand\Nconstraintkind[0]{\hyperlink{def-nintconstraints}{\nonterminal{constraint\_kind}}}
@@ -707,9 +706,7 @@
 \newcommand\PatternTuple[0]{\hyperlink{ast-patterntuple}{\textsf{Pattern\_Tuple}}}
 
 % Local declarations
-\newcommand\LDIDiscard[0]{\hyperlink{ast-ldidiscard}{\textsf{LDI\_Discard}}}
 \newcommand\LDIVar[0]{\hyperlink{ast-ldivar}{\textsf{LDI\_Var}}}
-\newcommand\LDITyped[0]{\hyperlink{ast-ldityped}{\textsf{LDI\_Typed}}}
 \newcommand\LDITuple[0]{\hyperlink{ast-ldituple}{\textsf{LDI\_Tuple}}}
 
 \newcommand\LDKVar[0]{\hyperlink{ast-ldkvar}{\textsf{LDK\_Var}}}
@@ -758,7 +755,6 @@
 \newcommand\buildast[0]{\hyperlink{build-ast}{\textfunc{build\_ast}}}
 \newcommand\builddecl[0]{\hyperlink{build-decl}{\textfunc{build\_decl}}}
 \newcommand\builddeclitem[0]{\hyperlink{build-declitem}{\textfunc{build\_decl\_item}}}
-\newcommand\builduntypeddeclitem[0]{\hyperlink{build-untypeddeclitem}{\textfunc{build\_untyped\_decl\_item}}}
 \newcommand\makesetter[0]{\hyperlink{def-makesetter}{\textfunc{make\_setter}}}
 \newcommand\desugarsetter[0]{\hyperlink{def-desugarsetter}{\textfunc{desugar\_setter}}}
 \newcommand\buildlooplimit[0]{\hyperlink{build-looplimit}{\textfunc{build\_looplimit}}}
@@ -1287,7 +1283,6 @@
 \newcommand\usebitfield[0]{\hyperlink{def-usebitfield}{\textfunc{use\_bitfield}}}
 \newcommand\useconstraint[0]{\hyperlink{def-useconstraint}{\textfunc{use\_constraint}}}
 \newcommand\usestmt[0]{\hyperlink{def-usestmt}{\textfunc{use\_s}}}
-\newcommand\useldi[0]{\hyperlink{def-useldi}{\textfunc{use\_ldi}}}
 \newcommand\usecase[0]{\hyperlink{def-usecase}{\textfunc{use\_case}}}
 \newcommand\usecatcher[0]{\hyperlink{def-usecatcher}{\textfunc{use\_catcher}}}
 \newcommand\builddependencies[0]{\hyperlink{def-builddependencies}{\textfunc{build\_dependencies}}}
@@ -1610,7 +1605,7 @@
 \newcommand\reduceconstraint[0]{\hyperlink{def-reduceconstraint}{\textfunc{reduce\_constraint}}}
 \newcommand\reduceconstraints[0]{\hyperlink{def-reduceconstraints}{\textfunc{reduce\_constraints}}}
 \newcommand\declarelocalconstant[0]{\hyperlink{def-declarelocalconstant}{\textfunc{declare\_local\_constant}}}
-\newcommand\annotatelocaldeclitemuninit[0]{\hyperlink{def-annotatelocaldeclitemuninit}{\textfunc{annotate\_local\_decl\_item\_uninit}}}
+\newcommand\annotatelocaldecltypeannot[0]{\hyperlink{def-annotatelocaldecltypeannot}{\textfunc{annotate\_local\_decl\_type\_annot}}}
 \newcommand\checkvarnotinenv[1]{\hyperlink{def-checkvarnotinenv}{\textfunc{check\_var\_not\_in\_env}}(#1)}
 \newcommand\checkvarnotingenv[1]{\hyperlink{def-checkvarnotingenv}{\textfunc{check\_var\_not\_in\_genv}}(#1)}
 \newcommand\annotatesubprogram[0]{\hyperlink{def-annotatesubprogram}{\textfunc{annotate\_subprogram}}}
@@ -2025,7 +2020,6 @@
 \newcommand\mcond[0]{\texttt{m\_cond}}
 \newcommand\mfactor[0]{\texttt{m\_factor}}
 \newcommand\mindex[0]{\texttt{m\_index}}
-\newcommand\minitopt[0]{\texttt{m\_init\_opt}}
 \newcommand\minpos[0]{\texttt{min\_pos}}
 \newcommand\mlength[0]{\texttt{m\_length}}
 \newcommand\monome[0]{\texttt{monome}}
@@ -2443,6 +2437,7 @@
 \newcommand\vidasts[0]{\texttt{id\_asts}}
 \newcommand\vidopt[0]{\texttt{id\_opt}}
 \newcommand\vids[0]{\texttt{ids}}
+\newcommand\vignoredoridentifier[0]{\texttt{ignored\_or\_identifier}}
 \newcommand\vindex[0]{\texttt{index}}
 \newcommand\vindexname[0]{\texttt{index\_name}}
 \newcommand\vinitialvalue[0]{\texttt{initial\_value}}
@@ -2722,7 +2717,6 @@
 \newcommand\vu[0]{\texttt{u}}
 \newcommand\vunop[0]{\texttt{unop}}
 \newcommand\vuntypedast[0]{\texttt{untyped\_ast}}
-\newcommand\vuntypedlocaldeclitem[0]{\texttt{untyped\_local\_decl\_item}}
 \newcommand\vused[0]{\texttt{used}}
 \newcommand\vusedone[0]{\texttt{used1}}
 \newcommand\vv[0]{\texttt{v}}

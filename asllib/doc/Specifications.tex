@@ -1540,8 +1540,8 @@ One of the following applies:
 
   \item All of the following apply (\textsc{s\_decl}):
   \begin{itemize}
-    \item $\vs$ is a declaration statement with local declaration item $\ldi$ and \optional\ initialization expression $\ve$;
-    \item define $\ids$ as the union of applying $\useexpr$ to $\ve$ and $\useldi$ to $\ldi$.
+    \item $\vs$ is a declaration statement with \optional{} type annotation $\vt$ and \optional\ initialization expression $\ve$;
+    \item define $\ids$ as the union of applying $\usety$ to $\vt$ and $\useexpr$ to $\ve$.
   \end{itemize}
 
   \item All of the following apply (\textsc{s\_try}):
@@ -1637,7 +1637,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[s\_decl]{}{
-  \usestmt(\overname{\SDecl(\Ignore, \ldi, \ve)}\vs) \typearrow \overname{\useexpr(\ve) \cup \useldi(\ldi)}{\ids}
+  \usestmt(\overname{\SDecl(\Ignore, \ldi, \vt, \ve)}\vs) \typearrow \overname{\usety(\vt) \cup \useexpr(\ve)}{\ids}
 }
 \end{mathpar}
 
@@ -1664,55 +1664,6 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[s\_unreachable]{}{
   \usestmt(\overname{\SUnreachable}{\vs}) \typearrow \overname{\emptyset}{\ids}
-}
-\end{mathpar}
-
-\subsubsection{TypingRule.UseLDI \label{sec:TypingRule.UseLDI}}
-\hypertarget{def-useldi}{}
-The function
-\[
-\useldi(\overname{\localdeclitem}{\ldi}) \aslto \overname{\pow{\identifier}}{\ids}
-\]
-returns the set of identifiers $\ids$ which the local declaration item $\ldi$ depends on.
-
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{discard}):
-  \begin{itemize}
-    \item $\ldi$ is a discarding declaration;
-    \item define $\ids$ as the empty set.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{typed}):
-  \begin{itemize}
-    \item $\ldi$ is a typed declaration for the local declaration item $\ldione$ and type $\vt$;
-    \item define $\ids$ as the union of applying $\useldi$ to $\ldione$ and $\usety$ to $\vt$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{tuple}):
-  \begin{itemize}
-    \item $\ldi$ is a multi-variable declaration for the list of local declarations $\ldis$;
-    \item define $\ids$ as the union of applying $\useldi$ to each local declaration item in $\ldis$.
-  \end{itemize}
-\end{itemize}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule[discard]{}{
-  \useldi(\overname{\LDIDiscard}{\ldi}) \typearrow \overname{\emptyset}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[typed]{}{
-  \useldi(\overname{\LDITyped(\ldione, \vt)}{\ldi}) \typearrow \overname{\useldi(\ldione) \cup \usety(\vt)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[tuple]{}{
-  \useldi(\overname{\LDITuple(\ldis)}{\ldi}) \typearrow \overname{\bigcup_{\ldione\in\ldis}\useldi(\ldione)}{\ids}
 }
 \end{mathpar}
 

@@ -322,7 +322,7 @@ builds a statement $\news$ from an assignment of expression $\rhs$ to a setter i
   \fields \eqname [\field] \\
   \vx \in \Identifiers \text{ is fresh} \\\\
   \setcalltype(\vcall, \STGetter) \aslto \texttt{getter} \\\\
-  \texttt{read} \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \langle\texttt{getter}\rangle) \\\\
+  \texttt{read} \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \langle\texttt{getter}\rangle) \\\\
   \texttt{modify} \eqdef \SAssign(\LESetField(\LEVar(\vx), \field), \rhs) \\\\
   \makesetter(\vcall, \EVar(\vx)) \aslto \texttt{setter}
 }{
@@ -337,7 +337,7 @@ builds a statement $\news$ from an assignment of expression $\rhs$ to a setter i
   \listlen{\fields} > 1 \\
   \vx \in \Identifiers \text{ is fresh} \\\\
   \setcalltype(\vcall, \STGetter) \aslto \texttt{getter} \\\\
-  \texttt{read} \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \langle\texttt{getter}\rangle) \\\\
+  \texttt{read} \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \langle\texttt{getter}\rangle) \\\\
   \texttt{modify} \eqdef \SAssign(\LESetFields(\LEVar(\vx), \fields), \rhs) \\\\
   \makesetter(\vcall, \EVar(\vx)) \aslto \texttt{setter}
 }{
@@ -387,24 +387,26 @@ As given by applying the relevant rules to the desugared AST.
 \section{Declaration Statements\label{sec:DeclarationStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derives \ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
+\Nstmt \derives \ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \option{\Nty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Nty} \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
 \end{flalign*}
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\stmt \derives\ & \SDecl(\localdeclkeyword, \localdeclitem, \expr?) &
+\stmt \derives\ & \SDecl(\localdeclkeyword, \localdeclitem, \ty?, \expr?)
 \end{flalign*}
 
 \subsubsection{ASTRule.SDecl}
 \begin{mathpar}
-\inferrule[let\_constant]{}{
+\inferrule[let\_constant]{
+  \buildoption[\buildty](\vt) \astarrow \astversion{\vt}
+}{
   {
   \begin{array}{r}
-  \buildstmt(\overname{\Nstmt(\Nlocaldeclkeyword, \Ndeclitem, \Teq, \punnode{\Nexpr}, \Tsemicolon)}{\vparsednode})
+  \buildstmt(\overname{\Nstmt(\Nlocaldeclkeyword, \Ndeclitem, \namednode{\vt}{\option{\Nty}}, \Teq, \punnode{\Nexpr}, \Tsemicolon)}{\vparsednode})
   \astarrow\\
-  \overname{\SDecl(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \langle\astof{\vexpr}\rangle)}{\vastnode}
+  \overname{\SDecl(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \astversion{\vt}, \langle\astof{\vexpr}\rangle)}{\vastnode}
   \end{array}
   }
 }
@@ -412,13 +414,14 @@ As given by applying the relevant rules to the desugared AST.
 
 \begin{mathpar}
 \inferrule[var]{
+  \buildoption[\buildty](\vt) \astarrow \astversion{\vt} \\
   \buildoption[\buildexpr](\ve) \astarrow \astversion{\ve}
 }{
   {
     \begin{array}{r}
-  \buildstmt(\overname{\Nstmt(\Tvar, \Ndeclitem, \namednode{\ve}{\option{\Teq, \Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \buildstmt(\overname{\Nstmt(\Tvar, \Ndeclitem, \namednode{\vt}{\option{\Nty}}, \namednode{\ve}{\option{\Teq, \Nexpr}}, \Tsemicolon)}{\vparsednode})
   \astarrow \\
-  \overname{\SDecl(\LDKVar, \astof{\vdeclitem}, \astversion{\ve})}{\vastnode}
+  \overname{\SDecl(\LDKVar, \astof{\vdeclitem}, \astversion{\vt}, \astversion{\ve})}{\vastnode}
 \end{array}
 }
 }
@@ -427,7 +430,7 @@ As given by applying the relevant rules to the desugared AST.
 \begin{mathpar}
 \inferrule[multi\_var]{
   \buildclist[\buildidentity](\vids) \astarrow \astversion{\vids}\\
-  \vstmts \eqdef [\vx\in\astversion{\vids}: \SDecl(\LDKVar, \vx, \astof{\tty})]\\
+  \vstmts \eqdef [\vx\in\astversion{\vids}: \SDecl(\LDKVar, \vx, \langle\astof{\tty}\rangle, \None)]\\
   \stmtfromlist(\vstmts) \astarrow \vastnode
 }{
   \buildstmt(\overname{\Nstmt(\Tvar, \namednode{\vids}{\Clisttwo{\Tidentifier}}, \Tcolon, \punnode{\Nty}, \Tsemicolon)}{\vparsednode})
@@ -443,13 +446,10 @@ One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{some}):
   \begin{itemize}
-    \item $\vs$ is a declaration with local declaration keyword $\ldk$, local identifiers $\ldi$, and an expression $\ve$,
-          that is, $\SDecl(\ldk, \ldi, \langle\ve\rangle)$;
+    \item $\vs$ is a declaration with an initializing expression $\ve$,
+          that is, $\SDecl(\ldk, \ldi, \tyopt, \langle\ve\rangle)$;
     \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte,\vep, \vsese)$\ProseOrTypeError;
-    \item annotating the local declaration item $\ldi$ with local declaration keyword $\ldk$, the type $\vte$,
-          the initializing expression $\vep$ and $\vsese$, in $\tenv$
-          yields \\
-          $(\tenvone, \ldione, \vsesldi)$\ProseOrTypeError;
+    \item applying $\annotatelocaldecltypeannot$ to the environment $\tenv$, type annotation $\tyopt$, type $\vte$, local declaration keyword $\ldk$, expression $\vep$, and local declaration item $\ldi$ yields $(\tenvone, \tyoptp, \vsesldi)$\ProseOrTypeError;
     \item \Proseeqdef{$\vses$}{the union of $\vsese$ and $\vsesldi$};
     \item One of the following applies:
     \begin{itemize}
@@ -458,14 +458,14 @@ One of the following applies:
         \item $\ldk$ indicates a local constant declaration, that is, $\LDKConstant$;
         \item checking that all \timeframesterm\ in $\vsese$ are before \timeframeconstant\ yields $\True$\ProseOrTypeError;
         \item symbolically simplifying $\ve$ in $\tenvone$ yields the literal $\vv$\ProseOrTypeError;
-        \item declaring a local constant of type $\vte$, literal $\vv$ and local declaration item $\ldione$ in $\tenvone$ yields $\newtenv$;
-        \item $\news$ is a declaration with $\ldk$, $\ldione$ and an expression $\vep$.
+        \item declaring a local constant with literal $\vv$ and local declaration item $\ldi$ in $\tenvone$ yields $\newtenv$;
+        \item $\news$ is a declaration with $\ldk$, $\ldi$, type annotation $\tyoptp$, and an expression $\vep$.
       \end{itemize}
 
       \item All of the following apply (\textsc{non\_constant}):
       \begin{itemize}
         \item $\ldk$ indicates that this is not a local constant declaration, that is, $\ldk\neq\LDKConstant$;
-        \item $\news$ is a declaration with $\ldk$, $\ldione$ and an expression $\vep$;
+        \item $\news$ is a declaration with $\ldk$, $\ldi$, type annotation $\tyoptp$, and an expression $\vep$;
         \item $\newtenv$ is $\tenvone$.
       \end{itemize}
     \end{itemize}
@@ -473,64 +473,58 @@ One of the following applies:
 
   \item All of the following apply (\textsc{none}):
   \begin{itemize}
-  \item $\vs$ is a local declaration statement with a variable keyword and local identifiers $\ldi$, and no initial expression,
-        that is, $\SDecl(\LDKVar, \ldi, \None)$ (local declarations of \texttt{let} variables and constants require
+  \item $\vs$ is a local declaration statement with a variable keyword and no initializing expression,
+        that is, $\SDecl(\LDKVar, \ldi, \tyopt, \None)$ (local declarations of \texttt{let} variables and constants require
         an initializing expression, otherwise they are rejected by an ASL parser);
-  \item annotating the uninitialised local declarations $\ldi$ in $\tenv$ yields \\
-        $(\newtenv, \ldione, \veinit, \vsesldi)$;
-  \item $\news$ is a local declaration statement with variable keyword, local identifiers $\ldione$, and the initializing expression $\veinit$,
-        that is, \\
-        $\SDecl(\LDKVar, \ldione, \langle\veinit\rangle)$;
-  \item \Proseeqdef{$\vses$}{$\vsesldi$}.
+  \item $\tyopt$ is $\langle\vt\rangle$\ProseOrTypeError;
+  \item annotating $\vt$ in $\tenv$ yields $(\vtp, \vses)$\ProseOrTypeError;
+  \item applying $\basevalue$ to $\vtp$ in $\tenv$ yields $\veinit$\ProseOrTypeError;
+  \item annotating the local declaration item $\ldi$ with the type $\vtp$ and local declaration keyword $\LDIVar$
+        yields $\newtenv$\ProseOrTypeError;
+  \item define $\news$ as local declaration statement with variable keyword, local declaration item $\ldi$, type annotation $\vtp$, and initializing expression $\veinit$, that is, $\SDecl(\LDKVar, \ldi, \langle\veinit\rangle)$.
   \end{itemize}
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[constant]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
-  {
-  \begin{array}{r}
-    \annotatelocaldeclitem(\tenv, \vte, \ldk, \langle(\vep, \vsese)\rangle, \ldi) \typearrow \\
-    (\tenvone, \ldione, \vsesldi) \OrTypeError
-  \end{array}
-  }\\
+  \annotatelocaldecltypeannot(\tenv, \tyopt, \vte, \ldk, \vep, \ldi) \typearrow (\tenvone, \tyoptp, \vsesldi) \OrTypeError\\\\
   \vses \eqdef \vsese \cup \vsesldi\\\\
   \commonprefixline\\\\
   \ldk = \LDKConstant\\
   \checktrans{\sesisbefore(\vsese, \timeframeconstant)}{TimeFrameConstant} \typearrow \True \OrTypeError\\\\
   \staticeval(\tenvone, \ve) \typearrow \vv \OrTypeError\\\\
-  \declarelocalconstant(\tenvone, \vv, \ldione) \typearrow \newtenv\\
-  \news \eqdef \SDecl(\LDKConstant, \ldione, \langle\vep\rangle)
+  \declarelocalconstant(\tenvone, \vv, \ldi) \typearrow \newtenv\\
+  \news \eqdef \SDecl(\LDKConstant, \ldi, \tyoptp, \langle\vep\rangle)
 }{
-  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \langle\ve\rangle)}{\vs}) \typearrow (\news, \newtenv, \vses)
+  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \tyopt, \langle\ve\rangle)}{\vs}) \typearrow (\news, \newtenv, \vses)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[non\_constant]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
-  {
-  \begin{array}{r}
-    \annotatelocaldeclitem(\tenv, \vte, \ldk, \langle(\vep, \vsese)\rangle, \ldi) \typearrow \\
-    (\tenvone, \ldione, \vsesldi) \OrTypeError
-  \end{array}
-  }\\
+  \annotatelocaldecltypeannot(\tenv, \tyopt, \vte, \ldk, \vep, \ldi) \typearrow (\tenvone, \tyoptp, \vsesldi) \OrTypeError\\\\
   \vses \eqdef \vsese \cup \vsesldi\\\\
   \commonprefixline\\\\
   \ldk \neq \LDKConstant\\
-  \news \eqdef \SDecl(\ldk, \ldione, \langle\vep\rangle)
+  \news \eqdef \SDecl(\ldk, \ldi, \tyoptp, \langle\vep\rangle)
 }{
-  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \langle\ve\rangle)}{\vs}) \typearrow (\news, \overname{\tenvone}{\newtenv}, \vses)
+  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \tyopt, \langle\ve\rangle)}{\vs}) \typearrow (\news, \overname{\tenvone}{\newtenv}, \vses)
 }
 \end{mathpar}
 \lrmcomment{This is related to \identr{YSPM}.}
 
 \begin{mathpar}
 \inferrule[none]{
-  \annotatelocaldeclitemuninit(\tenv, \ldi) \typearrow (\newtenv, \ldione, \veinit, \vsesldi) \OrTypeError\\\\
-  \news \eqdef \SDecl(\LDKVar, \ldione, \langle\veinit\rangle)
+  \checktrans{\tyopt = \langle\Ignore\rangle}{\TypeErrorVal{ExpectedInitializingExpression}} \typearrow \True \OrTypeError \\
+  \tyopt \eqname \langle\vt\rangle \\
+  \annotatetype{\tenv, \vt} \typearrow (\vtp, \vses) \OrTypeError\\\\
+  \basevalue(\tenv, \vtp) \typearrow \veinit \OrTypeError\\\\
+  \annotatelocaldeclitem{\tenv, \vtp, \LDKVar, \None, \ldip} \typearrow \newtenv \OrTypeError \\
+  \news \eqdef \SDecl(\LDKVar, \ldi, \langle\vtp\rangle, \langle\veinit\rangle)
 }{
-  \annotatestmt(\tenv, \overname{\SDecl(\LDKVar, \ldi, \None)}{\vs}) \typearrow (\news, \newtenv, \overname{\vsesldi}{\vses})
+  \annotatestmt(\tenv, \overname{\SDecl(\LDKVar, \ldi, \tyopt, \None)}{\vs}) \typearrow (\news, \newtenv, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\SDeclegin}{\SDeclEnd}{../Typing.ml}
@@ -548,12 +542,6 @@ yielding the modified static environment $\newtenv$.
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{discard}):
-  \begin{itemize}
-    \item $\ldi$ corresponds to a discarding declaration, that is, $\LDIDiscard$;
-    \item $\newtenv$ is $\tenv$.
-  \end{itemize}
-
   \item All of the following apply (\textsc{var}):
   \begin{itemize}
     \item $\ldi$ corresponds to a variable declaration for $\vx$, that is, $\LDIVar(\vx)$;
@@ -565,20 +553,8 @@ One of the following applies:
     \item $\ldi$ corresponds to a tuple declaration, that is, $\LDIVar(\Ignore)$;
     \item this case is not yet implemented.
   \end{itemize}
-
-  \item All of the following apply (\textsc{typed}):
-  \begin{itemize}
-    \item $\ldi$ corresponds to a typed declaration of the local declaration item $\ldip$ and some type, that is, $\LDITyped(\ldip, \Ignore)$;
-    \item applying $\declarelocalconstant$ to $\vv$ and $\ldip$ in $\tenv$ yields $\newtenv$.
-  \end{itemize}
 \end{itemize}
 \subsubsection{Formally}
-\begin{mathpar}
-\inferrule[discard]{}{
-  \declarelocalconstant(\tenv, \vv, \overname{\LDIDiscard}{\ldi}) \typearrow \overname{\tenv}{\newtenv}
-}
-\end{mathpar}
-
 \begin{mathpar}
 \inferrule[var]{
   \addlocalconstant(\tenv, \vx, \vv) \typearrow \newtenv
@@ -592,84 +568,192 @@ One of the following applies:
   \declarelocalconstant(\tenv, \vv, \overname{\LDITuple(\Ignore)}{\ldi}) \typearrow \tododefine{not implemented yet}
 }
 \end{mathpar}
-
-\begin{mathpar}
-\inferrule[typed]{
-  \declarelocalconstant(\tenv, \vv, \ldip) \typearrow \newtenv
-}{
-  \declarelocalconstant(\tenv, \vv, \overname{\LDITyped(\ldip, \Ignore)}{\ldi}) \typearrow \newtenv
-}
-\end{mathpar}
 \CodeSubsection{\DeclareLocalConstantBegin}{\DeclareLocalConstantEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.AnnotateLocalDeclItemUninit \label{sec:TypingRule.AnnotateLocalDeclItemUninit}}
-\hypertarget{def-annotatelocaldeclitemuninit}{}
+\subsubsection{TypingRule.AnnotateLocalDeclTypeAnnot \label{sec:TypingRule.AnnotateLocalDeclTypeAnnot}}
+\hypertarget{def-annotatelocaldecltypeannot}{}
 The helper function
 \[
-\begin{array}{r}
-\annotatelocaldeclitemuninit(\overname{\staticenvs}{\tenv} \aslsep \overname{\localdeclitem}{\ldi})
-\typearrow \\
-(\overname{\staticenvs}{\newtenv} \times \overname{\localdeclitem}{\newldi} \times \overname{\expr}{\veinit} \times \overname{\TSideEffectSet}{\vses})
-\cup \overname{\TTypeError}{\TypeErrorConfig}
-\end{array}
+  \annotatelocaldecltypeannot
+  \left(
+  \begin{array}{c}
+    \overname{\staticenvs}{\tenv} \aslsep \\
+    \overname{\langle\ty\rangle}{\tyopt} \aslsep \\
+    \overname{\ty}{\vte} \aslsep \\
+    \overname{\localdeclkeyword}{\ldk} \aslsep \\
+    \overname{\expr}{\vep} \aslsep\\
+    \overname{\localdeclitem}{\ldi}
+  \end{array}
+  \right)
+  \typearrow
+  \left(
+  \begin{array}{cl}
+    \left(\overname{\staticenvs}{\newtenv} \aslsep \overname{\langle\ty\rangle}{\tyoptp} \aslsep \overname{\TSideEffectSet}{\vses}\right)
+    & \cup \\
+    \overname{\TTypeError}{\TypeErrorConfig} &
+  \end{array}
+  \right)
 \]
-annotates the local declaration for a variable declaration without an initializing expression $\ldi$,
-in the static environment $\tenv$,
-yielding the annotated local declaration item $\newldi$,
-the modified static environment $\newtenv$,
-an initializing expression $\veinit$, and
-the inferred \sideeffectsetterm\ $\vses$.
+annotates the type annotation $\tyopt$ in the static environment $\tenv$ within the context of a local declaration with keyword $\ldk$, item $\ldi$, and initializing expression $\vep$ with type $\vte$.
+It yields the modified static environment $\newtenv$, the annotated type annotation $\tyoptp$, and the inferred \sideeffectsetterm{} $\vses$.
 \ProseOtherwiseTypeError
 
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{typed}):
+  \item All of the following apply (\textsc{none}):
   \begin{itemize}
-    \item $\ldi$ corresponds to a variable declaration via the local declaration item $\ldip$ and type annotation $\vt$,
-          that is, $\LDITyped(\ldip, \vt)$;
-          \item annotating $\vt$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
-          \item applying $\basevalue$ to $\vtp$ in $\tenv$ yields $\veinit$\ProseOrTypeError;
-    \item annotating the local declaration item $\ldip$ with the type $\vtp$ and local declaration keyword $\LDIVar$
-          yields $(\newtenv, \newldip, \vsesldi)$\ProseOrTypeError;
-    \item define $\newldi$ as the typed local declaration item with local declaration item $\newldip$, type $\vtp$, and
-          $\veinit$;
-    \item \Proseeqdef{$\vses$}{the union of $\vsest$ and $\vsesldi$}.
+    \item $\tyopt$ is $\None$;
+    \item $\newtenv$ is the result of $\annotatelocaldeclitem{\tenv, \vte, \ldk, \langle\vep\rangle, \ldi}$\ProseOrTypeError;
+    \item $\tyoptp$ is $\tyopt$;
+    \item \Proseeqdef{$\vses$}{the empty set}.
   \end{itemize}
 
-  \item All of the following apply (\textsc{error}):
+  \item All of the following apply (\textsc{some}):
   \begin{itemize}
-    \item $\ldi$ does not correspond to a typed declaration item;
-    \item the result is a type error indicating that an initializing expression was expected.
+    \item $\tyopt$ is $\langle\vt\rangle$;
+    \item determining the \structure{} of $\vte$ in $\tenv$ yields $\vtep$\ProseOrTypeError;
+    \item propagating integer constraints from $\vtep$ to $\vt$ using $\inheritintegerconstraints$ yields $\vtp$\ProseOrTypeError;
+    \item annotating the type $\vtp$ in $\tenv$ yields $(\vtpp, \vses)$\ProseOrTypeError;
+  \item determining whether $\vtpp$ can be initialized with $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item annotating the local declaration item $\ldi$ with the local declaration keyword $\ldk$, given
+  the expression $\vep$, in the environment $\tenv$, yields $\newtenv$;
+  \item $\tyoptp$ is $\langle\vtpp\rangle$.
   \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[typed]{
-  \annotatetype{\tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
-  \basevalue(\tenv, \vtp) \typearrow \veinit \OrTypeError\\\\
-  {
-    \begin{array}{r}
-      \annotatelocaldeclitem(\tenv, \vtp, \LDKVar, \None, \ldip) \typearrow \\
-      (\newtenv, \newldip, \vsesldi) \OrTypeError
-    \end{array}
-  }\\
-  \newldi \eqdef \LDITyped(\newldip, \vtp, \veinit)\\
-  \vses \eqdef \vsest \cup \vsesldi
+\inferrule[none]{
+  \annotatelocaldeclitem{\tenv, \vte, \ldk, \langle\vep\rangle, \ldi} \typearrow \newtenv \OrTypeError
 }{
-  \annotatelocaldeclitemuninit(\tenv, \overname{\LDITyped(\ldip, \vt)}{\ldi}) \typearrow (\newtenv, \newldi, \vses)
+  \annotatelocaldecltypeannot(\tenv, \None, \vte, \ldk, \vep, \ldi) \typearrow (\newtenv, \overname{\None}{\tyoptp}, \overname{\emptyset}{\vses})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[some]{
+  \tstruct(\tenv, \vte) \typearrow \vtep \OrTypeError \\
+  \inheritintegerconstraints(\vt, \vtep) \typearrow \vtp \OrTypeError \\
+  \annotatetype{\tenv, \vtp} \typearrow (\vtpp, \vses) \OrTypeError\\\\
+  \checkcanbeinitializedwith(\tenv, \vtpp, \vte) \typearrow \True \OrTypeError\\\\
+  \annotatelocaldeclitem{\tenv, \vtpp, \ldk, \langle \vep \rangle, \ldip} \typearrow \newtenv \OrTypeError
+}{
+  \annotatelocaldecltypeannot(\tenv, \langle\vt\rangle, \vte, \ldk, \vep, \ldi) \typearrow (\newtenv, \overname{\langle\vtpp\rangle}{\tyoptp}, \vses)
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.InheritIntegerConstraints\label{sec:TypingRule.InheritIntegerConstraints}}
+\hypertarget{def-inheritintegerconstraints}{}
+The helper function
+\[
+\inheritintegerconstraints(\overname{\ty}{\lhs} \aslsep \overname{\ty}{\rhs})
+\typearrow \lhsp \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\]
+propagates integer constraints from the right-hand side type $\rhs$ to the left-hand side type annotation $\lhs$.
+In particular, each occurence of \pendingconstrainedintegertype{} on the left-hand side should inherit constraints from a corresponding \wellconstrainedintegertype{} on the right-hand side.
+If the corresponding right-hand side type is not a \wellconstrainedintegertype{} (including if it is an \unconstrainedintegertype{}), the result is a type error.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{int}):
+  \begin{itemize}
+    \item $\lhs$ is a \pendingconstrainedintegertype{};
+    \item $\rhs$ is a \wellconstrainedintegertype{}\ProseOrTypeError;
+    \item $\lhsp$ is $\rhs$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{tuple}):
+  \begin{itemize}
+    \item $\lhs$ is a tuple of types \texttt{lhs\_tys};
+    \item $\rhs$ is a tuple of types \texttt{rhs\_tys};
+    \item the lengths of \texttt{lhs\_tys} and \texttt{rhs\_tys} are equal\ProseOrTypeError;
+    \item define \texttt{lhs\_tys'} by applying $\inheritintegerconstraints$ to each element of \texttt{lhs\_tys} and \texttt{rhs\_tys}\ProseOrTypeError;
+    \item $\lhsp$ is $\TTuple(\texttt{lhs\_tys'})$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{other}):
+  \begin{itemize}
+    \item $\lhs$ is not a \pendingconstrainedintegertype{}, or one of $\lhs$ and $\rhs$ is not a tuple type;
+    \item $\lhsp$ is $\lhs$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[int]{
+  \rhs \eqname \TInt(\wellconstrained(\Ignore)) \OrTypeError
+}{
+  \inheritintegerconstraints(\overname{\TInt(\pendingconstrained)}{\lhs}, \rhs) \typearrow \overname{\rhs}{\lhsp}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tuple]{
+  \lhs \eqname \TTuple(\texttt{lhs\_tys}) \\
+  \rhs \eqname \TTuple(\texttt{rhs\_tys}) \\\\
+  \equallength(\texttt{lhs\_tys}, \texttt{rhs\_tys}) \typearrow \True \OrTypeError \\
+  \vi \in \listrange(\lhs): \inheritintegerconstraints(\texttt{lhs\_tys}_i, \texttt{rhs\_tys}_i) \typearrow \texttt{lhs\_tys'}_i \OrTypeError \\
+}{
+  \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\TTuple(\texttt{lhs\_tys'})}{\lhsp}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[other]{
+  \lhs \neq \TInt(\pendingconstrained) \;\lor\; \astlabel(\lhs) \neq \TTuple \;\lor\; \astlabel(\rhs) \neq \TTuple
+}{
+  \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\lhs}{\lhsp}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.CheckCanBeInitializedWith\label{sec:TypingRule.CheckCanBeInitializedWith}}
+\hypertarget{def-checkcanbeinitializedwith}{}
+The helper function
+\[
+\checkcanbeinitializedwith(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vs} \aslsep \overname{\ty}{\vt})
+\typearrow \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks whether an expression of type $\vs$ can be used to initialize a storage element of type $\vt$ in the static environment
+$\tenv$.
+If the answer if $\False$, the result is a type error.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{okay}):
+  \begin{itemize}
+    \item testing whether $\vt$ \typesatisfies\ $\vs$ in $\tenv$ yields $\True$;
+    \item the result is $\True$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item testing whether $\vt$ \typesatisfies\ $\vs$ in $\tenv$ yields $\False$;
+    \item the result is a type error indicating that an expression of type $\vs$ cannot
+          be used to initialize a storage element of type $\vt$.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[okay]{
+  \typesat(\tenv, \vt, \vs) \typearrow \True
+}{
+  \checkcanbeinitializedwith(\tenv, \vs, \vt) \typearrow \True
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[error]{
-  \astlabel(\ldi) \in \{\LDIDiscard, \LDIVar, \LDITuple\}
+  \typesat(\tenv, \vt, \vs) \typearrow \False
 }{
-  \annotatelocaldeclitemuninit(\tenv, \ldi) \typearrow \TypeErrorVal{ExpectedInitializingExpression}
+  \checkcanbeinitializedwith(\tenv, \vs, \vt) \typearrow \TypeErrorVal{CannotBeInitializedWith}
 }
 \end{mathpar}
-\CodeSubsection{\AnnotateLocalDeclItemUninitBegin}{\AnnotateLocalDeclItemUninitEnd}{../Typing.ml}
+\lrmcomment{This is related to \identr{ZCVD} and \identr{LXQZ}.}
+
 
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SDeclSome\label{sec:SemanticsRule.SDeclSome}}
@@ -689,36 +773,32 @@ One of the following applies:
   \item All of the following apply (\textsc{some}):
   \begin{itemize}
     \item $\vs$ is a declaration with an initial value,
-    $\SDecl(\text{ldk}, \ldi, \langle\ve\rangle)$;
+    $\SDecl(\Ignore, \ldi, \Ignore, \langle\ve\rangle)$;
     \item evaluating $\ve$ in $\env$ is $\Normal(\vm, \envone)$\ProseOrAbnormal;
-    \item evaluating the local declaration $\ldi$ with $\langle\vm\rangle$ as the initializing
+    \item evaluating the local declaration $\ldi$ with $\vm$ as the initializing
     value in $\envone$ as per \chapref{LocalStorageDeclarations} is $\Normal(\newg, \newenv)$;
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
   \end{itemize}
 
   \item All of the following apply (\textsc{none}):
   \begin{itemize}
-    \item $\vs$ is a declaration without an initial value, $\SDecl(\Ignore, \ldi, \None)$;
-    \item evaluating the local declaration $(\ldi, \None)$ as per \chapref{LocalStorageDeclarations}
-    is \\ $\Normal(\newg, \newenv)$;
-    \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
+    \item $\vs$ is a declaration without an initial value, $\SDecl(\Ignore, \ldi, \Ignore, \None)$;
+    \item the result is a dynamic error.
   \end{itemize}
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[some]{
   \evalexpr{\env, \ve} \evalarrow \Normal(\vm, \envone) \OrAbnormal\\
-  \evallocaldecl{\envone, \ldi, \langle\vm\rangle} \evalarrow \Normal(\newg, \newenv)\\
+  \evallocaldecl{\envone, \ldi, \vm} \evalarrow \Normal(\newg, \newenv)\\
 }{
-  \evalstmt{\env, \SDecl(\Ignore, \ldi, \langle\ve\rangle)} \evalarrow \Continuing(\newg, \newenv)
+  \evalstmt{\env, \SDecl(\Ignore, \ldi, \Ignore, \langle\ve\rangle)} \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[none]{
-  \evallocaldecl{\env, \vs, \ldi, \None} \evalarrow \Normal(\newg, \newenv)\\
-}{
-  \evalstmt{\env, \SDecl(\Ignore, \ldi, \None)} \evalarrow \Continuing(\newg, \newenv)
+\inferrule[none]{}{
+  \evalstmt{\env, \SDecl(\Ignore, \ldi, \Ignore, \None)} \evalarrow \DynamicErrorVal{UninitialisedDecl}
 }
 \end{mathpar}
 \CodeSubsection{\EvalSDeclBegin}{\EvalSDeclEnd}{../Interpreter.ml}
@@ -728,8 +808,8 @@ One of the following applies:
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \
-   & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
+   & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 \end{flalign*}
 
 \begin{flalign*}
@@ -795,21 +875,23 @@ The helper function
 \desugarelidedparameter(
   \overname{\localdeclkeyword}{\ldk} \aslsep
   \overname{\localdeclitem}{\ldi} \aslsep
+  \overname{\ty}{\vt} \aslsep
   \overname{\call}{\vcall})
 \aslto \overname{\stmt}{\news}
 \cup\ \{\ParseError\}
 \]
-builds a declaration statement $\news$ from an assignment of the call $\vcall$ to the left-hand side $\ldi$ with keyword $\ldk$, where the call has an elided parameter.
+builds a declaration statement $\news$ from an assignment of the call $\vcall$ to the left-hand side $\ldi$ with keyword $\ldk$ and type annotation $\vt$, where the call has an elided parameter.
 Otherwise, the result is a parse error.
 
 \begin{mathpar}
 \inferrule{
-  \ldi \eqname \LDITyped(\Ignore, \TBits(\ve, \Ignore)) \;\terminateas \ParseError \\
+  \checktrans{\vt = \TBits(\Ignore, \Ignore)}{\ParseError} \typearrow \True \;\terminateas \ParseError \\
+  \vt \eqname \TBits(\ve, \Ignore) \\
   \vcallp \eqdef \vcall[\callparams\mapsto [\ve] \concat \vcall.\callparams ]
 }{
-  \desugarelidedparameter(\ldk, \ldi, \vcall)
+  \desugarelidedparameter(\ldk, \ldi, \vt, \vcall)
   \astarrow
-  \SDecl(\ldk, \ldi, \ECall(\vcallp))
+  \SDecl(\ldk, \ldi, \langle\vt\rangle, \ECall(\vcallp))
 }
 \end{mathpar}
 
@@ -817,12 +899,12 @@ Otherwise, the result is a parse error.
 \begin{mathpar}
 \inferrule{
   \buildelidedparamcall (\vcall) \astarrow \astversion{\vcall} \\
-  \desugarelidedparameter(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \astversion{\vcall}) \astarrow \vastnode
+  \desugarelidedparameter(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \astof{\vasty}, \astversion{\vcall}) \astarrow \vastnode
 }{
   {
     \begin{array}{l}
     \buildstmt(\Nstmt \\
-    \qquad (\punnode{\Nlocaldeclkeyword}, \punnode{\Ndeclitem}, \Teq, \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon)) \astarrow \vastnode
+    \qquad (\punnode{\Nlocaldeclkeyword}, \punnode{\Ndeclitem}, \punnode{\Nasty}, \Teq, \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon)) \astarrow \vastnode
     \end{array}
   }
 }
@@ -831,21 +913,16 @@ Otherwise, the result is a parse error.
 \begin{mathpar}
 \inferrule{
   \buildelidedparamcall (\vcall) \astarrow \astversion{\vcall} \\
-  \desugarelidedparameter(\LDKVar, \astof{\vdeclitem}, \astversion{\vcall}) \astarrow \vastnode
+  \desugarelidedparameter(\LDKVar, \astof{\vdeclitem}, \astof{\vasty}, \astversion{\vcall}) \astarrow \vastnode
 }{
   {
     \begin{array}{l}
     \buildstmt(\Nstmt \\
-    \qquad (\Tvar, \punnode{\Ndeclitem}, \Teq, \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon)) \astarrow \vastnode
+    \qquad (\Tvar, \punnode{\Ndeclitem}, \punnode{\Nasty}, \Teq, \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon)) \astarrow \vastnode
     \end{array}
   }
 }
 \end{mathpar}
-
-
-% \Nstmt \derives \
-%    & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
-% |\ & \Tvar \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 
 \subsection{Typing and semantics}
 As given by the applying the relevant rules to the desugared AST (see \secref{DeclarationStatements}).
@@ -1390,7 +1467,7 @@ All of the following apply:
 \inferrule[non\_var]{
   \astlabel(\ve) \neq \EVar\\
   \vx \in \Identifiers \text{ is fresh}\\
-  \vdeclx \eqname \SDecl(\LDKLet, \LDIVar(\vx), \langle\ve\rangle)\\
+  \vdeclx \eqname \SDecl(\LDKLet, \LDIVar(\vx), \None, \langle\ve\rangle)\\
   \casestocond(\EVar(\vx), \vcases) \typearrow \vscond
 }{
   \desugarcasestmt(\overname{\SCase(\ve, \vcases)}{\vs}) \typearrow \overname{\SSeq(\vdeclx, \vscond)}{\news}

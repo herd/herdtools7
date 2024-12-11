@@ -401,15 +401,15 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 |\ & \Treturn \parsesep \option{\Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Ncall &\\
 |\ & \Tassert \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \option{\Nty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Ncall \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Ncall \parsesep \Tdot \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Ncall \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{{\Tidentifier}} \parsesep \Trbracket \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Nty} \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 |\ & \Tprint \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Tunreachable \parsesep \Tlpar \parsesep \Trpar \parsesep \Tsemicolon &\\
 |\ & \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Nlooplimit \parsesep \Tsemicolon &\\
@@ -451,15 +451,9 @@ which appears only in declarations. It cannot have setter calls or set record fi
 it must declare a new variable.
 \hypertarget{def-ndeclitem}{}
 \begin{flalign*}
-\Ndeclitem \derives\ & \Nuntypeddeclitem \parsesep \Nasty&\\
-|\ & \Nuntypeddeclitem  &
-\end{flalign*}
-
-\hypertarget{def-nuntypeddeclitem}{}
-\begin{flalign*}
-\Nuntypeddeclitem \derives \ & \Tidentifier &\\
-|\ & \Tminus &\\
-|\ & \Plisttwo{\Ndeclitem} &
+\Ndeclitem \derives\
+   & \Nignoredoridentifier &\\
+|\ & \Plisttwo{\Nignoredoridentifier}  &
 \end{flalign*}
 
 \hypertarget{def-nintconstraintsopt}{}
