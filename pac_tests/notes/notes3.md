@@ -325,3 +325,6 @@ exists
 ```
 
 ![Expected event graph for an `str` failure](str_failure.png)
+
+And we have similar intrinsic control dependencies for the atomic operations
+(`cas`, `swp`...).
