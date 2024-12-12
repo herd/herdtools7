@@ -67,6 +67,7 @@ begin
   assert SInt('000') == 0;
   assert SInt('0') == 0;
   assert SInt('1') == -1;
+  assert SInt('') == 0;
 
   test_uint{0}(Zeros{0});
   test_uint{1}(Zeros{1});
