@@ -104,7 +104,7 @@ the number of bits in the PAC field), then their is no contradiction:
         different to `f1(N(2), ...)`, `f2(N(3), ...)`, ...
     - and we continue by using the inequalities that doesn't contains `N(1)`...
 
-So if the program have more than `2^n - 1` equalities I just raise an user
+So if the program have more than `2^n - 1` inequalities I just raise an user
 error.
 
 ## Algorithm
@@ -128,5 +128,5 @@ non-basic variables so we can assume that all the variables are non-basic, and:
 This approach is not perfect because it suppose that we have less than `2^n`
 inequalities but it is very unlikely to have this number of inequalities because
 this number is per execution (with `n=15` for kvm-unit-tests). So the program
-must either have a loop that we unfold 32768 times, or have more than 3276
+must either have a loop that we unfold 32768 times, or have more than 32768
 lines of assembly...

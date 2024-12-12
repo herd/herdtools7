@@ -82,7 +82,7 @@ module PAC = struct
   (* Return the exclusive XOR of two sets of PAC fields, can be optimised but
      it's probably not very usefull as the size of the equations will be very
      small for small programs... *)
-  let rec xor (x: t) (y: t) : t =
+  let xor (x: t) (y: t) : t =
     PACSet.diff (PACSet.union x y) (PACSet.inter x y)
 
   let compare = PACSet.compare
@@ -162,7 +162,7 @@ module PAC = struct
     end
 
   (* Add the inequality x != y (rewrite x ^ y != 0) to the solver state *)
-  let add_inequalities (x: t) (y: t) (state: solver_state) : solver_state option
+  let add_inequality (x: t) (y: t) (state: solver_state) : solver_state option
   =
     let inequality = simplify (xor x y) state.equalities in
     if is_canonical inequality

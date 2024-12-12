@@ -40,6 +40,21 @@ module PAC : sig
    *     `add modifier key offset p = pac(x+offset, key, modifier) eor p`
    *)
   val add : string -> string -> int -> t -> t
+
+  (* A type of solver to reason about equality constraints on the PAC fields of
+   * virtual addresses*)
+  type solver_state
+
+  (* A solver state without constraints *)
+  val empty_solver : solver_state
+
+  (* Add an equality constraint to the solver state, return None if this
+   * equality introduce a contradiction *)
+  val add_equality : t -> t -> solver_state -> solver_state option
+
+  (* Add an inequality constraint to the solver state, return None if this
+   * inequality introduce a contradiction *)
+  val add_inequality : t -> t -> solver_state -> solver_state option
 end
 
 (* Symbolic location metadata*)
