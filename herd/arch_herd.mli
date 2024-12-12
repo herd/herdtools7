@@ -56,8 +56,6 @@ module type S =
       val sets : (string * (op -> bool)) list
     end
 
-    val convert_if_imm_branch : int -> int -> int Label.Map.t -> int Label.Map.t -> instruction -> instruction
-
     module MemType:MemoryType.S
 
     module Barrier:AllBarrier.S with type a = barrier
