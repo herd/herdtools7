@@ -8,6 +8,7 @@ by $\lexpr$.
 
 We show the syntax relevant to \assignableexpressions\ in \secref{AssignableExpressionsSyntax} and
 the rules need to build the AST for \assignableexpressions\ in \secref{AssignableExpressionsAbstractSyntaxBuilders}.
+These rules rely on three further desugaring relations, defined in \secref{AssignableExpressionsDesugaring}.
 We then define the abstract syntax, typing, and semantics of the different kinds of \assignableexpressions:
 \begin{itemize}
 \item Discarding assignment expressions (see \secref{DiscardingAssignmentExpressions})
@@ -61,17 +62,52 @@ using $\texttt{eval\_expr}$ to evaluate it.
 
 \section{Syntax\label{sec:AssignableExpressionsSyntax}}
 \begin{flalign*}
-\Nlexpr \derives\ & \Nlexpratom &\\
-|\ & \Tminus &\\
-|\ & \Tlpar \parsesep \Clisttwo{\Nlexpr} \parsesep \Trpar &\\
-\Nlexpratom \derives\ & \Tidentifier &\\
-|\ & \Nlexpratom \parsesep \Nslices &\\
-|\ & \Nlexpratom \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket &\\
-|\ & \Nlexpratom \parsesep \Tdot \parsesep \Tidentifier{\field} &\\
-|\ & \Nlexpratom \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clist{{\Tidentifier}} \parsesep \Trbracket &
+\Nlexpr \derives\
+   & \Tminus &\\
+|\ & \Nslicedbasiclexpr &\\
+|\ & \Tlpar \parsesep \Clisttwo{\Ndiscardorslicedbasiclexpr} \parsesep \Trpar &\\
+|\ & \Tidentifier \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{\Tidentifier} \parsesep \Trbracket &\\
+|\ & \Tidentifier \parsesep \Tdot \parsesep \Tlpar \parsesep \Clisttwo{\Nignoredoridentifier} \parsesep \Trpar &
+\end{flalign*}
+
+\begin{flalign*}
+\Nbasiclexpr \derives\
+   & \Tidentifier \parsesep \Nnestedfields &\\
+|\ & \Tidentifier \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket \parsesep \Nnestedfields &
+\end{flalign*}
+
+\begin{flalign*}
+\Nnestedfields \derives\ & \emptysentence \;|\; \Tdot \parsesep \Tidentifier \parsesep \Nnestedfields &
+\end{flalign*}
+
+\begin{flalign*}
+\Nslicedbasiclexpr \derives\ & \Nbasiclexpr \;|\; \Nbasiclexpr \parsesep \Nslices &
+\end{flalign*}
+
+\begin{flalign*}
+\Ndiscardorslicedbasiclexpr \derives\ & \Tminus \;|\; \Nslicedbasiclexpr &
 \end{flalign*}
 
 \subsection{Abstract Syntax Builders\label{sec:AssignableExpressionsAbstractSyntaxBuilders}}
+
+We first define $\lhsaccess$, which we use in this section as an intermediate representation between some syntax forms of \assignableexpressions{} and their corresponding abstract syntax.
+In particular, rather than directly building the abstract syntax for these \assignableexpressions{}, we first build structures containing $\lhsaccess$, which we then desugar into abstract syntax in \secref{AssignableExpressionsDesugaring}.
+
+\hypertarget{ast-lhsaccess}{}
+\begin{flalign*}
+\lhsaccess \derives\ &
+{
+\left\{
+  \begin{array}{rcl}
+    \lhsaccessbase &:& \identifier, \\
+    \lhsaccessindex &:& \expr?,\\
+    \lhsaccessfields &:& \identifier^{*},\\
+    \lhsaccessslices &:& \slice^{*}
+\end{array}
+\right\}
+} &
+\end{flalign*}
+
 \subsubsection{ASTRule.LExpr \label{sec:ASTRule.LExpr}}
 \hypertarget{build-lexpr}{}
 The function
@@ -81,72 +117,325 @@ The function
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
-\inferrule[lexpr\_atom]{}{
-  \buildlexpr(\Nlexpr(\punnode{\Nlexpratom})) \astarrow \overname{\astof{\vlexpratom}}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
 \inferrule[discard]{}{
   \buildlexpr(\Nlexpr(\Tminus)) \astarrow \overname{\LEDiscard}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[multi\_lexpr]{
-  \buildclist[\Nlexpr](\vlexprs) \astarrow \vlexprasts
+\inferrule[sliced\_basic\_lexpr]{
+  \desugarlhsaccess(\astof{\vslicedbasiclexpr}) \astarrow \vastnode
 }{
-  \buildlexpr(\Nlexpr(\Tlpar, \namednode{\vlexprs}{\Clisttwo{\Nlexpr}}, \Trpar)) \astarrow
-  \overname{\LEDestructuring(\vlexprasts)}{\vastnode}
-}
-\end{mathpar}
-
-\subsubsection{ASTRule.LExprAtom \label{sec:ASTRule.LExprAtom}}
-\hypertarget{build-lexpratom}{}
-The function
-\[
-  \buildlexpratom(\overname{\parsenode{\Nlexpratom}}{\vparsednode}) \;\aslto\; \overname{\lexpr}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
-\begin{mathpar}
-\inferrule[var]{}{
-  \buildlexpratom(\Nlexpr(\Tidentifier(\id))) \astarrow
-  \overname{\LEVar(\id)}{\vastnode}
+  \buildlexpr(\Nlexpr(\punnode{\Nslicedbasiclexpr})) \astarrow \vastnode
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[slice]{}{
-  \buildlexpratom(\Nlexpr(\punnode{\Nlexpratom}, \punnode{\Nslices})) \astarrow
-  \overname{\LESlice(\astof{\vlexpratom}, \astof{\vslices})}{\vastnode}
+\inferrule[multi\_lexpr]{
+  \buildclist[\builddiscardorslicedbasiclexpr](\vlexprs) \astarrow \vlexprasts \\
+  \desugarlhstuple(\vlexprasts) \astarrow \vastnode
+}{
+  {
+  \begin{array}{r}
+  \buildlexpr(\Nlexpr(\Tlpar, \namednode{\vlexprs}{\Clisttwo{\Ndiscardorslicedbasiclexpr}}, \Trpar)) \\
+  \astarrow \vastnode
+  \end{array}
+  }
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[array]{}{
-  \buildlexpratom(\Nlexpr(\punnode{\Nlexpratom}, \Tllbracket, \punnode{\Nexpr}, \Trrbracket)) \astarrow
-  \overname{\LESetArray(\astof{\vlexpratom}, \astof{\vexpr})}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[set\_field]{}{
-  \buildlexpratom(\Nlexpr(\punnode{\Nlexpratom}, \Tdot, \Tidentifier(\id))) \astarrow
-  \overname{\LESetField(\astof{\vlexpratom}, \id)}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[set\_fields]{
+\inferrule[concat\_fields]{
   \buildclist[\buildidentity](\vfields) \astarrow \vfieldasts
 }{
   {
   \begin{array}{r}
-  \buildlexpratom(\Nlexpr(\punnode{\Nlexpratom}, \Tdot, \Tlbracket, \namednode{\vfields}{\Clist{\Tidentifier}}, \Trbracket)) \astarrow\\
-  \overname{\LESetFields(\astof{\vlexpratom}, \vfieldasts)}{\vastnode}
+  \buildlexpr(\Nlexpr(\Tidentifier(\id), \Tdot, \Tlbracket, \namednode{\vfields}{\Clisttwo{\Tidentifier}}, \Trbracket)) \astarrow \\
+  \overname{\LESetFields (\LEVar(\id), \vfieldasts)}{\vastnode}
   \end{array}
   }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tuple\_fields]{
+  \buildclist[\builddiscardoridentifier](\vids) \astarrow \astversion{\vids} \\
+  \desugarlhsfieldstuple(\id, \astversion{\vids}) \astarrow \vastnode
+}{
+  {
+  \begin{array}{r}
+  \buildlexpr(\Nlexpr(\Tidentifier(\id), \Tdot, \Tlpar, \namednode{\vids}{\Clisttwo{\Ndiscardoridentifier}}, \Trpar))\\ \astarrow
+  \vastnode
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.BasicLexpr \label{sec:ASTRule.BasicLexpr}}
+\hypertarget{build-basiclexpr}{}
+The function
+\[
+  \buildbasiclexpr(\overname{\parsenode{\Nbasiclexpr}}{\vparsednode}) \;\aslto\; \overname{\lhsaccess}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[no\_index]{
+  \vastnode \eqdef \left\{
+  {
+  \begin{array}{rcl}
+    \lhsaccessbase   &:& \id,\\
+    \lhsaccessindex  &:& \None,\\
+    \lhsaccessfields &:& \astof{\vnestedfields},\\
+    \lhsaccessslices &:& \emptylist
+  \end{array}
+  }
+  \right\}
+}{
+  \buildbasiclexpr(\Nbasiclexpr(\Tidentifier(\id), \punnode{\Nnestedfields})) \astarrow
+  \vastnode
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[index]{
+  \vastnode \eqdef \left\{
+  {
+  \begin{array}{rcl}
+    \lhsaccessbase   &:& \id,\\
+    \lhsaccessindex  &:& \langle \astof{\vexpr} \rangle,\\
+    \lhsaccessfields &:& \astof{\vnestedfields},\\
+    \lhsaccessslices &:& \emptylist
+  \end{array}
+  }
+  \right\}
+}{
+  \buildbasiclexpr(\Nbasiclexpr(\Tidentifier(\id), \Tllbracket, \punnode{\Nexpr}, \Trrbracket, \punnode{\Nnestedfields})) \astarrow
+  \vastnode
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.NestedFields \label{sec:ASTRule.NestedFields}}
+\hypertarget{build-nestedfields}{}
+The function
+\[
+  \buildnestedfields(\overname{\parsenode{\Nnestedfields}}{\vparsednode}) \;\aslto\; \overname{\identifier^*}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[empty]{}{
+  \buildnestedfields(\Nnestedfields(\emptysentence)) \astarrow
+  \overname{\emptylist}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{}{
+  {
+    \begin{array}{r}
+      \buildnestedfields(\Nnestedfields(\Tdot, \Tidentifier(\id), \punnode{\Nnestedfields})) \astarrow\\
+      \overname{[\id] \concat \vnestedfields}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.SlicedBasicLexpr \label{sec:ASTRule.SlicedBasicLexpr}}
+\hypertarget{build-slicedbasiclexpr}{}
+The function
+\[
+  \buildslicedbasiclexpr(\overname{\parsenode{\Nslicedbasiclexpr}}{\vparsednode}) \;\aslto\; \overname{\lhsaccess}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[no\_slices]{}{
+  \buildslicedbasiclexpr(\Nslicedbasiclexpr(\punnode{\Nbasiclexpr})) \astarrow
+  \overname{\astof{\vbasiclexpr}}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[slices]{}{
+  {
+    \begin{array}{r}
+      \buildslicedbasiclexpr(\Nslicedbasiclexpr(\punnode{\Nbasiclexpr}, \punnode{\Nslices})) \astarrow \\
+      \overname{\astof{\vbasiclexpr}[\lhsaccessslices \mapsto \astof{\vslices}]}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.DiscardOrSlicedBasicLexpr \label{sec:ASTRule.DiscardOrSlicedBasicLexpr}}
+
+\hypertarget{build-discardorslicedbasiclexpr}{}
+The function
+\[
+\begin{array}{r}
+  \builddiscardorslicedbasiclexpr(\overname{\parsenode{\Ndiscardorslicedbasiclexpr}}{\vparsednode}) \;\aslto\\
+  \overname{\langle\lhsaccess\rangle}{\vastnode}
+\end{array}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[discard]{}{
+  \builddiscardorslicedbasiclexpr(\Ndiscardorslicedbasiclexpr(\Tminus)) \astarrow \overname{\None}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[sliced\_basic]{}{
+  {
+    \begin{array}{r}
+      \builddiscardorslicedbasiclexpr(\Ndiscardorslicedbasiclexpr(\punnode{\Nslicedbasiclexpr})) \astarrow \\
+      \overname{\langle \astof{\vslicedbasiclexpr} \rangle}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsection{Desugaring Assignable Expressions\label{sec:AssignableExpressionsDesugaring}}
+
+This section defines three desugaring relations which produce assignable expression abstract syntax, that is, $\lexpr$.
+They are used in \secref{AssignableExpressionsAbstractSyntaxBuilders} to build $\lexpr$ abstract syntax.
+\begin{itemize}
+  \item $\desugarlhsaccess$, which desugars an $\lhsaccess$ into an $\lexpr$.
+  \item $\desugarlhstuple$, which desugars a tuple of optional $\lhsaccess$ elements into an $\lexpr$.
+    This represents a multi-assignment of a tuple value, where $\None$ means that element of the tuple is discarded.
+  \item $\desugarlhsfieldstuple$, which desugars a multi-assignment of a tuple value to multiple fields of an identifier.
+\end{itemize}
+
+\subsubsection{ASTRule.DesugarLHSAccess \label{sec:ASTRule.DesugarLHSAccess}}
+\hypertarget{def-desugarlhsaccess}{}
+The function
+\[
+  \desugarlhsaccess(\overname{\lhsaccess}{\vlhsaccess}) \;\aslto\; \overname{\lexpr}{\vlexpr}
+\]
+transforms an $\lhsaccess$ into an AST node $\vlexpr$.
+
+\begin{mathpar}
+\inferrule[index\_none]{
+  \vlexprs_0 \eqdef \EVar(\id) \\
+  i \in 1..|\vfields|: \vlexprs_i \eqdef \LESetField(\vlexprs_{i-1}, \vfields_i) \\
+  \vsliced \eqdef
+  \choice{\vslices = \emptylist}{\vlexprs_{|\vfields|}}{\ESlice(\vlexprs_{|\vfields|}, \vslices)} \\
+}{
+  \desugarlhsaccess\overname{
+    \left\{
+      {
+        \begin{array}{rcl}
+          \lhsaccessbase &:& \id, \\
+          \lhsaccessindex &:& \None,\\
+          \lhsaccessfields &:& \vfields,\\
+          \lhsaccessslices &:& \vslices
+        \end{array}
+      }
+    \right\}
+  }{\vlhsaccess} \astarrow \overname{\vsliced}{\vlexpr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[index\_some]{
+  \vlexprs_0 \eqdef \LESetArray(\EVar(\id), \vindex) \\
+  i \in 1..|\vfields|: \vlexprs_i \eqdef \LESetField(\vlexprs_{i-1}, \vfields_i) \\
+  \vsliced \eqdef
+  \choice{\vslices = \emptylist}{\vlexprs_{|\vfields|}}{\ESlice(\vlexprs_{|\vfields|}, \vslices)} \\
+}{
+  \desugarlhsaccess\overname{
+    \left\{
+      {
+        \begin{array}{rcl}
+          \lhsaccessbase &:& \id, \\
+          \lhsaccessindex &:& \langle\vindex\rangle,\\
+          \lhsaccessfields &:& \vfields,\\
+          \lhsaccessslices &:& \vslices
+        \end{array}
+      }
+    \right\}
+  }{\vlhsaccess} \astarrow \overname{\vsliced}{\vlexpr}
+}
+\end{mathpar}
+\subsubsection{ASTRule.DesugarLHSTuple \label{sec:ASTRule.DesugarLHSTuple}}
+\hypertarget{def-desugarlhstuple}{}
+The function
+\[
+  \desugarlhstuple(\overname{\langle\lhsaccess\rangle^*}{\vlhsaccessopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
+\]
+transforms a list of \optional{} $\lhsaccess$ elements into an AST node $\vlexpr$. \\
+
+\hypertarget{def-desugarlhsaccessopt}{}
+\noindent We first define the helper AST function
+\[
+    \desugarlhsaccessopt(\overname{\langle\lhsaccess\rangle}{\vlhsaccessopt}) \;\aslto\; \overname{\lexpr}{\vlexpr}
+\]
+via the following rules:
+\begin{mathpar}
+\inferrule[none]{}
+{
+  \desugarlhsaccessopt(\overname{\None}{\vlhsaccessopt}) \astarrow \overname{\LEDiscard}{\vlexpr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[some]{
+  \desugarlhsaccess(\vlhsaccess) \astarrow \vlexpr
+}{
+  \desugarlhsaccessopt(\overname{\langle\vlhsaccess\rangle}{\vlhsaccessopt}) \astarrow \vlexpr
+}
+\end{mathpar}
+
+\noindent We now use the helper rules to define $\desugarlhstuple$:
+\begin{mathpar}
+\inferrule{
+  \vlhsaccesses \eqdef \filteroptionlist(\vlhsaccessopts) \\
+  \vids \eqdef [i \in 1..|\vlhsaccesses|: \vlhsaccesses_i.\lhsaccessbase] \\
+  \checknoduplicates(\vids) \typearrow \True \OrTypeError \\
+  i \in 1..|\vlhsaccessopts|: \desugarlhsaccessopt(\vlhsaccessopt_i) \astarrow \vlexpr_i \\
+  \vlexprs \eqdef [i \in 1..|\vlhsaccessopts|: \vlexpr_i]
+}{
+  \desugarlhstuple(\vlhsaccessopts) \astarrow \overname{\LEDestructuring(\vlexprs)}{\vlexpr}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.DesugarLHSFieldsTuple \label{sec:ASTRule.DesugarLHSFieldsTuple}}
+\hypertarget{def-desugarlhsfieldstuple}{}
+The function
+\[
+  \desugarlhsfieldstuple(\overname{\identifier}{\id} \aslsep \overname{\langle\identifier\rangle^*}{\fieldopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
+\]
+transforms an assignment to a tuple of fields $\fields$ of variable $\id$ into an AST node $\vlexpr$. \\
+
+\hypertarget{def-desugarlhsfieldopt}{}
+\noindent We first define the helper AST function
+\[
+    \desugarlhsfieldopt(\overname{\identifier}{\id} \aslsep \overname{\langle\identifier\rangle}{\fieldopt}) \;\aslto\; \overname{\lexpr}{\vlexpr}
+\]
+via the following rules:
+\begin{mathpar}
+\inferrule[none]{}
+{
+  \desugarlhsfieldopt(\id, \overname{\None}{\fieldopt}) \astarrow \overname{\LEDiscard}{\vlexpr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{}{
+  \desugarlhsfieldopt(\id, \overname{\langle\vfield\rangle}{\fieldopt}) \astarrow \overname{\LESetField(\LEVar(\id), \vfield)}{\vlexpr}
+}
+\end{mathpar}
+
+\noindent We now use the helper rules to define $\desugarlhsfieldstuple$:
+\begin{mathpar}
+\inferrule{
+  \fields \eqdef \filteroptionlist(\fieldopts) \\
+  \checknoduplicates(\fields) \typearrow \True \OrTypeError \\
+  i \in 1..|\fieldopts|: \desugarlhsfieldopt(\fieldopts_i) \astarrow \vlexpr_i \\
+  \vlexprs \eqdef [i \in 1..|\fieldopts|: \vlexpr_i]
+}{
+  \desugarlhsfieldstuple(\id, \fieldopts) \astarrow \overname{\LEDestructuring(\vlexprs)}{\vlexpr}
 }
 \end{mathpar}
 

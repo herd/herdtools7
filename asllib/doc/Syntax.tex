@@ -432,18 +432,39 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-nlexpr}{}
 \begin{flalign*}
-\Nlexpr \derives\ & \Nlexpratom &\\
-|\ & \Tminus &\\
-|\ & \Tlpar \parsesep \Clisttwo{\Nlexpr} \parsesep \Trpar &
+\Nlexpr \derives\
+   & \Tminus &\\
+|\ & \Nslicedbasiclexpr &\\
+|\ & \Tlpar \parsesep \Clisttwo{\Ndiscardorslicedbasiclexpr} \parsesep \Trpar &\\
+|\ & \Tidentifier \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{\Tidentifier} \parsesep \Trbracket &\\
+|\ & \Tidentifier \parsesep \Tdot \parsesep \Tlpar \parsesep \Clisttwo{\Ndiscardoridentifier} \parsesep \Trpar &
 \end{flalign*}
 
-\hypertarget{def-nlexpratom}{}
+\hypertarget{def-nbasiclexpr}{}
 \begin{flalign*}
-\Nlexpratom \derives\ & \Tidentifier &\\
-|\ & \Nlexpratom \parsesep \Nslices &\\
-|\ & \Nlexpratom \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket &\\
-|\ & \Nlexpratom \parsesep \Tdot \parsesep \Tidentifier &\\
-|\ & \Nlexpratom \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clist{{\Tidentifier}} \parsesep \Trbracket &
+\Nbasiclexpr \derives\
+   & \Tidentifier \parsesep \Nnestedfields &\\
+|\ & \Tidentifier \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket \parsesep \Nnestedfields &
+\end{flalign*}
+
+\hypertarget{def-nnested-fields}{}
+\begin{flalign*}
+\Nnestedfields \derives\ & \emptysentence \;|\; \Tdot \parsesep \Tidentifier \parsesep \Nnestedfields &
+\end{flalign*}
+
+\hypertarget{def-nslicedbasiclexpr}{}
+\begin{flalign*}
+\Nslicedbasiclexpr \derives\ & \Nbasiclexpr \;|\; \Nbasiclexpr \parsesep \Nslices &
+\end{flalign*}
+
+\hypertarget{def-ndiscardorslicedbasiclexpr}{}
+\begin{flalign*}
+\Ndiscardorslicedbasiclexpr \derives\ & \Tminus \;|\; \Nslicedbasiclexpr &
+\end{flalign*}
+
+\hypertarget{def-ndiscardoridentifier}{}
+\begin{flalign*}
+\Ndiscardoridentifier \derives \ & \Tminus \;|\; \Tidentifier &
 \end{flalign*}
 
 A $\Ndeclitem$ is another kind of left-hand-side expression,
