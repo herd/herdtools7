@@ -160,6 +160,7 @@ let barrier_compare = A64B.barrier_compare
 type parsedInstruction = Asllib.AST.t
 type instruction = Asllib.AST.t
 let nop = None
+and mk_imm_branch _ = None
 and is_nop _ = false
 let pp_instruction _ppmode ast = Asllib.PP.t_to_string ast
 let dump_instruction a = pp_instruction PPMode.Ascii a

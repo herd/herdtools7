@@ -57,6 +57,7 @@ let rec fmt_io io = match io with
        "%s(%s)"
        f
         (String.concat "," (List.map pp_reg regs))
+  | Pagealign | Skip _ -> assert false (* Not implemented yet *)
 
 let rec unwrap_pseudo = function
   | [] -> []
