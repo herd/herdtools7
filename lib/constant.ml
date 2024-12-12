@@ -60,6 +60,11 @@ module PAC = struct
     let compare = compare_signature
   end)
 
+  module PACMap = Map.Make (struct
+    type t = signature
+    let compare = compare_signature
+  end)
+
   type t = PACSet.t
 
   let canonical = PACSet.empty
@@ -74,6 +79,12 @@ module PAC = struct
     else
       PACSet.add {modifier; key; offset} pac
 
+  (* Return the exclusive XOR of two sets of PAC fields, can be optimised but
+     it's probably not very usefull as the size of the equations will be very
+     small for small programs... *)
+  let rec xor (x: t) (y: t) : t =
+    PACSet.diff (PACSet.union x y) (PACSet.inter x y)
+
   let compare = PACSet.compare
 
   let equal = PACSet.equal
@@ -84,6 +95,84 @@ module PAC = struct
       | [] -> s
     in
     aux (PACSet.to_list pac)
+
+  (* A simplex like solver for linear constraints over PAC fields (linear
+     because of the XOR), it use a bi-partition of the variables in two set:
+     the basic variables and the non-basic varaibles (a variable is a PAC
+     field), and canonical is 0 by construction *)
+  type solver_state =
+    {
+      (* For each basic variables, an equality of the form
+            b_i = n_1 ^ ... ^ n_k
+        with {n_1, ..., n_k} a set of non basic variables
+      *)
+      equalities: PACSet.t PACMap.t;
+      (* a set of inequalities of the form n_1 ^ ... ^ n_k != 0, k must be
+         at least 1, such that each inequality is not empty (otherwise we found
+         a contradiction), {n_1, ..., n_k} must be a set of non-basic variables *)
+      inequalities: PACSet.t list;
+    }
+
+  let empty_solver = {equalities= PACMap.empty; inequalities= []}
+
+  (* simplify all the basic variables by their definition *)
+  (* so the output only contain non-basic variables *)
+  let simplify (x: t) (equations: t PACMap.t) : t =
+    PACSet.fold (fun var acc ->
+        if PACMap.mem var equations
+        then
+          (* `var` is a basic variable, so we replace it with it's "definition"
+             in equations *)
+          xor
+            (PACSet.remove var acc)
+            (PACMap.find var equations) (* only-contain non-basic variables *)
+        else acc
+      ) x x
+
+  (* Add the equality in a solver state and return the new solver state *)
+  let add_equality (x: t) (y: t) (state: solver_state) : solver_state option =
+    (* the "new equality" to add to the solver if not empty *)
+    let new_eq = simplify (xor x y) state.equalities in
+
+    if is_canonical new_eq then Some state else begin
+      let pivot = PACSet.min_elt new_eq in
+      let def = PACSet.remove pivot new_eq in
+
+      (* simplify all the current equations with the new one *)
+      let simplified_equalities = PACMap.map
+        (fun x -> simplify x (PACMap.singleton pivot def))
+        state.equalities
+      in
+
+      (* simplify all the current inequations with the new one *)
+      let simplified_inequalities = List.map
+        (fun x -> simplify x (PACMap.singleton pivot def))
+        state.inequalities
+      in
+
+      let new_state = {
+        (* add the new equality *)
+        equalities = PACMap.add pivot def simplified_equalities;
+        inequalities = simplified_inequalities
+      } in
+
+      if List.exists is_canonical state.inequalities
+      then None (* We found a contradiction *)
+      else Some new_state (* No contradiction found *)
+    end
+
+  (* Add the inequality x != y (rewrite x ^ y != 0) to the solver state *)
+  let add_inequalities (x: t) (y: t) (state: solver_state) : solver_state option
+  =
+    let inequality = simplify (xor x y) state.equalities in
+    if is_canonical inequality
+    then None
+    else
+      (* If we have more than 2^n - 1 inequalities the pivot algorithm is not sound *)
+      if List.length state.inequalities > 32767
+      then Warn.user_error "too many inequalities to be sound"
+      else Some {state with inequalities = inequality :: state.inequalities}
+
 end
 
 

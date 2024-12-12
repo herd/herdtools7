@@ -1,4 +1,4 @@
-NAME = example12
+NAME = example13
 
 all: #my_herd
 	touch build/example.svg
@@ -10,7 +10,7 @@ my_herd:
 		-set-libdir ../herd/libdir \
 		-showevents all -show all \
 		-doshow iico_ctrl -doshow ctrl -doshow all \
-		-squished true -variant mte
+		-squished true
 
 # Run my modified version of herd on a user given file
 %.expected:

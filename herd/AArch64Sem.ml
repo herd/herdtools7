@@ -41,7 +41,9 @@ module Make
     let pte2 = kvm && C.variant Variant.PTE2
     let do_cu = C.variant Variant.ConstrainedUnpredictable
     let self = C.variant Variant.Ifetch
-    let pac = C.variant Variant.PAC
+    let pac = C.variant Variant.Pac
+    let const_pac_field = C.variant Variant.ConstPacField
+    let fpac = C.variant Variant.FPac
 
     let check_mixed ins =
       if not mixed then
@@ -1408,7 +1410,6 @@ module Make
  * iico_data dependency between `mv` and `mop` in case of a success.
  *)
       let lift_pac_virt mop ma dir an ii =
-        let commit = commit_pred_txt (Some "pac") ii in
         let mok ma = mop Access.VIR ma >>= M.ignore >>= B.next1T in
         let mfault ma =
           do_insert_commit ma (fun a ->
@@ -1419,7 +1420,6 @@ module Make
         in
         let ma_with_commit ma =
           do_append_commit ma (Some "pac") ii
-          (* ma >>== fun a -> commit >>= fun _ -> M.unitT a *)
         in
         let mcheck ma =
           M.delay_kont "pac check" ma (fun a ma ->
@@ -4312,7 +4312,7 @@ module Make
               in
               read_reg_ord rd ii >>|
               read_reg_ord rn ii >>= fun (addr, modifier) ->
-              M.op (Op.AddPAC key) addr modifier >>= fun v ->
+              M.op (Op.AddPAC (not const_pac_field, key)) addr modifier >>= fun v ->
               write_reg_dest rd v ii >>= fun v ->
               B.nextSetT rd v
             end
@@ -4348,10 +4348,12 @@ module Make
               let ma =
                 read_reg_ord rd ii >>|
                 read_reg_ord rn ii >>= fun (addr, modifier) ->
-                M.op (Op.AutPAC key) addr modifier
+                M.op (Op.AddPAC (false, key)) addr modifier
               in
 
-              check_pac_canonical ma ii mop mfault
+              if fpac
+              then check_pac_canonical ma ii mop mfault
+              else mop ma
             end
         (* If address tagging and logical address tagging is not enabled then
           xpacd and xpaci have the same behaviour *)

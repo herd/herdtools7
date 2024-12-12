@@ -2451,7 +2451,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
               wm.intra_causality_control])
           (let output_br = get_ctrl_output br in
            EventRel.union4
-             (if is_branching && is_phy then
+             (if true || (is_branching && is_phy) then
                 EventRel.cartesian (get_ctrl_output_commits rn)
                   (EventSet.union input_rm input_wm)
               else EventRel.empty)
