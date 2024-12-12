@@ -77,8 +77,6 @@ module type S = sig
   (* Code memory is a mapping from labels to sequences of instructions, too far from actual machine, maybe *)
   type code = (int * instr) list
 
-  val convert_if_imm_branch : int -> int -> int Label.Map.t -> int Label.Map.t -> instr -> instr
-
   (* Program loaded in memory *)
   type program = int Label.Map.t
 
@@ -338,15 +336,6 @@ module Make(C:Config) (I:I) : S with module I = I
 
       (* Code memory is a mapping from globals locs, to instructions *)
       type code = (int * instr) list
-
-      (* This function is a default behaviour for all architectures.
-         When variant -self is enabled, it fails trying to convert a branch
-         instruction to a label into a branch-with-offset representation. *)
-      let convert_if_imm_branch _ _ _ _ i =
-        if C.variant Variant.Ifetch then
-          Warn.fatal "Functionality %s not implemented for -variant self" "convert_if_imm_branch"
-        else
-          i
 
       (* Programm loaded in memory *)
       type program = int Label.Map.t
