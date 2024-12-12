@@ -34,7 +34,7 @@ The ARM Reference Manual is available here:
 // The whole logic is too complex for our simple use, so we return the base value of the return type.
 
 // MPAMinfo GenMPAMatEL(AccessType acctype, bits(2) el)
-func GenMPAMatEL(acctype:: AccessType, el::bits(2)) => MPAMinfo
+func GenMPAMatEL(acctype: AccessType, el:bits(2)) => MPAMinfo
 begin
   var x : MPAMinfo;
   return x;
@@ -48,12 +48,12 @@ end;
 // From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/shared-functions-common?lang=en#impl-shared.IsAligned.2
 // We disable alignment checks.
 
-func IsAligned{N}(x :: bits(N), y::integer) => boolean
+func IsAligned{N}(x : bits(N), y:integer) => boolean
 begin
   return TRUE;
 end;
 
-func IsAligned(x::integer, y::integer) => boolean
+func IsAligned(x:integer, y:integer) => boolean
 begin
   return TRUE;
 end;
@@ -66,7 +66,7 @@ end;
 // From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/shared-functions-memory?lang=en#impl-shared.BigEndian.1
 // We only use small-endian
 
-func BigEndian(acctype:: AccessType) => boolean
+func BigEndian(acctype: AccessType) => boolean
 begin
   return FALSE;
 end;
@@ -80,7 +80,7 @@ end;
 // From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/shared-functions-aborts?lang=en#impl-shared.IsFault.1
 // No fault is ever constructed with the associated address descriptors.
 
-func IsFault(addrdesc:: AddressDescriptor) => boolean
+func IsFault(addrdesc: AddressDescriptor) => boolean
 begin
   return FALSE;
 end;
@@ -94,7 +94,7 @@ end;
 // From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/aarch64-translation-vmsa-translation?lang=en#AArch64.TranslateAddress.4
 // We disable address translation
 
-func AArch64_TranslateAddress(address::bits(64), accdesc::AccessDescriptor, aligned::boolean, size::integer) => AddressDescriptor
+func AArch64_TranslateAddress(address:bits(64), accdesc:AccessDescriptor, aligned:boolean, size:integer) => AddressDescriptor
 begin
   var full_addr : FullAddress;
   return CreateAddressDescriptor(address, full_addr, NormalNCMemAttr());
@@ -112,7 +112,7 @@ end;
 // From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/shared-functions-system?lang=en#impl-shared.ELStateUsingAArch32K.2
 // We are always on AArch64
 
-func ELStateUsingAArch32K(el::bits(2), secure::boolean) => (boolean, boolean)
+func ELStateUsingAArch32K(el:bits(2), secure:boolean) => (boolean, boolean)
 begin
     return (TRUE, FALSE);
 end;

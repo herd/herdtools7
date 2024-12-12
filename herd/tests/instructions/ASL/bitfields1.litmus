@@ -9,17 +9,17 @@ type MyBits of bits(5) {
   [4  ] e,
 };
 
-func constructor(b:: bits(5)) => MyBits
+func constructor(b: bits(5)) => MyBits
 begin
   return b;
 end;
 
-func get_b(b::MyBits) => bits(3)
+func get_b(b:MyBits) => bits(3)
 begin
   return b.b;
 end;
 
-func set_e(b::MyBits, e::bits(1)) => MyBits
+func set_e(b:MyBits, e:bits(1)) => MyBits
 begin
   var b2 = b;
   b2.e = e;
