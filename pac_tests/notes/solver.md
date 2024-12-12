@@ -1,4 +1,4 @@
-# Solving PAC has collisions contraints
+# Solving PAC hash collisions contraints
 
 As I explain in [my previous notes](notes3.md), Pointer Authentication can
 introduce hash collisions, as example this program
