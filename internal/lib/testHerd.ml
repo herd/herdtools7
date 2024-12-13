@@ -38,7 +38,22 @@ let is_stable line = not (Str.string_match time_re line 0)
 
 let without_unstable_lines lines = List.filter is_stable lines
 
-let log_compare a b = String.compare (String.concat "\n" a) (String.concat "\n" b)
+let hash_re = Str.regexp "^Hash="
+
+let compare_lines nohash l1 l2 =
+  (nohash
+   && Str.string_match hash_re l1 0
+   && Str.string_match hash_re l2 0)
+  || String.equal l1 l2
+
+let rec log_equal nohash xs ys =
+  match xs,ys with
+  | [],[] -> true
+  | x::xs,y::ys ->
+      compare_lines nohash x y && log_equal nohash xs ys
+  | ([],_::_)|(_::_,[]) -> false
+
+let log_diff nohash xs ys = not (log_equal nohash xs ys)
 
 let herd_args  ~bell ~cat ~conf ~variants ~libdir ~timeout =
   let timeout =
@@ -144,7 +159,7 @@ let read_some_file litmus name =
         None
       end
 
-let do_check_output litmus expected  expected_failure expected_warn t =
+let do_check_output nohash litmus expected  expected_failure expected_warn t =
   let () =
     let _,lines,_ = t in
     if false && lines <> [] then begin
@@ -163,7 +178,7 @@ let do_check_output litmus expected  expected_failure expected_warn t =
          match read_some_file litmus expected with
          | None -> false
          | Some expected_output ->
-            if log_compare stdout expected_output <> 0 then begin
+            if log_diff nohash stdout expected_output then begin
               Printf.printf "Failed %s : Logs do not match\n%!" litmus ;
               false
             end else true
@@ -174,7 +189,7 @@ let do_check_output litmus expected  expected_failure expected_warn t =
          match read_some_file litmus expected_failure with
          | None -> false
          | Some expected_failure_output ->
-            if log_compare stderr expected_failure_output <> 0 then begin
+            if log_diff nohash stderr expected_failure_output then begin
               Printf.printf
                   "Failed %s : Expected Failure Logs do not match\n" litmus ;
               false
@@ -186,7 +201,7 @@ let do_check_output litmus expected  expected_failure expected_warn t =
          match read_some_file litmus expected with
          | None -> false
          | Some expected_output ->
-             if log_compare stdout expected_output <> 0 then begin
+             if log_diff nohash stdout expected_output then begin
               Printf.printf "Failed %s : Logs do not match\n" litmus ;
               false
             end else
@@ -200,7 +215,7 @@ let do_check_output litmus expected  expected_failure expected_warn t =
                   end ;
                   false
               | Some expected_warn ->
-                  if log_compare stderr expected_warn <> 0 then begin
+                  if log_diff nohash stderr expected_warn then begin
                     Printf.printf
                       "Failed %s : Warning logs do not match\n" litmus ;
                     false
@@ -230,29 +245,31 @@ let read_output_files litmus =
   and e = read_file (errname litmus) in
   o,e
 
-let output_matches_expected litmus expected =
+let output_matches_expected ?(nohash=false) litmus expected =
   try
     let o,e = read_output_files litmus in
-    do_check_output litmus expected "" "" (0,o,e)
+    do_check_output nohash litmus expected "" "" (0,o,e)
   with Command.Error e ->
      Printf.printf "Failed %s : %s \n" litmus
        (Command.string_of_error e) ; false
 
 let do_herd_output_matches_expected
-      do_run litmus expected expected_failure expected_warn =
+      nohash do_run litmus expected expected_failure expected_warn =
   try
     let t = do_run litmus in
     do_check_output
-      litmus expected expected_failure expected_warn t
+      nohash litmus expected expected_failure expected_warn t
   with
   | Command.Error e ->
      Printf.printf "Failed %s : %s \n" litmus
        (Command.string_of_error e) ; false
 
 let herd_output_matches_expected
+    ?(nohash=false)
       ~bell ~cat ~conf ~variants ~libdir
       herd litmus expected expected_failure expected_warn =
   do_herd_output_matches_expected
+    nohash
     (fun litmus ->
       run_herd
         ~bell:bell ~cat:cat ~conf:conf
@@ -260,8 +277,9 @@ let herd_output_matches_expected
     litmus expected expected_failure expected_warn
 
 let herd_args_output_matches_expected
-      herd args  litmus expected expected_failure expected_warn =
+    ?(nohash=false) herd args  litmus expected expected_failure expected_warn =
   do_herd_output_matches_expected
+    nohash
     (run_herd_args herd args)
     litmus expected expected_failure expected_warn
 

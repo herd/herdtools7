@@ -36,6 +36,12 @@ val set_string_option : string option ref -> Arg.spec
 
 val npar : int option ref -> spec
 
+(** [nohash b] Build an Arg.spec for setting b to true, with documentation
+    as not checking hashes *)
+
+val nohash : bool ref -> spec
+
+
 (** Validators. *)
 
 (** [is_file (k, s, d)] returns [k, s', d], where [s'] wraps [s] with an

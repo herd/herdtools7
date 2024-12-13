@@ -96,10 +96,10 @@ val run_herd_concurrent :
   libdir   : path ->
      path -> j:int-> path list -> int
 
-(** [herd_output_matches_expected litmus expected] returns true when
+(** [herd_output_matches_expected nohash litmus expected] returns true when
  * the output file produced by running [litmus] matches reference
- *  [expected]. *)
-val output_matches_expected : path -> path -> bool
+ *  [expected]. If argument [nohash] is true, hashes are not compared. *)
+val output_matches_expected : ?nohash:bool -> path -> path -> bool
 
 (** [herd_output_matches_expected ~bell ~cat ~conf ~variants ~libdir herd
  *  litmus expected expected_failure expected_warn] runs the binary
@@ -115,6 +115,7 @@ val output_matches_expected : path -> path -> bool
  *  Paths to [cat], [bell], and [conf] files, as well as [variants], can also
  *  be passed in. *)
 val herd_output_matches_expected :
+  ?nohash  : bool ->
   bell     : path option ->
   cat      : path option ->
   conf     : path option ->
@@ -127,6 +128,7 @@ val herd_output_matches_expected :
   *  as [herd_output_matches_expected] above but a different interface,
   *   as command line options are given as the list [args]. *)
 val herd_args_output_matches_expected :
+  ?nohash:bool ->
   path -> string list -> path -> path -> path -> path  -> bool
 
 (** [is_litmus filename] returns whether the [filename] is a .litmus file. *)

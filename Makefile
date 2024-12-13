@@ -243,6 +243,7 @@ test-local:: test-asl
 test-asl:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
+		-nohash \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
 		-litmus-dir ./herd/tests/instructions/ASL \
@@ -254,6 +255,7 @@ test-local:: test-pseudo-asl
 test-pseudo-asl:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
+		-nohash \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
 		-litmus-dir ./herd/tests/instructions/ASL-pseudo-arch \
@@ -320,7 +322,7 @@ aarch32-test::
 		-litmus-dir ./herd/tests/instructions/AArch32 \
 		-conf ./herd/tests/instructions/AArch32/aarch32.cfg \
 		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 ARM instructions tests: OK"
+	@ echo "herd7 AArch32 instructions tests: OK"
 
 test::aarch32-test
 test-local::aarch32-test

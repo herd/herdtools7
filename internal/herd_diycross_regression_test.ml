@@ -30,6 +30,7 @@ type flags = {
   diycross_args : string list ;
   expected_dir  : path ;
   variants      : string list ;
+  nohash        : bool ;
 }
 
 
@@ -117,7 +118,8 @@ let run_tests ?j flags =
     | None ->
        List.map
          (fun (l, e) ->
-           TestHerd.herd_output_matches_expected ~bell:None ~cat:None
+            TestHerd.herd_output_matches_expected ~nohash:flags.nohash
+              ~bell:None ~cat:None
              ~conf:flags.herd_conf
              ~variants:flags.variants
              ~libdir:flags.libdir
@@ -131,7 +133,7 @@ let run_tests ?j flags =
             ~libdir:flags.libdir
             flags.herd ~j:j litmus_paths) ;
        List.map
-         (fun (l,e) -> TestHerd.output_matches_expected l e)
+         (fun (l,e) -> TestHerd.output_matches_expected ~nohash:flags.nohash l e)
          les
   in
   let passed x = x in
@@ -216,6 +218,7 @@ let () =
   (* Optional arguments. *)
   let conf = ref None in
   let j = ref None in
+  let nohash = ref false in
 
   let anon_args = ref [] in
   let options = [
@@ -226,7 +229,7 @@ let () =
     "-diycross-arg", Args.append_string diycross_args,  "one argument for diycross (cumulative)" ;
     Args.is_file ("-conf", Args.set_string_option conf,   "path to config file to pass to herd7") ;
                   "-variant",     Args.append_string variants,   "variant to pass to herd7" ;
-    Args.npar j ;
+    Args.npar j ; Args.nohash nohash ;
   ] in
   Arg.parse options (fun a -> anon_args := a :: !anon_args) usage ;
 
@@ -253,7 +256,7 @@ let () =
     diycross_args = !diycross_args ;
     expected_dir = !expected_dir ;
     variants = !variants ;
-
+    nohash = !nohash ;
     } in
   let j = !j in
   match !anon_args with
