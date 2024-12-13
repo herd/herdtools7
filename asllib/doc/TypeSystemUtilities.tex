@@ -111,6 +111,60 @@ One of the following applies:
 }
 \end{mathpar}
 
+\hypertarget{def-filteroptionlist}{}
+\subsubsection{TypingRule.FilterOptionList \label{sec:TypingRule.FilterOptionList}}
+The parametric function
+\[
+  \filteroptionlist(\overname{\langle T \rangle^*}{\vvopts}) \aslto \overname{T^*}{\vvs}
+\]
+filters a list of \optional{} elements, removing those which are $\None$ and unwrapping those which are $\langle v \rangle$ to $v$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\vvopts$ is the empty list;
+    \item $\vvs$ is the empty list.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty\_none}):
+  \begin{itemize}
+    \item $\vvopts$ is the non-empty list with head $\None$ and tail $\vvoptsp$;
+    \item applying $\filteroptionlist$ to $\vvoptsp$ yields $\vvs$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty\_some}):
+  \begin{itemize}
+    \item $\vvopts$ is the non-empty list with head $\langle\vv\rangle$ and tail $\vvoptsp$;
+    \item applying $\filteroptionlist$ to $\vvoptsp$ yields $\vvsp$;
+    \item $\vvs$ is the concatenation of $\vv$ and $\vvsp$.
+  \end{itemize}
+\end{itemize}
+
+\begin{mathpar}
+  \inferrule[none]{}
+  {
+    \filteroptionlist(\overname{\emptylist}{\vvopts}) \typearrow \overname{\emptylist}{\vvs}
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[non\_empty\_none]{
+    \filteroptionlist(\vvoptsp) \typearrow \vvs
+  }{
+    \filteroptionlist(\overname{[\None] \concat \vvoptsp}{\vvopts}) \typearrow \vvs
+  }
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[non\_empty\_some]{
+    \filteroptionlist(\vvoptsp) \typearrow \vvsp
+  }{
+    \filteroptionlist(\overname{[\langle\vv\rangle] \concat \vvoptsp}{\vvopts}) \typearrow \overname{[\vv] \concat \vvsp}{\vvs}
+  }
+\end{mathpar}
+
 \subsubsection{TypingRule.Sort\label{sec:sortinglists}}
 \hypertarget{def-sort}{}
 The parametric function

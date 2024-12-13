@@ -240,27 +240,20 @@ module Untyped (C : Config.S) = struct
     | li -> filter_oneof li
 
   let ldi : local_decl_item sgen =
-    let ldi_ignore = return LDI_Discard
-    and ldi_var =
+    let ldi_var =
       let+ name = names in
       LDI_Var name
-    and ldi_typed ldis n =
-      let* n1, n2 = Nat.split2 n in
-      let+ ldi = ldis n1 and+ ty = ty n2 in
-      LDI_Typed (ldi, ty)
-    and ldi_tuple ldi n =
-      let+ li = Nat.list_sized ldi n in
-      LDI_Tuple li
+    and ldi_tuple n =
+      let+ names = list_repeat n names in
+      LDI_Tuple names
     in
-    fix @@ fun ldi n ->
-    let n = pay n in
-    [
-      (if C.Syntax.ldi_var then Some ldi_var else None);
-      (if C.Syntax.ldi_discard then Some ldi_ignore else None);
-      (if C.Syntax.ldi_typed then Some (ldi_typed ldi n) else None);
-      (if C.Syntax.ldi_tuple && n >= 2 then Some (ldi_tuple ldi n) else None);
-    ]
-    |> filter_oneof
+    fun n ->
+      let n = pay n in
+      [
+        (if C.Syntax.ldi_var then Some ldi_var else None);
+        (if C.Syntax.ldi_tuple && n >= 2 then Some (ldi_tuple n) else None);
+      ]
+      |> filter_oneof
 
   let ldk = oneofa [| LDK_Var; LDK_Constant; LDK_Let |]
 
@@ -311,9 +304,12 @@ module Untyped (C : Config.S) = struct
       S_Cond (e1, s2, s3) |> annot
     in
     let s_decl n =
-      let* n1, n2 = Nat.split2 n in
-      let+ e = expr n1 |> option and+ ldi = ldi n2 and+ ldk = ldk in
-      S_Decl (ldk, ldi, e) |> annot
+      let* n1, n2, n3 = Nat.split3 n in
+      let+ e = expr n1 |> option
+      and+ ldi = ldi n2
+      and+ ty = ty n3 |> option
+      and+ ldk = ldk in
+      S_Decl (ldk, ldi, ty, e) |> annot
     in
     let s_assert n =
       let+ e = expr n in
@@ -890,7 +886,7 @@ module Typed (C : Config.S) = struct
       let+ e = expr env ty n2
       and+ ldk = Untyped.ldk
       and+ name = fresh_name env in
-      ( S_Decl (ldk, LDI_Typed (LDI_Var name, ty), Some e) |> annot,
+      ( S_Decl (ldk, LDI_Var name, Some ty, Some e) |> annot,
         StaticEnv.add_local name ty ldk env )
     in
     let s_return env n =

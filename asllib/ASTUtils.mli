@@ -262,7 +262,7 @@ val bitwidth_equal : (expr -> expr -> bool) -> expr -> expr -> bool
 
 (** {1 Transformers} *)
 
-val lid_of_lexpr : lexpr -> local_decl_item option
+val ldi_of_lexpr : lexpr -> local_decl_item option
 val expr_of_lexpr : lexpr -> expr
 val desugar_case_stmt : stmt -> stmt
 val slice_is_single : slice -> bool
@@ -349,6 +349,10 @@ val list_fold_left_map :
 
 val uniq : 'a list -> 'a list
 (** [uniq l] returns the unique elements of [l], in the order they appear *)
+
+val get_first_duplicate : identifier list -> identifier option
+(** [get_first_duplicate ids] returns [None] if all identifiers in [ids] are
+    unique, otherwise it returns [Some id] where [id] is the first duplicate. *)
 
 val list_is_empty : 'a list -> bool
 (** [list_is_empty li] is [true] iff [li] is empty, [false] otherwise. *)

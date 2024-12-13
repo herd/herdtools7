@@ -425,21 +425,16 @@ the local declaration item is
 
 \hypertarget{ast-localdeclitem}{} \hypertarget{ast-ldidiscard}{}
 \begin{flalign*}
-\localdeclitem \derives\ & \LDIDiscard
-  % & & \ASTComment{The ignored local declaration item, for example used in: \Verb!let - = 42;!.}
+\localdeclitem \derives\ &
   & \hypertarget{ast-ldivar}{}\\
   |\ & \LDIVar(\identifier)
   % & & \ASTComment{\texttt{LDI\_Var x} is the variable declaration of the variable \texttt{x}, used for example in:}\\
   % & & \ASTComment{\texttt{let x = 42;}.}
   & \hypertarget{ast-ldituple}{}\\
-  |\ & \LDITuple(\localdeclitem^*)
+  |\ & \LDITuple(\identifier^*) &
   % & & \ASTComment{\texttt{LDI\_Tuple ldis} is the tuple declarations of the items in \texttt{ldis},}\\
   % & & \ASTComment{used for example in: \texttt{let (x, y, -, z) = (1, 2, 3, 4);}}\\
   % & & \ASTComment{Note that a the list here must be at least 2 items long.}
-  & \hypertarget{ast-ldityped}{}\\
-  |\ & \LDITyped(\localdeclitem, \ty) &
-  % & & \ASTComment{\texttt{LDI\_Typed (ldi, t)} declares the item \texttt{ldi} with type \texttt{t}, used for example in:} \\
-  % & & \ASTComment{\texttt{let x: integer = 4;}}
 \end{flalign*}
 
 \subsection{Statements \label{sec:Statements}}
@@ -452,7 +447,7 @@ the local declaration item is
 \hypertarget{ast-sseq}{} &\\
   |\ & \SSeq(\stmt, \stmt)
   \hypertarget{ast-sdecl}{} &\\
-  |\ & \SDecl(\localdeclkeyword, \localdeclitem, \expr?)
+  |\ & \SDecl(\localdeclkeyword, \localdeclitem, \ty?, \expr?)
   \hypertarget{ast-sassign}{} &\\
   |\ & \SAssign(\lexpr, \expr)
   \hypertarget{ast-scall}{} &\\

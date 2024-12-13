@@ -13,9 +13,7 @@ We show the syntax relevant to local declarations in \secref{LocalStorageDeclara
 the AST rule and rules need to build the AST for \assignableexpressions\ in \secref{LocalStorageDeclarationsAbstractSyntax}.
 We then define the typing and semantics of the different kinds of local declarations:
 \begin{itemize}
-\item Discarding declarations (see \secref{DiscardingDeclarations})
-\item Un-annotated variable declarations (see \secref{UnAnnotatedVariableDeclarations})
-\item Type-annotated variable declarations (see \secref{TypeAnnotatedVariableDeclarations})
+\item Variable declarations (see \secref{VariableDeclarations})
 \item Tuple declarations (see \secref{TupleDeclarations})
 \end{itemize}
 
@@ -33,15 +31,14 @@ We then define the typing and semantics of the different kinds of local declarat
     \overname{\localdeclitem}{\ldi}
     \end{array}
    \right) \aslto\\
-  (\overname{\staticenvs}{\newtenv} \aslsep \overname{\localdeclitem}{\newldi} \aslsep \overname{\TSideEffectSet}{\vses})
+  (\overname{\staticenvs}{\newtenv})
   \cup \overname{\TTypeError}{\TypeErrorConfig}
   \end{array}
 \]
 annotates a \localdeclarationitem\ $\ldi$ with a \localdeclarationkeyword\ $\ldk$, given a type $\tty$,
 and optionally $\veopt$ --- an initializing expression and \sideeffectsetterm,
-in a static environment $\tenv$ results in $(\newenv, \newldi)$ where $\newenv$ is the modified
-static environment, the annotated local declaration item $\newldi$, and the
-\sideeffectsetterm\ $\vses$.
+in a static environment $\tenv$ results in $\newenv$, the modified
+static environment.
 \ProseOtherwiseTypeError
 
 \paragraph{Semantics:} The relation
@@ -50,14 +47,14 @@ static environment, the annotated local declaration item $\newldi$, and the
   \evallocaldecl{
     \overname{\envs}{\env} \aslsep
     \overname{\localdeclitem}{\ldi} \aslsep
-    \overname{\langle\overname{\vals}{\vv}\times\overname{\XGraphs}{\vgone}\rangle}{\minitopt}
+    \overname{\overname{\vals}{\vv}\times\overname{\XGraphs}{\vgone}}{\vm}
     } \;\aslrel\;
     \Normal(\overname{\XGraphs}{\newg}, \overname{\envs}{\newenv})
 \]
 evaluates a \localdeclarationitem\ $\ldi$ in an environment
-$\env$ with an optional initialization value $\minitopt$.
-That is, the right-hand side of the declaration, if it exists,
-has already been evaluated, yielding $\minitopt$ (see, for example, \nameref{sec:SemanticsRule.SDeclSome}).
+$\env$ with an initialization value $\vm$.
+That is, the right-hand side of the declaration
+has already been evaluated, yielding $\vm$ (see, for example, \nameref{sec:SemanticsRule.SDeclSome}).
 Evaluation of the local variables $\ldi$
 in an environment $\env$ is either $\Normal(\vg, \newenv)$
 or an abnormal configuration.
@@ -69,27 +66,24 @@ from the perspective of the semantics of local storage elements, they are all tr
 \section{Syntax\label{sec:LocalStorageDeclarationsSyntax}}
 Declaring a local storage element is done via the following grammar rules:
 \begin{flalign*}
-\Nstmt \derives \ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
+\Nstmt \derives \ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \option{\Nty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Nty} \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
 \end{flalign*}
 
 \begin{flalign*}
 \Nlocaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant&\\
-\Ndeclitem \derives\ & \Nuntypeddeclitem \parsesep \Nasty&\\
-|\ & \Nuntypeddeclitem  &\\
-\Nuntypeddeclitem \derives \ & \Tidentifier &\\
-|\ & \Tminus &\\
-|\ & \Plisttwo{\Ndeclitem} &
+\Ndeclitem \derives\
+   & \Nignoredoridentifier &\\
+|\ & \Plisttwo{\Nignoredoridentifier} &
 \end{flalign*}
 
 \section{Abstract Syntax\label{sec:LocalStorageDeclarationsAbstractSyntax}}
 \begin{flalign*}
 \localdeclkeyword \derives\ & \LDKVar \;|\; \LDKConstant \;|\; \LDKLet &\\
-\localdeclitem \derives\ & \LDIDiscard &\\
-    |\ & \LDIVar(\identifier) & \\
-    |\ & \LDITuple(\localdeclitem^*) &\\
-    |\ & \LDITyped(\localdeclitem, \ty) &
+\localdeclitem \derives\
+     & \LDIVar(\identifier) & \\
+  |\ & \LDITuple(\identifier^*) &
 \end{flalign*}
 
 \subsubsection{ASTRule.LocalDeclKeyword\label{sec:ASTRule.LocalDeclKeyword}}
@@ -122,107 +116,26 @@ The function
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
-\inferrule[typed]{}{
-  {
-    \begin{array}{r}
-  \builddeclitem(\Ndeclitem(\punnode{\Nuntypeddeclitem}, \punnode{\Nasty})) \astarrow \\
-  \overname{\LDITyped(\astof{\vuntypedlocaldeclitem}, \astof{\vasty})}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[untyped]{}{
-  \builddeclitem(\Ndeclitem(\punnode{\Nuntypeddeclitem})) \astarrow
-  \overname{\astof{\vuntypedlocaldeclitem}}{\vastnode}
-}
-\end{mathpar}
-
-\subsubsection{ASTRule.UntypedDeclItem\label{sec:ASTRule.UntypedDeclItem}}
-\hypertarget{build-untypeddeclitem}{}
-The function
-\[
-  \builduntypeddeclitem(\overname{\parsenode{\Nuntypeddeclitem}}{\vparsednode}) \;\aslto\; \overname{\localdeclitem}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
-\begin{mathpar}
 \inferrule[var]{}{
-  \builduntypeddeclitem(\Nuntypeddeclitem(\Tidentifier(\id))) \astarrow
-  \overname{\LDIVar(\id)}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[discard]{}{
-  \builduntypeddeclitem(\Nuntypeddeclitem(\Tminus)) \astarrow
-  \overname{\LDIDiscard}{\vastnode}
+  \builddeclitem(\Ndeclitem(\punnode{\Nignoredoridentifier})) \astarrow
+  \overname{\astof{\vignoredoridentifier}}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[tuple]{
-  \buildclist[\builddeclitem](\vdeclitems) \astarrow \vdeclitemasts
+  \buildclist[\buildignoredoridentifier](\vids) \astarrow \astversion{\vids}
 }{
   {
     \begin{array}{r}
-  \builduntypeddeclitem(\Nuntypeddeclitem(\namednode{\vdeclitems}{\Plisttwo{\Ndeclitem}})) \astarrow \\
-  \overname{\LDITuple(\vdeclitemasts)}{\vastnode}
+  \builddeclitem(\Ndeclitem(\namednode{\vids}{\Plisttwo{\Nignoredoridentifier}})) \astarrow \\
+  \overname{\LDITuple(\astversion{\vids})}{\vastnode}
     \end{array}
   }
 }
 \end{mathpar}
 
-\section{Discarding Declarations\label{sec:DiscardingDeclarations}}
-\subsection{Typing}
-\subsubsection{TypingRule.LDDiscard \label{sec:TypingRule.LDDiscard}}
-\subsubsection{Example}
-\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDDiscard.asl}
-
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item $\ldi$ is a local declaration which can be discarded, that is, $\LDIDiscard(\None)$;
-  \item $\newenv$ is $\tenv$;
-  \item $\newldi$ is $\ldi$;
-  \item \Proseeqdef{$\vses$}{the empty set}.
-\end{itemize}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{}{
-  \annotatelocaldeclitem(\tenv, \tty, \ldk, \veopt, \overname{\LDIDiscard(\None)}{\ldi}) \typearrow (\tenv, \ldi, \overname{\emptyset}{\vses})
-}
-\end{mathpar}
-\CodeSubsection{\LDDiscardBegin}{\LDDiscardEnd}{../Typing.ml}
-
-\subsection{Semantics}
-\subsubsection{SemanticsRule.LDDiscard \label{sec:SemanticsRule.LDDiscard}}
-\subsubsection{Example}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDDiscard.asl}
-\texttt{var - : integer;} does not modify the environment.
-
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item $\ldi$ indicates that the initialization value will be discarded,
-        $\LDIDiscard$;
-  \item $\newg$ is the empty graph;
-  \item $\newenv$ is $\env$.
-\end{itemize}
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{}
-{
-  \evallocaldecl{\env, \overname{\LDIDiscard}{\ldi}, \overname{\color{white}{\texttt{xx}\Ignore}\texttt{xx}}{\minitopt}}
-  \evalarrow \Normal(\overname{\emptygraph}{\newg}, \overname{\env}{\newenv})
-}
-\end{mathpar}
-\CodeSubsection{\EvalLDDiscardBegin}{\EvalLDDiscardEnd}{../Interpreter.ml}
-
-\section{Un-annotated Variable Declarations\label{sec:UnAnnotatedVariableDeclarations}}
+\section{Variable Declarations\label{sec:VariableDeclarations}}
 \subsection{Typing}
 \subsubsection{TypingRule.LDVar \label{sec:TypingRule.LDVar}}
 \subsubsection{Example}
@@ -235,9 +148,7 @@ All of the following apply:
   \item determining whether $\vx$ is not declared in $\tenv$ yields $\True$\ProseOrTypeError;
   \item $\tenvtwo$ is $\tenv$ modified so that $\vx$ is locally declared to have type $\tty$;
   \item applying $\addimmutableexpression$ to $\ldk$, $\veopt$, and $\vx$ in $\tenv$ (to conditionally
-        update $\tenvtwo$) yields $\newtenv$;
-  \item $\newldi$ is the declaration of variable $\vx$;
-  \item \Proseeqdef{$\vses$}{the empty set}.
+        update $\tenvtwo$) yields $\newtenv$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
@@ -246,8 +157,7 @@ All of the following apply:
   \addlocal(\tenv, \vx, \tty, \ldk) \typearrow \tenvtwo\\
   \addimmutableexpression(\tenvtwo, \ldk, \veopt, \vx) \typearrow \newtenv
 }{
-  \annotatelocaldeclitem(\tenv, \tty, \ldk, \veopt, \overname{\LDIVar(\vx)}{\ldi}) \typearrow
-  (\newtenv, \LDIVar(\vx), \overname{\emptyset}{\vses})
+  \annotatelocaldeclitem(\tenv, \tty, \ldk, \veopt, \overname{\LDIVar(\vx)}{\ldi}) \typearrow \newtenv
 }
 \end{mathpar}
 \CodeSubsection{\LDVarBegin}{\LDVarEnd}{../Typing.ml}
@@ -259,7 +169,6 @@ All of the following apply:
     All of the following apply:
     \begin{itemize}
     \item $\ldi$ is a variable declaration, $\LDIVar(\vx)$;
-    \item $\minitopt$ is $\vm$;
     \item $\vm$ is a pair consisting of the value $\vv$ and execution graph $\vgone$;
     \item declaring $\vx$ in $\env$ is $(\newenv, \vgtwo)$;
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
@@ -283,217 +192,10 @@ In the specification:
   \declarelocalidentifier(\env, \vx, \vv)\evalarrow(\newenv, \vgtwo)\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
 }{
-  \evallocaldecl{\env, \LDIVar(\vx), \langle \vm\rangle} \evalarrow \Normal(\newg, \newenv)
+  \evallocaldecl{\env, \LDIVar(\vx), \vm} \evalarrow \Normal(\newg, \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalLDVarBegin}{\EvalLDVarEnd}{../Interpreter.ml}
-
-\section{Type-annotated Variable Declarations\label{sec:TypeAnnotatedVariableDeclarations}}
-\subsection{Typing}
-\subsubsection{TypingRule.LDTyped\label{sec:TypingRule.LDTyped}}
-\subsubsection{Example}
-\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDTyped.asl}
-
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item $\ldi$ denotes a local declaration item $\ldip$ with local declaration keyword $\ldk$
-        and a type $\vt$, that is $\LDITyped(\ldip, \vt)$;
-  \item determining the \structure{} of right-hand side type $\tty$ in $\tenv$ yields $\ttyp$;
-  \item propagating integer constraints from $\ttyp$ to $\vt$ using $\inheritintegerconstraints$ yields $\vtone$;
-  \item annotating the type $\vtone$ in $\tenv$ yields $(\vttwo, \vsest)$\ProseOrTypeError;
-  \item determining whether $\vttwo$ can be initialized with $\tty$ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item annotating the local declaration item $\ldip$ with the local declaration keyword $\ldk$, given
-        the type $\vttwo$, in the environment $\tenv$, yields $(\newtenv,\newldip, \vsesldi)$;
-  \item $\newldi$ is the local declaration denoting $\newldip$ and the type $\vtp$, that is, \\
-        $\LDITyped(\newldip, \vttwo)$;
-  \item \Proseeqdef{$\vses$}{the union of $\vsest$ and $\vsesldi$}.
-\end{itemize}
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \tstruct(\tenv, \tty) \typearrow \ttyp \\
-  \inheritintegerconstraints(\vt, \ttyp) \typearrow \vtone \OrTypeError \\
-  \annotatetype{\tenv, \vtone} \typearrow (\vttwo, \vsest) \OrTypeError\\\\
-  \checkcanbeinitializedwith(\tenv, \vttwo, \tty) \typearrow \True \OrTypeError\\\\
-  {
-    \begin{array}{r}
-  \annotatelocaldeclitem(\tenv, \vttwo, \ldk, \veopt, \ldip) \typearrow \\
-  (\newtenv, \newldip, \vsesldi) \OrTypeError
-    \end{array}
-  }\\
-  \vses \eqdef \vsest \cup \vsesldi
-}{
-  \annotatelocaldeclitem(\tenv, \tty, \ldk, \veopt, \overname{\LDITyped(\ldip, \vt)}{\ldi}) \typearrow \\
-  (\newtenv, \LDITyped(\newldip, \vttwo), \vses)
-}
-\end{mathpar}
-\CodeSubsection{\LDTypedBegin}{\LDTypedEnd}{../Typing.ml}
-
-\subsubsection{TypingRule.InheritIntegerConstraints\label{sec:TypingRule.InheritIntegerConstraints}}
-\hypertarget{def-inheritintegerconstraints}{}
-The helper function
-\[
-\inheritintegerconstraints(\overname{\ty}{\lhs} \aslsep \overname{\ty}{\rhs})
-\typearrow \lhsp \cup\ \overname{\TTypeError}{\TypeErrorConfig}
-\]
-propagates integer constraints from the right-hand side type $\rhs$ to the left-hand side type annotation $\lhs$.
-In particular, each occurence of \pendingconstrainedintegertype{} on the left-hand side should inherit constraints from a corresponding \wellconstrainedintegertype{} on the right-hand side.
-If the corresponding right-hand side type is not a \wellconstrainedintegertype{} (including if it is an \unconstrainedintegertype{}), the result is a type error.
-
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{int}):
-  \begin{itemize}
-    \item $\lhs$ is a \pendingconstrainedintegertype{};
-    \item $\rhs$ is a \wellconstrainedintegertype{}\ProseOrTypeError;
-    \item $\lhsp$ is $\rhs$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{tuple}):
-  \begin{itemize}
-    \item $\lhs$ is a tuple of types \texttt{lhs\_tys};
-    \item $\rhs$ is a tuple of types \texttt{rhs\_tys};
-    \item the lengths of \texttt{lhs\_tys} and \texttt{rhs\_tys} are equal\ProseOrTypeError;
-    \item define \texttt{lhs\_tys'} by applying $\inheritintegerconstraints$ to each element of \texttt{lhs\_tys} and \texttt{rhs\_tys}\ProseOrTypeError;
-    \item $\lhsp$ is $\TTuple(\texttt{lhs\_tys'})$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{other}):
-  \begin{itemize}
-    \item $\lhs$ is not a \pendingconstrainedintegertype{}, or one of $\lhs$ and $\rhs$ is not a tuple type;
-    \item $\lhsp$ is $\lhs$.
-  \end{itemize}
-\end{itemize}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule[int]{
-  \rhs \eqname \TInt(\wellconstrained(\Ignore)) \OrTypeError
-}{
-  \inheritintegerconstraints(\overname{\TInt(\pendingconstrained)}{\lhs}, \rhs) \typearrow \overname{\rhs}{\lhsp}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[tuple]{
-  \lhs \eqname \TTuple(\texttt{lhs\_tys}) \\
-  \rhs \eqname \TTuple(\texttt{rhs\_tys}) \\\\
-  \equallength(\texttt{lhs\_tys}, \texttt{rhs\_tys}) \typearrow \True \OrTypeError \\
-  \vi \in \listrange(\lhs): \inheritintegerconstraints(\texttt{lhs\_tys}_i, \texttt{rhs\_tys}_i) \typearrow \texttt{lhs\_tys'}_i \OrTypeError \\
-}{
-  \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\TTuple(\texttt{lhs\_tys'})}{\lhsp}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[other]{
-  \lhs \neq \TInt(\pendingconstrained) \;\lor\; \astlabel(\lhs) \neq \TTuple \;\lor\; \astlabel(\rhs) \neq \TTuple
-}{
-  \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\lhs}{\lhsp}
-}
-\end{mathpar}
-
-\subsubsection{TypingRule.CheckCanBeInitializedWith\label{sec:TypingRule.CheckCanBeInitializedWith}}
-\hypertarget{def-checkcanbeinitializedwith}{}
-The helper function
-\[
-\checkcanbeinitializedwith(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vs} \aslsep \overname{\ty}{\vt})
-\typearrow \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
-\]
-checks whether an expression of type $\vs$ can be used to initialize a storage element of type $\vt$ in the static environment
-$\tenv$.
-If the answer if $\False$, the result is a type error.
-
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{okay}):
-  \begin{itemize}
-    \item testing whether $\vt$ \typesatisfies\ $\vs$ in $\tenv$ yields $\True$;
-    \item the result is $\True$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{error}):
-  \begin{itemize}
-    \item testing whether $\vt$ \typesatisfies\ $\vs$ in $\tenv$ yields $\False$;
-    \item the result is a type error indicating that an expression of type $\vs$ cannot
-          be used to initialize a storage element of type $\vt$.
-  \end{itemize}
-\end{itemize}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule[okay]{
-  \typesat(\tenv, \vt, \vs) \typearrow \True
-}{
-  \checkcanbeinitializedwith(\tenv, \vs, \vt) \typearrow \True
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[error]{
-  \typesat(\tenv, \vt, \vs) \typearrow \False
-}{
-  \checkcanbeinitializedwith(\tenv, \vs, \vt) \typearrow \TypeErrorVal{CannotBeInitializedWith}
-}
-\end{mathpar}
-\lrmcomment{This is related to \identr{ZCVD} and \identr{LXQZ}.}
-
-\subsection{Semantics}
-\subsubsection{SemanticsRule.LDTyped\label{sec:SemanticsRule.LDTyped}}
-\subsubsection{Example (Initialized)}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDTyped.asl}
-\texttt{var x : integer = 42;} binds \texttt{x} in $\env$ to $\nvint(42)$.
-
-\subsubsection{Example (Uninitialized)}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDUninitialisedTyped.asl}
-\verb|var x : integer{3..43};| binds \texttt{x} in $\env$ to the base value of \verb|integer{3..43}|,
-which is $\nvint(3)$.
-
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-    \item All of the following apply (\textsc{initialized}):
-    \begin{itemize}
-        \item $\ldi$ is a typed declaration, $\LDITyped(\ldione, \vt)$;
-        \item $\minitopt$ corresponds to the initializing value $\vm$;
-        \item the resulting configuration is obtained via the evaluation
-        of the local declaration $\ldione$ in $\env$ with $\minitopt$ as $\vm$,
-        that is, \\ $\evallocaldecl{\env, \ldi1, \langle \vm\rangle}$.
-    \end{itemize}
-
-    \item All of the following apply (\textsc{uninitialized}):
-    \begin{itemize}
-      \item $\ldi$ gives a local declaration with a type, but no initial value, \\
-            $\LDITyped(\ldione, \vt)$;
-      \item $\minitopt$ is $\None$;
-      \item the base value of $\vt$ is $\vm$\ProseOrError;
-      \item evaluating the local declaration $\ldione$ with $\vm$
-            as the $\minitopt$ component yields the output configuration.
-    \end{itemize}
-\end{itemize}
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule[initialized]{
-  \evallocaldecl{\env, \ldi1, \langle \vm\rangle} \evalarrow C
-}{
-  \evallocaldecl{\env, \LDITyped(\ldi1, \Ignore), \langle \vm\rangle} \evalarrow C
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[uninitialized]{
-    \basevalue(\env, \vt) \evalarrow \vm \OrDynError\\\\
-    \evallocaldecl{\env, \ldione, \langle \vm \rangle} \evalarrow C
-}{
-    \evallocaldecl{\env, \LDITyped(\ldione, \vt), \None} \evalarrow C
-}
-\end{mathpar}
-\CodeSubsection{\EvalLDTypedBegin}{\EvalLDTypedEnd}{../Interpreter.ml}
 
 \section{Tuple Declarations\label{sec:TupleDeclarations}}
 \subsection{Typing}
@@ -504,18 +206,14 @@ One of the following applies:
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\ldi$ denotes a tuple of local declaration items $\ldi_{1..k}$, that is, $\LDITuple(\ldi_{1..k})$;
+  \item $\ldi$ denotes a tuple of identifiers $\vids_{1..k}$, that is, $\LDITuple(\vids_{1..k})$;
   \item obtaining the \underlyingtype\ of $\tty$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
   \item determining whether $\vtp$ is a tuple type yields $\True$\ProseOrTypeError;
-  \item determining whether $\vtp$ the number of elements of $\vtp$ is $k$ yields $\True$\ProseOrTypeError;
-  \item annotating the local declaration items in $\ldis$ from right to left with their corresponding
+  \item determining whether the number of elements of $\vtp$ is $k$ yields $\True$\ProseOrTypeError;
+  \item declaring the identifiers in $\vids$ in the static environment $\tenv$ from from right to left with their corresponding
         (that is, with the same index) types $t_{1..k}$ in $\tenv$,
-        propagating static environments from one annotation to the next,
-        yields the local declaration items $\ldip_{1..k}$ and \sideeffectsetterm\ $\vxs_{1..k}$\ProseOrTypeError;
-  \item $\newtenv$ is the static environment yielded by annotating $\ldi_1$;
-  \item $\newldi$ is a tuple of local declaration items with $\ldip_{1..k}$, that is, \\
-        $\LDITuple(\ldip_{1..k})$;
-  \item \Proseeqdef{$\vses$}{the union of all \sideeffectsetterm\ $\vxs_i$, for $i=1..k$}.
+        propagating static environments from one declaration to the next,
+        yields the resulting environment $\newtenv$\ProseOrTypeError.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
@@ -524,19 +222,18 @@ All of the following apply:
   \checktrans{\astlabel(\vtp) = \TTuple}{TupleTypeExpected} \checktransarrow \True \OrTypeError\\\\
   \vtp \eqname \TTuple([\vt_{1..n}])\\\\
   \checktrans{k = n}{InvalidArity} \checktransarrow \True \OrTypeError\\\\
-  \newtenv_k \eqdef \tenv\\
+  \newtenv_k \eqdef \tenv\\\\
   {
     \begin{array}{r}
-  i=k..1:
-  \annotatelocaldeclitem(\newtenv_{i}, \vt_{i}, \ldk, \None, \ldi_{i}, ) \typearrow \\
-  (\newtenv_{i-1}, \ldip_i, \vxs_i) \OrTypeError
+      i=k..1: \hfill \\
+      \quad \checkvarnotinenv{\newtenv_i, \vids_i} \typearrow \True \OrTypeError\\
+      \quad \addlocal(\tenv, \vids_i, \vt_i, \ldk) \typearrow \newtenv_{i-1}
     \end{array}
-  }\\
-  \newtenv \eqdef \newtenv_0\\
-  \vses \eqdef \bigcup_{i=1..k} \vxs_i
+  }\\\\
+  \newtenv \eqdef \newtenv_0
 }{
-  \annotatelocaldeclitem(\tenv, \tty, \ldk, \veopt, \overname{\LDITuple(\ldi_{1..k})}{\ldi}) \typearrow \\
-  (\newtenv, \LDITuple(\ldip_{1..k}), \vses)
+  \annotatelocaldeclitem(\tenv, \tty, \ldk, \veopt, \overname{\LDITuple(\vids_{1..k})}{\ldi}) \typearrow \\
+  \newtenv
 }
 \end{mathpar}
 \CodeSubsection{\LDTupleBegin}{\LDTupleEnd}{../Typing.ml}
@@ -553,20 +250,19 @@ evaluation of \texttt{3} in $\env$.
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\ldi$ declares a list of local variables, $\LDITuple(\ldis)$;
-  \item $\minitopt$ is $\vm$;
+  \item $\ldi$ declares a list of local variables, $\LDITuple(\vids)$;
   \item $\vm$ is a pair consisting of the native vector $\vv$ and execution graph $\vg$;
-  \item $\ldis$ is a list of local declaration items $\ldi_{1..k}$;
+  \item $\vids$ is a list of identifiers $\id_{1..k}$;
   \item the value at each index of $\vv$ is $\vv_i$, for $i=1..k$;
   \item $\liv$ is the list of pairs $(\vv_i, \vg)$, for $i=1..k$;
-  \item the output configuration is obtained by declare each local declaration item $\ldi_i$
-  with the corresponding value ($\minitopt$ component) $(\vv_i, \vg)$.
+  \item the output configuration is obtained by declaring each identifier $\id_i$
+  with the corresponding value ($\vm$ component) $(\vv_i, \vg)$.
 \end{itemize}
 \subsubsection{Formally}
 \hypertarget{def-ldituplefolder}{}
 We first define the helper semantic relation
 \[
-    \ldituplefolder(\overname{\envs}{\env} \aslsep \overname{\localdeclitem^*}{\ldis} \aslsep \overname{(\vals \times \XGraphs)^*}{\liv}) \;\aslrel\;
+    \ldituplefolder(\overname{\envs}{\env} \aslsep \overname{\identifier^*}{\vids} \aslsep \overname{(\vals \times \XGraphs)^*}{\liv}) \;\aslrel\;
      \Normal(\overname{\XGraphs}{\vg} \aslsep \overname{\envs}{\newenv})
 \]
 via the following rules:
@@ -577,14 +273,14 @@ via the following rules:
 }
 \and
 \inferrule{
-  \ldis \eqname [\ldi] \concat \ldis'\\
+  \vids \eqname [\id] \concat \vids'\\
   \liv \eqname [\vm] \concat \liv'\\
-  \vm \eqname (\vv, \vgone)\\
-  \evallocaldecl{\env, \ldi, \langle\vm\rangle} \evalarrow \Normal(\vgone, \envone)\\
-  \ldituplefolder(\envone, \ldis', \liv') \evalarrow \Normal(\vgtwo, \newenv)\\
-  \newg \eqdef \vgone \parallelcomp \vgtwo
+  \vm \eqname (\vv, \vgone)\\\\
+  \declarelocalidentifier(\env, \id, \vv) \evalarrow (\envone, \vgtwo)\\
+  \ldituplefolder(\envone, \vids', \liv') \evalarrow \Normal(\vgthree, \newenv)\\
+  \newg \eqdef (\ordered{\vgone}{\asldata}{\vgtwo}) \parallelcomp \vgthree\\
 }{
-  \ldituplefolder(\env, \ldis, \liv) \evalarrow \Normal(\newg, \newenv)
+  \ldituplefolder(\env, \vids, \liv) \evalarrow \Normal(\newg, \newenv)
 }
 \end{mathpar}
 
@@ -592,12 +288,12 @@ We now use the helper rules to define the rule for local declaration item tuples
 \begin{mathpar}
 \inferrule{
   \vm \eqname (\vv, \vg)\\
-  \ldis \eqname \ldi_{1..k}\\
+  \ldis \eqname \id_{1..k}\\
   i=1..k: \getindex(i, \vv) \evalarrow \vv_i\\
   \liv \eqname [i=1..k: (\vv_i, \vg)]\\
-  \ldituplefolder(\env, \ldis, \liv) \evalarrow C
+  \ldituplefolder(\env, \vids, \liv) \evalarrow C
 }{
-  \evallocaldecl{\env, \LDITuple(\ldis), \langle \vm\rangle} \evalarrow C
+  \evallocaldecl{\env, \LDITuple(\vids), \vm} \evalarrow C
 }
 \end{mathpar}
 \CodeSubsection{\EvalLDTupleBegin}{\EvalLDTupleEnd}{../Interpreter.ml}

@@ -474,8 +474,12 @@
 \newcommand\Ninitialvalue[0]{\hyperlink{def-ninitialvalue}{\nonterminal{initial\_value}}}
 \newcommand\Nty[0]{\hyperlink{def-nty}{\nonterminal{ty}}}
 \newcommand\Nexpr[0]{\hyperlink{def-nexpr}{\nonterminal{expr}}}
+\newcommand\Nbasiclexpr[0]{\hyperlink{def-nbasiclexpr}{\nonterminal{basic\_lexpr}}}
+\newcommand\Nnestedfields[0]{\hyperlink{def-nnestedfields}{\nonterminal{nested\_fields}}}
+\newcommand\Nslicedbasiclexpr[0]{\hyperlink{def-nslicedbasiclexpr}{\nonterminal{sliced\_basic\_lexpr}}}
+\newcommand\Ndiscardorslicedbasiclexpr[0]{\hyperlink{def-ndiscardorslicedbasiclexpr}{\nonterminal{discard\_or\_sliced\_basic\_lexpr}}}
+\newcommand\Ndiscardoridentifier[0]{\hyperlink{def-ndiscardoridentifier}{\nonterminal{discard\_or\_identifier}}}
 \newcommand\Nlexpr[0]{\hyperlink{def-nlexpr}{\nonterminal{lexpr}}}
-\newcommand\Nlexpratom[0]{\hyperlink{def-nlexpratom}{\nonterminal{lexpr\_atom}}}
 \newcommand\Nfields[0]{\hyperlink{def-nfields}{\nonterminal{fields}}}
 \newcommand\Nfieldsopt[0]{\hyperlink{def-nfieldsopt}{\nonterminal{fields\_opt}}}
 \newcommand\Nopttypedidentifier[0]{\hyperlink{def-nopttypeidentifier}{\nonterminal{opt\_typed\_identifier}}}
@@ -492,7 +496,6 @@
 \newcommand\Nstmt[0]{\hyperlink{def-nstmt}{\nonterminal{stmt}}}
 \newcommand\Nselse[0]{\hyperlink{def-nselse}{\nonterminal{s\_else}}}
 \newcommand\Ndeclitem[0]{\hyperlink{def-ndeclitem}{\nonterminal{decl\_item}}}
-\newcommand\Nuntypeddeclitem[0]{\hyperlink{def-nuntypeddeclitem}{\nonterminal{untyped\_decl\_item}}}
 \newcommand\Nslice[0]{\hyperlink{def-nslice}{\nonterminal{slice}}}
 \newcommand\Nslices[0]{\hyperlink{def-nslices}{\nonterminal{slices}}}
 \newcommand\Nconstraintkind[0]{\hyperlink{def-nintconstraints}{\nonterminal{constraint\_kind}}}
@@ -567,7 +570,7 @@
 \newcommand\SHL[0]{\hyperlink{ast-shl}{\texttt{SHL}}} % Shift left for integers
 \newcommand\SHR[0]{\hyperlink{ast-shr}{\texttt{SHR}}} % Shift right for integers
 
-\newcommand\ARBITRARY[0]{\hyperlink{ast-arbitrary}{\texttt{ARBITRARY}}}
+\newcommand\ARBITRARY[0]{\hyperlink{ast-earbitrary}{\texttt{ARBITRARY}}}
 
 % For loop direction
 \newcommand\UP[0]{\hyperlink{ast-up}{\texttt{Up}}}
@@ -595,6 +598,7 @@
 \newcommand\bitfield[0]{\hyperlink{ast-bitfield}{\textsf{bitfield}}}
 \newcommand\spec[0]{\hyperlink{ast-spec}{\textsf{spec}}}
 \newcommand\typedidentifier[0]{\hyperlink{ast-typedidentifier}{\textsf{typed\_identifier}}}
+\newcommand\lhsaccess[0]{\hyperlink{ast-lhsaccess}{\textsf{lhs\_access}}}
 \newcommand\localdeclkeyword[0]{\hyperlink{ast-localdeclkeyword}{\textsf{local\_decl\_keyword}}}
 \newcommand\globaldeclkeyword[0]{\hyperlink{ast-globaldeclkeyword}{\textsf{global\_decl\_keyword}}}
 \newcommand\localdeclitem[0]{\hyperlink{ast-localdeclitem}{\textsf{local\_decl\_item}}}
@@ -707,9 +711,7 @@
 \newcommand\PatternTuple[0]{\hyperlink{ast-patterntuple}{\textsf{Pattern\_Tuple}}}
 
 % Local declarations
-\newcommand\LDIDiscard[0]{\hyperlink{ast-ldidiscard}{\textsf{LDI\_Discard}}}
 \newcommand\LDIVar[0]{\hyperlink{ast-ldivar}{\textsf{LDI\_Var}}}
-\newcommand\LDITyped[0]{\hyperlink{ast-ldityped}{\textsf{LDI\_Typed}}}
 \newcommand\LDITuple[0]{\hyperlink{ast-ldituple}{\textsf{LDI\_Tuple}}}
 
 \newcommand\LDKVar[0]{\hyperlink{ast-ldkvar}{\textsf{LDK\_Var}}}
@@ -758,7 +760,6 @@
 \newcommand\buildast[0]{\hyperlink{build-ast}{\textfunc{build\_ast}}}
 \newcommand\builddecl[0]{\hyperlink{build-decl}{\textfunc{build\_decl}}}
 \newcommand\builddeclitem[0]{\hyperlink{build-declitem}{\textfunc{build\_decl\_item}}}
-\newcommand\builduntypeddeclitem[0]{\hyperlink{build-untypeddeclitem}{\textfunc{build\_untyped\_decl\_item}}}
 \newcommand\makesetter[0]{\hyperlink{def-makesetter}{\textfunc{make\_setter}}}
 \newcommand\desugarsetter[0]{\hyperlink{def-desugarsetter}{\textfunc{desugar\_setter}}}
 \newcommand\buildlooplimit[0]{\hyperlink{build-looplimit}{\textfunc{build\_looplimit}}}
@@ -767,7 +768,16 @@
 \newcommand\buildstmt[0]{\hyperlink{build-stmt}{\textfunc{build\_stmt}}}
 \newcommand\buildexpr[0]{\hyperlink{build-expr}{\textfunc{build\_expr}}}
 \newcommand\buildlexpr[0]{\hyperlink{build-lexpr}{\textfunc{build\_lexpr}}}
-\newcommand\buildlexpratom[0]{\hyperlink{build-lexpratom}{\textfunc{build\_lexpr\_atom}}}
+\newcommand\buildbasiclexpr[0]{\hyperlink{build-basiclexpr}{\textfunc{build\_basic\_lexpr}}}
+\newcommand\buildnestedfields[0]{\hyperlink{build-nestedfields}{\textfunc{build\_nested\_fields}}}
+\newcommand\buildslicedbasiclexpr[0]{\hyperlink{build-slicedbasiclexpr}{\textfunc{build\_sliced\_basic\_lexpr}}}
+\newcommand\builddiscardorslicedbasiclexpr[0]{\hyperlink{build-discardorslicedbasiclexpr}{\textfunc{build\_discard\_or\_sliced\_basic\_lexpr}}}
+\newcommand\builddiscardoridentifier[0]{\hyperlink{build-discardoridentifier}{\textfunc{build\_discard\_or\_identifier}}}
+\newcommand\desugarlhsaccess[0]{\hyperlink{def-desugarlhsaccess}{\textfunc{desugar\_lhs\_access}}}
+\newcommand\desugarlhsaccessopt[0]{\hyperlink{def-desugarlhsaccessopt}{\textfunc{desugar\_lhs\_access\_opt}}}
+\newcommand\desugarlhstuple[0]{\hyperlink{def-desugarlhstuple}{\textfunc{desugar\_lhs\_tuple}}}
+\newcommand\desugarlhsfieldopt[0]{\hyperlink{def-desugarlhsfieldopt}{\textfunc{desugar\_lhs\_field\_opt}}}
+\newcommand\desugarlhsfieldstuple[0]{\hyperlink{def-desugarlhsfieldstuple}{\textfunc{desugar\_lhs\_fields\_tuple}}}
 \newcommand\buildparamsopt[0]{\hyperlink{build-paramsopt}{\textfunc{build\_params\_opt}}}
 \newcommand\buildfuncargs[0]{\hyperlink{build-funcargs}{\textfunc{build\_func\_args}}}
 \newcommand\buildcall[0]{\hyperlink{build-call}{\textfunc{build\_call}}}
@@ -922,6 +932,10 @@
 \newcommand\callparams[0]{\text{params}}
 \newcommand\callargs[0]{\text{args}}
 \newcommand\callcalltype[0]{\text{call\_type}}
+\newcommand\lhsaccessbase[0]{\text{base}}
+\newcommand\lhsaccessindex[0]{\text{index}}
+\newcommand\lhsaccessfields[0]{\text{fields}}
+\newcommand\lhsaccessslices[0]{\text{slices}}
 
 \newcommand\True[0]{\hyperlink{def-true}{\texttt{TRUE}}}
 \newcommand\False[0]{\hyperlink{def-false}{\texttt{FALSE}}}
@@ -1287,7 +1301,6 @@
 \newcommand\usebitfield[0]{\hyperlink{def-usebitfield}{\textfunc{use\_bitfield}}}
 \newcommand\useconstraint[0]{\hyperlink{def-useconstraint}{\textfunc{use\_constraint}}}
 \newcommand\usestmt[0]{\hyperlink{def-usestmt}{\textfunc{use\_s}}}
-\newcommand\useldi[0]{\hyperlink{def-useldi}{\textfunc{use\_ldi}}}
 \newcommand\usecase[0]{\hyperlink{def-usecase}{\textfunc{use\_case}}}
 \newcommand\usecatcher[0]{\hyperlink{def-usecatcher}{\textfunc{use\_catcher}}}
 \newcommand\builddependencies[0]{\hyperlink{def-builddependencies}{\textfunc{build\_dependencies}}}
@@ -1610,7 +1623,7 @@
 \newcommand\reduceconstraint[0]{\hyperlink{def-reduceconstraint}{\textfunc{reduce\_constraint}}}
 \newcommand\reduceconstraints[0]{\hyperlink{def-reduceconstraints}{\textfunc{reduce\_constraints}}}
 \newcommand\declarelocalconstant[0]{\hyperlink{def-declarelocalconstant}{\textfunc{declare\_local\_constant}}}
-\newcommand\annotatelocaldeclitemuninit[0]{\hyperlink{def-annotatelocaldeclitemuninit}{\textfunc{annotate\_local\_decl\_item\_uninit}}}
+\newcommand\annotatelocaldecltypeannot[0]{\hyperlink{def-annotatelocaldecltypeannot}{\textfunc{annotate\_local\_decl\_type\_annot}}}
 \newcommand\checkvarnotinenv[1]{\hyperlink{def-checkvarnotinenv}{\textfunc{check\_var\_not\_in\_env}}(#1)}
 \newcommand\checkvarnotingenv[1]{\hyperlink{def-checkvarnotingenv}{\textfunc{check\_var\_not\_in\_genv}}(#1)}
 \newcommand\annotatesubprogram[0]{\hyperlink{def-annotatesubprogram}{\textfunc{annotate\_subprogram}}}
@@ -1669,6 +1682,7 @@
 \newcommand\samescope[0]{\hyperlink{def-samescope}{\textfunc{same\_scope}}}
 
 \newcommand\checknoduplicates[0]{\hyperlink{def-checknoduplicates}{\textfunc{check\_no\_duplicates}}}
+\newcommand\filteroptionlist[0]{\hyperlink{def-filteroptionlist}{\textfunc{filter\_option\_list}}}
 \newcommand\typeofarraylength[0]{\hyperlink{def-typeofarraylength}{\textfunc{type\_of\_array\_length}}}
 \newcommand\addlocal[0]{\hyperlink{def-addlocal}{\textfunc{add\_local}}}
 \newcommand\declaretype[0]{\hyperlink{def-declaretype}{\textfunc{declare\_type}}}
@@ -1954,6 +1968,8 @@
 \newcommand\fieldname[0]{\texttt{field\_name}}
 \newcommand\fields[0]{\texttt{fields}}
 \newcommand\fieldsone[0]{\texttt{fields1}}
+\newcommand\fieldopt[0]{\texttt{field\_opt}}
+\newcommand\fieldopts[0]{\texttt{field\_opts}}
 \newcommand\fieldsp[0]{\texttt{fields'}}
 \newcommand\fieldstwo[0]{\texttt{fields2}}
 \newcommand\fieldtypes[0]{\texttt{field\_types}}
@@ -2025,7 +2041,6 @@
 \newcommand\mcond[0]{\texttt{m\_cond}}
 \newcommand\mfactor[0]{\texttt{m\_factor}}
 \newcommand\mindex[0]{\texttt{m\_index}}
-\newcommand\minitopt[0]{\texttt{m\_init\_opt}}
 \newcommand\minpos[0]{\texttt{min\_pos}}
 \newcommand\mlength[0]{\texttt{m\_length}}
 \newcommand\monome[0]{\texttt{monome}}
@@ -2290,6 +2305,7 @@
 \newcommand\vb[0]{\texttt{b}}
 \newcommand\vbp[0]{\texttt{b'}}
 \newcommand\vbase[0]{\texttt{base}}
+\newcommand\vbasiclexpr[0]{\texttt{basic\_lexpr}}
 \newcommand\vbequal[0]{\texttt{b\_equal}}
 \newcommand\vbequallength[0]{\texttt{b\_equal\_length}}
 \newcommand\vbexploding[0]{\texttt{b\_exploding}}
@@ -2429,6 +2445,10 @@
 \newcommand\vg[0]{\texttt{g}}
 \newcommand\vgfour[0]{\texttt{g4}}
 \newcommand\vgfive[0]{\texttt{g5}}
+\newcommand\vlhsaccess[0]{\texttt{lhs\_access}}
+\newcommand\vlhsaccesses[0]{\texttt{lhs\_accesses}}
+\newcommand\vlhsaccessopt[0]{\texttt{lhs\_access\_opt}}
+\newcommand\vlhsaccessopts[0]{\texttt{lhs\_access\_opts}}
 \newcommand\vlocal[0]{\texttt{local}}
 \newcommand\vlooplimit[0]{\texttt{looplimit}}
 \newcommand\vglobal[0]{\texttt{global}}
@@ -2443,6 +2463,7 @@
 \newcommand\vidasts[0]{\texttt{id\_asts}}
 \newcommand\vidopt[0]{\texttt{id\_opt}}
 \newcommand\vids[0]{\texttt{ids}}
+\newcommand\vignoredoridentifier[0]{\texttt{ignored\_or\_identifier}}
 \newcommand\vindex[0]{\texttt{index}}
 \newcommand\vindexname[0]{\texttt{index\_name}}
 \newcommand\vinitialvalue[0]{\texttt{initial\_value}}
@@ -2473,7 +2494,6 @@
 \newcommand\vletwo[0]{\texttt{le2}}
 \newcommand\vlexpr[0]{\texttt{lexpr}}
 \newcommand\vlexprasts[0]{\texttt{lexpr\_asts}}
-\newcommand\vlexpratom[0]{\texttt{lexpr\_atom}}
 \newcommand\vlexprs[0]{\texttt{lexprs}}
 \newcommand\vli[0]{\texttt{li}}
 \newcommand\vlimit[0]{\texttt{limit}}
@@ -2521,6 +2541,7 @@
 \newcommand\vnamet[0]{\texttt{name\_t}}
 \newcommand\vneg[0]{\texttt{neg}}
 \newcommand\vnested[0]{\texttt{nested}}
+\newcommand\vnestedfields[0]{\texttt{nested\_fields}}
 \newcommand\vnextlimitopt[0]{\texttt{next\_limit\_opt}}
 \newcommand\vnew[0]{\texttt{new}}
 \newcommand\vds[0]{\texttt{ds}}
@@ -2624,7 +2645,9 @@
 \newcommand\vsesty[0]{\texttt{ses\_ty}}
 \newcommand\newses[0]{\texttt{new\_ses}}
 \newcommand\vslice[0]{\texttt{slice}}
+\newcommand\vsliced[0]{\texttt{sliced}}
 \newcommand\vsliceasts[0]{\texttt{slice\_asts}}
+\newcommand\vslicedbasiclexpr[0]{\texttt{sliced\_basic\_lexpr}}
 \newcommand\vsliceone[0]{\texttt{slice1}}
 \newcommand\vslicetwo[0]{\texttt{slice2}}
 \newcommand\vslices[0]{\texttt{slices}}
@@ -2722,7 +2745,6 @@
 \newcommand\vu[0]{\texttt{u}}
 \newcommand\vunop[0]{\texttt{unop}}
 \newcommand\vuntypedast[0]{\texttt{untyped\_ast}}
-\newcommand\vuntypedlocaldeclitem[0]{\texttt{untyped\_local\_decl\_item}}
 \newcommand\vused[0]{\texttt{used}}
 \newcommand\vusedone[0]{\texttt{used1}}
 \newcommand\vv[0]{\texttt{v}}
@@ -2733,11 +2755,14 @@
 \newcommand\vvfields[0]{\texttt{v\_fields}}
 \newcommand\vvl[0]{\texttt{vl}}
 \newcommand\vvopt[0]{\texttt{v\_opt}}
+\newcommand\vvopts[0]{\texttt{v\_opts}}
+\newcommand\vvoptsp[0]{\texttt{v\_opts'}}
 \newcommand\vvoptp[0]{\texttt{v\_opt'}}
 \newcommand\vvone[0]{\texttt{v1}}
 \newcommand\vvp[0]{\texttt{v'}}
 \newcommand\vvparams[0]{\texttt{vparams}}
 \newcommand\vvs[0]{\texttt{vs}}
+\newcommand\vvsp[0]{\texttt{vs'}}
 \newcommand\vvsg[0]{\texttt{vsg}}
 \newcommand\vvsm[0]{\texttt{vsm}}
 \newcommand\vvsmone[0]{\texttt{vsm1}}

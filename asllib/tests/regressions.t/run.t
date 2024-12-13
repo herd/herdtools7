@@ -375,6 +375,8 @@ Base values
     determined since it consists of N.
   [1]
 
+  $ aslref base_values_tuple.asl
+
 Getters/setters
   $ aslref nonempty-getter-called-without-slices.asl
   File nonempty-getter-called-without-slices.asl, line 8, characters 10 to 12:
@@ -431,4 +433,15 @@ Inherit integer constraints on left-hand sides
   File inherit-integer-constraints-bad-type.asl, line 1, character 0 to line 4,
     character 2:
   ASL Typing error: a pending constrained integer is illegal here.
+  [1]
+
+Left-hand sides
+  $ aslref lhs-tuple-fields.asl
+  $ aslref lhs-tuple-fields-same-field.asl
+  File lhs-tuple-fields-same-field.asl, line 8, characters 2 to 4:
+  ASL Typing error: multiple writes to "bv.fld".
+  [1]
+  $ aslref lhs-tuple-same-var.asl
+  File lhs-tuple-same-var.asl, line 8, characters 2 to 20:
+  ASL Typing error: multiple writes to "bv".
   [1]

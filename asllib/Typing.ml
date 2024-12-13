@@ -122,18 +122,6 @@ let annotate_literal env = function
       with Not_found -> assert false)
 (* End *)
 
-let get_first_duplicate extractor li =
-  let exception Duplicate of identifier in
-  let folder acc elt =
-    let x = extractor elt in
-    let acc' = ISet.add x acc in
-    if acc' == acc then raise (Duplicate x) else acc'
-  in
-  try
-    let _ = List.fold_left folder ISet.empty li in
-    None
-  with Duplicate x -> Some x
-
 (** [set_filter_map f set] is the list of [y] such that [f x = Some y] for all
     elements [x] of [set]. *)
 let set_filter_map f set =
@@ -1117,7 +1105,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* Begin TBitFields *)
   and annotate_bitfields ~loc env e_width bitfields =
     let+ () =
-      match get_first_duplicate bitfield_get_name bitfields with
+      match get_first_duplicate (List.map bitfield_get_name bitfields) with
       | None -> ok
       | Some x -> fun () -> fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
     in
@@ -1226,7 +1214,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin TStructuredDecl *)
     | (T_Record fields | T_Exception fields) when decl -> (
         let+ () =
-          match get_first_duplicate fst fields with
+          match get_first_duplicate (List.map fst fields) with
           | None -> ok
           | Some x ->
               fun () -> fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
@@ -1248,7 +1236,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (* Begin TEnumDecl *))
     | T_Enum li when decl ->
         let+ () =
-          match get_first_duplicate Fun.id li with
+          match get_first_duplicate li with
           | None -> ok
           | Some x ->
               fun () -> fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
@@ -1917,7 +1905,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           (* and whose fields have the values given in the field_assignment_list. *)
         in
         let+ () =
-          match get_first_duplicate fst fields with
+          match get_first_duplicate (List.map fst fields) with
           | None -> ok
           | Some x ->
               fun () -> fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
@@ -2577,26 +2565,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           T_Tuple lhs_tys' |> add_pos_from ~loc:lhs_ty
     | _ -> lhs_ty
 
-  let rec annotate_local_decl_item ~loc (env : env) ty ldk ?e ldi =
+  let annotate_local_decl_item ~loc (env : env) ty ldk ?e ldi =
     let () =
       if false then Format.eprintf "Annotating %a.@." PP.pp_local_decl_item ldi
     in
     match ldi with
-    (* Begin LDDiscard *)
-    | LDI_Discard -> (env, ldi, SES.empty) |: TypingRule.LDDiscard
-    (* End *)
-    (* Begin LDTyped *)
-    | LDI_Typed (ldi', t) ->
-        let ty' = Types.get_structure env ty in
-        let t = inherit_integer_constraints ~loc t ty' in
-        let t', ses_t = annotate_type ~loc env t in
-        let+ () = check_can_be_initialized_with ~loc env t' ty in
-        let new_env, new_ldi', ses_ldi =
-          annotate_local_decl_item ~loc env t' ldk ?e ldi'
-        in
-        let ses = SES.union ses_t ses_ldi in
-        (new_env, LDI_Typed (new_ldi', t'), ses) |: TypingRule.LDTyped
-    (* End *)
     (* Begin LDVar *)
     | LDI_Var x ->
         (* Rule LCFD: A ~local declaration shall not declare an identifier
@@ -2604,64 +2577,36 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let+ () = check_var_not_in_env ~loc env x in
         let env2 = add_local x ty ldk env in
         let new_env = add_immutable_expression env2 ldk e x in
-        (new_env, LDI_Var x, SES.empty) |: TypingRule.LDVar
+        new_env |: TypingRule.LDVar
     (* End *)
     (* Begin LDTuple *)
-    | LDI_Tuple ldis ->
+    | LDI_Tuple names ->
         let tys =
           match (Types.make_anonymous env ty).desc with
-          | T_Tuple tys when List.compare_lengths tys ldis = 0 -> tys
+          | T_Tuple tys when List.compare_lengths tys names = 0 -> tys
           | T_Tuple tys ->
               fatal_from ~loc
                 (Error.BadArity
                    ( Static,
                      "tuple initialization",
                      List.length tys,
-                     List.length ldis ))
+                     List.length names ))
           | _ -> conflict ~loc [ T_Tuple [] ] ty
         in
-        let new_env, new_ldis, sess =
+        let new_env =
           List.fold_right2
-            (fun ty' ldi' (env', les, sess) ->
-              let env', le, ses =
-                annotate_local_decl_item ~loc env' ty' ldk ldi'
-              in
-              (env', le :: les, ses :: sess))
-            tys ldis (env, [], [])
+            (fun ty' name env' ->
+              let+ () = check_var_not_in_env ~loc env' name in
+              add_local name ty' ldk env')
+            tys names env
         in
-        let ses = SES.unions sess in
-        (new_env, LDI_Tuple new_ldis, ses) |: TypingRule.LDTuple
-  (* End *)
-
-  (* Begin AnnotateLocalDeclItemUninit *)
-  let annotate_local_decl_item_uninit ~loc (env : env) ldi =
-    (* Here implicitly ldk=LDK_Var *)
-    match ldi with
-    | LDI_Discard | LDI_Tuple _ | LDI_Var _ ->
-        (* Here LDI_Tuple is never parsed containing any LDI_Typed, so we don't
-           need to care about decalarations in it. *)
-        fatal_from ~loc (Error.BadLDI ldi) |: TypingRule.LDUninitialisedVar
-    | LDI_Typed (ldi', t) ->
-        let t', ses_t = annotate_type ~loc env t in
-        let e_init = base_value ~loc env t' in
-        let new_env, new_ldi', ses_ldi =
-          annotate_local_decl_item ~loc env t' LDK_Var ldi'
-        in
-        let ses = SES.union ses_t ses_ldi in
-        (new_env, LDI_Typed (new_ldi', t'), e_init, ses)
-        |: TypingRule.LDUninitialisedTyped
+        new_env |: TypingRule.LDTuple
   (* End *)
 
   (* Begin DeclareLocalConstant *)
-  let declare_local_constant =
-    let rec add_constants v env ldi =
-      match ldi with
-      | LDI_Discard -> env
-      | LDI_Var x -> add_local_constant x v env
-      | LDI_Tuple _ -> (* Not yet implemented *) env
-      | LDI_Typed (ldi, _ty) -> add_constants v env ldi
-    in
-    fun env v ldi -> add_constants v env ldi
+  let declare_local_constant env v = function
+    | LDI_Var x -> add_local_constant x v env
+    | LDI_Tuple _ -> (* Not yet implemented *) env
   (* End *)
 
   let rec annotate_stmt env s : stmt * env * SES.t =
@@ -2707,14 +2652,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                     * Fix this by typing first assignments of
                     * undeclared variables as declarations.
                     *)
-                   match ASTUtils.lid_of_lexpr le with
+                   match ASTUtils.ldi_of_lexpr le with
                    | None -> env
                    | Some ldi ->
-                       let rec undefined = function
-                         | LDI_Discard -> true
+                       let undefined = function
                          | LDI_Var x -> is_undefined x env
-                         | LDI_Tuple ldis -> List.for_all undefined ldis
-                         | LDI_Typed (ldi', _) -> undefined ldi'
+                         | LDI_Tuple names ->
+                             List.for_all (fun x -> is_undefined x env) names
                        in
                        if undefined ldi then
                          let () =
@@ -2724,7 +2668,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                                PP.pp_stmt s
                          in
                          let ldk = LDK_Var in
-                         let env2, _ldi, _ses_ldi =
+                         let env2 =
                            annotate_local_decl_item ~loc env t_re ldk ldi
                          in
                          env2
@@ -2859,7 +2803,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         |: TypingRule.SFor
     (* End *)
     (* Begin SDecl *)
-    | S_Decl (ldk, ldi, e_opt) -> (
+    | S_Decl (ldk, ldi, ty_opt, e_opt) -> (
         match (ldk, e_opt) with
         (* SDecl.Some( *)
         | _, Some e ->
@@ -2868,18 +2812,26 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               if false then
                 Format.eprintf "Found rhs side-effects: %a@." SES.pp_print ses_e
             in
-            let env1, ldi1, ses_ldi =
-              annotate_local_decl_item ~loc env t_e ldk ~e:typed_e ldi
+            let env1, ty_opt', ses_ldi =
+              match ty_opt with
+              | None ->
+                  let env1 =
+                    annotate_local_decl_item ~loc env t_e ldk ~e:typed_e ldi
+                  in
+                  (* When [print_typed] is specified, wrap untyped items with their inferred type. *)
+                  let ty_opt = if C.print_typed then Some t_e else None in
+                  (env1, ty_opt, SES.empty)
+              | Some t ->
+                  let t_e' = Types.get_structure env t_e in
+                  let t = inherit_integer_constraints ~loc t t_e' in
+                  let t', ses_t = annotate_type ~loc env t in
+                  let+ () = check_can_be_initialized_with ~loc env t' t_e in
+                  let env1 =
+                    annotate_local_decl_item ~loc env t' ldk ~e:typed_e ldi
+                  in
+                  (env1, Some t', ses_t)
             in
             let ses = SES.union ses_e ses_ldi in
-            let ldi1 =
-              if C.print_typed then
-                (* When [print_typed] is specified, wrap untyped items with their inferred type. *)
-                match ldi1 with
-                | LDI_Typed _ | LDI_Discard -> ldi1
-                | LDI_Var _ | LDI_Tuple _ -> LDI_Typed (ldi1, t_e)
-              else ldi1
-            in
             let new_env =
               match ldk with
               | LDK_Let | LDK_Var -> env1
@@ -2887,18 +2839,28 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   let+ () = check_leq_constant_time ~loc:s typed_e in
                   try
                     let v = StaticInterpreter.static_eval env1 e in
-                    declare_local_constant env1 v ldi1
+                    declare_local_constant env1 v ldi
                   with Error.(ASLException _) -> env1)
             in
-            (S_Decl (ldk, ldi1, Some e') |> here, new_env, ses)
+            (S_Decl (ldk, ldi, ty_opt', Some e') |> here, new_env, ses)
             |: TypingRule.SDecl
         (* SDecl.Some) *)
         (* SDecl.None( *)
         | LDK_Var, None ->
-            let new_env, ldi1, e_init, ses_ldi =
-              annotate_local_decl_item_uninit ~loc env ldi
-            in
-            (S_Decl (LDK_Var, ldi1, Some e_init) |> here, new_env, ses_ldi)
+            (match ty_opt with
+            | None ->
+                fatal_from ~loc (Error.BadLDI ldi)
+                |: TypingRule.LDUninitialisedVar
+            | Some t ->
+                let t', ses_t' = annotate_type ~loc env t in
+                let e_init = base_value ~loc env t' in
+                let new_env =
+                  annotate_local_decl_item ~loc env t' LDK_Var ldi
+                in
+                ( S_Decl (LDK_Var, ldi, Some t', Some e_init) |> here,
+                  new_env,
+                  ses_t' )
+                |: TypingRule.LDUninitialisedTyped)
             |: TypingRule.SDecl
         | (LDK_Constant | LDK_Let), None ->
             fatal_from ~loc UnrespectedParserInvariant)
@@ -3062,12 +3024,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let t_sub_re, sub_re, ses_sub_re =
       expr_of_lexpr sub_le |> annotate_expr env
     in
-    let env1, ldi_x, ses_ldi =
-      annotate_local_decl_item ~loc env t_sub_re LDK_Var (LDI_Var x)
-    in
+    let ldi_x = LDI_Var x in
+    let env1 = annotate_local_decl_item ~loc env t_sub_re LDK_Var ldi_x in
     let s1, ses_s1 =
-      ( S_Decl (LDK_Var, ldi_x, Some sub_re) |> here,
-        SES.union ses_ldi ses_sub_re )
+      (S_Decl (LDK_Var, ldi_x, None, Some sub_re) |> here, ses_sub_re)
     in
     let s2, ses_s2 =
       let t_e, e, ses_e = typed_e in
@@ -3147,9 +3107,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         match (Types.make_anonymous env t_e).desc with
         | T_Tuple t_es when List.compare_lengths les t_es = 0 ->
             let x = fresh_var "__setter_destructuring" in
-            let env1, ldi_x, ses_ldi =
-              annotate_local_decl_item ~loc env t_e LDK_Let ~e:typed_e
-                (LDI_Var x)
+            let ldi_x = LDI_Var x in
+            let env1 =
+              annotate_local_decl_item ~loc env t_e LDK_Let ~e:typed_e ldi_x
             in
             let sub_e i = E_GetItem (E_Var x |> here, i) |> here in
             let recurse_one i sub_le t_sub_e =
@@ -3159,7 +3119,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let subs = list_mapi2 recurse_one 0 les t_es in
             if List.for_all Option.is_none subs then None
             else
-              let s0 = S_Decl (LDK_Let, ldi_x, Some e) |> here in
+              let s0 = S_Decl (LDK_Let, ldi_x, None, Some e) |> here in
               let produce_one i sub_le t_sub_e_i = function
                 | None ->
                     let sub_le', sub_le_ses =
@@ -3172,7 +3132,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 list_mapi3 produce_one 0 les t_es subs |> List.split
               in
               let s = stmt_from_list (s0 :: stmts)
-              and ses = SES.unions (ses_ldi :: ses_e :: sess) in
+              and ses = SES.unions (ses_e :: sess) in
               Some (s, ses)
         | _ -> None)
     | LE_Var x ->

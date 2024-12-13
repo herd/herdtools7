@@ -401,15 +401,15 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 |\ & \Treturn \parsesep \option{\Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Ncall &\\
 |\ & \Tassert \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \option{\Nty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Ncall \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Ncall \parsesep \Tdot \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Ncall \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{{\Tidentifier}} \parsesep \Trbracket \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Nty} \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Ndeclitem \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 |\ & \Tprint \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Tunreachable \parsesep \Tlpar \parsesep \Trpar \parsesep \Tsemicolon &\\
 |\ & \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Nlooplimit \parsesep \Tsemicolon &\\
@@ -432,18 +432,39 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-nlexpr}{}
 \begin{flalign*}
-\Nlexpr \derives\ & \Nlexpratom &\\
-|\ & \Tminus &\\
-|\ & \Tlpar \parsesep \Clisttwo{\Nlexpr} \parsesep \Trpar &
+\Nlexpr \derives\
+   & \Tminus &\\
+|\ & \Nslicedbasiclexpr &\\
+|\ & \Tlpar \parsesep \Clisttwo{\Ndiscardorslicedbasiclexpr} \parsesep \Trpar &\\
+|\ & \Tidentifier \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{\Tidentifier} \parsesep \Trbracket &\\
+|\ & \Tidentifier \parsesep \Tdot \parsesep \Tlpar \parsesep \Clisttwo{\Ndiscardoridentifier} \parsesep \Trpar &
 \end{flalign*}
 
-\hypertarget{def-nlexpratom}{}
+\hypertarget{def-nbasiclexpr}{}
 \begin{flalign*}
-\Nlexpratom \derives\ & \Tidentifier &\\
-|\ & \Nlexpratom \parsesep \Nslices &\\
-|\ & \Nlexpratom \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket &\\
-|\ & \Nlexpratom \parsesep \Tdot \parsesep \Tidentifier &\\
-|\ & \Nlexpratom \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clist{{\Tidentifier}} \parsesep \Trbracket &
+\Nbasiclexpr \derives\
+   & \Tidentifier \parsesep \Nnestedfields &\\
+|\ & \Tidentifier \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket \parsesep \Nnestedfields &
+\end{flalign*}
+
+\hypertarget{def-nnested-fields}{}
+\begin{flalign*}
+\Nnestedfields \derives\ & \emptysentence \;|\; \Tdot \parsesep \Tidentifier \parsesep \Nnestedfields &
+\end{flalign*}
+
+\hypertarget{def-nslicedbasiclexpr}{}
+\begin{flalign*}
+\Nslicedbasiclexpr \derives\ & \Nbasiclexpr \;|\; \Nbasiclexpr \parsesep \Nslices &
+\end{flalign*}
+
+\hypertarget{def-ndiscardorslicedbasiclexpr}{}
+\begin{flalign*}
+\Ndiscardorslicedbasiclexpr \derives\ & \Tminus \;|\; \Nslicedbasiclexpr &
+\end{flalign*}
+
+\hypertarget{def-ndiscardoridentifier}{}
+\begin{flalign*}
+\Ndiscardoridentifier \derives \ & \Tminus \;|\; \Tidentifier &
 \end{flalign*}
 
 A $\Ndeclitem$ is another kind of left-hand-side expression,
@@ -451,15 +472,9 @@ which appears only in declarations. It cannot have setter calls or set record fi
 it must declare a new variable.
 \hypertarget{def-ndeclitem}{}
 \begin{flalign*}
-\Ndeclitem \derives\ & \Nuntypeddeclitem \parsesep \Nasty&\\
-|\ & \Nuntypeddeclitem  &
-\end{flalign*}
-
-\hypertarget{def-nuntypeddeclitem}{}
-\begin{flalign*}
-\Nuntypeddeclitem \derives \ & \Tidentifier &\\
-|\ & \Tminus &\\
-|\ & \Plisttwo{\Ndeclitem} &
+\Ndeclitem \derives\
+   & \Nignoredoridentifier &\\
+|\ & \Plisttwo{\Nignoredoridentifier}  &
 \end{flalign*}
 
 \hypertarget{def-nintconstraintsopt}{}
