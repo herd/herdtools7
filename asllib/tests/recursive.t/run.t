@@ -1,6 +1,17 @@
   $ aslref simple-recursive.asl
 
+  $ aslref simple-recursive-without-limit.asl
+  File simple-recursive-without-limit.asl, line 1, character 0 to line 8,
+    character 4:
+  ASL Warning: the recursive function f has no recursive limit annotation.
+
   $ aslref double-recursive.asl
+
+  $ aslref double-recursive-without-limit.asl
+  File double-recursive-without-limit.asl, line 10, character 0 to line 13,
+    character 4:
+  ASL Warning: the mutually-recursive functions g, f have no recursive limit
+  annotation.
 
   $ aslref recursive-constant.asl
   File recursive-constant.asl, line 1, characters 13 to 14:

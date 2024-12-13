@@ -114,6 +114,7 @@ let error_handling_time_to_string = function
   | Dynamic -> "Dynamic"
 
 type warning_desc =
+  | NoRecursionLimit of identifier list
   | NoLoopLimit
   | IntervalTooBigToBeExploded of Z.t * Z.t
   | RemovingValuesFromConstraints of {
@@ -190,6 +191,7 @@ let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
   | IntervalTooBigToBeExploded _ -> "IntervalTooBigToBeExploded"
   | RemovingValuesFromConstraints _ -> "RemovingValuesFromConstraints"
+  | NoRecursionLimit _ -> "NoRecursionLimit"
 
 module PPrint = struct
   open Format
@@ -458,6 +460,13 @@ module PPrint = struct
 
   let pp_warning_desc f w =
     match w.desc with
+    | NoRecursionLimit [ name ] ->
+        fprintf f "@[ASL Warning:@ the recursive function %s%a@]" name
+          pp_print_text " has no recursive limit annotation."
+    | NoRecursionLimit li ->
+        fprintf f "@[ASL Warning:@ the mutually-recursive functions @[%a@]%a@]"
+          (pp_comma_list pp_print_string)
+          li pp_print_text " have no recursive limit annotation."
     | NoLoopLimit ->
         fprintf f "@[%a@]" pp_print_text
           "ASL Warning: Loop does not have a limit."
