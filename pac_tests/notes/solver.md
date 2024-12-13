@@ -181,3 +181,10 @@ inequalities but it is very unlikely to have this number of inequalities because
 this number is per execution (with `n=15` for kvm-unit-tests). So the program
 must either have a loop that we unfold 32768 times, or have more than 32768
 lines of assembly...
+
+An other assumption is that we don't use virtual addresses with non-canonical
+pac fields as modifier for the pac computation. This assumption may change the
+soundness: without it we must improve the union-find algorithm with a congruence
+closure algorithm, and the simplex-like algorithm with a Nelson-Oppen algorithm
+to combine it with a congruence closure algorithm and this make the
+implementation of the solver very hard.
