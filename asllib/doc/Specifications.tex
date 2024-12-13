@@ -247,9 +247,10 @@ All of the following apply:
         $(\genvtwo, \lenvtwo, \vses_\vf)$ and $\vf$ yields $(\vnew_\vf, \vses_\vf)$\ProseOrTypeError;
   \item define $\vds$ as the list of $\DFunc(\vnew_\vf)$ for all $(\lenvtwo, \vf, \vses\_\vf)$ in $\envandfstwo$;
   \item define $\vsess$ as the list of $(\vf, \vses_\vf)$ for all $(\lenvtwo, \vf, \vses\_\vf)$ in $\envandfstwo$;
+  \item applying $\propagaterecursivecallssess$ on $\vsess$ yields $\vsessprop$;
   \item define $\tenvtwo$ as the environment with $\genvtwo$ as its static global environment
         and an empty static local environment;
-  \item applying $\addsubprogramdecls$ to $\tenvtwo$ and $\vsess$ yields $(\tenvthree, \newdecls)$;
+  \item applying $\addsubprogramdecls$ to $\tenvtwo$ and $\vsessprop$ yields $(\tenvthree, \newdecls)$;
   \item define $\newtenv$ as the global static environment of $\tenvthree$.
 \end{itemize}
 
