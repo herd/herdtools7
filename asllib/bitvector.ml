@@ -123,10 +123,13 @@ let remask (length, data) =
    --------------------------------------------------------------------------*)
 
 let sign_bit (length, data) =
-  let n = length / 8 and m = length mod 8 in
-  let data_pos = if m = 0 then n - 1 else n in
-  let bit_index = (m + 7) mod 8 in
-  String.get data data_pos |> read_bit_raw bit_index
+  match length with
+  | 0 -> 0
+  | _ ->
+      let n = length / 8 and m = length mod 8 in
+      let data_pos = if m = 0 then n - 1 else n in
+      let bit_index = (m + 7) mod 8 in
+      String.get data data_pos |> read_bit_raw bit_index
 
 let extend signed nbytes (length, data) =
   let to_length = 8 * nbytes in
