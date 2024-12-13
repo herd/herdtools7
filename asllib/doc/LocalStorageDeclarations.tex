@@ -23,21 +23,25 @@ We then define the typing and semantics of the different kinds of local declarat
 \paragraph{Typing:} The function
 \[
   \begin{array}{c}
-  \annotatelocaldeclitem{
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\ty}{\tty} \aslsep
-    \overname{\localdeclkeyword}{\ldk} \aslsep
-    \overname{\langle\expr\rangle}{\veopt} \aslsep
+  \annotatelocaldeclitem
+  \left(
+    \begin{array}{c}
+    \overname{\staticenvs}{\tenv} \aslsep\\
+    \overname{\ty}{\tty} \aslsep\\
+    \overname{\localdeclkeyword}{\ldk} \aslsep\\
+    \overname{\langle\expr\times\TSideEffectSet\rangle}{\veopt} \aslsep\\
     \overname{\localdeclitem}{\ldi}
-   } \aslto\\
-  (\overname{\staticenvs}{\newtenv} \aslsep \overname{\localdeclitem}{\newldi})
+    \end{array}
+   \right) \aslto\\
+  (\overname{\staticenvs}{\newtenv} \aslsep \overname{\localdeclitem}{\newldi} \aslsep \overname{\TSideEffectSet}{\vses})
   \cup \overname{\TTypeError}{\TypeErrorConfig}
   \end{array}
 \]
 annotates a \localdeclarationitem\ $\ldi$ with a \localdeclarationkeyword\ $\ldk$, given a type $\tty$,
-and optional initializing expression $\veopt$,
+and optionally $\veopt$ --- an initializing expression and \sideeffectsetterm,
 in a static environment $\tenv$ results in $(\newenv, \newldi)$ where $\newenv$ is the modified
-static environment and $\newldi$ is the annotated local declaration item.
+static environment, the annotated local declaration item $\newldi$, and the
+\sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 \paragraph{Semantics:} The relation
@@ -181,12 +185,14 @@ All of the following apply:
 \begin{itemize}
   \item $\ldi$ is a local declaration which can be discarded, that is, $\LDIDiscard(\None)$;
   \item $\newenv$ is $\tenv$;
-  \item $\newldi$ is $\ldi$.
+  \item $\newldi$ is $\ldi$;
+  \item \Proseeqdef{$\vses$}{the empty set}.
 \end{itemize}
+
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{}{
-  \annotatelocaldeclitem{\tenv, \tty, \ldk, \veopt, \overname{\LDIDiscard(\None)}{\ldi}} \typearrow (\tenv, \ldi)
+  \annotatelocaldeclitem(\tenv, \tty, \ldk, \veopt, \overname{\LDIDiscard(\None)}{\ldi}) \typearrow (\tenv, \ldi, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
 \CodeSubsection{\LDDiscardBegin}{\LDDiscardEnd}{../Typing.ml}
@@ -228,18 +234,20 @@ All of the following apply:
   \item $\ldi$ denotes a variable $\vx$, that is, $\LDIVar(\vx)$;
   \item determining whether $\vx$ is not declared in $\tenv$ yields $\True$\ProseOrTypeError;
   \item $\tenvtwo$ is $\tenv$ modified so that $\vx$ is locally declared to have type $\tty$;
-  \item applying $\addimmutableexpr$ to $\ldk$, $\veopt$, and $\vx$ in $\tenv$ (to conditionally
+  \item applying $\addimmutableexpression$ to $\ldk$, $\veopt$, and $\vx$ in $\tenv$ (to conditionally
         update $\tenvtwo$) yields $\newtenv$;
-  \item $\newldi$ is the declaration of variable $\vx$.
+  \item $\newldi$ is the declaration of variable $\vx$;
+  \item \Proseeqdef{$\vses$}{the empty set}.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \checkvarnotinenv{\tenv, \vx} \typearrow \True \OrTypeError\\\\
   \addlocal(\tenv, \vx, \tty, \ldk) \typearrow \tenvtwo\\
-  \addimmutableexpr(\tenvtwo, \ldk, \veopt, \vx) \typearrow \newtenv
+  \addimmutableexpression(\tenvtwo, \ldk, \veopt, \vx) \typearrow \newtenv
 }{
-  \annotatelocaldeclitem{\tenv, \tty, \ldk, \veopt, \overname{\LDIVar(\vx)}{\ldi}} \typearrow (\newtenv, \LDIVar(\vx))
+  \annotatelocaldeclitem(\tenv, \tty, \ldk, \veopt, \overname{\LDIVar(\vx)}{\ldi}) \typearrow
+  (\newtenv, \LDIVar(\vx), \overname{\emptyset}{\vses})
 }
 \end{mathpar}
 \CodeSubsection{\LDVarBegin}{\LDVarEnd}{../Typing.ml}
@@ -290,27 +298,34 @@ In the specification:
 All of the following apply:
 \begin{itemize}
   \item $\ldi$ denotes a local declaration item $\ldip$ with local declaration keyword $\ldk$
-  and a type $\vt$, that is $\LDITyped(\ldip, \vt)$;
+        and a type $\vt$, that is $\LDITyped(\ldip, \vt)$;
   \item determining the \structure{} of right-hand side type $\tty$ in $\tenv$ yields $\ttyp$;
   \item propagating integer constraints from $\ttyp$ to $\vt$ using $\inheritintegerconstraints$ yields $\vtone$;
-  \item annotating the type $\vtone$ in $\tenv$ yields $\vttwo$\ProseOrTypeError;
+  \item annotating the type $\vtone$ in $\tenv$ yields $(\vttwo, \vsest)$\ProseOrTypeError;
   \item determining whether $\vttwo$ can be initialized with $\tty$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item annotating the local declaration item $\ldip$ with the local declaration keyword $\ldk$, given
-  the type $\vttwo$, in the environment $\tenv$, yields $(\newtenv,\newldip)$;
+        the type $\vttwo$, in the environment $\tenv$, yields $(\newtenv,\newldip, \vsesldi)$;
   \item $\newldi$ is the local declaration denoting $\newldip$ and the type $\vtp$, that is, \\
-  $\LDITyped(\newldip, \vttwo)$.
+        $\LDITyped(\newldip, \vttwo)$;
+  \item \Proseeqdef{$\vses$}{the union of $\vsest$ and $\vsesldi$}.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \tstruct(\tenv, \tty) \typearrow \ttyp \\
   \inheritintegerconstraints(\vt, \ttyp) \typearrow \vtone \OrTypeError \\
-  \annotatetype{\tenv, \vtone} \typearrow \vttwo \OrTypeError\\\\
+  \annotatetype{\tenv, \vtone} \typearrow (\vttwo, \vsest) \OrTypeError\\\\
   \checkcanbeinitializedwith(\tenv, \vttwo, \tty) \typearrow \True \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vttwo, \ldk, \veopt, \ldip} \typearrow (\newtenv, \newldip) \OrTypeError
+  {
+    \begin{array}{r}
+  \annotatelocaldeclitem(\tenv, \vttwo, \ldk, \veopt, \ldip) \typearrow \\
+  (\newtenv, \newldip, \vsesldi) \OrTypeError
+    \end{array}
+  }\\
+  \vses \eqdef \vsest \cup \vsesldi
 }{
-  \annotatelocaldeclitem{\tenv, \tty, \ldk, \veopt, \overname{\LDITyped(\ldip, \vt)}{\ldi}} \typearrow \\
-  (\newtenv, \LDITyped(\newldip, \vttwo))
+  \annotatelocaldeclitem(\tenv, \tty, \ldk, \veopt, \overname{\LDITyped(\ldip, \vt)}{\ldi}) \typearrow \\
+  (\newtenv, \LDITyped(\newldip, \vttwo), \vses)
 }
 \end{mathpar}
 \CodeSubsection{\LDTypedBegin}{\LDTypedEnd}{../Typing.ml}
@@ -490,36 +505,38 @@ One of the following applies:
 All of the following apply:
 \begin{itemize}
   \item $\ldi$ denotes a tuple of local declaration items $\ldi_{1..k}$, that is, $\LDITuple(\ldi_{1..k})$;
-  \item determining the \structure\ of $\tty$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\tty$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
   \item determining whether $\vtp$ is a tuple type yields $\True$\ProseOrTypeError;
   \item determining whether $\vtp$ the number of elements of $\vtp$ is $k$ yields $\True$\ProseOrTypeError;
   \item annotating the local declaration items in $\ldis$ from right to left with their corresponding
         (that is, with the same index) types $t_{1..k}$ in $\tenv$,
         propagating static environments from one annotation to the next,
-        yields the local declaration items $\ldip_{1..k}$\ProseOrTypeError;
+        yields the local declaration items $\ldip_{1..k}$ and \sideeffectsetterm\ $\vxs_{1..k}$\ProseOrTypeError;
   \item $\newtenv$ is the static environment yielded by annotating $\ldi_1$;
   \item $\newldi$ is a tuple of local declaration items with $\ldip_{1..k}$, that is, \\
-        $\LDITuple(\ldip_{1..k})$.
+        $\LDITuple(\ldip_{1..k})$;
+  \item \Proseeqdef{$\vses$}{the union of all \sideeffectsetterm\ $\vxs_i$, for $i=1..k$}.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \tstruct(\tenv, \tty) \typearrow \vtp \OrTypeError\\\\
+  \makeanonymous(\tenv, \tty) \typearrow \vtp \OrTypeError\\\\
   \checktrans{\astlabel(\vtp) = \TTuple}{TupleTypeExpected} \checktransarrow \True \OrTypeError\\\\
   \vtp \eqname \TTuple([\vt_{1..n}])\\\\
   \checktrans{k = n}{InvalidArity} \checktransarrow \True \OrTypeError\\\\
-  \newtenv_k = \tenv\\
+  \newtenv_k \eqdef \tenv\\
   {
     \begin{array}{r}
   i=k..1:
-  \annotatelocaldeclitem{\newtenv_{i}, \vt_{i}, \ldk, \None, \ldi_{i}} \typearrow \\
-  (\newtenv_{i-1}, \ldip_i) \OrTypeError
+  \annotatelocaldeclitem(\newtenv_{i}, \vt_{i}, \ldk, \None, \ldi_{i}, ) \typearrow \\
+  (\newtenv_{i-1}, \ldip_i, \vxs_i) \OrTypeError
     \end{array}
   }\\
-  \newtenv = \newtenv_0
+  \newtenv \eqdef \newtenv_0\\
+  \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
-  \annotatelocaldeclitem{\tenv, \tty, \ldk, \veopt, \overname{\LDITuple(\ldi_{1..k})}{\ldi}} \typearrow \\
-  (\newtenv, \LDITuple(\ldip_{1..k}))
+  \annotatelocaldeclitem(\tenv, \tty, \ldk, \veopt, \overname{\LDITuple(\ldi_{1..k})}{\ldi}) \typearrow \\
+  (\newtenv, \LDITuple(\ldip_{1..k}), \vses)
 }
 \end{mathpar}
 \CodeSubsection{\LDTupleBegin}{\LDTupleEnd}{../Typing.ml}

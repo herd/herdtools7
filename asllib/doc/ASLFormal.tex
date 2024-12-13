@@ -311,6 +311,21 @@ transforms a list of pairs into the corresponding pair of lists:
 \]
 \end{definition}
 
+\hypertarget{def-unziplistthree}{}
+\begin{definition}[Unzipping a List of Triples]
+The parametric function
+\[
+\unziplistthree : (T_1 \cartimes T_2 \cartimes T_3)^* \rightarrow (T_1^* \cartimes T_2^* \cartimes T_3^*)
+\]
+transforms a list of triples into the corresponding triple of lists:
+\[
+  \unziplistthree(\triples) \triangleq \begin{cases}
+    (\emptylist, \emptylist, \emptylist)  & \text{if }\triples = \emptylist\\
+    (a_{1..k}, b_{1..k}, c_{1..k})      & \text{else }\triples = (a_1,b_1,c_1) \ldots (a_k,b_k,c_k)  \enspace.
+  \end{cases}
+\]
+\end{definition}
+
 \hypertarget{def-uniquelist}{}
 \hypertarget{def-uniquep}{}
 \begin{definition}[Finding unique elements of a list]

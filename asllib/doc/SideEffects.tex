@@ -1,0 +1,716 @@
+\chapter{Side Effects\label{chap:SideEffects}}
+
+This chapter defines a static \emph{side effect analysis}.
+The analysis aims to \emph{soundly} answer which pairs of expressions are \emph{order independent}.
+By \emph{soundly}, we mean that the analysis proves that a \underline{sufficient condition}
+for \emph{order independence} holds.
+
+Intuitively, two expressions --- $\veone$ and $\vetwo$ --- are \emph{order independent}
+if they can be evaluated in any order (first $\veone$ and then $\vetwo$ or first $\vetwo$ and then $\veone$),
+starting from any initial environment $\env$,
+and terminate in the same configuration.
+
+To formalize this intuition, we need to consider the following:
+\begin{description}
+    \item[Evaluation] We employ $\evalexprlist{\cdot}$ to evaluate a list of expressions;
+
+    \item[Non-determinism] Recall that the semantics is non-deterministic, which means evaluation of any
+    expression in the same environment may terminate with different configurations. We therefore compare
+    the \underline{sets} of output configurations resulting from each order of evaluation.
+
+    \item[Order Sensitivity] evaluating two expressions yields a list consisting of two
+    corresponding values. Further, evaluating two expressions in two different orders results in the values
+    appearing in reverse order relative to one another. Therefore to enable comparison, we need to reverse one of
+    the lists (see $\reversevals$ below).
+
+    \item[Dynamic Errors] if both orders of evaluation terminate in dynamic errors, we consider them
+    equivalent even if the error codes are different. This abstraction is carried out by $\abstractdynerror$.
+    We ignore all dynamic errors that are not assertions, by abstracting them away.
+\end{description}
+
+\begin{definition}[Order Independence]
+Two expressions $\veone$ and $\vetwo$ are \emph{order independent}
+if the following condition holds for every
+environment $\env \in \dynamicenvs$:
+\[
+\begin{array}{l}
+\{\ \abstractdynerror(C) \;|\; \evalexprlist{\env, [\veone, \vetwo]} \evalarrow C\ \} \setminus \{\bot\} = \\
+\{\ \abstractdynerror(C) \;|\; \reversevals(\evalexprlist{\env, [\vetwo, \veone]}) \evalarrow C\ \} \setminus \{\bot\} \enspace.
+\end{array}
+\]
+\hypertarget{def-reversevals}{}
+where $\reversevals$ reverses the order of values resulting from evaluating $\vetwo$ first
+and $\veone$ second into configurations resulting from evaluating $\veone$ first
+and $\vetwo$ second, leaving abnormal configurations unchanged:
+\[
+    \reversevals(C) \triangleq \begin{cases}
+        \Normal(([\vvone, \vvtwo], \vg), \env) & \text{if }C=\Normal(([\vvtwo, \vvone], \vg), \env)\\
+        C & \text{else}
+    \end{cases}
+\]
+\hypertarget{def-abstractdynerror}{}
+and $\abstractdynerror$ abstracts assertion errors into $\top$,
+all other dynamic errors into $\bot$ (which are ignored)
+and leaves all other configurations unchanged:
+\[
+\abstractdynerror(C) \triangleq \begin{cases}
+    C       & \text{if }\configdomain{C} \in \{\Normal, \Throwing\}\\
+    \top    & \text{if }C \in \{ \DynamicErrorVal{\DynamicAssertionFailure}, \DynamicErrorVal{\DynamicTypeAssertionFailure} \}\\
+    \bot    & \text{else}\\
+\end{cases}
+\]
+That is, evaluating the expressions results in the same set of configurations,
+up to the order of values, and ignoring dynamic errors that are not due to assertions.
+\end{definition}
+
+Along the way, we also define the concept of \emph{pure expressions} and \staticallyevaluable\ expressions.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Time Frames\label{sec:TimeFrames}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\hypertarget{def-timeframe}{}
+We divide side effects by \emph{\timeframesterm}, which indicate the phase where a side effect occurs:
+\begin{description}
+    \item[Constant] Contains effects that take place during static evaluation (see \chapref{staticevaluation}). That is, during type-checking.
+    \item[Configuration] Contains effects that take place while rewriting the initializing value of a \texttt{config} storage element.
+    \item[Execution] Contains effects that take place during semantic evaluation.
+\end{description}
+
+Formally, \timeframesterm\ are totally ordered via $\timeframeless$ as follows:
+\hypertarget{def-timeframetype}{}
+\hypertarget{def-timeframeless}{}
+\[
+\TTimeFrame \triangleq \{ \timeframeconstant \timeframeless \timeframeconfig \timeframeless \timeframeexecution \}
+\]
+Additionally, we define the less-than-or-equal ordering as follows:
+\[
+f \timeframeleq f' \triangleq f \timeframeless f' \lor f = f' \enspace.
+\]
+
+We now define some helper functions for constructing time frames.
+
+\hypertarget{def-timeframemax}{}
+We define the maximum of a set of time frames $\timeframemax : \pow{\TTimeFrame} \rightarrow \TTimeFrame$
+as follows:
+\[
+    \timeframemax(T) \triangleq t \text{ such that } t\in T \land \forall t'\in T.\ t' \timeframeleq t \enspace.
+\]
+
+\subsubsection{TypingRule.TimeFrameLDK\label{sec:TypingRule.TimeFrameLDK}}
+\hypertarget{def-timeframeofldk}{}
+The function
+\[
+    \timeframeofldk(\overname{\localdeclkeyword}{\ldk}) \aslto \overname{\TTimeFrame}{\vt}
+\]
+constructs a \timeframeterm\ $\vt$ from a local declaration keyword $\ldk$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+    {
+        \timeframeofldk(\ldk) \typearrow
+    \begin{cases}
+        \timeframeconstant & \text{if }\ldk = \LDKConstant\\
+        \timeframeexecution & \text{if }\ldk = \LDKLet\\
+        \timeframeexecution & \text{if }\ldk = \LDKVar\\
+    \end{cases}
+    }
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.TimeFrameGDK\label{sec:TypingRule.TimeFrameGDK}}
+\hypertarget{def-timeframeofgdk}{}
+The function
+\[
+    \timeframeofgdk(\overname{\globaldeclkeyword}{\gdk}) \aslto \TTimeFrame
+\]
+constructs a \timeframeterm\ $\vt$ from a global declaration keyword $\gdk$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+    {
+        \timeframeofgdk(\gdk) \typearrow
+    \begin{cases}
+        \timeframeconstant  & \text{if }\gdk = \GDKConstant\\
+        \timeframeconfig & \text{if }\gdk = \GDKConfig\\
+        \timeframeexecution & \text{if }\gdk = \GDKLet\\
+        \timeframeexecution & \text{if }\gdk = \GDKVar\\
+    \end{cases}
+    }
+}
+\end{mathpar}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Side Effect Descriptors\label{sec:SideEffectDescriptors}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\hypertarget{def-sideeffectdescriptorterm}{}
+We now define \sideeffectdescriptorsterm,
+which are configurations used to describe side effects, as explained below:
+\hypertarget{def-tsideeffect}{}
+\hypertarget{def-readlocal}{}
+\[
+\TSideEffect \triangleq \left\lbrace
+\begin{array}{ll}
+    \ReadLocal(\overname{\identifier}{\vx}, \overname{\TTimeFrame}{\vt}, \overname{\Bool}{\vimmutable})     & \cup
+    \hypertarget{def-writelocal}{}\\
+    \WriteLocal(\overname{\identifier}{\vx})                                            & \cup
+    \hypertarget{def-readglobal}{}\\
+    \ReadGlobal(\overname{\identifier}{\vx}, \overname{\TTimeFrame}{\vt}, \overname{\Bool}{\vimmutable})    & \cup
+    \hypertarget{def-writeglobal}{}\\
+    \WriteGlobal(\overname{\identifier}{\vx})                                           & \cup
+    \hypertarget{def-throwexception}{}\\
+    \ThrowException(\overname{\identifier}{\vx})                                        & \cup
+    \hypertarget{def-recursivecall}{}\\
+    \RecursiveCall(\overname{\identifier}{\vf})                                         & \cup
+    \hypertarget{def-performsassertions}{}\\
+    \PerformsAssertions                                                 & \cup
+    \hypertarget{def-nondeterministic}{}\\
+    \NonDeterministic                                                   &
+\end{array} \right.
+\]
+\hypertarget{def-readlocalterm}{}
+\begin{description}
+    \item[$\ReadLocal$] a \ReadLocalTerm\ describes an evaluation of a construct that leads to reading the value of the local storage element
+        $\vx$ at the \timeframeterm\ $\vt$ where $\vimmutable$ is $\True$ if and only if $\vx$
+        was declared as an immutable local storage element (that is, \texttt{constant} or \texttt{let});
+    \hypertarget{def-writelocalterm}{}
+    \item[$\WriteLocal$] a \WriteLocalTerm\ describes an evaluation of a construct that leads to modifying the value of the local storage element
+        $\vx$;
+    \hypertarget{def-readglobalterm}{}
+    \item[$\ReadGlobal$] a \ReadGlobalTerm\ describes an evaluation of a construct that leads to reading the value of the global storage element
+        $\vx$ at the \timeframeterm\ $\vt$ where $\vimmutable$ is $\True$ if and only if $\vx$
+        was declared as an immutable local storage element (that is, \texttt{constant}, \texttt{config}, or \texttt{let});
+    \hypertarget{def-writeglobalterm}{}
+    \item[$\WriteGlobal$] a \WriteGlobalTerm\ describes an evaluation of a construct that leads to modifying the value of the global storage element
+        $\vx$;
+    \hypertarget{def-throwexceptionterm}{}
+    \item[$\ThrowException$] an \ThrowExceptionTerm\ describes an evaluation of a construct that leads to raising an exception whose type
+        is named $\vx$;
+    \hypertarget{def-recursivecallterm}{}
+    \item[$\RecursiveCall$] a \RecursiveCallTerm\ describes an evaluation of a construct that leads to calling the recursive function $\vf$;
+    \hypertarget{def-performsassertionsterm}{}
+    \item[$\PerformsAssertions$] a \PerformsAssertionsTerm\ describes an evaluation of a construct that leads to evaluating an \texttt{assert} statement;
+    \hypertarget{def-nondeterministicterm}{}
+    \item[$\NonDeterministic$] a \NonDeterministicTerm\ describes an evaluation of a construct that leads to evaluating a non-deterministic
+        expression (either \ARBITRARY\ or a library function call known to be non-deterministic).
+\end{description}
+
+We now define a few helper functions over \timeframesterm.
+
+\subsubsection{TypingRule.TimeFrame\label{sec:TypingRule.TimeFrame}}
+\hypertarget{def-sideeffecttimeframe}{}
+The function
+\[
+    \timeframe(\overname{\TSideEffect}{\vs}) \aslto \overname{\TTimeFrame}{\vt}
+\]
+retrieves the \timeframeterm\ $\vt$ from a \sideeffectdescriptorterm\ $\vs$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+    \timeframe(\overname{\ReadLocal(\Ignore, \vt, \Ignore)}{\vs}) \typearrow \vt
+}
+\and
+\inferrule{}{
+    \timeframe(\overname{\ReadGlobal(\Ignore, \vt, \Ignore)}{\vs}) \typearrow \vt
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{
+    {
+    \configdomain{\vs} \in \left\{
+        \begin{array}{c}
+            \WriteLocal, \\
+            \WriteGlobal, \\
+            \NonDeterministic, \\
+            \RecursiveCall, \\
+            \ThrowException
+        \end{array}
+    \right\}
+    }
+}{
+    \timeframe(\vs) \typearrow \overname{\timeframeexecution}{\vt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{}{
+    \timeframe(\overname{\PerformsAssertions}{\vs}) \typearrow \overname{\timeframeconstant}{\vt}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.SideEffectIsPure\label{sec:TypingRule.SideEffectIsPure}}
+\hypertarget{def-sideeffectispure}{}
+\[
+    \sideeffectispure(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
+\]
+defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{pure},
+yielding the result in $\vb$.
+Intuitively, a \emph{pure} \sideeffectdescriptorterm\ helps to establish that
+an expression evaluates without modifying values of storage elements.
+
+\subsubsection{Prose}
+Define $\vb$ as $\True$ if and only if $\vt$ is either a \ReadLocalTerm, a \ReadGlobalTerm,
+a \NonDeterministicTerm, or a \PerformsAssertionsTerm.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+    \vb \eqdef \configdomain{\vs} \in \{\ReadLocal, \ReadGlobal, \NonDeterministic, \PerformsAssertions\}
+}{
+    \sideeffectispure(\vt) \typearrow \vb
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.SideEffectIsStaticallyEvaluable\label{sec:TypingRule.SideEffectIsStaticallyEvaluable}}
+\hypertarget{def-sideeffectisstaticallyevaluable}{}
+\[
+    \sideeffectisstaticallyevaluable(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
+\]
+defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{\staticallyevaluable},
+yielding the result in $\vb$.
+Intuitively, a \emph{statically evaluable} \sideeffectdescriptorterm\ helps establish that
+an expression evaluates without failing assertions, without modifying any storage element,
+and always yielding the same result, that is, deterministically.
+
+\subsubsection{Prose}
+Define $\vb$ as $\True$ if and only if $\vs$ is either
+a \ReadLocalTerm\ associated with an immutable storage element, or
+a \ReadGlobalTerm\ associated with an immutable storage element.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+    \vb \eqdef \vs = \ReadLocal(\Ignore, \Ignore, \True) \lor \vs = \ReadGlobal(\Ignore, \Ignore, \True)
+}{
+    \sideeffectisstaticallyevaluable(\vs) \typearrow \vb
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.SideEffectConflict\label{sec:TypingRule.SideEffectConflict}}
+% Transliteration note: this function is not reflected in the implementation as it checks conflicts directly on sets of side effects.
+\hypertarget{def-sideeffectconflict}{}
+\hypertarget{def-sideeffectconflictterm}{}
+The function
+\[
+\sideeffectconflict(\overname{\TSideEffect}{\vsone}, \overname{\TSideEffect}{\vstwo}) \aslto \overname{\Bool}{\vb}
+\]
+defines whether there exists a \emph{\sideeffectconflictterm} between the \sideeffectdescriptorterm\ $\vsone$
+and the \sideeffectdescriptorterm\ $\vstwo$, yielding the result in $\vb$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+    \item All of the following apply (\textsc{globalread}):
+    \begin{itemize}
+        \item $\vsone$ is a \ReadGlobalTerm\ for a storage element named $\id$;
+        \item define $\vb$ as $\True$ if and only if $\vstwo$ is either
+              a \WriteGlobalTerm\ for a storage element named $\id$ or a \RecursiveCallTerm.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{globalwrite}):
+    \begin{itemize}
+        \item $\vsone$ is a \WriteGlobalTerm\ for a storage element named $\id$;
+        \item define $\vb$ as $\True$ if and only if $\vstwo$ is either
+              a \WriteGlobalTerm\ for a storage element named $\id$,
+              a \ReadGlobalTerm\ for a storage element named $\id$,
+              an \ThrowExceptionTerm, or
+              a \RecursiveCallTerm.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{exception}):
+    \begin{itemize}
+        \item $\vsone$ is an \ThrowExceptionTerm;
+        \item define $\vb$ as $\True$ if and only if $\vstwo$ is either
+                an \ThrowExceptionTerm,
+                a \WriteLocalTerm,
+                a \PerformsAssertionsTerm, or a
+                \RecursiveCallTerm.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{localread}):
+    \begin{itemize}
+        \item $\vsone$ is a \ReadLocalTerm\ for a storage element named $\id$;
+        \item define $\vb$ as $\True$ if and only if $\vstwo$ is either
+                a \WriteLocalTerm\ for a storage element named $\id$, or a
+                \RecursiveCallTerm.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{localwrite}):
+    \begin{itemize}
+        \item $\vsone$ is a \WriteLocalTerm\ for a storage element named $\id$;
+        \item define $\vb$ as $\True$ if and only if $\vstwo$ is either
+              a \ReadLocalTerm\ for a storage element named $\id$,
+              a \WriteLocalTerm\ for a storage element named $\id$, or a
+                \RecursiveCallTerm.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{assertion}):
+    \begin{itemize}
+        \item $\vsone$ is a \PerformsAssertionsTerm;
+        \item define $\vb$ as $\True$ if and only if $\vstwo$ is either
+              a \PerformsAssertionsTerm\, or a
+            \RecursiveCallTerm.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{nondeterminism}):
+    \begin{itemize}
+        \item $\vsone$ is a \NonDeterministicTerm;
+        \item define $\vb$ as $\False$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{recursion}):
+    \begin{itemize}
+        \item $\vsone$ is a \RecursiveCallTerm;
+        \item define $\vb$ as $\True$ if and only if $\vstwo$ is not a \NonDeterministicTerm.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[globalread]{
+    \vb \eqdef \vstwo = \WriteGlobal(\id, \Ignore, \Ignore) \lor \configdomain{\vstwo} = \RecursiveCall
+}{
+    \sideeffectconflict(\overname{\ReadGlobal(\id, \Ignore, \Ignore)}{\vsone}, \vstwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[globalwrite]{
+    {
+        \vb \eqdef \left\lbrace
+        \begin{array}{ll}
+            \vstwo = \WriteGlobal(\id, \Ignore, \Ignore) & \lor\\
+            \vstwo = \ReadGlobal(\id, \Ignore, \Ignore)  & \lor\\
+            \configdomain{\vstwo} \in \{\ThrowException, \RecursiveCall\} &
+        \end{array}\right.
+    }
+}{
+    \sideeffectconflict(\overname{\WriteGlobal(\id, \Ignore, \Ignore)}{\vsone}, \vstwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[exception]{
+    \vb \eqdef \configdomain{\vstwo} \in \{\ThrowException, \WriteLocal, \PerformsAssertions, \RecursiveCall\}
+}{
+    \sideeffectconflict(\overname{\ThrowException}{\vsone}, \vstwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[localread]{
+    \vb \eqdef \vstwo = \WriteLocal(\id, \Ignore, \Ignore) \lor \configdomain{\vstwo} = \RecursiveCall
+}{
+    \sideeffectconflict(\overname{\ReadLocal(\id, \Ignore, \Ignore)}{\vsone}, \vstwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[localwrite]{
+    {
+    \vb \eqdef \left\lbrace\begin{array}{ll}
+        \vstwo = \ReadLocal(\id, \Ignore, \Ignore)  & \lor\\
+        \vstwo = \WriteLocal(\id, \Ignore, \Ignore) & \lor \\
+        \configdomain{\vstwo} = \RecursiveCall      &
+    \end{array}\right.
+    }
+}{
+    \sideeffectconflict(\overname{\WriteLocal(\id, \Ignore, \Ignore)}{\vsone}, \vstwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[assertion]{
+    \vb \eqdef \configdomain{\vstwo} \in \{\PerformsAssertions, \RecursiveCall\}
+}{
+    \sideeffectconflict(\overname{\PerformsAssertions}{\vsone}, \vstwo) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[nondeterminism]{}{
+    \sideeffectconflict(\overname{\NonDeterministic}{\vsone}, \vstwo) \typearrow \overname{\False}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[recursion]{}{
+    \sideeffectconflict(\overname{\RecursiveCall}{\vsone}, \vstwo) \typearrow \overname{\vstwo \neq \NonDeterministic}{\vb}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.LDKIsImmutable\label{sec:TypingRule.LDKIsImmutable}}
+\hypertarget{def-ldkisimmutable}{}
+The function
+\[
+\ldkisimmutable(\overname{\localdeclkeyword}{\ldk}) \typearrow \overname{\True}{\vb}
+\]
+tests whether the local declaration keyword $\ldk$ relates to an immutable storage element,
+yielding the result in $\vb$.
+
+\subsubsection{Prose}
+Define $\vb$ as $\True$ if and only if $\ldk$ corresponds to either the keyword \texttt{constant} or
+the keyword \texttt{let}.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \ldkisimmutable(\ldk) \typearrow \overname{\ldk \in \{\LDKConstant, \LDKLet\}}{}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.GDKIsImmutable\label{sec:TypingRule.GDKIsImmutable}}
+\hypertarget{def-gdkisimmutable}{}
+The function
+\[
+\gdkisimmutable(\overname{\globaldeclkeyword}{\gdk}) \typearrow \overname{\True}{\vb}
+\]
+tests whether the global declaration keyword $\gdk$ relates to an immutable storage element,
+yielding the result in $\vb$.
+
+\subsubsection{Prose}
+Define $\vb$ as $\True$ if and only if $\gdk$ corresponds to either the keyword \texttt{constant},
+the keyword \texttt{config}, or the keyword \texttt{let}.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \gdkisimmutable(\gdk) \typearrow \overname{\gdk \in \{\GDKConstant, \GDKConfig, \GDKLet\}}{}
+}
+\end{mathpar}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Side Effect Sets\label{sec:SideEffectSets}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{TypingRule.AreNonConflicting\label{sec:TypingRule.AreNonConflicting}}
+\hypertarget{def-arenonconflicting}{}
+The function
+\[
+    \arenonconflicting(\overname{\TSideEffectSet}{\vsesone}, \overname{\TSideEffectSet}{\vsestwo})
+    \aslto \overname{\Bool}{\vb}
+\]
+tests whether there are no \sideeffectconflictterm\ between the set of
+\sideeffectdescriptorsterm\ $\vsesone$ and the set of \sideeffectdescriptorsterm\ $\vsestwo$,
+yielding the result in $\vb$.
+
+\subsubsection{Prose}
+Define $\vb$ as $\True$ if for every \sideeffectdescriptorterm\ $\vsone$ in $\vsesone$ and
+every \sideeffectdescriptorterm\ $\vstwo$ in $\vsestwo$,
+testing $\sideeffectconflict$ for $\vsone$ and $\vstwo$ yields $\False$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+    \vbp \eqdef \bigvee_{\vsone \in \vsesone, \vstwo \in \vsestwo} \sideeffectconflict(\vsone, \vstwo)
+}{
+    \arenonconflicting(\vsesone, \vsestwo) \typearrow \overname{\neg \vbp}{\vb}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.NonConflictingUnion\label{sec:TypingRule.NonConflictingUnion}}
+\hypertarget{def-nonconflictingunion}{}
+The function
+\[
+    \nonconflictingunion(\overname{\TSideEffectSet}{\vsesone} \aslsep \overname{\TSideEffectSet}{\vsestwo})
+    \aslto \overname{\TSideEffectSet}{\vses} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+yields the union of the two sets of \sideeffectdescriptorsterm\ $\vsesone$ and $\vsestwo$ in $\vses$
+if they are \hyperlink{def-sideeffectconflictterm}{non-conflicting}. \ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+    \item checking whether $\arenonconflicting$ yields $\True$ for $\vsesone$ and $\vsestwo$ yields\\
+         $\True$\ProseTerminateAs{\ConflictingSideEffects};
+    \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+    \checktrans{\arenonconflicting(\vsesone, \vsestwo)}{\ConflictingSideEffects} \typearrow \True \OrTypeError
+}{
+    \nonconflictingunion(\vsesone, \vsestwo) \typearrow \overname{\vsesone \cup \vsestwo}{\vses}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.MaxTimeFrame\label{sec:TypingRule.MaxTimeFrame}}
+\hypertarget{def-maxtimeframe}{}
+The function
+\[
+    \maxtimeframe(\overname{\TSideEffectSet}{\vses}) \aslto \overname{\TTimeFrame}{\vf}
+\]
+defines the maximal \timeframeterm\ for a \sideeffectsetterm\ $\vses$, which is returned
+in $\vf$.
+(If $\vses$ is empty, the result is \timeframeconstant.)
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+    \item All of the following apply (\textsc{execution}):
+    \begin{itemize}
+        \item there exists a \sideeffectdescriptorterm\ in $\vses$ that is either
+            a \WriteLocalTerm, a \WriteGlobalTerm, an \ThrowExceptionTerm, a \RecursiveCallTerm, or
+            a \NonDeterministicTerm;
+        \item define $\vf$ as \timeframeexecution.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{reads}):
+    \begin{itemize}
+        \item define $\vreads$ as the subset of $\vses$ that contains only
+            \sideeffectdescriptorsterm\ that are either \ReadLocalTerm\ or \ReadGlobalTerm;
+        \item $\vreads$ is equal to $\vses$;
+        \item define $\vtimeframes$ as the \timeframesterm\ appearing in the \sideeffectdescriptorsterm\
+            in $\vreads$;
+        \item define $\vf$ as the greatest time frame in the union of $\vtimeframes$ and the singleton set for \timeframeconstant,
+              where $\timeframeleq$ is used to compare any two \timeframesterm.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[execution]{
+    {
+    \exists \vs \in \vses.\ \configdomain{\vs} \in \left\{
+        \begin{array}{c}
+            \WriteLocal, \\
+            \WriteGlobal, \\
+            \ThrowException, \\
+            \RecursiveCall, \\
+            \NonDeterministic
+        \end{array}
+        \right\}
+    }
+}{
+    \maxtimeframe(\vses) \typearrow \overname{\timeframeexecution}{\vf}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[reads]{
+    \vreads \eqdef \{ \vs \in \vses \;|\; \configdomain{\vs} \in \{\ReadLocal, \ReadGlobal\} \}\\
+    \vses = \vreads\\
+    \vtimeframes \eqdef \{ \timeframe(\vfp) \;|\; \vfp\in\vreads \} \\
+    \vf \eqdef \timeframemax(\vtimeframes \cup \{\timeframeconstant\})
+}{
+    \maxtimeframe(\vses) \typearrow \vf
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.SESIsStaticallyEvaluable\label{sec:TypingRule.SESIsStaticallyEvaluable}}
+\hypertarget{def-isstaticallyevaluable}{}
+\hypertarget{def-staticallyevaluable}{}
+The function
+\[
+  \isstaticallyevaluable(\overname{\TSideEffectSet}{\vses}) \aslto \overname{\Bool}{\bv}
+\]
+tests whether a set of \sideeffectdescriptorsterm\ $\vses$ are all \staticallyevaluable,
+yielding the result in $\vb$.
+
+\subsubsection{Prose}
+Define $\vb$ as $\True$ if and only if every \sideeffectdescriptorterm\ $\vs$ in $\vses$
+is \staticallyevaluable.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \vb \eqdef \bigwedge_{\vs\in\vses} \sideeffectisstaticallyevaluable(\vs)
+}{
+  \isstaticallyevaluable(\vses) \typearrow \vb
+}
+\end{mathpar}
+
+\hypertarget{def-checkstaticallyevaluable}{}
+\subsubsection{TypingRule.CheckStaticallyEvaluable\label{sec:TypingRule.CheckStaticallyEvaluable}}
+The function
+\[
+  \checkstaticallyevaluable(\overname{\TSideEffectSet}{\vses}) \aslto
+  \{\True\} \cup \TTypeError
+\]
+returns $\True$ if the set of \sideeffectdescriptorsterm\ $\vses$ is \staticallyevaluable.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+All of the following applies:
+\begin{itemize}
+  \item applying $\isstaticallyevaluable$ to $\ve$ in $\tenv$ yields $\vb$;
+  \item the result is $\True$ if $\vb$ is $\True$, otherwise it is a type error indicating that the expression
+  is not statically evaluable.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \isstaticallyevaluable(\vses) \typearrow \vb\\
+  \checktrans{\vb}{NotStaticallyEvaluable} \checktransarrow \True \OrTypeError
+}{
+  \checkstaticallyevaluable(\vses) \typearrow \True
+}
+\end{mathpar}
+\CodeSubsection{\CheckStaticallyEvaluableBegin}{\CheckStaticallyEvaluableEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.SESIsPure\label{sec:TypingRule.SESIsPure}}
+\hypertarget{def-sesispure}{}
+The function
+\[
+    \sesispure(\overname{\TSideEffectSet}{\vses}) \aslto \overname{\Bool}{\vb}
+\]
+tests whether all side effects in the set $\vses$ are pure, yielding the result in $\vb$.
+
+\subsubsection{Prose}
+Define $\vb$ as $\True$ if and only if $\sideeffectispure$ holds for
+every \sideeffectdescriptorterm\ $\vs$ in $\vses$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+    \bigwedge_{\vs\in\vses} \sideeffectispure(\vs)
+}{
+    \sesispure(\vses) \typearrow \True
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.SESIsDeterministic\label{sec:TypingRule.SESIsDeterministic}}
+\hypertarget{def-sesisdeterministic}{}
+The function
+\[
+  \sesisdeterministic(\overname{\TSideEffectSet}{\vses}) \aslto \overname{\Bool}{\bv}
+\]
+tests whether the \NonDeterministic\ \sideeffectdescriptorterm\ is not included in $\vses$,
+yielding the result in $\vb$.
+
+\subsubsection{Prose}
+Define $\vb$ as $\True$ if and only if \NonDeterministic\ is not included in $\vses$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+  \sesisdeterministic(\vses) \typearrow \overname{\NonDeterministic \not\in \vses}{\vb}
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.SESIsBefore\label{sec:TypingRule.SESIsBefore}}
+\hypertarget{def-sesisbefore}{}
+The function
+\[
+  \sesisbefore(\overname{\TSideEffectSet}{\vses} \aslsep \overname{\TTimeFrame}{\vt}) \aslto \overname{\Bool}{\vb}
+\]
+tests whether the \timeframesterm\ of \sideeffectdescriptorsterm\ in $\vses$ are all less than or equal to the \timeframeterm\
+$\vt$, yielding the result in $\vb$.
+% Transliteration note: this abstracts both leq_config_time and leq_constant_time
+
+\subsubsection{Prose}
+Define $\vb$ as $\True$ if and only if the maximal \timeframeterm\ of all \sideeffectdescriptorsterm\ in $\vses$
+is less than or equal to $\vt$ with respect to $\timeframeleq$.
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{}{
+    \sesisbefore(\vses, \vt) \typearrow \overname{\maxtimeframe(\vses) \timeframeleq \vt}{\vb}
+}
+\end{mathpar}

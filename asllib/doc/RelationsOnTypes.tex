@@ -10,7 +10,7 @@ This section defines the following relations over types and operators:
   \item Applying a binary operator to a pair of types (\secref{TypingRule.ApplyBinopTypes})
 \end{itemize}
 
-\subsection{TypingRule.Subtype\label{sec:TypingRule.Subtype}}
+\subsubsection{TypingRule.Subtype\label{sec:TypingRule.Subtype}}
 The \emph{subtype} relation is a partial order over \underline{named types}.
 The \emph{supertype} is the inverse relation. That is, \tty\ is a supertype of \tsy\ if and only if \tsy\ is a subtype of \tty.
 
@@ -20,6 +20,8 @@ The predicate
   \subtypesrel(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo})
   \aslto \overname{\Bool}{\vb}
 \]
+defines whether the type $\vtone$ subtypes the type $\vttwo$ in the static environment $\tenv$,
+yielding the result in $\vb$.
 
 \subsubsection{Prose}
 One of the following applies:
@@ -92,7 +94,7 @@ type subInt of integer subtypes superInt;
 
 \lrmcomment{This is related to \identr{NXRX}, \identi{KGKS}, \identi{MTML}, \identi{JVRM}, \identi{CHMP}.}
 
-\subsection{TypingRule.SubtypeSatisfaction\label{sec:TypingRule.SubtypeSatisfaction}}
+\subsubsection{TypingRule.SubtypeSatisfaction\label{sec:TypingRule.SubtypeSatisfaction}}
 \hypertarget{def-subtypesat}{}
 The predicate
 \[
@@ -349,7 +351,7 @@ if there is a unique one, as follows:
 
 \CodeSubsection{\SubtypeSatisfactionBegin}{\SubtypeSatisfactionEnd}{../types.ml}
 
-\subsection{TypingRule.TypeSatisfaction \label{sec:TypingRule.TypeSatisfaction}}
+\subsubsection{TypingRule.TypeSatisfaction \label{sec:TypingRule.TypeSatisfaction}}
 \hypertarget{def-typesatisfies}{}
 The predicate
 \[
@@ -535,7 +537,7 @@ every type $\vt$ is a subtype of itself, and as a consequence, every type $\vt$
 
 \lrmcomment{This is related to \identr{FMXK} and \identi{NLFD}.}
 
-\subsection{TypingRule.TypeClash\label{sec:TypingRule.TypeClash}}
+\subsubsection{TypingRule.TypeClash\label{sec:TypingRule.TypeClash}}
 \hypertarget{def-typeclashes}{}
 The predicate
 \[
@@ -705,7 +707,7 @@ type-clashes with \texttt{A} and \texttt{B} then it is also the case that \textt
 
 \lrmcomment{This is related to \identd{VPZZ}, \identi{PQCT} and \identi{WZKM}.}
 
-\subsection{TypingRule.LowestCommonAncestor \label{sec:TypingRule.LowestCommonAncestor}}
+\subsubsection{TypingRule.LowestCommonAncestor \label{sec:TypingRule.LowestCommonAncestor}}
 \hypertarget{def-lowestcommonancestor}{}
 Annotating a conditional expression (see \secref{TypingRule.ECond}),
 requires finding a single type that can be used to annotate the results of both subexpressions.
@@ -986,7 +988,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
 
 \lrmcomment{This is related to \identr{YZHM}.}
 
-\subsection{TypingRule.ApplyUnopType \label{sec:TypingRule.ApplyUnopType}}
+\subsubsection{TypingRule.ApplyUnopType \label{sec:TypingRule.ApplyUnopType}}
 \hypertarget{def-applyunoptype}{}
 The function
 \[
@@ -1120,7 +1122,7 @@ the values it represents:
 }
 \end{mathpar}
 
-\subsection{TypingRule.ApplyBinopTypes\label{sec:TypingRule.ApplyBinopTypes}}
+\subsubsection{TypingRule.ApplyBinopTypes\label{sec:TypingRule.ApplyBinopTypes}}
 \hypertarget{def-applybinoptypes}{}
 The function
 \[
@@ -1558,7 +1560,7 @@ One of the following applies:
   \identi{LGHJ}, \identi{RXLG}.
 }
 
-\subsection{TypingRule.FindNamedLCA \label{sec:TypingRule.FindNamedLCA}}
+\subsubsection{TypingRule.FindNamedLCA \label{sec:TypingRule.FindNamedLCA}}
 \hypertarget{def-namedlowestcommonancestor}{}
 The function
 \[
@@ -1634,7 +1636,7 @@ One of the following holds:
 }
 \end{mathpar}
 
-\subsection{TypingRule.AnnotateConstraintBinop\label{sec:TypingRule.AnnotateConstraintBinop}}
+\subsubsection{TypingRule.AnnotateConstraintBinop\label{sec:TypingRule.AnnotateConstraintBinop}}
 \hypertarget{def-annotateconstraintbinop}{}
 The function
 \[
@@ -1699,7 +1701,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\AnnotateConstraintBinopBegin}{\AnnotateConstraintBinopEnd}{../StaticOperations.ml}
 
-\subsection{TypingRule.BinopFilterRhs \label{sec:TypingRule.BinopFilterRhs}}
+\subsubsection{TypingRule.BinopFilterRhs \label{sec:TypingRule.BinopFilterRhs}}
 \hypertarget{def-binopfilterrhs}{}
 The function
 \[
@@ -1765,7 +1767,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.RefineConstraintBySign \label{sec:TypingRule.RefineConstraintBySign}}
+\subsubsection{TypingRule.RefineConstraintBySign \label{sec:TypingRule.RefineConstraintBySign}}
 \hypertarget{def-refineconstraintbysign}{}
 The function
 \[
@@ -1934,7 +1936,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.ReduceToZOpt \label{sec:TypingRule.ReduceToZOpt}}
+\subsubsection{TypingRule.ReduceToZOpt \label{sec:TypingRule.ReduceToZOpt}}
 \hypertarget{def-reducetozopt}{}
 The function
 \[
@@ -1980,7 +1982,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.RefineConstraints \label{sec:TypingRule.RefineConstraints}}
+\subsubsection{TypingRule.RefineConstraints \label{sec:TypingRule.RefineConstraints}}
 \hypertarget{def-refineconstraints}{}
 The function
 \[
@@ -2044,7 +2046,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.RefineConstraintForDiv \label{sec:TypingRule.RefineConstraintForDiv}}
+\subsubsection{TypingRule.RefineConstraintForDiv \label{sec:TypingRule.RefineConstraintForDiv}}
 \hypertarget{def-refineconstraintfordiv}{}
 The function
 \[
@@ -2097,7 +2099,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\RefineConstraintForDIVBegin}{\RefineConstraintForDIVEnd}{../types.ml}
 
-\subsection{TypingRule.FilterReduceConstraintDiv \label{sec:TypingRule.FilterReduceConstraintDiv}}
+\subsubsection{TypingRule.FilterReduceConstraintDiv \label{sec:TypingRule.FilterReduceConstraintDiv}}
 \hypertarget{def-filterreduceconstraintdiv}{}
 The function
 \[
@@ -2199,7 +2201,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.GetLiteralDivOpt \label{sec:TypingRule.GetLiteralDivOpt}}
+\subsubsection{TypingRule.GetLiteralDivOpt \label{sec:TypingRule.GetLiteralDivOpt}}
 \hypertarget{def-getliteraldivopt}{}
 The function
 \[
@@ -2222,7 +2224,7 @@ and two literal integer expressions for the integers $\vzone$ and $\vztwo$ and $
 }
 \end{mathpar}
 
-\subsection{TypingRule.ExplodeIntervals \label{sec:TypingRule.ExplodeIntervals}}
+\subsubsection{TypingRule.ExplodeIntervals \label{sec:TypingRule.ExplodeIntervals}}
 \hypertarget{def-explodeintervals}{}
 The function
 \[
@@ -2266,7 +2268,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.ExplodeConstraint \label{sec:TypingRule.ExplodeConstraint}}
+\subsubsection{TypingRule.ExplodeConstraint \label{sec:TypingRule.ExplodeConstraint}}
 \hypertarget{def-explodeconstraint}{}
 The function
 \[
@@ -2341,7 +2343,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsection{TypingRule.IntervalTooLarge \label{sec:TypingRule.IntervalTooLarge}}
+\subsubsection{TypingRule.IntervalTooLarge \label{sec:TypingRule.IntervalTooLarge}}
 \hypertarget{def-intervaltoolarge}{}
 The function
 \[
@@ -2360,7 +2362,7 @@ The value $\vb$ is $\True$ if and only if the absolute value of $\vzone-\vztwo$ 
 }
 \end{mathpar}
 
-\subsection{TypingRule.BinopIsExploding\label{sec:TypingRule.BinopIsExploding}}
+\subsubsection{TypingRule.BinopIsExploding\label{sec:TypingRule.BinopIsExploding}}
 \hypertarget{def-binopisexploding}{}
 The function
 \[

@@ -157,57 +157,67 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\TypecheckDeclBegin}{\TypecheckDeclEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.Subprogram \label{sec:TypingRule.Subprogram}}
+\subsubsection{TypingRule.Subprogram\label{sec:TypingRule.Subprogram}}
 \hypertarget{def-annotatesubprogram}{}
 The function
 \[
-  \annotatesubprogram(\overname{\staticenvs}{\tenv} \aslsep \overname{\func}{\vf}) \aslto \overname{\func}{\vfp}
+  \annotatesubprogram(\overname{\staticenvs}{\tenv} \aslsep \overname{\func}{\vf} \aslsep \overname{\TSideEffectSet}{\vsesfuncsig})
+  \aslto (\overname{\func}{\vfp} \times \overname{\TSideEffectSet}{\vses})
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates a subprogram $\vf$ in an environment $\tenv$, resulting in an annotated subprogram $\vfp$.
+annotates a subprogram $\vf$ in an environment $\tenv$ and \sideeffectsetterm\ $\vsesfuncsig$, resulting in an annotated subprogram $\vfp$
+and inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 Note that the return type in $\vf$ has already been annotated by $\annotatefuncsig$.
 
-\subsection{Prose}
-One of the following applies:
+\subsubsection{Prose}
+All of the following apply:
 \begin{itemize}
-  \item All of the following apply (\textsc{procedure}):
+  \item annotating $\vf.\funcbody$ in $\tenv$ as per \nameref{sec:TypingRule.Block} yields $(\newbody, \vsesbody)$\ProseOrTypeError;
+  \item One of the following applies:
   \begin{itemize}
-    \item $\vf$ is a $\func$ AST node subprogram body $\body$;
-    \item annotating the block $\body$ in $\tenv$ as per \secref{TypingRule.Block} yields $\newbody$\ProseOrTypeError;
-    \item $\vf.\funcreturntype$ is $\None$;
-    \item $\vfp$ is $\vf$ with the subprogram body substituted with $\newbody$.
-  \end{itemize}
+    \item All of the following apply (\textsc{procedure}):
+    \begin{itemize}
+      \item $\vf.\funcreturntype$ is $\None$;
+    \end{itemize}
 
-  \item All of the following apply (\textsc{function}):
-  \begin{itemize}
-    \item $\vf$ is a $\func$ AST node subprogram body $\body$;
-    \item annotating the block $\body$ in $\tenv$ as per \secref{TypingRule.Block} yields $\newbody$\ProseOrTypeError;
-    \item applying $\checkstmtreturnsorthrows$ to $\newbody$ yields $\True$\ProseOrTypeError;
-    \item $\vfp$ is $\vf$ with the subprogram body substituted with $\newbody$.
+    \item All of the following apply (\textsc{function}):
+    \begin{itemize}
+      \item $\vf.\funcreturntype$ is not $\None$;
+      \item applying $\checkstmtreturnsorthrows$ to $\newbody$ yields $\True$\ProseOrTypeError;
+    \end{itemize}
   \end{itemize}
+  \item $\vfp$ is $\vf$ with the subprogram body substituted with $\newbody$;
+  \item \Proseeqdef{$\vses$}{the union of $\vsesfuncsig$ and $\vsesbody$ with every instance of a
+        \ReadLocalTerm\ or a \WriteLocalTerm\ removed}.
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule[procedure]{
-  \annotateblock{\tenv, \body} \typearrow \newbody \OrTypeError\\\\
-  \vf.\funcreturntype = \None\\
-  \vfp \eqdef \substrecordfield(\vf, \funcbody, \SBASL(\newbody))
+  \annotateblock{\tenv, \vf.\funcbody} \typearrow (\newbody, \vsesbody) \OrTypeError\\\\
+  \commonprefixline\\\\
+  \vf.\funcreturntype = \None\\\\
+  \commonsuffixline\\\\
+  \vfp \eqdef \substrecordfield(\vf, \funcbody, \SBASL(\newbody))\\
+  \vses \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} \in \{\ReadLocal, \WriteLocal\} \})
 }{
-  \annotatesubprogram(\tenv, \vf) \typearrow \vfp
+  \annotatesubprogram(\tenv, \vf, \vsesfuncsig) \typearrow \vfp
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[function]{
-  \annotateblock{\tenv, \body} \typearrow \newbody \OrTypeError\\\\
+  \annotateblock{\tenv, \vf.\funcbody} \typearrow (\newbody, \vsesbody) \OrTypeError\\\\
+  \commonprefixline\\\\
   \vf.\funcreturntype \neq \None\\
   \checkstmtreturnsorthrows(\newbody) \typearrow \True \OrTypeError\\\\
-  \vfp \eqdef \substrecordfield(\vf, \funcbody, \SBASL(\newbody))
+  \commonsuffixline\\\\
+  \vfp \eqdef \substrecordfield(\vf, \funcbody, \SBASL(\newbody))\\
+  \vses \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} \in \{\ReadLocal, \WriteLocal\} \})
 }{
-  \annotatesubprogram(\tenv, \vf) \typearrow \vfp
+  \annotatesubprogram(\tenv, \vf, \vsesfuncsig) \typearrow \vfp
 }
 \end{mathpar}
 

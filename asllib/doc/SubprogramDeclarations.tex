@@ -375,33 +375,34 @@ We also define the following helper rules:
 The function
 \[
   \annotateanddeclarefunc(\overname{\globalstaticenvs}{\tenv}, \overname{\func}{\funcsig})
-  \aslto (\overname{\staticenvs}{\tenv} \times \overname{\func}{\newfuncsig})
+  \aslto (\overname{\staticenvs}{\tenv} \times \overname{\func}{\newfuncsig} \times \overname{\TSideEffectSet}{\vses})
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates a subprogram definition $\funcsig$ in the global static environment $\genv$,
-yielding a new subprogram definition $\newfuncsig$ and modified static environment
-$\newtenv$.
+yielding a new subprogram definition $\newfuncsig$, a modified static environment
+$\newtenv$, and an inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item annotating the signature of $\funcsig$ in $\genv$ as per
-        \secref{TypingRule.AnnotateFuncSig} yields
-        the environment $\tenvone$ and subprogram definition $\funcsigone$\ProseOrTypeError;
-  \item declaring the subprogram defined by $\funcsigone$ in $\tenvone$
-        as per \secref{TypingRule.DeclareOneFunc} yields the environment $\newtenv$
-        and new $\func$ node $\newfuncsig$\ProseOrTypeError.
+        \nameref{sec:TypingRule.AnnotateFuncSig} yields
+        $(\tenvone, \funcsigfone, \vsesone)$\ProseOrTypeError;
+  \item declaring the subprogram defined by $\funcsigfone$ in $\tenvone$ with $\vsesfone$
+        as per \nameref{sec:TypingRule.DeclareOneFunc} yields the environment $\newtenv$
+        and new $\func$ node $\newfuncsig$\ProseOrTypeError;
+  \item \Proseeqdef{$\vses$}{$\vsesfone$}.
 \end{itemize}
 \CodeSubsection{\AnnotateAndDeclareFuncBegin}{\AnnotateAndDeclareFuncEnd}{../Typing.ml}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatefuncsig(\genv, \funcsig) \typearrow (\tenvone, \funcsigone) \OrTypeError\\\\
-  \declareonefunc(\tenvone, \funcsigone) \typearrow (\newtenv, \newfuncsig) \OrTypeError
+  \annotatefuncsig(\genv, \funcsig) \typearrow (\tenvone, \funcsigfone, \vsesfone) \OrTypeError\\\\
+  \declareonefunc(\tenvone, \funcsigfone, \vsesfone) \typearrow (\newtenv, \newfuncsig) \OrTypeError
 }{
-  \annotateanddeclarefunc(\genv, \funcsig) \typearrow (\newtenv, \newfuncsig)
+  \annotateanddeclarefunc(\genv, \funcsig) \typearrow (\newtenv, \newfuncsig, \overname{\vsesfone}{\vses})
 }
 \end{mathpar}
 
@@ -410,52 +411,60 @@ All of the following apply:
 The function
 \[
   \annotatefuncsig(\overname{\globalstaticenvs}{\genv}, \overname{\func}{\funcsig})
-  \aslto (\overname{\staticenvs}{\newtenv} \times \overname{\func}{\newfuncsig})
+  \aslto (\overname{\staticenvs}{\newtenv} \times \overname{\func}{\newfuncsig} \times \overname{\TSideEffect}{\vses})
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates the signature of a function definition $\funcsig$ in the global static environment $\genv$,
-yielding a new function definition $\newfuncsig$ and modified static environment
-$\newtenv$.
+yielding a new function definition $\newfuncsig$,
+a modified static environment $\newtenv$, and
+an inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item $\tenv$ is the static environment which comprises of the global static environment $\genv$ and an empty local environment;
   \item applying $\annotatelimitexpr$ to $\funcsig.\funcrecurselimit$ in $\tenvone$ yields \\
-        $\vrecurselimit$\ProseOrTypeError;
-  \item annotating and declaring the parameters $\funcsig.\funcparameters$ in $\tenv$ using \\ $\annotateparams$ yields environment $\tenvwithparams$ and the list of annotated parameters $\params$\ProseOrTypeError;
-  \item checking that the parameters $\funcsig.\funcparameters$ are declared correctly using $\checkparamdecls$ yields $\True$\ProseOrTypeError;
-  \item annotating and declaring the arguments $\funcsig.\funcargs$ in $\tenvwithparams$ using $\annotateargs$ yields environment $\tenvwithargs$ and the list of annotated arguments $\vargs$\ProseOrTypeError;
-  \item annotating the return type of $\funcsig$ in $\tenvwithparams$ using \\ $\annotatereturntype$ yields the result environment $\newenv$ and the annotated return type $\vreturntype$\ProseOrTypeError;
+        $(\vrecurselimit, \vsesrecurselimit)$\ProseOrTypeError;
+  \item annotating and declaring the parameters $\funcsig.\funcparameters$ in $\tenv$ using \\
+        $\annotateparams$ yields $(\tenvwithparams, \vseswithparams, \params)$\ProseOrTypeError;
+  \item checking that the parameters $\funcsig.\funcparameters$ are declared correctly using $\checkparamdecls$, yields $\True$\ProseOrTypeError;
+  \item annotating and declaring the arguments $\funcsig.\funcargs$ in $\tenvwithparams$ using $\annotateargs$
+        and $\vseswithparams$ yields
+        $(\tenvwithargs, \vseswithargs, \vargs)$\ProseOrTypeError;
+  \item annotating the return type of $\funcsig$ in $\tenvwithparams$ using \\ $\annotatereturntype$ and $\vseswithargs$, yields
+        $(\newtenv, \vreturntype, \vseswithreturn)$\ProseOrTypeError;
+  \item \Proseeqdef{$\vses$}{$\vseswithreturn$ with all instances of \ReadLocal\ and \WriteLocalTerm\ removed};
   \item $\newfuncsig$ is $\funcsig$ with the annotated parameters $\vparams$, annotated arguments $\vargs$, annotated return type $\vreturntype$,
         and $\vrecurselimit$ as its recursion limit.
-\end{itemize}\CodeSubsection{\AnnotateFuncSigBegin}{\AnnotateFuncSigEnd}{../Typing.ml}
+\end{itemize}
+\CodeSubsection{\AnnotateFuncSigBegin}{\AnnotateFuncSigEnd}{../Typing.ml}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \withemptylocal(\genv) \typearrow \tenv\\
-  \annotatelimitexpr(\tenvone, \funcsig.\funcrecurselimit) \typearrow \vrecurselimit \OrTypeError\\\\
+  \annotatelimitexpr(\tenvone, \funcsig.\funcrecurselimit) \typearrow (\vrecurselimit, \vsesrecurselimit) \OrTypeError\\\\
   {
     \begin{array}{r}
     \annotateparams(\tenv, \funcsig.\funcparameters, (\tenv, \emptylist)) \typearrow \\
-    (\tenvwithparams, \params) \OrTypeError
+    (\tenvwithparams, \vseswithparams, \params) \OrTypeError
     \end{array}
   }\\
   \checkparamdecls(\tenv, \funcsig) \typearrow \True \OrTypeError \\
   {
     \begin{array}{r}
-    \annotateargs(\tenvwithparams, \funcsig.\funcargs, (\tenvwithparams, \emptylist)) \typearrow \\
-    (\tenvwithargs, \vargs) \OrTypeError
+    \annotateargs(\tenvwithparams, \funcsig.\funcargs, (\tenvwithparams, \emptylist), \vseswithparams) \typearrow \\
+    (\tenvwithargs, \vseswithargs, \vargs) \OrTypeError
       \end{array}
   }\\\\
   {
     \begin{array}{r}
-  \annotatereturntype(\tenvwithargs, \tenvwithparams, \funcsig.\funcreturntype) \typearrow \\
-    (\newtenv, \vreturntype) \OrTypeError
+  \annotatereturntype(\tenvwithargs, \tenvwithparams, \funcsig.\funcreturntype, \vseswithargs) \typearrow \\
+    (\newtenv, \vreturntype, \vseswithreturn) \OrTypeError
     \end{array}
   }\\\\
+  \vses \eqdef \vseswithreturn \setminus \{ \vs \;|\; \configdomain{\vs} \in \{\ReadLocal, \WriteLocal\} \}\\
   {
     \newfuncsig \eqdef
     \left\{
@@ -472,7 +481,7 @@ All of the following apply:
     \right\}
   }
 }{
-  \annotatefuncsig(\genv, \funcsig) \typearrow (\newtenv, \newfuncsig, \argparams)
+  \annotatefuncsig(\genv, \funcsig) \typearrow (\newtenv, \newfuncsig, \vses)
 }
 \end{mathpar}
 
@@ -502,7 +511,7 @@ Therefore, $\tenvwithparams$ effectively reflects the added declarations \verb|l
 
 \VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
 
-\subsection{Prose}
+\subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -521,7 +530,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule[empty]{}{
   \annotateparams(\tenv, \overname{\emptylist}{\params}, (\newtenv, \acc)) \typearrow
@@ -557,7 +566,7 @@ with respect to $\tenv$ and then declares the parameter $\vx$ in environment $\n
 The updated environment $\newtenvp$ and annotated parameter type $\tty$ are returned.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item One of the following applies:
@@ -581,7 +590,7 @@ All of the following apply:
         $\LDKLet$ in $\newtenv$ yields $\newtenvp$.
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule[type\_parameterized]{
   (\tyopt = \None \lor \tyopt = \langle \unconstrainedinteger\rangle) \\
@@ -611,7 +620,7 @@ The function
 \]
 checks the parameters declared in $\funcsig$ for validity.
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item Finding the list of types in $\funcsig$ using $\typesinfuncsig$ yields $\tys$;
@@ -620,7 +629,7 @@ All of the following apply:
   \item Checking that the expected parameters $\paramsone$ and the declared parameters $\funcsig.\funcparameters$ are equal yields $\vb$\ProseOrTypeError.
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \typesinfuncsig(\funcsig) \typearrow \tys \\
@@ -642,10 +651,10 @@ The function
 returns the list of types $\tys$ in the function signature $\funcsig$.
 Their ordering is return type first (if any), followed by argument types left-to-right.
 
-\subsection{Prose}
+\subsubsection{Prose}
 Define $\tys$ as the return type (if any) concatenated with the argument types.
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   {
@@ -672,7 +681,7 @@ The function
 finds the list of parameters in the type $\tty$.
 It assumes that $\tty$ appears in a function signature.
 
-\subsection{Prose}
+\subsubsection{Prose}
 One of the following applies:
 
 \begin{itemize}
@@ -703,7 +712,7 @@ One of the following applies:
     \end{itemize}
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule[tbits]{
   \paramsofexpr(\tenv, \ve) \typearrow \ids
@@ -749,7 +758,7 @@ The function
 finds the list of parameters in the expression $\ve$.
 It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellconstrainedintegertype{} in a function signature.
 
-\subsection{Prose}
+\subsubsection{Prose}
 One of the following applies:
 
 \begin{itemize}
@@ -780,7 +789,7 @@ One of the following applies:
     \end{itemize}
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule[eval]{
   \isundefined(\tenv, \vx) \typearrow \vb\\
@@ -824,7 +833,7 @@ The function
 finds the list of parameters in the constraint $\vc$.
 It assumes that $\vc$ appears within a \wellconstrainedintegertype{} in a function signature.
 
-\subsection{Prose}
+\subsubsection{Prose}
 One of the following applies:
 
 \begin{itemize}
@@ -843,7 +852,7 @@ One of the following applies:
     \end{itemize}
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule[exact]{
   \paramsofexpr(\tenv, \ve) \typearrow \ids
@@ -895,35 +904,19 @@ The function
 \annotateargs(
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{(\identifier \times \ty)^*}{\args} \aslsep\
-  (\overname{\staticenvs}{\newtenv} \times \overname{(\identifier\times\ty)^*}{\acc})
+  (\overname{\staticenvs}{\newtenv} \times \overname{(\identifier\times\ty)^*}{\acc} \aslsep
+  \overname{\TSideEffectSet}{\vsesin})
 ) \aslto \\
-(\overname{\staticenvs}{\tenvwithargs} \times \overname{(\identifier\times\ty)^*}{\vnewargs})
+(\overname{\staticenvs}{\tenvwithargs} \times \overname{(\identifier\times\ty)^*}{\vnewargs} \times \overname{\TSideEffectSet}{\vses})
 \cup \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
-annotates each argument in $\args$ with respect to $\tenv$,
+annotates each argument in $\args$ with respect to $\tenv$ and a \sideeffectsetterm\ $\vsesin$,
 and declares it in environment $\newtenv$.
-It returns the updated environment $\tenvwithargs$ and the annotated arguments $\vnewargs$, together with any annotated arguments already in the accumulator $\acc$.
+It returns the updated environment $\tenvwithargs$, the annotated arguments $\vnewargs$,
+together with any annotated arguments already in the accumulator $\acc$,
+and a \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
-
-\subsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{empty}):
-  \begin{itemize}
-    \item $\args$ is the empty list;
-    \item $\tenvwithargs$ is $\newtenv$;
-    \item $\newargs$ is $\acc$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{non\_empty}):
-  \begin{itemize}
-    \item $\args$ is a list with $(\vx, \tty)$ as its \head\ and $\vargsp$ as its \tail;
-    \item applying $\annotateonearg$ to the argument $(\vx, \tty)$ with $\tenv$ and $\newtenv$ yields the pair $\newtenvp$ and $\ttyp$\ProseOrTypeError;
-    \item define $\accp$ as the concatenation of $\acc$ and the pair $(\vx, \ttyp)$;
-    \item applying $\annotateargs$ to $\vargsp$ with $\tenv$, $\newtenvp$, and $\accp$ yields $\tenvwithargs$ and $\vnewargs$.
-  \end{itemize}
-\end{itemize}
 
 \subsection{Example}
 In the following specification, the annotated arguments are
@@ -931,20 +924,43 @@ In the following specification, the annotated arguments are
 
 \VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
 
-\subsection{Formally}
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\args$ is the empty list;
+    \item $\tenvwithargs$ is $\newtenv$;
+    \item $\newargs$ is $\acc$;
+    \item \Proseeqdef{$\vses$}{$\vsesin$}
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\args$ is a list with $(\vx, \tty)$ as its \head\ and $\vargsp$ as its \tail;
+    \item applying $\annotateonearg$ to the argument $(\vx, \tty)$ with $\tenv$ and $\newtenv$ yields
+          $(\newtenvp, \ttyp, \vsesty)$\ProseOrTypeError;
+    \item define $\accp$ as the concatenation of $\acc$ and the pair $(\vx, \ttyp)$;
+    \item applying $\annotateargs$ to $\vargsp$ with $\tenv$, $\newtenvp$, and $\accp$ yields $(\tenvwithargs, \newargs, \newses)$;
+    \item \Proseeqdef{$\vses$}{the union of $\vsesty$ and $\newses$}.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule[empty]{}{
-  \annotateargs(\tenv, \overname{\emptylist}{\args}, (\newtenv, \acc)) \typearrow
-  (\overname{\newtenv}{\tenvwithargs}, \overname{\acc}{\newargs})
+  \annotateargs(\tenv, \overname{\emptylist}{\args}, (\newtenv, \acc), \vsesin) \typearrow
+  (\overname{\newtenv}{\tenvwithargs}, \overname{\acc}{\newargs}, \overname{\vsesin}{\vses})
 }
 \and
 \inferrule[non\_empty]{
   \vargs \eqname [(\vx,\tty)] \concat \vargsp\\\\
-  \annotateonearg(\tenv, \newtenv, (\vx, \tty)) \typearrow (\newtenvp, \ttyp) \OrTypeError \\\\
+  \annotateonearg(\tenv, \newtenv, (\vx, \tty)) \typearrow (\newtenvp, \ttyp, \vsesty) \OrTypeError \\\\
   \accp \eqdef \acc \concat [(\vx, \ttyp)] \\\\
-  \annotateargs(\tenv, \vargsp, (\newtenvp, \accp)) \typearrow (\tenvwithargs, \newargs) \OrTypeError
+  \annotateargs(\tenv, \vargsp, (\newtenvp, \accp), \vsesin) \typearrow (\tenvwithargs, \newargs, \newses) \OrTypeError\\\\
+  \vses \eqdef \vsesty \cup \newses
 }{
-  \annotateargs(\tenv, \args, (\newtenv, \acc)) \typearrow (\tenvwithargs, \newargs)
+  \annotateargs(\tenv, \args, (\newtenv, \acc), \vsesin) \typearrow (\tenvwithargs, \newargs, \vses)
 }
 \end{mathpar}
 
@@ -957,32 +973,33 @@ The function
   \overname{\staticenvs}{\newtenv} \aslsep
   (\overname{\identifier}{\vx} \times \overname{\ty}{\tty})
 ) \aslto
-(\overname{\staticenvs}{\newtenvp} \times\ \overname{\ty}{\ttyp})
+(\overname{\staticenvs}{\newtenvp} \times\ \overname{\ty}{\ttyp} \times \overname{\TSideEffectSet}{\vses})
 \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates the argument given by the identifier $\vx$ and the type $\tty$
 with respect to $\tenv$ and then declares the parameter $\vx$ in environment $\newtenv$.
-The updated environment $\newtenvp$ and annotated argument type $\ttyp$ are returned.
+The result is the updated environment $\newtenvp$, annotated argument type $\ttyp$, and
+and inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item annotating the type $\tty$ in $\tenv$ yields $\ttyp$\ProseOrTypeError;
+  \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vses)$\ProseOrTypeError;
   \item checking that $\vx$ is not defined in $\newtenv$ yields $\True$\ProseOrTypeError;
   \item adding the local storage element given by the identifier $\vx$, type $\ttyp$, and local declaration keyword
         $\LDKLet$ in $\newtenv$ yields $\newtenvp$.
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatetype{\tenv, \tty} \typearrow \ttyp \OrTypeError \\
+  \annotatetype{\tenv, \tty} \typearrow (\ttyp, \vses) \OrTypeError \\
   \checkvarnotinenv{\newtenv, \vx} \typearrow \True \OrTypeError\\
   \addlocal(\newtenv, \vx, \ttyp, \LDKLet) \typearrow \newtenvp
 }{
   \annotateonearg(\tenv, \newtenv, (\vx, \tty))
-  \typearrow (\newtenvp, \ttyp)
+  \typearrow (\newtenvp, \ttyp, \vses)
 }
 \end{mathpar}
 
@@ -994,58 +1011,65 @@ The function
 \annotatereturntype(
   \overname{\staticenvs}{\tenvwithparams} \aslsep
   \overname{\staticenvs}{\tenvwithargs} \aslsep
-  \overname{\langle\ty\rangle}{\vreturntype}
+  \overname{\langle\ty\rangle}{\vreturntype \aslsep
+  \overname{\TSideEffectSet}{\vsesin}}
 ) & \aslto \\
-(\overname{\staticenvs}{\newtenv} \times \overname{\ty}{\newreturntype})
+(\overname{\staticenvs}{\newtenv} \times \overname{\ty}{\newreturntype} \times \overname{\TSideEffectSet}{\vses})
 \cup \overname{\TTypeError}{\TypeErrorConfig} &
 \end{array}
 \]
 annotates the \optional\ return type $\vreturntype$ in the context of the static environment
-$\tenvwithparams$ where all parameters have been declared.
-It produces $\newtenv$, which is the input $\tenvwithargs$ (where all parameters and arguments have been declared) with the \optional{} annotated return type $\newreturntype$ added.
+$\tenvwithparams$, where all parameters have been declared,
+and the \sideeffectsetterm\ $\vsesin$.
+The result is $\newtenv$, which is the input $\tenvwithargs$ (where all parameters and arguments have been declared)
+with the \optional{} annotated return type $\newreturntype$ added
+and the inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{no\_return\_type}):
   \begin{itemize}
     \item $\vreturntype$ is $\None$;
     \item $\newtenv$ is $\tenvwithargs$;
-    \item $\newreturntype$ is $\None$.
+    \item $\newreturntype$ is $\None$;
+    \item \Proseeqdef{$\vses$}{$\vsesin$}.
   \end{itemize}
 
   \item All of the following apply (\textsc{has\_return\_type}):
   \begin{itemize}
     \item $\returntype$ is $\langle\tty\rangle$;
-    \item annotating $\tty$ in $\tenvwithparams$ yields $\ttyp$\ProseOrTypeError;
+    \item annotating $\tty$ in $\tenvwithparams$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
     \item $\newreturntype$ is $\langle\ttyp\rangle$;
     \item $\newtenv$ is $\tenvwithargs$ with its local environment updated by binding its \\ $\funcreturntype$ field
-          to $\newreturntype$.
+          to $\newreturntype$;
+    \item \Proseeqdef{$\vses$}{the union of $\vsesin$ and $\vsesty$}.
   \end{itemize}
 \end{itemize}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule[no\_return\_type]{}
 {
   {
   \begin{array}{r}
-  \annotatereturntype(\tenvwithparams, \tenvwithargs, \overname{\None}{\vreturntype}) \typearrow \\
-  (\overname{\tenvwithargs}{\newtenv}, \overname{\None}{\newreturntype})
+  \annotatereturntype(\tenvwithparams, \tenvwithargs, \overname{\None}{\vreturntype}, \vsesin) \typearrow \\
+  (\overname{\tenvwithargs}{\newtenv}, \overname{\None}{\newreturntype}, \overname{\vsesin}{\vses})
   \end{array}
   }
 }
 \and
 \inferrule[has\_return\_type]{
-  \annotatetype{\tenvwithparams, \tty} \typearrow \ttyp \OrTypeError\\\\
+  \annotatetype{\tenvwithparams, \tty} \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
   \newreturntype \eqdef \langle\ttyp\rangle\\
-  \newtenv \eqdef (G^\tenvwithargs, L^\tenvwithargs[\funcreturntype\mapsto\newreturntype])
+  \newtenv \eqdef (G^\tenvwithargs, L^\tenvwithargs[\funcreturntype\mapsto\newreturntype])\\
+  \vses \eqdef \vsesin \cup \vsesty
 }{
   {
   \begin{array}{r}
-  \annotatereturntype(\tenvwithparams, \tenvwithargs, \overname{\langle\tty\rangle}{\returntype}) \typearrow \\
-  (\newtenv, \newreturntype)
+  \annotatereturntype(\tenvwithparams, \tenvwithargs, \overname{\langle\tty\rangle}{\returntype}, \vsesin) \typearrow \\
+  (\newtenv, \newreturntype, \vses)
   \end{array}
   }
 }
@@ -1055,15 +1079,20 @@ One of the following applies:
 \hypertarget{def-declareonefunc}{}
 The function
 \[
-  \declareonefunc(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig})
+  \declareonefunc(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\func}{\funcsig} \aslsep
+    \overname{\TSideEffectSet}{\vsesfuncsig})
   \aslto (\overname{\staticenvs}{\newtenv} \times \overname{\func}{\newfuncsig})
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-checks that a subprogram defined by $\funcsig$ can be added to the static environment $\tenv$,
+checks that a subprogram defined by $\funcsig$
+and associated with the \sideeffectsetterm\ $\vsesfuncsig$
+can be added to the static environment $\tenv$,
 resulting in an annotated function definition $\newfuncdef$ and new static environment $\newtenv$.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item $\funcsig$ has name $\name$, arguments $\vargs$, and type $\subprogramtype$, that is,
@@ -1086,11 +1115,13 @@ All of the following apply:
         yields $\True$\ProseOrTypeError;
   \item ensuring that each setter has a getter given $\funcsig$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item $\funcsigone$ is $\funcsig$ with $\name$ substituted by $\nameone$;
-  \item adding a subprogram with name $\namep$ and definition $\funcsigone$ to $\tenvone$ yields $\newtenv$\ProseOrTypeError.
+  \item \Proseeqdef{$\initses$}{the union of $\vsesfuncsig$ and the singleton set for
+        a \RecursiveCallTerm\ for $\namep$};
+  \item adding a subprogram with name $\namep$, definition $\funcsigone$,
+        and \sideeffectsetterm\ $\initses$ to $\tenvone$ yields $\newtenv$\ProseOrTypeError.
 \end{itemize}
-\CodeSubsection{\DeclareOneFuncBegin}{\DeclareOneFuncEnd}{../Typing.ml}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   {
@@ -1123,11 +1154,14 @@ All of the following apply:
                 \} &&&
       \end{array}
     }\\
-    \addsubprogram(\tenvone, \namep, \funcsigone) \typearrow \newtenv \OrTypeError
+    \initses \eqdef \vsesfuncsig \cup \{ \RecursiveCall(\namep) \}\\
+    \addsubprogram(\tenvone, \namep, \funcsigone, \initses) \typearrow \newtenv \OrTypeError
 }{
   \declareonefunc(\tenv, \funcsig) \typearrow (\newtenv, \newfuncsig)
 }
-\end{mathpar}\lrmcomment{This relates to \identi{HJRD}, \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}, and \identr{PGFC}.}
+\end{mathpar}
+\CodeSubsection{\DeclareOneFuncBegin}{\DeclareOneFuncEnd}{../Typing.ml}
+\lrmcomment{This relates to \identi{HJRD}, \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}, and \identr{PGFC}.}
 
 \subsubsection{TypingRule.SubprogramClash \label{sec:TypingRule.SubprogramClash}}
 \hypertarget{def-subprogramclash}{}
@@ -1151,20 +1185,21 @@ yielding a Boolean value in $\vb$.
 The function is only defined when there exists a binding for $\name$ in the
 $\subprograms$ map of $\tenv$.
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item the subprogram type associated with the unique subprogram named by $\name$ is $\namesubpgmtype$;
-  \item applying $\subprogramtypesclash$ to $\namesubpgmtype$ and $\subpgmtype$ yields \\
+  \item the identifier $\name$ is bound to the $\func$ AST node $\otherfuncsig$ in the \\
+        $\subprograms$ map
+        of the static global environment of $\tenv$ (ignoring the associated \sideeffectdescriptorsterm);
+  \item applying $\subprogramtypesclash$ to the subprogram type of $\otherfuncsig$ \\
+        ($\otherfuncsig.\subprogramtype$) and $\subpgmtype$ yields \\
         $\True$\ProseTerminateAs{\False}
-        (that is, if both $\namesubpgmtype$ and $\subpgmtype$ are $\STGetter$ or both are $\STSetter$ then the
+        (that is, if both subprogram types are $\STGetter$ or both are $\STSetter$ then the
         subprogram types are considered to be non-clashing and the entire rule short-circuits to $\False$);
-  \item $\nameargs$ is the list of pairs of types and identifiers associated with the function definition
-        of $\name$ in $\tenv$;
   \item determining whether there is an argument clash between $\formaltypes$ and \\
-        $\nameformals$ in $\tenv$ yields $\vb$\ProseOrTypeError.
+        the formal arguments of $\otherfuncsig$ ($\otherfuncsig.\funcargs$) in $\tenv$ yields $\vb$\ProseOrTypeError.
 \end{itemize}
-\subsection{Formally}
+\subsubsection{Formally}
 \hypertarget{def-subprogramtypeclash}{}
 We first introduce the helper predicate
 \[
@@ -1191,16 +1226,16 @@ which defines whether two subprogram types are considered to be clashing:
 
 \begin{mathpar}
 \inferrule{
-  \namesubpgmtype \eqdef G^\tenv.\subprograms(\name).\subprogramtype\\
-  \subprogramtypesclash(\namesubpgmtype, \subpgmtype) \typearrow \True \terminateas \False\\
-  \nameargs \eqdef G^\tenv.\subprograms(\name).\funcargs\\
-  \hasargclash(\formaltypes, \nameargs) \typearrow \vb
+  G^\tenv.\subprograms(\name) = (\otherfuncsig, \Ignore)\\
+  \subprogramtypesclash(\otherfuncsig.\subprogramtype, \subpgmtype) \typearrow \True \terminateas \False\\
+  \hasargclash(\formaltypes, \otherfuncsig.\funcargs) \typearrow \vb
 }{
   \subprogramclash(\tenv, \namep, \subpgmtype, \formaltypes) \typearrow \vb
 }
-\end{mathpar}\lrmcomment{This is related to \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}.}
+\end{mathpar}
+\lrmcomment{This is related to \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}.}
 
-\subsubsection{TypingRule.AddNewFunc \label{sec:TypingRule.AddNewFunc}}
+\subsubsection{TypingRule.AddNewFunc\label{sec:TypingRule.AddNewFunc}}
 \hypertarget{def-addnewfunc}{}
 The function
 \[
@@ -1223,7 +1258,7 @@ of overloaded subprograms (that is, other subprograms that share the same name)
 and the environment $\newtenv$, which is updated with $\newname$.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{first\_name}):
@@ -1249,9 +1284,9 @@ One of the following applies:
           $\{\newname\}$.
   \end{itemize}
 \end{itemize}
-\subsection{Formally}
+\subsubsection{Formally}
 \newcommand\stringconcat[0]{\hyperlink{def-stringconcat}{\texttt{+}}}
-\newcommand\stringofint[0]{\hyperlink{def-stringofnat}{\texttt{string\_of\_nat}}}
+\newcommand\stringofnat[0]{\hyperlink{def-stringofnat}{\texttt{string\_of\_nat}}}
 
 We use the following functions to construct a unique string for each subprogram:
 \begin{itemize}
@@ -1260,7 +1295,7 @@ We use the following functions to construct a unique string for each subprogram:
 concatenates two strings.
 
 \hypertarget{def-stringofnat}{}
-\item The function $\stringofint : \N \rightarrow \Strings$ converts a natural number
+\item The function $\stringofnat : \N \rightarrow \Strings$ converts a natural number
 to the corresponding string.
 \end{itemize}
 
@@ -1278,7 +1313,7 @@ to the corresponding string.
 \inferrule[name\_exists]{
   G^\tenv.\overloadedsubprograms(\name) = \othernames\\
   k \eqdef \cardinality{\othernames}\\
-  \newname \eqdef \name\ \stringconcat\ \texttt{"-"}\ \stringconcat\ \stringofint(k)\\
+  \newname \eqdef \name\ \stringconcat\ \texttt{"-"}\ \stringconcat\ \stringofnat(k)\\
   \formaltypes \eqdef [(\id,\vt) \in \formals : \vt]\\
   {
     \left(\begin{array}{l}
@@ -1292,8 +1327,8 @@ to the corresponding string.
   \addnewfunc(\tenv, \name, \formals, \subpgmtype) \typearrow
   (\newtenv, \newname)
 }
-\end{mathpar}\lrmcomment{This is related to \identr{PGFC}.}
-
+\end{mathpar}
+\lrmcomment{This is related to \identr{PGFC}.}
 \CodeSubsection{\AddNewFuncBegin}{\AddNewFuncEnd}{../Typing.ml}
 
 \subsubsection{TypingRule.CheckSetterHasGetter \label{sec:TypingRule.CheckSetterHasGetter}}
@@ -1306,7 +1341,7 @@ The function
 checks whether the setter procedure given by $\funcsig$ has a corresponding getter,
 returning $\True$ if this condition holds and a type error otherwise.
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item checking that the subprogram type of $\funcsig$ is $\STSetter$ has one of two outcomes:
@@ -1328,7 +1363,7 @@ All of the following apply:
 \end{itemize}
 \CodeSubsection{\CheckSetterHasGetterBegin}{\CheckSetterHasGetterEnd}{../Typing.ml}
 
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \issetter \eqdef \funcsig.\subprogramtype = \STSetter\\
@@ -1344,31 +1379,5 @@ All of the following apply:
   \checktrans{\vb_\ret}{\SetterWithoutGetter} \typearrow \True \OrTypeError
 }{
   \checksetterhasgetter(\tenv, \funcsig) \typearrow \overname{\True}{\vb}
-}
-\end{mathpar}
-
-\subsubsection{TypingRule.AddSubprogram \label{sec:TypingRule.AddSubprogram}}
-\hypertarget{def-addsubprogram}{}
-The function
-\[
-  \addsubprogram(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\Strings}{\name} \aslsep
-    \overname{\func}{\funcdef})
-   \aslto
-  \overname{\staticenvs}{\newtenv}
-\]
-updates the global environment of $\tenv$ by mapping the (unique) subprogram identifier $\name$
-to the function definition $\funcdef$ in $\tenv$, resulting in a new static environment $\newtenv$.
-
-\subsection{Prose}
-$\newtenv$ is $\tenv$ with its $\subprograms$ component updated by binding $\name$ to $\funcdef$.
-
-\subsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \newtenv \eqdef (G^\tenv.\subprograms[\name\mapsto\funcdef], L^\tenv)
-}{
-  \addsubprogram(\tenv, \name, \funcdef) \typearrow \newtenv
 }
 \end{mathpar}

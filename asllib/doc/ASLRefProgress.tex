@@ -2,18 +2,10 @@
 % ------------------------------------------------------------------------------
 
 This chapter describes what is not yet present in the executable version of ASLRef
-(Build \#215 from Nov 14, 2024).
+(Build from Dec 12, 2024).
 
 % ------------------------------------------------------------------------------
 \section{Syntax}
-
-\subsection{Pragmas}
-ASLRef does not currently parse pragmas:
-\begin{verbatim}
-pragma asl_pragma1;
-\end{verbatim}
-
-\lrmcomment{This is related to \identi{ZGJQ}, \identr{GBNH}, \identr{GFSD}.}
 
 \subsection{Declaring Multiple Identifiers Without Initialization}
 The following simultaneous declaration of three global variables does not currently parse with ASLRef.
@@ -59,28 +51,9 @@ but it currently fails.
   end
 \end{verbatim}
 
-\subsection{Side-effect-free Subprograms}
-ASLRef does yet infer whether a subprorgam is side-effect-free.
-Therefore, there are no checks that expressions are side-effect-free when those are expected,
-for example, in \texttt{for} loop ranges.
-
-\lrmcomment{This is related to \identr{WQRN}, \identr{SNQJ}, \identr{DJMC}, \identr{KLDR}.}
-
-\subsection{Statically evaluable programs}%
-\label{sec:nyi:statically-evaluable-subprograms}
-
-Side effects analysis has not been implemented yet.
-%
-This makes detection of statically evaluable subprograms impossible.
-
-Furthermore, non-execution time subprograms, expressions, and types have not
-been implemented.
-
-\lrmcomment{This is related to \identi{LZCX}, \identi{NXJR}, \identr{CSFT}, \identi{HYBT},
-\identd{CCTY}, \identi{LYKD}, \identi{ZPWM}, \identd{KCKX}, \identi{NTYZ},
-\identi{MSZT}, \identd{QNHM}, \identi{XYKC}, \identd{ZPMF}, \identi{XSDY},
-\identd{XRBT}, \identi{WVGG}, \identd{JLJD}, \identi{KKDY}, \identd{MTQJ},
-\identi{YBGL}, \identi{YMRT}, \identi{QJTN}, \identi{GFZT}.}
+\subsection{Side-effect-free Subprograms with respect to dynamic errors}
+ASLRef performs a side effect analysis (see \chapref{SideEffects}).
+The analysis currently ignores dynamic errors that are not due to assertions.
 
 \subsection{Restriction on Use of Parameterized Integer Types}
 
@@ -115,9 +88,7 @@ The standard library is not yet defined by a reference.
 \section{Typing}
 
 \subsection{Checking Type Annotations for Absence of Side Effects}
-Type annotations that contain expressions must ensure that those expressions are side-effect-free.
-This is currently ensured by disallowing such expressions to contain call expressions.
-Allowing side-effect-free calls is being considered.
+Type annotations that contain expressions that may fail dynamically are not checked for.
 
 \subsection{Enumeration Labels}
 Enumeration labels are not yet treated as first-class literals, but rather as integer literals.
@@ -137,8 +108,3 @@ The domain of an enumeration type should be a set of enumeration labels.
 The standard library is not yet defined by the reference.
 
 \lrmcomment{This is related to \identr{RXYN}.}
-
-% ------------------------------------------------------------------------------
-\section{Side-Effects}
-
-Side-Effects are not yet defined by the reference.

@@ -165,7 +165,7 @@ We also define the following helper rules:
   \item TypingRule.AddGlobalStorage (see \secref{TypingRule.AddGlobalStorage})
 \end{itemize}
 
-\subsubsection{TypingRule.DeclareGlobalStorage \label{sec:TypingRule.DeclareGlobalStorage}}
+\subsubsection{TypingRule.DeclareGlobalStorage\label{sec:TypingRule.DeclareGlobalStorage}}
 \hypertarget{def-declareglobalstorage}{}
 The function
 \[
@@ -179,25 +179,27 @@ annotates the global storage declaration $\gsd$ in the global static environment
 yielding a modified global static environment $\newgenv$ and annotated global storage declaration $\newgsd$.
 \ProseOtherwiseTypeError
 
-\subsection{Prose}
+\subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item $\gsd$ is a global storage declaration with keyword $\keyword$, initial value \\ $\initialvalue$,
         \optional\ type $\tyopt$, and name $\name$;
   \item checking that $\name$ is not already declared in $\genv$ yields $\True$\ProseOrTypeError;
   \item applying $\withemptylocal$ to $\genv$ yields $\tenv$;
-  \item applying $\annotatetyoptinitialvalue$ to $\tyoptp$ and $\initialvalue$ in $\tenv$ yields
-        $(\initialvaluep, \tyoptp, \declaredt)$\ProseOrTypeError;
+  \item applying $\timeframeofgdk$ to $\keyword$ yields $\vtargettimeframe$;
+  \item applying $\annotatetyoptinitialvalue$ to $\vtargettimeframe$, $\tyoptp$, and $\initialvalue$ in $\tenv$ yields
+        $(\typedinitialvalue, \tyoptp, \declaredt)$\ProseOrTypeError;
   \item adding a global storage element with name $\name$, global declaration keyword \\ $\keyword$ and type $\declaredt$
         to $\tenv$ via $\addglobalstorage$ yields $\tenvone$\ProseOrTypeError;
   \item applying $\withemptylocal$ to $\genvone$ yields $\tenvone$;
-  \item applying $\updateglobalstorage$ to$\name$, $\keyword$, and $\initialvaluep$ in $\tenvone$ \\
+  \item view $\typedinitialvalue$ as $(\Ignore, \initialvaluep, \vsesinitialvalue)$;
+  \item applying $\updateglobalstorage$ to$\name$, $\keyword$, $\initialvaluep$, and $\vsesinitialvalue$ in $\tenvone$ \\
         yields $\tenvtwo$\ProseOrTypeError;
   \item define $\newgsd$ as $\gsd$ with its type component ($\GDty$) set to $\tyoptp$ and its initial value component
         ($\GDinitialvalue$) set to $\initialvaluep$;
   \item define $\newgenv$ as the global component of $\tenvtwo$.
 \end{itemize}
-\subsection{Formally}
+\subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \gsd \eqname \{
@@ -208,20 +210,33 @@ All of the following apply:
   \}\\
 \checkvarnotingenv{\genv, \name} \typearrow \True \OrTypeError\\\\
 \withemptylocal(\genv) \typearrow \tenv\\
+\timeframeofgdk(\keyword) \typearrow \vtargettimeframe\\
 {
   \begin{array}{r}
-    \annotatetyoptinitialvalue(\tenv, \tyopt, \initialvalue) \typearrow \\
-    (\initialvaluep, \tyoptp, \declaredt) \OrTypeError
+    \annotatetyoptinitialvalue(\tenv, \vtargettimeframe, \tyopt, \initialvalue) \typearrow \\
+    (\typedinitialvalue, \tyoptp, \declaredt) \OrTypeError
   \end{array}
 }\\
 \addglobalstorage(\genv, \name, \keyword, \declaredt) \typearrow \genvone \OrTypeError\\\\
 \withemptylocal(\genvone) \typearrow \tenvone\\\\
-\updateglobalstorage(\tenvone, \name, \keyword, \initialvaluep) \typearrow \tenvtwo\OrTypeError\\\\
+\typedinitialvalue \eqname (\Ignore, \initialvaluep, \vsesinitialvalue)\\
+{
+    \updateglobalstorage\left(
+      \begin{array}{l}
+      \tenvone, \\
+      \name, \\
+      \keyword, \\
+      \typedinitialvalue, \\
+      \vsesinitialvalue
+      \end{array}
+      \right) \typearrow
+    \tenvtwo \OrTypeError
+}\\
 {
 \newgsd \eqdef \left\{
   \begin{array}{rcl}
   \GDkeyword &:& \keyword, \\
-  \GDinitialvalue &:& \langle\initialvaluep\rangle, \\
+  \GDinitialvalue &:& \langle\typedinitialvalue\rangle, \\
   \GDty &:& \tyoptp, \\
   \GDname &:& \name
   \end{array}
@@ -239,15 +254,21 @@ All of the following apply:
 The helper function
 \[
 \begin{array}{r}
-\annotatetyoptinitialvalue(\overname{\staticenvs}{\tenv} \aslsep \overname{\langle\ty\rangle}{\tyoptp}
-  \aslsep \overname{\langle\expr\rangle}{\initialvalue}) \aslto \\
-  (\overname{\expr}{\initialvaluep} \times \overname{\langle\ty\rangle}{\tyoptp} \times \overname{\ty}{\declaredt})
+\annotatetyoptinitialvalue(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\TTimeFrame}{\vtargettimeframe} \aslsep
+  \overname{\langle\ty\rangle}{\tyoptp} \aslsep
+  \overname{\langle\expr\rangle}{\initialvalue}
+  ) \aslto \\
+  (\overname{(\expr\times \ty \times \TSideEffectSet)}{\typedinitialvalue}
+  \times \overname{\langle\ty\rangle}{\tyoptp} \times \overname{\ty}{\declaredt})
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
 is used in the context of a declaration of a global storage element with optional type annotation $\tyoptp$
 and optional initializing expression $\initialvalue$, in the static environment $\tenv$.
-It determines the initializing expression $\initialvaluep$,
+It determines $\typedinitialvalue$, which consists
+of an expression, a type, and a \sideeffectsetterm,
 the annotation of the type in $\tyoptp$ (in case there is a type), and the type
 that should be associated with the storage element $\declaredt$.
 
@@ -258,10 +279,13 @@ One of the following applies:
   \begin{itemize}
     \item $\tyoptp$ is the singleton set for the type $\vt$;
     \item $\initialvalue$ is the singleton set for the expression $\ve$;
-    \item annotating the type $\vt$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
-    \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep)$\ProseOrTypeError;
+    \item annotating the type $\vt$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
+    \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vsese)$\ProseOrTypeError;
+    \item define $\typede$ as $(\vte, \vep, \vsese)$;
     \item checking that $\vte$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
-    \item define $\initialvaluep$ as $\vep$;
+    \item checking that all \timeframesterm\ in $\vsest$ are less than or equal to \\
+          $\vtargettimeframe$ via $\sesisbefore$ yields $\True$\ProseOrTypeError;
+    \item define $\typedinitialvalue$ as $\typede$;
     \item define $\tyoptp$ as the singleton set for $\vtp$;
     \item define $\declaredt$ as $\vtp$;
   \end{itemize}
@@ -270,9 +294,11 @@ One of the following applies:
   \begin{itemize}
     \item $\tyoptp$ is the singleton set for the type $\vt$;
     \item $\initialvalue$ is $\None$;
-    \item annotating the type $\vt$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
+    \item annotating the type $\vt$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
+    \item checking that all \timeframesterm\ in $\vsest$ are less than or equal to \\
+          $\vtargettimeframe$ via $\sesisbefore$ yields $\True$\ProseOrTypeError;
     \item obtaining the \basevalueterm\ of $\vtp$ in $\tenv$ yields $\vep$\ProseOrTypeError;
-    \item define $\initialvaluep$ as $\vep$;
+    \item define $\typedinitialvalue$ as $(\vtp, \vep, \emptyset)$;
     \item define $\tyoptp$ as the singleton set for $\vtp$;
     \item define $\declaredt$ as $\vtp$;
   \end{itemize}
@@ -281,10 +307,11 @@ One of the following applies:
   \begin{itemize}
     \item $\tyoptp$ is $\None$;
     \item $\initialvalue$ is the singleton set for the expression $\ve$;
-    \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep)$\ProseOrTypeError;
-    \item define $\initialvaluep$ as $\vep$;
+    \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vsese)$\ProseOrTypeError;
+    \item define $\typede$ as $(\vte, \vep, \vsese)$;
+    \item define $\typedinitialvalue$ as $\typede$;
     \item define $\tyoptp$ as $\None$;
-    \item define $\declaredt$ as $\vtp$;
+    \item define $\declaredt$ as $\vte$;
   \end{itemize}
 \end{itemize}
 The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syntax error.
@@ -292,31 +319,51 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[some\_some]{
-  \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep) \OrTypeError\\\\
-  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError
+  \annotatetype{\tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
+  \typede \eqdef (\vte, \vep, \vsese)\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \checktrans{\sesisbefore(\vsest, \vtargettimeframe)}{WrongTimeFrame} \typearrow \True \OrTypeError
 }{
-  \annotatetyoptinitialvalue(\tenv, \overname{\langle\vt\rangle}{\tyoptp}, \overname{\langle\ve\rangle}{\initialvalue})
-  \typearrow (\overname{\vep}{\initialvaluep}, \overname{\langle\vtp\rangle}{\tyoptp}, \overname{\vtp}{\declaredt})
+  {
+    \begin{array}{r}
+  \annotatetyoptinitialvalue(\tenv, \vtargettimeframe, \overname{\langle\vt\rangle}{\tyoptp}, \overname{\langle\ve\rangle}{\initialvalue})
+  \typearrow \\
+  (\overname{\typede}{\typedinitialvalue}, \overname{\langle\vtp\rangle}{\tyoptp}, \overname{\vtp}{\declaredt})
+    \end{array}
+  }
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[some\_none]{
-  \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
-  \basevalue(\tenv, \vtp) \typearrow \vep \OrTypeError
+  \annotatetype{\tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
+  \checktrans{\sesisbefore(\vsest, \vtargettimeframe)}{WrongTimeFrame} \typearrow \True \OrTypeError\\\\
+  \basevalue(\tenv, \vtp) \typearrow \vep \OrTypeError\\\\
+  \typedinitialvalue \eqdef (\vtp, \vep, \emptyset)
 }{
-  \annotatetyoptinitialvalue(\tenv, \overname{\langle\vt\rangle}{\tyoptp}, \overname{\None}{\initialvalue})
-  \typearrow (\overname{\vep}{\initialvaluep}, \overname{\langle\vtp\rangle}{\tyoptp}, \overname{\vtp}{\declaredt})
+  {
+  \begin{array}{r}
+    \annotatetyoptinitialvalue(\tenv, \vtargettimeframe, \overname{\langle\vt\rangle}{\tyoptp}, \overname{\None}{\initialvalue})
+    \typearrow \\
+    (\typedinitialvalue, \overname{\langle\vtp\rangle}{\tyoptp}, \overname{\vtp}{\declaredt})
+  \end{array}
+  }
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[none\_some]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
+  \typede \eqdef (\vte, \vep, \vsese)
 }{
-  \annotatetyoptinitialvalue(\tenv, \overname{\None}{\tyoptp}, \overname{\langle\ve\rangle}{\initialvalue})
-  \typearrow (\overname{\vep}{\initialvaluep}, \overname{\None}{\tyoptp}, \overname{\vtp}{\declaredt})
+  {
+    \begin{array}{r}
+  \annotatetyoptinitialvalue(\tenv, \vtargettimeframe, \overname{\None}{\tyoptp}, \overname{\langle\ve\rangle}{\initialvalue})
+  \typearrow \\
+  (\overname{\typede}{\typedinitialvalue}, \overname{\None}{\tyoptp}, \overname{\vte}{\declaredt})
+    \end{array}
+  }
 }
 \end{mathpar}
 
@@ -324,50 +371,201 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
 \hypertarget{def-updateglobalstorage}{}
 The helper function
 \[
-\updateglobalstorage(\overname{\staticenvs}{\tenv} \aslsep
-    \overname{\identifier}{\name} \aslsep
-    \overname{\globaldeclkeyword}{\gdk} \aslsep
-    \overname{\langle\expr\rangle}{\veopt} \aslsep
-) \aslto \overname{\staticenvs}{\newtenv}
+\updateglobalstorage
+\left(
+\begin{array}{c}
+  \overname{\staticenvs}{\tenv} \aslsep\\
+    \overname{\identifier}{\name} \aslsep\\
+    \overname{\globaldeclkeyword}{\gdk} \aslsep\\
+    \overname{(\ty\times\expr\times\TSideEffectSet)}{\typedinitialvalue}
+\end{array}
+\right) \aslto \overname{\staticenvs}{\newtenv}
 \]
 updates the static environment $\tenv$ for the global storage element
-named $\name$ with global declaration keyword $\gdk$, and optional initializing value $\veopt$,
-resulting in the updated static environment $\newtenv$.
+named $\name$ with global declaration keyword $\gdk$,
+and a tuple (obtained via \nameref{sec:TypingRule.AnnotateTyOptInitialValue})
+$\typedinitialvalue$, which consists a type for the initializing value,
+the annotated initializing expression, and the inferred \sideeffectsetterm\ for the initializing value.
+The result is the updated static environment $\newtenv$.
 \ProseOtherwiseTypeError
 This helper function is applied following $\addglobalstorage(\tenv, \name, \gdk, \vt)$ where $\vt$
 is the type associated with $\name$.
 
 \subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{constant}):
+  \begin{itemize}
+    \item $\gdk$ is $\GDKConstant$;
+    \item view $\typedinitialvalue$ as $(\Ignore, \initialvaluep, \vsesinitialvalue)$;
+    \item checking that all \timeframesterm\ in $\vsesinitialvalue$ are equal to or less than
+          $\timeframeconstant$ via $\sesisbefore$ yields $\True$\ProseOrTypeError;
+    \item applying $\tryaddglobalconstant$ to $\name$ and $\initialvaluep$ in $\tenv$ yields $\newtenv$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{let\_normalizable}):
+  \begin{itemize}
+    \item $\gdk$ is $\GDKLet$;
+    \item applying $\normalizeopt$ to $\ve$ in $\tenv$ yields $\langle\vep\rangle$\ProseOrTypeError;
+    \item applying $\addglobalimmutableexpr$ to $\name$ and $\vep$ in $\tenv$ yields $\newtenv$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{let\_non\_normalizable}):
+  \begin{itemize}
+    \item $\gdk$ is $\GDKLet$;
+    \item applying $\normalizeopt$ to $\ve$ in $\tenv$ yields $\None$\ProseOrTypeError;
+    \item \Proseeqdef{$\newtenv$}{$\tenv$}.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{config}):
+  \begin{itemize}
+    \item $\gdk$ is $\GDKConfig$;
+    \item view $\typedinitialvalue$ as $(\Ignore, \initialvaluep, \vsesinitialvalue)$;
+    \item checking that all \timeframesterm\ in $\vsesinitialvalue$ are equal to or less than
+          $\timeframeconfig$ via $\sesisbefore$ yields $\True$\ProseOrTypeError;
+    \item \Proseeqdef{$\newtenv$}{$\tenv$}.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{var}):
+  \begin{itemize}
+    \item $\gdk$ is $\GDKVar$;
+    \item \Proseeqdef{$\newtenv$}{$\tenv$}.
+  \end{itemize}
+\end{itemize}
+
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[constant]{
-  \addglobalconstant(\tenvtwo, \name, \ve) \typearrow \newtenv
+  \typedinitialvalue \eqname (\Ignore, \initialvaluep, \vsesinitialvalue)\\
+  \checktrans{\sesisbefore(\vsesinitialvalue, \timeframeconstant)}{BadTimeFrame} \typearrow \True \OrTypeError\\\\
+  \tryaddglobalconstant(\tenv, \name, \initialvaluep) \typearrow \newtenv
 }{
-  \updateglobalstorage(\tenv, \name, \overname{\GDKConstant}{\gdk}, \overname{\langle\ve\rangle}{\veopt}) \typearrow \newtenv
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[let\_statically\_evaluable]{
-  \normalize(\tenvone, \ve) \typearrow \vep \OrTypeError\\\\
-  \addglobalimmutableexpr(\tenv, \vep) \typearrow \newtenv
-}{
-  \updateglobalstorage(\tenv, \name, \overname{\GDKLet}{\gdk}, \overname{\langle\ve\rangle}{\veopt}) \typearrow \newtenv
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[other]{
   {
-    \begin{array}{l}
-      \gdk \neq \GDKConstant\ \lor \\
-      \veopt = \None\ \lor \\
-      \gdk = \GDKLet \land \veopt = \langle\ve\rangle \land
-      \isstaticallyevaluable(\tenv, \ve) \typearrow \False
+    \begin{array}{r}
+  \updateglobalstorage(
+    \tenv,
+    \name,
+    \overname{\GDKConstant}{\gdk},
+    \typedinitialvalue) \typearrow \\
+    \newtenv
     \end{array}
   }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[let\_normalizable]{
+  \normalizeopt(\tenv, \ve) \typearrow \langle\vep\rangle \OrTypeError\\\\
+  \addglobalimmutableexpr(\tenv, \name, \vep) \typearrow \newtenv
 }{
-  \updateglobalstorage(\tenv, \name, \gdk, \veopt) \typearrow \overname{\tenv}{\newtenv}
+  {
+    \begin{array}{r}
+  \updateglobalstorage(
+    \tenv,
+    \name,
+    \overname{\GDKLet}{\gdk},
+    \typedinitialvalue) \typearrow \\
+    \newtenv
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[let\_non\_normalizable]{
+  \normalizeopt(\tenv, \ve) \typearrow \None
+}{
+  {
+    \begin{array}{r}
+  \updateglobalstorage(
+    \tenv,
+    \name,
+    \overname{\GDKLet}{\gdk},
+    \typedinitialvalue) \typearrow \\
+    \overname{\tenv}{\newtenv}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[config]{
+  \typedinitialvalue \eqname (\Ignore, \initialvaluep, \vsesinitialvalue)\\
+  \checktrans{\sesisbefore(\vsesinitialvalue, \timeframeconfig)}{BadTimeFrame} \typearrow \True \OrTypeError\\\\
+}{
+  {
+    \begin{array}{r}
+  \updateglobalstorage(
+    \tenv,
+    \name,
+    \overname{\GDKConfig}{\gdk},
+    \typedinitialvalue) \typearrow \\
+    \overname{\tenv}{\newtenv}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[var]{}{
+  {
+    \begin{array}{r}
+  \updateglobalstorage(
+    \tenv,
+    \name,
+    \overname{\GDKVar}{\gdk},
+    \typedinitialvalue) \typearrow \\
+    \overname{\tenv}{\newtenv}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsubsection{TypingRule.TryAddGlobalConstant\label{sec:TryAddGlobalConstant.AddGlobalStorage}}
+\hypertarget{def-tryaddglobalconstant}{}
+The helper function
+\[
+\tryaddglobalconstant(
+  \overname{\staticenvs}{\tenv} \aslsep
+  \overname{\identifier}{\name} \aslsep
+  \overname{\expr}{\ve}
+  )
+  \typearrow \overname{\staticenvs}{\newtenv}
+\]
+attempts to update $\tenv$ by binding $\name$ to a literal value when $\ve$ can be statically
+evaluated to one. The resulting static environment is $\newtenv$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{okay}):
+  \begin{itemize}
+    \item \Prosestaticeval{$\tenv$}{$\ve$}{the literal $\vv$};
+    \item applying $\addglobalconstant$ to $\ve$ and $\vv$ in $\tenv$ yields $\newtenv$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{error}):
+  \begin{itemize}
+    \item \Prosestaticeval{$\tenv$}{$\ve$}{a type error};
+    \item \Proseeqdef{$\newtenv$}{$\tenv$};
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[okay]{
+  \staticeval(\tenv, \ve) \typearrow \vv\\
+  \addglobalconstant(\tenv, \ve, \vv) \typearrow \newtenv
+}{
+  \tryaddglobalconstant(\tenv, \name, \ve) \typearrow \newtenv
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[error]{
+  \staticeval(\tenv, \ve) \typearrow \TypeErrorConfig
+}{
+  \tryaddglobalconstant(\tenv, \name, \ve) \typearrow \overname{\tenv}{\newtenv}
 }
 \end{mathpar}
 

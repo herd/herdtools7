@@ -149,21 +149,24 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
   \annotatebitfields(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ewidth} \aslsep \overname{\bitfield^*}{\fields})
-  \aslto \overname{\bitfield^*}{\newfields} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto (\overname{\bitfield^*}{\newfields} \times \overname{\TSideEffectSet}{\vses})
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates a list of bitfields --- $\fields$ --- with an expression denoting the overall number of bits in the containing
 bitvector type --- $\ewidth$,
 in an environment $\tenv$,
-resulting in $\newfields$ --- the \typedast\ for $\fields$ and $\ewidth$. \ProseOtherwiseTypeError
+resulting in $\newfields$ --- the \typedast\ for $\fields$ and $\ewidth$
+as well as a set of \sideeffectdescriptorsterm\ $\vses$. \ProseOtherwiseTypeError
 
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item checking that the list of bitfield names in $\bitfields$ does not contain duplicates yields $\True$\ProseOrTypeError;
   \item symbolically simplifying $\ewidth$ in $\tenv$ via $\staticeval$ yields the literal integer for $\width$\ProseOrTypeError;
-  \item annotating each bitfield $\field$ in $\fields$ with width $\width$ in $\tenv$ yields the corresponding annotated
-  bitfield $\newfield$\ProseOrTypeError;
-  \item $\newfields$ is the list of annotated bitfields.
+  \item annotating each bitfield $\vf$ in $\fields$ with width $\width$ in $\tenv$ yields the corresponding annotated
+  bitfield $\vfp$ and \sideeffectsetterm\ $\vxs_\vf$\ProseOrTypeError;
+  \item define $\newfields$ as the list of annotated bitfields;
+  \item \Prosenonconflictingunion{$\vxs_\vf$ for every field $\vf$ in $\fields$}{$\vses$}.
 \end{itemize}
 
 \subsubsection{Formally}
@@ -172,13 +175,13 @@ All of the following apply:
   \names \eqdef [\field\in\fields: \bitfieldgetname(\field)]\\
   \checknoduplicates(\names) \typearrow \True \OrTypeError\\\\
   \staticeval(\tenv, \ewidth) \typearrow \lint(\width) \OrTypeError\\\\
-  \field\in\fields: \annotatebitfield(\tenv, \width, \field) \typearrow \newfield \OrTypeError\\\\
-  \newfields \eqdef [\field\in\fields: \newfield]
+  \vf\in\fields: \annotatebitfield(\tenv, \width, \field) \typearrow (\vfp, \vxs_\vf) \OrTypeError\\\\
+  \newfields \eqdef [\vf\in\fields: \vfp]\\
+  \nonconflictingunion(\vf\in\fields: \vxs_\vf) \typearrow \vses \OrTypeError
 }{
-  \annotatebitfields(\tenv, \ewidth, \fields) \typearrow \newfields
+  \annotatebitfields(\tenv, \ewidth, \fields) \typearrow (\newfields, \vses)
 }
 \end{mathpar}
-
 \CodeSubsection{\TBitFieldsBegin}{\TBitFieldsEnd}{../Typing.ml}
 
 \subsubsection{TypingRule.BitFieldGetName\label{sec:TypingRule.BitFieldGetName}}
@@ -285,7 +288,7 @@ One of the following applies:
 The function
 \[
   \annotatebitfield(\overname{\staticenvs}{\tenv} \aslsep \overname{\Z}{\width} \aslsep \overname{\bitfield}{\vfield})
-  \aslto \overname{\bitfield}{\newfield} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto (\overname{\bitfield}{\newfield} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates a bitfield --- $\vfield$ --- with an integer --- $\width$ --- indicating the number of bits in
 the bitvector type that contains $\field$,
@@ -295,35 +298,39 @@ annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
 \subsubsection{Prose}
 \begin{itemize}
   \item $\vfield$ is a bitfield with list of slices $\vslices$;
-  \item annotating the slices $\vslices$ yields $\slicesone$\ProseOrTypeError;
+  \item annotating the slices $\vslices$ yields $(\slicesone, \vsesslices)$\ProseOrTypeError;
   \item One of the following applies:
   \begin{itemize}
     \item All of the following apply (\textsc{simple}):
     \begin{itemize}
       \item checking whether the range of positions in $\slicesone$ fits inside $0..\width-1$ yields $\True$\ProseOrTypeError;
-      \item $\newfield$ is a bitfield named $\name$ with list of slices $\slicesone$, that is, $\BitFieldSimple(\name, \slicesone)$.
+      \item define $\newfield$ as the bitfield named $\name$ with list of slices $\slicesone$, that is, $\BitFieldSimple(\name, \slicesone)$.
     \end{itemize}
 
     \item All of the following apply (\textsc{nested}):
     \begin{itemize}
       \item converting the $\slicesone$ into a list of positions with $\width$ and static environment $\tenv$
-      yields $\positions$\ProseOrTypeError;
+            yields $\positions$\ProseOrTypeError;
       \item checking that all positions in $\positions$ fit inside $0..\width$ yields \\
             $\True$\ProseOrTypeError;
       \item let $\widthp$ be the length of the list $\positions$;
-      \item annotating the bitfields $\bitfieldsp$ with $\widthp$ in static environment $\tenv$ yields $\bitfieldspp$\ProseOrTypeError;
-      \item $\newfields$ is the nested bitfield with $\slicesone$ and bitfields $\bitfieldspp$, that is, $\BitFieldNested(\slicesone, \bitfieldspp)$.
+      \item annotating the bitfields $\bitfieldsp$ with $\widthp$ in static environment $\tenv$ yields $ (\bitfieldspp, \vsesbitfields)$\ProseOrTypeError;
+      \item define $\newfields$ as the nested bitfield with $\slicesone$ and bitfields \\
+            $\bitfieldspp$, that is, $\BitFieldNested(\slicesone, \bitfieldspp)$;
+      \item define $\vses$ as the union of $\vsesslices$ and $\vsesbitfields$.
     \end{itemize}
 
     \item All of the following apply (\textsc{type}):
     \begin{itemize}
-      \item Annotating the type $\vt$ yields $\vtp$\ProseOrTypeError;
+      \item Annotating the type $\vt$ yields $(\vtp, \vsesty)$\ProseOrTypeError;
       \item checking whether the range of positions in $\slicesone$ fit inside $0..\width$ yields $\True$\ProseOrTypeError;
       \item converting the list of slices $\slicesone$ into a list of positions in $\tenv$ yields $\positions$\ProseOrTypeError;
       \item checking that all positions in $\positions$ fit inside $0..\width$ yields $\True$\ProseOrTypeError;
       \item let $\widthp$ be the length of the list $\positions$;
       \item checking whether the $\vt$ and the bitvector with $\widthp$ bits have the same width yields $\True$\ProseOrTypeError
-      \item $\newfield$ is the typed-bitfield with name $\name$, list of slices $\slicesone$ and type $\vtp$, that is, \BitFieldType(\name, \slicesone, \vtp).
+      \item define $\newfield$ as the typed bitfield with name $\name$, list of slices \\
+            $\slicesone$ and type $\vtp$, that is, \BitFieldType(\name, \slicesone, \vtp);
+      \item define $\vses$ as the union of $\vsesslices$ and $\vsesty$.
     \end{itemize}
   \end{itemize}
 \end{itemize}
@@ -331,42 +338,44 @@ annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[simple]{
-  \annotateslices(\tenv, \vslices) \typearrow \slicesone \OrTypeError\\\\
+  \annotateslices(\tenv, \vslices) \typearrow (\slicesone, \vsesslices) \OrTypeError\\\\
   \commonprefixline\\\\
   \checkslicesinwidth(\tenv, \width, \slicesone) \typearrow \True \OrTypeError
 }{
   \annotatebitfield(\tenv, \width, \BitFieldSimple(\name, \vslices)) \typearrow \\
-  \BitFieldSimple(\name, \slicesone)
+  (\overname{\BitFieldSimple(\name, \slicesone)}{\newfield}, \overname{\vsesslices}{\vses})
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[nested]{
-  \annotateslices(\tenv, \vslices) \typearrow \slicesone \OrTypeError\\\\
+  \annotateslices(\tenv, \vslices) \typearrow (\slicesone, \vsesslices) \OrTypeError\\\\
   \commonprefixline\\\\
   \disjointslicestopositions(\tenv, \slicesone) \typearrow \positions \OrTypeError\\\\
   \checkpositionsinwidth(\tenv, \width, \positions) \typearrow \True \OrTypeError\\\\
   \widthp \eqdef \listlen{\positions}\\
-  \annotatebitfields(\tenv, \widthp, \bitfieldsp) \typearrow \bitfieldspp \OrTypeError\\
+  \annotatebitfields(\tenv, \widthp, \bitfieldsp) \typearrow (\bitfieldspp, \vsesbitfields) \OrTypeError\\
+  \vses \eqdef \vsesslices \cup \vsesbitfields
 }{
   \annotatebitfield(\tenv, \width, \BitFieldNested(\name, \vslices, \bitfieldsp)) \typearrow \\
-  \BitFieldNested(\slicesone, \bitfieldspp)
+  (\overname{\BitFieldNested(\slicesone, \bitfieldspp)}{\newfield}, \vses)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[type]{
-  \annotateslices(\tenv, \vslices) \typearrow \slicesone \OrTypeError\\\\
+  \annotateslices(\tenv, \vslices) \typearrow (\slicesone, \vsesslices) \OrTypeError\\\\
   \commonprefixline\\\\
-  \annotatetype{\tenv, \vt} \typearrow \vtp \OrTypeError\\\\
+  \annotatetype{\tenv, \vt} \typearrow (\vtp, \vsesty) \OrTypeError\\\\
   \checkslicesinwidth(\tenv, \width, \slicesone) \typearrow \True \OrTypeError\\\\
   \disjointslicestopositions(\tenv, \slicesone) \typearrow \positions \OrTypeError\\\\
   \checkpositionsinwidth(\tenv, \slicesone, \width, \positions) \typearrow \True \OrTypeError\\\\
   \widthp \eqdef \listlen{\positions}\\
-  \checkbitsequalwidth(\TBits(\widthp, \emptylist), \vt) \typearrow \True \OrTypeError
+  \checkbitsequalwidth(\TBits(\widthp, \emptylist), \vt) \typearrow \True \OrTypeError\\\\
+  \vses \eqdef \vsesslices \cup \vsesty
 }{
   \annotatebitfield(\tenv, \width, \BitFieldType(\name, \vslices, \vt)) \typearrow \\
-  \BitFieldType(\name, \slicesone, \vtp)
+  (\overname{\BitFieldType(\name, \slicesone, \vtp)}{\newfield}, \vses)
 }
 \end{mathpar}
 
@@ -837,4 +846,3 @@ All of the following apply:
   \slicetoindices(\tenv, \overname{\SliceLength(\vi, \vw)}{\vs}) \typearrow \overname{\vstart..\vend}{\indices}
 }
 \end{mathpar}
-
