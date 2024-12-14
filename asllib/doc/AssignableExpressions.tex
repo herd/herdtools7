@@ -16,8 +16,9 @@ We then define the abstract syntax, typing, and semantics of the different kinds
 \item Multi-assignment expressions (see \secref{MultiAssignmentExpressions})
 \item Array assignment expressions (see \secref{ArrayAssignmentExpressions})
 \item Bitvector slice assignment expressions (see \secref{BitvectorSliceAssignmentExpressions})
+\item Structured type field assignment expressions (\secref{StructuredTypeFieldAssignmentExpressions})
+\item Structured Type Multi-field Assignment expressions (\secref{StructuredTypeMultiFieldAssignmentExpressions})
 \item Bitfield assignment expressions (see \secref{BitfieldAssignmentExpressions})
-\item Structured type field assignment Expressions (see \secref{StructuredTypeFieldAssignmentExpressions})
 \end{itemize}
 
 \hypertarget{def-annotatelexpr}{}
@@ -55,7 +56,7 @@ Some of the typing rules and semantics rules require viewing \assignableexpressi
 as \rhsexpressions.
 The correspondence is given by the function $\torexpr : \lexpr \rightarrow \expr$., defined in \secref{LeftToRight}.
 %
-For example, \hyperlink{SemanticsRule.LESetField}{SemanticsRule.LESetField}
+For example, \nameref{sec:SemanticsRule.LESetField}
 needs to evaluate the record subexpression $\rerecord$, which is an \assignableexpression.
 To achieve this, $\torexpr(\record)$ is used to obtain an \rhsexpression, which then allows
 using $\texttt{eval\_expr}$ to evaluate it.
@@ -1165,8 +1166,7 @@ All of the following apply:
 \section{Structured Type Field Assignment Expressions\label{sec:StructuredTypeFieldAssignmentExpressions}}
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\lexpr \derives\ & \LESetField(\lexpr, \identifier) & \\
-    |\ & \LESetFields(\lexpr, \identifier^*) &
+\lexpr \derives\ & \LESetField(\lexpr, \identifier) &
 \end{flalign*}
 
 \subsection{Typing}
@@ -1225,6 +1225,256 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\LESetStructuredFieldBegin}{\LESetStructuredFieldEnd}{../Typing.ml}
+
+\section{Structured Type Multi-field Assignment Expressions\label{sec:StructuredTypeMultiFieldAssignmentExpressions}}
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\lexpr \derives\ & \LESetFields(\lexpr, \identifier^*) &
+\end{flalign*}
+
+\subsection{Typing}
+\subsubsection{TypingRule.LESetFields\label{sec:TypingRule.LESetFields}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ is an assignable expression for assigning the list of fields $\vlefields$ of the base
+        expression $\lebase$;
+  \item \Proseannotateexpr{$\tenv$}{the right-hand side expression corresponding to \\ $\lebaseannot$}{$(\tbase, \Ignore, \Ignore)$}\ProseOrTypeError;
+  \item \Proseannotatelexpr{$\tenv$}{$\lebase$}{$\tbase$}{$(\lebaseannot, \vsesbase)$}\ProseOrTypeError;
+  \item \Prosemakeanonymous{$\tenv$}{$\tbase$}{\\ $\tbaseanon$}\ProseOrTypeError;
+  \item One of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{bits}):
+    \begin{itemize}
+      \item $\tanonbase$ is a bitvector type with list of bitfields $\vbitfields$;
+      \item applying $\findbitfieldsslices$ to $\name$ and $\vbitfields$, for every $\name$ in $\vlefields$, yields $\vslices_\name$\ProseOrTypeError;
+      \item define $\vleslice$ as the \ProseLESlice\ for the base expression $\lebaseannot$ and list of slices formed by concatenating all
+            slice lists $\vslices_\name$, for every $\name$ in $\vlefields$;
+      \item \Proseannotatelexpr{$\tenv$}{$\vleslice$}{$\vte$}{$(\newle, \vses)$}\ProseOrTypeError.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{record}):
+    \begin{itemize}
+      \item $\tanonbase$ is a record type with list of fields $\vbasefields$;
+      \item applying $\foldbitvectorfields$ to $\vlefields$ and $\vbasefields$ in $\tenv$ yields $(\vlength, \vslices)$ \ProseOrTypeError;
+      \item \Proseeqdef{$\vtlhs$}{the bitvector type of length $\vlength$ and no bitfields, that is, $\TBits(\ELInt{\vlength}, \emptylist)$};
+      \item checking that $\vte$ \typesatisfies\ $\vtlhs$ in $\tenv$ yields $\True$\ProseOrTypeError;
+      \item define $\newle$ as the assignable expression of the list of fields $\vlefields$ to the base expression $\lebase$, that is,
+            $\LESetFields(\lebase, \vlefields)$;
+      \item \Proseeqdef{$\vses$}{$\vsesbase$}.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{error}):
+    \begin{itemize}
+      \item $\tanonbase$ is neither a bitvector type nor a record type;
+      \item the result is a type error indicating that the type of the left-hand-side expression is expected to be
+            either a bitvector type or a record type.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[bits]{
+  \annotateexpr{\tenv, \torexpr(\lebase)} \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \lebase, \tbase} \typearrow (\lebaseannot, \vsesbase) \OrTypeError\\\\
+  \makeanonymous(\tenv, \tbase) \typearrow \tbaseanon \OrTypeError\\\\
+  \commonprefixline\\\\
+  \tbaseanon = \TBits(\Ignore, \vbitfields)\\
+  \name\in\vlefields: \findbitfieldsslices(\name, \vbitfields) \typearrow \vslices_\name \OrTypeError\\\\
+  \vleslice \eqdef \LESlice(\lebaseannot, [\name\in\vlefields: \vslices_\name])\\
+  \annotatelexpr{\tenv, \vleslice, \vte} \typearrow (\newle, \vses) \OrTypeError
+}{
+  \annotatelexpr{\tenv, \overname{\LESetFields(\lebase, \vlefields)}{\vle}, \vte} \typearrow (\newle, \vses)
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[record]{
+  \annotateexpr{\tenv, \torexpr(\lebase)} \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \lebase, \tbase} \typearrow (\lebaseannot, \vsesbase) \OrTypeError\\\\
+  \makeanonymous(\tenv, \tbase) \typearrow \tbaseanon \OrTypeError\\\\
+  \commonprefixline\\\\
+  \tbaseanon = \TRecord(\vbasefields)\\
+  \foldbitvectorfields(\tenv, \vbasefields, \vlefields) \typearrow (\vlength, \vslices) \OrTypeError\\\\
+  \vtlhs \eqdef \TBits(\ELInt{\vlength}, \emptylist)\\
+  \checktypesat(\tenv, \vte, \vtlhs) \typearrow \True \OrTypeError
+}{
+  {
+   \begin{array}{r}
+    \annotatelexpr{\tenv, \overname{\LESetFields(\lebase, \vlefields)}{\vle}, \vte} \typearrow\\
+    (\overname{\LESetFields(\lebaseannot, \vlefields, \vslices)}{\newle}, \overname{\vsesbase}{\vses})
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[error]{
+  \annotateexpr{\tenv, \torexpr(\lebase)} \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \lebase, \tbase} \typearrow (\lebaseannot, \vsesbase) \OrTypeError\\\\
+  \makeanonymous(\tenv, \tbase) \typearrow \tbaseanon \OrTypeError\\\\
+  \commonprefixline\\\\
+  \checktrans{\astlabel(\tbaseanon) \not\in \{\TBits, \TRecord\}}{UnexpectedType} \typearrow \True \OrTypeError
+}{
+  \annotatelexpr{\tenv, \overname{\LESetFields(\lebase, \vlefields)}{\vle}, \vte} \typearrow (\newle, \vses)
+}
+\end{mathpar}
+\CodeSubsection{\LESetFieldsBegin}{\LESetFieldsEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.FoldBitvectorFields\label{sec:TypingRule.FoldBitvectorFields}}
+\hypertarget{def-foldbitvectorfields}{}
+The helper function
+\[
+\foldbitvectorfields(\overname{\staticenvs}{\tenv} \aslsep \overname{\Field^*}{\vbasefields} \aslsep \overname{\bitfield^*}{\vlefields})
+\aslto (\overname{\N}\vlength \times \overname{(\N \times N)^*}{\vslices})
+\]
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\vlefields$ is empty;
+    \item \Proseeqdef{$\vlength$}{$0$};
+    \item \Proseeqdef{$\vslices$}{the empty list}.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\vlefields$ is the list with prefix $\vlefieldsone$ (the elements excluding the last one) and last element $\vfield$;
+    \item applying $\foldbitvectorfields$ to $\vbasefields$ and $\vlefieldsone$ in $\tenv$ yields $(\vstart, \vslicesone)$\ProseOrTypeError;
+    \item applying $\assocopt$ to $\vfields$ and $\vbasefields$ yields $\tyopt$;
+    \item checking that $\tyopt$ is different to $\None$ yields $\True$\ProseTerminateAs{\MissingField};
+    \item view $\tyopt$ as $\langle\vtfield\rangle$;
+    \item applying $\getbitvectorconstwidth$ to $\vtfield$ in $\tenv$ yields $\vfieldwidth$\ProseOrTypeError;
+    \item \Proseeqdef{$\vlength$}{$\vstart + \vfieldwidth$};
+    \item \Proseeqdef{$\vslices$}{the list with \head\ $(\vstart, \vfieldwidth)$ and \tail\ $\vslicesone$}.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \foldbitvectorfields(\tenv, \vbasefields, \overname{\emptylist}{\vlefields}) \typearrow (\overname{0}{\vlength}, \overname{\emptylist}{\vslices})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \foldbitvectorfields(\tenv, \vbasefields, \vlefieldsone) \typearrow (\vstart, \vslicesone)\OrTypeError\\\\
+  \assocopt(\vfields, \vbasefields) \typearrow \tyopt\\
+  \checktrans{\tyopt \neq \None}{\MissingField} \typearrow \True \OrTypeError\\\\
+  \tyoptp \eqname \langle\vtfield\rangle\\
+  \getbitvectorconstwidth(\tenv, \vtfield) \typearrow \vfieldwidth \OrTypeError\\\\
+}{
+  {
+  \begin{array}{r}
+  \foldbitvectorfields(\tenv, \vbasefields, \overname{\vlefieldsone \concat [\vfield]}{\vlefields}) \typearrow\\
+  (\overname{\vstart + \vfieldwidth}{\vlength}, \overname{[(\vstart, \vfieldwidth)] \concat \vslicesone}{\vslices})
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\subsection{Semantics}
+\subsubsection{SemanticsRule.LESetFields}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ is an expression for assigning each of the fields in $\fields$ of the record expression $\vlerecord$
+        with the corresponding slices given in $\vslices$ from the bitvector value $\vv$
+        (the rule \nameref{sec:TypingRule.LESetFields} ensures that the length of $\fields$ and $\vslices$ is the same);
+  \item \Proseevalexpr{$\env$}{right-hand-side expression corresponding to $\vlerecord$}{$(\vrmrecord, \envone)$}\ProseOrAbnormal;
+  \item \Proseeqdef{$\vm$}{$(\vv,\vg)$};
+  \item applying $\assignbitvectorfields$ to $(\vv,\vg)$, $\vrmrecord$, $\fields$, and $\vslices$, yields \\
+        $(\vmtwo, \envone)$\ProseOrError;
+  \item view the \concurrentnativevalue\ $\vmtwo$ as the pair $(\vvtwo, \vgtwo)$;
+  \item \Proseevallexpr{$\envone$}{$\vlerecord$}{the \concurrentnativevalue\ consisting of $\vvtwo$ and the parallel composition of $\vg$ and $\vgtwo$}{$C$}.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexpr{\env, \torexpr(\vlerecord), \vrmrecordnew} \evalarrow (\vrmrecord, \envone) \OrAbnormal\\\\
+  \vm \eqdef (\vv,\vg)\\
+  \assignbitvectorfields(\vm, \vrmrecord, \fields, \vslices) \evalarrow (\vmtwo, \envone) \OrDynError\\\\
+  \vmtwo \eqname (\vvtwo, \vgtwo)\\
+  \evallexpr{\envone, \vlerecord, (\vvtwo, \vg \parallelcomp \vgtwo)} \evalarrow C
+}{
+  \evalexpr{\env, \overname{\LESetFields(\vlerecord, \fields, \vslices)}{\vle}, (\vv,\vg)} \evalarrow C
+}
+\end{mathpar}
+
+\subsubsection{SemanticsRule.AssignBitvectorFields}
+\hypertarget{def-assignbitvectorfields}{}
+The helper function
+\[
+  \assignbitvectorfields(
+    \overname{(\trecord\times\XGraphs)}{\vm} \aslsep
+    \overname{(\trecord\times\XGraphs)}{\vmone} \aslsep
+    \overname{\identifier^*}{\fields} \aslsep
+    \overname{(\N\times\N)^*}{\vslices}) \aslto
+    \overname{(\trecord\times\XGraphs)}{\vmtwo}
+\]
+updates the list of fields $\fields$ of \concurrentnativevalue\ $\vmone$ with the
+slices given by $\vslices$ of the \concurrentnativevalue\ $\vm$, yielding the
+\concurrentnativevalue\ $\vmtwo$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{empty}):
+  \begin{itemize}
+    \item $\fields$ and $\vslices$ are both empty lists;
+    \item \Proseeqdef{$\vmtwo$}{$\vmone$}.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{non\_empty}):
+  \begin{itemize}
+    \item $\fields$ is a list with \head\ $\fieldname$ and \tail\ $\fieldsone$;
+    \item $\vslices$ is a list with \head\ $(\vione, \vitwo)$ and \tail\ $\vslicesone$;
+    \item \Proseeqdef{$\vslice$}{the singleton list comprised of the pair of native integer values for $\vione$ and $\vitwo$};
+    \item view $\vm$ as $(\vv, \vg)$;
+    \item view $\vmone$ as $(\rvrecord, \vgone)$;
+    \item applying $\readfrombitvector$ to $\vv$ and $\vslice$ yields $\vvrecordslices$\ProseOrError;
+    \item applying $\setfield$ to $\fieldname$, $\vvrecordslices$, and $\rvrecord$ yields \\ $\rvrecordone$;
+    \item \Proseeqdef{the \concurrentnativevalue\ $\vrmrecordone$}{the pair consisting of the \nativevalue\ $\rvrecordone$
+          and the \executiongraph, which is the parallel composition of $\vg$ and $\vgone$};
+    \item applying $\assignbitvectorfields$ to $\vm$, $\vrmrecordone$, $\fieldsone$, and $\vslicesone$, yields $\vmtwo$\ProseOrError.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule[empty]{}{
+  \assignbitvectorfields(\vm, \vmone, \overname{\emptylist}{\fields}, \overname{\emptylist}{\vslices}) \evalarrow
+  \overname{\vmone}{\vmtwo}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \vslice \eqdef [(\nvint(\vione), \nvint(\vitwo))]\\
+  \vm \eqname (\vv, \vg)\\
+  \vmone \eqname (\rvrecord, \vgone)\\
+  \readfrombitvector(\vv, \vslice) \evalarrow \vvrecordslices \OrDynError\\\\
+  \setfield(\fieldname, \vvrecordslices, \rvrecord) \evalarrow \rvrecordone\\
+  \vrmrecordone \eqdef (\rvrecordone, \vg \parallelcomp \vgone)\\
+  \assignbitvectorfields(\vm, \vrmrecordone, \fieldsone, \vslicesone) \evalarrow \vmtwo \OrDynError
+}{
+  {
+    \begin{array}{r}
+  \assignbitvectorfields(
+    \vm,
+    \vmone,
+    \overname{[\fieldname]\concat\fieldsone}{\fields},
+    \overname{[(\vione, \vitwo)]\concat\vslicesone}{\vslices}) \evalarrow \\
+    \vmtwo
+    \end{array}
+  }
+}
+\end{mathpar}
 
 \section{Bitfield Assignment Expressions\label{sec:BitfieldAssignmentExpressions}}
 \subsection{Abstract Syntax}

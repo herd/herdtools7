@@ -1,6 +1,6 @@
-\chapter{Semantics Definitions\label{chap:Semantics}}
+\chapter{Dynamic Semantics Definitions\label{chap:Semantics}}
 
-The semantics of ASL define all valid behaviors of a given ASL specification.
+The dynamic semantics of ASL define all valid behaviors of a given ASL specification.
 More precisely, an ASL specification is first parsed into an \emph{abstract syntax tree},
 or AST, for short. Second, a type checker analyzes the \emph{untyped AST} to determine whether it
 is well-typed and, if successful, returns a \emph{static environment} and a \emph{typed AST}.
@@ -9,16 +9,16 @@ Otherwise, it returns a type error.
 Tools such as interpreters, Verilog simulators, and verifiers can operate over the typed AST, based on the definition
 of the semantics in this reference, to test and analyze a given specification.
 
-\paragraph{Understanding the Semantics Formalization:}
+\paragraph{Understanding the Dynamic Semantics Formalization:}
 We assume basic familiarity with the ASL language constructs.
-The ASL semantics is defined in terms of its AST,
+The ASL dynamic semantics is defined in terms of its AST,
 and as a consequence familiarity with the AST is required to understand the semantics.
-The few components of the type system needed to understand the ASL semantics are explained in context.
+The few components of the type system needed to understand the ASL dynamic semantics are explained in context.
 The mathematical background needed to understand the mathematical formalization
-of the ASL semantics appears in \chapref{FormalSystem} and \secref{semanticsbuildingblocks}.
+of the ASL dynamic semantics appears in \chapref{FormalSystem} and \secref{semanticsbuildingblocks}.
 
 \section{When Do ASL Specifications Have Meaning\label{sec:MeaningfulASLSpecifications}}
-The ASL semantics defined here assign meaning only to \emph{well-typed specifications}.
+The ASL dynamic semantics defined here assign meaning only to \emph{well-typed specifications}.
 That is, specifications for which the type-checker produces a static environment rather than
 a type error.
 Specifications that are not well-typed have no defined semantics.
@@ -35,7 +35,7 @@ reference assign meaning only to terminating specifications.
 A future version of this reference, will assign meaning to non-terminating specifications.
 
 \section{Basic Semantic Concepts}
-The ASL semantics are given by relations between \emph{semantic configurations},
+The ASL dynamic semantics are given by relations between \emph{semantic configurations},
 or \hyperlink{def-configuration}{\emph{semantic configurations}}~\cite{SemanticsWithApplicationsBook}, for short.
 We refer to relations between semantic configurations as \emph{semantic relations}.
 Semantic configurations encapsulate information needed to transition into other semantic configurations, such as:
@@ -224,7 +224,8 @@ From the perspective of the semantics, the static environment is immutable.
 That is, all environments share the same static environment.
 
 \subsection{Concurrent Execution Graphs\label{sec:concurrentexecutiongraphs}}
-
+\hypertarget{def-executiongraph}{}
+\hypertarget{def-executiongraphs}{}
 The concurrent semantics of an ASL specification utilize \emph{concurrent execution graphs}
 (\emph{execution graphs}, for short),
 which track the Read and Write Effects over variables, yielded by the sequential semantics,
@@ -317,9 +318,14 @@ Intuitively, this composition constrains the output effects of $S_1$ to appear b
 to the given ordering label.
 \end{definition}
 
+\subsection{Concurrent Values\label{sec:ConcurrentValues}}
+\hypertarget{def-concurrentnativevalue}{}
+The ASL dynamic semantics operate over pairs consisting of \nativevalues\ and \executiongraphs,
+which we refer to as \concurrentnativevalues.
+
 \subsection{Kinds of Semantic Configurations\label{sec:KindsOfSemanticConfigurations}}
 
-Recall that the ASL semantics defines a relation between input semantic configurations and output semantic configurations
+Recall that the ASL dynamic semantics define a relation between input semantic configurations and output semantic configurations
 (\secref{SemanticConfigurations}).
 Input semantic configuration domains are unique to the semantic relation that employs them.
 For that reason, we name semantic relations by the name of the corresponding configuration domain of the input semantic configuration.
@@ -329,7 +335,7 @@ is named $\texttt{eval\_expr}$.
 We will often use the prefix \texttt{eval} for semantic relations with the intuition being that their input semantic configurations
 should be semantically evaluated, yielding an output semantic configuration.
 
-ASL semantics mainly utilizes the following types of output semantic configurations:
+ASL dynamic semantics mainly utilize the following types of output semantic configurations:
 \begin{description}
   \item[Normal Values.] \hypertarget{def-normal}{}
   Semantic configurations consisting of different combinations of values,
@@ -356,25 +362,25 @@ ASL semantics mainly utilizes the following types of output semantic configurati
   exceptions without an exception value (as in \texttt{throw;}), and ones with an exception value,
   an identifier to which the Read Effect is attributed, and an associated type.
   The type $\valuereadfrom(\vals,\Identifiers)$ is a semantic configuration nested inside an exception semantic configuration.
-  The ASL semantics propagates these \emph{exceptional semantic configurations} to the nearest catch clause that matches
+  The ASL dynamic semantics propagate these \emph{exceptional semantic configurations} to the nearest catch clause that matches
   them, and otherwise they are caught at the top-level and reported as errors (see dynamic errors below).
 
   \hypertarget{def-returning}{}
   \item[Returned Values.] Semantic configurations in $\Returning((\vals^* \times \XGraphs), \envs)$
   represent (tuples of) values being returned by the currently executing subprogram.
-  The ASL semantics propagates these \emph{early return semantic configurations} to the respective call expression/statement.
+  The ASL dynamic semantics propagate these \emph{early return semantic configurations} to the respective call expression/statement.
 
   \hypertarget{def-continuing}{}
   \item[In-flight Subprogram.] Semantic semantic configurations in $\Continuing(\XGraphs, \envs)$
   represent the fact that a subprogram has more statements to execute.
-  The ASL semantics treats these semantic configurations as a signal to keep evaluating the remainder
+  The ASL dynamic semantics treat these semantic configurations as a signal to keep evaluating the remainder
   of the subprogram currently being evaluated.
 %where is this used?
 
   \hypertarget{def-error}{}
   \item[Dynamic Errors.] Semantic configurations in $\Error(\Strings)$
   represent dynamic errors (for example, division by zero).
-  The ASL semantics is set up such that when these \emph{error semantic configurations} appear,
+  The ASL dynamic semantics are set up such that when these \emph{error semantic configurations} appear,
   the evaluation of the entire specification terminates by outputting them.
 \end{description}
 Helper relations often have output semantic configurations that are just tuples, without an associated configuration domain.
@@ -494,7 +500,7 @@ The relation \primitiverel\ provides the semantics of primitive subprograms and 
 constructively.
 
 \subsection{Natural Operational Semantics}
-We define the ASL semantics in the style of \emph{natural operational semantics}~\cite{SemanticsWithApplicationsBook}
+We define the ASL dynamic semantics in the style of \emph{natural operational semantics}~\cite{SemanticsWithApplicationsBook}
 (also known as \emph{big step semantics}).
 Natural operational semantics evaluates the AST inductively.
 That is, it concludes transitions for semantic configurations starting from
@@ -503,10 +509,10 @@ non-leaf AST nodes by concluding transitions from semantic configurations starti
 \subsubsection{No Undefined Behaviors}
 When an input semantic configuration does not satisfy any semantic rule,
 there is no output semantic configuration for it to transition to. We say that
-the semantic configuration is \emph{stuck} and the ASL semantics is undefined for that
+the semantic configuration is \emph{stuck} and the ASL dynamic semantics are undefined for that
 input semantic configuration.
 
-The ASL semantics is defined for well-typed ASL specifications
+The ASL dynamic semantics are defined for well-typed ASL specifications
 and gets stuck only in cases of non-terminating specifications
 (due to non-terminating loops, or infinite recursion).
 Otherwise, for every input semantic configuration there is at least one rule that can be used to take a semantic transition.

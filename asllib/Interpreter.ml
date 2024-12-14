@@ -809,15 +809,18 @@ module Make (B : Backend.S) (C : Config) = struct
             fatal_from le Error.TypeInferenceNeeded
         in
         let*^ rm_record, env1 = expr_of_lexpr le_record |> eval_expr env in
+        (* AssignBitvectorFields( *)
         let m2 =
           List.fold_left2
             (fun m1 field_name (i1, i2) ->
               let slice = [ (B.v_of_int i1, B.v_of_int i2) ] in
-              let* v = m >>= B.read_from_bitvector slice and* rv_record = m1 in
-              B.set_field field_name v rv_record)
+              let* v_record_slices = m >>= B.read_from_bitvector slice
+              and* rv_record = m1 in
+              B.set_field field_name v_record_slices rv_record)
             rm_record fields slices
+          (* AssignBitvectorFields) *)
         in
-        eval_lexpr ver le_record env1 m2 |: SemanticsRule.LESetField
+        eval_lexpr ver le_record env1 m2 |: SemanticsRule.LESetFields
   (* End *)
 
   (* Evaluation of Expression Lists *)

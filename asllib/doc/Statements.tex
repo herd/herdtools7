@@ -575,6 +575,7 @@ One of the following applies:
 \hypertarget{def-annotatelocaldecltypeannot}{}
 The helper function
 \[
+\begin{array}{r}
   \annotatelocaldecltypeannot
   \left(
   \begin{array}{c}
@@ -586,7 +587,7 @@ The helper function
     \overname{\localdeclitem}{\ldi}
   \end{array}
   \right)
-  \typearrow
+  \typearrow \\
   \left(
   \begin{array}{cl}
     \left(\overname{\staticenvs}{\newtenv} \aslsep \overname{\langle\ty\rangle}{\tyoptp} \aslsep \overname{\TSideEffectSet}{\vses}\right)
@@ -594,6 +595,7 @@ The helper function
     \overname{\TTypeError}{\TypeErrorConfig} &
   \end{array}
   \right)
+\end{array}
 \]
 annotates the type annotation $\tyopt$ in the static environment $\tenv$ within the context of a local declaration with keyword $\ldk$, item $\ldi$, and initializing expression $\vep$ with type $\vte$.
 It yields the modified static environment $\newtenv$, the annotated type annotation $\tyoptp$, and the inferred \sideeffectsetterm{} $\vses$.

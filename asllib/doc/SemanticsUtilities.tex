@@ -439,10 +439,10 @@ The type-checker ensures, via TypingRule.EGetRecordField, that the field $\name$
 
 \subsubsection{SemanticsRule.SetField \label{sec:SemanticsRule.SetField}}
 \subsubsection{Prose}
-The relation
+The function
 \hypertarget{def-setfield}{}
 \[
-  \setfield(\overname{\Identifiers}{\name} \aslsep \overname{\vals}{\vv} \aslsep \overname{\trecord}{\record}) \;\aslrel\; \trecord
+  \setfield(\overname{\Identifiers}{\name} \aslsep \overname{\vals}{\vv} \aslsep \overname{\trecord}{\record}) \;\aslto\; \trecord
 \]
 overwrites the value corresponding to the field name $\name$ in the record value $\record$ with the value $\vv$.
 
@@ -450,10 +450,10 @@ overwrites the value corresponding to the field name $\name$ in the record value
 \begin{mathpar}
   \inferrule{
     \record \eqname \nvrecord{\fieldmap}\\
-    \fieldmap' \eqdef \fieldmap[\name\mapsto\vv]
+    \fieldmapp \eqdef \fieldmap[\name\mapsto\vv]
   }
   {
-    \setfield(\name, \vv, \record) \evalarrow \nvrecord{\fieldmap'}
+    \setfield(\name, \vv, \record) \evalarrow \nvrecord{\fieldmapp}
   }
 \end{mathpar}
 The type-checker ensures that the field $\name$ exists in $\record$.

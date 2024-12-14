@@ -1448,7 +1448,7 @@ One of the following applies:
   \towellconstrained(\vttwo) \typearrow \vttwowellconstrained\\
   \applybinoptypes(\tenv, \vtonewellconstrained, \vttwowellconstrained) \typearrow \vt \OrTypeError
 }{
-  \applybinoptypes(\tenv, \op, \overname{\TInt(\vcone)}{\vtone}, \overname{\TInt(\vctwo)}{\vttwo}) \typearrow \unconstrainedinteger
+  \applybinoptypes(\tenv, \op, \overname{\TInt(\vcone)}{\vtone}, \overname{\TInt(\vctwo)}{\vttwo}) \typearrow \vt
 }
 \end{mathpar}
 
@@ -2705,10 +2705,11 @@ All of the following apply:
 The function
 \[
   \getbitvectorwidth(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto
-  \overname{\expr}{\ve} \cup \TTypeError
+  \overname{\expr}{\ve} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-returns the expression $\ve$, which represents the width of the bitvector type $\vt$,
-or a type error if $\vt$ is not a bitvector type or another type error is detected.
+returns the expression $\ve$, which represents the width of the bitvector type $\vt$
+in the static environment $\tenv$.
+\ProseOrTypeError
 
 \subsubsection{Prose}
 One of the following applies:
@@ -2742,6 +2743,37 @@ One of the following applies:
   \getbitvectorwidth(\tenv, \vt) \typearrow \TypeErrorVal{\ExpectedBitvectorType}
 }
 \end{mathpar}
+\CodeSubsection{\GetBitvectorWidthBegin}{\GetBitvectorWidthEnd}{../Typing.ml}
+
+\subsubsection{TypingRule.GetBitvectorConstWidth}
+\hypertarget{def-getbitvectorconstwidth}{}
+The function
+\[
+  \getbitvectorconstwidth(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto
+  \overname{\N}{\vw} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+returns the natural number $\vw$, which represents the width of the bitvector type $\vt$
+in the static environment $\tenv$.
+\ProseOtherwiseTypeError
+
+\subsubsection{Prose}
+One of the following applies:
+All of the following apply:
+\begin{itemize}
+  \item applying $\getbitvectorwidth$ to $\vt$ in $\tenv$ yields $\ewidth$\ProseOrTypeError;
+  \item \Prosestaticeval{$\tenv$}{$\ewidth$}{integer for $\vw$}\ProseOrTypeError.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \getbitvectorwidth(\tenv, \vt) \typearrow \ewidth \OrTypeError\\\\
+  \staticeval(\tenv, \ewidth) \typearrow \lint(\vw) \OrTypeError
+}{
+  \getbitvectorconstwidth(\tenv, \vt) \typearrow \vw
+}
+\end{mathpar}
+\CodeSubsection{\GetBitvectorConstWidthBegin}{\GetBitvectorConstWidthEnd}{../Typing.ml}
 
 \subsubsection{TypingRule.CheckBitsEqualWidth}
 \hypertarget{def-checkbitsequalwidth}{}

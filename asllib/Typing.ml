@@ -496,20 +496,24 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
      -------------------------------------------------------------------------- *)
 
+  (* Begin GetBitvectorWidth *)
   let get_bitvector_width' env t =
     match (Types.get_structure env t).desc with
     | T_Bits (n, _) -> n
     | _ -> assumption_failed ()
 
   let get_bitvector_width ~loc env t =
-    try get_bitvector_width' env t
+    try get_bitvector_width' env t |: TypingRule.GetBitvectorWidth
     with TypingAssumptionFailed -> conflict ~loc [ default_t_bits ] t
+  (* End *)
 
+  (* Begin GetBitvectorConstWidth *)
   let get_bitvector_const_width ~loc env t =
     let e_width = get_bitvector_width ~loc env t in
     match StaticInterpreter.static_eval env e_width with
-    | L_Int z -> Z.to_int z
+    | L_Int z -> Z.to_int z |: TypingRule.GetBitvectorConstWidth
     | _ -> assert false
+  (* End *)
 
   (** [check_type_satisfies t1 t2] if [t1 <: t2]. *)
   let check_type_satisfies ~loc env t1 t2 () =
@@ -2062,10 +2066,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 |: TypingRule.EGetBadField)
         (* End *))
     (* Begin E_GetFields *)
-    | E_GetFields (e1, fields) -> (
+    | E_GetFields (e_base, fields) -> (
         let reduced =
-          if e1.version = V0 && C.use_field_getter_extension then
-            reduce_getfields_to_slices env e1 fields
+          if e_base.version = V0 && C.use_field_getter_extension then
+            reduce_getfields_to_slices env e_base fields
           else None
         in
         match reduced with
@@ -2079,30 +2083,36 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             in
             (ty, E_Call call |> here, ses)
         | None -> (
-            let t_e2, e2, ses1 = annotate_expr env e1 in
-            match (Types.make_anonymous env t_e2).desc with
+            let t_base_annot, e_base_annot, ses_base =
+              annotate_expr env e_base
+            in
+            match (Types.make_anonymous env t_base_annot).desc with
             | T_Bits (_, bitfields) ->
                 let one_field field =
                   match find_bitfields_slices_opt field bitfields with
-                  | None -> fatal_from ~loc (Error.BadField (field, t_e2))
+                  | None ->
+                      fatal_from ~loc (Error.BadField (field, t_base_annot))
                   | Some slices -> slices
                 in
-                E_Slice (e1, list_concat_map one_field fields)
+                E_Slice (e_base, list_concat_map one_field fields)
                 |> here |> annotate_expr env |: TypingRule.EGetFields
-            | T_Record tfields ->
+            | T_Record base_fields ->
                 let get_bitfield_width name =
-                  match List.assoc_opt name tfields with
-                  | None -> fatal_from ~loc (Error.BadField (name, t_e2))
+                  match List.assoc_opt name base_fields with
+                  | None ->
+                      fatal_from ~loc (Error.BadField (name, t_base_annot))
                   | Some t -> get_bitvector_width ~loc env t
                 in
                 let widths = List.map get_bitfield_width fields in
-                let w =
+                let e_slice_width =
                   let wh = List.hd widths and wts = List.tl widths in
                   List.fold_left (width_plus env) wh wts
                 in
-                (T_Bits (w, []) |> here, E_GetFields (e2, fields) |> here, ses1)
+                ( T_Bits (e_slice_width, []) |> here,
+                  E_GetFields (e_base_annot, fields) |> here,
+                  ses_base )
                 |: TypingRule.EGetFields
-            | _ -> conflict ~loc [ default_t_bits ] t_e2))
+            | _ -> conflict ~loc [ default_t_bits ] t_base_annot))
     (* End *)
     (* Begin EPattern *)
     | E_Pattern (e1, pat) ->
@@ -2460,35 +2470,44 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                [ default_t_bits; T_Record []; T_Exception [] ]
                t_e)
         |: TypingRule.LESetBadField
-        (* End *)
-    | LE_SetFields (le', fields, []) -> (
-        let t_le', _, _ = expr_of_lexpr le' |> annotate_expr env in
-        let le', ses = annotate_lexpr env le' t_le' in
-        let t_le'_struct = Types.make_anonymous env t_le' in
-        match t_le'_struct.desc with
+    (* End *)
+    (* Begin LESetFields *)
+    | LE_SetFields (le_base, le_fields, []) -> (
+        let t_base, _, _ = expr_of_lexpr le_base |> annotate_expr env in
+        let le_base_annot, ses_base = annotate_lexpr env le_base t_base in
+        let t_base_anon = Types.make_anonymous env t_base in
+        match t_base_anon.desc with
         | T_Bits (_, bitfields) ->
-            let one_field field =
+            let slices_of_bitfield field =
               match find_bitfields_slices_opt field bitfields with
-              | None -> fatal_from ~loc (Error.BadField (field, t_le'_struct))
+              | None -> fatal_from ~loc (Error.BadField (field, t_base_anon))
               | Some slices -> slices
             in
-            let new_le =
-              LE_Slice (le', list_concat_map one_field fields) |> here
+            let le_slice =
+              LE_Slice
+                (le_base_annot, list_concat_map slices_of_bitfield le_fields)
+              |> here
             in
-            annotate_lexpr env new_le t_e |: TypingRule.LESetFields
-        | T_Record tfields ->
-            let one_field field (start, slices) =
-              match List.assoc_opt field tfields with
-              | None -> fatal_from ~loc (Error.BadField (field, t_le'_struct))
-              | Some t ->
-                  let w = get_bitvector_const_width ~loc env t in
-                  (start + w, (start, w) :: slices)
+            annotate_lexpr env le_slice t_e |: TypingRule.LESetFields
+        | T_Record base_fields ->
+            let fold_bitvector_fields field (start, slices) =
+              match List.assoc_opt field base_fields with
+              | None -> fatal_from ~loc (Error.BadField (field, t_base_anon))
+              | Some t_field ->
+                  let field_width =
+                    get_bitvector_const_width ~loc env t_field
+                  in
+                  (start + field_width, (start, field_width) :: slices)
             in
-            let length, slices = List.fold_right one_field fields (0, []) in
-            let t = T_Bits (expr_of_int length, []) |> here in
-            let+ () = check_type_satisfies ~loc env t_e t in
-            (LE_SetFields (le', fields, slices) |> here, ses)
-        | _ -> conflict ~loc [ default_t_bits ] t_le')
+            let length, slices =
+              List.fold_right fold_bitvector_fields le_fields (0, [])
+            in
+            let t_lhs = T_Bits (expr_of_int length, []) |> here in
+            let+ () = check_type_satisfies ~loc env t_e t_lhs in
+            (LE_SetFields (le_base_annot, le_fields, slices) |> here, ses_base)
+        | _ -> conflict ~loc [ default_t_bits ] t_base |: TypingRule.LESetFields
+        )
+    (* End *)
     (* Begin LESetArray *)
     | LE_SetArray (e_base, e_index) -> (
         let t_base, _, _ = expr_of_lexpr e_base |> annotate_expr env in

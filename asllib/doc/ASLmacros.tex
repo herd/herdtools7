@@ -638,6 +638,7 @@
 % Left-hand-side expression labels
 \newcommand\LEDiscard[0]{\hyperlink{ast-lediscard}{\textsf{LE\_Discard}}}
 \newcommand\LEVar[0]{\hyperlink{ast-levar}{\textsf{LE\_Var}}}
+\newcommand\ProseLESlice{\hyperlink{ast-leslice}{left-hand-side slicing expression}}
 \newcommand\LESlice{\hyperlink{ast-leslice}{\textsf{LE\_Slice}}}
 \newcommand\LESetArray[0]{\hyperlink{ast-lesetarray}{\textsf{LE\_SetArray}}}
 \newcommand\LESetEnumArray[0]{\hyperlink{ast-lesetenumarray}{\textsf{LE\_SetEnumArray}}}
@@ -946,7 +947,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\newcommand\torexpr[0]{\hyperlink{def-rexpr}{\textsf{rexpr}}}
+\newcommand\torexpr[0]{\hyperlink{def-rexpr}{\textfunc{rexpr}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type System macros
@@ -980,6 +981,7 @@
 
 \newcommand\unopliterals[0]{\hyperlink{def-unopliterals}{\textfunc{unop\_literals}}}
 \newcommand\binopliterals[0]{\hyperlink{def-binopliterals}{\textfunc{binop\_literals}}}
+\newcommand\foldbitvectorfields[0]{\hyperlink{def-foldbitvectorfields}{\textfunc{fold\_bitvector\_fields}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Semantics macros
@@ -1055,8 +1057,10 @@
 \newcommand\TOutConfig[0]{\hyperlink{def-toutconfig}{\textsf{TOutConfig}}}
 
 \newcommand\evalexpr[1]{\hyperlink{def-evalexpr}{\textfunc{eval\_expr}}(#1)}
+\newcommand\Proseevalexpr[3]{\hyperlink{def-evalexpr}{evaluating} the expression #2 in the environment #1 yields #3}
 \newcommand\evalexprsef[1]{\hyperlink{def-evalexprsef}{\textfunc{eval\_expr\_sef}}(#1)}
 \newcommand\evallexpr[1]{\hyperlink{def-evallexpr}{\textfunc{eval\_lexpr}}(#1)}
+\newcommand\Proseevallexpr[4]{\hyperlink{def-evalexpr}{evaluating} the left-hand-side expression #2 in the environment #1 and #3, yields #4}
 \newcommand\evalexprlist[1]{\hyperlink{def-evalexprlist}{\textfunc{eval\_expr\_list}}(#1)}
 \newcommand\evalexprlistm[0]{\hyperlink{def-evalexprlistm}{\textfunc{eval\_expr\_list\_m}}}
 \newcommand\evalpattern[1]{\hyperlink{def-evalpattern}{\textfunc{eval\_pattern}}(#1)}
@@ -1128,6 +1132,7 @@
 \newcommand\readvaluefrom[0]{\hyperlink{def-readvaluefrom}{\textfunc{read\_value\_from}}}
 \newcommand\writeretvals[0]{\hyperlink{def-writeretvals}{\textfunc{write\_ret\_vals}}}
 \newcommand\outputtoconsole[0]{\hyperlink{def-outputtoconsole}{\textfunc{output\_to\_console}}}
+\newcommand\assignbitvectorfields[0]{\hyperlink{def-assignbitvectorfields}{\textfunc{assign\_bitvector\_fields}}}
 
 \newcommand\unoprel[0]{\hyperlink{def-unoprel}{\textfunc{unop}}}
 \newcommand\binoprel[0]{\hyperlink{def-binoprel}{\textfunc{binop}}}
@@ -1183,6 +1188,7 @@
 \newcommand\staticenvtoenv[0]{\hyperlink{def-staticenvtoenv}{\textfunc{static\_env\_to\_env}}}
 
 \newcommand\makeanonymous[0]{\hyperlink{def-makeanonymous}{\textfunc{make\_anonymous}}}
+\newcommand\Prosemakeanonymous[3]{\hyperlink{def-makeanonymous}{obtaining} the \underlyingtype\ of #2 in the static environment #1 yields #3}
 \newcommand\subtypesrel[0]{\hyperlink{def-subtypesrel}{\textfunc{is\_subtype}}}
 \newcommand\subtypesat[0]{\hyperlink{def-subtypesat}{\textfunc{subtype\_satisfies}}}
 \newcommand\checktypesat[0]{\hyperlink{def-checktypesat}{\textfunc{checked\_typesat}}}
@@ -1195,6 +1201,7 @@
 \newcommand\instantiate[0]{\textfunc{instantiate}}
 \newcommand\checkcanbeinitializedwith[0]{\hyperlink{def-checkcanbeinitializedwith}{\textfunc{check\_can\_be\_initialized\_with}}}
 \newcommand\getbitvectorwidth[0]{\hyperlink{def-getbitvectorwidth}{\textfunc{get\_bitvector\_width}}}
+\newcommand\getbitvectorconstwidth[0]{\hyperlink{def-getbitvectorconstwidth}{\textfunc{get\_bitvector\_const\_width}}}
 \newcommand\getbitfieldwidth[0]{\hyperlink{def-getbitfieldwidth}{\textfunc{get\_bitfield\_width}}}
 \newcommand\widthplus[0]{\hyperlink{def-widthplus}{\textfunc{width\_plus}}}
 \newcommand\checkbitsequalwidth[0]{\hyperlink{def-checkbitsequalwidth}{\textfunc{check\_bits\_equal\_width}}}
@@ -1523,7 +1530,11 @@
 \newcommand\arrayaccess[0]{\hyperlink{def-arrayaccess}{array access}}
 \newcommand\symbolicallysimplifies[0]{\hyperlink{def-symbolicallysimplifies}{symbolically simplifies}}
 \newcommand\nativevalue[0]{\hyperlink{def-nativevalue}{native value}}
+\newcommand\executiongraph[0]{\hyperlink{def-executiongraph}{execution graph}}
+\newcommand\executiongraphs[0]{\hyperlink{def-executiongraph}{execution graphs}}
 \newcommand\nativevalues[0]{\hyperlink{def-nativevalues}{native values}}
+\newcommand\concurrentnativevalue[0]{\hyperlink{def-concurrentnativevalue}{concurrent native value}}
+\newcommand\concurrentnativevalues[0]{\hyperlink{def-concurrentnativevalue}{concurrent native values}}
 
 \newcommand\singleslice[0]{\hyperlink{def-singleslice}{single slice}}
 \newcommand\rangeslice[0]{\hyperlink{def-rangeslice}{range slice}}
@@ -1612,6 +1623,8 @@
 \newcommand\getvariableenum[0]{\hyperlink{def-getvariableenum}{\textfunc{get\_variable\_enum}}}
 \newcommand\annotateexpr[1]{\hyperlink{def-annotateexpr}{\textfunc{annotate\_expr}}(#1)}
 \newcommand\Proseannotateexpr[3]{\hyperlink{def-annotateexpr}{annotating} the expression #2 in the static environment #1 yields #3}
+\newcommand\Proseannotatelexpr[4]{\hyperlink{def-annotatelexpr}{annotating}
+    the assignable expression #2 with the right-hand side type #3 in the static environment #1 yields #4}
 \newcommand\annotateexprlist[0]{\hyperlink{def-annotateexprs}{\textfunc{annotate\_exprs}}}
 \newcommand\annotatelimitexpr[0]{\hyperlink{def-annotatelimitexpr}{\textfunc{annotate\_limit\_expr}}}
 \newcommand\annotatelexpr[1]{\hyperlink{def-annotatelexpr}{\textfunc{annotate\_lexpr}}(#1)}
@@ -1910,6 +1923,9 @@
 \newcommand\earray[0]{\texttt{e\_array}}
 \newcommand\eactual[0]{\texttt{e\_actual}}
 \newcommand\ebase[0]{\texttt{e\_base}}
+\newcommand\lebase[0]{\texttt{le\_base}}
+\newcommand\ebaseannot[0]{\texttt{e\_base\_annot}}
+\newcommand\lebaseannot[0]{\texttt{le\_base\_annot}}
 \newcommand\ebasep[0]{\texttt{e\_base'}}
 \newcommand\ebot[0]{\texttt{e\_bot}}
 \newcommand\ebv[0]{\texttt{e\_bv}}
@@ -1971,7 +1987,8 @@
 \newcommand\factor[0]{\texttt{factor}}
 \newcommand\falsep[0]{\texttt{false'}}
 \newcommand\field[0]{\texttt{field}}
-\newcommand\fieldmap[0]{\textit{field\_map}}
+\newcommand\fieldmap[0]{\texttt{field\_map}}
+\newcommand\fieldmapp[0]{\texttt{field\_map'}}
 \newcommand\fieldname[0]{\texttt{field\_name}}
 \newcommand\fields[0]{\texttt{fields}}
 \newcommand\fieldsone[0]{\texttt{fields1}}
@@ -2187,6 +2204,7 @@
 \newcommand\rmrecord[0]{\texttt{rm\_record}}
 \newcommand\rvarray[0]{\texttt{rv\_array}}
 \newcommand\rvrecord[0]{\texttt{rv\_record}}
+\newcommand\rvrecordone[0]{\texttt{rv\_record1}}
 \newcommand\setters[0]{\texttt{setters}}
 \newcommand\pragmas[0]{\texttt{pragmas}}
 \newcommand\sg[0]{\texttt{s\_g}}
@@ -2214,6 +2232,9 @@
 \newcommand\subtys[0]{\texttt{sub\_tys}}
 \newcommand\ta[0]{\texttt{ta}}
 \newcommand\tbase[0]{\texttt{t\_base}}
+\newcommand\tbaseannot[0]{\texttt{t\_base\_annot}}
+\newcommand\tbaseanon[0]{\texttt{t\_base\_anon}}
+\newcommand\tbaseannotanon[0]{\texttt{t\_base\_annot\_anon}}
 \newcommand\tcond[0]{\texttt{t\_cond}}
 \newcommand\telem[0]{\texttt{t\_elem}}
 \newcommand\tenvfive[0]{\texttt{tenv5}}
@@ -2228,6 +2249,7 @@
 \newcommand\tenvtwop[0]{\texttt{tenv2'}}
 \newcommand\tenvtwopp[0]{\texttt{tenv2''}}
 \newcommand\vtenv[0]{\texttt{tenv}}
+\newcommand\vtfield[0]{\texttt{t\_field}}
 \newcommand\vtopabsolute[0]{\texttt{top\_absolute}}
 \newcommand\tenvwithparams[0]{\texttt{tenv\_with\_params}}
 \newcommand\tenvwithargs[0]{\texttt{tenv\_with\_args}}
@@ -2314,6 +2336,7 @@
 \newcommand\vb[0]{\texttt{b}}
 \newcommand\vbp[0]{\texttt{b'}}
 \newcommand\vbase[0]{\texttt{base}}
+\newcommand\vbasefields[0]{\texttt{base\_fields}}
 \newcommand\vbasiclexpr[0]{\texttt{basic\_lexpr}}
 \newcommand\vbequal[0]{\texttt{b\_equal}}
 \newcommand\vbequallength[0]{\texttt{b\_equal\_length}}
@@ -2434,11 +2457,15 @@
 \newcommand\vfactor[0]{\texttt{v\_factor}}
 \newcommand\vfield[0]{\texttt{field}}
 \newcommand\vfieldinits[0]{\texttt{field\_inits}}
+\newcommand\vfieldwidth[0]{\texttt{field\_width}}
 \newcommand\vfieldassignasts[0]{\texttt{field\_assign\_asts}}
 \newcommand\vfieldassigns[0]{\texttt{field\_assigns}}
 \newcommand\vfieldasts[0]{\texttt{field\_asts}}
 \newcommand\vfieldone[0]{\texttt{field1}}
 \newcommand\vfields[0]{\texttt{fields}}
+\newcommand\vlefields[0]{\texttt{le\_fields}}
+\newcommand\vlefieldsone[0]{\texttt{le\_fields1}}
+\newcommand\vlerecord[0]{\texttt{le\_record}}
 \newcommand\vfieldsone[0]{\texttt{fields1}}
 \newcommand\vfieldsopt[0]{\texttt{fields\_opt}}
 \newcommand\vfieldss[0]{\texttt{fields\_s}}
@@ -2594,6 +2621,9 @@
 \newcommand\vqone[0]{\texttt{q1}}
 \newcommand\vqtwo[0]{\texttt{q2}}
 \newcommand\vr[0]{\texttt{r}}
+\newcommand\vrmrecord[0]{\texttt{rm\_record}}
+\newcommand\vrmrecordnew[0]{\texttt{rm\_record\_new}}
+\newcommand\vrmrecordone[0]{\texttt{rm\_record1}}
 \newcommand\vre[0]{\texttt{re}}
 \newcommand\vreads[0]{\texttt{reads}}
 \newcommand\vtargettimeframe[0]{\texttt{target\_time\_frame}}
@@ -2613,6 +2643,7 @@
 \newcommand\vselse[0]{\texttt{s\_else}}
 \newcommand\initses[0]{\texttt{init\_ses}}
 \newcommand\vsesinitialvalue[0]{\texttt{ses\_initial\_value}}
+\newcommand\vsesbase[0]{\texttt{ses\_base}}
 \newcommand\vsesf[0]{\texttt{ses\_f}}
 \newcommand\vsesfone[0]{\texttt{ses\_f1}}
 \newcommand\vsescatchers[0]{\texttt{ses\_catchers}}
@@ -2625,7 +2656,6 @@
 \newcommand\vsesin[0]{\texttt{ses\_in}}
 \newcommand\vsefiltered[0]{\texttt{ses\_filtered}}
 \newcommand\vsesotherwise[0]{\texttt{ses\_otherwise}}
-\newcommand\vsesbase[0]{\texttt{ses\_base}}
 \newcommand\vsesldi[0]{\texttt{ses\_ldi}}
 \newcommand\vsesblock[0]{\texttt{ses\_block}}
 \newcommand\vsesstart[0]{\texttt{ses\_start}}
@@ -2730,6 +2760,7 @@
 \newcommand\vtetwostruct[0]{\texttt{t\_e2\_struct}}
 \newcommand\vtetwoanon[0]{\texttt{t\_e2\_anon}}
 \newcommand\vthenexpr[0]{\texttt{then\_expr}}
+\newcommand\vtlhs[0]{\texttt{t\_lhs}}
 \newcommand\vtleone[0]{\texttt{t\_le1}}
 \newcommand\vtleonestruct[0]{\texttt{t\_le1\_struct}}
 \newcommand\vtoexpr[0]{\texttt{to\_expr}}
@@ -2764,6 +2795,7 @@
 \newcommand\vused[0]{\texttt{used}}
 \newcommand\vusedone[0]{\texttt{used1}}
 \newcommand\vv[0]{\texttt{v}}
+\newcommand\vvrecordslices[0]{\texttt{v\_record\_slices}}
 \newcommand\vvalue[0]{\texttt{value}}
 \newcommand\vvaluep[0]{\texttt{value'}}
 \newcommand\vvargs[0]{\texttt{vargs}}
@@ -2830,6 +2862,9 @@
 \newcommand\xs[0]{\texttt{xs}}
 \newcommand\vEs[0]{\texttt{es}}
 \newcommand\vesone[0]{\texttt{es1}}
+\newcommand\veslice[0]{\texttt{e\_slice}}
+\newcommand\vleslice[0]{\texttt{le\_slice}}
+\newcommand\veslicewidth[0]{\texttt{e\_slice\_width}}
 \newcommand\valueranges[0]{\texttt{value\_ranges}}
 \newcommand\vrange[0]{\texttt{range}}
 \newcommand\twidth[0]{\texttt{t\_width}}

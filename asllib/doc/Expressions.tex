@@ -1868,28 +1868,38 @@ All of the following apply:
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\ve$ is a multi-field access expression for the base expression $\veone$ and list of fields $\vfields$,
-      that is, $\EGetFields(\veone, \vfields)$;
-  \item \Proseannotateexpr{$\tenv$}{$\veone$}{\\ $(\vtetwo, \vetwo, \vsesone)$}\ProseOrTypeError;
+  \item $\ve$ is a multi-field access expression for the base expression $\ebase$ and list of fields $\vfields$,
+        that is, $\EGetFields(\ebase, \vfields)$;
+  \item \Proseannotateexpr{$\tenv$}{$\ebase$}{\\ $(\tbaseannot, \vetwo, \vsesbase)$}\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\tbaseannot$ in $\tenv$ yields \\
+        $\tbaseannotanon$\ProseOrTypeError;
   \item One of the following applies:
   \begin{itemize}
     \item All of the following apply (\textsc{bits}):
     \begin{itemize}
-      \item obtaining the \underlyingtype\ of $\vtetwo$ in $\tenv$ yields a bitvector type with list of bitfields $\vbitfields$\ProseOrTypeError;
+      \item $\tbaseannotanon$ is a bitvector type with list of bitfields $\vbitfields$\ProseOrTypeError;
       \item applying $\findbitfieldsslices$ to each field name $\name$ in $\vfields$ yields \\
             $\vslices_\name$\ProseOrTypeError;
-      \item define $\vep$ as the slicing expression for $\veone$ and lists of slices $\vslices_\name$, for each $\name$ in $\vfields$;
-      \item \Proseannotateexpr{$\tenv$}{$\vep$}{\\ $(\vt, \newe, \vses)$}\ProseOrTypeError.
+      \item define $\veslice$ as the slicing expression for $\ebase$ and lists of slices $\vslices_\name$, for each $\name$ in $\vfields$;
+      \item \Proseannotateexpr{$\tenv$}{$\veslice$}{\\ $(\vt, \newe, \vses)$}\ProseOrTypeError.
     \end{itemize}
 
     \item All of the following apply (\textsc{record}):
     \begin{itemize}
-      \item obtaining the \underlyingtype\ of $\vtetwo$ in $\tenv$ yields a record type with list of field initializers $\tfields$\ProseOrTypeError;
-      \item applying $\getbitfieldwidth$ to $\vf$ in $\tfields$ and $\tfields$, for each $\vf$ in $\tfields$, in $\tenv$ yields $\ewidth_\vf$\ProseOrTypeError;
-      \item applying $\widthplus$ to the list of expressions $\ewidth_\vf$, for each $\vf$ in $\tfields$, yields $\vw$\ProseOrTypeError;
-      \item define $\vt$ as the bitvector type with width $\vw$ and an empty list of bitfields;
-      \item define $\ve$ as the multi-field access for $\vetwo$ and list of fields $\tfields$;
-      \item define $\vses$ as $\vsesone$.
+      \item $\tbaseannotanon$ is a record type with list of fields $\vbasefields$\ProseOrTypeError;
+      \item applying $\getbitfieldwidth$ to $\vf$ in $\vbasefields$ and $\vbasefields$, for each $\vf$ in $\vbasefields$, in $\tenv$ yields $\ewidth_\vf$\ProseOrTypeError;
+      \item applying $\widthplus$ to the list of expressions $\ewidth_\vf$,
+            for each $\vf$ in $\vbasefields$, yields $\veslicewidth$\ProseOrTypeError;
+      \item define $\vt$ as the bitvector type with width $\veslicewidth$ and an empty list of bitfields;
+      \item define $\ve$ as the multi-field access for $\ebaseannot$ and list of fields \\
+            $\vbasefields$;
+      \item define $\vses$ as $\vsesbase$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{error}):
+    \begin{itemize}
+      \item $\tbaseannotanon$ is neither a bitvector type nor a record type;
+      \item the result is a type error indicating an unexpected type.
     \end{itemize}
   \end{itemize}
 \end{itemize}
@@ -1897,27 +1907,27 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[bits]{
-  \annotateexpr{\tenv, \veone} \typearrow (\vtetwo, \vetwo, \vsesone) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vtetwo) \typearrow \TBits(\Ignore, \vbitfields) \OrTypeError\\\\
+  \annotateexpr{\tenv, \ebase} \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\\\\
+  \makeanonymous(\tenv, \tbaseannot) \typearrow \TBits(\Ignore, \vbitfields) \OrTypeError\\\\
   \name\in\vfields: \findbitfieldsslices(\name) \typearrow \vslices_\name \OrTypeError\\\\
-  \vep \eqdef \ESlice(\veone, [\name\in\vfields: \vslices_\name])\\
-  \annotateexpr{\tenv, \vep} \typearrow (\vt, \newe, \vses) \OrTypeError
+  \veslice \eqdef \ESlice(\ebase, [\name\in\vfields: \vslices_\name])\\
+  \annotateexpr{\tenv, \veslice} \typearrow (\vt, \newe, \vses) \OrTypeError
 }{
-  \annotateexpr{\tenv, \overname{\EGetFields(\veone, \vfields)}{\ve}} \typearrow (\vt, \newe, \vses)
+  \annotateexpr{\tenv, \overname{\EGetFields(\ebase, \vfields)}{\ve}} \typearrow (\vt, \newe, \vses)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[record]{
-  \annotateexpr{\tenv, \veone} \typearrow (\vtetwo, \vetwo, \vsesone) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vtetwo) \typearrow \TRecord(\tfields) \OrTypeError\\\\
-  \vf \in \tfields: \getbitfieldwidth(\tenv, \vf, \tfields) \typearrow \ewidth_\vf \OrTypeError\\\\
-  \widthplus(\tenv, [\vf \in \tfields: \ewidth_\vf]) \typearrow \vw\OrTypeError
+  \annotateexpr{\tenv, \ebase} \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\\\\
+  \makeanonymous(\tenv, \tbaseannot) \typearrow \TRecord(\vbasefields) \OrTypeError\\\\
+  \vf \in \vbasefields: \getbitfieldwidth(\tenv, \vf, \tfields) \typearrow \ewidth_\vf \OrTypeError\\\\
+  \widthplus(\tenv, [\vf \in \vbasefields: \ewidth_\vf]) \typearrow \veslicewidth\OrTypeError
 }{
   {
   \begin{array}{r}
-    \annotateexpr{\tenv, \overname{\EGetFields(\veone, \vfields)}{\ve}} \typearrow \\
-    (\overname{\TBits(\vw, \emptylist)}{\vt}, \overname{\EGetFields(\vetwo, \vfields)}{\newe}, \overname{\vsesone}{\vses})
+    \annotateexpr{\tenv, \overname{\EGetFields(\ebase, \vfields)}{\ve}} \typearrow \\
+    (\overname{\TBits(\veslicewidth, \emptylist)}{\vt}, \overname{\EGetFields(\ebaseannot, \vfields)}{\newe}, \overname{\vsesbase}{\vses})
   \end{array}
   }
 }
@@ -1925,11 +1935,11 @@ All of the following apply:
 
 \begin{mathpar}
 \inferrule[error]{
-  \annotateexpr{\tenv, \veone} \typearrow (\vtetwo, \vetwo, \vsesone) \OrTypeError\\\\
-  \makeanonymous(\tenv, \veone) \typearrow \vtetwoanon \OrTypeError\\\\
-  \astlabel(\vtetwoanon) \not\in \{\TBits, \TRecord\}
+  \annotateexpr{\tenv, \veone} \typearrow (\tbaseannot, \ebaseannot, \Ignore) \OrTypeError\\\\
+  \makeanonymous(\tenv, \tbaseannot) \typearrow \tbaseannotanon \OrTypeError\\\\
+  \astlabel(\tbaseannotanon) \not\in \{\TBits, \TRecord\}
 }{
-  \annotateexpr{\tenv, \overname{\EGetFields(\veone, \vfields)}{\ve}} \typearrow \TypeErrorVal{}
+  \annotateexpr{\tenv, \overname{\EGetFields(\veone, \vfields)}{\ve}} \typearrow \TypeErrorVal{UnexpectedType}
 }
 \end{mathpar}
 \CodeSubsection{\EGetFieldsBegin}{\EGetFieldsEnd}{../Typing.ml}
