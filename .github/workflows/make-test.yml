@@ -21,26 +21,40 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          # - macos-latest # Very slow
           - ubuntu-latest
-          # - windows-latest # Unsupported?
-        ocaml-compiler:
-          - "4.08.1"
-          - "5.1"
+        cfg:
+          - ocaml-version: "4.08.1"
+            with-fmt: false
+            job-name: "OCaml v4.08"
+          - ocaml-version: "5.2"
+            with-fmt: true
+            job-name: "OCaml v5.2, with formatting check"
+
+    name: Make test on ${{ matrix.cfg.job-name }}
 
     runs-on: ${{ matrix.os }}
+
+    env:
+      DUNE_CACHE: 'enabled-except-user-rules'
 
     steps:
       - name: Checkout tree
         uses: actions/checkout@v4
 
-      - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
-        uses: ocaml/setup-ocaml@v2
+      - name: Set-up OCaml ${{ matrix.cfg.ocaml-version }}
+        uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          ocaml-compiler: ${{ matrix.cfg.ocaml-version }}
+          dune-cache: true
 
       - run: opam install . --deps-only --with-test
 
       - run: opam exec -- make build DUNE_PROFILE=dev
 
       - run: opam exec -- make test DUNE_PROFILE=dev
+
+      - run: opam install ocamlformat.0.26.2
+        if: ${{ matrix.cfg.with-fmt }}
+
+      - run: opam exec -- dune fmt
+        if: ${{ matrix.cfg.with-fmt }}
