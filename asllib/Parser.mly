@@ -34,6 +34,19 @@
     - In some cases, rules ending with <> are not implemented in the AST yet.
  *)
 
+(*
+  Parser Attributes:
+    * [@internal: bool] - marks which parse nodes, productions or symbols are not
+      a documented part of the ASL language.
+
+  Notes:
+    * While attributes can be attached to productions, this appears to
+      not always propagate when a production is wrapped by a
+      parameterized production. In such cases the attribute has been
+      attached to an arbitrary symbol inside the production as a
+      workaround as those remain after the inlining completes.
+*)
+
 (* ------------------------------------------------------------------------
 
                                Parser Config
@@ -177,7 +190,7 @@ let list1(x) :=
 
 let end_semicolon ==
   | END; SEMI_COLON; <>
-  | END; {
+  | END [@internal true]; {
       if not Config.allow_no_end_semicolon then
           Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Missing ';' after 'end' keyword.";
   }
@@ -525,7 +538,7 @@ let stmt :=
         { desugar_elided_parameter LDK_Var lhs ty call}
       | PRINTLN; args=plist0(expr);                           { S_Print { args; newline = true; debug = false } }
       | PRINT; args=plist0(expr);                             { S_Print { args; newline = false; debug = false } }
-      | DEBUG; args=plist0(expr);                             { S_Print { args; newline = true; debug = true } }
+      | DEBUG; args=plist0(expr);            { S_Print { args; newline = true; debug = true } }
       | UNREACHABLE; LPAR; RPAR;                             { S_Unreachable }
       | REPEAT; ~=stmt_list; UNTIL; ~=expr; ~=loop_limit;    < S_Repeat >
       | THROW; e=expr;                                       { S_Throw (Some (e, None)) }
@@ -672,7 +685,7 @@ let decl :=
 let spec := terminated(list(decl), EOF)
 (* End *)
 
-let opn := body=stmt; EOF;
+let opn [@internal true] := body=stmt; EOF;
     {
       [
         D_Func
@@ -690,4 +703,4 @@ let opn := body=stmt; EOF;
       ]
     }
 
-let stmts := terminated(stmt_list,EOF)
+let stmts [@internal true] := terminated(stmt_list,EOF)
