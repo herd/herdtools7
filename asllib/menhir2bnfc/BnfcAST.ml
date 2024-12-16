@@ -77,3 +77,38 @@ let string_of_bnfc bnfc =
   let decl_strs = List.map print_decl_list grouped_decls in
   String.concat "\n\n" (eps :: decl_strs)
 
+(** Convert the bnfc ast into a simpler format which exludes AST information *)
+let simplified_bnfc bnfc =
+  let snake_case_id name =
+    let cvt_char idx c =
+      let is_upper c = match c with 'A' .. 'Z' -> true | _ -> false in
+      if not @@ is_upper c then String.make 1 c
+      else
+        let lower = String.make 1 @@ Char.lowercase_ascii c in
+        if Int.equal idx 0 then lower else "_" ^ lower
+    in
+    List.init (String.length name) (String.get name)
+    |> List.mapi cvt_char |> String.concat ""
+  in
+  let print_terms { terms } =
+    let print_term term =
+      match term with
+      | Reference id -> snake_case_id id
+      | _ -> string_of_term term
+    in
+    let str_terms = List.map print_term terms in
+    String.concat " " str_terms
+  in
+  let print_decl decl_list =
+    let name = (List.hd decl_list).name in
+    let id = snake_case_id name in
+    let padding_len = String.length id + 3 in
+    (* + " ::" *)
+    let sep = Printf.sprintf "\n%s| " @@ String.make padding_len ' ' in
+    Printf.sprintf "%s ::= %s" id
+      (String.concat sep @@ List.map print_terms decl_list)
+  in
+  let grouped_decls = group_by_name bnfc.decls in
+  let eps = Printf.sprintf "// %s" (string_of_entrypoints bnfc.entrypoints) in
+  let decls = List.map print_decl grouped_decls |> String.concat "\n\n" in
+  String.concat "\n\n" [ eps; decls ]
