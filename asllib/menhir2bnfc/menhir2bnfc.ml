@@ -24,12 +24,20 @@
   Menhir to BNFC Grammar converter
 *)
 
+type args = { cmly_file : string; cf_file : string; no_ast : bool }
 (** Command line arguments structure *)
-type args = { cmly_file : string; cf_file : string }
 
 let parse_args () =
   let files = ref [] in
-  let speclist = [] in
+  let no_ast = ref false in
+  let speclist =
+    [
+      ( "--no-ast",
+        Arg.Set no_ast,
+        " Output in a simplified A := B | C format excluding AST information."
+      );
+    ]
+  in
   let prog =
     if Array.length Sys.argv > 0 then Filename.basename Sys.argv.(0)
     else "menhir2bnfc"
@@ -40,13 +48,13 @@ let parse_args () =
       "Menhir parser (.cmly) and ocamllex (.ml) to bnfc (.cf) grammar \
        converter.\n\n\
        USAGE:\n\
-       \t%s [CMLY_FILE] [OUTPUT_FILE]\n"
+       \t%s [OPTIONS] [CMLY_FILE] [OUTPUT_FILE]\n"
       prog
   in
   let () = Arg.parse speclist anon_fun usage_msg in
   let args =
     match List.rev !files with
-    | [ cmly; cf ] -> { cmly_file = cmly; cf_file = cf }
+    | [ cmly; cf ] -> { cmly_file = cmly; cf_file = cf; no_ast = !no_ast }
     | _ ->
         let () = Printf.eprintf "%s invalid arguments!\n%s" prog usage_msg in
         exit 1
@@ -82,7 +90,7 @@ let translate_to_str args =
     end)) in
     { entrypoints = BnfcData.entrypoints; decls = BnfcData.decls }
   in
-  string_of_bnfc bnfc
+  if args.no_ast then simplified_bnfc bnfc else string_of_bnfc bnfc
 
 let () =
   let args = parse_args () in
