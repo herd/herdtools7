@@ -3425,5 +3425,13 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\SPragmaBegin}{\SPragmaEnd}{../Typing.ml}
 
-\subsection{Semantics}
-Pragmas are not associated with semantics.
+\subsection{Semantics\label{sec:PragmaSemantics}}
+
+\subsubsection{Prose}
+Pragmas are structures present in the \untypedast \ which are designed to be used
+by third-party tools.
+
+To avoid conflicts between different ASL parsers, it is recommended that the pragma's identifier $\Tidentifier(\id)$ be prefixed by the name of the ASL tool that supports that pragma
+(e.g. ARM for Arm's internal ASL tools). An ASL language processor that does not recognise a pragma directive should generate a warning for that pragma.
+
+Pragmas are not associated with semantics and are discarded from the \typedast.
