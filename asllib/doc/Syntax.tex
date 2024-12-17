@@ -175,7 +175,7 @@ We define the following parametric productions for various types of lists and op
 \paragraph{Possibly-empty Comma-separated List}
 \hypertarget{def-clist}{}
 \begin{flalign*}
-\Clist{x}   \derivesinline\ & \emptysentence \;|\; \NClist{x} &\\
+\Clist{x}   \derives \ & \emptysentence \;|\; \NClist{x} &\\
 \end{flalign*}
 
 \paragraph{Comma-separated List With At Least Two Elements}
@@ -245,7 +245,9 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \hypertarget{def-subtypedecl}{}\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon&
 \hypertarget{def-globalstorage}{}\\
-|\ & \Nstoragekeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
+|\ & \Nglobaldeclkeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
+   & \wrappedline\ \Nexpr \parsesep \Tsemicolon &
+|\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
    & \wrappedline\ \Nexpr \parsesep \Tsemicolon &
 \hypertarget{def-globaluninitvar}{}\\
 |\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&
@@ -339,9 +341,9 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \Nlocaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant&
 \end{flalign*}
 
-\hypertarget{def-nstoragekeyword}{}
+\hypertarget{def-nglobaldeclkeyword}{}
 \begin{flalign*}
-\Nstoragekeyword \derivesinline\ & \Tlet \;|\; \Tconstant \;|\; \Tvar \;|\; \Tconfig&
+\Nglobaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant \;|\; \Tconfig&
 \end{flalign*}
 
 \hypertarget{def-ndirection}{}
@@ -516,7 +518,8 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     |\  & \Nexpr \parsesep \Teqop \parsesep \Tmasklit &\\
                     |\  & \Nexpr \parsesep \Tneq \parsesep \Tmasklit &\\
                     |\  & \Tarbitrary \parsesep \Tcolon \parsesep \Nty &\\
-                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Clist{\Nfieldassign} \parsesep \Trbrace &\\
+                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace &\\
+                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nfieldassign} \parsesep \Trbrace &\\
                     |\  & \Tlpar \parsesep \Nexprpattern \parsesep \Trpar &
 \end{flalign*}
 
@@ -629,7 +632,8 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     |\  & \Nexpr \parsesep \Teqop \parsesep \Tmasklit &\\
                     |\  & \Nexpr \parsesep \Tneq \parsesep \Tmasklit &\\
                     |\  & \Tarbitrary \parsesep \Tcolon \parsesep \Nty &\\
-                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Clist{\Nfieldassign} \parsesep \Trbrace &\\
+                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace &\\
+                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nfieldassign} \parsesep \Trbrace &\\
                     |\  & \Tlpar \parsesep \Nexpr \parsesep \Trpar &\\
                     |\  & \Plisttwo{\Nexpr} &
 \end{flalign*}
