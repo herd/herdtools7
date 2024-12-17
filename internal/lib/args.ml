@@ -32,6 +32,10 @@ let npar j =
   "-j",Arg.Int (fun i -> j := Some (max i 1)),
   "<n> concurrent run with at most <n> instances"
 
+let nohash b =
+  "-nohash",Arg.Unit (fun () -> b := true),
+  "do not check hashes"
+
 (** Validators. *)
 
 let validate check msg (key, spec, doc) =
