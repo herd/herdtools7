@@ -302,14 +302,14 @@
   2
 
   $ aslref global-var-initialisation.asl
-  X = 0
+  X = 5
   Y0 = 0
-  Y1 = 0
-  Y2 = 0
-  Y3 = 0
-  Y4 = 0
+  Y1 = 1
+  Y2 = 2
+  Y3 = 3
+  Y4 = 4
   $ aslref global-throw-initialisation.asl
-  File global-throw-initialisation.asl, line 8, characters 17 to 28:
-  Unexpected side-effect: An exception of type E was thrown when evaluating throwing()
-  .
+  File global-throw-initialisation.asl, line 8, characters 0 to 29:
+  ASL Execution error: unexpected exception E thrown during the evaluation of
+    the initialisation of the global storage element "X".
   [1]

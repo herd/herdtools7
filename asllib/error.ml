@@ -93,6 +93,8 @@ type error_desc =
   | ConfigTimeBroken of expr * SideEffect.SES.t
   | ConstantTimeBroken of expr * SideEffect.SES.t
   | MultipleWrites of identifier
+  | UnexpectedInitialisationThrow of
+      ty * identifier (* Exception type and global storage element name. *)
 
 type error = error_desc annotated
 
@@ -186,6 +188,7 @@ let error_label = function
   | ConfigTimeBroken _ -> "ConfigTimeBroken"
   | ConstantTimeBroken _ -> "ConstantTimeBroken"
   | MultipleWrites _ -> "MultipleWrites"
+  | UnexpectedInitialisationThrow _ -> "UnexpectedInitialisationThrow"
 
 let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
@@ -454,6 +457,13 @@ module PPrint = struct
            but define different slices of the containing bitvector type: %s \
            and %s, respectively."
           field1_absname field2_absname field1_absslices field2_absslices
+    | UnexpectedInitialisationThrow (exception_ty, global_storage_element_name)
+      ->
+        fprintf f
+          "ASL Execution error:@ unexpected@ exception@ %a@ thrown@ during@ \
+           the@ evaluation@ of@ the@ initialisation@ of@ the global@ storage@ \
+           element@ %S."
+          pp_ty exception_ty global_storage_element_name
     | MultipleWrites id ->
         fprintf f "ASL Typing error:@ multiple@ writes@ to@ %S." id);
     pp_close_box f ()

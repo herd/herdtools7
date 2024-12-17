@@ -217,13 +217,26 @@ module Make (B : Backend.S) (C : Config) = struct
         match IMap.find_opt name env0 with
         | Some v -> IEnv.declare_global name v env |> return
         | None ->
-            let* v =
+            let init_expr =
               match initial_value with
-              | Some e -> eval_expr env e
+              | Some e -> e
               | None -> fatal_from d TypeInferenceNeeded
             in
+            let* eval_res = eval_expr env init_expr in
+            let v, env2 =
+              match eval_res with
+              | Normal (v, env2) -> (v, env2)
+              | Throwing (exc, _env2) ->
+                  let ty =
+                    match exc with
+                    | Some (_, ty) -> ty
+                    | None -> T_Named "implicit" |> add_pos_from d
+                  in
+                  fatal_from d (UnexpectedInitialisationThrow (ty, name))
+            in
             let* () = B.on_write_identifier name scope v in
-            IEnv.declare_global name v env |> return)
+            let env3 = IEnv.declare_global name v env2 in
+            return env3)
     | _ -> return env
 
   (* Begin EvalBuildGlobalEnv *)
@@ -1366,7 +1379,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Begin EvalSpec *)
   let run_typed_env env (static_env : StaticEnv.global) (ast : AST.t) :
       B.value m =
-    let*| env = build_genv env eval_expr_sef static_env ast in
+    let*| env = build_genv env eval_expr static_env ast in
     let*| res =
       eval_subprogram env "main" dummy_annotated ~params:[] ~args:[]
     in
