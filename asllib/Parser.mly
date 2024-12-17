@@ -184,7 +184,7 @@ let nlist(x) :=
   | ~=x; { [ x ] }
   | ~=x; l=nlist(x); { x :: l }
 
-let end_semicolon :=
+let end_semicolon ==
   | END; SEMI_COLON; <>
   | END; {
       if not Config.allow_no_end_semicolon then
