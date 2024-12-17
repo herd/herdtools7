@@ -666,10 +666,9 @@ One of the following applies:
     \item $d$ is the AST node for declaring a global storage element with initial value $\ve$,
     name $\name$, and type $\vt$;
     \item $\envm$ is the environment-execution graph pair $(\env, \vgone)$;
-    \item evaluating the side-effect-free expression $\ve$ in $\env$ as per \secref{SemanticsRule.ESideEffectFreeExpr} \\
-    is $(\vv, \vgtwo)$\ProseOrError;
-    \item declaring the global $\name$ with value $\vv$ in $\env$ gives $\envtwo$;
-    \item evaluating the remaining global declarations $\vdecls'$ with the environment $\envtwo$ and the execution graph
+    \item the evaluation of the expression $\ve$ in $\env$ yields $\Normal((\vv, \vgtwo), \envtwo)$\ProseOrAbnormal;
+    \item declaring the global $\name$ with value $\vv$ in $\envtwo$ gives $\envthree$;
+    \item evaluating the remaining global declarations $\vdecls'$ with the environment $\envthree$ and the execution graph
     that is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ label gives $C$;
     \item the result of the entire evaluation is $C$.
   \end{itemize}
@@ -687,9 +686,9 @@ One of the following applies:
 \inferrule[non\_empty]{
   \vd \eqname \DGlobalStorage(\{ \text{initial\_value}=\langle\ve\rangle, \text{name}:\name, \ldots \})\\
   \envm \eqname (\env, \vgone)\\
-  \evalexprsef{\env, \ve} \evalarrow (\vv, \vgtwo) \OrDynError\\\\
-  \declareglobal(\name, \vv, \env) \evalarrow \envtwo\\
-  \evalglobals(\vdecls', (\envtwo, \ordered{\vgone}{\aslpo}{ \vgtwo })) \evalarrow C
+  \evalexpr{ \env, \ve} \evalarrow \Normal((\vv,\vgtwo), \envtwo) \OrAbnormal\\\\
+  \declareglobal(\name, \vv, \envtwo) \evalarrow \envthree\\
+  \evalglobals(\vdecls', (\envthree, \ordered{\vgone}{\aslpo}{ \vgtwo })) \evalarrow C
 }{
   \evalglobals(\overname{[\vd] \concat \vdecls'}{\vdecls}, \envm) \evalarrow C
 }
