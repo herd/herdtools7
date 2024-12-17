@@ -467,6 +467,8 @@ module Make (B : Backend.S) (C : Config) = struct
         if is_simple_expr e1 && is_simple_expr e2 then
           let*= v_cond = m_cond in
           let* v =
+            (* The calls to [eval_expr_sef] are safe because [is_simple_expr]
+               implies [is_pure]. *)
             B.ternary v_cond
               (fun () -> eval_expr_sef env1 e1)
               (fun () -> eval_expr_sef env1 e2)
@@ -548,6 +550,9 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalEArray *)
     | E_Array { length = e_length; value = e_value } ->
         (let** v_value, new_env = eval_expr env e_value in
+         (* The call to [eval_expr_sef] is safe because Typing.annotate_type
+            checks that all expressions on which a type depends are statically
+            evaluable, i.e. side-effect-free. *)
          let* v_length = eval_expr_sef env e_length in
          match B.v_to_int v_length with
          | Some n_length ->
@@ -560,6 +565,9 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin EvalEArbitrary *)
     | E_Arbitrary t ->
+        (* The call to [eval_expr_sef] is safe because Typing.annotate_type
+           checks that all expressions on which a type depends are statically
+           evaluable, i.e. side-effect-free. *)
         let* v = B.v_unknown_of_type ~eval_expr_sef:(eval_expr_sef env) t in
         return_normal (v, env) |: SemanticsRule.EArbitrary
     (* End *)
@@ -618,9 +626,15 @@ module Make (B : Backend.S) (C : Config) = struct
           *)
           fatal_from loc Error.UnrespectedParserInvariant
       | T_Bits (e, _) ->
+          (* The call to [eval_expr_sef] is safe because Typing.annotate_type
+             checks that all expressions on which a type depends are statically
+             evaluable, i.e. side-effect-free. *)
           let* v' = eval_expr_sef env e and* v_length = B.bitvector_length v in
           B.binop EQ_OP v_length v'
       | T_Int (WellConstrained constraints) ->
+          (* The calls to [eval_expr_sef] is safe because Typing.annotate_type
+             checks that all expressions on which a type depends are statically
+             evaluable, i.e. side-effect-free. *)
           let map_constraint = function
             | Constraint_Exact e ->
                 let* v' = eval_expr_sef env e in
@@ -794,6 +808,9 @@ module Make (B : Backend.S) (C : Config) = struct
     let false_ = B.v_of_literal (L_Bool false) |> return in
     let disjunction = big_op false_ (B.binop BOR)
     and conjunction = big_op true_ (B.binop BAND) in
+    (* The calls to [eval_expr_sef] are safe because Typing.annotate_pattern
+       checks that all expressions on which a type depends are statically
+       evaluable, i.e. side-effect-free. *)
     fun p ->
       match p.desc with
       (* Begin EvalPAll *)
@@ -972,6 +989,8 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin EvalSFor *)
     | S_For { index_name; start_e; dir; end_e; body; limit = e_limit_opt } ->
+        (* The calls to [eval_expr_sef] are safe because Typing.annotate_stmt,
+           S_For case, checks that the bounds are side-effect-free. *)
         let* start_v = eval_expr_sef env start_e
         and* end_v = eval_expr_sef env end_e
         and* limit_opt = eval_limit env e_limit_opt in
@@ -1054,6 +1073,9 @@ module Make (B : Backend.S) (C : Config) = struct
     match e_limit_opt with
     | None -> return None
     | Some e_limit -> (
+        (* The call to [eval_expr_sef] is safe because
+           [Typing.annotate_limit_expr] checks that the limit is statically
+           evaluable. *)
         let* v_limit = eval_expr_sef env e_limit in
         match B.v_to_int v_limit with
         | Some limit -> return (Some limit)
