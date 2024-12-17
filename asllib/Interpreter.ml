@@ -1036,22 +1036,22 @@ module Make (B : Backend.S) (C : Config) = struct
     | S_Decl (_ldk, _ldi, _ty_opt, None) -> fatal_from s TypeInferenceNeeded
     (* End *)
     (* Begin EvalSPrint *)
-    | S_Print { args; newline; debug } ->
-        let* vs = List.map (eval_expr_sef env) args |> sync_list in
+    | S_Print { args = e_list; newline; debug } ->
+        let** v_list, new_env = eval_expr_list env e_list in
         let () =
           if debug then
             let open Format in
             let pp_value fmt v = B.debug_value v |> pp_print_string fmt in
             eprintf "@[@<2>%a:@ @[%a@]@ ->@ %a@]@." PP.pp_pos s
               (pp_print_list ~pp_sep:pp_print_space PP.pp_expr)
-              args
+              e_list
               (pp_print_list ~pp_sep:pp_print_space pp_value)
-              vs
+              v_list
           else (
-            List.map B.debug_value vs |> String.concat "" |> print_string;
+            List.map B.debug_value v_list |> String.concat "" |> print_string;
             if newline then print_newline () else ())
         in
-        return_continue env |: SemanticsRule.SPrint
+        return_continue new_env |: SemanticsRule.SPrint
     (* End *)
     | S_Pragma _ -> assert false
     | S_Unreachable -> fatal_from s Error.UnreachableReached

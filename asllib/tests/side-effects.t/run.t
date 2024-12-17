@@ -298,8 +298,8 @@
 
   $ aslref print-var.asl
   0
-  0
-  0
+  1
+  2
 
   $ aslref global-var-initialisation.asl
   X = 0
