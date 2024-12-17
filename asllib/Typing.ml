@@ -2925,7 +2925,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         |: TypingRule.SPrint
     (* End *)
     (* Begin SPragma *)
-    | S_Pragma (_, args) ->
+    | S_Pragma (id, args) ->
+        let () = warn_from ~loc (Error.PragmaUse id) in
         let _, _, sess = List.map (annotate_expr env) args |> list_split3 in
         let ses =
           SES.non_conflicting_unions sess
@@ -3720,8 +3721,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* Being CheckGlobalPragma *)
   let check_global_pragma genv d =
+    let loc = to_pos d in
     match d.desc with
-    | D_Pragma (_, args) ->
+    | D_Pragma (id, args) ->
+        let () = warn_from ~loc (Error.PragmaUse id) in
         List.iter
           (fun e -> annotate_expr (with_empty_local genv) e |> ignore)
           args
