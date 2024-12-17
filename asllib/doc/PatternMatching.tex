@@ -53,6 +53,9 @@ for matching a single values and for matching a range of values, exclude tuples
 The AST for these expressions is $\expr$ --- same as the AST for $\Nexpr$.
 The builders for $\Nexprpattern$ are identical to those of $\Nexpr$. For completeness,
 we list those in \secref{ASTRulesForPatternExpressions}.
+Those expressions are side-effect-free, as guaranteed by the checks to
+$\checkstaticallyevaluable$, and thus in the semantics we can use
+$\evalexprsef\empty$.
 
 \section{Matching All Values\label{sec:MatchingAllValues}}
 \subsection{Syntax}

@@ -1962,6 +1962,10 @@ evaluates the optional expression $\velimitopt$ in the environment $\env$, yield
 the optional integer value $\vvopt$ and execution graph $\vg$.
 \ProseOrError
 
+The evaluation uses the function $\evalexprsef$ because limit expressions are
+guaranteed side-effect-free by the type-checker,
+see \nameref{TypingRule.AnnotateLimitExpr}.
+
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
@@ -2467,8 +2471,9 @@ All of the following apply:
   \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
 \end{itemize}
 \subsubsection{Formally}
-Recall that the expressions for the \texttt{for} loop range are side-effect-free,
-which is why they are evaluated via the rule for evaluating side-effect-free expressions.
+Recall that the expressions for the \texttt{for} loop range are
+side-effect-free, as guaranteed by \nameref{TypingRule.SFor}, which is why
+they are evaluated via the rule for evaluating side-effect-free expressions.
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \vstarte} \evalarrow \Normal(\vstartv, \vgone) \OrDynError\\\\
