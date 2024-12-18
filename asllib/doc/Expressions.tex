@@ -2429,6 +2429,9 @@ the expressions appearing in $\vc$:
 }
 \end{mathpar}
 
+The use of $\evalexprsef$ is justified by checks in $\annotatetype$ verifying
+that expressions in types are side-effect-free.
+
 Finally, we can check whether an integer value satisfies any of the constraints:
 \begin{mathpar}
 \inferrule[int\_wellconstrained]{
@@ -3033,6 +3036,10 @@ no rules for building the AST for such expressions nor rules for type-checking t
 \end{flalign*}
 
 \subsection{Semantics}
+
+The Semantic Rules use $\evalexprsef\empty$ because the type-checker in
+$\annotatetype$ guarantees that expressions in types are side-effect-free.
+
 \subsubsection{SemanticsRule.EvalEArray}
 \subsubsection{Prose}
 All of the following apply:

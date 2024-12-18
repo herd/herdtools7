@@ -296,3 +296,20 @@
   ASL Typing error: conflicting side effects CallsRecursive "bar" and CallsRecursive "bar"
   [1]
 
+  $ aslref print-var.asl
+  0
+  1
+  2
+
+  $ aslref global-var-initialisation.asl
+  X = 5
+  Y0 = 0
+  Y1 = 1
+  Y2 = 2
+  Y3 = 3
+  Y4 = 4
+  $ aslref global-throw-initialisation.asl
+  File global-throw-initialisation.asl, line 8, characters 0 to 29:
+  ASL Execution error: unexpected exception E thrown during the evaluation of
+    the initialisation of the global storage element "X".
+  [1]

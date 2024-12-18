@@ -217,13 +217,26 @@ module Make (B : Backend.S) (C : Config) = struct
         match IMap.find_opt name env0 with
         | Some v -> IEnv.declare_global name v env |> return
         | None ->
-            let* v =
+            let init_expr =
               match initial_value with
-              | Some e -> eval_expr env e
+              | Some e -> e
               | None -> fatal_from d TypeInferenceNeeded
             in
+            let* eval_res = eval_expr env init_expr in
+            let v, env2 =
+              match eval_res with
+              | Normal (v, env2) -> (v, env2)
+              | Throwing (exc, _env2) ->
+                  let ty =
+                    match exc with
+                    | Some (_, ty) -> ty
+                    | None -> T_Named "implicit" |> add_pos_from d
+                  in
+                  fatal_from d (UnexpectedInitialisationThrow (ty, name))
+            in
             let* () = B.on_write_identifier name scope v in
-            IEnv.declare_global name v env |> return)
+            let env3 = IEnv.declare_global name v env2 in
+            return env3)
     | _ -> return env
 
   (* Begin EvalBuildGlobalEnv *)
@@ -467,6 +480,8 @@ module Make (B : Backend.S) (C : Config) = struct
         if is_simple_expr e1 && is_simple_expr e2 then
           let*= v_cond = m_cond in
           let* v =
+            (* The calls to [eval_expr_sef] are safe because [is_simple_expr]
+               implies [is_pure]. *)
             B.ternary v_cond
               (fun () -> eval_expr_sef env1 e1)
               (fun () -> eval_expr_sef env1 e2)
@@ -548,6 +563,9 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalEArray *)
     | E_Array { length = e_length; value = e_value } ->
         (let** v_value, new_env = eval_expr env e_value in
+         (* The call to [eval_expr_sef] is safe because Typing.annotate_type
+            checks that all expressions on which a type depends are statically
+            evaluable, i.e. side-effect-free. *)
          let* v_length = eval_expr_sef env e_length in
          match B.v_to_int v_length with
          | Some n_length ->
@@ -560,6 +578,9 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin EvalEArbitrary *)
     | E_Arbitrary t ->
+        (* The call to [eval_expr_sef] is safe because Typing.annotate_type
+           checks that all expressions on which a type depends are statically
+           evaluable, i.e. side-effect-free. *)
         let* v = B.v_unknown_of_type ~eval_expr_sef:(eval_expr_sef env) t in
         return_normal (v, env) |: SemanticsRule.EArbitrary
     (* End *)
@@ -618,9 +639,15 @@ module Make (B : Backend.S) (C : Config) = struct
           *)
           fatal_from loc Error.UnrespectedParserInvariant
       | T_Bits (e, _) ->
+          (* The call to [eval_expr_sef] is safe because Typing.annotate_type
+             checks that all expressions on which a type depends are statically
+             evaluable, i.e. side-effect-free. *)
           let* v' = eval_expr_sef env e and* v_length = B.bitvector_length v in
           B.binop EQ_OP v_length v'
       | T_Int (WellConstrained constraints) ->
+          (* The calls to [eval_expr_sef] is safe because Typing.annotate_type
+             checks that all expressions on which a type depends are statically
+             evaluable, i.e. side-effect-free. *)
           let map_constraint = function
             | Constraint_Exact e ->
                 let* v' = eval_expr_sef env e in
@@ -794,6 +821,9 @@ module Make (B : Backend.S) (C : Config) = struct
     let false_ = B.v_of_literal (L_Bool false) |> return in
     let disjunction = big_op false_ (B.binop BOR)
     and conjunction = big_op true_ (B.binop BAND) in
+    (* The calls to [eval_expr_sef] are safe because Typing.annotate_pattern
+       checks that all expressions on which a type depends are statically
+       evaluable, i.e. side-effect-free. *)
     fun p ->
       match p.desc with
       (* Begin EvalPAll *)
@@ -972,6 +1002,8 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin EvalSFor *)
     | S_For { index_name; start_e; dir; end_e; body; limit = e_limit_opt } ->
+        (* The calls to [eval_expr_sef] are safe because Typing.annotate_stmt,
+           S_For case, checks that the bounds are side-effect-free. *)
         let* start_v = eval_expr_sef env start_e
         and* end_v = eval_expr_sef env end_e
         and* limit_opt = eval_limit env e_limit_opt in
@@ -1017,22 +1049,22 @@ module Make (B : Backend.S) (C : Config) = struct
     | S_Decl (_ldk, _ldi, _ty_opt, None) -> fatal_from s TypeInferenceNeeded
     (* End *)
     (* Begin EvalSPrint *)
-    | S_Print { args; newline; debug } ->
-        let* vs = List.map (eval_expr_sef env) args |> sync_list in
+    | S_Print { args = e_list; newline; debug } ->
+        let** v_list, new_env = eval_expr_list env e_list in
         let () =
           if debug then
             let open Format in
             let pp_value fmt v = B.debug_value v |> pp_print_string fmt in
             eprintf "@[@<2>%a:@ @[%a@]@ ->@ %a@]@." PP.pp_pos s
               (pp_print_list ~pp_sep:pp_print_space PP.pp_expr)
-              args
+              e_list
               (pp_print_list ~pp_sep:pp_print_space pp_value)
-              vs
+              v_list
           else (
-            List.map B.debug_value vs |> String.concat "" |> print_string;
+            List.map B.debug_value v_list |> String.concat "" |> print_string;
             if newline then print_newline () else ())
         in
-        return_continue env |: SemanticsRule.SPrint
+        return_continue new_env |: SemanticsRule.SPrint
     (* End *)
     | S_Pragma _ -> assert false
     | S_Unreachable -> fatal_from s Error.UnreachableReached
@@ -1054,6 +1086,9 @@ module Make (B : Backend.S) (C : Config) = struct
     match e_limit_opt with
     | None -> return None
     | Some e_limit -> (
+        (* The call to [eval_expr_sef] is safe because
+           [Typing.annotate_limit_expr] checks that the limit is statically
+           evaluable. *)
         let* v_limit = eval_expr_sef env e_limit in
         match B.v_to_int v_limit with
         | Some limit -> return (Some limit)
@@ -1344,7 +1379,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Begin EvalSpec *)
   let run_typed_env env (static_env : StaticEnv.global) (ast : AST.t) :
       B.value m =
-    let*| env = build_genv env eval_expr_sef static_env ast in
+    let*| env = build_genv env eval_expr static_env ast in
     let*| res =
       eval_subprogram env "main" dummy_annotated ~params:[] ~args:[]
     in
