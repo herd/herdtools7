@@ -450,6 +450,11 @@ let do_mk_sym sym = match Misc.tr_pte sym with
 
 let mk_sym_virtual_label p lbl = Symbolic (do_mk_virtual_label_with_offset p lbl 0)
 let mk_sym_virtual_label_with_offset p lbl o = Symbolic (do_mk_virtual_label_with_offset p lbl o)
+let mk_sym_physical_label_from_virt = function
+  | Symbolic (Virtual {name=Symbol.Label (p,s); _}) ->
+      Symbolic (Physical (sprintf "%i:%s" p s,0))
+  | _ -> assert false
+
 let mk_sym_virtual s = Symbolic (do_mk_virtual s)
 let mk_sym s = Symbolic (do_mk_sym s)
 

@@ -3,7 +3,6 @@
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
-(*                                                                          *)
 (* Copyright 2010-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
@@ -216,7 +215,8 @@ module Make(A:ArchBase.S)
         | A.Instruction i -> A.dump_instruction_hash i::k
         | A.Label (lbl,p) -> sprintf "%s:" lbl::dump_rec p k
         | A.Symbolic s -> sprintf "codevar:%s" s::k
-        | A.Macro _ -> assert false (* applied after macro expansion *) in
+        | A.Macro _ -> assert false (* applied after macro expansion *) 
+        | A.Align n -> sprintf ".p2align %d" n::k in
         fun (_,ps) ->
           List.fold_right dump_rec ps []
 

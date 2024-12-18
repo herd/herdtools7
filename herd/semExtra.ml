@@ -88,6 +88,10 @@ module type S = sig
   (* Both of them *)
   val get_exported_labels : test -> Label.Full.Set.t
 
+(* "Exported" TTDs, i.e. TTDs that can find their way to registers *)
+  (* In initial state *)
+  val get_exported_TTDs_init : test -> (A.V.Cst.Scalar.t, A.V.Cst.PteVal.t, A.V.Cst.AddrReg.t, A.instruction) Constant.t list
+
   type event = E.event
   type event_structure = E.event_structure
   type event_set = E.EventSet.t
@@ -324,6 +328,20 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
         (get_exported_labels_init test)
         (get_exported_labels_code test)
 
+(* Exported TTDs from the init environments *)
+    let get_exported_TTDs_init test =
+      let { Test_herd.init_state=st; _ } = test in
+      A.state_fold
+        (fun _ v k ->
+          match v with
+          | V.Val cst ->
+              begin
+                match Constant.as_pte cst with
+                | Some ttd -> ttd::k
+                | None -> k
+              end
+          | V.Var _ -> k)
+        st []
 
 (**********)
 (* Events *)

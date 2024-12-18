@@ -73,7 +73,7 @@ module Top
 
 (* Reduce critical sections to useful ones *)
       let rec opt d p = match p with
-        | Macro _|Symbolic _ -> assert false
+        | Macro _|Symbolic _| Align _ -> assert false
         | Label (lbl,p) ->
             let d,p = opt d p  in
             d,Label (lbl,p)
@@ -144,7 +144,7 @@ module Top
 
       let tr n m u v s c id =
         let rec do_tr (idx_sync,idx_unlock,free as st) p = match p with
-        | Macro _|Symbolic _ -> assert false
+        | Macro _|Symbolic _| Align _ -> assert false
         | Nop -> st,[Nop]
         | Label (lbl,p) ->
             let st,ps = do_tr st p in
