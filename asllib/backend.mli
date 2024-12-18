@@ -73,6 +73,9 @@ module type S = sig
   val warnT : string -> 'a -> 'a m
   (** Add warning message *)
 
+  val cutoffT : string -> 'a -> 'a m
+  (** Flag loop unrolling pruning *)
+
   val bind_data : 'a m -> ('a -> 'b m) -> 'b m
   (** Monadic bind operation, used when data from the first operation is needed
       to compute the second operation. *)
@@ -101,12 +104,19 @@ module type S = sig
   (** Branching event *)
 
   val choice : value m -> 'b m -> 'b m -> 'b m
+
+  val choice_debug : (unit -> unit) -> value m -> 'b m -> 'b m -> 'b m
   (** choice is a boolean if operator. *)
 
   val delay : 'a m -> ('a -> 'a m -> 'b m) -> 'b m
   (** delay operator spits monad into result ['a] and
      hidden structure. This permits deciding on
      the monad value, while using hidden structure later *)
+
+  val failT : exn -> 'a -> 'a m
+  (** Register a raised exception. Depending on the monad, this exception
+      may be delayed, so as to be discarded if the monad is discarded, or
+      raised instantaneously. *)
 
   (** Special operations with vectors *)
   (*  --------------------------------*)

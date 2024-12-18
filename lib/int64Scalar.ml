@@ -18,6 +18,7 @@
 include Int64
 
 let unique_zero = true
+let is_zero = equal 0L
 
 let printable c = c
 
