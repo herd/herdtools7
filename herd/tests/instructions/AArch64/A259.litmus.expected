@@ -1,0 +1,10 @@
+Test A259 Required
+States 1
+ Fault(P0:L0,SupervisorCall);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0:L0,SupervisorCall))
+Observation A259 Always 1 0
+Hash=4091dac82d97298f370a841c62bd669c
+
