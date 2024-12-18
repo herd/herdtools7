@@ -77,8 +77,9 @@ end =
         | A.Nop -> false
         | A.Label _
         | A.Instruction _
-	| A.Symbolic _
-        | A.Macro _ -> true)
+        | A.Symbolic _
+        | A.Macro _ 
+        | A.Align _ -> true)
 
     let mix_code c1 c2 =
       let c1 = clean_code c1

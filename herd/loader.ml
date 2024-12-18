@@ -19,7 +19,13 @@
 (************************************************)
 
 let func_size = Pseudo.func_size
-let proc_size = 10000
+let proc_size = 1000000
+
+let align_to_next addr p =
+  let addr_part = addr mod proc_size in
+  let proc_part = addr - addr_part in
+  let n = Int.shift_left 1 p in
+  proc_part + ((addr_part / n) + 1 ) * n
 
 let func_start_addr proc = function
   | MiscParser.Main -> (proc + 1) * proc_size
@@ -88,6 +94,7 @@ struct
        load_ins proc addr mem rets code ins
 
   and load_ins proc addr mem rets code = fun x ->
+    (* Printf.printf "Loading addr=%d\n" addr; *)
     match x with
     | A.Nop ->
        load_code proc addr mem rets code
@@ -104,6 +111,13 @@ struct
         start,new_rets
     | A.Symbolic _
     | A.Macro (_,_) -> assert false
+    | A.Align p -> 
+      let new_addr = align_to_next addr p in
+      let diff = (new_addr - addr)/4 in
+      let padding = List.init diff (fun _ -> A.Instruction A.mynop) in
+      (* Printf.printf "    thought the addr would be %d, but need to proceed from %d, the diff being %d\n" addr new_addr diff; *)
+      load_code proc addr mem rets (List.append padding code)
+      (* load_code proc (align_to_next addr p) mem rets code *)
 
   let load prog =
     let mem = preload prog in

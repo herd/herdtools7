@@ -77,6 +77,8 @@ module type S = sig
   (* Code memory is a mapping from labels to sequences of instructions, too far from actual machine, maybe *)
   type code = (int * instr) list
 
+  val mynop : I.V.Cst.Instr.t
+
   (* Program loaded in memory *)
   type program = int Label.Map.t
 
@@ -336,6 +338,9 @@ module Make(C:Config) (I:I) : S with module I = I
 
       (* Code memory is a mapping from globals locs, to instructions *)
       type code = (int * instr) list
+
+      let mynop =
+        Option.get I.V.Cst.Instr.nop
 
       (* Programm loaded in memory *)
       type program = int Label.Map.t

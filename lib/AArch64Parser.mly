@@ -65,6 +65,7 @@ let check_op3 op e =
 %token <string> META
 %token <string> CODEVAR
 %token <int> PROC
+%token DOTP2ALIGN
 
 %token SEMI COMMA PIPE COLON DOT BANG LCRL RCRL LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
 
@@ -172,7 +173,6 @@ let check_op3 op e =
 %start one_instr
 %type  <AArch64Base.pins> one_instr
 
-
 %%
 main:
 | semi_opt proc_list iol_list scopes_and_memory_map EOF
@@ -206,6 +206,7 @@ instr_option :
 |            { Nop }
 | NAME COLON instr_option {Label ($1,$3) }
 | CODEVAR    { Symbolic $1 }
+| DOTP2ALIGN NUM { Align $2 }
 | instr      { Instruction $1}
 
 reg:

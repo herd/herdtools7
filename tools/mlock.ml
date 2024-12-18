@@ -172,6 +172,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
     | Label (l,i) ->
         let nxt,vs,i = tr_pseudo nxt i in
         nxt,vs,Label (l,i)
+    | Align _ -> assert false
 
     and tr_pseudo_code nxt = function
       | [] -> StringSet.empty,[]

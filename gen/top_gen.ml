@@ -940,6 +940,7 @@ let rec dump_pseudo = function
         (String.concat ","
            (List.map A.pp_reg args))::
       dump_pseudo rem
+  | A.Align _::_ -> assert false (* support for .p2align not implemented yet*)
 
 let fmt_cols =
   let rec fmt_col p k = function

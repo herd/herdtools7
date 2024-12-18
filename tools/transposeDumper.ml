@@ -63,6 +63,7 @@ end = struct
         "%s(%s)"
         f
         (String.concat "," (List.map A.pp_reg regs))
+  | A.Align n -> sprintf ".p2align %d" n
 
   let rec clean_code = function
     | [] -> []
