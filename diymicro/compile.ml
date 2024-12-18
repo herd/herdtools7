@@ -260,6 +260,8 @@ let rec dump_pseudo = function
   | A.Macro (m, args) :: rem ->
       Printf.sprintf "%s(%s)" m (String.concat "," (List.map A.pp_reg args))
       :: dump_pseudo rem
+  | A.Align _ :: _ ->
+      Warn.fatal "Page alignment not available in diymicro"
 
 let fmt_cols =
   let rec fmt_col p k = function

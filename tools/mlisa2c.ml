@@ -164,6 +164,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
     | BellBase.Label (lab,i) -> CBase.Label (lab,tr_pseudo tr i)
     | BellBase.Macro (f,es) -> CBase.Macro (f,List.map tr_reg es)
     | BellBase.Symbolic s -> CBase.Symbolic s
+    | BellBase.Align s -> CBase.Align s
 
   let ptr_type =
     let open CType in

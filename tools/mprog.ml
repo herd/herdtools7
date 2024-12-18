@@ -73,8 +73,9 @@ module Top
               | A.Label (_,i) -> get_addrs_ins k i
               | A.Instruction i ->
                   A.fold_addrs add_loc k i
-	      | A.Symbolic _
+              | A.Symbolic _
               | A.Macro _ -> assert false
+              | A.Align _ -> assert false
 
 
             let dump_global_state prog st =

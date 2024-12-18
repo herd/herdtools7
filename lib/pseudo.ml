@@ -32,6 +32,7 @@ module type Types = sig
     | Instruction of 'ins
     | Macro of string * reg_arg list
     | Symbolic of string
+    | Align of int
 
   type pseudo = ins kpseudo
   type parsedPseudo = pins kpseudo
@@ -131,6 +132,7 @@ struct
     | Instruction of 'ins
     | Macro of string * reg_arg list
     | Symbolic of string
+    | Align of int
 
   type pseudo = ins kpseudo
   type parsedPseudo = pins kpseudo
@@ -144,6 +146,7 @@ struct
     | Label (lbl,ins) -> Label (lbl, pseudo_map f ins)
     | Symbolic s -> Symbolic s
     | Macro (_,_) -> assert false
+    | Align n -> Align n
 
   let rec pseudo_fold f k ins = match ins with
     | Nop -> k
@@ -151,6 +154,7 @@ struct
     | Label (_,ins) -> pseudo_fold f k ins
     | Symbolic _ -> k
     | Macro (_,_) -> assert false
+    | Align _ -> k
 
   let pseudo_exists p = pseudo_fold (fun b i -> b || p i) false
   let pseudo_dump dump = pseudo_fold (fun  _ i -> dump i) ""
@@ -167,6 +171,7 @@ struct
   | Label (lbl,ins) -> fold_labels f (f k lbl) ins
   | Symbolic _ -> k
   | Macro _ -> assert false
+  | Align _ -> k
 
   let map_labels_base = I.map_labels
 
@@ -185,6 +190,7 @@ struct
   | Label (lbl,ins) -> Label (f lbl, map_labels f ins)
   | Symbolic s -> Symbolic s
   | Macro _ -> assert false
+  | Align n -> Align n
 
 (* For printing the program, code per processor *)
   type nice_prog = (MiscParser.proc * pseudo list) list
@@ -247,6 +253,7 @@ struct
        (lbl,I.map_labels f i)::k
     | Label (_,i)::code -> add_next_instr m addr lbl (i::code) k
     | (Symbolic _|Macro _)::_ -> assert false
+    | (Align _)::_ -> assert false
 
 
   let fold_label_addr f =
@@ -260,6 +267,7 @@ struct
       | Nop ->
          fold_rec m addr code
       | Macro _|Symbolic _ -> assert false
+      | Align _ -> fold_rec m addr code
 
       and fold_rec m addr = function
         | [] -> m
@@ -285,7 +293,8 @@ struct
       | Instruction ins::rem ->
          do_rec (addr+I.size_of_ins ins)  rem k
       | Nop::rem -> do_rec addr rem k
-      | (Macro _|Symbolic _)::_ -> assert false in
+      | (Macro _|Symbolic _)::_ -> assert false 
+      | (Align _)::_ -> assert false in
     do_rec 0 c k |> do_rec func_size f
 
 

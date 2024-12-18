@@ -61,6 +61,7 @@ CoreDumper.S with
         "%s(%s)"
         f
         (String.concat "," (List.map A.pp_reg regs))
+  | A.Align n -> sprintf ".p2align %d" n
 
   let fmt_col (p,is) = MiscParser.pp_proc p::List.map fmt_io is
 
