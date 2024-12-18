@@ -519,6 +519,7 @@ let interprete ?instrumentation static_env ast =
   let module CI : Interpreter.Config = struct
     let unroll = 0
     let error_handling_time = Error.Dynamic
+    let log_nondet_choice = false
 
     module Instr = Instrumentation.SemMake (B)
   end in
