@@ -506,6 +506,7 @@ module NativeConfig (I : Instrumentation.SEMINSTR) = struct
   let unroll = 0
   let error_handling_time = Error.Dynamic
   let empty_branching_effects_optimization = true
+  let log_nondet_choice = false
 
   module Instr = I
 end

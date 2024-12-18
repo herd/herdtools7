@@ -58,6 +58,9 @@ module type Config = sig
 
   val empty_branching_effects_optimization : bool
   (** Whether to produce meaningful branching effects. *)
+
+  val log_nondet_choice : bool
+  (** Log to stderr non-deterministic choices. *)
 end
 
 module Make (B : Backend.S) (C : Config) : S with module B = B
