@@ -1,0 +1,34 @@
+name: Build ASL reference
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Prime the caches every Monday
+    - cron: 0 1 * * MON
+
+permissions: read-all
+
+# Copy-pasted from https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  make-asldoc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+
+      - name: Install opam and texlive
+        run: sudo apt-get install --quiet --yes opam texlive-full
+
+      - name: Make sure opam is well installed
+        run: opam init
+
+      - name: Install opam dependencies
+        run: opam install . --deps-only --yes
+
+      - name: Build ASL Reference
+        run: opam exec -- make asldoc
+
