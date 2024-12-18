@@ -33,6 +33,7 @@ let get_ref_result_instr =
   let module C : Interpreter.Config = struct
     let unroll = 0
     let error_handling_time = Error.Dynamic
+    let log_nondet_choice = false
 
     module Instr = Instrumentation.SemMake (B)
   end in

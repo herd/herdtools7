@@ -66,6 +66,7 @@ module type Config = sig
 
   val unroll : int
   val error_handling_time : Error.error_handling_time
+  val log_nondet_choice : bool
 end
 
 module Make (B : Backend.S) (C : Config) = struct
@@ -138,7 +139,16 @@ module Make (B : Backend.S) (C : Config) = struct
   let ( >>*= ) = B.bind_ctrl
 
   (* Choice *)
-  let choice m v1 v2 = B.choice m (return v1) (return v2)
+  let choice ~pos m v1 v2 =
+    if C.log_nondet_choice then
+      let* v = m in
+      let () =
+        if B.is_undetermined v then
+          Printf.eprintf "Non-deterministic choice done at position %s.\n%!"
+            (Error.desc_to_string_inf PP.pp_pos pos)
+      in
+      B.choice (return v) (return v1) (return v2)
+    else B.choice m (return v1) (return v2)
 
   (*
    * Choice with inserted branching (commit) effect/
@@ -150,13 +160,13 @@ module Make (B : Backend.S) (C : Config) = struct
    *         input .
    *)
 
-  let choice_with_branch_effect_msg m_cond msg v1 v2 kont =
-    choice m_cond v1 v2 >>= fun v ->
+  let choice_with_branch_effect_msg ~pos m_cond msg v1 v2 kont =
+    choice ~pos m_cond v1 v2 >>= fun v ->
     B.commit (Some msg) >>*= fun () -> kont v
 
   let choice_with_branch_effect m_cond e_cond v1 v2 kont =
     let pp_cond = Format.asprintf "%a@?" PP.pp_expr e_cond in
-    choice_with_branch_effect_msg m_cond pp_cond v1 v2 kont
+    choice_with_branch_effect_msg ~pos:e_cond m_cond pp_cond v1 v2 kont
 
   (* Exceptions *)
   let bind_exception binder m f =
@@ -397,7 +407,7 @@ module Make (B : Backend.S) (C : Config) = struct
       [value_ranges] are given by a list of couples [(start, length)].
       If they are overlapping, an error [OverlappingSlices (slices, Dynamic)]
       is thrown. *)
-  let check_non_overlapping_slices slices value_ranges =
+  let check_non_overlapping_slices ~pos slices value_ranges =
     let check_two_ranges_are_non_overlapping (s1, l1) m (s2, l2) =
       let* () = m in
       let cond =
@@ -410,7 +420,7 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         B.binop `BOR s1l1s2 s2l2s1
       in
-      let* b = choice cond true false in
+      let* b = choice ~pos cond true false in
       if b then return ()
       else
         Error.(
@@ -745,7 +755,7 @@ module Make (B : Backend.S) (C : Config) = struct
           List.fold_left fold (0, m_true) tys |> snd
       | _ -> fatal_from loc TypeInferenceNeeded
     in
-    choice (in_values v ty) true false
+    choice ~pos:loc (in_values v ty) true false
   (* End *)
 
   (* Evaluation of Left-Hand-Side Expressions *)
@@ -789,7 +799,7 @@ module Make (B : Backend.S) (C : Config) = struct
           let* v_rhs = m
           and* slice_ranges = m_slice_ranges
           and* v_bv_lhs = m_bv_lhs in
-          let* () = check_non_overlapping_slices slices slice_ranges in
+          let* () = check_non_overlapping_slices ~pos:le slices slice_ranges in
           B.write_to_bitvector slice_ranges v_rhs v_bv_lhs
         in
         eval_lexpr ver e_bv env2 new_m_bv |: SemanticsRule.LESlice
@@ -1102,7 +1112,7 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalSAssert *)
     | S_Assert e ->
         let*^ v, env1 = eval_expr env e in
-        let*= b = choice v true false in
+        let*= b = choice ~pos:s v true false in
         if b then return_continue env1
         else fatal_from e @@ Error.AssertionFailed e |: SemanticsRule.SAssert
     (* End *)
@@ -1295,7 +1305,7 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     (* Real logic: if the condition holds, we continue to the next
        loop iteration, otherwise we loop. *)
-    choice_with_branch_effect_msg cond_m loop_msg return_continue loop
+    choice_with_branch_effect_msg ~pos:body cond_m loop_msg return_continue loop
       (fun kont -> kont env)
     |: SemanticsRule.For
   (* End *)
