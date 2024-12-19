@@ -1794,7 +1794,7 @@ let match_reg_events es =
       (* We can build those now *)
       let evts = es.E.events in
       let po_iico = U.po_iico es in
-      let partial_po = E.EventTransRel.to_transitive_rel es.E.partial_po in
+      let partial_po = E.EventTransRel.to_implicitely_transitive_rel es.E.partial_po in
       let ppoloc = make_ppoloc po_iico evts in
       let store_load_vbf = store_load rfm
       and init_load_vbf = init_load es rfm in

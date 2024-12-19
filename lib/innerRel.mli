@@ -71,7 +71,8 @@ module type S =  sig
   val up :  elt0 -> t -> Elts.t
   val up_from_set : Elts.t -> t -> Elts.t
 
-(* Does not detect cycles either *)
+  (* Transitive closure, the fist function returns Map form *)
+  val transitive_to_map : t -> Elts.t M.ME.t
   val transitive_closure : t -> t
 
 (* Direct cycles *)
