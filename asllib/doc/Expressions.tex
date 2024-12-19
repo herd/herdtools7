@@ -1466,7 +1466,7 @@ All of the following apply:
 \subsubsection{Example}
 In the specification:
 \ASLExample{\semanticstests/SemanticsRule.EGetArray.asl}
-the expression \texttt{my\_array[2]} appearing in the assertion evaluates to the value \texttt{42} since the element
+the expression \texttt{my\_array[[2]]} appearing in the assertion evaluates to the value \texttt{42} since the element
 indexed by \texttt{2} in \texttt{my\_array} is \texttt{42}.
 
 \subsubsection{Example}
@@ -1878,7 +1878,7 @@ All of the following apply:
     \item All of the following apply (\textsc{bits}):
     \begin{itemize}
       \item $\tbaseannotanon$ is a bitvector type with list of bitfields $\vbitfields$\ProseOrTypeError;
-      \item applying $\findbitfieldsslices$ to each field name $\name$ in $\vfields$ yields \\
+      \item applying $\findbitfieldsslices$ to each field name $\name$ and list of bitfields $\vbitfields$ in $\vfields$ yields \\
             $\vslices_\name$\ProseOrTypeError;
       \item define $\veslice$ as the slicing expression for $\ebase$ and lists of slices $\vslices_\name$, for each $\name$ in $\vfields$;
       \item \Proseannotateexpr{$\tenv$}{$\veslice$}{\\ $(\vt, \newe, \vses)$}\ProseOrTypeError.
@@ -1909,7 +1909,7 @@ All of the following apply:
 \inferrule[bits]{
   \annotateexpr{\tenv, \ebase} \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\\\\
   \makeanonymous(\tenv, \tbaseannot) \typearrow \TBits(\Ignore, \vbitfields) \OrTypeError\\\\
-  \name\in\vfields: \findbitfieldsslices(\name) \typearrow \vslices_\name \OrTypeError\\\\
+  \name\in\vfields: \findbitfieldsslices(\name, \vbitfields) \typearrow \vslices_\name \OrTypeError\\\\
   \veslice \eqdef \ESlice(\ebase, [\name\in\vfields: \vslices_\name])\\
   \annotateexpr{\tenv, \veslice} \typearrow (\vt, \newe, \vses) \OrTypeError
 }{
