@@ -124,6 +124,7 @@ type warning_desc =
       prev : int_constraint list;
       after : int_constraint list;
     }
+  | PragmaUse of identifier
 
 type warning = warning_desc annotated
 
@@ -195,6 +196,7 @@ let warning_label = function
   | IntervalTooBigToBeExploded _ -> "IntervalTooBigToBeExploded"
   | RemovingValuesFromConstraints _ -> "RemovingValuesFromConstraints"
   | NoRecursionLimit _ -> "NoRecursionLimit"
+  | PragmaUse _ -> "PragmaUse"
 
 module PPrint = struct
   open Format
@@ -492,6 +494,9 @@ module PPrint = struct
            with@ this@ constraint@ set.@]"
           (binop_to_string op) PP.pp_int_constraints prev PP.pp_int_constraints
           after
+    | PragmaUse id ->
+        fprintf f "@[ASL Warning:@ pragma %s%a@]" id pp_print_text
+          " will be ignored."
 
   let pp_pos_begin f pos =
     if pos.pos_end != Lexing.dummy_pos && pos.pos_start != Lexing.dummy_pos then
