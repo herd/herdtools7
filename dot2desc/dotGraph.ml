@@ -18,7 +18,7 @@ module Edge = struct
   type t = {
     left: string;
     right: string;
-    desc: string;
+    desc: string -> string -> string;
   }
   let pp e = Printf.sprintf "%s -> %s" e.left e.right
 end
@@ -85,37 +85,32 @@ let rec tr_stmt acc stmt =
       let reg_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)[0-9]:\([A-Z_]+[0-9]*\)|} in
       let branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(\(\[[a-zA-Z0-9_]+\]\|[0-9]:[A-Z_]+[0-9]*\)\(==\|!=\)\(\[[a-zA-Z0-9_]+\]\|[0-9]:[A-Z_]+[0-9]*\))|} in
       let node = if Str.string_match mem_access value 0 then begin
-        let rw = if Str.matched_group 1 value = "R" then
-          "the Explicit Memory Read effect"
-        else
-          "the Explicit Memory Write effect" in
-        let loc = "the Memory Location " ^ Str.matched_group 2 value in
+        let f = if Str.matched_group 1 value = "R" then DescDict.mem_read else DescDict.mem_write in
+        let loc = Str.matched_group 2 value in
 
         (* Look for the register that was used to address memory, which
           is part of the instruction (at the end of the attribute value) *)
         let address_reg = Str.regexp {|\[\([A-Z]+[0-9]*\)\]|} in
         ignore (Str.search_backward address_reg value (String.length value - 1));
-        let loc = loc ^ " addressed by " ^ Str.matched_group 1 value in
+        let reg = Str.matched_group 1 value in
         {
-          Node.desc = rw ^ " of " ^ loc;
+          Node.desc = f loc reg;
           kind = Node.Mem;
         }
       end
       else if Str.string_match reg_access value 0 then begin
-        let rw = if Str.matched_group 1 value = "R" then
-          "the Register Read effect"
-        else
-          "the Register Write effect" in
+        let f = if Str.matched_group 1 value = "R" then DescDict.reg_read else DescDict.reg_write in
         let reg = pp_reg (Str.matched_group 2 value) in
         let kind = if str_contains value "(data)" then
           Node.Reg_Data
         else
           Node.Reg_Other in
-        { Node.desc=rw ^ " of " ^ reg; kind=kind }
+        { Node.desc=f reg; kind=kind }
       end
       else if Str.string_match branching value 0 then begin
+        let f = DescDict.branching in
         let lhs = Str.matched_group 1 value in
-        let eq = Str.matched_group 2 value in
+        let rel = Str.matched_group 2 value in
         let rhs = Str.matched_group 3 value in
 
         (* Extracts the memory location or register name out of a lhs or rhs *)
@@ -123,18 +118,19 @@ let rec tr_stmt acc stmt =
           let mem = Str.regexp {|\[\([a-zA-Z0-9_]+\)\]|} in
           let reg = Str.regexp {|[0-9]:\([A-Z_]+[0-9]*\)|} in
           if Str.string_match mem str 0 then
-            "the Memory Location " ^ Str.matched_group 1 str
+            DescDict.memloc (Str.matched_group 1 str)
           else if Str.string_match reg str 0 then
-            "the Register " ^ (pp_reg (Str.matched_group 1 str))
+            DescDict.reg (pp_reg (Str.matched_group 1 str))
           else
             Warn.fatal "String %s contains neither a register nor a memory address" str in
         
         let lhs = mem_or_reg lhs in
         let rhs = mem_or_reg rhs in
-        let eq = if String.equal eq "==" then "are equal" else "are not equal" in
-        let desc = "the Intrinsic Branching effect which checks whether the contents of " 
-          ^ lhs ^ " " ^ eq ^ " to the contents of " ^ rhs in
-        { Node.desc=desc; kind=Node.Branching }
+        let cond = if String.equal rel "==" then
+          DescDict.eq_contents lhs rhs
+        else
+          DescDict.neq_contents lhs rhs in
+        { Node.desc=f cond; kind=Node.Branching }
       end
       else
         Warn.fatal "Unsupported type of effect label: %s" value in
@@ -143,29 +139,24 @@ let rec tr_stmt acc stmt =
       { acc with nodes=map }
     end
   | ParsedStmt.Attr _ -> acc
-  | ParsedStmt.Edge e ->
-    let label = List.find (fun a -> a.ParsedAttr.name = "label") e.ParsedEdge.attrs in
-    let value = label.ParsedAttr.value in
-    if String.equal value "iico_data" then
-      let desc = "an Intrinsic data dependency" in
-      let edge = { Edge.left=e.ParsedEdge.left; right=e.ParsedEdge.right; desc=desc } in
-      { acc with edges=edge::acc.edges }
-    else if String.equal value "iico_ctrl" then
-      let desc = "an Intrinsic control dependency" in
-      let edge = { Edge.left=e.ParsedEdge.left; right=e.ParsedEdge.right; desc=desc } in
-      { acc with edges=edge::acc.edges }
-    else if String.equal value "iico_order" then
-      let desc = "an Intrinsic order dependency" in
-      let edge = { Edge.left=e.ParsedEdge.left; right=e.ParsedEdge.right; desc=desc } in
-      { acc with edges=edge::acc.edges }
-    else
-      (* Skip any other kind of edge *)
-      acc
+  | ParsedStmt.Edge e -> begin
+      let label = List.find (fun a -> a.ParsedAttr.name = "label") e.ParsedEdge.attrs in
+      let value = label.ParsedAttr.value in
+      try
+        let desc = StringMap.find value DescDict.edges in
+        let edge = { Edge.left=e.ParsedEdge.left; right=e.ParsedEdge.right; desc=desc } in
+        { acc with edges=edge::acc.edges }
+      with Not_found ->
+        (* Skip any other kind of edge *)
+        acc
+    end
   | ParsedStmt.Subgraph s ->
-    List.fold_left tr_stmt acc s.ParsedSubgraph.stmts
+    List.fold_left (fun acc stmt -> tr_stmt acc stmt) acc s.ParsedSubgraph.stmts
 
 let tr parsed_graph =
-  let translated = List.fold_left tr_stmt empty parsed_graph.ParsedDotGraph.stmts in
+  let translated = List.fold_left (fun acc stmt ->
+    tr_stmt acc stmt
+  ) empty parsed_graph.ParsedDotGraph.stmts in
 
   let module Adjacency = struct
     type t = {
@@ -258,11 +249,11 @@ let tr parsed_graph =
 
 let describe g =
   let descs = List.map (fun edge ->
-    let desc_edge = edge.Edge.desc in
+    let edge_desc = edge.Edge.desc in
     try
       let lhs = StringMap.find edge.Edge.left g.nodes in
       let rhs = StringMap.find edge.Edge.right g.nodes in
-      "There is " ^ desc_edge ^ " from " ^ lhs.Node.desc ^ " to " ^ rhs.Node.desc ^ ".\n"
+      edge_desc lhs.Node.desc rhs.Node.desc ^ ".\n"
     with Not_found ->
       Warn.fatal "Could not find one of the nodes for edge %s\n" (Edge.pp edge)
     ) g.edges in
