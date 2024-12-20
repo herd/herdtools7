@@ -39,6 +39,12 @@ Bad types:
   ASL Static error: overlapping slices 0+:11, 3+:2.
   [1]
 
+  $ aslref bad-inclusion-in-symbolic-type.asl
+  File bad-inclusion-in-symbolic-type.asl, line 2, characters 0 to 26:
+  ASL Typing error: a subtype of integer {2..A} was expected,
+    provided integer {1}.
+  [1]
+
 Global ignored:
   $ cat >global_ignored.asl <<EOF
   > var - = 3 / 0;
