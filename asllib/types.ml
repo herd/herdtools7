@@ -359,8 +359,11 @@ module Domain = struct
         if Z.lt z2 z1 then acc else f z1 acc |> aux f (Z.succ z1) z2
       in
       fun f z1 z2 acc ->
-        if Z.equal z1 z2 then f z1 acc
-        else acc |> f z1 |> f z2 |> aux f (Z.succ z1) (Z.pred z2)
+        match Z.compare z1 z2 with
+        | 1 -> acc
+        | 0 -> f z1 acc
+        | -1 -> acc |> f z1 |> f z2 |> aux f (Z.succ z1) (Z.pred z2)
+        | _ -> assert false
 
     let rec expr_fold :
           'acc. _ -> _ -> (literal -> 'acc -> 'acc) -> _ -> 'acc -> 'acc =
