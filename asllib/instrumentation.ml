@@ -111,6 +111,7 @@ module SemanticsRule = struct
     | RethrowImplicit
     | ReadValueFrom
     | BuildGlobalEnv
+    | IsConstraintSat
 
   let to_string : t -> string = function
     | ELit -> "ELit"
@@ -200,6 +201,7 @@ module SemanticsRule = struct
     | RethrowImplicit -> "RethrowImplicit"
     | ReadValueFrom -> "ReadValueFrom"
     | BuildGlobalEnv -> "BuildGlobalEnv"
+    | IsConstraintSat -> "IsConstraintSat"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -292,6 +294,7 @@ module SemanticsRule = struct
       RethrowImplicit;
       ReadValueFrom;
       BuildGlobalEnv;
+      IsConstraintSat;
     ]
 
   let all_nb = List.length all

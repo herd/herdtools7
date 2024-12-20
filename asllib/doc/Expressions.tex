@@ -990,6 +990,9 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
 \texttt{ARBITRARY} is implemented.
 
 \subsubsection{SemanticsRule.ECond \label{sec:SemanticsRule.ECond}}
+% Transliteration note: the code uses an optimized semantics for the case where
+% true and false sub-expressions do not contain function calls. Since this is an
+% optimization, we do not document it.
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -2399,7 +2402,7 @@ The relation
   \isvaloftype(\overname{\envs}{\env} \aslsep \overname{\vals}{\vv} \aslsep \overname{\ty}{\vt}) \;\aslrel\;
   (\overname{\Bool}{\vb} \times \overname{\XGraphs}{\vg}) \cup \overname{\TDynError}{\DynErrorConfig}
 \]
-checks whether the value $\vv$ can be stored in a variable of type $\vt$ in the environment $\env$,
+tests whether the value $\vv$ can be stored in a variable of type $\vt$ in the environment $\env$,
 resulting in a Boolean value $\vb$ and execution graph $\vg$ or a dynamic error.
 
 This relation is used in the context of a asserted type conversion,
@@ -2407,6 +2410,9 @@ which means the type-checker rule \nameref{sec:TypingRule.ATC} was already appli
 thus filtering cases where the type inferred for the converted expression
 does not type-satisfy $\vt$. The semantics takes this into account and
 only returns \False\ in cases where dynamic information is required.
+
+Recall that the $\vt$ is the result of $\annotatetype$, which ensures that
+all sub-expressions appearing in $\vt$ are side-effect-free.
 
 One of the following applies:
 \begin{itemize}
@@ -2433,6 +2439,14 @@ One of the following applies:
     yields a Boolean value $\vb_i$ and an execution graph $\vg_i$\ProseOrError;
     \item $\vb$ is the Boolean disjunction of all Boolean values $\vb_i$, for $i=1..k$;
     \item $\vg$ is the parallel composition of all execution graphs $\vg_i$, for $i=1..k$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bits}):
+  \begin{itemize}
+    \item $\vt$ is a bitvector type with with expression $\ve$, that is, $\TBits(\ve, \Ignore)$;
+    \item $\vv$ is a native bitvector value for the sequence of bits $\vbits$, that is, \\ $\nvbitvector(\vbits)$;
+    \item evaluating the side-effect-free expression $\ve$ in $\env$ yields $\Normal(\vvp, \vg)$\ProseOrError;
+    \item \Proseeqdef{$\vb$}{$\True$ if and only if $\vvp$ is equal to the number of bits in $\vbits$}.
   \end{itemize}
 
   \item All of the following apply (\textsc{tuple}):
@@ -2462,45 +2476,10 @@ One of the following applies:
 }
 \end{mathpar}
 
-\hypertarget{def-integerconstraintsatisfied}{}
-To handle \emph{well-constrained integers} (integers with a non-empty list of constraints),
-we introduce the helper relation
-\[
-  \integerconstraintsatisfied(\overname{\envs}{\env} \aslsep \overname{\intconstraint}{\vc} \aslsep \overname{\Z}{n}) \;\aslrel\;
-  (\overname{\Bool}{\vb} \times \overname{\XGraphs}{\vg})
-\]
-which checks whether the integer value $n$ \emph{meets the constraint} $\vc$
-(that is, whether $n$ is within the range of values defined by $\vc$) in the environment $\env$
-and returns a Boolean answer $\vb$ and the execution graph $\vg$ resulting from evaluating
-the expressions appearing in $\vc$:
-\begin{mathpar}
-\inferrule[Constraint\_Exact\_Sat]{
-  \evalexprsef{\env, \ve} \evalarrow (\nvint(m), \vg) \OrDynError\\\\
-  \vb \eqdef m = n
-}
-{
-  \integerconstraintsatisfied(\env, \constraintexact(\ve), n) \evalarrow (\vb, \vg)
-}
-\and
-\inferrule[Constraint\_Range\_Sat]{
-  \evalexprsef{\env, \veone} \evalarrow (\nvint(a), \vgone) \OrDynError\\\\
-  \evalexprsef{\env, \vetwo} \evalarrow (\nvint(b), \vgtwo) \OrDynError\\\\
-  \vb \eqdef \choice{a \leq n \wedge n \leq b}{\True}{\False}\\
-  \vg \eqdef \vgone \parallelcomp \vgtwo
-}
-{
-  \integerconstraintsatisfied(\env, \constraintrange(\veone, \vetwo), n) \evalarrow (\vb, \vg)
-}
-\end{mathpar}
-
-The use of $\evalexprsef$ is justified by checks in $\annotatetype$ verifying
-that expressions in types are side-effect-free.
-
-Finally, we can check whether an integer value satisfies any of the constraints:
 \begin{mathpar}
 \inferrule[int\_wellconstrained]{
   \vv \eqname \nvint(n)\\
-  i=1..k: \integerconstraintsatisfied(\env, \vc_i, n) \evalarrow (\vb_i, \vg_i) \OrDynError\\\\
+  i=1..k: \isconstaintsat(\env, \vc_i, n) \evalarrow (\vb_i, \vg_i) \OrDynError\\\\
   \vb \eqdef \bigvee_{i=1}^k \vb_i\\
   \vg \eqdef \parallel_{i=1}^k \vg_i
 }{
@@ -2509,11 +2488,20 @@ Finally, we can check whether an integer value satisfies any of the constraints:
 \end{mathpar}
 
 \begin{mathpar}
+\inferrule[bits]{
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\vvp, \vg) \OrDynError
+}{
+  \isvaloftype(\env, \overname{\nvbitvector(\vbits)}{\vv}, \overname{\TBits(\ve, \Ignore)}{\vt}) \evalarrow
+  (\overname{\vvp = |\vbits|}{\vb}, \vg)
+}
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[tuple]{
   i=1..k: \getindex(i, \vv) \evalarrow \vu_i\\
   i=1..k: \isvaloftype(\env, \vu_i, \vt_i) \evalarrow (\vb_i, \vg_i) \OrDynError\\\\
   \vb \eqdef \bigwedge_{i=1}^k \vb_i \\
-  \vg \eqdef \parallel_{i=1}^k \vg_i
+  \vg \eqdef\ \parallelcomp_{i=1}^k \vg_i
 }{
   \isvaloftype(\env, \vv, \overname{\TTuple(i=1..k: \vt_i)}{\vt}) \evalarrow (\vb, \vg)
 }
@@ -2531,6 +2519,64 @@ cannot appear as a type, since ASL syntax does not allow the following:
 \item Declaring an alias to an parameterized integer type, and
 \item Declaring an parameterized integer in a compound type.
 \end{itemize}
+
+\subsubsection{SemanticsRule.IsConstraintSat}
+\hypertarget{def-isconstraintsat}{}
+The helper relation
+\[
+  \isconstaintsat(\overname{\envs}{\env} \aslsep \overname{\intconstraint}{\vc} \aslsep \overname{\Z}{n}) \;\aslrel\;
+  (\overname{\Bool}{\vb} \times \overname{\XGraphs}{\vg})
+\]
+tests whether the integer value $n$ \emph{satisfies the constraint} $\vc$
+(that is, whether $n$ is within the range of values defined by $\vc$) in the environment $\env$
+and returns a Boolean answer $\vb$ and the execution graph $\vg$ resulting from evaluating
+the expressions appearing in $\vc$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{Constraint\_Exact\_Sat}):
+  \begin{itemize}
+    \item $\vc$ is a constraint for the expression $\ve$;
+    \item evaluating the side-effect-free expression $\ve$ in $\env$ yields the \concurrentnativevalue\ given
+          by the native integer value for $m$ and the \executiongraph\ $\vg$\ProseOrError.
+    \item \Proseeqdef{$\vb$}{$\True$ if and only if $m$ is equal to $n$}.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{Constraint\_Range\_Sat}):
+  \begin{itemize}
+    \item $\vc$ is a constraint for the expressions $\veone$ and $\vetwo$;
+    \item evaluating the side-effect-free expression $\veone$ in $\env$ yields the \concurrentnativevalue\ given
+          by the native integer value for $a$ and the \executiongraph\ $\vgone$\ProseOrError.
+    \item evaluating the side-effect-free expression $\vetwo$ in $\env$ yields the \concurrentnativevalue\ given
+          by the native integer value for $b$ and the \executiongraph\ $\vgtwo$\ProseOrError.
+    \item \Proseeqdef{$\vb$}{$\True$ if and only if $n$ is greater or equal to $a$ and less than or equal to $b$};
+    \item \Proseeqdef{$\vg$}{the parallel composition of $\vgone$ and $\vgtwo$}.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+The use of $\evalexprsef$ is justified by checks in $\annotatetype$, verifying
+that expressions appearing in types are all side-effect-free.
+
+\begin{mathpar}
+\inferrule[Constraint\_Exact\_Sat]{
+  \evalexprsef{\env, \ve} \evalarrow (\nvint(m), \vg) \OrDynError
+}{
+  \isconstaintsat(\env, \overname{\constraintexact(\ve)}{\vc}, n) \evalarrow (\overname{m = n}{\vb}, \vg)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[Constraint\_Range\_Sat]{
+  \evalexprsef{\env, \veone} \evalarrow (\nvint(a), \vgone) \OrDynError\\\\
+  \evalexprsef{\env, \vetwo} \evalarrow (\nvint(b), \vgtwo) \OrDynError\\\\
+  \vb \eqdef \choice{a \leq n \wedge n \leq b}{\True}{\False}\\
+  \vg \eqdef \vgone \parallelcomp \vgtwo
+}{
+  \isconstaintsat(\env, \overname{\constraintrange(\veone, \vetwo)}{\vc}, n) \evalarrow (\vb, \vg)
+}
+\end{mathpar}
 
 \section{Pattern Matching Expressions\label{sec:PatternMatchingExpressions}}
 The binary operator $\Tin$ tests whether a value (referred to as the discriminant) matches any item from a $\Npatternset$.

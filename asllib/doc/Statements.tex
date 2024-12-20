@@ -628,7 +628,7 @@ One of the following applies:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[none]{
-  \annotatelocaldeclitem{\tenv, \vte, \ldk, \langle\vep\rangle, \ldi} \typearrow \newtenv \OrTypeError
+  \annotatelocaldeclitem(\tenv, \vte, \ldk, \langle\vep\rangle, \ldi) \typearrow \newtenv \OrTypeError
 }{
   \annotatelocaldecltypeannot(\tenv, \None, \vte, \ldk, \vep, \ldi) \typearrow (\newtenv, \overname{\None}{\tyoptp}, \overname{\emptyset}{\vses})
 }
@@ -640,7 +640,7 @@ One of the following applies:
   \inheritintegerconstraints(\vt, \vtep) \typearrow \vtp \OrTypeError \\
   \annotatetype{\tenv, \vtp} \typearrow (\vtpp, \vses) \OrTypeError\\\\
   \checkcanbeinitializedwith(\tenv, \vtpp, \vte) \typearrow \True \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vtpp, \ldk, \langle \vep \rangle, \ldip} \typearrow \newtenv \OrTypeError
+  \annotatelocaldeclitem(\tenv, \vtpp, \ldk, \langle \vep \rangle, \ldip) \typearrow \newtenv \OrTypeError
 }{
   \annotatelocaldecltypeannot(\tenv, \langle\vt\rangle, \vte, \ldk, \vep, \ldi) \typearrow (\newtenv, \overname{\langle\vtpp\rangle}{\tyoptp}, \vses)
 }
