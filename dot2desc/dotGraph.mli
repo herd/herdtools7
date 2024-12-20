@@ -18,7 +18,7 @@ module Edge : sig
   type t = {
     left: string;
     right: string;
-    desc: string;
+    desc: string -> string -> string;
   }
 end
   

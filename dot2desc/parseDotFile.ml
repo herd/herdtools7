@@ -28,7 +28,7 @@ end = struct
     let lexbuf = Lexing.from_channel channel in
     try
       let graphs = DotParser.main DotLexer.token lexbuf in
-      List.map DotGraph.tr graphs
+      List.map (fun g -> DotGraph.tr g) graphs
     with
     | DotParser.Error ->
       Printf.eprintf "Syntax error at position %d\n" (Lexing.lexeme_start lexbuf);
