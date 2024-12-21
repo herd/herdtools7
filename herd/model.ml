@@ -81,6 +81,7 @@ module type Config = sig
   val through : through
   val debug : bool
   val debug_files : bool
+  val profile: bool
   val verbose : int
   val skipchecks : StringSet.t
   val strictskip : bool

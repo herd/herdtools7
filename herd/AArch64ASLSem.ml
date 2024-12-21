@@ -1138,6 +1138,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         let bell_model_info = None
         let debug = ASLConf.debug.Debug_herd.barrier
         let debug_files = ASLConf.debug.Debug_herd.files
+        let profile = ASLConf.debug.Debug_herd.profile_cat
         let showsome = true
         let skipchecks = StringSet.empty
         let strictskip = true

@@ -29,6 +29,7 @@ type t = {
   mixed : bool ;
   files : bool ;
   timeout : bool ;
+  profile_cat: bool ;
   exc : bool ;  }
 
 val none : t
