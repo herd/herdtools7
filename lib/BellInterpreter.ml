@@ -39,6 +39,7 @@ module Make (C: Config) = struct
       let showsome = false
       let debug = C.debug
       let debug_files = C.debug_files
+      let profile = false
       let verbose = C.verbose
       let skipchecks = StringSet.empty
       let strictskip = false
