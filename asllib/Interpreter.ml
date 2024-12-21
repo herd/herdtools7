@@ -447,6 +447,28 @@ module Make (B : Backend.S) (C : Config) = struct
         | NotFound -> fatal_from e @@ Error.UndefinedIdentifier x)
         |: SemanticsRule.EVar
     (* End *)
+    | E_Binop (((BAND | BOR | IMPL) as op), e1, e2)
+      when is_simple_expr e1 && is_simple_expr e2 ->
+        let*= v1 = eval_expr_sef env e1 in
+        if B.is_undetermined v1 then
+          let* v2 = eval_expr_sef env e2 in
+          let* v = B.binop op v1 v2 in
+          return_normal (v, env)
+        else
+          (* This is equivalent to the non-optimised case, but we can't use the
+             syntactic sugar trick used in the following cases as we can't
+             reconstruct an expression from a value. *)
+          let eval_e2 () = eval_expr_sef env e2 in
+          let ret_true () = m_true and ret_false () = m_false in
+          let on_true, on_false =
+            match op with
+            | BAND -> (eval_e2, ret_false)
+            | BOR -> (ret_true, eval_e2)
+            | IMPL -> (eval_e2, ret_true)
+            | _ -> assert false
+          in
+          let* v = B.ternary v1 on_true on_false in
+          return_normal (v, env)
     (* Begin EvalBinopAnd *)
     | E_Binop (BAND, e1, e2) ->
         (* if e1 then e2 else false *)
