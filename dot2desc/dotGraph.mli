@@ -23,7 +23,7 @@ module Edge : sig
 end
   
 module Node : sig
-  type kind =  Mem | Reg_Data | Branching | Reg_Other
+  type kind = Fault | Mem | Reg_Data | Branching | Reg_Other
   type t = {
     desc: string;
     kind: kind;
