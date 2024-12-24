@@ -26,11 +26,23 @@ let mem_read loc reg =
 let mem_write loc reg =
   Printf.sprintf "\\ExpMWEof{\\memlocAddrBy{%s}{%s}}" loc reg
 
+let tag_read loc reg =
+  Printf.sprintf "\\ImpTagMREof{\\taglocOf{%s}{\\memlocAddrBy{%s}{%s}}}" loc loc reg
+
+let tag_write loc reg =
+  Printf.sprintf "\\ImpTagMWEof{\\taglocOf{%s}{\\memlocAddrBy{%s}{%s}}}" loc loc reg
+
 let reg_read reg =
   Printf.sprintf "\\RREof{%s}" reg
 
 let reg_write reg =
   Printf.sprintf "\\RWEof{%s}" reg
+
+let mte_cond loc reg =
+  Printf.sprintf "\\iseqCheck{\\allocTagOf{%s}}{\\logAddrTagIn{%s}}" loc reg
+
+let instr_cond cond =
+  Printf.sprintf "\\cond{%s}" cond
 
 let eq_contents lhs rhs =
   Printf.sprintf "\\eqContentsCheck{%s}{%s}" lhs rhs
@@ -40,6 +52,12 @@ let neq_contents lhs rhs =
 
 let branching cond =
   Printf.sprintf "\\IntrBranching{%s}" cond
+
+let fault name =
+  Printf.sprintf "\\genericFault{%s}" name
+
+let exc_entry name =
+  Printf.sprintf "\\genericExcEntry{%s}" name
 
 let iico_data e1 e2 =
   Printf.sprintf "\\iicodata{%s}{%s}" e1 e2

@@ -23,10 +23,18 @@ val reg: string -> string
 (* location -> address register -> description *)
 val mem_read: string -> string -> string
 val mem_write: string -> string -> string
+val tag_read: string -> string -> string
+val tag_write: string -> string -> string
 
 (* register -> description *)
 val reg_read: string -> string
 val reg_write: string -> string
+
+(* location -> register -> description *)
+val mte_cond: string -> string -> string
+
+(* condition -> description *)
+val instr_cond: string -> string
 
 (* lhs -> rhs -> description *)
 val eq_contents: string -> string -> string
@@ -34,6 +42,10 @@ val neq_contents: string -> string -> string
 
 (* condition -> description *)
 val branching: string -> string
+
+(* name -> description *)
+val fault: string -> string
+val exc_entry: string -> string
 
 (* Map from edge name to description *)
 val edges: (string -> string -> string) StringMap.t
