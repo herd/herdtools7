@@ -127,9 +127,9 @@ integers, Booleans, real numbers, bitvectors, and strings.
  & \hypertarget{ast-lstring}{}
 \\
  |\ & \lstring(\overname{S}{S \in \{C \;|\; \texttt{"$C$"}\ \in\ \Strings\}}) &
-\\
- |\ & \llabel(\overname{l}{\identifier}, \overname{n}{\N})
- & \hypertarget{ast-llabel}{}
+ \hypertarget{ast-llabel}{} \\
+ |\ & \llabel(\overname{l}{\identifier})
+ & \\
 \end{flalign*}
 
 \subsection{Basic Operations\label{sec:BasicOperations}}
@@ -369,17 +369,6 @@ The type of array indices is given by the following AST type:
 \arrayindex \derives\ &  \ArrayLengthExpr(\overtext{\expr}{array length}) &
 \end{flalign*}
 
-% \[
-%   \begin{array}{rcl}
-%     & & \ASTComment{The type of indexes for an array.}  \\
-%     \hline
-%     \arrayindex & \derives
-%       & \ArrayLengthExpr(\overtext{\expr}{array length})
-%       \hypertarget{ast-arraylengthenum}{}\\
-%     &|& \ArrayLengthEnum(\overtext{\identifier}{name of enumeration}, \overtext{\Z}{length}) \\
-%   \end{array}
-% \]
-
 \subsection{Fields and Typed Identifiers \label{sec:FieldsAndTypedIdentifiers}}
 
 The following rule corresponds to a field of a record-like structure:
@@ -574,14 +563,26 @@ Declaration keyword for global storage elements:
 The derivation rules for the typed abstract syntax are the same as the rules for the untyped abstract syntax,
 except for the following differences.
 
-The rules for expressions have the following extra derivation rule:
+The rules for expressions have the following extra derivation rules:
 \hypertarget{ast-earray}{}
 \begin{flalign*}
-\expr \derives\ & \EArray \{\EArrayLength: \expr, \EArrayValue: \expr\} &
+\expr \derives\ & \EArray \{\EArrayLength: \expr, \EArrayValue: \expr\} & \hypertarget{ast-eenumarray}{}\\
+             |\ & \EEnumArray \{\EArrayLabels: \identifier^+, \EArrayValue: \expr\} & \hypertarget{ast-egetenumarray}{}\\
+             |\ & \EGetEnumArray(\overtext{\expr}{base}, \overtext{\expr}{key}) & \hypertarget{ast-esetenumarray}{}\\
+             |\ & \LESetEnumArray(\overtext{\lexpr}{base}, \overtext{\expr}{value}) &\\
 \end{flalign*}
 
-$\EArray\{\EArrayLength: \veone, \EArrayValue: \vetwo\}$ is used to construct an array value
-in order to initialize an array-typed variable.
+Their use is as follows:
+\begin{itemize}
+\item $\EArray\{\EArrayLength: \veone, \EArrayValue: \vetwo\}$ is used to construct an integer-indexed array value
+in order to initialize an array-typed variable;
+\item $\EEnumArray\{\EArrayLabels: \vl_{1..k}, \EArrayValue: \vetwo\}$ is used to construct an enumeration-indexed
+array value in order to initialize an array-typed variable;
+\item $\EGetEnumArray(\ebase, \ekey)$ is used for accessing an enumerated array given by $\ebase$ at the entry
+      given by $\ekey$;
+\item $\LESetEnumArray(\ebase, \evalue)$ is used for updating an enumerated array left-hand-side expression given
+      by $\ebase$ with the value given by $\evalue$;
+\end{itemize}
 
 The rules for statements exclude \texttt{case} statements, since those are transformed into
 conditional statements (see \nameref{sec:TypingRule.DesugarCaseStmt}).
@@ -605,14 +606,14 @@ for \SliceLength.
 The following extra rule enables expressing array indices based on enumeration:
 \hypertarget{ast-arraylengthenum}{}
 \begin{flalign*}
-\arrayindex \derives\ &  \ArrayLengthEnum(\overtext{\identifier}{name of enumeration}, \overtext{\Z}{length}) &
+\arrayindex \derives\ &  \ArrayLengthEnum(\overtext{\identifier}{name of enumeration}, \overtext{\identifier^+}{enumeration labels}) &
 \end{flalign*}
 
 In the \untypedast, the $\globaldecl$ child node in the abstract syntax nodes of the form $\DGlobalStorage(\globaldecl)$
 contains an optional expression field assigned to the $\GDinitialvalue$ field. In the \typedast, this field
 always contains an expression (that is, it is never $\None$).
 
-Global pragma declarations $\DPragma$ are removed from the \untypedast once their expressions have been type checked and do not appear in the \typedast.
+Global pragma declarations $\DPragma$ are removed from the \untypedast\ once their expressions have been type checked and do not appear in the \typedast.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Building Abstract Syntax Trees\label{sec:BuildingAbstractSyntaxTrees}}

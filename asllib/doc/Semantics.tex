@@ -143,7 +143,8 @@ We define the following shorthands for \nativevalue\ literals:
 \begin{array}{rcl}
 \nvint(z)       &\triangleq& \nvliteral{\lint(z)}           \hypertarget{def-nvbool}{}\\
 \nvbool(b)      &\triangleq& \nvliteral{\lbool(b)}          \hypertarget{def-nvreal}{}\\
-\nvreal(r)      &\triangleq& \nvliteral{\lreal(r)}          \hypertarget{def-nvstring}{}\\
+\nvreal(r)      &\triangleq& \nvliteral{\lreal(r)}          \hypertarget{def-nvlabel}{}\\
+\nvlabel(l)     &\triangleq& \nvliteral{\llabel(l)}         \hypertarget{def-nvstring}{}\\
 \nvstring(s)    &\triangleq& \nvliteral{\lstring(s)}        \hypertarget{def-nvbitvector}{}\\
 \nvbitvector(v) &\triangleq& \nvliteral{\lbitvector(v)}\\
 \end{array}
@@ -156,6 +157,7 @@ We define the following types of \nativevalues:
   \tint       &\triangleq& \{ \nvint(z) \;|\; z \in \Z\}                                        \hypertarget{def-tbool}{}\\
   \tbool      &\triangleq& \{ \nvbool(\True), \nvbool(\False) \}                                \hypertarget{def-treal}{}\\
   \treal      &\triangleq& \{ \nvreal(r) \;|\; r \in \Q\}                                       \hypertarget{def-tstring}{}\\
+  \tlabel     &\triangleq& \{ \nvlabel(l) \;|\; l \in \identifier\}                             \hypertarget{def-tlabel}{}\\
   \tstring    &\triangleq& \{ \nvstring(s) \;|\; s \in \Strings\}  \hypertarget{def-tbitvector}{}\\
   \tbitvector &\triangleq& \{ \nvbitvector(\textit{bits}) \;|\; \textit{bits} \in \{0,1\}^*\}   \hypertarget{def-tvector}{}\\
   \tvector    &\triangleq& \{ \nvvector{\textit{vals}} \;|\; \textit{vals} \in \vals^*\}        \hypertarget{def-trecord}{}\\

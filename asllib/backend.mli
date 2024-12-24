@@ -61,6 +61,10 @@ module type S = sig
   (** [v_to_int v] returns, if possible, an integer corresponding to the value.
       Should be called only on values of type integer. *)
 
+  val v_to_label : value -> string
+  (** [v_to_label v] returns the identifier of the label nested in the literal inside [v].
+      Should be called only on values of type [NV_Literal] where the literal is of type [L_Label]. *)
+
   (* Monadic operators *)
   (*-------------------*)
 
@@ -89,8 +93,8 @@ module type S = sig
   (** Monadic product operation, two monads are combined "in parallel".*)
 
   val appl_data : 'a m -> ('a -> 'b) -> 'b m
-  (** Applicative map. 
-  
+  (** Applicative map.
+
       Creates a data dependency between the output events and
       the input events of the argument in the resulting monad. *)
 

@@ -391,8 +391,8 @@ module Domain = struct
                 assert false (* Type error - should have been caught earlier. *)
           in
           expr_fold approx env f' e1 acc
-      | E_Array _ | E_GetArray _ | E_GetField _ | E_GetFields _ | E_GetItem _
-      | E_Record _ | E_Tuple _ ->
+      | E_Array _ | E_EnumArray _ | E_GetArray _ | E_GetEnumArray _
+      | E_GetField _ | E_GetFields _ | E_GetItem _ | E_Record _ | E_Tuple _ ->
           (* Not supported: aggregate types. *)
           assert_under approx acc
       | E_ATC (_, _) | E_Slice (_, _) | E_Pattern (_, _) | E_Call _ ->

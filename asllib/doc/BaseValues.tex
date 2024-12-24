@@ -100,12 +100,11 @@ One of the following applies:
 
     \item All of the following apply (\textsc{t\_array\_enum}):
     \begin{itemize}
-        \item $\vt$ is the array type over an enumerated index of $\vi$ labels and element type $\tty$, that is,
-              $\TArray(\ArrayLengthEnum(\Ignore, \vi), \tty)$ ;
+        \item $\vt$ is the enumerated array type over for the enumeration $\venum$ and labels $\vlabels$ and element type $\tty$,
+              that is, $\TArray(\ArrayLengthEnum(\venum, \vlabels), \tty)$ ;
         \item applying $\basevalue$ to $\tty$ in $\tenv$ yields the expression $\vvalue$\ProseOrTypeError;
-        \item define $\vlength$ as the literal integer expression for $\vi$;
-        \item $\veinit$ is the array construction expression with length expression $\vlength$ and value expression $\vvalue$,
-              that is, $\EArray\{\EArrayLength: \length, \EArrayValue: \vvalue\}$.
+        \item $\veinit$ is the array construction expression for an enumerated array with labels $\vlabels$ and initial value $\vvalue$,
+              that is, $\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \vvalue\}$.
     \end{itemize}
 
     \item All of the following apply (\textsc{t\_array\_expr}):
@@ -206,13 +205,12 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[t\_array\_enum]{
-    \basevalue(\tenv, \tty) \typearrow \vvalue \OrTypeError\\\\
-    \length \eqdef \elint{\vi}
+    \basevalue(\tenv, \tty) \typearrow \vvalue \OrTypeError
 }{
     {
         \begin{array}{r}
-            \basevalue(\tenv, \overname{\TArray(\ArrayLengthEnum(\Ignore, \vi), \tty)}{\vt}) \typearrow \\
-            \overname{\EArray\{\EArrayLength: \length, \EArrayValue: \vvalue\}}{\veinit}
+            \basevalue(\tenv, \overname{\TArray(\ArrayLengthEnum(\venum, \vlabels), \tty)}{\vt}) \typearrow \\
+            \overname{\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \vvalue\}}{\veinit}
         \end{array}
     }
 }
