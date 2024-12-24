@@ -245,7 +245,7 @@ module PPrint = struct
           (pp_comma_list pp_type_desc)
           li
     | BadField (s, ty) ->
-        fprintf f "ASL Error: There are no field '%s'@ on type %a." s pp_ty ty
+        fprintf f "ASL Error: There is no field '%s'@ on type %a." s pp_ty ty
     | MissingField (fields, ty) ->
         fprintf f
           "ASL Error: Fields mismatch for creating a value of type %a@ -- \

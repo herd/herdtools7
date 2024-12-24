@@ -136,7 +136,7 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotateliteral{\vv, \tenv} \typearrow \vt
+  \annotateliteral{\tenv, \vv} \typearrow \vt
 }{
   \annotateexpr{\tenv, \overname{\ELiteral(\vv)}{\ve}} \typearrow (\vt, \overname{\ELiteral(\vv)}{\newe}, \overname{\emptyset}{\vses})
 }
@@ -453,7 +453,7 @@ an error. Surrounding $\ve$ by parenthesis fixes the error.
 
 For example, \texttt{a + b + c} is considered legal, since the same binary operator (\texttt{+})
 is used, whereas \texttt{a + b - c} is considered illegal, since $\PLUS$ and $\MINUS$ have the
-same precedence ($3$). To fix this, we can surround one of the sub-expressions by parenthesis,
+same precedence ($3$). To fix this, we can surround one of the subexpressions by parenthesis,
 for example: \texttt{(a + b) - c}.
 
 \subsubsection{Prose}
@@ -1424,7 +1424,12 @@ All of the following apply:
   \item applying $\typeofarraylength$ to $\size$, to obtain the type of the array length, yields
         $\wantedtindex$;
   \item checking that $\tindexp$ \typesatisfies\ $\wantedtindex$ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item \Prosenonconflictingunion{$\vsesindex$ and $\vsesbase$}{$\vses$}.
+  \item \Prosenonconflictingunion{$\vsesindex$ and $\vsesbase$}{$\vses$};
+  \item \Proseeqdef{$\newe$}{
+    an access to an integer-indexed array for $\ebase$ and $\eindexp$, that is, $\EGetArray(\ebase, \eindexp)$ if $\size$ is an integer-typed array index,
+    and an access to an enumeration-indexed array for $\ebase$ and $\eindexp$, that is,\\
+    $\EGetEnumArray(\ebase, \eindexp)$ if $\size$ is an enumeration-typed array index.
+  }
 \end{itemize}
 
 \subsubsection{Formally}
@@ -1434,11 +1439,17 @@ All of the following apply:
   \typeofarraylength(\size) \typearrow \wantedtindex\\
   \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\\\
   \nonconflictingunion([\vsesindex, \vsesbase]) \typearrow \vses \OrTypeError\\\\
+  {
+    \newe \eqdef \begin{cases}
+      \EGetArray(\ebase, \eindexp)     & \text{if }\astlabel(\size) = \ArrayLengthExpr\\
+      \EGetEnumArray(\ebase, \eindexp) & \text{if }\astlabel(\size) = \ArrayLengthEnum
+    \end{cases}
+  }
 }{
   {
   \begin{array}{r}
   \annotategetarray(\tenv, (\size, \telem), (\ebase, \vsesbase, \eindex)) \typearrow\\
-  (\overname{\telem}{\vt}, \overname{\EGetArray(\ebase, \eindexp)}{\newe}, \vses)
+  (\overname{\telem}{\vt}, \newe, \vses)
   \end{array}
   }
 }

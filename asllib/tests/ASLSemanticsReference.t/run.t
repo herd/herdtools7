@@ -174,3 +174,4 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.SCond3.asl
   $ aslref SemanticsRule.SCond4.asl
   $ aslref SemanticsRule.STry.asl
+  $ aslref SemanticsRule.EGetEnumArray.asl

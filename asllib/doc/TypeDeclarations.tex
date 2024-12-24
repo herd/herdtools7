@@ -568,7 +568,12 @@ All of the following apply:
 \inferrule{
   \ids \eqname \id_{1..k}\\
   \tenv_0 \eqdef \tenv\\
-  \vi=1..k: \declareconst(\tenv_{\vi-1}, \id_\vi, \TNamed(\name), \llabel(\id_\vi, \vi-1)) \typearrow \tenv_{\vi} \OrTypeError
+  {
+  \begin{array}{r}
+    \vi=1..k: \declareconst(\tenv_{\vi-1}, \id_\vi, \TNamed(\name), \llabel(\id_\vi, \vi-1)) \typearrow \\
+    \tenv_{\vi} \OrTypeError
+  \end{array}
+  }
 }{
   \declareenumlabels(\tenv, \name, \ids) \typearrow \overname{\tenv_k}{\newtenv}
 }

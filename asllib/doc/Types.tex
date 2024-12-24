@@ -676,10 +676,10 @@ All of the following apply:
 \inferrule[expr\_is\_enum]{
   \annotatetype{\False, \tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \commonprefixline\\\\
-  \getvariableenum(\tenv, \ve) \typearrow \langle \vs, \vi \rangle\OrTypeError
+  \getvariableenum(\tenv, \ve) \typearrow \langle \vs, \vlabels \rangle\OrTypeError
 }{
   \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\AbbrevTArrayLengthExpr{\ve}{\vt}}{\tty}} \typearrow
-  (\overname{\AbbrevTArrayLengthEnum{\ve}{\vi}{\vtp}}{\newty}, \overname{\emptyset}{\vsest})
+  (\overname{\AbbrevTArrayLengthEnum{\ve}{\vlabels}{\vtp}}{\newty}, \overname{\emptyset}{\vsest})
 }
 \end{mathpar}
 
@@ -702,10 +702,11 @@ All of the following apply:
 The function
 \[
 \getvariableenum(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-\langle (\overname{\identifier}{\vx}, \overname{\N}{n})\rangle
+\langle (\overname{\identifier}{\vx}, \overname{\identifier^+}{\vlabels})\rangle
 \]
 tests whether the expression $\ve$ represents a variable of an enumeration type.
-If so, the result is $\vx$ --- the name of the variable and the number of labels defined for the enumeration type.
+If so, the result is $\vx$ --- the name of the variable and the list of labels $\vlabels$,
+declared for the enumeration type.
 Otherwise, the result is $\None$.
 
 \subsubsection{Prose}
@@ -728,8 +729,8 @@ One of the following applies:
   \begin{itemize}
     \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
     \item $\vx$ is associated with a type $\vt$ in the global environment of $\tenv$;
-    \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields an enumeration type with labels $\vli$\ProseOrTypeError;
-    \item the result is the pair consisting of $\vx$ and the length of $\vli$.
+    \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields an enumeration type with labels $\vlabels$\ProseOrTypeError;
+    \item the result is the pair consisting of $\vx$ and $\vlabels$.
   \end{itemize}
 
   \item All of the following apply (\textsc{declared\_not\_enum}):
@@ -761,9 +762,9 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[declared\_enum]{
   G^\tenv.\declaredtypes(\vx) = (\vt, \Ignore)\\
-  \makeanonymous(\tenv, \vt) \typearrow \TEnum(\vli) \OrTypeError
+  \makeanonymous(\tenv, \vt) \typearrow \TEnum(\vlabels) \OrTypeError
 }{
-  \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \langle(\vx, |\vli|)\rangle
+  \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \langle(\vx, \vlabels)\rangle
 }
 \end{mathpar}
 

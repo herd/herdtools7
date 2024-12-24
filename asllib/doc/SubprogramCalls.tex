@@ -584,9 +584,9 @@ One of the following applies:
 
   \item All of the following apply (\textsc{e\_slice}):
   \begin{itemize}
-    \item $\ve$ is the slicing expression for sub-expression $\veone$ and list of slices $\vslices$, that is, $\ESlice(\veone, \vslices)$;
+    \item $\ve$ is the slicing expression for subexpression $\veone$ and list of slices $\vslices$, that is, $\ESlice(\veone, \vslices)$;
     \item applying $\substexpr$ to $\veone$ in $\tenv$ yields $\veonep$;
-    \item define $\newe$ as slicing expression for sub-expression $\veonep$ and list of slices $\vslices$, that is, $\ESlice(\veonep, \vslices)$.
+    \item define $\newe$ as slicing expression for subexpression $\veonep$ and list of slices $\vslices$, that is, $\ESlice(\veonep, \vslices)$.
   \end{itemize}
 
   \item All of the following apply (\textsc{e\_tuple}):
@@ -604,8 +604,9 @@ One of the following applies:
           $\EArray\{\EArrayLength: \length, \EArrayValue: \vvalue\}$;
     \item applying $\substexpr$ to $\substs$ and $\length$ in $\tenv$ yields $\lengthp$;
     \item applying $\substexpr$ to $\substs$ and $\vvalue$ in $\tenv$ yields $\vvaluep$;
-    \item define $\newe$ as the array construction expression with length expression $\lengthp$ and value expression $\vvaluep$, that is,
-    $\EArray\{\EArrayLength: \lengthp, \EArrayValue: \vvaluep\}$.
+    \item define $\newe$ as the array construction expression with length expression \\
+          $\lengthp$ and value expression $\vvaluep$, that is, \\
+          $\EArray\{\EArrayLength: \lengthp, \EArrayValue: \vvaluep\}$.
   \end{itemize}
 
   \item All of the following apply (\textsc{e\_atc}):

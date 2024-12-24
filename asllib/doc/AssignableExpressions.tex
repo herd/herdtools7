@@ -810,7 +810,12 @@ All of the following apply:
   \item determining whether $\tindexp$ \typesatisfies\ $\wantedtindex$ in $\tenv$ yields \\
         $\True$\ProseOrTypeError;
   \item \Prosenonconflictingunion{$\vsesbase$ and $\vsesindex$}{$\vses$};
-  \item \Proseeqdef{$\newle$}{array update for $\ebasep$ at index $\eindexp$, that is, \\ $\LESetArray(\ebasep, \eindexp)$}.
+  \item \Proseeqdef{$\newle$}{
+    an integer-based array update for $\ebasep$ at index $\eindexp$, that is, \\ $\LESetArray(\ebasep, \eindexp)$,
+    if $\size$ is an integer-typed array index, and
+    an enumeration-based array update for $\ebasep$ at index $\eindexp$, that is, \\ $\LESetEnumArray(\ebasep, \eindexp)$,
+    if $\size$ is an enumeration-typed array index.
+    }
 \end{itemize}
 
 \subsubsection{Formally}
@@ -821,7 +826,14 @@ All of the following apply:
   \typeofarraylength(\tenv, \size) \typearrow \wantedtindex\\
   \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\\\
   \nonconflictingunion(\vsesbase, \vsesindex) \typearrow \vses \OrTypeError\\\\
-  \newle \eqdef \LESetArray(\ebasep, \eindexp)
+  \newleint \eqdef \LESetArray(\ebasep, \eindexp)\\
+  \newleenum \eqdef \LESetEnumArray(\ebasep, \eindexp)\\
+  {
+  \newle \eqdef \begin{cases}
+    \newleint & \text{if }\astlabel(\size) = \ArrayLengthExpr\\
+    \newleenum & \text{if }\astlabel(\size) = \ArrayLengthEnum\\
+  \end{cases}
+  }
 }{
   {
   \begin{array}{r}

@@ -91,8 +91,11 @@ module NativeBackend (C : Config) = struct
 
   let v_to_int = function
     | NV_Literal (L_Int z) -> Some (Z.to_int z)
-    | NV_Literal (L_Label (_, i)) -> Some i
     | _ -> None
+
+  let v_to_label = function
+    | NV_Literal (L_Label (l, _)) -> l
+    | _ -> assert false
 
   let bind (vm : 'a m) (f : 'a -> 'b m) : 'b m = f vm
   let prod_par (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = (r1, r2)
@@ -430,21 +433,23 @@ let rec unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef ty =
   match ty.desc with
   | T_Real | T_String | T_Bool | T_Bits _ | T_Int _ ->
       unknown_of_singular_type ~eval_expr_sef ty
-  | T_Array (length, t) ->
-      let n =
-        match length with
-        | ArrayLength_Enum (_, i) ->
-            assert (i >= 0);
-            i
-        | ArrayLength_Expr e -> (
-            match eval_expr_sef e with
-            | NV_Literal (L_Int n) ->
-                let n = Z.to_int n in
-                if n >= 0 then n
-                else Error.(fatal_from ty (UnsupportedExpr (Dynamic, e)))
-            | _ -> (* Bad types *) assert false)
-      in
-      NV_Vector (List.init n (fun _ -> unknown_of_type t))
+  | T_Array (length, t_elem) -> (
+      match length with
+      | ArrayLength_Expr e -> (
+          match eval_expr_sef e with
+          | NV_Literal (L_Int n) ->
+              let n = Z.to_int n in
+              if n >= 0 then
+                NV_Vector (List.init n (fun _ -> unknown_of_type t_elem))
+              else Error.(fatal_from ty (UnsupportedExpr (Dynamic, e)))
+          | _ -> (* Bad types *) assert false)
+      | ArrayLength_Enum (_enum, labels) ->
+          let fields =
+            List.map
+              (fun field_name -> (field_name, unknown_of_type t_elem))
+              labels
+          in
+          NV_Record (IMap.of_list fields))
   | T_Record fields | T_Exception fields ->
       fields
       |> List.map (fun (field_name, t) -> (field_name, unknown_of_type t))

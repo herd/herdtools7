@@ -110,7 +110,7 @@ let pp_literal f = function
       fprintf f "(%a.0 / %a.0)" Z.pp_print (Q.num r) Z.pp_print (Q.den r)
   | L_BitVector bv -> Bitvector.pp_t f bv
   | L_String s -> fprintf f "%S" s
-  | L_Label (s, _) -> fprintf f "%S" s
+  | L_Label (l, _) -> fprintf f "%s" l
 
 let rec pp_expr f e =
   match e.desc with
@@ -128,7 +128,9 @@ let rec pp_expr f e =
         args
   | E_Slice (e, args) ->
       fprintf f "@[<hov 2>%a[%a]@]" pp_expr e pp_slice_list args
-  | E_GetArray (e1, e2) -> fprintf f "@[<hov 2>%a[%a]@]" pp_expr e1 pp_expr e2
+  | E_GetArray (e1, e2) -> fprintf f "@[<hov 2>%a[[%a]]@]" pp_expr e1 pp_expr e2
+  | E_GetEnumArray (e1, e2) ->
+      fprintf f "@[<hov 2>%a[[%a]]@]" pp_expr e1 pp_expr e2
   | E_Cond (e1, e2, e3) ->
       fprintf f "@[<hv>@[<h>if %a@ then@]@;<1 2>%a@ else@;<1 2>%a@]" pp_expr e1
         pp_expr e2 pp_expr e3
@@ -142,6 +144,8 @@ let rec pp_expr f e =
   | E_Tuple es -> fprintf f "@[<hv 2>(%a)@]" pp_expr_list es
   | E_Array { length; value } ->
       fprintf f "@[<hv 2>array[%a] of %a@]" pp_expr length pp_expr value
+  | E_EnumArray { enum; value } ->
+      fprintf f "@[<hv 2>array[%s] of %a@]" enum pp_expr value
   | E_Arbitrary ty -> fprintf f "@[<h>ARBITRARY :@ %a@]" pp_ty ty
   | E_Pattern (e, p) -> fprintf f "@[<hv 2>%a@ IN %a@]" pp_expr e pp_pattern p
 
@@ -189,8 +193,8 @@ and pp_ty f t =
   | T_Tuple ty_list -> fprintf f "@[(%a)@]" (pp_comma_list pp_ty) ty_list
   | T_Array (ArrayLength_Expr e, elt_type) ->
       fprintf f "@[array [%a] of %a@]" pp_expr e pp_ty elt_type
-  | T_Array (ArrayLength_Enum (s, _), elt_type) ->
-      fprintf f "@[array [%s] of %a@]" s pp_ty elt_type
+  | T_Array (ArrayLength_Enum (enum, _), elt_type) ->
+      fprintf f "@[array [%s] of %a@]" enum pp_ty elt_type
   | T_Record record_ty ->
       fprintf f "@[<hv 2>record {@ %a@;<1 -2>}@]" pp_fields record_ty
   | T_Exception record_ty ->
@@ -234,7 +238,8 @@ let rec pp_lexpr f le =
   match le.desc with
   | LE_Var x -> pp_print_string f x
   | LE_Slice (le, args) -> fprintf f "%a[%a]" pp_lexpr le pp_slice_list args
-  | LE_SetArray (le, e) -> fprintf f "%a[%a]" pp_lexpr le pp_expr e
+  | LE_SetArray (le, e) -> fprintf f "%a[[%a]]" pp_lexpr le pp_expr e
+  | LE_SetEnumArray (le, e) -> fprintf f "%a[[%a]]" pp_lexpr le pp_expr e
   | LE_SetField (le, x) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
   | LE_SetFields (le, li, _) ->
       fprintf f "@[%a@,.@[[%a]@]@]" pp_lexpr le
