@@ -37,6 +37,8 @@ module type S = sig
 
   val same_oa : t -> t -> bool
 
+  val readable : bool -> t -> bool
+
   (* Value specifies a writable page *)
   val writable : bool -> bool -> t -> bool
 
@@ -50,6 +52,7 @@ module type S = sig
   val as_physical : t -> string option
   val as_flags : t -> string option
   val attrs_as_kvm_symbols : t -> string list
+  val init_needs_cmo : t -> t list -> bool
 end
 
 module No = struct
@@ -70,6 +73,7 @@ module No = struct
     let is_af _ = false
 
     let same_oa _ _ = false
+    let readable _ _ = false
     let writable _ _ _ = false
     let get_attrs _ = []
 
@@ -79,6 +83,7 @@ module No = struct
     let as_physical _ = None
     let as_flags _ = None
     let attrs_as_kvm_symbols _ = assert false
+    let init_needs_cmo _ _ = assert false
 end
 
 module ASL = No

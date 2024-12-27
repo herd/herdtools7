@@ -20,6 +20,10 @@ inline static void cache_flush(void *p) {
 #endif
 }
 
+inline static void cache_clean(void *p) {
+    asm __volatile__ ("dc cvac,%[p]" :: [p] "r" (p) : "memory");
+}
+
 inline static void cache_touch(void *p) {
   asm __volatile__ ("prfm pldl1keep,[%[p]]" :: [p] "r" (p) : "memory");
 }

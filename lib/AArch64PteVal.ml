@@ -75,6 +75,8 @@ module Attrs = struct
         [sprintf "attr_Normal_i%s_o%s" (pp_ch ich) (pp_ch och); "attr_" ^ (pp_sh sh)]
       | _ -> Warn.user_error "Memory attribute not supported in kvm-unit-tests"
 
+    let is_cacheable {ich; och; _ } = not (ich=NC && och=NC)
+
   end
 
   module DeviceAttrs = struct
@@ -102,6 +104,9 @@ module Attrs = struct
       match a with
       | GRE | NGnRE | NGnRnE -> ["attr_Device_" ^ (pp_attr a)]
       | _ -> Warn.user_error "Device attribute not supported in kvm-unit-tests"
+
+    let is_cacheable _ = false
+
   end
 
   type t = Normal of NormalAttrs.t | Device of DeviceAttrs.t
@@ -143,6 +148,10 @@ module Attrs = struct
   let as_kvm_symbols = function
     | Normal n -> NormalAttrs.as_kvm_symbols n
     | Device d -> DeviceAttrs.as_kvm_symbols d
+
+  let is_cacheable = function
+    | Normal n -> NormalAttrs.is_cacheable n
+    | Device d -> DeviceAttrs.is_cacheable d
 end
 
 
@@ -171,8 +180,14 @@ and same_oa {oa=oa1; _} {oa=oa2; _} = OutputAddress.eq oa1 oa2
 
 (* *)
 let writable ha hd p =
+  (p.valid <> 0) &&
   (p.af <> 0 || ha) && (* access allowed *)
   (p.db <> 0 || (p.dbm <> 0 && hd)) (* write allowed *)
+
+let readable ha p =
+  (p.valid <> 0) &&
+  (p.af <> 0 || ha) (* access allowed *)
+
 
 let get_attrs {attrs;_ } = Attrs.as_list attrs
 
@@ -343,3 +358,7 @@ let as_flags p =
 
 let attrs_as_kvm_symbols p =
   Attrs.as_kvm_symbols p.attrs
+
+let init_needs_cmo p0 l =
+  let cacheable = List.exists (fun p -> (same_oa p0 p) && (Attrs.is_cacheable p.attrs)) l in
+  not cacheable
