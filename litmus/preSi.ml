@@ -1509,6 +1509,15 @@ module Make
         let vss = List.map2 (@) rems vs in
         List.combine rems (responsible vss)
 
+      let memattrs_change a pte_init =
+        match Misc.Simple.assoc_opt a pte_init with
+        | Some (V (_,pteval)) when not (A.V.PteVal.is_default pteval) -> begin
+            match A.V.PteVal.get_attrs pteval with
+            | _::_ -> true
+            | [] -> false
+        end
+        | _ -> false
+
       let dump_run_thread procs_user faults
           pte_init env test _some_ptr stats global_env
           (_vars,inits) (proc,(out,(_outregs,envVolatile)))  =
@@ -1575,7 +1584,8 @@ module Make
                 end
             | _ ->
                 O.fii "%s;" (U.do_store at (sprintf "*%s" a) (pp_const v)) ;
-                if Cfg.is_kvm then O.fii "litmus_flush_tlb((void *)%s);" a)
+                if Cfg.is_kvm then
+                  O.fii "litmus_flush_tlb((void *)%s);" a)
           inits ;
 (*        eprintf "%i: INIT {%s}\n" proc (String.concat "," inits) ; *)
         (* And cache-instruct them *)
@@ -1583,10 +1593,10 @@ module Make
           O.oii "barrier_wait(_b);" ;
           List.iter
             (fun addr ->
-              O.fii "if (_p->%s == ctouch) cache_touch((void *)%s);"
-                (pctag (proc,addr)) addr ;
-              O.fii "else if (_p->%s == cflush) cache_flush((void *)%s);"
-                (pctag (proc,addr)) addr)
+               O.fii "if (_p->%s == ctouch) cache_touch((void *)%s);"
+                 (pctag (proc,addr)) addr ;
+               O.fii "else if (_p->%s == cflush) cache_flush((void *)%s);"
+                 (pctag (proc,addr)) addr )
             addrs
         end ;
         let mem_map =
@@ -1611,6 +1621,16 @@ module Make
                   | V (o,pteval) ->
                       let is_default = A.V.PteVal.is_default pteval in
                       if not (o = None && is_default) then begin
+                        (* Initialisation happens before we change the memory
+                           attributes. Clean the cache to make sure we don't
+                           create the conditions for mismatched memory
+                           attributes accidentally. *)
+                        match A.V.PteVal.get_attrs pteval with
+                        | _::_ when not is_default ->
+                          assert have_cache ;
+                          O.fii "cache_flush((void *)%s);" x
+                        | _ ->
+                          () ;
                         let arg = match o with
                         | None -> sprintf "_vars->saved_pte_%s" x
                         | Some s -> sprintf "_vars->saved_pte_%s" s in
@@ -1672,6 +1692,16 @@ module Make
                 inits in
           List.iter
             (fun a ->
+               (* We check the final value of a location using the
+                  default memory attributes. For locations that might
+                  have been written to with memory attributes other
+                  than the default, we clean the cache to make sure we
+                  don't create the conditions for mismatched memory
+                  attributes accidentally. *)
+              if memattrs_change a pte_init then begin
+                assert have_cache ;
+                O.fii "cache_flush((void *)%s);" a
+              end ;
               let pte = OutUtils.fmt_pte_kvm a
               and phy = OutUtils.fmt_phy_kvm a in
               let rhs =
