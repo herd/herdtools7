@@ -22,6 +22,10 @@ inline static void cache_flush(void *p) {
 }
 
 
+inline static void cache_clean(void *p) {
+  asm __volatile__ ("clflush 0(%[p])" :: [p] "r" (p) : "memory");
+}
+
 inline static void cache_touch(void *p) {
   asm __volatile__ ("prefetcht0 0(%[p])" :: [p] "r" (p) : "memory");
 }
