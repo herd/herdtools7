@@ -11,7 +11,7 @@ static void record_fault(who_t *w, unsigned long pc, unsigned long esr) {
 
   flt.instr_symb = get_instr_symb_id(lbls, (ins_t *)pc);
   if (get_far(esr, &far)) {
-    flt.data_symb = idx_addr((intmax_t *)far, vars_ptr[w->instance]);
+    flt.data_symb = idx_addr((intmax_t *)untagged(far), vars_ptr[w->instance]);
   } else {
     flt.data_symb = DATA_SYMB_ID_UNKNOWN;
   }
