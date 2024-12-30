@@ -1,5 +1,5 @@
 AArch64 str failure
-{ 0:x0=x; int x = 42 }
+{ 0:x0=pac(x,da,42); int x = 42 }
 P0;
   ldr x1,[x0];
 exists

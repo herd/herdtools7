@@ -1,0 +1,6 @@
+AArch64 A11.litmus
+{ 0:x0=pac(x, da, 42, 7) }
+P0         ;
+xpaci x0   ;
+forall
+(0:x0=x)

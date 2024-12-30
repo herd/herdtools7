@@ -21,8 +21,7 @@ type cap = Int64.t
 type offset = int
 
 (* Symbolic implementation of `FEAT_Pauth2` and `FEAT_CONSTPACFIELD`
- * Allow to manipulate the PAC field of a virtual address assumming that `pac`
- * is a one way function (this implementation ignore collisions).
+ * Also add a type of solver state to reason about hash collisions
  *)
 module PAC : sig
   (* Symbolic type for Pointer Authentication Codes *)
@@ -141,6 +140,13 @@ val eq :
     ('pte -> 'pte -> bool) ->
         ('instr -> 'instr -> bool) ->
           ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t -> bool
+
+(* Return if the collision of two PAC fields can implies equality of the two
+   syntactically differents constants *)
+val collision :
+  ('scalar, 'pte, 'instr) t ->
+    ('scalar, 'pte, 'instr) t ->
+      (PAC.t * PAC.t) option
 
 (* New style: PTE(s), PHY(s), etc. *)
 val pp :

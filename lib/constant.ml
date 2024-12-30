@@ -172,7 +172,6 @@ module PAC = struct
       if List.length state.inequalities > 32767
       then Warn.user_error "too many inequalities to be sound"
       else Some {state with inequalities = inequality :: state.inequalities}
-
 end
 
 
@@ -232,6 +231,18 @@ let symbolic_data_eq s1 s2 =
   && Int64.equal s1.cap s2.cap
   && Misc.int_eq s1.offset s2.offset
   && PAC.equal s1.pac s2.pac
+
+(* Return if two symbolic address are syntatically differents and can be equals
+ modulo a hash collision between two pac fields *)
+let symbolic_data_collision s1 s2 =
+  if
+    Misc.string_eq s1.name s2.name
+    && Misc.opt_eq Misc.string_eq s1.tag s2.tag
+    && Int64.equal s1.cap s2.cap
+    && Misc.int_eq s1.offset s2.offset
+    && not (PAC.equal s1.pac s2.pac)
+  then Some (s1.pac, s2.pac)
+  else None
 
 type syskind = PTE|PTE2|TLB
 type tagkind = PHY|VIR
@@ -431,6 +442,14 @@ let rec eq scalar_eq pteval_eq instr_eq c1 c2 = match c1,c2 with
   | (Label _,(Concrete _|Symbolic _|Tag _|ConcreteRecord _|ConcreteVector _|PteVal _|Instruction _|Frozen _))
   | (Tag _,(Concrete _|Symbolic _|Label _|ConcreteRecord _|ConcreteVector _|PteVal _|Instruction _|Frozen _))
     -> false
+
+(* Return if two constants are syntactically differents and can be semantically
+ equals if their is a hash collision between two pac fields *)
+let collision s1 s2 = match s1,s2 with
+  | Symbolic (Virtual v1), Symbolic (Virtual v2) ->
+      symbolic_data_collision v1 v2
+  | _, _ ->
+      None
 
 let rec mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_instr = function
   | Concrete i -> pp_scalar i
