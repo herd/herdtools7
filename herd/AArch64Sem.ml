@@ -911,20 +911,31 @@ module Make
                        fun _ -> set a_pte pte_v ii)
                  >>== fun () -> M.unitT (pte_v,ipte))
                no in
+            let add_setbits_db ipte m =
+              add_setbits
+                (m_op Op.Or (is_zero ipte.af_v) (is_zero ipte.db_v))
+                "af:0 || db:0"
+                set_afdb m in
+            let add_setbits_af ipte m =
+              add_setbits (is_zero ipte.af_v) "af:0" set_af m in
             let setbits =
               match dir with
               | Dir.W ->
                  if hd && updatedb then
-                   add_setbits
-                     (m_op Op.Or (is_zero ipte.af_v) (is_zero ipte.db_v))
-                     "af:0 || db:0"
-                     set_afdb m
+                   add_setbits_db ipte m
                  else if ha then
-                   add_setbits (is_zero ipte.af_v) "af:0" set_af m
+                   add_setbits_af ipte m
                  else m
               | Dir.R ->
-                  if ha then
-                   add_setbits (is_zero ipte.af_v) "af:0" set_af m
+                  if hd && updatedb then
+                    (* The case of a failed CAS with no write, but with a db update *)
+                    M.altT (
+                      add_setbits_db ipte m
+                    )( (* no need to check ha, because hd implies ha *)
+                      add_setbits_af ipte m
+                    )
+                  else if ha then
+                    add_setbits_af ipte m
                  else m in
             setbits in
           mok m a in
@@ -1462,7 +1473,7 @@ module Make
 
       let do_ldr rA sz an mop ma ii =
 (* Generic load *)
-        lift_memop rA Dir.R true memtag
+        lift_memop rA Dir.R false memtag
           (fun ac ma _mv -> (* value fake here *)
             let open Precision in
             let memtag_sync =
@@ -1959,29 +1970,60 @@ module Make
         let an = rmw_to_read rmw in
         let read_rs = read_reg_data sz rs ii
         and write_rs v = write_reg_sz sz rs v ii in
-        lift_memop rn Dir.W true memtag
+        let noret = match rs with | AArch64.ZR -> true | _ -> false in
+        let branch a =
+          let cond = Printf.sprintf "[%s]==%d:%s" (V.pp_v a) ii.A.proc (A.pp_reg rs) in
+            commit_pred_txt (Some cond) ii in
+        let mop_fail_no_wb ac ma _ =
+          (* CAS fails, there is no Explicit Write Effect *)
+          let read_mem a =
+            if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
+            else do_read_mem_ret sz an aexp ac a ii in
+          M.aarch64_cas_no (Access.is_physical ac) ma read_rs write_rs read_mem branch M.neqT
+        in
+        let mop_fail_with_wb ac ma _ =
+          (* CAS fails, there is an Explicit Write Effect writing back *)
+          (* the value that is already in memory                       *)
+          let read_mem a =
+            if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
+            else rmw_amo_read sz rmw ac a ii
+          and write_mem a v = rmw_amo_write sz rmw ac a v ii in
+          M.aarch64_cas_no_with_writeback (Access.is_physical ac) ma read_rs write_rs
+                                      read_mem write_mem branch M.neqT
+        in
+        let mop_success ac ma mv =
+          (* CAS succeeds, there is an Explicit Write Effect *)
            (* mv is read new value from reg, not important
               as this code is not executed in morello mode *)
-          (fun ac ma mv ->
-             let noret = match rs with | AArch64.ZR -> true | _ -> false in
-             let is_phy = Access.is_physical ac in
-             let branch a =
-               let cond = Printf.sprintf "[%s]==%d:%s" (V.pp_v a) ii.A.proc (A.pp_reg rs) in
-               commit_pred_txt (Some cond) ii in
-             M.altT
-              (let read_mem a =
-                  if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
-                  else do_read_mem_ret sz an aexp ac a ii in
-               M.aarch64_cas_no is_phy ma read_rs write_rs read_mem branch M.neqT)
-              (let read_rt = mv
-               and read_mem a =
-                 if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
-                 else rmw_amo_read sz rmw ac a ii
-               and write_mem a v = rmw_amo_write sz rmw ac a v ii in
-               M.aarch64_cas_ok is_phy ma read_rs read_rt write_rs
-                 read_mem write_mem branch M.eqT))
-          (to_perms "rw" sz) (read_reg_ord rn ii) (read_reg_data sz rt ii)
-        an ii
+          let read_rt = mv
+          and read_mem a =
+            if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
+            else rmw_amo_read sz rmw ac a ii
+          and write_mem a v = rmw_amo_write sz rmw ac a v ii in
+          M.aarch64_cas_ok (Access.is_physical ac) ma read_rs read_rt write_rs
+                                read_mem write_mem branch M.eqT
+        in
+        M.altT (
+          (* CAS succeeds and generates an Explicit Write Effect *)
+          (* there must be an update to the dirty bit of the TTD *)
+          lift_memop rn Dir.W true memtag mop_success (to_perms "rw" sz)
+            (read_reg_ord rn ii) (read_reg_data sz rt ii) an ii
+        )( (* CAS fails *)
+          M.altT (
+            (* CAS generates an Explicit Write Effect              *)
+            (* there must be an update to the dirty bit of the TTD *)
+            lift_memop rn Dir.W true memtag mop_fail_with_wb (to_perms "rw" sz)
+              (read_reg_ord rn ii) (read_reg_data sz rt ii) an ii
+          )(
+            (* CAS does not generate an Explicit Write Effect          *)
+            (* It is IMPLEMENTATION SPECIFIC if there is an update to  *)
+            (*                                the dirty bit of the TTD *)
+            (* Note: the combination of dir=Dir.R and updatedb=true    *)
+            (*                    triggers an alternative in check_ptw *)
+            lift_memop rn Dir.R true memtag mop_fail_no_wb (to_perms "rw" sz)
+              (read_reg_ord rn ii) (read_reg_data sz rt ii) an ii
+          )
+        )
 
       let casp sz rmw rs1 rs2 rt1 rt2 rn ii =
         let an = rmw_to_read rmw in
@@ -1995,37 +2037,77 @@ module Make
           let cond = Printf.sprintf "[%s]=={%d:%s,%d:%s}" (V.pp_v a)
             ii.A.proc (A.pp_reg rs1) ii.A.proc (A.pp_reg rs1) in
           commit_pred_txt (Some cond) ii in
-        lift_memop rn Dir.W true memtag
-          (fun ac ma _ ->
-            let is_phy = Access.is_physical ac in
-             M.altT
-              (let read_mem a = do_read_mem_ret sz an aexp ac a ii
+        let neqp (v1,v2) (x1,x2) =
+            M.op Op.Eq v1 x1 >>| M.op Op.Eq v2 x2
+            >>= fun (b1,b2) -> M.op Op.And b1 b2
+            >>= M.eqT V.zero
+        and eqp (v1,v2) (x1,x2) =
+            M.eqT v1 x1 >>| M.eqT v2 x2
+            >>= fun _ -> M.unitT () in
+        let mop_fail_no_wb ac ma _ =
+          (* CASP fails, there are no Explicit Write Effects *)
+          let read_mem a = do_read_mem_ret sz an aexp ac a ii
                 >>| (add_size a sz
                 >>= fun a -> do_read_mem_ret sz an aexp ac a ii) in
-               let neqp (v1,v2) (x1,x2) =
-                 M.op Op.Eq v1 x1 >>| M.op Op.Eq v2 x2
-                 >>= fun (b1,b2) -> M.op Op.And b1 b2
-                 >>= M.eqT V.zero in
-               M.aarch64_cas_no is_phy ma read_rs write_rs read_mem branch neqp)
-              (let read_rt = read_reg_data sz rt1 ii
+          M.aarch64_cas_no (Access.is_physical ac) ma read_rs
+              write_rs read_mem branch neqp
+        in
+        let mop_fail_with_wb ac ma _ =
+          (* CASP fails, there are Explicit Write Effects writing back *)
+          (* the value that is already in memory                       *)
+          let read_mem a = do_read_mem_ret sz an aexp ac a ii
+                >>| (add_size a sz
+                >>= fun a -> do_read_mem_ret sz an aexp ac a ii)
+          and write_mem a (v1,v2) =
+              rmw_amo_write sz rmw ac a v1 ii
+              >>| (add_size a sz >>= fun a2 ->
+                  rmw_amo_write sz rmw ac a2 v2 ii)
+              >>= fun _ -> M.unitT () in
+          M.aarch64_cas_no_with_writeback (Access.is_physical ac) ma read_rs
+              write_rs read_mem write_mem branch neqp
+        in
+        let mop_success ac ma _ =
+          (* CASP succeeds, there are Explicit Write Effects *)
+          let read_rt = read_reg_data sz rt1 ii
                 >>| read_reg_data sz rt2 ii
-               and read_mem a = rmw_amo_read sz rmw ac a ii
+          and read_mem a = rmw_amo_read sz rmw ac a ii
                 >>| (add_size a sz
                 >>= fun a -> rmw_amo_read sz rmw ac a ii)
-               and write_mem a (v1,v2) =
-                   rmw_amo_write sz rmw ac a v1 ii
-                   >>| (add_size a sz >>= fun a2 ->
-                       rmw_amo_write sz rmw ac a2 v2 ii)
-                   >>= fun _ -> M.unitT ()
-               and eqp (v1,v2) (x1,x2) =
-                 M.eqT v1 x1 >>| M.eqT v2 x2
-                 >>= fun _ -> M.unitT () in
-               M.aarch64_cas_ok is_phy ma read_rs read_rt write_rs
-                 read_mem write_mem branch eqp))
-          (to_perms "rw" sz)
-          (read_reg_ord rn ii)
-          (read_reg_data sz rt1 ii >>> fun _ -> read_reg_data sz rt2 ii)
-        an ii
+          and write_mem a (v1,v2) =
+              rmw_amo_write sz rmw ac a v1 ii
+              >>| (add_size a sz >>= fun a2 ->
+                  rmw_amo_write sz rmw ac a2 v2 ii)
+              >>= fun _ -> M.unitT () in
+          M.aarch64_cas_ok (Access.is_physical ac) ma read_rs
+              read_rt write_rs read_mem write_mem branch eqp
+        in
+        M.altT (
+          (* CASP succeeds and generates Explicit Write Effects  *)
+          (* there must be an update to the dirty bit of the TTD *)
+          lift_memop rn Dir.W true memtag mop_success
+            (to_perms "rw" sz) (read_reg_ord rn ii)
+            (read_reg_data sz rt1 ii >>> fun _ -> read_reg_data sz rt2 ii)
+            an ii
+        )( (* CASP fails *)
+          M.altT (
+            (* CASP generates Explicit Write Effects               *)
+            (* there must be an update to the dirty bit of the TTD *)
+            lift_memop rn Dir.W true memtag mop_fail_with_wb
+              (to_perms "rw" sz) (read_reg_ord rn ii)
+              (read_reg_data sz rt1 ii >>> fun _ -> read_reg_data sz rt2 ii)
+              an ii
+          )(
+            (* CASP does not generate Explicit Write Effects           *)
+            (* It is IMPLEMENTATION SPECIFIC if there is an update to  *)
+            (*                                the dirty bit of the TTD *)
+            (* Note: the combination of dir=Dir.R and updatedb=true    *)
+            (*                    triggers an alternative in check_ptw *)
+            lift_memop rn Dir.R true memtag mop_fail_no_wb
+              (to_perms "rw" sz) (read_reg_ord rn ii)
+              (read_reg_data sz rt1 ii >>> fun _ -> read_reg_data sz rt2 ii)
+              an ii
+          )
+        )
 
       (* Temporary morello variation of CAS *)
       let cas_morello sz rmw rs rt rn ii =
