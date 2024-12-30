@@ -72,7 +72,7 @@ let get_loc_and_address_reg value =
    whether the access is a read or a write effect, and the second matches the
    location. The instruction must contain register addressing using the "[Xn]"
    syntax. *)
-let do_mem_and_tag value read write =
+let do_mem_access value read write =
   let f = if Str.matched_group 1 value = "R" then read else write in
   let loc, reg = get_loc_and_address_reg value in
   {
@@ -118,16 +118,23 @@ let tr_stmt acc stmt =
     else begin
       let mem_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[\([a-zA-Z0-9_]+\)\]|} in
       let tag_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[tag(\([a-zA-Z0-9_]+\))\]|} in
+      let pte_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[PTE(\([a-zA-Z0-9_]+\))\]|} in
+      let pa_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[PA(\([a-zA-Z0-9_]+\))\]|} in
       let reg_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)[0-9]:\([A-Z_]+[0-9]*\)|} in
       let branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(\(\[[a-zA-Z0-9_]+\]\|[0-9]:[A-Z_]+[0-9]*\)\(==\|!=\)\(\[[a-zA-Z0-9_]+\]\|[0-9]:[A-Z_]+[0-9]*\))|} in
       let branching_mte_tag = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(color)(tag(\([a-zA-Z0-9_]+\)), \([A-Z_]+[0-9]*\))|} in
+      let branching_pte = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(PTE(\([a-zA-Z0-9_]+\)), \([A-Z_]+[0-9]*\))\((\([a-zA-Z0-9_,:&|() ]+\))\)?|} in
       let branching_instr_cond = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)|} in
       let fault = Str.regexp {|[a-zA-Z0-9_]*: Fault(\([a-zA-Z0-9_:,]*\))|} in
       let exc_entry = Str.regexp {|[a-zA-Z0-9_]*: ExcEntry(\([a-zA-Z0-9_:,]*\))|} in
       let node = if Str.string_match mem_access value 0 then
-        do_mem_and_tag value DescDict.mem_read DescDict.mem_write
+        do_mem_access value DescDict.mem_read DescDict.mem_write
       else if Str.string_match tag_access value 0 then
-        do_mem_and_tag value DescDict.tag_read DescDict.tag_write
+        do_mem_access value DescDict.tag_read DescDict.tag_write
+      else if Str.string_match pte_access value 0 then
+        do_mem_access value DescDict.pte_read DescDict.pte_write
+      else if Str.string_match pa_access value 0 then
+        do_mem_access value DescDict.pa_read DescDict.pa_write
       else if Str.string_match reg_access value 0 then begin
         let f = if Str.matched_group 1 value = "R" then DescDict.reg_read else DescDict.reg_write in
         let reg = pp_reg (Str.matched_group 2 value) in
@@ -167,6 +174,19 @@ let tr_stmt acc stmt =
         let loc = Str.matched_group 1 value in
         let reg = Str.matched_group 2 value in
         let cond = DescDict.mte_cond loc reg in
+        { Node.desc=f cond; kind=Node.Branching }
+      end
+      else if Str.string_match branching_pte value 0 then begin
+        let f = DescDict.branching in
+        let loc = Str.matched_group 1 value in
+        let reg = Str.matched_group 2 value in
+        let pred = try
+          let text = Str.matched_group 4 value in
+          (* Sometimes there can be text before the logical expression *)
+          let words = String.split_on_char ',' text in
+          String.trim (List.hd (List.rev words))
+        with Not_found -> "valid:1 && af:1" in
+        let cond = DescDict.pte_cond loc reg pred in
         { Node.desc=f cond; kind=Node.Branching }
       end
       else if Str.string_match branching_instr_cond value 0 then begin
@@ -211,7 +231,7 @@ let tr_stmt acc stmt =
   | ParsedStmt.Subgraph _ ->
     Warn.fatal "Found dot subgraph even after flattenning was performed"
 
-let convert_bcolour_nodes stmts =
+let convert_bnodes stmts =
   let node_map = List.fold_left (fun map stmt ->
     match stmt with
     | ParsedStmt.Node n ->
@@ -221,13 +241,10 @@ let convert_bcolour_nodes stmts =
       StringMap.add name value map
     | _ -> map
   ) StringMap.empty stmts in
-  let branching_mte_tag = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(color)|} in
-  let tag_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[tag(\([a-zA-Z0-9_]+\))\]|} in
-  let bcolour_nodes = StringMap.fold (fun key value m ->
-    if Str.string_match branching_mte_tag value 0 then
-      StringMap.add key value m
-    else
-      m
+
+  (* Compute the list of direct iico_data predecessors for every node *)
+  let preds = StringMap.fold (fun key _ acc ->
+    StringMap.add key [] acc
   ) node_map StringMap.empty in
   let preds = List.fold_left (fun map stmt ->
     match stmt with
@@ -237,28 +254,64 @@ let convert_bcolour_nodes stmts =
       if value = "iico_data" then
         let left = e.ParsedEdge.left in
         let right = e.ParsedEdge.right in
-        let preds = StringMap.safe_find [] right map in
+        let preds = StringMap.find right map in
         StringMap.add right (left :: preds) map
       else map
     | _ -> map
-  ) StringMap.empty stmts in
-  let bcolour_nodes = StringMap.mapi (fun key value ->
-    let ps = StringMap.find key preds in
-    let tag_ps = List.fold_left (fun acc p ->
-      let p_val = StringMap.find p node_map in
-      if Str.string_match tag_access p_val 0 then p_val :: acc else acc
-    ) [] ps in
-    (* There should be only one tag access with an iico_data to this node *)
-    let p_val = List.hd tag_ps in
-    ignore (Str.string_match tag_access p_val 0);
+  ) preds stmts in
+
+  let get_matching_nodes regex =
+    StringMap.fold (fun key value m ->
+      if Str.string_match regex value 0 then
+        StringMap.add key value m
+      else
+        m
+    ) node_map StringMap.empty in
+
+  (* Get all predecessors that match pred_regex and extract the information
+     (in practice location and address register), and then insert it into
+     the nodes matching node_regex *)
+  let update_labels node_regex pred_regex build_templ =
+    let nodes = get_matching_nodes node_regex in
+    StringMap.fold (fun key value map ->
+      let ps = StringMap.find key preds in
+      let matching_ps = List.fold_left (fun acc p ->
+        let p_val = StringMap.find p node_map in
+        if Str.string_match pred_regex p_val 0 then p_val :: acc else acc
+      ) [] ps in
+      match matching_ps with
+      | [] -> map
+      | p_val :: _ ->
+        ignore (Str.string_match pred_regex p_val 0);
+        let templ = build_templ p_val in
+        let new_value = Str.replace_first node_regex templ value in
+        StringMap.add key new_value map
+    ) nodes StringMap.empty in
+
+  (* Heuristic: If there is a PTE/MTE R/W predecessor that feeds its data to a
+     branching effect, then probably the condition of that branching effect
+     checks those values *)
+  let branching_mte_tag = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(color)|} in
+  let branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)|} in
+  let tag_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[tag(\([a-zA-Z0-9_]+\))\]|} in
+  let pte_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[PTE(\([a-zA-Z0-9_]+\))\]|} in
+
+  let bcolour_nodes = update_labels branching_mte_tag tag_access (fun p_val ->
     (* The address register should be the same in the p_val as in value *)
     let loc, reg = get_loc_and_address_reg p_val in
-    let templ = Printf.sprintf "\\0(tag(%s), %s)" loc reg in
-    Str.replace_first branching_mte_tag templ value
-  ) bcolour_nodes in
+    Printf.sprintf "\\0(tag(%s), %s)" loc reg
+  ) in
+  let b_pte_nodes = update_labels branching pte_access (fun p_val ->
+    let loc, reg = get_loc_and_address_reg p_val in
+    Printf.sprintf "\\0(PTE(%s), %s)" loc reg
+  ) in
+  let b_nodes = StringMap.union_std (fun key _ _ ->
+    Warn.fatal "Found %s which is both a colour and pte branching effect\n" key
+  ) bcolour_nodes b_pte_nodes in
+
   List.map (function
-    | ParsedStmt.Node n when StringMap.mem n.ParsedNode.name bcolour_nodes ->
-      let value = StringMap.find n.ParsedNode.name bcolour_nodes in
+    | ParsedStmt.Node n when StringMap.mem n.ParsedNode.name b_nodes ->
+      let value = StringMap.find n.ParsedNode.name b_nodes in
       let attrs = List.map (fun a ->
         if a.ParsedAttr.name = "label" then
           { a with ParsedAttr.value=value }
@@ -278,7 +331,7 @@ let flatten_subgraphs stmts =
 
 let tr parsed_graph =
   let flattened_stmts = flatten_subgraphs parsed_graph.ParsedDotGraph.stmts in
-  let stmts = convert_bcolour_nodes flattened_stmts in
+  let stmts = convert_bnodes flattened_stmts in
   let translated = List.fold_left (fun acc stmt ->
     tr_stmt acc stmt
   ) empty stmts in

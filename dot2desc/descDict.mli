@@ -25,6 +25,10 @@ val mem_read: string -> string -> string
 val mem_write: string -> string -> string
 val tag_read: string -> string -> string
 val tag_write: string -> string -> string
+val pte_read: string -> string -> string
+val pte_write: string -> string -> string
+val pa_read: string -> string -> string
+val pa_write: string -> string -> string
 
 (* register -> description *)
 val reg_read: string -> string
@@ -32,6 +36,9 @@ val reg_write: string -> string
 
 (* location -> register -> description *)
 val mte_cond: string -> string -> string
+
+(* location -> register -> logical predicate -> description *)
+val pte_cond: string -> string -> string -> string
 
 (* condition -> description *)
 val instr_cond: string -> string
