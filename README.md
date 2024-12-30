@@ -30,6 +30,11 @@ Compilation and installation
 
 See file [INSTALL.md](INSTALL.md).
 
+Introducing new languages in herdtools7
+=======================================
+
+See file [HERDTOOLS7.md](HERDTOOLS7.md).
+
 Contributing
 ============
 
