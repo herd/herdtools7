@@ -3,6 +3,7 @@ name: Run Litmus X86_64
 on:
   schedule:
     - cron: '0 10 * * 0'
+  workflow_dispatch:
 
 jobs:
   build:
