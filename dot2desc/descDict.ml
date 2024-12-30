@@ -32,6 +32,18 @@ let tag_read loc reg =
 let tag_write loc reg =
   Printf.sprintf "\\ImpTagMWEof{\\taglocOf{%s}{\\memlocAddrBy{%s}{%s}}}" loc loc reg
 
+let pte_read loc reg =
+  Printf.sprintf "\\ExpMREof{\\PTEof{\\memlocAddrBy{%s}{%s}}}" loc reg
+
+let pte_write loc reg =
+  Printf.sprintf "\\ExpMWEof{\\PTEof{\\memlocAddrBy{%s}{%s}}}" loc reg
+
+let pa_read loc reg =
+  Printf.sprintf "\\ExpMREof{\\PAof{\\memlocAddrBy{%s}{%s}}}" loc reg
+
+let pa_write loc reg =
+  Printf.sprintf "\\ExpMWEof{\\PAof{\\memlocAddrBy{%s}{%s}}}" loc reg
+
 let reg_read reg =
   Printf.sprintf "\\RREof{%s}" reg
 
@@ -40,6 +52,9 @@ let reg_write reg =
 
 let mte_cond loc reg =
   Printf.sprintf "\\iseqCheck{\\allocTagOf{%s}}{\\logAddrTagIn{%s}}" loc reg
+
+let pte_cond loc reg pred =
+  Printf.sprintf "\\PTECheck{%s}{%s}{%s}" loc reg pred
 
 let instr_cond cond =
   Printf.sprintf "\\cond{%s}" cond

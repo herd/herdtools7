@@ -49,6 +49,7 @@
 \newcommand{\eqContentsCheck}[2]{whether \contentsof{#1} are equal to \contentsof{#2}}
 \newcommand{\neqContentsCheck}[2]{whether \contentsof{#1} are not equal to \contentsof{#2}}
 \newcommand{\iseqCheck}[2]{whether #1 is equal to #2}
+\newcommand{\PTECheck}[3]{\cond{#3} for \PTEof{\memlocAddrBy{#1}{#2}}}
 
 \newcommand{\BCC}[1]{#1 is a Conditional Branching Effect}
 \newcommand{\genericFault}[1]{the #1 Fault Effect}
@@ -74,6 +75,8 @@
 \newcommand{\taglocOf}[2]{the Tag Location #1 of #2}
 \newcommand{\allocTagOf}[1]{the Allocation Tag of #1}
 \newcommand{\logAddrTagIn}[1]{the Logical Address Tag in #1}
+\newcommand{\PTEof}[1]{the Page-Table Entry of #1}
+\newcommand{\PAof}[1]{the Physical Address of #1}
 \newcommand{\reg}[1]{the Register #1}
 
 %
