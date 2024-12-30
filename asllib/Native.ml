@@ -103,6 +103,7 @@ module NativeBackend (C : Config) = struct
     Printf.eprintf "Warning: message %s found its way, something is wrong\n" msg;
     return v
 
+  let cutoffT msg v = warnT msg v
   let bind_data = bind
   let bind_seq = bind
   let bind_ctrl = bind
@@ -117,7 +118,9 @@ module NativeBackend (C : Config) = struct
       | NV_Literal (L_Bool false) -> m_false
       | v -> mismatch_type v [ T_Bool ])
 
+  let choice_debug _pp c m1 m2 = choice c m1 m2
   let delay m k = k m m
+  let failT e _ = raise e
 
   let binop op v1 v2 =
     match (v1, v2) with
@@ -516,6 +519,7 @@ let interprete ?instrumentation static_env ast =
   let module CI : Interpreter.Config = struct
     let unroll = 0
     let error_handling_time = Error.Dynamic
+    let log_nondet_choice = false
 
     module Instr = Instrumentation.SemMake (B)
   end in

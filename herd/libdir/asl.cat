@@ -90,9 +90,11 @@ acyclic (aarch64_intrinsic | asl_po) as asl_determinism
 
 let AArch64NoB = AArch64 \ B
 let reaching = domain ([B]; aarch64_iico_ctrl; [AArch64NoB])
-let reachable = range ([AArch64NoB]; aarch64_iico_data; aarch64_iico_ctrl?; [B])
+let R = [B];asl_iico_ctrl;asl_data?
+let reachable = range ([AArch64NoB]; aarch64_iico_data; R?; [B])
 
 let AArch64B = reaching & reachable
+
 
 let AArch64 = AArch64NoB | AArch64B
 
