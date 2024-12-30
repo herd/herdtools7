@@ -68,6 +68,8 @@ let neq_contents lhs rhs =
 let branching cond =
   Printf.sprintf "\\IntrBranching{%s}" cond
 
+let bcc_branching = "\\BccBranching{}"
+
 let fault name =
   Printf.sprintf "\\genericFault{%s}" name
 

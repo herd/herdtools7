@@ -125,6 +125,7 @@ let tr_stmt acc stmt =
       let branching_mte_tag = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(color)(tag(\([a-zA-Z0-9_]+\)), \([A-Z_]+[0-9]*\))|} in
       let branching_pte = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(PTE(\([a-zA-Z0-9_]+\)), \([A-Z_]+[0-9]*\))\((\([a-zA-Z0-9_,:&|() ]+\))\)?|} in
       let branching_instr_cond = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)|} in
+      let bcc_branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(bcc)|} in
       let fault = Str.regexp {|[a-zA-Z0-9_]*: Fault(\([a-zA-Z0-9_:,]*\))|} in
       let exc_entry = Str.regexp {|[a-zA-Z0-9_]*: ExcEntry(\([a-zA-Z0-9_:,]*\))|} in
       let node = if Str.string_match mem_access value 0 then
@@ -192,14 +193,17 @@ let tr_stmt acc stmt =
       else if Str.string_match branching_instr_cond value 0 then begin
         let f = DescDict.branching in
         let cond = Str.regexp {|\(EQ\|NE\)|} in
-        let cond = try
+        try
           ignore (Str.search_backward cond value (String.length value - 1));
-          DescDict.instr_cond (Str.matched_group 1 value)
+          let cond = DescDict.instr_cond (Str.matched_group 1 value) in
+          { Node.desc=f cond; kind=Node.Branching }
         with
         | Not_found ->
-            Warn.fatal "Could not find branching condition for effect label %s" value in
-        { Node.desc=f cond; kind=Node.Branching }
+          (* Fallback to Bcc Branching *)
+          { Node.desc=DescDict.bcc_branching; kind=Node.Branching }
       end
+      else if Str.string_match bcc_branching value 0 then
+        { Node.desc=DescDict.bcc_branching; kind=Node.Branching }
       else if Str.string_match fault value 0 then begin
         let f = DescDict.fault in
         let name = get_fault_name value in

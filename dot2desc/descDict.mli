@@ -50,6 +50,9 @@ val neq_contents: string -> string -> string
 (* condition -> description *)
 val branching: string -> string
 
+(* description *)
+val bcc_branching: string
+
 (* name -> description *)
 val fault: string -> string
 val exc_entry: string -> string
