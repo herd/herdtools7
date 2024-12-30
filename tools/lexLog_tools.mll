@@ -244,7 +244,7 @@ and pline bds fs abs = parse
      let p = poolize loc v in
      pline (p::bds) fs abs lexbuf }
 | blank* ('~'? as neg) fault blank*
-    '(' blank* ('P'? (num as proc)) (':' (name as lbl))? blank*
+    '(' blank* ('P'? (num as proc)) (':'digit+)? (':' (name as lbl))? blank*
      (','((loc|new_loc) as loc) (':' alpha+)?)? blank* (* NB: skip optional tag *)
      (',' blank* (fault_type as ftype))? blank*
      (',' [^')']*)?  (* skip optional comment *)
