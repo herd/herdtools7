@@ -35,5 +35,5 @@ type t = {
   edges: Edge.t list;
 }
 
-val tr: ParsedDotGraph.t -> t
+val tr: ParsedDotGraph.t -> string option -> t
 val describe : t -> string

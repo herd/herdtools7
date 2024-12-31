@@ -16,6 +16,7 @@
 
 module type Config = sig
   val debuglexer : bool
+  val instr: string option
 end
 
 module Make(C: Config) : sig
@@ -28,7 +29,7 @@ end = struct
     let lexbuf = Lexing.from_channel channel in
     try
       let graphs = DotParser.main DotLexer.token lexbuf in
-      List.map (fun g -> DotGraph.tr g) graphs
+      List.map (fun g -> DotGraph.tr g C.instr) graphs
     with
     | DotParser.Error ->
       Printf.eprintf "Syntax error at position %d\n" (Lexing.lexeme_start lexbuf);
