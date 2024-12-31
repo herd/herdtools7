@@ -44,6 +44,9 @@ let pa_read loc reg =
 let pa_write loc reg =
   Printf.sprintf "\\ExpMWEof{\\PAof{\\memlocAddrBy{%s}{%s}}}" loc reg
 
+let ifetch label instr =
+  Printf.sprintf "\\IFetch{%s}{%s}" label instr
+
 let reg_read reg =
   Printf.sprintf "\\RREof{%s}" reg
 
@@ -75,6 +78,8 @@ let fault name =
 
 let exc_entry name =
   Printf.sprintf "\\genericExcEntry{%s}" name
+
+let empty = "\\Empty{}"
 
 let iico_data e1 e2 =
   Printf.sprintf "\\iicodata{%s}{%s}" e1 e2
