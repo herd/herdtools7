@@ -16,3 +16,4 @@
 
 let prog = Sys.argv.(0)
 let debug = ref Debug.none
+let instr = ref None

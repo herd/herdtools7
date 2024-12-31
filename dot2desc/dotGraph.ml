@@ -67,20 +67,23 @@ let get_loc_and_address_reg value =
   let reg = Str.matched_group 1 value in
   (loc, reg)
 
-(* To be called after Str.string_match was called on the appropriate regex and
-   string. The regex must contain 2 groups: the first is a (R|W) denoting
-   whether the access is a read or a write effect, and the second matches the
-   location. The instruction must contain register addressing using the "[Xn]"
-   syntax. *)
-let do_mem_access value read write =
-  let f = if Str.matched_group 1 value = "R" then read else write in
-  let loc, reg = get_loc_and_address_reg value in
-  {
-    Node.desc = f loc reg;
-    kind = Node.Mem;
-  }
+let get_label_value attrs =
+  let label = List.find (fun a -> a.ParsedAttr.name = "label") attrs in
+  label.ParsedAttr.value
 
-let tr_stmt acc stmt =
+let tr_stmt acc stmt param_map =
+
+  (* To be called after Str.string_match was called on the appropriate regex
+    and string. The regex must contain 2 groups: the first is a (R|W) denoting
+    whether the access is a read or a write effect, and the second matches the
+    location. The instruction must contain register addressing using the "[Xn]"
+    syntax. *)
+  let do_mem_access value read write =
+    let f = if Str.matched_group 1 value = "R" then read else write in
+    let loc, reg = get_loc_and_address_reg value in
+    let reg = StringMap.safe_find reg reg param_map in
+    { Node.desc=f loc reg; kind=Node.Mem } in
+
   let is_init_event str =
     let r = Str.regexp {|Init|} in
     try
@@ -97,8 +100,9 @@ let tr_stmt acc stmt =
     let reg = match reg with
     | "NZCV" -> "PSTATE.NZCV"
     | r -> r in
-    if is_gpreg reg then reg else "`" ^ reg ^ "`" in
-  
+    let tr_reg = StringMap.safe_find reg reg param_map in
+    if is_gpreg reg then tr_reg else "`" ^ tr_reg ^ "`" in
+
   (* To be called after Str.string_match was called on the fault or exc_entry regexes *)
   let get_fault_name value =
     let gr = Str.matched_group 1 value in
@@ -110,8 +114,7 @@ let tr_stmt acc stmt =
 
   match stmt with
   | ParsedStmt.Node n ->
-    let label = List.find (fun a -> a.ParsedAttr.name = "label") n.ParsedNode.attrs in
-    let value = label.ParsedAttr.value in
+    let value = get_label_value n.ParsedNode.attrs in
     if is_init_event value then
       (* Skip init events *)
       acc
@@ -173,20 +176,20 @@ let tr_stmt acc stmt =
       else if Str.string_match branching_mte_tag value 0 then begin
         let f = DescDict.branching in
         let loc = Str.matched_group 1 value in
-        let reg = Str.matched_group 2 value in
+        let reg = pp_reg (Str.matched_group 2 value) in
         let cond = DescDict.mte_cond loc reg in
         { Node.desc=f cond; kind=Node.Branching }
       end
       else if Str.string_match branching_pte value 0 then begin
         let f = DescDict.branching in
         let loc = Str.matched_group 1 value in
-        let reg = Str.matched_group 2 value in
         let pred = try
           let text = Str.matched_group 4 value in
           (* Sometimes there can be text before the logical expression *)
           let words = String.split_on_char ',' text in
           String.trim (List.hd (List.rev words))
         with Not_found -> "valid:1 && af:1" in
+        let reg = pp_reg (Str.matched_group 2 value) in
         let cond = DescDict.pte_cond loc reg pred in
         { Node.desc=f cond; kind=Node.Branching }
       end
@@ -195,7 +198,8 @@ let tr_stmt acc stmt =
         let cond = Str.regexp {|\(EQ\|NE\)|} in
         try
           ignore (Str.search_backward cond value (String.length value - 1));
-          let cond = DescDict.instr_cond (Str.matched_group 1 value) in
+          let cond = Str.matched_group 1 value in
+          let cond = DescDict.instr_cond (StringMap.safe_find cond cond param_map) in
           { Node.desc=f cond; kind=Node.Branching }
         with
         | Not_found ->
@@ -222,8 +226,7 @@ let tr_stmt acc stmt =
     end
   | ParsedStmt.Attr _ -> acc
   | ParsedStmt.Edge e -> begin
-      let label = List.find (fun a -> a.ParsedAttr.name = "label") e.ParsedEdge.attrs in
-      let value = label.ParsedAttr.value in
+      let value = get_label_value e.ParsedEdge.attrs in
       try
         let desc = StringMap.find value DescDict.edges in
         let edge = { Edge.left=e.ParsedEdge.left; right=e.ParsedEdge.right; desc=desc } in
@@ -240,8 +243,7 @@ let convert_bnodes stmts =
     match stmt with
     | ParsedStmt.Node n ->
       let name = n.ParsedNode.name in
-      let label = List.find (fun a -> a.ParsedAttr.name = "label") n.ParsedNode.attrs in
-      let value = label.ParsedAttr.value in
+      let value = get_label_value n.ParsedNode.attrs in
       StringMap.add name value map
     | _ -> map
   ) StringMap.empty stmts in
@@ -253,8 +255,7 @@ let convert_bnodes stmts =
   let preds = List.fold_left (fun map stmt ->
     match stmt with
     | ParsedStmt.Edge e ->
-      let label = List.find (fun a -> a.ParsedAttr.name = "label") e.ParsedEdge.attrs in
-      let value = label.ParsedAttr.value in
+      let value = get_label_value e.ParsedEdge.attrs in
       if value = "iico_data" then
         let left = e.ParsedEdge.left in
         let right = e.ParsedEdge.right in
@@ -333,11 +334,68 @@ let flatten_subgraphs stmts =
   | stmt -> stmt :: acc in
   List.fold_right flatten stmts []
 
-let tr parsed_graph =
+let get_param_map stmts instr =
+  let regex = Str.regexp {|\([A-Z]+\)\( \([][,a-zA-Z0-9_]+\)\)?|} in
+  if not (Str.string_match regex instr 0) then
+    Warn.fatal "Instr validation did not work. %s is malformed" instr;
+  let instr_mnemonic = Str.matched_group 1 instr in
+  let instr_params = try
+    let params = Str.matched_group 3 instr in
+    String.split_on_char ',' params
+  with Not_found -> [] in
+  let gpreg_regex = Str.regexp {|\[?\([BHWXQ]\)\([a-z0-9]+\)\]?|} in
+  let instr_params = List.map (fun param ->
+    if Str.string_match gpreg_regex param 0 then
+      Str.matched_group 1 param ^ "~" ^ Str.matched_group 2 param ^ "~"
+    else param
+  ) instr_params in
+
+  let str = instr_mnemonic ^ {|\( \([][,a-zA-Z0-9_]+\)\)?|} in
+  let regex = Str.regexp str in
+  let stmt = try List.find (function
+    | ParsedStmt.Node n ->
+      let value = get_label_value n.ParsedNode.attrs in
+      begin try
+        ignore (Str.search_backward regex value (String.length value - 1));
+        true
+      with Not_found -> false
+      end
+    | _ -> false
+  ) stmts
+  with Not_found ->
+    Warn.fatal "Unable to find instr %s in dot nodes labels" instr_mnemonic in
+
+  let value = match stmt with
+  | ParsedStmt.Node n -> get_label_value n.ParsedNode.attrs
+  | _ -> Warn.fatal "This is not a dot graph node" in
+
+  let read_params = try
+    let params = Str.matched_group 2 value in
+    String.split_on_char ',' params
+  with Not_found -> [] in
+  let gpreg_regex = Str.regexp {|\[?[BHWXQ]\([0-9]+\)\]?|} in
+  let read_params = List.map (fun param ->
+    if Str.string_match gpreg_regex param 0 then
+      "X" ^ Str.matched_group 1 param
+    else param
+  ) read_params in
+
+  if (List.length read_params) <> (List.length instr_params) then
+    Warn.user_error "Passed instr param and read param lists have \
+      different lengths";
+  List.fold_left2 (fun map p1 p2 ->
+    StringMap.add p1 p2 map
+  ) StringMap.empty read_params instr_params
+
+let tr parsed_graph instr =
   let flattened_stmts = flatten_subgraphs parsed_graph.ParsedDotGraph.stmts in
+  let param_map = match instr with
+  | Some s -> get_param_map flattened_stmts s
+  | None -> StringMap.empty in
+  (* let param_map = StringMap.empty in *)
   let stmts = convert_bnodes flattened_stmts in
   let translated = List.fold_left (fun acc stmt ->
-    tr_stmt acc stmt
+    tr_stmt acc stmt param_map
   ) empty stmts in
 
   let module Adjacency = struct
