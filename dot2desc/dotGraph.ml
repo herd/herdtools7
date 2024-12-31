@@ -493,7 +493,7 @@ let describe g =
     try
       let lhs = StringMap.find edge.Edge.left g.nodes in
       let rhs = StringMap.find edge.Edge.right g.nodes in
-      edge_desc lhs.Node.desc rhs.Node.desc ^ ".\n"
+      "-   " ^ edge_desc lhs.Node.desc rhs.Node.desc ^ ".\n"
     with Not_found ->
       Warn.fatal "Could not find one of the nodes for edge %s\n" (Edge.pp edge)
     ) g.edges in

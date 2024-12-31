@@ -25,9 +25,20 @@ let exec filename =
     let instr = !instr
   end) in
   let graphs = Parse.parse_file filename in
-  List.iteri (fun i g ->
-    Printf.printf "The content of graph %d is:\n%s\n" (i + 1) (DotGraph.describe g)
-  ) graphs
+  begin match graphs with
+  | [] -> Printf.printf "No graph produced from dot file %s\n" filename
+  | [g] -> Printf.printf "%s" (DotGraph.describe g)
+  | gs -> let descs = List.map (fun g ->
+      let desc = DotGraph.describe g in
+      let sentences = String.split_on_char '\n' desc in
+      let indent = "    " in
+      let sentences = List.map (fun s -> indent ^ s) sentences in
+      let desc = String.concat "\n" sentences in
+      Printf.sprintf "-   All of the following apply:\n\n%s" desc
+    ) gs in
+    let desc = String.concat "\n" descs in
+    Printf.printf "%s" desc
+  end
 
 let options = [
   ArgUtils.parse_tags
