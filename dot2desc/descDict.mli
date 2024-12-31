@@ -30,6 +30,9 @@ val pte_write: string -> string -> string
 val pa_read: string -> string -> string
 val pa_write: string -> string -> string
 
+(* label -> instruction -> description *)
+val ifetch: string -> string -> string
+
 (* register -> description *)
 val reg_read: string -> string
 val reg_write: string -> string
@@ -56,6 +59,9 @@ val bcc_branching: string
 (* name -> description *)
 val fault: string -> string
 val exc_entry: string -> string
+
+(* description *)
+val empty: string
 
 (* Map from edge name to description *)
 val edges: (string -> string -> string) StringMap.t
