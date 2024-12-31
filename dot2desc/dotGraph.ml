@@ -24,7 +24,7 @@ module Edge = struct
 end
 
 module Node = struct
-  type kind = Fault | Mem | Reg_Data | Branching | Reg_Other
+  type kind = Fault | Mem | Reg_Data | Branching | Reg_Other | Empty
   type t = {
     desc: string;
     kind: kind;
@@ -123,6 +123,7 @@ let tr_stmt acc stmt param_map =
       let tag_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[tag(\([a-zA-Z0-9_]+\))\]|} in
       let pte_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[PTE(\([a-zA-Z0-9_]+\))\]|} in
       let pa_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[PA(\([a-zA-Z0-9_]+\))\]|} in
+      let ifetch = Str.regexp {|[a-zA-Z0-9_]*: R\[label:\\"P[0-9]:\([a-zA-Z0-9_]+\)\\"\]IFetch=\([][,a-zA-Z0-9_ ]+\)|} in
       let reg_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)[0-9]:\([A-Z_]+[0-9]*\)|} in
       let branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(\(\[[a-zA-Z0-9_]+\]\|[0-9]:[A-Z_]+[0-9]*\)\(==\|!=\)\(\[[a-zA-Z0-9_]+\]\|[0-9]:[A-Z_]+[0-9]*\))|} in
       let branching_mte_tag = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(color)(tag(\([a-zA-Z0-9_]+\)), \([A-Z_]+[0-9]*\))|} in
@@ -131,6 +132,7 @@ let tr_stmt acc stmt param_map =
       let bcc_branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(bcc)|} in
       let fault = Str.regexp {|[a-zA-Z0-9_]*: Fault(\([a-zA-Z0-9_:,]*\))|} in
       let exc_entry = Str.regexp {|[a-zA-Z0-9_]*: ExcEntry(\([a-zA-Z0-9_:,]*\))|} in
+      let empty = Str.regexp {|[a-zA-Z0-9_]*: \\|} in
       let node = if Str.string_match mem_access value 0 then
         do_mem_access value DescDict.mem_read DescDict.mem_write
       else if Str.string_match tag_access value 0 then
@@ -139,6 +141,12 @@ let tr_stmt acc stmt param_map =
         do_mem_access value DescDict.pte_read DescDict.pte_write
       else if Str.string_match pa_access value 0 then
         do_mem_access value DescDict.pa_read DescDict.pa_write
+      else if Str.string_match ifetch value 0 then begin
+        let f = DescDict.ifetch in
+        let label = Str.matched_group 1 value in
+        let instr = Str.matched_group 2 value in
+        { Node.desc=f label instr; kind=Node.Mem }
+      end
       else if Str.string_match reg_access value 0 then begin
         let f = if Str.matched_group 1 value = "R" then DescDict.reg_read else DescDict.reg_write in
         let reg = pp_reg (Str.matched_group 2 value) in
@@ -218,6 +226,8 @@ let tr_stmt acc stmt param_map =
         let name = get_fault_name value in
         { Node.desc=f name; kind=Node.Fault }
         end
+      else if Str.string_match empty value 0 then
+        { Node.desc=DescDict.empty; kind=Node.Empty }
       else
         Warn.fatal "Unsupported type of effect label: %s" value in
       
