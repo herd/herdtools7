@@ -16,3 +16,4 @@
 
 val prog : string
 val debug : Debug.t ref
+val instr : string option ref

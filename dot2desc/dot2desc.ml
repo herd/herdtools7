@@ -22,6 +22,7 @@ let get_cmd_arg s = args := s :: !args
 let exec filename =
   let module Parse = ParseDotFile.Make(struct
     let debuglexer = !debug.Debug.lexer
+    let instr = !instr
   end) in
   let graphs = Parse.parse_file filename in
   List.iteri (fun i g ->
@@ -36,6 +37,9 @@ let options = [
     | Some t -> debug := t ; true)
     Debug.tags
     "show debug messages for specific parts" ;
+  ArgUtils.parse_string_opt "-instr" instr
+    "Instance of the instruction being run, used for substitution \
+    of register names and/or condition variables";
 ]
 
 let () =
@@ -47,6 +51,17 @@ let () =
       invalid_arg (Printf.sprintf "%s run with no target dot file" prog);
     if List.length !args > 1 then
       invalid_arg (Printf.sprintf "Cannot run %s on more than one dot file at once" prog);
+
+    begin match !instr with
+    | None -> ()
+    | Some s ->
+      let regex = Str.regexp {|\([A-Z]+\)\( \([][a-zA-Z0-9_]+\)\)?\(,\([][a-zA-Z0-9_]+\)\)*$|} in
+      if not (Str.string_match regex s 0) then
+        invalid_arg "Invalid format for command. Command must have arguments separated by \
+        commas, and with no whitespaces between them. The mnemonic and the first argument \
+        are separated by exactly one space (eg. LDR X0,[X1])"
+    end;
+
     let filename = List.hd !args in
     exec filename
   with
