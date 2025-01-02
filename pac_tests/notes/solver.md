@@ -284,7 +284,7 @@ To do so I use a new ***monad***!
 
 ```ocaml
 type solver_state = {solution: cst V.Solution.t; solver: PAC.solver_state}
-type 'a solver_monad = solver_state -> (solution_state * 'a) list
+type 'a solver_monad = solver_state -> (solver_state * 'a) list
 
 (* Bind operator *)
 let (let*) (x: 'a solver_monad) (f: 'a -> 'b solver_monad) : 'b solver_monad =
