@@ -40,7 +40,7 @@ and type evt_struct = E.event_structure) =
     module E = E
     module V = A.V
     module VC =
-      Valconstraint.Make
+      CollisionSolver.Make
         (struct
           let hexa = C.hexa
           let debug = C.debug

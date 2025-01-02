@@ -369,12 +369,12 @@ and type state = A.state =
       match PAC.add_equality x y solver,PAC.add_inequality x y solver with
       | Some s1,Some s2 ->
           alternative
-            (let* _ = set_solver s1 in pure vtrue)
-            (let* _ = set_solver s2 in pure vfalse)
+            (let+ _ = set_solver s1 in vtrue)
+            (let+ _ = set_solver s2 in vfalse)
       | None,Some s2 ->
-          let* _ = set_solver s2 in pure vfalse
+          let+ _ = set_solver s2 in vfalse
       | Some s1,None ->
-          let* _ = set_solver s1 in pure vtrue
+          let+ _ = set_solver s1 in vtrue
       | None,None -> assert false
 
     (* Add a new solution into the solver state, and resolve associated PAC
@@ -450,68 +450,108 @@ and type state = A.state =
       | exn ->
           pure (Failure exn)
 
-    (* A map from variables to their assignations *)
-    let rec gen_assign_map : cnstrnts -> expr list V.Solution.t = function
-      | Assign (V.Var v, expr) :: rest -> begin
-          let map = gen_assign_map rest in
-          try
-            V.Solution.add v (expr :: V.Solution.find v map) map
-          with Not_found ->
-            V.Solution.add v [expr] map
-      end
-      | _ :: rest ->
-          gen_assign_map rest
-      | [] ->
-          V.Solution.empty
+(**************************************)
+(* Initial phase: normalize variables *)
+(**************************************)
 
-    (* Sort the constraints in a topological order, and group all the
-       constraints that assign a same variable together *)
+(*
+  straightforward union-find.
+  <http://en.wikipedia.org/wiki/Disjoint-set_data_structure>
+*)
+
+(* Collect all variables in partition *)
+
+    module OV = struct
+      type t = V.csym
+      let compare = V.compare_csym
+    end
+
+    module Part = Partition.Make (OV)
+
+    let add_vars_expr = fold_vars_expr Part.add
+    and add_var = fold_var Part.add
+
+    let add_vars_cn t cn = match cn with
+    | Assign (v,e) ->
+        add_var v t |> add_vars_expr e
+    | Failed _ | Warn _ -> t
+
+    let add_vars_cns cns = List.fold_left add_vars_cn (Part.create ()) cns
+
+(* Perform union-find *)
+
+    let uf_cn t cn = match cn with
+    | Assign (V.Var v,Atom (V.Var w)) -> Part.union t v w
+    | _ -> ()
+
+    let uf_cns t cns =
+      List.iter (uf_cn t) cns ;
+      Part.as_solution t
+
+(* Simplify equations *)
+
+    let subst_atom m v =
+      V.map_csym
+        (fun x ->
+          try V.Var (Part.Sol.find x m)
+          with Not_found -> V.Var x)
+        v
+    let subst_expr m = map_expr (subst_atom m)
+
+    let subst_cn m cn k = match cn with
+    | Assign (v,Atom w) ->
+        let v = subst_atom m v
+        and w = subst_atom m w in
+        if V.compare v w = 0 then k else Assign (v,Atom w)::k
+    | Assign (v,e) ->
+        let v = subst_atom m v
+        and e = subst_expr m e in
+        Assign (v,e)::k
+    | Failed _ | Warn _ -> cn::k
+
+    let subst_cns soln cns = List.fold_right (subst_cn soln) cns []
+
+
+(* All together *)
+
+    (** [normalise cns], where [cns] is a list of equations,
+     * that is, compute equivalence classes of variables and
+     * replace variables by their representative.
+     * The function returns a pair [(m,cns)], where cns collects
+     * the new equations, with equations [x := y] removed and
+     * variables replaced by representative. The mapping [m]
+     * is from variables to representative.
+     *)
+    let normalize_vars cns =
+      let t = add_vars_cns cns in
+      let m = uf_cns t cns in
+      let cns = subst_cns m cns in
+      if debug_solver then begin
+       eprintf "* Normalizes to *\n%s\n%!" (pp_cnstrnts cns)
+      end ;
+      m,cns
+
+    let add_vars_solns m solns0 =
+      Part.Sol.fold
+        (fun  x y solns ->
+          try
+            let cst = V.Solution.find y solns0 in
+            V.Solution.add x (V.Val cst) solns
+          with Not_found ->
+            V.Solution.add x (V.Var y) solns)
+        m
+        (V.Solution.map (fun x -> V.Val x) solns0)
+
+(**************************************)
+(* Second phase: topological order *)
+(**************************************)
+
+    (* Sort the SCC (Strongly connected component) in topological order *)
     let topo_order (constraints: cnstrnts) : cnstrnts list =
       let ns,r = eq2g constraints in
       List.rev (EqRel.scc_kont List.cons [] ns r)
-      (*let map = gen_assign_map constraints in
-      (* We already start the exploration of the variable *)
-      let seen : (V.csym, unit) Hashtbl.t = Hashtbl.create 42 in
 
-      let rec explore (x: V.csym) : cnstrnts list =
-        if Hashtbl.mem seen x then [] else begin
-          Hashtbl.add seen x ();
-
-          (* Assignations of `x` *)
-          let exprs =
-            try V.Solution.find x map
-            with Not_found -> []
-          in
-
-          (* Dependences of `x` *)
-          let vars = List.concat_map (fun expr ->
-              fold_vars_expr List.cons expr []
-            ) exprs
-          in
-
-          let l1 = List.concat_map explore vars in
-          let l2 = [List.map (fun e -> Assign (V.Var x, e)) exprs] in
-          l1 @ l2
-        end
-      in
-
-      (* Return a tuple `sorted_assignations, other_constraints` *)
-      let rec sort : cnstrnts -> cnstrnts list * cnstrnts = function
-        | Assign (V.Var x, _) :: xs ->
-            let l1 = explore x in
-            let (l2, rest) = sort xs in
-            (l1 @ l2, rest)
-        | _ as c :: xs ->
-            let (l, rest) = sort xs in
-            (l, c :: rest)
-        | [] -> ([], [])
-      in
-
-      let (assignations, other_constraints) = sort constraints in
-      assignations @ [other_constraints]
-      *)
-
-    (* Try to solve a constraint *)
+    (* Try to solve one constraint and return the list of unsolved constraints *)
     let solve_one : cnstrnt -> cnstrnts solver_monad = function
       | Assign (v, expr) -> begin
         let* v = subst_value v in
@@ -548,6 +588,7 @@ and type state = A.state =
           pure []
 
     let solve_topo (constraints : cnstrnts) : answer =
+      let m,constraints = normalize_vars constraints in
       if debug_solver then
         Printf.printf "*** Solve ***\n%s\n" (pp_cnstrnts constraints);
       let constraints = topo_order constraints in
@@ -556,9 +597,15 @@ and type state = A.state =
         constraints));
       match solve_many constraints init_solver with
       | (state, constraints) :: _ ->
-          Maybe (V.Solution.map (fun x -> V.Val x) state.solution, constraints)
+          let solution = add_vars_solns m state.solution in
+          Maybe (solution, constraints)
       | _ ->
           NoSolns
+
+    let solve cs =
+      let answer = solve_topo cs in
+      if debug_solver then Printf.printf "Answer: %s\n" (pp_answer answer);
+      answer
 
     let get_failed cns =
       List.fold_left
@@ -570,7 +617,6 @@ and type state = A.state =
         None cns
 
     let pp_answer =
-
       let pp_cns cns = match cns with
       | [] -> ""
       | _::_ ->
@@ -590,9 +636,4 @@ and type state = A.state =
                  (fun (v,i) -> V.pp_csym v ^ "<-" ^ V.pp C.hexa i) bds) in
 
           sol_pped ^ pp_cns cns
-
-    let solve cs =
-      let answer = solve_topo cs in
-      if debug_solver then Printf.printf "Answer: %s\n" (pp_answer answer);
-      answer
   end
