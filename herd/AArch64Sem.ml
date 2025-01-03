@@ -828,8 +828,8 @@ module Make
 
           * Without HW-management (on old CPUs, or where TCR_ELx.{HA,HD} == {0,0}):
 
-          A load/store to x where pte_x has the access flag clear will raise a
-          permission fault
+          A load/store to x where pte_x has the access flag clear will raise an
+          Access flag fault
 
           A store to x where pte_x has the dirty bit clear will raise
           a permission fault
@@ -1376,12 +1376,19 @@ module Make
             fun (r,_) -> M.unitT r
         else m
 
-      let lift_kvm dir updatedb mop ma an ii mphy =
-        let lbl_v = get_instr_label ii in
+      let lift_kvm dir updatedb mop ma an ii mphy instr_at =
         let mfault ma a ft =
-          insert_commit_to_fault ma
-            (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
-            None ii >>! B.fault [AArch64Base.elr_el1, lbl_v] in
+          let lbl_v = get_instr_label ii in
+          if not instr_at then
+            insert_commit_to_fault ma
+              (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
+              None ii >>! B.fault [AArch64Base.elr_el1, lbl_v]
+          else
+            let parel1_v = V.Val (Constant.AddrReg (V.Cst.AddrReg.default 1)) in
+            (* address translation faults are asynchronously reported in PAR_EL1 *)
+            let set_par_el1 = write_reg AArch64Base.par_el1 parel1_v ii in
+                let ma = ma >>= (fun a -> (set_par_el1) >>! a) in ma >>! B.Next []
+        in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb false a ma an ii
             ((let m = mop Access.PTE ma in
@@ -1516,7 +1523,7 @@ module Make
         | Some rB -> AArch64.reg_compare rA rB=0
 
       let lift_memop rA (* Base address register *)
-            dir updatedb checked mop perms ma mv an ii =
+            dir updatedb checked mop perms ma mv an ii instr_at =
         if morello then
           lift_morello mop perms ma mv dir an ii
         else
@@ -1537,7 +1544,7 @@ module Make
               if checked then lift_memtag_phy dir mop ma an ii mphy
               else mphy
             in
-            let m = lift_kvm dir updatedb mop ma an ii mphy in
+            let m = lift_kvm dir updatedb mop ma an ii mphy instr_at in
             (* M.short will add an iico_data only if memtag is enabled *)
             M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
           else if pac then
@@ -1546,6 +1553,18 @@ module Make
             lift_memtag_virt mop ma dir an ii
           else
             mop Access.VIR ma >>= M.ignore >>= B.next1T
+
+      (* Address translation instruction *)
+      let do_at op rd ii =
+        let open AArch64Base in
+        let dir =
+          match op.AArch64Base.AT.rw with
+          | AArch64Base.AT.W -> Dir.W
+          | AArch64Base.AT.R -> Dir.R in
+        let sreg = SysReg (AArch64Base.PAR_EL1) in
+        lift_memop rd dir false memtag
+          (fun _ ma _ -> ma >>= (fun a -> write_reg_dest sreg a ii))
+          (to_perms "r" MachSize.Word) (read_reg_ord rd ii) mzero Annot.N ii true
 
       let do_ldr rA sz an mop ma ii =
 (* Generic load *)
@@ -1560,7 +1579,7 @@ module Make
             else
               ma >>= mop ac)
           (to_perms "r" sz)
-          ma mzero an ii
+          ma mzero an ii false
 
 (* Generic store *)
       let do_str rA mop sz an ma mv ii =
@@ -1579,7 +1598,7 @@ module Make
                 ii
             else
               (ma >>| mv) >>= fun (a,v) -> mop ac a v ii)
-          (to_perms "w" sz) ma mv an ii
+          (to_perms "w" sz) ma mv an ii false
 
 (***********************)
 (* Memory instructions *)
@@ -1974,7 +1993,7 @@ module Make
               (mw an ac))
               (to_perms "w" sz)
               (read_reg_ord rd ii)
-              ms an ii
+              ms an ii false
 
       let stxr sz t rr rs rd ii =
         do_stxr
@@ -2040,7 +2059,7 @@ module Make
           (read_reg_ord r3 ii)
           (read_reg_data sz r1 ii)
           (rmw_to_read rmw)
-          ii
+          ii false
 
       let cas sz rmw rs rt rn ii =
         let an = rmw_to_read rmw in
@@ -2085,13 +2104,13 @@ module Make
           (* CAS succeeds and generates an Explicit Write Effect *)
           (* there must be an update to the dirty bit of the TTD *)
           lift_memop rn Dir.W true memtag mop_success (to_perms "rw" sz)
-            (read_reg_ord rn ii) (read_reg_data sz rt ii) an ii
+            (read_reg_ord rn ii) (read_reg_data sz rt ii) an ii false
         )( (* CAS fails *)
           M.altT (
             (* CAS generates an Explicit Write Effect              *)
             (* there must be an update to the dirty bit of the TTD *)
             lift_memop rn Dir.W true memtag mop_fail_with_wb (to_perms "rw" sz)
-              (read_reg_ord rn ii) (read_reg_data sz rt ii) an ii
+              (read_reg_ord rn ii) (read_reg_data sz rt ii) an ii false
           )(
             (* CAS does not generate an Explicit Write Effect          *)
             (* It is IMPLEMENTATION SPECIFIC if there is an update to  *)
@@ -2099,7 +2118,7 @@ module Make
             (* Note: the combination of dir=Dir.R and updatedb=true    *)
             (*                    triggers an alternative in check_ptw *)
             lift_memop rn Dir.R true memtag mop_fail_no_wb (to_perms "rw" sz)
-              (read_reg_ord rn ii) (read_reg_data sz rt ii) an ii
+              (read_reg_ord rn ii) (read_reg_data sz rt ii) an ii false
           )
         )
 
@@ -2166,7 +2185,7 @@ module Make
           lift_memop rn Dir.W true memtag mop_success
             (to_perms "rw" sz) (read_reg_ord rn ii)
             (read_reg_data sz rt1 ii >>> fun _ -> read_reg_data sz rt2 ii)
-            an ii
+            an ii false
         )( (* CASP fails *)
           M.altT (
             (* CASP generates Explicit Write Effects               *)
@@ -2174,7 +2193,7 @@ module Make
             lift_memop rn Dir.W true memtag mop_fail_with_wb
               (to_perms "rw" sz) (read_reg_ord rn ii)
               (read_reg_data sz rt1 ii >>> fun _ -> read_reg_data sz rt2 ii)
-              an ii
+              an ii false
           )(
             (* CASP does not generate Explicit Write Effects           *)
             (* It is IMPLEMENTATION SPECIFIC if there is an update to  *)
@@ -2184,7 +2203,7 @@ module Make
             lift_memop rn Dir.R true memtag mop_fail_no_wb
               (to_perms "rw" sz) (read_reg_ord rn ii)
               (read_reg_data sz rt1 ii >>> fun _ -> read_reg_data sz rt2 ii)
-              an ii
+              an ii false
           )
         )
 
@@ -2258,7 +2277,7 @@ module Make
           (to_perms "rw" sz)
           (read_reg_ord rn ii)
           (read_reg_data sz rs ii >>= tr_input)
-          an ii
+          an ii false
 
       (* Neon/SVE/SME instructions *)
       let (let>*) = M.bind_control_set_data_input_first
@@ -3232,7 +3251,7 @@ module Make
                 else
                   ma >>= mop ac)
               (to_perms "r" MachSize.Word)
-              (read_reg_ord rd ii) mzero Annot.N ii
+              (read_reg_ord rd ii) mzero Annot.N ii false
           end
 
       let do_ic op rd ii =
@@ -3266,7 +3285,7 @@ module Make
           (fun a_virt ma ->
              let do_ldg = do_ldg a_virt in
              lift_memop rn Dir.R false false (fun ac ma _mv -> do_ldg ac ma)
-               (to_perms "w" MachSize.S128) ma mzero Annot.N ii)
+               (to_perms "w" MachSize.S128) ma mzero Annot.N ii false)
 
       type double = Once|Twice
 
@@ -3292,7 +3311,7 @@ module Make
           else
             (ma >>| mv) >>= fun (a,v) -> _do_stg a v in
         lift_memop rn Dir.W true false (fun ac ma mv -> do_stg ac ma mv)
-          (to_perms "w" MachSize.granule) ma mv Annot.N ii
+          (to_perms "w" MachSize.granule) ma mv Annot.N ii false
 
       let stz d rn k ii =
         let sz = MachSize.granule in
@@ -3316,7 +3335,7 @@ module Make
                   (fun a v -> mop ac a v ii)
               end else
               (ma >>| mv) >>= fun (a,v) -> mop ac a v ii)
-          (to_perms "w" sz) ma mzero Annot.N ii
+          (to_perms "w" sz) ma mzero Annot.N ii false
 
       let do_stzg d rt rn k ii =
         let do_stz = stz d rn k ii in
@@ -4425,6 +4444,8 @@ module Make
             ldop op (bh_to_sz v) (w_to_rmw w) rs ZR rn ii
         | I_LDOPBH (op,v,rmw,rs,rt,rn) ->
             ldop op (bh_to_sz v) rmw rs rt rn ii
+(* Address translation operation *)
+        | I_AT (op, rd) -> do_at op rd ii
 (* Page tables and TLBs *)
         | I_TLBI (op, rd) ->
             !(read_reg_ord rd ii >>= fun a -> do_inv op a ii)

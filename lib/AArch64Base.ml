@@ -924,6 +924,31 @@ module TLBI = struct
   let sets = [("TLBIIS", fun op->op.domain=IS); ("TLBInXS", (fun op -> op.nXS))]
 end
 
+module AT = struct
+
+  type stages =
+    | S1
+    | S12
+
+  let pp_stages = function
+    | S1 -> "S1"
+    | S12 -> "S12"
+
+  type rw =
+    | R
+    | W
+
+  let pp_rw = function
+    | R -> "R"
+    | W -> "W"
+
+  type op = { stages:stages; level:level; rw:rw }
+
+  let pp_op { stages; level; rw; } =
+    sprintf "%s%s%s" (pp_stages stages) (pp_level level) (pp_rw rw)
+
+end
+
 (****************)
 (* Instructions *)
 (****************)
@@ -1714,6 +1739,8 @@ type 'k kinstruction =
   | I_IC of IC.op * reg
   | I_DC of DC.op * reg
   | I_TLBI of TLBI.op * reg
+(* Address translation *)
+  | I_AT of AT.op * reg
 (* Read system register *)
   | I_MRS of reg * sysreg
 (* Write system register *)
@@ -2468,6 +2495,8 @@ let do_pp_instruction m =
       sprintf "TLBI %s" (TLBI.pp_op op)
   | I_TLBI (op,r)->
       sprintf "TLBI %s,%s" (TLBI.pp_op op) (pp_xreg r)
+  | I_AT (op, r) ->
+      sprintf "AT %s, %s" (AT.pp_op op) (pp_xreg r)
 (* Read System register *)
   | I_MRS (r,sr) ->
       sprintf "MRS %s,%s" (pp_xreg r) (pp_sysreg sr)
@@ -2576,6 +2605,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_CHKSLD r | I_CHKTGD r
   | I_MOVI_V (r,_,_) | I_MOVI_S (_,r,_)
   | I_TLBI (_,r)
+  | I_AT (_,r)
   | I_MOV_SV (r,_,_)
   | I_INDEX_II (r,_,_)
   | I_RDVL (r,_)
@@ -3024,6 +3054,8 @@ let map_regs f_reg f_symb =
       I_DC (op,map_reg r)
   | I_TLBI (op,r) ->
       I_TLBI (op,map_reg r)
+  | I_AT (op,r) ->
+      I_AT (op,map_reg r)
 (* Read system register *)
   | I_MRS (r,sr) ->
      let sr =
@@ -3128,6 +3160,7 @@ let get_next =
   | I_IC _
   | I_DC _
   | I_TLBI _
+  | I_AT _
   | I_MRS _ | I_MSR _
   | I_STG _|I_STZG _|I_STZ2G _|I_LDG _
   | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
@@ -3530,6 +3563,7 @@ module PseudoI = struct
         | I_IC _
         | I_DC _
         | I_TLBI _
+        | I_AT _
         | I_MRS _ | I_MSR _
         | I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _|I_CPYTYPE _
         | I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|I_SEAL _|I_STCT _
@@ -3668,6 +3702,7 @@ module PseudoI = struct
         | I_TLBI (_,_)
         | I_XPACI _
         | I_XPACD _
+        | I_AT (_,_)
           -> 1
         | I_LDP _|I_LDPSW _|I_STP _|I_LDXP _|I_STXP _
         | I_CAS _ | I_CASBH _

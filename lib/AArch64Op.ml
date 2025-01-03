@@ -85,7 +85,7 @@ module
       let module InstrPP = AArch64Base.MakePP(struct
         let is_morello = true
       end) in
-      Constant.pp (S.pp hexa) (AArch64PteVal.pp hexa)
+      Constant.pp (S.pp hexa) (AArch64PteVal.pp hexa) (AArch64AddrReg.pp hexa)
       (InstrPP.dump_instruction) v
 
     open AArch64PteVal
@@ -135,10 +135,6 @@ module
     let getel0 = op_get_pteval (fun p -> p.el0 <> 0)
 
     let gettagged = op_get_pteval (fun p -> Attrs.mem "TaggedNormal" p.attrs)
-
-    let getf = op_get_parel (fun p -> p.AArch64AddrReg.f <> 0)
-
-    let setf = op_set_parel (fun p -> { p with AArch64AddrReg.f=1; })
 
     let getoa v =
       let open Constant in
