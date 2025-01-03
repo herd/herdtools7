@@ -30,6 +30,7 @@ type t = {
   files : bool ;
   timeout : bool ;
   profile_cat: bool ;
+  profile_asl: bool ;
   exc : bool ;  }
 
 val none : t
