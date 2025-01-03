@@ -1218,18 +1218,12 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             if _dbg then
               Printf.eprintf "Got rfms back: %d of them.\n%!" (List.length rfms)
           in
-          let build_conc es rfmap =
-            let open ASLE in
-            let po = MU.po_iico es in
-            let pos =
-              let mem_evts = mem_of es.events in
-              EventRel.of_pred mem_evts mem_evts @@ fun e1 e2 ->
-              same_location e1 e2 && EventRel.mem (e1, e2) po
-            in
+          let build_conc str rfmap =
             let partial_po =
-              EventTransRel.to_implicitely_transitive_rel es.partial_po
+              let open ASLE in
+              EventTransRel.to_implicitely_transitive_rel str.partial_po
             in
-            ASLS.{ ASLS.conc_zero with str = es; rfmap; po; partial_po; pos }
+            ASLS.{ ASLS.conc_zero with str; rfmap; partial_po; }
           in
           let check_rfm_and_translate acc (es, rfm, cs) =
             let kfail acc = acc in
