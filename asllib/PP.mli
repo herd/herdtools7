@@ -34,8 +34,9 @@ val pp_print_seq : ?pp_sep:unit printer -> 'a printer -> 'a Seq.t printer
 (** Re-exported from stdlib 4.12, print q sequence from its elements. *)
 
 val pp_pos : 'a annotated printer
-
 val pp_pos_str : 'a annotated -> string
+
+val pp_pos_str_no_char : 'a annotated -> string
 (** Print a position. *)
 
 (** {1 AST pretty-printers} *)

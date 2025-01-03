@@ -248,17 +248,9 @@ module Make (C : Config) = struct
       in
       an
 
-    let wrap_op1_symb_as_var op1 = function
-      | V.Val (Constant.Symbolic _) as v ->
-          let v' = V.fresh_var () in
-          M.restrict M.VC.[ Assign (v', Unop (op1, v)) ] >>! v'
-      | v -> M.op1 op1 v
-
-    let to_bv sz =
-      wrap_op1_symb_as_var
-        (Op.ArchOp1 (ASLOp.ToBV (MachSize.nbits sz)))
-    let to_int_unsigned = wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.ToIntU)
-    let to_int_signed = wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.ToIntS)
+    let to_bv sz = M.op1 (Op.ArchOp1 (ASLOp.ToBV (MachSize.nbits sz)))
+    let to_int_unsigned = M.op1 (Op.ArchOp1 ASLOp.ToIntU)
+    let to_int_signed = M.op1 (Op.ArchOp1 ASLOp.ToIntS)
 
     (**************************************************************************)
     (* Special monad interactions                                              *)
@@ -298,24 +290,33 @@ module Make (C : Config) = struct
             if b then m2 else m3
          | b -> M.asl_data (to_int_signed b) (fun v -> M.choiceT v m2 m3))
 
+    let logor v1 v2 =
+      match (v1, v2) with
+      | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)), v
+        when Asllib.Bitvector.is_zeros bv ->
+          return v
+      | v, V.Val (Constant.Concrete (ASLScalar.S_BitVector bv))
+        when Asllib.Bitvector.is_zeros bv ->
+          return v
+      | _ -> M.op Op.Or v1 v2
+
+    let boolop herdop shortcut v1 v2 =
+      match (v1, v2) with
+      | V.Val (Constant.Concrete (ASLScalar.S_Bool b)), v
+      | v, V.Val (Constant.Concrete (ASLScalar.S_Bool b)) ->
+          return @@ shortcut b v
+      | _ -> M.op herdop v1 v2
+
     let binop =
       let open AST in
       let to_bool op v1 v2 = op v1 v2 >>= M.op1 (Op.ArchOp1 ASLOp.ToBool) in
-      let or_ v1 v2 =
-        match (v1, v2) with
-        | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)), v
-          when Asllib.Bitvector.is_zeros bv ->
-            return v
-        | v, V.Val (Constant.Concrete (ASLScalar.S_BitVector bv))
-          when Asllib.Bitvector.is_zeros bv ->
-            return v
-        | _ -> M.op Op.Or v1 v2
-      in
+      let v_true = V.Val (Constant.Concrete (ASLScalar.S_Bool true))
+      and v_false = V.Val (Constant.Concrete (ASLScalar.S_Bool false)) in
       function
       | AND -> M.op Op.And
-      | BAND -> M.op Op.And
+      | BAND -> boolop Op.And (fun b v -> if b then v else v_false)
       | BEQ -> M.op Op.Eq |> to_bool
-      | BOR -> M.op Op.Or
+      | BOR -> boolop Op.Or (fun b v -> if b then v_true else v)
       | DIV -> M.op Op.Div
       | MOD -> M.op Op.Rem
       | DIVRM -> M.op (Op.ArchOp ASLOp.Divrm)
@@ -328,7 +329,7 @@ module Make (C : Config) = struct
       | MINUS -> M.op Op.Sub
       | MUL -> M.op Op.Mul
       | NEQ -> M.op Op.Ne |> to_bool
-      | OR -> or_
+      | OR -> logor
       | PLUS -> M.op Op.Add
       | SHL -> M.op Op.ShiftLeft
       | SHR -> M.op Op.ShiftRight
@@ -340,9 +341,9 @@ module Make (C : Config) = struct
     let unop op =
       let open AST in
       match op with
-      | BNOT -> wrap_op1_symb_as_var (Op.ArchOp1 ASLOp.BoolNot)
+      | BNOT -> M.op1 (Op.ArchOp1 ASLOp.BoolNot)
       | NEG -> M.op Op.Sub V.zero
-      | NOT -> wrap_op1_symb_as_var Op.Inv
+      | NOT -> M.op1 Op.Inv
 
     let ternary = function
       | V.Val (Constant.Concrete (ASLScalar.S_Bool true)) -> fun m1 _ -> m1 ()
@@ -496,6 +497,8 @@ module Make (C : Config) = struct
      * Notice that ASL fence events take
      * an AArch64 barrier as argument.
      *)
+
+    let cutoffT (ii,poi) msg v = M.cutoffT msg (use_ii_with_poi ii poi) v
 
     let primitive_isb (ii, poi) () =
       create_barrier AArch64Base.ISB (use_ii_with_poi ii poi)
@@ -912,7 +915,7 @@ module Make (C : Config) = struct
         let choice = choice
         let delay m k = M.delay_kont "ASL" m k
         let return = M.unitT
-        let warnT = M.warnT
+        let cutoffT msg v = cutoffT ii_env msg v
         let on_write_identifier = on_write_identifier ii_env
         let on_read_identifier = on_read_identifier ii_env
         let binop = binop

@@ -726,7 +726,6 @@ let rec is_simple_expr e =
   | E_GetArray (e1, e2)
   | E_Binop (_, e1, e2) ->
       is_simple_expr e1 && is_simple_expr e2
-  | E_ATC (e, _)
   | E_GetFields (e, _)
   | E_GetField (e, _)
   | E_GetItem (e, _)
@@ -736,9 +735,16 @@ let rec is_simple_expr e =
   | E_Tuple es -> List.for_all is_simple_expr es
   | E_Cond (e1, e2, e3) ->
       is_simple_expr e1 && is_simple_expr e2 && is_simple_expr e3
+  | E_Slice (e, slices) ->
+      is_simple_expr e && List.for_all is_simple_slice slices
   | E_Record (_, fields) ->
       List.for_all (fun (_name, e) -> is_simple_expr e) fields
-  | E_Call _ | E_Slice _ -> false
+  | E_ATC (_, _) | E_Call _ -> false
+
+and is_simple_slice = function
+  | Slice_Length (e1, e2) | Slice_Range (e1, e2) | Slice_Star (e1, e2) ->
+      is_simple_expr e1 && is_simple_expr e2
+  | Slice_Single e -> is_simple_expr e
 
 let bitfield_get_name = function
   | BitField_Simple (name, _)

@@ -1,1 +1,1 @@
-Warning: File "./herd/tests/instructions/AArch64.kvm/A018.litmus", unrolling limit exceeded, legal outcomes may be missing.
+Warning: File "./herd/tests/instructions/AArch64.kvm/A018.litmus": unrolling limit exceeded at L0, legal outcomes may be missing.

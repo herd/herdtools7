@@ -1,0 +1,10 @@
+Test non-deterministic Required
+States 1
+0:main.0.z=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation non-deterministic Always 1 0
+Hash=35f62616408094ca372b7b6260f3ffd3
+
