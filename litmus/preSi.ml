@@ -1509,6 +1509,16 @@ module Make
         let vss = List.map2 (@) rems vs in
         List.combine rems (responsible vss)
 
+      let memattrs_change a pte_init =
+        if Cfg.is_kvm then begin
+          match Misc.Simple.assoc_opt a pte_init with
+          | Some (V (o,pteval)) when (Misc.is_some o) && not (A.V.PteVal.is_default pteval) ->
+            let attrs = A.V.PteVal.get_attrs pteval in
+            attrs <> []
+          | _ -> false
+        end
+        else false
+
       let dump_run_thread procs_user faults
           pte_init env test _some_ptr stats global_env
           (_vars,inits) (proc,(out,(_outregs,envVolatile)))  =
@@ -1569,13 +1579,27 @@ module Make
                     O.fiii "%s;"
                       (U.do_store (Base t)
                          (sprintf "%s[_j]" a) (pp_const v)) ;
+                    (* Initialisation happens before we change the
+                       memory attributes. Clean the cache to make sure
+                       we don't create the conditions for mismatched
+                       memory attributes accidentally. *)
+                    if memattrs_change a pte_init then
+                      O.fiii "cache_flush((void *)&%s[_j]);" a ;
                     O.oii "}" ;
                     if Cfg.is_kvm then
                       O.fii "litmus_flush_tlb((void *)%s);" a
                 end
             | _ ->
                 O.fii "%s;" (U.do_store at (sprintf "*%s" a) (pp_const v)) ;
-                if Cfg.is_kvm then O.fii "litmus_flush_tlb((void *)%s);" a)
+                if Cfg.is_kvm then begin
+                  O.fii "litmus_flush_tlb((void *)%s);" a ;
+                  (* Initialisation happens before we change the
+                     memory attributes. Clean the cache to make sure
+                     we don't create the conditions for mismatched
+                     memory attributes accidentally. *)
+                  if memattrs_change a pte_init then
+                    O.fii "cache_flush((void *)%s);" a ;
+                end)
           inits ;
 (*        eprintf "%i: INIT {%s}\n" proc (String.concat "," inits) ; *)
         (* And cache-instruct them *)
@@ -1618,10 +1642,9 @@ module Make
                           x x (PU.dump_pteval_flags arg pteval);
                         List.iter
                           (fun attr ->
-                            let attr = sprintf "attr_%s" (MyName.name_as_symbol attr) in
                             O.fii "litmus_set_pte_attribute(_vars->pte_%s, %s);"
                               x attr)
-                          (A.V.PteVal.get_attrs pteval)
+                          (A.V.PteVal.attrs_as_kvm_symbols pteval)
                       end
                   end ;
                   true
