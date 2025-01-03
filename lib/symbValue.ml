@@ -304,8 +304,16 @@ module
     | (Val (Label _),Val (Label _))
     | (Val (PteVal _),Val (PteVal _))
     | (Val (Instruction _),Val (Instruction _))
-      ->
-        Val (Concrete (Cst.Scalar.of_int (compare  v1 v2)))
+      -> begin
+        let default = Val (Concrete (Cst.Scalar.of_int (compare  v1 v2))) in
+        let c1 = Option.get (as_constant v1) in
+        let c2 = Option.get (as_constant v2) in
+        match Constant.collision c1 c2 with
+        | Some (px, py) ->
+          raise (CollisionPAC (px, py, zero, default))
+        | None ->
+            default
+    end
     (* 0 is sometime used as invalid PTE, no orpat because warning 57
        cannot be disabled in some versions ?  *)
     | (Val (PteVal _),Val cst)

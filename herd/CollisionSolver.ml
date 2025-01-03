@@ -66,14 +66,14 @@ module type S = sig
 
   type answer =
     | NoSolns
-    | Maybe of solution *  cnstrnts
+    | Maybe of solution *  cnstrnts * solver_state
 
   val pp_answer : answer -> string
 
 (* Extract delayed exception, if present, or warning, if present. *)
   val get_failed :  cnstrnts -> cnstrnt option
 
-  val solve : cnstrnt list -> answer
+  val solve : solver_state -> cnstrnt list -> answer
 end
 
 module type Config = sig
@@ -176,6 +176,103 @@ and type state = A.state =
     let pp_cnstrnts lst =
       String.concat "\n"
         (List.map pp_cnstrnt lst)
+
+(**************************************)
+(* Initial phase: normalize variables *)
+(**************************************)
+
+(*
+  straightforward union-find.
+  <http://en.wikipedia.org/wiki/Disjoint-set_data_structure>
+*)
+
+(* Collect all variables in partition *)
+
+    module OV = struct
+      type t = V.csym
+      let compare = V.compare_csym
+    end
+
+    module Part = Partition.Make (OV)
+
+    let add_vars_expr = fold_vars_expr Part.add
+    and add_var = fold_var Part.add
+
+    let add_vars_cn t cn = match cn with
+    | Assign (v,e) ->
+        add_var v t |> add_vars_expr e
+    | Failed _ | Warn _ -> t
+
+    let add_vars_cns cns = List.fold_left add_vars_cn (Part.create ()) cns
+
+(* Perform union-find *)
+
+    let uf_cn t cn = match cn with
+    | Assign (V.Var v,Atom (V.Var w)) -> Part.union t v w
+    | _ -> ()
+
+    let uf_cns t cns =
+      List.iter (uf_cn t) cns ;
+      Part.as_solution t
+
+(* Simplify equations *)
+
+    let subst_atom m v =
+      V.map_csym
+        (fun x ->
+          try V.Var (Part.Sol.find x m)
+          with Not_found -> V.Var x)
+        v
+    let subst_expr m = map_expr (subst_atom m)
+
+    let subst_cn m cn k = match cn with
+    | Assign (v,Atom w) ->
+        let v = subst_atom m v
+        and w = subst_atom m w in
+        if V.compare v w = 0 then k else Assign (v,Atom w)::k
+    | Assign (v,e) ->
+        let v = subst_atom m v
+        and e = subst_expr m e in
+        Assign (v,e)::k
+    | Failed _ | Warn _ -> cn::k
+
+    let subst_cns soln cns = List.fold_right (subst_cn soln) cns []
+
+
+(* All together *)
+
+    (** [normalise cns], where [cns] is a list of equations,
+     * that is, compute equivalence classes of variables and
+     * replace variables by their representative.
+     * The function returns a pair [(m,cns)], where cns collects
+     * the new equations, with equations [x := y] removed and
+     * variables replaced by representative. The mapping [m]
+     * is from variables to representative.
+     *)
+    let normalize_vars cns =
+      let t = add_vars_cns cns in
+      let m = uf_cns t cns in
+      let cns = subst_cns m cns in
+      if debug_solver then begin
+       eprintf "* Normalizes to *\n%s\n%!" (pp_cnstrnts cns)
+      end ;
+      m,cns
+
+    let add_vars_solns m solns0 =
+      Part.Sol.fold
+        (fun  x y solns ->
+          try
+            let cst = V.Solution.find y solns0 in
+            V.Solution.add x (V.Val cst) solns
+          with Not_found ->
+            V.Solution.add x (V.Var y) solns)
+        m
+        (V.Solution.map (fun x -> V.Val x) solns0)
+
+(**************************************)
+(* Construct the topological order    *)
+(**************************************)
+
 
     module OrderedEq = struct
       type t = cnstrnt
@@ -304,7 +401,7 @@ and type state = A.state =
 
     type answer =
       | NoSolns
-      | Maybe of solution * cnstrnts
+      | Maybe of solution * cnstrnts * solver_state
 
     let init_solver = {
       solver= PAC.empty_solver;
@@ -450,97 +547,6 @@ and type state = A.state =
       | exn ->
           pure (Failure exn)
 
-(**************************************)
-(* Initial phase: normalize variables *)
-(**************************************)
-
-(*
-  straightforward union-find.
-  <http://en.wikipedia.org/wiki/Disjoint-set_data_structure>
-*)
-
-(* Collect all variables in partition *)
-
-    module OV = struct
-      type t = V.csym
-      let compare = V.compare_csym
-    end
-
-    module Part = Partition.Make (OV)
-
-    let add_vars_expr = fold_vars_expr Part.add
-    and add_var = fold_var Part.add
-
-    let add_vars_cn t cn = match cn with
-    | Assign (v,e) ->
-        add_var v t |> add_vars_expr e
-    | Failed _ | Warn _ -> t
-
-    let add_vars_cns cns = List.fold_left add_vars_cn (Part.create ()) cns
-
-(* Perform union-find *)
-
-    let uf_cn t cn = match cn with
-    | Assign (V.Var v,Atom (V.Var w)) -> Part.union t v w
-    | _ -> ()
-
-    let uf_cns t cns =
-      List.iter (uf_cn t) cns ;
-      Part.as_solution t
-
-(* Simplify equations *)
-
-    let subst_atom m v =
-      V.map_csym
-        (fun x ->
-          try V.Var (Part.Sol.find x m)
-          with Not_found -> V.Var x)
-        v
-    let subst_expr m = map_expr (subst_atom m)
-
-    let subst_cn m cn k = match cn with
-    | Assign (v,Atom w) ->
-        let v = subst_atom m v
-        and w = subst_atom m w in
-        if V.compare v w = 0 then k else Assign (v,Atom w)::k
-    | Assign (v,e) ->
-        let v = subst_atom m v
-        and e = subst_expr m e in
-        Assign (v,e)::k
-    | Failed _ | Warn _ -> cn::k
-
-    let subst_cns soln cns = List.fold_right (subst_cn soln) cns []
-
-
-(* All together *)
-
-    (** [normalise cns], where [cns] is a list of equations,
-     * that is, compute equivalence classes of variables and
-     * replace variables by their representative.
-     * The function returns a pair [(m,cns)], where cns collects
-     * the new equations, with equations [x := y] removed and
-     * variables replaced by representative. The mapping [m]
-     * is from variables to representative.
-     *)
-    let normalize_vars cns =
-      let t = add_vars_cns cns in
-      let m = uf_cns t cns in
-      let cns = subst_cns m cns in
-      if debug_solver then begin
-       eprintf "* Normalizes to *\n%s\n%!" (pp_cnstrnts cns)
-      end ;
-      m,cns
-
-    let add_vars_solns m solns0 =
-      Part.Sol.fold
-        (fun  x y solns ->
-          try
-            let cst = V.Solution.find y solns0 in
-            V.Solution.add x (V.Val cst) solns
-          with Not_found ->
-            V.Solution.add x (V.Var y) solns)
-        m
-        (V.Solution.map (fun x -> V.Val x) solns0)
 
 (**************************************)
 (* Second phase: topological order *)
@@ -587,7 +593,7 @@ and type state = A.state =
       | [] ->
           pure []
 
-    let solve_topo (constraints : cnstrnts) : answer =
+    let solve_topo (state: solver_state) (constraints : cnstrnts) : answer =
       let m,constraints = normalize_vars constraints in
       if debug_solver then
         Printf.printf "*** Solve ***\n%s\n" (pp_cnstrnts constraints);
@@ -595,17 +601,17 @@ and type state = A.state =
       if debug_solver then
         Printf.printf "*** Ordered ***\n%s\n" (pp_cnstrnts (List.concat
         constraints));
-      match solve_many constraints init_solver with
-      | (state, constraints) :: _ ->
+      match solve_many constraints state with
+      | (state, constraints) :: _ as solutions -> begin
+          if debug_solver then begin
+            Printf.printf "found %d solutions\n%s" (List.length solutions)
+            (PAC.pp_solver state.solver)
+          end;
           let solution = add_vars_solns m state.solution in
-          Maybe (solution, constraints)
+          Maybe (solution, constraints, state)
+      end
       | _ ->
           NoSolns
-
-    let solve cs =
-      let answer = solve_topo cs in
-      if debug_solver then Printf.printf "Answer: %s\n" (pp_answer answer);
-      answer
 
     let get_failed cns =
       List.fold_left
@@ -625,7 +631,7 @@ and type state = A.state =
 
       fun soln -> match soln with
       | NoSolns -> "No solutions"
-      | Maybe (sol,cns) ->
+      | Maybe (sol,cns, _) ->
           let sol_pped =
             let bds =
               V.Solution.fold
@@ -636,4 +642,10 @@ and type state = A.state =
                  (fun (v,i) -> V.pp_csym v ^ "<-" ^ V.pp C.hexa i) bds) in
 
           sol_pped ^ pp_cns cns
+
+
+    let solve state cs =
+      let answer = solve_topo state cs in
+      if debug_solver then Printf.printf "Answer: %s\n" (pp_answer answer);
+      answer
   end

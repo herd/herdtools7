@@ -1411,6 +1411,7 @@ module Make
  *)
       let lift_pac_virt mop ma dir an ii =
         let mok ma = mop Access.VIR ma >>= M.ignore >>= B.next1T in
+        let mok ma = mok (ma >>= M.op1 Op.SetCanonical) in
         let mfault ma =
           do_insert_commit ma (fun a ->
             mk_fault (Some a) dir an ii

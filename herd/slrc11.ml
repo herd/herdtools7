@@ -224,8 +224,8 @@ module Make (M:Cfg)
 
     let solve test es cs =
       match M.solve_regs test es cs with
-      | None -> (es, M.S.RFMap.empty, cs)
-      | Some (es, rfm, cs) -> (es, rfm, cs)
+      | None -> (es, M.S.RFMap.empty, cs, S.M.VC.init_solver)
+      | Some (es, rfm, cs, solver) -> (es, rfm, cs, solver)
 
 
 
@@ -356,7 +356,7 @@ module Make (M:Cfg)
       let check_cns ex cs =
         let ncs = (List.append cs (make_cnstrnts
                                      {ex with rf = added ex.safe ex.rf})) in
-        match M.S.M.VC.solve ncs with
+        match M.S.M.VC.solve S.M.VC.init_solver ncs with
         | M.S.M.VC.NoSolns -> false
         | _ -> true
 
@@ -827,10 +827,10 @@ module Make (M:Cfg)
       {ex with added = nadded; rf = nrf; mo = nmo; po = npo; debug_rels = ndebugrels}
 
 
-    let mykont test model_kont es cs = (fun e res ->
+    let mykont test model_kont es cs solver = (fun e res ->
         let ncs = (List.append cs (make_cnstrnts e)) in
-        M.solve_mem test es e.rfm ncs
-          (fun es0 rfm0 cs0 res0 ->
+        M.solve_mem test es e.rfm ncs solver
+          (fun es0 rfm0 cs0 solver res0 ->
             match cs0 with
             | [] ->
                if S.A.reject_mixed then M.check_sizes test es0;
@@ -874,13 +874,13 @@ module Make (M:Cfg)
                else begin
                    res0
                  end
-            | _ -> M.when_unsolved test es0 rfm0 cs0 (fun c -> c) res0) res)
+            | _ -> M.when_unsolved test es0 rfm0 cs0 solver (fun c -> c) res0) res)
 
     let real e = fence e || E.is_mem e
 
     let check_rfms test rfms _kfail _kont model_kont res =
       let (_, cs0, es0) = rfms in
-      let (es, rfm, cs) = solve test es0 cs0 in
+      let (es, rfm, cs, solver) = solve test es0 cs0 in
       let rmws = M.make_atomic_load_store es in
       let evts = E.EventSet.filter real es.E.events in
       let inits = E.EventSet.filter E.is_mem_store_init evts in
@@ -912,7 +912,7 @@ module Make (M:Cfg)
           psc = E.EventRel.empty;
           debug_rels = []
         } in
-      (visit ex_init cs (mykont test model_kont es cs) res)
+      (visit ex_init cs (mykont test model_kont es cs solver) res)
 
     let check_event_structure test (rfms : (_ * S.M.VC.cnstrnts * S.event_structure) list) kfail kont model_kont  (res : 'a) =
       List.fold_left (fun re rf -> check_rfms test rf kfail kont model_kont re) res rfms

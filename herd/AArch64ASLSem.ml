@@ -1199,7 +1199,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 (List.length rfms_with_regs)
           in
           let conc_and_pp =
-            let check_rfm li (es, rfm, cs) =
+            let check_rfm li (es, rfm, cs, solver) =
               let po = MU.po_iico es in
               let pos =
                 let mem_evts = ASLE.mem_of es.ASLE.events in

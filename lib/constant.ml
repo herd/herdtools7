@@ -113,6 +113,32 @@ module PAC = struct
       inequalities: PacSet.t list;
     }
 
+  let pp_solver solver =
+    let pp_elem x =
+      if Misc.int_eq x.offset 0 then
+        Printf.sprintf "pac%s(%s)" x.key x.modifier
+      else
+        Printf.sprintf "pac%s(%s,%d)" x.key x.modifier x.offset
+    in
+    let rec aux = function
+      | x :: y :: ys ->
+          Printf.sprintf "%s ^ %s" (pp_elem x) (aux (y :: ys))
+      | [x] ->
+          pp_elem x
+      | [] -> "0"
+    in
+    let pp_xor set = aux (PacSet.to_list set) in
+    let equalities =
+      PacMap.fold (fun x def s -> Printf.sprintf "\t%s := %s\n%s" (pp_elem x) (pp_xor def) s)
+      solver.equalities ""
+    in
+    let inequalities =
+      List.fold_right (fun eq s -> Printf.sprintf "\t0 != %s\n%s" (pp_xor eq) s)
+      solver.inequalities equalities
+    in
+    inequalities
+
+
   let empty_solver = {equalities= PacMap.empty; inequalities= []}
 
   (* simplify all the basic variables by their definition *)
@@ -156,7 +182,7 @@ module PAC = struct
         inequalities = simplified_inequalities
       } in
 
-      if List.exists PacSet.is_empty state.inequalities
+      if List.exists PacSet.is_empty new_state.inequalities
       then None (* We found a contradiction *)
       else Some new_state (* No contradiction found *)
     end

@@ -1,6 +1,10 @@
 AArch64 str failure
-{ 0:x0=pac(x,da,42); int x = 42 }
+{ 0:x0=pac(x,da,0); 0:x1=pac(x,db,0) }
 P0;
-  ldr x1,[x0];
+  cmp x0,x1;
+  b.eq finish;
+  autdzb x0;
+  mov x2,#1;
+finish:;
 exists
-( [x]=42 )
+( 0:x2=1 /\ ~Fault(P0) )

@@ -229,7 +229,7 @@ the constraints).
 
 ```
 A: S0 := 0
-B: S0 := S0 + S1
+B: S0 := S2 + S1
 C: S1 := 0
 D: S2 := S0
 ```
@@ -250,7 +250,8 @@ SCC1: { A: S0 := 0 }
 SCC2: { B: S0 := S0 + S1 }
 ```
 
-And the solver will find a solution `{S0 := 0; S1 := 0; S2 := 0}`.
+And the solver will find a solution `{S0 := 0; S1 := 0; S2 := 0}` (the solver
+assign `S2` to the value of the representant of it's equivalence class).
 
 
 ## Adding the collision solver
@@ -338,6 +339,7 @@ value (`vtrue` if the collision is assumed as present, `vfalse` otherwise).
 And we may use these operators to implement all the primitive we need:
 
 ```ocaml
+val assume_equality : cst -> cst -> unit solver_monad
 val add_solution : V.csym -> cst -> unit solver_monad
 val process_assignation : V.v -> cst -> unit solver_monad
 val subst_expr : expr -> expr solver_monad

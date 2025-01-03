@@ -1,4 +1,4 @@
-NAME = example8
+NAME = example9
 
 all: #my_herd
 	touch build/example.svg

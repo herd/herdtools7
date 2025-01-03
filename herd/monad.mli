@@ -31,7 +31,7 @@ module type S =
     module E : Event.S
     with module Act.A = A
 
-    module VC    : Valconstraint.S
+    module VC    : CollisionSolver.S
     with type atom = A.V.v
     and type cst = A.V.Cst.v
     and type solution = A.V.solution
