@@ -30,6 +30,7 @@ type t = {
     files : bool ;
     timeout : bool ;
     profile_cat: bool ;
+    profile_asl: bool ;
     exc : bool ;
   }
 
@@ -48,6 +49,7 @@ let tags =
   "files";
   "timeout";
   "profile_cat";
+  "profile_asl";
   "exception";
 ]
 
@@ -66,6 +68,7 @@ let none =
    files = false ;
    timeout = false ;
    profile_cat = false;
+   profile_asl = false;
    exc = false ;
  }
 
@@ -83,5 +86,6 @@ let parse t tag = match tag with
   | "files"|"file" -> Some { t with files = true ;}
   | "timeout" -> Some { t with timeout = true ;}
   | "exception"|"exc" -> Some { t with exc = true ;}
-  | "profile_cat" -> Some { t with profile_cat = true ;}
+  | "profile_cat" -> Some { t with profile_cat = true }
+  | "profile_asl" -> Some { t with profile_asl = true }
   | _ -> None
