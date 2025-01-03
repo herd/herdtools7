@@ -740,15 +740,6 @@ module Make
                            and phy = OutUtils.fmt_phy_tag a in
                            sprintf "*%s,%s" pte phy)
                          locs))
-                 (* let parel1_inputs =
-                  List.filter (fun rloc ->
-                      match U.find_rloc_type rloc env with
-                      | Base "parel1_t" -> true
-                      | _ -> false) (A.RLocSet.elements rlocs)
-                  in
-                  if parel1_inputs <> [] then
-                    O.fi "parel1_t %s;"
-                    (String.concat "," (List.map (fun rloc -> sprintf "in_%s" (A.dump_rloc_tag rloc)) parel1_inputs)) *)
                end in
         let dump_vars_code nprocs =
           List.iter

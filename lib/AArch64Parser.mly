@@ -149,10 +149,11 @@ let check_op3 op e =
 %token LDUMINB LDUMINAB LDUMINLB LDUMINALB
 %token STUMIN STUMINL STUMINH STUMINLH STUMINB STUMINLB
 */
-%token IC DC IVAU TLBI
+%token IC DC IVAU TLBI AT
 %token <AArch64Base.IC.op> IC_OP
 %token <AArch64Base.DC.op> DC_OP
 %token <AArch64Base.TLBI.op> TLBI_OP
+%token <AArch64Base.AT.op> AT_OP
 %token <AArch64Base.sysreg> SYSREG
 %token MRS MSR TST RBIT ABS
 %token REV16 REV32 REV REV64
@@ -1556,6 +1557,8 @@ instr:
   { I_TLBI ($2, ZR) }
 | TLBI TLBI_OP COMMA xreg
   { I_TLBI ($2, $4) }
+| AT AT_OP COMMA xreg
+  { I_AT ($2, $4) }
 
 /* Pointer Authentication Code Extension */
 | PACIA1716 { I_PAC (PAC.IA, Ireg R17, Ireg R16) }

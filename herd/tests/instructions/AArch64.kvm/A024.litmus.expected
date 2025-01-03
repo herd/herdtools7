@@ -1,0 +1,10 @@
+Test A024 Required
+States 1
+0:X3=(parel1_t:(oa:PA(x)));
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=(parel1_t:(oa:PA(x))))
+Observation A024 Always 1 0
+Hash=a719e0042ead2e0235f7eba7a564a7f3
+

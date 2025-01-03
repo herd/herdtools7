@@ -1,0 +1,10 @@
+Test A025 Required
+States 1
+0:X2=1; 0:X3=(parel1_t:(f:1));
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=(parel1_t:(f:1)) /\ 0:X2=1)
+Observation A025 Always 1 0
+Hash=276482f76186d3913331805ee47dc615
+
