@@ -1958,6 +1958,12 @@ module Make(V:Constant.S)(C:Config) =
         cache (sprintf "dc %s" (Misc.lowercase (DC.pp_op op))) r::k
     | I_TLBI (op,r) ->
         tlbi op r::k
+    | I_AT (op,r) ->
+      let op = Misc.lowercase (AT.pp_op op) in
+        { empty_ins with
+        memo = sprintf "at %s,^i0" op; inputs=[r];
+        reg_env=add_p [r]; }
+      ::k
     | I_MRS (r,sr) ->
         let r,f = do_arg1o V64 r 0 in
         let memo =
