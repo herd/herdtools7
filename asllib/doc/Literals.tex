@@ -75,55 +75,56 @@ transforms a parse node $\vparsednode$ for $\Nvalue$ into an AST node $\vastnode
 \hypertarget{def-annotateliteral}{}
 The function
 \[
-  \annotateliteral{\overname{\literal}{\vl}, \overname{\staticenvs}{\tenv}} \aslto \overname{\ty}{\vt}
+  \annotateliteral{\overname{\staticenvs}{\tenv}, \overname{\literal}{\vl}} \aslto \overname{\ty}{\vt}
 \]
-annotates a literal $\vl$ in a static environment $\tenv$, resulting in a type $\vt$.
+annotates a literal $\vl$ in the static environment $\tenv$, resulting in a type $\vt$.
 
 \subsubsection{Prose}
 The result of annotating a literal $\vl$ in a static environment $\tenv$ is $\vt$ and one of the following applies:
 \begin{itemize}
-\item (\texttt{int}): $\vl$ is an integer literal $\vn$ and $\vt$ is the well-constrained integer type, constraining
+\item (\textsc{int}): $\vl$ is an integer literal $\vn$ and $\vt$ is the well-constrained integer type, constraining
 its set to the single value $\vn$;
-\item (\texttt{bool}): $\vl$ is a Boolean literal and $\vt$ is the Boolean type;
-\item (\texttt{real}): $\vl$ is a real literal and $\vt$ is the real type;
-\item (\texttt{string}): $\vl$ is a string literal and $\vt$ is the string type;
-\item (\texttt{bitvector}): $\vl$ is a bitvector literal of length $\vn$ and $\vt$ is the bitvector type of fixed width $\vn$.
-\item (\texttt{label}): $\vl$ is an enumeration label literal of name $\vx$ and $\vx$ is globally bound to the type $\vt$ in $\tenv$.
+\item (\textsc{bool}): $\vl$ is a Boolean literal and $\vt$ is the Boolean type;
+\item (\textsc{real}): $\vl$ is a real literal and $\vt$ is the real type;
+\item (\textsc{string}): $\vl$ is a string literal and $\vt$ is the string type;
+\item (\textsc{bitvector}): $\vl$ is a bitvector literal of length $\vn$ and $\vt$ is the bitvector type of fixed width $\vn$.
+\item (\textsc{label}): $\vl$ is an enumeration label for $\vlabel$ and $\vlabel$ is bound to the type $\vt$ in the
+      $\declaredtypes$ map of the global environment $\tenv$.
 \end{itemize}
 
 \CodeSubsection{\LitBegin}{\LitEnd}{../Typing.ml}
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[int]{}{\annotateliteral{\lint(n), \Ignore}\typearrow \TInt(\langle[\ConstraintExact(\ELInt{n})]\rangle)}
+\inferrule[int]{}{\annotateliteral{\Ignore, \lint(n)}\typearrow \TInt(\langle[\ConstraintExact(\ELInt{n})]\rangle)}
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[bool]{}{\annotateliteral{\lbool(\Ignore), \Ignore}\typearrow \TBool}
+\inferrule[bool]{}{\annotateliteral{\Ignore, \lbool(\Ignore)}\typearrow \TBool}
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[real]{}{\annotateliteral{\lreal(\Ignore), \Ignore}\typearrow \TReal}
+\inferrule[real]{}{\annotateliteral{\Ignore, \lreal(\Ignore)}\typearrow \TReal}
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[string]{}{\annotateliteral{\lstring(\Ignore), \Ignore}\typearrow \TString}
+\inferrule[string]{}{\annotateliteral{\Ignore, \lstring(\Ignore)}\typearrow \TString}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[bitvector]{
   n \eqdef \listlen{\bits}
 }{
-  \annotateliteral{\lbitvector(\bits), \Ignore}\typearrow \TBits(\ELInt{n}, \emptylist)
+  \annotateliteral{\Ignore, \lbitvector(\bits)}\typearrow \TBits(\ELInt{n}, \emptylist)
 }
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[label]{%
-    G^\tenv.\globalstoragetypes(\vx) = (\vt, \Ignore)\\
-  }{%
-    \annotateliteral{\llabel(\vx, \Ignore), \tenv}\typearrow \vt
-  }
+\inferrule[label]{
+  G^\tenv.\declaredtypes(\vlabel) = (\vt, \Ignore)
+}{
+  \annotateliteral{\tenv, \llabel(\vlabel)}\typearrow \vt
+}
 \end{mathpar}
 
 \subsection{Example}
