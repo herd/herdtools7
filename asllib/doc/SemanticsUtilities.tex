@@ -205,12 +205,16 @@ creates a native vector value bitvector from a sequence of values $\vvs$.
 \end{mathpar}
 
 \subsubsection{SemanticsRule.ConcatBitvectors \label{sec:SemanticsRule.ConcatBitvectors}}
-\subsubsection{Prose}
+\hypertarget{def-concatbitvector}{}
 The relation
 \[
-  \concatbitvectors(\overname{\tbitvector^*}{\vvs}) \;\aslrel\; \tbitvector
+  \concatbitvectors(\overname{\tbitvector^*}{\vvs}) \;\aslrel\; \overname{\tbitvector}{\newvs}
 \]
-transforms a (possibly empty) list of bitvector \nativevalues\ $\vvs$ into a single bitvector.
+transforms a (possibly empty) list of bitvector \nativevalues\ $\vvs$ into a single bitvector
+$\newvs$.
+
+\subsubsection{Prose}
+Define $\newvs$ as the concatenation of bitvectors listed in $\vvs$.
 
 \subsubsection{Formally}
 \begin{mathpar}
