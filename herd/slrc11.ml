@@ -224,8 +224,8 @@ module Make (M:Cfg)
 
     let solve test es cs =
       match M.solve_regs test es cs with
-      | None -> (es, M.S.RFMap.empty, cs, S.M.VC.init_solver)
-      | Some (es, rfm, cs, solver) -> (es, rfm, cs, solver)
+      | [] -> (es, M.S.RFMap.empty, cs, S.M.VC.init_solver)
+      | (es, rfm, cs, solver) :: _ -> (es, rfm, cs, solver)
 
 
 
@@ -357,7 +357,7 @@ module Make (M:Cfg)
         let ncs = (List.append cs (make_cnstrnts
                                      {ex with rf = added ex.safe ex.rf})) in
         match M.S.M.VC.solve S.M.VC.init_solver ncs with
-        | M.S.M.VC.NoSolns -> false
+        | [] -> false
         | _ -> true
 
 

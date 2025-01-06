@@ -65,8 +65,7 @@ module type S = sig
   type solution
 
   type answer =
-    | NoSolns
-    | Maybe of solution *  cnstrnts * solver_state
+    (solution * cnstrnts * solver_state) list
 
   val pp_answer : answer -> string
 
@@ -400,8 +399,7 @@ and type state = A.state =
     }
 
     type answer =
-      | NoSolns
-      | Maybe of solution * cnstrnts * solver_state
+      (solution * cnstrnts * solver_state) list
 
     let init_solver = {
       solver= PAC.empty_solver;
@@ -601,17 +599,13 @@ and type state = A.state =
       if debug_solver then
         Printf.printf "*** Ordered ***\n%s\n" (pp_cnstrnts (List.concat
         constraints));
-      match solve_many constraints state with
-      | (state, constraints) :: _ as solutions -> begin
-          if debug_solver then begin
-            Printf.printf "found %d solutions\n%s" (List.length solutions)
-            (PAC.pp_solver state.solver)
-          end;
-          let solution = add_vars_solns m state.solution in
-          Maybe (solution, constraints, state)
-      end
-      | _ ->
-          NoSolns
+      let solutions = solve_many constraints state in
+      List.map (fun (state, constraints) ->
+        if debug_solver then
+          Printf.printf "found solver state: \n%s" (PAC.pp_solver state.solver);
+        let solution = add_vars_solns m state.solution in
+        (solution, constraints, state)
+      ) solutions
 
     let get_failed cns =
       List.fold_left
@@ -629,20 +623,22 @@ and type state = A.state =
           "\nUnsolved equations:\n" ^
           (pp_cnstrnts cns) in
 
-      fun soln -> match soln with
-      | NoSolns -> "No solutions"
-      | Maybe (sol,cns, _) ->
-          let sol_pped =
-            let bds =
-              V.Solution.fold
-                (fun v i k -> (v,i)::k)
-                sol [] in
-            String.concat ", "
-              (List.map
-                 (fun (v,i) -> V.pp_csym v ^ "<-" ^ V.pp C.hexa i) bds) in
-
-          sol_pped ^ pp_cns cns
-
+      fun solns ->
+        if List.is_empty solns
+        then "No solutions"
+        else
+          List.fold_right (fun (sol,cns,_) s ->
+            let sol_pped =
+              let bds =
+                V.Solution.fold
+                  (fun v i k -> (v,i)::k)
+                  sol [] in
+              String.concat ", "
+                (List.map
+                   (fun (v,i) -> V.pp_csym v ^ "<-" ^ V.pp C.hexa i) bds) in
+            sol_pped ^ pp_cns cns ^
+              (if Misc.int_eq (String.length s) 0 then s else " and " ^ s)
+          ) solns ""
 
     let solve state cs =
       let answer = solve_topo state cs in

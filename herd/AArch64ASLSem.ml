@@ -1191,7 +1191,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           in
           let rfms_with_regs =
             let solve_regs (_i, cs, es) = MC.solve_regs test es cs in
-            List.filter_map solve_regs rfms
+            List.concat_map solve_regs rfms
           in
           let () =
             if _dbg then

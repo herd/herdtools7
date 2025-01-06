@@ -1411,6 +1411,8 @@ module Make
  *)
       let lift_pac_virt mop ma dir an ii =
         let mok ma = mop Access.VIR ma >>= M.ignore >>= B.next1T in
+        (* Addresses of memory operations must be canonical for the construction
+         * of the rf, co and fr maps... *)
         let mok ma = mok (ma >>= M.op1 Op.SetCanonical) in
         let mfault ma =
           do_insert_commit ma (fun a ->
@@ -4311,7 +4313,16 @@ module Make
                 | I_PAC_DB _ -> "db"
                 | _ -> assert false
               in
-              read_reg_ord rd ii >>|
+              (* Ensure that we doesn't raise an user error in case of a hash
+               * collision between the PAC field of the virtual address in `rd`
+               * and the canonical PAC field... *)
+              let gen_addr maddr =
+                M.delay_kont "remove pac field before pac*" maddr (fun addr maddr ->
+                  M.op1 Op.CheckCanonical addr >>= fun cond ->
+                  M.choiceT cond (maddr >>= M.op1 Op.SetCanonical) maddr
+                )
+              in
+              gen_addr (read_reg_ord rd ii) >>|
               read_reg_ord rn ii >>= fun (addr, modifier) ->
               M.op (Op.AddPAC (not const_pac_field, key)) addr modifier >>= fun v ->
               write_reg_dest rd v ii >>= fun v ->

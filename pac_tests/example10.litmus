@@ -1,15 +1,13 @@
-AArch64 L001
+AArch64 Pac* collision
 
 {
-int x=0;
-int y=1;
-0:X2=x;
-0:X4=y;
+  0:x0=pac(x, da, 42);
+  0:x1=x;
 }
 
-(* Regression on LDR indexed syntax *)
-
  P0                  ;
- LDR W0,[X2]         ;
- LDR W1,[X4,W0,SXTW] ;
-forall 0:X0=0 /\ 0:X1=1
+  cmp x0, x1         ;
+  b.ne finish        ;
+  pacdza x0          ;
+finish:              ;
+exists ( 0:X0=pac(x, da, 0) )
