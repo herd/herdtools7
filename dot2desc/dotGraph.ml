@@ -15,12 +15,19 @@
 (****************************************************************************)
 
 module Edge = struct
+  type kind = Data | Control | Order
   type t = {
     left: string;
     right: string;
     desc: string -> string -> string;
+    kind: kind;
   }
   let pp e = Printf.sprintf "%s -> %s" e.left e.right
+  let kind = function
+  | "iico_data" -> Data
+  | "iico_ctrl" -> Control
+  | "iico_order" -> Order
+  | s -> Warn.fatal "Invalid type of edge kind %s" s
 end
 
 module Node = struct
@@ -239,7 +246,8 @@ let tr_stmt acc stmt param_map =
       let value = get_label_value e.ParsedEdge.attrs in
       try
         let desc = StringMap.find value DescDict.edges in
-        let edge = { Edge.left=e.ParsedEdge.left; right=e.ParsedEdge.right; desc=desc } in
+        let kind = Edge.kind value in
+        let edge = { Edge.left=e.ParsedEdge.left; right=e.ParsedEdge.right; desc=desc; kind=kind } in
         { acc with edges=edge::acc.edges }
       with Not_found ->
         (* Skip any other kind of edge *)
@@ -498,13 +506,36 @@ let tr parsed_graph instr =
   { translated with edges = sorted_edges }
 
 let describe g =
-  let descs = List.map (fun edge ->
+  let module EdgeMap = MyMap.Make(struct
+    type t = Edge.kind
+    let compare = compare
+  end) in
+  
+  let edge_codes = [
+    (Edge.Data, ("D", 1));
+    (Edge.Control, ("C", 1));
+    (Edge.Order, ("O", 1))
+  ] in
+  let edge_codes = List.fold_left (fun map (key, value) ->
+    EdgeMap.add key value map
+  ) EdgeMap.empty edge_codes in
+
+  let get_code kind map =
+    let s, i = EdgeMap.find kind map in
+    let code = Printf.sprintf "%s~%d~" s i in
+    let map = EdgeMap.add kind (s, i + 1) map in
+    code, map in
+
+  let descs, _ = List.fold_left (fun (res, map) edge ->
     let edge_desc = edge.Edge.desc in
     try
       let lhs = StringMap.find edge.Edge.left g.nodes in
       let rhs = StringMap.find edge.Edge.right g.nodes in
-      "-   " ^ edge_desc lhs.Node.desc rhs.Node.desc ^ ".\n"
+      let code, map = get_code edge.Edge.kind map in
+      let desc = Printf.sprintf "-   %s: %s.\n"
+        code (edge_desc lhs.Node.desc rhs.Node.desc) in
+      desc :: res, map
     with Not_found ->
       Warn.fatal "Could not find one of the nodes for edge %s\n" (Edge.pp edge)
-    ) g.edges in
-  String.concat "\n" descs
+    ) ([], edge_codes) g.edges in
+  String.concat "\n" (List.rev descs)
