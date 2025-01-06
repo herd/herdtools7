@@ -15,10 +15,12 @@
 (****************************************************************************)
 
 module Edge : sig
+  type kind = Data | Control | Order
   type t = {
     left: string;
     right: string;
     desc: string -> string -> string;
+    kind: kind;
   }
 end
   
