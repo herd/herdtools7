@@ -531,6 +531,7 @@ and type state = A.state =
             Assign (v, Atom value)
         | V.Undetermined | A.LocUndetermined ->
             pure (Assign (v, expr))
+        | Misc.Timeout as e -> raise e
         | exn -> pure (Failed exn)
       end
       | cnstrnt -> pure cnstrnt
