@@ -79,6 +79,7 @@ module type Config = sig
   val hexa : bool
   val debug : Debug_herd.t
   val keep_failed_as_undetermined : bool
+  val old_solver : bool
 end
 
 module Make (C:Config) (A:Arch_herd.S) : S
@@ -395,8 +396,7 @@ and type state = A.state =
 
     type solver_state =
       { solver: PAC.solver_state (* Collision solver *)
-      ; solution: cst V.Solution.t (* Current variable assignation to constants *)
-    }
+      ; solution: cst V.Solution.t} (* Current variable assignation to constants *)
 
     type answer =
       (solution * cnstrnts * solver_state) list
@@ -508,47 +508,87 @@ and type state = A.state =
         with Not_found -> V.Var x
       )) expr
 
-    (* Result of the evaluation of an expression *)
-    type eval_result
-      = Cst of cst
-        (* The evaluation is a success and return a constant *)
-      | Undetermined
-        (* The evaluation failed because some variables are undetermined *)
-      | Failure of exn
-        (* The evaluation failed because of a delayed exception *)
-
-    (* Evaluate a value of type V.v *)
-    let eval_value : V.v -> eval_result = function
-      | V.Var _ -> Undetermined
-      | V.Val c -> Cst c
-
-    let eval_expr : expr -> eval_result solver_monad = fun expr ->
-      let* expr = subst_expr expr in
-      try
-        pure (eval_value (match expr with
-        | Atom v ->
-            v
-        | ReadInit (loc,init) ->
-            A.look_address_in_state init loc
-        | Unop (op, v) ->
-            V.op1 op v
-        | Binop (op, v1, v2) ->
-            V.op op v1 v2
-        | Terop (op, v1, v2, v3) ->
-            V.op3 op v1 v2 v3))
-      with
-      | V.CollisionPAC (px, py, vtrue, vfalse) ->
-          let+ v = collision px py vtrue vfalse in
-          eval_value v
-      | V.Undetermined | A.LocUndetermined ->
-          pure Undetermined
-      | exn ->
-          pure (Failure exn)
+    (* Try to simplify an expression by substitution then evaluation *)
+    let simplify_cnstrnt : cnstrnt -> cnstrnt solver_monad = function
+      | Assign (v, expr) -> begin
+        let* v = subst_value v in
+        let* expr = subst_expr expr in
+        try
+          pure (Assign (v, (Atom (match expr with
+          | Atom value ->
+              value
+          | ReadInit (loc, init) ->
+              A.look_address_in_state init loc
+          | Unop (op, v) ->
+              V.op1 op v
+          | Binop (op, v1, v2) ->
+              V.op op v1 v2
+          | Terop (op, v1, v2, v3) ->
+              V.op3 op v1 v2 v3))))
+        with
+        | V.CollisionPAC (px, py, vtrue, vfalse) ->
+            let+ value = collision px py vtrue vfalse in
+            Assign (v, Atom value)
+        | V.Undetermined | A.LocUndetermined ->
+            pure (Assign (v, expr))
+        | exn -> pure (Failed exn)
+      end
+      | cnstrnt -> pure cnstrnt
 
 
-(**************************************)
+(*******************************)
+(* Old solver iteration method *)
+(*******************************)
+
+    (* Return the set of new assignations from a given set of constraints, and
+       the set of unsolver constraints *)
+    let rec new_assignations : cnstrnts -> ((V.v * cst) list * cnstrnts) solver_monad = function
+      | cnstrnt :: rest -> begin
+        (* Look at the rest of the constraints *)
+        let* assignations,unsolved = new_assignations rest in
+        let+ cnstrnt = simplify_cnstrnt cnstrnt in
+
+        match cnstrnt with
+        | Assign (v, Atom (V.Val cst))
+        | Assign (V.Val cst, Atom v) ->
+            ((v, cst) :: assignations, unsolved)
+        | _ ->
+            (assignations, cnstrnt :: unsolved)
+      end
+      | [] ->
+          pure ([], [])
+
+    (* Process a list of assignations *)
+    let rec process_assignations : (V.v * cst) list -> unit solver_monad = function
+      | (v, cst) :: xs ->
+          let* _ = process_assignation v cst in
+          process_assignations xs
+      | [] -> pure ()
+
+    (* Try to eliminate all the constraints until a fixed-point is reached *)
+    let rec solve_iter : cnstrnts -> cnstrnts solver_monad = fun constraints ->
+      let* assignations,unsolved = new_assignations constraints in
+      let* _ = process_assignations assignations in
+
+      if List.is_empty assignations
+      then pure unsolved
+      else solve_iter unsolved
+
+    let solve_std (state: solver_state) (constraints : cnstrnts) : answer =
+      let m,constraints = normalize_vars constraints in
+      if debug_solver then
+        Printf.printf "*** Solve ***\n%s\n" (pp_cnstrnts constraints);
+      let solutions = solve_iter constraints state in
+      List.map (fun (state, constraints) ->
+        if debug_solver then
+          Printf.printf "found solver state: \n%s" (PAC.pp_solver state.solver);
+        let solution = add_vars_solns m state.solution in
+        (solution, constraints, state)
+      ) solutions
+
+(***********************************)
 (* Second phase: topological order *)
-(**************************************)
+(***********************************)
 
     (* Sort the SCC (Strongly connected component) in topological order *)
     let topo_order (constraints: cnstrnts) : cnstrnts list =
@@ -556,22 +596,14 @@ and type state = A.state =
       List.rev (EqRel.scc_kont List.cons [] ns r)
 
     (* Try to solve one constraint and return the list of unsolved constraints *)
-    let solve_one : cnstrnt -> cnstrnts solver_monad = function
-      | Assign (v, expr) -> begin
-        let* v = subst_value v in
-        let* expr = subst_expr expr in
-        let* result = eval_expr expr in
-
-        match result with
-        | Cst cst ->
-            let+ _ = process_assignation v cst in []
-        | Undetermined ->
-            pure [Assign (v, expr)]
-        | Failure exn ->
-            pure [Failed exn]
-      end
-      | Warn str -> pure [Warn str]
-      | Failed exn -> pure [Failed exn]
+    let solve_one : cnstrnt -> cnstrnts solver_monad = fun cnstrnt ->
+      let* cnstrnt = simplify_cnstrnt cnstrnt in
+      match cnstrnt with
+      | Assign (v, Atom (V.Val cst))
+      | Assign (V.Val cst, Atom v) ->
+          let+ _ = process_assignation v cst in
+          []
+      | _ -> pure [cnstrnt]
 
     (* Attemp to solve a SCC *)
     let rec solve_scc : cnstrnts -> cnstrnts solver_monad = function
@@ -641,7 +673,8 @@ and type state = A.state =
           ) solns ""
 
     let solve state cs =
-      let answer = solve_topo state cs in
+      let answer =
+        if C.old_solver then solve_std state cs else solve_topo state cs in
       if debug_solver then Printf.printf "Answer: %s\n" (pp_answer answer);
       answer
   end

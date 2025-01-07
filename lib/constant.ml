@@ -196,7 +196,7 @@ module PAC = struct
     else
       (* If we have more than 2^n - 1 inequalities the pivot algorithm is not sound *)
       if List.length state.inequalities > 32767
-      then Warn.user_error "too many inequalities to be sound"
+      then Warn.user_error "PAC fields solver: too many inequalities to be sound"
       else Some {state with inequalities = inequality :: state.inequalities}
 end
 

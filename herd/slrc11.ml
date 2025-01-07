@@ -880,39 +880,40 @@ module Make (M:Cfg)
 
     let check_rfms test rfms _kfail _kont model_kont res =
       let (_, cs0, es0) = rfms in
-      let (es, rfm, cs, solver) = solve test es0 cs0 in
-      let rmws = M.make_atomic_load_store es in
-      let evts = E.EventSet.filter real es.E.events in
-      let inits = E.EventSet.filter E.is_mem_store_init evts in
-      let po = U.po_iico es in
-      let iico = U.iico es in
-      let procs = List.map
-                    (fun x ->
-                      let e = E.EventSet.filter
-                                (fun y -> match E.proc_of y with
-                                          | Some p when p = x -> true
-                                          | _ -> false)
-                                evts in
-                      x, e, E.EventRel.restrict_rel (fun x y -> E.EventSet.mem x e && E.EventSet.mem y e) po)
-                    es.E.procs in
-      let toadd = List.map (fun (x, y, _) -> x, y) procs in
-      let ex_init = {
-          toadd = toadd;
-          added = inits;
-          po = (E.EventRel.union rmws po);
-          iico = iico;
-          mo = E.EventRel.empty;
-          rf = E.EventRel.empty;
-          revisit = E.EventSet.empty;
-          safe = inits;
-          exvals = (fun _ -> false);
-          rmws = rmws;
-          rfm = rfm;
-          flags = Flag.Set.empty;
-          psc = E.EventRel.empty;
-          debug_rels = []
-        } in
-      (visit ex_init cs (mykont test model_kont es cs solver) res)
+      List.fold_right (fun (es,rfm,cs,solver) res ->
+        let rmws = M.make_atomic_load_store es in
+        let evts = E.EventSet.filter real es.E.events in
+        let inits = E.EventSet.filter E.is_mem_store_init evts in
+        let po = U.po_iico es in
+        let iico = U.iico es in
+        let procs = List.map
+                      (fun x ->
+                        let e = E.EventSet.filter
+                                  (fun y -> match E.proc_of y with
+                                            | Some p when p = x -> true
+                                            | _ -> false)
+                                  evts in
+                        x, e, E.EventRel.restrict_rel (fun x y -> E.EventSet.mem x e && E.EventSet.mem y e) po)
+                      es.E.procs in
+        let toadd = List.map (fun (x, y, _) -> x, y) procs in
+        let ex_init = {
+            toadd = toadd;
+            added = inits;
+            po = (E.EventRel.union rmws po);
+            iico = iico;
+            mo = E.EventRel.empty;
+            rf = E.EventRel.empty;
+            revisit = E.EventSet.empty;
+            safe = inits;
+            exvals = (fun _ -> false);
+            rmws = rmws;
+            rfm = rfm;
+            flags = Flag.Set.empty;
+            psc = E.EventRel.empty;
+            debug_rels = []
+          } in
+        (visit ex_init cs (mykont test model_kont es cs solver) res)
+      ) (M.solve_regs test es0 cs0) res
 
     let check_event_structure test (rfms : (_ * S.M.VC.cnstrnts * S.event_structure) list) kfail kont model_kont  (res : 'a) =
       List.fold_left (fun re rf -> check_rfms test rf kfail kont model_kont re) res rfms

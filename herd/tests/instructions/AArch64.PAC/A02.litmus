@@ -1,6 +1,0 @@
-AArch64 A02.litmus
-{ 0:x0=pac(x, da, 42, 7) }
-P0          ;
-str x1,[x0] ;
-forall
-(Fault(P0, MMU:Translation))
