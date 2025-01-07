@@ -18,6 +18,7 @@
 
 open Printf
 
+module Extract = TxtLoc.Extract ()
 
 module type Config = sig
   val m : AST.t
@@ -27,6 +28,7 @@ module type Config = sig
   val showsome : bool
   val debug : bool
   val debug_files : bool
+  val profile: bool
   val verbose : int
   val skipchecks : StringSet.t
   val strictskip : bool
@@ -1224,6 +1226,20 @@ module Make
       | Revent of E.EventRel.t
       | Rclass of ClassRel.t
 
+    let end_profile ~t0 ~loc : unit =
+      let t1 = Sys.time () in
+      if t1 -. t0 > 1. (* We log only executions that took more than 1 second *)
+      then
+        Printf.eprintf "cat interpreter took %fs to evaluate %s.\n%!" (t1 -. t0)
+          (Extract.extract loc)
+
+    let profile_exp =
+      if O.profile then (fun f e ->
+        let t0 = Sys.time () in
+        let res = f e in
+        end_profile ~t0 ~loc:(ASTUtils.exp2loc e);
+        res)
+      else ( @@ )
 
     let eval_variant loc v =
       try O.variant v
@@ -1248,7 +1264,7 @@ module Make
       | Op1 (_,ToId,e) -> Some (eval_events_mem env e)
       | _ -> None
 
-      and eval env = function
+      and eval env = profile_exp @@ function
         | Konst (_,AST.Empty SET) -> V.Empty (* Polymorphic empty *)
         | Konst (_,AST.Empty RLN) -> empty_rel
         | Konst (_,Universe _) -> Unv
@@ -2583,12 +2599,17 @@ module Make
 
           and run : 'a.st -> ins list ->
             ('a -> 'a) -> (st -> 'a -> 'a) -> 'a -> 'a =
-              fun st c kfail kont res -> match c with
-              | [] ->  kont st res
-              | i::c ->
-                  exec st i kfail
-                    (fun st res -> run st c kfail kont res)
-                    res in
+           fun st c kfail kont ->
+            match c with
+            | [] -> kont st
+            | i :: c ->
+                if O.profile then
+                  let t0 = Sys.time () in
+                  exec st i kfail @@ fun st res ->
+                  let () = end_profile ~t0 ~loc:(ASTUtils.ins2loc i) in
+                  run st c kfail kont res
+                else exec st i kfail @@ fun st res -> run st c kfail kont res
+      in
 
       fun ks m vb_pp kont res ->
 (* Primitives *)

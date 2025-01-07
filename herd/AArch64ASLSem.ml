@@ -26,6 +26,13 @@ let return_0 =
   let open Asllib.ASTUtils in
   add_dummy_annotation (S_Return (Some (expr_of_int 0)))
 
+let end_profile t0 msg : unit =
+  let t1 = Sys.time () in
+  if t1 -. t0 > 1. (* We log only executions that took more than 1 second *)
+  then
+    Printf.eprintf "AArch64+ASL sem took %fs to evaluate %s.\n%!" (t1 -. t0)
+      msg
+
 module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
   AArch64Sig.Semantics with module A.V = V = struct
   module AArch64S = AArch64Sem.Make (TopConf) (V)
@@ -35,6 +42,18 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
   let ( let* ) = M.( >>= )
   let return = M.unitT
   let _dbg = TopConf.C.debug.Debug_herd.monad
+  let _profile = TopConf.C.debug.Debug_herd.profile_asl
+
+  let start_profile = if _profile then Sys.time else Fun.const 0.
+  let end_profile = if _profile then end_profile else fun _ _ -> ()
+
+  let profile msg f =
+    if _profile then
+      let t0 = start_profile () in
+      let res = f () in
+      let () = end_profile t0 msg in
+      res
+    else f ()
 
   module Mixed (SZ : ByteSize.S) : sig
     val build_semantics : test -> A.inst_instance_id -> (proc * branch) M.t
@@ -760,8 +779,10 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | ASLS.A.V.Val cst -> V.Val (tr_cst Misc.identity cst)
 
     let is_experimental = TopConf.C.variant Variant.ASLExperimental
+    let not_cutoff = not (TopConf.C.variant Variant.CutOff)
 
     let fake_test ii fname decode =
+      profile "build fake test" @@ fun () ->
       let init = [] in
       let prog =
         let version =
@@ -793,7 +814,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             Format.eprintf "@[<v>Executing main:@ %a@]@." Asllib.PP.pp_t
               [ main ]
         in
-        [ ((0, None, MiscParser.Main), [ ASLBase.Instruction [ main ] ]) ]
+        [ ((ii.A.proc, None, MiscParser.Main), [ ASLBase.Instruction [ main ] ]) ]
       in
       let t =
         {
@@ -999,6 +1020,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
 
 
       let tr_execution ii (conc, cs, set_pp, vbpp) =
+        profile "translate execution" @@ fun () ->
         let get_cat_show get x =
           match StringMap.find_opt x set_pp with
           | Some e -> get e
@@ -1138,6 +1160,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         let bell_model_info = None
         let debug = ASLConf.debug.Debug_herd.barrier
         let debug_files = ASLConf.debug.Debug_herd.files
+        let profile = ASLConf.debug.Debug_herd.profile_cat
         let showsome = true
         let skipchecks = StringSet.empty
         let strictskip = true
@@ -1149,6 +1172,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       ASL64M.check_event_structure
 
     let build_model_from_file fname =
+      profile "build asl model" @@ fun () ->
       let module P = ParseModel.Make (struct
         include LexUtils.Default
 
@@ -1169,75 +1193,96 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           (A.dump_instruction ii.A.inst);
       AArch64Mixed.build_semantics test ii
 
-    let build_semantics test ii =
+    let check_cutoff test =
+      if not_cutoff then Fun.const true
+      else
+        let flitmus = test.Test_herd.name.Name.file in
+        let tbl = Hashtbl.create 13 in
+        fun (_i, _cs, es) ->
+          profile "Check cutoff" @@ fun () ->
+          let open ASLS.E in
+          match ASLS.find_cutoff es.events with
+          | None -> true
+          | Some msg ->
+              if Hashtbl.mem tbl msg then ()
+              else (
+                Hashtbl.add tbl msg true;
+                Warn.warn_always "%a: %s, some legal outcomes may be missing"
+                  Pos.pp_pos0 flitmus msg);
+              false
+
+    let solve_regs test (_i, cs, es) =
+      profile "solve regs" @@ fun () ->
       let () =
         if _dbg then
-          Printf.eprintf "\n\nExecuting %s\n"
+          Printf.eprintf "** Events **\n  %a\n%!"
+            (fun chan -> ASLE.EventSet.pp chan "\n  " ASLE.debug_event)
+            es.ASLE.events;
+      in
+      MC.solve_regs test es cs
+
+    let build_semantics test_aarch64 ii =
+      let () =
+        if _dbg then
+          Printf.eprintf "\n\nExecuting %s by proc %s\n%!"
             (A.pp_instruction PPMode.Ascii ii.A.inst)
+            (Proc.pp ii.A.proc)
       in
       match decode_inst ii with
-      | None -> check_strict test ii
-      | Some _ when AArch64.is_mixed -> check_strict test ii
+      | None -> check_strict test_aarch64 ii
+      | Some _ when AArch64.is_mixed -> check_strict test_aarch64 ii
       | Some (fname, args) -> (
-          let test = fake_test ii fname args in
+          profile "build AArch64 semantics from ASL" @@ fun () ->
+          let test_asl = fake_test ii fname args in
           let model = build_model_from_file "asl.cat" in
-          let check_event_structure = check_event_structure model in
-          let { MC.event_structures = rfms; _ }, test =
-            MC.glommed_event_structures test
+          let { MC.event_structures = rfms; _ }, test_asl =
+            profile "run ASL Semantics" @@ fun () ->
+            MC.glommed_event_structures test_asl
           in
           let () =
             if _dbg then
               Printf.eprintf "Got rfms back: %d of them.\n%!" (List.length rfms)
           in
-          let rfms_with_regs =
-            let solve_regs (_i, cs, es) = MC.solve_regs test es cs in
-            List.filter_map solve_regs rfms
-          in
-          let () =
-            if _dbg then
-              Printf.eprintf "With regs solved, still %d rfms.\n%!"
-                (List.length rfms_with_regs)
-          in
-          let conc_and_pp =
-            let check_rfm li (es, rfm, cs) =
-              let po = MU.po_iico es in
-              let pos =
-                let mem_evts = ASLE.mem_of es.ASLE.events in
-                ASLE.EventRel.of_pred mem_evts mem_evts (fun e1 e2 ->
-                    ASLE.same_location e1 e2 && ASLE.EventRel.mem (e1, e2) po)
-              in
-              let partial_po =
-                ASLE.EventTransRel.to_implicitely_transitive_rel
-                  es.ASLE.partial_po
-              in
-
-              let conc =
-                {
-                  ASLS.conc_zero with
-                  ASLS.str = es;
-                  ASLS.rfmap = rfm;
-                  ASLS.po;
-                  ASLS.partial_po;
-                  ASLS.pos;
-                }
-              in
-              let kfail li = li in
-              let ksuccess conc _fs (out_sets, out_show) _flags li =
-                (conc, cs, Lazy.force out_sets, Lazy.force out_show) :: li
-              in
-              check_event_structure test conc kfail ksuccess li
+          let build_conc str rfmap =
+            profile "build conc" @@ fun () ->
+            let partial_po =
+              let open ASLE in
+              EventTransRel.to_implicitely_transitive_rel str.partial_po
             in
-            List.fold_left check_rfm [] rfms_with_regs
+            ASLS.{ ASLS.conc_zero with str; rfmap; partial_po; }
           in
+          let check_rfm_and_translate acc (es, rfm, cs) =
+            let conc = build_conc es rfm in
+            let t0 = start_profile () in
+            let kfail acc =
+              let () = end_profile t0 "ASL cat, failed" in
+              let () = if _dbg then prerr_endline "ASL cat, failure" in
+              acc
+            in
+            let ksuccess conc _fs (out_sets, out_show) _flags acc =
+              let () = if _dbg then prerr_endline "ASL cat, success" in
+              let c = (conc, cs, Lazy.force out_sets, Lazy.force out_show) in
+              let () = end_profile t0 "ASL cat, success" in
+              Translator.tr_execution ii c :: acc
+            in
+            check_event_structure model test_asl conc kfail ksuccess acc
+          in
+          let check_and_translate acc c =
+            profile "check and translate" @@ fun () ->
+            if check_cutoff test_asl c then
+              match solve_regs test_asl c with
+              | None -> acc
+              | Some c -> check_rfm_and_translate acc c
+            else acc
+          in
+          let monads = List.fold_left check_and_translate [] rfms in
           let () =
             if _dbg then
-              Printf.eprintf "Got %d complete executions.\n%!"
-                (List.length conc_and_pp)
-          in
-          let monads = List.map (Translator.tr_execution ii) conc_and_pp in
-          let () =
-            if _dbg then
-              Printf.eprintf "End of ASL execution for %s.\n\n%!"
+              Printf.eprintf
+                "Got %d complete executions.\n\
+                 End of ASL execution for %s.\n\n\
+                 %!"
+                (List.length monads)
                 (A.pp_instruction PPMode.Ascii ii.A.inst)
           in
           match monads with

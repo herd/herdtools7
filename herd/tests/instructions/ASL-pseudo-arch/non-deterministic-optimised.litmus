@@ -1,0 +1,28 @@
+ASL non-deterministic
+
+{
+  x = 0;
+  0: X1= x;
+}
+
+// Always return 2, but this could create 2 executions that will turn out to
+// follow the same branch. To know if this creates two different executions
+// with the same end state, run herd with option -v.
+func g() => integer
+begin
+  let x = read_register(1);
+  let vx = UInt(read_memory{64}(x));
+  if (vx[0] == '0' && FALSE) then
+    return 1;
+  end;
+  return 2;
+end;
+
+func main() => integer
+begin
+  let z = g();
+  return 0;
+end;
+
+locations [0:main.0.z;]
+

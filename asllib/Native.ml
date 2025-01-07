@@ -97,12 +97,7 @@ module NativeBackend (C : Config) = struct
   let bind (vm : 'a m) (f : 'a -> 'b m) : 'b m = f vm
   let prod_par (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = (r1, r2)
   let return v = v
-
-  let warnT msg v =
-    (* Should not be called... *)
-    Printf.eprintf "Warning: message %s found its way, something is wrong\n" msg;
-    return v
-
+  let cutoffT _msg _v = assert false
   let bind_data = bind
   let bind_seq = bind
   let bind_ctrl = bind

@@ -70,6 +70,10 @@ let pp_pos_str withpos =
   let () = pp_print_flush fmt () in
   Buffer.contents buf
 
+let pp_pos_str_no_char { pos_start; pos_end } =
+  Printf.sprintf "file %S, line %d to line %d" pos_start.pos_fname
+    pos_start.pos_lnum pos_end.pos_lnum
+
 let binop_to_string : binop -> string = function
   | AND -> "AND"
   | BAND -> "&&"

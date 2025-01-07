@@ -20,6 +20,7 @@ val as_vars : AST.exp list -> (TxtLoc.t * AST.var) list option
 
 (* Get location of an expression *)
 val exp2loc : AST.exp -> TxtLoc.t
+val ins2loc : AST.ins -> TxtLoc.t
 
 (* Pre-condition expression for miaou:
  *   + Flatten associative operations

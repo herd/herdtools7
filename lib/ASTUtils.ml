@@ -45,6 +45,25 @@ let exp2loc = function
   | If (loc,_,_,_)
     -> loc
 
+let ins2loc = function
+  | Let (loc, _)
+  | Rec (loc, _, _)
+  | InsMatch (loc, _, _, _)
+  | UnShow (loc, _)
+  | Show (loc, _)
+  | ShowAs (loc, _, _)
+  | Include (loc, _)
+  | Procedure (loc, _, _, _, _)
+  | Call (loc, _, _, _)
+  | Enum (loc, _, _)
+  | Forall (loc, _, _, _)
+  | Debug (loc, _)
+  | WithFrom (loc, _, _)
+  | Events (loc, _, _, _)
+  | IfVariant (loc, _, _, _)
+  | Test ((loc, _, _, _, _), _)
+      -> loc
+
 (* Flatten application of associative operators. *)
 
 let rec flatten = function

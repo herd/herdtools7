@@ -102,6 +102,7 @@ module Top (TopConf:RunTest.Config) = struct
         let through = Conf.through
         let debug = Conf.debug.Debug_herd.barrier
         let debug_files = Conf.debug.Debug_herd.files
+        let profile = Conf.debug.Debug_herd.profile_cat
         let verbose = Conf.verbose
         let skipchecks = Conf.skipchecks
         let strictskip = Conf.strictskip

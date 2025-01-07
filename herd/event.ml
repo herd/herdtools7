@@ -136,8 +136,9 @@ val same_instance : event -> event -> bool
   val is_pred_txt : string option -> event -> bool
   val is_commit : event -> bool
 
-(* Too much unrolling *)
+(* The "CutOff" effect flags stepping beyond unrolling limit *)
   val is_cutoff : event -> bool
+  val as_cutoff : event -> string option
 
 (**************)
 (* Event sets *)
@@ -728,6 +729,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
 (*  Unrolling control *)
     let is_cutoff e = Act.is_cutoff e.action
+    and as_cutoff e = Act.as_cutoff e.action
 
 (******************************)
 (* Build structures of events *)
