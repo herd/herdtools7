@@ -190,6 +190,7 @@ which denotes writing into $\name$.
 
 \subsubsection{SemanticsRule.CreateBitvector \label{sec:SemanticsRule.CreateBitvector}}
 \subsubsection{Prose}
+\hypertarget{def-createbitvector}{}
 The relation
 \[
   \createbitvector(\overname{\vals^*}{\vvs}) \;\aslrel\; \tbitvector
@@ -332,10 +333,11 @@ by the slices when accessing a bit.
 
 \subsubsection{SemanticsRule.WriteToBitvector \label{sec:SemanticsRule.WriteToBitvector}}
 \subsubsection{Prose}
+\hypertarget{def-writetobitvector}{}
 The relation
 \[
   \writetobitvector(\overname{(\tint\times\tint)^*}{\slices} \aslsep \overname{\tbitvector}{\src} \aslsep \overname{\tbitvector}{\dst})
-  \;\bigtimes\; \overname{\tbitvector}{\vv} \cup \overname{\TDynError}{\DynErrorConfig}
+  \;\aslrel\; \overname{\tbitvector}{\vv} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 overwrites the bits of $\dst$ at the positions given by $\slices$ with the bits of $\src$
 and one of the following applies:

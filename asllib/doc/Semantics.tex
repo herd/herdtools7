@@ -170,14 +170,18 @@ We define the following types of \nativevalues:
 A \emph{sequential dynamic environment}, or \\ \emph{dynamic environment}
 $\denv \in \dynamicenvs$
 consists of a \emph{dynamic global environment} and a \emph{dynamic local environment}.
+\hypertarget{def-stacksize}{}
+\hypertarget{def-storage}{}
 In turn, a dynamic global environment maps identifiers corresponding to global storage elements to \nativevalues\
 via the $\storage$ map and identifiers corresponding to subprograms to natural numbers corresponding
-to the number of calls being evaluated for those subprograms.
+to the number of calls being evaluated for those subprograms via the $\stacksize$ map.
 The dynamic local environment maps identifiers corresponding to local storage elements to \nativevalues:
 \[
 \begin{array}{rcl}
-\dynamicenvs        &\triangleq&  \globaldynamicenvs \times \localdynamicenvs \\
-\globaldynamicenvs  &\triangleq&  [\storage \mapsto (\Identifiers \partialto \vals),\; \stacksize \mapsto (\Identifiers \partialto \N)]\\
+\dynamicenvs        &\triangleq&  \globaldynamicenvs \times \localdynamicenvs
+  \hypertarget{def-globaldynamicenvs}{}\\
+\globaldynamicenvs  &\triangleq&  [\storage \mapsto (\Identifiers \partialto \vals),\; \stacksize \mapsto (\Identifiers \partialto \N)]
+  \hypertarget{def-localdynamicenvs}{}\\
 \localdynamicenvs   &\triangleq&  (\Identifiers \partialto \vals) \\
 \end{array}
 \]
@@ -225,7 +229,6 @@ That is, all environments share the same static environment.
 
 \subsection{Concurrent Execution Graphs\label{sec:concurrentexecutiongraphs}}
 \hypertarget{def-executiongraph}{}
-\hypertarget{def-executiongraphs}{}
 The concurrent semantics of an ASL specification utilize \emph{concurrent execution graphs}
 (\emph{execution graphs}, for short),
 which track the Read and Write Effects over variables, yielded by the sequential semantics,

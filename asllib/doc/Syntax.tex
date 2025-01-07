@@ -35,6 +35,7 @@ Context-free grammars consist of a list of \emph{derivations} $N \derives S^*$
 where $N$ is a non-terminal symbol and $S$ is a list of non-terminal symbols and terminal symbols,
 which correspond to tokens.
 We refer to a list of such symbols as a \emph{sentence}.
+\hypertarget{def-emptysentence}{}
 A special form of a sentence is the \emph{empty sentence}, written $\emptysentence$.
 
 As commonly done, we aggregate all derivations associated with the same non-terminal symbol
@@ -198,6 +199,7 @@ We define the following parametric productions for various types of lists and op
 
 \paragraph{Non-empty Comma-separated Trailing List}
 \hypertarget{def-tclist}{}
+\hypertarget{def-ntclist}{}
 \begin{flalign*}
 \NTClist{x}   \derives\ & x \parsesep \option{\Tcomma} &\\
                           |\  & x \parsesep \Tcomma \parsesep \NTClist{x}
@@ -443,7 +445,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 |\ & \Tidentifier \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket \parsesep \Nnestedfields &
 \end{flalign*}
 
-\hypertarget{def-nnested-fields}{}
+\hypertarget{def-nnestedfields}{}
 \begin{flalign*}
 \Nnestedfields \derives\ & \emptysentence \;|\; \Tdot \parsesep \Tidentifier \parsesep \Nnestedfields &
 \end{flalign*}

@@ -388,7 +388,7 @@ The following rule corresponds to an identifier with its associated type:
 The following rules define the types of left-hand side of assignments:
 \hypertarget{ast-lexpr}{} \hypertarget{ast-lediscard}{}
 \begin{flalign*}
-\lexpr \derives\ & \overtext{\LEDiscard}{\texttt{"-"}} &\\
+\lexpr \derives\ & \overtext{\LEDiscard}{\texttt{"-"}} & \hypertarget{ast-levar}{}\\
   |\ & \LEVar(\identifier) & \hypertarget{ast-leslice}{}\\
   |\ & \LESlice(\lexpr, \slice^*) & \hypertarget{ast-lesetarray}{}\\
   |\ & \LESetArray(\lexpr, \expr) & \hypertarget{ast-lesetfield}{}\\
@@ -564,9 +564,10 @@ The derivation rules for the typed abstract syntax are the same as the rules for
 except for the following differences.
 
 The rules for expressions have the following extra derivation rules:
-\hypertarget{ast-earray}{}
+\hypertarget{ast-egetitem}{}
 \begin{flalign*}
-\expr \derives\ & \EArray \{\EArrayLength: \expr, \EArrayValue: \expr\} & \hypertarget{ast-eenumarray}{}\\
+\expr \derives\ & \EGetItem(\expr, \N) &\\ \hypertarget{ast-earray}{}
+             |\ & \EArray \{\EArrayLength: \expr, \EArrayValue: \expr\} & \hypertarget{ast-eenumarray}{}\\
              |\ & \EEnumArray \{\EArrayLabels: \identifier^+, \EArrayValue: \expr\} & \hypertarget{ast-egetenumarray}{}\\
              |\ & \EGetEnumArray(\overtext{\expr}{base}, \overtext{\expr}{key}) & \hypertarget{ast-esetenumarray}{}\\
              |\ & \LESetEnumArray(\overtext{\lexpr}{base}, \overtext{\expr}{index}) &\\
@@ -574,6 +575,7 @@ The rules for expressions have the following extra derivation rules:
 
 The intention for each AST node type above is as follows:
 \begin{itemize}
+\item $\EGetItem(\ve, i)$ accesses the $i$th component of the tuple given by the expression $\ve$.
 \item $\EArray\{\EArrayLength: \veone, \EArrayValue: \vetwo\}$ is used to construct an integer-indexed array value
 in order to initialize an array-typed variable;
 \item $\EEnumArray\{\EArrayLabels: \vl_{1..k}, \EArrayValue: \vetwo\}$ is used to construct an enumeration-indexed
@@ -625,9 +627,12 @@ for each non-terminal node.
 (Some of the builders are relations due to non-determinism induced by naming global variables
 for assignments whose left-hand-side variable is discarded ($\Tminus$).)
 
+\hypertarget{def-tbuilderror}{}
+\hypertarget{def-builderrorconfig}{}
 For each non-terminal $N \derives R_1 \;|\; \ldots R_k$, we define a builder function
 $\textsf{build\_}N $ which takes a parse tree $\parsenode{N}$ and returns the corresponding
-AST. The builder function is defined in terms of one inference rule per alternative $R_i$.
+AST or a \emph{build error configuration} $\BuildErrorConfig \in \TBuildError$.
+The builder function is defined in terms of one inference rule per alternative $R_i$.
 The input for the builder for an alternative $R = S_{1..m}$ is a parse node
 $N(S_{1..m})$. To allow the builder to refer to the children nodes of $N$,
 we use the notation $\namednode{n_i}{S_i}$, which names the child node $S_i$ as $n_i$.
@@ -714,6 +719,7 @@ that are not inlined:
 \begin{itemize}
   \item ASTRule.List (see \secref{ASTRule.List})
   \item ASTRule.CList (see \secref{ASTRule.CList})
+  \item ASTRule.PList (see \secref{ASTRule.PList})
   \item ASTRule.NTCList (see \secref{ASTRule.NTCList})
   \item ASTRule.Option (see \secref{ASTRule.Option})
 \end{itemize}
@@ -777,11 +783,29 @@ to each of them --- $\vsymasts$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.NTCList \label{sec:ASTRule.NTCList}}
-\hypertarget{build-ntclist}{}
+\subsubsection{ASTRule.PList \label{sec:ASTRule.PList}}
+\hypertarget{build-plist}{}
 The meta relation
 \[
-\buildntclist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
+\buildplist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
+\]
+which is parameterized by an AST building relation $b : E \aslrel A$,
+takes a parse node that represents a parenthesized comma-separated list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
+to each of them --- $\vsymasts$.
+
+\begin{mathpar}
+\inferrule{
+  \buildclist[b](\vv) \astarrow \astversion{\vv}
+}{
+  \buildplist[b](\Tlpar, \namednode{\vv}{L}, \Trpar) \astarrow \astversion{\vv}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.NTCList \label{sec:ASTRule.NTCList}}
+\hypertarget{build-tclist}{}
+The meta relation
+\[
+\buildtclist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
 \]
 which is parameterized by an AST building relation $b : E \aslrel A$,
 takes a parse node that represents a non-empty comma-separated trailing list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
@@ -791,16 +815,16 @@ to each of them --- $\vsymasts$.
 \inferrule[empty]{
   b(\vv) \astarrow \astversion{\vv}
 }{
-  \buildntclist[b](\overname{\vv \parsesep \option{\Tcomma}}{\vsyms}) \astarrow \overname{[\astversion{\vv}]}{\vsymasts}
+  \buildtclist[b](\overname{\vv \parsesep \option{\Tcomma}}{\vsyms}) \astarrow \overname{[\astversion{\vv}]}{\vsymasts}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[non\_empty]{
   b(\vv) \astarrow \astversion{\vv}\\
-  \buildntclist[b](\vsymsone) \astarrow \vsymastsone
+  \buildtclist[b](\vsymsone) \astarrow \vsymastsone
 }{
-  \buildntclist[b](\overname{\namednode{\vv}{E}, \Tcomma, \namednode{\vsymsone}{\NTClist{N}}}{\vsyms}) \astarrow \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
+  \buildtclist[b](\overname{\namednode{\vv}{E}, \Tcomma, \namednode{\vsymsone}{\NTClist{N}}}{\vsyms}) \astarrow \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
 }
 \end{mathpar}
 
@@ -888,8 +912,8 @@ $\ELInt{n}$ & literal integer expression: $\ELiteral(\lint(n))$
 $\AbbrevConstraintExact{\ve}$ & $\ConstraintExact(\ve)$
 \hypertarget{def-abbrevconstraintrange}{}\\
 $\AbbrevConstraintRange{\veone}{\vetwo}$ & $\ConstraintRange(\veone, \vetwo)$ \hypertarget{def-abbrevebinop}{}\\
-$\AbbrevEBinop{\op}{\veone}{\vetwo}$ & $\EBinop(\op, \veone, \vetwo)$ \hypertarget{def-abbrevtarraylengthexpr}{}\\
-$\AbbrevTArray{\vi}{\vt}$ & $\TArray(\ArrayLengthExpr(\vi), \vt)$ \hypertarget{def-abbrevtarray}{}\\
+$\AbbrevEBinop{\op}{\veone}{\vetwo}$ & $\EBinop(\op, \veone, \vetwo)$ \hypertarget{def-tarrayshort}{} \hypertarget{def-abbrevtarray}{}\\
+$\AbbrevTArray{\vi}{\vt}$ & $\TArray(\ArrayLengthExpr(\vi), \vt)$ \hypertarget{def-abbrevtarraylengthexpr}{}\\
 $\AbbrevTArrayLengthExpr{\ve}{\vt}$ & $\TArray(\ArrayLengthExpr(\ve), \vt)$ \hypertarget{def-abbrevtarraylengthenum}{}\\
 $\AbbrevTArrayLengthEnum{\ve}{\vs}{\vt}$ & $\TArray(\ArrayLengthEnum(\ve, \vs), \vt)$\\
 \hline
