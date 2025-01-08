@@ -223,7 +223,7 @@
 %left PLUS MINUS EOR AND OR
 %left STAR SLASH MOD LT_LT GT_GT DIV
 %left CARET
-%nonassoc BANG NOT
+%nonassoc UNOPS
 %left LBRACK
 %left DOT
 
@@ -368,7 +368,7 @@ let binop_expr(e, b) ==
         { AST.E_Call { name; args; params; call_type = ST_Function } }
       | name=qualident; params=braced(clist(expr)); args=pared(clist(expr));
         { AST.E_Call { name; args; params; call_type = ST_Function } }
-      | ~=unop; ~=e;                                  < AST.E_Unop      >
+      | ~=unop; ~=e;                                  < AST.E_Unop      > %prec UNOPS
       | e1=e; op=b; e2=e;                             { AST.E_Binop (op, e1, e2) }
       | ~=pared(nnclist(expr));                       < AST.E_Tuple     >
       | IF; c=expr; THEN; e=expr; ~=e_else;           < AST.E_Cond      >
