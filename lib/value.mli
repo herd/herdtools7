@@ -66,7 +66,7 @@ module type S =
       val freeze : csym -> Cst.v
 
 (* Equality (for constraint solver) is possible *)
-      (* val equalityPossible : v -> v -> bool *)
+      val equalityPossible : v -> v -> bool
 
 (* Please use this for comparing constants... *)
       val compare : v -> v -> int
@@ -91,11 +91,6 @@ module type S =
          type v are not determined enough to yield a result *)
 
       exception Undetermined
-
-      (* The equality tests may raise an CollisionPAC execption to info the
-         solver that the result depend of the presence of a hash collision
-         between two PAC fields *)
-      exception CollisionPAC of Constant.PAC.t * Constant.PAC.t * v * v
 
 
 (* Bit-Twiddling Ops *)

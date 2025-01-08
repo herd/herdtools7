@@ -1685,9 +1685,6 @@ Monad type:
       | V.Undetermined ->
          (* Not ready yet add equation *)
          delay_op mk_c
-      | V.CollisionPAC _ ->
-         (* Solve PAC collisions in the solver *)
-         delay_op mk_c
       | exn ->
          if C.debug.Debug_herd.exc then raise exn
          (* Delay failure *)
