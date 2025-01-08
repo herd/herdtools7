@@ -14,9 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(*module Collision = CollisionSolver*)
-module Collision = CollisionSolver
-
 (** Top level loop : execute test according to model *)
 
 module type CommonConfig = sig
@@ -423,7 +420,7 @@ module Make(O:Config)(M:XXXMem.S) =
       end else
         (* Thanks to the existence of check_test, XXMem modules
            apply their internal functors once *)
-        let call_model conc ofail _ c =
+        let call_model conc ofail c =
         let check_test = M.check_event_structure test in
         (* Checked pruned executions before even calling model *)
         let cutoff =  S.exists_cutoff conc in

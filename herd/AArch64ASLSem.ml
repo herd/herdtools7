@@ -918,7 +918,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               | IsInstr -> IsInstr
               | Promote -> Promote
               | Demote -> Demote
-              | CheckCanonical | SetCanonical
+              | SetCanonical -> SetCanonical
+              | CheckCanonical -> CheckCanonical
               | ArchOp1 _ -> assert false
             in
             fun acc v -> (M.VC.Unop (new_op, tr_v v), acc)
@@ -1191,7 +1192,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           in
           let rfms_with_regs =
             let solve_regs (_i, cs, es) = MC.solve_regs test es cs in
-            List.concat_map solve_regs rfms
+            List.filter_map solve_regs rfms
           in
           let () =
             if _dbg then
@@ -1199,7 +1200,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 (List.length rfms_with_regs)
           in
           let conc_and_pp =
-            let check_rfm li (es, rfm, cs, solver) =
+            let check_rfm li (es, rfm, cs) =
               let po = MU.po_iico es in
               let pos =
                 let mem_evts = ASLE.mem_of es.ASLE.events in

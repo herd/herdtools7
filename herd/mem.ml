@@ -103,17 +103,17 @@ module type S = sig
 
   val calculate_rf_with_cnstrnts :
       S.test -> Label.Set.t -> S.event_structure -> S.M.VC.cnstrnts ->
-        (S.concrete -> S.M.VC.cnstrnt option -> S.M.VC.solver_state -> 'a -> 'a ) -> (* kont *)
+        (S.concrete -> S.M.VC.cnstrnt option -> 'a -> 'a ) -> (* kont *)
           'a -> 'a
 
   val solve_regs :
       S.test -> S.E.event_structure -> S.M.VC.cnstrnt list ->
-        (S.E.event_structure * S.read_from S.RFMap.t * S.M.VC.cnstrnt list * S.M.VC.solver_state) list
+        (S.E.event_structure * S.read_from S.RFMap.t * S.M.VC.cnstrnt list) option
 
   val solve_mem :
-      S.test ->S.E.event_structure -> S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> S.M.VC.solver_state ->
+      S.test ->S.E.event_structure -> S.read_from S.RFMap.t -> S.M.VC.cnstrnt list ->
         (S.E.event_structure ->
-          S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> S.M.VC.solver_state -> 'a -> 'a) ->
+          S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> 'a -> 'a) ->
             'a -> 'a
 
   val check_sizes : S.test -> S.event_structure -> unit
@@ -122,8 +122,7 @@ module type S = sig
       S.E.event_structure -> S.read_from S.RFMap.t -> bool
 
   val when_unsolved :
-      S.test -> S.E.event_structure -> S.read_from S.RFMap.t -> S.M.VC.cnstrnt list ->
-        S.M.VC.solver_state -> 'a -> 'a
+      S.test -> S.E.event_structure -> S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> 'a -> 'a
 
   val compute_final_state :
     S.test -> S.read_from S.RFMap.t -> S.E.EventSet.t -> S.A.state * S.A.FaultSet.t
@@ -806,9 +805,16 @@ let match_reg_events es =
 
 (* Optimization: adding constraint v1 := v2 should always work *)
 
+    exception Contradiction
+
     let add_eq v1 v2 eqs =
-      if V.equal v1 v2
-      then eqs
+      if V.is_var_determined v1 then
+        if V.is_var_determined v2 then
+          if V.equal v1 v2 then eqs
+          else raise Contradiction
+        else (* Here, v1 and v2 necessarily differ *)
+          VC.Assign (v2, VC.Atom v1)::eqs
+      else if V.equal v1 v2 then eqs
       else VC.Assign (v1, VC.Atom v2)::eqs
 
     let pp_nosol lvl test es rfm =
@@ -826,18 +832,28 @@ let match_reg_events es =
           | S.Load load ->
               let v_loaded = get_read load in
               let v_stored = get_rf_value test load rf in
-              add_eq v_loaded v_stored csn)
+              try add_eq v_loaded v_stored csn
+              with Contradiction ->
+                let loc = Misc.as_some (E.location_of load) in
+                Printf.eprintf
+                  "Contradiction on reg %s: loaded %s vs. stored %s\n"
+                  (A.pp_location loc)
+                  (A.V.pp_v v_loaded)
+                  (A.V.pp_v v_stored) ;
+                assert false)
           rfm csn in
       if  C.debug.Debug_herd.solver then
         prerr_endline "++ Solve  registers" ;
-      let solved = VC.solve VC.init_solver csn in
-      if List.is_empty solved && C.debug.Debug_herd.solver then
-        pp_nosol "register" test es rfm ;
-      List.map (fun (sol,csn,solver) ->
-        (E.simplify_vars_in_event_structure sol es,
-         S.simplify_vars_in_rfmap sol rfm,
-         csn, solver)
-      ) solved
+      match VC.solve csn with
+      | VC.NoSolns ->
+         if C.debug.Debug_herd.solver then
+           pp_nosol "register" test es rfm ;
+         None
+      | VC.Maybe (sol,csn) ->
+          Some
+            (E.simplify_vars_in_event_structure sol es,
+             S.simplify_vars_in_rfmap sol rfm,
+             csn)
 
 (**************************************)
 (* Step 2. Generate rfmap for memory  *)
@@ -1042,7 +1058,7 @@ let match_reg_events es =
       List.fold_right2
         (List.fold_right2 (fun r w ->  S.RFMap.add (S.Load r) (S.Store w)))
 
-    let solve_mem_or_res test es rfm cns solver kont res loads stores compat_locs add_eqs =
+    let solve_mem_or_res test es rfm cns kont res loads stores compat_locs add_eqs =
       let possible =
         map_load_possible_stores test es rfm loads stores compat_locs in
       let possible =
@@ -1072,20 +1088,28 @@ let match_reg_events es =
             (* And solve *)
             if C.debug.Debug_herd.solver then
               prerr_endline "++ Solve memory" ;
-            let solved = VC.solve solver cns in
-            if List.is_empty solved && C.debug.Debug_herd.solver then begin
-              let rfm = add_some_mem loads stores rfm in
-              pp_nosol "memory" test es rfm
-            end ;
-            List.fold_right (fun (sol,cs,solver) res ->
-              (* Time to complete rfmap *)
-              let rfm = add_some_mem loads stores rfm in
-              (* And to make everything concrete *)
-              let es = E.simplify_vars_in_event_structure sol es
-              and rfm = S.simplify_vars_in_rfmap sol rfm in
-              kont es rfm cs solver res
-            ) solved res
+            match VC.solve cns with
+            | VC.NoSolns ->
+               if C.debug.Debug_herd.solver then begin
+                 let rfm = add_some_mem loads stores rfm in
+                 pp_nosol "memory" test es rfm
+               end ;
+               res
+            | VC.Maybe (sol,cs) ->
+                (* Time to complete rfmap *)
+                let rfm = add_some_mem loads stores rfm in
+                (* And to make everything concrete *)
+                let es = E.simplify_vars_in_event_structure sol es
+                and rfm = S.simplify_vars_in_rfmap sol rfm in
+                kont es rfm cs res
           with
+          | Contradiction ->  (* May  be raised by add_mem_eqs *)
+             if C.debug.Debug_herd.solver then
+               begin
+                 let rfm = add_some_mem loads stores rfm in
+                 pp_nosol "memory" test es rfm
+               end ;
+             res
           | e ->
               if C.debug.Debug_herd.top then begin
                 eprintf "Exception: %s\n%!" (Printexc.to_string e) ;
@@ -1097,7 +1121,7 @@ let match_reg_events es =
         )
         res
 
-    let when_unsolved test es rfm _cs _solver res =
+    let when_unsolved test es rfm _cs res =
       (* This system in fact has no solution.
          In other words, it is not possible to make
          such event structures concrete.
@@ -1110,7 +1134,7 @@ let match_reg_events es =
       assert (true || rfmap_is_cyclic es rfm);
       res
 
-    let solve_mem_non_mixed test es rfm cns solver kont res =
+    let solve_mem_non_mixed test es rfm cns kont res =
       let compat_locs = compatible_locs_mem in
       if self then
         let code_store e =
@@ -1125,7 +1149,7 @@ let match_reg_events es =
           E.EventSet.filter E.is_ifetch es.E.events
         and code_stores =
           E.EventSet.filter code_store es.E.events in
-        let kont es rfm cns solver res =
+        let kont es rfm cns res =
           (* We get here once code accesses are solved *)
           let loads =  E.EventSet.filter E.is_mem_load es.E.events
           and stores = E.EventSet.filter E.is_mem_store es.E.events in
@@ -1136,13 +1160,13 @@ let match_reg_events es =
             eprintf "Left loads : %a\n"E.debug_events loads ;
             eprintf "All stores: %a\n"E.debug_events stores
           end ;
-          solve_mem_or_res test es rfm cns solver kont res
+          solve_mem_or_res test es rfm cns kont res
             loads stores compat_locs add_mem_eqs in
         if dbg then begin
             eprintf "Code loads : %a\n"E.debug_events code_loads ;
             eprintf "Code stores: %a\n"E.debug_events code_stores
           end ;
-        solve_mem_or_res test es rfm cns solver kont res
+        solve_mem_or_res test es rfm cns kont res
           code_loads code_stores compat_locs add_mem_eqs
       else
         let loads = E.EventSet.filter E.is_mem_load es.E.events
@@ -1151,7 +1175,7 @@ let match_reg_events es =
           eprintf "Loads : %a\n"E.debug_events loads ;
           eprintf "Stores: %a\n"E.debug_events stores
           end ;
-        solve_mem_or_res test es rfm cns solver kont res
+        solve_mem_or_res test es rfm cns kont res
           loads stores compat_locs add_mem_eqs
 
 (*************************************)
@@ -1331,7 +1355,7 @@ let match_reg_events es =
         map_load_possible_stores test es rfm loads stores compatible_locs_mem in
       m
 
-    let solve_mem_mixed test es rfm cns solver kont res =
+    let solve_mem_mixed test es rfm cns kont res =
       let match_tags = if morello then []
         else pair_tags test es rfm in
       let tag_loads,tag_possible_stores = List.split match_tags in
@@ -1341,52 +1365,56 @@ let match_reg_events es =
       Misc.fold_cross wsss
         (fun wss res ->
           (* Add memory constraints now *)
-          let cns =
-            List.fold_right2
-              (fun rs ws eqs ->
-                List.fold_right2
-                  (fun r w eqs ->
-                    assert (E.same_location r w) ;
-                    add_eq (get_read r) (get_written w) eqs)
-                  rs ws eqs)
-              rss wss cns in
-          Misc.fold_cross tag_possible_stores
-            (fun tag_stores res ->
-              (* Add tag memory constraints *)
-              try
-                let cns =
+          try
+            let cns =
+              List.fold_right2
+                (fun rs ws eqs ->
                   List.fold_right2
-                    (fun load store k -> add_mem_eqs test store load k)
-                    tag_loads tag_stores cns in
-                (* And solve *)
-                List.fold_right (fun (sol,cs,solver) res ->
-                  (* Time to complete rfmap *)
-                  let rfm = add_mems rss wss rfm in
-                  let rfm = add_mem tag_loads tag_stores rfm in
-                  (* And to make everything concrete *)
-                  let es = E.simplify_vars_in_event_structure sol es
-                  and rfm = S.simplify_vars_in_rfmap sol rfm in
-                  kont es rfm cs solver res
-                ) (VC.solve solver cns) res
-              with
-              | e ->
-                  if C.debug.Debug_herd.top then begin
-                    eprintf "Exception: %s\n%!" (Printexc.to_string e) ;
-                    let module PP = Pretty.Make(S) in
-                    let rfm = add_mems rss wss rfm in
-                    PP.show_es_rfm test es rfm
-                  end ;
-                  raise e)
-            res)   (* can be raised by add_eq *)
+                    (fun r w eqs ->
+                      assert (E.same_location r w) ;
+                      add_eq (get_read r) (get_written w) eqs)
+                    rs ws eqs)
+                rss wss cns in
+            Misc.fold_cross tag_possible_stores
+              (fun tag_stores res ->
+                (* Add tag memory constraints *)
+                try
+                  let cns =
+                    List.fold_right2
+                      (fun load store k -> add_mem_eqs test store load k)
+                      tag_loads tag_stores cns in
+                  (* And solve *)
+                  match VC.solve cns with
+                  | VC.NoSolns -> res
+                  | VC.Maybe (sol,cs) ->
+                      (* Time to complete rfmap *)
+                      let rfm = add_mems rss wss rfm in
+                      let rfm = add_mem tag_loads tag_stores rfm in
+                      (* And to make everything concrete *)
+                      let es = E.simplify_vars_in_event_structure sol es
+                      and rfm = S.simplify_vars_in_rfmap sol rfm in
+                      kont es rfm cs res
+                with
+                | Contradiction -> res  (* can be raised by add_mem_eqs *)
+                | e ->
+                    if C.debug.Debug_herd.top then begin
+                      eprintf "Exception: %s\n%!" (Printexc.to_string e) ;
+                      let module PP = Pretty.Make(S) in
+                      let rfm = add_mems rss wss rfm in
+                      PP.show_es_rfm test es rfm
+                    end ;
+                    raise e)
+              res
+          with Contradiction -> res)   (* can be raised by add_eq *)
         res
 
-    let solve_mem test es rfm cns solver kont res =
+    let solve_mem test es rfm cns kont res =
       try
-        if mixed && not C.debug.Debug_herd.mixed then solve_mem_mixed test es rfm cns solver kont res
-        else solve_mem_non_mixed test es rfm cns solver kont res
+        if mixed && not C.debug.Debug_herd.mixed then solve_mem_mixed test es rfm cns kont res
+        else solve_mem_non_mixed  test es rfm cns kont res
       with
       | CannotSca ->
-         solve_mem_non_mixed test es rfm cns solver kont res
+         solve_mem_non_mixed test es rfm cns kont res
 
 
 (*************************************)
@@ -1762,7 +1790,7 @@ let match_reg_events es =
           Misc.exists_pair S.read_from_equal rfs)
         loads
 
-    let fold_mem_finals test es rfm ofail atomic_load_store solver kont res =
+    let fold_mem_finals test es rfm ofail atomic_load_store kont res =
       (* We can build those now *)
       let evts = es.E.events in
       let po_iico = U.po_iico es in
@@ -1859,7 +1887,7 @@ let match_reg_events es =
                    last_store_vbf = last_store_vbf ;
                    atomic_load_store = atomic_load_store ;
                  } in
-                kont conc ofail solver res
+                kont conc ofail res
               else begin
                 if C.debug.Debug_herd.solver then begin
                   let conc =
@@ -2040,23 +2068,25 @@ Please use `-variant self` as an argument to herd7 to enable it."
       ) stores
 
     let calculate_rf_with_cnstrnts test owls es cs kont res =
-      List.fold_right (fun (es,rfm,cs,solver) res ->
-        if C.debug.Debug_herd.solver && C.verbose > 0 then begin
-          let module PP = Pretty.Make(S) in
-          prerr_endline "Reg solved" ;
-          PP.show_es_rfm test es rfm ;
-        end ;
-        solve_mem test es rfm cs solver
-          (fun es rfm cs solver res ->
-            let ofail = VC.get_failed cs in
-            match cs with
-            | _::_
-                 when
-                   (not oota)
-                   && (not C.initwrites || not do_deps)
-                   && not asl
-                   && Misc.is_none ofail
-              ->
+      match solve_regs test es cs with
+      | None -> res
+      | Some (es,rfm,cs) ->
+          if C.debug.Debug_herd.solver && C.verbose > 0 then begin
+            let module PP = Pretty.Make(S) in
+            prerr_endline "Reg solved" ;
+            PP.show_es_rfm test es rfm ;
+          end ;
+          solve_mem test es rfm cs
+            (fun es rfm cs res ->
+              let ofail = VC.get_failed cs in
+              match cs with
+              | _::_
+                   when
+                     (not oota)
+                     && (not C.initwrites || not do_deps)
+                     && not asl
+                     && Misc.is_none ofail
+                ->
 (*
  Jade:
   on tolere qu'il reste des equations dans le cas d'evts specules -
@@ -2065,42 +2095,42 @@ Please use `-variant self` as an argument to herd7 to enable it."
    Done, or at least avoid accepting such candidates in non-deps mode.
    Namely, having  non-sensical candidates rejected later by model
    entails a tremendous runtime penalty. *)
-                when_unsolved test es rfm cs solver res
-            | _ ->
-                check_symbolic_locations test es ;
-                if self then check_ifetch_limitations test es owls
-                else check_noifetch_limitations es;
-                if (mixed && not unaligned) then check_aligned test es ;
-                if A.reject_mixed
-                   && not (mixed || memtag || morello)
-                then
-                  check_sizes test es ;
-                if C.debug.Debug_herd.solver && C.verbose > 0 then begin
-                  let module PP = Pretty.Make(S) in
-                  prerr_endline "Mem solved" ;
-                  PP.show_es_rfm test es rfm
-                end ;
-                if
-                  match C.optace with
-                  | OptAce.False|OptAce.Iico -> true
-                  | OptAce.True -> check_rfmap es rfm
-                then
-                  (* Atomic load/store pairs *)
-                  let atomic_load_store = make_atomic_load_store es in
+                  when_unsolved test es rfm cs res
+              | _ ->
+                  check_symbolic_locations test es ;
+                  if self then check_ifetch_limitations test es owls
+                  else check_noifetch_limitations es;
+                  if (mixed && not unaligned) then check_aligned test es ;
+                  if A.reject_mixed
+                     && not (mixed || memtag || morello)
+                  then
+                    check_sizes test es ;
+                  if C.debug.Debug_herd.solver && C.verbose > 0 then begin
+                    let module PP = Pretty.Make(S) in
+                    prerr_endline "Mem solved" ;
+                    PP.show_es_rfm test es rfm
+                  end ;
                   if
-                    C.variant Variant.OptRfRMW
-                    && some_same_rf_rmw rfm atomic_load_store
-                  then begin
-                    if C.debug.Debug_herd.mem then begin
-                      let module PP = Pretty.Make(S) in
-                      eprintf
-                        "Atomicity violation anticipated from rf map%!" ;
-                      PP.show_es_rfm test es rfm
-                    end ;
-                    res
-                    end else
-                    fold_mem_finals test es
-                      rfm ofail atomic_load_store solver kont res
-                else  res)
-          res) (solve_regs test es cs) res
+                    match C.optace with
+                    | OptAce.False|OptAce.Iico -> true
+                    | OptAce.True -> check_rfmap es rfm
+                  then
+                    (* Atomic load/store pairs *)
+                    let atomic_load_store = make_atomic_load_store es in
+                    if
+                      C.variant Variant.OptRfRMW
+                      && some_same_rf_rmw rfm atomic_load_store
+                    then begin
+                      if C.debug.Debug_herd.mem then begin
+                        let module PP = Pretty.Make(S) in
+                        eprintf
+                          "Atomicity violation anticipated from rf map%!" ;
+                        PP.show_es_rfm test es rfm
+                      end ;
+                      res
+                      end else
+                      fold_mem_finals test es
+                        rfm ofail atomic_load_store kont res
+                  else  res)
+            res
   end
