@@ -387,9 +387,9 @@ As given by applying the relevant rules to the desugared AST.
 \section{Declaration Statements\label{sec:DeclarationStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derives \ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \option{\Nty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Nty} \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
+\Nstmt \derives \ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \option{\Nasty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Nasty} \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Nasty \parsesep \Tsemicolon &\\
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -400,11 +400,11 @@ As given by applying the relevant rules to the desugared AST.
 \subsubsection{ASTRule.SDecl}
 \begin{mathpar}
 \inferrule[let\_constant]{
-  \buildoption[\buildty](\vt) \astarrow \astversion{\vt}
+  \buildoption[\buildasty](\vt) \astarrow \astversion{\vt}
 }{
   {
   \begin{array}{r}
-  \buildstmt(\overname{\Nstmt(\Nlocaldeclkeyword, \Ndeclitem, \namednode{\vt}{\option{\Nty}}, \Teq, \punnode{\Nexpr}, \Tsemicolon)}{\vparsednode})
+  \buildstmt(\overname{\Nstmt(\Nlocaldeclkeyword, \Ndeclitem, \namednode{\vt}{\option{\Nasty}}, \Teq, \punnode{\Nexpr}, \Tsemicolon)}{\vparsednode})
   \astarrow\\
   \overname{\SDecl(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \astversion{\vt}, \langle\astof{\vexpr}\rangle)}{\vastnode}
   \end{array}
@@ -414,12 +414,12 @@ As given by applying the relevant rules to the desugared AST.
 
 \begin{mathpar}
 \inferrule[var]{
-  \buildoption[\buildty](\vt) \astarrow \astversion{\vt} \\
+  \buildoption[\buildasty](\vt) \astarrow \astversion{\vt} \\
   \buildoption[\buildexpr](\ve) \astarrow \astversion{\ve}
 }{
   {
     \begin{array}{r}
-  \buildstmt(\overname{\Nstmt(\Tvar, \Ndeclitem, \namednode{\vt}{\option{\Nty}}, \namednode{\ve}{\option{\Teq, \Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \buildstmt(\overname{\Nstmt(\Tvar, \Ndeclitem, \namednode{\vt}{\option{\Nasty}}, \namednode{\ve}{\option{\Teq, \Nexpr}}, \Tsemicolon)}{\vparsednode})
   \astarrow \\
   \overname{\SDecl(\LDKVar, \astof{\vdeclitem}, \astversion{\vt}, \astversion{\ve})}{\vastnode}
 \end{array}
@@ -430,10 +430,11 @@ As given by applying the relevant rules to the desugared AST.
 \begin{mathpar}
 \inferrule[multi\_var]{
   \buildclist[\buildidentity](\vids) \astarrow \astversion{\vids}\\
-  \vstmts \eqdef [\vx\in\astversion{\vids}: \SDecl(\LDKVar, \vx, \langle\astof{\tty}\rangle, \None)]\\
+  \buildasty(\vt) \astarrow \astversion{\vt} \\
+  \vstmts \eqdef [\vx\in\astversion{\vids}: \SDecl(\LDKVar, \vx, \astversion{\vt}, \None)]\\
   \stmtfromlist(\vstmts) \astarrow \vastnode
 }{
-  \buildstmt(\overname{\Nstmt(\Tvar, \namednode{\vids}{\Clisttwo{\Tidentifier}}, \Tcolon, \punnode{\Nty}, \Tsemicolon)}{\vparsednode})
+  \buildstmt(\overname{\Nstmt(\Tvar, \namednode{\vids}{\Clisttwo{\Tidentifier}}, \namednode{\vt}{\Nasty}, \Tsemicolon)}{\vparsednode})
   \astarrow
   \vastnode
 }
@@ -1149,8 +1150,8 @@ All of the following apply:
 \begin{flalign*}
 \Nstmt \derives \ & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse \parsesep \Tend \parsesep \Tsemicolon &\\
 \Nselse \derives\ & \Telseif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse &\\
-        |\ & \Tpass &\\
-        |\ & \Telse \parsesep \Nstmtlist &
+        |\ & \Telse \parsesep \Nstmtlist &\\
+        |\ & \emptysentence &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -1192,7 +1193,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[pass]{}{
-  \buildselse(\Nselse(\Tpass)) \astarrow \overname{\SPass}{\vastnode}
+  \buildselse(\Nselse(\emptysentence)) \astarrow \overname{\SPass}{\vastnode}
 }
 \end{mathpar}
 

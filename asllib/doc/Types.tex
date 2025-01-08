@@ -29,6 +29,24 @@ The function
 \]
 transforms an anonymous type parse node $\vparsednode$ into a type AST node $\vastnode$.
 
+\hypertarget{build-as-ty}{}
+The function
+\[
+  \buildasty(\overname{\parsenode{\Nasty}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
+\]
+transforms a type annotation parse node $\vparsednode$ into a type AST node $\vastnode$.
+\ProseOtherwiseBuildError
+
+Formally:
+
+\begin{mathpar}
+\inferrule{
+  \buildty(\vt) \astarrow \astversion{\vt}
+} {
+  \buildasty(\Tcolon, \namednode{\vt}{\Nty}) \astarrow \astversion{\vt}
+}
+\end{mathpar}
+
 \hypertarget{build-tydecl}{}
 The function
 \[
