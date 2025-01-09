@@ -24,18 +24,28 @@
   Menhir to BNFC Grammar converter
 *)
 
-type args = { cmly_file : string; cf_file : string; no_ast : bool }
+type args = {
+  cmly_file : string;
+  cf_file : string;
+  order_file : string option;
+  no_ast : bool;
+}
 (** Command line arguments structure *)
 
 let parse_args () =
   let files = ref [] in
   let no_ast = ref false in
+  let order_file = ref "" in
   let speclist =
     [
       ( "--no-ast",
         Arg.Set no_ast,
         " Output in a simplified A := B | C format excluding AST information."
       );
+      ( "--order",
+        Arg.Set_string order_file,
+        " A file describing the desired order of bnfc names. Represented as a \
+         newline separated list of bnfc names." );
     ]
   in
   let prog =
@@ -53,8 +63,10 @@ let parse_args () =
   in
   let () = Arg.parse speclist anon_fun usage_msg in
   let args =
+    let order_file = match !order_file with "" -> None | f -> Some f in
     match List.rev !files with
-    | [ cmly; cf ] -> { cmly_file = cmly; cf_file = cf; no_ast = !no_ast }
+    | [ cmly; cf ] ->
+        { cmly_file = cmly; cf_file = cf; no_ast = !no_ast; order_file }
     | _ ->
         let () = Printf.eprintf "%s invalid arguments!\n%s" prog usage_msg in
         exit 1
@@ -66,7 +78,9 @@ let parse_args () =
         let () = Printf.eprintf "%s cannot find file %S\n%!" prog s in
         exit 1
     in
-    ensure_exists args.cmly_file
+    ensure_exists args.cmly_file;
+    if Option.is_some args.order_file then
+      ensure_exists (Option.get args.order_file)
   in
   args
 
@@ -88,7 +102,18 @@ let translate_to_str args =
     let module BnfcData = CvtGrammar.Convert (MenhirSdk.Cmly_read.Read (struct
       let filename = args.cmly_file
     end)) in
-    { entrypoints = BnfcData.entrypoints; decls = BnfcData.decls }
+    let initial =
+      { entrypoints = BnfcData.entrypoints; decls = BnfcData.decls }
+    in
+    match args.order_file with
+    | None -> initial
+    | Some ord_file ->
+        let parse_order chan =
+          let data = really_input_string chan (in_channel_length chan) in
+          String.trim data |> String.split_on_char '\n' |> List.map String.trim
+        in
+        let order = with_open_in_bin ord_file parse_order in
+        sort_bnfc initial order
   in
   if args.no_ast then simplified_bnfc bnfc else string_of_bnfc bnfc
 
