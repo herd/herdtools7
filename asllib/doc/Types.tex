@@ -26,13 +26,16 @@ All types are represented as ASTs derived from the AST non-terminal $\ty$.
 The function
 \[
   \buildty(\overname{\parsenode{\Nty}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
+  \cup \overname{\TBuildError}{\BuildErrorConfig}
 \]
 transforms an anonymous type parse node $\vparsednode$ into a type AST node $\vastnode$.
+\ProseOtherwiseBuildError
 
 \hypertarget{build-as-ty}{}
 The function
 \[
   \buildasty(\overname{\parsenode{\Nasty}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
+  \cup \overname{\TBuildError}{\BuildErrorConfig}
 \]
 transforms a type annotation parse node $\vparsednode$ into a type AST node $\vastnode$.
 \ProseOtherwiseBuildError
@@ -51,8 +54,10 @@ Formally:
 The function
 \[
   \buildtydecl(\overname{\parsenode{\Ntydecl}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
+  \cup \overname{\TBuildError}{\BuildErrorConfig}
 \]
 transforms a \namedtype\ parse node $\vparsednode$ into an AST node $\vastnode$.
+\ProseOtherwiseBuildError
 
 \hypertarget{def-annotatetype}{}
 The function
