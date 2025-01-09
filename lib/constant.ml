@@ -44,7 +44,7 @@ module PAC = struct
     }
 
   let pp_signature p s =
-    sprintf "pac(%s, %s, %s, %d)" s p.key p.modifier p.offset
+    sprintf "pac%s(%s, %s, %d)" p.key s p.modifier p.offset
 
   let compare_signature p1 p2 =
     match String.compare p1.key p2.key with

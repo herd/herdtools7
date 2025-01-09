@@ -1,0 +1,10 @@
+Test A05 Required
+States 1
+ Fault(P0,PacCheck:DB);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0,PacCheck:DB))
+Observation A05 Always 1 0
+Hash=ae39602e4ed36188a925d402f836408d
+

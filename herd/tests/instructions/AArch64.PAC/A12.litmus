@@ -1,0 +1,9 @@
+AArch64 A12
+Variant=pac
+
+{ 0:x0=pacia(x,42) }
+
+P0            ;
+  xpacd x0    ;
+forall
+  ( 0:x0=x )

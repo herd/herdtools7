@@ -1,0 +1,9 @@
+AArch64 A06
+Variant=pac
+
+{ 0:x0=pacda(x,42) }
+
+P0                 ;
+  autdzb x0        ;
+forall
+  ( ~Fault(P0) /\ 0:x0=pacda(pacdb(x,0),42) )

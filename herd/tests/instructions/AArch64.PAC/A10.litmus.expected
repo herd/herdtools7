@@ -1,0 +1,10 @@
+Test A10 Required
+States 1
+0:X0=pacda(pacdb(x, 0x0, 0), 0x2a, 0);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=pacda(pacdb(x, 0x0, 0), 0x2a, 0))
+Observation A10 Always 1 0
+Hash=e011df3a60a07e9c29fdc0be53a8013f
+
