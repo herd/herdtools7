@@ -400,18 +400,19 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 |\ & \Ttry \parsesep \Nstmtlist \parsesep \Tcatch \parsesep \nonemptylist{\Ncatcher} \parsesep \Notherwiseopt \parsesep \Tend \parsesep \Tsemicolon &\\
 |\ & \Tpass \parsesep \Tsemicolon &\\
 |\ & \Treturn \parsesep \option{\Nexpr} \parsesep \Tsemicolon &\\
-|\ & \Ncall &\\
+|\ & \Ncall \parsesep \Tsemicolon &\\
 |\ & \Tassert \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \option{\Nty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \option{\Nasty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Ncall \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Ncall \parsesep \Tdot \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Ncall \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{{\Tidentifier}} \parsesep \Trbracket \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Nty} \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Nasty} \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Nasty \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 |\ & \Tprint \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Tprintln \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Tunreachable \parsesep \Tlpar \parsesep \Trpar \parsesep \Tsemicolon &\\
 |\ & \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Nlooplimit \parsesep \Tsemicolon &\\
 |\ & \Tthrow \parsesep \Nexpr \parsesep \Tsemicolon &\\
@@ -427,8 +428,8 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \hypertarget{def-nselse}{}
 \begin{flalign*}
 \Nselse \derives\ & \Telseif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse &\\
-|\ & \Tpass &\\
-|\ & \Telse \parsesep \Nstmtlist &
+|\ & \Telse \parsesep \Nstmtlist &\\
+|\ & \emptysentence &
 \end{flalign*}
 
 \hypertarget{def-nlexpr}{}
