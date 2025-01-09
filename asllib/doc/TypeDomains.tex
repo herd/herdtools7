@@ -108,37 +108,37 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
   \item All of the following apply (\textsc{constraint\_exact\_okay}):
   \begin{itemize}
     \item $\vc$ is a constraint consisting of a single side-effect-free expression $\ve$, that is, $\ConstraintExact(\ve)$;
-    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $n$;
+    \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $n$;
     \item $\vd$ is the set containing the single native integer value for $n$.
   \end{itemize}
 
   \item All of the following apply (\textsc{constraint\_exact\_dynamic\_error}):
   \begin{itemize}
     \item $\vc$ is a constraint consisting of a single side-effect-free expression $\ve$, that is, $\ConstraintExact(\ve)$;
-    \item evaluating $\ve$ in $\env$, results in a dynamic error configuration;
+    \item evaluating $\ve$ in $\env$ results in a dynamic error configuration;
     \item $\vd$ is the empty set.
   \end{itemize}
 
   \item All of the following apply (\textsc{constraint\_range\_okay}):
   \begin{itemize}
     \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
-    \item evaluating $\veone$ in $\env$, results in a configuration with the native integer for $a$;
-    \item evaluating $\vetwo$ in $\env$, results in a configuration with the native integer for $b$;
+    \item evaluating $\veone$ in $\env$ results in a configuration with the native integer for $a$;
+    \item evaluating $\vetwo$ in $\env$ results in a configuration with the native integer for $b$;
     \item $\vd$ is the set containing all native integer values for integers greater or equal to $a$ and less than or equal to $b$.
   \end{itemize}
 
   \item All of the following apply (\textsc{constraint\_range\_dynamic\_error1}):
   \begin{itemize}
     \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
-    \item evaluating $\veone$ in $\env$, results in a dynamic error configuration;
+    \item evaluating $\veone$ in $\env$ results in a dynamic error configuration;
     \item $\vd$ is the empty set.
   \end{itemize}
 
   \item All of the following apply (\textsc{constraint\_range\_dynamic\_error2}):
   \begin{itemize}
     \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
-    \item evaluating $\veone$ in $\env$, results in a configuration with the native integer for $a$;
-    \item evaluating $\vetwo$ in $\env$, results in a dynamic error configuration;
+    \item evaluating $\veone$ in $\env$ results in a configuration with the native integer for $a$;
+    \item evaluating $\vetwo$ in $\env$ results in a dynamic error configuration;
     \item $\vd$ is the empty set.
   \end{itemize}
 
@@ -152,14 +152,14 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
   \item All of the following apply (\textsc{t\_bits\_dynamic\_error}):
   \begin{itemize}
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
-    \item evaluating $\ve$ in $\env$, results in a dynamic error configuration;
+    \item evaluating $\ve$ in $\env$ results in a dynamic error configuration;
     \item $\vd$ is the empty set.
   \end{itemize}
 
   \item All of the following apply (\textsc{t\_bits\_negative\_width\_error}):
   \begin{itemize}
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
-    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
+    \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
     \item $k$ is negative;
     \item $\vd$ is the empty set.
   \end{itemize}
@@ -167,14 +167,14 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
   \item All of the following apply (\textsc{t\_bits\_empty}):
   \begin{itemize}
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
-    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $0$;
+    \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $0$;
     \item $\vd$ is the set containing the single \nativevalue\ for an empty bitvector.
   \end{itemize}
 
   \item All of the following apply (\textsc{t\_bits\_non\_empty}):
   \begin{itemize}
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
-    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
+    \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
     \item $k$ is greater than $0$;
     \item $\vd$ is the set containing all \nativevalues\ for bitvectors of size exactly $k$.
   \end{itemize}
@@ -183,7 +183,7 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
   \begin{itemize}
     \item $\vt$ is a tuple type over types $\vt_i$, for $i=1..k$, $\TTuple(\vt_{1..k})$;
     \item the domain of each element $\vt_i$ is $D_i$, for $i=1..k$;
-    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
+    \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
     \item $\vd$ is the set containing all native vectors of $k$ values, where the value at position $i$
     is from $D_i$.
   \end{itemize}
@@ -192,25 +192,27 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
   \begin{itemize}
     \item $\vt$ is an integer-indexed array type with length expression $\ve$ and element type $\telem$, $\TArray(\ArrayLengthExpr(\ve), \telem)$;
     \item One of the following applies:
-    \item All of the following apply (\textsc{t\_array\_dynamic\_error}):
-    \begin{itemize}
-      \item evaluating $\ve$ in $\env$, results in a dynamic error configuration;
-      \item $\vd$ is the empty set.
-    \end{itemize}
+      \begin{itemize}
+      \item All of the following apply (\textsc{t\_array\_dynamic\_error}):
+      \begin{itemize}
+        \item evaluating $\ve$ in $\env$ results in a dynamic error configuration;
+        \item $\vd$ is the empty set.
+      \end{itemize}
 
-    \item All of the following apply (\textsc{t\_array\_negative\_length\_error}):
-    \begin{itemize}
-      \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
-      \item $k$ is negative;
-      \item $\vd$ is the empty set.
-    \end{itemize}
+      \item All of the following apply (\textsc{t\_array\_negative\_length\_error}):
+      \begin{itemize}
+        \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
+        \item $k$ is negative;
+        \item $\vd$ is the empty set.
+      \end{itemize}
 
-    \item All of the following apply (\textsc{t\_array\_okay}):
-    \begin{itemize}
-      \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
-      \item $k$ is greater than or equal to $0$;
-      \item the domain of $\vtone$ is $D_\telem$;
-      \item $\vd$ is the set of all native vectors of $k$ values taken from $D_\telem$.
+      \item All of the following apply (\textsc{t\_array\_okay}):
+      \begin{itemize}
+        \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
+        \item $k$ is greater than or equal to $0$;
+        \item the domain of $\vtone$ is $D_\telem$;
+        \item $\vd$ is the set of all native vectors of $k$ values taken from $D_\telem$.
+      \end{itemize}
     \end{itemize}
   \end{itemize}
 

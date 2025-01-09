@@ -734,7 +734,7 @@ which is when the \textsc{empty} axiom case is used.
 
 \section{Array Assignment Expressions\label{sec:ArrayAssignmentExpressions}}
 This section details the syntax, abstract syntax, semantics, and typing of array write expressions.
-In the untyped AST, a write to either an integer-indexed array or an enumeration-indexed arrays is represented
+In the untyped AST, a write to either an integer-indexed array or an enumeration-indexed array is represented
 the same way. They type system infers the kind of array and outputs a typed AST node differentiating
 the two kinds of arrays, either a $\LESetArray$ or a $\LESetEnumArray$, via \nameref{sec:TypingRule.LESetArray}.
 The semantics utilizes a rule matching the corresponding type of array ---

@@ -141,10 +141,10 @@ val var_ : identifier -> expr
 (** [var_ x] is the expression [x]. *)
 
 val binop : binop -> expr -> expr -> expr
-(** Builds a binary operation from to sub-expressions. *)
+(** Builds a binary operation from to subexpressions. *)
 
 val unop : unop -> expr -> expr
-(** Builds a unary operation from its sub-expression. *)
+(** Builds a unary operation from its subexpression. *)
 
 val expr_of_z : Z.t -> expr
 (** [expr_of_z z] is the integer literal for [z]. *)
