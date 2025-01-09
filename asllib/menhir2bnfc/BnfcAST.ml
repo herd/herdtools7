@@ -38,6 +38,16 @@ type bnfc = { entrypoints : string list; decls : decl list }
    BNFC data structure utilities
  *)
 
+(** A copy of Ocaml's List.find_index from stdlib 5.1
+    https://github.com/ocaml/ocaml/blob/trunk/stdlib/list.ml
+ *)
+let list_find_index p =
+  let rec aux i = function
+    | [] -> None
+    | a :: l -> if p a then Some i else aux (i + 1) l
+  in
+  aux 0
+
 (** Group decl lists into a list of lists where each sub-list has a common name *)
 let rec group_by_name decl_list =
   match decl_list with
@@ -76,6 +86,34 @@ let string_of_bnfc bnfc =
   let eps = string_of_entrypoints bnfc.entrypoints in
   let decl_strs = List.map print_decl_list grouped_decls in
   String.concat "\n\n" (eps :: decl_strs)
+
+(** Given a sorting order of the generated BNFC names. Order the bnfc ast
+    using the order of the names specified *)
+let sort_bnfc bnfc order =
+  let sort_fn el1 el2 =
+    let get_idx { name } =
+      let idx_opt = list_find_index (String.equal name) order in
+      Option.value ~default:Int.max_int idx_opt
+    in
+    let l = get_idx el1 in
+    let r = get_idx el2 in
+    Int.compare l r
+  in
+  (* Sanity check that all order names actually exsit *)
+  let () =
+    let name_not_found =
+      List.filter
+        (fun n ->
+          not @@ List.exists (fun { name } -> String.equal name n) bnfc.decls)
+        order
+    in
+    if List.length name_not_found > 0 then (
+      Printf.printf
+        "The following names specified in the order list don't exist [%s]\n"
+      @@ String.concat ", " name_not_found;
+      raise @@ Failure "Order file error.")
+  in
+  { bnfc with decls = List.sort sort_fn bnfc.decls }
 
 (** Convert the bnfc ast into a simpler format which exludes AST information *)
 let simplified_bnfc bnfc =
