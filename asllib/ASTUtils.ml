@@ -385,7 +385,7 @@ let literal_equal v1 v2 =
   | L_BitVector _, _ -> false
   | L_String s1, L_String s2 -> String.equal s1 s2
   | L_String _, _ -> false
-  | L_Label (l1, _), L_Label (l2, _) -> String.equal l1 l2
+  | L_Label l1, L_Label l2 -> String.equal l1 l2
   | L_Label _, _ -> false
 
 let rec expr_equal eq e1 e2 =

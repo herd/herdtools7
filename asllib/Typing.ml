@@ -117,7 +117,7 @@ let annotate_literal env = function
   | L_Real _ -> T_Real
   | L_String _ -> T_String
   | L_BitVector bv -> Bitvector.length bv |> expr_of_int |> t_bits_bitwidth
-  | L_Label (label, _) -> (
+  | L_Label label -> (
       try IMap.find label env.global.declared_types |> fst |> desc
       with Not_found -> assert false)
 (* End *)
@@ -3593,10 +3593,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       match t2.desc with
       | T_Enum ids ->
           let t = T_Named name |> here in
-          let declare_one i env2 label =
-            declare_const ~loc label t (L_Label (label, i)) env2
+          let declare_one env2 label =
+            declare_const ~loc label t (L_Label label) env2
           in
-          let genv3 = list_fold_lefti declare_one env2.global ids in
+          let genv3 = List.fold_left declare_one env2.global ids in
           { env2 with global = genv3 }
       | _ -> env2
     in

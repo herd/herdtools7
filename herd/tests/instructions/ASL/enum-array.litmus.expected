@@ -1,0 +1,10 @@
+{A:0,B:0,C:0,}
+{A:32,B:64,C:128,}
+Test enum-arrays Required
+States 1
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation enum-arrays Always 1 0
+Hash=be5ae986ade4b6f6e1a9fc497ec9008a

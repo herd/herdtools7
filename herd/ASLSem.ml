@@ -189,7 +189,7 @@ module Make (C : Config) = struct
             Printf.eprintf "real: %s\n%!" (Q.to_string _f);
             Warn.fatal "Cannot use reals yet."
         | L_String _f -> Warn.fatal "Cannot instantiate strings in herd yet."
-        | L_Label (_, i) -> S_Int (Z.of_int i) |> concrete
+        | L_Label s -> S_Label s |> concrete
       in
       fun v -> V.Val (tr v)
 
@@ -197,7 +197,9 @@ module Make (C : Config) = struct
       | V.Val (Constant.Concrete (ASLScalar.S_Int i)) -> Some (Z.to_int i)
       | _ -> None
 
-    let v_to_label v = V.as_symbol v
+      let v_to_label = function
+      | V.Val (Constant.Concrete (ASLScalar.S_Label l)) -> l
+      | v -> Warn.fatal "Cannot make a label out of value %s" (V.pp_v v)
 
     let v_as_int = function
       | V.Val (Constant.Concrete i) -> V.Cst.Scalar.to_int i

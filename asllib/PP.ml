@@ -110,7 +110,7 @@ let pp_literal f = function
       fprintf f "(%a.0 / %a.0)" Z.pp_print (Q.num r) Z.pp_print (Q.den r)
   | L_BitVector bv -> Bitvector.pp_t f bv
   | L_String s -> fprintf f "%S" s
-  | L_Label (l, _) -> fprintf f "%s" l
+  | L_Label l -> fprintf f "%s" l
 
 let rec pp_expr f e =
   match e.desc with

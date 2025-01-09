@@ -108,16 +108,7 @@ type literal =
   | L_Real of Q.t
   | L_BitVector of Bitvector.t
   | L_String of string
-  | L_Label of (string * int)
-      (** An enumeration label, given by its name and its index in the
-          containing enumeration type declaration.
-          The index is only used for herd executions.
-          For example, the declaration
-              type MyEnum of enumeration {LABEL_A, LABEL_B};
-          will result in the following labels:
-              L_Label ("LABEL_A", 0)
-              L_Label ("LABEL_B", 1)
-      *)
+  | L_Label of string  (** An enumeration label, given by its name. *)
 
 (* -------------------------------------------------------------------------
 

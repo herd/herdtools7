@@ -94,7 +94,7 @@ let pp_literal f = function
   | L_BitVector bv ->
       bprintf f "L_BitVector (Bitvector.of_string %S)" (Bitvector.to_string bv)
   | L_String s -> bprintf f "L_String %S" s
-  | L_Label (s, d) -> bprintf f "L_Label (%S, %d)" s d
+  | L_Label s -> bprintf f "L_Label %S" s
 
 let subprogram_type_to_string = function
   | ST_Function -> "ST_Function"

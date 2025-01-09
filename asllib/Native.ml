@@ -51,7 +51,7 @@ let pp_literal f =
   | L_Real r -> Q.pp_print f r
   | L_BitVector bv -> pp_print_string f (Bitvector.to_string_hexa bv)
   | L_String s -> pp_print_string f s
-  | L_Label (l, _) -> pp_print_string f l
+  | L_Label l -> pp_print_string f l
 
 let rec pp_native_value f =
   let open Format in
@@ -93,10 +93,7 @@ module NativeBackend (C : Config) = struct
     | NV_Literal (L_Int z) -> Some (Z.to_int z)
     | _ -> None
 
-  let v_to_label = function
-    | NV_Literal (L_Label (l, _)) -> l
-    | _ -> assert false
-
+  let v_to_label = function NV_Literal (L_Label l) -> l | _ -> assert false
   let bind (vm : 'a m) (f : 'a -> 'b m) : 'b m = f vm
   let prod_par (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = (r1, r2)
   let return v = v
