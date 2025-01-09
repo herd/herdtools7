@@ -616,6 +616,16 @@ In the following example, all the uses of tuple types are well-typed:
 \subsubsection{Example}
 
 \section{Array Types\label{sec:ArrayTypes}}
+ASL offers two kinds of arrays:
+\begin{description}
+  \item[Integer-indexed arrays] representing a consecutive list of elements at positions $0$ to the size
+      specified for the array. The array elements can be accessed via an \texttt{integer}
+      type that specifies the $0$-based position of the element to read/update.
+  \item[Enumeration-indexed arrays] representing a dictionary-like data type where the keys are defined
+      by a given enumeration type. The array elements can be accessed via values of the \texttt{enumeration}
+      type specified for the array type.
+\end{description}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nty \derives\ & \Tarray \parsesep \Tlbracket \parsesep \Nexpr \parsesep \Trbracket \parsesep \Tof \parsesep \Nty &

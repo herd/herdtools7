@@ -1332,7 +1332,13 @@ resulting bitvector --- and the execution graph $\vgone$;
 \CodeSubsection{\EvalESliceBegin}{\EvalESliceEnd}{../Interpreter.ml}
 
 \section{Array Access Expressions\label{sec:ArrayAccessExpressions}}
-This section details the syntax, abstract syntax, semantics, and typing of array access expressions.
+This section details the syntax, abstract syntax, semantics, and typing of array read expressions.
+In the untyped AST, a read from either an integer-indexed array or an enumeration-indexed arrays is represented
+the same way. They type system infers the kind of array and outputs a typed AST node differentiating
+the two kinds of arrays, either a $\EGetArray$ or a $\EGetEnumArray$, via \nameref{sec:TypingRule.EGetArray}.
+The semantics utilizes a rule matching the corresponding type of array ---
+\nameref{sec:SemanticsRule.EGetArray} for integer-indexed arrays and
+\nameref{sec:SemanticsRule.EGetEnumArray} for enumeration-indexed arrays.
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -1481,6 +1487,7 @@ All of the following apply:
   \item evaluating the value at index $\vi$ of $\varray$ is $\vv$;
   \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
 \end{itemize}
+
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
@@ -1496,6 +1503,42 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\EvalEGetArrayBegin}{\EvalEGetArrayEnd}{../Interpreter.ml}
+
+\subsubsection{SemanticsRule.EGetEnumArray\label{sec:SemanticsRule.EGetEnumArray}}
+\subsubsection{Example}
+In the specification:
+\ASLExample{\semanticstests/SemanticsRule.EGetEnumArray.asl}
+the enumeration-typed array \texttt{Arr} is accessed for reading and writing
+with indices taken from the enumeration type \texttt{Enum}.
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ denotes an array access expression, $\EGetArray(\earray, \eindex)$;
+  \item the evaluation of $\earray$ in $\env$ is $\Normal(\marray, \envone)$\ProseOrAbnormal;
+  \item the evaluation of $\eindex$ in $\env$ is  $\Normal(\mindex, \newenv)$\ProseOrAbnormal
+  \item $\marray$ consists of the native vector $\varray$ and execution graph $\vgone$;
+  \item $\mindex$ consists of the native integer $\vindex$ and execution graph $\vgtwo$;
+  \item $\vindex$ is the native literal for the label $\vl$;
+  \item accessing the field $\vl$ of $\varray$, which is a native record value, yields $\vv$;
+  \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexpr{\env, \earray} \evalarrow \Normal(\marray, \envone)  \OrAbnormal\\
+  \evalexpr{\envone, \eindex} \evalarrow \Normal(\mindex, \newenv)  \OrAbnormal\\
+  \marray \eqname (\varray, \vgone)\\
+  \mindex \eqname (\vindex, \vgtwo)\\
+  \vindex \eqname \nvlabel(\vl)\\
+  \getfield(\vl, \varray) \evalarrow \vv\\
+  \vg \eqdef \vgone \parallelcomp \vgtwo\\
+}{
+  \evalexpr{\env, \EGetEnumArray(\earray, \eindex)} \evalarrow \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalEGetEnumArrayBegin}{\EvalEGetEnumArrayEnd}{../Interpreter.ml}
 
 \section{Field Reading Expressions\label{sec:FieldReadingExpressions}}
 \subsection{Syntax}
@@ -2712,6 +2755,12 @@ In the specification:
 \ASLExample{\semanticstests/SemanticsRule.EArbitraryIntegerRange3-42-3.asl}
 the expression \verb|ARBITRARY : integer {3, 42}| evaluates to either $\nvint(3)$ or $\nvint(42)$.
 
+\subsubsection{Example}
+The specification:
+\ASLExample{\semanticstests/SemanticsRule.EArbitraryArray.asl}
+demonstrates how to obtain an arbitrary integer-indexed array, \texttt{int\_array},
+and how to obtain an arbitrary enumeration-indexed array, \texttt{enum\_array}.
+
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -2738,7 +2787,7 @@ Notice that this rule introduces non-determinism.
 \subsection{Syntax}
 \begin{flalign*}
 \Nexpr \derives\  & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace &\\
-	       \| & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nfieldassign} \parsesep \Trbrace &\\
+	       |\ & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nfieldassign} \parsesep \Trbrace &\\
 \Nfieldassign \derives \ & \Tidentifier \parsesep \Teq \parsesep \Nexpr &
 \end{flalign*}
 
@@ -3043,7 +3092,8 @@ no rules for building the AST for such expressions nor rules for type-checking t
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\expr \derives\ & \EArray\{\EArrayLength: \expr, \EArrayValue: \expr\} &
+\expr \derives\ & \EArray\{\EArrayLength: \expr, \EArrayValue: \expr\} &\\
+             |\ & \EEnumArray \{\EArrayLabels: \identifier^+, \EArrayValue: \expr\}
 \end{flalign*}
 
 \subsection{Semantics}
@@ -3051,7 +3101,7 @@ no rules for building the AST for such expressions nor rules for type-checking t
 The Semantic Rules use $\evalexprsef\empty$ because the type-checker in
 $\annotatetype$ guarantees that expressions in types are side-effect-free.
 
-\subsubsection{SemanticsRule.EvalEArray}
+\subsubsection{SemanticsRule.EArray}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -3079,6 +3129,36 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\EvalEArrayBegin}{\EvalEArrayEnd}{../Typing.ml}
+
+\subsubsection{SemanticsRule.EEnumArray}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ve$ is an array construction expression for an enumerated-index array with
+        list of labels $\vlabels$ and value expression $\evalue$,
+        that is, \\
+        $\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \evalue\}$;
+  \item evaluating the expression $\evalue$ in $\env$ yields $\Normal((\vvalue, \vg), \newenv)$\ProseOrAbnormal;
+  \item \Proseeqdef{$\vv$}{the native record mapping each label $\vl\in\vlabels$ to $\vvalue$};
+  \item define $\vg$ as the parallel composition of $\vgone$ and $\vgtwo$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexpr{\env, \evalue} \evalarrow \Normal((\vvalue, \vg), \newenv) \OrAbnormal\\\\
+  \vv \eqdef \nvrecord{\vl\in\vlabels: [\vl\mapsto \vvalue]}
+}{
+  {
+  \begin{array}{r}
+    \evalexpr{\env, \overname{\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \evalue\}}{\ve}} \evalarrow\\
+    \Normal((\vv, \vg), \newenv)
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\CodeSubsection{\EvalEEnumArrayBegin}{\EvalEEnumArrayEnd}{../Typing.ml}
 
 \section{Side-effect-free Expressions\label{sec:SideEffectFreeExpressions}}
 \subsection{Typing}

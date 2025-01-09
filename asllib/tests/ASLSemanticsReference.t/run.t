@@ -58,6 +58,7 @@ ASL Semantics Reference:
     characters 9 to 14:
   ASL Execution error: Assertion failed: (x == 42).
   [1]
+  $ aslref SemanticsRule.EArbitraryArray.asl
   $ aslref SemanticsRule.EPatternFALSE.asl
   $ aslref SemanticsRule.EPatternTRUE.asl
   $ aslref SemanticsRule.LELocalVar.asl

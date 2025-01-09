@@ -540,6 +540,17 @@ One of the following applies:
     that is, $\EGetArray(\veonep, \vetwop)$.
   \end{itemize}
 
+  \item All of the following apply (\textsc{e\_getenumarray}):
+  \begin{itemize}
+    \item $\ve$ is the \arrayaccess\ expression for base expression $\veone$ and an enumeration-typed index expression $\vetwo$,
+          that is, $\EGetEnumArray(\veone, \vetwo)$;
+    \item applying $\substexpr$ to $\substs$ and $\veone$ in $\tenv$ yields $\veonep$;
+    \item applying $\substexpr$ to $\substs$ and $\vetwo$ in $\tenv$ yields $\vetwop$;
+    \item define $\newe$ as the \arrayaccess\ expression for base expression $\veonep$ and \\
+          enumeration-typed index expression $\vetwop$,
+          that is, $\EGetEnumArray(\veonep, \vetwop)$.
+  \end{itemize}
+
   \item All of the following apply (\textsc{e\_getfield}):
   \begin{itemize}
     \item $\ve$ is the field access expression for base expression $\ve$ and field $\vx$,
@@ -605,8 +616,19 @@ One of the following applies:
     \item applying $\substexpr$ to $\substs$ and $\length$ in $\tenv$ yields $\lengthp$;
     \item applying $\substexpr$ to $\substs$ and $\vvalue$ in $\tenv$ yields $\vvaluep$;
     \item define $\newe$ as the array construction expression with length expression \\
-          $\lengthp$ and value expression $\vvaluep$, that is, \\
+          $\lengthp$ and initial element value expression $\vvaluep$, that is, \\
           $\EArray\{\EArrayLength: \lengthp, \EArrayValue: \vvaluep\}$.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{e\_enumarray}):
+  \begin{itemize}
+    \item $\ve$ is an array construction expression for an enumeration-typed index
+          with list of labels $\vlabels$ and initial element value expression $\vvalue$, that is, \\
+          $\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \vvalue\}$;
+    \item applying $\substexpr$ to $\substs$ and $\vvalue$ in $\tenv$ yields $\vvaluep$;
+    \item define $\newe$ as the array construction expression with list of labels $\vlabels$
+          and value expression $\vvaluep$, that is,
+          $\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \vvaluep\}$.
   \end{itemize}
 
   \item All of the following apply (\textsc{e\_atc}):
@@ -690,6 +712,15 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
+\inferrule[e\_getenumarray]{
+  \substexpr(\tenv, \substs, \veone) \typearrow \veonep\\
+  \substexpr(\tenv, \substs, \vetwop) \typearrow \vetwop
+}{
+  \substexpr(\tenv, \substs, \overname{\EGetEnumArray(\veone, \vetwo)}{\ve}) \typearrow \overname{\EGetEnumArray(\veonep, \vetwop)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[e\_getfield]{
   \substexpr(\tenv, \substs, \veone) \typearrow \veonep
 }{
@@ -756,6 +787,19 @@ One of the following applies:
     \begin{array}{r}
   \substexpr(\tenv, \substs, \overname{\EArray\{\EArrayLength: \length, \EArrayValue: \vvalue\}}{\ve}) \typearrow\\
   \overname{\EArray\{\EArrayLength: \length, \EArrayValue: \vvaluep\}}{\newe}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_enumarray]{
+  \substexpr(\tenv, \substs, \vvalue) \typearrow \vvaluep
+}{
+  {
+    \begin{array}{r}
+  \substexpr(\tenv, \substs, \overname{\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \vvalue\}}{\ve}) \typearrow\\
+  \overname{\EEnumArray\{\EArrayLabels: \length, \EArrayValue: \vvaluep\}}{\newe}
     \end{array}
   }
 }

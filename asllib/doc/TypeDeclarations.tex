@@ -557,7 +557,7 @@ All of the following apply:
 \begin{itemize}
   \item $\ids$ is the (non-empty) list of labels $\id_{1..k}$;
   \item $\tenv_0$ is $\tenv$;
-  \item declaring the constant $\id_i$ with the type $\TNamed(\name)$ and literal $\llabel(\id_i, i-1)$ in $\tenv_{i-1}$
+  \item declaring the constant $\id_i$ with the type $\TNamed(\name)$ and literal $\llabel(\id_i)$ in $\tenv_{i-1}$
         via $\declareconst$
         yields $\tenv_i$, for $i=1 $ to $k$ (if $k>1$)\ProseOrTypeError;
   \item $\newtenv$ is $\tenv_k$.
@@ -570,7 +570,7 @@ All of the following apply:
   \tenv_0 \eqdef \tenv\\
   {
   \begin{array}{r}
-    \vi=1..k: \declareconst(\tenv_{\vi-1}, \id_\vi, \TNamed(\name), \llabel(\id_\vi, \vi-1)) \typearrow \\
+    \vi=1..k: \declareconst(\tenv_{\vi-1}, \id_\vi, \TNamed(\name), \llabel(\id_\vi)) \typearrow \\
     \tenv_{\vi} \OrTypeError
   \end{array}
   }

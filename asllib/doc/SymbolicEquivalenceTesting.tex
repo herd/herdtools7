@@ -1866,9 +1866,11 @@ One of the following applies:
 
   \item All of the following apply (\textsc{enum\_enum}):
   \begin{itemize}
-    \item $\vlone$ is an enumeration type length expression over the enumeration $\vsone$, that is, $\ArrayLengthEnum(\vsone, \Ignore)$;
-    \item $\vltwo$ is an enumeration type length expression over the enumeration $\vstwo$, that is, $\ArrayLengthEnum(\vstwo, \Ignore)$;
-    \item $\vb$ is $\True$ if and only if $\vsone$ is equal to $\vstwo$.
+    \item $\vlone$ is an enumeration type index for the identifier $\venumone$ and a list of labels, that is,
+          $\ArrayLengthEnum(\venumone, \Ignore)$;
+    \item $\vltwo$ is an enumeration type index for the identifier $\venumtwo$ and a list of labels, that is,
+           $\ArrayLengthEnum(\venumtwo, \Ignore)$;
+    \item $\vb$ is $\True$ if and only if $\venumone$ is equal to $\venumtwo$.
   \end{itemize}
 \end{itemize}
 
@@ -1879,17 +1881,21 @@ One of the following applies:
 }{
   \arraylengthequal(\vlone, \vltwo) \typearrow \False
 }
-\and
-  \inferrule[expr\_expr]{
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[expr\_expr]{
   \exprequal(\veoneone, \vetwoone) \typearrow \vb \OrTypeError
 }{
   \arraylengthequal(\ArrayLengthExpr(\veoneone), \ArrayLengthExpr(\vetwoone)) \typearrow \vb
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[enum\_enum]{
-  \vb \eqdef \vsone = \vstwo
+  \vb \eqdef (\venumone = \venumtwo)
 }{
-  \arraylengthequal(\ArrayLengthEnum(\vsone, \Ignore), \ArrayLengthEnum(\vstwo, \Ignore)) \typearrow \vb
+  \arraylengthequal(\ArrayLengthEnum(\venumone, \Ignore), \ArrayLengthEnum(\venumtwo, \Ignore)) \typearrow \vb
 }
 \end{mathpar}
 

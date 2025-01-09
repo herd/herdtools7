@@ -944,6 +944,12 @@ One of the following applies:
     \item define $\ids$ as the union of applying $\useexpr$ to $\veone$ and applying $\useexpr$ to $\vetwo$.
   \end{itemize}
 
+  \item All of the following apply (\textsc{e\_getenumarray}):
+  \begin{itemize}
+    \item $\ve$ is the \arrayaccess\ expression for base expression $\veone$ and enumeration-typed index expression $\vetwo$;
+    \item define $\ids$ as the union of applying $\useexpr$ to $\veone$ and applying $\useexpr$ to $\vetwo$.
+  \end{itemize}
+
   \item All of the following apply (\textsc{e\_binop}):
   \begin{itemize}
     \item $\ve$ is the binary operation expression over expressions $\veone$ and $\vetwo$;
@@ -1012,6 +1018,15 @@ One of the following applies:
     \item define $\ids$ as the union of applying of $\useexpr$ to each of $\veone$ and $\vetwo$.
   \end{itemize}
 
+  \item All of the following apply (\textsc{e\_enumarray}):
+  \begin{itemize}
+    \item $\ve$ is the array construction expression for the array with enumeration-typed index for the list of labels
+          $\vlabels$ and value expression $\vvalue$,
+          that is, \\
+          $\EEnumArray\{\EArrayLabels:\vlabels, \EArrayValue:\vvalue\}$;
+    \item define $\ids$ as the union of labels listed in $\vlabels$ and the result of applying $\useexpr$ to $\vvalue$.
+  \end{itemize}
+
   \item All of the following apply (\textsc{e\_arbitrary}):
   \begin{itemize}
     \item $\ve$ is the arbitrary expression with type $\vt$;
@@ -1053,6 +1068,12 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[e\_getarray]{}{
   \useexpr(\overname{\EGetArray(\veone, \vetwo)}{\ve}) \typearrow \overname{\useexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_getenumarray]{}{
+  \useexpr(\overname{\EGetEnumArray(\veone, \vetwo)}{\ve}) \typearrow \overname{\useexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
 }
 \end{mathpar}
 
@@ -1123,6 +1144,12 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
+\inferrule[e\_enumarray]{}{
+  \useexpr(\overname{\EEnumArray\{\EArrayLabels:\vlabels, \EArrayValue:\vvalue\}}{\ve}) \typearrow \overname{\{\vlabels\} \cup \useexpr(\vvalue)}{\ids}
+}
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[e\_arbitrary]{}{
   \useexpr(\overname{\EArbitrary(\vt)}{\ve}) \typearrow \overname{\usety(\vt)}{\ids}
 }
@@ -1170,6 +1197,13 @@ One of the following applies:
     \item define $\ids$ as the union of applying $\uselexpr$ to $\veone$ and applying $\useexpr$ to $\vetwo$.
   \end{itemize}
 
+  \item All of the following apply (\textsc{le\_setenumarray}):
+  \begin{itemize}
+    \item $\vle$ is a left-hand-side array update of the array given by the expression $\veone$ and
+          the enumeration-typed index expression $\vetwo$;
+    \item define $\ids$ as the union of applying $\uselexpr$ to $\veone$ and applying $\useexpr$ to $\vetwo$.
+  \end{itemize}
+
   \item All of the following apply (\textsc{le\_setfield}):
   \begin{itemize}
     \item $\vle$ is a left-hand-side field update of the record given by the expression $\veone$;
@@ -1207,6 +1241,12 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[le\_setarray]{}{
   \uselexpr(\overname{\LESetArray(\veone, \vetwo)}{\vle}) \typearrow \overname{\uselexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[le\_setenumarray]{}{
+  \uselexpr(\overname{\LESetEnumArray(\veone, \vetwo)}{\vle}) \typearrow \overname{\uselexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
 }
 \end{mathpar}
 

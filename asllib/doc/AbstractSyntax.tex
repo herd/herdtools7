@@ -569,7 +569,7 @@ The rules for expressions have the following extra derivation rules:
 \expr \derives\ & \EArray \{\EArrayLength: \expr, \EArrayValue: \expr\} & \hypertarget{ast-eenumarray}{}\\
              |\ & \EEnumArray \{\EArrayLabels: \identifier^+, \EArrayValue: \expr\} & \hypertarget{ast-egetenumarray}{}\\
              |\ & \EGetEnumArray(\overtext{\expr}{base}, \overtext{\expr}{key}) & \hypertarget{ast-esetenumarray}{}\\
-             |\ & \LESetEnumArray(\overtext{\lexpr}{base}, \overtext{\expr}{value}) &\\
+             |\ & \LESetEnumArray(\overtext{\lexpr}{base}, \overtext{\expr}{index}) &\\
 \end{flalign*}
 
 Their use is as follows:
@@ -867,6 +867,7 @@ which is utilized both for the type system and semantics:
   \torexpr(\LEVar(\vx)) &=& \EVar(\vx)\\
   \torexpr(\LESlice(\vle, \vargs)) &=& \ESlice(\torexpr(\vle), \vargs)\\
   \torexpr(\LESetArray(\vle, \ve)) &=& \EGetArray(\torexpr(\vle), \ve)\\
+  \torexpr(\LESetEnumArray(\vle, \ve)) &=& \EGetEnumArray(\torexpr(\vle), \ve)\\
   \torexpr(\LESetField(\vle, \vx)) &=& \EGetField(\torexpr(\vle), \vx)\\
   \torexpr(\LESetFields(\vle, \vx)) &=& \EGetFields(\torexpr(\vle), \vx)\\
   \torexpr(\LEDiscard) &=& \EVar(\texttt{-})\\
