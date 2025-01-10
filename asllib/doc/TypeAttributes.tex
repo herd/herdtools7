@@ -703,7 +703,7 @@ One of the following applies:
 }
 \and
 \inferrule[unconstrained]{
-  \astlabel(\vc) = \unconstrained \;\lor\; \astlabel{\vc} = \pendingconstrained
+  \astlabel(\vc) = \unconstrained \;\lor\; \astlabel(\vc) = \pendingconstrained
 }
 {
   \checkconstrainedinteger(\tenv, \TInt(\vc)) \typearrow \\

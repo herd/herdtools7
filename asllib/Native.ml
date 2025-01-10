@@ -116,8 +116,8 @@ module NativeBackend (C : Config) = struct
 
   let binop op v1 v2 =
     match (v1, v2) with
-    | NV_Literal v1, NV_Literal v2 ->
-        Operations.binop_values dummy_annotated C.error_handling_time op v1 v2
+    | NV_Literal l1, NV_Literal l2 ->
+        Operations.binop_values dummy_annotated C.error_handling_time op l1 l2
         |> nv_literal
     | NV_Literal _, v | v, _ ->
         mismatch_type v [ T_Bool; integer'; T_Real; default_t_bits ]
@@ -129,8 +129,8 @@ module NativeBackend (C : Config) = struct
 
   let unop op v =
     match v with
-    | NV_Literal v ->
-        Operations.unop_values dummy_annotated C.error_handling_time op v
+    | NV_Literal l ->
+        Operations.unop_values dummy_annotated C.error_handling_time op l
         |> nv_literal
     | _ -> mismatch_type v [ T_Bool; integer'; T_Real; default_t_bits ]
 

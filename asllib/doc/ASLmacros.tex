@@ -971,7 +971,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand\aslrel[0]{\bigtimes}
 \newcommand\vals[0]{\hyperlink{def-vals}{\mathbb{V}}}
-\newcommand\nvliteral[1]{\hyperlink{def-nvliteral}{\texttt{NV\_Literal}}(#1)}
+\newcommand\nvliterallabel[0]{\hyperlink{def-nvliteral}{\texttt{NV\_Literal}}}
+\newcommand\nvliteral[1]{\nvliterallabel(#1)}
 \newcommand\nvvector[1]{\hyperlink{def-nvvector}{\texttt{NV\_Vector}}(#1)}
 \newcommand\nvrecord[1]{\hyperlink{def-nvrecord}{\texttt{NV\_Record}}(#1)}
 \newcommand\nvint[0]{\hyperlink{def-nvint}{\texttt{Int}}}
@@ -1709,6 +1710,7 @@
 \newcommand\BadParameterDecl[0]{\hyperlink{def-badparameterdecl}{\TypeErrorCode{BPD}}}
 \newcommand\NoLCA[0]{\hyperlink{def-nolca}{\TypeErrorCode{LCA}}}
 \newcommand\MismatchedReturnValue[0]{\hyperlink{def-mrv}{\TypeErrorCode{MRV}}}
+\newcommand\BadReturnStatement[0]{\hyperlink{def-brs}{\TypeErrorCode{BRS}}}
 \newcommand\CallBadArity[0]{\hyperlink{def-cba}{\TypeErrorCode{CBA}}}
 \newcommand\CallBadParameterArity[0]{\hyperlink{def-cbpa}{\TypeErrorCode{CBPA}}}
 \newcommand\BadRecursiveDecls[0]{\hyperlink{def-brd}{\TypeErrorCode{BRA}}}
@@ -2336,6 +2338,8 @@
 \newcommand\vcone[0]{\texttt{c1}}
 \newcommand\vconstraintasts[0]{\texttt{constraint\_asts}}
 \newcommand\vconstraints[0]{\texttt{constraints}}
+\newcommand\vconstraintkind[0]{\texttt{constraint\_kind}}
+\newcommand\vconstraintkindopt[0]{\texttt{constraint\_kind\_opt}}
 \newcommand\vcopt[0]{\texttt{c\_opt}}
 \newcommand\vcs[0]{\texttt{vcs}}
 \newcommand\vcsnew[0]{\texttt{cs\_new}}
@@ -2466,8 +2470,6 @@
 \newcommand\vindex[0]{\texttt{index}}
 \newcommand\vindexname[0]{\texttt{index\_name}}
 \newcommand\vinitialvalue[0]{\texttt{initial\_value}}
-\newcommand\vintconstraints[0]{\texttt{int\_constraints}}
-\newcommand\vintconstraintsopt[0]{\texttt{intconstraints\_opt}}
 \newcommand\vione[0]{\texttt{i1}}
 \newcommand\vis[0]{\texttt{vis}}
 \newcommand\visone[0]{\texttt{is1}}

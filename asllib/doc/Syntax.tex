@@ -676,8 +676,11 @@ A \emph{parse tree} has one of the following forms:
 \begin{definition}[Well-formed Parse Trees]
 A parse tree is \emph{well-formed} if its root is labelled by the start non-terminal ($\Nspec$ for ASL)
 and each non-terminal node $N(n_{1..k})$ corresponds to a grammar derivation
-$N \derives l_{1..k}$ where $l_i$ is the label of node $n_i$ if it is a non-terminal node and $n_i$
-itself when it is a token.
+$N \derives l_{1..k}$ where for each $i \in 1..k$ either:
+\begin{itemize}
+   \item $n_i$ is a non-terminal node and $l_i$ is its label;
+   \item $n_i$ is a token and $l_i$ is equal to $n_i$.
+\end{itemize}
 A non-terminal node $N(\epsilonnode)$ is well-formed if the grammar includes a derivation
 $N \derives \emptysentence$.
 \end{definition}

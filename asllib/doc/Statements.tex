@@ -1519,7 +1519,7 @@ One of the following applies:
   \casestocond(\ve, \vcasesone) \typearrow \vsone\\
   \casetocond(\ve, \vcase, \vsone) \typearrow \news
 }{
-  \casestocond(\ve, \overname{[\vcase] \concat \vcasesone}{\vcases}) \typearrow
+  \casestocond(\ve, \overname{[\vcase] \concat \vcasesone}{\vcases}) \typearrow \news
 }
 \end{mathpar}
 
@@ -2458,31 +2458,32 @@ All of the following apply:
     \Forbody &:& \vbody\\
     \Forlimit &:& \Ignore
   \end{array}\right\}$;
-  \item evaluating the side-effect-free expression $\veone$ in $\env$ yields
-        $\Normal(\vvone, \vgone)$\ProseOrError;
-  \item evaluating the side-effect-free expression $\vetwo$ in $\env$ yields
-        $\Normal(\vvtwo, \vgtwo)$\ProseOrError;
+  \item evaluating the side-effect-free expression $\vstarte$ in $\env$ yields
+        $\Normal(\vstartv, \vgone)$\ProseOrError;
+  \item evaluating the side-effect-free expression $\vende$ in $\env$ yields
+        $\Normal(\vendv, \vgtwo)$\ProseOrError;
   \item \Proseevallimit{$\env$}{$\velimitopt$}{$\Normal(\vlimitopt, \vgthree)$}\ProseOrError;
-  \item declaring the local identifier $\vindexname$ in $\env$ with value $\vvone$ is $(\vgthree, \envone)$;
-  \item evaluating the \texttt{for} loop with arguments $(\vindexname, \velimitopt, \veone, \dir, \vetwo, \vs)$ in $\envone$,
-        as per \nameref{sec:SemanticsRule.SFor} yields $\Normal(\vgfour, \envtwo)$\ProseOrAbnormal;
+  \item declaring the local identifier $\vindexname$ in $\env$ with value $\vstartv$ is $(\vgfour, \envone)$;
+  \item evaluating the \texttt{for} loop with arguments $(\vindexname, \vlimitopt, \vstartv, \dir, \vendv, \vbody)$ in $\envone$,
+        as per \nameref{sec:SemanticsRule.EvalFor} yields $\Normal(\vgfive, \envtwo)$\ProseOrAbnormal;
   \item removing the local $\vindexname$ from $\envtwo$ is $\envthree$;
-  \item $\newg$ is formed as follows: taking the parallel composition of $\vgone$ and $\vgtwo$,
-        then taking the ordered composition of the result with the $\asldata$ edge,
-        and finally taking the ordered composition of the result with the $\aslpo$ edges;
+  \item $\newg$ is formed as follows:
+        the parallel composition of $\vgone$, $\vgtwo$, and $\vgthree$;
+        followed by the ordered composition of the result with $\vgfour$ using the $\asldata$ edge;
+        followed by the ordered composition of the result with $\vgfive$ using the $\aslpo$ edge.
   \item $\newenv$ is $\envthree$.
   \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
 \end{itemize}
 \subsubsection{Formally}
 Recall that the expressions for the \texttt{for} loop range are
-side-effect-free, as guaranteed by \nameref{TypingRule.SFor}, which is why
+side-effect-free, as guaranteed by \nameref{sec:TypingRule.SFor}, which is why
 they are evaluated via the rule for evaluating side-effect-free expressions.
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \vstarte} \evalarrow \Normal(\vstartv, \vgone) \OrDynError\\\\
   \evalexprsef{\env, \vende} \evalarrow \Normal(\vendv, \vgtwo) \OrDynError\\\\
   \evallimit(\env, \velimitopt) \evalarrow \Normal(\vlimitopt, \vgthree) \OrDynError\\\\
-  \declarelocalidentifier(\env, \vindexname, \vendv) \evalarrow (\vgfour,\envone)\\
+  \declarelocalidentifier(\env, \vindexname, \vstartv) \evalarrow (\vgfour,\envone)\\
   {
     \begin{array}{r}
       \evalfor(\envone, \vindexname, \vlimitopt, \vstartv, \dir, \vendv, \vbody) \evalarrow \\
@@ -3055,9 +3056,10 @@ One of the following applies:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[error]{
-  L^\tenv.\returntype \neq \veopt
+  \vb \eqdef (L^\tenv.\returntype = \None \leftrightarrow \veopt = \None) \\
+  \vb = \False
 }{
-  \annotatestmt(\tenv, \overname{\SReturn(\veopt)}{\vs}) \typearrow \TypeErrorVal{InvalidReturnStmt}
+  \annotatestmt(\tenv, \overname{\SReturn(\veopt)}{\vs}) \typearrow \TypeErrorVal{\MismatchedReturnValue}
 }
 \end{mathpar}
 

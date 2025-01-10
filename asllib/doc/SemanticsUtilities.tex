@@ -155,17 +155,17 @@ is the environment $\newenv$ and all of the following apply:
 The relation
 \hypertarget{def-readidentifier}{}
 \[
-  \readidentifier(\overname{\Identifiers}{\name}\aslsep\overname{\vals}{\vv}) \;\aslrel\; (\overname{\vals}{\vv} \times \XGraphs)
+  \readidentifier(\overname{\Identifiers}{\name}\aslsep\overname{\vals}{\vv}) \;\aslrel\; \XGraphs
 \]
 reads a value $\vv$ into a storage element given by an identifier $\name$.
-The result is the value and an execution graph containing a single Read Effect,
-which denoting reading from $\name$.
+The result is an execution graph containing a single Read Effect,
+which denotes reading from $\name$.
 
 \subsubsection{Formally}
 \begin{mathpar}
   \inferrule{}
   {
-    \readidentifier(\name, \vv) \evalarrow (\vv, \ReadEffect(\name))
+    \readidentifier(\name, \vv) \evalarrow \ReadEffect(\name)
   }
 \end{mathpar}
 

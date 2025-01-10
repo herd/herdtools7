@@ -233,24 +233,24 @@ All of the following apply:
 \begin{itemize}
   \item checking that each declaration in $\vd$ is a subprogram declaration yields $\True$\ProseTerminateAs{\BadRecursiveDecls};
   \item applying $\annotatefuncsig$ to each node $\vf$ in $\genv$, where $\DFunc(\vf)$ is a declaration in $\decls$,
-        yields $(\tenv_\vf, \vd_\vf, \vses_f)$\ProseOrTypeError;
+        yields $(\tenv_\vf, \vd_\vf, \vses_\vf)$\ProseOrTypeError;
   \item define $\envandfs$ as the list of pairs, each consisting of the local environment component of $\tenv_\vf$
         the annotated subprogram $\vd_\vf$, and the \sideeffectsetterm\ $\vses_\vf$, for each subprogram declaration $\DFunc(\vf)$ in $\decls$;
   \item splitting $\envandfs$ into two sublists by testing each pair to check whether the subprogram declaration
-        component is that of a setter (or an empty setter) yields $\setters$ and $\others$, respectively;
+        component is that of a setter yields $\setters$ and $\others$, respectively;
   \item define $\envandfsone$ as the concatenation of $\others$ and $\setters$;
   \item applying $\declaresubprograms$ to $\genv$ and $\envandfsone$ yields \\
         $(\genvtwo, \envandfstwo)$\ProseOrTypeError;
   \item for tuple in $\envandfstwo$ consisting of a local static environment, an element of $\func$,
         and a \sideeffectsetterm, $(\lenvtwo, \vf, \vses_\vf)$,
-        applying $\annotatesubprogram$ to the static environment \\
-        $(\genvtwo, \lenvtwo, \vses_\vf)$ and $\vf$ yields $(\vnew_\vf, \vses_\vf)$\ProseOrTypeError;
-  \item define $\vds$ as the list of $\DFunc(\vnew_\vf)$ for all $(\lenvtwo, \vf, \vses\_\vf)$ in $\envandfstwo$;
-  \item define $\vsess$ as the list of $(\vf, \vses_\vf)$ for all $(\lenvtwo, \vf, \vses\_\vf)$ in $\envandfstwo$;
+        applying $\annotatesubprogram$ to $\vf$ and $\vses_\vf$ in the static environment \\
+        $(\genvtwo, \lenvtwo)$ yields $(\vnew_\vf, \vsesp_\vf)$\ProseOrTypeError;
+  \item define $\newdecls$ as the list of $\DFunc(\vnew_\vf)$ for all $(\Ignore, \vf, \Ignore)$ in $\envandfstwo$;
+  \item define $\vsess$ as the list of $(\vnew_\vf, \vsesp_\vf)$ for all $(\Ignore, \vf, \Ignore)$ in $\envandfstwo$;
   \item applying $\propagaterecursivecallssess$ on $\vsess$ yields $\vsessprop$;
   \item define $\tenvtwo$ as the environment with $\genvtwo$ as its static global environment
         and an empty static local environment;
-  \item applying $\addsubprogramdecls$ to $\tenvtwo$ and $\vsessprop$ yields $(\tenvthree, \newdecls)$;
+  \item applying $\addsubprogramdecls$ to $\tenvtwo$ and $\vsessprop$ yields $\tenvthree$;
   \item define $\newtenv$ as the global static environment of $\tenvthree$.
 \end{itemize}
 
@@ -258,33 +258,33 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \vd\in\decls: \checktrans{\astlabel(\vd) = \DFunc}{\BadRecursiveDecls} \typearrow \True\OrTypeError\\\\
-  \DFunc(\vf)\in\decls: \annotatefuncsig(\genv, \vf) \typearrow (\tenv_\vf, \vd_\vf, \vses_f)\OrTypeError\\\\
-  \envandfs \eqdef [\DFunc(\vf)\in\decls: (L^{\tenv_\vf}, \vd_\vf)]\\
+  \DFunc(\vf)\in\decls: \annotatefuncsig(\genv, \vf) \typearrow (\tenv_\vf, \vd_\vf, \vses_\vf)\OrTypeError\\\\
+  \envandfs \eqdef [\DFunc(\vf)\in\decls: (L^{\tenv_\vf}, \vd_\vf, \vses_\vf)]\\
   {
   \setters \eqdef \left[ \begin{array}{r|l}
-    (\lenv,\vd, \vses) & (\lenv, \DFunc(\vf), \vses) \in \envandfs\ \land \\
-                & \astlabel(\vf) = \STSetter
+    (\lenv,\vf, \vses) & (\lenv, \vf, \vses) \in \envandfs\ \land \\
+                & \vf.\funcsubprogramtype = \STSetter
   \end{array}\right]
   }\\
   {
   \others \eqdef \left[ \begin{array}{r|l}
-    (\lenv,\vd, \vses) & (\lenv, \DFunc(\vf), \vses) \in \envandfs\ \land \\
-                & \astlabel(\vf) \neq \STSetter
+    (\lenv,\vf, \vses) & (\lenv, \vf, \vses) \in \envandfs\ \land \\
+                & \vf.\funcsubprogramtype\neq \STSetter
   \end{array}\right]
   }\\
-  \envandfsone \eqdef \others \concat \setters\\
+  \envandfsone \eqdef \others \concat \setters \\
   \declaresubprograms(\genv, \envandfsone) \typearrow (\genvtwo, \envandfstwo) \OrTypeError\\\\
   {
     \begin{array}{r}
-  (\lenvtwo, \vf, \vses\_\vf)\in\envandfstwo: \annotatesubprogram(\genvtwo, \lenvtwo, \vf, \vses\_vf) \typearrow \\
-      (\vnew_\vf, \vses_\vf) \OrTypeError
+  (\lenvtwo, \vf, \vses_\vf)\in\envandfstwo: \annotatesubprogram((\genvtwo, \lenvtwo), \vf, \vses_\vf) \typearrow \\
+      (\vnew_\vf, \vsesp_\vf) \OrTypeError
     \end{array}
   }\\\\
-  \vds \eqdef [(\lenvtwo, \vf, \vses\_\vf)\in\envandfstwo: \DFunc(\vnew_\vf)]\\
-  \vsess \eqdef [(\lenvtwo, \vf, \vses\_\vf)\in\envandfstwo: (\vf, \vses\_\vf)]\\
-  \tenvtwo \eqdef (\genvtwo, \emptyfunc)\\
+  \newdecls \eqdef [(\Ignore, \vf, \Ignore)\in\envandfstwo: \DFunc(\vnew_\vf)]\\
+  \vsess \eqdef [(\Ignore, \vf, \Ignore)\in\envandfstwo: (\vnew_\vf, \vsesp_\vf)]\\
   \propagaterecursivecallssess(\vsess) \typearrow \vsessprop\\
-  \addsubprogramdecls(\tenvtwo, \vsessprop) \typearrow (\tenvthree, \newdecls)
+  \tenvtwo \eqdef (\genvtwo, \emptyfunc)\\
+  \addsubprogramdecls(\tenvtwo, \vsessprop) \typearrow \tenvthree
 }{
   \typecheckmutuallyrec(\genv, \decls) \typearrow (\newdecls, \overname{G^\tenvthree}{\newgenv})
 }
@@ -392,12 +392,11 @@ The function
 \[
   \addsubprogramdecls(
     \overname{\staticenvs}{\tenv} \aslsep
-    \overname{(\func\times\TSideEffectSet)^*}{\vfuncs} \aslsep
+    \overname{(\func\times\TSideEffectSet)^*}{\vfuncs}
   ) \aslto
-  (\overname{\staticenvs}{\newtenv} \times \overname{\decl^*}{\decls})
+  \overname{\staticenvs}{\newtenv}
 \]
-adds each $\func$ element in $\vfuncs$ to the $\subprograms$ map of $G^\tenv$, yielding $\newtenv$
-and a list of declarations $\vdecls$.
+adds each $\func$ element in $\vfuncs$ to the $\subprograms$ map of $G^\tenv$, yielding $\newtenv$.
 
 \subsubsection{Prose}
 One of the following applies:
@@ -405,33 +404,31 @@ One of the following applies:
   \item All of the following apply (\textsc{empty}):
   \begin{itemize}
     \item $\vfuncs$ is the empty list;
-    \item $\newtenv$ is $\tenv$ and $\vdecls$ is the empty list.
+    \item $\newtenv$ is $\tenv$.
   \end{itemize}
 
   \item All of the following apply (\textsc{non\_empty}):
   \begin{itemize}
     \item $\vfuncs$ is the list with \head\ $(\vf, \vsesf)$ and \tail\ $\vfuncsone$;
-    \item applying $\addsubprogram$ to $vf.\funcname$, $\vf$, and $\vsesf$ in $\tenv$ yields $\tenvone$;
-    \item applying $\addsubprogramdecls$ to $\tenvone$ and $\vfuncsone$ yields \\
-          $(\newtenv, \vdeclsone)$;
-    \item define $\decls$ as the list with $\DFunc(\vf)$ as its \head\ and $\vdeclsone$ as its tail.
+    \item applying $\addsubprogram$ to $\vf.\funcname$, $\vf$, and $\vsesf$ in $\tenv$ yields $\tenvone$;
+    \item applying $\addsubprogramdecls$ to $\tenvone$ and $\vfuncsone$ yields $\newtenv$.
   \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[empty]{}{
-  \addsubprogramdecls(\tenv, \overname{\emptylist}{\vfuncs}) \typearrow (\overname{\tenv}{\newtenv}, \overname{\emptylist}{\vdecls})
+  \addsubprogramdecls(\tenv, \overname{\emptylist}{\vfuncs}) \typearrow \overname{\tenv}{\newtenv}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[non\_empty]{
   \addsubprogram(\tenv, \vf.\funcname, \vf, \vsesf) \typearrow \tenvone\\
-  \addsubprogramdecls(\tenvone, \vfuncsone) \typearrow (\newtenv, \vdeclsone)
+  \addsubprogramdecls(\tenvone, \vfuncsone) \typearrow \newtenv
 }{
-  \addsubprogramdecls(\tenv, \overname{(\vf, \vsesf) \concat \vfuncsone}{\vfuncs}) \typearrow
-  (\newtenv, \overname{[\DFunc(\vf)] \concat \vdeclsone}{\decls})
+  \addsubprogramdecls(\tenv, \overname{[(\vf, \vsesf)] \concat \vfuncsone}{\vfuncs}) \typearrow
+  \newtenv
 }
 \end{mathpar}
 
@@ -1049,7 +1046,7 @@ One of the following applies:
 \inferrule[some]{
   \useexpr(\veone) \typearrow \ids
 }{
-  \useexpr(\overname{\langle\veone\rangle}{\ve}) \typearrow \overname{\emptyset}{\ids}
+  \useexpr(\overname{\langle\veone\rangle}{\ve}) \typearrow \ids
 }
 \and
 \inferrule[e\_literal]{}{
@@ -1620,7 +1617,7 @@ One of the following applies:
 }
 \and
 \inferrule[assert\_return\_some]{
-  \vs = \SAssert(\ve) \lor \SReturn(\langle\ve\rangle)
+  \vs = \SAssert(\ve) \lor \vs = \SReturn(\langle\ve\rangle)
 }{
   \usestmt(\vs) \typearrow \overname{\useexpr(\ve)}{\ids}
 }
@@ -1678,7 +1675,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[s\_decl]{}{
-  \usestmt(\overname{\SDecl(\Ignore, \ldi, \vt, \ve)}\vs) \typearrow \overname{\usety(\vt) \cup \useexpr(\ve)}{\ids}
+  \usestmt(\overname{\SDecl(\Ignore, \Ignore, \vt, \ve)}\vs) \typearrow \overname{\usety(\vt) \cup \useexpr(\ve)}{\ids}
 }
 \end{mathpar}
 

@@ -292,7 +292,7 @@ One of the following applies:
   \makeanonymous(\tenv, \vs) \typearrow \TArray(\vlengths,\vtys) \\
   \makeanonymous(\tenv, \vt) \typearrow \TArray(\vlengtht,\vtyt) \\
   \typeequal(\tenv, \vtys, \vtyt) \typearrow \True\\
-  \booltrans{\astlabel(\vlengths) = \astlabel(\vlengtht)} \typearrow \True\\
+  \booltrans{\astlabel(\vlengths) = \astlabel(\vlengtht)} \typearrow \True \terminateas \False \\
   \vlengths \eqname \ArrayLengthEnum(\vnames, \Ignore)\\
   \vlengtht \eqname \ArrayLengthEnum(\vnamet, \Ignore)\\
   \vb \eqdef \vnames = \vnamet
@@ -1176,8 +1176,8 @@ One of the following applies:
     \item $\vtone$ is a bitvector type with width expression $\vwone$;
     \item $\vttwo$ is a bitvector type with width expression $\vwtwo$;
     \item define $\vw$ as the addition of $\vwone$ and $\vwtwo$;
-    \item applying \normalize{} to $\vw$ in $\tenv$ yields $\wp$;
-    \item $\vt$ is the bitvector type of width $\wp$ and empty list of bitfields, that is, \\ $\TBits(\vw, \emptylist)$.
+    \item applying \normalize{} to $\vw$ in $\tenv$ yields $\vwp$;
+    \item $\vt$ is the bitvector type of width $\vwp$ and empty list of bitfields, that is, \\ $\TBits(\vw, \emptylist)$.
   \end{itemize}
 
   \item All of the following apply (\textsc{rel}):
@@ -1236,7 +1236,7 @@ One of the following applies:
   \item All of the following apply (\textsc{arith\_t\_int\_parameterized}):
   \begin{itemize}
     \item $\op$ is one of $\{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \PLUS, \MINUS\}$;
-    \item both $\vtone$ and $\vttwo$ are integer types and at least one them is a \parameterizedintegertype;
+    \item both $\vtone$ and $\vttwo$ are integer types, neither is an unconstrained integer type, and at least one them is a \parameterizedintegertype;
     \item applying $\towellconstrained$ to $\vtone$ yields $\vtonewellconstrained$;
     \item applying $\towellconstrained$ to $\vttwo$ yields $\vttwowellconstrained$;
     \item \Proseapplybinoptypes{$\tenv$}{$\op$}{$\vtonewellconstrained$}{$\vttwowellconstrained$}{$\vt$}.
@@ -1377,10 +1377,10 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[bits\_concat]{
   \vw \eqdef \EBinop(\PLUS, \vwone, \vwtwo) \\
-  \normalize(\tenv, \vw) \typearrow \wp
+  \normalize(\tenv, \vw) \typearrow \vwp
 }{
   \applybinoptypes(\tenv, \BVCONCAT, \overname{\TBits(\vwone, \Ignore)}{\vtone}, \overname{\TBits(\vwtwo, \Ignore)}{\vttwo}) \typearrow
-  \overname{\TBits(\wp, \emptylist)}{\vt}
+  \overname{\TBits(\vwp, \emptylist)}{\vt}
 }
 \end{mathpar}
 
@@ -1444,6 +1444,7 @@ One of the following applies:
 \inferrule[arith\_t\_int\_parameterized]{
   \op \in  \{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \PLUS, \MINUS\}\\
   \astlabel(\vcone) = \parameterized \lor \astlabel(\vctwo) = \parameterized\\
+  \astlabel(\vcone) \neq \unconstrained \land \astlabel(\vctwo) \neq \unconstrained\\
   \towellconstrained(\vtone) \typearrow \vtonewellconstrained\\
   \towellconstrained(\vttwo) \typearrow \vttwowellconstrained\\
   \applybinoptypes(\tenv, \vtonewellconstrained, \vttwowellconstrained) \typearrow \vt \OrTypeError
@@ -1467,7 +1468,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[arith\_real]{
-  (\op, \vtone, \vttwo) \not\in
+  (\op, \vtone, \vttwo) \in
   {
     \left\{
     \begin{array}{lclcl}
@@ -1630,7 +1631,7 @@ One of the following holds:
 \inferrule[none]{
   \supers(\tenv, \vt) \typearrow \vtsupers\\
   \vs \not\in \vtsupers\\
-  G^\tenv.\subtypes(\vs) = \None
+  G^\tenv.\subtypes(\vs) = \bot
 }{
   \namedlca(\tenv, \vt, \vs) \typearrow \None
 }
@@ -2757,7 +2758,6 @@ in the static environment $\tenv$.
 \ProseOtherwiseTypeError
 
 \subsubsection{Prose}
-One of the following applies:
 All of the following apply:
 \begin{itemize}
   \item applying $\getbitvectorwidth$ to $\vt$ in $\tenv$ yields $\ewidth$\ProseOrTypeError;

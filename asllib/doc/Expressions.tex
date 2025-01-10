@@ -1693,12 +1693,12 @@ All of the following apply:
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
+  \vtetwo \eqname \TBits(\Ignore, \bitfields)\\\\
   {
     \begin{array}{r}
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \\ \langle \BitFieldNested(\Ignore, \slices, \bitfieldsp)\rangle
     \end{array}
-  }\\
+  }\\\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
   \annotateexpr{\tenv, \vethree} \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\\\\
   \vtefour \eqname \TBits(\width, \Ignore)\\
@@ -2214,7 +2214,7 @@ All of the following apply:
   \checkatc(\tenv, \vtstruct, \vtystruct) \typearrow \True \OrTypeError\\\\
   \vsesp \eqdef \vsesty \cup \vsese \cup \{\PerformsAssertions\}\\
   \subtypesat(\tenv, \vtstruct, \vtystruct) \typearrow \vallwayssucceeds \OrTypeError\\\\
-  (\newe, \vses) \eqdef \choice{\vallwayssucceeds}{(\vepp, \vsese)}{(\EATC(\ttyp, \vepp), \vsesp)}
+  (\newe, \vses) \eqdef \choice{\vallwayssucceeds}{(\vepp, \vsese)}{(\EATC(\vepp, \ttyp), \vsesp)}
 }{
   \annotateexpr{\tenv, \overname{\EATC(\vep, \tty)}{\ve}} \typearrow (\overname{\ttyp}{\vt}, \newe, \vses)
 }
@@ -2387,7 +2387,7 @@ All of the following apply:
 \and
 \inferrule[error]{
   \evalexpr{\env, \veone} \evalarrow \Normal((\vv, \Ignore), \Ignore)\\
-  \neg\isvaloftype(\env, \vv, \vt) \evalarrow (\vb, \Ignore)\\
+  \isvaloftype(\env, \vv, \vt) \evalarrow (\vb, \Ignore)\\
   \vb \eqname \nvbool(\False)
 }{
   \evalexpr{\env, \EATC(\veone, \vt)} \evalarrow \DynamicErrorVal{\DynamicTypeAssertionFailure}
@@ -2444,7 +2444,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{bits}):
   \begin{itemize}
-    \item $\vt$ is a bitvector type with with expression $\ve$, that is, $\TBits(\ve, \Ignore)$;
+    \item $\vt$ is a bitvector type with expression $\ve$, that is, $\TBits(\ve, \Ignore)$;
     \item $\vv$ is a native bitvector value for the sequence of bits $\vbits$, that is, \\ $\nvbitvector(\vbits)$;
     \item evaluating the side-effect-free expression $\ve$ in $\env$ yields $\Normal(\vvp, \vg)$\ProseOrError;
     \item \Proseeqdef{$\vb$}{$\True$ if and only if $\vvp$ is equal to the number of bits in $\vbits$}.

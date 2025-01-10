@@ -220,7 +220,7 @@ All of the following apply:
 \inferrule[enum]{
   \checkvarnotingenv{\genv, \name} \typearrow \True \OrTypeError\\\\
   \withemptylocal(\genv) \typearrow \tenv\\\\
-  \annotateextrafields(\tenv, \tty, \vs) \typearrow (\tenvone, \vtone)\\
+  \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\tenvone, \vtone)\\
   \annotatetype{\True, \tenvone, \vtone} \typearrow (\vttwo, \vsest) \OrTypeError\\\\
   \maxtimeframe(\vsest) \typearrow \vtimeframe\\
   \addtype(\tenvone, \name, \vttwo, \vtimeframe) \typearrow \tenvtwo\\
@@ -236,7 +236,7 @@ All of the following apply:
 \inferrule[not\_enum]{
   \checkvarnotingenv{\genv, \name} \typearrow \True \OrTypeError\\\\
   \withemptylocal(\genv) \typearrow \tenv\\\\
-  \annotateextrafields(\tenv, \tty, \vs) \typearrow (\tenvone, \vtone)\\
+  \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\tenvone, \vtone)\\
   \annotatetype{\True, \tenvone, \vtone} \typearrow (\vttwo, \vsest) \OrTypeError\\\\
   \maxtimeframe(\vsest) \typearrow \vtimeframe\\
   \addtype(\tenvone, \name, \vttwo, \vtimeframe) \typearrow \tenvtwo\\
@@ -255,6 +255,7 @@ The function
 \[
 \begin{array}{r}
 \annotateextrafields(\overname{\staticenvs}{\tenv} \aslsep
+  \overname{\identifier}{\name} \aslsep
   \overname{\ty}{\tty} \aslsep
   \overname{\langle(\overname{\identifier}{\vsuper}\times\overname{\field^*}{\extrafields})\rangle}{\vs}
 )
@@ -283,7 +284,7 @@ One of the following applies:
     \item checking that $\tty$ \subtypesatisfies\ the named type $\vsuper$ (that is, \\ $\TNamed(\vsuper)$) yields
           $\True$\ProseOrTypeError;
     \item $\extrafields$ is the empty list;
-    \item $\newtenv$ is $\tenv$;
+    \item $\newtenv$ is $\tenv$ with its $\subtypes$ component updated by binding $\name$ to $\vsuper$;
     \item $\newty$ is $\tty$.
   \end{itemize}
 
@@ -315,7 +316,7 @@ One of the following applies:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[none]{}{
-  \annotateextrafields(\tenv, \tty, \overname{\None}{\vs}) \typearrow (\overname{\tenv}{\newtenv}, \overname{\tty}{\newty})
+  \annotateextrafields(\tenv, \name, \tty, \overname{\None}{\vs}) \typearrow (\overname{\tenv}{\newtenv}, \overname{\tty}{\newty})
 }
 \end{mathpar}
 
@@ -323,9 +324,10 @@ One of the following applies:
 \inferrule[empty\_fields]{
   \subtypesat(\tty, \TNamed(\vsuper)) \typearrow \vb\\
   \checktrans{\vb}{TypeConflict} \typearrow \True \OrTypeError\\\\
-  \extrafields = \emptylist
+  \extrafields = \emptylist \\
+  \newtenv \eqdef (G^\tenv.\subtypes[\name\mapsto\vsuper], L^\tenv)
 }{
-  \annotateextrafields(\tenv, \tty, \overname{\langle(\vsuper, \extrafields)\rangle}{\vs}) \typearrow (\overname{\tenv}{\newtenv}, \overname{\tty}{\newty})
+  \annotateextrafields(\tenv, \name, \tty, \overname{\langle(\vsuper, \extrafields)\rangle}{\vs}) \typearrow (\newtenv, \overname{\tty}{\newty})
 }
 \end{mathpar}
 
@@ -336,7 +338,7 @@ One of the following applies:
   \extrafields \neq \emptylist\\\\
   G^\tenv.\declaredtypes(\vsuper) = \bot
 }{
-  \annotateextrafields(\tenv, \tty, \overname{\langle(\vsuper, \extrafields)\rangle}{\vs}) \typearrow
+  \annotateextrafields(\tenv, \name, \tty, \overname{\langle(\vsuper, \extrafields)\rangle}{\vs}) \typearrow
   \TypeErrorVal{\UndefinedIdentifier}
 }
 \end{mathpar}
@@ -356,7 +358,7 @@ One of the following applies:
   \newty \eqdef L(\fields \concat \extrafields)\\
   \newtenv \eqdef (G^\tenv.\subtypes[\name\mapsto\vsuper], L^\tenv)
 }{
-  \annotateextrafields(\tenv, \tty, \overname{\langle(\vsuper, \extrafields)\rangle}{\vs}) \typearrow (\newtenv, \newty)
+  \annotateextrafields(\tenv, \name, \tty, \overname{\langle(\vsuper, \extrafields)\rangle}{\vs}) \typearrow (\newtenv, \newty)
 }
 \end{mathpar}
 

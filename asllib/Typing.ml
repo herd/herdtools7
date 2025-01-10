@@ -3851,7 +3851,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let env_and_fs1 =
       (* Setters last as they need getters declared. *)
-      let others, setters =
+      let setters, others =
         List.partition
           (fun (_, f, _, _) ->
             match f.subprogram_type with
@@ -3859,7 +3859,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             | _ -> false)
           env_and_fs
       in
-      List.rev_append setters others
+      List.rev_append others setters
     in
     (* DeclareSubprograms( *)
     let genv2, env_and_fs2 =

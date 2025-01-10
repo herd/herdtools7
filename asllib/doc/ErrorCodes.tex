@@ -87,6 +87,12 @@ This error occurs when a call to a function or a getter is inferred to refer to 
 or a call to a procedure or a setter is inferred to refer to a function or a getter.
 See \secref{TypingRule.AnnotateCallActualsTyped} for an example.
 
+\hypertarget{def-brs}{}
+\item[$\BadReturnStatement$]
+Values can only be returned from within a subprogram which declares a return type (a function or getter).
+This error occurs when attempting to return a value from a procedure or setter.
+See \secref{TypingRule.SReturn} for an example.
+
 \hypertarget{def-cba}{}
 \item[$\CallBadArity$]
 A call to a subprogram must have the same number of arguments as the list of formal arguments

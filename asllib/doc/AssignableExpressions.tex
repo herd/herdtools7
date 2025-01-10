@@ -17,7 +17,7 @@ We then define the abstract syntax, typing, and semantics of the different kinds
 \item Array assignment expressions (see \secref{ArrayAssignmentExpressions})
 \item Bitvector slice assignment expressions (see \secref{BitvectorSliceAssignmentExpressions})
 \item Structured type field assignment expressions (\secref{StructuredTypeFieldAssignmentExpressions})
-\item Structured Type Multi-field Assignment expressions (\secref{StructuredTypeMultiFieldAssignmentExpressions})
+\item Structured type multi-field assignment expressions (\secref{StructuredTypeMultiFieldAssignmentExpressions})
 \item Bitfield assignment expressions (see \secref{BitfieldAssignmentExpressions})
 \end{itemize}
 
@@ -236,7 +236,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   {
     \begin{array}{r}
       \buildnestedfields(\Nnestedfields(\Tdot, \Tidentifier(\id), \punnode{\Nnestedfields})) \astarrow\\
-      \overname{[\id] \concat \vnestedfields}{\vastnode}
+      \overname{[\id] \concat \astof{\vnestedfields}}{\vastnode}
     \end{array}
   }
 }
@@ -527,7 +527,7 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[local]{
-  L^\tenv.\localstoragetypes(\id) = (\tty, k)\\
+  L^\tenv.\localstoragetypes(\vx) = (\tty, k)\\
   \checktrans{k = \LDKVar}{\AssignmentToImmutable} \checktransarrow \True \OrTypeError\\\\
   \checktypesat(\tenv, \vte, \tty) \typearrow \True \OrTypeError
 }{
@@ -538,7 +538,7 @@ All of the following apply:
 
 \begin{mathpar}
 \inferrule[global]{
-  L^\tenv.\globalstoragetypes(\id) = (\tty, k)\\
+  L^\tenv.\globalstoragetypes(\vx) = (\tty, k)\\
   \checktrans{k = \GDKVar}{AssignToImmutable} \checktransarrow \True \OrTypeError\\\\
   \checktypesat(\tenv, \vte, \tty) \typearrow \True \OrTypeError
 }{
@@ -549,8 +549,8 @@ All of the following apply:
 
 \begin{mathpar}
 \inferrule[error\_undefined]{
-  L^\tenv.\localstoragetypes(\id) = \bot\\
-  L^\tenv.\globalstoragetypes(\id) = \bot
+  L^\tenv.\localstoragetypes(\vx) = \bot\\
+  L^\tenv.\globalstoragetypes(\vx) = \bot
 }{
   \annotatelexpr{\tenv, \overname{\LEVar(\vx)}{\vle}, \vte} \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }

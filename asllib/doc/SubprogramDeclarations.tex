@@ -635,9 +635,9 @@ All of the following apply:
 \inferrule{
   \typesinfuncsig(\funcsig) \typearrow \tys \\
   \vi \in \listrange(\tys): \paramsofty(\tenv, \tty_i) \typearrow \params_i \\
-  \params \eqdef \texttt{inferred\_params} \concat \ldots \concat \params_{\listlen{\tys}} \\
+  \params \eqdef \params_1 \concat \ldots \concat \params_{\listlen{\tys}} \\
   \paramsone \eqdef \uniquelist(\params) \\\\
-  \checktrans{\texttt{inferred\_params} = \funcsig.\funcparameters}{\BadParameterDecl} \checktransarrow \vb \OrTypeError
+  \checktrans{\paramsone = \funcsig.\funcparameters}{\BadParameterDecl} \checktransarrow \vb \OrTypeError
 }{
   \checkparamdecls(\tenv, \funcsig) \typearrow \vb
 }
@@ -1231,7 +1231,7 @@ which defines whether two subprogram types are considered to be clashing:
   \subprogramtypesclash(\otherfuncsig.\subprogramtype, \subpgmtype) \typearrow \True \terminateas \False\\
   \hasargclash(\formaltypes, \otherfuncsig.\funcargs) \typearrow \vb
 }{
-  \subprogramclash(\tenv, \namep, \subpgmtype, \formaltypes) \typearrow \vb
+  \subprogramclash(\tenv, \name, \subpgmtype, \formaltypes) \typearrow \vb
 }
 \end{mathpar}
 \lrmcomment{This is related to \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}.}
