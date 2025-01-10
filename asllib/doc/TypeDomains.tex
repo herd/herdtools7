@@ -89,8 +89,8 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
 
   \item All of the following apply (\textsc{t\_enumeration}):
   \begin{itemize}
-    \item $\vt$ is the enumeration type with labels $\id_{1..k}$, that is $\TEnum(\id_{1..k})$;
-    \item $\vd$ is the set of all native enumeration labels $\llabel(\id_\vi, \vi)$, for $\vi = 1..k$.
+    \item $\vt$ is the enumeration type with labels $\vl_{1..k}$, that is $\TEnum(\vl_{1..k})$;
+    \item $\vd$ is the set of all native labels $\nvlabel(\vl_\vi)$, for $\vi = 1..k$.
   \end{itemize}
 
   \item All of the following apply (\textsc{t\_int\_unconstrained}):
@@ -108,37 +108,37 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
   \item All of the following apply (\textsc{constraint\_exact\_okay}):
   \begin{itemize}
     \item $\vc$ is a constraint consisting of a single side-effect-free expression $\ve$, that is, $\ConstraintExact(\ve)$;
-    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $n$;
+    \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $n$;
     \item $\vd$ is the set containing the single native integer value for $n$.
   \end{itemize}
 
   \item All of the following apply (\textsc{constraint\_exact\_dynamic\_error}):
   \begin{itemize}
     \item $\vc$ is a constraint consisting of a single side-effect-free expression $\ve$, that is, $\ConstraintExact(\ve)$;
-    \item evaluating $\ve$ in $\env$, results in a dynamic error configuration;
+    \item evaluating $\ve$ in $\env$ results in a dynamic error configuration;
     \item $\vd$ is the empty set.
   \end{itemize}
 
   \item All of the following apply (\textsc{constraint\_range\_okay}):
   \begin{itemize}
     \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
-    \item evaluating $\veone$ in $\env$, results in a configuration with the native integer for $a$;
-    \item evaluating $\vetwo$ in $\env$, results in a configuration with the native integer for $b$;
+    \item evaluating $\veone$ in $\env$ results in a configuration with the native integer for $a$;
+    \item evaluating $\vetwo$ in $\env$ results in a configuration with the native integer for $b$;
     \item $\vd$ is the set containing all native integer values for integers greater or equal to $a$ and less than or equal to $b$.
   \end{itemize}
 
   \item All of the following apply (\textsc{constraint\_range\_dynamic\_error1}):
   \begin{itemize}
     \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
-    \item evaluating $\veone$ in $\env$, results in a dynamic error configuration;
+    \item evaluating $\veone$ in $\env$ results in a dynamic error configuration;
     \item $\vd$ is the empty set.
   \end{itemize}
 
   \item All of the following apply (\textsc{constraint\_range\_dynamic\_error2}):
   \begin{itemize}
     \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
-    \item evaluating $\veone$ in $\env$, results in a configuration with the native integer for $a$;
-    \item evaluating $\vetwo$ in $\env$, results in a dynamic error configuration;
+    \item evaluating $\veone$ in $\env$ results in a configuration with the native integer for $a$;
+    \item evaluating $\vetwo$ in $\env$ results in a dynamic error configuration;
     \item $\vd$ is the empty set.
   \end{itemize}
 
@@ -152,14 +152,14 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
   \item All of the following apply (\textsc{t\_bits\_dynamic\_error}):
   \begin{itemize}
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
-    \item evaluating $\ve$ in $\env$, results in a dynamic error configuration;
+    \item evaluating $\ve$ in $\env$ results in a dynamic error configuration;
     \item $\vd$ is the empty set.
   \end{itemize}
 
   \item All of the following apply (\textsc{t\_bits\_negative\_width\_error}):
   \begin{itemize}
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
-    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
+    \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
     \item $k$ is negative;
     \item $\vd$ is the empty set.
   \end{itemize}
@@ -167,14 +167,14 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
   \item All of the following apply (\textsc{t\_bits\_empty}):
   \begin{itemize}
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
-    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $0$;
+    \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $0$;
     \item $\vd$ is the set containing the single \nativevalue\ for an empty bitvector.
   \end{itemize}
 
   \item All of the following apply (\textsc{t\_bits\_non\_empty}):
   \begin{itemize}
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
-    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
+    \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
     \item $k$ is greater than $0$;
     \item $\vd$ is the set containing all \nativevalues\ for bitvectors of size exactly $k$.
   \end{itemize}
@@ -183,41 +183,56 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
   \begin{itemize}
     \item $\vt$ is a tuple type over types $\vt_i$, for $i=1..k$, $\TTuple(\vt_{1..k})$;
     \item the domain of each element $\vt_i$ is $D_i$, for $i=1..k$;
-    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
+    \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
     \item $\vd$ is the set containing all native vectors of $k$ values, where the value at position $i$
     is from $D_i$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_array\_dynamic\_error}):
+  \item All of the following apply:
   \begin{itemize}
-    \item $\vt$ is an array type with length expression $\ve$ and element type $\vt_i$, for $i=1..k$, $\TArray(\ve, \vtone)$;
-    \item evaluating $\ve$ in $\env$, results in a dynamic error configuration;
-    \item $\vd$ is the empty set.
+    \item $\vt$ is an integer-indexed array type with length expression $\ve$ and element type $\telem$, $\TArray(\ArrayLengthExpr(\ve), \telem)$;
+    \item One of the following applies:
+      \begin{itemize}
+      \item All of the following apply (\textsc{t\_array\_dynamic\_error}):
+      \begin{itemize}
+        \item evaluating $\ve$ in $\env$ results in a dynamic error configuration;
+        \item $\vd$ is the empty set.
+      \end{itemize}
+
+      \item All of the following apply (\textsc{t\_array\_negative\_length\_error}):
+      \begin{itemize}
+        \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
+        \item $k$ is negative;
+        \item $\vd$ is the empty set.
+      \end{itemize}
+
+      \item All of the following apply (\textsc{t\_array\_okay}):
+      \begin{itemize}
+        \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
+        \item $k$ is greater than or equal to $0$;
+        \item the domain of $\vtone$ is $D_\telem$;
+        \item $\vd$ is the set of all native vectors of $k$ values taken from $D_\telem$.
+      \end{itemize}
+    \end{itemize}
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_array\_negative\_length\_error}):
+  \item All of the following apply (\textsc{t\_enum\_array}):
   \begin{itemize}
-    \item $\vt$ is an array type with length expression $\ve$ and element type $\vt_i$, for $i=1..k$, $\TArray(\ve, \vtone)$;
-    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
-    \item $k$ is negative;
-    \item $\vd$ is the empty set.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{t\_array\_okay}):
-  \begin{itemize}
-    \item $\vt$ is an array type with length expression $\ve$ and element type $\vt_i$, for $i=1..k$, $\TArray(\ve, \vtone)$;
-    \item evaluating $\ve$ in $\env$, results in a configuration with the native integer for $k$;
-    \item $k$ is greater than or equal to $0$;
-    \item the domain of $\vtone$ is $D_\vtone$;
-    \item $\vd$ is the set containing all native vectors of $k$ values taken from $D_\vtone$.
+    \item $\vt$ is an enumeration-indexed array type with for the enumeration $\id$ with $k$ labels and element type $\telem$,
+          $\TArray(\ArrayLengthEnum(\id, k), \telem)$;
+    \item view $\env$ as the pair consisting of the static environment $\tenv$ and a dynamic environment;
+    \item the type bound to $\id$ in the $\declaredtypes$ map of the static environment of $\tenv$ is the enumeration type
+          for the labels $\vl_{1..k}$, that is, $\TEnum(\vl_{1..k})$;
+    \item the dynamic domain of $\telem$ in $\env$ is $D_\telem$;
+    \item $\vd$ is the set of all native records where each $\vl_i$ is mapped to a value taken from $D_\telem$, for $i=1..k$.
   \end{itemize}
 
   \item All of the following apply (\textsc{t\_structured}):
   \begin{itemize}
-    \item $\vt$ is a \structuredtype\ with typed fields $(\id_i, \vt_i$, for $i=1..k$, that is $L([i=1..k: (\id_i,\vt_i))]$
+    \item $\vt$ is a \structuredtype\ with typed fields $(\id_i, \vt_i)$, for $i=1..k$, that is $L([i=1..k: (\id_i,\vt_i))]$
     where $L\in\{\TRecord, \TException\}$;
     \item the domain of each type $\vt_i$ is $D_i$, for $i=1..k$;
-    \item $\vd$ is the set containing all native records where $\id_i$ is mapped to a value taken from $D_i$.
+    \item $\vd$ is the set containing all native records where $\id_i$ is mapped to a value taken from $D_i$, for $i=1..k$.
   \end{itemize}
 
   \item All of the following apply (\textsc{t\_named}):
@@ -238,7 +253,7 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
 \inferrule[t\_real]{}{ \dynamicdomain(\env, \overname{\TReal}{\vt}) = \overname{\treal}{\vd} }
 \and
 \inferrule[t\_enumeration]{}{
-  \dynamicdomain(\env, \overname{\TEnum(\id_{1..k})}{\vt}) = \overname{\{ \vi = 1..k: \nvliteral{\llabel(\id_\vi, \vi)} \}}{\vd}
+  \dynamicdomain(\env, \overname{\TEnum(\vl_{1..k})}{\vt}) = \overname{\{ \vi = 1..k: \nvlabel(\vl_\vi) \}}{\vd}
 }
 \end{mathpar}
 
@@ -341,23 +356,38 @@ in the \emph{local dynamic environment} of $\denv$.
 \inferrule[t\_array\_dynamic\_error]{
   \evalexprsef{\env, \ve} \evalarrow \DynErrorConfig
 }{
-  \dynamicdomain(\env, \overname{\TArray(\ve, \vtone)}{\vt}) = \overname{\emptyset}{\vd}
+  \dynamicdomain(\env, \overname{\TArray(\ArrayLengthExpr(\ve), \telem)}{\vt}) = \overname{\emptyset}{\vd}
 }
 \and
 \inferrule[t\_array\_negative\_length\_error]{
   \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
   k < 0
 }{
-  \dynamicdomain(\env, \overname{\TArray(\ve, \vtone)}{\vt}) = \overname{\emptyset}{\vd}
+  \dynamicdomain(\env, \overname{\TArray(\ArrayLengthExpr(\ve), \telem)}{\vt}) = \overname{\emptyset}{\vd}
 }
 \and
 \inferrule[t\_array\_okay]{
   \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
   k \geq 0\\
-  \dynamicdomain(\env, \vtone) = D_\vtone
+  \dynamicdomain(\env, \telem) = D_\telem
 }{
-  \dynamicdomain(\env, \overname{\TArray(\ve, \vtone)}{\vt}) =
-  \overname{\{ \nvvector{\vv_{1..k}} \;|\; \vv_{1..k} \in D_{\vtone} \}}{\vd}
+  \dynamicdomain(\env, \overname{\TArray(\ArrayLengthExpr(\ve), \telem)}{\vt}) =
+  \overname{\{ \nvvector{\vv_{1..k}} \;|\; \vv_{1..k} \in D_{\telem} \}}{\vd}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_enum\_array]{
+  \env \eqname (\tenv, \Ignore)\\
+  G^\tenv.\declaredtypes(\id) = \TEnum(\vl_{1..k})\\
+  \dynamicdomain(\env, \telem) = D_\telem
+}{
+  {
+  \begin{array}{c}
+    \dynamicdomain(\env, \overname{\TArray(\ArrayLengthEnum(\id, k), \telem)}{\vt}) =\\
+    \overname{\{ \nvrecord{\{i=1..k: \vl_i\mapsto \vv_i\}} \;|\; \vv_i \in D_\telem \}}{\vd}
+  \end{array}
+  }
 }
 \end{mathpar}
 
@@ -393,7 +423,7 @@ The domain of \texttt{bits(2)} is the set $\{\nvbitvector(00)$, $\nvbitvector(01
 $\nvbitvector(10)$, $\nvbitvector(11)\}$.
 
 The domain of \verb|enumeration {GREEN, ORANGE, RED}| is the set \\
-$\{\nvint(1), \nvint(2), \nvint(3)\}$ and so is the domain
+$\{\nvlabel(\texttt{GREEN}), \nvlabel(\texttt{ORANGE}), \nvlabel(\texttt{RED})\}$ and so is the domain
 of \\
 \verb|type TrafficLights of enumeration {GREEN, ORANGE, RED}|.
 

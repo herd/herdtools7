@@ -733,9 +733,18 @@ until both lists become empty
 which is when the \textsc{empty} axiom case is used.
 
 \section{Array Assignment Expressions\label{sec:ArrayAssignmentExpressions}}
+This section details the syntax, abstract syntax, semantics, and typing of array write expressions.
+In the untyped AST, a write to either an integer-indexed array or an enumeration-indexed array is represented
+the same way. They type system infers the kind of array and outputs a typed AST node differentiating
+the two kinds of arrays, either a $\LESetArray$ or a $\LESetEnumArray$, via \nameref{sec:TypingRule.LESetArray}.
+The semantics utilizes a rule matching the corresponding type of array ---
+\nameref{sec:SemanticsRule.LESetArray} for integer-indexed arrays and
+\nameref{sec:SemanticsRule.LESetEnumArray} for enumeration-indexed arrays.
+
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\lexpr \derives\ & \LESetArray(\lexpr, \expr) &
+\lexpr \derives\ & \LESetArray(\lexpr, \expr) &\\
+|\ & \LESetEnumArray(\overtext{\lexpr}{base}, \overtext{\expr}{index}) &\\
 \end{flalign*}
 
 \subsection{Typing}
@@ -810,7 +819,12 @@ All of the following apply:
   \item determining whether $\tindexp$ \typesatisfies\ $\wantedtindex$ in $\tenv$ yields \\
         $\True$\ProseOrTypeError;
   \item \Prosenonconflictingunion{$\vsesbase$ and $\vsesindex$}{$\vses$};
-  \item \Proseeqdef{$\newle$}{array update for $\ebasep$ at index $\eindexp$, that is, \\ $\LESetArray(\ebasep, \eindexp)$}.
+  \item \Proseeqdef{$\newle$}{
+    an integer-based array update for $\ebasep$ at index $\eindexp$, that is, $\LESetArray(\ebasep, \eindexp)$,
+    if $\size$ is an integer-typed array index, and
+    an enumeration-based array update for $\ebasep$ at index $\eindexp$, that is, \\ $\LESetEnumArray(\ebasep, \eindexp)$,
+    if $\size$ is an enumeration-typed array index.
+    }
 \end{itemize}
 
 \subsubsection{Formally}
@@ -821,7 +835,14 @@ All of the following apply:
   \typeofarraylength(\tenv, \size) \typearrow \wantedtindex\\
   \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\\\
   \nonconflictingunion(\vsesbase, \vsesindex) \typearrow \vses \OrTypeError\\\\
-  \newle \eqdef \LESetArray(\ebasep, \eindexp)
+  \newleint \eqdef \LESetArray(\ebasep, \eindexp)\\
+  \newleenum \eqdef \LESetEnumArray(\ebasep, \eindexp)\\
+  {
+  \newle \eqdef \begin{cases}
+    \newleint & \text{if }\astlabel(\size) = \ArrayLengthExpr\\
+    \newleenum & \text{if }\astlabel(\size) = \ArrayLengthEnum\\
+  \end{cases}
+  }
 }{
   {
   \begin{array}{r}
@@ -889,6 +910,42 @@ getter invocation
 
 We note that the index is guaranteed by the type-checker to be within the array bounds
 via \secref{TypingRule.LESetArray}.
+
+\subsubsection{SemanticsRule.LESetEnumArray\label{sec:SemanticsRule.LESetEnumArray}}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\vle$ denotes an array update expression, $\LESetEnumArray(\rearray, \eindex)$;
+  \item evaluating the right-hand-side expression corresponding to $\rearray$ in $\env$
+  is \Normal(\rmarray, \envone)\ProseOrAbnormal;
+  \item evaluating $\eindex$ in $\envone$ is \Normal(\mindex, \envtwo)\ProseOrAbnormal;
+  \item $\mindex$ consists of the native value $\vindex$ and the execution graph $\vgone$;
+  \item $\vindex$ is the native label for $\vl$;
+  \item $\rmarray$ consists of the native value $\rvarray$ and the execution graph $\vgtwo$;
+  \item setting the value $\vv$ of field $\vl$ of $\rvarray$ is the native record $\vvone$;
+  \item $\vmone$ is the pair consisting of $\vvone$ and the parallel composition of $\vgone$ and $\vgtwo$;
+  \item the steps so far computed the updated array, but have not assigned it to the variable
+  bound to the array given by $\rearray$, which is achieved next.
+  Evaluating the left-hand-side expression $\rearray$ in an environment $\envtwo$ with $\vmone$
+  is the output configuration $C$.
+\end{itemize}
+
+\subsubsection{Formally}
+\begin{mathpar}
+\inferrule{
+  \evalexpr{\env, \torexpr(\rearray)} \evalarrow \Normal(\rmarray, \envone) \OrAbnormal\\
+  \evalexpr{\envone, \eindex} \evalarrow \Normal(\mindex, \envtwo) \OrAbnormal\\
+  \mindex \eqname (\vindex, \vgone)\\
+  \vindex \eqname \nvlabel(\vl)\\
+  \rmarray \eqname (\rvarray, \vgtwo)\\
+  \setfield(\vl, \vv, \rvarray) \evalarrow \vvone\\
+  \vmone \eqdef (\vvone, \vgone \parallelcomp \vgtwo)\\
+  \evallexpr{\envtwo, \rearray, \vmone} \evalarrow C
+}{
+  \evallexpr{\env, \LESetEnumArray(\rearray, \eindex), (\vv, \vg)} \evalarrow C
+}
+\end{mathpar}
+\CodeSubsection{\EvalLESetEnumArrayBegin}{\EvalLESetEnumArrayEnd}{../Interpreter.ml}
 
 \section{Bitvector Slice Assignment Expressions\label{sec:BitvectorSliceAssignmentExpressions}}
 \subsection{Abstract Syntax}

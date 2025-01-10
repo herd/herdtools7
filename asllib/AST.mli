@@ -108,16 +108,7 @@ type literal =
   | L_Real of Q.t
   | L_BitVector of Bitvector.t
   | L_String of string
-  | L_Label of (string * int)
-      (** An enumeration label, given by its name and its index in its type
-          definition.
-
-          For example, the declaration
-              type MyEnum of enumeration {LABEL_A, LABEL_B};
-          will result in the following labels:
-              L_Label ("LABEL_A", 0)
-              L_Label ("LABEL_B", 1)
-      *)
+  | L_Label of string  (** An enumeration label, given by its name. *)
 
 (* -------------------------------------------------------------------------
 
@@ -158,6 +149,17 @@ type expr_desc =
   | E_Slice of expr * slice list
   | E_Cond of expr * expr * expr
   | E_GetArray of expr * expr
+      (** [E_GetArray base index] Represents an access to an array given
+        by the expression [base] at index [index].
+        When this node appears in the untyped AST, the index may either
+        be integer-typed or enumeration-typed.
+        When this node appears in the typed AST, the index can only be
+        integer-typed.
+    *)
+  | E_GetEnumArray of expr * expr
+      (** Access an array with an enumeration index.
+        This constructor is only part of the typed AST.
+    *)
   | E_GetField of expr * identifier
   | E_GetFields of expr * identifier list
   | E_GetItem of expr * int
@@ -167,6 +169,15 @@ type expr_desc =
   | E_Array of { length : expr; value : expr }
       (** Initial value for an array of size [length] and of content [value] at
           each array cell.
+
+          This expression constructor is only part of the typed AST, i.e. it is
+          only built by the type-checker, not any parser.
+      *)
+  | E_EnumArray of { enum : identifier; labels : identifier list; value : expr }
+      (** Initial value for an array where the index is the enumeration [enum],
+          which declares the list of labels [labels],
+          and the content of each cell is given by [value].
+          [enum] is only used for pretty-printing.
 
           This expression constructor is only part of the typed AST, i.e. it is
           only built by the type-checker, not any parser.
@@ -268,8 +279,8 @@ and bitfield =
 and array_index =
   | ArrayLength_Expr of expr
       (** An integer expression giving the length of the array. *)
-  | ArrayLength_Enum of identifier * int
-      (** An enumeration name and its length. *)
+  | ArrayLength_Enum of identifier * identifier list
+      (** An enumeration name and its list of labels. *)
 
 and field = identifier * ty
 (** A field of a record-like structure. *)
@@ -291,6 +302,17 @@ type lexpr_desc =
   | LE_Var of identifier
   | LE_Slice of lexpr * slice list
   | LE_SetArray of lexpr * expr
+      (** [LE_SetArray base index] represents a write to an array given
+        by the expression [base] at index [index].
+        When this node appears in the untyped AST, the index may either
+        be integer-typed or enumeration-typed.
+        When this node appears in the typed AST, the index can only be
+        integer-typed.
+    *)
+  | LE_SetEnumArray of lexpr * expr
+      (** Represents a write to an array with an enumeration index.
+        This constructor is only part of the typed AST.
+    *)
   | LE_SetField of lexpr * identifier
   | LE_SetFields of lexpr * identifier list * (int * int) list
       (** LE_SetFields (le, fields, _) unpacks the various fields. Third argument is a type annotation. *)

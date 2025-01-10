@@ -94,7 +94,7 @@ let pp_literal f = function
   | L_BitVector bv ->
       bprintf f "L_BitVector (Bitvector.of_string %S)" (Bitvector.to_string bv)
   | L_String s -> bprintf f "L_String %S" s
-  | L_Label (s, d) -> bprintf f "L_Label (%S, %d)" s d
+  | L_Label s -> bprintf f "L_Label %S" s
 
 let subprogram_type_to_string = function
   | ST_Function -> "ST_Function"
@@ -123,6 +123,8 @@ let rec pp_expr =
         bprintf f "E_Cond (%a, %a, %a)" pp_expr e1 pp_expr e2 pp_expr e3
     | E_GetArray (e1, e2) ->
         bprintf f "E_GetArray (%a, %a)" pp_expr e1 pp_expr e2
+    | E_GetEnumArray (e1, e2) ->
+        bprintf f "E_GetEnumArray (%a, %a)" pp_expr e1 pp_expr e2
     | E_GetField (e, x) -> bprintf f "E_GetField (%a, %S)" pp_expr e x
     | E_GetFields (e, x) ->
         bprintf f "E_GetFields (%a, %a)" pp_expr e (pp_list pp_string) x
@@ -135,6 +137,9 @@ let rec pp_expr =
     | E_Array { length; value } ->
         bprintf f "E_Array { length=(%a); value=(%a) }" pp_expr length pp_expr
           value
+    | E_EnumArray { enum; labels; value } ->
+        bprintf f "E_EnumArray { enum=%S; labels=(%a); value=(%a) }" enum
+          (pp_list pp_string) labels pp_expr value
     | E_Arbitrary ty -> bprintf f "E_Arbitrary (%a)" pp_ty ty
     | E_Pattern (e, p) -> bprintf f "E_Pattern (%a, %a)" pp_expr e pp_pattern p
   in
@@ -200,7 +205,8 @@ and pp_ty =
 
 and pp_array_length f = function
   | ArrayLength_Expr e -> bprintf f "ArrayLength_Expr (%a)" pp_expr e
-  | ArrayLength_Enum (s, i) -> bprintf f "ArrayLength_Enum (%S, %i)" s i
+  | ArrayLength_Enum (enum, labels) ->
+      bprintf f "ArrayLength_Enum (%s, %a)" enum (pp_list pp_string) labels
 
 and pp_bitfield f = function
   | BitField_Simple (name, slices) ->
@@ -233,6 +239,8 @@ let rec pp_lexpr =
         bprintf f "LE_Slice (%a, %a)" pp_lexpr le pp_slice_list args
     | LE_SetArray (le, e) ->
         bprintf f "LE_SetArray (%a, %a)" pp_lexpr le pp_expr e
+    | LE_SetEnumArray (le, e) ->
+        bprintf f "LE_SetEnumArray (%a, %a)" pp_lexpr le pp_expr e
     | LE_SetField (le, x) -> bprintf f "LE_SetField (%a, %S)" pp_lexpr le x
     | LE_SetFields (le, x, _) ->
         bprintf f "LE_SetFields (%a, %a)" pp_lexpr le (pp_list pp_string) x

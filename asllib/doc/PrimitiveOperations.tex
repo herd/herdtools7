@@ -1290,13 +1290,13 @@ of \texttt{width} bits.
 \subsubsection{Operators Over Label Values \label{sec:LabelOperations}}
 \begin{mathpar}
 \inferrule[eq\_label]{}{
-  \binopliterals(\overname{\EQOP}{\op}, \overname{\llabel(a, \Ignore)}{\vvone}, \overname{\llabel(b, \Ignore)}{\vvtwo}) \typearrow \overname{\lbool(a = b)}{\vr}
+  \binopliterals(\overname{\EQOP}{\op}, \overname{\llabel(a)}{\vvone}, \overname{\llabel(b)}{\vvtwo}) \typearrow \overname{\lbool(a = b)}{\vr}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[ne\_label]{}{
-  \binopliterals(\overname{\NEQ}{\op}, \overname{\llabel(a, \Ignore)}{\vvone}, \overname{\llabel(b, \Ignore)}{\vvtwo}) \typearrow \overname{\lbool(a \neq b)}{\vr}
+  \binopliterals(\overname{\NEQ}{\op}, \overname{\llabel(a)}{\vvone}, \overname{\llabel(b)}{\vvtwo}) \typearrow \overname{\lbool(a \neq b)}{\vr}
 }
 \end{mathpar}
 
@@ -1598,8 +1598,8 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[label\_rel]{
-  \binopliterals(\op, \llabel(a, i_a), \llabel(b, i_b)) \typearrow \lbool(c)
+  \binopliterals(\op, \llabel(a), \llabel(b)) \typearrow \lbool(c)
 }{
-  \binoprel(\op, \overname{\llabel(a, i_a)}{\vvone}, \overname{\llabel(b, i_b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
+  \binoprel(\op, \overname{\llabel(a)}{\vvone}, \overname{\llabel(b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
 }
 \end{mathpar}

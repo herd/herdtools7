@@ -386,26 +386,27 @@ We use the following rule notation, where $P_{1..k}$ are the rule premises and $
 For example, the rule TypingRule.ELit has one premise:
 \begin{mathpar}
 \inferrule{
-  \textsf{annotate\_literal}(\vv) \typearrow \vt
+  \annotateliteral{\vv} \typearrow \vt
 }{
-  \texttt{annotate\_expr}(\tenv, \ELiteral(\vv)) \typearrow (\vt, \ELiteral(\vv))
+  \annotateexpr{\tenv, \ELiteral(\vv)} \typearrow (\vt, \ELiteral(\vv))
 }
 \end{mathpar}
 
-and the rule TypingRule.Binop (somewhat simplified here) has three premises:
+and the rule \nameref{sec:TypingRule.Binop} (somewhat simplified here) has three premises:
 \begin{mathpar}
-  \inferrule{
-    \texttt{annotate\_expr}(\tenv, \veone) \typearrow (\vtone, \veone') \\\\
-    \texttt{annotate\_expr}(\tenv, \vetwo) \typearrow (\vttwo, \vetwo') \\\\
-    \texttt{check\_binop}(\tenv, \op, \vtone, \vttwo) \typearrow \vt
-    }
-  {\texttt{annotate\_expr}(\tenv, \EBinop(\op, \veone, \vetwo)) \typearrow (\vt, \EBinop(\op, \veone', \vetwo'))}
+\inferrule{
+  \annotateexpr{\tenv, \veone} \typearrow (\vtone, \veone') \\\\
+  \annotateexpr{\tenv, \vetwo} \typearrow (\vttwo, \vetwo') \\\\
+  \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \vt
+}{
+  \annotateexpr{\tenv, \EBinop(\op, \veone, \vetwo)} \typearrow (\vt, \EBinop(\op, \veone', \vetwo'))
+}
 \end{mathpar}
 
 The free variables appearing in the premises and conclusion are interpreted \underline{universally}.
 That is, the rules apply to any values (of the appropriate types) assigned to their free variables.
 %
-For example, the rule TypingRule.Binop applies to any choice of values for the free variables
+For example, the rule \nameref{sec:TypingRule.Binop} applies to any choice of values for the free variables
 $\tenv$ (a static environment),
 $\veone$, $\vetwo$, $\veone'$, $\vetwo'$ (expressions),
 $\vt$, $\vtone$, and $\vttwo$ (types).
@@ -415,14 +416,15 @@ Assertions can be \emph{grounded} by substituting their free variables with valu
 A \emph{ground rule} is a rule with all its assertions (premises and conclusion) grounded.
 \end{definition}
 For example,
-the following is a grounding of TypingRule.Binop
+the following is a grounding of \nameref{sec:TypingRule.Binop}
 \begin{mathpar}
-  \inferrule{
-    \texttt{annotate\_expr}(\emptytenv, \ELiteral(\lint(2))) \typearrow (\TInt, \ELiteral(\lint(2))) \\\\
-    \texttt{annotate\_expr}(\emptytenv, \ELiteral(\lint(3))) \typearrow (\TInt, \ELiteral(\lint(3))) \\\\
-    \texttt{check\_binop}(\emptytenv, \MUL, \TInt, \TInt) \typearrow \TInt
-    }
-  {\texttt{annotate\_expr}(\emptytenv, \EBinop(\MUL, \ELiteral(\lint(2)), \ELiteral(\lint(3)))) \typearrow \\ (\TInt, \EBinop(\MUL, \ELiteral(\lint(2)), \ELiteral(\lint(3))))}
+\inferrule{
+  \annotateexpr{\emptytenv, \ELiteral(\lint(2))} \typearrow (\TInt, \ELiteral(\lint(2))) \\\\
+  \annotateexpr{\emptytenv, \ELiteral(\lint(3))} \typearrow (\TInt, \ELiteral(\lint(3))) \\\\
+  \applybinoptypes(\emptytenv, \MUL, \TInt, \TInt) \typearrow \TInt
+}{
+  \annotateexpr{\emptytenv, \EBinop(\MUL, \ELiteral(\lint(2)), \ELiteral(\lint(3)))} \typearrow \\ (\TInt, \EBinop(\MUL, \ELiteral(\lint(2)), \ELiteral(\lint(3))))
+}
 \end{mathpar}
 obtained by the following substitutions:
 \begin{tabular}{ll}
@@ -447,15 +449,15 @@ An \emph{axiom} is a rule with an empty set of premises.
 An axiom is denoted by simply stating its conclusion.
 \end{definition}
 
-An example of an axiom in the ASL type system is TypingRule.SPass:
+An example of an axiom in the ASL type system is \nameref{sec:TypingRule.SPass}:
 \begin{mathpar}
-  \inferrule{}{\texttt{annotate\_stmt}(\tenv, \SPass) \typearrow (\SPass,\tenv)}
+\inferrule{}{\annotatestmt(\tenv, \SPass) \typearrow (\SPass,\tenv)}
 \end{mathpar}
 \hypertarget{SemanticsRule.PAll-example}{}
 An example of an axiom in the ASL semantics is SemanticsRule.PAll:
 \begin{mathpar}
 \inferrule{}{
-  \texttt{eval\_pattern}(\texttt{env}, \Ignore, \PatternAll) \evalarrow \textsf{Normal}(\texttt{Bool}(\True), \emptyset_{\textsf{g}})
+  \evalpattern{\env, \Ignore, \PatternAll} \evalarrow \Normal(\nvbool(\True), \emptygraph)
 }
 \end{mathpar}
 
@@ -471,9 +473,6 @@ the set of semantic rules, we must apply rules to form a \emph{derivation tree}.
   corresponding to the ground premises of the same rule.
 \end{definition}
 
-% TODO: point to the example in the semantics reference
-% when all references are joined into a single document.
-
 \subsection{Transitions\label{sec:transitions}}
 
 We use rules as a structured way for defining relations (and therefore functions, as a special case).
@@ -487,9 +486,9 @@ A set of rules $M$ with transition assertions defines the relation
     R = \{ (x,y) \;|\; x \rulearrow y \text{ can be derived from rules in } M\} \enspace.
 \]
 
-For example, the rule \hyperlink{TypingRule.ELit}{TypingRule.ELit} defines a relation
+For example, the rule \nameref{sec:TypingRule.ELit} defines a relation
 between the infinite set of elements of the form
-$\texttt{annotate\_expr}(\tenv, \ELiteral(\vv))$ (for the
+$\annotateexpr{\tenv, \ELiteral(\vv)}$ (for the
 infinite choice of values for the free variables $\tenv$ and
 $\vv$) to the infinite set of pairs of the form $(\vt,
 \ELiteral(\vv))$, such that the premise holds.
@@ -514,11 +513,11 @@ The domain of a configuration $C=L(\ldots)$, denoted $\configdomain{C}$, is the 
 We refer to configurations at the origin of a transition as \emph{input configurations} and to the
 configurations at the destination of a transition as \emph{output transitions}.
 
-For example, the conclusion of the rule TypingRule.ELit has \\
-$\texttt{annotate\_expr}(\tenv, \ELiteral(\vv))$ as its input configuration
+For example, the conclusion of the rule \nameref{sec:TypingRule.ELit} has \\
+$\annotateexpr{\tenv, \ELiteral(\vv)}$ as its input configuration
 and $(\vt, \ELiteral(\vv))$ as its output configuration.
 Further, \\
-$\configdomain{\texttt{annotate\_expr}(\tenv, \ELiteral(\vv))} = \texttt{annotate\_expr}$,
+$\configdomain{\annotateexpr{\tenv, \ELiteral(\vv)}} = \textit{annotate\_expr}$,
 while the output configuration does not have a configuration domain, since it is an unlabelled pair.
 
 Our rules always make use of labelled input configurations. This makes it easier to ensure

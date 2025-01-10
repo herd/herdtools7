@@ -624,11 +624,13 @@
 \newcommand\ESlice[0]{\hyperlink{ast-eslice}{\textsf{E\_Slice}}}
 \newcommand\ECond[0]{\hyperlink{ast-econd}{\textsf{E\_Cond}}}
 \newcommand\EGetArray[0]{\hyperlink{ast-egetarray}{\textsf{E\_GetArray}}}
+\newcommand\EGetEnumArray[0]{\hyperlink{ast-egetenumarray}{\textsf{E\_GetEnumArray}}}
 \newcommand\EGetField[0]{\hyperlink{ast-egetfield}{\textsf{E\_GetField}}}
 \newcommand\EGetItem[0]{\hyperlink{ast-egetitem}{\textsf{E\_GetItem}}}
 \newcommand\EGetFields[0]{\hyperlink{ast-getfields}{\textsf{E\_GetFields}}}
 \newcommand\ERecord[0]{\hyperlink{ast-erecord}{\textsf{E\_Record}}}
 \newcommand\EArray[0]{\hyperlink{ast-earray}{\textsf{E\_Array}}}
+\newcommand\EEnumArray[0]{\hyperlink{ast-eenumarray}{\textsf{E\_EnumArray}}}
 \newcommand\ETuple[0]{\hyperlink{ast-etuple}{\textsf{E\_Tuple}}}
 \newcommand\EArbitrary[0]{\hyperlink{ast-earbitrary}{\textsf{E\_Arbitrary}}}
 \newcommand\EPattern[0]{\hyperlink{ast-epattern}{\textsf{E\_Pattern}}}
@@ -638,6 +640,7 @@
 \newcommand\LEVar[0]{\hyperlink{ast-levar}{\textsf{LE\_Var}}}
 \newcommand\LESlice{\hyperlink{ast-leslice}{\textsf{LE\_Slice}}}
 \newcommand\LESetArray[0]{\hyperlink{ast-lesetarray}{\textsf{LE\_SetArray}}}
+\newcommand\LESetEnumArray[0]{\hyperlink{ast-lesetenumarray}{\textsf{LE\_SetEnumArray}}}
 \newcommand\LESetField[0]{\hyperlink{ast-lesetfield}{\textsf{LE\_SetField}}}
 \newcommand\LESetFields[0]{\hyperlink{ast-lesetfields}{\textsf{LE\_SetFields}}}
 \newcommand\LEDestructuring[0]{\hyperlink{ast-ledestructuring}{\textsf{LE\_Destructuring}}}
@@ -927,6 +930,7 @@
 \newcommand\Forbody[0]{\text{body}}
 \newcommand\Forlimit[0]{\text{limit}}
 \newcommand\EArrayLength[0]{\text{length}}
+\newcommand\EArrayLabels[0]{\text{labels}}
 \newcommand\EArrayValue[0]{\text{value}}
 \newcommand\callname[0]{\text{name}}
 \newcommand\callparams[0]{\text{params}}
@@ -989,6 +993,7 @@
 \newcommand\nvbool[0]{\hyperlink{def-nvbool}{\texttt{Bool}}}
 \newcommand\nvreal[0]{\hyperlink{nv-real}{\texttt{Real}}}
 \newcommand\nvstring[0]{\hyperlink{def-nvstring}{\texttt{String}}}
+\newcommand\nvlabel[0]{\hyperlink{def-nvlabel}{\texttt{Label}}}
 \newcommand\nvbitvector[0]{\hyperlink{def-nvbitvector}{\texttt{Bitvector}}}
 \newcommand\tint[0]{\hyperlink{def-tint}{\mathcal{Z}}}
 \newcommand\tbool[0]{\hyperlink{def-tbool}{\mathcal{B}}}
@@ -997,6 +1002,7 @@
 \newcommand\tbitvector[0]{\hyperlink{def-tbitvector}{\mathcal{B}\mathcal{V}}}
 \newcommand\tvector[0]{\hyperlink{def-tvector}{\mathcal{V}\mathcal{E}\mathcal{C}}}
 \newcommand\trecord[0]{\hyperlink{def-trecord}{\mathcal{R}\mathcal{E}\mathcal{C}}}
+\newcommand\tlabel[0]{\hyperlink{def-tlabel}{\mathcal{L}\mathcal{A}\mathcal{B}\mathcal{E}\mathcal{L}}}
 
 \newcommand\evalrel[0]{\hyperlink{def-evalrel}{\textsf{eval}}}
 \newcommand\evalarrow[0]{\xrightarrow{\evalrel}}
@@ -1951,6 +1957,7 @@
 \newcommand\ety[0]{\texttt{e\_ty}}
 \newcommand\etuple[0]{\texttt{e\_tuple}}
 \newcommand\evalue[0]{\texttt{e\_value}}
+\newcommand\ekey[0]{\texttt{e\_key}}
 \newcommand\ewidth[0]{\texttt{e\_width}}
 \newcommand\ewidthone[0]{\texttt{e\_width1}}
 \newcommand\ewidthp[0]{\texttt{e\_width'}}
@@ -2100,6 +2107,8 @@
 \newcommand\newldis[0]{\texttt{new\_ldis'}}
 \newcommand\newle[0]{\texttt{new\_le}}
 \newcommand\newli[0]{\texttt{new\_li}}
+\newcommand\newleint[0]{\texttt{new\_le\_int}}
+\newcommand\newleenum[0]{\texttt{new\_le\_enum}}
 \newcommand\newlocalstoragetypes[0]{\texttt{new\_local\_storagetypes}}
 \newcommand\newmbv[0]{\texttt{new\_m\_bv}}
 \newcommand\newname[0]{\texttt{new\_name}}
@@ -2385,6 +2394,9 @@
 \newcommand\vendv[0]{\texttt{end\_v}}
 \newcommand\vezero[0]{\texttt{e0}}
 \newcommand\veone[0]{\texttt{e1}}
+\newcommand\venum[0]{\texttt{enum}}
+\newcommand\venumone[0]{\texttt{enum1}}
+\newcommand\venumtwo[0]{\texttt{enum2}}
 \newcommand\veoneopt[0]{\texttt{e1\_opt}}
 \newcommand\vetwoopt[0]{\texttt{e2\_opt}}
 \newcommand\vzoneopt[0]{\texttt{z1\_opt}}
@@ -2421,6 +2433,7 @@
 \newcommand\vfsthree[0]{\texttt{fs3}}
 \newcommand\vfactor[0]{\texttt{v\_factor}}
 \newcommand\vfield[0]{\texttt{field}}
+\newcommand\vfieldinits[0]{\texttt{field\_inits}}
 \newcommand\vfieldassignasts[0]{\texttt{field\_assign\_asts}}
 \newcommand\vfieldassigns[0]{\texttt{field\_assigns}}
 \newcommand\vfieldasts[0]{\texttt{field\_asts}}
@@ -2478,7 +2491,10 @@
 \newcommand\vk[0]{\texttt{k}}
 \newcommand\vkeyword[0]{\texttt{keyword}}
 \newcommand\vl[0]{\texttt{l}}
+\newcommand\vlabel[0]{\texttt{label}}
 \newcommand\vlabels[0]{\texttt{labels}}
+\newcommand\vlabelsone[0]{\texttt{labels1}}
+\newcommand\vlabelstwo[0]{\texttt{labels2}}
 \newcommand\vlastindex[0]{\texttt{last\_index}}
 \newcommand\vle[0]{\texttt{le}}
 \newcommand\vlelist[0]{\texttt{le\_list}}

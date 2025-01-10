@@ -245,7 +245,8 @@ let rec use_e e =
   | E_Literal _ -> Fun.id
   | E_ATC (e, ty) -> use_ty ty $ use_e e
   | E_Var x -> ISet.add x
-  | E_GetArray (e1, e2) | E_Binop (_, e1, e2) -> use_e e1 $ use_e e2
+  | E_GetArray (e1, e2) | E_GetEnumArray (e1, e2) | E_Binop (_, e1, e2) ->
+      use_e e1 $ use_e e2
   | E_Unop (_op, e) -> use_e e
   | E_Call { name; args; params } -> ISet.add name $ use_es params $ use_es args
   | E_Slice (e, slices) -> use_e e $ use_slices slices
@@ -256,6 +257,7 @@ let rec use_e e =
   | E_Record (ty, li) -> use_ty ty $ use_fields li
   | E_Tuple es -> use_es es
   | E_Array { length; value } -> use_e length $ use_e value
+  | E_EnumArray { labels; value } -> use_list ISet.add labels $ use_e value
   | E_Arbitrary t -> use_ty t
   | E_Pattern (e, p) -> use_e e $ use_pattern p
 
@@ -337,7 +339,7 @@ and use_le le =
   | LE_Var x -> ISet.add x
   | LE_Destructuring les -> List.fold_right use_le les
   | LE_Discard -> Fun.id
-  | LE_SetArray (le, e) -> use_le le $ use_e e
+  | LE_SetArray (le, e) | LE_SetEnumArray (le, e) -> use_le le $ use_e e
   | LE_SetField (le, _) | LE_SetFields (le, _, _) -> use_le le
   | LE_Slice (le, slices) -> use_slices slices $ use_le le
 
@@ -381,7 +383,7 @@ let literal_equal v1 v2 =
   | L_BitVector _, _ -> false
   | L_String s1, L_String s2 -> String.equal s1 s2
   | L_String _, _ -> false
-  | L_Label (l1, _), L_Label (l2, _) -> String.equal l1 l2
+  | L_Label l1, L_Label l2 -> String.equal l1 l2
   | L_Label _, _ -> false
 
 let rec expr_equal eq e1 e2 =
@@ -410,6 +412,9 @@ let rec expr_equal eq e1 e2 =
   | E_GetArray (e11, e21), E_GetArray (e12, e22) ->
       expr_equal eq e11 e12 && expr_equal eq e21 e22
   | E_GetArray _, _ | _, E_GetArray _ -> false
+  | E_GetEnumArray (e11, e21), E_GetEnumArray (e12, e22) ->
+      expr_equal eq e11 e12 && expr_equal eq e21 e22
+  | E_GetEnumArray _, _ | _, E_GetEnumArray _ -> false
   | E_GetField (e1', f1), E_GetField (e2', f2) ->
       String.equal f1 f2 && expr_equal eq e1' e2'
   | E_GetField _, _ | _, E_GetField _ -> false
@@ -427,6 +432,10 @@ let rec expr_equal eq e1 e2 =
   | E_Array { length = l1; value = v1 }, E_Array { length = l2; value = v2 } ->
       expr_equal eq l1 l2 && expr_equal eq v1 v2
   | E_Array _, _ | _, E_Array _ -> false
+  | ( E_EnumArray { labels = l1; value = v1 },
+      E_EnumArray { labels = l2; value = v2 } ) ->
+      list_equal String.equal l1 l2 && expr_equal eq v1 v2
+  | E_EnumArray _, _ | _, E_EnumArray _ -> false
   | E_ATC (e1, t1), E_ATC (e2, t2) -> expr_equal eq e1 e2 && type_equal eq t1 t2
   | E_ATC _, _ | _, E_ATC _ -> false
   | E_Unop (o1, e1), E_Unop (o2, e2) -> o1 = o2 && expr_equal eq e1 e2
@@ -463,7 +472,8 @@ and constraints_equal eq cs1 cs2 =
 and array_length_equal eq l1 l2 =
   match (l1, l2) with
   | ArrayLength_Expr e1, ArrayLength_Expr e2 -> expr_equal eq e1 e2
-  | ArrayLength_Enum (s1, _), ArrayLength_Enum (s2, _) -> String.equal s1 s2
+  | ArrayLength_Enum (enum1, _), ArrayLength_Enum (enum2, _) ->
+      String.equal enum1 enum2
   | ArrayLength_Enum (_, _), ArrayLength_Expr _
   | ArrayLength_Expr _, ArrayLength_Enum (_, _) ->
       false
@@ -588,6 +598,7 @@ let expr_of_lexpr : lexpr -> expr =
     | LE_Var x -> E_Var x
     | LE_Slice (le, args) -> E_Slice (map_desc aux le, args)
     | LE_SetArray (le, e) -> E_GetArray (map_desc aux le, e)
+    | LE_SetEnumArray (le, e) -> E_GetEnumArray (map_desc aux le, e)
     | LE_SetField (le, x) -> E_GetField (map_desc aux le, x)
     | LE_SetFields (le, x, _) -> E_GetFields (map_desc aux le, x)
     | LE_Discard -> E_Var "-"
@@ -703,6 +714,7 @@ let rec subst_expr substs e =
           call_type;
         }
   | E_GetArray (e1, e2) -> E_GetArray (tr e1, tr e2)
+  | E_GetEnumArray (e1, e2) -> E_GetEnumArray (tr e1, tr e2)
   | E_GetField (e, x) -> E_GetField (tr e, x)
   | E_GetFields (e, fields) -> E_GetFields (tr e, fields)
   | E_GetItem (e, i) -> E_GetItem (tr e, i)
@@ -714,6 +726,8 @@ let rec subst_expr substs e =
   | E_Tuple es -> E_Tuple (List.map tr es)
   | E_Array { length; value } ->
       E_Array { length = tr length; value = tr value }
+  | E_EnumArray { enum; labels; value } ->
+      E_EnumArray { enum; labels; value = tr value }
   | E_ATC (e, t) -> E_ATC (tr e, t)
   | E_Arbitrary _ -> e.desc
   | E_Unop (op, e) -> E_Unop (op, tr e)
@@ -724,8 +738,11 @@ let rec is_simple_expr e =
   | E_Var _ | E_Literal _ | E_Arbitrary _ -> true
   | E_Array { length = e1; value = e2 }
   | E_GetArray (e1, e2)
+  | E_GetEnumArray (e1, e2)
   | E_Binop (_, e1, e2) ->
       is_simple_expr e1 && is_simple_expr e2
+  | E_EnumArray { value = e }
+  | E_ATC (e, _)
   | E_GetFields (e, _)
   | E_GetField (e, _)
   | E_GetItem (e, _)
@@ -739,7 +756,7 @@ let rec is_simple_expr e =
       is_simple_expr e && List.for_all is_simple_slice slices
   | E_Record (_, fields) ->
       List.for_all (fun (_name, e) -> is_simple_expr e) fields
-  | E_ATC (_, _) | E_Call _ -> false
+  | E_Call _ -> false
 
 and is_simple_slice = function
   | Slice_Length (e1, e2) | Slice_Range (e1, e2) | Slice_Star (e1, e2) ->
@@ -788,6 +805,7 @@ let rename_locals map_name ast =
     | E_Slice (e', slices) -> E_Slice (map_e e', map_slices slices)
     | E_Cond (e1, e2, e3) -> E_Cond (map_e e1, map_e e2, map_e e3)
     | E_GetArray (e1, e2) -> E_GetArray (map_e e1, map_e e2)
+    | E_GetEnumArray (e1, e2) -> E_GetEnumArray (map_e e1, map_e e2)
     | E_GetField (e', f) -> E_GetField (map_e e', f)
     | E_GetFields (e', li) -> E_GetFields (map_e e', li)
     | E_GetItem (e', i) -> E_GetItem (map_e e', i)
@@ -795,6 +813,8 @@ let rename_locals map_name ast =
     | E_Tuple li -> E_Tuple (map_es li)
     | E_Array { length; value } ->
         E_Array { length = map_e length; value = map_e value }
+    | E_EnumArray { enum; labels; value } ->
+        E_EnumArray { enum; labels; value = map_e value }
     | E_Pattern (_, _) -> failwith "Not yet implemented: obfuscate patterns"
   and map_es li = List.map map_e li
   and map_slices slices = List.map map_slice slices
@@ -858,6 +878,7 @@ let rename_locals map_name ast =
     | LE_Var x -> LE_Var (map_name x)
     | LE_Slice (le, slices) -> LE_Slice (map_le le, map_slices slices)
     | LE_SetArray (le, i) -> LE_SetArray (map_le le, map_e i)
+    | LE_SetEnumArray (le, i) -> LE_SetEnumArray (map_le le, map_e i)
     | LE_SetField (le, f) -> LE_SetField (map_le le, f)
     | LE_SetFields (le, f, annot) -> LE_SetFields (map_le le, f, annot)
     | LE_Destructuring les -> LE_Destructuring (List.map map_le les)

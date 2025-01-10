@@ -1,0 +1,15 @@
+ASL enum-arrays
+{}
+type Enum of enumeration {A, B, C};
+type Arr of array[Enum] of integer;
+func main () => integer
+begin
+  var arr: Arr;
+  println(arr);
+  arr[[A]] = 32;
+  arr[[B]] = 64;
+  arr[[C]] = 128;
+  assert 2 * arr[[A]] + arr[[B]] == arr[[C]];
+  println(arr);
+  return 0;
+end;
