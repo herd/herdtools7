@@ -1517,8 +1517,8 @@ All of the following apply:
   \item $\ve$ denotes an array access expression, $\EGetArray(\earray, \eindex)$;
   \item the evaluation of $\earray$ in $\env$ is $\Normal(\marray, \envone)$\ProseOrAbnormal;
   \item the evaluation of $\eindex$ in $\env$ is  $\Normal(\mindex, \newenv)$\ProseOrAbnormal
-  \item $\marray$ consists of the native vector $\varray$ and execution graph $\vgone$;
-  \item $\mindex$ consists of the native integer $\vindex$ and execution graph $\vgtwo$;
+  \item $\marray$ consists of the native value $\varray$ and execution graph $\vgone$;
+  \item $\mindex$ consists of the native value $\vindex$ and execution graph $\vgtwo$;
   \item $\vindex$ is the native literal for the label $\vl$;
   \item accessing the field $\vl$ of $\varray$, which is a native record value, yields $\vv$;
   \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
@@ -3139,8 +3139,7 @@ All of the following apply:
         that is, \\
         $\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \evalue\}$;
   \item evaluating the expression $\evalue$ in $\env$ yields $\Normal((\vvalue, \vg), \newenv)$\ProseOrAbnormal;
-  \item \Proseeqdef{$\vv$}{the native record mapping each label $\vl\in\vlabels$ to $\vvalue$};
-  \item define $\vg$ as the parallel composition of $\vgone$ and $\vgtwo$.
+  \item \Proseeqdef{$\vv$}{the native record mapping each label $\vl\in\vlabels$ to $\vvalue$}.
 \end{itemize}
 
 \subsubsection{Formally}

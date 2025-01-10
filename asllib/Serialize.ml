@@ -137,9 +137,9 @@ let rec pp_expr =
     | E_Array { length; value } ->
         bprintf f "E_Array { length=(%a); value=(%a) }" pp_expr length pp_expr
           value
-    | E_EnumArray { labels; value } ->
-        bprintf f "E_EnumArray { labels=(%a); value=(%a) }" (pp_list pp_string)
-          labels pp_expr value
+    | E_EnumArray { enum; labels; value } ->
+        bprintf f "E_EnumArray { enum=%S; labels=(%a); value=(%a) }" enum
+          (pp_list pp_string) labels pp_expr value
     | E_Arbitrary ty -> bprintf f "E_Arbitrary (%a)" pp_ty ty
     | E_Pattern (e, p) -> bprintf f "E_Pattern (%a, %a)" pp_expr e pp_pattern p
   in

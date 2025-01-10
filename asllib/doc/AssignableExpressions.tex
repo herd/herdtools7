@@ -820,7 +820,7 @@ All of the following apply:
         $\True$\ProseOrTypeError;
   \item \Prosenonconflictingunion{$\vsesbase$ and $\vsesindex$}{$\vses$};
   \item \Proseeqdef{$\newle$}{
-    an integer-based array update for $\ebasep$ at index $\eindexp$, that is, \\ $\LESetArray(\ebasep, \eindexp)$,
+    an integer-based array update for $\ebasep$ at index $\eindexp$, that is, $\LESetArray(\ebasep, \eindexp)$,
     if $\size$ is an integer-typed array index, and
     an enumeration-based array update for $\ebasep$ at index $\eindexp$, that is, \\ $\LESetEnumArray(\ebasep, \eindexp)$,
     if $\size$ is an enumeration-typed array index.
@@ -919,9 +919,9 @@ All of the following apply:
   \item evaluating the right-hand-side expression corresponding to $\rearray$ in $\env$
   is \Normal(\rmarray, \envone)\ProseOrAbnormal;
   \item evaluating $\eindex$ in $\envone$ is \Normal(\mindex, \envtwo)\ProseOrAbnormal;
-  \item $\mindex$ consists of the native label $\vindex$ and the execution graph $\vgone$;
+  \item $\mindex$ consists of the native value $\vindex$ and the execution graph $\vgone$;
   \item $\vindex$ is the native label for $\vl$;
-  \item $\rmarray$ consists of the native vector $\rvarray$ and the execution graph $\vgtwo$;
+  \item $\rmarray$ consists of the native value $\rvarray$ and the execution graph $\vgtwo$;
   \item setting the value $\vv$ of field $\vl$ of $\rvarray$ is the native record $\vvone$;
   \item $\vmone$ is the pair consisting of $\vvone$ and the parallel composition of $\vgone$ and $\vgtwo$;
   \item the steps so far computed the updated array, but have not assigned it to the variable

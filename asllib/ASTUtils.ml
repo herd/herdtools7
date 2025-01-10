@@ -257,9 +257,7 @@ let rec use_e e =
   | E_Record (ty, li) -> use_ty ty $ use_fields li
   | E_Tuple es -> use_es es
   | E_Array { length; value } -> use_e length $ use_e value
-  | E_EnumArray { labels; value } ->
-      (fun init -> List.fold_left (fun acc lab -> ISet.add lab acc) init labels)
-      $ use_e value
+  | E_EnumArray { labels; value } -> use_list ISet.add labels $ use_e value
   | E_Arbitrary t -> use_ty t
   | E_Pattern (e, p) -> use_e e $ use_pattern p
 
@@ -474,8 +472,8 @@ and constraints_equal eq cs1 cs2 =
 and array_length_equal eq l1 l2 =
   match (l1, l2) with
   | ArrayLength_Expr e1, ArrayLength_Expr e2 -> expr_equal eq e1 e2
-  | ArrayLength_Enum (enum1, labels1), ArrayLength_Enum (enum2, labels2) ->
-      String.equal enum1 enum2 && list_equal String.equal labels1 labels2
+  | ArrayLength_Enum (enum1, _), ArrayLength_Enum (enum2, _) ->
+      String.equal enum1 enum2
   | ArrayLength_Enum (_, _), ArrayLength_Expr _
   | ArrayLength_Expr _, ArrayLength_Enum (_, _) ->
       false
