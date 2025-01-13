@@ -43,7 +43,7 @@ All of the following apply:
     \item \Proseaslparse{$\vstdtokens$}{$\vstdparse$\ProseTerminateAs{\ParseError}};
     \item \Prosebuildast{$\vstdparse$}{$\vstdast$\ProseTerminateAs{\BuildErrorConfig}};
     \item define $\vstdasbuiltin$ by applying $\setbuiltin$ to each top-level declaration in\\
-          $\vstdast$\ProseOrTypeError;
+          $\vstdast$\ProseTerminateAs{\BuildErrorConfig};
     %%%%%
     \item \Proseaslscan{$\vspectext$}{$\spectoken$}{$\vspectokens$\ProseTerminateAs{\LexicalError}};
     \item \Proseaslparse{$\vspectokens$}{$\vspecparse$\ProseTerminateAs{\ParseError}};
@@ -61,7 +61,7 @@ All of the following apply:
     \aslscan(\spectoken, \vstdtext) \scanarrow \vstdtokens \terminateas \LexicalError\\\\
     \aslparse(\vstdtokens) \parsearrow \vstdparse \terminateas \ParseError\\\\
     \buildast(\vstdparse) \astarrow \vstdast \terminateas \BuildErrorConfig\\\\
-    \vi \in \listrange(\vstdast): \setbuiltin(\vstdast_i) \typearrow \vstddeclast_i \OrTypeError\\\\
+    \vi \in \listrange(\vstdast): \setbuiltin(\vstdast_i) \typearrow \vstddeclast_i \terminateas \BuildErrorConfig\\\\
     \vstdasbuiltin \eqdef [\vi \in \listrange(\vstdast): \vstddeclast_i]\\
     \aslscan(\spectoken, \vspectext) \scanarrow \vspectokens \terminateas \LexicalError\\\\
     \aslparse(\vspectokens) \parsearrow \vspecparse \terminateas \ParseError\\\\
@@ -74,16 +74,16 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SetBuiltin\label{sec:TypingRule.SetBuiltin}}
+\subsubsection{ASTRule.SetBuiltin\label{sec:ASTRule.SetBuiltin}}
 The helper function
 \hypertarget{def-setbuiltin}{}
 \[
   \setbuiltin(\overname{\decl}{\vdecl}) \aslto
   \overname{\decl}{\vdeclp}
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \cup \overname{\TBuildError}{\BuildErrorConfig}
 \]
 sets the $\funcbuiltin$ flag of a top-level function declaration, which is used to identify standard library functions in \secref{TypingRule.InsertStdlibParam}.
-It produces a type error when given a top-level declaration which is not a function.
+It produces a build error when given a top-level declaration which is not a function.
 
 \subsubsection{Prose}
 All of the following apply:
@@ -97,10 +97,10 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \checktrans{\astlabel(\vdecl) = \DFunc}{\BuiltinExpectedToBeFunction} \typearrow \True \OrTypeError\\\\
+  \checktrans{\astlabel(\vdecl) = \DFunc}{\BuiltinExpectedToBeFunction} \typearrow \True \terminateas \BuildErrorConfig\\\\
   \vdecl \eqname \DFunc(\funcsig)\\
   \funcsigp \eqdef \funcsig[\funcbuiltin \mapsto \True]
 }{
-  \setbuiltin(\vdecl) \typearrow \DFunc(\funcsigp)
+  \setbuiltin(\vdecl) \astarrow \DFunc(\funcsigp)
 }
 \end{mathpar}
