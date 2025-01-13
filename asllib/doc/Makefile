@@ -29,6 +29,7 @@ ASLReference.pdf: control\
 	$(LATEX) ASLReference.tex
 	$(BIBTEX) ASLReference
 	$(LATEX) ASLReference.tex
+	python3 doclint.py
 
 ASLASTLines.tex: ../AST.mli
 	$(BENTO) $< > $@

@@ -35,6 +35,7 @@ Context-free grammars consist of a list of \emph{derivations} $N \derives S^*$
 where $N$ is a non-terminal symbol and $S$ is a list of non-terminal symbols and terminal symbols,
 which correspond to tokens.
 We refer to a list of such symbols as a \emph{sentence}.
+\hypertarget{def-emptysentence}{}
 A special form of a sentence is the \emph{empty sentence}, written $\emptysentence$.
 
 As commonly done, we aggregate all derivations associated with the same non-terminal symbol
@@ -198,6 +199,7 @@ We define the following parametric productions for various types of lists and op
 
 \paragraph{Non-empty Comma-separated Trailing List}
 \hypertarget{def-tclist}{}
+\hypertarget{def-ntclist}{}
 \begin{flalign*}
 \NTClist{x}   \derives\ & x \parsesep \option{\Tcomma} &\\
                           |\  & x \parsesep \Tcomma \parsesep \NTClist{x}
@@ -377,12 +379,6 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
           |\              & \Twhen \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
 \end{flalign*}
 
-\hypertarget{def-nloo}{}
-\begin{flalign*}
-\Ncatcher \derives      \ & \Twhen \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
-          |\              & \Twhen \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
-\end{flalign*}
-
 \hypertarget{def-nlooplimit}{}
 \begin{flalign*}
 \Nlooplimit \derives    \ & \Tlooplimit \parsesep \Nexpr &\\
@@ -449,7 +445,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 |\ & \Tidentifier \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket \parsesep \Nnestedfields &
 \end{flalign*}
 
-\hypertarget{def-nnested-fields}{}
+\hypertarget{def-nnestedfields}{}
 \begin{flalign*}
 \Nnestedfields \derives\ & \emptysentence \;|\; \Tdot \parsesep \Tidentifier \parsesep \Nnestedfields &
 \end{flalign*}
@@ -680,8 +676,11 @@ A \emph{parse tree} has one of the following forms:
 \begin{definition}[Well-formed Parse Trees]
 A parse tree is \emph{well-formed} if its root is labelled by the start non-terminal ($\Nspec$ for ASL)
 and each non-terminal node $N(n_{1..k})$ corresponds to a grammar derivation
-$N \derives l_{1..k}$ where $l_i$ is the label of node $n_i$ if it is a non-terminal node and $n_i$
-itself when it is a token.
+$N \derives l_{1..k}$ where for each $i \in 1..k$ either:
+\begin{itemize}
+   \item $n_i$ is a non-terminal node and $l_i$ is its label;
+   \item $n_i$ is a token and $l_i$ is equal to $n_i$.
+\end{itemize}
 A non-terminal node $N(\epsilonnode)$ is well-formed if the grammar includes a derivation
 $N \derives \emptysentence$.
 \end{definition}

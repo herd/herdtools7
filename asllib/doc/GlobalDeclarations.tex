@@ -63,7 +63,6 @@ The relation
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\hypertarget{build-globalpragma}{}
 \begin{mathpar}
 \inferrule[global\_pragma]{
   \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
@@ -259,6 +258,7 @@ All of the following apply:
 
 \subsubsection{TypingRule.ControlFlowFromStmt\label{sec:TypingRule.ControlFlowFromStmt}}
 \hypertarget{def-controlflowsymbolterm}{}
+\hypertarget{def-controlflowstate}{}
 We define \controlflowsymbolterm\ as follows:
 \[
   \controlflowstate \eqdef \{\assertednotinterrupt, \interrupt, \maynotinterrupt\}

@@ -683,25 +683,25 @@ module Make (B : Backend.S) (C : Config) = struct
           *)
           fatal_from loc Error.UnrespectedParserInvariant
       | T_Bits (e, _) ->
-          (* The call to [eval_expr_sef] is safe because Typing.annotate_type
+          (* The call to [eval_expr_sef] is justified since annotate_type
              checks that all expressions on which a type depends are statically
              evaluable, i.e. side-effect-free. *)
           let* v' = eval_expr_sef env e and* v_length = B.bitvector_length v in
           B.binop EQ_OP v_length v'
       | T_Int (WellConstrained constraints) ->
-          (* The calls to [eval_expr_sef] is safe because Typing.annotate_type
+          (* The calls to [eval_expr_sef] are justified since annotate_type
              checks that all expressions on which a type depends are statically
-             evaluable, i.e. side-effect-free. *)
-          let map_constraint = function
+             evaluable, i.e., side-effect-free. *)
+          let is_constraint_sat = function
             | Constraint_Exact e ->
                 let* v' = eval_expr_sef env e in
-                B.binop EQ_OP v v'
+                B.binop EQ_OP v v' |: SemanticsRule.IsConstraintSat
             | Constraint_Range (e1, e2) ->
                 let* v1 = eval_expr_sef env e1 and* v2 = eval_expr_sef env e2 in
                 let* c1 = B.binop LEQ v1 v and* c2 = B.binop LEQ v v2 in
-                B.binop BAND c1 c2
+                B.binop BAND c1 c2 |: SemanticsRule.IsConstraintSat
           in
-          List.map map_constraint constraints |> big_or
+          List.map is_constraint_sat constraints |> big_or
       | T_Tuple tys ->
           let fold (i, prev) ty' =
             let m =
@@ -809,15 +809,18 @@ module Make (B : Backend.S) (C : Config) = struct
             fatal_from le Error.TypeInferenceNeeded
         in
         let*^ rm_record, env1 = expr_of_lexpr le_record |> eval_expr env in
+        (* AssignBitvectorFields( *)
         let m2 =
           List.fold_left2
             (fun m1 field_name (i1, i2) ->
               let slice = [ (B.v_of_int i1, B.v_of_int i2) ] in
-              let* v = m >>= B.read_from_bitvector slice and* rv_record = m1 in
-              B.set_field field_name v rv_record)
+              let* v_record_slices = m >>= B.read_from_bitvector slice
+              and* rv_record = m1 in
+              B.set_field field_name v_record_slices rv_record)
             rm_record fields slices
+          (* AssignBitvectorFields) *)
         in
-        eval_lexpr ver le_record env1 m2 |: SemanticsRule.LESetField
+        eval_lexpr ver le_record env1 m2 |: SemanticsRule.LESetFields
   (* End *)
 
   (* Evaluation of Expression Lists *)
@@ -877,7 +880,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let false_ = B.v_of_literal (L_Bool false) |> return in
     let disjunction = big_op false_ (B.binop BOR)
     and conjunction = big_op true_ (B.binop BAND) in
-    (* The calls to [eval_expr_sef] are safe because Typing.annotate_pattern
+    (* The calls to [eval_expr_sef] are justified since annotate_pattern
        checks that all expressions on which a type depends are statically
        evaluable, i.e. side-effect-free. *)
     fun p ->

@@ -79,10 +79,14 @@ We divide side effects by \emph{\timeframesterm}, which indicate the phase where
 Formally, \timeframesterm\ are totally ordered via $\timeframeless$ as follows:
 \hypertarget{def-timeframetype}{}
 \hypertarget{def-timeframeless}{}
+\hypertarget{def-timeframeconstant}{}
+\hypertarget{def-timeframeexecution}{}
+\hypertarget{def-timeframeconfig}{}
 \[
 \TTimeFrame \triangleq \{ \timeframeconstant \timeframeless \timeframeconfig \timeframeless \timeframeexecution \}
 \]
 Additionally, we define the less-than-or-equal ordering as follows:
+\hypertarget{def-timeframeleq}{}
 \[
 f \timeframeleq f' \triangleq f \timeframeless f' \lor f = f' \enspace.
 \]

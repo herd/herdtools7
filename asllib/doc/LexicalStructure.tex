@@ -81,7 +81,7 @@ is a comment (\ascii{10} is the line feed character \verb|\n|).
 \end{itemize}
 Comments do not nest and the two styles of comments do not interact with each other.
 
-\hypertarget{def-recomment}{}
+\hypertarget{def-relinecomment}{}
 \begin{center}
 \begin{tabular}{rcl}
 $\RElinecomment$  &$\triangleq$& \texttt{"//"} (\REchar\ \texttt{-} \ascii{10})* \texttt{|} \texttt{"/*"} \REchar* \texttt{"*/"}\\
@@ -279,6 +279,7 @@ where each pair $(r_i,a_i)$ consists of a lexical regular expression $r_i$
 and a \emph{lexeme action} $a_i : \Strings\times\Strings \aslto \Token^*$.
 \end{definition}
 
+\hypertarget{def-rematch}{}
 The function
 \[
 \remaxmatch : \overname{\RegExp}{e} \times \overname{\Strings}{s} \aslto (\overname{\Strings}{s_1} \times \overname{\Strings}{s_2}) \cup \{\bot\}
@@ -288,6 +289,7 @@ More precisely:
 $\remaxmatch(e, s) = (s_1,s_2)$ means that $s_1\in\Lang(e)$ and $s = s_1 \concat s_2$.
 If no match exists, it is indicated by returning $\bot$.
 
+\hypertarget{def-maxmatch}{}
 The function $\maxmatches : \overname{\LexSpec}{R} \times \overname{\Strings}{s} \aslto \overname{\LexSpec}{R'}$
 returns the sublist of $R$ consisting of pairs whose maximal matches for $s$ are equal. Importantly, the result sublist $R'$ maintains
 the order of pairs in $R$. If all expressions in $R$ do not match (that is $\remaxmatch$ returns $\bot$ for all pairs in $R$), then $R'$ is the empty list.
@@ -349,6 +351,7 @@ we define the following lexeme actions:
 \begin{itemize}
 \item
 The lexeme action
+\hypertarget{def-discard}{}
 \[
 \actiondiscard(s_1, s_2) \triangleq \aslscan(\spectoken, s_2)
 \]

@@ -1,5 +1,6 @@
 \chapter{Expressions\label{chap:Expressions}}
 
+\hypertarget{def-rhsexpression}{}
 Expressions calculate values.
 Expressions can have side effects and can raise exceptions and, therefore, there are constraints on the evaluation
 order and on the side-effects/exceptions to avoid surprising or unpredictable behavior (see \secref{PriorityAndAssociativity}).
@@ -990,6 +991,9 @@ evaluate either \texttt{3} or \texttt{Return42()} depending on how
 \texttt{ARBITRARY} is implemented.
 
 \subsubsection{SemanticsRule.ECond \label{sec:SemanticsRule.ECond}}
+% Transliteration note: the code uses an optimized semantics for the case where
+% true and false sub-expressions do not contain function calls. Since this is an
+% optimization, we do not document it.
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1466,7 +1470,7 @@ All of the following apply:
 \subsubsection{Example}
 In the specification:
 \ASLExample{\semanticstests/SemanticsRule.EGetArray.asl}
-the expression \texttt{my\_array[2]} appearing in the assertion evaluates to the value \texttt{42} since the element
+the expression \texttt{my\_array[[2]]} appearing in the assertion evaluates to the value \texttt{42} since the element
 indexed by \texttt{2} in \texttt{my\_array} is \texttt{42}.
 
 \subsubsection{Example}
@@ -1689,12 +1693,12 @@ All of the following apply:
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
+  \vtetwo \eqname \TBits(\Ignore, \bitfields)\\\\
   {
     \begin{array}{r}
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \\ \langle \BitFieldNested(\Ignore, \slices, \bitfieldsp)\rangle
     \end{array}
-  }\\
+  }\\\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
   \annotateexpr{\tenv, \vethree} \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\\\\
   \vtefour \eqname \TBits(\width, \Ignore)\\
@@ -1868,28 +1872,38 @@ All of the following apply:
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\ve$ is a multi-field access expression for the base expression $\veone$ and list of fields $\vfields$,
-      that is, $\EGetFields(\veone, \vfields)$;
-  \item \Proseannotateexpr{$\tenv$}{$\veone$}{\\ $(\vtetwo, \vetwo, \vsesone)$}\ProseOrTypeError;
+  \item $\ve$ is a multi-field access expression for the base expression $\ebase$ and list of fields $\vfields$,
+        that is, $\EGetFields(\ebase, \vfields)$;
+  \item \Proseannotateexpr{$\tenv$}{$\ebase$}{\\ $(\tbaseannot, \vetwo, \vsesbase)$}\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\tbaseannot$ in $\tenv$ yields \\
+        $\tbaseannotanon$\ProseOrTypeError;
   \item One of the following applies:
   \begin{itemize}
     \item All of the following apply (\textsc{bits}):
     \begin{itemize}
-      \item obtaining the \underlyingtype\ of $\vtetwo$ in $\tenv$ yields a bitvector type with list of bitfields $\vbitfields$\ProseOrTypeError;
-      \item applying $\findbitfieldsslices$ to each field name $\name$ in $\vfields$ yields \\
+      \item $\tbaseannotanon$ is a bitvector type with list of bitfields $\vbitfields$\ProseOrTypeError;
+      \item applying $\findbitfieldsslices$ to each field name $\name$ and list of bitfields $\vbitfields$ in $\vfields$ yields \\
             $\vslices_\name$\ProseOrTypeError;
-      \item define $\vep$ as the slicing expression for $\veone$ and lists of slices $\vslices_\name$, for each $\name$ in $\vfields$;
-      \item \Proseannotateexpr{$\tenv$}{$\vep$}{\\ $(\vt, \newe, \vses)$}\ProseOrTypeError.
+      \item define $\veslice$ as the slicing expression for $\ebase$ and lists of slices $\vslices_\name$, for each $\name$ in $\vfields$;
+      \item \Proseannotateexpr{$\tenv$}{$\veslice$}{\\ $(\vt, \newe, \vses)$}\ProseOrTypeError.
     \end{itemize}
 
     \item All of the following apply (\textsc{record}):
     \begin{itemize}
-      \item obtaining the \underlyingtype\ of $\vtetwo$ in $\tenv$ yields a record type with list of field initializers $\tfields$\ProseOrTypeError;
-      \item applying $\getbitfieldwidth$ to $\vf$ in $\tfields$ and $\tfields$, for each $\vf$ in $\tfields$, in $\tenv$ yields $\ewidth_\vf$\ProseOrTypeError;
-      \item applying $\widthplus$ to the list of expressions $\ewidth_\vf$, for each $\vf$ in $\tfields$, yields $\vw$\ProseOrTypeError;
-      \item define $\vt$ as the bitvector type with width $\vw$ and an empty list of bitfields;
-      \item define $\ve$ as the multi-field access for $\vetwo$ and list of fields $\tfields$;
-      \item define $\vses$ as $\vsesone$.
+      \item $\tbaseannotanon$ is a record type with list of fields $\vbasefields$\ProseOrTypeError;
+      \item applying $\getbitfieldwidth$ to $\vf$ in $\vbasefields$ and $\vbasefields$, for each $\vf$ in $\vbasefields$, in $\tenv$ yields $\ewidth_\vf$\ProseOrTypeError;
+      \item applying $\widthplus$ to the list of expressions $\ewidth_\vf$,
+            for each $\vf$ in $\vbasefields$, yields $\veslicewidth$\ProseOrTypeError;
+      \item define $\vt$ as the bitvector type with width $\veslicewidth$ and an empty list of bitfields;
+      \item define $\ve$ as the multi-field access for $\ebaseannot$ and list of fields \\
+            $\vbasefields$;
+      \item define $\vses$ as $\vsesbase$.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{error}):
+    \begin{itemize}
+      \item $\tbaseannotanon$ is neither a bitvector type nor a record type;
+      \item the result is a type error indicating an unexpected type.
     \end{itemize}
   \end{itemize}
 \end{itemize}
@@ -1897,27 +1911,27 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[bits]{
-  \annotateexpr{\tenv, \veone} \typearrow (\vtetwo, \vetwo, \vsesone) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vtetwo) \typearrow \TBits(\Ignore, \vbitfields) \OrTypeError\\\\
-  \name\in\vfields: \findbitfieldsslices(\name) \typearrow \vslices_\name \OrTypeError\\\\
-  \vep \eqdef \ESlice(\veone, [\name\in\vfields: \vslices_\name])\\
-  \annotateexpr{\tenv, \vep} \typearrow (\vt, \newe, \vses) \OrTypeError
+  \annotateexpr{\tenv, \ebase} \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\\\\
+  \makeanonymous(\tenv, \tbaseannot) \typearrow \TBits(\Ignore, \vbitfields) \OrTypeError\\\\
+  \name\in\vfields: \findbitfieldsslices(\name, \vbitfields) \typearrow \vslices_\name \OrTypeError\\\\
+  \veslice \eqdef \ESlice(\ebase, [\name\in\vfields: \vslices_\name])\\
+  \annotateexpr{\tenv, \veslice} \typearrow (\vt, \newe, \vses) \OrTypeError
 }{
-  \annotateexpr{\tenv, \overname{\EGetFields(\veone, \vfields)}{\ve}} \typearrow (\vt, \newe, \vses)
+  \annotateexpr{\tenv, \overname{\EGetFields(\ebase, \vfields)}{\ve}} \typearrow (\vt, \newe, \vses)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[record]{
-  \annotateexpr{\tenv, \veone} \typearrow (\vtetwo, \vetwo, \vsesone) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vtetwo) \typearrow \TRecord(\tfields) \OrTypeError\\\\
-  \vf \in \tfields: \getbitfieldwidth(\tenv, \vf, \tfields) \typearrow \ewidth_\vf \OrTypeError\\\\
-  \widthplus(\tenv, [\vf \in \tfields: \ewidth_\vf]) \typearrow \vw\OrTypeError
+  \annotateexpr{\tenv, \ebase} \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\\\\
+  \makeanonymous(\tenv, \tbaseannot) \typearrow \TRecord(\vbasefields) \OrTypeError\\\\
+  \vf \in \vbasefields: \getbitfieldwidth(\tenv, \vf, \tfields) \typearrow \ewidth_\vf \OrTypeError\\\\
+  \widthplus(\tenv, [\vf \in \vbasefields: \ewidth_\vf]) \typearrow \veslicewidth\OrTypeError
 }{
   {
   \begin{array}{r}
-    \annotateexpr{\tenv, \overname{\EGetFields(\veone, \vfields)}{\ve}} \typearrow \\
-    (\overname{\TBits(\vw, \emptylist)}{\vt}, \overname{\EGetFields(\vetwo, \vfields)}{\newe}, \overname{\vsesone}{\vses})
+    \annotateexpr{\tenv, \overname{\EGetFields(\ebase, \vfields)}{\ve}} \typearrow \\
+    (\overname{\TBits(\veslicewidth, \emptylist)}{\vt}, \overname{\EGetFields(\ebaseannot, \vfields)}{\newe}, \overname{\vsesbase}{\vses})
   \end{array}
   }
 }
@@ -1925,11 +1939,11 @@ All of the following apply:
 
 \begin{mathpar}
 \inferrule[error]{
-  \annotateexpr{\tenv, \veone} \typearrow (\vtetwo, \vetwo, \vsesone) \OrTypeError\\\\
-  \makeanonymous(\tenv, \veone) \typearrow \vtetwoanon \OrTypeError\\\\
-  \astlabel(\vtetwoanon) \not\in \{\TBits, \TRecord\}
+  \annotateexpr{\tenv, \veone} \typearrow (\tbaseannot, \ebaseannot, \Ignore) \OrTypeError\\\\
+  \makeanonymous(\tenv, \tbaseannot) \typearrow \tbaseannotanon \OrTypeError\\\\
+  \astlabel(\tbaseannotanon) \not\in \{\TBits, \TRecord\}
 }{
-  \annotateexpr{\tenv, \overname{\EGetFields(\veone, \vfields)}{\ve}} \typearrow \TypeErrorVal{}
+  \annotateexpr{\tenv, \overname{\EGetFields(\veone, \vfields)}{\ve}} \typearrow \TypeErrorVal{UnexpectedType}
 }
 \end{mathpar}
 \CodeSubsection{\EGetFieldsBegin}{\EGetFieldsEnd}{../Typing.ml}
@@ -2200,7 +2214,7 @@ All of the following apply:
   \checkatc(\tenv, \vtstruct, \vtystruct) \typearrow \True \OrTypeError\\\\
   \vsesp \eqdef \vsesty \cup \vsese \cup \{\PerformsAssertions\}\\
   \subtypesat(\tenv, \vtstruct, \vtystruct) \typearrow \vallwayssucceeds \OrTypeError\\\\
-  (\newe, \vses) \eqdef \choice{\vallwayssucceeds}{(\vepp, \vsese)}{(\EATC(\ttyp, \vepp), \vsesp)}
+  (\newe, \vses) \eqdef \choice{\vallwayssucceeds}{(\vepp, \vsese)}{(\EATC(\vepp, \ttyp), \vsesp)}
 }{
   \annotateexpr{\tenv, \overname{\EATC(\vep, \tty)}{\ve}} \typearrow (\overname{\ttyp}{\vt}, \newe, \vses)
 }
@@ -2373,7 +2387,7 @@ All of the following apply:
 \and
 \inferrule[error]{
   \evalexpr{\env, \veone} \evalarrow \Normal((\vv, \Ignore), \Ignore)\\
-  \neg\isvaloftype(\env, \vv, \vt) \evalarrow (\vb, \Ignore)\\
+  \isvaloftype(\env, \vv, \vt) \evalarrow (\vb, \Ignore)\\
   \vb \eqname \nvbool(\False)
 }{
   \evalexpr{\env, \EATC(\veone, \vt)} \evalarrow \DynamicErrorVal{\DynamicTypeAssertionFailure}
@@ -2389,7 +2403,7 @@ The relation
   \isvaloftype(\overname{\envs}{\env} \aslsep \overname{\vals}{\vv} \aslsep \overname{\ty}{\vt}) \;\aslrel\;
   (\overname{\Bool}{\vb} \times \overname{\XGraphs}{\vg}) \cup \overname{\TDynError}{\DynErrorConfig}
 \]
-checks whether the value $\vv$ can be stored in a variable of type $\vt$ in the environment $\env$,
+tests whether the value $\vv$ can be stored in a variable of type $\vt$ in the environment $\env$,
 resulting in a Boolean value $\vb$ and execution graph $\vg$ or a dynamic error.
 
 This relation is used in the context of a asserted type conversion,
@@ -2397,6 +2411,9 @@ which means the type-checker rule \nameref{sec:TypingRule.ATC} was already appli
 thus filtering cases where the type inferred for the converted expression
 does not type-satisfy $\vt$. The semantics takes this into account and
 only returns \False\ in cases where dynamic information is required.
+
+Recall that the $\vt$ is the result of $\annotatetype$, which ensures that
+all sub-expressions appearing in $\vt$ are side-effect-free.
 
 One of the following applies:
 \begin{itemize}
@@ -2423,6 +2440,14 @@ One of the following applies:
     yields a Boolean value $\vb_i$ and an execution graph $\vg_i$\ProseOrError;
     \item $\vb$ is the Boolean disjunction of all Boolean values $\vb_i$, for $i=1..k$;
     \item $\vg$ is the parallel composition of all execution graphs $\vg_i$, for $i=1..k$;
+  \end{itemize}
+
+  \item All of the following apply (\textsc{bits}):
+  \begin{itemize}
+    \item $\vt$ is a bitvector type with expression $\ve$, that is, $\TBits(\ve, \Ignore)$;
+    \item $\vv$ is a native bitvector value for the sequence of bits $\vbits$, that is, \\ $\nvbitvector(\vbits)$;
+    \item evaluating the side-effect-free expression $\ve$ in $\env$ yields $\Normal(\vvp, \vg)$\ProseOrError;
+    \item \Proseeqdef{$\vb$}{$\True$ if and only if $\vvp$ is equal to the number of bits in $\vbits$}.
   \end{itemize}
 
   \item All of the following apply (\textsc{tuple}):
@@ -2452,45 +2477,10 @@ One of the following applies:
 }
 \end{mathpar}
 
-\hypertarget{def-integerconstraintsatisfied}{}
-To handle \emph{well-constrained integers} (integers with a non-empty list of constraints),
-we introduce the helper relation
-\[
-  \integerconstraintsatisfied(\overname{\envs}{\env} \aslsep \overname{\intconstraint}{\vc} \aslsep \overname{\Z}{n}) \;\aslrel\;
-  (\overname{\Bool}{\vb} \times \overname{\XGraphs}{\vg})
-\]
-which checks whether the integer value $n$ \emph{meets the constraint} $\vc$
-(that is, whether $n$ is within the range of values defined by $\vc$) in the environment $\env$
-and returns a Boolean answer $\vb$ and the execution graph $\vg$ resulting from evaluating
-the expressions appearing in $\vc$:
-\begin{mathpar}
-\inferrule[Constraint\_Exact\_Sat]{
-  \evalexprsef{\env, \ve} \evalarrow (\nvint(m), \vg) \OrDynError\\\\
-  \vb \eqdef m = n
-}
-{
-  \integerconstraintsatisfied(\env, \constraintexact(\ve), n) \evalarrow (\vb, \vg)
-}
-\and
-\inferrule[Constraint\_Range\_Sat]{
-  \evalexprsef{\env, \veone} \evalarrow (\nvint(a), \vgone) \OrDynError\\\\
-  \evalexprsef{\env, \vetwo} \evalarrow (\nvint(b), \vgtwo) \OrDynError\\\\
-  \vb \eqdef \choice{a \leq n \wedge n \leq b}{\True}{\False}\\
-  \vg \eqdef \vgone \parallelcomp \vgtwo
-}
-{
-  \integerconstraintsatisfied(\env, \constraintrange(\veone, \vetwo), n) \evalarrow (\vb, \vg)
-}
-\end{mathpar}
-
-The use of $\evalexprsef$ is justified by checks in $\annotatetype$ verifying
-that expressions in types are side-effect-free.
-
-Finally, we can check whether an integer value satisfies any of the constraints:
 \begin{mathpar}
 \inferrule[int\_wellconstrained]{
   \vv \eqname \nvint(n)\\
-  i=1..k: \integerconstraintsatisfied(\env, \vc_i, n) \evalarrow (\vb_i, \vg_i) \OrDynError\\\\
+  i=1..k: \isconstaintsat(\env, \vc_i, n) \evalarrow (\vb_i, \vg_i) \OrDynError\\\\
   \vb \eqdef \bigvee_{i=1}^k \vb_i\\
   \vg \eqdef \parallel_{i=1}^k \vg_i
 }{
@@ -2499,11 +2489,20 @@ Finally, we can check whether an integer value satisfies any of the constraints:
 \end{mathpar}
 
 \begin{mathpar}
+\inferrule[bits]{
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\vvp, \vg) \OrDynError
+}{
+  \isvaloftype(\env, \overname{\nvbitvector(\vbits)}{\vv}, \overname{\TBits(\ve, \Ignore)}{\vt}) \evalarrow
+  (\overname{\vvp = |\vbits|}{\vb}, \vg)
+}
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[tuple]{
   i=1..k: \getindex(i, \vv) \evalarrow \vu_i\\
   i=1..k: \isvaloftype(\env, \vu_i, \vt_i) \evalarrow (\vb_i, \vg_i) \OrDynError\\\\
   \vb \eqdef \bigwedge_{i=1}^k \vb_i \\
-  \vg \eqdef \parallel_{i=1}^k \vg_i
+  \vg \eqdef\ \parallelcomp_{i=1}^k \vg_i
 }{
   \isvaloftype(\env, \vv, \overname{\TTuple(i=1..k: \vt_i)}{\vt}) \evalarrow (\vb, \vg)
 }
@@ -2521,6 +2520,64 @@ cannot appear as a type, since ASL syntax does not allow the following:
 \item Declaring an alias to an parameterized integer type, and
 \item Declaring an parameterized integer in a compound type.
 \end{itemize}
+
+\subsubsection{SemanticsRule.IsConstraintSat}
+\hypertarget{def-isconstraintsat}{}
+The helper relation
+\[
+  \isconstaintsat(\overname{\envs}{\env} \aslsep \overname{\intconstraint}{\vc} \aslsep \overname{\Z}{n}) \;\aslrel\;
+  (\overname{\Bool}{\vb} \times \overname{\XGraphs}{\vg})
+\]
+tests whether the integer value $n$ \emph{satisfies the constraint} $\vc$
+(that is, whether $n$ is within the range of values defined by $\vc$) in the environment $\env$
+and returns a Boolean answer $\vb$ and the execution graph $\vg$ resulting from evaluating
+the expressions appearing in $\vc$.
+
+\subsubsection{Prose}
+One of the following applies:
+\begin{itemize}
+  \item All of the following apply (\textsc{Constraint\_Exact\_Sat}):
+  \begin{itemize}
+    \item $\vc$ is a constraint for the expression $\ve$;
+    \item evaluating the side-effect-free expression $\ve$ in $\env$ yields the \concurrentnativevalue\ given
+          by the native integer value for $m$ and the \executiongraph\ $\vg$\ProseOrError.
+    \item \Proseeqdef{$\vb$}{$\True$ if and only if $m$ is equal to $n$}.
+  \end{itemize}
+
+  \item All of the following apply (\textsc{Constraint\_Range\_Sat}):
+  \begin{itemize}
+    \item $\vc$ is a constraint for the expressions $\veone$ and $\vetwo$;
+    \item evaluating the side-effect-free expression $\veone$ in $\env$ yields the \concurrentnativevalue\ given
+          by the native integer value for $a$ and the \executiongraph\ $\vgone$\ProseOrError.
+    \item evaluating the side-effect-free expression $\vetwo$ in $\env$ yields the \concurrentnativevalue\ given
+          by the native integer value for $b$ and the \executiongraph\ $\vgtwo$\ProseOrError.
+    \item \Proseeqdef{$\vb$}{$\True$ if and only if $n$ is greater or equal to $a$ and less than or equal to $b$};
+    \item \Proseeqdef{$\vg$}{the parallel composition of $\vgone$ and $\vgtwo$}.
+  \end{itemize}
+\end{itemize}
+
+\subsubsection{Formally}
+The use of $\evalexprsef$ is justified by checks in $\annotatetype$, verifying
+that expressions appearing in types are all side-effect-free.
+
+\begin{mathpar}
+\inferrule[Constraint\_Exact\_Sat]{
+  \evalexprsef{\env, \ve} \evalarrow (\nvint(m), \vg) \OrDynError
+}{
+  \isconstaintsat(\env, \overname{\constraintexact(\ve)}{\vc}, n) \evalarrow (\overname{m = n}{\vb}, \vg)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[Constraint\_Range\_Sat]{
+  \evalexprsef{\env, \veone} \evalarrow (\nvint(a), \vgone) \OrDynError\\\\
+  \evalexprsef{\env, \vetwo} \evalarrow (\nvint(b), \vgtwo) \OrDynError\\\\
+  \vb \eqdef \choice{a \leq n \wedge n \leq b}{\True}{\False}\\
+  \vg \eqdef \vgone \parallelcomp \vgtwo
+}{
+  \isconstaintsat(\env, \overname{\constraintrange(\veone, \vetwo)}{\vc}, n) \evalarrow (\vb, \vg)
+}
+\end{mathpar}
 
 \section{Pattern Matching Expressions\label{sec:PatternMatchingExpressions}}
 The binary operator $\Tin$ tests whether a value (referred to as the discriminant) matches any item from a $\Npatternset$.

@@ -1306,70 +1306,57 @@ of \texttt{width} bits.
 \hypertarget{def-unoprel}{}
 The function
 \[
-  \unoprel(\overname{\unop}{\op} \aslsep \overname{\vals}{\vv}) \aslto \overname{\vals}{\vw}
+  \unoprel(\overname{\unop}{\op} \aslsep \overname{\vals}{\vv}) \aslto \overname{\vals}{\vw} \cup \TDynError
 \]
-evaluates a unary operator $\op$ over a \nativevalue\  $\vv$ and returns the \nativevalue\  $\vw$.
+evaluates a unary operator $\op$ over a \nativevalue\  $\vv$ and returns the \nativevalue\  $\vw$ or an error.
 
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{negate\_int}):
+  \item All of the following apply (\textsc{ok}):
   \begin{itemize}
-    \item $\op$ is $\NEG$ and $\vv$ is a literal integer for $n$;
-    \item statically evaluating $\NEG$ on the literal integer for $n$ yields the
-          literal integer for $m$;
-    \item $\vw$ is the native integer value for $m$.
+    \item $\vv$ is a literal native value, that is, $\nvliteral{l}$;
+    \item statically evaluating $\op$ on the literal $l$ yields a literal $l'$;
+    \item $\vw$ is the native literal value for $l'$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{negate\_real}):
+  \item All of the following apply (\textsc{static\_error}):
   \begin{itemize}
-    \item $\op$ is $\NEG$ and $\vv$ is a literal real for $p$;
-    \item statically evaluating $\NEG$ on the literal real for $n$ yields the
-          literal real for $q$;
-    \item $\vw$ is the native real value for $q$.
+    \item $\vv$ is a literal native value, that is, $\nvliteral{l}$;
+    \item statically evaluating $\op$ on $l$ yields a type error with message $m$;
+    \item the result is a dynamic error with message $m$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{not\_bool}):
+  \item All of the following apply (\textsc{non\_literal}):
   \begin{itemize}
-    \item $\op$ is $\BNOT$ and $\vv$ is a literal Boolean for $b$;
-    \item statically evaluating $\BNOT$ on the literal Boolean for $b$ yields the
-          literal real for $c$;
-    \item $\vw$ is the native Boolean value for $c$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{not\_bits}):
-  \begin{itemize}
-    \item $\op$ is $\NOT$ and $\vv$ is a literal bitvector for $\bits$;
-    \item statically evaluating $\NOT$ on the literal bitvector for $\bits$ yields the
-          literal bitvector for $c$;
-    \item $\vw$ is the native bitvector value for $c$.
+    \item $\vv$ is not a literal native value;
+    \item the result is a dynamic error indicating the mismatch.
   \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[negate\_int]{
-  \unopliterals(\NEG, \lint(n)) \typearrow \lint(m)
+\inferrule[ok]{
+  \unopliterals(\op, l) \typearrow l' \\
+  l' \neq \TypeErrorVal{\Ignore}
 }{
-  \unoprel(\overname{\NEG}{\op}, \overname{\nvint(n)}{\vv}) \evalarrow \overname{\nvint(m)}{\vw}
+  \unoprel(\op, \overname{\nvliteral{l}}{\vv}) \evalarrow \overname{\nvliteral{l'}}{\vw}
 }
-\and
-\inferrule[negate\_real]{
-  \unopliterals(\NEG, \lreal(p)) \typearrow \lreal(q)
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[static\_error]{
+  \unopliterals(\op, l) \typearrow \TypeErrorVal{m} \\
 }{
-  \unoprel(\overname{\NEG}{\op}, \overname{\nvreal(p)}{\vv}) \evalarrow \overname{\nvreal(q)}{\vw}
+  \unoprel(\op, \overname{\nvliteral{l}}{\vv}) \evalarrow \TypeErrorVal{m}
 }
-\and
-\inferrule[not\_bool]{
-  \unopliterals(\BNOT, \lbool(b)) \typearrow \lreal(c)
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_literal]{
+  \astlabel(\vv) \neq \nvliterallabel
 }{
-  \unoprel(\overname{\BNOT}{\op}, \overname{\nvbool(b)}{\vv}) \evalarrow \overname{\nvbool(c)}{\vw}
-}
-\and
-\inferrule[not\_bits]{
-  \unopliterals(\NOT, \lbitvector(\bits)) \typearrow \lbitvector(c)
-}{
-  \unoprel(\overname{\NOT}{\op}, \overname{\nvbitvector(\bits)}{\vv}) \evalarrow \overname{\nvbitvector(c)}{\vw}
+  \unoprel(\op, \vv) \evalarrow \DynamicErrorVal{TypeMismatch}
 }
 \end{mathpar}
 
@@ -1378,7 +1365,7 @@ One of the following applies:
 The function
 \[
   \binoprel(\overname{\binop}{\op} \aslsep \overname{\vals}{\vvone} \aslsep \overname{\vals}{\vvtwo})
-  \aslto \overname{\vals}{\vr} \cup \TDynError
+  \aslto \overname{\vals}{\vw} \cup \TDynError
 \]
 evaluates a binary operator $\op$ over a pair of \nativevalues\  --- $\vvone$ and $\vvtwo$ --- and returns the
 \nativevalue\  $\vw$ or an error.
@@ -1386,220 +1373,51 @@ evaluates a binary operator $\op$ over a pair of \nativevalues\  --- $\vvone$ an
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{int\_arith}):
+  \item All of the following apply (\textsc{ok}):
   \begin{itemize}
-    \item $\vvone$ is a literal integer for $a$;
-    \item $\vvtwo$ is a literal integer for $b$;
-    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal integer for $c$;
-    \item $\vr$ is the native integer value for $c$.
+    \item $\vvone$ is a literal native value, that is, $\nvliteral{l_1}$;
+    \item $\vvtwo$ is a literal native value, that is, $\nvliteral{l_2}$;
+    \item statically evaluating $\op$ on the literals $l_1$ and $l_2$ yields a literal $l'$;
+    \item $\vw$ is the native literal value for $l'$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{int\_rel}):
+  \item All of the following apply (\textsc{static\_error}):
   \begin{itemize}
-    \item $\vvone$ is a literal integer for $a$;
-    \item $\vvtwo$ is a literal integer for $b$;
-    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal Boolean for $c$;
-    \item $\vr$ is the native Boolean value for $c$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{int\_error}):
-  \begin{itemize}
-    \item $\vvone$ is a literal integer for $a$;
-    \item $\vvtwo$ is a literal integer for $b$;
-    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields a type error with message $m$;
+    \item $\vvone$ is a literal native value, that is, $\nvliteral{l_1}$;
+    \item $\vvtwo$ is a literal native value, that is, $\nvliteral{l_2}$;
+    \item statically evaluating $\op$ on the literals $l_1$ and $l_2$ yields a type error with message $m$;
     \item the result is a dynamic error with message $m$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{bool\_okay}):
+  \item All of the following apply (\textsc{non\_literal}):
   \begin{itemize}
-    \item $\vvone$ is a literal Boolean for $a$;
-    \item $\vvtwo$ is a literal Boolean for $b$;
-    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal Boolean for $c$;
-    \item $\vr$ is the native Boolean value for $c$.
+    \item either $\vvone$ or $\vvtwo$ is not a literal native value;
+    \item the result is a dynamic error indicating the mismatch.
   \end{itemize}
-
-  \item All of the following apply (\textsc{bool\_error}):
-  \begin{itemize}
-    \item $\vvone$ is a literal Boolean for $a$;
-    \item $\vvtwo$ is a literal Boolean for $b$;
-    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields a type error with message $m$;
-    \item the result is a dynamic error with message $m$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{real\_arith\_okay}):
-  \begin{itemize}
-    \item $\vvone$ is a literal real for $a$;
-    \item $\vvtwo$ is a literal real for $b$;
-    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal real for $c$;
-    \item $\vr$ is the native real value for $c$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{real\_rel\_okay}):
-  \begin{itemize}
-    \item $\vvone$ is a literal real for $a$;
-    \item $\vvtwo$ is a literal real for $b$;
-    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal Boolean for $c$;
-    \item $\vr$ is the native Boolean value for $c$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{real\_rel\_error}):
-  \begin{itemize}
-    \item $\vvone$ is a literal real for $a$;
-    \item $\vvtwo$ is a literal real for $b$;
-    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields a type error with message $m$;
-    \item the result is a dynamic error with message $m$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{bitvector\_rel\_okay}):
-  \begin{itemize}
-    \item $\vvone$ is a literal bitvector for $a$;
-    \item $\vvtwo$ is a literal bitvector for $b$;
-    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal Boolean for $c$;
-    \item $\vr$ is the native Boolean value for $c$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{bitvector\_rel\_error}):
-  \begin{itemize}
-    \item $\vvone$ is a literal bitvector for $a$;
-    \item $\vvtwo$ is a literal bitvector for $b$;
-    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields a type error with message $m$;
-    \item the result is a dynamic error with message $m$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{bitvector\_bits\_okay}):
-  \begin{itemize}
-    \item $\vvone$ is a literal bitvector for $a$;
-    \item $\vvtwo$ is a literal bitvector for $b$;
-    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal bitvector for $c$;
-    \item $\vr$ is the native bitvector value for $c$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{bitvector\_bits\_error}):
-  \begin{itemize}
-    \item $\vvone$ is a literal bitvector for $a$;
-    \item $\vvtwo$ is a literal bitvector for $b$;
-    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields a type error with message $m$;
-    \item the result is a dynamic error with message $m$.
-  \end{itemize}
-  \item All of the following apply (\textsc{string\_rel}):
-  \begin{itemize}
-    \item $\vvone$ is a literal string for $a$;
-    \item $\vvtwo$ is a literal string for $b$;
-    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal Boolean for $c$;
-    \item $\vr$ is the native Boolean value for $c$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{label\_rel}):
-  \begin{itemize}
-    \item $\vvone$ is a literal label for $a$;
-    \item $\vvtwo$ is a literal label for $b$;
-    \item statically evaluating $\op$ on $\vvone$ and $\vvtwo$ yields the literal Boolean for $c$;
-    \item $\vr$ is the native Boolean value for $c$.
-  \end{itemize}
-
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[int\_arith]{
-  \binopliterals(\op, \lint(a), \lint(b)) \typearrow \lint(c)
+\inferrule[ok]{
+  \binopliterals(\op, l_1, l_2) \typearrow l' \\
+  l' \neq \TypeErrorVal{\Ignore}
 }{
-  \binoprel(\op, \overname{\nvint(a)}{\vvone}, \overname{\nvint(b)}{\vvtwo}) \evalarrow \overname{\nvint(c)}{\vr}
-}
-\and
-\inferrule[int\_rel]{
-  \binopliterals(\op, \lint(a), \lint(b)) \typearrow \lbool(c)
-}{
-  \binoprel(\op, \overname{\nvint(a)}{\vvone}, \overname{\nvint(b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
-}
-\and
-\inferrule[int\_error]{
-  \binopliterals(\op, \lint(a), \lint(b)) \typearrow \TypeError(m)
-}{
-  \binoprel(\op, \overname{\nvint(a)}{\vvone}, \overname{\nvint(b)}{\vvtwo}) \evalarrow \Error(m)
+  \binoprel(\op, \overname{\nvliteral{l_1}}{\vvone}, \overname{\nvliteral{l_2}}{\vvtwo}) \evalarrow \overname{\nvliteral{l'}}{\vw}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[bool\_okay]{
-  \binopliterals(\op, \lbool(a), \lbool(b)) \typearrow \lbool(c)
+\inferrule[static\_error]{
+  \binopliterals(\op, l_1, l_2) \typearrow \TypeErrorVal{m} \\
 }{
-  \binoprel(\op, \overname{\nvbool(a)}{\vvone}, \overname{\nvbool(b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
-}
-\and
-\inferrule[bool\_error]{
-  \binopliterals(\op, \lbool(a), \lbool(b)) \typearrow \TypeError(m)
-}{
-  \binoprel(\op, \overname{\nvbool(a)}{\vvone}, \overname{\nvbool(b)}{\vvtwo}) \evalarrow \Error(m)
+  \binoprel(\op, \overname{\nvliteral{l_1}}{\vvone}, \overname{\nvliteral{l_2}}{\vvtwo}) \evalarrow \TypeErrorVal{m}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[real\_arith\_okay]{
-  \binopliterals(\op, \lreal(a), \lreal(b)) \typearrow \lreal(c)
+\inferrule[non\_literal]{
+  \astlabel(\vvone) \neq \nvliterallabel \lor \astlabel(\vvtwo) \neq \nvliterallabel
 }{
-  \binoprel(\op, \overname{\nvreal(a)}{\vvone}, \overname{\nvreal(b)}{\vvtwo}) \evalarrow \overname{\nvreal(c)}{\vr}
-}
-\and
-\inferrule[real\_arith\_error]{
-  \binopliterals(\op, \lreal(a), \lreal(b)) \typearrow \TypeError(m)
-}{
-  \binoprel(\op, \overname{\nvreal(a)}{\vvone}, \overname{\nvreal(b)}{\vvtwo}) \evalarrow \Error(m)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[real\_rel\_okay]{
-  \binopliterals(\op, \lreal(a), \lreal(b)) \typearrow \lbool(c)
-}{
-  \binoprel(\op, \overname{\nvreal(a)}{\vvone}, \overname{\nvreal(b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
-}
-\and
-\inferrule[real\_rel\_error]{
-  \binopliterals(\op, \lreal(a), \lreal(b)) \typearrow \TypeError(m)
-}{
-  \binoprel(\op, \overname{\nvreal(a)}{\vvone}, \overname{\nvreal(b)}{\vvtwo}) \evalarrow \Error(m)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[bitvector\_rel\_okay]{
-  \binopliterals(\op, \nvbitvector(a), \nvbitvector(b)) \typearrow \lbool(c)
-}{
-  \binoprel(\op, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
-}
-\and
-\inferrule[bitvector\_rel\_error]{
-  \binopliterals(\op, \lbitvector(a), \lbitvector(b)) \typearrow \TypeError(m)
-}{
-  \binoprel(\op, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \evalarrow \Error(m)
-}
-\and
-\inferrule[bitvector\_bits\_okay]{
-  \binopliterals(\op, \lbitvector(a), \lbitvector(b)) \typearrow \lbitvector(c)
-}{
-  \binoprel(\op, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \evalarrow \overname{\nvbitvector(c)}{\vr}
-}
-\and
-\inferrule[bitvector\_bits\_error]{
-  \binopliterals(\op, \lbitvector(a), \lbitvector(b)) \typearrow \TypeError(m)
-}{
-  \binoprel(\op, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \evalarrow \Error(m)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[string\_rel]{
-  \binopliterals(\op, \lstring(a), \lstring(b)) \typearrow \lbool(c)
-}{
-  \binoprel(\op, \overname{\lstring(a)}{\vvone}, \overname{\lstring(b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[label\_rel]{
-  \binopliterals(\op, \llabel(a), \llabel(b)) \typearrow \lbool(c)
-}{
-  \binoprel(\op, \overname{\llabel(a)}{\vvone}, \overname{\llabel(b)}{\vvtwo}) \evalarrow \overname{\nvbool(c)}{\vr}
+  \binoprel(\op, \vvone, \vvtwo) \evalarrow \DynamicErrorVal{TypeMismatch}
 }
 \end{mathpar}

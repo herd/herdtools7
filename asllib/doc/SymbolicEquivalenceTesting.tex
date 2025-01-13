@@ -30,7 +30,6 @@ and then define the rules for symbolic reduction and equivalence testing in \sec
 
 \section{Symbolic Expressions\label{sec:symbolicexpressions}}
 Our symbolic reduction and equivalence testing rules use \emph{symbolic expressions}, defined below:
-\hypertarget{def-sum}{}
 \[
   \begin{array}{rcl}
     \polynomial &\triangleq& \unitarymonomial \partialto \Q \setminus \{0\}\\
@@ -43,6 +42,7 @@ via the interpretation function $\alpha$.
 We also define operations over symbolic expressions.
 
 \hypertarget{def-unitarymonomial}{}
+\hypertarget{def-monomial}{}
 \begin{definition}[Unitary Monomial]
 A \emph{Unitary Monomial} is a partial function from identifiers to positive integers\footnote{A unitary monomial has a unit factor,
 for example $x^3$, whereas a non-unitary monomial has a non-unit factor, for example, $2 x^3$.}.
@@ -157,6 +157,7 @@ adds a list of polynomials:
 \end{mathpar}
 
 The function
+\hypertarget{def-mulpolynomials}{}
 \[
   \mulpolynomials : \overname{\polynomial}{\vpone} \times \overname{\polynomial}{\vptwo} \rightarrow \overname{\polynomial}{\vp}
 \]
@@ -1533,6 +1534,7 @@ One of the following applies:
 \end{mathpar}
 
 \subsubsection{TypingRule.BitFieldEqual \label{sec:TypingRule.BitFieldEqual}}
+\hypertarget{def-bitfieldequal}{}
 The function
 \[
   \bitfieldequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\bitfield}{\bfone} \aslsep \overname{\bitfield}{\bftwo})

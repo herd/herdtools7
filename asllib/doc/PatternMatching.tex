@@ -180,7 +180,7 @@ All of the following apply:
 \begin{mathpar}
 \inferrule[t\_bool, t\_real, t\_int, t\_string]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
-  \checkstaticallyevaluable(\vses) \typearrow \OrTypeError\\\\
+  \checkstaticallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
   \commonprefixline\\\\
@@ -193,7 +193,8 @@ All of the following apply:
 
 \begin{mathpar}
 \inferrule[t\_bits]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
+  \checkstaticallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
   \commonprefixline\\\\
@@ -208,7 +209,8 @@ All of the following apply:
 
 \begin{mathpar}
 \inferrule[t\_enum]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
+  \checkstaticallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
   \commonprefixline\\\\
@@ -224,7 +226,8 @@ All of the following apply:
 
 \begin{mathpar}
 \inferrule[error]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep) \OrTypeError\\\\
+  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
+  \checkstaticallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
   \commonprefixline\\\\
@@ -310,8 +313,8 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatestaticallyevaluableexpr{\tenv, \veone} \typearrow (\vteone, \veonep, \vsesone) \OrTypeError\\\\
-  \annotatestaticallyevaluableexpr{\tenv, \vetwo} \typearrow (\vtetwo, \vetwop, \vsestwo) \OrTypeError\\\\
+  \annotatestaticallyevaluableexpr(\tenv, \veone) \typearrow (\vteone, \veonep, \vsesone) \OrTypeError\\\\
+  \annotatestaticallyevaluableexpr(\tenv, \vetwo) \typearrow (\vtetwo, \vetwop, \vsestwo) \OrTypeError\\\\
   \vses \eqdef \vsesone \cup \vsestwo\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vteonestruct \OrTypeError\\\\
@@ -976,7 +979,7 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
     {
       \begin{array}{r}
   \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tas, \punnode{\Nconstraintkind})) \astarrow\\
-  \overname{\EATC(\astof{\vexprpattern}, \TInt(\astof{\vintconstraints}))}{\vastnode}
+  \overname{\EATC(\astof{\vexprpattern}, \TInt(\astof{\vconstraintkind}))}{\vastnode}
 \end{array}
 }
 }

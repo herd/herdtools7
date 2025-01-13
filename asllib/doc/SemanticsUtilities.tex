@@ -155,17 +155,17 @@ is the environment $\newenv$ and all of the following apply:
 The relation
 \hypertarget{def-readidentifier}{}
 \[
-  \readidentifier(\overname{\Identifiers}{\name}\aslsep\overname{\vals}{\vv}) \;\aslrel\; (\overname{\vals}{\vv} \times \XGraphs)
+  \readidentifier(\overname{\Identifiers}{\name}\aslsep\overname{\vals}{\vv}) \;\aslrel\; \XGraphs
 \]
 reads a value $\vv$ into a storage element given by an identifier $\name$.
-The result is the value and an execution graph containing a single Read Effect,
-which denoting reading from $\name$.
+The result is an execution graph containing a single Read Effect,
+which denotes reading from $\name$.
 
 \subsubsection{Formally}
 \begin{mathpar}
   \inferrule{}
   {
-    \readidentifier(\name, \vv) \evalarrow (\vv, \ReadEffect(\name))
+    \readidentifier(\name, \vv) \evalarrow \ReadEffect(\name)
   }
 \end{mathpar}
 
@@ -190,6 +190,7 @@ which denotes writing into $\name$.
 
 \subsubsection{SemanticsRule.CreateBitvector \label{sec:SemanticsRule.CreateBitvector}}
 \subsubsection{Prose}
+\hypertarget{def-createbitvector}{}
 The relation
 \[
   \createbitvector(\overname{\vals^*}{\vvs}) \;\aslrel\; \tbitvector
@@ -205,12 +206,16 @@ creates a native vector value bitvector from a sequence of values $\vvs$.
 \end{mathpar}
 
 \subsubsection{SemanticsRule.ConcatBitvectors \label{sec:SemanticsRule.ConcatBitvectors}}
-\subsubsection{Prose}
+\hypertarget{def-concatbitvector}{}
 The relation
 \[
-  \concatbitvectors(\overname{\tbitvector^*}{\vvs}) \;\aslrel\; \tbitvector
+  \concatbitvectors(\overname{\tbitvector^*}{\vvs}) \;\aslrel\; \overname{\tbitvector}{\newvs}
 \]
-transforms a (possibly empty) list of bitvector \nativevalues\ $\vvs$ into a single bitvector.
+transforms a (possibly empty) list of bitvector \nativevalues\ $\vvs$ into a single bitvector
+$\newvs$.
+
+\subsubsection{Prose}
+Define $\newvs$ as the concatenation of bitvectors listed in $\vvs$.
 
 \subsubsection{Formally}
 \begin{mathpar}
@@ -328,10 +333,11 @@ by the slices when accessing a bit.
 
 \subsubsection{SemanticsRule.WriteToBitvector \label{sec:SemanticsRule.WriteToBitvector}}
 \subsubsection{Prose}
+\hypertarget{def-writetobitvector}{}
 The relation
 \[
   \writetobitvector(\overname{(\tint\times\tint)^*}{\slices} \aslsep \overname{\tbitvector}{\src} \aslsep \overname{\tbitvector}{\dst})
-  \;\bigtimes\; \overname{\tbitvector}{\vv} \cup \overname{\TDynError}{\DynErrorConfig}
+  \;\aslrel\; \overname{\tbitvector}{\vv} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 overwrites the bits of $\dst$ at the positions given by $\slices$ with the bits of $\src$
 and one of the following applies:
@@ -439,10 +445,10 @@ The type-checker ensures, via TypingRule.EGetRecordField, that the field $\name$
 
 \subsubsection{SemanticsRule.SetField \label{sec:SemanticsRule.SetField}}
 \subsubsection{Prose}
-The relation
+The function
 \hypertarget{def-setfield}{}
 \[
-  \setfield(\overname{\Identifiers}{\name} \aslsep \overname{\vals}{\vv} \aslsep \overname{\trecord}{\record}) \;\aslrel\; \trecord
+  \setfield(\overname{\Identifiers}{\name} \aslsep \overname{\vals}{\vv} \aslsep \overname{\trecord}{\record}) \;\aslto\; \trecord
 \]
 overwrites the value corresponding to the field name $\name$ in the record value $\record$ with the value $\vv$.
 
@@ -450,10 +456,10 @@ overwrites the value corresponding to the field name $\name$ in the record value
 \begin{mathpar}
   \inferrule{
     \record \eqname \nvrecord{\fieldmap}\\
-    \fieldmap' \eqdef \fieldmap[\name\mapsto\vv]
+    \fieldmapp \eqdef \fieldmap[\name\mapsto\vv]
   }
   {
-    \setfield(\name, \vv, \record) \evalarrow \nvrecord{\fieldmap'}
+    \setfield(\name, \vv, \record) \evalarrow \nvrecord{\fieldmapp}
   }
 \end{mathpar}
 The type-checker ensures that the field $\name$ exists in $\record$.

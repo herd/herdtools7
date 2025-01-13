@@ -506,7 +506,6 @@ The function
   \bitfieldslicetopositions(\overname{\staticenvs}{\tenv}, \overname{\slice}{\vslice})
   \aslto \overname{\langle\powfin{\Z}\rangle}{\positions} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-\hypertarget{def-nonstatic}{}
 returns the set of integers defined by the bitfield slice $\vslice$ in $\positions$,
 if they can be statically evaluated, or $\None$ if they cannot be statically evaluated.
 \ProseOtherwiseTypeError
@@ -567,7 +566,7 @@ One of the following applies:
   \checktrans{\vy \leq \vx}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
 }{
   \bitfieldslicetopositions(\tenv, \overname{\SliceRange(\veone, \vetwo)}{\vslice}) \typearrow
-  \overname{\langle\{n \;|\; \vx \leq n \leq \vy\}\rangle}{\positions}
+  \overname{\langle\{n \;|\; \vy \leq n \leq \vx\}\rangle}{\positions}
 }
 \end{mathpar}
 
@@ -577,7 +576,7 @@ One of the following applies:
   \reducetozopt(\tenv, \vetwo) \typearrow \langle\vy\rangle \terminateas\None\\\\
   \checktrans{\vy > 0}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
 }{
-  \bitfieldslicetopositions(\tenv, \overname{\SliceRange(\veone, \vetwo)}{\vslice}) \typearrow
+  \bitfieldslicetopositions(\tenv, \overname{\SliceLength(\veone, \vetwo)}{\vslice}) \typearrow
   \overname{\langle\{n \;|\; \vx \leq n \leq \vx+\vy-1\}\rangle}{\positions}
 }
 \end{mathpar}
@@ -700,7 +699,7 @@ All of the following apply:
 \hypertarget{def-bitfieldtoabsolute}{}
 The function
 \[
-\bitfieldstoabsolute(
+\bitfieldtoabsolute(
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\bitfield}{\vbf} \aslsep
   \overname{\TAbsField}{\vabsoluteparent}
@@ -714,12 +713,12 @@ of the bitfield containing $\vbf$ are $\vabsoluteparent$, in the static environm
 All of the following apply:
 \begin{itemize}
   \item obtaining the name of the bitfield $\vbf$ via $\bitfieldgetname$ yields $\name$;
-  \item define the \absolutename\ of $\vbfname$ for $\vbf$ by appending $\name$ to $\vabsname$;
+  \item define the \absolutename\ of $\vbfname$ for $\vbf$ by appending $\name$ to the $\vabsname$, the \absolutename{} of $\vabsoluteparent$;
   \item obtaining the list of slices for $\vbf$ via $\bitfieldgetslices$ yields $\vslices$;
   \item \Proseslicetoindices{$\tenv$}{$\vs$}{$\indices_\vs$};
   \item define $\vslicesasindices$ as the concatenation of the sequences $\indices_\vs$,
         for each slice $\vs$ in $\vslices$, in their order of appearance in $\vslices$;
-  \item \Prosesliceindicesbyslices{$\vabsslices$}{$\vslicesasindices$}{$\vbfindices$};
+  \item \Prosesliceindicesbyslices{$\vabsslices$}{$\vslicesasindices$}{$\vbfindices$}, where $\vabsslices$ are the \absoluteslices{} of $\vabsoluteparent$;
   \item define $\vbfabsolute$ as the \absolutebitfield\ with \absolutename\ $\vbfname$
         and \absoluteslices\ $\vbfindices$;
   \item obtaining the bitfields nested in $\vbf$ via $\bitfieldgetnested$ yields $\vnested$;
@@ -743,7 +742,7 @@ All of the following apply:
 }{
   {
     \begin{array}{r}
-      \bitfieldtoabsolute(\tenv, \overname{(\vabsname, \vabsslices)}{\vbf}, \vabsoluteparent) \typearrow \\
+      \bitfieldtoabsolute(\tenv, \vbf, \overname{(\vabsname, \vabsslices)}{\vabsoluteparent}) \typearrow \\
       \overname{\{\vbfabsolute\} \cup \vabsbitfieldsone}{\vabsbitfields}
     \end{array}
   }

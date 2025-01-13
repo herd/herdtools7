@@ -70,12 +70,10 @@ is defined before the block and hence still exists after the block.
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-    \item $\blockenv$ is the environment $\env$ modified by replacing the local component
-    (of the inner dynamic environment) by an empty one;
-    \item evaluating $\stm$ in $\blockenv$, as per \chapref{Statements},
-    is \\ $\Continuing(\newg, \blockenvone)$\ProseTerminateAs{\ReturningConfig};
-    \item $\newenv$ is formed from $\blockenvone$ after restoring the
-    variable bindings of $\env$ with the updated values of $\blockenv$.
+    \item evaluating $\stm$ in $\env$, as per \chapref{Statements},
+    is $\Continuing(\newg, \envone)$\ProseTerminateAs{\ReturningConfig};
+    \item $\newenv$ is formed from $\envone$ after restoring the
+    variable bindings of $\env$ with the updated values of $\envone$.
     The effect is that of discarding the bindings for variables declared inside $\stm$;
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
 \end{itemize}
@@ -83,9 +81,8 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \env \eqname (\tenv,\denv)\\
-  \blockenv \eqdef (\tenv, (G^\denv, \emptyfunc))\\
-  \evalstmt{\blockenv, \stm} \evalarrow \Continuing(\newg, \blockenvone) \terminateas \ReturningConfig,\ThrowingConfig,\DynErrorConfig\\\\
-  \blockenvone\eqname(\tenv, \denvone)\\
+  \evalstmt{\env, \stm} \evalarrow \Continuing(\newg, \envone) \terminateas \ReturningConfig,\ThrowingConfig,\DynErrorConfig\\\\
+  \envone\eqname(\tenvone, \denvone)\\
   \newenv \eqdef(\tenv, (G^{\denvone}, \restrictfunc{L^{\denvone}}{{\dom(L^\denv)}}))
 }{
   \evalblock{\env, \stm} \evalarrow \Continuing(\newg, \newenv)

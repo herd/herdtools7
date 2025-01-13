@@ -16,7 +16,7 @@ functions that inspect the structure of types:
   \item Non-primitive types (\secref{TypingRule.NonPrimitiveType})
   \item Primitive types (\secref{TypingRule.PrimitiveType})
   \item The structure of a type (\secref{TypingRule.structure})
-  \item The underlying type of a type (\secref{TypingRule.Anonymize})
+  \item The underlying type of a type (\secref{TypingRule.MakeAnonymous})
   \item Checked constrained integers (\secref{TypingRule.CheckConstrainedInteger})
 \end{itemize}
 
@@ -266,7 +266,7 @@ type C of B;
 \lrmcomment{This is related to \identr{GVZK}.}
 
 \subsubsection{TypingRule.AggregateType \label{sec:TypingRule.AggregateType}}
-\hypertarget{def-isbuiltinaggregate}{}
+\hypertarget{def-isaggregate}{}
 The predicate
 \[
   \isaggregate(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \;\aslto\;
@@ -703,7 +703,7 @@ One of the following applies:
 }
 \and
 \inferrule[unconstrained]{
-  \astlabel(\vc) = \unconstrained \;\lor\; \astlabel{\vc} = \pendingconstrained
+  \astlabel(\vc) = \unconstrained \;\lor\; \astlabel(\vc) = \pendingconstrained
 }
 {
   \checkconstrainedinteger(\tenv, \TInt(\vc)) \typearrow \\

@@ -318,7 +318,7 @@ One of the following applies:
   \checkstaticallyevaluable(\vsesactual) \typearrow \True\OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \tyactual) \typearrow \True\OrTypeError\\\\
   \commonprefixline\\\\
-  \tyactual \eqname \langle\tydecl\rangle\\
+  \tydeclopt \eqname \langle\tydecl\rangle\\
   \tydecl \neq \TInt(\parameterized(\vx))\\
   \checktypesat(\tenv, \tyactual, \tydecl) \typearrow \True \OrTypeError\\\\
   \checkparamstypesat(\tenv, \funcsigparamsone, \paramsone) \typearrow \True \OrTypeError
@@ -933,7 +933,7 @@ that $\funcsigargs$ and $\argtypes$ have the same length.
   \argtypes \eqname [\tyactual] \concat \argtypesone\\
   \renametyeqs(\tenv, \eqs, \tydecl) \typearrow \tydeclp\OrTypeError\\\\
   \checktypesat(\tenv, \tyactual, \tydeclp) \typearrow \True\OrTypeError\\\\
-  \checkargstypesat(\tenv, \funcsigargsone, \argtypesone, \eqs) \typearrow \True
+  \checkargstypesat(\tenv, \funcsigargsone, \argtypesone, \eqs) \typearrow \True\OrTypeError
 }{
   \checkargstypesat(\tenv, \funcsigargs, \argtypes, \eqs) \typearrow \True
 }
@@ -1476,6 +1476,7 @@ The following rule utilizes the transition relation
   \Normal(\overname{(\vals\times\XGraphs)^*}{\vms} \aslsep \overname{\XGraphs}{\vgone}) \cup \overname{\TDynError}{\DynErrorConfig} \enspace,
 \]
 which parameterizes the ASL semantics and allows evaluating primitive subprograms.
+\hypertarget{def-evalprimitivearrow}{}
 That is, it is not a part of $\evalarrow$ but rather a separate transition relation denoted $\evalprimitivearrow$.
 
 \begin{mathpar}
