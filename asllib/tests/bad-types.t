@@ -76,3 +76,36 @@ Bad slices
   File bad-types6.asl, line 1, character 0 to line 7, character 2:
   ASL Static error: Cannot extract from bitvector of length 3 slice 8+:3.
   [1]
+
+Empty types
+===========
+
+Arbitrary of empty type
+
+  $ cat >bad-types7.asl <<EOF
+  > func main () => integer
+  > begin
+  >    let b: integer {1..0} = ARBITRARY: integer {1..0};
+  >    return 0;
+  > end;
+  > EOF
+
+  $ aslref bad-types7.asl
+  File bad-types7.asl, line 3, characters 38 to 52:
+  ASL Execution error: ARBITRARY of empty type integer {1..0}.
+  [1]
+
+Base value of empty type
+
+  $ cat >bad-types8.asl <<EOF
+  > func main () => integer
+  > begin
+  >   var b: integer {1..0};
+  >   return 0;
+  > end;
+  > EOF
+
+  $ aslref bad-types8.asl
+  File bad-types8.asl, line 3, characters 2 to 24:
+  ASL Typing error: base value of empty type integer {1..0}.
+  [1]

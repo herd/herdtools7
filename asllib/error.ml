@@ -72,6 +72,7 @@ type error_desc =
   | BadParameterDecl of identifier * identifier list * identifier list
       (** name, expected, actual *)
   | BaseValueEmptyType of ty
+  | ArbitraryEmptyType of ty
   | BaseValueNonStatic of ty * expr
   | SettingIntersectingSlices of bitfield list
   | SetterWithoutCorrespondingGetter of func
@@ -173,6 +174,7 @@ let error_label = function
   | ParameterWithoutDecl _ -> "ParameterWithoutDecl"
   | BadParameterDecl _ -> "BadParameterDecl"
   | BaseValueEmptyType _ -> "BaseValueEmptyType"
+  | ArbitraryEmptyType _ -> "ArbitraryEmptyType"
   | BaseValueNonStatic _ -> "BaseValueNonStatic"
   | SettingIntersectingSlices _ -> "SettingIntersectingSlices"
   | SetterWithoutCorrespondingGetter _ -> "SetterWithoutCorrespondingGetter"
@@ -381,6 +383,8 @@ module PPrint = struct
           expected
           (pp_comma_list pp_print_string)
           actual
+    | ArbitraryEmptyType t ->
+        fprintf f "ASL Execution error: ARBITRARY of empty type %a." pp_ty t
     | BaseValueEmptyType t ->
         fprintf f "ASL Typing error: base value of empty type %a." pp_ty t
     | BaseValueNonStatic (t, e) ->

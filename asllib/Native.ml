@@ -465,18 +465,29 @@ module DeterministicBackend = struct
     let error_handling_time = Error.Dynamic
   end)
 
+  let rec deterministic_unknown_of_constraints ~eval_expr_sef ty constraints =
+    match constraints with
+    | Constraint_Exact e :: _ -> eval_expr_sef e
+    | Constraint_Range (e1, e2) :: other_constraints -> (
+        let v1 = eval_expr_sef e1 and v2 = eval_expr_sef e2 in
+        match (v1, v2) with
+        | NV_Literal (L_Int i1), NV_Literal (L_Int i2) ->
+            if Z.leq i1 i2 then v1
+            else
+              deterministic_unknown_of_constraints ~eval_expr_sef ty
+                other_constraints
+        | _ -> (* Bad types *) assert false)
+    | [] -> Error.(fatal_from ty (ArbitraryEmptyType ty))
+
   let deterministic_unknown_of_singular_type ~eval_expr_sef ty =
     match ty.desc with
     | T_Bool -> NV_Literal (L_Bool false)
     | T_String -> NV_Literal (L_String "")
     | T_Real -> NV_Literal (L_Real Q.zero)
     | T_Int UnConstrained -> NV_Literal (L_Int Z.zero)
-    | T_Int
-        (WellConstrained ((Constraint_Exact e | Constraint_Range (e, _)) :: _))
-      ->
-        eval_expr_sef e
+    | T_Int (WellConstrained constraints) ->
+        deterministic_unknown_of_constraints ~eval_expr_sef ty constraints
     | T_Int (Parameterized (_, x)) -> eval_expr_sef (E_Var x |> add_pos_from ty)
-    | T_Int (WellConstrained []) -> assert false
     | T_Bits (e, _) -> (
         match eval_expr_sef e with
         | NV_Literal (L_Int n) ->
