@@ -3,7 +3,7 @@
 import os, fnmatch, sys
 
 def extract_labels_from_line(line: str, left_delim: str, labels: set[str]):
-    """
+    r"""
     Adds all labels found in `line` into `labels`. A label starts with the
     sub-string given by `left_delim` and ends with the substring `}`.
     """
@@ -21,7 +21,7 @@ def extract_labels_from_line(line: str, left_delim: str, labels: set[str]):
         label_pos = right_brace_pos + 1
 
 def check_hyperlinks_and_hypertargets():
-    """
+    r"""
     Checks whether all labels defined in `\hyperlink` definitions match
     labels defined in `\hypertarget` definitions, print the mismatches to the console.
     """
@@ -31,9 +31,9 @@ def check_hyperlinks_and_hypertargets():
     for latex_souce in latex_files:
         with open(latex_souce) as file:
             for line in file.readlines():
-                extract_labels_from_line(line, "\hyperlink{", hyperlink_labels)
-                extract_labels_from_line(line, "\hypertarget{", hypertarget_labels)
-    num_errors = 0
+                extract_labels_from_line(line, "\\hyperlink{", hyperlink_labels)
+                extract_labels_from_line(line, "\\hypertarget{", hypertarget_labels)
+    num_errors, num_warnings = 0, 0
     missing_hypertargets = hyperlink_labels.difference(hypertarget_labels)
     if not missing_hypertargets == set():
         num_missing_hypertargets = len(missing_hypertargets)
@@ -45,18 +45,18 @@ def check_hyperlinks_and_hypertargets():
     missing_hyperlinks = hypertarget_labels.difference(hyperlink_labels)
     if not missing_hyperlinks == set():
         num_missing_hyperlinks = len(missing_hyperlinks)
-        num_errors += num_missing_hyperlinks
-        print(f"ERROR: found {num_missing_hyperlinks} hypertargets without matching hyperlinks: ", file=sys.stderr)
+        num_warnings += num_missing_hyperlinks
+        print(f"WARNING: found {num_missing_hyperlinks} hypertargets without matching hyperlinks: ", file=sys.stderr)
         for label in missing_hyperlinks:
             print(label, file=sys.stderr)
 
-    return num_errors
+    return num_errors, num_warnings
 
 def main():
-    num_errors = check_hyperlinks_and_hypertargets()
+    num_errors, num_warnings = check_hyperlinks_and_hypertargets()
+    print(f"There were {num_errors} errors and {num_warnings} warnings!", file=sys.stderr)
     if num_errors > 0:
-        print(f"There were {num_errors} errors!", file=sys.stderr)
-        #sys.exit(1) # uncomment when all error have been fixed.
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

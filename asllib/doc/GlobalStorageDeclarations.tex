@@ -52,7 +52,6 @@ The relation
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\hypertarget{build-globalstorage}{}
 \begin{mathpar}
 \inferrule[global\_storage]{
   \buildglobaldeclkeyword(\keyword) \astarrow \astof{\keyword}\\
@@ -83,7 +82,6 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\hypertarget{build-globalstorage-var}{}
 \begin{mathpar}
 \inferrule[global\_storage\_var]{
   \buildoption[\buildasty](\tty) \astarrow \ttyp\\
@@ -113,7 +111,6 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\hypertarget{build-globaluninitvar}{}
 \begin{mathpar}
 \inferrule[global\_uninit\_var]{
   \buildignoredoridentifier(\cname) \astarrow \name

@@ -394,7 +394,7 @@ The following rules define the types of left-hand side of assignments:
   |\ & \LESetArray(\lexpr, \expr) & \hypertarget{ast-lesetfield}{}\\
   |\ & \LESetField(\lexpr, \identifier) & \hypertarget{ast-lesetfields}{}\\
   |\ & \LESetFields(\lexpr, \identifier^*) & \hypertarget{ast-ledestructuring}{}\\
-  |\ & \LEDestructuring(\lexpr^*) & \hypertarget{ast-leconcat}{}\\
+  |\ & \LEDestructuring(\lexpr^*) & \\
 \end{flalign*}
 
 \subsection{Local Declarations \label{sec:LocalDeclarations}}
@@ -412,7 +412,7 @@ let (x, -, z): (integer, integer, integer {0..32}) = (2, 3, 4);
 the local declaration item is
 \Verb|(x, -, z): (integer, integer, integer {0..32})|.
 
-\hypertarget{ast-localdeclitem}{} \hypertarget{ast-ldidiscard}{}
+\hypertarget{ast-localdeclitem}{}
 \begin{flalign*}
 \localdeclitem \derives\ &
   & \hypertarget{ast-ldivar}{}\\
@@ -569,7 +569,7 @@ The rules for expressions have the following extra derivation rules:
 \expr \derives\ & \EGetItem(\expr, \N) &\\ \hypertarget{ast-earray}{}
              |\ & \EArray \{\EArrayLength: \expr, \EArrayValue: \expr\} & \hypertarget{ast-eenumarray}{}\\
              |\ & \EEnumArray \{\EArrayLabels: \identifier^+, \EArrayValue: \expr\} & \hypertarget{ast-egetenumarray}{}\\
-             |\ & \EGetEnumArray(\overtext{\expr}{base}, \overtext{\expr}{key}) & \hypertarget{ast-esetenumarray}{}\\
+             |\ & \EGetEnumArray(\overtext{\expr}{base}, \overtext{\expr}{key}) & \hypertarget{ast-lesetenumarray}{}\\
              |\ & \LESetEnumArray(\overtext{\lexpr}{base}, \overtext{\expr}{index}) &\\
 \end{flalign*}
 

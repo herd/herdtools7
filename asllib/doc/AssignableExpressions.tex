@@ -1,7 +1,6 @@
 \chapter{Assignable Expressions\label{chap:AssignableExpressions}}
 
 \hypertarget{def-assignableexpression}{}
-\hypertarget{def-assignableexpressions}{}
 We refer to expressions that may appear on the left hand side of an assignment statement as \assignableexpressions.
 An \assignableexpression\ is grammatically derived from $\Nlexpr$ and is represented as an AST
 by $\lexpr$.
@@ -68,7 +67,7 @@ using $\texttt{eval\_expr}$ to evaluate it.
 |\ & \Nslicedbasiclexpr &\\
 |\ & \Tlpar \parsesep \Clisttwo{\Ndiscardorslicedbasiclexpr} \parsesep \Trpar &\\
 |\ & \Tidentifier \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{\Tidentifier} \parsesep \Trbracket &\\
-|\ & \Tidentifier \parsesep \Tdot \parsesep \Tlpar \parsesep \Clisttwo{\Nignoredoridentifier} \parsesep \Trpar &
+|\ & \Tidentifier \parsesep \Tdot \parsesep \Tlpar \parsesep \Clisttwo{\Ndiscardoridentifier} \parsesep \Trpar &
 \end{flalign*}
 
 \begin{flalign*}
@@ -87,6 +86,10 @@ using $\texttt{eval\_expr}$ to evaluate it.
 
 \begin{flalign*}
 \Ndiscardorslicedbasiclexpr \derives\ & \Tminus \;|\; \Nslicedbasiclexpr &
+\end{flalign*}
+
+\begin{flalign*}
+\Ndiscardoridentifier \derives \ & \Tminus \;|\; \Tidentifier &
 \end{flalign*}
 
 \subsection{Abstract Syntax Builders\label{sec:AssignableExpressionsAbstractSyntaxBuilders}}
@@ -292,6 +295,35 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
     \begin{array}{r}
       \builddiscardorslicedbasiclexpr(\Ndiscardorslicedbasiclexpr(\punnode{\Nslicedbasiclexpr})) \astarrow \\
       \overname{\langle \astof{\vslicedbasiclexpr} \rangle}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.DiscardOrIdentifier \label{sec:ASTRule.DiscardOrIdentifier}}
+
+\hypertarget{build-discardoridentifier}{}
+The function
+\[
+\begin{array}{r}
+  \builddiscardoridentifier(\overname{\parsenode{\Ndiscardoridentifier}}{\vparsednode}) \;\aslto
+  \overname{\langle\identifier\rangle}{\vastnode}
+\end{array}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[none]{}{
+  \builddiscardoridentifier(\Ndiscardoridentifier(\Tminus)) \astarrow \overname{\None}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[some]{}{
+  {
+    \begin{array}{r}
+      \builddiscardoridentifier(\Ndiscardoridentifier(\Tidentifier(\id))) \astarrow
+      \overname{\langle \id \rangle}{\vastnode}
     \end{array}
   }
 }
