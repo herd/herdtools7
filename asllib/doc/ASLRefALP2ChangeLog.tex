@@ -1,44 +1,24 @@
-%\documentclass{article}
-%\usepackage{graphicx}
-%\usepackage{hyperref}  % Insert links inside pdfs
-%\hypersetup{
-%    colorlinks=true,
-%    linkcolor=blue,
-%    filecolor=magenta,
-%    urlcolor=cyan
-%}
-%\makeatletter
-%\makeatother
-
-%\author{Arm Architecture Technology Group}
-%\title{ASL Reference ALP2 Changelog}
-\begin{document}
-%\maketitle
-
-%\tableofcontents{}
-%\newpage
-
 \chapter{ASLRef ALP2 Changelog}
 
 The following changes have been made.
 
 \section{ASL-676: Add \texttt{;} at the end of \texttt{if...end} statements}
 
-Add \texttt{;} at end of block statements. 
+Add \texttt{;} at end of block statements.
 For consistency this includes: \texttt{if...end}, \texttt{while...end},
-\texttt{for...end}, \texttt{repeat...until \textit{cond}}, \texttt{case...end},
+\texttt{for...end}, \texttt{try...catch...end}, \texttt{case...end},
 \texttt{begin...end}.
 
 \section{ASL-675: Reduce overloading of \texttt{[]}}
 
-\subsection{Keep \texttt{[]} around list of nested bitvector field
-names or record field names for bit packing/unpacking}
+\subsection{Keep \texttt{[]} around lists of bitvector/record field
+names for bit packing/unpacking}
 
 For example:
 \begin{verbatim}
-var nzcv : bits(4) = PSTATE.[N,Z,C,V];  
+var nzcv : bits(4) = PSTATE.[N,Z,C,V];
   // pack 4 x PSTATE bits into 4-bit nzcv
-PSTATE.[N,Z,C,V] = nzcv;                
+PSTATE.[N,Z,C,V] = nzcv;
   // unpack 4-bit nzcv into 4 x PSTATE bits
 \end{verbatim}
 
@@ -49,38 +29,34 @@ For example:
 \begin{verbatim}
 value = [highhalf, lowhalf]
 \end{verbatim}
-
 becomes:
-
 \begin{verbatim}
 value = highhalf :: lowhalf;
 \end{verbatim}
-
 The \texttt{::} binary operator is associative, and its precedence is
 level 5 (Add-Sub-Logic).
 
-\subsection{Remove support for \texttt{[highhalf, lowhalf]} on lhs of
-assignment}
+\subsection{Remove support for \texttt{[]} on LHSs of assignments}
 
 For example, the following code from \texttt{SHA256hash()}:
 \begin{verbatim}
 var x : bits(128);
-var y : bits(128];
-... 
+var y : bits(128);
+...
 [y, x] = ROL ([y, x], 32);
 \end{verbatim}
-
 must be rewritten explicitly:
 \begin{verbatim}
 var x : bits(128);
 var y : bits(128];
-... 
+...
 var tmp = ROL (y :: x, 32);
 (y, x) = (tmp[1*:128], tmp[0*:128]);
 \end{verbatim}
 
-\subsection{Add \texttt{[:wid]} as syntactic sugar for \texttt{[0+:wid]} (i.e.
-least sig wid bits)}
+\subsection{Add \texttt{[:wid]} as syntactic sugar for \texttt{[0+:wid]}}
+
+In other words, the least significant \texttt{wid} bits.
 
 \subsection{Change array indexing syntax}
 
@@ -88,43 +64,41 @@ Change array indexing syntax from:
 \begin{verbatim}
 myArray[index]
 \end{verbatim}
-
 to:
 \begin{verbatim}
 myArray[[index]]
 \end{verbatim}
 
-\subsection{Use parentheses for getter and setter argument list}
+\subsection{Use parentheses for getter/setter argument lists}
 
 For example:
 \begin{verbatim}
 reg[index] = value;
 \end{verbatim}
-
 becomes:
 \begin{verbatim}
 reg(index) = value
 \end{verbatim}
 
-\section{ASL-677 and ASL-742: \texttt{integer\{-\}} for use when integer
-declarations implicitly resolve constraints from rhs}
+\section{ASL-677 and ASL-742: \texttt{integer\{-\}} syntax for inherited integer constraints}
+Add a new syntax to explicitly declare integer types on the LHS of an assignment
+which inherit their constraint from the RHS:
 
-Add a new syntax to explicitly declare integer types which inherit their
-constraint from the RHS of an assignment:
-
-\begin{verbatim} 
+\begin{verbatim}
 let Rn : bits(5) = '11111';
-let ui : integer = UInt(Rn); 
-  // ui is an unconstrained integer, initialised to 31
-let ci : integer {-} = UInt(Rn); 
-  // NEW: ci is constrained integer, 
+let i = UInt(Rn);
+  // i inherits UInt() integer type and constraint {0..31}
+let ui : integer = UInt(Rn);
+  // ui is explicitly unconstrained integer
+let ci : integer{-} = UInt(Rn);
+  // NEW: ci is explicitly constrained integer,
   // inheriting constraint {0..31} from UInt()
 \end{verbatim}
 
 \section{ASL-622: Loop/recursion limits annotations}
 
 Inline \texttt{@looplimit} and \texttt{@recurselimit} into the loop syntax, as
-optional qualifiers \texttt{looplimit} and \texttt{recurselimit}.  
+optional qualifiers \texttt{looplimit} and \texttt{recurselimit}.
 
 The presence of \texttt{looplimit} and \texttt{recurselimit} are not mandated
 by the language, but a compiler should be able to optionally flag their
@@ -142,7 +116,7 @@ The current base value rules apply so long as the type of the variable or
 field is unconstrained or all of the constraint's expressions use only
 compile-time constants and literals.
 
-If the variable's or field's type are underconstrained or the constraint
+If the variable's or field's type are parameterized or the constraint
 values cannot be determined statically, then it is the programmer's
 responsibility to provide an explicit initialising assignment, since a
 declaration should never have an undefined value. The initialising
@@ -157,9 +131,6 @@ specification. A summary is as follows.
 \includegraphics[width=\textwidth]{sideeffects.png}
 
 \section{ASL-630: Behaviour of print}
-
-\includegraphics[width=\textwidth]{print.png}
-
 There are two variants, \texttt{print} and \texttt{println}, which behave
 as follows:
 \begin{verbatim}
@@ -169,7 +140,6 @@ println("Goodbye world!")
 // Hello world!
 // Goodbye world!
 \end{verbatim}
-
 whereas:
 \begin{verbatim}
 print("Hello world!");
@@ -177,28 +147,29 @@ println("Goodbye world!")
 // Prints:
 // Hello world!Goodbye world!
 \end{verbatim}
-
 In other words, \texttt{print} does not do any formatting such as adding any
 newlines or spaces whereas \texttt{println} adds a single newline to the end of
 the output.
 
-A user can type in a series of prints to print a "concatenated" string as
-
+A user can type in a series of prints to print a "concatenated" string as:
 \begin{verbatim}
-print("helloworld", 42); printMybitvector(mybits); println(""); 
+print("helloworld", 42); printMybitvector(mybits); println("");
 \end{verbatim}
+
+The following table summarises the supported values:\\
+\includegraphics[width=\textwidth]{print.png}
 
 \section{ASL-632: Parameters simplification}
 
 \subsection{Functions must be declared with all parameters in braces}
-None can be parameter-defining arguments. 
+None can be parameter-defining arguments.
 
-\subsection{Parameters must be declared in a specific order} 
+\subsection{Parameters must be declared in a specific order}
 
 Textually left-to-right as they appear in first the return type, then the
 argument types.
 
-\subsection{Functions must be called with all parameters instantiated using the braced syntax} 
+\subsection{Functions must be called with all parameters instantiated using the braced syntax}
 Except for the following (optional) cases:
 \begin{itemize}
 \item Standard library functions, which can omit their input parameters -
@@ -208,10 +179,9 @@ the left-hand side is explicitly type annotated. These can inherit their
 return parameter (first in the parameter list) from the left-hand side.
 \end{itemize}
 
-\subsection{Modify the signature of \texttt{Replicate} to align with \texttt{SignExtend} and \texttt{ZeroExtend}} 
+\subsection{Modify the signature of \texttt{Replicate} to align with \texttt{SignExtend} and \texttt{ZeroExtend}}
 
 In other words, allow its parameters to be elided:
-
 \begin{verbatim}
 func Replicate{N,M}(x: bits(M)) => bits(N)
 begin
@@ -221,54 +191,50 @@ end
 \end{verbatim}
 
 \subsection{Call sites can elide empty argument lists \texttt{()} if
-there is a non-empty parameter list} 
+there is a non-empty parameter list}
 For example, \texttt{Zeros\{64\}}. However, this cannot
 be applied in conjunction with an elided single parameter on RHS.
 
+\noindent
 Examples:
 \begin{verbatim}
 // func Bar{N}(...) => bits(N)
 // func Baz{A,B}(...) => bits(A)
-let res : bits(N) = Bar{}(args);   -->  Bar{N}(args);    
+let res : bits(N) = Bar{}(args);
   // omitted single parameter N (no ambiguity)
-let res : bits(N) = Baz{,sz}(bv);  -->  Baz{N,sz}(bv);   
+  // desugared to Bar{N}(args);
+let res : bits(N) = Baz{,sz}(bv);
   // omitted positional parameter A
-let res : bits(N) = Baz{}(bv);                           
-  // ILLEGAL - only 1 parameter can be omitted
+  // desugared to Baz{N,sz}(bv);
+let res : bits(N) = Baz{}(bv);
+  // ILLEGAL - only first parameter can be omitted
 
-func{_}(..., x : bits(M), ..., y : bits(N)) => bits(L)   
+func{_}(..., x : bits(M), ..., y : bits(N)) => bits(L)
   // Parameters must be declared {L,M,N}
 
-let res = Zeros{64};                
+let res = Zeros{64};
   // can avoid empty argument list ()
-let res : bits(64) = Zeros{}();     
+let res : bits(64) = Zeros{}();
   // OK
-let res : bits(64) = Zeros{64};     
+let res : bits(64) = Zeros{64};
   // OK
-let res : bits(64) = Zeros{};       
+let res : bits(64) = Zeros{};
   // INVALID - parsing conflict with empty record
 
-let - = UInt('1111'); 
+let - = UInt('1111');
   // equivalent to UInt{4}('1111');
 // func ZeroExtend{N,M}(x: bits(M)) => bits(N)
 // no need to specify input parameter M
-let - : bits(64) = ZeroExtend{64}('11'); 
+let - : bits(64) = ZeroExtend{64}('11');
   // equivalent to ZeroExtend{64,2}
-let - : bits(64) = ZeroExtend{}('11');   
-  // can also elide the output parameter N 
+let - : bits(64) = ZeroExtend{}('11');
+  // can also elide the output parameter N
 \end{verbatim}
-
-\section{ASL-637: Dynamic and static errors}
-
-The taxonomy of ASL errors as dynamic or static has been captured in the ASLRef
-specification. A summary is as follows.
-
-\includegraphics[width=\textwidth]{ASL-error-status.pdf}
 
 \section{ASL-710: Syntax for \texttt{IN '10xx'}}
 
 \subsection{Require that the \texttt{IN} set membership operator always
-requires \{ and \} around the set} 
+requires \{ and \} around the set}
 
 This is regardless of the number of members.
 
@@ -278,17 +244,29 @@ single-member sets but is not anymore:
 
 \begin{itemize}
 \item \texttt{Mybits IN \{'000x'\}} could be written as \texttt{Mybits IN '000x'}
-\item \texttt{!Mybits IN \{'000x'\}} could be written as \texttt{! Mybits
+\item \texttt{!Mybits IN \{'000x'\}} could be written as \texttt{!Mybits
 IN '000x'}
 \end{itemize}
 
-\subsection{Reintroduce ASL0 syntactic sugar} 
+\subsection{Reintroduce ASL0 syntactic sugar}
 
 This means that:
 \begin{itemize}
 \item \texttt{Mybits IN \{'000x'\}} can be written as \texttt{Mybits == '000x'}
 \item \texttt{!Mybits IN \{'000x'\}} can be written as \texttt{Mybits != '000x'}
 \end{itemize}
+
+\section{ASL-738: Rename \texttt{UNKNOWN} to \texttt{ARBITRARY}}
+
+\texttt{UNKNOWN} keyword is renamed to \texttt{ARBITRARY}.
+
+
+\section{ASL-637: Dynamic and static errors}
+
+The taxonomy of ASL errors as dynamic or static has been captured in the ASLRef
+specification. A summary is as follows.
+
+\includegraphics[width=\textwidth]{ASL-error-status.pdf}
 
 \section{ASL-702: Underscore identifiers}
 
@@ -301,7 +279,7 @@ character is treated as a normal identifier, but ASLRef recommends that
 these are only for use by platform-specific code which should not clash
 with the rest of a portable ASL program.
 
-The following keywords are removed from the ASL reserved list: 
+The following keywords are removed from the ASL reserved list:
 \begin{verbatim}
 access
 advice
@@ -319,10 +297,6 @@ set
 statements
 watch
 \end{verbatim}
-
-\section{ASL-738: Rename \texttt{UNKNOWN} to \texttt{ARBITRARY}}
-
-\texttt{UNKNOWN} keyword is renamed to \texttt{ARBITRARY}
 
 \section{ASL-741: Behaviour of \texttt{ARBITRARY}}
 
@@ -352,7 +326,7 @@ is no way to test whether a value was produced by evaluating
 
 Although that list could be empty.
 
-\subsection{Restrict setter usage on some left-hand sides} 
+\subsection{Restrict setter usage on some left-hand sides}
 
 For example, no setters in tuples.
 
@@ -367,8 +341,6 @@ For example, no setters in tuples.
 \includegraphics[width=\textwidth]{lhs-declarations.png}
 
 \section{ASL-596: Remove \texttt{Int()} and \texttt{IsZeroBit()} in the standard library}
-
-Do not include \texttt{Int()} and \texttt{IsZeroBit()} in the standard library.
 
 \section{ASL-539: Nested bitfields}
 
@@ -385,31 +357,29 @@ type Nested_Type of bits(32) {
         [0]  : moving
     },
     [31] : fixed,
-    [0]  : fmt            
+    [0]  : fmt
 };
 
-var nested : Nested_Type; 
+var nested : Nested_Type;
 
 // select the correct view of moving
 // nested.fmt is '0'
 //    nested.fmt0.moving is nested[30]
 // nested.fmt is '1'
 //    nested.fmt1.moving is nested[16]
-let moving = if nested.fmt == '0' then 
-               nested.fmt0.moving 
-             else 
-               nested.fmt1.moving; 
+let moving = if nested.fmt == '0' then
+               nested.fmt0.moving
+             else
+               nested.fmt1.moving;
 
-// below are all equivalent 
-let fixed = nested[31]; 
+// below are all equivalent
+let fixed = nested[31];
 let fixed = nested.fixed;
 let fixed = nested.fmt0.fixed;
-let fixed = nested.fmt1.fixed; 
+let fixed = nested.fmt1.fixed;
 \end{verbatim}
 
 \subsection{Require that fields with same name occupy the same absolute bit
 positions in all ancestor fields}
 
 This will result in a static error if this requirement is not met.
-
-\end{document}
