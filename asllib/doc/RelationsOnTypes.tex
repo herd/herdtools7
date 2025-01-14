@@ -2120,8 +2120,8 @@ One of the following applies:
     \item applying $\getliteraldivopt$ to $\ve$ yields $\langle(\vzone, \vztwo)\rangle$\ProseTerminateAs{\None};
     \item define $\vcopt$ as follows:
     \begin{itemize}
-      \item $\langle\vc\rangle$, if $\vztwo$ is positive and $\vztwo$ divides $\vzone$;
-      \item $\None$, otherwise.
+      \item $\None$, if $\vztwo$ is positive and $\vztwo$ does not divide $\vzone$;
+      \item $\langle\vc\rangle$, otherwise.
     \end{itemize}
   \end{itemize}
 
@@ -2159,8 +2159,8 @@ One of the following applies:
   {
     \vcopt \eqdef
     \begin{cases}
-      \langle\vc\rangle & \text{if }\vztwo > 0 \land \frac{\vzone}{\vztwo} \in \Z\\
-      \None & \text{else}
+      \None & \text{if }\vztwo > 0 \land \frac{\vzone}{\vztwo} \not\in \Z\\
+      \langle\vc\rangle & \text{else}
     \end{cases}
   }
 }{
