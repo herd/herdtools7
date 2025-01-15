@@ -79,6 +79,44 @@ begin
   return if a<b then a else b;
 end;
 
+// ILog2()
+// Return floor(log2(VALUE))
+
+func ILog2(value : real) => integer
+begin
+    assert value > 0.0;
+    var val : real = Abs(value);
+    var low : integer;
+    var high : integer;
+
+    // Exponential search to find upper/lower power-of-2 exponent range
+    if val >= 1.0 then
+        low = 0; high = 1;
+        while 2.0 ^ high <= val looplimit 2^128 do
+            low = high;
+            high = high * 2;
+        end;
+    else
+        low = -1; high = 0;
+        while 2.0 ^ low > val looplimit 2^128 do
+            high = low;
+            low = low * 2;
+        end;
+    end;
+
+    // Binary search between low and high
+    while low <= high looplimit 2^128 do
+        var mid = (low + high) DIVRM 2;
+        if 2.0 ^ mid > val then
+            high = mid - 1;
+        else
+            low = mid + 1;
+        end;
+    end;
+
+    return high;
+end;
+
 // Calculate the square root of x to sf binary digits.
 // The second tuple element of the return value is TRUE if the result is
 // inexact, else FALSE.
