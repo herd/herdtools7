@@ -1,6 +1,6 @@
 type MyEnum of enumeration { A, B, C };
 
-type MyArray of array [ MyEnum ] of integer;
+type MyArray of array [[ MyEnum ]] of integer;
 
 func main () => integer
 begin

@@ -60,7 +60,7 @@ end;
 
 
 // We can parametrise accessors
-var _R : array [31] of bits(64);
+var _R : array [[31]] of bits(64);
 
 getter X{N}(regno: integer) => bits(N)
 begin

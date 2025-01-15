@@ -8,6 +8,6 @@ end;
 
 func FunctWithConstraint{M}(result : bits(M), x : integer{1,2,3,4}) => bits(M)
 begin
-    var y : array[x] of integer;
+    var y : array[[x]] of integer;
     return result;
 end;

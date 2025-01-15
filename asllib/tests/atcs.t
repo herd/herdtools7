@@ -91,8 +91,8 @@ ATCs on other types
   > func main () => integer
   > begin
   >     let x: A = B { a = 0 };
-  >     var a: array[10] of B;
-  >     let b = a as array[10] of A;
+  >     var a: array[[10]] of B;
+  >     let b = a as array[[10]] of A;
   >     return 0;
   > end;
   > EOF

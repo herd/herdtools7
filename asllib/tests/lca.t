@@ -182,8 +182,8 @@
   > type T1 of integer;
   > func main () => integer
   > begin
-  >   var a: array[4] of integer;
-  >   var b: array[4] of T1;
+  >   var a: array[[4]] of integer;
+  >   var b: array[[4]] of T1;
   >   let x = if ARBITRARY: boolean then a else b;
   >   let -: real = x;
   > end;
@@ -191,5 +191,5 @@
 
   $ aslref lca14.asl
   File lca14.asl, line 7, characters 2 to 18:
-  ASL Typing error: a subtype of real was expected, provided array [4] of T1.
+  ASL Typing error: a subtype of real was expected, provided array [[4]] of T1.
   [1]
