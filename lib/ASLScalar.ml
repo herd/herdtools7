@@ -106,6 +106,13 @@ let to_int64 = function
   | S_BitVector bv -> BV.to_int64_signed bv
   | S_Label _ -> Warn.fatal "Trying to convert a label to int"
 
+let as_bool = function
+  | S_Bool b -> Some b
+  | _ -> None
+
+let s_true = S_Bool true
+let s_false = S_Bool false
+
 let to_native_value = function
   | S_Int i -> AST.L_Int i
   | S_Bool b -> AST.L_Bool b

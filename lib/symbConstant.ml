@@ -36,6 +36,8 @@ module Make
 
   let zero = Concrete Scalar.zero
   and one = Concrete Scalar.one
+  and cst_true = Concrete Scalar.s_true
+  and cst_false = Concrete Scalar.s_false
 
   let as_int = function
     | Concrete c ->
@@ -43,6 +45,10 @@ module Make
          try Some (Scalar.to_int c)
          with Invalid_argument _ -> None
        end
+    | _ -> None
+
+  let as_bool = function
+    | Concrete c -> Scalar.as_bool c
     | _ -> None
 
   let pp_instr_cst i = Instr.pp i

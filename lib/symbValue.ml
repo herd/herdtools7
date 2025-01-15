@@ -125,6 +125,8 @@ module
   and one = Val Cst.one
   and two = intToV 2
   and default_tag = Val Constant.default_tag
+  and v_true = Val Cst.cst_true
+  and v_false = Val Cst.cst_false
 
 (************************************)
 (* Constraint compatible operations *)
@@ -141,6 +143,10 @@ module
   let is_one v = match v with
   | Val cst ->  Cst.eq cst Cst.one
   | Var _ -> raise  Undetermined
+
+  let as_bool = function
+    | Val cst -> Cst.as_bool cst
+    | Var _ -> None
 
   let as_int = function
     | Val cst -> Cst.as_int cst
@@ -416,29 +422,35 @@ module
         (fun x1 x2 -> Cst.Scalar.logand x1 (Cst.Scalar.lognot x2)) v1 v2
 
   let bool_to_v f v1 v2 = match f v1 v2 with
-  | false -> zero
-  | true -> one
+  | false -> v_false
+  | true -> v_true
 
   let bool_to_scalar b = match b with
-  | false -> Cst.Scalar.zero
-  | true -> Cst.Scalar.one
+  | false -> Cst.Scalar.s_false
+  | true -> Cst.Scalar.s_true
 
-  let scalar_to_bool v = Cst.Scalar.compare v Cst.Scalar.zero <> 0
+  let scalar_to_bool v =
+    match Cst.Scalar.as_bool v with
+    | Some b -> b
+    | None -> assert false
 
   let eq v1 v2 = match v1,v2 with
-  | Var i1,Var i2 when Misc.int_eq i1 i2 -> one
+  | Var i1,Var i2 when Misc.int_eq i1 i2 -> v_true
   | Val (Symbolic _|Label _|Tag _|PteVal _|ConcreteVector _|Instruction _ as s1),Val (Symbolic _|Label _|Tag _|PteVal _|ConcreteVector _|Instruction _ as s2) ->
       bool_to_v Cst.eq s1 s2
 (* Assume concrete and others always to differ *)
   | (Val (Symbolic _|Label _|Tag _|ConcreteVector _|PteVal _|Instruction _), Val (Concrete _))
-  | (Val (Concrete _), Val (Symbolic _|Label _|Tag _|ConcreteVector _|PteVal _|Instruction _)) -> zero
+  | (Val (Concrete _), Val (Symbolic _|Label _|Tag _|ConcreteVector _|PteVal _|Instruction _)) -> v_false
   | _,_ ->
       binop
         Op.Eq
         (fun s1 s2 -> bool_to_scalar (Cst.Scalar.equal s1 s2))
         v1 v2
 
-  let ne v1 v2 = if is_zero (eq v1 v2) then one else zero
+  let ne v1 v2 =
+    match as_bool (eq v1 v2) with
+    | Some b -> if b then v_false else v_true
+    | None -> assert false
 
   let lt v1 v2 = match v1,v2 with
 (* Need to compare symbols to zero, for setting X86_64 flags *)

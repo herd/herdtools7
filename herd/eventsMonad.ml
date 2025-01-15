@@ -822,16 +822,18 @@ Monad type:
     let choiceT =
       fun v l r eiid ->
         if V.is_var_determined v then begin
-          if V.is_zero v  then r eiid else l eiid
+          match V.as_bool v with
+          | Some b -> if b then l eiid else r eiid
+          | None -> assert false
         end else
           let (eiid, (lact,lspec)) = l eiid in
           assert (lspec = None);
           let (eiid, (ract,rspec)) = r eiid in
           assert (rspec = None);
           let fl = (fun (r,cs,es) ->
-            (r,(VC.Assign (v,VC.Atom V.one)) :: cs,es)) in
+            (r,(VC.Assign (v,VC.Atom V.v_true)) :: cs,es)) in
           let fr = (fun (r,cs,es) ->
-            (r,(VC.Assign (v,VC.Atom V.zero)) :: cs, es)) in
+            (r,(VC.Assign (v,VC.Atom V.v_false)) :: cs, es)) in
           let un =
             Evt.union
               (Evt.map fl lact)

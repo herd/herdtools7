@@ -61,6 +61,10 @@ let sxt sz v =
 let of_int64 = Misc.identity
 let to_int64 = Misc.identity
 
+let as_bool v = Some (Bool.not (Int64.equal Int64.zero v))
+let s_true = one
+let s_false = zero
+
 let get_tag _ = assert false
 let set_tag _ = assert false
 
