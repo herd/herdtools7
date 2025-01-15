@@ -9,7 +9,7 @@ let range a b = Constraint_Range (a, b)
 (* Begin ConstraintMod *)
 let constraint_mod = function
   | Constraint_Exact e | Constraint_Range (_, e) ->
-      range zero_expr e |: TypingRule.ConstraintMod
+      range zero_expr (binop MINUS e one_expr) |: TypingRule.ConstraintMod
 (* End *)
 
 (* Begin PossibleExtremitiesLeft *)

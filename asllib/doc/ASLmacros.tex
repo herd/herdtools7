@@ -208,6 +208,12 @@
   \lstinputlisting{#1}
 }
 
+\newcommand\ASLListing[3]{
+\begin{center}
+\lstinputlisting[caption=#1\label{listing:#2}]{#3}
+\end{center}
+}
+
 \ifcode
 % First argument is \<rule>Begin, second is \<rule>End, third is the file name.
 % Example: for SemanticsRule.Lit, use the following:
@@ -222,6 +228,7 @@
 \newtheorem{definition}{Definition}
 \newtheorem{example}{Example}
 \newcommand\figref[1]{Figure.~\ref{fi:#1}}
+\newcommand\listingref[1]{Listing~\ref{listing:#1}}
 \newcommand\taref[1]{Table.~\ref{ta:#1}}
 \newcommand\defref[1]{Definition~\ref{def:#1}}
 \newcommand\secref[1]{Section~\ref{sec:#1}}
@@ -2361,6 +2368,8 @@
 \newcommand\vdone[0]{\texttt{d1}}
 \newcommand\vdtwo[0]{\texttt{d2}}
 \newcommand\ve[0]{\texttt{e}}
+\newcommand\veminusone[0]{\texttt{e\_minus\_1}}
+\newcommand\veupper[0]{\texttt{e\_upper}}
 \newcommand\veinit[0]{\texttt{e\_init}}
 \newcommand\veelse[0]{\texttt{e\_else}}
 \newcommand\vefive[0]{\texttt{e5}}

@@ -1175,36 +1175,36 @@ The function
 yields a range constraint $\newc$ from $0$ to the expression in $\vc$ that is maximal.
 This is needed to apply the modulus operation to a pair of constraints.
 
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{exact}):
-  \begin{itemize}
-    \item $\vc$ is a constraint for the expression $\ve$, that is, $\ConstraintExact(\ve)$;
-    \item $\newc$ is a constraint for the range from the literal expression for $0$ to $\ve$.
-  \end{itemize}
+\subsubsection{Example}
+In \listingref{typing-constraintmod}, the assignment to \texttt{z} is illegal, since the type
+inferred for \texttt{z} is\\
+\verb|integer{0..2}|.
 
-  \item All of the following apply (\textsc{range}):
-  \begin{itemize}
-    \item $\vc$ is a range constraint for some start expression and end expression $\ve$, that is, $\ConstraintRange(\Ignore, \ve)$;
-    \item $\newc$ is a constraint for the range from the literal expression for $0$ to $\ve$.
-  \end{itemize}
+\ASLListing{An illegal value for }{typing-constraintmod}{\typingtests/TypingRule.ConstraintMod.bad.asl}
+
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item \Proseeqdef{$\veupper$}{
+    $\ve$ if $\vc$ is a single constraint for $\ve$,
+    and $\vb$ if $\vc$ is a range constraint for a pair of expressions, the second of which is $\vb$.
+  };
+  \item \Proseeqdef{$\veminusone$}{the binary expression subtracting $1$ from $\veupper$};
+  \item \Proseeqdef{$\newc$}{a range constraint for the literal expression for $0$ for $\veminusone$}.
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule[exact]{}{
-  \constraintmod(\overname{\ConstraintExact(\ve)}{\vc})
-  \typearrow
-  \overname{\ConstraintRange(\ELInt{0}, \ve)}{\newc}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[range]{}{
-  \constraintmod(\overname{\ConstraintRange(\Ignore, \ve)}{\vc})
-  \typearrow
-  \overname{\ConstraintRange(\ELInt{0}, \ve)}{\newc}
+\inferrule{
+  {
+    \veupper \eqdef \begin{cases}
+      \ve & \vc = \ConstraintExact(\ve)\\
+      \vb & \vc = \ConstraintRange(\Ignore, \vb)
+    \end{cases}
+  }\\
+  \veminusone \eqdef \EBinop(\MINUS, \veupper, \ELInt{1})
+}{
+  \constraintmod(\vc) \typearrow \overname{\ConstraintRange(\ELInt{0}, \veminusone)}{\newc}
 }
 \end{mathpar}
 \CodeSubsection{\ConstraintModBegin}{\ConstraintModEnd}{../Typing.ml}

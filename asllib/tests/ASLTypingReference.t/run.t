@@ -45,3 +45,8 @@ ASL Typing Reference / annotating types:
   $ aslref TypingRule.BuiltinSingularTypes.asl
   $ aslref TypingRule.EnumerationType.asl
   $ aslref TypingRule.TString.asl
+  $ aslref TypingRule.ConstraintMod.bad.asl
+  File TypingRule.ConstraintMod.bad.asl, line 9, characters 4 to 5:
+  ASL Typing error: a subtype of integer {0..2} was expected,
+    provided integer {3}.
+  [1]
