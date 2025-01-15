@@ -53,7 +53,7 @@ module type S = sig
   type global = {
     static : StaticEnv.global;  (** References the static environment. *)
     storage : v Storage.t;  (** Binds global variables to their names. *)
-    stack_size : int IMap.t;
+    stack_size : Z.t IMap.t;
         (** Current number of recursive calls open for each subprogram. *)
   }
   (** The global part of an environment. *)
@@ -150,7 +150,7 @@ module type S = sig
   (** [pop_scope old new] restores the variable bindings of [old], with the
       updated values of [new]. *)
 
-  val get_stack_size : identifier -> env -> int
+  val get_stack_size : identifier -> env -> Z.t
   (** [get_stack_size name env] returns the [stack_size] for [name]. *)
 
   val incr_stack_size : identifier -> global -> global

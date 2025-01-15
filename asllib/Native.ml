@@ -88,11 +88,7 @@ module NativeBackend (C : Config) = struct
   let v_of_int i = L_Int (Z.of_int i) |> nv_literal
   let v_of_literal = nv_literal
   let debug_value = native_value_to_string
-
-  let v_to_int = function
-    | NV_Literal (L_Int z) -> Some (Z.to_int z)
-    | _ -> None
-
+  let v_to_z = function NV_Literal (L_Int z) -> Some z | _ -> None
   let v_to_label = function NV_Literal (L_Label l) -> l | _ -> assert false
   let bind (vm : 'a m) (f : 'a -> 'b m) : 'b m = f vm
   let prod_par (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = (r1, r2)
