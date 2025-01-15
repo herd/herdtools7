@@ -145,12 +145,13 @@ begin
     end;
   end;
 
-  for i = 1 to 10 do
+  for i = 1 to 100 do
+    let x = Real(i);
+    let expected_res = SqrtRounded(x, 1000);
     for p = 1 to 10 do
-      let x = Real(i);
-      let (res, inexact) = SqrtRoundDown(x, p);
-      assert Abs(res * res - x) <= 1.0 / 2.0 ^ p;
-      assert inexact || res * res == x;
+      let res = SqrtRounded(x, p);
+      // +2 because of the rounding to odd?
+      assert Abs(res - expected_res) / expected_res <= 2.0 ^ (-p+2);
     end;
   end;
 

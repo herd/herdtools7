@@ -157,29 +157,44 @@ begin
     return high;
 end;
 
-// Calculate the square root of x to sf binary digits.
-// The second tuple element of the return value is TRUE if the result is
-// inexact, else FALSE.
-func SqrtRoundDown(x: real, sf: integer) => (real, boolean)
+// SqrtRounded()
+// Compute square root of VALUE with FRACBITS of precision, rounding inexact values to Odd
+
+func SqrtRounded(value : real, fracbits : integer) => real
 begin
-  assert x > 0.0 && sf > 0;
+    assert value >= 0.0 && fracbits > 0;
+    if value == 0.0 then return 0.0; end;
 
-  // Following https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Heron's_method
+    // Normalize value to the form 1.nnnn... x 2^exp
+    var exp : integer = ILog2(value);
+    var frac : real = value / (2.0 ^ exp);
 
-  // Initial guess
-  let x0 = x;
+    // Require value = 2.0^exp * frac, where exp is even and 1/4 <= frac < 1
+    if exp MOD 2 == 0 then
+        frac = 0.25 * frac;
+        exp = exp + 2;
+    else
+        frac = 0.5 * frac;
+        exp = exp + 1;
+    end;
 
-  let precision = 1.0 / (2.0 ^ sf);
+    // Set root to sqrt(frac) truncated to fracbits-1 bits
+    var root = 0.0;
+    var prec = 1.0;
+    for n = 1 to fracbits - 1 do
+        if (root + prec) ^ 2 <= frac then
+            root = root + prec;
+        end;
+        prec = prec / 2.0;
+    end;
 
-  var xn: real = x0;
-  while Abs(x - xn * xn) > precision looplimit 1000 do
-    xn = (xn + x / xn) / 2.0 ;
-  end;
-  let root = xn;
+    // Final value of root is odd-rounded to fracbits bits
+    if root ^ 2 < frac then
+        root = root + prec;
+    end;
 
-  let inexact = x != root * root;
-
-  return (root, inexact);
+    // Return sqrt(value) odd-rounded to fracbits bits
+    return (2.0 ^ (exp DIV 2)) * root;
 end;
 
 //------------------------------------------------------------------------------
