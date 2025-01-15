@@ -121,7 +121,10 @@ let do_op op c1 c2 =
         Some (Constant.ConcreteRecord record')
       else None
   | Concat ->
-      let is_empty s = s = ASLScalar.S_BitVector Asllib.Bitvector.empty in
+      let is_empty = function
+        | ASLScalar.S_BitVector s -> Asllib.Bitvector.length s = 0
+        | _ -> false
+      in
       (match (as_concrete c1, as_concrete c2) with
       | (Some s, _) when is_empty s ->
           Some c2

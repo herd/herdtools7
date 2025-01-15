@@ -1,0 +1,10 @@
+Test Concatenation Required
+States 1
+0:X1=0; 0:X2=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation Concatenation Always 1 0
+Hash=997fe11b177bc91173a4dfdf882b43e5
+

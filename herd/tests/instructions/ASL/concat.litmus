@@ -1,0 +1,15 @@
+ASL Concatenation
+
+{ 0: X1 = x }
+
+func main () => integer
+begin
+  let address = read_register (1);
+  let data = read_memory{64}(address);
+  write_register (1, '' :: data);
+  write_register (2, data[0+:32] :: data[32+:32]);
+
+  return 0;
+end;
+
+locations [ 0:X1; 0:X2];
