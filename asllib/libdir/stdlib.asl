@@ -85,6 +85,49 @@ begin
     return FloorPow2(x) == CeilPow2(x);
 end;
 
+// AlignDownSize()
+// ===============
+// For a non-negative integer x and positive integer size, returns the greatest
+// multiple of size that is less than or equal to x.
+
+func AlignDownSize(x: integer, size: integer) => integer
+begin
+    assert size > 0;
+    return (x DIVRM size) * size;
+end;
+
+// AlignUpSize()
+// =============
+// For a non-negative integer x and positive integer size, returns the smallest
+// multiple of size that is greater than or equal to x.
+
+func AlignUpSize(x: integer, size: integer) => integer
+begin
+    assert size > 0;
+    return AlignDownSize(x + (size - 1), size);
+end;
+
+// AlignDownP2()
+// =============
+// For non-negative integers x and p2, returns the greatest multiple of 2^p2
+// that is less than or equal to x.
+
+func AlignDownP2(x: integer, p2: integer) => integer
+begin
+    assert p2 >= 0;
+    return AlignDownSize(x, 2^p2);
+end;
+
+// AlignUpP2()
+// ===========
+// For non-negative integers x and p2, returns the smallest multiple of 2^p2
+// that is greater than or equal to x.
+
+func AlignUpP2(x: integer, p2: integer) => integer
+begin
+    assert p2 >= 0;
+    return AlignUpSize(x, 2^p2);
+end;
 
 //------------------------------------------------------------------------------
 // Functions on reals
@@ -210,7 +253,7 @@ begin
   return if isZero then Zeros{N} else Ones{N};
 end;
 
-// Returns a bit vector of width N, containing (N DIV M) copies of input bit
+// Returns a bitvector of width N, containing (N DIV M) copies of input bit
 // vector x of width M. N must be exactly divisible by M.
 func Replicate{N,M}(x: bits(M)) => bits(N)
 begin
@@ -326,6 +369,50 @@ begin
   else
     return x[N-1:y]+1 :: Zeros{y};
   end;
+end;
+
+// Bitvector alignment functions
+// =============================
+
+// AlignDownSize()
+// ===============
+// A variant of AlignDownSize where the bitvector x is viewed as an unsigned
+// integer and the resulting integer is represented by its first N bits.
+
+func AlignDownSize{N}(x: bits(N), size: integer {1..2^N}) => bits(N)
+begin
+    return AlignDownSize(UInt(x), size)[:N];
+end;
+
+// AlignUpSize()
+// =============
+// A variant of AlignUpSize where the bitvector x is viewed as an unsigned
+// integer and the resulting integer is represented by its first N bits.
+
+func AlignUpSize{N}(x: bits(N), size: integer {1..2^N}) => bits(N)
+begin
+    return AlignUpSize(UInt(x), size)[:N];
+end;
+
+// AlignDownP2()
+// =============
+// A variant of AlignDownP2 where the bitvector x is viewed as an unsigned
+// integer and the resulting integer is represented by its first N bits.
+
+func AlignDownP2{N}(x: bits(N), p2: integer {0..N}) => bits(N)
+begin
+    if N == 0 then return x; end;
+    return x[N-1:p2] :: Zeros{p2};
+end;
+
+// AlignUpP2()
+// ===========
+// A variant of AlignUpP2 where the bitvector x is viewed as an unsigned
+// integer and the resulting integer is represented by its first N bits.
+
+func AlignUpP2{N}(x: bits(N), p2: integer {0..N}) => bits(N)
+begin
+    return AlignDownP2{N}(x + (2^p2 - 1), p2);
 end;
 
 // The shift functions LSL, LSR, ASR and ROR accept a non-negative shift amount.
