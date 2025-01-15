@@ -1,78 +1,78 @@
-\section{Introducing new languages in herdtools7}
-
+\cutname{developer.html}
+\section{Introducing new languages in \texttt{herdtools7}}
 A language can be a high-level programming language (e.g. C++, Java), an
 assembly language (e.g. AArch64, x86), or a specialised language (e.g. BPF).
 
 To handle a target language (TL) (e.g. run litmus tests against the
-\texttt{herd} simulator, or against hardware using \texttt{litmus}, or generate
-litmus tests using \texttt{diy}), it is required to introduce the following
-files in the \texttt{lib/} folder:
+\herd{} simulator, or against hardware using \litmus{}, or generate
+litmus tests using \diy{}), it is required to introduce the following
+files in the \source{lib/} folder:
 
 \begin{itemize}
-\item \texttt{TLBase.ml}
-\item \texttt{TLLexer.\{ml,mll\}}
-\item \texttt{TLParser.mly}
+\item \source{TLBase.ml}
+\item \source{TLLexer.\{ml,mll\}}
+\item \source{TLParser.mly}
 \end{itemize}
 
-The \texttt{lib/} folder contains modules that are shared between the three
-other relevant directories: \texttt{herd/}, \texttt{gen/} and \texttt{litmus/}.
+The \source{lib/} folder contains modules that are shared between the three
+other relevant directories: \source{herd/}, \source{gen/} and \source{litmus/}.
 
-The \texttt{TLBase.ml} file defines the basic types that all tools
-(\texttt{herd}, \texttt{diy} and \texttt{litmus}) use. Using
-\texttt{AArch64Base.ml} as an example, it defines the following:
+The \source{TLBase.ml} file defines the basic types that all tools
+(\herd{}, \diy{} and \litmus{}) use. Using
+\source{AArch64Base.ml} as an example, it defines the following:
 
 \begin{itemize}
 \item Register formats: \texttt{type gpr}, \texttt{type reg}
 \item Barriers: \texttt{type barrier}
 \item Instruction: \texttt{type kinstruction}
 \item Datatype of the AST
-\item Various pretty printing functions: \texttt{do_pp_instruction}
+\item Various pretty printing functions: \source{do_pp_instruction}
 \end{itemize}
 
 It might be further required to define memory orders for the language: an
-example can be found in \texttt{lib/memOrder.ml}, which is relative to C++.
+example can be found in \source{lib/memOrder.ml}, which is relative to C++.
 
-After defining the \texttt{lib/} files, the next steps are:
+After defining the \source{lib/} files, the next steps are:
 
 \begin{itemize}
-\item \texttt{herd/}: Define the semantics of commands which link to cat files.
-\item \texttt{gen/}: Enable multiple tests generation.
-\item \texttt{litmus/}: Enable running litmus tests.
+\item \source{herd/}: Define the semantics of commands which link to cat files.
+\item \source{gen/}: Enable multiple tests generation.
+\item \source{litmus/}: Enable running litmus tests.
 \end{itemize}
 
 It does not matter which tool you should to update first: some people
-prioritise the simulator \texttt{herd} for rapid modelling development, others
-prioritise the test harness \texttt{litmus} for experimenting with hardware.  
+prioritise the simulator \herd{} for rapid modeling development, others
+prioritise the test harness \litmus{} for experimenting with hardware.  
 
-\subsection{The \texttt{herd} tool}
+\subsection{The \herd{} tool}
 
-In \texttt{herd/}, three files are required:
+In \source{herd/}, three files are required:
 \begin{itemize}
-\item \texttt{TLArch_herd.ml}: Define the annotations that the language Effects
+\item \source{TLArch_herd.ml}: Define the annotations that the language Effects
 (sometimes called events) can have and the sets that the cat file uses. For
-example: \texttt{type annot} and \texttt{type annot_sets} in
-\texttt{AArch64Arch_herd.ml}
+example: \texttt{type annot} and \texttt{type annot\_sets} in
+\source{AArch64Arch_herd.ml}
 
-\item \texttt{TLMem.ml}: Simple call to \texttt{machModelChecker}. It might be
-further required to define \texttt{TLBarrier.mli} which has the same type
-declaration as \texttt{TLBase.ml}.
+\item \source{TLMem.ml}: Simple call to \source{machModelChecker}. It might be
+further required to define \source{TLBarrier.mli} which has the same type
+declaration as \source{TLBase.ml}.
 
-\item \texttt{TLSem.ml}: Using monadic operators (see
-Section~\ref{sec:monadic_operators}), such as \texttt{>>=} or \texttt{>>|},
+\item \source{TLSem.ml}: Using monadic operators (see
+Section~\ref{sec:monadic_operators}), such as \source{>>=} or \source{>>|},
 assemble the semantics of a given instruction. See function
-\texttt{build_semantics} in \texttt{herd/AArch64Sem.ml}.
+\source{build_semantics} in \source{herd/AArch64Sem.ml}.
 \end{itemize}
 
 \subsubsection{Monadic operators in herd \label{sec:monadic_operators}}
 
-Monadic operators are defined in \texttt{herd/eventsMonad.ml} and are used to
+Monadic operators are defined in \source{herd/eventsMonad.ml} and are used to
 combine different Effects and add relations among them. Memory accesses and
 ordering constraints enforced by synchronization operations are examples of
 Effects.
 
-The monadic operators use various base operators, such as \texttt{=**=},
-\texttt{=*$=}, \texttt{=$$=}, \texttt{+|+}, \texttt{=|=}, which are defined in
-\texttt{herd/event.ml}. These operators provide various ways of combining two
+The monadic operators use various base operators, such as \source{=**=},
+\source{=*$=}, \source{=$$=}, \source{+|+}, \source{=|=}, which are defined in
+\source{herd/event.ml}. These operators provide various ways of combining two
 Effect graphs.
 
 Effect graphs can either represent the execution of a whole litmus test or be
@@ -81,83 +81,86 @@ of a single instruction or command.
 
 The operators build on three definitions:
 \begin{itemize}
-\item \texttt{para_comp}
-\item \texttt{data_comp}
-\item \texttt{control_comp}
+\item \source{para_comp}
+\item \source{data_comp}
+\item \source{control_comp}
 \end{itemize}
 
 We detail each in turn below.
 
-\paragraph{Operator \texttt{para_comp}}: Unions Effects from both Effect graphs, and their relations.
+\paragraph{Operator \source{para_comp}} Unions Effects from both Effect graphs, and their relations.
 
-For example, \texttt{para_comp} is used in the semantics of a store (see
-\texttt{do_str} and its call in the definition of \texttt{str} in
-\texttt{herd/AArch64Sem.ml)}. A store takes as input a source register
-\texttt{rs}, which contains the value \texttt{v} to be stored, and a target
-register \texttt{rd}, which contains the address \texttt{a} to be written to.
-In \texttt{do_str}, two things happen in parallel using \texttt{>>|}, which
-makes use of \texttt{para_comp}: an address \texttt{a} is extracted from a
-register \texttt{rd} (\texttt{ma} in \texttt{do_str}, instantiated to
-\texttt{get_ea} in \texttt{str}) and a value \texttt{v} is extracted from
-register \texttt{rs} (via \texttt{read_reg_data} in \texttt{do_str}).
+For example, \source{para_comp} is used in the semantics of a store (see
+\source{do_str} and its call in the definition of \source{str} in
+\source{herd/AArch64Sem.ml)}. A store takes as input a source register
+\source{rs}, which contains the value \source{v} to be stored, and a target
+register \source{rd}, which contains the address \source{a} to be written to.
+In \source{do_str}, two things happen in parallel using \source{>>|}, which
+makes use of \source{para_comp}: an address \source{a} is extracted from a
+register \source{rd} (\source{ma} in \source{do_str}, instantiated to
+\source{get_ea} in \source{str}) and a value \source{v} is extracted from
+register \source{rs} (via \source{read_reg_data} in \source{do_str}).
 
-Base operators that build on \texttt{para_comp} are as follows:
+Base operators that build on \source{para_comp} are as follows:
 \begin{itemize}
-\item \texttt{=|=}: Corresponds to \texttt{para_comp} over disjoint graphs
-\item \texttt{+|+}: Applies \texttt{para_comp} if there are two disjoint
-graphs, and asserts false otherwise (via check_both)
+\item \source{=|=}: Corresponds to \source{para_comp} over disjoint graphs
+\item \source{+|+}: Applies \source{para_comp} if there are two disjoint
+graphs, and asserts false otherwise (via \source{check_both})
 \end{itemize}
 
-\paragraph{Operator \texttt{data_comp}}: Introduces a causality link between an
-Effect graph \texttt{es1} and an Effect graph \texttt{es2} (see
-\texttt{intra_causality_data}). This means that the Effect(s) of \texttt{es1}
-is (intrinsically-)before the Effect(s) of \texttt{es2} in the order of
+\paragraph{Operator \source{data_comp}} Introduces a causality link between an
+Effect graph \source{es1} and an Effect graph \source{es2} (see
+\source{intra_causality_data}). This means that the Effect(s) of \source{es1}
+is (intrinsically-)before the Effect(s) of \source{es2} in the order of
 operation of the instruction or command described.
 
-Using the same \texttt{str} example as above, after extracting the value
-\texttt{v} and the address \texttt{a} in parallel, the value \texttt{v} is
-written to the address \texttt{a} via \texttt{do_write_mem} in \texttt{do_str}.
-This last Effect \texttt{do_write_mem} occurs after the two extracting Effects.
-In the herd diagrams, this is depicted with an \texttt{iico} arrow, which
+Using the same \source{str} example as above, after extracting the value
+\source{v} and the address \source{a} in parallel, the value \source{v} is
+written to the address \source{a} via \source{do_write_mem} in \source{do_str}.
+This last Effect \source{do_write_mem} occurs after the two extracting Effects.
+In the herd diagrams, this is depicted with an \source{iico} arrow, which
 stands for intra-instruction causality order. 
 
-Base operators that build on \texttt{data_comp} are as follows:
+Base operators that build on \source{data_comp} are as follows:
 \begin{itemize}
-\item \texttt{=*$=}: Applies \texttt{data_comp} over disjoint graphs. This
-means that two graphs \texttt{es1} and \texttt{es2} are composed and an
-\texttt{iico} causality link from \texttt{es1} to \texttt{es2} is added.
+\item \source{=*$=}: Applies \source{data_comp} over disjoint graphs. This
+means that two graphs \source{es1} and \source{es2} are composed and an
+\source{iico} causality link from \source{es1} to \source{es2} is added.
 
-\item \texttt{=$$=}: Similar to \texttt{=*$=}, but additionally performs some
-transitive closure on the \texttt{iico} links (via \texttt{get_output}).
+\item \source{=$$=}: Similar to \source{=*$=}, but additionally performs some
+transitive closure on the \source{iico} links (via \source{get_output}).
 
-\item \texttt{control_comp}: Introduces another type of causality link between
-the first and second Effect graphs (see \texttt{intra_causality_control}). This
-is similar to \texttt{data_comp}, but it distinguishes which type of causality
+\item \source{control_comp}: Introduces another type of causality link between
+the first and second Effect graphs (see \source{intra_causality_control}). This
+is similar to \source{data_comp}, but it distinguishes which type of causality
 is at stake. This is used to indicate whether there is a Intrinsic control
 dependency.
 \end{itemize}
 
 
-Base operators that build on \texttt{control_comp} are as follows:
+Base operators that build on \source{control_comp} are as follows:
 \begin{itemize}
-\item \texttt{=**=}: Applies \texttt{control_comp} over disjoint graphs,
-meaning that two graphs \texttt{es1} and \texttt{es2} are composed and an
-\texttt{iico_control} causality link from \texttt{es1} to \texttt{es2} is
+\item \source{=**=}: Applies \source{control_comp} over disjoint graphs,
+meaning that two graphs \source{es1} and \source{es2} are composed and an
+\source{iico_control} causality link from \source{es1} to \source{es2} is
 added.
 
-\item \texttt{=*$$=}: Similar to \texttt{=**=}, but additionally performs some
-transitive closure on the \texttt{iico_control} links (via
-\texttt{get_output}).
+\item \source{=*$$=}: Similar to \source{=**=}, but additionally performs some
+transitive closure on the \source{iico_control} links (via
+\source{get_output}).
 \end{itemize}
 
-\begin{tabular}{c|p{.5\linewidth}
+\subsection{Memento of frequently used operators}
+
+\begin{showcenter}
+\begin{tabular}{c|p{.5\linewidth}}
 Operator      & Description  \\
-\texttt{>>|}  & Intuitively \texttt{a >>| b} means ``do a in parallel with b''.
+\source{>>|}  & Intuitively \source{a >>| b} means ``do a in parallel with b''.
 This is used when accesses do not need to be ordered. The code snippet  below
-reads the register \texttt{rs} and in parallel reads the register \texttt{rd},
-gets a value \texttt{v} from \texttt{rs} and a location \texttt{x} from
-\texttt{rd}, and writes that value \texttt{v} back to that memory location
-\texttt{x}.                    
+reads the register \source{rs} and in parallel reads the register \source{rd},
+gets a value \source{v} from \source{rs} and a location \source{x} from
+\source{rd}, and writes that value \source{v} back to that memory location
+\source{x}.                    
 
 \begin{verbatim}
 (read_reg rs >>| read_reg rd) >>= fun (v,x) -> write_mem x v    
@@ -165,16 +168,16 @@ gets a value \texttt{v} from \texttt{rs} and a location \texttt{x} from
 
 \\
 
-\texttt{>>||} & \texttt{>>||} is similar to \texttt{>>|}, but this operator
+\source{>>||} & \source{>>||} is similar to \source{>>|}, but this operator
 does not check               whether the two argument Effect graphs are
 disjoint.            
 
 \\
 
-\texttt{>>=}  & Intuitively \texttt{a >>= b} means ``do a, collect its result
-and feed it into b''. The code snippet below reads the register \texttt{rs},
-gets a value \texttt{v}, and writes that value \texttt{v} back to memory
-location \texttt{x}.  
+\source{>>=}  & Intuitively \source{a >>= b} means ``do a, collect its result
+and feed it into b''. The code snippet below reads the register \source{rs},
+gets a value \source{v}, and writes that value \source{v} back to memory
+location \source{x}.  
 
 \begin{verbatim}
 read_reg rs >>= fun v -> write_mem x v                          
@@ -182,22 +185,23 @@ read_reg rs >>= fun v -> write_mem x v
 
 \\
 
-\texttt{>>==} & The operator \texttt{>>=} corresponds to \texttt{=*$=}, while
-\texttt{>>==} corresponds to \texttt{=$$=}. They both do \texttt{data_comp}
+\source{>>==} & The operator \source{>>=} corresponds to \source{=*$=}, while
+\source{>>==} corresponds to \source{=$$=}. They both do \source{data_comp}
 over disjoint graphs, with the latter performing transitive closure on
-\texttt{iico} causality link.                                        
+\source{iico} causality link.                                        
     
 \\
 
-\texttt{>>*=} and \texttt{>>*==} & The operator \texttt{>>*=} corresponds to
-\texttt{=**=}, while \texttt{>>*==} corresponds to \texttt{=*$$=}. They both do
-\texttt{control_comp} over disjoint graphs, with the latter performing
-transitive closure on \texttt{iico_control} links.                                          
+\source{>>*=} and \source{>>*==} & The operator \source{>>*=} corresponds to
+\source{=**=}, while \source{>>*==} corresponds to \source{=*$$=}. They both do
+\source{control_comp} over disjoint graphs, with the latter performing
+transitive closure on \source{iico_control} links.                                          
 \end{tabular}
+\end{showcenter}
 
-\subsection{The \texttt{diy} tool}
+\subsection{The \diy{} tool}
 
-The \texttt{gen/} directory is used for the \texttt{diy7} tool suite which
+The \source{gen/} directory is used for the \diy{} tool suite which
 enables one or multiple tests generation.
 
 The algorithm that generates litmus tests from cycles of relaxations is
@@ -206,39 +210,39 @@ when introducing a new language.
 
 To add a new backend to the general test generation algorithm, two modules are required:
 \begin{itemize}
-\item \texttt{TLArch_gen.ml}: Define the syntax of the tests. For example, what
+\item \source{TLArch_gen.ml}: Define the syntax of the tests. For example, what
 is the syntax of a load?
-\item \texttt{TLCompile_gen.ml}: Define how the relaxations of a given cycle
+\item \source{TLCompile_gen.ml}: Define how the relaxations of a given cycle
 combine, and what sequence of code to output on a given relaxation.
 \end{itemize}
 
-To better understand \texttt{TLArch_gen.ml}, an example of such file is
-\texttt{CArch_gen.ml}, with function \texttt{dump_typ} and \texttt{type exp} as
+To better understand \source{TLArch_gen.ml}, an example of such file is
+\source{CArch_gen.ml}, with function \source{dump_typ} and \source{type exp} as
 example candidates.
 
-To better understand \texttt{TLCompile_gen.ml}, an example of such file is
-\texttt{CCompile_gen.ml}. It contains the function \texttt{type_event}, which
+To better understand \source{TLCompile_gen.ml}, an example of such file is
+\source{CCompile_gen.ml}. It contains the function \source{type_event}, which
 checks whether an extremity is atomic or not, in the sense defined by the
-architecture. It also contains the function \texttt{compile_access}, which
-could, for example, output a store using function \texttt{compile_store} as per
-the architecture definition, when given \texttt{W} as an input. See also
-functions \texttt{dump_exp}, \texttt{dump_ins}, \texttt{dump_c_test} which
+architecture. It also contains the function \source{compile_access}, which
+could, for example, output a store using function \source{compile_store} as per
+the architecture definition, when given \source{W} as an input. See also
+functions \source{dump_exp}, \source{dump_ins}, \source{dump_c_test} which
 print the right syntax. There needs to be an equivalent of these functions for
 each new language.
 
-\subsection{The \texttt{litmus} tool}
+\subsection{The \litmus{} tool}
 
-The \texttt{litmus/} directory contains the sources of the \texttt{litmus7}
+The \source{litmus/} directory contains the sources of the \litmus{}
 tool which enables running litmus tests on hardware.
 
-To enable the \texttt{litmus7} tool to run litmus tests on hardware, it is
+To enable the \litmus{} tool to run litmus tests on hardware, it is
 required to add new skeletons that the litmus assembly can be slotted into.
 
 In this case, two files are required:
 \begin{itemize}
-\item \texttt{TLArch_litmus}
-\item \texttt{TLCompile_Litmus}: Performs the code emission
+\item \source{TLArch_litmus}
+\item \source{TLCompile_Litmus}: Performs the code emission
 \end{itemize}
 
-These enable the \texttt{litmus7} tool to create a program in the programming
+These enable the \litmus{} tool to create a program in the programming
 language that is being introduced and then run it on the target machine.

@@ -168,7 +168,7 @@ TST=ARM-LB.log SB.litmus SB+onces.litmus SB.log SB-PPC.litmus SB-PPC.log  SB-PPC
 
 STY=macros.sty common.tex syntaxdef.sty
 HVA=macros.hva common.tex syntaxdef.hva
-SRC=diy.tex litmus.tex gen.tex herd.tex jingle.tex examples.tex version.tex
+SRC=diy.tex litmus.tex gen.tex herd.tex jingle.tex examples.tex version.tex languages.tex
 GENTEX=BASIC.tex MPPOSS.tex
 GENSRC=$(GENTEX:.tex=-src)
 GENIMG=$(GENTEX:.tex=-img)

@@ -18,3 +18,4 @@
 {\begin{divstyle}{showcenter}}
 {\end{divstyle}}
 \usepackage{tests}
+\def\source#1{\bgroup\catcode`\_=11\catcode`\$=11\texttt{#1}\egroup}
