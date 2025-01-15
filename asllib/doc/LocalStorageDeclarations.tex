@@ -177,12 +177,12 @@ All of the following apply:
 
 \subsubsection{Example}
 In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDVar0.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.LDVar0.asl}
 \texttt{var x = 3;} binds \texttt{x} to the evaluation of \texttt{3} in $\env$.
 
 \subsubsection{Example}
 In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDVar1.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.LDVar1.asl}
 \texttt{var x : integer = 3;} binds \texttt{x} to the evaluation of
 \texttt{3} in $\env$, without type consideration at runtime.
 
@@ -243,7 +243,7 @@ All of the following apply:
 \subsubsection{SemanticsRule.LDTuple\label{sec:SemanticsRule.LDTuple}}
 \subsubsection{Example}
 In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LDTuple.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.LDTuple.asl}
 \texttt{var (x,y,z) = (1,2,3);} binds \texttt{x} to the evaluation of
 \texttt{1}, \texttt{y} to the evaluation of \texttt{2}, and \texttt{z} to the
 evaluation of \texttt{3} in $\env$.

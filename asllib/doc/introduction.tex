@@ -49,7 +49,7 @@ A \emph{specification} consists of a self-contained collection of ASL code.
 More specifically, a specification is the set of declarations written in ASL code which describe an architecture.
 
 \section{Example Specification 1}
-\figref{spec1} shows a small example of a specification written in ASL. It consists of the following declarations:
+\listingref{spec1} shows a small example of a specification written in ASL. It consists of the following declarations:
 \begin{itemize}
     \item Global bitvectors \texttt{R0}, \texttt{R1}, and \texttt{R2} representing the state of the system.
     \item A function \texttt{MyOR} demonstrating a simple bit-wise OR function of 2 bitvectors.
@@ -58,11 +58,11 @@ More specifically, a specification is the set of declarations written in ASL cod
 \end{itemize}
 
 \begin{center}
-\lstinputlisting[caption=Example specification 1\label{fi:spec1}]{\definitiontests/spec1.asl}
+\lstinputlisting[caption=Example specification 1\label{listing:spec1}]{\definitiontests/spec1.asl}
 \end{center}
 
 \section{Example Specification 2}
-\figref{spec2} shows a small example of a specification written in ASL. It consists of the following declarations:
+\listingref{spec2} shows a small example of a specification written in ASL. It consists of the following declarations:
 \begin{itemize}
 \item A global variable \texttt{COUNT} representing the state of the system.
 \item A procedure \texttt{ColdReset} to initialize the state of the system when power is applied and the system is reset.
@@ -74,11 +74,11 @@ More specifically, a specification is the set of declarations written in ASL cod
 \end{itemize}
 
 \begin{center}
-\lstinputlisting[caption=Example specification 2\label{fi:spec2}]{\definitiontests/spec2.asl}
+\lstinputlisting[caption=Example specification 2\label{listing:spec2}]{\definitiontests/spec2.asl}
 \end{center}
 
 \section{Example Specification 3}
-\figref{spec3} shows a small example of a specification in ASL. It consists of the following declarations:
+\listingref{spec3} shows a small example of a specification in ASL. It consists of the following declarations:
 \begin{itemize}
     \item A function \texttt{Dot8} which operates on 2 bitvectors a byte at a time.
     \item A global variable \texttt{COUNT} to indicate the number of calls to the \texttt{Fib} function.
@@ -88,26 +88,19 @@ More specifically, a specification is the set of declarations written in ASL cod
     \item A function \texttt{main}.
 \end{itemize}
 
-\begin{center}
-\lstinputlisting[caption=Example specification 3\label{fi:spec3}]{\definitiontests/spec3.asl}
-\end{center}
+\ASLListing{Example specification 3}{spec3}{\definitiontests/spec3.asl}
 
-The ASL type system and its semantics are defined in terms of
-the ASL abstract syntax (\chapref{AbstractSyntax}).
-Familiarity with the AST is \underline{required} to understand both.
-The mathematical background needed to understand the formalization
-of the ASL type system and ASL semantics appears in \chapref{FormalSystem},
-\chapref{TypeChecking}, and \chapref{Semantics}.
-
-% \section{The Language Pipeline}
-% \begin{description}
-% \item[Lexical Analysis] The text is first transformed into a list of \emph{tokens}.
-%         This stage is defined in \secref{lexicalanalysis};
-% \item[Parsing] The list of tokens is transformed into a \emph{parse tree}.
-%         This stage is defined in \secref{parsing};
-% \item[Abstraction] The parse tree is transformed into an abstract syntax tree. This is a conceptual stage. In actuality,
-%         the parsing stage transforms the list of tokens directly into an abstract syntax tree. However, it is useful to
-%         distinguish between the parsing state and the abstraction stage.
-%         ASL abstract syntax trees are defined in \chapref{ASLAbstractSyntax}.
-%         This stage is defined in \chapref{BuildingAbstractSyntaxTrees}.
-% \end{description}
+\paragraph{Structure of this Reference:}
+The rest of this document introduces elements of the ASL language and formalizes
+them. First, the mathematical background needed to understand the formalization
+is introduced in \chapref{FormalSystem}.
+Then, we define the ASL lexical structure \chapref{LexicalStructure}, syntax \chapref{Syntax},
+and ASL abstract syntax (AST) \chapref{AbstractSyntax}.
+Familiarity with the AST is \underline{essential} for understanding the
+type system (static semantics) and the dynamic semantics.
+\chapref{TypeChecking}, and \chapref{Semantics} introduce the
+definitions used to formalize the type system and dynamic semantics.
+Following these chapters, the reference roughly follows the structure of the AST
+in a bottom-up fashion, until reaching \chapref{TopLevel} where all of the formalisms
+are used together to demonstrate how they can be utilized to form an interpreter
+for an ASL specification.

@@ -498,9 +498,8 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.LEDiscard\label{sec:SemanticsRule.LEDiscard}}
 \subsubsection{Example}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEDiscard.asl}
-\texttt{- = 42;} does not affect the environment.
+In \listingref{lediscardsemantics}, \texttt{- = 42;} does not affect the environment.
+\ASLListing{Assignment to \texttt{-}}{lediscardsemantics}{\semanticstests/SemanticsRule.LEDiscard.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -596,14 +595,15 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.LEVar\label{sec:SemanticsRule.LEVar}}
 \subsubsection{Example (Local Variable)}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LELocalVar.asl}
-SemanticsRule.LELocalVar is (only) used to assign the value $42$ to the left-hand-side expression
+In \listingref{semantics-levar}, \nameref{sec:SemanticsRule.LEVar} is (only) used
+to assign the value $42$ to the left-hand-side expression
 \texttt{x} within \texttt{x = 42;}.
+
+\ASLListing{Semantics of a left-hand-side variable expression}{semantics-levar}{\semanticstests/SemanticsRule.LELocalVar.asl}
 
 \subsubsection{Example (Global Variable)}
 In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEGlobalVar.asl}
+\ASLListing{Assignment to a global variable}{semantics-leglobalvar}{\semanticstests/SemanticsRule.LEGlobalVar.asl}
 SemanticsRule.LEGlobalVar is (only) used to assign the value $42$ to the left-hand-side expression
 \texttt{x} within \texttt{x = 42;}.
 
@@ -697,10 +697,11 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.LEDestructuring\label{sec:SemanticsRule.LEDestructuring}}
 \subsubsection{Example}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LEDestructuring.asl}
-\texttt{(x, y) = (3, 42)} binds \texttt{x} to $\nvint(3)$ and \texttt{y} to
-$\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and \texttt{y} is bound to $\nvint(3)$.
+In \listingref{semantics-ledestructuring}, \texttt{(x, y) = (3, 42)} binds
+\texttt{x} to $\nvint(3)$ and \texttt{y} to
+$\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and
+\texttt{y} is bound to $\nvint(3)$.
+\ASLListing{Assignment to multiple left-hand-side expressions}{semantics-ledestructuring}{\semanticstests/SemanticsRule.LEDestructuring.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -889,9 +890,8 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.LESetArray\label{sec:SemanticsRule.LESetArray}}
 \subsubsection{Example}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LESetArray.asl}
-binds the third element of \texttt{my\_array} to the value \texttt{53}.
+\listingref{semantics-lesetarray}, binds the third element of \texttt{my\_array} to the value \texttt{53}.
+\ASLListing{Assignment to an array cell}{semantics-lesetarray}{\semanticstests/SemanticsRule.LESetArray.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -1057,11 +1057,12 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.LESlice\label{sec:SemanticsRule.LESlice}}
 \subsubsection{Example}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LESlice.asl}
-The assignment \texttt{x[3:0] = '0000'} binds \texttt{x} to $\nvbitvector(11110000)$
-via the rule SemanticsRule.LESlice.asl
+In \listingref{semantics-leslice}, the assignment \texttt{x[3:0] = '0000'} binds
+\texttt{x} to $\nvbitvector(11110000)$
+via the rule \nameref{sec:SemanticsRule.LESlice}
 in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
+
+\ASLListing{Assignment to a slice}{semantics-leslice}{\semanticstests/SemanticsRule.LESlice.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -1642,9 +1643,11 @@ as the type system transforms the \untypedast\ for assigning to an individual bi
 \subsubsection{SemanticsRule.LESetField\label{sec:SemanticsRule.LESetField}}
 
 \subsubsection{Example}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.LESetField.asl}
-\texttt{my\_record.a = 42;} binds \texttt{my\_record} to \texttt{\{a: 42, b: 100\}} in the environment where \texttt{my\_record} is bound to \texttt{\{a: 3, b: 100\}}.
+In \listingref{semantics-lesetfield},
+\texttt{my\_record.a = 42;} binds \texttt{my\_record} to \texttt{\{a: 42, b: 100\}}
+in the environment where \texttt{my\_record} is bound to \texttt{\{a: 3, b: 100\}}.
+
+\ASLListing{Assignment to a field}{semantics-lesetfield}{\semanticstests/SemanticsRule.LESetField.asl}
 
 \subsubsection{Prose}
 All of the following apply:

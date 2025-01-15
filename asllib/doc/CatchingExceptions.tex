@@ -58,10 +58,10 @@ to the global environment made by evaluating the try-block statement.
 %
 We demonstrate this with the following example.
 
-Consider the following specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/EvalCatchers.asl}
+\ASLListing{Semantics of exception catching}{semantics-evalcatchers}{\semanticstests/EvalCatchers.asl}
 
-Here, the try-block statement consists of the single statement \texttt{update\_and\_throw();}.
+In \listingref{semantics-evalcatchers}, the try-block statement consists of the single statement \\
+\texttt{update\_and\_throw();}.
 Evaluating the call to \texttt{update\_and\_throw} employs an environment $\env$ where
 \texttt{g} is bound to $0$.
 Notice that the call to \texttt{update\_and\_throw} binds \texttt{g} to $1$ before raising an exception.
@@ -204,9 +204,9 @@ One of the following applies:
 \section{Semantics}
 \subsubsection{SemanticsRule.Catch\label{sec:SemanticsRule.Catch}}
 \subsubsection{Example}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Catch.asl}
-terminates successfully. That is, no dynamic error occurs.
+The specification in \listingref{semantics-catch} terminates successfully.
+That is, no dynamic error occurs.
+\ASLListing{Catching an exception}{semantics-catch}{\semanticstests/SemanticsRule.Catch.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -242,9 +242,8 @@ All of the following apply:
 
 \subsubsection{SemanticsRule.CatchNamed\label{sec:SemanticsRule.CatchNamed}}
 \subsubsection{Example}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNamed.asl}
-prints \texttt{My exception with my message}.
+The specification in \listingref{semantics-catchnamed}, prints \texttt{My exception with my message}.
+\ASLListing{Catching a named exception}{semantics-catchnamed}{\semanticstests/SemanticsRule.CatchNamed.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -291,9 +290,8 @@ All of the following apply:
 
 \subsubsection{SemanticsRule.CatchOtherwise\label{sec:SemanticsRule.CatchOtherwise}}
 \subsubsection{Example}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchOtherwise.asl}
-prints \texttt{Otherwise}.
+The specification in \listingref{semantics-catchotherwise} prints \texttt{Otherwise}.
+\ASLListing{Catching an exception with \texttt{otherwise}}{semantics-catchotherwise}{\semanticstests/SemanticsRule.CatchOtherwise.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -332,7 +330,7 @@ All of the following apply:
 \subsubsection{SemanticsRule.CatchNone\label{sec:SemanticsRule.CatchNone}}
 \subsubsection{Example}
 The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNone.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.CatchNone.asl}
 does not print anything.
 
 \subsubsection{Prose}
@@ -361,7 +359,7 @@ All of the following apply:
 \subsubsection{SemanticsRule.CatchNoThrow\label{sec:SemanticsRule.CatchNoThrow}}
 \subsubsection{Example}
 The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNoThrow.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.CatchNoThrow.asl}
 prints \texttt{No exception raised}.
 
 \subsubsection{Prose}

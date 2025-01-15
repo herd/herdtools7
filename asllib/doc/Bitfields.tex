@@ -7,8 +7,8 @@ Individual bitfields are grammatically derived from $\Nbitfield$ and represented
 Bitfields are not associated with a semantic relation.
 
 \subsection{Example}
-The following code declares a global variable whose type is a bitvector with bitfields.
-\ASLExample{\definitiontests/Bitfields.asl}
+\listingref{bitfields1} declares a global variable whose type is a bitvector with bitfields.
+\ASLListing{A bitvector type with bitfields}{bitfields1}{\definitiontests/Bitfields.asl}
 \begin{itemize}
   \item The expression \texttt{myData.flag} evaluates to the value \texttt{myData[4]} of type \texttt{bits(1)};
   \item The expression \texttt{myData.data} evaluates to the value \texttt{[myData[3:0], myData[8:5]]} of type \texttt{bits(8)};
@@ -68,9 +68,9 @@ equal.
 This is formalized in \nameref{sec:TypingRule.CheckCommonBitfieldsAlign}.
 
 \subsection{Example}
-The following example shows a bitvector type with nested bitfields, along with the absolute bitfield
+\listingref{nestedbitfields} shows a bitvector type with nested bitfields, along with the absolute bitfield
 defined for each bitfield.
-\ASLExample{\definitiontests/Bitfields_nested.asl}
+\ASLListing{A bitvector type with nested bitfields}{nestedbitfields}{\definitiontests/Bitfields_nested.asl}
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -380,8 +380,8 @@ annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
 \end{mathpar}
 
 \subsubsection{Example}
-In the following example, all the uses of bitvector types with bitfields are well-typed:
-\ASLExample{\typingtests/TypingRule.TBitField.asl}
+In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bitfields are well-typed.
+\ASLListing{Well-typed bitfields}{welltypedbitvectortypes}{\typingtests/TypingRule.TBitField.asl}
 
 \CodeSubsection{\TBitFieldBegin}{\TBitFieldEnd}{../Typing.ml}
 

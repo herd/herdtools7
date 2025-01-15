@@ -52,8 +52,22 @@ def check_hyperlinks_and_hypertargets():
 
     return num_errors, num_warnings
 
+def check_undefined_references_and_multiply_defined_labels():
+    num_errors = 0
+    with open("ASLReference.log") as file:
+        log_str = file.read()
+        if log_str.find("LaTeX Warning: There were undefined references."):
+            print(f"ERROR: There are undefined references (see ./ASLReference.log)", file=sys.stderr)
+            num_errors += 1
+        if log_str.find("LaTeX Warning: There were multiply-defined labels."):
+            print(f"ERROR: There are multiply-defined labels (see ./ASLReference.log)", file=sys.stderr)
+            num_errors += 1
+    return num_errors
+
 def main():
     num_errors, num_warnings = check_hyperlinks_and_hypertargets()
+    num_errors += check_undefined_references_and_multiply_defined_labels()
+
     print(f"There were {num_errors} errors and {num_warnings} warnings!", file=sys.stderr)
     #if num_errors > 0:
     #    sys.exit(1)

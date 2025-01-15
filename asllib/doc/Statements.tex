@@ -106,7 +106,7 @@ All of the following apply:
 \subsubsection{SemanticsRule.SPass \label{sec:SemanticsRule.SPass}}
 \subsubsection{Example}
 In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SPass.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SPass.asl}
 \texttt{pass;} does nothing.
 
 \subsubsection{Prose}
@@ -174,7 +174,7 @@ All of the following apply:
 \subsubsection{SemanticsRule.SAssign \label{sec:SemanticsRule.SAssign}}
 \subsubsection{Example}
 In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssign.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SAssign.asl}
 \texttt{x = 3;} binds \texttt{x} to $\nvint(3)$ in the environment where \texttt{x} is bound to
 $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
 
@@ -215,16 +215,18 @@ etc.
 
 \subsubsection{SemanticsRule.SAssignCall \label{sec:SemanticsRule.SAssignCall}}
 \subsubsection{Example}
-\VerbatimInput{\semanticstests/SemanticsRule.SAssignCall.asl}
-given that the function call \texttt{f(1)} returns a pair of values --- $\nvint(1)$ and $\nvint(2)$
+In \listingref{assigncallsemantics}, given that the function call \texttt{f(1)} returns a triple of values ---
+$\nvint(1)$, $\nvint(2)$, and $\nvint(3)$
 (each with its own associated execution graph),
-the statement \texttt{(a,b) = f(1)} assigns the value $\nvint(1)$ to the mutable variable \texttt{a}
-and the value $\nvint(2)$ to the mutable variable~\texttt{b}.
+the statement \texttt{(a,b,-) = f(1)} assigns the value $\nvint(1)$ to the mutable variable \texttt{a}
+and the value $\nvint(2)$ to the mutable variable~\texttt{b}, and discards $\nvint(3)$.
+
+\ASLListing{Assignment from a call expression.}{assigncallsemantics}{\semanticstests/SemanticsRule.SAssignCall.asl}
 
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\vs$ assigns a \assignableexpression\ list from a subprogram call, \\
+  \item $\vs$ assigns an \assignableexpression\ list from a subprogram call, \\
         $\SAssign(\LEDestructuring(\les),\ECall(\vcall))$;
   \item $\les$ is a list of \assignableexpressions, each of which is either \\ a variable ($\LEVar(\Ignore)$)
         or a discarded variable (\LEDiscard);
@@ -241,11 +243,9 @@ We first define the syntactic predicate
   \lexprisvar(\lexpr) \aslto \True
 \]
 which holds when a left-hand side expression
-represents a variable:
+represents a variable or a discarded left-hand-side expression:
 \begin{mathpar}
-  \inferrule{}{ \lexprisvar(\LEVar(\Ignore)) \evalarrow \True}
-  \and
-  \inferrule{}{ \lexprisvar(\LEDiscard) \evalarrow \False}
+\inferrule{}{ \lexprisvar(\vle) \evalarrow \astlabel(\vle) \in \{\LEVar, \LEDiscard\}}
 \end{mathpar}
 
 We now define the evaluation of assigning from a subprogram call:
@@ -762,12 +762,12 @@ One of the following applies:
 \subsubsection{SemanticsRule.SDeclSome\label{sec:SemanticsRule.SDeclSome}}
 \subsubsection{Example (Declaration With an Initializing Value)}
 The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SDeclSome.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SDeclSome.asl}
 \texttt{let x = 3;} binds \texttt{x} to $\nvint(3)$ in the empty environment.
 
 \subsubsection{Example (Declaration Without an Initializing Value)}
 In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SDeclNone.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SDeclNone.asl}
 \texttt{var x : integer;} binds \texttt{x} in $\env$ to the base value of \texttt{integer}.
 
 \subsubsection{Prose}
@@ -1045,7 +1045,7 @@ All of the following apply:
 \subsubsection{SemanticsRule.SSeq\label{sec:SemanticsRule.SSeq}}
 \subsubsection{Example}
 In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SSeq.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SSeq.asl}
 \texttt{let x = 3; let y = x + 1} evaluates \texttt{let x = 3} then \texttt{let y = x + 1}.
 
 \subsubsection{Prose}
@@ -1134,7 +1134,7 @@ All of the following apply:
 \subsubsection{SemanticsRule.SCall\label{sec:SemanticsRule.SCall}}
 \subsubsection{Example}
 In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCall.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SCall.asl}
 \texttt{Zeros(3)} evaluates to \texttt{'000'}.
 
 \subsubsection{Prose}
@@ -1249,19 +1249,19 @@ All of the following apply:
 \subsubsection{SemanticsRule.SCond\label{sec:SemanticsRule.SCond}}
 \subsubsection{Examples}
 The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SCond.asl}
 does not result in any Assertion Error.
 
 The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond2.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SCond2.asl}
 does not result in any error.
 
 The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond3.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SCond3.asl}
 results in an Assertion Error.
 
 The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond4.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SCond4.asl}
 does not result in any error.
 
 \subsubsection{Prose}
@@ -1617,12 +1617,12 @@ All of the following apply:
 \subsubsection{SemanticsRule.SAssert \label{sec:SemanticsRule.SAssert}}
 \subsubsection{Example}
 In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssertOk.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SAssertOk.asl}
 \texttt{assert (42 != 3);} ensures that \texttt{3} is not equal to \texttt{42}.
 
 \subsubsection{Example}
 In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssertNo.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SAssertNo.asl}
 \texttt{assert (42 == 3);} results in an \texttt{AssertionFailed} error.
 \subsubsection{Prose}
 All of the following apply:
@@ -1807,7 +1807,7 @@ One of the following applies:
 \subsubsection{SemanticsRule.SWhile \label{sec:SemanticsRule.SWhile}}
 \subsubsection{Example}
 The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SWhile.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SWhile.asl}
 prints \texttt{0123}.
 
 \subsubsection{Prose}
@@ -1869,7 +1869,7 @@ an early return configuration, or an abnormal configuration.
 
 \subsubsection{Example}
 The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Loop.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.Loop.asl}
 does not result in any Assertion Error and the specification terminates with exit
 code $0$.
 
@@ -2107,7 +2107,7 @@ All of the following apply:
 \subsubsection{SemanticsRule.SRepeat \label{sec:SemanticsRule.SRepeat}}
 \subsubsection{Example}
 The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SRepeat.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SRepeat.asl}
 prints
 \begin{Verbatim}
   0
@@ -2421,7 +2421,7 @@ statement.
 
 \subsubsection{Example}
 The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SFor.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SFor.asl}
 prints
 \begin{Verbatim}
   0
@@ -2594,7 +2594,7 @@ All of the following apply:
 \subsubsection{Overall Evaluation}
 \subsubsection{Example}
 The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.For.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.For.asl}
 does not result in any assertion error, and the specification terminates with exit-code $0$.
 
 Evaluating $(\vindexname, \vstart, \dir, \vend, \vbody)$ in $\env$ is either
@@ -2791,12 +2791,12 @@ One of the following applies:
 subsubsection{SemanticsRule.SThrow\label{sec:SemanticsRule.SThrow}}
 \subsubsection{Example (Throwing Without an Exception)}
 The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SThrowNone.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SThrowNone.asl}
 throws a \texttt{MyException} exception.
 
 \subsubsection{Example (Throwing a Typed Exception)}
 The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SThrowSomeTyped.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SThrowSomeTyped.asl}
 terminates successfully. That is, no dynamic error occurs.
 
 \subsubsection{Prose}
@@ -2956,7 +2956,7 @@ All of the following apply:
 \subsubsection{SemanticsRule.STry \label{sec:SemanticsRule.STry}}
 \subsubsection{Example}
 The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.STry.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.STry.asl}
 does not result in any Assertion error, and the specification terminates with the exit code $0$.
 
 \subsubsection{Prose}
@@ -3072,17 +3072,17 @@ One of the following applies:
 \subsubsection{SemanticsRule.SReturn\label{sec:SemanticsRule.SReturn}}
 \subsubsection{Example (No Return Value)}
 The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnNone.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SReturnNone.asl}
 exits the current procedure.
 
 \subsubsection{Example (Returning a Single Value)}
 In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnOne.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SReturnOne.asl}
 \texttt{return 3;} exits the current subprogram with value \texttt{3}.
 
 \subsubsection{Example (Returning Multiple Values)}
 In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnSome.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SReturnSome.asl}
 \texttt{return (3, 42);} exits the current subprogram with value \texttt{(3, 42)}.
 
 \subsubsection{Prose}

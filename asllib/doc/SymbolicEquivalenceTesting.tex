@@ -168,7 +168,7 @@ multiplies two polynomials.
     \vps \eqdef \left\{
       \begin{array}{l}
         \{\mulmonomials(\vmone, \vmtwo) \mapsto \vfone(\vmone)\times\vftwo(\vmtwo)\}  \;|\; \\
-       \vmone\in\dom(\vfone)\ \land\ \vmtwo\in\dom(\vgtwo)
+       \vmone\in\dom(\vfone)\ \land\ \vmtwo\in\dom(\vftwo)
     \end{array}
     \right\}
   }\\
@@ -217,8 +217,7 @@ One of the following applies:
   \item All of the following apply (\textsc{normalizable})
   \begin{itemize}
     \item applying $\toir$ to $\ve$ in $\tenv$ to obtain a symbolic expression yields a symbolic expression $\vpone$\ProseOrTypeError;
-    \item applying $\reduceir$ to $\vpone$ to symbolically simplify $\vpone$ yields $\vptwo$;
-    \item applying $\polynomialtoexpr$ to $\vptwo$ to transform it into an expression yields $\newe$.
+    \item applying $\polynomialtoexpr$ to $\vpone$ to transform it into an expression yields $\newe$.
   \end{itemize}
 
   \item All of the following apply (\textsc{not\_normalizable})
@@ -233,8 +232,7 @@ One of the following applies:
 \inferrule[normalizable]{
   \toir(\tenv, \ve) \typearrow \vpone \OrTypeError\\\\
   \vpone \neq \CannotBeTransformed\\
-  \reduceir(\vpone) \typearrow \vptwo\\
-  \polynomialtoexpr(\vptwo) \typearrow \newe
+  \polynomialtoexpr(\vpone) \typearrow \newe
 }{
   \normalize(\tenv, \ve) \typearrow \newe
 }
@@ -1921,16 +1919,6 @@ $\vb$ is $\True$ if and only if $\vvone$ is equal to $\vvtwo$.
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ReduceIR \label{sec:TypingRule.ReduceIR}}
-\hypertarget{def-reduceir}{}
-The function
-\[
-\reduceir(\overname{\polynomial}{\vp}) \aslto \overname{\polynomial}{\newp}
-\]
-simplifies the polynomial $\vp$, yielding the simplified polynomial $\newp$.
-
-\subsubsection{Prose}
-\subsubsection{Formally}
 \subsubsection{TypingRule.PolynomialToExpr \label{sec:TypingRule.PolynomialToExpr}}
 \hypertarget{def-polynomialtoexpr}{}
 The function

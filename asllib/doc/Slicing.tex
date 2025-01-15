@@ -443,23 +443,23 @@ $\Normal(((\vstart, \vlength), \vg), \newenv)$, a throwing configuration, or a d
 
 \subsubsection{Example (Single Slice)}
 In the specification:
-  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceSingle.asl}
+  \ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SliceSingle.asl}
 the slice \texttt{[2]} evaluates to \texttt{(2, 1)}, i.\,e.\ the slice of
 length 1 starting at index 2.
 
 \subsubsection{Example (Range Slice)}
 In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceRange.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SliceRange.asl}
 \texttt{4:2} evaluates to \texttt{(2, 3)}.
 
 \subsubsection{Example (Length Slice)}
 In the specification:
-  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceLength.asl}
+  \ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SliceLength.asl}
 \texttt{2+:3} evaluates to \texttt{(2, 3)}.
 
 \subsubsection{Example (Scaled Slice)}
 In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceStar.asl}
+\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SliceStar.asl}
 \texttt{x[3*:2]} evaluates to \texttt{'11'}.
 
 \subsubsection{Prose}

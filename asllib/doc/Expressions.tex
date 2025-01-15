@@ -146,9 +146,8 @@ All of the following apply:
 
 \subsection{Semantics}
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.Lit.asl}
-each of the expressions \texttt{3} evaluates to the \nativevalue\  $\nvint(3)$.
+In \listingref{literalssemantics}, each of the expressions \texttt{3} evaluates to the \nativevalue\ $\nvint(3)$.
+\ASLListing{Semantics of literals}{literalssemantics}{\semanticstests/SemanticsRule.Lit.asl}
 
 \subsubsection{SemanticsRule.ELit \label{sec:SemanticsRule.ELit}}
 \subsubsection{Prose}
@@ -356,15 +355,14 @@ and
 both in the Chapter ``Typing of Global Declarations''.
 
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.ELocalVar.asl}
-the evaluation of \texttt{x} within \texttt{assert x == 3;} uses SemanticsRule.EVar.LOCAL.
+In \listingref{localvarsemantics}, the evaluation of \texttt{x} within \texttt{assert x == 3;}
+uses \\ \nameref{sec:SemanticsRule.EVar}.LOCAL.
+\ASLListing{Semantics of local variables}{localvarsemantics}{\semanticstests/SemanticsRule.ELocalVar.asl}
 
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.EGlobalVar.asl}
-the evaluation of~\texttt{global\_x} within~\texttt{assert global\_x == 3;}
-uses the rule \\ SemanticsRule.EVar.GLOBAL.
+In \listingref{globalvarsemantics}, the evaluation of~\texttt{global\_x} within~\texttt{assert global\_x == 3;}
+uses the rule \nameref{sec:SemanticsRule.EVar}.GLOBAL.
+\ASLListing{Semantics of global variables}{globalvarsemantics}{\semanticstests/SemanticsRule.EGlobalVar.asl}
 
 \section{Binary Expressions\label{sec:BinaryExpressions}}
 \subsection{Syntax}
@@ -556,8 +554,9 @@ All of the following apply:
 \end{itemize}
 
 \subsubsection{Example}
-\ASLExample{\semanticstests/SemanticsRule.EBinopAndFalse.asl}
+In \listingref{andsemantics},
 the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}. Notice that the function \texttt{fail} is never called.
+\ASLListing{Semantics of conjunction}{andsemantics}{\semanticstests/SemanticsRule.EBinopAndFalse.asl}
 
 \CodeSubsection{\EvalBinopAndBegin}{\EvalBinopAndEnd}{../Interpreter.ml}
 
