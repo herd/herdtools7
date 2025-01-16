@@ -711,7 +711,7 @@ let conditional_stmt ==
   | IF; ~=expr; THEN; ~=possibly_empty_block; ~=s_else;       < AST.S_Cond >
   | IF; ~=expr; THEN; ~=simple_stmt_list; ~=simple_else; EOL; < AST.S_Cond >
   | CASE; ~=expr; OF; EOL; INDENT; alts=list(alt); DEDENT;
-    { desugar_case_stmt expr alts }
+    { desugar_case_stmt expr alts (AST.S_Unreachable |> ASTUtils.add_pos_from expr) }
 
 let s_elsif == annotated ( ELSIF; ~=expr; THEN; ~=possibly_empty_block; <> )
 let s_else == ~=list(s_elsif); ~=ioption(ELSE; possibly_empty_block); < build_stmt_conds >

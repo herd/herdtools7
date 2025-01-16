@@ -131,7 +131,7 @@ let desugar_lhs_fields_tuple base field_opts =
       in
       LE_Destructuring (List.map desugar_one field_opts)
 
-let desugar_case_stmt e0 cases =
+let desugar_case_stmt e0 cases otherwise =
   let case_to_cond e0 case tail =
     let { pattern; where; stmt } = case.desc in
     let e_pattern = E_Pattern (e0, pattern) |> add_pos_from pattern in
@@ -143,15 +143,15 @@ let desugar_case_stmt e0 cases =
     S_Cond (cond, stmt, tail) |> add_pos_from case
   in
   (* Begin CasesToCond *)
-  let cases_to_cond ~loc e0 cases =
-    List.fold_right (case_to_cond e0) cases (add_pos_from loc S_Unreachable)
+  let cases_to_cond e0 cases =
+    List.fold_right (case_to_cond e0) cases otherwise
     (* End *)
   in
   (* Begin DesugarCaseStmt *)
   match e0.desc with
-  | E_Var _ -> (cases_to_cond ~loc:e0 e0 cases).desc
+  | E_Var _ -> (cases_to_cond e0 cases).desc
   | _ ->
       let x = fresh_var "__case__linearisation" in
       let decl_x = S_Decl (LDK_Let, LDI_Var x, None, Some e0) in
-      S_Seq (decl_x |> add_pos_from e0, cases_to_cond ~loc:e0 (var_ x) cases)
+      S_Seq (decl_x |> add_pos_from e0, cases_to_cond (var_ x) cases)
 (* End *)

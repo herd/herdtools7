@@ -83,8 +83,9 @@ val desugar_lhs_fields_tuple :
     are unique. *)
 
 val desugar_case_stmt :
-  expr_desc annotated -> case_alt_desc annotated list -> stmt_desc
-(** [desugar_case_stmt e0 cases] desugars a case statement for the expression
-    [e0] and case alternatives [cases] into a conditional statement
-    (possibly preceded by an assignment of the condition [e0] to a fresh
-     variable). *)
+  expr_desc annotated -> case_alt_desc annotated list -> stmt -> stmt_desc
+(** [desugar_case_stmt e0 cases otherwise] desugars a case statement for the
+    discriminant expression [e0], case alternatives [cases], and otherwise
+    statement [otherwise].
+    The result is a conditional statement, possibly preceded by an assignment
+    of the condition [e0] to a fresh variable). *)

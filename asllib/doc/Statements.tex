@@ -1301,10 +1301,10 @@ condition an expression satisfies.
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \Ncasealtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+|\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \Ncasealtlist \parsesep \Totherwise \parsesep \Tarrow &\\
+   & \wrappedline\ \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
 \Ncasealtlist \derives \ & \NClist{\Ncasealt} \parsesep &\\
-                           |\ & \NClist{\Ncasealt} \parsesep \Ncaseotherwise &\\
 \Ncasealt \derives \ & \Twhen \parsesep \Npatternlist \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &\\
-\Ncaseotherwise \derives \ & \Totherwise \parsesep \Tarrow \parsesep \Nstmtlist &
 \end{flalign*}
 
 \hypertarget{def-casediscriminantterm}{}
@@ -1339,7 +1339,7 @@ follows the semantics of pattern matching defined in \chapref{PatternMatching}.
 It is not a static error if it can be statically determined that none of the patterns in a
 \casealternativeterm\ can match the discriminant.
 
-\RequirementDef{CaseNoCaseError} If no \casealternativeterm\ is selected,
+\RequirementDef{CaseNoOtherwiseError} If no \casealternativeterm\ is selected,
 and there is no \otherwisecaseterm, it is a dynamic error.
 
 \subsubsection{Example}
@@ -1350,7 +1350,7 @@ compound condition statement.
 \listingref{ast-case2} shows an example of how a \texttt{case} statement can be transformed into
 a statement that does not contain any \text{case} statement.
 By storing the \casediscriminantterm\ in a variable and by adding
-a call to \Tunreachable, the transformation ensures that a dynamic error occurs when no
+a call to \texttt{Unreachable()}, the transformation ensures that a dynamic error occurs when no
 \casealternativeterm\ is selected.
 \ASLListing{Transforming a case statement with a non-variable as the case discriminant
 and no otherwise case}{ast-case2}{\syntaxtests/ASTRule.Desugar_SCase2.asl}
@@ -1364,11 +1364,18 @@ AST:
 \end{flalign*}
 
 \subsubsection{ASTRule.SCase}
+To satisfy \RequirementRef{CaseNoOtherwiseError}, when no \otherwisecaseterm\ exists,
+$\SUnreachable$ is used instead:
 \begin{mathpar}
-\inferrule{
+\inferrule[no\_otherwise]{
   \buildlist[\buildcasealt](\vcasealtlist) \astarrow \vcasealtlistast\\
   \buildexpr(\vediscriminant) \astarrow \astversion{\vediscriminant}\\
-  \desugarcasestmt(\astversion{\vediscriminant}, \vcasealtlistast) \astarrow \vastnode
+  {
+  \begin{array}{r}
+  \desugarcasestmt(\astversion{\vediscriminant}, \vcasealtlistast, \SUnreachable) \astarrow \\
+  \vastnode
+  \end{array}
+  }
 }{
   {
   \buildstmt\left(\overname{
@@ -1376,6 +1383,35 @@ AST:
       \begin{array}{l}
         \Tcase, \namednode{\vediscriminant}{\Nexpr}, \Tof, \\
         \wrappedline\ \namednode{\vcasealtlist}{\Ncasealtlist}, \\
+        \wrappedline\ \Tend, \Tsemicolon
+      \end{array}
+    \right)
+    }{\vparsednode}\right)
+  \astarrow
+  \vastnode
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[otherwise]{
+  \buildlist[\buildcasealt](\vcasealtlist) \astarrow \vcasealtlistast\\
+  \buildexpr(\vediscriminant) \astarrow \astversion{\vediscriminant}\\
+  \buildstmtlist(\votherwise) \astarrow \astversion{\votherwise}\\
+  {
+  \begin{array}{r}
+  \desugarcasestmt(\astversion{\vediscriminant}, \vcasealtlistast, \astversion{\votherwise}) \astarrow \\
+  \vastnode
+  \end{array}
+  }
+}{
+  {
+  \buildstmt\left(\overname{
+    \Nstmt\left(
+      \begin{array}{l}
+        \Tcase, \namednode{\vediscriminant}{\Nexpr}, \Tof, \\
+        \wrappedline\ \namednode{\vcasealtlist}{\Ncasealtlist}, \\
+        \wrappedline\ \Totherwise, \Tarrow, \namednode{\votherwise}{\Nstmtlist}, \\
         \wrappedline\ \Tend, \Tsemicolon
       \end{array}
     \right)
@@ -1395,29 +1431,10 @@ The function
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
-\inferrule[no\_otherwise]{
+\inferrule{
   \buildclist[\buildcasealt](\vcases) \typearrow \vastnode
 }{
   \buildcasealtlist(\overname{\Ncasealtlist(\vcases : \NClist{\Ncasealt})}{\vparsednode}) \astarrow \vastnode
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[otherwise]{
-  \buildclist[\buildcasealt](\vcases) \astarrow h\\
-  \buildcasealt(\votherwise) \astarrow t
-}{
-  {
-  \buildcasealtlist\left(\overname{
-      \Ncasealtlist\left(
-        \begin{array}{l}
-          \vcases : \NClist{\Ncasealt}, \\
-          \votherwise:\Ncaseotherwise
-        \end{array}
-    \right)
-    }{\vparsednode}\right) \astarrow
-  \overname{[h] \concat t}{\vastnode}
-  }
 }
 \end{mathpar}
 
@@ -1449,84 +1466,24 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.CaseOtherwise\label{sec:ASTRule.CaseOtherwise}}
-\hypertarget{build-caseotherwise}{}
-The function
-\[
-\buildcaseotherwise(\overname{\parsenode{\Ncaseotherwise}}{\vparsednode}) \;\aslto\; \overname{\casealt}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
-\begin{mathpar}
-\inferrule{}{
-  {
-    \begin{array}{r}
-  \buildcaseotherwise(\overname{\Ncasealt(\Totherwise, \Tarrow, \namednode{\vstmts}{\Nstmtlist})}{\vparsednode})
-  \astarrow \\
-  \overname{\casealt(\CasePattern: \PatternAll, \CaseWhere: \None, \CaseStmt: \astof{\vstmtlist})}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\subsubsection{ASTRule.OtherwiseOpt\label{sec:ASTRule.OtherwiseOpt}}
-\hypertarget{build-otherwiseopt}{}
-The function
-\[
-\buildotherwiseopt(\overname{\parsenode{\Notherwiseopt}}{\vparsednode}) \;\aslto\; \overname{\stmt?}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
-\begin{mathpar}
-\inferrule{
-  \buildoption[\buildstmtlist] (\vv)\astarrow \vastnode
-}{
-  {
-  \begin{array}{r}
-  \buildotherwiseopt(\overname{\Notherwiseopt(\namednode{\vv}{\option{\Totherwise, \Tarrow, \Nstmtlist}})}{\vparsednode})
-  \astarrow \\
-  \vastnode
-  \end{array}
-  }
-}
-\end{mathpar}
-
 \subsubsection{ASTRule.DesugarCaseStmt\label{sec:ASTRule.DesugarCaseStmt}}
 \hypertarget{def-desugarcasestmt}{}
 The relation
 \[
-\desugarcasestmt(\overname{\expr}{\vezero}, \overname{\casealt^*}{\vcases}) \;\aslrel\; \overname{\stmt}{\news}
+\desugarcasestmt(
+  \overname{\expr}{\vezero},
+  \overname{\casealt^*}{\vcases},
+  \overname{\stmt}{\votherwise}) \;\aslrel\; \overname{\stmt}{\news}
 \]
-transforms a \casediscriminantterm\ $\vezero$ and a list of \casealternativesterm\ $\vcases$
-into a statement $\news$.
+transforms a \casediscriminantterm\ $\vezero$, a list of \casealternativesterm\ $\vcases$,
+and a statement $\votherwise$ into a statement $\news$.
 
-% \subsubsection{Prose}
-% One of the following applies:
-% \begin{itemize}
-%   \item All of the following apply (\textsc{var}):
-%   \begin{itemize}
-%     \item $\vezero$ is a variable expression;
-%     \item applying $\casestocond$ to $\vezero$ and $\vcases$ yields $\news$.
-%   \end{itemize}
-
-%   \item All of the following apply (\textsc{non\_var}):
-%   \begin{itemize}
-%     \item $\vezero$ is not a variable expression;
-%     \item let $\vx$ be a fresh identifier;
-%     \item define $\vdeclx$ the statement declaring $\vx$ as an immutable variable initialized by $\vezero$;
-%     \item applying $\casestocond$ to the variable expression for $\vx$ ($\EVar(\vx)$) and $\vcases$ yields
-%           the condition statement $\vscond$;
-%     \item define $\news$ as the sequence statement for $\vdeclx$ and $\vscond$.
-%   \end{itemize}
-% \end{itemize}
-
-% \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[var]{
   \astlabel(\vezero) = \EVar\\
-  \casestocond(\vezero, \vcases) \typearrow \news
+  \casestocond(\vezero, \vcases, \votherwise) \typearrow \news
 }{
-  \desugarcasestmt(\vezero, \vcases) \astarrow \news
+  \desugarcasestmt(\vezero, \vcases, \votherwise) \astarrow \news
 }
 \end{mathpar}
 
@@ -1538,9 +1495,9 @@ compound conditional statement (see \listingref{ast-case2} for an example):
   \astlabel(\vezero) \neq \EVar\\
   \vx \in \Identifiers \text{ is fresh}\\
   \vdeclx \eqname \SDecl(\LDKLet, \LDIVar(\vx), \None, \langle\vezero\rangle)\\
-  \casestocond(\EVar(\vx), \vcases) \typearrow \vscond
+  \casestocond(\EVar(\vx), \vcases, \votherwise) \typearrow \vscond
 }{
-  \desugarcasestmt(\vezero, \vcases) \astarrow \overname{\SSeq(\vdeclx, \vscond)}{\news}
+  \desugarcasestmt(\vezero, \vcases, \votherwise) \astarrow \overname{\SSeq(\vdeclx, \vscond)}{\news}
 }
 \end{mathpar}
 
@@ -1548,35 +1505,21 @@ compound conditional statement (see \listingref{ast-case2} for an example):
 \hypertarget{def-casestocond}{}
 The function
 \[
-\casestocond(\overname{\expr}{\ve} \aslsep \overname{\casealt^*}{\vcases})
+\casestocond(
+  \overname{\expr}{\ve} \aslsep
+  \overname{\casealt^*}{\vcases} \aslsep
+  \overname{\stmt}{\votherwise})
 \;\aslrel\; \overname{\stmt}{\news}
 \]
-transforms an expression $\ve$ and a list of \texttt{case} alternatives $\vcases$
+transforms an expression $\ve$, a list of \texttt{case} alternatives $\vcases$,
+and a statement $\votherwise$
 into a statement $\news$.
 
-% \subsubsection{Prose}
-% One of the following applies:
-% \begin{itemize}
-%   \item All of the following apply (\textsc{last}):
-%   \begin{itemize}
-%     \item $\vcases$ is the list consisting of just $\vcase$;
-%     \item applying $\casetocond$ to $\ve$, $\vcase$, and $\SUnreachable$ yields $\news$.
-%   \end{itemize}
-
-%   \item All of the following apply (\textsc{not\_last}):
-%   \begin{itemize}
-%     \item $\vcases$ is the list with $\vcase$ as its \head\ and a non-empty list $\vcasesone$ as its \tail;
-%     \item applying $\casestocond$ to $\ve$ and $\vcasesone$ yields $\vsone$;
-%     \item applying $\casetocond$ to $\ve$, $\vcase$, and $\vsone$ yields $\news$.
-%   \end{itemize}
-% \end{itemize}
-
-% \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[last]{
-  \casetocond(\ve, \vcase, \SUnreachable) \astarrow \news
+  \casetocond(\ve, \vcase, \votherwise) \astarrow \news
 }{
-  \casestocond(\ve, \overname{[\vcase]}{\vcases}) \astarrow \news
+  \casestocond(\ve, \overname{[\vcase]}{\vcases}, \votherwise) \astarrow \news
 }
 \end{mathpar}
 
@@ -1586,7 +1529,7 @@ into a statement $\news$.
   \casestocond(\ve, \vcasesone) \typearrow \vsone\\
   \casetocond(\ve, \vcase, \vsone) \typearrow \news
 }{
-  \casestocond(\ve, \overname{[\vcase] \concat \vcasesone}{\vcases}) \astarrow \news
+  \casestocond(\ve, \overname{[\vcase] \concat \vcasesone}{\vcases}, \votherwise) \astarrow \news
 }
 \end{mathpar}
 
@@ -1601,20 +1544,6 @@ transforms an expression $\vezero$ (the condition used for a \texttt{case} state
 a single \texttt{case} alternative $\vcase$, and a statement $\vtail$, which represents
 a list of \texttt{case} alternatives already converted to conditionals, into a condition statement $\news$.
 
-% \subsubsection{Prose}
-% All of the following apply:
-% \begin{itemize}
-%   \item view $\vcase$ as the \texttt{case} alternative with pattern $\vpattern$, optional \texttt{where} clause $\vwhere$,
-%         and statement $\vstmt$;
-%   \item define $\vepattern$ as the pattern expression for expression $\vezero$ and the pattern \\
-%         $\vpattern$;
-%   \item define $\vcond$ as the binary expression with operator $\BAND$ and expressions \\
-%         $\vepattern$ and $\vewhere$
-%         if $\vwhere$ is the expression $\vewhere$ and $\vepattern$, otherwise;
-%   \item define $\news$ as the condition statement with the condition expression $\vcond$ and statements $\vstmt$ and $\vtail$.
-% \end{itemize}
-
-% \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \vcase \eqname \{ \CasePattern : \vpattern, \CaseWhere : \vwhere, \CaseStmt : \vstmt \}\\

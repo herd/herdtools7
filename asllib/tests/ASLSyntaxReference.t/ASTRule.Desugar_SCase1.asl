@@ -11,11 +11,7 @@ begin
   if x IN {42} then
     x = 42;
   else
-    if x IN {<= 42} then
-      x = 0;
-    else
-      if x IN {-} then x = 43; else Unreachable(); end;
-    end;
+    if x IN {<= 42} then x = 0; else x = 43; end;
   end;
 
   return x;
