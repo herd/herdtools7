@@ -236,7 +236,7 @@ One of the following applies:
           $\SliceLength(\eoffset, \elength)$;
     \item annotating the expression $\eoffset$ in $\tenv$ yields \\
           $(\toffset, \eoffsetp, \vsesoffset)$\ProseOrTypeError;
-    \item annotating the \staticallyevaluable\ \constrainedinteger\ expression $\elength$ in $\tenv$ yields
+    \item annotating the \symbolicallyevaluable\ \constrainedinteger\ expression $\elength$ in $\tenv$ yields
     $(\elengthp, \vseslength)$\ProseOrTypeError;
     \item determining whether $\toffset$ has the \structureofinteger\ yields $\True$\ProseOrTypeError;
     \item $\vsp$ is the slice at offset $\eoffsetp$ and length $\elength'$, that is,\\
@@ -275,7 +275,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[length]{
   \annotateexpr{\tenv, \eoffset} \typearrow (\toffset, \eoffsetp, \vsesoffset) \OrTypeError\\\\
-  \annotatestaticconstrainedinteger(\tenv, \elength) \typearrow (\elengthp, \vseslength) \OrTypeError\\\\
+  \annotatesymbolicconstrainedinteger(\tenv, \elength) \typearrow (\elengthp, \vseslength) \OrTypeError\\\\
   \checkstructureinteger(\tenv, \toffset) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsesoffset \cup \vseslength
 }{
@@ -394,37 +394,37 @@ One of the following applies:
 }
 \end{mathpar}
 
-\TypingRuleDef{StaticConstrainedInteger}
-\hypertarget{def-annotatestaticconstrainedinteger}{}
+\TypingRuleDef{SymbolicConstrainedInteger}
+\hypertarget{def-annotatesymbolicconstrainedinteger}{}
 The function
 \[
-  \annotatestaticconstrainedinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
+  \annotatesymbolicconstrainedinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
   (\overname{\expr}{\vepp} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates a \staticallyevaluable\ integer expression $\ve$ of a constrained integer type in the static environment $\tenv$
+annotates a \symbolicallyevaluable\ integer expression $\ve$ of a constrained integer type in the static environment $\tenv$
 and returns the annotated expression $\vepp$ and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item \Proseannotatestaticallyevaluableexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$\ProseOrTypeError};
-  \item determining whether $\vt$ is a statically \constrainedinteger\ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item determining whether $\vep$ is \staticallyevaluable\  in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item \Proseannotatesymbolicallyevaluableexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$\ProseOrTypeError};
+  \item determining whether $\vt$ is a symbolically \constrainedinteger\ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item determining whether $\vep$ is \symbolicallyevaluable\  in $\tenv$ yields $\True$\ProseOrTypeError;
   \item applying $\normalize$ to $\vep$ in $\tenv$ yields $\vepp$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatestaticallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
+  \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \vt) \typearrow \True \OrTypeError\\\\
-  \checkstaticallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
+  \checksymbolicallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
   \normalize(\tenv, \vep) \typearrow \vepp
 }{
-  \annotatestaticconstrainedinteger(\tenv, \ve) \typearrow (\vepp, \vses)
+  \annotatesymbolicconstrainedinteger(\tenv, \ve) \typearrow (\vepp, \vses)
 }
 \end{mathpar}
-\CodeSubsection{\StaticConstrainedIntegerBegin}{\StaticConstrainedIntegerEnd}{../Typing.ml}
+\CodeSubsection{\SymbolicConstrainedIntegerBegin}{\SymbolicConstrainedIntegerEnd}{../Typing.ml}
 
 \subsection{Semantics}
 \SemanticsRuleDef{Slice}

@@ -475,8 +475,8 @@ module TypingRule = struct
     | BitfieldSliceToPositions
     | CheckPositionsInWidth
     | ShouldReduceToCall
-    | IsStaticallyEvaluable
-    | CheckStaticallyEvaluable
+    | IsSymbolicallyEvaluable
+    | CheckSymbolicallyEvaluable
     | ShouldRememberImmutableExpression
     | AddImmutableExpression
     | SymIntSetSubset
@@ -663,8 +663,8 @@ module TypingRule = struct
     | BitfieldSliceToPositions -> "BitfieldSliceToPositions"
     | CheckPositionsInWidth -> "CheckPositionsInWidth"
     | ShouldReduceToCall -> "ShouldReduceToCall"
-    | IsStaticallyEvaluable -> "IsStaticallyEvaluable"
-    | CheckStaticallyEvaluable -> "CheckStaticallyEvaluable"
+    | IsSymbolicallyEvaluable -> "IsSymbolicallyEvaluable"
+    | CheckSymbolicallyEvaluable -> "CheckSymbolicallyEvaluable"
     | ShouldRememberImmutableExpression -> "ShouldRememberImmutableExpression"
     | AddImmutableExpression -> "AddImmutableExpression"
     | SymIntSetSubset -> "SymIntSetSubset"
@@ -835,8 +835,8 @@ module TypingRule = struct
       BitfieldSliceToPositions;
       CheckPositionsInWidth;
       ShouldReduceToCall;
-      IsStaticallyEvaluable;
-      CheckStaticallyEvaluable;
+      IsSymbolicallyEvaluable;
+      CheckSymbolicallyEvaluable;
       ShouldRememberImmutableExpression;
       AddImmutableExpression;
       SymIntSetSubset;

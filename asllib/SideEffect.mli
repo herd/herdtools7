@@ -37,7 +37,7 @@ val compare : t -> t -> int
 val pp_print : Format.formatter -> t -> unit
 val time_frame : t -> TimeFrame.t
 val is_pure : t -> bool
-val is_statically_evaluable : t -> bool
+val is_symbolically_evaluable : t -> bool
 
 (** The module [SES] provides an abstraction over a set of side-effects. *)
 module SES : sig
@@ -58,7 +58,7 @@ module SES : sig
   (* Properties *)
   val max_time_frame : t -> TimeFrame.t
   val is_pure : t -> bool
-  val is_statically_evaluable : t -> bool
+  val is_symbolically_evaluable : t -> bool
   val equal : t -> t -> bool
   val is_deterministic : t -> bool
 

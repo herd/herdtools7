@@ -270,7 +270,7 @@ One of the following applies:
           \tail\ $\funcsigparamsone$, and
           $\params$ is a non-empty list with \head\ \\
           $(\tyactual, \eactual, \vsesactual)$ and \tail\ $\paramsone$;
-    \item \Prosecheckstaticallyevaluable{$\vsesactual$};
+    \item \Prosechecksymbolicallyevaluable{$\vsesactual$};
     \item checking that $\tyactual$ represents a \constrainedinteger{} yields $\True$\ProseOrTypeError;
     \item One of the following applies:
     \begin{itemize}
@@ -303,7 +303,7 @@ One of the following applies:
 \inferrule[parameterized]{
   \funcsigparams \eqname [(\vx, \tydeclopt)] \concat \funcsigparamsone\\
   \params \eqname [(\tyactual, \eactual, \vsesactual)] \concat \paramsone\\
-  \checkstaticallyevaluable(\vsesactual) \typearrow \True\OrTypeError\\\\
+  \checksymbolicallyevaluable(\vsesactual) \typearrow \True\OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \tyactual) \typearrow \True\OrTypeError\\\\
   \commonprefixline\\\\
   \tydeclopt = \langle\TInt(\parameterized(\vx))\rangle\\\\
@@ -315,7 +315,7 @@ One of the following applies:
 \inferrule[other]{
   \funcsigparams \eqname [(\vx, \tydeclopt)] \concat \funcsigparamsone\\
   \params \eqname [(\tyactual, \eactual, \vsesactual)] \concat \paramsone\\
-  \checkstaticallyevaluable(\vsesactual) \typearrow \True\OrTypeError\\\\
+  \checksymbolicallyevaluable(\vsesactual) \typearrow \True\OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \tyactual) \typearrow \True\OrTypeError\\\\
   \commonprefixline\\\\
   \tydeclopt \eqname \langle\tydecl\rangle\\

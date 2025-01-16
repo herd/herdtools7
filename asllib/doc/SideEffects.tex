@@ -63,7 +63,7 @@ That is, evaluating the expressions results in the same set of configurations,
 up to the order of values, and ignoring dynamic errors that are not due to assertions.
 \end{definition}
 
-Along the way, we also define the concept of \emph{pure expressions} and \staticallyevaluable\ expressions.
+Along the way, we also define the concept of \emph{pure expressions} and \symbolicallyevaluable\ expressions.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Time Frames\label{sec:TimeFrames}}
@@ -269,14 +269,14 @@ a \NonDeterministicTerm, or a \PerformsAssertionsTerm.
 }
 \end{mathpar}
 
-\TypingRuleDef{SideEffectIsStaticallyEvaluable}
-\hypertarget{def-sideeffectisstaticallyevaluable}{}
+\TypingRuleDef{SideEffectIsSymbolicallyEvaluable}
+\hypertarget{def-sideeffectissymbolicallyevaluable}{}
 \[
-    \sideeffectisstaticallyevaluable(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
+    \sideeffectissymbolicallyevaluable(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
 \]
-defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{\staticallyevaluable},
+defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{\symbolicallyevaluable},
 yielding the result in $\vb$.
-Intuitively, a \emph{statically evaluable} \sideeffectdescriptorterm\ helps establish that
+Intuitively, a \emph{symbolically evaluable} \sideeffectdescriptorterm\ helps establish that
 an expression evaluates without failing assertions, without modifying any storage element,
 and always yielding the same result, that is, deterministically.
 
@@ -290,7 +290,7 @@ a \ReadGlobalTerm\ associated with an immutable storage element.
 \inferrule{
     \vb \eqdef \vs = \ReadLocal(\Ignore, \Ignore, \True) \lor \vs = \ReadGlobal(\Ignore, \Ignore, \True)
 }{
-    \sideeffectisstaticallyevaluable(\vs) \typearrow \vb
+    \sideeffectissymbolicallyevaluable(\vs) \typearrow \vb
 }
 \end{mathpar}
 
@@ -606,57 +606,57 @@ One of the following applies:
 }
 \end{mathpar}
 
-\TypingRuleDef{SESIsStaticallyEvaluable}
-\hypertarget{def-isstaticallyevaluable}{}
-\hypertarget{def-staticallyevaluable}{}
+\TypingRuleDef{SESIsSymbolicallyEvaluable}
+\hypertarget{def-issymbolicallyevaluable}{}
+\hypertarget{def-symbolicallyevaluable}{}
 The function
 \[
-  \isstaticallyevaluable(\overname{\TSideEffectSet}{\vses}) \aslto \overname{\Bool}{\bv}
+  \issymbolicallyevaluable(\overname{\TSideEffectSet}{\vses}) \aslto \overname{\Bool}{\bv}
 \]
-tests whether a set of \sideeffectdescriptorsterm\ $\vses$ are all \staticallyevaluable,
+tests whether a set of \sideeffectdescriptorsterm\ $\vses$ are all \symbolicallyevaluable,
 yielding the result in $\vb$.
 
 \subsubsection{Prose}
 Define $\vb$ as $\True$ if and only if every \sideeffectdescriptorterm\ $\vs$ in $\vses$
-is \staticallyevaluable.
+is \symbolicallyevaluable.
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \vb \eqdef \bigwedge_{\vs\in\vses} \sideeffectisstaticallyevaluable(\vs)
+  \vb \eqdef \bigwedge_{\vs\in\vses} \sideeffectissymbolicallyevaluable(\vs)
 }{
-  \isstaticallyevaluable(\vses) \typearrow \vb
+  \issymbolicallyevaluable(\vses) \typearrow \vb
 }
 \end{mathpar}
 
-\hypertarget{def-checkstaticallyevaluable}{}
-\TypingRuleDef{CheckStaticallyEvaluable}
+\hypertarget{def-checksymbolicallyevaluable}{}
+\TypingRuleDef{CheckSymbolicallyEvaluable}
 The function
 \[
-  \checkstaticallyevaluable(\overname{\TSideEffectSet}{\vses}) \aslto
+  \checksymbolicallyevaluable(\overname{\TSideEffectSet}{\vses}) \aslto
   \{\True\} \cup \TTypeError
 \]
-returns $\True$ if the set of \sideeffectdescriptorsterm\ $\vses$ is \staticallyevaluable.
+returns $\True$ if the set of \sideeffectdescriptorsterm\ $\vses$ is \symbolicallyevaluable.
 \ProseOtherwiseTypeError
 
 \subsubsection{Prose}
 All of the following applies:
 \begin{itemize}
-  \item applying $\isstaticallyevaluable$ to $\ve$ in $\tenv$ yields $\vb$;
+  \item applying $\issymbolicallyevaluable$ to $\ve$ in $\tenv$ yields $\vb$;
   \item the result is $\True$ if $\vb$ is $\True$, otherwise it is a type error indicating that the expression
-  is not statically evaluable.
+  is not \symbolicallyevaluable.
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \isstaticallyevaluable(\vses) \typearrow \vb\\
-  \checktrans{\vb}{NotStaticallyEvaluable} \checktransarrow \True \OrTypeError
+  \issymbolicallyevaluable(\vses) \typearrow \vb\\
+  \checktrans{\vb}{NotSymbolicallyEvaluable} \checktransarrow \True \OrTypeError
 }{
-  \checkstaticallyevaluable(\vses) \typearrow \True
+  \checksymbolicallyevaluable(\vses) \typearrow \True
 }
 \end{mathpar}
-\CodeSubsection{\CheckStaticallyEvaluableBegin}{\CheckStaticallyEvaluableEnd}{../Typing.ml}
+\CodeSubsection{\CheckSymbolicallyEvaluableBegin}{\CheckSymbolicallyEvaluableEnd}{../Typing.ml}
 
 \TypingRuleDef{SESIsPure}
 \hypertarget{def-sesispure}{}

@@ -163,8 +163,8 @@ let is_pure = function
   | WritesLocal _ | WritesGlobal _ | CallsRecursive _ | ThrowsException _ ->
       false
 
-(* Begin IsStaticallyEvaluable *)
-let is_statically_evaluable = function
+(* Begin IsSymbolicallyEvaluable *)
+let is_symbolically_evaluable = function
   | ReadsLocal { immutable } | ReadsGlobal { immutable } -> immutable
   | WritesLocal _ | WritesGlobal _ | NonDeterministic | CallsRecursive _
   | ThrowsException _ | PerformsAssertions ->
@@ -228,8 +228,8 @@ module SES = struct
   let all_reads_are_immutable ses =
     ISet.is_empty ses.local_reads && ISet.is_empty ses.global_reads
 
-  (* Begin SESIsStaticallyEvaluable *)
-  let is_statically_evaluable ses =
+  (* Begin SESIsSymbolicallyEvaluable *)
+  let is_symbolically_evaluable ses =
     is_pure ses && (not ses.non_determinism)
     && (not ses.assertions_performed)
     && all_reads_are_immutable ses
