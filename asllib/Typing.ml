@@ -2742,9 +2742,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let ses = SES.union3 ses_cond ses1 ses2 in
         (S_Cond (e_cond, s1', s2') |> here, env, ses) |: TypingRule.SCond
     (* End *)
-    (* Begin SCase *)
-    | S_Case _ -> desugar_case_stmt s |> annotate_stmt env |: TypingRule.SCase
-    (* End *)
     (* Begin SAssert *)
     | S_Assert e ->
         let t_e', e', ses_e = annotate_expr env e in
@@ -3423,8 +3420,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | S_Repeat (body, _, _) -> from_stmt body
       | S_While _ | S_For _ -> MayNotInterrupt
       | S_Try (body, _, _) -> from_stmt body
-      | S_Case (_, _) ->
-          (* Should be unsugared, so only for v0 *) AssertedNotInterrupt
     (* End *)
 
     (** [check_stmt_interrupts name env body] checks that the function named

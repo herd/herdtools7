@@ -315,7 +315,6 @@ let rec use_s s =
   | S_Assign (le, e) -> use_e e $ use_le le
   | S_Call { name; args; params } -> ISet.add name $ use_es params $ use_es args
   | S_Cond (e, s1, s2) -> use_s s1 $ use_s s2 $ use_e e
-  | S_Case (e, cases) -> use_e e $ use_cases cases
   | S_For { start_e; end_e; body; index_name = _; dir = _; limit } ->
       use_option use_e limit $ use_e start_e $ use_e end_e $ use_s body
   | S_While (e, limit, s) | S_Repeat (s, e, limit) ->
@@ -328,11 +327,6 @@ let rec use_s s =
   | S_Print { args; debug = _ } -> use_es args
   | S_Pragma (name, args) -> ISet.add name $ use_es args
   | S_Unreachable -> Fun.id
-
-and use_case { desc = { pattern; where; stmt }; _ } =
-  use_option use_e where $ use_pattern pattern $ use_s stmt
-
-and use_cases cases = use_list use_case cases
 
 and use_le le =
   match le.desc with
@@ -620,37 +614,6 @@ let string_starts_with ~prefix s =
 let global_ignored_prefix = "__global_ignored"
 let global_ignored () = fresh_var global_ignored_prefix
 let is_global_ignored s = string_starts_with ~prefix:global_ignored_prefix s
-
-let desugar_case_stmt : stmt -> stmt =
-  let case_to_cond e0 case tail =
-    let { pattern; where; stmt } = case.desc in
-    let e_pattern = E_Pattern (e0, pattern) |> add_pos_from pattern in
-    let cond =
-      match where with
-      | None -> e_pattern
-      | Some e_where -> binop BAND e_pattern e_where
-    in
-    S_Cond (cond, stmt, tail) |> add_pos_from case
-  in
-  (* Begin CasesToCond *)
-  let cases_to_cond ~loc e0 cases =
-    List.fold_right (case_to_cond e0) cases (add_pos_from loc S_Unreachable)
-    (* End *)
-  in
-  (* Begin DesugarCaseStmt *)
-  fun s ->
-    match s.desc with
-    | S_Case (({ desc = E_Var _; _ } as e0), cases) ->
-        cases_to_cond ~loc:s e0 cases
-    | S_Case (e, cases) ->
-        let x = fresh_var "__case__linearisation" in
-        let decl_x =
-          S_Decl (LDK_Let, LDI_Var x, None, Some e) |> add_pos_from e
-        in
-        S_Seq (decl_x, cases_to_cond ~loc:s (var_ x) cases) |> add_pos_from s
-    | _ -> raise (Invalid_argument "desugar_case_stmt")
-(* End *)
-
 let slice_is_single = function Slice_Single _ -> true | _ -> false
 
 let slice_as_single = function
@@ -851,7 +814,6 @@ let rename_locals map_name ast =
         S_Call { name; args = map_es args; params = map_es params; call_type }
     | S_Return e -> S_Return (Option.map map_e e)
     | S_Cond (e, s1, s2) -> S_Cond (map_e e, map_s s1, map_s s2)
-    | S_Case (_, _) -> failwith "Not yet implemented: obfuscate cases"
     | S_Assert e -> S_Assert (map_e e)
     | S_For { index_name; start_e; dir; end_e; body; limit } ->
         let index_name = map_name index_name

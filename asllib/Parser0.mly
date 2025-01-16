@@ -76,7 +76,7 @@
   end
 
   open Prelude
-
+  open Desugar
 %}
 
 %token <string> IDENTIFIER STRING_LIT
@@ -710,7 +710,8 @@ let conditional_stmt ==
   (* The first two cases of asl.ott are united in this simpler rule. *)
   | IF; ~=expr; THEN; ~=possibly_empty_block; ~=s_else;       < AST.S_Cond >
   | IF; ~=expr; THEN; ~=simple_stmt_list; ~=simple_else; EOL; < AST.S_Cond >
-  | CASE; ~=expr; OF; EOL; INDENT; ~=list(alt); DEDENT;   < AST.S_Case >
+  | CASE; ~=expr; OF; EOL; INDENT; alts=list(alt); DEDENT;
+    { desugar_case_stmt expr alts }
 
 let s_elsif == annotated ( ELSIF; ~=expr; THEN; ~=possibly_empty_block; <> )
 let s_else == ~=list(s_elsif); ~=ioption(ELSE; possibly_empty_block); < build_stmt_conds >

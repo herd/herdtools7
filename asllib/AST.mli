@@ -350,7 +350,6 @@ type stmt_desc =
   | S_Call of call
   | S_Return of expr option
   | S_Cond of expr * stmt * stmt
-  | S_Case of expr * case_alt list
   | S_Assert of expr
   | S_For of {
       index_name : identifier;

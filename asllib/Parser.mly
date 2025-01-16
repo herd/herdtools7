@@ -511,7 +511,8 @@ let stmt :=
   annotated (
     | terminated_by(end_semicolon,
       | IF; e=expr; THEN; s1=stmt_list; s2=s_else;    <S_Cond>
-      | CASE; ~=expr; OF; alt=case_alt_list;          <S_Case>
+      | CASE; ~=expr; OF; alt=case_alt_list;
+          { desugar_case_stmt expr alt }
       | WHILE; ~=expr; ~=loop_limit; DO; ~=stmt_list; <S_While>
       | FOR; index_name=IDENTIFIER; EQ; start_e=expr; dir=direction;
           end_e=expr; limit=loop_limit; DO; body=stmt_list;

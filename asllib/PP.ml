@@ -285,25 +285,6 @@ let rec pp_stmt f s =
         "@[<hv>@[<h>if %a@ then@]@;\
          <1 2>@[<hv>%a@]@ else@;\
          <1 2>@[<hv>%a@]@ end@]" pp_expr e pp_stmt s1 pp_stmt s2
-  | S_Case (e, case_li) ->
-      let pp_where f = function
-        | None -> ()
-        | Some e -> fprintf f "where %a@ " pp_expr e
-      in
-      let pp_case_alt f { desc = { pattern; where; stmt }; _ } =
-        match (pattern.desc, where) with
-        | Pattern_All, None ->
-            fprintf f "@[<hv 2>otherwise@ => @[<hv>%a@]@]" pp_stmt stmt
-        | Pattern_Any li, _ ->
-            fprintf f "@[<hv 2>when @[<h>%a@]@ %a=> @[<hv>%a@]@]"
-              (pp_comma_list pp_pattern) li pp_where where pp_stmt stmt
-        | _ ->
-            fprintf f "@[<hv 2>when %a@ %a=> @[<hv>%a@]@]" pp_pattern pattern
-              pp_where where pp_stmt stmt
-      in
-      fprintf f "@[<v 2>case %a of@ %a@;<1 -2>end@]" pp_expr e
-        (pp_print_list ~pp_sep:pp_print_space pp_case_alt)
-        case_li
   | S_Assert e -> fprintf f "@[<2>assert@ %a;@]" pp_expr e
   | S_While (e, limit, s) ->
       fprintf f "@[<hv>@[<h>while %a%a@ do@]@;<1 2>@[<hv>%a@]@ end@]" pp_expr e
