@@ -256,6 +256,8 @@ let emit_joker st init = None,init,[],st
     let emit_access  st p init e = match e.dir with
     | None -> Warn.fatal "MIPSCompile.emit_access"
     | Some d ->
+        (* collapse the value `v` in event `e` to integer *)
+        let value = Code.value_to_int e.v in
         match d,e.atom,e.loc with
         | R,None,Data loc ->
             let r,init,cs,st = emit_load st p init loc in
@@ -267,11 +269,11 @@ let emit_joker st init = None,init,[],st
             let r,init,cs,st = emit_fno st p init loc  in
             Some r,init,cs,st
         | W,None,Data loc ->
-            let init,cs,st = emit_store st p init loc e.v in
+            let init,cs,st = emit_store st p init loc value in
             None,init,cs,st
         | W,Some Reserve,Data _ -> Warn.fatal "No store with reservation"
         | W,Some Atomic,Data loc ->
-            let ro,init,cs,st = emit_sta st p init loc e.v in
+            let ro,init,cs,st = emit_sta st p init loc value in
             ro,init,cs,st
         | _,Some (Mixed _),Data _ -> assert false
         | J, _,Data _ -> emit_joker st init
@@ -280,7 +282,7 @@ let emit_joker st init = None,init,[],st
     let emit_exch st p init er ew =
       let rA,init,st = U.next_init st p init (Code.as_data er.loc) in
       let rR,st = A.alloc_reg st in
-      let rW,init,csv,st = U.emit_mov st p init ew.v in
+      let rW,init,csv,st = U.emit_mov st p init (Code.value_to_int ew.v) in
       let cs,st = emit_pair p st rR rW rA in
       rR,init,csv@cs,st
 
@@ -294,6 +296,8 @@ let emit_joker st init = None,init,[],st
       match e.dir,e.loc  with
       | None,_ -> Warn.fatal "TODO"
       | Some d,Data loc ->
+          (* collapse the value `v` in event `e` to integer *)
+          let value = Code.value_to_int e.v in
           begin match d,e.atom with
           | R,None ->
               let r,init,cs,st = emit_load_idx st p init loc r2 in
@@ -305,11 +309,11 @@ let emit_joker st init = None,init,[],st
               let r,init,cs,st = emit_fno_idx st p init loc r2 in
               Some r,init, Instruction c::cs,st
           | W,None ->
-              let init,cs,st = emit_store_idx st p init loc r2 e.v in
+              let init,cs,st = emit_store_idx st p init loc r2 value in
               None,init,Instruction c::cs,st
           | W,Some Reserve -> Warn.fatal "No store with reservation"
           | W,Some Atomic ->
-              let ro,init,cs,st = emit_sta_idx st p init loc r2 e.v in
+              let ro,init,cs,st = emit_sta_idx st p init loc r2 value in
               ro,init,Instruction c::cs,st
           | _,Some (Mixed _) -> assert false
           | J,_ -> emit_joker st init
@@ -319,7 +323,7 @@ let emit_joker st init = None,init,[],st
     let emit_exch_dep_addr st p init er ew rd =
       let rA,init,st = U.next_init st p init (as_data er.loc) in
       let rR,st = A.alloc_reg st in
-      let rW,init,csv,st = U.emit_mov st p init ew.v in
+      let rW,init,csv,st = U.emit_mov st p init (Code.value_to_int ew.v) in
       let cs,st = emit_pair p st rR rW tmp1 in
       rR,init,
       csv@
@@ -336,7 +340,7 @@ let emit_joker st init = None,init,[],st
           let r2,st = A.alloc_reg st in
           let cs2 =
             [Instruction (OP (XOR,r2,r1,r1)) ;
-             Instruction (OPI (ADDU,r2,r2,e.v)) ; ] in
+             Instruction (OPI (ADDU,r2,r2,(Code.value_to_int e.v))) ; ] in
           begin match e.atom with
           | None ->
               let init,cs,st = emit_store_reg st p init loc r2 in
@@ -392,7 +396,7 @@ let emit_joker st init = None,init,[],st
 (* Check load *)
     let do_check_load p st r e =
       let ok,st = A.ok_reg st in
-      (fun k -> lift_code (branch_neq r e.v (Label.last p) [inc ok])@k),
+      (fun k -> lift_code (branch_neq r (Code.value_to_int e.v) (Label.last p) [inc ok])@k),
       A.next_ok st
 
     let check_load  p r e init st =

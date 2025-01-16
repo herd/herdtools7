@@ -106,7 +106,7 @@ module Make (O:Config) (C:ArchRun.S) :
       MySet.Make
         (struct
           type t = Code.v State.t
-          let compare = State.compare Misc.int_compare
+          let compare = State.compare Code.value_compare
         end)
 
     let by_loc pred evts =
@@ -252,7 +252,7 @@ module Make (O:Config) (C:ArchRun.S) :
 
     module OV = struct
       type t = Code.v
-      let compare = Misc.int_compare
+      let compare = Code.value_compare
     end
 
     module VSet = MySet.Make(OV)
@@ -341,7 +341,7 @@ module Make (O:Config) (C:ArchRun.S) :
       | And [] -> "true"
       | Or fs -> do_dumps " \\/ " fs
       | And fs -> do_dumps " /\\ " fs
-      | Atom (loc,v) -> sprintf "%s=%i" (A.pp_location loc) v
+      | Atom (loc,v) -> sprintf "%s=%s" (A.pp_location loc) (Code.pp_v v)
 
     let dump_cond fs = do_dump (cond_of_finals fs)
 

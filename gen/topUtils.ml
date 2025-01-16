@@ -54,9 +54,10 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     open Printf
     open Code
 
-    let pp_v =
-      if O.hexa then sprintf "0x%x"
-      else sprintf "%i"
+    let pp_v v =
+      let v = Code.value_to_int v in
+      if O.hexa then sprintf "0x%x" v
+      else sprintf "%i" v
 
     let pp_cell t = match Array.length t with
       | 0 -> ""
@@ -281,7 +282,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         Some r
       with Not_found -> None
 
-    let is_load_init e = e.C.C.dir = Some R && e.C.C.v = 0
+    let is_load_init e = e.C.C.dir = Some R && e.C.C.v = Plain 0
 
     let check_edge = function
       | C.E.Ws Ext
@@ -301,16 +302,18 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         check_edge n.C.C.edge.C.E.edge && not (is_load_init n.C.C.evt)
 
 (* Poll for value is possible *)
+    (* TODO is this simple lift from 2,1,0 to Plain * correct *)
     let do_poll n =
       match O.poll,n.C.C.prev.C.C.edge.C.E.edge,n.C.C.evt.C.C.v with
       | true,
-        (C.E.Rf Ext|C.E.Leave CRf|C.E.Back CRf),1 -> true
+        (C.E.Rf Ext|C.E.Leave CRf|C.E.Back CRf),Plain 1 -> true
       | _,_,_ -> false
 
+    (* TODO is this simple lift from 2,1,0 to Plain * correct *)
     let fetch_val n =
       let n = C.C.find_node (fun n -> C.E.is_com n.C.C.edge) n.C.C.prev in
       match n.C.C.edge.C.E.edge with
-      | C.E.Rf _-> 2
-      | C.E.Fr _ -> 1
-      | _ -> 0
+      | C.E.Rf _-> Plain 2
+      | C.E.Fr _ -> Plain 1
+      | _ -> Plain 0
   end
