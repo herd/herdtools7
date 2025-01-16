@@ -148,14 +148,10 @@ let desugar_case_stmt e0 cases =
     (* End *)
   in
   (* Begin DesugarCaseStmt *)
-  let res_annotated =
-    match e0 with
-    | { desc = E_Var _ } -> cases_to_cond ~loc:e0 e0 cases
-    | _ ->
-        let x = fresh_var "__case__linearisation" in
-        let decl_x = S_Decl (LDK_Let, LDI_Var x, None, Some e0) in
-        S_Seq (decl_x |> add_pos_from e0, cases_to_cond ~loc:e0 (var_ x) cases)
-        |> add_pos_from e0
-    (* End *)
-  in
-  res_annotated.desc
+  match e0.desc with
+  | E_Var _ -> (cases_to_cond ~loc:e0 e0 cases).desc
+  | _ ->
+      let x = fresh_var "__case__linearisation" in
+      let decl_x = S_Decl (LDK_Let, LDI_Var x, None, Some e0) in
+      S_Seq (decl_x |> add_pos_from e0, cases_to_cond ~loc:e0 (var_ x) cases)
+(* End *)

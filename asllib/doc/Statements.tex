@@ -50,7 +50,7 @@ We now define the syntax, abstract syntax, typing, and semantics for the followi
 \item Setter assignment statements (see \secref{SetterAssignmentStatements})
 \item Declaration statements (see \secref{DeclarationStatements})
 \item Declaration statements with an elided parameter (see \secref{DeclarationStatementsElidedParameter})
-\item Sequencing statements (see \secref{SeuqncingStatements})
+\item Sequencing statements (see \secref{SequencingStatement})
 \item Call statements (see \secref{CallStatements})
 \item Conditional statements (see \secref{ConditionalStatements})
 \item Case statements (see \secref{CaseStatements})
@@ -902,13 +902,23 @@ Otherwise, the result is a parse error.
 \begin{mathpar}
 \inferrule{
   \buildelidedparamcall (\vcall) \astarrow \astversion{\vcall} \\
-  \desugarelidedparameter(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \astof{\vasty}, \astversion{\vcall}) \astarrow \vastnode
+  {
+    \begin{array}{r}
+      \desugarelidedparameter(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \astof{\vasty}, \astversion{\vcall}) \astarrow \\
+      \vastnode
+    \end{array}
+  }
 }{
   {
-    \begin{array}{l}
-    \buildstmt(\Nstmt \\
-    \qquad (\punnode{\Nlocaldeclkeyword}, \punnode{\Ndeclitem}, \punnode{\Nasty}, \Teq, \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon)) \astarrow \vastnode
-    \end{array}
+    \buildstmt\left(
+      \Nstmt\left(
+        \begin{array}{l}
+          \punnode{\Nlocaldeclkeyword}, \\
+          \wrappedline\ \punnode{\Ndeclitem}, \punnode{\Nasty}, \Teq, \\
+          \wrappedline\ \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon
+        \end{array}
+      \right)
+    \right) \astarrow \vastnode
   }
 }
 \end{mathpar}
@@ -919,9 +929,9 @@ Otherwise, the result is a parse error.
   \desugarelidedparameter(\LDKVar, \astof{\vdeclitem}, \astof{\vasty}, \astversion{\vcall}) \astarrow \vastnode
 }{
   {
-    \begin{array}{l}
-    \buildstmt(\Nstmt \\
-    \qquad (\Tvar, \punnode{\Ndeclitem}, \punnode{\Nasty}, \Teq, \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon)) \astarrow \vastnode
+    \begin{array}{r}
+    \buildstmt(\Nstmt(\Tvar, \punnode{\Ndeclitem}, \punnode{\Nasty}, \Teq, \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon)) \astarrow\\
+     \vastnode
     \end{array}
   }
 }
@@ -930,7 +940,7 @@ Otherwise, the result is a parse error.
 \subsection{Typing and semantics}
 As given by the applying the relevant rules to the desugared AST (see \secref{DeclarationStatements}).
 
-\section{Sequencing Statements\label{sec:SeuqncingStatements}}
+\section{Sequencing Statements\label{sec:SequencingStatement}}
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmtlist \derives \ & \nonemptylist{\Nstmt} &
@@ -1285,7 +1295,8 @@ $\vstwo$ will be evaluated);
 \CodeSubsection{\EvalSCondBegin}{\EvalSCondEnd}{../Interpreter.ml}
 
 \section{Case Statements\label{sec:CaseStatements}}
-Case statements have the syntax shown below.
+Case statements allow executing different statements, based on which
+condition an expression satisfies.
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -1304,15 +1315,18 @@ The list following the \Tof\ keyword consists of \emph{\casealternativesterm},
 optionally ending with an \emph{\otherwisecaseterm}, which follows the \Totherwise\ keyword.
 
 \subsection{Abstract Syntax}
-Case statements are considered syntactic sugar and are desugared-away via \\
-\nameref{sec:ASTRule.DesugarCaseStmt}
-by considering the following requirements:
+Case statements are considered syntactic sugar and are \emph{desugared}.
+That is, they are transformed into an untyped AST node that does not have
+an explicit representation for \texttt{case} statements.
+This is achieved via \nameref{sec:ASTRule.DesugarCaseStmt},
+which obeys the following requirements:
 \RequirementDef{CaseDiscriminant} The \casediscriminantterm\ of a \texttt{case}
 statement should be evaluated only once each time the case statement is evaluated.
 
-\RequirementDef{CaseAlternatives} The \casealternativesterm\ are examined in sequential order.
+\RequirementDef{CaseAlternatives} The \casealternativesterm\ are examined
+one after another, in the order they are listed.
 If any of the patterns match the \casediscriminantterm (and the guard
-expression is true, if present --- see below) then this \casealternativeterm\ is considered selected,
+expression is true, if present) then this \casealternativeterm\ is considered selected,
 its statement list is executed, and the \texttt{case} statement ends without examining any further
 \casealternativesterm.
 
@@ -1329,18 +1343,21 @@ It is not a static error if it can be statically determined that none of the pat
 and there is no \otherwisecaseterm, it is a dynamic error.
 
 \subsubsection{Example}
-\listingref{ast-case1} shows an example of how a \texttt{case} statement can be desugared into a corresponding
+\listingref{ast-case1} shows an example of how a \texttt{case} statement can be transformed into a corresponding
 compound condition statement.
-\ASLListing{Desugaring a case statement with a variable as the case discriminant}{ast-case1}{\syntaxtests/ASTRule.Desugar_SCase1.asl}
+\ASLListing{Transforming a case statement with a variable as the case discriminant}{ast-case1}{\syntaxtests/ASTRule.Desugar_SCase1.asl}
 
-\listingref{ast-case2} shows an example of how a \texttt{case} statement can be desugared into
-by storing the \casediscriminantterm\ in a variable and by adding
-a call to \Tunreachable, to ensure that a dynamic error occurs when no \casealternativeterm\ is selected.
-\ASLListing{Desugaring a case statement with a non-variable as the case discriminant
+\listingref{ast-case2} shows an example of how a \texttt{case} statement can be transformed into
+a statement that does not contain any \text{case} statement.
+By storing the \casediscriminantterm\ in a variable and by adding
+a call to \Tunreachable, the transformation ensures that a dynamic error occurs when no
+\casealternativeterm\ is selected.
+\ASLListing{Transforming a case statement with a non-variable as the case discriminant
 and no otherwise case}{ast-case2}{\syntaxtests/ASTRule.Desugar_SCase2.asl}
 
 The untyped AST contains non-terminals for \casealternativesterm, which exist
-only as a data type used by the desugaring function:
+only as a data type used by $\desugarcasestmt$ and do not later appear in the untyped
+AST:
 
 \begin{flalign*}
 \casealt \derives\ & \{ \CasePattern : \pattern, \CaseWhere : \expr?, \CaseStmt : \stmt \} &
@@ -1483,27 +1500,27 @@ The relation
 transforms a \casediscriminantterm\ $\vezero$ and a list of \casealternativesterm\ $\vcases$
 into a statement $\news$.
 
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{var}):
-  \begin{itemize}
-    \item $\vezero$ is a variable expression;
-    \item applying $\casestocond$ to $\vezero$ and $\vcases$ yields $\news$.
-  \end{itemize}
+% \subsubsection{Prose}
+% One of the following applies:
+% \begin{itemize}
+%   \item All of the following apply (\textsc{var}):
+%   \begin{itemize}
+%     \item $\vezero$ is a variable expression;
+%     \item applying $\casestocond$ to $\vezero$ and $\vcases$ yields $\news$.
+%   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_var}):
-  \begin{itemize}
-    \item $\vezero$ is not a variable expression;
-    \item let $\vx$ be a fresh identifier;
-    \item define $\vdeclx$ the statement declaring $\vx$ as an immutable variable initialized by $\vezero$;
-    \item applying $\casestocond$ to the variable expression for $\vx$ ($\EVar(\vx)$) and $\vcases$ yields
-          the condition statement $\vscond$;
-    \item define $\news$ as the sequence statement for $\vdeclx$ and $\vscond$.
-  \end{itemize}
-\end{itemize}
+%   \item All of the following apply (\textsc{non\_var}):
+%   \begin{itemize}
+%     \item $\vezero$ is not a variable expression;
+%     \item let $\vx$ be a fresh identifier;
+%     \item define $\vdeclx$ the statement declaring $\vx$ as an immutable variable initialized by $\vezero$;
+%     \item applying $\casestocond$ to the variable expression for $\vx$ ($\EVar(\vx)$) and $\vcases$ yields
+%           the condition statement $\vscond$;
+%     \item define $\news$ as the sequence statement for $\vdeclx$ and $\vscond$.
+%   \end{itemize}
+% \end{itemize}
 
-\subsubsection{Formally}
+% \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[var]{
   \astlabel(\vezero) = \EVar\\
@@ -1537,24 +1554,24 @@ The function
 transforms an expression $\ve$ and a list of \texttt{case} alternatives $\vcases$
 into a statement $\news$.
 
-\subsubsection{Prose}
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{last}):
-  \begin{itemize}
-    \item $\vcases$ is the list consisting of just $\vcase$;
-    \item applying $\casetocond$ to $\ve$, $\vcase$, and $\SUnreachable$ yields $\news$.
-  \end{itemize}
+% \subsubsection{Prose}
+% One of the following applies:
+% \begin{itemize}
+%   \item All of the following apply (\textsc{last}):
+%   \begin{itemize}
+%     \item $\vcases$ is the list consisting of just $\vcase$;
+%     \item applying $\casetocond$ to $\ve$, $\vcase$, and $\SUnreachable$ yields $\news$.
+%   \end{itemize}
 
-  \item All of the following apply (\textsc{not\_last}):
-  \begin{itemize}
-    \item $\vcases$ is the list with $\vcase$ as its \head\ and a non-empty list $\vcasesone$ as its \tail;
-    \item applying $\casestocond$ to $\ve$ and $\vcasesone$ yields $\vsone$;
-    \item applying $\casetocond$ to $\ve$, $\vcase$, and $\vsone$ yields $\news$.
-  \end{itemize}
-\end{itemize}
+%   \item All of the following apply (\textsc{not\_last}):
+%   \begin{itemize}
+%     \item $\vcases$ is the list with $\vcase$ as its \head\ and a non-empty list $\vcasesone$ as its \tail;
+%     \item applying $\casestocond$ to $\ve$ and $\vcasesone$ yields $\vsone$;
+%     \item applying $\casetocond$ to $\ve$, $\vcase$, and $\vsone$ yields $\news$.
+%   \end{itemize}
+% \end{itemize}
 
-\subsubsection{Formally}
+% \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[last]{
   \casetocond(\ve, \vcase, \SUnreachable) \astarrow \news
@@ -1584,20 +1601,20 @@ transforms an expression $\vezero$ (the condition used for a \texttt{case} state
 a single \texttt{case} alternative $\vcase$, and a statement $\vtail$, which represents
 a list of \texttt{case} alternatives already converted to conditionals, into a condition statement $\news$.
 
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item view $\vcase$ as the \texttt{case} alternative with pattern $\vpattern$, optional \texttt{where} clause $\vwhere$,
-        and statement $\vstmt$;
-  \item define $\vepattern$ as the pattern expression for expression $\vezero$ and the pattern \\
-        $\vpattern$;
-  \item define $\vcond$ as the binary expression with operator $\BAND$ and expressions \\
-        $\vepattern$ and $\vewhere$
-        if $\vwhere$ is the expression $\vewhere$ and $\vepattern$, otherwise;
-  \item define $\news$ as the condition statement with the condition expression $\vcond$ and statements $\vstmt$ and $\vtail$.
-\end{itemize}
+% \subsubsection{Prose}
+% All of the following apply:
+% \begin{itemize}
+%   \item view $\vcase$ as the \texttt{case} alternative with pattern $\vpattern$, optional \texttt{where} clause $\vwhere$,
+%         and statement $\vstmt$;
+%   \item define $\vepattern$ as the pattern expression for expression $\vezero$ and the pattern \\
+%         $\vpattern$;
+%   \item define $\vcond$ as the binary expression with operator $\BAND$ and expressions \\
+%         $\vepattern$ and $\vewhere$
+%         if $\vwhere$ is the expression $\vewhere$ and $\vepattern$, otherwise;
+%   \item define $\news$ as the condition statement with the condition expression $\vcond$ and statements $\vstmt$ and $\vtail$.
+% \end{itemize}
 
-\subsubsection{Formally}
+% \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \vcase \eqname \{ \CasePattern : \vpattern, \CaseWhere : \vwhere, \CaseStmt : \vstmt \}\\
