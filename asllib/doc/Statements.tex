@@ -1285,8 +1285,7 @@ $\vstwo$ will be evaluated);
 \CodeSubsection{\EvalSCondBegin}{\EvalSCondEnd}{../Interpreter.ml}
 
 \section{Case Statements\label{sec:CaseStatements}}
-Case statements are considered syntactic sugar for compound condition statements,
-as defined by \nameref{sec:TypingRule.DesugarCaseStmt}.
+Case statements have the syntax shown below.
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -1297,22 +1296,75 @@ as defined by \nameref{sec:TypingRule.DesugarCaseStmt}.
 \Ncaseotherwise \derives \ & \Totherwise \parsesep \Tarrow \parsesep \Nstmtlist &
 \end{flalign*}
 
+\hypertarget{def-casediscriminantterm}{}
+\hypertarget{def-casealternativeterm}{}
+\hypertarget{def-otherwisecaseterm}{}
+The expression following the \Tcase\ keyword is called the \emph{\casediscriminantterm}.
+The list following the \Tof\ keyword consists of \emph{\casealternativesterm},
+optionally ending with an \emph{\otherwisecaseterm}, which follows the \Totherwise\ keyword.
+
 \subsection{Abstract Syntax}
+Case statements are considered syntactic sugar and are desugared-away via \\
+\nameref{sec:ASTRule.DesugarCaseStmt}
+by considering the following requirements:
+\RequirementDef{CaseDiscriminant} The \casediscriminantterm\ of a \texttt{case}
+statement should be evaluated only once each time the case statement is evaluated.
+
+\RequirementDef{CaseAlternatives} The \casealternativesterm\ are examined in sequential order.
+If any of the patterns match the \casediscriminantterm (and the guard
+expression is true, if present --- see below) then this \casealternativeterm\ is considered selected,
+its statement list is executed, and the \texttt{case} statement ends without examining any further
+\casealternativesterm.
+
+\RequirementDef{CaseOtherwise} If no \casealternativeterm\ is selected, and there is an
+\otherwisecaseterm\, the \otherwisecaseterm\ is executed.
+
+\RequirementDef{CaseDiscriminantTesting} Testing the \casediscriminantterm\ against a \\
+pattern list
+follows the semantics of pattern matching defined in \chapref{PatternMatching}.
+It is not a static error if it can be statically determined that none of the patterns in a
+\casealternativeterm\ can match the discriminant.
+
+\RequirementDef{CaseNoCaseError} If no \casealternativeterm\ is selected,
+and there is no \otherwisecaseterm, it is a dynamic error.
+
+\subsubsection{Example}
+\listingref{ast-case1} shows an example of how a \texttt{case} statement can be desugared into a corresponding
+compound condition statement.
+\ASLListing{Desugaring a case statement with a variable as the case discriminant}{ast-case1}{\syntaxtests/ASTRule.Desugar_SCase1.asl}
+
+\listingref{ast-case2} shows an example of how a \texttt{case} statement can be desugared into
+by storing the \casediscriminantterm\ in a variable and by adding
+a call to \Tunreachable, to ensure that a dynamic error occurs when no \casealternativeterm\ is selected.
+\ASLListing{Desugaring a case statement with a non-variable as the case discriminant
+and no otherwise case}{ast-case2}{\syntaxtests/ASTRule.Desugar_SCase2.asl}
+
+The untyped AST contains non-terminals for \casealternativesterm, which exist
+only as a data type used by the desugaring function:
+
 \begin{flalign*}
-\stmt \derives\ & \SCase(\expr, \casealt^*) &
+\casealt \derives\ & \{ \CasePattern : \pattern, \CaseWhere : \expr?, \CaseStmt : \stmt \} &
 \end{flalign*}
 
 \subsubsection{ASTRule.SCase}
 \begin{mathpar}
 \inferrule{
-  \buildlist[\Ncasealt](\vcasealtlist) \astarrow \vcasealtlistast
+  \buildlist[\buildcasealt](\vcasealtlist) \astarrow \vcasealtlistast\\
+  \buildexpr(\vediscriminant) \astarrow \astversion{\vediscriminant}\\
+  \desugarcasestmt(\astversion{\vediscriminant}, \vcasealtlistast) \astarrow \vastnode
 }{
   {
-    \begin{array}{r}
-  \buildstmt(\overname{\Nstmt(\Tcase, \punnode{\Nexpr}, \Tof, \namednode{\vcasealtlist}{\Ncasealtlist}, \Tend, \Tsemicolon)}{\vparsednode})
-  \astarrow \\
-  \overname{\SCase(\astof{\vexpr}, \vcasealtlistast)}{\vastnode}
-    \end{array}
+  \buildstmt\left(\overname{
+    \Nstmt\left(
+      \begin{array}{l}
+        \Tcase, \namednode{\vediscriminant}{\Nexpr}, \Tof, \\
+        \wrappedline\ \namednode{\vcasealtlist}{\Ncasealtlist}, \\
+        \wrappedline\ \Tend, \Tsemicolon
+      \end{array}
+    \right)
+    }{\vparsednode}\right)
+  \astarrow
+  \vastnode
   }
 }
 \end{mathpar}
@@ -1422,62 +1474,60 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsection{Typing}
-\subsubsection{TypingRule.DesugarCaseStmt\label{sec:TypingRule.DesugarCaseStmt}}
+\subsubsection{ASTRule.DesugarCaseStmt\label{sec:ASTRule.DesugarCaseStmt}}
 \hypertarget{def-desugarcasestmt}{}
 The relation
 \[
-\desugarcasestmt(\overname{\stmt}{\vs}) \;\aslrel\; \overname{\stmt}{\news}
+\desugarcasestmt(\overname{\expr}{\vezero}, \overname{\casealt^*}{\vcases}) \;\aslrel\; \overname{\stmt}{\news}
 \]
-transforms a case statement $\vs$ into a conditional statement $\news$.
+transforms a \casediscriminantterm\ $\vezero$ and a list of \casealternativesterm\ $\vcases$
+into a statement $\news$.
 
 \subsubsection{Prose}
-All of the following apply:
+One of the following applies:
 \begin{itemize}
-  \item $\vs$ is a \texttt{case} statement with expression $\ve$ and list of cases $\vcases$, that is, \\
-        $\SCase(\ve, \vcases)$;
-  \item One of the following applies:
+  \item All of the following apply (\textsc{var}):
   \begin{itemize}
-    \item All of the following apply (\textsc{var}):
-    \begin{itemize}
-      \item $\ve$ is a variable expression;
-      \item applying $\casestocond$ to $\ve$ and $\vcases$ yields $\news$.
-    \end{itemize}
+    \item $\vezero$ is a variable expression;
+    \item applying $\casestocond$ to $\vezero$ and $\vcases$ yields $\news$.
+  \end{itemize}
 
-    \item All of the following apply (\textsc{non\_var}):
-    \begin{itemize}
-      \item $\ve$ is not a variable expression;
-      \item let $\vx$ be a fresh identifier;
-      \item define $\vdeclx$ the statement declaring $\vx$ as an immutable variable initialized by $\ve$;
-      \item applying $\casestocond$ to the variable expression for $\vx$ ($\EVar(\vx)$) and $\vcases$ yields
-            the condition statement $\vscond$;
-      \item define $\news$ as the sequence statement for $\vdeclx$ and $\vscond$.
-    \end{itemize}
+  \item All of the following apply (\textsc{non\_var}):
+  \begin{itemize}
+    \item $\vezero$ is not a variable expression;
+    \item let $\vx$ be a fresh identifier;
+    \item define $\vdeclx$ the statement declaring $\vx$ as an immutable variable initialized by $\vezero$;
+    \item applying $\casestocond$ to the variable expression for $\vx$ ($\EVar(\vx)$) and $\vcases$ yields
+          the condition statement $\vscond$;
+    \item define $\news$ as the sequence statement for $\vdeclx$ and $\vscond$.
   \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[var]{
-  \astlabel(\ve) = \EVar\\
-  \casestocond(\ve, \vcases) \typearrow \news
+  \astlabel(\vezero) = \EVar\\
+  \casestocond(\vezero, \vcases) \typearrow \news
 }{
-  \desugarcasestmt(\overname{\SCase(\ve, \vcases)}{\vs}) \typearrow \news
+  \desugarcasestmt(\vezero, \vcases) \astarrow \news
 }
 \end{mathpar}
 
+To satisfy \RequirementRef{CaseDiscriminant}, the transformation assigns the
+\casediscriminantterm\ to a temporary variable, which is then used in a
+compound conditional statement (see \listingref{ast-case2} for an example):
 \begin{mathpar}
 \inferrule[non\_var]{
-  \astlabel(\ve) \neq \EVar\\
+  \astlabel(\vezero) \neq \EVar\\
   \vx \in \Identifiers \text{ is fresh}\\
-  \vdeclx \eqname \SDecl(\LDKLet, \LDIVar(\vx), \None, \langle\ve\rangle)\\
+  \vdeclx \eqname \SDecl(\LDKLet, \LDIVar(\vx), \None, \langle\vezero\rangle)\\
   \casestocond(\EVar(\vx), \vcases) \typearrow \vscond
 }{
-  \desugarcasestmt(\overname{\SCase(\ve, \vcases)}{\vs}) \typearrow \overname{\SSeq(\vdeclx, \vscond)}{\news}
+  \desugarcasestmt(\vezero, \vcases) \astarrow \overname{\SSeq(\vdeclx, \vscond)}{\news}
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.CasesToCond\label{sec:TypingRule.CasesToCond}}
+\subsubsection{ASTRule.CasesToCond\label{sec:ASTRule.CasesToCond}}
 \hypertarget{def-casestocond}{}
 The function
 \[
@@ -1507,9 +1557,9 @@ One of the following applies:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[last]{
-  \casetocond(\ve, \vcase, \SUnreachable) \typearrow \news
+  \casetocond(\ve, \vcase, \SUnreachable) \astarrow \news
 }{
-  \casestocond(\ve, \overname{[\vcase]}{\vcases}) \typearrow \news
+  \casestocond(\ve, \overname{[\vcase]}{\vcases}) \astarrow \news
 }
 \end{mathpar}
 
@@ -1519,11 +1569,11 @@ One of the following applies:
   \casestocond(\ve, \vcasesone) \typearrow \vsone\\
   \casetocond(\ve, \vcase, \vsone) \typearrow \news
 }{
-  \casestocond(\ve, \overname{[\vcase] \concat \vcasesone}{\vcases}) \typearrow \news
+  \casestocond(\ve, \overname{[\vcase] \concat \vcasesone}{\vcases}) \astarrow \news
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.CaseToCond\label{sec:TypingRule.CaseToCond}}
+\subsubsection{ASTRule.CaseToCond\label{sec:ASTRule.CaseToCond}}
 \hypertarget{def-casetocond}{}
 The function
 \[
@@ -1554,33 +1604,17 @@ All of the following apply:
   \vepattern \eqdef \EPattern(\vezero, \vpattern)\\
   \vcond \eqdef \choice{\vwhere = \langle\vewhere\rangle}{\EBinop(\BAND, \vepattern, \vewhere)}{\vepattern}
 }{
-  \casetocond(\vezero, \vcase, \vtail) \typearrow \overname{\SCond(\vcond, \vstmt, \vtail)}{\news}
+  \casetocond(\vezero, \vcase, \vtail) \astarrow \overname{\SCond(\vcond, \vstmt, \vtail)}{\news}
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SCase\label{sec:TypingRule.SCase}}
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item $\vs$ is a case statement;
-  \item applying $\desugarcasestmt$ to $\vs$ transforms $\vs$ to a conditional statement $\vsp$;
-  \item annotating $\vsp$ in $\tenv$ yields $(\news, \newtenv, \vses)$\ProseOrTypeError.
-\end{itemize}
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \astlabel(\vs) = \SCase\\
-  \desugarcasestmt(\vs) \typearrow \vsp\\
-  \annotatestmt(\tenv, \vsp) \typearrow (\news, \newtenv, \vses) \OrTypeError
-}{
-  \annotatestmt(\tenv,\vs) \typearrow (\news, \newtenv, \vses)
-}
-\end{mathpar}
-\CodeSubsection{\SCaseBegin}{\SCaseEnd}{../Typing.ml}
+\subsection{Typing}
+Since case statements are transformed into other statements,
+they do not require type system rules.
 \lrmcomment{This is related to \identr{WGSY}.}
 
 \subsection{Semantics}
-Since case statements are transformed into conditional statements,
+Since case statements are transformed into other statements,
 they do not appear in the typed AST and thus are not associated with a semantics.
 
 \section{Assertion Statements\label{sec:AssertionStatements}}

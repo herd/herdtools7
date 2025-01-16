@@ -152,14 +152,14 @@
 \newcommand\tododefine[1]{\hyperlink{tododefine}{\color{red}{\texttt{#1}}}}
 \newcommand\lrmcomment[1]{}
 \newcommand\textfunc[1]{\textit{#1}}
-\newcommand\TypingRule[1]{\subsubsection{TypingRule.#1{\label{sec:TypingRule.#1}}}}
-\newcommand\SemanticsRule[1]{\subsubsection{SemanticsRule.#1{\label{sec:SemanticsRule.#1}}}}
 \newcommand\ProseParagraph[0]{\subsubsection{Prose}}
 \newcommand\FormallyParagraph[0]{\subsubsection{Formally}}
 \newcommand\AllApply[0]{All of the following apply:}
 \newcommand\AllApplyCase[1]{All of the following apply (\textsc{#1}):}
 \newcommand\OneApplies[0]{One of the following applies:}
 \newcommand\Proseeqdef[2]{define #1 as #2}
+\newcommand\RequirementDef[1]{\paragraph{R\_#1\label{Requirement.#1}}}
+\newcommand\RequirementRef[1]{\nameref{Requirement.#1}}
 
 \usepackage{enumitem}
 \renewlist{itemize}{itemize}{20}
@@ -1296,7 +1296,6 @@
 \newcommand\usebitfield[0]{\hyperlink{def-usebitfield}{\textfunc{use\_bitfield}}}
 \newcommand\useconstraint[0]{\hyperlink{def-useconstraint}{\textfunc{use\_constraint}}}
 \newcommand\usestmt[0]{\hyperlink{def-usestmt}{\textfunc{use\_s}}}
-\newcommand\usecase[0]{\hyperlink{def-usecase}{\textfunc{use\_case}}}
 \newcommand\usecatcher[0]{\hyperlink{def-usecatcher}{\textfunc{use\_catcher}}}
 \newcommand\builddependencies[0]{\hyperlink{def-builddependencies}{\textfunc{build\_dependencies}}}
 \newcommand\Prosebuilddependencies[2]{\hyperlink{def-builddependencies}{building} the \dependencygraphterm\ of #1 yields #2}
@@ -1532,6 +1531,11 @@
 \newcommand\defusedependencyterm[0]{\hyperlink{def-builddependencies}{def-use dependency}}
 \newcommand\defusedependenciesterm[0]{\hyperlink{def-builddependencies}{def-use dependencies}}
 \newcommand\dependencygraphterm[0]{\hyperlink{def-builddependencies}{def-use dependency graph}}
+
+\newcommand\casediscriminantterm[0]{\hyperlink{def-casediscriminantterm}{case discriminant}}
+\newcommand\casealternativeterm[0]{\hyperlink{def-casealternativeterm}{case alternative}}
+\newcommand\casealternativesterm[0]{\hyperlink{def-casealternativeterm}{case alternatives}}
+\newcommand\otherwisecaseterm[0]{\hyperlink{def-otherwisecaseterm}{otherwise case}}
 
 % Side effect macros
 
@@ -2368,6 +2372,7 @@
 \newcommand\vdone[0]{\texttt{d1}}
 \newcommand\vdtwo[0]{\texttt{d2}}
 \newcommand\ve[0]{\texttt{e}}
+\newcommand\vediscriminant[0]{\texttt{e\_discriminant}}
 \newcommand\veminusone[0]{\texttt{e\_minus\_1}}
 \newcommand\veupper[0]{\texttt{e\_upper}}
 \newcommand\veinit[0]{\texttt{e\_init}}

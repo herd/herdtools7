@@ -1550,12 +1550,6 @@ One of the following applies:
     \item define $\ids$ as the union of applying $\useexpr$ to $\ve$ and $\usestmt$ to both of $\vsone$ and $\vstwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{s\_case}):
-  \begin{itemize}
-    \item $\vs$ is the case statement with expression $\ve$ and case list $\vcases$;
-    \item define $\ids$ as the union of applying $\useexpr$ to $\ve$ and $\usecase$ to every case in $\vcases$.
-  \end{itemize}
-
   \item All of the following apply (\textsc{s\_for}):
   \begin{itemize}
     \item $\vs$ is the for statement $\SFor\left\{\begin{array}{rcl}
@@ -1645,12 +1639,6 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[s\_case]{}{
-  \usestmt(\overname{\SCase(\ve, \vcases)}{\vs}) \typearrow \overname{\useexpr(\ve) \cup \bigcup_{\vc\in\vcases}\usecase(\vc)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
 \inferrule[s\_for]{
   \ids \eqdef \useexpr(\vlimit) \cup \useexpr(\vstarte) \cup \useexpr(\vende) \cup \usestmt(\vbody)
 }{
@@ -1702,32 +1690,6 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[s\_unreachable]{}{
   \usestmt(\overname{\SUnreachable}{\vs}) \typearrow \overname{\emptyset}{\ids}
-}
-\end{mathpar}
-
-\subsubsection{TypingRule.UseCase \label{sec:TypingRule.UseCase}}
-\hypertarget{def-usecase}{}
-The function
-\[
-\usecase(\overname{\casealt}{\vc}) \aslto \overname{\pow{\identifier}}{\ids}
-\]
-returns the set of identifiers $\ids$ which the case alternative $\vc$ depends on.
-
-\subsubsection{Prose}
-All of the following apply:
-\begin{itemize}
-  \item $\vc$ is the case alternative for the pattern $\pattern$, \optional\ \texttt{where} expression
-        $\veopt$ and \texttt{otherwise} statement $\vs$;
-  \item define $\ids$ as the union of applying $\usepattern$ to $\pattern$, applying $\useexpr$ to $\veopt$,
-        and applying $\usestmt$ to $\vs$.
-\end{itemize}
-
-\subsubsection{Formally}
-\begin{mathpar}
-\inferrule{
-  \ids \eqdef \usepattern(\pattern) \cup \useexpr(\veopt) \cup \usestmt(\vs)
-}{
-  \usecase(\overname{\{ \CasePattern : \pattern, \CaseWhere : \veopt, \CaseStmt : \vs \}}{\vc}) \typearrow \ids
 }
 \end{mathpar}
 

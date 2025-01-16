@@ -159,7 +159,7 @@ and pp_slice f = function
 
 and pp_pattern f p =
   match p.desc with
-  | Pattern_All -> pp_print_string f "-"
+  | Pattern_All -> pp_print_string f "{-}"
   | Pattern_Any li -> fprintf f "@[{%a}@]" (pp_comma_list pp_pattern) li
   | Pattern_Geq e -> fprintf f "@[>= %a@]" pp_expr e
   | Pattern_Leq e -> fprintf f "@[<= %a@]" pp_expr e
@@ -278,16 +278,16 @@ let rec pp_stmt f s =
   | S_Return (Some e) -> fprintf f "return %a;" pp_expr e
   | S_Return None -> fprintf f "return;"
   | S_Cond (e, s1, { desc = S_Pass; _ }) ->
-      fprintf f "@[<hv>@[<h>if %a@ then@]@;<1 2>@[<hv>%a@]@ end@]" pp_expr e
+      fprintf f "@[<hv>@[<h>if %a@ then@]@;<1 2>@[<hv>%a@]@ end;@]" pp_expr e
         pp_stmt s1
   | S_Cond (e, s1, s2) ->
       fprintf f
         "@[<hv>@[<h>if %a@ then@]@;\
          <1 2>@[<hv>%a@]@ else@;\
-         <1 2>@[<hv>%a@]@ end@]" pp_expr e pp_stmt s1 pp_stmt s2
+         <1 2>@[<hv>%a@]@ end;@]" pp_expr e pp_stmt s1 pp_stmt s2
   | S_Assert e -> fprintf f "@[<2>assert@ %a;@]" pp_expr e
   | S_While (e, limit, s) ->
-      fprintf f "@[<hv>@[<h>while %a%a@ do@]@;<1 2>@[<hv>%a@]@ end@]" pp_expr e
+      fprintf f "@[<hv>@[<h>while %a%a@ do@]@;<1 2>@[<hv>%a@]@ end;@]" pp_expr e
         pp_loop_limit limit pp_stmt s
   | S_Repeat (s, e, limit) ->
       fprintf f "@[<hv 2>repeat@;<1 2>@[<hv>%a@]@;<1 0>@[<h>until@ %a%a;@]@]"
