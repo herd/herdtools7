@@ -877,7 +877,10 @@ let get_ie e = match e with
 
 let fold_edge f r = Code.fold_ie (fun ie r -> f (IFF ie) (f (FIF ie) r)) r
 
-let compute_rmw r old co = match r with
+let compute_rmw r old co = 
+    let old = Code.value_to_int old in
+    let co = Code.value_to_int co in
+    let new_value = match r with 
     | LdOp op | StOp op ->
       begin match op with
         | A_ADD -> old + co
@@ -893,7 +896,8 @@ let compute_rmw r old co = match r with
         | A_SET -> old lor co
         | A_CLR -> old land (lnot co)
     end
-    | LrSc | Swp | Cas  -> co
+    | LrSc | Swp | Cas  -> co in
+    Code.value_of_int new_value
 
 include
     ArchExtra_gen.Make
