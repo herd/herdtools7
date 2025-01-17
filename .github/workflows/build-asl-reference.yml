@@ -5,6 +5,9 @@ on:
   schedule:
     # Prime the caches every Monday
     - cron: 0 1 * * MON
+  pull_request:
+    paths:
+      - 'asllib/doc/**'
 
 permissions: read-all
 
@@ -32,3 +35,7 @@ jobs:
       - name: Build ASL Reference
         run: opam exec -- make asldoc
 
+      - uses: actions/upload-artifact@v4
+        with:
+         name: ASL Reference Document
+         path: asllib/doc/ASLReference.pdf
