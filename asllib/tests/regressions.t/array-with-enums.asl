@@ -4,7 +4,7 @@ type MyEnum of enumeration {
   MyEnumC,
 };
 
-type MyArray of array [ MyEnum ] of integer;
+type MyArray of array [[ MyEnum ]] of integer;
 
 var myArray : MyArray;
 

@@ -1,4 +1,4 @@
-type MyArrayType of array [3] of integer;
+type MyArrayType of array [[3]] of integer;
 
 var my_array : MyArrayType;
 

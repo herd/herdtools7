@@ -143,9 +143,9 @@ let rec pp_expr f e =
       fprintf f "@[<hv>%a {@ %a@;<1 -2>}@]" pp_ty ty (pp_comma_list pp_one) li
   | E_Tuple es -> fprintf f "@[<hv 2>(%a)@]" pp_expr_list es
   | E_Array { length; value } ->
-      fprintf f "@[<hv 2>array[%a] of %a@]" pp_expr length pp_expr value
+      fprintf f "@[<hv 2>array[[%a]] of %a@]" pp_expr length pp_expr value
   | E_EnumArray { enum; value } ->
-      fprintf f "@[<hv 2>array[%s] of %a@]" enum pp_expr value
+      fprintf f "@[<hv 2>array[[%s]] of %a@]" enum pp_expr value
   | E_Arbitrary ty -> fprintf f "@[<h>ARBITRARY :@ %a@]" pp_ty ty
   | E_Pattern (e, p) -> fprintf f "@[<hv 2>%a@ IN %a@]" pp_expr e pp_pattern p
 
@@ -192,9 +192,9 @@ and pp_ty f t =
         enum_ty
   | T_Tuple ty_list -> fprintf f "@[(%a)@]" (pp_comma_list pp_ty) ty_list
   | T_Array (ArrayLength_Expr e, elt_type) ->
-      fprintf f "@[array [%a] of %a@]" pp_expr e pp_ty elt_type
+      fprintf f "@[array [[%a]] of %a@]" pp_expr e pp_ty elt_type
   | T_Array (ArrayLength_Enum (enum, _), elt_type) ->
-      fprintf f "@[array [%s] of %a@]" enum pp_ty elt_type
+      fprintf f "@[array [[%s]] of %a@]" enum pp_ty elt_type
   | T_Record record_ty ->
       fprintf f "@[<hv 2>record {@ %a@;<1 -2>}@]" pp_fields record_ty
   | T_Exception record_ty ->

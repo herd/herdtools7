@@ -1,5 +1,5 @@
 type Enum of enumeration {A, B, C};
-type Arr of array[Enum] of integer;
+type Arr of array[[Enum]] of integer;
 
 func main () => integer
 begin

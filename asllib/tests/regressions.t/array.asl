@@ -1,4 +1,4 @@
-type a of array [4] of integer;
+type a of array [[4]] of integer;
 
 var global_a: a;
 

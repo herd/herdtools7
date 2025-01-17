@@ -6,8 +6,8 @@ Hello world should work:
 Type-checking errors:
 
   $ aslref subtype-satisfaction-arrray-illegal.asl
-  File subtype-satisfaction-arrray-illegal.asl, line 4, characters 0 to 36:
-  ASL Typing error: a subtype of m was expected, provided array [10] of n.
+  File subtype-satisfaction-arrray-illegal.asl, line 4, characters 0 to 38:
+  ASL Typing error: a subtype of m was expected, provided array [[10]] of n.
   [1]
 
   $ aslref anonymous-types-example.asl

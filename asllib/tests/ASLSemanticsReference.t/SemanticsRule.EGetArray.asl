@@ -1,6 +1,6 @@
-type MyArrayType of array [3] of integer;
+type MyArrayType of array [[3]] of integer;
 
-var my_array : MyArrayType;  
+var my_array : MyArrayType;
 
 func main () => integer
 begin
@@ -9,4 +9,4 @@ begin
   assert my_array[[2]]==42;
 
   return 0;
-end; 
+end;

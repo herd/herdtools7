@@ -1,8 +1,8 @@
 type Pair of (integer, boolean);
 
-type T of array [3] of real;
+type T of array [[3]] of real;
 type Coord of enumeration { CX, CY, CZ };
-type PointArray of array [Coord] of real;
+type PointArray of array [[Coord]] of real;
 
 type PointRecord of record
   { x : real, y : real, z : real };

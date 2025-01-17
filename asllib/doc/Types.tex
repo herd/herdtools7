@@ -628,7 +628,7 @@ ASL offers two kinds of arrays:
 
 \subsection{Syntax}
 \begin{flalign*}
-\Nty \derives\ & \Tarray \parsesep \Tlbracket \parsesep \Nexpr \parsesep \Trbracket \parsesep \Tof \parsesep \Nty &
+\Nty \derives\ & \Tarray \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket \parsesep \Tof \parsesep \Nty &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -640,7 +640,7 @@ ASL offers two kinds of arrays:
 \subsubsection{ASTRule.Ty.TArray}
 \begin{mathpar}
 \inferrule{}{
-  \buildty(\Nty(\Tarray, \Tlbracket, \punnode{\Nexpr}, \Trbracket, \Tof, \punnode{\Nty})) \astarrow
+  \buildty(\Nty(\Tarray, \Tllbracket, \punnode{\Nexpr}, \Trrbracket, \Tof, \punnode{\Nty})) \astarrow
   \overname{\TArray(\ArrayLengthExpr(\astof{\vexpr}), \astof{\tty})}{\vastnode}
 }
 \end{mathpar}

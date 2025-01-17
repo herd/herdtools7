@@ -1,6 +1,6 @@
 func main () => integer
 begin
-  var arr: array[5] of integer;
+  var arr: array[[5]] of integer;
 
   // Legal
   arr[[2]] = 0;
@@ -10,4 +10,4 @@ begin
 
   return 1;
 end;
-  
+

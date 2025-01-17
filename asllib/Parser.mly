@@ -388,7 +388,7 @@ let ty :=
     | BITS; ~=pared(expr); ~=bitfields_opt;             < T_Bits      >
     | l=plist(ty);                                      < T_Tuple     >
     | name=IDENTIFIER;                                  < T_Named     >
-    | ARRAY; e=bracketed(expr); OF; t=ty;               { T_Array (ArrayLength_Expr e, t) }
+    | ARRAY; LLBRACKET; e=expr; RRBRACKET; OF; t=ty;    { T_Array (ArrayLength_Expr e, t) }
   )
 
 let ty_decl := ty |
