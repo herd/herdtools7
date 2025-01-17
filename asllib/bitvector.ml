@@ -611,6 +611,24 @@ type mask = {
 
 let mask_length mask = mask.length
 
+let preprocess_mask_string s =
+  let buffer = Buffer.create (String.length s) in
+  let process_parentheses s =
+    let convert_to_x in_parens = function
+      | '(' ->
+          if in_parens then raise (Invalid_argument "Mask preprocess") else true
+      | ')' ->
+          if not in_parens then raise (Invalid_argument "Mask preprocess")
+          else false
+      | c ->
+          Buffer.add_char buffer (if in_parens then 'x' else c);
+          in_parens
+    in
+    let _ = String.fold_left convert_to_x false s in
+    Buffer.contents buffer
+  in
+  process_parentheses s
+
 let mask_of_string s =
   let length_set, set =
     String.map (function 'x' -> '0' | '0' -> '0' | '1' -> '1' | c -> c) s

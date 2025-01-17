@@ -196,6 +196,9 @@ type mask
 val mask_length : mask -> int
 (** Returns the length of bitvectors matched by this mask. *)
 
+val preprocess_mask_string : string -> string
+(** Preprocess a string which uses parentheses to represent a mask, and convert into "x"s. *)
+
 val mask_of_string : string -> mask
 (** Build a mask from its ASL representation. *)
 

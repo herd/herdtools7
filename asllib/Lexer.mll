@@ -297,7 +297,7 @@ exception LexerError
 
 let new_line lexbuf = Lexing.new_line lexbuf; lexbuf
 let bitvector_lit lxm = BITVECTOR_LIT (Bitvector.of_string lxm)
-let mask_lit lxm = MASK_LIT (Bitvector.mask_of_string lxm)
+let mask_lit lxm = MASK_LIT (lxm |> Bitvector.preprocess_mask_string |> Bitvector.mask_of_string)
 let reserved_err s = Error.fatal_unknown_pos @@ (Error.ReservedIdentifier s)
 
 let fatal lexbuf desc =
@@ -395,7 +395,7 @@ let real_lit = int_lit '.' int_lit
 let alpha = ['a'-'z' 'A'-'Z']
 let string_lit = '"' [^ '"']* '"'
 let bits = ['0' '1' ' ']*
-let mask = ['0' '1' 'x' ' ']*
+let mask = ['0' '1' 'x' ' ']* | ( ['0' '1' ' ' ]+ | '(' ['0' '1' ' ' ]+ ')')*
 let identifier = (alpha | '_') (alpha|digit|'_')*
 
 (*
