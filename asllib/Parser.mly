@@ -90,7 +90,7 @@ let prec =
   function
   | `BOR | `BAND | `IMPL | `BEQ -> 1
   | `EQ_OP | `NEQ -> 2
-  | `PLUS | `MINUS | `OR | `XOR | `AND | `BV_CONCAT -> 3
+  | `PLUS | `MINUS | `OR | `XOR | `AND | `CONCAT -> 3
   | `MUL | `DIV | `DIVRM | `RDIV | `MOD | `SHL | `SHR -> 4
   | `POW -> 5
   | `GT | `GEQ | `LT | `LEQ -> 0 (* Non assoc *)
@@ -238,7 +238,7 @@ let binop ==
   | SHL         ; { `SHL    }
   | SHR         ; { `SHR    }
   | POW         ; { `POW    }
-  | COLON_COLON ; { `BV_CONCAT }
+  | COLON_COLON ; { `CONCAT }
 
 (* ------------------------------------------------------------------------
 

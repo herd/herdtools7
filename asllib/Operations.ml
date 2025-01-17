@@ -104,7 +104,7 @@ let binop_values pos t (op : binop) v1 v2 =
       L_BitVector
         Bitvector.(
           of_z (length b1) (Z.sub (to_z_unsigned b1) (to_z_unsigned b2)))
-  | `BV_CONCAT, L_BitVector b1, L_BitVector b2 ->
+  | `CONCAT, L_BitVector b1, L_BitVector b2 ->
       L_BitVector (Bitvector.concat [ b1; b2 ])
   (* bits -> integer -> bits *)
   | `PLUS, L_BitVector b1, L_Int z2 ->
@@ -117,6 +117,10 @@ let binop_values pos t (op : binop) v1 v2 =
   (* enum -> enum -> bool *)
   | `EQ_OP, L_Label s1, L_Label s2 -> L_Bool (String.equal s1 s2)
   | `NEQ, L_Label s1, L_Label s2 -> L_Bool (not (String.equal s1 s2))
+  (* string concatenation *)
+  | `CONCAT, _, _ ->
+      let str = literal_to_string v1 ^ literal_to_string v2 in
+      L_String str
   (* Failure *)
   | _ -> fatal_from pos (Error.UnsupportedBinop (t, op, v1, v2))
 

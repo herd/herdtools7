@@ -69,7 +69,7 @@ module Untyped (C : Config.S) = struct
       (if C.Syntax.rdiv then Some `RDIV else None);
       (if C.Syntax.shl then Some `SHL else None);
       (if C.Syntax.shr then Some `SHR else None);
-      (if C.Syntax.bv_concat then Some `BV_CONCAT else None);
+      (if C.Syntax.bv_concat then Some `CONCAT else None);
     ]
     |> protected_filter_oneofl
 
@@ -532,7 +532,7 @@ module Typed (C : Config.S) = struct
             |> map (fun op -> (op, real, real))
         | T_Bits _ ->
             [
-              [| `AND; `OR; `XOR; `BV_CONCAT |]
+              [| `AND; `OR; `XOR; `CONCAT |]
               |> oneofa
               |> map (fun op -> (op, ty, ty));
               [| `PLUS; `MINUS |] |> oneofa |> map (fun op -> (op, ty, integer));

@@ -373,6 +373,7 @@ Required tests:
   $ aslref alt-mask-syntax.asl
   $ aslref subprogram-global-name-clash.asl
   $ aslref subprogram-local-name-clash.asl
+  $ aslref string_concat.asl
 
   $ aslref --no-type-check throw-local-env.asl
   File throw-local-env.asl, line 10, characters 13 to 14:
