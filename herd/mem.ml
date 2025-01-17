@@ -349,6 +349,62 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 (* canonical location (label).                            *)
 (**********************************************************)
 
+      (* map an addres to an address for rep*)
+      let a2ra =
+        let page_size = 16 in
+        let proc_size = 1000000 in
+        let proc_of_addr a = (a / proc_size)-1 in
+        let page_of_addr a = a / page_size in
+        let on_the_same_page a1 a2 =
+          page_of_addr a1 = page_of_addr a2
+        in
+        let labels = (* the list of all labels *)
+          prog
+          |> Label.Map.to_list
+          |> List.sort (fun (_,a1) (_,a2) -> Int.compare a1 a2) in
+        (if dbg then List.iter (fun (k,a) -> Printf.printf "Label k=%s a=%d\n" k a) labels);
+        let a2l =
+          prog
+          |> Label.Map.to_list
+          |> List.fold_left (fun acc (lbl,addr) -> IntMap.add addr lbl acc) IntMap.empty in
+        let iaddrs = (* the list of all instruction addresses *)
+          let open Test_herd in
+          if self && kvm then
+            List.fold_left
+            (fun acc (_,code,fh_code) ->
+              let code = match fh_code with
+                | Some fh_code -> code@fh_code
+                | None -> code in
+              acc @ (List.map (fun (addr,_) -> addr) code))
+            [] starts
+          else []
+        in
+        let p2lbl = (* map page numbers into labels *)
+          let rec iter ls a2a = 
+            match ls with
+            | (_,a1)::(_,a2)::tail when (on_the_same_page a1 a2) ->
+                iter tail a2a
+            | (_,_)::(l2,a2)::tail ->
+                iter ((l2,a2)::tail) (IntMap.add (page_of_addr a2) a2 a2a)
+            | _ -> a2a
+          in
+          match labels with
+          | (_,a)::_ -> iter labels (IntMap.add (page_of_addr a) a (IntMap.empty))
+          | [] -> (IntMap.empty)
+        in
+        List.fold_left (fun acc x ->
+            match IntMap.find_opt (page_of_addr x) p2lbl with
+            | Some a -> (
+                let lbl = IntMap.find a a2l in
+                let off = x - a in
+                let proc = proc_of_addr x in
+                let a_virt = V.Val (Constant.mk_sym_virtual_label_with_offset proc lbl (off/4)) in
+                (if dbg then Printf.printf "[%d -> <%d :::: label P%d:%s with offset %d)>\n" x a proc lbl off);
+                IntMap.add x a_virt acc)
+            | None -> Warn.user_error
+                    "The combination of vmsa and ifetch modes requires each page to have a label"
+          ) IntMap.empty iaddrs in
+
       (* lbls2i -- overwritable instructions, with labels          *)
       (* overwritable_labels -- the set of labels of instructions  *)
       (*                        that are allowed to be overwritten *)
@@ -418,13 +474,32 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         else fun v -> v in
 
       let test =
-        match lbls2i with
-        | [] -> test
-        | _::_ ->
-            let open Test_herd in
-            let init_state =
-              (* Change labels into their canonical representants *)
-              A.map_state norm_val test.init_state in
+        let open Test_herd in
+        let init_state =
+          (* Change labels into their canonical representants *)
+          A.map_state norm_val test.init_state in
+        if self && kvm then
+          (* Add initialisation of all instructions *)
+          let init_state =
+            List.fold_left
+            (fun env_ (_,code,fh_code) ->
+              let code = match fh_code with
+                | Some fh_code -> code@fh_code
+                | None -> code in
+              List.fold_left
+                (fun env (addr,i) ->
+                  let loc = A.Location_global (IntMap.find addr a2ra)
+                    (* mk_addr proc addr *)
+                  and v = A.V.instructionToV i in
+                  A.state_add env loc v)
+                env_ code)
+            init_state starts
+          in
+          { test with init_state; }
+        else
+          match lbls2i with
+          | [] -> test
+          | _::_ ->
             let init_state =
               (* Add initialisation of overwritable instructions *)
               List.fold_left
@@ -439,6 +514,14 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                 init_state lbls2i
             in
             { test with init_state; } in
+
+        if dbg then
+          List.iter
+            (fun (lbls,(proc,i)) ->
+              Printf.printf "P%d:" proc ;
+              Label.Set.iter (fun lbl -> Printf.printf " %s" lbl) lbls;
+              Printf.printf ": %s\n" (A.pp_instruction PPMode.Ascii i);)
+            lbls2i;
 
 (*****************************************************)
 (* Build events monad, _i.e._ run code in some sense *)
@@ -526,6 +609,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
              lbl2addr = prog;
              addr = addr;
              addr2v=addr2v proc;
+             addr2ra=a2ra;
              env = env;
              in_handler = re_exec;
            } in
@@ -1207,6 +1291,7 @@ let match_reg_events es =
             with
             | Some (V.Var _) -> true
             | Some (V.Val (Symbolic (Virtual {name=n;_}))) when Symbol.is_label n -> true
+            | Some (V.Val (Symbolic (Physical (s,_)))) when (s |> Symbol.of_string |> Symbol.is_label) -> true
             | Some _|None -> false
         in
         (* let code_access e =
@@ -1220,6 +1305,14 @@ let match_reg_events es =
           E.EventSet.filter E.is_ifetch es.E.events
         and code_stores =
           E.EventSet.filter code_store es.E.events in
+        if dbg then begin
+            eprintf "# Code loads : %a\n"E.debug_events code_loads ;
+            eprintf "# Code stores: %a\n"E.debug_events code_stores ;
+          end ;
+        if dbg then begin
+          eprintf "# Loads : %a\n" E.debug_events (E.EventSet.filter E.is_mem_load es.E.events) ;
+          eprintf "# Stores: %a\n" E.debug_events (E.EventSet.filter E.is_mem_store es.E.events) ;
+          end ;
         let kont es rfm cns res =
           (* We get here once code accesses are solved *)
           let loads =  E.EventSet.filter E.is_mem_load es.E.events
@@ -2034,6 +2127,8 @@ let match_reg_events es =
           (fun loc evts ->
             let open Constant in
             begin match loc with
+            | A.Location_global (V.Val (Symbolic sym))
+                  when is_label_pa (Symbolic sym) -> ()
             | A.Location_global (V.Val (Symbolic sym))
                   when not (S.is_non_mixed_symbol test sym) ->
                 Warn.user_error "mixed-size test rejected (symbol %s), consider option -variant mixed"

@@ -21,11 +21,11 @@
 let func_size = Pseudo.func_size
 let proc_size = 1000000
 
-let align_to_next addr p =
+let align_to_next p addr =
   let addr_part = addr mod proc_size in
   let proc_part = addr - addr_part in
   let n = Int.shift_left 1 p in
-  proc_part + ((addr_part / n) + 1 ) * n
+  proc_part + ((addr_part / n) + (if addr_part mod n = 0 then 0 else 1) ) * n
 
 let func_start_addr proc = function
   | MiscParser.Main -> (proc + 1) * proc_size
@@ -47,7 +47,6 @@ struct
   type program = A.program
   type start_points = A.start_points
   type code_segment = A.code_segment
-
 
   let preload_labels proc =
     let add_label lbl addr m =
@@ -111,15 +110,65 @@ struct
         start,new_rets
     | A.Symbolic _
     | A.Macro (_,_) -> assert false
+    | A.Align _ -> 
+      load_code proc addr mem rets code
+      (* let new_addr = align_to_next p addr in
+      assert ((new_addr - addr) mod (A.size_of_ins A.mynop) = 0);
+      let diff = (new_addr - addr)/(A.size_of_ins A.mynop) in
+      let padding = List.init diff (fun _ -> A.Instruction A.mynop) in
+      load_code proc addr mem rets (padding @ code) *)
+
+  let rec preprocess_code addr = function 
+  | [] -> []
+  | ins::code -> preprocess_ins addr code ins
+
+  and preprocess_ins addr code = function
+    | A.Nop ->
+       preprocess_code addr code
+    | A.Instruction ins ->
+        (A.Instruction ins) :: (preprocess_code (addr+A.size_of_ins ins) code)
+    | A.Label (lbl,ins) ->
+        let rec check_label = fun x ->
+          match x with
+          | A.Nop -> (None,None)
+          | A.Instruction ins  -> (None,Some (A.size_of_ins ins))
+          | A.Symbolic _  -> (None,None)
+          | A.Macro (_,_) -> (None,None)
+          | A.Align p -> (Some (align_to_next p addr),None)
+          | A.Label (_,ins) ->
+              check_label ins
+        in
+        (match check_label ins with
+        | (Some _, Some _) -> assert false
+        | (Some new_addr, None) -> begin
+          assert ((new_addr - addr) mod (A.size_of_ins A.mynop) = 0);
+          let diff = (new_addr - addr)/(A.size_of_ins A.mynop) in
+          let padding = List.init diff (fun _ -> A.Instruction A.mynop) in
+          (A.Label (lbl,ins)) :: preprocess_code addr (padding @ code)
+          end
+        | (None, Some sz) ->
+          (A.Label (lbl,ins)) :: preprocess_code (addr+sz) code
+        | (None, None) ->
+          (A.Label (lbl,ins)) :: preprocess_code addr code
+        )
+    | A.Symbolic _
+    | A.Macro (_,_) -> assert false
     | A.Align p -> 
-      let new_addr = align_to_next addr p in
-      let diff = (new_addr - addr)/4 in
+      let new_addr = align_to_next p addr in
+      assert ((new_addr - addr) mod (A.size_of_ins A.mynop) = 0);
+      let diff = (new_addr - addr)/(A.size_of_ins A.mynop) in
       let padding = List.init diff (fun _ -> A.Instruction A.mynop) in
       (* Printf.printf "    thought the addr would be %d, but need to proceed from %d, the diff being %d\n" addr new_addr diff; *)
-      load_code proc addr mem rets (List.append padding code)
+      (A.Align p) :: preprocess_code addr (padding @ code)
       (* load_code proc (align_to_next addr p) mem rets code *)
+  and preprocess = function
+  | [] -> []
+  | ((proc,foo,func),code)::prog ->
+    let addr = func_start_addr proc func in
+    ((proc, foo, func),preprocess_code addr code)::(preprocess prog)
 
   let load prog =
+    let prog = preprocess prog in
     let mem = preload prog in
     let rec load_iter = function
       | [] -> [],IntMap.empty

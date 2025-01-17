@@ -1559,9 +1559,8 @@ module Make
             lift_pac_virt mop ma dir an ii
           else if checked then
             lift_memtag_virt mop ma dir an ii branch
-          else(
+          else
             mop Access.VIR ma |> branch
-          )
 
 (*
 Arguments:
@@ -3421,8 +3420,12 @@ Arguments:
 (* Instruction fetch *)
 (*********************)
 
-      let make_label_value proc lbl_str =
-        A.V.cstToV (Constant.mk_sym_virtual_label proc lbl_str)
+      let get_instr_addr ii =
+        let lbl =
+          Label.norm ii.A.labels in
+        match lbl with
+        | Some l -> ii.A.addr2v l
+        | None ->  V.intToV ii.A.addr
 
       let read_loc_instr a ac ii =
         M.read_loc Port.No (mk_fetch Annot.N ac) a ii
@@ -4637,7 +4640,7 @@ Arguments:
 
 
 (* Test all possible instructions, when appropriate *)
-      let mk_fetch_mphy test ii =
+      let mk_mop_fetch test ii =
         let module InstrSet = AArch64.V.Cst.Instr.Set in
         let cands =
           InstrSet.of_list (get_overwriting_instrs test) (* optimization to consider only possible instruction overwrites *)
@@ -4669,17 +4672,15 @@ Arguments:
                   >>! B.Fault (false,[AArch64Base.elr_el1, lbl_v])
               end in
         fun ac ma _ -> ( (* value fake here *)
-          if Access.is_physical ac then begin
-            assert (kvm && self);
+          if Access.is_physical ac then
             M.bind_ctrldata ma (mop ac)
-          end else begin
-            assert (not kvm && self);
+          else
             ma >>= mop ac
-          end
         )
 
 (* Test all possible instructions, when appropriate *)
       let check_self test ii =
+        assert (ii.A.fetch_proc = ii.A.proc) ;
         let module InstrSet = AArch64.V.Cst.Instr.Set in
         let lbls = get_exported_labels test in
         let is_exported =
@@ -4690,15 +4691,17 @@ Arguments:
                 lbls)
             ii.A.labels in
         if is_exported then
-          match Label.norm ii.A.labels with
-          | None -> assert false
-          | Some hd ->
-              let mop_fetch = mk_fetch_mphy test ii in
-              let a_v = make_label_value ii.A.fetch_proc hd in
-              lift_fetch AArch64.ZR Dir.R true
-                mop_fetch
-                (to_perms "r" MachSize.Word)
-                (M.unitT a_v) mzero Annot.N ii
+          let mop_fetch = mk_mop_fetch test ii in
+          let a_v =
+            if kvm && self then
+              IntMap.find ii.A.addr ii.A.addr2ra
+            else
+              get_instr_addr ii
+          in
+          lift_fetch AArch64.ZR Dir.R true
+            mop_fetch
+            (to_perms "r" MachSize.Word)
+            (M.unitT a_v) mzero Annot.N ii
         else
           do_build_semantics test ii.A.inst ii
 

@@ -108,6 +108,7 @@ module type S = sig
       labels : Label.Set.t; lbl2addr:program;
       addr : int;
       addr2v : string -> I.V.v;
+      addr2ra : I.V.v IntMap.t;
       env : ii_env;
       in_handler : bool;
     }
@@ -367,6 +368,7 @@ module Make(C:Config) (I:I) : S with module I = I
           labels : Label.Set.t; lbl2addr : program;
           addr : int ;
           addr2v : string -> I.V.v;
+          addr2ra : I.V.v IntMap.t;
           env : ii_env;
           in_handler : bool;
         }
