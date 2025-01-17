@@ -33,7 +33,7 @@ Bitfields may have nested bitfields. This can have several uses, one of which be
 different views of a register.
 
 We now define several properties of bitfields, illustrated by the example below.
-These are used to define \nameref{sec:Requirement.BitifledAlignment}.
+These are used to define \RequirementRef{BitfieldAlignment}.
 
 The \hypertarget{def-absolutename}{\absolutename} of a (possibly-nested) bitfield is the list of identifiers starting from the
 name of the top-level bitfield containing it and following with the names of the nested bitfields,
@@ -61,7 +61,7 @@ They exist in the same scope, since \texttt{fmt0.later1} is a prefix of
 In contrast, a pair of bitfields with \absolutenames\ \texttt{fmt0.common}
 and \texttt{fmt1.common}, since neither of \texttt{fmt0} and \texttt{fmt1} is a prefix of the other.
 
-\subsubsection{Requirement.BitifledAlignment\label{sec:Requirement.BitifledAlignment}}
+\RequirementDef{BitfieldAlignment}
 For every two bitfields of a given bitvector type,
 if they share the same name and exist in the same \bitfieldscope\ then their \absoluteslices\ must be
 equal.
@@ -602,7 +602,7 @@ The function
   \overname{\N}{\vwidth}
 ) \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-checks \nameref{sec:Requirement.BitifledAlignment}
+checks \RequirementRef{BitfieldAlignment}
 for every pair of bitfields in $\vbitfields$, contained in a
 bitvector type of width $\vwidth$ in the static environment $\tenv$.
 \ProseOtherwiseTypeError

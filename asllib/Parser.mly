@@ -492,13 +492,10 @@ let case_alt :=
   )
 
 let case_otherwise :=
-  annotated(
-    loc=annotated(OTHERWISE); ARROW; stmt=stmt_list;
-      { { pattern = add_pos_from loc Pattern_All; where = None; stmt } }
-  )
+    OTHERWISE; ARROW; otherwise_stmt=stmt_list;
+      { otherwise_stmt }
 
-let case_alt_list :=
-    nlist_opt_terminated(case_alt, case_otherwise)
+let case_alt_list := nlist(case_alt)
 
 let otherwise == OTHERWISE; ARROW; stmt_list
 let otherwise_opt := ioption(otherwise)
@@ -511,7 +508,10 @@ let stmt :=
   annotated (
     | terminated_by(end_semicolon,
       | IF; e=expr; THEN; s1=stmt_list; s2=s_else;    <S_Cond>
-      | CASE; ~=expr; OF; alt=case_alt_list;          <S_Case>
+      | CASE; ~=expr; OF; alt=case_alt_list;
+          { desugar_case_stmt expr alt (S_Unreachable |> ASTUtils.add_pos_from expr)}
+      | CASE; ~=expr; OF; alt=case_alt_list; ~=case_otherwise;
+          { desugar_case_stmt expr alt case_otherwise }
       | WHILE; ~=expr; ~=loop_limit; DO; ~=stmt_list; <S_While>
       | FOR; index_name=IDENTIFIER; EQ; start_e=expr; dir=direction;
           end_e=expr; limit=loop_limit; DO; body=stmt_list;

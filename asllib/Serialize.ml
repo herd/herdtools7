@@ -273,10 +273,6 @@ let rec pp_stmt =
     | S_Cond (e, s1, s2) ->
         bprintf f "S_Cond (%a, %a, %a)" pp_expr e pp_stmt s1 pp_stmt s2
     | S_Return e -> bprintf f "S_Return (%a)" (pp_option pp_expr) e
-    | S_Case (e, cases) ->
-        bprintf f "S_Case (%a, %a)" pp_expr e
-          (pp_list (pp_annotated pp_case_alt))
-          cases
     | S_Assert e -> bprintf f "S_Assert (%a)" pp_expr e
     | S_While (e, limit, s) ->
         bprintf f "S_While(%a, %a, %a)" pp_expr e (pp_option pp_expr) limit
@@ -313,10 +309,6 @@ let rec pp_stmt =
 
 and pp_catcher f (name, ty, s) =
   bprintf f "(%a, %a, %a)" (pp_option pp_string) name pp_ty ty pp_stmt s
-
-and pp_case_alt f { pattern; where; stmt } =
-  bprintf f "{ pattern: %a; where: %a; stmt: %a }" pp_pattern pattern
-    (pp_option pp_expr) where pp_stmt stmt
 
 let pp_gdk f gdk =
   addb f

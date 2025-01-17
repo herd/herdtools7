@@ -355,17 +355,11 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \hypertarget{def-ncasealtlist}{}
 \begin{flalign*}
 \Ncasealtlist \derives \ & \NClist{\Ncasealt} &\\
-                      |\ & \NClist{\Ncasealt} \parsesep \Ncaseotherwise &\\
 \end{flalign*}
 
 \hypertarget{def-ncasealt}{}
 \begin{flalign*}
 \Ncasealt \derives \ & \Twhen \parsesep \Npatternlist \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &
-\end{flalign*}
-
-\hypertarget{def-ncaseotherwise}{}
-\begin{flalign*}
-\Ncaseotherwise \derives \ & \Totherwise \parsesep \Tarrow \parsesep \Nstmtlist &
 \end{flalign*}
 
 \hypertarget{def-notherwiseopt}{}
@@ -389,6 +383,8 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \begin{flalign*}
 \Nstmt \derives \ & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse \parsesep \Tend \parsesep \Tsemicolon &\\
 |\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \Ncasealtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+|\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \Ncasealtlist \parsesep \Totherwise \parsesep \Tarrow &\\
+   & \wrappedline\ \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
 |\ & \Twhile \parsesep \Nexpr \parsesep \Nlooplimit \parsesep \Tdo \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
 |\ & \Tfor \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Ndirection \parsesep
                     \Nexpr \parsesep \Nlooplimit \parsesep \Tdo &\\

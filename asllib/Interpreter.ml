@@ -1037,7 +1037,6 @@ module Make (B : Backend.S) (C : Config) = struct
         let*^ v, env' = eval_expr env e in
         choice_with_branch_effect v e s1 s2 (eval_block env')
         |: SemanticsRule.SCond
-    | S_Case _ -> fatal_from s Error.TypeInferenceNeeded |: SemanticsRule.SCase
     (* Begin EvalSAssert *)
     | S_Assert e ->
         let*^ v, env1 = eval_expr env e in
