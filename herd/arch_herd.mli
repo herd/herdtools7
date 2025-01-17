@@ -56,8 +56,6 @@ module type S =
       val sets : (string * (op -> bool)) list
     end
 
-    val mynop : instruction
-
     module MemType:MemoryType.S
 
     module Barrier:AllBarrier.S with type a = barrier

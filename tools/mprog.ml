@@ -75,7 +75,7 @@ module Top
                   A.fold_addrs add_loc k i
               | A.Symbolic _
               | A.Macro _ -> assert false
-              | A.Align _ -> assert false
+              | A.Pagealign | A.Skip _ -> assert false
 
 
             let dump_global_state prog st =
