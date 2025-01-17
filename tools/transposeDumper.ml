@@ -63,7 +63,8 @@ end = struct
         "%s(%s)"
         f
         (String.concat "," (List.map A.pp_reg regs))
-  | A.Align n -> sprintf ".p2align %d" n
+  | A.Pagealign -> ".pagealign"
+  | A.Skip _ -> assert false
 
   let rec clean_code = function
     | [] -> []

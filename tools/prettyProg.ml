@@ -59,8 +59,8 @@ module Make(O:Config)(A:Arch_tools.S) =
         | A.Instruction ins -> a_pp_instruction ins
         | A.Label (lbl,i) -> sprintf "%s: %s" lbl (pp_rec i)
         | A.Symbolic s -> sprintf "codevar:%s" s
-        | A.Macro (_,_) -> assert false 
-        | A.Align n -> sprintf ".p2align %d" n in
+        | A.Macro (_,_) | A.Skip _ -> assert false 
+        | A.Pagealign -> ".pagealign" in
         pp_rec i::k
 
     let is_nil = function [] -> true | _::_ -> false

@@ -213,7 +213,7 @@ module MakeCommon(A:Base) = struct
     | Instruction i -> di i
     | Symbolic v -> "codevar:"^v
     | Macro _ -> assert false
-    | Align n -> sprintf ".p2align %d" n
+    | Pagealign | Skip _ -> assert false (* Not implemented yet *)
 
   let rec dump_pseudos = function
     | [] -> ""
@@ -364,7 +364,7 @@ end) = struct
             end
         | Symbolic s -> find_code s st
         | Macro (_,_) -> assert false
-        | Align _ -> assert false
+        | Pagealign | Skip _ -> assert false (* Not implemented yet *)
       in fun is st -> match is with
       | [] -> []
       | i::is ->

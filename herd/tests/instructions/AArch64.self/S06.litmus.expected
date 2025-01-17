@@ -1,6 +1,6 @@
 Test S06 Required
 States 1
-0:X0=0; 0:X30=10004;
+0:X0=0; 0:X30=100004;
 Ok
 Witnesses
 Positive: 1 Negative: 0

@@ -88,9 +88,11 @@ module type S = sig
   (* Both of them *)
   val get_exported_labels : test -> Label.Full.Set.t
 
-(* "Exported" TTDs, i.e. TTDs that can find their way to registers *)
+(* "Exposed" TTDs of code pages, i.e. TTDs whose addresses are in registers *)
   (* In initial state *)
-  val get_exported_TTDs_init : test -> (A.V.Cst.Scalar.t, A.V.Cst.PteVal.t, A.V.Cst.AddrReg.t, A.instruction) Constant.t list
+  val get_exposed_codepages : test -> (A.V.Cst.Scalar.t, A.V.Cst.PteVal.t, A.V.Cst.AddrReg.t, A.instruction) Constant.t list
+(* "Exposed" TTDs, i.e. TTDs whose values are in registers *)
+  val get_exposed_codepage_mappings : test -> (A.V.Cst.Scalar.t, A.V.Cst.PteVal.t, A.V.Cst.AddrReg.t, A.instruction) Constant.t list
 
   type event = E.event
   type event_structure = E.event_structure
@@ -294,6 +296,12 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
       let open Constant in
       function
       | Virtual sym -> is_non_mixed_offset test (Symbol.pp sym.name) sym.offset
+      | Physical (s,_) when (s |> Symbol.of_string |> Symbol.is_label) -> true
+      (* FIXME: the above excludes PA(<label_name>) from the check; instead
+       * ideally the clause would not be necessary at all. To make this happen
+       * we need to (1) generate 4-sized offsets in calls to
+       * mk_virtual_label_with_offset in mem.ml, and
+       * (2) to ensure is_non_mixed_offset works with that *)
       | Physical (s,o) -> is_non_mixed_offset test s o
       | TagAddr _
       | System ((PTE|PTE2|TLB),_)  -> true
@@ -328,20 +336,50 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
         (get_exported_labels_init test)
         (get_exported_labels_code test)
 
+
 (* Exported TTDs from the init environments *)
-    let get_exported_TTDs_init test =
+    let get_exposed_codepages test =
+      (* extract the list [<labels>] from the list of locations [TTD(<label>)]
+       *)
+      let { Test_herd.init_state=st; _ } = test in
+      let cst_to_pagelbl cst =
+        let (>>=) = Option.bind in
+        Constant.as_pte_arg cst
+        >>= Misc.str_as_label
+        >>= fun (proc, lblname) ->
+              Some (Constant.mk_sym_virtual_label_with_offset proc lblname 0)
+      in
+      A.state_fold
+        (fun loc _ k ->
+          match loc with
+          | A.Location_global (V.Val cst) -> begin
+            match cst_to_pagelbl cst with
+            | Some v -> v::k
+            | None -> k
+            end
+          | A.Location_global _
+          | A.Location_reg _ -> k
+          )
+        st []
+
+    let get_exposed_codepage_mappings test =
       let { Test_herd.init_state=st; _ } = test in
       A.state_fold
         (fun _ v k ->
           match v with
-          | V.Val cst ->
-              begin
-                match Constant.as_pte cst with
-                | Some ttd -> ttd::k
-                | None -> k
+          | V.Val (Constant.PteVal pte_v) -> begin
+            match V.Cst.PteVal.as_physical pte_v with
+            | Some str -> begin
+              match Misc.str_as_label str with
+                  | Some (proc, lblname) ->
+                    (Constant.mk_sym_virtual_label_with_offset proc lblname 0)::k
+                  | None -> k
               end
-          | V.Var _ -> k)
+            | None -> k
+            end
+          | V.Val _ | V.Var _ -> k)
         st []
+
 
 (**********)
 (* Events *)

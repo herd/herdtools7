@@ -1,0 +1,11 @@
+Test A009 Required
+States 1
+0:X0=3;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag combining-vmsa-and-ifetch-is-not-supported
+Condition forall (0:X0=3)
+Observation A009 Always 1 0
+Hash=0aa672c26e065509a95411415f111f7c
+

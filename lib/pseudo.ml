@@ -17,6 +17,13 @@
 (** Closed signature for basic view of architectures *)
 
 let func_size = 1000
+let proc_size = 100000
+let page_size = 4096
+
+let next_addr_after_pagealign addr = addr
+  (* let addr_part = addr mod proc_size in
+  let proc_part = addr - addr_part in
+  proc_part + ((addr_part / page_size) + (if addr_part mod page_size = 0 then 0 else 1) ) * page_size *)
 
 (* Restricted signature, for dumping *)
 
@@ -32,7 +39,8 @@ module type Types = sig
     | Instruction of 'ins
     | Macro of string * reg_arg list
     | Symbolic of string
-    | Align of int
+    | Pagealign
+    | Skip of int
 
   type pseudo = ins kpseudo
   type parsedPseudo = pins kpseudo
@@ -132,7 +140,8 @@ struct
     | Instruction of 'ins
     | Macro of string * reg_arg list
     | Symbolic of string
-    | Align of int
+    | Pagealign
+    | Skip of int
 
   type pseudo = ins kpseudo
   type parsedPseudo = pins kpseudo
@@ -146,7 +155,8 @@ struct
     | Label (lbl,ins) -> Label (lbl, pseudo_map f ins)
     | Symbolic s -> Symbolic s
     | Macro (_,_) -> assert false
-    | Align n -> Align n
+    | Pagealign -> Pagealign
+    | Skip n -> Skip n
 
   let rec pseudo_fold f k ins = match ins with
     | Nop -> k
@@ -154,7 +164,8 @@ struct
     | Label (_,ins) -> pseudo_fold f k ins
     | Symbolic _ -> k
     | Macro (_,_) -> assert false
-    | Align _ -> k
+    | Pagealign -> k
+    | Skip _ -> k
 
   let pseudo_exists p = pseudo_fold (fun b i -> b || p i) false
   let pseudo_dump dump = pseudo_fold (fun  _ i -> dump i) ""
@@ -171,7 +182,8 @@ struct
   | Label (lbl,ins) -> fold_labels f (f k lbl) ins
   | Symbolic _ -> k
   | Macro _ -> assert false
-  | Align _ -> k
+  | Pagealign -> k
+  | Skip _ -> k
 
   let map_labels_base = I.map_labels
 
@@ -190,7 +202,8 @@ struct
   | Label (lbl,ins) -> Label (f lbl, map_labels f ins)
   | Symbolic s -> Symbolic s
   | Macro _ -> assert false
-  | Align n -> Align n
+  | Pagealign -> Pagealign
+  | Skip n -> Skip n
 
 (* For printing the program, code per processor *)
   type nice_prog = (MiscParser.proc * pseudo list) list
@@ -236,6 +249,16 @@ struct
 
 (* Extract instructions pointed by label set *)
 
+  let rec next_addr_after_pseudoins addr pseudo_ins =
+      match pseudo_ins with
+      | Nop -> addr
+      | Instruction ins -> addr+I.size_of_ins ins
+      | Label (_,ins) ->
+          next_addr_after_pseudoins addr ins
+      | Symbolic _ | Macro (_,_) -> assert false
+      | Pagealign -> next_addr_after_pagealign addr
+      | Skip n -> addr+n
+
   let rec add_next_instr m addr lbl code k =
     match code with
     | [] -> k
@@ -253,21 +276,25 @@ struct
        (lbl,I.map_labels f i)::k
     | Label (_,i)::code -> add_next_instr m addr lbl (i::code) k
     | (Symbolic _|Macro _)::_ -> assert false
-    | (Align _)::_ -> assert false
-
+    | Pagealign::code -> add_next_instr m (next_addr_after_pagealign addr) lbl code k
+    | (Skip n)::code -> add_next_instr m (addr + n) lbl code k
 
   let fold_label_addr f =
 
     let rec fold_ins m addr i code =
+      let next_addr = next_addr_after_pseudoins addr i in
       match i with
       | Label (lbl,ins) ->
-         fold_ins (f lbl addr m) addr ins code
-      | Instruction ins ->
-         fold_rec m (addr+I.size_of_ins ins) code
+          fold_ins (f lbl addr m) next_addr ins code
+      | Instruction _ ->
+          fold_rec m next_addr code
       | Nop ->
-         fold_rec m addr code
-      | Macro _|Symbolic _ -> assert false
-      | Align _ -> fold_rec m addr code
+          fold_rec m next_addr code
+      | Macro _|Symbolic _ ->
+          assert false
+      | Pagealign ->
+          fold_rec m next_addr code
+      | Skip _ -> fold_rec m next_addr code
 
       and fold_rec m addr = function
         | [] -> m
@@ -294,7 +321,8 @@ struct
          do_rec (addr+I.size_of_ins ins)  rem k
       | Nop::rem -> do_rec addr rem k
       | (Macro _|Symbolic _)::_ -> assert false 
-      | (Align _)::_ -> assert false in
+      | Pagealign::_ -> assert false
+      | (Skip _)::_ -> assert false in
     do_rec 0 c k |> do_rec func_size f
 
 

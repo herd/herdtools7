@@ -755,6 +755,8 @@ let get_exported_label _ = None
 
 let nop = Some Pnop
 
+let mk_imm_branch _ = None
+
 let is_nop = function
   | Pnop -> true
   | _ -> false

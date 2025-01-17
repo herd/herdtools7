@@ -94,6 +94,7 @@ type instruction =
   | PCall of string * expression list
 
 let nop = None
+and mk_imm_branch _ = None
 and is_nop _ = false
 
 type parsedInstruction = instruction

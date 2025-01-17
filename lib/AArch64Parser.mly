@@ -65,7 +65,7 @@ let check_op3 op e =
 %token <string> META
 %token <string> CODEVAR
 %token <int> PROC
-%token DOTP2ALIGN
+%token DOTPAGEALIGN
 
 %token SEMI COMMA PIPE COLON DOT BANG LCRL RCRL LBRK RBRK LPAR RPAR SCOPES LEVELS REGIONS
 
@@ -206,7 +206,7 @@ instr_option :
 |            { Nop }
 | NAME COLON instr_option {Label ($1,$3) }
 | CODEVAR    { Symbolic $1 }
-| DOTP2ALIGN NUM { Align $2 }
+| DOTPAGEALIGN { Pagealign }
 | instr      { Instruction $1}
 
 reg:
