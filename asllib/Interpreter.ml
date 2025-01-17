@@ -314,6 +314,18 @@ module Make (B : Backend.S) (C : Config) = struct
   let m_false = return v_false
   let m_true = return v_true
 
+  let v_to_int ~loc v =
+    match B.v_to_z v with
+    | Some z when Z.fits_int z -> Z.to_int z
+    | Some z ->
+        Printf.eprintf
+          "Overflow in asllib: cannot convert back to 63-bit integer the \
+           integer %a.\n\
+           %!"
+          Z.output z;
+        unsupported_expr loc
+    | None -> fatal_from loc (MismatchType (B.debug_value v, [ integer' ]))
+
   let sync_list ms =
     let folder m vsm =
       let* v = m and* vs = vsm in
@@ -540,15 +552,13 @@ module Make (B : Backend.S) (C : Config) = struct
         return_normal (v, new_env) |: SemanticsRule.ECall
     (* End *)
     (* Begin EvalEGetArray *)
-    | E_GetArray (e_array, e_index) -> (
+    | E_GetArray (e_array, e_index) ->
         let*^ m_array, env1 = eval_expr env e_array in
         let*^ m_index, new_env = eval_expr env1 e_index in
         let* v_array = m_array and* v_index = m_index in
-        match B.v_to_int v_index with
-        | None -> unsupported_expr e
-        | Some i ->
-            let* v = B.get_index i v_array in
-            return_normal (v, new_env) |: SemanticsRule.EGetArray)
+        let i_index = v_to_int ~loc:e v_index in
+        let* v = B.get_index i_index v_array in
+        return_normal (v, new_env) |: SemanticsRule.EGetArray
     (* End *)
     (* Begin EvalEGetEnumArray *)
     | E_GetEnumArray (e_array, e_index) ->
@@ -599,19 +609,14 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin EvalEArray *)
     | E_Array { length = e_length; value = e_value } ->
-        (let** v_value, new_env = eval_expr env e_value in
-         (* The call to [eval_expr_sef] is safe because Typing.annotate_type
-            checks that all expressions on which a type depends are statically
-            evaluable, i.e. side-effect-free. *)
-         let* v_length = eval_expr_sef env e_length in
-         match B.v_to_int v_length with
-         | Some n_length ->
-             let* v =
-               B.create_vector (List.init n_length (Fun.const v_value))
-             in
-             return_normal (v, new_env)
-         | None -> unsupported_expr e_length)
-        |: SemanticsRule.EArray
+        let** v_value, new_env = eval_expr env e_value in
+        (* The call to [eval_expr_sef] is safe because Typing.annotate_type
+           checks that all expressions on which a type depends are statically
+           evaluable, i.e. side-effect-free. *)
+        let* v_length = eval_expr_sef env e_length in
+        let n_length = v_to_int ~loc:e v_length in
+        let* v = B.create_vector (List.init n_length (Fun.const v_value)) in
+        return_normal (v, new_env) |: SemanticsRule.EArray
     (* End *)
     (* Begin EvalEEnumArray *)
     | E_EnumArray { labels; value = e_value } ->
@@ -767,9 +772,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let*^ m_index, env2 = eval_expr env1 e_index in
         let m1 =
           let* v = m and* v_index = m_index and* rv_array = rm_array in
-          match B.v_to_int v_index with
-          | None -> unsupported_expr e_index
-          | Some i -> B.set_index i v rv_array
+          B.set_index (v_to_int ~loc:e_index v_index) v rv_array
         in
         eval_lexpr ver re_array env2 m1 |: SemanticsRule.LESetArray
     (* End *)
@@ -1148,7 +1151,7 @@ module Make (B : Backend.S) (C : Config) = struct
            [Typing.annotate_limit_expr] checks that the limit is statically
            evaluable. *)
         let* v_limit = eval_expr_sef env e_limit in
-        match B.v_to_int v_limit with
+        match B.v_to_z v_limit with
         | Some limit -> return (Some limit)
         | None ->
             fatal_from e_limit
@@ -1167,7 +1170,8 @@ module Make (B : Backend.S) (C : Config) = struct
     match limit_opt with
     | None -> return None
     | Some limit ->
-        if limit >= 1 then return (Some (limit - 1))
+        let new_limit = Z.pred limit in
+        if Z.sign new_limit >= 0 then return (Some new_limit)
         else fatal_from loc Error.LoopLimitReached
 
   (* Begin EvalLoop *)

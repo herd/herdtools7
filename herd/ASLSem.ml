@@ -193,8 +193,8 @@ module Make (C : Config) = struct
       in
       fun v -> V.Val (tr v)
 
-    let v_to_int = function
-      | V.Val (Constant.Concrete (ASLScalar.S_Int i)) -> Some (Z.to_int i)
+    let v_to_z = function
+      | V.Val (Constant.Concrete (ASLScalar.S_Int i)) -> Some i
       | _ -> None
 
       let v_to_label = function
@@ -908,7 +908,7 @@ module Make (C : Config) = struct
         let is_undetermined = function V.Var _ -> true | V.Val _ -> false
         let v_of_int = V.intToV
         let v_of_literal = v_of_literal
-        let v_to_int = v_to_int
+        let v_to_z = v_to_z
         let v_to_label = v_to_label
         let bind_data = M.asl_data
         let bind_seq = M.asl_seq

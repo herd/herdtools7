@@ -13,6 +13,43 @@ begin
   end;
 end;
 
+func check_pow2 (n: integer)
+begin
+  if n <= 1 then // For n <= 1, we can't test 'around' 2^n
+    assert    IsPow2(0) == FALSE;
+    assert  CeilPow2(0) == 1;
+    // No FloorPow2 for 0
+
+    assert    IsPow2(1) == TRUE;
+    assert  CeilPow2(1) == 1;
+    assert FloorPow2(1) == 1;
+
+    assert    IsPow2(2) == TRUE;
+    assert  CeilPow2(2) == 2;
+    assert FloorPow2(2) == 2;
+
+    assert    IsPow2(3) == FALSE;
+    assert  CeilPow2(3) == 4;
+    assert FloorPow2(3) == 2;
+
+    return;
+  end;
+
+  let p = 2 ^ n;
+
+  assert FloorPow2(p-1) == p DIVRM 2;
+  assert  CeilPow2(p-1) == p;
+  assert    IsPow2(p-1) == FALSE;
+
+  assert FloorPow2(p) == p;
+  assert  CeilPow2(p) == p;
+  assert    IsPow2(p) == TRUE;
+
+  assert FloorPow2(p+1) == p;
+  assert  CeilPow2(p+1) == 2 * p;
+  assert    IsPow2(p+1) == FALSE;
+end;
+
 // Extra main
 func main() => integer
 begin
@@ -108,12 +145,13 @@ begin
     end;
   end;
 
-  for i = 1 to 10 do
+  for i = 1 to 100 do
+    let x = Real(i);
+    let expected_res = SqrtRounded(x, 1000);
     for p = 1 to 10 do
-      let x = Real(i);
-      let (res, inexact) = SqrtRoundDown(x, p);
-      assert Abs(res * res - x) <= 1.0 / 2.0 ^ p;
-      assert inexact || res * res == x;
+      let res = SqrtRounded(x, p);
+      // +2 because of the rounding to odd?
+      assert Abs(res - expected_res) / expected_res <= 2.0 ^ (-p+2);
     end;
   end;
 
@@ -143,6 +181,76 @@ begin
   assert highestsetbit_010 == 1;
   let highestsetbit_ = HighestSetBit ('');
   assert highestsetbit_ == -1;
+
+  for i = 1 to 1000 do
+    let x = Real (i) / 100.0;
+    assert (Abs(ILog2(x) + ILog2(1.0 / x)) < 2);
+  end;
+
+  for i = -10 to 10 do
+    let x = 3.0 ^ i;
+    let lgx = ILog2(x);
+    assert (Abs(lgx + ILog2(1.0 / x)) < 2);
+    if i >= 0 then
+      assert Log2(3 ^ (i as integer)) == lgx;
+    end;
+  end;
+
+  for i = 10 to 1000 do
+    assert Log2(i DIVRM 10) == ILog2 (Real (i) / 10.0);
+  end;
+
+  for n = 0 to 10 do
+    check_pow2(n);
+    check_pow2(19*n+1);
+  end;
+
+  assert AlignDownP2('110111', 1) == '110110';
+  assert AlignDownP2('110111', 2) == '110100';
+  assert AlignDownP2('110111', 3) == '110000';
+  assert AlignDownP2('110111', 4) == '110000';
+  assert AlignDownP2('110111', 5) == '100000';
+  assert AlignDownP2('110111', 6) == '000000';
+  assert AlignDownP2('001000', 1) == '001000';
+  assert AlignDownP2('001000', 2) == '001000';
+  assert AlignDownP2('001000', 3) == '001000';
+  assert AlignDownP2('001000', 4) == '000000';
+  assert AlignDownP2('001000', 5) == '000000';
+  assert AlignDownP2('001000', 6) == '000000';
+  assert AlignUpP2('110111', 1) == '111000';
+  assert AlignUpP2('110111', 2) == '111000';
+  assert AlignUpP2('110111', 3) == '111000';
+  assert AlignUpP2('110111', 4) == '000000';
+  assert AlignUpP2('110111', 5) == '000000';
+  assert AlignUpP2('110111', 6) == '000000';
+  assert AlignUpP2('001000', 1) == '001000';
+  assert AlignUpP2('001000', 2) == '001000';
+  assert AlignUpP2('001000', 3) == '001000';
+  assert AlignUpP2('001000', 4) == '010000';
+  assert AlignUpP2('001000', 5) == '100000';
+  assert AlignUpP2('001000', 6) == '000000';
+
+  for N = 0 to 5 do
+    let pN = 2 ^ N;
+    for x = -pN to pN do
+      for y = 0 to N do
+        let bv = x[0+:N];
+        let p = 2^y as integer {1..2^N};
+
+        assert AlignUpP2(bv, y) == AlignUpP2(x, y)[0+:N];
+        assert AlignDownP2(bv, y) == AlignDownP2(x, y)[0+:N];
+
+        assert AlignUpP2(x, y) IN {x..x+p};
+        assert AlignDownP2(x, y) IN {(x - p)..x};
+
+        assert AlignUpSize(x, p) == AlignUpP2(x, y);
+        assert AlignDownSize(x, p) == AlignDownP2(x, y);
+
+        assert AlignUpSize(bv, p) == AlignUpP2(bv, y);
+        assert AlignDownSize(bv, p) == AlignDownP2(bv, y);
+      end;
+    end;
+  end;
 
   return 0;
 end;

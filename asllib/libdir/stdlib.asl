@@ -46,6 +46,89 @@ begin
     return (a MOD 2) == 1;
 end;
 
+// FloorPow2()
+// ===========
+// For a strictly positive integer x, returns the largest power of 2 that is
+// less than or equal to x
+
+func FloorPow2(x : integer) => integer
+begin
+    assert x > 0;
+    // p2 stores twice the result until last line where it is divided by 2
+    var p2 : integer = 2;
+    while x >= p2 looplimit 2^128 do // i.e. unbounded
+        p2 = p2 * 2;
+    end;
+    return p2 DIV 2;
+end;
+
+// CeilPow2()
+// ==========
+// For a positive integer x, returns the smallest power of 2 that is greater or
+// equal to x.
+
+func CeilPow2(x : integer) => integer
+begin
+    assert x >= 0;
+    if x <= 1 then return 1; end;
+    return FloorPow2(x - 1) * 2;
+end;
+
+// IsPow2()
+// ========
+// Return TRUE if integer X is positive and a power of 2. Otherwise,
+// return FALSE.
+
+func IsPow2(x : integer) => boolean
+begin
+    if x <= 0 then return FALSE; end;
+    return FloorPow2(x) == CeilPow2(x);
+end;
+
+// AlignDownSize()
+// ===============
+// For a non-negative integer x and positive integer size, returns the greatest
+// multiple of size that is less than or equal to x.
+
+func AlignDownSize(x: integer, size: integer) => integer
+begin
+    assert size > 0;
+    return (x DIVRM size) * size;
+end;
+
+// AlignUpSize()
+// =============
+// For a non-negative integer x and positive integer size, returns the smallest
+// multiple of size that is greater than or equal to x.
+
+func AlignUpSize(x: integer, size: integer) => integer
+begin
+    assert size > 0;
+    return AlignDownSize(x + (size - 1), size);
+end;
+
+// AlignDownP2()
+// =============
+// For non-negative integers x and p2, returns the greatest multiple of 2^p2
+// that is less than or equal to x.
+
+func AlignDownP2(x: integer, p2: integer) => integer
+begin
+    assert p2 >= 0;
+    return AlignDownSize(x, 2^p2);
+end;
+
+// AlignUpP2()
+// ===========
+// For non-negative integers x and p2, returns the smallest multiple of 2^p2
+// that is greater than or equal to x.
+
+func AlignUpP2(x: integer, p2: integer) => integer
+begin
+    assert p2 >= 0;
+    return AlignUpSize(x, 2^p2);
+end;
+
 //------------------------------------------------------------------------------
 // Functions on reals
 
@@ -79,29 +162,82 @@ begin
   return if a<b then a else b;
 end;
 
-// Calculate the square root of x to sf binary digits.
-// The second tuple element of the return value is TRUE if the result is
-// inexact, else FALSE.
-func SqrtRoundDown(x: real, sf: integer) => (real, boolean)
+// ILog2()
+// Return floor(log2(VALUE))
+
+func ILog2(value : real) => integer
 begin
-  assert x > 0.0 && sf > 0;
+    assert value > 0.0;
+    var val : real = Abs(value);
+    var low : integer;
+    var high : integer;
 
-  // Following https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Heron's_method
+    // Exponential search to find upper/lower power-of-2 exponent range
+    if val >= 1.0 then
+        low = 0; high = 1;
+        while 2.0 ^ high <= val looplimit 2^128 do
+            low = high;
+            high = high * 2;
+        end;
+    else
+        low = -1; high = 0;
+        while 2.0 ^ low > val looplimit 2^128 do
+            high = low;
+            low = low * 2;
+        end;
+    end;
 
-  // Initial guess
-  let x0 = x;
+    // Binary search between low and high
+    while low <= high looplimit 2^128 do
+        var mid = (low + high) DIVRM 2;
+        if 2.0 ^ mid > val then
+            high = mid - 1;
+        else
+            low = mid + 1;
+        end;
+    end;
 
-  let precision = 1.0 / (2.0 ^ sf);
+    return high;
+end;
 
-  var xn: real = x0;
-  while Abs(x - xn * xn) > precision looplimit 1000 do
-    xn = (xn + x / xn) / 2.0 ;
-  end;
-  let root = xn;
+// SqrtRounded()
+// Compute square root of VALUE with FRACBITS of precision, rounding inexact values to Odd
 
-  let inexact = x != root * root;
+func SqrtRounded(value : real, fracbits : integer) => real
+begin
+    assert value >= 0.0 && fracbits > 0;
+    if value == 0.0 then return 0.0; end;
 
-  return (root, inexact);
+    // Normalize value to the form 1.nnnn... x 2^exp
+    var exp : integer = ILog2(value);
+    var frac : real = value / (2.0 ^ exp);
+
+    // Require value = 2.0^exp * frac, where exp is even and 1/4 <= frac < 1
+    if exp MOD 2 == 0 then
+        frac = 0.25 * frac;
+        exp = exp + 2;
+    else
+        frac = 0.5 * frac;
+        exp = exp + 1;
+    end;
+
+    // Set root to sqrt(frac) truncated to fracbits-1 bits
+    var root = 0.0;
+    var prec = 1.0;
+    for n = 1 to fracbits - 1 do
+        if (root + prec) ^ 2 <= frac then
+            root = root + prec;
+        end;
+        prec = prec / 2.0;
+    end;
+
+    // Final value of root is odd-rounded to fracbits bits
+    if root ^ 2 < frac then
+        root = root + prec;
+    end;
+
+    // Return sqrt(value) odd-rounded to fracbits bits
+    return (2.0 ^ (exp DIV 2)) * root;
 end;
 
 //------------------------------------------------------------------------------
@@ -117,7 +253,7 @@ begin
   return if isZero then Zeros{N} else Ones{N};
 end;
 
-// Returns a bit vector of width N, containing (N DIV M) copies of input bit
+// Returns a bitvector of width N, containing (N DIV M) copies of input bit
 // vector x of width M. N must be exactly divisible by M.
 func Replicate{N,M}(x: bits(M)) => bits(N)
 begin
@@ -233,6 +369,50 @@ begin
   else
     return x[N-1:y]+1 :: Zeros{y};
   end;
+end;
+
+// Bitvector alignment functions
+// =============================
+
+// AlignDownSize()
+// ===============
+// A variant of AlignDownSize where the bitvector x is viewed as an unsigned
+// integer and the resulting integer is represented by its first N bits.
+
+func AlignDownSize{N}(x: bits(N), size: integer {1..2^N}) => bits(N)
+begin
+    return AlignDownSize(UInt(x), size)[:N];
+end;
+
+// AlignUpSize()
+// =============
+// A variant of AlignUpSize where the bitvector x is viewed as an unsigned
+// integer and the resulting integer is represented by its first N bits.
+
+func AlignUpSize{N}(x: bits(N), size: integer {1..2^N}) => bits(N)
+begin
+    return AlignUpSize(UInt(x), size)[:N];
+end;
+
+// AlignDownP2()
+// =============
+// A variant of AlignDownP2 where the bitvector x is viewed as an unsigned
+// integer and the resulting integer is represented by its first N bits.
+
+func AlignDownP2{N}(x: bits(N), p2: integer {0..N}) => bits(N)
+begin
+    if N == 0 then return x; end;
+    return x[N-1:p2] :: Zeros{p2};
+end;
+
+// AlignUpP2()
+// ===========
+// A variant of AlignUpP2 where the bitvector x is viewed as an unsigned
+// integer and the resulting integer is represented by its first N bits.
+
+func AlignUpP2{N}(x: bits(N), p2: integer {0..N}) => bits(N)
+begin
+    return AlignDownP2{N}(x + (2^p2 - 1), p2);
 end;
 
 // The shift functions LSL, LSR, ASR and ROR accept a non-negative shift amount.

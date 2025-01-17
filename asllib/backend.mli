@@ -57,8 +57,8 @@ module type S = sig
   (** [v_of_int] is used to convert raw integers arising from the interpretation,
       and not parsed values. *)
 
-  val v_to_int : value -> int option
-  (** [v_to_int v] returns, if possible, an integer corresponding to the value.
+  val v_to_z : value -> Z.t option
+  (** [v_to_z v] returns, if possible, an integer corresponding to the value.
       Should be called only on values of type integer. *)
 
   val v_to_label : value -> string

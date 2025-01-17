@@ -39,7 +39,7 @@ module type S = sig
   type global = {
     static : StaticEnv.global;
     storage : v Storage.t;
-    stack_size : int IMap.t;
+    stack_size : Z.t IMap.t;
   }
 
   type local
@@ -66,7 +66,7 @@ module type S = sig
   val get_scope : env -> Scope.t
   val push_scope : env -> env
   val pop_scope : env -> env -> env
-  val get_stack_size : identifier -> env -> int
+  val get_stack_size : identifier -> env -> Z.t
   val incr_stack_size : identifier -> global -> global
   val decr_stack_size : identifier -> global -> global
 end
@@ -79,7 +79,7 @@ module RunTime (C : RunTimeConf) = struct
   type global = {
     static : StaticEnv.global;
     storage : C.v Storage.t;
-    stack_size : int IMap.t;
+    stack_size : Z.t IMap.t;
   }
 
   type int_stack = int list
@@ -212,20 +212,22 @@ module RunTime (C : RunTimeConf) = struct
     { child with local = { parent.local with storage = local_storage } }
 
   let get_stack_size name env =
-    try IMap.find name env.global.stack_size with Not_found -> 0
+    try IMap.find name env.global.stack_size with Not_found -> Z.zero
 
   let set_stack_size name value global =
     let stack_size = IMap.add name value global.stack_size in
     { global with stack_size }
 
   let incr_stack_size name global =
-    let prev = try IMap.find name global.stack_size with Not_found -> 0 in
-    set_stack_size name (prev + 1) global
+    let prev =
+      try IMap.find name global.stack_size with Not_found -> Z.zero
+    in
+    set_stack_size name (Z.succ prev) global
 
   let decr_stack_size name global =
     let prev =
       try IMap.find name global.stack_size with Not_found -> assert false
     in
-    assert (prev > 0);
-    set_stack_size name (prev - 1) global
+    assert (Z.sign prev > 0);
+    set_stack_size name (Z.pred prev) global
 end
