@@ -32,3 +32,7 @@ jobs:
       - name: Build ASL Reference
         run: opam exec -- make asldoc
 
+      - uses: actions/upload-artifact@v4
+        with:
+         name: ASL Reference Document
+         path: asllib/doc/ASLReference.pdf
