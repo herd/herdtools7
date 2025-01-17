@@ -631,6 +631,29 @@ let mask_of_string s =
     raise (Invalid_argument "Mask")
   else { length = length_set; set; unset; specified; initial_string = s }
 
+let preprocess_mask_string s =
+  let buffer = Buffer.create (String.length s) in
+  let process_parentheses s =
+    let convert_to_x in_parens = function
+      | '(' ->
+          if in_parens then raise (Invalid_argument "Mask preprocess") else true
+      | ')' ->
+          if not in_parens then raise (Invalid_argument "Mask preprocess")
+          else false
+      | ' ' as c ->
+          Buffer.add_char buffer c;
+          in_parens
+      | c ->
+          Buffer.add_char buffer (if in_parens then 'x' else c);
+          in_parens
+    in
+    let _ = Seq.fold_left convert_to_x false (String.to_seq s) in
+    Buffer.contents buffer
+  in
+  process_parentheses s
+
+let mask_of_alt_string s = preprocess_mask_string s |> mask_of_string
+
 let mask_of_bitvector ((length, data) as bv) =
   let set = data
   and _, unset = lognot bv
