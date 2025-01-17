@@ -25,6 +25,15 @@ let exp_real q z =
     let res_num = Z.pow num i and res_den = Z.pow den i in
     Q.(res_num /// res_den)
 
+let literal_to_string = function
+  | L_Int i -> Z.to_string i
+  | L_Bool true -> "TRUE"
+  | L_Bool false -> "FALSE"
+  | L_Real r -> Q.to_string r
+  | L_BitVector bv -> Bitvector.to_string_hexa bv
+  | L_String s -> s
+  | L_Label l -> l
+
 let binop_values pos t (op : binop) v1 v2 =
   match (op, v1, v2) with
   (* int -> int -> int *)
