@@ -234,6 +234,19 @@ stands for $V(a_1) \ldots V(a_k)$ where $a_{1..k}$ is an arbitrary ordering of t
 We write $T^*$ to denote a the type of a possibly-empty list of elements of type $T$,
 and $T^+$ for a non-empty list of elements of type $T$.
 
+\hypertarget{def-listset}{}
+\begin{definition}[Listing a Set]
+The parametric relation $\listset : \pow{T} \times T^*$
+lists the elements of a set in an arbitrary order:
+\[
+\begin{array}{c}
+  \listset(X) = x_{1..k}\\
+  |X| = k\\
+  \forall x\in X.\ \exists 1 \leq i \leq k.\ x = x_i
+\end{array}
+\]
+\end{definition}
+
 \hypertarget{def-concat}{}
 \begin{definition}[List Concatenation]
 The parametric function $\concat : T^* \cartimes T^* \rightarrow T^*$ concatenates two lists:
