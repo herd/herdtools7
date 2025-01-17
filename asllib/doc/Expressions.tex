@@ -2805,7 +2805,7 @@ All of the following apply:
 \subsubsection{Example}
 In the specification:
 \ASLExample{\semanticstests/SemanticsRule.EArbitraryInteger3.asl}
-the expression \texttt{[ARBITRARY : integer]} evaluates to an integer value.
+the expression \texttt{ARBITRARY : integer} evaluates to an integer value.
 
 \subsubsection{Example}
 In the specification:
@@ -2822,16 +2822,40 @@ and how to obtain an arbitrary enumeration-indexed array, \texttt{enum\_array}.
 All of the following apply:
 \begin{itemize}
   \item $\ve$ denotes the \texttt{ARBITRARY} expression annotated with type $\vt$;
-  \item $\vv$ is an arbitrary value in the domain of $\vt$ in $\env$ (see \secref{DynDomain});
-  \item $\newenv$ is $\env$.
-  \item $\vg$ is the empty execution graph.
+  \item One of the following applies:
+  \begin{itemize}
+    \item All of the following apply (\textsc{okay}):
+    \begin{itemize}
+      \item the domain of $\vt$ in $\env$ (see \secref{DynDomain}) is not empty;
+      \item $\vv$ is an arbitrary value in the domain of $\vt$ in $\env$;
+      \item $\newenv$ is $\env$.
+      \item $\vg$ is the empty execution graph.
+    \end{itemize}
+
+    \item All of the following apply (\textsc{error}):
+    \begin{itemize}
+      \item the domain of $\vt$ in $\env$ is empty;
+      \item the result is a dynamic error (\ArbitraryEmptyType) indicating that the type $\vt$ has an empty
+            domain in $\env$ and therefore no value can be returned.
+    \end{itemize}
+  \end{itemize}
 \end{itemize}
+
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule{
+\inferrule[okay]{
+  \dynamicdomain(\env, \vt) \neq \emptyset\\
   \vv \in \dynamicdomain(\env, \vt)
 }{
   \evalexpr{\env, \overname{\EArbitrary (\vt)}{\ve}} \evalarrow \Normal((\vv, \overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[error]{
+  \dynamicdomain(\env, \vt) = \emptyset
+}{
+  \evalexpr{\env, \overname{\EArbitrary (\vt)}{\ve}} \evalarrow \DynamicErrorVal{\ArbitraryEmptyType}
 }
 \end{mathpar}
 \CodeSubsection{\EvalEArbitraryBegin}{\EvalEArbitraryEnd}{../Interpreter.ml}
