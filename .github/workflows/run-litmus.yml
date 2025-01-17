@@ -1,4 +1,4 @@
-name: Run Litmus X86_64
+name: Run Litmus
 
 on:
   schedule:
@@ -10,12 +10,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
+        arch:
+          - os: ubuntu-latest
+            make-test-target: litmus-x86_64-test X86_64_PREFIX=''
+          - os: ubuntu-24.04-arm
+            make-test-target: litmus-aarch64-test
         ocaml-compiler:
           - "5.2"
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.arch.os }}
 
     steps:
       - name: Checkout tree
@@ -29,4 +32,4 @@ jobs:
           opam install dune menhir zarith
           opam exec -- make Version.ml
           opam exec -- dune build litmus/litmus.exe
-          opam exec -- make litmus-x86_64-test LITMUS=$(pwd)/_build/default/litmus/litmus.exe X86_64_PREFIX=''
+          opam exec -- make ${{ matrix.arch.make-test-target }} LITMUS=$(pwd)/_build/default/litmus/litmus.exe
