@@ -1500,6 +1500,7 @@ compound conditional statement (see \listingref{ast-case2} for an example):
   \desugarcasestmt(\vezero, \vcases, \votherwise) \astarrow \overname{\SSeq(\vdeclx, \vscond)}{\news}
 }
 \end{mathpar}
+\CodeSubsection{\DesugarCaseStmtBegin}{\DesugarCaseStmtEnd}{../desugar.ml}
 
 \subsubsection{ASTRule.CasesToCond\label{sec:ASTRule.CasesToCond}}
 \hypertarget{def-casestocond}{}
@@ -1532,6 +1533,7 @@ into a statement $\news$.
   \casestocond(\ve, \overname{[\vcase] \concat \vcasesone}{\vcases}, \votherwise) \astarrow \news
 }
 \end{mathpar}
+\CodeSubsection{\CasesToCondBegin}{\CasesToCondEnd}{../desugar.ml}
 
 \subsubsection{ASTRule.CaseToCond\label{sec:ASTRule.CaseToCond}}
 \hypertarget{def-casetocond}{}
@@ -1553,6 +1555,7 @@ a list of \texttt{case} alternatives already converted to conditionals, into a c
   \casetocond(\vezero, \vcase, \vtail) \astarrow \overname{\SCond(\vcond, \vstmt, \vtail)}{\news}
 }
 \end{mathpar}
+\CodeSubsection{\CaseToCondBegin}{\CaseToCondEnd}{../desugar.ml}
 
 \subsection{Typing}
 Since case statements are transformed into other statements,

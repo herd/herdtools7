@@ -23,7 +23,8 @@ control: control.tex $(CONTROLS)
 ASLReference.pdf: control\
 				ASLASTLines.tex ASLTypeSatisfactionLines.tex ASLStaticModelLines.tex ASLStaticInterpreterLines.tex\
 				ASLStaticEnvLines.tex ASLEnvLines.tex ASLASTUtilsLines.tex\
-				ASLTypingLines.tex ASLSemanticsLines.tex ASLStaticOperationsLines.tex
+				ASLTypingLines.tex ASLSemanticsLines.tex ASLStaticOperationsLines.tex\
+				desugarLines.tex
 	$(LATEX) ASLReference.tex
 	$(BIBTEX) ASLReference
 	$(LATEX) ASLReference.tex
@@ -41,6 +42,9 @@ ASLEnvLines.tex: ../env.ml
 	$(BENTO) $< > $@
 
 ASLSemanticsLines.tex: ../Interpreter.ml
+	$(BENTO) $< > $@
+
+desugarLines.tex: ../desugar.ml
 	$(BENTO) $< > $@
 
 ASL%Lines.tex: ../%.ml
