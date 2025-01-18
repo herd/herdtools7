@@ -105,9 +105,8 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SPass \label{sec:SemanticsRule.SPass}}
 \subsubsection{Example}
-In the specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SPass.asl}
-\texttt{pass;} does nothing.
+In \listingref{semantics-spass}, \texttt{pass;} does nothing.:
+\ASLListing{Evaluating a \texttt{pass} statement}{semantics-spass}{\semanticstests/SemanticsRule.SPass.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -173,10 +172,10 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SAssign \label{sec:SemanticsRule.SAssign}}
 \subsubsection{Example}
-In the specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SAssign.asl}
+In \listingref{semantics-sassign},
 \texttt{x = 3;} binds \texttt{x} to $\nvint(3)$ in the environment where \texttt{x} is bound to
 $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
+\ASLListing{Evaluating an assignment}{semantics-sassign}{\semanticstests/SemanticsRule.SAssign.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -761,14 +760,14 @@ One of the following applies:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SDeclSome\label{sec:SemanticsRule.SDeclSome}}
 \subsubsection{Example (Declaration With an Initializing Value)}
-The specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SDeclSome.asl}
+In \listingref{semantics-sdeclsome},
 \texttt{let x = 3;} binds \texttt{x} to $\nvint(3)$ in the empty environment.
+\ASLListing{Evaluating a declaration with a given initial value}{semantics-sdeclsome}{\semanticstests/SemanticsRule.SDeclSome.asl}
 
 \subsubsection{Example (Declaration Without an Initializing Value)}
-In the specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SDeclNone.asl}
+In \listingref{semantics-sdeclnone},
 \texttt{var x : integer;} binds \texttt{x} in $\env$ to the base value of \texttt{integer}.
+\ASLListing{Evaluating a declaration without a given initial value}{semantics-sdeclnone}{\semanticstests/SemanticsRule.SDeclNone.asl}
 
 \subsubsection{Prose}
 One of the following applies:
@@ -1044,9 +1043,10 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SSeq\label{sec:SemanticsRule.SSeq}}
 \subsubsection{Example}
-In the specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SSeq.asl}
-\texttt{let x = 3; let y = x + 1} evaluates \texttt{let x = 3} then \texttt{let y = x + 1}.
+In \listingref{semantics-sseq},
+the evaluation of \texttt{let x = 3; let y = x + 1} first evaluates \texttt{let x = 3} and only then
+evaluates \texttt{let y = x + 1}.
+\ASLListing{Evaluating a sequence of statements}{semantics-sseq}{\semanticstests/SemanticsRule.SSeq.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -1133,9 +1133,9 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SCall\label{sec:SemanticsRule.SCall}}
 \subsubsection{Example}
-In the specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SCall.asl}
-\texttt{Zeros(3)} evaluates to \texttt{'000'}.
+In \listingref{semantics-scall},
+\verb|Zeros{3}| evaluates to \texttt{'000'}.
+\ASLListing{Evaluating a call statement}{semantics-scall}{\semanticstests/SemanticsRule.SCall.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -1248,21 +1248,19 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SCond\label{sec:SemanticsRule.SCond}}
 \subsubsection{Examples}
-The specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SCond.asl}
-does not result in any Assertion Error.
+The specification in \listingref{semantics-scond} does not result in any Assertion Error.
+\ASLListing{Evaluating a conditional statement}{semantics-scond}{\semanticstests/SemanticsRule.SCond.asl}
 
-The specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SCond2.asl}
+The specification in \listingref{semantics-scond2}
 does not result in any error.
+\ASLListing{Evaluating a condition statement with \texttt{elsif}}{semantics-scond2}{\semanticstests/SemanticsRule.SCond2.asl}
 
-The specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SCond3.asl}
+The specification in \listingref{semantics-scond3}
 results in an Assertion Error.
+\ASLListing{Evaluating a condition statement that results in an Assertion Error}{semantics-scond3}{\semanticstests/SemanticsRule.SCond3.asl}
 
-The specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SCond4.asl}
-does not result in any error.
+The specification in \listingref{semantics-scond4} does not result in any error.
+\ASLListing{Evaluating a condition statement with only a \texttt{then} branch}{semantics-scond4}{\semanticstests/SemanticsRule.SCond4.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -1616,14 +1614,15 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SAssert \label{sec:SemanticsRule.SAssert}}
 \subsubsection{Example}
-In the specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SAssertOk.asl}
+In \listingref{semantics-sasertok},
 \texttt{assert (42 != 3);} ensures that \texttt{3} is not equal to \texttt{42}.
+\ASLListing{Evaluating an assertion that succeeds}{semantics-sasertok}{\semanticstests/SemanticsRule.SAssertOk.asl}
 
 \subsubsection{Example}
-In the specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SAssertNo.asl}
-\texttt{assert (42 == 3);} results in an \texttt{AssertionFailed} error.
+In \listingref{semantics-sassertno},
+evaluating \texttt{assert (42 == 3);} results in an \texttt{AssertionFailed} error.
+\ASLListing{Evaluating an assertion that fails}{semantics-sassertno}{\semanticstests/SemanticsRule.SAssertNo.asl}
+
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1806,9 +1805,8 @@ One of the following applies:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SWhile \label{sec:SemanticsRule.SWhile}}
 \subsubsection{Example}
-The specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SWhile.asl}
-prints \texttt{0123}.
+The specification in \listingref{semantics-swhile} prints \texttt{0123}.
+\ASLListing{Evaluating a \texttt{while} loop}{semantics-swhile}{\semanticstests/SemanticsRule.SWhile.asl}
 
 \subsubsection{Prose}
 Evaluation of the statement $\vs$ in an environment $\env$ is
@@ -1868,10 +1866,9 @@ The result is either the continuing configuration \\ $\Continuing(\newg,\newenv)
 an early return configuration, or an abnormal configuration.
 
 \subsubsection{Example}
-The specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.Loop.asl}
-does not result in any Assertion Error and the specification terminates with exit
-code $0$.
+The specification in \listingref{semantics-loop} does not result in any Assertion Error
+and the specification terminates with exit code $0$.
+\ASLListing{Evaluating a loop}{semantics-loop}{\semanticstests/SemanticsRule.Loop.asl}
 
 \CodeSubsection{\EvalLoopBegin}{\EvalLoopEnd}{../Interpreter.ml}
 \subsubsection{Prose}
@@ -2106,15 +2103,14 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SRepeat \label{sec:SemanticsRule.SRepeat}}
 \subsubsection{Example}
-The specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SRepeat.asl}
-prints
+The specification in \listingref{semantics-srepeat} prints
 \begin{Verbatim}
   0
   1
   2
   3
 \end{Verbatim}
+\ASLListing{Evaluating a \texttt{repeat} loop}{semantics-srepeat}{\semanticstests/SemanticsRule.SRepeat.asl}
 
 \subsubsection{Prose}
 Evaluation of the statement $\vs$ in an environment $\env$ is
@@ -2420,15 +2416,14 @@ is not already declared in the scope of the subprogram containing the \texttt{fo
 statement.
 
 \subsubsection{Example}
-The specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SFor.asl}
-prints
+The specification in \listingref{semantics-sfor} prints
 \begin{Verbatim}
   0
   1
   2
   3
 \end{Verbatim}
+\ASLListing{Evaluating a \texttt{for} loop}{semantics-sfor}{\semanticstests/SemanticsRule.SFor.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -2593,9 +2588,8 @@ All of the following apply:
 
 \subsubsection{Overall Evaluation}
 \subsubsection{Example}
-The specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.For.asl}
-does not result in any assertion error, and the specification terminates with exit-code $0$.
+The specification in \listingref{semantics-sfor}
+does not result in any assertion error, and terminates with exit-code $0$.
 
 Evaluating $(\vindexname, \vstart, \dir, \vend, \vbody)$ in $\env$ is either
 a continuing configuration $\Continuing(\newg, \newenv)$ or a returning configuration
@@ -2789,15 +2783,18 @@ One of the following applies:
 
 \subsection{Semantics}
 subsubsection{SemanticsRule.SThrow\label{sec:SemanticsRule.SThrow}}
-\subsubsection{Example (Throwing Without an Exception)}
-The specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SThrowNone.asl}
-throws a \texttt{MyException} exception.
+\subsubsection{Example (Rethrowing an Exception)}
+The specification in \listingref{semantics-sthrownone}
+first catches the exception raised by \\
+\verb|throw MyExceptionType{a=42}|
+and then raises it in the catch clause via \verb|throw;|,
+catching it again in the outer \texttt{try-catch} statement.
+\ASLListing{Rethrowing an exception}{semantics-sthrownone}{\semanticstests/SemanticsRule.SThrowNone.asl}
 
 \subsubsection{Example (Throwing a Typed Exception)}
-The specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SThrowSomeTyped.asl}
+The specification in \listingref{semantics-sthrowsometyped}
 terminates successfully. That is, no dynamic error occurs.
+\ASLListing{Throwing an exception}{semantics-sthrowsometyped}{\semanticstests/SemanticsRule.SThrowSomeTyped.asl}
 
 \subsubsection{Prose}
 One of the following applies:
@@ -2955,9 +2952,9 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.STry \label{sec:SemanticsRule.STry}}
 \subsubsection{Example}
-The specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.STry.asl}
+Evaluating the specification in \listingref{semantics-stry}
 does not result in any Assertion error, and the specification terminates with the exit code $0$.
+\ASLListing{Evaluating a \texttt{try} statement}{semantics-stry}{\semanticstests/SemanticsRule.STry.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -3071,19 +3068,19 @@ One of the following applies:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SReturn\label{sec:SemanticsRule.SReturn}}
 \subsubsection{Example (No Return Value)}
-The specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SReturnNone.asl}
-exits the current procedure.
+The specification in \listingref{semantics-sreturn} exits the procedure \texttt{println\_me}
+by evaluating the \texttt{return;} statement.
+\ASLListing{Evaluating a \texttt{return} statement with no value}{semantics-sreturn}{\semanticstests/SemanticsRule.SReturnNone.asl}
 
 \subsubsection{Example (Returning a Single Value)}
-In the specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SReturnOne.asl}
-\texttt{return 3;} exits the current subprogram with value \texttt{3}.
+In \listingref{semantic-ssreturnone},
+\texttt{return 3;} exits the function \texttt{f} with value \texttt{3}.
+\ASLListing{Evaluating a \texttt{return} statement with a single value}{semantic-ssreturnone}{\semanticstests/SemanticsRule.SReturnOne.asl}
 
-\subsubsection{Example (Returning Multiple Values)}
-In the specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SReturnSome.asl}
-\texttt{return (3, 42);} exits the current subprogram with value \texttt{(3, 42)}.
+\subsubsection{Example (Returning a Tuple of Values)}
+In \listingref{semantics-sreturntuple},
+\texttt{return (3, 42);} exits the function \texttt{f} with the value \texttt{(3, 42)}.
+\ASLListing{Evaluating a \texttt{return} statement with a tuple of values}{semantics-sreturntuple}{\semanticstests/SemanticsRule.SReturnSome.asl}
 
 \subsubsection{Prose}
 One of the following applies:

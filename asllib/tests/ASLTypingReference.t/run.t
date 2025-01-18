@@ -11,9 +11,6 @@ ASL Typing Reference:
   ASL Typing error: a subtype of pairT was expected,
     provided (integer {1}, T2).
   [1]
-  $ aslref TypingRule.Block0.asl
-  3
-  Some text
 //  $ aslref TypingRule.EConcatUnresolvableToInteger.asl
   $ aslref TypingRule.ApplyBinopTypes.asl
   $ aslref TypingRule.LDDiscard.asl
@@ -28,7 +25,7 @@ ASL Typing Reference / annotating types:
   $ aslref TypingRule.TNamed.asl
   $ aslref TypingRule.TIntUnConstrained.asl
   $ aslref TypingRule.TIntWellConstrained.asl
-  $ aslref TypingRule.TIntUnderConstrained.asl
+  $ aslref TypingRule.TIntParameterized.asl
   $ aslref TypingRule.TBits.asl
   $ aslref TypingRule.TTuple.asl
   $ aslref TypingRule.TArray.asl

@@ -140,7 +140,10 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \subsection{Typing}
 \subsubsection{TypingRule.LDVar \label{sec:TypingRule.LDVar}}
 \subsubsection{Example}
-\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDVar.asl}
+In \listingref{ldvar}, the statement \texttt{let x = 3;} is legal, since
+\texttt{x} is not defined elsewhere. It is added to the type environment
+with the type inferred type \texttt{integer{3}}.
+\ASLListing{A local storage declaration}{ldvar}{\typingtests/TypingRule.LDVar.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -166,25 +169,24 @@ All of the following apply:
 
 \subsection{Semantics}
 \subsubsection{SemanticsRule.LDVar \label{sec:SemanticsRule.LDVar}}
-    \subsubsection{Prose}
-    All of the following apply:
-    \begin{itemize}
-    \item $\ldi$ is a variable declaration, $\LDIVar(\vx)$;
-    \item $\vm$ is a pair consisting of the value $\vv$ and execution graph $\vgone$;
-    \item declaring $\vx$ in $\env$ is $(\newenv, \vgtwo)$;
-    \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
-    \end{itemize}
+\subsubsection{Prose}
+All of the following apply:
+\begin{itemize}
+  \item $\ldi$ is a variable declaration, $\LDIVar(\vx)$;
+  \item $\vm$ is a pair consisting of the value $\vv$ and execution graph $\vgone$;
+  \item declaring $\vx$ in $\env$ is $(\newenv, \vgtwo)$;
+  \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
+\end{itemize}
 
 \subsubsection{Example}
-In the specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.LDVar0.asl}
-\texttt{var x = 3;} binds \texttt{x} to the evaluation of \texttt{3} in $\env$.
+The statement \texttt{var x = 3;} in \listingref{ldvar} binds \texttt{x}
+to the evaluation of \texttt{3} in $\env$.
 
 \subsubsection{Example}
-In the specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.LDVar1.asl}
+In \listingref{semantics-ldvar1}
 \texttt{var x : integer = 3;} binds \texttt{x} to the evaluation of
 \texttt{3} in $\env$, without type consideration at runtime.
+\ASLListing{Binding a local variable to a literal integer}{semantics-ldvar1}{\semanticstests/SemanticsRule.LDVar1.asl}
 
 \subsubsection{Formally}
 \begin{mathpar}
@@ -202,7 +204,7 @@ In the specification:
 \subsection{Typing}
 \subsubsection{TypingRule.LDTuple\label{sec:TypingRule.LDTuple}}
 \subsubsection{Example}
-\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.LDTuple.asl}
+\ASLListing{Declaring a tuple in the local storage}{typing-ldtuple}{\typingtests/TypingRule.LDTuple.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -242,11 +244,11 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.LDTuple\label{sec:SemanticsRule.LDTuple}}
 \subsubsection{Example}
-In the specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.LDTuple.asl}
+In \listingref{semantics-ldtuple},
 \texttt{var (x,y,z) = (1,2,3);} binds \texttt{x} to the evaluation of
 \texttt{1}, \texttt{y} to the evaluation of \texttt{2}, and \texttt{z} to the
 evaluation of \texttt{3} in $\env$.
+\ASLListing{Evaluating a tuple declaration in the local storage}{semantics-ldtuple}{\semanticstests/SemanticsRule.LDTuple.asl}
 
 \subsubsection{Prose}
 All of the following apply:

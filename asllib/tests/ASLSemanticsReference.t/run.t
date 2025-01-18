@@ -59,8 +59,7 @@ ASL Semantics Reference:
   ASL Execution error: Assertion failed: (x == 42).
   [1]
   $ aslref SemanticsRule.EArbitraryArray.asl
-  $ aslref SemanticsRule.EPatternFALSE.asl
-  $ aslref SemanticsRule.EPatternTRUE.asl
+  $ aslref SemanticsRule.EPattern.asl
   $ aslref SemanticsRule.LELocalVar.asl
   $ aslref SemanticsRule.LESetArray.asl
   $ aslref SemanticsRule.SReturnNone.asl
@@ -97,27 +96,16 @@ ASL Semantics Reference:
   ASL Error: Undefined identifier: 'foo'
   [1]
   $ aslref SemanticsRule.FCall.asl
-  $ aslref SemanticsRule.FPrimitive.asl
-  Hello, world!
   $ aslref SemanticsRule.PAll.asl
-  $ aslref SemanticsRule.PAnyTRUE.asl
-  $ aslref SemanticsRule.PAnyFALSE.asl
-  $ aslref SemanticsRule.PGeqTRUE.asl
-  $ aslref SemanticsRule.PGeqFALSE.asl
-  $ aslref SemanticsRule.PLeqTRUE.asl
-  $ aslref SemanticsRule.PLeqFALSE.asl
-  $ aslref SemanticsRule.PNotTRUE.asl
-  $ aslref SemanticsRule.PNotFALSE.asl
-  $ aslref SemanticsRule.PRangeTRUE.asl
-  $ aslref SemanticsRule.PRangeFALSE.asl
-  $ aslref SemanticsRule.PSingleTRUE.asl
-  $ aslref SemanticsRule.PSingleFALSE.asl
-  $ aslref SemanticsRule.PMaskTRUE.asl
-  $ aslref SemanticsRule.PMaskFALSE.asl
-  $ aslref SemanticsRule.PTupleTRUE.asl
-  $ aslref SemanticsRule.PTupleFALSE.asl
+  $ aslref SemanticsRule.PAny.asl
+  $ aslref SemanticsRule.PGeq.asl
+  $ aslref SemanticsRule.PLeq.asl
+  $ aslref SemanticsRule.PNot.asl
+  $ aslref SemanticsRule.PRange.asl
+  $ aslref SemanticsRule.PSingle.asl
+  $ aslref SemanticsRule.PMask.asl
+  $ aslref SemanticsRule.PTuple.asl
   $ aslref SemanticsRule.ATCValue.asl
-  $ aslref SemanticsRule.ATCError.asl
   $ aslref -0 SemanticsRule.LEUndefIdentV0.asl
   $ aslref SemanticsRule.LEUndefIdentV1.asl
   File SemanticsRule.LEUndefIdentV1.asl, line 5, characters 2 to 3:
@@ -126,7 +114,6 @@ ASL Semantics Reference:
   $ aslref SemanticsRule.LESlice.asl
   $ aslref SemanticsRule.LESetField.asl
   $ aslref SemanticsRule.LEDestructuring.asl
-  $ aslref SemanticsRule.LDVar0.asl
   $ aslref SemanticsRule.LDVar1.asl
   $ aslref SemanticsRule.SliceSingle.asl
   $ aslref SemanticsRule.SliceLength.asl

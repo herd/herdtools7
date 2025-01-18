@@ -1461,13 +1461,6 @@ All of the following apply:
   \item the result of the entire evaluation is $\Normal((\vvs, \newg), \newenv)$.
 \end{itemize}
 
-\subsubsection{Example}
-In the specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.FPrimitive.asl}
-\texttt{print ("Hello, world!");} calls the primitive \texttt{print} on the evaluation of \texttt{"Hello, world!"}.
-
-\CodeSubsection{\EvalFPrimitiveBegin}{\EvalFPrimitiveEnd}{../Interpreter.ml}
-
 \subsubsection{Formally}
 The following rule utilizes the transition relation
 \hypertarget{def-evalprimitive}{}
@@ -1492,6 +1485,7 @@ That is, it is not a part of $\evalarrow$ but rather a separate transition relat
   \evalsubprogram{\env, \name, \params, \args} \evalarrow \Normal((\vvs, \newg), \newenv)
 }
 \end{mathpar}
+\CodeSubsection{\EvalFPrimitiveBegin}{\EvalFPrimitiveEnd}{../Interpreter.ml}
 
 \subsubsection{SemanticsRule.FCall \label{sec:SemanticsRule.FCall}}
 \subsubsection{Prose}
@@ -1522,9 +1516,9 @@ All of the following apply:
 \end{itemize}
 
 \subsubsection{Example}
-The specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.FCall.asl}
-calls the function \texttt{foo} and the procedure \texttt{bar}.
+In \listingref{semantics-fcall},
+the function \texttt{main} calls the function \texttt{foo} and the procedure \texttt{bar}.
+\ASLListing{Evaluating function calls}{semantics-fcall}{\semanticstests/SemanticsRule.FCall.asl}
 
 \CodeSubsection{\EvalFCallBegin}{\EvalFCallEnd}{../Interpreter.ml}
 

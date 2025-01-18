@@ -442,25 +442,23 @@ resulting either in \\
 $\Normal(((\vstart, \vlength), \vg), \newenv)$, a throwing configuration, or a dynamic error configuration.
 
 \subsubsection{Example (Single Slice)}
-In the specification:
-  \ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SliceSingle.asl}
-the slice \texttt{[2]} evaluates to \texttt{(2, 1)}, i.\,e.\ the slice of
+In \listingref{semantics-slicesingle},
+the slice \texttt{[2]} evaluates to \texttt{(2, 1)}, that is, the slice of
 length 1 starting at index 2.
+\ASLListing{A single expression slice}{semantics-slicesingle}{\semanticstests/SemanticsRule.SliceSingle.asl}
 
 \subsubsection{Example (Range Slice)}
-In the specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SliceRange.asl}
-\texttt{4:2} evaluates to \texttt{(2, 3)}.
+In \listingref{semantics-slicerange}, \texttt{4:2} evaluates to \texttt{(2, 3)}.
+\ASLListing{A range slice}{semantics-slicerange}{\semanticstests/SemanticsRule.SliceRange.asl}
 
 \subsubsection{Example (Length Slice)}
-In the specification:
-  \ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SliceLength.asl}
-\texttt{2+:3} evaluates to \texttt{(2, 3)}.
+In \listingref{semantics-slicelength}, \texttt{2+:3} evaluates to \texttt{(2, 3)}.
+\ASLListing{A slice by length}{semantics-slicelength}{\semanticstests/SemanticsRule.SliceLength.asl}
 
 \subsubsection{Example (Scaled Slice)}
-In the specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.SliceStar.asl}
+In \listingref{semantics-scaledslice},
 \texttt{x[3*:2]} evaluates to \texttt{'11'}.
+\ASLListing{A scaled lice}{semantics-scaledslice}{\semanticstests/SemanticsRule.SliceStar.asl}
 
 \subsubsection{Prose}
 One of the following applies:

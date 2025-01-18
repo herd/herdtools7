@@ -329,9 +329,10 @@ All of the following apply:
 
 \subsubsection{SemanticsRule.CatchNone\label{sec:SemanticsRule.CatchNone}}
 \subsubsection{Example}
-The specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.CatchNone.asl}
-does not print anything.
+The specification in \listingref{semantics-catchnone} does not print anything.
+It shows how a \texttt{try} statement (the inner one) may not have a \texttt{catch} clause
+that matches the exception type (\texttt{MyExceptionType1}).
+\ASLListing{A catch clause that does not match a thrown exception type}{semantics-catchnone}{\semanticstests/SemanticsRule.CatchNone.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -358,9 +359,8 @@ All of the following apply:
 
 \subsubsection{SemanticsRule.CatchNoThrow\label{sec:SemanticsRule.CatchNoThrow}}
 \subsubsection{Example}
-The specification:
-\ASLListing{}{semantics-}{\semanticstests/SemanticsRule.CatchNoThrow.asl}
-prints \texttt{No exception raised}.
+The specification in \listingref{semantics-nothrow} prints \texttt{No exception raised}.
+\ASLListing{A \texttt{try} statement that does not raise an exception}{semantics-nothrow}{\semanticstests/SemanticsRule.CatchNoThrow.asl}
 
 \subsubsection{Prose}
 all of the following apply:
