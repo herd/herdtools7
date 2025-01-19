@@ -64,14 +64,25 @@ def check_undefined_references_and_multiply_defined_labels():
             num_errors += 1
     return num_errors
 
+def check_tododefines():
+    num_todo_define = 0
+    latex_files = fnmatch.filter(os.listdir('.'), '*.tex')
+    for latex_souce in latex_files:
+        with open(latex_souce) as file:
+            file_str = file.read()
+            num_todo_define += file_str.count('\\tododefine')
+    num_todo_define -= 1 # Ignore the definition of the \tododefine macro itself.
+    print(f"WARING: There are {num_todo_define} occurrences of \\tododefine")
+
 def main():
     num_errors = 0
     num_errors += check_hyperlinks_and_hypertargets()
     num_errors += check_undefined_references_and_multiply_defined_labels()
+    check_tododefines()
 
     print(f"There were {num_errors} errors!", file=sys.stderr)
-    #if num_errors > 0:
-    #    sys.exit(1)
+    if num_errors > 0:
+       sys.exit(1)
 
 if __name__ == "__main__":
     main()
