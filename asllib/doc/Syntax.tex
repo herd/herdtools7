@@ -124,26 +124,6 @@ which results in the following derivation replacing the original derivation for 
 \Nspec \derives\ & \Ndecllist &
 \end{flalign*}
 
-% For example,
-% \[
-%   \option{x} \derives \emptysentence \;|\; x
-% \]
-% is useful for compactly defining derivations where part of a sentence may or may not appear.
-
-% Suppose we have
-% \[
-% B \derives a \parsesep \option{A \parsesep b}
-% \]
-% then expanding the instance $\option{A, b}$ produces
-% \[
-% \uniquesymb{\option{A \parsesep b}} \derives \emptysentence \;|\; A \parsesep b
-% \]
-% since $x[A \parsesep b/x]$ yields $A \parsesep b$ and $\emptysentence[A \parsesep b/x]$ yields $\emptysentence$,
-% and the derivations for $B$ are replaced by
-% \[
-% B \derives a \parsesep \uniquesymb{\option{A \parsesep b}}
-% \]
-
 Expanding all instances of parametric productions results in a grammar without any parametric productions.
 
 \section{ASL Parametric Productions \label{sec:ASLParametricProductions}}
@@ -231,28 +211,19 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \end{flalign*}
 
 \hypertarget{def-ndecl}{}
-\hypertarget{def-funcdecl}{}
 \begin{flalign*}
 \Ndecl  \derives \ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \parsesep &\\
-                   & \wrappedline\ \Nfuncbody
-\hypertarget{def-proceduredecl}{}\\
-|\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &
-\hypertarget{def-getter}{}\\
-|\ & \Tgetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody&
-\hypertarget{def-setter}{}\\
+                   & \wrappedline\ \Nfuncbody\\
+|\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
+|\ & \Tgetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody &\\
 |\ & \Tsetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Teq \parsesep \Ntypedidentifier & \\
-   & \wrappedline\ \parsesep \Nfuncbody &
-\hypertarget{def-typedecl}{}\\
-|\ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon&
-\hypertarget{def-subtypedecl}{}\\
-|\ & \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon&
-\hypertarget{def-globalstorage}{}\\
-|\ & \Nglobaldeclkeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
-   & \wrappedline\ \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &
-\hypertarget{def-globaluninitvar}{}\\
-|\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&
-\hypertarget{def-globalpragma}{}\\
+   & \wrappedline\ \parsesep \Nfuncbody &\\
+|\ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon &\\
+|\ & \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon &\\
+|\ & \Nglobaldeclkeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} &\\
+   & \wrappedline\ \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
 |\ & \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon&
 \end{flalign*}
 
@@ -364,7 +335,8 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-notherwiseopt}{}
 \begin{flalign*}
-\Notherwiseopt \derives\ & \option{\Totherwise \parsesep \Tarrow \parsesep \Nstmtlist} &
+\Notherwiseopt \derives\ & \Totherwise \parsesep \Tarrow \parsesep \Nstmtlist &\\
+                      |\ & \emptysentence &\\
 \end{flalign*}
 
 \hypertarget{def-ncatcher}{}

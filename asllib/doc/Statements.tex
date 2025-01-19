@@ -2845,7 +2845,10 @@ One of the following applies:
 \section{Try Statements\label{sec:TryStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derives \ & \Ttry \parsesep \Nstmtlist \parsesep \Tcatch \parsesep \nonemptylist{\Ncatcher} \parsesep \Notherwiseopt \parsesep \Tend \parsesep \Tsemicolon &
+\Nstmt \derives \ & \Ttry \parsesep \Nstmtlist \parsesep \Tcatch \parsesep \nonemptylist{\Ncatcher} \parsesep \Notherwiseopt &\\
+                  & \wrappedline\ \parsesep \Tend \parsesep \Tsemicolon &\\
+\Notherwiseopt \derives\ & \Totherwise \parsesep \Tarrow \parsesep \Nstmtlist &\\
+               |\ & \emptysentence &\\
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -2871,6 +2874,34 @@ One of the following applies:
   \overname{\STry(\astof{\vstmtlist}, \astversion{\vcatcherlist}, \astof{\votherwiseopt})}{\vastnode}
 \end{array}
 }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.OtherwiseOpt}
+\hypertarget{build-otherwiseopt}{}
+The function
+\[
+   \buildotherwiseopt(\overname{\parsenode{\Notherwiseopt}}{\vparsednode}) \aslto
+    \overname{\langle\stmt\rangle}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \buildstmtlist(\vstmts) \astarrow \astversion{\vstmts}
+}{
+  {
+  \begin{array}{r}
+    \buildotherwiseopt(\overname{\Notherwiseopt(\Totherwise, \Tarrow, \namednode{\vstmts}{\Nstmtlist})}{\vparsednode}) \astarrow\\
+    \astversion{\vstmts}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[empty]{}{
+  \buildotherwiseopt(\overname{\Notherwiseopt(\emptysentence)}{\vparsednode}) \astarrow \None
 }
 \end{mathpar}
 

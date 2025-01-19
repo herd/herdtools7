@@ -33,7 +33,7 @@ def check_hyperlinks_and_hypertargets():
             for line in file.readlines():
                 extract_labels_from_line(line, "\\hyperlink{", hyperlink_labels)
                 extract_labels_from_line(line, "\\hypertarget{", hypertarget_labels)
-    num_errors, num_warnings = 0, 0
+    num_errors = 0
     missing_hypertargets = hyperlink_labels.difference(hypertarget_labels)
     if not missing_hypertargets == set():
         num_missing_hypertargets = len(missing_hypertargets)
@@ -45,30 +45,31 @@ def check_hyperlinks_and_hypertargets():
     missing_hyperlinks = hypertarget_labels.difference(hyperlink_labels)
     if not missing_hyperlinks == set():
         num_missing_hyperlinks = len(missing_hyperlinks)
-        num_warnings += num_missing_hyperlinks
-        print(f"WARNING: found {num_missing_hyperlinks} hypertargets without matching hyperlinks: ", file=sys.stderr)
+        num_errors += num_missing_hyperlinks
+        print(f"ERROR: found {num_missing_hyperlinks} hypertargets without matching hyperlinks: ", file=sys.stderr)
         for label in missing_hyperlinks:
             print(label, file=sys.stderr)
 
-    return num_errors, num_warnings
+    return num_errors
 
 def check_undefined_references_and_multiply_defined_labels():
     num_errors = 0
-    with open("ASLReference.log") as file:
+    with open("./ASLReference.log") as file:
         log_str = file.read()
-        if log_str.find("LaTeX Warning: There were undefined references."):
+        if "LaTeX Warning: There were undefined references." in log_str:
             print(f"ERROR: There are undefined references (see ./ASLReference.log)", file=sys.stderr)
             num_errors += 1
-        if log_str.find("LaTeX Warning: There were multiply-defined labels."):
+        if "LaTeX Warning: There were multiply-defined labels." in log_str:
             print(f"ERROR: There are multiply-defined labels (see ./ASLReference.log)", file=sys.stderr)
             num_errors += 1
     return num_errors
 
 def main():
-    num_errors, num_warnings = check_hyperlinks_and_hypertargets()
+    num_errors = 0
+    num_errors += check_hyperlinks_and_hypertargets()
     num_errors += check_undefined_references_and_multiply_defined_labels()
 
-    print(f"There were {num_errors} errors and {num_warnings} warnings!", file=sys.stderr)
+    print(f"There were {num_errors} errors!", file=sys.stderr)
     #if num_errors > 0:
     #    sys.exit(1)
 
