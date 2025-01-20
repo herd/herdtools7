@@ -4,7 +4,7 @@ Subprogram declarations are grammatically derived from $\Ndecl$ via the subset o
 \secref{SubprogramDeclarationsSyntax} and represented as ASTs via the production of $\decl$
 shown in \secref{SubprogramDeclarationsAbstractSyntax}.
 %
-Subprogram declarations are typed via $\annotateanddeclarefunc$, which is defined in \nameref{sec:TypingRule.AnnotateAndDeclareFunc}.
+Subprogram declarations are typed via $\annotateanddeclarefunc$, which is defined in \TypingRuleRef{AnnotateAndDeclareFunc}.
 %
 Subprogram declarations have no associated semantics.
 
@@ -383,10 +383,10 @@ $\newtenv$, and an inferred \sideeffectsetterm\ $\vses$.
 All of the following apply:
 \begin{itemize}
   \item annotating the signature of $\funcsig$ in $\genv$ as per
-        \nameref{sec:TypingRule.AnnotateFuncSig} yields
+        \TypingRuleRef{AnnotateFuncSig} yields
         $(\tenvone, \funcsigfone, \vsesone)$\ProseOrTypeError;
   \item declaring the subprogram defined by $\funcsigfone$ in $\tenvone$ with $\vsesfone$
-        as per \nameref{sec:TypingRule.DeclareOneFunc} yields the environment $\newtenv$
+        as per \TypingRuleRef{DeclareOneFunc} yields the environment $\newtenv$
         and new $\func$ node $\newfuncsig$\ProseOrTypeError;
   \item \Proseeqdef{$\vses$}{$\vsesfone$}.
 \end{itemize}

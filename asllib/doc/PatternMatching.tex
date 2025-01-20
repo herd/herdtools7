@@ -731,7 +731,10 @@ All of the following apply:
 \section{Matching Any Pattern in a Set of Patterns\label{sec:MatchingAnyPatternInASetOfPatterns}}
 \subsection{Syntax}
 \begin{flalign*}
-\Npattern \derives\ & \Npatternset &
+\Npattern     \derives\   & \Npatternset &\\
+\Npatternset  \derives \  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
+                  |\      & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
+\Npatternlist \derives \ & \NClist{\Npattern} &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -739,13 +742,50 @@ All of the following apply:
 \pattern \derives\ & \PatternAny(\pattern^{*}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.PAny}
-\tododefine{Missing a rule for PatternAny}
+\subsubsection{ASTRule.PatternSet\label{sec:ASTRule.PatternSet}}
+\hypertarget{build-patternset}{}
+The function
+\[
+  \buildpatternset(\overname{\parsenode{\Npatternset}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
-\inferrule{}{
-  \buildpattern(\Npattern(\punnode{\Npatternset})) \astarrow
-  \overname{\astof{\vpatternset}}{\vastnode}
+\inferrule[not]{}{
+  {
+    \begin{array}{r}
+  \buildpatternset(\Npatternset(\Tbnot, \Tlbrace, \punnode{\Npatternlist}, \Trbrace)) \astarrow\\
+  \overname{\PatternNot(\astof{\vpatternlist})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[list]{}{
+  \buildpatternset(\Npatternset(\Tlbrace, \punnode{\Npatternlist}, \Trbrace)) \astarrow
+  \overname{\astof{\vpatternlist}}{\vastnode}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.PatternList \label{sec:ASTRule.PatternList}}
+\hypertarget{build-patternlist}{}
+The function
+\[
+  \buildpatternlist(\overname{\parsenode{\Npatternlist}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{
+  \buildclist[\buildpattern](\vpatterns) \astarrow \vpatternasts
+}{
+  {
+    \begin{array}{r}
+  \buildpatternlist(\Npatternlist(\namednode{\vpatterns}{\NClist{\Npattern}})) \astarrow\\
+  \overname{\PatternAny(\vpatternasts)}{\vastnode}
+    \end{array}
+  }
 }
 \end{mathpar}
 
@@ -760,7 +800,7 @@ All of the following apply:
 \item $\newp$ is the pattern which matches anything in $\newli$, that is, \\ $\PatternAny(\newli)$;
 \item define $\vses$ as the union of all $\vxs_\vl$, for each $\vl$ in $\vli$.
       (Checking for absence of conflicts is not required as all patterns are ensured to be
-      \staticallyevaluable. See, for example, \nameref{sec:TypingRule.PSingle}.)
+      \staticallyevaluable. See, for example, \TypingRuleRef{PSingle}.)
 \end{itemize}
 
 \subsubsection{Formally}
@@ -808,14 +848,17 @@ All of the following apply:
 
 \section{Matching a Negated Pattern\label{sec:MatchingANegatedPattern}}
 \subsection{Syntax}
-See \secref{PatternMatchingExpressions}.
+\begin{flalign*}
+\Npatternset \derives \  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
+                  |\    & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &
+\end{flalign*}
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
 \pattern \derives\ & \PatternNot(\pattern) &
 \end{flalign*}
 
-See \nameref{sec:ASTRule.PatternSet} (\textsc{NOT} case).
+The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
 
 \subsection{Typing}
 \subsubsection{TypingRule.PNot\label{sec:TypingRule.PNot}}

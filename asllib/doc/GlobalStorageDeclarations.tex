@@ -4,11 +4,11 @@ Global storage declarations are grammatically derived from $\Ndecl$ via the subs
 \secref{GlobalStorageDeclarationsSyntax} and represented as ASTs via the production of $\decl$
 shown in \secref{GlobalStorageDeclarationsAbstractSyntax}.
 %
-Global storage declarations are typed by $\declareglobalstorage$, which is defined in \nameref{sec:TypingRule.DeclareGlobalStorage}.
+Global storage declarations are typed by $\declareglobalstorage$, which is defined in \TypingRuleRef{DeclareGlobalStorage}.
 %
-The semantics of a list of global storage declarations is defined in \nameref{sec:SemanticsRule.EvalGlobals},
-where the list is ordered via \nameref{sec:SemanticsRule.BuildGlobalEnv}.
-The semantics of a single global storage declarations is defined in \nameref{sec:SemanticsRule.DeclareGlobal}.
+The semantics of a list of global storage declarations is defined in \SemanticsRuleRef{EvalGlobals},
+where the list is ordered via \SemanticsRuleRef{BuildGlobalEnv}.
+The semantics of a single global storage declarations is defined in \SemanticsRuleRef{DeclareGlobal}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Syntax\label{sec:GlobalStorageDeclarationsSyntax}}
@@ -406,7 +406,7 @@ The helper function
 \]
 updates the static environment $\tenv$ for the global storage element
 named $\name$ with global declaration keyword $\gdk$,
-and a tuple (obtained via \nameref{sec:TypingRule.AnnotateTyOptInitialValue})
+and a tuple (obtained via \TypingRuleRef{AnnotateTyOptInitialValue})
 $\typedinitialvalue$, which consists a type for the initializing value,
 the annotated initializing expression, and the inferred \sideeffectsetterm\ for the initializing value.
 The result is the updated static environment $\newtenv$.

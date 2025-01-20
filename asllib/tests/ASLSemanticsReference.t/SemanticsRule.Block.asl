@@ -2,7 +2,10 @@ func main() => integer
 begin
   var x : integer = 1;
 
-  if TRUE then x = 2; let y = 2;  else pass; end;
+  if TRUE then
+    x = 2;
+    let y = 2;
+  end;
   let y = 1;
   assert (x == 2 && y == 1);
 

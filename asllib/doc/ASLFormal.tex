@@ -405,7 +405,7 @@ For example, the rule TypingRule.ELit has one premise:
 }
 \end{mathpar}
 
-and the rule \nameref{sec:TypingRule.Binop} (somewhat simplified here) has three premises:
+and the rule \TypingRuleRef{Binop} (somewhat simplified here) has three premises:
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vtone, \veone') \\\\
@@ -419,7 +419,7 @@ and the rule \nameref{sec:TypingRule.Binop} (somewhat simplified here) has three
 The free variables appearing in the premises and conclusion are interpreted \underline{universally}.
 That is, the rules apply to any values (of the appropriate types) assigned to their free variables.
 %
-For example, the rule \nameref{sec:TypingRule.Binop} applies to any choice of values for the free variables
+For example, the rule \TypingRuleRef{Binop} applies to any choice of values for the free variables
 $\tenv$ (a static environment),
 $\veone$, $\vetwo$, $\veone'$, $\vetwo'$ (expressions),
 $\vt$, $\vtone$, and $\vttwo$ (types).
@@ -429,7 +429,7 @@ Assertions can be \emph{grounded} by substituting their free variables with valu
 A \emph{ground rule} is a rule with all its assertions (premises and conclusion) grounded.
 \end{definition}
 For example,
-the following is a grounding of \nameref{sec:TypingRule.Binop}
+the following is a grounding of \TypingRuleRef{Binop}
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\emptytenv, \ELiteral(\lint(2))} \typearrow (\TInt, \ELiteral(\lint(2))) \\\\
@@ -462,7 +462,7 @@ An \emph{axiom} is a rule with an empty set of premises.
 An axiom is denoted by simply stating its conclusion.
 \end{definition}
 
-An example of an axiom in the ASL type system is \nameref{sec:TypingRule.SPass}:
+An example of an axiom in the ASL type system is \TypingRuleRef{SPass}:
 \begin{mathpar}
 \inferrule{}{\annotatestmt(\tenv, \SPass) \typearrow (\SPass,\tenv)}
 \end{mathpar}
@@ -499,7 +499,7 @@ A set of rules $M$ with transition assertions defines the relation
     R = \{ (x,y) \;|\; x \rulearrow y \text{ can be derived from rules in } M\} \enspace.
 \]
 
-For example, the rule \nameref{sec:TypingRule.ELit} defines a relation
+For example, the rule \TypingRuleRef{ELit} defines a relation
 between the infinite set of elements of the form
 $\annotateexpr{\tenv, \ELiteral(\vv)}$ (for the
 infinite choice of values for the free variables $\tenv$ and
@@ -526,7 +526,7 @@ The domain of a configuration $C=L(\ldots)$, denoted $\configdomain{C}$, is the 
 We refer to configurations at the origin of a transition as \emph{input configurations} and to the
 configurations at the destination of a transition as \emph{output transitions}.
 
-For example, the conclusion of the rule \nameref{sec:TypingRule.ELit} has \\
+For example, the conclusion of the rule \TypingRuleRef{ELit} has \\
 $\annotateexpr{\tenv, \ELiteral(\vv)}$ as its input configuration
 and $(\vt, \ELiteral(\vv))$ as its output configuration.
 Further, \\

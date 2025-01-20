@@ -234,6 +234,9 @@
 \newcommand\chapref[1]{Chapter~\ref{chap:#1}}
 \newcommand\partref[1]{Part~\ref{part:#1}}
 \newcommand\appendixref[1]{Appendix~\ref{appendix:#1}}
+\newcommand\SemanticsRuleRef[1]{\nameref{sec:SemanticsRule.#1}}
+\newcommand\TypingRuleRef[1]{\nameref{sec:TypingRule.#1}}
+\newcommand\ASTRuleRef[1]{\nameref{sec:ASTRule.#1}}
 \newcommand\secreflink[1]{\small\nameref{sec:#1}}
 \newcommand\prosesection[0]{\subsubsection{Prose}}
 \newcommand\ie{i.\,e.}
@@ -1648,8 +1651,6 @@
 \newcommand\sliceequal[0]{\hyperlink{def-sliceequal}{\textfunc{slice\_equal}}}
 \newcommand\constraintsequal[0]{\hyperlink{def-constraintsequal}{\textfunc{constraints\_equal}}}
 \newcommand\constraintequal[0]{\hyperlink{def-constraintequal}{\textfunc{constraint\_equal}}}
-\newcommand\constraintsforall[0]{\tododefine{\textfunc{constraints\_for\_all}}}
-\newcommand\constraintsexists[0]{\tododefine{\textfunc{constraints\_exists}}}
 \newcommand\arraylengthequal[0]{\hyperlink{def-arraylengthequal}{\textfunc{array\_length\_equal}}}
 \newcommand\literalequal[0]{\hyperlink{def-literalequal}{\textfunc{literal\_equal}}}
 \newcommand\annotatebitfield[0]{\hyperlink{def-annotatebitfield}{\textfunc{annotate\_bitfield}}}

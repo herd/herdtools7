@@ -60,12 +60,12 @@ We demonstrate this with the following example.
 
 \ASLListing{Semantics of exception catching}{semantics-evalcatchers}{\semanticstests/EvalCatchers.asl}
 
-In \listingref{semantics-evalcatchers}, the try-block statement consists of the single statement \\
-\texttt{update\_and\_throw();}.
-Evaluating the call to \texttt{update\_and\_throw} employs an environment $\env$ where
+In \listingref{semantics-evalcatchers}, the statement \verb|update_and_throw();|
+makes up the whole try-block.
+Evaluating the call to \verb|update_and_throw| employs an environment $\env$ where
 \texttt{g} is bound to $0$.
-Notice that the call to \texttt{update\_and\_throw} binds \texttt{g} to $1$ before raising an exception.
-Therefore, evaluating the call to \texttt{update\_and\_throw} returns a configuration
+Notice that the call to \verb|update_and_throw| binds \texttt{g} to $1$ before raising an exception.
+Therefore, evaluating the call to \verb|update_and_throw| returns a configuration
 of the form
 $\Throwing(\Ignore, \envthrow)$ where $\envthrow$ binds \texttt{g} to $1$.
 When the catch clause is evaluated the semantics takes the global environment from $\envthrow$

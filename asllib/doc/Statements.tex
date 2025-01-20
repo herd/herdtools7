@@ -203,7 +203,7 @@ All of the following apply:
 \subsubsection{Comments}
 This rule covers all assignment statements, except the ones where the
 right-hand side expression is a function call, which is covered by
-\nameref{sec:SemanticsRule.SAssignCall}.  Although
+\SemanticsRuleRef{SAssignCall}.  Although
 the sequential semantics of both statements is the same,
 SemanticsRule.SAssignCall generates a different execution graph.
 
@@ -1316,7 +1316,7 @@ optionally ending with an \emph{\otherwisecaseterm}, which follows the \Totherwi
 Case statements are considered syntactic sugar and are \emph{desugared}.
 That is, they are transformed into an untyped AST node that does not have
 an explicit representation for \texttt{case} statements.
-This is achieved via \nameref{sec:ASTRule.DesugarCaseStmt},
+This is achieved via \ASTRuleRef{DesugarCaseStmt},
 which obeys the following requirements:
 \RequirementDef{CaseDiscriminant} The \casediscriminantterm\ of a \texttt{case}
 statement should be evaluated only once each time the case statement is evaluated.
@@ -1731,7 +1731,7 @@ All of the following apply:
 \item annotating the right-hand-side expression $\veone$ in $\tenv$ yields $(\vt, \vetwo, \vsese)$\ProseOrTypeError;
 \item annotating the optional limit expression $\vlimitone$ via $\annotatelimitexpr$ in $\tenv$ yields $(\vlimittwo, \vseslimit)$\ProseOrTypeError;
 \item checking that $\vt$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
-\item annotating $\vsone$ as a block statement as per \nameref{sec:TypingRule.Block} in $\tenv$ yields \\
+\item annotating $\vsone$ as a block statement as per \TypingRuleRef{Block} in $\tenv$ yields \\
       $(\vstwo, \vsesblock)$\ProseOrTypeError;
 \item $\news$ is a \texttt{while} statement with expression $\vetwo$, optional limit expression $\vlimittwo$,
       and statement block $\vstwo$, that is, $\SWhile(\vetwo, \vstwo)$;
@@ -1815,7 +1815,7 @@ the output configuration $C$ and all of the following apply:
   \item $\vs$ is a \texttt{while} statement, $\SWhile(\ve, \velimitopt, \vbody)$;
   \item evaluating the optional limit expression $\velimitopt$ via $\evallimit$ in $\env$
         yields $(\vlimitopt, \vgone)$\ProseOrError;
-  \item evaluating the loop as per \nameref{sec:SemanticsRule.Loop} in an environment $\env$,
+  \item evaluating the loop as per \SemanticsRuleRef{Loop} in an environment $\env$,
   with the arguments $\True$ (which conveys that this is a \texttt{while} statement), $\vlimitopt$, $\ve$, and $\vbody$
   yields the (non-error configuration) $C$\ProseOrError;
   \item $\vgtwo$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge;
@@ -1888,7 +1888,7 @@ One of the following applies:
     \item $\mcond$ consists of a native Boolean for $\vb$ and an execution graph $\vgone$;
     \item $\vb$ is equal to $\iswhile$;
     \item \Proseticklooplimit{$\vlimitopt$}{$\vlimitoptp$}\ProseOrError;
-    \item evaluating $\vbody$ in $\envone$ as per \nameref{sec:SemanticsRule.Block} is either \\
+    \item evaluating $\vbody$ in $\envone$ as per \SemanticsRuleRef{Block} is either \\
     $\Continuing(\vgtwo, \envtwo)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
     \item evaluating $(\iswhile, \vlimitoptp, \econd, \vbody)$ in $\envtwo$ as a loop is \\
     $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
@@ -1947,7 +1947,7 @@ the optional integer value $\vvopt$ and execution graph $\vg$.
 
 The evaluation uses the function $\evalexprsef$ because limit expressions are
 guaranteed side-effect-free by the type-checker,
-see \nameref{sec:TypingRule.AnnotateLimitExpr}.
+see \TypingRuleRef{AnnotateLimitExpr}.
 
 \subsubsection{Prose}
 One of the following applies:
@@ -2075,7 +2075,7 @@ All of the following apply:
 \begin{itemize}
   \item $\vs$ is a \texttt{repeat} statement with statement block $\vsone$,
         optional limit expression $\vlimitone$, and expression $\veone$, that is, $\SRepeat(\vsone, \veone, \vlimitone)$;
-  \item annotating $\vsone$ as a block statement per \nameref{sec:TypingRule.Block} in $\tenv$ yields $(\vstwo, \vsesblock)$\ProseOrTypeError;
+  \item annotating $\vsone$ as a block statement per \TypingRuleRef{Block} in $\tenv$ yields $(\vstwo, \vsesblock)$\ProseOrTypeError;
   \item annotating the optional limit expression $\vlimitone$ via $\annotatelimitexpr$ in $\tenv$ yields $(\vlimittwo, \vseslimit)$\ProseOrTypeError;
   \item annotating the right-hand-side expression $\veone$ in $\tenv$ yields $(\vt, \vetwo, \vsese)$\ProseOrTypeError;
   \item checking that $\vt$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
@@ -2411,7 +2411,7 @@ One of the following applies:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SFor\label{sec:SemanticsRule.SFor}}
 Evaluating a \texttt{for} statement involves introducing an index variable to the
-environment. The type system ensures, via \nameref{sec:TypingRule.SFor}, that the index variable
+environment. The type system ensures, via \TypingRuleRef{SFor}, that the index variable
 is not already declared in the scope of the subprogram containing the \texttt{for}
 statement.
 
@@ -2443,7 +2443,7 @@ All of the following apply:
   \item \Proseevallimit{$\env$}{$\velimitopt$}{$\Normal(\vlimitopt, \vgthree)$}\ProseOrError;
   \item declaring the local identifier $\vindexname$ in $\env$ with value $\vstartv$ is $(\vgfour, \envone)$;
   \item evaluating the \texttt{for} loop with arguments $(\vindexname, \vlimitopt, \vstartv, \dir, \vendv, \vbody)$ in $\envone$,
-        as per \nameref{sec:SemanticsRule.EvalFor} yields $\Normal(\vgfive, \envtwo)$\ProseOrAbnormal;
+        as per \SemanticsRuleRef{EvalFor} yields $\Normal(\vgfive, \envtwo)$\ProseOrAbnormal;
   \item removing the local $\vindexname$ from $\envtwo$ is $\envthree$;
   \item $\newg$ is formed as follows:
         the parallel composition of $\vgone$, $\vgtwo$, and $\vgthree$;
@@ -2454,7 +2454,7 @@ All of the following apply:
 \end{itemize}
 \subsubsection{Formally}
 Recall that the expressions for the \texttt{for} loop range are
-side-effect-free, as guaranteed by \nameref{sec:TypingRule.SFor}, which is why
+side-effect-free, as guaranteed by \TypingRuleRef{SFor}, which is why
 they are evaluated via the rule for evaluating side-effect-free expressions.
 \begin{mathpar}
 \inferrule{
@@ -2575,7 +2575,7 @@ All of the following apply:
 \subsubsection{Running the Loop Body}
 All of the following apply:
 \begin{itemize}
-  \item evaluating $\vbody$ as a block statement (see \nameref{sec:SemanticsRule.Block}) in $\env$
+  \item evaluating $\vbody$ as a block statement (see \SemanticsRuleRef{Block}) in $\env$
         yields \\ $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
   \item stepping the index $\vindexname$ with $\vstart$ and the direction $\dir$ in $\envone$,
         that is, $\evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir)$ yields \\

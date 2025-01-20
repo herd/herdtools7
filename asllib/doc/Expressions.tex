@@ -349,19 +349,19 @@ All of the following apply:
 \subsubsection{Comments}
 When there exists a global variable $\vx$, the type system
 forbids having $\vx$ as a local variable.
-This is enforced by \nameref{sec:TypingRule.LDVar} in the Chapter ``Typing of Local Declarations'',
+This is enforced by \TypingRuleRef{LDVar} in the Chapter ``Typing of Local Declarations'',
 and
-\nameref{sec:TypingRule.DeclareGlobalStorage} and \nameref{sec:TypingRule.DeclareOneFunc},
+\TypingRuleRef{DeclareGlobalStorage} and \TypingRuleRef{DeclareOneFunc},
 both in the Chapter ``Typing of Global Declarations''.
 
 \subsubsection{Example}
 In \listingref{localvarsemantics}, the evaluation of \texttt{x} within \texttt{assert x == 3;}
-uses \\ \nameref{sec:SemanticsRule.EVar}.LOCAL.
+uses \\ \SemanticsRuleRef{EVar}.LOCAL.
 \ASLListing{Semantics of local variables}{localvarsemantics}{\semanticstests/SemanticsRule.ELocalVar.asl}
 
 \subsubsection{Example}
 In \listingref{globalvarsemantics}, the evaluation of~\texttt{global\_x} within~\texttt{assert global\_x == 3;}
-uses the rule \nameref{sec:SemanticsRule.EVar}.GLOBAL.
+uses the rule \SemanticsRuleRef{EVar}.GLOBAL.
 \ASLListing{Semantics of global variables}{globalvarsemantics}{\semanticstests/SemanticsRule.EGlobalVar.asl}
 
 \section{Binary Expressions\label{sec:BinaryExpressions}}
@@ -377,7 +377,7 @@ uses the rule \nameref{sec:SemanticsRule.EVar}.GLOBAL.
 
 \subsubsection{ASTRule.Binop}
 The following rule constructs a binary expression AST
-when a property on \emph{associative operators} holds (see \nameref{sec:ASTRule.CheckNotSamePrec}).
+when a property on \emph{associative operators} holds (see \ASTRuleRef{CheckNotSamePrec}).
 
 \begin{mathpar}
   \inferrule{
@@ -1339,10 +1339,10 @@ resulting bitvector --- and the execution graph $\vgone$;
 This section details the syntax, abstract syntax, semantics, and typing of array read expressions.
 In the untyped AST, a read from either an integer-indexed array or an enumeration-indexed arrays is represented
 the same way. They type system infers the kind of array and outputs a typed AST node differentiating
-the two kinds of arrays, either a $\EGetArray$ or a $\EGetEnumArray$, via \nameref{sec:TypingRule.EGetArray}.
+the two kinds of arrays, either a $\EGetArray$ or a $\EGetEnumArray$, via \TypingRuleRef{EGetArray}.
 The semantics utilizes a rule matching the corresponding type of array ---
-\nameref{sec:SemanticsRule.EGetArray} for integer-indexed arrays and
-\nameref{sec:SemanticsRule.EGetEnumArray} for enumeration-indexed arrays.
+\SemanticsRuleRef{EGetArray} for integer-indexed arrays and
+\SemanticsRuleRef{EGetEnumArray} for enumeration-indexed arrays.
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -2405,7 +2405,7 @@ tests whether the value $\vv$ can be stored in a variable of type $\vt$ in the e
 resulting in a Boolean value $\vb$ and execution graph $\vg$ or a dynamic error.
 
 This relation is used in the context of a asserted type conversion,
-which means the type-checker rule \nameref{sec:TypingRule.ATC} was already applied,
+which means the type-checker rule \TypingRuleRef{ATC} was already applied,
 thus filtering cases where the type inferred for the converted expression
 does not type-satisfy $\vt$. The semantics takes this into account and
 only returns \False\ in cases where dynamic information is required.
@@ -2418,7 +2418,7 @@ One of the following applies:
   \item All of the following apply (\textsc{type\_equal}):
   \begin{itemize}
     \item the AST label of $\vt$ is not $\TInt$, $\TBits$, or $\TTuple$;
-    \item $\vb$ is \True (since \nameref{sec:TypingRule.ATC}
+    \item $\vb$ is \True (since \TypingRuleRef{ATC}
     succeeds in these cases only if the \structure\ of the type of the expression and the \structure\ of the type asserted against are \typeequivalent);
     \item $\vg$ is the empty graph.
   \end{itemize}
@@ -2508,7 +2508,7 @@ One of the following applies:
 \CodeSubsection{\EvalValOfTypeBegin}{\EvalValOfTypeEnd}{../Interpreter.ml}
 
 Notice that these rules cover all types, including named types ($\TNamed$),
-since the \typedast\ returned from \nameref{sec:TypingRule.ATC} is the \structure\ of the type
+since the \typedast\ returned from \TypingRuleRef{ATC} is the \structure\ of the type
 given in the specification.
 %
 Parameterized integers (integers with an empty set of constraints)
@@ -2588,10 +2588,7 @@ Lists of patterns are also used in case statements.
 \begin{flalign*}
 \Nexpr \derives\  & \Nexpr \parsesep \Tin \parsesep \Npatternset &\\
               |\  & \Nexpr \parsesep \Teqop \parsesep \Tmasklit &\\
-              |\  & \Nexpr \parsesep \Tneq \parsesep \Tmasklit &\\
-\Npatternset \derives \  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
-                  |\    & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
-\Npatternlist \derives \ & \NClist{\Npattern} &
+              |\  & \Nexpr \parsesep \Tneq \parsesep \Tmasklit &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -2632,53 +2629,6 @@ Lists of patterns are also used in case statements.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.PatternSet\label{sec:ASTRule.PatternSet}}
-\hypertarget{build-patternset}{}
-The function
-\[
-  \buildpatternset(\overname{\parsenode{\Npatternset}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
-\begin{mathpar}
-\inferrule[not]{}{
-  {
-    \begin{array}{r}
-  \buildpatternset(\Npatternset(\Tbnot, \Tlbrace, \punnode{\Npatternlist}, \Trbrace)) \astarrow\\
-  \overname{\PatternNot(\astof{\vpatternlist})}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[list]{}{
-  \buildpatternset(\Npatternset(\Tlbrace, \punnode{\Npatternlist}, \Trbrace)) \astarrow
-  \overname{\astof{\vpatternlist}}{\vastnode}
-}
-\end{mathpar}
-
-\subsubsection{ASTRule.PatternList \label{sec:ASTRule.PatternList}}
-\hypertarget{build-patternlist}{}
-The function
-\[
-  \buildpatternlist(\overname{\parsenode{\Npatternlist}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
-\begin{mathpar}
-\inferrule{
-  \buildclist[\buildpattern](\vpatterns) \astarrow \vpatternasts
-}{
-  {
-    \begin{array}{r}
-  \buildpatternlist(\Npatternlist(\namednode{\vpatterns}{\NClist{\Npattern}})) \astarrow\\
-  \overname{\PatternAny(\vpatternasts)}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
 \subsection{Typing}
 \subsubsection{TypingRule.EPattern\label{sec:TypingRule.EPattern}}
 \subsubsection{Prose}
@@ -2691,7 +2641,7 @@ All of the following apply:
   \item define $\newe$ as the pattern expression for $\vetwo$ and the pattern $\vpatp$, that is, \\
         $\EPattern(\vetwo, \vpatp)$;
   \item define $\vses$ as the union of $\vsese$ and $\vsespat$ (there is no need to check for conflicts,
-        since the $\veone$ is evaluated before $\vpat$, see \nameref{sec:SemanticsRule.EPattern}).
+        since the $\veone$ is evaluated before $\vpat$, see \SemanticsRuleRef{EPattern}).
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
@@ -3079,7 +3029,7 @@ One of the following applies:
   \item All of the following apply (\textsc{parenthesized}):
   \begin{itemize}
     \item $\ve$ denotes a tuple expression with list of expressions consisting solely of $\vep$, that is, $\ETuple([\vep])$,
-          meaning it represents a parenthesized expression (see \nameref{sec:ASTRule.ParenExpr});
+          meaning it represents a parenthesized expression (see \ASTRuleRef{ParenExpr});
     \item annotating $\vep$ in $\tenv$ yields $(\vt, \newe, \vses)$\ProseOrTypeError.
   \end{itemize}
 
@@ -3143,7 +3093,7 @@ All of the following apply:
 A single expression inside parentheses is not considered to be a tuple, but rather the element
 inside the parenthesis.
 Parenthesizing an expression can be used to improve readability, enforce an order of evaluation,
-and avoid binary operator precedence errors (see \nameref{sec:ASTRule.CheckNotSamePrec}).
+and avoid binary operator precedence errors (see \ASTRuleRef{CheckNotSamePrec}).
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -3152,9 +3102,9 @@ and avoid binary operator precedence errors (see \nameref{sec:ASTRule.CheckNotSa
 
 \subsection{Abstract Syntax}
 We represent a parenthesized expression as a single element tuple for the technical
-reason of enabling \nameref{sec:ASTRule.CheckNotSamePrec} by distinguishing parenthesized
+reason of enabling \ASTRuleRef{CheckNotSamePrec} by distinguishing parenthesized
 expressions from non-parenthesized expressions. However, upon typing such expressions,
-we ignore the parenthesis (see \nameref{sec:TypingRule.ETuple}.\textsc{PARENTHESIZED}).
+we ignore the parenthesis (see \TypingRuleRef{ETuple}.\textsc{PARENTHESIZED}).
 
 \subsubsection{ASTRule.ParenExpr\label{sec:ASTRule.ParenExpr}}
 \begin{mathpar}

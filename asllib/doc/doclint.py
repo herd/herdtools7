@@ -35,7 +35,7 @@ def check_hyperlinks_and_hypertargets():
                 extract_labels_from_line(line, "\\hypertarget{", hypertarget_labels)
     num_errors = 0
     missing_hypertargets = hyperlink_labels.difference(hypertarget_labels)
-    if not missing_hypertargets == set():
+    if missing_hypertargets:
         num_missing_hypertargets = len(missing_hypertargets)
         num_errors += num_missing_hypertargets
         print(f"ERROR: found {num_missing_hypertargets} hyperlinks without matching hypertargets: ", file=sys.stderr)

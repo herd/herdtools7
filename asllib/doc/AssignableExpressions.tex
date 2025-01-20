@@ -55,7 +55,7 @@ Some of the typing rules and semantics rules require viewing \assignableexpressi
 as \rhsexpressions.
 The correspondence is given by the function $\torexpr : \lexpr \rightarrow \expr$., defined in \secref{LeftToRight}.
 %
-For example, \nameref{sec:SemanticsRule.LESetField}
+For example, \SemanticsRuleRef{LESetField}
 needs to evaluate the record subexpression $\rerecord$, which is an \assignableexpression.
 To achieve this, $\torexpr(\record)$ is used to obtain an \rhsexpression, which then allows
 using $\texttt{eval\_expr}$ to evaluate it.
@@ -498,8 +498,8 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.LEDiscard\label{sec:SemanticsRule.LEDiscard}}
 \subsubsection{Example}
-In \listingref{lediscardsemantics}, \texttt{- = 42;} does not affect the environment.
-\ASLListing{Assignment to \texttt{-}}{lediscardsemantics}{\semanticstests/SemanticsRule.LEDiscard.asl}
+In \listingref{semantics-lediscard}, the assignment \texttt{- = 42;} does not affect the environment.
+\ASLListing{Assignment to \texttt{-}}{semantics-lediscard}{\semanticstests/SemanticsRule.LEDiscard.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -595,17 +595,17 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.LEVar\label{sec:SemanticsRule.LEVar}}
 \subsubsection{Example (Local Variable)}
-In \listingref{semantics-levar}, \nameref{sec:SemanticsRule.LEVar} is (only) used
+In \listingref{semantics-levar}, \SemanticsRuleRef{LEVar} is (only) used
 to assign the value $42$ to the left-hand-side expression
 \texttt{x} within \texttt{x = 42;}.
 
 \ASLListing{Semantics of a left-hand-side variable expression}{semantics-levar}{\semanticstests/SemanticsRule.LELocalVar.asl}
 
 \subsubsection{Example (Global Variable)}
-In the specification:
-\ASLListing{Assignment to a global variable}{semantics-leglobalvar}{\semanticstests/SemanticsRule.LEGlobalVar.asl}
-SemanticsRule.LEGlobalVar is (only) used to assign the value $42$ to the left-hand-side expression
+In \listingref{semantics-leglobalvar},
+\SemanticsRuleRef{LEVar} is (only) used to assign the value $42$ to the left-hand-side expression
 \texttt{x} within \texttt{x = 42;}.
+\ASLListing{Assignment to a global variable}{semantics-leglobalvar}{\semanticstests/SemanticsRule.LEGlobalVar.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -697,7 +697,7 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.LEDestructuring\label{sec:SemanticsRule.LEDestructuring}}
 \subsubsection{Example}
-In \listingref{semantics-ledestructuring}, \texttt{(x, y) = (3, 42)} binds
+In \listingref{semantics-ledestructuring}, the assignment \texttt{(x, y) = (3, 42)} binds
 \texttt{x} to $\nvint(3)$ and \texttt{y} to
 $\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and
 \texttt{y} is bound to $\nvint(3)$.
@@ -770,10 +770,10 @@ which is when the \textsc{empty} axiom case is used.
 This section details the syntax, abstract syntax, semantics, and typing of array write expressions.
 In the untyped AST, a write to either an integer-indexed array or an enumeration-indexed array is represented
 the same way. They type system infers the kind of array and outputs a typed AST node differentiating
-the two kinds of arrays, either a $\LESetArray$ or a $\LESetEnumArray$, via \nameref{sec:TypingRule.LESetArray}.
+the two kinds of arrays, either a $\LESetArray$ or a $\LESetEnumArray$, via \TypingRuleRef{LESetArray}.
 The semantics utilizes a rule matching the corresponding type of array ---
-\nameref{sec:SemanticsRule.LESetArray} for integer-indexed arrays and
-\nameref{sec:SemanticsRule.LESetEnumArray} for enumeration-indexed arrays.
+\SemanticsRuleRef{LESetArray} for integer-indexed arrays and
+\SemanticsRuleRef{LESetEnumArray} for enumeration-indexed arrays.
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
@@ -890,7 +890,8 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.LESetArray\label{sec:SemanticsRule.LESetArray}}
 \subsubsection{Example}
-\listingref{semantics-lesetarray}, binds the third element of \texttt{my\_array} to the value \texttt{53}.
+In \listingref{semantics-lesetarray}, the assignment \verb|my_array[[3]] = 53;| binds the third element
+of \texttt{my\_array} to the value \texttt{53}.
 \ASLListing{Assignment to an array cell}{semantics-lesetarray}{\semanticstests/SemanticsRule.LESetArray.asl}
 
 \subsubsection{Prose}
@@ -1059,7 +1060,7 @@ All of the following apply:
 \subsubsection{Example}
 In \listingref{semantics-leslice}, the assignment \texttt{x[3:0] = '0000'} binds
 \texttt{x} to $\nvbitvector(11110000)$
-via the rule \nameref{sec:SemanticsRule.LESlice}
+via the rule \SemanticsRuleRef{LESlice}
 in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
 
 \ASLListing{Assignment to a slice}{semantics-leslice}{\semanticstests/SemanticsRule.LESlice.asl}
@@ -1417,7 +1418,7 @@ All of the following apply:
 \begin{itemize}
   \item $\vle$ is an expression for assigning each of the fields in $\fields$ of the record expression $\vlerecord$
         with the corresponding slices given in $\vslices$ from the bitvector value $\vv$
-        (the rule \nameref{sec:TypingRule.LESetFields} ensures that the length of $\fields$ and $\vslices$ is the same);
+        (the rule \TypingRuleRef{LESetFields} ensures that the length of $\fields$ and $\vslices$ is the same);
   \item \Proseevalexpr{$\env$}{right-hand-side expression corresponding to $\vlerecord$}{$(\vrmrecord, \envone)$}\ProseOrAbnormal;
   \item \Proseeqdef{$\vm$}{$(\vv,\vg)$};
   \item applying $\assignbitvectorfields$ to $(\vv,\vg)$, $\vrmrecord$, $\fields$, and $\vslices$, yields \\
@@ -1637,14 +1638,14 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Semantics}
-The semantics for assigning to individual bitvector bitfields is covered by \nameref{sec:SemanticsRule.LESlice}
+The semantics for assigning to individual bitvector bitfields is covered by \SemanticsRuleRef{LESlice}
 as the type system transforms the \untypedast\ for assigning to an individual bitfield into an $\LESlice$ \typedast.
 
 \subsubsection{SemanticsRule.LESetField\label{sec:SemanticsRule.LESetField}}
 
 \subsubsection{Example}
-In \listingref{semantics-lesetfield},
-\texttt{my\_record.a = 42;} binds \texttt{my\_record} to \texttt{\{a: 42, b: 100\}}
+In \listingref{semantics-lesetfield}, the assignment
+\verb|my\_record.a = 42;| binds \texttt{my\_record} to \texttt{\{a: 42, b: 100\}}
 in the environment where \texttt{my\_record} is bound to \texttt{\{a: 3, b: 100\}}.
 
 \ASLListing{Assignment to a field}{semantics-lesetfield}{\semanticstests/SemanticsRule.LESetField.asl}
@@ -1683,7 +1684,7 @@ All of the following apply:
 
 \subsubsection{Comments}
 We note that the type-checker guarantees that $\fieldname$ exists in the record given by $\record$
-via \nameref{sec:TypingRule.LESetStructuredField}.
+via \TypingRuleRef{LESetStructuredField}.
 
 \lrmcomment{This is related to \identr{WHRS}:}
 If the declared type of the \rhsexpression\ of a setter has the structure of a
