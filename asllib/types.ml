@@ -697,7 +697,7 @@ let rec type_clashes env t s =
       • they both have the structure of strings
       • they both have the structure of enumeration types with the same
         enumeration literals
-      • they both have the structure of bit vectors
+      • they both have the structure of bitvectors
       • they both have the structure of arrays whose element types
         type-clash
       • they both have the structure of tuples of the same length whose

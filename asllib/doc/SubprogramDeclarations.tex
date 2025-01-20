@@ -4,7 +4,7 @@ Subprogram declarations are grammatically derived from $\Ndecl$ via the subset o
 \secref{SubprogramDeclarationsSyntax} and represented as ASTs via the production of $\decl$
 shown in \secref{SubprogramDeclarationsAbstractSyntax}.
 %
-Subprogram declarations are typed via $\annotateanddeclarefunc$, which is defined in \nameref{sec:TypingRule.AnnotateAndDeclareFunc}.
+Subprogram declarations are typed via $\annotateanddeclarefunc$, which is defined in \TypingRuleRef{AnnotateAndDeclareFunc}.
 %
 Subprogram declarations have no associated semantics.
 
@@ -383,10 +383,10 @@ $\newtenv$, and an inferred \sideeffectsetterm\ $\vses$.
 All of the following apply:
 \begin{itemize}
   \item annotating the signature of $\funcsig$ in $\genv$ as per
-        \nameref{sec:TypingRule.AnnotateFuncSig} yields
+        \TypingRuleRef{AnnotateFuncSig} yields
         $(\tenvone, \funcsigfone, \vsesone)$\ProseOrTypeError;
   \item declaring the subprogram defined by $\funcsigfone$ in $\tenvone$ with $\vsesfone$
-        as per \nameref{sec:TypingRule.DeclareOneFunc} yields the environment $\newtenv$
+        as per \TypingRuleRef{DeclareOneFunc} yields the environment $\newtenv$
         and new $\func$ node $\newfuncsig$\ProseOrTypeError;
   \item \Proseeqdef{$\vses$}{$\vsesfone$}.
 \end{itemize}
@@ -501,11 +501,11 @@ It returns the updated environment $\tenvwithparams$ and the annotated parameter
 \ProseOtherwiseTypeError
 
 \subsection{Example}
-In the following specification, the list of explicitly defined parameters
+In \listingref{typing-parameterofconstraint}, the list of explicitly defined parameters
 of the function \texttt{signature\_example} is $\{\texttt{A},\texttt{B}\}$.
 Therefore, $\tenvwithparams$ effectively reflects the added declarations \verb|let A: integer{A}| and \verb|let B: integer{B}|.
 
-\VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
+\ASLListing{A function with parameters}{typing-parameterofconstraint}{\typingtests/TypingRule.AnnotateFuncSig.asl}
 
 \subsubsection{Prose}
 One of the following applies:
@@ -704,7 +704,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{other}):
     \begin{itemize}
-      \item $\tty$ is not a tuple type, bit vector type, or \wellconstrainedintegertype;
+      \item $\tty$ is not a tuple type, bitvector type, or \wellconstrainedintegertype;
       \item $\ids$ is the empty list.
     \end{itemize}
 \end{itemize}
@@ -868,18 +868,13 @@ One of the following applies:
 \end{mathpar}
 
 \subsection{Example}
-In the following specification, the set of identifiers that may correspond
+In \listingref{typing-parameterofconstraint}, the set of identifiers that may correspond
 to parameters of the function \texttt{signature\_example} is $\{\texttt{A}, \texttt{B}\}$,
 since they appear in the type \texttt{bits(A)}
 of the argument \texttt{bv} and the type \texttt{bits(A+B)} of the argument \texttt{bv3}.
 
-\VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
-
-\subsection{Example}
-Consider the following specification:
-\VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
-
-Finding parameters for each type in the signature of the function \texttt{signature\_example} yields the following results:
+Finding parameters for each type in the signature of the function \texttt{signature\_example}
+yields the following results:
 \begin{center}
 \begin{tabular}{lll}
 \textbf{Expression} & \textbf{Result} & \textbf{Reason}\\
@@ -891,7 +886,6 @@ Finding parameters for each type in the signature of the function \texttt{signat
 & & and neither is defined in the environment.\\
 \end{tabular}
 \end{center}
-
 
 \subsubsection{TypingRule.AnnotateArgs \label{sec:TypingRule.AnnotateArgs}}
 \hypertarget{def-annotateargs}{}
@@ -916,10 +910,8 @@ and a \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 \subsection{Example}
-In the following specification, the annotated arguments are
+In \listingref{typing-parameterofconstraint}, the annotated arguments are
 \texttt{bv}, \texttt{bv2}, \texttt{bv3}, and \texttt{C}.
-
-\VerbatimInput{\typingtests/TypingRule.AnnotateFuncSig.asl}
 
 \subsubsection{Prose}
 One of the following applies:

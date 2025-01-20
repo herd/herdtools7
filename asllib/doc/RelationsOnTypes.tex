@@ -427,23 +427,23 @@ One of the following applies:
 \end{itemize}
 
 \subsubsection{Example}
-In the specification:
-\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction1.asl}
+In \listingref{typing-typesat1},
 \texttt{var pair: pairT = (1, dataT1)} is legal since the right-hand-side has
 anonymous, non-primitive type \texttt{(integer, T1)}.
+\ASLListing{Type satisfaction example}{typing-typesat1}{\typingtests/TypingRule.TypeSatisfaction1.asl}
 
 \subsubsection{Example}
-In the specification:
-\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction2.asl}
+In \listingref{typing-typesat2},
 \texttt{pair = (1, dataAsInt);} is legal since the right-hand-side has anonymous,
 primitive type \texttt{(integer, integer)}.
+\ASLListing{Type satisfaction example}{typing-typesat2}{\typingtests/TypingRule.TypeSatisfaction2.asl}
 
 \subsubsection{Example}
-In the specification:
-\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.TypeSatisfaction3.asl}
+In \listingref{typing-typesat3},
 \texttt{pair = (1, dataT2);} is illegal since the right-hand-side has anonymous,
 non-primitive type \texttt{(integer, T2)} which does not subtype-satisfy named
 type \texttt{pairT}.
+\ASLListing{Type satisfaction example}{typing-typesat3}{\typingtests/TypingRule.TypeSatisfaction3.asl}
 
 \CodeSubsection{\TypeSatisfactionBegin}{\TypeSatisfactionEnd}{../types.ml}
 
@@ -2120,8 +2120,8 @@ One of the following applies:
     \item applying $\getliteraldivopt$ to $\ve$ yields $\langle(\vzone, \vztwo)\rangle$\ProseTerminateAs{\None};
     \item define $\vcopt$ as follows:
     \begin{itemize}
-      \item $\langle\vc\rangle$, if $\vztwo$ is positive and $\vztwo$ divides $\vzone$;
-      \item $\None$, otherwise.
+      \item $\None$, if $\vztwo$ is positive and $\vztwo$ does not divide $\vzone$;
+      \item $\langle\vc\rangle$, otherwise.
     \end{itemize}
   \end{itemize}
 
@@ -2159,8 +2159,8 @@ One of the following applies:
   {
     \vcopt \eqdef
     \begin{cases}
-      \langle\vc\rangle & \text{if }\vztwo > 0 \land \frac{\vzone}{\vztwo} \in \Z\\
-      \None & \text{else}
+      \None & \text{if }\vztwo > 0 \land \frac{\vzone}{\vztwo} \not\in \Z\\
+      \langle\vc\rangle & \text{else}
     \end{cases}
   }
 }{

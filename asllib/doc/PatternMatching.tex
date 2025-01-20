@@ -97,7 +97,9 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.PAll \label{sec:SemanticsRule.PAll}}
 \subsubsection{Example}
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PAll.asl}
+In \listingref{semantics-pall}, \texttt{match\_me} evaluates to \True,
+since \texttt{-} matches any value and \texttt{42} in particular.
+\ASLListing{Matching any value}{semantics-pall}{\semanticstests/SemanticsRule.PAll.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -242,10 +244,11 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.PSingle \label{sec:SemanticsRule.PSingle}}
 \subsubsection{Example}
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PSingleTRUE.asl}
-
-\subsubsection{Example}
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PSingleFALSE.asl}
+In \listingref{semantics-psingle},
+\texttt{match\_true} evaluates to \True, since \texttt{42} matches \verb|{42}|,
+whereas \\
+\texttt{match\_false} evaluates to \False, since \texttt{42} does no match \verb|{3}|.
+\ASLListing{Matching against a single value}{semantics-psingle}{\semanticstests/SemanticsRule.PSingle.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -335,10 +338,12 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.PRange \label{sec:SemanticsRule.PRange}}
 \subsubsection{Example}
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PRangeTRUE.asl}
-
-\subsubsection{Example}
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PRangeFALSE.asl}
+In \listingref{semantics-prange},
+\texttt{match\_true} evaluates to \True, since \texttt{42} is in the range given by
+\texttt{3..42},
+whereas \texttt{match\_false} evaluates to \False, since \texttt{1} is outside the
+range given by \texttt{3..42}.
+\ASLListing{Matching against a range of values}{semantics-prange}{\semanticstests/SemanticsRule.PRange.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -430,10 +435,10 @@ which short-circuits the entire rule;
 \subsection{Semantics}
 \subsubsection{SemanticsRule.PLeq \label{sec:SemanticsRule.PLeq}}
 \subsubsection{Example}
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PLeqTRUE.asl}
-
-\subsubsection{Example}
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PLeqFALSE.asl}
+In \listingref{semantics-pleq},
+\texttt{match\_true} evaluates to \True, since \texttt{3} is less than or equal to \texttt{42},
+whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less than or equal to \texttt{3}.
+\ASLListing{Matching against an upper bound value}{semantics-pleq}{\semanticstests/SemanticsRule.PLeq.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -515,10 +520,10 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.PGeq \label{sec:SemanticsRule.PGeq}}
 \subsubsection{Example}
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PGeqTRUE.asl}
-
-\subsubsection{Example}
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PGeqFALSE.asl}
+In \listingref{semantics-pgeq},
+\texttt{match\_true} evaluates to \True, since \texttt{42} is greater or equal to \texttt{3},
+whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not greater or equal to \texttt{42}.
+\ASLListing{Matching against a lower bound}{semantics-pgeq}{\semanticstests/SemanticsRule.PGeq.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -589,10 +594,11 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.PMask \label{sec:SemanticsRule.PMask}}
 \subsubsection{Example}
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PMaskTRUE.asl}
-
-\subsubsection{Example}
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PMaskFALSE.asl}
+In \listingref{semantics-pmask}, \texttt{match\_true} evaluates to \True, since
+\texttt{101010} matches the bitmask \texttt{xx1010},
+whereas \texttt{match\_false} evaluates to \False, since
+\texttt{101010} does not match the bitmask \texttt{0x1010}
+\ASLListing{Matching against a bitmask}{semantics-pmask}{\semanticstests/SemanticsRule.PMask.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -688,10 +694,14 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.PTuple \label{sec:SemanticsRule.PTuple}}
 \subsubsection{Example}
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PTupleTRUE.asl}
-
-\subsubsection{Example}
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PTupleFALSE.asl}
+In \listingref{semantics-ptuple},
+\texttt{match\_true} evaluates to \True, since
+the tuple of expression \\
+\texttt{(3, '1101010')} matches the tuple of patterns \texttt{(<= 42, 'xx101010')},
+whereas \\
+\texttt{match\_false} evaluates to \False, since
+the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patterns \texttt{(>= 42, 'xx101010')}.
+\ASLListing{Matching against a tuple of patterns}{semantics-ptuple}{\semanticstests/SemanticsRule.PTuple.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -721,7 +731,10 @@ All of the following apply:
 \section{Matching Any Pattern in a Set of Patterns\label{sec:MatchingAnyPatternInASetOfPatterns}}
 \subsection{Syntax}
 \begin{flalign*}
-\Npattern \derives\ & \Npatternset &
+\Npattern     \derives\   & \Npatternset &\\
+\Npatternset  \derives \  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
+                  |\      & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
+\Npatternlist \derives \ & \NClist{\Npattern} &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -729,13 +742,50 @@ All of the following apply:
 \pattern \derives\ & \PatternAny(\pattern^{*}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.PAny}
-\tododefine{Missing a rule for PatternAny}
+\subsubsection{ASTRule.PatternSet\label{sec:ASTRule.PatternSet}}
+\hypertarget{build-patternset}{}
+The function
+\[
+  \buildpatternset(\overname{\parsenode{\Npatternset}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
-\inferrule{}{
-  \buildpattern(\Npattern(\punnode{\Npatternset})) \astarrow
-  \overname{\astof{\vpatternset}}{\vastnode}
+\inferrule[not]{}{
+  {
+    \begin{array}{r}
+  \buildpatternset(\Npatternset(\Tbnot, \Tlbrace, \punnode{\Npatternlist}, \Trbrace)) \astarrow\\
+  \overname{\PatternNot(\astof{\vpatternlist})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[list]{}{
+  \buildpatternset(\Npatternset(\Tlbrace, \punnode{\Npatternlist}, \Trbrace)) \astarrow
+  \overname{\astof{\vpatternlist}}{\vastnode}
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.PatternList \label{sec:ASTRule.PatternList}}
+\hypertarget{build-patternlist}{}
+The function
+\[
+  \buildpatternlist(\overname{\parsenode{\Npatternlist}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{
+  \buildclist[\buildpattern](\vpatterns) \astarrow \vpatternasts
+}{
+  {
+    \begin{array}{r}
+  \buildpatternlist(\Npatternlist(\namednode{\vpatterns}{\NClist{\Npattern}})) \astarrow\\
+  \overname{\PatternAny(\vpatternasts)}{\vastnode}
+    \end{array}
+  }
 }
 \end{mathpar}
 
@@ -750,7 +800,7 @@ All of the following apply:
 \item $\newp$ is the pattern which matches anything in $\newli$, that is, \\ $\PatternAny(\newli)$;
 \item define $\vses$ as the union of all $\vxs_\vl$, for each $\vl$ in $\vli$.
       (Checking for absence of conflicts is not required as all patterns are ensured to be
-      \staticallyevaluable. See, for example, \nameref{sec:TypingRule.PSingle}.)
+      \staticallyevaluable. See, for example, \TypingRuleRef{PSingle}.)
 \end{itemize}
 
 \subsubsection{Formally}
@@ -768,10 +818,11 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.PAny \label{sec:SemanticsRule.PAny}}
 \subsubsection{Example}
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PAnyTRUE.asl}
-
-\subsubsection{Example}
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PAnyFALSE.asl}
+In \listingref{semantics-pany},
+\texttt{match\_true} evaluates to \True, since \texttt{42} matches the second pattern in \verb|{3, 42}|,
+whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does not match
+any pattern in \verb|{3, 4}|.
+\ASLListing{Matching against any pattern in a list of patterns}{semantics-pany}{\semanticstests/SemanticsRule.PAny.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -797,14 +848,17 @@ All of the following apply:
 
 \section{Matching a Negated Pattern\label{sec:MatchingANegatedPattern}}
 \subsection{Syntax}
-See \secref{PatternMatchingExpressions}.
+\begin{flalign*}
+\Npatternset \derives \  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
+                  |\    & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &
+\end{flalign*}
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
 \pattern \derives\ & \PatternNot(\pattern) &
 \end{flalign*}
 
-See \nameref{sec:ASTRule.PatternSet} (\textsc{NOT} case).
+The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
 
 \subsection{Typing}
 \subsubsection{TypingRule.PNot\label{sec:TypingRule.PNot}}
@@ -825,13 +879,13 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\PNotBegin}{\PNotEnd}{../Typing.ml}
 
-\subsection{semantics}
+\subsection{Semantics}
 \subsubsection{SemanticsRule.PNot \label{sec:SemanticsRule.PNot}}
 \subsubsection{Example}
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PNotTRUE.asl}
-
-\subsubsection{Example}
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.PNotFALSE.asl}
+In \listingref{semantics-pnot},
+\texttt{match\_true} evaluates to \True, since \texttt{42} does not match the pattern \verb|{3}|,
+whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does match the pattern \verb|{42}|.
+\ASLListing{Matching against a negated pattern}{semantics-pnot}{\semanticstests/SemanticsRule.PNot.asl}
 
 \subsubsection{Prose}
 All of the following apply:

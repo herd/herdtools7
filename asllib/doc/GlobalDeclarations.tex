@@ -175,7 +175,7 @@ Note that the return type in $\vf$ has already been annotated by $\annotatefuncs
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item annotating $\vf.\funcbody$ in $\tenv$ as per \nameref{sec:TypingRule.Block} yields $(\newbody, \vsesbody)$\ProseOrTypeError;
+  \item annotating $\vf.\funcbody$ in $\tenv$ as per \TypingRuleRef{Block} yields $(\newbody, \vsesbody)$\ProseOrTypeError;
   \item One of the following applies:
   \begin{itemize}
     \item All of the following apply (\textsc{procedure}):
@@ -276,10 +276,12 @@ and determines the \controlflowsymbolterm\ $\vctrlflow$ to be one of the followi
 \begin{description}
   \item[$\assertednotinterrupt$] evaluating $\vs$ in any environment will evaluate \texttt{Unreachable()};
   \hypertarget{def-interrupt}{}
-  \item[$\interrupt$] evaluating $\vs$ in any environment will end by either evaluating a return statement with an expression,
+  \item[$\interrupt$] evaluating $\vs$ in any environment will \underline{always} end by either evaluating
+      a return statement with an expression,
       or evaluating a \texttt{throw} statement;
   \hypertarget{def-maynotinterrupt}{}
-  \item[$\maynotinterrupt$] evaluating $\vs$ in any environment may not end by evaluating either of the above mentioned statements.
+  \item[$\maynotinterrupt$] evaluating $\vs$ in any environment might not end by evaluating
+      a \texttt{return} statement with an expression or a \texttt{throw} statement.
 \end{description}
 
 \subsubsection{Prose}
@@ -381,6 +383,16 @@ One of the following applies:
 }
 \end{mathpar}
 
+The reasoning for the next case is as follows:
+\begin{itemize}
+  \item Conservatively, that is, without attempting to reason about the condition expressions,
+    a $\SWhile$ loop, and a $\SFor$ are like a conditional statement that either executes
+    $\SPass$ (when the loop condition does not hold) or executes the body and then loops back.
+  \item The control flow state for $\SPass$ is $\maynotinterrupt$.
+  \item The overall control flow state is then $\controlflowjoin(\maynotinterrupt, \Ignore)$,
+    which is always $\maynotinterrupt$.
+\end{itemize}
+
 \begin{mathpar}
 \inferrule[s\_while\_for]{
   \astlabel(\vs) \in \{\SWhile, \SFor\}
@@ -388,6 +400,20 @@ One of the following applies:
   \controlflowfromstmt(\vs) \typearrow \overname{\maynotinterrupt}{\vctrlflow}
 }
 \end{mathpar}
+
+The reasoning for the next case is as follows:
+\begin{itemize}
+  \item A statement $\SRepeat(\vbody, \vcond, \Ignore)$ is equivalent (ignoring limits) to \\
+$\SSeq(\vbody, \SWhile(\vcond, \Ignore, \vbody))$;
+  \item Let us denote $\controlflowfromstmt(\vbody) \typearrow \vctrlflow$.
+  Observe that by case \textsc{s\_while\_for} above, we have that \\
+  $\controlflowfromstmt(\SWhile(\vcond, \Ignore, \vbody)) \typearrow \maynotinterrupt$
+  holds;
+  \item Applying the rule for the \textsc{s\_seq} case above, requires applying $\controlflowseq$
+  to $\vctrlflow$ and $\maynotinterrupt$, which always yields $\vctrlflow$
+  (to see this, consider the case $\vctrlflow=\maynotinterrupt$
+  and the case \\ $\vctrlflow\neq\maynotinterrupt$).
+\end{itemize}
 
 \begin{mathpar}
 \inferrule[s\_repeat]{

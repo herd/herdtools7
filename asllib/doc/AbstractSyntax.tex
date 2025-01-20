@@ -114,21 +114,21 @@ integers, Booleans, real numbers, bitvectors, and strings.
 
 \hypertarget{ast-literal}{} \hypertarget{ast-lint}{}
 \begin{flalign*}
-\literal \derives\ & \lint(\overname{n}{\Z})
+\literal \derives\ & \lint(\overtext{n}{$\Z$})
 & \hypertarget{ast-lbool}{}
 \\
- |\ & \lbool(\overname{b}{\{\True, \False\}})
+ |\ & \lbool(\overtext{b}{$\{\True, \False\}$})
  & \hypertarget{ast-lreal}{}
 \\
- |\ & \lreal(\overname{q}{\Q})
+ |\ & \lreal(\overtext{q}{$\Q$})
  & \hypertarget{ast-lbitvector}{}
 \\
- |\ & \lbitvector(\overname{B}{B \in \{0, 1\}^*})
+ |\ & \lbitvector(\overtext{B}{$B \in \{0, 1\}^*$})
  & \hypertarget{ast-lstring}{}
 \\
- |\ & \lstring(\overname{S}{S \in \{C \;|\; \texttt{"$C$"}\ \in\ \Strings\}}) &
+ |\ & \lstring(\overtext{S}{$S \in \{C \;|\; \texttt{"$C$"}\ \in\ \Strings\}$}) &
  \hypertarget{ast-llabel}{} \\
- |\ & \llabel(\overname{l}{\identifier})
+ |\ & \llabel(\overtext{l}{enumeration label})
  & \\
 \end{flalign*}
 
@@ -137,26 +137,26 @@ The following rules correspond to unary operations and binary operations that ca
 
 \hypertarget{ast-unop}{} \hypertarget{ast-bnot}{} \hypertarget{ast-neg}{} \hypertarget{ast-not}{}
 \begin{flalign*}
-\unop \derives\ & \overname{\BNOT}{\texttt{"!"}} \;|\; \overname{\NEG}{\texttt{"-"}} \;|\; \overname{\NOT}{\texttt{"NOT"}}
+\unop \derives\ & \overtext{\BNOT}{\texttt{"!"}} \;|\; \overtext{\NEG}{\texttt{"-"}} \;|\; \overtext{\NOT}{\texttt{"NOT"}}
 & \hypertarget{ast-binop}{} \hypertarget{ast-bor}{} \hypertarget{ast-impl}{} \hypertarget{ast-beq}{} \hypertarget{ast-band}{}
 \\
-\binop  \derives\ & \overname{\BAND}{\texttt{"\&\&"}} \;|\; \overname{\BOR}{\texttt{"||"}} \;|\; \overname{\IMPL}{\texttt{"-->"}}
-              \;|\; \overname{\BEQ}{\texttt{"<->"}}
+\binop  \derives\ & \overtext{\BAND}{\texttt{"\&\&"}} \;|\; \overtext{\BOR}{\texttt{"||"}} \;|\; \overtext{\IMPL}{\texttt{"-->"}}
+              \;|\; \overtext{\BEQ}{\texttt{"<->"}}
               & \hypertarget{ast-eqop}{} \hypertarget{ast-neq}{} \hypertarget{ast-gt}{} \hypertarget{ast-geq}{} \hypertarget{ast-lt}{} \hypertarget{ast-leq}{}
 \\
-        |\ & \overname{\EQOP}{\texttt{"=="}} \;|\; \overname{\NEQ}{\texttt{"!="}} \;|\; \overname{\GT}{\texttt{">"}}
-        \;|\; \overname{\GEQ}{\texttt{">="}} \;|\; \overname{\LT}{\texttt{"<"}} \;|\; \overname{\LEQ}{\texttt{"<="}}
+        |\ & \overtext{\EQOP}{\texttt{"=="}} \;|\; \overtext{\NEQ}{\texttt{"!="}} \;|\; \overtext{\GT}{\texttt{">"}}
+        \;|\; \overtext{\GEQ}{\texttt{">="}} \;|\; \overtext{\LT}{\texttt{"<"}} \;|\; \overtext{\LEQ}{\texttt{"<="}}
         & \hypertarget{ast-plus}{} \hypertarget{ast-minus}{} \hypertarget{ast-or}{} \hypertarget{ast-xor}{} \hypertarget{ast-and}{}
 \\
-        |\ & \overname{\PLUS}{\texttt{"+"}} \;|\; \overname{\MINUS}{\texttt{"-"}} \;|\; \overname{\OR}{\texttt{"OR"}}
-        \;|\; \overname{\XOR}{\texttt{"XOR"}} \;|\; \overname{\AND}{\texttt{"AND"}}
+        |\ & \overtext{\PLUS}{\texttt{"+"}} \;|\; \overtext{\MINUS}{\texttt{"-"}} \;|\; \overtext{\OR}{\texttt{"OR"}}
+        \;|\; \overtext{\XOR}{\texttt{"XOR"}} \;|\; \overtext{\AND}{\texttt{"AND"}}
         & \hypertarget{ast-mul}{} \hypertarget{ast-div}{} \hypertarget{ast-divrm}{} \hypertarget{ast-mod}{} \hypertarget{ast-shl}{} \hypertarget{ast-shr}{}
 \\
-        |\ & \overname{\MUL}{\texttt{"*"}} \;|\; \overname{\DIV}{\texttt{"DIV"}} \;|\; \overname{\DIVRM}{\texttt{"DIVRM"}}
-        \;|\; \overname{\MOD}{\texttt{"MOD"}} \;|\; \overname{\SHL}{\texttt{"<<"}}  \;|\; \overname{\SHR}{\texttt{">>"}}
+        |\ & \overtext{\MUL}{\texttt{"*"}} \;|\; \overtext{\DIV}{\texttt{"DIV"}} \;|\; \overtext{\DIVRM}{\texttt{"DIVRM"}}
+        \;|\; \overtext{\MOD}{\texttt{"MOD"}} \;|\; \overtext{\SHL}{\texttt{"<<"}}  \;|\; \overtext{\SHR}{\texttt{">>"}}
         & \hypertarget{ast-rdiv}{} \hypertarget{ast-pow}{} \hypertarget{ast-bvconcat}{}
 \\
-        |\ & \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}} \;|\; \overname{\BVCONCAT}{\texttt{"::"}}
+        |\ & \overtext{\RDIV}{\texttt{"/"}} \;|\; \overtext{\POW}{\texttt{"\^{}"}} \;|\; \overtext{\BVCONCAT}{\texttt{"::"}}
         &
 \end{flalign*}
 
@@ -200,17 +200,10 @@ and pattern matching expressions.
 	|\ & \EPattern(\expr, \pattern)
 \end{flalign*}
 
-\figref{expr1} and \figref{expr2} exemplify the different kinds of expressions,
+\listingref{expr1} and \listingref{expr2} exemplify the different kinds of expressions,
 as indicated by respective comments.
-\begin{figure}
-\ASLExample{\syntaxtests/expr1.asl}
-\caption{Examples of expressions \label{fi:expr1}}
-\end{figure}
-
-\begin{figure}
-\ASLExample{\syntaxtests/expr2.asl}
-\caption{Examples of expressions\label{fi:expr2}}
-\end{figure}
+\ASLListing{Examples of expressions}{expr1}{\syntaxtests/expr1.asl}
+\ASLListing{More examples of expressions}{expr2}{\syntaxtests/expr2.asl}
 
 \begin{itemize}
   \item $\EVar(\vx)$ represents variables (\texttt{E\_Var}).
@@ -584,11 +577,8 @@ array value in order to initialize an array-typed variable;
       by $\ebase$ with the value given by $\evalue$;
 \end{itemize}
 
-The rules for statements exclude \texttt{case} statements, since those are transformed into
-conditional statements (see \nameref{sec:TypingRule.DesugarCaseStmt}).
-
 The rules for statements exclude \texttt{pragma} statements, since those are transformed into
-\texttt{pass} statements (see \nameref{sec:TypingRule.SPragma}).
+\texttt{pass} statements (see \TypingRuleRef{SPragma}).
 
 The rules for statements refine the throw statement by annotating it with
 the type of the thrown exception.
@@ -910,7 +900,7 @@ $\ELInt{n}$ & literal integer expression: $\ELiteral(\lint(n))$
 $\AbbrevConstraintExact{\ve}$ & $\ConstraintExact(\ve)$
 \hypertarget{def-abbrevconstraintrange}{}\\
 $\AbbrevConstraintRange{\veone}{\vetwo}$ & $\ConstraintRange(\veone, \vetwo)$ \hypertarget{def-abbrevebinop}{}\\
-$\AbbrevEBinop{\op}{\veone}{\vetwo}$ & $\EBinop(\op, \veone, \vetwo)$ \hypertarget{def-tarrayshort}{} \hypertarget{def-abbrevtarray}{}\\
+$\AbbrevEBinop{\op}{\veone}{\vetwo}$ & $\EBinop(\op, \veone, \vetwo)$ \hypertarget{def-abbrevtarray}{}\\
 $\AbbrevTArray{\vi}{\vt}$ & $\TArray(\ArrayLengthExpr(\vi), \vt)$ \hypertarget{def-abbrevtarraylengthexpr}{}\\
 $\AbbrevTArrayLengthExpr{\ve}{\vt}$ & $\TArray(\ArrayLengthExpr(\ve), \vt)$ \hypertarget{def-abbrevtarraylengthenum}{}\\
 $\AbbrevTArrayLengthEnum{\ve}{\vs}{\vt}$ & $\TArray(\ArrayLengthEnum(\ve, \vs), \vt)$\\

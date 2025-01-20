@@ -146,9 +146,8 @@ All of the following apply:
 
 \subsection{Semantics}
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.Lit.asl}
-each of the expressions \texttt{3} evaluates to the \nativevalue\  $\nvint(3)$.
+In \listingref{literalssemantics}, each of the expressions \texttt{3} evaluates to the \nativevalue\ $\nvint(3)$.
+\ASLListing{Semantics of literals}{literalssemantics}{\semanticstests/SemanticsRule.Lit.asl}
 
 \subsubsection{SemanticsRule.ELit \label{sec:SemanticsRule.ELit}}
 \subsubsection{Prose}
@@ -350,21 +349,20 @@ All of the following apply:
 \subsubsection{Comments}
 When there exists a global variable $\vx$, the type system
 forbids having $\vx$ as a local variable.
-This is enforced by \nameref{sec:TypingRule.LDVar} in the Chapter ``Typing of Local Declarations'',
+This is enforced by \TypingRuleRef{LDVar} in the Chapter ``Typing of Local Declarations'',
 and
-\nameref{sec:TypingRule.DeclareGlobalStorage} and \nameref{sec:TypingRule.DeclareOneFunc},
+\TypingRuleRef{DeclareGlobalStorage} and \TypingRuleRef{DeclareOneFunc},
 both in the Chapter ``Typing of Global Declarations''.
 
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.ELocalVar.asl}
-the evaluation of \texttt{x} within \texttt{assert x == 3;} uses SemanticsRule.EVar.LOCAL.
+In \listingref{localvarsemantics}, the evaluation of \texttt{x} within \texttt{assert x == 3;}
+uses \\ \SemanticsRuleRef{EVar}.LOCAL.
+\ASLListing{Semantics of local variables}{localvarsemantics}{\semanticstests/SemanticsRule.ELocalVar.asl}
 
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.EGlobalVar.asl}
-the evaluation of~\texttt{global\_x} within~\texttt{assert global\_x == 3;}
-uses the rule \\ SemanticsRule.EVar.GLOBAL.
+In \listingref{globalvarsemantics}, the evaluation of~\texttt{global\_x} within~\texttt{assert global\_x == 3;}
+uses the rule \SemanticsRuleRef{EVar}.GLOBAL.
+\ASLListing{Semantics of global variables}{globalvarsemantics}{\semanticstests/SemanticsRule.EGlobalVar.asl}
 
 \section{Binary Expressions\label{sec:BinaryExpressions}}
 \subsection{Syntax}
@@ -379,7 +377,7 @@ uses the rule \\ SemanticsRule.EVar.GLOBAL.
 
 \subsubsection{ASTRule.Binop}
 The following rule constructs a binary expression AST
-when a property on \emph{associative operators} holds (see \nameref{sec:ASTRule.CheckNotSamePrec}).
+when a property on \emph{associative operators} holds (see \ASTRuleRef{CheckNotSamePrec}).
 
 \begin{mathpar}
   \inferrule{
@@ -493,6 +491,12 @@ One of the following applies:
 
 \subsection{Typing}
 \subsubsection{TypingRule.Binop\label{sec:TypingRule.Binop}}
+\subsubsection{Example}
+In \listingref{typing-binoperror},
+the expression \texttt{3 DIV 0} results in a type error.
+\ASLListing{Evaluating a binary expression resulting in a type error}{typing-binoperror}
+{\semanticstests/SemanticsRule.EBinopDIVBackendDefinedError.asl}
+
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -546,6 +550,11 @@ All of the following apply:
 
 \subsection{Semantics}
 \subsubsection{SemanticsRule.BinopAnd \label{sec:SemanticsRule.BinopAnd}}
+\subsubsection{Example}
+In \listingref{andsemantics},
+the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}. Notice that the function \texttt{fail} is never called.
+\ASLListing{Semantics of conjunction}{andsemantics}{\semanticstests/SemanticsRule.EBinopAndFalse.asl}
+
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -554,12 +563,6 @@ All of the following apply:
 \item $C$ is the result of the evaluation of the expression
       \texttt{if e1 then e2 else false} (see \secref{SemanticsRule.ECond}).
 \end{itemize}
-
-\subsubsection{Example}
-\ASLExample{\semanticstests/SemanticsRule.EBinopAndFalse.asl}
-the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}. Notice that the function \texttt{fail} is never called.
-
-\CodeSubsection{\EvalBinopAndBegin}{\EvalBinopAndEnd}{../Interpreter.ml}
 
 \subsubsection{Formally}
 \begin{mathpar}
@@ -570,6 +573,7 @@ the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}.
 \evalexpr{\env, \EBinop(\BAND, \veone, \vetwo)} \evalarrow C
 }
 \end{mathpar}
+\CodeSubsection{\EvalBinopAndBegin}{\EvalBinopAndEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
 The evaluation via the rule above ensures that $\veone$ is evaluated first and
@@ -617,10 +621,8 @@ All of the following apply:
 \end{itemize}
 
 \subsubsection{Example}
-\ASLExample{\semanticstests/SemanticsRule.EBinopOrTrue.asl}
-The expression \texttt{(0 == 1) || (1 == 1)} evaluates to the value \True.
-
-\CodeSubsection{\EvalBinopOrBegin}{\EvalBinopOrEnd}{../Interpreter.ml}
+In \listingref{semantics-binopor}, the expression \texttt{(0 == 1) || (1 == 1)} evaluates to the value \True.
+\ASLListing{Evaluating a disjunction expression}{semantics-binopor}{\semanticstests/SemanticsRule.EBinopOrTrue.asl}
 
 \begin{mathpar}
 \inferrule{
@@ -630,6 +632,8 @@ The expression \texttt{(0 == 1) || (1 == 1)} evaluates to the value \True.
 \evalexpr{\env, \EBinop(\BOR, \veone, \vetwo)} \evalarrow C
 }
 \end{mathpar}
+\CodeSubsection{\EvalBinopOrBegin}{\EvalBinopOrEnd}{../Interpreter.ml}
+
 The evaluation via the rule above ensures that $\veone$ is evaluated first and only if
 it evaluates to $\False$, is $\vetwo$ evaluated.
 
@@ -676,23 +680,22 @@ All of the following apply:
 \end{itemize}
 
 \subsubsection{Example}
-\ASLExample{\semanticstests/SemanticsRule.EBinopImplExFalso.asl}
+In \listingref{semantics-binopimpl},
 the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \True, according to the definition of implication.
+\ASLListing{Evaluating an implication expression}{semantics-binopimpl}{\semanticstests/SemanticsRule.EBinopImplExFalso.asl}
 
-  \CodeSubsection{\EvalBinopImplBegin}{\EvalBinopImplEnd}{../Interpreter.ml}
-
-  \begin{mathpar}
-    \inferrule{
-      \truep \eqdef \ELiteral(\lbool(\True))\\
-      \evalexpr{\env, \ECond(\veone, \vetwo, \truep)} \evalarrow C
-    }
-    {
-    \evalexpr{\env, \EBinop(\IMPL, \veone, \vetwo)} \evalarrow C
-    }
-  \end{mathpar}
-  The evaluation via the rule above ensures that $\veone$ is evaluated first and only if
-  it evaluates to \True, is $\vetwo$ evaluated.
-
+\begin{mathpar}
+\inferrule{
+  \truep \eqdef \ELiteral(\lbool(\True))\\
+  \evalexpr{\env, \ECond(\veone, \vetwo, \truep)} \evalarrow C
+}
+{
+\evalexpr{\env, \EBinop(\IMPL, \veone, \vetwo)} \evalarrow C
+}
+\end{mathpar}
+\CodeSubsection{\EvalBinopImplBegin}{\EvalBinopImplEnd}{../Interpreter.ml}
+The evaluation via the rule above ensures that $\veone$ is evaluated first and only if
+it evaluates to \True, is $\vetwo$ evaluated.
 
 \lrmcomment{This is related to \identr{BKNT}: add table}
 
@@ -735,16 +738,9 @@ All of the following apply:
 \end{itemize}
 
 \subsubsection{Example}
-In this specification:
-\ASLExample{\semanticstests/SemanticsRule.EBinopPlusAssert.asl}
+In \listingref{semantics-binopassert},
 the expression \texttt{3 + 2} evaluates to the value \texttt{5}.
-
-\subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.EBinopDIVBackendDefinedError.asl}
-the expression \texttt{3 DIV 0} results in a type error.
-
-\CodeSubsection{\EvalBinopBegin}{\EvalBinopEnd}{../Interpreter.ml}
+\ASLListing{Evaluating a binary expression}{semantics-binopassert}{\semanticstests/SemanticsRule.EBinopPlusAssert.asl}
 
 \subsubsection{Formally}
 \begin{mathpar}
@@ -760,6 +756,7 @@ the expression \texttt{3 DIV 0} results in a type error.
   \Normal((\vv, \vg), \newenv)
 }
 \end{mathpar}
+\CodeSubsection{\EvalBinopBegin}{\EvalBinopEnd}{../Interpreter.ml}
 
 The rule above applies to many binary operators, including $\EQOP$ (which is used for \texttt{<->}
 as well as \texttt{==}).
@@ -850,9 +847,9 @@ All of the following apply:
 
 \subsection{Semantics}
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.EUnopAssert.asl}
+In \listingref{semantics-unopassert},
 the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
+\ASLListing{Evaluating a unary expression}{semantics-unopassert}{\semanticstests/SemanticsRule.EUnopAssert.asl}
 
 \subsubsection{SemanticsRule.Unop\label{sec:SemanticsRule.Unop}}
 
@@ -979,16 +976,19 @@ All of the following apply:
 
 \subsection{Semantics}
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.ECondFalse.asl}
+In \listingref{semantics-econdfalse},
 the expression \texttt{if FALSE then Return42() else 3} evaluates to the value \texttt{3}.
+\ASLListing{Evaluating a conditional expression yielding the result of the \texttt{else} subexpression}
+{semantics-econdfalse}{\semanticstests/SemanticsRule.ECondFalse.asl}
 
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.ECondARBITRARY3or42.asl}
+In \listingref{semantics-econdarbitrary},
 the expression \texttt{if ARBITRARY: boolean then 3 else Return42()} will
-evaluate either \texttt{3} or \texttt{Return42()} depending on how
-\texttt{ARBITRARY} is implemented.
+evaluate either \texttt{3} or \texttt{Return42()}, depending on the
+(non-deterministic) result of \\
+\texttt{ARBITRARY: boolean}.
+\ASLListing{Evaluating a conditional expression with non-determinic choice}{semantics-econdarbitrary}
+{\semanticstests/SemanticsRule.ECondARBITRARY3or42.asl}
 
 \subsubsection{SemanticsRule.ECond \label{sec:SemanticsRule.ECond}}
 % Transliteration note: the code uses an optimized semantics for the case where
@@ -1160,10 +1160,10 @@ All of the following apply:
 
 \subsection{Semantics}
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.ECall.asl}
+In \listingref{semantics-ecall},
 the expression \texttt{Return42()} evaluates to the value \texttt{42} because the
 subprogram \texttt{Return42()} is implemented to return the value \texttt{42}.
+\ASLListing{Evaluating a call expression}{semantics-ecall}{\semanticstests/SemanticsRule.ECall.asl}
 
 \subsubsection{SemanticsRule.ECall \label{sec:SemanticsRule.ECall}}
 All of the following apply:
@@ -1303,9 +1303,9 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.ESlice\label{sec:SemanticsRule.ESlice}}
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.ESlice.asl}
+In \listingref{semantics-eslice},
 the expression \texttt{'11110000'[6:3]} evaluates to the value \texttt{'1110'}.
+\ASLListing{Evaluating a slice expression}{semantics-eslice}{\semanticstests/SemanticsRule.ESlice.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -1339,10 +1339,10 @@ resulting bitvector --- and the execution graph $\vgone$;
 This section details the syntax, abstract syntax, semantics, and typing of array read expressions.
 In the untyped AST, a read from either an integer-indexed array or an enumeration-indexed arrays is represented
 the same way. They type system infers the kind of array and outputs a typed AST node differentiating
-the two kinds of arrays, either a $\EGetArray$ or a $\EGetEnumArray$, via \nameref{sec:TypingRule.EGetArray}.
+the two kinds of arrays, either a $\EGetArray$ or a $\EGetEnumArray$, via \TypingRuleRef{EGetArray}.
 The semantics utilizes a rule matching the corresponding type of array ---
-\nameref{sec:SemanticsRule.EGetArray} for integer-indexed arrays and
-\nameref{sec:SemanticsRule.EGetEnumArray} for enumeration-indexed arrays.
+\SemanticsRuleRef{EGetArray} for integer-indexed arrays and
+\SemanticsRuleRef{EGetEnumArray} for enumeration-indexed arrays.
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -1468,16 +1468,17 @@ All of the following apply:
 
 \subsubsection{SemanticsRule.EGetArray\label{sec:SemanticsRule.EGetArray}}
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.EGetArray.asl}
-the expression \texttt{my\_array[[2]]} appearing in the assertion evaluates to the value \texttt{42} since the element
+In \listingref{semantics-egetarray},
+the expression \verb|my_array[[2]]| appearing in the assertion evaluates to the value \texttt{42} since the element
 indexed by \texttt{2} in \texttt{my\_array} is \texttt{42}.
+\ASLListing{Evaluating an array access expression}{semantics-egetarray}{\semanticstests/SemanticsRule.EGetArray.asl}
 
 \subsubsection{Example}
-The specification:
-\ASLExample{\semanticstests/SemanticsRule.EGetArrayTooSmall.asl}
-results in a typing error since we are trying to access index \texttt{3} of an array
+In \listingref{semantics-egetarrayerror}.
+evaluating the array access expression \verb|my_array[[3]]| results in a dynamic error,
+since we are trying to access index \texttt{3} of an array
 which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
+\ASLListing{Evaluating an illegal array access}{semantics-egetarrayerror}{\semanticstests/SemanticsRule.EGetArrayTooSmall.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -1510,10 +1511,11 @@ All of the following apply:
 
 \subsubsection{SemanticsRule.EGetEnumArray\label{sec:SemanticsRule.EGetEnumArray}}
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.EGetEnumArray.asl}
+In \listingref{semantics-egetenumarray},
 the enumeration-typed array \texttt{Arr} is accessed for reading and writing
 with indices taken from the enumeration type \texttt{Enum}.
+\ASLListing{Evaluating an access to an enumeration-indexed array}{semantics-egetenumarray}
+{\semanticstests/SemanticsRule.EGetEnumArray.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -1798,9 +1800,9 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.EGetField\label{sec:SemanticsRule.EGetField}}
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.ERecord.asl}
-the expression \texttt{my\_record.a} evaluates to the value \texttt{3}.
+In \listingref{semantics-egetfield},
+the expression \verb|my_record.a| evaluates to the value \texttt{3}.
+\ASLListing{Evaluating a field access expression}{semantics-egetfield}{\semanticstests/SemanticsRule.ERecord.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -2332,26 +2334,22 @@ One of the following applies:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.ATC\label{sec:SemanticsRule.ATC}}
 \subsubsection{Example}
-\ASLExample{\semanticstests/SemanticsRule.ATCValue.asl}
-
-\subsubsection{Example}
-\ASLExample{\semanticstests/SemanticsRule.ATCError.asl}
+In \listingref{semantics-atcvalue}, both type assertions ---
+\verb|3 as integer| and \verb|3 as integer{3..5}| --- succeed.
+\ASLListing{Evaluating a successful type assertion expression}{semantics-atcvalue}{\semanticstests/SemanticsRule.ATCValue.asl}
 
 \subsubsection{Example}
 \lrmcomment{This is related to \identr{YCPX}:}
 
-Dynamic error conditions only hold if the asserting type conversion is
-evaluated.
-
-In the example below, the asserting type conversion on \texttt{y} is
-not a dynamic error if the invocation of \texttt{f1} returns $\False$ when
+In \listingref{semantics-atcnotevaluated}, the asserting type conversion on \texttt{y}
+does not yield a dynamic error, since the invocation of \texttt{f1} returns $\False$ when
 evaluated:
-\ASLExample{\semanticstests/SemanticsRule.ATCNotDynamicErrorIfFalse.asl}
+\ASLListing{A asserting type conversion that is never evaluated}{semantics-atcnotevaluated}
+{\semanticstests/SemanticsRule.ATCNotDynamicErrorIfFalse.asl}
 
 \subsubsection{Example}
-The following excerpts indicates several points where various static and
-dynamic errors can occur:
-\ASLExample{\semanticstests/SemanticsRule.ATCVariousErrors.asl}
+\listingref{semantics-variousatcs} shows various type errors and dynamic errors:
+\ASLListing{Various type errors and dynamic errors}{semantics-variousatcs}{\semanticstests/SemanticsRule.ATCVariousErrors.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -2407,7 +2405,7 @@ tests whether the value $\vv$ can be stored in a variable of type $\vt$ in the e
 resulting in a Boolean value $\vb$ and execution graph $\vg$ or a dynamic error.
 
 This relation is used in the context of a asserted type conversion,
-which means the type-checker rule \nameref{sec:TypingRule.ATC} was already applied,
+which means the type-checker rule \TypingRuleRef{ATC} was already applied,
 thus filtering cases where the type inferred for the converted expression
 does not type-satisfy $\vt$. The semantics takes this into account and
 only returns \False\ in cases where dynamic information is required.
@@ -2420,7 +2418,7 @@ One of the following applies:
   \item All of the following apply (\textsc{type\_equal}):
   \begin{itemize}
     \item the AST label of $\vt$ is not $\TInt$, $\TBits$, or $\TTuple$;
-    \item $\vb$ is \True (since \nameref{sec:TypingRule.ATC}
+    \item $\vb$ is \True (since \TypingRuleRef{ATC}
     succeeds in these cases only if the \structure\ of the type of the expression and the \structure\ of the type asserted against are \typeequivalent);
     \item $\vg$ is the empty graph.
   \end{itemize}
@@ -2510,7 +2508,7 @@ One of the following applies:
 \CodeSubsection{\EvalValOfTypeBegin}{\EvalValOfTypeEnd}{../Interpreter.ml}
 
 Notice that these rules cover all types, including named types ($\TNamed$),
-since the \typedast\ returned from \nameref{sec:TypingRule.ATC} is the \structure\ of the type
+since the \typedast\ returned from \TypingRuleRef{ATC} is the \structure\ of the type
 given in the specification.
 %
 Parameterized integers (integers with an empty set of constraints)
@@ -2590,10 +2588,7 @@ Lists of patterns are also used in case statements.
 \begin{flalign*}
 \Nexpr \derives\  & \Nexpr \parsesep \Tin \parsesep \Npatternset &\\
               |\  & \Nexpr \parsesep \Teqop \parsesep \Tmasklit &\\
-              |\  & \Nexpr \parsesep \Tneq \parsesep \Tmasklit &\\
-\Npatternset \derives \  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
-                  |\    & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
-\Npatternlist \derives \ & \NClist{\Npattern} &
+              |\  & \Nexpr \parsesep \Tneq \parsesep \Tmasklit &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -2634,53 +2629,6 @@ Lists of patterns are also used in case statements.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.PatternSet\label{sec:ASTRule.PatternSet}}
-\hypertarget{build-patternset}{}
-The function
-\[
-  \buildpatternset(\overname{\parsenode{\Npatternset}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
-\begin{mathpar}
-\inferrule[not]{}{
-  {
-    \begin{array}{r}
-  \buildpatternset(\Npatternset(\Tbnot, \Tlbrace, \punnode{\Npatternlist}, \Trbrace)) \astarrow\\
-  \overname{\PatternNot(\astof{\vpatternlist})}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[list]{}{
-  \buildpatternset(\Npatternset(\Tlbrace, \punnode{\Npatternlist}, \Trbrace)) \astarrow
-  \overname{\astof{\vpatternlist}}{\vastnode}
-}
-\end{mathpar}
-
-\subsubsection{ASTRule.PatternList \label{sec:ASTRule.PatternList}}
-\hypertarget{build-patternlist}{}
-The function
-\[
-  \buildpatternlist(\overname{\parsenode{\Npatternlist}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
-\begin{mathpar}
-\inferrule{
-  \buildclist[\buildpattern](\vpatterns) \astarrow \vpatternasts
-}{
-  {
-    \begin{array}{r}
-  \buildpatternlist(\Npatternlist(\namednode{\vpatterns}{\NClist{\Npattern}})) \astarrow\\
-  \overname{\PatternAny(\vpatternasts)}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
 \subsection{Typing}
 \subsubsection{TypingRule.EPattern\label{sec:TypingRule.EPattern}}
 \subsubsection{Prose}
@@ -2693,7 +2641,7 @@ All of the following apply:
   \item define $\newe$ as the pattern expression for $\vetwo$ and the pattern $\vpatp$, that is, \\
         $\EPattern(\vetwo, \vpatp)$;
   \item define $\vses$ as the union of $\vsese$ and $\vsespat$ (there is no need to check for conflicts,
-        since the $\veone$ is evaluated before $\vpat$, see \nameref{sec:SemanticsRule.EPattern}).
+        since the $\veone$ is evaluated before $\vpat$, see \SemanticsRuleRef{EPattern}).
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
@@ -2710,14 +2658,10 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.EPattern \label{sec:SemanticsRule.EPattern}}
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.EPatternFALSE.asl}
-the expression \texttt{42 IN \{0..3, -4\}} evaluates to the value $\nvbool(\False)$.
-
-\subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.EPatternTRUE.asl}
-the expression \texttt{42 IN \{0..3, 42\}} evaluates to $\nvbool(\True)$.
+In \listingref{semantics-epattern},
+the expression \texttt{42 IN \{0..3, 42\}} evaluates to $\nvbool(\True)$
+whereas the expression \texttt{42 IN \{0..3, -4\}} evaluates to $\nvbool(\False)$.
+\ASLListing{Evaluating a pattern expression}{semantics-epattern}{\semanticstests/SemanticsRule.EPattern.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -2803,20 +2747,24 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.EArbitrary\label{sec:SemanticsRule.EArbitrary}}
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.EArbitraryInteger3.asl}
-the expression \texttt{ARBITRARY : integer} evaluates to an integer value.
+In \listingref{semantics-earbitraryunconstrained},
+the expression \verb|ARBITRARY : integer| evaluates to an arbitrary integer value.
+\ASLListing{Evaluating an \texttt{ARBITRARY} expression for an unconstrained integer}{semantics-earbitraryunconstrained}
+{\semanticstests/SemanticsRule.EArbitraryInteger3.asl}
 
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.EArbitraryIntegerRange3-42-3.asl}
-the expression \verb|ARBITRARY : integer {3, 42}| evaluates to either $\nvint(3)$ or $\nvint(42)$.
+In \listingref{semantics-earbitraryconstrained},
+the expression \verb|ARBITRARY : integer {3, 42}| evaluates to either \\
+$\nvint(3)$ or $\nvint(42)$.
+\ASLListing{Evaluating an \texttt{ARBITRARY} expression for a constrained integer}{semantics-earbitraryconstrained}
+{\semanticstests/SemanticsRule.EArbitraryIntegerRange3-42-3.asl}
 
 \subsubsection{Example}
-The specification:
-\ASLExample{\semanticstests/SemanticsRule.EArbitraryArray.asl}
+\listingref{semantics-earbitraryarray}
 demonstrates how to obtain an arbitrary integer-indexed array, \texttt{int\_array},
 and how to obtain an arbitrary enumeration-indexed array, \texttt{enum\_array}.
+\ASLListing{Evaluating an \texttt{ARBITRARY} expression for array types}{semantics-earbitraryarray}
+{\semanticstests/SemanticsRule.EArbitraryArray.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -3021,10 +2969,10 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.ERecord \label{sec:SemanticsRule.ERecord}}
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.ERecord.asl}
+In \listingref{semantics-erecord},
 the expression \verb|MyRecordType{a=3, b=42}| evaluates to the native record value \\
 $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
+\ASLListing{Evaluating a record construction expression}{semantics-erecord}{\semanticstests/SemanticsRule.ERecord.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -3081,7 +3029,7 @@ One of the following applies:
   \item All of the following apply (\textsc{parenthesized}):
   \begin{itemize}
     \item $\ve$ denotes a tuple expression with list of expressions consisting solely of $\vep$, that is, $\ETuple([\vep])$,
-          meaning it represents a parenthesized expression (see \nameref{sec:ASTRule.ParenExpr});
+          meaning it represents a parenthesized expression (see \ASTRuleRef{ParenExpr});
     \item annotating $\vep$ in $\tenv$ yields $(\vt, \newe, \vses)$\ProseOrTypeError.
   \end{itemize}
 
@@ -3119,9 +3067,9 @@ One of the following applies:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.ETuple \label{sec:SemanticsRule.ETuple}}
 \subsubsection{Example}
-In the specification:
-\ASLExample{\semanticstests/SemanticsRule.ETuple.asl}
+In \listingref{semantics-etuple},
 the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
+\ASLListing{Evaluating a tuple expression}{semantics-etuple}{\semanticstests/SemanticsRule.ETuple.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -3145,7 +3093,7 @@ All of the following apply:
 A single expression inside parentheses is not considered to be a tuple, but rather the element
 inside the parenthesis.
 Parenthesizing an expression can be used to improve readability, enforce an order of evaluation,
-and avoid binary operator precedence errors (see \nameref{sec:ASTRule.CheckNotSamePrec}).
+and avoid binary operator precedence errors (see \ASTRuleRef{CheckNotSamePrec}).
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -3154,9 +3102,9 @@ and avoid binary operator precedence errors (see \nameref{sec:ASTRule.CheckNotSa
 
 \subsection{Abstract Syntax}
 We represent a parenthesized expression as a single element tuple for the technical
-reason of enabling \nameref{sec:ASTRule.CheckNotSamePrec} by distinguishing parenthesized
+reason of enabling \ASTRuleRef{CheckNotSamePrec} by distinguishing parenthesized
 expressions from non-parenthesized expressions. However, upon typing such expressions,
-we ignore the parenthesis (see \nameref{sec:TypingRule.ETuple}.\textsc{PARENTHESIZED}).
+we ignore the parenthesis (see \TypingRuleRef{ETuple}.\textsc{PARENTHESIZED}).
 
 \subsubsection{ASTRule.ParenExpr\label{sec:ASTRule.ParenExpr}}
 \begin{mathpar}

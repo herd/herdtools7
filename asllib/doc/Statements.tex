@@ -105,9 +105,8 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SPass \label{sec:SemanticsRule.SPass}}
 \subsubsection{Example}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SPass.asl}
-\texttt{pass;} does nothing.
+In \listingref{semantics-spass}, \texttt{pass;} does nothing.:
+\ASLListing{Evaluating a \texttt{pass} statement}{semantics-spass}{\semanticstests/SemanticsRule.SPass.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -173,10 +172,10 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SAssign \label{sec:SemanticsRule.SAssign}}
 \subsubsection{Example}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssign.asl}
+In \listingref{semantics-sassign},
 \texttt{x = 3;} binds \texttt{x} to $\nvint(3)$ in the environment where \texttt{x} is bound to
 $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
+\ASLListing{Evaluating an assignment}{semantics-sassign}{\semanticstests/SemanticsRule.SAssign.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -204,7 +203,7 @@ All of the following apply:
 \subsubsection{Comments}
 This rule covers all assignment statements, except the ones where the
 right-hand side expression is a function call, which is covered by
-\nameref{sec:SemanticsRule.SAssignCall}.  Although
+\SemanticsRuleRef{SAssignCall}.  Although
 the sequential semantics of both statements is the same,
 SemanticsRule.SAssignCall generates a different execution graph.
 
@@ -215,16 +214,18 @@ etc.
 
 \subsubsection{SemanticsRule.SAssignCall \label{sec:SemanticsRule.SAssignCall}}
 \subsubsection{Example}
-\VerbatimInput{\semanticstests/SemanticsRule.SAssignCall.asl}
-given that the function call \texttt{f(1)} returns a pair of values --- $\nvint(1)$ and $\nvint(2)$
+In \listingref{assigncallsemantics}, given that the function call \texttt{f(1)} returns a triple of values ---
+$\nvint(1)$, $\nvint(2)$, and $\nvint(3)$
 (each with its own associated execution graph),
-the statement \texttt{(a,b) = f(1)} assigns the value $\nvint(1)$ to the mutable variable \texttt{a}
-and the value $\nvint(2)$ to the mutable variable~\texttt{b}.
+the statement \texttt{(a,b,-) = f(1)} assigns the value $\nvint(1)$ to the mutable variable \texttt{a}
+and the value $\nvint(2)$ to the mutable variable~\texttt{b}, and discards $\nvint(3)$.
+
+\ASLListing{Assignment from a call expression.}{assigncallsemantics}{\semanticstests/SemanticsRule.SAssignCall.asl}
 
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item $\vs$ assigns a \assignableexpression\ list from a subprogram call, \\
+  \item $\vs$ assigns an \assignableexpression\ list from a subprogram call, \\
         $\SAssign(\LEDestructuring(\les),\ECall(\vcall))$;
   \item $\les$ is a list of \assignableexpressions, each of which is either \\ a variable ($\LEVar(\Ignore)$)
         or a discarded variable (\LEDiscard);
@@ -241,11 +242,9 @@ We first define the syntactic predicate
   \lexprisvar(\lexpr) \aslto \True
 \]
 which holds when a left-hand side expression
-represents a variable:
+represents a variable or a discarded left-hand-side expression:
 \begin{mathpar}
-  \inferrule{}{ \lexprisvar(\LEVar(\Ignore)) \evalarrow \True}
-  \and
-  \inferrule{}{ \lexprisvar(\LEDiscard) \evalarrow \False}
+\inferrule{}{ \lexprisvar(\vle) \evalarrow \astlabel(\vle) \in \{\LEVar, \LEDiscard\}}
 \end{mathpar}
 
 We now define the evaluation of assigning from a subprogram call:
@@ -761,14 +760,14 @@ One of the following applies:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SDeclSome\label{sec:SemanticsRule.SDeclSome}}
 \subsubsection{Example (Declaration With an Initializing Value)}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SDeclSome.asl}
+In \listingref{semantics-sdeclsome},
 \texttt{let x = 3;} binds \texttt{x} to $\nvint(3)$ in the empty environment.
+\ASLListing{Evaluating a declaration with a given initial value}{semantics-sdeclsome}{\semanticstests/SemanticsRule.SDeclSome.asl}
 
 \subsubsection{Example (Declaration Without an Initializing Value)}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SDeclNone.asl}
+In \listingref{semantics-sdeclnone},
 \texttt{var x : integer;} binds \texttt{x} in $\env$ to the base value of \texttt{integer}.
+\ASLListing{Evaluating a declaration without a given initial value}{semantics-sdeclnone}{\semanticstests/SemanticsRule.SDeclNone.asl}
 
 \subsubsection{Prose}
 One of the following applies:
@@ -1044,9 +1043,10 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SSeq\label{sec:SemanticsRule.SSeq}}
 \subsubsection{Example}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SSeq.asl}
-\texttt{let x = 3; let y = x + 1} evaluates \texttt{let x = 3} then \texttt{let y = x + 1}.
+In \listingref{semantics-sseq},
+the evaluation of \texttt{let x = 3; let y = x + 1} first evaluates \texttt{let x = 3} and only then
+evaluates \texttt{let y = x + 1}.
+\ASLListing{Evaluating a sequence of statements}{semantics-sseq}{\semanticstests/SemanticsRule.SSeq.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -1133,9 +1133,9 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SCall\label{sec:SemanticsRule.SCall}}
 \subsubsection{Example}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCall.asl}
-\texttt{Zeros(3)} evaluates to \texttt{'000'}.
+In \listingref{semantics-scall},
+\verb|Zeros{3}| evaluates to \texttt{'000'}.
+\ASLListing{Evaluating a call statement}{semantics-scall}{\semanticstests/SemanticsRule.SCall.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -1248,21 +1248,19 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SCond\label{sec:SemanticsRule.SCond}}
 \subsubsection{Examples}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond.asl}
-does not result in any Assertion Error.
+The specification in \listingref{semantics-scond} does not result in any Assertion Error.
+\ASLListing{Evaluating a conditional statement}{semantics-scond}{\semanticstests/SemanticsRule.SCond.asl}
 
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond2.asl}
+The specification in \listingref{semantics-scond2}
 does not result in any error.
+\ASLListing{Evaluating a condition statement with \texttt{elsif}}{semantics-scond2}{\semanticstests/SemanticsRule.SCond2.asl}
 
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond3.asl}
+The specification in \listingref{semantics-scond3}
 results in an Assertion Error.
+\ASLListing{Evaluating a condition statement that results in an Assertion Error}{semantics-scond3}{\semanticstests/SemanticsRule.SCond3.asl}
 
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SCond4.asl}
-does not result in any error.
+The specification in \listingref{semantics-scond4} does not result in any error.
+\ASLListing{Evaluating a condition statement with only a \texttt{then} branch}{semantics-scond4}{\semanticstests/SemanticsRule.SCond4.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -1318,7 +1316,7 @@ optionally ending with an \emph{\otherwisecaseterm}, which follows the \Totherwi
 Case statements are considered syntactic sugar and are \emph{desugared}.
 That is, they are transformed into an untyped AST node that does not have
 an explicit representation for \texttt{case} statements.
-This is achieved via \nameref{sec:ASTRule.DesugarCaseStmt},
+This is achieved via \ASTRuleRef{DesugarCaseStmt},
 which obeys the following requirements:
 \RequirementDef{CaseDiscriminant} The \casediscriminantterm\ of a \texttt{case}
 statement should be evaluated only once each time the case statement is evaluated.
@@ -1616,14 +1614,15 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SAssert \label{sec:SemanticsRule.SAssert}}
 \subsubsection{Example}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssertOk.asl}
+In \listingref{semantics-sasertok},
 \texttt{assert (42 != 3);} ensures that \texttt{3} is not equal to \texttt{42}.
+\ASLListing{Evaluating an assertion that succeeds}{semantics-sasertok}{\semanticstests/SemanticsRule.SAssertOk.asl}
 
 \subsubsection{Example}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SAssertNo.asl}
-\texttt{assert (42 == 3);} results in an \texttt{AssertionFailed} error.
+In \listingref{semantics-sassertno},
+evaluating \texttt{assert (42 == 3);} results in an \texttt{AssertionFailed} error.
+\ASLListing{Evaluating an assertion that fails}{semantics-sassertno}{\semanticstests/SemanticsRule.SAssertNo.asl}
+
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1732,7 +1731,7 @@ All of the following apply:
 \item annotating the right-hand-side expression $\veone$ in $\tenv$ yields $(\vt, \vetwo, \vsese)$\ProseOrTypeError;
 \item annotating the optional limit expression $\vlimitone$ via $\annotatelimitexpr$ in $\tenv$ yields $(\vlimittwo, \vseslimit)$\ProseOrTypeError;
 \item checking that $\vt$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
-\item annotating $\vsone$ as a block statement as per \nameref{sec:TypingRule.Block} in $\tenv$ yields \\
+\item annotating $\vsone$ as a block statement as per \TypingRuleRef{Block} in $\tenv$ yields \\
       $(\vstwo, \vsesblock)$\ProseOrTypeError;
 \item $\news$ is a \texttt{while} statement with expression $\vetwo$, optional limit expression $\vlimittwo$,
       and statement block $\vstwo$, that is, $\SWhile(\vetwo, \vstwo)$;
@@ -1806,9 +1805,8 @@ One of the following applies:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SWhile \label{sec:SemanticsRule.SWhile}}
 \subsubsection{Example}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SWhile.asl}
-prints \texttt{0123}.
+The specification in \listingref{semantics-swhile} prints \texttt{0123}.
+\ASLListing{Evaluating a \texttt{while} loop}{semantics-swhile}{\semanticstests/SemanticsRule.SWhile.asl}
 
 \subsubsection{Prose}
 Evaluation of the statement $\vs$ in an environment $\env$ is
@@ -1817,7 +1815,7 @@ the output configuration $C$ and all of the following apply:
   \item $\vs$ is a \texttt{while} statement, $\SWhile(\ve, \velimitopt, \vbody)$;
   \item evaluating the optional limit expression $\velimitopt$ via $\evallimit$ in $\env$
         yields $(\vlimitopt, \vgone)$\ProseOrError;
-  \item evaluating the loop as per \nameref{sec:SemanticsRule.Loop} in an environment $\env$,
+  \item evaluating the loop as per \SemanticsRuleRef{Loop} in an environment $\env$,
   with the arguments $\True$ (which conveys that this is a \texttt{while} statement), $\vlimitopt$, $\ve$, and $\vbody$
   yields the (non-error configuration) $C$\ProseOrError;
   \item $\vgtwo$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge;
@@ -1868,10 +1866,9 @@ The result is either the continuing configuration \\ $\Continuing(\newg,\newenv)
 an early return configuration, or an abnormal configuration.
 
 \subsubsection{Example}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Loop.asl}
-does not result in any Assertion Error and the specification terminates with exit
-code $0$.
+The specification in \listingref{semantics-loop} does not result in any Assertion Error
+and the specification terminates with exit code $0$.
+\ASLListing{Evaluating a loop}{semantics-loop}{\semanticstests/SemanticsRule.Loop.asl}
 
 \CodeSubsection{\EvalLoopBegin}{\EvalLoopEnd}{../Interpreter.ml}
 \subsubsection{Prose}
@@ -1891,7 +1888,7 @@ One of the following applies:
     \item $\mcond$ consists of a native Boolean for $\vb$ and an execution graph $\vgone$;
     \item $\vb$ is equal to $\iswhile$;
     \item \Proseticklooplimit{$\vlimitopt$}{$\vlimitoptp$}\ProseOrError;
-    \item evaluating $\vbody$ in $\envone$ as per \nameref{sec:SemanticsRule.Block} is either \\
+    \item evaluating $\vbody$ in $\envone$ as per \SemanticsRuleRef{Block} is either \\
     $\Continuing(\vgtwo, \envtwo)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
     \item evaluating $(\iswhile, \vlimitoptp, \econd, \vbody)$ in $\envtwo$ as a loop is \\
     $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
@@ -1950,7 +1947,7 @@ the optional integer value $\vvopt$ and execution graph $\vg$.
 
 The evaluation uses the function $\evalexprsef$ because limit expressions are
 guaranteed side-effect-free by the type-checker,
-see \nameref{sec:TypingRule.AnnotateLimitExpr}.
+see \TypingRuleRef{AnnotateLimitExpr}.
 
 \subsubsection{Prose}
 One of the following applies:
@@ -2078,7 +2075,7 @@ All of the following apply:
 \begin{itemize}
   \item $\vs$ is a \texttt{repeat} statement with statement block $\vsone$,
         optional limit expression $\vlimitone$, and expression $\veone$, that is, $\SRepeat(\vsone, \veone, \vlimitone)$;
-  \item annotating $\vsone$ as a block statement per \nameref{sec:TypingRule.Block} in $\tenv$ yields $(\vstwo, \vsesblock)$\ProseOrTypeError;
+  \item annotating $\vsone$ as a block statement per \TypingRuleRef{Block} in $\tenv$ yields $(\vstwo, \vsesblock)$\ProseOrTypeError;
   \item annotating the optional limit expression $\vlimitone$ via $\annotatelimitexpr$ in $\tenv$ yields $(\vlimittwo, \vseslimit)$\ProseOrTypeError;
   \item annotating the right-hand-side expression $\veone$ in $\tenv$ yields $(\vt, \vetwo, \vsese)$\ProseOrTypeError;
   \item checking that $\vt$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
@@ -2106,15 +2103,14 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SRepeat \label{sec:SemanticsRule.SRepeat}}
 \subsubsection{Example}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SRepeat.asl}
-prints
+The specification in \listingref{semantics-srepeat} prints
 \begin{Verbatim}
   0
   1
   2
   3
 \end{Verbatim}
+\ASLListing{Evaluating a \texttt{repeat} loop}{semantics-srepeat}{\semanticstests/SemanticsRule.SRepeat.asl}
 
 \subsubsection{Prose}
 Evaluation of the statement $\vs$ in an environment $\env$ is
@@ -2415,20 +2411,19 @@ One of the following applies:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SFor\label{sec:SemanticsRule.SFor}}
 Evaluating a \texttt{for} statement involves introducing an index variable to the
-environment. The type system ensures, via \nameref{sec:TypingRule.SFor}, that the index variable
+environment. The type system ensures, via \TypingRuleRef{SFor}, that the index variable
 is not already declared in the scope of the subprogram containing the \texttt{for}
 statement.
 
 \subsubsection{Example}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SFor.asl}
-prints
+The specification in \listingref{semantics-sfor} prints
 \begin{Verbatim}
   0
   1
   2
   3
 \end{Verbatim}
+\ASLListing{Evaluating a \texttt{for} loop}{semantics-sfor}{\semanticstests/SemanticsRule.SFor.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -2448,7 +2443,7 @@ All of the following apply:
   \item \Proseevallimit{$\env$}{$\velimitopt$}{$\Normal(\vlimitopt, \vgthree)$}\ProseOrError;
   \item declaring the local identifier $\vindexname$ in $\env$ with value $\vstartv$ is $(\vgfour, \envone)$;
   \item evaluating the \texttt{for} loop with arguments $(\vindexname, \vlimitopt, \vstartv, \dir, \vendv, \vbody)$ in $\envone$,
-        as per \nameref{sec:SemanticsRule.EvalFor} yields $\Normal(\vgfive, \envtwo)$\ProseOrAbnormal;
+        as per \SemanticsRuleRef{EvalFor} yields $\Normal(\vgfive, \envtwo)$\ProseOrAbnormal;
   \item removing the local $\vindexname$ from $\envtwo$ is $\envthree$;
   \item $\newg$ is formed as follows:
         the parallel composition of $\vgone$, $\vgtwo$, and $\vgthree$;
@@ -2459,7 +2454,7 @@ All of the following apply:
 \end{itemize}
 \subsubsection{Formally}
 Recall that the expressions for the \texttt{for} loop range are
-side-effect-free, as guaranteed by \nameref{sec:TypingRule.SFor}, which is why
+side-effect-free, as guaranteed by \TypingRuleRef{SFor}, which is why
 they are evaluated via the rule for evaluating side-effect-free expressions.
 \begin{mathpar}
 \inferrule{
@@ -2580,7 +2575,7 @@ All of the following apply:
 \subsubsection{Running the Loop Body}
 All of the following apply:
 \begin{itemize}
-  \item evaluating $\vbody$ as a block statement (see \nameref{sec:SemanticsRule.Block}) in $\env$
+  \item evaluating $\vbody$ as a block statement (see \SemanticsRuleRef{Block}) in $\env$
         yields \\ $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
   \item stepping the index $\vindexname$ with $\vstart$ and the direction $\dir$ in $\envone$,
         that is, $\evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir)$ yields \\
@@ -2593,9 +2588,8 @@ All of the following apply:
 
 \subsubsection{Overall Evaluation}
 \subsubsection{Example}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.For.asl}
-does not result in any assertion error, and the specification terminates with exit-code $0$.
+The specification in \listingref{semantics-sfor}
+does not result in any assertion error, and terminates with exit-code $0$.
 
 Evaluating $(\vindexname, \vstart, \dir, \vend, \vbody)$ in $\env$ is either
 a continuing configuration $\Continuing(\newg, \newenv)$ or a returning configuration
@@ -2789,15 +2783,18 @@ One of the following applies:
 
 \subsection{Semantics}
 subsubsection{SemanticsRule.SThrow\label{sec:SemanticsRule.SThrow}}
-\subsubsection{Example (Throwing Without an Exception)}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SThrowNone.asl}
-throws a \texttt{MyException} exception.
+\subsubsection{Example (Rethrowing an Exception)}
+The specification in \listingref{semantics-sthrownone}
+first catches the exception raised by \\
+\verb|throw MyExceptionType{a=42}|
+and then raises it in the catch clause via \verb|throw;|,
+catching it again in the outer \texttt{try-catch} statement.
+\ASLListing{Rethrowing an exception}{semantics-sthrownone}{\semanticstests/SemanticsRule.SThrowNone.asl}
 
 \subsubsection{Example (Throwing a Typed Exception)}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SThrowSomeTyped.asl}
+The specification in \listingref{semantics-sthrowsometyped}
 terminates successfully. That is, no dynamic error occurs.
+\ASLListing{Throwing an exception}{semantics-sthrowsometyped}{\semanticstests/SemanticsRule.SThrowSomeTyped.asl}
 
 \subsubsection{Prose}
 One of the following applies:
@@ -2848,7 +2845,10 @@ One of the following applies:
 \section{Try Statements\label{sec:TryStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derives \ & \Ttry \parsesep \Nstmtlist \parsesep \Tcatch \parsesep \nonemptylist{\Ncatcher} \parsesep \Notherwiseopt \parsesep \Tend \parsesep \Tsemicolon &
+\Nstmt \derives \ & \Ttry \parsesep \Nstmtlist \parsesep \Tcatch \parsesep \nonemptylist{\Ncatcher} \parsesep \Notherwiseopt &\\
+                  & \wrappedline\ \parsesep \Tend \parsesep \Tsemicolon &\\
+\Notherwiseopt \derives\ & \Totherwise \parsesep \Tarrow \parsesep \Nstmtlist &\\
+               |\ & \emptysentence &\\
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -2874,6 +2874,34 @@ One of the following applies:
   \overname{\STry(\astof{\vstmtlist}, \astversion{\vcatcherlist}, \astof{\votherwiseopt})}{\vastnode}
 \end{array}
 }
+}
+\end{mathpar}
+
+\subsubsection{ASTRule.OtherwiseOpt}
+\hypertarget{build-otherwiseopt}{}
+The function
+\[
+   \buildotherwiseopt(\overname{\parsenode{\Notherwiseopt}}{\vparsednode}) \aslto
+    \overname{\langle\stmt\rangle}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \buildstmtlist(\vstmts) \astarrow \astversion{\vstmts}
+}{
+  {
+  \begin{array}{r}
+    \buildotherwiseopt(\overname{\Notherwiseopt(\Totherwise, \Tarrow, \namednode{\vstmts}{\Nstmtlist})}{\vparsednode}) \astarrow\\
+    \astversion{\vstmts}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[empty]{}{
+  \buildotherwiseopt(\overname{\Notherwiseopt(\emptysentence)}{\vparsednode}) \astarrow \None
 }
 \end{mathpar}
 
@@ -2955,9 +2983,9 @@ All of the following apply:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.STry \label{sec:SemanticsRule.STry}}
 \subsubsection{Example}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.STry.asl}
+Evaluating the specification in \listingref{semantics-stry}
 does not result in any Assertion error, and the specification terminates with the exit code $0$.
+\ASLListing{Evaluating a \texttt{try} statement}{semantics-stry}{\semanticstests/SemanticsRule.STry.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -3071,19 +3099,19 @@ One of the following applies:
 \subsection{Semantics}
 \subsubsection{SemanticsRule.SReturn\label{sec:SemanticsRule.SReturn}}
 \subsubsection{Example (No Return Value)}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnNone.asl}
-exits the current procedure.
+The specification in \listingref{semantics-sreturn} exits the procedure \texttt{println\_me}
+by evaluating the \texttt{return;} statement.
+\ASLListing{Evaluating a \texttt{return} statement with no value}{semantics-sreturn}{\semanticstests/SemanticsRule.SReturnNone.asl}
 
 \subsubsection{Example (Returning a Single Value)}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnOne.asl}
-\texttt{return 3;} exits the current subprogram with value \texttt{3}.
+In \listingref{semantic-ssreturnone},
+\texttt{return 3;} exits the function \texttt{f} with value \texttt{3}.
+\ASLListing{Evaluating a \texttt{return} statement with a single value}{semantic-ssreturnone}{\semanticstests/SemanticsRule.SReturnOne.asl}
 
-\subsubsection{Example (Returning Multiple Values)}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SReturnSome.asl}
-\texttt{return (3, 42);} exits the current subprogram with value \texttt{(3, 42)}.
+\subsubsection{Example (Returning a Tuple of Values)}
+In \listingref{semantics-sreturntuple},
+\texttt{return (3, 42);} exits the function \texttt{f} with the value \texttt{(3, 42)}.
+\ASLListing{Evaluating a \texttt{return} statement with a tuple of values}{semantics-sreturntuple}{\semanticstests/SemanticsRule.SReturnSome.asl}
 
 \subsubsection{Prose}
 One of the following applies:

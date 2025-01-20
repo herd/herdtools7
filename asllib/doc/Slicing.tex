@@ -6,9 +6,9 @@ is given by a list of $\slice$ AST nodes.
 %
 The function $\buildslices$ builds the AST for a list of slices.
 %
-The function $\annotateslices$ (see \nameref{sec:TypingRule.Slices}) annotates a list of slices.
+The function $\annotateslices$ (see \TypingRuleRef{Slices}) annotates a list of slices.
 %
-The relation $\evalslices$ (see \nameref{sec:SemanticsRule.Slices}) evaluates a list of slices.
+The relation $\evalslices$ (see \SemanticsRuleRef{Slices}) evaluates a list of slices.
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -127,9 +127,9 @@ $\slices$.
 An individual slice construct is grammatically derived from $\Nslice$ and
 represented as an AST by $\slice$.
 %
-The function $\buildslice$ (see \nameref{sec:ASTRule.Slice}) builds the AST for an individual slice construct.
+The function $\buildslice$ (see \ASTRuleRef{Slice}) builds the AST for an individual slice construct.
 %
-the function $\annotateslice$ (see \nameref{sec:TypingRule.Slice}) annotates a single slice.
+the function $\annotateslice$ (see \TypingRuleRef{Slice}) annotates a single slice.
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -442,25 +442,23 @@ resulting either in \\
 $\Normal(((\vstart, \vlength), \vg), \newenv)$, a throwing configuration, or a dynamic error configuration.
 
 \subsubsection{Example (Single Slice)}
-In the specification:
-  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceSingle.asl}
-the slice \texttt{[2]} evaluates to \texttt{(2, 1)}, i.\,e.\ the slice of
+In \listingref{semantics-slicesingle},
+the slice \texttt{[2]} evaluates to \texttt{(2, 1)}, that is, the slice of
 length 1 starting at index 2.
+\ASLListing{A single expression slice}{semantics-slicesingle}{\semanticstests/SemanticsRule.SliceSingle.asl}
 
 \subsubsection{Example (Range Slice)}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceRange.asl}
-\texttt{4:2} evaluates to \texttt{(2, 3)}.
+In \listingref{semantics-slicerange}, \texttt{4:2} evaluates to \texttt{(2, 3)}.
+\ASLListing{A range slice}{semantics-slicerange}{\semanticstests/SemanticsRule.SliceRange.asl}
 
 \subsubsection{Example (Length Slice)}
-In the specification:
-  \VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceLength.asl}
-\texttt{2+:3} evaluates to \texttt{(2, 3)}.
+In \listingref{semantics-slicelength}, \texttt{2+:3} evaluates to \texttt{(2, 3)}.
+\ASLListing{A slice by length}{semantics-slicelength}{\semanticstests/SemanticsRule.SliceLength.asl}
 
 \subsubsection{Example (Scaled Slice)}
-In the specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.SliceStar.asl}
+In \listingref{semantics-scaledslice},
 \texttt{x[3*:2]} evaluates to \texttt{'11'}.
+\ASLListing{A scaled lice}{semantics-scaledslice}{\semanticstests/SemanticsRule.SliceStar.asl}
 
 \subsubsection{Prose}
 One of the following applies:

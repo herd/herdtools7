@@ -112,6 +112,7 @@ module SemanticsRule = struct
     | ReadValueFrom
     | BuildGlobalEnv
     | IsConstraintSat
+    | AssignArgs
 
   let to_string : t -> string = function
     | ELit -> "ELit"
@@ -202,6 +203,7 @@ module SemanticsRule = struct
     | ReadValueFrom -> "ReadValueFrom"
     | BuildGlobalEnv -> "BuildGlobalEnv"
     | IsConstraintSat -> "IsConstraintSat"
+    | AssignArgs -> "AssignArgs"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -295,6 +297,7 @@ module SemanticsRule = struct
       ReadValueFrom;
       BuildGlobalEnv;
       IsConstraintSat;
+      AssignArgs;
     ]
 
   let all_nb = List.length all

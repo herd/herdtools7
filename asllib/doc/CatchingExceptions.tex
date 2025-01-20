@@ -58,14 +58,14 @@ to the global environment made by evaluating the try-block statement.
 %
 We demonstrate this with the following example.
 
-Consider the following specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/EvalCatchers.asl}
+\ASLListing{Semantics of exception catching}{semantics-evalcatchers}{\semanticstests/EvalCatchers.asl}
 
-Here, the try-block statement consists of the single statement \texttt{update\_and\_throw();}.
-Evaluating the call to \texttt{update\_and\_throw} employs an environment $\env$ where
+In \listingref{semantics-evalcatchers}, the statement \verb|update_and_throw();|
+makes up the whole try-block.
+Evaluating the call to \verb|update_and_throw| employs an environment $\env$ where
 \texttt{g} is bound to $0$.
-Notice that the call to \texttt{update\_and\_throw} binds \texttt{g} to $1$ before raising an exception.
-Therefore, evaluating the call to \texttt{update\_and\_throw} returns a configuration
+Notice that the call to \verb|update_and_throw| binds \texttt{g} to $1$ before raising an exception.
+Therefore, evaluating the call to \verb|update_and_throw| returns a configuration
 of the form
 $\Throwing(\Ignore, \envthrow)$ where $\envthrow$ binds \texttt{g} to $1$.
 When the catch clause is evaluated the semantics takes the global environment from $\envthrow$
@@ -204,9 +204,9 @@ One of the following applies:
 \section{Semantics}
 \subsubsection{SemanticsRule.Catch\label{sec:SemanticsRule.Catch}}
 \subsubsection{Example}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.Catch.asl}
-terminates successfully. That is, no dynamic error occurs.
+The specification in \listingref{semantics-catch} terminates successfully.
+That is, no dynamic error occurs.
+\ASLListing{Catching an exception}{semantics-catch}{\semanticstests/SemanticsRule.Catch.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -242,9 +242,8 @@ All of the following apply:
 
 \subsubsection{SemanticsRule.CatchNamed\label{sec:SemanticsRule.CatchNamed}}
 \subsubsection{Example}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNamed.asl}
-prints \texttt{My exception with my message}.
+The specification in \listingref{semantics-catchnamed}, prints \texttt{My exception with my message}.
+\ASLListing{Catching a named exception}{semantics-catchnamed}{\semanticstests/SemanticsRule.CatchNamed.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -291,9 +290,8 @@ All of the following apply:
 
 \subsubsection{SemanticsRule.CatchOtherwise\label{sec:SemanticsRule.CatchOtherwise}}
 \subsubsection{Example}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchOtherwise.asl}
-prints \texttt{Otherwise}.
+The specification in \listingref{semantics-catchotherwise} prints \texttt{Otherwise}.
+\ASLListing{Catching an exception with \texttt{otherwise}}{semantics-catchotherwise}{\semanticstests/SemanticsRule.CatchOtherwise.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -331,9 +329,10 @@ All of the following apply:
 
 \subsubsection{SemanticsRule.CatchNone\label{sec:SemanticsRule.CatchNone}}
 \subsubsection{Example}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNone.asl}
-does not print anything.
+The specification in \listingref{semantics-catchnone} does not print anything.
+It shows how a \texttt{try} statement (the inner one) may not have a \texttt{catch} clause
+that matches the exception type (\texttt{MyExceptionType1}).
+\ASLListing{A catch clause that does not match a thrown exception type}{semantics-catchnone}{\semanticstests/SemanticsRule.CatchNone.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -360,9 +359,8 @@ All of the following apply:
 
 \subsubsection{SemanticsRule.CatchNoThrow\label{sec:SemanticsRule.CatchNoThrow}}
 \subsubsection{Example}
-The specification:
-\VerbatimInput{../tests/ASLSemanticsReference.t/SemanticsRule.CatchNoThrow.asl}
-prints \texttt{No exception raised}.
+The specification in \listingref{semantics-nothrow} prints \texttt{No exception raised}.
+\ASLListing{A \texttt{try} statement that does not raise an exception}{semantics-nothrow}{\semanticstests/SemanticsRule.CatchNoThrow.asl}
 
 \subsubsection{Prose}
 all of the following apply:

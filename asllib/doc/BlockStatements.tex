@@ -1,6 +1,17 @@
 \chapter{Block Statements\label{chap:BlockStatements}}
 Block statements are statements executing in their own scope within the scope of their enclosing subprogram.
 
+\subsubsection{Example}
+In \listingref{block},
+the conditional statement \verb|if TRUE then ... end;| defines a
+block structure. Thus, the scope of the declaration \texttt{let y = 2;} is
+limited to its declaring block---or the binding for \texttt{y} no longer exists
+once the block is exited. As a consequence, the subsequent declaration
+\texttt{let y = 1} is valid.  By contrast, the assignment of the mutable
+variable~\texttt{x} persists after block end. However, observe that \texttt{x}
+is defined before the block and hence still exists after the block.
+\ASLListing{A conditional statement defining a block structure}{block}{\semanticstests/SemanticsRule.Block.asl}
+
 \section{Typing\label{sec:BlockStatementsTyping}}
 \hypertarget{def-annotateblock}{}
 The function
@@ -13,9 +24,6 @@ statement $\newstmt$ and inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 \subsubsection{TypingRule.Block\label{sec:TypingRule.Block}}
-\subsubsection{Example}
-\VerbatimInput{../tests/ASLTypingReference.t/TypingRule.Block0.asl}
-
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -56,17 +64,6 @@ evaluates a statement $\stm$ as a \emph{block}. That is, $\stm$ is evaluated in 
 which drops back to the original local environment of $\env$ when the evaluation terminates.
 
 \subsubsection{SemanticsRule.Block\label{sec:SemanticsRule.Block}}
-\subsubsection{Example}
-In the specification:
-\VerbatimInput{\semanticstests/SemanticsRule.Block.asl}
-the conditional statement \texttt{if TRUE then\ldots{} end;} defines a
-block structure. Thus, the scope of the declaration \texttt{let y = 2;} is
-limited to its declaring block---or the binding for \texttt{y} no longer exists
-once the block is exited. As a consequence, the subsequent declaration
-\texttt{let y = 1} is valid.  By contrast, the assignment of the mutable
-variable~\texttt{x} persists after block end. However, observe that \texttt{x}
-is defined before the block and hence still exists after the block.
-
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}

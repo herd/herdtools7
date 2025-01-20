@@ -5,12 +5,12 @@
 \hypertarget{def-binopprecedence}{}
 \item[$\BinopPrecedence$]
 This error indicates that a compound binary expression consists of two associative binary
-operators of the same precedence, without the use of parenthesis (see \nameref{sec:ASTRule.CheckNotSamePrec}).
+operators of the same precedence, without the use of parenthesis (see \ASTRuleRef{CheckNotSamePrec}).
 
 \hypertarget{def-expectedbitvectortype}{}
 \item[$\ExpectedBitvectorType$]
 This error indicates that a bitvector type was expected where a non-bitvector type was given.
-See \typingrulecasename{ApplyBinopTypes}{plus\_minus\_bits\_bits} (\nameref{sec:TypingRule.ApplyBinopTypes}) for an example.
+See \typingrulecasename{ApplyBinopTypes}{plus\_minus\_bits\_bits} (\TypingRuleRef{ApplyBinopTypes}) for an example.
 
 \hypertarget{def-expectedenumerationtype}{}
 \item[$\ExpectedEnumerationType$]
@@ -46,7 +46,7 @@ See TypingRule.SubprogramForName (\secref{TypingRule.SubprogramForName}) for an 
 This error indicates an attempt to declare an identifier where it has already been declared.
 The context makes it clear whether this error relates to the local static environment or to the
 entire static environment.
-See \nameref{sec:TypingRule.CheckVarNotInEnv} and \nameref{sec:TypingRule.CheckVarNotInGEnv}.
+See \TypingRuleRef{CheckVarNotInEnv} and \TypingRuleRef{CheckVarNotInGEnv}.
 
 \hypertarget{def-lengthsmismatch}{}
 \item[$\LengthsMismatch$]
@@ -72,7 +72,7 @@ See \secref{TypingRule.SubprogramForName} for an example.
 \hypertarget{def-badparameterdecl}{}
 \item[$\BadParameterDecl$]
 A subprogram has an invalid declaration of its parameters.\\
-See \nameref{sec:TypingRule.CheckParamDecls} for an example.
+See \TypingRuleRef{CheckParamDecls} for an example.
 
 \hypertarget{def-nolca}{}
 \item[$\NoLCA$]
@@ -185,74 +185,74 @@ See \textsc{TypingRule.CheckPositionsInWidth} (\secref{TypingRule.CheckPositions
 \hypertarget{def-bso}{}
 \item[$\BitfieldSlicesOverlap$]
 This error indicates that two bitfield slices defined for a bitvector type have overlapping ranges.
-This is checked by \nameref{sec:TypingRule.DisjointSlicesToPositions}.
+This is checked by \TypingRuleRef{DisjointSlicesToPositions}.
 
 \hypertarget{def-bsr}{}
 \item[$\BitfieldSliceReversed$]
 This error indicates that a bitfield slice is defined such that its upper position is less than its lower position.
-This is checked by \nameref{sec:TypingRule.BitfieldSliceToPositions}.
+This is checked by \TypingRuleRef{BitfieldSliceToPositions}.
 
 \hypertarget{def-icc}{}
 \item[$\IntConstantExpected$]
 This error indicates that a given expression was expected to statically evaluate
 to an integer-typed literal but either evaluated to a literal of a different type
 or could not be statically evaluated to a literal.
-This is checked by \nameref{sec:TypingRule.BitfieldSliceToPositions}.
+This is checked by \TypingRuleRef{BitfieldSliceToPositions}.
 
 \hypertarget{def-es}{}
 \item[$\EmptySlice$]
 This error indicates that an expression is either a slice with an empty list of slice subexpressions
 or an incorrect way of invoking a getter or a setter with the wrong list of arguments, a missing
 list of arguments, or a list of arguments where the getter or setter are declared with no arguments.
-This is checked by \nameref{sec:TypingRule.ESlice}.
+This is checked by \TypingRuleRef{ESlice}.
 
 \hypertarget{def-bvns}{}
 \item[$\BaseValueNonStatic$]
 This error indicates that a storage element without a supplied initializing expression cannot be
 assigned a \basevalueterm\ expression, since one cannot be statically inferred from the type of the
 storage element.
-This is produced by \nameref{sec:TypingRule.BaseValue}.
+This is produced by \TypingRuleRef{BaseValue}.
 
 \hypertarget{def-bvet}{}
 \item[$\BaseValueEmptyType$]
 This error indicates that a storage element without a supplied initializing expression cannot be
 assigned a \basevalueterm\ expression, since the static domain of the type of the storage element
 is empty.
-This is produced by \nameref{sec:TypingRule.BaseValue}.
+This is produced by \TypingRuleRef{BaseValue}.
 
 \hypertarget{def-nrf}{}
 \item[$\NonReturningFunction$]
 This error indicates that a function contains a control-flow path that may not terminate by
 either returning a value, throwing an exception, or executing \\
-\texttt{Unreachable()} (see \nameref{sec:TypingRule.CheckStmtReturnsOrThrows}).
+\texttt{Unreachable()} (see \TypingRuleRef{CheckStmtReturnsOrThrows}).
 
 \hypertarget{def-bef}{}
 \item[$\BuiltinExpectedToBeFunction$]
 This error indicates an attempt to list a top-level declaration that is not a function
 in the standard library
-(see \nameref{sec:TypingRule.SetBuiltin}).
+(see \TypingRuleRef{SetBuiltin}).
 
 \hypertarget{def-upc}{}
 \item[$\UnexpectedPendingConstrained$]
 This error indicates that a \pendingconstrainedintegertype{} has been encountered where one is not permitted
-(see \nameref{sec:TypingRule.TInt}).
+(see \TypingRuleRef{TInt}).
 
 \hypertarget{def-bitfieldsnotaligned}{}
 \item[$\BitfieldsNotAligned$]
 This error indicates that a pair of bitfields defined for a bitvector type exist in the same
 scope, share the same name, but the slices they define for the containing bitvector type are
 different
-(see \nameref{sec:TypingRule.CheckCommonBitfieldsAlign}).
+(see \TypingRuleRef{CheckCommonBitfieldsAlign}).
 
 \item[$\BadPrintType$]%
 \hypertarget{def-badprinttype}{}
   This error indicates that an argument passed to the functions \Tprint{} or
-  \Tprintln{} is not singular (see \nameref{sec:TypingRule.SingularType}).
+  \Tprintln{} is not singular (see \TypingRuleRef{SingularType}).
 \hypertarget{def-cse}{}
 \item[$\ConflictingSideEffects$]
 This error indicates an attempt to combine two sets of \sideeffectdescriptorsterm\ where
 a \sideeffectconflictterm\ exists
-(see \nameref{sec:TypingRule.NonConflictingUnion}).
+(see \TypingRuleRef{NonConflictingUnion}).
 
 \end{description}
 
@@ -260,21 +260,21 @@ a \sideeffectconflictterm\ exists
 \begin{description}
 \hypertarget{def-unr}{}
 \item[$\UnreachableError$]
-This error results from evaluating an \texttt{Unreachable()} statement (see \nameref{sec:SemanticsRule.SUnreachable}).
+This error results from evaluating an \texttt{Unreachable()} statement (see \SemanticsRuleRef{SUnreachable}).
 
 \hypertarget{def-daf}{}
 \item[$\DynamicAssertionFailure$]
 This error results from evaluating an \texttt{assert} statement whose
-conditions evaluates to $\False$ (see \nameref{sec:SemanticsRule.SAssert}).
+conditions evaluates to $\False$ (see \SemanticsRuleRef{SAssert}).
 
 \hypertarget{def-datc}{}
 \item[$\DynamicTypeAssertionFailure$]
 This error results from a failing type assertion (\texttt{$e$ as $t$})
-(see \nameref{sec:SemanticsRule.ATC}).
+(see \SemanticsRuleRef{ATC}).
 
 \hypertarget{def-aet}{}
 \item[$\ArbitraryEmptyType$]
 This error occurs when an expression \texttt{$t$ : ARBITRARY} is evaluated
-and $t$ has an empty domain (see \nameref{sec:SemanticsRule.EArbitrary}).
+and $t$ has an empty domain (see \SemanticsRuleRef{EArbitrary}).
 
 \end{description}

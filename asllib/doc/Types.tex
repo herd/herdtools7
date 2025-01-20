@@ -216,10 +216,13 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \subsection{Typing Integer Types\label{sec:TypingIntegerTypes}}
 \subsubsection{TypingRule.TInt\label{sec:TypingRule.TInt}}
 \subsubsection{Example}
-In the following examples, all the uses of integer types are well-typed:
-\ASLExample{\typingtests/TypingRule.TIntUnConstrained.asl}
-\ASLExample{\typingtests/TypingRule.TIntWellConstrained.asl}
-\ASLExample{\typingtests/TypingRule.TIntUnderConstrained.asl}
+In \listingref{typing-unconstrained}, \listingref{typing-wellconstrained},
+and \listingref{typing-parameterized} all examples of
+\unconstrainedintegertypes, \wellconstrainedintegertypes,
+and \parameterizedintegertypes, respectively, are well-typed.
+\ASLListing{Well-typed unconstrained integer types}{typing-unconstrained}{\typingtests/TypingRule.TIntUnConstrained.asl}
+\ASLListing{Well-typed well-constrained integer types}{typing-wellconstrained}{\typingtests/TypingRule.TIntWellConstrained.asl}
+\ASLListing{Well-typed parameterized integer types}{typing-parameterized}{\typingtests/TypingRule.TIntParameterized.asl}
 
 \subsubsection{Prose}
 One of the following applies:
@@ -375,8 +378,8 @@ One of the following applies:
 \subsection{Typing the Real Type\label{sec:TypingRealType}}
 \subsubsection{TypingRule.TReal\label{sec:TypingRule.TReal}}
 \subsubsection{Example}
-In the following example, all the uses of \texttt{real} are well-typed:
-\ASLExample{\typingtests/TypingRule.TReal.asl}
+In \listingref{typing-treal}, all the uses of \texttt{real} are well-typed.
+\ASLListing{Well-typed real types}{typing-treal}{\typingtests/TypingRule.TReal.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -417,8 +420,8 @@ All of the following apply:
 \subsection{Typing the String Type\label{sec:TypingStringType}}
 \subsubsection{TypingRule.TString\label{sec:TypingRule.TString}}
 \subsubsection{Example}
-In the following example, all the uses of \texttt{string} are well-typed:
-\ASLExample{\typingtests/TypingRule.TString.asl}
+In \listingref{typing-tstring}, all the uses of \texttt{string} are well-typed.
+\ASLListing{Well-typed string types}{typing-tstring}{\typingtests/TypingRule.TString.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -459,8 +462,8 @@ All of the following apply:
 \subsection{Typing the Boolean Type\label{sec:TypingBooleanType}}
 \subsubsection{TypingRule.TBool\label{sec:TypingRule.TBool}}
 \subsubsection{Example}
-In the following example, all the uses of \texttt{boolean} are well-typed:
-\ASLExample{\typingtests/TypingRule.TBool.asl}
+In \listingref{typing-tbool}, all the uses of \texttt{boolean} are well-typed.
+\ASLListing{Well-typed Boolean types}{typing-tbool}{\typingtests/TypingRule.TBool.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -519,8 +522,8 @@ All of the following apply:
 \subsection{Typing}
 \subsubsection{TypingRule.TBits\label{sec:TypingRule.TBits}}
 \subsubsection{Example}
-In the following example, all the uses of bitvector types are well-typed:
-\ASLExample{\typingtests/TypingRule.TBits.asl}
+In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
+\ASLListing{Well-typed Bitevector types}{typing-tbits}{\typingtests/TypingRule.TBits.asl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -586,6 +589,10 @@ must be non-negative.
 \end{mathpar}
 
 \subsection{Typing Tuple Types\label{sec:TypingTupleTypes}}
+\subsubsection{Example}
+In \listingref{typing-ttuple}, all the uses of tuple types are well-typed.
+\ASLListing{Well-typed tuple types}{typing-ttuple}{\typingtests/TypingRule.TTuple.asl}
+
 \subsubsection{TypingRule.TTuple\label{sec:TypingRule.TTuple}}
 \subsubsection{Prose}
 All of the following apply:
@@ -610,10 +617,6 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\TTupleBegin}{\TTupleEnd}{../Typing.ml}
-
-In the following example, all the uses of tuple types are well-typed:
-\ASLExample{\typingtests/TypingRule.TTuple.asl}
-\subsubsection{Example}
 
 \section{Array Types\label{sec:ArrayTypes}}
 ASL offers two kinds of arrays:
@@ -646,8 +649,8 @@ ASL offers two kinds of arrays:
 \end{mathpar}
 \subsection{Typing Array Types\label{sec:TypingArrayTypes}}
 \subsubsection{Example}
-In the following example, all the uses of array types are well-typed:
-\ASLExample{\typingtests/TypingRule.TArray.asl}
+In \listingref{typing-tarray}, all the uses of array types are well-typed.
+\ASLListing{Well-typed array types}{typing-tarray}{\typingtests/TypingRule.TArray.asl}
 
 \subsubsection{TypingRule.TArray\label{sec:TypingRule.TArray}}
 \subsubsection{Prose}
@@ -952,8 +955,8 @@ All of the following apply:
 \end{mathpar}
 \lrmcomment{This is related to \identd{YZBQ}, \identr{DWSP}, \identi{MZXL}.}
 \subsubsection{Example}
-The following example declares a valid enumeration type:
-\ASLExample{\typingtests/TypingRule.TEnumDecl.asl}
+\listingref{typing-tenum} shows an example of a well-typed enumeration type declaration.
+\ASLListing{Well-typed enumeration type}{typing-tenum}{\typingtests/TypingRule.TEnumDecl.asl}
 
 \section{Record Types\label{sec:RecordTypes}}
 \subsection{Syntax}
@@ -1009,8 +1012,8 @@ All of the following apply:
 \CodeSubsection{\TStructuredDeclBegin}{\TStructuredDeclEnd}{../Typing.ml}
 
 \subsubsection{Example}
-In the following example, all the uses of record or exception types are well-typed:
-\ASLExample{\typingtests/TypingRule.TRecordExceptionDecl.asl}
+In \listingref{typing-trecord}, all the uses of record or exception types are well-typed.
+\ASLListing{Well-typed structured types}{typing-trecord}{\typingtests/TypingRule.TRecordExceptionDecl.asl}
 
 \section{Exception Types\label{sec:ExceptionTypes}}
 \subsection{Syntax}
@@ -1043,7 +1046,7 @@ In the following example, all the uses of record or exception types are well-typ
 \end{flalign*}
 
 \subsection{Typing Exception Types}
-The rule for typing exception type is \nameref{sec:TypingRule.TStructuredDecl}.
+The rule for typing exception type is \TypingRuleRef{TStructuredDecl}.
 
 \subsubsection{ASTRule.Ty.TNamed}
 \begin{mathpar}
@@ -1077,8 +1080,8 @@ All of the following apply:
 \CodeSubsection{\TNamedBegin}{\TNamedEnd}{../Typing.ml}
 
 \subsubsection{Example}
-In the following example, all the uses of \texttt{MyType} are well-typed:
-\ASLExample{\typingtests/TypingRule.TNamed.asl}
+In \listingref{typing-tnamed}, all the uses of \texttt{MyType} are well-typed.
+\ASLListing{Well-typed named types}{typing-tnamed}{\typingtests/TypingRule.TNamed.asl}
 
 \section{Declared Types}
 A declared type can be ab enumeration type, a record type, an exception type, or an \anonymoustype.
@@ -1098,6 +1101,10 @@ A declared type can be ab enumeration type, a record type, an exception type, or
 
 \subsection{Typing Declared Types}
 \subsubsection{TypingRule.TNonDecl\label{sec:TypingRule.TNonDecl}}
+\subsubsection{Example}
+In \listingref{typing-trecorderror}, the use of a record type outside of a declaration is erroneous.
+\ASLListing{An erroneous use of a record type}{typing-trecorderror}{\typingtests/TypingRule.TNonDecl.asl}
+
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1108,12 +1115,6 @@ All of the following apply:
   and exceptions types is not allowed here.
 \end{itemize}
 
-\subsubsection{Example}
-In the following example, the use of a record type outside of a declaration is erroneous:
-\ASLExample{\typingtests/TypingRule.TNonDecl.asl}
-
-\CodeSubsection{\TNonDeclBegin}{\TNonDeclEnd}{../Typing.ml}
-
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
@@ -1122,6 +1123,7 @@ In the following example, the use of a record type outside of a declaration is e
   \annotatetype{\False, \tenv, \tty} \typearrow \TypeErrorVal{\AnnonymousFormNotAllowedHere}
 }
 \end{mathpar}
+\CodeSubsection{\TNonDeclBegin}{\TNonDeclEnd}{../Typing.ml}
 
 \input{TypeDomains.tex}
 \input{TypeAttributes.tex}

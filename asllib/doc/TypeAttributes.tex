@@ -42,18 +42,16 @@ The \emph{builtin singular types} are:
 \end{itemize}
 
 \subsubsection{Example}
-In this example:
-\VerbatimInput[firstline=3,lastline=8]{\typingtests/TypingRule.BuiltinSingularTypes.asl}
-
-Variables of builtin singular types \texttt{integer}, \texttt{real},
-\texttt{boolean}, \texttt{bits(4)}, \\ and~\texttt{bits(2)} are defined.
+\listingref{typing-builtinsingulartype} defines variables of builtin singular types
+\texttt{integer}, \texttt{real},
+\texttt{boolean}, \texttt{bits(4)}, and~\texttt{bits(2)}
+\ASLListing{Examples of builtin singular types}{typing-builtinsingulartype}{\typingtests/TypingRule.BuiltinSingularTypes.asl}
 
 \subsubsection{Example}
-\VerbatimInput{\typingtests/TypingRule.EnumerationType.asl}
-The builtin singular type \texttt{Color} consists in two constants
-\texttt{RED}, and~\texttt{BLACK}.
-
-\CodeSubsection{\BuiltinSingularBegin}{\BuiltinSingularEnd}{../types.ml}
+In \listingref{typing-builtinenumerationtype},
+the builtin singular type \texttt{Color} consists in two constants:
+\texttt{RED} and~\texttt{BLACK}.
+\ASLListing{An enumeration type}{typing-builtinenumerationtype}{\typingtests/TypingRule.EnumerationType.asl}
 
 \subsubsection{Formally}
 \begin{mathpar}
@@ -63,6 +61,7 @@ The builtin singular type \texttt{Color} consists in two constants
   \isbuiltinsingular(\tty) \typearrow \vb
 }
 \end{mathpar}
+\CodeSubsection{\BuiltinSingularBegin}{\BuiltinSingularEnd}{../types.ml}
 
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{PQCK} and \identd{NZWT}.}
@@ -85,7 +84,9 @@ The builtin aggregate types are:
 \end{itemize}
 
 \subsubsection{Example}
-\VerbatimInput{\typingtests/TypingRule.BuiltinAggregateTypes.asl}
+\listingref{typing-builtinaggregatetypes} provides examples of some builtin aggregate types.
+\ASLListing{Builtin aggregate types}{typing-builtinaggregatetypes}{\typingtests/TypingRule.BuiltinAggregateTypes.asl}
+
 Type \texttt{Pair} is the type of integer and boolean pairs.
 
 Arrays are declared with indices that are either integer-typed
@@ -107,8 +108,7 @@ The (builtin aggregate) type \verb|{ x : real, y : real, z : real }| is a record
 \texttt{x}, \texttt{y} and \texttt{z}.
 
 \subsubsection{Example}
-\VerbatimInput{\typingtests/TypingRule.BuiltinExceptionType.asl}
-Two (builtin aggregate) exception types are defined:
+\listingref{typing-builtinexceptiontype} defines two (builtin aggregate) exception types:
 \begin{itemize}
 \item \verb|exception{}| (for \texttt{Not\_found}), which carries no value; and
 \item \verb|exception { message:string }| (for \texttt{SyntaxException}), which carries a message.
@@ -116,13 +116,14 @@ Two (builtin aggregate) exception types are defined:
 Notice the similarity with record types and that the empty field list \verb|{}| can be
 omitted in type declarations, as is the case for \texttt{Not\_found}.
 
-\CodeSubsection{\BuiltinAggregateBegin}{\BuiltinAggregateEnd}{../types.ml}
+\ASLListing{Exception types}{typing-builtinexceptiontype}{\typingtests/TypingRule.BuiltinExceptionType.asl}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{ \vb \eqdef \astlabel(\tty) \in \{\TTuple, \TArray, \TRecord, \TException\} }
 { \isbuiltinaggregate(\tty) \typearrow \vb }
 \end{mathpar}
+\CodeSubsection{\BuiltinAggregateBegin}{\BuiltinAggregateEnd}{../types.ml}
 
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{PQCK} and \identd{KNBD}.}

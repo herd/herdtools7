@@ -1,11 +1,11 @@
 func ErrorExample()
 begin
-  var a: integer{1, 2, 3} = 2 as integer{1, 2, 3}; // legal
-  var b: integer{4, 5, 6} = 2;                     // static error
-  var c: integer{4, 5, 6} = 2 as integer{4, 5, 6}; // dynamic error
+  var a: integer{1, 2, 3} = 2 as integer{1, 2, 3}; // Legal
+  var b: integer{4, 5, 6} = 2;                     // A type error
+  var c: integer{4, 5, 6} = 2 as integer{4, 5, 6}; // A dynamic error
   if FALSE then
-      var d: integer{4, 5, 6} = 2; // static error.
-      // The following is not a dynamic error as will never be evaluated,
+      var d: integer{4, 5, 6} = 2; // A type error
+      // A dynamic error
       var e: integer{4, 5, 6} = 2 as integer{4, 5, 6};
   end;
 end;

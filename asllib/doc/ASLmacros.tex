@@ -227,7 +227,6 @@
 % Typesetting macros
 \newtheorem{definition}{Definition}
 \newtheorem{example}{Example}
-\newcommand\figref[1]{Figure.~\ref{fi:#1}}
 \newcommand\listingref[1]{Listing~\ref{listing:#1}}
 \newcommand\taref[1]{Table.~\ref{ta:#1}}
 \newcommand\defref[1]{Definition~\ref{def:#1}}
@@ -235,6 +234,9 @@
 \newcommand\chapref[1]{Chapter~\ref{chap:#1}}
 \newcommand\partref[1]{Part~\ref{part:#1}}
 \newcommand\appendixref[1]{Appendix~\ref{appendix:#1}}
+\newcommand\SemanticsRuleRef[1]{\nameref{sec:SemanticsRule.#1}}
+\newcommand\TypingRuleRef[1]{\nameref{sec:TypingRule.#1}}
+\newcommand\ASTRuleRef[1]{\nameref{sec:ASTRule.#1}}
 \newcommand\secreflink[1]{\small\nameref{sec:#1}}
 \newcommand\prosesection[0]{\subsubsection{Prose}}
 \newcommand\ie{i.\,e.}
@@ -277,6 +279,7 @@
 \newcommand\unziplistthree[0]{\hyperlink{def-unziplistthree}{\textfunc{unzip3}}}
 \newcommand\uniquep[0]{\hyperlink{def-uniquep}{\textfunc{unique'}}}
 \newcommand\uniquelist[0]{\hyperlink{def-uniquelist}{\textfunc{unique}}}
+\newcommand\listset[0]{\hyperlink{def-listset}{\textfunc{list\_set}}}
 \newcommand\concat[0]{\hyperlink{def-concat}{+}}
 \newcommand\listprefix[0]{\hyperlink{def-listprefix}{\textfunc{prefix}}}
 \newcommand\listcomprehension[2]{[#1 : #2]} % #1 is a list element predicate, #2 is the output list element.
@@ -545,7 +548,7 @@
 \newcommand\BAND[0]{\hyperlink{ast-band}{\texttt{BAND}}} % Boolean and
 \newcommand\BEQ[0]{\hyperlink{ast-beq}{\texttt{BEQ}}} % Boolean equivalence
 \newcommand\BOR[0]{\hyperlink{ast-bor}{\texttt{BOR}}} % Boolean or
-\newcommand\BVCONCAT[0]{\hyperlink{ast-bvconcat}{\texttt{BV\_CONCAT}}} % Concatenation for bit vectors
+\newcommand\BVCONCAT[0]{\hyperlink{ast-bvconcat}{\texttt{BV\_CONCAT}}} % Concatenation for bitvectors
 \newcommand\DIV[0]{\hyperlink{ast-div}{\texttt{DIV}}} % Integer division
 \newcommand\DIVRM[0]{\hyperlink{ast-divrm}{\texttt{DIVRM}}} % Inexact integer division, with rounding towards negative infinity.
 \newcommand\XOR[0]{\hyperlink{ast-xor}{\texttt{XOR}}} % Bitvector bitwise exclusive or
@@ -649,7 +652,6 @@
 \newcommand\SSeq[0]{\hyperlink{ast-sseq}{\textsf{S\_Seq}}}
 \newcommand\SCall[0]{\hyperlink{ast-scall}{\textsf{S\_Call}}}
 \newcommand\SCond[0]{\hyperlink{ast-scond}{\textsf{S\_Cond}}}
-\newcommand\SCase[0]{\hyperlink{ast-scase}{\textsf{S\_Case}}}
 \newcommand\SDecl[0]{\hyperlink{ast-sdecl}{\textsf{S\_Decl}}}
 \newcommand\SAssert[0]{\hyperlink{ast-sassert}{\textsf{S\_Assert}}}
 \newcommand\SWhile[0]{\hyperlink{ast-swhile}{\textsf{S\_While}}}
@@ -791,7 +793,6 @@
 \newcommand\builddirection[0]{\hyperlink{build-direction}{\textfunc{build\_direction}}}
 \newcommand\buildcasealt[0]{\hyperlink{build-casealt}{\textfunc{build\_case\_alt}}}
 \newcommand\buildcasealtlist[0]{\hyperlink{build-casealtlist}{\textfunc{build\_case\_alt\_list}}}
-\newcommand\buildcaseotherwise[0]{\hyperlink{build-caseotherwise}{\textfunc{build\_case\_otherwise}}}
 \newcommand\buildotherwiseopt[0]{\hyperlink{build-otherwiseopt}{\textfunc{build\_otherwise\_opt}}}
 \newcommand\buildcatcher[0]{\hyperlink{build-catcher}{\textfunc{build\_catcher}}}
 \newcommand\buildasty[0]{\hyperlink{build-as-ty}{\textfunc{build\_as\_ty}}}
@@ -1072,7 +1073,6 @@
 \newcommand\evalmultiassignment[0]{\hyperlink{def-evalmultiassign}{\textfunc{multi\_assign}}}
 \newcommand\rethrowimplicit[0]{\hyperlink{def-rethrowimplicit}{\textfunc{rethrow\_implicit}}}
 \newcommand\assignargs[0]{\hyperlink{def-assignargs}{\textfunc{assign\_args}}}
-\newcommand\assignnamedargs[0]{\tododefine{\textfunc{assign\_named\_args}}}
 \newcommand\matchfuncres[0]{\hyperlink{def-matchfuncres}{\textfunc{match\_func\_res}}}
 \newcommand\Prosebuildgenv[4]{\hyperlink{def-buildgenv}{building} an environment from the static environment #1 and specification #2 yields #3 and the execution graph #4}
 \newcommand\buildgenv[0]{\hyperlink{def-buildgenv}{\textfunc{build\_genv}}}
@@ -1353,7 +1353,6 @@
 \newcommand\bitwidthequal[0]{\hyperlink{def-bitwidthequal}{\textfunc{bitwidth\_equal}}}
 \newcommand\bitfieldequal[0]{\hyperlink{def-bitfieldequal}{\textfunc{bitfield\_equal}}}
 \newcommand\bitfieldsequal[0]{\hyperlink{def-bitfieldsequal}{\textfunc{bitfields\_equal}}}
-\newcommand\reduceir[0]{\hyperlink{def-reduceir}{\textfunc{reduce\_ir}}}
 \newcommand\polynomialtoexpr[0]{\hyperlink{def-polynomialtoexpr}{\textfunc{polynomial\_to\_expr}}}
 \newcommand\monomialtoexpr[0]{\hyperlink{def-monomialtoexpr}{\textfunc{monomial\_to\_expr}}}
 \newcommand\symmulexpr[0]{\hyperlink{def-symmulexpr}{\textfunc{sym\_mul\_expr}}}
@@ -1452,7 +1451,7 @@
 \newcommand\AbbrevConstraintExact[1]{\overbracket{#1}^{\hyperlink{def-abbrevconstraintexact}{\abbrevfont{Constraint\_Exact}}}}
 \newcommand\AbbrevConstraintRange[2]{\overbracket{#1..#2}^{\hyperlink{def-abbrevconstraintrange}{\abbrevfont{Constraint\_Range}}}}
 \newcommand\AbbrevEBinop[3]{\overbracket{#2\ #1\ #3}^{\hyperlink{def-abbrevebinop}{\abbrevfont{E\_Binop}}}}
-\newcommand\AbbrevTArray[2]{\overbracket{\texttt{array }[#1]\texttt{ of }#2}^{\hyperlink{def-tarrayshort}{\abbrevfont{T\_Array}}}}
+\newcommand\AbbrevTArray[2]{\overbracket{\texttt{array }[#1]\texttt{ of }#2}^{\hyperlink{def-abbrevtarray}{\abbrevfont{T\_Array}}}}
 \newcommand\AbbrevTArrayLengthExpr[2]{\overbracket{\texttt{array }[#1]\texttt{ of }#2}^{\hyperlink{def-abbrevtarraylengthexpr}{\abbrevfont{T\_Array(ArrayLength\_Expr)}}}}
 \newcommand\AbbrevTArrayLengthEnum[3]{\overbracket{\texttt{array }[#1 \# #2]\texttt{ of }#3}^{\hyperlink{def-abbrevtarraylengthenum}{\abbrevfont{T\_Array(Array\_Length\_Enum)}}}}
 
@@ -1481,8 +1480,11 @@
 \newcommand\subtypeterm[0]{\hyperlink{def-subtypes}{subtype}}
 
 \newcommand\unconstrainedintegertype[0]{\hyperlink{def-unconstrainedintegertype}{unconstrained integer type}}
+\newcommand\unconstrainedintegertypes[0]{\hyperlink{def-unconstrainedintegertype}{unconstrained integer types}}
 \newcommand\parameterizedintegertype[0]{\hyperlink{def-parameterizedintegertype}{parameterized integer type}}
+\newcommand\parameterizedintegertypes[0]{\hyperlink{def-parameterizedintegertype}{parameterized integer types}}
 \newcommand\wellconstrainedintegertype[0]{\hyperlink{def-wellconstrainedintegertype}{well-constrained integer type}}
+\newcommand\wellconstrainedintegertypes[0]{\hyperlink{def-wellconstrainedintegertype}{well-constrained integer types}}
 \newcommand\pendingconstrainedintegertype[0]{\hyperlink{def-pendingconstrainedintegertype}{pending constrained integer type}}
 \newcommand\structuredtype[0]{\hyperlink{def-structuredtype}{structured type}}
 \newcommand\structure[0]{\hyperlink{def-structure}{structure}}
@@ -1648,8 +1650,6 @@
 \newcommand\sliceequal[0]{\hyperlink{def-sliceequal}{\textfunc{slice\_equal}}}
 \newcommand\constraintsequal[0]{\hyperlink{def-constraintsequal}{\textfunc{constraints\_equal}}}
 \newcommand\constraintequal[0]{\hyperlink{def-constraintequal}{\textfunc{constraint\_equal}}}
-\newcommand\constraintsforall[0]{\tododefine{\textfunc{constraints\_for\_all}}}
-\newcommand\constraintsexists[0]{\tododefine{\textfunc{constraints\_exists}}}
 \newcommand\arraylengthequal[0]{\hyperlink{def-arraylengthequal}{\textfunc{array\_length\_equal}}}
 \newcommand\literalequal[0]{\hyperlink{def-literalequal}{\textfunc{literal\_equal}}}
 \newcommand\annotatebitfield[0]{\hyperlink{def-annotatebitfield}{\textfunc{annotate\_bitfield}}}
@@ -1779,10 +1779,12 @@
 \newcommand\accp[0]{\texttt{acc'}}
 \newcommand\actualargs[0]{\texttt{actual\_args}}
 \newcommand\actuals[0]{\texttt{actuals}}
+\newcommand\actualsone[0]{\texttt{actuals1}}
 \newcommand\annotateddecls[0]{\texttt{annotated\_decls}}
 \newcommand\argdecls[0]{\texttt{arg\_decls}}
 \newcommand\argparams[0]{\texttt{arg\_params}}
 \newcommand\args[0]{\texttt{args}}
+\newcommand\argnames[0]{\texttt{arg\_names}}
 \newcommand\argtypes[0]{\texttt{arg\_types}}
 \newcommand\argtypesp[0]{\texttt{arg\_types'}}
 \newcommand\argtypesone[0]{\texttt{arg\_types1}}
@@ -2136,6 +2138,7 @@
 \newcommand\paramdecls[0]{\texttt{param\_decls}}
 \newcommand\paramname[0]{\texttt{param\_name}}
 \newcommand\params[0]{\texttt{params}}
+\newcommand\paramnames[0]{\texttt{param\_names}}
 \newcommand\paramsp[0]{\texttt{params'}}
 \newcommand\paramsone[0]{\texttt{params1}}
 \newcommand\parsedast[0]{\texttt{parsed\_ast}}
@@ -2479,6 +2482,7 @@
 \newcommand\vidasts[0]{\texttt{id\_asts}}
 \newcommand\vidopt[0]{\texttt{id\_opt}}
 \newcommand\vids[0]{\texttt{ids}}
+\newcommand\vidsone[0]{\texttt{ids1}}
 \newcommand\vignoredoridentifier[0]{\texttt{ignored\_or\_identifier}}
 \newcommand\vindex[0]{\texttt{index}}
 \newcommand\vindexname[0]{\texttt{index\_name}}

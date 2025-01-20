@@ -4,9 +4,9 @@ Specifications are grammatically derived from $\Nspec$ and represented as ASTs b
 $\spec$.
 %
 Typing specifications is done by the relation $\typecheckast$, which is defined in
-\nameref{sec:TypingRule.TypeCheckAST}.
+\TypingRuleRef{TypeCheckAST}.
 %
-The semantics of specifications in given by the relation $\evalspec$, which is defined in \nameref{sec:SemanticsRule.EvalSpec}.
+The semantics of specifications in given by the relation $\evalspec$, which is defined in \SemanticsRuleRef{EvalSpec}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Syntax}
@@ -46,7 +46,7 @@ We define this function for subprogram declarations, type declarations, and glob
 
 The untyped AST of an ASL specification consists of a list of global declarations.
 Type-checking the untyped AST succeeds if all declarations can be successfully annotated,
-which is achieved via \nameref{sec:TypingRule.TypeCheckAST}. Otherwise, the result is a
+which is achieved via \TypingRuleRef{TypeCheckAST}. Otherwise, the result is a
 type error.
 
 We note that whether type-checking a specification succeeds or fails with a type
@@ -483,7 +483,7 @@ which is formally defined by $\usedecl$, and the identifier \emph{defined} by $d
 which is formally defined by $\defdecl$.
 %
 The set of \defusedependenciesterm\ associated with a declaration $\vd$ is given by
-$\decldependencies(\vd)$ (see \nameref{sec:TypingRule.DeclDependencies}).
+$\decldependencies(\vd)$ (see \TypingRuleRef{DeclDependencies}).
 
 \subsubsection{TypingRule.BuildDependencies \label{sec:TypingRule.BuildDependencies}}
 \hypertarget{def-builddependencies}{}
@@ -1865,7 +1865,7 @@ and updating the environment accordingly.
 
 It is assumed that $\typedspec$ lists the declarations in reverse order with respect
 to the \defusedependencyterm\ order
-(see \nameref{sec:TypingRule.TypeCheckAST}).
+(see \TypingRuleRef{TypeCheckAST}).
 
 \subsubsection{Prose}
 All of the following apply:
