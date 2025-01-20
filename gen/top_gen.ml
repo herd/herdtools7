@@ -133,6 +133,7 @@ module U = TopUtils.Make(O)(Comp)
   | Rmw rmw -> rmw
   | _ -> assert false
 
+  (* TODO pass the fault information *)
   let call_emit_access st p init n =
     let e = n.C.evt in
     if e.C.rmw then match e.C.dir with
@@ -169,23 +170,30 @@ module U = TopUtils.Make(O)(Comp)
 
 (* Encodes load of first non-initial value in chain,
    can poll on value in place of checking it *)
-
   let emit_access ro_prev st p init n =
+    eprintf "callling emit_access\n";
     let init,ip,st  = match O.overload,n.C.evt.C.loc with
     | Some ov,Data loc  when insert_overload n ->
+        eprintf "\tcallling emit_overload\n";
         emit_overload st p init ov loc
     | _ -> init,[],st in
     let o,init,i,st = match ro_prev,n.C.evt.C.loc with
     | No,Data loc ->
         if U.do_poll n then
           let r,init,i,st =
+            eprintf "\tcallling emit_load_one\n";
             Comp.emit_load_one st p init loc in
           Some r,init,i,st
-        else
+        else begin
+          eprintf "\tcallling call_emit_access\n";
           call_emit_access st p init n
-    | No,Code _ -> call_emit_access st p init n
-    | Yes (dp,r1,n1),_
-      -> call_emit_access_dep st p init n dp r1 n1 in
+        end
+    | No,Code _ -> 
+            eprintf "\tcallling call_emit_access #2\n";
+            call_emit_access st p init n
+    | Yes (dp,r1,n1),_ -> 
+            eprintf "\tcallling call_emit_access_dep\n";
+            call_emit_access_dep st p init n dp r1 n1 in
     o,init,ip@i,st
 
 let edge_to_prev_load o n = match o with
@@ -212,7 +220,9 @@ let get_fence n =
           f::fs,ns
       | _ -> [],all
 
-  (* compile_proc Misc.identity false loc_writes A.st0 proc No      i    n, `st` is the machine state *)
+  (* `ro_prev` if there is a previous load, `st` is the machine state
+     The callee from compile_proc
+                  Misc.identity false loc_writes A.st0 proc No      i    n *)
   let rec compile_proc pref     chk   loc_writes st    p    ro_prev init ns = match ns with
   | [] -> init,pref [],(C.EventMap.empty,[]),st
   | n::ns ->

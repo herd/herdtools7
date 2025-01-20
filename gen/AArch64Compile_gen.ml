@@ -555,12 +555,22 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     module LOAD(L:L) =
       struct
 
-        let emit_load_var_reg vr st p init rB =
+        (* TODO new base load with label *)
+        let emit_label_load_var_reg vr st p init rB label =
           let rA,st =
             if do_mixed then L.next_reg st p vr
             else next_reg st in
           let ld,st = L.load vr st rA rB in
-          rA,init,lift_code ld,st
+          let ld = lift_code ld 
+                    |> List.map 
+                      ( fun i -> match label with
+                      | Some label -> Label (label,i)
+                      | None -> i
+                      ) in 
+          rA,init,ld,st
+
+        let emit_load_var_reg vr st p init rB =
+             emit_label_load_var_reg vr st p init rB None
 
         let emit_load_var vr st p init x =
           let rB,init,st = U.next_init st p init x in
@@ -961,15 +971,22 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     module STORE(S:S) =
       struct
 
-        let emit_store_reg st p init x rA a e =
+        (* TODO add label *)
+        let emit_store_reg st p init x rA a e label =
           let rB,init,st = U.next_init st p init x in
           let init,csi,st = emit_str_addon st p init rA rB a e in
           let cs,st = S.store st rA rB in
-          init,csi@pseudo cs,st
+          let cs = pseudo cs
+                    |> List.map 
+                      ( fun i -> match label with
+                      | Some label -> Label (label,i)
+                      | None -> i
+                      ) in 
+          init,csi@cs,st
 
         let emit_store st p init x v a e =
           let rA,init,csi,st = S.emit_mov st p init v in
-          let init,cs,st = emit_store_reg st p init x rA a e in
+          let init,cs,st = emit_store_reg st p init x rA a e None in
           init,csi@cs,st
 
         let emit_store_idx_reg st p init x idx rA a e =
@@ -1725,6 +1742,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let get_tagged_loc e = add_tag (as_data e.C.loc) e.C.tag
 
+    (* TODO add fault check and print instruction label? *)
+    (* TODO add the label name, wrapped in `e`? *)
     let emit_access  st p init e = match e.C.dir,e.C.loc with
     | None,_ -> Warn.fatal "AArchCompile.emit_access"
     | Some d,Code lab ->
@@ -1927,6 +1946,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
            None,init,cs,st
         | W,Some (Neon _,Some _) -> assert false
         end
+    (* END of emit_access *)
 
     let same_sz sz1 sz2 = match sz1,sz2 with
       | None,None -> true
@@ -2552,11 +2572,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           begin match atom with
           | None ->
               let init,cs,st =
-                STR.emit_store_reg st p init loc r2 None C.evt_null in
+                STR.emit_store_reg st p init loc r2 None C.evt_null None in
               None,init,cs2@cs,st
           | Some (Rel _,None) ->
               let init,cs,st =
-                STLR.emit_store_reg st p init loc r2 None C.evt_null in
+                  STLR.emit_store_reg st p init loc r2 None C.evt_null None in
               None,init,cs2@cs,st
           | Some (Rel a,Some (sz,o)) ->
               let module S =
@@ -2566,7 +2586,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                     let store_idx _st _r1 _r2 _idx = assert false
                     let emit_mov = emit_mov_sz sz
                   end) in
-              let init,cs,st = S.emit_store_reg st p init loc r2 a e in
+              let init,cs,st = S.emit_store_reg st p init loc r2 a e None in
               None,init,cs2@cs,st
           | Some (Atomic rw,None) ->
               let r,init,cs,st = emit_sta_reg (tr_rw rw) st p init loc r2 in
@@ -2592,7 +2612,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       cs,st
                     let emit_mov = emit_mov_sz sz
                   end) in
-              let init,cs,st = S.emit_store_reg st p init loc r2 a e in
+              let init,cs,st = S.emit_store_reg st p init loc r2 a e None in
               None,init,cs2@cs,st
           | Some (Tag, None) ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
@@ -2809,7 +2829,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let postlude =
       mk_postlude
         (fun st p init loc r ->
-          STR.emit_store_reg st p init loc r None C.evt_null)
+          STR.emit_store_reg st p init loc r None C.evt_null None)
 
 
     let get_strx_result k = function

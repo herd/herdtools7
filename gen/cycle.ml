@@ -26,12 +26,17 @@ module type S = sig
   module PteVal : PteVal_gen.S with type pte_atom = atom
 
   type event =
-      { loc : loc ; ord : int; tag : int ;
+      { loc : loc ; ord : int; 
+        (* memory tag *)
+        tag : int ;
+        (* morello *)
         ctag : int; cseal : int; dep : int ;
         (* TODO: merge `v` and `pte`, and add `none` value for init *)
         (* TODO: The value read is the expected value following the cycle in order *)
         v   : v ; (* Value read or written *)
         vecreg: v list list ; (* Alternative for SIMD *)
+        pte : PteVal.t ;
+        (* instruction fecth *)
         ins : int ;
         dir : dir option ;
         (* TODO do a option type on code.proc *)
@@ -45,8 +50,7 @@ module type S = sig
         idx : int ; 
         (* - TODO the current pte value for this variable?
            - new PTE value read or written if it is a pte event *)
-        pte : PteVal.t ;
-        can_fault : bool option; }
+        check_fault : (Label.t * bool) option; }
 
   val evt_null : event
   val make_wsi : int -> Code.loc -> event
@@ -158,6 +162,7 @@ module Make (O:Config) (E:Edge.S) :
         ctag : int; cseal : int; dep : int;
         v   : v ;
         vecreg: v list list ;
+        pte : PteVal.t ;
         ins : int ;
         dir : dir option ;
         proc : Code.proc ;
@@ -167,8 +172,7 @@ module Make (O:Config) (E:Edge.S) :
         tcell : v array ; (* value of tag cell at node exit *)
         bank : SIMD.atom Code.bank ;
         idx : int ;
-        pte : PteVal.t ;
-        can_fault : bool option; }
+        check_fault : (Label.t * bool) option; }
 
   let pte_default = PteVal.default "*"
 
@@ -179,7 +183,7 @@ module Make (O:Config) (E:Edge.S) :
       v=(-1) ; ins=0;dir=None; proc=(-1); atom=None; rmw=false;
       cell=[||]; tcell=[||];
       bank=Code.Ord; idx=(-1);
-      pte=pte_default; can_fault=None; }
+      pte=pte_default; check_fault=None; }
 
   let make_wsi idx loc = { evt_null with dir=Some W ; loc=loc; idx=idx; v=0;}
 
@@ -236,7 +240,7 @@ module Make (O:Config) (E:Edge.S) :
       match e.bank with
       | Pte -> PteVal.pp e.pte
       | (Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _|Instr) -> debug_val e.v in
-    sprintf "dir:%s atom:%s loc:%s cell:%s value:%s tag:%s morello:%s vector_value:%s, pte_val: %s, can_fault:%s"
+    sprintf "dir:%s atom:%s loc:%s cell:%s value:%s tag:%s morello:%s vector_value:%s, pte_val: %s, check_fault:%s"
       (debug_dir e.dir)
       (debug_atom e.atom)
       (Code.pp_loc e.loc)
@@ -244,10 +248,9 @@ module Make (O:Config) (E:Edge.S) :
        | "" -> "" | s -> "cell=[" ^ s ^"] ")
       pp_v (debug_tag e) (debug_morello e) (debug_vector e)
       (PteVal.pp e.pte) 
-      ( match e.can_fault with 
+      ( match e.check_fault with 
       | None -> "none" 
-      | Some true -> "true" 
-      | Some false -> "false" )
+      | Some (label, b) -> sprintf "%s,%b" label b )
 
   let debug_edge = E.pp_edge
 
@@ -493,17 +496,18 @@ module CoSt = struct
     MyMap.Make
       (struct type t = E.SIMD.atom Code.bank let compare = compare end)
 
-  type t = { map : int M.t; co_cell : int array; }
+  type t = { map : int M.t; co_cell : int array; pte_value : PteVal.t; need_to_check_fault : bool }
 
   let (<<) f g = fun x -> f (g x)
   and (<!) f x = f x
 
-  let create ?(init=0) sz =
+  (* Initialise a st with `init` value and `init_pte` for pte_value *)
+  let create init sz pte_value =
     let map  =
       M.add Tag init <<  M.add CapaTag init <<
       M.add CapaSeal init << M.add Ord init << M.add Instr init <! M.empty
     and co_cell = Array.make (if sz <= 0 then 1 else sz) init in
-    { map; co_cell;  }
+    { map; co_cell; pte_value; need_to_check_fault = true }
 
   let find_no_fail key map =
     try M.find key map with Not_found -> assert false
@@ -516,7 +520,9 @@ module CoSt = struct
 
   let get_cell st = st.co_cell
 
-  (* TODO Why do not do anything about PTE here *)
+  (* Update the coherence state `st` based on a new node `n` *)
+  (* TODO add pte value here *)
+  (* TODO Why this functon only work on Ord and Pair *)
   let set_cell st n =
     let e = n.evt in match e.bank with
     | Ord|Pair -> begin
@@ -542,6 +548,14 @@ module CoSt = struct
     end
     | _ -> e,st
 
+ (* TODO: do something about pte, and set need_to_check_fault  *)
+  let set_pte_value st pte_value = { st with pte_value; need_to_check_fault = true }
+
+  (* read the need_to_check_fault flag, and reset/clean it *)
+  let read_and_unset_fault st = 
+      let flag = st.need_to_check_fault in 
+      flag, {st with need_to_check_fault = false }
+
   let set_tcell st e = match e.bank with
     | Tag ->
        {e with tcell=[| e.v; |];},st
@@ -559,14 +573,22 @@ module CoSt = struct
   let step_simd st n =
     let fst = find_no_fail Ord st.map in
     let lst = fst+E.SIMD.nregs n in
-    { co_cell=E.SIMD.step n fst st.co_cell;
-      map=M.add Ord lst st.map;}
+    { st with co_cell=E.SIMD.step n fst st.co_cell;
+      map=M.add Ord lst st.map; }
 
+  let pp chan st = 
+      fprintf chan "coherence state:{ map: %s, co_cell[%d]: [%s], pte_cell: %s}"
+      (M.pp_str (fun k v -> sprintf "%s -> %d" (pp_bank k) v) st.map)
+      (Array.length st.co_cell)
+      (Array.fold_left (fun acc v -> sprintf "%s,%d" acc v) "" st.co_cell)
+      (PteVal.pp st.pte_value)
 end
 
 let pte_val_init loc = match loc with
 | Code.Data loc when do_kvm -> PteVal.default loc
 | _ -> pte_default
+
+let can_fault pte_val = Some ((Label.next_label "L"), (PteVal.can_fault pte_val))
 
 (****************************)
 (* Add events in edge cycle *)
@@ -843,15 +865,13 @@ let set_same_loc st n0 =
     n.evt <- e ;
     st
 
-  (* Check if an access (read/write) can fail. *)
-  let can_fault node pte_val = Some false
-
 (* do_set_write_val returns true when variable next_x has been used
    and should thus be initialised *)
+  (* TODO do we really need pte_val since we add a pte in st *)
   let rec do_set_write_val next_x_ok st pte_val nss =
     if O.verbose > 2 then
-      eprintf "do_set_write_val ns:[%a]\n\t pte_val: %s\n" 
-                  debug_nodes nss (PteVal.pp pte_val);
+      eprintf "do_set_write_val ns:[%a]\n\tst: %a, pte_val: %s\n" 
+                  debug_nodes nss CoSt.pp st (PteVal.pp pte_val);
     match nss with
     | [] -> next_x_ok
     | n::ns ->
@@ -862,7 +882,6 @@ let set_same_loc st n0 =
             match n.evt.loc with
             | Data _ ->
                 begin
-                n.evt <- { n.evt with can_fault = can_fault n pte_val; };
                 if do_memtag then
                   let tag = CoSt.get_co st Tag in
                   n.evt <- { n.evt with tag=tag; }
@@ -880,11 +899,15 @@ let set_same_loc st n0 =
 *)
                 end ;
                 (* TODO: add the process on pte *)
+                let need_to_check_fault, st = CoSt.read_and_unset_fault st in
+                let fault = if do_kvm && need_to_check_fault then can_fault pte_val else None in 
                 let bank = n.evt.bank in
                 begin match bank with
                 | Instr -> Warn.fatal "instruction annotation to data bank not possible?"
+                (* TODO check pte access? *)
                 | Ord ->
                    let st = set_write_val_ord st n in
+                   n.evt <- { n.evt with check_fault = fault };
                    do_set_write_val next_x_ok st pte_val ns
                 | Pair ->
                    (* Same code as for Ord, however notice that
@@ -894,6 +917,7 @@ let set_same_loc st n0 =
                    assert (Array.length cell>=2) ;
                    let st = CoSt.next_co st Ord in (* Pre-increment *)
                    let st = set_write_val_ord st n in
+                   n.evt <- { n.evt with check_fault = fault };
                    do_set_write_val next_x_ok st pte_val ns
                 | Tag|CapaTag|CapaSeal ->
                    let st = CoSt.next_co st bank in
@@ -913,7 +937,7 @@ let set_same_loc st n0 =
                    n.evt <- { n.evt with vecreg; cell;v;} ;
                    do_set_write_val next_x_ok st pte_val ns
                 | Pte ->
-                  (* TODO: add the process on pte *)
+                  (* TODO: What is this process?? *)
                    let next_x_pred = ref false in
                    let pte_val =
                      if do_kvm then begin
@@ -931,13 +955,15 @@ let set_same_loc st n0 =
                                   Code.as_data m.evt.loc
                                 with Not_found ->
                                   next_x_pred := true ; next_x end
-                           | Code.Code _ -> assert false in
+                           | Code.Code _ -> Warn.fatal "Code location has no pte value." in
+                         (* TODO why set_pteval take a funcion `next_loc` *)
                          E.set_pteval n.evt.atom pte_val next_loc
                        end else pte_val in
-(*
-                   eprintf "kvm pte_val: %s\n" (PteVal.pp pte_val);
-*)
-                   n.evt <- { n.evt with pte = pte_val; } ;
+                   if O.verbose > 2 then
+                     eprintf "kvm pte_val: %s\n" (PteVal.pp pte_val);
+                    (* TODO check if this pte value access is allowed *)
+                   n.evt <- { n.evt with pte = pte_val; check_fault = fault; } ;
+                   let st = CoSt.set_pte_value st pte_val in
                    do_set_write_val (!next_x_pred || next_x_ok) st pte_val ns
                 end (* END of match bank *)
             | Code _ ->
@@ -967,11 +993,12 @@ let set_same_loc st n0 =
               (* TODO why???? *)
               let i = if do_kvm then k else 0 in
               (* process the nodes in list `ns` for the location `loc` *)
+              let pte_val = pte_val_init loc in
               let next_x_ok =
                 do_set_write_val
                   false
-                  (CoSt.create ~init:i sz)
-                  (pte_val_init loc) ns in
+                  (CoSt.create i sz pte_val)
+                  pte_val ns in
               let env = if do_kvm then (Code.as_data loc,k)::env else env in
               (* TODO why if kvm the next value need to be `+4` ??? *)
               if next_x_ok then
@@ -1031,7 +1058,7 @@ let set_read_individual_v n cell =
   let e = n.evt in
   let v = E.extract_value cell.(0) e.atom in 
   if O.verbose > 2 then
-    eprintf "SET READ: cell=0x%x, v=0x%x\n" cell.(0) v ;
+    eprintf "SET READ: loc=%s cell=0x%x, v=0x%x\n" (Code.pp_loc n.evt.loc) cell.(0) v ;
   let e = { e with v=v; } in
   n.evt <- e ;
   if O.verbose > 2 then
@@ -1052,9 +1079,16 @@ let set_read_pair_v n cell =
 let do_set_read_v =
   (* st keeps track of tags, cell and pte_cell are the current
      state of memory *)
-  let rec do_rec st cell pte_cell = 
-    function
-    | [] -> cell.(0),pte_cell
+  let rec do_rec st cell pte_cell ns = 
+    if O.verbose > 2 then
+      eprintf "do_set_read_v do_rec: ns:[%a],\n\tst: %a, cell: %s, pte_val: %s\n"
+              debug_nodes ns 
+              CoSt.pp st
+              (Array.fold_left (fun acc v -> sprintf "%s,%d" acc v) "" cell)
+              (PteVal.pp pte_cell);
+    match ns with
+    | [] -> 
+    cell.(0),pte_cell
     | n::ns ->
         let cell =
           if n.store == nil then cell
@@ -1063,6 +1097,8 @@ let do_set_read_v =
         begin match n.evt.dir with
         (* Assign the read value according to `cell` and `pte_cell` *)
         | Some R ->
+            let need_to_check_fault, st = CoSt.read_and_unset_fault st in
+            let fault = if do_kvm && need_to_check_fault then can_fault pte_cell else None in 
             begin match bank with
             | Ord | Instr->
                set_read_individual_v n cell
@@ -1077,6 +1113,7 @@ let do_set_read_v =
             | Pte ->
                 n.evt <- { n.evt with pte = pte_cell; }
             end ;
+            n.evt <- { n.evt with check_fault =fault };
             do_rec st cell pte_cell ns
         (* Update `st`, `cell` and `pte_cell` for future read events *)
         | Some W ->
@@ -1084,8 +1121,15 @@ let do_set_read_v =
               match bank with
               | Tag|CapaTag|CapaSeal ->
                  CoSt.set_co st bank n.evt.v
-              | Pte|Ord|Pair|VecReg _| Instr ->
+              |Ord|Pair|VecReg _| Instr ->
+                (* TODO what ist he is_data check here? *)
                 if Code.is_data n.evt.loc then st
+                else CoSt.set_co st bank n.evt.ins 
+              |Pte ->
+                (* TODO what ist he is_data check here? *)
+                (* Carry over the pte_value in st *)
+                if Code.is_data n.evt.loc then 
+                    CoSt.set_pte_value st n.evt.pte
                 else CoSt.set_co st bank n.evt.ins in
             do_rec st
               (* cell *)
@@ -1097,7 +1141,9 @@ let do_set_read_v =
               (*  pte_cell *)
               (match bank with
                | Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _|Instr -> pte_cell
-               | Pte -> n.evt.pte)
+               (* TODO is this correct to carry the most up-to-date pte value *)
+               | Pte -> 
+                    n.evt.pte)
               ns
         | None | Some J ->
             do_rec st cell pte_cell ns
@@ -1106,11 +1152,10 @@ let do_set_read_v =
   | []   -> assert false
   | n::_ ->
      let sz = get_wide_list ns in
-     let st = CoSt.create sz in
+     let pte_val = pte_val_init n.evt.loc in
+     let st = CoSt.create 0 sz pte_val in
      let cell = CoSt.get_cell st in
-     do_rec st cell
-        (pte_val_init n.evt.loc)
-        ns
+     do_rec st cell pte_val ns
 (*let new_pte = PteVal.set_pteval_field m.evt.pte "oa" ("phy_" ^ Code.pp_loc loc ) in*)
 
 let set_read_v nss =

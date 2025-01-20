@@ -596,6 +596,11 @@ let overwrite_value v ao w = match ao with
           | "oa" -> AArch64PteVal.set_oa pte value
           | otherwise -> AArch64PteVal.set_attr pte otherwise value
 
+    (* TODO add more *)
+    open AArch64PteVal
+    let can_fault pte_val = 
+        pte_val.valid = 0
+
   end
 
 (* Wide accesses *)
