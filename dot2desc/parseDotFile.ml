@@ -37,5 +37,14 @@ end = struct
     | e -> raise e
 
   let parse_file filename =
-    Misc.input_protect do_parse_file filename
+    let pairs = Misc.input_protect do_parse_file filename in
+    let tr_graphs, parsed_graphs = List.split pairs in
+
+    let do_writeback channel =
+      let printed_parsed_graphs = List.map ParsedDotGraph.pp parsed_graphs in
+      let file_contents = String.concat "\n\n" printed_parsed_graphs in
+      Printf.fprintf channel "%s\n" file_contents in
+
+    Misc.output_protect do_writeback filename;
+    tr_graphs
 end
