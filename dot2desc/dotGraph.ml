@@ -70,13 +70,25 @@ let get_loc_and_address_reg value =
   (* Look for the register that was used to address memory, which
     is part of the instruction (at the end of the attribute value) *)
   let address_reg = Str.regexp {|\[\([A-Z_]+[0-9]*\)\]|} in
-  ignore (Str.search_backward address_reg value (String.length value - 1));
-  let reg = Str.matched_group 1 value in
+  let reg = try
+    ignore (Str.search_backward address_reg value (String.length value - 1));
+    Str.matched_group 1 value
+  with Not_found ->
+    Warn.fatal "Could not find address register for memory access" in
   (loc, reg)
 
 let get_label_value attrs =
   let label = List.find (fun a -> a.ParsedAttr.name = "label") attrs in
   label.ParsedAttr.value
+
+let is_init_event n =
+  let value = get_label_value n.ParsedNode.attrs in
+  let r = Str.regexp {|Init|} in
+  try
+    ignore (Str.search_backward r value (String.length value - 1));
+    true
+  with
+  | Not_found -> false
 
 let tr_stmt acc stmt param_map =
 
@@ -90,14 +102,6 @@ let tr_stmt acc stmt param_map =
     let loc, reg = get_loc_and_address_reg value in
     let reg = StringMap.safe_find reg reg param_map in
     { Node.desc=f loc reg; kind=Node.Mem } in
-
-  let is_init_event str =
-    let r = Str.regexp {|Init|} in
-    try
-      ignore (Str.search_backward r str (String.length str - 1));
-      true
-    with
-    | Not_found -> false in
 
   let is_gpreg reg =
     let r = Str.regexp {|[BHWXQ][0-9]+|} in
@@ -122,7 +126,7 @@ let tr_stmt acc stmt param_map =
   match stmt with
   | ParsedStmt.Node n ->
     let value = get_label_value n.ParsedNode.attrs in
-    if is_init_event value then
+    if is_init_event n then
       (* Skip init events *)
       acc
     else begin
@@ -352,7 +356,7 @@ let flatten_subgraphs stmts =
   | stmt -> stmt :: acc in
   List.fold_right flatten stmts []
 
-let get_param_map stmts instr =
+let get_param_maps stmts instr =
   let regex = Str.regexp {|\([A-Z]+\)\( \([][,a-zA-Z0-9_]+\)\)?|} in
   if not (Str.string_match regex instr 0) then
     Warn.fatal "Instr validation did not work. %s is malformed" instr;
@@ -362,9 +366,14 @@ let get_param_map stmts instr =
     String.split_on_char ',' params
   with Not_found -> [] in
   let gpreg_regex = Str.regexp {|\[?\([BHWXQ]\)\([a-z0-9]+\)\]?|} in
-  let instr_params = List.map (fun param ->
+  let md_instr_params = List.map (fun param ->
     if Str.string_match gpreg_regex param 0 then
       Str.matched_group 1 param ^ "~" ^ Str.matched_group 2 param ^ "~"
+    else param
+  ) instr_params in
+  let graph_instr_params = List.map (fun param ->
+    if Str.string_match gpreg_regex param 0 then
+      Str.matched_group 1 param ^ Str.matched_group 2 param
     else param
   ) instr_params in
 
@@ -394,26 +403,32 @@ let get_param_map stmts instr =
   let gpreg_regex = Str.regexp {|\[?[BHWXQ]\([0-9]+\)\]?|} in
   let read_params = List.map (fun param ->
     if Str.string_match gpreg_regex param 0 then
-      "X" ^ Str.matched_group 1 param
-    else param
+      let index = Str.matched_group 1 param in
+      "X" ^ index, "[BHWXQ]" ^ index
+    else param, param
   ) read_params in
+  let md_read_params, graph_read_params = List.split read_params in
 
-  if (List.length read_params) <> (List.length instr_params) then
+  if (List.length md_read_params) <> (List.length md_instr_params) then
     Warn.user_error "Passed instr param and read param lists have \
       different lengths";
-  List.fold_left2 (fun map p1 p2 ->
+  let md_map = List.fold_left2 (fun map p1 p2 ->
     StringMap.add p1 p2 map
-  ) StringMap.empty read_params instr_params
+  ) StringMap.empty md_read_params md_instr_params in
+  let graph_pairs = List.fold_right2 (fun p1 p2 acc ->
+    (p1, p2) :: acc
+  ) graph_read_params graph_instr_params [] in
+  md_map, graph_pairs
 
 let tr parsed_graph instr =
   let flattened_stmts = flatten_subgraphs parsed_graph.ParsedDotGraph.stmts in
-  let param_map = match instr with
-  | Some s -> get_param_map flattened_stmts s
-  | None -> StringMap.empty in
-  (* let param_map = StringMap.empty in *)
-  let stmts = convert_bnodes flattened_stmts in
+  let md_param_map, graph_param_pairs = match instr with
+  | Some s -> get_param_maps flattened_stmts s
+  | None -> StringMap.empty, [] in
+
+  let stmts = convert_bnodes flattened_stmts in  
   let translated = List.fold_left (fun acc stmt ->
-    tr_stmt acc stmt param_map
+    tr_stmt acc stmt md_param_map
   ) empty stmts in
 
   let module Adjacency = struct
@@ -494,6 +509,72 @@ let tr parsed_graph instr =
     else
       compare i1 i2 in
 
+  (* Sort the nodes in the original parsed graph according to the topological order *)
+  let parsed_nodes = List.filter_map (function
+    | ParsedStmt.Node n -> if is_init_event n then None else Some n
+    | _ -> None
+  ) flattened_stmts in
+
+  let parsed_nodes = List.sort (fun n1 n2 ->
+    cmp_nodes n1.ParsedNode.name n2.ParsedNode.name
+  ) parsed_nodes in
+
+  (* Compute the regex to search for in the label, which is the read param,
+     preceded by an optional thread number and followed by an optional
+     access size. These two can be present when the param is a gp register *)
+  let param_replacements = List.map (fun (key, v) ->
+    let str1 = "\\(R\\|W\\)[0-9]:" ^ key ^ "[a-z]?" in
+    let str2 = "\\([0-9]:\\)?" ^ key ^ "[a-z]?" in
+    let regex1 = Str.regexp str1 in
+    let regex2 = Str.regexp str2 in
+    let v1 = "\\1 " ^ v in
+    regex1, v1, regex2, v
+  ) graph_param_pairs in
+  (* In case -instr was not passed, we need to just get rid of access sizes *)
+  let param_replacements = if param_replacements = [] then
+    let regex1 = Str.regexp {|\(R\|W\)[0-9]:\([A-Z][0-9]+\)[a-z]?|} in
+    let v1 = "\\1 \\2" in
+    let regex2 = Str.regexp {|\([0-9]:\)?\([A-Z][0-9]+\)[a-z]?|} in
+    let v2 = "\\2" in
+    [regex1, v1, regex2, v2]
+  else param_replacements in
+
+  (* Convert read to instr params, remove access sizes and tag every effect with Ei,
+     where i is its index in the topological order *)
+  let tag_regex = Str.regexp {|[a-zA-Z0-9_]+:|} in
+  let adapted_parsed_nodes = List.mapi (fun i n ->
+    let value = get_label_value n.ParsedNode.attrs in
+    let value = if Str.string_match tag_regex value 0 then
+      let tag = Printf.sprintf "E%d" (i + 1) in
+      let templ = tag ^ ":" in
+      Str.replace_first tag_regex templ value
+    else value in
+    let value = List.fold_left (fun value (regex1, v1, regex2, v2) ->
+      let value = Str.global_replace regex1 v1 value in
+      Str.global_replace regex2 v2 value
+    ) value param_replacements in
+    let attrs = List.map (fun a ->
+      if a.ParsedAttr.name = "label" then
+        { a with ParsedAttr.value=value }
+      else
+        a
+    ) n.ParsedNode.attrs in
+    { n with ParsedNode.attrs = attrs }
+  ) parsed_nodes in
+  let adapted_parsed_nodes = List.fold_left (fun map n ->
+    StringMap.add n.ParsedNode.name n map
+  ) StringMap.empty adapted_parsed_nodes in
+
+  (* Reinsert the parsed nodes into the original graph, in the same order *)
+  let adapted_parsed_stmts = List.map (function
+    | ParsedStmt.Node n ->
+        let node = if is_init_event n then n
+        else StringMap.find n.ParsedNode.name adapted_parsed_nodes in
+        ParsedStmt.Node node
+    | stmt -> stmt
+  ) flattened_stmts in
+  let adapted_parsed_graph = { parsed_graph with ParsedDotGraph.stmts = adapted_parsed_stmts } in
+
   (* Comparison function on edges - prioritises the in-node over
      the out-node, because once we start describing edges going
      inside a node, we want to describe all of those edges *)
@@ -503,7 +584,8 @@ let tr parsed_graph instr =
     if cmp_right <> 0 then cmp_right else cmp_left in
 
   let sorted_edges = List.sort cmp_edges translated.edges in
-  { translated with edges = sorted_edges }
+  let sorted_translated_graph = { translated with edges = sorted_edges } in
+  sorted_translated_graph, adapted_parsed_graph
 
 let describe g =
   let module EdgeMap = MyMap.Make(struct
