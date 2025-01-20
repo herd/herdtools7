@@ -1488,6 +1488,11 @@ That is, it is not a part of $\evalarrow$ but rather a separate transition relat
 \CodeSubsection{\EvalFPrimitiveBegin}{\EvalFPrimitiveEnd}{../Interpreter.ml}
 
 \subsubsection{SemanticsRule.FCall \label{sec:SemanticsRule.FCall}}
+\subsubsection{Example}
+In \listingref{semantics-fcall},
+the function \texttt{main} calls the function \texttt{foo} and the procedure \texttt{bar}.
+\ASLListing{Evaluating function calls}{semantics-fcall}{\semanticstests/SemanticsRule.FCall.asl}
+
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1499,14 +1504,16 @@ All of the following apply:
   \item $\envone$ is the environment consisting of the static environment $\tenv$ and the dynamic
         environment consisting of the dynamic component from $\denv$ and an empty local component;
   \item applying $\checkrecurselimit$ to $\name$ and $\vrecurselimit$ in $\envone$ yields $\vgone$\ProseOrError;
-  \item assigning the actual arguments with $((\envone, \emptygraph), \argdecls, \args)$
-        as per \secref{SemanticsRule.AssignArgs} gives $(\envtwo, \vgtwo)$ and ensures that each
+  \item \Proseeqdef{$\argnames$}{the identifiers appearing as the first component of each pair in $\argdecls$};
+  \item assigning the actual arguments with $((\envone, \emptygraph), \argnames, \args)$
+        as per \SemanticsRuleRef{AssignArgs} gives $(\envtwo, \vgtwo)$ and ensures that each
         formal argument in $\argdecls$ is
-        locally bound to the corresponding actual argument in $\args$;
-  \item assigning the actual parameters with $((\envtwo, \emptygraph), \paramdecls, \params)$
-        as per \secref{SemanticsRule.AssignArgs} gives $(\envthree, \vgthree)$ and ensures that each
-        formal argument in $\paramdecls$ is
-        locally bound to the corresponding actual argument in $\params$;
+        locally bound to the corresponding actual value in $\args$;
+  \item \Proseeqdef{$\paramnames$}{the identifiers appearing as the first component of each pair in $\params$};
+  \item assigning the actual parameters with $((\envtwo, \emptygraph), \paramnames, \paramdecls)$
+        as per \SemanticsRuleRef{AssignArgs} gives $(\envthree, \vgthree)$ and ensures that each
+        formal parameter in $\paramdecls$ is
+        locally bound to the corresponding actual value in $\params$;
   \item evaluating the body of the subprogram $\vbody$ as a statement in in $\envthree$
         is $\vres$\ProseOrAbnormal;
   \item matching the result $\vres$ to obtain a normal configuration as per \secref{SemanticsRule.MatchFuncRes}
@@ -1514,13 +1521,6 @@ All of the following apply:
   \item $\newg$ is the ordered composition of $\vgone$ with the $\asldata$ and $\vgtwo$ and $\vgthree$ with the $\aslpo$ edge;
   \item the result is $C$ with its graph substituted for $\newg$.
 \end{itemize}
-
-\subsubsection{Example}
-In \listingref{semantics-fcall},
-the function \texttt{main} calls the function \texttt{foo} and the procedure \texttt{bar}.
-\ASLListing{Evaluating function calls}{semantics-fcall}{\semanticstests/SemanticsRule.FCall.asl}
-
-\CodeSubsection{\EvalFCallBegin}{\EvalFCallEnd}{../Interpreter.ml}
 
 \subsubsection{Formally}
 \begin{mathpar}
@@ -1531,6 +1531,7 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
       \begin{array}{rcl}
       \funcbody &:& \SBASL(\vbody),\\
       \funcargs &:& \argdecls,\\
+      \funcparameters &:& \paramdecls,\\
       \funcrecurselimit &:& \vrecurselimit, \\
       &&\ldots
       \end{array}
@@ -1538,8 +1539,10 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
   }\\
   \envone \eqdef (\tenv, (G^\denv, \emptyfunc))\\
   \checkrecurselimit(\envone, \name, \vrecurselimit) \evalarrow \vgone \OrDynError\\\\
-  \assignargs((\envone, \emptygraph), \argdecls, \actualargs) \evalarrow (\envtwo, \vgtwo)\\
-  \assignnamedargs((\envtwo, \vgtwo), \params) \evalarrow (\envthree, \vgthree)\\
+  \argnames \eqdef [(\vx, \Ignore) \in \argdecls: \vx]\\
+  \assignargs((\envone, \emptygraph), \argnames, \actualargs) \evalarrow (\envtwo, \vgtwo)\\
+  \paramnames \eqdef [(\vx, \Ignore) \in \params: \vx]\\
+  \assignargs((\envtwo, \vgtwo), \paramnames, \paramdecls) \evalarrow (\envthree, \vgthree)\\
   \evalstmt{\envthree, \vbody} \evalarrow \vres \OrAbnormal\\
   \matchfuncres(\vres) \evalarrow C\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\ordered{\vgtwo}{\aslpo}{\vgthree}}\\
@@ -1547,6 +1550,7 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
   \evalsubprogram{\env, \name, \actualargs, \params} \evalarrow \withgraph{C}{\newg}
 }
 \end{mathpar}
+\CodeSubsection{\EvalFCallBegin}{\EvalFCallEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
 \lrmcomment{This is related to \identr{DFWZ}:}
@@ -1712,49 +1716,55 @@ returned by the evaluation of a primitive subprogram:
 The helper relation
 \hypertarget{def-assignargs}{}
 \[
-  \assignargs((\overname{\envs}{\env}\times\overname{\XGraphs}{\vgone})\aslsep \overname{(\Identifiers\times\ty)^*}{\decls}
-                  \aslsep \overname{(\vals\times\XGraphs)^*} {\actuals}) \;\aslrel\;
+  \assignargs(
+    (\overname{\envs}{\env}\times\overname{\XGraphs}{\vgone})\aslsep
+    \overname{\Identifiers^*}{\vids} \aslsep
+    \overname{(\vals\times\XGraphs)^*} {\actuals}) \;\aslrel\;
               (\overname{\envs}{\newenv} \times \overname{\XGraphs}{\newg})
 \]
-assigns the values of the actual arguments/parameters to the
-declared formal argument/parameter names of a given subprogram.
+updates the pair consisting of the environments $\env$ and \executiongraph\ $\vgone$
+by assigning the values given by $\actuals$ to the identifiers given by $\vids$,
+yielding the updated pair $(\newenv, \newg)$.
 
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
   \begin{itemize}
-    \item both $\decls$ and $\actuals$ are empty lists;
-    \item the result is $(\env, \vgone)$.
+    \item both $\vids$ and $\actuals$ are empty lists;
+    \item \Proseeqdef{$\newenv$}{$\env$};
+    \item \Proseeqdef{$\newg$}{$\vgone$}.
   \end{itemize}
 
   \item All of the following apply (\textsc{non\_empty}):
   \begin{itemize}
-    \item $\decls$ has $(\vx, \Ignore)$ as its head and $\decls'$ as its tail,
-    and $\actuals$ has $\vm$ as its head and $\actuals'$ as its tail;
+    \item $\vids$ has $\vx$ as its head and $\vidsone$ as its tail,
+          and $\actuals$ has $\vm$ as its head and $\actualsone$ as its tail;
     \item declaring the local identifier $\vx$ with $\vm$ in $\env$ as per \secref{SemanticsRule.DeclareLocalIdentifierMM}
     gives \\ $(\envone, \vgtwo)$.
-    \item assigning the remaining lists $\decls'$ and $\actuals'$ with the environment $\envone$ and the ordered
-    composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ edge gives $(\newenv, \newg)$.
+    \item assigning the remaining lists $\vidsone$ and $\actualsone$ with the environment $\envone$ and the ordered
+          composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ edge yields\\
+          $(\newenv, \newg)$.
     \item the entire result of the evaluation is $(\newenv, \newg)$.
   \end{itemize}
 \end{itemize}
 
 \subsubsection{Formally}
-  \begin{mathpar}
-    \inferrule[empty]{}
-    {
-      \assignargs((\env, \vgone), \emptylist, \emptylist) \evalarrow (\env, \vgone)
-    }
-    \and
-    \inferrule[non\_empty]{
-      \declarelocalidentifiermm(\env, \vx, \vm) \evalarrow (\envone, \vgtwo)\\
-      \assignargs((\envone, \ordered{\vgone}{\aslpo}{\vgtwo}), \decls', \actuals') \evalarrow (\newenv, \vg)
-    }
-    {
-      \assignargs((\env, \vgone), [(\vx, \Ignore)] \concat \decls', [\vm] \concat \actuals') \evalarrow (\newenv, \vg)
-    }
-  \end{mathpar}
+\begin{mathpar}
+\inferrule[empty]{}
+{
+  \assignargs((\env, \vgone), \overname{\vids}{\emptylist}, \overname{\emptylist}{\actuals}) \evalarrow (\overname{\env}{\newenv}, \overname{\vgone}{\newg})
+}
+\end{mathpar}
+
+\begin{mathpar}
+  \inferrule[non\_empty]{
+  \declarelocalidentifiermm(\env, \vx, \vm) \evalarrow (\envone, \vgtwo)\\
+  \assignargs((\envone, \ordered{\vgone}{\aslpo}{\vgtwo}), \vidsone, \actualsone) \evalarrow (\newenv, \vg)
+}{
+  \assignargs((\env, \vgone), \overname{[\vx] \concat \vidsone}{\vids}, \overname{[\vm] \concat \actualsone}{\actuals}) \evalarrow (\newenv, \vg)
+}
+\end{mathpar}
 
 \subsubsection{SemanticsRule.MatchFuncRes \label{sec:SemanticsRule.MatchFuncRes}}
 The helper relation

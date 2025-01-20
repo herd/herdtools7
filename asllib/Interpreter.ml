@@ -1402,9 +1402,14 @@ module Make (B : Backend.S) (C : Config) = struct
          let scope = B.Scope.new_local name in
          let env1 = IEnv.{ global = genv; local = local_empty_scoped scope } in
          let* () = check_recurse_limit pos name env1 recurse_limit in
-         let one_arg envm (x, _) m = declare_local_identifier_mm envm x m in
-         let env2 = List.fold_left2 one_arg (return env1) arg_decls args in
-         let*| env3 = List.fold_left2 one_arg env2 param_decls params in
+         let declare_arg envm x m = declare_local_identifier_mm envm x m in
+         let arg_names = List.map fst arg_decls in
+         let env2 =
+           List.fold_left2 declare_arg (return env1) arg_names args
+           |: SemanticsRule.AssignArgs
+         in
+         let param_names = List.map fst param_decls in
+         let*| env3 = List.fold_left2 declare_arg env2 param_names params in
          let**| res = eval_stmt env3 body in
          let () =
            if false then Format.eprintf "Finished evaluating %s.@." name
