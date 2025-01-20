@@ -183,9 +183,10 @@ The statement \texttt{var x = 3;} in \listingref{ldvar} binds \texttt{x}
 to the evaluation of \texttt{3} in $\env$.
 
 \subsubsection{Example}
-In \listingref{semantics-ldvar1}
+In \listingref{semantics-ldvar1},
+the statement
 \texttt{var x : integer = 3;} binds \texttt{x} to the evaluation of
-\texttt{3} in $\env$, without type consideration at runtime.
+\texttt{3} in $\env$.
 \ASLListing{Binding a local variable to a literal integer}{semantics-ldvar1}{\semanticstests/SemanticsRule.LDVar1.asl}
 
 \subsubsection{Formally}
