@@ -87,7 +87,7 @@ Declaring a local storage element is done via the following grammar rules:
   |\ & \LDITuple(\identifier^*) &
 \end{flalign*}
 
-\subsubsection{ASTRule.LocalDeclKeyword\label{sec:ASTRule.LocalDeclKeyword}}
+\ASTRuleDef{LocalDeclKeyword}
 \hypertarget{build-localdeclkeyword}{}
 The function
 \[
@@ -108,7 +108,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.DeclItem\label{sec:ASTRule.DeclItem}}
+\ASTRuleDef{DeclItem}
 \hypertarget{build-declitem}{}
 The function
 \[
@@ -138,7 +138,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \section{Variable Declarations\label{sec:VariableDeclarations}}
 \subsection{Typing}
-\subsubsection{TypingRule.LDVar \label{sec:TypingRule.LDVar}}
+\TypingRuleDef{LDVar}
 \subsubsection{Example}
 In \listingref{ldvar}, the statement \texttt{let x = 3;} is legal, since
 \texttt{x} is not defined elsewhere. It is added to the type environment
@@ -168,7 +168,7 @@ All of the following apply:
 \lrmcomment{This is related to \identr{YSPM}, \identd{FXST}.}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.LDVar \label{sec:SemanticsRule.LDVar}}
+\SemanticsRuleDef{LDVar}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -202,7 +202,7 @@ In \listingref{semantics-ldvar1}
 
 \section{Tuple Declarations\label{sec:TupleDeclarations}}
 \subsection{Typing}
-\subsubsection{TypingRule.LDTuple\label{sec:TypingRule.LDTuple}}
+\TypingRuleDef{LDTuple}
 \subsubsection{Example}
 \ASLListing{Declaring a tuple in the local storage}{typing-ldtuple}{\typingtests/TypingRule.LDTuple.asl}
 
@@ -242,7 +242,7 @@ All of the following apply:
 \CodeSubsection{\LDTupleBegin}{\LDTupleEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.LDTuple\label{sec:SemanticsRule.LDTuple}}
+\SemanticsRuleDef{LDTuple}
 \subsubsection{Example}
 In \listingref{semantics-ldtuple},
 \texttt{var (x,y,z) = (1,2,3);} binds \texttt{x} to the evaluation of

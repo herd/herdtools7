@@ -74,7 +74,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.SetBuiltin\label{sec:ASTRule.SetBuiltin}}
+\ASTRuleDef{SetBuiltin}
 The helper function
 \hypertarget{def-setbuiltin}{}
 \[
@@ -82,7 +82,7 @@ The helper function
   \overname{\decl}{\vdeclp}
   \cup \overname{\TBuildError}{\BuildErrorConfig}
 \]
-sets the $\funcbuiltin$ flag of a top-level function declaration, which is used to identify standard library functions in \secref{TypingRule.InsertStdlibParam}.
+sets the $\funcbuiltin$ flag of a top-level function declaration, which is used to identify standard library functions in \TypingRuleRef{InsertStdlibParam}.
 It produces a build error when given a top-level declaration which is not a function.
 
 \subsubsection{Prose}

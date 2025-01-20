@@ -182,26 +182,26 @@ multiplies two polynomials.
 \section{Typing Rules\label{sec:SymbolicReductionAndEquivalenceTestingRules}}
 We employ the following rules:
 \begin{itemize}
-  \item TypingRule.Normalize (see \secref{TypingRule.Normalize})
-  \item TypingRule.ReduceConstraint (see \secref{TypingRule.ReduceConstraint})
-  \item TypingRule.ReduceConstraints (see \secref{TypingRule.ReduceConstraints})
-  \item TypingRule.ToIR (see \secref{TypingRule.ToIR})
-  \item TypingRule.ExprEqual (see \secref{TypingRule.ExprEqual})
-  \item TypingRule.ExprEqualNorm (see \secref{TypingRule.ExprEqualNorm})
-  \item TypingRule.ExprEqualCase (see \secref{TypingRule.ExprEqualCase})
-  \item TypingRule.TypeEqual (see \secref{TypingRule.TypeEqual})
-  \item TypingRule.BitwidthEqual (see \secref{TypingRule.BitwidthEqual})
-  \item TypingRule.BitFieldsEqual (see \secref{TypingRule.BitFieldsEqual})
-  \item TypingRule.BitFieldEqual (see \secref{TypingRule.BitFieldEqual})
-  \item TypingRule.ConstraintsEqual (see \secref{TypingRule.ConstraintsEqual})
-  \item TypingRule.ConstraintEqual (see \secref{TypingRule.ConstraintEqual})
-  \item TypingRule.SlicesEqual (see \secref{TypingRule.SlicesEqual})
-  \item TypingRule.SliceEqual (see \secref{TypingRule.SliceEqual})
-  \item TypingRule.ArrayLengthEqual (see \secref{TypingRule.ArrayLengthEqual})
-  \item TypingRule.LiteralEqual (see \secref{TypingRule.LiteralEqual})
+  \item \TypingRuleRef{Normalize}
+  \item \TypingRuleRef{ReduceConstraint}
+  \item \TypingRuleRef{ReduceConstraints}
+  \item \TypingRuleRef{ToIR}
+  \item \TypingRuleRef{ExprEqual}
+  \item \TypingRuleRef{ExprEqualNorm}
+  \item \TypingRuleRef{ExprEqualCase}
+  \item \TypingRuleRef{TypeEqual}
+  \item \TypingRuleRef{BitwidthEqual}
+  \item \TypingRuleRef{BitFieldsEqual}
+  \item \TypingRuleRef{BitFieldEqual}
+  \item \TypingRuleRef{ConstraintsEqual}
+  \item \TypingRuleRef{ConstraintEqual}
+  \item \TypingRuleRef{SlicesEqual}
+  \item \TypingRuleRef{SliceEqual}
+  \item \TypingRuleRef{ArrayLengthEqual}
+  \item \TypingRuleRef{LiteralEqual}
 \end{itemize}
 
-\subsubsection{TypingRule.Normalize \label{sec:TypingRule.Normalize}}
+\TypingRuleDef{Normalize}
 \hypertarget{def-normalize}{}
 The function
 \[
@@ -245,7 +245,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\NormalizeBegin}{\NormalizeEnd}{../StaticModel.ml}
 
-\subsubsection{TypingRule.ReduceConstraint \label{sec:TypingRule.ReduceConstraint}}
+\TypingRuleDef{ReduceConstraint}
 \hypertarget{def-reduceconstraint}{}
 The function
 \[
@@ -296,7 +296,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ReduceConstraints \label{sec:TypingRule.ReduceConstraints}}
+\TypingRuleDef{ReduceConstraints}
 \hypertarget{def-reduceconstraints}{}
 The function
 \[
@@ -328,7 +328,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ToIR \label{sec:TypingRule.ToIR}}
+\TypingRuleDef{ToIR}
 \hypertarget{def-toir}{}
 The function
 \[
@@ -773,7 +773,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\ToIRBegin}{\ToIREnd}{../StaticModel.ml}
 
-\subsubsection{TypingRule.ExprEqual \label{sec:TypingRule.ExprEqual}}
+\TypingRuleDef{ExprEqual}
 \hypertarget{def-exprequal}{}
 The function
 \[
@@ -815,7 +815,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ExprEqualNorm \label{sec:TypingRule.ExprEqualNorm}}
+\TypingRuleDef{ExprEqualNorm}
 \hypertarget{def-exprequalnorm}{}
 The helper function
 \[
@@ -874,7 +874,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ExprEqualCase \label{sec:TypingRule.ExprEqualCase}}
+\TypingRuleDef{ExprEqualCase}
 \hypertarget{def-exprequalcase}{}
 The helper function
 \[
@@ -1263,7 +1263,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.TypeEqual \label{sec:TypingRule.TypeEqual}}
+\TypingRuleDef{TypeEqual}
 \hypertarget{def-typeequal}{}
 The function
 \[
@@ -1464,7 +1464,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.BitwidthEqual \label{sec:TypingRule.BitwidthEqual}}
+\TypingRuleDef{BitwidthEqual}
 \hypertarget{def-bitwidthequal}{}
 The function
 \[
@@ -1486,7 +1486,7 @@ Testing whether the expressions $\vwone$ and $\vwtwo$ are equivalent in $\tenv$ 
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.BitFieldsEqual \label{sec:TypingRule.BitFieldsEqual}}
+\TypingRuleDef{BitFieldsEqual}
 \hypertarget{def-bitfieldsequal}{}
 The function
 \[
@@ -1531,7 +1531,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.BitFieldEqual \label{sec:TypingRule.BitFieldEqual}}
+\TypingRuleDef{BitFieldEqual}
 \hypertarget{def-bitfieldequal}{}
 The function
 \[
@@ -1623,7 +1623,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ConstraintsEqual \label{sec:TypingRule.ConstraintsEqual}}
+\TypingRuleDef{ConstraintsEqual}
 \hypertarget{def-constraintsequal}{}
 The function
 \[
@@ -1654,7 +1654,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ConstraintEqual \label{sec:TypingRule.ConstraintEqual}}
+\TypingRuleDef{ConstraintEqual}
 \hypertarget{def-constraintequal}{}
 The function
 \[
@@ -1717,7 +1717,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SlicesEqual \label{sec:TypingRule.SlicesEqual}}
+\TypingRuleDef{SlicesEqual}
 \hypertarget{def-slicesequal}{}
 The function
 \[
@@ -1762,7 +1762,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SliceEqual \label{sec:TypingRule.SliceEqual}}
+\TypingRuleDef{SliceEqual}
 \hypertarget{def-sliceequal}{}
 The function
 \[
@@ -1838,7 +1838,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ArrayLengthEqual \label{sec:TypingRule.ArrayLengthEqual}}
+\TypingRuleDef{ArrayLengthEqual}
 \hypertarget{def-arraylengthequal}{}
 The function
 \[
@@ -1899,7 +1899,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.LiteralEqual \label{sec:TypingRule.LiteralEqual}}
+\TypingRuleDef{LiteralEqual}
 \hypertarget{def-literalequal}{}
 The function
 \[
@@ -1919,7 +1919,7 @@ $\vb$ is $\True$ if and only if $\vvone$ is equal to $\vvtwo$.
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.PolynomialToExpr \label{sec:TypingRule.PolynomialToExpr}}
+\TypingRuleDef{PolynomialToExpr}
 \hypertarget{def-polynomialtoexpr}{}
 The function
 \[
@@ -1974,7 +1974,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.CompareMonomialBindings \label{sec:TypingRule.CompareMonomialBindings}}
+\TypingRuleDef{CompareMonomialBindings}
 \hypertarget{def-comparemonomialbindings}{}
 The function
 \[
@@ -2043,7 +2043,7 @@ via the lexicographic ordering.
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.MonomialsToExpr \label{sec:TypingRule.MonomialsToExpr}}
+\TypingRuleDef{MonomialsToExpr}
 \hypertarget{def-monomialstoexpr}{}
 The function
 \[
@@ -2090,7 +2090,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.MonomialToExpr \label{sec:TypingRule.MonomialToExpr}}
+\TypingRuleDef{MonomialToExpr}
 \hypertarget{def-monomialtoexpr}{}
 The function
 \[
@@ -2168,7 +2168,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SymAddExpr \label{sec:TypingRule.SymAddExpr}}
+\TypingRuleDef{SymAddExpr}
 \hypertarget{def-symaddexpr}{}
 The function
 \[
@@ -2253,7 +2253,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.UnitaryMonomialsToExpr \label{sec:TypingRule.UnitaryMonomialsToExpr}}
+\TypingRuleDef{UnitaryMonomialsToExpr}
 \hypertarget{def-unitarymonomialstoexpr}{}
 The function
 \[
@@ -2352,7 +2352,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SymMulExpr \label{sec:TypingRule.SymMulExpr}}
+\TypingRuleDef{SymMulExpr}
 \hypertarget{def-symmulexpr}{}
 The function
 $
@@ -2445,7 +2445,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\TypeOfBegin}{\TypeOfEnd}{../StaticModel.ml}
 
-\subsubsection{TypingRule.NormalizeOpt\label{sec:TypingRule.NormalizeOpt}}
+\TypingRuleDef{NormalizeOpt}
 \hypertarget{def-normalizeopt}{}
 The helper function
 \[

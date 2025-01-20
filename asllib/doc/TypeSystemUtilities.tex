@@ -69,7 +69,7 @@ One of the following applies:
 \end{mathpar}
 
 \hypertarget{def-checknoduplicates}{}
-\subsubsection{TypingRule.CheckNoDuplicates \label{sec:TypingRule.CheckNoDuplicates}}
+\TypingRuleDef{CheckNoDuplicates}
 The function
 \[
   \checknoduplicates(\overname{\identifier^*}{\id_{1..k}}) \aslto \{\True\} \cup \TTypeError
@@ -112,7 +112,7 @@ One of the following applies:
 \end{mathpar}
 
 \hypertarget{def-filteroptionlist}{}
-\subsubsection{TypingRule.FilterOptionList \label{sec:TypingRule.FilterOptionList}}
+\TypingRuleDef{FilterOptionList}
 The parametric function
 \[
   \filteroptionlist(\overname{\langle T \rangle^*}{\vvopts}) \aslto \overname{T^*}{\vvs}
@@ -165,7 +165,7 @@ One of the following applies:
   }
 \end{mathpar}
 
-\subsubsection{TypingRule.Sort\label{sec:sortinglists}}
+\TypingRuleDef{Sort}
 \hypertarget{def-sort}{}
 The parametric function
 \[
@@ -269,7 +269,7 @@ One of the following applies:
 \end{mathpar}
 
 \hypertarget{def-typeofarraylength}{}
-\subsubsection{TypingRule.TypeOfArrayLength \label{sec:TypingRule.TypeOfArrayLength}}
+\TypingRuleDef{TypeOfArrayLength}
 The function
 \[
   \typeofarraylength(\overname{\arrayindex}{\size}) \aslto
@@ -369,7 +369,7 @@ is the local static environment of $\emptytenv$.
 \CodeSubsection{\WithEmptyLocalBegin}{\WithEmptyLocalEnd}{../types.ml}
 
 \hypertarget{def-checkvarnotinenv}{}
-\subsubsection{TypingRule.CheckVarNotInEnv\label{sec:TypingRule.CheckVarNotInEnv}}
+\TypingRuleDef{CheckVarNotInEnv}
 The function
 \[
   \checkvarnotinenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\Strings}{\id}}
@@ -396,7 +396,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\CheckVarNotInEnvBegin}{\CheckVarNotInEnvEnd}{../types.ml}
 
-\subsubsection{TypingRule.CheckVarNotInGEnv\label{sec:TypingRule.CheckVarNotInGEnv}}
+\TypingRuleDef{CheckVarNotInGEnv}
 \hypertarget{def-checkvarnotingenv}{}
 The function
 \[
@@ -425,7 +425,7 @@ All of the following apply:
 \CodeSubsection{\CheckVarNotInGEnvBegin}{\CheckVarNotInGEnvEnd}{../Interpreter.ml}
 
 \hypertarget{def-addlocal}{}
-\subsubsection{TypingRule.AddLocal \label{sec:TypingRule.AddLocal}}
+\TypingRuleDef{AddLocal}
 The function
 \[
   \addlocal(
@@ -460,7 +460,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.IsUndefined\label{sec:TypingRule.IsUndefined}}
+\TypingRuleDef{IsUndefined}
 \hypertarget{def-isundefined}{}
 The function
 \[
@@ -484,7 +484,7 @@ $\vb$ is $\True$ if and only if $\vx$ is both undefined in the global static env
 \end{mathpar}
 \CodeSubsection{\IsUndefinedBegin}{\IsUndefinedEnd}{../StaticEnv.ml}
 
-\subsubsection{TypingRule.IsGlobalUndefined\label{sec:TypingRule.IsGlobalUndefined}}
+\TypingRuleDef{IsGlobalUndefined}
 \hypertarget{def-isglobalundefined}{}
 The function
 \[
@@ -511,7 +511,7 @@ $\globalstoragetypes$, $\subprograms$, and $\declaredtypes$.
 \end{mathpar}
 \CodeSubsection{\IsGlobalUndefinedBegin}{\IsGlobalUndefinedEnd}{../StaticEnv.ml}
 
-\subsubsection{TypingRule.IsLocalUndefined\label{sec:TypingRule.IsLocalUndefined}}
+\TypingRuleDef{IsLocalUndefined}
 \hypertarget{def-islocalundefined}{}
 The function
 \[
@@ -529,7 +529,7 @@ Define $\vb$ as $\True$ if and only if $\vx$ is not bound in the $\localstoraget
 \end{mathpar}
 \CodeSubsection{\IsLocalUndefinedBegin}{\IsLocalUndefinedEnd}{../StaticEnv.ml}
 
-\subsubsection{TypingRule.IsSubprogram\label{sec:TypingRule.IsSubprogram}}
+\TypingRuleDef{IsSubprogram}
 \hypertarget{def-issubprogram}{}
 The function
 \[
@@ -550,7 +550,7 @@ environment of $\tenv$.
 \end{mathpar}
 \CodeSubsection{\IsSubprogramBegin}{\IsSubprogramEnd}{../StaticEnv.ml}
 
-\subsubsection{TypingRule.LookupConstant}
+\TypingRuleDef{LookupConstant}
 \hypertarget{def-lookupconstant}{}
 The function
 \[
@@ -610,7 +610,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\LookupConstantBegin}{\LookupConstantEnd}{../StaticEnv.ml}
 
-\subsubsection{TypingRule.AddGlobalConstant\label{sec:TypingRule.AddGlobalConstant}}
+\TypingRuleDef{AddGlobalConstant}
 \hypertarget{def-addglobalconstant}{}
 The function
 \[
@@ -633,7 +633,7 @@ Define $\newgenv$ as $\genv$ with the $\constantvalues$ map updated to bind $\na
 \end{mathpar}
 \CodeSubsection{\AddGlobalConstantBegin}{\AddGlobalConstantEnd}{../StaticEnv.ml}
 
-\subsubsection{TypingRule.AddLocalConstant\label{sec:TypingRule.AddLocalConstant}}
+\TypingRuleDef{AddLocalConstant}
 \hypertarget{def-addlocalconstant}{}
 The function
 \[
@@ -656,7 +656,7 @@ Define $\newtenv$ as $\tenv$ with the global component updated such that its $\c
 \end{mathpar}
 \CodeSubsection{\AddLocalConstantBegin}{\AddLocalConstantEnd}{../StaticEnv.ml}
 
-\subsubsection{TypingRule.LookupImmutableExpr\label{sec:TypingRule.LookupImmutableExpr}}
+\TypingRuleDef{LookupImmutableExpr}
 \hypertarget{def-lookupimmutableexpr}{}
 The function
 \[
@@ -714,7 +714,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\AddGlobalStorageBegin}{\AddGlobalStorageEnd}{../StaticEnv.ml}
 
-\subsubsection{TypingRule.AddGlobalImmutableExpr\label{sec:TypingRule.AddGlobalImmutableExpr}}
+\TypingRuleDef{AddGlobalImmutableExpr}
 \hypertarget{def-addglobalimmutableexpr}{}
 The function
 \[
@@ -742,7 +742,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\AddGlobalImmutableExprBegin}{\AddGlobalImmutableExprEnd}{../StaticEnv.ml}
 
-\subsubsection{TypingRule.AddLocalImmutableExpr\label{sec:TypingRule.AddLocalImmutableExpr}}
+\TypingRuleDef{AddLocalImmutableExpr}
 \hypertarget{def-addlocalimmutableexpr}{}
 The function
 \[
@@ -770,7 +770,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\AddLocalImmutableExprBegin}{\AddLocalImmutableExprEnd}{../StaticEnv.ml}
 
-\subsubsection{TypingRule.ShouldRememberImmutableExpression\label{sec:TypingRule.ShouldRememberImmutableExpression}}
+\TypingRuleDef{ShouldRememberImmutableExpression}
 \hypertarget{def-shouldrememberimmutableexpression}{}
 The helper function
 \[
@@ -796,7 +796,7 @@ yields $\True$.
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AddImmutableExpr\label{sec:TypingRule.AddImmutableExpr}}
+\TypingRuleDef{AddImmutableExpr}
 \hypertarget{def-addimmutableexpression}{}
 The function
 \[
@@ -869,7 +869,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AddSubprogram\label{sec:TypingRule.AddSubprogram}}
+\TypingRuleDef{AddSubprogram}
 \hypertarget{def-addsubprogram}{}
 The function
 \[
@@ -899,7 +899,7 @@ binding $\name$ to $\funcdef$.
 \end{mathpar}
 \CodeSubsection{\AddSubprogramBegin}{\AddSubprogramEnd}{../StaticEnv.ml}
 
-\subsubsection{TypingRule.AddType\label{sec:TypingRule.AddType}}
+\TypingRuleDef{AddType}
 \hypertarget{def-addtype}{}
 The function
 \[

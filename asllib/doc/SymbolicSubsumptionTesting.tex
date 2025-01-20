@@ -2,7 +2,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 This chapter is concerned with implementing a \hyperlink{def-soundsubsumptiontest}{sound subsumption test}
 for integer types, as defined in \secref{subsumptiontesting} and employed by
-TypingRule.SubtypeSatisfaction (see \secref{TypingRule.SubtypeSatisfaction}).
+TypingRule.SubtypeSatisfaction (see \TypingRuleRef{SubtypeSatisfaction}).
 
 \hypertarget{def-symbolicdomain}{}
 The symbolic reasoning operates by first transforming types into expressions in a \emph{symbolic domain} AST
@@ -27,26 +27,26 @@ The symbolic reasoning operates by first transforming types into expressions in 
         which represents the set of all integers.
 \end{itemize}
 
-The main rule is of this chapter is TypingRule.SymSubsumes (see \secref{TypingRule.SymSubsumes}), which defines the function
+The main rule is of this chapter is \TypingRuleRef{SymSubsumes}, which defines the function
 $\symsubsumes$.
 
 Other helper rules are as follows:
 \begin{itemize}
-  \item TypingRule.SymDomOfType (see \secref{TypingRule.SymDomOfType})
-  \item TypingRule.SymDomOfExpr (see \secref{TypingRule.SymDomOfExpr})
-  \item TypingRule.SymDomOfWidth (see \secref{TypingRule.SymDomOfWidth})
-  \item TypingRule.IntSetOp (see \secref{TypingRule.IntSetOp})
-  \item TypingRule.IntSetToIntConstraints (see \secref{TypingRule.IntSetToIntConstraints})
-  \item TypingRule.SymDomOfLiteral (see \secref{TypingRule.SymDomOfLiteral})
-  \item TypingRule.SymIntSetOfConstraints (see \secref{TypingRule.SymIntSetOfConstraints})
-  \item TypingRule.ConstraintToIntSet (see \secref{TypingRule.ConstraintToIntSet})
-  \item TypingRule.NormalizeToInt (see \secref{TypingRule.NormalizeToInt})
-  \item TypingRule.SymDomIsSubset (see \secref{TypingRule.SymDomIsSubset})
-  \item TypingRule.SymIntSetSubset (see \secref{TypingRule.SymIntSetSubset})
-  \item TypingRule.ConstraintBinop (see \secref{TypingRule.ConstraintBinop})
+  \item \TypingRuleRef{SymDomOfType}
+  \item \TypingRuleRef{SymDomOfExpr}
+  \item \TypingRuleRef{SymDomOfWidth}
+  \item \TypingRuleRef{IntSetOp}
+  \item \TypingRuleRef{IntSetToIntConstraints}
+  \item \TypingRuleRef{SymDomOfLiteral}
+  \item \TypingRuleRef{SymIntSetOfConstraints}
+  \item \TypingRuleRef{ConstraintToIntSet}
+  \item \TypingRuleRef{NormalizeToInt}
+  \item \TypingRuleRef{SymDomIsSubset}
+  \item \TypingRuleRef{SymIntSetSubset}
+  \item \TypingRuleRef{ConstraintBinop}
 \end{itemize}
 
-\subsubsection{TypingRule.SymSubsumes \label{sec:TypingRule.SymSubsumes}}
+\TypingRuleDef{SymSubsumes}
 \hypertarget{def-symsubsumes}{}
 The predicate
 \[
@@ -78,7 +78,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SymDomOfType \label{sec:TypingRule.SymDomOfType}}
+\TypingRuleDef{SymDomOfType}
 \hypertarget{def-symdomoftype}{}
 The function
 \[
@@ -166,7 +166,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SymDomOfExpr \label{sec:TypingRule.SymDomOfExpr}}
+\TypingRuleDef{SymDomOfExpr}
 \hypertarget{def-symdomofexpr}{}
 The function
 \[
@@ -310,7 +310,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SymDomOfWidth \label{sec:TypingRule.SymDomOfWidth}}
+\TypingRuleDef{SymDomOfWidth}
 \hypertarget{def-symdomofwidth}{}
 The function
 \[
@@ -380,7 +380,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.IntSetOp \label{sec:TypingRule.IntSetOp}}
+\TypingRuleDef{IntSetOp}
 \hypertarget{def-intsetop}{}
 The function
 \[
@@ -476,7 +476,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.IntSetToIntConstraints \label{sec:TypingRule.IntSetToIntConstraints}}
+\TypingRuleDef{IntSetToIntConstraints}
 \hypertarget{def-intsettointconstraints}{}
 The function
 \[
@@ -571,7 +571,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SymDomOfLiteral \label{sec:TypingRule.SymDomOfLiteral}}
+\TypingRuleDef{SymDomOfLiteral}
 \hypertarget{def-symdomofliteral}{}
 The function
 \[
@@ -593,7 +593,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SymIntSetOfConstraints \label{sec:TypingRule.SymIntSetOfConstraints}}
+\TypingRuleDef{SymIntSetOfConstraints}
 \hypertarget{def-intsetofintconstraintse}{}
 The function
 \[
@@ -648,7 +648,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ConstraintToIntSet \label{sec:TypingRule.ConstraintToIntSet}}
+\TypingRuleDef{ConstraintToIntSet}
 \hypertarget{def-constrainttointset}{}
 The function
 \[
@@ -698,7 +698,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.NormalizeToInt \label{sec:TypingRule.NormalizeToInt}}
+\TypingRuleDef{NormalizeToInt}
 \hypertarget{def-normalizetoint}{}
 The function
 \[
@@ -747,7 +747,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SymDomIsSubset \label{sec:TypingRule.SymDomIsSubset}}
+\TypingRuleDef{SymDomIsSubset}
 \hypertarget{def-symdomissubset}{}
 The function
 \[
@@ -776,7 +776,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SymIntSetSubset \label{sec:TypingRule.SymIntSetSubset}}
+\TypingRuleDef{SymIntSetSubset}
 \hypertarget{def-symintsetsubset}{}
 The function
 \[
@@ -859,7 +859,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ConstraintBinop\label{sec:TypingRule.ConstraintBinop}}
+\TypingRuleDef{ConstraintBinop}
 \hypertarget{def-constraintbinop}{}
 The function
 \[
@@ -944,7 +944,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\ConstraintBinopBegin}{\ConstraintBinopEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.ApplyBinopExtremities\label{sec:TypingRule.ApplyBinopExtremities}}
+\TypingRuleDef{ApplyBinopExtremities}
 \hypertarget{def-applybinopextremities}{}
 The function
 \[
@@ -1042,7 +1042,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.PossibleExtremitiesLeft\label{sec:TypingRule.PossibleExtremitiesLeft}}
+\TypingRuleDef{PossibleExtremitiesLeft}
 \hypertarget{def-possibleextremitiesleft}{}
 The function
 \[
@@ -1085,7 +1085,7 @@ for cases where applying $\op$ to $\va$ and $\vb$ would lead to a dynamic error.
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.PossibleExtremitiesRight\label{sec:TypingRule.PossibleExtremitiesRight}}
+\TypingRuleDef{PossibleExtremitiesRight}
 \hypertarget{def-possibleextremitiesright}{}
 The function
 \[
@@ -1166,7 +1166,7 @@ for cases where applying $\op$ to $\vc$ and $\vd$ would lead to a dynamic error.
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ConstraintMod\label{sec:TypingRule.ConstraintMod}}
+\TypingRuleDef{ConstraintMod}
 \hypertarget{def-constraintmod}{}
 The function
 \[
@@ -1209,7 +1209,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\ConstraintModBegin}{\ConstraintModEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.ConstraintPow\label{sec:TypingRule.ConstraintPow}}
+\TypingRuleDef{ConstraintPow}
 \hypertarget{def-constraintpow}{}
 The function
 \[

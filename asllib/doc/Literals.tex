@@ -17,14 +17,14 @@ As such, they are not built by the Grammar, but by the Type-checker.
 
 \section{Abstract Syntax}
 \begin{flalign*}
-\literal \derives\ & \lint(\overname{n}{\Z}) & \\
-    |\ & \lbool(\overname{b}{\{\True, \False\}})
+\literal \derives\ & \lint(\overtext{n}{$\Z$}) & \\
+    |\ & \lbool(\overtext{b}{$\{\True, \False\}$})
     & \\
-    |\ & \lreal(\overname{q}{\Q})
+    |\ & \lreal(\overtext{q}{$\Q$})
     & \\
-    |\ & \lbitvector(\overname{B}{B \in \{0, 1\}^*})
+    |\ & \lbitvector(\overtext{B}{$B \in \{0, 1\}^*$})
     & \\
-    |\ & \lstring(\overname{S}{S \in \{C \;|\; \texttt{"$C$"}\ \in\ \Strings\}}) &
+    |\ & \lstring(\overtext{S}{$S \in \Strings$}) &
 \end{flalign*}
 
 \subsection{ASTRule.Value \label{sec:ASTRule.Value}}
@@ -71,7 +71,7 @@ transforms a parse node $\vparsednode$ for $\Nvalue$ into an AST node $\vastnode
 \end{mathpar}
 
 \section{Typing}
-\subsubsection{TypingRule.Lit \label{sec:TypingRule.Lit}}
+\TypingRuleDef{Lit}
 \hypertarget{def-annotateliteral}{}
 The function
 \[

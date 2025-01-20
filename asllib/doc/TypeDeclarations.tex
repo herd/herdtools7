@@ -30,13 +30,7 @@ Type declarations have no associated semantics.
 \Field \derives\ & (\identifier, \ty) &
 \end{flalign*}
 
-\subsubsection{ASTRule.GlobalDecl}
-The relation
-\[
-  \builddecl : \overname{\parsenode{\Ndecl}}{\vparsednode} \;\aslrel\; \overname{\decl}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
+\ASTRuleDef{TypeDecl}
 \begin{mathpar}
 \inferrule[type\_decl]{}
 {
@@ -65,7 +59,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.Subtype \label{sec:ASTRule.Subtype}}
+\ASTRuleDef{Subtype}
 \hypertarget{build-subtype}{}
 The function
 \[
@@ -97,7 +91,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.Subtypeopt \label{sec:ASTRule.Subtypeopt}}
+\ASTRuleDef{Subtypeopt}
 \hypertarget{build-subtypeopt}{}
 The function
 \[
@@ -114,7 +108,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.Fields \label{sec:ASTRule.Fields}}
+\ASTRuleDef{Fields}
 \hypertarget{build-fields}{}
 The function
 \[
@@ -131,7 +125,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.FieldsOpt \label{sec:ASTRule.FieldsOpt}}
+\ASTRuleDef{FieldsOpt}
 \hypertarget{build-fieldsopt}{}
 The function
 \[
@@ -159,17 +153,17 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 We also define the following helper rules:
 \begin{itemize}
-  \item TypingRule.AnnotateTypeOpt (see \secref{TypingRule.AnnotateTypeOpt})
-  \item TypingRule.AnnotateExprOpt (see \secref{TypingRule.AnnotateExprOpt})
-  \item TypingRule.AnnotateInitType (see \secref{TypingRule.AnnotateInitType})
-  \item TypingRule.AddGlobalStorage (see \secref{TypingRule.AddGlobalStorage})
-  \item TypingRule.DeclareType (see \secref{TypingRule.DeclareType})
-  \item TypingRule.AnnotateExtraFields (see \secref{TypingRule.AnnotateExtraFields})
-  \item TypingRule.AnnotateEnumLabels (see \secref{TypingRule.AnnotateEnumLabels})
-  \item TypingRule.DeclareConst (see \secref{TypingRule.DeclareConst})
+  \item\TypingRuleRef{AnnotateTypeOpt}
+  \item\TypingRuleRef{AnnotateExprOpt}
+  \item\TypingRuleRef{AnnotateInitType}
+  \item\TypingRuleRef{AddGlobalStorage}
+  \item\TypingRuleRef{DeclareType}
+  \item\TypingRuleRef{AnnotateExtraFields}
+  \item\TypingRuleRef{AnnotateEnumLabels}
+  \item\TypingRuleRef{DeclareConst}
 \end{itemize}
 
-\subsubsection{TypingRule.DeclareType \label{sec:TypingRule.DeclareType}}
+\TypingRuleDef{DeclareType}
 \hypertarget{def-declaretype}{}
 The function
 \[
@@ -247,7 +241,7 @@ All of the following apply:
 \CodeSubsection{\DeclareTypeBegin}{\DeclareTypeEnd}{../Typing.ml}
 \lrmcomment{This is related to \identr{DHRC}, \identd{YZBQ}, \identr{DWSP}, \identi{MZXL}, \identr{MDZD}, \identr{CHKR}.}
 
-\subsubsection{TypingRule.AnnotateExtraFields \label{sec:TypingRule.AnnotateExtraFields}}
+\TypingRuleDef{AnnotateExtraFields}
 \hypertarget{def-annotateextrafields}{}
 The function
 \[
@@ -360,7 +354,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AnnotateTypeOpt \label{sec:TypingRule.AnnotateTypeOpt}}
+\TypingRuleDef{AnnotateTypeOpt}
 \hypertarget{def-annotatetypeopt}{}
 The function
 \[
@@ -401,7 +395,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AnnotateExprOpt \label{sec:TypingRule.AnnotateExprOpt}}
+\TypingRuleDef{AnnotateExprOpt}
 \hypertarget{def-annotateexpropt}{}
 The function
 \[
@@ -443,7 +437,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AnnotateInitType \label{sec:TypingRule.AnnotateInitType}}
+\TypingRuleDef{AnnotateInitType}
 \hypertarget{def-annotateinittype}{}
 The function
 \[
@@ -505,7 +499,7 @@ One of the following applies:
 \end{mathpar}
 
 \hypertarget{def-declaredtype}{}
-\subsubsection{TypingRule.DeclaredType \label{sec:TypingRule.DeclaredType}}
+\TypingRuleDef{DeclaredType}
 The function
 \[
   \declaredtype(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\id}) \aslto \overname{\ty}{\vt} \cup \TTypeError
@@ -537,7 +531,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AnnotateEnumLabels \label{sec:TypingRule.AnnotateEnumLabels}}
+\TypingRuleDef{AnnotateEnumLabels}
 \hypertarget{def-annotateenumlabels}{}
 The function
 \[
@@ -579,7 +573,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.DeclareConst \label{sec:TypingRule.DeclareConst}}
+\TypingRuleDef{DeclareConst}
 \hypertarget{def-declareconst}{}
 The function
 \[

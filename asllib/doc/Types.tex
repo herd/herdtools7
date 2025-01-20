@@ -122,7 +122,7 @@ expressions and statements.
 |\ & \ConstraintRange(\overtext{\expr}{start}, \overtext{\expr}{end})&
 \end{flalign*}
 
-\subsubsection{ASTRule.Ty.TInt\label{sec:ASTRule.Ty.TInt}}
+\ASTRuleDef{Ty.TInt}
 \begin{mathpar}
 \inferrule[integer]{}{
   \buildty(\Nty(\Tinteger, \punnode{\Nconstraintkindopt})) \astarrow
@@ -130,7 +130,7 @@ expressions and statements.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.IntConstraintsOpt\label{sec:ASTRule.IntConstraintsOpt}}
+\ASTRuleDef{IntConstraintsOpt}
 \hypertarget{build-constraintkindopt}{}
 The function
 \[
@@ -184,7 +184,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.IntConstraint\label{sec:ASTRule.IntConstraint}}
+\ASTRuleDef{IntConstraint}
 \hypertarget{build-intconstraint}{}
 The function
 \[
@@ -214,7 +214,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \subsection{Typing Integer Types\label{sec:TypingIntegerTypes}}
-\subsubsection{TypingRule.TInt\label{sec:TypingRule.TInt}}
+\TypingRuleDef{TInt}
 \subsubsection{Example}
 In \listingref{typing-unconstrained}, \listingref{typing-wellconstrained},
 and \listingref{typing-parameterized} all examples of
@@ -308,7 +308,7 @@ One of the following applies:
 
 \CodeSubsection{\TIntBegin}{\TIntEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.AnnotateConstraint\label{sec:TypingRule.AnnotateConstraint}}
+\TypingRuleDef{AnnotateConstraint}
 \hypertarget{def-annotateconstraint}{}
 The function
 \[
@@ -367,7 +367,7 @@ One of the following applies:
 \ty \derives\ & \TReal &
 \end{flalign*}
 
-\subsubsection{ASTRule.TReal}
+\ASTRuleDef{TReal}
 \begin{mathpar}
 \inferrule{}{
   \buildty(\Nty(\Treal)) \astarrow
@@ -376,7 +376,7 @@ One of the following applies:
 \end{mathpar}
 
 \subsection{Typing the Real Type\label{sec:TypingRealType}}
-\subsubsection{TypingRule.TReal\label{sec:TypingRule.TReal}}
+\TypingRuleDef{TReal}
 \subsubsection{Example}
 In \listingref{typing-treal}, all the uses of \texttt{real} are well-typed.
 \ASLListing{Well-typed real types}{typing-treal}{\typingtests/TypingRule.TReal.asl}
@@ -409,7 +409,7 @@ All of the following apply:
 \ty \derives\ & \TString&
 \end{flalign*}
 
-\subsubsection{ASTRule.Ty.String}
+\ASTRuleDef{Ty.String}
 \begin{mathpar}
 \inferrule{}{
   \buildty(\Nty(\Tstring)) \astarrow
@@ -418,7 +418,7 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Typing the String Type\label{sec:TypingStringType}}
-\subsubsection{TypingRule.TString\label{sec:TypingRule.TString}}
+\TypingRuleDef{TString}
 \subsubsection{Example}
 In \listingref{typing-tstring}, all the uses of \texttt{string} are well-typed.
 \ASLListing{Well-typed string types}{typing-tstring}{\typingtests/TypingRule.TString.asl}
@@ -451,7 +451,7 @@ All of the following apply:
 \ty \derives\ & \TBool &
 \end{flalign*}
 
-\subsubsection{ASTRule.Ty.BoolType}
+\ASTRuleDef{Ty.BoolType}
 \begin{mathpar}
 \inferrule{}{
   \buildty(\Nty(\Tboolean)) \astarrow
@@ -460,7 +460,7 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Typing the Boolean Type\label{sec:TypingBooleanType}}
-\subsubsection{TypingRule.TBool\label{sec:TypingRule.TBool}}
+\TypingRuleDef{TBool}
 \subsubsection{Example}
 In \listingref{typing-tbool}, all the uses of \texttt{boolean} are well-typed.
 \ASLListing{Well-typed Boolean types}{typing-tbool}{\typingtests/TypingRule.TBool.asl}
@@ -498,7 +498,7 @@ All of the following apply:
 \ty \derives\ & \TBits(\overtext{\expr}{width}, \bitfield^{*}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.Ty.TBits}
+\ASTRuleDef{Ty.TBits}
 \begin{mathpar}
 \inferrule[bit]{}{
   \buildty(\Nty(\Tbit)) \astarrow
@@ -520,7 +520,7 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.TBits\label{sec:TypingRule.TBits}}
+\TypingRuleDef{TBits}
 \subsubsection{Example}
 In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
 \ASLListing{Well-typed Bitevector types}{typing-tbits}{\typingtests/TypingRule.TBits.asl}
@@ -578,7 +578,7 @@ must be non-negative.
 \ty \derives\ & \TTuple(\ty^{*}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.Ty.TTuple}
+\ASTRuleDef{Ty.TTuple}
 \begin{mathpar}
 \inferrule{
   \buildplist[\buildty](\vtypes) \astarrow \vtypeasts
@@ -593,7 +593,7 @@ must be non-negative.
 In \listingref{typing-ttuple}, all the uses of tuple types are well-typed.
 \ASLListing{Well-typed tuple types}{typing-ttuple}{\typingtests/TypingRule.TTuple.asl}
 
-\subsubsection{TypingRule.TTuple\label{sec:TypingRule.TTuple}}
+\TypingRuleDef{TTuple}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -640,7 +640,7 @@ ASL offers two kinds of arrays:
 \arrayindex \derives\ &  \ArrayLengthExpr(\overtext{\expr}{array length}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.Ty.TArray}
+\ASTRuleDef{Ty.TArray}
 \begin{mathpar}
 \inferrule{}{
   \buildty(\Nty(\Tarray, \Tllbracket, \punnode{\Nexpr}, \Trrbracket, \Tof, \punnode{\Nty})) \astarrow
@@ -652,7 +652,7 @@ ASL offers two kinds of arrays:
 In \listingref{typing-tarray}, all the uses of array types are well-typed.
 \ASLListing{Well-typed array types}{typing-tarray}{\typingtests/TypingRule.TArray.asl}
 
-\subsubsection{TypingRule.TArray\label{sec:TypingRule.TArray}}
+\TypingRuleDef{TArray}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -710,7 +710,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\TArrayBegin}{\TArrayEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.GetVariableEnum\label{sec:TypingRule.GetVariableEnum}}
+\TypingRuleDef{GetVariableEnum}
 \hypertarget{def-getvariableenum}{}
 The function
 \[
@@ -791,7 +791,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AnnotateStaticallyEvaluableExpr\label{sec:TypingRule.AnnotateStaticallyEvaluableExpr}}
+\TypingRuleDef{AnnotateStaticallyEvaluableExpr}
 \hypertarget{def-annotatestaticallyevaluableexpr}{}
 The function
 \[
@@ -822,7 +822,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\AnnotateStaticallyEvaluableExprBegin}{\AnnotateStaticallyEvaluableExprEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.AnnotateStaticInteger\label{sec:TypingRule.AnnotateStaticInteger}}
+\TypingRuleDef{AnnotateStaticInteger}
 \hypertarget{def-annotatestaticinteger}{}
 The function
 \[
@@ -855,7 +855,7 @@ All of the following apply:
 \CodeSubsection{\AnnotateStaticIntegerBegin}{\AnnotateStaticIntegerEnd}{../Typing.ml}
 
 \hypertarget{def-checkstructureinteger}{}
-\subsubsection{TypingRule.CheckStructureInteger \label{sec:TypingRule.CheckStructureInteger}}
+\TypingRuleDef{CheckStructureInteger}
 The function
 \[
   \checkstructureinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto
@@ -913,7 +913,7 @@ One of the following applies:
 \ty \derives\ & \TEnum(\overtext{\identifier^{*}}{labels}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.TyDecl.TEnum}
+\ASTRuleDef{TyDecl.TEnum}
 \begin{mathpar}
 \inferrule{
   \buildtclist[\buildidentity](\vids) \astarrow \vidasts
@@ -928,7 +928,7 @@ One of the following applies:
 \end{mathpar}
 
 \subsection{Typing Enumeration Types\label{sec:TypingEnumerationTypes}}
-\subsubsection{TypingRule.TEnumDecl\label{sec:TypingRule.TEnumDecl}}
+\TypingRuleDef{TEnumDecl}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -969,7 +969,7 @@ All of the following apply:
 \ty \derives\ & \TRecord(\Field^{*}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.TyDecl.TRecord}
+\ASTRuleDef{TyDecl.TRecord}
 \begin{mathpar}
 \inferrule{}{
   \buildtydecl(\Ntydecl(\Trecord, \punnode{\Nfieldsopt})) \astarrow
@@ -978,7 +978,7 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Typing Record Types\label{sec:TypingRecordTypes}}
-\subsubsection{TypingRule.TStructuredDecl\label{sec:TypingRule.TStructuredDecl}}
+\TypingRuleDef{TStructuredDecl}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1026,7 +1026,7 @@ In \listingref{typing-trecord}, all the uses of record or exception types are we
 \ty \derives\ & \TException(\Field^{*}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.TyDecl.TException}
+\ASTRuleDef{TyDecl.TException}
 \begin{mathpar}
 \inferrule{}{
   \buildtydecl(\Ntydecl(\Texception, \punnode{\Nfieldsopt})) \astarrow
@@ -1048,7 +1048,7 @@ In \listingref{typing-trecord}, all the uses of record or exception types are we
 \subsection{Typing Exception Types}
 The rule for typing exception type is \TypingRuleRef{TStructuredDecl}.
 
-\subsubsection{ASTRule.Ty.TNamed}
+\ASTRuleDef{Ty.TNamed}
 \begin{mathpar}
 \inferrule{}{
   \buildty(\Nty(\Tidentifier(\id))) \astarrow
@@ -1057,7 +1057,7 @@ The rule for typing exception type is \TypingRuleRef{TStructuredDecl}.
 \end{mathpar}
 
 \subsection{Typing Named Types\label{sec:TypingNamedTypes}}
-\subsubsection{TypingRule.TNamed\label{sec:TypingRule.TNamed}}
+\TypingRuleDef{TNamed}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1091,7 +1091,7 @@ A declared type can be ab enumeration type, a record type, an exception type, or
 \end{flalign*}
 
 \subsection{Abstract Syntax}
-\subsubsection{ASTRule.TyDecl \label{sec:ASTRule.TyDecl}}
+\ASTRuleDef{TyDecl}
 \begin{mathpar}
 \inferrule[ty]{}{
   \buildtydecl(\Ntydecl(\punnode{\Nty})) \astarrow
@@ -1100,7 +1100,7 @@ A declared type can be ab enumeration type, a record type, an exception type, or
 \end{mathpar}
 
 \subsection{Typing Declared Types}
-\subsubsection{TypingRule.TNonDecl\label{sec:TypingRule.TNonDecl}}
+\TypingRuleDef{TNonDecl}
 \subsubsection{Example}
 In \listingref{typing-trecorderror}, the use of a record type outside of a declaration is erroneous.
 \ASLListing{An erroneous use of a record type}{typing-trecorderror}{\typingtests/TypingRule.TNonDecl.asl}

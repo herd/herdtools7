@@ -61,7 +61,7 @@ Subprogram declarations have no associated semantics.
                 |\  & \STGetter \;|\; \STSetter &
 \end{flalign*}
 
-\subsubsection{ASTRule.GlobalDecl}
+\ASTRuleDef{GlobalDecl}
 The relation
 \[
   \builddecl : \overname{\parsenode{\Ndecl}}{\vparsednode} \;\aslrel\; \overname{\decl}{\vastnode}
@@ -181,7 +181,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.RecurseLimit}
+\ASTRuleDef{RecurseLimit}
 \hypertarget{build-recurselimit}{}
 The function
 \[
@@ -205,7 +205,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.TypedIdentifier \label{sec:ASTRule.TypedIdentifier}}
+\ASTRuleDef{TypedIdentifier}
 \hypertarget{build-typedidentifier}{}
 The function
 \[
@@ -219,7 +219,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.OptTypedIdentifier \label{sec:ASTRule.OptTypedIdentifier}}
+\ASTRuleDef{OptTypedIdentifier}
 \hypertarget{build-opttypedidentifier}{}
 The function
 \[
@@ -240,7 +240,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.ReturnType \label{sec:ASTRule.ReturnType}}
+\ASTRuleDef{ReturnType}
 \hypertarget{build-returntype}{}
 The function
 \[
@@ -255,7 +255,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.ParamsOpt \label{sec:ASTRule.ParamsOpt}}
+\ASTRuleDef{ParamsOpt}
 \hypertarget{build-paramsopt}{}
 The function
 \[
@@ -280,7 +280,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.FuncArgs \label{sec:ASTRule.FuncArgs}}
+\ASTRuleDef{FuncArgs}
 \hypertarget{build-funcargs}{}
 The function
 \[
@@ -298,7 +298,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.MaybeEmptyStmtList \label{sec:ASTRule.MaybeEmptyStmtList}}
+\ASTRuleDef{MaybeEmptyStmtList}
 \hypertarget{build-maybeemptystmtlist}{}
 The function
 \[
@@ -321,7 +321,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.FuncBody \label{sec:ASTRule.FuncBody}}
+\ASTRuleDef{FuncBody}
 \hypertarget{build-funcbody}{}
 The function
 \[
@@ -347,26 +347,26 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 We also define the following helper rules:
 \begin{itemize}
-  \item TypingRule.AnnotateAndDeclareFunc (see \secref{TypingRule.AnnotateAndDeclareFunc})
-  \item TypingRule.AnnotateFuncSig (see \secref{TypingRule.AnnotateFuncSig})
-  \item TypingRule.AnnotateParams (see \secref{TypingRule.AnnotateParams})
-  \item TypingRule.AnnotateOneParam (see \secref{TypingRule.AnnotateOneParam})
-  \item TypingRule.CheckParamDecls (see \secref{TypingRule.CheckParamDecls})
-  \item TypingRule.TypesInFuncSig (see \secref{TypingRule.TypesInFuncSig})
-  \item TypingRule.ParametersOfTy (see \secref{TypingRule.ParametersOfTy})
-  \item TypingRule.ParametersOfExpr (see \secref{TypingRule.ParametersOfExpr})
-  \item TypingRule.ParametersOfConstraint (see \secref{TypingRule.ParametersOfConstraint})
-  \item TypingRule.AnnotateArgs (see \secref{TypingRule.AnnotateArgs})
-  \item TypingRule.AnnotateOneArg (see \secref{TypingRule.AnnotateOneArg})
-  \item TypingRule.AnnotateReturnType (see \secref{TypingRule.AnnotateReturnType})
-  \item TypingRule.DeclareOneFunc (see \secref{TypingRule.DeclareOneFunc})
-  \item TypingRule.SubprogramClash (see \secref{TypingRule.SubprogramClash})
-  \item TypingRule.AddNewFunc (see \secref{TypingRule.AddNewFunc})
-  \item TypingRule.CheckSetterHasGetter (see \secref{TypingRule.CheckSetterHasGetter})
-  \item TypingRule.AddSubprogram (see \secref{TypingRule.AddSubprogram})
+  \item \TypingRuleRef{AnnotateAndDeclareFunc}
+  \item \TypingRuleRef{AnnotateFuncSig}
+  \item \TypingRuleRef{AnnotateParams}
+  \item \TypingRuleRef{AnnotateOneParam}
+  \item \TypingRuleRef{CheckParamDecls}
+  \item \TypingRuleRef{TypesInFuncSig}
+  \item \TypingRuleRef{ParametersOfTy}
+  \item \TypingRuleRef{ParametersOfExpr}
+  \item \TypingRuleRef{ParametersOfConstraint}
+  \item \TypingRuleRef{AnnotateArgs}
+  \item \TypingRuleRef{AnnotateOneArg}
+  \item \TypingRuleRef{AnnotateReturnType}
+  \item \TypingRuleRef{DeclareOneFunc}
+  \item \TypingRuleRef{SubprogramClash}
+  \item \TypingRuleRef{AddNewFunc}
+  \item \TypingRuleRef{CheckSetterHasGetter}
+  \item \TypingRuleRef{AddSubprogram}
 \end{itemize}
 
-\subsubsection{TypingRule.AnnotateAndDeclareFunc \label{sec:TypingRule.AnnotateAndDeclareFunc}}
+\TypingRuleDef{AnnotateAndDeclareFunc}
 \hypertarget{def-annotateanddeclarefunc}{}
 The function
 \[
@@ -402,7 +402,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AnnotateFuncSig\label{sec:TypingRule.AnnotateFuncSig}}
+\TypingRuleDef{AnnotateFuncSig}
 \hypertarget{def-annotatefuncsig}{}
 The function
 \[
@@ -481,7 +481,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AnnotateParams \label{sec:TypingRule.AnnotateParams}}
+\TypingRuleDef{AnnotateParams}
 \hypertarget{def-annotateparams}{}
 The function
 \[
@@ -543,7 +543,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AnnotateOneParam \label{sec:TypingRule.AnnotateOneParam}}
+\TypingRuleDef{AnnotateOneParam}
 The function
 \hypertarget{def-annotateoneparam}{}
 \[
@@ -609,7 +609,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.CheckParamDecls \label{sec:TypingRule.CheckParamDecls}}
+\TypingRuleDef{CheckParamDecls}
 \hypertarget{def-checkparamdecls}{}
 The function
 \[
@@ -639,7 +639,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.TypesInFuncSig \label{sec:TypingRule.TypesInFuncSig}}
+\TypingRuleDef{TypesInFuncSig}
 \hypertarget{def-typesinfuncsig}{}
 The function
 \[
@@ -669,7 +669,7 @@ Define $\tys$ as the return type (if any) concatenated with the argument types.
 \end{mathpar}
 
 
-\subsubsection{TypingRule.ParametersOfTy \label{sec:TypingRule.ParametersOfTy}}
+\TypingRuleDef{ParametersOfTy}
 \hypertarget{def-paramsofty}{}
 The function
 \[
@@ -746,7 +746,7 @@ One of the following applies:
 \end{mathpar}
 
 
-\subsubsection{TypingRule.ParametersOfExpr \label{sec:TypingRule.ParametersOfExpr}}
+\TypingRuleDef{ParametersOfExpr}
 \hypertarget{def-paramsofexpr}{}
 The function
 \[
@@ -821,7 +821,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ParametersOfConstraint \label{sec:TypingRule.ParametersOfConstraint}}
+\TypingRuleDef{ParametersOfConstraint}
 \hypertarget{def-paramsofconstraint}{}
 The function
 \[
@@ -887,7 +887,7 @@ yields the following results:
 \end{tabular}
 \end{center}
 
-\subsubsection{TypingRule.AnnotateArgs \label{sec:TypingRule.AnnotateArgs}}
+\TypingRuleDef{AnnotateArgs}
 \hypertarget{def-annotateargs}{}
 The function
 \[
@@ -953,7 +953,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AnnotateOneArg \label{sec:TypingRule.AnnotateOneArg}}
+\TypingRuleDef{AnnotateOneArg}
 \hypertarget{def-annotateonearg}{}
 The function
 \[
@@ -992,7 +992,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AnnotateReturnType \label{sec:TypingRule.AnnotateReturnType}}
+\TypingRuleDef{AnnotateReturnType}
 \hypertarget{def-annotatereturntype}{}
 The function
 \[
@@ -1064,7 +1064,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.DeclareOneFunc \label{sec:TypingRule.DeclareOneFunc}}
+\TypingRuleDef{DeclareOneFunc}
 \hypertarget{def-declareonefunc}{}
 The function
 \[
@@ -1152,7 +1152,7 @@ All of the following apply:
 \CodeSubsection{\DeclareOneFuncBegin}{\DeclareOneFuncEnd}{../Typing.ml}
 \lrmcomment{This relates to \identi{HJRD}, \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}, and \identr{PGFC}.}
 
-\subsubsection{TypingRule.SubprogramClash \label{sec:TypingRule.SubprogramClash}}
+\TypingRuleDef{SubprogramClash}
 \hypertarget{def-subprogramclash}{}
 The function
 \[
@@ -1224,7 +1224,7 @@ which defines whether two subprogram types are considered to be clashing:
 \end{mathpar}
 \lrmcomment{This is related to \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}.}
 
-\subsubsection{TypingRule.AddNewFunc\label{sec:TypingRule.AddNewFunc}}
+\TypingRuleDef{AddNewFunc}
 \hypertarget{def-addnewfunc}{}
 The function
 \[
@@ -1320,7 +1320,7 @@ to the corresponding string.
 \lrmcomment{This is related to \identr{PGFC}.}
 \CodeSubsection{\AddNewFuncBegin}{\AddNewFuncEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.CheckSetterHasGetter \label{sec:TypingRule.CheckSetterHasGetter}}
+\TypingRuleDef{CheckSetterHasGetter}
 \hypertarget{def-checksetterhashgetter}{}
 The function
 \[

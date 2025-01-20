@@ -13,7 +13,8 @@ The typing of global declarations is defined in \secref{GlobalDeclarationsTyping
 As the only kind of global declarations that are associated with semantics are global storage declarations,
 their semantics is given in \secref{GlobalStorageDeclarationsSemantics}.
 
-Global pragmas behave the same as statement pragmas described in \secref{PragmaSemantics}.
+Global pragmas are statically checked by the type checker, but do not produce type AST nodes,
+and thus are not associated with a dynamic semantics.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Syntax}
@@ -35,8 +36,8 @@ Type declarations:
 
 Global storage declarations:
 \begin{flalign*}
-\Ndecl  \derives \ & \Nglobaldeclkeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
-    & \wrappedline\ \Nexpr \parsesep \Tsemicolon &\\
+\Ndecl  \derives \ & \Nglobaldeclkeyword \parsesep \Nignoredoridentifier \parsesep &\\
+    & \wrappedline\ \option{\Tcolon \parsesep \Nty} \parsesep \Teq \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&\\
 \end{flalign*}
 
@@ -55,7 +56,6 @@ Pragmas:
   |\ & \DPragma(\Tidentifier, \overtext{\expr^*}{args}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.GlobalDecl\label{sec:ASTRule.GlobalDecl}}
 \hypertarget{build-decl}{}
 The relation
 \[
@@ -63,6 +63,14 @@ The relation
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
+The case rules for building global declarations are the following:
+\begin{itemize}
+  \item \ASTRuleRef{GlobalStorageDecl} for global storage declarations
+  \item \ASTRuleRef{TypeDecl} for type declarations
+  \item \ASTRuleRef{GlobalPragma} for global pragmas
+\end{itemize}
+
+\ASTRuleDef{GlobalPragma}
 \begin{mathpar}
 \inferrule[global\_pragma]{
   \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
@@ -90,14 +98,14 @@ annotates a global declaration $\vd$ in the global static environment $\genv$,
 yielding an annotated global declaration $\newd$ and modified global static environment $\newgenv$.
 \ProseOtherwiseTypeError
 
-\subsubsection{TypingRule.TypecheckDecl\label{sec:TypingRule.TypecheckDecl}}
+\TypingRuleDef{TypecheckDecl}
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{func}):
   \begin{itemize}
     \item $\vd$ is a subprogram AST node with a subprogram definition $\vf$, that is, $\DFunc(\vf)$;
-    \item annotating and declaring the subprogram for $\vf$ in $\genv$ as per \secref{TypingRule.AnnotateAndDeclareFunc}
+    \item annotating and declaring the subprogram for $\vf$ in $\genv$ as per \TypingRuleRef{AnnotateAndDeclareFunc}
           yields the environment $\tenvone$ and a subprogram definition $\vfone$\ProseOrTypeError;
     \item \Proseannotatesubprogram{$\vfone$}{$\tenv$}{$\vftwo$\ProseOrTypeError};
     \item applying $\addsubprogram$ to bind $\vftwo.\funcname$ to $\vftwo$ in $\tenvone$ yields $\newtenv$;
@@ -118,7 +126,7 @@ One of the following applies:
     \item $\vd$ is a type declaration with identifier $\vx$, type $\tty$,
           and \optional\ field initializers $\vs$, that is, $\DTypeDecl(\vx, \tty, \vs)$;
     \item declaring the type described by $(\vx, \tty, \vs)$ in $\genv$
-          as per \secref{TypingRule.DeclaredType} yields the modified global static environment $\newgenv$\ProseOrTypeError;
+          as per \TypingRuleRef{DeclaredType} yields the modified global static environment $\newgenv$\ProseOrTypeError;
     \item define $\newd$ as $\vd$.
   \end{itemize}
 \end{itemize}
@@ -158,7 +166,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\TypecheckDeclBegin}{\TypecheckDeclEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.Subprogram\label{sec:TypingRule.Subprogram}}
+\TypingRuleDef{Subprogram}
 \hypertarget{def-annotatesubprogram}{}
 The function
 \[
@@ -228,7 +236,7 @@ This is related to \identi{GHGK}, \identr{HWTV}, \identr{SCHV}, \identr{VDPC},
 }
 \CodeSubsection{\SubprogramBegin}{\SubprogramEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.CheckStmtReturnsOrThrows\label{sec:TypingRule.CheckStmtReturnsOrThrows}}
+\TypingRuleDef{CheckStmtReturnsOrThrows}
 \hypertarget{def-checkstmtreturnsorthrows}{}
 The helper function
 \[
@@ -256,7 +264,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ControlFlowFromStmt\label{sec:TypingRule.ControlFlowFromStmt}}
+\TypingRuleDef{ControlFlowFromStmt}
 \hypertarget{def-controlflowsymbolterm}{}
 \hypertarget{def-controlflowstate}{}
 We define \controlflowsymbolterm\ as follows:
@@ -431,7 +439,7 @@ $\SSeq(\vbody, \SWhile(\vcond, \Ignore, \vbody))$;
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ControlFlowSeq\label{sec:TypingRule.ControlFlowSeq}}
+\TypingRuleDef{ControlFlowSeq}
 \hypertarget{def-controlflowseq}{}
 The helper function
 \[
@@ -454,7 +462,7 @@ Define $\vctrlflow$ as $\vttwo$ if $\vtone$ is $\maynotinterrupt$ and $\vtone$, 
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ControlFlowJoin\label{sec:TypingRule.ControlFlowJoin}}
+\TypingRuleDef{ControlFlowJoin}
 \hypertarget{def-controlflowjoin}{}
 The helper function
 \[
