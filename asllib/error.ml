@@ -120,6 +120,12 @@ type warning_desc =
   | NoRecursionLimit of identifier list
   | NoLoopLimit
   | IntervalTooBigToBeExploded of Z.t * Z.t
+  | ConstraintSetPairToBigToBeExploded of {
+      op : binop;
+      left : int_constraint list;
+      right : int_constraint list;
+      log_max : int;  (** Maximum size breached by this constraint set pair. *)
+    }
   | RemovingValuesFromConstraints of {
       op : binop;
       prev : int_constraint list;
@@ -196,6 +202,7 @@ let error_label = function
 let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
   | IntervalTooBigToBeExploded _ -> "IntervalTooBigToBeExploded"
+  | ConstraintSetPairToBigToBeExploded _ -> "ConstraintSetPairToBigToBeExploded"
   | RemovingValuesFromConstraints _ -> "RemovingValuesFromConstraints"
   | NoRecursionLimit _ -> "NoRecursionLimit"
   | PragmaUse _ -> "PragmaUse"
@@ -484,6 +491,13 @@ module PPrint = struct
     | NoLoopLimit ->
         fprintf f "@[%a@]" pp_print_text
           "ASL Warning: Loop does not have a limit."
+    | ConstraintSetPairToBigToBeExploded { op; left; right; log_max } ->
+        fprintf f "@[%a@ %s@ %a%d@ with@ constraints@ %a@ and@ %a.@ %a@]"
+          pp_print_text "Exploding sets for the binary operation"
+          (binop_to_string op) pp_print_text
+          "could result in a constraint set bigger than 2^" log_max
+          PP.pp_int_constraints left PP.pp_int_constraints right pp_print_text
+          "Continuing with the non-expanded constraints."
     | IntervalTooBigToBeExploded (za, zb) ->
         fprintf f
           "@[Interval too large: @[<h>[ %a .. %a ]@].@ Keeping it as an \

@@ -312,17 +312,16 @@ module Make (C : CONFIG) = struct
 
   let simplify_static_constraints =
     let module DZ = Diet.Z in
-    let acc_diet (diet, non_static) = function
+    let to_diets (diets, non_static) = function
       | Constraint_Exact e as c -> (
           match e.desc with
-          | E_Literal (L_Int z) ->
-              (DZ.(add Interval.(make z z) diet), non_static)
-          | _ -> (diet, c :: non_static))
+          | E_Literal (L_Int z) -> (DZ.singleton z :: diets, non_static)
+          | _ -> (diets, c :: non_static))
       | Constraint_Range (e1, e2) as c -> (
           match (e1.desc, e2.desc) with
           | E_Literal (L_Int z1), E_Literal (L_Int z2) when Z.leq z1 z2 ->
-              DZ.(add Interval.(make z1 z2) diet, non_static)
-          | _ -> (diet, c :: non_static))
+              DZ.(add Interval.(make z1 z2) empty :: diets, non_static)
+          | _ -> (diets, c :: non_static))
     in
     let constraint_of_interval interval =
       let x = DZ.Interval.x interval and y = DZ.Interval.y interval in
@@ -330,9 +329,8 @@ module Make (C : CONFIG) = struct
       else Constraint_Range (expr_of_z x, expr_of_z y)
     in
     fun constraints ->
-      let diet, non_static =
-        List.fold_left acc_diet (DZ.empty, []) constraints
-      in
+      let diets, non_static = List.fold_left to_diets ([], []) constraints in
+      let diet = DZ.unions diets in
       DZ.fold
         (fun interval acc -> constraint_of_interval interval :: acc)
         diet non_static
@@ -353,6 +351,10 @@ module Make (C : CONFIG) = struct
     | OR | RDIV | BV_CONCAT ->
         assert false
 
+  let log_max_consrtaint_size = 17
+  let max_constraint_size = Z.shift_left Z.one log_max_consrtaint_size
+  let max_exploded_interval_size = Z.shift_left Z.one 14
+
   (* Begin ExplodeIntervals *)
   let explode_intervals =
     let rec make_interval ~loc acc a b =
@@ -362,10 +364,9 @@ module Make (C : CONFIG) = struct
         make_interval ~loc acc' a (Z.pred b)
       else acc
     in
-    let[@warning "-44"] interval_too_large z1 z2 =
-      let open Z in
-      let max_interval_size = ~$1 lsl 14 in
-      Compare.(abs (z1 - z2) > max_interval_size)
+    let interval_too_large z1 z2 =
+      let expected_size = Z.sub z2 z1 in
+      Z.lt max_exploded_interval_size expected_size
     in
     let explode_constraint ~loc env = function
       | Constraint_Exact _ as c -> [ c ]
@@ -400,7 +401,27 @@ module Make (C : CONFIG) = struct
         in
         let cs1_arg, cs2_arg =
           if binop_is_exploding op then
-            (explode_intervals ~loc env cs1, explode_intervals ~loc env cs2_f)
+            let ex_cs1 = explode_intervals ~loc env cs1
+            and ex_cs2 = explode_intervals ~loc env cs2_f in
+            let l1 = List.length ex_cs1 and l2 = List.length ex_cs2 in
+            let expected_constraint_length =
+              Z.(if op = MOD then ~$l2 else mul ~$l1 ~$l2)
+            in
+            if Z.leq expected_constraint_length max_constraint_size then
+              (ex_cs1, ex_cs2)
+            else
+              let () =
+                C.warn_from ~loc
+                  Error.(
+                    ConstraintSetPairToBigToBeExploded
+                      {
+                        op;
+                        left = cs1;
+                        right = cs2_f;
+                        log_max = log_max_consrtaint_size;
+                      })
+              in
+              (cs1, cs2_f)
           else (cs1, cs2_f)
         in
         let annotated_cs =
