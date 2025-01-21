@@ -540,8 +540,10 @@ let tr parsed_graph instr =
   else param_replacements in
 
   (* Convert read to instr params, remove access sizes and tag every effect with Ei,
-     where i is its index in the topological order *)
+     where i is its index in the topological order, and get rid of everything
+     following a \l - eg. thread, poi and instruction information *)
   let tag_regex = Str.regexp {|[a-zA-Z0-9_]+:|} in
+  let newline_regex = Str.regexp {|\\l|} in
   let adapted_parsed_nodes = List.mapi (fun i n ->
     let value = get_label_value n.ParsedNode.attrs in
     let value = if Str.string_match tag_regex value 0 then
@@ -553,6 +555,10 @@ let tr parsed_graph instr =
       let value = Str.global_replace regex1 v1 value in
       Str.global_replace regex2 v2 value
     ) value param_replacements in
+    let value = try
+      let pos = Str.search_forward newline_regex value 0 in
+      String.sub value 0 pos
+    with Not_found -> value in
     let attrs = List.map (fun a ->
       if a.ParsedAttr.name = "label" then
         { a with ParsedAttr.value=value }
