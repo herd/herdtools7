@@ -102,6 +102,7 @@ We now define the syntax, abstract syntax, typing, and semantics of the followin
 Finally, we define side-effect-free expressions (see \secref{SideEffectFreeExpressions})
 and define how to evaluate a list of expressions (see \secref{ExprList}).
 
+\hypertarget{def-literalexpressionterm}{}
 \section{Literal Expressions\label{sec:LiteralExpressions}}
 A literal expression represents a literal as an expression.
 
@@ -166,6 +167,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalELitBegin}{\EvalELitEnd}{../Interpreter.ml}
 
+\hypertarget{def-variableexpressionterm}{}
 \section{Variable Expressions\label{sec:VariablExpressions}}
 A variable expression represents consists of an identifier.
 The identifier stands for either a storage element or the name of a getter with no arguments.
@@ -717,6 +719,7 @@ However, note that relying on this short-circuit evaluation can be confusing
 for readers of ASL specifications and as a consequence it is recommended that
 an if-statement is used to achieve the same effect.
 
+\hypertarget{def-binopexpressionterm}{}
 \SemanticsRuleDef{Binop}
 \subsubsection{Prose}
 All of the following apply:
@@ -772,7 +775,7 @@ the right subexpression.
 This is an arbitrary choice as the type-checker must ensure that either order
 of evaluation of the operands yields the same result.
 
-In other words, it it is an error for an expression’s meaning to rely on
+In other words, it is an error for an expression’s meaning to rely on
 evaluation order except that conditional expressions, and uses of the boolean
 operators \texttt{\&\&}, \texttt{||}, \texttt{-->}, are guaranteed to evaluate
 from left to right.
@@ -803,6 +806,7 @@ subexpressions conflict with each other by:
 These conditions are sufficient but not necessary to ensure that evaluation
 order does not affect the result of an expression, including any side-effects.
 
+\hypertarget{def-unopexpressionterm}{}
 \section{Unary Expressions\label{sec:UnaryExpressions}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -873,6 +877,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalUnopBegin}{\EvalUnopEnd}{../Interpreter.ml}
 
+\hypertarget{def-conditionexpressionterm}{}
 \section{Conditional Expressions\label{sec:ConditionalExpressions}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1032,6 +1037,7 @@ the conditional expression evaluates to the corresponding \texttt{elsif}
 expression. If no \texttt{elsif} expression evaluates to $\True$ the
 conditional expression evaluates to the \texttt{else} expression.
 
+\hypertarget{def-callexpressionterm}{}
 \section{Call Expressions\label{sec:CallExpressions}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1210,6 +1216,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalECallBegin}{\EvalECallEnd}{../Interpreter.ml}
 
+\hypertarget{def-sliceexpressionterm}{}
 \section{Slicing Expressions\label{sec:SlicingExpressions}}
 This section details the high-level form of the syntax and abstract syntax of slicing expressions,
 and defines the semantics of bitvector slices.
@@ -1334,6 +1341,8 @@ resulting bitvector --- and the execution graph $\vgone$;
 \end{mathpar}
 \CodeSubsection{\EvalESliceBegin}{\EvalESliceEnd}{../Interpreter.ml}
 
+\hypertarget{def-getarrayexpressionterm}{}
+\hypertarget{def-getenumarrayexpression}{}
 \section{Array Access Expressions\label{sec:ArrayAccessExpressions}}
 This section details the syntax, abstract syntax, semantics, and typing of array read expressions.
 In the untyped AST, a read from either an integer-indexed array or an enumeration-indexed arrays is represented
@@ -1545,6 +1554,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalEGetEnumArrayBegin}{\EvalEGetEnumArrayEnd}{../Interpreter.ml}
 
+\hypertarget{def-getfieldexpressionterm}{}
 \section{Field Reading Expressions\label{sec:FieldReadingExpressions}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1842,6 +1852,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalEGetTupleItemBegin}{\EvalEGetTupleItemEnd}{../Interpreter.ml}
 
+\hypertarget{def-getfieldsexpressionterm}{}
 \section{Multi-field Reading Expressions\label{sec:MultiFieldReadingExpressions}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -2130,6 +2141,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalEGetFieldsBegin}{\EvalEGetFieldsEnd}{../interpreter.ml}
 
+\hypertarget{def-atceexpressionterm}{}
 \section{Asserting Type Conversion Expressions\label{sec:AssertingTypeConversionExpressions}}
 \lrmcomment{This is related to \identi{TCST}:}
 The rule about domains in the definitions of subtype-satisfaction and
@@ -2576,6 +2588,7 @@ that expressions appearing in types are all side-effect-free.
 }
 \end{mathpar}
 
+\hypertarget{def-patternexpressionterm}{}
 \section{Pattern Matching Expressions\label{sec:PatternMatchingExpressions}}
 The binary operator $\Tin$ tests whether a value (referred to as the discriminant) matches any item from a $\Npatternset$.
 Patterns can also be used to test whether an expression matches a bitmask (via $\Teq$) or does not match a bitmask (via $\Tneq$).
@@ -2685,6 +2698,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalEPatternBegin}{\EvalEPatternEnd}{../Interpreter.ml}
 
+\hypertarget{def-arbitraryexpressionterm}{}
 \section{Arbitrary Value Expressions\label{sec:ArbitraryValueExpressions}}
 An expression of the form \texttt{ARBITRARY: ty} evaluates to an arbitrary value in the
 domain of \texttt{ty}.
@@ -2811,6 +2825,7 @@ All of the following apply:
 Notice that this rule introduces non-determinism.
 \lrmcomment{This is related to \identr{WLCH}:}
 
+\hypertarget{def-recordexpressionterm}{}
 \section{Structured Type Construction Expressions\label{sec:StructuredTypeConstructionExpressions}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -2999,6 +3014,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalERecordBegin}{\EvalERecordEnd}{../Interpreter.ml}
 
+\hypertarget{def-tupleexpressionterm}{}
 \section{Tuple Expressions\label{sec:TupleExpressions}}
 \subsection{Syntax}
 \begin{flalign*}

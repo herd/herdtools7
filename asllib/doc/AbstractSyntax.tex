@@ -461,7 +461,7 @@ the local declaration item is
   \hypertarget{ast-stry}{} &\\
   |\ & \STry(\stmt, \catcher^*, \overtext{\stmt?}{otherwise})
   \hypertarget{ast-sprint}{} &\\
-  |\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{debug})
+  |\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{newline})
   \hypertarget{ast-spragma}{} &\\
   |\ & \SPragma(\Tidentifier, \overtext{\expr^*}{args})
   \hypertarget{ast-sunreachable}{} &\\
@@ -578,7 +578,7 @@ array value in order to initialize an array-typed variable;
 \end{itemize}
 
 The rules for statements exclude \texttt{pragma} statements, since those are transformed into
-\texttt{pass} statements (see \TypingRuleRef{SPragma}).
+\passstatementsterm\ (see \TypingRuleRef{SPragma}).
 
 The rules for statements refine the throw statement by annotating it with
 the type of the thrown exception.

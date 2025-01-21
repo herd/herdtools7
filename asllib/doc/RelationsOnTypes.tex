@@ -145,7 +145,7 @@ One of the following applies:
 \item All of the following apply (\textsc{t\_enum}):
   \begin{itemize}
   \item the \underlyingtype\ of $\vt$ is an enumeration type with list of labels $\vlit$, that is, $\TEnum(\vlit)$;
-  \item the \underlyingtype\ of $\vs$ is is an enumeration type with list of labels $\vlis$, that is, $\TEnum(\vlis)$;
+  \item the \underlyingtype\ of $\vs$ is an enumeration type with list of labels $\vlis$, that is, $\TEnum(\vlis)$;
   \item $\vb$ is $\True$ if and only if $\vlit$ is equal to $\vlis$.
   \end{itemize}
 
@@ -794,8 +794,8 @@ One of the following applies:
 
     \item All of the following apply (\textsc{t\_bits}):
     \begin{itemize}
-      \item $\vt$ is a bitvector type with with length expression $\vet$, that is, $\TBits(\vet, \Ignore)$;
-      \item $\vs$ is a bitvector type with with length expression $\ves$, that is, $\TBits(\ves, \Ignore)$;
+      \item $\vt$ is a bitvector type with length expression $\vet$, that is, $\TBits(\vet, \Ignore)$;
+      \item $\vs$ is a bitvector type with length expression $\ves$, that is, $\TBits(\ves, \Ignore)$;
       \item applying $\typeequal$ to $\vt$ and $\vs$ in $\tenv$ yields $\False$;
       \item applying $\exprequal$ to $\vet$ and $\ves$ in $\tenv$ yields $\vbequal$;
       \item checking whether $\vbequal$ is $\True$ yields $\True$\ProseTerminateAs{\NoLCA};
@@ -2147,7 +2147,7 @@ One of the following applies:
       \item $\None$, if $\vzoneopt$ is $\langle\vzfive\rangle$ and $\vztwoopt$ is $\langle\vzsix\rangle$ and $\vzfive$ is greater than $\vzsix$;
       \item the range constraint for the literal integer $\vzfive$ and $\vetwo$, if $\vzoneopt$ is $\langle\vzfive\rangle$ and $\vztwoopt$ is $\None$;
       \item the range constraint for $\veone$ and the literal integer $\vzsix$, if $\vzoneopt$ is $\None$ and $\vztwoopt$ is $\langle\vzsix\rangle$;
-      \item $\vc$ if if $\vzoneopt$ is $\None$ and $\vztwoopt$ is $\None$.
+      \item $\vc$ if $\vzoneopt$ is $\None$ and $\vztwoopt$ is $\None$.
     \end{itemize}
   \end{itemize}
 \end{itemize}

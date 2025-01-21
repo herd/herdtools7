@@ -361,6 +361,15 @@ It relies on the helper function $\uniquep$:
 \]
 \end{definition}
 
+\subsection{Strings}
+\hypertarget{def-stringconcat}{}
+The function $\stringconcat : \Strings \times \Strings \rightarrow \Strings$
+concatenates two strings.
+
+\hypertarget{def-stringofnat}{}
+The function $\stringofnat : \N \rightarrow \Strings$ converts a natural number
+to the corresponding string.
+
 \subsection{OCaml-style Notations}
 We use the following notations, which are in the style of the OCaml programming language,
 to facilitate correspondence with our
@@ -373,11 +382,12 @@ $\{ L(v_{1..k}) \;|\; v_1\in T_1,\ldots,v_k\in T_k \}$.
 \hypertarget{def-optional}{}
 \begin{definition}[Optional]
 \hypertarget{def-none}{}
-The notation $\langle \cdot \rangle$ stands for either an empty set or a singleton set,
+\hypertarget{def-some}
+The notation $\Some{\cdot}$ stands for either an empty set or a singleton set,
 where $\None\triangleq\langle\rangle$ denotes an empty set
-and $\langle v \rangle$ denotes a set containing the single element $v$.
+and $\Some{v}$ denotes a set containing the single element $v$.
 %
-The notation $\langle T \rangle$, where $T$ denotes a mathematical type, stands for
+The notation $\Some{T}$, where $T$ denotes a mathematical type, stands for
 $\{ \langle\rangle \} \cup \{\langle v \rangle \;|\; v \in T\}$.
 
 We refer to $\langle T\rangle$ as an \emph{optional}.
@@ -893,15 +903,49 @@ We define the following rules to allow us to treat assertions as transition asse
 \end{mathpar}
 This is useful in that it allows us to use assertions in rule macros.
 
-% \begin{mathpar}
-%   \inferrule{
-%     \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False \terminateas \True\\\\
-%     \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
-%   }
-%   {
-%     \exprequal(\tenv, \veone, \vetwo) \typearrow \vb
-%   }
-% \end{mathpar}
+\subsection{Assertions Over Optional Data Types}
+\hypertarget{def-mapopt}{}
+Optional data types are prevalent in the AST.
+To facilitate transition assertions over optional data types,
+we introduce the parametric function,
+which accepts a one-argument relation (or function) $f : A \aslrel B$
+and applies it to an optional value $A?$:
+\[
+\mapopt{\cdot} : \overname{A?}{\vvopt} \aslrel \overname{B?}{\vvoptnew}
+\]
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{Some}
+  \begin{itemize}
+    \item $\vvopt$ consists of the value $v$;
+    \item applying $f$ to $v$ yields $v'$;
+    \item \Proseeqdef{$\vvoptnew$}{the singleton set consisting of $v'$}.
+  \end{itemize}
+
+  \item \AllApplyCase{None}
+  \begin{itemize}
+    \item $\vvopt$ is $\None$;
+    \item \Proseeqdef{$\vvoptnew$}{$\None$}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[Some]{
+  f(v) \longrightarrow v'
+}{
+  \mapopt{f}(\overname{\Some{v}}{\vvopt}) \longrightarrow{r} \Some{v'}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[None]{}{
+  \mapopt{f}(\None) \longrightarrow \None
+}
+\end{mathpar}
+
 
 \subsection{Rule Naming}
 To name a rule, we place it in a section with its name.

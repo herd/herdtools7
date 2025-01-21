@@ -1274,20 +1274,6 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 \subsubsection{Formally}
-\newcommand\stringconcat[0]{\hyperlink{def-stringconcat}{\texttt{+}}}
-\newcommand\stringofnat[0]{\hyperlink{def-stringofnat}{\texttt{string\_of\_nat}}}
-
-We use the following functions to construct a unique string for each subprogram:
-\begin{itemize}
-\hypertarget{def-stringconcat}{}
-\item The function $\stringconcat : \Strings \times \Strings \rightarrow \Strings$
-concatenates two strings.
-
-\hypertarget{def-stringofnat}{}
-\item The function $\stringofnat : \N \rightarrow \Strings$ converts a natural number
-to the corresponding string.
-\end{itemize}
-
 \begin{mathpar}
 \inferrule[first\_name]{
   G^\tenv.\overloadedsubprograms(\name) = \bot\\

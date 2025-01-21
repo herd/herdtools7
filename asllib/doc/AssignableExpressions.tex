@@ -472,6 +472,7 @@ via the following rules:
 }
 \end{mathpar}
 
+\hypertarget{def-discardlexprterm}{}
 \section{Discarding Assignment Expressions\label{sec:DiscardingAssignmentExpressions}}
 \subsection{Abstract Syntax}
 \begin{flalign*}
@@ -519,6 +520,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalLEDiscardBegin}{\EvalLEDiscardEnd}{../Interpreter.ml}
 
+\hypertarget{def-varlexprterm}{}
 \section{Variable Assignment Expressions\label{sec:VariableAssignmentExpressions}}
 \subsection{Abstract Syntax}
 \begin{flalign*}
@@ -653,6 +655,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalLEVarBegin}{\EvalLEVarEnd}{../Interpreter.ml}
 
+\hypertarget{def-destructuringlexprterm}{}
 \section{Multi-assignment Expressions\label{sec:MultiAssignmentExpressions}}
 \subsection{Abstract Syntax}
 \begin{flalign*}
@@ -766,6 +769,7 @@ have at least one element and shortens the lengths of both lists by one,
 until both lists become empty
 which is when the \textsc{empty} axiom case is used.
 
+\hypertarget{def-setarraylexprterm}{}
 \section{Array Assignment Expressions\label{sec:ArrayAssignmentExpressions}}
 This section details the syntax, abstract syntax, semantics, and typing of array write expressions.
 In the untyped AST, a write to either an integer-indexed array or an enumeration-indexed array is represented
@@ -981,6 +985,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalLESetEnumArrayBegin}{\EvalLESetEnumArrayEnd}{../Interpreter.ml}
 
+\hypertarget{def-slicelexprterm}{}
 \section{Bitvector Slice Assignment Expressions\label{sec:BitvectorSliceAssignmentExpressions}}
 \subsection{Abstract Syntax}
 \begin{flalign*}
@@ -1197,6 +1202,7 @@ All of the following apply:
 }
 \end{mathpar}
 
+\hypertarget{def-setfieldlexprterm}{}
 \section{Structured Type Field Assignment Expressions\label{sec:StructuredTypeFieldAssignmentExpressions}}
 \subsection{Abstract Syntax}
 \begin{flalign*}
@@ -1260,6 +1266,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\LESetStructuredFieldBegin}{\LESetStructuredFieldEnd}{../Typing.ml}
 
+\hypertarget{def-setfieldslexprterm}{}
 \section{Structured Type Multi-field Assignment Expressions\label{sec:StructuredTypeMultiFieldAssignmentExpressions}}
 \subsection{Abstract Syntax}
 \begin{flalign*}
@@ -1524,7 +1531,7 @@ All of the following apply:
   \item $\vle$ denotes the access to the field named $\field$ in $\vleone$, that is, \\ $\LESetField(\vleone, \field)$;
   \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
   \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $(\vletwo, \vses)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vtleone$ in $\tenv$ yields a bitvector type with with bitfields $\bitfields$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vtleone$ in $\tenv$ yields a bitvector type with bitfields $\bitfields$\ProseOrTypeError;
   \item One of the following applies:
   \begin{itemize}
     \item All of the following applies (\textsc{error\_missing\_field}):

@@ -66,6 +66,7 @@ We now define the syntax, abstract syntax, typing, and semantics for the followi
 \item Pragma statements (see \secref{PragmaStatements})
 \end{itemize}
 
+\hypertarget{def-passstatementterm}{}
 \section{Pass Statements\label{sec:PassStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -111,7 +112,7 @@ In \listingref{semantics-spass}, \texttt{pass;} does nothing.:
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-\item $\vs$ is a \texttt{pass} statement, $\SPass$;
+\item $\vs$ is a \passstatementterm, $\SPass$;
 \item $\newg$ is the empty graph;
 \item $\newenv$ is $\env$.
 \end{itemize}
@@ -124,6 +125,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalSPassBegin}{\EvalSPassEnd}{../Interpreter.ml}
 
+\hypertarget{def-assignmentstatementterm}{}
 \section{Assignment Statements\label{sec:AssignmentStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -261,6 +263,7 @@ We now define the evaluation of assigning from a subprogram call:
 \end{mathpar}
 \CodeSubsection{\EvalSAssignCallBegin}{\EvalSAssignCallEnd}{../Interpreter.ml}
 
+\hypertarget{def-setterassignmentstatementterm}{}
 \section{Setter Assignment Statements\label{sec:SetterAssignmentStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -383,6 +386,7 @@ builds a statement $\news$ from an assignment of expression $\rhs$ to a setter i
 \subsection{Typing and semantics}
 As given by applying the relevant rules to the desugared AST.
 
+\hypertarget{def-declarationstatementterm}{}
 \section{Declaration Statements\label{sec:DeclarationStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -805,12 +809,13 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\EvalSDeclBegin}{\EvalSDeclEnd}{../Interpreter.ml}
 
+\hypertarget{def-declarationstatementelidedparameterterm}{}
 \section{Declaration statements with an elided parameter \label{sec:DeclarationStatementsElidedParameter}}
-
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \
-   & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
+   & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \\
+   & \wrappedline\ \Nelidedparamcall \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 \end{flalign*}
 
@@ -939,6 +944,7 @@ Otherwise, the result is a parse error.
 \subsection{Typing and semantics}
 As given by the applying the relevant rules to the desugared AST (see \secref{DeclarationStatements}).
 
+\hypertarget{def-sequencestatementterm}{}
 \section{Sequencing Statements\label{sec:SequencingStatement}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1075,6 +1081,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalSSeqBegin}{\EvalSSeqEnd}{../Interpreter.ml}
 
+\hypertarget{def-callstatementterm}{}
 \section{Call Statements\label{sec:CallStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1157,6 +1164,7 @@ All of the following apply:
 \CodeSubsection{\EvalSCallBegin}{\EvalSCallEnd}{../Interpreter.ml}
 % \lrmcomment{This is related to \identd{KCYT}:}
 
+\hypertarget{def-conditionalstatementterm}{}
 \section{Conditional Statements\label{sec:ConditionalStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1292,6 +1300,7 @@ $\vstwo$ will be evaluated);
 \end{mathpar}
 \CodeSubsection{\EvalSCondBegin}{\EvalSCondEnd}{../Interpreter.ml}
 
+\hypertarget{def-casestatementterm}{}
 \section{Case Statements\label{sec:CaseStatements}}
 Case statements allow executing different statements, based on which
 condition an expression satisfies.
@@ -1564,6 +1573,7 @@ they do not require type system rules.
 Since case statements are transformed into other statements,
 they do not appear in the typed AST and thus are not associated with a semantics.
 
+\hypertarget{def-assertionstatementterm}{}
 \section{Assertion Statements\label{sec:AssertionStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1665,6 +1675,7 @@ All of the following apply:
 \CodeSubsection{\EvalSAssertBegin}{\EvalSAssertEnd}{../Interpreter.ml}
 \lrmcomment{This is related to \identd{QJYV}, \identr{WZSL}, \identr{WQRN}.}
 
+\hypertarget{def-whilestatementterm}{}
 \section{While Statements\label{sec:WhileStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -2037,6 +2048,7 @@ One of the following applies:
 }
 \end{mathpar}
 
+\hypertarget{def-repeatstatementterm}{}
 \section{Repeat Statements\label{sec:RepeatStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -2148,6 +2160,7 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ an
 \end{mathpar}
 \CodeSubsection{\EvalSRepeatBegin}{\EvalSRepeatEnd}{../Interpreter.ml}
 
+\hypertarget{def-forstatementterm}{}
 \section{For Statements\label{sec:ForStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -2703,6 +2716,7 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 \end{mathpar}
 \CodeSubsection{\EvalForBegin}{\EvalForEnd}{../Interpreter.ml}
 
+\hypertarget{def-throwstatementterm}{}
 \section{Throw Statements\label{sec:ThrowStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -2842,6 +2856,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\EvalSThrowBegin}{\EvalSThrowEnd}{../Interpreter.ml}
 
+\hypertarget{def-trystatementterm}{}
 \section{Try Statements\label{sec:TryStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -3007,6 +3022,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalSTryBegin}{\EvalSTryEnd}{../Interpreter.ml}
 
+\hypertarget{def-returnstatementterm}{}
 \section{Return Statements\label{sec:ReturnStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -3249,6 +3265,7 @@ by composing the graphs in $\vms$ with Write Effects for the respective values.
 }
 \end{mathpar}
 
+\hypertarget{def-printstatementterm}{}
 \section{Print Statements\label{sec:PrintStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -3350,9 +3367,9 @@ All of the following apply:
     \evalstmt{\env, \SPrint(\elist, \True)} \evalarrow \Continuing(\vg, \newenv)
   }
 \end{mathpar}
-
 \CodeSubsection{\EvalSPrintBegin}{\EvalSPrintEnd}{../Interpreter.ml}
 
+\hypertarget{def-unreachablestatementterm}{}
 \section{The Unreachable Statement\label{sec:UnreachableStatement}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -3394,6 +3411,7 @@ Evaluating $\SUnreachable$ in an environment $\env$ results in a dynamic error i
 }
 \end{mathpar}
 
+\hypertarget{def-pragmastatementterm}{}
 \section{Pragma Statements\label{sec:PragmaStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -3423,7 +3441,7 @@ All of the following apply:
   \item $\vs$ is a pragma statement with identifier $\id$ and expression list $\vargs$. that is, $\SPragma(\id, \vargs)$;
   \item for each \Proselistrange{$i$}{$\vargs$}, \Proseannotateexpr{$\tenv$}{$\vargs[i]$}{$(\Ignore, \Ignore, \vxs_i)$}\ProseOrTypeError;
   \item define $\vsess$ as the list of $\vxs_i$m \Proselistrange{$i$}{$\vargs$};
-  \item define $\news$ as the \texttt{pass} statement, that is, $\SPass$
+  \item define $\news$ as the \passstatementterm, that is, $\SPass$
   \item $\newtenv$ is $\tenv$;
   \item \Prosenonconflictingunion{$\vsess$}{$\vses$}\ProseOrTypeError.
 \end{itemize}

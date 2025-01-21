@@ -315,7 +315,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{s\_seq}):
   \begin{itemize}
-    \item $\vs$ is the sequence statement for $\vsone$ and $\vstwo$;
+    \item $\vs$ is the \sequencingstatementterm\ for $\vsone$ and $\vstwo$;
     \item applying $\controlflowfromstmt$ to $\vsone$ yields $\vctrlflowone$;
     \item applying $\controlflowfromstmt$ to $\vstwo$ yields $\vctrlflowtwo$;
     \item applying $\controlflowseq$ to $\vctrlflowone$ and $\vctrlflowtwo$ yields $\vctrlflow$.
@@ -323,7 +323,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{s\_cond}):
   \begin{itemize}
-    \item $\vs$ is the condition statement for an expression and statements $\vsone$ and $\vstwo$;
+    \item $\vs$ is the \conditionalstatementterm\ for an expression and statements $\vsone$ and $\vstwo$;
     \item applying $\controlflowfromstmt$ to $\vsone$ yields $\vctrlflowone$;
     \item applying $\controlflowfromstmt$ to $\vstwo$ yields $\vctrlflowtwo$;
     \item applying $\controlflowjoin$ to $\vctrlflowone$ and $\vctrlflowtwo$ yields $\vctrlflow$.
@@ -331,19 +331,19 @@ One of the following applies:
 
   \item All of the following apply (\textsc{s\_while\_for}):
   \begin{itemize}
-    \item $\vs$ is either a \texttt{while} statement or a \texttt{for};
+    \item $\vs$ is either a \whilestatementterm\ or a \forstatementterm;
     \item define $\vctrlflow$ as $\maynotinterrupt$.
   \end{itemize}
 
   \item All of the following apply (\textsc{s\_repeat}):
   \begin{itemize}
-    \item $\vs$ is the \texttt{repeat} statement for the statement $\vbody$;
+    \item $\vs$ is the \repeatstatementterm\ with the body statement $\vbody$;
     \item applying $\controlflowfromstmt$ to $\vbody$ yields $\vctrlflow$.
   \end{itemize}
 
   \item All of the following apply (\textsc{s\_try}):
   \begin{itemize}
-    \item $\vs$ is the \texttt{try} statement for the statement $\vbody$;
+    \item $\vs$ is the \trystatementterm\ for the statement $\vbody$;
     \item applying $\controlflowfromstmt$ to $\vbody$ yields $\vctrlflow$.
   \end{itemize}
 \end{itemize}

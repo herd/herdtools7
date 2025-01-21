@@ -84,6 +84,7 @@ expressions and statements.
       elements of a given type (for which no initializing expression is supplied).
 \end{itemize}
 
+\hypertarget{integertypeterm}{}
 \section{Integer Types\label{sec:IntegerTypes}}
 \begin{center}
 \begin{tabular}{lll}
@@ -356,6 +357,7 @@ One of the following applies:
 }
 \end{mathpar}
 
+\hypertarget{realtypeterm}{}
 \section{The Real Type\label{sec:RealType}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -398,6 +400,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\TRealBegin}{\TRealEnd}{../Typing.ml}
 
+\hypertarget{stringtypeterm}{}
 \section{The String Type\label{sec:StringType}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -440,6 +443,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\TStringBegin}{\TStringEnd}{../Typing.ml}
 
+\hypertarget{booleantypeterm}{}
 \section{The Boolean Type\label{sec:BooleanType}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -482,6 +486,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\TBoolBegin}{\TBoolEnd}{../Typing.ml}
 
+\hypertarget{bitvectortypeterm}{}
 \section{Bitvector Types\label{sec:BitvectorTypes}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -567,6 +572,7 @@ The width of a bitvector type $\TBits(\ewidth, \bitfields)$, given by the expres
 $\ewidth$,
 must be non-negative.
 
+\hypertarget{tupletypeterm}{}
 \section{Tuple Types\label{sec:TupleTypes}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -618,6 +624,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\TTupleBegin}{\TTupleEnd}{../Typing.ml}
 
+\hypertarget{arraytypeterm}{}
 \section{Array Types\label{sec:ArrayTypes}}
 ASL offers two kinds of arrays:
 \begin{description}
@@ -902,6 +909,7 @@ One of the following applies:
 }
 \end{mathpar}
 
+\hypertarget{enumerationtypeterm}{}
 \section{Enumeration Types\label{sec:EnumerationTypes}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -958,6 +966,7 @@ All of the following apply:
 \listingref{typing-tenum} shows an example of a well-typed enumeration type declaration.
 \ASLListing{Well-typed enumeration type}{typing-tenum}{\typingtests/TypingRule.TEnumDecl.asl}
 
+\hypertarget{recordtypeterm}{}
 \section{Record Types\label{sec:RecordTypes}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1015,6 +1024,7 @@ All of the following apply:
 In \listingref{typing-trecord}, all the uses of record or exception types are well-typed.
 \ASLListing{Well-typed structured types}{typing-trecord}{\typingtests/TypingRule.TRecordExceptionDecl.asl}
 
+\hypertarget{exceptiontypeterm}{}
 \section{Exception Types\label{sec:ExceptionTypes}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1034,6 +1044,7 @@ In \listingref{typing-trecord}, all the uses of record or exception types are we
 }
 \end{mathpar}
 
+\hypertarget{namedtypeterm}{}
 \section{Named Types\label{sec:NamedTypes}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1084,7 +1095,7 @@ In \listingref{typing-tnamed}, all the uses of \texttt{MyType} are well-typed.
 \ASLListing{Well-typed named types}{typing-tnamed}{\typingtests/TypingRule.TNamed.asl}
 
 \section{Declared Types}
-A declared type can be ab enumeration type, a record type, an exception type, or an \anonymoustype.
+A declared type can be an enumeration type, a record type, an exception type, or an \anonymoustype.
 \subsection{Syntax}
 \begin{flalign*}
 \Ntydecl \derives\ & \Nty &

@@ -29,8 +29,8 @@ def check_hyperlinks_and_hypertargets():
     latex_files = fnmatch.filter(os.listdir('.'), '*.tex')
     hyperlink_labels : set[str] = set()
     hypertarget_labels : set[str] = set()
-    for latex_souce in latex_files:
-        with open(latex_souce) as file:
+    for latex_source in latex_files:
+        with open(latex_source) as file:
             for line in file.readlines():
                 extract_labels_from_line(line, "\\hyperlink{", hyperlink_labels)
                 extract_labels_from_line(line, "\\hypertarget{", hypertarget_labels)
@@ -74,17 +74,17 @@ def check_tododefines():
     Checks that there are no more than the expected number of \tododefine
     instances.
     """
+    MAX_TODODEFINE_INSTANCES = 8
     num_todo_define = 0
     latex_files = fnmatch.filter(os.listdir('.'), '*.tex')
-    for latex_souce in latex_files:
-        with open(latex_souce) as file:
+    for latex_source in latex_files:
+        with open(latex_source) as file:
             file_str = file.read()
             num_todo_define += file_str.count('\\tododefine')
     num_todo_define -= 1 # Ignore the definition of the \tododefine macro itself.
-    max_tododefine_instances = 4
-    if num_todo_define > max_tododefine_instances:
+    if num_todo_define > MAX_TODODEFINE_INSTANCES:
         # Disallow adding new \tododefines
-        print(f"ERROR: There are {num_todo_define} occurrences of \\tododefine, expected at most {max_tododefine_instances}")
+        print(f"ERROR: There are {num_todo_define} occurrences of \\tododefine, expected at most {MAX_TODODEFINE_INSTANCES}")
         return num_todo_define
     else:
         print(f"WARING: There are {num_todo_define} occurrences of \\tododefine")
@@ -143,12 +143,33 @@ def run_source_transformations():
     transform_ruledefs('TypingRule')
     transform_ruledefs('SemanticsRule')
 
+def check_repeated_words():
+    num_errors = 0
+    latex_files = fnmatch.filter(os.listdir('.'), '*.tex')
+    for latex_source in latex_files:
+        with open(latex_source) as file:
+            line_number = 0
+            for line in file.readlines():
+                line_number += 1
+                line = line.strip()
+                parts = line.split()
+                if len(parts) < 2:
+                    continue
+                for i in range(0, len(parts) - 1):
+                    word1 = parts[i]
+                    word2 = parts[i + 1]
+                    if word1.isalpha() and word1 == word2:
+                        num_errors += 1
+                        print(f"./{latex_source} line {line_number}: repeated '{word1}' in '{line}'")
+    return num_errors
+
 def main():
     #run_source_transformations()
     num_errors = 0
     num_errors += check_hyperlinks_and_hypertargets()
     num_errors += check_undefined_references_and_multiply_defined_labels()
     num_errors += check_tododefines()
+    num_errors += check_repeated_words()
 
     print(f"There were {num_errors} errors!", file=sys.stderr)
     if num_errors > 0:

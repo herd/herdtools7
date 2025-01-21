@@ -350,7 +350,7 @@ One of the following applies:
   \begin{itemize}
     \item $\tty$ is a bitvector type with width expression $\ve$ and fields $\fields$, that is, $\TBits(\ve, \fields)$;
     \item applying $\substexprnormalize$ to $\eqs$ and $\ve$ in $\tenv$ yields the expression $\newe$;
-    \item define $\newty$ as a bitvector type with with expression $\newe$ and fields $\fields$.
+    \item define $\newty$ as a bitvector type with expression $\newe$ and fields $\fields$.
   \end{itemize}
 
   \item All of the following apply (\textsc{t\_int\_wellconstrained}):
@@ -1514,10 +1514,10 @@ All of the following apply:
         as per \SemanticsRuleRef{AssignArgs} gives $(\envthree, \vgthree)$ and ensures that each
         formal parameter in $\paramdecls$ is
         locally bound to the corresponding actual value in $\params$;
-  \item evaluating the body of the subprogram $\vbody$ as a statement in in $\envthree$
+  \item evaluating the body of the subprogram $\vbody$ as a statement in $\envthree$
         is $\vres$\ProseOrAbnormal;
-  \item matching the result $\vres$ to obtain a normal configuration as per \SemanticsRuleRef{MatchFuncRes}
-        gives $C$;
+  \item matching the result $\vres$ to obtain a normal configuration as per \\
+        \SemanticsRuleRef{MatchFuncRes} gives $C$;
   \item $\newg$ is the ordered composition of $\vgone$ with the $\asldata$ and $\vgtwo$ and $\vgthree$ with the $\aslpo$ edge;
   \item the result is $C$ with its graph substituted for $\newg$.
 \end{itemize}
