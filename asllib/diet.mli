@@ -133,6 +133,9 @@ module type INTERVAL_SET = sig
   val union : t -> t -> t
   (** set union *)
 
+  val unions : t list -> t
+  (** Iterated set union. *)
+
   val diff : t -> t -> t
   (** set difference *)
 
