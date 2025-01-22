@@ -39,7 +39,7 @@
   $ aslref lca3.asl
   File lca3.asl, line 5, characters 2 to 25:
   ASL Typing error: a subtype of integer {N} was expected,
-    provided integer {N, 3}.
+    provided integer {3, N}.
   [1]
 
   $ cat >lca4.asl <<EOF

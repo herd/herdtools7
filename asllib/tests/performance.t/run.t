@@ -4,7 +4,7 @@
   Warning: Removing some values that would fail with op DIVRM from constraint
   set {0..4} gave {1..4}. Continuing with this constraint set.
   File constraint-mul-00.asl, line 10, characters 4 to 6:
-  ASL Typing error: a subtype of integer {6, 12, 16, 0..4, 8..9} was expected,
+  ASL Typing error: a subtype of integer {0..4, 6, 8..9, 12, 16} was expected,
     provided integer {15}.
   [1]
 
@@ -14,8 +14,8 @@
   set {0..16} gave {1..16}. Continuing with this constraint set.
   File constraint-mul-01.asl, line 10, characters 4 to 6:
   ASL Typing error: a subtype of
-    integer {18, 30, 42, 52, 60, 70, 72, 75, 84, 88, ...} was expected,
-    provided integer {255}.
+    integer {0..16, 18, 20..22, 24..28, 30, 32..33, 35..36, 39..40, 42, 
+             44..45, ...} was expected, provided integer {255}.
   [1]
 
   $ aslref constraint-mul-02.asl
@@ -24,8 +24,8 @@
   set {0..32} gave {1..32}. Continuing with this constraint set.
   File constraint-mul-02.asl, line 10, characters 4 to 6:
   ASL Typing error: a subtype of
-    integer {42, 60, 72, 102, 108, 110, 112, 128, 130, 138, ...} was expected,
-    provided integer {1023}.
+    integer {0..36, 38..40, 42, 44..46, 48..52, 54..58, 60, 62..66, 68..70, 72,
+             ...} was expected, provided integer {1023}.
   [1]
 
   $ aslref constraint-mul-03.asl
@@ -34,8 +34,8 @@
   set {0..64} gave {1..64}. Continuing with this constraint set.
   File constraint-mul-03.asl, line 10, characters 4 to 6:
   ASL Typing error: a subtype of
-    integer {72, 102, 108, 138, 150, 180, 192, 198, 200, 212, ...}
-    was expected, provided integer {4095}.
+    integer {0..66, 68..70, 72, 74..78, 80..82, 84..88, 90..96, 98..100, 102,
+             104..106, ...} was expected, provided integer {4095}.
   [1]
 
   $ aslref constraint-mul-04.asl
@@ -44,8 +44,9 @@
   set {0..128} gave {1..128}. Continuing with this constraint set.
   File constraint-mul-04.asl, line 10, characters 4 to 6:
   ASL Typing error: a subtype of
-    integer {138, 150, 180, 192, 198, 228, 240, 270, 282, 312, ...}
-    was expected, provided integer {16383}.
+    integer {0..130, 132..136, 138, 140..148, 150, 152..156, 158..162,
+             164..166, 168..172, 174..178, ...} was expected,
+    provided integer {16383}.
   [1]
 
   $ aslref constraint-mul-05.asl
@@ -54,8 +55,9 @@
   set {0..256} gave {1..256}. Continuing with this constraint set.
   File constraint-mul-05.asl, line 10, characters 4 to 6:
   ASL Typing error: a subtype of
-    integer {270, 282, 312, 348, 420, 432, 462, 522, 570, 600, ...}
-    was expected, provided integer {65535}.
+    integer {0..256, 258..262, 264..268, 270, 272..276, 278..280, 282,
+             284..292, 294..306, 308..310, ...} was expected,
+    provided integer {65535}.
   [1]
 
   $ aslref constraint-mul-06.asl
