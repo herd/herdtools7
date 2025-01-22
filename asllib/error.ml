@@ -419,8 +419,8 @@ module PPrint = struct
     | UnreachableReached ->
         pp_print_text f "ASL Dynamic error: Unreachable reached."
     | NonReturningFunction name ->
-        fprintf f "ASL Typing error:@ function %S@ does@ not@ return@ anything."
-          name
+        fprintf f "ASL Typing error:@ the@ function %S@ %a." name pp_print_text
+          "may not terminate by returning a value or raising an exception."
     | RecursionLimitReached ->
         pp_print_text f "ASL Dynamic error: recursion limit reached."
     | LoopLimitReached ->
@@ -444,14 +444,12 @@ module PPrint = struct
            expression@ of@ type@ %a@ is@ expected."
           pp_ty t
     | EmptyConstraints ->
-        fprintf f
-          "ASL Typing error:@ a@ well-constrained@ integer@ cannot@ have@ \
-           empty@ constraints."
+        pp_print_text f
+          "ASL Typing error: a well-constrained integer cannot have empty \
+           constraints."
     | BadPrintType t ->
-        fprintf f
-          "ASL Typing error:@ print@ and@ println@ only@ accept@ singular@ \
-           types,@ found@ %a."
-          pp_ty t
+        fprintf f "ASL Typing error:@ %a@ %a." pp_print_text
+          "print and println only accept singular types, found" pp_ty t
     | UnexpectedPendingConstrained ->
         pp_print_text f
           "ASL Typing error: a pending constrained integer is illegal here."
