@@ -59,6 +59,7 @@ module type INTERVAL_SET = sig
   val choose : t -> interval
   val take : t -> elt -> (t * t) option
   val union : t -> t -> t
+  val unions : t list -> t
   val diff : t -> t -> t
   val inter : t -> t -> t
   val find_next_gap : elt -> t -> elt
@@ -348,6 +349,18 @@ module Make (Elt : ELT) = struct
   let union a b =
     let a' = cardinal a and b' = cardinal b in
     if a' > b' then fold add b a else fold add a b
+
+  (* Added by Hadrien Renaud *)
+  let rec pairwise_unions acc = function
+    | [] -> acc
+    | x :: [] -> x :: acc
+    | x :: y :: li -> pairwise_unions (union x y :: acc) li
+
+  let rec unions = function
+    | [] -> empty
+    | x :: [] -> x
+    | li -> pairwise_unions [] li |> unions
+  (* End added by Hadrien Renaud *)
 
   let merge l r =
     match (l, r) with
