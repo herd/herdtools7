@@ -88,9 +88,9 @@ module Make(V:Constant.S) = struct
   let compile_val_fun v =
     let open Constant in
     match v with
+    | Symbolic _ when Constant.is_label v -> Warn.user_error "No label value in LISA"
     | Symbolic sym -> sprintf "%s" (Constant.as_address sym)
     | Concrete _|ConcreteVector _ -> Tmpl.dump_v v
-    | Label _ -> Warn.user_error "No label value in LISA"
     | Tag _ -> Warn.user_error "No tag in LISA"
     | PteVal _ -> Warn.user_error "No pteval in LISA"
     | Instruction _ -> Warn.user_error "No instruction value in LISA"

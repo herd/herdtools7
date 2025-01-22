@@ -199,7 +199,7 @@ module
       let open Constant in
       match c,sz with
 (* The following are 64bits quantities, the last two being virtual addresses *)
-      | ((PteVal _|Symbolic _|Label _),Quad)
+      | ((PteVal _|Symbolic _),Quad)
 (* Non-signed 32bit quantity *)
       | (Instruction _,(Word|Quad))
         -> Some c

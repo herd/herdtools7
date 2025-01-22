@@ -151,7 +151,7 @@ module
   let bit_at k = function
     | Val (Concrete v) -> Val (Concrete (Cst.Scalar.bit_at k v))
     | Val
-        (ConcreteVector _|ConcreteRecord _|Symbolic _|Label _|
+        (ConcreteVector _|ConcreteRecord _|Symbolic _|
          Tag _|PteVal _|Instruction _|Frozen _ as x)
       ->
         Warn.user_error "Illegal operation on %s" (Cst.pp_v x)
@@ -163,7 +163,7 @@ module
   match v1 with
     | Val (Concrete i1) ->
         Val (Concrete (op i1))
-    | Val (ConcreteVector _|ConcreteRecord _|Symbolic _|Label _|Tag _|PteVal _|Frozen _ as x) ->
+    | Val (ConcreteVector _|ConcreteRecord _|Symbolic _|Tag _|PteVal _|Frozen _ as x) ->
         Warn.user_error "Illegal operation %s on %s"
           (pp_unop op_op) (Cst.pp_v x)
     | Val (Instruction _ as x) ->
@@ -294,7 +294,6 @@ module
     match v1,v2 with
     | (Val (Tag _),Val (Tag _))
     | (Val (Symbolic _),Val (Symbolic _))
-    | (Val (Label _),Val (Label _))
     | (Val (PteVal _),Val (PteVal _))
     | (Val (Instruction _),Val (Instruction _))
       ->
@@ -324,7 +323,7 @@ module
     Val (Symbolic (Virtual {s with offset=i+k}))
   | Val (Symbolic (Physical (s,i))) -> Val (Symbolic (Physical (s,i+k)))
   | Val (ConcreteVector _|ConcreteRecord _
-       | Symbolic ((TagAddr _|System _))|Label _
+       | Symbolic ((TagAddr _|System _))
        |Tag _|PteVal _|Instruction _|Frozen _ as c) ->
       Warn.user_error "Illegal addition on constants %s +%d" (Cst.pp_v c) k
   | Var _ -> raise Undetermined
@@ -359,7 +358,7 @@ module
 
   and maskop op sz v = match v,sz with
   | Val (Tag _),_ -> v (* tags are small enough for any mask be idempotent *)
-  | Val (PteVal _|Instruction _|Symbolic _|Label _ as c),_ ->
+  | Val (PteVal _|Instruction _|Symbolic _ as c),_ ->
      begin
        match ArchOp.mask c sz with
        | Some c -> Val c
@@ -372,7 +371,7 @@ module
   and shift_right_logical v1 v2 = match v1,v2 with
     | Val (Symbolic (Virtual {name=s;_})),Val (Concrete c) ->
        begin
-         match ArchOp.shift_address_right s c with
+         match ArchOp.shift_address_right (Symbol.pp s) c with
          | Some c -> Val c
          | None ->
             Warn.user_error
@@ -427,11 +426,11 @@ module
 
   let eq v1 v2 = match v1,v2 with
   | Var i1,Var i2 when Misc.int_eq i1 i2 -> one
-  | Val (Symbolic _|Label _|Tag _|PteVal _|ConcreteVector _|Instruction _ as s1),Val (Symbolic _|Label _|Tag _|PteVal _|ConcreteVector _|Instruction _ as s2) ->
+  | Val (Symbolic _|Tag _|PteVal _|ConcreteVector _|Instruction _ as s1),Val (Symbolic _|Tag _|PteVal _|ConcreteVector _|Instruction _ as s2) ->
       bool_to_v Cst.eq s1 s2
 (* Assume concrete and others always to differ *)
-  | (Val (Symbolic _|Label _|Tag _|ConcreteVector _|PteVal _|Instruction _), Val (Concrete _))
-  | (Val (Concrete _), Val (Symbolic _|Label _|Tag _|ConcreteVector _|PteVal _|Instruction _)) -> zero
+  | (Val (Symbolic _|Tag _|ConcreteVector _|PteVal _|Instruction _), Val (Concrete _))
+  | (Val (Concrete _), Val (Symbolic _|Tag _|ConcreteVector _|PteVal _|Instruction _)) -> zero
   | _,_ ->
       binop
         Op.Eq
@@ -480,7 +479,7 @@ module
   let op_tagged op_op op v = match v with
   |  Val (Symbolic (Virtual ({offset=o;_} as a))) -> Val (op a o)
   |  Val (Symbolic (Physical _|TagAddr _|System _)
-          |Concrete _|Label _
+          |Concrete _
           |Tag _|ConcreteRecord _|ConcreteVector _
           |PteVal _|Instruction _
           |Frozen _)
@@ -489,32 +488,33 @@ module
 
   (*  Returns the location of the tag associated to a location *)
   let op_tagloc f {name=a;_} _ =
-    Symbolic (Virtual {default_symbolic_data with name=f a})
+    Symbolic (Virtual {default_symbolic_data with name=Symbol.map f a;})
   let capatagloc = op_tagged "capatagloc" (op_tagloc Misc.add_ctag)
 
   let tagloc v =  match v with
     | Val (Symbolic (Virtual {name=a;offset=o;_}))
       ->
-       Val (Symbolic (TagAddr (VIR,a,MachSize.granule_align o)))
+       Val (Symbolic (TagAddr (VIR,Symbol.pp a,MachSize.granule_align o)))
+
     | Val (Symbolic (Physical (a,o)))
       ->
        Val (Symbolic (TagAddr (PHY,a,MachSize.granule_align o)))
     | Val
         (Concrete _|ConcreteRecord _|ConcreteVector _
          |Symbolic ((TagAddr _|System _))
-         |Label _|Tag _|PteVal _
+         |Tag _|PteVal _
          |Instruction _|Frozen _)
       ->
        Warn.user_error "Illegal tagloc on %s" (pp_v v)
   | Var _ -> raise Undetermined
 
   let check_ctag = function
-    | Val (Symbolic (Virtual {name=s;_})) -> Misc.check_ctag s
+    | Val (Symbolic (Virtual {name=s;_})) -> Misc.check_ctag (Symbol.pp s)
     | Val (Symbolic (Physical _|System _|TagAddr _)) -> false
     | Var _
     | Val
         (Concrete _|ConcreteRecord _|ConcreteVector _
-        |Label _|Tag _
+        |Tag _
         |PteVal _|Instruction _
         |Frozen _)
       ->
@@ -535,7 +535,7 @@ module
   |  Val (Symbolic (Virtual s)) -> Val (op s)
   |  Val
        (Concrete _|ConcreteRecord _|ConcreteVector _
-       |Label _|Tag _
+       |Tag _
        |Symbolic _|PteVal _
        |Instruction _|Frozen _)
      ->
@@ -543,11 +543,11 @@ module
   | Var _ -> raise Undetermined
 
   let pteloc v = match v with
-  | Val (Symbolic (Virtual {name=a;_})) -> Val (Symbolic (System (PTE,a)))
+  | Val (Symbolic (Virtual {name=a;_})) -> Val (Symbolic (System (PTE, Symbol.pp a)))
   | Val (Symbolic (System (PTE,a))) -> Val (Symbolic (System (PTE2,a)))
   | Val
       (Concrete _|ConcreteRecord _|ConcreteVector _
-      |Label _|Tag _
+      |Tag _
       |Symbolic _|PteVal _
       |Instruction _|Frozen _)
     ->
@@ -561,13 +561,13 @@ module
   | Val (Symbolic (System ((PTE|PTE2|TLB),_))) -> zero
   | Val
       (Concrete _|ConcreteRecord _|ConcreteVector _
-      |Label _|Tag _
+      |Tag _
       |PteVal _|Instruction _
       |Frozen _) ->
       Warn.user_error "Illegal offset on %s" (pp_v v)
   | Var _ -> raise Undetermined
 
-  let op_tlbloc {name=a;_} = Symbolic (System (TLB,a))
+  let op_tlbloc {name=a;_} = Symbolic (System (TLB, Symbol.pp a))
   let tlbloc = op_pte_tlb "tlbloc" op_tlbloc
 
   let is_virtual v = match v with
@@ -955,7 +955,7 @@ module
   | Val (Concrete x) -> if scalar_to_bool x then v2 else v3
   | Val
       (ConcreteVector _|ConcreteRecord _|Symbolic _
-      |Label _|Tag _
+      |Tag _
       |PteVal _|Instruction _
       | Frozen _ as s) ->
       Warn.user_error "illegal if on symbolic constant %s" (Cst.pp_v s)

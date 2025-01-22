@@ -101,7 +101,6 @@ end = struct
     | Symbolic (TagAddr _) -> Access.TAG
     | Symbolic (System ((PTE|PTE2),_)) -> Access.PTE
     | Symbolic (System (TLB,_)) -> Access.TLB
-    | Label _ -> Access.VIR
     | Tag _
     | ConcreteVector _|Concrete _|ConcreteRecord _
     | PteVal _|Instruction _|Frozen _ as v
@@ -131,8 +130,8 @@ end = struct
           if kvm then Access.PTE
           else Warn.fatal "PTE %s while -variant kvm is not active"
                  (A.pp_location loc)
-    | A.Location_global (V.Val (Label(_,_)))
-      -> Access.VIR
+    (* | A.Location_global (V.Val (Label(_,_)))
+      -> Access.VIR *)
     | A.Location_global v ->
         Warn.fatal
           "access_of_location_std on non-standard symbol '%s'"
@@ -633,7 +632,7 @@ end = struct
           | Some
               (A.V.Val
                  (ConcreteVector _|Concrete _|Symbolic _|ConcreteRecord _
-                  |Label (_, _)|Tag _|Instruction _
+                  |Tag _|Instruction _
                   |Frozen _))
           | None
             -> None
