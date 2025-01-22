@@ -594,8 +594,9 @@ module
         | Some o -> intToV o
         | None ->  illegal_offset v
       end
+  | Val (Concrete _) as v -> v
   | Val
-      (Concrete _|ConcreteRecord _|ConcreteVector _
+      (ConcreteRecord _|ConcreteVector _
       |Tag _
       |PteVal _|AddrReg _|Instruction _
       |Frozen _) ->
