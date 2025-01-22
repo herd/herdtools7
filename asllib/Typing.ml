@@ -3419,7 +3419,17 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | S_Cond (_, s1, s2) -> join (from_stmt s1) (from_stmt s2)
       | S_Repeat (body, _, _) -> from_stmt body
       | S_While _ | S_For _ -> MayNotInterrupt
-      | S_Try (body, _, _) -> from_stmt body
+      | S_Try (body, catchers, otherwise) ->
+          let res0 = from_stmt body in
+          let res1 =
+            match otherwise with
+            | None -> res0
+            | Some s -> join (from_stmt s) res0
+          in
+          List.fold_left
+            (fun res (_, _, s) -> join res (from_stmt s))
+            res1 catchers
+
     (* End *)
 
     (** [check_stmt_interrupts name env body] checks that the function named
