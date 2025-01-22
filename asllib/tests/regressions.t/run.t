@@ -371,7 +371,7 @@ Required tests:
 Base values
   $ aslref base_values.asl
   File base_values.asl, line 5, characters 2 to 28:
-  ASL Typing error: base value of type integer {N..M, 42} cannot be statically
+  ASL Typing error: base value of type integer {42, N..M} cannot be statically
     determined since it consists of N.
   [1]
 
