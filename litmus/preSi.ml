@@ -1007,6 +1007,9 @@ module Make
                 A.GetInstr.dump_instr (T.C.V.pp O.hexa) v
 
               let dump_value loc v = match v with
+              | Constant.Symbolic (Constant.Virtual {Constant.pac})
+                when not (Constant.PAC.is_canonical pac) ->
+                  Warn.user_error "PAC not supported in post-conditions in litmus"
               | Constant.Symbolic _ -> SkelUtil.data_symb_id (T.C.V.pp O.hexa v)
               | Constant.PteVal p ->
                  A.V.PteVal.dump_pack SkelUtil.data_symb_id p
