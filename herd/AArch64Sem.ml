@@ -3397,7 +3397,7 @@ module Make
         let set_affinity p v = arch_op1 (AArch64Op.IntidSetAff p) v
         let get_affinity v = arch_op1 AArch64Op.IntidGetAff v
         let set_hm p v = arch_op1 (AArch64Op.IntidSetHM p) v
-        let get_hm v = arch_op1 AArch64Op.IntidGetHM v
+        let is_edge v = arch_op1 AArch64Op.IntidIsEdge v
 
         let is_cHPPI proc v =
           let* act = get_active v in
@@ -3479,7 +3479,9 @@ module Make
               | None ->
                 M.unitT ()
               | Some _ ->
-                let* v = set_pending false v in
+                let* v =
+                  let* c = is_edge v in
+                  M.choiceT c (set_pending false v) (M.unitT v) in
                 let* v = set_active true v in
               write_intid a ~an:Annot.GICR aimp v ii
             and* () =
