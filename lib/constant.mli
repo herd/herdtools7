@@ -171,7 +171,12 @@ module type S =  sig
   (** numeric one *)
   val one : v
 
+  (** Boolean values **)
+  val cst_true : v
+  val cst_false : v
+
   val as_int : v -> int option
+  val as_bool : v -> bool option
   val bit_at : int -> Scalar.t -> Scalar.t
   val pp : bool -> v -> string (* true -> hexa *)
   val pp_unsigned : bool -> v -> string (* true -> hexa *)

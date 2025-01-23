@@ -86,6 +86,9 @@ module type S =
       val two : v
       val default_tag : v
 
+      val v_true : v
+      val v_false : v
+
       (* The following operations may raise
          exception "Undetermined", if their arguments of
          type v are not determined enough to yield a result *)
@@ -98,6 +101,7 @@ module type S =
 
       val is_zero : v -> bool
       val is_one : v -> bool
+      val as_bool : v -> bool option
       val as_int : v -> int option
       val check_ctag : v -> bool
       val is_virtual : v -> bool

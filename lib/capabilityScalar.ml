@@ -101,6 +101,10 @@ let sxt sz v = match sz with
      let m = Uint128.shift_left Uint128.one (nb-1) in
      t,Uint128.sub (Uint128.logxor v m) m
 
+let as_bool (_, v) = Some (Bool.not (Uint128.equal Uint128.zero v))
+let s_true = one
+let s_false = zero
+
 let get_tag (t,_) = t
 and set_tag t (_,x) = t, x
 

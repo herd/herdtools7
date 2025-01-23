@@ -283,16 +283,13 @@ module Make (C : Config) = struct
     (* ASL-Backend implementation                                             *)
     (**************************************************************************)
 
-    let commit (ii,poi) msg =
+    let commit (ii, poi) msg =
       M.mk_singleton_es (Act.Branching msg) (use_ii_with_poi ii poi)
 
     let choice (m1 : V.v M.t) (m2 : 'b M.t) (m3 : 'b M.t) : 'b M.t =
-      M.asl_data
-        m1
-        (function
-         | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) ->
-            if b then m2 else m3
-         | b -> M.asl_data (to_int_signed b) (fun v -> M.choiceT v m2 m3))
+      M.asl_data m1 @@ function
+      | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) -> if b then m2 else m3
+      | b -> M.choiceT b m2 m3
 
     let logor v1 v2 =
       match (v1, v2) with
@@ -311,33 +308,42 @@ module Make (C : Config) = struct
           return @@ shortcut b v
       | _ -> M.op herdop v1 v2
 
+    let concat v1 v2 =
+      match (v1, v2) with
+      | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)), v
+        when Asllib.Bitvector.length bv = 0 ->
+          return v
+      | v, V.Val (Constant.Concrete (ASLScalar.S_BitVector bv))
+        when Asllib.Bitvector.length bv = 0 ->
+          return v
+      | _ -> M.op (Op.ArchOp ASLOp.Concat) v1 v2
+
     let binop =
       let open AST in
-      let to_bool op v1 v2 = op v1 v2 >>= M.op1 (Op.ArchOp1 ASLOp.ToBool) in
       let v_true = V.Val (Constant.Concrete (ASLScalar.S_Bool true))
       and v_false = V.Val (Constant.Concrete (ASLScalar.S_Bool false)) in
       function
       | AND -> M.op Op.And
       | BAND -> boolop Op.And (fun b v -> if b then v else v_false)
-      | BEQ -> M.op Op.Eq |> to_bool
+      | BEQ -> M.op Op.Eq
       | BOR -> boolop Op.Or (fun b v -> if b then v_true else v)
       | DIV -> M.op Op.Div
       | MOD -> M.op Op.Rem
       | DIVRM -> M.op (Op.ArchOp ASLOp.Divrm)
       | EOR -> M.op Op.Xor
-      | EQ_OP -> M.op Op.Eq |> to_bool
-      | GT -> M.op Op.Gt |> to_bool
-      | GEQ -> M.op Op.Ge |> to_bool
-      | LT -> M.op Op.Lt |> to_bool
-      | LEQ -> M.op Op.Le |> to_bool
+      | EQ_OP -> M.op Op.Eq
+      | GT -> M.op Op.Gt
+      | GEQ -> M.op Op.Ge
+      | LT -> M.op Op.Lt
+      | LEQ -> M.op Op.Le
       | MINUS -> M.op Op.Sub
       | MUL -> M.op Op.Mul
-      | NEQ -> M.op Op.Ne |> to_bool
+      | NEQ -> M.op Op.Ne
       | OR -> logor
       | PLUS -> M.op Op.Add
       | SHL -> M.op Op.ShiftLeft
       | SHR -> M.op Op.ShiftRight
-      | BV_CONCAT -> M.op (Op.ArchOp ASLOp.Concat)
+      | BV_CONCAT -> concat
       | (POW | IMPL | RDIV) as op ->
           Warn.fatal "ASL operation %s not yet implement in ASLSem."
             (Asllib.PP.binop_to_string op)
@@ -352,9 +358,11 @@ module Make (C : Config) = struct
     let ternary = function
       | V.Val (Constant.Concrete (ASLScalar.S_Bool true)) -> fun m1 _ -> m1 ()
       | V.Val (Constant.Concrete (ASLScalar.S_Bool false)) -> fun _ m2 -> m2 ()
+      | V.Val (Constant.Concrete _) as v ->
+          Warn.fatal "ASL Type error: got %s for a ternary." (V.pp_v v)
       | v ->
           fun m1 m2 ->
-            let* v1 = m1 () and* v2 = m2 () and* v = to_int_signed v in
+            let* v1 = m1 () and* v2 = m2 () in
             M.op3 Op.If v v1 v2
 
     (*

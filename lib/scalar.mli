@@ -26,6 +26,8 @@ module type S = sig
   (** zero is unique and here it is *)
   val unique_zero : bool
   val one : t
+  val s_true : t
+  val s_false : t
 
   val of_string : string -> t
   val pp : bool -> t -> string
@@ -36,6 +38,8 @@ module type S = sig
 
   val of_int64 : int64 -> t
   val to_int64 : t -> int64 (* Hum *)
+
+  val as_bool : t -> bool option
 
   val printable : t -> t
   val compare : t -> t -> int

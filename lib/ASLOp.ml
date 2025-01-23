@@ -47,7 +47,6 @@ type 'a constr_op1 =
   | BVSlice of int list
   | ToIntU
   | ToIntS
-  | ToBool
   | ToBV of int
   | BoolNot
   | BVLength
@@ -76,7 +75,6 @@ let pp_op1 _hexa = function
       @@ List.map string_of_int positions
   | ToIntU -> "ToIntU"
   | ToIntS -> "ToIntS"
-  | ToBool -> "ToBool"
   | ToBV sz -> Printf.sprintf "ToBV%d" sz
   | BoolNot -> "BoolNot"
   | BVLength -> "BVLength"
@@ -121,7 +119,10 @@ let do_op op c1 c2 =
         Some (Constant.ConcreteRecord record')
       else None
   | Concat ->
-      let is_empty s = s = ASLScalar.S_BitVector Asllib.Bitvector.empty in
+      let is_empty = function
+        | ASLScalar.S_BitVector s -> Asllib.Bitvector.length s = 0
+        | _ -> false
+      in
       (match (as_concrete c1, as_concrete c2) with
       | (Some s, _) when is_empty s ->
           Some c2
@@ -162,9 +163,6 @@ let do_op1 op cst =
       | Constant.Concrete s -> ASLScalar.convert_to_bv sz s |> return_concrete
       | Constant.Symbolic _ -> Some cst
       | _ -> None)
-  | ToBool ->
-      let* s = as_concrete cst in
-      return_concrete (ASLScalar.convert_to_bool s)
   | BVSlice positions -> (
       match cst with
       | Constant.Concrete s ->

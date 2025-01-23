@@ -34,6 +34,9 @@ module
     let unique_zero = false (* Wide also have a zero *)
     let one = Narrow Narrow.one
 
+    let s_true = one
+    let s_false = zero
+
     (*****************)
     (* One arguments *)
     (*****************)
@@ -57,6 +60,10 @@ module
 
     let of_int64 = to_narrow Narrow.of_int64
     and to_int64 = choose Narrow.to_int64 Wide.to_int64
+
+    let as_bool = function
+      | Narrow i -> Narrow.as_bool i
+      | Wide i -> Warn.fatal "as_bool on wide scalar '%s'" @@ Wide.pp i
 
     let printable = map Narrow.printable Misc.identity
 
