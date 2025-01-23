@@ -177,6 +177,8 @@ module Make
       val get_stabilized : T.t -> StringSet.t
       val is_ptr : A.location -> env -> bool
       val is_rloc_ptr : A.rlocation -> env -> bool
+      val is_rloc_tag : A.rlocation -> env -> bool
+      val is_rloc_tag_ptr: A.rlocation -> env -> bool
       val is_rloc_label : A.rlocation -> env -> bool
       val ptr_in_outs : env -> T.t -> bool
       val is_pte : A.location -> env -> bool
@@ -185,6 +187,7 @@ module Make
       val ptr_pte_in_outs : env -> T.t -> bool
       val instr_in_outs : env -> T.t -> bool
       val label_in_outs : env -> T.t -> bool
+      val ptr_tag_in_outs: env -> T.t -> bool
       val get_faults : T.t -> (A.V.v, A.FaultType.t) Fault.atom list
       val find_label_offset : Proc.t -> string -> T.t -> int
 
@@ -240,6 +243,9 @@ module Make
 
         (* Dump function to translate back opcodes into instructions *)
         val dump_opcode : env -> T.t -> unit
+
+        (* Dump function to translate back numerical tags into symbolic names *)
+        val dump_tag : env -> T.t -> unit
 
        (* Dump topology-definitions as renaming of external ones *)
         val dump_topology_external : int -> unit
@@ -369,14 +375,14 @@ end
       let select_global env =
         select_types
           (function
-            | A.Location_reg _|A.Location_global (G.Pte _|G.Phy _) -> None
+            | A.Location_reg _|A.Location_global (G.Pte _|G.Phy _|G.AddrT _|G.Tag _) -> None
             | A.Location_global (G.Addr a) -> Some a)
           env
 
       let select_aligned env =
         select_types
           (function
-            | A.Location_reg _|A.Location_global (G.Pte _|G.Phy _) -> None
+            | A.Location_reg _|A.Location_global (G.Pte _|G.Phy _|G.AddrT _|G.Tag _) -> None
             | A.Location_global (G.Addr loc) ->
                 if is_aligned loc env then Some loc else None)
           env
@@ -417,6 +423,7 @@ end
         let tr_out = tr_out test in
         let rec pp_fmt t = match t with
         | CType.Pointer t when CType.is_ins_t t -> [fmt_label]
+        | CType.Pointer t when CType.is_tag t -> ["%s";"%s"]
         | CType.Pointer _ -> ["%s"]
         | CType.Base "pteval_t" ->
             ["("; "oa:%s";  ", af:%d"; ", db:%d";
@@ -476,7 +483,7 @@ end
           (fun a k -> match ConstrGen.loc_of_rloc a with
           | A.Location_global (G.Pte a) ->  StringSet.add a k
           | A.Location_reg _
-          | A.Location_global (G.Phy _|G.Addr _)
+          | A.Location_global (G.Phy _|G.Addr _|G.AddrT _|G.Tag _)
             -> k)
           locs StringSet.empty
 
@@ -519,6 +526,14 @@ end
         let t = find_rloc_type loc env in
         CType.is_ins_ptr_t t
 
+      let is_rloc_tag loc env  =
+        let t = find_rloc_type loc env in
+        CType.is_tag t
+
+      let is_rloc_tag_ptr loc env  =
+        let t = find_rloc_type loc env in
+        CType.is_tag_ptr t
+
       let is_rloc_ptr loc env  =
         let t = find_rloc_type loc env in
         CType.is_ptr t
@@ -553,6 +568,14 @@ end
         let t = find_rloc_type loc env in
         CType.is_ins_t t
 
+      let is_tag loc env =
+        let t = find_rloc_type loc env in
+        CType.is_tag t
+
+      let is_ptr_tag loc env =
+        let t = find_rloc_type loc env in
+        CType.is_tag_ptr t
+
       let instr_in_outs env test =
         let locs = get_displayed_locs test in
         A.RLocSet.exists (fun loc -> is_instr loc env) locs
@@ -561,6 +584,14 @@ end
         let locs = get_displayed_locs t in
         A.RLocSet.exists (fun loc -> is_rloc_label loc env)
           locs
+
+      let tag_in_outs env test =
+        let locs = get_displayed_locs test in
+        A.RLocSet.exists (fun loc -> is_tag loc env) locs
+
+      let ptr_tag_in_outs env test =
+        let locs = get_displayed_locs test in
+        A.RLocSet.exists (fun loc -> is_ptr_tag loc env) locs
 
       let get_faults test =
         let inc = T.C.get_faults test.T.condition
@@ -1123,6 +1154,22 @@ end
               lbl2instr ;
             O.oi "else return \"???\";" ;
             O.o "}"
+          end
+
+        let dump_tag env t =
+          if (tag_in_outs env t || ptr_tag_in_outs env t) then
+          begin
+            O.o "static char *pretty_tag(tag_t tag) {" ;
+            O.oi "switch (tag) {" ;
+            List.iter
+              (fun t ->
+                O.fi "case %d: return \":%s\";"
+                  t (Misc.tag_of_int t))
+            (List.init 8 Fun.id) ;
+            O.oi "default: return \":?\";" ;
+            O.oi "}" ;
+            O.o "}" ;
+            O.o ""
           end
 
         let dump_topology_external n =
