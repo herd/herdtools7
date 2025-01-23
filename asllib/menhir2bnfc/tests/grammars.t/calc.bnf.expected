@@ -1,0 +1,15 @@
+// entrypoints Main;
+
+main ::= expr EOL
+
+expr ::= expr PLUS expr1
+       | expr MINUS expr1
+       | expr1
+
+expr1 ::= expr1 TIMES expr2
+        | expr1 DIV expr2
+        | expr2
+
+expr2 ::= INT
+        | LPAREN expr RPAREN
+        | MINUS expr2
