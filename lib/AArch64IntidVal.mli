@@ -18,8 +18,11 @@ module Target_Mode : sig
   type t
 end
 
-module Trigger_Mode : sig
-    type t
+module HM : sig
+  type t = int
+  val label : string
+  val is_edge : t -> bool
+  val of_string : string -> t
 end
 
 type t = {
@@ -29,7 +32,7 @@ type t = {
   priority : int;
   target : Proc.t;
   target_mode : Target_Mode.t;
-  trigger_mode : Trigger_Mode.t;
+  hm : HM.t;
   }
 
 val default : t

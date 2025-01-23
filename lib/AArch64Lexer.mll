@@ -465,6 +465,7 @@ let keyword_list = [
   "cddi", A.GIC.(GIC_OP { domain=CD; cmd=DI; });
   "cddis", A.GIC.(GIC_OP { domain=CD; cmd=DIS; });
   "cden", A.GIC.(GIC_OP { domain=CD; cmd=EN; });
+  "cdhm", A.GIC.(GIC_OP { domain=CD; cmd=HM; });
   "cdpend", A.GIC.(GIC_OP { domain=CD; cmd=PEND; });
   "cdrcfg", A.GIC.(GIC_OP { domain=CD; cmd=RCFG; });
   "cdeoi", A.GIC.(GIC_OP { domain=CD; cmd=EOI; });

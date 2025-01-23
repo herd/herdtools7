@@ -33,19 +33,25 @@ module Target_Mode = struct
     | ONEOFN -> "1ofN"
 end
 
-module Trigger_Mode = struct
-  type t = EDGE | LEVEL
+module HM = struct
+  type t = int
 
-  let trigger_mode_of_string s =
-    match s with
-    | "edge" -> EDGE
-    | "level" -> LEVEL
-    | _ -> Warn.user_error "Field trigger_mode should be edge or level" s
+  let label = "handling_mode"
 
-  let string_of_trigger_mode v =
-    match v with
-    | EDGE -> "edge-triggered"
-    | LEVEL -> "level-sensitive"
+  let of_string = function
+    | "edge" -> 0
+    | "level" -> 1
+    | _ as s -> Warn.user_error "Field handling_mode should be edge or level %s" s
+
+  let pp = function
+    | 0 -> "edge"
+    | 1 -> "level"
+    | _ -> Warn.fatal "Unexpected value of INTID handling mode"
+
+  let is_edge = function
+    | 0 -> true
+    | 1 -> false
+    | _ -> Warn.fatal "Unexpected value of INTID handling mode"
 end
 
 type t = {
@@ -55,7 +61,7 @@ type t = {
   priority : int;
   target : Proc.t;
   target_mode : Target_Mode.t;
-  trigger_mode : Trigger_Mode.t;
+  hm : HM.t;
   }
 
 let default = {
@@ -65,7 +71,7 @@ let default = {
   priority = 1;
   target = 0; (* corresponds to process P0 *)
   target_mode = Target_Mode.TARGETED;
-  trigger_mode = Trigger_Mode.EDGE;
+  hm = HM.of_string "edge";
   }
 
 let my_bool_of_string k s =
@@ -100,11 +106,11 @@ let pp_enabled v = pp_or_skip v (fun v -> v.enabled) my_string_of_bool "enabled"
 let pp_priority v = pp_or_skip v (fun v -> v.priority) my_string_of_int "priority"
 let pp_target v = pp_field (Proc.pp v.target) "affinity"
 let pp_target_mode v = pp_or_skip v (fun v -> v.target_mode) Target_Mode.string_of_target_mode "target_mode"
-let pp_trigger_mode v = pp_or_skip v (fun v -> v.trigger_mode) Trigger_Mode.string_of_trigger_mode "trigger_mode"
+let pp_hm v = pp_or_skip v (fun v -> v.hm) HM.pp "handling_mode"
 
 let pp v =
   let l = []
-    |> pp_trigger_mode v
+    |> pp_hm v
     |> pp_target_mode v
     |> pp_target v
     |> pp_priority v
@@ -121,7 +127,7 @@ let compare =
     |> Misc.lex_compare (fun v1 v2 -> Int.compare v1.priority v2.priority)
     |> Misc.lex_compare (fun v1 v2 -> Proc.compare v1.target v2.target)
     |> Misc.lex_compare (fun v1 v2 -> compare v1.target_mode v2.target_mode)
-    |> Misc.lex_compare (fun v1 v2 -> compare v1.trigger_mode v2.trigger_mode)
+    |> Misc.lex_compare (fun v1 v2 -> compare v1.hm v2.hm)
 
 let eq v1 v2 =
   Bool.equal v1.pending v2.pending &&
@@ -130,7 +136,7 @@ let eq v1 v2 =
   Int.equal v1.priority v2.priority &&
   Proc.equal v1.target v2.target &&
   v1.target_mode == v2.target_mode &&
-  v1.trigger_mode == v2.trigger_mode
+  v1.hm == v2.hm
 
 let add_field k v p =
   match k with
@@ -139,7 +145,7 @@ let add_field k v p =
   | "enabled" -> { p with enabled = my_bool_of_string k v }
   | "priority" -> { p with priority = my_int_of_string k v }
   | "target_mode" -> { p with target_mode = Target_Mode.target_mode_of_string v }
-  | "trigger_mode" -> { p with trigger_mode = Trigger_Mode.trigger_mode_of_string v }
+  | "handling_mode" -> { p with hm = HM.of_string v }
   | _ -> Warn.user_error "Illegal AArch64 INTID property"
 
 let add_target_field v p = { p with target = v }

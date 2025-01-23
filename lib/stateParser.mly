@@ -66,8 +66,9 @@ let mk_tag_mask t =
 %token <string> ENABLED
 %token <string> PRIORITY
 %token <string> TARGET_MODE
-%token <string> TRIGGER_MODE
+%token <string> HANDLING_MODE
 %token <string> VALID
+%token <string> AFFINITY
 
 %token TRUE FALSE
 %token EQUAL NOTEQUAL EQUALEQUAL
@@ -76,7 +77,7 @@ let mk_tag_mask t =
 %token LBRK RBRK LPAR RPAR LCURLY RCURLY SEMI COLON AMPER COMMA
 %token ATOMIC
 %token ATOMICINIT
-%token ATTRS TOK_OA TARGET
+%token ATTRS TOK_OA
 %token TOK_PTE TOK_INTID TOK_INTID_UPDATE TOK_PA
 %token TOK_TAG
 %token TOK_NOP
@@ -219,13 +220,12 @@ intid_field:
 | ENABLED { $1 }
 | PRIORITY { $1 }
 | TARGET_MODE { $1 }
-| TRIGGER_MODE { $1 }
-| VALID { $1 }
+| HANDLING_MODE { $1 }
 
 intid_prop_head:
-| key=intid_field COLON v=name_or_num tail=intid_prop_tail
+ | key=intid_field COLON v=name_or_num tail=intid_prop_tail
   { ParsedIntidVal.add_param key v tail }
-| TARGET COLON v=PROC tail=intid_prop_tail
+ | AFFINITY COLON v=PROC tail=intid_prop_tail
   { ParsedIntidVal.add_target v tail }
 
 intidval:
@@ -235,12 +235,16 @@ intid_update_prop_tail:
 | { IntidUpdateVal.empty }
 | COMMA key=intid_field COLON v=name_or_num tail=intid_update_prop_tail
   { IntidUpdateVal.add_field key v tail }
-| COMMA TARGET COLON v=PROC tail=intid_update_prop_tail
-  { IntidUpdateVal.add_field "target" (string_of_int v) tail }
+| COMMA key=AFFINITY COLON v=PROC tail=intid_update_prop_tail
+  { IntidUpdateVal.add_field key (string_of_int v) tail }
+| COMMA head=intid_update_prop_head
+  { head }
 
 intid_update_prop_head:
-| TOK_INTID_UPDATE COLON v=NAME tail=intid_update_prop_tail
-  { IntidUpdateVal.add_intid v tail }
+| TOK_INTID_UPDATE COLON i=NAME tail=intid_update_prop_tail
+  { IntidUpdateVal.add_intid i tail }
+| key=VALID COLON v=NUM tail=intid_update_prop_tail
+  { IntidUpdateVal.add_field key v tail }
 
 intid_update_val:
 | TOK_GICVAL COLON LPAR updateval=intid_update_prop_head RPAR { updateval }
