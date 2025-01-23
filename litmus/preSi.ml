@@ -1545,6 +1545,9 @@ module Make
                   Warn.fatal "Vector used as scalar"
               | ConcreteRecord _ ->
                   Warn.fatal "Record used as scalar"
+              | Symbolic (Virtual {pac})
+                when not (Constant.PAC.is_canonical pac) ->
+                  Warn.user_error "Litmus cannot initialize a virtual address with a non-canonical PAC field"
               | Symbolic (Virtual {name=s; tag=None; offset=0; _}) ->
                   sprintf "(%s)_vars->%s" (CType.dump at) s
               | Label (p,lbl) ->
