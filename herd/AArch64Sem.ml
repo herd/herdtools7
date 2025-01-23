@@ -3373,16 +3373,18 @@ module Make
         let (and*) = (>>|)
         let aimp = AArch64.NExp AArch64.Other
 
-        let read_intid a ?(an=Annot.X) ?(ae=aexp) ii =
+        let read_intid a ?(an=Annot.X) ae ii =
           M.read_loc Port.No
             (fun loc v -> Act.Access (Dir.R, loc, v, an, ae, quad, Access.INTID))
             (A.Location_global a) ii
-        and write_intid a ?(an=Annot.X) ?(ae=aexp) v ii =
+        and write_intid a ?(an=Annot.X) ae v ii =
           M.write_loc
             (mk_write quad an ae Access.INTID v) (A.Location_global a) ii
 
         let extract_intid v = arch_op1 AArch64Op.GICGetIntid v
-        let extract_update_val v f = arch_op1 (AArch64Op.GICGetField f) v
+        let extract_update_val cmd v =
+          let f = AArch64Base.GIC.cmd_to_field cmd in
+          arch_op1 (AArch64Op.GICGetField f) v
         let gic_setintid v = arch_op1 AArch64Op.GICSetIntid v
         let set_active act v = arch_op1 (AArch64Op.IntidSetAct act) v
         let get_active v = arch_op1 AArch64Op.IntidGetAct v
@@ -3406,71 +3408,37 @@ module Make
           m_op Op.And (is_not_zero enabled) |>
           m_op Op.And (M.op Op.Eq affinity proc)
 
+        let gic_modify cmd v old_v =
+          let open AArch64Base.GIC in
+          match cmd with
+          | DI -> set_active false old_v
+          | PEND ->
+            let* p = extract_update_val cmd v in
+            set_pending (V.is_one p) old_v
+          | DIS -> set_enabled false old_v
+          | EN -> set_enabled true old_v
+          | PRI ->
+            let* p = extract_update_val cmd v in
+            let p = Option.get (V.as_int p) in
+            set_priority p old_v
+          | AFF ->
+            let* aff_v = extract_update_val cmd v in
+            let aff = Option.get (V.as_int aff_v) in
+            set_affinity aff old_v
+          | HM ->
+            let* hm_v = extract_update_val cmd v in
+            let hm = Option.get (V.as_int hm_v) in
+            set_hm hm old_v
+          | RCFG | EOI -> assert false
+
         let gic_instr _domain cmd r ii =
           let open AArch64Base.GIC in
             match cmd with
-            | DI ->
-              let* v = read_reg Port.AddrData r ii in
-              let* intid = extract_intid v in
-              let* old_v = read_intid intid ~ae:aimp ii in
-              let* new_v = set_active false old_v in
-              let* () = write_intid intid new_v ~ae:aimp ii in
-              B.nextT
-            | PEND ->
-              let* v = read_reg Port.AddrData r ii in
-              let* intid = extract_intid v in
-              let* old_v = read_intid intid ii in
-              let* pend_v = extract_update_val v "pending" in
-              let* new_v = set_pending (V.is_one pend_v) old_v in
-              (* FIXME: Set handling mode too *)
-              let* () = write_intid intid new_v ii in
-              B.nextT
-            | DIS ->
-              let* v = read_reg Port.AddrData r ii in
-              let* intid = extract_intid v in
-              let* old_v = read_intid intid ii in
-              let* new_v = set_enabled false old_v in
-              let* () = write_intid intid new_v ii in
-              B.nextT
-            | EN ->
-              let* v = read_reg Port.AddrData r ii in
-              let* intid = extract_intid v in
-              let* old_v = read_intid intid ii in
-              let* new_v = set_enabled true old_v in
-              let* () = write_intid intid new_v ii in
-              B.nextT
-            | PRI ->
-              let* v = read_reg Port.AddrData r ii in
-              let* intid = extract_intid v in
-              let* intid_val = read_intid intid ii in
-              let* pri_v = extract_update_val v "priority" in
-              let pri = Option.get (V.as_int pri_v) in
-              let* intid_val = set_priority pri intid_val in
-              let* () = write_intid intid intid_val ii in
-              B.nextT
-            | AFF ->
-              let* v = read_reg Port.AddrData r ii in
-              let* intid = extract_intid v in
-              let* old_v = read_intid intid ii in
-              let* aff_v = extract_update_val v "target" in
-              let aff = Option.get (V.as_int aff_v) in
-              let* new_v = set_affinity aff old_v in
-              let* () = write_intid intid new_v ii in
-              B.nextT
-            | HM ->
-              let* v = read_reg false r ii in
-              let* intid = extract_intid v in
-              let* old_v = read_intid intid ii in
-              let* hm_v = extract_update_val v "handling_mode" in
-              let hm = Option.get (V.as_int hm_v) in
-              let* new_v = set_hm hm old_v in
-              let* () = write_intid intid new_v ii in
-              B.nextT
             | RCFG ->
               let open AArch64Base in
               let* v = read_reg Port.AddrData r ii in
               let* intid = extract_intid v in
-              let* intid_val = read_intid intid ~an:Annot.RCFG ii in
+              let* intid_val = read_intid intid ~an:Annot.RCFG aexp ii in
               let* () = write_reg (SysReg ICC_ICSR_EL1) intid_val ii in
               B.nextSetT (SysReg ICC_ICSR_EL1) intid_val
             | EOI -> begin
@@ -3480,6 +3448,16 @@ module Make
                 | _ ->
                   Warn.user_error "Instruction GIC CDEOI,%s not supported" (A.pp_reg r)
               end
+            | _ ->
+              let ae,annot = match cmd with
+                |  DI -> aimp,Annot.DI
+                | _ -> aexp,Annot.X in
+              let* v = read_reg Port.AddrData r ii in
+              let* intid = extract_intid v in
+              let* old_v = read_intid intid ~an:annot ae ii in
+              let* new_v = gic_modify cmd v old_v in
+              let* () = write_intid intid ~an:annot ae new_v ii in
+              B.nextT
 
         let gicr_instr _domain cmd r ii test =
           let open AArch64Base.GICR in
@@ -3503,7 +3481,7 @@ module Make
               | Some _ ->
                 let* v = set_pending false v in
                 let* v = set_active true v in
-              write_intid a ~an:Annot.GICR ~ae:aimp v ii
+              write_intid a ~an:Annot.GICR aimp v ii
             and* () =
               let* v = gic_setintid a in
               write_reg r v ii in
@@ -3511,7 +3489,7 @@ module Make
           let intids = A.V.ValueSet.elements (get_exported_intids test) in
           let m =
             let* vs = List.fold_right (>>::)
-                (List.map (fun a -> read_intid a ~an:Annot.GICR ~ae:aimp ii) intids)
+                (List.map (fun a -> read_intid a ~an:Annot.GICR aimp ii) intids)
                 (M.unitT []) in
             let rec choose vl al =
               match (vl, al) with
