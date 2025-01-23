@@ -487,7 +487,7 @@ module RegMap = A.RegMap)
         fun ptevalEnv v -> match v with
         | Symbolic (Virtual {pac})
           when not (PAC.is_canonical pac) ->
-            Warn.user_error "Litmus cannot generate VA with non-canonical PAC fields"
+            Warn.user_error "Litmus cannot initialize a virtual address with a non-canonical PAC field"
         | Symbolic sym ->
             let s = Constant.pp_symbol_old sym in
             sprintf "%s%s"
