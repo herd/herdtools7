@@ -188,16 +188,16 @@ begin
     end;
 
     // Binary search between low and high
-    while low <= high looplimit 2^128 do
+    while low + 1 < high looplimit 2^128 do
         var mid = (low + high) DIVRM 2;
         if 2.0 ^ mid > val then
-            high = mid - 1;
+            high = mid;
         else
-            low = mid + 1;
+            low = mid;
         end;
     end;
 
-    return high;
+    return low;
 end;
 
 // SqrtRounded()
