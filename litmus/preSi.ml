@@ -2020,7 +2020,8 @@ module Make
         O.o "" ;
         O.f "static void %szyva(void *_a) {" (if Cfg.is_kvm then "" else "*") ;
         if Cfg.is_kvm then begin
-            O.oi "init_pauth();" ;
+            if Cfg.variant Variant_litmus.Pac then
+              O.oi "init_pauth();" ;
             O.oi "int id = smp_processor_id();" ;
             O.oi "if (id >= AVAIL) return;" ;
             O.oi "zyva_t *a = (zyva_t*)_a + id;" ;
