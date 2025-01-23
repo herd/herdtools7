@@ -868,8 +868,6 @@
 \newcommand\maxmatches[0]{\hyperlink{def-maxmatch}{\textfunc{max\_matches}}}
 \newcommand\remaxmatch[0]{\hyperlink{def-rematch}{\textfunc{re\_max\_match}}}
 \newcommand\Token[0]{\hyperlink{def-token}{\mathbb{T}\mathbb{O}\mathbb{K}\mathbb{E}\mathbb{N}}}
-\newcommand\LexicalError[0]{\hyperlink{def-lexicalerrorresult}{\texttt{\#LE}}}
-\newcommand\ParseError[0]{\hyperlink{def-parseerror}{\texttt{\#PE}}}
 \newcommand\discard[0]{\hyperlink{def-discard}{\textfunc{discard}}}
 \newcommand\decimaltolit[0]{\hyperlink{def-decimaltolit}{\textfunc{dec\_to\_lit}}}
 \newcommand\hextolit[0]{\hyperlink{def-hextolit}{\textfunc{hex\_to\_lit}}}
@@ -1148,8 +1146,6 @@
 \newcommand\Continuing[0]{\hyperlink{def-continuing}{\textsf{Continuing}}}
 \newcommand\Returning[0]{\hyperlink{def-returning}{\textsf{Returning}}}
 \newcommand\Error[0]{\hyperlink{def-error}{\textsf{DynError}}}
-
-\newcommand\ErrorVal[1]{\Error(\texttt{"ERROR[#1]"})}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Typing macros
@@ -1882,60 +1878,51 @@
 \newcommand\intsettointconstraints[0]{\hyperlink{def-intsettointconstraints}{\textfunc{int\_set\_to\_int\_constraints}}}
 
 %% Build Error Codes
-\newcommand\BuildErrorCode[1]{\texttt{BE\_#1}}
+\newcommand\BuildErrorPrefix[0]{\texttt{BE}}
+\newcommand\BuildErrorCode[1]{\texttt{\BuildErrorPrefix\_#1}}
+\newcommand\LexicalError[0]{\hyperlink{def-lexicalerrorresult}{\BuildErrorCode{LE}}}
+\newcommand\LexicalErrorConfig[0]{\texttt{\#}\LexicalError}
+\newcommand\ParseError[0]{\hyperlink{def-parseerror}{\BuildErrorCode{PE}}}
+\newcommand\ParseErrorConfig[0]{\texttt{\#}\ParseError}
+\newcommand\ReservedIdentifier[0]{\hyperlink{def-reservedidentifier}{\BuildErrorCode{RI}}}
 \newcommand\BinopPrecedence[0]{\hyperlink{def-binopprecedence}{\BuildErrorCode{BOP}}}
+\newcommand\BuildBadDeclaration[0]{\hyperlink{def-buildbaddeclaration}{\BuildErrorCode{BD}}}
 
 %% Type Error Codes
-\newcommand\TypeErrorCode[1]{\texttt{TE\_#1}}
-\newcommand\BadPrintType[0]{\hyperlink{def-badprinttype}{\TypeErrorCode{BPT}}}
-\newcommand\BitfieldsNotAligned[0]{\hyperlink{def-bitfieldsnotaligned}{\TypeErrorCode{BNA}}}
+\newcommand\TypeErrorPrefix[0]{\texttt{TE}}
+\newcommand\TypeErrorCode[1]{\texttt{\TypeErrorPrefix\_#1}}
 \newcommand\UndefinedIdentifier[0]{\hyperlink{def-undefinedidentifier}{\TypeErrorCode{UI}}}
 \newcommand\IdentifierAlreadyDeclared[0]{\hyperlink{def-identifieralreadydeclared}{\TypeErrorCode{IAD}}}
-\newcommand\LengthsMismatch[0]{\hyperlink{def-lengthsmismatch}{\TypeErrorCode{LMM}}}
-\newcommand\SetterWithoutGetter[0]{\hyperlink{def-setterwithoutgetter}{\TypeErrorCode{SWG}}}
-\newcommand\ExpectedBitvectorType[0]{\hyperlink{def-expectedbitvectortype}{\TypeErrorCode{EBT}}}
-\newcommand\SubrogramDeclaredMultipleTimes[0]{\hyperlink{def-subprogramdeclaredmultipletimes}{\TypeErrorCode{SDM}}}
-\newcommand\NoCallCandidates[0]{\hyperlink{def-nocallcandidates}{\TypeErrorCode{NCC}}}
-\newcommand\TooManyCandidates[0]{\hyperlink{def-toomanycandidates}{\TypeErrorCode{TMC}}}
-\newcommand\BadParameterDecl[0]{\hyperlink{def-badparameterdecl}{\TypeErrorCode{BPD}}}
-\newcommand\NoLCA[0]{\hyperlink{def-nolca}{\TypeErrorCode{LCA}}}
-\newcommand\MismatchedReturnValue[0]{\hyperlink{def-mrv}{\TypeErrorCode{MRV}}}
-\newcommand\BadReturnStatement[0]{\hyperlink{def-brs}{\TypeErrorCode{BRS}}}
-\newcommand\CallBadArity[0]{\hyperlink{def-cba}{\TypeErrorCode{CBA}}}
-\newcommand\CallBadParameterArity[0]{\hyperlink{def-cbpa}{\TypeErrorCode{CBPA}}}
-\newcommand\BadRecursiveDecls[0]{\hyperlink{def-brd}{\TypeErrorCode{BRA}}}
-\newcommand\RequireIntegerForLoopBounds[0]{\hyperlink{def-lbi}{\TypeErrorCode{LBI}}}
-\newcommand\ExpectedStructuredType[0]{\hyperlink{def-expectedstructuredtype}{\TypeErrorCode{EST}}}
-\newcommand\ExpectedTupleType[0]{\hyperlink{def-expectedtupletype}{\TypeErrorCode{ETT}}}
-\newcommand\MissingFieldInitializer[0]{\hyperlink{def-mfi}{\TypeErrorCode{MFI}}}
-\newcommand\RequireSameBitwidths[0]{\hyperlink{def-rsb}{\TypeErrorCode{RSB}}}
-\newcommand\TypeAsssertionFails[0]{\hyperlink{def-taf}{\TypeErrorCode{TAF}}}
-\newcommand\BinaryOperationFailsAllConstraints[0]{\hyperlink{def-ofc}{\TypeErrorCode{OFC}}}
-\newcommand\InvalidOperandTypesForBinop[0]{\hyperlink{def-otb}{\TypeErrorCode{OTB}}}
-\newcommand\ExpectedEnumerationType[0]{\hyperlink{def-expectedenumerationtype}{\TypeErrorCode{EET}}}
-\newcommand\AnnonymousFormNotAllowedHere[0]{\hyperlink{def-iaf}{\TypeErrorCode{IAF}}}
 \newcommand\AssignmentToImmutable[0]{\hyperlink{def-aim}{\TypeErrorCode{AIM}}}
-\newcommand\MissingField[0]{\hyperlink{def-mf}{\TypeErrorCode{MF}}}
-\newcommand\DivIntIndivisible[0]{\hyperlink{def-dii}{\TypeErrorCode{DII}}}
-\newcommand\BitfieldsOutOfRange[0]{\hyperlink{def-bor}{\TypeErrorCode{BOT}}}
-\newcommand\BitfieldSlicesOverlap[0]{\hyperlink{def-bso}{\TypeErrorCode{BSO}}}
-\newcommand\BitfieldSliceReversed[0]{\hyperlink{def-bsr}{\TypeErrorCode{BSR}}}
-\newcommand\IntConstantExpected[0]{\hyperlink{def-icc}{\TypeErrorCode{ICC}}}
-\newcommand\EmptySlice[0]{\hyperlink{def-es}{\TypeErrorCode{ES}}}
-\newcommand\BaseValueNonStatic[0]{\hyperlink{def-bvns}{\TypeErrorCode{BVNS}}}
-\newcommand\BaseValueEmptyType[0]{\hyperlink{def-bvet}{\TypeErrorCode{BVET}}}
-\newcommand\NonReturningFunction[0]{\hyperlink{def-nrf}{\TypeErrorCode{NRF}}}
-\newcommand\BuiltinExpectedToBeFunction[0]{\hyperlink{def-bef}{\TypeErrorCode{BEF}}}
-\newcommand\UnexpectedPendingConstrained[0]{\hyperlink{def-upc}{\TypeErrorCode{UPC}}}
-\newcommand\ConflictingSideEffects[0]{\hyperlink{def-cse}{\TypeErrorCode{CSE}}}
+\newcommand\TypeSatisfactionFailure[0]{\hyperlink{def-typesatisfactionfailure}{\TypeErrorCode{TSF}}}
+\newcommand\StaticEvaluationFailure[0]{\hyperlink{def-staticevaluationfailure}{\TypeErrorCode{SEF}}}
+\newcommand\NoLCA[0]{\hyperlink{def-nolca}{\TypeErrorCode{LCA}}}
+\newcommand\NoBaseValue[0]{\hyperlink{def-nobasevalue}{\TypeErrorCode{NBV}}}
+\newcommand\TypeAssertionFailure[0]{\hyperlink{def-typeassertionfailure}{\TypeErrorCode{TAF}}}
+\newcommand\BadOperands[0]{\hyperlink{def-badoperands}{\TypeErrorCode{BO}}}
+\newcommand\UnexpectedType[0]{\hyperlink{def-unexpectedtype}{\TypeErrorCode{UT}}}
+\newcommand\BadTupleIndex[0]{\hyperlink{def-badtupleindex}{\TypeErrorCode{BTI}}}
+\newcommand\BadSlices[0]{\hyperlink{def-badslices}{\TypeErrorCode{BS}}}
+\newcommand\BadField[0]{\hyperlink{def-badfield}{\TypeErrorCode{BF}}}
+\newcommand\BadSubprogramDeclaration[0]{\hyperlink{def-badsubprogramdeclaration}{\TypeErrorCode{BSPD}}}
+\newcommand\BadDeclaration[0]{\hyperlink{def-baddeclaration}{\TypeErrorCode{BD}}}
+\newcommand\BadCall[0]{\hyperlink{def-badcall}{\TypeErrorCode{BC}}}
+\newcommand\SideEffectViolation[0]{\hyperlink{def-sideeffectviolation}{\TypeErrorCode{SEV}}}
 
 %% Dynamic Error Codes
+\newcommand\DynamicErrorPrefix[1]{\texttt{DE}}
 \newcommand\DynamicErrorVal[1]{\Error(\texttt{#1})}
-\newcommand\DynamicErrorCode[1]{\texttt{DE\_#1}}
-\newcommand\UnreachableError[0]{\hyperlink{def-unr}{\DynamicErrorCode{UNR}}}
-\newcommand\DynamicAssertionFailure[0]{\hyperlink{def-daf}{\DynamicErrorCode{DAF}}}
-\newcommand\DynamicTypeAssertionFailure[0]{\hyperlink{def-datc}{\DynamicErrorCode{ATC}}}
-\newcommand\ArbitraryEmptyType[0]{\hyperlink{def-aet}{\DynamicErrorCode{AET}}}
+\newcommand\DynamicErrorCode[1]{\texttt{\DynamicErrorPrefix\_#1}}
+\newcommand\UnreachableError[0]{\hyperlink{def-unreachableerror}{\DynamicErrorCode{UNR}}}
+\newcommand\DynamicAssertionFailure[0]{\hyperlink{def-dynamicassertionfailure}{\DynamicErrorCode{DAF}}}
+\newcommand\DynamicTypeAssertionFailure[0]{\hyperlink{def-dynamictypeassertionfailure}{\DynamicErrorCode{TAF}}}
+\newcommand\ArbitraryEmptyType[0]{\hyperlink{def-arbitraryemptytype}{\DynamicErrorCode{AET}}}
+\newcommand\DynamicBadOperands[0]{\hyperlink{def-dynamicbadoperands}{\DynamicErrorCode{BO}}}
+\newcommand\LimitExceeded[0]{\hyperlink{def-limitexceeded}{\DynamicErrorCode{LE}}}
+\newcommand\UncaughtException[0]{\hyperlink{def-uncaughtexception}{\DynamicErrorCode{UE}}}
+\newcommand\BadIndex[0]{\hyperlink{def-badindex}{\DynamicErrorCode{BI}}}
+\newcommand\OverlappingSliceAssignment[0]{\hyperlink{def-overlappingsliceassignment}{\DynamicErrorCode{OSA}}}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Semantics/Typing Shared macros

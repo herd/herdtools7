@@ -250,7 +250,7 @@ a statement returning a value, a \texttt{throw} statement, or the \texttt{Unreac
 All of the following apply:
 \begin{itemize}
   \item applying $\controlflowfromstmt$ to $\vs$ yields a \controlflowsymbolterm\ $\vctrlflow$;
-  \item checking that $\vctrlflow$ is different from $\maynotinterrupt$ yields $\True$\ProseTerminateAs{\NonReturningFunction};
+  \item checking that $\vctrlflow$ is different from $\maynotinterrupt$ yields $\True$\ProseTerminateAs{\BadSubprogramDeclaration};
   \item the result is $\True$.
 \end{itemize}
 
@@ -258,7 +258,7 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \controlflowfromstmt(\vs) \typearrow \vctrlflow\\
-  \checktrans{\vctrlflow \neq \maynotinterrupt}{\NonReturningFunction} \typearrow \True \OrTypeError
+  \checktrans{\vctrlflow \neq \maynotinterrupt}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError
 }{
   \checkstmtreturnsorthrows(\vs) \typearrow \True
 }

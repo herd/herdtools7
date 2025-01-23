@@ -496,7 +496,7 @@ One of the following applies:
   \vses \eqdef \vsese \cup \vsesldi\\\\
   \commonprefixline\\\\
   \ldk = \LDKConstant\\
-  \checktrans{\sesisbefore(\vsese, \timeframeconstant)}{TimeFrameConstant} \typearrow \True \OrTypeError\\\\
+  \checktrans{\sesisbefore(\vsese, \timeframeconstant)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
   \staticeval(\tenvone, \ve) \typearrow \vv \OrTypeError\\\\
   \declarelocalconstant(\tenvone, \vv, \ldi) \typearrow \newtenv\\
   \news \eqdef \SDecl(\LDKConstant, \ldi, \tyoptp, \langle\vep\rangle)
@@ -521,7 +521,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[none]{
-  \checktrans{\tyopt = \langle\Ignore\rangle}{\TypeErrorVal{ExpectedInitializingExpression}} \typearrow \True \OrTypeError \\
+  \checktrans{\tyopt = \langle\Ignore\rangle}{\TypeErrorVal{\BadDeclaration}} \typearrow \True \OrTypeError \\
   \tyopt \eqname \langle\vt\rangle \\
   \annotatetype{\tenv, \vt} \typearrow (\vtp, \vses) \OrTypeError\\\\
   \basevalue(\tenv, \vtp) \typearrow \veinit \OrTypeError\\\\
@@ -755,7 +755,7 @@ One of the following applies:
 \inferrule[error]{
   \typesat(\tenv, \vt, \vs) \typearrow \False
 }{
-  \checkcanbeinitializedwith(\tenv, \vs, \vt) \typearrow \TypeErrorVal{CannotBeInitializedWith}
+  \checkcanbeinitializedwith(\tenv, \vs, \vt) \typearrow \TypeErrorVal{\TypeSatisfactionFailure}
 }
 \end{mathpar}
 \lrmcomment{This is related to \identr{ZCVD} and \identr{LXQZ}.}
@@ -885,14 +885,14 @@ The helper function
   \overname{\ty}{\vt} \aslsep
   \overname{\call}{\vcall})
 \aslto \overname{\stmt}{\news}
-\cup\ \{\ParseError\}
+\cup\ \{\ParseErrorConfig\}
 \]
 builds a declaration statement $\news$ from an assignment of the call $\vcall$ to the left-hand side $\ldi$ with keyword $\ldk$ and type annotation $\vt$, where the call has an elided parameter.
 Otherwise, the result is a parse error.
 
 \begin{mathpar}
 \inferrule{
-  \checktrans{\vt = \TBits(\Ignore, \Ignore)}{\ParseError} \typearrow \True \;\terminateas \ParseError \\
+  \checktrans{\vt = \TBits(\Ignore, \Ignore)}{\ParseErrorConfig} \typearrow \True \;\terminateas \ParseErrorConfig \\
   \vt \eqname \TBits(\ve, \Ignore) \\
   \vcallp \eqdef \vcall[\callparams\mapsto [\ve] \concat \vcall.\callparams ]
 }{
@@ -1611,7 +1611,7 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \ve} \typearrow (\vtep, \vep, \vsese) \OrTypeError\\\\
-  \checktrans{\sesispure(\vsese) \typearrow \True}{ExpectedPureExpression}\\\\
+  \checktrans{\sesispure(\vsese) \typearrow \True}{\SideEffectViolation}\\\\
   \checktypesat(\tenv, \vtep, \TBool) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsese \cup \{\PerformsAssertions\}
 }{
@@ -2044,7 +2044,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[some\_error]{}{
-  \ticklooplimit(\overname{\langle 0 \rangle}{\vvopt}) \evalarrow \DynamicErrorVal{LimitReached}
+  \ticklooplimit(\overname{\langle 0 \rangle}{\vvopt}) \evalarrow \DynamicErrorVal{\LimitExceeded}
 }
 \end{mathpar}
 
@@ -2291,10 +2291,10 @@ All of the following apply:
   \annotateexpr{\tenv, \vstarte} \typearrow (\vstartt, \vstartep, \vsesstart) \OrTypeError\\\\
   \annotateexpr{\tenv, \vende} \typearrow (\vendt, \vendep, \vsesend) \OrTypeError\\\\
   \annotatelimitexpr(\tenv, \vlimit) \typearrow (\vlimitp, \vseslimit) \OrTypeError\\\\
-  \checktrans{\sesispure(\vsesstart)}{ExpectedPureExpression} \typearrow \OrTypeError\\\\
-  \checktrans{\sesisdeterministic(\vsesstart)}{ExpectedDeterministic} \typearrow \OrTypeError\\\\
-  \checktrans{\sesispure(\vsesend)}{ExpectedPureExpression} \typearrow \OrTypeError\\\\
-  \checktrans{\sesisdeterministic(\vsesend)}{ExpectedDeterministic} \typearrow \OrTypeError\\\\
+  \checktrans{\sesispure(\vsesstart)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
+  \checktrans{\sesisdeterministic(\vsesstart)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
+  \checktrans{\sesispure(\vsesend)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
+  \checktrans{\sesisdeterministic(\vsesend)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
   \vsescond \eqdef \vsesstart \cup \vsesend \cup \vseslimit\\
   \makeanonymous(\tenv, \vstartt) \typearrow \vstartstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vendt) \typearrow \vendstruct \OrTypeError\\\\
@@ -2394,7 +2394,7 @@ One of the following applies:
 \inferrule[not\_integers]{
   \astlabel(\structone) \neq \TInt \lor \astlabel(\structtwo) \neq \TInt
 }{
-  \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \TypeErrorVal{\RequireIntegerForLoopBounds}
+  \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
 
@@ -3086,7 +3086,7 @@ One of the following applies:
   \vb \eqdef (L^\tenv.\returntype = \None \leftrightarrow \veopt = \None) \\
   \vb = \False
 }{
-  \annotatestmt(\tenv, \overname{\SReturn(\veopt)}{\vs}) \typearrow \TypeErrorVal{\MismatchedReturnValue}
+  \annotatestmt(\tenv, \overname{\SReturn(\veopt)}{\vs}) \typearrow \TypeErrorVal{\BadSubprogramDeclaration}
 }
 \end{mathpar}
 
@@ -3318,7 +3318,7 @@ All of the following apply:
 \begin{mathpar}
   \inferrule{%
     \vi\in\listrange(\vargs): \annotateexpr{\vargs[i], \tenv} \typearrow (\vt_i, \vargsp[i], \vxs_i)\OrTypeError \\\\
-    \vi\in\listrange(\vargs): \checktrans{\issingular(\vt_i)}{\BadPrintType} \typearrow \True \OrTypeError \\\\
+    \vi\in\listrange(\vargs): \checktrans{\issingular(\vt_i)}{\UnexpectedType} \typearrow \True \OrTypeError \\\\
     \nonconflictingunion([\vi\in\listrange(\vargs): \vxs_i]) \typearrow \vses \OrTypeError
   }{%
     \annotatestmt (\tenv, \overname{\SPrint(\vargs, \vnewline)}{\vs}) \typearrow (\SPrint(\vargsp, \vnewline), \tenv, \vses)

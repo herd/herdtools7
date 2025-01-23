@@ -431,7 +431,7 @@ All of the following apply:
     \item define $\minpos$ as the minimal position in $\positions$;
     \item define $\maxpos$ as the maximal position in $\positions$;
     \item checking that $\minpos$ is non-negative and that $\maxpos$ is less than or equal to $\vwidth$
-            yields $\True$\ProseTerminateAs{\BitfieldsOutOfRange}.
+            yields $\True$\ProseTerminateAs{\BadSlices}.
     \item the result is $\True$.
 \end{itemize}
 
@@ -440,7 +440,7 @@ All of the following apply:
 \inferrule{
     \minpos \eqdef \min(\positions)\\
     \maxpos \eqdef \max(\positions)\\
-    \checktrans{0 \leq \minpos \land \maxpos \leq \vwidth}{\BitfieldsOutOfRange} \typearrow \True \OrTypeError
+    \checktrans{0 \leq \minpos \land \maxpos \leq \vwidth}{\BadSlices} \typearrow \True \OrTypeError
 }{
     \checkpositionsinwidth(\vwidth, \positions) \typearrow \True
 }
@@ -476,7 +476,7 @@ One of the following applies:
     \item applying $\disjointslicestopositions$ to $\vslicesone$ in $\tenv$ yields the optional set of positions
           $\positionstwoopt$\ProseOrTypeError;
     \item define $\positionstwo$ as $\vsone$ if $\positionstwoopt$ is $\langle\vstwo\rangle$ and the empty set, otherwise;
-    \item checking that $\positionsone$ is disjoint from $\positionstwo$ yields $\True$\ProseTerminateAs{\BitfieldSlicesOverlap}
+    \item checking that $\positionsone$ is disjoint from $\positionstwo$ yields $\True$\ProseTerminateAs{\BadSlices}
     \item $\positions$ is the union of $\positionsone$ and $\positionstwo$.
   \end{itemize}
 \end{itemize}
@@ -493,7 +493,7 @@ One of the following applies:
   \positionsone \eqdef \choice{\positionsoneopt = \langle\vsone\rangle}{\vsone}{\emptyset}\\
   \disjointslicestopositions(\tenv, \vslicesone) \typearrow \positionstwoopt \OrTypeError\\\\
   \positionstwo \eqdef \choice{\positionstwoopt = \langle\vstwo\rangle}{\vstwo}{\emptyset}\\
-  \checktrans{\positionsone \cap \positionstwo = \emptyset}{\BitfieldSlicesOverlap} \checktransarrow \True \OrTypeError
+  \checktrans{\positionsone \cap \positionstwo = \emptyset}{\BadSlices} \checktransarrow \True \OrTypeError
 }{
   \disjointslicestopositions(\tenv, \overname{\vs \concat \vslicesone}{\vslices}) \typearrow \overname{\positionsone \cup \positionstwo}{\positions}
 }
@@ -526,7 +526,7 @@ One of the following applies:
           $\SliceRange(\veone, \vetwo)$;
     \item applying $\reducetozopt$ to $\veone$ in $\tenv$ yields the integer literal for $\vx$\ProseTerminateAs{\None};
     \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$ yields the integer literal for $\vy$\ProseTerminateAs{\None};
-    \item checking that $\vx$ is less than or equal to $\vy$ yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
+    \item checking that $\vx$ is less than or equal to $\vy$ yields $\True$\ProseTerminateAs{\BadSlices};
     \item $\positions$ is the set of integers between $\vx$ and $\vy$, inclusive.
   \end{itemize}
 
@@ -536,7 +536,7 @@ One of the following applies:
           $\SliceLength(\veone, \vetwo)$;
     \item applying $\reducetozopt$ to $\veone$ in $\tenv$ yields the integer literal for $\vx$\ProseTerminateAs{\None};
     \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$ yields the integer literal for $\vy$\ProseTerminateAs{\None};
-    \item checking that $\vy > 0$ holds (which implies that $\vx \leq \vx+\vy-1$ holds) yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
+    \item checking that $\vy > 0$ holds (which implies that $\vx \leq \vx+\vy-1$ holds) yields $\True$\ProseTerminateAs{\BadSlices};
     \item $\positions$ is the set of integers between $\vx$ and $\vx+\vy-1$, inclusive.
   \end{itemize}
 
@@ -546,7 +546,7 @@ One of the following applies:
           $\SliceStar(\veone, \vetwo)$;
     \item applying $\reducetozopt$ to $\veone$ in $\tenv$ yields the integer literal for $\vx$\ProseTerminateAs{\None};
     \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$ yields the integer literal for $\vy$\ProseTerminateAs{\None};
-    \item checking that $\vx > 0$ holds (which implies that $\vx \times \vy \leq \vx \times (\vy + 1) - 1$ holds) yields $\True$\ProseTerminateAs{\BitfieldSliceReversed};
+    \item checking that $\vx > 0$ holds (which implies that $\vx \times \vy \leq \vx \times (\vy + 1) - 1$ holds) yields $\True$\ProseTerminateAs{\BadSlices};
     \item $\positions$ is the set of integers between $\vx \times \vy$ and $\vx \times (\vy + 1) - 1$, inclusive.
   \end{itemize}
 \end{itemize}
@@ -563,7 +563,7 @@ One of the following applies:
 \inferrule[range]{
   \reducetozopt(\tenv, \veone) \typearrow \langle\vx\rangle \terminateas\None\\\\
   \reducetozopt(\tenv, \vetwo) \typearrow \langle\vy\rangle \terminateas\None\\\\
-  \checktrans{\vy \leq \vx}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{\vy \leq \vx}{\BadSlices} \checktransarrow \True \OrTypeError\\\\
 }{
   \bitfieldslicetopositions(\tenv, \overname{\SliceRange(\veone, \vetwo)}{\vslice}) \typearrow
   \overname{\langle\{n \;|\; \vy \leq n \leq \vx\}\rangle}{\positions}
@@ -574,7 +574,7 @@ One of the following applies:
 \inferrule[length]{
   \reducetozopt(\tenv, \veone) \typearrow \langle\vx\rangle \terminateas\None\\\\
   \reducetozopt(\tenv, \vetwo) \typearrow \langle\vy\rangle \terminateas\None\\\\
-  \checktrans{\vy > 0}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{\vy > 0}{\BadSlices} \checktransarrow \True \OrTypeError\\\\
 }{
   \bitfieldslicetopositions(\tenv, \overname{\SliceLength(\veone, \vetwo)}{\vslice}) \typearrow
   \overname{\langle\{n \;|\; \vx \leq n \leq \vx+\vy-1\}\rangle}{\positions}
@@ -585,7 +585,7 @@ One of the following applies:
 \inferrule[scaled]{
   \reducetozopt(\tenv, \veone) \typearrow \langle\vx\rangle \terminateas\None\\\\
   \reducetozopt(\tenv, \vetwo) \typearrow \langle\vy\rangle \terminateas\None\\\\
-  \checktrans{\vx > 0}{\BitfieldSliceReversed} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{\vx > 0}{\BadSlices} \checktransarrow \True \OrTypeError\\\\
 }{
   \bitfieldslicetopositions(\tenv, \overname{\SliceStar(\veone, \vetwo)}{\vslice}) \typearrow
   \overname{\langle\{n \;|\; \vx \times \vy \leq n \leq \vx \times (\vy + 1) - 1\}\rangle}{\positions}
@@ -637,7 +637,7 @@ One of the following applies:
     \item \Prosebitfieldstoabsolute{$\tenv$}{$\vbitfields$}{$\vtopabsolute$}{$\vfs$};
     \item checking that \absolutebitfields\ $\vfone$ and $\vftwo$ align via
           $\absolutefieldsalign$ in $\tenv$, for every $\vfone$ and $\vftwo$ in $\vfs$,
-          yields $\True$\ProseTerminateAs{\BitfieldsNotAligned};
+          yields $\True$\ProseTerminateAs{\BadSlices};
     \item the result is $\True$.
   \end{itemize}
 \end{itemize}
@@ -657,7 +657,7 @@ One of the following applies:
   \vlastindex \eqdef \vwidth - 1\\
   \vtopabsolute \eqdef (\emptylist, 0..\vlastindex)\\
   \bitfieldstoabsolute(\tenv, \vbitfields, \vtopabsolute) \typearrow \vfs\\
-  \checktrans{\forall \vfone, \vftwo \in \vfs: \absolutefieldsalign(\vfone, \vftwo)}{\BitfieldsNotAligned} \typearrow \True \OrTypeError
+  \checktrans{\forall \vfone, \vftwo \in \vfs: \absolutefieldsalign(\vfone, \vftwo)}{\BadSlices} \typearrow \True \OrTypeError
 }{
   \checkcommonbitfieldsalign(\tenv, \vbitfields, \vwidth) \typearrow \True
 }

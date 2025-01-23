@@ -51,7 +51,7 @@ One of the following applies:
   \id_i = \id_j
 }
 {
-  \pairstomap([i=1..k: (\id_i,t_i)]) \typearrow \TypeErrorVal{DuplicateIdentifier}
+  \pairstomap([i=1..k: (\id_i,t_i)]) \typearrow \TypeErrorVal{\IdentifierAlreadyDeclared}
 }
 \and
 \inferrule[okay]{
@@ -107,7 +107,7 @@ One of the following applies:
   \id_i = \id_j
 }
 {
-  \checknoduplicates(\id_{1..k}) \typearrow \TypeErrorVal{DuplicateIdentifier}
+  \checknoduplicates(\id_{1..k}) \typearrow \TypeErrorVal{\IdentifierAlreadyDeclared}
 }
 \end{mathpar}
 

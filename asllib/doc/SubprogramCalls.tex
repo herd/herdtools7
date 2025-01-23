@@ -126,10 +126,10 @@ All of the following apply:
         yields \\ $(\namep, \funcsig, \vsescall)$\ProseOrTypeError;
   \item define $\vses$ as the union of $\vsesargs$ and $\vsescall$;
   \item either the $\subprogramtype$ of $\funcsig$ equals $\calltype$,
-        or the $\subprogramtype$ of $\funcsig$ is $\STGetter$ and $\calltype$ is $\STFunction$\ProseTerminateAs{\MismatchedReturnValue};
+        or the $\subprogramtype$ of $\funcsig$ is $\STGetter$ and $\calltype$ is $\STFunction$\ProseTerminateAs{\BadCall};
   \item applying $\insertstdlibparam$ to $\funcsig$, $\params$, and $\argtypes$ yields new parameters $\paramsone$;
-  \item checking that the lengths of $\funcsig.\funcparameters$ and $\paramsone$ are the same yields $\True$\ProseTerminateAs{\CallBadParameterArity};
-  \item checking that the lengths of $\funcsig.\funcargs$ and $\args$ are the same yields $\True$\ProseTerminateAs{\CallBadArity};
+  \item checking that the lengths of $\funcsig.\funcparameters$ and $\paramsone$ are the same yields $\True$\ProseTerminateAs{\BadCall};
+  \item checking that the lengths of $\funcsig.\funcargs$ and $\args$ are the same yields $\True$\ProseTerminateAs{\BadCall};
   \item applying $\checkparamstypesat$ to $\paramsone$
         to check that the actual parameters have correct types with respect to $\funcsig.\funcparameters$
         in $\tenv$ yields $\True$\ProseOrTypeError;
@@ -160,12 +160,12 @@ All of the following apply:
     \right)
   }\\\\
   \vses \eqdef \vsesargs \cup \vsescall\\
-  \checktrans{\vb}{\MismatchedReturnValue} \checktransarrow \True \OrTypeError \\
+  \checktrans{\vb}{\BadCall} \checktransarrow \True \OrTypeError \\
   \insertstdlibparam(\funcsig, \params, \argtypes) \typearrow \paramsone\\\\
   \equallength(\funcsig.\funcparameters, \paramsone) \typearrow \paramaritymatch \\\\
-  \checktrans{\paramaritymatch}{\CallBadParameterArity} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{\paramaritymatch}{\BadCall} \checktransarrow \True \OrTypeError\\\\
   \equallength(\funcsig.\funcargs, \args) \typearrow \aritymatch\\
-  \checktrans{\aritymatch}{\CallBadArity} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{\aritymatch}{\BadCall} \checktransarrow \True \OrTypeError\\\\
   \checkparamstypesat(\tenv, \funcsig.\funcparameters, \paramsone) \typearrow \True \OrTypeError\\\\
   \eqs \eqdef [(\vx_i, \Ignore) \in \funcsig.\funcargs_i ,\; (\Ignore, \vv_i, \Ignore) \in \paramsone: (\vx_i, \vv_i) ] \\
   \checkargstypesat(\tenv, \funcsig.\funcargs, \argtypes, \eqs) \typearrow \True \OrTypeError\\\\
@@ -1016,7 +1016,7 @@ One of the following applies:
   }
 }{
   \annotateretty(\tenv, \calltype, \funcsigrettyopt, \eqs) \typearrow
-  \TypeErrorVal{\MismatchedReturnValue}
+  \TypeErrorVal{\BadCall}
 }
 \end{mathpar}
 
@@ -1115,7 +1115,7 @@ One of the following applies:
     \end{array}
   }
 }{
-  \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \TypeErrorVal{\NoCallCandidates}
+  \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \TypeErrorVal{\BadCall}
 }
 \end{mathpar}
 
@@ -1129,7 +1129,7 @@ One of the following applies:
   }\\\\
   \cardinality{\matchingrenamings} \geq 2
 }{
-  \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \TypeErrorVal{\TooManyCandidates}
+  \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \TypeErrorVal{\BadCall}
 }
 \end{mathpar}
 
@@ -1622,7 +1622,7 @@ One of the following applies:
   \getstacksize(\denv, \name) \evalarrow \vstacksize\\
   \vlimit \geq \vstacksize
 }{
-  \checkrecurselimit(\env, \name, \velimitopt) \evalarrow \DynamicErrorVal{RecursionLimitReached}
+  \checkrecurselimit(\env, \name, \velimitopt) \evalarrow \DynamicErrorVal{\LimitExceeded}
 }
 \end{mathpar}
 

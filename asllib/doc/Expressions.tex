@@ -1253,7 +1253,7 @@ All of the following apply:
   \item annotating the expression $\vep$ in $\tenv$ yields $(\tep,\vepp, \vsesone)$\ProseOrTypeError;
   \item obtaining the \structure\ of $\tep$ in $\tenv$ yields $\structtep$\ProseOrTypeError;
   \item $\structtep$ is either a bitvector or an integer;
-  \item checking that $\slices$ is not empty yields $\True$\ProseTerminateAs{\EmptySlice};
+  \item checking that $\slices$ is not empty yields $\True$\ProseTerminateAs{\BadSlices};
   \item annotating $\slices$ in $\tenv$ yields $(\slicesp, \vsestwo)$\ProseOrTypeError;
   \item obtaining the width of $\slices$ in $\tenv$ via $\sliceswidth$ yields $\vw$\ProseOrTypeError;
   \item $\vt$ is the bitvector type of width $\vw$, that is, $\TBits(\vw, \emptylist)$;
@@ -1268,7 +1268,7 @@ All of the following apply:
   \annotateexpr{\tenv, \vep} \typearrow (\tep, \vepp, \vsesone) \OrTypeError\\\\
   \tstruct(\tenv, \tep) \typearrow \structtep \OrTypeError\\\\
   \astlabel(\structtep) \in \{\TInt, \TBits\}\\
-  \checktrans{\slices \neq \emptylist}{\EmptySlice} \typearrow \True \OrTypeError\\\\
+  \checktrans{\slices \neq \emptylist}{\BadSlices} \typearrow \True \OrTypeError\\\\
   \annotateslices(\tenv, \slices) \typearrow (\slicesp, \vsestwo) \OrTypeError\\\\
   \sliceswidth(\tenv, \slices) \typearrow \vw \OrTypeError\\\\
   \vses \eqdef \vsesone \cup \vsestwo
@@ -1301,7 +1301,7 @@ All of the following apply:
   \tstruct(\tenv, \tep) \typearrow \vtp\\
   \astlabel(\vtp) \not\in \{\TInt, \TBits\}
 }{
-  \annotateexpr{\tenv, \overname{\ESlice(\vep, \slices)}{\ve}} \typearrow \TypeErrorVal{IllegalSliceType}
+  \annotateexpr{\tenv, \overname{\ESlice(\vep, \slices)}{\ve}} \typearrow \TypeErrorVal{\BadSlices}
 }
 \end{mathpar}
 \CodeSubsection{\ESliceError}{\ESliceErrorEnd}{../Typing.ml}
@@ -1628,7 +1628,7 @@ All of the following apply:
   L \in \{\TRecord, \TException\}\\
   \assocopt(\fields, \fieldname) \typearrow \None
 }{
-  \annotateexpr{\tenv, \EGetField(\veone, \fieldname)} \typearrow \TypeErrorVal{FieldDoesNotExist}
+  \annotateexpr{\tenv, \EGetField(\veone, \fieldname)} \typearrow \TypeErrorVal{\BadField}
 }
 \end{mathpar}
 \CodeSubsection{\EGetBadRecordFieldBegin}{\EGetBadRecordFieldEnd}{../Typing.ml}
@@ -1651,7 +1651,7 @@ All of the following apply:
   \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \None
 }{
-  \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow \TypeErrorVal{FieldDoesNotExist}
+  \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow \TypeErrorVal{\BadField}
 }
 \end{mathpar}
 \CodeSubsection{\EGetBadBitFieldBegin}{\EGetBadBitFieldEnd}{../Typing.ml}
@@ -1775,7 +1775,7 @@ All of the following apply:
   \fieldname \eqname \texttt{"item"}\num\\
   \num \in \Lang(\REintlit)\\
   \decimaltolit(\num) = \Tintlit(\vindex)\\
-  \checktrans{0 \leq \vindex \leq \listlen{\tys}}{IndexOutOfRange} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{0 \leq \vindex \leq \listlen{\tys}}{\BadTupleIndex} \checktransarrow \True \OrTypeError\\\\
   \vt \eqdef \tys[\vindex]\\
   \newe \eqdef \EGetItem(\vetwo, \vindex)
 }{
@@ -1801,7 +1801,7 @@ All of the following apply:
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   \astlabel(\vtetwo) \not\in \{\TRecord, \TException, \TBits, \TTuple\}
 }{
-  \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow \TypeErrorVal{ConflictingTypes}
+  \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
 \CodeSubsection{\EGetBadFieldBegin}{\EGetBadFieldEnd}{../Typing.ml}
@@ -1955,7 +1955,7 @@ All of the following apply:
   \makeanonymous(\tenv, \tbaseannot) \typearrow \tbaseannotanon \OrTypeError\\\\
   \astlabel(\tbaseannotanon) \not\in \{\TBits, \TRecord\}
 }{
-  \annotateexpr{\tenv, \overname{\EGetFields(\veone, \vfields)}{\ve}} \typearrow \TypeErrorVal{UnexpectedType}
+  \annotateexpr{\tenv, \overname{\EGetFields(\veone, \vfields)}{\ve}} \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
 \CodeSubsection{\EGetFieldsBegin}{\EGetFieldsEnd}{../Typing.ml}
@@ -2018,7 +2018,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[empty]{}{
-  \findbitfieldsslices(\name, \overname{\emptylist}{\vbitfields}) \typearrow \TypeErrorVal{BitfieldNotFound}
+  \findbitfieldsslices(\name, \overname{\emptylist}{\vbitfields}) \typearrow \TypeErrorVal{\BadField}
 }
 \end{mathpar}
 
@@ -2066,7 +2066,7 @@ One of the following applies:
 \inferrule[error]{
   \assocopt(\name, \tfields) \typearrow \None
 }{
-  \getbitfieldwidth(\tenv, \name, \tfields) \typearrow \TypeErrorVal{BitFieldNotFound}
+  \getbitfieldwidth(\tenv, \name, \tfields) \typearrow \TypeErrorVal{\BadField}
 }
 \end{mathpar}
 
@@ -2279,7 +2279,7 @@ One of the following applies:
     \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item $\vtone$ is a tuple type with list of tuples $\vlone$, that is, $\TTuple(\vlone)$;
     \item $\vtone$ is a tuple type with list of tuples $\vltwo$, that is, $\TTuple(\vltwo)$;
-    \item checking whether $\vlone$ and $\vltwo$ have the same length yields $\True$\ProseTerminateAs{\TypeErrorVal{\TypeAsssertionFails}};
+    \item checking whether $\vlone$ and $\vltwo$ have the same length yields $\True$\ProseTerminateAs{\TypeAssertionFailure};
     \item applying $\checkatc$ to $\vlone[\vi]$ and $\vltwo[\vi]$ in $\tenv$ for every $\vi\in\listrange(\vlone)$ yields $\True$\ProseOrTypeError;
     \item the result is $\True$;
   \end{itemize}
@@ -2289,7 +2289,7 @@ One of the following applies:
     \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item the AST labels of $\vtone$ and $\vttwo$ are the same;
     \item the AST label of $\vtone$ is neither $\TInt$, nor $\TBits$, nor $\TTuple$;
-    \item the result is a type error indicating that the type assertion will always fail ($\TypeAsssertionFails$).
+    \item the result is a type error indicating that the type assertion will always fail ($\TypeAssertionFailure$).
   \end{itemize}
 \end{itemize}
 \subsubsection{Formally}
@@ -2306,7 +2306,7 @@ One of the following applies:
   \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
   \astlabel(\vtone) \neq \astlabel(\vttwo)
 }{
-  \checkatc(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{\TypeAsssertionFails}
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{\TypeAssertionFailure}
 }
 \end{mathpar}
 
@@ -2325,7 +2325,7 @@ One of the following applies:
   \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
   \vtone = \TTuple(\vlone)\\
   \vttwo = \TTuple(\vltwo)\\
-  \checktrans{|\vlone|=|\vltwo|}{\TypeAsssertionFails} \typearrow \True\OrTypeError\\\\
+  \checktrans{|\vlone|=|\vltwo|}{\TypeAssertionFailure} \typearrow \True\OrTypeError\\\\
   \vi\in\listrange(\vlone): \checkatc(\vlone[\vi], \vltwo[\vi]) \typearrow \True\OrTypeError
 }{
   \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
@@ -2338,7 +2338,7 @@ One of the following applies:
   \astlabel(\vtone) = \astlabel(\vttwo)\\
   \astlabel(\vtone) \not\in \{\TInt, \TBits, \TTuple\}
 }{
-  \checkatc(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{\TypeAsssertionFails}
+  \checkatc(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{\TypeAssertionFailure}
 }
 \end{mathpar}
 
@@ -2377,7 +2377,7 @@ All of the following apply:
             \end{itemize}
       \item all of the following apply (\textsc{error}):
             \begin{itemize}
-            \item $\vb$ is the native Boolean for \True;
+            \item $\vb$ is the native Boolean for \False;
             \item the result is a dynamic error indicating that the type assertion failed
                   (\DynamicTypeAssertionFailure).
             \end{itemize}
@@ -2919,11 +2919,11 @@ All of the following apply:
 \inferrule{
   \checktrans{\astlabel(\tty) = \TNamed}{NamedTypeExpected} \checktransarrow \True \OrTypeError\\\\
   \makeanonymous(\tenv, \tty) \typearrow \ttyanon \OrTypeError\\\\
-  \checktrans{\astlabel(\ttyanon) \in \{\TRecord, \TException\}}{\ExpectedStructuredType} \typearrow \True\OrTypeError\\\\
+  \checktrans{\astlabel(\ttyanon) \in \{\TRecord, \TException\}}{\UnexpectedType} \typearrow \True\OrTypeError\\\\
   \ttyanon \eqname L(\fieldtypes)\\
   \initializedfields \eqdef \{\name \;|\; (\name, \Ignore)\in\vfields\}\\
   \names \eqdef \fieldnames(\fieldtypes)\\
-  \checktrans{\{\names\} = \{\initializedfields\}}{\MissingFieldInitializer} \typearrow \True \OrTypeError\\\\
+  \checktrans{\{\names\} = \{\initializedfields\}}{\BadField} \typearrow \True \OrTypeError\\\\
   \checknoduplicates(\initializedfields) \typearrow \True \OrTypeError\\\\
   {
     \begin{array}{r}
@@ -2972,7 +2972,7 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \vep} \typearrow (\vtp, \vepp, \vses) \OrTypeError\\\\
-  \checktrans{\fieldtype(\fieldtypes, \name) \neq \bot}{MissingFieldInitializer} \typearrow \True \OrTypeError\\\\
+  \checktrans{\fieldtype(\fieldtypes, \name) \neq \bot}{\BadField} \typearrow \True \OrTypeError\\\\
   \fieldtype(\fieldtypes, \name) = \tspecp\\
   \checktypesat(\tenv, \vtp, \tspecp) \typearrow \True \OrTypeError
 }{

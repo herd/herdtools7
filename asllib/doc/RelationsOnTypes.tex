@@ -526,7 +526,7 @@ The rules for the checked type-satisfy predicate are:
 \inferrule[error]{
   \typesat(\tenv, \vt, \vs) \typearrow \False
 }{
-  \checktypesat(\tenv, \vt, \vs) \typearrow \TypeErrorVal{TypeConflict}
+  \checktypesat(\tenv, \vt, \vs) \typearrow \TypeErrorVal{\TypeSatisfactionFailure}
 }
 \end{mathpar}
 
@@ -1084,7 +1084,7 @@ the values it represents:
   \typesat(\tenv, \vt, \unconstrainedinteger) \typearrow \False \OrTypeError\\\\
   \typesat(\tenv, \vt, \TReal) \typearrow \False \OrTypeError\\
 }{
-  \applyunoptype(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \TypeErrorVal{InappropriateTypeForNeg}
+  \applyunoptype(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \TypeErrorVal{\BadOperands}
 }
 \end{mathpar}
 
@@ -1549,7 +1549,7 @@ One of the following applies:
     \right\}
   }
 }{
-  \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \TypeErrorVal{\InvalidOperandTypesForBinop}
+  \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \TypeErrorVal{\BadOperands}
 }
 \end{mathpar}
 \CodeSubsection{\applybinoptypesBegin}{\applybinoptypesEnd}{../Typing.ml}
@@ -1718,7 +1718,7 @@ One of the following applies:
     \item define $\vf$ as the specialization of $\refineconstraintbysign$ for the predicate
           $\lambda x.\ x \geq 0$, which is $\True$ if and only if the tested number is greater or equal to $0$;
     \item refining the list of constraints $\cs$ with $\vf$ via $\refineconstraints$ yields $\newcs$;
-    \item checking whether $\newcs$ is empty yields $\True$\ProseTerminateAs{\BinaryOperationFailsAllConstraints}.
+    \item checking whether $\newcs$ is empty yields $\True$\ProseTerminateAs{\BadOperands}.
   \end{itemize}
 
   \item All of the following apply (\textsc{greater\_than}):
@@ -1727,7 +1727,7 @@ One of the following applies:
     \item define $\vf$ as the specialization of $\refineconstraintbysign$ for the predicate
           $\lambda x.\ x > 0$, which is $\True$ if and only if the tested number is greater than $0$;
     \item refining the list of constraints $\cs$ with $\vf$ via $\refineconstraints$ yields $\newcs$;
-    \item checking whether $\newcs$ is empty yields $\True$\ProseTerminateAs{\BinaryOperationFailsAllConstraints}.
+    \item checking whether $\newcs$ is empty yields $\True$\ProseTerminateAs{\BadOperands}.
   \end{itemize}
 
   \item All of the following apply (\textsc{no\_filtering}):
@@ -1743,7 +1743,7 @@ One of the following applies:
   \op \in \{\SHL, \SHR, \POW\}\\\\
   \vf \eqdef \refineconstraintbysign(\tenv, \lambda x.\ x \geq 0)\\
   \refineconstraints(\cs, \vf) \typearrow \newcs\\
-  \checktrans{\newcs \neq \emptylist}{\BinaryOperationFailsAllConstraints} \typearrow \True\OrTypeError
+  \checktrans{\newcs \neq \emptylist}{\BadOperands} \typearrow \True\OrTypeError
 }{
   \binopfilterrhs(\tenv, \op, \cs) \typearrow \newcs
 }
@@ -1754,7 +1754,7 @@ One of the following applies:
   \op \in \{\MOD, \DIV, \DIVRM\}\\\\
   \vf \eqdef \refineconstraintbysign(\tenv, \lambda x.\ x > 0)\\
   \refineconstraints(\cs, \vf) \typearrow \newcs\\
-  \checktrans{\newcs \neq \emptylist}{\BinaryOperationFailsAllConstraints} \typearrow \True\OrTypeError
+  \checktrans{\newcs \neq \emptylist}{\BadOperands} \typearrow \True\OrTypeError
 }{
   \binopfilterrhs(\tenv, \op, \cs) \typearrow \newcs
 }
@@ -2069,7 +2069,7 @@ One of the following applies:
           yields the optional constraint $\vcopt_\vi$\ProseOrTypeError;
     \item define $\vres$ as the list made of constraints $\vcp_\vi$, for each $\vi$ in $\listrange(\cs)$
           such that $\vcopt_\vi = \langle\vcp_\vi\rangle$;
-    \item checking that $\vres$ is not the empty list yields $\True$\ProseTerminateAs{\BinaryOperationFailsAllConstraints}.
+    \item checking that $\vres$ is not the empty list yields $\True$\ProseTerminateAs{\BadOperands}.
   \end{itemize}
 
   \item All of the following apply (\textsc{non\_div}):
@@ -2085,7 +2085,7 @@ One of the following applies:
   \op = \DIV\\
   \vi\in\listrange(\cs): \filterreduceconstraintdiv(\cs[\vi]) \typearrow \vcopt_\vi \OrTypeError\\\\
   \vres \eqdef [\vi\in\listrange(\cs): \choice{\vcopt_\vi = \langle\vcp_\vi\rangle}{\vcp}{\epsilon}]\\
-  \checktrans{\vres \neq \emptylist}{\BinaryOperationFailsAllConstraints} \checktransarrow \True \OrTypeError
+  \checktrans{\vres \neq \emptylist}{\BadOperands} \checktransarrow \True \OrTypeError
 }{
   \refineconstraintfordiv(\op, \cs) \typearrow \vres
 }
@@ -2626,7 +2626,7 @@ One of the following applies:
   \astlabel(\vtp) \neq \vl
 }
 {
-  \checkstructurelabel(\tenv, \vt, \vl) \typearrow \TypeErrorVal{UnexpectedTypeStructure}
+  \checkstructurelabel(\tenv, \vt, \vl) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
 
@@ -2741,7 +2741,7 @@ One of the following applies:
   \tstruct(\tenv, \vt) \typearrow \vtp\\
   \astlabel(\vtp) \neq \TBits
 }{
-  \getbitvectorwidth(\tenv, \vt) \typearrow \TypeErrorVal{\ExpectedBitvectorType}
+  \getbitvectorwidth(\tenv, \vt) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
 \CodeSubsection{\GetBitvectorWidthBegin}{\GetBitvectorWidthEnd}{../Typing.ml}
@@ -2824,6 +2824,6 @@ All of the following apply:
   \getbitvectorwidth(\tenv, \vttwo) \typearrow \vm \OrTypeError\\\\
   \bitwidthequal(\tenv, \vn, \vm) \typearrow \False
 }{
-  \checkbitsequalwidth(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{DifferentBitwidths}
+  \checkbitsequalwidth(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}

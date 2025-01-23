@@ -468,7 +468,7 @@ One of the following applies:
 \inferrule[error]{
   (\op, \vl) \not\in \unopsignatures
 }{
-  \unopliterals(\op, \astlabel(\vl)) \typearrow \TypeErrorVal{TypeMismatch}
+  \unopliterals(\op, \astlabel(\vl)) \typearrow \TypeErrorVal{\BadOperands}
 }
 \and
 \inferrule[negate\_int]{}{
@@ -928,7 +928,7 @@ One of the following applies:
 \inferrule[error]{
   (\op, \astlabel(\vlone), \astlabel(\vltwo)) \not\in \binopsignatures
 }{
-  \binopliterals(\op, \overname{\vlone}{\vvone}, \overname{\vltwo}{\vvtwo}) \typearrow \TypeErrorVal{TypeMismatch}
+  \binopliterals(\op, \overname{\vlone}{\vvone}, \overname{\vltwo}{\vvtwo}) \typearrow \TypeErrorVal{\BadOperands}
 }
 \end{mathpar}
 
@@ -955,7 +955,7 @@ One of the following applies:
 \inferrule[div\_int]{
   \checktrans{b > 0}{DIV\_DenominatorNegative} \checktransarrow \True \OrTypeError\\\\
   n \eqdef a \div b \\\\
-  \checktrans{n \in \Z}{\DivIntIndivisible} \checktransarrow \True \OrTypeError
+  \checktrans{n \in \Z}{\BadOperands} \checktransarrow \True \OrTypeError
 }{
   \binopliterals(\overname{\DIV}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lint(n)}{\vr}
 }
@@ -1164,7 +1164,7 @@ of \texttt{width} bits.
   \listlen{a} \neq \listlen{b}
 }{
   \binopliterals(\op, \overname{\lbitvector(a)}{\vvone}, \overname{\lbitvector(b)}{\vvtwo}) \typearrow
-  \TypeErrorVal{\RequireSameBitwidths}
+  \TypeErrorVal{\BadOperands}
 }
 \and
 \inferrule[bitwise\_empty]{
@@ -1323,8 +1323,8 @@ One of the following applies:
   \item All of the following apply (\textsc{static\_error}):
   \begin{itemize}
     \item $\vv$ is a literal native value, that is, $\nvliteral{l}$;
-    \item statically evaluating $\op$ on $l$ yields a type error with message $m$;
-    \item the result is a dynamic error with message $m$.
+    \item statically evaluating $\op$ on $l$ yields a type error;
+    \item the result is a dynamic error.
   \end{itemize}
 
   \item All of the following apply (\textsc{non\_literal}):
@@ -1346,9 +1346,9 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[static\_error]{
-  \unopliterals(\op, l) \typearrow \TypeErrorVal{m} \\
+  \unopliterals(\op, l) \typearrow \TypeErrorVal{\Ignore} \\
 }{
-  \unoprel(\op, \overname{\nvliteral{l}}{\vv}) \evalarrow \TypeErrorVal{m}
+  \unoprel(\op, \overname{\nvliteral{l}}{\vv}) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
 }
 \end{mathpar}
 
@@ -1356,7 +1356,7 @@ One of the following applies:
 \inferrule[non\_literal]{
   \astlabel(\vv) \neq \nvliterallabel
 }{
-  \unoprel(\op, \vv) \evalarrow \DynamicErrorVal{TypeMismatch}
+  \unoprel(\op, \vv) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
 }
 \end{mathpar}
 
@@ -1385,14 +1385,14 @@ One of the following applies:
   \begin{itemize}
     \item $\vvone$ is a literal native value, that is, $\nvliteral{l_1}$;
     \item $\vvtwo$ is a literal native value, that is, $\nvliteral{l_2}$;
-    \item statically evaluating $\op$ on the literals $l_1$ and $l_2$ yields a type error with message $m$;
-    \item the result is a dynamic error with message $m$.
+    \item statically evaluating $\op$ on the literals $l_1$ and $l_2$ yields a type error;
+    \item the result is a dynamic error ($\DynamicBadOperands$).
   \end{itemize}
 
   \item All of the following apply (\textsc{non\_literal}):
   \begin{itemize}
     \item either $\vvone$ or $\vvtwo$ is not a literal native value;
-    \item the result is a dynamic error indicating the mismatch.
+    \item the result is a dynamic error indicating the mismatch ($\DynamicBadOperands$).
   \end{itemize}
 \end{itemize}
 
@@ -1408,9 +1408,9 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[static\_error]{
-  \binopliterals(\op, l_1, l_2) \typearrow \TypeErrorVal{m} \\
+  \binopliterals(\op, l_1, l_2) \typearrow \TypeErrorVal{\Ignore} \\
 }{
-  \binoprel(\op, \overname{\nvliteral{l_1}}{\vvone}, \overname{\nvliteral{l_2}}{\vvtwo}) \evalarrow \TypeErrorVal{m}
+  \binoprel(\op, \overname{\nvliteral{l_1}}{\vvone}, \overname{\nvliteral{l_2}}{\vvtwo}) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
 }
 \end{mathpar}
 
@@ -1418,6 +1418,6 @@ One of the following applies:
 \inferrule[non\_literal]{
   \astlabel(\vvone) \neq \nvliterallabel \lor \astlabel(\vvtwo) \neq \nvliterallabel
 }{
-  \binoprel(\op, \vvone, \vvtwo) \evalarrow \DynamicErrorVal{TypeMismatch}
+  \binoprel(\op, \vvone, \vvtwo) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
 }
 \end{mathpar}

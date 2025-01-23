@@ -187,7 +187,7 @@ $\REstringlit$ &$\triangleq$& \anycharacter{\texttt{"}} ( ($\REstrchar$ \texttt{
 \end{tabular}
 \end{center}
 
-\section{Identifiers}
+\section{Identifiers} \label{sec:LexicalIdentifiers}
 Identifiers start with a letter or underscore and continue with zero or more letters, underscores or digits.
 Identifiers are case sensitive.
 \hypertarget{def-reletter}{}
@@ -217,16 +217,16 @@ Tuple element selectors are classed as identifiers. That is, in cases like \text
 the selector \texttt{item0} is classed as an identifier.
 \lrmcomment{This is related to \identiTSXL}
 
-\section{Lexical Analysis}
+\section{Lexical Analysis} \label{sec:LexicalAnalysis}
 Lexical analysis, which is also referred to as \emph{scanning}, is defined via the function
 \hypertarget{def-aslscan}{}
 \[
-\aslscan : \LexSpec \times \REasciichar^* \aslto (\Token^* \cup \{\LexicalError\})
+\aslscan : \LexSpec \times \REasciichar^* \aslto (\Token^* \cup \{\LexicalErrorConfig\})
 \]
 \hypertarget{def-lexicalerrorresult}{}
 which takes a \emph{lexical specification} (explained soon), an ASL specification string
 (where characters are simply numbers representing ASCII characters)
-and returns a sequence of tokens (tokens are defined below) or a \emph{lexical error} $\LexicalError$.
+and returns a sequence of tokens (tokens are defined below) or a \emph{lexical error} $\LexicalErrorConfig$.
 
 Tokens have one of two forms:
 \begin{description}
@@ -307,7 +307,7 @@ The function $\aslscan$ is constructively defined via the following inference ru
 \inferrule[no\_match]{
   \maxmatches(R, s) = \emptylist
 }{
-  \aslscan(R, s) \scanarrow \LexicalError
+  \aslscan(R, s) \scanarrow \LexicalErrorConfig
 }
 \end{mathpar}
 
@@ -315,7 +315,7 @@ The function $\aslscan$ is constructively defined via the following inference ru
 \inferrule[token]{
   \maxmatches(R, s) = [(e_1,a_1),\ldots,(e_n,a_n)]\\
   \remaxmatch(s, e_1) = (s_1, s_2)\\
-  a_1(s_1, s_2) \scanarrow \ts \terminateas \LexicalError
+  a_1(s_1, s_2) \scanarrow \ts \terminateas \LexicalErrorConfig
 }{
   \aslscan(R, s) \scanarrow \ts
 }
@@ -373,7 +373,7 @@ The lexeme action
 \actiontoken(f) \triangleq \lambda (s_1,s_2). \\
 \wrappedline\
 \begin{cases}
-  \LexicalError & \text{if }f(s_1) = \Terror \text{ or}\\
+  \LexicalErrorConfig & \text{if }f(s_1) = \Terror \text{ or}\\
    & \aslscan(\spectoken, s_2) = \Terror\\
   [f(s_1)] \concat \aslscan(\spectoken, s_2) & \text{else}
 \end{cases}
@@ -430,7 +430,7 @@ given by $s$.
 \[
 \eoftoken(s_1, s_2) \triangleq \begin{cases}
   \emptylist & s_2 = \emptylist\\
-  \LexicalError & \text{else}
+  \LexicalErrorConfig & \text{else}
 \end{cases}
 \]
 checks whether $\eof$ is not followed by more characters and returns a lexical error otherwise.
@@ -570,7 +570,7 @@ $\eof$            & $\eoftoken$ \\
 To scan string literals, we define the following specialized scanning function.
 The function
 \[
-\scanstring : \overname{\REasciichar^*}{\buff} \times \overname{\REasciichar^*}{s} \aslto (\Token^* \cup \{\LexicalError\})
+\scanstring : \overname{\REasciichar^*}{\buff} \times \overname{\REasciichar^*}{s} \aslto (\Token^* \cup \{\LexicalErrorConfig\})
 \]
 scans string with the $\specstring$ specification while building the final string literal in $\buff$.
 It is defined via the following rules:
@@ -578,7 +578,7 @@ It is defined via the following rules:
 \inferrule[no\_match]{
   \maxmatches(\specstring, s) = \emptylist
 }{
-  \scanstring(\buff, s) \scanarrow \LexicalError
+  \scanstring(\buff, s) \scanarrow \LexicalErrorConfig
 }
 \end{mathpar}
 
@@ -587,7 +587,7 @@ It is defined via the following rules:
   \maxmatches(R, s) = [(e_1,a_1),\ldots,(e_n,a_n)]\\
   \remaxmatch(s, e_1) = (s_1, s_2)\\
   a_1(s_1, s_2) = \Tstringchar(t)\\
-  \scanstring(\buff \concat t, s_2) \scanarrow \tstwo \terminateas \LexicalError
+  \scanstring(\buff \concat t, s_2) \scanarrow \tstwo \terminateas \LexicalErrorConfig
 }{
   \scanstring(\buff, s) \scanarrow \tstwo
 }
@@ -598,7 +598,7 @@ It is defined via the following rules:
   \maxmatches(R, s) = [(e_1,a_1),\ldots,(e_n,a_n)]\\
   \remaxmatch(s, e_1) = (s_1, s_2)\\
   a_1(s_1, s_2) = \Tstringend\\
-  \aslscan(\spectoken, s_2) \scanarrow \tstwo \terminateas \LexicalError
+  \aslscan(\spectoken, s_2) \scanarrow \tstwo \terminateas \LexicalErrorConfig
 }{
   \scanstring(\buff, s) \scanarrow [\Tstringlit(\buff)] \concat \tstwo
 }

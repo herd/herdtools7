@@ -530,14 +530,14 @@ if they are \hyperlink{def-sideeffectconflictterm}{non-conflicting}. \ProseOther
 All of the following apply:
 \begin{itemize}
     \item checking whether $\arenonconflicting$ yields $\True$ for $\vsesone$ and $\vsestwo$ yields\\
-         $\True$\ProseTerminateAs{\ConflictingSideEffects};
+         $\True$\ProseTerminateAs{\SideEffectViolation};
     \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$.
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-    \checktrans{\arenonconflicting(\vsesone, \vsestwo)}{\ConflictingSideEffects} \typearrow \True \OrTypeError
+    \checktrans{\arenonconflicting(\vsesone, \vsestwo)}{\SideEffectViolation} \typearrow \True \OrTypeError
 }{
     \nonconflictingunion(\vsesone, \vsestwo) \typearrow \overname{\vsesone \cup \vsestwo}{\vses}
 }
