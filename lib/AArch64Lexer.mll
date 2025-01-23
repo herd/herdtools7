@@ -457,6 +457,7 @@ match name with
 | "cddi"|"CDDI" -> A.GIC.(GIC_OP { domain=CD; cmd=DI; })
 | "cddis"|"CDDIS" -> A.GIC.(GIC_OP { domain=CD; cmd=DIS; })
 | "cden"|"CDEN" -> A.GIC.(GIC_OP { domain=CD; cmd=EN; })
+| "cdhm"|"CDHM" -> A.GIC.(GIC_OP { domain=CD; cmd=HM; })
 | "cdpend"|"CDPEND" -> A.GIC.(GIC_OP { domain=CD; cmd=PEND; })
 | "cdrfcg"|"CDRCFG" -> A.GIC.(GIC_OP { domain=CD; cmd=RCFG; })
 | "cdeoi"|"CDEOI" -> A.GIC.(GIC_OP { domain=CD; cmd=EOI; })

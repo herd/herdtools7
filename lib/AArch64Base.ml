@@ -1350,13 +1350,14 @@ module GIC = struct
     | CD -> "CD"
 
   type cmd =
-    | PRI | AFF | DI | DIS | EN | PEND | RCFG | EOI
+    | PRI | AFF | DI | DIS | EN | HM | PEND | RCFG | EOI
   let pp_cmd = function
     | PRI -> "PRI"
     | AFF -> "AFF"
     | DI -> "DI"
     | DIS -> "DIS"
     | EN -> "EN"
+    | HM -> "HM"
     | PEND -> "PEND"
     | RCFG -> "RCFG"
     | EOI -> "EOI"
@@ -1369,6 +1370,7 @@ module GIC = struct
     | DI -> "active"
     | DIS -> "enabled"
     | EN -> "enabled"
+    | HM -> "handling_mode"
     | PEND -> "pending"
     | RCFG | EOI -> assert false
 end

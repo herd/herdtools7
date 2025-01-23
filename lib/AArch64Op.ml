@@ -39,6 +39,8 @@ type 'op1 unop =
   | IntidGetPri
   | IntidSetAff of int
   | IntidGetAff
+  | IntidSetHM of int
+  | IntidGetHM
   | Extra1 of 'op1
 
 type 'op binop =
@@ -99,6 +101,8 @@ module
       | IntidGetPri -> "IntidGetPri"
       | IntidSetAff v -> "IntidSetAff:" ^ (string_of_int v)
       | IntidGetAff -> "IntidGetAff"
+      | IntidSetHM v -> "IntidSetHM:" ^ (string_of_int v)
+      | IntidGetHM -> "IntidGetHM"
       | Extra1 op1 -> Extra.pp_op1 hexa op1
 
     type scalar = S.t
@@ -176,15 +180,20 @@ module
         (fun v -> (Constant.mk_sym_intid (Option.get v.IntidUpdateVal.intid)))
 
     let get_gicfield field =
-      op_get_intid_update_val
-        (fun v ->
-           match v.IntidUpdateVal.field with
-           | Some (f, v) when String.equal f field ->
-             Constant.Concrete (S.of_string v)
-           | _ ->
-             Warn.user_error
-               "No field named %s in %s" field (IntidUpdateVal.pp v)
-        )
+      let f v =
+        match v.IntidUpdateVal.field with
+          | Some (f, v) when String.equal f field ->
+            let open AArch64IntidVal in
+            let c =
+              if String.equal field HM.label then
+                S.of_int (HM.of_string v)
+              else
+                S.of_string v in
+            Constant.Concrete c
+          | _ ->
+            Warn.user_error
+              "No field named %s in %s" field (IntidUpdateVal.pp v) in
+      op_get_intid_update_val f
 
     let gic_setintid v =
       let open Constant in
@@ -237,6 +246,14 @@ module
     let intid_get_aff () =
       let open Constant in
       op_get_intid_field (fun i -> S.of_int i.AArch64IntidVal.target)
+
+    let intid_set_hm v =
+      op_set_intid (fun i -> {i with AArch64IntidVal.hm=v})
+
+    let intid_get_hm () =
+      let open Constant in
+      op_get_intid_field (fun i -> S.of_int i.AArch64IntidVal.hm)
+
 
     let exit _ = raise Exit
     let toExtra cst = Constant.map Misc.identity exit exit exit cst
@@ -306,6 +323,8 @@ module
       | IntidGetPri -> intid_get_pri ()
       | IntidSetAff v -> intid_set_aff v
       | IntidGetAff -> intid_get_aff ()
+      | IntidSetHM v -> intid_set_hm v
+      | IntidGetHM -> intid_get_hm ()
       | Extra1 op1 ->
          fun cst ->
            try

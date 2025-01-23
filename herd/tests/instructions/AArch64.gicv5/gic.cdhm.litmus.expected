@@ -1,0 +1,10 @@
+Test gic.cdhm Required
+States 1
+[INTID(A)]=(affinity:P0, handling_mode:level);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([INTID(A)]=(affinity:P0, handling_mode:level))
+Observation gic.cdhm Always 1 0
+Hash=35f2edf81fb98b7aad7555cd83c0f7c7
+

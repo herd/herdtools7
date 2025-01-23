@@ -3394,6 +3394,8 @@ module Make
         let get_priority v = arch_op1 AArch64Op.IntidGetPri v
         let set_affinity p v = arch_op1 (AArch64Op.IntidSetAff p) v
         let get_affinity v = arch_op1 AArch64Op.IntidGetAff v
+        let set_hm p v = arch_op1 (AArch64Op.IntidSetHM p) v
+        let get_hm v = arch_op1 AArch64Op.IntidGetHM v
 
         let is_cHPPI proc v =
           let* act = get_active v in
@@ -3453,6 +3455,15 @@ module Make
               let* aff_v = extract_update_val v "target" in
               let aff = Option.get (V.as_int aff_v) in
               let* new_v = set_affinity aff old_v in
+              let* () = write_intid intid new_v ii in
+              B.nextT
+            | HM ->
+              let* v = read_reg false r ii in
+              let* intid = extract_intid v in
+              let* old_v = read_intid intid ii in
+              let* hm_v = extract_update_val v "handling_mode" in
+              let hm = Option.get (V.as_int hm_v) in
+              let* new_v = set_hm hm old_v in
               let* () = write_intid intid new_v ii in
               B.nextT
             | RCFG ->
