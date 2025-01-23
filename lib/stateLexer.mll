@@ -79,9 +79,9 @@ rule token = parse
 | "active" { ACTIVE "active" }
 | "enabled" { ENABLED "enabled" }
 | "priority" { PRIORITY "priority" }
-| "affinity" { TARGET }
+| "affinity" { AFFINITY "affinity" }
 | "routing_mode" { TARGET_MODE "target_mode" }
-| "handling_mode" { TRIGGER_MODE "trigger_mode" }
+| "handling_mode" { HANDLING_MODE "handling_mode" }
 | "valid" { VALID "valid" }
 (* PTW keywords *)
 | "PTE"|"TTD" { TOK_PTE }
