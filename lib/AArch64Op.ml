@@ -40,7 +40,7 @@ type 'op1 unop =
   | IntidSetAff of int
   | IntidGetAff
   | IntidSetHM of int
-  | IntidGetHM
+  | IntidIsEdge
   | Extra1 of 'op1
 
 type 'op binop =
@@ -102,7 +102,7 @@ module
       | IntidSetAff v -> "IntidSetAff:" ^ (string_of_int v)
       | IntidGetAff -> "IntidGetAff"
       | IntidSetHM v -> "IntidSetHM:" ^ (string_of_int v)
-      | IntidGetHM -> "IntidGetHM"
+      | IntidIsEdge -> "IntidIsEdge"
       | Extra1 op1 -> Extra.pp_op1 hexa op1
 
     type scalar = S.t
@@ -250,9 +250,10 @@ module
     let intid_set_hm v =
       op_set_intid (fun i -> {i with AArch64IntidVal.hm=v})
 
-    let intid_get_hm () =
+    let intid_is_edge () =
       let open Constant in
-      op_get_intid_field (fun i -> S.of_int i.AArch64IntidVal.hm)
+      let open AArch64IntidVal.HM in
+      op_get_intid_field (fun i -> if (is_edge i.AArch64IntidVal.hm) then S.one else S.zero)
 
 
     let exit _ = raise Exit
@@ -324,7 +325,7 @@ module
       | IntidSetAff v -> intid_set_aff v
       | IntidGetAff -> intid_get_aff ()
       | IntidSetHM v -> intid_set_hm v
-      | IntidGetHM -> intid_get_hm ()
+      | IntidIsEdge -> intid_is_edge ()
       | Extra1 op1 ->
          fun cst ->
            try
