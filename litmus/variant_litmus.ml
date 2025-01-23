@@ -24,6 +24,7 @@ type t =
   | SVE (* Do nothing *)
   | SME (* Do nothing *)
   | NoInit (* Do not initialise variables *)
+  | Pac (* Pointer authentication instructions *)
 
 let compare = compare
 
@@ -40,6 +41,7 @@ let parse s = match Misc.lowercase s with
 | "telechat" -> Some Telechat
 | "sve" -> Some SVE
 | "sme" -> Some SME
+| "pac" -> Some Pac
 | tag ->
   match
    Misc.app_opt (fun p -> FaultHandling p) (Fault.Handling.parse tag)
@@ -69,6 +71,7 @@ let pp = function
   | FaultHandling p -> Fault.Handling.pp p
   | SVE -> "sve"
   | SME -> "sme"
+  | Pac -> "pac"
 
 let ok v a = match v,a with
 | Self,`AArch64 -> true

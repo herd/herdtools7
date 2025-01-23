@@ -213,6 +213,8 @@ module Make
           if have_timebase then O.f "#define DELTA_TB %s" delta
         end ;
         O.o "/* Includes */" ;
+        if Cfg.variant Variant_litmus.Pac then
+          Insert.insert O.o "kvm_auth.c" ;
         Insert.insert_when_exists O.o "intrinsics.h" ;
         if do_dynalloc then O.o "#define DYNALLOC 1" ;
         if do_stats then O.o "#define STATS 1" ;
@@ -2005,69 +2007,12 @@ module Make
         O.o "}" ;
         O.o ""
 
-      let dump_init_pauth_def env test =
-        dump_choose_def env test ;
-        O.o "// read the SCTLR_EL1 status register" ;
-        O.o "unsigned long long read_sctlr_el1() {" ;
-        O.oi "unsigned long long ret;" ;
-        O.oi "asm __volatile__(\"mrs %[ret], SCTLR_EL1\": [ret] \"=r\" (ret));" ;
-        O.oi "return ret;" ;
-        O.o "}" ;
-        O.o "" ;
-        O.o "void init_pauth_key_ia() {" ;
-        O.oi "unsigned long long x = 0xaaaaaaaaaaaaaaaa;" ;
-        O.oi "unsigned long long y = 0xaaaaaaaaaaaaaaaa;" ;
-        O.oi "asm __volatile__(\"msr APIAKeyHi_EL1, %[x]\":: [x] \"r\" (x));" ;
-        O.oi "asm __volatile__(\"msr APIAKeyLo_EL1, %[y]\":: [y] \"r\" (y));" ;
-        O.o "}" ;
-        O.o "" ;
-        O.o "void init_pauth_key_ib() {" ;
-        O.oi "unsigned long long x = 0x5555555555555555;" ;
-        O.oi "unsigned long long y = 0x5555555555555555;" ;
-        O.oi "asm __volatile__(\"msr APIBKeyHi_EL1, %[x]\":: [x] \"r\" (x));" ;
-        O.oi "asm __volatile__(\"msr APIBKeyLo_EL1, %[y]\":: [y] \"r\" (y));" ;
-        O.o "}" ;
-        O.o "" ;
-        O.o "void init_pauth_key_da() {" ;
-        O.oi "unsigned long long x = 0x5555555555555555;" ;
-        O.oi "unsigned long long y = 0xaaaaaaaaaaaaaaaa;" ;
-        O.oi "asm __volatile__(\"msr APDAKeyHi_EL1, %[x]\":: [x] \"r\" (x));" ;
-        O.oi "asm __volatile__(\"msr APDAKeyLo_EL1, %[y]\":: [y] \"r\" (y));" ;
-        O.o "}" ;
-        O.o "" ;
-        O.o "void init_pauth_key_db() {" ;
-        O.oi "unsigned long long x = 0xaaaaaaaaaaaaaaaa;" ;
-        O.oi "unsigned long long y = 0x5555555555555555;" ;
-        O.oi "asm __volatile__(\"msr APDBKeyHi_EL1, %[x]\":: [x] \"r\" (x));" ;
-        O.oi "asm __volatile__(\"msr APDBKeyLo_EL1, %[y]\":: [y] \"r\" (y));" ;
-        O.o "}" ;
-        O.o "" ;
-        O.o "// update the SCTLR_EL1 status register" ;
-        O.o "void write_sctlr_el1(unsigned long long x) {" ;
-        O.oi "asm __volatile__(\"msr SCTLR_EL1, %[x]\":: [x] \"r\" (x));" ;
-        O.o "}" ;
-        O.o "" ;
-        O.o "// Initialize pointer authentication" ;
-        O.o "void init_pauth() {" ;
-        O.oi "unsigned long long enIA = 1ULL << 31;" ;
-        O.oi "unsigned long long enIB = 1ULL << 30;" ;
-        O.oi "unsigned long long enDA = 1ULL << 27;" ;
-        O.oi "unsigned long long enDB = 1ULL << 13;" ;
-        O.oi "write_sctlr_el1(enIA | enIB | enDA | enDB | read_sctlr_el1());" ;
-        O.oi "init_pauth_key_ia();" ;
-        O.oi "init_pauth_key_ib();" ;
-        O.oi "init_pauth_key_da();" ;
-        O.oi "init_pauth_key_db();" ;
-        O.o "}" ;
-        O.o ""
-
-
       let dump_zyva_def tname env test db procs_user =
         O.o "/*******************/" ;
         O.o "/* Forked function */" ;
         O.o "/*******************/" ;
         O.o "" ;
-        dump_init_pauth_def env test ;
+        dump_choose_def env test ;
         O.o "typedef struct {" ;
         O.oi "int id;" ;
         O.oi "global_t *g;" ;
