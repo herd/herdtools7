@@ -188,20 +188,29 @@ begin
     end;
 
     // Binary search between low and high
-    while low <= high looplimit 2^128 do
+    while low + 1 < high looplimit 2^128 do
         var mid = (low + high) DIVRM 2;
         if 2.0 ^ mid > val then
-            high = mid - 1;
+            high = mid;
         else
-            low = mid + 1;
+            low = mid;
         end;
     end;
 
-    return high;
+    return low;
 end;
 
 // SqrtRounded()
-// Compute square root of VALUE with FRACBITS of precision, rounding inexact values to Odd
+// =============
+// Compute square root of VALUE with FRACBITS of precision, rounding inexact
+// values to Odd
+
+// Round to Odd (RO) preserves any leftover fraction in the least significant
+// bit (LSB) so a subsequent IEEE rounding (RN/RZ/RP/RM) to a lower precision
+// yields the same final result as a direct single-step rounding would have. It
+// also ensures an Inexact flag is correctly signaled, as RO explicitly marks
+// all inexact intermediates by setting the LSB to 1, which cannot be
+// represented exactly when rounding to lower precision.
 
 func SqrtRounded(value : real, fracbits : integer) => real
 begin
@@ -212,28 +221,26 @@ begin
     var exp : integer = ILog2(value);
     var frac : real = value / (2.0 ^ exp);
 
-    // Require value = 2.0^exp * frac, where exp is even and 1/4 <= frac < 1
-    if exp MOD 2 == 0 then
-        frac = 0.25 * frac;
-        exp = exp + 2;
-    else
-        frac = 0.5 * frac;
-        exp = exp + 1;
+    // Require value = 2.0^exp * frac, where exp is even and 1 <= frac < 4
+    if exp MOD 2 != 0 then
+        frac = 2.0 * frac;
+        exp = exp - 1;
     end;
 
     // Set root to sqrt(frac) truncated to fracbits-1 bits
-    var root = 0.0;
+    var root = 1.0;
     var prec = 1.0;
     for n = 1 to fracbits - 1 do
+        prec = prec / 2.0;
         if (root + prec) ^ 2 <= frac then
             root = root + prec;
         end;
-        prec = prec / 2.0;
     end;
+    // prec == 2^(1-fracbits)
 
     // Final value of root is odd-rounded to fracbits bits
     if root ^ 2 < frac then
-        root = root + prec;
+        root = root + (prec / 2.0);
     end;
 
     // Return sqrt(value) odd-rounded to fracbits bits
