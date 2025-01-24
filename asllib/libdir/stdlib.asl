@@ -219,27 +219,27 @@ begin
 
     // Normalize value to the form 1.nnnn... x 2^exp
     var exp : integer = ILog2(value);
-    var frac : real = value / (2.0 ^ exp);
+    var mant : real = value / (2.0 ^ exp);
 
-    // Require value = 2.0^exp * frac, where exp is even and 1 <= frac < 4
+    // Require value = 2.0^exp * mant, where exp is even and 1 <= mant < 4
     if exp MOD 2 != 0 then
-        frac = 2.0 * frac;
+        mant = 2.0 * mant;
         exp = exp - 1;
     end;
 
-    // Set root to sqrt(frac) truncated to fracbits-1 bits
+    // Set root to sqrt(mant) truncated to fracbits-1 bits
     var root = 1.0;
     var prec = 1.0;
     for n = 1 to fracbits - 1 do
         prec = prec / 2.0;
-        if (root + prec) ^ 2 <= frac then
+        if (root + prec) ^ 2 <= mant then
             root = root + prec;
         end;
     end;
     // prec == 2^(1-fracbits)
 
     // Final value of root is odd-rounded to fracbits bits
-    if root ^ 2 < frac then
+    if root ^ 2 < mant then
         root = root + (prec / 2.0);
     end;
 
