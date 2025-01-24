@@ -93,13 +93,13 @@ let constraint_pow c1 c2 =
       [ exact (pow a c) ] |: TypingRule.ConstraintPow
   | Constraint_Range (a, b), Constraint_Exact c ->
       (* We need:
-         - 1 for 0 POW 0 that can be included everywhere and is the only time that POW is very unpredictable
          - the case a positive is included in the case a negative.
          - 0..b POW c for the positive values
          - (- ((-a) POW c)) .. ((-a) POW c) for the negative values
+         - the case 0 POW 0 can only happen if c = 0, and then this is included in 0..b POW c
       *)
       let mac = pow (neg a) c in
-      [ range zero_expr (pow b c); range (neg mac) mac; exact one_expr ]
+      [ range zero_expr (pow b c); range (neg mac) mac ]
   | Constraint_Exact a, Constraint_Range (_c, d) ->
       (* We need here:
          - 1 for 0 POW 0 that can be included everywhere and is the only time that POW is very unpredictable

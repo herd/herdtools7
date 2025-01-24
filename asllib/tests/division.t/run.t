@@ -156,3 +156,12 @@ Other polynomial equations:
   $ aslref rat-poly-01.asl
   ASL Dynamic error: Cannot extract from bitvector of length 0 slice 0+:-2.
   [1]
+
+Division as POW:
+  $ aslref zero-pow-neg.asl
+  ASL Dynamic error: Illegal application of operator ^ for values (0.0 / 1.0)
+    and -1.
+  [1]
+
+  $ aslref zero-pow-zero.asl
+

@@ -1239,7 +1239,6 @@ One of the following applies:
       \item the range constraint for the literal integer expression for $0$ and the expression
             $\EBinop(\POW, \vb, \vc)$;
       \item the range constraint for the expression $\EUnop(\NEG, \vmac)$ and $\vmac$;
-      \item the constraint for the literal integer expression for $1$.
     \end{itemize}
   \end{itemize}
 
@@ -1293,8 +1292,7 @@ One of the following applies:
   \constraintpow(\overname{\ConstraintRange(\va, \vb)}{\vcone}, \overname{\ConstraintExact(\vc)}{\vctwo}) \typearrow \\
   \overname{[
   \AbbrevConstraintRange{\ELInt{0}}{\AbbrevEBinop{\POW}{\vb}{\vc}},\
-  \AbbrevConstraintRange{\EUnop(\NEG, \vmac)}{\vmac},\
-  \AbbrevConstraintExact{\ELInt{1}}
+  \AbbrevConstraintRange{\EUnop(\NEG, \vmac)}{\vmac}
   ]}{\newcs}
     \end{array}
   }

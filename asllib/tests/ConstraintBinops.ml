@@ -103,11 +103,11 @@ let print_test op (x, y, cs1, cs2) =
       x Z.pp_print y PP.pp_int_constraints cs1 PP.pp_int_constraints cs2
       (PP.binop_to_string op)
 
-let long_factor = 100
+let long_factor = 1000
 let base_count = 10000
 
 let test_abcd op =
-  let count = base_count * 10
+  let count = base_count
   and name =
     Printf.sprintf "constraint_binop [a..b] %s [c..d] is sound"
       (PP.binop_to_string op)

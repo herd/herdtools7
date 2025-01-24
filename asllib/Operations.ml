@@ -15,7 +15,9 @@ let is_strict_positive z = Z.sign z = 1
 let bv_same_length b1 b2 = Bitvector.(length b1 = length b2)
 
 let exp_real q z =
-  if Q.sign q = 0 then Q.zero
+  if Q.sign q = 0 then (
+    assert (Z.sign z >= 0) (* Case handled earlier *);
+    if Z.sign z = 0 then Q.one else Q.zero)
   else
     let q, z = if is_positive z then (q, z) else (Q.inv q, Z.neg z) in
     let num = Q.num q and den = Q.den q in
@@ -60,7 +62,9 @@ let binop_values pos t op v1 v2 =
   | MUL, L_Real v1, L_Real v2 -> L_Real (Q.mul v1 v2)
   | MINUS, L_Real v1, L_Real v2 -> L_Real (Q.sub v1 v2)
   | RDIV, L_Real v1, L_Real v2 -> L_Real (Q.div v1 v2)
-  | POW, L_Real q1, L_Int z2 -> L_Real (exp_real q1 z2)
+  | POW, L_Real q1, L_Int z2 when not (Q.sign q1 = 0 && Z.sign z2 < 0) ->
+      (* 0.0 ^ z is not defined for z < 0 *)
+      L_Real (exp_real q1 z2)
   (* real -> real -> bool *)
   | EQ_OP, L_Real v1, L_Real v2 -> L_Bool (Q.equal v1 v2)
   | NEQ, L_Real v1, L_Real v2 -> L_Bool (not (Q.equal v1 v2))
