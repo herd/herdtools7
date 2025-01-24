@@ -213,8 +213,6 @@ module Make
           if have_timebase then O.f "#define DELTA_TB %s" delta
         end ;
         O.o "/* Includes */" ;
-        if Cfg.variant Variant_litmus.Pac then
-          Insert.insert O.o "kvm_auth.c" ;
         Insert.insert_when_exists O.o "intrinsics.h" ;
         if do_dynalloc then O.o "#define DYNALLOC 1" ;
         if do_stats then O.o "#define STATS 1" ;
@@ -259,6 +257,8 @@ module Make
             end
           end
         end ;
+        if Cfg.variant Variant_litmus.Pac then
+          Insert.insert O.o "kvm_auth.c" ;
         O.o "" ;
         O.o "typedef uint32_t count_t;" ;
         O.o "#define PCTR PRIu32" ;
@@ -2181,9 +2181,17 @@ module Make
         dump_run_def env test some_ptr stats procs_user ;
         dump_zyva_def doc.Name.name env test db procs_user ;
         dump_prelude_def doc test ;
+        let is_pac = Cfg.variant Variant_litmus.Pac in
+        if is_pac then begin
+          Insert.insert O.o "pac_check.c" ;
+          O.o ""
+        end ;
         O.o "static int feature_check(void) {" ;
         if do_self then
           O.oi "cache_line_size = getcachelinesize();" ;
+        if is_pac then begin
+          O.fi "if (!pac_check(%S)) return 0;" doc.Name.name
+        end ;
         if Cfg.is_kvm then begin
           match db with
           | None ->
