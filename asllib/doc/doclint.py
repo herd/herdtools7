@@ -87,61 +87,8 @@ def check_tododefines():
         print(f"ERROR: There are {num_todo_define} occurrences of \\tododefine, expected at most {MAX_TODODEFINE_INSTANCES}")
         return num_todo_define
     else:
-        print(f"WARING: There are {num_todo_define} occurrences of \\tododefine")
+        print(f"WARNING: There are {num_todo_define} occurrences of \\tododefine")
         return 0
-
-def transform_files(files, line_transform):
-    r"""
-    Applies the line-to-line transformation `line_transform` to each lines for
-    each file in the list `files` and write the modified files.
-    """
-    for filename in files:
-        output_lines = []
-        with open(filename, "r") as file:
-            for line in file.readlines():
-                transformed_line = line_transform(line)
-                output_lines.append(transformed_line)
-        with open(filename, "w") as file:
-            file.writelines(output_lines)
-
-def transform_rule_line(rule_str, line):
-    r"""
-    Applies a transformation to go from \subsubsection-style definition
-    of a rule to the corresponding rule definition macro.
-    """
-    macro_name = rule_str + 'Def'
-    rule_start_str = '\\subsubsection{' + rule_str + '.'
-    rule_end_str = '\\label'
-    rule_start_pos = line.find(rule_start_str)
-    transformed_line = line
-    if rule_start_pos != -1:
-        rule_end_pos = line.find(rule_end_str, rule_start_pos + len(rule_start_str))
-        if rule_end_pos != -1:
-            rule_name = line[rule_start_pos + len(rule_start_str):rule_end_pos].strip()
-            transformed_line = '\\' + macro_name + '{' + rule_name + '}\n'
-            print('transformed_line: ' + transformed_line)
-        else:
-            print("WARNING: " + line)
-    return transformed_line
-
-def transform_ruledefs(rule_str):
-    r"""
-    Applies a rule transformation to each LaTeX source other than ASLmacros.tex.
-    """
-    latex_files = fnmatch.filter(os.listdir('.'), '*.tex')
-    macros_file = 'ASLmacros.tex'
-    if macros_file in latex_files:
-        latex_files.remove(macros_file)
-    transform = partial(transform_rule_line, rule_str)
-    transform_files(latex_files, transform)
-
-def run_source_transformations():
-    r"""
-    Applies source-to-source transformations to LaTeX sources.
-    """
-    transform_ruledefs('ASTRule')
-    transform_ruledefs('TypingRule')
-    transform_ruledefs('SemanticsRule')
 
 def check_repeated_words():
     num_errors = 0
@@ -164,7 +111,6 @@ def check_repeated_words():
     return num_errors
 
 def main():
-    #run_source_transformations()
     num_errors = 0
     num_errors += check_hyperlinks_and_hypertargets()
     num_errors += check_undefined_references_and_multiply_defined_labels()
