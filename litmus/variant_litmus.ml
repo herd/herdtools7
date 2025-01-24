@@ -41,7 +41,7 @@ let parse s = match Misc.lowercase s with
 | "telechat" -> Some Telechat
 | "sve" -> Some SVE
 | "sme" -> Some SME
-| "pac" -> Some Pac
+| "pac"|"fpac"|"const-pac-field" -> Some Pac
 | tag ->
   match
    Misc.app_opt (fun p -> FaultHandling p) (Fault.Handling.parse tag)
