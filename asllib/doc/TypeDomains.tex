@@ -15,7 +15,7 @@ and the \emph{static domain} of a type.
 Intuitively, domains assign potentially infinite sets of \nativevalues\ to types.
 Dynamic domains are used by the semantics to evaluate expressions of the form \texttt{ARBITRARY: t}
 by choosing a single value from the dynamic domain of $\vt$.
-Static domains are used to define subtype satisfaction in \secref{TypingRule.SubtypeSatisfaction}.
+Static domains are used to define subtype satisfaction in \TypingRuleRef{SubtypeSatisfaction}.
 
 Formally, the partial function
 \[
@@ -450,7 +450,7 @@ This is related to \identd{BMGM}, \identr{PHRL}, \identr{PZNR},
 Whether an assignment statement is well-typed depends on whether the dynamic domain of the
 right hand side type is contained in the dynamic domain of the left hand side type,
 for any given dynamic environment
-(see \secref{TypingRule.SubtypeSatisfaction} where this is checked).
+(see \TypingRuleRef{SubtypeSatisfaction} where this is checked).
 
 \begin{definition}[Subsumption]
 For any given types $\vt$ and $\vs$ and static environment $\tenv$,

@@ -22,7 +22,7 @@ The semantics of specifications in given by the relation $\evalspec$, which is d
 \spec \derives\ & \decl^* &
 \end{flalign*}
 
-\subsubsection{ASTRule.AST \label{sec:ASTRule.AST}}
+\ASTRuleDef{AST}
 \hypertarget{build-ast}{}
 The relation
 \[
@@ -66,7 +66,7 @@ This order relies on the notion of \defusedependencyterm, which we formally defi
 order the declarations such that false type errors are avoided.
 \lrmcomment{This relates to \identi{LWQQ}.}
 
-\subsubsection{TypingRule.TypeCheckAST\label{sec:TypingRule.TypeCheckAST}}
+\TypingRuleDef{TypeCheckAST}
 \hypertarget{def-typecheckast}{}
 The relation
 \[
@@ -122,7 +122,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AnnotateDeclComps\label{sec:TypingRule.AnnotateDeclComps}}
+\TypingRuleDef{AnnotateDeclComps}
 \hypertarget{def-annotatedeclcomps}{}
 The function
 \[
@@ -202,7 +202,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.TypeCheckMutuallyRec\label{sec:TypingRule.TypeCheckMutuallyRec}}
+\TypingRuleDef{TypeCheckMutuallyRec}
 \hypertarget{def-typecheckmutuallyrec}{}
 The function
 \[
@@ -291,7 +291,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\TypeCheckMutuallyRecBegin}{\TypeCheckMutuallyRecEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.CheckGlobalPragma\label{sec:TypingRule.CheckGlobalPragma}}
+\TypingRuleDef{CheckGlobalPragma}
 \hypertarget{def-checkglobalpragma}{}
 The function
 \[
@@ -329,7 +329,7 @@ All of the following apply:
 
 \CodeSubsection{\CheckGlobalPragmaBegin}{\CheckGlobalPragmaEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.DeclareSubprograms\label{sec:TypingRule.DeclareSubprograms}}
+\TypingRuleDef{DeclareSubprograms}
 \hypertarget{def-declaresubprograms}{}
 The function
 \[
@@ -386,7 +386,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AddSubprogramDecls\label{sec:TypingRule.AddSubprogramDecls}}
+\TypingRuleDef{AddSubprogramDecls}
 \hypertarget{def-addsubprogramdecls}{}
 The function
 \[
@@ -432,7 +432,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.PropagateRecursiveCallsSess\label{sec:TypingRule.PropagateRecursiveCallsSess}}
+\TypingRuleDef{PropagateRecursiveCallsSess}
 \hypertarget{def-propagaterecursivecallssess}{}
 The helper relation
 \[
@@ -485,7 +485,7 @@ which is formally defined by $\defdecl$.
 The set of \defusedependenciesterm\ associated with a declaration $\vd$ is given by
 $\decldependencies(\vd)$ (see \TypingRuleRef{DeclDependencies}).
 
-\subsubsection{TypingRule.BuildDependencies \label{sec:TypingRule.BuildDependencies}}
+\TypingRuleDef{BuildDependencies}
 \hypertarget{def-builddependencies}{}
 The function
 \[
@@ -520,7 +520,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.DeclDependencies \label{sec:TypingRule.DeclDependencies}}
+\TypingRuleDef{DeclDependencies}
 \hypertarget{def-decldependencies}{}
 The function
 \[
@@ -551,7 +551,7 @@ Define $\dependencies$ as the union of the following two sets of pairs:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.DefDecl\label{sec:TypingRule.DefDecl}}
+\TypingRuleDef{DefDecl}
 \hypertarget{def-defdecl}{}
 The function
 \[
@@ -592,7 +592,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.DefEnumLabels \label{sec:TypingRule.DefEnumLabels}}
+\TypingRuleDef{DefEnumLabels}
 \hypertarget{def-defenumlabels}{}
 The function
 \[
@@ -631,7 +631,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.UseDecl \label{sec:TypingRule.UseDecl}}
+\TypingRuleDef{UseDecl}
 \hypertarget{def-usedecl}{}
 The function
 \[
@@ -709,7 +709,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.UseTy \label{sec:TypingRule.UseTy}}
+\TypingRuleDef{UseTy}
 \hypertarget{def-usety}{}
 The function
 \[
@@ -855,7 +855,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.UseSubtypes \label{sec:TypingRule.UseSubtypes}}
+\TypingRuleDef{UseSubtypes}
 \hypertarget{def-usesubtypes}{}
 The function
 \[
@@ -894,7 +894,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.UseExpr \label{sec:TypingRule.UseExpr}}
+\TypingRuleDef{UseExpr}
 \hypertarget{def-useexpr}{}
 The function
 \[
@@ -1158,7 +1158,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.UseLexpr \label{sec:TypingRule.UseLexpr}}
+\TypingRuleDef{UseLexpr}
 \hypertarget{def-uselexpr}{}
 The function
 \[
@@ -1265,7 +1265,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.UsePattern \label{sec:TypingRule.UsePattern}}
+\TypingRuleDef{UsePattern}
 \hypertarget{def-usepattern}{}
 The function
 \[
@@ -1376,7 +1376,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.UseSlice \label{sec:TypingRule.UseSlice}}
+\TypingRuleDef{UseSlice}
 \hypertarget{def-useslice}{}
 The function
 \[
@@ -1413,7 +1413,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.UseBitfield \label{sec:TypingRule.UseBitfield}}
+\TypingRuleDef{UseBitfield}
 \hypertarget{def-usebitfield}{}
 The function
 \[
@@ -1464,7 +1464,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.UseConstraint \label{sec:TypingRule.UseConstraint}}
+\TypingRuleDef{UseConstraint}
 \hypertarget{def-useconstraint}{}
 The function
 \[
@@ -1499,7 +1499,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.UseStmt \label{sec:TypingRule.UseStmt}}
+\TypingRuleDef{UseStmt}
 \hypertarget{def-usestmt}{}
 The function
 \[
@@ -1683,7 +1683,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[s\_print]{}{
-  \usestmt(\overname{\SPrint(\vargs)}{\vs}) \typearrow \overname{\bigcup_{\ve\in\vargs}\useexpr(\ve)}{\ids}
+  \usestmt(\overname{\SPrint(\vargs, \Ignore)}{\vs}) \typearrow \overname{\bigcup_{\ve\in\vargs}\useexpr(\ve)}{\ids}
 }
 \end{mathpar}
 
@@ -1693,7 +1693,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.UseCatcher \label{sec:TypingRule.UseCatcher}}
+\TypingRuleDef{UseCatcher}
 \hypertarget{def-usecatcher}{}
 The function
 \[
@@ -1747,7 +1747,7 @@ $C_{1..k} \in \topologicalorderingcomps(\comps, E)$, if the following condition 
 \]
 \end{definition}
 
-\subsubsection{TypingRule.DeclsOfComp \label{sec:TypingRule.DeclsOfComp}}
+\TypingRuleDef{DeclsOfComp}
 \hypertarget{def-declsofcomp}{}
 The helper function
 \[
@@ -1795,7 +1795,7 @@ One of the following applies:
 \section{Semantics of Specifications\label{sec:SemanticsOfSpecifications}}
 The semantics of specifications is defined via the relation $\evalspec$, which is defined next.
 
-\subsubsection{SemanticsRule.EvalSpec\label{sec:SemanticsRule.EvalSpec}}
+\SemanticsRuleDef{EvalSpec}
 The relation
 \hypertarget{def-evalspec}{}
 \[
@@ -1850,7 +1850,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalSpecBegin}{\EvalSpecEnd}{../Interpreter.ml}
 
-\subsubsection{SemanticsRule.BuildGlobalEnv\label{sec:SemanticsRule.BuildGlobalEnv}}
+\SemanticsRuleDef{BuildGlobalEnv}
 The helper relation
 \hypertarget{def-buildgenv}{}
 \[

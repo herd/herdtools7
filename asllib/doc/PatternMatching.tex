@@ -68,7 +68,7 @@ $\evalexprsef\empty$.
 \pattern \derives\ & \PatternAll &
 \end{flalign*}
 
-\subsubsection{ASTRule.PAll}
+\ASTRuleDef{PAll}
 \begin{mathpar}
 \inferrule{}{
   \buildpattern(\Npattern(\Tminus)) \astarrow
@@ -77,7 +77,7 @@ $\evalexprsef\empty$.
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.PAll\label{sec:TypingRule.PAll}}
+\TypingRuleDef{PAll}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -95,7 +95,7 @@ All of the following apply:
 \CodeSubsection{\PAllBegin}{\PAllEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.PAll \label{sec:SemanticsRule.PAll}}
+\SemanticsRuleDef{PAll}
 \subsubsection{Example}
 In \listingref{semantics-pall}, \texttt{match\_me} evaluates to \True,
 since \texttt{-} matches any value and \texttt{42} in particular.
@@ -129,7 +129,7 @@ All of the following apply:
 \pattern \derives\ & \PatternSingle(\expr) &
 \end{flalign*}
 
-\subsubsection{ASTRule.PSingle}
+\ASTRuleDef{PSingle}
 \begin{mathpar}
 \inferrule{}{
   \buildpattern(\Npattern(\punnode{\Nexprpattern})) \astarrow
@@ -138,7 +138,7 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.PSingle\label{sec:TypingRule.PSingle}}
+\TypingRuleDef{PSingle}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -242,7 +242,7 @@ All of the following apply:
 \CodeSubsection{\PSingleBegin}{\PSingleEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.PSingle \label{sec:SemanticsRule.PSingle}}
+\SemanticsRuleDef{PSingle}
 \subsubsection{Example}
 In \listingref{semantics-psingle},
 \texttt{match\_true} evaluates to \True, since \texttt{42} matches \verb|{42}|,
@@ -282,7 +282,7 @@ All of the following apply:
 \pattern \derives\ & \PatternRange(\overtext{\expr}{lower}, \overtext{\expr}{upper}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.PRange}
+\ASTRuleDef{PRange}
 \begin{mathpar}
 \inferrule{}{
   {
@@ -295,7 +295,7 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.PRange\label{sec:TypingRule.PRange}}
+\TypingRuleDef{PRange}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -336,7 +336,7 @@ All of the following apply:
 \CodeSubsection{\PRangeBegin}{\PRangeEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.PRange \label{sec:SemanticsRule.PRange}}
+\SemanticsRuleDef{PRange}
 \subsubsection{Example}
 In \listingref{semantics-prange},
 \texttt{match\_true} evaluates to \True, since \texttt{42} is in the range given by
@@ -387,7 +387,7 @@ All of the following apply:
 \pattern \derives\ & \PatternLeq(\expr) &
 \end{flalign*}
 
-\subsubsection{ASTRule.PLeq}
+\ASTRuleDef{PLeq}
 \begin{mathpar}
 \inferrule{}{
   \buildpattern(\Npattern(\Tleq, \punnode{\Nexpr})) \astarrow
@@ -396,7 +396,7 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.PLeq\label{sec:TypingRule.PLeq}}
+\TypingRuleDef{PLeq}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -433,7 +433,7 @@ which short-circuits the entire rule;
 \CodeSubsection{\PLeqBegin}{\PLeqEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.PLeq \label{sec:SemanticsRule.PLeq}}
+\SemanticsRuleDef{PLeq}
 \subsubsection{Example}
 In \listingref{semantics-pleq},
 \texttt{match\_true} evaluates to \True, since \texttt{3} is less than or equal to \texttt{42},
@@ -472,7 +472,7 @@ All of the following apply:
 \pattern \derives\ & \PatternGeq(\expr) &
 \end{flalign*}
 
-\subsubsection{ASTRule.PGeq}
+\ASTRuleDef{PGeq}
 \begin{mathpar}
 \inferrule{}{
   \buildpattern(\Npattern(\Tgeq, \punnode{\Nexpr})) \astarrow
@@ -481,7 +481,7 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.PGeq\label{sec:TypingRule.PGeq}}
+\TypingRuleDef{PGeq}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -518,7 +518,7 @@ All of the following apply:
 \CodeSubsection{\PGeqBegin}{\PGeqEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.PGeq \label{sec:SemanticsRule.PGeq}}
+\SemanticsRuleDef{PGeq}
 \subsubsection{Example}
 In \listingref{semantics-pgeq},
 \texttt{match\_true} evaluates to \True, since \texttt{42} is greater or equal to \texttt{3},
@@ -557,7 +557,7 @@ All of the following apply:
 \pattern \derives\ & \PatternMask(\overtext{\{0,1,x\}^*}{mask constant}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.PMask}
+\ASTRuleDef{PMask}
 \begin{mathpar}
 \inferrule{}{
   \buildpattern(\Npattern(\Tmasklit(\vm))) \astarrow
@@ -566,7 +566,7 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.PMask\label{sec:TypingRule.PMask}}
+\TypingRuleDef{PMask}
 \subsubsection{Prose}
 All of the following apply:
   \begin{itemize}
@@ -592,7 +592,7 @@ All of the following apply:
 \lrmcomment{This is related to \identi{VMKF}.}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.PMask \label{sec:SemanticsRule.PMask}}
+\SemanticsRuleDef{PMask}
 \subsubsection{Example}
 In \listingref{semantics-pmask}, \texttt{match\_true} evaluates to \True, since
 \texttt{101010} matches the bitmask \texttt{xx1010},
@@ -649,7 +649,7 @@ is defined by the following table:
 \pattern \derives\ & \PatternTuple(\pattern^{*}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.PTuple}
+\ASTRuleDef{PTuple}
 \begin{mathpar}
 \inferrule{
   \buildplist[\buildpattern](\vpatterns) \astarrow \vpatternasts
@@ -660,7 +660,7 @@ is defined by the following table:
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.PTuple\label{sec:TypingRule.PTuple}}
+\TypingRuleDef{PTuple}
 \subsubsection{Prose}
 All of the following apply:
   \begin{itemize}
@@ -692,7 +692,7 @@ All of the following apply:
 \CodeSubsection{\PTupleBegin}{\PTupleEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.PTuple \label{sec:SemanticsRule.PTuple}}
+\SemanticsRuleDef{PTuple}
 \subsubsection{Example}
 In \listingref{semantics-ptuple},
 \texttt{match\_true} evaluates to \True, since
@@ -742,7 +742,7 @@ All of the following apply:
 \pattern \derives\ & \PatternAny(\pattern^{*}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.PatternSet\label{sec:ASTRule.PatternSet}}
+\ASTRuleDef{PatternSet}
 \hypertarget{build-patternset}{}
 The function
 \[
@@ -768,7 +768,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.PatternList \label{sec:ASTRule.PatternList}}
+\ASTRuleDef{PatternList}
 \hypertarget{build-patternlist}{}
 The function
 \[
@@ -790,7 +790,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.PAny\label{sec:TypingRule.PAny}}
+\TypingRuleDef{PAny}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -816,7 +816,7 @@ All of the following apply:
 \CodeSubsection{\PAnyBegin}{\PAnyEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.PAny \label{sec:SemanticsRule.PAny}}
+\SemanticsRuleDef{PAny}
 \subsubsection{Example}
 In \listingref{semantics-pany},
 \texttt{match\_true} evaluates to \True, since \texttt{42} matches the second pattern in \verb|{3, 42}|,
@@ -861,7 +861,7 @@ All of the following apply:
 The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
 
 \subsection{Typing}
-\subsubsection{TypingRule.PNot\label{sec:TypingRule.PNot}}
+\TypingRuleDef{PNot}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -880,7 +880,7 @@ All of the following apply:
 \CodeSubsection{\PNotBegin}{\PNotEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.PNot \label{sec:SemanticsRule.PNot}}
+\SemanticsRuleDef{PNot}
 \subsubsection{Example}
 In \listingref{semantics-pnot},
 \texttt{match\_true} evaluates to \True, since \texttt{42} does not match the pattern \verb|{3}|,

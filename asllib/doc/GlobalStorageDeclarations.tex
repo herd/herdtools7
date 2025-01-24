@@ -45,25 +45,19 @@ The semantics of a single global storage declarations is defined in \SemanticsRu
  \globaldeclkeyword \derives\ & \GDKConstant \;|\; \GDKConfig \;|\; \GDKLet \;|\; \GDKVar &
 \end{flalign*}
 
-\subsubsection{ASTRule.GlobalDecl}
-The relation
-\[
-  \builddecl : \overname{\parsenode{\Ndecl}}{\vparsednode} \;\aslrel\; \overname{\decl}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
+\ASTRuleDef{GlobalStorageDecl}
 \begin{mathpar}
 \inferrule[global\_storage]{
   \buildglobaldeclkeyword(\keyword) \astarrow \astof{\keyword}\\
   \buildoption[\buildasty](\tty) \astarrow \ttyp\\
   \buildexpr(\vinitialvalue) \typearrow \astof{\vinitialvalue}
-}
-{
+}{
   {
       \builddecl\left(\overname{\Ndecl\left(
       \begin{array}{r}
-      \namednode{\vkeyword}{\Nglobaldeclkeyword}, \namednode{\name}{\Nignoredoridentifier},  \\
-  \wrappedline\ \namednode{\tty}{\option{\Nasty}}, \Teq, \namednode{\vinitialvalue}{\Nexpr}, \Tsemicolon
+      \namednode{\vkeyword}{\Nglobaldeclkeyword}, \\
+      \wrappedline\ \namednode{\name}{\Nignoredoridentifier}, \\
+      \wrappedline\ \namednode{\tty}{\option{\Nasty}}, \Teq, \namednode{\vinitialvalue}{\Nexpr}, \Tsemicolon
       \end{array}
   \right)}{\vparsednode}\right)
   } \astarrow \\
@@ -86,8 +80,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule[global\_storage\_var]{
   \buildoption[\buildasty](\tty) \astarrow \ttyp\\
   \buildexpr(\vinitialvalue) \typearrow \astof{\vinitialvalue}
-}
-{
+}{
   {
       \builddecl\left(\overname{\Ndecl\left(
       \begin{array}{r}
@@ -114,8 +107,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \begin{mathpar}
 \inferrule[global\_uninit\_var]{
   \buildignoredoridentifier(\cname) \astarrow \name
-}
-{
+}{
   {
     \begin{array}{r}
       \builddecl(\overname{\Ndecl(\Tvar, \namednode{\cname}{\Nignoredoridentifier}, \Nasty, \Tsemicolon)}{\vparsednode}) \astarrow
@@ -125,7 +117,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.GlobalDeclKeyword \label{sec:ASTRule.GlobalDeclKeyword}}
+\ASTRuleDef{GlobalDeclKeyword}
 \hypertarget{build-globaldeclkeyword}{}
 The function
 \[
@@ -152,7 +144,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.IgnoredOrIdentifier\label{sec:ASTRule.IgnoredOrIdentifier}}
+\ASTRuleDef{IgnoredOrIdentifier}
 \hypertarget{build-ignoredoridentifier}{}
 The relation
 \[
@@ -182,13 +174,13 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 We also define the following helper rules:
 \begin{itemize}
-  \item TypingRule.DeclareGlobalStorage (see \secref{TypingRule.DeclareGlobalStorage})
-  \item TypingRule.AnnotateTyOptInitialValue (see \secref{TypingRule.AnnotateTyOptInitialValue})
-  \item TypingRule.AnnotateInitType (see \secref{TypingRule.AnnotateInitType})
-  \item TypingRule.AddGlobalStorage (see \secref{TypingRule.AddGlobalStorage})
+  \item \TypingRuleRef{DeclareGlobalStorage}
+  \item \TypingRuleRef{AnnotateTyOptInitialValue}
+  \item \TypingRuleRef{AnnotateInitType}
+  \item \TypingRuleRef{AddGlobalStorage}
 \end{itemize}
 
-\subsubsection{TypingRule.DeclareGlobalStorage\label{sec:TypingRule.DeclareGlobalStorage}}
+\TypingRuleDef{DeclareGlobalStorage}
 \hypertarget{def-declareglobalstorage}{}
 The function
 \[
@@ -272,7 +264,7 @@ All of the following apply:
 \CodeSubsection{\DeclareGlobalStorageBegin}{\DeclareGlobalStorageEnd}{../Typing.ml}
 \lrmcomment{This relates to \identr{YSPM} and \identr{FWQM}.}
 
-\subsubsection{TypingRule.AnnotateTyOptInitialValue\label{sec:TypingRule.AnnotateTyOptInitialValue}}
+\TypingRuleDef{AnnotateTyOptInitialValue}
 \hypertarget{def-annotatetyoptinitialvalue}{}
 The helper function
 \[
@@ -390,7 +382,7 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.UpdateGlobalStorage\label{sec:TypingRule.UpdateGlobalStorage}}
+\TypingRuleDef{UpdateGlobalStorage}
 \hypertarget{def-updateglobalstorage}{}
 The helper function
 \[
@@ -544,7 +536,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.TryAddGlobalConstant\label{sec:TryAddGlobalConstant.AddGlobalStorage}}
+\TypingRuleDef{TryAddGlobalConstant}
 \hypertarget{def-tryaddglobalconstant}{}
 The helper function
 \[
@@ -592,7 +584,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AddGlobalStorage\label{sec:TypingRule.AddGlobalStorage}}
+\TypingRuleDef{AddGlobalStorage}
 \hypertarget{def-addglobalstorage}{}
 The function
 \[
@@ -635,11 +627,11 @@ All of the following apply:
 
 We now define the following relations:
 \begin{itemize}
-  \item SemanticsRule.EvalGlobals (\secref{SemanticsRule.EvalGlobals})
-  \item SemanticsRule.DeclareGlobal (\secref{SemanticsRule.DeclareGlobal})
+  \item \SemanticsRuleRef{EvalGlobals}
+  \item \SemanticsRuleRef{DeclareGlobal}
 \end{itemize}
 
-\subsubsection{SemanticsRule.EvalGlobals\label{sec:SemanticsRule.EvalGlobals}}
+\SemanticsRuleDef{EvalGlobals}
 The relation
 \hypertarget{def-evalglobals}{}
 \[
@@ -692,7 +684,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\EvalGlobalsBegin}{\EvalGlobalsEnd}{../Interpreter.ml}
 
-\subsubsection{SemanticsRule.DeclareGlobal\label{sec:SemanticsRule.DeclareGlobal}}
+\SemanticsRuleDef{DeclareGlobal}
 \subsubsection{Prose}
 The relation
 \hypertarget{def-declareglobal}{}

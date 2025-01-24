@@ -100,7 +100,7 @@ as follows:
     \timeframemax(T) \triangleq t \text{ such that } t\in T \land \forall t'\in T.\ t' \timeframeleq t \enspace.
 \]
 
-\subsubsection{TypingRule.TimeFrameLDK\label{sec:TypingRule.TimeFrameLDK}}
+\TypingRuleDef{TimeFrameLDK}
 \hypertarget{def-timeframeofldk}{}
 The function
 \[
@@ -122,7 +122,7 @@ constructs a \timeframeterm\ $\vt$ from a local declaration keyword $\ldk$.
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.TimeFrameGDK\label{sec:TypingRule.TimeFrameGDK}}
+\TypingRuleDef{TimeFrameGDK}
 \hypertarget{def-timeframeofgdk}{}
 The function
 \[
@@ -203,7 +203,7 @@ which are configurations used to describe side effects, as explained below:
 
 We now define a few helper functions over \timeframesterm.
 
-\subsubsection{TypingRule.TimeFrame\label{sec:TypingRule.TimeFrame}}
+\TypingRuleDef{TimeFrame}
 \hypertarget{def-sideeffecttimeframe}{}
 The function
 \[
@@ -246,7 +246,7 @@ retrieves the \timeframeterm\ $\vt$ from a \sideeffectdescriptorterm\ $\vs$.
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SideEffectIsPure\label{sec:TypingRule.SideEffectIsPure}}
+\TypingRuleDef{SideEffectIsPure}
 \hypertarget{def-sideeffectispure}{}
 \[
     \sideeffectispure(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
@@ -269,7 +269,7 @@ a \NonDeterministicTerm, or a \PerformsAssertionsTerm.
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SideEffectIsStaticallyEvaluable\label{sec:TypingRule.SideEffectIsStaticallyEvaluable}}
+\TypingRuleDef{SideEffectIsStaticallyEvaluable}
 \hypertarget{def-sideeffectisstaticallyevaluable}{}
 \[
     \sideeffectisstaticallyevaluable(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
@@ -294,7 +294,7 @@ a \ReadGlobalTerm\ associated with an immutable storage element.
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SideEffectConflict\label{sec:TypingRule.SideEffectConflict}}
+\TypingRuleDef{SideEffectConflict}
 % Transliteration note: this function is not reflected in the implementation as it checks conflicts directly on sets of side effects.
 \hypertarget{def-sideeffectconflict}{}
 \hypertarget{def-sideeffectconflictterm}{}
@@ -447,7 +447,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.LDKIsImmutable\label{sec:TypingRule.LDKIsImmutable}}
+\TypingRuleDef{LDKIsImmutable}
 \hypertarget{def-ldkisimmutable}{}
 The function
 \[
@@ -467,7 +467,7 @@ the keyword \texttt{let}.
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.GDKIsImmutable\label{sec:TypingRule.GDKIsImmutable}}
+\TypingRuleDef{GDKIsImmutable}
 \hypertarget{def-gdkisimmutable}{}
 The function
 \[
@@ -491,7 +491,7 @@ the keyword \texttt{config}, or the keyword \texttt{let}.
 \section{Side Effect Sets\label{sec:SideEffectSets}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsubsection{TypingRule.AreNonConflicting\label{sec:TypingRule.AreNonConflicting}}
+\TypingRuleDef{AreNonConflicting}
 \hypertarget{def-arenonconflicting}{}
 The function
 \[
@@ -516,7 +516,7 @@ testing $\sideeffectconflict$ for $\vsone$ and $\vstwo$ yields $\False$.
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.NonConflictingUnion\label{sec:TypingRule.NonConflictingUnion}}
+\TypingRuleDef{NonConflictingUnion}
 \hypertarget{def-nonconflictingunion}{}
 The function
 \[
@@ -543,7 +543,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.MaxTimeFrame\label{sec:TypingRule.MaxTimeFrame}}
+\TypingRuleDef{MaxTimeFrame}
 \hypertarget{def-maxtimeframe}{}
 The function
 \[
@@ -606,7 +606,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SESIsStaticallyEvaluable\label{sec:TypingRule.SESIsStaticallyEvaluable}}
+\TypingRuleDef{SESIsStaticallyEvaluable}
 \hypertarget{def-isstaticallyevaluable}{}
 \hypertarget{def-staticallyevaluable}{}
 The function
@@ -630,7 +630,7 @@ is \staticallyevaluable.
 \end{mathpar}
 
 \hypertarget{def-checkstaticallyevaluable}{}
-\subsubsection{TypingRule.CheckStaticallyEvaluable\label{sec:TypingRule.CheckStaticallyEvaluable}}
+\TypingRuleDef{CheckStaticallyEvaluable}
 The function
 \[
   \checkstaticallyevaluable(\overname{\TSideEffectSet}{\vses}) \aslto
@@ -658,7 +658,7 @@ All of the following applies:
 \end{mathpar}
 \CodeSubsection{\CheckStaticallyEvaluableBegin}{\CheckStaticallyEvaluableEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.SESIsPure\label{sec:TypingRule.SESIsPure}}
+\TypingRuleDef{SESIsPure}
 \hypertarget{def-sesispure}{}
 The function
 \[
@@ -679,7 +679,7 @@ every \sideeffectdescriptorterm\ $\vs$ in $\vses$.
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SESIsDeterministic\label{sec:TypingRule.SESIsDeterministic}}
+\TypingRuleDef{SESIsDeterministic}
 \hypertarget{def-sesisdeterministic}{}
 The function
 \[
@@ -698,7 +698,7 @@ Define $\vb$ as $\True$ if and only if \NonDeterministic\ is not included in $\v
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SESIsBefore\label{sec:TypingRule.SESIsBefore}}
+\TypingRuleDef{SESIsBefore}
 \hypertarget{def-sesisbefore}{}
 The function
 \[

@@ -5,24 +5,24 @@
 This section defines some basic predicates for classifying types as well as
 functions that inspect the structure of types:
 \begin{itemize}
-  \item Builtin singular types (\secref{TypingRule.BuiltinSingularType})
-  \item Builtin aggregate types (\secref{TypingRule.BuiltinAggregateType})
-  \item Builtin types (\secref{TypingRule.BuiltinSingularOrAggregate})
-  \item Named types (\secref{TypingRule.NamedType})
-  \item Anonymous types (\secref{TypingRule.AnonymousType})
-  \item Singular types (\secref{TypingRule.SingularType})
-  \item Aggregate types (\secref{TypingRule.AggregateType})
-  \item Structured types (\secref{TypingRule.StructuredType})
-  \item Non-primitive types (\secref{TypingRule.NonPrimitiveType})
-  \item Primitive types (\secref{TypingRule.PrimitiveType})
-  \item The structure of a type (\secref{TypingRule.structure})
-  \item The underlying type of a type (\secref{TypingRule.MakeAnonymous})
-  \item Checked constrained integers (\secref{TypingRule.CheckConstrainedInteger})
+  \item Builtin singular types (\TypingRuleRef{BuiltinSingularType})
+  \item Builtin aggregate types (\TypingRuleRef{BuiltinAggregateType})
+  \item Builtin types (\TypingRuleRef{BuiltinSingularOrAggregate})
+  \item Named types (\TypingRuleRef{NamedType})
+  \item Anonymous types (\TypingRuleRef{AnonymousType})
+  \item Singular types (\TypingRuleRef{SingularType})
+  \item Aggregate types (\TypingRuleRef{AggregateType})
+  \item Structured types (\TypingRuleRef{StructuredType})
+  \item Non-primitive types (\TypingRuleRef{NonPrimitiveType})
+  \item Primitive types (\TypingRuleRef{PrimitiveType})
+  \item The structure of a type (\TypingRuleRef{Structure})
+  \item The underlying type of a type (\TypingRuleRef{MakeAnonymous})
+  \item Checked constrained integers (\TypingRuleRef{CheckConstrainedInteger})
 \end{itemize}
 
 Finally, constrained types are defined in \secref{ConstrainedTypes}.
 
-\subsubsection{TypingRule.BuiltinSingularType \label{sec:TypingRule.BuiltinSingularType}}
+\TypingRuleDef{BuiltinSingularType}
 \hypertarget{def-isbuiltinsingular}{}
 The predicate
 \[
@@ -66,7 +66,7 @@ the builtin singular type \texttt{Color} consists in two constants:
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{PQCK} and \identd{NZWT}.}
 
-\subsubsection{TypingRule.BuiltinAggregateType \label{sec:TypingRule.BuiltinAggregateType}}
+\TypingRuleDef{BuiltinAggregateType}
 \hypertarget{def-isbuiltinaggregate}{}
 The predicate
 \[
@@ -128,7 +128,7 @@ omitted in type declarations, as is the case for \texttt{Not\_found}.
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{PQCK} and \identd{KNBD}.}
 
-\subsubsection{TypingRule.BuiltinSingularOrAggregate \label{sec:TypingRule.BuiltinSingularOrAggregate}}
+\TypingRuleDef{BuiltinSingularOrAggregate}
 \hypertarget{def-isbuiltin}{}
 The predicate
 \[
@@ -162,7 +162,7 @@ the type \texttt{integer} is a builtin type but the type of \texttt{ticks} is no
   }
 \end{mathpar}
 
-\subsubsection{TypingRule.NamedType \label{sec:TypingRule.NamedType} }
+\TypingRuleDef{NamedType}
 \hypertarget{def-isnamed}{}
 The predicate
 \[
@@ -197,7 +197,7 @@ In the specification
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{vmzx}.}
 
-\subsubsection{TypingRule.AnonymousType \label{sec:TypingRule.AnonymousType}}
+\TypingRuleDef{AnonymousType}
 \hypertarget{def-isanonymous}{}
 The predicate
 \[
@@ -227,7 +227,7 @@ The tuple type \texttt{(integer, integer)} is an \anonymoustype.
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{VMZX}.}
 
-\subsubsection{TypingRule.SingularType \label{sec:TypingRule.SingularType}}
+\TypingRuleDef{SingularType}
 \hypertarget{def-issingular}{}
 The predicate
 \[
@@ -266,7 +266,7 @@ type C of B;
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identr{GVZK}.}
 
-\subsubsection{TypingRule.AggregateType \label{sec:TypingRule.AggregateType}}
+\TypingRuleDef{AggregateType}
 \hypertarget{def-isaggregate}{}
 The predicate
 \[
@@ -305,7 +305,7 @@ type C of B;
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identr{GVZK}.}
 
-\subsubsection{TypingRule.StructuredType\label{sec:TypingRule.StructuredType}}
+\TypingRuleDef{StructuredType}
 \hypertarget{def-isstructured}{}
 \hypertarget{def-structuredtype}{}
 A \emph{\structuredtype} is any type that consists of a list of field identifiers
@@ -339,7 +339,7 @@ type PointRecord of Record {x : real, y: real, z: real};
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{WGQS}, \identd{QXYC}.}
 
-\subsubsection{TypingRule.NonPrimitiveType \label{sec:TypingRule.NonPrimitiveType}}
+\TypingRuleDef{NonPrimitiveType}
 \hypertarget{def-isnonprimitive}{}
 The predicate
 \[
@@ -436,7 +436,7 @@ Boolean variables by using the types denoted by $\vt$ as a subscript.
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{GWXK}.}
 
-\subsubsection{TypingRule.PrimitiveType \label{sec:TypingRule.PrimitiveType}}
+\TypingRuleDef{PrimitiveType}
 \hypertarget{def-isprimitive}{}
 The predicate
 \[
@@ -473,7 +473,7 @@ The following types are primitive:
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{GWXK}.}
 
-\subsubsection{TypingRule.Structure\label{sec:TypingRule.structure}}
+\TypingRuleDef{Structure}
 \hypertarget{def-structure}{}
 The function
 \[
@@ -483,9 +483,9 @@ assigns a type to its \hypertarget{def-tstruct}{\emph{\structure}}, which is the
 recursively replacing named types by their type definition in the static environment $\tenv$.
 If a named type is not associated with a declared type in $\tenv$, a type error is returned.
 
-TypingRule.Specification ensures the absence of circular type definitions,
-which ensures that TypingRule.Structure terminates\footnote{In mathematical terms,
-this ensures that TypingRule.Structure is a proper \emph{structural induction.}}.
+\TypingRuleRef{TypeCheckAST} ensures the absence of circular type definitions,
+which ensures that \TypingRuleRef{Structure} terminates\footnote{In mathematical terms,
+this ensures that \TypingRuleRef{Structure} is a proper \emph{structural induction.}}.
 
 \subsubsection{Prose}
 One of the following applies:
@@ -513,7 +513,7 @@ One of the following applies:
   \begin{itemize}
     \item $\tty$ is an array type of length $\ve$ with element type $\vt$;
     \item obtaining the structure of $\vt$ yields $\vtone$\ProseOrTypeError;
-    \item $\vt$ is is an array type with of length $\ve$ with element type $\vtone$.
+    \item $\vt$ is an array type with of length $\ve$ with element type $\vtone$.
   \end{itemize}
 \item All of the following apply (\textsc{structured}):
   \begin{itemize}
@@ -589,7 +589,7 @@ the type of \texttt{z} is the anonymous non-primitive type
 \isempty{\subsubsection{Comments}}
 \lrmcomment{This is related to \identd{FXQV}.}
 
-\subsubsection{TypingRule.MakeAnonymous\label{sec:TypingRule.MakeAnonymous}}
+\TypingRuleDef{MakeAnonymous}
 \hypertarget{def-makeanonymous}{}
 \hypertarget{def-underlyingtype}{}
 The function
@@ -651,7 +651,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\MakeAnonymousBegin}{\MakeAnonymousEnd}{../types.ml}
 
-\subsubsection{TypingRule.CheckConstrainedInteger \label{sec:TypingRule.CheckConstrainedInteger}}
+\TypingRuleDef{CheckConstrainedInteger}
 \hypertarget{def-checkconstrainedinteger}{}
 The function
 \[

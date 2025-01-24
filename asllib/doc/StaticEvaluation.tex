@@ -4,7 +4,7 @@ In this chapter, we define how to statically evaluate an expression
 to yield a literal value.
 
 \hypertarget{def-staticeval}{}
-\subsubsection{TypingRule.StaticEval\label{sec:TypingRule.StaticEval}}
+\TypingRuleDef{StaticEval}
 The function
 \[
   \staticeval(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \;\aslto\;
@@ -78,7 +78,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\StaticEvalBegin}{\StaticEvalEnd}{../StaticInterpreter.ml}
 
-\subsubsection{TypingRule.StaticEnvToEnv\label{sec:TypingRule.StaticEnvToEnv}}
+\TypingRuleDef{StaticEnvToEnv}
 \hypertarget{def-staticenvtoenv}{}
 The function
 \[

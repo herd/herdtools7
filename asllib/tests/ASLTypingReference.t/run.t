@@ -3,7 +3,7 @@ Hello world should work:
   $ aslref hello_world.asl
   Hello, world!
 
-ASL Typing Reference:
+ASL Typing Tests:
   $ aslref TypingRule.TypeSatisfaction1.asl
   $ aslref TypingRule.TypeSatisfaction2.asl
   $ aslref TypingRule.TypeSatisfaction3.asl
@@ -19,7 +19,7 @@ ASL Typing Reference:
   $ aslref TypingRule.LDTuple.asl
   $ aslref TypingRule.Lit.asl
 
-ASL Typing Reference / annotating types:
+ASL Typing Tests / annotating types:
   $ aslref TypingRule.TReal.asl
   $ aslref TypingRule.TBool.asl
   $ aslref TypingRule.TNamed.asl

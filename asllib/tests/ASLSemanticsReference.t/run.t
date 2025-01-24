@@ -3,7 +3,7 @@ Hello world should work:
   $ aslref hello_world.asl
   Hello, world!
 
-ASL Semantics Reference:
+ASL Semantics Tests:
   $ aslref SemanticsRule.Lit.asl
   $ aslref SemanticsRule.ELocalVar.asl
   $ aslref SemanticsRule.EGlobalVar.asl

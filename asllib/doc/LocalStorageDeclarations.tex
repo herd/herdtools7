@@ -87,7 +87,7 @@ Declaring a local storage element is done via the following grammar rules:
   |\ & \LDITuple(\identifier^*) &
 \end{flalign*}
 
-\subsubsection{ASTRule.LocalDeclKeyword\label{sec:ASTRule.LocalDeclKeyword}}
+\ASTRuleDef{LocalDeclKeyword}
 \hypertarget{build-localdeclkeyword}{}
 The function
 \[
@@ -108,7 +108,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.DeclItem\label{sec:ASTRule.DeclItem}}
+\ASTRuleDef{DeclItem}
 \hypertarget{build-declitem}{}
 The function
 \[
@@ -138,7 +138,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \section{Variable Declarations\label{sec:VariableDeclarations}}
 \subsection{Typing}
-\subsubsection{TypingRule.LDVar \label{sec:TypingRule.LDVar}}
+\TypingRuleDef{LDVar}
 \subsubsection{Example}
 In \listingref{ldvar}, the statement \texttt{let x = 3;} is legal, since
 \texttt{x} is not defined elsewhere. It is added to the type environment
@@ -168,7 +168,7 @@ All of the following apply:
 \lrmcomment{This is related to \identr{YSPM}, \identd{FXST}.}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.LDVar \label{sec:SemanticsRule.LDVar}}
+\SemanticsRuleDef{LDVar}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -183,9 +183,10 @@ The statement \texttt{var x = 3;} in \listingref{ldvar} binds \texttt{x}
 to the evaluation of \texttt{3} in $\env$.
 
 \subsubsection{Example}
-In \listingref{semantics-ldvar1}
+In \listingref{semantics-ldvar1},
+the statement
 \texttt{var x : integer = 3;} binds \texttt{x} to the evaluation of
-\texttt{3} in $\env$, without type consideration at runtime.
+\texttt{3} in $\env$.
 \ASLListing{Binding a local variable to a literal integer}{semantics-ldvar1}{\semanticstests/SemanticsRule.LDVar1.asl}
 
 \subsubsection{Formally}
@@ -202,7 +203,7 @@ In \listingref{semantics-ldvar1}
 
 \section{Tuple Declarations\label{sec:TupleDeclarations}}
 \subsection{Typing}
-\subsubsection{TypingRule.LDTuple\label{sec:TypingRule.LDTuple}}
+\TypingRuleDef{LDTuple}
 \subsubsection{Example}
 \ASLListing{Declaring a tuple in the local storage}{typing-ldtuple}{\typingtests/TypingRule.LDTuple.asl}
 
@@ -213,7 +214,7 @@ All of the following apply:
   \item obtaining the \underlyingtype\ of $\tty$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
   \item determining whether $\vtp$ is a tuple type yields $\True$\ProseOrTypeError;
   \item determining whether the number of elements of $\vtp$ is $k$ yields $\True$\ProseOrTypeError;
-  \item declaring the identifiers in $\vids$ in the static environment $\tenv$ from from right to left with their corresponding
+  \item declaring the identifiers in $\vids$ in the static environment $\tenv$ from right to left with their corresponding
         (that is, with the same index) types $t_{1..k}$ in $\tenv$,
         propagating static environments from one declaration to the next,
         yields the resulting environment $\newtenv$\ProseOrTypeError.
@@ -242,7 +243,7 @@ All of the following apply:
 \CodeSubsection{\LDTupleBegin}{\LDTupleEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.LDTuple\label{sec:SemanticsRule.LDTuple}}
+\SemanticsRuleDef{LDTuple}
 \subsubsection{Example}
 In \listingref{semantics-ldtuple},
 \texttt{var (x,y,z) = (1,2,3);} binds \texttt{x} to the evaluation of
