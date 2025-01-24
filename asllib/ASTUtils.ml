@@ -755,23 +755,24 @@ let find_bitfields_slices_opt name bitfields =
 (* End *)
 
 let rename_locals map_name ast =
+  (* Begin RenameLocalsExpr *)
   let rec map_e e =
     map_desc_st' e @@ function
     | E_Literal _ -> e.desc
     | E_Arbitrary t -> E_Arbitrary (map_t t)
     | E_Var x -> E_Var (map_name x)
-    | E_ATC (e', t) -> E_ATC (map_e e', map_t t)
+    | E_ATC (e1, t) -> E_ATC (map_e e1, map_t t)
     | E_Binop (op, e1, e2) -> E_Binop (op, map_e e1, map_e e2)
-    | E_Unop (op, e') -> E_Unop (op, map_e e')
+    | E_Unop (op, e1) -> E_Unop (op, map_e e1)
     | E_Call { name; args; params; call_type } ->
         E_Call { name; args = map_es args; params = map_es params; call_type }
-    | E_Slice (e', slices) -> E_Slice (map_e e', map_slices slices)
+    | E_Slice (e1, slices) -> E_Slice (map_e e1, map_slices slices)
     | E_Cond (e1, e2, e3) -> E_Cond (map_e e1, map_e e2, map_e e3)
     | E_GetArray (e1, e2) -> E_GetArray (map_e e1, map_e e2)
     | E_GetEnumArray (e1, e2) -> E_GetEnumArray (map_e e1, map_e e2)
-    | E_GetField (e', f) -> E_GetField (map_e e', f)
-    | E_GetFields (e', li) -> E_GetFields (map_e e', li)
-    | E_GetItem (e', i) -> E_GetItem (map_e e', i)
+    | E_GetField (e1, f) -> E_GetField (map_e e1, f)
+    | E_GetFields (e1, li) -> E_GetFields (map_e e1, li)
+    | E_GetItem (e1, i) -> E_GetItem (map_e e1, i)
     | E_Record (t, li) -> E_Record (t, List.map (fun (f, e) -> (f, map_e e)) li)
     | E_Tuple li -> E_Tuple (map_es li)
     | E_Array { length; value } ->
@@ -779,13 +780,17 @@ let rename_locals map_name ast =
     | E_EnumArray { enum; labels; value } ->
         E_EnumArray { enum; labels; value = map_e value }
     | E_Pattern (_, _) -> failwith "Not yet implemented: obfuscate patterns"
+  (* End *)
   and map_es li = List.map map_e li
   and map_slices slices = List.map map_slice slices
+  (* Begin RenameLocalsSlice *)
   and map_slice = function
     | Slice_Length (e1, e2) -> Slice_Length (map_e e1, map_e e2)
     | Slice_Single e -> Slice_Single (map_e e)
     | Slice_Range (e1, e2) -> Slice_Range (map_e e1, map_e e2)
     | Slice_Star (e1, e2) -> Slice_Star (map_e e1, map_e e2)
+  (* End *)
+  (* Begin RenameLocalsType *)
   and map_t t =
     map_desc_st' t @@ function
     | T_Real | T_String | T_Bool | T_Enum _ | T_Named _
@@ -799,10 +804,14 @@ let rename_locals map_name ast =
     | T_Array (_, _) -> failwith "Not yet implemented: obfuscate array types"
     | T_Record li -> T_Record (List.map (fun (f, t) -> (f, map_t t)) li)
     | T_Exception li -> T_Exception (List.map (fun (f, t) -> (f, map_t t)) li)
+  (* End *)
   and map_cs cs = List.map map_c cs
+  (* Begin RenameLocalsConstraint *)
   and map_c = function
     | Constraint_Exact e -> Constraint_Exact (map_e e)
     | Constraint_Range (e1, e2) -> Constraint_Range (map_e e1, map_e e2)
+  (* End *)
+  (* Begin RenameLocalsStmt *)
   and map_s s =
     map_desc_st' s @@ function
     | S_Pass -> s.desc
@@ -822,7 +831,8 @@ let rename_locals map_name ast =
         and limit = Option.map map_e limit
         and body = map_s body in
         S_For { index_name; start_e; dir; end_e; body; limit }
-    | S_While (e, limit, s) -> S_While (map_e e, Option.map map_e limit, map_s s)
+    | S_While (e, limit, body) ->
+        S_While (map_e e, Option.map map_e limit, map_s body)
     | S_Repeat (s, e, limit) ->
         S_Repeat (map_s s, map_e e, Option.map map_e limit)
     | S_Throw (Some (e, t)) -> S_Throw (Some (map_e e, Option.map map_t t))
@@ -834,26 +844,36 @@ let rename_locals map_name ast =
     | S_Pragma (name, args) ->
         let args = map_es args in
         S_Pragma (name, args)
+  (* End *)
+  (* Begin RenameLocalsLexpr *)
   and map_le le =
     map_desc_st' le @@ function
     | LE_Discard -> le.desc
     | LE_Var x -> LE_Var (map_name x)
-    | LE_Slice (le, slices) -> LE_Slice (map_le le, map_slices slices)
-    | LE_SetArray (le, i) -> LE_SetArray (map_le le, map_e i)
+    | LE_Slice (le1, slices) -> LE_Slice (map_le le1, map_slices slices)
+    | LE_SetArray (le1, i) -> LE_SetArray (map_le le1, map_e i)
     | LE_SetEnumArray (le, i) -> LE_SetEnumArray (map_le le, map_e i)
-    | LE_SetField (le, f) -> LE_SetField (map_le le, f)
-    | LE_SetFields (le, f, annot) -> LE_SetFields (map_le le, f, annot)
+    | LE_SetField (le1, f) -> LE_SetField (map_le le1, f)
+    | LE_SetFields (le1, fl, annot) -> LE_SetFields (map_le le1, fl, annot)
     | LE_Destructuring les -> LE_Destructuring (List.map map_le les)
+  (* End *)
+  (* Begin RenameLocalsLDI *)
   and map_ldi = function
     | LDI_Var x -> LDI_Var (map_name x)
     | LDI_Tuple names -> LDI_Tuple (List.map map_name names)
+  (* End *)
   and map_body = function
     | SB_Primitive _ as b -> b
     | SB_ASL s -> SB_ASL (map_s s)
+  (* Begin RenameLocalsFunc *)
   and map_func f =
+    (* RenameLocalsArgs( *)
     let map_args li = List.map (fun (name, t) -> (map_name name, map_t t)) li in
+    (* RenameLocalsArgs) *)
+    (* RenameLocalsNamedArgs( *)
     let map_nargs li =
       List.map (fun (name, t) -> (map_name name, Option.map map_t t)) li
+      (* RenameLocalsNamedArgs) *)
     in
     {
       f with
@@ -862,10 +882,13 @@ let rename_locals map_name ast =
       body = map_body f.body;
       return_type = Option.map map_t f.return_type;
     }
+  (* End *)
+  (* Begin RenameLocals *)
   and map_decl d =
     map_desc_st' d @@ function D_Func f -> D_Func (map_func f) | d -> d
   in
   List.map map_decl ast
+(* End *)
 
 (* Taken from lib/innerRel.ml *)
 let rec transitive_closure m0 =

@@ -1,16 +1,16 @@
 \section{Relations Over Types\label{sec:RelationsOnTypes}}
 This section defines the following relations over types and operators:
 \begin{itemize}
-  \item Subtype (\secref{TypingRule.Subtype})
-  \item Subtype Satisfaction (\secref{TypingRule.SubtypeSatisfaction})
-  \item Type Satisfaction (\secref{TypingRule.TypeSatisfaction})
-  \item Type Clash (\secref{TypingRule.TypeClash})
-  \item The Lowest Common Ancestor of two types (\secref{TypingRule.LowestCommonAncestor})
-  \item Applying a unary operator to a type (\secref{TypingRule.ApplyUnopType})
-  \item Applying a binary operator to a pair of types (\secref{TypingRule.ApplyBinopTypes})
+  \item Subtype (\TypingRuleRef{Subtype})
+  \item Subtype Satisfaction (\TypingRuleRef{SubtypeSatisfaction})
+  \item Type Satisfaction (\TypingRuleRef{TypeSatisfaction})
+  \item Type Clash (\TypingRuleRef{TypeClash})
+  \item The Lowest Common Ancestor of two types (\TypingRuleRef{LowestCommonAncestor})
+  \item Applying a unary operator to a type (\TypingRuleRef{ApplyUnopType})
+  \item Applying a binary operator to a pair of types (\TypingRuleRef{ApplyBinopTypes})
 \end{itemize}
 
-\subsubsection{TypingRule.Subtype\label{sec:TypingRule.Subtype}}
+\TypingRuleDef{Subtype}
 The \emph{subtype} relation is a partial order over \underline{named types}.
 The \emph{supertype} is the inverse relation. That is, \tty\ is a supertype of \tsy\ if and only if \tsy\ is a subtype of \tty.
 
@@ -94,7 +94,7 @@ type subInt of integer subtypes superInt;
 
 \lrmcomment{This is related to \identr{NXRX}, \identi{KGKS}, \identi{MTML}, \identi{JVRM}, \identi{CHMP}.}
 
-\subsubsection{TypingRule.SubtypeSatisfaction\label{sec:TypingRule.SubtypeSatisfaction}}
+\TypingRuleDef{SubtypeSatisfaction}
 \hypertarget{def-subtypesat}{}
 The predicate
 \[
@@ -145,7 +145,7 @@ One of the following applies:
 \item All of the following apply (\textsc{t\_enum}):
   \begin{itemize}
   \item the \underlyingtype\ of $\vt$ is an enumeration type with list of labels $\vlit$, that is, $\TEnum(\vlit)$;
-  \item the \underlyingtype\ of $\vs$ is is an enumeration type with list of labels $\vlis$, that is, $\TEnum(\vlis)$;
+  \item the \underlyingtype\ of $\vs$ is an enumeration type with list of labels $\vlis$, that is, $\TEnum(\vlis)$;
   \item $\vb$ is $\True$ if and only if $\vlit$ is equal to $\vlis$.
   \end{itemize}
 
@@ -351,7 +351,7 @@ if there is a unique one, as follows:
 
 \CodeSubsection{\SubtypeSatisfactionBegin}{\SubtypeSatisfactionEnd}{../types.ml}
 
-\subsubsection{TypingRule.TypeSatisfaction \label{sec:TypingRule.TypeSatisfaction}}
+\TypingRuleDef{TypeSatisfaction}
 \hypertarget{def-typesatisfies}{}
 The predicate
 \[
@@ -537,7 +537,7 @@ every type $\vt$ is a subtype of itself, and as a consequence, every type $\vt$
 
 \lrmcomment{This is related to \identr{FMXK} and \identi{NLFD}.}
 
-\subsubsection{TypingRule.TypeClash\label{sec:TypingRule.TypeClash}}
+\TypingRuleDef{TypeClash}
 \hypertarget{def-typeclashes}{}
 The predicate
 \[
@@ -707,9 +707,9 @@ type-clashes with \texttt{A} and \texttt{B} then it is also the case that \textt
 
 \lrmcomment{This is related to \identd{VPZZ}, \identi{PQCT} and \identi{WZKM}.}
 
-\subsubsection{TypingRule.LowestCommonAncestor \label{sec:TypingRule.LowestCommonAncestor}}
+\TypingRuleDef{LowestCommonAncestor}
 \hypertarget{def-lowestcommonancestor}{}
-Annotating a conditional expression (see \secref{TypingRule.ECond}),
+Annotating a conditional expression (see \TypingRuleRef{ECond}),
 requires finding a single type that can be used to annotate the results of both subexpressions.
 The function
 \[
@@ -794,8 +794,8 @@ One of the following applies:
 
     \item All of the following apply (\textsc{t\_bits}):
     \begin{itemize}
-      \item $\vt$ is a bitvector type with with length expression $\vet$, that is, $\TBits(\vet, \Ignore)$;
-      \item $\vs$ is a bitvector type with with length expression $\ves$, that is, $\TBits(\ves, \Ignore)$;
+      \item $\vt$ is a bitvector type with length expression $\vet$, that is, $\TBits(\vet, \Ignore)$;
+      \item $\vs$ is a bitvector type with length expression $\ves$, that is, $\TBits(\ves, \Ignore)$;
       \item applying $\typeequal$ to $\vt$ and $\vs$ in $\tenv$ yields $\False$;
       \item applying $\exprequal$ to $\vet$ and $\ves$ in $\tenv$ yields $\vbequal$;
       \item checking whether $\vbequal$ is $\True$ yields $\True$\ProseTerminateAs{\NoLCA};
@@ -988,7 +988,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
 
 \lrmcomment{This is related to \identr{YZHM}.}
 
-\subsubsection{TypingRule.ApplyUnopType \label{sec:TypingRule.ApplyUnopType}}
+\TypingRuleDef{ApplyUnopType}
 \hypertarget{def-applyunoptype}{}
 The function
 \[
@@ -1122,7 +1122,7 @@ the values it represents:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ApplyBinopTypes\label{sec:TypingRule.ApplyBinopTypes}}
+\TypingRuleDef{ApplyBinopTypes}
 \hypertarget{def-applybinoptypes}{}
 The function
 \[
@@ -1561,7 +1561,7 @@ One of the following applies:
   \identi{LGHJ}, \identi{RXLG}.
 }
 
-\subsubsection{TypingRule.FindNamedLCA \label{sec:TypingRule.FindNamedLCA}}
+\TypingRuleDef{FindNamedLCA}
 \hypertarget{def-namedlowestcommonancestor}{}
 The function
 \[
@@ -1637,7 +1637,7 @@ One of the following holds:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AnnotateConstraintBinop\label{sec:TypingRule.AnnotateConstraintBinop}}
+\TypingRuleDef{AnnotateConstraintBinop}
 \hypertarget{def-annotateconstraintbinop}{}
 The function
 \[
@@ -1702,7 +1702,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\AnnotateConstraintBinopBegin}{\AnnotateConstraintBinopEnd}{../StaticOperations.ml}
 
-\subsubsection{TypingRule.BinopFilterRhs \label{sec:TypingRule.BinopFilterRhs}}
+\TypingRuleDef{BinopFilterRhs}
 \hypertarget{def-binopfilterrhs}{}
 The function
 \[
@@ -1768,7 +1768,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.RefineConstraintBySign \label{sec:TypingRule.RefineConstraintBySign}}
+\TypingRuleDef{RefineConstraintBySign}
 \hypertarget{def-refineconstraintbysign}{}
 The function
 \[
@@ -1937,7 +1937,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ReduceToZOpt \label{sec:TypingRule.ReduceToZOpt}}
+\TypingRuleDef{ReduceToZOpt}
 \hypertarget{def-reducetozopt}{}
 The function
 \[
@@ -1983,7 +1983,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.RefineConstraints \label{sec:TypingRule.RefineConstraints}}
+\TypingRuleDef{RefineConstraints}
 \hypertarget{def-refineconstraints}{}
 The function
 \[
@@ -2047,7 +2047,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.RefineConstraintForDiv \label{sec:TypingRule.RefineConstraintForDiv}}
+\TypingRuleDef{RefineConstraintForDiv}
 \hypertarget{def-refineconstraintfordiv}{}
 The function
 \[
@@ -2100,7 +2100,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\RefineConstraintForDIVBegin}{\RefineConstraintForDIVEnd}{../types.ml}
 
-\subsubsection{TypingRule.FilterReduceConstraintDiv \label{sec:TypingRule.FilterReduceConstraintDiv}}
+\TypingRuleDef{FilterReduceConstraintDiv}
 \hypertarget{def-filterreduceconstraintdiv}{}
 The function
 \[
@@ -2147,7 +2147,7 @@ One of the following applies:
       \item $\None$, if $\vzoneopt$ is $\langle\vzfive\rangle$ and $\vztwoopt$ is $\langle\vzsix\rangle$ and $\vzfive$ is greater than $\vzsix$;
       \item the range constraint for the literal integer $\vzfive$ and $\vetwo$, if $\vzoneopt$ is $\langle\vzfive\rangle$ and $\vztwoopt$ is $\None$;
       \item the range constraint for $\veone$ and the literal integer $\vzsix$, if $\vzoneopt$ is $\None$ and $\vztwoopt$ is $\langle\vzsix\rangle$;
-      \item $\vc$ if if $\vzoneopt$ is $\None$ and $\vztwoopt$ is $\None$.
+      \item $\vc$ if $\vzoneopt$ is $\None$ and $\vztwoopt$ is $\None$.
     \end{itemize}
   \end{itemize}
 \end{itemize}
@@ -2202,7 +2202,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.GetLiteralDivOpt \label{sec:TypingRule.GetLiteralDivOpt}}
+\TypingRuleDef{GetLiteralDivOpt}
 \hypertarget{def-getliteraldivopt}{}
 The function
 \[
@@ -2225,7 +2225,7 @@ and two literal integer expressions for the integers $\vzone$ and $\vztwo$ and $
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ExplodeIntervals \label{sec:TypingRule.ExplodeIntervals}}
+\TypingRuleDef{ExplodeIntervals}
 \hypertarget{def-explodeintervals}{}
 The function
 \[
@@ -2269,7 +2269,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ExplodeConstraint \label{sec:TypingRule.ExplodeConstraint}}
+\TypingRuleDef{ExplodeConstraint}
 \hypertarget{def-explodeconstraint}{}
 The function
 \[
@@ -2344,7 +2344,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.IntervalTooLarge \label{sec:TypingRule.IntervalTooLarge}}
+\TypingRuleDef{IntervalTooLarge}
 \hypertarget{def-intervaltoolarge}{}
 The function
 \[
@@ -2363,7 +2363,7 @@ The value $\vb$ is $\True$ if and only if the absolute value of $\vzone-\vztwo$ 
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.BinopIsExploding\label{sec:TypingRule.BinopIsExploding}}
+\TypingRuleDef{BinopIsExploding}
 \hypertarget{def-binopisexploding}{}
 The function
 \[
@@ -2384,7 +2384,7 @@ The value $\vb$ is $\True$ if and only if $\op$ is one of $\MUL$, $\SHL$, and $\
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.BitFieldsIncluded}
+\TypingRuleDef{BitFieldsIncluded}
 \hypertarget{def-bitfieldsincluded}{}
 The predicate
 \[
@@ -2410,7 +2410,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.MemBfs}
+\TypingRuleDef{MemBfs}
 \hypertarget{def-membfs}{}
 The function
 \[
@@ -2585,7 +2585,7 @@ One of the following applies:
 \end{mathpar}
 
 \hypertarget{def-checkstructurelabel}{}
-\subsubsection{TypingRule.CheckStructure \label{sec:TypingRule.CheckStructure}}
+\TypingRuleDef{CheckStructure}
 The function
 \[
   \checkstructurelabel(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\astlabels}{\vl}) \aslto
@@ -2630,7 +2630,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ToWellConstrained}
+\TypingRuleDef{ToWellConstrained}
 \hypertarget{def-towellconstrained}{}
 The function
 \[
@@ -2674,7 +2674,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.GetWellConstrainedStructure}
+\TypingRuleDef{GetWellConstrainedStructure}
 \hypertarget{def-getwellconstrainedstructure}{}
 The function
 \[
@@ -2701,7 +2701,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.GetBitvectorWidth}
+\TypingRuleDef{GetBitvectorWidth}
 \hypertarget{def-getbitvectorwidth}{}
 The function
 \[
@@ -2746,7 +2746,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\GetBitvectorWidthBegin}{\GetBitvectorWidthEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.GetBitvectorConstWidth}
+\TypingRuleDef{GetBitvectorConstWidth}
 \hypertarget{def-getbitvectorconstwidth}{}
 The function
 \[
@@ -2775,7 +2775,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\GetBitvectorConstWidthBegin}{\GetBitvectorConstWidthEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.CheckBitsEqualWidth}
+\TypingRuleDef{CheckBitsEqualWidth}
 \hypertarget{def-checkbitsequalwidth}{}
 The function
 \[

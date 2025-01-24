@@ -29,7 +29,7 @@ a slice of the form \texttt{[$\veone$+:$\vetwo$]} as a \lengthslice,
 and slice of the form \texttt{[$\veone$*:$\vetwo$]} as a \scaledslice.
 
 \section{Nested Bitfields}
-Bitfields may have nested bitfields. This can have several uses, one of which being being able to define two
+Bitfields may have nested bitfields. This can have several uses, one of which being able to define two
 different views of a register.
 
 We now define several properties of bitfields, illustrated by the example below.
@@ -89,7 +89,7 @@ defined for each bitfield.
   |\ & \BitFieldType(\identifier, \slice^{*}, \ty) &
 \end{flalign*}
 
-\subsubsection{ASTRule.Bitfields\label{sec:ASTRule.Bitfields}}
+\ASTRuleDef{Bitfields}
 \hypertarget{build-bitfields}{}
 The function
 \[
@@ -106,7 +106,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.Bitfield\label{sec:ASTRule.Bitfield}}
+\ASTRuleDef{Bitfield}
 \hypertarget{build-bitfield}{}
 The function
 \[
@@ -144,7 +144,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \section{Typing Bitfields}
-\subsubsection{TypingRule.TBitFields\label{sec:TypingRule.TBitFields}}
+\TypingRuleDef{TBitFields}
 \hypertarget{def-annotatebitfields}{}
 The function
 \[
@@ -184,7 +184,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\TBitFieldsBegin}{\TBitFieldsEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.BitFieldGetName\label{sec:TypingRule.BitFieldGetName}}
+\TypingRuleDef{BitFieldGetName}
 \hypertarget{def-bitfieldgetname}{}
 The function
 \[
@@ -215,7 +215,7 @@ One of the following applies:
   }
 \end{mathpar}
 
-\subsubsection{TypingRule.BitFieldGetSlices\label{sec:TypingRule.BitFieldGetSlices}}
+\TypingRuleDef{BitFieldGetSlices}
 \hypertarget{def-bitfieldgetslices}{}
 The function
 \[
@@ -246,7 +246,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.BitFieldGetNested\label{sec:TypingRule.BitFieldGetNested}}
+\TypingRuleDef{BitFieldGetNested}
 \hypertarget{def-bitfieldgetnested}{}
 The function
 \[
@@ -283,7 +283,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.TBitField\label{sec:TypingRule.TBitField}}
+\TypingRuleDef{TBitField}
 \hypertarget{def-annotatebitfield}{}
 The function
 \[
@@ -385,7 +385,7 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
 
 \CodeSubsection{\TBitFieldBegin}{\TBitFieldEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.CheckSlicesInWidth\label{sec:TypingRule.CheckSlicesInWidth}}
+\TypingRuleDef{CheckSlicesInWidth}
 \hypertarget{def-checkslicesinwidth}{}
 The function
 \[
@@ -415,7 +415,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\CheckSlicesInWidthBegin}{\CheckSlicesInWidthEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.CheckPositionsInWidth\label{sec:TypingRule.CheckPositionsInWidth}}
+\TypingRuleDef{CheckPositionsInWidth}
 \hypertarget{def-checkpositionsinwidth}{}
 The function
 \[
@@ -446,7 +446,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.DisjointSlicesToPositions\label{sec:TypingRule.DisjointSlicesToPositions}}
+\TypingRuleDef{DisjointSlicesToPositions}
 \hypertarget{def-disjointslicestopositions}{}
 The function
 \[
@@ -499,7 +499,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.BitfieldSliceToPositions\label{sec:TypingRule.BitfieldSliceToPositions}}
+\TypingRuleDef{BitfieldSliceToPositions}
 \hypertarget{def-bitfieldslicetopositions}{}
 The function
 \[
@@ -592,7 +592,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.CheckCommonBitfieldsAlign\label{sec:TypingRule.CheckCommonBitfieldsAlign}}
+\TypingRuleDef{CheckCommonBitfieldsAlign}
 \hypertarget{def-checkcommonbitfieldsalign}{}
 The function
 \[
@@ -663,7 +663,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.BitfieldsToAbsolute\label{sec:TypingRule.BitfieldsToAbsolute}}
+\TypingRuleDef{BitfieldsToAbsolute}
 \hypertarget{def-bitfieldstoabsolute}{}
 The function
 \[
@@ -695,7 +695,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.BitfieldToAbsolute\label{sec:TypingRule.BitfieldToAbsolute}}
+\TypingRuleDef{BitfieldToAbsolute}
 \hypertarget{def-bitfieldtoabsolute}{}
 The function
 \[
@@ -749,7 +749,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SliceIndicesBySlices\label{sec:TypingRule.SliceIndicesBySlices}}
+\TypingRuleDef{SliceIndicesBySlices}
 \hypertarget{def-sliceindicesbyslices}{}
 The function
 \[
@@ -775,7 +775,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.AbsoluteFieldsAlign\label{sec:TypingRule.AbsoluteFieldsAlign}}
+\TypingRuleDef{AbsoluteFieldsAlign}
 \hypertarget{def-absolutefieldsalign}{}
 The function
 \[
@@ -815,7 +815,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SliceToIndices\label{sec:TypingRule.SliceToIndices}}
+\TypingRuleDef{SliceToIndices}
 \hypertarget{def-slicetoindices}{}
 The function
 \[

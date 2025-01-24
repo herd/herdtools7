@@ -66,6 +66,7 @@ We now define the syntax, abstract syntax, typing, and semantics for the followi
 \item Pragma statements (see \secref{PragmaStatements})
 \end{itemize}
 
+\hypertarget{def-passstatementterm}{}
 \section{Pass Statements\label{sec:PassStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -77,7 +78,7 @@ We now define the syntax, abstract syntax, typing, and semantics for the followi
 \stmt \derives\ & \SPass &
 \end{flalign*}
 
-\subsubsection{ASTRule.SPass}
+\ASTRuleDef{SPass}
 \begin{mathpar}
 \inferrule{}{
   \buildstmt(\overname{\Nstmt(\Tpass, \Tsemicolon)}{\vparsednode})
@@ -87,7 +88,7 @@ We now define the syntax, abstract syntax, typing, and semantics for the followi
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.SPass \label{sec:TypingRule.SPass}}
+\TypingRuleDef{SPass}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -103,7 +104,7 @@ All of the following apply:
 \CodeSubsection{\SPassBegin}{\SPassEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.SPass \label{sec:SemanticsRule.SPass}}
+\SemanticsRuleDef{SPass}
 \subsubsection{Example}
 In \listingref{semantics-spass}, \texttt{pass;} does nothing.:
 \ASLListing{Evaluating a \texttt{pass} statement}{semantics-spass}{\semanticstests/SemanticsRule.SPass.asl}
@@ -111,7 +112,7 @@ In \listingref{semantics-spass}, \texttt{pass;} does nothing.:
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-\item $\vs$ is a \texttt{pass} statement, $\SPass$;
+\item $\vs$ is a \passstatementterm, $\SPass$;
 \item $\newg$ is the empty graph;
 \item $\newenv$ is $\env$.
 \end{itemize}
@@ -124,6 +125,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalSPassBegin}{\EvalSPassEnd}{../Interpreter.ml}
 
+\hypertarget{def-assignmentstatementterm}{}
 \section{Assignment Statements\label{sec:AssignmentStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -135,7 +137,7 @@ All of the following apply:
 \stmt \derives\ & \SAssign(\lexpr, \expr) &
 \end{flalign*}
 
-\subsubsection{ASTRule.SAssign}
+\ASTRuleDef{SAssign}
 \begin{mathpar}
 \inferrule{}{
   \buildstmt(\overname{\Nstmt(\punnode{\Nlexpr}, \Teq, \punnode{\Nexpr}, \Tsemicolon)}{\vparsednode})
@@ -145,7 +147,7 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.SAssign \label{sec:TypingRule.SAssign}}
+\TypingRuleDef{SAssign}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -170,7 +172,7 @@ All of the following apply:
 \CodeSubsection{\SAssignBegin}{\SAssignEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.SAssign \label{sec:SemanticsRule.SAssign}}
+\SemanticsRuleDef{SAssign}
 \subsubsection{Example}
 In \listingref{semantics-sassign},
 \texttt{x = 3;} binds \texttt{x} to $\nvint(3)$ in the environment where \texttt{x} is bound to
@@ -212,7 +214,7 @@ and then completes the update via an appropriate rule for evaluating the
 \assignableexpression, which in turn handles variables, tuples, bitvectors,
 etc.
 
-\subsubsection{SemanticsRule.SAssignCall \label{sec:SemanticsRule.SAssignCall}}
+\SemanticsRuleDef{SAssignCall}
 \subsubsection{Example}
 In \listingref{assigncallsemantics}, given that the function call \texttt{f(1)} returns a triple of values ---
 $\nvint(1)$, $\nvint(2)$, and $\nvint(3)$
@@ -261,6 +263,7 @@ We now define the evaluation of assigning from a subprogram call:
 \end{mathpar}
 \CodeSubsection{\EvalSAssignCallBegin}{\EvalSAssignCallEnd}{../Interpreter.ml}
 
+\hypertarget{def-setterassignmentstatementterm}{}
 \section{Setter Assignment Statements\label{sec:SetterAssignmentStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -270,7 +273,7 @@ We now define the evaluation of assigning from a subprogram call:
 |\ & \Ncall \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{{\Tidentifier}} \parsesep \Trbracket \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 \end{flalign*}
 
-\subsubsection{ASTRule.MakeSetter}
+\ASTRuleDef{MakeSetter}
 \hypertarget{def-makesetter}{}
 The helper function
 \[
@@ -294,7 +297,7 @@ constructs a setter call $\vcallp$ using a base call $\vcall$ and right-hand sid
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.DesugarSetter}
+\ASTRuleDef{DesugarSetter}
 \hypertarget{def-desugarsetter}{}
 The helper function
 \[
@@ -346,7 +349,7 @@ builds a statement $\news$ from an assignment of expression $\rhs$ to a setter i
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.SetterAssign}
+\ASTRuleDef{SetterAssign}
 \begin{mathpar}
 \inferrule{
   \desugarsetter(\astof{\vcall}, \emptylist, \astof{\vexpr}) \astarrow \vastnode
@@ -383,6 +386,7 @@ builds a statement $\news$ from an assignment of expression $\rhs$ to a setter i
 \subsection{Typing and semantics}
 As given by applying the relevant rules to the desugared AST.
 
+\hypertarget{def-declarationstatementterm}{}
 \section{Declaration Statements\label{sec:DeclarationStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -396,7 +400,7 @@ As given by applying the relevant rules to the desugared AST.
 \stmt \derives\ & \SDecl(\localdeclkeyword, \localdeclitem, \ty?, \expr?)
 \end{flalign*}
 
-\subsubsection{ASTRule.SDecl}
+\ASTRuleDef{SDecl}
 \begin{mathpar}
 \inferrule[let\_constant]{
   \buildoption[\buildasty](\vt) \astarrow \astversion{\vt}
@@ -440,7 +444,7 @@ As given by applying the relevant rules to the desugared AST.
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.SDecl\label{sec:TypingRule.SDecl}}
+\TypingRuleDef{SDecl}
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
@@ -529,7 +533,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\SDeclegin}{\SDeclEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.DeclareLocalConstant \label{sec:TypingRule.DeclareLocalConstant}}
+\TypingRuleDef{DeclareLocalConstant}
 \hypertarget{def-declarelocalconstant}{}
 The helper function
 \[
@@ -570,7 +574,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\DeclareLocalConstantBegin}{\DeclareLocalConstantEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.AnnotateLocalDeclTypeAnnot \label{sec:TypingRule.AnnotateLocalDeclTypeAnnot}}
+\TypingRuleDef{AnnotateLocalDeclTypeAnnot}
 \hypertarget{def-annotatelocaldecltypeannot}{}
 The helper function
 \[
@@ -645,7 +649,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.InheritIntegerConstraints\label{sec:TypingRule.InheritIntegerConstraints}}
+\TypingRuleDef{InheritIntegerConstraints}
 \hypertarget{def-inheritintegerconstraints}{}
 The helper function
 \[
@@ -710,7 +714,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.CheckCanBeInitializedWith\label{sec:TypingRule.CheckCanBeInitializedWith}}
+\TypingRuleDef{CheckCanBeInitializedWith}
 \hypertarget{def-checkcanbeinitializedwith}{}
 The helper function
 \[
@@ -758,7 +762,7 @@ One of the following applies:
 
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.SDeclSome\label{sec:SemanticsRule.SDeclSome}}
+\SemanticsRuleDef{SDeclSome}
 \subsubsection{Example (Declaration With an Initializing Value)}
 In \listingref{semantics-sdeclsome},
 \texttt{let x = 3;} binds \texttt{x} to $\nvint(3)$ in the empty environment.
@@ -805,12 +809,13 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\EvalSDeclBegin}{\EvalSDeclEnd}{../Interpreter.ml}
 
+\hypertarget{def-declarationstatementelidedparameterterm}{}
 \section{Declaration statements with an elided parameter \label{sec:DeclarationStatementsElidedParameter}}
-
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \
-   & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
+   & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \\
+   & \wrappedline\ \Nelidedparamcall \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 \end{flalign*}
 
@@ -821,7 +826,7 @@ One of the following applies:
   |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \NClist{\Nexpr} \parsesep \Trbrace \parsesep \Plist{\Nexpr}&
 \end{flalign*}
 
-\subsubsection{ASTRule.ElidedParamCall}
+\ASTRuleDef{ElidedParamCall}
 \hypertarget{build-elided-param-call}{}
 The helper function $\buildelidedparamcall$ builds a $\call$ from a parsed $\Nelidedparamcall$.
 
@@ -870,7 +875,7 @@ The helper function $\buildelidedparamcall$ builds a $\call$ from a parsed $\Nel
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.DesugarElidedParameter}
+\ASTRuleDef{DesugarElidedParameter}
 \hypertarget{def-desugarelidedparameter}{}
 The helper function
 \[
@@ -897,7 +902,7 @@ Otherwise, the result is a parse error.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.ElidedParamDecl}
+\ASTRuleDef{ElidedParamDecl}
 \begin{mathpar}
 \inferrule{
   \buildelidedparamcall (\vcall) \astarrow \astversion{\vcall} \\
@@ -939,6 +944,7 @@ Otherwise, the result is a parse error.
 \subsection{Typing and semantics}
 As given by the applying the relevant rules to the desugared AST (see \secref{DeclarationStatements}).
 
+\hypertarget{def-sequencestatementterm}{}
 \section{Sequencing Statements\label{sec:SequencingStatement}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -950,7 +956,7 @@ As given by the applying the relevant rules to the desugared AST (see \secref{De
 \stmt \derives\ & \SSeq(\stmt, \stmt) &
 \end{flalign*}
 
-\subsubsection{ASTRule.StmtList \label{sec:ASTRule.StmtList}}
+\ASTRuleDef{StmtList}
 \hypertarget{build-stmtlist}{}
 The function
 \[
@@ -967,7 +973,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.StmtFromList \label{sec:ASTRule.StmtFromList}}
+\ASTRuleDef{StmtFromList}
 \hypertarget{def-stmtfromlist}{}
 The helper function
 \[
@@ -989,7 +995,7 @@ builds a statement $\news$ from a possibly-empty list of statements $\vstmts$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.SequenceStmts \label{sec:ASTRule.SequenceStmts}}
+\ASTRuleDef{SequenceStmts}
 \hypertarget{def-sequencestmts}{}
 The helper function
 \[
@@ -1018,7 +1024,7 @@ instances of $\SPass$.
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.SSeq \label{sec:TypingRule.SSeq}}
+\TypingRuleDef{SSeq}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1041,7 +1047,7 @@ All of the following apply:
 \CodeSubsection{\SSeqBegin}{\SSeqEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.SSeq\label{sec:SemanticsRule.SSeq}}
+\SemanticsRuleDef{SSeq}
 \subsubsection{Example}
 In \listingref{semantics-sseq},
 the evaluation of \texttt{let x = 3; let y = x + 1} first evaluates \texttt{let x = 3} and only then
@@ -1075,6 +1081,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalSSeqBegin}{\EvalSSeqEnd}{../Interpreter.ml}
 
+\hypertarget{def-callstatementterm}{}
 \section{Call Statements\label{sec:CallStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1086,7 +1093,7 @@ All of the following apply:
 \stmt \derives\ & \SCall(\call) &
 \end{flalign*}
 
-\subsubsection{ASTRule.SCall}
+\ASTRuleDef{SCall}
 \begin{mathpar}
 \inferrule{
   \buildcall(\vcall) \astarrow \astversion{\vcall} \\
@@ -1100,7 +1107,7 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.SCall \label{sec:TypingRule.SCall}}
+\TypingRuleDef{SCall}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1131,7 +1138,7 @@ All of the following apply:
 \lrmcomment{This is related to \identd{VXKM}.}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.SCall\label{sec:SemanticsRule.SCall}}
+\SemanticsRuleDef{SCall}
 \subsubsection{Example}
 In \listingref{semantics-scall},
 \verb|Zeros{3}| evaluates to \texttt{'000'}.
@@ -1157,6 +1164,7 @@ All of the following apply:
 \CodeSubsection{\EvalSCallBegin}{\EvalSCallEnd}{../Interpreter.ml}
 % \lrmcomment{This is related to \identd{KCYT}:}
 
+\hypertarget{def-conditionalstatementterm}{}
 \section{Conditional Statements\label{sec:ConditionalStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1171,7 +1179,7 @@ All of the following apply:
 \stmt \derives\ & \SCond(\expr, \stmt, \stmt)
 \end{flalign*}
 
-\subsubsection{ASTRule.SCond}
+\ASTRuleDef{SCond}
 \begin{mathpar}
 \inferrule{}{
   {
@@ -1184,7 +1192,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.SElse \label{sec:ASTRule.SElse}}
+\ASTRuleDef{SElse}
 \hypertarget{build-selse}{}
 The function
 \[
@@ -1216,7 +1224,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.SCond \label{sec:TypingRule.SCond}}
+\TypingRuleDef{SCond}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1246,7 +1254,7 @@ All of the following apply:
 \lrmcomment{This is related to \identr{NBDJ}.}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.SCond\label{sec:SemanticsRule.SCond}}
+\SemanticsRuleDef{SCond}
 \subsubsection{Examples}
 The specification in \listingref{semantics-scond} does not result in any Assertion Error.
 \ASLListing{Evaluating a conditional statement}{semantics-scond}{\semanticstests/SemanticsRule.SCond.asl}
@@ -1292,6 +1300,7 @@ $\vstwo$ will be evaluated);
 \end{mathpar}
 \CodeSubsection{\EvalSCondBegin}{\EvalSCondEnd}{../Interpreter.ml}
 
+\hypertarget{def-casestatementterm}{}
 \section{Case Statements\label{sec:CaseStatements}}
 Case statements allow executing different statements, based on which
 condition an expression satisfies.
@@ -1361,7 +1370,7 @@ AST:
 \casealt \derives\ & \{ \CasePattern : \pattern, \CaseWhere : \expr?, \CaseStmt : \stmt \} &
 \end{flalign*}
 
-\subsubsection{ASTRule.SCase}
+\ASTRuleDef{SCase}
 To satisfy \RequirementRef{CaseNoOtherwiseError}, when no \otherwisecaseterm\ exists,
 $\SUnreachable$ is used instead:
 \begin{mathpar}
@@ -1420,7 +1429,7 @@ $\SUnreachable$ is used instead:
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.CaseAltList\label{sec:ASTRule.CaseAltList}}
+\ASTRuleDef{CaseAltList}
 \hypertarget{build-casealtlist}{}
 The function
 \[
@@ -1436,7 +1445,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.CaseAlt\label{sec:ASTRule.CaseAlt}}
+\ASTRuleDef{CaseAlt}
 \hypertarget{build-casealt}{}
 The function
 \[
@@ -1464,7 +1473,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.DesugarCaseStmt\label{sec:ASTRule.DesugarCaseStmt}}
+\ASTRuleDef{DesugarCaseStmt}
 \hypertarget{def-desugarcasestmt}{}
 The relation
 \[
@@ -1500,7 +1509,7 @@ compound conditional statement (see \listingref{ast-case2} for an example):
 \end{mathpar}
 \CodeSubsection{\DesugarCaseStmtBegin}{\DesugarCaseStmtEnd}{../desugar.ml}
 
-\subsubsection{ASTRule.CasesToCond\label{sec:ASTRule.CasesToCond}}
+\ASTRuleDef{CasesToCond}
 \hypertarget{def-casestocond}{}
 The function
 \[
@@ -1533,7 +1542,7 @@ into a statement $\news$.
 \end{mathpar}
 \CodeSubsection{\CasesToCondBegin}{\CasesToCondEnd}{../desugar.ml}
 
-\subsubsection{ASTRule.CaseToCond\label{sec:ASTRule.CaseToCond}}
+\ASTRuleDef{CaseToCond}
 \hypertarget{def-casetocond}{}
 The function
 \[
@@ -1564,6 +1573,7 @@ they do not require type system rules.
 Since case statements are transformed into other statements,
 they do not appear in the typed AST and thus are not associated with a semantics.
 
+\hypertarget{def-assertionstatementterm}{}
 \section{Assertion Statements\label{sec:AssertionStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1575,7 +1585,7 @@ they do not appear in the typed AST and thus are not associated with a semantics
 \stmt \derives\ & \SAssert(\expr) &
 \end{flalign*}
 
-\subsubsection{ASTRule.SAssert}
+\ASTRuleDef{SAssert}
 \begin{mathpar}
 \inferrule{}{
   \buildstmt(\overname{\Nstmt(\Tassert, \Nexpr, \Tsemicolon)}{\vparsednode})
@@ -1585,7 +1595,7 @@ they do not appear in the typed AST and thus are not associated with a semantics
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.SAssert \label{sec:TypingRule.SAssert}}
+\TypingRuleDef{SAssert}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1612,7 +1622,7 @@ All of the following apply:
 \lrmcomment{This is related to \identr{JQYF}.}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.SAssert \label{sec:SemanticsRule.SAssert}}
+\SemanticsRuleDef{SAssert}
 \subsubsection{Example}
 In \listingref{semantics-sasertok},
 \texttt{assert (42 != 3);} ensures that \texttt{3} is not equal to \texttt{42}.
@@ -1665,6 +1675,7 @@ All of the following apply:
 \CodeSubsection{\EvalSAssertBegin}{\EvalSAssertEnd}{../Interpreter.ml}
 \lrmcomment{This is related to \identd{QJYV}, \identr{WZSL}, \identr{WQRN}.}
 
+\hypertarget{def-whilestatementterm}{}
 \section{While Statements\label{sec:WhileStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1676,7 +1687,7 @@ All of the following apply:
 \stmt \derives\ & \SWhile(\overtext{\expr}{condition}, \overtext{\expr?}{loop limit}, \overtext{\stmt}{loop body}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.SWhile}
+\ASTRuleDef{SWhile}
 \begin{mathpar}
 \inferrule{
   \buildexpr(\vlimitexpr) \astarrow \astversion{\vlimitexpr}\\
@@ -1697,7 +1708,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.LoopLimit}
+\ASTRuleDef{LoopLimit}
 \hypertarget{build-looplimit}{}
 The function
 \[
@@ -1722,7 +1733,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.SWhile\label{sec:TypingRule.SWhile}}
+\TypingRuleDef{SWhile}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1754,7 +1765,7 @@ All of the following apply:
 \CodeSubsection{\SWhileBegin}{\SWhileEnd}{../Typing.ml}
 \lrmcomment{This is related to \identr{FTVN}.}
 
-\subsubsection{TypingRule.AnnotateLimitExpr\label{sec:TypingRule.AnnotateLimitExpr}}
+\TypingRuleDef{AnnotateLimitExpr}
 \hypertarget{def-annotatelimitexpr}{}
 The function
 \[
@@ -1803,7 +1814,7 @@ One of the following applies:
 \CodeSubsection{\AnnotateLimitExprBegin}{\AnnotateLimitExprEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.SWhile \label{sec:SemanticsRule.SWhile}}
+\SemanticsRuleDef{SWhile}
 \subsubsection{Example}
 The specification in \listingref{semantics-swhile} prints \texttt{0123}.
 \ASLListing{Evaluating a \texttt{while} loop}{semantics-swhile}{\semanticstests/SemanticsRule.SWhile.asl}
@@ -1835,7 +1846,7 @@ the output configuration $C$ and all of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalSWhileBegin}{\EvalSWhileEnd}{../Interpreter.ml}
 
-\subsubsection{SemanticsRule.Loop\label{sec:SemanticsRule.Loop}}
+\SemanticsRuleDef{Loop}
 The relation
 \hypertarget{def-evalloop}{}
 \[
@@ -1933,7 +1944,7 @@ The negation of the condition is used to decide whether to continue the loop ite
 }
 \end{mathpar}
 
-\subsubsection{SemanticsRule.EvalLimit\label{sec:SemanticsRule.EvalLimit}}
+\SemanticsRuleDef{EvalLimit}
 The relation
 \hypertarget{def-evallimit}{}
 \[
@@ -1983,7 +1994,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{SemanticsRule.TickLoopLimit\label{sec:SemanticsRule.TickLoopLimit}}
+\SemanticsRuleDef{TickLoopLimit}
 The relation
 \hypertarget{def-ticklooplimit}{}
 \[
@@ -2037,6 +2048,7 @@ One of the following applies:
 }
 \end{mathpar}
 
+\hypertarget{def-repeatstatementterm}{}
 \section{Repeat Statements\label{sec:RepeatStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -2048,7 +2060,7 @@ One of the following applies:
 \stmt \derives\ & \SRepeat(\overtext{\stmt}{loop body}, \overtext{\expr}{condition}, \overtext{\expr?}{loop limit}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.SRepeat}
+\ASTRuleDef{SRepeat}
 \begin{mathpar}
 \inferrule{
   \buildexpr(\vlimitexpr) \astarrow \astversion{\vlimitexpr}
@@ -2069,7 +2081,7 @@ One of the following applies:
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.SRepeat \label{sec:TypingRule.SRepeat}}
+\TypingRuleDef{SRepeat}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -2101,7 +2113,7 @@ All of the following apply:
 \lrmcomment{This is related to \identr{FTVN}.}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.SRepeat \label{sec:SemanticsRule.SRepeat}}
+\SemanticsRuleDef{SRepeat}
 \subsubsection{Example}
 The specification in \listingref{semantics-srepeat} prints
 \begin{Verbatim}
@@ -2148,6 +2160,7 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ an
 \end{mathpar}
 \CodeSubsection{\EvalSRepeatBegin}{\EvalSRepeatEnd}{../Interpreter.ml}
 
+\hypertarget{def-forstatementterm}{}
 \section{For Statements\label{sec:ForStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -2172,7 +2185,7 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ an
     \right\} &
 \end{flalign*}
 
-\subsubsection{ASTRule.SFor}
+\ASTRuleDef{SFor}
 \begin{mathpar}
 \inferrule{
   \buildexpr(\vstarte) \astarrow \astversion{\vstarte}\\
@@ -2204,7 +2217,7 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ an
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.Direction \label{sec:ASTRule.Direction}}
+\ASTRuleDef{Direction}
 \hypertarget{build-direction}{}
 The function
 \[
@@ -2225,7 +2238,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.SFor \label{sec:TypingRule.SFor}}
+\TypingRuleDef{SFor}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -2322,7 +2335,7 @@ All of the following apply:
 \CodeSubsection{\SForBegin}{\SForEnd}{../Typing.ml}
 \lrmcomment{This is related to \identr{SSBD}, \identr{ZSND}, \identr{VTJW}.}
 
-\subsubsection{TypingRule.SForConstraints\label{sec:TypingRule.SForConstraints}}
+\TypingRuleDef{SForConstraints}
 \hypertarget{def-getforconstraints}{}
 The function
 \[
@@ -2409,7 +2422,7 @@ One of the following applies:
 \end{mathpar}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.SFor\label{sec:SemanticsRule.SFor}}
+\SemanticsRuleDef{SFor}
 Evaluating a \texttt{for} statement involves introducing an index variable to the
 environment. The type system ensures, via \TypingRuleRef{SFor}, that the index variable
 is not already declared in the scope of the subprogram containing the \texttt{for}
@@ -2490,7 +2503,7 @@ they are evaluated via the rule for evaluating side-effect-free expressions.
 \end{mathpar}
 \CodeSubsection{\EvalSForBegin}{\EvalSForEnd}{../Interpreter.ml}
 
-\subsubsection{SemanticsRule.EvalFor\label{sec:SemanticsRule.EvalFor}}
+\SemanticsRuleDef{EvalFor}
 The relation
 \hypertarget{def-evalfor}{}
 \[
@@ -2703,6 +2716,7 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 \end{mathpar}
 \CodeSubsection{\EvalForBegin}{\EvalForEnd}{../Interpreter.ml}
 
+\hypertarget{def-throwstatementterm}{}
 \section{Throw Statements\label{sec:ThrowStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -2715,7 +2729,7 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 \stmt \derives\ & \SThrow(\expr?) &
 \end{flalign*}
 
-\subsubsection{ASTRule.SThrow}
+\ASTRuleDef{SThrow}
 \begin{mathpar}
 \inferrule[throw\_some]{}{
   \buildstmt(\overname{\Nstmt(\Tthrow, \Nexpr, \Tsemicolon)}{\vparsednode})
@@ -2733,7 +2747,7 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.SThrow\label{sec:TypingRule.SThrow}}
+\TypingRuleDef{SThrow}
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
@@ -2842,6 +2856,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\EvalSThrowBegin}{\EvalSThrowEnd}{../Interpreter.ml}
 
+\hypertarget{def-trystatementterm}{}
 \section{Try Statements\label{sec:TryStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -2856,7 +2871,7 @@ One of the following applies:
 \stmt \derives\ & \STry(\stmt, \catcher^*, \overtext{\stmt?}{otherwise}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.STry}
+\ASTRuleDef{STry}
 \begin{mathpar}
 \inferrule{
   \buildlist[\Ncatcher] \astarrow \astversion{\vcatcherlist}
@@ -2877,7 +2892,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.OtherwiseOpt}
+\ASTRuleDef{OtherwiseOpt}
 \hypertarget{build-otherwiseopt}{}
 The function
 \[
@@ -2906,7 +2921,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.STry \label{sec:TypingRule.STry}}
+\TypingRuleDef{STry}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -2981,7 +2996,7 @@ All of the following apply:
 \lrmcomment{This is related to \identr{WVXS}.}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.STry \label{sec:SemanticsRule.STry}}
+\SemanticsRuleDef{STry}
 \subsubsection{Example}
 Evaluating the specification in \listingref{semantics-stry}
 does not result in any Assertion error, and the specification terminates with the exit code $0$.
@@ -3007,6 +3022,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalSTryBegin}{\EvalSTryEnd}{../Interpreter.ml}
 
+\hypertarget{def-returnstatementterm}{}
 \section{Return Statements\label{sec:ReturnStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -3018,7 +3034,7 @@ All of the following apply:
   \stmt \derives\ & \SReturn(\expr?) &
 \end{flalign*}
 
-\subsubsection{ASTRule.SReturn}
+\ASTRuleDef{SReturn}
 \begin{mathpar}
 \inferrule{
   \buildoption[\Nexpr](\vexpr) \astarrow \astversion{\vexpr}
@@ -3030,7 +3046,7 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.SReturn\label{sec:TypingRule.SReturn}}
+\TypingRuleDef{SReturn}
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
@@ -3097,7 +3113,7 @@ One of the following applies:
 \lrmcomment{This is related to \identr{FTPK}.}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.SReturn\label{sec:SemanticsRule.SReturn}}
+\SemanticsRuleDef{SReturn}
 \subsubsection{Example (No Return Value)}
 The specification in \listingref{semantics-sreturn} exits the procedure \texttt{println\_me}
 by evaluating the \texttt{return;} statement.
@@ -3171,7 +3187,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsubsection{\SReturnBegin}{\EvalSReturnEnd}{../Interpreter.ml}
 
-\subsubsection{SemanticsRule.EExprListM \label{sec:SemanticsRule.EExprListM}}
+\SemanticsRuleDef{EExprListM}
 \hypertarget{def-evalexprlistm}{}
 The helper relation
 \[
@@ -3222,7 +3238,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{SemanticsRule.WriteFolder\label{sec:SemanticsRule.WriteFolder}}
+\SemanticsRuleDef{WriteFolder}
 \hypertarget{def-writefolder}{}
 The helper relation
 \[
@@ -3249,6 +3265,7 @@ by composing the graphs in $\vms$ with Write Effects for the respective values.
 }
 \end{mathpar}
 
+\hypertarget{def-printstatementterm}{}
 \section{Print Statements\label{sec:PrintStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -3261,7 +3278,7 @@ by composing the graphs in $\vms$ with Write Effects for the respective values.
   \stmt \derives\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{newline}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.SPrint}
+\ASTRuleDef{SPrint}
 \begin{mathpar}
 \inferrule{%
   \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
@@ -3285,7 +3302,7 @@ by composing the graphs in $\vms$ with Write Effects for the respective values.
 
 \subsection{Typing}
 
-\subsubsection{TypingRule.SPrint\label{sec:TypingRule.SPrint}}
+\TypingRuleDef{SPrint}
 \paragraph{Prose}
 All of the following apply:
 \begin{itemize}
@@ -3350,9 +3367,9 @@ All of the following apply:
     \evalstmt{\env, \SPrint(\elist, \True)} \evalarrow \Continuing(\vg, \newenv)
   }
 \end{mathpar}
-
 \CodeSubsection{\EvalSPrintBegin}{\EvalSPrintEnd}{../Interpreter.ml}
 
+\hypertarget{def-unreachablestatementterm}{}
 \section{The Unreachable Statement\label{sec:UnreachableStatement}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -3364,7 +3381,7 @@ All of the following apply:
 \stmt \derives\ & \SUnreachable &
 \end{flalign*}
 
-\subsubsection{ASTRule.SUnreachable}
+\ASTRuleDef{SUnreachable}
 \begin{mathpar}
 \inferrule{}{
   \buildstmt(\overname{\Nstmt(\Tunreachable, \Tlpar, \Trpar, \Tsemicolon)}{\vparsednode})
@@ -3373,8 +3390,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SUnreachable}
-\subsubsection{TypingRule.SUnreachable\label{sec:TypingRule.SUnreachable}}
+\TypingRuleDef{SUnreachable}
 \subsubsection{Prose}
 Annotating $\SUnreachable$ in the static environment $\tenv$ yields $(\SUnreachable, \tenv, \emptyset)$.
 
@@ -3385,7 +3401,7 @@ Annotating $\SUnreachable$ in the static environment $\tenv$ yields $(\SUnreacha
 }
 \end{mathpar}
 
-\subsubsection{SemanticsRule.SUnreachable\label{sec:SemanticsRule.SUnreachable}}
+\SemanticsRuleDef{SUnreachable}
 \subsubsection{Prose}
 Evaluating $\SUnreachable$ in an environment $\env$ results in a dynamic error indicating this ($\UnreachableError$).
 \subsubsection{Formally}
@@ -3395,6 +3411,7 @@ Evaluating $\SUnreachable$ in an environment $\env$ results in a dynamic error i
 }
 \end{mathpar}
 
+\hypertarget{def-pragmastatementterm}{}
 \section{Pragma Statements\label{sec:PragmaStatements}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -3406,7 +3423,7 @@ Evaluating $\SUnreachable$ in an environment $\env$ results in a dynamic error i
 \stmt \derives\ & \SPragma(\Tidentifier, \overtext{\expr^*}{args}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.SPragma}
+\ASTRuleDef{SPragma}
 \begin{mathpar}
 \inferrule{
   \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
@@ -3417,14 +3434,14 @@ Evaluating $\SUnreachable$ in an environment $\env$ results in a dynamic error i
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SPragma\label{sec:TypingRule.SPragma}}
+\TypingRuleDef{SPragma}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a pragma statement with identifier $\id$ and expression list $\vargs$. that is, $\SPragma(\id, \vargs)$;
   \item for each \Proselistrange{$i$}{$\vargs$}, \Proseannotateexpr{$\tenv$}{$\vargs[i]$}{$(\Ignore, \Ignore, \vxs_i)$}\ProseOrTypeError;
   \item define $\vsess$ as the list of $\vxs_i$m \Proselistrange{$i$}{$\vargs$};
-  \item define $\news$ as the \texttt{pass} statement, that is, $\SPass$
+  \item define $\news$ as the \passstatementterm, that is, $\SPass$
   \item $\newtenv$ is $\tenv$;
   \item \Prosenonconflictingunion{$\vsess$}{$\vses$}\ProseOrTypeError.
 \end{itemize}

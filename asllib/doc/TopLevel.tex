@@ -15,6 +15,8 @@ We emphasize that this is only an example usage of the components listed above.
 One can think of other combinations where, for example, semantic evaluation is
 replaced with a translation to a hardware description language.
 
+\section{An Example Interpreter}
+
 \hypertarget{def-checkandinterpret}{}
 The relation
 \[
@@ -42,8 +44,9 @@ All of the following apply:
     \item \Proseaslscan{$\vstdtext$}{$\spectoken$}{$\vstdtokens$\ProseTerminateAs{\LexicalError}};
     \item \Proseaslparse{$\vstdtokens$}{$\vstdparse$\ProseTerminateAs{\ParseError}};
     \item \Prosebuildast{$\vstdparse$}{$\vstdast$\ProseTerminateAs{\BuildErrorConfig}};
+    \item \Proserenamelocals{\vstdast}{\vstdastrenamed};
     \item define $\vstdasbuiltin$ by applying $\setbuiltin$ to each top-level declaration in\\
-          $\vstdast$\ProseOrTypeError;
+          $\vstdastrenamed$\ProseTerminateAs{\BuildErrorConfig};
     %%%%%
     \item \Proseaslscan{$\vspectext$}{$\spectoken$}{$\vspectokens$\ProseTerminateAs{\LexicalError}};
     \item \Proseaslparse{$\vspectokens$}{$\vspecparse$\ProseTerminateAs{\ParseError}};
@@ -61,7 +64,13 @@ All of the following apply:
     \aslscan(\spectoken, \vstdtext) \scanarrow \vstdtokens \terminateas \LexicalError\\\\
     \aslparse(\vstdtokens) \parsearrow \vstdparse \terminateas \ParseError\\\\
     \buildast(\vstdparse) \astarrow \vstdast \terminateas \BuildErrorConfig\\\\
-    \vi \in \listrange(\vstdast): \setbuiltin(\vstdast_i) \typearrow \vstddeclast_i \OrTypeError\\\\
+    \renamelocals(\vstdast) \astarrow \vstdastrenamed\\
+    {
+    \begin{array}{r}
+      \vi \in \listrange(\vstdastrenamed): \setbuiltin(\vstdastrenamed[\vi]) \typearrow \\
+      \vstddeclast_i \terminateas \BuildErrorConfig
+    \end{array}
+    }\\
     \vstdasbuiltin \eqdef [\vi \in \listrange(\vstdast): \vstddeclast_i]\\
     \aslscan(\spectoken, \vspectext) \scanarrow \vspectokens \terminateas \LexicalError\\\\
     \aslparse(\vspectokens) \parsearrow \vspecparse \terminateas \ParseError\\\\
@@ -74,19 +83,1328 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.SetBuiltin\label{sec:TypingRule.SetBuiltin}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Beginning of rename locals-related functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Renaming Local Storage Elements in the Standard Library}
+% Transliteration comment: this transformation only applies to untyped AST node types.
+
+In order to combine the standard library declarations with a given specification,
+we need to avoid name clashes between the identifiers for local storage elements
+in the standard library and the identifiers used for global declarations in the
+specification.
+%
+This is done by renaming the identifiers corresponding to local storage elements
+in the standard library. Specifically, we prefix these identifiers with the
+string \verb|__stdlib_local_|.
+%
+The rest of this section consists of functions that recursively transform an
+untyped AST, renaming local storage elements accordingly.
+
+\ASTRuleDef{RenameLocals}
+\hypertarget{def-renamelocals}{}
 The helper function
+\[
+\renamelocals(\overname{\decl^*}{\vdecls}) \aslto \overname{\decl^*}{\vnewdecls}
+\]
+renames the local storage elements appearing in $\vdecls$,
+yielding the list of declarations $\vnewdecls$.
+
+\ProseParagraph
+\AllApply:
+\begin{itemize}
+  \item \Proserenamelocalsdecl{$\vdecls[\vi]$}{$\vnewdecl_\vi$},
+        for each \Proselistrange{$\vi$}{$\vdecls$};
+  \item \Proseeqdef{$\vnewdecls$}{the list of declarations $\vnewdecl_\vi$},
+        for each \Proselistrange{$\vi$}{$\vdecls$}.
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{
+  \vi\in\listrange(\vdecls): \renamelocalsdecl(\vdecls[\vi]) \astarrow \vnewdecl_\vi
+}{
+  \renamelocals(\vdecls) \astarrow \overname{[\vi\in\listrange(\vdecls): \vnewdecl_\vi]}{\vnewdecls}
+}
+\end{mathpar}
+\CodeSubsection{\RenameLocalsBegin}{\RenameLocalsEnd}{../ASTUtils.ml}
+
+\ASTRuleDef{RenameLocalsDecl}
+\hypertarget{def-renamelocalsdecl}{}
+The helper function
+\[
+\renamelocalsdecl(\overname{\decl}{\vdecl}) \aslto \overname{\decl^*}{\vnewdecl}
+\]
+renames the local storage elements appearing in $\vdecl$,
+yielding the declaration $\vnewdecl$.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{subprogram}
+  \begin{itemize}
+    \item $\vf$ is a subprogram declaration with description $\vf$, that is, $\DFunc(\vf)$;
+    \item \Proserenamelocalsfunc{$\vf$}{$\vnewf$};
+    \item \Proseeqdef{$\vnewdecl$}{the subprogram declaration for $\vnewf$, that is, \\
+          $\DFunc(\vnewf)$}.
+  \end{itemize}
+
+  \item \AllApplyCase{other}
+  \begin{itemize}
+    \item $\vf$ is not a subprogram declaration;
+    \item \Proseeqdef{$\vnewdecl$}{$\vdecl$}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[subprogram]{
+  \renamelocalsfunc(\vf) \astarrow \vnewf
+}{
+  \renamelocalsdecl(\overname{\DFunc(\vf)}{\vdecl}) \astarrow \overname{\DFunc(\vnewf)}{\vnewdecl}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[other]{
+  \astlabel(\vdecl) \neq \DFunc
+}{
+  \renamelocalsdecl(\vdecl) \astarrow \overname{\vdecl}{\vnewdecl}
+}
+\end{mathpar}
+
+\ASTRuleDef{RenameLocalsFunc}
+\hypertarget{def-renamelocalsfunc}{}
+The helper function
+\[
+\renamelocalsfunc(\overname{\func}{\vf}) \aslto \overname{\func}{\vnewf}
+\]
+renames the local storage elements appearing in the subprogram description $\vf$,
+yielding the subprogram description $\vnewf$.
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item view $\vf$ as a subprogram description consisting of a subprogram named $\name$,
+        list of parameters $\params$, list of arguments $\args$, body $\vbody$,
+        optional return type $\rettyopt$, optional subtype $\vsubtype$,
+        optional limit expression $\vlimitexpr$, and builtin flag $\vbuiltin$;
+  \item \Proserenamelocalsargs{$\args$}{$\newargs$};
+  \item \Proserenamelocalsnamedargs{$\params$}{$\newparams$};
+  \item \Proserenamelocalsstmt{$\vbody$}{$\vnewbody$};
+  \item \Prosemapopt{$\renamelocalsty$}{$\rettyopt$}{\\ $\newrettyopt$};
+  \item define $\vnewf$ as the subprogram description consisting of a subprogram named $\name$,
+    list of parameters $\newparams$, list of arguments $\newargs$, body $\vnewbody$,
+    optional return type $\newrettyopt$, optional subtype $\vsubtype$,
+    optional limit expression $\vlimitexpr$, and builtin flag $\vbuiltin$.
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{
+  {
+  \vf \eqname
+  {
+  \left\{
+    \begin{array}{rcl}
+   \funcname &:& \name, \\
+   \funcparameters &:& \params,\\
+   \funcargs &:& \args,\\
+   \funcbody &:& \vbody,\\
+   \funcreturntype &:& \rettyopt,\\
+   \funcsubprogramtype &:& \vsubtype\\
+   \funcrecurselimit    &:& \vlimitexpr\\
+   \funcbuiltin &:& \vbuiltin
+  \end{array}
+  \right\}
+  }
+  }\\
+  \renamelocalsargs(\args) \astarrow \newargs\\
+  \renamelocalsnamedargs(\params) \astarrow \newparams\\
+  \renamelocalsstmt(\vbody) \astarrow \vnewbody\\
+  \mapopt{\renamelocalsty}(\rettyopt) \astarrow \newrettyopt\\
+  {
+    \vnewf \eqdef
+    {
+    \left\{
+      \begin{array}{rcl}
+     \funcname &:& \name, \\
+     \funcparameters &:& \newparams,\\
+     \funcargs &:& \newargs,\\
+     \funcbody &:& \vnewbody,\\
+     \funcreturntype &:& \newrettyopt,\\
+     \funcsubprogramtype &:& \vsubtype\\
+     \funcrecurselimit    &:& \vlimitexpr\\
+     \funcbuiltin &:& \vbuiltin
+    \end{array}
+    \right\}
+    }
+  }
+}{
+  \renamelocalsfunc(\vf) \astarrow \vnewf
+}
+\end{mathpar}
+
+\ASTRuleDef{RenameLocalsArgs}
+\hypertarget{def-renamelocalsargs}{}
+The helper function
+\[
+\renamelocalsargs(\overname{(\identifier\times\ty)^*}{\args}) \aslto
+\overname{(\identifier\times\ty)^*}{\newargs}
+\]
+renames the local storage elements appearing in the list of arguments
+$\args$, yielding the list of arguments $\newargs$.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{empty}
+  \begin{itemize}
+    \item $\args$ is the empty list;
+    \item \Proseeqdef{$\newargs$}{the empty list}.
+  \end{itemize}
+
+  \item \AllApplyCase{non\_empty}
+  \begin{itemize}
+    \item $\args$ is the list with \head\ $(\name,\vt)$ and \tail\ $\vargsone$;
+    \item \Proserenamelocalsname{$\name$}{$\namep$};
+    \item \Proserenamelocalsty{$\vt$}{$\vtp$};
+    \item \Proserenamelocalsargs{$\vargsone$}{$\vargsonep$};
+    \item \Proseeqdef{$\newargs$}{the list with headp $(\namep,\vtp)$ and \tail\ $\vargsonep$}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[empty]{}{
+  \renamelocalsargs(\overname{\emptylist}{\args}) \astarrow \overname{\emptylist}{\newargs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \renamelocalsname(\name) \astarrow \namep\\
+  \renamelocalsty(\vt) \astarrow \vtp\\
+  \renamelocalsargs(\vargsone) \astarrow \vargsonep
+}{
+  \renamelocalsargs(\overname{(\name,\vt) \concat \vargsone}{\args}) \astarrow \overname{[(\namep, \vtp)] \concat \vargsonep}{\newargs}
+}
+\end{mathpar}
+
+\ASTRuleDef{RenameLocalsNamedArgs}
+\hypertarget{def-renamelocalsnamedargs}{}
+The helper function
+\[
+\renamelocalsnamedargs(\overname{(\identifier\times\langle\ty\rangle)^*}{\params}) \aslto
+\overname{(\identifier\times\langle\ty\rangle)^*}{\newparams}
+\]
+renames the local storage elements appearing in the list of parameters $\params$,
+yielding the list of parameters $\newparams$.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{empty}
+  \begin{itemize}
+    \item $\params$ is the empty list;
+    \item \Proseeqdef{$\newparams$}{the empty list}.
+  \end{itemize}
+
+  \item \AllApplyCase{non\_empty}
+  \begin{itemize}
+    \item $\newparams$ is the list with \head\ $(\name,\tyopt)$ and \tail\ $\paramsone$;
+    \item \Proserenamelocalsname{$\name$}{$\namep$};
+    \item \Prosemapopt{$\renamelocalsty$}{$\tyopt$}{$\tyoptp$};
+    \item \Proserenamelocalsnamedargs{$\paramsone$}{$\paramsonep$};
+    \item \Proseeqdef{$\newargs$}{the list with headp $(\namep,\tyoptp)$ and \tail\ $\paramsonep$}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[empty]{}{
+  \renamelocalsnamedargs(\overname{\emptylist}{\params}) \astarrow \overname{\emptylist}{\newparams}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \renamelocalsname(\name) \astarrow \namep\\
+  \mapopt{\renamelocalsty}(\tyopt) \astarrow \tyoptp\\
+  \renamelocalsnamedargs(\paramsone) \astarrow \paramsonep
+}{
+  \renamelocalsnamedargs(\overname{(\name,\tyopt) \concat \vargsone}{\params}) \astarrow \overname{[(\namep, \tyoptp)] \concat \paramsonep}{\newparams}
+}
+\end{mathpar}
+
+\ASTRuleDef{RenameLocalsTy}
+\hypertarget{def-renamelocalsty}{}
+The helper function
+\[
+\renamelocalsty(\overname{\ty}{\tty}) \aslto \overname{\ty}{\newty}
+\]
+renames the local storage elements appearing in the type $\tty$,
+yielding the type $\newty$.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{unchanged}
+  \begin{itemize}
+    \item $\tty$ is either one of the following types: the \realtypeterm, the \stringtypeterm,
+          the \booleantypeterm, an \enumerationtypeterm, a \namedtypeterm,
+          or $\tty$ is an \unconstrainedintegertype\ or a
+          \pendingconstrainedintegertype.
+    \item \Proseeqdef{$\newty$}{$\tty$}.
+  \end{itemize}
+
+  \item \AllApplyCase{t\_int\_parameterized}
+  \begin{itemize}
+    \item $\tty$ is the \parameterizedintegertype.
+    \item this case is not implemented yet.
+  \end{itemize}
+
+  \item \AllApplyCase{t\_int\_wellconstrained}
+  \begin{itemize}
+    \item $\tty$ is the \wellconstrainedintegertype\ with list of constraints $\vcs$.
+    \item \Proseeqdef{$\newcs$}{the list obtained by applying $\renamelocalsconstraint$ to every constraint in $\vcs$};
+    \item \Proseeqdef{$\newty$}{the \wellconstrainedintegertype\ with list of constraints $\newcs$}.
+  \end{itemize}
+
+  \item \AllApplyCase{t\_bits}
+  \begin{itemize}
+    \item $\tty$ is the \bitvectortypeterm\ with width expression $\ve$ and bitfields $\bitfields$;
+    \item \Proserenamelocalsexpr{$\ve$}{$\vep$};
+    \item \Proseeqdef{$\newty$}{the \bitvectortypeterm\ with width expression $\vep$ bitfields\\ $\bitfields$}.
+  \end{itemize}
+
+  \item \AllApplyCase{t\_tuple}
+  \begin{itemize}
+    \item $\tty$ is the \tupletypeterm\ for the list of types $\vli$;
+    \item \Proserenamelocalsexpr{$\newli$}{the list obtained by applying $\renamelocalsty$ to each type in $\vli$};
+    \item \Proseeqdef{$\newty$}{the \tupletypeterm\ for the list of types $\newli$}.
+  \end{itemize}
+
+  \item \AllApplyCase{tarray}
+  \begin{itemize}
+    \item $\tty$ is the \arraytypeterm;
+    \item this case is not implemented yet
+  \end{itemize}
+
+  \item \AllApplyCase{structured}
+  \begin{itemize}
+    \item $\tty$ is \structuredtype\ with AST label $L$ list of pairs consisting of identifiers and types $\vli$;
+    \item \Proseeqdef{$\newli$}{the list of pairs $(\name, \renamelocalsty(\vt))$ for each pair
+          $(\name, \vt)$ in $\vli$}
+    \item \Proseeqdef{$\newty$}{the \structuredtype\ with AST label $L$ and $\newli$}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[unchanged]{
+  {
+  \begin{array}{c}
+    \astlabel(\tty) \in \{\TReal, \TString, \TBool, \TEnum, \TNamed\}\ \lor\\
+    (\tty = \TInt(\vc) \land \astlabel(\vc) \in \{\unconstrained, \pendingconstrained\})
+  \end{array}
+  }
+}{
+  \renamelocalsty(\tty) \astarrow \overname{\tty}{\newty}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_int\_parameterized]{
+  \astlabel(\vc) = \parameterized
+}{
+  \renamelocalsty(\overname{\TInt(\vc)}{\tty}) \astarrow \tododefine{unimplemented}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_int\_wellconstrained]{
+  \newcs \eqdef [\vc\in \vcs: \renamelocalsconstraint(\vcs)]
+}{
+  \renamelocalsty(\overname{\TInt(\wellconstrained(\vcs))}{\tty}) \astarrow \overname{\TInt(\wellconstrained(\newcs))}{\newty}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_bits]{
+  \renamelocalsexpr(\ve) \astarrow \vep
+}{
+  \renamelocalsty(\overname{\TBits(\ve, \bitfields)}{\tty}) \astarrow \overname{\TBits(\vep, \bitfields)}{\newty}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_tuple]{
+  \newli \eqdef [\vt\in\vli: \renamelocalsty(\vt)]
+}{
+  \renamelocalsty(\overname{\TTuple(\vli)}{\tty}) \astarrow \overname{\TTuple(\newli)}{\newty}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_array]{
+  \astlabel(\tty) = \TArray
+}{
+  \renamelocalsty(\tty) \astarrow \tododefine{unimplemented}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[structured]{
+  L \in \{\TRecord, \TException\}\\
+  \newli \eqdef [(\name, \vt) \in \vli: (\name, \renamelocalsty(\vt))]
+}{
+  \renamelocalsty(\overname{L(\vli)}{\tty}) \astarrow \overname{L(\newli)}{\newty}
+}
+\end{mathpar}
+
+\ASTRuleDef{RenameLocalsStmt}
+\hypertarget{def-renamelocalsstmt}{}
+The helper function
+\[
+\renamelocalsstmt(\overname{\stmt}{\vs}) \aslto \overname{\stmt}{\news}
+\]
+renames the local storage elements appearing in the statement $\vs$,
+yielding the statement $\news$.
+
+\ProseParagraph
+\begin{itemize}
+  \item \AllApplyCase{s\_pass}
+  \begin{itemize}
+    \item $\vs$ is a \passstatementterm;
+    \item \Proseeqdef{$\news$}{$\vs$}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_seq}
+  \begin{itemize}
+    \item $\vs$ is a \sequencingstatementterm\ for $\vsone$ and $\vstwo$;
+    \item \Proserenamelocalsstmt{$\vsone$}{$\vsonep$};
+    \item \Proserenamelocalsstmt{$\vstwo$}{$\vstwop$};
+    \item \Proseeqdef{$\news$}{a \sequencingstatementterm\ for $\vsonep$ and $\vstwop$}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_decl}
+  \begin{itemize}
+    \item $\vs$ is a \declarationstatement{$\ldk$}{$\ldi$}{$\tty$}{$\ve$};
+    \item \Proserenamelocalsldi{$\ldi$}{$\ldip$};
+    \item \Prosemapopt{$\renamelocalsty$}{$\tty$}{$\ttyp$};
+    \item \Prosemapopt{$\renamelocalsexpr$}{$\ve$}{$\vep$};
+    \item \Proseeqdef{$\news$}{a \declarationstatement{$\ldk$}{$\ldip$}{$\ttyp$}{$\vep$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_assign}
+  \begin{itemize}
+    \item $\vs$ is a \assignmentstatement{$\vle$}{$\ve$};
+    \item \Proserenamelocalslexpr{$\vle$}{$\vlep$};
+    \item \Proserenamelocalsexpr{$\ve$}{$\vep$};
+    \item \Proseeqdef{$\news$}{an \assignmentstatement{$\vlep$}{$\vep$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_call}
+  \begin{itemize}
+    \item $\vs$ is a \callstatement{$\name$}{$\args$}{$\params$}{$\calltype$};
+    \item \Proserenamelocalsargs{$\args$}{$\newargs$};
+    \item \Proserenamelocalsnamedargs{$\params$}{$\newparams$};
+    \item \Proseeqdef{$\news$}{\callstatement{$\name$}{$\newargs$}{$\newparams$}{$\calltype$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_return}
+  \begin{itemize}
+    \item $\vs$ is a \returnstatement{$\ve$};
+    \item \Prosemapopt{$\renamelocalsexpr$}{$\ve$}{$\vep$};
+    \item \Proseeqdef{$\news$}{the \returnstatement{$\vep$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_cond}
+  \begin{itemize}
+    \item $\vs$ is a \conditionalstatement{$\ve$}{$\vsone$}{$\vstwo$};
+    \item \Proserenamelocalsexpr{$\ve$}{$\vep$};
+    \item \Proserenamelocalsstmt{$\vsone$}{$\vsonep$};
+    \item \Proserenamelocalsstmt{$\vstwo$}{$\vstwop$};
+    \item \Proseeqdef{$\news$}{\conditionalstatement{$\vep$}{$\vsonep$}{$\vstwop$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_assert}
+  \begin{itemize}
+    \item $\vs$ is a \assertionstatement{$\ve$};
+    \item \Proserenamelocalsexpr{$\ve$}{$\vep$};
+    \item \Proseeqdef{$\news$}{\assertionstatement{$\vep$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_for}
+  \begin{itemize}
+    \item $\vs$ is a \forstatement{$\id$}{$\estart$}{$\dir$}{$\eend$}{$\vbody$}{$\velimitopt$};
+    \item \Proserenamelocalsexpr{$\estart$}{$\estartp$};
+    \item \Proserenamelocalsexpr{$\eend$}{$\eendp$};
+    \item \Proserenamelocalsstmt{$\vbody$}{$\vbodyp$};
+    \item \Prosemapopt{$\renamelocalsexpr$}{$\velimitopt$}{$\velimitoptp$};
+    \item \Proseeqdef{$\news$}{\forstatement{$\id$}{\\ $\estartp$}{$\dir$}{$\eendp$}{$\vbodyp$}{$\velimitoptp$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_while}
+  \begin{itemize}
+    \item $\vs$ is a \whilestatement{$\ve$}{$\vlimit$}{$\vbody$};
+    \item \Proserenamelocalsstmt{$\vbody$}{$\vbodyp$};
+    \item \Proserenamelocalsexpr{$\ve$}{$\vep$};
+    \item \Prosemapopt{$\renamelocalsexpr$}{$\vlimit$}{$\vlimitp$};
+    \item \Proseeqdef{$\news$}{\whilestatement{$\vep$}{$\vlimitp$}{$\vbodyp$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_repeat}
+  \begin{itemize}
+    \item $\vs$ is a \repeatstatement{$\vs$}{$\ve$}{$\vlimit$};
+    \item \Proserenamelocalsstmt{$\vs$}{$\vsp$};
+    \item \Proserenamelocalsexpr{$\ve$}{$\vep$};
+    \item \Prosemapopt{$\renamelocalsexpr$}{$\vlimit$}{$\vlimitp$};
+    \item \Proseeqdef{$\news$}{\repeatstatement{$\vsp$}{$\vep$}{$\vlimitp$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_throw}
+  \begin{itemize}
+    \item $\vs$ is a \throwstatement{$\veopt$};
+    \item \Prosemapopt{$\renamelocalsexpr$}{$\veopt$}{$\veoptp$};
+    \item \Proseeqdef{$\news$}{\throwstatement{$\veoptp$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_try}
+  \begin{itemize}
+    \item $\vs$ is a \trystatementterm;
+    \item this case is not implemented.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_print}
+  \begin{itemize}
+    \item $\vs$ is a \printstatement{$\args$}{$\vnewline$};
+    \item \Proseeqdef{$\newargs$}{the list obtained by applying $\renamelocalsexpr$ to each expression in $\args$};
+    \item \Proseeqdef{$\news$}{\printstatement{$\newargs$}{$\vnewline$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_unreachable}
+  \begin{itemize}
+    \item $\vs$ is a \unreachablestatementterm;
+    \item \Proseeqdef{$\news$}{\unreachablestatementterm}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_pragma}
+  \begin{itemize}
+    \item $\vs$ is a \pragmastatement{$\name$}{$\args$};
+    \item \Proseeqdef{$\newargs$}{the list obtained by applying $\renamelocalsexpr$ to each expression in $\args$};
+    \item \Proseeqdef{$\news$}{\pragmastatement{$\name$}{$\newargs$}}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[s\_pass]{}{
+  \renamelocalsstmt(\overname{\SPass}{\vs}) \astarrow \overname{\SPass}{\news}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_seq]{
+  \renamelocalsstmt(\vsone) \astarrow \vsonep\\
+  \renamelocalsstmt(\vstwo) \astarrow \vstwop\\
+}{
+  \renamelocalsstmt(\overname{\SSeq(\vsone, \vstwo)}{\vs}) \astarrow \overname{\SSeq(\vsonep, \vstwop)}{\news}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_decl]{
+  \renamelocalsldi(\ldi) \astarrow \ldip\\
+  \mapopt{\renamelocalsty}(\tty) \astarrow \ttyp\\
+  \mapopt{\renamelocalsexpr}(\ve) \astarrow \vep
+}{
+  \renamelocalsstmt(\overname{\SDecl(\ldk, \ldi, \tty, \ve)}{\vs}) \astarrow \overname{\SDecl(\ldk, \ldip, \ttyp, \vep)}{\news}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_assign]{
+  \renamelocalslexpr(\vle) \astarrow \vlep\\
+  \renamelocalsexpr(\ve) \astarrow \vep\\
+}{
+  \renamelocalsstmt(\overname{\SAssign(\vle, \ve)}{\vs}) \astarrow \overname{\SAssign(\vlep, \vep)}{\news}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_call]{
+  \renamelocalsargs(\args) \astarrow \newargs\\
+  \renamelocalsnamedargs(\params) \astarrow \newparams
+}{
+  {
+  \begin{array}{r}
+    \renamelocalsstmt\left(\overname{\SCall\left(
+      {
+        \left\{
+          \begin{array}{rcl}
+         \callname &:& \name, \\
+         \callparams &:& \params, \\
+         \callargs &:& \args, \\
+         \callcalltype &:& \calltype
+        \end{array}
+        \right\}
+        }\right)}{\vs}\right) \astarrow \\
+    \overname{\SCall\left(
+      {
+        \left\{
+          \begin{array}{rcl}
+         \callname &:& \name, \\
+         \callparams &:& \newparams, \\
+         \callargs &:& \newargs, \\
+         \callcalltype &:& \calltype
+        \end{array}
+        \right\}
+        }\right)}{\news}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_return]{
+  \mapopt{\renamelocals}(\ve) \astarrow \vep
+}{
+  \renamelocalsstmt(\overname{\SReturn(\ve)}{\vs}) \astarrow \overname{\SReturn(\vep)}{\news}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_cond]{
+  \renamelocalsexpr(\ve) \astarrow \vep\\
+  \renamelocalsstmt(\vsone) \astarrow \vsonep\\
+  \renamelocalsstmt(\vstwo) \astarrow \vstwop\\
+}{
+  \renamelocalsstmt(\overname{\SCond(\ve, \vsone, \vstwo)}{\vs}) \astarrow
+  \overname{\SCond(\vep, \vsonep, \vstwop)}{\news}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_assert]{
+  \renamelocalsexpr(\ve) \astarrow \vep
+}{
+  \renamelocalsstmt(\overname{\SAssert(\ve)}{\vs}) \astarrow \overname{\SAssert(\vep)}{\news}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_for]{
+  \renamelocalsexpr(\estart) \astarrow \estartp\\
+  \renamelocalsexpr(\eend) \astarrow \eendp\\
+  \renamelocalsstmt(\vbody) \astarrow \vbodyp\\
+  \mapopt{\renamelocalsexpr}(\velimitopt) \astarrow \velimitoptp\\
+}{
+  {
+  \begin{array}{r}
+  \renamelocalsstmt\left(\overname{
+    \SFor\left\{
+    \begin{array}{rcl}
+    \Forindexname  &:& \id,\\
+    \Forstarte     &:& \estart,\\
+    \Fordir        &:& \dir,\\
+    \Forende       &:& \eend,\\
+    \Forbody       &:& \vbody,\\
+    \Forlimit      &:& \velimitopt
+    \end{array}
+  \right\}
+  }{\vs}\right) \astarrow \\
+  \overname{
+    \SFor\left\{
+    \begin{array}{rcl}
+    \Forindexname  &:& \id,\\
+    \Forstarte     &:& \estartp,\\
+    \Fordir        &:& \dir,\\
+    \Forende       &:& \eendp,\\
+    \Forbody       &:& \vbodyp,\\
+    \Forlimit      &:& \velimitoptp
+    \end{array}
+  \right\}
+  }{\news}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_while]{
+  \renamelocalsexpr(\ve) \astarrow \vep\\
+  \mapopt{\renamelocalsexpr}(\vlimit) \astarrow \vlimitp\\
+  \renamelocalsstmt(\vbody) \astarrow \vbodyp\\
+}{
+  \renamelocalsstmt(\overname{\SWhile(\ve, \vlimit, \vbody)}{\vs}) \astarrow
+  \overname{\SWhile(\vep, \vlimitp, \vbodyp)}{\news}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_repeat]{
+  \renamelocalsstmt(\vs) \astarrow \vsp\\
+  \renamelocalsexpr(\ve) \astarrow \vep\\
+  \mapopt{\renamelocalsexpr}(\vlimit) \astarrow \vlimitp\\
+}{
+  \renamelocalsstmt(\overname{\SRepeat(\vs, \ve, \vlimit)}{\vs}) \astarrow
+  \overname{\SRepeat(\vsp, \vep, \vlimitp)}{\news}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_throw]{
+  \mapopt{\renamelocalsexpr}(\veopt) \astarrow \veoptp
+}{
+  \renamelocalsstmt(\overname{\SThrow(\veopt)}{\vs}) \astarrow
+  \overname{\SThrow(\veoptp)}{\news}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_try]{
+  \astlabel(\vs) = \STry
+}{
+  \renamelocalsstmt(\vs) \astarrow \tododefine{not implemented yet}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_print]{
+  \newargs = [\ve\in\args: \renamelocalsexpr(\ve)]
+}{
+  {
+  \begin{array}{r}
+  \renamelocalsstmt(\overname{\SPrint(\args, \vnewline)}{\vs}) \astarrow\\
+  \overname{\SPrint(\newargs, \vnewline)}{\news}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_unreachable]{}{
+  \renamelocalsstmt(\overname{\SUnreachable}{\vs}) \astarrow \overname{\SUnreachable}{\news}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_pragma]{
+  \newargs \eqdef [\ve\in\args: \renamelocalsexpr(\ve)]
+}{
+  \renamelocalsstmt(\overname{\SPragma(\name, \args)}{\vs}) \astarrow \overname{\SPragma(\name, \newargs)}{\news}
+}
+\end{mathpar}
+\CodeSubsection{\RenameLocalsStmtBegin}{\RenameLocalsStmtEnd}{../ASTUtils.ml}
+
+\ASTRuleDef{RenameLocalsExpr}
+\hypertarget{def-renamelocalsexpr}{}
+The helper function
+\[
+\renamelocalsexpr(\overname{\expr}{\ve}) \aslto \overname{\expr}{\newe}
+\]
+renames the local storage elements appearing in the expression $\ve$,
+yielding the expression $\newe$.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{e\_literal}
+  \begin{itemize}
+    \item $\ve$ is a \literalexpressionterm;
+    \item \Proseeqdef{$\newe$}{$\ve$}.
+  \end{itemize}
+
+  \item \AllApplyCase{e\_var}
+  \begin{itemize}
+    \item $\ve$ is a \variableexpression{$\vs$};
+    \item \Proserenamelocalsname{$\vx$}{$\vxp$};
+    \item \Proseeqdef{$\newe$}{the \variableexpression{$\vxp$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{e\_arbitrary}
+  \begin{itemize}
+    \item $\ve$ is a \arbitraryexpression{$\vt$};
+    \item \Proserenamelocalsty{$\vt$}{$\vtp$};
+    \item \Proseeqdef{$\newe$}{the \arbitraryexpression{$\vtp$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{e\_atc}
+  \begin{itemize}
+    \item $\ve$ is a \atcexpression{$\veone$}{$\vt$};
+    \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
+    \item \Proserenamelocalsty{$\vt$}{$\vtp$};
+    \item \Proseeqdef{$\newe$}{the \atcexpression{$\veonep$}{$\vtp$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{e\_binop}
+  \begin{itemize}
+    \item $\ve$ is a \binopexpression{$\op$}{$\veone$}{$\vetwo$};
+    \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
+    \item \Proserenamelocalsexpr{$\vetwo$}{$\vetwop$};
+    \item \Proseeqdef{$\newe$}{the \binopexpression{$\op$}{$\veonep$}{$\vetwop$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{e\_unop}
+  \begin{itemize}
+    \item $\ve$ is a \unopexpression{$\op$}{$\veone$};
+    \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
+    \item \Proseeqdef{$\newe$}{the \unopexpression{$\op$}{$\veonep$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{e\_call}
+  \begin{itemize}
+    \item $\ve$ is a \callexpression{$\name$}{$\params$}{$\args$}{$\calltype$};
+    \item \Proseeqdef{$\newargs$}{the list obtained by applying $\renamelocalsexpr$ to each expression in $\args$};
+    \item \Proseeqdef{$\newparams$}{the list obtained by applying $\renamelocalsexpr$ to each expression in $\params$};
+    \item \Proseeqdef{$\newe$}{the \callexpression{$\name$}{$\newparams$}{$\newargs$}{$\calltype$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{e\_slice}
+  \begin{itemize}
+    \item $\ve$ is a \sliceexpression{$\veone$}{$\vslices$};
+    \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
+    \item \Proseeqdef{$\vslicesp$}{the list obtained by applying $\renamelocalsslice$ to each slice in $\vslices$};
+    \item \Proseeqdef{$\newe$}{the \sliceexpression{$\veonep$}{$\vslicesp$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{e\_cond}
+  \begin{itemize}
+    \item $\ve$ is a \conditionalstatement{$\veone$}{$\vetwo$}{$\vethree$};
+    \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
+    \item \Proserenamelocalsexpr{$\vetwo$}{$\vetwop$};
+    \item \Proserenamelocalsexpr{$\vethree$}{$\vethreep$};
+    \item \Proseeqdef{$\newe$}{the \conditionalstatement{$\veonep$}{$\vetwop$}{$\vethreep$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{e\_getarray}
+  \begin{itemize}
+    \item $\ve$ is a \getarrayexpression{$\veone$}{$\vetwo$};
+    \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
+    \item \Proserenamelocalsexpr{$\vetwo$}{$\vetwop$};
+    \item \Proseeqdef{$\newe$}{the \getarrayexpression{$\veonep$}{$\vetwop$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{e\_getenumarray}
+  \begin{itemize}
+    \item $\ve$ is a \getenumarrayexpression{$\veone$}{$\vetwo$};
+    \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
+    \item \Proserenamelocalsexpr{$\vetwo$}{$\vetwop$};
+    \item \Proseeqdef{$\newe$}{the \getenumarrayexpression{$\veonep$}{$\vetwop$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{e\_getfield}
+  \begin{itemize}
+    \item $\ve$ is a \getfieldexpression{$\veone$}{$\vf$};
+    \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
+    \item \Proseeqdef{$\newe$}{the \getfieldexpression{$\veonep$}{$\vf$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{e\_getfields}
+  \begin{itemize}
+    \item $\ve$ is a \getfieldsexpression{$\veone$}{$\vli$};
+    \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
+    \item \Proseeqdef{$\newe$}{the \getfieldsexpression{$\veonep$}{$\vli$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{e\_getitem}
+  \begin{itemize}
+    \item $\ve$ is a \getitemexpression{$\veone$}{$\vi$};
+    \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
+    \item \Proseeqdef{$\newe$}{the \getitemexpression{$\veonep$}{$\vi$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{e\_record}
+  \begin{itemize}
+    \item $\ve$ is a \recordexpression{$\vt$}{$\vli$};
+    \item \Proserenamelocalsty{$\vt$}{$\vtp$};
+    \item \Proseeqdef{$\newe$}{the \recordexpression{$\vtp$}{$\vli$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{e\_tuple}
+  \begin{itemize}
+    \item $\ve$ is a \tupleexpression{$\vli$};
+    \item \Proseeqdef{$\vlip$}{the list obtained by the application of $\renamelocalsty$ to each type in $\vli$};
+    \item \Proseeqdef{$\newe$}{the \tupleexpression{$\vlip$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{e\_pattern}
+  \begin{itemize}
+    \item $\ve$ is a \patternexpressionterm;
+    \item this case is not implemented.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[e\_literal]{
+  \astlabel(\ve) = \ELiteral
+}{
+  \renamelocalsexpr(\ve) \astarrow \overname{\ve}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_var]{
+  \renamelocalsname(\vx) \astarrow \vxp
+}{
+  \renamelocalsexpr(\overname{\EVar(\vx)}{\ve}) \astarrow \overname{\EVar(\vxp)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_arbitrary]{
+  \renamelocalsty(\vt) \astarrow \vtp
+}{
+  \renamelocalsexpr(\overname{\EArbitrary(\vt)}{\ve}) \astarrow \overname{\EArbitrary(\vtp)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_atc]{
+  \renamelocalsexpr(\veone) \astarrow \veonep\\
+  \renamelocalsty(\vt) \astarrow \vtp
+}{
+  \renamelocalsexpr(\overname{\EATC(\veone, \vt)}{\ve}) \astarrow \overname{\EATC(\veonep, \vtp)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_binop]{
+  \renamelocalsexpr(\veone) \astarrow \veonep\\
+  \renamelocalsexpr(\vetwo) \astarrow \vetwop\\
+}{
+  \renamelocalsexpr(\overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \astarrow \overname{\EBinop(\op, \veonep, \vetwop)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_unop]{
+  \renamelocalsexpr(\veone) \astarrow \veonep
+}{
+  \renamelocalsexpr(\overname{\EUnop(\op, \veone)}{\ve}) \astarrow \overname{\EUnop(\op, \veonep)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_call]{
+  \newargs \eqdef [\ve\in\args: \renamelocalsexpr(\ve)]\\
+  \newparams \eqdef [\ve\in\params: \renamelocalsexpr(\ve)]
+}{
+  {
+  \begin{array}{r}
+  \renamelocalsexpr(\overname{
+    \ECall\left(
+      {
+        \left\{
+          \begin{array}{rcl}
+         \callname &:& \name, \\
+         \callparams &:& \params, \\
+         \callargs &:& \args, \\
+         \callcalltype &:& \calltype
+        \end{array}
+        \right\}
+        }\right)}{\ve}) \astarrow \\
+    \overname{
+      \ECall\left(
+      {
+        \left\{
+          \begin{array}{rcl}
+         \callname &:& \name, \\
+         \callparams &:& \newparams, \\
+         \callargs &:& \newargs, \\
+         \callcalltype &:& \calltype
+        \end{array}
+        \right\}
+        }\right)
+    }{\newe}
+      \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_slice]{
+  \renamelocalsexpr(\veone) \astarrow \veonep\\
+  \vslicesp \eqdef [\vs \in \vslices: \renamelocalsslice(\vs)]
+}{
+  \renamelocalsexpr(\overname{\ESlice(\veone, \vslices)}{\ve}) \astarrow \overname{\ESlice(\veonep, \vslicesp)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_cond]{
+  \renamelocalsexpr(\veone) \astarrow \veonep\\
+  \renamelocalsexpr(\vetwo) \astarrow \vetwop\\
+  \renamelocalsexpr(\vethree) \astarrow \vethreep\\
+}{
+  \renamelocalsexpr(\overname{\ECond(\veone, \vetwo, \vethree)}{\ve}) \astarrow \overname{\ECond(\veonep, \vetwop, \vethreep)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_getarray]{
+  \renamelocalsexpr(\veone) \astarrow \veonep\\
+  \renamelocalsexpr(\vetwo) \astarrow \vetwop
+}{
+  \renamelocalsexpr(\overname{\EGetArray(\veone, \vetwo)}{\ve}) \astarrow \overname{\EGetArray(\veonep, \vetwop)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_getenumarray]{
+  \renamelocalsexpr(\veone) \astarrow \veonep\\
+  \renamelocalsexpr(\vetwo) \astarrow \vetwop
+}{
+  \renamelocalsexpr(\overname{\EGetEnumArray(\veone, \vetwo)}{\ve}) \astarrow \overname{\EGetEnumArray(\veonep, \vetwop)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_getfield]{
+  \renamelocalsexpr(\veone) \astarrow \veonep
+}{
+  \renamelocalsexpr(\overname{\EGetField(\veone, \vf)}{\ve}) \astarrow \overname{\EGetField(\veone, \vf)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_getfields]{
+  \renamelocalsexpr(\veone) \astarrow \veonep
+}{
+  \renamelocalsexpr(\overname{\EGetFields(\veone, \vli)}{\ve}) \astarrow \overname{\EGetFields(\veonep, \vli)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_getitem]{
+  \renamelocalsexpr(\veone) \astarrow \veonep
+}{
+  \renamelocalsexpr(\overname{\EGetItem(\veone, \vi)}{\ve}) \astarrow \overname{\EGetItem(\veonep, \vi)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_record]{
+  \renamelocalsty(\vy) \astarrow \vtp
+}{
+  \renamelocalsexpr(\overname{\ERecord(\vt, \vli)}{\ve}) \astarrow \overname{\ERecord(\vtp, \vli)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_tuple]{
+  \vlip \eqdef [\ve\in\vli: \renamelocalsexpr(\ve)]
+}{
+  \renamelocalsexpr(\overname{\ETuple(\vli)}{\ve}) \astarrow \overname{\ETuple(\vlip)}{\newe}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[e\_pattern]{}{
+  \renamelocalsexpr(\overname{\EPattern(\Ignore, \Ignore)}{\ve}) \astarrow \tododefine{not implemented yet}
+}
+\end{mathpar}
+
+\CodeSubsection{\RenameLocalsExprBegin}{\RenameLocalsExprEnd}{../ASTUtils.ml}
+
+\ASTRuleDef{RenameLocalsLexpr}
+\hypertarget{def-renamelocalslexpr}{}
+The helper function
+\[
+\renamelocalslexpr(\overname{\lexpr}{\vle}) \aslto \overname{\lexpr}{\newle}
+\]
+renames the local storage elements appearing in the \assignableexpression\ $\vle$,
+yielding the \assignableexpression\ $\newle$.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{le\_discard}
+  \begin{itemize}
+    \item $\vle$ is a \discardlexprterm;
+    \item \Proseeqdef{$\newle$}{$\vle$}.
+  \end{itemize}
+
+  \item \AllApplyCase{le\_var}
+  \begin{itemize}
+    \item $\vle$ is an \varlexpr{$\vx$};
+    \item \Proserenamelocalsname{$\vx$}{$\vxp$};
+    \item \Proseeqdef{$\newle$}{the \varlexpr{$\vxp$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{le\_slice}
+  \begin{itemize}
+    \item $\vle$ is an \slicelexpr{$\vleone$}{$\vslices$};
+    \item \Proserenamelocalslexpr{$\vleone$}{$\vleonep$};
+    \item \Proseeqdef{$\vslicesp$}{the list obtained by applying $\renamelocalsslice$ to each slice in $\vslices$};
+    \item \Proseeqdef{$\newle$}{the \slicelexpr{$\vleonep$}{$\vslicesp$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{le\_setarray}
+  \begin{itemize}
+    \item $\vle$ is an \setarraylexpr{$\vleone$}{$\vi$};
+    \item \Proserenamelocalslexpr{$\vle$}{$\vlep$};
+    \item \Proserenamelocalsexpr{$\vi$}{$\vip$};
+    \item \Proseeqdef{$\newle$}{the \setarraylexpr{$\vleonep$}{$\vip$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{le\_setfield}
+  \begin{itemize}
+    \item $\vle$ is an \setfield{$\vleone$}{$\vf$};
+    \item \Proserenamelocalslexpr{$\vle$}{$\vlep$};
+    \item \Proseeqdef{$\newle$}{the \setfield{$\vleonep$}{$\vf$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{le\_setfields}
+  \begin{itemize}
+    \item $\vle$ is an \setfieldslexpr{$\vleone$}{$\vfl$};
+    \item \Proserenamelocalslexpr{$\vle$}{$\vlep$};
+    \item \Proseeqdef{$\newle$}{the \setfieldslexpr{$\vleonep$}{$\vfl$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{le\_destructuring}
+  \begin{itemize}
+    \item $\vle$ is an \destructuringlexpr{$\vles$};
+    \item \Proseeqdef{$\vlesp$}{the list obtained by applying $\renamelocalslexpr$\\ to each assignable expression in $\vles$};
+    \item \Proseeqdef{$\newle$}{the \destructuringlexpr{$\vlesp$}}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[le\_discard]{}{
+  \renamelocalslexpr(\overname{\LEDiscard}{\vle}) \astarrow \overname{\LEDiscard}{\newle}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[le\_var]{
+  \renamelocalsname(\vx) \astarrow \vxp
+}{
+  \renamelocalslexpr(\overname{\LEVar(\vx)}{\vle}) \astarrow \overname{\LEVar(\vxp)}{\newle}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[le\_slice]{
+  \renamelocalslexpr(\vleone) \astarrow \vleonep\\
+  \vslicesp \eqdef [\vs\in\vslices: \renamelocalsslice(\vs)]
+}{
+  \renamelocalslexpr(\overname{\LESlice(\vleone, \vslices)}{\vle}) \astarrow \overname{\LESlice(\vlep, \vslicesp)}{\newle}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[le\_setarray]{
+  \renamelocalslexpr(\vleone) \astarrow \vleonep\\
+  \renamelocalsexpr(\vi) \astarrow \vip\\
+}{
+  \renamelocalslexpr(\overname{\LESetArray(\vleone, \vi)}{\vle}) \astarrow \overname{\LESetArray(\vleonep, \vip)}{\newle}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[le\_setfield]{
+  \renamelocalslexpr(\vleone) \astarrow \vleonep
+}{
+  \renamelocalslexpr(\overname{\LESetField(\vleone, \vf)}{\vle}) \astarrow \overname{\LESetField(\vleonep, \vf)}{\newle}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[le\_setfields]{
+  \renamelocalslexpr(\vleone) \astarrow \vleonep
+}{
+  \renamelocalslexpr(\overname{\LESetFields(\vleone, \vfl)}{\vle}) \astarrow \overname{\LESetFields(\vleonep, \vfl)}{\newle}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[le\_destructuring]{
+  \vlesp \eqdef [\vl\in\vles: \renamelocalslexpr(\vl)]
+}{
+  \renamelocalslexpr(\overname{\LEDestructuring(\vles)}{\vle}) \astarrow \overname{\LEDestructuring(\vlesp)}{\newle}
+}
+\end{mathpar}
+
+\ASTRuleDef{RenameLocalsLDI}
+\hypertarget{def-renamelocalsldi}{}
+The helper function
+\[
+\renamelocalsldi(\overname{\localdeclarationitem}{\ldi}) \aslto \overname{\localdeclarationitem}{\newldi}
+\]
+renames the local storage elements appearing in the local declaration item $\ldi$,
+yielding the local declaration item $\newldi$.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{var}
+  \begin{itemize}
+    \item $\ldi$ is a local declaration item for the identifier $\vx$;
+    \item \Proserenamelocalsname{$\vx$}{$\vxp$};
+    \item \Proseeqdef{$\newldi$}{the local declaration item for the identifier $\vxp$}.
+  \end{itemize}
+
+  \item \AllApplyCase{tuple}
+  \begin{itemize}
+    \item $\ldi$ is a local declaration item for the tuple of identifiers $\names$;
+    \item \Proseeqdef{$\namesp$}{the list obtained by applying $\renamelocalsname$ to each identifier in $\names$};
+    \item \Proseeqdef{$\newldi$}{the local declaration item for the tuple of identifiers $\namesp$}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[var]{}{
+  \renamelocalsldi(\overname{\LDIVar(\vx)}{\ldi}) \astarrow \overname{\LDIVar(\vxp)}{\newldi}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[tuple]{
+  \namesp \eqdef [\name\in\names: \renamelocalsname(\name)]
+}{
+  \renamelocalsldi(\overname{\LDITuple(\names)}{\ldi}) \astarrow \overname{\LDITuple(\namesp)}{\newldi}
+}
+\end{mathpar}
+
+\ASTRuleDef{RenameLocalsConstraint}
+\hypertarget{def-renamelocalsconstraint}{}
+The helper function
+\[
+\renamelocalsconstraint(\overname{\intconstraint}{\vc}) \aslto \overname{\intconstraint}{\newc}
+\]
+renames the local storage elements appearing in the constraint $\vc$,
+yielding the constraint $\newc$.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{exact}
+  \begin{itemize}
+    \item $\vx$ is a \Proseconstraintexact{$\ve$};
+    \item \Proserenamelocals{$\ve$}{$\vep$};
+    \item \Proseeqdef{$\newc$}{\Proseconstraintexact{$\vep$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{range}
+  \begin{itemize}
+    \item $\vx$ is a \Proseconstraintrange{$\veone$}{$\vetwo$};
+    \item \Proserenamelocals{$\veone$}{$\veonep$};
+    \item \Proserenamelocals{$\vetwo$}{$\vetwop$};
+    \item \Proseeqdef{$\newc$}{\Proseconstraintrange{$\veonep$}{$\vetwop$}}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[exact]{
+  \renamelocalsexpr(\ve) \astarrow \vep
+}{
+  \renamelocalsconstraint(\overname{\ConstraintExact(\ve)}{\vc}) \astarrow \overname{\ConstraintExact(\vep)}{\newc}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range]{
+  \renamelocalsexpr(\veone) \astarrow \veonep\\
+  \renamelocalsexpr(\vetwo) \astarrow \vetwop\\
+}{
+  \renamelocalsconstraint(\overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \astarrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
+}
+\end{mathpar}
+
+\ASTRuleDef{RenameLocalsSlice}
+\hypertarget{def-renamelocalsslice}{}
+The helper function
+\[
+\renamelocalsslice(\overname{\slice}{\vslice}) \aslto \overname{\slice}{\vnewslice}
+\]
+renames the local storage elements appearing in the slice $\vslice$,
+yielding $\vnewslice$.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{single}
+  \begin{itemize}
+    \item $\vslice$ is the slice of the single expression $\ve$;
+    \item \Proserenamelocalsexpr{$\ve$}{$\vep$};
+    \item \Proseeqdef{$\vnewslice$}{the slice of the single expression $\vep$};
+  \end{itemize}
+
+  \item \AllApplyCase{non\_single}
+  \begin{itemize}
+    \item $\vslice$ is a slice over two expression $\veone$ and $\vetwo$ with AST label \\
+          $S \in \{\SliceLength, \SliceRange, \SliceStar\}$;
+    \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
+    \item \Proserenamelocalsexpr{$\vetwo$}{$\vetwop$};
+    \item \Proseeqdef{$\vnewslice$}{the slice with AST label $S$ over the two expression $\veonep$ and $\vetwop$};
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[single]{
+  \renamelocalsexpr(\ve) \astarrow \vep
+}{
+\renamelocalsslice(\overname{\SliceSingle(\ve)}{\vslice}) \astarrow \overname{\SliceSingle(\vep)}{\vnewslice}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_single]{
+  S \in \{\SliceLength, \SliceRange, \SliceStar\}
+  \renamelocalsexpr(\veone) \astarrow \veonep\\
+  \renamelocalsexpr(\vetwo) \astarrow \vetwop\\
+}{
+\renamelocalsslice(\overname{S(\veone, \vetwo)}{\vslice}) \astarrow \overname{S(\veonep, \vetwop)}{\vnewslice}
+}
+\end{mathpar}
+
+\ASTRuleDef{RenameLocalsName}
+\hypertarget{def-renamelocalsname}{}
+The helper function
+\[
+\renamelocalsname(\overname{\identifier}{\name}) \aslto \overname{\identifier}{\newname}
+\]
+renames the local identifier $\name$,
+yielding the identifier $\newname$.
+
+\ProseParagraph
+\Proseeqdef{$\newname$}{the string concatenation of \texttt{\_\_stdlib\_local\_} and $\name$}.
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{}{
+  \renamelocalsname(\name) \astarrow \overname{\texttt{\_\_stdlib\_local\_}\ \stringconcat\ \name}{\newname}
+}
+\end{mathpar}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Beginning of rename locals-related functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Marking Standard Library Functions}
+
+\ASTRuleDef{SetBuiltin}
 \hypertarget{def-setbuiltin}{}
+The helper function
 \[
   \setbuiltin(\overname{\decl}{\vdecl}) \aslto
   \overname{\decl}{\vdeclp}
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \cup \overname{\TBuildError}{\BuildErrorConfig}
 \]
-sets the $\funcbuiltin$ flag of a top-level function declaration, which is used to identify standard library functions in \secref{TypingRule.InsertStdlibParam}.
-It produces a type error when given a top-level declaration which is not a function.
+sets the $\funcbuiltin$ flag of a top-level function declaration, which is used to identify standard library functions in \TypingRuleRef{InsertStdlibParam}.
+It produces a build error when given a top-level declaration which is not a function.
 
 \subsubsection{Prose}
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item \Prosechecktrans{that $\vdecl$ is a function}{\BuiltinExpectedToBeFunction};
   \item view $\vdecl$ as $\DFunc(\funcsig)$;
@@ -97,10 +1415,10 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \checktrans{\astlabel(\vdecl) = \DFunc}{\BuiltinExpectedToBeFunction} \typearrow \True \OrTypeError\\\\
+  \checktrans{\astlabel(\vdecl) = \DFunc}{\BuiltinExpectedToBeFunction} \typearrow \True \terminateas \BuildErrorConfig\\\\
   \vdecl \eqname \DFunc(\funcsig)\\
   \funcsigp \eqdef \funcsig[\funcbuiltin \mapsto \True]
 }{
-  \setbuiltin(\vdecl) \typearrow \DFunc(\funcsigp)
+  \setbuiltin(\vdecl) \astarrow \DFunc(\funcsigp)
 }
 \end{mathpar}

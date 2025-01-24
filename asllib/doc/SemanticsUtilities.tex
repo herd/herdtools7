@@ -7,27 +7,27 @@ In this chapter, we define helper relations for operating on \nativevalues,
 
 We now define the following relations:
 \begin{itemize}
-  \item SemanticsRule.GetStackSize (see \secref{SemanticsRule.GetStackSize})
-  \item SemanticsRule.SetStackSize (see \secref{SemanticsRule.SetStackSize})
-  \item SemanticsRule.IncrStackSize (see \secref{SemanticsRule.IncrStackSize})
-  \item SemanticsRule.DecrStackSize (see \secref{SemanticsRule.DecrStackSize})
-  \item SemanticsRule.RemoveLocal \secref{SemanticsRule.RemoveLocal};
-  \item SemanticsRule.ReadIdentifier \secref{SemanticsRule.ReadIdentifier};
-  \item SemanticsRule.WriteIdentifier \secref{SemanticsRule.WriteIdentifier};
-  \item SemanticsRule.CreateBitvector \secref{SemanticsRule.CreateBitvector};
-  \item SemanticsRule.ConcatBitvectors \secref{SemanticsRule.ConcatBitvectors};
-  \item SemanticsRule.ReadFromBitvector \secref{SemanticsRule.ReadFromBitvector};
-  \item SemanticsRule.WriteToBitvector \secref{SemanticsRule.WriteToBitvector};
-  \item SemanticsRule.GetIndex \secref{SemanticsRule.GetIndex};
-  \item SemanticsRule.SetIndex \secref{SemanticsRule.SetIndex};
-  \item SemanticsRule.GetField \secref{SemanticsRule.GetField};
-  \item SemanticsRule.SetField \secref{SemanticsRule.SetField};
-  \item SemanticsRule.DeclareLocalIdentifier \secref{SemanticsRule.DeclareLocalIdentifier};
-  \item SemanticsRule.DeclareLocalIdentifierM\secref{SemanticsRule.DeclareLocalIdentifierM};
-  \item SemanticsRule.DeclareLocalIdentifierMM \secref{SemanticsRule.DeclareLocalIdentifierMM};
+  \item \SemanticsRuleRef{GetStackSize}
+  \item \SemanticsRuleRef{SetStackSize}
+  \item \SemanticsRuleRef{IncrStackSize}
+  \item \SemanticsRuleRef{DecrStackSize}
+  \item \SemanticsRuleRef{RemoveLocal};
+  \item \SemanticsRuleRef{ReadIdentifier};
+  \item \SemanticsRuleRef{WriteIdentifier};
+  \item \SemanticsRuleRef{CreateBitvector};
+  \item \SemanticsRuleRef{ConcatBitvectors};
+  \item \SemanticsRuleRef{ReadFromBitvector};
+  \item \SemanticsRuleRef{WriteToBitvector};
+  \item \SemanticsRuleRef{GetIndex};
+  \item \SemanticsRuleRef{SetIndex};
+  \item \SemanticsRuleRef{GetField};
+  \item \SemanticsRuleRef{SetField};
+  \item \SemanticsRuleRef{DeclareLocalIdentifier};
+  \item \SemanticsRuleRef{DeclareLocalIdentifierM};
+  \item \SemanticsRuleRef{DeclareLocalIdentifierMM};
 \end{itemize}
 
-\subsubsection{SemanticsRule.GetStackSize\label{sec:SemanticsRule.GetStackSize}}
+\SemanticsRuleDef{GetStackSize}
 \hypertarget{def-getstacksize}{}
 The function
 \[
@@ -48,7 +48,7 @@ $\name$ in $\denv.\stacksize$ otherwise.
 }
 \end{mathpar}
 
-\subsubsection{SemanticsRule.SetStackSize\label{sec:SemanticsRule.SetStackSize}}
+\SemanticsRuleDef{SetStackSize}
 \hypertarget{def-setstacksize}{}
 The function
 \[
@@ -67,7 +67,7 @@ define $\newdenv$ as $\genv$ updated to bind $\name$ to $\vv$ in $\genv.\stacksi
 }
 \end{mathpar}
 
-\subsubsection{SemanticsRule.IncrStackSize\label{sec:SemanticsRule.IncrStackSize}}
+\SemanticsRuleDef{IncrStackSize}
 \hypertarget{def-incrstacksize}{}
 The function
 \[
@@ -93,7 +93,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{SemanticsRule.DecrStackSize\label{sec:SemanticsRule.DecrStackSize}}
+\SemanticsRuleDef{DecrStackSize}
 \hypertarget{def-decrstacksize}{}
 The function
 \[
@@ -120,7 +120,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{SemanticsRule.RemoveLocal \label{sec:SemanticsRule.RemoveLocal}}
+\SemanticsRuleDef{RemoveLocal}
 \subsubsection{Prose}
 The relation
 \hypertarget{def-removelocal}{}
@@ -150,7 +150,7 @@ is the environment $\newenv$ and all of the following apply:
   }
 \end{mathpar}
 
-\subsubsection{SemanticsRule.ReadIdentifier \label{sec:SemanticsRule.ReadIdentifier}}
+\SemanticsRuleDef{ReadIdentifier}
 \subsubsection{Prose}
 The relation
 \hypertarget{def-readidentifier}{}
@@ -169,7 +169,7 @@ which denotes reading from $\name$.
   }
 \end{mathpar}
 
-\subsubsection{SemanticsRule.WriteIdentifier \label{sec:SemanticsRule.WriteIdentifier}}
+\SemanticsRuleDef{WriteIdentifier}
 \subsubsection{Prose}
 The relation
 \hypertarget{def-writeidentifier}{}
@@ -188,7 +188,7 @@ which denotes writing into $\name$.
   }
 \end{mathpar}
 
-\subsubsection{SemanticsRule.CreateBitvector \label{sec:SemanticsRule.CreateBitvector}}
+\SemanticsRuleDef{CreateBitvector}
 \subsubsection{Prose}
 \hypertarget{def-createbitvector}{}
 The relation
@@ -205,7 +205,7 @@ creates a native vector value bitvector from a sequence of values $\vvs$.
   }
 \end{mathpar}
 
-\subsubsection{SemanticsRule.ConcatBitvectors \label{sec:SemanticsRule.ConcatBitvectors}}
+\SemanticsRuleDef{ConcatBitvectors}
 \hypertarget{def-concatbitvector}{}
 The relation
 \[
@@ -235,7 +235,7 @@ Define $\newvs$ as the concatenation of bitvectors listed in $\vvs$.
   }
 \end{mathpar}
 
-\subsubsection{SemanticsRule.ReadFromBitvector \label{sec:SemanticsRule.ReadFromBitvector}}
+\SemanticsRuleDef{ReadFromBitvector}
 \hypertarget{def-readfrombitvector}{}
 The relation
 \[
@@ -331,7 +331,7 @@ from all of the given slices.
 Also notice that bitvector bits are numbered from 1 and onwards, which is why we add 1 to the indices specified
 by the slices when accessing a bit.
 
-\subsubsection{SemanticsRule.WriteToBitvector \label{sec:SemanticsRule.WriteToBitvector}}
+\SemanticsRuleDef{WriteToBitvector}
 \subsubsection{Prose}
 \hypertarget{def-writetobitvector}{}
 The relation
@@ -369,7 +369,7 @@ and one of the following applies:
   }
 \end{mathpar}
 
-\subsubsection{SemanticsRule.GetIndex \label{sec:SemanticsRule.GetIndex}}
+\SemanticsRuleDef{GetIndex}
 \subsubsection{Prose}
 The relation
 \hypertarget{def-getindex}{}
@@ -399,7 +399,7 @@ this is guaranteed by the type-checker not to happen. Specifically,
 \end{itemize}
 If the rules listed above do not hold the type checker fails.
 
-\subsubsection{SemanticsRule.SetIndex \label{sec:SemanticsRule.SetIndex}}
+\SemanticsRuleDef{SetIndex}
 \subsubsection{Prose}
 The relation
 \hypertarget{def-setindex}{}
@@ -423,7 +423,7 @@ overwrites the value at the given index $\vi$ in a vector of values $\vvec$ with
 \end{mathpar}
 Similar to $\getindex$, there is no need to handle the out-of-range index case.
 
-\subsubsection{SemanticsRule.GetField \label{sec:SemanticsRule.GetField}}
+\SemanticsRuleDef{GetField}
 \subsubsection{Prose}
 The relation
 \hypertarget{def-getfield}{}
@@ -441,9 +441,9 @@ retrieves the value corresponding to the field name $\name$ from the record valu
     \getfield(\name, \record) \evalarrow \fieldmap(\name)
   }
 \end{mathpar}
-The type-checker ensures, via TypingRule.EGetRecordField, that the field $\name$ exists in $\record$.
+The type-checker ensures, via \TypingRuleRef{EGetRecordField}, that the field $\name$ exists in $\record$.
 
-\subsubsection{SemanticsRule.SetField \label{sec:SemanticsRule.SetField}}
+\SemanticsRuleDef{SetField}
 \subsubsection{Prose}
 The function
 \hypertarget{def-setfield}{}
@@ -464,7 +464,7 @@ overwrites the value corresponding to the field name $\name$ in the record value
 \end{mathpar}
 The type-checker ensures that the field $\name$ exists in $\record$.
 
-\subsubsection{SemanticsRule.DeclareLocalIdentifier \label{sec:SemanticsRule.DeclareLocalIdentifier}}
+\SemanticsRuleDef{DeclareLocalIdentifier}
 \subsubsection{Prose}
 The relation
 \hypertarget{def-declarelocalidentifier}{}
@@ -485,7 +485,7 @@ returns the updated environment $\newenv$ with the execution graph consisting of
   { \declarelocalidentifier(\env, \name, \vv) \evalarrow (\newenv, \vg)  }
 \end{mathpar}
 
-\subsubsection{SemanticsRule.DeclareLocalIdentifierM \label{sec:SemanticsRule.DeclareLocalIdentifierM}}
+\SemanticsRuleDef{DeclareLocalIdentifierM}
 \subsubsection{Prose}
 \hypertarget{def-declarelocalidentifierm}{}
 The relation
@@ -516,7 +516,7 @@ of the value-graph pair $(\vv, \vg)$, and all of the following apply:
   }
 \end{mathpar}
 
-\subsubsection{SemanticsRule.DeclareLocalIdentifierMM \label{sec:SemanticsRule.DeclareLocalIdentifierMM}}
+\SemanticsRuleDef{DeclareLocalIdentifierMM}
 \subsubsection{Prose}
 \hypertarget{def-declarelocalidentifermm}{}
 The relation

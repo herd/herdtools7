@@ -23,7 +23,7 @@ annotates a block statement $\vs$ in static environment $\tenv$ and returns the 
 statement $\newstmt$ and inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
-\subsubsection{TypingRule.Block\label{sec:TypingRule.Block}}
+\TypingRuleDef{Block}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -63,7 +63,7 @@ The relation
 evaluates a statement $\stm$ as a \emph{block}. That is, $\stm$ is evaluated in a fresh local environment,
 which drops back to the original local environment of $\env$ when the evaluation terminates.
 
-\subsubsection{SemanticsRule.Block\label{sec:SemanticsRule.Block}}
+\SemanticsRuleDef{Block}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}

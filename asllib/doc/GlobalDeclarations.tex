@@ -13,7 +13,8 @@ The typing of global declarations is defined in \secref{GlobalDeclarationsTyping
 As the only kind of global declarations that are associated with semantics are global storage declarations,
 their semantics is given in \secref{GlobalStorageDeclarationsSemantics}.
 
-Global pragmas behave the same as statement pragmas described in \secref{PragmaSemantics}.
+Global pragmas are statically checked by the type checker, but do not produce type AST nodes,
+and thus are not associated with a dynamic semantics.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Syntax}
@@ -35,8 +36,8 @@ Type declarations:
 
 Global storage declarations:
 \begin{flalign*}
-\Ndecl  \derives \ & \Nglobaldeclkeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
-    & \wrappedline\ \Nexpr \parsesep \Tsemicolon &\\
+\Ndecl  \derives \ & \Nglobaldeclkeyword \parsesep \Nignoredoridentifier \parsesep &\\
+    & \wrappedline\ \option{\Tcolon \parsesep \Nty} \parsesep \Teq \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&\\
 \end{flalign*}
 
@@ -55,7 +56,6 @@ Pragmas:
   |\ & \DPragma(\Tidentifier, \overtext{\expr^*}{args}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.GlobalDecl\label{sec:ASTRule.GlobalDecl}}
 \hypertarget{build-decl}{}
 The relation
 \[
@@ -63,6 +63,14 @@ The relation
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
+The case rules for building global declarations are the following:
+\begin{itemize}
+  \item \ASTRuleRef{GlobalStorageDecl} for global storage declarations
+  \item \ASTRuleRef{TypeDecl} for type declarations
+  \item \ASTRuleRef{GlobalPragma} for global pragmas
+\end{itemize}
+
+\ASTRuleDef{GlobalPragma}
 \begin{mathpar}
 \inferrule[global\_pragma]{
   \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
@@ -90,14 +98,14 @@ annotates a global declaration $\vd$ in the global static environment $\genv$,
 yielding an annotated global declaration $\newd$ and modified global static environment $\newgenv$.
 \ProseOtherwiseTypeError
 
-\subsubsection{TypingRule.TypecheckDecl\label{sec:TypingRule.TypecheckDecl}}
+\TypingRuleDef{TypecheckDecl}
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{func}):
   \begin{itemize}
     \item $\vd$ is a subprogram AST node with a subprogram definition $\vf$, that is, $\DFunc(\vf)$;
-    \item annotating and declaring the subprogram for $\vf$ in $\genv$ as per \secref{TypingRule.AnnotateAndDeclareFunc}
+    \item annotating and declaring the subprogram for $\vf$ in $\genv$ as per \TypingRuleRef{AnnotateAndDeclareFunc}
           yields the environment $\tenvone$ and a subprogram definition $\vfone$\ProseOrTypeError;
     \item \Proseannotatesubprogram{$\vfone$}{$\tenv$}{$\vftwo$\ProseOrTypeError};
     \item applying $\addsubprogram$ to bind $\vftwo.\funcname$ to $\vftwo$ in $\tenvone$ yields $\newtenv$;
@@ -118,7 +126,7 @@ One of the following applies:
     \item $\vd$ is a type declaration with identifier $\vx$, type $\tty$,
           and \optional\ field initializers $\vs$, that is, $\DTypeDecl(\vx, \tty, \vs)$;
     \item declaring the type described by $(\vx, \tty, \vs)$ in $\genv$
-          as per \secref{TypingRule.DeclaredType} yields the modified global static environment $\newgenv$\ProseOrTypeError;
+          as per \TypingRuleRef{DeclaredType} yields the modified global static environment $\newgenv$\ProseOrTypeError;
     \item define $\newd$ as $\vd$.
   \end{itemize}
 \end{itemize}
@@ -158,7 +166,7 @@ One of the following applies:
 \end{mathpar}
 \CodeSubsection{\TypecheckDeclBegin}{\TypecheckDeclEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.Subprogram\label{sec:TypingRule.Subprogram}}
+\TypingRuleDef{Subprogram}
 \hypertarget{def-annotatesubprogram}{}
 The function
 \[
@@ -228,7 +236,7 @@ This is related to \identi{GHGK}, \identr{HWTV}, \identr{SCHV}, \identr{VDPC},
 }
 \CodeSubsection{\SubprogramBegin}{\SubprogramEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.CheckStmtReturnsOrThrows\label{sec:TypingRule.CheckStmtReturnsOrThrows}}
+\TypingRuleDef{CheckStmtReturnsOrThrows}
 \hypertarget{def-checkstmtreturnsorthrows}{}
 The helper function
 \[
@@ -256,12 +264,17 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ControlFlowFromStmt\label{sec:TypingRule.ControlFlowFromStmt}}
+\TypingRuleDef{ControlFlowFromStmt}
 \hypertarget{def-controlflowsymbolterm}{}
 \hypertarget{def-controlflowstate}{}
-We define \controlflowsymbolterm\ as follows:
+We define \controlflowsymbolsterm\ as follows:
 \[
   \controlflowstate \eqdef \{\assertednotinterrupt, \interrupt, \maynotinterrupt\}
+\]
+\hypertarget{def-controlflowleq}{}
+\controlflowsymbolsterm\ are totally ordered via the relation $\controlflowleq$, defined as follows:
+\[
+  \assertednotinterrupt\ \controlflowleq \interrupt \controlflowleq \maynotinterrupt \enspace.
 \]
 
 \hypertarget{def-controlflowfromstmt}{}
@@ -307,7 +320,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{s\_seq}):
   \begin{itemize}
-    \item $\vs$ is the sequence statement for $\vsone$ and $\vstwo$;
+    \item $\vs$ is the \sequencingstatementterm\ for $\vsone$ and $\vstwo$;
     \item applying $\controlflowfromstmt$ to $\vsone$ yields $\vctrlflowone$;
     \item applying $\controlflowfromstmt$ to $\vstwo$ yields $\vctrlflowtwo$;
     \item applying $\controlflowseq$ to $\vctrlflowone$ and $\vctrlflowtwo$ yields $\vctrlflow$.
@@ -315,7 +328,7 @@ One of the following applies:
 
   \item All of the following apply (\textsc{s\_cond}):
   \begin{itemize}
-    \item $\vs$ is the condition statement for an expression and statements $\vsone$ and $\vstwo$;
+    \item $\vs$ is the \conditionalstatementterm\ for an expression and statements $\vsone$ and $\vstwo$;
     \item applying $\controlflowfromstmt$ to $\vsone$ yields $\vctrlflowone$;
     \item applying $\controlflowfromstmt$ to $\vstwo$ yields $\vctrlflowtwo$;
     \item applying $\controlflowjoin$ to $\vctrlflowone$ and $\vctrlflowtwo$ yields $\vctrlflow$.
@@ -323,20 +336,29 @@ One of the following applies:
 
   \item All of the following apply (\textsc{s\_while\_for}):
   \begin{itemize}
-    \item $\vs$ is either a \texttt{while} statement or a \texttt{for};
+    \item $\vs$ is either a \whilestatementterm\ or a \forstatementterm;
     \item define $\vctrlflow$ as $\maynotinterrupt$.
   \end{itemize}
 
   \item All of the following apply (\textsc{s\_repeat}):
   \begin{itemize}
-    \item $\vs$ is the \texttt{repeat} statement for the statement $\vbody$;
+    \item $\vs$ is the \repeatstatementterm\ with the body statement $\vbody$;
     \item applying $\controlflowfromstmt$ to $\vbody$ yields $\vctrlflow$.
   \end{itemize}
 
   \item All of the following apply (\textsc{s\_try}):
   \begin{itemize}
-    \item $\vs$ is the \texttt{try} statement for the statement $\vbody$;
-    \item applying $\controlflowfromstmt$ to $\vbody$ yields $\vctrlflow$.
+    \item $\vs$ is the \trystatement{$\vbody$}{\\ $\catchers$}{$\votherwiseopt$};
+    \item applying $\controlflowfromstmt$ to $\vbody$ yields $\vreszero$;
+    \item \Proseeqdef{$\vresone$}{
+          the application of $\controlflowjoin$ to $\controlflowfromstmt(\vo)$
+          and $\vreszero$, if $\votherwiseopt = \langle\vo\rangle$,
+          and $\vreszero$, otherwise};
+    \item for each catcher in $\catchers$ associated with a statement $\vs$,
+          applying \\
+          $\controlflowfromstmt$ to $\vs$ yields $\vcf_\vs$;
+    \item \Proseeqdef{$\vctrlflow$}{the application of $\controlflowjoin$ to $\vresone$,
+          and $\vcf_\vs$, for each catcher in $\catchers$ associated with a statement $\vs$}.
   \end{itemize}
 \end{itemize}
 
@@ -377,7 +399,7 @@ One of the following applies:
 \inferrule[s\_cond]{
   \controlflowfromstmt(\vsone) \typearrow \vctrlflowone\\
   \controlflowfromstmt(\vstwo) \typearrow \vctrlflowtwo\\
-  \controlflowjoin(\vctrlflowone, \vctrlflowtwo) \typearrow \vctrlflow
+  \controlflowjoin(\{\vctrlflowone, \vctrlflowtwo\}) \typearrow \vctrlflow
 }{
   \controlflowfromstmt(\overname{\SCond(\Ignore, \vsone, \vstwo)}{\vs}) \typearrow \vctrlflow
 }
@@ -389,8 +411,9 @@ The reasoning for the next case is as follows:
     a $\SWhile$ loop, and a $\SFor$ are like a conditional statement that either executes
     $\SPass$ (when the loop condition does not hold) or executes the body and then loops back.
   \item The control flow state for $\SPass$ is $\maynotinterrupt$.
-  \item The overall control flow state is then $\controlflowjoin(\maynotinterrupt, \Ignore)$,
-    which is always $\maynotinterrupt$.
+  \item The overall control flow state is then $\controlflowjoin(\{\maynotinterrupt, \Ignore\})$,
+    which is always $\maynotinterrupt$, since $\maynotinterrupt$ is the maximal element,
+    with respect to $\controlflowleq$.
 \end{itemize}
 
 \begin{mathpar}
@@ -423,15 +446,28 @@ $\SSeq(\vbody, \SWhile(\vcond, \Ignore, \vbody))$;
 }
 \end{mathpar}
 
+The rule for \textsc{s\_try} conservatively approximates the results from all control flows
+passing through the statement by returning the maximal $\controlflowsymbolterm$,
+with respect to $\controlflowleq$,
+computed for each control flow path.
 \begin{mathpar}
 \inferrule[s\_try]{
-  \controlflowfromstmt(\vbody) \typearrow \vctrlflow
+  \controlflowfromstmt(\vbody) \typearrow \vreszero\\
+  {
+  \vresone \eqdef
+  \begin{cases}
+    \controlflowjoin(\{\controlflowfromstmt(\vo), \vreszero\}) & \text{if }\votherwiseopt = \langle\vo\rangle\\
+    \vreszero & \text{otherwise}
+  \end{cases}
+  }\\
+  (\Ignore,\Ignore,\vs)\in\catchers: \controlflowfromstmt(\vs) \typearrow \vcf_\vs\\
+  \vctrlflow \eqdef \controlflowjoin(\{(\Ignore,\Ignore,\vs)\in\catchers: \vcf_\vs\} \cup \{\vresone\})
 }{
-  \controlflowfromstmt(\overname{\STry(\vbody, \Ignore, \Ignore)}{\vs}) \typearrow \vctrlflow
+  \controlflowfromstmt(\overname{\STry(\vbody, \catchers, \votherwiseopt)}{\vs}) \typearrow \vctrlflow
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ControlFlowSeq\label{sec:TypingRule.ControlFlowSeq}}
+\TypingRuleDef{ControlFlowSeq}
 \hypertarget{def-controlflowseq}{}
 The helper function
 \[
@@ -454,15 +490,24 @@ Define $\vctrlflow$ as $\vttwo$ if $\vtone$ is $\maynotinterrupt$ and $\vtone$, 
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.ControlFlowJoin\label{sec:TypingRule.ControlFlowJoin}}
+\TypingRuleDef{ControlFlowJoin}
 \hypertarget{def-controlflowjoin}{}
 The helper function
+The helper function
 \[
-\controlflowjoin(\overname{\controlflowstate}{\vtone} \aslsep
-                \overname{\controlflowstate}{\vttwo})
+\controlflowjoin(\overname{\pow{\controlflowstate}}{\vs})
 \aslto \overname{\controlflowstate}{\vctrlflow}
 \]
-returns in $\vctrlflow$ the maximal element of $\vtone$ and $\vttwo$ in the following ordering:
-\[
-  \assertednotinterrupt\ \sqsubset \interrupt \sqsubset \maynotinterrupt \enspace.
-\]
+returns the maximal element in the set of \controlflowsymbolsterm\ $\vs$,
+with respect to $\controlflowleq$ in $\vctrlflow$.
+
+\ProseParagraph
+\Proseeqdef{$\vctrlflow$}{the maximal element in the set of \controlflowsymbolsterm\ $\vs$,
+with respect to $\controlflowleq$}.
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{}{
+  \controlflowjoin(\vs) \typearrow \overname{\max_{\controlflowleq}(\vs)}{\vctrlflow}
+}
+\end{mathpar}

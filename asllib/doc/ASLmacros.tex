@@ -227,6 +227,9 @@
 % Typesetting macros
 \newtheorem{definition}{Definition}
 \newtheorem{example}{Example}
+\newcommand\TypingRuleDef[1]{\subsubsection{TypingRule.#1\label{sec:TypingRule.#1}}}
+\newcommand\SemanticsRuleDef[1]{\subsubsection{SemanticsRule.#1\label{sec:SemanticsRule.#1}}}
+\newcommand\ASTRuleDef[1]{\subsubsection{ASTRule.#1\label{sec:ASTRule.#1}}}
 \newcommand\listingref[1]{Listing~\ref{listing:#1}}
 \newcommand\taref[1]{Table.~\ref{ta:#1}}
 \newcommand\defref[1]{Definition~\ref{def:#1}}
@@ -284,9 +287,12 @@
 \newcommand\listprefix[0]{\hyperlink{def-listprefix}{\textfunc{prefix}}}
 \newcommand\listcomprehension[2]{[#1 : #2]} % #1 is a list element predicate, #2 is the output list element.
 \newcommand\setcomprehension[2]{\{#1 : #2\}} % #1 is a set element predicate, #2 is the output set element.
+\newcommand\stringconcat[0]{\hyperlink{def-stringconcat}{\texttt{+}}}
+\newcommand\stringofnat[0]{\hyperlink{def-stringofnat}{\texttt{string\_of\_nat}}}
 
 \newcommand\Ignore[0]{\hyperlink{def-ignore}{\underline{\;\;}}}
 \newcommand\None[0]{\hyperlink{def-none}{\texttt{None}}}
+\newcommand\Some[1]{\hyperlink{def-some}{\langle}#1\hyperlink{def-some}{\rangle}}
 
 % Set types
 \newcommand\N[0]{\hyperlink{def-N}{\mathbb{N}}}
@@ -325,9 +331,12 @@
 \newcommand\XP[0]{\mathit{XP}}
 \newcommand\XQ[0]{\mathit{XQ}}
 
+\newcommand\mapopt[1]{\hyperlink{def-mapopt}{\textsf{optional}}[#1]}
+\newcommand\Prosemapopt[3]{\hyperlink{def-mapopt}{applying} #1 to the optional value #2 via \hyperlink{def-mapopt}{\textsf{optional}}
+  yields #3}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Syntax macros
-% These are used by the AST reference, typing reference, and semantics reference.
 \newcommand\nonterminal[1]{\texttt{#1}}
 \newcommand\terminal[1]{\mathtt{\mathbf{#1}}}
 \newcommand\verbatimterminal[2]{\texttt{"}\texttt{#2}\texttt{"}} % Grammar terminals
@@ -1461,6 +1470,48 @@
 \newcommand\checkandinterpret[0]{\hyperlink{def-checkandinterpret}{\textfunc{check\_and\_interpret}}}
 \newcommand\setbuiltin[0]{\hyperlink{def-setbuiltin}{\textfunc{set\_builtin}}}
 
+\newcommand\renamelocals[0]{\hyperlink{def-renamelocals}{\textfunc{rename\_locals}}}
+\newcommand\Proserenamelocals[2]{\hyperlink{def-renamelocals}{renaming}
+  the local storage elements in the list of global declarations #1 yields the list of global declarations #2}
+\newcommand\renamelocalsname[0]{\hyperlink{def-renamelocalsname}{\textfunc{rename\_locals\_name}}}
+\newcommand\Proserenamelocalsname[2]{\hyperlink{def-renamelocalsname}{renames}
+  the identifier #1, yielding the identifier #2}
+\newcommand\renamelocalsdecl[0]{\hyperlink{def-renamelocalsdecl}{\textfunc{rename\_locals\_decl}}}
+\newcommand\Proserenamelocalsdecl[2]{\hyperlink{def-renamelocalsdecl}{renaming}
+  the local storage elements in declaration #1 yields the declaration #2}
+\newcommand\renamelocalsfunc[0]{\hyperlink{def-renamelocalsfunc}{\textfunc{rename\_locals\_func}}}
+\newcommand\Proserenamelocalsfunc[2]{\hyperlink{def-renamelocalsfunc}{renaming}
+  the local storage elements in subprogram description #1 yields the function description #2}
+\newcommand\renamelocalsargs[0]{\hyperlink{def-renamelocalsargs}{\textfunc{rename\_locals\_args}}}
+\newcommand\Proserenamelocalsargs[2]{\hyperlink{def-renamelocalsargs}{renaming}
+  the list local arguments #1 yields the list of arguments #2}
+\newcommand\renamelocalsnamedargs[0]{\hyperlink{def-renamelocalsnamedargs}{\textfunc{rename\_locals\_named\_args}}}
+\newcommand\Proserenamelocalsnamedargs[2]{\hyperlink{def-renamelocalsnamedargs}{renaming}
+  the local storage elements in the list of parameters #1 yields the list of parameters #2}
+\newcommand\renamelocalsstmt[0]{\hyperlink{def-renamelocalsstmt}{\textfunc{rename\_locals\_stmt}}}
+\newcommand\Proserenamelocalsstmt[2]{\hyperlink{def-renamelocalsstmt}{renaming}
+  the local storage elements in the statement #1 yields the statement #2}
+\newcommand\renamelocalsexpr[0]{\hyperlink{def-renamelocalsexpr}{\textfunc{rename\_locals\_expr}}}
+\newcommand\Proserenamelocalsexpr[2]{\hyperlink{def-renamelocalsexpr}{renaming}
+  the local storage elements in the expression #1 yields the expression #2}
+\newcommand\renamelocalslexpr[0]{\hyperlink{def-renamelocalslexpr}{\textfunc{rename\_locals\_lexpr}}}
+\newcommand\Proserenamelocalslexpr[2]{\hyperlink{def-renamelocalslexpr}{renaming}
+  the local storage elements in the assignable expression #1 yields the
+  assignable expression #2}
+\newcommand\renamelocalsldi[0]{\hyperlink{def-renamelocalsldi}{\textfunc{rename\_locals\_ldi}}}
+\newcommand\Proserenamelocalsldi[2]{\hyperlink{def-renamelocalsldi}{renaming}
+  the local storage elements in the local declaration item #1 yields
+  the local declaration item #2}
+\newcommand\renamelocalsty[0]{\hyperlink{def-renamelocalsty}{\textfunc{rename\_locals\_ty}}}
+\newcommand\Proserenamelocalsty[2]{\hyperlink{def-renamelocalsty}{renaming}
+  the local storage elements in the type #1 yields the type #2}
+\newcommand\renamelocalsslice[0]{\hyperlink{def-renamelocalsslice}{\textfunc{rename\_locals\_slice}}}
+\newcommand\Proserenamelocalsslice[2]{\hyperlink{def-renamelocalsslice}{renaming}
+  the local storage elements in the slice #1 yields the slice #2}
+\newcommand\renamelocalsconstraint[0]{\hyperlink{def-renamelocalsconstraint}{\textfunc{rename\_locals\_constraint}}}
+\newcommand\Proserenamelocalsconstraint[2]{\hyperlink{def-renamelocalsconstraint}{renaming}
+  the local storage elements in the constraint #1 yields the constraint #2}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Glossary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1479,6 +1530,18 @@
 \newcommand\subtypesterm[0]{\hyperlink{def-subtypes}{subtypes}}
 \newcommand\subtypeterm[0]{\hyperlink{def-subtypes}{subtype}}
 
+%% Type macros
+\newcommand\integertypeterm[0]{\hyperlink{integertypeterm}{integer type}}
+\newcommand\bitvectortypeterm[0]{\hyperlink{bitvectortypeterm}{bitvector type}}
+\newcommand\realtypeterm[0]{\hyperlink{realtypeterm}{real type}}
+\newcommand\stringtypeterm[0]{\hyperlink{stringtypeterm}{string type}}
+\newcommand\booleantypeterm[0]{\hyperlink{booleantypeterm}{boolean type}}
+\newcommand\enumerationtypeterm[0]{\hyperlink{enumerationtypeterm}{enumeration type}}
+\newcommand\tupletypeterm[0]{\hyperlink{tupletypeterm}{tuple type}}
+\newcommand\arraytypeterm[0]{\hyperlink{arraytypeterm}{array type}}
+\newcommand\namedtypeterm[0]{\hyperlink{namedtypeterm}{named type}}
+\newcommand\recordtypeterm[0]{\hyperlink{recordtypeterm}{record type}}
+\newcommand\exceptiontypeterm[0]{\hyperlink{exceptiontypeterm}{exception type}}
 \newcommand\unconstrainedintegertype[0]{\hyperlink{def-unconstrainedintegertype}{unconstrained integer type}}
 \newcommand\unconstrainedintegertypes[0]{\hyperlink{def-unconstrainedintegertype}{unconstrained integer types}}
 \newcommand\parameterizedintegertype[0]{\hyperlink{def-parameterizedintegertype}{parameterized integer type}}
@@ -1528,6 +1591,7 @@
 
 \newcommand\basevalueterm[0]{\hyperlink{def-basevalueterm}{base value}}
 \newcommand\controlflowsymbolterm[0]{\hyperlink{def-controlflowsymbolterm}{control flow state}}
+\newcommand\controlflowsymbolsterm[0]{\hyperlink{def-controlflowsymbolterm}{control flow states}}
 
 \newcommand\defusedependencyterm[0]{\hyperlink{def-builddependencies}{def-use dependency}}
 \newcommand\defusedependenciesterm[0]{\hyperlink{def-builddependencies}{def-use dependencies}}
@@ -1538,8 +1602,120 @@
 \newcommand\casealternativesterm[0]{\hyperlink{def-casealternativeterm}{case alternatives}}
 \newcommand\otherwisecaseterm[0]{\hyperlink{def-otherwisecaseterm}{otherwise case}}
 
-% Side effect macros
+%% Constraint macros
+\newcommand\constraintexactterm[0]{an exact constraint}
+\newcommand\Proseconstraintexact[1]{an exact constraint for the expression #1}
+\newcommand\constraintrangeterm[0]{a range constraint}
+\newcommand\Proseconstraintrange[2]{a range constraint for the lower end expression #1 and upper end expression #2}
 
+%% Expression macros
+\newcommand\literalexpressionterm[0]{\hyperlink{def-literalexpressionterm}{literal expression}}
+\newcommand\literalexpression[1]{\hyperlink{def-literalexpressionterm}{literal expression} for the literal #1}
+\newcommand\variableexpressionterm[0]{\hyperlink{def-variableexpressionterm}{variable expression}}
+\newcommand\variableexpression[1]{\hyperlink{def-variableexpressionterm}{variable expression} for the identifier #1}
+\newcommand\atcexpressionterm[0]{\hyperlink{def-atceexpressionterm}{asserting type conversion expression}}
+\newcommand\atcexpression[2]{\hyperlink{def-atceexpressionterm}{asserting type conversion} for the expression #1 and type #2}
+\newcommand\binopexpressionterm[0]{\hyperlink{def-binopexpressionterm}{binary operation expression}}
+\newcommand\binopexpression[3]{\hyperlink{def-binopexpressionterm}
+  {binary operation expression} for the binary operator #1, left-hand-side expression #2, and right-hand-side expression #3}
+\newcommand\unopexpressionterm[0]{\hyperlink{def-unopexpressionterm}{unary operation expression}}
+\newcommand\unopexpression[2]{\hyperlink{def-unopexpressionterm}
+  {unary operation expression} for the unary operator #1 and expression #2}
+\newcommand\callexpressionterm[0]{\hyperlink{def-callexpressionterm}{call expression}}
+\newcommand\callexpression[4]{\hyperlink{def-callexpressionterm}
+  {call expression} for the subprogram #1, list of parameters #2, list of arguments #3, and subprogram type #4}
+\newcommand\sliceexpressionterm[0]{\hyperlink{def-sliceexpressionterm}{slicing expression}}
+\newcommand\sliceexpression[2]{\hyperlink{def-sliceexpressionterm}{slicing expression} for the bitvector expression #1 and list of slices #2}
+\newcommand\condexpressionterm[0]{\hyperlink{def-conditionexpressionterm}{conditional expression}}
+\newcommand\condexpression[3]{\hyperlink{def-conditionexpressionterm}
+  {conditional expression} for the condition expression #1, left-hand-side expression #2, and right-hand-side expression #3}
+\newcommand\getarrayexpressionterm[0]{\hyperlink{def-getarrayexpressionterm}{array read expression}}
+\newcommand\getarrayexpression[2]{\hyperlink{def-getarrayexpressionterm}
+  {array read expression} for the array base expression #1 and index expression #2}
+\newcommand\getarrayintexpression[2]{\hyperlink{def-getarrayexpressionterm}
+{array read expression} for the array base expression #1 and integer-typed index expression #2}
+\newcommand\getenumarrayexpression[2]{\hyperlink{def-getenumarrayexpression}
+{array read expression} for the array base expression #1 and enumeration-typed index expression #2}
+\newcommand\getfieldexpressionterm[0]{\hyperlink{def-getfieldexpressionterm}{field read expression}}
+\newcommand\getfieldexpression[2]{\hyperlink{def-getfieldexpressionterm}
+  {field read expression} for the record base expression #1 and field identifier #2}
+\newcommand\getfieldsexpressionterm[0]{\hyperlink{def-getfieldsexpressionterm}{multi-field read expression}}
+\newcommand\getfieldsexpression[2]{\hyperlink{def-getfieldsexpressionterm}
+  {multi-field read expression} for the record base expression #1 and list of field identifiers #2}
+\newcommand\getitemexpressionterm[2]{\hyperlink{def-getfieldexpressionterm}{tuple item expression}}
+\newcommand\getitemexpression[2]{\hyperlink{def-getfieldexpressionterm}
+{tuple item expression} for the tuple base expression #1 and item index #2}
+\newcommand\recordexpressionterm[0]{\hyperlink{def-recordexpressionterm}{record construction expression}}
+\newcommand\recordexpression[2]{\hyperlink{def-recordexpressionterm}
+  {record construction expression} for the record type #1 and list of field initializers #2}
+\newcommand\tupleexpressionterm[0]{\hyperlink{def-tupleexpressionterm}{tuple expression}}
+\newcommand\tupleexpression[1]{\hyperlink{def-tupleexpressionterm}
+  {tuple expression} for the list of expressions #1}
+\newcommand\arbitraryexpressionterm[0]{\hyperlink{def-arbitraryexpressionterm}{\texttt{ARBITRARY} expression}}
+\newcommand\arbitraryexpression[1]{\hyperlink{def-arbitraryexpressionterm}
+  {\texttt{ARBITRARY} expression} for the type #1}
+\newcommand\patternexpressionterm[0]{\hyperlink{def-patternexpressionterm}{pattern expression}}
+\newcommand\patternexpression[2]{\hyperlink{def-patternexpressionterm}
+  {pattern expression} for the expression #1 and pattern #2}
+
+%% Assignable expression macros
+\newcommand\discardlexprterm[0]{\hyperlink{def-discardlexprterm}{discarding assignment expression}}
+\newcommand\varlexprterm[0]{\hyperlink{def-varlexprterm}{assignable variable expression}}
+\newcommand\varlexpr[1]{\hyperlink{def-varlexprterm}{assignable variable expression} for the identifier #1}
+\newcommand\slicelexprterm[0]{\hyperlink{def-slicelexprterm}{assignable slicing expression}}
+\newcommand\slicelexpr[2]{\hyperlink{def-slicelexprterm}{assignable slicing expression} for the assignable expression #1 and list of slices #1}
+\newcommand\setarraylexprterm[0]{\hyperlink{def-setarraylexprterm}{assignable array expression}}
+\newcommand\setarraylexpr[2]{\hyperlink{def-setarraylexprterm}{assignable array expression} for the assignable array base expression #1 and index expression #2}
+\newcommand\setfieldlexprterm[0]{\hyperlink{def-setfieldlexprterm}{assignable field expression}}
+\newcommand\setfieldlexpr[2]{\hyperlink{def-setfieldlexprterm}{assignable field expression} for the assignable record base expression #1 and field identifier #2}
+\newcommand\setfieldslexprterm[0]{\hyperlink{def-setfieldslexprterm}{assignable multi-field expression}}
+\newcommand\setfieldslexpr[2]{\hyperlink{def-setfieldlexprterm}{assignable multi-field expression} for the assignable record base expression #1 and list of field identifier #2}
+\newcommand\destructuringlexprterm[0]{\hyperlink{def-destructuringlexprterm}{assignable multi-expression}}
+\newcommand\destructuringlexpr[1]{\hyperlink{def-destructuringlexprterm}{assignable multi-expression} for the list of assignable expressions #1}
+
+%% Statement macros
+\newcommand\passstatementterm[0]{\hyperlink{def-passstatementterm}{pass statement}}
+\newcommand\passstatementsterm[0]{\hyperlink{def-passstatementterm}{pass statements}}
+\newcommand\assignmentstatementterm[0]{\hyperlink{def-assignmentstatementterm}{assignment statement}}
+\newcommand\assignmentstatement[2]{\hyperlink{def-assignmentstatementterm}
+  {assignment statement} for the assignable expression #1 and right-hand-side expression #2}
+\newcommand\setterassignmentstatementterm[0]{\hyperlink{def-setterassignmentstatementterm}{setter assignment statement}}
+\newcommand\declarationstatementterm[0]{\hyperlink{def-declarationstatementterm}{declaration statement}}
+\newcommand\declarationstatement[4]{\hyperlink{def-declarationstatementterm}
+  {declaration statement} for the local declaration keyword #1, local declaration item #2, optional type annotation #3, and optional initializing expression #4}
+\newcommand\declarationstatementelidedparameterterm[0]{\hyperlink{def-declarationstatementelidedparameterterm}
+  {declaration statement with an elided parameter}}
+\newcommand\sequencingstatementterm[0]{\hyperlink{def-sequencestatementterm}{sequencing statement}}
+\newcommand\callstatementterm[0]{\hyperlink{def-callstatementterm}{call statement}}
+\newcommand\callstatement[4]{\hyperlink{def-callstatementterm}{call statement} for the subprogram #1 with list of arguments #2, list of parameters #3, and subprogram type #4}
+\newcommand\conditionalstatementterm[0]{\hyperlink{def-conditionalstatementterm}{conditional statement}}
+\newcommand\conditionalstatement[3]{\hyperlink{def-conditionalstatementterm}
+  {conditional statement} with condition expression #1, \texttt{then} statement #2, and \texttt{else} statement #3 }
+\newcommand\casestatementterm[0]{\hyperlink{def-casestatementterm}{case statement}}
+\newcommand\assertionstatementterm[0]{\hyperlink{def-assertionstatementterm}{assertion statement}}
+\newcommand\assertionstatement[1]{\hyperlink{def-assertionstatementterm}{assertion statement} for the expression #1}
+\newcommand\whilestatementterm[0]{\hyperlink{def-whilestatementterm}{while statement}}
+\newcommand\whilestatement[3]{\hyperlink{def-whilestatementterm}
+  {while statement} for the condition #1, optional limit expression #2, and body statement #2}
+\newcommand\repeatstatementterm[0]{\hyperlink{def-repeatstatementterm}{repeat statement}}
+\newcommand\repeatstatement[3]{\hyperlink{def-repeatstatementterm}
+  {repeat statement} for the body statement #1, condition expression #2, and optional limit expression #3}
+\newcommand\forstatementterm[0]{\hyperlink{def-forstatementterm}{for statement}}
+\newcommand\forstatement[6]{\hyperlink{def-forstatementterm}
+  {for statement} for the index variable #1, start expression #2, direction #3, end expression #4, body statement #5, and optional limit expression #6}
+\newcommand\throwstatementterm[0]{\hyperlink{def-throwstatementterm}{throw statement}}
+\newcommand\throwstatement[1]{\hyperlink{def-throwstatementterm}{throw statement} for the optional exception expression #1}
+\newcommand\trystatementterm[0]{\hyperlink{def-trystatementterm}{try statement}}
+\newcommand\trystatement[3]{\hyperlink{def-trystatementterm}{try statement} with body statement #1, list of \texttt{catch} clauses #2, and optional \texttt{otherwise} statement #3}
+\newcommand\returnstatementterm[0]{\hyperlink{def-returnstatementterm}{return statement}}
+\newcommand\returnstatement[1]{\hyperlink{def-returnstatementterm}{return statement} for the optional expression #1}
+\newcommand\printstatementterm[0]{\hyperlink{def-printstatementterm}{print statement}}
+\newcommand\printstatement[2]{\hyperlink{def-printstatementterm}{print statement} with list of expressions #1 and newline flag #2}
+\newcommand\unreachablestatementterm[0]{\hyperlink{def-unreachablestatementterm}{unreachable statement}}
+\newcommand\pragmastatementterm[0]{\hyperlink{def-pragmastatementterm}{pragma statement}}
+\newcommand\pragmastatement[2]{\hyperlink{def-pragmastatementterm}{pragma statement} for the pragma #1 and list of expressions #2}
+
+% Side effect macros
 \newcommand\absolutenames[0]{\hyperlink{def-absolutename}{absolute names}}
 \newcommand\absolutename[0]{\hyperlink{def-absolutename}{absolute name}}
 \newcommand\absoluteslice[0]{\hyperlink{def-absoluteslice}{absolute slice}}
@@ -1632,6 +1808,7 @@
 \newcommand\interrupt[0]{\hyperlink{def-interrupt}{\textsf{Interrupt}}}
 \newcommand\maynotinterrupt[0]{\hyperlink{def-maynotinterrupt}{\textsf{MayNotInterrupt}}}
 \newcommand\controlflowstate[0]{\hyperlink{def-controlflowstate}{\textsf{ControlFlow}}}
+\newcommand\controlflowleq[0]{\hyperlink{def-controlflowleq}{<_{\textsf{CF}}}}
 
 \newcommand\Prosetypecheckast[4]{\hyperlink{def-typecheckast}{type-checking} #1 in #2 yields the typed AST #3 and static environment #4}
 \newcommand\typecheckast[0]{\hyperlink{def-typecheckast}{\textfunc{type\_check\_ast}}}
@@ -1938,6 +2115,9 @@
 \newcommand\erecord[0]{\ERecord}
 \newcommand\es[0]{\texttt{es}}
 \newcommand\estart[0]{\texttt{e\_start}}
+\newcommand\estartp[0]{\texttt{e\_start'}}
+\newcommand\eend[0]{\texttt{e\_end}}
+\newcommand\eendp[0]{\texttt{e\_end'}}
 \newcommand\etop[0]{\texttt{e\_top}}
 \newcommand\etrue[0]{\texttt{e\_true}}
 \newcommand\etruep[0]{\texttt{e\_true'}}
@@ -2058,6 +2238,7 @@
 \newcommand\namep[0]{\texttt{name'}}
 \newcommand\namepp[0]{\texttt{name''}}
 \newcommand\names[0]{\texttt{names}}
+\newcommand\namesp[0]{\texttt{names'}}
 \newcommand\namesubpgmtype[0]{\texttt{name\_subpgmtype}}
 \newcommand\namesubs[0]{\texttt{name\_s}}
 \newcommand\namesubt[0]{\texttt{name\_t}}
@@ -2138,9 +2319,11 @@
 \newcommand\paramdecls[0]{\texttt{param\_decls}}
 \newcommand\paramname[0]{\texttt{param\_name}}
 \newcommand\params[0]{\texttt{params}}
+\newcommand\newparams[0]{\texttt{new\_params}}
 \newcommand\paramnames[0]{\texttt{param\_names}}
 \newcommand\paramsp[0]{\texttt{params'}}
 \newcommand\paramsone[0]{\texttt{params1}}
+\newcommand\paramsonep[0]{\texttt{params1'}}
 \newcommand\parsedast[0]{\texttt{parsed\_ast}}
 \newcommand\parsedspec[0]{\texttt{parsed\_spec}}
 \newcommand\parsedstd[0]{\texttt{parsed\_std}}
@@ -2170,6 +2353,7 @@
 \newcommand\retty[0]{\texttt{ret\_ty}}
 \newcommand\rettyone[0]{\texttt{ret\_ty1}}
 \newcommand\rettyopt[0]{\texttt{ret\_ty\_opt}}
+\newcommand\newrettyopt[0]{\texttt{new\_ret\_ty\_opt}}
 \newcommand\rettype[0]{\texttt{ret\_type}}
 \newcommand\rhs[0]{\texttt{rhs}}
 \newcommand\rid[0]{\texttt{rid}}
@@ -2274,8 +2458,10 @@
 \newcommand\vabsoluteparent[0]{\texttt{absolute\_parent}}
 \newcommand\vabsbitfields[0]{\texttt{abs\_bitfields}}
 \newcommand\vabsbitfieldsone[0]{\texttt{abs\_bitfields1}}
+\newcommand\vdeclnew[0]{\texttt{decl\_new}}
 \newcommand\vdeclx[0]{\texttt{decl\_x}}
 \newcommand\vadecls[0]{\texttt{adecls}}
+\newcommand\vcf[0]{\texttt{cf}}
 \newcommand\vctrlflow[0]{\texttt{ctrl\_flow}}
 \newcommand\vctrlflowone[0]{\texttt{ctrl\_flow1}}
 \newcommand\vctrlflowtwo[0]{\texttt{ctrl\_flow2}}
@@ -2295,6 +2481,7 @@
 \newcommand\vargs[0]{\texttt{args}}
 \newcommand\vargsm[0]{\texttt{vargs\_m}}
 \newcommand\vargsone[0]{\texttt{args1}}
+\newcommand\vargsonep[0]{\texttt{args1'}}
 \newcommand\vargsp[0]{\texttt{args'}}
 \newcommand\vargstwo[0]{\texttt{args2}}
 \newcommand\vargtwo[0]{\texttt{arg2}}
@@ -2307,6 +2494,7 @@
 \newcommand\vsamenameandscope[0]{\texttt{same\_name\_and\_scope}}
 \newcommand\vallwayssucceeds[0]{\texttt{allways\_succeeds}}
 \newcommand\vb[0]{\texttt{b}}
+\newcommand\vbuiltin[0]{\texttt{builtin}}
 \newcommand\vbits[0]{\texttt{bits}}
 \newcommand\vbp[0]{\texttt{b'}}
 \newcommand\vbase[0]{\texttt{base}}
@@ -2328,6 +2516,7 @@
 \newcommand\vbitfields[0]{\texttt{bitfields}}
 \newcommand\vbitfieldsone[0]{\texttt{bitfields1}}
 \newcommand\vbody[0]{\texttt{body}}
+\newcommand\vnewbody[0]{\texttt{new\_body}}
 \newcommand\vbodyp[0]{\texttt{body'}}
 \newcommand\vbone[0]{\texttt{b1}}
 \newcommand\vbot[0]{\texttt{bot}}
@@ -2369,6 +2558,8 @@
 \newcommand\vdeclitems[0]{\texttt{decls\_items}}
 \newcommand\vdecls[0]{\texttt{decls}}
 \newcommand\vdeclsone[0]{\texttt{decls1}}
+\newcommand\vnewdecl[0]{\texttt{new\_decl}}
+\newcommand\vnewdecls[0]{\texttt{new\_decls}}
 \newcommand\vdiff[0]{\texttt{v\_diff}}
 \newcommand\vdir[0]{\texttt{dir}}
 \newcommand\vdirection[0]{\texttt{direction}}
@@ -2386,6 +2577,7 @@
 \newcommand\velem[0]{\texttt{v\_elem}}
 \newcommand\velimit[0]{\texttt{e\_limit}}
 \newcommand\velimitopt[0]{\texttt{e\_limit\_opt}}
+\newcommand\velimitoptp[0]{\texttt{e\_limit\_opt'}}
 \newcommand\velse[0]{\texttt{else}}
 \newcommand\velseexpr[0]{\texttt{else\_expr}}
 \newcommand\vend[0]{\texttt{v\_end}}
@@ -2408,6 +2600,7 @@
 \newcommand\veonethree[0]{\texttt{e1\_3}}
 \newcommand\veonetwo[0]{\texttt{e1\_2}}
 \newcommand\veopt[0]{\texttt{e\_opt}}
+\newcommand\veoptp[0]{\texttt{e\_opt'}}
 \newcommand\vep[0]{\texttt{e'}}
 \newcommand\vepp[0]{\texttt{e''}}
 \newcommand\vepattern[0]{\texttt{e\_pattern}}
@@ -2431,6 +2624,8 @@
 \newcommand\vexprpattern[0]{\texttt{expr\_pattern}}
 \newcommand\vexprs[0]{\texttt{exprs}}
 \newcommand\vf[0]{\texttt{f}}
+\newcommand\vfl[0]{\texttt{fl}}
+\newcommand\vnewf[0]{\texttt{f\_new}}
 \newcommand\vfs[0]{\texttt{fs}}
 \newcommand\vfsthree[0]{\texttt{fs3}}
 \newcommand\vfactor[0]{\texttt{v\_factor}}
@@ -2476,6 +2671,7 @@
 \newcommand\vgthree[0]{\texttt{g3}}
 \newcommand\vgtwo[0]{\texttt{g2}}
 \newcommand\vi[0]{\texttt{i}}
+\newcommand\vip[0]{\texttt{i'}}
 \newcommand\annotatedcs[0]{\texttt{annotated\_cs}}
 \newcommand\refinedcs[0]{\texttt{refined\_cs}}
 \newcommand\vics[0]{\texttt{ics}}
@@ -2502,15 +2698,19 @@
 \newcommand\vlabelstwo[0]{\texttt{labels2}}
 \newcommand\vlastindex[0]{\texttt{last\_index}}
 \newcommand\vle[0]{\texttt{le}}
+\newcommand\vlep[0]{\texttt{le'}}
 \newcommand\vlelist[0]{\texttt{le\_list}}
 \newcommand\vlelistone[0]{\texttt{le\_list1}}
 \newcommand\vlength[0]{\texttt{v\_length}}
+\newcommand\vlengthp[0]{\texttt{v\_length'}}
 \newcommand\vlengthexprs[0]{\texttt{length\_expr\_s}}
 \newcommand\vlengthexprt[0]{\texttt{length\_expr\_t}}
 \newcommand\vlengths[0]{\texttt{length\_s}}
 \newcommand\vlengtht[0]{\texttt{length\_t}}
 \newcommand\vleone[0]{\texttt{le1}}
+\newcommand\vleonep[0]{\texttt{le1'}}
 \newcommand\vles[0]{\texttt{les}}
+\newcommand\vlesp[0]{\texttt{les'}}
 \newcommand\vlethree[0]{\texttt{le3}}
 \newcommand\vletwo[0]{\texttt{le2}}
 \newcommand\vlexpr[0]{\texttt{lexpr}}
@@ -2611,6 +2811,8 @@
 \newcommand\vrecurselimit[0]{\texttt{recurse\_limit}}
 \newcommand\vreone[0]{\texttt{re1}}
 \newcommand\vres[0]{\texttt{res}}
+\newcommand\vreszero[0]{\texttt{res0}}
+\newcommand\vresone[0]{\texttt{res1}}
 \newcommand\vret[0]{\texttt{ret}}
 \newcommand\vreturntype[0]{\texttt{return\_type}}
 \newcommand\vs[0]{\texttt{s}}
@@ -2669,12 +2871,14 @@
 \newcommand\vsesty[0]{\texttt{ses\_ty}}
 \newcommand\newses[0]{\texttt{new\_ses}}
 \newcommand\vslice[0]{\texttt{slice}}
+\newcommand\vnewslice[0]{\texttt{new\_slice}}
 \newcommand\vsliced[0]{\texttt{sliced}}
 \newcommand\vsliceasts[0]{\texttt{slice\_asts}}
 \newcommand\vslicedbasiclexpr[0]{\texttt{sliced\_basic\_lexpr}}
 \newcommand\vsliceone[0]{\texttt{slice1}}
 \newcommand\vslicetwo[0]{\texttt{slice2}}
 \newcommand\vslices[0]{\texttt{slices}}
+\newcommand\vslicesp[0]{\texttt{slices'}}
 \newcommand\vslicesone[0]{\texttt{slices1}}
 \newcommand\vsone[0]{\texttt{s1}}
 \newcommand\vsonep[0]{\texttt{s1'}}
@@ -2692,6 +2896,7 @@
 \newcommand\vstdparse[0]{\texttt{std\_parse}}
 \newcommand\vspecast[0]{\texttt{spec\_ast}}
 \newcommand\vstdast[0]{\texttt{std\_ast}}
+\newcommand\vstdastrenamed[0]{\texttt{std\_ast\_renamed}}
 \newcommand\vstddeclast[0]{\texttt{std\_decl\_ast}}
 \newcommand\vstdasbuiltin[0]{\texttt{std\_as\_builtin}}
 \newcommand\vspp[0]{\texttt{s''}}
@@ -2781,6 +2986,7 @@
 \newcommand\vvfields[0]{\texttt{v\_fields}}
 \newcommand\vvl[0]{\texttt{vl}}
 \newcommand\vvopt[0]{\texttt{v\_opt}}
+\newcommand\vvoptnew[0]{\texttt{v\_opt\_new}}
 \newcommand\vvopts[0]{\texttt{v\_opts}}
 \newcommand\vvoptsp[0]{\texttt{v\_opts'}}
 \newcommand\vvoptp[0]{\texttt{v\_opt'}}
@@ -2810,6 +3016,7 @@
 \newcommand\vwtwo[0]{\texttt{w2}}
 \newcommand\vwzero[0]{\texttt{w0}}
 \newcommand\vx[0]{\texttt{x}}
+\newcommand\vxp[0]{\texttt{x'}}
 \newcommand\vxs[0]{\texttt{xs}}
 \newcommand\vy[0]{\texttt{y}}
 \newcommand\vz[0]{\texttt{z}}

@@ -102,6 +102,7 @@ We now define the syntax, abstract syntax, typing, and semantics of the followin
 Finally, we define side-effect-free expressions (see \secref{SideEffectFreeExpressions})
 and define how to evaluate a list of expressions (see \secref{ExprList}).
 
+\hypertarget{def-literalexpressionterm}{}
 \section{Literal Expressions\label{sec:LiteralExpressions}}
 A literal expression represents a literal as an expression.
 
@@ -115,7 +116,7 @@ A literal expression represents a literal as an expression.
 \expr \derives\ & \ELiteral(\literal) &
 \end{flalign*}
 
-\subsubsection{ASTRule.ELit\label{sec:ASTRule.ELit}}
+\ASTRuleDef{ELit}
 \begin{mathpar}
 \inferrule{}{
   \buildexpr(\overname{\Nexpr(\punnode{\Nvalue})}{\vparsednode}) \astarrow
@@ -124,7 +125,7 @@ A literal expression represents a literal as an expression.
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.ELit\label{sec:TypingRule.ELit}}
+\TypingRuleDef{ELit}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -149,7 +150,7 @@ All of the following apply:
 In \listingref{literalssemantics}, each of the expressions \texttt{3} evaluates to the \nativevalue\ $\nvint(3)$.
 \ASLListing{Semantics of literals}{literalssemantics}{\semanticstests/SemanticsRule.Lit.asl}
 
-\subsubsection{SemanticsRule.ELit \label{sec:SemanticsRule.ELit}}
+\SemanticsRuleDef{ELit}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -166,6 +167,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalELitBegin}{\EvalELitEnd}{../Interpreter.ml}
 
+\hypertarget{def-variableexpressionterm}{}
 \section{Variable Expressions\label{sec:VariablExpressions}}
 A variable expression represents consists of an identifier.
 The identifier stands for either a storage element or the name of a getter with no arguments.
@@ -180,7 +182,7 @@ The identifier stands for either a storage element or the name of a getter with 
 \expr \derives\ & \EVar(\overtext{\identifier}{variable name}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.EVAR}
+\ASTRuleDef{EVAR}
 \begin{mathpar}
   \inferrule{}{
   \buildexpr(\overname{\Nexpr(\Tidentifier(\id))}{\vparsednode}) \astarrow
@@ -189,7 +191,7 @@ The identifier stands for either a storage element or the name of a getter with 
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.EVar \label{sec:TypingRule.EVar}}
+\TypingRuleDef{EVar}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -302,7 +304,7 @@ function calls) to global constant variables.
 \CodeSubsection{\EUndefIdentBegin}{\EUndefIdentEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.EVar\label{sec:SemanticsRule.EVar}}
+\SemanticsRuleDef{EVar}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -375,7 +377,7 @@ uses the rule \SemanticsRuleRef{EVar}.GLOBAL.
 \expr \derives\ & \EBinop(\binop, \expr, \expr) &
 \end{flalign*}
 
-\subsubsection{ASTRule.Binop}
+\ASTRuleDef{EBinop}
 The following rule constructs a binary expression AST
 when a property on \emph{associative operators} holds (see \ASTRuleRef{CheckNotSamePrec}).
 
@@ -395,7 +397,7 @@ when a property on \emph{associative operators} holds (see \ASTRuleRef{CheckNotS
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.CheckNotSamePrec\label{sec:ASTRule.CheckNotSamePrec}}
+\ASTRuleDef{CheckNotSamePrec}
 The set of \emph{associative binary operators} consists of the following:
 $\BOR$,
 $\BAND$,
@@ -490,7 +492,7 @@ One of the following applies:
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.Binop\label{sec:TypingRule.Binop}}
+\TypingRuleDef{EBinop}
 \subsubsection{Example}
 In \listingref{typing-binoperror},
 the expression \texttt{3 DIV 0} results in a type error.
@@ -549,7 +551,7 @@ All of the following apply:
 \CodeSubsection{\BinopBegin}{\BinopEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.BinopAnd \label{sec:SemanticsRule.BinopAnd}}
+\SemanticsRuleDef{BinopAnd}
 \subsubsection{Example}
 In \listingref{andsemantics},
 the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}. Notice that the function \texttt{fail} is never called.
@@ -561,7 +563,7 @@ All of the following apply:
 \item $\ve$ denotes a conjunction over two expressions,
       $\EBinop(\BAND, \veone, \vetwo)$;
 \item $C$ is the result of the evaluation of the expression
-      \texttt{if e1 then e2 else false} (see \secref{SemanticsRule.ECond}).
+      \texttt{if e1 then e2 else false} (see \SemanticsRuleRef{ECond}).
 \end{itemize}
 
 \subsubsection{Formally}
@@ -611,13 +613,13 @@ However, note that relying on this short-circuit evaluation can be confusing
 for readers of ASL specifications and as a consequence it is recommended that
 an if-statement is used to achieve the same effect.
 
-\subsubsection{SemanticsRule.BinopOr \label{sec:SemanticsRule.BinopOr}}
+\SemanticsRuleDef{BinopOr}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
 \item $\ve$ denotes a disjunction of two expressions, $\EBinop(\BOR, \veone, \vetwo)$;
 \item $C$ is the result of the evaluation of
-      \texttt{if e1 then true else e2} (see \secref{SemanticsRule.ECond}).
+      \texttt{if e1 then true else e2} (see \SemanticsRuleRef{ECond}).
 \end{itemize}
 
 \subsubsection{Example}
@@ -671,7 +673,7 @@ However, note that relying on this short-circuit evaluation can be confusing
 for readers of ASL specifications and as a consequence it is recommended that
 an if-statement is used to achieve the same effect.
 
-\subsubsection{SemanticsRule.BinopImpl \label{sec:SemanticsRule.BinopImpl}}
+\SemanticsRuleDef{BinopImpl}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -717,16 +719,17 @@ However, note that relying on this short-circuit evaluation can be confusing
 for readers of ASL specifications and as a consequence it is recommended that
 an if-statement is used to achieve the same effect.
 
-\subsubsection{SemanticsRule.Binop \label{sec:SemanticsRule.Binop}}
+\hypertarget{def-binopexpressionterm}{}
+\SemanticsRuleDef{Binop}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item $\ve$ denotes a Binary Operator $\op$ over two expressions, $\EBinop(\op, \veone, \vetwo)$;
   \item the operator $\op$ is not one of $\BAND$, $\BOR$, or $\IMPL$.
         These operators are handled by rules
-        SemanticsRule.BinopAnd (\secref{SemanticsRule.BinopAnd}),
-        SemanticsRule.BinopOr \\ (\secref{SemanticsRule.BinopOr}), and
-        SemanticsRule.BinopImpl (\secref{SemanticsRule.BinopImpl});
+        \SemanticsRuleRef{BinopAnd},
+        \SemanticsRuleRef{BinopOr}, and
+        \SemanticsRuleRef{BinopImpl};
   \item the evaluation of the expression $\veone$ in $\env$ is the configuration \\
         $\Normal(\vmone, \envone)$\ProseOrAbnormal;
   \item the evaluation of the expression $\vetwo$ in $\envone$ is the configuration \\
@@ -772,7 +775,7 @@ the right subexpression.
 This is an arbitrary choice as the type-checker must ensure that either order
 of evaluation of the operands yields the same result.
 
-In other words, it it is an error for an expression’s meaning to rely on
+In other words, it is an error for an expression’s meaning to rely on
 evaluation order except that conditional expressions, and uses of the boolean
 operators \texttt{\&\&}, \texttt{||}, \texttt{-->}, are guaranteed to evaluate
 from left to right.
@@ -803,6 +806,7 @@ subexpressions conflict with each other by:
 These conditions are sufficient but not necessary to ensure that evaluation
 order does not affect the result of an expression, including any side-effects.
 
+\hypertarget{def-unopexpressionterm}{}
 \section{Unary Expressions\label{sec:UnaryExpressions}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -814,7 +818,7 @@ order does not affect the result of an expression, including any side-effects.
 \expr \derives\ & \EUnop(\unop, \expr) &
 \end{flalign*}
 
-\subsubsection{ASTRule.Unop}
+\ASTRuleDef{EUnop}
 \begin{mathpar}
   \inferrule{
     \buildexpr(\vexpr) \astarrow \astversion{\vexpr} \OrBuildError
@@ -825,13 +829,13 @@ order does not affect the result of an expression, including any side-effects.
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.Unop\label{sec:TypingRule.Unop}}
+\TypingRuleDef{Unop}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
   \item $\ve$ denotes a unary operation $\op$ over an expression $\vep$, that is $\EUnop(\op, \vep)$;
   \item annotating $\vep$ in $\tenv$ yields $(\vtpp, \vepp, \vses)$\ProseOrTypeError;
-  \item checking compatibility of $\op$ with $\vtpp$ as per \secref{TypingRule.ApplyUnopType} yields $\vt$\ProseOrTypeError;
+  \item checking compatibility of $\op$ with $\vtpp$ as per \TypingRuleRef{ApplyUnopType} yields $\vt$\ProseOrTypeError;
   \item define $\newe$ as $\op$ over $\vepp$, that is, $\EUnop(\op, \vepp)$.
 \end{itemize}
 \subsubsection{Formally}
@@ -851,7 +855,7 @@ In \listingref{semantics-unopassert},
 the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 \ASLListing{Evaluating a unary expression}{semantics-unopassert}{\semanticstests/SemanticsRule.EUnopAssert.asl}
 
-\subsubsection{SemanticsRule.Unop\label{sec:SemanticsRule.Unop}}
+\SemanticsRuleDef{Unop}
 
 \subsubsection{Prose}
 All of the following apply:
@@ -873,6 +877,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalUnopBegin}{\EvalUnopEnd}{../Interpreter.ml}
 
+\hypertarget{def-conditionexpressionterm}{}
 \section{Conditional Expressions\label{sec:ConditionalExpressions}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -886,7 +891,7 @@ All of the following apply:
 \expr \derives\ & \ECond(\overtext{\expr}{condition}, \overtext{\expr}{then}, \overtext{\expr}{else})
 \end{flalign*}
 
-\subsubsection{ASTRule.ECond}
+\ASTRuleDef{ECond}
 \begin{mathpar}
   \inferrule{
     \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr} \OrBuildError\\\\
@@ -907,7 +912,7 @@ All of the following apply:
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.EElse \label{sec:ASTRule.EElse}}
+\ASTRuleDef{EElse}
 \hypertarget{build-eelse}{}
 The function
 \[
@@ -942,7 +947,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.ECond \label{sec:TypingRule.ECond}}
+\TypingRuleDef{ECond}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -990,7 +995,7 @@ evaluate either \texttt{3} or \texttt{Return42()}, depending on the
 \ASLListing{Evaluating a conditional expression with non-determinic choice}{semantics-econdarbitrary}
 {\semanticstests/SemanticsRule.ECondARBITRARY3or42.asl}
 
-\subsubsection{SemanticsRule.ECond \label{sec:SemanticsRule.ECond}}
+\SemanticsRuleDef{ECond}
 % Transliteration note: the code uses an optimized semantics for the case where
 % true and false sub-expressions do not contain function calls. Since this is an
 % optimization, we do not document it.
@@ -1008,17 +1013,16 @@ All of the following apply:
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
-  \inferrule{
-    \evalexpr{\env, \econd} \evalarrow \Normal(\mcond, \envone) \OrAbnormal\\\\
-    \mcond \eqname (\nvbool(\vb), \vgone)\\
-    \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\\\
-    \evalexpr{\envone, \vep} \evalarrow \Normal((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
-    \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
-  }
-  {
-    \evalexpr{\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}} \evalarrow
-    \Normal((\vv, \vg), \newenv)
-  }
+\inferrule{
+  \evalexpr{\env, \econd} \evalarrow \Normal(\mcond, \envone) \OrAbnormal\\\\
+  \mcond \eqname (\nvbool(\vb), \vgone)\\
+  \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\\\
+  \evalexpr{\envone, \vep} \evalarrow \Normal((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
+  \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
+}{
+  \evalexpr{\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}} \evalarrow
+  \Normal((\vv, \vg), \newenv)
+}
 \end{mathpar}
 \CodeSubsection{\EvalECondBegin}{\EvalECondEnd}{../Interpreter.ml}
 
@@ -1033,6 +1037,7 @@ the conditional expression evaluates to the corresponding \texttt{elsif}
 expression. If no \texttt{elsif} expression evaluates to $\True$ the
 conditional expression evaluates to the \texttt{else} expression.
 
+\hypertarget{def-callexpressionterm}{}
 \section{Call Expressions\label{sec:CallExpressions}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1065,7 +1070,7 @@ conditional expression evaluates to the \texttt{else} expression.
 } &
 \end{flalign*}
 
-\subsubsection{ASTRule.Call}
+\ASTRuleDef{Call}
 \hypertarget{build-call}{}
 \begin{mathpar}
 \inferrule{
@@ -1112,7 +1117,7 @@ conditional expression evaluates to the \texttt{else} expression.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.SetCallType}
+\ASTRuleDef{SetCallType}
 \hypertarget{def-setcalltype}{}
 Above, $\STFunction$ is inserted as a default call type for any parsed $\call$.
 The helper function
@@ -1128,7 +1133,7 @@ changes the call type of $\vcall$ to $\texttt{call\_type}$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.ECall}
+\ASTRuleDef{ECall}
 \begin{mathpar}
 \inferrule{}{
   \buildexpr(\overname{\Nexpr(\punnode{\Ncall})}{\vparsednode}) \astarrow
@@ -1137,7 +1142,7 @@ changes the call type of $\vcall$ to $\texttt{call\_type}$.
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.ECall\label{sec:TypingRule.ECall}}
+\TypingRuleDef{ECall}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1165,7 +1170,7 @@ the expression \texttt{Return42()} evaluates to the value \texttt{42} because th
 subprogram \texttt{Return42()} is implemented to return the value \texttt{42}.
 \ASLListing{Evaluating a call expression}{semantics-ecall}{\semanticstests/SemanticsRule.ECall.asl}
 
-\subsubsection{SemanticsRule.ECall \label{sec:SemanticsRule.ECall}}
+\SemanticsRuleDef{ECall}
 All of the following apply:
 \begin{itemize}
   \item $\ve$ denotes a subprogram call, $\ECall(\vcall)$;
@@ -1211,6 +1216,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalECallBegin}{\EvalECallEnd}{../Interpreter.ml}
 
+\hypertarget{def-sliceexpressionterm}{}
 \section{Slicing Expressions\label{sec:SlicingExpressions}}
 This section details the high-level form of the syntax and abstract syntax of slicing expressions,
 and defines the semantics of bitvector slices.
@@ -1226,7 +1232,7 @@ The details of the various types of bitvector slices is deferred to \chapref{Bit
 \expr \derives\ & \ESlice(\expr, \slice^{*}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.ESlice}
+\ASTRuleDef{ESlice}
 \begin{mathpar}
 \inferrule{
   \buildexpr(\vexpr) \astarrow \astversion{\vexpr} \OrBuildError\\\\
@@ -1238,7 +1244,7 @@ The details of the various types of bitvector slices is deferred to \chapref{Bit
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.ESlice\label{sec:TypingRule.ESlice}}
+\TypingRuleDef{ESlice}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1278,7 +1284,7 @@ widths references a \texttt{let} identifier with a non-compile-time-constant
 initializer expression.
 \lrmcomment{This is related to \identi{MJWM}.}
 
-\subsubsection{TypingRule.ESliceError\label{sec:TypingRule.ESliceError}}
+\TypingRuleDef{ESliceError}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1301,7 +1307,7 @@ All of the following apply:
 \CodeSubsection{\ESliceError}{\ESliceErrorEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.ESlice\label{sec:SemanticsRule.ESlice}}
+\SemanticsRuleDef{ESlice}
 \subsubsection{Example}
 In \listingref{semantics-eslice},
 the expression \texttt{'11110000'[6:3]} evaluates to the value \texttt{'1110'}.
@@ -1316,7 +1322,7 @@ All of the following apply:
 \item $\mpositions$ consists of $\positions$ --- all the indices that need to be added to the
 resulting bitvector --- and the execution graph $\vgone$;
 \item reading from $\vbv$ as a bitvector at the indices indicated by $\positions$
-      (see \secref{SemanticsRule.ReadFromBitvector}) results in the bitvector $\vv$,
+      (see \SemanticsRuleRef{ReadFromBitvector}) results in the bitvector $\vv$,
       which concatenates all of the values from the indicates indices\ProseOrError;
 \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
 \end{itemize}
@@ -1335,6 +1341,8 @@ resulting bitvector --- and the execution graph $\vgone$;
 \end{mathpar}
 \CodeSubsection{\EvalESliceBegin}{\EvalESliceEnd}{../Interpreter.ml}
 
+\hypertarget{def-getarrayexpressionterm}{}
+\hypertarget{def-getenumarrayexpression}{}
 \section{Array Access Expressions\label{sec:ArrayAccessExpressions}}
 This section details the syntax, abstract syntax, semantics, and typing of array read expressions.
 In the untyped AST, a read from either an integer-indexed array or an enumeration-indexed arrays is represented
@@ -1354,7 +1362,7 @@ The semantics utilizes a rule matching the corresponding type of array ---
 \expr \derives\ & \EGetArray(\expr, \expr) &
 \end{flalign*}
 
-\subsubsection{ASTRule.EGetArray}
+\ASTRuleDef{EGetArray}
 \begin{mathpar}
 \inferrule{
   \buildexpr(\veone) \astarrow \astversion{\veone} \OrBuildError\\\\
@@ -1365,7 +1373,7 @@ The semantics utilizes a rule matching the corresponding type of array ---
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.EGetArray\label{sec:TypingRule.EGetArray}}
+\TypingRuleDef{EGetArray}
 \hypertarget{def-arrayaccess}{}
 \begin{definition}[Array Access]
 We refer to a right-hand-side expression of the form \texttt{b[[i]]},
@@ -1405,7 +1413,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EGetArrayBegin}{\EGetArrayEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.AnnotateGetArray\label{sec:TypingRule.AnnotateGetArray}}
+\TypingRuleDef{AnnotateGetArray}
 \hypertarget{def-annotategetarray}{}
 The helper function
 \[
@@ -1466,7 +1474,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\AnnotateGetArrayBegin}{\AnnotateGetArrayEnd}{../Typing.ml}
 
-\subsubsection{SemanticsRule.EGetArray\label{sec:SemanticsRule.EGetArray}}
+\SemanticsRuleDef{EGetArray}
 \subsubsection{Example}
 In \listingref{semantics-egetarray},
 the expression \verb|my_array[[2]]| appearing in the assertion evaluates to the value \texttt{42} since the element
@@ -1509,7 +1517,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalEGetArrayBegin}{\EvalEGetArrayEnd}{../Interpreter.ml}
 
-\subsubsection{SemanticsRule.EGetEnumArray\label{sec:SemanticsRule.EGetEnumArray}}
+\SemanticsRuleDef{EGetEnumArray}
 \subsubsection{Example}
 In \listingref{semantics-egetenumarray},
 the enumeration-typed array \texttt{Arr} is accessed for reading and writing
@@ -1546,6 +1554,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalEGetEnumArrayBegin}{\EvalEGetEnumArrayEnd}{../Interpreter.ml}
 
+\hypertarget{def-getfieldexpressionterm}{}
 \section{Field Reading Expressions\label{sec:FieldReadingExpressions}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1557,7 +1566,7 @@ All of the following apply:
 \expr \derives\ & \EGetField(\overtext{\expr}{record}, \overtext{\identifier}{field name}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.EGetField}
+\ASTRuleDef{EGetField}
 \begin{mathpar}
   \inferrule{
     \buildexpr(\ve) \astarrow \astversion{\ve} \OrBuildError
@@ -1568,7 +1577,7 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.EGetRecordField\label{sec:TypingRule.EGetRecordField}}
+\TypingRuleDef{EGetRecordField}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1599,7 +1608,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EGetRecordFieldBegin}{\EGetRecordFieldEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.EGetBadRecordField \label{sec:TypingRule.EGetBadRecordField}}
+\TypingRuleDef{EGetBadRecordField}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1624,7 +1633,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EGetBadRecordFieldBegin}{\EGetBadRecordFieldEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.EGetBadBitField\label{sec:TypingRule.EGetBadBitField}}
+\TypingRuleDef{EGetBadBitField}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1647,7 +1656,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EGetBadBitFieldBegin}{\EGetBadBitFieldEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.EGetBitField\label{sec:TypingRule.EGetBitField}}
+\TypingRuleDef{EGetBitField}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1674,7 +1683,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EGetBitFieldBegin}{\EGetBitFieldEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.EGetBitFieldNested\label{sec:TypingRule.EGetBitFieldNested}}
+\TypingRuleDef{EGetBitFieldNested}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1711,7 +1720,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EGetBitFieldNestedBegin}{\EGetBitFieldNestedEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.EGetBitFieldTyped\label{sec:TypingRule.EGetBitFieldTyped}}
+\TypingRuleDef{EGetBitFieldTyped}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1742,7 +1751,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EGetBitFieldTypedBegin}{\EGetBitFieldTypedEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.EGetTupleItem\label{sec:TypingRule.EGetTupleItem}}
+\TypingRuleDef{EGetTupleItem}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1775,7 +1784,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EGetTupleItemBegin}{\EGetTupleItemEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.EGetBadField\label{sec:TypingRule.EGetBadField}}
+\TypingRuleDef{EGetBadField}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1798,7 +1807,7 @@ All of the following apply:
 \CodeSubsection{\EGetBadFieldBegin}{\EGetBadFieldEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.EGetField\label{sec:SemanticsRule.EGetField}}
+\SemanticsRuleDef{EGetField}
 \subsubsection{Example}
 In \listingref{semantics-egetfield},
 the expression \verb|my_record.a| evaluates to the value \texttt{3}.
@@ -1822,7 +1831,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalEGetFieldBegin}{\EvalEGetFieldEnd}{../Interpreter.ml}
 
-\subsubsection{SemanticsRule.EGetItem\label{sec:SemanticsRule.EGetItem}}
+\SemanticsRuleDef{EGetItem}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1843,6 +1852,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalEGetTupleItemBegin}{\EvalEGetTupleItemEnd}{../Interpreter.ml}
 
+\hypertarget{def-getfieldsexpressionterm}{}
 \section{Multi-field Reading Expressions\label{sec:MultiFieldReadingExpressions}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1854,7 +1864,7 @@ All of the following apply:
 \expr \derives\ & \EGetFields(\overtext{\expr}{record}, \overtext{\identifier^{*}}{field names}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.EGetFields}
+\ASTRuleDef{EGetFields}
 \begin{mathpar}
   \inferrule{
     \buildclist[\buildidentity](\vids) \astarrow \vidasts\\
@@ -1870,7 +1880,7 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.EGetFields}
+\TypingRuleDef{EGetFields}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -1950,7 +1960,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EGetFieldsBegin}{\EGetFieldsEnd}{../Typing.ml}
 
-\subsubsection{TypingRule.FindBitFieldsSlices}
+\TypingRuleDef{FindBitFieldsSlices}
 \hypertarget{def-findbitfieldsslices}{}
 % Transliteration note: The implementation returns an optional, but all of its uses raise a type error if the result is None.
 The helper function
@@ -2012,7 +2022,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.GetBitfieldWidth}
+\TypingRuleDef{GetBitfieldWidth}
 \hypertarget{def-getbitfieldwidth}{}
 The helper function
 \[
@@ -2060,7 +2070,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.WidthPlus}
+\TypingRuleDef{WidthPlus}
 \hypertarget{def-widthplus}{}
 % NOTE: the implementation handles just two expressions, here we fold over a list.
 The helper function
@@ -2106,7 +2116,7 @@ One of the following applies:
 \end{mathpar}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.EGetfields{\label{sec:SemanticsRule.EGetfields}}}
+\SemanticsRuleDef{EGetfields}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -2131,6 +2141,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalEGetFieldsBegin}{\EvalEGetFieldsEnd}{../interpreter.ml}
 
+\hypertarget{def-atceexpressionterm}{}
 \section{Asserting Type Conversion Expressions\label{sec:AssertingTypeConversionExpressions}}
 \lrmcomment{This is related to \identi{TCST}:}
 The rule about domains in the definitions of subtype-satisfaction and
@@ -2161,7 +2172,7 @@ is a dynamic error.
 \expr \derives\ & \overtext{\EATC}{Type assertion}(\expr, \overtext{\ty}{asserted type}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.ATC}
+\ASTRuleDef{ATC}
 \begin{mathpar}
 \inferrule[type]{
   \buildexpr(\ve) \astarrow \astversion{\ve} \OrBuildError\\\\
@@ -2187,7 +2198,7 @@ is a dynamic error.
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.ATC\label{sec:TypingRule.ATC}}
+\TypingRuleDef{ATC}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -2228,7 +2239,7 @@ All of the following apply:
   \identi{TCST}, \identi{CGRH}, \identi{YJBB}.
 }
 
-\subsubsection{TypingRule.CheckATC \label{sec:TypingRule.CheckATC}}
+\TypingRuleDef{CheckATC}
 \hypertarget{def-checkatc}{}
 The helper function
 \[
@@ -2332,7 +2343,7 @@ One of the following applies:
 \end{mathpar}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.ATC\label{sec:SemanticsRule.ATC}}
+\SemanticsRuleDef{ATC}
 \subsubsection{Example}
 In \listingref{semantics-atcvalue}, both type assertions ---
 \verb|3 as integer| and \verb|3 as integer{3..5}| --- succeed.
@@ -2393,7 +2404,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalATCBegin}{\EvalATCEnd}{../Interpreter.ml}
 
-\subsubsection{SemanticsRule.IsValOfType}
+\SemanticsRuleDef{IsValOfType}
 \subsubsection{Prose}
 \hypertarget{def-isvaloftype}{}
 The relation
@@ -2519,7 +2530,7 @@ cannot appear as a type, since ASL syntax does not allow the following:
 \item Declaring an parameterized integer in a compound type.
 \end{itemize}
 
-\subsubsection{SemanticsRule.IsConstraintSat}
+\SemanticsRuleDef{IsConstraintSat}
 \hypertarget{def-isconstraintsat}{}
 The helper relation
 \[
@@ -2577,6 +2588,7 @@ that expressions appearing in types are all side-effect-free.
 }
 \end{mathpar}
 
+\hypertarget{def-patternexpressionterm}{}
 \section{Pattern Matching Expressions\label{sec:PatternMatchingExpressions}}
 The binary operator $\Tin$ tests whether a value (referred to as the discriminant) matches any item from a $\Npatternset$.
 Patterns can also be used to test whether an expression matches a bitmask (via $\Teq$) or does not match a bitmask (via $\Tneq$).
@@ -2596,7 +2608,7 @@ Lists of patterns are also used in case statements.
 \expr \derives\ & \EPattern(\expr, \pattern) &
 \end{flalign*}
 
-\subsubsection{ASTRule.EPattern}
+\ASTRuleDef{EPattern}
 \begin{mathpar}
 \inferrule{
   \buildexpr(\ve) \astarrow \astversion{\ve} \OrBuildError\\\\
@@ -2630,7 +2642,7 @@ Lists of patterns are also used in case statements.
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.EPattern\label{sec:TypingRule.EPattern}}
+\TypingRuleDef{EPattern}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -2656,7 +2668,7 @@ All of the following apply:
 \CodeSubsection{\EPatternBegin}{\EPatternEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.EPattern \label{sec:SemanticsRule.EPattern}}
+\SemanticsRuleDef{EPattern}
 \subsubsection{Example}
 In \listingref{semantics-epattern},
 the expression \texttt{42 IN \{0..3, 42\}} evaluates to $\nvbool(\True)$
@@ -2686,6 +2698,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalEPatternBegin}{\EvalEPatternEnd}{../Interpreter.ml}
 
+\hypertarget{def-arbitraryexpressionterm}{}
 \section{Arbitrary Value Expressions\label{sec:ArbitraryValueExpressions}}
 An expression of the form \texttt{ARBITRARY: ty} evaluates to an arbitrary value in the
 domain of \texttt{ty}.
@@ -2710,7 +2723,7 @@ Note that there are two important consequences of producing an arbitrary value w
 \expr \derives\ & \EArbitrary(\ty) &
 \end{flalign*}
 
-\subsubsection{ASTRule.EArbitrary}
+\ASTRuleDef{EArbitrary}
 \begin{mathpar}
 \inferrule{
   \buildty(\vt) \astarrow \astversion{\vt} \OrBuildError
@@ -2721,7 +2734,7 @@ Note that there are two important consequences of producing an arbitrary value w
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.EArbitrary \label{sec:TypingRule.EArbitrary}}
+\TypingRuleDef{EArbitrary}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -2745,7 +2758,7 @@ All of the following apply:
 \CodeSubsection{\EArbitraryBegin}{\EArbitraryEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.EArbitrary\label{sec:SemanticsRule.EArbitrary}}
+\SemanticsRuleDef{EArbitrary}
 \subsubsection{Example}
 In \listingref{semantics-earbitraryunconstrained},
 the expression \verb|ARBITRARY : integer| evaluates to an arbitrary integer value.
@@ -2812,6 +2825,7 @@ All of the following apply:
 Notice that this rule introduces non-determinism.
 \lrmcomment{This is related to \identr{WLCH}:}
 
+\hypertarget{def-recordexpressionterm}{}
 \section{Structured Type Construction Expressions\label{sec:StructuredTypeConstructionExpressions}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -2825,7 +2839,7 @@ Notice that this rule introduces non-determinism.
 \expr \derives\ & \ERecord(\overtext{\ty}{record type}, \overtext{(\identifier, \expr)^{*}}{field initializers}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.ERecord}
+\ASTRuleDef{ERecord}
 \begin{mathpar}
   \inferrule[empty]{}{
     {
@@ -2860,7 +2874,7 @@ Notice that this rule introduces non-determinism.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.FieldAssign\label{sec:ASTRule.FieldAssign}}
+\ASTRuleDef{FieldAssign}
 \hypertarget{build-fieldassign}{}
 The function
 \[
@@ -2876,7 +2890,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.ERecord\label{sec:TypingRule.ERecord}}
+\TypingRuleDef{ERecord}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -2929,7 +2943,7 @@ All of the following apply:
 \lrmcomment{This is related to \identr{WBCQ}.}
 
 \hypertarget{def-annotatefieldinit}{}
-\subsubsection{TypingRule.AnnotateFieldInit}
+\TypingRuleDef{AnnotateFieldInit}
 The function
 \[
 \begin{array}{r}
@@ -2967,7 +2981,7 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.ERecord \label{sec:SemanticsRule.ERecord}}
+\SemanticsRuleDef{ERecord}
 \subsubsection{Example}
 In \listingref{semantics-erecord},
 the expression \verb|MyRecordType{a=3, b=42}| evaluates to the native record value \\
@@ -3000,6 +3014,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalERecordBegin}{\EvalERecordEnd}{../Interpreter.ml}
 
+\hypertarget{def-tupleexpressionterm}{}
 \section{Tuple Expressions\label{sec:TupleExpressions}}
 \subsection{Syntax}
 \begin{flalign*}
@@ -3011,7 +3026,7 @@ All of the following apply:
 \expr \derives\ & \ETuple(\expr^{+}) &
 \end{flalign*}
 
-\subsubsection{ASTRule.ETuple}
+\ASTRuleDef{ETuple}
 \begin{mathpar}
 \inferrule[tuple]{
   \buildplist[\buildexpr](\vexprs) \astarrow \vexprasts
@@ -3022,7 +3037,7 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Typing}
-\subsubsection{TypingRule.ETuple \label{sec:TypingRule.ETuple}}
+\TypingRuleDef{ETuple}
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
@@ -3065,7 +3080,7 @@ One of the following applies:
 \CodeSubsection{\ETupleBegin}{\ETupleEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.ETuple \label{sec:SemanticsRule.ETuple}}
+\SemanticsRuleDef{ETuple}
 \subsubsection{Example}
 In \listingref{semantics-etuple},
 the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
@@ -3106,7 +3121,7 @@ reason of enabling \ASTRuleRef{CheckNotSamePrec} by distinguishing parenthesized
 expressions from non-parenthesized expressions. However, upon typing such expressions,
 we ignore the parenthesis (see \TypingRuleRef{ETuple}.\textsc{PARENTHESIZED}).
 
-\subsubsection{ASTRule.ParenExpr\label{sec:ASTRule.ParenExpr}}
+\ASTRuleDef{ParenExpr}
 \begin{mathpar}
   \inferrule[sub\_expr]{}{
   \buildexpr(\overname{\Nexpr(\Tlpar, \punnode{\Nexpr}, \Trpar)}{\vparsednode}) \astarrow
@@ -3130,7 +3145,7 @@ no rules for building the AST for such expressions nor rules for type-checking t
 The Semantic Rules use $\evalexprsef\empty$ because the type-checker in
 $\annotatetype$ guarantees that expressions in types are side-effect-free.
 
-\subsubsection{SemanticsRule.EArray}
+\SemanticsRuleDef{EArray}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -3159,7 +3174,7 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\EvalEArrayBegin}{\EvalEArrayEnd}{../Typing.ml}
 
-\subsubsection{SemanticsRule.EEnumArray}
+\SemanticsRuleDef{EEnumArray}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
@@ -3195,7 +3210,7 @@ if $\annotateexpr{\tenv, \ve} \typearrow (\Ignore, \Ignore, \vses)$
 and $\vses$ only contains \sideeffectdescriptorsterm\ for reading storage (\ReadLocal\ and \ReadGlobal).
 
 \subsection{Semantics}
-\subsubsection{SemanticsRule.ESideEffectFreeExpr\label{sec:SemanticsRule.ESideEffectFreeExpr}}
+\SemanticsRuleDef{ESideEffectFreeExpr}
 \subsubsection{Prose}
 The helper relation
 \hypertarget{def-evalexprsef}{}
@@ -3219,7 +3234,7 @@ Notice that the output configuration does not contain an environment,
 since side-effect-free expressions do not modify the environment.
 
 \section{Evaluating a List of Expressions\label{sec:ExprList}}
-\subsubsection{SemanticsRule.EExprList\label{sec:SemanticsRule.EExprList}}
+\SemanticsRuleDef{EExprList}
 \subsubsection{Prose}
 The relation
 \hypertarget{def-evalexprlist}{}

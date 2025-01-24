@@ -461,7 +461,7 @@ the local declaration item is
   \hypertarget{ast-stry}{} &\\
   |\ & \STry(\stmt, \catcher^*, \overtext{\stmt?}{otherwise})
   \hypertarget{ast-sprint}{} &\\
-  |\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{debug})
+  |\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{newline})
   \hypertarget{ast-spragma}{} &\\
   |\ & \SPragma(\Tidentifier, \overtext{\expr^*}{args})
   \hypertarget{ast-sunreachable}{} &\\
@@ -578,7 +578,7 @@ array value in order to initialize an array-typed variable;
 \end{itemize}
 
 The rules for statements exclude \texttt{pragma} statements, since those are transformed into
-\texttt{pass} statements (see \TypingRuleRef{SPragma}).
+\passstatementsterm\ (see \TypingRuleRef{SPragma}).
 
 The rules for statements refine the throw statement by annotating it with
 the type of the thrown exception.
@@ -705,18 +705,18 @@ This section defines builder relations for the
 subset of macro productions in \secref{ParametricProductions}
 that are not inlined:
 \begin{itemize}
-  \item ASTRule.List (see \secref{ASTRule.List})
-  \item ASTRule.CList (see \secref{ASTRule.CList})
-  \item ASTRule.PList (see \secref{ASTRule.PList})
-  \item ASTRule.NTCList (see \secref{ASTRule.NTCList})
-  \item ASTRule.Option (see \secref{ASTRule.Option})
+  \item \ASTRuleRef{List}
+  \item \ASTRuleRef{CList}
+  \item \ASTRuleRef{PList}
+  \item \ASTRuleRef{NTCList}
+  \item \ASTRuleRef{Option}
 \end{itemize}
 
-We also define ASTRule.Identity (see \secref{ASTRule.Identity}),
+We also define \ASTRuleRef{Identity},
 which can be used in conjunction with the rules above in application
 to terminals.
 
-\subsubsection{ASTRule.List \label{sec:ASTRule.List}}
+\ASTRuleDef{List}
 \hypertarget{build-list}{}
 The meta relation
 \[
@@ -744,7 +744,7 @@ to each of them --- $\vsymasts$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.CList \label{sec:ASTRule.CList}}
+\ASTRuleDef{CList}
 \hypertarget{build-clist}{}
 The meta relation
 \[
@@ -771,7 +771,7 @@ to each of them --- $\vsymasts$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.PList \label{sec:ASTRule.PList}}
+\ASTRuleDef{PList}
 \hypertarget{build-plist}{}
 The meta relation
 \[
@@ -789,7 +789,7 @@ to each of them --- $\vsymasts$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.NTCList \label{sec:ASTRule.NTCList}}
+\ASTRuleDef{NTCList}
 \hypertarget{build-tclist}{}
 The meta relation
 \[
@@ -816,7 +816,7 @@ to each of them --- $\vsymasts$.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.Option \label{sec:ASTRule.Option}}
+\ASTRuleDef{Option}
 \hypertarget{build-option}{}
 The meta relation
 \[
@@ -850,7 +850,7 @@ it ignore the terminals and returns the result for the non-terminal.
 }
 \end{mathpar}
 
-\subsubsection{ASTRule.Identity \label{sec:ASTRule.Identity}}
+\ASTRuleDef{Identity}
 \hypertarget{build-identity}{}
 The meta function
 \[
@@ -907,49 +907,3 @@ $\AbbrevTArrayLengthEnum{\ve}{\vs}{\vt}$ & $\TArray(\ArrayLengthEnum(\ve, \vs), 
 \hline
 \end{tabular}
 \end{center}
-
-% \subsection{AST Builder Functions and Relations}
-% We define the following rules for transforming the various non-terminal parse nodes into
-% the corresponding AST nodes:
-% \begin{itemize}
-%   \item ASTRule.AST (see \secref{ASTRule.AST})
-%   \item ASTRule.GlobalDecl (see \secref{ASTRule.GlobalDecl})
-%   \item ASTRule.Subtype (see \secref{ASTRule.Subtype})
-%   \item ASTRule.Subtypeopt (see \secref{ASTRule.Subtypeopt})
-%   \item ASTRule.TypedIdentifier (see \secref{ASTRule.TypedIdentifier})
-%   \item ASTRule.OptTypedIdentifier (see \secref{ASTRule.OptTypedIdentifier})
-%   \item ASTRule.ReturnType (see \secref{ASTRule.ReturnType})
-%   \item ASTRule.ParamsOpt (see \secref{ASTRule.ParamsOpt})
-%   \item ASTRule.AccessArgs (see \secref{ASTRule.AccessArgs})
-%   \item ASTRule.FuncArgs (see \secref{ASTRule.FuncArgs})
-%   \item ASTRule.MaybeEmptyStmtList (see \secref{ASTRule.MaybeEmptyStmtList})
-%   \item ASTRule.FuncBody (see \secref{ASTRule.FuncBody})
-%   \item ASTRule.IgnoredOrIdentifier (see \secref{ASTRule.IgnoredOrIdentifier})
-%   \item ASTRule.LocalDeclKeyword (see \secref{ASTRule.LocalDeclKeyword})
-%   \item ASTRule.GlobalDeclKeyword (see \secref{ASTRule.GlobalDeclKeyword})
-%   \item ASTRule.Direction (see \secref{ASTRule.Direction})
-%   \item ASTRule.Alt (see \secref{ASTRule.Alt})
-%   \item ASTRule.OtherwiseOpt (see \secref{ASTRule.OtherwiseOpt})
-%   \item ASTRule.Catcher (see \secref{ASTRule.Catcher})
-%   \item ASTRule.Stmt (see \secref{ASTRule.Stmt})
-%   \item ASTRule.StmtList (see \secref{ASTRule.StmtList})
-%   \item ASTRule.SElse (see \secref{ASTRule.SElse})
-%   \item ASTRule.LExpr (see \secref{ASTRule.LExpr})
-%   \item ASTRule.LExprAtom (see \secref{ASTRule.LExprAtom})
-%   \item ASTRule.DeclItem (see \secref{ASTRule.DeclItem})
-%   \item ASTRule.UntypedDeclItem (see \secref{ASTRule.UntypedDeclItem})
-%   \item ASTRule.ExprPattern (see \secref{ASTRule.ExprPattern})
-%   \item ASTRule.Pattern (see \secref{ASTRule.Pattern})
-%   \item ASTRule.Fields (see \secref{ASTRule.Fields})
-%   \item ASTRule.FieldsOpt (see \secref{ASTRule.FieldsOpt})
-%   \item ASTRule.Slices (see \secref{ASTRule.Slices})
-%   \item ASTRule.Slice (see \secref{ASTRule.Slice})
-%   \item ASTRule.TyDecl (see \secref{ASTRule.TyDecl})
-%   \item ASTRule.FieldAssign (see \secref{ASTRule.FieldAssign})
-% \end{itemize}
-
-% We also define the following helper functions:
-% \begin{itemize}
-% \item ASTRule.StmtFromList (see \secref{ASTRule.StmtFromList})
-% \item ASTRule.SequenceStmts (see \secref{ASTRule.SequenceStmts})
-% \end{itemize}

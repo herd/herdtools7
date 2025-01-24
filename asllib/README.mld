@@ -112,12 +112,12 @@ In the directory [herdtools7/]:
 
 {2 Contributing examples and regression tests}
 
-We welcome new examples to add to both the ASL Semantics and Typing Reference
-Documents.  We use those examples as regression tests also. Therefore, please
+We welcome new examples to add to the ASL Reference Document.
+We use those examples as regression tests also. Therefore, please
 make sure that each example which appears in an ASL Reference Document also
 appears in the corresponding asllib test suite, as follows.
 
-  {3 Contributing examples to the ASL Semantics Reference document and regression suite}
+  {3 Contributing dynamic semantics examples to the ASL Reference document and regression suite}
 
   In [asllib/tests/ASLSemanticsReference.t]:
 
@@ -134,7 +134,7 @@ appears in the corresponding asllib test suite, as follows.
     - add a new section titled [SemanticsRule.MyNewTest.asl];
     - add a comment about how the test should behave and why.
 
-  {3 Contributing examples to the ASL Typing Reference document and regression suite}
+  {3 Contributing typing examples to the ASL Reference document and regression suite}
 
   In [asllib/tests/ASLTypingReference.t]:
 
