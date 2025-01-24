@@ -202,8 +202,8 @@ end;
 
 // SqrtRounded()
 // =============
-// Compute square root of VALUE with FRACBITS of precision, rounding inexact
-// values to Odd
+// Compute square root of VALUE with FRACBITS bits of precision after
+// the leading 1, rounding inexact values to Odd
 
 // Round to Odd (RO) preserves any leftover fraction in the least significant
 // bit (LSB) so a subsequent IEEE rounding (RN/RZ/RP/RM) to a lower precision
