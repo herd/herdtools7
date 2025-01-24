@@ -1792,7 +1792,7 @@ One of the following applies:
   \item All of the following apply (\textsc{some}):
   \begin{itemize}
     \item $\ve$ is $\langle\vlimit\rangle$;
-    \item applying $\annotatestaticconstrainedinteger$ to $\vlimit$ in $\tenv$ yields \\
+    \item applying $\annotatesymbolicconstrainedinteger$ to $\vlimit$ in $\tenv$ yields \\
           $(\vlimitp, \vses)$\ProseOrTypeError;
     \item $\vep$ is $\langle\vlimitp\rangle$.
   \end{itemize}
@@ -1806,7 +1806,7 @@ One of the following applies:
 \end{mathpar}
 \begin{mathpar}
 \inferrule[some]{
-  \annotatestaticconstrainedinteger(\tenv, \vlimit) \typearrow (\vlimitp, \vses) \OrTypeError
+  \annotatesymbolicconstrainedinteger(\tenv, \vlimit) \typearrow (\vlimitp, \vses) \OrTypeError
 }{
   \annotatelimitexpr(\tenv, \overname{\langle\vlimit\rangle}{\ve}) \typearrow (\overname{\langle\vlimitp\rangle}{\vep}, \vses)
 }

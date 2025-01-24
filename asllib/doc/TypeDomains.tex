@@ -473,7 +473,7 @@ $\{\nvint(1), \nvint(2), \nvint(3)\}$, which subsumes
 the domain of \verb|integer{1,2}|, which is \\ $\{\nvint(1), \nvint(2)\}$.
 
 Since dynamic domains are potentially infinite, this requires \emph{symbolic reasoning}.
-Furthermore, since any (statically evaluable) expressions may appear inside integer and bitvector
+Furthermore, since any (\symbolicallyevaluable{}) expressions may appear inside integer and bitvector
 types, testing subsumption is undecidable.
 We therefore approximate subsumption testing \emph{conservatively} via the predicate $\symsubsumes(\tenv, \vt, \vs)$.
 

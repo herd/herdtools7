@@ -326,15 +326,15 @@ One of the following applies:
   \item All of the following apply (\textsc{exact}):
   \begin{itemize}
     \item $\vc$ is the exact integer constraint for the expression $\ve$, that is, \\ $\ConstraintExact(\ve)$;
-    \item applying $\annotatestaticconstrainedinteger$ to $\ve$ in $\tenv$ yields $(\vep, \vses)$\ProseOrTypeError;
+    \item applying $\annotatesymbolicconstrainedinteger$ to $\ve$ in $\tenv$ yields $(\vep, \vses)$\ProseOrTypeError;
     \item define $\newc$ as the exact integer constraint for $\vep$, that is, $\ConstraintExact(\vep)$.
   \end{itemize}
 
   \item All of the following apply (\textsc{range}):
   \begin{itemize}
     \item $\vc$ is the range integer constraint for expressions $\veone$ and $\vetwo$, that is, \\ $\ConstraintRange(\veone, \vetwo)$;
-    \item applying $\annotatestaticconstrainedinteger$ to $\veone$ in $\tenv$ yields\\ $(\veonep, \vsesone)$\ProseOrTypeError;
-    \item applying $\annotatestaticconstrainedinteger$ to $\vetwo$ in $\tenv$ yields\\ $(\vetwop, \vsestwo)$\ProseOrTypeError;
+    \item applying $\annotatesymbolicconstrainedinteger$ to $\veone$ in $\tenv$ yields\\ $(\veonep, \vsesone)$\ProseOrTypeError;
+    \item applying $\annotatesymbolicconstrainedinteger$ to $\vetwo$ in $\tenv$ yields\\ $(\vetwop, \vsestwo)$\ProseOrTypeError;
     \item define $\newc$ as the range integer constraint for expressions $\veonep$ and $\vetwop$, that is, $\ConstraintRange(\veonep, \vetwop)$;
     \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$.
   \end{itemize}
@@ -343,14 +343,14 @@ One of the following applies:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule[exact]{
-  \annotatestaticconstrainedinteger(\tenv, \ve) \typearrow (\vep, \vses) \OrTypeError
+  \annotatesymbolicconstrainedinteger(\tenv, \ve) \typearrow (\vep, \vses) \OrTypeError
 }{
   \annotateconstraint(\tenv, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow (\overname{\ConstraintExact(\vep)}{\newc}, \vses)
 }
 \and
 \inferrule[range]{
-  \annotatestaticconstrainedinteger(\tenv, \veone) \typearrow (\veonep, \vsesone) \OrTypeError\\\\
-  \annotatestaticconstrainedinteger(\tenv, \vetwo) \typearrow (\vetwop, \vsestwo) \OrTypeError\\\\
+  \annotatesymbolicconstrainedinteger(\tenv, \veone) \typearrow (\veonep, \vsesone) \OrTypeError\\\\
+  \annotatesymbolicconstrainedinteger(\tenv, \vetwo) \typearrow (\vetwop, \vsestwo) \OrTypeError\\\\
   \vses \eqdef \vsesone \cup \vsestwo
 }{
   \annotateconstraint(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
@@ -536,7 +536,7 @@ All of the following apply:
   \item $\tty$ is the bit-vector type with width given by the expression
     $\ewidth$ and the bitfields given by $\bitfields$, that is, $\TBits(\ewidth, \bitfields)$;
   \item annotating the expression $\ewidth$ yields $(\twidth, \ewidthp, \seswidth)$\ProseOrTypeError;
-  \item \Prosecheckstaticallyevaluable{\seswidth};
+  \item \Prosechecksymbolicallyevaluable{\seswidth};
   \item \Prosecheckconstrainedinteger{$\tenv$}{$\twidth$};
   \item annotating the bitfields $\bitfields$ yields $(\bitfieldsp, \vsesbitfields)$\ProseOrTypeError;
   \item \Prosestaticeval{$\tenv$}{$\ewidthp$}{$\lint(\vwidth)$};
@@ -550,7 +550,7 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \ewidth} \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\\\\
-  \checkstaticallyevaluable(\seswidth) \typearrow \True \OrTypeError\\\\
+  \checksymbolicallyevaluable(\seswidth) \typearrow \True \OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\\\\
   \annotatebitfields(\tenv, \ewidthp, \bitfields) \typearrow (\bitfieldsp, \vsesbitfields) \OrTypeError\\\\
   \staticeval(\tenv, \ewidthp) \typearrow \lint(\vwidth)\\
@@ -682,7 +682,7 @@ All of the following apply:
       \item the array index is $\ve$ and determining whether $\ve$ corresponds to an enumeration in $\tenv$
       via $\getvariableenum$ yields $\None$ (meaning it does not
       correspond to an enumeration)\ProseOrTypeError;
-      \item annotating the statically evaluable integer expression $\ve$ yields\\
+      \item annotating the \symbolicallyevaluable{} integer expression $\ve$ yields\\
       $(\vep, \vsesindex)$\ProseOrTypeError;
       \item $\newty$ the array type indexed by integer bounded by
       the expression $\vep$ and of elements of type $\vtp$, that is,
@@ -708,7 +708,7 @@ All of the following apply:
   \annotatetype{\False, \tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \commonprefixline\\\\
   \getvariableenum(\tenv, \ve) \typearrow \None \OrTypeError\\\\
-  \annotatestaticinteger(\tenv, \ve) \typearrow (\vep, \vsesindex) \OrTypeError\\\\
+  \annotatesymbolicinteger(\tenv, \ve) \typearrow (\vep, \vsesindex) \OrTypeError\\\\
   \vses \eqdef \vsest \cup \vsesindex
 }{
   \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\AbbrevTArrayLengthExpr{\ve}{\vt}}{\tty}} \typearrow
@@ -798,16 +798,16 @@ One of the following applies:
 }
 \end{mathpar}
 
-\TypingRuleDef{AnnotateStaticallyEvaluableExpr}
-\hypertarget{def-annotatestaticallyevaluableexpr}{}
+\TypingRuleDef{AnnotateSymbolicallyEvaluableExpr}
+\hypertarget{def-annotatesymbolicallyevaluableexpr}{}
 The function
 \[
 \begin{array}{r}
-  \annotatestaticallyevaluableexpr(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto \\
+  \annotatesymbolicallyevaluableexpr(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto \\
   (\overname{\ty}{\vt}\times\overname{\expr}{\vep}\times\overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
-annotates the expression $\ve$ in the static environment $\tenv$ and checks that it is \staticallyevaluable,
+annotates the expression $\ve$ in the static environment $\tenv$ and checks that it is \symbolicallyevaluable,
 yielding the resulting type in $\vt$, the annotated expression in $\vep$ and the \sideeffectsetterm\ in $\vses$.
 \ProseOtherwiseTypeError
 
@@ -815,51 +815,51 @@ yielding the resulting type in $\vt$, the annotated expression in $\vep$ and the
 All of the following apply:
 \begin{itemize}
   \item \Proseannotateexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$};
-  \item \Prosecheckstaticallyevaluable{$\vses$}.
+  \item \Prosechecksymbolicallyevaluable{$\vses$}.
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \ve} \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
-  \checkstaticallyevaluable(\vses) \typearrow \True \OrTypeError
+  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError
 }{
-  \annotatestaticallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses)
+  \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses)
 }
 \end{mathpar}
-\CodeSubsection{\AnnotateStaticallyEvaluableExprBegin}{\AnnotateStaticallyEvaluableExprEnd}{../Typing.ml}
+\CodeSubsection{\AnnotateSymbolicallyEvaluableExprBegin}{\AnnotateSymbolicallyEvaluableExprEnd}{../Typing.ml}
 
-\TypingRuleDef{AnnotateStaticInteger}
-\hypertarget{def-annotatestaticinteger}{}
+\TypingRuleDef{AnnotateSymbolicInteger}
+\hypertarget{def-annotatesymbolicinteger}{}
 The function
 \[
-  \annotatestaticinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
+  \annotatesymbolicinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
   (\overname{\expr}{\vepp} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates a \staticallyevaluable\ integer expression $\ve$ in the static environment $\tenv$
+annotates a \symbolicallyevaluable\ integer expression $\ve$ in the static environment $\tenv$
 and returns the annotated expression $\vepp$ and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item \Proseannotatestaticallyevaluableexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$\ProseOrTypeError};
+  \item \Proseannotatesymbolicallyevaluableexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$\ProseOrTypeError};
   \item determining whether $\vt$ has the structure of an integer yields $\True$\ProseOrTypeError;
-  \item determining whether $\vep$ is \staticallyevaluable\ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item determining whether $\vep$ is \symbolicallyevaluable\ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item applying $\normalize$ to $\vep$ in $\tenv$ yields $\vepp$.
 \end{itemize}
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \annotatestaticallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
+  \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
   \checkstructureinteger(\tenv, \vt) \typearrow \True \OrTypeError\\\\
-  \checkstaticallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
+  \checksymbolicallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
   \normalize(\tenv, \vep) \typearrow \vepp
 }{
-  \annotatestaticinteger(\tenv, \ve) \typearrow (\vepp, \vses)
+  \annotatesymbolicinteger(\tenv, \ve) \typearrow (\vepp, \vses)
 }
 \end{mathpar}
-\CodeSubsection{\AnnotateStaticIntegerBegin}{\AnnotateStaticIntegerEnd}{../Typing.ml}
+\CodeSubsection{\AnnotateSymbolicIntegerBegin}{\AnnotateSymbolicIntegerEnd}{../Typing.ml}
 
 \hypertarget{def-checkstructureinteger}{}
 \TypingRuleDef{CheckStructureInteger}

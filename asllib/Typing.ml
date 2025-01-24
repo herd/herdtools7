@@ -567,10 +567,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | _ -> conflict ~loc [ T_Exception [] ] t_struct
   (* End *)
 
-  (* Begin CheckStaticallyEvaluable *)
-  let check_statically_evaluable expr_for_error ses () =
-    if SES.is_statically_evaluable ses then
-      () |: TypingRule.CheckStaticallyEvaluable
+  (* Begin CheckSymbolicallyEvaluable *)
+  let check_symbolically_evaluable expr_for_error ses () =
+    if SES.is_symbolically_evaluable ses then
+      () |: TypingRule.CheckSymbolicallyEvaluable
     else
       fatal_from ~loc:expr_for_error
         (Error.ImpureExpression (expr_for_error, ses))
@@ -1171,7 +1171,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin TBits *)
     | T_Bits (e_width, bitfields) ->
         let t_width, e_width', ses_width = annotate_expr env e_width in
-        let+ () = check_statically_evaluable e_width ses_width in
+        let+ () = check_symbolically_evaluable e_width ses_width in
         let+ () = check_constrained_integer ~loc:e_width env t_width in
         let bitfields', ses_bitfields =
           if bitfields = [] then (bitfields, SES.empty)
@@ -1207,7 +1207,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               match get_variable_enum' env e with
               | Some (s, labels) -> (ArrayLength_Enum (s, labels), SES.empty)
               | None ->
-                  let e', ses = annotate_static_integer ~loc env e in
+                  let e', ses = annotate_symbolic_integer ~loc env e in
                   (ArrayLength_Expr e', ses))
           | ArrayLength_Enum (_, _) ->
               assert (* Enumerated indices only exist in the typed AST. *)
@@ -1261,23 +1261,23 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           |: TypingRule.TNonDecl
   (* End *)
 
-  (* Begin AnnotateStaticallyEvaluableExpr *)
-  and annotate_statically_evaluable_expr env e =
+  (* Begin AnnotateSymbolicallyEvaluableExpr *)
+  and annotate_symbolically_evaluable_expr env e =
     let t, e', ses = annotate_expr env e in
-    let+ () = check_statically_evaluable e ses in
+    let+ () = check_symbolically_evaluable e ses in
     (t, e', ses)
   (* End *)
 
-  (* Begin AnnotateStaticInteger *)
-  and annotate_static_integer ~(loc : 'a annotated) env e =
-    let t, e', ses = annotate_statically_evaluable_expr env e in
+  (* Begin AnnotateSymbolicInteger *)
+  and annotate_symbolic_integer ~(loc : 'a annotated) env e =
+    let t, e', ses = annotate_symbolically_evaluable_expr env e in
     let+ () = check_structure_integer ~loc env t in
     (StaticModel.try_normalize env e', ses)
   (* End *)
 
-  (* Begin StaticConstrainedInteger *)
-  and annotate_static_constrained_integer ~(loc : 'a annotated) env e =
-    let t, e', ses = annotate_statically_evaluable_expr env e in
+  (* Begin SymbolicConstrainedInteger *)
+  and annotate_symbolic_constrained_integer ~(loc : 'a annotated) env e =
+    let t, e', ses = annotate_symbolically_evaluable_expr env e in
     let+ () = check_constrained_integer ~loc env t in
     (StaticModel.try_normalize env e', ses)
   (* End *)
@@ -1285,11 +1285,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* Begin AnnotateConstraint *)
   and annotate_constraint ~loc env = function
     | Constraint_Exact e ->
-        let e', ses = annotate_static_constrained_integer ~loc env e in
+        let e', ses = annotate_symbolic_constrained_integer ~loc env e in
         (Constraint_Exact e', ses)
     | Constraint_Range (e1, e2) ->
-        let e1', ses1 = annotate_static_constrained_integer ~loc env e1
-        and e2', ses2 = annotate_static_constrained_integer ~loc env e2 in
+        let e1', ses1 = annotate_symbolic_constrained_integer ~loc env e1
+        and e2', ses2 = annotate_symbolic_constrained_integer ~loc env e2 in
         let ses = SES.union ses1 ses2 in
         (Constraint_Range (e1', e2'), ses)
   (* End *)
@@ -1314,7 +1314,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | Slice_Length (offset, length) ->
           let t_offset, offset', ses_offset = annotate_expr env offset
           and length', ses_length =
-            annotate_static_constrained_integer ~loc env length
+            annotate_symbolic_constrained_integer ~loc env length
           in
           let+ () = check_structure_integer ~loc:offset env t_offset in
           let ses = SES.union ses_length ses_offset in
@@ -1362,7 +1362,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin PSingle *)
     | Pattern_Single e ->
         let t_e, e', ses = annotate_expr env e in
-        let+ () = check_statically_evaluable e ses in
+        let+ () = check_symbolically_evaluable e ses in
         let+ () =
          fun () ->
           let t_struct = Types.make_anonymous env t
@@ -1383,7 +1383,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin PGeq *)
     | Pattern_Geq e ->
         let t_e, e', ses = annotate_expr env e in
-        let+ () = check_statically_evaluable e ses in
+        let+ () = check_symbolically_evaluable e ses in
         let+ () =
          fun () ->
           let t_struct = Types.get_structure env t
@@ -1397,7 +1397,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin PLeq *)
     | Pattern_Leq e ->
         let t_e, e', ses = annotate_expr env e in
-        let+ () = check_statically_evaluable e ses in
+        let+ () = check_symbolically_evaluable e ses in
         let+ () =
          fun () ->
           let t_anon = Types.make_anonymous env t
@@ -1410,8 +1410,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* End *)
     (* Begin PRange *)
     | Pattern_Range (e1, e2) ->
-        let t_e1, e1', ses1 = annotate_statically_evaluable_expr env e1
-        and t_e2, e2', ses2 = annotate_statically_evaluable_expr env e2 in
+        let t_e1, e1', ses1 = annotate_symbolically_evaluable_expr env e1
+        and t_e2, e2', ses2 = annotate_symbolically_evaluable_expr env e2 in
         let ses =
           (* They can't be conflicting because they are statically evaluable *)
           SES.union ses1 ses2
@@ -1520,7 +1520,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       (* CheckParamsTypeSat( *)
       List.iter2
         (fun (name, ty_declared_opt) (ty_actual, e_actual, ses_actual) ->
-          let+ () = check_statically_evaluable e_actual ses_actual in
+          let+ () = check_symbolically_evaluable e_actual ses_actual in
           (* That's enough of a check on Side Effects for parameters:
              - parameters can't conflict with anything once they are statically
                evaluable;
@@ -1656,7 +1656,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               (fun (p_name, _ty) -> String.equal callee_x p_name)
               callee.parameters
           then
-            let+ () = check_statically_evaluable caller_e caller_ses in
+            let+ () = check_symbolically_evaluable caller_e caller_ses in
             let+ () = check_constrained_integer ~loc env caller_ty in
             (callee_x, caller_e) :: eqs
           else eqs)
@@ -1713,7 +1713,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 | Some e -> e
               in
               let caller_param_t, _, _ =
-                annotate_statically_evaluable_expr env caller_param_e
+                annotate_symbolically_evaluable_expr env caller_param_e
               in
               let () =
                 if false then
@@ -2549,7 +2549,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* Begin ShouldRememberImmutableExpression *)
   let should_remember_immutable_expression ses =
     let ses_non_assert = SES.remove_assertions ses in
-    SES.is_statically_evaluable ses_non_assert
+    SES.is_symbolically_evaluable ses_non_assert
     |: TypingRule.ShouldRememberImmutableExpression
   (* End *)
 
@@ -2963,7 +2963,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (None, SES.empty)
     | Some limit ->
         let new_limit, ses =
-          annotate_static_constrained_integer ~loc env limit
+          annotate_symbolic_constrained_integer ~loc env limit
         in
         (Some new_limit, ses) |: TypingRule.AnnotateLimitExpr
   (* End *)

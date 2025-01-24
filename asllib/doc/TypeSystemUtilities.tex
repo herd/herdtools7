@@ -724,7 +724,7 @@ The function
   \aslsep \overname{\expr}{\ve}) \aslto \overname{\staticenvs}{\newtenv}
 \]
 binds the identifier $\vx$, which is assumed to name a global storage element,
-to the expression $\ve$, which is assumed to be \staticallyevaluable,
+to the expression $\ve$, which is assumed to be \symbolicallyevaluable,
 in the static environment $\tenv$,
 resulting in the updated environment $\newtenv$.
 
@@ -752,7 +752,7 @@ The function
   \aslsep \overname{\expr}{\ve}) \aslto \overname{\staticenvs}{\newtenv}
 \]
 binds the identifier $\vx$, which is assumed to name a local storage element,
-to the expression $\ve$, which is assumed to be \staticallyevaluable,
+to the expression $\ve$, which is assumed to be \symbolicallyevaluable,
 in the static environment $\tenv$,
 resulting in the updated environment $\newtenv$.
 
@@ -784,13 +784,13 @@ reason about type satisfaction, yielding the result in $\vb$.
 
 \subsubsection{Prose}
 Define $\vb$ as $\True$ if and only if
-applying $\isstaticallyevaluable$ to $\vses$ with \PerformsAssertionsTerm\ removed from it,
+applying $\issymbolicallyevaluable$ to $\vses$ with \PerformsAssertionsTerm\ removed from it,
 yields $\True$.
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \isstaticallyevaluable(\vses \setminus \{\PerformsAssertions\}) \typearrow \vb
+  \issymbolicallyevaluable(\vses \setminus \{\PerformsAssertions\}) \typearrow \vb
 }{
   \shouldrememberimmutableexpression(\vses) \typearrow \vb
 }
@@ -809,11 +809,11 @@ The function
   \overname{\staticenvs}{\newtenv} \cup \TTypeError
 \end{array}
 \]
-conditionally adds the information that the expression in $\veopt$ is statically evaluable
+conditionally adds the information that the expression in $\veopt$ is \symbolicallyevaluable{}
 and bound to $\vx$.
 More precisely, $\addimmutableexpression(\tenv, \ldk, \veopt, \vx)$
 associates an expression with the identifier $\vx$
-in the static environment $\tenv$, if one exists in $\veopt$ and it is \staticallyevaluable\ with
+in the static environment $\tenv$, if one exists in $\veopt$ and it is \symbolicallyevaluable\ with
 respect to the \sideeffectsetterm\ $\vsese$,
 along with the local declaration keyword $\ldk$. The result is the updated static environment $\newtenv$.
 \ProseOtherwiseTypeError
