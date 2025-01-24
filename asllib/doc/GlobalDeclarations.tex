@@ -267,9 +267,14 @@ All of the following apply:
 \TypingRuleDef{ControlFlowFromStmt}
 \hypertarget{def-controlflowsymbolterm}{}
 \hypertarget{def-controlflowstate}{}
-We define \controlflowsymbolterm\ as follows:
+We define \controlflowsymbolsterm\ as follows:
 \[
   \controlflowstate \eqdef \{\assertednotinterrupt, \interrupt, \maynotinterrupt\}
+\]
+\hypertarget{def-controlflowleq}{}
+\controlflowsymbolsterm\ are totally ordered via the relation $\controlflowleq$, defined as follows:
+\[
+  \assertednotinterrupt\ \controlflowleq \interrupt \controlflowleq \maynotinterrupt \enspace.
 \]
 
 \hypertarget{def-controlflowfromstmt}{}
@@ -343,8 +348,17 @@ One of the following applies:
 
   \item All of the following apply (\textsc{s\_try}):
   \begin{itemize}
-    \item $\vs$ is the \trystatementterm\ for the statement $\vbody$;
-    \item applying $\controlflowfromstmt$ to $\vbody$ yields $\vctrlflow$.
+    \item $\vs$ is the \trystatement{$\vbody$}{\\ $\catchers$}{$\votherwiseopt$};
+    \item applying $\controlflowfromstmt$ to $\vbody$ yields $\vreszero$;
+    \item \Proseeqdef{$\vresone$}{
+          the application of $\controlflowjoin$ to $\controlflowfromstmt(\vo)$
+          and $\vreszero$, if $\votherwiseopt = \langle\vo\rangle$,
+          and $\vreszero$, otherwise};
+    \item for each catcher in $\catchers$ associated with a statement $\vs$,
+          applying \\
+          $\controlflowfromstmt$ to $\vs$ yields $\vcf_\vs$;
+    \item \Proseeqdef{$\vctrlflow$}{the application of $\controlflowjoin$ to $\vresone$,
+          and $\vcf_\vs$, for each catcher in $\catchers$ associated with a statement $\vs$}.
   \end{itemize}
 \end{itemize}
 
@@ -385,7 +399,7 @@ One of the following applies:
 \inferrule[s\_cond]{
   \controlflowfromstmt(\vsone) \typearrow \vctrlflowone\\
   \controlflowfromstmt(\vstwo) \typearrow \vctrlflowtwo\\
-  \controlflowjoin(\vctrlflowone, \vctrlflowtwo) \typearrow \vctrlflow
+  \controlflowjoin(\{\vctrlflowone, \vctrlflowtwo\}) \typearrow \vctrlflow
 }{
   \controlflowfromstmt(\overname{\SCond(\Ignore, \vsone, \vstwo)}{\vs}) \typearrow \vctrlflow
 }
@@ -397,8 +411,9 @@ The reasoning for the next case is as follows:
     a $\SWhile$ loop, and a $\SFor$ are like a conditional statement that either executes
     $\SPass$ (when the loop condition does not hold) or executes the body and then loops back.
   \item The control flow state for $\SPass$ is $\maynotinterrupt$.
-  \item The overall control flow state is then $\controlflowjoin(\maynotinterrupt, \Ignore)$,
-    which is always $\maynotinterrupt$.
+  \item The overall control flow state is then $\controlflowjoin(\{\maynotinterrupt, \Ignore\})$,
+    which is always $\maynotinterrupt$, since $\maynotinterrupt$ is the maximal element,
+    with respect to $\controlflowleq$.
 \end{itemize}
 
 \begin{mathpar}
@@ -431,11 +446,24 @@ $\SSeq(\vbody, \SWhile(\vcond, \Ignore, \vbody))$;
 }
 \end{mathpar}
 
+The rule for \textsc{s\_try} conservatively approximates the results from all control flows
+passing through the statement by returning the maximal $\controlflowsymbolterm$,
+with respect to $\controlflowleq$,
+computed for each control flow path.
 \begin{mathpar}
 \inferrule[s\_try]{
-  \controlflowfromstmt(\vbody) \typearrow \vctrlflow
+  \controlflowfromstmt(\vbody) \typearrow \vreszero\\
+  {
+  \vresone \eqdef
+  \begin{cases}
+    \controlflowjoin(\{\controlflowfromstmt(\vo), \vreszero\}) & \text{if }\votherwiseopt = \langle\vo\rangle\\
+    \vreszero & \text{otherwise}
+  \end{cases}
+  }\\
+  (\Ignore,\Ignore,\vs)\in\catchers: \controlflowfromstmt(\vs) \typearrow \vcf_\vs\\
+  \vctrlflow \eqdef \controlflowjoin(\{(\Ignore,\Ignore,\vs)\in\catchers: \vcf_\vs\} \cup \{\vresone\})
 }{
-  \controlflowfromstmt(\overname{\STry(\vbody, \Ignore, \Ignore)}{\vs}) \typearrow \vctrlflow
+  \controlflowfromstmt(\overname{\STry(\vbody, \catchers, \votherwiseopt)}{\vs}) \typearrow \vctrlflow
 }
 \end{mathpar}
 
@@ -465,12 +493,21 @@ Define $\vctrlflow$ as $\vttwo$ if $\vtone$ is $\maynotinterrupt$ and $\vtone$, 
 \TypingRuleDef{ControlFlowJoin}
 \hypertarget{def-controlflowjoin}{}
 The helper function
+The helper function
 \[
-\controlflowjoin(\overname{\controlflowstate}{\vtone} \aslsep
-                \overname{\controlflowstate}{\vttwo})
+\controlflowjoin(\overname{\pow{\controlflowstate}}{\vs})
 \aslto \overname{\controlflowstate}{\vctrlflow}
 \]
-returns in $\vctrlflow$ the maximal element of $\vtone$ and $\vttwo$ in the following ordering:
-\[
-  \assertednotinterrupt\ \sqsubset \interrupt \sqsubset \maynotinterrupt \enspace.
-\]
+returns the maximal element in the set of \controlflowsymbolsterm\ $\vs$,
+with respect to $\controlflowleq$ in $\vctrlflow$.
+
+\ProseParagraph
+\Proseeqdef{$\vctrlflow$}{the maximal element in the set of \controlflowsymbolsterm\ $\vs$,
+with respect to $\controlflowleq$}.
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{}{
+  \controlflowjoin(\vs) \typearrow \overname{\max_{\controlflowleq}(\vs)}{\vctrlflow}
+}
+\end{mathpar}
