@@ -150,7 +150,7 @@ let hex_lit = '0' 'x' (digit | hex_alpha) ('_' | digit | hex_alpha)*
 let real_lit = digit ('_' | digit)* '.' digit ('_' | digit)*
 let alpha = ['a'-'z' 'A'-'Z']
 let string_lit = '"' [^ '"']* '"'
-let bits = ['0' '1' 'z' ' ']*
+let bits = ['0' '1' ' ']*
 let mask = ['0' '1' 'x' ' ']*
 let identifier = (alpha | '_') (alpha|digit|'_')*
 
