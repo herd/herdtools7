@@ -189,12 +189,7 @@ $\REstringlit$ &$\triangleq$& \anycharacter{\texttt{"}} ( ($\REstrchar$ \texttt{
 
 \section{Identifiers}
 Identifiers start with a letter or underscore and continue with zero or more letters, underscores or digits.
-Identifiers are case sensitive. To improve readability, it is recommended to avoid the use of identifiers that differ
-only by the case of some characters.
-
-By convention, identifiers that begin with double-underscore are reserved for use in the implementation and should
-not be used in specifications.
-
+Identifiers are case sensitive.
 \hypertarget{def-reletter}{}
 \hypertarget{def-reidentifier}{}
 \begin{center}
@@ -204,7 +199,19 @@ $\REidentifier$ &$\triangleq$& \texttt{($\REletter$ $|$ $\underbracket{\texttt{ 
 \end{tabular}
 \end{center}
 
-% An enumeration literal is also classed as a literal constant, but is syntactically an identifier.
+\RequirementDef{ReservedIdentifiers}
+Identifiers that begin with double-underscore are reserved for use in the implementation and should
+not be used in specifications (see \LexicalRuleRef{ReservedIdentifiers}).
+
+\ConventionDef{IdentifiersDifferingByCase}
+To improve readability, it is recommended to avoid the use of identifiers that differ
+only by the case of some characters.
+
+\ConventionDef{IdentifiersStartingWithSingleUnderscore}
+Any identifier with a single underscore followed by an alphanumeric character
+is treated as a normal identifier. We recommend that these are only
+for use by platform-specific code, which should not clash with the rest of a
+portable ASL specification.
 
 Tuple element selectors are classed as identifiers. That is, in cases like \texttt{(1, 2).item0},
 the selector \texttt{item0} is classed as an identifier.
@@ -418,8 +425,6 @@ given by $s$.
 \item The function $\tokenid(s)$ returns $\Tlexeme(s)$.
 \hypertarget{def-lexicalerror}{}
 \item The function $\lexicalerror$ returns $\Terror$.
-\hypertarget{def-toidentifier}{}
-\item The function $\toidentifier(s)$ returns $\Tidentifier(s)$.
 \hypertarget{def-eoftoken}{}
 \item The lexeme action
 \[
@@ -430,6 +435,26 @@ given by $s$.
 \]
 checks whether $\eof$ is not followed by more characters and returns a lexical error otherwise.
 \end{itemize}
+
+\LexicalRuleDef{ReservedIdentifiers}
+\hypertarget{def-toidentifier}{}
+The function $\toidentifier(s)$ checks whether $s$ is a legal identifier
+and if so returns $\Tidentifier(s)$. Otherwise, the result is a lexical error.
+
+\ProseParagraph
+Given a string $s$, $\toidentifier(s)$ checks whether $s$ starts with a double
+underscore. If so, the result is a lexical error. Otherwise the result is
+$\Tidentifier(s)$.
+
+\FormallyParagraph
+\[
+  \toidentifier(s) = \begin{cases}
+    \LexicalError & \text{if }s = \underbracket{\texttt{ \_ } }\ \underbracket{\texttt{ \_ } } s'\\
+    \Tidentifier(s) & \text{else}
+  \end{cases}
+\]
+
+\subsection{Regular Tokens Tables}
 
 \hypertarget{def-spectoken}{}
 The lexical specification  $\spectoken$ is given by the following four tables.
