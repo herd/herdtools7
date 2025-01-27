@@ -2192,10 +2192,12 @@ module Make
         O.o "static int feature_check(void) {" ;
         if do_self then
           O.oi "cache_line_size = getcachelinesize();" ;
-        if Cfg.variant Variant_litmus.Pac then
+        if Cfg.variant Variant_litmus.Pac then begin
           O.fi "if (!check_pac_variant(%S)) return 0;" doc.Name.name;
-        if Cfg.variant Variant_litmus.FPac then
-          O.fi "if (!check_fpac_variant(%S)) return 0;" doc.Name.name;
+          let expect_fpac =
+            if Cfg.variant Variant_litmus.FPac then "true" else "false" in
+          O.fi "if (!check_fpac_variant(%S,%s)) return 0;" doc.Name.name expect_fpac
+        end ;
         if Cfg.variant Variant_litmus.ConstPacField then
           O.fi "if (!check_const_pac_field_variant(%S)) return 0;" doc.Name.name;
         if Cfg.is_kvm then begin

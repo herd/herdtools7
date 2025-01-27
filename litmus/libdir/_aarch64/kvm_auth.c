@@ -68,8 +68,9 @@ static int check_pac_variant(char* tname) {
   }
 }
 
-// Check if `FEAT_Pauth2` is implemented
-static int check_fpac_variant(char* tname) {
+// Check if `FEAT_FPAC` is implemented iff `present`:
+// FPAC change the way `aut*` is executed in case of failure
+static int check_fpac_variant(char* tname, int present) {
   uint64_t isar1;
   asm volatile("mrs %[isar1], ID_AA64ISAR1_EL1": [isar1] "=r" (isar1));
   uint64_t isar1_api = (isar1 >> 8) & 0b1111;
@@ -77,10 +78,13 @@ static int check_fpac_variant(char* tname) {
   switch (isar1_api) {
     case 0b0100:
     case 0b0101:
-      return 1;
+      if (!present)
+        printf("Test %s, FPAC is implemented on this system\n", tname);
+      return present;
     default:
-      printf("Test %s, FPAC not available on this system\n", tname);
-      return 0;
+      if (present)
+        printf("Test %s, FPAC not implemented on this system\n", tname);
+      return !present;
   }
 }
 
