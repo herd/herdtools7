@@ -494,4 +494,5 @@ module type S =  sig
   val eq : v -> v -> bool
   val vToName : v -> string
   val is_nop : v -> bool
+  val is_zero : v -> bool
 end

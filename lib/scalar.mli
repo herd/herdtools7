@@ -41,6 +41,9 @@ module type S = sig
 
   val as_bool : t -> bool option
 
+  (** [is_zero s] is true if and only if [s] is identity wrt [add]/[sub]. *)
+  val is_zero : t -> bool
+
   val printable : t -> t
   val compare : t -> t -> int
   val unsigned_compare : t -> t -> int

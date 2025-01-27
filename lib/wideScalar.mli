@@ -57,4 +57,6 @@ module type S = sig
   val lt : t -> t -> bool
   val le : t -> t -> bool
   val mask : MachSize.sz -> t -> t
+
+  val is_zero : t -> bool
 end

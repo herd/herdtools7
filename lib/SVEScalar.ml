@@ -30,7 +30,6 @@ module BV = struct
   let compare = Z.compare
   let equal = Z.equal
 
-
   let logor = Z.logor
   and logand = Z.logand
   and logxor = Z.logxor
@@ -56,6 +55,8 @@ module BV = struct
     | Word -> fun v ->  Z.logand v mask32
     | Quad -> fun v -> logand v mask64
     | S128 -> Misc.identity
+
+  let is_zero = Z.equal Z.zero
 end
 
 module Translate = struct

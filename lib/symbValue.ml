@@ -137,7 +137,7 @@ module
   exception Undetermined
 
   let is_zero v = match v with
-  | Val cst -> Cst.eq cst Cst.zero
+  | Val cst -> Cst.is_zero cst
   | Var _ -> raise  Undetermined
 
   let is_one v = match v with
@@ -282,7 +282,7 @@ module
 
   let add v1 v2 =
 (* Particular cases are important for symbolic constants *)
-    if protect_is is_zero v1 then v2
+    if protect_is is_zero v1 && Cst.Scalar.unique_zero then v2
     else if protect_is is_zero v2 then v1
     else match v1,v2 with
     | (Val (Concrete i1),Val (Symbolic (Virtual ({offset=i2;_} as sym))))
@@ -454,8 +454,8 @@ module
 
   let lt v1 v2 = match v1,v2 with
 (* Need to compare symbols to zero, for setting X86_64 flags *)
-    | Val (Symbolic _),Val c when Cst.eq c Cst.zero -> zero
-    | Val c,Val (Symbolic _) when Cst.eq c Cst.zero -> one
+    | Val (Symbolic _),Val c when Cst.is_zero c -> zero
+    | Val c,Val (Symbolic _) when Cst.is_zero c -> one
     | _,_ ->
        binop Op.Lt
          (fun s1 s2 -> bool_to_scalar (Cst.Scalar.lt s1 s2)) v1 v2
@@ -590,7 +590,7 @@ module
   | Val c -> Constant.as_virtual c
   | Var _ -> raise Undetermined
 
-  let is_virtual_v v =  if is_virtual v then one else zero
+  let is_virtual_v v = if is_virtual v then v_true else v_false
 
   let is_instrloc v = match v with
   | Val c -> Constant.is_label c
@@ -846,10 +846,7 @@ module
     | ReadBit k ->
         (* ReadBit returns 0 or 1, not false or true *)
         unop op
-          (fun s ->
-             if equal (logand (mask_one k) s) zero
-             then zero
-             else one)
+          (fun s -> if is_zero (logand (mask_one k) s) then zero else one)
     | LogicalRightShift 0
     | LeftShift 0
     | AddK 0 -> fun s -> s
