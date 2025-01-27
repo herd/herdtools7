@@ -73,6 +73,14 @@ module Make
     if Cfg.variant Variant_litmus.NoInit then
       Warn.user_error "Switches `-variant NoInit` and `-mode (presi|kvm)` are not compatible"
 
+  let () =
+    if Cfg.variant Variant_litmus.FPac && not (Cfg.variant Variant_litmus.Pac) then
+      Warn.user_error "\"fpac\" variant require \"pac\" variant"
+
+  let () =
+    if Cfg.variant Variant_litmus.ConstPacField && not (Cfg.variant Variant_litmus.Pac) then
+      Warn.user_error "\"const-pac-field\" variant require \"pac\" variant"
+
   module Insert =
       ObjUtil.Insert
         (struct
@@ -213,8 +221,6 @@ module Make
           if have_timebase then O.f "#define DELTA_TB %s" delta
         end ;
         O.o "/* Includes */" ;
-        if Cfg.variant Variant_litmus.Pac then
-          Insert.insert O.o "kvm_auth.c" ;
         Insert.insert_when_exists O.o "intrinsics.h" ;
         if do_dynalloc then O.o "#define DYNALLOC 1" ;
         if do_stats then O.o "#define STATS 1" ;
@@ -259,6 +265,8 @@ module Make
             end
           end
         end ;
+        if Cfg.variant Variant_litmus.Pac then
+          Insert.insert O.o "kvm_auth.c" ;
         O.o "" ;
         O.o "typedef uint32_t count_t;" ;
         O.o "#define PCTR PRIu32" ;
@@ -2184,6 +2192,12 @@ module Make
         O.o "static int feature_check(void) {" ;
         if do_self then
           O.oi "cache_line_size = getcachelinesize();" ;
+        if Cfg.variant Variant_litmus.Pac then
+          O.fi "if (!check_pac_variant(%S)) return 0;" doc.Name.name;
+        if Cfg.variant Variant_litmus.FPac then
+          O.fi "if (!check_fpac_variant(%S)) return 0;" doc.Name.name;
+        if Cfg.variant Variant_litmus.ConstPacField then
+          O.fi "if (!check_const_pac_field_variant(%S)) return 0;" doc.Name.name;
         if Cfg.is_kvm then begin
           match db with
           | None ->

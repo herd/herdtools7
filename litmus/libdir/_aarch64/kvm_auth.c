@@ -50,3 +50,51 @@ void init_pauth() {
   init_pauth_key_da();
   init_pauth_key_db();
 }
+
+// Check if `FEAT_Pauth2` is implemented
+static int check_pac_variant(char* tname) {
+  uint64_t isar1;
+  asm volatile("mrs %[isar1], ID_AA64ISAR1_EL1": [isar1] "=r" (isar1));
+  uint64_t isar1_api = (isar1 >> 8) & 0b1111;
+
+  switch (isar1_api) {
+    case 0b0100:
+    case 0b0011:
+    case 0b0101:
+      return 1;
+    default:
+      printf("Test %s, PAC not available on this system\n", tname);
+      return 0;
+  }
+}
+
+// Check if `FEAT_Pauth2` is implemented
+static int check_fpac_variant(char* tname) {
+  uint64_t isar1;
+  asm volatile("mrs %[isar1], ID_AA64ISAR1_EL1": [isar1] "=r" (isar1));
+  uint64_t isar1_api = (isar1 >> 8) & 0b1111;
+
+  switch (isar1_api) {
+    case 0b0100:
+    case 0b0101:
+      return 1;
+    default:
+      printf("Test %s, FPAC not available on this system\n", tname);
+      return 0;
+  }
+}
+
+// Check if `FEAT_CONSTPACFIELD` is implemented
+static int check_const_pac_field_variant(char* tname) {
+  uint64_t isar2;
+  asm volatile("mrs %[isar2], ID_AA64ISAR2_EL1": [isar2] "=r" (isar2));
+  uint64_t isar2_pac = (isar2 >> 24) & 0b1111;
+
+  switch (isar2_pac) {
+    case 0b0001:
+      return 1;
+    default:
+      printf("Test %s, CONSTPACFIELD not available on this system\n", tname);
+      return 0;
+  }
+}

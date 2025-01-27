@@ -25,12 +25,14 @@ type t =
   | SME (* Do nothing *)
   | NoInit (* Do not initialise variables *)
   | Pac (* Pointer authentication instructions *)
+  | FPac (* Fault on pointer authentication *)
+  | ConstPacField (* Bit 55 is used to compute the VA-range in ComputePAC *)
 
 let compare = compare
 
 let tags =
-  "noinit"::"s128"::"self"::"mixed"::"vmsa"::"telechat"
-  ::Fault.Handling.tags
+  "noinit"::"s128"::"self"::"mixed"::"vmsa"::"telechat"::"pac"
+  ::"const-pac-field"::"fpac"::Fault.Handling.tags
 
 let parse s = match Misc.lowercase s with
 | "noinit" -> Some NoInit
@@ -42,6 +44,8 @@ let parse s = match Misc.lowercase s with
 | "sve" -> Some SVE
 | "sme" -> Some SME
 | "pac" -> Some Pac
+| "fpac" -> Some FPac
+| "const-pac-field" -> Some ConstPacField
 | tag ->
   match
    Misc.app_opt (fun p -> FaultHandling p) (Fault.Handling.parse tag)
@@ -72,6 +76,8 @@ let pp = function
   | SVE -> "sve"
   | SME -> "sme"
   | Pac -> "pac"
+  | FPac -> "fpac"
+  | ConstPacField -> "const-pac-field"
 
 let ok v a = match v,a with
 | Self,`AArch64 -> true
