@@ -199,3 +199,20 @@ let orop _ _ = None
 let andnot2 _ _ = None
 let andop _ _ = None
 let mask _ _ = None
+
+let is_left_identity =
+  let open ASLScalar in
+  function
+  | Concat -> (
+      function S_BitVector bv -> Asllib.Bitvector.length bv = 0 | _ -> false)
+  | Divrm | BVSliceSet _ | SetIndex _ | SetField _ -> Fun.const false
+
+let is_right_identity =
+  let open ASLScalar in
+  function
+  | Divrm -> ( function S_Int z -> Z.equal Z.one z | _ -> false)
+  | Concat -> (
+      ASLScalar.(
+        function S_BitVector bv -> Asllib.Bitvector.length bv = 0 | _ -> false))
+  | BVSliceSet _ | SetIndex _ | SetField _ -> Fun.const false
+

@@ -959,6 +959,8 @@ module
       fun v1 v2 ->
         match (v1, v2) with
         | Var _, _ | _, Var _ -> raise Undetermined
+        | Val (Concrete s1), _ when ArchOp.is_left_identity o s1 -> v2
+        | _, Val (Concrete s2) when ArchOp.is_right_identity o s2 -> v1
         | Val c1, Val c2 -> (
             match ArchOp.do_op o c1 c2 with
             | Some c -> Val c
