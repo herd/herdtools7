@@ -200,7 +200,7 @@ and pattern_desc =
 
 and pattern = pattern_desc annotated
 
-(** Indexes an array, a bitvector. *)
+(** Slices define lists of indices into arrays and bitvectors. *)
 and slice =
   | Slice_Single of expr
       (** [Slice_Single i] is the slice of length [1] at position [i]. *)
@@ -212,7 +212,7 @@ and slice =
   | Slice_Star of expr * expr
       (** [Slice_Start (factor, length)] denotes the slice starting at [factor
           * length] of length [n]. *)
-(** All position mentionned above are included. *)
+(** All positions mentioned above are inclusive. *)
 
 and call = {
   name : identifier;
