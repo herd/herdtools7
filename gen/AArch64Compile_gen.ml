@@ -569,12 +569,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       ) in 
           rA,init,ld,st
 
-        let emit_load_var_reg vr st p init rB =
-             emit_label_load_var_reg vr st p init rB None
+        let emit_load_var_reg vr st p init rB label =
+             emit_label_load_var_reg vr st p init rB label
 
-        let emit_load_var vr st p init x =
+        let emit_load_var vr st p init x label =
           let rB,init,st = U.next_init st p init x in
-          emit_load_var_reg vr st p init rB
+          emit_load_var_reg vr st p init rB label
 
         let emit_load =  emit_load_var L.sz0
 
@@ -984,9 +984,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       ) in 
           init,csi@cs,st
 
-        let emit_store st p init x v a e =
+        let emit_store st p init x v a e label =
           let rA,init,csi,st = S.emit_mov st p init v in
-          let init,cs,st = emit_store_reg st p init x rA a e None in
+          let init,cs,st = emit_store_reg st p init x rA a e label in
           init,csi@cs,st
 
         let emit_store_idx_reg st p init x idx rA a e =
@@ -1699,7 +1699,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | Code.Ord | Code.Instr-> emit_load_mixed naturalsize 0
     | Code.Pte->
         fun st p init loc ->
-        let r,init,cs,st = LDR.emit_load_var A64.V64 st p init (Misc.add_pte loc) in
+        let r,init,cs,st = LDR.emit_load_var A64.V64 st p init (Misc.add_pte loc) None in
         r,init,cs,st
     | Code.Tag -> LDG.emit_load
     | Code.CapaTag -> LDCT.emit_load
@@ -1765,6 +1765,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         end
     | Some d,Data loc ->
         let loc = add_tag loc e.C.tag in
+        let instr_label = Option.map (fun (label,_) -> label) e.C.check_fault in
         let atom = match e.C.atom with
         | None -> None
         | Some (a,m) -> begin match a with
@@ -1777,10 +1778,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | _ -> Some (a,m) end in
         begin match d,atom with
         | R,None ->
-            let r,init,cs,st = LDR.emit_load st p init loc in
+            let r,init,cs,st = LDR.emit_load st p init loc instr_label in
             Some r,init,cs,st
         | R,Some (Acq _,None) ->
-            let r,init,cs,st = LDAR.emit_load st p init loc  in
+            let r,init,cs,st = LDAR.emit_load st p init loc instr_label in
             Some r,init,cs,st
         | R,Some (Acq a,Some (sz,o)) ->
             let module L =
@@ -1792,11 +1793,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   let load_idx sz _ = ldar_mixed_idx AA sz o
                   let next_reg = next_reg_sz
                 end) in
-            let r,init,cs,st = L.emit_load st p init loc in
+            let r,init,cs,st = L.emit_load st p init loc instr_label in
             let cs2 = emit_ldr_addon a r in
             Some r,init,cs@pseudo cs2,st
         | R,Some (AcqPc _,None) ->
-            let r,init,cs,st = LDAPR.emit_load st p init loc  in
+            let r,init,cs,st = LDAPR.emit_load st p init loc instr_label in
             Some r,init,cs,st
         | R,Some (AcqPc a,Some (sz,o)) ->
             let module L =
@@ -1808,7 +1809,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   let load_idx sz _ = ldar_mixed_idx AQ sz o
                   let next_reg = next_reg_sz
                 end) in
-            let r,init,cs,st = L.emit_load st p init loc in
+            let r,init,cs,st = L.emit_load st p init loc instr_label in
             let cs2 = emit_ldr_addon a r in
             Some r,init,cs@pseudo cs2,st
         | R,Some (Rel _,_) ->
@@ -1855,11 +1856,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some (Pair _,Some _) -> assert false
         | W,None ->
             let init,cs,st =
-              STR.emit_store st p init loc e.C.v None C.evt_null in
+              STR.emit_store st p init loc e.C.v None C.evt_null instr_label in
             None,init,cs,st
         | W,Some (Rel _,None) ->
             let init,cs,st =
-              STLR.emit_store st p init loc e.C.v None C.evt_null in
+              STLR.emit_store st p init loc e.C.v None C.evt_null instr_label in
             None,init,cs,st
         | W,Some (Acq _,_) -> Warn.fatal "No store acquire"
         | W,Some (AcqPc _,_) -> Warn.fatal "No store acquirePc"
@@ -1885,7 +1886,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                     cs,st
                   let emit_mov = emit_mov_sz sz
                 end) in
-            let init,cs,st = S.emit_store st p init loc e.C.v a e in
+              let init,cs,st = S.emit_store st p init loc e.C.v a e instr_label in
             None,init,cs,st
         | W,Some (Tag,None) ->
             let init,cs,st = STG.emit_store st p init e in
@@ -1901,7 +1902,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             | ReadAcq -> LDAR.emit_load_var
             | ReadAcqPc -> LDAPR.emit_load_var
             | _ -> assert false in
-            let r,init,cs,st = emit A64.V64 st p init (Misc.add_pte loc) in
+            let r,init,cs,st = emit A64.V64 st p init (Misc.add_pte loc) instr_label in
             Some r,init,cs,st
         | W,Some (Pte (Set _),None) ->
             let init,cs,st =
@@ -2405,6 +2406,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               None,init,pseudo cs0@cs,st
           | (R,(Some (Pte (Read|ReadAcq|ReadAcqPc as rk),None)))
             ->
+                (* TODO Not sure if this needs to be labelled *)
               let emit = match rk with
               | Read -> LDR.emit_load_var_reg
               | ReadAcq -> LDAR.emit_load_var_reg
@@ -2413,7 +2415,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let loc = Misc.add_pte loc in
               let rA,init,st = U.next_init st p init loc in
               let rA,cs1,st = do_sum_addr vdep st rA r2 in
-              let r,init,cs,st = emit A64.V64 st p init rA in
+              let r,init,cs,st = emit A64.V64 st p init rA None in
               Some r,init,pseudo cs0@pseudo cs1@cs,st
          | (W|R) as d,Some (Pte _,_ as a) ->
              Warn.fatal

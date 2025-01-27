@@ -76,11 +76,12 @@ struct
 
   let pseudo = List.map (fun i -> X86.Instruction i)
 
-  let emit_load st _p init x =
+  let emit_load st _p init x _label =
     let rA,st = next_reg st in
     rA,init,pseudo [emit_load_ins x rA],st
 
-  let emit_obs _ = emit_load
+  (* TODO should we allowed label in emit_obs *)
+  let emit_obs _ st p init x = emit_load st p init x None
 
   let emit_obs_not_zero st _p init x =
     let rA,st = next_reg st in

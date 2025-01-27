@@ -110,12 +110,12 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let _branch_eq r i lab k = do_branch MIPS.EQ r i lab k
 
-    let emit_load st p init x =
+    let emit_load st p init x _label =
       let rA,st = A.alloc_reg st in
       let rB,init,st = U.next_init st p init x in
       rA,init,lift_code [LW (rA,0,rB)],st
 
-    let emit_obs _ = emit_load
+    let emit_obs _ st p init x = emit_load st p init x None
 
     let emit_obs_not_zero st p init x =
       let rA,st = A.alloc_reg st in
@@ -258,7 +258,7 @@ let emit_joker st init = None,init,[],st
     | Some d ->
         match d,e.atom,e.loc with
         | R,None,Data loc ->
-            let r,init,cs,st = emit_load st p init loc in
+            let r,init,cs,st = emit_load st p init loc None in
             Some r,init,cs,st
         | R,Some Reserve,Data loc ->
             let r,init,cs,st = emit_ll st p init loc  in
