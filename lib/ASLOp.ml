@@ -101,42 +101,29 @@ let list_set n =
   in
   list_set [] n
 
-let do_op op c1 c2 =
+let wrap_scalar_op scalar_op c1 c2 =
+  let* s1 = as_concrete c1 in
+  let* s2 = as_concrete c2 in
+  let* s = scalar_op s1 s2 in
+  return_concrete s
+
+let do_op op =
   match op with
-  | Divrm ->
-      let* s1 = as_concrete c1 in
-      let* s2 = as_concrete c2 in
-      let* s = ASLScalar.try_divrm s1 s2 in
-      return_concrete s
+  | Divrm -> wrap_scalar_op ASLScalar.try_divrm
+  | Concat -> wrap_scalar_op ASLScalar.try_concat
+  | BVSliceSet positions -> wrap_scalar_op (ASLScalar.try_write_slice positions)
   | SetIndex i ->
-      let* vec = as_concrete_vector c1 in
-      let* vec' = list_set i c2 vec in
-      Some (Constant.ConcreteVector vec')
+      fun c1 c2 ->
+        let* vec = as_concrete_vector c1 in
+        let* vec' = list_set i c2 vec in
+        Some (Constant.ConcreteVector vec')
   | SetField x ->
-      let* record = as_concrete_record c1 in
-      if StringMap.mem x record then
-        let record' = StringMap.add x c2 record in
-        Some (Constant.ConcreteRecord record')
-      else None
-  | Concat ->
-      let is_empty = function
-        | ASLScalar.S_BitVector s -> Asllib.Bitvector.length s = 0
-        | _ -> false
-      in
-      (match (as_concrete c1, as_concrete c2) with
-      | (Some s, _) when is_empty s ->
-          Some c2
-      | (_, Some s) when is_empty s ->
-          Some c1
-      | (Some s1, Some s2) ->
-        let* s = ASLScalar.try_concat s1 s2 in
-        return_concrete s
-      | _ -> None)
-  | BVSliceSet positions ->
-      let* s1 = as_concrete c1 in
-      let* s2 = as_concrete c2 in
-      let* s = ASLScalar.try_write_slice positions s1 s2 in
-      return_concrete s
+      fun c1 c2 ->
+        let* record = as_concrete_record c1 in
+        if StringMap.mem x record then
+          let record' = StringMap.add x c2 record in
+          Some (Constant.ConcreteRecord record')
+        else None
 
 let do_op1 op cst =
   match op with

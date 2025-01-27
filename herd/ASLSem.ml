@@ -308,16 +308,6 @@ module Make (C : Config) = struct
           return @@ shortcut b v
       | _ -> M.op herdop v1 v2
 
-    let concat v1 v2 =
-      match (v1, v2) with
-      | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)), v
-        when Asllib.Bitvector.length bv = 0 ->
-          return v
-      | v, V.Val (Constant.Concrete (ASLScalar.S_BitVector bv))
-        when Asllib.Bitvector.length bv = 0 ->
-          return v
-      | _ -> M.op (Op.ArchOp ASLOp.Concat) v1 v2
-
     let binop =
       let open AST in
       let v_true = V.Val (Constant.Concrete (ASLScalar.S_Bool true))
@@ -343,7 +333,7 @@ module Make (C : Config) = struct
       | PLUS -> M.op Op.Add
       | SHL -> M.op Op.ShiftLeft
       | SHR -> M.op Op.ShiftRight
-      | BV_CONCAT -> concat
+      | BV_CONCAT -> M.op (Op.ArchOp ASLOp.Concat)
       | (POW | IMPL | RDIV) as op ->
           Warn.fatal "ASL operation %s not yet implement in ASLSem."
             (Asllib.PP.binop_to_string op)
