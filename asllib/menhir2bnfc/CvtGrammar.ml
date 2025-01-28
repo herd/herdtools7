@@ -479,7 +479,7 @@ end = struct
     | _ -> false
 
   (* A utility function to create precedence related bnfc decl data *)
-  let mk_precedence_productions prec_levels =
+  let mk_precedence_productions prec_levels ast_name_map =
     let nterm_level_count : int NonterminalMap.t =
       let loop acc level =
         let nterms =
@@ -526,10 +526,10 @@ end = struct
           used_nterms
       in
       let mk_prec_decls level =
-        let suffixes = mk_short_suffixes level in
-        let mk_decl prod suffix =
+        let mk_decl prod =
           let nterm = Production.lhs prod in
           let name = mk_name nterm in
+          let ast_name = ProductionMap.find prod ast_name_map in
           let fst_is_rec =
             let rhs = Production.rhs prod in
             let is_rec (sym, _, _) =
@@ -563,7 +563,6 @@ end = struct
                 let l_term = BNFC.Reference (mk_name lhs) in
                 let op_term = BNFC.LitReference (t_name op) in
                 let r_term = BNFC.Reference (mk_name ~succ:true rhs) in
-                let ast_name = name ^ "_" ^ suffix in
                 let terms = [ l_term; op_term; r_term ] in
                 BNFC.Decl { ast_name; name; terms }
           else if is_unary used_nterms prod then
@@ -575,7 +574,6 @@ end = struct
             let terms =
               Array.map mk_lit (Production.rhs prod) |> Array.to_list
             in
-            let ast_name = name ^ "_" ^ suffix in
             BNFC.Decl { ast_name; name; terms }
           else if fst_is_rec then
             let rhs = Production.rhs prod |> Array.to_list in
@@ -585,17 +583,15 @@ end = struct
               | _ -> assert false
             in
             let rem_terms = List.map mk_simple_lit (List.tl rhs) in
-            let ast_name = name ^ "_" ^ suffix in
             let terms = fst_term :: rem_terms in
             BNFC.Decl { ast_name; name; terms }
           else
             let terms =
               Array.map mk_simple_lit (Production.rhs prod) |> Array.to_list
             in
-            let ast_name = name ^ "_" ^ suffix in
             BNFC.Decl { ast_name; name; terms }
         in
-        List.map2 mk_decl level suffixes
+        List.map mk_decl level
       in
       let level_decls =
         let rec group_by_nterm level =
@@ -626,7 +622,24 @@ end = struct
 
   let decls : BNFC.decl list =
     (* 3.1. Build precedence related productions *)
-    let prec_decls = mk_precedence_productions final_precedence_levels in
+    (* First I build the ast names for each precedence production.
+       This is done to minimize the change in ast names if a new precedence level is added *)
+    let prec_prod_ast_names : string ProductionMap.t =
+      NonterminalMap.fold
+        (fun nterm prod_map acc ->
+          let name = n_name nterm in
+          let prods = ProductionMap.bindings prod_map |> List.split |> fst in
+          let suffixes = mk_short_suffixes prods in
+          let names = List.map (Printf.sprintf "%s_%s" name) suffixes in
+          let ast_name_map = List.combine prods names in
+          List.fold_left
+            (fun acc (prod, name) -> ProductionMap.add prod name acc)
+            acc ast_name_map)
+        reduced_production_sets ProductionMap.empty
+    in
+    let prec_decls =
+      mk_precedence_productions final_precedence_levels prec_prod_ast_names
+    in
 
     (* 3.2. Build all other productions *)
     let decls : BNFC.decl list =
