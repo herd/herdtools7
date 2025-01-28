@@ -22,6 +22,7 @@ module type Config = sig
   val variant : Variant_gen.t -> bool
 end
 
+open FaultSet
 module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
   sig
 
@@ -67,7 +68,10 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       Code.proc -> C.A.arch_reg option -> C.C.node ->
       eventmap * fenv -> eventmap * fenv
 
-    type faults = (Proc.t * StringSet.t) list
+    (* string option: potential instruction label, 
+       Proc.t: procedure nunmber
+       FaultSet.t, i.e. set of optional label and variable *)
+    type faults = (Proc.t * FaultSet.t) list
     type final
 
     val check : fenv -> faults -> final
@@ -220,7 +224,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         else finals
     | None -> finals
 
-    type faults = (Proc.t * StringSet.t) list
+    type faults = (Proc.t * FaultSet.t) list
 
     type cond_final =
       | Exists of fenv
@@ -236,8 +240,6 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     let run evts m flts = Forall (Run.run evts m),flts
 
 (* Dumping *)
-    open Printf
-
     let dump_val = function
       | I i ->
           if O.hexa then sprintf "0x%x" i
@@ -272,18 +274,22 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                  sprintf "(%s)" pp)
            fs)
 
-    let dump_one_flt p x =  sprintf "fault (%s,%s)" (Proc.pp p) x
+    let dump_one_flt proc (opt_label, var) =
+        match opt_label with
+        | Some label -> sprintf "fault (%s:%s,%s)" (Proc.pp proc) label var
+        | None -> sprintf "fault (%s,%s)" (Proc.pp proc) var
 
-    let dump_flt sep (p,xs) = StringSet.pp_str sep (dump_one_flt p) xs
+    (*TODO option label *)
+    let dump_flt sep (p,xs) = FaultSet.pp_str sep (dump_one_flt p) xs
 
-    let dump_flts =
-      if do_kvm then fun _ ->   ""
-      else fun flts ->
-        let pp = List.map (dump_flt " \\/ ") flts in
-        let pp = String.concat " \\/ " pp in
+    let dump_flts flts =
+      if do_kvm then ""
+      else
+        let pp = List.map (dump_flt " \\/ ") flts 
+                 |> String.concat " \\/ " in
         match flts with
         | [] -> ""
-        | [_,xs] when StringSet.is_singleton xs -> "~" ^ pp
+        | [_,xs] when FaultSet.is_singleton xs -> "~" ^ pp
         | _ -> sprintf "~(%s)" pp
 
     let dump_locations chan = function
@@ -295,10 +301,10 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       let loc_flts =
         if do_kvm then
           List.fold_right
-            (fun (p,xs) ->
-              StringSet.fold
+            (fun (p,xs) acc ->
+              FaultSet.fold
                 (fun x k -> sprintf "%s;" (dump_one_flt p x)::k)
-                xs)
+                xs acc)
             flts []
         else [] in
       match f with
