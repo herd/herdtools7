@@ -2,7 +2,27 @@
 
 ## Input data
 To use this tool you need the following input files:
-    * A Menhir `.cmly` file (see `menhir --help` on instructions on building a cmly file)
+    * A Menhir `.cmly` file (see `menhir --help` on instructions on building a cmly file from mly file(s))
+    * For the lexer an `ocamllex` `.ml` file. Speicifically one built with the `ocamllex -ml` flag.
+
+## Usage with AslRef
+
+To build and run this script in `aslref` make sure you have `ppxlib` installed.
+
+Then from the `herdtools7` root directory you can run the following:
+```
+make
+# Note: The following command succeds with errors related to type inference.
+# Since we don't care about the backend this is not relevant.
+menhir --cmly --base Parser asllib/Parser.mly asllib/Tokens.mly
+ocamllex -ml asllib/Lexer.mll -o Lexer.ml
+
+# At this point you should have a Parser.cmly and Lexer.ml file
+# To build the grammar run:
+./_build/install/default/bin/menhir2bnfc --ml Lexer.ml Parser.cmly grammar.cf
+
+# You should now have a bnfc compliant grammar.cf file!
+```
 
 ## Building and running the script
 
@@ -10,13 +30,15 @@ To build you simply run `dune build`.
 
 The script can be run using:
 ```
-menhir2bnfc <cmly file> <output (cf) file>
+menhir2bnfc <cmly file> <output file>
 ```
 
 For example:
 ```
 menhir2bnfc Parser.cmly out.cf
 ```
+
+See `menhir2bnfc --help` for more details.
 
 ## Transforming the Grammar to BNFC
 
@@ -72,7 +94,6 @@ The algorithm implemented has some limitations worth noting:
     1. It assumes that ambiguous precedence expressions follow a `expr op expr`/`<terminals> expr`/`expr <non op> ...` structure
        If somebody was to create an in-between production `expr opexpr` where `opexpr := op expr` the algorithm may not be sufficient to detect this.
     2. Associativity is assumed to be left.
-    3. So far only the grammar is translated (no lexing capability)
 
 Possible future work/ideas for each of these
     1. Identifying which operands actually control precedence and associativity would be a more scalable approach than working on productions only
@@ -81,4 +102,3 @@ Possible future work/ideas for each of these
         * For left associativity a reduction `Expr Op Expr` will happen at  `Expr . Op Expr` first
         * For right associativity a reduction `Expr Op Expr` should not happen at `Expr . Op Expr` since Op should be a `shift` and not a reduce
         * This may need more detailed investigation. `menhir`'s SDK does have some of this data in it's LR0 components of the LR(1) table
-    3. Extracting some tokens from ocamllex could enable more grammar annotation

@@ -23,16 +23,68 @@
 (*
   This file describes the bnfc AST and defines a few utility functions to print and update the contained data
  *)
+open Utils
 
 (* Define BNFC data types *)
+
+(* Lexer regex construction types *)
+
+module Regex = struct
+  type t = part list
+
+  and part =
+    | Char of char
+    | Str of string
+    | OneOf of string
+    | Except of part * part
+    | Choice of t list
+    | OneOrMore of t
+    | ZeroOrMore of t
+    | MatchAll
+    | EOF
+
+  (** Convert token type to string *)
+  let rec string_of_regex regex =
+    let rec str_part part =
+      match part with
+      | Char chr -> "'" ^ Char.escaped chr ^ "'"
+      | Str str -> "{\"" ^ String.escaped str ^ "\"}"
+      | OneOf str -> "[\"" ^ String.escaped str ^ "\"]"
+      | Except (t1, t2) -> "(" ^ str_part t1 ^ " - " ^ str_part t2 ^ ")"
+      | Choice t_list ->
+          "(" ^ (List.map string_of_regex t_list |> String.concat "|") ^ ")"
+      | OneOrMore t ->
+          let is_singleton = List.length t == 1 in
+          if is_singleton then string_of_regex t ^ "+"
+          else "(" ^ string_of_regex t ^ ")+"
+      | ZeroOrMore t ->
+          let is_singleton = List.length t == 1 in
+          if is_singleton then string_of_regex t ^ "*"
+          else "(" ^ string_of_regex t ^ ")*"
+      | MatchAll -> "char"
+      | EOF -> "$"
+    in
+    List.map str_part regex |> String.concat " "
+end
+
+(** BNFC row types *)
+
 type term =
   | Literal of string
   (* Literal which is referenced via a token name. Can be replaced by a literal in the future *)
   | LitReference of string
   | Reference of string
 
+type token = Token of { name : string; regex : Regex.t }
+type comment = Comment of string list
 type decl = Decl of { ast_name : string; name : string; terms : term list }
-type t = { entrypoints : string list; decls : decl list }
+
+type t = {
+  entrypoints : string list;
+  decls : decl list;
+  comments : comment list;
+  tokens : token list;
+}
 
 (*
    BNFC data structure utilities
@@ -59,6 +111,15 @@ let string_of_term term =
 let string_of_entrypoints eps =
   Printf.sprintf "entrypoints %s;" (String.concat ", " eps)
 
+let string_of_comment comment =
+  let quote s = Printf.sprintf "\"%s\"" s in
+  let comment = match comment with Comment c -> c in
+  Printf.sprintf "comment %s;" (String.concat " " @@ List.map quote comment)
+
+let string_of_token (token : token) =
+  let name, regex = match token with Token { name; regex } -> (name, regex) in
+  Printf.sprintf "token %s %s;" name (Regex.string_of_regex regex)
+
 (** Conert the bnfc type to string *)
 let string_of_bnfc bnfc =
   let print_decl_list decl_list =
@@ -76,8 +137,15 @@ let string_of_bnfc bnfc =
   in
   let grouped_decls = group_by_name bnfc.decls in
   let eps = string_of_entrypoints bnfc.entrypoints in
+  let comments =
+    List.map string_of_comment bnfc.comments |> String.concat "\n"
+  in
+  let tokens = List.map string_of_token bnfc.tokens |> String.concat "\n" in
   let decl_strs = List.map print_decl_list grouped_decls in
-  String.concat "\n\n" (eps :: decl_strs)
+  String.concat "\n\n"
+  @@ List.filter
+       (fun part -> not @@ String.equal part "")
+       (eps :: comments :: tokens :: decl_strs)
 
 (** Given a sorting order of the generated BNFC names. Order the bnfc ast
     using the order of the names specified *)
@@ -141,5 +209,71 @@ let simplified_bnfc bnfc =
   in
   let grouped_decls = group_by_name bnfc.decls in
   let eps = Printf.sprintf "// %s" (string_of_entrypoints bnfc.entrypoints) in
+  let comments =
+    List.map
+      (fun c -> Printf.sprintf "// %s" @@ string_of_comment c)
+      bnfc.comments
+    |> String.concat "\n"
+  in
+  let tokens =
+    List.map (fun t -> Printf.sprintf "// %s" @@ string_of_token t) bnfc.tokens
+    |> String.concat "\n"
+  in
   let decls = List.map print_decl grouped_decls |> String.concat "\n\n" in
-  String.concat "\n\n" [ eps; decls ]
+  String.concat "\n\n"
+  @@ List.filter
+       (fun part -> not @@ String.equal "" part)
+       [ eps; comments; tokens; decls ]
+
+(** Collect all referenced names in a bnfc's decls *)
+let collect_used_names decl_list : StringSet.t =
+  List.fold_left
+    (fun acc (Decl { terms }) ->
+      List.fold_left
+        (fun acc lit ->
+          match lit with
+          | Reference id | LitReference id -> StringSet.add id acc
+          | _ -> acc)
+        acc terms)
+    StringSet.empty decl_list
+
+(** Given a bnfc record - embed all string/char literal tokens into
+    the bnfc decls *)
+let embed_literals bnfc =
+  let open Regex in
+  let used_ids = collect_used_names bnfc.decls in
+  let literals, tokens =
+    List.partition
+      (function
+        | Token { name; regex = [ (Str _ | Char _) ] } ->
+            StringSet.mem name used_ids
+        | _ -> false)
+      bnfc.tokens
+  in
+  let name_map =
+    List.fold_left
+      (fun acc (Token { name; regex }) ->
+        let value =
+          match regex with
+          | [ Char c ] -> Literal (String.escaped @@ String.make 1 c)
+          | [ Str s ] -> Literal (String.escaped s)
+          | _ -> assert false
+        in
+        StringMap.add name value acc)
+      StringMap.empty literals
+  in
+  let update_decl_refs (Decl ({ terms } as decl)) =
+    let terms =
+      List.map
+        (fun ref ->
+          match ref with
+          | Reference id | LitReference id ->
+              let new_lit = StringMap.find_opt id name_map in
+              Option.value ~default:ref new_lit
+          | _ -> ref)
+        terms
+    in
+    Decl { decl with terms }
+  in
+  let decls = List.map update_decl_refs bnfc.decls in
+  { bnfc with tokens; decls }
