@@ -1,6 +1,6 @@
 (executable
  (name menhir2bnfc)
  (public_name menhir2bnfc)
- (libraries menhirSdk)
+ (libraries menhirSdk ppxlib)
  (optional)
- (modules menhir2bnfc BNFC CvtGrammar utils))
+ (modules menhir2bnfc BNFC CvtGrammar CvtLexer utils))

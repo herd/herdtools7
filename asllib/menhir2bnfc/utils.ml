@@ -22,6 +22,10 @@
 
 (* Definitions for various common utility functions and modules *)
 
+(* Simple StringMap/StringSet definitions *)
+module StringMap = Map.Make (String)
+module StringSet = Set.Make (String)
+
 (** A copy of Ocaml's List.find_index from stdlib 5.1
     https://github.com/ocaml/ocaml/blob/trunk/stdlib/list.ml
  *)
@@ -31,3 +35,15 @@ let list_find_index p =
     | a :: l -> if p a then Some i else aux (i + 1) l
   in
   aux 0
+
+(* I/O utility functions *)
+let with_open_in_bin file fn =
+  let chan = open_in_bin file in
+  let res = fn chan in
+  close_in chan;
+  res
+
+let with_open_out_bin file fn =
+  let chan = open_out_bin file in
+  fn chan;
+  close_out chan

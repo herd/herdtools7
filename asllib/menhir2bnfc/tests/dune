@@ -1,2 +1,2 @@
 (cram
- (deps %{bin:menhir2bnfc} %{bin:menhir}))
+ (deps %{bin:menhir2bnfc} %{bin:menhir} %{bin:ocamllex}))
