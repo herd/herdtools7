@@ -97,12 +97,12 @@ let with_open_out_bin file fn =
   close_out chan
 
 let translate_to_str args =
-  let open BnfcAST in
+  let open BNFC in
   let bnfc =
     let module BnfcData = CvtGrammar.Convert (MenhirSdk.Cmly_read.Read (struct
       let filename = args.cmly_file
     end)) in
-    let initial =
+    let initial : BNFC.t =
       { entrypoints = BnfcData.entrypoints; decls = BnfcData.decls }
     in
     match args.order_file with

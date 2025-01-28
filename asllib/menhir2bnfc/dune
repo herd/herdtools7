@@ -3,4 +3,4 @@
  (public_name menhir2bnfc)
  (libraries menhirSdk)
  (optional)
- (modules menhir2bnfc BnfcAST CvtGrammar))
+ (modules menhir2bnfc BNFC CvtGrammar utils))

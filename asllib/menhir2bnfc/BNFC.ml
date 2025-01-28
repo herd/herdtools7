@@ -31,31 +31,21 @@ type term =
   | LitReference of string
   | Reference of string
 
-type decl = { ast_name : string; name : string; terms : term list }
-type bnfc = { entrypoints : string list; decls : decl list }
+type decl = Decl of { ast_name : string; name : string; terms : term list }
+type t = { entrypoints : string list; decls : decl list }
 
 (*
    BNFC data structure utilities
  *)
 
-(** A copy of Ocaml's List.find_index from stdlib 5.1
-    https://github.com/ocaml/ocaml/blob/trunk/stdlib/list.ml
- *)
-let list_find_index p =
-  let rec aux i = function
-    | [] -> None
-    | a :: l -> if p a then Some i else aux (i + 1) l
-  in
-  aux 0
-
 (** Group decl lists into a list of lists where each sub-list has a common name *)
 let rec group_by_name decl_list =
   match decl_list with
   | [] -> []
-  | { name } :: _ ->
+  | Decl { name } :: _ ->
       let common, rest =
         List.partition
-          (fun { name = name2 } -> String.equal name name2)
+          (fun (Decl { name = name2 }) -> String.equal name name2)
           decl_list
       in
       common :: group_by_name rest
@@ -72,9 +62,11 @@ let string_of_entrypoints eps =
 (** Conert the bnfc type to string *)
 let string_of_bnfc bnfc =
   let print_decl_list decl_list =
-    let longest_name { ast_name } acc = max acc (String.length ast_name) in
+    let longest_name (Decl { ast_name }) acc =
+      max acc (String.length ast_name)
+    in
     let max_name = List.fold_right longest_name decl_list 0 in
-    let print_decl { ast_name; name; terms } =
+    let print_decl (Decl { ast_name; name; terms }) =
       let terms_str = String.concat " " @@ List.map string_of_term terms in
       let space = String.make (max_name - String.length ast_name) ' ' in
       Printf.sprintf "%s. %s%s ::= %s;" ast_name space name terms_str
@@ -91,8 +83,8 @@ let string_of_bnfc bnfc =
     using the order of the names specified *)
 let sort_bnfc bnfc order =
   let sort_fn el1 el2 =
-    let get_idx { name } =
-      let idx_opt = list_find_index (String.equal name) order in
+    let get_idx (Decl { name }) =
+      let idx_opt = Utils.list_find_index (String.equal name) order in
       Option.value ~default:Int.max_int idx_opt
     in
     let l = get_idx el1 in
@@ -104,7 +96,8 @@ let sort_bnfc bnfc order =
     let name_not_found =
       List.filter
         (fun n ->
-          not @@ List.exists (fun { name } -> String.equal name n) bnfc.decls)
+          not
+          @@ List.exists (fun (Decl { name }) -> String.equal name n) bnfc.decls)
         order
     in
     if List.length name_not_found > 0 then (
@@ -128,7 +121,7 @@ let simplified_bnfc bnfc =
     List.init (String.length name) (String.get name)
     |> List.mapi cvt_char |> String.concat ""
   in
-  let print_terms { terms } =
+  let print_terms (Decl { terms }) =
     let print_term term =
       match term with
       | Reference id -> snake_case_id id
@@ -138,7 +131,7 @@ let simplified_bnfc bnfc =
     String.concat " " str_terms
   in
   let print_decl decl_list =
-    let name = (List.hd decl_list).name in
+    let name = match List.hd decl_list with Decl { name } -> name in
     let id = snake_case_id name in
     let padding_len = String.length id + 3 in
     (* + " ::" *)
