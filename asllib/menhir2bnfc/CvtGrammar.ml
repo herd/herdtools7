@@ -24,8 +24,6 @@
     Translate ASL's grammar in ASLRef to a BNFC-style structure
  *)
 
-open BnfcAST
-
 (* Translate ids to be bnfc compliant *)
 let cvt_id id =
   String.split_on_char '_' id
@@ -36,7 +34,7 @@ let cvt_id id =
 (** Convert a menhir cmly file to bnfc AST *)
 module Convert (MenhirGrammar : MenhirSdk.Cmly_api.GRAMMAR) : sig
   val entrypoints : string list
-  val decls : decl list
+  val decls : BNFC.decl list
 end = struct
   (* Load the grammar module *)
   open MenhirGrammar
@@ -447,15 +445,15 @@ end = struct
       let rhs = Production.rhs prod in
       let mk_term (s, _, _) acc =
         match s with
-        | N n -> Reference (n_name n) :: acc
+        | N n -> BNFC.Reference (n_name n) :: acc
         | T t when String.equal (t_name t) eof_token -> acc
-        | T t -> LitReference (t_name t) :: acc
+        | T t -> BNFC.LitReference (t_name t) :: acc
       in
       Array.fold_right mk_term rhs []
     in
     let ast_name = name ^ "_" ^ suffix in
     let terms = mk_terms prod in
-    { ast_name; name; terms }
+    BNFC.Decl { ast_name; name; terms }
 
   (* A utility function to create named bnfc nodes for a specific nonterminal's productions *)
   let mk_productions prod_list =
@@ -519,11 +517,12 @@ end = struct
             if is_last_idx n current_idx then None
             else
               Some
-                {
-                  ast_name = "_";
-                  name = mk_name n;
-                  terms = [ Reference (mk_name ~succ:true n) ];
-                })
+                (BNFC.Decl
+                   {
+                     ast_name = "_";
+                     name = mk_name n;
+                     terms = [ BNFC.Reference (mk_name ~succ:true n) ];
+                   }))
           used_nterms
       in
       let mk_prec_decls level =
@@ -550,8 +549,8 @@ end = struct
 
           let mk_simple_lit (sym, _, _) =
             match sym with
-            | N n -> Reference (n_name n)
-            | T t -> LitReference (t_name t)
+            | N n -> BNFC.Reference (n_name n)
+            | T t -> BNFC.LitReference (t_name t)
           in
 
           if Option.is_some binop_comps then
@@ -561,40 +560,40 @@ end = struct
             let lhs, op, rhs = Option.get binop_comps in
             match get_associativity op with
             | `Left ->
-                let l_term = Reference (mk_name lhs) in
-                let op_term = LitReference (t_name op) in
-                let r_term = Reference (mk_name ~succ:true rhs) in
+                let l_term = BNFC.Reference (mk_name lhs) in
+                let op_term = BNFC.LitReference (t_name op) in
+                let r_term = BNFC.Reference (mk_name ~succ:true rhs) in
                 let ast_name = name ^ "_" ^ suffix in
                 let terms = [ l_term; op_term; r_term ] in
-                { ast_name; name; terms }
+                BNFC.Decl { ast_name; name; terms }
           else if is_unary used_nterms prod then
             let mk_lit (sym, _, _) =
               match sym with
-              | N n -> Reference (mk_name n)
-              | T t -> LitReference (t_name t)
+              | N n -> BNFC.Reference (mk_name n)
+              | T t -> BNFC.LitReference (t_name t)
             in
             let terms =
               Array.map mk_lit (Production.rhs prod) |> Array.to_list
             in
             let ast_name = name ^ "_" ^ suffix in
-            { ast_name; name; terms }
+            BNFC.Decl { ast_name; name; terms }
           else if fst_is_rec then
             let rhs = Production.rhs prod |> Array.to_list in
             let fst_term =
               match List.hd rhs with
-              | N n, _, _ -> Reference (mk_name n)
+              | N n, _, _ -> BNFC.Reference (mk_name n)
               | _ -> assert false
             in
             let rem_terms = List.map mk_simple_lit (List.tl rhs) in
             let ast_name = name ^ "_" ^ suffix in
             let terms = fst_term :: rem_terms in
-            { ast_name; name; terms }
+            BNFC.Decl { ast_name; name; terms }
           else
             let terms =
               Array.map mk_simple_lit (Production.rhs prod) |> Array.to_list
             in
             let ast_name = name ^ "_" ^ suffix in
-            { ast_name; name; terms }
+            BNFC.Decl { ast_name; name; terms }
         in
         List.map2 mk_decl level suffixes
       in
@@ -625,12 +624,12 @@ end = struct
     in
     List.fold_left mk_decls ([], indexes) prec_levels |> fst
 
-  let decls : decl list =
+  let decls : BNFC.decl list =
     (* 3.1. Build precedence related productions *)
     let prec_decls = mk_precedence_productions final_precedence_levels in
 
     (* 3.2. Build all other productions *)
-    let decls : decl list =
+    let decls : BNFC.decl list =
       NonterminalMap.filter
         (fun nterm _ -> not @@ NonterminalMap.mem nterm reduced_production_sets)
         production_to_terminals
