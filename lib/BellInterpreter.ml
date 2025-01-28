@@ -74,6 +74,7 @@ module Make (C: Config) = struct
         module EventSet = MySet.Make(Ordered)
         module EventRel = InnerRel.Make(Ordered)
         module EventMap = MyMap.Make(Ordered)
+        module EventTransRel = InnerTransRel.Make(Ordered)
       end
 
       type test = unit

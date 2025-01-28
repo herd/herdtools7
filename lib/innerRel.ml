@@ -70,6 +70,7 @@ module type S =  sig
   val up_from_set : Elts.t -> t -> Elts.t
 
 (* Does not detect cycles either *)
+  val transitive_to_map : t -> Elts.t M.ME.t
   val transitive_closure : t -> t
 
 (* Direct cycles *)
@@ -450,7 +451,9 @@ and module Elts = MySet.Make(O) =
 
     end
 
-    let transitive_closure r = M.of_map (M.tr (M.to_map r))
+    let transitive_to_map r = M.to_map r |> M.tr
+
+    let transitive_closure r = transitive_to_map r |> M.of_map
 
 (* Acyclicity check *)
 
