@@ -471,7 +471,7 @@ val same_instance : event -> event -> bool
   val aarch64_cas_no :
     bool -> (* Physical memory access *)
     bool -> (* Add an iico_ctrl between the Branch and the Register Write *)
-    event_structure -> event_structure -> event_structure ->
+    event_structure -> event_structure -> event_structure -> event_structure ->
     event_structure -> event_structure -> event_structure
 
   val aarch64_cas_ok :
@@ -2328,29 +2328,32 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           @ wres.aligned @ wresult.aligned @ wmem.aligned ;}
 
 (* AArch64 CAS, failure *)
-    let aarch64_cas_no is_phy add_ctrl rn rs wrs rm br =
+    let aarch64_cas_no is_phy add_ctrl rn rs wrs rm br noact =
+      let noact = if add_ctrl then empty else noact in
       let input_wrs = minimals wrs
       and input_rm = minimals rm
-      and input_br = minimals br in
+      and input_br = minimals br
+      and input_noact = minimals noact in
       { procs = [] ;
         events =
-        EventSet.union5
-          rn.events rs.events wrs.events rm.events br.events;
+        EventSet.union6
+          rn.events rs.events wrs.events rm.events br.events noact.events;
         speculated =
         if do_deps then
-          EventSet.union5
-            rn.speculated rs.speculated wrs.speculated rm.speculated br.speculated
+          EventSet.union6
+            rn.speculated rs.speculated wrs.speculated rm.speculated br.speculated noact.speculated
         else rn.speculated;
-        po = po_union5 rn rs wrs rm br;
-        partial_po = partial_po_union5 rn rs wrs rm br;
+        po = po_union6 rn rs wrs rm br noact;
+        partial_po = partial_po_union6 rn rs wrs rm br noact;
         intra_causality_data =
         EventRel.union
-          (EventRel.union5
+          (EventRel.union6
              rn.intra_causality_data
              rs.intra_causality_data
              wrs.intra_causality_data
              rm.intra_causality_data
-             br.intra_causality_data)
+             br.intra_causality_data
+             noact.intra_causality_data)
           (EventRel.union4
              (EventRel.cartesian (get_output rn) input_rm) (* D1 *)
              (EventRel.cartesian (get_output rm) input_wrs)    (* Df1 *)
@@ -2359,13 +2362,17 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           );
         intra_causality_control =
           (if is_branching && is_phy then
-             EventRel.union
+             EventRel.union3
                (EventRel.cartesian (get_ctrl_output_commits rn) input_rm)
+               (EventRel.cartesian (get_ctrl_output_commits br) input_noact)
            else Misc.identity)
           ((if add_ctrl then
              EventRel.union
                (EventRel.cartesian (get_output br) input_wrs)
-            else Misc.identity)
+            else
+              EventRel.union
+                (EventRel.cartesian (get_output br) input_noact)
+           )
           (EventRel.union5
              rn.intra_causality_control rs.intra_causality_control
              wrs.intra_causality_control rm.intra_causality_control
@@ -2376,26 +2383,26 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
             wrs.intra_causality_order rm.intra_causality_order
             br.intra_causality_order;
         control =
-        EventRel.union5 rn.control rs.control rm.control wrs.control br.control;
+        EventRel.union6 rn.control rs.control rm.control wrs.control br.control noact.control;
         data_ports =
-        EventSet.union5
+        EventSet.union6
           rn.data_ports rs.data_ports
-          wrs.data_ports rm.data_ports br.data_ports;
+          wrs.data_ports rm.data_ports br.data_ports noact.data_ports;
         success_ports =
-        EventSet.union5
+        EventSet.union6
           rn.success_ports rs.success_ports
-          wrs.success_ports rm.success_ports br.success_ports;
+          wrs.success_ports rm.success_ports br.success_ports noact.success_ports;
         sca =
-        EventSetSet.union5
-          rn.sca rs.sca wrs.sca rm.sca br.sca;
+        EventSetSet.union6
+          rn.sca rs.sca wrs.sca rm.sca br.sca noact.sca;
         mem_accesses =
-        EventSet.union5
+        EventSet.union6
           rn.mem_accesses rs.mem_accesses
-          wrs.mem_accesses rm.mem_accesses br.mem_accesses;
+          wrs.mem_accesses rm.mem_accesses br.mem_accesses noact.mem_accesses;
         input=None; data_input=None;
         output = Some (maximals wrs);
         ctrl_output = None ;
-        aligned = rn.aligned @ rs.aligned @ wrs.aligned @ rm.aligned @ br.aligned;
+        aligned = rn.aligned @ rs.aligned @ wrs.aligned @ rm.aligned @ br.aligned @ noact.aligned;
       }
 
 (* AArch64 CAS, success *)
