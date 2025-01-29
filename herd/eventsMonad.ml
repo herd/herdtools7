@@ -585,6 +585,7 @@ Monad type:
         (write_rs:'v-> unit t)
         (read_mem: 'loc -> 'v t)
         (branch: 'loc -> unit t)
+        (noact: unit t)
         (rne: 'v -> 'v -> unit t)
         eiid =
       let eiid,read_rn = read_rn eiid in
@@ -601,12 +602,14 @@ Monad type:
             let (),cl_wrs,es_wrs = Evt.as_singleton_nospecul write_rs in
             let eiid,branch = branch a eiid in
             let (),cl_br,es_br =  Evt.as_singleton_nospecul branch in
+            let eiid,noact = noact eiid in
+            let (),cl_noact,es_noact = Evt.as_singleton_nospecul noact in
             let eiid,nem = rne ov cv eiid in
             let (),cl_ne,eseq =  Evt.as_singleton_nospecul nem in
             assert (E.is_empty_event_structure eseq) ;
             let es =
-              E.aarch64_cas_no is_physical add_ctrl es_rn es_rs es_wrs es_rm es_br in
-            let cls = cl_a@cl_cv@cl_rm@cl_wrs@cl_ne@cl_br  in
+              E.aarch64_cas_no is_physical add_ctrl es_rn es_rs es_wrs es_rm es_br es_noact in
+            let cls = cl_a@cl_cv@cl_rm@cl_wrs@cl_ne@cl_br@cl_noact  in
             eiid,Evt.add ((),cls,es) acts)
           acts_rn (eiid,Evt.empty) in
       eiid,(acts, None)
@@ -739,10 +742,10 @@ Monad type:
 
     let aarch64_cas_no (is_physical:bool) (read_rn:'loc t) (read_rs:'v t)
         (write_rs:'v-> unit t) (read_mem: 'loc -> 'v t) (branch: 'loc -> unit t)
-        (rne: 'v -> 'v -> unit t) =
+        (noact: unit t) (rne: 'v -> 'v -> unit t) =
       let do_ add_ctrl =
         do_aarch64_cas_no is_physical add_ctrl read_rn read_rs write_rs
-          read_mem branch rne
+          read_mem branch noact rne
       in
       altT (do_ true) (do_ false)
 
