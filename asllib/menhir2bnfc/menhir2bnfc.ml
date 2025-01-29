@@ -23,6 +23,7 @@
 (*
   Menhir to BNFC Grammar converter
 *)
+open Menhir2bnfc_lib
 
 type args = {
   cmly_file : string;
@@ -105,6 +106,17 @@ let parse_args () =
 let translate_to_str args =
   let open BNFC in
   let bnfc =
+    let order_data =
+      match args.order_file with
+      | None -> []
+      | Some ord_file ->
+          let parse_order chan =
+            let data = really_input_string chan (in_channel_length chan) in
+            String.trim data |> String.split_on_char '\n'
+            |> List.map String.trim
+          in
+          Utils.with_open_in_bin ord_file parse_order
+    in
     let module GrammarData =
     CvtGrammar.Convert (MenhirSdk.Cmly_read.Read (struct
       let filename = args.cmly_file
@@ -127,15 +139,7 @@ let translate_to_str args =
           tokens;
         }
     in
-    match args.order_file with
-    | None -> initial
-    | Some ord_file ->
-        let parse_order chan =
-          let data = really_input_string chan (in_channel_length chan) in
-          String.trim data |> String.split_on_char '\n' |> List.map String.trim
-        in
-        let order = Utils.with_open_in_bin ord_file parse_order in
-        sort_bnfc initial order
+    sort_bnfc initial order_data
   in
   if args.no_ast then simplified_bnfc bnfc else string_of_bnfc bnfc
 

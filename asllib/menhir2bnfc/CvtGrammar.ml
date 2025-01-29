@@ -23,6 +23,7 @@
 (*
     Translate ASL's grammar in ASLRef to a BNFC-style structure
  *)
+open BNFC
 
 (* Translate ids to be bnfc compliant *)
 let cvt_id id =
@@ -34,7 +35,7 @@ let cvt_id id =
 (** Convert a menhir cmly file to bnfc AST *)
 module Convert (MenhirGrammar : MenhirSdk.Cmly_api.GRAMMAR) : sig
   val entrypoints : string list
-  val decls : BNFC.decl list
+  val decls : decl list
 end = struct
   (* Load the grammar module *)
   open MenhirGrammar
@@ -150,18 +151,21 @@ end = struct
   (* 2.5. Determine if any of the detected nonterminals can be removed and do so if possible *)
   (* This is sometimes possible. There seems to be an inefficiency in the LR(1) table which causes the following case to happen:
 
-        A := ... B [t1, t2]
-        A := ... A [t1, t2, t3, ...]
+         A := ... B [t1, t2]
+         A := ... A [t1, t2, t3, ...]
 
-        B := ... A [t1, t2, t3, ...]
+         B := ... A [t1, t2, t3, ...]
 
-        C := ... A [t1, t2, t3, ...]
-        ...
+         C := ... A [t1, t2, t3, ...]
+         ...
 
-     In this case we can infer that all highlighted cases share the same terminal reduction set as `A := ... B` because:
-         * `A := ... B` is the last reduction of `A` (as all others recurse as their last step), so its terminals are what reduces the wider `A`
-         * `B := ... A` will always reduce with the last reduction terminal set of `A` (or the subset overlapping with `A`)
-         * `C := ... A` will always reduce with the last reduction terminal set of `A` (or the subset overlapping with `A`)
+      In this case we can infer that all highlighted cases share the same terminal reduction set as `A := ... B` because:
+          * `A := ... B` is the last reduction of `A` (as all others recurse as their last step), so its terminals are what reduces the wider `A`
+          * `B := ... A` will always reduce with the last reduction terminal set of `A` (or the subset overlapping with `A`)
+          * `C := ... A` will always reduce with the last reduction terminal set of `A` (or the subset overlapping with `A`)
+
+     The following function therefore would remove the A nonterminal from consideration and update the terminal sets
+     of the productions in B and C which terminate in A to match the [t1; t12] case.
   *)
   let reduced_production_sets : TerminalSet.t ProductionMap.t NonterminalMap.t =
     let get_last_rhs prod = get_last @@ Production.rhs prod in
@@ -210,12 +214,12 @@ end = struct
 
        [
            [
-               A := A "&&" B
-               B := B "&&" B
-           ];
-           [
                A := A "+" B
                B := B "+" B
+           ];
+           [
+               A := A "*" B
+               B := B "*" B
            ]
        ]
 
@@ -223,7 +227,8 @@ end = struct
        * Since we could have more than one (related) nonterminal we expect
          the precedence levels of the nonterminals to overlap.
          Each nonterminal, however, could appear in a different part of the parse tree
-         as such we need to only consider terminals coming from binary ops at higher precedence levels
+         as such we need to only consider terminals coming from the target productions themselves.
+         (Not where the A and B nonterminals are used, but only their recursive calls)
   *)
   let precedence_list : Production.t list list =
     (* First create a nested production list for each nonterminal.
@@ -243,7 +248,7 @@ end = struct
                 let current_level, rest =
                   List.partition (fun (_, c2) -> Int.equal c1 c2) prod_list
                 in
-                let level = List.split current_level |> fst in
+                let level = List.map fst current_level in
                 level :: loop rest
           in
           loop sorted)
@@ -257,6 +262,20 @@ end = struct
              This is not the case as this approach is fairly naive (but is almost exact) a better one might be
              to try to build an LR1 parser and see near which terminals we get shift/reduce conflicts. *)
     let term_sets : TerminalSet.t list NonterminalMap.t =
+      let rec collect_terms terms set =
+        match terms with
+        | (N n, _, _) :: (T t, _, _) :: tl
+          when NonterminalMap.mem n nterm_prec_levels ->
+            collect_terms tl (TerminalSet.add t set)
+        | (N n, _, _) :: ((N n2, _, _) :: _ as tl)
+          when NonterminalMap.mem n nterm_prec_levels ->
+            let follow : TerminalSet.t =
+              Nonterminal.first n2 |> TerminalSet.of_list
+            in
+            collect_terms tl (TerminalSet.union set follow)
+        | _ :: tl -> collect_terms tl set
+        | [] -> set
+      in
       NonterminalMap.map
         (fun prec_list ->
           List.fold_right
@@ -264,20 +283,6 @@ end = struct
               List.fold_right
                 (fun prod set ->
                   let rhs = Production.rhs prod |> Array.to_list in
-                  let rec collect_terms terms set =
-                    match terms with
-                    | (N n, _, _) :: (T t, _, _) :: tl
-                      when NonterminalMap.mem n nterm_prec_levels ->
-                        collect_terms tl (TerminalSet.add t set)
-                    | (N n, _, _) :: (N n2, _, _) :: tl
-                      when NonterminalMap.mem n nterm_prec_levels ->
-                        let follow : TerminalSet.t =
-                          Nonterminal.first n2 |> TerminalSet.of_list
-                        in
-                        collect_terms tl (TerminalSet.union set follow)
-                    | _ :: tl -> collect_terms tl set
-                    | [] -> set
-                  in
                   collect_terms rhs set)
                 level TerminalSet.empty
               :: acc)
@@ -285,8 +290,15 @@ end = struct
         nterm_prec_levels
     in
     (* Lastly we merge all the nonterminal precedence levels by matching them up against each other's
-       terminal sets. If two sets overlap the they belong to the same precedence level. If a set is found to not
-       overlap then it either belongs at a higher or lower precedence than any other one in the other nonterminal. *)
+       terminal sets. If two sets overlap the they belong to the same precedence level.
+       A nonterminal might skip a precedence level if it omits another nonterminal's operands or it
+       could introduce its own operands at a new level.
+
+       As we merge the new level with the accumulation in the case of a non-overlap
+       we decide which one to prioritize based on whether the new level for consideration
+       appears later in the accumulation. If yes, then all other old levels must come
+       before it and have a relatively lower precedence. Otherwise if the new level does
+       not appear in the accumulation we insert it expecting a later ovelrap *)
     NonterminalMap.fold
       (fun nterm prec_levels acc ->
         let other_ops_per_level = NonterminalMap.find nterm term_sets in
@@ -298,12 +310,17 @@ end = struct
           match (old_levels, new_levels) with
           | _, [] -> old_levels
           | [], _ -> new_levels
-          | (l1, s1) :: tl1, (l2, s2) :: tl2 when is_inter s1 s2 ->
-              (l1 @ l2, TerminalSet.union s1 s2) :: merge_levels tl1 tl2
-          | (l1, s1) :: tl1, (l2, s2) :: tl2 -> (
-              match List.find_opt (fun (_, s2) -> is_inter s1 s2) tl2 with
-              | None -> (l1, s1) :: merge_levels tl1 new_levels
-              | Some _ -> (l2, s2) :: merge_levels old_levels tl2)
+          | (old_l, old_s) :: old_tl, (new_l, new_s) :: new_tl
+            when is_inter old_s new_s ->
+              (old_l @ new_l, TerminalSet.union old_s new_s)
+              :: merge_levels old_tl new_tl
+          | (old_l, old_s) :: old_tl, (new_l, new_s) :: new_tl ->
+              if
+                List.exists
+                  (fun (_, next_old_s) -> is_inter next_old_s new_s)
+                  old_tl
+              then (old_l, old_s) :: merge_levels old_tl new_levels
+              else (new_l, new_s) :: merge_levels old_levels new_tl
         in
         merge_levels acc new_levels)
       nterm_prec_levels []
@@ -445,15 +462,15 @@ end = struct
       let rhs = Production.rhs prod in
       let mk_term (s, _, _) acc =
         match s with
-        | N n -> BNFC.Reference (n_name n) :: acc
+        | N n -> Reference (n_name n) :: acc
         | T t when String.equal (t_name t) eof_token -> acc
-        | T t -> BNFC.LitReference (t_name t) :: acc
+        | T t -> LitReference (t_name t) :: acc
       in
       Array.fold_right mk_term rhs []
     in
     let ast_name = name ^ "_" ^ suffix in
     let terms = mk_terms prod in
-    BNFC.Decl { ast_name; name; terms }
+    Decl { ast_name; name; terms }
 
   (* A utility function to create named bnfc nodes for a specific nonterminal's productions *)
   let mk_productions prod_list =
@@ -517,11 +534,11 @@ end = struct
             if is_last_idx n current_idx then None
             else
               Some
-                (BNFC.Decl
+                (Decl
                    {
                      ast_name = "_";
                      name = mk_name n;
-                     terms = [ BNFC.Reference (mk_name ~succ:true n) ];
+                     terms = [ Reference (mk_name ~succ:true n) ];
                    }))
           used_nterms
       in
@@ -549,8 +566,8 @@ end = struct
 
           let mk_simple_lit (sym, _, _) =
             match sym with
-            | N n -> BNFC.Reference (n_name n)
-            | T t -> BNFC.LitReference (t_name t)
+            | N n -> Reference (n_name n)
+            | T t -> LitReference (t_name t)
           in
 
           if Option.is_some binop_comps then
@@ -560,36 +577,36 @@ end = struct
             let lhs, op, rhs = Option.get binop_comps in
             match get_associativity op with
             | `Left ->
-                let l_term = BNFC.Reference (mk_name lhs) in
-                let op_term = BNFC.LitReference (t_name op) in
-                let r_term = BNFC.Reference (mk_name ~succ:true rhs) in
+                let l_term = Reference (mk_name lhs) in
+                let op_term = LitReference (t_name op) in
+                let r_term = Reference (mk_name ~succ:true rhs) in
                 let terms = [ l_term; op_term; r_term ] in
-                BNFC.Decl { ast_name; name; terms }
+                Decl { ast_name; name; terms }
           else if is_unary used_nterms prod then
             let mk_lit (sym, _, _) =
               match sym with
-              | N n -> BNFC.Reference (mk_name n)
-              | T t -> BNFC.LitReference (t_name t)
+              | N n -> Reference (mk_name n)
+              | T t -> LitReference (t_name t)
             in
             let terms =
               Array.map mk_lit (Production.rhs prod) |> Array.to_list
             in
-            BNFC.Decl { ast_name; name; terms }
+            Decl { ast_name; name; terms }
           else if fst_is_rec then
             let rhs = Production.rhs prod |> Array.to_list in
             let fst_term =
               match List.hd rhs with
-              | N n, _, _ -> BNFC.Reference (mk_name n)
+              | N n, _, _ -> Reference (mk_name n)
               | _ -> assert false
             in
             let rem_terms = List.map mk_simple_lit (List.tl rhs) in
             let terms = fst_term :: rem_terms in
-            BNFC.Decl { ast_name; name; terms }
+            Decl { ast_name; name; terms }
           else
             let terms =
               Array.map mk_simple_lit (Production.rhs prod) |> Array.to_list
             in
-            BNFC.Decl { ast_name; name; terms }
+            Decl { ast_name; name; terms }
         in
         List.map mk_decl level
       in
@@ -620,7 +637,7 @@ end = struct
     in
     List.fold_left mk_decls ([], indexes) prec_levels |> fst
 
-  let decls : BNFC.decl list =
+  let decls : decl list =
     (* 3.1. Build precedence related productions *)
     (* First I build the ast names for each precedence production.
        This is done to minimize the change in ast names if a new precedence level is added *)
@@ -628,7 +645,7 @@ end = struct
       NonterminalMap.fold
         (fun nterm prod_map acc ->
           let name = n_name nterm in
-          let prods = ProductionMap.bindings prod_map |> List.split |> fst in
+          let prods = List.map fst (ProductionMap.bindings prod_map) in
           let suffixes = mk_short_suffixes prods in
           let names = List.map (Printf.sprintf "%s_%s" name) suffixes in
           let ast_name_map = List.combine prods names in
@@ -638,17 +655,21 @@ end = struct
         reduced_production_sets ProductionMap.empty
     in
     let prec_decls =
+      let sort_by_name (Decl { name = n1 }) (Decl { name = n2 }) =
+        String.compare n1 n2
+      in
       mk_precedence_productions final_precedence_levels prec_prod_ast_names
+      |> List.sort sort_by_name
     in
 
     (* 3.2. Build all other productions *)
-    let decls : BNFC.decl list =
+    let decls : decl list =
       NonterminalMap.filter
         (fun nterm _ -> not @@ NonterminalMap.mem nterm reduced_production_sets)
         production_to_terminals
       |> NonterminalMap.map (fun m ->
-             ProductionMap.bindings m |> List.split |> fst |> mk_productions)
-      |> NonterminalMap.bindings |> List.split |> snd |> List.concat
+             List.map fst (ProductionMap.bindings m) |> mk_productions)
+      |> NonterminalMap.bindings |> List.map snd |> List.concat
     in
     decls @ prec_decls
 end

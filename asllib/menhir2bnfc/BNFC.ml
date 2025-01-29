@@ -21,7 +21,8 @@
 (******************************************************************************)
 
 (*
-  This file describes the bnfc AST and defines a few utility functions to print and update the contained data
+  This file describes the bnfc AST and defines a few utility functions to print and update
+  the contained data
  *)
 open Utils
 
@@ -179,15 +180,15 @@ let sort_bnfc bnfc order =
 (** Convert the bnfc ast into a simpler format which exludes AST information *)
 let simplified_bnfc bnfc =
   let snake_case_id name =
-    let cvt_char idx c =
-      let is_upper c = match c with 'A' .. 'Z' -> true | _ -> false in
-      if not @@ is_upper c then String.make 1 c
-      else
-        let lower = String.make 1 @@ Char.lowercase_ascii c in
-        if Int.equal idx 0 then lower else "_" ^ lower
-    in
-    List.init (String.length name) (String.get name)
-    |> List.mapi cvt_char |> String.concat ""
+    let is_upper = function 'A' .. 'Z' -> true | _ -> false in
+    Seq.fold_left
+      (fun acc c ->
+        let s = String.make 1 @@ Char.lowercase_ascii c in
+        match acc with
+        | "" -> s
+        | _ when is_upper c -> acc ^ "_" ^ s
+        | _ -> acc ^ s)
+      "" (String.to_seq name)
   in
   let print_terms (Decl { terms }) =
     let print_term term =
