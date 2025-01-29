@@ -669,9 +669,9 @@ All of the following apply:
 \begin{itemize}
   \item $\vle$ denotes a tuple of left-hand-side expressions $\les$, that is, $\LEDestructuring(\les)$;
   \item $\les$ is a list $\ve_{1..k}$;
-  \item checking whether $\vte$ is a tuple type yields $\True$\ProseTerminateAs{\ExpectedTupleType};
+  \item checking whether $\vte$ is a tuple type yields $\True$\ProseTerminateAs{\UnexpectedType};
   \item $\vte$ is a tuple type over the list of types $\tys$, that is, $\TTuple(\tys)$;
-  \item determining whether $\les$ and $\subtys$ have the same length yields $\True$\ProseTerminateAs{\LengthsMismatch};
+  \item determining whether $\les$ and $\subtys$ have the same length yields $\True$\ProseTerminateAs{\UnexpectedType};
   \item $\subtys$ is the list of types $\vt_{1..k}$;
   \item annotating the left-hand-side expression $\ve_i$ with the type $\vt_i$, for $i=1..k$, yields $(\vep_i, \vxs_i)$\ProseOrTypeError;
   \item the list of expressions $\lesp$ is $\vep_i$, for $i=1..k$;
@@ -682,10 +682,10 @@ All of the following apply:
 \begin{mathpar}
 \inferrule{
   \les \eqname [\ve_{1..k}]\\
-  \checktrans{\astlabel(\vte) = \TTuple}{\ExpectedTupleType} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{\astlabel(\vte) = \TTuple}{\UnexpectedType} \checktransarrow \True \OrTypeError\\\\
   \vte \eqname \TTuple(\tys)\\
   \equallength(\les, \tys) \typearrow \vb\\
-  \checktrans{\vb}{\LengthsMismatch} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{\vb}{\UnexpectedType} \checktransarrow \True \OrTypeError\\\\
   \tys \eqname [\vt_{1..k}]\\
   i=1..k: \annotatelexpr{\tenv, \ve_i,\vt_i} \typearrow (\vep_i, \vxs_i) \OrTypeError\\\\
   \lesp \eqname [i=1..k: \vep_i]\\
@@ -1001,14 +1001,14 @@ All of the following apply:
   \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\
         $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vtleone$ in $\tenv$ yields $\tleoneanon$\ProseOrTypeError;
-  \item checking that $\tleoneanon$ is a bitvector type yields $\True$\ProseTerminateAs{\ExpectedBitvectorType};
+  \item checking that $\tleoneanon$ is a bitvector type yields $\True$\ProseTerminateAs{\UnexpectedType};
   \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $(\vletwo, \vsesone)$\ProseOrTypeError;
   \item obtaining the width of the slices $\slices$ in $\tenv$ and simplifying them yields $\vwidth$;
   \item $\vt$ is the bitvector type of width $\width$ and empty list of bitfields;
   \item checking whether $\vte$ \typesatisfies\ $\vt$ yields $\True$\ProseOrTypeError;
   \item annotating $\slices$ in $\tenv$ yields $(\slicestwo, \vsestwo)$\ProseOrTypeError;
   \item checking that the slices $\slicestwo$ are all disjoint yields $\True$\ProseOrTypeError;
-  \item checking that $\slices$ is not empty yields $\True$\ProseTerminateAs{\EmptySlice};
+  \item checking that $\slices$ is not empty yields $\True$\ProseTerminateAs{\BadSlices};
   \item $\newle$ is the slicing of $\vletwo$ by $\slicestwo$, that is, $\LESlice(\vletwo, \slicestwo)$;
   \item \Prosenonconflictingunion{$\vsesone$ and $\vsestwo$}{$\vses$}.
 \end{itemize}
@@ -1017,7 +1017,7 @@ All of the following apply:
 \inferrule{
   \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
   \makeanonymous(\tenv, \vtleone) \typearrow \tleoneanon \OrTypeError\\\\
-  \checktrans{\astlabel(\tleoneanon) = \TBits}{\ExpectedBitvectorType} \typearrow \True \OrTypeError\\\\
+  \checktrans{\astlabel(\tleoneanon) = \TBits}{\UnexpectedType} \typearrow \True \OrTypeError\\\\
   \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow (\vletwo, \vsesone) \OrTypeError\\
   \sliceswidth(\tenv, \slices) \typearrow \widthp\\
   \normalize(\tenv, \widthp) \typearrow \vwidth\\
@@ -1025,7 +1025,7 @@ All of the following apply:
   \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \annotateslices(\tenv, \slices) \typearrow (\slicestwo, \vsestwo) \OrTypeError\\\\
   \checkdisjointslices(\tenv, \slicestwo) \typearrow \True \OrTypeError\\\\
-  \checktrans{\slices \neq \emptylist}{\EmptySlice} \typearrow \True \OrTypeError\\\\
+  \checktrans{\slices \neq \emptylist}{\BadSlices} \typearrow \True \OrTypeError\\\\
   \newle \eqdef \LESlice(\vletwo, \slicestwo)\\
   \nonconflictingunion([\vsesone, \vsestwo]) \typearrow \vses \OrTypeError
 }{
@@ -1184,7 +1184,7 @@ All of the following apply:
   \item evaluating $\PLUS$ for $\vstwo$ and $\vltwo$ yields $\vstwoltwo$;
   \item evaluating $\LEQ$ for $\vstwoltwo$ and $\vsone$ yields $\vstwoltwosone$;
   \item evaluating $\BOR$ for $\vsonelonestwo$ and $\vstwoltwosone$ yields $\nvbool(\vb)$;
-  \item checking whether $\vb$ is $\True$ yields $\True$\ProseTerminateAs{OverlappingSlices};
+  \item checking whether $\vb$ is $\True$ yields $\True$\ProseTerminateAs{\OverlappingSliceAssignment};
   \item the result is $\True$.
 \end{itemize}
 
@@ -1196,7 +1196,7 @@ All of the following apply:
   \binoprel(\PLUS, \vstwo, \vltwo) \evalarrow \vstwoltwo\\
   \binoprel(\LEQ, \vstwoltwo, \vsone) \evalarrow \vstwoltwosone\\
   \binoprel(\BOR, \vsonelonestwo, \vstwoltwosone) \evalarrow \nvbool(\vb)\\
-  \checktrans{\vb}{OverlappingSlices} \checktransarrow \True\OrDynError
+  \checktrans{\vb}{\OverlappingSliceAssignment} \checktransarrow \True\OrDynError
 }{
   \checktworangesnonoverlapping((\vsone, \vlone), (\vstwo, \vltwo)) \evalarrow \True
 }
@@ -1229,7 +1229,7 @@ All of the following apply:
   \makeanonymous(\tenv, \vtleone) \typearrow \tleoneanon \OrTypeError\\\\
   \astlabel(\tleoneanon) \not\in \{\TException, \TRecord, \TBits\}
 }{
-  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \TypeErrorVal{TypeConflict}
+  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
 \CodeSubsection{\LESetBadFieldBegin}{\LESetBadFieldEnd}{../Typing.ml}
@@ -1243,7 +1243,7 @@ All of the following apply:
   \item annotating the left-hand-side expression  $\vleone$ with type $\vtleone$ in $\tenv$ yields \\ $(\vletwo, \vses)$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vtleone$ in $\tenv$ yields a \structuredtype\ with fields \\
         $\fields$\ProseOrTypeError;
-  \item checking that there exists a type associated with the field $\field$ in $\fields$ $\True$ \ProseTerminateAs{\MissingField};
+  \item checking that there exists a type associated with the field $\field$ in $\fields$ $\True$ \ProseTerminateAs{\BadField};
   \item the type associated with the field $\field$ in $\fields$ is $\vt$;
   \item determining whether $\vte$ \typesatisfies\ $\vt$ yields $\True$\ProseOrTypeError;
   \item $\newle$ is the access to the field $\field$ in $\vletwo$, that is, $\LESetField(\vletwo, \field)$.
@@ -1256,7 +1256,7 @@ All of the following apply:
   \makeanonymous(\tenv, \vtleone) \typearrow L(\fields) \OrTypeError\\\\
   L \in \{\TException, \TRecord\}\\
   \assocopt(\fields, \field) \typearrow \tyopt\\
-  \checktrans{\tyopt \neq \None}{\MissingField} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{\tyopt \neq \None}{\BadField} \checktransarrow \True \OrTypeError\\\\
   \tyopt \eqname \langle\vt\rangle\\
   \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \newle \eqdef \LESetField(\vletwo, \field)
@@ -1356,7 +1356,7 @@ All of the following apply:
   \annotatelexpr{\tenv, \lebase, \tbase} \typearrow (\lebaseannot, \vsesbase) \OrTypeError\\\\
   \makeanonymous(\tenv, \tbase) \typearrow \tbaseanon \OrTypeError\\\\
   \commonprefixline\\\\
-  \checktrans{\astlabel(\tbaseanon) \not\in \{\TBits, \TRecord\}}{UnexpectedType} \typearrow \True \OrTypeError
+  \checktrans{\astlabel(\tbaseanon) \not\in \{\TBits, \TRecord\}}{\UnexpectedType} \typearrow \True \OrTypeError
 }{
   \annotatelexpr{\tenv, \overname{\LESetFields(\lebase, \vlefields)}{\vle}, \vte} \typearrow (\newle, \vses)
 }
@@ -1386,7 +1386,7 @@ One of the following applies:
     \item $\vlefields$ is the list with prefix $\vlefieldsone$ (the elements excluding the last one) and last element $\vfield$;
     \item applying $\foldbitvectorfields$ to $\vbasefields$ and $\vlefieldsone$ in $\tenv$ yields $(\vstart, \vslicesone)$\ProseOrTypeError;
     \item applying $\assocopt$ to $\vfields$ and $\vbasefields$ yields $\tyopt$;
-    \item checking that $\tyopt$ is different to $\None$ yields $\True$\ProseTerminateAs{\MissingField};
+    \item checking that $\tyopt$ is different to $\None$ yields $\True$\ProseTerminateAs{\BadField};
     \item view $\tyopt$ as $\langle\vtfield\rangle$;
     \item applying $\getbitvectorconstwidth$ to $\vtfield$ in $\tenv$ yields $\vfieldwidth$\ProseOrTypeError;
     \item \Proseeqdef{$\vlength$}{$\vstart + \vfieldwidth$};
@@ -1405,7 +1405,7 @@ One of the following applies:
 \inferrule[non\_empty]{
   \foldbitvectorfields(\tenv, \vbasefields, \vlefieldsone) \typearrow (\vstart, \vslicesone)\OrTypeError\\\\
   \assocopt(\vfields, \vbasefields) \typearrow \tyopt\\
-  \checktrans{\tyopt \neq \None}{\MissingField} \typearrow \True \OrTypeError\\\\
+  \checktrans{\tyopt \neq \None}{\BadField} \typearrow \True \OrTypeError\\\\
   \tyoptp \eqname \langle\vtfield\rangle\\
   \getbitvectorconstwidth(\tenv, \vtfield) \typearrow \vfieldwidth \OrTypeError\\\\
 }{
@@ -1538,7 +1538,7 @@ All of the following apply:
     \begin{itemize}
       \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields $\None$, meaning the field is not declared
             in $\vtleone$;
-      \item the result is a type error $\MissingField$.
+      \item the result is a type error $\BadField$.
     \end{itemize}
 
     \item All of the following applies (\textsc{field\_simple}):
@@ -1585,7 +1585,7 @@ All of the following apply:
   \commonprefixline\\\\
   \findbitfieldopt(\bitfields, \field) \typearrow \None\
 }{
-  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \TypeErrorVal{\MissingField}
+  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \TypeErrorVal{\BadField}
 }
 \end{mathpar}
 

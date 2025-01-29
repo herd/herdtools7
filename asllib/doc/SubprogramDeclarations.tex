@@ -633,7 +633,7 @@ All of the following apply:
   \vi \in \listrange(\tys): \paramsofty(\tenv, \tty_i) \typearrow \params_i \\
   \params \eqdef \params_1 \concat \ldots \concat \params_{\listlen{\tys}} \\
   \paramsone \eqdef \uniquelist(\params) \\\\
-  \checktrans{\paramsone = \funcsig.\funcparameters}{\BadParameterDecl} \checktransarrow \vb \OrTypeError
+  \checktrans{\paramsone = \funcsig.\funcparameters}{\BadSubprogramDeclaration} \checktransarrow \vb \OrTypeError
 }{
   \checkparamdecls(\tenv, \funcsig) \typearrow \vb
 }
@@ -1296,7 +1296,7 @@ One of the following applies:
   \vb_{\namep} \OrTypeError
     \end{array}\right)
   }\\\\
-  \namep \in \othernames: \checktrans{\neg\vb_{\namep}}{\SubrogramDeclaredMultipleTimes} \typearrow \True \OrTypeError\\\\
+  \namep \in \othernames: \checktrans{\neg\vb_{\namep}}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError\\\\
   \newtenv \eqdef (G^\tenv.\overloadedsubprograms[\name\mapsto \othernames \cup \{\newname\}],  L^\tenv)
 }{
   \addnewfunc(\tenv, \name, \formals, \subpgmtype) \typearrow
@@ -1346,12 +1346,12 @@ All of the following apply:
   \funcsig.\funcargs \eqname (\Ignore, \rettype) \concat \vargs\\
   \argtypes \eqdef [(\Ignore, \vt) \in \vargs: \vt]\\
   \subprogramforname(\tenv, \funcsig.\funcname, \argtypes) \typearrow (\Ignore, \Ignore, \funcsigp) \OrTypeError\\\\
-  \checktrans{\funcsigp.\funcsubprogramtype = \STGetter}{\SetterWithoutGetter} \typearrow \True \OrTypeError\\\\
+  \checktrans{\funcsigp.\funcsubprogramtype = \STGetter}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError\\\\
   \argtypesp \eqdef [(\Ignore, \vt) \in \funcsigp.\funcargs : \vt]\\
   \vi\in\listrange(\argtypes): \typeequal(\argtypes[\vi], \argtypesp[\vi]) \typearrow \vb_\vi \OrTypeError\\\\
-  \vi\in\listrange(\argtypes): \checktrans{\vb_\vi}{\SetterWithoutGetter} \typearrow \True \OrTypeError\\\\
+  \vi\in\listrange(\argtypes): \checktrans{\vb_\vi}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError\\\\
   \typeequal(\rettype, \funcsigp.\funcreturntype) \typearrow \vb_\ret \OrTypeError\\\\
-  \checktrans{\vb_\ret}{\SetterWithoutGetter} \typearrow \True \OrTypeError
+  \checktrans{\vb_\ret}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError
 }{
   \checksetterhasgetter(\tenv, \funcsig) \typearrow \overname{\True}{\vb}
 }

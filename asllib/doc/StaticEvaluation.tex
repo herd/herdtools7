@@ -63,7 +63,7 @@ All of the following apply:
   \evalexpr{\env, \ve} \evalarrow \Normal(\vx, \Ignore)\\
   \vx \neq \nvliteral{\Ignore}
 }{
-  \staticeval(\tenv, \ve) \typearrow \TypeErrorVal{StaticEvaluationFailure}
+  \staticeval(\tenv, \ve) \typearrow \TypeErrorVal{\StaticEvaluationFailure}
 }
 \end{mathpar}
 
@@ -73,7 +73,7 @@ All of the following apply:
   \evalexpr{\env, \ve} \evalarrow C\\
   \configdomain{C} \in \{\Throwing, \Error\}
 }{
-  \staticeval(\tenv, \ve) \typearrow \TypeErrorVal{StaticEvaluationFailure}
+  \staticeval(\tenv, \ve) \typearrow \TypeErrorVal{\StaticEvaluationFailure}
 }
 \end{mathpar}
 \CodeSubsection{\StaticEvalBegin}{\StaticEvalEnd}{../StaticInterpreter.ml}

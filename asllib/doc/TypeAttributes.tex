@@ -708,13 +708,13 @@ One of the following applies:
 }
 {
   \checkconstrainedinteger(\tenv, \TInt(\vc)) \typearrow \\
-  \TypeErrorVal{ConstrainedIntegerExpected}
+  \TypeErrorVal{\UnexpectedType}
 }
 \and
 \inferrule[conflicting\_type]{
   \astlabel(\vt) \neq \TInt
 }{
-  \checkconstrainedinteger(\tenv, \vt) \typearrow \TypeErrorVal{TypeConflict}
+  \checkconstrainedinteger(\tenv, \vt) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
 

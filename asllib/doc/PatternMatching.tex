@@ -187,7 +187,7 @@ All of the following apply:
   \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
   \commonprefixline\\\\
   \astlabel(\vtstruct) \in \{\TBool, \TReal, \TInt, \TString\}\\
-  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\InvalidOperandTypesForBinop} \checktransarrow \True \OrTypeError
+  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\BadOperands} \checktransarrow \True \OrTypeError
 }{
   \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow (\overname{\PatternSingle(\vep)}{\newp}, \vses)
 }
@@ -201,7 +201,7 @@ All of the following apply:
   \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
   \commonprefixline\\\\
   \astlabel(\vtstruct) = \TBits\\
-  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\InvalidOperandTypesForBinop} \checktransarrow \True \OrTypeError\\
+  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\BadOperands} \checktransarrow \True \OrTypeError\\
   \bitwidthequal(\tenv, \vtstruct, \testruct) \typearrow \vb\\
   \checktrans{\vb}{BitvectorsDifferentWidths} \checktransarrow \True \OrTypeError
 }{
@@ -217,7 +217,7 @@ All of the following apply:
   \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
   \commonprefixline\\\\
   \astlabel(\vtstruct) = \TEnum\\
-  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\InvalidOperandTypesForBinop} \checktransarrow \True \OrTypeError\\
+  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\BadOperands} \checktransarrow \True \OrTypeError\\
   \vtstruct \eqname \TEnum(\vlione)\\
   \vtestruct \eqname \TEnum(\vlitwo)\\
   \checktrans{\vlione = \vlitwo}{EnumDifferentLabels} \checktransarrow \True \OrTypeError\\
@@ -233,10 +233,10 @@ All of the following apply:
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
   \commonprefixline\\\\
-  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\InvalidOperandTypesForBinop} \checktransarrow \True \OrTypeError\\
+  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\BadOperands} \checktransarrow \True \OrTypeError\\
   \astlabel(\vtstruct) \not\in \{\TBool, \TReal, \TInt, \TBits, \TEnum\}
 }{
-  \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow \TypeErrorVal{TypeConflict}
+  \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
 \CodeSubsection{\PSingleBegin}{\PSingleEnd}{../Typing.ml}

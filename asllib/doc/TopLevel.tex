@@ -24,7 +24,7 @@ The relation
 \left(
     \begin{array}{cc}
         (\overname{\tint}{\vret} \times \overname{\XGraphs}{\vg})   & \cup\\
-        \{\ \LexicalError, \ParseError, \BuildErrorConfig\ \}    & \cup\\
+        \{\ \LexicalErrorConfig, \ParseErrorConfig, \BuildErrorConfig\ \}    & \cup\\
         \overname{\TTypeError}{\TypeErrorConfig}    & \cup\\
         \overname{\TDynError}{\DynErrorConfig}      &
     \end{array}
@@ -37,19 +37,19 @@ exists is returned --- scanning, parsing, or AST building.
 If found valid, an AST is built and semantically evaluated, yielding an integer return code $\vret$ and an execution graph $\vg$,
 or a dynamic error.
 
-\subsubsection{TopLevelRule.CheckAndInterpret}
+\subsubsection{TopLevelRule.CheckAndInterpret\label{sec:TopLevelRule.CheckAndInterpret}}
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-    \item \Proseaslscan{$\vstdtext$}{$\spectoken$}{$\vstdtokens$\ProseTerminateAs{\LexicalError}};
-    \item \Proseaslparse{$\vstdtokens$}{$\vstdparse$\ProseTerminateAs{\ParseError}};
+    \item \Proseaslscan{$\vstdtext$}{$\spectoken$}{$\vstdtokens$\ProseTerminateAs{\LexicalErrorConfig}};
+    \item \Proseaslparse{$\vstdtokens$}{$\vstdparse$\ProseTerminateAs{\ParseErrorConfig}};
     \item \Prosebuildast{$\vstdparse$}{$\vstdast$\ProseTerminateAs{\BuildErrorConfig}};
     \item \Proserenamelocals{\vstdast}{\vstdastrenamed};
     \item define $\vstdasbuiltin$ by applying $\setbuiltin$ to each top-level declaration in\\
           $\vstdastrenamed$\ProseTerminateAs{\BuildErrorConfig};
     %%%%%
-    \item \Proseaslscan{$\vspectext$}{$\spectoken$}{$\vspectokens$\ProseTerminateAs{\LexicalError}};
-    \item \Proseaslparse{$\vspectokens$}{$\vspecparse$\ProseTerminateAs{\ParseError}};
+    \item \Proseaslscan{$\vspectext$}{$\spectoken$}{$\vspectokens$\ProseTerminateAs{\LexicalErrorConfig}};
+    \item \Proseaslparse{$\vspectokens$}{$\vspecparse$\ProseTerminateAs{\ParseErrorConfig}};
     \item \Prosebuildast{$\vspecparse$}{$\vspecast$\ProseTerminateAs{\BuildErrorConfig}};
     %%%%%
     \item define $\vuntypedast$ as the concatenation of the AST $\vstdasbuiltin$ and
@@ -61,8 +61,8 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-    \aslscan(\spectoken, \vstdtext) \scanarrow \vstdtokens \terminateas \LexicalError\\\\
-    \aslparse(\vstdtokens) \parsearrow \vstdparse \terminateas \ParseError\\\\
+    \aslscan(\spectoken, \vstdtext) \scanarrow \vstdtokens \terminateas \LexicalErrorConfig\\\\
+    \aslparse(\vstdtokens) \parsearrow \vstdparse \terminateas \ParseErrorConfig\\\\
     \buildast(\vstdparse) \astarrow \vstdast \terminateas \BuildErrorConfig\\\\
     \renamelocals(\vstdast) \astarrow \vstdastrenamed\\
     {
@@ -72,8 +72,8 @@ All of the following apply:
     \end{array}
     }\\
     \vstdasbuiltin \eqdef [\vi \in \listrange(\vstdast): \vstddeclast_i]\\
-    \aslscan(\spectoken, \vspectext) \scanarrow \vspectokens \terminateas \LexicalError\\\\
-    \aslparse(\vspectokens) \parsearrow \vspecparse \terminateas \ParseError\\\\
+    \aslscan(\spectoken, \vspectext) \scanarrow \vspectokens \terminateas \LexicalErrorConfig\\\\
+    \aslparse(\vspectokens) \parsearrow \vspecparse \terminateas \ParseErrorConfig\\\\
     \buildast(\vspecparse) \astarrow \vspecast \terminateas \BuildErrorConfig\\\\
     \vuntypedast \eqdef \vstdasbuiltin \concat \vspecast\\
     \typecheckast(G^{\emptytenv}, \vuntypedast) \typearrow (\vtypedast, \tenv) \OrTypeError\\\\
@@ -1406,7 +1406,7 @@ It produces a build error when given a top-level declaration which is not a func
 \subsubsection{Prose}
 \AllApply
 \begin{itemize}
-  \item \Prosechecktrans{that $\vdecl$ is a function}{\BuiltinExpectedToBeFunction};
+  \item \Prosechecktrans{that $\vdecl$ is a function}{\BuildBadDeclaration};
   \item view $\vdecl$ as $\DFunc(\funcsig)$;
   \item define $\funcsigp$ as $\funcsig$ with its $\funcbuiltin$ flag set to $\True$;
   \item define $\vdeclp$ as $\DFunc(\funcsigp)$.
@@ -1415,7 +1415,7 @@ It produces a build error when given a top-level declaration which is not a func
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \checktrans{\astlabel(\vdecl) = \DFunc}{\BuiltinExpectedToBeFunction} \typearrow \True \terminateas \BuildErrorConfig\\\\
+  \checktrans{\astlabel(\vdecl) = \DFunc}{\BuildBadDeclaration} \typearrow \True \terminateas \BuildErrorConfig\\\\
   \vdecl \eqname \DFunc(\funcsig)\\
   \funcsigp \eqdef \funcsig[\funcbuiltin \mapsto \True]
 }{

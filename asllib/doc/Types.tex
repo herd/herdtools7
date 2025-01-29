@@ -231,7 +231,7 @@ One of the following applies:
   \item All of the following apply (\textsc{pending\_constrained}):
     \begin{itemize}
       \item $\tty$ is a \pendingconstrainedintegertype;
-      \item the result is a type error (\UnexpectedPendingConstrained).
+      \item the result is a type error (\UnexpectedType).
     \end{itemize}
   \item All of the following apply (\textsc{well\_constrained}):
     \begin{itemize}
@@ -268,7 +268,7 @@ One of the following applies:
   {
     \begin{array}{r}
   \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TInt(\pendingconstrained)}{\tty}} \typearrow
-  \TypeErrorVal{\UnexpectedPendingConstrained}
+  \TypeErrorVal{\UnexpectedType}
     \end{array}
   }
 }
@@ -905,7 +905,7 @@ One of the following applies:
   \astlabel(\vtp) \neq \TInt
 }
 {
-  \checkstructureinteger(\tenv, \vt) \typearrow \TypeErrorVal{ExpectedIntegerStructure}
+  \checkstructureinteger(\tenv, \vt) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
 
@@ -1131,7 +1131,7 @@ All of the following apply:
 \inferrule{
   \astlabel(\tty) \in \{\TEnum, \TRecord, \TException\}
 }{
-  \annotatetype{\False, \tenv, \tty} \typearrow \TypeErrorVal{\AnnonymousFormNotAllowedHere}
+  \annotatetype{\False, \tenv, \tty} \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
 \CodeSubsection{\TNonDeclBegin}{\TNonDeclEnd}{../Typing.ml}

@@ -28,7 +28,7 @@ One of the following applies:
     \begin{itemize}
         \item $\vt$ is the bitvector type with width expression $\ve$;
         \item applying $\reducetozopt$ to $\ve$ in $\tenv$ yields $\vzopt$;
-        \item checking that $\vzopt$ is not $\None$ yields $\True$\ProseTerminateAs{\BaseValueNonStatic};
+        \item checking that $\vzopt$ is not $\None$ yields $\True$\ProseTerminateAs{\NoBaseValue};
         \item view $\vzopt$ as the singleton integer $\length$;
         \item $\veinit$ is the literal expression for a bitvector made of a sequence of $\length$ values of $0$.
     \end{itemize}
@@ -57,7 +57,7 @@ One of the following applies:
         \item $\vt$ is the \wellconstrainedintegertype\ with a list of constraints $\cs$;
         \item define $\vzminlist$ as the concatenation of lists obtained for each
               constraint $\cs[\vi]$ in $\tenv$, for each $\vi\in\listrange(\cs)$, via $\constraintabsmin$;
-        \item checking whether $\vzminlist$ is empty yields $\True$\ProseOrTypeError{\BaseValueEmptyType};
+        \item checking whether $\vzminlist$ is empty yields $\True$\ProseOrTypeError{\NoBaseValue};
         \item determining the minimal absolute integer in $\vzminlist$ via $\listminabs$ yields $\vzmin$;
         \item $\veinit$ is the integer literal expression for $\vzmin$.
     \end{itemize}
@@ -126,7 +126,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[t\_bits]{
     \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
-    \checktrans{\vzopt \neq \None}{\BaseValueNonStatic} \checktransarrow \True\OrTypeError\\\\
+    \checktrans{\vzopt \neq \None}{\NoBaseValue} \checktransarrow \True\OrTypeError\\\\
     \vzopt \eqname \langle\length\rangle\\
 }{
     \basevalue(\tenv, \overname{\TBits(\ve, \Ignore)}{\vt}) \typearrow \overname{\ELiteral(\lbitvector(i=1..\length: 0))}{\veinit}
@@ -149,7 +149,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[t\_int\_parameterized]{}{
-    \basevalue(\tenv, \overname{\TInt(\parameterized(\id))}{\vt}) \typearrow \TypeErrorVal{\BaseValueNonStatic}
+    \basevalue(\tenv, \overname{\TInt(\parameterized(\id))}{\vt}) \typearrow \TypeErrorVal{\NoBaseValue}
 }
 \end{mathpar}
 
@@ -157,7 +157,7 @@ One of the following applies:
 \inferrule[t\_int\_wellconstrained]{
     \cs \eqname \vc_{1..k}\\
     \vzminlist \eqdef \constraintabsmin(\tenv, \vc_1) \concat \ldots \concat \constraintabsmin(\tenv, \vc_k)\\
-    \checktrans{\vzminlist \neq \emptyset}{\BaseValueEmptyType} \typearrow \True \OrTypeError\\\\
+    \checktrans{\vzminlist \neq \emptyset}{\NoBaseValue} \typearrow \True \OrTypeError\\\\
     \listminabs(\vzminlist) \typearrow \vzmin
 }{
     \basevalue(\tenv, \overname{\TInt(\wellconstrained(\cs))}{\vt}) \typearrow \overname{\ELiteral(\lint(\vzmin))}{\veinit}
@@ -236,11 +236,11 @@ The function
 \[
     \constraintabsmin(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vc}) \aslto
     \overname{\Z^*}{\vzs}
-    \cup \overname{\TTypeError}{\TypeErrorVal{\BaseValueNonStatic}}
+    \cup \overname{\TTypeError}{\TypeErrorVal{\NoBaseValue}}
 \]
 returns a single element list containing the integer closest to $0$ that satisfies the constraint $\vc$ in $\tenv$, if one exists,
 and an empty list if the constraint represents an empty set.
-Otherwise, the result is $\TypeErrorVal{\BaseValueNonStatic}$.
+Otherwise, the result is $\TypeErrorVal{\NoBaseValue}$.
 
 \subsubsection{Prose}
 One of the following applies:
@@ -249,7 +249,7 @@ One of the following applies:
     \begin{itemize}
         \item $\vc$ is the constraint given by the expression $\ve$, that is, $\ConstraintExact(\ve)$;
         \item applying $\reducetozopt$ to $\ve$ in $\tenv$ yields the optional integer $\vzopt$;
-        \item checking that $\vzopt$ is not $\None$ yields $\True$\ProseTerminateAs{\BaseValueNonStatic};
+        \item checking that $\vzopt$ is not $\None$ yields $\True$\ProseTerminateAs{\NoBaseValue};
         \item view $\vzopt$ as the singleton set for the integer $\vz$;
         \item define $\vzs$ as the single element list containing $\vz$.
     \end{itemize}
@@ -259,10 +259,10 @@ One of the following applies:
         \item $\vc$ is the constraint given by the expression $\veone$ and $\vetwo$, that is, \\
                 $\ConstraintRange(\veone, \vetwo)$;
         \item applying $\reducetozopt$ to $\veone$ in $\tenv$ yields the optional integer $\vzoptone$;
-        \item checking that $\vzoptone$ is not $\None$ yields $\True$\ProseTerminateAs{\BaseValueNonStatic};
+        \item checking that $\vzoptone$ is not $\None$ yields $\True$\ProseTerminateAs{\NoBaseValue};
         \item view $\vzoptone$ as the singleton set for $\vvone$;
         \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$ yields the optional integer $\vzopttwo$;
-        \item checking that $\vzopttwo$ is not $\None$ yields $\True$\ProseTerminateAs{\BaseValueNonStatic};
+        \item checking that $\vzopttwo$ is not $\None$ yields $\True$\ProseTerminateAs{\NoBaseValue};
         \item view $\vzopttwo$ as the singleton set for $\vvtwo$;
         \item define $\vzs$ as based on the following cases for $\vvone$ and $\vvtwo$:
         \begin{itemize}
@@ -278,7 +278,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[exact]{
     \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
-    \checktrans{\vzopt \neq \None}{\BaseValueNonStatic} \checktransarrow \True \OrTypeError\\\\
+    \checktrans{\vzopt \neq \None}{\NoBaseValue} \checktransarrow \True \OrTypeError\\\\
     \vzopt \eqname \langle\vz\rangle
 }{
     \constraintabsmin(\overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{[\vz]}{\vzs}
@@ -288,10 +288,10 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[range]{
     \reducetozopt(\tenv, \veone) \typearrow \vzoptone\\
-    \checktrans{\vzoptone \neq \None}{\BaseValueNonStatic} \checktransarrow \True \OrTypeError\\\\
+    \checktrans{\vzoptone \neq \None}{\NoBaseValue} \checktransarrow \True \OrTypeError\\\\
     \vzoptone \eqname \langle\vvone\rangle\\
     \reducetozopt(\tenv, \vetwo) \typearrow \vzopttwo\\
-    \checktrans{\vzopttwo \neq \None}{\BaseValueNonStatic} \checktransarrow \True \OrTypeError\\\\
+    \checktrans{\vzopttwo \neq \None}{\NoBaseValue} \checktransarrow \True \OrTypeError\\\\
     \vzopttwo \eqname \langle\vvtwo\rangle\\
     \vzs \eqdef {
         \begin{cases}

@@ -231,7 +231,7 @@ easy to check this requirement.
 \subsubsection{Prose}
 All of the following apply:
 \begin{itemize}
-  \item checking that each declaration in $\vd$ is a subprogram declaration yields $\True$\ProseTerminateAs{\BadRecursiveDecls};
+  \item checking that each declaration in $\vd$ is a subprogram declaration yields $\True$\ProseTerminateAs{\BadDeclaration};
   \item applying $\annotatefuncsig$ to each node $\vf$ in $\genv$, where $\DFunc(\vf)$ is a declaration in $\decls$,
         yields $(\tenv_\vf, \vd_\vf, \vses_\vf)$\ProseOrTypeError;
   \item define $\envandfs$ as the list of pairs, each consisting of the local environment component of $\tenv_\vf$
@@ -257,7 +257,7 @@ All of the following apply:
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{
-  \vd\in\decls: \checktrans{\astlabel(\vd) = \DFunc}{\BadRecursiveDecls} \typearrow \True\OrTypeError\\\\
+  \vd\in\decls: \checktrans{\astlabel(\vd) = \DFunc}{\BadDeclaration} \typearrow \True\OrTypeError\\\\
   \DFunc(\vf)\in\decls: \annotatefuncsig(\genv, \vf) \typearrow (\tenv_\vf, \vd_\vf, \vses_\vf)\OrTypeError\\\\
   \envandfs \eqdef [\DFunc(\vf)\in\decls: (L^{\tenv_\vf}, \vd_\vf, \vses_\vf)]\\
   {
@@ -1845,7 +1845,7 @@ All of the following apply:
   \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynError\\\\
   \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Throwing(\vvopt, \Ignore)
 }{
-  \evalspec(\tenv, \vspec) \evalarrow \ErrorVal{UncaughtException}
+  \evalspec(\tenv, \vspec) \evalarrow \DynamicErrorVal{\UncaughtException}
 }
 \end{mathpar}
 \CodeSubsection{\EvalSpecBegin}{\EvalSpecEnd}{../Interpreter.ml}

@@ -672,12 +672,12 @@ We denote the set of well-formed parse trees for a non-terminal symbol $S$ by $\
 \hypertarget{def-aslparse}{}
 A parser is a function
 \[
-\aslparse : (\Token^* \setminus \{\Terror\}) \aslto \parsenode{\Nspec} \cup \{\ParseError\}
+\aslparse : (\Token^* \setminus \{\Terror\}) \aslto \parsenode{\Nspec} \cup \{\ParseErrorConfig\}
 \]
 \hypertarget{def-parseerror}{}
-where $\ParseError$ stands for a \emph{parse error}.
+where $\ParseErrorConfig$ stands for a \emph{parse error}.
 If $\aslparse(\ts) = n$ then $\yield(n)=\ts$
-and if $\aslparse(\ts) = \ParseError$ then there is no well-formed tree
+and if $\aslparse(\ts) = \ParseErrorConfig$ then there is no well-formed tree
 $n$ such that $\yield(n)=\ts$.
 (Notice that we do not define a parser if $\ts$ is lexically illegal.)
 

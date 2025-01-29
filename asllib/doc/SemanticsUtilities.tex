@@ -278,7 +278,7 @@ unless an index would be out of range for a bitvector of length $\vn$, in which 
     j \in 1..k: \neg\positioninrange(\vs_j, \vl_j, \vn)
   }
   {
-    \slicestopositions(\vn, \slices) \evalarrow \ErrorVal{Slice\_PositionOutOfRange}
+    \slicestopositions(\vn, \slices) \evalarrow \DynamicErrorVal{\BadIndex}
   }
   \and
   \inferrule[SlicesToPositionsInRange]{

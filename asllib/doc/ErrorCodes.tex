@@ -1,280 +1,333 @@
-\chapter{Error Codes}
+\chapter{Errors}
 
-\section{Static Error Codes}
+This chapter describes the errors defined for ASL.
+An error denotes the presence of a bug in an ASL specification, and the ASL Reference mandates the different types of errors (corresponding to different types of bugs) that implementations must detect, including when these errors must be detected and reported to users.
+
+Each type of error has an \emph{error code} which uniquely identifies it, a description of what the error means, and a \emph{kind} which dictates in which phase it is detected and reported.
+Error codes must be consistent across implementations, but each implementation can define its own appropriate error messages. \\
+
+
+\section{Error kinds}
+
 \begin{description}
-\hypertarget{def-binopprecedence}{}
-\item[$\BinopPrecedence$]
-This error indicates that a compound binary expression consists of two associative binary
-operators of the same precedence, without the use of parenthesis (see \ASTRuleRef{CheckNotSamePrec}).
+  \item[Build errors]
+    Detected and reported during lexing, parsing, and building of AST.
+    Build errors are always detected and reported.
+    Their error codes are prefixed with \BuildErrorPrefix.
+  \item[Typing errors]
+    Detected and reported during type-checking.
+    Typing errors are always detected and reported, even if the part of the specification that causes them is never executed.
+    Their error codes are prefixed with \TypeErrorPrefix.
+  \item[Dynamic errors]
+    Detected and reported during execution, if and only if the part of the specification that causes them is executed.
+    Their error codes are prefixed with \DynamicErrorPrefix.
+\end{description}
 
-\hypertarget{def-expectedbitvectortype}{}
-\item[$\ExpectedBitvectorType$]
-This error indicates that a bitvector type was expected where a non-bitvector type was given.
-See \typingrulecasename{ApplyBinopTypes}{plus\_minus\_bits\_bits} (\TypingRuleRef{ApplyBinopTypes}) for an example.
+Build errors and typing errors are known collectively as \emph{static errors}.
 
-\hypertarget{def-expectedenumerationtype}{}
-\item[$\ExpectedEnumerationType$]
-This error indicates that an enumeration type was expected where a \\
-non-enumeration type was given.
-See \TypingRuleRef{TArray} for an example.
+\section{Summary}
 
-\hypertarget{def-expectedstructuredtype}{}
-\item[$\ExpectedStructuredType$]
-This error indicates that a \structuredtype\ was expected where a non-\structuredtype\ was given.
-See \TypingRuleRef{ERecord} for an example.
+The following table summarises the information in this chapter.
 
-\hypertarget{def-expectedtupletype}{}
-\item[$\ExpectedTupleType$]
-This error indicates that a tuple type was expected where a non-tuple type was given.
-See \TypingRuleRef{LEDestructuring} for an example.
+\begin{center}
+\newcommand{\qq}{\symbol{34}} % ascii code for "
+\begin{tabular}{clc}
+\hline
+\textbf{Code} & \textbf{Name} & \textbf{Kind} \\
+\hline
+  $\LexicalError$                & Lexical error                  & Build         \\
+  $\ParseError$                  & Parse error                    & "             \\
+  $\ReservedIdentifier$          & Reserved identifier            & "             \\
+  $\BinopPrecedence$             & Binary operation precedence    & "             \\
+  $\BuildBadDeclaration$         & Bad declaration                & "             \\
+  \hline
+  $\UndefinedIdentifier$         & Undefined identifier           & Typing        \\
+  $\IdentifierAlreadyDeclared$   & Identifier already declared    & "             \\
+  $\AssignmentToImmutable$       & Assign to immutable            & "             \\
+  $\TypeSatisfactionFailure$     & Type satisfaction failure      & "             \\
+  $\NoLCA$                       & Lowest common ancestor         & "             \\
+  $\NoBaseValue$                 & No base value                  & "             \\
+  $\TypeAssertionFailure$        & Type assertion failure         & "             \\
+  $\StaticEvaluationFailure$     & Static evaluation failure      & "             \\
+  $\BadOperands$                 & Bad operands                   & "             \\
+  $\UnexpectedType$              & Unexpected type                & "             \\
+  $\BadTupleIndex$               & Bad tuple index                & "             \\
+  $\BadSlices$                   & Bad slices                     & "             \\
+  $\BadField$                    & Bad field                      & "             \\
+  $\BadSubprogramDeclaration$    & Bad subprogram declaration     & "             \\
+  $\BadDeclaration$              & Bad declaration                & "             \\
+  $\BadCall$                     & Bad call                       & "             \\
+  $\SideEffectViolation$         & Side effect violation          & "             \\
+  \hline
+  $\UnreachableError$            & Unreachable error              & Dynamic       \\
+  $\DynamicTypeAssertionFailure$ & Dynamic type assertion failure & "             \\
+  $\ArbitraryEmptyType$          & \texttt{ARBITRARY} empty type  & "             \\
+  $\DynamicBadOperands$          & Bad operands                   & "             \\
+  $\LimitExceeded$               & Limit exceeded                 & "             \\
+  $\UncaughtException$           & Uncaught exception             & "             \\
+  $\BadIndex$                    & Bad index                      & "             \\
+  $\OverlappingSliceAssignment$  & Overlapping slice assignment   & "             \\
+\end{tabular}
+\end{center}
 
-\hypertarget{def-setterwithoutgetter}{}
-\item[$\SetterWithoutGetter$:]
-ASL requires each setter for a given identifier to have a corresponding getter for the same
-identifier.
-The specification either does not contain a getter for the same identifier
-or a getter for the same identifier exists, but it does not have the expected
-signature (see \TypingRuleRef{CheckSetterHasGetter}).
 
-\hypertarget{def-undefinedidentifier}{}
-\item[$\UndefinedIdentifier$]
-An identifier that is missing a definition of the appropriate kind.
-See \TypingRuleRef{SubprogramForName} for an example.
+\section{Build errors}
 
-\hypertarget{def-identifieralreadydeclared}{}
-\item[$\IdentifierAlreadyDeclared$]
-This error indicates an attempt to declare an identifier where it has already been declared.
-The context makes it clear whether this error relates to the local static environment or to the
-entire static environment.
-See \TypingRuleRef{CheckVarNotInEnv} and \TypingRuleRef{CheckVarNotInGEnv}.
+\begin{description}
 
-\hypertarget{def-lengthsmismatch}{}
-\item[$\LengthsMismatch$]
-This error indicates that two lists that are expected to have the same length have different lengths.
-See \TypingRuleRef{LEDestructuring} for an example.
+  \item[$\LexicalError$]
+    \textit{Lexical error.}
+    An error was encountered during lexical analysis.
+    See \nameref{sec:TopLevelRule.CheckAndInterpret} for an example.
 
-\hypertarget{def-subprogramdeclaredmultipletimes}{}
-\item[$\SubrogramDeclaredMultipleTimes$]
-At least two subprograms in the specification clash.
-See \TypingRuleRef{AddNewFunc} for an example.
+  \item[$\ParseError$]
+    \textit{Parse error.}
+    An error was encountered during parsing. \\
+    See \nameref{sec:TopLevelRule.CheckAndInterpret} for an example.
 
-\hypertarget{def-nocallcandidates}{}
-\item[$\NoCallCandidates$]
-A function call, given by its name and list of formal argument types, does not match any defined subprogram.
-See \TypingRuleRef{SubprogramForName} for an example.
+  \hypertarget{def-reservedidentifier}{}
+  \item[$\ReservedIdentifier$]
+    \textit{Reserved identifier.}
+    A reserved identifier was used.
+    See \LexicalRuleRef{ReservedIdentifiers}.
 
-\hypertarget{def-toomanycandidates}{}
-\item[$\TooManyCandidates$]
-A function call, given by its name and list of formal argument types, matches more than one subprogram,
-which does not allow the type-checker to decide which subprogram the call refers to.
-See \TypingRuleRef{SubprogramForName} for an example.
+  \hypertarget{def-binopprecedence}{}
+  \item[$\BinopPrecedence$]
+    \textit{Binary operation precedence.}
+    A compound binary expression consisting of two associative binary operators of the same precedence was used without sufficient parentheses.
+    See \ASTRuleRef{CheckNotSamePrec}.
 
-\hypertarget{def-badparameterdecl}{}
-\item[$\BadParameterDecl$]
-A subprogram has an invalid declaration of its parameters.\\
-See \TypingRuleRef{CheckParamDecls} for an example.
-
-\hypertarget{def-nolca}{}
-\item[$\NoLCA$]
-A conditional expressions results in two types that have no common ancestor type that can represent both.
-See \TypingRuleRef{LowestCommonAncestor} for an example.
-
-\hypertarget{def-mrv}{}
-\item[$\MismatchedReturnValue$]
-A call to a function must result in a returned value,
-whereas a call to a procedure must not.
-This error occurs when a call to a function or a getter is inferred to refer to a procedure or a setter,
-or a call to a procedure or a setter is inferred to refer to a function or a getter.
-See \TypingRuleRef{AnnotateCallActualsTyped} for an example.
-
-\hypertarget{def-brs}{}
-\item[$\BadReturnStatement$]
-Values can only be returned from within a subprogram which declares a return type (a function or getter).
-This error occurs when attempting to return a value from a procedure or setter.
-See \TypingRuleRef{SReturn} for an example.
-
-\hypertarget{def-cba}{}
-\item[$\CallBadArity$]
-A call to a subprogram must have the same number of arguments as the list of formal arguments
-declared for the subprogram.
-This error indicates that the number of arguments is different to the number of declared formal arguments.
-See \TypingRuleRef{AnnotateCallActualsTyped} for an example.
-
-\hypertarget{def-cbpa}{}
-\item[$\CallBadParameterArity$]
-A call to a subprogram must have the same number of parameters as the list of formal parameters
-declared for the subprogram.
-This error indicates that the number of parameters is different to the number of declared formal parameters.
-See \TypingRuleRef{AnnotateCallActualsTyped} for an example.
-
-\hypertarget{def-brd}{}
-\item[$\BadRecursiveDecls$]
-Only subprogram declarations may be mutually recursive.
-This error indicates that at least one declaration in a given list of mutually recursive declarations
-is not a subprogram.
-See \TypingRuleRef{TypeCheckMutuallyRec} for an example.
-
-\hypertarget{def-lbi}{}
-\item[$\RequireIntegerForLoopBounds$]
-The expressions defining the bounds of a \texttt{for} loop are required to have the \structure\ of
-an integer type.
-This error indicates that at least one of the start expression and end expression violate this
-requirement.
-See \TypingRuleRef{TypeCheckMutuallyRec} for an example.
-
-\hypertarget{def-mfi}{}
-\item[$\MissingFieldInitializer$]
-This error indicates that an initialization of a \structuredtype\ is missing an expression to initialize
-one of its fields.
-See \TypingRuleRef{ERecord} for an example.
-
-\hypertarget{def-rsb}{}
-\item[$\RequireSameBitwidths$]
-This error indicates that two bitvector types are required to have the same bitwidths but the type-checker
-was not able to prove it.
-See \secref{BitvectorOperations} for an example.
-
-\hypertarget{def-taf}{}
-\item[$\TypeAsssertionFails$]
-This error indicates that a given at type assertion expression will always fail.
-See \TypingRuleRef{CheckATC} for an example.
-
-\hypertarget{def-ofc}{}
-\item[$\BinaryOperationFailsAllConstraints$]
-This error indicates that a binary expression appearing in a constraint will always fail dynamically.
-This means that the set of values that the type containing
-the constraint can take is empty.
-See \TypingRuleRef{BinopFilterRhs} for an example.
-
-\hypertarget{def-otb}{}
-\item[$\InvalidOperandTypesForBinop$]
-This error indicates that the operator of a binary expression cannot be applied to its operand expressions
-due to their types.
-See \TypingRuleRef{ApplyBinopTypes} for an example.
-
-\hypertarget{def-iaf}{}
-\item[$\AnnonymousFormNotAllowedHere$]
-This error indicates that an anonymous type is being used as a type annotation in a context
-where anonymous types are not allowed.
-See \TypingRuleRef{TNonDecl} for an example.
-
-\hypertarget{def-aim}{}
-\item[$\AssignmentToImmutable$]
-This error indicates that an assignment has a left-hand-side storage element that is immutable.
-See \TypingRuleRef{LEVar} for an example.
-
-\hypertarget{def-mf}{}
-\item[$\MissingField$]
-This error indicates that an access is made (for either reading or writing) to a field that is
-not declared by the respective \structuredtype\ or a bitfield that is not declared by the respective
-bitvector type.
-See \TypingRuleRef{LESetStructuredField} for an example.
-
-\hypertarget{def-dii}{}
-\item[$\DivIntIndivisible$]
-This error indicates that static evaluation encountered an integer division expression where
-the denominator does not divide the numerator.
-See \textsc{TypingRule.BinopLiterals.DIV\_INT} (\TypingRuleRef{BinopLiterals}) for an example.
-
-\hypertarget{def-bor}{}
-\item[$\BitfieldsOutOfRange$]
-This error indicates that at least one bitfield is declared with indices that go out of the range
-$[0, \vwidth]$ where $\vwidth$ is the width of the enclosing bitvector type.
-See \textsc{TypingRule.CheckPositionsInWidth} (\TypingRuleRef{CheckPositionsInWidth}).
-
-\hypertarget{def-bso}{}
-\item[$\BitfieldSlicesOverlap$]
-This error indicates that two bitfield slices defined for a bitvector type have overlapping ranges.
-This is checked by \TypingRuleRef{DisjointSlicesToPositions}.
-
-\hypertarget{def-bsr}{}
-\item[$\BitfieldSliceReversed$]
-This error indicates that a bitfield slice is defined such that its upper position is less than its lower position.
-This is checked by \TypingRuleRef{BitfieldSliceToPositions}.
-
-\hypertarget{def-icc}{}
-\item[$\IntConstantExpected$]
-This error indicates that a given expression was expected to statically evaluate
-to an integer-typed literal but either evaluated to a literal of a different type
-or could not be statically evaluated to a literal.
-This is checked by \TypingRuleRef{BitfieldSliceToPositions}.
-
-\hypertarget{def-es}{}
-\item[$\EmptySlice$]
-This error indicates that an expression is either a slice with an empty list of slice subexpressions
-or an incorrect way of invoking a getter or a setter with the wrong list of arguments, a missing
-list of arguments, or a list of arguments where the getter or setter are declared with no arguments.
-This is checked by \TypingRuleRef{ESlice}.
-
-\hypertarget{def-bvns}{}
-\item[$\BaseValueNonStatic$]
-This error indicates that a storage element without a supplied initializing expression cannot be
-assigned a \basevalueterm\ expression, since one cannot be statically inferred from the type of the
-storage element.
-This is produced by \TypingRuleRef{BaseValue}.
-
-\hypertarget{def-bvet}{}
-\item[$\BaseValueEmptyType$]
-This error indicates that a storage element without a supplied initializing expression cannot be
-assigned a \basevalueterm\ expression, since the static domain of the type of the storage element
-is empty.
-This is produced by \TypingRuleRef{BaseValue}.
-
-\hypertarget{def-nrf}{}
-\item[$\NonReturningFunction$]
-This error indicates that a function contains a control-flow path that may not terminate by
-either returning a value, throwing an exception, or executing \\
-\texttt{Unreachable()} (see \TypingRuleRef{CheckStmtReturnsOrThrows}).
-
-\hypertarget{def-bef}{}
-\item[$\BuiltinExpectedToBeFunction$]
-This error indicates an attempt to list a top-level declaration that is not a function
-in the standard library
-(see \nameref{sec:ASTRule.SetBuiltin}).
-
-\hypertarget{def-upc}{}
-\item[$\UnexpectedPendingConstrained$]
-This error indicates that a \pendingconstrainedintegertype{} has been encountered where one is not permitted
-(see \TypingRuleRef{TInt}).
-
-\hypertarget{def-bitfieldsnotaligned}{}
-\item[$\BitfieldsNotAligned$]
-This error indicates that a pair of bitfields defined for a bitvector type exist in the same
-scope, share the same name, but the slices they define for the containing bitvector type are
-different
-(see \TypingRuleRef{CheckCommonBitfieldsAlign}).
-
-\item[$\BadPrintType$]%
-\hypertarget{def-badprinttype}{}
-  This error indicates that an argument passed to the functions \Tprint{} or
-  \Tprintln{} is not singular (see \TypingRuleRef{SingularType}).
-\hypertarget{def-cse}{}
-\item[$\ConflictingSideEffects$]
-This error indicates an attempt to combine two sets of \sideeffectdescriptorsterm\ where
-a \sideeffectconflictterm\ exists
-(see \TypingRuleRef{NonConflictingUnion}).
+  \hypertarget{def-buildbaddeclaration}{}
+  \item[$\BuildBadDeclaration$]
+    \textit{Bad declaration.}
+    A top-level declaration is invalid.
+    For example, the standard library defines a non-subprogram (\ASTRuleRef{SetBuiltin}).
 
 \end{description}
 
-\section{Dynamic Error Codes}
+
+\section{Typing errors}
+
 \begin{description}
-\hypertarget{def-unr}{}
+
+\hypertarget{def-undefinedidentifier}{}
+\item[$\UndefinedIdentifier$]
+  \textit{Undefined identifier.}
+  An identifier is missing a definition of the appropriate kind.
+  See \TypingRuleRef{SubprogramForName} for an example.
+
+\hypertarget{def-identifieralreadydeclared}{}
+\item[$\IdentifierAlreadyDeclared$]
+  \textit{Identifier already declared.}
+  An attempt to declare an identifier which has already been defined.
+  For example:
+  \begin{itemize}
+    \item Re-defining a local variable (see the use of \TypingRuleRef{CheckVarNotInEnv} in \TypingRuleRef{LDVar}).
+    \item Re-defining a global variable (see the use of \TypingRuleRef{CheckVarNotInGEnv} in \TypingRuleRef{DeclareGlobalStorage}).
+  \end{itemize}
+
+\hypertarget{def-aim}{}
+\item[$\AssignmentToImmutable$]
+  \textit{Assign to immutable.}
+  An assignment has an immutable storage element on its left-hand side.
+  See \TypingRuleRef{LEVar}.
+
+\hypertarget{def-typesatisfactionfailure}{}
+\item[$\TypeSatisfactionFailure$]
+  \textit{Type satisfaction failure.}
+  See \TypingRuleRef{TypeSatisfaction}.
+
+\hypertarget{def-staticevaluationfailure}{}
+\item[$\StaticEvaluationFailure$]
+  \textit{Static evaluation failure.}
+  Static evaluation did not produce a literal.
+  See \TypingRuleRef{StaticEval}.
+
+\hypertarget{def-nolca}{}
+\item[$\NoLCA$]
+  \textit{Lowest common ancestor.}
+  The two branches of a conditional expression have types with no common ancestor.
+  See \TypingRuleRef{LowestCommonAncestor}.
+
+\hypertarget{def-nobasevalue}{}
+\item[$\NoBaseValue$]
+  \textit{No base value.}
+  A \basevalueterm{} for a given type cannot be constructed, either because one cannot be statically inferred from the type or because the static domain of the type is empty
+  See \TypingRuleRef{BaseValue}.
+
+\hypertarget{def-typeassertionfailure}{}
+\item[$\TypeAssertionFailure$]
+  \textit{Type assertion failure.}
+  An asserting type conversion must always fail dynamically.
+  See \TypingRuleRef{CheckATC}.
+
+\hypertarget{def-badoperands}{}
+\item[$\BadOperands$]
+  \textit{Bad operands.}
+  A primitive operator was provided invalid operands during type checking.
+  For example:
+  \begin{itemize}
+    \item The operands had the wrong types \\
+      (\TypingRuleRef{ApplyUnopType}, \TypingRuleRef{ApplyBinopTypes}).
+    \item Static evaluation of a primitive operator encountered an error \\
+      (\TypingRuleRef{UnopLiterals}, \TypingRuleRef{BinopLiterals}).
+    \item The operator must always fail dynamically, because the type of one of its operands is empty (\TypingRuleRef{BinopFilterRhs}).
+  \end{itemize}
+
+\hypertarget{def-unexpectedtype}{}
+\item[$\UnexpectedType$]
+  \textit{Unexpected type.}
+  In a context where a particular type was required, another one was found instead.
+  For example:
+  \begin{itemize}
+    \item Expected a constrained integer, found an unconstrained one \\
+      (\TypingRuleRef{CheckConstrainedInteger}).
+    \item Expected integer types in \texttt{for}-loop bounds (\TypingRuleRef{SForConstraints}).
+    \item Expected a bitvector (\TypingRuleRef{ApplyBinopTypes}).
+    \item Expected a structured type (\TypingRuleRef{ERecord}).
+    \item Expected a tuple type of a specific length (\TypingRuleRef{LEDestructuring}).
+    \item Expected a printable type (\TypingRuleRef{SPrint}).
+    \item Encountered a forbidden \pendingconstrainedintegertype{} (\TypingRuleRef{TInt}).
+    \item An anonymous enumeration or \structuredtype{} was used as a type annotation outside of a type declaration (\TypingRuleRef{TNonDecl}).
+  \end{itemize}
+
+\hypertarget{def-badtupleindex}{}
+\item[$\BadTupleIndex$]
+  \textit{Bad tuple index.}
+  A tuple index is out of bounds.
+  See \TypingRuleRef{EGetTupleItem}.
+
+\hypertarget{def-badslices}{}
+\item[$\BadSlices$]
+  \textit{Bad slices.}
+  One or more bitvector slices are invalid.
+  For example:
+  \begin{itemize}
+    \item Bitfields overlap on the left-hand side of an assignment (\TypingRuleRef{LESlice}).
+    \item Bit slices that are \symbolicallyevaluable{} overlap on the left-hand side of an assignment (\TypingRuleRef{DisjointSlicesToPositions}).
+      Note that if the overlapping slices are not \symbolicallyevaluable{}, then this is a dynamic error ($\OverlappingSliceAssignment$).
+    \item A slice expression has an empty list of slices (\TypingRuleRef{ESlice}).
+    \item Bitfield slices overlap in a bit vector type declaration \\
+      (\TypingRuleRef{DisjointSlicesToPositions}).
+    \item A bitfield slice in a bit vector type declaration is defined with its upper index less than its lower index (\TypingRuleRef{BitfieldSliceToPositions}).
+    \item A bitfield slice is (partially) out-of-bounds for its enclosing bit vector type declaration (\TypingRuleRef{CheckPositionsInWidth}).
+    \item Bitfield slices in a bit vector type declaration share name and scope, but define different slices (\TypingRuleRef{CheckCommonBitfieldsAlign}).
+  \end{itemize}
+
+\hypertarget{def-badfield}{}
+\item[$\BadField$]
+  \textit{Bad field.}
+  Invalid usage of a field of a \structuredtype{} or bitfield of a bitvector.
+  For example:
+  \begin{itemize}
+    \item An initialization expression for a \structuredtype{} is missing a field (\TypingRuleRef{ERecord}).
+    \item An access (read or write) is made to a non-existent field for a \structuredtype{} or bitfield of a bitvector type (\TypingRuleRef{LESetStructuredField}).
+  \end{itemize}
+
+\hypertarget{def-badsubprogramdeclaration}{}
+\item[$\BadSubprogramDeclaration$]
+  \textit{Bad subprogram declaration.}
+  A subprogram declaration is invalid.
+  For example:
+  \begin{itemize}
+    \item Incorrect declaration of parameters (\TypingRuleRef{CheckParamDecls}).
+    \item Clashes with another subprogram (\TypingRuleRef{AddNewFunc})
+    \item A procedure or setter returns a value (\TypingRuleRef{SReturn}).
+    \item A setter is missing its corresponding getter, or a getter with the same name exists but does not have a matching signature (\TypingRuleRef{CheckSetterHasGetter}).
+    \item A function contains a control-flow path that does not terminate with either: return of a value, throwing of an exception, or \texttt{Unreachable()} \\
+      (\TypingRuleRef{CheckStmtReturnsOrThrows}).
+  \end{itemize}
+
+\hypertarget{def-baddeclaration}{}
+\item[$\BadDeclaration$]
+  \textit{Bad declaration.}
+  A top-level non-subprogram declaration is invalid.
+  For example, there is a circular definition: a non-subprogram declaration appears in a mutually recursive set of declarations (\TypingRuleRef{TypeCheckMutuallyRec}).
+
+\hypertarget{def-badcall}{}
+\item[$\BadCall$]
+  \textit{Bad call.}
+  A function or procedure call is invalid.
+  For example:
+  \begin{itemize}
+    \item The call does not match any defined subprograms, or matches too many (\TypingRuleRef{SubprogramForName}).
+    \item An incorrect number of arguments or parameters was passed \\
+      (\TypingRuleRef{AnnotateCallActualsTyped}).
+    \item The call site expects a function or getter, but instead finds a procedure or setter, or \textit{vice versa} (\TypingRuleRef{AnnotateCallActualsTyped}).
+  \end{itemize}
+
+\hypertarget{def-sideeffectviolation}{}
+\item[$\SideEffectViolation$]
+  \textit{Side effect violation.}
+  An error was detected by side effect analysis (\chapref{SideEffects}).
+  For example:
+  \begin{itemize}
+    \item An impure expression was provided where a pure one was required \\
+      (\TypingRuleRef{SAssert}).
+    \item  A non-constant-time initalization expression was provided for a constant declaration (\TypingRuleRef{SDecl}.\textsc{constant}).
+    \item A \sideeffectconflictterm{} was found during an attempt to combine two sets of \sideeffectdescriptorsterm{} (\TypingRuleRef{NonConflictingUnion}).
+  \end{itemize}
+
+\end{description}
+
+
+\section{Dynamic errors}
+
+\begin{description}
+
+\hypertarget{def-unreachableerror}{}
 \item[$\UnreachableError$]
-This error results from evaluating an \texttt{Unreachable()} statement (see \SemanticsRuleRef{SUnreachable}).
+  \textit{Unreachable.}
+  An an \texttt{Unreachable()} statement was evaluated
+    (see \SemanticsRuleRef{SUnreachable}).
 
-\hypertarget{def-daf}{}
+\hypertarget{def-dynamicassertionfailure}{}
 \item[$\DynamicAssertionFailure$]
-This error results from evaluating an \texttt{assert} statement whose
-conditions evaluates to $\False$ (see \SemanticsRuleRef{SAssert}).
+  \textit{Dynamic assertion failure.}
+  An assertion (\texttt{assert}) evaluated to $\False$
+    (see \SemanticsRuleRef{SAssert}).
 
-\hypertarget{def-datc}{}
+\hypertarget{def-dynamictypeassertionfailure}{}
 \item[$\DynamicTypeAssertionFailure$]
-This error results from a failing type assertion (\texttt{$e$ as $t$})
-(see \SemanticsRuleRef{ATC}).
+  \textit{Dynamic type assertion failure.}
+  A type assertion (\texttt{$e$ as $t$}) failed
+    (see \SemanticsRuleRef{ATC}).
 
-\hypertarget{def-aet}{}
+\hypertarget{def-arbitraryemptytype}{}
 \item[$\ArbitraryEmptyType$]
-This error occurs when an expression \texttt{$t$ : ARBITRARY} is evaluated
-and $t$ has an empty domain (see \SemanticsRuleRef{EArbitrary}).
+  \textit{\texttt{ARBITRARY} empty type.}
+  An expression \texttt{ARBITRARY : $t$} is evaluated and $t$ is an empty type (see \SemanticsRuleRef{EArbitrary}).
 
+\hypertarget{def-dynamicbadoperands}{}
+\item[$\DynamicBadOperands$]
+  \textit{Bad operands.}
+  A primitive operator was provided invalid operands during evaluation (see \SemanticsRuleRef{UnopValues} and \SemanticsRuleRef{BinopValues}).
+  For example, a division by zero or modulo by zero.
+
+\hypertarget{def-limitexceeded}{}
+\item[$\LimitExceeded$]
+  \textit{Limit exceeded.}
+  A loop or recursion limit was exceeded \\
+  (see \SemanticsRuleRef{TickLoopLimit} and \SemanticsRuleRef{CheckRecurseLimit}).
+
+\hypertarget{def-uncaughtexception}{}
+\item[$\UncaughtException$]
+  \textit{Uncaught exception.}
+  An exception thrown in the specification was not caught (see \SemanticsRuleRef{EvalSpec}.\textsc{throwing}).
+
+\hypertarget{def-badindex}{}
+\item[$\BadIndex$]
+  \textit{Bad index.}
+  An invalid index was encountered.
+  For example:
+  \begin{itemize}
+    \item A bitslice index was out of bounds (\SemanticsRuleRef{ReadFromBitvector}).
+    \item An array index was out of bounds (\SemanticsRuleRef{EGetArray}).
+  \end{itemize}
+
+\hypertarget{def-overlappingsliceassignment}{}
+\item[$\OverlappingSliceAssignment$]
+  \textit{Overlapping slice assignment.}
+  Bitvector slices that are not \symbolicallyevaluable{} overlap on the left-hand side of an assignment (\SemanticsRuleRef{CheckNonOverlappingSlices}).
+  Note that overlapping \emph{bitfields} are typing errors, and that if the overlapping slices are \symbolicallyevaluable{} this too is a typing error ($\BadSlices$).
 \end{description}
