@@ -738,6 +738,8 @@ One of the following applies:
   \item All of the following apply (\textsc{exp\_real}):
   \begin{itemize}
     \item $\op$ is $\POW$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item since exponentiation is undefined when $a$ is 0 and $b$ is negative,
+          checking whether $a$ is different from $0$ or $b$ is non-negative yields $\True$\ProseOrTypeError;
     \item define $\vr$ as the real literal for $a^b$.
   \end{itemize}
 
@@ -1100,7 +1102,9 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[exp\_real]{}{
+\inferrule[exp\_real]{
+  \checktrans{a \neq 0 \lor b \geq 0}{IllegalOp} \checktransarrow \True \OrTypeError
+}{
   \binopliterals(\overname{\POW}{\op}, \overname{\lreal(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lreal(a^b)}{\vr}
 }
 \end{mathpar}
