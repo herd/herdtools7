@@ -1,2 +1,3 @@
 (cram
- (deps %{bin:menhir2bnfc} %{bin:menhir} %{bin:ocamllex}))
+ (enabled_if %{lib-available:menhir2bnfc_lib})
+ (deps %{bin:menhir} %{bin:ocamllex}))
