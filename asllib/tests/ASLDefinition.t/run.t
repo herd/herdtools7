@@ -5,3 +5,4 @@ Examples used in ASL High-level Definition:
 
   $ aslref --no-exec Bitfields.asl
   $ aslref Bitfields_nested.asl
+  $ aslref Bitvector_slices.asl

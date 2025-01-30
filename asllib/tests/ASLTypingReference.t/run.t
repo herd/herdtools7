@@ -18,6 +18,12 @@ ASL Typing Tests:
   $ aslref TypingRule.LDTyped.asl
   $ aslref TypingRule.LDTuple.asl
   $ aslref TypingRule.Lit.asl
+  $ aslref TypingRule.CheckCommonBitfieldsAlign.Error.asl
+  File TypingRule.CheckCommonBitfieldsAlign.Error.asl, line 1, character 20 to
+    line 6, character 1:
+  ASL Typing error:
+    bitfields `sub.common` and `common` are in the same scope but define different slices of the containing bitvector type: [0, 1] and [1:0], respectively.
+  [1]
 
 ASL Typing Tests / annotating types:
   $ aslref TypingRule.TReal.asl

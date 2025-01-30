@@ -202,10 +202,6 @@
   \end{center}
 }
 
-\newcommand\ASLExample[1]{
-  \lstinputlisting{#1}
-}
-
 \newcommand\ASLListing[3]{
 \begin{center}
 \lstinputlisting[caption=#1\label{listing:#2}]{#3}
@@ -1834,7 +1830,7 @@
 \newcommand\Prosecheckcommonbitfieldsalign[3]{\hyperlink{def-checkcommonbitfieldsalign}{checking} that all pairs of bitfields in #2 that are in the same scope
   and share the same name correspond to the same slice of the containing bitvector type in the static environment #1 yields $\True$}
 \newcommand\checkcommonbitfieldsalign[0]{\hyperlink{def-checkcommonbitfieldsalign}{\textfunc{check\_common\_bitfields\_align}}}
-\newcommand\absolutefieldsalign[0]{\hyperlink{def-absolutefieldsalign}{\textfunc{absolute\_fields\_align}}}
+\newcommand\absolutebitfieldsalign[0]{\hyperlink{def-absolutefieldsalign}{\textfunc{absolute\_bitfields\_align}}}
 \newcommand\TAbsField[0]{\hyperlink{def-tabsfield}{\mathbb{A}\mathbb{B}\mathbb{F}}}
 \newcommand\Prosebitfieldstoabsolute[4]{\hyperlink{def-bitfieldstoabsolute}{generating} the \absolutebitfields\ for the list of bitfields #2 and its nested bitfields
   with #3 as the parent \absolutebitfield\ in the static environment #1 yields the set of fields #4}
@@ -1842,8 +1838,9 @@
 \newcommand\bitfieldtoabsolute[0]{\hyperlink{def-bitfieldtoabsolute}{\textfunc{bitfield\_to\_absolute}}}
 \newcommand\Proseslicetoindices[3]{\hyperlink{def-slicetoindices}{obtaining} the sequence of indices for a slice #1 in the static environment #2 yields #3}
 \newcommand\slicetoindices[0]{\hyperlink{def-slicetoindices}{\textfunc{slice\_to\_indices}}}
-\newcommand\Prosesliceindicesbyslices[3]{\hyperlink{def-sliceindicesbyslices}{slicing} the list of indices #1 according to #2 yields #3}
-\newcommand\sliceindicesbyslices[0]{\hyperlink{def-sliceindicesbyslices}{\textfunc{slice\_indices\_by\_slices}}}
+\newcommand\Proseselectindicesbyslices[3]{\hyperlink{def-selectindicesbyslices}{selecting}
+  the integers from the list #1 specified by the list of indices #2 yields the list #3}
+\newcommand\selectindicesbyslices[0]{\hyperlink{def-selectindicesbyslices}{\textfunc{select\_indices\_by\_slices}}}
 
 \newcommand\checknoduplicates[0]{\hyperlink{def-checknoduplicates}{\textfunc{check\_no\_duplicates}}}
 \newcommand\filteroptionlist[0]{\hyperlink{def-filteroptionlist}{\textfunc{filter\_option\_list}}}

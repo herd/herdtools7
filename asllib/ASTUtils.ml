@@ -114,7 +114,18 @@ let list_fold_left_map f accu l =
 let list_fold_lefti f accu l =
   List.fold_left (fun (i, accu) elt -> (i + 1, f i accu elt)) (0, accu) l |> snd
 
-(* Straigh out of stdlib v4.10 *)
+let list_coalesce_right f l =
+  List.fold_right
+    (fun e acc ->
+      match acc with
+      | [] -> [ e ]
+      | acc_head :: acc_tail -> (
+          match f e acc_head with
+          | Some coalesced -> coalesced :: acc_tail
+          | None -> e :: acc))
+    l []
+
+(* Straight out of stdlib v4.10 *)
 let list_concat_map f l =
   let open List in
   let rec aux f acc = function

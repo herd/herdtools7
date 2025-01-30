@@ -346,6 +346,15 @@ val list_fold_left_map :
 (** [fold_left_map] is a combination of [fold_left] and [map] that threads an
     accumulator through calls to [f]. Taken from stdlib 4.11. *)
 
+val list_coalesce_right : ('a -> 'a -> 'a option) -> 'a list -> 'a list
+(** [list_coalesce_right f l] applies the coalescing function [f] to
+  adjacent elements of [l], using it to folding [l] in a right-to-left order.
+
+  @param [f] is a function that, given two elements, either coalesces them into
+  a single element or returns [None], signalling that the elements cannot be
+  coalesced.
+*)
+
 val uniq : 'a list -> 'a list
 (** [uniq l] returns the unique elements of [l], in the order they appear *)
 
