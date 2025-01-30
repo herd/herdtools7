@@ -827,7 +827,7 @@ let max_set = IntSet.max_elt
               |> List.filter_map
                 (fun n -> match n.C.evt.C.loc,n.C.evt.C.bank with
                 | Data x,Ord when StringSet.mem x tagchange 
-                    -> Some (None (* no instruction label *), x)
+                    -> Some (None, None, (* no instruction label *) x)
                 | _ -> None)
               |> FaultSet.of_list
             else if do_morello then
@@ -836,9 +836,9 @@ let max_set = IntSet.max_elt
                 (fun n -> let evt = n.C.evt in
                     match n.C.prev.C.edge.edge,evt.C.loc,evt.C.bank with
                 | Dp (dp,_,_),Data x,CapaTag when A.is_addr dp
-                          -> Some (None (* no instruction label *), x)
+                          -> Some (None, None, (* no instruction label *) x)
                 | Dp (dp,_,_),Data x,CapaSeal when A.is_addr dp 
-                          -> Some (None (* no instruction label *), x)
+                          -> Some (None, None, (* no instruction label *) x)
                 | _ -> None)
               |> FaultSet.of_list
             (* TODO: Add more process to extract (1) if an read or write access will fault and (2) the code location.
@@ -848,7 +848,7 @@ let max_set = IntSet.max_elt
               |> List.filter_map
                   (fun n -> let e = n.C.evt in
                     match e.C.check_fault,e.C.loc,e.C.bank with
-                    | Some (label,_),Data x,Ord -> Some (Some label, x)
+                    | Some (label,boolean),Data x,Ord -> Some (Some label, Some boolean, x)
                     | _ -> None)
               |> FaultSet.of_list
             else (* no fault-related flag *)

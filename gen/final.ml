@@ -274,53 +274,53 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                  sprintf "(%s)" pp)
            fs)
 
-    let dump_one_flt proc (opt_label, var) =
-        match opt_label with
-        | Some label -> sprintf "fault (%s:%s,%s)" (Proc.pp proc) label var
-        | None -> sprintf "fault (%s,%s)" (Proc.pp proc) var
+    let dump_one_flt proc (opt_label, opt_bool, var) =
+        match opt_label, opt_bool with
+        | Some label, Some boolean 
+            -> sprintf "%sfault (%s:%s,%s)" 
+                (if boolean then "" else "~")
+                (Proc.pp proc) label var
+        | None, None -> sprintf "fault (%s,%s)" (Proc.pp proc) var
+        | _ -> Warn.fatal "fault condition is incorrect."
 
     (*TODO option label *)
     let dump_flt sep (p,xs) = FaultSet.pp_str sep (dump_one_flt p) xs
 
     let dump_flts flts =
-      if do_kvm then ""
-      else
-        let pp = List.map (dump_flt " \\/ ") flts 
-                 |> String.concat " \\/ " in
-        match flts with
-        | [] -> ""
-        | [_,xs] when FaultSet.is_singleton xs -> "~" ^ pp
-        | _ -> sprintf "~(%s)" pp
+      if do_kvm then
+        List.map (dump_flt " /\\ ") flts 
+        |> String.concat " /\\ "
+      else ""
 
-    let dump_locations chan = function
-      | [] -> ()
-      | locs -> fprintf chan "locations [%s]\n" (String.concat " " locs)
+    let faults_to_string flts = 
+        flts |> List.map
+        (fun (p,xs) ->
+          FaultSet.map_list
+            (fun (_,_,loc) -> sprintf "fault (%d,%s);" p loc)
+        xs) 
+        |> List.flatten
+
+    let dump_locations chan locs = 
+      fprintf chan "locations [%s]\n" (String.concat " " locs)
 
     (* TODO change to dump the fault *)
     let dump_final chan (f,flts) =
-      let loc_flts =
-        if do_kvm then
-          List.fold_right
-            (fun (p,xs) acc ->
-              FaultSet.fold
-                (fun x k -> sprintf "%s;" (dump_one_flt p x)::k)
-                xs acc)
-            flts []
-        else [] in
+      let loc_flts = if do_kvm then faults_to_string flts else [] in
       match f with
+      (* TODO what the fault looks like in Forall condition? *)
       | Exists fs ->
-          dump_locations chan loc_flts ;
+          dump_locations chan loc_flts;
           let ppfs = dump_state fs
           and ppflts = dump_flts flts in
           let cc = match ppfs,ppflts with
           | "","" -> ""
           | "",_ -> ppflts
           | _,"" -> sprintf "(%s)" ppfs
-          | _,_ -> sprintf "(%s) /\\ %s" ppfs ppflts in
+          | _,_ -> sprintf "((%s) /\\ (%s))" ppfs ppflts in
           if cc <> "" then
             fprintf chan "%sexists %s\n" (if !Config.neg then "~" else "") cc
       | Forall ffs ->
-          dump_locations chan loc_flts ;
+          dump_locations chan loc_flts;
           fprintf chan "forall\n" ;
           fprintf chan "%s%s\n" (Run.dump_cond ffs)
             (match dump_flts flts with

@@ -551,6 +551,8 @@ module CoSt = struct
  (* TODO: do something about pte, and set need_to_check_fault  *)
   let set_pte_value st pte_value = { st with pte_value; need_to_check_fault = true }
 
+  let get_pte_value st = st.pte_value
+
   (* read the need_to_check_fault flag, and reset/clean it *)
   let read_and_unset_fault st = 
       let flag = st.need_to_check_fault in 
@@ -899,14 +901,17 @@ let set_same_loc st n0 =
 *)
                 end ;
                 (* TODO: add the process on pte *)
-                let need_to_check_fault, st = CoSt.read_and_unset_fault st in
-                let fault = if do_kvm && need_to_check_fault then can_fault pte_val else None in 
+                let fault_update st pte_val =
+                    let need_to_check_fault, st = CoSt.read_and_unset_fault st in
+                    eprintf "need_to_check_fault %b\n" need_to_check_fault;
+                    (if do_kvm && need_to_check_fault then can_fault pte_val else None), st in 
                 let bank = n.evt.bank in
                 begin match bank with
                 | Instr -> Warn.fatal "instruction annotation to data bank not possible?"
                 (* TODO check pte access? *)
                 | Ord ->
                    let st = set_write_val_ord st n in
+                   let fault, st = fault_update st pte_val in
                    n.evt <- { n.evt with check_fault = fault };
                    do_set_write_val next_x_ok st pte_val ns
                 | Pair ->
@@ -917,6 +922,7 @@ let set_same_loc st n0 =
                    assert (Array.length cell>=2) ;
                    let st = CoSt.next_co st Ord in (* Pre-increment *)
                    let st = set_write_val_ord st n in
+                   let fault, st = fault_update st pte_val in
                    n.evt <- { n.evt with check_fault = fault };
                    do_set_write_val next_x_ok st pte_val ns
                 | Tag|CapaTag|CapaSeal ->
@@ -961,8 +967,9 @@ let set_same_loc st n0 =
                        end else pte_val in
                    if O.verbose > 2 then
                      eprintf "kvm pte_val: %s\n" (PteVal.pp pte_val);
-                    (* TODO check if this pte value access is allowed *)
-                   n.evt <- { n.evt with pte = pte_val; check_fault = fault; } ;
+                     (* TODO check if this pte value access is allowed *)
+                     (* TODO Is that correct pte can fail? *)
+                   n.evt <- { n.evt with pte = pte_val; } ;
                    let st = CoSt.set_pte_value st pte_val in
                    do_set_write_val (!next_x_pred || next_x_ok) st pte_val ns
                 end (* END of match bank *)
@@ -1077,7 +1084,7 @@ let set_read_pair_v n cell =
    convert the node list, the first unnamed parameter, to the final value `cell`
    and PTE value `pte_cell` *)
 let do_set_read_v =
-  (* st keeps track of tags, cell and pte_cell are the current
+    (* st keeps track of previous value, cell and pte_cell are the current
      state of memory *)
   let rec do_rec st cell pte_cell ns = 
     if O.verbose > 2 then
@@ -1097,8 +1104,11 @@ let do_set_read_v =
         begin match n.evt.dir with
         (* Assign the read value according to `cell` and `pte_cell` *)
         | Some R ->
-            let need_to_check_fault, st = CoSt.read_and_unset_fault st in
-            let fault = if do_kvm && need_to_check_fault then can_fault pte_cell else None in 
+            let fault_update st =
+                let need_to_check_fault, st = CoSt.read_and_unset_fault st in
+                eprintf "need_to_check_fault %b\n" need_to_check_fault;
+                let pte_val = CoSt.get_pte_value st in
+                (if do_kvm && need_to_check_fault then can_fault pte_val else None), st in 
             begin match bank with
             | Ord | Instr->
                set_read_individual_v n cell
@@ -1113,7 +1123,8 @@ let do_set_read_v =
             | Pte ->
                 n.evt <- { n.evt with pte = pte_cell; }
             end ;
-            n.evt <- { n.evt with check_fault =fault };
+            let fault, st = fault_update st in
+            n.evt <- { n.evt with check_fault = fault };
             do_rec st cell pte_cell ns
         (* Update `st`, `cell` and `pte_cell` for future read events *)
         | Some W ->
@@ -1127,9 +1138,10 @@ let do_set_read_v =
                 else CoSt.set_co st bank n.evt.ins 
               |Pte ->
                 (* TODO what ist he is_data check here? *)
-                (* Carry over the pte_value in st *)
+                (* TODO Is that correct pte can fail? *)
+                (* Carry over the old pte_value in st *)
                 if Code.is_data n.evt.loc then 
-                    CoSt.set_pte_value st n.evt.pte
+                    CoSt.set_pte_value st pte_cell
                 else CoSt.set_co st bank n.evt.ins in
             do_rec st
               (* cell *)
