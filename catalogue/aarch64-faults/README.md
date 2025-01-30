@@ -31,3 +31,21 @@ in the folder `${KUT_DIR}`:
     % sh ./litmus/run.sh
 
 > **_NOTE:_** litmus7 does not support MTE and, consequently, cannot run the test LDRredF.
+
+Herd7 support for faults
+------------------------
+
+Currently, herdtools7 supports the following faults:
+
+    - MMU Translation Fault, illustrated by 3faults.litmus test.
+    - MMU Access Flag Fault, illustrated by 3faults.litmus and LDRaf0F.litmus tests.
+    - MMU Permission Fault, illustrated by STRdb0F.litmus.
+    - TagCheck Fault, illustrated by LDRredF.litmus test.
+    - Undefined Instruction, illustrated by UDF.litmus and noUDF.litmus tests.
+    - Supervisor Call, illustrated by SVC.litmus test.
+
+The litmus tests above follow the convention that the `fault()` predicate
+inquires about the instruction that caused the fault rather than the instruction
+to which the program returns after exiting the fault handler. This difference
+is only relevant for the SVC instruction, where the return address is the next
+instruction after SVC.
