@@ -36,7 +36,7 @@ type 'aop op =
   | CheckPerms of string
   | ToInteger
   | ArchOp of 'aop
-  | AddPAC of bool * string
+  | AddPAC of bool * PAC.key
 
 let pp_op o pp_aop =
   match o with
@@ -85,9 +85,9 @@ let pp_op o pp_aop =
   | ArchOp aop -> pp_aop aop
   | AddPAC (uniq, key) ->
       if uniq then
-        sprintf "AddOnePac:%s" key
+        sprintf "AddOnePac:%s" (PAC.pp_upper_key key)
       else
-        sprintf "AddPAC:%s" key
+        sprintf "AddPAC:%s" (PAC.pp_upper_key key)
 
 let is_infix = function
   | Add|Sub|Mul|Div|Rem|And|Or|Xor|ShiftLeft

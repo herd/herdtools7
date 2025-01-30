@@ -1982,10 +1982,10 @@ module Make(V:Constant.S)(C:Config) =
           | I_AUT _ -> "aut"
           | _ -> assert false
         and key = match key with
-          | IA -> "iza"
-          | DA -> "dza"
-          | IB -> "izb"
-          | DB -> "dzb"
+          | PAC.IA -> "iza"
+          | PAC.DA -> "dza"
+          | PAC.IB -> "izb"
+          | PAC.DB -> "dzb"
         in
 
         let rD,fD = do_arg1i V64 rD 0 in
@@ -2000,12 +2000,7 @@ module Make(V:Constant.S)(C:Config) =
           | I_PAC _ -> "pac"
           | I_AUT _ -> "aut"
           | _ -> assert false
-        and key = match key with
-          | IA -> "ia"
-          | DA -> "da"
-          | IB -> "ib"
-          | DB -> "db"
-        in
+        and key = PAC.pp_lower_key key in
 
         let rD,fD,rN,fN = args2i V64 rD rN in
         { empty_ins with

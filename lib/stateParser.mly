@@ -138,31 +138,24 @@ location_global:
 | name_pac_plus { $1 }
 
 pac_key:
-| TOK_PACDA { "da" }
-| TOK_PACDB { "db" }
-| TOK_PACIA { "ia" }
-| TOK_PACIB { "ib" }
+| TOK_PACDA { PAC.DA }
+| TOK_PACDB { PAC.DB }
+| TOK_PACIA { PAC.IA }
+| TOK_PACIB { PAC.IB }
 
 name_pac_plus:
 | NAME { Constant.mk_sym $1 }
 | TOK_PAC LPAR name_pac_plus COMMA NAME COMMA NUM RPAR
   {
     (* Pointer Authentication Code parsing: restricted to integer modifiers *)
-    let key = $5 in
-    let modifier =
-      Printf.sprintf "0x%x" (int_of_string $7)
-    in
-    let keys = ["da"; "db"; "ia"; "ib"] in
-    if List.mem key keys then
-      begin match $3 with
-      | Symbolic (Virtual v) ->
-        Symbolic (Virtual {
-          v with pac = PAC.add key modifier 0 v.pac
-        })
-      | _ -> Warn.user_error "pac field only exists for virtual address"
-      end
-    else
-      Warn.user_error "PAC: the key \"%s\" is not in {da, db, ia, ib}" key
+    let key = PAC.parse_key $5 in
+    let modifier = Printf.sprintf "0x%x" (int_of_string $7) in
+    match $3 with
+    | Symbolic (Virtual v) ->
+      Symbolic (Virtual {
+        v with pac = PAC.add key modifier 0 v.pac
+      })
+    | _ -> Warn.user_error "pac field only exists for virtual address"
   }
 | pac_key LPAR name_pac_plus COMMA NUM RPAR
   {
@@ -176,21 +169,16 @@ name_pac_plus:
 | TOK_PAC LPAR name_pac_plus COMMA NAME COMMA NUM COMMA NUM RPAR
   {
     (* Pointer Authentication Code parsing: restricted to integer modifiers *)
-    let key = $5 in
+    let key = PAC.parse_key $5 in
     let modifier =
       Printf.sprintf "0x%x" (int_of_string $7)
     in
-    let keys = ["da"; "db"; "ia"; "ib"] in
-    if List.mem key keys then
-      begin match $3 with
-      | Symbolic (Virtual v) ->
-        Symbolic (Virtual {
-          v with pac = PAC.add key modifier (int_of_string $9) v.pac
-        })
-      | _ -> Warn.user_error "pac field only exists for virtual address"
-      end
-    else
-      Warn.user_error "PAC: the key \"%s\" is not in {da, db, ia, ib}" key
+    match $3 with
+    | Symbolic (Virtual v) ->
+      Symbolic (Virtual {
+        v with pac = PAC.add key modifier (int_of_string $9) v.pac
+      })
+    | _ -> Warn.user_error "pac field only exists for virtual address"
   }
 | pac_key LPAR name_pac_plus COMMA NUM COMMA NUM RPAR
   {

@@ -1285,12 +1285,6 @@ and strbh_memo bh t =  sprintf "%s%s" (str_memo t) (pp_bh bh)
 
 type opsel = Cpy | Inc | Inv | Neg
 
-type pac_key = IA | IB | DA | DB
-
-let pp_pac_key = function
-  | IA -> "IA" | IB -> "IB"
-  | DA -> "DA" | DB -> "DB"
-
 let sel_memo = function
   | Cpy -> "CSEL"
   | Inc -> "CSINC"
@@ -1741,7 +1735,7 @@ type 'k kinstruction =
    * PACDB <Xd>, <Xn|Sp>
    * PACDZB <Xd>, <X31>
    *)
-  | I_PAC of pac_key * reg * reg     (* detination <- AddPACIA(source) *)
+  | I_PAC of PAC.key * reg * reg     (* detination <- AddPACIA(source) *)
 
 (*  - Second part: check the PAC of a register *)
   (* see C6.2.23
@@ -1766,7 +1760,7 @@ type 'k kinstruction =
    * AUTDB <Xd>, <Xn|Sp>
    * AUTDZB <Xd>, <X31>
    *)
-  | I_AUT of pac_key * reg * reg (* destination <- AuthIA(source) *)
+  | I_AUT of PAC.key * reg * reg (* destination <- AuthIA(source) *)
 
 (*  - Third part: strip the PAC of a register *)
   (* | I_XPACLRI (* strip a PAC from LR *) *)
@@ -2475,9 +2469,9 @@ let do_pp_instruction m =
       sprintf "UDF %s" (m.pp_k k)
   (* Pointer Authentication Code *)
   | I_PAC (key, r1, r2) ->
-      sprintf "PAC%s %s, %s" (pp_pac_key key) (pp_reg r1) (pp_reg r2)
+      sprintf "PAC%s %s, %s" (PAC.pp_upper_key key) (pp_reg r1) (pp_reg r2)
   | I_AUT (key, r1, r2) ->
-      sprintf "AUT%s %s, %s" (pp_pac_key key) (pp_reg r1) (pp_reg r2)
+      sprintf "AUT%s %s, %s" (PAC.pp_upper_key key) (pp_reg r1) (pp_reg r2)
   | I_XPACI r ->
       sprintf "XPACI %s" (pp_reg r)
   | I_XPACD r ->

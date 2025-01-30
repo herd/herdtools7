@@ -4297,14 +4297,8 @@ module Make
            let lbl_v = get_instr_label ii in
            m_fault >>| set_elr_el1 lbl_v ii >>! B.Fault [AArch64Base.elr_el1, lbl_v]
 (* Pointer Anthentication Code `FEAT_Pauth2` with `FEAT_FPAC` *)
-        | I_PAC (k, rd, rn) ->
+        | I_PAC (key, rd, rn) ->
             begin
-              let key = match k with
-                | IA -> "ia"
-                | IB -> "ib"
-                | DA -> "da"
-                | DB -> "db"
-              in
               read_reg_ord rd ii >>|
               read_reg_ord rn ii >>= fun (addr, modifier) ->
               M.op (Op.AddPAC (not const_pac_field, key)) addr modifier >>= fun v ->
@@ -4312,19 +4306,13 @@ module Make
               B.nextSetT rd v
             end
         (* Implement `FEAT_FPAC`: raise a fault if the PAC field doesn't match *)
-        | I_AUT (k, rd, rn) ->
+        | I_AUT (key, rd, rn) ->
             begin
               let (>>!) = M.(>>!) in
-              let (key, k_fault) = match k with
-                | IA -> ("ia", FaultType.AArch64.IA)
-                | IB -> ("ib", FaultType.AArch64.IB)
-                | DA -> ("da", FaultType.AArch64.DA)
-                | DB -> ("db", FaultType.AArch64.DB)
-              in
 
               let mfault =
                   mk_fault None Dir.R Annot.N ii
-                    (Some (FaultType.AArch64.PacCheck k_fault))
+                    (Some (FaultType.AArch64.PacCheck key))
                     None
                   >>! B.Exit
               in

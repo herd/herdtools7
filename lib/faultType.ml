@@ -30,13 +30,11 @@ module type AArch64Sig = sig
     | AccessFlag
     | Permission
 
-  type key_t = DA | DB | IA | IB
-
   type t =
     | MMU of mmu_t
     | TagCheck
     | UndefinedInstruction
-    | PacCheck of key_t
+    | PacCheck of PAC.key
 
   include S with type t := t
 end
@@ -52,19 +50,11 @@ module AArch64 = struct
     | AccessFlag -> "AccessFlag"
     | Permission -> "Permission"
 
-  type key_t = DA | DB | IA | IB
-
-  let pp_key_t = function
-    | DA -> "DA"
-    | DB -> "DB"
-    | IA -> "IA"
-    | IB -> "IB"
-
   type t =
     | MMU of mmu_t
     | TagCheck
     | UndefinedInstruction
-    | PacCheck of key_t
+    | PacCheck of PAC.key
 
   let sets = [
       "MMU", [MMU Translation;
@@ -85,7 +75,7 @@ module AArch64 = struct
     | MMU m -> Printf.sprintf "MMU:%s" (pp_mmu_t m)
     | TagCheck -> "TagCheck"
     | UndefinedInstruction -> "UndefinedInstruction"
-    | PacCheck k -> Printf.sprintf "PacCheck:%s" (pp_key_t k)
+    | PacCheck k -> Printf.sprintf "PacCheck:%s" (PAC.pp_upper_key k)
 
   let parse = function
     | "MMU:Translation" -> MMU Translation

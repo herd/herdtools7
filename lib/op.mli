@@ -48,7 +48,7 @@ type 'aop op =
 (* Apply the exclusive OR between the current PAC field of a virtual address
  * and the PAC signature of this address, and a modifier for a given key.
  *)
-  | AddPAC of bool * string
+  | AddPAC of bool * PAC.key
 
 val pp_op : 'aop op -> ('aop -> string)-> string
 
