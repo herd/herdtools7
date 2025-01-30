@@ -1018,7 +1018,7 @@ module Make
 
               let dump_value loc v = match v with
               | Constant.Symbolic (Constant.Virtual {Constant.pac})
-                when not (Constant.PAC.is_canonical pac) ->
+                when not (PAC.is_canonical pac) ->
                   Warn.user_error "PAC not supported in post-conditions in litmus"
               | Constant.Symbolic _ -> SkelUtil.data_symb_id (T.C.V.pp O.hexa v)
               | Constant.PteVal p ->
@@ -1554,7 +1554,7 @@ module Make
               | ConcreteRecord _ ->
                   Warn.fatal "Record used as scalar"
               | Symbolic (Virtual {pac})
-                when not (Constant.PAC.is_canonical pac) ->
+                when not (PAC.is_canonical pac) ->
                   Warn.user_error "Litmus cannot initialize a virtual address with a non-canonical PAC field"
               | Symbolic (Virtual {name=s; tag=None; offset=0; _}) ->
                   sprintf "(%s)_vars->%s" (CType.dump at) s

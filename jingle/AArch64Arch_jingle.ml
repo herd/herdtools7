@@ -652,38 +652,14 @@ include Arch.MakeArch(struct
         conv_reg r2 >! fun r2 ->
         I_STCT(r1,r2)
     (* Pointer Authentication Core extension *)
-    | I_PAC_IA (r1, r2) ->
+    | I_PAC (k, r1, r2) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >! fun r2 ->
-        I_PAC_IA(r1, r2)
-    | I_PAC_IB (r1, r2) ->
+        I_PAC (k, r1, r2)
+    | I_AUT (k, r1, r2) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >! fun r2 ->
-        I_PAC_IB(r1, r2)
-    | I_PAC_DA (r1, r2) ->
-        conv_reg r1 >> fun r1 ->
-        conv_reg r2 >! fun r2 ->
-        I_PAC_DA(r1, r2)
-    | I_PAC_DB (r1, r2) ->
-        conv_reg r1 >> fun r1 ->
-        conv_reg r2 >! fun r2 ->
-        I_PAC_DB(r1, r2)
-    | I_AUT_IA (r1, r2) ->
-        conv_reg r1 >> fun r1 ->
-        conv_reg r2 >! fun r2 ->
-        I_AUT_IA(r1, r2)
-    | I_AUT_IB (r1, r2) ->
-        conv_reg r1 >> fun r1 ->
-        conv_reg r2 >! fun r2 ->
-        I_AUT_IB(r1, r2)
-    | I_AUT_DA (r1, r2) ->
-        conv_reg r1 >> fun r1 ->
-        conv_reg r2 >! fun r2 ->
-        I_AUT_DA(r1, r2)
-    | I_AUT_DB (r1, r2) ->
-        conv_reg r1 >> fun r1 ->
-        conv_reg r2 >! fun r2 ->
-        I_AUT_DB(r1, r2)
+        I_AUT (k, r1, r2)
     | I_XPACI r ->
         conv_reg r >! fun r ->
         I_XPACI(r)

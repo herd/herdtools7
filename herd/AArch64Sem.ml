@@ -4297,18 +4297,13 @@ module Make
            let lbl_v = get_instr_label ii in
            m_fault >>| set_elr_el1 lbl_v ii >>! B.Fault [AArch64Base.elr_el1, lbl_v]
 (* Pointer Anthentication Code `FEAT_Pauth2` with `FEAT_FPAC` *)
-        | I_PAC_DA (rd, rn)
-        | I_PAC_DB (rd, rn)
-        | I_PAC_IA (rd, rn)
-        | I_PAC_IB (rd, rn)
-        ->
+        | I_PAC (k, rd, rn) ->
             begin
-              let key = match inst with
-                | I_PAC_IA _ -> "ia"
-                | I_PAC_IB _ -> "ib"
-                | I_PAC_DA _ -> "da"
-                | I_PAC_DB _ -> "db"
-                | _ -> assert false
+              let key = match k with
+                | IA -> "ia"
+                | IB -> "ib"
+                | DA -> "da"
+                | DB -> "db"
               in
               read_reg_ord rd ii >>|
               read_reg_ord rn ii >>= fun (addr, modifier) ->
@@ -4317,19 +4312,14 @@ module Make
               B.nextSetT rd v
             end
         (* Implement `FEAT_FPAC`: raise a fault if the PAC field doesn't match *)
-        | I_AUT_DA (rd, rn)
-        | I_AUT_DB (rd, rn)
-        | I_AUT_IA (rd, rn)
-        | I_AUT_IB (rd, rn)
-        ->
+        | I_AUT (k, rd, rn) ->
             begin
               let (>>!) = M.(>>!) in
-              let (key, k_fault) = match inst with
-                | I_AUT_IA _ -> ("ia", FaultType.AArch64.IA)
-                | I_AUT_IB _ -> ("ib", FaultType.AArch64.IB)
-                | I_AUT_DA _ -> ("da", FaultType.AArch64.DA)
-                | I_AUT_DB _ -> ("db", FaultType.AArch64.DB)
-                | _ -> assert false
+              let (key, k_fault) = match k with
+                | IA -> ("ia", FaultType.AArch64.IA)
+                | IB -> ("ib", FaultType.AArch64.IB)
+                | DA -> ("da", FaultType.AArch64.DA)
+                | DB -> ("db", FaultType.AArch64.DB)
               in
 
               let mfault =

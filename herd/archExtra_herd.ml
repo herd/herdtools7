@@ -649,7 +649,7 @@ module Make(C:Config) (I:I) : S with module I = I
                       tag=tag ;
                       cap=cap ;
                       offset=i*nbytes;
-                      pac=Constant.PAC.canonical} in
+                      pac=PAC.canonical} in
                   of_symbolic_data sym_data,(TestType.Ty array_prim,I.V.cstToV v))
                 vs in
               List.fold_left

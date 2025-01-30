@@ -673,11 +673,11 @@ module
   let addOnePAC key pointer modifier =
     match pointer, modifier with
     | Val (Symbolic (Virtual {pac})), Val _
-      when not (Constant.PAC.is_canonical pac) ->
+      when not (PAC.is_canonical pac) ->
         Warn.user_error "addPAC: %s already contain a PAC field" (pp_v pointer)
     | Val (Symbolic (Virtual ({pac; offset} as v))), Val m ->
       let modifier = Cst.pp true m in
-      let pac = Constant.PAC.add key modifier offset pac in
+      let pac = PAC.add key modifier offset pac in
       Val (Symbolic (Virtual {v with pac}))
     | Val _, Val _ ->
         Warn.user_error "addPAC: %s is not a valid virtual address" (pp_v pointer)
@@ -691,7 +691,7 @@ module
     match pointer, modifier with
     | Val (Symbolic (Virtual ({pac; offset} as v))), Val m ->
       let modifier = Cst.pp true m in
-      let pac = Constant.PAC.add key modifier offset pac in
+      let pac = PAC.add key modifier offset pac in
       Val (Symbolic (Virtual {v with pac}))
     | Val _, Val _ ->
         Warn.user_error "addPAC: %s is not a valid virtual address" (pp_v pointer)
@@ -701,7 +701,7 @@ module
   (* Check that the PAC field of a virtual address is canonical *)
   let checkCanonical = function
     | Val (Symbolic (Virtual {pac})) ->
-        if Constant.PAC.is_canonical pac then
+        if PAC.is_canonical pac then
           Val (Concrete Cst.Scalar.one)
         else
           Val (Concrete Cst.Scalar.zero)
@@ -712,7 +712,7 @@ module
   (* Remove the PAC field of a virtual address *)
   let setCanonical = function
     | Val (Symbolic (Virtual v)) ->
-        Val (Symbolic (Virtual {v with pac= Constant.PAC.canonical}))
+        Val (Symbolic (Virtual {v with pac= PAC.canonical}))
     | Val cst ->
         Warn.user_error "setCanonical: %s is not a valid virtual address" (Cst.pp_v cst)
     | Var _ -> raise Undetermined

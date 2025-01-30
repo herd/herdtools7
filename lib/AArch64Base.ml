@@ -1285,6 +1285,12 @@ and strbh_memo bh t =  sprintf "%s%s" (str_memo t) (pp_bh bh)
 
 type opsel = Cpy | Inc | Inv | Neg
 
+type pac_key = IA | IB | DA | DB
+
+let pp_pac_key = function
+  | IA -> "IA" | IB -> "IB"
+  | DA -> "DA" | DB -> "DB"
+
 let sel_memo = function
   | Cpy -> "CSEL"
   | Inc -> "CSINC"
@@ -1719,34 +1725,23 @@ type 'k kinstruction =
    * PACIASP <X30>, <Sp>
    * PACIAZ <X30>, <X31>
    * PACIA1716 <X17>, <X16>
-   *)
-  | I_PAC_IA of reg * reg     (* detination <- AddPACIA(source) *)
-
-  (* see C6.2.267
+   *
+   * see C6.2.267
    * PACIB <Xd>, <Xn|Sp>
    * PACIZA <Xd>, <X31>
    * PACIBSP <X30>, <Sp>
    * PACIBZ <X30>, <X31>
    * PACIB1716 <X17>, <X16>
-   *)
-  | I_PAC_IB of reg * reg     (* detination <- AddPACIB(source) *)
-
-  (* see C6.2.263
+   *
+   * see C6.2.263
    * PACDA <Xd>, <Xn|Sp>
    * PACDZA <Xd>, <X31>
-  *)
-  | I_PAC_DA of reg * reg   (* destination <- AddPACDA(source) *)
-
-  (* see C6.2.264
+   *
+   * see C6.2.264
    * PACDB <Xd>, <Xn|Sp>
    * PACDZB <Xd>, <X31>
-  *)
-  | I_PAC_DB of reg * reg   (* destination <- AddPACDB(source) *)
-
-  (* (* see C6.2.265 *)
-  (* PACGA <Xd>, <Xn>, <Xm|Sp> *)
-  | I_PACGA of reg * reg * reg (* destination <- AddPACGA(source1, source2) *)
-  *)
+   *)
+  | I_PAC of pac_key * reg * reg     (* detination <- AddPACIA(source) *)
 
 (*  - Second part: check the PAC of a register *)
   (* see C6.2.23
@@ -1755,29 +1750,23 @@ type 'k kinstruction =
    * AUTIASP <X30>, <Sp>
    * AUTIAZ <X30>, <X31>
    * AUTIA1716 <X17>, <X16>
-   *)
-  | I_AUT_IA of reg * reg (* destination <- AuthIA(source) *)
-
-  (* see C6.2.24
+   *
+   * see C6.2.24
    * AUTIB <Xd>, <Xn|Sp>
    * AUTIZB <Xd>, <X31>
    * AUTIBSP <X30>, <Sp>
    * AUTIBZ <X30>, <X31>
    * AUTIB1716 <X17>, <X16>
-   *)
-  | I_AUT_IB of reg * reg (* destination <- AuthIB(source) *)
-
-  (* see C6.2.21
+   *
+   * see C6.2.21
    * AUTDA <Xd>, <Xn|Sp>
    * AUTDZA <Xd>, <X31>
-  *)
-  | I_AUT_DA of reg * reg   (* destination <- AuthDA(source) *)
-
-  (* see C6.2.22
+   *
+   * see C6.2.22
    * AUTDB <Xd>, <Xn|Sp>
    * AUTDZB <Xd>, <X31>
-  *)
-  | I_AUT_DB of reg * reg   (* destination <- AuthDB(source) *)
+   *)
+  | I_AUT of pac_key * reg * reg (* destination <- AuthIA(source) *)
 
 (*  - Third part: strip the PAC of a register *)
   (* | I_XPACLRI (* strip a PAC from LR *) *)
@@ -2485,22 +2474,10 @@ let do_pp_instruction m =
   | I_UDF k ->
       sprintf "UDF %s" (m.pp_k k)
   (* Pointer Authentication Code *)
-  | I_PAC_IA (r1, r2) ->
-      sprintf "PACIA %s, %s" (pp_reg r1) (pp_reg r2)
-  | I_PAC_IB (r1, r2) ->
-      sprintf "PACIB %s, %s" (pp_reg r1) (pp_reg r2)
-  | I_PAC_DA (r1, r2) ->
-      sprintf "PACDA %s, %s" (pp_reg r1) (pp_reg r2)
-  | I_PAC_DB (r1, r2) ->
-      sprintf "PACDB %s, %s" (pp_reg r1) (pp_reg r2)
-  | I_AUT_IA (r1, r2) ->
-      sprintf "AUTIA %s, %s" (pp_reg r1) (pp_reg r2)
-  | I_AUT_IB (r1, r2) ->
-      sprintf "AUTIB %s, %s" (pp_reg r1) (pp_reg r2)
-  | I_AUT_DA (r1, r2) ->
-      sprintf "AUTDA %s, %s" (pp_reg r1) (pp_reg r2)
-  | I_AUT_DB (r1, r2) ->
-      sprintf "AUTDB %s, %s" (pp_reg r1) (pp_reg r2)
+  | I_PAC (key, r1, r2) ->
+      sprintf "PAC%s %s, %s" (pp_pac_key key) (pp_reg r1) (pp_reg r2)
+  | I_AUT (key, r1, r2) ->
+      sprintf "AUT%s %s, %s" (pp_pac_key key) (pp_reg r1) (pp_reg r2)
   | I_XPACI r ->
       sprintf "XPACI %s" (pp_reg r)
   | I_XPACD r ->
@@ -2681,14 +2658,8 @@ let fold_regs (f_regs,f_sregs) =
   | I_LD1SPT (_,r1,r2,_,r3,r4,idx)
   | I_ST1SPT (_,r1,r2,_,r3,r4,idx)
     -> fold_reg r1 (fold_reg r2 ( fold_reg r3 (fold_reg r4 (fold_idx idx c))))
-  | I_PAC_IA (src, dst)
-  | I_PAC_IB (src, dst)
-  | I_PAC_DA (src, dst)
-  | I_PAC_DB (src, dst)
-  | I_AUT_IA (src, dst)
-  | I_AUT_IB (src, dst)
-  | I_AUT_DA (src, dst)
-  | I_AUT_DB (src, dst)
+  | I_PAC (_, src, dst)
+  | I_AUT (_, src, dst)
     -> fold_reg src (fold_reg dst c)
   | I_XPACI r -> fold_reg r c
   | I_XPACD r -> fold_reg r c
@@ -3064,22 +3035,10 @@ let map_regs f_reg f_symb =
   | I_LDG (r1,r2,k) ->
       I_LDG (map_reg r1,map_reg r2, k)
   (* Pointer Authentication code *)
-  | I_PAC_IA (r1, r2) ->
-      I_PAC_IA (map_reg r1, map_reg r2)
-  | I_PAC_IB (r1, r2) ->
-      I_PAC_IB (map_reg r1, map_reg r2)
-  | I_PAC_DA (r1, r2) ->
-      I_PAC_DA (map_reg r1, map_reg r2)
-  | I_PAC_DB (r1, r2) ->
-      I_PAC_DB (map_reg r1, map_reg r2)
-  | I_AUT_IA (r1, r2) ->
-      I_AUT_IA (map_reg r1, map_reg r2)
-  | I_AUT_IB (r1, r2) ->
-      I_AUT_IB (map_reg r1, map_reg r2)
-  | I_AUT_DA (r1, r2) ->
-      I_AUT_DA (map_reg r1, map_reg r2)
-  | I_AUT_DB (r1, r2) ->
-      I_AUT_DB (map_reg r1, map_reg r2)
+  | I_PAC (key, r1, r2) ->
+      I_PAC (key, map_reg r1, map_reg r2)
+  | I_AUT (key, r1, r2) ->
+      I_AUT (key, map_reg r1, map_reg r2)
   | I_XPACI r ->
       I_XPACI (map_reg r)
   | I_XPACD r ->
@@ -3189,8 +3148,7 @@ let get_next =
   | I_MOV_SV _ | I_ADD_SV _ | I_NEG_SV _ | I_EOR_SV _ | I_MOVPRFX _
   | I_LD1SPT _  | I_ST1SPT _ | I_SMSTART _ | I_SMSTOP _
   | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
-  | I_PAC_IA _ | I_PAC_IB _ | I_PAC_DA _ | I_PAC_DB _
-  | I_AUT_IA _ | I_AUT_IB _ | I_AUT_DA _ | I_AUT_DB _
+  | I_PAC _ | I_AUT _
   | I_XPACI _ | I_XPACD _
     -> [Label.Next;]
 
@@ -3454,8 +3412,7 @@ module PseudoI = struct
         | I_ADD_SV _ | I_INDEX_SS _
         | I_NEG_SV _ | I_EOR_SV _ | I_MOVPRFX _
         | I_SMSTART _ | I_SMSTOP _ | I_ADDA _
-        | I_PAC_IA _ | I_PAC_IB _ | I_PAC_DA _ | I_PAC_DB _
-        | I_AUT_IA _ | I_AUT_IB _ | I_AUT_DA _ | I_AUT_DB _
+        | I_PAC _ | I_AUT _
         | I_XPACI _ | I_XPACD _
             as keep -> keep
         | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,ext_tr idx)
@@ -3587,8 +3544,8 @@ module PseudoI = struct
         | I_LDP_SIMD _ | I_STP_SIMD _
         | I_LD2 _ | I_LD2R _
         | I_ST2 _
-        | I_PAC_IA _ | I_PAC_IB _ | I_PAC_DA _ | I_PAC_DB _
-        | I_AUT_IA _ | I_AUT_IB _ | I_AUT_DA _ | I_AUT_DB _
+        | I_PAC _
+        | I_AUT _
           -> 2
         | I_LD3 _ | I_LD3R _
         | I_ST3 _

@@ -20,43 +20,6 @@ type tag = string option
 type cap = Int64.t
 type offset = int
 
-(* Symbolic implementation of `FEAT_Pauth2` and `FEAT_CONSTPACFIELD`
- * Also add a type of solver state to reason about hash collisions
- *)
-module PAC : sig
-  (* Symbolic type for Pointer Authentication Codes *)
-  type t
-
-  (* Generate a canonical PAC field *)
-  val canonical : t
-
-  (* Check if a virtual address is canonical *)
-  val is_canonical : t -> bool
-
-  (* Symbolically add a new pac field to a pointer with an exclusive OR using
-   * the key, the modifier and the current offset of the pointer.
-   * If `x` is a canonical virtual address and `p` is a PAC field:
-   *     `add modifier key offset p = pac(x+offset, key, modifier) eor p`
-   *)
-  val add : string -> string -> int -> t -> t
-
-  (* A type of solver to reason about equality constraints on the PAC fields of
-   * virtual addresses*)
-  type solver_state
-
-  val pp_solver : solver_state -> string
-
-  (* A solver state without constraints *)
-  val empty_solver : solver_state
-
-  (* Add an equality constraint to the solver state, return None if this
-   * equality introduce a contradiction *)
-  val add_equality : t -> t -> solver_state -> solver_state option
-
-  (* Add an inequality constraint to the solver state, return None if this
-   * inequality introduce a contradiction *)
-  val add_inequality : t -> t -> solver_state -> solver_state option
-end
 
 (* Symbolic location metadata*)
 (* Memory cell, with optional tag, capability<128:95>,optional vector metadata, and offset *)

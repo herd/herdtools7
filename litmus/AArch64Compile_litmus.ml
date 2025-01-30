@@ -1976,48 +1976,40 @@ module Make(V:Constant.S)(C:Config) =
           outputs = rD;
           reg_env = add_v V64 rD
         }::k
-    | I_PAC_IA (rD, ZR) | I_PAC_IB (rD, ZR)
-    | I_PAC_DA (rD, ZR) | I_PAC_DB (rD, ZR)
-    | I_AUT_IA (rD, ZR) | I_AUT_IB (rD, ZR)
-    | I_AUT_DA (rD, ZR) | I_AUT_DB (rD, ZR) ->
+    | I_PAC (key, rD, ZR) | I_AUT (key, rD, ZR) ->
         let op = match ins with
-        | I_PAC_IA (_, ZR) -> "paciza"
-        | I_PAC_DA (_, ZR) -> "pacdza"
-        | I_AUT_IA (_, ZR) -> "autiza"
-        | I_AUT_DA (_, ZR) -> "autdza"
-        | I_PAC_IB (_, ZR) -> "pacizb"
-        | I_PAC_DB (_, ZR) -> "pacdzb"
-        | I_AUT_IB (_, ZR) -> "autizb"
-        | I_AUT_DB (_, ZR) -> "autdzb"
-        | _ -> assert false
+          | I_PAC _ -> "pac"
+          | I_AUT _ -> "aut"
+          | _ -> assert false
+        and key = match key with
+          | IA -> "iza"
+          | DA -> "dza"
+          | IB -> "izb"
+          | DB -> "dzb"
         in
 
         let rD,fD = do_arg1i V64 rD 0 in
         { empty_ins with
-          memo = sprintf "%s %s" op fD;
+          memo = sprintf "%s%s %s" op key fD;
           inputs = rD;
           outputs = rD;
           reg_env = add_v V64 rD
         }::k
-    | I_PAC_IA (rD, rN) | I_PAC_IB (rD, rN)
-    | I_PAC_DA (rD, rN) | I_PAC_DB (rD, rN)
-    | I_AUT_IA (rD, rN) | I_AUT_IB (rD, rN)
-    | I_AUT_DA (rD, rN) | I_AUT_DB (rD, rN) ->
+    | I_PAC (key, rD, rN) | I_AUT (key, rD, rN) ->
         let op = match ins with
-        | I_PAC_IA _ -> "pacia"
-        | I_PAC_DA _ -> "pacda"
-        | I_AUT_IA _ -> "autia"
-        | I_AUT_DA _ -> "autda"
-        | I_PAC_IB _ -> "pacib"
-        | I_PAC_DB _ -> "pacdb"
-        | I_AUT_IB _ -> "autib"
-        | I_AUT_DB _ -> "autdb"
-        | _ -> assert false
+          | I_PAC _ -> "pac"
+          | I_AUT _ -> "aut"
+          | _ -> assert false
+        and key = match key with
+          | IA -> "ia"
+          | DA -> "da"
+          | IB -> "ib"
+          | DB -> "db"
         in
 
         let rD,fD,rN,fN = args2i V64 rD rN in
         { empty_ins with
-          memo = sprintf "%s %s,%s" op fD fN;
+          memo = sprintf "%s%s %s,%s" op key fD fN;
           inputs = rD@rN;
           outputs = rD;
           reg_env = add_v V64 (rD@rN)
