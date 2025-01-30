@@ -95,6 +95,9 @@ module type INTERVAL_SET = sig
   val fold_individual : (elt -> 'a -> 'a) -> t -> 'a -> 'a
   (** [fold_individual f t acc] folds [f] across all the individual elements of [t] *)
 
+  val map_individual : (elt -> elt) -> t -> t
+  (** [map_individual f t] is the set of all [f(x)] for [x] in [t]. *)
+
   val iter : (interval -> unit) -> t -> unit
   (** [iter f t] iterates [f] across all the intervals in [t] *)
 
@@ -104,12 +107,20 @@ module type INTERVAL_SET = sig
   val remove : interval -> t -> t
   (** [remove interval t] returns the set consisting of [t] minus [interval] *)
 
-  val min_elt : t -> interval
-  (** [min_elt t] returns the smallest (in terms of the ordering) interval in
+  val min_elt : t -> elt
+  (** [min_elt t] returns the smallest (in terms of the ordering) element in
       [t], or raises [Not_found] if the set is empty. *)
 
-  val max_elt : t -> interval
-  (** [max_elt t] returns the largest (in terms of the ordering) interval in
+  val max_elt : t -> elt
+  (** [max_elt t] returns the largest (in terms of the ordering) element in
+      [t], or raises [Not_found] if the set is empty. *)
+
+  val min_interval : t -> interval
+  (** [min_interval t] returns the smallest (in terms of the ordering) interval in
+      [t], or raises [Not_found] if the set is empty. *)
+
+  val max_interval : t -> interval
+  (** [max_interval t] returns the largest (in terms of the ordering) interval in
       [t], or raises [Not_found] if the set is empty. *)
 
   val choose : t -> interval
@@ -128,9 +139,24 @@ module type INTERVAL_SET = sig
   val inter : t -> t -> t
   (** set intersection *)
 
+  val subset : t -> t -> bool
+  (** subsets *)
+
+  val cross_map_individual : (elt -> elt -> elt) -> t -> t -> t
+  (** Cross product on all elements of sets *)
+
   val find_next_gap : elt -> t -> elt
   (** [find_next_gap from t] returns the next element that's
       absent in set [t] and greater than or equal to [from] **)
+
+  val elements : t -> interval list
+  (** [elements t] returns the list of intervals in the set [t]. *)
+
+  val elements_individual : t -> elt list
+  (** [elements_individual t] returns the list of elements in the set [t]. *)
+
+  val of_list : elt list -> t
+  (** [of_list li] returns the set of elements in the list [li]. *)
 
   (**/**)
 
