@@ -1089,6 +1089,11 @@ module Make
 (* Conditions and flags *)
 (************************)
 
+      (* Force integer representation of booleans.
+         Useful for the ASL case *)
+
+      let forceIntBool b = M.op3 Op.If b V.one V.zero
+
       let tr_cond =
         (* Utils for writing formulas:
            Here we do operations on functions that will generate the
@@ -1108,7 +1113,9 @@ module Make
         let make_op op f1 f2 flags =
           f1 flags >>| f2 flags >>= fun (v1, v2) -> M.op op v1 v2
         in
-        let ( == ) = make_op Op.Eq in
+        let ( == ) =
+          fun f1 f2 flags ->
+            make_op Op.Eq f1 f2 flags >>= forceIntBool in
         let ( || ) = make_op Op.Or in
         let ( && ) = make_op Op.And in
         (* Note : I use [a <> b] as a shortcut for [!a == b]
@@ -1159,12 +1166,15 @@ module Make
         let make_op op f1 f2 v0 v1 v2 =
           f1 v0 v1 v2 >>| f2 v0 v1 v2 >>= fun (a, b) -> M.op op a b
         in
-        let make_op1 fop f v0 v1 v2 = f v0 v1 v2 >>= fop in
+        let make_op1 fop f v0 v1 v2 = f v0 v1 v2 >>= fop
+        in
         let ( ! ) = make_op1 (M.op1 Op.Inv) in
         let ( & ) = make_op Op.And in
         let ( || ) = make_op Op.Or in
         let ( + ) = make_op Op.Xor in
-        let ( === ) f v = make_op1 (M.op Op.Eq v) f in
+        let ( === ) f v = (* Force integer result of comparison *)
+          fun v0 v1 v2 ->
+            f v0 v1 v2 >>= M.op Op.Eq v >>= forceIntBool in
         let ( << ) f i = make_op1 (M.op1 (Op.LeftShift i)) f in
         let sign_bit = MachSize.nbits (AArch64Base.tr_variant ty) - 1 in
         let read_sign_bit = make_op1 (M.op1 (Op.ReadBit sign_bit)) in

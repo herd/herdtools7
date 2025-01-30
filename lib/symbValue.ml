@@ -844,9 +844,12 @@ module
         unop op
           (fun s -> logand (lognot (mask_one k)) s)
     | ReadBit k ->
+        (* ReadBit returns 0 or 1, not false or true *)
         unop op
           (fun s ->
-            bool_to_scalar (Cst.Scalar.compare (logand (mask_one k) s) zero <> 0))
+             if equal (logand (mask_one k) s) zero
+             then zero
+             else one)
     | LogicalRightShift 0
     | LeftShift 0
     | AddK 0 -> fun s -> s
