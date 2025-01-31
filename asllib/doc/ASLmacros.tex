@@ -224,10 +224,14 @@
 \newtheorem{example}{Example}
 \newcommand\ConventionDef[1]{\paragraph{Convention.#1:\label{sec:Convention.#1}}}
 \newcommand\RequirementDef[1]{\paragraph{Requirement.#1\label{Requirement.#1}}}
+\newcommand\RequirementDefExample[1]{\emph{Requirement.#1}}
 \newcommand\LexicalRuleDef[1]{\subsubsection{LexicalRule.#1\label{sec:LexicalRule.#1}}}
 \newcommand\ASTRuleDef[1]{\subsubsection{ASTRule.#1\label{sec:ASTRule.#1}}}
+\newcommand\ASTRuleDefExample[1]{\emph{ASTRule.#1}}
 \newcommand\TypingRuleDef[1]{\subsubsection{TypingRule.#1\label{sec:TypingRule.#1}}}
+\newcommand\TypingRuleDefExample[1]{\emph{TypingRule.#1}}
 \newcommand\SemanticsRuleDef[1]{\subsubsection{SemanticsRule.#1\label{sec:SemanticsRule.#1}}}
+\newcommand\SemanticsRuleDefExample[1]{\emph{SemanticsRule.#1}}
 \newcommand\listingref[1]{Listing~\ref{listing:#1}}
 \newcommand\taref[1]{Table.~\ref{ta:#1}}
 \newcommand\defref[1]{Definition~\ref{def:#1}}
@@ -1518,8 +1522,16 @@
 \newcommand\tail[0]{\hyperlink{def-tail}{\texttt{tail}}}
 \newcommand\optional[0]{\hyperlink{def-optional}{optional}}
 
+\newcommand\inferencerule[0]{\hyperlink{def-inferencerule}{inference rule}}
+\newcommand\inferencerules[0]{\hyperlink{def-inferencerule}{inference rules}}
+\newcommand\specificationterm[0]{\hyperlink{def-specificationterm}{specification}}
+\newcommand\specificationsterm[0]{\hyperlink{def-specificationterm}{specifications}}
+\newcommand\globaldeclarationterm[0]{\hyperlink{def-globaldeclarationterm}{global declaration}}
+\newcommand\globaldeclarationsterm[0]{\hyperlink{def-globaldeclarationterm}{global declarations}}
+
 \newcommand\typedast[0]{\hyperlink{def-typedast}{typed AST}}
 \newcommand\untypedast[0]{\hyperlink{def-untypedast}{untyped AST}}
+
 \newcommand\anonymoustype[0]{\hyperlink{def-isanonymous}{anonymous type}}
 \newcommand\Anonymoustypes[0]{\hyperlink{def-isanonymous}{Anonymous types}}
 \newcommand\namedtype[0]{\hyperlink{def-isnamed}{named type}}
