@@ -66,11 +66,11 @@ let f-ib =
 (* DSB-ordered-before *)
 let DSB-ob =
 [M | DC.CVAU | IC]; po; [dsb.full]; po; [~(Imp & TTD & M | Imp & Instr & R)]
- | (if "ETS2" then [M | DC.CVAU | IC]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
+ | (if "ETS2" || "ETS3" then [M | DC.CVAU | IC]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
  | [(Exp & R) \ NoRet | Imp & Tag & R]; po; [dsb.ld]; po; [~(Imp & TTD & M | Imp & Instr & R)]
- | (if "ETS2" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [Imp & TTD & M] else 0)
+ | (if "ETS2" || "ETS3" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [Imp & TTD & M] else 0)
  | [Exp & W]; po; [dsb.st]; po; [~(Imp & TTD & M | Imp & Instr & R)]
- | (if "ETS2" then [Exp & W]; po; [dsb.st]; po; [Imp & TTD & M] else 0)
+ | (if "ETS2" || "ETS3" then [Exp & W]; po; [dsb.st]; po; [Imp & TTD & M] else 0)
 
 (* IFB-ordered-before *)
 let EXC-ENTRY-IFB = EXC-ENTRY

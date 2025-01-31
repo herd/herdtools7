@@ -69,7 +69,7 @@ let Exp-haz-ob =
 let TTD-read-ordered-before =
   TLBI-after; [TLBI]; po; [dsb.full]; po; [~(Imp & M)]
   | TLBI-after; [TLBI]; po; [dsb.full]; po; [IFB]; po; [Imp & M]
-  | (if "ETS2" then TLBI-after; [TLBI]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
+  | (if "ETS2" || "ETS3" then TLBI-after; [TLBI]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
 
 (* TLBI-ordered-before *)
 let TLBI-ob =
