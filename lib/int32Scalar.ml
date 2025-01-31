@@ -59,7 +59,8 @@ let sxt sz v =
      let m = shift_left one (nb-1) in
      sub (logxor v m) m
 
-let as_bool v = Some (Bool.not (Int32.equal Int32.zero v))
+let is_zero v = Int32.equal Int32.zero v
+let as_bool v = Some (Bool.not (is_zero v))
 let s_true = one
 let s_false = zero
 

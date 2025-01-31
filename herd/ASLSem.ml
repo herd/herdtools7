@@ -287,19 +287,7 @@ module Make (C : Config) = struct
       M.mk_singleton_es (Act.Branching msg) (use_ii_with_poi ii poi)
 
     let choice (m1 : V.v M.t) (m2 : 'b M.t) (m3 : 'b M.t) : 'b M.t =
-      M.asl_data m1 @@ function
-      | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) -> if b then m2 else m3
-      | b -> M.choiceT b m2 m3
-
-    let logor v1 v2 =
-      match (v1, v2) with
-      | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)), v
-        when Asllib.Bitvector.is_zeros bv ->
-          return v
-      | v, V.Val (Constant.Concrete (ASLScalar.S_BitVector bv))
-        when Asllib.Bitvector.is_zeros bv ->
-          return v
-      | _ -> M.op Op.Or v1 v2
+      m1 >>= fun b -> M.choiceT b m2 m3
 
     let boolop herdop shortcut v1 v2 =
       match (v1, v2) with
@@ -307,16 +295,6 @@ module Make (C : Config) = struct
       | v, V.Val (Constant.Concrete (ASLScalar.S_Bool b)) ->
           return @@ shortcut b v
       | _ -> M.op herdop v1 v2
-
-    let concat v1 v2 =
-      match (v1, v2) with
-      | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)), v
-        when Asllib.Bitvector.length bv = 0 ->
-          return v
-      | v, V.Val (Constant.Concrete (ASLScalar.S_BitVector bv))
-        when Asllib.Bitvector.length bv = 0 ->
-          return v
-      | _ -> M.op (Op.ArchOp ASLOp.Concat) v1 v2
 
     let binop =
       let open AST in
@@ -339,11 +317,11 @@ module Make (C : Config) = struct
       | MINUS -> M.op Op.Sub
       | MUL -> M.op Op.Mul
       | NEQ -> M.op Op.Ne
-      | OR -> logor
+      | OR -> M.op Op.Or
       | PLUS -> M.op Op.Add
       | SHL -> M.op Op.ShiftLeft
       | SHR -> M.op Op.ShiftRight
-      | BV_CONCAT -> concat
+      | BV_CONCAT -> M.op (Op.ArchOp ASLOp.Concat)
       | (POW | IMPL | RDIV) as op ->
           Warn.fatal "ASL operation %s not yet implement in ASLSem."
             (Asllib.PP.binop_to_string op)
@@ -351,7 +329,7 @@ module Make (C : Config) = struct
     let unop op =
       let open AST in
       match op with
-      | BNOT -> M.op1 (Op.ArchOp1 ASLOp.BoolNot)
+      | BNOT -> M.op1 Op.Not
       | NEG -> M.op Op.Sub V.zero
       | NOT -> M.op1 Op.Inv
 

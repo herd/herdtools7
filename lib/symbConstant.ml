@@ -51,6 +51,10 @@ module Make
     | Concrete c -> Scalar.as_bool c
     | _ -> None
 
+  let is_zero = function
+    | Concrete c -> Scalar.is_zero c
+    | _ -> false
+
   let pp_instr_cst i = Instr.pp i
 
   let pp hexa =

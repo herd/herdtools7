@@ -48,6 +48,16 @@ module type S = sig
 
   (* Masking some structured constant *)
   val mask : cst -> MachSize.sz -> cst option
+
+  (*********************)
+  (* Identity elements *)
+  (*********************)
+
+  (** [is_left_identity op s] is true if and only if [s op t] is [t] for all [t]. *)
+  val is_left_identity : op -> scalar -> bool
+
+  (** [is_right_identity op s] is true if and only if [t op s] is [t] for all [t]. *)
+  val is_right_identity : op -> scalar -> bool
 end
 
 type no_extra_op1
@@ -83,6 +93,9 @@ module No (Cst : Constant.S) :
   let andnot2 _ _ = None
   let andop _ _ = None
   let mask _ _ = None
+
+  let is_left_identity _ _ = assert false
+  let is_right_identity _ _ = assert false
 end
 
 module type S1 = sig
@@ -120,4 +133,7 @@ module OnlyArchOp1 (A : S1) :
 
   let pp_op _ = assert false
   let do_op _ _ _ = None
+
+  let is_left_identity _ _ = assert false
+  let is_right_identity _ _ = assert false
 end

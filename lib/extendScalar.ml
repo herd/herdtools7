@@ -65,6 +65,7 @@ module
       | Narrow i -> Narrow.as_bool i
       | Wide i -> Warn.fatal "as_bool on wide scalar '%s'" @@ Wide.pp i
 
+    let is_zero = choose Narrow.is_zero Wide.is_zero
     let printable = map Narrow.printable Misc.identity
 
     let compare s1 s2 = match s1,s2 with
