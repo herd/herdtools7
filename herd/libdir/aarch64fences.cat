@@ -52,11 +52,6 @@ let dsb.full = DSB.ISH | DSB.OSH | DSB.SY
 let dsb.ld = DSB.ISHLD | DSB.OSHLD | DSB.LD
 let dsb.st = DSB.ISHST | DSB.OSHST | DSB.ST
 
-(*
- * A further restriction is that standard litmus tests are unable to
- * distinguish between DMB and DSB instructions, so the model treats
- * them as equivalent to each other.
- *)
 let dmb.full = DMB.ISH | DMB.OSH | DMB.SY | dsb.full
 let dmb.ld = DMB.ISHLD | DMB.OSHLD | DMB.LD | dsb.ld
 let dmb.st = DMB.ISHST | DMB.OSHST | DMB.ST | dsb.st
