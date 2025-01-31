@@ -48,7 +48,6 @@ type 'a constr_op1 =
   | ToIntU
   | ToIntS
   | ToBV of int
-  | BoolNot
   | BVLength
 
 type op1 = extra_op1 constr_op1
@@ -76,7 +75,6 @@ let pp_op1 _hexa = function
   | ToIntU -> "ToIntU"
   | ToIntS -> "ToIntS"
   | ToBV sz -> Printf.sprintf "ToBV%d" sz
-  | BoolNot -> "BoolNot"
   | BVLength -> "BVLength"
 
 let ( let* ) = Option.bind
@@ -166,12 +164,6 @@ let do_op1 op cst =
             | [63] -> Some (Constant.Concrete ASLScalar.zeros_size_one)
             | _ -> None
           end
-      | _ -> None)
-  | BoolNot -> (
-      let open Constant in
-      let open ASLScalar in
-      match cst with
-      | Concrete (S_Bool b) -> return_concrete (S_Bool (not b))
       | _ -> None)
   | BVLength -> (
       let open Constant in
