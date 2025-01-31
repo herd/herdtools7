@@ -743,11 +743,8 @@ Monad type:
     let aarch64_cas_no (is_physical:bool) (read_rn:'loc t) (read_rs:'v t)
         (write_rs:'v-> unit t) (read_mem: 'loc -> 'v t) (branch: 'loc -> unit t)
         (noact: unit t) (rne: 'v -> 'v -> unit t) =
-      let do_ add_ctrl =
-        do_aarch64_cas_no is_physical add_ctrl read_rn read_rs write_rs
-          read_mem branch noact rne
-      in
-      altT (do_ true) (do_ false)
+      do_aarch64_cas_no is_physical false read_rn read_rs write_rs
+        read_mem branch noact rne
 
     let aarch64_cas_no_with_writeback (is_physical: bool) (read_rn: 'loc t)
         (read_rs: 'v t) (write_rs: 'v -> unit t) (read_mem: 'loc -> 'v t)
