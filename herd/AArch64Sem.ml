@@ -5,7 +5,8 @@
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
 (* Copyright 2015-present Institut National de Recherche en Informatique et *)
-(* en Automatique, ARM Ltd and the authors. All rights reserved.            *)
+(* en Automatique, ARM Ltd and the authoes
+   rs. All rights reserved.            *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
 (* abiding by the rules of distribution of free software. You can use,      *)
@@ -38,7 +39,7 @@ module Make
     let neon = C.variant Variant.Neon || sve
     let kvm = C.variant Variant.VMSA
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
-    let pte2 = kvm && C.variant Variant.PTE2
+    let pte2 = kvm && (C.variant Variant.PTE2 || C.variant Variant.ASL)
     let do_cu = C.variant Variant.ConstrainedUnpredictable
     let self = C.variant Variant.Ifetch
 
@@ -87,7 +88,7 @@ module Make
     let atomic_pair_allowed _ _ = true
 
     let quad = MachSize.Quad (* This machine natural size *)
-    and aexp = AArch64.Exp    (* Explicit accesses *)
+    and aexp = AArch64Explicit.Exp    (* Explicit accesses *)
 
     let tnt2annot =
       let open Annot in
@@ -701,14 +702,14 @@ module Make
 
 
       let op_of_set =
-        let open AArch64 in
+        let open AArch64Explicit in
         function
         | AF -> AArch64Op.SetAF
         | DB -> AArch64Op.SetDB
         | IFetch|Other|AFDB -> assert false
 
       let do_test_and_set_bit combine cond set a_pte iiid =
-        let nexp = AArch64.NExp set in
+        let nexp = AArch64Explicit.NExp set in
         mextract_whole_pte_val Annot.X nexp a_pte iiid >>= fun pte_v ->
         cond pte_v >>*= fun c ->
         combine c
@@ -724,14 +725,14 @@ module Make
       let m_op op m1 m2 = (m1 >>| m2) >>= fun (v1,v2) -> M.op op v1 v2
 
       let do_set_bit an a_pte pte_v ii =
-        let nexp = AArch64.NExp an in
+        let nexp = AArch64Explicit.NExp an in
         arch_op1 (op_of_set an) pte_v >>= fun v ->
         write_whole_pte_val Annot.X nexp a_pte v (E.IdSome ii)
 
-      let set_af = do_set_bit AArch64.AF
+      let set_af = do_set_bit AArch64Explicit.AF
 
       let set_afdb a_pte pte_v ii =
-        let nexp = AArch64.NExp AArch64.AFDB in
+        let nexp = AArch64Explicit.NExp AArch64Explicit.AFDB in
         arch_op1 (AArch64Op.SetAF) pte_v >>= arch_op1 (AArch64Op.SetDB) >>= fun v ->
         write_whole_pte_val Annot.X nexp a_pte v (E.IdSome ii)
 
@@ -740,7 +741,7 @@ module Make
           (bit_is_zero AArch64Op.AF v) (bit_is_not_zero AArch64Op.Valid v)
 
       let test_and_set_af_succeeds =
-        test_and_set_bit_succeeds cond_af AArch64.AF
+        test_and_set_bit_succeeds cond_af AArch64Explicit.AF
 
       let mextract_pte_vals pte_v =
         (extract_oa pte_v >>|
@@ -870,7 +871,7 @@ module Make
         and hd = dirty.hd proc in
         let ha = ha || hd in (* As far as we know hd => ha *)
         let mfault (_,ipte) m =
-          let open FaultType.AArch64 in
+         let open FaultType.AArch64 in
           (is_zero ipte.valid_v) >>=
             (fun c ->
               M.choiceT c
@@ -939,9 +940,9 @@ module Make
               ma >>= fun _ -> M.op1 Op.PTELoc a_virt >>= fun a_pte ->
               let an,nexp =
                 if hd then (* Atomic accesses, tagged with updated bits *)
-                  an_xpte an,AArch64.NExp AArch64.AFDB
+                  an_xpte an,AArch64Explicit.NExp AArch64Explicit.AFDB
                 else if ha then
-                  an_xpte an,AArch64.NExp AArch64.AF
+                  an_xpte an,AArch64Explicit.NExp AArch64Explicit.AF
                 else
                   (* Ordinary non-explicit access *)
                   an_pte an,AArch64.nexp_annot in
@@ -1927,15 +1928,15 @@ module Make
         let open AArch64 in
         let open Annot in
         match rmw with
-        | RMW_A|RMW_AL -> do_read_mem_ret sz XA Exp
-        | RMW_L|RMW_P  -> do_read_mem_ret sz X Exp
+        | RMW_A|RMW_AL -> do_read_mem_ret sz XA aexp
+        | RMW_L|RMW_P  -> do_read_mem_ret sz X aexp
 
       and rmw_amo_write sz rmw =
         let open AArch64 in
         let open Annot in
         match rmw with
-        | RMW_L|RMW_AL -> do_write_mem sz XL Exp
-        | RMW_P|RMW_A  -> do_write_mem sz X Exp
+        | RMW_L|RMW_AL -> do_write_mem sz XL aexp
+        | RMW_P|RMW_A  -> do_write_mem sz X aexp
 
       let rmw_to_read rmw =
         let open AArch64 in
@@ -2094,7 +2095,7 @@ module Make
             let read_mem =
               if noret then
                 fun sz ->
-                do_read_mem_ret sz Annot.NoRet Exp ac
+                do_read_mem_ret sz Annot.NoRet aexp ac
               else fun sz -> rmw_amo_read sz rmw ac
             and write_mem = fun sz -> rmw_amo_write sz rmw ac in
             M.amo_strict (Access.is_physical ac) op
