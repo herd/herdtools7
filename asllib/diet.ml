@@ -54,14 +54,20 @@ module type INTERVAL_SET = sig
   val iter : (interval -> unit) -> t -> unit
   val add : interval -> t -> t
   val remove : interval -> t -> t
-  val min_elt : t -> interval
-  val max_elt : t -> interval
+  val min_elt : t -> elt
+  val max_elt : t -> elt
+  val min_interval : t -> interval
+  val max_interval : t -> interval
   val choose : t -> interval
   val take : t -> elt -> (t * t) option
   val union : t -> t -> t
   val diff : t -> t -> t
   val inter : t -> t -> t
+  val subset : t -> t -> bool
   val find_next_gap : elt -> t -> elt
+  val elements : t -> interval list
+  val elements_individual : t -> elt list
+  val of_list : elt list -> t
   val check_invariants : t -> (unit, string) result
   val height : t -> int
 end
@@ -246,16 +252,18 @@ module Make (Elt : ELT) = struct
         (* or search left or search right *)
         if elt < n.x then mem elt n.l else mem elt n.r
 
-  let rec min_elt = function
+  let rec min_interval = function
     | Empty -> raise Not_found
     | Node { x; y; l = Empty; _ } -> (x, y)
-    | Node { l; _ } -> min_elt l
+    | Node { l; _ } -> min_interval l
 
-  let rec max_elt = function
+  let rec max_interval = function
     | Empty -> raise Not_found
     | Node { x; y; r = Empty; _ } -> (x, y)
-    | Node { r; _ } -> max_elt r
+    | Node { r; _ } -> max_interval r
 
+  let min_elt t = min_interval t |> Interval.x
+  let max_elt t = max_interval t |> Interval.y
   let choose = function Empty -> raise Not_found | Node { x; y; _ } -> (x, y)
 
   (* fold over the maximal contiguous intervals *)
@@ -276,6 +284,9 @@ module Make (Elt : ELT) = struct
       loop acc from
     in
     fold range t acc
+
+  let elements t = fold List.cons t []
+  let elements_individual t = fold_individual List.cons t []
 
   (* iterate over maximal contiguous intervals *)
   let iter f t =
@@ -393,6 +404,7 @@ module Make (Elt : ELT) = struct
 
   let diff a b = fold remove b a
   let inter a b = diff a (diff a b)
+  let subset a b = is_empty (diff a b)
 
   let rec find_next_gap from = function
     | Empty -> from
@@ -421,6 +433,23 @@ module Make (Elt : ELT) = struct
     in
     loop empty t n
 
+  let _make_intervals =
+    let rec loop acc ((x, y) as i) = function
+      | [] -> List.map (fun (a, b) -> Interval.make a b) (i :: acc)
+      | z :: t ->
+          let y' = Elt.succ y in
+          if eq y' z then loop acc (x, y') t
+          else (
+            assert (y' < z);
+            loop (i :: acc) (z, z) t)
+    in
+    function [] -> [] | x :: t -> loop [] (x, x) t
+
+  let of_list li =
+    List.sort_uniq Elt.compare li
+    |> _make_intervals
+    |> List.fold_left (fun acc elt -> add elt acc) empty
+
   let check_invariants = Invariant.check
   let singleton x = add (Interval.make x x) empty
 
@@ -434,7 +463,7 @@ module Make (Elt : ELT) = struct
     function
     | Empty -> fprintf fmt "∅"
     | t ->
-        let m = min_elt t in
+        let m = min_interval t in
         let t = remove m t in
         pp_open_hovbox fmt 0;
         pp_interval fmt m;
