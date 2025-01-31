@@ -1,7 +1,8 @@
 (library
  (name menhir2bnfc_lib)
- (modules :standard \ menhir2bnfc)
+ (modules :standard \ menhir2bnfc parser_cmp)
  (optional)
+ (flags -w -9)
  (libraries menhirSdk ppxlib))
 
 (executable
@@ -10,3 +11,10 @@
  (modules menhir2bnfc)
  (optional)
  (libraries menhir2bnfc_lib))
+
+(executable
+ (public_name parser_cmp)
+ (name parser_cmp)
+ (modules parser_cmp)
+ (optional)
+ (libraries bnfc_parser herdtools7.asllib))

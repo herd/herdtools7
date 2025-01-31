@@ -1,0 +1,34 @@
+(rule
+ (target lex_data)
+ (deps
+  (:lex ../../Lexer.mll))
+ (action
+  (run %{bin:ocamllex} -ml -o %{target} %{lex})))
+
+(rule
+ (target grammar.cf)
+ (deps
+  (:par ../../Parser.cmly)
+  (:lex lex_data))
+ (action
+  (run %{bin:menhir2bnfc} --ml %{lex} %{par} grammar.cf)))
+
+(rule
+ (targets AbsGrammar.ml LexGrammar.mll ParGrammar.mly)
+ (deps
+  (:gr grammar.cf))
+ (action
+  (run %{bin:bnfc} --ocaml-menhir %{gr})))
+
+(ocamllex LexGrammar)
+
+(menhir
+ (modules ParGrammar)
+ (flags --unused-tokens))
+
+(library
+ (name bnfc_parser)
+ (modules :standard)
+ (flags -w -33)
+ (optional)
+ (libraries menhir2bnfc_lib))

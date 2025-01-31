@@ -1,0 +1,2 @@
+FAIL - aslref false | bnfc true: asllib/tests/regressions.t/lhs-tuple-fields-same-field.asl
+FAIL - aslref false | bnfc true: asllib/tests/regressions.t/lhs-tuple-same-var.asl

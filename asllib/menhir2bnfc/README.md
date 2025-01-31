@@ -7,11 +7,12 @@ To use this tool you need the following input files:
 
 ## Usage with AslRef
 
-To build and run this script in `aslref` make sure you have `ppxlib` installed.
+To build and run this script make sure you have `ppxlib` and `bnfc` (https://github.com/BNFC/bnfc) installed.
 
 Then from the `herdtools7` root directory you can run the following:
 ```
 make
+dune build asllib/menhir2bnfc
 # Note: The following command succeds with errors related to type inference.
 # Since we don't care about the backend this is not relevant.
 menhir --cmly --base Parser asllib/Parser.mly asllib/Tokens.mly
@@ -19,7 +20,7 @@ ocamllex -ml asllib/Lexer.mll -o Lexer.ml
 
 # At this point you should have a Parser.cmly and Lexer.ml file
 # To build the grammar run:
-./_build/install/default/bin/menhir2bnfc --ml Lexer.ml Parser.cmly grammar.cf
+./_build/default/asllib/menhir2bnfc/menhir2bnfc.exe --ml Lexer.ml Parser.cmly grammar.cf
 
 # You should now have a bnfc compliant grammar.cf file!
 ```
