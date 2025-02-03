@@ -770,7 +770,7 @@ as well as \texttt{==}).
 The semantics takes a semantic transition over the left subexpression before
 the right subexpression.
 
-This is an arbitrary choice as the type-checker must ensure that either order
+This is an arbitrary choice as the typechecker must ensure that either order
 of evaluation of the operands yields the same result.
 
 In other words, it is an error for an expression’s meaning to rely on
@@ -2149,8 +2149,8 @@ be used to overcome this.
 
 \lrmcomment{This is related to \identi{CGRH}:}
 An ATC allows code to explicitly mark places where uses of constrained types
-would otherwise be a static type-checking error. The intent is to reduce the
-incidence of unintended errors by making such uses fail type-checking unless
+would otherwise be a static typechecking error. The intent is to reduce the
+incidence of unintended errors by making such uses fail typechecking unless
 the asserting type conversion is provided.
 
 \lrmcomment{This is related to \identr{WZVX}:}
@@ -2414,7 +2414,7 @@ tests whether the value $\vv$ can be stored in a variable of type $\vt$ in the e
 resulting in a Boolean value $\vb$ and execution graph $\vg$ or a dynamic error.
 
 This relation is used in the context of a asserted type conversion,
-which means the type-checker rule \TypingRuleRef{ATC} was already applied,
+which means the typechecker rule \TypingRuleRef{ATC} was already applied,
 thus filtering cases where the type inferred for the converted expression
 does not type-satisfy $\vt$. The semantics takes this into account and
 only returns \False\ in cases where dynamic information is required.
@@ -3130,7 +3130,7 @@ we ignore the parenthesis (see \TypingRuleRef{ETuple}.\textsc{PARENTHESIZED}).
 \section{Array Construction Expressions\label{sec:ArrayConstructionExpressions}}
 Array construction expression are used by the type system to express the initialization
 of array-typed variables. Since there is no syntax to initialize arrays, there are also
-no rules for building the AST for such expressions nor rules for type-checking them.
+no rules for building the AST for such expressions nor rules for typechecking them.
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
@@ -3140,7 +3140,7 @@ no rules for building the AST for such expressions nor rules for type-checking t
 
 \subsection{Semantics}
 
-The Semantic Rules use $\evalexprsef\empty$ because the type-checker in
+The Semantic Rules use $\evalexprsef\empty$ because the typechecker in
 $\annotatetype$ guarantees that expressions in types are side-effect-free.
 
 \SemanticsRuleDef{EArray}

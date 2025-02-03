@@ -17,6 +17,7 @@ carriage return (decimal encoding 13) and line feed (decimal encoding 10).
 The end of file character is denoted by $\eof$.
 The content text does not contain an end-of-file character.
 
+\RequirementDef{TabCharacter}
 In particular, it is an error to use a tab character in ASL specification text (decimal encoding 9).
 
 \section{Lexical Regular Expressions}
@@ -70,6 +71,7 @@ The notation $\Lang(e)$ stands for \emph{formal language} of a regular expressio
 That is, the set of strings that match that regular expression.
 
 \section{Whitespace}
+\RequirementDef{Whitespace}
 Comments, newlines and space characters are treated as whitespace.
 
 \section{Comments}
@@ -79,7 +81,10 @@ ASL supports comments in the style of C++:
 is a comment (\ascii{10} is the line feed character \verb|\n|).
 \item Multi-line comments: the text between \texttt{/*} and \texttt{*/} is a comment.
 \end{itemize}
-Comments do not nest and the two styles of comments do not interact with each other.
+Comments do not nest and the two styles of comments do not interact with each other,
+as exemplified in \listingref{LexicalComments}.
+
+\ASLListing{Examples of comments}{LexicalComments}{\syntaxtests/Lexical.Comments.asl}
 
 \hypertarget{def-relinecomment}{}
 \begin{center}
@@ -203,15 +208,26 @@ $\REidentifier$ &$\triangleq$& \texttt{($\REletter$ $|$ $\underbracket{\texttt{ 
 Identifiers that begin with double-underscore are reserved for use in the implementation and should
 not be used in specifications (see \LexicalRuleRef{ReservedIdentifiers}).
 
+\RequirementDef{IdentifiersKeywords}
+Keywords cannot be used as identifiers.
+
 \ConventionDef{IdentifiersDifferingByCase}
 To improve readability, it is recommended to avoid the use of identifiers that differ
 only by the case of some characters.
 
-\ConventionDef{IdentifiersStartingWithSingleUnderscore}
+\ConventionDef{IdentifierSingleUnderscore}
 Any identifier with a single underscore followed by an alphanumeric character
 is treated as a normal identifier. We recommend that these are only
 for use by platform-specific code, which should not clash with the rest of a
 portable ASL specification.
+
+\RequirementDef{IdentiferDoubleUnderscore}
+Identifiers that begin with \\
+double-underscore are reserved for use in the implementation and should
+not be used in specifications (see \LexicalRuleRef{ReservedIdentifiers}).
+
+An enumeration literal is classed as a literal value
+(see \chapref{Literals}), but is syntactically an identifier.
 
 Tuple element selectors are classed as identifiers. That is, in cases like \texttt{(1, 2).item0},
 the selector \texttt{item0} is classed as an identifier.

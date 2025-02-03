@@ -1,4 +1,4 @@
-\chapter{Type Inference and Type-checking Definitions\label{chap:TypeChecking}}
+\chapter{Type Inference and Typechecking Definitions\label{chap:TypeChecking}}
 
 The purpose of the ASL type system is to describe, in a formal and authoritative way,
 which ASL specifications are considered \emph{well-typed}.
@@ -72,7 +72,7 @@ A static environment $\tenv=(G^\tenv, L^\tenv)$ consists of two
 distinct components: the global environment $G^\tenv \in \globalstaticenvs$ --- pertaining to AST nodes
 appearing outside of a given subprogram, and the local environment
 $L^\tenv \in \localstaticenvs$ --- pertaining to AST nodes appearing inside a given subprogram.
-This separation allows us to type-check subprograms by using an empty local environment.
+This separation allows us to typecheck subprograms by using an empty local environment.
 
 The intuitive meaning of each component is as follows:
 \begin{itemize}

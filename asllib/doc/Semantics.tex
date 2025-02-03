@@ -19,7 +19,7 @@ of the ASL dynamic semantics appears in \chapref{FormalSystem} and \secref{seman
 
 \section{When Do ASL Specifications Have Meaning\label{sec:MeaningfulASLSpecifications}}
 The ASL dynamic semantics defined here assign meaning only to \emph{well-typed specifications}.
-That is, specifications for which the type-checker produces a static environment rather than
+That is, specifications for which the typechecker produces a static environment rather than
 a type error.
 Specifications that are not well-typed have no defined semantics.
 In the rest of this reference, we assume well-typed specifications.
@@ -99,7 +99,7 @@ We now explain the components over which semantic configurations are defined:
 \begin{itemize}
     \item Native values.
     \item Static Environments, which consist of the information inferred
-            by the type-checker for the specification.
+            by the typechecker for the specification.
     \item Dynamic Environments (\defref{dynamicenvironments}) associate \nativevalues\ to variables.
     \item Concurrent Execution Graphs (\secref{concurrentexecutiongraphs}) track Read and Write Effects over variables.
 \end{itemize}
@@ -195,7 +195,7 @@ An empty dynamic environment $\emptydenv$ is defined as follows:
 
 \paragraph{Static Environments}
 A \emph{static environment} (see \secref{StaticEnvironments}) $\tenv \in \staticenvs$ (also referred to as a \emph{type environment})
-is produced by the type-checker from the untyped AST.
+is produced by the typechecker from the untyped AST.
 
 We assume that the static environment supports the following functions:
 \hypertarget{def-findfunc}{}
@@ -208,7 +208,7 @@ We assume that the static environment supports the following functions:
 The partial function $\findfunc$ returns the typed AST of the subprogram for a given identifier.
 (Recall that ASL allows subprogram overloading so a name does not uniquely identify
 a specific subprogram.
-However, the type-checker renames each function uniquely so that it can be accessed based
+However, the typechecker renames each function uniquely so that it can be accessed based
 on its name alone.)
 %
 The function $\typesat(\vt, \vs)$ returns true

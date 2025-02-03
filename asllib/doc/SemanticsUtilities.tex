@@ -389,7 +389,7 @@ reads the value $\vv_i$ from the vector of values $\vvec$ at the index $\vi$.
   }
 \end{mathpar}
 Notice that there is no rule to handle the case where the index is out of range ---
-this is guaranteed by the type-checker not to happen. Specifically,
+this is guaranteed by the typechecker not to happen. Specifically,
 \begin{itemize}
   \item \texttt{TypingRule.EGetArray} ensures that an index is within the bounds of the array
   being accessed via a check that the type of the index satisfies the type of the array size.
@@ -441,7 +441,7 @@ retrieves the value corresponding to the field name $\name$ from the record valu
     \getfield(\name, \record) \evalarrow \fieldmap(\name)
   }
 \end{mathpar}
-The type-checker ensures, via \TypingRuleRef{EGetRecordField}, that the field $\name$ exists in $\record$.
+The typechecker ensures, via \TypingRuleRef{EGetRecordField}, that the field $\name$ exists in $\record$.
 
 \SemanticsRuleDef{SetField}
 \subsubsection{Prose}
@@ -462,7 +462,7 @@ overwrites the value corresponding to the field name $\name$ in the record value
     \setfield(\name, \vv, \record) \evalarrow \nvrecord{\fieldmapp}
   }
 \end{mathpar}
-The type-checker ensures that the field $\name$ exists in $\record$.
+The typechecker ensures that the field $\name$ exists in $\record$.
 
 \SemanticsRuleDef{DeclareLocalIdentifier}
 \subsubsection{Prose}

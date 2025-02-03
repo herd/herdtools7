@@ -2,8 +2,9 @@
 ASL allows specifying literal values for the following types:
 integers, Booleans, real numbers, bitvectors, and strings.
 
-Enumeration labels are also considered literal values but are technically identifiers.
-As such, they are not built by the Grammar, but by the Type-checker.
+Enumeration labels are also considered literal values but are syntactically
+considered as identifiers.
+As such, they are not built by the grammar, but rather by the typechecker.
 
 \section{Syntax}
 
@@ -24,7 +25,9 @@ As such, they are not built by the Grammar, but by the Type-checker.
     & \\
     |\ & \lbitvector(\overtext{B}{$B \in \{0, 1\}^*$})
     & \\
-    |\ & \lstring(\overtext{S}{$S \in \Strings$}) &
+    |\ & \lstring(\overtext{S}{$S \in \Strings$})
+    &\\
+    |\ & \llabel(\overtext{l}{enumeration label})
 \end{flalign*}
 
 \subsection{ASTRule.Value \label{sec:ASTRule.Value}}

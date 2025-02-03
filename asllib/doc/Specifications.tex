@@ -45,20 +45,20 @@ We define this function for subprogram declarations, type declarations, and glob
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 The untyped AST of an ASL specification consists of a list of global declarations.
-Type-checking the untyped AST succeeds if all declarations can be successfully annotated,
+Typechecking the untyped AST succeeds if all declarations can be successfully annotated,
 which is achieved via \TypingRuleRef{TypeCheckAST}. Otherwise, the result is a
 type error.
 
-We note that whether type-checking a specification succeeds or fails with a type
+We note that whether typechecking a specification succeeds or fails with a type
 error, does not depend on the order in which the declarations appear in the specification.
-That is, if type-checking a specification with one ordering of its declarations leads to
-a type error, then type-checking that specification with any other ordering of its
+That is, if typechecking a specification with one ordering of its declarations leads to
+a type error, then typechecking that specification with any other ordering of its
 declarations also leads to a type error, but the type errors may not be the same
 (since there may be two erroneous declarations and the type error returned
 depends on which declaration is processed first).
 
-When type-checking declarations, it is important to process them in a certain order,
-to avoid false type errors resulting from type-checking a declaration that uses an identifier
+When typechecking declarations, it is important to process them in a certain order,
+to avoid false type errors resulting from typechecking a declaration that uses an identifier
 before a declaration that defines it.
 This order relies on the notion of \defusedependencyterm, which we formally define in
 \secref{Dependencies}.
@@ -302,7 +302,7 @@ The function
   \aslto
   \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-type-checks a global pragma declaration $\vd$ in the global static environment $\genv$,
+typechecks a global pragma declaration $\vd$ in the global static environment $\genv$,
 yielding $\True$.
 \ProseOtherwiseTypeError
 

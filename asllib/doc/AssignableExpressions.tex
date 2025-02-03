@@ -946,7 +946,7 @@ getter invocation
 \item invoking the setter to assign the resulting value
 \end{itemize}
 
-We note that the index is guaranteed by the type-checker to be within the array bounds
+We note that the index is guaranteed by the typechecker to be within the array bounds
 via \TypingRuleRef{LESetArray}.
 
 \SemanticsRuleDef{LESetEnumArray}
@@ -1690,7 +1690,7 @@ All of the following apply:
 \CodeSubsection{\EvalLESetFieldBegin}{\EvalLESetFieldEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
-We note that the type-checker guarantees that $\fieldname$ exists in the record given by $\record$
+We note that the typechecker guarantees that $\fieldname$ exists in the record given by $\record$
 via \TypingRuleRef{LESetStructuredField}.
 
 \lrmcomment{This is related to \identr{WHRS}:}
