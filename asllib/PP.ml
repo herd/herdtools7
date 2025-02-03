@@ -34,6 +34,21 @@ let pp_print_seq ?(pp_sep = pp_print_cut) pp_v ppf v =
   in
   Seq.iter pp_v v
 
+(* Just to display better error messages ... *)
+let nonstandard_constraint_compare c1 c2 =
+  match (c1, c2) with
+  | Constraint_Exact _, Constraint_Exact _
+  | Constraint_Range _, Constraint_Range _ ->
+      compare c1 c2
+  | Constraint_Exact e1, Constraint_Range (e3, e4) -> (
+      match compare e1 e3 with
+      | 0 -> ( match compare e1 e4 with 0 -> 1 | n -> n)
+      | n -> n)
+  | Constraint_Range (e1, e2), Constraint_Exact e3 -> (
+      match compare e1 e3 with
+      | 0 -> ( match compare e2 e3 with 0 -> -1 | n -> n)
+      | n -> n)
+
 let pp_comma f () = fprintf f ",@ "
 let pp_comma_list pp_elt f = pp_print_list ~pp_sep:pp_comma pp_elt f
 
@@ -224,6 +239,7 @@ and pp_int_constraint f = function
   | Constraint_Range (x, y) -> fprintf f "@[<h>%a..%a@]" pp_expr x pp_expr y
 
 and pp_int_constraints f li =
+  let li = List.sort nonstandard_constraint_compare li in
   let pp_max_int_constraint_list = 10 in
   if List.length li < pp_max_int_constraint_list then
     fprintf f "@[%a@]" (pp_comma_list pp_int_constraint) li
