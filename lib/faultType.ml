@@ -64,10 +64,10 @@ module AArch64 = struct
       "AccessFlag", [MMU AccessFlag];
       "Permission", [MMU Permission];
       "TagCheck", [TagCheck];
-      "PacCheck", [PacCheck DA;
-                   PacCheck DB;
-                   PacCheck IA;
-                   PacCheck IB];
+      "PacCheck", [PacCheck PAC.DA;
+                   PacCheck PAC.DB;
+                   PacCheck PAC.IA;
+                   PacCheck PAC.IB];
       "UndefinedInstruction",[UndefinedInstruction];
     ]
 
@@ -82,10 +82,10 @@ module AArch64 = struct
     | "MMU:AccessFlag" -> MMU AccessFlag
     | "MMU:Permission" -> MMU Permission
     | "TagCheck" -> TagCheck
-    | "PacCheck:DA" -> PacCheck DA
-    | "PacCheck:DB" -> PacCheck DB
-    | "PacCheck:IA" -> PacCheck IA
-    | "PacCheck:IB" -> PacCheck IB
+    | "PacCheck:DA" -> PacCheck PAC.DA
+    | "PacCheck:DB" -> PacCheck PAC.DB
+    | "PacCheck:IA" -> PacCheck PAC.IA
+    | "PacCheck:IB" -> PacCheck PAC.IB
     | "UndefinedInstruction" -> UndefinedInstruction
     | _ as s -> Warn.user_error "%s not a valid fault type" s
 
