@@ -1,32 +1,32 @@
 // read the SCTLR_EL1 status register
-uint64_t read_sctlr_el1() {
+static uint64_t read_sctlr_el1() {
   uint64_t ret;
   asm __volatile__("mrs %[ret], SCTLR_EL1": [ret] "=r" (ret));
   return ret;
 }
 
-void init_pauth_key_ia() {
+static void init_pauth_key_ia() {
   uint64_t x = 0xaaaaaaaaaaaaaaaa;
   uint64_t y = 0xaaaaaaaaaaaaaaaa;
   asm __volatile__("msr APIAKeyHi_EL1, %[x]":: [x] "r" (x));
   asm __volatile__("msr APIAKeyLo_EL1, %[y]":: [y] "r" (y));
 }
 
-void init_pauth_key_ib() {
+static void init_pauth_key_ib() {
   uint64_t x = 0x5555555555555555;
   uint64_t y = 0x5555555555555555;
   asm __volatile__("msr APIBKeyHi_EL1, %[x]":: [x] "r" (x));
   asm __volatile__("msr APIBKeyLo_EL1, %[y]":: [y] "r" (y));
 }
 
-void init_pauth_key_da() {
+static void init_pauth_key_da() {
   uint64_t x = 0x5555555555555555;
   uint64_t y = 0xaaaaaaaaaaaaaaaa;
   asm __volatile__("msr APDAKeyHi_EL1, %[x]":: [x] "r" (x));
   asm __volatile__("msr APDAKeyLo_EL1, %[y]":: [y] "r" (y));
 }
 
-void init_pauth_key_db() {
+static void init_pauth_key_db() {
   uint64_t x = 0xaaaaaaaaaaaaaaaa;
   uint64_t y = 0x5555555555555555;
   asm __volatile__("msr APDBKeyHi_EL1, %[x]":: [x] "r" (x));
@@ -34,12 +34,12 @@ void init_pauth_key_db() {
 }
 
 // update the SCTLR_EL1 status register
-void write_sctlr_el1(uint64_t x) {
+static void write_sctlr_el1(uint64_t x) {
   asm __volatile__("msr SCTLR_EL1, %[x]":: [x] "r" (x));
 }
 
 // Initialize pointer authentication
-void init_pauth() {
+static void init_pauth() {
   uint64_t enIA = 1ULL << 31;
   uint64_t enIB = 1ULL << 30;
   uint64_t enDA = 1ULL << 27;
@@ -52,7 +52,7 @@ void init_pauth() {
 }
 
 // Check if `FEAT_Pauth2` is implemented
-int check_pac_variant(char* tname) {
+static int check_pac_variant(char* tname) {
   uint64_t isar1;
   asm volatile("mrs %[isar1], ID_AA64ISAR1_EL1": [isar1] "=r" (isar1));
   uint64_t isar1_api = (isar1 >> 8) & 0b1111;
@@ -70,7 +70,7 @@ int check_pac_variant(char* tname) {
 
 // Check if `FEAT_FPAC` is implemented iff `present`:
 // FPAC change the way `aut*` is executed in case of failure
-int check_fpac_variant(char* tname, int present) {
+static int check_fpac_variant(char* tname, int present) {
   uint64_t isar1;
   asm volatile("mrs %[isar1], ID_AA64ISAR1_EL1": [isar1] "=r" (isar1));
   uint64_t isar1_api = (isar1 >> 8) & 0b1111;
@@ -85,20 +85,5 @@ int check_fpac_variant(char* tname, int present) {
       if (present)
         printf("Test %s, FPAC not implemented on this system\n", tname);
       return !present;
-  }
-}
-
-// Check if `FEAT_CONSTPACFIELD` is implemented
-int check_const_pac_field_variant(char* tname) {
-  uint64_t isar2;
-  asm volatile("mrs %[isar2], ID_AA64ISAR2_EL1": [isar2] "=r" (isar2));
-  uint64_t isar2_pac = (isar2 >> 24) & 0b1111;
-
-  switch (isar2_pac) {
-    case 0b0001:
-      return 1;
-    default:
-      printf("Test %s, CONSTPACFIELD not available on this system\n", tname);
-      return 0;
   }
 }
