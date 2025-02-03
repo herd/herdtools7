@@ -372,6 +372,7 @@ module Domain = struct
       Operations.binop_values loc Error.Static op (L_Int z1) (L_Int z2)
       |> literal_to_z
 
+    (* Begin ApproxExpr *)
     let rec approx_expr approx env e =
       match e.desc with
       | E_Literal (L_Int z) -> IntSet.singleton z
@@ -393,41 +394,53 @@ module Domain = struct
           | Over -> IntSet.union s2 s3
           | Under -> IntSet.inter s2 s3)
       | _ -> bottom_top approx
+    (* End *)
 
+    (* Begin ApproxType *)
     and approx_type approx env t =
       match t.desc with
       | T_Named _ -> make_anonymous env t |> approx_type approx env
       | T_Int (WellConstrained cs) -> approx_constraints approx env cs
       | _ -> bottom_top approx
+    (* End *)
 
+    (* Begin ApproxConstraints *)
     and approx_constraints approx env cs =
-      if list_is_empty cs then bottom_top approx
-      else
-        let join =
-          let empty = IntSet.empty (* will not be used *) in
-          match approx with
-          | Under -> list_iterated_op ~empty IntSet.inter
-          | Over -> list_iterated_op ~empty IntSet.union
-        in
-        List.map (approx_constraint approx env) cs |> join
+      let join =
+        let empty = IntSet.empty (* will not be used *) in
+        match approx with
+        | Under -> list_iterated_op ~empty IntSet.inter
+        | Over -> list_iterated_op ~empty IntSet.union
+      in
+      List.map (approx_constraint approx env) cs
+      |> join |: TypingRule.ApproxConstraints
+    (* End *)
 
+    (* Begin ApproxConstraint *)
     and approx_constraint approx env = function
-      | Constraint_Exact e -> approx_expr approx env e
+      | Constraint_Exact e ->
+          approx_expr approx env e |: TypingRule.ApproxConstraint
       | Constraint_Range (e1, e2) -> (
           try
             let z1, z2 =
               match approx with
-              | Over -> (get_min env e1, get_max env e2)
-              | Under -> (get_max env e1, get_min env e2)
+              | Over -> (approx_expr_min env e1, approx_expr_max env e2)
+              | Under -> (approx_expr_max env e1, approx_expr_min env e2)
             in
             make_interval approx z1 z2
           with Not_found | CannotOverApproximate -> bottom_top approx)
+    (* end *)
 
-    and get_min env e = approx_expr Over env e |> IntSet.min_elt
-    and get_max env e = approx_expr Over env e |> IntSet.max_elt
+    (* Begin ApproxExprMin *)
+    and approx_expr_min env e = approx_expr Over env e |> IntSet.min_elt
+    (* End *)
+
+    (* Begin ApproxExprMax *)
+    and approx_expr_max env e = approx_expr Over env e |> IntSet.max_elt
+    (* End *)
   end
 
-  (* Begin SyDomIsSubset *)
+  (* Begin SymDomIsSubset *)
   let is_subset env is1 is2 =
     let () =
       if false then Format.eprintf "Is %a a subset of %a?@." pp is1 pp is2
@@ -453,7 +466,7 @@ module Domain = struct
           let s1 = approx_constraints Over env cs1 in
           IntSet.subset s1 s2
         with CannotOverApproximate -> false))
-    |: TypingRule.SyDomIsSubset
+    |: TypingRule.SymDomIsSubset
   (* End *)
 end
 

@@ -595,7 +595,7 @@ shown here:
   is the list of premises
   \[
     \begin{array}{l}
-    a[0] > b[0]\\
+    a[1] > b[1]\\
     \ldots\\
     a[k] > b[k] \enspace.
     \end{array}
@@ -641,9 +641,9 @@ shown here:
 
 \subsection{AST-related Notations}
 
-When deconstructing AST record nodes such as $\{f_1:t_2,\ldots,f_k:t_k\}$,
+When deconstructing AST record nodes such as $\{f_1:t_1,\ldots,f_k:t_k\}$,
 we sometimes only care about a subset of the fields $\{f_{i_1},\ldots,f_{i_m}\} \subset \{f_{1..k}\}$.
-In such cases, we write $\{f_{i_1}:t_{i_m},\ldots,f_{i_m}:t_{i_m},\ldots\}$,
+In such cases, we write $\{f_{i_1}:t_{i_1},\ldots,f_{i_m}:t_{i_m},\ldots\}$,
 where $\ldots$ stands for fields that are irrelevant for the rule.
 
 For example\footnote{This example is from \SemanticsRuleRef{FCall}.}, the \func\ non-terminal is of a record type and has the following fields:
@@ -653,7 +653,7 @@ allows us to deconstruct a given \func\ node by matching only the \textsf{body} 
 
 Recall that a subset of AST nodes are either labels or labelled tuples.
 \hypertarget{def-astlabel}{}
-The partial function $\astlabel$ returns the label $\vl\in\astlabels$ an AST node, when it exists.
+The partial function $\astlabel$ returns the label $\vl\in\astlabels$ of an AST node, when it exists.
 For example, $\astlabel(\TBool) = \TBool$ and $\astlabel(\TNamed(\texttt{x})) = \TNamed$.
 
 \subsection{How to Parse Rules Efficiently}
@@ -698,7 +698,7 @@ intermediate values have to be assigned first.
 For example, $\evalexpr{ \env, \veone} \evalarrow \Normal(\vmone, \envone)$
 assigned values to $\envone$, which is then used by the transition \\
 $\evalexpr{ \envone, \vetwo } \evalarrow \Normal(\vmtwo, \newenv)$.
-Similarly, $\vg$ is requires first assigning values to $\vgone$ and $\vgtwo$,
+Similarly, $\vg$ requires first assigning values to $\vgone$ and $\vgtwo$,
 which are components of the previously assigned variables $\vmone$ and $\vmtwo$.
 
 \subsection{Short-Circuit Rule Macros}
