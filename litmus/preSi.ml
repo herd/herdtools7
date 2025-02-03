@@ -265,8 +265,7 @@ module Make
             end
           end
         end ;
-        if Cfg.variant Variant_litmus.Pac then
-          Insert.insert O.o "kvm_auth.c" ;
+        if Cfg.variant Variant_litmus.Pac then O.o "#include \"auth.h\"" ;
         O.o "" ;
         O.o "typedef uint32_t count_t;" ;
         O.o "#define PCTR PRIu32" ;

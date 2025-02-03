@@ -34,6 +34,7 @@ module type CommonConfig = sig
   val speedcheck : Speedcheck.t
   val isync : bool
   val c11 : bool
+  val variant : Variant_litmus.t -> bool
   include DumpParams.Config
 end
 
