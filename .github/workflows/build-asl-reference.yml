@@ -7,7 +7,9 @@ on:
     - cron: 0 1 * * MON
   pull_request:
     paths:
+      - 'internal/bento.mll'
       - 'asllib/doc/**'
+      - '.github/workflows/**'
 
 permissions: read-all
 
@@ -22,6 +24,9 @@ jobs:
     steps:
       - name: Checkout tree
         uses: actions/checkout@v4
+
+      - name: Update apt database
+        run: sudo apt-get update --quiet --yes
 
       - name: Install opam and texlive
         run: sudo apt-get install --quiet --yes opam texlive-full
