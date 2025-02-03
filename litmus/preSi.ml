@@ -2195,7 +2195,7 @@ module Make
         if Cfg.variant Variant_litmus.Pac then begin
           O.fi "if (!check_pac_variant(%S)) return 0;" doc.Name.name;
           let expect_fpac =
-            if Cfg.variant Variant_litmus.FPac then "true" else "false" in
+            if Cfg.variant Variant_litmus.FPac then "1" else "0" in
           O.fi "if (!check_fpac_variant(%S,%s)) return 0;" doc.Name.name expect_fpac
         end ;
         if Cfg.variant Variant_litmus.ConstPacField then
