@@ -1,0 +1,40 @@
+\chapter{Runtime Environment\label{chap:RuntimeEnvironment}}
+
+An ASL runtime provides run time support within a hosting environment.
+
+Examples of a hosting environment include an interactive interpreter, an interpreter running in batch mode, a
+Verilog simulator, and  Linux process (native executable).
+
+\RequirementDef{RuntimeConfigSetting}
+The runtime should provide a mechanism to set configuration (\texttt{config})
+variables before the entry point (default: \texttt{main}).
+
+\RequirementDef{RuntimeConfigReading}
+Configuration variables are read only once the entry point is called.
+The runtime may enforce this.
+
+\RequirementDef{RuntimeDeafultEntry}
+The default entry point is the \texttt{main} function, which has the signature
+\verb|func main() => integer|.
+
+\RequirementDef{RuntimeReturn}
+When evaluation from the entry point returns (without throwing an exception)
+the runtime should pass the return value to the hosting environment.
+%
+For example: an ASL runtime for native executables may use the return value
+of main as the exit status of the process.
+%
+By convention a return value of zero indicates success and a return value of
+one indicates failure.
+%
+An alternative (non-default) entry point may be specified by the user if
+supported by the runtime. Not all runtimes may support alternative entry points.
+
+\RequirementDef{RuntimeUncaught}
+Uncaught exceptions cause termination of the application by the runtime.
+If an exception is thrown from \texttt{main} it is
+an uncaught exception. The runtime should signal an error to the hosting environment.
+
+\RequirementDef{Printing}
+Output may be generated using the \printstatementterm, which makes
+best efforts to print them to diagnostic output.
