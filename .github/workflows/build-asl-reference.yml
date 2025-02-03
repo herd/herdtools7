@@ -23,6 +23,9 @@ jobs:
       - name: Checkout tree
         uses: actions/checkout@v4
 
+      - name: Update apt database
+        run: sudo apt-get update --quiet --yes
+
       - name: Install opam and texlive
         run: sudo apt-get install --quiet --yes opam texlive-full
 
