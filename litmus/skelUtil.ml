@@ -197,7 +197,7 @@ module Make
 
 (* Dump stuff *)
       module Dump : functor (O:Indent.S) -> functor(EPF:EmitPrintf.S) -> sig
-        (* Some small dump functions common std/presi *)
+(* Some small dump functions common std/presi *)
 
         val dump_mbar_def : unit -> unit
 
@@ -243,7 +243,11 @@ module Make
 
        (* Dump topology-definitions as renaming of external ones *)
         val dump_topology_external : int -> unit
-end
+
+        (* Check PAC features *)
+        val dump_check_pac : Name.t -> unit
+
+      end
 
     end = struct
 
@@ -600,6 +604,19 @@ end
       let pp_cond test =
         let tr_out = tr_out test in
         ConstrGen.constraints_to_string (pp_atom tr_out) test.T.condition
+
+(* PAC *)
+  let () =
+    if
+      Cfg.variant Variant_litmus.FPac
+      && not (Cfg.variant Variant_litmus.Pac)
+    then
+      Warn.user_error "\"fpac\" variant require \"pac\" variant" ;
+    if
+      Cfg.variant Variant_litmus.ConstPacField
+      && not (Cfg.variant Variant_litmus.Pac)
+    then
+      Warn.user_error "\"const-pac-field\" variant require \"pac\" variant"
 
 (* Instructions as values *)
 
@@ -1145,5 +1162,13 @@ end
           end ;
           O.o ""
 
+        let dump_check_pac doc =
+          if Cfg.variant Variant_litmus.Pac then begin
+            O.fi "if (!check_pac_variant(%S)) return 0;" doc.Name.name;
+            let expect_fpac =
+              if Cfg.variant Variant_litmus.FPac then "1" else "0" in
+            O.fi "if (!check_fpac_variant(%S,%s)) return 0;"
+              doc.Name.name expect_fpac
+          end
       end
     end

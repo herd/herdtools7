@@ -73,14 +73,6 @@ module Make
     if Cfg.variant Variant_litmus.NoInit then
       Warn.user_error "Switches `-variant NoInit` and `-mode (presi|kvm)` are not compatible"
 
-  let () =
-    if Cfg.variant Variant_litmus.FPac && not (Cfg.variant Variant_litmus.Pac) then
-      Warn.user_error "\"fpac\" variant require \"pac\" variant"
-
-  let () =
-    if Cfg.variant Variant_litmus.ConstPacField && not (Cfg.variant Variant_litmus.Pac) then
-      Warn.user_error "\"const-pac-field\" variant require \"pac\" variant"
-
   module Insert =
       ObjUtil.Insert
         (struct
@@ -2030,6 +2022,8 @@ module Make
         O.o "" ;
         O.f "static void %szyva(void *_a) {" (if Cfg.is_kvm then "" else "*") ;
         if Cfg.is_kvm then begin
+          (* init_pauth() requires privileged mode.
+             Hence, perform it in kvm mode only. *)
             if Cfg.variant Variant_litmus.Pac then
               O.oi "init_pauth();" ;
             O.oi "int id = smp_processor_id();" ;
@@ -2191,12 +2185,7 @@ module Make
         O.o "static int feature_check(void) {" ;
         if do_self then
           O.oi "cache_line_size = getcachelinesize();" ;
-        if Cfg.variant Variant_litmus.Pac then begin
-          O.fi "if (!check_pac_variant(%S)) return 0;" doc.Name.name;
-          let expect_fpac =
-            if Cfg.variant Variant_litmus.FPac then "1" else "0" in
-          O.fi "if (!check_fpac_variant(%S,%s)) return 0;" doc.Name.name expect_fpac
-        end ;
+        UD.dump_check_pac doc ;
         if Cfg.variant Variant_litmus.ConstPacField then
           O.fi "if (!check_const_pac_field_variant(%S)) return 0;" doc.Name.name;
         if Cfg.is_kvm then begin

@@ -434,6 +434,7 @@ module Make
         O.o "#include <string.h>";
         O.o "#include \"utils.h\"" ;
         if Cfg.c11 then O.o "#include <stdatomic.h>";
+        if Cfg.variant Variant_litmus.Pac then O.o "#include \"auth.h\"" ;
         O.o "#include \"outs.h\"" ;
         if do_affinity then begin
           O.o "#include \"affinity.h\""
@@ -2791,10 +2792,17 @@ module Make
         ()
 
 (* Main *)
+      let dump_feature_check doc =
+        O.o "static int feature_check(void) {" ;
+        UD.dump_check_pac doc ;
+        O.oi "return 1;" ;
+        O.o "}" ;
+        O.o ""
 
       let dump_main doc _env test =
         let dca,_ca = mk_dca test in
         O.o "" ;
+        dump_feature_check doc ;
 (* Static list of logical processors *)
         begin match Cfg.logicalprocs with
         | Some procs when do_affinity ->
@@ -2812,6 +2820,7 @@ module Make
               O.f "int %s(int argc, char **argv, FILE *out) {"
                 (MyName.as_symbol doc) ;
               "out" in
+        O.oi "if (!feature_check()) return EXIT_FAILURE;" ;
         let alloc_def_all_cpus =
           if do_affinity then begin
             begin match Cfg.logicalprocs with
