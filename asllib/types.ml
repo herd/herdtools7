@@ -346,181 +346,114 @@ module Domain = struct
 
   let compare _d1 _d2 = assert false
 
-  module Iterators = struct
+  (** The [StaticApprox] module creates constant approximation of integer
+      constraints as sets of integers. *)
+  module StaticApprox = struct
+    (** The two possible types of approximations. *)
     type approx = Over | Under
 
     exception CannotOverApproximate
+    (** Raised if over approximation is not possible. *)
 
-    let assert_under approx acc =
-      if approx = Over then raise CannotOverApproximate else acc
+    (** Return bottom for Under approximation, top for over approximation. *)
+    let bottom_top approx =
+      if approx = Over then raise CannotOverApproximate else IntSet.empty
 
-    let fold_zs =
-      let rec aux f z1 z2 acc =
-        if Z.lt z2 z1 then acc else f z1 acc |> aux f (Z.succ z1) z2
-      in
-      fun f z1 z2 acc ->
-        match Z.compare z1 z2 with
-        | 1 -> acc
-        | 0 -> f z1 acc
-        | -1 -> acc |> f z1 |> f z2 |> aux f (Z.succ z1) (Z.pred z2)
-        | _ -> assert false
+    let make_interval approx z1 z2 =
+      if Z.leq z1 z2 then IntSet.(add (Interval.make z1 z2) empty)
+      else bottom_top approx
 
-    let rec expr_fold :
-          'acc. _ -> _ -> (literal -> 'acc -> 'acc) -> _ -> 'acc -> 'acc =
-     fun approx env f e acc ->
-      let e = StaticModel.try_normalize env e in
+    let literal_to_z = function L_Int z -> z | _ -> assert false
+
+    let apply_unop loc op z =
+      Operations.unop_values loc Error.Static op (L_Int z) |> literal_to_z
+
+    let apply_binop loc op z1 z2 =
+      Operations.binop_values loc Error.Static op (L_Int z1) (L_Int z2)
+      |> literal_to_z
+
+    let rec approx_expr approx env e =
       match e.desc with
-      | E_Literal l -> f l acc
-      | E_Var x ->
-          if approx = Over then
-            let t = try SEnv.type_of env x with Not_found -> assert false in
-            type_fold Over env f t acc
-          else acc
-      | E_Unop (op, e) ->
-          let f' z = Operations.unop_values e Error.Static op z |> f in
-          expr_fold approx env f' e acc
+      | E_Literal (L_Int z) -> IntSet.singleton z
+      | E_Literal _ -> bottom_top approx
+      | E_Var x -> (
+          match approx with
+          | Over -> approx_type Over env (SEnv.type_of env x)
+          | Under -> IntSet.empty)
+      | E_Unop (op, e') ->
+          IntSet.map_individual (apply_unop e op) (approx_expr approx env e')
       | E_Binop (op, e1, e2) ->
-          let f1 z2 z1 = Operations.binop_values e Error.Static op z1 z2 |> f in
-          let f2 z2 = expr_fold approx env (f1 z2) e1 in
-          expr_fold approx env f2 e2 acc
-      | E_Arbitrary t -> type_fold approx env f t acc
-      | E_Cond (e1, e2, e3) ->
-          let f' = function
-            | L_Bool b -> expr_fold approx env f (if b then e2 else e3)
-            | _ ->
-                assert false (* Type error - should have been caught earlier. *)
-          in
-          expr_fold approx env f' e1 acc
-      | E_Array _ | E_EnumArray _ | E_GetArray _ | E_GetEnumArray _
-      | E_GetField _ | E_GetFields _ | E_GetItem _ | E_Record _ | E_Tuple _ ->
-          (* Not supported: aggregate types. *)
-          assert_under approx acc
-      | E_ATC (_, _) | E_Slice (_, _) | E_Pattern (_, _) | E_Call _ ->
-          (* Not yet implemented *)
-          assert_under approx acc
+          IntSet.cross_map_individual (apply_binop e op)
+            (approx_expr approx env e1)
+            (approx_expr approx env e2)
+      | E_Cond (_econd, e2, e3) -> (
+          let s2 = approx_expr approx env e2
+          and s3 = approx_expr approx env e3 in
+          match approx with
+          | Over -> IntSet.union s2 s3
+          | Under -> IntSet.inter s2 s3)
+      | _ -> bottom_top approx
 
-    and type_fold :
-          'acc. _ -> _ -> (literal -> 'acc -> 'acc) -> _ -> 'acc -> 'acc =
-     fun approx env f t acc ->
-      let t = make_anonymous env t in
+    and approx_type approx env t =
       match t.desc with
-      | T_Real | T_String | T_Int (UnConstrained | Parameterized _) ->
-          assert_under approx acc (* We can't iterate on all of those. *)
-      | T_Int PendingConstrained -> assert false
-      | T_Int (WellConstrained cs) -> constraints_fold approx env f cs acc
-      | T_Bool -> acc |> f (L_Bool true) |> f (L_Bool false)
-      | T_Bits (e_len, _) ->
-          let f1 length z = L_BitVector (Bitvector.of_z length z) |> f in
-          let f2 = function
-            | L_Int z when Z.fits_int z && Z.sign z >= 0 ->
-                let length = Z.to_int z in
-                let max = Z.shift_left Z.one length |> Z.pred in
-                fold_zs (f1 length) Z.zero max
-            | L_Int _ -> Fun.id (* Those are delayed until runtime. *)
-            | _ -> assert false (* Type error. *)
-          in
-          expr_fold approx env f2 e_len acc
-      | T_Enum li ->
-          List.fold_left
-            (fun acc x ->
-              expr_fold approx env f (E_Var x |> add_pos_from t) acc)
-            acc li
-      | T_Tuple _ | T_Array (_, _) | T_Record _ | T_Exception _ ->
-          (* Non supported: aggregate types. *)
-          assert_under approx acc
-      | T_Named _ -> assert false (* Error in output of [make_anonmymous]. *)
+      | T_Named _ -> make_anonymous env t |> approx_type approx env
+      | T_Int (WellConstrained cs) -> approx_constraints approx env cs
+      | _ -> bottom_top approx
 
-    and constraint_fold :
-          'acc. _ -> _ -> (literal -> 'acc -> 'acc) -> _ -> 'acc -> 'acc =
-     fun approx env f c acc ->
-      match c with
-      | Constraint_Exact e -> expr_fold approx env f e acc
-      | Constraint_Range (e1, e2) ->
-          let z1, z2 =
-            match approx with
-            | Over -> (get_min env e1, get_max env e2)
-            | Under -> (get_max env e1, get_min env e2)
-          in
-          let f z = f (L_Int z) in
-          fold_zs f z1 z2 acc
+    and approx_constraints approx env cs =
+      if list_is_empty cs then bottom_top approx
+      else
+        let join =
+          let empty = IntSet.empty (* will not be used *) in
+          match approx with
+          | Under -> list_iterated_op ~empty IntSet.inter
+          | Over -> list_iterated_op ~empty IntSet.union
+        in
+        List.map (approx_constraint approx env) cs |> join
 
-    and constraints_fold :
-          'acc. _ -> _ -> (literal -> 'acc -> 'acc) -> _ -> 'acc -> 'acc =
-     fun approx env f li acc ->
-      List.fold_left (fun acc c -> constraint_fold approx env f c acc) acc li
+    and approx_constraint approx env = function
+      | Constraint_Exact e -> approx_expr approx env e
+      | Constraint_Range (e1, e2) -> (
+          try
+            let z1, z2 =
+              match approx with
+              | Over -> (get_min env e1, get_max env e2)
+              | Under -> (get_max env e1, get_min env e2)
+            in
+            make_interval approx z1 z2
+          with Not_found | CannotOverApproximate -> bottom_top approx)
 
-    and get_min env e =
-      expr_fold Over env
-        (function L_Int z1 -> Z.min z1 | _ -> assert false)
-        e
-        Z.(shift_left one 30)
-
-    and get_max env e =
-      expr_fold Over env
-        (function L_Int z1 -> Z.max z1 | _ -> assert false)
-        e
-        Z.(shift_left minus_one 30)
-
-    let constraints_for_all env is f =
-      let exception FalseFound in
-      let f' l _acc = f l || raise FalseFound in
-      try constraints_fold Over env f' is true
-      with CannotOverApproximate | FalseFound -> false
-
-    let constraints_exists env is f =
-      let exception TrueFound in
-      let f' l _acc = f l && raise TrueFound in
-      try constraints_fold Under env f' is false with
-      | CannotOverApproximate -> false
-      | TrueFound -> true
+    and get_min env e = approx_expr Over env e |> IntSet.min_elt
+    and get_max env e = approx_expr Over env e |> IntSet.max_elt
   end
 
-  let int_set_for_all =
-    let interval_iter elt_iter interval =
-      let x = IntSet.Interval.x interval and y = IntSet.Interval.y interval in
-      (* We try the extremities first, in case it's linear. *)
-      elt_iter x;
-      elt_iter y;
-      let n = Z.(sub y x |> to_int) in
-      for i = 0 to n do
-        Z.of_int i |> Z.add x |> elt_iter
-      done
+  (* Begin SyDomIsSubset *)
+  let is_subset env is1 is2 =
+    let () =
+      if false then Format.eprintf "Is %a a subset of %a?@." pp is1 pp is2
     in
-    let exception FalseFound in
-    fun is f ->
-      let elt_iter z = if f z then () else raise FalseFound in
-      try
-        IntSet.iter (interval_iter elt_iter) is;
-        true
-      with FalseFound -> false
-
-  (* Begin SymIntSetSubset *)
-  let int_set_is_subset env is1 is2 =
-    match (is1, is2) with
-    | _, Top -> true |: TypingRule.SymIntSetSubset
+    let open StaticApprox in
+    (match (is1, is2) with
+    | _, Top -> true
     | Top, _ -> false
     | Finite ints1, Finite ints2 -> IntSet.(is_empty (diff ints1 ints2))
-    | FromSyntax cs1, FromSyntax cs2 ->
+    | FromSyntax cs1, FromSyntax cs2 -> (
         constraints_equal env cs1 cs2
-        || Iterators.constraints_for_all env cs1 @@ fun l1 ->
-           Iterators.constraints_exists env cs2 @@ fun l2 -> literal_equal l1 l2
-    | Finite ints1, FromSyntax cs2 -> (
-        int_set_for_all ints1 @@ fun z1 ->
-        Iterators.constraints_exists env cs2 @@ function
-        | L_Int z2 -> Z.equal z1 z2
-        | _ -> false)
-    | FromSyntax cs1, Finite ints2 -> (
-        Iterators.constraints_for_all env cs1 @@ function
-        | L_Int z1 -> IntSet.mem z1 ints2
-        | _ -> false)
-  (* End *)
-
-  (* Begin SyDomIsSubset *)
-  let is_subset env d1 d2 =
-    let () =
-      if false then Format.eprintf "Is %a a subset of %a?@." pp d1 pp d2
-    in
-    int_set_is_subset env d1 d2 |: TypingRule.SyDomIsSubset
+        ||
+        try
+          let s1 = approx_constraints Over env cs1
+          and s2 = approx_constraints Under env cs2 in
+          IntSet.subset s1 s2
+        with CannotOverApproximate -> false)
+    | Finite s1, FromSyntax cs2 ->
+        let s2 = approx_constraints Under env cs2 in
+        IntSet.subset s1 s2
+    | FromSyntax cs1, Finite s2 -> (
+        try
+          let s1 = approx_constraints Over env cs1 in
+          IntSet.subset s1 s2
+        with CannotOverApproximate -> false))
+    |: TypingRule.SyDomIsSubset
   (* End *)
 end
 

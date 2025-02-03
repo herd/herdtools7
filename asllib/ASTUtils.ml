@@ -22,6 +22,18 @@
 
 open AST
 
+let list_iterated_op ~empty op =
+  let rec pairwise acc = function
+    | [] -> acc
+    | [ x ] -> x :: acc
+    | x :: y :: t -> pairwise (op x y :: acc) t
+  and iter = function
+    | [] -> empty
+    | [ x ] -> x
+    | li -> pairwise [] li |> iter
+  in
+  iter
+
 module ISet = struct
   include Set.Make (String)
 
@@ -34,13 +46,7 @@ module ISet = struct
       (pp_print_list ~pp_sep:pp_comma pp_print_string)
       (elements t)
 
-  let rec unions =
-    let rec one_step acc = function
-      | [] -> acc
-      | [ x ] -> x :: acc
-      | x :: y :: li -> one_step (union x y :: acc) li
-    in
-    function [] -> empty | [ s ] -> s | li -> one_step [] li |> unions
+  let unions = list_iterated_op ~empty union
 end
 
 module IMap = struct
