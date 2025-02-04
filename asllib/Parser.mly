@@ -512,8 +512,6 @@ let stmt :=
           end_e=expr; limit=loop_limit; DO; body=stmt_list;
           { S_For { index_name; start_e; end_e; dir; body; limit } }
       | TRY; s=stmt_list; CATCH; c=list1(catcher); o=otherwise_opt; < S_Try >
-      | ARROBASE_LOOPLIMIT; looplimit=pared(expr); WHILE; cond=expr; DO; body=stmt_list;
-          { S_While (cond, Some looplimit, body) }
     )
     | terminated_by(SEMI_COLON,
       | PASS; pass
@@ -539,8 +537,6 @@ let stmt :=
       | DEBUG; args=plist0(expr);                             { S_Print { args; newline = true; debug = true } }
       | UNREACHABLE; LPAR; RPAR;                             { S_Unreachable }
       | REPEAT; ~=stmt_list; UNTIL; ~=expr; ~=loop_limit;    < S_Repeat >
-      | ARROBASE_LOOPLIMIT; looplimit=pared(expr); REPEAT; body=stmt_list; UNTIL; cond=expr;
-          { S_Repeat (body, cond, Some looplimit) }
       | THROW; e=expr;                                       { S_Throw (Some (e, None)) }
       | THROW;                                               { S_Throw None             }
       | PRAGMA; x=IDENTIFIER; e=clist0(expr);                 < S_Pragma >

@@ -41,6 +41,16 @@ let bitvector_lit lxm = BITVECTOR_LIT (Bitvector.of_string lxm)
 let mask_lit lxm = MASK_LIT (Bitvector.mask_of_string lxm)
 let reserved_err s = Error.fatal_unknown_pos @@ (Error.ReservedIdentifier s)
 
+let fatal lexbuf desc =
+  AST.
+    {
+      desc;
+      version = V1;
+      pos_start = Lexing.lexeme_start_p lexbuf;
+      pos_end = Lexing.lexeme_end_p lexbuf;
+    }
+  |> Error.fatal
+
 let tr_name s = match s with
 | "AND"           -> AND
 | "array"         -> ARRAY
@@ -100,7 +110,7 @@ let tr_name s = match s with
 | "type"          -> TYPE
 | "UNKNOWN"       ->
     if Config.allow_unknown then ARBITRARY
-    else Error.fatal_unknown_pos @@ (Error.ObsoleteSyntax s)
+    else fatal_unknown_pos (Error.ObsoleteSyntax s)
 | "ARBITRARY"     -> ARBITRARY
 | "Unreachable"   -> UNREACHABLE
 | "until"         -> UNTIL
@@ -246,14 +256,14 @@ and token = parse
     | ':'                      { COLON                            }
     | "=>"                     { ARROW                            }
     | '}'                      { RBRACE                           }
-    | "++"                     { fatal_unknown_pos (ObsoleteSyntax "string concatenation with ++") }
+    | "++"                     { fatal lexbuf (ObsoleteSyntax "string concatenation with ++") }
     | "::"                     { COLON_COLON                      }
     | '>'                      { GT                               }
     | "+:"                     { PLUS_COLON                       }
     | "*:"                     { STAR_COLON                       }
     | ';'                      { SEMI_COLON                       }
     | ">="                     { GEQ                              }
-    | "@looplimit"             { ARROBASE_LOOPLIMIT               }
+    | "@looplimit"             { fatal lexbuf (ObsoleteSyntax "Loop limits with @looplimit") }
     | identifier as lxm        { tr_name lxm                      }
     | eof                      { EOF                              }
     | ""                       { raise LexerError                 }
