@@ -363,14 +363,19 @@ module Domain = struct
       if Z.leq z1 z2 then IntSet.(add (Interval.make z1 z2) empty)
       else bottom_top approx
 
-    let literal_to_z = function L_Int z -> z | _ -> assert false
+    let literal_to_z = function L_Int z -> Some z | _ -> None
 
     let apply_unop loc op z =
-      Operations.unop_values loc Error.Static op (L_Int z) |> literal_to_z
+      let open Error in
+      try Operations.unop_values loc Error.Static op (L_Int z) |> literal_to_z
+      with ASLException { desc = UnsupportedUnop _ } -> None
 
     let apply_binop loc op z1 z2 =
-      Operations.binop_values loc Error.Static op (L_Int z1) (L_Int z2)
-      |> literal_to_z
+      let open Error in
+      try
+        Operations.binop_values loc Static op (L_Int z1) (L_Int z2)
+        |> literal_to_z
+      with ASLException { desc = UnsupportedBinop _ } -> None
 
     (* Begin ApproxExpr *)
     let rec approx_expr approx env e =
@@ -382,9 +387,10 @@ module Domain = struct
           | Over -> approx_type Over env (SEnv.type_of env x)
           | Under -> IntSet.empty)
       | E_Unop (op, e') ->
-          IntSet.map_individual (apply_unop e op) (approx_expr approx env e')
+          IntSet.filter_map_individual (apply_unop e op)
+            (approx_expr approx env e')
       | E_Binop (op, e1, e2) ->
-          IntSet.cross_map_individual (apply_binop e op)
+          IntSet.cross_filter_map_individual (apply_binop e op)
             (approx_expr approx env e1)
             (approx_expr approx env e2)
       | E_Cond (_econd, e2, e3) -> (

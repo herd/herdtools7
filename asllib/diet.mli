@@ -95,8 +95,8 @@ module type INTERVAL_SET = sig
   val fold_individual : (elt -> 'a -> 'a) -> t -> 'a -> 'a
   (** [fold_individual f t acc] folds [f] across all the individual elements of [t] *)
 
-  val map_individual : (elt -> elt) -> t -> t
-  (** [map_individual f t] is the set of all [f(x)] for [x] in [t]. *)
+  val filter_map_individual : (elt -> elt option) -> t -> t
+  (** [filter_map_individual f t] is the set of all [f(x)] for [x] in [t]. *)
 
   val iter : (interval -> unit) -> t -> unit
   (** [iter f t] iterates [f] across all the intervals in [t] *)
@@ -145,7 +145,7 @@ module type INTERVAL_SET = sig
   val subset : t -> t -> bool
   (** subsets *)
 
-  val cross_map_individual : (elt -> elt -> elt) -> t -> t -> t
+  val cross_filter_map_individual : (elt -> elt -> elt option) -> t -> t -> t
   (** Cross product on all elements of sets *)
 
   val find_next_gap : elt -> t -> elt
