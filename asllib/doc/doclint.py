@@ -105,9 +105,9 @@ def check_repeated_words():
                 for i in range(0, len(parts) - 1):
                     word1 = parts[i]
                     word2 = parts[i + 1]
-                    if word1.isalpha() and word1 == word2:
+                    if word1.isalpha() and word1.lower() == word2.lower():
                         num_errors += 1
-                        print(f"./{latex_source} line {line_number}: repeated '{word1}' in '{line}'")
+                        print(f"./{latex_source} line {line_number}: word repetition ({word1} {word2}) in '{line}'")
     return num_errors
 
 def main():

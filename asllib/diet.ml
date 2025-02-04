@@ -51,7 +51,7 @@ module type INTERVAL_SET = sig
   val mem : elt -> t -> bool
   val fold : (interval -> 'a -> 'a) -> t -> 'a -> 'a
   val fold_individual : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-  val map_individual : (elt -> elt) -> t -> t
+  val filter_map_individual : (elt -> elt option) -> t -> t
   val iter : (interval -> unit) -> t -> unit
   val add : interval -> t -> t
   val remove : interval -> t -> t
@@ -66,7 +66,7 @@ module type INTERVAL_SET = sig
   val diff : t -> t -> t
   val inter : t -> t -> t
   val subset : t -> t -> bool
-  val cross_map_individual : (elt -> elt -> elt) -> t -> t -> t
+  val cross_filter_map_individual : (elt -> elt -> elt option) -> t -> t -> t
   val find_next_gap : elt -> t -> elt
   val elements : t -> interval list
   val elements_individual : t -> elt list
@@ -460,12 +460,18 @@ module Make (Elt : ELT) = struct
 
   let of_list li = List.sort_uniq Elt.compare li |> of_sorted_list
 
-  let map_individual f t =
-    fold_individual (fun x acc -> f x :: acc) t [] |> of_list
-
-  let cross_map_individual f t1 t2 =
+  let filter_map_individual f t =
     fold_individual
-      (fun x -> fold_individual (fun y acc -> f x y :: acc) t2)
+      (fun x acc -> match f x with Some z -> z :: acc | None -> acc)
+      t []
+    |> of_list
+
+  let cross_filter_map_individual f t1 t2 =
+    fold_individual
+      (fun x ->
+        fold_individual
+          (fun y acc -> match f x y with Some z -> z :: acc | None -> acc)
+          t2)
       t1 []
     |> of_list
 

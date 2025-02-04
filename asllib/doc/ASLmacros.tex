@@ -158,6 +158,7 @@
 \newcommand\AllApplyCase[1]{All of the following apply (\textsc{#1}):}
 \newcommand\OneApplies[0]{One of the following applies:}
 \newcommand\Proseeqdef[2]{define #1 as #2}
+\newcommand\ProseEqdef[2]{Define #1 as #2}
 
 \usepackage{enumitem}
 \renewlist{itemize}{itemize}{20}
@@ -1231,6 +1232,7 @@
 \newcommand\findbitfieldsslices[0]{\hyperlink{def-findbitfieldsslices}{\textfunc{find\_bitfields\_slices}}}
 \newcommand\lookupconstant[0]{\hyperlink{def-lookupconstant}{\textfunc{lookup\_constant}}}
 \newcommand\typeof[0]{\hyperlink{def-typeof}{\textfunc{type\_of}}}
+\newcommand\Prosetypeof[3]{\hyperlink{def-typeof}{obtaining} the type of #2 in the static environment #1 yields #3}
 \newcommand\typecheckdecl[0]{\hyperlink{def-typecheckdecl}{\textfunc{typecheck\_decl}}}
 \newcommand\Prosecheckglobalpragma[2]{\hyperlink{def-checkglobalpragma}{checking} the global pragma #2 for correctness in the static environment #1 yields $\True$}
 \newcommand\checkglobalpragma[0]{\hyperlink{def-checkglobalpragma}{\textfunc{check\_global\_pragma}}}
@@ -1738,6 +1740,8 @@
 \newcommand\sideeffectconflictterm[0]{\hyperlink{def-sideeffectconflictterm}{side effect conflict}}
 \newcommand\sideeffectconflictsterm[0]{\hyperlink{def-sideeffectconflictterm}{side effect conflicts}}
 
+\newcommand\approximationdirectionterm[0]{\hyperlink{def-approximationdirectionterm}{approximation direction}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type functions
 \newcommand\applyunoptype[0]{\hyperlink{def-applyunoptype}{\textfunc{apply\_unop\_type}}}
@@ -1870,9 +1874,43 @@
 \newcommand\symdomissubset[0]{\hyperlink{def-symdomissubset}{\textfunc{symdom\_is\_subset}}}
 \newcommand\constrainttointset[0]{\hyperlink{def-constrainttointset}{\textfunc{constraint\_to\_intset}}}
 \newcommand\normalizetoint[0]{\hyperlink{def-normalizetoint}{\textfunc{normalize\_to\_int}}}
-\newcommand\symintsetsubset[0]{\hyperlink{def-symintsetsubset}{\textfunc{sym\_intset\_subset}}}
 \newcommand\intsetop[0]{\hyperlink{def-intsetop}{\textfunc{intset\_op}}}
 \newcommand\intsettointconstraints[0]{\hyperlink{def-intsettointconstraints}{\textfunc{int\_set\_to\_int\_constraints}}}
+\newcommand\Under[0]{\hyperlink{def-Under}{\textsf{Under}}}
+\newcommand\Over[0]{\hyperlink{def-Over}{\textsf{Over}}}
+\newcommand\approxconstraints[0]{\hyperlink{def-approxconstraints}{\textfunc{approx\_constraints}}}
+\newcommand\Proseapproxconstraints[4]{\hyperlink{def-approxconstraints}
+  {Overapproximating} the list of constraints #3 in the static environment #1 with the \approximationdirectionterm\ #2
+  yields the set of integers #3}
+\newcommand\ProseapproxconstraintsOver[3]{\hyperlink{def-approxconstraints}
+  {Overapproximating} the list of constraints #2 in the static environment #1 yields the set of
+  integers #3}
+\newcommand\ProseapproxconstraintsUnder[3]{\hyperlink{def-approxconstraints}
+  {Underapproximating} the list of constraints #2 in the static environment #1 yields the set of
+  integers #3}
+\newcommand\approxconstraint[0]{\hyperlink{def-approxconstraint}{\textfunc{approx\_constraint}}}
+\newcommand\Proseapproxconstraint[4]{\hyperlink{def-approxconstraint}
+  {approximating} the constraint #2 for all environments consisting of the static environment
+  #1 with the \approximationdirectionterm\ #3 yields the set #4}
+\newcommand\approxexpr[0]{\hyperlink{def-approxexpr}{\textfunc{approx\_expr}}}
+\newcommand\Proseapproxexpr[4]{\hyperlink{def-approxexpr}
+  {approximating} the set integers represented by the expression #3 in the static environment #1
+  with the symbol #2 yields the set of integers #4}
+\newcommand\approxexprmin[0]{\hyperlink{def-approxexprmin}{\textfunc{approx\_expr\_min}}}
+\newcommand\Proseapproxexprmin[3]{\hyperlink{def-approxexprmin}
+  {approximating} the minimal integer in the set of integers represented by the expression #2
+  in the static environment #1 yields #3}
+\newcommand\approxexprmax[0]{\hyperlink{def-approxexprmax}{\textfunc{approx\_expr\_max}}}
+\newcommand\Proseapproxexprmax[3]{\hyperlink{def-approxexprmax}
+  {approximating} the maximal integer in the set of integers represented by the expression #2
+  in the static environment #1 yields #3}
+\newcommand\approxtype[0]{\hyperlink{def-approxtype}{\textfunc{approx\_type}}}
+\newcommand\Proseapproxtype[4]{\hyperlink{def-approxtype}
+  {approximating} the type #3 in any environment consisting of the static environment #1
+  with the \approximationdirectionterm\ #2 yields the set #4}
+\newcommand\approxbottomtop[0]{\hyperlink{def-approxbottomtop}{\textfunc{approx\_bottom\_top}}}
+\newcommand\mininfty[0]{\hyperlink{def-mininfty}{\min_{-\infty}}}
+\newcommand\maxinfty[0]{\hyperlink{def-maxinfty}{\max_{+\infty}}}
 
 %% Build Error Codes
 \newcommand\BuildErrorPrefix[0]{\texttt{BE}}
@@ -2436,6 +2474,7 @@
 \newcommand\tysp[0]{\texttt{tys'}}
 \newcommand\useset[0]{\texttt{use\_set}}
 \newcommand\va[0]{\texttt{a}}
+\newcommand\vapprox[0]{\texttt{approx}}
 \newcommand\vap[0]{\texttt{a'}}
 \newcommand\vacc[0]{\texttt{acc}}
 \newcommand\vad[0]{\texttt{ad}}
@@ -2905,6 +2944,9 @@
 \newcommand\vstructt[0]{\texttt{struct\_t}}
 \newcommand\vstwo[0]{\texttt{s2}}
 \newcommand\vstwop[0]{\texttt{s2'}}
+\newcommand\vsthree[0]{\texttt{s3}}
+\newcommand\vsinterval[0]{\texttt{s\_interval}}
+\newcommand\vsbottomtop[0]{\texttt{s\_bottom\_top}}
 \newcommand\vsubtype[0]{\texttt{subtype}}
 \newcommand\vsubtypeopt[0]{\texttt{subtype\_opt}}
 \newcommand\vsuper[0]{\texttt{super}}

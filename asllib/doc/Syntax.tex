@@ -113,7 +113,7 @@ It is defined via the parametric production for possibly-empty lists:
 \newcommand\Ndecllist[0]{\nonterminal{decl\_list}}
 Expanding $\maybeemptylist{\Ndecl}$ produces the following derivations for a new unique symbol.
 That is, a symbol that does not appear anywhere else in the grammar.
-In this example we will choose $\uniquesymb{\maybeemptylist{\Ndecl}}$ the be the symbol $\Ndecllist$.
+In this example we will choose $\uniquesymb{\maybeemptylist{\Ndecl}}$ to be the symbol $\Ndecllist$.
 The result of the expansion is then:
 \begin{flalign*}
 \Ndecllist   \derives\ & \emptysentence \;|\; \Ndecl \parsesep \Ndecllist &\\
