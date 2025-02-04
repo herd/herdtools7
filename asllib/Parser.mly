@@ -210,8 +210,6 @@ let unop ==
   | MINUS ; { NEG }
   | NOT   ; { NOT }
 
-let unimplemented_binop(x) == x ; { PLUS }
-
 let binop ==
   | AND         ; { AND    }
   | BAND        ; { BAND   }
@@ -237,9 +235,6 @@ let binop ==
   | SHR         ; { SHR    }
   | POW         ; { POW    }
   | COLON_COLON ; { BV_CONCAT }
-  | unimplemented_binop(
-    | CONCAT; <>
-  )
 
 (* ------------------------------------------------------------------------
 

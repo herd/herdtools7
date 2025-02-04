@@ -246,7 +246,7 @@ and token = parse
     | ':'                      { COLON                            }
     | "=>"                     { ARROW                            }
     | '}'                      { RBRACE                           }
-    | "++"                     { CONCAT                           }
+    | "++"                     { fatal_unknown_pos (ObsoleteSyntax "string concatenation with ++") }
     | "::"                     { COLON_COLON                      }
     | '>'                      { GT                               }
     | "+:"                     { PLUS_COLON                       }
