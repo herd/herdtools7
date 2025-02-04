@@ -77,10 +77,10 @@ let prec =
   function
   | BOR | BAND | IMPL | BEQ -> 1
   | EQ_OP | NEQ -> 2
-  | PLUS | MINUS | OR | EOR | AND -> 3
+  | PLUS | MINUS | OR | EOR | AND | BV_CONCAT -> 3
   | MUL | DIV | DIVRM | RDIV | MOD | SHL | SHR -> 4
   | POW -> 5
-  | _ -> 0 (* Non assoc *)
+  | GT | GEQ | LT | LEQ -> 0 (* Non assoc *)
 
 let check_not_same_prec loc op op' =
   if prec op = prec op' then Error.(fatal_from loc CannotParse)
@@ -437,7 +437,7 @@ let discard_or_field :=
 
 let lexpr :=
   | ~=sliced_basic_lexpr; < desugar_lhs_access >
-  | ~=annotated(pared(clist2(discard_or_sliced_basic_lexpr))); < desugar_lhs_tuple >
+  | ~=annotated(plist2(discard_or_sliced_basic_lexpr)); < desugar_lhs_tuple >
   | annotated(
     | MINUS; { LE_Discard }
     | x=annotated(IDENTIFIER); DOT; flds=bracketed(clist2(IDENTIFIER));
