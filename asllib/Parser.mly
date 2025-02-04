@@ -486,11 +486,11 @@ let case_alt :=
       { { pattern; where; stmt } }
   )
 
-let case_otherwise :=
+let case_otherwise ==
     OTHERWISE; ARROW; otherwise_stmt=stmt_list;
       { otherwise_stmt }
 
-let case_alt_list := nlist(case_alt)
+let case_alt_list == list1(case_alt)
 
 let otherwise == OTHERWISE; ARROW; stmt_list
 let otherwise_opt := ioption(otherwise)
@@ -584,7 +584,7 @@ let elided_param_call :=
     { { name; params; args; call_type = ST_Function } }
 let func_args := plist0(typed_identifier)
 let maybe_empty_stmt_list := stmt_list | annotated({ S_Pass })
-let func_body := delimited(BEGIN, maybe_empty_stmt_list, end_semicolon)
+let func_body == delimited(BEGIN, maybe_empty_stmt_list, end_semicolon)
 let recurse_limit := ioption(RECURSELIMIT; expr)
 let ignored_or_identifier :=
   | MINUS; { global_ignored () }
