@@ -3,8 +3,8 @@ States 1
 [x]=1;
 Ok
 Witnesses
-Positive: 1 Negative: 0
+Positive: 2 Negative: 0
 Condition forall ([x]=1)
-Observation CAS03 Always 1 0
+Observation CAS03 Always 2 0
 Hash=337d3b9628962897752d5dd8bce6694a
 
