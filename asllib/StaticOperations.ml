@@ -351,8 +351,8 @@ module Make (C : CONFIG) = struct
     | OR | RDIV | BV_CONCAT ->
         assert false
 
-  let log_max_consrtaint_size = 17
-  let max_constraint_size = Z.shift_left Z.one log_max_consrtaint_size
+  let log_max_constraint_size = 17
+  let max_constraint_size = Z.shift_left Z.one log_max_constraint_size
   let max_exploded_interval_size = Z.shift_left Z.one 14
 
   (* Begin ExplodeIntervals *)
@@ -418,7 +418,7 @@ module Make (C : CONFIG) = struct
                         op;
                         left = cs1;
                         right = cs2_f;
-                        log_max = log_max_consrtaint_size;
+                        log_max = log_max_constraint_size;
                       })
               in
               (cs1, cs2_f)
