@@ -23,7 +23,7 @@ static void record_fault(who_t *w, unsigned long pc, unsigned long esr) {
   if (get_far(esr, &far)) {
     flt.data_symb = idx_addr((intmax_t *)far, vars_ptr[w->instance]);
   } else {
-    flt.data_symb = DATA_SYMB_ID_UNKNOWN;
+    flt.data_symb = unknown_symbolic();
   }
 
   if (!log_fault(w->proc, flt.instr_symb, flt.data_symb, flt.type)) {

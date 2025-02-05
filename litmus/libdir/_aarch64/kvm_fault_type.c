@@ -47,7 +47,7 @@ static enum fault_type_t get_fault_type(unsigned long esr)
 
 typedef struct {
   int instr_symb;
-  int data_symb;
+  symb_t data_symb;
   enum fault_type_t type;
 } fault_info_t;
 
@@ -61,7 +61,7 @@ static void th_faults_info_init(th_faults_info_t *th_flts)
   for (int i = 0; i < MAX_FAULTS_PER_THREAD; i++) {
     fault_info_t *f = &th_flts->faults[i];
     f->instr_symb = INSTR_SYMB_ID_UNKNOWN;
-    f->data_symb = DATA_SYMB_ID_UNKNOWN;
+    f->data_symb = unknown_symbolic();
     f->type = FaultUnknown;
   }
   th_flts->n = 0;
@@ -79,7 +79,7 @@ static int th_faults_info_compare(th_faults_info_t *th_flts1, th_faults_info_t *
     if (i2 == th_flts2->n)
       return 0;
 
-    if (f1->instr_symb == f2->instr_symb && f1->data_symb == f2->data_symb &&
+    if (f1->instr_symb == f2->instr_symb && symbolic_equal(f1->data_symb, f2->data_symb) &&
         f1->type == f2->type) {
       i1++;
       i2 = 0;
@@ -90,15 +90,16 @@ static int th_faults_info_compare(th_faults_info_t *th_flts1, th_faults_info_t *
   return 1;
 }
 
-static void pp_fault(int proc, int instr_symb, int data_symb, int ftype)
+static void pp_fault(int proc, int instr_symb, symb_t data_symb, int ftype)
 {
   if (instr_symb != INSTR_SYMB_ID_UNKNOWN)
     printf("fault(P%s", instr_symb_name[instr_symb]);
   else
     printf("fault(P%d", proc);
-  if (data_symb != DATA_SYMB_ID_UNKNOWN)
+  if (!symbolic_equal(data_symb, unknown_symbolic())) {
+    printf(","); pp_symbolic(data_symb);
     printf(",%s", data_symb_name[data_symb]);
-  if (ftype != FaultUnknown)
+  } if (ftype != FaultUnknown)
     printf(",%s", fault_type_names[ftype]);
   printf(");");
 }
@@ -115,7 +116,7 @@ static void pp_log_faults_init(void)
 }
 
 static void pp_log_faults(FILE *chan, th_faults_info_t *th_flts, int proc, int instr_symb,
-                          int data_symb, int ftype)
+                          symb_t data_symb, int ftype)
 {
   int found = 0;
   for (int i = 0; i < th_flts->n; i++) {
@@ -124,8 +125,8 @@ static void pp_log_faults(FILE *chan, th_faults_info_t *th_flts, int proc, int i
     if (instr_symb != INSTR_SYMB_ID_UNKNOWN) {
       cond &= flt->instr_symb == instr_symb;
     }
-    if (data_symb != DATA_SYMB_ID_UNKNOWN) {
-      cond &= flt->data_symb == data_symb;
+    if (!symbolic_equal(data_symb, unknown_symbolic())) {
+      cond &= symbolic_equal(flt->data_symb, data_symb);
     }
     if (ftype != FaultUnknown) {
       cond &= flt->type == ftype;
@@ -155,7 +156,7 @@ static int eq_faults(th_faults_info_t *th_flts1, th_faults_info_t *th_flts2)
   return 1;
 }
 
-static int exists_fault(th_faults_info_t *th_flts, int instr_symb, int data_symb, int ftype)
+static int exists_fault(th_faults_info_t *th_flts, int instr_symb, symb_t data_symb, int ftype)
 {
   for (int i = 0; i < th_flts->n; i++) {
     fault_info_t *flt = &th_flts->faults[i];
@@ -163,8 +164,8 @@ static int exists_fault(th_faults_info_t *th_flts, int instr_symb, int data_symb
     if (instr_symb != INSTR_SYMB_ID_UNKNOWN) {
       cond &= flt->instr_symb == instr_symb;
     }
-    if (data_symb != DATA_SYMB_ID_UNKNOWN) {
-      cond &= flt->data_symb == data_symb;
+    if (!symbolic_equal(data_symb, unknown_symbolic())) {
+      cond &= symbolic_equal(flt->data_symb, data_symb);
     }
     if (ftype != FaultUnknown) {
       cond &= flt->type == ftype;

@@ -68,11 +68,11 @@ module Make
       val dump : Name.t -> T.t -> unit
     end = struct
 
-(* Non valid mode for presi *)  
+(* Non valid mode for presi *)
   let () =
     if Cfg.variant Variant_litmus.NoInit then
       Warn.user_error "Switches `-variant NoInit` and `-mode (presi|kvm)` are not compatible"
-        
+
   module Insert =
       ObjUtil.Insert
         (struct
@@ -648,9 +648,9 @@ module Make
         | Base ("int"|"int32_t"|"uint32_t"|"int64_t"|"uint64_t") -> true
         | _ -> false
 
-      let dump_loc_tag_coded loc =  sprintf "%s_idx" (A.dump_loc_tag loc)
+      let dump_loc_tag_coded loc =  sprintf "%s_symb" (A.dump_loc_tag loc)
 
-      let dump_rloc_tag_coded loc =  sprintf "%s_idx" (A.dump_rloc_tag loc)
+      let dump_rloc_tag_coded loc =  sprintf "%s_symb" (A.dump_rloc_tag loc)
 
       let choose_dump_rloc_tag rloc env =
         if U.is_rloc_ptr rloc env then dump_rloc_tag_coded rloc
@@ -684,8 +684,21 @@ module Make
                 O.fi "\"%s\"," (Misc.pp_pte a)
               end)
           test.T.globals ;
-        O.o "};"
-
+        O.o "};" ;
+        Insert.insert O.o "kvm_symb.c" ;
+        (* Define global variables symbols *)
+        List.iter
+          (fun (a,_) ->
+            O.f "#define %-25s  symbolic_of_id(%-25s)"
+              (SkelUtil.data_symb a)
+              (SkelUtil.data_symb_id a);
+            if Cfg.is_kvm then begin
+                O.f "#define %-25s  symbolic_of_id(%-25s)"
+                  (SkelUtil.data_symb (Misc.add_pte a))
+                  (SkelUtil.data_symb_id (Misc.add_pte a))
+              end)
+          test.T.globals ;
+        O.o ""
 
       let dump_fault_type env test =
         if some_labels test then begin
@@ -780,7 +793,7 @@ module Make
         List.iter
           (fun (t,rloc) ->
             if CType.is_ptr t then
-              O.fi "int %s;"
+              O.fi "symb_t %s;"
                 (dump_loc_tag_coded (ConstrGen.loc_of_rloc rloc))
             else match rloc with
             | ConstrGen.Loc (A.Location_global a as loc) ->
@@ -822,32 +835,31 @@ module Make
             (*  Translation to indices *)
             let addr = if Cfg.is_kvm then "p_addr" else "v_addr" in
             let dump_test (s,_) =
-              O.fi "if (%s == p->%s) return %s;"
+              O.fi "if (%s == p->%s) ret.id = %s;"
                 addr s (SkelUtil.data_symb_id s) ;
               if Cfg.is_kvm then begin
-                O.fi "if ((pteval_t *)v_addr == p->%s) return %s;"
+                O.fi "if ((pteval_t *)v_addr == p->%s) ret.id = %s;"
                   (OutUtils.fmt_pte_tag s)
                   (SkelUtil.data_symb_id (Misc.add_pte s))
               end in
             begin
-              O.o "static int idx_addr(intmax_t *v_addr,vars_t *p) {" ;
+              O.o "static symb_t idx_addr(intmax_t *v_addr,vars_t *p) {" ;
+              O.oi "symb_t ret = { .raw = v_addr, .id = -1, .offset = 0 };" ;
               begin match test.T.globals with
               | _::_ when Cfg.is_kvm ->
                  O.oi  "intmax_t *p_addr =" ;
-                 O.oii "(intmax_t *)((uintptr_t)v_addr & PAGE_MASK);"
+                 O.oii "(intmax_t *)((uintptr_t)v_addr & PAGE_MASK);" ;
+                 O.oi "ret.offset = (uintptr_t)v_addr - (uintptr_t)p_addr;"
               | _ -> ()
               end ;
               if (not Cfg.is_kvm) then
                 (* Compatibility with standard mode, recognise NULL *)
-                O.fi "if (%s == NULL) return %s;" addr data_zero ;
+                O.fi "if (%s == NULL) ret.id = %s;" addr data_zero ;
               List.iter dump_test test.T.globals ;
-              O.oi "fatal(\"Cannot find symbol for address\"); return -1;" ;
+              O.oi "if (ret.id == -1)" ;
+              O.oii "fatal(\"Cannot find symbol for address\");" ;
+              O.oi "return ret;" ;
               O.o "}" ;
-              O.o ""
-            end ;
-(* Pretty-print indices *)
-            if some_ptr then begin
-              O.o "static const char **pretty_addr = data_symb_name;" ;
               O.o ""
             end
         end ;
@@ -887,7 +899,7 @@ module Make
                 [sprintf "instr_symb_name[p->%s]" (dump_rloc_tag_coded rloc)]
             | Pointer _ ->
                 None,
-                [sprintf "pretty_addr[p->%s]" (dump_rloc_tag_coded rloc)]
+                [sprintf "data_symb_name[p->%s.id]" (dump_rloc_tag_coded rloc)]
             | Array (_,sz) ->
                 let tag = A.dump_rloc_tag rloc in
                 let rec pp_rec k =
@@ -1007,9 +1019,9 @@ module Make
                 A.GetInstr.dump_instr (T.C.V.pp O.hexa) v
 
               let dump_value loc v = match v with
-              | Constant.Symbolic _ -> SkelUtil.data_symb_id (T.C.V.pp O.hexa v)
+              | Constant.Symbolic _ -> SkelUtil.data_symb (T.C.V.pp O.hexa v)
               | Constant.PteVal p ->
-                 A.V.PteVal.dump_pack SkelUtil.data_symb_id p
+                 A.V.PteVal.dump_pack SkelUtil.data_symb p
               | _ ->
                   begin match loc with
                   | Some loc ->
