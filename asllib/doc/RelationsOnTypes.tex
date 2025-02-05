@@ -1673,26 +1673,66 @@ Annotating the constraints involves applying symbolic reasoning and in particula
 will definitely result in a dynamic error.
 
 \subsubsection{Prose}
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item applying $\binopfilterrhs$ to $\op$ $\cstwo$ in $\tenv$, to filter out constraints that will definitely fail dynamically, yields $\cstwof$;
-  \item applying $\binopisexploding$ to $\op$ yields $\vbexploding$;
-  \item applying $\explodeintervals$ to $\csone$ in $\tenv$ yields $\csonee$;
-  \item applying $\explodeintervals$ to $\cstwo$ in $\tenv$ yields $\cstwo$;
-  \item define $(\csonearg, \cstwoarg)$ as $(\csonee, \cstwoe)$ if $\vbexploding$ is $\True$ and $(\csone, \cstwof)$, otherwise;
-  \item applying $\constraintbinop$ yo $\op$, $\csonearg$, and $\cstwoarg$ yields $\csvanilla$;
+  \item \OneApplies
+  \begin{itemize}
+    \item \AllApplyCase{exploding}
+    \begin{itemize}
+      \item applying $\binopisexploding$ to $\op$ yields $\True$;
+      \item applying $\explodeintervals$ to $\csone$ in $\tenv$ yields $\csonee$;
+      \item applying $\explodeintervals$ to $\cstwo$ in $\tenv$ yields $\cstwo$;
+      \item \Proseeqdef{$\vexpectedconstraintlength$}{the number of constraints in \\
+            $\cstwoe$ if $\op$ is $\MOD$
+            and the multiplication of numbers of constraints in $\csonee$ and $\cstwoe$, respectively};
+      \item \Proseeqdef{$(\csonearg, \cstwoarg)$}{$(\csonee, \cstwoe)$ if \\
+            $\vexpectedconstraintlength$ is
+            less than $2^{17}$ and $(\csone, \cstwof)$, otherwise};
+    \end{itemize}
+
+    \item \AllApplyCase{non\_exploding}
+    \begin{itemize}
+      \item applying $\binopisexploding$ to $\op$ yields $\False$;
+      \item \Proseeqdef{$(\csonearg, \cstwoarg)$}{$(\csone, \cstwof)$};
+    \end{itemize}
+  \end{itemize}
+  \item applying $\constraintbinop$ to $\op$, $\csonearg$, and $\cstwoarg$ yields $\csvanilla$;
   \item applying $\refineconstraintfordiv$ to $\op$ and $\csvanilla$ yields $\refinedcs$\ProseOrTypeError;
   \item applying $\reduceconstraints$ to $\refinedcs$ in $\tenv$ yields $\annotatedcs$.
 \end{itemize}
 
 \subsubsection{Formally}
 \begin{mathpar}
-\inferrule{
-  \binopfilterrhs(\tenv, \op, \cstwo) \typearrow \cstwof\\
-  \binopisexploding(\op) \typearrow \vbexploding\\
+\inferrule[exploding]{
+  \binopfilterrhs(\tenv, \op, \cstwo) \typearrow \cstwof\\\\
+  \commonprefixline\\\\
+  \binopisexploding(\op) \typearrow \True\\
   \explodeintervals(\tenv, \csone) \typearrow \csonee\\
   \explodeintervals(\tenv, \cstwof) \typearrow \cstwoe\\
-  (\csonearg, \cstwoarg) \eqdef \choice{\vbexploding}{(\csonee, \cstwoe)}{(\csone, \cstwof)}\\
+  \vexpectedconstraintlength \eqdef \choice{\op = \MOD}{\listlen{\cstwoe}}{\listlen{\csonee} \times \listlen{\cstwoe}}\\
+  {
+  (\csonearg, \cstwoarg) \eqdef \begin{cases}
+    (\csonee, \cstwoe) & \text{if }\vexpectedconstraintlength < 2^{17}\\
+    (\csone, \cstwof) & \text{else}
+  \end{cases}
+  }\\\\
+  \commonsuffixline\\\\
+  \constraintbinop(\op, \csonearg, \cstwoarg) \typearrow \csvanilla\\
+  \refineconstraintfordiv(\op, \csvanilla) \typearrow \refinedcs \OrTypeError\\\\
+  \reduceconstraints(\tenv, \refinedcs) \typearrow \annotatedcs
+}{
+  \annotateconstraintbinop(\tenv, \op, \csone, \cstwo) \typearrow \annotatedcs
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_exploding]{
+  \binopfilterrhs(\tenv, \op, \cstwo) \typearrow \cstwof\\\\
+  \commonprefixline\\\\
+  \binopisexploding(\op) \typearrow \False\\
+  (\csonearg, \cstwoarg) \eqdef (\csone, \cstwof)\\\\
+  \commonsuffixline\\\\
   \constraintbinop(\op, \csonearg, \cstwoarg) \typearrow \csvanilla\\
   \refineconstraintfordiv(\op, \csvanilla) \typearrow \refinedcs \OrTypeError\\\\
   \reduceconstraints(\tenv, \refinedcs) \typearrow \annotatedcs
@@ -2354,12 +2394,12 @@ tests whether the set of numbers between $\vzone$ and $\vztwo$, inclusive, conta
 integers, yielding the result in $\vb$.
 
 \subsubsection{Prose}
-The value $\vb$ is $\True$ if and only if the absolute value of $\vzone-\vztwo$ is greater than $2^{14}$.
+The value $\vb$ is $\True$ if and only if $\vztwo-\vzone$ is greater than $2^{14}$.
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{}{
-  \intervaltoolarge(\vzone, \vztwo) \typearrow \overname{|\vzone-\vztwo| > 2^{14}}{\vb}
+  \intervaltoolarge(\vzone, \vztwo) \typearrow \overname{\vztwo-\vzone > 2^{14}}{\vb}
 }
 \end{mathpar}
 
