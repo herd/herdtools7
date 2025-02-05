@@ -7,32 +7,6 @@ and the ASL Reference mandates the different types of errors
 (corresponding to different types of bugs) that implementations must detect,
 including when these errors must be detected and reported to users.
 
-\RequirementDef{ErrorDescriptors}
-Each type of error has an \emph{error code}, which uniquely identifies it,
-a description of what the error means,
-and a \emph{kind}, which dictates in which phase it is detected and reported.
-Error codes must be consistent across implementations, but each implementation
-can define its own appropriate error messages.
-
-\section{Error Kinds}
-
-\begin{description}
-  \item[Build errors]
-    Detected and reported during lexing, parsing, and building of AST.
-    Build errors are always detected and reported.
-    Their error codes are prefixed with \BuildErrorPrefix.
-  \item[Typing errors]
-    Detected and reported during typechecking.
-    Typing errors are always detected and reported, even if the part of the specification that causes them is never executed.
-    Their error codes are prefixed with \TypeErrorPrefix.
-  \item[Dynamic errors]
-    Detected and reported during execution, if and only if the part of the specification that causes them is executed.
-    Their error codes are prefixed with \DynamicErrorPrefix.
-\end{description}
-
-\hypertarget{def-staticerrorterm}{}
-Build errors and typing errors are known collectively as \emph{\staticerrorsterm}.
-
 \section{How Implementations Should Handle Errors}
 
 \RequirementDef{StaticErrorCheck} Implementations should detect and report \staticerrorsterm.
@@ -57,14 +31,42 @@ it should signal an error to the hosting environment.
 
 \RequirementDef{DynamicErrorAssert}
 An assertion failure arising from an \assertionstatementterm\ is a dynamic error
-(see \SemanticsRuleRef{SAssert}).
+(see \SemanticsRuleRef{SAssert} and error code $\DynamicAssertionFailure$).
 
 \RequirementDef{DynamicErrorUnreachable}
 Evaluation of the \unreachablestatementterm\ is a dynamic error
-(see \SemanticsRuleRef{SUnreachable}).
+(see \SemanticsRuleRef{SUnreachable} and error code $\UnreachableError$).
 
-\section{Summary}
-The following table summarises the information in this chapter.
+\section{Error Kinds}
+\RequirementDef{ErrorDescriptors}
+Each type of error has an \emph{error code}, which uniquely identifies it,
+a description of what the error means,
+and a \emph{kind}, which dictates in which phase it is detected and reported.
+Error codes must be consistent across implementations, but each implementation
+can define its own appropriate error messages.
+
+ASL includes the following error kinds:
+\begin{description}
+  \item[Build Errors]
+    Detected and reported during lexing, parsing, and building of AST.
+    Build errors are always detected and reported.
+    Their error codes, listed in \secref{BuildErrors}, are prefixed with \BuildErrorPrefix.
+
+  \item[Typing Errors]
+    Detected and reported during typechecking.
+    Typing errors are always detected and reported, even if the part of the specification that causes them is never executed.
+    Their error codes, listed in \secref{TypingErrors}, are prefixed with \TypeErrorPrefix.
+
+  \item[Dynamic Errors]
+    Detected and reported during execution, if and only if the part of the specification that causes them is executed.
+    Their error codes, listed in \secref{DynamicErrors}, are prefixed with \DynamicErrorPrefix.
+\end{description}
+
+\hypertarget{def-staticerrorterm}{}
+Build errors and typing errors are known collectively as \emph{\staticerrorsterm}.
+
+\section{Error Codes Summary}
+The following table summarises all error codes.
 
 \begin{center}
 \newcommand{\qq}{\symbol{34}} % ascii code for "
@@ -107,8 +109,7 @@ The following table summarises the information in this chapter.
 \end{tabular}
 \end{center}
 
-
-\section{Build Errors}
+\section{Build Errors\label{sec:BuildErrors}}
 \begin{description}
   \item[$\LexicalError$]
     \textit{Lexical error.}
@@ -139,7 +140,7 @@ The following table summarises the information in this chapter.
     For example, the standard library defines a non-subprogram (\ASTRuleRef{SetBuiltin}).
 \end{description}
 
-\section{Typing Errors}
+\section{Typing Errors\label{sec:TypingErrors}}
 \begin{description}
 
 \hypertarget{def-undefinedidentifier}{}
@@ -298,25 +299,25 @@ The following table summarises the information in this chapter.
   \begin{itemize}
     \item An impure expression was provided where a pure one was required \\
       (\TypingRuleRef{SAssert}).
-    \item A non-constant-time initalization expression was provided for a constant declaration (\TypingRuleRef{SDecl}.\textsc{constant}).
+    \item A non-constant-time initialization expression was provided for a constant declaration (\TypingRuleRef{SDecl}.\textsc{constant}).
     \item A \sideeffectconflictterm{} was found during an attempt to combine two sets of \sideeffectdescriptorsterm{} (\TypingRuleRef{NonConflictingUnion}).
   \end{itemize}
 
 \end{description}
 
-\section{Dynamic Errors}
+\section{Dynamic Errors\label{sec:DynamicErrors}}
 \begin{description}
 
 \hypertarget{def-unreachableerror}{}
 \item[$\UnreachableError$]
   \textit{Unreachable.}
-  An \texttt{Unreachable()} statement was evaluated
+  An \unreachablestatementterm\ statement was evaluated\\
     (see \SemanticsRuleRef{SUnreachable}).
 
 \hypertarget{def-dynamicassertionfailure}{}
 \item[$\DynamicAssertionFailure$]
   \textit{Dynamic assertion failure.}
-  An assertion (\texttt{assert}) evaluated to $\False$
+  An \assertionstatementterm\ evaluated to $\False$
     (see \SemanticsRuleRef{SAssert}).
 
 \hypertarget{def-dynamictypeassertionfailure}{}

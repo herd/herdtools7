@@ -2,9 +2,11 @@
 ASL allows specifying literal values for the following types:
 integers, Booleans, real numbers, bitvectors, and strings.
 
-Enumeration labels are also considered literal values but are syntactically
-considered as identifiers.
-As such, they are not built by the grammar, but rather by the typechecker.
+Enumeration labels are also literal values.
+However, they are syntactically indistinguishable from identifiers,
+so they cannot be input directly in concrete syntax.
+Rather, they are parsed as identifiers, and during type elaboration
+converted true enumeration label literal values.
 
 \section{Syntax}
 
