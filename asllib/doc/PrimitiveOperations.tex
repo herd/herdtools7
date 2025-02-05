@@ -187,7 +187,7 @@ as well as a unique name.
 \Nunop \derivesinline\ & \Tbnot \;|\; \Tminus \;|\; \Tnot &\\
 \Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
                       |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
-                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat \;|\; \Tcoloncolon
+                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon
 \end{flalign*}
 
 \section{Abstract Syntax}
@@ -384,12 +384,6 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \begin{mathpar}
 \inferrule[]{}{
   \buildbinop(\Nbinop(\Tpow)) \astarrow \overname{\POW}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[]{}{
-  \buildbinop(\Nbinop(\Tconcat)) \astarrow \overname{\tododefine{CONCAT}}{\vastnode}
 }
 \end{mathpar}
 

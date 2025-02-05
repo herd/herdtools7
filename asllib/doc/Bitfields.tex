@@ -75,7 +75,7 @@ defined for each bitfield.
 
 \subsection{Syntax}
 \begin{flalign*}
-\Nbitfields \derives \ & \Tlbrace \parsesep \TClist{\Nbitfield} \parsesep \Trbrace &\\
+\Nbitfields \derives \ & \Tlbrace \parsesep \TClistZero{\Nbitfield} \parsesep \Trbrace &\\
 \Nbitfield \derives \ & \Nslices \parsesep \Tidentifier &\\
                   |\ & \Nslices \parsesep \Tidentifier \parsesep \Nbitfields &\\
                   |\ & \Nslices \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &\\
@@ -102,7 +102,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule{
   \buildtclist[\buildbitfield](\vbitfields) \astarrow \vbitfieldasts
 }{
-  \buildbitfields(\Nbitfields(\Tlbrace, \namednode{\vbitfields}{\TClist{\Nbitfield}}, \Trbrace)) \astarrow
+  \buildbitfields(\Nbitfields(\Tlbrace, \namednode{\vbitfields}{\TClistZero{\Nbitfield}}, \Trbrace)) \astarrow
   \overname{\vbitfieldasts}{\vastnode}
 }
 \end{mathpar}

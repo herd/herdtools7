@@ -24,9 +24,9 @@ Subprogram declarations have no associated semantics.
 \Nrecurselimit   \derives \ & \Trecurselimit \parsesep \Nexpr &\\
 |\              & \emptysentence &\\
 \Nparamsopt \derives \ & \emptysentence &\\
-                   |\ & \Tlbrace \parsesep \Clist{\Nopttypedidentifier} \parsesep \Trbrace &\\
+                   |\ & \Tlbrace \parsesep \ClistZero{\Nopttypedidentifier} \parsesep \Trbrace &\\
 \Nopttypedidentifier \derives \ & \Tidentifier \parsesep \option{\Nasty} &\\
-\Nfuncargs          \derives \ & \Tlpar \parsesep \Clist{\Ntypedidentifier} \parsesep \Trpar &\\
+\Nfuncargs          \derives \ & \Tlpar \parsesep \ClistZero{\Ntypedidentifier} \parsesep \Trpar &\\
 \Nreturntype        \derives \ & \Tarrow \parsesep \Nty &\\
 \Nfuncbody          \derives \ & \Tbegin \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
 \Nmaybeemptystmtlist \derives \ & \emptysentence \;|\; \Nstmtlist &
@@ -275,7 +275,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule[non\_empty]{
   \buildclist[\Nopttypedidentifier](\ids) \astarrow \astversion{\ids}
 }{
-  \buildparamsopt(\overname{\Nparamsopt(\Tlbrace, \namednode{\ids}{\Clist{\Nopttypedidentifier}}, \Trbrace)}{\vparsednode}) \astarrow
+  \buildparamsopt(\overname{\Nparamsopt(\Tlbrace, \namednode{\ids}{\ClistZero{\Nopttypedidentifier}}, \Trbrace)}{\vparsednode}) \astarrow
   \overname{\astversion{\ids}}{\vastnode}
 }
 \end{mathpar}
@@ -293,7 +293,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule{
   \buildclist[\Ntypedidentifier](\ids) \astarrow \astversion{\ids}
 }{
-  \buildfuncargs(\overname{\Nfuncargs(\Tlpar, \namednode{\ids}{\Clist{\Ntypedidentifier}}, \Trpar)}{\vparsednode}) \astarrow
+  \buildfuncargs(\overname{\Nfuncargs(\Tlpar, \namednode{\ids}{\ClistZero{\Ntypedidentifier}}, \Trpar)}{\vparsednode}) \astarrow
   \overname{\astversion{\ids}}{\vastnode}
 }
 \end{mathpar}

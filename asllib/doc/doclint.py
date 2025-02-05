@@ -74,7 +74,7 @@ def check_tododefines():
     Checks that there are no more than the expected number of \tododefine
     instances.
     """
-    MAX_TODODEFINE_INSTANCES = 8
+    MAX_TODODEFINE_INSTANCES = 7
     num_todo_define = 0
     latex_files = fnmatch.filter(os.listdir('.'), '*.tex')
     for latex_source in latex_files:

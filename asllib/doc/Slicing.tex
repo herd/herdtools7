@@ -17,7 +17,7 @@ The relation $\evalslices$ (see \SemanticsRuleRef{Slices}) evaluates a list of s
 
 \subsection{Syntax}
 \begin{flalign*}
-\Nslices \derives \ & \Tlbracket \parsesep \Clist{\Nslice} \parsesep \Trbracket &
+\Nslices \derives \ & \Tlbracket \parsesep \ClistZero{\Nslice} \parsesep \Trbracket &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -33,7 +33,7 @@ transforms a parse node for a list of slices $\vparsednode$ into an AST node for
 \inferrule{
   \buildclist[\buildslice](\vslices) \astarrow \vsliceasts
 }{
-  \buildslices(\Nslices(\Tlbracket, \namednode{\vslices}{\NClist{\Nslice}}, \Trbracket)) \astarrow
+  \buildslices(\Nslices(\Tlbracket, \namednode{\vslices}{\ClistOne{\Nslice}}, \Trbracket)) \astarrow
   \overname{\vsliceasts}{\vastnode}
 }
 \end{mathpar}

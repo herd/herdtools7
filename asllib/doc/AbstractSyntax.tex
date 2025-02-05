@@ -766,7 +766,7 @@ to each of them --- $\vsymasts$.
   \buildclist[b](\vsymsone) \astarrow \vsymastsone
 }{
   \buildclist[b](\overname{
-    \Clist{N}(\namednode{\vv}{E}, \Tcomma, \namednode{\vsymsone}{\NClist{N}})
+    \ClistZero{N}(\namednode{\vv}{E}, \Tcomma, \namednode{\vsymsone}{\ClistOne{N}})
     }{\vsyms}) \astarrow \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
 }
 \end{mathpar}
@@ -812,7 +812,7 @@ to each of them --- $\vsymasts$.
   b(\vv) \astarrow \astversion{\vv}\\
   \buildtclist[b](\vsymsone) \astarrow \vsymastsone
 }{
-  \buildtclist[b](\overname{\namednode{\vv}{E}, \Tcomma, \namednode{\vsymsone}{\NTClist{N}}}{\vsyms}) \astarrow \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
+  \buildtclist[b](\overname{\namednode{\vv}{E}, \Tcomma, \namednode{\vsymsone}{\TClistOne{N}}}{\vsyms}) \astarrow \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
 }
 \end{mathpar}
 

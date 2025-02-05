@@ -84,7 +84,7 @@
       call, cast,
       class, dict,
       endcase, endcatch, endclass,
-      ,endevent, endfor, endfunc, endgetter,
+      endevent, endfor, endfunc, endgetter,
       endif, endmodule, endnamespace, endpackage,
       endproperty, endrule, endsetter, endtemplate,
       endtry, endwhile,
@@ -373,7 +373,6 @@
 \newcommand\Tcolon[0]{\verbatimterminal{COLON}{:}}
 \newcommand\Tcoloncolon[0]{\verbatimterminal{COLON\_COLON}{::}}
 \newcommand\Tcomma[0]{\verbatimterminal{COMMA}{,}}
-\newcommand\Tconcat[0]{\verbatimterminal{CONCAT}{++}}
 \newcommand\Tconfig[0]{\verbatimterminal{CONFIG}{config}}
 \newcommand\Tconstant[0]{\verbatimterminal{CONSTANT}{constant}}
 \newcommand\Tdebug[0]{\verbatimterminal{DEBUG}{debug}}
@@ -536,14 +535,14 @@
 \newcommand\parsesep[0]{\ } % separates symbols in a single production
 
 \newcommand\maybeemptylist[1]{\hyperlink{def-maybeemptylist}{\textsf{list}^{*}}(#1)} % This stands for list(x)
-\newcommand\nonemptylist[1]{\hyperlink{def-nonemptylist}{\textsf{list}^{+}}(#1)} % This stands for non_empty_list(x)
-\newcommand\NClist[1]{\hyperlink{def-nclist}{\textsf{clist}^{+}}(#1)}
-\newcommand\Plist[1]{\hyperlink{def-plist}{\textsf{plist}^{*}}(#1)}
+\newcommand\ListOne[1]{\hyperlink{def-listone}{\textsf{list1}}(#1)} % This stands for non_empty_list(x)
+\newcommand\ClistOne[1]{\hyperlink{def-clistone}{\textsf{clist1}}(#1)}
+\newcommand\PlistZero[1]{\hyperlink{def-plistzero}{\textsf{plist0}}(#1)}
 \newcommand\Plisttwo[1]{\hyperlink{def-plisttwo}{\textsf{plist2}}(#1)}
-\newcommand\Clist[1]{\hyperlink{def-clist}{\textsf{clist}^{*}}(#1)}
+\newcommand\ClistZero[1]{\hyperlink{def-clistzero}{\textsf{clist0}}(#1)}
 \newcommand\Clisttwo[1]{\hyperlink{def-clisttwo}{\textsf{clist2}}(#1)}
-\newcommand\NTClist[1]{\hyperlink{def-ntclist}{\textsf{ntclist}}(#1)}
-\newcommand\TClist[1]{\hyperlink{def-tclist}{\textsf{tclist}^{*}}(#1)}
+\newcommand\TClistOne[1]{\hyperlink{def-tclistone}{\textsf{tclist1}}(#1)}
+\newcommand\TClistZero[1]{\hyperlink{def-tclistzero}{\textsf{tclist0}}(#1)}
 \newcommand\option[1]{\hyperlink{def-option}{\textsf{option}}(#1)}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
