@@ -77,10 +77,10 @@ let prec =
   function
   | BOR | BAND | IMPL | BEQ -> 1
   | EQ_OP | NEQ -> 2
-  | PLUS | MINUS | OR | EOR | AND -> 3
+  | PLUS | MINUS | OR | EOR | AND | BV_CONCAT -> 3
   | MUL | DIV | DIVRM | RDIV | MOD | SHL | SHR -> 4
   | POW -> 5
-  | _ -> 0 (* Non assoc *)
+  | GT | GEQ | LT | LEQ -> 0 (* Non assoc *)
 
 let check_not_same_prec loc op op' =
   if prec op = prec op' then Error.(fatal_from loc CannotParse)
@@ -146,43 +146,41 @@ let annotated(x) == desc = x; { { desc; pos_start=$symbolstartpos; pos_end=$endp
 (* List handling *)
 
 (* A non-empty comma-separated list. *)
-let nclist(x) :=
+let clist1(x) :=
   | x=x; { [ x ] }
-  | h=x; COMMA; t=nclist(x); { h :: t }
+  | h=x; COMMA; t=clist1(x); { h :: t }
 
 (* A comma separated list. *)
-let clist(x) := { [] } | nclist(x)
+let clist0(x) := { [] } | clist1(x)
 
 (* A comma separated list with at least 2 elements. *)
-let clist2(x) := ~=x; COMMA; li=nclist(x); { x :: li }
+let clist2(x) := ~=x; COMMA; li=clist1(x); { x :: li }
 
 (* A comma-separated trailing list. *)
-let tclist(x) := { [] } | ntclist(x)
+let tclist0(x) := { [] } | tclist1(x)
 
 (* A comma-separated non-empty trailing list. *)
-let ntclist(x) :=
+let tclist1(x) :=
   | x=x; ioption(COMMA); { [ x ] }
-  | h=x; COMMA; t=ntclist(x); { h :: t }
+  | h=x; COMMA; t=tclist1(x); { h :: t }
 
 (* A parenthesised comma-separated list *)
-let plist(x) := pared(clist(x))
+let plist0(x) == pared(clist0(x))
 
 (* A parenthesised comma-separated list with at least 2 elements. *)
-let plist2(x) := pared(
-  ~=x; COMMA; li=nclist(x); { x :: li }
-)
+let plist2(x) == pared(clist2(x))
 
 (* Produces a list of [x]s, optionally followed by a single [y] that would go
    in the tail of the list *)
-let nlist_opt_terminated(x, y) :=
+let list1_opt_terminated(x, y) :=
   | ~=x; { [ x ] }
   | ~=x; ~=y; { [ x; y ] }
-  | ~=x; l=nlist_opt_terminated(x, y); { x :: l }
+  | ~=x; l=list1_opt_terminated(x, y); { x :: l }
 
 (* A parametarised list with at least 1 element *)
-let nlist(x) :=
+let list1(x) :=
   | ~=x; { [ x ] }
-  | ~=x; l=nlist(x); { x :: l }
+  | ~=x; l=list1(x); { x :: l }
 
 let end_semicolon ==
   | END; SEMI_COLON; <>
@@ -210,8 +208,6 @@ let unop ==
   | MINUS ; { NEG }
   | NOT   ; { NOT }
 
-let unimplemented_binop(x) == x ; { PLUS }
-
 let binop ==
   | AND         ; { AND    }
   | BAND        ; { BAND   }
@@ -237,9 +233,6 @@ let binop ==
   | SHR         ; { SHR    }
   | POW         ; { POW    }
   | COLON_COLON ; { BV_CONCAT }
-  | unimplemented_binop(
-    | CONCAT; <>
-  )
 
 (* ------------------------------------------------------------------------
 
@@ -266,7 +259,7 @@ let expr :=
     | e=expr; ~=slices;                                       < E_Slice              >
     | e1=expr; LLBRACKET; e2=expr; RRBRACKET;                 < E_GetArray           >
     | e=expr; DOT; x=IDENTIFIER;                              < E_GetField           >
-    | e=expr; DOT; fs=bracketed(nclist(IDENTIFIER));          < E_GetFields          >
+    | e=expr; DOT; fs=bracketed(clist1(IDENTIFIER));          < E_GetFields          >
 
     | ~=expr; AS; ~=ty;                                       < E_ATC                >
     | ~=expr; AS; ~=implicit_t_int;                           < E_ATC                >
@@ -277,10 +270,10 @@ let expr :=
     | ARBITRARY; COLON; ~=ty;                                 < E_Arbitrary        >
     | e=pared(expr);                                          { E_Tuple [ e ]        }
 
-    (* For E_Record we use an inlined clist to avoid a shift/reduce conflict with elided_param_call's empty case *)
+    (* For E_Record we use an inlined clist0 to avoid a shift/reduce conflict with elided_param_call's empty case *)
     | t=annotated(IDENTIFIER); LBRACE; RBRACE;
         { E_Record (add_pos_from t (T_Named t.desc), []) }
-    | t=annotated(IDENTIFIER); fields=braced(nclist(field_assign));
+    | t=annotated(IDENTIFIER); fields=braced(clist1(field_assign));
         { E_Record (add_pos_from t (T_Named t.desc), fields) }
     (* Excluded from expr_pattern *)
     | ~=plist2(expr);                                             < E_Tuple              >
@@ -296,7 +289,7 @@ let expr :=
 
 let constraint_kind_opt := constraint_kind | { UnConstrained }
 let constraint_kind :=
-  | ~=braced(nclist(int_constraint)); < WellConstrained >
+  | ~=braced(clist1(int_constraint)); < WellConstrained >
   | braced(MINUS); { PendingConstrained }
 
 let int_constraint :=
@@ -317,7 +310,7 @@ let expr_pattern :=
     | e=expr_pattern; ~=slices;                                       < E_Slice              >
     | e1=expr_pattern; LLBRACKET; e2=expr; RRBRACKET;                 < E_GetArray           >
     | e=expr_pattern; DOT; x=IDENTIFIER;                              < E_GetField           >
-    | e=expr_pattern; DOT; fs=bracketed(nclist(IDENTIFIER));          < E_GetFields          >
+    | e=expr_pattern; DOT; fs=bracketed(clist1(IDENTIFIER));          < E_GetFields          >
 
     | ~=expr_pattern; AS; ~=ty;                                       < E_ATC                >
     | ~=expr_pattern; AS; ~=implicit_t_int;                           < E_ATC                >
@@ -329,15 +322,15 @@ let expr_pattern :=
     | ARBITRARY; COLON; ~=ty;                                         < E_Arbitrary        >
     | e=pared(expr_pattern);                                          { E_Tuple [ e ]        }
 
-    (* For E_Record we use an inlined clist to avoid a shift/reduce conflict with elided_param_call *)
+    (* For E_Record we use an inlined clist0 to avoid a shift/reduce conflict with elided_param_call *)
     | t=annotated(IDENTIFIER); LBRACE; RBRACE;
         { E_Record (add_pos_from t (T_Named t.desc), []) }
-    | t=annotated(IDENTIFIER); fields=braced(nclist(field_assign));
+    | t=annotated(IDENTIFIER); fields=braced(clist1(field_assign));
         { E_Record (add_pos_from t (T_Named t.desc), fields) }
   )
 
 let pattern_mask == annotated(~=MASK_LIT; < Pattern_Mask >)
-let pattern_list := annotated(~=nclist(pattern); < Pattern_Any >)
+let pattern_list := annotated(~=clist1(pattern); < Pattern_Any >)
 
 let pattern :=
   annotated (
@@ -357,11 +350,11 @@ let pattern_set :=
       BNOT; ~=braced(pattern_list); < Pattern_Not >
     )
 
-let fields := braced(tclist(typed_identifier))
+let fields := braced(tclist0(typed_identifier))
 let fields_opt := { [] } | fields
 
 (* Slices *)
-let slices := bracketed(nclist(slice))
+let slices := bracketed(clist1(slice))
 let slice :=
   | ~=expr;                       < Slice_Single  >
   | e1=expr; COLON; e2=expr;      < Slice_Range   >
@@ -371,7 +364,7 @@ let slice :=
 
 (* Bitfields *)
 let bitfields_opt := { [] } | bitfields
-let bitfields := braced(tclist(bitfield))
+let bitfields := braced(tclist0(bitfield))
 let bitfield :=
   | s=slices ; x=IDENTIFIER ;                 { BitField_Simple (x, s)     }
   | s=slices ; x=IDENTIFIER ; bf=bitfields ;  { BitField_Nested (x, s, bf) }
@@ -386,14 +379,14 @@ let ty :=
     | STRING;                                           { T_String    }
     | BIT;                                              { t_bit       }
     | BITS; ~=pared(expr); ~=bitfields_opt;             < T_Bits      >
-    | l=plist(ty);                                      < T_Tuple     >
+    | l=plist0(ty);                                      < T_Tuple     >
     | name=IDENTIFIER;                                  < T_Named     >
     | ARRAY; LLBRACKET; e=expr; RRBRACKET; OF; t=ty;    { T_Array (ArrayLength_Expr e, t) }
   )
 
 let ty_decl := ty |
   annotated (
-    | ENUMERATION; l=braced(ntclist(IDENTIFIER));       < T_Enum      >
+    | ENUMERATION; l=braced(tclist1(IDENTIFIER));       < T_Enum      >
     | RECORD; l=fields_opt;                             < T_Record    >
     | EXCEPTION; l=fields_opt;                          < T_Exception >
   )
@@ -442,7 +435,7 @@ let discard_or_field :=
 
 let lexpr :=
   | ~=sliced_basic_lexpr; < desugar_lhs_access >
-  | ~=annotated(pared(clist2(discard_or_sliced_basic_lexpr))); < desugar_lhs_tuple >
+  | ~=annotated(plist2(discard_or_sliced_basic_lexpr)); < desugar_lhs_tuple >
   | annotated(
     | MINUS; { LE_Discard }
     | x=annotated(IDENTIFIER); DOT; flds=bracketed(clist2(IDENTIFIER));
@@ -491,11 +484,11 @@ let case_alt :=
       { { pattern; where; stmt } }
   )
 
-let case_otherwise :=
+let case_otherwise ==
     OTHERWISE; ARROW; otherwise_stmt=stmt_list;
       { otherwise_stmt }
 
-let case_alt_list := nlist(case_alt)
+let case_alt_list == list1(case_alt)
 
 let otherwise == OTHERWISE; ARROW; stmt_list
 let otherwise_opt := ioption(otherwise)
@@ -516,9 +509,7 @@ let stmt :=
       | FOR; index_name=IDENTIFIER; EQ; start_e=expr; dir=direction;
           end_e=expr; limit=loop_limit; DO; body=stmt_list;
           { S_For { index_name; start_e; end_e; dir; body; limit } }
-      | TRY; s=stmt_list; CATCH; c=nlist(catcher); o=otherwise_opt; < S_Try >
-      | ARROBASE_LOOPLIMIT; looplimit=pared(expr); WHILE; cond=expr; DO; body=stmt_list;
-          { S_While (cond, Some looplimit, body) }
+      | TRY; s=stmt_list; CATCH; c=list1(catcher); o=otherwise_opt; < S_Try >
     )
     | terminated_by(SEMI_COLON,
       | PASS; pass
@@ -539,20 +530,18 @@ let stmt :=
       | VAR; ~=clist2(IDENTIFIER); ~=as_ty;                  < make_ldi_vars >
       | VAR; lhs=decl_item; ty=as_ty; EQ; call=annotated(elided_param_call);
         { desugar_elided_parameter LDK_Var lhs ty call}
-      | PRINTLN; args=plist(expr);                           { S_Print { args; newline = true; debug = false } }
-      | PRINT; args=plist(expr);                             { S_Print { args; newline = false; debug = false } }
-      | DEBUG; args=plist(expr);                             { S_Print { args; newline = true; debug = true } }
+      | PRINTLN; args=plist0(expr);                           { S_Print { args; newline = true; debug = false } }
+      | PRINT; args=plist0(expr);                             { S_Print { args; newline = false; debug = false } }
+      | DEBUG; args=plist0(expr);                             { S_Print { args; newline = true; debug = true } }
       | UNREACHABLE; LPAR; RPAR;                             { S_Unreachable }
       | REPEAT; ~=stmt_list; UNTIL; ~=expr; ~=loop_limit;    < S_Repeat >
-      | ARROBASE_LOOPLIMIT; looplimit=pared(expr); REPEAT; body=stmt_list; UNTIL; cond=expr;
-          { S_Repeat (body, cond, Some looplimit) }
       | THROW; e=expr;                                       { S_Throw (Some (e, None)) }
       | THROW;                                               { S_Throw None             }
-      | PRAGMA; x=IDENTIFIER; e=clist(expr);                 < S_Pragma >
+      | PRAGMA; x=IDENTIFIER; e=clist0(expr);                 < S_Pragma >
     )
   )
 
-let stmt_list := ~ = nlist(stmt) ; <stmt_from_list>
+let stmt_list := ~ = list1(stmt) ; <stmt_from_list>
 
 let s_else :=
   annotated (
@@ -574,22 +563,22 @@ let subtype_opt := ioption(subtype)
 
 let opt_typed_identifier := pair(IDENTIFIER, ty_opt)
 let return_type := ARROW; ty
-let params_opt := { [] } | braced(nclist(opt_typed_identifier))
+let params_opt := { [] } | braced(clist1(opt_typed_identifier))
 (* Uses a dummy call_type, overriden when used above *)
-let opt_call_args == { [] } | plist(expr)
+let opt_call_args == { [] } | plist0(expr)
 let call :=
-  | name=IDENTIFIER; args=plist(expr);
+  | name=IDENTIFIER; args=plist0(expr);
     { { name; params=[]; args; call_type = ST_Function } }
-  | name=IDENTIFIER; params=braced(nclist(expr)); args=opt_call_args;
+  | name=IDENTIFIER; params=braced(clist1(expr)); args=opt_call_args;
     { { name; params; args; call_type = ST_Function } }
 let elided_param_call :=
-  | name=IDENTIFIER; LBRACE; RBRACE; args=plist(expr);
+  | name=IDENTIFIER; LBRACE; RBRACE; args=plist0(expr);
     { { name; params=[]; args; call_type = ST_Function } }
-  | name=IDENTIFIER; LBRACE; COMMA; params=nclist(expr); RBRACE; args=opt_call_args;
+  | name=IDENTIFIER; LBRACE; COMMA; params=clist1(expr); RBRACE; args=opt_call_args;
     { { name; params; args; call_type = ST_Function } }
-let func_args := plist(typed_identifier)
+let func_args := plist0(typed_identifier)
 let maybe_empty_stmt_list := stmt_list | annotated({ S_Pass })
-let func_body := delimited(BEGIN, maybe_empty_stmt_list, end_semicolon)
+let func_body == delimited(BEGIN, maybe_empty_stmt_list, end_semicolon)
 let recurse_limit := ioption(RECURSELIMIT; expr)
 let ignored_or_identifier :=
   | MINUS; { global_ignored () }
@@ -681,7 +670,7 @@ let decl :=
         { D_GlobalStorage { keyword=GDK_Var; name; ty; initial_value=None}}
       (* End *)
       (* Begin global_pragma *)
-      | PRAGMA; x=IDENTIFIER; e=clist(expr); < D_Pragma >
+      | PRAGMA; x=IDENTIFIER; e=clist0(expr); < D_Pragma >
       (* End *)
     )
   )

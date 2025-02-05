@@ -374,7 +374,7 @@ begin
   if IsZero(x[y-1:0]) then
     return x;
   else
-    return x[N-1:y]+1 :: Zeros{y};
+    return (x[N-1:y]+1) :: Zeros{y};
   end;
 end;
 
