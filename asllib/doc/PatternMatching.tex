@@ -78,14 +78,14 @@ $\evalexprsef\empty$.
 
 \subsection{Typing}
 \TypingRuleDef{PAll}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vp$ is the pattern matching everything, that is, $\PatternAll$;
   \item $\newp$ is $\vp$;
   \item define $\vses$ to be the empty set.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}
 {
@@ -101,7 +101,7 @@ In \listingref{semantics-pall}, \texttt{match\_me} evaluates to \True,
 since \texttt{-} matches any value and \texttt{42} in particular.
 \ASLListing{Matching any value}{semantics-pall}{\semanticstests/SemanticsRule.PAll.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vp$ is the pattern which matches everything, $\PatternAll$, and therefore
@@ -109,7 +109,7 @@ All of the following apply:
   \item $\vb$ is the native Boolean value \True;
   \item $\newg$ is the empty graph.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}
 {
@@ -139,7 +139,7 @@ All of the following apply:
 
 \subsection{Typing}
 \TypingRuleDef{PSingle}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vp$ is the pattern that matches the expression $\ve$, that is, $\PatternSingle(\ve)$;
@@ -178,7 +178,7 @@ All of the following apply:
   \end{itemize}
   \item $\newp$ is the pattern that matches the expression $\vep$, that is, $\PatternSingle(\vep)$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[t\_bool, t\_real, t\_int, t\_string]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
@@ -250,7 +250,7 @@ whereas \\
 \texttt{match\_false} evaluates to \False, since \texttt{42} does no match \verb|{3}|.
 \ASLListing{Matching against a single value}{semantics-psingle}{\semanticstests/SemanticsRule.PSingle.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vp$ is the condition corresponding to being equal to the
@@ -260,7 +260,7 @@ All of the following apply:
   \item $\vb$ is the Boolean value corresponding to whether $\vv$
     is equal to $\vvone$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \veone} \evalarrow \Normal(\vvone, \newg) \OrDynError\\\\
@@ -296,7 +296,7 @@ All of the following apply:
 
 \subsection{Typing}
 \TypingRuleDef{PRange}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vp$ is the pattern which matches anything within the range given by
@@ -313,7 +313,7 @@ All of the following apply:
         $\veone$, $\vetwo$ and the type $\vt$ must be either of integer type or of real type.
   \item $\newp$ is a range pattern with bounds $\veonep$ and $\vetwop$, that is, $\PatternRange(\veonep, \vetwop)$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotatesymbolicallyevaluableexpr(\tenv, \veone) \typearrow (\vteone, \veonep, \vsesone) \OrTypeError\\\\
@@ -345,7 +345,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{1} is outside t
 range given by \texttt{3..42}.
 \ASLListing{Matching against a range of values}{semantics-prange}{\semanticstests/SemanticsRule.PRange.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vp$ is the condition corresponding to being greater than or equal
@@ -361,7 +361,7 @@ All of the following apply:
   $\vbtwo$;
   \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \veone} \evalarrow \Normal(\vvone, \vgone) \OrDynError\\\\
@@ -397,7 +397,7 @@ All of the following apply:
 
 \subsection{Typing}
 \TypingRuleDef{PLeq}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
 \item $\vp$ is the pattern which matches anything less than or equal to an expression $\ve$,
@@ -412,7 +412,7 @@ that is, $\PatternLeq(\ve)$;
 which short-circuits the entire rule;
 \item $\newp$ is the pattern which matches anything less than or equal to $\vep$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
@@ -440,7 +440,7 @@ In \listingref{semantics-pleq},
 whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less than or equal to \texttt{3}.
 \ASLListing{Matching against an upper bound value}{semantics-pleq}{\semanticstests/SemanticsRule.PLeq.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vp$ is the condition corresponding to being less than or equal
@@ -450,7 +450,7 @@ All of the following apply:
   \item $\vb$ is the Boolean value corresponding to whether $\vv$
     is less than or equal to $\vvone$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \ve} \evalarrow \Normal(\vvone, \newg) \OrDynError\\\\
@@ -482,7 +482,7 @@ All of the following apply:
 
 \subsection{Typing}
 \TypingRuleDef{PGeq}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
 \item $\vp$ is the pattern which matches anything greater than or equal to an expression $\ve$,
@@ -497,7 +497,7 @@ All of the following apply:
       which short-circuits the entire rule;
 \item $\newp$ is the pattern which matches anything greater than or equal to $\vep$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
@@ -525,7 +525,7 @@ In \listingref{semantics-pgeq},
 whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not greater or equal to \texttt{42}.
 \ASLListing{Matching against a lower bound}{semantics-pgeq}{\semanticstests/SemanticsRule.PGeq.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vp$ is the condition corresponding to being greater than or equal
@@ -535,7 +535,7 @@ All of the following apply:
   \item $\vb$ is the Boolean value corresponding to whether $\vv$
     is greater than or equal to $\vvone$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \ve} \evalarrow \Normal(\vvone, \newg) \OrDynError\\\\
@@ -567,7 +567,7 @@ All of the following apply:
 
 \subsection{Typing}
 \TypingRuleDef{PMask}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
   \begin{itemize}
   \item $\vp$ is the pattern which matches a mask $\vm$, that is, $\PatternMask(\vm)$;
@@ -578,7 +578,7 @@ All of the following apply:
   \item $\newp$ is $\vp$;
   \item define $\vses$ as the empty set.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \checkstructurelabel(\tenv, \vt, \TBits) \typearrow \True \OrTypeError\\\\
@@ -600,7 +600,7 @@ whereas \texttt{match\_false} evaluates to \False, since
 \texttt{101010} does not match the bitmask \texttt{0x1010}
 \ASLListing{Matching against a bitmask}{semantics-pmask}{\semanticstests/SemanticsRule.PMask.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vp$ is a mask pattern, $\PatternMask(\vm)$,
@@ -610,7 +610,7 @@ All of the following apply:
   where the bit $\vu_i$ is checked for matching the mask character $\vm_i$;
   \item $\newg$ is the empty graph.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \newcommand\maskmatch[0]{\text{mask\_match}}
 The helper function $\maskmatch : \{0, 1, \vx\} \times \{0,1\} \rightarrow \Bool$,
 checks whether a bit value (second operand) matches a mask value (first operand),
@@ -661,7 +661,7 @@ is defined by the following table:
 
 \subsection{Typing}
 \TypingRuleDef{PTuple}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
   \begin{itemize}
   \item $\vp$ is the pattern which matches a tuple $\vli$, that is, $\PatternTuple(\vli)$;
@@ -675,7 +675,7 @@ All of the following apply:
   \item $\newp$ is the pattern which matches the tuple $\newli$, that is, $\PatternTuple(\newli)$;
   \item define $\vses$ as the union of all $\vxs_i$, for each \Proselistrange{$i$}{$\vli$}.
   \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
@@ -703,7 +703,7 @@ whereas \\
 the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patterns \texttt{(>= 42, 'xx101010')}.
 \ASLListing{Matching against a tuple of patterns}{semantics-ptuple}{\semanticstests/SemanticsRule.PTuple.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vp$ gives a list of patterns $\vps$ of length $k$, $\PatternTuple(\vps)$;
@@ -714,7 +714,7 @@ All of the following apply:
   \item $\vbs$ is the list of all $\vb_i$ for $1 \leq i \leq k$;
   \item $\vb$ is the conjunction of the Boolean values of $\vbs$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \vps \eqname \vp_{1..k}\\
@@ -791,7 +791,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \subsection{Typing}
 \TypingRuleDef{PAny}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
 \item $\vp$ is the pattern which matches anything in a list $\vli$, that is, $\PatternAny(\vli)$;
@@ -803,7 +803,7 @@ All of the following apply:
       \symbolicallyevaluable. See, for example, \TypingRuleRef{PSingle}.)
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \vl\in\vli: \annotatepattern(\tenv, \vt, \vl) \typearrow (\newl_\vl, \vxs_\vl) \OrTypeError\\\\
@@ -824,7 +824,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does not ma
 any pattern in \verb|{3, 4}|.
 \ASLListing{Matching against any pattern in a list of patterns}{semantics-pany}{\semanticstests/SemanticsRule.PAny.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vp$ is a list of patterns, $\PatternAny(\vps)$;
@@ -833,7 +833,7 @@ All of the following apply:
   \item $\vb$ is the native Boolean which is the disjunction of $\vb_i$, for $i=1..k$;
   \item $\newg$ is the parallel composition of all execution graphs $\vg_i$, for $i=1..k$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \vps \eqname \vp_{1..k}\\
@@ -862,14 +862,14 @@ The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
 
 \subsection{Typing}
 \TypingRuleDef{PNot}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vp$ is the pattern which matches the negation of a pattern $\vq$, that is, $\PatternNot(\vq)$;
   \item annotating $\vq$ in $\tenv$ yields $(\newq, \vses)$\ProseOrTypeError;
   \item $\newp$ is pattern which matches the negation of $\newq$, that is, $\PatternNot(\newq)$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotatepattern(\tenv, \vq) \typearrow (\newq, \vses) \OrTypeError
@@ -887,7 +887,7 @@ In \listingref{semantics-pnot},
 whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does match the pattern \verb|{42}|.
 \ASLListing{Matching against a negated pattern}{semantics-pnot}{\semanticstests/SemanticsRule.PNot.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vp$ is a negation pattern, $\PatternNot(\vpone)$;
@@ -895,7 +895,7 @@ All of the following apply:
   $\Normal(\vbone, \newg)$\ProseOrError;
   \item $\vb$ is the Boolean negation of $\vbone$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \vpone} \evalarrow \Normal(\vbone, \newg) \OrDynError\\\\

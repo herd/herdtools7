@@ -420,7 +420,7 @@ for a given unary operator:
 \right\}
 \]
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{error}):
@@ -457,7 +457,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[error]{
   (\op, \vl) \not\in \unopsignatures
@@ -561,7 +561,7 @@ argument types for a given binary operator:
 \right\}
 \]
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{error}):
@@ -918,7 +918,7 @@ One of the following applies:
 
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 
 \begin{mathpar}
 \inferrule[error]{
@@ -1308,7 +1308,7 @@ The function
 \]
 evaluates a unary operator $\op$ over a \nativevalue\  $\vv$ and returns the \nativevalue\  $\vw$ or an error.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{ok}):
@@ -1332,7 +1332,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[ok]{
   \unopliterals(\op, l) \typearrow l' \\
@@ -1368,7 +1368,7 @@ The function
 evaluates a binary operator $\op$ over a pair of \nativevalues\  --- $\vvone$ and $\vvtwo$ --- and returns the
 \nativevalue\  $\vw$ or an error.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{ok}):
@@ -1394,7 +1394,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[ok]{
   \binopliterals(\op, l_1, l_2) \typearrow l' \\

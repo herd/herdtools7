@@ -211,7 +211,7 @@ The function
 yielding an expression $\newe$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{normalizable})
@@ -227,7 +227,7 @@ One of the following applies:
     \item define $\newe$ as $\ve$.
   \end{itemize}
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[normalizable]{
   \toir(\tenv, \ve) \typearrow \vpone \OrTypeError\\\\
@@ -257,7 +257,7 @@ The function
 \]
 \symbolicallysimplifies\ an integer constraint $\vc$, yielding the integer constraint $\newc$
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{exact}):
@@ -278,7 +278,7 @@ One of the following applies:
 
 \CodeSubsection{\ReduceConstraintBegin}{\ReduceConstraintEnd}{../StaticOperations.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[exact]{
   \normalize(\tenv, \ve) \typearrow \vep
@@ -308,7 +308,7 @@ The function
 \]
 \symbolicallysimplifies\ a list of integer constraints $\cs$, yielding a list of integer constraints $\newcs$
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item applying $\reduceconstraint$ to every constraint $\cs[\vi]$ in $\tenv$ for every $\vi$ in \\
@@ -318,7 +318,7 @@ All of the following apply:
 
 \CodeSubsection{\ReduceConstraintsBegin}{\ReduceConstraintsEnd}{../StaticOperations.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \vi\in\listrange(\cs): \reduceconstraint(\tenv, \cs[\vi]) \typearrow \vc_\vi\\
@@ -339,7 +339,7 @@ transforms a subset of ASL expressions into symbolic expressions. If an ASL expr
 by a symbolic expression (because, for example, it contains operations that are not available in symbolic expressions),
 the special value $\CannotBeTransformed$ is returned.
 
-\subsubsection{Prose}
+\ProseParagraph
 Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expression corresponds to a polynomial.
 
 One of the following applies:
@@ -547,7 +547,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[literal\_int]{}
 {
@@ -783,7 +783,7 @@ The function
 conservatively checks whether the expression $\veone$ is equivalent to the expression $\vetwo$ in environment $\tenv$.
 The result is given in $\vb$ or a type error, if one is detected.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{norm\_true}):
@@ -799,7 +799,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[norm\_true]{
   \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \True \OrTypeError
@@ -827,7 +827,7 @@ by attempting to transform both expressions to their symbolic expression form
 and, if successful, comparing the resulting normal forms for equality.
 The result is given in $\vb$ or a type error, if one is detected.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{all\_supported}):
@@ -851,7 +851,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[all\_supported]{
   \toir(\veone) \typearrow \irone \OrTypeError\\\\
@@ -885,7 +885,7 @@ specializes the equivalence test for expressions $\veone$ and $\vetwo$ in $\tenv
 for the different types of expressions.
 The result is given in $\vb$ or a type error, if one is detected.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{different\_labels}):
@@ -1064,7 +1064,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[different\_labels]{
   \astlabel(\veone) \neq \astlabel(\vetwo)
@@ -1273,7 +1273,7 @@ The function
 conservatively tests whether the type $\vtone$ is equivalent to the type $\vttwo$ in environment $\tenv$
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{different\_labels}):
@@ -1365,7 +1365,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[different\_labels]{
   \astlabel(\vtone) \neq \astlabel(\vttwo)
@@ -1474,10 +1474,10 @@ The function
 conservatively tests whether the bitwidth expression $\vwone$ is equivalent to the bitwidth expression $\vwtwo$
 in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 Testing whether the expressions $\vwone$ and $\vwtwo$ are equivalent in $\tenv$ yields $\vb$\ProseOrTypeError.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \exprequal(\tenv, \vwone, \vwtwo) \typearrow \vb \OrTypeError
@@ -1496,7 +1496,7 @@ The function
 conservatively tests whether the list of bitfields $\bfone$ is equivalent to the list of bitfields $\bftwo$
 in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{different\_lengths}):
@@ -1514,7 +1514,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[different\_lengths]{
   \equallength(\bfone, \bftwo) \typearrow \False
@@ -1583,7 +1583,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[different\_labels]{
   \astlabel(\bfone) \neq \astlabel(\bftwo)
@@ -1633,7 +1633,7 @@ The function
 conservatively tests whether the constraint list $\csone$ is equivalent to the constraint list $\cstwo$ in environment $\tenv$
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item checking whether the number of constraints in $\csone$ is the same as the number of constraints in $\cstwo$
@@ -1643,7 +1643,7 @@ All of the following apply:
   \item $\vb$ is $\True$ if and only if all $\vb_i$ are $\True$ for each index in the indices for $\csone$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \equallength(\csone, \cstwo) \typearrow \True \terminateas \False\\
@@ -1664,7 +1664,7 @@ The function
 conservatively tests whether the constraint $\vcone$ is equivalent to the constraint $\vctwo$ in environment $\tenv$
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{different\_labels}):
@@ -1690,7 +1690,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[different\_labels]{
   \astlabel(\vcone) \neq \astlabel(\vctwo)
@@ -1727,7 +1727,7 @@ The function
 conservatively tests whether the list of slices $\slicesone$ is equivalent to the list of slices $\slicestwo$
 in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
-\subsubsection{Formally}
+\FormallyParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{different\_lengths}):
@@ -1745,7 +1745,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[different\_lengths]{
   \equallength(\slicesone, \slicestwo) \typearrow \False
@@ -1772,7 +1772,7 @@ The function
 conservatively tests whether the slice $\sliceone$ is equivalent to the slice $\slicetwo$
 in environment $\tenv$ and yields the result in $\vb$. \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{different\_labels}):
@@ -1807,7 +1807,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[different\_label]{
   \astlabel(\sliceone) \neq \astlabel(\slicetwo)
@@ -1848,7 +1848,7 @@ The function
 tests whether the array lengths $\vlone$ and $\vltwo$ are equivalent and yields the result
 in $\vb$. \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{different\_labels}):
@@ -1874,7 +1874,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[different\_labels]{
   \astlabel(\vlone) \neq \astlabel(\vltwo)
@@ -1907,10 +1907,10 @@ The function
 \]
 tests whether literal $\vvone$ is $\vvtwo$ by equating them.
 
-\subsubsection{Prose}
+\ProseParagraph
 $\vb$ is $\True$ if and only if $\vvone$ is equal to $\vvtwo$.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \vb \eqdef \vvone = \vvtwo
@@ -1927,7 +1927,7 @@ The function
 \]
 transforms a polynomial $\vp$ into the corresponding expression $\ve$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -1952,7 +1952,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -1988,7 +1988,7 @@ and yields in $\vs$ $-1$ to mean that the first monomial binding should be order
 $0$ to mean that any ordering of the monomial bindings is acceptable,
 and $1$ to mean that the second monomial binding should be ordered before the first.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{equal\_monomials}):
@@ -2012,7 +2012,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \hypertarget{def-compareidentifier}{}
 The function $\compareidentifier$ compares two identifiers, which are lists of ASCII characters,
 via the lexicographic ordering.
@@ -2054,7 +2054,7 @@ transforms a list consisting of pairs of unitary monomials and rational factors 
 into an expression $\ve$, which represents the absolute value of the sum of all the monomials,
 and a sign value $\vs$, which indicates the sign of the resulting sum.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -2073,7 +2073,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -2100,7 +2100,7 @@ The function
 transforms an expression $\ve$ and rational $q$ into the expression $\newe$,
 which represents the absolute value of $\ve$ multiplied by $q$, and the sign of $q$ as $\vs$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{q\_zero}):
@@ -2134,7 +2134,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[q\_zero]{
   q = 0\\
@@ -2201,7 +2201,7 @@ $\vstwo$                      & -1                         & 0               & 1
 \end{tabular}
 \end{center}
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{zero}):
@@ -2229,7 +2229,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[zero]{
   (\vsone = 0 \lor \vstwo = 0)\\
@@ -2262,7 +2262,7 @@ The function
 transforms a list of single-variable unitary monomials $\monoms$ into an expression $\ve$.
 Intuitively, $\monoms$ represented a multiplication of the single-variable unitary monomials.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -2305,7 +2305,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -2361,7 +2361,7 @@ $
 produces an expression representing the multiplication of expressions $\veone$ and $\vetwo$,
 simplifying away the case where one of the operands is the literal one.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{one\_operand}):
@@ -2371,7 +2371,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[one\_operand]{
   (\veone = \ELiteral(\lint(1)) \lor \vetwo = \ELiteral(\lint(1)))\\
@@ -2398,7 +2398,7 @@ The function
 looks up the environment $\tenv$ for a type $\tty$ associated with an identifier
 $\vs$. The result is type error if $\vs$ is not associated with any type.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{local}):
@@ -2421,7 +2421,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[local]{
   L^\tenv.\localstoragetypes(\vs) = \tty
@@ -2456,7 +2456,7 @@ is similar to $\normalize$, except that it returns $\None$ when $\ve$ is not an
 expression that can be symbolically simplified.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{normalizable})
@@ -2474,7 +2474,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[normalizable]{
   \toir(\tenv, \ve) \typearrow \vpone \OrTypeError\\\\

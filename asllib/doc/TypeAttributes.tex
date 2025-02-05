@@ -30,7 +30,7 @@ The predicate
 \]
 tests whether the type $\tty$ is a \emph{builtin singular type}.
 
-\subsubsection{Prose}
+\ProseParagraph
 The \emph{builtin singular types} are:
 \begin{itemize}
 \item \texttt{integer};
@@ -53,7 +53,7 @@ the builtin singular type \texttt{Color} consists in two constants:
 \texttt{RED} and~\texttt{BLACK}.
 \ASLListing{An enumeration type}{typing-builtinenumerationtype}{\typingtests/TypingRule.EnumerationType.asl}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \vb \eqdef \astlabel(\tty) \in \{\TReal, \TString, \TBool, \TBits, \TEnum, \TInt\}
@@ -74,7 +74,7 @@ The predicate
 \]
 tests whether the type $\tty$ is a \emph{builtin aggregate type}.
 
-\subsubsection{Prose}
+\ProseParagraph
 The builtin aggregate types are:
 \begin{itemize}
 \item tuple;
@@ -118,7 +118,7 @@ omitted in type declarations, as is the case for \texttt{Not\_found}.
 
 \ASLListing{Exception types}{typing-builtinexceptiontype}{\typingtests/TypingRule.BuiltinExceptionType.asl}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{ \vb \eqdef \astlabel(\tty) \in \{\TTuple, \TArray, \TRecord, \TException\} }
 { \isbuiltinaggregate(\tty) \typearrow \vb }
@@ -136,7 +136,7 @@ The predicate
 \]
 tests whether the type $\tty$ is a \emph{builtin type}.
 
-\subsubsection{Prose}
+\ProseParagraph
 $\tty$ is a builtin type and one of the following applies:
 \begin{itemize}
 \item $\tty$ is singular;
@@ -152,7 +152,7 @@ the type \texttt{integer} is a builtin type but the type of \texttt{ticks} is no
 
 \CodeSubsection{\BuiltinSingularOrAggregateBegin}{\BuiltinSingularOrAggregateEnd}{../types.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
   \inferrule{
     \isbuiltinsingular(\tty) \typearrow \vbone\\
@@ -173,7 +173,7 @@ tests whether the type $\tty$ is a \emph{named type}.
 Enumeration types, record types, and exception types must be declared
 and associated with a named type.
 
-\subsubsection{Prose}
+\ProseParagraph
 A named type is a type that is declared by using the \texttt{type of} syntax.
 
 \subsubsection{Example}
@@ -185,7 +185,7 @@ In the specification
 
 \CodeSubsection{\NamedBegin}{\NamedEnd}{../types.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \vb \eqdef \astlabel(\tty) = \TNamed
@@ -205,7 +205,7 @@ The predicate
 \]
 tests whether the type $\tty$ is an \anonymoustype.
 
-\subsubsection{Prose}
+\ProseParagraph
 \Anonymoustypes\ are types that are not declared using the type syntax:
 integer types, the real type, the string type, the Boolean type,
 bitvector types, tuple types, and array types.
@@ -215,7 +215,7 @@ The tuple type \texttt{(integer, integer)} is an \anonymoustype.
 
 \CodeSubsection{\AnonymousBegin}{\AnonymousEnd}{../types.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{ \vb \eqdef \astlabel(\tty) \neq \TNamed
 }
@@ -236,7 +236,7 @@ The predicate
 \]
 tests whether the type $\tty$ is a \emph{singular type} in the static environment $\tenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 A type $\tty$ is singular if and only if all of the following apply:
 \begin{itemize}
   \item obtaining the \underlyingtype\ of $\tty$ in the environment $\tenv$ yields $\vtone$\ProseOrTypeError;
@@ -253,7 +253,7 @@ type C of B;
 
 \CodeSubsection{\SingularBegin}{\SingularEnd}{../types.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \makeanonymous(\tenv, \tty) \typearrow \vtone \OrTypeError\\\\
@@ -275,7 +275,7 @@ The predicate
 \]
 tests whether the type $\tty$ is an \emph{aggregate type} in the static environment $\tenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 A type $\tty$ is aggregate in an environment $\tenv$ if and only if all of the following apply:
 \begin{itemize}
   \item obtaining the \underlyingtype\ of $\tty$ in the environment $\tenv$ yields $\vtone$\ProseOrTypeError;
@@ -292,7 +292,7 @@ type C of B;
 
 \CodeSubsection{\AggregateBegin}{\AggregateEnd}{../types.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \makeanonymous(\tenv, \tty) \typearrow \vtone \OrTypeError\\\\
@@ -317,7 +317,7 @@ The predicate
 \]
 tests whether the type $\tty$ is a \structuredtype\ and yields the result in $\vb$.
 
-\subsubsection{Prose}
+\ProseParagraph
 The result $\vb$ is $\True$ if and only if $\tty$ is either a record type or an exception type,
 which is determined via the AST label of $\tty$.
 
@@ -329,7 +329,7 @@ type SyntaxException of exception {message: string };
 type PointRecord of Record {x : real, y: real, z: real};
 \end{verbatim}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \isstructured(\tty) \typearrow \overname{\astlabel(\tty) \in \{\TRecord, \TException\}}{\vb}
@@ -347,7 +347,7 @@ The predicate
 \]
 tests whether the type $\tty$ is a \emph{non-primitive type}.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{singular}):
@@ -391,7 +391,7 @@ The following types are non-primitive:
 
 \CodeSubsection{\NonPrimitiveBegin}{\NonPrimitiveEnd}{../types.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 The cases \textsc{tuple} and \textsc{structured} below, use the notation $\vb_\vt$ to name
 Boolean variables by using the types denoted by $\vt$ as a subscript.
 \begin{mathpar}
@@ -444,7 +444,7 @@ The predicate
 \]
 tests whether the type $\tty$ is a \emph{primitive type}.
 
-\subsubsection{Prose}
+\ProseParagraph
 A type $\tty$ is primitive if it is not non-primitive.
 
 \subsubsection{Example}
@@ -461,7 +461,7 @@ The following types are primitive:
 
 \CodeSubsection{\PrimitiveBegin}{\PrimitiveEnd}{../types.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \isnonprimitive(\tty) \typearrow \vb
@@ -487,7 +487,7 @@ If a named type is not associated with a declared type in $\tenv$, a type error 
 which ensures that \TypingRuleRef{Structure} terminates\footnote{In mathematical terms,
 this ensures that \TypingRuleRef{Structure} is a proper \emph{structural induction.}}.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
 \item All of the following apply (\textsc{named}):
@@ -549,7 +549,7 @@ the type of \texttt{z} is the anonymous non-primitive type
 
 \CodeSubsection{\StructureBegin}{\StructureEnd}{../types.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[named]{
   \declaredtype(\tenv, \vx) \typearrow \vtone \OrTypeError\\\\
@@ -616,7 +616,7 @@ The underlying type of \texttt{(integer, T2)} and \texttt{T3} is
 \texttt{T2} with its own underlying type, in contrast to the structure of
 \texttt{T2}, which is \texttt{(integer, integer)}.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{named}):
@@ -633,7 +633,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[named]{
   \tty \eqname \TNamed(\vx) \\
@@ -659,7 +659,7 @@ The function
 \]
 checks whether the type $\vt$ is a \constrainedinteger. If so, the result is $\True$, otherwise a type error is returned.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{well-constrained}):
@@ -691,7 +691,7 @@ One of the following applies:
 
 \CodeSubsection{\CheckConstrainedIntegerBegin}{\CheckConstrainedIntegerEnd}{../Typing.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[well-constrained]{}
 {

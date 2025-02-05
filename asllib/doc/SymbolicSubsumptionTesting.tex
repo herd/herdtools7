@@ -58,7 +58,7 @@ soundly approximates $\subsumes(\tenv, \vt, \vs)$ for integer types.
 We assume that both $\vt$ and $\vs$ have been successfully annotated to integer types as per \chapref{Types}
 (otherwise a typing error prevents us from applying this function).
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item applying $\symdomoftype$ to $\vt$ in $\tenv$ yields $\dt$;
@@ -66,7 +66,7 @@ All of the following apply:
   \item applying $\symdomissubset$ to $\dt$ and $\ds$ in $\tenv$ yields $\vb$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \symdomoftype(\tenv, \vt) \typearrow \dt\\
@@ -85,7 +85,7 @@ The function
 \]
 transforms a type $\vt$ in a static environment $\tenv$ into a symbolic domain $\vd$.
 It assumes its input type has an \underlyingtype{} which is an integer.
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{int\_unconstrained}):
@@ -125,7 +125,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[int\_unconstrained]{}{ \symdomoftype(\tenv, \overname{\unconstrainedinteger}{\vt}) \typearrow \overname{\Top}{\vd} }
 \end{mathpar}
@@ -177,7 +177,7 @@ The function
 \]
 assigns a symbolic domain $\vd$ to an \underline{integer typed} expression $\ve$ in the static environment $\tenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{e\_literal}):
@@ -238,7 +238,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[e\_literal]{
   \symdomofliteral(\vv) \typearrow \vd
@@ -322,7 +322,7 @@ The function
 assigns a symbolic domain $\vd$ to an \underline{integer typed} expression $\ve$ in the static environment $\tenv$.
 In contrast to $\symdomofexpr$, $\symdomofwidth$ should be applied to expressions that represent a bitvector width.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{finite\_one\_width}):
@@ -349,7 +349,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[finite\_one\_width]{
   \symdomofexpr(\tenv, \ve) \typearrow \vdone \\
@@ -389,7 +389,7 @@ The function
 applies the binary operation $\op$ to the symbolic domains $\visone$ and $\vistwo$,
 yielding the symbolic domain $\vis$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{top}):
@@ -434,7 +434,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[top]{
   \visone = \Top \lor \vistwo = \Top
@@ -484,7 +484,7 @@ The function
 \]
 transforms a finite set of integers into the equivalent list of integer constraints.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -525,7 +525,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
   \intsettointconstraints(\overname{\emptyset}{\vs}) \typearrow \overname{\emptylist}{\cs}
@@ -578,14 +578,14 @@ The function
 \]
 returns the symbolic domain $\vd$ that corresponds to the literal $\vv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vv$ is an integer literal for $n$;
   \item define $\vd$ as the symbolic finite set integer domain for the singleton set for $n$, that is, $\Finite(\{n\})$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \symdomofliteral(\overname{\lint(n)}{\vv}) \typearrow \overname{\Finite(\{n\})}{\vd}
@@ -605,7 +605,7 @@ The function
 returns the symbolic domain $\vis$ for the list of constraints $\vcs$
 in the static environment $\tenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{finite}):
@@ -624,7 +624,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[finite]{
   \vi\in\listrange(\vcs): \constrainttointset(\tenv, \vcs[\vi]) \typearrow \Finite(C_\vi)\\
@@ -661,7 +661,7 @@ transforms an integer constraint $\vc$ into a symbolic domain $\vis$.
 It produces $\Top$ when the expressions involved in the integer constraints cannot be simplified
 to integers.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{exact}):
@@ -680,7 +680,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[exact]{
   \normalizetoint(\tenv, \ve) \typearrow n \terminateas \Top
@@ -712,7 +712,7 @@ the result of the simplification is not an integer.
 We assume that $\ve$ has been annotated as it is part of the constraint for an integer type,
 and therefore applying $\normalize$ to it does not yield a type error.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{integer}):
@@ -729,7 +729,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[integer]{
   \normalize(\tenv, \ve) \typearrow \veone\\
@@ -783,7 +783,7 @@ In the following, we use the symbol $\Over$ to stand for \emph{overapproximation
 and the symbol $\Under$ to stand for \emph{underapproximation}.
 We refer such a symbol as an \approximationdirectionterm.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{right\_top}):
@@ -832,7 +832,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[right\_top]{}{
   \symdomissubset(\tenv, \visone, \overname{\Top}{\vistwo}) \typearrow
@@ -1356,7 +1356,7 @@ The function
 symbolically applies the binary operation $\op$ to the lists of integer constraints $\csone$ and $\cstwo$,
 yielding the integer constraints $\vics$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{extremities}):
@@ -1385,7 +1385,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[extremities]{
   \op \in \{\DIV, \DIVRM, \MUL, \PLUS, \MINUS, \SHR, \SHL\}\\
@@ -1439,7 +1439,7 @@ The function
 yields a list of constraints $\newcs$ for the constraints $\vcone$ and $\vctwo$, which are needed to include
 range constraints for cases where the binary operation $\op$ yields a dynamic error.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{exact\_exact}):
@@ -1481,7 +1481,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[exact\_exact]{}{
   {
@@ -1538,7 +1538,7 @@ yields a list of pairs of expressions $\extpairs$ given the binary operation $\o
 and pair of expressions $\va$ and $\vb$, which are needed to form constraints
 for cases where applying $\op$ to $\va$ and $\vb$ would lead to a dynamic error.
 
-\subsubsection{Prose}
+\ProseParagraph
 \begin{itemize}
   \item All of the following apply (\textsc{mul}):
   \begin{itemize}
@@ -1553,7 +1553,7 @@ for cases where applying $\op$ to $\va$ and $\vb$ would lead to a dynamic error.
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[mul]{}{
   \possibleextremitiesleft(\overname{\MUL}{\op}, \va, \vb) \typearrow \overname{[(\va, \va), (\va, \vb), (\vb, \va), (\vb, \vb)]}{\extpairs}
@@ -1581,7 +1581,7 @@ yields a list of pairs of expressions $\extpairs$ given the binary operation $\o
 and pair of expressions $\vc$ and $\vd$, which are needed to form constraints
 for cases where applying $\op$ to $\vc$ and $\vd$ would lead to a dynamic error.
 
-\subsubsection{Prose}
+\ProseParagraph
 \begin{itemize}
   \item All of the following apply (\textsc{plus}):
   \begin{itemize}
@@ -1614,7 +1614,7 @@ for cases where applying $\op$ to $\vc$ and $\vd$ would lead to a dynamic error.
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[plus]{}{
   \possibleextremitiesright(\overname{\PLUS}{\op}, \vc, \vd) \typearrow \overname{[(\vc, \vd)]}{\extpairs}
@@ -1665,7 +1665,7 @@ inferred for \texttt{z} is\\
 
 \ASLListing{An illegal value for }{typing-constraintmod}{\typingtests/TypingRule.ConstraintMod.bad.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item \Proseeqdef{$\veupper$}{
@@ -1676,7 +1676,7 @@ All of the following apply:
   \item \Proseeqdef{$\newc$}{a range constraint for the literal expression for $0$ for $\veminusone$}.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   {
@@ -1701,7 +1701,7 @@ The function
 yields a list of range constraints $\newcs$ that are needed to calculate the result of
 applying a $\POW$ operation to the constraints $\vcone$ and $\vctwo$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{exact\_exact}):
@@ -1754,7 +1754,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[exact\_exact]{}{
   {

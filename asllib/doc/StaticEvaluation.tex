@@ -21,7 +21,7 @@ a literal. The evaluation should be able to access global constants as well as l
 are bound in $\tenv$. Therefore, a dynamic environment is constructed from the constants defined in $\tenv$
 (see \TypingRuleRef{StaticEnvToEnv}).
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item applying $\staticenvtoenv$ to $\tenv$ yields $\env$;
@@ -47,7 +47,7 @@ All of the following apply:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[normal\_literal]{
   \staticenvtoenv(\tenv) \typearrow \env\\
@@ -86,7 +86,7 @@ The function
 \]
 transforms the constants defined in the static environment $\tenv$ into an environment $\env$.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item define the global dynamic environment $\vglobal$ as the map that bind
@@ -98,7 +98,7 @@ All of the following apply:
   \item define the environment $\env$ to have the static component $\tenv$ and the dynamic
         environment $(\vglobal, \vlocal)$;
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \vglobal \eqdef [\id \mapsto \nvliteral{\vl} \;|\; G^\tenv.\constantvalues(\id) = \vl]\\

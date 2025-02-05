@@ -159,7 +159,7 @@ in an environment $\tenv$,
 resulting in $\newfields$ --- the \typedast\ for $\fields$ and $\ewidth$
 as well as a set of \sideeffectdescriptorsterm\ $\vses$. \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item checking that the list of bitfield names in $\bitfields$ does not contain duplicates yields $\True$\ProseOrTypeError;
@@ -170,7 +170,7 @@ All of the following apply:
   \item \Prosenonconflictingunion{$\vxs_\vf$ for every field $\vf$ in $\fields$}{$\vses$}.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \names \eqdef [\field\in\fields: \bitfieldgetname(\field)]\\
@@ -193,7 +193,7 @@ The function
 \]
 returns the name of a bitfield --- $\name$, given a bitfield $\vbf$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item $\vbf$ is a simple bitfield with name $\name$, that is, $\BitFieldSimple(\name, \Ignore)$;
@@ -201,7 +201,7 @@ One of the following applies:
   \item $\vbf$ is a typed bitfield with name $\name$, that is, $\BitFieldType(\name, \Ignore, \Ignore)$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
   \inferrule[simple]{}{
     \bitfieldgetname(\overname{\BitFieldSimple(\name, \Ignore)}{\vbf}) \typearrow \name
@@ -224,7 +224,7 @@ The function
 \]
 returns the list of slices $\vslices$ associated with the bitfield $\vbf$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item $\vbf$ is a simple bitfield with list of slices $\vslices$, that is, $\BitFieldSimple(\Ignore, \vslices)$;
@@ -232,7 +232,7 @@ One of the following applies:
   \item $\vbf$ is a typed bitfield with list of slices $\vslices$, that is, $\BitFieldType(\Ignore, \vslices, \Ignore)$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[simple]{}{
   \bitfieldgetslices(\overname{\BitFieldSimple(\Ignore, \vslices)}{\vbf}) \typearrow \vslices
@@ -256,7 +256,7 @@ The function
 returns the list of bitfields $\vnested$ nested within the bitfield $\vbf$, if there are any,
 and an empty list if there are none.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{simple\_type}):
@@ -271,7 +271,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[simple\_typed]{
   \astlabel(\vbf) \neq \BitFieldNested
@@ -296,7 +296,7 @@ the bitvector type that contains $\field$,
 in an environment $\tenv$, resulting in an
 annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
 
-\subsubsection{Prose}
+\ProseParagraph
 \begin{itemize}
   \item $\vfield$ is a bitfield with list of slices $\vslices$;
   \item annotating the slices $\vslices$ yields $(\slicesone, \vsesslices)$\ProseOrTypeError;
@@ -336,7 +336,7 @@ annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[simple]{
   \annotateslices(\tenv, \vslices) \typearrow (\slicesone, \vsesslices) \OrTypeError\\\\
@@ -396,7 +396,7 @@ The function
 checks whether the slices in $\vslices$ fit within the bitvector width given by $\vwidth$ in $\tenv$,
 yielding $\True$. \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
     \item applying $\disjointslicestopositions$ to $\vslices$ in $\tenv$ checks whether the
@@ -405,7 +405,7 @@ All of the following apply:
     all of the positions fit with the width given by $\vwidth$ yields $\True$\ProseOrError.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
     \disjointslicestopositions(\tenv, \vslices) \typearrow \positions \OrTypeError\\\\
@@ -426,7 +426,7 @@ The function
 checks whether the set of positions in $\positions$ fit within the bitvector width given by $\vwidth$,
 yielding $\True$. \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
     \item define $\minpos$ as the minimal position in $\positions$;
@@ -436,7 +436,7 @@ All of the following apply:
     \item the result is $\True$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
     \minpos \eqdef \min(\positions)\\
@@ -459,7 +459,7 @@ In particular, this rule checks that the bitfield slices do not overlap and that
 (e.g., \texttt{0:1} rather than \texttt{1:0})
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -481,7 +481,7 @@ One of the following applies:
     \item $\positions$ is the union of $\positionsone$ and $\positionstwo$.
   \end{itemize}
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
   \disjointslicestopositions(\tenv, \overname{\emptylist}{\vslices}) \typearrow \overname{\emptyset}{\positions}
@@ -511,7 +511,7 @@ returns the set of integers defined by the bitfield slice $\vslice$ in $\positio
 if they can be statically evaluated, or $\None$ if they cannot be statically evaluated.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{single}):
@@ -551,7 +551,7 @@ One of the following applies:
     \item $\positions$ is the set of integers between $\vx \times \vy$ and $\vx \times (\vy + 1) - 1$, inclusive.
   \end{itemize}
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[single\_static]{
   \reducetozopt(\tenv, \ve) \typearrow \langle\vx\rangle \terminateas\None
@@ -629,7 +629,7 @@ Typechecking this example results in the type error \BadSlices.
 but have different absolute slices}
 {CommonBitfieldsAlignError}{\typingtests/TypingRule.CheckCommonBitfieldsAlign.Error.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -654,7 +654,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{
   \vbitfields = \emptylist
@@ -689,7 +689,7 @@ returns the set of \absolutebitfields\ $\vabsbitfields$ that correspond to the l
 of bitfields $\vbitfields$, whose \bitfieldscope\ and \absoluteslice\ is given by
 $\vabsoluteparent$, in the static environment $\tenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item applying $\bitfieldtoabsolute$ to each field $\vf$ in $\vbitfields$ with $\vabsoluteparent$ in $\tenv$,
@@ -697,7 +697,7 @@ All of the following apply:
   \item define $\vabsbitfields$ as the union of the sets $\va_\vf$, for every $\vf$ in $\vbitfields$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \vf\in\vbitfields: \bitfieldtoabsolute(\tenv, \vf, \vabsoluteparent) \typearrow \va_\vf\\
@@ -721,7 +721,7 @@ returns the set of \absolutebitfields\ $\vabsbitfields$ that correspond to the
 bitfields nested in $\vbf$, including itself, where the \bitfieldscope\ and \absoluteslice\
 of the bitfield containing $\vbf$ are $\vabsoluteparent$, in the static environment $\tenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item obtaining the name of the bitfield $\vbf$ via $\bitfieldgetname$ yields $\name$;
@@ -739,7 +739,7 @@ All of the following apply:
         of $\vabsbitfieldsone$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \bitfieldgetname(\vbf) \typearrow \name\\
@@ -774,7 +774,7 @@ and returns the sub-list of $\indices$ indicated by the indices in $\sliceindice
 % The reference abstracts away from the implementation,
 % which represents sequence of indices via intervals.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item view $\sliceindices$ as the list $S_{m..0}$;
@@ -782,7 +782,7 @@ All of the following apply:
   \item define $\vabsslice$ as the list $I[S_m] \ldots I[S_0]$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \selectindicesbyslices(\overname{I_{n..0}}{\indices}, \overname{S_{m..0}}{\sliceindices}) \typearrow
@@ -801,7 +801,7 @@ tests whether the \absolutebitfields\ $\vfone$ and $\vftwo$ share the same name
 and exist in the same scope. If they do, $\vb$ indicates whether their \absoluteslices\
 are equal. Otherwise, the result if $\True$.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vf$ is an \absolutebitfield\ with \absolutename\ $\vf_{1..k}$ and \absoluteslice\ $\vsliceone$;
@@ -815,7 +815,7 @@ All of the following apply:
         that $\vsliceone$ is equal to $\vslicetwo$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \nameone \eqdef \vf_k\\
@@ -838,7 +838,7 @@ The function
 \]
 returns the list of indices $\indices$ represented by the bitvector slice $\vs$ in the static environment $\tenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a \lengthslice\ for the expressions $\vi$ and $\vw$;
@@ -849,7 +849,7 @@ All of the following apply:
   \item define $\indices$ as the list of integers starting at $\vend$ and counting down to $\vstart$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
   \inferrule{
   \staticeval(\tenv, \vi) \typearrow \lint(\vz_\vi)\\

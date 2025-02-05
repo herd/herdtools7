@@ -89,7 +89,7 @@ We now define the syntax, abstract syntax, typing, and semantics for the followi
 
 \subsection{Typing}
 \TypingRuleDef{SPass}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a pass statement, that is, $\SPass$;
@@ -97,7 +97,7 @@ All of the following apply:
   \item $\newtenv$ is $\tenv$;
   \item \Proseeqdef{$\vses$}{the empty set}.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{\annotatestmt(\tenv, \SPass) \typearrow (\SPass, \tenv, \overname{\emptyset}{\vses})}
 \end{mathpar}
@@ -109,7 +109,7 @@ All of the following apply:
 In \listingref{semantics-spass}, \texttt{pass;} does nothing.:
 \ASLListing{Evaluating a \texttt{pass} statement}{semantics-spass}{\semanticstests/SemanticsRule.SPass.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
 \item $\vs$ is a \passstatementterm, $\SPass$;
@@ -117,7 +117,7 @@ All of the following apply:
 \item $\newenv$ is $\env$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \evalstmt{\env, \SPass} \evalarrow \Continuing(\overname{\emptygraph}{\newg}, \overname{\env}{\newenv})
@@ -148,7 +148,7 @@ All of the following apply:
 
 \subsection{Typing}
 \TypingRuleDef{SAssign}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is an assignment \texttt{le = re}, that is, $\SAssign(\vle, \vre)$;
@@ -158,7 +158,7 @@ All of the following apply:
   \item $\newtenv$ is $\tenv$;
   \item \Proseeqdef{$\vses$}{the union of $\vsesre$ and $\vsesle$}.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \vre} \typearrow (\vtre, \vreone, \vsesre) \OrTypeError\\\\
@@ -179,7 +179,7 @@ In \listingref{semantics-sassign},
 $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
 \ASLListing{Evaluating an assignment}{semantics-sassign}{\semanticstests/SemanticsRule.SAssign.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is an assignment statement, $\SAssign(\vle, \vre)$;
@@ -190,7 +190,7 @@ All of the following apply:
         as per \chapref{AssignableExpressions}, yields $\Normal(\newg, \newenv)$\ProseOrAbnormal.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \astlabel(\vre) \neq \ECall\\
@@ -224,7 +224,7 @@ and the value $\nvint(2)$ to the mutable variable~\texttt{b}, and discards $\nvi
 
 \ASLListing{Assignment from a call expression.}{assigncallsemantics}{\semanticstests/SemanticsRule.SAssignCall.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ assigns an \assignableexpression\ list from a subprogram call, \\
@@ -237,7 +237,7 @@ All of the following apply:
         $\Normal(\vgtwo, \newg)$\ProseOrAbnormal.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \hypertarget{def-lexprisvar}{}
 We first define the syntactic predicate
 \[
@@ -445,7 +445,7 @@ As given by applying the relevant rules to the desugared AST.
 
 \subsection{Typing}
 \TypingRuleDef{SDecl}
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{some}):
@@ -488,7 +488,7 @@ One of the following applies:
   \item define $\news$ as local declaration statement with variable keyword, local declaration item $\ldi$, type annotation $\vtp$, and initializing expression $\veinit$, that is, $\SDecl(\LDKVar, \ldi, \langle\veinit\rangle)$.
   \end{itemize}
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[constant]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
@@ -543,7 +543,7 @@ The helper function
 adds the literal $\vv$ with the local declaration item $\ldi$ as a constant to the local component of the static environment $\tenv$,
 yielding the modified static environment $\newtenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{var}):
@@ -558,7 +558,7 @@ One of the following applies:
     \item this case is not yet implemented.
   \end{itemize}
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[var]{
   \addlocalconstant(\tenv, \vx, \vv) \typearrow \newtenv
@@ -604,7 +604,7 @@ annotates the type annotation $\tyopt$ in the static environment $\tenv$ within 
 It yields the modified static environment $\newtenv$, the annotated type annotation $\tyoptp$, and the inferred \sideeffectsetterm{} $\vses$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{none}):
@@ -628,7 +628,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{
   \annotatelocaldeclitem(\tenv, \vte, \ldk, \langle\vep\rangle, \ldi) \typearrow \newtenv \OrTypeError
@@ -660,7 +660,7 @@ propagates integer constraints from the right-hand side type $\rhs$ to the left-
 In particular, each occurence of \pendingconstrainedintegertype{} on the left-hand side should inherit constraints from a corresponding \wellconstrainedintegertype{} on the right-hand side.
 If the corresponding right-hand side type is not a \wellconstrainedintegertype{} (including if it is an \unconstrainedintegertype{}), the result is a type error.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{int}):
@@ -686,7 +686,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[int]{
   \rhs \eqname \TInt(\wellconstrained(\Ignore)) \OrTypeError
@@ -725,7 +725,7 @@ checks whether an expression of type $\vs$ can be used to initialize a storage e
 $\tenv$.
 If the answer if $\False$, the result is a type error.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{okay}):
@@ -742,7 +742,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[okay]{
   \typesat(\tenv, \vt, \vs) \typearrow \True
@@ -773,7 +773,7 @@ In \listingref{semantics-sdeclnone},
 \texttt{var x : integer;} binds \texttt{x} in $\env$ to the base value of \texttt{integer}.
 \ASLListing{Evaluating a declaration without a given initial value}{semantics-sdeclnone}{\semanticstests/SemanticsRule.SDeclNone.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{some}):
@@ -792,7 +792,7 @@ One of the following applies:
     \item the result is a dynamic error.
   \end{itemize}
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[some]{
   \evalexpr{\env, \ve} \evalarrow \Normal(\vm, \envone) \OrAbnormal\\
@@ -1025,7 +1025,7 @@ instances of $\SPass$.
 
 \subsection{Typing}
 \TypingRuleDef{SSeq}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is the AST node for the sequence of statements $\vsone$ and $\vstwo$, that is, $\SSeq(\vsone, \vstwo)$;
@@ -1034,7 +1034,7 @@ All of the following apply:
   \item $\news$ is the AST node for the sequence of statements $\newsone$ and $\newstwo$, that is, $\SSeq(\newsone, \newstwo)$;
   \item \Proseeqdef{$\vses$}{the union of $\vsesone$ and $\vsestwo$}.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotatestmt(\tenv, \vs1) \typearrow (\newsone, \tenvone, \vsesone) \OrTypeError\\\\
@@ -1054,7 +1054,7 @@ the evaluation of \texttt{let x = 3; let y = x + 1} first evaluates \texttt{let 
 evaluates \texttt{let y = x + 1}.
 \ASLListing{Evaluating a sequence of statements}{semantics-sseq}{\semanticstests/SemanticsRule.SSeq.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a \emph{sequencing statement} \texttt{s1; s2}, that is, $\SSeq(\vsone, \vstwo)$;
@@ -1067,7 +1067,7 @@ All of the following apply:
   $\aslpo$ edge;
   \item $D$ is the configuration $C$ with the execution graph component replaced with $\newg$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
   \inferrule{
     \evalstmt{\env, \vsone} \evalarrow \Continuing(\vgone, \envone) \terminateas \ReturningConfig,\ThrowingConfig,\DynErrorConfig\\
@@ -1108,7 +1108,7 @@ All of the following apply:
 
 \subsection{Typing}
 \TypingRuleDef{SCall}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a call to a subprogram, that is, $\SCall(\vcall)$;
@@ -1117,7 +1117,7 @@ All of the following apply:
   \item $\news$ is the call using $\vcallp$, that is, $\SCall(\vcallp)$;
   \item $\newtenv$ is $\tenv$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   {
@@ -1144,7 +1144,7 @@ In \listingref{semantics-scall},
 \verb|Zeros{3}| evaluates to \texttt{'000'}.
 \ASLListing{Evaluating a call statement}{semantics-scall}{\semanticstests/SemanticsRule.SCall.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a call statement, $\SCall(\vcall)$;
@@ -1153,7 +1153,7 @@ All of the following apply:
   \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \evalcall{\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs} \evalarrow \Normal(\newg, \newenv) \OrAbnormal
@@ -1225,7 +1225,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \subsection{Typing}
 \TypingRuleDef{SCond}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a condition $\ve$ with the statements $\vsone$ and $\vstwo$, that is, $\SCond(\ve, \vsone, \vstwo)$;
@@ -1237,7 +1237,7 @@ All of the following apply:
   \item $\newtenv$ is $\tenv$;
   \item \Proseeqdef{$\vses$}{the union of $\vsescond$, $\vsesone$, and $\vsestwo$}.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \ve} \typearrow (\tcond, \econd, \vsescond) \OrTypeError\\\\
@@ -1270,7 +1270,7 @@ results in an Assertion Error.
 The specification in \listingref{semantics-scond4} does not result in any error.
 \ASLListing{Evaluating a condition statement with only a \texttt{then} branch}{semantics-scond4}{\semanticstests/SemanticsRule.SCond4.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
 \item $\vs$ is a condition statement, $\SCond(\ve, \vsone, \vstwo)$;
@@ -1285,7 +1285,7 @@ $\vstwo$ will be evaluated);
 \item $D$ is the configuration $C$ with the execution graph component updated to be $\vg$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \envone) \OrAbnormal\\
@@ -1596,7 +1596,7 @@ they do not appear in the typed AST and thus are not associated with a semantics
 
 \subsection{Typing}
 \TypingRuleDef{SAssert}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is an assert statement with expression $\ve$, that is, $\SAssert(\ve)$;
@@ -1607,7 +1607,7 @@ All of the following apply:
   \item $\newtenv$ is $\tenv$;
   \item \Proseeqdef{$\vses$}{the union of $\vsese$ and the singleton set for \PerformsAssertionsTerm}.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \ve} \typearrow (\vtep, \vep, \vsese) \OrTypeError\\\\
@@ -1633,7 +1633,7 @@ In \listingref{semantics-sassertno},
 evaluating \texttt{assert (42 == 3);} results in an \texttt{AssertionFailed} error.
 \ASLListing{Evaluating an assertion that fails}{semantics-sassertno}{\semanticstests/SemanticsRule.SAssertNo.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is an assertion statement, $\SAssert(\ve)$;
@@ -1654,7 +1654,7 @@ All of the following apply:
     \end{itemize}
   \end{itemize}
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[okay]{
   \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \newg), \newenv) \OrAbnormal\\\\
@@ -1734,7 +1734,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \subsection{Typing}
 \TypingRuleDef{SWhile}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
 \item $\vs$ is a \texttt{while} statement with expression $\veone$, optional limit expression $\vlimitone$,
@@ -1749,7 +1749,7 @@ All of the following apply:
 \item $\newtenv$ is $\tenv$;
 \item \Proseeqdef{$\vses$}{the union of $\vsesblock$, $\vsese$, and $\vseslimit$}.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vt, \vetwo, \vsese) \OrTypeError\\\\
@@ -1779,7 +1779,7 @@ annotates an optional expression $\ve$ serving as the limit of a loop or a recur
 yielding a pair consisting of an expression $\vep$ and a \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{none}):
@@ -1798,7 +1798,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{}{
   \annotatelimitexpr(\tenv, \overname{\None}{\ve}) \typearrow (\overname{\None}{\vep}, \overname{\emptyset}{\vses})
@@ -1819,7 +1819,7 @@ One of the following applies:
 The specification in \listingref{semantics-swhile} prints \texttt{0123}.
 \ASLListing{Evaluating a \texttt{while} loop}{semantics-swhile}{\semanticstests/SemanticsRule.SWhile.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 Evaluation of the statement $\vs$ in an environment $\env$ is
 the output configuration $C$ and all of the following apply:
 \begin{itemize}
@@ -1833,7 +1833,7 @@ the output configuration $C$ and all of the following apply:
   \item the output configuration $D$ is the output configuration $C$ with its execution graph
         substituted with $\vgtwo$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \evallimit(\env, \velimitopt) \evalarrow (\vlimitopt, \vgone) \OrDynError\\\\
@@ -1882,7 +1882,7 @@ and the specification terminates with exit code $0$.
 \ASLListing{Evaluating a loop}{semantics-loop}{\semanticstests/SemanticsRule.Loop.asl}
 
 \CodeSubsection{\EvalLoopBegin}{\EvalLoopEnd}{../Interpreter.ml}
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
 \item all of the following apply (\textsc{exit}):
@@ -1909,7 +1909,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 The premise $\vb \neq \iswhile$ is $\True$ in the case of a \texttt{while} loop
 and the loop condition $\ve$ not holding, which is exactly when we want the
 loop to exit. The opposite holds for a \texttt{repeat} loop.
@@ -1960,7 +1960,7 @@ The evaluation uses the function $\evalexprsef$ because limit expressions are
 guaranteed side-effect-free by the typechecker,
 see \TypingRuleRef{AnnotateLimitExpr}.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{none}):
@@ -1979,7 +1979,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{}{
   \evallimit(\env, \overname{\None}{\velimitopt}) \evalarrow (\overname{\None}{\vvopt}, \overname{\emptygraph}{\vg})
@@ -2005,7 +2005,7 @@ decrements the optional integer $\vvopt$, yielding
 the optional integer value $\vvopt$.
 If the value is $0$, the result is a dynamic error.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{none}):
@@ -2027,7 +2027,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{}{
   \ticklooplimit(\overname{\None}{\vvopt}) \evalarrow \overname{\None}{\vvoptp}
@@ -2082,7 +2082,7 @@ One of the following applies:
 
 \subsection{Typing}
 \TypingRuleDef{SRepeat}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a \texttt{repeat} statement with statement block $\vsone$,
@@ -2096,7 +2096,7 @@ All of the following apply:
   \item $\newtenv$ is $\tenv$;
   \item \Proseeqdef{$\vses$}{the union of $\vsesblock$, $\vsese$, and $\vseslimit$}.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotateblock{\tenv, \vsone} \typearrow (\vstwo, \vsesblock) \OrTypeError\\\\
@@ -2124,7 +2124,7 @@ The specification in \listingref{semantics-srepeat} prints
 \end{Verbatim}
 \ASLListing{Evaluating a \texttt{repeat} loop}{semantics-srepeat}{\semanticstests/SemanticsRule.SRepeat.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 Evaluation of the statement $\vs$ in an environment $\env$ is
 either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ and all of the following apply:
 \begin{itemize}
@@ -2145,7 +2145,7 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ an
   \item the output configuration $D$ is the output configuration $C$ with its execution graph
         substituted with $\vgthree$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \evallimit(\env, \velimitopt) \evalarrow (\vlimitoptone, \vgone) \OrDynError\\\\
@@ -2239,7 +2239,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \subsection{Typing}
 \TypingRuleDef{SFor}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a \texttt{for} statement with index $\vindexname$,
@@ -2285,7 +2285,7 @@ All of the following apply:
         out of scope);
   \item \Prosenonconflictingunion{$\vsesblock$ and $\vsescond$}{$\vses$}.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \vstarte} \typearrow (\vstartt, \vstartep, \vsesstart) \OrTypeError\\\\
@@ -2360,7 +2360,7 @@ infers the integer constraints for a \texttt{for} loop index variable from the f
 The result is $\vis$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{not\_integers}):
@@ -2389,7 +2389,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[not\_integers]{
   \astlabel(\structone) \neq \TInt \lor \astlabel(\structtwo) \neq \TInt
@@ -2438,7 +2438,7 @@ The specification in \listingref{semantics-sfor} prints
 \end{Verbatim}
 \ASLListing{Evaluating a \texttt{for} loop}{semantics-sfor}{\semanticstests/SemanticsRule.SFor.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a \texttt{for} statement, $\SFor\left\{\begin{array}{rcl}
@@ -2465,7 +2465,7 @@ All of the following apply:
   \item $\newenv$ is $\envthree$.
   \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 Recall that the expressions for the \texttt{for} loop range are
 side-effect-free, as guaranteed by \TypingRuleRef{SFor}, which is why
 they are evaluated via the rule for evaluating side-effect-free expressions.
@@ -2572,7 +2572,7 @@ The helper relation
 executes one iteration of the loop body and then uses $\texttt{eval\_for}$ to execute the remaining
 iterations.
 
-\subsubsection{Prose}
+\ProseParagraph
 \subsubsection{Stepping the Index Variable}
 All of the following apply:
 \begin{itemize}
@@ -2632,7 +2632,7 @@ and All of the following apply:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 Advancing the loop counter one step towards the end of its range is achieved via the following rule:
 \begin{mathpar}
 \inferrule{
@@ -2748,7 +2748,7 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 
 \subsection{Typing}
 \TypingRuleDef{SThrow}
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{none}):
@@ -2772,7 +2772,7 @@ One of the following applies:
           $\ThrowException(\exnname)$}.
   \end{itemize}
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{}{
   \annotatestmt(\tenv, \overname{\SThrow(\None)}{\vs}) \typearrow
@@ -2810,7 +2810,7 @@ The specification in \listingref{semantics-sthrowsometyped}
 terminates successfully. That is, no dynamic error occurs.
 \ASLListing{Throwing an exception}{semantics-sthrowsometyped}{\semanticstests/SemanticsRule.SThrowSomeTyped.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{none}):
@@ -2835,7 +2835,7 @@ One of the following applies:
     \item the result of the entire evaluation is $\Throwing((\vex, \newg), \env)$.
   \end{itemize}
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{}
 {
@@ -2922,7 +2922,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \subsection{Typing}
 \TypingRuleDef{STry}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a try statement with statement $\vsp$, list of catchers $\catchers$ and an \optional\ \texttt{otherwise} block;
@@ -2959,7 +2959,7 @@ All of the following apply:
   \item $\newtenv$ is $\tenv$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[no\_otherwise]{
   \annotateblock{\tenv, \vsp} \typearrow (\vspp, \vsesone) \OrTypeError\\\\
@@ -3002,7 +3002,7 @@ Evaluating the specification in \listingref{semantics-stry}
 does not result in any Assertion error, and the specification terminates with the exit code $0$.
 \ASLListing{Evaluating a \texttt{try} statement}{semantics-stry}{\semanticstests/SemanticsRule.STry.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a \texttt{try} statement, $\STry(\vs, \catchers, \otherwiseopt)$;
@@ -3011,7 +3011,7 @@ All of the following apply:
   \item evaluating $(\catchers, \otherwiseopt, \sm)$ as per \chapref{CatchingExceptions}
   is $C$, which is the result of the entire evaluation.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \evalblock{\env, \vsone} \evalarrow \sm \OrAbnormal\\
@@ -3047,7 +3047,7 @@ All of the following apply:
 
 \subsection{Typing}
 \TypingRuleDef{SReturn}
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{error}):
@@ -3080,7 +3080,7 @@ One of the following applies:
     \item $\newtenv$ is $\tenv$.
   \end{itemize}
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[error]{
   \vb \eqdef (L^\tenv.\returntype = \None \leftrightarrow \veopt = \None) \\
@@ -3129,7 +3129,7 @@ In \listingref{semantics-sreturntuple},
 \texttt{return (3, 42);} exits the function \texttt{f} with the value \texttt{(3, 42)}.
 \ASLListing{Evaluating a \texttt{return} statement with a tuple of values}{semantics-sreturntuple}{\semanticstests/SemanticsRule.SReturnSome.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{none}):
@@ -3199,7 +3199,7 @@ evaluates a list of expressions $\vEs$ in left-to-right in the initial environme
 and returns the list of values associated with graphs $\vms$ and the new environment $\newenv$.
 If the evaluation of any expression terminates abnormally then the abnormal configuration is returned.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -3219,7 +3219,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -3303,7 +3303,7 @@ by composing the graphs in $\vms$ with Write Effects for the respective values.
 \subsection{Typing}
 
 \TypingRuleDef{SPrint}
-\paragraph{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ denotes the print statement with arguments $\vargs$ and newline indicator $\vnewline$;
@@ -3314,7 +3314,7 @@ All of the following apply:
   \item \Prosenonconflictingunion{$\vxs_i$, \Proselistrange{$i$}{$\vargs$}, }{$\vses$}\ProseOrTypeError.
 \end{itemize}
 
-\paragraph{Formally}
+\FormallyParagraph
 \begin{mathpar}
   \inferrule{%
     \vi\in\listrange(\vargs): \annotateexpr{\vargs[i], \tenv} \typearrow (\vt_i, \vargsp[i], \vxs_i)\OrTypeError \\\\
@@ -3339,7 +3339,7 @@ which takes a string and communicates it to a console, where one exists.%
   this component from our definition of a dynamic environment.%
 }
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ denotes a Print statement with arguments $\elist$ and newline indicator $\vnewline$;
@@ -3349,7 +3349,7 @@ All of the following apply:
   \item $\newenv$ is $\env$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 
 \begin{mathpar}
   \inferrule[Print]{%
@@ -3391,10 +3391,10 @@ All of the following apply:
 \end{mathpar}
 
 \TypingRuleDef{SUnreachable}
-\subsubsection{Prose}
+\ProseParagraph
 Annotating $\SUnreachable$ in the static environment $\tenv$ yields $(\SUnreachable, \tenv, \emptyset)$.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \annotatestmt(\tenv, \SUnreachable) \typearrow (\SUnreachable, \tenv, \overname{\emptyset}{\vses})
@@ -3402,9 +3402,9 @@ Annotating $\SUnreachable$ in the static environment $\tenv$ yields $(\SUnreacha
 \end{mathpar}
 
 \SemanticsRuleDef{SUnreachable}
-\subsubsection{Prose}
+\ProseParagraph
 Evaluating $\SUnreachable$ in an environment $\env$ results in a dynamic error indicating this ($\UnreachableError$).
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \evalstmt{\env, \SUnreachable} \evalarrow \DynamicErrorVal{\UnreachableError}
@@ -3435,7 +3435,7 @@ Evaluating $\SUnreachable$ in an environment $\env$ results in a dynamic error i
 \end{mathpar}
 
 \TypingRuleDef{SPragma}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vs$ is a pragma statement with identifier $\id$ and expression list $\vargs$. that is, $\SPragma(\id, \vargs)$;
@@ -3446,7 +3446,7 @@ All of the following apply:
   \item \Prosenonconflictingunion{$\vsess$}{$\vses$}\ProseOrTypeError.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   i\in\listrange(\vargs): \annotateexpr{\tenv, \vargs[i]} \typearrow (\Ignore, \Ignore, \vxs_i) \OrTypeError\\\\
@@ -3460,7 +3460,7 @@ All of the following apply:
 
 \subsection{Semantics\label{sec:PragmaSemantics}}
 
-\subsubsection{Prose}
+\ProseParagraph
 Pragmas are structures present in the \untypedast \ which are designed to be used
 by third-party tools.
 

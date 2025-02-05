@@ -84,7 +84,11 @@ The function
 \]
 annotates a literal $\vl$ in the static environment $\tenv$, resulting in a type $\vt$.
 
-\subsubsection{Prose}
+\subsection{Example}
+\listingref{literals1} shows literals and their corresponding types in comments:
+\ASLListing{Literals and their corresponding types}{literals1}{\typingtests/TypingRule.Lit.asl}
+
+\ProseParagraph
 The result of annotating a literal $\vl$ in a static environment $\tenv$ is $\vt$ and one of the following applies:
 \begin{itemize}
 \item (\textsc{int}): $\vl$ is an integer literal $\vn$ and $\vt$ is the well-constrained integer type, constraining
@@ -97,9 +101,7 @@ its set to the single value $\vn$;
       $\declaredtypes$ map of the global environment $\tenv$.
 \end{itemize}
 
-\CodeSubsection{\LitBegin}{\LitEnd}{../Typing.ml}
-
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[int]{}{\annotateliteral{\Ignore, \lint(n)}\typearrow \TInt(\langle[\ConstraintExact(\ELInt{n})]\rangle)}
 \end{mathpar}
@@ -131,10 +133,7 @@ its set to the single value $\vn$;
   \annotateliteral{\tenv, \llabel(\vlabel)}\typearrow \vt
 }
 \end{mathpar}
-
-\subsection{Example}
-\listingref{literals1} shows literals and their corresponding types in comments:
-\ASLListing{Literals and their corresponding types}{literals1}{\typingtests/TypingRule.Lit.asl}
+\CodeSubsection{\LitBegin}{\LitEnd}{../Typing.ml}
 
 \section{Semantics}
 A literal $\vl$ can be converted to the \nativevalue\ $\nvliteral{\vl}$.

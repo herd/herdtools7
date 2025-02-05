@@ -118,7 +118,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \section{Typing}
 \TypingRuleDef{Catcher}
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{none}):
@@ -146,7 +146,7 @@ One of the following applies:
   \item \Proseeqdef{$\vses$}{the union of $\vsesblock$ and $\vsesty$}.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{
   \vc = (\overname{\None}{\nameopt}, \tty, \vstmt)\\
@@ -208,7 +208,7 @@ The specification in \listingref{semantics-catch} terminates successfully.
 That is, no dynamic error occurs.
 \ASLListing{Catching an exception}{semantics-catch}{\semanticstests/SemanticsRule.Catch.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
@@ -224,7 +224,7 @@ All of the following apply:
   \item the result of the entire evaluation is $D$ with its graph substituted with $\newg$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \sm \eqname \Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)\\
@@ -245,7 +245,7 @@ All of the following apply:
 The specification in \listingref{semantics-catchnamed}, prints \texttt{My exception with my message}.
 \ASLListing{Catching a named exception}{semantics-catchnamed}{\semanticstests/SemanticsRule.CatchNamed.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
@@ -267,7 +267,7 @@ All of the following apply:
   with the $\aslpo$ edges;
   \item the result of the entire evaluation is $E$ with its graph substituted with $\newg$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \sm \eqname \Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)\\
@@ -293,7 +293,7 @@ All of the following apply:
 The specification in \listingref{semantics-catchotherwise} prints \texttt{Otherwise}.
 \ASLListing{Catching an exception with \texttt{otherwise}}{semantics-catchotherwise}{\semanticstests/SemanticsRule.CatchOtherwise.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
@@ -311,7 +311,7 @@ All of the following apply:
   \item the result of the entire evaluation is $D$ with its graph substituted with $\newg$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \sm \eqname \Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)\\
@@ -334,7 +334,7 @@ It shows how a \texttt{try} statement (the inner one) may not have a \texttt{cat
 that matches the exception type (\texttt{MyExceptionType1}).
 \ASLListing{A catch clause that does not match a thrown exception type}{semantics-catchnone}{\semanticstests/SemanticsRule.CatchNone.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
@@ -345,7 +345,7 @@ All of the following apply:
   (that is, neither of the \texttt{catch} clauses matches the raised exception);
   \item since there no \texttt{otherwise} clause, the result is $\sm$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \sm \eqname \Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)\\
@@ -362,7 +362,7 @@ All of the following apply:
 The specification in \listingref{semantics-nothrow} prints \texttt{No exception raised}.
 \ASLListing{A \texttt{try} statement that does not raise an exception}{semantics-nothrow}{\semanticstests/SemanticsRule.CatchNoThrow.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 all of the following apply:
 \begin{itemize}
   \item One of the following holds:
@@ -373,7 +373,7 @@ all of the following apply:
   \item the result is $\sm$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[implicit\_throw]{
   \sm \eqname \Throwing((\None, \sg), \envthrow)
@@ -401,7 +401,7 @@ The (recursively-defined) helper relation
 returns the first catcher clause in $\catchers$ that matches the type $\vvty$ (as a singleton set), or an empty set ($\None$),
 by invoking $\typesat$ with the static environment $\tenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -429,7 +429,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{\findcatcher(\tenv, \vvty, \emptylist) \evalarrow \None}
 \end{mathpar}
@@ -478,7 +478,7 @@ which have the form $\Throwing(\langle(\valuereadfrom(\vv', \eid), \vvty')\rangl
 Implicit throwing configurations are changed by substituting the optional $\valuereadfrom$ configuration-exception type
 pair with $\vv$ and $\vvty$, respectively.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{implicit\_throwing}):
@@ -501,7 +501,7 @@ One of the following applies:
     \item the result is $C$.
   \end{itemize}
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[implicit\_throwing]{}
 {

@@ -225,7 +225,7 @@ and \parameterizedintegertypes, respectively, are well-typed.
 \ASLListing{Well-typed well-constrained integer types}{typing-wellconstrained}{\typingtests/TypingRule.TIntWellConstrained.asl}
 \ASLListing{Well-typed parameterized integer types}{typing-parameterized}{\typingtests/TypingRule.TIntParameterized.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{pending\_constrained}):
@@ -262,7 +262,7 @@ One of the following applies:
     \end{itemize}
   \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[pending\_constrained]{}{
   {
@@ -320,7 +320,7 @@ annotates an integer constraint $\vc$ in the static environment $\tenv$ yielding
 integer constraint $\newc$ and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{exact}):
@@ -340,7 +340,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[exact]{
   \annotatesymbolicconstrainedinteger(\tenv, \ve) \typearrow (\vep, \vses) \OrTypeError
@@ -383,7 +383,7 @@ One of the following applies:
 In \listingref{typing-treal}, all the uses of \texttt{real} are well-typed.
 \ASLListing{Well-typed real types}{typing-treal}{\typingtests/TypingRule.TReal.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\tty$ is the real type \TReal.
@@ -391,7 +391,7 @@ All of the following apply:
   \item define $\vses$ as the empty set.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}
 {
@@ -426,7 +426,7 @@ All of the following apply:
 In \listingref{typing-tstring}, all the uses of \texttt{string} are well-typed.
 \ASLListing{Well-typed string types}{typing-tstring}{\typingtests/TypingRule.TString.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\tty$ is the string type \TString.
@@ -434,7 +434,7 @@ All of the following apply:
   \item $\vses$ is the empty set.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}
 {
@@ -469,7 +469,7 @@ All of the following apply:
 In \listingref{typing-tbool}, all the uses of \texttt{boolean} are well-typed.
 \ASLListing{Well-typed Boolean types}{typing-tbool}{\typingtests/TypingRule.TBool.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\tty$ is the boolean type, \TBool;
@@ -477,7 +477,7 @@ All of the following apply:
   \item define $\vses$ as the empty set.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}
 {
@@ -530,7 +530,7 @@ All of the following apply:
 In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
 \ASLListing{Well-typed Bitevector types}{typing-tbits}{\typingtests/TypingRule.TBits.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\tty$ is the bit-vector type with width given by the expression
@@ -546,7 +546,7 @@ All of the following apply:
   \item define $\vses$ as the union of $\seswidth$ and $\vsesbitfields$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \ewidth} \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\\\\
@@ -600,7 +600,7 @@ In \listingref{typing-ttuple}, all the uses of tuple types are well-typed.
 \ASLListing{Well-typed tuple types}{typing-ttuple}{\typingtests/TypingRule.TTuple.asl}
 
 \TypingRuleDef{TTuple}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\tty$ is the tuple type with member types $\tys$, that is, $\TTuple(\tys)$;
@@ -611,7 +611,7 @@ All of the following apply:
   \item define $\vses$ as the union of all $\vxs_i$, for $i=1..k$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   k \geq 2\\
@@ -660,7 +660,7 @@ In \listingref{typing-tarray}, all the uses of array types are well-typed.
 \ASLListing{Well-typed array types}{typing-tarray}{\typingtests/TypingRule.TArray.asl}
 
 \TypingRuleDef{TArray}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\tty$ is the array type with element type $\vt$;
@@ -691,7 +691,7 @@ All of the following apply:
     \end{itemize}
   \end{itemize}
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[expr\_is\_enum]{
   \annotatetype{\False, \tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
@@ -729,7 +729,7 @@ If so, the result is $\vx$ --- the name of the variable and the list of labels $
 declared for the enumeration type.
 Otherwise, the result is $\None$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{not\_evar}):
@@ -762,7 +762,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[not\_evar]{
   \astlabel(\ve) \neq \EVar
@@ -811,14 +811,14 @@ annotates the expression $\ve$ in the static environment $\tenv$ and checks that
 yielding the resulting type in $\vt$, the annotated expression in $\vep$ and the \sideeffectsetterm\ in $\vses$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item \Proseannotateexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$};
   \item \Prosechecksymbolicallyevaluable{$\vses$}.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \ve} \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
@@ -840,7 +840,7 @@ annotates a \symbolicallyevaluable\ integer expression $\ve$ in the static envir
 and returns the annotated expression $\vepp$ and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item \Proseannotatesymbolicallyevaluableexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$\ProseOrTypeError};
@@ -848,7 +848,7 @@ All of the following apply:
   \item determining whether $\vep$ is \symbolicallyevaluable\ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item applying $\normalize$ to $\vep$ in $\tenv$ yields $\vepp$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
@@ -870,7 +870,7 @@ The function
 \]
 returns $\True$ is $\vt$ is has the \structure\ an integer type and a type error otherwise.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{okay}):
@@ -890,7 +890,7 @@ One of the following applies:
 
 \CodeSubsection{\CheckStructureIntegerBegin}{\CheckStructureIntegerEnd}{../Typing.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[okay]{
   \tstruct(\vt) \typearrow \vtp \OrTypeError\\\\
@@ -938,7 +938,7 @@ One of the following applies:
 \subsection{Typing Enumeration Types\label{sec:TypingEnumerationTypes}}
 \TypingRuleDef{TEnumDecl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\tty$ is the enumeration type with enumeration literals
@@ -950,7 +950,7 @@ All of the following apply:
   \item $\newty$ is the enumeration type $\tty$;
   \item define $\vses$ as the empty set.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \checknoduplicates(\vli) \typearrow \True \OrTypeError\\\\
@@ -988,7 +988,7 @@ All of the following apply:
 
 \subsection{Typing Record Types\label{sec:TypingRecordTypes}}
 \TypingRuleDef{TStructuredDecl}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\tty$ is a \structuredtype\ with AST label $L$;
@@ -1005,7 +1005,7 @@ All of the following apply:
   \item define $\vses$ as the union of all $\vxs_i$, for $i=1..k$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   L \in \{\TRecord, \TException\}\\
@@ -1069,7 +1069,7 @@ The rule for typing exception type is \TypingRuleRef{TStructuredDecl}.
 
 \subsection{Typing Named Types\label{sec:TypingNamedTypes}}
 \TypingRuleDef{TNamed}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\tty$ is the named type $\vx$, that is $\TNamed(\vx)$;
@@ -1078,7 +1078,7 @@ All of the following apply:
   \item define $\vses$ as the singleton set for the \ReadGlobalTerm\ for $\vx$, $\vtimeframe$, and $\True$ for immutability;
   \item $\newty$ is $\tty$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \checktrans{G^\tenv.\declaredtypes(\vx) \neq \bot}{\UndefinedIdentifier} \typearrow \True \OrTypeError\\\\
@@ -1116,7 +1116,7 @@ A declared type can be an enumeration type, a record type, an exception type, or
 In \listingref{typing-trecorderror}, the use of a record type outside of a declaration is erroneous.
 \ASLListing{An erroneous use of a record type}{typing-trecorderror}{\typingtests/TypingRule.TNonDecl.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\tty$ is a \structuredtype\ or an enumeration type;
@@ -1126,7 +1126,7 @@ All of the following apply:
   and exceptions types is not allowed here.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \astlabel(\tty) \in \{\TEnum, \TRecord, \TException\}

@@ -145,7 +145,7 @@ In \listingref{ldvar}, the statement \texttt{let x = 3;} is legal, since
 with the type inferred type \texttt{integer{3}}.
 \ASLListing{A local storage declaration}{ldvar}{\typingtests/TypingRule.LDVar.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\ldi$ denotes a variable $\vx$, that is, $\LDIVar(\vx)$;
@@ -154,7 +154,7 @@ All of the following apply:
   \item applying $\addimmutableexpression$ to $\ldk$, $\veopt$, and $\vx$ in $\tenv$ (to conditionally
         update $\tenvtwo$) yields $\newtenv$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \checkvarnotinenv{\tenv, \vx} \typearrow \True \OrTypeError\\\\
@@ -169,7 +169,7 @@ All of the following apply:
 
 \subsection{Semantics}
 \SemanticsRuleDef{LDVar}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\ldi$ is a variable declaration, $\LDIVar(\vx)$;
@@ -189,7 +189,7 @@ the statement
 \texttt{3} in $\env$.
 \ASLListing{Binding a local variable to a literal integer}{semantics-ldvar1}{\semanticstests/SemanticsRule.LDVar1.asl}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \vm \eqname (\vv, \vgone)\\
@@ -207,7 +207,7 @@ the statement
 \subsubsection{Example}
 \ASLListing{Declaring a tuple in the local storage}{typing-ldtuple}{\typingtests/TypingRule.LDTuple.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\ldi$ denotes a tuple of identifiers $\vids_{1..k}$, that is, $\LDITuple(\vids_{1..k})$;
@@ -219,7 +219,7 @@ All of the following apply:
         propagating static environments from one declaration to the next,
         yields the resulting environment $\newtenv$\ProseOrTypeError.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \makeanonymous(\tenv, \tty) \typearrow \vtp \OrTypeError\\\\
@@ -251,7 +251,7 @@ In \listingref{semantics-ldtuple},
 evaluation of \texttt{3} in $\env$.
 \ASLListing{Evaluating a tuple declaration in the local storage}{semantics-ldtuple}{\semanticstests/SemanticsRule.LDTuple.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\ldi$ declares a list of local variables, $\LDITuple(\vids)$;
@@ -262,7 +262,7 @@ All of the following apply:
   \item the output configuration is obtained by declaring each identifier $\id_i$
   with the corresponding value ($\vm$ component) $(\vv_i, \vg)$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \hypertarget{def-ldituplefolder}{}
 We first define the helper semantic relation
 \[
