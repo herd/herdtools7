@@ -168,9 +168,7 @@ let tclist1(x) :=
 let plist0(x) == pared(clist0(x))
 
 (* A parenthesised comma-separated list with at least 2 elements. *)
-let plist2(x) == pared(
-  ~=x; COMMA; li=clist1(x); { x :: li }
-)
+let plist2(x) == pared(clist2(x))
 
 (* Produces a list of [x]s, optionally followed by a single [y] that would go
    in the tail of the list *)
