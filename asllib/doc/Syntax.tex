@@ -57,7 +57,7 @@ coupled with the derivation
 \begin{flalign*}
 \Nbinop \derives\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
                       |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
-                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat \;|\; \Tcoloncolon
+                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon
 \end{flalign*}
 
 A grammar containing these two derivations results in shift-reduce conflicts.
@@ -68,14 +68,14 @@ and creating a version of the first derivation for each binary operator:
               |\ & \Nexpr \parsesep \Tband \parsesep \Nexpr & \\
               |\ & \Nexpr \parsesep \Tbor \parsesep \Nexpr & \\
               \ldots \\
-              |\ & \Nexpr \parsesep \Tconcat \parsesep \Nexpr &
+              |\ & \Nexpr \parsesep \Tcoloncolon \parsesep \Nexpr &
 \end{flalign*}
 
 By defining the derivations of $\Nbinop$ as inlined, we achieve the same effect more compactly:
 \begin{flalign*}
 \Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
                       |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
-                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat \;|\;\Tcoloncolon
+                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon
 \end{flalign*}
 
 Barring mutually-recursive derivations involving inlined derivations, it is possible to expand
@@ -142,53 +142,52 @@ We define the following parametric productions for various types of lists and op
 \end{flalign*}
 
 \paragraph{Non-empty List}
-\hypertarget{def-nonemptylist}{}
+\hypertarget{def-listone}{}
 \begin{flalign*}
-\nonemptylist{x}   \derives\ & x \;|\; x \parsesep \nonemptylist{x}&\\
+\ListOne{x}   \derives\ & x \;|\; x \parsesep \ListOne{x}&\\
 \end{flalign*}
 
 \paragraph{Non-empty Comma-separated List}
-\hypertarget{def-nclist}{}
+\hypertarget{def-clistone}{}
 \begin{flalign*}
-\NClist{x}   \derives\ & x \;|\; x \parsesep \Tcomma \parsesep \NClist{x} &\\
+\ClistOne{x}   \derives\ & x \;|\; x \parsesep \Tcomma \parsesep \ClistOne{x} &\\
 \end{flalign*}
 
 \paragraph{Possibly-empty Comma-separated List}
-\hypertarget{def-clist}{}
+\hypertarget{def-clistzero}{}
 \begin{flalign*}
-\Clist{x}   \derives \ & \emptysentence \;|\; \NClist{x} &\\
+\ClistZero{x}   \derives \ & \emptysentence \;|\; \ClistOne{x} &\\
 \end{flalign*}
 
 \paragraph{Comma-separated List With At Least Two Elements}
 \hypertarget{def-clisttwo}{}
 \begin{flalign*}
-\Clisttwo{x}   \derives \ & x \parsesep \Tcomma \parsesep \NClist{x} &\\
+\Clisttwo{x}   \derives \ & x \parsesep \Tcomma \parsesep \ClistOne{x} &\\
 \end{flalign*}
 
 \paragraph{Possibly-empty Parenthesized, Comma-separated List}
-\hypertarget{def-plist}{}
+\hypertarget{def-plistzero}{}
 \begin{flalign*}
-\Plist{x}   \derives \ & \Tlpar \parsesep \Clist{x} \parsesep \Trpar &\\
+\PlistZero{x}   \derivesinline \ & \Tlpar \parsesep \ClistZero{x} \parsesep \Trpar &\\
 \end{flalign*}
 
 \paragraph{Parenthesized Comma-separated List With At Least Two Elements}
 \hypertarget{def-plisttwo}{}
 \begin{flalign*}
-\Plisttwo{x}   \derives \ & \Tlpar \parsesep x \parsesep \Tcomma \parsesep \NClist{x} \parsesep \Trpar &\\
+\Plisttwo{x}   \derivesinline \ & \Tlpar \parsesep x \parsesep \Tcomma \parsesep \ClistOne{x} \parsesep \Trpar &\\
 \end{flalign*}
 
 \paragraph{Non-empty Comma-separated Trailing List}
-\hypertarget{def-tclist}{}
-\hypertarget{def-ntclist}{}
+\hypertarget{def-tclistone}{}
 \begin{flalign*}
-\NTClist{x}   \derives\ & x \parsesep \option{\Tcomma} &\\
-                          |\  & x \parsesep \Tcomma \parsesep \NTClist{x}
+\TClistOne{x}   \derives\ & x \parsesep \option{\Tcomma} &\\
+                          |\  & x \parsesep \Tcomma \parsesep \TClistOne{x}
 \end{flalign*}
 
 \paragraph{Comma-separated Trailing List}
-\hypertarget{def-tclist}{}
+\hypertarget{def-tclistzero}{}
 \begin{flalign*}
-\TClist{x}   \derives \ & \option{\NTClist{x}} &\\
+\TClistZero{x}   \derives \ & \option{\TClistOne{x}} &\\
 \end{flalign*}
 
 \section{ASL Grammar\label{sec:ASLGrammar}}
@@ -224,7 +223,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
    & \wrappedline\ \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
-|\ & \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon&
+|\ & \Tpragma \parsesep \Tidentifier \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon&
 \end{flalign*}
 
 \hypertarget{def-nrecurselimit}{}
@@ -267,28 +266,28 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \hypertarget{def-nparamsopt}{}
 \begin{flalign*}
 \Nparamsopt \derives \ & \emptysentence &\\
-                    |\ & \Tlbrace \parsesep \Clist{\Nopttypedidentifier} \parsesep \Trbrace &
+                    |\ & \Tlbrace \parsesep \ClistZero{\Nopttypedidentifier} \parsesep \Trbrace &
 \end{flalign*}
 
 \hypertarget{def-ncall}{}
 \begin{flalign*}
 \Ncall \derives \
-     & \Tidentifier \parsesep \Plist{\Nexpr} &\\
-  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nexpr} \parsesep \Trbrace &\\
-  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nexpr} \parsesep \Trbrace \parsesep \Plist{\Nexpr} &
+     & \Tidentifier \parsesep \PlistZero{\Nexpr} &\\
+  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \ClistOne{\Nexpr} \parsesep \Trbrace &\\
+  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \ClistOne{\Nexpr} \parsesep \Trbrace \parsesep \PlistZero{\Nexpr} &
 \end{flalign*}
 
 \hypertarget{def-nelidedparamcall}{}
 \begin{flalign*}
 \Nelidedparamcall \derives \
-     & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace \parsesep \Plist{\Nexpr} &\\
-  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \NClist{\Nexpr} \parsesep \Trbrace &\\
-  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \NClist{\Nexpr} \parsesep \Trbrace \parsesep \Plist{\Nexpr}&
+     & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace \parsesep \PlistZero{\Nexpr} &\\
+  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \ClistOne{\Nexpr} \parsesep \Trbrace &\\
+  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \ClistOne{\Nexpr} \parsesep \Trbrace \parsesep \PlistZero{\Nexpr}&
 \end{flalign*}
 
 \hypertarget{def-nfuncargs}{}
 \begin{flalign*}
-    \Nfuncargs          \derives \ & \Plist{\Ntypedidentifier} &
+    \Nfuncargs          \derives \ & \PlistZero{\Ntypedidentifier} &
 \end{flalign*}
 
 \hypertarget{def-nmaybeemptystmtlist}{}
@@ -325,7 +324,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-ncasealtlist}{}
 \begin{flalign*}
-\Ncasealtlist \derives \ & \NClist{\Ncasealt} &\\
+\Ncasealtlist \derives \ & \ClistOne{\Ncasealt} &\\
 \end{flalign*}
 
 \hypertarget{def-ncasealt}{}
@@ -361,7 +360,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 |\ & \Tfor \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Ndirection \parsesep
                     \Nexpr \parsesep \Nlooplimit \parsesep \Tdo &\\
                     & \wrappedline\ \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
-|\ & \Ttry \parsesep \Nstmtlist \parsesep \Tcatch \parsesep \nonemptylist{\Ncatcher} \parsesep \Notherwiseopt \parsesep \Tend \parsesep \Tsemicolon &\\
+|\ & \Ttry \parsesep \Nstmtlist \parsesep \Tcatch \parsesep \ListOne{\Ncatcher} \parsesep \Notherwiseopt \parsesep \Tend \parsesep \Tsemicolon &\\
 |\ & \Tpass \parsesep \Tsemicolon &\\
 |\ & \Treturn \parsesep \option{\Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Ncall \parsesep \Tsemicolon &\\
@@ -375,18 +374,18 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 |\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Nasty} \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Nasty \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
-|\ & \Tprint \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &\\
-|\ & \Tprintln \parsesep \Plist{\Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Tprint \parsesep \PlistZero{\Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Tprintln \parsesep \PlistZero{\Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Tunreachable \parsesep \Tlpar \parsesep \Trpar \parsesep \Tsemicolon &\\
 |\ & \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Nlooplimit \parsesep \Tsemicolon &\\
 |\ & \Tthrow \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tthrow \parsesep \Tsemicolon &\\
-|\ & \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon &
+|\ & \Tpragma \parsesep \Tidentifier \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon &
 \end{flalign*}
 
 \hypertarget{def-nstmtlist}{}
 \begin{flalign*}
-\Nstmtlist \derives \ & \nonemptylist{\Nstmt} &
+\Nstmtlist \derives \ & \ListOne{\Nstmt} &
 \end{flalign*}
 
 \hypertarget{def-nselse}{}
@@ -451,7 +450,7 @@ it must declare a new variable.
 \hypertarget{def-nintconstraints}{}
 \begin{flalign*}
 \Nconstraintkind \derives \ &
-       \Tlbrace \parsesep \NClist{\Nintconstraint} \parsesep \Trbrace &\\
+       \Tlbrace \parsesep \ClistOne{\Nintconstraint} \parsesep \Trbrace &\\
   |\ & \Tlbrace \parsesep \Tminus \parsesep \Trbrace &
 \end{flalign*}
 
@@ -475,7 +474,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     |\  & \Nexprpattern \parsesep \Nslices &\\
                     |\  & \Nexprpattern \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket &\\
                     |\  & \Nexprpattern \parsesep \Tdot \parsesep \Tidentifier&\\
-                    |\  & \Nexprpattern \parsesep \Tdot \parsesep \Tlbracket \parsesep \NClist{\Tidentifier} \parsesep \Trbracket &\\
+                    |\  & \Nexprpattern \parsesep \Tdot \parsesep \Tlbracket \parsesep \ClistOne{\Tidentifier} \parsesep \Trbracket &\\
                     |\  & \Nexprpattern \parsesep \Tas \parsesep \Nty &\\
                     |\  & \Nexprpattern \parsesep \Tas \parsesep \Nconstraintkind &\\
                     |\  & \Nexpr \parsesep \Tin \parsesep \Npatternset &\\
@@ -483,7 +482,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     |\  & \Nexpr \parsesep \Tneq \parsesep \Tmasklit &\\
                     |\  & \Tarbitrary \parsesep \Tcolon \parsesep \Nty &\\
                     |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace &\\
-                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nfieldassign} \parsesep \Trbrace &\\
+                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \ClistOne{\Nfieldassign} \parsesep \Trbrace &\\
                     |\  & \Tlpar \parsesep \Nexprpattern \parsesep \Trpar &
 \end{flalign*}
 
@@ -495,7 +494,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 
 \hypertarget{def-npatternlist}{}
 \begin{flalign*}
-\Npatternlist \derives \ & \NClist{\Npattern} &
+\Npatternlist \derives \ & \ClistOne{\Npattern} &
 \end{flalign*}
 
 \hypertarget{def-npattern}{}
@@ -512,7 +511,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 
 \hypertarget{def-nfields}{}
 \begin{flalign*}
-\Nfields \derives \ & \Tlbrace \parsesep \TClist{\Ntypedidentifier} \parsesep \Trbrace &
+\Nfields \derives \ & \Tlbrace \parsesep \TClistZero{\Ntypedidentifier} \parsesep \Trbrace &
 \end{flalign*}
 
 \hypertarget{def-nfieldsopt}{}
@@ -522,7 +521,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 
 \hypertarget{def-nslices}{}
 \begin{flalign*}
-\Nslices \derives \ & \Tlbracket \parsesep \NClist{\Nslice} \parsesep \Trbracket &
+\Nslices \derives \ & \Tlbracket \parsesep \ClistOne{\Nslice} \parsesep \Trbracket &
 \end{flalign*}
 
 \hypertarget{def-nslice}{}
@@ -536,7 +535,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 
 \hypertarget{def-nbitfields}{}
 \begin{flalign*}
-\Nbitfields \derives \ & \Tlbrace \parsesep \TClist{\Nbitfield} \parsesep \Trbrace &
+\Nbitfields \derives \ & \Tlbrace \parsesep \TClistZero{\Nbitfield} \parsesep \Trbrace &
 \end{flalign*}
 
 \hypertarget{def-nbitfield}{}
@@ -554,7 +553,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
             |\ & \Tboolean &\\
             |\ & \Tbit &\\
             |\ & \Tbits \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \option{\Nbitfields} &\\
-            |\ & \Plist{\Nty} &\\
+            |\ & \PlistZero{\Nty} &\\
             |\ & \Tidentifier &\\
             |\ & \Tarray \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket \parsesep \Tof \parsesep \Nty &
 \end{flalign*}
@@ -562,7 +561,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 \hypertarget{def-ntydecl}{}
 \begin{flalign*}
 \Ntydecl \derives\ & \Nty &\\
-            |\ & \Tenumeration \parsesep \Tlbrace \parsesep \NTClist{\Tidentifier} \parsesep \Trbrace &\\
+            |\ & \Tenumeration \parsesep \Tlbrace \parsesep \TClistOne{\Tidentifier} \parsesep \Trbrace &\\
             |\ & \Trecord \parsesep \Nfieldsopt &\\
             |\ & \Texception \parsesep \Nfieldsopt &
 \end{flalign*}
@@ -589,7 +588,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     |\  & \Nexpr \parsesep \Nslices &\\
                     |\  & \Nexpr \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket &\\
                     |\  & \Nexpr \parsesep \Tdot \parsesep \Tidentifier&\\
-                    |\  & \Nexpr \parsesep \Tdot \parsesep \Tlbracket \parsesep \NClist{\Tidentifier} \parsesep \Trbracket &\\
+                    |\  & \Nexpr \parsesep \Tdot \parsesep \Tlbracket \parsesep \ClistOne{\Tidentifier} \parsesep \Trbracket &\\
                     |\  & \Nexpr \parsesep \Tas \parsesep \Nty &\\
                     |\  & \Nexpr \parsesep \Tas \parsesep \Nconstraintkind &\\
                     |\  & \Nexpr \parsesep \Tin \parsesep \Npatternset &\\
@@ -597,7 +596,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     |\  & \Nexpr \parsesep \Tneq \parsesep \Tmasklit &\\
                     |\  & \Tarbitrary \parsesep \Tcolon \parsesep \Nty &\\
                     |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace &\\
-                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nfieldassign} \parsesep \Trbrace &\\
+                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \ClistOne{\Nfieldassign} \parsesep \Trbrace &\\
                     |\  & \Tlpar \parsesep \Nexpr \parsesep \Trpar &\\
                     |\  & \Plisttwo{\Nexpr} &
 \end{flalign*}
@@ -620,7 +619,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 \begin{flalign*}
 \Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
                      |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
-                     |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tconcat \;|\; \Tcoloncolon
+                     |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon
 \end{flalign*}
 
 \section{Parse Trees \label{sec:ParseTrees}}
@@ -723,7 +722,7 @@ which is never returned by the scanner.
 \Tgt, \Tgeq, \Tlt, \Tleq & \nonassoc\\
 \Tplus, \Tminus, \Tor, \Txor, \Tand, \Tcoloncolon & \leftassoc\\
 \Tmul, \Tdiv, \Tdivrm, \Trdiv, \Tmod, \Tshl, \Tshr & \leftassoc\\
-\Tpow, \Tconcat & \leftassoc\\
+\Tpow & \leftassoc\\
 $\Tunops$ & \nonassoc\\
 \Tin & \nonassoc\\
 \Tdot, \Tlbracket, \Tllbracket & \leftassoc

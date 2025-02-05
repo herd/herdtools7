@@ -378,7 +378,7 @@ uses the rule \SemanticsRuleRef{EVar}.GLOBAL.
 
 \ASTRuleDef{EBinop}
 The following rule constructs a binary expression AST
-when a property on \emph{associative operators} holds (see \ASTRuleRef{CheckNotSamePrec}).
+and checks that a requirement on \emph{associative operators} holds (see \ASTRuleRef{CheckNotSamePrec}).
 
 \begin{mathpar}
   \inferrule{
@@ -423,26 +423,25 @@ We define the helper function
 \[
   \binopprec(\overname{\binop}{\op}) \aslto \N
 \]
-which assigns a precedence level to an associative binary operator $\op$,
-as defined below:
+which assigns a precedence level to each binary operator $\op$, as defined below:
 \begin{mathpar}
 \inferrule{}{
   {
   \binopprec(\op) \astarrow
   \begin{cases}
-    5 & \text{if }\op = \POW\\
-    4 & \text{if }\op \in \{\MUL, \DIV, \DIVRM, \RDIV, \MOD, \SHL, \SHR\}\\
-    3 & \text{if }\op \in \{\PLUS, \MINUS, \OR, \XOR, \AND\}\\
-    2 & \text{if }\op \in \{\EQOP, \NEQ\}\\
+    0 & \text{if }\op \in \{\GT, \GEQ, \LT, \LEQ\}\\
     1 & \text{if }\op \in \{\BOR, \BAND, \IMPL, \BEQ \}\\
-    0 & \text{else}
+    2 & \text{if }\op \in \{\EQOP, \NEQ\}\\
+    3 & \text{if }\op \in \{\PLUS, \MINUS, \OR, \XOR, \AND\}\\
+    4 & \text{if }\op \in \{\MUL, \DIV, \DIVRM, \RDIV, \MOD, \SHL, \SHR\}\\
+    5 & \text{if }\op = \POW\\
   \end{cases}
   }
 }
 \end{mathpar}
 
 \hypertarget{build-checknotsameprec}{}
-The helper function
+The function
 \[
 \checknotsameprec(\overname{\binop}{\op} \aslsep \overname{\expr}{\ve})
 \aslto \{\True\} \cup \overname{\TBuildError}{\BuildErrorConfig}
@@ -1045,9 +1044,9 @@ conditional expression evaluates to the \texttt{else} expression.
 
 \begin{flalign*}
 \Ncall \derives \
-     & \Tidentifier \parsesep \Plist{\Nexpr} &\\
-  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nexpr} \parsesep \Trbrace &\\
-  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nexpr} \parsesep \Trbrace \parsesep \Plist{\Nexpr} &
+     & \Tidentifier \parsesep \PlistZero{\Nexpr} &\\
+  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \ClistOne{\Nexpr} \parsesep \Trbrace &\\
+  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \ClistOne{\Nexpr} \parsesep \Trbrace \parsesep \PlistZero{\Nexpr} &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -1075,7 +1074,7 @@ conditional expression evaluates to the \texttt{else} expression.
 \inferrule{
   \buildplist[\buildexpr](\vargs) \astarrow \vargasts
 }{
-  \buildcall(\overname{\Ncall(\Tidentifier(\id), \namednode{\vargs}{\Plist{\Nexpr}})}{\vparsednode}) \astarrow \\
+  \buildcall(\overname{\Ncall(\Tidentifier(\id), \namednode{\vargs}{\PlistZero{\Nexpr}})}{\vparsednode}) \astarrow \\
   { \overname{\left\{
       \begin{array}{rcl}
         \callname &:& \id,\\
@@ -1089,7 +1088,7 @@ conditional expression evaluates to the \texttt{else} expression.
 \inferrule{
   \buildlist[\buildexpr](\vparams) \astarrow \astversion{\vparams} \\
 }{
-  \buildcall(\overname{\Ncall(\Tidentifier(\id), \Tlbrace, \namednode{\vparams}{\NClist{\Nexpr}}, \Trbrace)}{\vparsednode}) \astarrow \\
+  \buildcall(\overname{\Ncall(\Tidentifier(\id), \Tlbrace, \namednode{\vparams}{\ClistOne{\Nexpr}}, \Trbrace)}{\vparsednode}) \astarrow \\
   { \overname{\left\{
       \begin{array}{rcl}
               \callname &:& \id,\\
@@ -1104,7 +1103,7 @@ conditional expression evaluates to the \texttt{else} expression.
   \buildplist[\buildexpr](\vargs) \astarrow \vargasts \\
   \buildlist[\buildexpr](\vparams) \astarrow \astversion{\vparams} \\
 }{
-  \buildcall(\overname{\Ncall(\Tidentifier(\id), \Tlbrace, \namednode{\vparams}{\NClist{\Nexpr}}, \Trbrace, \namednode{\vargs}{\Plist{\Nexpr}})}{\vparsednode}) \astarrow \\
+  \buildcall(\overname{\Ncall(\Tidentifier(\id), \Tlbrace, \namednode{\vparams}{\ClistOne{\Nexpr}}, \Trbrace, \namednode{\vargs}{\PlistZero{\Nexpr}})}{\vparsednode}) \astarrow \\
   { \overname{\left\{
       \begin{array}{rcl}
               \callname &:& \id,\\
@@ -1855,7 +1854,7 @@ All of the following apply:
 \section{Multi-field Reading Expressions\label{sec:MultiFieldReadingExpressions}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nexpr \derives\  & \Nexpr \parsesep \Tdot \parsesep \Tlbracket \parsesep \NClist{\Tidentifier} \parsesep \Trbracket &
+\Nexpr \derives\  & \Nexpr \parsesep \Tdot \parsesep \Tlbracket \parsesep \ClistOne{\Tidentifier} \parsesep \Trbracket &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -1871,7 +1870,7 @@ All of the following apply:
   }{
     {
       \begin{array}{r}
-  \buildexpr(\overname{\Nexpr(\ve : \Nexpr, \Tdot, \Tlbracket, \namednode{\vids}{\NClist{\Tidentifier}}, \Trbracket)}{\vparsednode}) \astarrow\\
+  \buildexpr(\overname{\Nexpr(\ve : \Nexpr, \Tdot, \Tlbracket, \namednode{\vids}{\ClistOne{\Tidentifier}}, \Trbracket)}{\vparsednode}) \astarrow\\
   \overname{\EGetFields(\astversion{\ve}, \vidasts)}{\vastnode}
       \end{array}
     }
@@ -2829,7 +2828,7 @@ Notice that this rule introduces non-determinism.
 \subsection{Syntax}
 \begin{flalign*}
 \Nexpr \derives\  & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace &\\
-	       |\ & \Tidentifier \parsesep \Tlbrace \parsesep \NClist{\Nfieldassign} \parsesep \Trbrace &\\
+	       |\ & \Tidentifier \parsesep \Tlbrace \parsesep \ClistOne{\Nfieldassign} \parsesep \Trbrace &\\
 \Nfieldassign \derives \ & \Tidentifier \parsesep \Teq \parsesep \Nexpr &
 \end{flalign*}
 
@@ -2863,7 +2862,7 @@ Notice that this rule introduces non-determinism.
   \buildexpr\left(\overname{\Nexpr\left(
     \begin{array}{l}
     \Tidentifier(\vt), \Tlbrace, \\
-    \wrappedline\ \namednode{\vfieldassigns}{\NClist{\Nfieldassign}}, \\
+    \wrappedline\ \namednode{\vfieldassigns}{\ClistOne{\Nfieldassign}}, \\
     \wrappedline\ \Trbrace
     \end{array}
     \right)}{\vparsednode}\right) \\

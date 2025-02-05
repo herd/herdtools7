@@ -43,7 +43,7 @@ Global storage declarations:
 
 Pragmas:
 \begin{flalign*}
-\Ndecl  \derives \ & \Tpragma \parsesep \Tidentifier \parsesep \Clist{\Nexpr} \parsesep \Tsemicolon&
+\Ndecl  \derives \ & \Tpragma \parsesep \Tidentifier \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon&
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -75,7 +75,7 @@ The case rules for building global declarations are the following:
 \inferrule[global\_pragma]{
   \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
 }{
-    \builddecl(\overname{\Ndecl(\Tpragma, \Tidentifier(\id), \namednode{\vargs}{\Clist{\Nexpr}}, \Tsemicolon)}{\vparsednode})
+    \builddecl(\overname{\Ndecl(\Tpragma, \Tidentifier(\id), \namednode{\vargs}{\ClistZero{\Nexpr}}, \Tsemicolon)}{\vparsednode})
   \astarrow
     \overname{\DPragma(\id, \astversion{\vargs})}{\vastnode}
 }

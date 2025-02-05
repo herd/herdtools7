@@ -170,14 +170,7 @@ let plist0(x) == pared(clist0(x))
 (* A parenthesised comma-separated list with at least 2 elements. *)
 let plist2(x) == pared(clist2(x))
 
-(* Produces a list of [x]s, optionally followed by a single [y] that would go
-   in the tail of the list *)
-let list1_opt_terminated(x, y) :=
-  | ~=x; { [ x ] }
-  | ~=x; ~=y; { [ x; y ] }
-  | ~=x; l=list1_opt_terminated(x, y); { x :: l }
-
-(* A parametarised list with at least 1 element *)
+(* A parameterized list with at least 1 element *)
 let list1(x) :=
   | ~=x; { [ x ] }
   | ~=x; l=list1(x); { x :: l }

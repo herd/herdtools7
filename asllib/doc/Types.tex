@@ -102,7 +102,7 @@ expressions and statements.
 \begin{flalign*}
 \Nty \derives\ & \Tinteger \parsesep \Nconstraintkindopt &\\
 \Nconstraintkindopt \derives \ & \Nconstraintkind \;|\; \emptysentence &\\
-\Nconstraintkind \derives \ & \Tlbrace \parsesep \NClist{\Nintconstraint} \parsesep \Trbrace &\\
+\Nconstraintkind \derives \ & \Tlbrace \parsesep \ClistOne{\Nintconstraint} \parsesep \Trbrace &\\
 |\ & \Tlbrace \parsesep \Tminus \parsesep \Trbrace &\\
 \Nintconstraint \derives \ & \Nexpr &\\
 |\ & \Nexpr \parsesep \Tslicing \parsesep \Nexpr &
@@ -171,7 +171,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }{
   {
     \begin{array}{r}
-  \buildconstraintkind(\Nconstraintkind(\Tlbrace, \namednode{\vconstraints}{\NClist{\Nintconstraint}}, \Trbrace)) \astarrow\\
+  \buildconstraintkind(\Nconstraintkind(\Tlbrace, \namednode{\vconstraints}{\ClistOne{\Nintconstraint}}, \Trbrace)) \astarrow\\
   \overname{\wellconstrained(\vconstraintasts)}{\vastnode}
     \end{array}
   }
@@ -492,7 +492,7 @@ All of the following apply:
 \begin{flalign*}
 \Nty \derives\ & \Tbit &\\
             |\ & \Tbits \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \option{\Nbitfields} &\\
-\Nbitfields \derives \ & \Tlbrace \parsesep \TClist{\Nbitfield} \parsesep \Trbrace &\\
+\Nbitfields \derives \ & \Tlbrace \parsesep \TClistZero{\Nbitfield} \parsesep \Trbrace &\\
 \Nbitfield \derives \ & \Nslices \parsesep \Tidentifier &\\
                   |\ & \Nslices \parsesep \Tidentifier \parsesep \Nbitfields &\\
                   |\ & \Nslices \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &\\
@@ -576,7 +576,7 @@ must be non-negative.
 \section{Tuple Types\label{sec:TupleTypes}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nty \derives\ & \Plist{\Nty} &
+\Nty \derives\ & \PlistZero{\Nty} &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -589,7 +589,7 @@ must be non-negative.
 \inferrule{
   \buildplist[\buildty](\vtypes) \astarrow \vtypeasts
 }{
-  \buildty(\Nty(\namednode{\vtypes}{\Plist{\Nty}})) \astarrow
+  \buildty(\Nty(\namednode{\vtypes}{\PlistZero{\Nty}})) \astarrow
   \overname{\TTuple(\vtypeasts)}{\vastnode}
 }
 \end{mathpar}
@@ -913,7 +913,7 @@ One of the following applies:
 \section{Enumeration Types\label{sec:EnumerationTypes}}
 \subsection{Syntax}
 \begin{flalign*}
-\Ntydecl \derives\ & \Tenumeration \parsesep \Tlbrace \parsesep \NTClist{\Tidentifier} \parsesep \Trbrace &
+\Ntydecl \derives\ & \Tenumeration \parsesep \Tlbrace \parsesep \TClistOne{\Tidentifier} \parsesep \Trbrace &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -928,7 +928,7 @@ One of the following applies:
 }{
   {
     \begin{array}{r}
-  \buildtydecl(\Ntydecl(\Tenumeration, \Tlbrace, \namednode{\vids}{\NTClist{\Tidentifier}}, \Trbrace)) \astarrow\\
+  \buildtydecl(\Ntydecl(\Tenumeration, \Tlbrace, \namednode{\vids}{\TClistOne{\Tidentifier}}, \Trbrace)) \astarrow\\
   \overname{\TEnum(\vidasts)}{\vastnode}
 \end{array}
   }

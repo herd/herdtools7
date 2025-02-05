@@ -734,7 +734,7 @@ All of the following apply:
 \Npattern     \derives\   & \Npatternset &\\
 \Npatternset  \derives \  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
                   |\      & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
-\Npatternlist \derives \ & \NClist{\Npattern} &
+\Npatternlist \derives \ & \ClistOne{\Npattern} &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -782,7 +782,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }{
   {
     \begin{array}{r}
-  \buildpatternlist(\Npatternlist(\namednode{\vpatterns}{\NClist{\Npattern}})) \astarrow\\
+  \buildpatternlist(\Npatternlist(\namednode{\vpatterns}{\ClistOne{\Npattern}})) \astarrow\\
   \overname{\PatternAny(\vpatternasts)}{\vastnode}
     \end{array}
   }
@@ -1010,7 +1010,7 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
   }{
     {
       \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tdot, \Tlbracket, \namednode{\vids}{\NClist{\Tidentifier}}, \Trbracket)) \astarrow\\
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tdot, \Tlbracket, \namednode{\vids}{\ClistOne{\Tidentifier}}, \Trbracket)) \astarrow\\
   \overname{\EGetFields(\astof{\vexprpattern}, \vidasts)}{\vastnode}
       \end{array}
     }
@@ -1103,7 +1103,7 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
   \buildexprpattern\left(\Nexprpattern\left(
     \begin{array}{l}
     \Tidentifier(\vt), \Tlbrace, \\
-    \wrappedline\ \namednode{\vfieldassigns}{\Clist{\Nfieldassign}}, \\
+    \wrappedline\ \namednode{\vfieldassigns}{\ClistZero{\Nfieldassign}}, \\
     \wrappedline\ \Trbrace
     \end{array}
     \right)\right) \\
