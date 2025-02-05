@@ -1682,13 +1682,13 @@ will definitely result in a dynamic error.
     \begin{itemize}
       \item applying $\binopisexploding$ to $\op$ yields $\True$;
       \item applying $\explodeintervals$ to $\csone$ in $\tenv$ yields $\csonee$;
-      \item applying $\explodeintervals$ to $\cstwo$ in $\tenv$ yields $\cstwo$;
+      \item applying $\explodeintervals$ to $\cstwof$ in $\tenv$ yields $\cstwoe$;
       \item \Proseeqdef{$\vexpectedconstraintlength$}{the number of constraints in \\
             $\cstwoe$ if $\op$ is $\MOD$
             and the multiplication of numbers of constraints in $\csonee$ and $\cstwoe$, respectively};
       \item \Proseeqdef{$(\csonearg, \cstwoarg)$}{$(\csonee, \cstwoe)$ if \\
             $\vexpectedconstraintlength$ is
-            less than $2^{17}$ and $(\csone, \cstwof)$, otherwise};
+            less than $\maxconstraintsize$ and $(\csone, \cstwof)$, otherwise};
     \end{itemize}
 
     \item \AllApplyCase{non\_exploding}
@@ -1713,7 +1713,7 @@ will definitely result in a dynamic error.
   \vexpectedconstraintlength \eqdef \choice{\op = \MOD}{\listlen{\cstwoe}}{\listlen{\csonee} \times \listlen{\cstwoe}}\\
   {
   (\csonearg, \cstwoarg) \eqdef \begin{cases}
-    (\csonee, \cstwoe) & \text{if }\vexpectedconstraintlength < 2^{17}\\
+    (\csonee, \cstwoe) & \text{if }\vexpectedconstraintlength < \maxconstraintsize\\
     (\csone, \cstwof) & \text{else}
   \end{cases}
   }\\\\
@@ -1749,6 +1749,11 @@ The function
 \binopfilterrhs(\overname{\staticenvs}{\tenv} \aslsep \overname{\binop}{\op} \aslsep \overname{\intconstraint^*}{\cs})
 \aslto \overname{\intconstraint^*}{\newcs}
 \]
+filters the list of constraints $\cs$ by removing values that will definitely result in a dynamic
+error if found on the right-hand-side of a binary operation expression with the operator $\op$
+in any environment consisting of the static environment $\tenv$.
+The result is the filtered list of constraints $\newcs$.
+
 \subsubsection{Prose}
 One of the following applies:
 \begin{itemize}
@@ -2390,16 +2395,16 @@ The function
 \[
 \intervaltoolarge(\overname{\Z}{\vzone} \aslsep \overname{\Z}{\vztwo}) \aslto \overname{\Bool}{\vb}
 \]
-tests whether the set of numbers between $\vzone$ and $\vztwo$, inclusive, contains more than $2^{14}$
+tests whether the set of numbers between $\vzone$ and $\vztwo$, inclusive, contains more than $\maxexplodedintervalsize$
 integers, yielding the result in $\vb$.
 
 \subsubsection{Prose}
-The value $\vb$ is $\True$ if and only if $\vztwo-\vzone$ is greater than $2^{14}$.
+The value $\vb$ is $\True$ if and only if $\vztwo-\vzone$ is greater than $\maxexplodedintervalsize$.
 
 \subsubsection{Formally}
 \begin{mathpar}
 \inferrule{}{
-  \intervaltoolarge(\vzone, \vztwo) \typearrow \overname{\vztwo-\vzone > 2^{14}}{\vb}
+  \intervaltoolarge(\vzone, \vztwo) \typearrow \overname{\vztwo-\vzone > \maxexplodedintervalsize}{\vb}
 }
 \end{mathpar}
 
