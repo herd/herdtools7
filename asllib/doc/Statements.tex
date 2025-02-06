@@ -3288,7 +3288,9 @@ by composing the graphs in $\vms$ with Write Effects for the respective values.
   \astarrow
   \overname{\SPrint(\astversion{\vargs}, \vnewline)}{\vastnode}
 }
-\\
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule{%
   \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
   \vnewline \eqdef \True \\
@@ -3301,8 +3303,9 @@ by composing the graphs in $\vms$ with Write Effects for the respective values.
 \end{mathpar}
 
 \subsection{Typing}
-
 \TypingRuleDef{SPrint}
+\listingref{literals1} shows literals and their corresponding types in comments.
+
 \ProseParagraph
 All of the following apply:
 \begin{itemize}
@@ -3327,47 +3330,153 @@ All of the following apply:
 \CodeSubsection{\SPrintBegin}{\SPrintEnd}{../Typing.ml}
 
 \subsection{Semantics}
+\SemanticsRuleDef{SPrint}
 
-Not all ASL backends support printing to a console.
-%
-Therefore, the semantics is parameterized by the function $\outputtoconsole$,
-which takes a string and communicates it to a console, where one exists.%
-\footnote{%
-  Formally, the console can be modelled by adding a string-typed component to
-  the global dybamic environment, which concatenates all strings that were sent
-  to it. For brevity, and since it is only used for print statements, we omit
-  this component from our definition of a dynamic environment.%
-}
+\subsection{Example (Printing Literals)}
+\listingref{semantics-literals} shows examples of printing various types of literals,
+followed by the output to the console resulting from running the specification.
+\ASLListing{Literals and how they are displayed}{semantics-literals}{\semanticstests/SemanticsRule.SPrint.asl}
+\begin{verbatim}
+string_number_1
+1000000
+53170898287292728730499578000
+TRUE
+FALSE
+12345678900123456789/10000000000
+hello\world
+          "here I am "
+
+0xd
+0x
+LABEL_B
+\end{verbatim}
 
 \ProseParagraph
-All of the following apply:
+\OneApplies
 \begin{itemize}
-  \item $\vs$ denotes a Print statement with arguments $\elist$ and newline indicator $\vnewline$;
-  \item the evaluation of $\elist$ in $\env$ is $\Normal((\vlist, \vg), \newenv)$\ProseOrAbnormal;
-  \item \hyperlink{def-outputtoconsole}{prints} all the elements in $\elist$, without separator;
-  \item if $\vnewline$ is $\True$, prints a newline character;
-  \item $\newenv$ is $\env$.
+  \item \AllApplyCase{print}
+  \begin{itemize}
+    \item $\vs$ denotes a Print statement with arguments $\elist$ and newline indicator $\False$;
+    \item the evaluation of $\elist$ in $\env$ is $\Normal((\vlist, \vg), \newenv)$\ProseOrAbnormal;
+    \item \Proseoutputtoconsole{all the elements in $\elist$, without a separator,};
+    \item if $\vnewline$ is $\True$, \Proseoutputtoconsole{a newline character};
+  \end{itemize}
+
+  \item \AllApplyCase{println}
+  \begin{itemize}
+    \item $\vs$ denotes a Print statement with arguments $\elist$ and newline indicator $\True$;
+    \item the evaluation of the same statement with a newline indicator set to $\False$, that is,
+          $\SPrint(\elist, \False)$ yields the configuration $\Continuing(\vg, \envone)$\ProseOrAbnormal;
+    \item \Proseoutputtoconsole{a newline character};
+  \end{itemize}
+  \item the resulting configuration is $\Continuing(\vg, \newenv)$.
 \end{itemize}
 
 \FormallyParagraph
+\begin{mathpar}
+\inferrule[Print]{
+  \evalexprlist{\env, \elist} \evalarrow \Normal((\vlist, \vg), \env_1) \OrAbnormal\\
+  \vi\in\listrange(\vlist): \outputtoconsole(\env_\vi, \vlist[i]) \evalarrow \env_{\vi + 1} \\
+  n \eqdef \listlen{\vlist}\\
+  \newenv \eqdef \env_{n + 1}
+}{
+  \evalstmt{\env, \SPrint(\elist, \False)} \evalarrow \Continuing(\vg, \newenv)
+}
+\end{mathpar}
 
 \begin{mathpar}
-  \inferrule[Print]{%
-    \evalexprlist{\env, \elist} \evalarrow \Normal((\vlist, \vg), \newenv) \OrAbnormal\\
-    \vi\in\listrange(\vlist): \outputtoconsole(\vlist[i]) \\
-  }{%
-    \evalstmt{\env, \SPrint(\elist, \False)} \evalarrow \Continuing(\vg, \newenv)
-  }
-  \\
-  \inferrule[Println]{%
-    \evalexprlist{\env, \elist} \evalarrow \Normal((\vlist, \vg), \newenv) \OrAbnormal\\
-    \vi\in\listrange(\vlist): \outputtoconsole(\vlist[i]) \\
-    \outputtoconsole(\lstring(\texttt{"\char`\\n"})) \\
-  }{%
-    \evalstmt{\env, \SPrint(\elist, \True)} \evalarrow \Continuing(\vg, \newenv)
-  }
+\inferrule[Println]{
+  \evalstmt{\env, \SPrint(\elist, \False)} \evalarrow \Continuing(\vg, \envone) \OrAbnormal\\\\
+  \outputtoconsole(\envone, \nvstring(\texttt{"\char`\\n"})) \evalarrow \newenv
+}{
+  \evalstmt{\env, \SPrint(\elist, \True)} \evalarrow \Continuing(\vg, \newenv)
+}
 \end{mathpar}
 \CodeSubsection{\EvalSPrintBegin}{\EvalSPrintEnd}{../Interpreter.ml}
+
+\SemanticsRuleDef{OutputToConsole}
+Not all ASL runtimes support printing to a console (see \RequirementRef{Printing}).
+%
+Therefore, the semantics is parameterized by the function
+\hypertarget{def-outputtoconsole}{}
+\[
+\outputtoconsole(\overname{\envs}{\env} \aslsep \overname{\vals}{\vv}) \aslto
+  \overname{\envs}{\newenv}
+\]
+which takes a string and communicates it to a console, where one exists.
+
+We now explain how printing is modelled when the runtime supports a console
+and how it is modelled when the runtime does not support a console.
+
+\subsubsection{Runtime Does Not Support a Console}
+The function ignores the string value and returns the environment unchanged.
+
+\ProseParagraph
+\ProseEqdef{$\newenv$}{$\env$}.
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[no\_console]{}{
+  \outputtoconsole(\env, \Ignore) \evalarrow \overname{\env}{\newenv}
+}
+\end{mathpar}
+
+\subsubsection{Runtime Supports a Console}
+To support a console, the definition of environments needs
+to include an extra component to capture the string of characters sent to the console:
+\[
+\envs \triangleq \staticenvs \times \dynamicenvs \times \Strings \enspace.
+\]
+We omit this component in the rest of this document to avoid clutter, and include it
+only here to explain the modeling of a console.
+
+\hypertarget{def-literaltostring}{}
+The helper function $\literaltostring : \literal \aslto \Strings$,
+which defines how a literal is represented by a string,
+is defined by the following table.
+%
+Please note that surrounding quotations mark for $\lstring(S)$ are not included
+in $\literaltostring(S)$, so they will appear in the printed string.
+
+\begin{tabular}{rl}
+\textbf{literal $\vl$} & \textbf{$\literaltostring(\vl)$} \\
+\hline
+$\lint(n)$        & $n$ in decimal format, without any leading zeros, \\
+                  & preceded by a ``\texttt{-}'' sign if $n$ is negative. \\
+$\lbool(\True)$   & \texttt{TRUE} \\
+$\lbool(\False)$  & \texttt{FALSE} \\
+$\lreal(q)$       & $q$ as an irreducible fraction of positive integers, \\
+                  & preceded by a ``\texttt{-}'' sign when $q$ is negative, \\
+                  & with the denominator omitted if it is equal to 1. \\
+$\lbitvector(b)$  & $b$ in hexadecimal, preceded by ``\texttt{0x}'', with enough leading \\
+                  & zeros to make the number of hexadecimal digits printed \\
+                  & equal to the width of $b$ divided by 4, and rounded up to \\
+                  & the following integer.\\
+$\lstring(S)$     & $S$. \\
+$\llabel(s)$      & $s$. \\
+\end{tabular}
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item view $\env$ as the environment consisting of the static environment $\tenv$,
+        dynamic environment $\denv$, and console string $\vconsolestream$;
+  \item view $\vv$ as a native literal for the literal $\vl$;
+  \item \Proseeqdef{$\newenv$}{the environment consisting of the static environment $\tenv$,
+        dynamic environment $\denv$, and console string
+        define as the concatenation of \\
+        $\vconsolestream$ and $\literaltostring(\vl)$}.
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[console\_exists]{
+  \env \eqname (\tenv, \denv, \vconsolestream)\\
+  \newenv \eqdef (\tenv, \denv, \vconsolestream \concat \literaltostring(\vl))
+}{
+  \outputtoconsole(\env, \nvliteral{\vl}) \evalarrow (\newenv)
+}
+\end{mathpar}
 
 \hypertarget{def-unreachablestatementterm}{}
 \section{The Unreachable Statement\label{sec:UnreachableStatement}}
