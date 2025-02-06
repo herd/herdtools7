@@ -19,11 +19,13 @@
 
 module type S  = sig
   val user_handler_clobbers : string list
+  val default_sync_handler : bool -> string
   val vector_table : bool -> string -> string list
 end
 
 module No = struct
   let user_handler_clobbers = []
+  let default_sync_handler _ = ""
   let vector_table _ _ = []
 end
               

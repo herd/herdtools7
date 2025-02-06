@@ -340,10 +340,14 @@ module RegMap = A.RegMap)
 
       let before_dump args0 compile_out_reg compile_val compile_cpy
           chan indent proc t trashed =
+        List.iter
+          (fun (t,n) ->
+             fprintf chan "  extern %s %s;\n" (CType.dump t) n)
+          args0.Template.externs ;
         begin match args0.Template.trashed with
         | [] -> ()
         | trs ->
-            fprintf chan "uint64_t %s;" (String.concat "," trs)
+            fprintf chan "  uint64_t %s;\n" (String.concat "," trs)
         end ;
         RegSet.iter
           (fun reg ->
@@ -547,9 +551,12 @@ module RegMap = A.RegMap)
             addrs_proc in
         let params0 =
           List.map
-            (fun ((t,n),_) ->
-              sprintf "%s %s" (CType.dump t) n)
-          args0.Template.inputs in
+            (fun (tns,_) ->
+               List.map
+                 (fun (t,n)  ->
+                    sprintf "%s %s" (CType.dump t) n)
+                 tns)
+          args0.Template.inputs |> List.flatten in
         let ptes =
           List.map
             (fun x -> sprintf "pteval_t *%s" (Misc.add_pte x))
