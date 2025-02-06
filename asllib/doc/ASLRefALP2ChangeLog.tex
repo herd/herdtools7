@@ -1,17 +1,17 @@
-\chapter{ASLRef ALP2 Changelog}
+\section{ALP2}
 
 The following changes have been made.
 
-\section{ASL-676: Add \texttt{;} at the end of \texttt{if...end} statements}
+\subsection{ASL-676: Add \texttt{;} at the end of \texttt{if...end} statements}
 
 Add \texttt{;} at end of block statements.
 For consistency this includes: \texttt{if...end}, \texttt{while...end},
 \texttt{for...end}, \texttt{try...catch...end}, \texttt{case...end},
 \texttt{begin...end}.
 
-\section{ASL-675: Reduce overloading of \texttt{[]}}
+\subsection{ASL-675: Reduce overloading of \texttt{[]}}
 
-\subsection{Keep \texttt{[]} around lists of bitvector/record field
+\subsubsection{Keep \texttt{[]} around lists of bitvector/record field
 names for bit packing/unpacking}
 
 For example:
@@ -22,7 +22,7 @@ PSTATE.[N,Z,C,V] = nzcv;
   // unpack 4-bit nzcv into 4 x PSTATE bits
 \end{verbatim}
 
-\subsection{Replace \texttt{[]} around bitvectors to be concatenated
+\subsubsection{Replace \texttt{[]} around bitvectors to be concatenated
 with the \texttt{::} bit-concatenation operator}
 
 For example:
@@ -36,7 +36,7 @@ value = highhalf :: lowhalf;
 The \texttt{::} binary operator is associative, and its precedence is
 level 5 (Add-Sub-Logic).
 
-\subsection{Remove support for \texttt{[]} on LHSs of assignments}
+\subsubsection{Remove support for \texttt{[]} on LHSs of assignments}
 
 For example, the following code from \texttt{SHA256hash()}:
 \begin{verbatim}
@@ -54,11 +54,11 @@ var tmp = ROL (y :: x, 32);
 (y, x) = (tmp[1*:128], tmp[0*:128]);
 \end{verbatim}
 
-\subsection{Add \texttt{[:wid]} as syntactic sugar for \texttt{[0+:wid]}}
+\subsubsection{Add \texttt{[:wid]} as syntactic sugar for \texttt{[0+:wid]}}
 
 In other words, the least significant \texttt{wid} bits.
 
-\subsection{Change array indexing syntax}
+\subsubsection{Change array indexing syntax}
 
 Change array indexing syntax from:
 \begin{verbatim}
@@ -69,7 +69,7 @@ to:
 myArray[[index]]
 \end{verbatim}
 
-\subsection{Use parentheses for getter/setter argument lists}
+\subsubsection{Use parentheses for getter/setter argument lists}
 
 For example:
 \begin{verbatim}
@@ -80,7 +80,7 @@ becomes:
 reg(index) = value
 \end{verbatim}
 
-\section{ASL-677 and ASL-742: \texttt{integer\{-\}} syntax for inherited integer constraints}
+\subsection{ASL-677 and ASL-742: \texttt{integer\{-\}} syntax for inherited integer constraints}
 Add a new syntax to explicitly declare integer types on the LHS of an assignment
 which inherit their constraint from the RHS:
 
@@ -95,7 +95,20 @@ let ci : integer{-} = UInt(Rn);
   // inheriting constraint {0..31} from UInt()
 \end{verbatim}
 
-\section{ASL-622: Loop/recursion limits annotations}
+\subsection{ASL-624: Base values}
+
+The current base value rules apply so long as the type of the variable or
+field is unconstrained or all of the constraint's expressions use only
+compile-time constants and literals.
+
+If the variable's or field's type are parameterized or the constraint
+values cannot be determined statically, then it is the programmer's
+responsibility to provide an explicit initialising assignment, since a
+declaration should never have an undefined value. The initialising
+expression does not need to be constant, but must satisfy the
+constraints.
+
+\subsection{ASL-622: Loop/recursion limits annotations}
 
 Inline \texttt{@looplimit} and \texttt{@recurselimit} into the loop syntax, as
 optional qualifiers \texttt{looplimit} and \texttt{recurselimit}.
@@ -110,27 +123,14 @@ A limit greater than or equal to $2^{128}$ is explicitly \texttt{Unbounded}.
 
 \includegraphics[width=\textwidth]{looprecurselimit.png}
 
-\section{ASL-624: Base values}
-
-The current base value rules apply so long as the type of the variable or
-field is unconstrained or all of the constraint's expressions use only
-compile-time constants and literals.
-
-If the variable's or field's type are parameterized or the constraint
-values cannot be determined statically, then it is the programmer's
-responsibility to provide an explicit initialising assignment, since a
-declaration should never have an undefined value. The initialising
-expression does not need to be constant, but must satisfy the
-constraints.
-
-\section{ASL-629: Define side-effects}
+\subsection{ASL-629: Define side-effects}
 
 The order of conflicting evaluations is explicitly defined in the ASLRef
 specification. A summary is as follows.
 
 \includegraphics[width=\textwidth]{sideeffects.png}
 
-\section{ASL-630: Behaviour of print}
+\subsection{ASL-630: Behaviour of print}
 There are two variants, \texttt{print} and \texttt{println}, which behave
 as follows:
 \begin{verbatim}
@@ -159,17 +159,17 @@ print("helloworld", 42); printMybitvector(mybits); println("");
 The following table summarises the supported values:\\
 \includegraphics[width=\textwidth]{print.png}
 
-\section{ASL-632: Parameters simplification}
+\subsection{ASL-632: Parameters simplification}
 
-\subsection{Functions must be declared with all parameters in braces}
+\subsubsection{Functions must be declared with all parameters in braces}
 None can be parameter-defining arguments.
 
-\subsection{Parameters must be declared in a specific order}
+\subsubsection{Parameters must be declared in a specific order}
 
 Textually left-to-right as they appear in first the return type, then the
 argument types.
 
-\subsection{Functions must be called with all parameters instantiated using the braced syntax}
+\subsubsection{Functions must be called with all parameters instantiated using the braced syntax}
 Except for the following (optional) cases:
 \begin{itemize}
 \item Standard library functions, which can omit their input parameters -
@@ -179,7 +179,7 @@ the left-hand side is explicitly type annotated. These can inherit their
 return parameter (first in the parameter list) from the left-hand side.
 \end{itemize}
 
-\subsection{Modify the signature of \texttt{Replicate} to align with \texttt{SignExtend} and \texttt{ZeroExtend}}
+\subsubsection{Modify the signature of \texttt{Replicate} to align with \texttt{SignExtend} and \texttt{ZeroExtend}}
 
 In other words, allow its parameters to be elided:
 \begin{verbatim}
@@ -190,7 +190,7 @@ begin
 end
 \end{verbatim}
 
-\subsection{Call sites can elide empty argument lists \texttt{()} if
+\subsubsection{Call sites can elide empty argument lists \texttt{()} if
 there is a non-empty parameter list}
 For example, \texttt{Zeros\{64\}}. However, this cannot
 be applied in conjunction with an elided single parameter on RHS.
@@ -231,9 +231,9 @@ let - : bits(64) = ZeroExtend{}('11');
   // can also elide the output parameter N
 \end{verbatim}
 
-\section{ASL-710: Syntax for \texttt{IN '10xx'}}
+\subsection{ASL-710: Syntax for \texttt{IN '10xx'}}
 
-\subsection{Require that the \texttt{IN} set membership operator always
+\subsubsection{Require that the \texttt{IN} set membership operator always
 requires \{ and \} around the set}
 
 This is regardless of the number of members.
@@ -248,7 +248,7 @@ single-member sets but is not anymore:
 IN '000x'}
 \end{itemize}
 
-\subsection{Reintroduce ASL0 syntactic sugar}
+\subsubsection{Reintroduce ASL0 syntactic sugar}
 
 This means that:
 \begin{itemize}
@@ -256,19 +256,19 @@ This means that:
 \item \texttt{!Mybits IN \{'000x'\}} can be written as \texttt{Mybits != '000x'}
 \end{itemize}
 
-\section{ASL-738: Rename \texttt{UNKNOWN} to \texttt{ARBITRARY}}
+\subsection{ASL-738: Rename \texttt{UNKNOWN} to \texttt{ARBITRARY}}
 
 \texttt{UNKNOWN} keyword is renamed to \texttt{ARBITRARY}.
 
 
-\section{ASL-637: Dynamic and static errors}
+\subsection{ASL-637: Dynamic and static errors}
 
 The taxonomy of ASL errors as dynamic or static has been captured in the ASLRef
 specification. A summary is as follows.
 
 \includegraphics[width=\textwidth]{ASL-error-status.pdf}
 
-\section{ASL-702: Underscore identifiers}
+\subsection{ASL-702: Underscore identifiers}
 
 Any identifier with a double-underscore (\texttt{\_\_}) prefix is
 treated as a static error by ASLRef. Other compilers might recognise
@@ -298,7 +298,7 @@ statements
 watch
 \end{verbatim}
 
-\section{ASL-741: Behaviour of \texttt{ARBITRARY}}
+\subsection{ASL-741: Behaviour of \texttt{ARBITRARY}}
 
 Clarify behaviour of \texttt{ARBITRARY} as follows:
 
@@ -320,31 +320,31 @@ is no way to test whether a value was produced by evaluating
 \texttt{ARBITRARY}).
 \end{enumerate}
 
-\section{ASL-706: Getters and setters simplification}
+\subsection{ASL-706: Getters and setters simplification}
 
-\subsection{Forbid getters and setters without an argument list}
+\subsubsection{Forbid getters and setters without an argument list}
 
 Although that list could be empty.
 
-\subsection{Restrict setter usage on some left-hand sides}
+\subsubsection{Restrict setter usage on some left-hand sides}
 
 For example, no setters in tuples.
 
-\section{ASL-744: Clarifying left-hand sides}
+\subsection{ASL-744: Clarifying left-hand sides}
 
-\subsection{Mutable assignments}
+\subsubsection{Mutable assignments}
 
 \includegraphics[width=\textwidth]{lhs-multiple.png}
 
-\subsection{Declarations}
+\subsubsection{Declarations}
 
 \includegraphics[width=\textwidth]{lhs-declarations.png}
 
-\section{ASL-596: Remove \texttt{Int()} and \texttt{IsZeroBit()} in the standard library}
+\subsection{ASL-596: Remove \texttt{Int()} and \texttt{IsZeroBit()} in the standard library}
 
-\section{ASL-539: Nested bitfields}
+\subsection{ASL-539: Nested bitfields}
 
-\subsection{Ensure that nested bitfields checks in ASLRef handle the following patterns}
+\subsubsection{Ensure that nested bitfields checks in ASLRef handle the following patterns}
 
 \begin{verbatim}
 type Nested_Type of bits(32) {
@@ -379,7 +379,7 @@ let fixed = nested.fmt0.fixed;
 let fixed = nested.fmt1.fixed;
 \end{verbatim}
 
-\subsection{Require that fields with same name occupy the same absolute bit
+\subsubsection{Require that fields with same name occupy the same absolute bit
 positions in all ancestor fields}
 
 This will result in a static error if this requirement is not met.
