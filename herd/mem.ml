@@ -523,7 +523,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           let env =
             match branch with
             | S.B.Next bds|S.B.Jump (_,bds)|S.B.IndirectJump (_,_,bds)
-            | B.Fault bds ->
+            | B.Fault (_,bds) ->
                 List.fold_right
                   (fun (r,v) -> A.set_reg r v)
                   bds env
@@ -557,7 +557,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             addr in
           EM.failcodeT (Misc.UserError msg) true
 
-      and add_fault re_exec inst fetch_proc proc env seen addr nexts =
+      and add_fault re_exec inst fetch_proc proc env seen addr syscall nexts =
         match env.A.fh_code,re_exec with
         | Some _, true ->
            let e = "Fault inside a fault handler" in
@@ -569,10 +569,19 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         | None, false ->
            let open Fault.Handling in
            match C.fault_handling with
-           | Fatal -> EM.unitcodeT true
-           | Skip -> add_code false fetch_proc proc env seen nexts
+           | Fatal ->
+               (* Abort thread execution *)
+               EM.unitcodeT true
+           | Skip ->
+               (* Execute next instruction *)
+               add_code false fetch_proc proc env seen nexts
            | Handled ->
-              add_next_instr true fetch_proc proc env seen addr inst nexts
+               (* "Natural" behaviour, differs between syscalls and faults *)
+               if syscall then
+                 (* Execute instruction *)
+                 add_code false fetch_proc proc env seen nexts
+               else (* execute  again the same instruction *)
+                 add_next_instr true fetch_proc proc env seen addr inst nexts
 
       and next_instr re_exec inst fetch_proc proc env seen addr nexts b =
         match b with
@@ -581,8 +590,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           add_code re_exec fetch_proc proc env seen nexts
       | S.B.Jump (tgt,_) ->
           add_tgt re_exec true proc env seen addr tgt
-      | S.B.Fault _ ->
-          add_fault re_exec inst fetch_proc proc env seen addr nexts
+      | S.B.Fault (syscall,_) ->
+          add_fault re_exec inst fetch_proc proc env seen addr syscall nexts
       | S.B.FaultRet tgt ->
           add_tgt false true proc env seen addr tgt
       | S.B.CondJump (v,tgt) ->

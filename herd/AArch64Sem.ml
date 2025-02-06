@@ -1313,13 +1313,13 @@ module Make
         if has_handler ii then
           fun ma ->
             M.bind_ctrldata ma (fun _ -> mfault >>| set_elr_el1 lbl_v ii) >>!
-            B.Fault [AArch64Base.elr_el1, lbl_v]
+            B.fault [AArch64Base.elr_el1, lbl_v]
         else
           let open Precision in
           match C.mte_precision,dir with
           | (Synchronous,_)|(Asymmetric,(Dir.R)) ->
              fun ma ->  ma >>*= (fun _ -> mfault >>| set_elr_el1 lbl_v ii) >>!
-               B.Fault [AArch64Base.elr_el1, lbl_v]
+               B.fault [AArch64Base.elr_el1, lbl_v]
           | (Asynchronous,_)|(Asymmetric,Dir.W) ->
              fun ma ->
              let set_tfsr = write_reg AArch64Base.tfsr V.one ii in
@@ -1345,7 +1345,7 @@ module Make
         let mfault ma a ft =
           insert_commit_to_fault ma
             (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
-            None ii >>! B.Fault [AArch64Base.elr_el1, lbl_v] in
+            None ii >>! B.fault [AArch64Base.elr_el1, lbl_v] in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb false a ma an ii
             ((let m = mop Access.PTE ma in
@@ -1374,7 +1374,7 @@ module Make
             let mm ma = ma >>= M.ignore >>= B.next1T in
             let fault = lift_fault_memtag
                 (mk_fault (Some a_virt) dir an ii ft None) mm dir ii in
-            fault ma >>! B.Fault [] in
+            fault ma >>! B.fault [] in
           let check_tag moa a_virt =
             let do_check_tag a_phy moa =
               delayed_check_tags a_virt (Some a_phy) moa ii mok mno in
@@ -1392,7 +1392,7 @@ module Make
             let ma = M.para_bind_output_right ma (fun _ -> mpte_d) in
             let lbl_v = get_instr_label ii in
             ma >>*= fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None >>!
-            B.Fault [AArch64Base.elr_el1, lbl_v] in
+            B.fault [AArch64Base.elr_el1, lbl_v] in
           M.delay_kont "tag_ptw" ma @@ fun a ma ->
           let mdirect =
             let m = mop Access.PTE ma in
@@ -3421,9 +3421,9 @@ module Make
           let (>>!) = M.(>>!) in
           let ft = Some FaultType.AArch64.SupervisorCall in
           let m_fault = mk_fault None Dir.R Annot.N ii ft None in
-          let lbl_v = get_instr_label ii in
-          let lbl_ret = get_link_addr test ii in
-          m_fault >>| set_elr_el1 lbl_ret ii >>! B.Fault [AArch64Base.elr_el1, lbl_v]
+          let lbl_ret = get_link_addr test ii in          
+          m_fault >>| set_elr_el1 lbl_ret ii
+          >>! B.syscall [AArch64Base.elr_el1, lbl_ret]
 
         | I_CBZ(_,r,l) ->
             (read_reg_ord r ii)
@@ -4356,7 +4356,8 @@ module Make
            let ft = Some FaultType.AArch64.UndefinedInstruction in
            let m_fault = mk_fault None Dir.R Annot.N ii ft None in
            let lbl_v = get_instr_label ii in
-           m_fault >>| set_elr_el1 lbl_v ii >>! B.Fault [AArch64Base.elr_el1, lbl_v]
+           m_fault >>| set_elr_el1 lbl_v ii
+           >>! B.fault [AArch64Base.elr_el1, lbl_v]
 (*  Cannot handle *)
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | (I_STG _|I_STZG _|I_STZ2G _
@@ -4427,7 +4428,7 @@ module Make
                       let lbl_v = get_instr_label ii in
                       commit_pred ii
                         >>*= fun () -> m_fault >>| set_elr_el1 lbl_v ii
-                        >>! B.Fault [AArch64Base.elr_el1, lbl_v]
+                        >>! B.fault [AArch64Base.elr_el1, lbl_v]
                     end
         else do_build_semantics test inst ii
 
