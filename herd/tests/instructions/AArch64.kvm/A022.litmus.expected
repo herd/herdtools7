@@ -1,0 +1,10 @@
+Test A022 Required
+States 1
+0:X0=0; Fault(P0:L0,SupervisorCall);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0:L0) /\ 0:X0=0)
+Observation A022 Always 1 0
+Hash=6ca8359946048292b27f673122774a3e
+
