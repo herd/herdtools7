@@ -245,12 +245,14 @@ let get_fence n =
             compile_proc pref chk loc_writes st p (edge_to_prev_load ro_prev n1) init ns in
           init,cs@is,finals,st
       | _ ->
+              (* TODO what is the return type *)
           let o,init,i,st = emit_access ro_prev st p init n in
           let nchk,add_check =
             match O.docheck,n.C.evt.C.dir,o,ns with
             | true,Some R,Some r,_::_ ->
                 true,Comp.check_load p r n.C.evt
             | _ -> chk,no_check_load in
+          (* TODO change this after, so it adds when necessary, e.g. varaible value change *)
           let init,mk_c,st = add_check init st in
           let init,is,finals,st =
             compile_proc pref nchk loc_writes
@@ -269,9 +271,7 @@ let get_fence n =
                 StringSet.mem loc loc_writes  && not (U.do_poll n) in
               if call_add then
                 F.add_final (A.get_friends st) p o n finals
-              else begin
-                finals
-              end
+              else finals
           | Code _ ->
               begin match o with
               | None   -> finals (* Code write *)
@@ -282,6 +282,7 @@ let get_fence n =
               end),
           st
       end
+  (* END of compile_proc *)
 
 (*************)
 (* Observers *)
@@ -703,7 +704,7 @@ let max_set = IntSet.max_elt
     let no_local_ptes = StringSet.of_list (List.map fst last_ptes) in
     if O.verbose > 1 then U.pp_coherence cos0 ;
     let loc_writes = U.comp_loc_writes n in
-    (* TODO: comment: do_rec compile individual instructions? *)
+    (* `do_rec` compile individual instructions *)
     let rec do_rec p i = function
       | [] -> List.rev i,[],(C.EventMap.empty,[]),[],A.LocMap.empty
       | n::ns ->
@@ -761,8 +762,17 @@ let max_set = IntSet.max_elt
           then
             let ess = List.map (List.map (fun n -> n.C.edge)) splitted in
             if ok ess then
+              (* - `i` is the initial value.
+                 - `cs` pseudo code list 
+                 - `m` location to its last affect events?
+                 - `fs` final state
+                 - `ios`
+                 - `env`
+              *)
               let i,cs,(m,fs),ios,env =
                 do_rec (List.length obsc) i splitted in
+              if O.verbose > 2 then
+                eprintf "All final env from `compile_proc`: %s\n" (F.dump_state fs);
               i,obsc@cs,(m,f@fs),ios,env
             else Warn.fatal "Last minute check"
           else  Warn.fatal "Too many procs" in
@@ -841,8 +851,6 @@ let max_set = IntSet.max_elt
                           -> Some (None, None, (* no instruction label *) x)
                 | _ -> None)
               |> FaultSet.of_list
-            (* TODO: Add more process to extract (1) if an read or write access will fault and (2) the code location.
-               NOTE: It should calculated against the PTE value. *)
             else if do_kvm then
               ns
               |> List.filter_map
@@ -851,8 +859,7 @@ let max_set = IntSet.max_elt
                     | Some (label,boolean),Data x,Ord -> Some (Some label, Some boolean, x)
                     | _ -> None)
               |> FaultSet.of_list
-            else (* no fault-related flag *)
-                FaultSet.empty in
+            else FaultSet.empty in (* no fault-related flag *)
           (* END of get_faults *)
           (* Extract faults from proc `i` and its node list `ns` *)
           List.mapi (fun i ns -> i,get_faults ns) splitted 
@@ -871,7 +878,10 @@ let max_set = IntSet.max_elt
               F.run evts m
           | Cycle -> F.check final_value
           | Observe -> F.observe final_value in
+        eprintf "Final condition: %a\n" F.dump_final (fc flts);
+        eprintf "init: %s\n" (A.pp_env i);
         let i = if do_kvm then A.complete_init O.hexa initvals i else i in
+        eprintf "init after complete_init: %s\n" (A.pp_env i);
         (i,c,fc flts,env),
         (U.compile_prefetch_ios (List.length obsc) ios,
          U.compile_coms splitted)
