@@ -61,7 +61,7 @@ static void th_faults_info_init(th_faults_info_t *th_flts)
   for (int i = 0; i < MAX_FAULTS_PER_THREAD; i++) {
     fault_info_t *f = &th_flts->faults[i];
     f->instr_symb = INSTR_SYMB_ID_UNKNOWN;
-    f->data_symb = unknown_symbolic();
+    f->data_symb = symbolic_of_id(DATA_SYMB_ID_UNKNOWN);
     f->type = FaultUnknown;
   }
   th_flts->n = 0;
@@ -96,9 +96,8 @@ static void pp_fault(int proc, int instr_symb, symb_t data_symb, int ftype)
     printf("fault(P%s", instr_symb_name[instr_symb]);
   else
     printf("fault(P%d", proc);
-  if (!symbolic_equal(data_symb, unknown_symbolic())) {
-    printf(","); pp_symbolic(data_symb);
-    printf(",%s", data_symb_name[data_symb]);
+  if (!symbolic_equal(data_symb, symbolic_of_id(DATA_SYMB_ID_UNKNOWN))) {
+    puts(","); puts(pp_symbolic(data_symb));
   } if (ftype != FaultUnknown)
     printf(",%s", fault_type_names[ftype]);
   printf(");");
@@ -125,7 +124,7 @@ static void pp_log_faults(FILE *chan, th_faults_info_t *th_flts, int proc, int i
     if (instr_symb != INSTR_SYMB_ID_UNKNOWN) {
       cond &= flt->instr_symb == instr_symb;
     }
-    if (!symbolic_equal(data_symb, unknown_symbolic())) {
+    if (!symbolic_equal(data_symb, symbolic_of_id(DATA_SYMB_ID_UNKNOWN))) {
       cond &= symbolic_equal(flt->data_symb, data_symb);
     }
     if (ftype != FaultUnknown) {
@@ -164,7 +163,7 @@ static int exists_fault(th_faults_info_t *th_flts, int instr_symb, symb_t data_s
     if (instr_symb != INSTR_SYMB_ID_UNKNOWN) {
       cond &= flt->instr_symb == instr_symb;
     }
-    if (!symbolic_equal(data_symb, unknown_symbolic())) {
+    if (!symbolic_equal(data_symb, symbolic_of_id(DATA_SYMB_ID_UNKNOWN))) {
       cond &= symbolic_equal(flt->data_symb, data_symb);
     }
     if (ftype != FaultUnknown) {
