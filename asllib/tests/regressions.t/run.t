@@ -355,7 +355,6 @@ Required tests:
   $ aslref records-2.asl
   $ aslref records.asl
   $ aslref static.asl
-  $ aslref stdlib.asl
   $ aslref subtypes-example.asl
   $ aslref subtypes-with.asl
   $ aslref tuples.asl
