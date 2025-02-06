@@ -530,7 +530,7 @@ module A.FaultType = A.FaultType)
         else code in
       let code =
         if user then
-          C.user_mode has_handler proc
+          C.user_mode has_handler  proc
           @code
           @C.kernel_mode has_handler
         else code

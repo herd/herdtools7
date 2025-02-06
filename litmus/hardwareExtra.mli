@@ -18,6 +18,7 @@
 
 module type S  = sig
   val user_handler_clobbers : string list
+  val default_sync_handler : bool -> string
   val vector_table : bool -> string -> string list
 end
 

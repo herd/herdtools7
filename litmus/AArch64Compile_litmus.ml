@@ -1682,26 +1682,37 @@ module Make(V:Constant.S)(C:Config) =
 
     type ins = A.Out.ins
 
-    let max_handler_label = 1 (* Warning label 0 no other is used in handler code *)
+    let max_handler_label = 1 (* Warning label 0 and only label 0 is used in handler code *)
 
     let user_mode has_handler p =
       let ins =
-        (fun k ->
-          "nop"
-          ::"msr sp_el0,%[sp_usr]"
-          ::"adr %[tr0],0f"
-          ::"msr elr_el1,%[tr0]"
-          ::"msr spsr_el1,xzr"
-          ::"eret"
-          ::"0:"
-          ::k)
-          (if has_handler then [sprintf "adr x29,asm_handler%d" p;] else []) in
+        [
+          "nop";
+          "msr sp_el0,%[sp_usr]";
+          "adr %[tr0],0f";
+          "msr elr_el1,%[tr0]";
+          "msr spsr_el1,xzr";
+          "eret";
+          "0:";
+          begin
+            if has_handler then
+              sprintf "adr x29,asm_handler%d" p
+            else
+              "mov x29,%[default_handler]"
+          end;
+        ] in
       map_ins ins
 
     let kernel_mode has_handler =
       map_ins
-        ((fun k -> if has_handler then "adr x29,0f"::k else k)
-           ["svc #471";])
+        begin
+          (fun k -> "adr x29,0f"::k)
+          @@
+          (fun k -> "svc #471"::k)
+            (* Target label at end of explicit handler (see epilogue below), or here *)
+            (if has_handler then [] else  ["0:"])
+        end
+
 
     let fault_handler_prologue _is_user p =
       map_ins ["b 0f"; sprintf  "asm_handler%d:" p;]
