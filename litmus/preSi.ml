@@ -891,7 +891,7 @@ module Make
               end in
             begin
               O.o "static symb_t idx_addr(intmax_t *v_addr,vars_t *p) {" ;
-               O.oi "symb_t ret = { .raw = v_addr, .id = -1, .offset = 0 };" ;
+              O.oi "symb_t ret = { .id = -1, .offset = 0 };" ;
               if Cfg.variant Variant_litmus.Pac then
                 O.oi "v_addr = (intmax_t*) strip_pauth_data((void*) v_addr);" ;
               if Cfg.variant Variant_litmus.MemTag then
@@ -968,7 +968,7 @@ module Make
                  sprintf "pretty_tag(tag_of(p->%s))" (dump_rloc_tag_coded rloc)], [])
             | Pointer _ ->
                 None,
-                ([sprintf "data_symb_name[p->%s.id]" (dump_rloc_tag_coded rloc)], [])
+                ([sprintf "pp_symbolic[p->%s.id]" (dump_rloc_tag_coded rloc)], [])
             | Array (_,sz) ->
                 let tag = A.dump_rloc_tag rloc in
                 let rec pp_rec k =
@@ -1074,6 +1074,9 @@ module Make
                 pp_rec (k+1)
               end in
             pp_rec 0
+        | Pointer _ when not (U.is_rloc_label rloc env) ->
+            let loc = choose_dump_rloc_tag rloc env in
+            O.fii "symbolic_equal(p->%s, q->%s)%s" loc loc suf
         | _ -> do_eq rloc suf in
         let do_eq_faults = function
           | [] -> O.oii "1;"
