@@ -838,8 +838,10 @@ module Make
               O.fi "if (%s == p->%s) ret.id = %s;"
                 addr s (SkelUtil.data_symb_id s) ;
               if Cfg.is_kvm then begin
-                O.fi "if ((pteval_t *)v_addr == p->%s) ret.id = %s;"
-                  (OutUtils.fmt_pte_tag s)
+                O.fi "if ((pteval_t *)v_addr == p->%s) {"
+                  (OutUtils.fmt_pte_tag s) ;
+                O.fii "ret.offset = 0;" ;
+                O.fii "ret.id = %s; }"
                   (SkelUtil.data_symb_id (Misc.add_pte s))
               end in
             begin
