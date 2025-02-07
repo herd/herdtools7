@@ -83,11 +83,13 @@ ASL Semantics Tests:
   [1]
   $ aslref SemanticsRule.SPrint.asl
   string_number_1
+  0
   1000000
   53170898287292728730499578000
   TRUE
   FALSE
   12345678900123456789/10000000000
+  0
   hello\world
   	 "here I am "
   0xd

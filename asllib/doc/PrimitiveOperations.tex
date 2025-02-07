@@ -1,188 +1,30 @@
 \chapter{Primitive Operations\label{chap:PrimitiveOperations}}
 
-The term \emph{Primitive Operations} denotes the set of operations available in the expression syntax.
 \lrmcomment{\identd{KXWT}}
-This includes $\binop$, $\unop$ and \texttt{if..then..else} expressions.
 \lrmcomment{\identi{HSQL}}
+The term \emph{Primitive Operations} denotes the set of operations available
+in the expression syntax that use an \emph{Operator} derived from either
+$\unop$ or $\binop$.
 This chapter defines the Primitive Operations as functions over literals.
 
-ASL follows mathematical and programming language tradition of allowing operators such as \texttt{+} to be overloaded
-to refer to one of several different operations.
-%
-\taref{BooleanOperators}, \taref{IntegerOperators}, \taref{BitvectorOperators}, \taref{RealOperators},
-\taref{StringOperators}, and \taref{EnumerationOperators} define,
-for each primitive operation, the kinds of input literals and the kind of output literals,
-as well as a unique name.
+Primitive operations are evaluated both statically and dynamically.
+We define the static evaluation of primitive operations on literals
+via the functions $\unopliterals$ and $\binopliterals$ and then reuse
+those to define the dynamic evaluation of primitive operations
+on \nativevalues\ via $\unoprel$ and $\binoprel$.
 
-\begin{table}[!ht]
-\caption{Boolean Operation Signatures\label{ta:BooleanOperators}}
-\centering
-\hypertarget{def-notbool}{}
-\hypertarget{def-andbool}{}
-\hypertarget{def-orbool}{}
-\hypertarget{def-eqbool}{}
-\hypertarget{def-nebool}{}
-\hypertarget{def-impliesbool}{}
-\hypertarget{def-equivbool}{}
-\begin{tabular}{lllll}
-\hline
-\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
-\hline
-\Tbnot & \lbool & -        & \lbool & \aslnotbool\\
-\Tband & \lbool & \lbool  & \lbool & \andbool\\
-\Tbor & \lbool & \lbool  & \lbool & \orbool\\
-\Teqop & \lbool & \lbool  & \lbool & \eqbool\\
-\Tneq & \lbool & \lbool  & \lbool & \nebool\\
-\Timpl & \lbool & \lbool  & \lbool & \impliesbool\\
-\Tbeq & \lbool & \lbool  & \lbool & \equivbool\\
-\hline
-\end{tabular}
-\end{table}
+\begin{itemize}
+  \item \secref{PrimitiveOperationsSyntax} defines the syntax for unary operations and binary operations;
+  \item \secref{PrimitiveOperationsAbstractSyntax} defines the AST for unary operations and binary operations;
+  \item \secref{PrimitiveOperationSignatures} defines the signatures for all primitive operations;
+  \item \secref{PrimitiveOperationsTyping} defines the static evaluation of primitive operations for literal values;
+  \item \secref{PrimitiveOperationsSemantics} defines how to adapt $\unopliterals$
+        and $\binopliterals$ to be used by the dynamic semantics. Essentially this is done by unwrapping
+        \nativevalues\ into literal values, applying $\unopliterals$ and $\binopliterals$,
+        and finally wrapping the results by \nativevalues.
+\end{itemize}
 
-\begin{table}[!ht]
-\caption{Integer Operation Signatures\label{ta:IntegerOperators}}
-\centering
-\hypertarget{def-negateint}{}
-\hypertarget{def-addint}{}
-\hypertarget{def-subint}{}
-\hypertarget{def-mulint}{}
-\hypertarget{def-expint}{}
-\hypertarget{def-shiftleftint}{}
-\hypertarget{def-shiftrightint}{}
-\hypertarget{def-divint}{}
-\hypertarget{def-fdivint}{}
-\hypertarget{def-fremint}{}
-\hypertarget{def-eqint}{}
-\hypertarget{def-neint}{}
-\hypertarget{def-leint}{}
-\hypertarget{def-ltint}{}
-\hypertarget{def-gtint}{}
-\hypertarget{def-geint}{}
-\begin{tabular}{lllll}
-\hline
-\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
-\hline
-\Tminus & \lint & - & \lint & \negateint\\
-\Tplus & \lint & \lint & \lint & \addint\\
-\Tminus & \lint & \lint & \lint & \subint\\
-\Tmul & \lint & \lint & \lint & \mulint\\
-\Tpow & \lint & \lint & \lint & \expint\\
-\Tshl & \lint & \lint & \lint & \shiftleftint\\
-\Tshr & \lint & \lint & \lint & \shiftrightint\\
-\Tdiv & \lint & \lint & \lint & \divint\\
-\Tdivrm & \lint & \lint & \lint & \fdivint\\
-\Tmod & \lint & \lint & \lint & \fremint\\
-\Teqop & \lint & \lint & \lbool & \eqint\\
-\Tneq & \lint & \lint & \lbool & \neint\\
-\Tleq & \lint & \lint & \lbool & \leint\\
-\Tlt & \lint & \lint & \lbool & \ltint\\
-\Tgt & \lint & \lint & \lbool & \gtint\\
-\Tgeq & \lint & \lint & \lbool & \geint\\
-\hline
-\end{tabular}
-\end{table}
-
-\begin{table}[!ht]
-\caption{Real Operation Signatures\label{ta:RealOperators}}
-\centering
-\hypertarget{def-negatereal}{}
-\hypertarget{def-addreal}{}
-\hypertarget{def-subreal}{}
-\hypertarget{def-mulreal}{}
-\hypertarget{def-expreal}{}
-\hypertarget{def-divreal}{}
-\hypertarget{def-eqreal}{}
-\hypertarget{def-nereal}{}
-\hypertarget{def-lereal}{}
-\hypertarget{def-ltreal}{}
-\hypertarget{def-gtreal}{}
-\hypertarget{def-gereal}{}
-\begin{tabular}{lllll}
-\hline
-\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
-\hline
-\Tminus & \lreal & - & \lreal & \negatereal\\
-\Tplus & \lreal & \lreal & \lreal & \addreal\\
-\Tminus & \lreal & \lreal & \lreal & \subreal\\
-\Tmul & \lreal & \lreal & \lreal & \mulreal\\
-\Tpow & \lreal & \lint & \lreal & \expreal\\
-\Tdiv & \lreal & \lreal & \lreal & \divreal\\
-\Teqop & \lreal & \lreal & \lbool & \eqreal\\
-\Tneq  & \lreal & \lreal & \lbool & \nereal\\
-\Tleq  & \lreal & \lreal & \lbool & \lereal\\
-\Tlt & \lreal & \lreal & \lbool & \ltreal\\
-\Tgt & \lreal & \lreal & \lbool & \gtreal\\
-\Tgeq  & \lreal & \lreal & \lbool & \gereal\\
-\hline
-\end{tabular}
-\end{table}
-
-\begin{table}[!ht]
-\caption{Bitvector Operation Signatures\label{ta:BitvectorOperators}}
-\centering
-\hypertarget{def-addbits}{}
-\hypertarget{def-addbitsint}{}
-\hypertarget{def-subbits}{}
-\hypertarget{def-subbitsint}{}
-\hypertarget{def-notbits}{}
-\hypertarget{def-andbits}{}
-\hypertarget{def-orbits}{}
-\hypertarget{def-xorbits}{}
-\hypertarget{def-eqbits}{}
-\hypertarget{def-nebits}{}
-\hypertarget{def-concatbits}{}
-\begin{tabular}{lllll}
-\hline
-\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
-\hline
-\Tplus  & \lbitvector & \lbitvector & \lbitvector & \addbits\\
-\Tplus  & \lbitvector & \lint  & \lbitvector & \addbitsint\\
-\Tminus & \lbitvector & \lbitvector & \lbitvector & \subbits\\
-\Tminus & \lbitvector & \lint  & \lbitvector & \subbitsint\\
-\Tnot   & \lbitvector & -      & \lbitvector & \notbits\\
-\Tand   & \lbitvector & \lbitvector & \lbitvector & \andbits\\
-\Tor    & \lbitvector & \lbitvector & \lbitvector & \orbits\\
-\Txor   & \lbitvector & \lbitvector & \lbitvector & \xorbits\\
-\Teqop  & \lbitvector & \lbitvector & \lbool & \eqbits\\
-\Tneq   & \lbitvector & \lbitvector & \lbool & \nebits\\
-\Tcoloncolon & \lbitvector & \lbitvector & \lbitvector & \concatbits\\
-\hline
-\end{tabular}
-\end{table}
-
-\begin{table}[!ht]
-\caption{String Operation Signatures\label{ta:StringOperators}}
-\centering
-\hypertarget{def-eqstring}{}
-\hypertarget{def-nestring}{}
-\begin{tabular}{lllll}
-\hline
-\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
-\hline
-\Teqop  & \lstring & \lstring & \lbool & \eqstring\\
-\Tneq   & \lstring & \lstring & \lbool & \nestring\\
-\hline
-\end{tabular}
-\end{table}
-
-\begin{table}[!ht]
-\caption{Enumeration Operation Signatures\label{ta:EnumerationOperators}}
-\centering
-\hypertarget{def-eqenum}{}
-\hypertarget{def-neenum}{}
-\begin{tabular}{lllll}
-\hline
-\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
-\hline
-\Teqop  & \llabel & \llabel & \lbool & \eqenum\\
-\Tneq   & \llabel & \llabel & \lbool & \neenum\\
-\hline
-\end{tabular}
-\end{table}
-
-\pagebreak
-\newpage
-\section{Syntax}
+\section{Syntax\label{sec:PrimitiveOperationsSyntax}}
 \begin{flalign*}
 \Nunop \derivesinline\ & \Tbnot \;|\; \Tminus \;|\; \Tnot &\\
 \Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
@@ -190,7 +32,7 @@ as well as a unique name.
                       |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon
 \end{flalign*}
 
-\section{Abstract Syntax}
+\section{Abstract Syntax\label{sec:PrimitiveOperationsAbstractSyntax}}
 \begin{flalign*}
 \unop \derives\ & \overname{\BNOT}{\texttt{"!"}} \;|\; \overname{\NEG}{\texttt{"-"}} \;|\; \overname{\NOT}{\texttt{"NOT"}}
 & \hypertarget{ast-binop}{} \hypertarget{ast-bor}{} \hypertarget{ast-impl}{} \hypertarget{ast-beq}{} \hypertarget{ast-band}{}
@@ -215,7 +57,7 @@ as well as a unique name.
         &
 \end{flalign*}
 
-\subsection{ASTRule.Unop \label{sec:ASTRule.Unop}}
+\ASTRuleDef{Unop}
 \hypertarget{build-unop}{}
 The function
 \[
@@ -393,7 +235,200 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\section{Typing}
+\section{Primitive Operation Signatures\label{sec:PrimitiveOperationSignatures}}
+ASL follows mathematical and programming language tradition of allowing operators such as \texttt{+} to be overloaded
+to refer to one of several different operations.
+%
+\taref{BooleanOperators}, \taref{IntegerOperators}, \taref{BitvectorOperators}, \taref{RealOperators},
+\taref{StringOperators}, and \taref{EnumerationOperators} define,
+for each primitive operation, the kinds of input literals and the kind of output literals,
+as well as assigning each primitive operation a unique name.
+
+\lrmcomment{BKNT}
+\RequirementDef{PrimitiveOperatorImplements}
+An operation implements an operator if it appears in the same row as the operator in one
+of the tables in this section.
+
+\lrmcomment{JGWF}
+\RequirementDef{PrimitiveOperatorMatches}
+An expression which invokes a primitive operator \emph{matches} an operation
+if the operation implements the operator and the operands of the expression
+\typesatisfy\ the corresponding operands of the operation as shown in the
+tables in this section.
+
+\lrmcomment{TTGQ}
+\RequirementDef{PrimitiveOperationError}
+It is a type error if an expression which invokes a
+primitive operator does not match exactly one primitive operation.
+
+\begin{table}[!htbp]
+\caption{Boolean Operation Signatures\label{ta:BooleanOperators}}
+\centering
+\hypertarget{def-notbool}{}
+\hypertarget{def-andbool}{}
+\hypertarget{def-orbool}{}
+\hypertarget{def-eqbool}{}
+\hypertarget{def-nebool}{}
+\hypertarget{def-impliesbool}{}
+\hypertarget{def-equivbool}{}
+\begin{tabular}{lllll}
+\hline
+\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
+\hline
+\Tbnot & \lbool & -        & \lbool & \aslnotbool\\
+\Tband & \lbool & \lbool  & \lbool & \andbool\\
+\Tbor & \lbool & \lbool  & \lbool & \orbool\\
+\Teqop & \lbool & \lbool  & \lbool & \eqbool\\
+\Tneq & \lbool & \lbool  & \lbool & \nebool\\
+\Timpl & \lbool & \lbool  & \lbool & \impliesbool\\
+\Tbeq & \lbool & \lbool  & \lbool & \equivbool\\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+\caption{Integer Operation Signatures\label{ta:IntegerOperators}}
+\centering
+\hypertarget{def-negateint}{}
+\hypertarget{def-addint}{}
+\hypertarget{def-subint}{}
+\hypertarget{def-mulint}{}
+\hypertarget{def-expint}{}
+\hypertarget{def-shiftleftint}{}
+\hypertarget{def-shiftrightint}{}
+\hypertarget{def-divint}{}
+\hypertarget{def-fdivint}{}
+\hypertarget{def-fremint}{}
+\hypertarget{def-eqint}{}
+\hypertarget{def-neint}{}
+\hypertarget{def-leint}{}
+\hypertarget{def-ltint}{}
+\hypertarget{def-gtint}{}
+\hypertarget{def-geint}{}
+\begin{tabular}{lllll}
+\hline
+\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
+\hline
+\Tminus & \lint & - & \lint & \negateint\\
+\Tplus & \lint & \lint & \lint & \addint\\
+\Tminus & \lint & \lint & \lint & \subint\\
+\Tmul & \lint & \lint & \lint & \mulint\\
+\Tpow & \lint & \lint & \lint & \expint\\
+\Tshl & \lint & \lint & \lint & \shiftleftint\\
+\Tshr & \lint & \lint & \lint & \shiftrightint\\
+\Tdiv & \lint & \lint & \lint & \divint\\
+\Tdivrm & \lint & \lint & \lint & \fdivint\\
+\Tmod & \lint & \lint & \lint & \fremint\\
+\Teqop & \lint & \lint & \lbool & \eqint\\
+\Tneq & \lint & \lint & \lbool & \neint\\
+\Tleq & \lint & \lint & \lbool & \leint\\
+\Tlt & \lint & \lint & \lbool & \ltint\\
+\Tgt & \lint & \lint & \lbool & \gtint\\
+\Tgeq & \lint & \lint & \lbool & \geint\\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+\caption{Real Operation Signatures\label{ta:RealOperators}}
+\centering
+\hypertarget{def-negatereal}{}
+\hypertarget{def-addreal}{}
+\hypertarget{def-subreal}{}
+\hypertarget{def-mulreal}{}
+\hypertarget{def-expreal}{}
+\hypertarget{def-divreal}{}
+\hypertarget{def-eqreal}{}
+\hypertarget{def-nereal}{}
+\hypertarget{def-lereal}{}
+\hypertarget{def-ltreal}{}
+\hypertarget{def-gtreal}{}
+\hypertarget{def-gereal}{}
+\begin{tabular}{lllll}
+\hline
+\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
+\hline
+\Tminus & \lreal & - & \lreal & \negatereal\\
+\Tplus & \lreal & \lreal & \lreal & \addreal\\
+\Tminus & \lreal & \lreal & \lreal & \subreal\\
+\Tmul & \lreal & \lreal & \lreal & \mulreal\\
+\Tpow & \lreal & \lint & \lreal & \expreal\\
+\Trdiv & \lreal & \lreal & \lreal & \divreal\\
+\Teqop & \lreal & \lreal & \lbool & \eqreal\\
+\Tneq  & \lreal & \lreal & \lbool & \nereal\\
+\Tleq  & \lreal & \lreal & \lbool & \lereal\\
+\Tlt & \lreal & \lreal & \lbool & \ltreal\\
+\Tgt & \lreal & \lreal & \lbool & \gtreal\\
+\Tgeq  & \lreal & \lreal & \lbool & \gereal\\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+\caption{Bitvector Operation Signatures\label{ta:BitvectorOperators}}
+\centering
+\hypertarget{def-addbits}{}
+\hypertarget{def-addbitsint}{}
+\hypertarget{def-subbits}{}
+\hypertarget{def-subbitsint}{}
+\hypertarget{def-notbits}{}
+\hypertarget{def-andbits}{}
+\hypertarget{def-orbits}{}
+\hypertarget{def-xorbits}{}
+\hypertarget{def-eqbits}{}
+\hypertarget{def-nebits}{}
+\hypertarget{def-concatbits}{}
+\begin{tabular}{lllll}
+\hline
+\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
+\hline
+\Tplus  & \lbitvector & \lbitvector & \lbitvector & \addbits\\
+\Tplus  & \lbitvector & \lint  & \lbitvector & \addbitsint\\
+\Tminus & \lbitvector & \lbitvector & \lbitvector & \subbits\\
+\Tminus & \lbitvector & \lint  & \lbitvector & \subbitsint\\
+\Tnot   & \lbitvector & -      & \lbitvector & \notbits\\
+\Tand   & \lbitvector & \lbitvector & \lbitvector & \andbits\\
+\Tor    & \lbitvector & \lbitvector & \lbitvector & \orbits\\
+\Txor   & \lbitvector & \lbitvector & \lbitvector & \xorbits\\
+\Teqop  & \lbitvector & \lbitvector & \lbool & \eqbits\\
+\Tneq   & \lbitvector & \lbitvector & \lbool & \nebits\\
+\Tcoloncolon & \lbitvector & \lbitvector & \lbitvector & \concatbits\\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+\caption{String Operation Signatures\label{ta:StringOperators}}
+\centering
+\hypertarget{def-eqstring}{}
+\hypertarget{def-nestring}{}
+\begin{tabular}{lllll}
+\hline
+\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
+\hline
+\Teqop  & \lstring & \lstring & \lbool & \eqstring\\
+\Tneq   & \lstring & \lstring & \lbool & \nestring\\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+\caption{Enumeration Operation Signatures\label{ta:EnumerationOperators}}
+\centering
+\hypertarget{def-eqenum}{}
+\hypertarget{def-neenum}{}
+\begin{tabular}{lllll}
+\hline
+\textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
+\hline
+\Teqop  & \llabel & \llabel & \lbool & \eqenum\\
+\Tneq   & \llabel & \llabel & \lbool & \neenum\\
+\hline
+\end{tabular}
+\end{table}
+
+\pagebreak
+\section{Typing\label{sec:PrimitiveOperationsTyping}}
 \TypingRuleDef{UnopLiterals}
 \hypertarget{def-unopliterals}{}
 The function
@@ -419,6 +454,24 @@ for a given unary operator:
 \end{array}
 \right\}
 \]
+
+\subsubsection{Example (Unary Operations)}
+\listingref{unary-operations} shows applications of unary operations
+(invalid applications appear in comments),
+followed by the resulting console output.
+\ASLListing{Valid applications of unary operations}{unary-operations}{\typingtests/TypingRule.UnopLiterals.asl}
+
+\begin{small}
+\begin{verbatim}
+negate_int: -10 = -10
+negate_int: -0x0 = 0
+negate_int: -0xf = -15
+negate_rel: -2.3 = -23/10
+not_bool: !TRUE = FALSE
+not_bits: NOT '' = 0x
+not_bits: NOT '11 01' = 0x2
+\end{verbatim}
+\end{small}
 
 \ProseParagraph
 One of the following applies:
@@ -505,9 +558,122 @@ and returns the resulting literal $\vr$.
 The result is a type error, if it is illegal to apply the operator
 to the given values, or a different kind of type error is detected.
 
+\subsubsection{Example (Boolean Operations)\label{sec:BooleanOperations}}
+\listingref{binary-operations-boolean} shows applications
+of operations to Boolean-typed literals (invalid applications in comments),
+followed by the resulting console output.
+\ASLListing{Applications of Boolean operations}
+  {binary-operations-boolean}
+  {\typingtests/TypingRule.BinopLiterals.boolean.asl}
+
+\begin{small}
+\begin{verbatim}
+and_bool: TRUE && TRUE = TRUE
+and_bool: TRUE && FALSE = FALSE
+or_bool: TRUE || FALSE = TRUE
+or_bool: FALSE || FALSE = FALSE
+eq_bool: FALSE == FALSE = TRUE
+eq_bool: TRUE == TRUE = TRUE
+eq_bool: FALSE == TRUE = FALSE
+ne_bool: FALSE != FALSE = FALSE
+ne_bool: TRUE != TRUE = FALSE
+ne_bool: FALSE != TRUE = TRUE
+implies_bool: FALSE --> FALSE = TRUE
+implies_bool: FALSE --> TRUE = TRUE
+implies_bool: TRUE --> TRUE = TRUE
+implies_bool: TRUE --> FALSE = FALSE
+equiv_bool: FALSE <-> FALSE = TRUE
+equiv_bool: TRUE <-> TRUE = TRUE
+equiv_bool: FALSE <-> TRUE = FALSE
+\end{verbatim}
+\end{small}
+
+\subsubsection{Example (Integer Arithmetic)\label{sec:IntegerArithmetic}}
+\listingref{binary-operations-integer-arithmetic} shows applications
+of integer arithmetic operations to literals (invalid applications in comments),
+followed by the resulting console output.
+\ASLListing{Applications of integer arithmetic operations}
+  {binary-operations-integer-arithmetic}
+  {\typingtests/TypingRule.BinopLiterals.integer-arithmetic.asl}
+
+\begin{small}
+\begin{verbatim}
+add_int: 10 + 20 = 30
+sub_int: 10 - 20 = -10
+mul_int: 10 * 20 = 200
+div_int: 20 DIV 10 = 2
+fdiv_int: 20 DIVRM 3 = 6
+fdiv_int: -20 DIVRM 3 = -7
+frem_int: 20 MOD 3 = 1
+frem_int: -20 MOD 3 = 1
+exp_int: 2 ^ 10 = 1024
+exp_int: -2 ^ 10 = 1024
+exp_int: -2 ^ 11 = -2048
+exp_int: 0 ^ 0 = 1
+exp_int: -2 ^ 0 = 1
+shiftleft_int: 1 << 10 = 1024
+shiftleft_int: 1 << 0 = 1
+shiftleft_int: -1 << 10 = -1024
+shiftright_int: 1 >> 10 = 0
+shiftright_int: 16 >> 2 = 4
+shiftright_int: -16 >> 2 = -4
+shiftright_int: 1 >> 0 = 1
+shiftright_int: -1 >> 10 = -1
+\end{verbatim}
+\end{small}
+
+\subsubsection{Example (Integer Relational)\label{sec:IntegerRelational}}
+\listingref{binary-operations-integer-relational} shows applications
+of relational integer operations to literals (invalid applications in comments),
+followed by the resulting console output.
+\ASLListing{Applications of relational integer operations}
+  {binary-operations-integer-relational}
+  {\typingtests/TypingRule.BinopLiterals.integer-relational.asl}
+
+\begin{small}
+\begin{verbatim}
+eq_int: 5 == 10 = FALSE
+ne_int: 5 != 10 = TRUE
+le_int: 10 <= 10 = TRUE
+lt_int: 10 < 10 = TRUE
+lt_int: 5 < 10 = TRUE
+gt_int: 10 > 10 = FALSE
+gt_int: 11 > 10 = TRUE
+ge_int: 11 >= 10 = TRUE
+ge_int: 6 >= 10 = FALSE
+\end{verbatim}
+\end{small}
+
+\subsubsection{Example (Real Operations)\label{sec:RealOperations}}
+\listingref{binary-operations-real} shows applications
+of operations on real-typed literals (invalid applications in comments),
+followed by the resulting console output.
+\ASLListing{Applications of operations on real-typed literals}
+  {binary-operations-real}
+  {\typingtests/TypingRule.BinopLiterals.real.asl}
+
+% ASL_RUN_BEGIN: aslref \typingtests/TypingRule.BinopLiterals.real.asl
+\begin{small}
+\begin{verbatim}
+add_real: 10.0 + 0.5 = 21/2
+sub_real: 10.0 - 0.5 = 19/2
+mul_real: 10.0 * 0.5 = 5
+exp_real: 10.0 ^ 2 = 100
+div_real: 10.0 / 0.5 = 20
+eq_real: 10.0 == 0.5 = FALSE
+ne_real: 10.0 != 0.5 = TRUE
+le_real: 10.0 <= 0.5 = FALSE
+lt_real: 10.0 < 0.5 = FALSE
+gt_real: 10.0 > 0.5 = TRUE
+ge_real: 10.0 >= 0.5 = TRUE
+\end{verbatim}
+\end{small}
+% ASL_RUN_END
+
 \hypertarget{def-binopsignatures}{}
-The following set of binary operator types and argument types defines the correct
-argument types for a given binary operator:
+The following set defines the valid signatures of
+binary operations in terms of the type of the binary operator
+and argument types of its operand literals:
 \[
 \binopsignatures \triangleq
 \left\{
@@ -556,7 +722,7 @@ argument types for a given binary operator:
   (\EQOP      &,& \lstring &,& \lstring)&,\\
   (\NEQ       &,& \lstring &,& \lstring)&,\\
   (\EQOP      &,& \llabel &,& \llabel)&,\\
-  (\NEQ       &,& \llabel &,& \llabel)&,\\
+  (\NEQ       &,& \llabel &,& \llabel)&\\
 \end{array}
 \right\}
 \]
@@ -949,7 +1115,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[div\_int]{
-  \checktrans{b > 0}{DIV\_DenominatorNegative} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{b > 0}{\BadOperands} \checktransarrow \True \OrTypeError\\\\
   n \eqdef a \div b \\\\
   \checktrans{n \in \Z}{\BadOperands} \checktransarrow \True \OrTypeError
 }{
@@ -957,7 +1123,7 @@ One of the following applies:
 }
 \and
 \inferrule[fdiv\_int]{
-  \checktrans{b > 0}{FDIV\_DenominatorNegative} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{b > 0}{\BadOperands} \checktransarrow \True \OrTypeError\\\\
   n \eqdef \choice{a \geq 0}{\lfloor a \div b \rfloor}{-(\lceil (-a) \div b \rceil)}
 }{
   \binopliterals(\overname{\DIVRM}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lint(n)}{\vr}
@@ -974,7 +1140,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[exp\_int]{
-  \checktrans{b \geq 0}{ExponentNegative} \checktransarrow \True \OrTypeError
+  \checktrans{b \geq 0}{\BadOperands} \checktransarrow \True \OrTypeError
 }{
   \binopliterals(\overname{\POW}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lint(a^b)}{\vr}
 }
@@ -982,7 +1148,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[shl]{
-  \checktrans{b \geq 0}{ShifterNegative} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{b \geq 0}{\BadOperands} \checktransarrow \True \OrTypeError\\\\
   \binopliterals(\POW, \lint(2), \lint(b)) \typearrow \lint(e)\\
   \binopliterals(\MUL, \lint(a), \lint(e)) \typearrow \vr
 }{
@@ -992,7 +1158,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[shr]{
-  \checktrans{b \geq 0}{ShifterNegative} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{b \geq 0}{\BadOperands} \checktransarrow \True \OrTypeError\\\\
   \binopliterals(\POW, \lint(2), \lint(b)) \typearrow \lint(e)\\
   \binopliterals(\DIVRM, \lint(a), \lint(e)) \typearrow \vr
 }{
@@ -1089,7 +1255,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[div\_real]{
-  \checktrans{b \neq 0}{RDIV\_DenominatorZero} \checktransarrow \True \OrTypeError
+  \checktrans{b \neq 0}{\BadOperands} \checktransarrow \True \OrTypeError
 }{
   \binopliterals(\overname{\RDIV}{\op}, \overname{\lreal(a)}{\vvone}, \overname{\lreal(b)}{\vvtwo}) \typearrow \overname{\lreal(a\div b)}{\vr}
 }
@@ -1097,7 +1263,7 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[exp\_real]{
-  \checktrans{a \neq 0 \lor b \geq 0}{IllegalOp} \checktransarrow \True \OrTypeError
+  \checktrans{a \neq 0 \lor b \geq 0}{\BadOperands} \checktransarrow \True \OrTypeError
 }{
   \binopliterals(\overname{\POW}{\op}, \overname{\lreal(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lreal(a^b)}{\vr}
 }
@@ -1249,7 +1415,12 @@ of \texttt{width} bits.
 
 \begin{mathpar}
 \inferrule[concat\_bits]{}{
-  \binopliterals(\overname{\BVCONCAT}{\op}, \overname{\lbitvector(a_{1..k})}{\vvone}, \overname{\lbitvector(b_{1..l})}{\vvtwo}) \typearrow \overname{\lbitvector(a_{1..k})\lbitvector(b_{1..l})}{\vr}
+  {
+  \begin{array}{r}
+  \binopliterals(\overname{\BVCONCAT}{\op}, \overname{\lbitvector(a_{1..k})}{\vvone}, \overname{\lbitvector(b_{1..l})}{\vvtwo}) \typearrow \\
+  \overname{\lbitvector(a_{1..k})\lbitvector(b_{1..l})}{\vr}
+  \end{array}
+  }
 }
 \end{mathpar}
 
@@ -1298,7 +1469,7 @@ of \texttt{width} bits.
 }
 \end{mathpar}
 
-\section{Semantics}
+\section{Semantics\label{sec:PrimitiveOperationsSemantics}}
 
 \SemanticsRuleDef{UnopValues}
 \hypertarget{def-unoprel}{}

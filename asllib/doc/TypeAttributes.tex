@@ -687,10 +687,6 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\isempty{\subsubsection{Example}}
-
-\CodeSubsection{\CheckConstrainedIntegerBegin}{\CheckConstrainedIntegerEnd}{../Typing.ml}
-
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[well-constrained]{}
@@ -717,6 +713,7 @@ One of the following applies:
   \checkconstrainedinteger(\tenv, \vt) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
+\CodeSubsection{\CheckConstrainedIntegerBegin}{\CheckConstrainedIntegerEnd}{../Typing.ml}
 
 \section{Constrained Types\label{sec:ConstrainedTypes}}
 \begin{itemize}
@@ -728,7 +725,7 @@ One of the following applies:
         Specifically, the \hypertarget{def-unconstrainedintegertype}{\unconstrainedintegertype}.
   \item A constrained type with a non-empty constraint is \emph{well-constrained}.
   \hypertarget{def-parameterizedintegertype}
-  \item A \hypertarget{def-pendingconstrainedintegertype}{\emph{\pendingconstrainedintegertype}} is an integer type whose constraints will be inferred during type checking.
+  \item A \hypertarget{def-pendingconstrainedintegertype}{\emph{\pendingconstrainedintegertype}} is an integer type whose constraints will be inferred during typechecking.
   \item A \emph{\parameterizedintegertype} is an implicit type of a subprogram parameter.
   \end{itemize}
 The widths of bitvector storage elements are constrained integers.

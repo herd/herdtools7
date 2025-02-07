@@ -61,7 +61,7 @@ let binop_values pos t op v1 v2 =
   | PLUS, L_Real v1, L_Real v2 -> L_Real (Q.add v1 v2)
   | MUL, L_Real v1, L_Real v2 -> L_Real (Q.mul v1 v2)
   | MINUS, L_Real v1, L_Real v2 -> L_Real (Q.sub v1 v2)
-  | RDIV, L_Real v1, L_Real v2 -> L_Real (Q.div v1 v2)
+  | RDIV, L_Real v1, L_Real v2 when not (Q.sign v2 = 0) -> L_Real (Q.div v1 v2)
   | POW, L_Real q1, L_Int z2 when not (Q.sign q1 = 0 && Z.sign z2 < 0) ->
       (* 0.0 ^ z is not defined for z < 0 *)
       L_Real (exp_real q1 z2)
