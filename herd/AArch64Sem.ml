@@ -3165,7 +3165,8 @@ module Make
             let dir = match op.AArch64Base.DC.funct with
               | AArch64Base.DC.I -> Dir.W
               | _ -> Dir.R in
-            lift_memop rd dir false memtag
+            (* CMO by VA other than DC ZVA are Tag Unchecked *)
+            lift_memop rd dir false false
               (fun ac ma _mv -> (* value fake here *)
                 if Access.is_physical ac then
                   M.bind_ctrldata ma (mop ac)
