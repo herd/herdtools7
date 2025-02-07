@@ -1099,6 +1099,7 @@ module Make
             (struct
 
               let with_ok = true
+              let use_symbolic = true
 
               module C = T.C
 
