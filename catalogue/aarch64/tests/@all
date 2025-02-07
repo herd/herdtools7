@@ -45,3 +45,7 @@ SB+SWP-rfi-addr+DMBSY.litmus
 STABLE.litmus
 SB+dmb.sy+rel-acq.litmus
 SB+dmb.sy+rel-acqpc.litmus
+MP+rel+acq.litmus
+MP+rel+acqpc.litmus
+MP+rel+swp-acq.litmus
+MP+rel+swp-acqpc.litmus
