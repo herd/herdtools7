@@ -58,3 +58,7 @@ CoWW           Forbidden
 LB+SWP-RsRt-addr+rel Allowed
 SB+dmb.sy+rel-acq               Forbidden
 SB+dmb.sy+rel-acqpc             Allowed
+MP+rel+acq                      Forbidden
+MP+rel+acqpc                    Forbidden
+MP+rel+swp-acq                  Forbidden
+MP+rel+swp-acqpc                Forbidden
