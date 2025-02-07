@@ -7,5 +7,5 @@ int64_t 0:rcx;
 }
 
 P0                        ;
-movq 0(%rax,%ebx,8),%rcx  ;
+movq 0(%rax,%rbx,8),%rcx  ;
 forall 0:rcx = -1

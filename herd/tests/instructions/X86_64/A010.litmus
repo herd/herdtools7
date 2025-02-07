@@ -1,0 +1,9 @@
+X86_64 A010
+{
+  uint64_t x;
+  0:RBX=0x202020202020202;
+}
+  P0            ;
+  MOVQ %RBX,(x) ;
+locations [x;]
+forall [x] = 0x202020202020202
