@@ -895,6 +895,7 @@ module Make
       module DC =
         CompCond.Make(O)
           (struct
+            let use_symbolic = false
             let with_ok = true
             module C = C
  (* Location argument ignored, may be useful for null pointer.
@@ -948,7 +949,7 @@ module Make
                 O.fi "else if (v_addr == (void *)_a->%s[_i]) return %i;"
                   s k in
           O.o "static int idx_addr(ctx_t *_a,int _i,void *v_addr) {" ;
-          O.oi "if (v_addr == NULL) { return 0;}" ;
+          O.fi "if (v_addr == NULL) return 0;" ;
           Misc.iteri (fun k (s,_) -> dump_test (k+1) s) test.T.globals ;
           O.fi "else { fatal(\"%s, ???\"); return -1;}" doc.Name.name ;
           O.o "}" ;
