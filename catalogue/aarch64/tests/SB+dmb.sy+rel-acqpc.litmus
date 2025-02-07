@@ -1,0 +1,14 @@
+AArch64 SB+dmb.sy+rel-acqpc
+Hash=5b3a6dbce76eccd468d8ca9cc613b045
+
+{
+ 0:X1=x; 0:X3=y;
+ 1:X1=x; 1:X3=y;
+}
+ P0          | P1            ;
+ MOV W0,#1   | MOV W2,#1     ;
+ STR W0,[X1] | STLR W2,[X3]  ;
+ DMB SY      |               ;
+ LDR W2,[X3] | LDAPR W0,[X1] ;
+
+exists (0:X2=0 /\ 1:X0=0)

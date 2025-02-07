@@ -56,3 +56,5 @@ CoRW2          Forbidden
 CoWR           Forbidden
 CoWW           Forbidden
 LB+SWP-RsRt-addr+rel Allowed
+SB+dmb.sy+rel-acq               Forbidden
+SB+dmb.sy+rel-acqpc             Allowed
