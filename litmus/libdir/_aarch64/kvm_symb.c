@@ -16,7 +16,7 @@ static int symbolic_equal(symb_t s1, symb_t s2) {
   return s1.id == s2.id && s1.offset == s2.offset;
 }
 
-// Pretty print a symbolic data, only print the
+// Pretty print a symbolic data and return it as a string
 static const char* pp_symbolic(symb_t s) {
   char* buffer = (char*)malloc(sizeof(char) * 1024);
   if (s.offset == 0) snprintf(buffer, 1024, "%s", data_symb_name[s.id]);
