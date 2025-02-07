@@ -43,3 +43,5 @@ SB+CAS-rfi-addr+DMBSY.litmus
 SB+SWP-rfi-addr+DMBSY.litmus
 #Litmus testing
 STABLE.litmus
+SB+dmb.sy+rel-acq.litmus
+SB+dmb.sy+rel-acqpc.litmus
