@@ -91,6 +91,7 @@ def check_tododefines():
         return 0
 
 def check_repeated_words():
+    last_word = ""
     num_errors = 0
     latex_files = fnmatch.filter(os.listdir('.'), '*.tex')
     for latex_source in latex_files:
@@ -102,12 +103,12 @@ def check_repeated_words():
                 parts = line.split()
                 if len(parts) < 2:
                     continue
-                for i in range(0, len(parts) - 1):
-                    word1 = parts[i]
-                    word2 = parts[i + 1]
-                    if word1.isalpha() and word1.lower() == word2.lower():
+                for i in range(0, len(parts)):
+                    current_word = parts[i]
+                    if current_word.isalpha() and last_word.lower() == current_word.lower():
                         num_errors += 1
-                        print(f"./{latex_source} line {line_number}: word repetition ({word1} {word2}) in '{line}'")
+                        print(f"./{latex_source} line {line_number}: word repetition ({last_word} {current_word}) in '{line}'")
+                    last_word = current_word
     return num_errors
 
 def main():
