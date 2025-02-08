@@ -9,6 +9,6 @@ begin
     println("gt_int: 11 > 10 = ",  11 > 10);
     println("ge_int: 11 >= 10 = ",  11 >= 10);
     println("ge_int: 6 >= 10 = ",  6 >= 10);
-    // println(6 >= 0.0);
+    // println("invalid", 6 >= 0.0);
     return 0;
 end;

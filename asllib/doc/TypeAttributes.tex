@@ -145,9 +145,9 @@ $\tty$ is a builtin type and one of the following applies:
 
 \subsubsection{Example}
 In the specification
-\begin{verbatim}
-  type ticks of integer;
-\end{verbatim}
+\begin{lstlisting}
+type ticks of integer;
+\end{lstlisting}
 the type \texttt{integer} is a builtin type but the type of \texttt{ticks} is not.
 
 \CodeSubsection{\BuiltinSingularOrAggregateBegin}{\BuiltinSingularOrAggregateEnd}{../types.ml}
@@ -178,9 +178,9 @@ A named type is a type that is declared by using the \texttt{type of} syntax.
 
 \subsubsection{Example}
 In the specification
-\begin{verbatim}
-  type ticks of integer;
-\end{verbatim}
+\begin{lstlisting}
+type ticks of integer;
+\end{lstlisting}
 \texttt{ticks} is a named type.
 
 \CodeSubsection{\NamedBegin}{\NamedEnd}{../types.ml}
@@ -245,11 +245,11 @@ A type $\tty$ is singular if and only if all of the following apply:
 
 \subsubsection{Example}
 In the following example, the types \texttt{A}, \texttt{B}, and \texttt{C} are all singular types:
-\begin{verbatim}
+\begin{lstlisting}
 type A of integer;
 type B of A;
 type C of B;
-\end{verbatim}
+\end{lstlisting}
 
 \CodeSubsection{\SingularBegin}{\SingularEnd}{../types.ml}
 
@@ -284,11 +284,11 @@ A type $\tty$ is aggregate in an environment $\tenv$ if and only if all of the f
 
 \subsubsection{Example}
 In the following example, the types \texttt{A}, \texttt{B}, and \texttt{C} are all aggregate types:
-\begin{verbatim}
+\begin{lstlisting}
 type A of (integer, integer);
 type B of A;
 type C of B;
-\end{verbatim}
+\end{lstlisting}
 
 \CodeSubsection{\AggregateBegin}{\AggregateEnd}{../types.ml}
 
@@ -324,10 +324,10 @@ which is determined via the AST label of $\tty$.
 \subsubsection{Example}
 In the following example, the types \texttt{SyntaxException} and \texttt{PointRecord}
 are each an example of a \structuredtype:
-\begin{verbatim}
+\begin{lstlisting}
 type SyntaxException of exception {message: string };
 type PointRecord of Record {x : real, y: real, z: real};
-\end{verbatim}
+\end{lstlisting}
 
 \FormallyParagraph
 \begin{mathpar}
@@ -603,17 +603,17 @@ does not recurse further.
 
 \subsubsection{Example}
 Consider the following example:
-\begin{verbatim}
+\begin{lstlisting}
 type T1 of integer;
 type T2 of T1;
 type T3 of (integer, T2);
-\end{verbatim}
+\end{lstlisting}
 
-The underlying types of \texttt{integer}, \texttt{T1}, and \texttt{T2} is \texttt{integer}.
+The \underlyingtypes\ of \texttt{integer}, \texttt{T1}, and \texttt{T2} is \texttt{integer}.
 
-The underlying type of \texttt{(integer, T2)} and \texttt{T3} is
-\texttt{(integer, T2)}.  Notice how the underlying type does not replace
-\texttt{T2} with its own underlying type, in contrast to the structure of
+The \underlyingtype{} of \texttt{(integer, T2)} and \texttt{T3} is
+\texttt{(integer, T2)}.  Notice how the \underlyingtype{} does not replace
+\texttt{T2} with its own \underlyingtype, in contrast to the \structure{} of
 \texttt{T2}, which is \texttt{(integer, integer)}.
 
 \ProseParagraph

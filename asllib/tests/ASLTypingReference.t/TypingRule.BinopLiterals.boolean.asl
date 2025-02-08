@@ -17,7 +17,7 @@ begin
     println("equiv_bool: FALSE <-> FALSE = ", FALSE <-> FALSE);
     println("equiv_bool: TRUE <-> TRUE = ", TRUE <-> TRUE);
     println("equiv_bool: FALSE <-> TRUE = ", FALSE <-> TRUE);
-    // println(TRUE == 1);
-    // println(FALSE && 0);
+    // println("invalid", TRUE == 1);
+    // println("invalid", FALSE && 0);
     return 0;
 end;

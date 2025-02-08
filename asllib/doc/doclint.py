@@ -1,7 +1,11 @@
 #!/usr/bin/python3
 
 import os, fnmatch, sys
-from functools import partial
+from extended_macros import apply_all_macros
+
+import argparse
+cli_parser = argparse.ArgumentParser(prog='ASL Reference Linter')
+cli_parser.add_argument('-t', '--transform', help='Rewrites *.tex files with extended macros', action='store_true')
 
 def extract_labels_from_line(line: str, left_delim: str, labels: set[str]):
     r"""
@@ -112,15 +116,19 @@ def check_repeated_words():
     return num_errors
 
 def main():
+    args = cli_parser.parse_args()
+    if args.transform:
+        apply_all_macros()
+    print('Linting files...')
     num_errors = 0
     num_errors += check_hyperlinks_and_hypertargets()
     num_errors += check_undefined_references_and_multiply_defined_labels()
     num_errors += check_tododefines()
     num_errors += check_repeated_words()
 
-    print(f"There were {num_errors} errors!", file=sys.stderr)
     if num_errors > 0:
-       sys.exit(1)
+        print(f"There were {num_errors} errors!", file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

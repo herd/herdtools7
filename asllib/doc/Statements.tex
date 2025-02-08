@@ -2115,14 +2115,18 @@ All of the following apply:
 \subsection{Semantics}
 \SemanticsRuleDef{SRepeat}
 \subsubsection{Example}
-The specification in \listingref{semantics-srepeat} prints
-\begin{Verbatim}
-  0
-  1
-  2
-  3
-\end{Verbatim}
+The specification in \listingref{semantics-srepeat} is followed by its output to the console.
 \ASLListing{Evaluating a \texttt{repeat} loop}{semantics-srepeat}{\semanticstests/SemanticsRule.SRepeat.asl}
+% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.SRepeat.asl
+\begin{small}
+\begin{Verbatim}[frame=single]
+0
+1
+2
+3
+\end{Verbatim}
+\end{small}
+% CONSOLE_END
 
 \ProseParagraph
 Evaluation of the statement $\vs$ in an environment $\env$ is
@@ -2429,14 +2433,18 @@ is not already declared in the scope of the subprogram containing the \texttt{fo
 statement.
 
 \subsubsection{Example}
-The specification in \listingref{semantics-sfor} prints
-\begin{Verbatim}
-  0
-  1
-  2
-  3
-\end{Verbatim}
+The specification in \listingref{semantics-sfor} is followed by its output to the console.
 \ASLListing{Evaluating a \texttt{for} loop}{semantics-sfor}{\semanticstests/SemanticsRule.SFor.asl}
+% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.SFor.asl
+\begin{small}
+\begin{Verbatim}[frame=single]
+0
+1
+2
+3
+\end{Verbatim}
+\end{small}
+% CONSOLE_END
 
 \ProseParagraph
 All of the following apply:
@@ -3336,7 +3344,9 @@ All of the following apply:
 \listingref{semantics-literals} shows examples of printing various types of literals,
 followed by the output to the console resulting from running the specification.
 \ASLListing{Literals and how they are displayed}{semantics-literals}{\semanticstests/SemanticsRule.SPrint.asl}
-\begin{verbatim}
+% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.SPrint.asl
+\begin{small}
+\begin{Verbatim}[frame=single]
 string_number_1
 0
 1000000
@@ -3346,11 +3356,13 @@ FALSE
 12345678900123456789/10000000000
 0
 hello\world
-          "here I am "
+	 "here I am "
 0xd
 0x
 LABEL_B
-\end{verbatim}
+\end{Verbatim}
+\end{small}
+% CONSOLE_END
 
 Notice that empty bitvectors are displayed as \verb|0x|.
 

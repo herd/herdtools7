@@ -461,8 +461,9 @@ for a given unary operator:
 followed by the resulting console output.
 \ASLListing{Valid applications of unary operations}{unary-operations}{\typingtests/TypingRule.UnopLiterals.asl}
 
+% CONSOLE_BEGIN aslref \typingtests/TypingRule.UnopLiterals.asl
 \begin{small}
-\begin{verbatim}
+\begin{Verbatim}[frame=single]
 negate_int: -10 = -10
 negate_int: -0x0 = 0
 negate_int: -0xf = -15
@@ -470,8 +471,9 @@ negate_rel: -2.3 = -23/10
 not_bool: !TRUE = FALSE
 not_bits: NOT '' = 0x
 not_bits: NOT '11 01' = 0x2
-\end{verbatim}
+\end{Verbatim}
 \end{small}
+% CONSOLE_END
 
 \ProseParagraph
 One of the following applies:
@@ -566,8 +568,9 @@ followed by the resulting console output.
   {binary-operations-boolean}
   {\typingtests/TypingRule.BinopLiterals.boolean.asl}
 
+% CONSOLE_BEGIN aslref \typingtests/TypingRule.BinopLiterals.boolean.asl
 \begin{small}
-\begin{verbatim}
+\begin{Verbatim}[frame=single]
 and_bool: TRUE && TRUE = TRUE
 and_bool: TRUE && FALSE = FALSE
 or_bool: TRUE || FALSE = TRUE
@@ -585,8 +588,9 @@ implies_bool: TRUE --> FALSE = FALSE
 equiv_bool: FALSE <-> FALSE = TRUE
 equiv_bool: TRUE <-> TRUE = TRUE
 equiv_bool: FALSE <-> TRUE = FALSE
-\end{verbatim}
+\end{Verbatim}
 \end{small}
+% CONSOLE_END
 
 \subsubsection{Example (Integer Arithmetic)\label{sec:IntegerArithmetic}}
 \listingref{binary-operations-integer-arithmetic} shows applications
@@ -596,8 +600,9 @@ followed by the resulting console output.
   {binary-operations-integer-arithmetic}
   {\typingtests/TypingRule.BinopLiterals.integer-arithmetic.asl}
 
+% CONSOLE_BEGIN aslref \typingtests/TypingRule.BinopLiterals.integer-arithmetic.asl
 \begin{small}
-\begin{verbatim}
+\begin{Verbatim}[frame=single]
 add_int: 10 + 20 = 30
 sub_int: 10 - 20 = -10
 mul_int: 10 * 20 = 200
@@ -619,8 +624,9 @@ shiftright_int: 16 >> 2 = 4
 shiftright_int: -16 >> 2 = -4
 shiftright_int: 1 >> 0 = 1
 shiftright_int: -1 >> 10 = -1
-\end{verbatim}
+\end{Verbatim}
 \end{small}
+% CONSOLE_END
 
 \subsubsection{Example (Integer Relational)\label{sec:IntegerRelational}}
 \listingref{binary-operations-integer-relational} shows applications
@@ -630,8 +636,9 @@ followed by the resulting console output.
   {binary-operations-integer-relational}
   {\typingtests/TypingRule.BinopLiterals.integer-relational.asl}
 
+% CONSOLE_BEGIN aslref \typingtests/TypingRule.BinopLiterals.integer-relational.asl
 \begin{small}
-\begin{verbatim}
+\begin{Verbatim}[frame=single]
 eq_int: 5 == 10 = FALSE
 ne_int: 5 != 10 = TRUE
 le_int: 10 <= 10 = TRUE
@@ -641,20 +648,21 @@ gt_int: 10 > 10 = FALSE
 gt_int: 11 > 10 = TRUE
 ge_int: 11 >= 10 = TRUE
 ge_int: 6 >= 10 = FALSE
-\end{verbatim}
+\end{Verbatim}
 \end{small}
+% CONSOLE_END
 
 \subsubsection{Example (Real Operations)\label{sec:RealOperations}}
 \listingref{binary-operations-real} shows applications
 of operations on real-typed literals (invalid applications in comments),
 followed by the resulting console output.
-\ASLListing{Applications of operations on real-typed literals}
+\ASLListing{Applications of operations on reals}
   {binary-operations-real}
   {\typingtests/TypingRule.BinopLiterals.real.asl}
 
-% ASL_RUN_BEGIN: aslref \typingtests/TypingRule.BinopLiterals.real.asl
+% CONSOLE_BEGIN aslref \typingtests/TypingRule.BinopLiterals.real.asl
 \begin{small}
-\begin{verbatim}
+\begin{Verbatim}[frame=single]
 add_real: 10.0 + 0.5 = 21/2
 sub_real: 10.0 - 0.5 = 19/2
 mul_real: 10.0 * 0.5 = 5
@@ -666,9 +674,61 @@ le_real: 10.0 <= 0.5 = FALSE
 lt_real: 10.0 < 0.5 = FALSE
 gt_real: 10.0 > 0.5 = TRUE
 ge_real: 10.0 >= 0.5 = TRUE
-\end{verbatim}
+\end{Verbatim}
 \end{small}
-% ASL_RUN_END
+% CONSOLE_END
+
+\subsubsection{Example (Bitvector Operations)\label{sec:ExampleBitvectorOperations}}
+\listingref{binary-operations-bitvector} shows applications
+of operations on bitvector-typed literals (invalid applications in comments),
+followed by the resulting console output.
+\ASLListing{Applications of operations on bitvectors}
+  {binary-operations-bitvector}
+  {\typingtests/TypingRule.BinopLiterals.bits.asl}
+
+% CONSOLE_BEGIN aslref \typingtests/TypingRule.BinopLiterals.bits.asl
+\begin{small}
+\begin{Verbatim}[frame=single]
+add_bits: '010' + '011' = 0x5
+add_bits: '10' + '11' = 0x1
+add_bits: '010' + 3 = 0x5
+add_bits: '10' + 3 = 0x1
+sub_bits: '100' - '010' = 0x2
+sub_bits: '100' - '111' = 0x5
+sub_bits: '100' - 7 = 0x5
+sub_bits: '100' - 8 = 0x4
+and_bits: '100' AND '111' = 0x4
+or_bits: '100' OR '110' = 0x6
+xor_bits: '100' XOR '110' = 0x2
+eq_bits: '100' == '110' = FALSE
+ne_bits: '100' != '110' = TRUE
+concat_bits: '100' :: '110' = 0x26
+concat_bits: '100' :: '' = 0x4
+\end{Verbatim}
+\end{small}
+% CONSOLE_END
+
+\subsubsection{Example (String and Enumeration Label Operations)\label{sec:StringLabelOperations}}
+\listingref{binary-operations-stringslabels} shows applications
+of operations on string-typed literals and enumeration-typed literals (invalid applications in comments),
+followed by the resulting console output.
+\ASLListing{Applications of operations on strings and enumeration labels}
+  {binary-operations-stringslabels}
+  {\typingtests/TypingRule.BinopLiterals.strings_labels.asl}
+
+% CONSOLE_BEGIN aslref \typingtests/TypingRule.BinopLiterals.strings_labels.asl
+\begin{small}
+\begin{Verbatim}[frame=single]
+eq_string: "hello" == "world" = FALSE
+eq_string: "hello" == "hello" = TRUE
+ne_string: "hello" != "world" = TRUE
+eq_enum: RED == RED = TRUE
+eq_enum: RED == GREEN = FALSE
+eq_enum: RED != RED = FALSE
+eq_enum: RED != GREEN = TRUE
+\end{Verbatim}
+\end{small}
+% CONSOLE_END
 
 \hypertarget{def-binopsignatures}{}
 The following set defines the valid signatures of
@@ -1424,7 +1484,6 @@ of \texttt{width} bits.
 }
 \end{mathpar}
 
-
 \begin{mathpar}
 \inferrule[add\_bits\_int]{
   y \eqdef \bintounsigned(a)\\
@@ -1477,7 +1536,31 @@ The function
 \[
   \unoprel(\overname{\unop}{\op} \aslsep \overname{\vals}{\vv}) \aslto \overname{\vals}{\vw} \cup \TDynError
 \]
-evaluates a unary operator $\op$ over a \nativevalue\  $\vv$ and returns the \nativevalue\  $\vw$ or an error.
+evaluates a unary operator $\op$ over a \nativevalue{} $\vv$ and returns the \nativevalue{} $\vw$ or an error.
+
+\subsubsection{Example (Valid Unary Operation)}
+The following grounded rule shows how the application of negation
+to the literal integer for $1$
+translates into the application of negation to the \nativevalue\ for $1$.
+\begin{mathpar}
+\inferrule{
+  \unopliterals(\NEG, \lint(1)) \typearrow \lint(-1)
+}{
+  \unoprel(\NEG, \nvint(1)) \evalarrow \nvint(-1)
+}
+\end{mathpar}
+
+\subsubsection{Example (Invalid Unary Operation)}
+The following grounded rule shows how the application of negation
+to the literal Boolean for $\True$
+translates the resulting type error into the corresponding dynamic error.
+\begin{mathpar}
+\inferrule{
+  \unopliterals(\NEG, \lbool(\True)) \typearrow \TypeErrorVal{\BadOperands}
+}{
+  \unoprel(\NEG, \nvint(\True)) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
+}
+\end{mathpar}
 
 \ProseParagraph
 One of the following applies:
@@ -1538,6 +1621,31 @@ The function
 \]
 evaluates a binary operator $\op$ over a pair of \nativevalues\  --- $\vvone$ and $\vvtwo$ --- and returns the
 \nativevalue\  $\vw$ or an error.
+
+\subsubsection{Example (Valid Binary Operation)}
+The following grounded rule shows how the application of addition
+to the literal integer for $2$ and the literal integer for $3$
+translates into the application of addition to the \nativevalue\ for $2$
+and the \nativevalue\ for $3$.
+\begin{mathpar}
+\inferrule{
+  \binopliterals(\PLUS, \lint(2), \lint(3)) \typearrow \lint(5)
+}{
+  \binoprel(\PLUS, \nvint(2), \nvint(3)) \evalarrow \nvint(5)
+}
+\end{mathpar}
+
+\subsubsection{Example (Invalid Binary Operation)}
+The following grounded rule shows how the invalid application of addition
+to the literal integer for $2$ and the literal real for $1/2$
+translates the resulting type error into the corresponding dynamic error.
+\begin{mathpar}
+\inferrule{
+  \binopliterals(\PLUS, \lint(2), \lreal(1/2)) \typearrow \TypeErrorVal{\BadOperands}
+}{
+  \binoprel(\PLUS, \nvint(2), \nvreal(1/2)) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
+}
+\end{mathpar}
 
 \ProseParagraph
 One of the following applies:
