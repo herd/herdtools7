@@ -1,0 +1,10 @@
+Test A010 Required
+States 1
+[x]=144680345676153346;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([x]=144680345676153346)
+Observation A010 Always 1 0
+Hash=a4f2c7b46c9fe04acb695c7d4ca4630b
+

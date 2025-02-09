@@ -34,6 +34,22 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
       | _ -> false
     let branch lbl = I_JMP lbl
 
+(*******************)
+(* A bit of typing *)
+(*******************)
+
+    let reg2type = function
+      | Ireg (_,(R8bL|R8bH|R16b|R32b)) -> CType.word
+      | Ireg (_,R64b) -> CType.quad
+      | _ -> CType.voidstar
+
+    let regs2env rs =
+      List.sort_uniq reg_compare rs |> List.map (fun r -> r,reg2type r)
+
+    let regs2env2 r1s r2s = regs2env @@ r1s @ r2s
+
+    let voidstar = List.map (fun r -> r,CType.voidstar)
+
 (***************************************************)
 (* Extract explicit [symbolic] addresses from code *)
 (***************************************************)
@@ -136,10 +152,13 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
     let op_ea_output_op memo ea op =
       let op,(i,ins1) = compile_op 0 op in
       let ea,(_,ins2),(_,outs) = compile_ea_output i 0 ea in
+      let inputs = ins1@ins2 in
       { empty_ins with
         memo = sprintf "%s %s,%s" memo op ea;
-        inputs = ins1@ins2;
-        outputs = outs; }
+        inputs;
+        outputs = outs;
+        reg_env = regs2env2 inputs outs;
+      }
 
     let op_ea_input_op memo ea op =
       let op,(i,ins1) = compile_op 0 op in
@@ -147,15 +166,20 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
       { empty_ins with
         memo = sprintf "%s %s,%s" memo op ea;
         inputs = ins1@ins2;
-        outputs = [] ; }
+        outputs = [] ;
+        reg_env = regs2env2 ins1 ins2;
+      }
 
     let move memo ea op =
        let op,(i,ins1) = compile_op 0 op in
        let ea,(_,ins2),(_,outs2) = compile_ea_move i 0 ea in
+       let inputs = ins1@ins2 in
        { empty_ins with
          memo = sprintf "%s %s,%s" memo op ea;
-         inputs = ins1@ins2;
-         outputs=outs2; }
+         inputs;
+         outputs=outs2;
+         reg_env = regs2env2 inputs outs2; 
+       }
 
     let move_addr a i =
       move "movl"
@@ -171,7 +195,9 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
       { empty_ins with
         memo = sprintf "%s %s,%s" memo ea2 ea1;
         inputs = ins1@ins2@[reg_ax] ;
-        outputs = outs1@[reg_ax] ; }
+        outputs = outs1@[reg_ax] ;
+        reg_env = regs2env (reg_ax::ins1@ins2@outs1);
+      }
 
     let movnti sz ea r =
       let ea1,(_,ins1) = compile_ea_input 0 ea in
@@ -179,7 +205,9 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
        { empty_ins with
         memo = sprintf "%s %s,%s" (pp_movnti sz) ea2 ea1;
         inputs = ins2@ins1;
-        outputs = [] ; }
+        outputs = [] ;
+        reg_env = regs2env2 ins1 ins2;
+       }
 
     let movntdqa xmm ea =
       let xmm = XMM xmm in
@@ -188,7 +216,9 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
       { empty_ins with
         memo = sprintf "%s %s,%s" pp_movntdqa ea xmm ;
         inputs = inp ;
-        outputs = outp ; }
+        outputs = outp ;
+        reg_env = regs2env2 inp outp;
+      }
 
     let movd sz r xmm =
       let xmm = XMM xmm in
@@ -197,37 +227,44 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
       { empty_ins with
         memo = sprintf "%s %s,%s" (pp_movd sz) xmm r ;
         inputs = inp ;
-        outputs = outp ; }
+        outputs = outp ;
+        reg_env = regs2env2 inp outp;
+      }
 
     let clflush opt ea =
       let ea,(_,inp) = compile_ea_input 0 ea in
       { empty_ins with
         memo = sprintf "%s %s" (pp_clflush opt) ea ;
         inputs = inp ;
-        outputs = []; }
+        outputs = [];
+        reg_env = voidstar inp;
+      }
 
     let op_ea_ea memo ea1 ea2 =
       let ea1,(i,ins1),(o,outs1) = compile_ea_output 0 0 ea1 in
       let ea2,(_,ins2),(_,outs2) = compile_ea_output i o ea2 in
 (* For exchange, order of operands is irrelevant.
    Let us not swap them... *)
+      let inputs = ins1@ins2 and outputs = outs1@outs2 in
       { empty_ins with
         memo = sprintf "%s %s,%s" memo ea1 ea2;
-        inputs = ins1@ins2;
-        outputs = outs1@outs2; }
+        inputs;  outputs;
+        reg_env = regs2env2 inputs outputs;
+      }
 
     let op_ea memo ea =
       let ea,(_,ins),(_,outs) = compile_ea_output 0 0 ea in
       { empty_ins with
         memo = sprintf "%s %s" memo ea ;
         inputs = ins ;
-        outputs = outs ; }
+        outputs = outs ;
+        reg_env = regs2env2 ins outs;
+      }
 
     let op_none memo =
       { empty_ins with
         memo = memo;
-        inputs=[];
-        outputs=[]; }
+      }
 
     let emit_lbl lbl =
       { empty_ins with
