@@ -29,30 +29,29 @@ type args = {
   cmly_file : string;
   cf_file : string;
   order_file : string option;
-  ml_file : string option;
   no_ast : bool;
+  with_lexer : bool;
 }
 (** Command line arguments structure *)
 
 let parse_args () =
   let files = ref [] in
   let no_ast = ref false in
+  let with_lexer = ref false in
   let order_file = ref "" in
-  let ml_file = ref "" in
   let speclist =
     [
       ( "--no-ast",
         Arg.Set no_ast,
         " Output in a simplified A := B | C format excluding AST information."
       );
+      ( "--with-lexer",
+        Arg.Set with_lexer,
+        " Include Aslref specific token information." );
       ( "--order",
         Arg.Set_string order_file,
         " A file describing the desired order of bnfc names. Represented as a \
          newline separated list of bnfc names." );
-      ( "--ml",
-        Arg.Set_string ml_file,
-        " An ml file generated using 'ocamllex -ml' to provide lexical data to \
-         the generated grammar" );
     ]
   in
   let prog =
@@ -70,14 +69,13 @@ let parse_args () =
   let () = Arg.parse speclist anon_fun usage_msg in
   let args =
     let order_file = match !order_file with "" -> None | f -> Some f in
-    let ml_file = match !ml_file with "" -> None | f -> Some f in
     match List.rev !files with
     | [ cmly; cf ] ->
         {
           cmly_file = cmly;
           cf_file = cf;
           no_ast = !no_ast;
-          ml_file;
+          with_lexer = !with_lexer;
           order_file;
         }
     | _ ->
@@ -98,8 +96,7 @@ let parse_args () =
       if Option.is_some opt_s then ensure_exists (Option.get opt_s)
     in
     ensure_exists args.cmly_file;
-    opt_ensure_exists args.order_file;
-    opt_ensure_exists args.ml_file
+    opt_ensure_exists args.order_file
   in
   args
 
@@ -117,18 +114,15 @@ let translate_to_str args =
           in
           Utils.with_open_in_bin ord_file parse_order
     in
-    let module GrammarData =
-    CvtGrammar.Convert (MenhirSdk.Cmly_read.Read (struct
+    let module GRAMMAR = MenhirSdk.Cmly_read.Read (struct
       let filename = args.cmly_file
-    end)) in
-    let comments, tokens, reserved =
-      match args.ml_file with
-      | None -> ([], [], [])
-      | Some f ->
-          let module LexerData = CvtLexer.Convert (struct
-            let filename = f
-          end) in
-          (LexerData.comments, LexerData.tokens, LexerData.reserved)
+    end) in
+    let module GrammarData = CvtGrammar.Convert (GRAMMAR) in
+    let reserved, comments, tokens =
+      if args.with_lexer then
+        let module L = CvtLexer.Convert (GRAMMAR) in
+        (L.reserved, L.comments, L.tokens)
+      else ([], [], [])
     in
     let initial =
       embed_literals

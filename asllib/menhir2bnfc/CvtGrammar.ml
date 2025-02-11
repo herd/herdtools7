@@ -63,6 +63,7 @@ end = struct
      A nonterminal is external if its attributes don't mark it as internal.
     *)
   let is_external_nterm nterm = is_external @@ Nonterminal.attributes nterm
+  let is_external_term term = is_external @@ Terminal.attributes term
 
   (*
      A utility function to check if a production is external
@@ -77,8 +78,12 @@ end = struct
     in
     let is_external_prod = is_external @@ Production.attributes prod in
     let is_external_nterm = is_external_nterm @@ Production.lhs prod in
+    let is_external_sym (sym, _, attrs) =
+      let check_sym = match sym with | T t -> is_external_term t | N n -> is_external_nterm in
+      check_sym && is_external attrs
+    in
     let has_external_sym =
-      Array.for_all (fun (_, _, attrs) -> is_external attrs)
+      Array.for_all is_external_sym
       @@ Production.rhs prod
     in
     is_regular && is_external_prod && is_external_nterm && has_external_sym
@@ -140,15 +145,12 @@ end = struct
   (* 2.3. (TODO) It may be necessary to verify that the nonterminals are actually related (are part of the same component on the parse graph *)
   (* The next steps should likely be run for each connected component and produce a `production list list` for each *)
 
-  (* 2.4. (TODO) We need to determine the associativity of each of the terminals in the ambiguous precedence cases *)
-  (* For now left associativity is assumed. This should be possible to derive using the LR(1) table, but it's outside of the scope of this project for now *)
-
   (* A utility function to get the last element of an array or None if the array is empty *)
   let get_last arr =
     let len = Array.length arr in
     if len = 0 then None else Some arr.(len - 1)
 
-  (* 2.5. Determine if any of the detected nonterminals can be removed and do so if possible *)
+  (* 2.4. Determine if any of the detected nonterminals can be removed and do so if possible *)
   (* This is sometimes possible. There seems to be an inefficiency in the LR(1) table which causes the following case to happen:
 
          A := ... B [t1, t2]
@@ -207,6 +209,76 @@ end = struct
             | _ -> set)
           prod_map)
       rest_map
+
+  (* 2.5. We need to determine the associativity of each of the terminals in the ambiguous precedence cases *)
+  (*
+     For each production in the remaining set of the form
+
+     expr := expr op (...)
+
+     we look for an LR1 table entry at the end of the production rule:
+
+     expr op (...) (HERE)
+
+     For all entries at that location we assert associativity by checking if
+     op is a shift rule (Right associativity), a reduce rule (Left associativity)
+     or neither (Nonassoc) *)
+  type associativity = Left | Right | Nonassoc
+
+  let associativity_map : associativity ProductionMap.t =
+    let target_productions : Production.t list =
+      NonterminalMap.map
+        (fun prod_map -> ProductionMap.bindings prod_map |> List.map fst)
+        reduced_production_sets
+      |> NonterminalMap.bindings |> List.map snd |> List.flatten
+    in
+    let is_rec n = NonterminalMap.mem n reduced_production_sets in
+    let get_assoc p =
+      let rhs = Production.rhs p |> Array.map (fun (s, _, _) -> s) in
+      let len = Array.length rhs in
+      let target_term =
+        match Array.to_list rhs with
+        | N n :: T t :: _ when is_rec n -> Some t
+        | _ -> None
+      in
+      if Option.is_none target_term then Nonassoc
+      else
+        let target_term = Option.get target_term in
+        let assoc_test assoc_type lr1 acc =
+          let lr0 = Lr1.lr0 lr1 in
+          let prod_locs = Lr0.items lr0 in
+          let in_last =
+            List.exists
+              (fun (p2, i) -> Production.equal p p2 && Int.equal i len)
+              prod_locs
+          in
+          if not in_last then acc
+          else
+            let reductions = Lr1.get_reductions lr1 in
+            let shifts = Lr1.transitions lr1 in
+            let is_reduced =
+              List.exists
+                (fun (t, p2) ->
+                  Terminal.equal target_term t && Production.equal p p2)
+                reductions
+            in
+            let is_shifted =
+              List.exists
+                (function T t, _ -> Terminal.equal t target_term | _ -> false)
+                shifts
+            in
+            match assoc_type with
+            | Nonassoc -> ((not is_shifted) && not is_reduced) && acc
+            | Right -> is_shifted && (not is_reduced) && acc
+            | Left -> is_reduced && (not is_shifted) && acc
+        in
+        let is_nassoc = Lr1.fold (assoc_test Nonassoc) true in
+        let is_right = Lr1.fold (assoc_test Right) true in
+        if is_nassoc then Nonassoc else if is_right then Right else Left
+    in
+    List.fold_left (fun acc p ->
+        ProductionMap.add p (get_assoc p) acc)
+    ProductionMap.empty target_productions
 
   (* 2.6. Generate a precedence list by sorting the productions by the
           length of terminals following them - shortest meaning lowest precedence *)
@@ -571,17 +643,18 @@ end = struct
           in
 
           if Option.is_some binop_comps then
-            (* TODO this should use collected associativity data *)
-            let get_associativity _ = `Left in
-
             let lhs, op, rhs = Option.get binop_comps in
-            match get_associativity op with
-            | `Left ->
-                let l_term = Reference (mk_name lhs) in
-                let op_term = LitReference (t_name op) in
-                let r_term = Reference (mk_name ~succ:true rhs) in
-                let terms = [ l_term; op_term; r_term ] in
-                Decl { ast_name; name; terms }
+            let l_succ, r_succ =
+              match ProductionMap.find prod associativity_map with
+              | Left -> (false, true)
+              | Nonassoc -> (true, true)
+              | Right -> (true, false)
+            in
+            let l_term = Reference (mk_name ~succ:l_succ lhs) in
+            let op_term = LitReference (t_name op) in
+            let r_term = Reference (mk_name ~succ:r_succ rhs) in
+            let terms = [ l_term; op_term; r_term ] in
+            Decl { ast_name; name; terms }
           else if is_unary used_nterms prod then
             let mk_lit (sym, _, _) =
               match sym with

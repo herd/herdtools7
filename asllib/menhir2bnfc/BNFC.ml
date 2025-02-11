@@ -41,8 +41,14 @@ module Regex = struct
     | Choice of t list
     | OneOrMore of t
     | ZeroOrMore of t
-    | MatchAll
-    | EOF
+    | MatchAll (* char - regex . *)
+    | MatchDigit (* digit - regex [0-9] *)
+    | MatchLetter (* letter - regex [a-zA-Z] *)
+
+  (* Build a Choice/OneOrMore/ZeroOrMore from a list of part objects or a single part object *)
+  let choice (li: part list) : part = Choice (List.map (fun x -> [ x ]) li)
+  let one_or_more (p: part): part = OneOrMore [ p ]
+  let zero_or_more (p: part): part = ZeroOrMore [ p ]
 
   (** Convert token type to string *)
   let rec string_of_regex regex =
@@ -63,7 +69,8 @@ module Regex = struct
           if is_singleton then string_of_regex t ^ "*"
           else "(" ^ string_of_regex t ^ ")*"
       | MatchAll -> "char"
-      | EOF -> "$"
+      | MatchDigit -> "digit"
+      | MatchLetter -> "letter"
     in
     List.map str_part regex |> String.concat " "
 end
@@ -121,8 +128,7 @@ let string_of_token (token : token) =
   let name, regex = match token with Token { name; regex } -> (name, regex) in
   Printf.sprintf "token %s %s;" name (Regex.string_of_regex regex)
 
-(** Conert the bnfc type to string *)
-let string_of_bnfc bnfc =
+let string_of_decl_list (decl_list : decl list) : string list =
   let print_decl_list decl_list =
     let longest_name (Decl { ast_name }) acc =
       max acc (String.length ast_name)
@@ -136,17 +142,21 @@ let string_of_bnfc bnfc =
     let decl_strs = List.map print_decl decl_list in
     String.concat "\n" decl_strs
   in
-  let grouped_decls = group_by_name bnfc.decls in
+  let grouped_decls = group_by_name decl_list in
+  List.map print_decl_list grouped_decls
+
+(** Conert the bnfc type to string *)
+let string_of_bnfc bnfc =
   let eps = string_of_entrypoints bnfc.entrypoints in
   let comments =
     List.map string_of_comment bnfc.comments |> String.concat "\n"
   in
   let tokens = List.map string_of_token bnfc.tokens |> String.concat "\n" in
-  let decl_strs = List.map print_decl_list grouped_decls in
+  let decls = string_of_decl_list bnfc.decls in
   String.concat "\n\n"
   @@ List.filter
        (fun part -> not @@ String.equal part "")
-       (eps :: comments :: tokens :: decl_strs)
+       (eps :: comments :: tokens :: decls)
 
 (** Given a sorting order of the generated BNFC names. Order the bnfc ast
     using the order of the names specified *)

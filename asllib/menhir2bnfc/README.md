@@ -3,24 +3,31 @@
 ## Input data
 To use this tool you need the following input files:
     * A Menhir `.cmly` file (see `menhir --help` on instructions on building a cmly file from mly file(s))
-    * For the lexer an `ocamllex` `.ml` file. Speicifically one built with the `ocamllex -ml` flag.
 
 ## Usage with AslRef
 
-To build and run this script make sure you have `ppxlib` and `bnfc` (https://github.com/BNFC/bnfc) installed.
+To build and run this script make sure you have `bnfc` (https://github.com/BNFC/bnfc) installed.
 
 Then from the `herdtools7` root directory you can run the following:
 ```
 make
 dune build asllib/menhir2bnfc
+dune build @bnfc_test
+# Note: The last command builds a grammar.cf file, creates a menhir parser using bnfc and runs
+# a parser comparison script on all asl files in asllib/tests. If it succeds,
+# (it should if bnfc is installed)
+# You should have a _build/default/asllib/menhir2bnfc/tests/integration/bnfc_parser/grammar.cf file built
+# If all you're looking for an aslref bnfc file - that's it.
+
+# The rest of the steps are how to build the bnfc file from scratch.
+
 # Note: The following command succeds with errors related to type inference.
 # Since we don't care about the backend this is not relevant.
 menhir --cmly --base Parser asllib/Parser.mly asllib/Tokens.mly
-ocamllex -ml asllib/Lexer.mll -o Lexer.ml
 
 # At this point you should have a Parser.cmly and Lexer.ml file
 # To build the grammar run:
-./_build/default/asllib/menhir2bnfc/menhir2bnfc.exe --ml Lexer.ml Parser.cmly grammar.cf
+./_build/default/asllib/menhir2bnfc/menhir2bnfc.exe --with-lexer Parser.cmly grammar.cf
 
 # You should now have a bnfc compliant grammar.cf file!
 ```
@@ -66,12 +73,15 @@ See `menhir2bnfc --help` for more details.
           tokens following different productions
     2.3. (TODO) Verify that the nonterminals are actually related (are part of the same component on the parse graph)
         * The next steps likely want to be done for each component
-    2.4. (TODO) Determine the associativity of each of the operands in the ambiguous productions
-        * The script assumes left associativity for now
-    2.5. Determine if any of the detected nonterminals can be removed and remove them
+    2.4. Determine if any of the detected nonterminals can be removed and remove them
         * In cases where a nonterminal has a "final" production (all but one production end with a recursive reference) we can infer that the set of
           terminals which follow that final case must follow all other cases. Similarly, any other rule which terminates by that nonterminal is followed
           by the same set. This feels like an inefficiency in the LR(1) state machine menhir generates?
+    2.5. Determine the associativity of each of the operands in the ambiguous productions
+        * We determine associativity based on what the LR1 state at `expr op expr .` is.
+           * If `op` is a shift rule - right associativity
+           * if `op` is a reduce rule - left associativity
+           * if `op` is neither shifted nor reduced - non-associative
     2.6. Generate a precedence lists by sorting the productions by the length of terminals following them - shortest meaning lowest precedence
         * In order to compare the different nonterminals in the same component for each nonterminal's productions we subtract the shortest set from
           all productions. This is done to remove terminals which come from outside the component.
@@ -94,12 +104,7 @@ See `menhir2bnfc --help` for more details.
 The algorithm implemented has some limitations worth noting:
     1. It assumes that ambiguous precedence expressions follow a `expr op expr`/`<terminals> expr`/`expr <non op> ...` structure
        If somebody was to create an in-between production `expr opexpr` where `opexpr := op expr` the algorithm may not be sufficient to detect this.
-    2. Associativity is assumed to be left.
 
 Possible future work/ideas for each of these
     1. Identifying which operands actually control precedence and associativity would be a more scalable approach than working on productions only
         * Actually calculating where shift/reduce conflicts would happen if the productions generated a parser without precedence rules might give us this
-    2. If we know which operands control the precedence rules, we could see where in the LR(1) table the reductions happen.
-        * For left associativity a reduction `Expr Op Expr` will happen at  `Expr . Op Expr` first
-        * For right associativity a reduction `Expr Op Expr` should not happen at `Expr . Op Expr` since Op should be a `shift` and not a reduce
-        * This may need more detailed investigation. `menhir`'s SDK does have some of this data in it's LR0 components of the LR(1) table

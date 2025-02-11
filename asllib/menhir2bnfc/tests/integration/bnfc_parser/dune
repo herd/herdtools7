@@ -1,17 +1,9 @@
 (rule
- (target lex_data)
- (deps
-  (:lex ../../Lexer.mll))
- (action
-  (run %{bin:ocamllex} -ml -o %{target} %{lex})))
-
-(rule
  (target grammar.cf)
  (deps
-  (:par ../../Parser.cmly)
-  (:lex lex_data))
+  (:par %{workspace_root}/asllib/Parser.cmly))
  (action
-  (run %{bin:menhir2bnfc} --ml %{lex} %{par} grammar.cf)))
+  (run %{bin:menhir2bnfc} --with-lexer %{par} grammar.cf)))
 
 (rule
  (targets AbsGrammar.ml LexGrammar.mll ParGrammar.mly)

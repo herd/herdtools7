@@ -1,18 +1,3 @@
 (cram
  (enabled_if %{lib-available:menhir2bnfc_lib})
- (deps %{bin:menhir2bnfc} %{bin:menhir} %{bin:ocamllex}))
-
-(rule
- (target parser_cmp.out)
- (deps
-  (source_tree %{workspace_root}/asllib/tests))
- (action
-  (chdir
-   %{workspace_root}
-   (run %{bin:parser_cmp} -q -o %{target} asllib/tests))))
-
-(rule
- (alias runtest)
- (enabled_if %{lib-available:bnfc_parser})
- (action
-  (diff parser_cmp.expected parser_cmp.out)))
+ (deps %{bin:menhir2bnfc} %{bin:menhir}))
