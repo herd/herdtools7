@@ -739,7 +739,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[other]{
   \astlabel(\tty) \notin \{ \TBits, \TTuple \} \\
-  \tty \neq \TInt(\wellconstrained(\Ignore))
+  \neg \iswellconstrainedinteger(\tty)
 }{
   \paramsofty(\tenv, \tty) \typearrow \overname{\emptylist}{\ids}
 }

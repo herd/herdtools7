@@ -14,8 +14,8 @@ The semantics of a single global storage declarations is defined in \SemanticsRu
 \section{Syntax\label{sec:GlobalStorageDeclarationsSyntax}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
-\Ndecl  \derives \ & \Nglobaldeclkeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
-        & \wrappedline\ \Nexpr \parsesep \Tsemicolon &\\
+\Ndecl  \derives \ & \Nglobaldeclkeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep &\\
+        & \wrappedline\ \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 	|\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
         & \wrappedline\ \Nexpr \parsesep \Tsemicolon &\\
         |\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&\\
@@ -121,8 +121,10 @@ The semantics of a single global storage declarations is defined in \SemanticsRu
 \hypertarget{build-globaldeclkeyword}{}
 The function
 \[
-\buildglobaldeclkeyword(\overname{\parsenode{\Nglobaldeclkeyword}}{\vparsednode}) \;\aslto\;
+\begin{array}{r}
+\buildglobaldeclkeyword(\overname{\parsenode{\Nglobaldeclkeyword}}{\vparsednode}) \aslto \\
   \overname{\globaldeclkeyword}{\vastnode}
+\end{array}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -134,13 +136,23 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[constant]{}{
-  \buildglobaldeclkeyword(\overname{\Nglobaldeclkeyword(\Tconstant)}{\vparsednode}) \astarrow \overname{\GDKConstant}{\vastnode}
+  {
+\begin{array}{r}
+  \buildglobaldeclkeyword(\overname{\Nglobaldeclkeyword(\Tconstant)}{\vparsednode}) \astarrow \\
+  \overname{\GDKConstant}{\vastnode}
+\end{array}
+  }
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[config]{}{
-  \buildglobaldeclkeyword(\overname{\Nglobaldeclkeyword(\Tconfig)}{\vparsednode}) \astarrow \overname{\GDKConfig}{\vastnode}
+  {
+  \begin{array}{r}
+    \buildglobaldeclkeyword(\overname{\Nglobaldeclkeyword(\Tconfig)}{\vparsednode}) \astarrow \\
+    \overname{\GDKConfig}{\vastnode}
+  \end{array}
+  }
 }
 \end{mathpar}
 
@@ -202,14 +214,15 @@ All of the following apply:
   \item checking that $\name$ is not already declared in $\genv$ yields $\True$\ProseOrTypeError;
   \item applying $\withemptylocal$ to $\genv$ yields $\tenv$;
   \item applying $\timeframeofgdk$ to $\keyword$ yields $\vtargettimeframe$;
-  \item applying $\annotatetyoptinitialvalue$ to $\vtargettimeframe$, $\tyoptp$, and $\initialvalue$ in $\tenv$ yields
+  \item applying $\annotatetyoptinitialvalue$ to $\vtargettimeframe$, $\tyoptp$, and \\
+        $\initialvalue$ in $\tenv$ yields
         $(\typedinitialvalue, \tyoptp, \declaredt)$\ProseOrTypeError;
   \item adding a global storage element with name $\name$, global declaration keyword \\ $\keyword$ and type $\declaredt$
         to $\tenv$ via $\addglobalstorage$ yields $\tenvone$\ProseOrTypeError;
   \item applying $\withemptylocal$ to $\genvone$ yields $\tenvone$;
   \item view $\typedinitialvalue$ as $(\Ignore, \initialvaluep, \vsesinitialvalue)$;
-  \item applying $\updateglobalstorage$ to$\name$, $\keyword$, $\initialvaluep$, and $\vsesinitialvalue$ in $\tenvone$ \\
-        yields $\tenvtwo$\ProseOrTypeError;
+  \item applying $\updateglobalstorage$ to$\name$, $\keyword$, $\initialvaluep$, and \\
+        $\vsesinitialvalue$ in $\tenvone$ yields $\tenvtwo$\ProseOrTypeError;
   \item define $\newgsd$ as $\gsd$ with its type component ($\GDty$) set to $\tyoptp$ and its initial value component
         ($\GDinitialvalue$) set to $\initialvaluep$;
   \item define $\newgenv$ as the global component of $\tenvtwo$.
@@ -398,7 +411,8 @@ The helper function
 \]
 updates the static environment $\tenv$ for the global storage element
 named $\name$ with global declaration keyword $\gdk$,
-and a tuple (obtained via \TypingRuleRef{AnnotateTyOptInitialValue})
+and a tuple (obtained via \\
+\TypingRuleRef{AnnotateTyOptInitialValue})
 $\typedinitialvalue$, which consists a type for the initializing value,
 the annotated initializing expression, and the inferred \sideeffectsetterm\ for the initializing value.
 The result is the updated static environment $\newtenv$.
@@ -595,8 +609,7 @@ The function
     \overname{\ty}{\declaredt}
   )
   \aslto
-    \overname{\globalstaticenvs}{\newgenv} \aslsep
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+    \overname{\globalstaticenvs}{\newgenv} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 returns a global static environment $\newgenv$ which is identical to the global static environment $\genv$,
 except that the identifier $\name$, which is assumed to name a global storage element,

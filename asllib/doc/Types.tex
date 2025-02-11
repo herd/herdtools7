@@ -2,8 +2,10 @@
 
 Types describe the allowed values of variables, constants, function arguments, etc.
 \lrmcomment{\identi{BYVL}}
-This chapter first defines for each type how it is represented by the ASL syntax,
-by the abstract syntax, and how it is typechecked:
+
+This chapter first describes how types are represented formally (see \secref{FormalRepresentationofTypes}).
+Next, we introduce each type available in ASL and define
+how it is represented in the syntax and AST, and how it is typechecked:
 \begin{itemize}
   \item Integer types (see \secref{IntegerTypes})
   \item The real type (see \secref{RealType})
@@ -18,18 +20,45 @@ by the abstract syntax, and how it is typechecked:
   \item Named types (see \secref{NamedTypes})
 \end{itemize}
 
+The chapter then defines the following aspects of types:
+\begin{itemize}
+\item \secref{DeclaredTypes} defines \emph{declared types} and restrictions over them;
+\item \secref{DomainOfValuesForTypes} defines how values are associated with each type;
+\item \secref{BasicTypeAttributes} assigns basic properties to types, which are useful
+in classifying them;
+\item \secref{RelationsOnTypes} defines relations on types that are needed to typecheck
+expressions and statements; and
+\item \secref{BaseValues} defines how to produce an expression to initialize storage
+      elements of a given type (for which no initializing expression is supplied).
+\end{itemize}
+
+\section{Formal Representation of Types\label{sec:FormalRepresentationofTypes}}
 \Anonymoustypes\ are grammatically derived from the non-terminal $\Nty$
 and types that must be declared and named are grammatically derived from the non-terminal $\Ntydecl$.
-All types are represented as ASTs derived from the AST non-terminal $\ty$.
+The type system represents types by their AST, which is derived from the non-terminal $\ty$.
 
+\subsection{Abstract Syntax}
 \hypertarget{build-ty}{}
 The function
 \[
   \buildty(\overname{\parsenode{\Nty}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
   \cup \overname{\TBuildError}{\BuildErrorConfig}
 \]
-transforms an anonymous type parse node $\vparsednode$ into a type AST node $\vastnode$.
+transforms an anonymous type parse node $\vparsednode$ into the corresponding AST node $\vastnode$.
 \ProseOtherwiseBuildError
+
+We define $\buildty$ per type in the following sections.
+
+\hypertarget{build-tydecl}{}
+The function
+\[
+  \buildtydecl(\overname{\parsenode{\Ntydecl}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
+  \cup \overname{\TBuildError}{\BuildErrorConfig}
+\]
+transforms a \namedtype\ parse node $\vparsednode$ into an AST node $\vastnode$.
+\ProseOtherwiseBuildError
+
+We define $\buildtydecl$ per the corresponding type in the following sections.
 
 \hypertarget{build-as-ty}{}
 The function
@@ -41,7 +70,6 @@ transforms a type annotation parse node $\vparsednode$ into a type AST node $\va
 \ProseOtherwiseBuildError
 
 Formally:
-
 \begin{mathpar}
 \inferrule{
   \buildty(\vt) \astarrow \astversion{\vt}
@@ -50,53 +78,82 @@ Formally:
 }
 \end{mathpar}
 
-\hypertarget{build-tydecl}{}
-The function
-\[
-  \buildtydecl(\overname{\parsenode{\Ntydecl}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
-  \cup \overname{\TBuildError}{\BuildErrorConfig}
-\]
-transforms a \namedtype\ parse node $\vparsednode$ into an AST node $\vastnode$.
-\ProseOtherwiseBuildError
-
+\subsection{Typing}
 \hypertarget{def-annotatetype}{}
 The function
 \[
   \annotatetype{\overname{\Bool}{\vdecl} \aslsep \overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}}
   \aslto (\overname{\ty}{\newty} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-typechecks a type $\tty$ in an environment $\tenv$, resulting in a \typedast\ $\newty$
-and a \sideeffectsetterm\ $\vses$.
-The flag $\decl$ indicates whether $\tty$ is a type currently being declared,
+typechecks a type $\tty$ in a static environment $\tenv$,
+resulting in a \typedast\ $\newty$ and a \sideeffectsetterm\ $\vses$.
+The flag $\decl$ indicates whether $\tty$ is a type currently being declared or not,
 and makes a difference only when $\tty$ is an enumeration type or a \structuredtype.
 \ProseOtherwiseTypeError
 
-Types are not associated with a semantic relation.
-
-The rest of this chapter defines the following aspects of types:
-\begin{itemize}
-\item \secref{DomainOfValuesForTypes} defines how values are associated with each type.
-\item \secref{BasicTypeAttributes} assigns basic properties to types, which are useful
-in classifying them.
-\item \secref{RelationsOnTypes} defines relations on types that are needed to typecheck
-expressions and statements.
-\item \secref{BaseValues} defines how to produce an expression to initialize storage
-      elements of a given type (for which no initializing expression is supplied).
-\end{itemize}
+\subsection{Semantics}
+Types are not evaluated dynamically.
+However, the dynamic semantics of types is given by their \emph{domain of values},
+which is defined in \secref{DomainOfValuesForTypes}.
 
 \hypertarget{integertypeterm}{}
 \section{Integer Types\label{sec:IntegerTypes}}
-\begin{center}
-\begin{tabular}{lll}
-\hline
-\secreflink{IntegerTypesSyntax} & \secreflink{IntegerTypesAST} & \secreflink{TypingIntegerTypes}\\
-& \secreflink{ASTRule.Ty.TInt} & \secreflink{TypingRule.TInt}\\
-& \secreflink{ASTRule.IntConstraintsOpt} & \secreflink{TypingRule.AnnotateConstraint}\\
-& \secreflink{ASTRule.IntConstraints} & \\
-& \secreflink{ASTRule.IntConstraint} &\\
-\hline
-\end{tabular}
-\end{center}
+The \texttt{integer} type represents mathematical integer values.
+
+There are four kinds of integer types, which we explain next:
+\emph{unconstrained}, \emph{well-constrained},
+\emph{pending constrained}, and \emph{parameterized}.
+
+\subsection{Unconstrained Integer Types}
+The type \verb|integer| represents all integer values.
+\lrmcomment{\identi{HJBH}}
+There is no bound on the minimum and maximum integer value that can be represented.
+
+\ExampleDef{Unconstrained Integer Types}
+\listingref{typing-unconstrained} shows examples of unconstrained integer types.
+\ASLListing{Well-typed unconstrained integer types}{typing-unconstrained}{\typingtests/TypingRule.TIntUnConstrained.asl}
+
+\subsection{Well-constrained Integer Types}
+\lrmcomment{\identr{GWCP}}
+The type \texttt{integer\{$c_1,\ldots,c_n$\}} represents the
+union of sets of integers represented by the \emph{integer constraints} $c_1,\ldots,c_n$.
+\hypertarget{def-exactconstraintterm}{}
+\hypertarget{def-rangeconstraintterm}{}
+A constraint can either be an \emph{\exactconstraintterm}, consisting of a single expression like \texttt{4},
+or a \emph{\rangeconstraintterm}, consisting of a pair of expressions like \texttt{1..10}.
+
+\ExampleDef{Well-constrained Integer Types}
+\listingref{typing-wellconstrained} shows examples of well-constrained integer types.
+\ASLListing{Well-typed well-constrained integer types}{typing-wellconstrained}{\typingtests/TypingRule.TIntWellConstrained.asl}
+
+\subsection{Pending-constrained Integer Types}
+The type \verb|integer{-}| represents a well-constrained integer type whose
+constraints have yet to be determined.
+These constraints are inferred by the type system based on the expression used to initialize
+the storage element (see \TypingRuleRef{InheritIntegerConstraints}).
+
+\RequirementDef{PendingConstrainedLocal}
+Pending-constrained integer types may only appear on the left-hand-side
+of local storage element declarations.
+%
+\listingref{global-pending-constrained} shows an ill-typed specification.
+
+\ExampleDef{Well-typed pending-constrained types}
+\listingref{typing-pendingconstrained} shows examples of well-typed pending-constrained
+integer types.
+\ASLListing{Well-typed pending-constrained integer types}{typing-pendingconstrained}{\typingtests/TypingRule.InheritIntegerConstraints.asl}
+
+\subsection{Parameterized Integer Types}
+Subprogram parameters are implicitly \emph{parameterized integer types},
+which represent a singleton set for the integer passed to the parameter
+at the call site.
+
+\ExampleDef{Parameterized Integer Types}
+\listingref{typing-parameterized} shows examples of well-typed parameterized
+integer types.
+Notice that the type of the parameter \texttt{M} of the function \texttt{bar}
+is a parameterized integer type, \underline{not} an unconstrained integer type.
+\ASLListing{Well-typed parameterized integer types}{typing-parameterized}{\typingtests/TypingRule.TIntParameterized.asl}
 
 \subsection{Syntax\label{sec:IntegerTypesSyntax}}
 \begin{flalign*}
@@ -167,12 +224,12 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[well\_constrained]{
-  \buildclist[\buildintconstraint](\vconstraints) \astarrow \vconstraintasts
+  \buildclist[\buildintconstraint](\cs) \astarrow \vcsasts
 }{
   {
     \begin{array}{r}
-  \buildconstraintkind(\Nconstraintkind(\Tlbrace, \namednode{\vconstraints}{\ClistOne{\Nintconstraint}}, \Trbrace)) \astarrow\\
-  \overname{\wellconstrained(\vconstraintasts)}{\vastnode}
+  \buildconstraintkind(\Nconstraintkind(\Tlbrace, \namednode{\cs}{\ClistOne{\Nintconstraint}}, \Trbrace)) \astarrow\\
+  \overname{\wellconstrained(\vcsasts)}{\vastnode}
     \end{array}
   }
 }
@@ -215,15 +272,40 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \subsection{Typing Integer Types\label{sec:TypingIntegerTypes}}
+\hypertarget{def-isunconstrainedinteger}{}
+\hypertarget{def-isparameterizedinteger}{}
+\hypertarget{def-iswellconstrainedinteger}{}
+We use the following helper predicates to classify integer types:
+\[
+  \begin{array}{rcl}
+  \isunconstrainedinteger(\overname{\ty}{\vt}) &\aslto& \Bool\\
+  \isparameterizedinteger(\overname{\ty}{\vt}) &\aslto& \Bool\\
+  \iswellconstrainedinteger(\overname{\ty}{\vt}) &\aslto& \Bool
+  \end{array}
+\]
+Those are defined as follows:
+\[
+  \begin{array}{rcl}
+  \isunconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\unconstrained\\
+  \isparameterizedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\parameterized\\
+  \iswellconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\wellconstrained\\
+\end{array}
+\]\lrmcomment{This is related to \identd{ZTPP}, \identr{WJYH}, \identr{HJPN}, \identr{CZTX}, \identr{TPHR}.}
+
+\hypertarget{def-unconstrainedinteger}{}
+We use the shorthand notation $\unconstrainedinteger \triangleq \TInt(\unconstrained)$
+for unconstrained integers.
+
 \TypingRuleDef{TInt}
-\subsubsection{Example}
-In \listingref{typing-unconstrained}, \listingref{typing-wellconstrained},
-and \listingref{typing-parameterized} all examples of
-\unconstrainedintegertypes, \wellconstrainedintegertypes,
-and \parameterizedintegertypes, respectively, are well-typed.
-\ASLListing{Well-typed unconstrained integer types}{typing-unconstrained}{\typingtests/TypingRule.TIntUnConstrained.asl}
-\ASLListing{Well-typed well-constrained integer types}{typing-wellconstrained}{\typingtests/TypingRule.TIntWellConstrained.asl}
-\ASLListing{Well-typed parameterized integer types}{typing-parameterized}{\typingtests/TypingRule.TIntParameterized.asl}
+\ExampleDef{Ill-typed pending-constrained integer type}
+\listingref{global-pending-constrained}
+and \listingref{rhs-pending-constrained}
+correspond to \CaseName{pending\_constrained}.
+\ASLListing{Ill-typed pending-constrained integer type}{global-pending-constrained}
+{\typingtests/TypingRule.TInt.global_pending_constrained.bad.asl}
+
+\ASLListing{Ill-typed pending-constrained integer type}{rhs-pending-constrained}
+{\typingtests/TypingRule.TInt.rhs_pending_constrained.bad.asl}
 
 \ProseParagraph
 One of the following applies:
@@ -313,8 +395,11 @@ One of the following applies:
 \hypertarget{def-annotateconstraint}{}
 The function
 \[
+\begin{array}{r}
 \annotateconstraint(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vc})
-\aslto (\overname{\intconstraint}{\newc} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
+\aslto (\overname{\intconstraint}{\newc} \times \overname{\TSideEffectSet}{\vses})\ \cup \\
+\overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
 \]
 annotates an integer constraint $\vc$ in the static environment $\tenv$ yielding the annotated
 integer constraint $\newc$ and \sideeffectsetterm\ $\vses$.
@@ -326,7 +411,8 @@ One of the following applies:
   \item All of the following apply (\textsc{exact}):
   \begin{itemize}
     \item $\vc$ is the exact integer constraint for the expression $\ve$, that is, \\ $\ConstraintExact(\ve)$;
-    \item applying $\annotatesymbolicconstrainedinteger$ to $\ve$ in $\tenv$ yields $(\vep, \vses)$\ProseOrTypeError;
+    \item applying $\annotatesymbolicconstrainedinteger$ to $\ve$ in $\tenv$ yields \\
+          $(\vep, \vses)$\ProseOrTypeError;
     \item define $\newc$ as the exact integer constraint for $\vep$, that is, $\ConstraintExact(\vep)$.
   \end{itemize}
 
@@ -552,7 +638,12 @@ All of the following apply:
   \annotateexpr{\tenv, \ewidth} \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\\\\
   \checksymbolicallyevaluable(\seswidth) \typearrow \True \OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\\\\
-  \annotatebitfields(\tenv, \ewidthp, \bitfields) \typearrow (\bitfieldsp, \vsesbitfields) \OrTypeError\\\\
+  {
+  \begin{array}{r}
+    \annotatebitfields(\tenv, \ewidthp, \bitfields) \typearrow \\
+    (\bitfieldsp, \vsesbitfields) \OrTypeError
+  \end{array}
+  }\\
   \staticeval(\tenv, \ewidthp) \typearrow \lint(\vwidth)\\
   \checkcommonbitfieldsalign(\tenv, \bitfieldsp, \vwidth) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \seswidth \cup \vsesbitfields
@@ -650,8 +741,12 @@ ASL offers two kinds of arrays:
 \ASTRuleDef{Ty.TArray}
 \begin{mathpar}
 \inferrule{}{
-  \buildty(\Nty(\Tarray, \Tllbracket, \punnode{\Nexpr}, \Trrbracket, \Tof, \punnode{\Nty})) \astarrow
-  \overname{\TArray(\ArrayLengthExpr(\astof{\vexpr}), \astof{\tty})}{\vastnode}
+  {
+  \begin{array}{r}
+    \buildty(\Nty(\Tarray, \Tllbracket, \punnode{\Nexpr}, \Trrbracket, \Tof, \punnode{\Nty})) \astarrow\\
+    \overname{\TArray(\ArrayLengthExpr(\astof{\vexpr}), \astof{\tty})}{\vastnode}
+  \end{array}
+  }
 }
 \end{mathpar}
 \subsection{Typing Array Types\label{sec:TypingArrayTypes}}
@@ -1044,6 +1139,9 @@ In \listingref{typing-trecord}, all the uses of record or exception types are we
 }
 \end{mathpar}
 
+\subsection{Typing Exception Types}
+The rule for typing exception types is \TypingRuleRef{TStructuredDecl}.
+
 \hypertarget{namedtypeterm}{}
 \section{Named Types\label{sec:NamedTypes}}
 \subsection{Syntax}
@@ -1055,9 +1153,6 @@ In \listingref{typing-trecord}, all the uses of record or exception types are we
 \begin{flalign*}
 \ty \derives\ & \TNamed(\overtext{\identifier}{type name}) &
 \end{flalign*}
-
-\subsection{Typing Exception Types}
-The rule for typing exception type is \TypingRuleRef{TStructuredDecl}.
 
 \ASTRuleDef{Ty.TNamed}
 \begin{mathpar}
@@ -1094,7 +1189,7 @@ All of the following apply:
 In \listingref{typing-tnamed}, all the uses of \texttt{MyType} are well-typed.
 \ASLListing{Well-typed named types}{typing-tnamed}{\typingtests/TypingRule.TNamed.asl}
 
-\section{Declared Types}
+\section{Declared Types\label{sec:DeclaredTypes}}
 A declared type can be an enumeration type, a record type, an exception type, or an \anonymoustype.
 \subsection{Syntax}
 \begin{flalign*}
@@ -1111,6 +1206,13 @@ A declared type can be an enumeration type, a record type, an exception type, or
 \end{mathpar}
 
 \subsection{Typing Declared Types}
+\lrmcomment{\identr{RGRVJ}}
+\RequirementDef{RestrictionsOnAnonymousTypes}
+A declared type for an enumeration, a record type, or an exception type
+are only permitted in named type declarations. This is enforced by \TypingRuleRef{TNonDecl}.
+%
+See \ExampleRef{Ill-typed pending-constrained integer type}.
+
 \TypingRuleDef{TNonDecl}
 \subsubsection{Example}
 In \listingref{typing-trecorderror}, the use of a record type outside of a declaration is erroneous.

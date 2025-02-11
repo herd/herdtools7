@@ -963,13 +963,13 @@ $\forall z\in\Z.\ -\infty < z$ and $\forall z\in\Z.\ z < +\infty$.
 \begin{itemize}
   \item \AllApplyCase{exact}
   \begin{itemize}
-    \item $\vc$ is an \Proseconstraintexact{\ve};
+    \item $\vc$ is an \Proseexactconstraint{\ve};
     \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\ve$}{$\vs$}.
   \end{itemize}
 
   \item \AllApplyCase{range\_over}
   \begin{itemize}
-    \item $\vc$ is an \Proseconstraintrange{\veone}{\vetwo};
+    \item $\vc$ is a \Proserangeconstraint{\veone}{\vetwo};
     \item \Proseapproxexprmin{$\tenv$}{$\veone$}{$\vzone$};
     \item \Proseapproxexprmax{$\tenv$}{$\vetwo$}{$\vztwo$};
     \item \Proseeqdef{$\vsinterval$}{the set of integers greater or equal to $\vzone$ and
@@ -980,7 +980,7 @@ $\forall z\in\Z.\ -\infty < z$ and $\forall z\in\Z.\ z < +\infty$.
 
   \item \AllApplyCase{range\_over}
   \begin{itemize}
-    \item $\vc$ is an \Proseconstraintrange{\veone}{\vetwo};
+    \item $\vc$ is an \Proserangeconstraint{\veone}{\vetwo};
     \item \Proseapproxexprmax{$\tenv$}{$\veone$}{$\vzone$};
     \item \Proseapproxexprmin{$\tenv$}{$\vetwo$}{$\vztwo$};
     \item \Proseeqdef{$\vsinterval$}{the set of integers greater or equal to $\vzone$ and
@@ -1316,7 +1316,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[named]{
-  \vt = \TNamed(\Ignore)\\
+  \isnamed(\vt)\\
   \makeanonymous(\tenv, \vt) \typearrow \vtp\\
   \approxtype(\tenv, \vapprox, \vtp) \typearrow \vs
 }{
@@ -1335,7 +1335,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
 
 \begin{mathpar}
 \inferrule[other]{
-  \vt \neq \TNamed(\Ignore) \land \vt \neq \TInt(\wellconstrained(\Ignore))\\
+  \neg\isnamed(\vt) \land \neg\iswellconstrainedinteger(\vt)\\
   \approxbottomtop(\vapprox) \typearrow \vs
 }{
   \approxtype(\tenv, \vapprox, \vt) \typearrow \vs

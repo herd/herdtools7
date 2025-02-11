@@ -76,9 +76,13 @@ The case rules for building global declarations are the following:
 \inferrule[global\_pragma]{
   \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
 }{
-    \builddecl(\overname{\Ndecl(\Tpragma, \Tidentifier(\id), \namednode{\vargs}{\ClistZero{\Nexpr}}, \Tsemicolon)}{\vparsednode})
-  \astarrow
+  {
+  \begin{array}{r}
+  \builddecl(\overname{\Ndecl(\Tpragma, \Tidentifier(\id), \namednode{\vargs}{\ClistZero{\Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \astarrow \\
     \overname{\DPragma(\id, \astversion{\vargs})}{\vastnode}
+  \end{array}
+  }
 }
 \end{mathpar}
 
@@ -106,7 +110,8 @@ One of the following applies:
   \item All of the following apply (\textsc{func}):
   \begin{itemize}
     \item $\vd$ is a subprogram AST node with a subprogram definition $\vf$, that is, $\DFunc(\vf)$;
-    \item annotating and declaring the subprogram for $\vf$ in $\genv$ as per \TypingRuleRef{AnnotateAndDeclareFunc}
+    \item annotating and declaring the subprogram for $\vf$ in $\genv$ as per \\
+          \TypingRuleRef{AnnotateAndDeclareFunc}
           yields the environment $\tenvone$ and a subprogram definition $\vfone$\ProseOrTypeError;
     \item \Proseannotatesubprogram{$\vfone$}{$\tenv$}{$\vftwo$\ProseOrTypeError};
     \item applying $\addsubprogram$ to bind $\vftwo.\funcname$ to $\vftwo$ in $\tenvone$ yields $\newtenv$;
@@ -127,7 +132,9 @@ One of the following applies:
     \item $\vd$ is a type declaration with identifier $\vx$, type $\tty$,
           and \optional\ field initializers $\vs$, that is, $\DTypeDecl(\vx, \tty, \vs)$;
     \item declaring the type described by $(\vx, \tty, \vs)$ in $\genv$
-          as per \TypingRuleRef{DeclaredType} yields the modified global static environment $\newgenv$\ProseOrTypeError;
+          as per \\
+          \TypingRuleRef{DeclaredType} yields the modified global static environment \\
+          $\newgenv$\ProseOrTypeError;
     \item define $\newd$ as $\vd$.
   \end{itemize}
 \end{itemize}
@@ -171,9 +178,11 @@ One of the following applies:
 \hypertarget{def-annotatesubprogram}{}
 The function
 \[
+\begin{array}{r}
   \annotatesubprogram(\overname{\staticenvs}{\tenv} \aslsep \overname{\func}{\vf} \aslsep \overname{\TSideEffectSet}{\vsesfuncsig})
-  \aslto (\overname{\func}{\vfp} \times \overname{\TSideEffectSet}{\vses})
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \\
+  (\overname{\func}{\vfp} \times \overname{\TSideEffectSet}{\vses})\ \cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
 \]
 annotates a subprogram $\vf$ in an environment $\tenv$ and \sideeffectsetterm\ $\vsesfuncsig$, resulting in an annotated subprogram $\vfp$
 and inferred \sideeffectsetterm\ $\vses$.

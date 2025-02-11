@@ -729,28 +729,3 @@ One of the following applies:
   \item A \emph{\parameterizedintegertype} is an implicit type of a subprogram parameter.
   \end{itemize}
 The widths of bitvector storage elements are constrained integers.
-
-\hypertarget{def-isunconstrainedinteger}{}
-\hypertarget{def-isparameterizedinteger}{}
-\hypertarget{def-iswellconstrainedinteger}{}
-We use the following helper predicates to classify integer types:
-\[
-  \begin{array}{rcl}
-  \isunconstrainedinteger(\overname{\ty}{\vt}) &\aslto& \Bool\\
-  \isparameterizedinteger(\overname{\ty}{\vt}) &\aslto& \Bool\\
-  \iswellconstrainedinteger(\overname{\ty}{\vt}) &\aslto& \Bool
-  \end{array}
-\]
-Those are defined as follows:
-\[
-  \begin{array}{rcl}
-  \isunconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\unconstrained\\
-  \isparameterizedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\parameterized\\
-  \iswellconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\wellconstrained\\
-\end{array}
-\]\lrmcomment{This is related to \identd{ZTPP}, \identr{WJYH}, \identr{HJPN}, \identr{CZTX}, \identr{TPHR}.}
-
-\paragraph{Shorthand Notations:}
-
-\hypertarget{def-unconstrainedinteger}{}
-We use the shorthand notation $\unconstrainedinteger$ to denote the unconstrained integer type: $\TInt(\unconstrained)$.

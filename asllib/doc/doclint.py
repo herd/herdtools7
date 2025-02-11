@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os, fnmatch
+import os, sys, fnmatch
 from extended_macros import apply_all_macros
 
 import argparse

@@ -170,7 +170,7 @@ and pattern matching expressions.
 \hypertarget{ast-expr}{} \hypertarget{ast-eliteral}{}
 \begin{flalign*}
 \expr \derives\ & \ELiteral(\literal)
-& \hypertarget{ast-evar}{} \hypertarget{ast-identifier}{}\\
+& \hypertarget{ast-evar}{}\\
 	|\ & \EVar(\overtext{\identifier}{variable name})
   &\hypertarget{ast-eatc}{}\\
 	|\ & \overtext{\EATC}{Type assertion}(\expr, \overtext{\ty}{asserted type})
@@ -367,7 +367,7 @@ The type of array indices is given by the following AST type:
 The following rule corresponds to a field of a record-like structure:
 \hypertarget{ast-field}{}
 \begin{flalign*}
-\Field \derives\ & (\identifier, \ty) & \hypertarget{ast-typedidentifier}{}
+\Field \derives\ & (\identifier, \ty) &
 \end{flalign*}
 
 The following rule corresponds to an identifier with its associated type:

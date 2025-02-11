@@ -1287,17 +1287,17 @@ yielding the constraint $\newc$.
 \begin{itemize}
   \item \AllApplyCase{exact}
   \begin{itemize}
-    \item $\vx$ is a \Proseconstraintexact{$\ve$};
+    \item $\vx$ is an \Proseexactconstraint{$\ve$};
     \item \Proserenamelocals{$\ve$}{$\vep$};
-    \item \Proseeqdef{$\newc$}{\Proseconstraintexact{$\vep$}}.
+    \item \Proseeqdef{$\newc$}{\Proseexactconstraint{$\vep$}}.
   \end{itemize}
 
   \item \AllApplyCase{range}
   \begin{itemize}
-    \item $\vx$ is a \Proseconstraintrange{$\veone$}{$\vetwo$};
+    \item $\vx$ is a \Proserangeconstraint{$\veone$}{$\vetwo$};
     \item \Proserenamelocals{$\veone$}{$\veonep$};
     \item \Proserenamelocals{$\vetwo$}{$\vetwop$};
-    \item \Proseeqdef{$\newc$}{\Proseconstraintrange{$\veonep$}{$\vetwop$}}.
+    \item \Proseeqdef{$\newc$}{the \Proserangeconstraint{$\veonep$}{$\vetwop$}}.
   \end{itemize}
 \end{itemize}
 

@@ -654,42 +654,52 @@ One of the following applies:
 The helper function
 \[
 \inheritintegerconstraints(\overname{\ty}{\lhs} \aslsep \overname{\ty}{\rhs})
-\typearrow \lhsp \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\aslto \overname{\ty}{\lhsp} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
 propagates integer constraints from the right-hand side type $\rhs$ to the left-hand side type annotation $\lhs$.
-In particular, each occurence of \pendingconstrainedintegertype{} on the left-hand side should inherit constraints from a corresponding \wellconstrainedintegertype{} on the right-hand side.
+In particular, each occurrence of \pendingconstrainedintegertype{} on the left-hand side should inherit constraints from a corresponding \wellconstrainedintegertype{} on the right-hand side.
 If the corresponding right-hand side type is not a \wellconstrainedintegertype{} (including if it is an \unconstrainedintegertype{}), the result is a type error.
+
+\listingref{typing-pendingconstrained} shows examples of pending-constrained
+integer types.
+
+\ExampleDef{Pending-constrained integer type vs. unconstrained integer type}
+\listingref{pending-constrained-unconstrained} corresponds to the type error
+in the \CaseName{int} below.
+\ASLListing{An ill-typed pending-constrained integer type}{pending-constrained-unconstrained}
+{\typingtests/TypingRule.InheritIntegerConstraints.unconstrained.bad.asl}
 
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{int}):
+  \item \AllApplyCase{int}
   \begin{itemize}
     \item $\lhs$ is a \pendingconstrainedintegertype{};
-    \item $\rhs$ is a \wellconstrainedintegertype{}\ProseOrTypeError;
-    \item $\lhsp$ is $\rhs$.
+    \item checking that $\rhs$ is a \wellconstrainedintegertype{} yields $\True$\ProseOrTypeError;
+    \item \Proseeqdef{$\lhsp$}{$\rhs$}.
   \end{itemize}
 
   \item All of the following apply (\textsc{tuple}):
   \begin{itemize}
-    \item $\lhs$ is a tuple of types \texttt{lhs\_tys};
-    \item $\rhs$ is a tuple of types \texttt{rhs\_tys};
-    \item the lengths of \texttt{lhs\_tys} and \texttt{rhs\_tys} are equal\ProseOrTypeError;
-    \item define \texttt{lhs\_tys'} by applying $\inheritintegerconstraints$ to each element of \texttt{lhs\_tys} and \texttt{rhs\_tys}\ProseOrTypeError;
-    \item $\lhsp$ is $\TTuple(\texttt{lhs\_tys'})$.
+    \item $\lhs$ is a tuple of types \vlhstys;
+    \item $\rhs$ is a tuple of types \vrhstys;
+    \item checking that the lengths of \vlhstys and \vrhstys are equal yields $\True$\ProseOrTypeError;
+    \item define \vlhstysp by applying $\inheritintegerconstraints$ to each element of \\
+          \vlhstys\ and \vrhstys\ProseOrTypeError;
+    \item \Proseeqdef{$\lhsp$}{$\TTuple(\vlhstysp)$}.
   \end{itemize}
 
   \item All of the following apply (\textsc{other}):
   \begin{itemize}
     \item $\lhs$ is not a \pendingconstrainedintegertype{}, or one of $\lhs$ and $\rhs$ is not a tuple type;
-    \item $\lhsp$ is $\lhs$.
+    \item \Proseeqdef{$\lhsp$}{$\lhs$}.
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[int]{
-  \rhs \eqname \TInt(\wellconstrained(\Ignore)) \OrTypeError
+  \checktrans{\iswellconstrainedinteger(\rhs)}{\UnexpectedType} \checktransarrow \True\OrTypeError
 }{
   \inheritintegerconstraints(\overname{\TInt(\pendingconstrained)}{\lhs}, \rhs) \typearrow \overname{\rhs}{\lhsp}
 }
@@ -697,18 +707,23 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[tuple]{
-  \lhs \eqname \TTuple(\texttt{lhs\_tys}) \\
-  \rhs \eqname \TTuple(\texttt{rhs\_tys}) \\\\
-  \equallength(\texttt{lhs\_tys}, \texttt{rhs\_tys}) \typearrow \True \OrTypeError \\
-  \vi \in \listrange(\lhs): \inheritintegerconstraints(\texttt{lhs\_tys}_i, \texttt{rhs\_tys}_i) \typearrow \texttt{lhs\_tys'}_i \OrTypeError \\
+  \lhs = \TTuple(\vlhstys) \\
+  \rhs = \TTuple(\vrhstys) \\\\
+  \checktrans{\equallength(\vlhstys, \vrhstys)}{\UnexpectedType} \typearrow \True \OrTypeError \\\\
+  {
+  \begin{array}{r}
+  \vi \in \listrange(\lhs): \inheritintegerconstraints(\vlhstys_\vi, \vrhstys_\vi) \typearrow \\
+  \vlhstysp_\vi \OrTypeError
+  \end{array}
+  }
 }{
-  \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\TTuple(\texttt{lhs\_tys'})}{\lhsp}
+  \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\TTuple(\vlhstysp)}{\lhsp}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[other]{
-  \lhs \neq \TInt(\pendingconstrained) \;\lor\; \astlabel(\lhs) \neq \TTuple \;\lor\; \astlabel(\rhs) \neq \TTuple
+  \lhs \neq \TInt(\pendingconstrained) \lor \astlabel(\lhs) \neq \TTuple \lor \astlabel(\rhs) \neq \TTuple
 }{
   \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\lhs}{\lhsp}
 }
@@ -1113,7 +1128,8 @@ All of the following apply:
 \begin{itemize}
   \item $\vs$ is a call to a subprogram, that is, $\SCall(\vcall)$;
   \item annotating the subprogram call $\vcall$ as per \chapref{SubprogramCalls}
-        yields $(\vcallp, \None, \vses)$\ProseOrTypeError;
+        yields \\
+        $(\vcallp, \None, \vses)$\ProseOrTypeError;
   \item $\news$ is the call using $\vcallp$, that is, $\SCall(\vcallp)$;
   \item $\newtenv$ is $\tenv$.
 \end{itemize}

@@ -29,9 +29,28 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.TReal.asl
   $ aslref TypingRule.TBool.asl
   $ aslref TypingRule.TNamed.asl
-  $ aslref TypingRule.TIntUnConstrained.asl
+  $ aslref TypingRule.TIntUnconstrained.asl
   $ aslref TypingRule.TIntWellConstrained.asl
   $ aslref TypingRule.TIntParameterized.asl
+  $ aslref TypingRule.InheritIntegerConstraints.asl
+  $ aslref TypingRule.InheritIntegerConstraints.unconstrained.bad.asl
+  File TypingRule.InheritIntegerConstraints.unconstrained.bad.asl, line 5,
+    characters 4 to 27:
+  ASL Typing error: constrained integer expected, provided integer.
+  [1]
+
+  $ aslref TypingRule.TInt.global_pending_constrained.bad.asl
+  File TypingRule.TInt.global_pending_constrained.bad.asl, line 2,
+    characters 0 to 23:
+  ASL Typing error: a pending constrained integer is illegal here.
+  [1]
+
+  $ aslref TypingRule.TInt.rhs_pending_constrained.bad.asl
+  File TypingRule.TInt.rhs_pending_constrained.bad.asl, line 5,
+    characters 28 to 43:
+  ASL Typing error: a pending constrained integer is illegal here.
+  [1]
+
   $ aslref TypingRule.TBits.asl
   $ aslref TypingRule.TTuple.asl
   $ aslref TypingRule.TArray.asl

@@ -355,7 +355,11 @@ annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
   \disjointslicestopositions(\tenv, \slicesone) \typearrow \positions \OrTypeError\\\\
   \checkpositionsinwidth(\tenv, \width, \positions) \typearrow \True \OrTypeError\\\\
   \widthp \eqdef \listlen{\positions}\\
-  \annotatebitfields(\tenv, \widthp, \bitfieldsp) \typearrow (\bitfieldspp, \vsesbitfields) \OrTypeError\\
+  {
+  \begin{array}{r}
+  \annotatebitfields(\tenv, \widthp, \bitfieldsp) \typearrow \\ (\bitfieldspp, \vsesbitfields) \OrTypeError
+  \end{array}
+  }\\
   \vses \eqdef \vsesslices \cup \vsesbitfields
 }{
   \annotatebitfield(\tenv, \width, \BitFieldNested(\name, \vslices, \bitfieldsp)) \typearrow \\
@@ -586,10 +590,14 @@ One of the following applies:
 \inferrule[scaled]{
   \reducetozopt(\tenv, \veone) \typearrow \langle\vx\rangle \terminateas\None\\\\
   \reducetozopt(\tenv, \vetwo) \typearrow \langle\vy\rangle \terminateas\None\\\\
-  \checktrans{\vx > 0}{\BadSlices} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{\vx > 0}{\BadSlices} \checktransarrow \True \OrTypeError
 }{
-  \bitfieldslicetopositions(\tenv, \overname{\SliceStar(\veone, \vetwo)}{\vslice}) \typearrow
+  {
+  \begin{array}{r}
+  \bitfieldslicetopositions(\tenv, \overname{\SliceStar(\veone, \vetwo)}{\vslice}) \typearrow \\
   \overname{\langle\{n \;|\; \vx \times \vy \leq n \leq \vx \times (\vy + 1) - 1\}\rangle}{\positions}
+  \end{array}
+  }
 }
 \end{mathpar}
 

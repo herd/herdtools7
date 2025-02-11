@@ -156,11 +156,15 @@
 \newcommand\textfunc[1]{\textit{#1}}
 \newcommand\ProseParagraph[0]{\subsubsection{Prose}}
 \newcommand\FormallyParagraph[0]{\subsubsection{Formally}}
+\newcommand\CaseDef[1]{\textsc{#1}}
+\newcommand\CaseName[1]{case \textsc{#1}}
 \newcommand\AllApply[0]{All of the following apply:}
-\newcommand\AllApplyCase[1]{All of the following apply (\textsc{#1}):}
+\newcommand\AllApplyCase[1]{All of the following apply (\CaseDef{#1}):}
 \newcommand\OneApplies[0]{One of the following applies:}
 \newcommand\Proseeqdef[2]{define #1 as #2}
 \newcommand\ProseEqdef[2]{Define #1 as #2}
+\newcommand\ExampleDef[1]{\subsubsection{Example: #1\label{Example:#1}}}
+\newcommand\ExampleRef[1]{Example~\ref{Example:#1}}
 
 \usepackage{enumitem}
 \renewlist{itemize}{itemize}{20}
@@ -225,8 +229,8 @@
 \newtheorem{definition}{Definition}
 \newtheorem{example}{Example}
 \newcommand\ConventionDef[1]{\paragraph{Convention.#1:\label{sec:Convention.#1}}}
-\newcommand\RequirementDef[1]{\paragraph{Requirement.#1\label{Requirement.#1}}}
-\newcommand\RequirementDefExample[1]{\emph{Requirement.#1}}
+\newcommand\RequirementDef[1]{\paragraph{Guide.#1\label{Guide.#1}}}
+\newcommand\RequirementDefExample[1]{\emph{Guide.#1}}
 \newcommand\LexicalRuleDef[1]{\subsubsection{LexicalRule.#1\label{sec:LexicalRule.#1}}}
 \newcommand\ASTRuleDef[1]{\subsubsection{ASTRule.#1\label{sec:ASTRule.#1}}}
 \newcommand\ASTRuleDefExample[1]{\emph{ASTRule.#1}}
@@ -243,7 +247,7 @@
 \newcommand\appendixref[1]{Appendix~\ref{appendix:#1}}
 \newcommand\ASTRuleRef[1]{\nameref{sec:ASTRule.#1}}
 \newcommand\ConventionRef[1]{\nameref{sec:Convention.#1}}
-\newcommand\RequirementRef[1]{\nameref{Requirement.#1}}
+\newcommand\RequirementRef[1]{\nameref{Guide.#1}}
 \newcommand\LexicalRuleRef[1]{\nameref{sec:LexicalRule.#1}}
 \newcommand\TypingRuleRef[1]{\nameref{sec:TypingRule.#1}}
 \newcommand\SemanticsRuleRef[1]{\nameref{sec:SemanticsRule.#1}}
@@ -1054,7 +1058,7 @@
 \newcommand\ProseOrAbnormal[0]{\ProseTerminateAs{\ThrowingConfig, \DynErrorConfig}}
 \newcommand\ProseOrError[0]{\ProseTerminateAs{\DynErrorConfig}}
 \newcommand\TNormal[0]{\hyperlink{def-tnormal}{\textsf{TNormal}}}
-\newcommand\TDynError[0]{\hyperlink{def-terror}{\textsf{TDynError}}}
+\newcommand\TDynError[0]{\hyperlink{def-tdynerror}{\textsf{TDynError}}}
 \newcommand\TThrowing[0]{\hyperlink{def-tthrowing}{\textsf{TThrowing}}}
 \newcommand\TContinuing[0]{\hyperlink{def-tcontinuing}{\textsf{TContinuing}}}
 \newcommand\TReturning[0]{\hyperlink{def-treturning}{\textsf{TReturning}}}
@@ -1633,10 +1637,10 @@
 \newcommand\otherwisecaseterm[0]{\hyperlink{def-otherwisecaseterm}{otherwise case}}
 
 %% Constraint macros
-\newcommand\constraintexactterm[0]{an exact constraint}
-\newcommand\Proseconstraintexact[1]{an exact constraint for the expression #1}
-\newcommand\constraintrangeterm[0]{a range constraint}
-\newcommand\Proseconstraintrange[2]{a range constraint for the lower end expression #1 and upper end expression #2}
+\newcommand\exactconstraintterm[0]{\hyperlink{def-exactconstraintterm}{exact constraint}}
+\newcommand\Proseexactconstraint[1]{\hyperlink{def-exactconstraintterm}{exact constraint} for the expression #1}
+\newcommand\rangeconstraintterm[0]{\hyperlink{def-rangeconstraintterm}{range constraint}}
+\newcommand\Proserangeconstraint[2]{\hyperlink{def-rangeconstraintterm}{range constraint} for the lower end expression #1 and upper end expression #2}
 
 %% Expression macros
 \newcommand\literalexpressionterm[0]{\hyperlink{def-literalexpressionterm}{literal expression}}
@@ -2600,6 +2604,7 @@
 \newcommand\vcondexpr[0]{\texttt{cond\_expr}}
 \newcommand\vcone[0]{\texttt{c1}}
 \newcommand\vconstraintasts[0]{\texttt{constraint\_asts}}
+\newcommand\vcsasts[0]{\texttt{cs\_asts}}
 \newcommand\vconstraints[0]{\texttt{constraints}}
 \newcommand\vconstraintkind[0]{\texttt{constraint\_kind}}
 \newcommand\vconstraintkindopt[0]{\texttt{constraint\_kind\_opt}}
@@ -3129,3 +3134,7 @@
 \newcommand\vfieldnames[0]{\texttt{field\_names}}
 \newcommand\vexpectedconstraintlength[0]{\texttt{expected\_constraint\_length}}
 \newcommand\vconsolestream[0]{\texttt{consolestream}}
+\newcommand\vlhstys[0]{\texttt{lhs\_tys}}
+\newcommand\vlhstysp[0]{\texttt{lhs\_tys'}}
+\newcommand\vrhstys[0]{\texttt{rhs\_tys}}
+\newcommand\vrhstysp[0]{\texttt{rhs\_tys'}}
