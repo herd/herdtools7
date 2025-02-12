@@ -248,6 +248,9 @@ as well as assigning each primitive operation a unique name.
 \RequirementDef{PrimitiveOperatorImplements}
 An operation implements an operator if it appears in the same row as the operator in one
 of the tables in this section.
+%
+For example, the operation $\aslnotbool$ implements the operator $\Tbnot$
+as it appears on the first two of \taref{BooleanOperators}.
 
 \lrmcomment{JGWF}
 \RequirementDef{PrimitiveOperatorMatches}
@@ -255,11 +258,20 @@ An expression which invokes a primitive operator \emph{matches} an operation
 if the operation implements the operator and the operands of the expression
 \typesatisfy\ the corresponding operands of the operation as shown in the
 tables in this section.
+%
+For example, the expression \verb|!TRUE|, which invokes the primitive operator
+$\Tbnot$, matches the primitive operation $\aslnotbool$, since the operand $\True$
+\typesatisfies{} the \texttt{boolean} type.
 
 \lrmcomment{TTGQ}
 \RequirementDef{PrimitiveOperationError}
 It is a type error if an expression which invokes a
-primitive operator does not match exactly one primitive operation.
+primitive operator does not match exactly one primitive operation
+(see \BadOperands).
+%
+For example, including the expression \verb|!1| in any specification
+would lead to a \typingerrorterm{}, since it does not match any primitive
+operation.
 
 \begin{table}[!htbp]
 \caption{Boolean Operation Signatures\label{ta:BooleanOperators}}
@@ -459,11 +471,10 @@ for a given unary operator:
 \listingref{unary-operations} shows applications of unary operations
 (invalid applications appear in comments),
 followed by the resulting console output.
-\ASLListing{Valid applications of unary operations}{unary-operations}{\typingtests/TypingRule.UnopLiterals.asl}
+\ASLListing{Applications of unary operations}{unary-operations}{\typingtests/TypingRule.UnopLiterals.asl}
 
 % CONSOLE_BEGIN aslref \typingtests/TypingRule.UnopLiterals.asl
-\begin{small}
-\begin{Verbatim}[frame=single]
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
 negate_int: -10 = -10
 negate_int: -0x0 = 0
 negate_int: -0xf = -15
@@ -472,7 +483,6 @@ not_bool: !TRUE = FALSE
 not_bits: NOT '' = 0x
 not_bits: NOT '11 01' = 0x2
 \end{Verbatim}
-\end{small}
 % CONSOLE_END
 
 \ProseParagraph
@@ -569,8 +579,7 @@ followed by the resulting console output.
   {\typingtests/TypingRule.BinopLiterals.boolean.asl}
 
 % CONSOLE_BEGIN aslref \typingtests/TypingRule.BinopLiterals.boolean.asl
-\begin{small}
-\begin{Verbatim}[frame=single]
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
 and_bool: TRUE && TRUE = TRUE
 and_bool: TRUE && FALSE = FALSE
 or_bool: TRUE || FALSE = TRUE
@@ -589,7 +598,6 @@ equiv_bool: FALSE <-> FALSE = TRUE
 equiv_bool: TRUE <-> TRUE = TRUE
 equiv_bool: FALSE <-> TRUE = FALSE
 \end{Verbatim}
-\end{small}
 % CONSOLE_END
 
 \subsubsection{Example (Integer Arithmetic)\label{sec:IntegerArithmetic}}
@@ -601,8 +609,7 @@ followed by the resulting console output.
   {\typingtests/TypingRule.BinopLiterals.integer-arithmetic.asl}
 
 % CONSOLE_BEGIN aslref \typingtests/TypingRule.BinopLiterals.integer-arithmetic.asl
-\begin{small}
-\begin{Verbatim}[frame=single]
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
 add_int: 10 + 20 = 30
 sub_int: 10 - 20 = -10
 mul_int: 10 * 20 = 200
@@ -625,20 +632,18 @@ shiftright_int: -16 >> 2 = -4
 shiftright_int: 1 >> 0 = 1
 shiftright_int: -1 >> 10 = -1
 \end{Verbatim}
-\end{small}
 % CONSOLE_END
 
-\subsubsection{Example (Integer Relational)\label{sec:IntegerRelational}}
+\subsubsection{Example (Integer Comparison)\label{sec:IntegerComparison}}
 \listingref{binary-operations-integer-relational} shows applications
-of relational integer operations to literals (invalid applications in comments),
+of integer comparison operations to literals (invalid applications in comments),
 followed by the resulting console output.
-\ASLListing{Applications of relational integer operations}
+\ASLListing{Applications of integer comparison operations}
   {binary-operations-integer-relational}
   {\typingtests/TypingRule.BinopLiterals.integer-relational.asl}
 
 % CONSOLE_BEGIN aslref \typingtests/TypingRule.BinopLiterals.integer-relational.asl
-\begin{small}
-\begin{Verbatim}[frame=single]
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
 eq_int: 5 == 10 = FALSE
 ne_int: 5 != 10 = TRUE
 le_int: 10 <= 10 = TRUE
@@ -649,7 +654,6 @@ gt_int: 11 > 10 = TRUE
 ge_int: 11 >= 10 = TRUE
 ge_int: 6 >= 10 = FALSE
 \end{Verbatim}
-\end{small}
 % CONSOLE_END
 
 \subsubsection{Example (Real Operations)\label{sec:RealOperations}}
@@ -661,8 +665,7 @@ followed by the resulting console output.
   {\typingtests/TypingRule.BinopLiterals.real.asl}
 
 % CONSOLE_BEGIN aslref \typingtests/TypingRule.BinopLiterals.real.asl
-\begin{small}
-\begin{Verbatim}[frame=single]
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
 add_real: 10.0 + 0.5 = 21/2
 sub_real: 10.0 - 0.5 = 19/2
 mul_real: 10.0 * 0.5 = 5
@@ -675,7 +678,6 @@ lt_real: 10.0 < 0.5 = FALSE
 gt_real: 10.0 > 0.5 = TRUE
 ge_real: 10.0 >= 0.5 = TRUE
 \end{Verbatim}
-\end{small}
 % CONSOLE_END
 
 \subsubsection{Example (Bitvector Operations)\label{sec:ExampleBitvectorOperations}}
@@ -687,8 +689,7 @@ followed by the resulting console output.
   {\typingtests/TypingRule.BinopLiterals.bits.asl}
 
 % CONSOLE_BEGIN aslref \typingtests/TypingRule.BinopLiterals.bits.asl
-\begin{small}
-\begin{Verbatim}[frame=single]
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
 add_bits: '010' + '011' = 0x5
 add_bits: '10' + '11' = 0x1
 add_bits: '010' + 3 = 0x5
@@ -705,7 +706,6 @@ ne_bits: '100' != '110' = TRUE
 concat_bits: '100' :: '110' = 0x26
 concat_bits: '100' :: '' = 0x4
 \end{Verbatim}
-\end{small}
 % CONSOLE_END
 
 \subsubsection{Example (String and Enumeration Label Operations)\label{sec:StringLabelOperations}}
@@ -717,8 +717,7 @@ followed by the resulting console output.
   {\typingtests/TypingRule.BinopLiterals.strings_labels.asl}
 
 % CONSOLE_BEGIN aslref \typingtests/TypingRule.BinopLiterals.strings_labels.asl
-\begin{small}
-\begin{Verbatim}[frame=single]
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
 eq_string: "hello" == "world" = FALSE
 eq_string: "hello" == "hello" = TRUE
 ne_string: "hello" != "world" = TRUE
@@ -727,7 +726,6 @@ eq_enum: RED == GREEN = FALSE
 eq_enum: RED != RED = FALSE
 eq_enum: RED != GREEN = TRUE
 \end{Verbatim}
-\end{small}
 % CONSOLE_END
 
 \hypertarget{def-binopsignatures}{}
@@ -1226,7 +1224,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{Relational Operators Over Integer Values \label{sec:RelationalOverInt}}
+\subsubsection{Comparison Operators Over Integer Values \label{sec:ComparisonOverInt}}
 \begin{mathpar}
 \inferrule[eq\_int]{}{
   \binopliterals(\overname{\EQOP}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lbool(a = b)}{\vr}
@@ -1329,7 +1327,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{Relational Operators Over Real Values \label{sec:RealtionalOverReal}}
+\subsubsection{Comparison Operators Over Real Values \label{sec:ComparisonOverReal}}
 \begin{mathpar}
 \inferrule[eq\_real]{}{
   \binopliterals(\overname{\EQOP}{\op}, \overname{\lreal(a)}{\vvone}, \overname{\lreal(b)}{\vvtwo}) \typearrow \overname{\lbool(a = b)}{\vr}

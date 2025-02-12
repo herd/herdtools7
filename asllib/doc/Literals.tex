@@ -5,11 +5,10 @@ integers, Booleans, real numbers, bitvectors, and strings.
 Enumeration labels are also literal values.
 However, they are syntactically indistinguishable from identifiers,
 so they cannot be input directly in concrete syntax.
-Rather, they are parsed as identifiers, and during type elaboration
-converted true enumeration label literal values.
+Rather, they are parsed as identifiers, and during typechecking
+converted to enumeration label literal values (instance of $\llabel$).
 
-In the sequel of this reference, we often refer to literal values
-as simply literals.
+In the remainder of this reference, we often refer to literal values simply as literals.
 
 \section{Syntax}
 \begin{flalign*}

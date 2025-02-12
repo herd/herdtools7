@@ -14,9 +14,9 @@ such as punctuation and scoping syntax, which are useful for readability and par
 Technically, there are two abstract syntaxes:
 an \emph{untyped abstract syntax} and a \emph{typed abstract syntax}.
 The first syntax results from parsing the text of an ASL specification.
-The typechecker checks whether the untyped AST is valid and if so produces
-a typed AST where some nodes in the untyped AST have been transformed to
-more explicit representation.
+The typechecker checks whether the untyped AST satisfies the rules of the
+type system. If so, it is considered valid and the type system rules
+produce a typed AST.
 
 \paragraph{Outline:}
 The outline of this chapter is as follows,

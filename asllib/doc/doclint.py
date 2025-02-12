@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os, fnmatch, sys
+import os, fnmatch
 from extended_macros import apply_all_macros
 
 import argparse
@@ -107,8 +107,7 @@ def check_repeated_words():
                 parts = line.split()
                 if len(parts) < 2:
                     continue
-                for i in range(0, len(parts)):
-                    current_word = parts[i]
+                for current_word in parts:
                     if current_word.isalpha() and last_word.lower() == current_word.lower():
                         num_errors += 1
                         print(f"./{latex_source} line {line_number}: word repetition ({last_word} {current_word}) in '{line}'")

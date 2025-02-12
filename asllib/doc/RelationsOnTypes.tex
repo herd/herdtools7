@@ -11,8 +11,9 @@ This section defines the following relations over types and operators:
 \end{itemize}
 
 \TypingRuleDef{Subtype}
+\hypertarget{def-supertypeterm}{}
 The \emph{subtype} relation is a partial order over \underline{named types}.
-The \emph{supertype} is the inverse relation. That is, \tty\ is a supertype of \tsy\ if and only if \tsy\ is a subtype of \tty.
+The \emph{\supertypeterm} is the inverse relation. That is, \tty\ is a supertype of \tsy\ if and only if \tsy\ is a subtype of \tty.
 
 \hypertarget{def-subtypesrel}{}
 The predicate
@@ -1599,7 +1600,7 @@ One of the following holds:
   \begin{itemize}
     \item $\vs$ is not in $\vtsupers$;
     \item $\vs$ has a named super type in $\tenv$ --- $\vsp$;
-    \item $\tty$ is the lowest common named supertype of $\vt$ and $\vsp$ in $\tenv$.
+    \item $\tty$ is the lowest common named \supertypeterm{} of $\vt$ and $\vsp$ in $\tenv$.
   \end{itemize}
 
   \item All of the following hold (\textsc{none}):
@@ -2399,7 +2400,7 @@ tests whether the set of numbers between $\vzone$ and $\vztwo$, inclusive, conta
 integers, yielding the result in $\vb$.
 
 \ProseParagraph
-The value $\vb$ is $\True$ if and only if the absolute value of $\vzone-\vztwo$ is greater than $2^{14}$.
+The value $\vb$ is $\True$ if and only if the absolute value of $\vzone-\vztwo$ is greater than $\maxexplodedintervalsize$.
 
 \FormallyParagraph
 \begin{mathpar}

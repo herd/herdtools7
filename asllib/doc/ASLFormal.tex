@@ -381,7 +381,7 @@ We also write $L(T_{1..k})$, where $T_{1..k}$ denotes mathematical types of valu
 $\{ L(v_{1..k}) \;|\; v_1\in T_1,\ldots,v_k\in T_k \}$.
 
 \hypertarget{def-optional}{}
-\begin{definition}[Optional]
+\begin{definition}[Optional Data Type]
 \hypertarget{def-none}{}
 \hypertarget{def-some}
 The notation $\Some{\cdot}$ stands for either an empty set or a singleton set,
@@ -391,7 +391,8 @@ and $\Some{v}$ denotes a set containing the single element $v$.
 The notation $\Some{T}$, where $T$ denotes a mathematical type, stands for
 $\{ \None \} \cup \{\Some{v} \;|\; v \in T\}$.
 %
-We refer to $\Some{T}$ as an \emph{\optional}.
+We refer to $\Some{T}$ as the \emph{optional data type for the parameter
+type $T$}, or shortly as an \emph{\optional}.
 \end{definition}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

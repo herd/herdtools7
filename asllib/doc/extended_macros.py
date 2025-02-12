@@ -1,17 +1,17 @@
 #!/usr/bin/python3
 
-import os, fnmatch, subprocess
+import os, fnmatch, subprocess, shlex
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-ASLREF_EXE = '../../_build/default/asllib/aslref.exe'
+ASLREF_EXE = 'aslref'
 
 debug = False
 
 def yellow_error_message(msg: str) -> str:
     YELLOW = '\033[43m'
     COLOR_RESET = '\033[m'
-    YELLOW + msg + COLOR_RESET
+    return YELLOW + msg + COLOR_RESET
 
 def get_latex_sources() -> list[str]:
     r"""
@@ -23,13 +23,19 @@ def get_latex_sources() -> list[str]:
         latex_files.remove('macros.tex')
     return latex_files
 
-def execute_and_capture_output(command: str) -> str:
+def execute_and_capture_output(command: str, error_expected: bool) -> str:
     r"""
     Executes `command` and returns the output in a string.
     """
-    args = command.split()
+    args = shlex.split(command)
+    if 'aslref' not in args[0]:
+        raise ValueError(f'Command {command} does not refer to aslref!')
     try:
-        output = subprocess.check_output(args, text=True)
+        if error_expected:
+            subprocess_result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            output = subprocess_result.stdout + subprocess_result.stderr
+        else:
+            output = subprocess.check_output(args, text=True)
         return output
     except Exception as e:
         print(yellow_error_message(f'Error: failed executing {command}! Aborting run'))
@@ -87,12 +93,17 @@ class BlockMacro(ABC):
         return all_blocks
 
     @classmethod
-    def validate_blocks(cls, blocks: list[tuple[Block, bool]]):
+    def validate_blocks(cls, blocks: list[tuple[Block, bool]], num_lines):
+        r"""
+        Ensures that the list of blocks form non-overlapping intervals
+        that partition the range (0, num_lines).
+        """
         last_line_number = -1
         for (block, _) in blocks:
             assert block.end >= block.begin
-            assert block.begin > last_line_number
+            assert block.begin == last_line_number + 1
             last_line_number = block.end
+        assert last_line_number == num_lines
 
     @classmethod
     def apply_to_file(cls, source: str):
@@ -105,7 +116,7 @@ class BlockMacro(ABC):
         if debug:
             print(f'{source}: found {len(blocks_to_transform)} macro instance(s)')
         all_blocks : list[Block] = cls.extend_to_all_blocks(blocks_to_transform, len(lines))
-        cls.validate_blocks(all_blocks)
+        cls.validate_blocks(all_blocks, len(lines))
         output_lines : list[str] = []
         number_of_changes = 0
         for (block, should_transform) in all_blocks:
@@ -143,6 +154,8 @@ class ConsoleMacro(BlockMacro):
     """
     CONSOLE_BEGIN = 'CONSOLE_BEGIN'
     CONSOLE_END = 'CONSOLE_END'
+    CONSOLE_STDERR = 'CONSOLE_STDERR'
+    CONSOLE_CMD = 'CONSOLE_CMD'
 
     @classmethod
     def find_blocks(cls, lines):
@@ -166,9 +179,13 @@ class ConsoleMacro(BlockMacro):
     def transform(cls, block_lines: list[str]) -> list[str]:
         assert block_lines
         begin_line : str = block_lines[0]
+        error_expected = cls.CONSOLE_STDERR in begin_line
+        include_cmd = cls.CONSOLE_CMD in begin_line
         command = (
             begin_line.replace('%', '')
             .replace(cls.CONSOLE_BEGIN, '')
+            .replace(cls.CONSOLE_STDERR, '')
+            .replace(cls.CONSOLE_CMD, '')
             .replace('aslref', ASLREF_EXE)
             .replace('\\definitiontests', '../tests/ASLDefinition.t')
             .replace('\\syntaxtests', '../tests/ASLSyntaxReference.t')
@@ -179,15 +196,13 @@ class ConsoleMacro(BlockMacro):
         )
         if debug:
             print(f'Executing {command}')
-        transformed_lines = execute_and_capture_output(command).splitlines()
+        transformed_lines = execute_and_capture_output(command, error_expected).splitlines()
         end_line = block_lines[-1]
         transformed_lines = [
             begin_line,
-            '\\begin{small}',
-            '\\begin{Verbatim}[frame=single]',
-        ] + transformed_lines + [
+            '\\begin{Verbatim}[fontsize=\\footnotesize, frame=single]'
+        ] + (['> ' + command] if include_cmd else []) + transformed_lines + [
             '\\end{Verbatim}',
-            '\\end{small}',
             end_line
         ]
         return transformed_lines

@@ -1305,6 +1305,71 @@ $\vstwo$ will be evaluated);
 Case statements allow executing different statements, based on which
 condition an expression satisfies.
 
+\listingref{case-discriminant} shows an example of a \casestatementterm{}
+and the output to a console when it is evaluated.
+
+\ASLListing{A side-effecting case discriminant}{case-discriminant}{\definitiontests/CaseStatement.discriminant.asl}
+% CONSOLE_BEGIN aslref \definitiontests/CaseStatement.discriminant.asl
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
+num_tests: 0
+selected case 2
+\end{Verbatim}
+% CONSOLE_END
+
+\hypertarget{def-casediscriminantterm}{}
+\hypertarget{def-casealternativeterm}{}
+\hypertarget{def-otherwisecaseterm}{}
+The expression following the \Tcase\ keyword is called the \emph{\casediscriminantterm}.
+The list following the \Tof\ keyword consists of \emph{\casealternativesterm},
+optionally ending with an \emph{\otherwisecaseterm}, which follows the \Totherwise\ keyword.
+
+Case statements obey the following requirements:
+
+\RequirementDef{CaseDiscriminant} The \casediscriminantterm\ of a \texttt{case}
+statement should be evaluated only once each time the case statement is evaluated.
+%
+\listingref{case-discriminant} demonstrates how the \casediscriminantterm{}
+is evaluated only once.
+
+\RequirementDef{CaseAlternatives} The \casealternativesterm\ are examined
+one after another, in the order they are listed.
+If any of the patterns match the \casediscriminantterm{} (and the guard
+expression is true, if present) then this \casealternativeterm{} is considered selected,
+its statement list is executed, and the \texttt{case} statement ends without examining any further
+\casealternativesterm.
+%
+\listingref{case-discriminant} demonstrates how only one \casealternativeterm{} is selected
+for execution.
+
+\RequirementDef{CaseDiscriminantTesting} Testing the \casediscriminantterm{} against a \\
+pattern list
+follows the semantics of pattern matching defined in \chapref{PatternMatching}.
+It is not a static error if it can be statically determined that none of the patterns in a
+\casealternativeterm\ can match the discriminant.
+%
+\listingref{case-discriminant} exemplifies a \casestatementterm{} with pattern matching.
+
+\RequirementDef{CaseOtherwise} If no \casealternativeterm\ is selected, and there is an
+\otherwisecaseterm\, the \otherwisecaseterm\ is executed.
+%
+\listingref{case-otherwise} demonstrates how the \otherwisecaseterm{} is evaluated.
+
+\ASLListing{Executing the \texttt{otherwise} case alternative}{case-otherwise}{\definitiontests/CaseStatement.otherwise.asl}
+% CONSOLE_BEGIN aslref \definitiontests/CaseStatement.otherwise.asl
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
+num_tests: 0
+selected otherwise
+\end{Verbatim}
+% CONSOLE_END
+
+\RequirementDef{CaseNoOtherwiseError} If no \casealternativeterm\ is selected,
+and there is no \otherwisecaseterm, it is a dynamic error.
+%
+\listingref{case-no-otherwise} shows a specification that, when evaluated,
+yields a dynamic error.
+
+\ASLListing{A case statement with no \texttt{otherwise} case}{case-no-otherwise}{\definitiontests/CaseStatement.no_otherwise.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \Ncasealtlist \parsesep \Tend \parsesep \Tsemicolon &\\
@@ -1314,40 +1379,11 @@ condition an expression satisfies.
 \Ncasealt \derives \ & \Twhen \parsesep \Npatternlist \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &\\
 \end{flalign*}
 
-\hypertarget{def-casediscriminantterm}{}
-\hypertarget{def-casealternativeterm}{}
-\hypertarget{def-otherwisecaseterm}{}
-The expression following the \Tcase\ keyword is called the \emph{\casediscriminantterm}.
-The list following the \Tof\ keyword consists of \emph{\casealternativesterm},
-optionally ending with an \emph{\otherwisecaseterm}, which follows the \Totherwise\ keyword.
-
 \subsection{Abstract Syntax}
 Case statements are considered syntactic sugar and are \emph{desugared}.
 That is, they are transformed into an untyped AST node that does not have
 an explicit representation for \texttt{case} statements.
-This is achieved via \ASTRuleRef{DesugarCaseStmt},
-which obeys the following requirements:
-\RequirementDef{CaseDiscriminant} The \casediscriminantterm\ of a \texttt{case}
-statement should be evaluated only once each time the case statement is evaluated.
-
-\RequirementDef{CaseAlternatives} The \casealternativesterm\ are examined
-one after another, in the order they are listed.
-If any of the patterns match the \casediscriminantterm (and the guard
-expression is true, if present) then this \casealternativeterm\ is considered selected,
-its statement list is executed, and the \texttt{case} statement ends without examining any further
-\casealternativesterm.
-
-\RequirementDef{CaseOtherwise} If no \casealternativeterm\ is selected, and there is an
-\otherwisecaseterm\, the \otherwisecaseterm\ is executed.
-
-\RequirementDef{CaseDiscriminantTesting} Testing the \casediscriminantterm\ against a \\
-pattern list
-follows the semantics of pattern matching defined in \chapref{PatternMatching}.
-It is not a static error if it can be statically determined that none of the patterns in a
-\casealternativeterm\ can match the discriminant.
-
-\RequirementDef{CaseNoOtherwiseError} If no \casealternativeterm\ is selected,
-and there is no \otherwisecaseterm, it is a dynamic error.
+This is achieved via \ASTRuleRef{DesugarCaseStmt}.
 
 \subsubsection{Example}
 \listingref{ast-case1} shows an example of how a \texttt{case} statement can be transformed into a corresponding
@@ -1575,6 +1611,21 @@ they do not appear in the typed AST and thus are not associated with a semantics
 
 \hypertarget{def-assertionstatementterm}{}
 \section{Assertion Statements\label{sec:AssertionStatements}}
+Assertion statements are used to check that certain conditions are satisfied.
+They take a single \texttt{boolean}-typed operand, which we refer to as the
+\emph{condition}. If the condition is \False, the statement fails with a
+\dynamicerrorterm{} (\errorcodeterm{} $\DynamicAssertionFailure$).
+
+\listingref{AssertionStatement} shows a possible use of
+\assertionstatementterm{} to check the inputs to a function
+(also known as a \emph{precondition})
+and ensure the output satisfies expectations (also known as a \emph{postcondition}).
+%
+The first call to \verb|checked_8bit_add| succeeds, whereas the second call fails the
+\assertionstatementterm{} \verb|assert a + b < 256;|
+
+\ASLListing{Example of using \texttt{assert} statements}{AssertionStatement}{\definitiontests/AssertionStatement.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \ & \Tassert \parsesep \Nexpr \parsesep \Tsemicolon &
@@ -2118,14 +2169,12 @@ All of the following apply:
 The specification in \listingref{semantics-srepeat} is followed by its output to the console.
 \ASLListing{Evaluating a \texttt{repeat} loop}{semantics-srepeat}{\semanticstests/SemanticsRule.SRepeat.asl}
 % CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.SRepeat.asl
-\begin{small}
-\begin{Verbatim}[frame=single]
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
 0
 1
 2
 3
 \end{Verbatim}
-\end{small}
 % CONSOLE_END
 
 \ProseParagraph
@@ -2436,14 +2485,12 @@ statement.
 The specification in \listingref{semantics-sfor} is followed by its output to the console.
 \ASLListing{Evaluating a \texttt{for} loop}{semantics-sfor}{\semanticstests/SemanticsRule.SFor.asl}
 % CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.SFor.asl
-\begin{small}
-\begin{Verbatim}[frame=single]
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
 0
 1
 2
 3
 \end{Verbatim}
-\end{small}
 % CONSOLE_END
 
 \ProseParagraph
@@ -3345,8 +3392,7 @@ All of the following apply:
 followed by the output to the console resulting from running the specification.
 \ASLListing{Literals and how they are displayed}{semantics-literals}{\semanticstests/SemanticsRule.SPrint.asl}
 % CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.SPrint.asl
-\begin{small}
-\begin{Verbatim}[frame=single]
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
 string_number_1
 0
 1000000
@@ -3361,7 +3407,6 @@ hello\world
 0x
 LABEL_B
 \end{Verbatim}
-\end{small}
 % CONSOLE_END
 
 Notice that empty bitvectors are displayed as \verb|0x|.
@@ -3495,6 +3540,10 @@ $\llabel(s)$      & $s$. \\
 
 \hypertarget{def-unreachablestatementterm}{}
 \section{The Unreachable Statement\label{sec:UnreachableStatement}}
+\listingref{UnreachableStatement} shows an example of using an \unreachablestatementterm{}
+to implement a custom form of assertion checking.
+\ASLListing{An example use of an \texttt{Unreachable} statement}{UnreachableStatement}{\definitiontests/UnreachableStatement.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \ & \Tunreachable \parsesep \Tlpar \parsesep \Trpar \parsesep \Tsemicolon &
