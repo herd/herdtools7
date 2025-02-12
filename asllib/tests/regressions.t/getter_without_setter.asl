@@ -1,7 +1,7 @@
 accessor f() <=> integer
 begin
-  setter = v begin
-    pass;
+  getter begin
+    return 0;
   end;
 end;
 

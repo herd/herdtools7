@@ -1,6 +1,12 @@
-getter f1() => integer
+accessor f1() <=> integer
 begin
-  return 4;
+  getter begin
+    return 4;
+  end;
+
+  setter = v begin
+    Unreachable();
+  end;
 end;
 
 func main () => integer

@@ -16,86 +16,90 @@ begin
   return 0 <= n && n < 4 ;
 end;
 
-getter PSTATE() => ProcState
+accessor PSTATE() <=> ProcState
 begin
- return _PSTATE;
-end;
+  getter begin
+   return _PSTATE;
+  end;
 
-setter PSTATE() = v : ProcState
-begin
-  _PSTATE = v;
-end;
-
-getter PSTATE(n:integer) => bits(1)
-begin
-  if isNZCV(n) then
-    return _NZCV[n];
-  else
-    return _PSTATE[n];
+  setter = v begin
+    _PSTATE = v;
   end;
 end;
 
-setter PSTATE(n:integer) = v : bits(1)
+accessor PSTATE(n:integer) <=> bits(1)
 begin
-  if isNZCV(n) then
-    _NZCV[n] = v;
-  else
-    _PSTATE[n] = v;
+  getter begin
+    if isNZCV(n) then
+      return _NZCV[n];
+    else
+      return _PSTATE[n];
+    end;
+  end;
+
+  setter = v begin
+    if isNZCV(n) then
+      _NZCV[n] = v;
+    else
+      _PSTATE[n] = v;
+    end;
   end;
 end;
 
-
-getter PSTATE(n:integer,m:integer) => bits(2)
+accessor PSTATE(n:integer,m:integer) <=> bits(2)
 begin
-  if isNZCV(n) && isNZCV(m) then
-    return _NZCV[n,m];
-  else
-    return _PSTATE[n,m];
+  getter begin
+    if isNZCV(n) && isNZCV(m) then
+      return _NZCV[n,m];
+    else
+      return _PSTATE[n,m];
+    end;
+  end;
+
+  setter = v begin
+    if isNZCV(n) && isNZCV(m) then
+      _NZCV[n,m] = v;
+    else
+      _PSTATE[n,m] = v;
+    end;
   end;
 end;
 
-setter PSTATE(n:integer,m:integer) = v : bits(2)
+accessor PSTATE(n:integer,m:integer,o:integer) <=> bits(3)
 begin
-  if isNZCV(n) && isNZCV(m) then
-    _NZCV[n,m] = v;
-  else
-    _PSTATE[n,m] = v;
+  getter begin
+    if isNZCV(n) && isNZCV(m) && isNZCV(o) then
+      return _NZCV[n,m,o];
+    else
+      return _PSTATE[n,m,o];
+    end;
+  end;
+
+  setter = v begin
+    if isNZCV(n) && isNZCV(m) && isNZCV(o) then
+      _NZCV[n,m,o] = v;
+    else
+      _PSTATE[n,m,o] = v;
+    end;
   end;
 end;
 
-getter PSTATE(n:integer,m:integer,o:integer) => bits(3)
+accessor PSTATE(n:integer,m:integer,o:integer,p:integer) <=> bits(4)
 begin
-  if isNZCV(n) && isNZCV(m) && isNZCV(o) then
-    return _NZCV[n,m,o];
-  else
-    return _PSTATE[n,m,o];
+  getter begin
+    if isNZCV(n) && isNZCV(m) && isNZCV(o) && isNZCV(p) then
+      return _NZCV[n,m,o,p];
+    else
+      return _PSTATE[n,m,o,p];
+    end;
   end;
-end;
 
-setter PSTATE(n:integer,m:integer,o:integer) = v : bits(3)
-begin
-  if isNZCV(n) && isNZCV(m) && isNZCV(o) then
-    _NZCV[n,m,o] = v;
-  else
-    _PSTATE[n,m,o] = v;
-  end;
-end;
-
-getter PSTATE(n:integer,m:integer,o:integer,p:integer) => bits(4)
-begin
-  if isNZCV(n) && isNZCV(m) && isNZCV(o) && isNZCV(p) then
-    return _NZCV[n,m,o,p];
-  else
-    return _PSTATE[n,m,o,p];
-  end;
-end;
-
-setter PSTATE(n:integer,m:integer,o:integer,p:integer) = v : bits(4)
-begin
-  if isNZCV(n) && isNZCV(m) && isNZCV(o) && isNZCV(p) then
-    _NZCV[n,m,o,p] = v;
-  else
-    _PSTATE[n,m,o,p] = v;
+  setter = v begin
+    if isNZCV(n) && isNZCV(m) && isNZCV(o) && isNZCV(p) then
+      _NZCV[n,m,o,p] = v;
+    else
+      _PSTATE[n,m,o,p] = v;
+    end;
   end;
 end;
 

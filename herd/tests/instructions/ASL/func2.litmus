@@ -3,15 +3,16 @@ ASL func02
 
 {}
 
-getter X(i:integer) => integer
+accessor X(i:integer) <=> integer
 begin
-    return i;
-end;
+  getter begin
+      return i;
+  end;
 
-setter X(i:integer) = v:integer
-begin
-    let internal_i = i;
-    let internal_v = v;
+  setter = v begin
+      let internal_i = i;
+      let internal_v = v;
+  end;
 end;
 
 func main() => integer

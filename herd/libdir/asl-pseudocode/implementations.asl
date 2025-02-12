@@ -521,21 +521,28 @@ end;
 
 // =============================================================================
 
-getter _R (n : integer) => bits(64)
+accessor _R (n : integer) <=> bits(64)
 begin
-  return read_register(n);
-end;
+  getter begin
+    return read_register(n);
+  end;
 
-setter _R (n : integer) = value : bits(64)
-begin
-  write_register(n, value);
+  setter = value begin
+    write_register(n, value);
+  end;
 end;
 
 // =============================================================================
 
-getter SCTLR_EL1() => SCTLRType
+accessor SCTLR_EL1() <=> SCTLRType
 begin
-  return Zeros{64};
+  getter begin
+    return Zeros{64};
+  end;
+
+  setter = v begin
+    Unreachable();
+  end;
 end;
 
 // =============================================================================

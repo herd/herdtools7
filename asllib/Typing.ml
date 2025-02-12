@@ -3575,6 +3575,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* Begin CheckSetterHasGetter *)
   let check_setter_has_getter ~loc env (func_sig : AST.func) =
+    assert (loc.version = V0);
     let fail () =
       fatal_from ~loc (Error.SetterWithoutCorrespondingGetter func_sig)
     in
@@ -3641,7 +3642,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           func_sig.args
     in
     let+ () = check_var_not_in_genv ~loc env1.global name' in
-    let+ () = check_setter_has_getter ~loc env1 func_sig in
+    let+ () =
+     fun () ->
+      if loc.version = V0 then check_setter_has_getter ~loc env1 func_sig ()
+    in
     let new_func_sig = { func_sig with name = name' } in
     let init_ses =
       match func_sig.body with
@@ -3959,7 +3963,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         ds
     in
     let env_and_fs1 =
-      (* Setters last as they need getters declared. *)
+      (* Only relevant for V0: setters last as they need getters declared. *)
       let setters, others =
         List.partition
           (fun (_, f, _, _) ->

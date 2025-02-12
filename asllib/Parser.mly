@@ -586,8 +586,16 @@ let ignored_or_identifier :=
   | MINUS; { global_ignored () }
   | IDENTIFIER
 
+let accessors :=
+  | GETTER; getter=func_body;
+    SETTER; EQ; setter_arg=IDENTIFIER; setter=func_body;
+    { { getter; setter; setter_arg } }
+  | SETTER; EQ; setter_arg=IDENTIFIER; setter=func_body;
+    GETTER; getter=func_body;
+    { { getter; setter; setter_arg } }
+
 let decl :=
-  annotated (
+  | d=annotated (
     (* Begin func_decl *)
     | FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type; ~=recurse_limit; body=func_body;
         {
@@ -618,40 +626,6 @@ let decl :=
           }
         }
     (* End *)
-    (* Begin getter *)
-    | GETTER; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type;
-        ~=func_body;
-        {
-          D_Func
-            {
-              name;
-              parameters = params_opt;
-              args = func_args;
-              return_type = Some return_type;
-              body = SB_ASL func_body;
-              subprogram_type = ST_Getter;
-              recurse_limit = None;
-              builtin = false;
-            }
-        }
-    (* End *)
-    (* Begin setter *)
-    | SETTER; name=IDENTIFIER; ~=params_opt; ~=func_args; EQ; v=typed_identifier;
-        ~=func_body;
-        {
-          D_Func
-            {
-              name;
-              parameters = params_opt;
-              args = v :: func_args;
-              return_type = None;
-              body = SB_ASL func_body;
-              subprogram_type = ST_Setter;
-              recurse_limit = None;
-              builtin = false;
-            }
-        }
-    (* End *)
     | terminated_by(SEMI_COLON,
       (* Begin type_decl *)
       | TYPE; x=IDENTIFIER; OF; t=ty_decl; ~=subtype_opt; < D_TypeDecl           >
@@ -678,10 +652,13 @@ let decl :=
       | PRAGMA; x=IDENTIFIER; e=clist0(expr); < D_Pragma >
       (* End *)
     )
-  )
+  ); { [d] }
+  | ACCESSOR; name=IDENTIFIER; ~=params_opt; ~=func_args; BIARROW; ~=ty;
+    BEGIN; ~=accessors; end_semicolon;
+    { desugar_accessor_pair name params_opt func_args ty accessors }
 
 (* Begin AST *)
-let spec := terminated(list(decl), EOF)
+let spec := ~=terminated(list(decl), EOF); < List.concat >
 (* End *)
 
 let opn [@internal true] := body=stmt; EOF;
