@@ -12,13 +12,24 @@
   (:standard ../libdir/stdlib.asl))
  (libraries asllib zarith)
  (modules
-  (:standard \ toposort ConstraintBinops))
+  (:standard \ toposort ConstraintBinops Lexer))
  (flags
   (:standard -w -40-42))
  (action
   (setenv
    ASL_LIBDIR
    %{project_root}/asllib/libdir/
+   (run %{test} -e))))
+
+(test
+ (name Lexer)
+ (modes native)
+ (libraries asllib menhirSdk)
+ (modules helpers Lexer)
+ (action
+  (setenv
+   ASL_PARSER_CMLY
+   %{project_root}/asllib/Parser.cmly
    (run %{test} -e))))
 
 (cram
