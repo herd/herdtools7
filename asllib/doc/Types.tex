@@ -98,7 +98,7 @@ which is defined in \secref{DomainOfValuesForTypes}.
 
 \hypertarget{integertypeterm}{}
 \section{Integer Types\label{sec:IntegerTypes}}
-The \texttt{integer} type represents mathematical integer values.
+The \texttt{integer} type represents mathematical integer value.
 
 There are four kinds of integer types, which we explain next:
 \emph{unconstrained}, \emph{well-constrained},
@@ -411,6 +411,14 @@ The annotated constraints inline the constant \texttt{N} and the right-hand-side
 expressions of \texttt{let} storage elements.
 \ASLListing{Annotated constraints}{annotate-constraint}{\typingtests/TypingRule.AnnotateConstraint.asl}
 
+\RequirementDef{ConstraintSymbolicallyConstrained}
+The expressions appearing in integer constraints must be both
+\symbolicallyevaluable{} and \constrainedinteger{} types.
+%
+In \listingref{annotate-constraint-unconstrained}, the constraint
+\verb|x..x+1| is ill-typed, since the type of \texttt{x} is not constrained.
+\ASLListing{Ill-typed constraint}{annotate-constraint-unconstrained}{\typingtests/TypingRule.AnnotateConstraint.bad.asl}
+
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
@@ -451,6 +459,12 @@ One of the following applies:
 
 \hypertarget{realtypeterm}{}
 \section{The Real Type\label{sec:RealType}}
+The \realtypeterm{} represents mathematical rational number values.
+There is no bound on the minimum and maximum rational value that can be represented,
+and there is no bound on their precision.
+%
+There is no mechanism in the language to generate an irrational value of \realtypeterm.
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nty \derives\ & \Treal &

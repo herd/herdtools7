@@ -52,6 +52,7 @@ ASL Typing Tests / annotating types:
   [1]
 
   $ aslref TypingRule.AnnotateConstraint.asl
+  $ aslref TypingRule.AnnotateConstraint.bad.asl
 
   $ aslref TypingRule.TBits.asl
   $ aslref TypingRule.TTuple.asl

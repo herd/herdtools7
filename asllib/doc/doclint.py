@@ -156,8 +156,8 @@ def check_repeated_words(latex_files: list[str]):
 
 def detect_incorrect_latex_macros_spacing(latex_files) -> int:
     r"""
-    Detects erroneous occurrences of LaTeX macros succeeded by a space
-    character.
+    Detects erroneous occurrences of LaTeX macros rendered without
+    separation from the next word.
     """
     num_errors = 0
     for latex_source in latex_files:
@@ -178,10 +178,17 @@ def detect_incorrect_latex_macros_spacing(latex_files) -> int:
             for pattern in patterns_to_remove:
                 file_str = re.sub(pattern, '', file_str, flags=re.DOTALL)
 
+            # Look for things like \macro word
             macro_followed_by_space = r'\\[a-zA-Z]+(?= )'
             matches = re.findall(macro_followed_by_space, file_str)
             for match in matches:
                 print(f'{latex_source}: LaTeX macro followed by space "{match }"')
+                num_errors += 1
+            # Look for things like \macro{}word
+            macro_followed_by_space = r'\\[a-zA-Z]+{}[a-zA-Z]'
+            matches = re.findall(macro_followed_by_space, file_str)
+            for match in matches:
+                print(f'{latex_source}: LaTeX macro running into next word "{match}"')
                 num_errors += 1
     return num_errors
 
