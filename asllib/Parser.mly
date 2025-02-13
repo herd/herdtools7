@@ -472,13 +472,9 @@ let local_decl_keyword_non_var :=
   | VAR       ; { LDK_Var       }
   *)
 
-let global_decl_keyword_non_var :=
+let global_let_or_constant :=
   | LET       ; { GDK_Let      }
   | CONSTANT  ; { GDK_Constant }
-  | CONFIG    ; { GDK_Config   }
-  (* Var conflicts with global_uninit_var and as such is inlined in the decl production
-  | VAR       ; { GDK_Var      }
-  *)
 
 let pass == { S_Pass }
 let assign(x, y) == ~=x ; EQ ; ~=y ; < S_Assign >
@@ -664,9 +660,12 @@ let decl :=
       | TYPE; x=IDENTIFIER; s=annotated(subtype);         < make_ty_decl_subtype >
       (* End *)
       (* Begin global_storage *)
-      | keyword=global_decl_keyword_non_var; name=ignored_or_identifier;
+      | keyword=global_let_or_constant; name=ignored_or_identifier;
         ty=option(as_ty); EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword; name; ty; initial_value } }
+      | CONFIG; name=ignored_or_identifier;
+        ty=as_ty; EQ; initial_value=some(expr);
+        { D_GlobalStorage { keyword=GDK_Config; name; ty=Some ty; initial_value } }
       | VAR; name=ignored_or_identifier;
         ty=option(as_ty); EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword=GDK_Var; name; ty; initial_value } }

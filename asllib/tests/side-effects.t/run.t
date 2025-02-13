@@ -125,13 +125,13 @@
   [1]
 
   $ aslref config-uses-var.asl
-  File config-uses-var.asl, line 2, characters 0 to 17:
+  File config-uses-var.asl, line 2, characters 0 to 26:
   ASL Typing error: expected config-time expression, got (X + 3), which
     produces the following side-effects: [ReadsGlobal "X"].
   [1]
   $ aslref config-uses-config.asl
   $ aslref config-uses-let.asl
-  File config-uses-let.asl, line 2, characters 0 to 13:
+  File config-uses-let.asl, line 2, characters 0 to 22:
   ASL Typing error: expected config-time expression, got X, which produces the
     following side-effects: [ReadsGlobal "X"].
   [1]
@@ -140,13 +140,13 @@
   $ aslref config-uses-local-let.asl
   $ aslref config-uses-local-constant.asl
   $ aslref config-uses-var-through-func.asl
-  File config-uses-var-through-func.asl, line 8, characters 0 to 18:
+  File config-uses-var-through-func.asl, line 8, characters 0 to 27:
   ASL Typing error: expected config-time expression, got foo(), which produces
     the following side-effects: [ReadsGlobal "X"].
   [1]
   $ aslref config-uses-config-through-func.asl
   $ aslref config-uses-let-through-func.asl
-  File config-uses-let-through-func.asl, line 8, characters 0 to 18:
+  File config-uses-let-through-func.asl, line 8, characters 0 to 27:
   ASL Typing error: expected config-time expression, got foo(), which produces
     the following side-effects: [ReadsGlobal "X"].
   [1]
@@ -157,7 +157,7 @@
     value 0 does not belong to type integer {10}.
   [1]
   $ aslref config-uses-unknown.asl
-  File config-uses-unknown.asl, line 6, characters 0 to 18:
+  File config-uses-unknown.asl, line 6, characters 0 to 27:
   ASL Typing error: expected config-time expression, got foo(), which produces
     the following side-effects: [NonDeterministic].
   [1]
