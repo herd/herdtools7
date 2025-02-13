@@ -126,14 +126,18 @@
 
   $ aslref config-uses-var.asl
   File config-uses-var.asl, line 2, characters 0 to 26:
-  ASL Typing error: expected config-time expression, got (X + 3), which
+  ASL Typing error: expected constant-time expression, got (X + 3), which
     produces the following side-effects: [ReadsGlobal "X"].
   [1]
   $ aslref config-uses-config.asl
+  File config-uses-config.asl, line 2, characters 0 to 22:
+  ASL Typing error: expected constant-time expression, got X, which produces
+    the following side-effects: [ReadsGlobal "X"].
+  [1]
   $ aslref config-uses-let.asl
   File config-uses-let.asl, line 2, characters 0 to 22:
-  ASL Typing error: expected config-time expression, got X, which produces the
-    following side-effects: [ReadsGlobal "X"].
+  ASL Typing error: expected constant-time expression, got X, which produces
+    the following side-effects: [ReadsGlobal "X"].
   [1]
   $ aslref config-uses-constant.asl
   $ aslref config-uses-local-var.asl
@@ -141,14 +145,18 @@
   $ aslref config-uses-local-constant.asl
   $ aslref config-uses-var-through-func.asl
   File config-uses-var-through-func.asl, line 8, characters 0 to 27:
-  ASL Typing error: expected config-time expression, got foo(), which produces
-    the following side-effects: [ReadsGlobal "X"].
+  ASL Typing error: expected constant-time expression, got foo(), which
+    produces the following side-effects: [ReadsGlobal "X"].
   [1]
   $ aslref config-uses-config-through-func.asl
+  File config-uses-config-through-func.asl, line 8, characters 0 to 27:
+  ASL Typing error: expected constant-time expression, got foo(), which
+    produces the following side-effects: [ReadsGlobal "X"].
+  [1]
   $ aslref config-uses-let-through-func.asl
   File config-uses-let-through-func.asl, line 8, characters 0 to 27:
-  ASL Typing error: expected config-time expression, got foo(), which produces
-    the following side-effects: [ReadsGlobal "X"].
+  ASL Typing error: expected constant-time expression, got foo(), which
+    produces the following side-effects: [ReadsGlobal "X"].
   [1]
   $ aslref config-uses-constant-through-func.asl
   $ aslref config-uses-atc.asl
@@ -158,8 +166,8 @@
   [1]
   $ aslref config-uses-unknown.asl
   File config-uses-unknown.asl, line 6, characters 0 to 27:
-  ASL Typing error: expected config-time expression, got foo(), which produces
-    the following side-effects: [NonDeterministic].
+  ASL Typing error: expected constant-time expression, got foo(), which
+    produces the following side-effects: [NonDeterministic].
   [1]
 
   $ aslref assert-read.asl

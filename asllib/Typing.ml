@@ -588,13 +588,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       fatal_from ~loc:expr_for_error
         (Error.ImpureExpression (expr_for_error, SES.remove_pure ses))
 
-  let leq_config_time ses =
-    TimeFrame.is_before (SES.max_time_frame ses) TimeFrame.Config
-
-  let check_leq_config_time ~loc (_, e, ses_e) () =
-    if leq_config_time ses_e then ()
-    else fatal_from ~loc Error.(ConfigTimeBroken (e, ses_e))
-
   let leq_constant_time ses =
     TimeFrame.is_before (SES.max_time_frame ses) TimeFrame.Constant
 
@@ -606,7 +599,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let open TimeFrame in
     function
     | TimeFrame.Constant -> check_leq_constant_time
-    | TimeFrame.Config -> check_leq_config_time
     | TimeFrame.Execution -> fun ~loc:_ _ -> ok
 
   let check_bits_equal_width' env t1 t2 () =
@@ -3748,7 +3740,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let { keyword; initial_value; ty = ty_opt; name } = gsd in
     let+ () = check_var_not_in_genv ~loc genv name in
     let env = with_empty_local genv in
-    let target_time_frame = TimeFrame.of_gdk keyword in
+    let target_time_frame =
+      match keyword with
+      | GDK_Constant | GDK_Config -> TimeFrame.Constant
+      | GDK_Let | GDK_Var -> TimeFrame.Execution
+    in
     let typed_initial_value, ty_opt', declared_t =
       (* AnnotateTyOptInitialValue( *)
       match (ty_opt, initial_value) with
@@ -3793,7 +3789,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | Some e' -> add_global_immutable_expr name e' env1
           | None -> env1)
       | GDK_Config ->
-          let+ () = check_leq_config_time ~loc typed_initial_value in
+          let+ () = check_leq_constant_time ~loc typed_initial_value in
           let+ () =
             check_true (Types.is_singular env initial_value_ty) @@ fun () ->
             Error.fatal_from loc (Error.ExpectedSingularType initial_value_ty)
