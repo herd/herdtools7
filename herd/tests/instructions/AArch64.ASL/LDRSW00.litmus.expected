@@ -1,0 +1,10 @@
+Test LDRSW00 Required
+States 1
+0:X1=-1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=-1)
+Observation LDRSW00 Always 1 0
+Hash=0c7bdd3fdcc813ca2a8f3ad08229537d
+

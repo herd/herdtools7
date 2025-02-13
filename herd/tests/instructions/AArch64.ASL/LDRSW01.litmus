@@ -1,0 +1,12 @@
+AArch64 LDRSW01
+{
+int x=-1;
+0:X0=x;
+int64_t 0:X1;
+int64_t 0:X2 = 0;
+}
+
+  P0         ;
+ LDRSW X1,[X0,X2] ;
+
+forall 0:X1=-1

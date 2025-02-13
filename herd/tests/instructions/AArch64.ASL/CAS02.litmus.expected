@@ -3,8 +3,8 @@ States 1
 0:X1=3; [x]=3;
 Ok
 Witnesses
-Positive: 1 Negative: 0
+Positive: 2 Negative: 0
 Condition exists (0:X1=3 /\ [x]=3)
-Observation CAS02 Always 1 0
+Observation CAS02 Always 2 0
 Hash=5a1df8a6a77dfdcf886e04d2f916feb2
 
