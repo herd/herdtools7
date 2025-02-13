@@ -106,6 +106,12 @@ let to_int64 = function
   | S_BitVector bv -> BV.to_int64_signed bv
   | S_Label _ -> Warn.fatal "Trying to convert a label to int"
 
+let is_zero = function
+  | S_Bool b -> not b (* Zero for BAnd/BOr ... *)
+  | S_Int z -> Z.equal Z.zero z
+  | S_BitVector bv -> BV.is_zeros bv
+  | S_Label _ -> false
+
 let as_bool = function
   | S_Bool b -> Some b
   | _ -> None

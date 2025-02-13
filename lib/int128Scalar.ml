@@ -78,7 +78,8 @@ let zero = Int128.zero
 type t = Int128.t
 let unsigned_compare = Int128.unsigned_compare
 
-let as_bool v = Some (Bool.not (Int128.equal Int128.zero v))
+let is_zero v = Int128.equal Int128.zero v
+let as_bool v = Some (Bool.not (is_zero v))
 let s_true = one
 let s_false = zero
 

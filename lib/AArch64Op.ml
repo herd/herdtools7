@@ -204,4 +204,7 @@ module
       | (Instruction _,(Word|Quad))
         -> Some c
       | _,_ -> None
+
+    let is_left_identity = Extra.is_left_identity
+    let is_right_identity = Extra.is_left_identity
   end

@@ -101,7 +101,8 @@ let sxt sz v = match sz with
      let m = Uint128.shift_left Uint128.one (nb-1) in
      t,Uint128.sub (Uint128.logxor v m) m
 
-let as_bool (_, v) = Some (Bool.not (Uint128.equal Uint128.zero v))
+let is_zero (_, v) = Uint128.equal Uint128.zero v
+let as_bool s = Some (Bool.not (is_zero s))
 let s_true = one
 let s_false = zero
 
