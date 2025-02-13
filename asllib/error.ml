@@ -90,7 +90,7 @@ type error_desc =
       field1_absslices : string;
       field2_absslices : string;
     }
-  | BadPrintType of ty
+  | ExpectedSingularType of ty
   | ConfigTimeBroken of expr * SideEffect.SES.t
   | ConstantTimeBroken of expr * SideEffect.SES.t
   | MultipleWrites of identifier
@@ -193,7 +193,7 @@ let error_label = function
   | EmptyConstraints -> "EmptyConstraints"
   | UnexpectedPendingConstrained -> "UnexpectedPendingConstrained"
   | BitfieldsDontAlign _ -> "BitfieldsDontAlign"
-  | BadPrintType _ -> "BadPrintType"
+  | ExpectedSingularType _ -> "ExpectedSingularType"
   | ConflictingSideEffects _ -> "ConflictingSideEffects"
   | ConfigTimeBroken _ -> "ConfigTimeBroken"
   | ConstantTimeBroken _ -> "ConstantTimeBroken"
@@ -456,9 +456,9 @@ module PPrint = struct
         pp_print_text f
           "ASL Typing error: a well-constrained integer cannot have empty \
            constraints."
-    | BadPrintType t ->
+    | ExpectedSingularType t ->
         fprintf f "ASL Typing error:@ %a@ %a." pp_print_text
-          "print and println only accept singular types, found" pp_ty t
+          "expected singular type, found" pp_ty t
     | UnexpectedPendingConstrained ->
         pp_print_text f
           "ASL Typing error: a pending constrained integer is illegal here."

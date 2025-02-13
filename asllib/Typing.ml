@@ -3035,7 +3035,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               let ty, annot_e, ses_e = annotate_expr env e in
               let+ () =
                 check_true (Types.is_singular env ty) @@ fun () ->
-                Error.fatal_from e (Error.BadPrintType ty)
+                Error.fatal_from e (Error.ExpectedSingularType ty)
               in
               (annot_e, ses_e))
             args
@@ -3779,7 +3779,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let genv1 = add_global_storage ~loc name keyword genv declared_t in
     let env1 = with_empty_local genv1 in
-    let _, initial_value', ses_initial_value = typed_initial_value in
+    let initial_value_ty, initial_value', ses_initial_value =
+      typed_initial_value
+    in
     (* UpdateGlobalStorage( *)
     let env2 =
       match keyword with
@@ -3792,6 +3794,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | None -> env1)
       | GDK_Config ->
           let+ () = check_leq_config_time ~loc typed_initial_value in
+          let+ () =
+            check_true (Types.is_singular env initial_value_ty) @@ fun () ->
+            Error.fatal_from loc (Error.ExpectedSingularType initial_value_ty)
+          in
           env1
       | _ -> env1
       (* UpdateGlobalStorage) *)
