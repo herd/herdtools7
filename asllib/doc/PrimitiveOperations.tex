@@ -34,25 +34,19 @@ on \nativevalues\ via $\unoprel$ and $\binoprel$.
 
 \section{Abstract Syntax\label{sec:PrimitiveOperationsAbstractSyntax}}
 \begin{flalign*}
-\unop \derives\ & \overname{\BNOT}{\texttt{"!"}} \;|\; \overname{\NEG}{\texttt{"-"}} \;|\; \overname{\NOT}{\texttt{"NOT"}}
-& \hypertarget{ast-binop}{} \hypertarget{ast-bor}{} \hypertarget{ast-impl}{} \hypertarget{ast-beq}{} \hypertarget{ast-band}{}
-\\
+\unop \derives\ & \overname{\BNOT}{\texttt{"!"}} \;|\; \overname{\NEG}{\texttt{"-"}} \;|\; \overname{\NOT}{\texttt{"NOT"}} & \\
 \binop  \derives\ & \overname{\BAND}{\texttt{"\&\&"}} \;|\; \overname{\BOR}{\texttt{"||"}} \;|\; \overname{\IMPL}{\texttt{"-->"}}
               \;|\; \overname{\BEQ}{\texttt{"<->"}}
-              & \hypertarget{ast-eqop}{} \hypertarget{ast-neq}{} \hypertarget{ast-gt}{} \hypertarget{ast-geq}{} \hypertarget{ast-lt}{} \hypertarget{ast-leq}{}
-\\
+        & \\
         |\ & \overname{\EQOP}{\texttt{"=="}} \;|\; \overname{\NEQ}{\texttt{"!="}} \;|\; \overname{\GT}{\texttt{"<"}}
         \;|\; \overname{\GEQ}{\texttt{">="}} \;|\; \overname{\LT}{\texttt{"<"}} \;|\; \overname{\LEQ}{\texttt{"<="}}
-        & \hypertarget{ast-plus}{} \hypertarget{ast-minus}{} \hypertarget{ast-or}{} \hypertarget{ast-xor}{} \hypertarget{ast-and}{}
-\\
+        & \\
         |\ & \overname{\PLUS}{\texttt{"+"}} \;|\; \overname{\MINUS}{\texttt{"-"}} \;|\; \overname{\OR}{\texttt{"OR"}}
         \;|\; \overname{\XOR}{\texttt{"XOR"}} \;|\; \overname{\AND}{\texttt{"AND"}}
-        & \hypertarget{ast-mul}{} \hypertarget{ast-div}{} \hypertarget{ast-divrm}{} \hypertarget{ast-mod}{} \hypertarget{ast-shl}{} \hypertarget{ast-shr}{}
-\\
+        & \\
         |\ & \overname{\MUL}{\texttt{"*"}} \;|\; \overname{\DIV}{\texttt{"DIV"}} \;|\; \overname{\DIVRM}{\texttt{"DIVRM"}}
         \;|\; \overname{\MOD}{\texttt{"MOD"}} \;|\; \overname{\SHL}{\texttt{"<<"}}  \;|\; \overname{\SHR}{\texttt{">>"}}
-        & \hypertarget{ast-rdiv}{} \hypertarget{ast-pow}{}
-\\
+        & \\
         |\ & \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}} \;|\; \overname{\BVCONCAT}{\texttt{"::"}}
         &
 \end{flalign*}
