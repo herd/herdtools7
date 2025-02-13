@@ -13,14 +13,17 @@ def yellow_error_message(msg: str) -> str:
     COLOR_RESET = '\033[m'
     return YELLOW + msg + COLOR_RESET
 
-def get_latex_sources() -> list[str]:
+def get_latex_sources(exclude) -> list[str]:
     r"""
-    Returns the list of .tex files in the current directory,
-    excluding macros.tex.
+    Returns the list of .tex files in the current directory.
+    If 'exclude' is True, common files that are not required
+    for transformation and linting are excluded.
     """
     latex_files = fnmatch.filter(os.listdir('.'), '*.tex')
-    if 'macros.tex' in latex_files:
-        latex_files.remove('macros.tex')
+    if exclude:
+        excluded_files = ['ASLReference.tex', 'ASLmacros.tex', 'ASLRefALP2.1ChangeLog.tex', 'ASLRefALP2ChangeLog.tex']
+        for excluded_file in excluded_files:
+            latex_files.remove(excluded_file)
     return latex_files
 
 def execute_and_capture_output(command: str, error_expected: bool) -> str:
@@ -209,7 +212,7 @@ class ConsoleMacro(BlockMacro):
 
 def apply_all_macros():
     print('Extended macros: applying all macros... ')
-    ConsoleMacro.apply_to_files(get_latex_sources())
+    ConsoleMacro.apply_to_files(get_latex_sources(True))
     print('Extended macros: done')
 
 def main():

@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 
 import os, sys, fnmatch
-from extended_macros import apply_all_macros
+from extended_macros import apply_all_macros, get_latex_sources
+import re
 
 import argparse
 
@@ -12,7 +13,6 @@ cli_parser.add_argument(
     help="Rewrites *.tex files with extended macros",
     action="store_true",
 )
-
 
 def extract_labels_from_line(line: str, left_delim: str, labels: set[str]):
     r"""
@@ -33,13 +33,12 @@ def extract_labels_from_line(line: str, left_delim: str, labels: set[str]):
         label_pos = right_brace_pos + 1
 
 
-def check_hyperlinks_and_hypertargets():
+def check_hyperlinks_and_hypertargets(latex_files: list[str]):
     r"""
     Checks whether all labels defined in `\hyperlink` definitions match
     labels defined in `\hypertarget` definitions, print the mismatches
     to the console.
     """
-    latex_files = fnmatch.filter(os.listdir("."), "*.tex")
     hyperlink_labels: set[str] = set()
     hypertarget_labels: set[str] = set()
     for latex_source in latex_files:
@@ -106,14 +105,13 @@ def check_undefined_references_and_multiply_defined_labels():
     return num_errors
 
 
-def check_tododefines():
+def check_tododefines(latex_files: list[str]):
     r"""
     Checks that there are no more than the expected number of \tododefine
     instances.
     """
     MAX_TODODEFINE_INSTANCES = 7
     num_todo_define = 0
-    latex_files = fnmatch.filter(os.listdir("."), "*.tex")
     for latex_source in latex_files:
         with open(latex_source) as file:
             file_str = file.read()
@@ -131,10 +129,9 @@ def check_tododefines():
         return 0
 
 
-def check_repeated_words():
+def check_repeated_words(latex_files: list[str]):
     last_word = ""
     num_errors = 0
-    latex_files = fnmatch.filter(os.listdir("."), "*.tex")
     for latex_source in latex_files:
         with open(latex_source) as file:
             line_number = 0
@@ -157,6 +154,36 @@ def check_repeated_words():
                     last_word = current_word
     return num_errors
 
+def detect_incorrect_latex_macros_spacing(latex_files) -> int:
+    r"""
+    Detects erroneous occurrences of LaTeX macros succeeded by a space
+    character.
+    """
+    num_errors = 0
+    for latex_source in latex_files:
+        with open(latex_source) as file:
+            file_str = file.read()
+            patterns_to_remove = [
+                # Patterns for known math environments:
+                r'\$.*?\$',                                     # $...$
+                r'\\\[.*?\\\]',                                 # \[...\]
+                r'\\begin\{mathpar\}.*?\\end\{mathpar\}',       # \begin{mathpar}...\end{mathpar}
+                r'\\begin\{equation\}.*?\\end\{equation\}',     # \begin{equation}...\end{equation}
+                r'\\begin\{flalign\*\}.*?\\end\{flalign\*\}',   # \begin{flalign*}...\end{flalign*}
+                # Macros intended to be preceded by a space character in text mode:
+                r'\\item',                                      # \item occurrences
+                r'\\noindent',                                  # \noindent occurrences
+                r'\\tt',                                        # \tt occurrences
+            ]
+            for pattern in patterns_to_remove:
+                file_str = re.sub(pattern, '', file_str, flags=re.DOTALL)
+
+            macro_followed_by_space = r'\\[a-zA-Z]+(?= )'
+            matches = re.findall(macro_followed_by_space, file_str)
+            for match in matches:
+                print(f'{latex_source}: LaTeX macro followed by space "{match }"')
+                num_errors += 1
+    return num_errors
 
 def main():
     args = cli_parser.parse_args()
@@ -164,10 +191,11 @@ def main():
         apply_all_macros()
     print("Linting files...")
     num_errors = 0
-    num_errors += check_hyperlinks_and_hypertargets()
+    num_errors += check_hyperlinks_and_hypertargets(get_latex_sources(False))
     num_errors += check_undefined_references_and_multiply_defined_labels()
-    num_errors += check_tododefines()
-    num_errors += check_repeated_words()
+    num_errors += check_tododefines(get_latex_sources(True))
+    num_errors += check_repeated_words(get_latex_sources(False))
+    num_errors += detect_incorrect_latex_macros_spacing(get_latex_sources(True))
 
     if num_errors > 0:
         print(f"There were {num_errors} errors!", file=sys.stderr)

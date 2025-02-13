@@ -29,22 +29,6 @@ ASL Typing error: Illegal application of operator + on types integer {5}
   and string.
 \end{Verbatim}
 % CONSOLE_END
-%
-\secref{ExampleInterpreter} shows how an interpreter detects \builderrorsterm{}
-and \typingerrorsterm{}.
-%
-\listingref{typing-error-reporting} shows a specification containing a typing error,
-followed by an example of a report from \aslref{} in a \linuxbashshell.
-
-\ASLListing{A specification resulting in a typing error}{typing-error-reporting}{\definitiontests/TypingErrorReporting.asl}
-% CONSOLE_BEGIN CONSOLE_STDERR aslref \definitiontests/TypingErrorReporting.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-File ../tests/ASLDefinition.t/TypingErrorReporting.asl, line 3,
-  characters 11 to 22:
-ASL Typing error: Illegal application of operator + on types integer {5}
-  and string.
-\end{Verbatim}
-% CONSOLE_END
 
 \RequirementDef{DynamicErrorBehavior} The behaviour of an implementation when a \dynamicerrorterm{}
 occurs is implementation defined, including, but not limited to,

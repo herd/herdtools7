@@ -681,11 +681,11 @@ One of the following applies:
 
   \item All of the following apply (\textsc{tuple}):
   \begin{itemize}
-    \item $\lhs$ is a tuple of types \vlhstys;
-    \item $\rhs$ is a tuple of types \vrhstys;
-    \item checking that the lengths of \vlhstys and \vrhstys are equal yields $\True$\ProseOrTypeError;
-    \item define \vlhstysp by applying $\inheritintegerconstraints$ to each element of \\
-          \vlhstys\ and \vrhstys\ProseOrTypeError;
+    \item $\lhs$ is a tuple of types $\vlhstys$;
+    \item $\rhs$ is a tuple of types $\vrhstys$;
+    \item checking that the lengths of $\vlhstys$ and $\vrhstys$ are equal yields $\True$\ProseOrTypeError;
+    \item define $\vlhstysp$ by applying $\inheritintegerconstraints$ to each element of \\
+         $ \vlhstys$ and $\vrhstys$\ProseOrTypeError;
     \item \Proseeqdef{$\lhsp$}{$\TTuple(\vlhstysp)$}.
   \end{itemize}
 
@@ -1333,14 +1333,6 @@ selected case 2
 % CONSOLE_END
 \listingref{case-discriminant} shows an example of a \casestatementterm{}
 and the output to a console when it is evaluated.
-
-\ASLListing{A side-effecting case discriminant}{case-discriminant}{\definitiontests/CaseStatement.discriminant.asl}
-% CONSOLE_BEGIN aslref \definitiontests/CaseStatement.discriminant.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-num_tests: 0
-selected case 2
-\end{Verbatim}
-% CONSOLE_END
 
 \hypertarget{def-casediscriminantterm}{}
 \hypertarget{def-casealternativeterm}{}
@@ -3660,7 +3652,7 @@ All of the following apply:
 \subsection{Semantics\label{sec:PragmaSemantics}}
 
 \ProseParagraph
-Pragmas are structures present in the \untypedast \ which are designed to be used
+Pragmas are structures present in the \untypedast{} that are designed to be used
 by third-party tools.
 
 To avoid conflicts between different ASL parsers, it is recommended that the pragma's identifier $\Tidentifier(\id)$ be prefixed by the name of the ASL tool that supports that pragma
