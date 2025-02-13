@@ -1,4 +1,5 @@
 ARMv8DOB5-PPC Forbidden
+ARMv8DOB5-PPC-DATA Allowed
 CoRR+poonceonce+Once Forbidden
 CoRW+poonceonce+Once Forbidden
 CoWR+poonceonce Forbidden

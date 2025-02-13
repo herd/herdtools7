@@ -1,0 +1,13 @@
+Test T08 Allowed
+States 4
+1:$2=0; [x]=1;
+1:$2=0; [x]=2;
+1:$2=1; [x]=1;
+1:$2=1; [x]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([x]=2 /\ 1:$2=1)
+Observation T08 Sometimes 1 3
+Hash=82e19376ff2c5ad57e988f961c59c14d
+
