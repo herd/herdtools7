@@ -62,7 +62,12 @@ let rec dtrm =
   | dtrm; dtrm
 
 (** Data, Address and Control dependencies *)
-let ADDR = Rreg \ DATA
+
+let ADDR = NDATA
+let DATA =
+  let to_memory_write = [Rreg]; (iico_data|iico_ctrl)+; [M&W] in
+  domain(to_memory_write)\ADDR
+
 let basic-dep =
    [Exp & R | Rreg]; dtrm?
 let data = [Exp & R]; (basic-dep; [DATA]; iico_data+; [Exp & W]) & ~same-instance
