@@ -612,6 +612,10 @@ for readers of ASL specifications and as a consequence it is recommended that
 an if-statement is used to achieve the same effect.
 
 \SemanticsRuleDef{BinopOr}
+\subsubsection{Example}
+In \listingref{semantics-binopor}, the expression \texttt{(0 == 1) || (1 == 1)} evaluates to the value \True.
+\ASLListing{Evaluating a disjunction expression}{semantics-binopor}{\semanticstests/SemanticsRule.EBinopOrTrue.asl}
+
 \ProseParagraph
 All of the following apply:
 \begin{itemize}
@@ -620,10 +624,7 @@ All of the following apply:
       \texttt{if e1 then true else e2} (see \SemanticsRuleRef{ECond}).
 \end{itemize}
 
-\subsubsection{Example}
-In \listingref{semantics-binopor}, the expression \texttt{(0 == 1) || (1 == 1)} evaluates to the value \True.
-\ASLListing{Evaluating a disjunction expression}{semantics-binopor}{\semanticstests/SemanticsRule.EBinopOrTrue.asl}
-
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \truep \eqdef \ELiteral(\lbool(\True))\\
@@ -672,6 +673,11 @@ for readers of ASL specifications and as a consequence it is recommended that
 an if-statement is used to achieve the same effect.
 
 \SemanticsRuleDef{BinopImpl}
+\subsubsection{Example}
+In \listingref{semantics-binopimpl},
+the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \True, according to the definition of implication.
+\ASLListing{Evaluating an implication expression}{semantics-binopimpl}{\semanticstests/SemanticsRule.EBinopImplExFalso.asl}
+
 \ProseParagraph
 All of the following apply:
 \begin{itemize}
@@ -679,17 +685,12 @@ All of the following apply:
   \item $\ve$ is evaluated as \texttt{if e1 then e2 else true}.
 \end{itemize}
 
-\subsubsection{Example}
-In \listingref{semantics-binopimpl},
-the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \True, according to the definition of implication.
-\ASLListing{Evaluating an implication expression}{semantics-binopimpl}{\semanticstests/SemanticsRule.EBinopImplExFalso.asl}
-
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \truep \eqdef \ELiteral(\lbool(\True))\\
   \evalexpr{\env, \ECond(\veone, \vetwo, \truep)} \evalarrow C
-}
-{
+}{
 \evalexpr{\env, \EBinop(\IMPL, \veone, \vetwo)} \evalarrow C
 }
 \end{mathpar}
@@ -1169,6 +1170,7 @@ subprogram \texttt{Return42()} is implemented to return the value \texttt{42}.
 \ASLListing{Evaluating a call expression}{semantics-ecall}{\semanticstests/SemanticsRule.ECall.asl}
 
 \SemanticsRuleDef{ECall}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\ve$ denotes a subprogram call, $\ECall(\vcall)$;
@@ -1642,6 +1644,8 @@ All of the following apply:
   \item the field $\fieldname$ is not found in $\bitfields$
   \item the result is a type error indicating the missing field.
 \end{itemize}
+
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
@@ -1666,6 +1670,7 @@ All of the following apply:
   \item $\vethree$ denotes the slicing of the expression \vetwo\ by the slices $\slices$, that is, \\ $\ESlice(\vetwo, \slices)$;
   \item annotating $\vethree$ in $\tenv$ yields $(\vt, \newe, \vses)$\ProseOrTypeError.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{

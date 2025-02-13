@@ -53,6 +53,10 @@ ASL Typing Tests / annotating types:
 
   $ aslref TypingRule.AnnotateConstraint.asl
   $ aslref TypingRule.AnnotateConstraint.bad.asl
+  File TypingRule.AnnotateConstraint.bad.asl, line 4, characters 17 to 18:
+  ASL Typing error: a pure expression was expected, found x, which produces the
+    following side-effects: [ReadsLocal "x"].
+  [1]
 
   $ aslref TypingRule.TBits.asl
   $ aslref TypingRule.TTuple.asl

@@ -310,7 +310,7 @@ All of the following apply:
   \item a check the AST labels of $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$ are all the same and are either
         $\TInt$ or $\TReal$ yields $\True$. Otherwise, the result is a type error, which short-circuits the entire rule.
         The type error indicates that the types of
-        $\veone$, $\vetwo$ and the type $\vt$ must be either of integer type or of real type.
+        $\veone$, $\vetwo$ and the type $\vt$ must be either of integer type or of \realtypeterm{}.
   \item $\newp$ is a range pattern with bounds $\veonep$ and $\vetwop$, that is, $\PatternRange(\veonep, \vetwop)$.
 \end{itemize}
 \FormallyParagraph
@@ -406,7 +406,7 @@ that is, $\PatternLeq(\ve)$;
 \item \Prosechecksymbolicallyevaluable{$\vses$};
 \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
 \item obtaining the \underlyingtype\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
-\item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both real types;
+\item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both the \realtypeterm{};
 \item if $\vb$ is $\False$ a type error is returned (indicating that the types of $\vt$ and $\vte$
       are inappropriate for the $\LEQ$ operator),
 which short-circuits the entire rule;
@@ -491,7 +491,7 @@ All of the following apply:
 \item \Prosechecksymbolicallyevaluable{$\vses$};
 \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
 \item obtaining the \underlyingtype\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
-\item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both real types;
+\item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both the \realtypeterm{};
 \item if $\vb$ is $\False$ a type error is returned (indicating that the types of $\vt$ and $\vte$
       are inappropriate for the $\GEQ$ operator),
       which short-circuits the entire rule;

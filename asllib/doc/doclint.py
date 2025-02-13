@@ -14,6 +14,7 @@ cli_parser.add_argument(
     action="store_true",
 )
 
+
 def extract_labels_from_line(line: str, left_delim: str, labels: set[str]):
     r"""
     Adds all labels found in `line` into `labels`. A label starts with the
@@ -129,80 +130,139 @@ def check_tododefines(latex_files: list[str]):
         return 0
 
 
-def check_repeated_words(latex_files: list[str]):
-    last_word = ""
-    num_errors = 0
-    for latex_source in latex_files:
-        with open(latex_source) as file:
-            line_number = 0
-            for line in file.readlines():
-                line_number += 1
-                line = line.strip()
-                parts = line.split()
-                if len(parts) < 2:
-                    continue
-                for current_word in parts:
-                    if (
-                        current_word.isalpha()
-                        and last_word.lower() == current_word.lower()
-                    ):
-                        num_errors += 1
-                        print(
-                            f"./{latex_source} line {line_number}: \
-                              word repetition ({last_word} {current_word}) in '{line}'"
-                        )
-                    last_word = current_word
-    return num_errors
-
-def detect_incorrect_latex_macros_spacing(latex_files) -> int:
+def check_repeated_words(file, latex_source: str) -> int:
     r"""
-    Detects erroneous occurrences of LaTeX macros rendered without
-    separation from the next word.
+    Checks if 'file' contains occurrences of the same word
+    repeated twice, independent of case. For example, "the the".
+    Errors are reported for the file name 'filename' and the total
+    number of found errors is returned.
     """
     num_errors = 0
-    for latex_source in latex_files:
-        with open(latex_source) as file:
-            file_str = file.read()
-            patterns_to_remove = [
-                # Patterns for known math environments:
-                r'\$.*?\$',                                     # $...$
-                r'\\\[.*?\\\]',                                 # \[...\]
-                r'\\begin\{mathpar\}.*?\\end\{mathpar\}',       # \begin{mathpar}...\end{mathpar}
-                r'\\begin\{equation\}.*?\\end\{equation\}',     # \begin{equation}...\end{equation}
-                r'\\begin\{flalign\*\}.*?\\end\{flalign\*\}',   # \begin{flalign*}...\end{flalign*}
-                # Macros intended to be preceded by a space character in text mode:
-                r'\\item',                                      # \item occurrences
-                r'\\noindent',                                  # \noindent occurrences
-                r'\\tt',                                        # \tt occurrences
-            ]
-            for pattern in patterns_to_remove:
-                file_str = re.sub(pattern, '', file_str, flags=re.DOTALL)
-
-            # Look for things like \macro word
-            macro_followed_by_space = r'\\[a-zA-Z]+(?= )'
-            matches = re.findall(macro_followed_by_space, file_str)
-            for match in matches:
-                print(f'{latex_source}: LaTeX macro followed by space "{match }"')
+    line_number = 0
+    last_word = ""
+    for line in file.readlines():
+        line_number += 1
+        line = line.strip()
+        parts = line.split()
+        if len(parts) < 2:
+            continue
+        for current_word in parts:
+            if current_word.isalpha() and last_word.lower() == current_word.lower():
                 num_errors += 1
-            # Look for things like \macro{}word
-            macro_followed_by_space = r'\\[a-zA-Z]+{}[a-zA-Z]'
-            matches = re.findall(macro_followed_by_space, file_str)
-            for match in matches:
-                print(f'{latex_source}: LaTeX macro running into next word "{match}"')
-                num_errors += 1
+                print(
+                    f"./{latex_source} line {line_number}: \
+                        word repetition ({last_word} {current_word}) in '{line}'"
+                )
+            last_word = current_word
     return num_errors
+
+
+def detect_incorrect_latex_macros_spacing(file, filename: str) -> int:
+    r"""
+    Detects erroneous occurrences of LaTeX macros rendered without
+    separation from the next word in 'file'.
+    Errors are reported for the file name 'filename' and the total
+    number of found errors is returned.
+    """
+    num_errors = 0
+    file_str = file.read()
+    patterns_to_remove = [
+        # Patterns for known math environments:
+        r"\$.*?\$",  # $...$
+        r"\\\[.*?\\\]",  # \[...\]
+        r"\\begin\{mathpar\}.*?\\end\{mathpar\}",  # \begin{mathpar}...\end{mathpar}
+        r"\\begin\{equation\}.*?\\end\{equation\}",  # \begin{equation}...\end{equation}
+        r"\\begin\{flalign\*\}.*?\\end\{flalign\*\}",  # \begin{flalign*}...\end{flalign*}
+        # Macros intended to be preceded by a space character in text mode:
+        r"\\item",  # \item occurrences
+        r"\\noindent",  # \noindent occurrences
+        r"\\tt",  # \tt occurrences
+    ]
+    for pattern in patterns_to_remove:
+        file_str = re.sub(pattern, "", file_str, flags=re.DOTALL)
+
+    # Look for things like \macro word
+    macro_followed_by_space = r"\\[a-zA-Z]+(?= )"
+    matches = re.findall(macro_followed_by_space, file_str)
+    for match in matches:
+        print(f'{filename}: LaTeX macro followed by space "{match }"')
+        num_errors += 1
+    # Look for things like \macro{}word
+    macro_followed_by_space = r"\\[a-zA-Z]+{}[a-zA-Z]"
+    matches = re.findall(macro_followed_by_space, file_str)
+    for match in matches:
+        print(f'{filename}: LaTeX macro running into next word "{match}"')
+        num_errors += 1
+    return num_errors
+
+
+def check_consistent_prose_formally_paragraphs(file, filename) -> int:
+    r"""
+    Checks that in 'file' the list of \ProseParagraph and \FormallyParagraph
+    are such that each \ProseParagraph is followed by a \FormallyParagraph
+    and each \FormallyParagraph is preceded by a \ProseParagraph.
+    Errors are reported for 'filename' and the returned value is either
+    0 for no errors and 1, otherwise.
+    """
+    num_errors = 0
+    line_number = 0
+    num_prose_paragraphs = 0
+    num_formally_paragraphs = 0
+    for line in file.readlines():
+        line_number += 1
+        if "\\ProseParagraph" in line:
+            num_prose_paragraphs += 1
+        if "\\FormallyParagraph" in line:
+            num_formally_paragraphs += 1
+        if num_formally_paragraphs > num_prose_paragraphs:
+            print(
+                f"{filename} line {line_number} (or before): encountered Formally paragraph missing a Prose paragraph"
+            )
+            num_errors += 1
+        if num_prose_paragraphs > num_formally_paragraphs + 1:
+            print(
+                f"{filename} line {line_number} (or before): encountered Prose paragraph missing Formally paragraph"
+            )
+            num_formally_paragraphs += 1
+            num_errors += 1
+        if num_errors > 0:
+            break
+    return num_errors
+
+
+def check_per_file(latex_files: list[str], checks):
+    r"""
+    Applies the list of functions in 'checks' to each file in 'latex files',
+    accumulating the number of errors and returning the total number of errors
+    across all files.
+    """
+    num_errors = 0
+    for filename in latex_files:
+        with open(filename) as file:
+            for check in checks:
+                num_errors += check(file, filename)
+    return num_errors
+
 
 def main():
     args = cli_parser.parse_args()
     if args.transform:
         apply_all_macros()
     print("Linting files...")
+    all_latex_sources = get_latex_sources(False)
+    content_latex_sources = get_latex_sources(True)
     num_errors = 0
-    num_errors += check_hyperlinks_and_hypertargets(get_latex_sources(False))
+    num_errors += check_hyperlinks_and_hypertargets(all_latex_sources)
     num_errors += check_undefined_references_and_multiply_defined_labels()
-    num_errors += check_tododefines(get_latex_sources(True))
-    num_errors += check_repeated_words(get_latex_sources(False))
-    num_errors += detect_incorrect_latex_macros_spacing(get_latex_sources(True))
+    num_errors += check_tododefines(content_latex_sources)
+    num_errors += check_per_file(
+        all_latex_sources,
+        [
+            check_repeated_words,
+            detect_incorrect_latex_macros_spacing,
+            check_consistent_prose_formally_paragraphs,
+        ],
+    )
 
     if num_errors > 0:
         print(f"There were {num_errors} errors!", file=sys.stderr)

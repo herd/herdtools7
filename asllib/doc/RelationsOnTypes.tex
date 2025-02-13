@@ -1755,7 +1755,7 @@ error if found on the right-hand-side of a binary operation expression with the 
 in any environment consisting of the static environment $\tenv$.
 The result is the filtered list of constraints $\newcs$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{greater\_or\_equal}):
@@ -2447,6 +2447,7 @@ All of the following apply:
   \item the result --- $\vb$ --- is the conjunction of $\vb_\vbf$ for all bitfields $\vbf$ in $\bfsone$.
 \end{itemize}
 
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \vbf \in \bfsone: \membfs(\bfstwo, \vbf) \typearrow \vb_\vbf \OrTypeError\\\\
@@ -2544,6 +2545,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{
   \bitfieldgetname(\vbfone) \typearrow \name\\
@@ -2684,6 +2686,7 @@ The function
 \]
 returns the \wellconstrainedversion\ of a type $\vt$ --- $\vtp$, which is defined as follows.
 
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{t\_int\_parameterized}):

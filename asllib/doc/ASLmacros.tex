@@ -151,21 +151,6 @@
 
 \fvset{fontsize=\small}
 
-\newcommand\tododefine[1]{\hyperlink{tododefine}{\color{red}{\texttt{#1}}}}
-\newcommand\lrmcomment[1]{}
-\newcommand\textfunc[1]{\textit{#1}}
-\newcommand\ProseParagraph[0]{\subsubsection{Prose}}
-\newcommand\FormallyParagraph[0]{\subsubsection{Formally}}
-\newcommand\CaseDef[1]{\textsc{#1}}
-\newcommand\CaseName[1]{case \textsc{#1}}
-\newcommand\AllApply[0]{All of the following apply:}
-\newcommand\AllApplyCase[1]{All of the following apply (\CaseDef{#1}):}
-\newcommand\OneApplies[0]{One of the following applies:}
-\newcommand\Proseeqdef[2]{define #1 as #2}
-\newcommand\ProseEqdef[2]{Define #1 as #2}
-\newcommand\ExampleDef[1]{\subsubsection{Example: #1\label{Example:#1}}}
-\newcommand\ExampleRef[1]{Example~\ref{Example:#1}}
-
 \usepackage{enumitem}
 \renewlist{itemize}{itemize}{20}
 \setlist[itemize,1]{label=\textbullet}
@@ -188,6 +173,21 @@
 \setlist[itemize,18]{label=\textasteriskcentered}
 \setlist[itemize,19]{label=\textendash}
 \setlist[itemize,20]{label=\textendash}
+
+\newcommand\tododefine[1]{\hyperlink{tododefine}{\color{red}{\texttt{#1}}}}
+\newcommand\lrmcomment[1]{}
+\newcommand\textfunc[1]{\textit{#1}}
+\newcommand\ProseParagraph[0]{\subsubsection{Prose}}
+\newcommand\FormallyParagraph[0]{\subsubsection{Formally}}
+\newcommand\CaseDef[1]{\textsc{#1}}
+\newcommand\CaseName[1]{case \textsc{#1}}
+\newcommand\AllApply[0]{All of the following apply:}
+\newcommand\AllApplyCase[1]{All of the following apply (\CaseDef{#1}):}
+\newcommand\OneApplies[0]{One of the following applies:}
+\newcommand\Proseeqdef[2]{define #1 as #2}
+\newcommand\ProseEqdef[2]{Define #1 as #2}
+\newcommand\ExampleDef[1]{\subsubsection{Example: #1\label{Example:#1}}}
+\newcommand\ExampleRef[1]{Example~\ref{Example:#1}}
 
 \ifcode
 % First argument is \<rule>Begin, second is \<rule>End, third is the file name.
@@ -258,6 +258,8 @@
 \newcommand\wrappedline[0]{{\hyperlink{def-wrapline}{\color{red}\hookrightarrow}}}
 \newcommand\commonprefixline[0]{{\hyperlink{def-commonprefixline}{\color{cyan}{\text{\tiny******** common prefix ********}} }}}
 \newcommand\commonsuffixline[0]{{\hyperlink{def-commonsuffixline}{\color{cyan}{\text{\tiny******** common suffix ********}} }}}
+\newcommand\stdlibfunc[1]{standard library function \texttt{#1}}
+\newcommand\stdlibfuncname[1]{\texttt{#1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%$%%%%%
 %% Mathematical notations and Inference Rule macros

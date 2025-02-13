@@ -108,6 +108,10 @@ The function
 \]
 constructs a \timeframeterm\ $\vt$ from a local declaration keyword $\ldk$.
 
+\ProseParagraph
+\ProseEqdef{$\vt$}{$\timeframeconstant$ if $\ldk$ is $\LDKConstant$, and
+    $\timeframeexecution$ otherwise}.
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
@@ -126,9 +130,16 @@ constructs a \timeframeterm\ $\vt$ from a local declaration keyword $\ldk$.
 \hypertarget{def-timeframeofgdk}{}
 The function
 \[
-    \timeframeofgdk(\overname{\globaldeclkeyword}{\gdk}) \aslto \TTimeFrame
+    \timeframeofgdk(\overname{\globaldeclkeyword}{\gdk}) \aslto \overname{\TTimeFrame}{\vt}
 \]
 constructs a \timeframeterm\ $\vt$ from a global declaration keyword $\gdk$.
+
+\ProseParagraph
+\ProseEqdef{$\vt$}{$\timeframeconstant$ if $\gdk$ is $\GDKConstant$,
+    $\timeframeconfig$ if $\gdk$ is $\GDKConfig$,
+    $\timeframeexecution$ if $\gdk$ is $\GDKLet$, and
+    $\timeframeexecution$ if $\gdk$ is $\GDKVar$.
+}
 
 \FormallyParagraph
 \begin{mathpar}
@@ -211,19 +222,28 @@ The function
 \]
 retrieves the \timeframeterm\ $\vt$ from a \sideeffectdescriptorterm\ $\vs$.
 
+% \ProseParagraph
+% \OneApplies
+% \begin{itemize}
+%     \item \AllApplyCase{local}
+%     \begin{itemize}
+%         \item
+%     \end{itemize}
+% \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
-\inferrule{}{
+\inferrule[local]{}{
     \timeframe(\overname{\ReadLocal(\Ignore, \vt, \Ignore)}{\vs}) \typearrow \vt
 }
 \and
-\inferrule{}{
+\inferrule[global]{}{
     \timeframe(\overname{\ReadGlobal(\Ignore, \vt, \Ignore)}{\vs}) \typearrow \vt
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule{
+\inferrule[other]{
     {
     \configdomain{\vs} \in \left\{
         \begin{array}{c}

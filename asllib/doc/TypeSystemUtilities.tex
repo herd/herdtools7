@@ -42,6 +42,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{ \pairstomap(\emptylist) \typearrow \emptyfunc }
 \and
@@ -49,11 +50,12 @@ One of the following applies:
   i,j \in 1..k\\
   i \neq j\\
   \id_i = \id_j
-}
-{
+}{
   \pairstomap([i=1..k: (\id_i,t_i)]) \typearrow \TypeErrorVal{\IdentifierAlreadyDeclared}
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[okay]{
   \forall i,j \in 1..k. \id_i \neq \id_j\\
   {
@@ -62,8 +64,7 @@ One of the following applies:
     \bot & \text{ otherwise}
   \end{cases}
   }
-}
-{
+}{
   \pairstomap([i=1..k: (\id_i,t_i)]) \typearrow f
 }
 \end{mathpar}
@@ -93,20 +94,21 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
+\FormallyParagraph
 \begin{mathpar}
-  \inferrule[okay]{
-    \cardinality{\{\id_{1..k}\}} = k
-  }
-  {
-    \checknoduplicates(\id_{1..k}) \typearrow \True
-  }
-\and
+\inferrule[okay]{
+  \cardinality{\{\id_{1..k}\}} = k
+}{
+  \checknoduplicates(\id_{1..k}) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[error]{
   i,j \in 1..k\\
   i \neq j\\
   \id_i = \id_j
-}
-{
+}{
   \checknoduplicates(\id_{1..k}) \typearrow \TypeErrorVal{\IdentifierAlreadyDeclared}
 }
 \end{mathpar}
@@ -142,6 +144,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
+\FormallyParagraph
 \begin{mathpar}
   \inferrule[none]{}
   {
@@ -248,6 +251,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[match]{
   \bitfieldgetname(\vbf) \typearrow \name

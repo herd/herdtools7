@@ -8,7 +8,7 @@ Next, we introduce each type available in ASL and define
 how it is represented in the syntax and AST, and how it is typechecked:
 \begin{itemize}
   \item Integer types (see \secref{IntegerTypes})
-  \item The real type (see \secref{RealType})
+  \item The \realtypeterm{} (see \secref{RealType})
   \item The string type (see \secref{StringType})
   \item The Boolean type (see \secref{BooleanType})
   \item Bitvector types (see \secref{BitvectorTypes})
@@ -465,6 +465,16 @@ and there is no bound on their precision.
 %
 There is no mechanism in the language to generate an irrational value of \realtypeterm.
 
+Conversions from an \integertypeterm{} value to a \realtypeterm{} value are performed
+using the \stdlibfunc{Real}.
+%
+Conversions from a \realtypeterm{} value an \integertypeterm{} value to are performed
+using the \stdlibfunc{RoundDown} or \stdlibfunc{RoundUp}.
+
+\subsubsection{Example}
+In \listingref{typing-treal}, all the uses of the \realtypeterm{} are well-typed.
+\ASLListing{Well-typed real types}{typing-treal}{\typingtests/TypingRule.TReal.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nty \derives\ & \Treal &
@@ -485,15 +495,11 @@ There is no mechanism in the language to generate an irrational value of \realty
 
 \subsection{Typing the Real Type\label{sec:TypingRealType}}
 \TypingRuleDef{TReal}
-\subsubsection{Example}
-In \listingref{typing-treal}, all the uses of \texttt{real} are well-typed.
-\ASLListing{Well-typed real types}{typing-treal}{\typingtests/TypingRule.TReal.asl}
-
 \ProseParagraph
 All of the following apply:
 \begin{itemize}
-  \item $\tty$ is the real type \TReal.
-  \item $\newty$ is the real type \TReal;
+  \item $\tty$ is the \realtypeterm{}.
+  \item $\newty$ is the \realtypeterm{};
   \item define $\vses$ as the empty set.
 \end{itemize}
 
