@@ -11,7 +11,6 @@ else
 	J=$(shell nproc)
 endif
 
-
 REGRESSION_TEST_MODE = test
 # REGRESSION_TEST_MODE = promote
 # REGRESSION_TEST_MODE = show
@@ -381,6 +380,23 @@ cata-aarch64-test:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64 tests: OK"
 
+test-all:: cata-aarch64-test-asl
+cata-test-asl:: cata-aarch64-test-asl
+cata-aarch64-test-asl: asl-pseudocode
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-variant asl+exp \
+		-variant strict \
+		-herd-timeout $(TIMEOUT) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64/tests/kinds.txt \
+		-shelf-path catalogue/aarch64/shelf.py \
+		-conf-path catalogue/aarch64/cfgs/asl.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 catalogue aarch64 tests (ASL): OK"
+
 cata-test:: aarch64-test-mixed
 aarch64-test-mixed:
 	@ echo
@@ -418,6 +434,22 @@ pick-test:
 		-shelf-path catalogue/aarch64-pick/shelf.py \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-pick tests: OK"
+
+test-all:: pick-test-asl
+cata-test-asl:: pick-test-asl
+pick-test-asl:  asl-pseudocode
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-variant asl+exp \
+		-variant strict \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-pick/tests/desired-kinds.txt \
+		-shelf-path catalogue/aarch64-pick/shelf.py \
+		-conf-path catalogue/aarch64-pick/cfgs/asl.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 catalogue aarch64-pick tests (ASL): OK"
 
 cata-test:: faults-test
 faults-test:
