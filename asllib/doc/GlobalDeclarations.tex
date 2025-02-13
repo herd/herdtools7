@@ -1,4 +1,5 @@
 \chapter{Global Declarations\label{chap:GlobalDeclarations}}
+\hypertarget{def-globaldeclarationterm}{}
 Global declarations are grammatically derived from $\Ndecl$ and represented as ASTs by $\decl$.
 
 There are four kinds of global declarations:
@@ -13,7 +14,7 @@ The typing of global declarations is defined in \secref{GlobalDeclarationsTyping
 As the only kind of global declarations that are associated with semantics are global storage declarations,
 their semantics is given in \secref{GlobalStorageDeclarationsSemantics}.
 
-Global pragmas are statically checked by the type checker, but do not produce type AST nodes,
+Global pragmas are statically checked by the typechecker, but do not produce type AST nodes,
 and thus are not associated with a dynamic semantics.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -99,7 +100,7 @@ yielding an annotated global declaration $\newd$ and modified global static envi
 \ProseOtherwiseTypeError
 
 \TypingRuleDef{TypecheckDecl}
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{func}):
@@ -131,7 +132,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[func]{
   \vf \eqname \{\text{body}: \SBASL, \ldots\}\\
@@ -180,7 +181,7 @@ and inferred \sideeffectsetterm\ $\vses$.
 
 Note that the return type in $\vf$ has already been annotated by $\annotatefuncsig$.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item annotating $\vf.\funcbody$ in $\tenv$ as per \TypingRuleRef{Block} yields $(\newbody, \vsesbody)$\ProseOrTypeError;
@@ -202,7 +203,7 @@ All of the following apply:
         \ReadLocalTerm\ or a \WriteLocalTerm\ removed}.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[procedure]{
   \annotateblock{\tenv, \vf.\funcbody} \typearrow (\newbody, \vsesbody) \OrTypeError\\\\
@@ -246,7 +247,7 @@ The helper function
 checks whether all control-flow paths defined by the statement $\vs$ terminate by either
 a statement returning a value, a \texttt{throw} statement, or the \texttt{Unreachable()} statement.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item applying $\controlflowfromstmt$ to $\vs$ yields a \controlflowsymbolterm\ $\vctrlflow$;
@@ -254,7 +255,7 @@ All of the following apply:
   \item the result is $\True$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \controlflowfromstmt(\vs) \typearrow \vctrlflow\\
@@ -297,7 +298,7 @@ and determines the \controlflowsymbolterm\ $\vctrlflow$ to be one of the followi
       a \texttt{return} statement with an expression or a \texttt{throw} statement.
 \end{description}
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{falls\_through}):
@@ -362,7 +363,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[falls\_through]{
   \astlabel(\vs) \in \{\SPass, \SDecl, \SAssign, \SAssert, \SCall, \SPrint, \SPragma\}
@@ -478,10 +479,10 @@ combines two \controlflowsymbolterm{s} considering them as part of a control flo
 path prefix yields $\vtone$ and the analysis of the path suffix yields $\vttwo$,
 into a single \controlflowsymbolterm\ $\vctrlflow$.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\vctrlflow$ as $\vttwo$ if $\vtone$ is $\maynotinterrupt$ and $\vtone$, otherwise.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \vctrlflow \eqdef \choice{\vtone = \maynotinterrupt}{\vttwo}{\vtone}

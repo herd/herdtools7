@@ -36,7 +36,7 @@ Currently ASLRef only supports \texttt{main} as an entry point.
 \section{Typing}
 
 \subsection{Throwing Exceptions without Braces}
-In the following example, the commented out \texttt{throw} statement should type-check,
+In the following example, the commented out \texttt{throw} statement should typecheck,
 but it currently fails.
 
 \begin{verbatim}
@@ -44,7 +44,7 @@ but it currently fails.
 
   func main() => integer
   begin
-    // throw except; // Should type-check
+    // throw except; // Should typecheck
     throw except{}; // Okay
 
     return 0;

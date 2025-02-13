@@ -4,7 +4,7 @@ In previous chapters, we defined the following components:
     \item Lexical analysis (\chapref{LexicalStructure}),
     \item Parsing (\chapref{Syntax}),
     \item AST building (\secref{BuildingAbstractSyntaxTrees}),
-    \item Type checking (\secref{TypingSpecifications}), and
+    \item Typechecking (\secref{TypingSpecifications}), and
     \item Semantic evaluation (\secref{SemanticsOfSpecifications}).
 \end{itemize}
 
@@ -15,7 +15,7 @@ We emphasize that this is only an example usage of the components listed above.
 One can think of other combinations where, for example, semantic evaluation is
 replaced with a translation to a hardware description language.
 
-\section{An Example Interpreter}
+\section{Example Interpreter\label{sec:ExampleInterpreter}}
 
 \hypertarget{def-checkandinterpret}{}
 The relation
@@ -38,7 +38,7 @@ If found valid, an AST is built and semantically evaluated, yielding an integer 
 or a dynamic error.
 
 \subsubsection{TopLevelRule.CheckAndInterpret\label{sec:TopLevelRule.CheckAndInterpret}}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
     \item \Proseaslscan{$\vstdtext$}{$\spectoken$}{$\vstdtokens$\ProseTerminateAs{\LexicalErrorConfig}};
@@ -58,7 +58,7 @@ All of the following apply:
     \item \Proseevalspec{$\vtypedast$}{$\tenv$}{the integer $\vret$ and the execution graph $\vg$\ProseOrError}.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
     \aslscan(\spectoken, \vstdtext) \scanarrow \vstdtokens \terminateas \LexicalErrorConfig\\\\
@@ -1403,7 +1403,7 @@ The helper function
 sets the $\funcbuiltin$ flag of a top-level function declaration, which is used to identify standard library functions in \TypingRuleRef{InsertStdlibParam}.
 It produces a build error when given a top-level declaration which is not a function.
 
-\subsubsection{Prose}
+\ProseParagraph
 \AllApply
 \begin{itemize}
   \item \Prosechecktrans{that $\vdecl$ is a function}{\BuildBadDeclaration};
@@ -1412,7 +1412,7 @@ It produces a build error when given a top-level declaration which is not a func
   \item define $\vdeclp$ as $\DFunc(\funcsigp)$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \checktrans{\astlabel(\vdecl) = \DFunc}{\BuildBadDeclaration} \typearrow \True \terminateas \BuildErrorConfig\\\\

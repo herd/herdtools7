@@ -381,7 +381,7 @@ We also write $L(T_{1..k})$, where $T_{1..k}$ denotes mathematical types of valu
 $\{ L(v_{1..k}) \;|\; v_1\in T_1,\ldots,v_k\in T_k \}$.
 
 \hypertarget{def-optional}{}
-\begin{definition}[Optional]
+\begin{definition}[Optional Data Type]
 \hypertarget{def-none}{}
 \hypertarget{def-some}
 The notation $\Some{\cdot}$ stands for either an empty set or a singleton set,
@@ -389,15 +389,17 @@ where $\None\triangleq\langle\rangle$ denotes an empty set
 and $\Some{v}$ denotes a set containing the single element $v$.
 %
 The notation $\Some{T}$, where $T$ denotes a mathematical type, stands for
-$\{ \langle\rangle \} \cup \{\langle v \rangle \;|\; v \in T\}$.
-
-We refer to $\langle T\rangle$ as an \emph{optional}.
+$\{ \None \} \cup \{\Some{v} \;|\; v \in T\}$.
+%
+We refer to $\Some{T}$ as the \emph{optional data type for the parameter
+type $T$}, or shortly as an \emph{\optional}.
 \end{definition}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Inference Rules}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-An \emph{inference rule} (rule, for short) is an implication between a set of logical assertions,
+\hypertarget{def-inferencerule}{}
+An \emph{\inferencerule} (rule, for short) is an implication between a set of logical assertions,
 called the \emph{premises} of the rule,
 and a \emph{conclusion} assertion.
 The conclusion holds when the \underline{conjunction} of its premises holds.
@@ -939,14 +941,11 @@ and applies it to an optional value $A?$:
 }{
   \mapopt{f}(\overname{\Some{v}}{\vvopt}) \longrightarrow{r} \Some{v'}
 }
-\end{mathpar}
-
-\begin{mathpar}
+\and
 \inferrule[None]{}{
-  \mapopt{f}(\None) \longrightarrow \None
+  \mapopt{f}(\overname{\None}{\vvopt}) \longrightarrow \None
 }
 \end{mathpar}
-
 
 \subsection{Rule Naming}
 To name a rule, we place it in a section with its name.

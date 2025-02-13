@@ -146,6 +146,8 @@
 \input{control}
 
 \newcommand\herd[0]{\texttt{herd7}}
+\newcommand\aslref[0]{\href{https://github.com/herd/herdtools7/tree/master/asllib}{aslref}}
+\newcommand\linuxbashshell[0]{Linux bash shell}
 
 \fvset{fontsize=\small}
 
@@ -224,10 +226,14 @@
 \newtheorem{example}{Example}
 \newcommand\ConventionDef[1]{\paragraph{Convention.#1:\label{sec:Convention.#1}}}
 \newcommand\RequirementDef[1]{\paragraph{Requirement.#1\label{Requirement.#1}}}
+\newcommand\RequirementDefExample[1]{\emph{Requirement.#1}}
 \newcommand\LexicalRuleDef[1]{\subsubsection{LexicalRule.#1\label{sec:LexicalRule.#1}}}
 \newcommand\ASTRuleDef[1]{\subsubsection{ASTRule.#1\label{sec:ASTRule.#1}}}
+\newcommand\ASTRuleDefExample[1]{\emph{ASTRule.#1}}
 \newcommand\TypingRuleDef[1]{\subsubsection{TypingRule.#1\label{sec:TypingRule.#1}}}
+\newcommand\TypingRuleDefExample[1]{\emph{TypingRule.#1}}
 \newcommand\SemanticsRuleDef[1]{\subsubsection{SemanticsRule.#1\label{sec:SemanticsRule.#1}}}
+\newcommand\SemanticsRuleDefExample[1]{\emph{SemanticsRule.#1}}
 \newcommand\listingref[1]{Listing~\ref{listing:#1}}
 \newcommand\taref[1]{Table.~\ref{ta:#1}}
 \newcommand\defref[1]{Definition~\ref{def:#1}}
@@ -242,7 +248,7 @@
 \newcommand\TypingRuleRef[1]{\nameref{sec:TypingRule.#1}}
 \newcommand\SemanticsRuleRef[1]{\nameref{sec:SemanticsRule.#1}}
 \newcommand\secreflink[1]{\small\nameref{sec:#1}}
-\newcommand\prosesection[0]{\subsubsection{Prose}}
+\newcommand\prosesection[0]{\ProseParagraph}
 \newcommand\ie{i.\,e.}
 \newcommand\eg{e.\,g.}
 \newcommand\wrappedline[0]{{\hyperlink{def-wrapline}{\color{red}\hookrightarrow}}}
@@ -424,7 +430,7 @@
 \newcommand\Trbrace[0]{\verbatimterminal{RBRACE}{\}}}
 \newcommand\Trbracket[0]{\verbatimterminal{RBRACKET}{]}}
 \newcommand\Trrbracket[0]{\verbatimterminal{RRBRACKET}{]]}}
-\newcommand\Trdiv[0]{\verbatimterminal{RDIV}{RDIV}}
+\newcommand\Trdiv[0]{\verbatimterminal{RDIV}{/}}
 \newcommand\Treal[0]{\verbatimterminal{REAL}{real}}
 \newcommand\Trecord[0]{\verbatimterminal{RECORD}{record}}
 \newcommand\Trepeat[0]{\verbatimterminal{REPEAT}{repeat}}
@@ -1129,6 +1135,8 @@
 \newcommand\readvaluefrom[0]{\hyperlink{def-readvaluefrom}{\textfunc{read\_value\_from}}}
 \newcommand\writeretvals[0]{\hyperlink{def-writeretvals}{\textfunc{write\_ret\_vals}}}
 \newcommand\outputtoconsole[0]{\hyperlink{def-outputtoconsole}{\textfunc{output\_to\_console}}}
+\newcommand\literaltostring[0]{\hyperlink{def-literaltostring}{\textfunc{literal\_to\_string}}}
+\newcommand\Proseoutputtoconsole[1]{\hyperlink{def-outputtoconsole}{outputs} #1 to the console, if one exists}
 \newcommand\assignbitvectorfields[0]{\hyperlink{def-assignbitvectorfields}{\textfunc{assign\_bitvector\_fields}}}
 
 \newcommand\unoprel[0]{\hyperlink{def-unoprel}{\textfunc{unop}}}
@@ -1512,20 +1520,43 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Glossary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\errorcodeterm[0]{\hyperlink{def-errorcodeterm}{error code}}
+\newcommand\errorcodesterm[0]{\hyperlink{def-errorcodeterm}{error codes}}
+\newcommand\staticerrorterm[0]{\hyperlink{def-staticerrorterm}{static error}}
+\newcommand\staticerrorsterm[0]{\hyperlink{def-staticerrorterm}{static errors}}
+\newcommand\Staticerrorsterm[0]{\hyperlink{def-staticerrorterm}{Static errors}}
+\newcommand\typingerrorterm[0]{\hyperlink{def-typingerrorterm}{typing error}}
+\newcommand\typingerrorsterm[0]{\hyperlink{def-typingerrorterm}{typing errors}}
+\newcommand\Typingerrorsterm[0]{\hyperlink{def-typingerrorterm}{Typing errors}}
+\newcommand\builderrorterm[0]{\hyperlink{def-builderrorterm}{build error}}
+\newcommand\builderrorsterm[0]{\hyperlink{def-builderrorterm}{build errors}}
+\newcommand\Builderrorsterm[0]{\hyperlink{def-builderrorterm}{Build errors}}
+\newcommand\dynamicerrorterm[0]{\hyperlink{def-dynamicerrorterm}{dynamic error}}
+\newcommand\dynamicerrorsterm[0]{\hyperlink{def-dynamicerrorterm}{dynamic errors}}
+
 \newcommand\listprefixterm[0]{\hyperlink{def-listprefix}{prefix}}
 
 \newcommand\head[0]{\hyperlink{def-head}{\texttt{head}}}
 \newcommand\tail[0]{\hyperlink{def-tail}{\texttt{tail}}}
 \newcommand\optional[0]{\hyperlink{def-optional}{optional}}
 
+\newcommand\inferencerule[0]{\hyperlink{def-inferencerule}{inference rule}}
+\newcommand\inferencerules[0]{\hyperlink{def-inferencerule}{inference rules}}
+\newcommand\specificationterm[0]{\hyperlink{def-specificationterm}{specification}}
+\newcommand\specificationsterm[0]{\hyperlink{def-specificationterm}{specifications}}
+\newcommand\globaldeclarationterm[0]{\hyperlink{def-globaldeclarationterm}{global declaration}}
+\newcommand\globaldeclarationsterm[0]{\hyperlink{def-globaldeclarationterm}{global declarations}}
+
 \newcommand\typedast[0]{\hyperlink{def-typedast}{typed AST}}
 \newcommand\untypedast[0]{\hyperlink{def-untypedast}{untyped AST}}
+
 \newcommand\anonymoustype[0]{\hyperlink{def-isanonymous}{anonymous type}}
 \newcommand\Anonymoustypes[0]{\hyperlink{def-isanonymous}{Anonymous types}}
 \newcommand\namedtype[0]{\hyperlink{def-isnamed}{named type}}
 \newcommand\namedtypes[0]{\hyperlink{def-isnamed}{named types}}
 \newcommand\subtypesterm[0]{\hyperlink{def-subtypes}{subtypes}}
 \newcommand\subtypeterm[0]{\hyperlink{def-subtypes}{subtype}}
+\newcommand\supertypeterm[0]{\hyperlink{def-supertypeterm}{supertype}}
 
 %% Type macros
 \newcommand\integertypeterm[0]{\hyperlink{integertypeterm}{integer type}}
@@ -1549,6 +1580,7 @@
 \newcommand\structuredtype[0]{\hyperlink{def-structuredtype}{structured type}}
 \newcommand\structure[0]{\hyperlink{def-structure}{structure}}
 \newcommand\underlyingtype[0]{\hyperlink{def-underlyingtype}{underlying type}}
+\newcommand\underlyingtypes[0]{\hyperlink{def-underlyingtype}{underlying types}}
 \newcommand\symbolicdomain[0]{\hyperlink{def-symbolicdomain}{symbolic domain}}
 \newcommand\typesatisfies[0]{\hyperlink{def-typesatisfies}{type-satisfies}}
 \newcommand\typesatisfy[0]{\hyperlink{def-typesatisfies}{type-satisfy}}
@@ -1811,7 +1843,7 @@
 \newcommand\controlflowstate[0]{\hyperlink{def-controlflowstate}{\textsf{ControlFlow}}}
 \newcommand\controlflowleq[0]{\hyperlink{def-controlflowleq}{<_{\textsf{CF}}}}
 
-\newcommand\Prosetypecheckast[4]{\hyperlink{def-typecheckast}{type-checking} #1 in #2 yields the typed AST #3 and static environment #4}
+\newcommand\Prosetypecheckast[4]{\hyperlink{def-typecheckast}{typechecking} #1 in #2 yields the typed AST #3 and static environment #4}
 \newcommand\typecheckast[0]{\hyperlink{def-typecheckast}{\textfunc{type\_check\_ast}}}
 \newcommand\ProseSCC[3]{\hyperlink{def-scc}{partitioning} the set of declarations #1 with the set of edges #2 yields the list of strongly-connected components #3}
 \newcommand\SCC[0]{\hyperlink{def-scc}{\textfunc{SCC}}}
@@ -1967,7 +1999,7 @@
 \newcommand\denv[0]{\textsf{denv}}
 \newcommand\aslsep[0]{\mathbf{,}}
 
-\newcommand\env[0]{\hyperlink{def-env}{\texttt{env}}}
+\newcommand\env[0]{\texttt{env}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % LRM Ident info
@@ -3095,3 +3127,4 @@
 \newcommand\typede[0]{\texttt{typed\_e}}
 \newcommand\vfieldnames[0]{\texttt{field\_names}}
 \newcommand\vexpectedconstraintlength[0]{\texttt{expected\_constraint\_length}}
+\newcommand\vconsolestream[0]{\texttt{consolestream}}

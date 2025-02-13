@@ -24,13 +24,13 @@ statement $\newstmt$ and inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 \TypingRuleDef{Block}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item annotating the statement $\vs$ in $\tenv$ yields $(\newstmt, \newtenv, \vses)$\ProseOrTypeError;
   \item the modified environment $\newtenv$ is dropped.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotatestmt(\tenv, \vs) \typearrow (\newstmt, \Ignore, \vses) \OrTypeError
@@ -64,7 +64,7 @@ evaluates a statement $\stm$ as a \emph{block}. That is, $\stm$ is evaluated in 
 which drops back to the original local environment of $\env$ when the evaluation terminates.
 
 \SemanticsRuleDef{Block}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
     \item evaluating $\stm$ in $\env$, as per \chapref{Statements},
@@ -74,7 +74,7 @@ All of the following apply:
     The effect is that of discarding the bindings for variables declared inside $\stm$;
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \env \eqname (\tenv,\denv)\\

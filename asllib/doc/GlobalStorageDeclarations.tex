@@ -194,7 +194,7 @@ annotates the global storage declaration $\gsd$ in the global static environment
 yielding a modified global static environment $\newgenv$ and annotated global storage declaration $\newgsd$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\gsd$ is a global storage declaration with keyword $\keyword$, initial value \\ $\initialvalue$,
@@ -214,7 +214,7 @@ All of the following apply:
         ($\GDinitialvalue$) set to $\initialvaluep$;
   \item define $\newgenv$ as the global component of $\tenvtwo$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \gsd \eqname \{
@@ -287,7 +287,7 @@ of an expression, a type, and a \sideeffectsetterm,
 the annotation of the type in $\tyoptp$ (in case there is a type), and the type
 that should be associated with the storage element $\declaredt$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{some\_some}):
@@ -331,7 +331,7 @@ One of the following applies:
 \end{itemize}
 The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syntax error.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[some\_some]{
   \annotatetype{\tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
@@ -406,7 +406,7 @@ The result is the updated static environment $\newtenv$.
 This helper function is applied following $\addglobalstorage(\tenv, \name, \gdk, \vt)$ where $\vt$
 is the type associated with $\name$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{constant}):
@@ -448,7 +448,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[constant]{
   \typedinitialvalue \eqname (\Ignore, \initialvaluep, \vsesinitialvalue)\\
@@ -550,7 +550,7 @@ The helper function
 attempts to update $\tenv$ by binding $\name$ to a literal value when $\ve$ can be statically
 evaluated to one. The resulting static environment is $\newtenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{okay}):
@@ -566,7 +566,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[okay]{
   \staticeval(\tenv, \ve) \typearrow \vv\\
@@ -603,14 +603,14 @@ except that the identifier $\name$, which is assumed to name a global storage el
 is bound to the global storage keyword $\keyword$ and type $\declaredt$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item checking that $\name$ is not declared in the global environment of $\tenv$ yields $\True$\ProseOrTypeError;
   \item $\newgenv$ is the global static environment of $\tenv$ with its $\globalstoragetypes$ component updated by binding $\name$ to
         $(\declaredt, \keyword)$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \checkvarnotingenv{\genv, \name} \typearrow \True \OrTypeError\\\\
@@ -640,7 +640,7 @@ The relation
 \]
 updates the input environment and execution graph by initializing the global storage declarations.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -664,7 +664,7 @@ One of the following applies:
 \end{itemize}
 \subsubsection{Example}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
   \evalglobals(\overname{\emptylist}{\vdecls}, \envm) \evalarrow \envm
@@ -685,7 +685,7 @@ One of the following applies:
 \CodeSubsection{\EvalGlobalsBegin}{\EvalGlobalsEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{DeclareGlobal}
-\subsubsection{Prose}
+\ProseParagraph
 The relation
 \hypertarget{def-declareglobal}{}
 \[
@@ -693,7 +693,7 @@ The relation
 \]
 updates the environment $\env$ by mapping $\name$ to $\vv$ in the $\storage$ map of the global dynamic environment $G^\denv$.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \env \eqname (\tenv, (G^\denv, L^\denv))\\

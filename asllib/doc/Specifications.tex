@@ -1,5 +1,5 @@
 \chapter{Specifications\label{chap:Specifications}}
-
+\hypertarget{def-specificationterm}{}
 Specifications are grammatically derived from $\Nspec$ and represented as ASTs by \\
 $\spec$.
 %
@@ -45,20 +45,20 @@ We define this function for subprogram declarations, type declarations, and glob
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 The untyped AST of an ASL specification consists of a list of global declarations.
-Type-checking the untyped AST succeeds if all declarations can be successfully annotated,
+Typechecking the untyped AST succeeds if all declarations can be successfully annotated,
 which is achieved via \TypingRuleRef{TypeCheckAST}. Otherwise, the result is a
 type error.
 
-We note that whether type-checking a specification succeeds or fails with a type
+We note that whether typechecking a specification succeeds or fails with a type
 error, does not depend on the order in which the declarations appear in the specification.
-That is, if type-checking a specification with one ordering of its declarations leads to
-a type error, then type-checking that specification with any other ordering of its
+That is, if typechecking a specification with one ordering of its declarations leads to
+a type error, then typechecking that specification with any other ordering of its
 declarations also leads to a type error, but the type errors may not be the same
 (since there may be two erroneous declarations and the type error returned
 depends on which declaration is processed first).
 
-When type-checking declarations, it is important to process them in a certain order,
-to avoid false type errors resulting from type-checking a declaration that uses an identifier
+When typechecking declarations, it is important to process them in a certain order,
+to avoid false type errors resulting from typechecking a declaration that uses an identifier
 before a declaration that defines it.
 This order relies on the notion of \defusedependencyterm, which we formally define in
 \secref{Dependencies}.
@@ -81,7 +81,7 @@ annotates a list of declarations $\decls$ in an input global static environment 
 yielding an output static environment $\newtenv$ and annotated list of declarations $\newdecls$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item splitting $\decls$ into two sublists by testing each declaration to check whether
@@ -101,7 +101,7 @@ All of the following apply:
 \end{itemize}
 \CodeSubsection{\TypeCheckASTBegin}{\TypeCheckASTEnd}{../Typing.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \pragmas \eqdef [\ \vd \;|\; \vd \in \decls\ \land \astlabel(\vd) = \DPragma\ ]\\
@@ -144,7 +144,7 @@ to contain only subprograms. This is because the only type of mutually-recursive
 allows in ASL are between subprograms. The rules below handle these cases separately (\textsc{single}
 for single declarations and \textsc{mutually\_recursive} for more than one declaration).
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -173,7 +173,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
   \annotatedeclcomps(\genv, \overname{\emptylist}{\comps}) \aslto (\overname{\genv}{\newgenv}, \overname{\emptylist}{\newdecls})
@@ -228,7 +228,7 @@ that are not setters before annotating the declarations of setters. This way, wh
 the corresponding getter should have already been annotated and added to the environment, making it
 easy to check this requirement.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item checking that each declaration in $\vd$ is a subprogram declaration yields $\True$\ProseTerminateAs{\BadDeclaration};
@@ -254,7 +254,7 @@ All of the following apply:
   \item define $\newtenv$ as the global static environment of $\tenvthree$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \vd\in\decls: \checktrans{\astlabel(\vd) = \DFunc}{\BadDeclaration} \typearrow \True\OrTypeError\\\\
@@ -302,11 +302,11 @@ The function
   \aslto
   \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-type-checks a global pragma declaration $\vd$ in the global static environment $\genv$,
+typechecks a global pragma declaration $\vd$ in the global static environment $\genv$,
 yielding $\True$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 
 All of the following apply:
 \begin{itemize}
@@ -316,7 +316,7 @@ All of the following apply:
   \item $\vargsp$ is ignored;
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 
 \begin{mathpar}
 \inferrule{
@@ -348,7 +348,7 @@ each subprogram.
 The result is a modified global static environment $\newgenv$ and list of tuples $\newenvandfs$
 consisting of local static environment, annotated $\func$ AST node, and \sideeffectdescriptorsetsterm.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -369,7 +369,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
   \declaresubprograms(\genv, \overname{\emptylist}{\envandfs}) \typearrow
@@ -398,7 +398,7 @@ The function
 \]
 adds each $\func$ element in $\vfuncs$ to the $\subprograms$ map of $G^\tenv$, yielding $\newtenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -415,7 +415,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
   \addsubprogramdecls(\tenv, \overname{\emptylist}{\vfuncs}) \typearrow \overname{\tenv}{\newtenv}
@@ -445,7 +445,7 @@ ensures that the \sideeffectdescriptorsterm\ of a given $\func$
 consists of the \sideeffectdescriptorsterm\ of all the $\func$ AST nodes of the
 recursive functions it may transitively call.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item define the set $V$ as the set that includes an AST node $\vf$ if and only if $(\vf, \Ignore)$ exists in $\vsess$.
@@ -464,7 +464,7 @@ All of the following apply:
   \item define $\vsesnew$ as any listing of the set of pairs $(\vf, \propagatedeffects(\vf))$ such $\vf$ is a member of $V$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   V \eqdef \{ (\vf, \Ignore) \in \vsess\}\\
@@ -499,7 +499,7 @@ and whose set of edges $\dependencies$ consists of pairs $(a,b)$
 where the declaration of $a$ uses an identifier defined by the declaration of $b$.
 We refer to this graph as the \emph{\dependencygraphterm} (of $\decls$).
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item define $\defs$ as the union of two sets:
@@ -510,7 +510,7 @@ All of the following apply:
   \item define $\dependencies$ as the union of applying $\decldependencies$ to each declaration in $\decls$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \defs \eqdef \{ \defdecl(\vd) \;|\; \vd \in \decls\} \cup \bigcup_{\vd\in\decls} \defenumlabels(\vd)\\
@@ -528,7 +528,7 @@ The function
 \]
 returns the set of dependent pairs of identifiers $\dependencies$ induced by the declaration $\vd$.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\dependencies$ as the union of the following two sets of pairs:
 \begin{enumerate}
   \item a pair $(\idone, \idtwo)$, where $\idone$ is the result of applying $\defdecl$ to $\vd$
@@ -537,7 +537,7 @@ Define $\dependencies$ as the union of the following two sets of pairs:
         and $\idtwo$ included in the result of applying $\usedecl$ to $\vd$.
 \end{enumerate}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   {
@@ -559,7 +559,7 @@ The function
 \]
 returns the identifier $\name$ being defined by the declaration $\vd$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{d\_func}):
@@ -601,7 +601,7 @@ The function
 takes a declaration $\vd$ and returns the set of enumeration labels it defines --- $\vlabels$ --
 if it defines any.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{decl\_enum}):
@@ -639,7 +639,7 @@ The function
 \]
 returns the set of identifiers $\ids$ which the declaration $\vd$ depends on.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{D\_TypeDecl}):
@@ -665,7 +665,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[D\_TypeDecl]{}{
   \usedecl(\overname{\DTypeDecl(\Ignore, \tty, \fields)}{\vd}) \typearrow \overname{\usety(\tty) \cup \usesubtypes(\fields)}{\ids}
@@ -717,7 +717,7 @@ The function
 \]
 returns the set of identifiers $\ids$ which the type or \optional\ type $\vt$ depends on.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{none}):
@@ -787,7 +787,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{}{
   \usety(\overname{\None}{\vt}) \typearrow \overname{\emptyset}{\ids}
@@ -864,7 +864,7 @@ The function
 returns the set of identifiers $\ids$ which the \optional\ pair consisting of
 identifier $\vx$ (the type being subtyped) and fields $\subfields$ depends on.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{none}):
@@ -881,7 +881,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{}{
   \usesubtypes(\None) \typearrow \overname{\emptyset}{\ids}
@@ -902,7 +902,7 @@ The function
 \]
 returns the set of identifiers $\ids$ which the expression or \optional\ expression $\ve$ depends on.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{none}):
@@ -1037,7 +1037,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{}{
   \useexpr(\overname{\None}{\ve}) \typearrow \overname{\emptyset}{\ids}
@@ -1166,7 +1166,7 @@ The function
 \]
 returns the set of identifiers $\ids$ which the left-hand-side expression $\vle$ depends on.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{le\_var}):
@@ -1220,7 +1220,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[le\_var]{}{
   \uselexpr(\overname{\LEVar(\vx)}{\vle}) \typearrow \overname{\vx}{\ids}
@@ -1273,7 +1273,7 @@ The function
 \]
 returns the set of identifiers $\ids$ which the declaration $\vd$ depends on.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{mask\_all}):
@@ -1325,7 +1325,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[mask\_all]{
   \astlabel(\vp) \in \{\PatternMask, \PatternAll\}
@@ -1384,7 +1384,7 @@ The function
 \]
 returns the set of identifiers $\ids$ which the slice $\vs$ depends on.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{single}):
@@ -1400,7 +1400,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[single]{}{
   \useslice(\overname{\SliceSingle(\ve)}{\vs}) \typearrow \overname{\useexpr(\ve)}{\ids}
@@ -1421,7 +1421,7 @@ The function
 \]
 returns the set of identifiers $\ids$ which the bitfield $\vbf$ depends on.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{simple}):
@@ -1445,7 +1445,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[simple]{}{
   \usebitfield(\overname{\BitFieldSimple(\Ignore, \slices)}{\vbf}) \typearrow \overname{\bigcup_{\vs\in\slices}\useslice(\vs)}{\ids}
@@ -1472,7 +1472,7 @@ The function
 \]
 returns the set of identifiers $\ids$ which the integer constraint $\vc$ depends on.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{exact}):
@@ -1488,7 +1488,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[exact]{}{
   \useconstraint(\overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{\useexpr(\ve)}{\ids}
@@ -1507,7 +1507,7 @@ The function
 \]
 returns the set of identifiers $\ids$ which the statement $\vs$ depends on.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{pass\_return\_none\_throw\_none}):
@@ -1596,7 +1596,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[pass\_return\_none\_throw\_none]{
   \vs = \SPass \lor \vs = \SReturn(\None) \lor \vs = \SThrow(\None)
@@ -1701,14 +1701,14 @@ The function
 \]
 returns the set of identifiers $\ids$ which the try statement catcher $\vc$ depends on.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\vc$ is a case alternative with type $\tty$ and statement $\vs$;
   \item define $\ids$ as the union of applying $\usety$ to $\ty$ and applying $\usestmt$ to $\vs$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \usecatcher(\overname{(\Ignore, \tty, \vs)}{\vc}) \typearrow \overname{\usety(\tty) \cup \usestmt(\vs)}{\ids}
@@ -1759,7 +1759,7 @@ The helper function
 filters $\decls$ in order to retain the declarations whose identifiers are members of $\comp$,
 yielding $\compdecls$
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -1778,7 +1778,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
   \declsofcomp(\comp, \overname{\emptylist}{\decls}) \typearrow \overname{\emptylist}{\compdecls}
@@ -1806,7 +1806,7 @@ evaluates the specification $\vspec$ with the static environment $\tenv$,
 yielding the native integer value $\vv$ and execution graph $\vg$.
 Otherwise, the result is a dynamic error.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item \Prosebuildgenv{$\tenv$}{$\spec$}{$\env$}{$\vg$}\ProseOrError;
@@ -1829,7 +1829,7 @@ All of the following apply:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[normal]{
   \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynError\\\\
@@ -1867,7 +1867,7 @@ It is assumed that $\typedspec$ lists the declarations in reverse order with res
 to the \defusedependencyterm\ order
 (see \TypingRuleRef{TypeCheckAST}).
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item define the environment $\env$ as consisting of the static environment $\tenv$ and the empty dynamic environment $\emptydenv$;
@@ -1876,7 +1876,7 @@ All of the following apply:
   \item the result of the entire evaluation is $(\newenv, \newg)$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \env \eqdef (\tenv, \emptydenv)\\

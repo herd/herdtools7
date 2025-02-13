@@ -20,7 +20,7 @@ converts a list of pairs --- $\pairs$ --- where each pair consists of an identif
 of type $T$ into a function mapping each identifier to its respective value in the list.
 If a duplicate identifier exists in $\pairs$ then a type error is returned.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -77,7 +77,7 @@ The function
 checks whether a non-empty list of identifiers contains a duplicate identifier. If it does not, the result
 is $\True$ and otherwise the result is a type error.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{okay}):
@@ -119,7 +119,7 @@ The parametric function
 \]
 filters a list of \optional{} elements, removing those which are $\None$ and unwrapping those which are $\langle v \rangle$ to $v$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -177,7 +177,7 @@ $\compare(a, b)$ returns $1$ to mean that $a$ should be ordered before $b$,
 $0$ to mean that $a$ and $b$ can be ordered in any way,
 and $-1$ to mean that $b$ should be ordered before $a$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty\_or\_single}):
@@ -195,7 +195,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty\_or\_single]{
   \listlen{\vlone} = n\\
@@ -224,7 +224,7 @@ The function
 returns the bitfield associated with the name $\name$ in the list of bitfields $\bitfields$,
 if there is one. Otherwise, the result is $\None$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{match}):
@@ -277,7 +277,7 @@ The function
 \]
 returns the type for the array length $\size$ in $\vt$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{enum}):
@@ -293,7 +293,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[enum]{}
 {
@@ -314,7 +314,7 @@ The function
 \]
 returns the value $\vv$ associated with the identifier $\id$ in the list of pairs $\vli$ or $\None$, if no such association exists.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{member}):
@@ -330,7 +330,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[not\_member]{
   (\vx, \vv) \in \vli: \vx \neq \id
@@ -357,10 +357,10 @@ The function
 constructs a static environment from the global static environment $\genv$
 and the empty local static environment.
 
-\subsubsection{Prose}
+\ProseParagraph
 The result is a static environment where the global component is $\genv$ and the local component
 is the local static environment of $\emptytenv$.
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \withemptylocal(\genv) \typearrow (\genv, L^{\emptytenv})
@@ -378,14 +378,13 @@ The function
 checks whether $\id$ is already declared in $\tenv$. If it is, the result is a type error,
 and otherwise the result is $\True$.
 
-\subsubsection{Prose}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item applying $\isundefined$ to $\vx$ in $\genv$ yields $\vb$;
   \item checking whether $\vb$ is $\True$ yields $\True$\ProseTerminateAs{\IdentifierAlreadyDeclared}.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \isundefined(\tenv, \id) \typearrow \vb\\
@@ -406,14 +405,14 @@ The function
 checks whether $\id$ is already declared in the global static environment $\genv$.
 If it is, the result is a type error, and otherwise the result is $\True$.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item applying $\isglobalundefined$ to $\vx$ in $\genv$ yields $\vb$;
   \item checking whether $\vb$ is $\True$ yields $\True$\ProseTerminateAs{\IdentifierAlreadyDeclared}.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \isglobalundefined(\genv, \id) \typearrow \vb\\
@@ -439,7 +438,7 @@ The function
 adds the identifier $\id$ as a local storage element with type $\tty$ and local declaration keyword $\ldk$
 to the local environment of $\tenv$, resulting in the static environment $\newtenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item the map $\newlocalstoragetypes$ is defined by updating the map \\
@@ -449,7 +448,7 @@ All of the following apply:
         $\localstoragetypes$ to $\newlocalstoragetypes$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \newlocalstoragetypes \eqdef L^\tenv.\localstoragetypes[\id \mapsto (\tty, \ldk)]\\
@@ -469,11 +468,11 @@ The function
 \]
 checks whether the identifier $\vx$ is defined as a storage element in the static environment $\tenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 $\vb$ is $\True$ if and only if $\vx$ is both undefined in the global static environment of $\tenv$
 (see $\isglobalundefined$) and undefined in the local static environment of $\tenv$ (see $\islocalundefined$).
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \isglobalundefined(G^\tenv, \vx) \typearrow \vbone\\
@@ -492,10 +491,10 @@ The function
 \]
 checks whether the identifier $\vx$ is defined in the global static environment $\genv$, yielding the result in $\vb$.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\vb$ as $\True$ if and only if $\vx$ is not bound in any of the following maps of $\genv$:
 $\globalstoragetypes$, $\subprograms$, and $\declaredtypes$.
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   {
@@ -519,9 +518,9 @@ The function
 \]
 checks whether $\vx$ is declared as a local storage element in the static local environment $\lenv$, yielding the result in $\vb$.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\vb$ as $\True$ if and only if $\vx$ is not bound in the $\localstoragetypes$ of the static local environment $\lenv$.
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \islocalundefined(\lenv, \vx) \typearrow \overname{L^\tenv.\localstoragetypes = \bot}{\vb}
@@ -538,11 +537,11 @@ The function
 checks whether the identifier $\vx$ has been declared as a subprogram in the static environment $\tenv$,
 yielding an answer in $\vb$.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\vb$ as $\True$ if and only if $\vx$ is bound in the $\subprograms$ map in the global static
 environment of $\tenv$.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \issubprogram(\tenv, \vx) \typearrow \overname{G^\tenv.\subprograms[\vx] \neq \bot}{\vb}
@@ -560,7 +559,7 @@ The function
 looks up the environment $\tenv$ for a constant $\vv$ associated with an identifier
 $\vs$. The result is $\bot$ if $\vs$ is not associated with any constant.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{local}):
@@ -582,7 +581,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[local]{
   L^\tenv.\constantvalues(\vs) = \vv
@@ -623,9 +622,9 @@ The function
 binds the identifier $\name$ to the literal $\vv$ in the global static environment $\genv$,
 yielding the updated global static environment $\newgenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\newgenv$ as $\genv$ with the $\constantvalues$ map updated to bind $\name$ to $\vv$.
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \addglobalconstant(\genv, \name, \vv) \typearrow \overname{\genv.\constantvalues[\name\mapsto\vv]}{\newgenv}
@@ -646,9 +645,9 @@ The function
 binds the identifier $\name$ to the literal $\vv$ in the local static environment component of the static environment $\tenv$,
 yielding the updated static environment $\newtenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\newtenv$ as $\tenv$ with the global component updated such that its $\constantvalues$ map is updated to bind $\name$ to $\vv$.
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \addlocalconstant(\tenv, \name, \vv) \typearrow \overname{(G^\tenv.\constantvalues[\name\mapsto\vv], L^\tenv)}{\newtenv}
@@ -665,7 +664,7 @@ The function
 looks up the static environment $\tenv$ for an immutable expression associated with the identifier $\vx$,
 returning $\bot$ if there is none.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{local}):
@@ -686,7 +685,7 @@ One of the following applies:
     \item $\ve$ is $\bot$.
   \end{itemize}
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[local]{
   L^\tenv.\exprequiv(\vx) = \ve
@@ -728,13 +727,13 @@ to the expression $\ve$, which is assumed to be \symbolicallyevaluable,
 in the static environment $\tenv$,
 resulting in the updated environment $\newtenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item define $\newtenv$ as the static environment with the same local environment as $\tenv$ and a global environment
         where $\exprequiv$ binds $\vx$ to $\ve$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \addglobalimmutableexpr(\tenv, \vx, \ve) \typearrow \overname{(G^\tenv.\exprequiv[\vx \mapsto \ve], L^\tenv)}{\newtenv}
@@ -756,13 +755,13 @@ to the expression $\ve$, which is assumed to be \symbolicallyevaluable,
 in the static environment $\tenv$,
 resulting in the updated environment $\newtenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item define $\newtenv$ as the static environment with the same global environment as $\tenv$ and a local environment
         where $\exprequiv$ binds $\vx$ to $\ve$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \addlocalimmutableexpr(\tenv, \vx, \ve) \typearrow \overname{(G^\tenv, L^\tenv.\exprequiv[\vx \mapsto \ve])}{\newtenv}
@@ -778,16 +777,16 @@ The helper function
 \]
 tests whether the \sideeffectsetterm\ $\vses$
 allows an expression with those \sideeffectconflictsterm\ to be
-be recorded as an immutable expression in the appropriate $\exprequiv$ map component
+recorded as an immutable expression in the appropriate $\exprequiv$ map component
 of the static environment, so that it can later be used to
 reason about type satisfaction, yielding the result in $\vb$.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\vb$ as $\True$ if and only if
 applying $\issymbolicallyevaluable$ to $\vses$ with \PerformsAssertionsTerm\ removed from it,
 yields $\True$.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \issymbolicallyevaluable(\vses \setminus \{\PerformsAssertions\}) \typearrow \vb
@@ -818,7 +817,7 @@ respect to the \sideeffectsetterm\ $\vsese$,
 along with the local declaration keyword $\ldk$. The result is the updated static environment $\newtenv$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{ok}):
@@ -843,7 +842,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[ok]{
   \ldk \in \{\LDKConstant, \LDKLet\}\\
@@ -885,11 +884,11 @@ updates the global environment of $\tenv$ by mapping the (unique) subprogram ide
 to the function definition $\funcdef$ and \sideeffectdescriptorsterm\ $\vs$ in $\tenv$,
 resulting in a new static environment $\newtenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\newtenv$ as $\tenv$ with the $\subprograms$ map in the global component is updated by
 binding $\name$ to $\funcdef$.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \newtenv \eqdef (G^\tenv.\subprograms[\name\mapsto(\funcdef, \vs)], L^\tenv)
@@ -914,11 +913,11 @@ The function
 binds the type $\tty$ and \timeframeterm\ $\vf$ to the identifier $\name$ in the static environment $\tenv$,
 yielding the modified static environment $\newtenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\newtenv$ as $\tenv$ where the $\declaredtypes$ map of the global component is updated
 by binding $\name$ to $\tty$ and $\vf$.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \addtype(\tenv, \name, \tty, \vf) \typearrow \overname{(G^\tenv.\declaredtypes[\name\mapsto(\tty, \vf)] , L^\tenv)}{\newtenv}

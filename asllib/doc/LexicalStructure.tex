@@ -17,6 +17,7 @@ carriage return (decimal encoding 13) and line feed (decimal encoding 10).
 The end of file character is denoted by $\eof$.
 The content text does not contain an end-of-file character.
 
+\RequirementDef{TabCharacter}
 In particular, it is an error to use a tab character in ASL specification text (decimal encoding 9).
 
 \section{Lexical Regular Expressions}
@@ -70,7 +71,22 @@ The notation $\Lang(e)$ stands for \emph{formal language} of a regular expressio
 That is, the set of strings that match that regular expression.
 
 \section{Whitespace}
+\RequirementDef{Whitespace}
 Comments, newlines and space characters are treated as whitespace.
+%
+For example,
+\begin{lstlisting}
+var x    = 5; var y
+= x // comment
+
+;
+\end{lstlisting}
+is equivalent to
+\begin{lstlisting}
+var x = 5;
+var y = x;
+\end{lstlisting}
+in terms of the resulting AST.
 
 \section{Comments}
 ASL supports comments in the style of C++:
@@ -79,7 +95,10 @@ ASL supports comments in the style of C++:
 is a comment (\ascii{10} is the line feed character \verb|\n|).
 \item Multi-line comments: the text between \texttt{/*} and \texttt{*/} is a comment.
 \end{itemize}
-Comments do not nest and the two styles of comments do not interact with each other.
+Comments do not nest and the two styles of comments do not interact with each other,
+as exemplified in \listingref{LexicalComments}.
+
+\ASLListing{Examples of comments}{LexicalComments}{\syntaxtests/Lexical.Comments.asl}
 
 \hypertarget{def-relinecomment}{}
 \begin{center}
@@ -199,23 +218,58 @@ $\REidentifier$ &$\triangleq$& \texttt{($\REletter$ $|$ $\underbracket{\texttt{ 
 \end{tabular}
 \end{center}
 
+An enumeration literal is classed as a literal value
+(see \chapref{Literals}), but is syntactically an identifier.
+
+Tuple element selectors are classed as identifiers.
+%
+For example, \texttt{item0} is classed as an identifier
+in the expression \verb|(1, 2).item0|.
+\lrmcomment{This is related to \identiTSXL}
+
 \RequirementDef{ReservedIdentifiers}
 Identifiers that begin with double-underscore are reserved for use in the implementation and should
 not be used in specifications (see \LexicalRuleRef{ReservedIdentifiers}).
+%
+For example, the statement \verb|var __internal_var = TRUE;|
+should yield a lexical error by the lexical analysis.
+
+\RequirementDef{IdentifiersKeywords}
+Keywords cannot be used as identifiers.
+%
+For example,
+\begin{lstlisting}
+var case = 5;
+\end{lstlisting}
+should yield a lexical error by the lexical analysis.
 
 \ConventionDef{IdentifiersDifferingByCase}
 To improve readability, it is recommended to avoid the use of identifiers that differ
 only by the case of some characters.
+%
+For example, a specification containing the following declarations
+may confuse readers and the variable names are better renamed:
+\begin{lstlisting}
+func baz()
+begin
+  var color = foo();
+  var Color = bar();
+  // ...
+  var c = color; // should this be Color?
+end;
+\end{lstlisting}
 
-\ConventionDef{IdentifiersStartingWithSingleUnderscore}
+\ConventionDef{IdentifierSingleUnderscore}
 Any identifier with a single underscore followed by an alphanumeric character
 is treated as a normal identifier. We recommend that these are only
 for use by platform-specific code, which should not clash with the rest of a
 portable ASL specification.
-
-Tuple element selectors are classed as identifiers. That is, in cases like \texttt{(1, 2).item0},
-the selector \texttt{item0} is classed as an identifier.
-\lrmcomment{This is related to \identiTSXL}
+%
+For example,
+\begin{lstlisting}
+constant _my_platform_num_regs = 200;
+\end{lstlisting}
+can be useful for declaring a constant specific to the platform \verb|my_platform|.
 
 \section{Lexical Analysis} \label{sec:LexicalAnalysis}
 Lexical analysis, which is also referred to as \emph{scanning}, is defined via the function
@@ -408,8 +462,8 @@ by decimal representation.
 \item The function $\hextolit(s)$ returns $\Tintlit(n)$ where $n$ is the integer represented by $s$
 by hexadecimal representation.
 \hypertarget{def-realtolit}{}
-\item The function $\realtolit(s)$ returns $\Treallit(q)$ where $q$ is the real value represented by $s$
-by floating point representation.
+\item The function $\realtolit(s)$ returns $\Treallit(q)$ where $q$ is the rational number for
+$s$, which is given via a floating point representation.
 \hypertarget{def-strtolit}{}
 \item The function $\strtolit(s)$ returns $\Tstringlit(s')$ where $s'$ is the string value represented by $s$.
 \hypertarget{def-bitstolit}{}

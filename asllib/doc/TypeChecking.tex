@@ -1,4 +1,4 @@
-\chapter{Type Inference and Type-checking Definitions\label{chap:TypeChecking}}
+\chapter{Type Inference and Typechecking Definitions\label{chap:TypeChecking}}
 
 The purpose of the ASL type system is to describe, in a formal and authoritative way,
 which ASL specifications are considered \emph{well-typed}.
@@ -13,12 +13,12 @@ If the specification is syntactically valid, the parser returns an \emph{abstrac
 which represents the specification as a labelled structured tree. Otherwise, it returns a syntax error.
 When an ASL specification is successfully parsed, we refer to the resulting AST as the \emph{untyped AST}.
 
-A \emph{type checker} is an implementation of the ASL type system, which accepts an untyped AST and applies the
+A \emph{typechecker} is an implementation of the ASL type system, which accepts an untyped AST and applies the
 rules of the type system to the untyped AST. If it is successful, the specification
 is considered \emph{well-typed} and the result is a pair consisting of
 a \emph{static environment} and a \emph{typed AST},
 which are used in defining the ASL semantics (\chapref{Semantics}).
-Otherwise, the type checker returns a type error.
+Otherwise, the typechecker returns a type error.
 
 \hypertarget{def-annotaterel}{}
 The type system of ASL is given by the relation $\annotaterel$, which is defined as the disjoint union
@@ -72,7 +72,7 @@ A static environment $\tenv=(G^\tenv, L^\tenv)$ consists of two
 distinct components: the global environment $G^\tenv \in \globalstaticenvs$ --- pertaining to AST nodes
 appearing outside of a given subprogram, and the local environment
 $L^\tenv \in \localstaticenvs$ --- pertaining to AST nodes appearing inside a given subprogram.
-This separation allows us to type-check subprograms by using an empty local environment.
+This separation allows us to typecheck subprograms by using an empty local environment.
 
 The intuitive meaning of each component is as follows:
 \begin{itemize}

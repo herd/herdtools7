@@ -49,7 +49,7 @@ The function
 annotates a list of slices $\vslices$ in the static environment $\tenv$, yielding a list of annotated slices (that is,
 slices in the \typedast) and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item annotating the slice $\vslices[\vi]$ in $\tenv$, for each $\vi\in\listrange(\vslices)$, yields \\
@@ -57,7 +57,7 @@ All of the following apply:
   \item define $\slicesp$ as the list of slices $\vs_\vi$, for each $\vi\in\listrange(\vslices)$;
   \item define $\vses$ as the union of all $\vxs_i$, for every \Proselistrange{$i$}{$\vslices$}.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   i\in\listrange(\vslices): \annotateslice(\tenv, \vslices[i]) \typearrow (\vs_i, \vxs_i) \OrTypeError\\\\
@@ -81,7 +81,7 @@ The relation
 \]
 evaluates a list of slices $\slices$ in an environment $\env$, resulting in either \\
 $\Normal((\ranges, \newg), \newenv)$ or an abnormal configuration.
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -108,7 +108,7 @@ $\evalslices(\env, \vslices)$ is the list of pairs \texttt{(start\_n, length\_n)
 correspond to the start (included) and the length of each slice in
 $\slices$.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -219,7 +219,7 @@ the function
 annotates a single slice $\vs$ in the static environment $\tenv$,
 resulting in an annotated slice $\vsp$.
 \ProseOtherwiseTypeError
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{single}):
@@ -258,7 +258,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[single]{
   \annotateslice(\SliceLength(\vi, \eliteral{1})) \typearrow \vsp \OrTypeError
@@ -315,7 +315,7 @@ The helper function
 returns an expression $\vslices$ that represents the width of all slices given by $\vslices$
 in the static environment $\tenv$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -332,7 +332,7 @@ One of the following applies:
     \item symbolically simplifying the binary expression summing $\veone$ with $\vetwo$ yields $\vwidth$\ProseOrTypeError.
   \end{itemize}
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
   \sliceswidth(\tenv, \overname{\emptylist}{\vslices}) \typearrow \overname{\ELInt{0}}{\vwidth}
@@ -358,7 +358,7 @@ The helper function
 \]
 returns an expression $\vwidth$ that represents the width of the slices given by $\vslice$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{single}):
@@ -379,7 +379,7 @@ One of the following applies:
     \item $\vwidth$ is the expression for $1 + (\veone - \vetwo)$.
   \end{itemize}
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[single]{}{
   \slicewidth(\overname{\SliceSingle(\Ignore)}{\vslice}) \typearrow \overname{\ELInt{1}}{\vwidth}
@@ -410,7 +410,7 @@ annotates a \symbolicallyevaluable\ integer expression $\ve$ of a constrained in
 and returns the annotated expression $\vepp$ and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item \Proseannotatesymbolicallyevaluableexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$\ProseOrTypeError};
@@ -418,7 +418,7 @@ All of the following apply:
   \item determining whether $\vep$ is \symbolicallyevaluable\  in $\tenv$ yields $\True$\ProseOrTypeError;
   \item applying $\normalize$ to $\vep$ in $\tenv$ yields $\vepp$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
@@ -465,7 +465,7 @@ In \listingref{semantics-scaledslice},
 \texttt{x[3*:2]} evaluates to \texttt{'11'}.
 \ASLListing{A scaled slice}{semantics-scaledslice}{\semanticstests/SemanticsRule.SliceStar.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{single}):
@@ -512,7 +512,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[single]{
   \evalexpr{\env, \ve} \evalarrow \Normal((\vstart, \newg), \newenv) \OrAbnormal\\

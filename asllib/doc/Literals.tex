@@ -1,12 +1,16 @@
-\chapter{Literals}
+\chapter{Literals\label{chap:Literals}}
 ASL allows specifying literal values for the following types:
 integers, Booleans, real numbers, bitvectors, and strings.
 
-Enumeration labels are also considered literal values but are technically identifiers.
-As such, they are not built by the Grammar, but by the Type-checker.
+Enumeration labels are also literal values.
+However, they are syntactically indistinguishable from identifiers,
+so they cannot be input directly in concrete syntax.
+Rather, they are parsed as identifiers, and during typechecking
+converted to enumeration label literal values (instance of $\llabel$).
+
+In the remainder of this reference, we often refer to literal values simply as literals.
 
 \section{Syntax}
-
 \begin{flalign*}
 \Nvalue \derives         \ & \Tintlit &\\
                         |\ & \Tboollit &\\
@@ -24,7 +28,9 @@ As such, they are not built by the Grammar, but by the Type-checker.
     & \\
     |\ & \lbitvector(\overtext{B}{$B \in \{0, 1\}^*$})
     & \\
-    |\ & \lstring(\overtext{S}{$S \in \Strings$}) &
+    |\ & \lstring(\overtext{S}{$S \in \Strings$})
+    &\\
+    |\ & \llabel(\overtext{l}{enumeration label})
 \end{flalign*}
 
 \subsection{ASTRule.Value \label{sec:ASTRule.Value}}
@@ -79,7 +85,11 @@ The function
 \]
 annotates a literal $\vl$ in the static environment $\tenv$, resulting in a type $\vt$.
 
-\subsubsection{Prose}
+\subsection{Example}
+\listingref{literals1} shows literals and their corresponding types in comments:
+\ASLListing{Literals and their corresponding types}{literals1}{\typingtests/TypingRule.Lit.asl}
+
+\ProseParagraph
 The result of annotating a literal $\vl$ in a static environment $\tenv$ is $\vt$ and one of the following applies:
 \begin{itemize}
 \item (\textsc{int}): $\vl$ is an integer literal $\vn$ and $\vt$ is the well-constrained integer type, constraining
@@ -92,9 +102,7 @@ its set to the single value $\vn$;
       $\declaredtypes$ map of the global environment $\tenv$.
 \end{itemize}
 
-\CodeSubsection{\LitBegin}{\LitEnd}{../Typing.ml}
-
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[int]{}{\annotateliteral{\Ignore, \lint(n)}\typearrow \TInt(\langle[\ConstraintExact(\ELInt{n})]\rangle)}
 \end{mathpar}
@@ -126,35 +134,11 @@ its set to the single value $\vn$;
   \annotateliteral{\tenv, \llabel(\vlabel)}\typearrow \vt
 }
 \end{mathpar}
-
-\subsection{Example}
-\listingref{literals1} shows literals and their corresponding types in comments:
-\ASLListing{Literals and their corresponding types}{literals1}{\typingtests/TypingRule.Lit.asl}
+\CodeSubsection{\LitBegin}{\LitEnd}{../Typing.ml}
 
 \section{Semantics}
 A literal $\vl$ can be converted to the \nativevalue\ $\nvliteral{\vl}$.
 
-\subsection{Printing}%
-\hypertarget{def-outputtoconsole}{}
-
-The following table describes how literals can be printed to a command line.
-%
-Please note that surrounding quotations mark for $\lstring(S)$ are not included
-in $S$, so they will not be printed.
-
-\begin{tabular}{rl}
-  \textbf{literal} & \textbf{prints} \\
-  \hline
-  $\lint(n)$ & $n$ in decimal format, without any leading zeros, \\
-             & preceded by a ``\texttt{-}'' sign if $n$ is negative. \\
-  $\lbool(\True)$ & ``\texttt{TRUE}'' \\
-  $\lbool(\False)$ & ``\texttt{FALSE}'' \\
-  $\lreal(q)$ & $q$ as an irreducible fraction of positive integers, \\
-              & preceded by a ``\texttt{-}'' sign when $q$ is negative, \\
-              & with the denominator omitted if it is equal to 1. \\
-  $\lbitvector(b)$ & $b$ in hexadecimal, preceded by ``\texttt{0x}'', with enough leading zeros \\
-                   & to make the number of hexadecimal digits printed equal the width \\
-                   & of $b$ divided by 4, and rounded up to the following integer. \\
-  $\lstring(S)$ & $S$. \\
-  $\llabel(s)$ & $s$. \\
-\end{tabular}
+\subsubsection{Example}
+The literal $\lint(5)$ can be used as a \nativevalue\ $\nvliteral{\lint(5)}$,
+which we will usually abbreviate as $\nvint(5)$.

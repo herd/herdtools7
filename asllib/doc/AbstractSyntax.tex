@@ -14,9 +14,9 @@ such as punctuation and scoping syntax, which are useful for readability and par
 Technically, there are two abstract syntaxes:
 an \emph{untyped abstract syntax} and a \emph{typed abstract syntax}.
 The first syntax results from parsing the text of an ASL specification.
-The type checker checks whether the untyped AST is valid and if so produces
-a typed AST where some nodes in the untyped AST have been transformed to
-more explicit representation.
+The typechecker checks whether the untyped AST satisfies the rules of the
+type system. If so, it is considered valid and the type system rules
+produce a typed AST.
 
 \paragraph{Outline:}
 The outline of this chapter is as follows,
@@ -399,11 +399,13 @@ The following rules define the types of left-hand side of assignments:
 
 A local declaration item is the left-hand side of a declaration statements.
 In the following example of a declaration statement:
-\begin{verbatim}
+\begin{lstlisting}
 let (x, -, z): (integer, integer, integer {0..32}) = (2, 3, 4);
-\end{verbatim}
+\end{lstlisting}
 the local declaration item is
-\Verb|(x, -, z): (integer, integer, integer {0..32})|.
+\begin{lstlisting}
+(x, -, z): (integer, integer, integer {0..32})
+\end{lstlisting}
 
 \hypertarget{ast-localdeclitem}{}
 \begin{flalign*}
@@ -603,7 +605,7 @@ In the \untypedast, the $\globaldecl$ child node in the abstract syntax nodes of
 contains an optional expression field assigned to the $\GDinitialvalue$ field. In the \typedast, this field
 always contains an expression (that is, it is never $\None$).
 
-Global pragma declarations $\DPragma$ are removed from the \untypedast\ once their expressions have been type checked and do not appear in the \typedast.
+Global pragma declarations $\DPragma$ are removed from the \untypedast\ once their expressions have been typechecked and do not appear in the \typedast.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Building Abstract Syntax Trees\label{sec:BuildingAbstractSyntaxTrees}}

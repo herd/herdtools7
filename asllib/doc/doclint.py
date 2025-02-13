@@ -1,7 +1,11 @@
 #!/usr/bin/python3
 
-import os, fnmatch, sys
-from functools import partial
+import os, fnmatch
+from extended_macros import apply_all_macros
+
+import argparse
+cli_parser = argparse.ArgumentParser(prog='ASL Reference Linter')
+cli_parser.add_argument('-t', '--transform', help='Rewrites *.tex files with extended macros', action='store_true')
 
 def extract_labels_from_line(line: str, left_delim: str, labels: set[str]):
     r"""
@@ -91,6 +95,7 @@ def check_tododefines():
         return 0
 
 def check_repeated_words():
+    last_word = ""
     num_errors = 0
     latex_files = fnmatch.filter(os.listdir('.'), '*.tex')
     for latex_source in latex_files:
@@ -102,24 +107,27 @@ def check_repeated_words():
                 parts = line.split()
                 if len(parts) < 2:
                     continue
-                for i in range(0, len(parts) - 1):
-                    word1 = parts[i]
-                    word2 = parts[i + 1]
-                    if word1.isalpha() and word1.lower() == word2.lower():
+                for current_word in parts:
+                    if current_word.isalpha() and last_word.lower() == current_word.lower():
                         num_errors += 1
-                        print(f"./{latex_source} line {line_number}: word repetition ({word1} {word2}) in '{line}'")
+                        print(f"./{latex_source} line {line_number}: word repetition ({last_word} {current_word}) in '{line}'")
+                    last_word = current_word
     return num_errors
 
 def main():
+    args = cli_parser.parse_args()
+    if args.transform:
+        apply_all_macros()
+    print('Linting files...')
     num_errors = 0
     num_errors += check_hyperlinks_and_hypertargets()
     num_errors += check_undefined_references_and_multiply_defined_labels()
     num_errors += check_tododefines()
     num_errors += check_repeated_words()
 
-    print(f"There were {num_errors} errors!", file=sys.stderr)
     if num_errors > 0:
-       sys.exit(1)
+        print(f"There were {num_errors} errors!", file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

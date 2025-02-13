@@ -71,7 +71,7 @@ Along the way, we also define the concept of \emph{pure expressions} and \symbol
 \hypertarget{def-timeframe}{}
 We divide side effects by \emph{\timeframesterm}, which indicate the phase where a side effect occurs:
 \begin{description}
-    \item[Constant] Contains effects that take place during static evaluation (see \chapref{staticevaluation}). That is, during type-checking.
+    \item[Constant] Contains effects that take place during static evaluation (see \chapref{StaticEvaluation}). That is, during typechecking.
     \item[Configuration] Contains effects that take place while rewriting the initializing value of a \texttt{config} storage element.
     \item[Execution] Contains effects that take place during semantic evaluation.
 \end{description}
@@ -108,7 +108,7 @@ The function
 \]
 constructs a \timeframeterm\ $\vt$ from a local declaration keyword $\ldk$.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
     {
@@ -130,7 +130,7 @@ The function
 \]
 constructs a \timeframeterm\ $\vt$ from a global declaration keyword $\gdk$.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
     {
@@ -211,7 +211,7 @@ The function
 \]
 retrieves the \timeframeterm\ $\vt$ from a \sideeffectdescriptorterm\ $\vs$.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
     \timeframe(\overname{\ReadLocal(\Ignore, \vt, \Ignore)}{\vs}) \typearrow \vt
@@ -256,11 +256,11 @@ yielding the result in $\vb$.
 Intuitively, a \emph{pure} \sideeffectdescriptorterm\ helps to establish that
 an expression evaluates without modifying values of storage elements.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\vb$ as $\True$ if and only if $\vt$ is either a \ReadLocalTerm, a \ReadGlobalTerm,
 a \NonDeterministicTerm, or a \PerformsAssertionsTerm.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
     \vb \eqdef \configdomain{\vs} \in \{\ReadLocal, \ReadGlobal, \NonDeterministic, \PerformsAssertions\}
@@ -280,12 +280,12 @@ Intuitively, a \emph{symbolically evaluable} \sideeffectdescriptorterm\ helps es
 an expression evaluates without failing assertions, without modifying any storage element,
 and always yielding the same result, that is, deterministically.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\vb$ as $\True$ if and only if $\vs$ is either
 a \ReadLocalTerm\ associated with an immutable storage element, or
 a \ReadGlobalTerm\ associated with an immutable storage element.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
     \vb \eqdef \vs = \ReadLocal(\Ignore, \Ignore, \True) \lor \vs = \ReadGlobal(\Ignore, \Ignore, \True)
@@ -305,7 +305,7 @@ The function
 defines whether there exists a \emph{\sideeffectconflictterm} between the \sideeffectdescriptorterm\ $\vsone$
 and the \sideeffectdescriptorterm\ $\vstwo$, yielding the result in $\vb$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
     \item All of the following apply (\textsc{globalread}):
@@ -373,7 +373,7 @@ One of the following applies:
     \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[globalread]{
     \vb \eqdef \vstwo = \WriteGlobal(\id, \Ignore, \Ignore) \lor \configdomain{\vstwo} = \RecursiveCall
@@ -456,11 +456,11 @@ The function
 tests whether the local declaration keyword $\ldk$ relates to an immutable storage element,
 yielding the result in $\vb$.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\vb$ as $\True$ if and only if $\ldk$ corresponds to either the keyword \texttt{constant} or
 the keyword \texttt{let}.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \ldkisimmutable(\ldk) \typearrow \overname{\ldk \in \{\LDKConstant, \LDKLet\}}{}
@@ -476,11 +476,11 @@ The function
 tests whether the global declaration keyword $\gdk$ relates to an immutable storage element,
 yielding the result in $\vb$.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\vb$ as $\True$ if and only if $\gdk$ corresponds to either the keyword \texttt{constant},
 the keyword \texttt{config}, or the keyword \texttt{let}.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \gdkisimmutable(\gdk) \typearrow \overname{\gdk \in \{\GDKConstant, \GDKConfig, \GDKLet\}}{}
@@ -502,12 +502,12 @@ tests whether there are no \sideeffectconflictterm\ between the set of
 \sideeffectdescriptorsterm\ $\vsesone$ and the set of \sideeffectdescriptorsterm\ $\vsestwo$,
 yielding the result in $\vb$.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\vb$ as $\True$ if for every \sideeffectdescriptorterm\ $\vsone$ in $\vsesone$ and
 every \sideeffectdescriptorterm\ $\vstwo$ in $\vsestwo$,
 testing $\sideeffectconflict$ for $\vsone$ and $\vstwo$ yields $\False$.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
     \vbp \eqdef \bigvee_{\vsone \in \vsesone, \vstwo \in \vsestwo} \sideeffectconflict(\vsone, \vstwo)
@@ -526,7 +526,7 @@ The function
 yields the union of the two sets of \sideeffectdescriptorsterm\ $\vsesone$ and $\vsestwo$ in $\vses$
 if they are \hyperlink{def-sideeffectconflictterm}{non-conflicting}. \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
     \item checking whether $\arenonconflicting$ yields $\True$ for $\vsesone$ and $\vsestwo$ yields\\
@@ -534,7 +534,7 @@ All of the following apply:
     \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
     \checktrans{\arenonconflicting(\vsesone, \vsestwo)}{\SideEffectViolation} \typearrow \True \OrTypeError
@@ -553,7 +553,7 @@ defines the maximal \timeframeterm\ for a \sideeffectsetterm\ $\vses$, which is 
 in $\vf$.
 (If $\vses$ is empty, the result is \timeframeconstant.)
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
     \item All of the following apply (\textsc{execution}):
@@ -576,7 +576,7 @@ One of the following applies:
     \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[execution]{
     {
@@ -616,11 +616,11 @@ The function
 tests whether a set of \sideeffectdescriptorsterm\ $\vses$ are all \symbolicallyevaluable,
 yielding the result in $\vb$.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\vb$ as $\True$ if and only if every \sideeffectdescriptorterm\ $\vs$ in $\vses$
 is \symbolicallyevaluable.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \vb \eqdef \bigwedge_{\vs\in\vses} \sideeffectissymbolicallyevaluable(\vs)
@@ -639,7 +639,7 @@ The function
 returns $\True$ if the set of \sideeffectdescriptorsterm\ $\vses$ is \symbolicallyevaluable.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following applies:
 \begin{itemize}
   \item applying $\issymbolicallyevaluable$ to $\ve$ in $\tenv$ yields $\vb$;
@@ -647,7 +647,7 @@ All of the following applies:
   is not \symbolicallyevaluable.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \issymbolicallyevaluable(\vses) \typearrow \vb\\
@@ -666,11 +666,11 @@ The function
 \]
 tests whether all side effects in the set $\vses$ are pure, yielding the result in $\vb$.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\vb$ as $\True$ if and only if $\sideeffectispure$ holds for
 every \sideeffectdescriptorterm\ $\vs$ in $\vses$.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
     \bigwedge_{\vs\in\vses} \sideeffectispure(\vs)
@@ -688,10 +688,10 @@ The function
 tests whether the \NonDeterministic\ \sideeffectdescriptorterm\ is not included in $\vses$,
 yielding the result in $\vb$.
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\vb$ as $\True$ if and only if \NonDeterministic\ is not included in $\vses$.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \sesisdeterministic(\vses) \typearrow \overname{\NonDeterministic \not\in \vses}{\vb}
@@ -708,11 +708,11 @@ tests whether the \timeframesterm\ of \sideeffectdescriptorsterm\ in $\vses$ are
 $\vt$, yielding the result in $\vb$.
 % Transliteration note: this abstracts both leq_config_time and leq_constant_time
 
-\subsubsection{Prose}
+\ProseParagraph
 Define $\vb$ as $\True$ if and only if the maximal \timeframeterm\ of all \sideeffectdescriptorsterm\ in $\vses$
 is less than or equal to $\vt$ with respect to $\timeframeleq$.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
     \sesisbefore(\vses, \vt) \typearrow \overname{\maxtimeframe(\vses) \timeframeleq \vt}{\vb}

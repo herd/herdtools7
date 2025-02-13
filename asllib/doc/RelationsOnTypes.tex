@@ -11,8 +11,9 @@ This section defines the following relations over types and operators:
 \end{itemize}
 
 \TypingRuleDef{Subtype}
+\hypertarget{def-supertypeterm}{}
 The \emph{subtype} relation is a partial order over \underline{named types}.
-The \emph{supertype} is the inverse relation. That is, \tty\ is a supertype of \tsy\ if and only if \tsy\ is a subtype of \tty.
+The \emph{\supertypeterm} is the inverse relation. That is, \tty\ is a supertype of \tsy\ if and only if \tsy\ is a subtype of \tty.
 
 \hypertarget{def-subtypesrel}{}
 The predicate
@@ -23,7 +24,7 @@ The predicate
 defines whether the type $\vtone$ subtypes the type $\vttwo$ in the static environment $\tenv$,
 yielding the result in $\vb$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item all of the following apply (\textsc{reflexive}):
@@ -57,14 +58,14 @@ One of the following applies:
 \end{itemize}
 \subsubsection{Example}
 In the following example \texttt{subInt} is a subtype of itself and of \texttt{superInt}:
-\begin{verbatim}
+\begin{lstlisting}
 type superInt of integer;
 type subInt of integer subtypes superInt;
-\end{verbatim}
+\end{lstlisting}
 
 \CodeSubsection{\SubtypeBegin}{\SubtypeEnd}{../types.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
   \inferrule[reflexive]{}{
     \subtypesrel(\tenv, \TNamed(\id), \TNamed(\id)) \typearrow \True
@@ -105,7 +106,7 @@ tests whether a type $\vt$ \emph{subtype-satisfies} a type $\vs$ in environment 
 returning the result $\vb$ or a type error, if one is detected.
 The function assumes that both $\vt$ and $\vs$ are well-typed according to \chapref{Types}.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
 \item All of the following apply (\textsc{error1}):
@@ -203,7 +204,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
   \inferrule[error1]{
     \makeanonymous(\tenv, \vt) \typearrow \TypeErrorConfig
@@ -371,7 +372,7 @@ which is the same as $\typesat$, but yields a type error when \\ $\typesat(\tenv
 
 These functions assume that both $\vt$ and $\vs$ are well-typed according to \secref{Types}.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
  \begin{itemize}
   \item All of the following apply (\textsc{subtypes}):
@@ -447,7 +448,7 @@ type \texttt{pairT}.
 
 \CodeSubsection{\TypeSatisfactionBegin}{\TypeSatisfactionEnd}{../types.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[subtypes]{
   \subtypesrel(\tenv, \vt, \vs) \typearrow \True
@@ -547,7 +548,7 @@ The predicate
 tests whether a type $\vt$ \emph{type-clashes} with a type $\vs$ in environment $\tenv$,
 returning the result $\vb$ or a type error, if one is detected.
 
-\subsubsection{Prose}
+\ProseParagraph
  One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{subtype}):
@@ -614,7 +615,7 @@ returning the result $\vb$ or a type error, if one is detected.
 
 \CodeSubsection{\TypeClashBegin}{\TypeClashEnd}{../types.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[subtype]{
   (\subtypesrel(\tenv, \vs, \vt) \typearrow \True) \lor (\subtypesrel(\tenv, \vt, \vs) \typearrow \True)
@@ -719,7 +720,7 @@ The function
 returns the \emph{lowest common ancestor} of types $\vt$ and $\vs$ in $\tenv$ --- $\tty$.
 The result is a type error if a lowest common ancestor does not exist or a type error is detected.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{type\_equal}):
@@ -835,7 +836,7 @@ One of the following applies:
 \end{itemize}
 \CodeSubsection{\LowestCommonAncestorBegin}{\LowestCommonAncestorEnd}{../types.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 Since we do not impose a canonical representation on types (e.g., \verb|integer {1, 2}| is equivalent to \verb|integer {1..2}|),
 the lowest common ancestor is not unique.
 We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\ to the lowest common ancestor of $\vt$ and $\vs$.
@@ -999,7 +1000,7 @@ determines the result type of applying a unary operator when the type of its ope
 Similarly, we determine the negation of integer constraints.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
 \item All of the following apply (\textsc{bnot\_t\_bool}):
@@ -1048,7 +1049,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[bnot\_t\_bool]{
   \checktypesat(\tenv, \vtone, \TBool) \typearrow \True \OrTypeError\\
@@ -1134,7 +1135,7 @@ determines the result type $\vt$ of applying the binary operator $\op$
 to operands of type $\vtone$ and $\vttwo$ in the static environment $\tenv$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{named}):
@@ -1336,7 +1337,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[named]{
   \astlabel(\vtone) = \TNamed \lor \astlabel(\vttwo) = \TNamed\\
@@ -1585,7 +1586,7 @@ returns the set of \emph{named supertypes} given via the $\subtypes$ function of
   \end{cases}
 \]
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following holds:
 \begin{itemize}
   \item $\vtsupers$ is in the set of named supertypes of $\vt$;
@@ -1599,7 +1600,7 @@ One of the following holds:
   \begin{itemize}
     \item $\vs$ is not in $\vtsupers$;
     \item $\vs$ has a named super type in $\tenv$ --- $\vsp$;
-    \item $\tty$ is the lowest common named supertype of $\vt$ and $\vsp$ in $\tenv$.
+    \item $\tty$ is the lowest common named \supertypeterm{} of $\vt$ and $\vsp$ in $\tenv$.
   \end{itemize}
 
   \item All of the following hold (\textsc{none}):
@@ -1610,7 +1611,7 @@ One of the following holds:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[found]{
   \supers(\tenv, \vt) \typearrow \vtsupers\\
@@ -1672,7 +1673,7 @@ which is why $\binopisexploding(\MUL) \typearrow \True$.
 Annotating the constraints involves applying symbolic reasoning and in particular filtering out values that
 will definitely result in a dynamic error.
 
-\subsubsection{Prose}
+\ProseParagraph
 \AllApply
 \begin{itemize}
   \item applying $\binopfilterrhs$ to $\op$ $\cstwo$ in $\tenv$, to filter out constraints that will definitely fail dynamically, yields $\cstwof$;
@@ -1702,7 +1703,7 @@ will definitely result in a dynamic error.
   \item applying $\reduceconstraints$ to $\refinedcs$ in $\tenv$ yields $\annotatedcs$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[exploding]{
   \binopfilterrhs(\tenv, \op, \cstwo) \typearrow \cstwof\\\\
@@ -1782,7 +1783,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[greater\_or\_equal]{
   \op \in \{\SHL, \SHR, \POW\}\\\\
@@ -1828,7 +1829,7 @@ In this context, conservatively means that the new constraint may represent a su
 reasoning may yield.
 If the set of those values is empty the result is $\None$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{exact\_reduces\_to\_z}):
@@ -1902,7 +1903,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[exact\_reduces\_to\_z]{
   \reducetozopt(\tenv, \ve) \typearrow \langle\vz\rangle\\
@@ -1994,7 +1995,7 @@ and $\None$ otherwise.
 The expression $\ve$ is assumed to appear in a constraint for a type that has been successfully annotated,
 which means that applying $\normalize$ to it should not yield a type error.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{normalizes\_to\_z}):
@@ -2010,7 +2011,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[normalizes\_to\_z]{
   \normalize(\tenv, \ve) \typearrow \ELInt{\vz}
@@ -2041,7 +2042,7 @@ The function
 refines a list of constraints $\cs$ by applying the refinement function $\vf$ to each constraint and retaining the constraints
 that do not refine to $\None$. The resulting list of constraints is given in $\newcs$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -2067,7 +2068,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
   \refineconstraints(\tenv, \vf, \overname{\emptylist}{\cs}) \typearrow \overname{\emptylist}{\newcs}
@@ -2104,7 +2105,7 @@ removing constraints that represents a division operation that will definitely f
 when $\op$ is the division operation.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{div}):
@@ -2124,7 +2125,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[div]{
   \op = \DIV\\
@@ -2156,7 +2157,7 @@ where the denominator does not divide the numerator and an optional containing $
 The result is returned in $\vcopt$.
 This is used to conservatively test whether $\vc$ would always fail dynamically.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{exact}):
@@ -2197,7 +2198,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[exact]{
   \getliteraldivopt(\ve) \typearrow \langle(\vzone, \vztwo)\rangle \terminateas \None\\\\
@@ -2257,11 +2258,11 @@ matches the expression $\ve$ to a binary operation expression over the division 
 If $\ve$ matches this pattern the result $\rangeopt$ is an optional containing the pair of integers appearing in the operand
 expressions. Otherwise, the result is $\None$.
 
-\subsubsection{Prose}
+\ProseParagraph
 The value $\rangeopt$ is $\langle(\vzone, \vztwo)\rangle$ if $\ve$ is a binary operation expression over the division operation
 and two literal integer expressions for the integers $\vzone$ and $\vztwo$ and $\None$ otherwise.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \rangeopt \eqdef \choice{\ve = \EBinop(\DIV, \ELInt{\vzone}, \ELInt{\vztwo})}{\langle(\vzone, \vztwo)\rangle}{\None}
@@ -2280,7 +2281,7 @@ The function
 applies $\explodedinterval$ to each constraint of $\cs$ in $\tenv$ and concatenates the resulting
 list, yielding the result in $\newcs$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -2298,7 +2299,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
   \explodeintervals(\tenv, \overname{\emptylist}{\cs}) \typearrow \overname{\emptylist}{\newcs}
@@ -2325,7 +2326,7 @@ expands the constraint $\vc$ into the equivalent list of exact constraints if
 $\vc$ matches a n ascending range constraint that is not too large in $\tenv$
 and the singleton list for $\vc$ otherwise.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{exact}):
@@ -2356,7 +2357,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[exact]{
   \astlabel(\vc) = \ConstraintExact
@@ -2398,10 +2399,10 @@ The function
 tests whether the set of numbers between $\vzone$ and $\vztwo$, inclusive, contains more than $\maxexplodedintervalsize$
 integers, yielding the result in $\vb$.
 
-\subsubsection{Prose}
-The value $\vb$ is $\True$ if and only if $\vztwo-\vzone$ is greater than $\maxexplodedintervalsize$.
+\ProseParagraph
+The value $\vb$ is $\True$ if and only if the absolute value of $\vzone-\vztwo$ is greater than $\maxexplodedintervalsize$.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \intervaltoolarge(\vzone, \vztwo) \typearrow \overname{\vztwo-\vzone > \maxexplodedintervalsize}{\vb}
@@ -2419,10 +2420,10 @@ when the $\op$ is applied to a pair of constraint lists.
 It is assumed that $\op$ is one of $\MUL$, $\SHL$, $\POW$, $\PLUS$, $\DIV$, $\MINUS$, $\MOD$, $\SHR$,
 and $\DIVRM$.
 
-\subsubsection{Prose}
+\ProseParagraph
 The value $\vb$ is $\True$ if and only if $\op$ is one of $\MUL$, $\SHL$, and $\POW$.
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
   \binopisexploding(\op) \typearrow \overname{\op \in \{\MUL, \SHL, \POW, \DIV, \DIVRM, \MOD, \SHR\}}{\vb}
@@ -2439,7 +2440,7 @@ The predicate
 tests whether the set of bit fields $\bfsone$ is included in the set of bit fields $\bfstwo$ in environment $\tenv$,
 returning a type error, if one is detected.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item checking whether each field $\vbf$ in $\bfsone$ exists in $\bfstwo$ via $\membfs$ yields $\vb_\vbf$\ProseOrTypeError;
@@ -2464,7 +2465,7 @@ The function
 \]
 checks whether the bitfield $\vbf$ exists in $\bfstwo$ in the context of $\tenv$, returning the result in $\vb$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{none}):
@@ -2638,7 +2639,7 @@ The function
 \]
 returns $\True$ is $\vt$ is has the \structure\ a of type corresponding to the AST label $\vl$ and a type error otherwise.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{okay}):
@@ -2656,7 +2657,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[okay]{
   \tstruct(\vt) \typearrow \vtp \OrTypeError\\\\
@@ -2699,7 +2700,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[t\_int\_parameterized]{}
 {
@@ -2729,14 +2730,14 @@ The function
 returns the \wellconstrainedstructure\ of a type $\vt$ in the static environment $\tenv$ --- $\vtp$, which is defined as follows.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item the \structure\ of $\vt$ in $\tenv$ is $\vtone$\ProseOrTypeError;
   \item the well-constrained version of $\vtone$ is $\vtp$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \tstruct(\tenv, \vt) \typearrow \vtone \OrTypeError\\\\
@@ -2757,7 +2758,7 @@ returns the expression $\ve$, which represents the width of the bitvector type $
 in the static environment $\tenv$.
 \ProseOrTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{okay}):
@@ -2774,7 +2775,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[okay]{
   \tstruct(\tenv, \vt) \typearrow \TBits(\ve, \Ignore) \OrTypeError
@@ -2802,14 +2803,14 @@ returns the natural number $\vw$, which represents the width of the bitvector ty
 in the static environment $\tenv$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item applying $\getbitvectorwidth$ to $\vt$ in $\tenv$ yields $\ewidth$\ProseOrTypeError;
   \item \Prosestaticeval{$\tenv$}{$\ewidth$}{integer for $\vw$}\ProseOrTypeError.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \getbitvectorwidth(\tenv, \vt) \typearrow \ewidth \OrTypeError\\\\
@@ -2833,7 +2834,7 @@ The function
 tests whether the types $\vtone$ and $\vttwo$ are bitvector types of the same width.
 If the answer is positive, the result is $\True$. \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item obtaining the width of $\vtone$ in $\tenv$ (via $\getbitvectorwidth$) yields the expression $\vn$\ProseOrTypeError;
@@ -2854,7 +2855,7 @@ All of the following apply:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[true]{
   \getbitvectorwidth(\tenv, \vtone) \typearrow \vn \OrTypeError\\\\

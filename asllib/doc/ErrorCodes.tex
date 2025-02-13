@@ -1,33 +1,131 @@
-\chapter{Errors\label{chap:errors}}
+\chapter{Errors\label{chap:Errors}}
 
 This chapter describes the errors defined for ASL.
-An error denotes the presence of a bug in an ASL specification, and the ASL Reference mandates the different types of errors (corresponding to different types of bugs) that implementations must detect, including when these errors must be detected and reported to users.
+%
+An error denotes the presence of a bug in an ASL specification,
+and the ASL Reference mandates the different types of errors
+(corresponding to different types of bugs) that implementations must detect,
+including when these errors must be detected and reported to users.
 
-Each type of error has an \emph{error code} which uniquely identifies it, a description of what the error means, and a \emph{kind} which dictates in which phase it is detected and reported.
-Error codes must be consistent across implementations, but each implementation can define its own appropriate error messages. \\
+\section{How Implementations Should Handle Errors}
 
+\RequirementDef{StaticErrorCheck} Implementations should detect and report \staticerrorsterm.
+Specifically, \staticerrorsterm{} must never cause a \dynamicerrorterm{} or
+cause an exception to be raised.
+%
+\secref{ExampleInterpreter} shows how an interpreter detects \builderrorsterm{}
+and \typingerrorsterm{}.
+%
+\listingref{typing-error-reporting} shows a specification containing a typing error,
+followed by an example of a report from \aslref{} in a \linuxbashshell.
 
-\section{Error kinds}
+\ASLListing{A specification resulting in a typing error}{typing-error-reporting}{\definitiontests/TypingErrorReporting.asl}
+% CONSOLE_BEGIN CONSOLE_STDERR aslref \definitiontests/TypingErrorReporting.asl
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
+File ../tests/ASLDefinition.t/TypingErrorReporting.asl, line 3,
+  characters 11 to 22:
+ASL Typing error: Illegal application of operator + on types integer {5}
+  and string.
+\end{Verbatim}
+% CONSOLE_END
 
+\RequirementDef{DynamicErrorBehavior} The behaviour of an implementation when a \dynamicerrorterm{}
+occurs is implementation defined, including, but not limited to,
+(incorrect) behavior not following the dynamic semantics, termination of execution or raising an exception.
+%
+Implementations should detect and report \dynamicerrorsterm{} on a ``best effort'' basis
+(that is, they are not required to detect and/or report \dynamicerrorsterm{}).
+%
+If an implementation raises an exception in response to a \dynamicerrorterm{},
+the exception must have the \supertypeterm{}
+\verb|runtime_exception|.
+%
+\listingref{dynamic-error-reporting} shows a specification containing a \dynamicerrorterm{},
+followed by an example of a report from \aslref{} in a \linuxbashshell.
+
+\ASLListing{A specification resulting in a dynamic error}{dynamic-error-reporting}{\definitiontests/DynamicErrorReporting.asl}
+
+% CONSOLE_BEGIN CONSOLE_STDERR CONSOLE_CMD aslref \definitiontests/DynamicErrorReporting.asl
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
+> aslref ../tests/ASLDefinition.t/DynamicErrorReporting.asl
+ASL Dynamic error: Illegal application of operator DIV for values 128 and 7.
+\end{Verbatim}
+% CONSOLE_END
+
+\RequirementDef{DynamicErrorHost}
+If an implementation terminates execution in response to a \dynamicerrorterm{},
+it should signal an error to the hosting environment.
+%
+Applying \aslref{} in a \linuxbashshell{} on the specification in \listingref{dynamic-error-reporting}
+yields the error status \texttt{1}.
+
+\RequirementDef{DynamicErrorAssert}
+An assertion failure arising from an \assertionstatementterm\ is a \dynamicerrorterm{}
+(see \SemanticsRuleRef{SAssert} and \errorcodeterm{} $\DynamicAssertionFailure$).
+%
+\listingref{AssertionStatement} shows an example of a specification failing
+an \assertionstatementterm{}.
+The report from \aslref{} in a \linuxbashshell{} is shown next:
+% CONSOLE_BEGIN CONSOLE_STDERR aslref \definitiontests/AssertionStatement.asl
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
+File ../tests/ASLDefinition.t/AssertionStatement.asl, line 5,
+  characters 11 to 22:
+ASL Execution error: Assertion failed: ((a + b) < 256).
+\end{Verbatim}
+% CONSOLE_END
+
+\RequirementDef{DynamicErrorUnreachable}
+Evaluation of the \unreachablestatementterm{} is a \dynamicerrorterm{}
+(see \SemanticsRuleRef{SUnreachable} and \errorcodeterm{} $\UnreachableError$).
+%
+\listingref{UnreachableStatement} shows an example specification that
+fails with a \dynamicerrorsterm{} due to evaluation of an \unreachablestatementterm{}.
+The report from \aslref{} in a \linuxbashshell{} is shown next:
+
+% CONSOLE_BEGIN CONSOLE_STDERR aslref \definitiontests/UnreachableStatement.asl
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
+diagnostic assertion failed: example message
+File ../tests/ASLDefinition.t/UnreachableStatement.asl, line 5,
+  characters 8 to 22:
+ASL Dynamic error: Unreachable reached.
+\end{Verbatim}
+% CONSOLE_END
+
+\section{Error Kinds}
+\hypertarget{def-errorcodeterm}{}
+Each type of error has an \emph{\errorcodeterm}, which uniquely identifies it
+(see \secref{ErrorCodesSummary} for the full list of \errorcodesterm),
+a description of what the error means,
+and a \emph{kind}, which dictates in which phase it is detected and reported.
+Error codes must be consistent across implementations, but each implementation
+can define its own appropriate error messages.
+
+ASL includes the following error kinds:
 \begin{description}
-  \item[Build errors]
-    Detected and reported during lexing, parsing, and building of AST.
-    Build errors are always detected and reported.
-    Their error codes are prefixed with \BuildErrorPrefix.
-  \item[Typing errors]
-    Detected and reported during type-checking.
-    Typing errors are always detected and reported, even if the part of the specification that causes them is never executed.
-    Their error codes are prefixed with \TypeErrorPrefix.
-  \item[Dynamic errors]
+  \item[Static Errors] \hypertarget{def-staticerrorterm}{}
+  A \emph{\staticerrorterm} is detected by inspecting a specification without evaluating it.
+  That is, across all possible executions. \staticerrorsterm{} can be further classified:
+  \begin{description}
+    \item[Build Errors] \hypertarget{def-builderrorterm}{}
+      Detected and reported during lexical analysis, parsing, and building of AST.
+      \Builderrorsterm{} are always detected and reported.
+      Their error codes, listed in \secref{BuildErrors}, are prefixed with \BuildErrorPrefix.
+
+    \item[Typing Errors] \hypertarget{def-typingerrorterm}{}
+      Detected and reported during typechecking.
+      \Typingerrorsterm{} are always detected and reported, even if the part of the specification that causes them is never executed.
+      Their error codes, listed in \secref{TypingErrors}, are prefixed with \TypeErrorPrefix.
+  \end{description}
+
+  \item[Dynamic Errors] \hypertarget{def-dynamicerrorterm}{}
     Detected and reported during execution, if and only if the part of the specification that causes them is executed.
-    Their error codes are prefixed with \DynamicErrorPrefix.
+    Their error codes, listed in \secref{DynamicErrors}, are prefixed with \DynamicErrorPrefix.
 \end{description}
 
-Build errors and typing errors are known collectively as \emph{static errors}.
+\Builderrorsterm{} and \typingerrorsterm{} are known collectively as .
 
-\section{Summary}
-
-The following table summarises the information in this chapter.
+\section{Error Codes Summary\label{sec:ErrorCodesSummary}}
+The following table summarises all error codes.
 
 \begin{center}
 \newcommand{\qq}{\symbol{34}} % ascii code for "
@@ -70,11 +168,8 @@ The following table summarises the information in this chapter.
 \end{tabular}
 \end{center}
 
-
-\section{Build errors}
-
+\section{Build Errors\label{sec:BuildErrors}}
 \begin{description}
-
   \item[$\LexicalError$]
     \textit{Lexical error.}
     An error was encountered during lexical analysis.
@@ -88,7 +183,7 @@ The following table summarises the information in this chapter.
   \hypertarget{def-reservedidentifier}{}
   \item[$\ReservedIdentifier$]
     \textit{Reserved identifier.}
-    A reserved identifier was used.
+    A reserved identifier was used. \\
     See \LexicalRuleRef{ReservedIdentifiers}.
 
   \hypertarget{def-binopprecedence}{}
@@ -102,12 +197,9 @@ The following table summarises the information in this chapter.
     \textit{Bad declaration.}
     A top-level declaration is invalid.
     For example, the standard library defines a non-subprogram (\ASTRuleRef{SetBuiltin}).
-
 \end{description}
 
-
-\section{Typing errors}
-
+\section{Typing Errors\label{sec:TypingErrors}}
 \begin{description}
 
 \hypertarget{def-undefinedidentifier}{}
@@ -164,7 +256,7 @@ The following table summarises the information in this chapter.
 \hypertarget{def-badoperands}{}
 \item[$\BadOperands$]
   \textit{Bad operands.}
-  A primitive operator was provided invalid operands during type checking.
+  A primitive operator was provided with invalid operands during typechecking.
   For example:
   \begin{itemize}
     \item The operands had the wrong types \\
@@ -205,7 +297,7 @@ The following table summarises the information in this chapter.
   \begin{itemize}
     \item Bitfields overlap on the left-hand side of an assignment (\TypingRuleRef{LESlice}).
     \item Bit slices that are \symbolicallyevaluable{} overlap on the left-hand side of an assignment (\TypingRuleRef{DisjointSlicesToPositions}).
-      Note that if the overlapping slices are not \symbolicallyevaluable{}, then this is a dynamic error ($\OverlappingSliceAssignment$).
+      Note that if the overlapping slices are not \symbolicallyevaluable{}, then this is a \dynamicerrorterm{} ($\OverlappingSliceAssignment$).
     \item A slice expression has an empty list of slices (\TypingRuleRef{ESlice}).
     \item Bitfield slices overlap in a bit vector type declaration \\
       (\TypingRuleRef{DisjointSlicesToPositions}).
@@ -233,8 +325,10 @@ The following table summarises the information in this chapter.
     \item Incorrect declaration of parameters (\TypingRuleRef{CheckParamDecls}).
     \item Clashes with another subprogram (\TypingRuleRef{AddNewFunc})
     \item A procedure or setter returns a value (\TypingRuleRef{SReturn}).
-    \item A setter is missing its corresponding getter, or a getter with the same name exists but does not have a matching signature (\TypingRuleRef{CheckSetterHasGetter}).
-    \item A function contains a control-flow path that does not terminate with either: return of a value, throwing of an exception, or \texttt{Unreachable()} \\
+    \item A setter is missing its corresponding getter, or a getter with the same name exists but does not have a matching signature \\
+          (\TypingRuleRef{CheckSetterHasGetter}).
+    \item A function contains a control-flow path that does not terminate with either:
+          return of a value, throwing of an exception, or \texttt{Unreachable()} \\
       (\TypingRuleRef{CheckStmtReturnsOrThrows}).
   \end{itemize}
 
@@ -264,27 +358,25 @@ The following table summarises the information in this chapter.
   \begin{itemize}
     \item An impure expression was provided where a pure one was required \\
       (\TypingRuleRef{SAssert}).
-    \item  A non-constant-time initalization expression was provided for a constant declaration (\TypingRuleRef{SDecl}.\textsc{constant}).
+    \item A non-constant-time initialization expression was provided for a constant declaration (\TypingRuleRef{SDecl}.\textsc{constant}).
     \item A \sideeffectconflictterm{} was found during an attempt to combine two sets of \sideeffectdescriptorsterm{} (\TypingRuleRef{NonConflictingUnion}).
   \end{itemize}
 
 \end{description}
 
-
-\section{Dynamic errors}
-
+\section{Dynamic Errors\label{sec:DynamicErrors}}
 \begin{description}
 
 \hypertarget{def-unreachableerror}{}
 \item[$\UnreachableError$]
   \textit{Unreachable.}
-  An \texttt{Unreachable()} statement was evaluated
+  An \unreachablestatementterm\ statement was evaluated\\
     (see \SemanticsRuleRef{SUnreachable}).
 
 \hypertarget{def-dynamicassertionfailure}{}
 \item[$\DynamicAssertionFailure$]
   \textit{Dynamic assertion failure.}
-  An assertion (\texttt{assert}) evaluated to $\False$
+  An \assertionstatementterm\ evaluated to $\False$
     (see \SemanticsRuleRef{SAssert}).
 
 \hypertarget{def-dynamictypeassertionfailure}{}
@@ -328,6 +420,8 @@ The following table summarises the information in this chapter.
 \hypertarget{def-overlappingsliceassignment}{}
 \item[$\OverlappingSliceAssignment$]
   \textit{Overlapping slice assignment.}
-  Bitvector slices that are not \symbolicallyevaluable{} overlap on the left-hand side of an assignment (\SemanticsRuleRef{CheckNonOverlappingSlices}).
-  Note that overlapping \emph{bitfields} are typing errors, and that if the overlapping slices are \symbolicallyevaluable{} this too is a typing error ($\BadSlices$).
+  Bitvector slices that are not \symbolicallyevaluable{} overlap on the left-hand side of an assignment \\
+  (\SemanticsRuleRef{CheckNonOverlappingSlices}).
+  Note that overlapping \emph{bitfields} are \typingerrorsterm{},
+  and that if the overlapping slices are \symbolicallyevaluable{} this too is a \typingerrorterm{} ($\BadSlices$).
 \end{description}

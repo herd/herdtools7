@@ -60,7 +60,7 @@ We also define helper functions via respective rules:
 \end{itemize}
 
 \TypingRuleDef{AnnotateCall}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item applying $\annotateexprlist$ to annotate the expression list $\vcall.\callargs$ in $\tenv$ yields \\
@@ -71,7 +71,7 @@ All of the following apply:
         $\vcall.\callcalltype$ in $\tenv$ yields $(\vcallp, \retty, \vses)$\ProseOrTypeError.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotateexprlist(\tenv, \vcall.\callargs) \typearrow \args \OrTypeError\\\\
@@ -116,7 +116,7 @@ is similar to $\annotatecall$, except that it accepts annotated version of param
 \ProseOtherwiseTypeError
 
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item applying $\unziplistthree$ to $\typedargs$ yields the corresponding list of types $\argtypes$,
@@ -143,7 +143,7 @@ All of the following apply:
   \item define $\vcall$ as the call with name $\namep$, parameters taken from $\paramsone$, arguments $\vargs$,
         and call type $\funcsig.\funcsubprogramtype$.
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \unziplistthree(\typedargs) = (\argtypes, \args, \vsessargs)\\
@@ -209,7 +209,7 @@ Note that this function relies on all standard library functions with input para
 \end{lstlisting}
 
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following applies:
 \begin{itemize}
   \item $\funcsig.\funcparameters$ is either
@@ -223,7 +223,7 @@ All of the following applies:
         appended to $\params$\ProseTerminateAs{\params}.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \funcsig.\funcparameters \eqname [(\vx, \Ignore)] \;\lor\;
@@ -255,7 +255,7 @@ checks that annotated parameters $\params$ are correct with respect to the decla
 \ProseOtherwiseTypeError\
 It assumes that $\funcsigparams$ and $\params$ have the same length.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -293,7 +293,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{
 }{
@@ -343,7 +343,7 @@ by substituting parameter names with their corresponding expressions in
 $\eqs$, yielding the type $\newty$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{t\_bits}):
@@ -389,7 +389,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[t\_bits]{
   \substexprnormalize(\tenv, \eqs, \ve) \typearrow \newe
@@ -443,7 +443,7 @@ by substituting parameter names with their corresponding expressions in
 $\eqs$, and then attempting to symbolically simplify the result, yielding the expression $\newe$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item transforming $\ve$ in the static environment $\tenv$, by substituting the parameter expressions
@@ -451,7 +451,7 @@ All of the following apply:
   \item symbolically simplifying $\veone$ in $\tenv$ yields $\newe$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \substexpr(\tenv, \ve) \typearrow \veone\\
@@ -476,7 +476,7 @@ by substituting parameter names with their corresponding expressions in
 $\substs$, yielding the expression $\newe$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{e\_var\_in\_substs}):
@@ -645,7 +645,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[e\_var\_in\_substs]{
   \assocopt(\vs, \substs) \typearrow \langle\newe\rangle
@@ -839,7 +839,7 @@ $\eqs$, and then attempting to symbolically simplify the result,
 yielding the integer constraint $\newc$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{exact}):
@@ -860,7 +860,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[exact]{
   \substexprnormalize(\tenv, \eqs, \ve) \typearrow \newe
@@ -894,7 +894,7 @@ checks that the types $\argtypes$ \typesatisfy\ the types of the corresponding
 formal arguments $\funcsigargs$ with the parameters substituted with their corresponding
 arguments as per $\eqs$ and results in a type error otherwise.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -918,7 +918,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 We note that \TypingRuleRef{AnnotateCallActualsTyped} guarantees
 that $\funcsigargs$ and $\argtypes$ have the same length.
 
@@ -959,7 +959,7 @@ $\calltype$ with respect to the parameter expressions $\eqs$,
 yielding the \optional\ annotated type $\rettyopt$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{function\_or\_getter}):
@@ -985,7 +985,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[function\_or\_getter]{
   \calltype \in \{\STFunction, \STGetter\}\\
@@ -1059,7 +1059,7 @@ If the second case holds, the function returns a tuple which comprises:
 \end{itemize}
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{undefined}):
@@ -1097,7 +1097,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[undefined]{
   G^\tenv.\overloadedsubprograms(\name) = \bot
@@ -1171,7 +1171,7 @@ subprograms whose arguments clash in $\candidates$.
 
 The names $\candidates$ are assumed to exist in $G^\tenv.\subprograms$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{no\_candidates}):
@@ -1192,7 +1192,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[no\_candidates]
 {}{
@@ -1225,7 +1225,7 @@ checks whether a list of types $\formaltys$ clashes with the list of types appea
 in the list of arguments $\vargs$ in $\tenv$, yielding the result in $\vb$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item equating the list lengths of $\formaltys$ and $\vargs$ either yields $\True$
@@ -1238,7 +1238,7 @@ All of the following apply:
 
 \CodeSubsection{\HasArgClashBegin}{\HasArgClashEnd}{../Typing.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \equallength(\formaltypes, \vargs) \typearrow \True \terminateas \False\\
@@ -1261,7 +1261,7 @@ annotates a list of expressions $\exprs$ from left to right, yielding a list of 
 each consisting of a type, an annotated expression, and a \sideeffectsetterm.
 \ProseOtherwiseTypeError
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -1281,7 +1281,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -1365,7 +1365,7 @@ We also define the following helper rules:
 \end{itemize}
 
 \SemanticsRuleDef{Call}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item evaluating each expression in $\args$ separately in $\env$ as per \\
@@ -1407,7 +1407,7 @@ All of the following apply:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[normal]{
   \evalexprlistm(\env, \args) \evalarrow \Normal(\vvargs, \envone)\OrAbnormal\\
@@ -1444,7 +1444,7 @@ All of the following apply:
 \CodeSubsection{\EvalCallBegin}{\EvalCallEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{FPrimitive}
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\env$ consists of the static environment $\tenv$ and the dynamic environment with $\genv$ as its
@@ -1461,7 +1461,7 @@ All of the following apply:
   \item the result of the entire evaluation is $\Normal((\vvs, \newg), \newenv)$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 The following rule utilizes the transition relation
 \hypertarget{def-evalprimitive}{}
 \[
@@ -1493,7 +1493,7 @@ In \listingref{semantics-fcall},
 the function \texttt{main} calls the function \texttt{foo} and the procedure \texttt{bar}.
 \ASLListing{Evaluating function calls}{semantics-fcall}{\semanticstests/SemanticsRule.FCall.asl}
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item $\env$ consists of the static environment $\tenv$ and the dynamic environment with the global
@@ -1522,7 +1522,7 @@ All of the following apply:
   \item the result is $C$ with its graph substituted for $\newg$.
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \env \eqname (\tenv, \denv)\\
@@ -1568,7 +1568,7 @@ checks whether the value in the optional expression $\velimitopt$ has reached th
 in $\env$, yielding the execution graph resulting from evaluating the optional expression in $\vg$.
 Otherwise, the result is a dynamic error indicating that the recursion limit has been reached.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{none}):
@@ -1595,7 +1595,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{
   \evallimit(\env, \velimitopt) \evalarrow (\None, \vg) \OrDynError
@@ -1635,7 +1635,7 @@ The helper relation
 generates an execution graph for reading the given value to a variable given
 by the identifier, and pairs it with the given value.
 
-\subsubsection{Prose}
+\ProseParagraph
 All of the following apply:
 \begin{itemize}
   \item reading the value $\vv$ into the variable named $\id$ gives $\newg$;
@@ -1644,7 +1644,7 @@ All of the following apply:
 
 \CodeSubsection{\EvalReadValueFromBegin}{\EvalReadValueFromEnd}{../Interpreter.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \readidentifier(\vv, \id) \evalarrow \newg
@@ -1663,7 +1663,7 @@ The relation
 generates Write Effects for the values
 returned by the evaluation of a primitive subprogram:
 
-\subsubsection{Prose}
+\ProseParagraph
   one of the following applies:
   \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -1691,7 +1691,7 @@ returned by the evaluation of a primitive subprogram:
 %
 %   \CodeSubsection{\EvalWriteRetValsBegin}{\EvalWriteRetValsEnd}{../Interpreter.ml}
 
-\subsubsection{Formally}
+\FormallyParagraph
   \begin{mathpar}
     \inferrule[empty]{}
     {
@@ -1726,7 +1726,7 @@ updates the pair consisting of the environments $\env$ and \executiongraph\ $\vg
 by assigning the values given by $\actuals$ to the identifiers given by $\vids$,
 yielding the updated pair $(\newenv, \newg)$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{empty}):
@@ -1749,7 +1749,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -1776,7 +1776,7 @@ The helper relation
 converts continuing configurations and returning configurations
 into corresponding normal configurations that can be returned by a subprogram evaluation.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
   \item All of the following apply (\textsc{continuing}):
@@ -1796,7 +1796,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
   \inferrule[continuing]{}
   {

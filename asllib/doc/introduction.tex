@@ -10,7 +10,7 @@ all understand. It can intentionally under specify behaviors in the architecture
 
 ASL is:
 \begin{itemize}
-    \item a first-order language with strong static type-checking.
+    \item a first-order language with strong static typechecking.
     \item whitespace-insensitive.
     \item imperative.
 \end{itemize}
@@ -44,15 +44,18 @@ ASL does not have support for:
     \item virtual functions.
 \end{itemize}
 
-A \emph{specification} consists of a self-contained collection of ASL code.
+A \emph{\specificationterm} consists of a self-contained collection of ASL code.
 \lrmcomment{\identd{GVBK}}
-More specifically, a specification is the set of declarations written in ASL code which describe an architecture.
+More specifically, a \specificationterm\ is the set of \globaldeclarationsterm\
+written in ASL code which describe an architecture.
 
-\section{Example Specification 1}
+\section{Example Specifications}
+
+\subsection{Example Specification 1}
 \listingref{spec1} shows a small example of a specification written in ASL. It consists of the following declarations:
 \begin{itemize}
     \item Global bitvectors \texttt{R0}, \texttt{R1}, and \texttt{R2} representing the state of the system.
-    \item A function \texttt{MyOR} demonstrating a simple bit-wise OR function of 2 bitvectors.
+    \item A function \texttt{MyOR} demonstrating a simple bitwise OR function of 2 bitvectors.
     \item Initialization of \texttt{R0} and \texttt{R1} bitvectors.
     \item Assignment of bitvector \texttt{R2} with the result of a function call.
 \end{itemize}
@@ -61,7 +64,7 @@ More specifically, a specification is the set of declarations written in ASL cod
 \lstinputlisting[caption=Example specification 1\label{listing:spec1}]{\definitiontests/spec1.asl}
 \end{center}
 
-\section{Example Specification 2}
+\subsection{Example Specification 2}
 \listingref{spec2} shows a small example of a specification written in ASL. It consists of the following declarations:
 \begin{itemize}
 \item A global variable \texttt{COUNT} representing the state of the system.
@@ -77,7 +80,7 @@ More specifically, a specification is the set of declarations written in ASL cod
 \lstinputlisting[caption=Example specification 2\label{listing:spec2}]{\definitiontests/spec2.asl}
 \end{center}
 
-\section{Example Specification 3}
+\subsection{Example Specification 3}
 \listingref{spec3} shows a small example of a specification in ASL. It consists of the following declarations:
 \begin{itemize}
     \item A function \texttt{Dot8} which operates on 2 bitvectors a byte at a time.
@@ -90,17 +93,54 @@ More specifically, a specification is the set of declarations written in ASL cod
 
 \ASLListing{Example specification 3}{spec3}{\definitiontests/spec3.asl}
 
-\paragraph{Structure of this Reference:}
-The rest of this document introduces elements of the ASL language and formalizes
-them. First, the mathematical background needed to understand the formalization
-is introduced in \chapref{FormalSystem}.
-Then, we define the ASL lexical structure \chapref{LexicalStructure}, syntax \chapref{Syntax},
-and abstract syntax (AST) \chapref{AbstractSyntax}.
-Familiarity with the AST is \underline{essential} for understanding the
-type system (static semantics) and the dynamic semantics.
-\chapref{TypeChecking}, and \chapref{Semantics} introduce the
-definitions used to formalize the type system and dynamic semantics.
-Following these chapters, the reference roughly follows the structure of the AST
-in a bottom-up fashion, until reaching \chapref{TopLevel} where all of the formalisms
-are used together to demonstrate how they can be utilized to form an interpreter
-for an ASL specification.
+\section{Structure of this Reference}
+This reference defines the various constructs of ASL.
+Each construct is defined via a subset of the following:
+\begin{description}
+    \item[Preamble] A high-level explanation of what the construct is intended for using
+        prose and code examples;
+    \item[Requirements] High-level rules that provide informal guidance.
+        These rules follow the naming convention \RequirementDefExample{Name};
+    \item[Syntax] Rules that define how the construct is expressed in syntax;
+    \item[AST] Rules that define how the construct is expressed in the AST;
+    \item[AST build rules] Rules for building an AST from parse trees.
+        These rules follow the naming convention \ASTRuleDefExample{Name}
+        and defined in terms of \inferencerules;
+    \item[Typing rules] Rules expressing the type system.
+        These rules follow the naming convention \TypingRuleDefExample{Name}.
+        Typing rules are defined by a paragraph titled \emph{Prose},
+        which defines the rule in prose,
+        a paragraph titled \emph{Formally}, which defines the rule in terms of \inferencerules,
+        and are accompanied by examples;
+    \item[Dynamic semantics rules] Rules expressing the dynamic semantics.
+        These rules follow the naming convention \SemanticsRuleDefExample{Name}.
+        Semantics rules are defined by a paragraph titled \emph{Prose},
+        which defines the rule in prose,
+        a paragraph titled \emph{Formally}, which defines the rule in terms of \inferencerules,
+        and accompanied by examples.
+\end{description}
+
+\subsection{Outline of the Rest of this Reference}
+The rest of this document introduces elements of the ASL language
+and formalizes them:
+\begin{itemize}
+    \item \chapref{FormalSystem} contains the mathematical definitions used
+        throughout this document;
+    \item \chapref{LexicalStructure} introduces the ASL lexical structure;
+    \item \chapref{Syntax} introduces the ASL syntax;
+    \item \chapref{AbstractSyntax} introduces the abstract syntax (AST).
+        Familiarity with the AST is \underline{essential} for understanding the
+        type system and the dynamic semantics;
+    \item \chapref{TypeChecking} and \chapref{Semantics} introduce basic
+        definitions needed to formalize the type system and dynamic semantics;
+    \item \chapref{Literals}--\chapref{Specifications}
+        define the various constructs in ASL, roughly following the structure of the AST
+        in a bottom-up fashion;
+    \item \chapref{TopLevel} is where all of the formalisms are used together to
+        demonstrate how they can be utilized to form an interpreter for an ASL specification;
+    \item \chapref{SideEffects}--\chapref{SemanticsUtilityRules} are additional
+        technical chapters for aspects of the type system and dynamic semantics.
+    \item \chapref{RuntimeEnvironment} describes how ASL specifications may be used
+        within a runtime environment.
+    \item \chapref{Errors} classifies the types of errors in ASL specifications.
+\end{itemize}

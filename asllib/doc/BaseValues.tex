@@ -15,7 +15,7 @@ of type $\vt$ in the static environment $\tenv$.
 \ProseOtherwiseTypeError
 
 \TypingRuleDef{BaseValue}
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
     \item All of the following apply (\textsc{t\_bool}):
@@ -116,7 +116,7 @@ One of the following applies:
               that is, $\EArray\{\EArrayLength: \length, \EArrayValue: \vvalue\}$.
     \end{itemize}
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[t\_bool]{}{
     \basevalue(\tenv, \overname{\TBool}{\vt}) \typearrow \overname{\ELiteral(\lbool(\False))}{\veinit}
@@ -230,7 +230,7 @@ One of the following applies:
 \end{mathpar}
 
 \TypingRuleDef{ConstraintAbsMin}
-\subsubsection{Prose}
+\ProseParagraph
 \hypertarget{def-constraintabsmin}{}
 The function
 \[
@@ -242,7 +242,7 @@ returns a single element list containing the integer closest to $0$ that satisfi
 and an empty list if the constraint represents an empty set.
 Otherwise, the result is $\TypeErrorVal{\NoBaseValue}$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
     \item All of the following apply (\textsc{exact}):
@@ -274,7 +274,7 @@ One of the following applies:
     \end{itemize}
 \end{itemize}
 
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[exact]{
     \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
@@ -307,7 +307,7 @@ One of the following applies:
 \end{mathpar}
 
 \TypingRuleDef{ListMinAbs}
-\subsubsection{Prose}
+\ProseParagraph
 \hypertarget{def-listminabs}{}
 The function
 \[
@@ -318,7 +318,7 @@ of integers in the list $\vl$. The result is biased towards positive integers. T
 if two integers $x$ and $y$ have the same absolute value and $x$ is positive and $y$ is negative
 then $x$ is considered closer to $0$.
 
-\subsubsection{Prose}
+\ProseParagraph
 One of the following applies:
 \begin{itemize}
     \item All of the following apply (\textsc{one}):
@@ -341,7 +341,7 @@ One of the following applies:
         \end{itemize}
     \end{itemize}
 \end{itemize}
-\subsubsection{Formally}
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[one]{}{
     \listminabs(\overname{[\vz]}{\vl}) \typearrow \vz
