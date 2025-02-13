@@ -278,7 +278,7 @@ module Make (C : Config) = struct
 
     let read_loc sz loc a ii =
       let mk_action loc' v' = Act.Access (Dir.R, loc', v', sz, a) in
-      let* v = M.read_loc false mk_action loc ii in
+      let* v = M.read_loc Port.No mk_action loc ii in
       resize_from_quad sz v >>= to_bv sz
 
     (**************************************************************************)
@@ -577,6 +577,7 @@ module Make (C : Config) = struct
         v aneutral (use_ii_with_poi ii poi) >>! []
 
     let do_read_memory (ii, poi) addr_m datasize_m an =
+      let addr_m = M.as_addr_port addr_m in
       let* addr = addr_m and* datasize = datasize_m in
       let sz = datasize_to_machsize datasize in
       read_loc sz (A.Location_global addr) an (use_ii_with_poi ii poi)
@@ -589,8 +590,9 @@ module Make (C : Config) = struct
       do_read_memory ii addr_m datasize_m (accdesc_to_annot true accdesc)
 
     let do_write_memory (ii, poi) addr_m datasize_m value_m an =
-      let value_m = M.as_data_port value_m in
-      let* addr = addr_m and* datasize = datasize_m and* value = value_m in
+      let addr_m = M.as_addr_port addr_m in
+      let* addr = M.as_addr_port addr_m
+      and* datasize = datasize_m and* value = value_m in
       let sz = datasize_to_machsize datasize in
       write_loc sz (A.Location_global addr) value an (use_ii_with_poi ii poi)
       >>! []

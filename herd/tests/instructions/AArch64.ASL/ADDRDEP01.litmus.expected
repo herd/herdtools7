@@ -1,0 +1,12 @@
+Test ADDRDEP01 Forbidden
+States 3
+0:X1=0; 1:X1=0;
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
+Ok
+Witnesses
+Positive: 3 Negative: 0
+Condition ~exists (0:X1=1 /\ 1:X1=1)
+Observation ADDRDEP01 Never 0 3
+Hash=4eac32f57811b0c72e950bf324272d4d
+
