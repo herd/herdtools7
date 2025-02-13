@@ -1,0 +1,12 @@
+Test T18 Allowed
+States 3
+[x]=1; [y]=1;
+[x]=1; [y]=2;
+[x]=2; [y]=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists ([x]=2 /\ [y]=2)
+Observation T18 Never 0 3
+Hash=2e972c8c3fb0424b94c5b36f68deae7d
+

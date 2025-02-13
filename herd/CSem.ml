@@ -76,28 +76,35 @@ module
 
       let mk_cutoff msg ii = M.mk_singleton_es (Act.CutOff msg) ii
 
-      let read_loc is_data mo =
-        M.read_loc is_data (fun loc v -> Act.Access (Dir.R, loc, v, mo, false, nat_sz))
+      let read_loc port mo =
+        M.read_loc port (fun loc v -> Act.Access (Dir.R, loc, v, mo, false, nat_sz))
 
-      let  read_exchange is_data vstored mo =
-        M.read_loc is_data (fun loc v -> Act.RMW (loc,v,vstored,mo,nat_sz))
+      let  read_exchange port vstored mo a ii =
+        M.read_loc port
+          (fun loc v -> Act.RMW (loc,v,vstored,mo,nat_sz))
+          (A.Location_global a)
+          ii
 
-      let read_reg is_data r ii =
-        read_loc is_data no_mo (A.Location_reg (ii.A.proc,r)) ii
+      let read_reg port r ii =
+        M.read_loc port
+          (fun loc v -> Act.Access (Dir.R, loc, v, no_mo, false, nat_sz))
+          (A.Location_reg (ii.A.proc,r)) ii
 
-      let read_mem is_data mo a =
-        read_loc is_data mo (A.Location_global a)
+      let read_mem port mo a ii =
+        M.read_loc port
+          (fun loc v -> Act.Access (Dir.R, loc, v, mo, false, nat_sz))
+          (A.Location_global a)
+          ii
 
-      let read_mem_atomic is_data a loc =
-        M.read_loc is_data
+      let read_mem_atomic port a loc =
+        M.read_loc port
           (fun loc v -> Act.Access (Dir.R, loc, v,  a, true, nat_sz))
           (A.Location_global loc)
 
-      let read_mem_atomic_known is_data a loc v =
-        M.read_loc is_data
+      let read_mem_atomic_known port a loc v =
+        M.read_loc port
           (fun loc _v -> Act.Access (Dir.R, loc, v,  a, true, nat_sz))
           (A.Location_global loc)
-
 
       let write_loc mo loc v ii =
         M.mk_singleton_es (Act.Access (Dir.W, loc, v, mo, false, nat_sz)) ii >>! v
@@ -113,7 +120,7 @@ module
       let mk_mb ii =  mk_fence_a a_mb ii
       let mk_rb_dep ii =   mk_fence_a a_rb_dep ii
 
-      let xchg is_data rloc re a ii =
+      let xchg port rloc re a ii =
         let add_mb = match a with
         | ["mb"] -> true | _ -> false in
         let aw =
@@ -130,7 +137,7 @@ module
             | _ -> an_once
           else
             MOorAN.AN a) in
-        let rmem = fun loc -> read_mem_atomic is_data ar loc ii
+        let rmem = fun loc -> read_mem_atomic port ar loc ii
         and wmem = fun loc v -> write_mem_atomic aw loc v ii >>! () in
         let exch = M.linux_exch rloc re rmem wmem in
         if lkmmv1 && add_mb then
@@ -139,7 +146,7 @@ module
             fun v -> mk_fence_a a ii >>! v
         else exch
 
-      let cxchg is_data rloc re mo v_loc ii =
+      let cxchg port rloc re mo v_loc ii =
         let m = match mo with
         | MemOrder.SC
         | MemOrder.Rlx -> (mo, mo)
@@ -148,8 +155,8 @@ module
         | MemOrder.Acq_Rel -> (MemOrder.Acq, MemOrder.Rel)
         | _ -> assert false in
         let rmem = match v_loc with
-        | None -> fun loc -> read_mem_atomic is_data (MOorAN.MO (fst m)) loc ii
-        | Some x -> fun loc -> read_mem_atomic_known is_data (MOorAN.MO (fst m)) loc x ii
+        | None -> fun loc -> read_mem_atomic port (MOorAN.MO (fst m)) loc ii
+        | Some x -> fun loc -> read_mem_atomic_known port (MOorAN.MO (fst m)) loc x ii
         and wmem = fun loc v -> write_mem_atomic (MOorAN.MO (snd m)) loc v ii >>! () in
         let exch = M.linux_exch rloc re rmem wmem in
         exch
@@ -160,16 +167,17 @@ module
             M.mk_singleton_es
               (Act.Lock (A.Location_global loc,Act.LockLinux Dir.W)) ii
 
-      let rec build_semantics_expr is_data e ii : V.v M.t = match e with
+      let rec build_semantics_expr port e ii : V.v M.t = match e with
       | C.Const v -> M.unitT (V.maybevToV v)
-      | C.LoadReg r -> read_reg is_data r ii
+      | C.LoadReg r -> read_reg port r ii
       | C.LoadMem(loc,mo) ->
+          let port = Port.Addr in
           let open MemOrderOrAnnot in
           (match mo with
-          | AN [] | MO _ -> build_semantics_expr is_data loc ii
+          | AN [] | MO _ -> build_semantics_expr port loc ii
           | AN (_::_) ->  begin match loc with
             | C.LoadMem (loc,AN []) ->
-                build_semantics_expr is_data loc ii
+                build_semantics_expr port loc ii
             | _ ->
                 Warn.user_error "Bad __load argument: %s"
                   (C.dump_expr loc) end) >>=
@@ -177,15 +185,15 @@ module
             begin match mo with
             | AN [("deref"|"lderef")]   ->
 (* Cannot do this with a macro, by lack of sequencing expression operator *)
-                read_mem is_data an_once l ii >>*=
+                read_mem port an_once l ii >>*=
                 fun v -> mk_rb_dep ii >>! v
             | _ ->
-                read_mem is_data mo l ii
+                read_mem port mo l ii
             end
 
       | C.TryLock (_,C.MutexC11) -> assert false
       | C.TryLock (loc,C.MutexLinux) ->
-          build_semantics_expr is_data loc ii >>=
+          build_semantics_expr port loc ii >>=
           fun l ->
             M.altT
               (linux_lock l ii >>! V.one)
@@ -193,7 +201,7 @@ module
                  (Act.TryLock (A.Location_global l)) ii >>! V.zero)
       | C.IsLocked (_,C.MutexC11) -> assert false
       | C.IsLocked (loc,C.MutexLinux) ->
-          build_semantics_expr is_data loc ii >>=
+          build_semantics_expr port loc ii >>=
           fun l ->
             M.altT
               (M.mk_singleton_es (* Read from lock *)
@@ -201,30 +209,30 @@ module
               (M.mk_singleton_es (* Read from a unlock *)
                  (Act.ReadLock (A.Location_global l,false)) ii >>! V.zero)
       | C.Op(op,e1,e2) ->
-          (build_semantics_expr is_data e1 ii >>|
-          build_semantics_expr is_data e2 ii) >>= fun (v1,v2) ->
+          (build_semantics_expr port e1 ii >>|
+          build_semantics_expr port e2 ii) >>= fun (v1,v2) ->
             M.op op v1 v2
 
       | C.Exchange(l,e,(MOorAN.AN a)) ->
-          let re = build_semantics_expr true e ii
-          and rloc =  build_semantics_expr false l ii in
-          xchg is_data rloc re a ii
+          let re = build_semantics_expr Port.Data e ii
+          and rloc =  build_semantics_expr Port.Addr l ii in
+          xchg port rloc re a ii
 
 
       | C.Exchange(l,e,MOorAN.MO mo) ->
           if Conf.variant Variant.NoRMW then
-            let re = build_semantics_expr true e ii
-            and rloc = build_semantics_expr false l ii in
-            cxchg is_data rloc re mo None ii
+            let re = build_semantics_expr Port.Data e ii
+            and rloc = build_semantics_expr Port.Addr l ii in
+            cxchg port rloc re mo None ii
           else
-            (build_semantics_expr true e ii >>|
-            build_semantics_expr false l ii)
+            (build_semantics_expr Port.Data e ii >>|
+            build_semantics_expr Port.Addr l ii)
               >>= (fun (v,l) ->
-                read_exchange is_data v mo (A.Location_global l) ii)
+                read_exchange port v mo l ii)
 
       | C.CmpExchange (eloc,eold,enew,a) ->
-          let mloc =  build_semantics_expr false eloc ii
-          and mold =  build_semantics_expr true eold ii in
+          let mloc =  build_semantics_expr Port.Addr eloc ii
+          and mold =  build_semantics_expr Port.No eold ii in
           let add_mb r =
             (if lkmmv1 then
               (match a with
@@ -254,45 +262,44 @@ module
               MOorAN.AN a) in
           M.altT
             (let r =
-              let mnew = build_semantics_expr true enew ii
+              let mnew = build_semantics_expr Port.Data enew ii
               and rmem vloc =
-                read_mem_atomic true arok vloc ii
+                read_mem_atomic Port.No arok vloc ii
               and wmem vloc w =
                 write_mem_atomic awok vloc w ii >>! () in
               M.linux_cmpexch_ok mloc mold mnew rmem wmem M.assign in
             add_mb r)
             (M.linux_cmpexch_no mloc mold
-               (fun vloc -> read_mem_atomic true arnok vloc ii)
+               (fun vloc -> read_mem_atomic Port.Data arnok vloc ii)
                M.neqT)
 
       | C.Fetch(l,op,e,mo) ->
-          (build_semantics_expr true e ii >>|
-          build_semantics_expr false l ii)
-            >>= (fun (v,l) ->
-              fetch_op op v mo l ii)
+          (build_semantics_expr Port.Data e ii >>|
+          build_semantics_expr Port.Addr l ii)
+          >>= fun (v,l) -> fetch_op op v mo l ii
 
 
       | C.ECas(obj,exp,des,success,failure,strong) ->
           (* Obtain location of "expected" value *)
-          build_semantics_expr false exp ii >>= fun loc_exp ->
+          build_semantics_expr Port.Addr exp ii >>= fun loc_exp ->
             (* Obtain location of object *)
-            build_semantics_expr false obj ii >>= fun loc_obj ->
+            build_semantics_expr Port.Addr obj ii >>= fun loc_obj ->
               (* Non-atomically read the value at "expected" location *)
-              read_mem true no_mo loc_exp ii >>*= fun v_exp ->
+              read_mem Port.No no_mo loc_exp ii >>*= fun v_exp ->
                 (* Non-deterministic choice *)
                 M.altT
-                  (read_mem true (mo_as_anmo failure) loc_obj ii >>*= fun v_obj ->
+                  (read_mem Port.Data (mo_as_anmo failure) loc_obj ii >>*= fun v_obj ->
                     (* For "strong" cas: fail only when v_obj != v_exp *)
                     (if strong then M.neqT v_obj v_exp else M.unitT ()) >>= fun () ->
                       (* Non-atomically write that value into the "expected" location *)
                       write_mem no_mo loc_exp v_obj ii >>!
                       V.zero)
                   (* Obtain "desired" value *)
-                  (build_semantics_expr true des ii >>= fun v_des ->
+                  (build_semantics_expr Port.No des ii >>= fun v_des ->
                     if Conf.variant Variant.NoRMW then
-                      let re = build_semantics_expr true des ii
-                      and rloc = build_semantics_expr false obj ii in
-                      cxchg is_data rloc re success (Some v_exp) ii >>!
+                      let re = build_semantics_expr Port.Data des ii
+                      and rloc = build_semantics_expr Port.Addr obj ii in
+                      cxchg port rloc re success (Some v_exp) ii >>!
                       V.one
                     else
                       (* Do RMW action on "object", to change its value from "expected"
@@ -320,38 +327,44 @@ module
           build_atomic_op ret a a eloc op e ii
       | C.AtomicAddUnless (eloc,ea,eu,retbool,a) ->
           (* read arguments *)
-          let mloc = build_semantics_expr false eloc ii
-          and mu =  build_semantics_expr true eu ii
+          let mloc = build_semantics_expr Port.Addr eloc ii
+          and mu =  build_semantics_expr Port.No eu ii
           and mrmem loc =
-            read_mem_atomic true (if lkmmv1 then an_once else (MOorAN.AN a)) loc ii in
+            read_mem_atomic Port.No
+              (if lkmmv1 then an_once else (MOorAN.AN a)) loc ii in
           M.altT
             (let r =
-              M.linux_add_unless_ok mloc (build_semantics_expr true ea ii)
+              M.linux_add_unless_ok mloc (build_semantics_expr Port.Addr ea ii)
                 mu mrmem
-                (fun loc v -> write_mem_atomic (if lkmmv1 then an_once else (MOorAN.AN a)) loc v ii >>! ())
+                (fun loc v ->
+                   write_mem_atomic
+                     (if lkmmv1 then an_once else (MOorAN.AN a)) loc v ii
+                   >>! ())
                 M.neqT M.add (if retbool then Some V.one else None) in
             (if lkmmv1 then
               mk_mb ii >>*= fun () -> r >>*= fun v ->
                 mk_mb ii >>! v
             else
               r))
-            (M.linux_add_unless_no mloc mu mrmem M.assign (if retbool then Some V.zero else None))
+            (M.linux_add_unless_no mloc mu mrmem M.assign
+               (if retbool then Some V.zero else None))
       | C.ExpSRCU(eloc,a) ->
           let r = match a with
           |  ["srcu-lock"] ->
               Some (A.V.intToV ((ii.A.proc +1)* 307 + ii.A.program_order_index * 599))
           | _ -> None in
-          build_semantics_expr false eloc ii >>=
+          build_semantics_expr Port.Addr eloc ii >>=
           fun (vloc) ->
             M.mk_singleton_es (Act.SRCU (A.Location_global vloc,a,r)) ii
               >>! (match r with None -> V.zero | Some v -> v)
       | C.ECall (f,_) -> Warn.fatal "Macro call %s in CSem" f
 
       and build_atomic_op ret a_read a_write eloc op e ii =
-        build_semantics_expr true e ii >>|
-        (build_semantics_expr false eloc ii >>=
+        build_semantics_expr Port.Data e ii >>|
+        (build_semantics_expr Port.Addr eloc ii >>=
          fun loc ->
-           (read_mem_atomic true (MOorAN.AN a_read) loc ii >>| M.unitT loc))
+           (read_mem_atomic Port.Data
+              (MOorAN.AN a_read) loc ii >>| M.unitT loc))
           >>== (* Notice '==' as atomic_op 'ouput' iico depends on R *)
         (fun (v,(vloc,loc)) ->
           M.op op vloc v >>=
@@ -363,14 +376,17 @@ module
 
       and fetch_op op v mo loc ii =
         if Conf.variant Variant.NoRMW then
-          read_mem_atomic true
+          read_mem_atomic Port.Data
             (MOorAN.MO (MemOrder.extract_read mo)) loc ii >>= fun oldv ->
-              M.op op oldv v >>= fun w ->
-                write_mem_atomic
-                  (MOorAN.MO (MemOrder.extract_write mo)) loc w ii >>! oldv
+          M.op op oldv v
+          >>= fun w ->
+          write_mem_atomic
+            (MOorAN.MO (MemOrder.extract_write mo)) loc w ii
+          >>! oldv
         else
           M.fetch op v
-            (fun v vstored -> Act.RMW (A.Location_global loc,v,vstored,mo,nat_sz))
+            (fun v vstored ->
+               Act.RMW (A.Location_global loc,v,vstored,mo,nat_sz))
             ii
 
       let zero = ParsedConstant.zero
@@ -380,7 +396,7 @@ module
         let e = match e with
         | C.Op ((Lt|Gt|Eq|Ne|Le|Ge),_,_) -> e
         | _ -> C.Op (Ne,e,C.Const zero) in
-        build_semantics_expr false e ii
+        build_semantics_expr Port.No e ii
 
       let rec build_semantics test ii : (A.program_order_index * B.t) M.t =
         let ii =
@@ -423,43 +439,43 @@ module
             end
         | C.DeclReg _ ->  M.unitT (ii.A.program_order_index, next0)
         | C.CastExpr e ->
-            build_semantics_expr true e ii >>=
+            build_semantics_expr Port.No e ii >>=
             fun _ ->  M.unitT (ii.A.program_order_index, next0)
         | C.StoreReg(_,Some r,e) ->
-            build_semantics_expr true e ii >>=
+            build_semantics_expr Port.No e ii >>=
             fun v -> write_reg r v ii >>=
               fun _ ->  M.unitT (ii.A.program_order_index, next0)
         | C.StoreReg(_,None,e) ->
-            build_semantics_expr true e ii >>=
+            build_semantics_expr Port.No e ii >>=
               fun _ ->  M.unitT (ii.A.program_order_index, next0)
         | C.StoreMem(loc,e,mo) ->
             (begin
               let open MemOrderOrAnnot in
               match mo with
-              | AN [] | MO _ ->  build_semantics_expr false loc ii
+              | AN [] | MO _ ->  build_semantics_expr Port.Addr loc ii
               | AN (_::_) -> match loc with
-                | C.LoadMem (loc,AN []) -> build_semantics_expr false loc ii
+                | C.LoadMem (loc,AN []) -> build_semantics_expr Port.Addr loc ii
                 | _ ->
                     Warn.user_error "Bad __store argument: %s"
                       (C.dump_expr loc)
             end >>|
-            build_semantics_expr true e ii) >>=
+            build_semantics_expr Port.Data e ii) >>=
             fun (l,v) -> write_mem mo l v ii >>=
               fun _ -> M.unitT (ii.A.program_order_index, next0)
 (* C11 mutex, not sure about them... *)
         | C.Lock (l,k) ->
-            build_semantics_expr false l ii >>=
+            build_semantics_expr Port.Addr l ii >>=
             fun l -> begin match k with
             | C.MutexC11 ->
                 (* C11 Lock always successful, oversimplification?  *)
                 (M.mk_singleton_es
-                   (Act.Lock (A.Location_global l, Act.LockC11 true)) ii)
+                   (Act.Lock (A.Location_global l, Act.LockC11 false)) ii)
             | C.MutexLinux ->
                 linux_lock l ii
             end
                 >>= fun () -> M.unitT (ii.A.program_order_index, next0)
         | C.Unlock (l,k) ->
-            build_semantics_expr false l ii >>=
+            build_semantics_expr Port.Addr l ii >>=
             fun l ->
               M.mk_singleton_es (Act.Unlock (A.Location_global l,k)) ii
                 >>= fun _ -> M.unitT (ii.A.program_order_index, next0)
@@ -475,10 +491,10 @@ module
               >>= fun _ -> M.unitT (ii.A.program_order_index, next0)
 (********************)
         | C.InstrSRCU(e,a,oe) ->
-            build_semantics_expr false e ii >>|
+            build_semantics_expr Port.No e ii >>|
             (match oe with
             | None -> M.unitT None
-            | Some e -> build_semantics_expr true e ii >>= fun v -> M.unitT (Some v))
+            | Some e -> build_semantics_expr Port.Addr e ii >>= fun v -> M.unitT (Some v))
               >>=
             fun (l,v) ->
               M.mk_singleton_es (Act.SRCU (A.Location_global l,a,v)) ii

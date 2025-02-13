@@ -62,7 +62,7 @@ module
         let ac = Act.access_of_location_std loc in
         Act.Access (Dir.R, loc, v, an, (), sz, ac)
 
-      let read_loc sz is_d = M.read_loc is_d (mk_read sz X86_64.Plain)
+      let read_loc port sz = M.read_loc port (mk_read sz X86_64.Plain)
 
       let plain = X86_64.Plain
       and atomic = X86_64.Atomic
@@ -95,34 +95,39 @@ module
            | I_CMPXCHG (sz, _, _) | I_CMOVC (sz, _, _)
            | I_MOVNTI (sz,_,_) | I_MOVD (sz,_,_) -> sz
 
-      let read_reg is_data r ii =
-        if is_data then
-          match r with
-          | X86_64.Ireg (_, p) ->
-             let sz = reg_size_to_mach_size p in
-             read_loc sz is_data (A.Location_reg (ii.A.proc,r)) ii >>= mask_from_reg_part p
-          | _ -> read_loc nat_sz is_data (A.Location_reg (ii.A.proc,r)) ii
-        else
-          read_loc nat_sz is_data (A.Location_reg (ii.A.proc,r)) ii
+      let read_reg port r ii =
+        match r with
+        | X86_64.Ireg (_, p) ->
+            let sz = reg_size_to_mach_size p in
+            read_loc port sz
+              (A.Location_reg (ii.A.proc,r)) ii >>= mask_from_reg_part p
+        | _ ->
+            read_loc port nat_sz (A.Location_reg (ii.A.proc,r)) ii
 
-      let read_mem sz _data an a ii =
-        let data = false in
+      let read_reg_ord = read_reg Port.No
+      and read_reg_data = read_reg Port.Data
+      and read_reg_addr = read_reg Port.Addr
+
+      let read_mem port sz an a ii =
         if mixed then
-          Mixed.read_mixed data sz (fun sz -> mk_read sz an) a ii
+          Mixed.read_mixed port sz (fun sz -> mk_read sz an) a ii
         else
           let a = A.Location_global a in
-          M.read_loc data (mk_read sz an) a ii
+          M.read_loc port (mk_read sz an) a ii
 
-      let read_mem_atomic sz a ii = read_mem sz false X86_64.Atomic a ii
+      let read_mem_atomic port sz a ii = read_mem port sz X86_64.Atomic a ii
 
-      let read_loc_gen sz data locked loc ii = begin
-        match loc with
-        | A.Location_global l -> read_mem sz data locked l ii
-        | A.Location_reg (_, reg) -> read_reg data reg ii
-        end >>= mask_from_reg_part
-                  (if data
-                   then (inst_size_to_reg_size (get_inst_size ii.X86_64.inst))
-                   else X86_64.R64b)
+      let read_loc_gen port sz locked loc ii =
+        begin
+          match loc with
+          | A.Location_global l -> read_mem port sz locked l ii
+          | A.Location_reg (_, reg) -> read_reg port reg ii
+        end
+        >>= mask_from_reg_part
+              (match port with
+               | Port.(No|Data) ->
+                   inst_size_to_reg_size (get_inst_size ii.X86_64.inst)
+               | Port.Addr -> X86_64.R64b)
 
       let read_loc_atomic sz is_d loc ii =
         read_loc_gen sz is_d (atomic_when_global loc) loc ii
@@ -158,7 +163,7 @@ module
         match r with
         | X86_64.Ireg (_, p) ->
            let sz = reg_size_to_mach_size p in
-           read_reg false r ii >>=
+           read_reg_ord r ii >>=
              normalize_register_and_value p >>=
              fun nr -> M.op1 (Op.LeftShift (if p = X86_64.R8bH then 8 else 0)) v >>=
              fun nv -> M.op Op.Or nr nv >>=
@@ -182,26 +187,36 @@ module
       let create_barrier b ii =
         M.mk_singleton_es (Act.Barrier b) ii
 
+      let lval_port =
+        let open X86_64 in
+        function
+        | Effaddr_rm64 (Rm64_reg _|Rm64_abs _) -> Port.No
+        | Effaddr_rm64 (Rm64_deref _|Rm64_scaled _) -> Port.Addr
+
+      let check_data =
+        let open Port in
+        fun ea -> match lval_port ea with Addr -> Data | No -> No | Data -> assert false
+
       let lval_ea ea ii = match ea with
         | X86_64.Effaddr_rm64 (X86_64.Rm64_reg r)->
            M.unitT (X86_64.Location_reg (ii.A.proc,r))
         | X86_64.Effaddr_rm64 (X86_64.Rm64_deref (r,o)) ->
-           read_reg false r ii >>=
+           read_reg_addr  r ii >>=
              fun v -> M.add v (V.intToV o) >>=
              fun vreg -> M.unitT (X86_64.Location_global vreg)
         | X86_64.Effaddr_rm64 (X86_64.Rm64_scaled (o1,r1,r2,o2)) ->
-           (read_reg false r1 ii >>= fun v -> M.add v (V.intToV o1)) >>|
-           (read_reg false r2 ii >>= fun v ->M.op Op.Mul v (V.intToV o2))
+           (read_reg_addr r1 ii >>= fun v -> M.add v (V.intToV o1)) >>|
+           (read_reg_addr r2 ii >>= fun v -> M.op Op.Mul v (V.intToV o2))
           >>= fun (vreg,a) -> M.add vreg a
           >>= fun vreg -> M.unitT (X86_64.Location_global vreg)
         | X86_64.Effaddr_rm64 (X86_64.Rm64_abs v)->
            M.unitT (X86_64.maybev_to_location v)
 
-      let rval_ea sz locked ea ii =
-        lval_ea ea ii >>= fun loc -> read_loc_gen sz true locked loc ii
+      let rval_ea port sz locked ea ii =
+        lval_ea ea ii >>= fun loc -> read_loc_gen port sz locked loc ii
 
-      let rval_op sz locked op ii = match op with
-        | X86_64.Operand_effaddr ea  -> rval_ea sz locked ea ii
+      let rval_op port sz locked op ii = match op with
+        | X86_64.Operand_effaddr ea  -> rval_ea port sz locked ea ii
         | X86_64.Operand_immediate s -> M.unitT (V.intToV s)
 
       let flip_flag v = M.op Op.Xor v V.one
@@ -219,18 +234,20 @@ module
       let xchg sz ea1 ea2 ii =
         (lval_ea ea1 ii >>| lval_ea ea2 ii) >>=
           (fun (l1,l2) ->
-            let r1 = read_loc_atomic sz true l1 ii
-            and r2 = read_loc_atomic sz true l2 ii
+            let r1 = read_loc_atomic (check_data ea2) sz l1 ii
+            and r2 = read_loc_atomic (check_data ea1) sz l2 ii
             and w1 = fun v -> write_loc_atomic sz l1 v ii
             and w2 = fun v -> write_loc_atomic sz l2 v ii in
             M.exch r1 r2 w1 w2) >>= B.next2T
 
       let cmpxchg sz locked ea r ii =
-        lval_ea ea ii >>= fun loc_ea -> read_loc_gen sz true locked loc_ea ii >>=
+        lval_ea ea ii
+        >>= fun loc_ea -> read_loc_gen Port.No sz locked loc_ea ii
+        >>=
           fun v_ea -> lval_ea (X86_64.Effaddr_rm64 (X86_64.Rm64_reg (X86_64.Ireg (X86_64.AX,X86_64.R64b)))) ii >>=
-          fun loc_ra -> read_loc_gen sz true locked loc_ra ii >>=
+          fun loc_ra -> read_loc_gen Port.Data sz locked loc_ra ii >>=
           fun v_ra -> write_zf v_ea v_ra ii >>=
-          fun _ -> rval_ea sz locked (X86_64.Effaddr_rm64 (X86_64.Rm64_reg r)) ii >>=
+          fun _ -> rval_ea Port.No sz locked (X86_64.Effaddr_rm64 (X86_64.Rm64_reg r)) ii >>=
           fun v_r -> M.op Op.Eq v_ea v_ra >>=
           (fun vcf ->
             M.choiceT vcf
@@ -249,7 +266,9 @@ module
           | (A.I_MOV|A.I_CMP) -> assert false in
         (lval_ea ea ii >>=
            fun loc ->
-           M.addT loc (read_loc_gen sz true locked loc ii) >>| rval_op sz locked op ii)
+           let port = check_data ea in
+           M.addT loc (read_loc_gen port sz locked loc ii)
+           >>| rval_op port sz locked op ii)
         >>=
           fun ((loc,v_ea),v_op) ->
           M.op o v_ea v_op >>=
@@ -289,22 +308,23 @@ module
           match ii.A.inst with
           | X86_64.I_NOP -> B.nextT
           | X86_64.I_RET as i when C.variant Variant.Telechat ->
-            read_reg true X86_64.RIP ii
+            read_reg_ord X86_64.RIP ii
             >>= do_indirect_jump test [] i
           | X86_64.I_EFF_OP (X86_64.I_CMP, sz, ea, op) ->
              let sz = inst_size_to_mach_size sz in
-             (rval_ea sz locked ea ii >>| rval_op sz locked op ii) >>=
+             (rval_ea Port.No sz locked ea ii >>|
+              rval_op Port.No sz locked op ii) >>=
                fun (v_ea,v_op) ->
                write_all_flags v_ea v_op ii >>= B.next1T
           | X86_64.I_EFF_OP (X86_64.I_MOV, sz, ea, op) ->
              let sz = inst_size_to_mach_size sz in
-             (lval_ea ea ii >>| rval_op sz locked op ii) >>=
+             (lval_ea ea ii >>| rval_op (check_data ea) sz locked op ii) >>=
                fun (loc,v_op) ->
                write_loc_gen sz locked loc v_op ii >>= B.next1T
 (* TODO add NTI annotation, at movnti is an ordinary store *)
           | X86_64.I_MOVNTI (sz,ea,r) ->
               let sz = inst_size_to_mach_size sz in
-              (lval_ea ea ii >>| read_reg true r ii) >>=
+              (lval_ea ea ii >>| read_reg (check_data ea) r ii) >>=
               fun (loc,v) ->
               write_loc_gen sz X86_64.NonTemporal loc v ii >>= B.next1T
           | X86_64.I_EFF_OP (x86_op, sz, ea, op) ->
@@ -312,18 +332,21 @@ module
              do_op sz locked x86_op ea op ii (* Problem, it's not always xor but the parameter of I_EFF_OP *)
           | X86_64.I_EFF (X86_64.I_SETNB, sz, ea) ->
              let sz = inst_size_to_mach_size sz in
-             (lval_ea ea ii >>| read_reg false (X86_64.Flag X86_64.CF) ii) >>=
+             (lval_ea ea ii >>|
+              read_reg (check_data ea) (X86_64.Flag X86_64.CF) ii) >>=
                fun (loc,cf) ->
                flip_flag cf >>=
                fun v -> write_loc sz plain loc v ii >>= B.next1T
           | X86_64.I_EFF (inst, sz, ea) ->
              let sz = inst_size_to_mach_size sz in
              lval_ea ea ii >>=
-               fun loc -> read_loc_gen sz true locked loc ii >>=
-               fun v -> begin
-                   if inst = X86_64.I_DEC
-                   then M.op Op.Sub v V.one
-                   else M.add v V.one
+               fun loc -> read_loc_gen (check_data ea) sz locked loc ii >>=
+               fun v ->
+                 begin
+                   match inst with
+                   | X86_64.I_DEC -> M.op Op.Sub v V.one
+                   | X86_64.I_INC -> M.op Op.Add v V.one
+                   | _ -> assert false
                  end >>=
                fun v ->
                (write_loc_gen sz locked loc v ii >>|
@@ -331,46 +354,47 @@ module
                   write_zf v V.zero ii) >>= B.next3T
           | X86_64.I_CMOVC (sz,r,ea) ->
              let sz = inst_size_to_mach_size sz in
-             read_reg false (X86_64.Flag X86_64.CF) ii >>*=
+             read_reg_ord (X86_64.Flag X86_64.CF) ii >>*=
                (fun vcf ->
                  M.choiceT vcf
-                   (rval_ea  sz locked ea ii >>= fun vea -> write_reg r vea ii >>= B.next1T)
+                   (rval_ea Port.No sz locked ea ii
+                    >>= fun vea -> write_reg r vea ii >>= B.next1T)
                    B.nextT)
           |  X86_64.I_JMP lbl -> B.branchT lbl
 
           (* Conditional branch, I need to look at doc for
              interpretation of conditions *)
           |  X86_64.I_JCC (X86_64.C_LE,lbl) ->
-              read_reg false (X86_64.Flag X86_64.SF) ii >>=
+              read_reg_ord (X86_64.Flag X86_64.SF) ii >>=
                 (* control, data ? no event generated after this read anyway *)
                 fun sf -> (* LE simply is the negation of GT, given by sign flag *)
                 flip_flag sf >>=
                 fun v -> B.bccT v lbl
           | X86_64.I_JCC (X86_64.C_LT,lbl) ->
-             (read_reg false (X86_64.Flag X86_64.ZF) ii >>|
-                (read_reg false (X86_64.Flag X86_64.SF) ii >>= flip_flag)) >>=
+             (read_reg_ord (X86_64.Flag X86_64.ZF) ii >>|
+                (read_reg_ord (X86_64.Flag X86_64.SF) ii >>= flip_flag)) >>=
                fun (v1,v2) ->
                M.op Op.Or v1 v2 >>=
                fun v -> B.bccT v lbl
           | X86_64.I_JCC (X86_64.C_GE,lbl) ->
-             (read_reg false (X86_64.Flag X86_64.ZF) ii >>| read_reg false (X86_64.Flag X86_64.SF) ii) >>=
+             (read_reg_ord (X86_64.Flag X86_64.ZF) ii >>| read_reg_ord (X86_64.Flag X86_64.SF) ii) >>=
                fun (v1,v2) ->
                M.op Op.Or v1 v2 >>=
                fun v -> B.bccT v lbl
           | X86_64.I_JCC (X86_64.C_GT,lbl) ->
-             read_reg false (X86_64.Flag X86_64.SF) ii >>=
+             read_reg_ord (X86_64.Flag X86_64.SF) ii >>=
                fun v -> B.bccT v lbl
           | X86_64.I_JCC (X86_64.C_EQ,lbl) ->
-             read_reg false (X86_64.Flag X86_64.ZF) ii >>=
+             read_reg_ord (X86_64.Flag X86_64.ZF) ii >>=
                fun v -> B.bccT v lbl
           | X86_64.I_JCC (X86_64.C_NE,lbl) ->
-             read_reg false (X86_64.Flag X86_64.ZF) ii >>= flip_flag >>=
+             read_reg_ord (X86_64.Flag X86_64.ZF) ii >>= flip_flag >>=
                fun v -> B.bccT v lbl
           | X86_64.I_JCC (X86_64.C_S,lbl) ->
-             read_reg false (X86_64.Flag X86_64.SF) ii >>=
+             read_reg_ord (X86_64.Flag X86_64.SF) ii >>=
                fun v -> B.bccT v lbl
           | X86_64.I_JCC (X86_64.C_NS,lbl) ->
-             read_reg false (X86_64.Flag X86_64.SF) ii >>= flip_flag >>=
+             read_reg_ord (X86_64.Flag X86_64.SF) ii >>= flip_flag >>=
                fun v -> B.bccT v lbl
 
           | X86_64.I_LOCK inst -> begin

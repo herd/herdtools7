@@ -138,7 +138,7 @@ test.mips:
 		-libdir-path ./herd/libdir \
 		-litmus-dir ./herd/tests/instructions/MIPS \
 		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 RISCV instructions tests: OK"
+	@ echo "herd7 MIPS instructions tests: OK"
 
 test:: test.neon
 test-local:: test.neon

@@ -1,0 +1,12 @@
+Test ADDRDEP02 Forbidden
+States 3
+0:X1=0; 1:X1=0;
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
+Ok
+Witnesses
+Positive: 3 Negative: 0
+Condition ~exists (0:X1=1 /\ 1:X1=1)
+Observation ADDRDEP02 Never 0 3
+Hash=2c5ea9476c1c4a84f083fea413b7c4a8
+

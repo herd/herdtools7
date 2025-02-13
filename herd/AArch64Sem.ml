@@ -167,48 +167,53 @@ module Make
         M.mk_singleton_es
           (Act.Fault (ii,loc,dir,annot,fh || is_sync_exc_entry,ft,msg)) ii
 
-      let read_reg is_data r ii = match r with
+      let read_reg port r ii = match r with
       | AArch64.ZR -> M.unitT V.zero
       | _ ->
-          M.read_loc is_data (mk_read quad Annot.N aexp) (A.Location_reg (ii.A.proc,r)) ii
+          M.read_loc port
+            (mk_read quad Annot.N aexp) (A.Location_reg (ii.A.proc,r)) ii
 
-      let read_reg_morello is_data r ii =
-        if not morello then Warn.user_error "capabilities require -variant morello" ;
+      let read_reg_morello port r ii =
+        if not morello then
+          Warn.user_error "capabilities require -variant morello" ;
         match r with
         | AArch64.ZR -> M.unitT V.zero
         | _ ->
-            M.read_loc is_data
+            M.read_loc port
               (mk_read MachSize.S128 Annot.N aexp)
               (A.Location_reg (ii.A.proc,r)) ii
 
-      let read_reg_neon is_data r ii =
+      let read_reg_neon port r ii =
         let vr = match r with
         | AArch64Base.SIMDreg _ -> r
         | AArch64Base.Vreg(vr',_) -> (AArch64Base.SIMDreg vr')
         | _ -> assert false in
           let location = A.Location_reg (ii.A.proc,vr) in
-          M.read_loc is_data (mk_read MachSize.S128 Annot.N aexp) location ii
+          M.read_loc port (mk_read MachSize.S128 Annot.N aexp) location ii
 
       let neon_getlane cur_val idx esize =
         let mask = V.op1 (Op.LeftShift (idx*esize)) (AArch64.neon_mask esize) in
         M.op Op.And mask cur_val >>= fun masked_val ->
         M.op1 (Op.LogicalRightShift (idx*esize)) masked_val
 
-      let read_reg_neon_elem is_data r idx ii = match r with
+      let read_reg_neon_elem port r idx ii = match r with
       | AArch64Base.Vreg (_,(_,esize)) ->
-          read_reg_neon is_data r ii >>= fun cur_val ->
+          read_reg_neon port r ii >>= fun cur_val ->
           neon_getlane cur_val idx esize
       | _ -> assert false
 
-      let read_reg_sz sz is_data r ii = match sz with
-      | MachSize.S128 -> read_reg_morello is_data r ii
-      | MachSize.Quad when not morello || not is_data -> read_reg is_data r ii
+      let read_reg_sz port sz r ii = match sz with
+      | MachSize.S128 -> read_reg_morello port r ii
+      | MachSize.Quad when not morello -> read_reg port r ii
       | MachSize.Quad|MachSize.Word|MachSize.Short|MachSize.Byte ->
-          read_reg is_data r ii >>= uxt_op sz
+          read_reg port r ii >>= uxt_op sz
 
-      let read_reg_ord = read_reg_sz quad false
-      let read_reg_ord_sz sz = read_reg_sz sz false
-      let read_reg_data sz = read_reg_sz sz true
+      let read_reg_ord = read_reg_sz Port.No quad
+      let read_reg_ord_sz = read_reg_sz Port.No
+      let read_reg_data = read_reg_sz Port.Data quad
+      let read_reg_data_sz = read_reg_sz Port.Data
+      let read_reg_addr = read_reg_sz Port.Addr quad
+      let read_reg_addr_sz = read_reg_sz  Port.Addr
 
 (* Fetch of an instruction, i.e., a read from a label *)
       let mk_fetch an loc v =
@@ -252,10 +257,10 @@ module Make
       let read_nzcv ii =
         let ( << ) m i = m >>= fun v -> M.op1 (Op.LeftShift i) v in
         let ( || ) m1 m2 = m1 >>| m2 >>= fun (v1, v2) -> M.op Op.Or v1 v2 in
-        let n = read_reg true AArch64.(PState PSTATE.N) ii
-        and z = read_reg true AArch64.(PState PSTATE.Z) ii
-        and c = read_reg true AArch64.(PState PSTATE.C) ii
-        and v = read_reg true AArch64.(PState PSTATE.V) ii in
+        let n = read_reg Port.No AArch64.(PState PSTATE.N) ii
+        and z = read_reg Port.No AArch64.(PState PSTATE.Z) ii
+        and c = read_reg Port.No AArch64.(PState PSTATE.C) ii
+        and v = read_reg Port.No AArch64.(PState PSTATE.V) ii in
         n << 3 || z << 2 || c << 1 || v
 
       let write_reg_morello r v ii =
@@ -295,7 +300,7 @@ module Make
 
       let write_reg_neon_elem sz r idx v ii = match r with
       | AArch64Base.Vreg (_,(_,esize)) ->
-         read_reg_neon false r ii >>=
+         read_reg_neon Port.No r ii >>=
          fun old_val -> neon_setlane old_val idx esize v >>= fun new_val ->
          write_reg_neon_sz sz r new_val ii
       | _ -> assert false
@@ -356,12 +361,12 @@ module Make
             calc 1
         | _ -> 0
 
-      let read_reg_predicate is_data r ii =
+      let read_reg_predicate r ii =
         let vr = match r with
         | AArch64Base.Preg(_,_) | AArch64Base.PMreg(_,_) -> r
         | _ -> assert false in
         let location = A.Location_reg (ii.A.proc,vr) in
-        M.read_loc is_data (mk_read MachSize.S128 Annot.N aexp) location ii
+        M.read_loc Port.No (mk_read MachSize.S128 Annot.N aexp) location ii
 
       let predicate_setlane old_val idx psize v =
         let mask =
@@ -409,12 +414,12 @@ module Make
       | AArch64Base.Zreg (_,esize) -> scalable_nbits / esize
       | _ -> assert false
 
-      let read_reg_scalable is_data r ii =
+      let read_reg_scalable port r ii =
         let vr = match r with
         | AArch64Base.Zreg _ -> r
         | _ -> assert false in
           let location = A.Location_reg (ii.A.proc,vr) in
-          M.read_loc is_data (mk_read MachSize.S128 Annot.N aexp) location ii
+          M.read_loc port (mk_read MachSize.S128 Annot.N aexp) location ii
 
       let scalable_setlane old_val idx esize v =
         let mask =
@@ -500,12 +505,12 @@ module Make
         | AArch64Base.Horizontal -> za_setlane old_val tile slice idx esize v
         | AArch64Base.Vertical -> za_setlane old_val tile idx slice esize v
 
-      let read_reg_za is_data r ii =
+      let read_reg_za r ii =
         let vr = match r with
         | AArch64Base.ZAreg _ -> r
         | _ -> assert false in
           let location = A.Location_reg (ii.A.proc,vr) in
-          M.read_loc is_data (mk_read MachSize.S128 Annot.N aexp) location ii
+          M.read_loc Port.No (mk_read MachSize.S128 Annot.N aexp) location ii
 
       let write_reg_za_sz sz r v ii =
         let pr = match r with
@@ -603,11 +608,11 @@ module Make
 
 (*  Low level tag access *)
       let do_read_tag a ii =
-        M.read_loc false
+        M.read_loc Port.No
           (fun loc v -> access_ord Dir.R loc v Access.TAG)
           (A.Location_global a) ii
       and do_read_tag_nexp a ii =
-        M.read_loc false
+        M.read_loc Port.No
           (fun loc v -> access_anexp AArch64.nexp_annot Dir.R loc v Access.TAG)
           (A.Location_global a) ii
       and do_write_tag a v ii =
@@ -721,7 +726,7 @@ module Make
       let extract_tagged v = arch_op1 AArch64Op.Tagged v
 
       let mextract_whole_pte_val an nexp a_pte iiid =
-        (M.do_read_loc false
+        (M.do_read_loc Port.No
            (fun loc v ->
              Act.Access (Dir.R,loc,v,an,nexp,quad,Access.PTE))
            (A.Location_global a_pte) iiid)
@@ -1046,11 +1051,11 @@ module Make
       let do_read_mem_ret sz an anexp ac a ii =
         let m a =
           if mixed then begin
-              Mixed.read_mixed false sz (fun sz -> mk_read sz an anexp) a ii
+              Mixed.read_mixed Port.No sz (fun sz -> mk_read sz an anexp) a ii
             end else begin
               let mk_act loc v =  Act.Access (Dir.R,loc,v,an,anexp,sz,ac) in
               let loc = A.Location_global a in
-              M.read_loc false mk_act loc ii
+              M.read_loc Port.No mk_act loc ii
             end in
         if morello then process_read_capability sz a m ii
         else m a
@@ -1144,10 +1149,10 @@ module Make
            underlying monadic operations. We first define our fake variables,
            then a few logical operations on those.*)
         (* Variables *)
-        let n = read_reg true AArch64.(PState PSTATE.N) ii
-        and z = read_reg true AArch64.(PState PSTATE.Z) ii
-        and c = read_reg true AArch64.(PState PSTATE.C) ii
-        and v = read_reg true AArch64.(PState PSTATE.V) ii in
+        let n = read_reg Port.No AArch64.(PState PSTATE.N) ii
+        and z = read_reg Port.No AArch64.(PState PSTATE.Z) ii
+        and c = read_reg Port.No AArch64.(PState PSTATE.C) ii
+        and v = read_reg Port.No AArch64.(PState PSTATE.V) ii in
         let true_ = M.unitT V.one in
         (* Operators *)
         (* Note: I use [!a] as a shortcut for [a == 0],
@@ -1657,17 +1662,18 @@ module Make
         let open AArch64Base in
         match kr, s with
         | K 0, S_NOEXT -> (* Immediate with no shift*)
-            read_reg_ord rs ii
+            read_reg_addr rs ii
         | K k, s -> (* Immediate with offset, with shift *)
-            read_reg_ord rs ii
+            read_reg_addr rs ii
             >>= fun v -> shift MachSize.Quad s (V.intToV k)
             >>= M.add v
-        | RV(_,r), S_NOEXT -> (* register, no shift *)
-            (read_reg_ord rs ii >>| read_reg_ord r ii)
+        | RV(v,r), S_NOEXT -> (* register, no shift *)
+            (read_reg_addr rs ii >>| read_reg_addr_sz (tr_variant v) r ii)
             >>= fun (v1,v2) -> M.add v2 v1
         | RV(v,r), s -> (* register, with shift *)
-            (read_reg_ord rs ii >>| read_reg_ord r ii)
-            >>= fun (v1,v2) -> shift (tr_variant v) s v2
+            let sz = tr_variant v in
+            (read_reg_addr rs ii >>| read_reg_addr_sz sz r ii)
+            >>= fun (v1,v2) -> shift sz s v2
             >>= fun v2 -> M.add v1 v2
 
       let get_ea_idx rs k ii = get_ea rs (AArch64.K k) AArch64.S_NOEXT ii
@@ -1676,24 +1682,23 @@ module Make
         get_ea_idx rs k ii >>== fun v -> write_reg_dest rs v ii
 
       let get_ea_reg rs _v ri sext s ii =
-        read_reg_ord rs ii >>| (read_reg_ord ri ii >>= memext_sext sext s)
+        read_reg_addr rs ii >>| (read_reg_addr ri ii >>= memext_sext sext s)
         >>= fun (v1,v2) -> M.add v1 v2
 
       let add_size a sz = M.add a (V.intToV (MachSize.nbytes sz))
-
 
       let post_kr rA addr kr ii =
         let open AArch64Base in
         let get_k = match kr with
         | K k -> M.unitT (V.intToV k)
-        | RV(_,rO) -> read_reg_ord rO ii in
+        | RV(v,rO) -> read_reg_ord_sz (tr_variant v) rO ii in
         get_k >>= fun k ->
         if V.is_var_determined k && V.is_zero k then M.unitT() else
         M.add addr k >>= fun new_addr ->
         write_reg rA new_addr ii
 
-(* Ordinary loads *)
       let ldr0 op sz rd rs e ii =
+(* Ordinary loads *)
         let open AArch64Base in
         let open MemExt in
         let mop ac a =
@@ -1712,7 +1717,7 @@ module Make
             * from the ordinary `do_read_mem`.
             *)
            M.delay_kont "ldr_postindex"
-             (read_reg_ord rs ii)
+             (read_reg_addr rs ii)
              (fun a_virt ma ->
                do_ldr rs sz Annot.N
                  (fun ac a ->
@@ -1750,7 +1755,7 @@ module Make
           let ldp_wback sz an rd1 rd2 rs k post ii =
             let m =
               M.delay_kont "ldp_wback"
-                (read_reg_ord rs ii >>= add_if (not post) k)
+                (read_reg_addr rs ii >>= add_if (not post) k)
                 (fun a_virt ma ->
                   do_ldr rs sz Annot.N
                     (fun ac a ->
@@ -1827,7 +1832,7 @@ module Make
               add_size a sz >>= fun a ->
               do_read_mem sz an aexp ac rd2 a ii
             end)
-          (read_reg_ord rs ii) ii
+          (read_reg_addr rs ii) ii
 
       and ldar sz t rd rs ii =
         let open AArch64 in
@@ -1845,13 +1850,13 @@ module Make
               | AX -> read_mem_reserve sz Annot.XA
               | AQ -> read_mem_acquire_pc sz in
             read aexp ac rd a ii)
-          (read_reg_ord rs ii)  ii
+          (read_reg_addr rs ii)  ii
 
       let str_simple sz rs rd m_ea ii =
         do_str rd
           (fun ac a _ ii ->
                M.data_input_next
-                 (read_reg_data sz rs ii)
+                 (read_reg_data_sz sz rs ii)
                  (fun v -> do_write_mem sz Annot.N aexp ac a v ii))
           sz Annot.N
           m_ea  (M.unitT V.zero) ii
@@ -1865,14 +1870,14 @@ module Make
         | Imm (k,PostIdx) ->
            let m =
              M.delay_kont "str_post"
-               (read_reg_ord rd ii)
+               (read_reg_addr rd ii)
                (fun a_virt ma ->
                  do_str rd
                    (fun ac a _ ii ->
                      M.add a_virt (V.intToV k) >>= fun b -> write_reg rd b ii
                      >>|
                      M.data_input_next
-                       (read_reg_data sz rs ii)
+                       (read_reg_data_sz sz rs ii)
                        (fun v -> do_write_mem sz Annot.N aexp ac a v ii))
                    sz Annot.N
                    ma (M.unitT V.zero) ii) in
@@ -1890,7 +1895,7 @@ module Make
         fun sz an rs1 rs2 rd k post ii ->
           let m =
             M.delay_kont "stp_wback"
-              (read_reg_ord rd ii >>= add_if (not post) k)
+              (read_reg_addr rd ii >>= add_if (not post) k)
               (fun a_virt ma ->
                 do_str rd
                   (fun ac a _ ii ->
@@ -1902,10 +1907,10 @@ module Make
                            assert (not post) ;
                            fun m1 m2 -> M.seq_mem m2 m1
                         | _ -> (>>|) in
-                      ((read_reg_data sz rs1 ii >>> fun v ->
+                      ((read_reg_ord_sz sz rs1 ii >>> fun v ->
                         do_write_mem sz an aexp ac a v ii) >>|
                          (add_size a sz >>= fun a ->
-                          read_reg_data sz rs2 ii >>> fun v ->
+                          read_reg_ord_sz sz rs2 ii >>> fun v ->
                           do_write_mem sz an aexp ac a v ii)))
                   sz Annot.N
                   ma (M.unitT V.zero)
@@ -1932,10 +1937,10 @@ module Make
             let (>>>) = M.data_input_next in
             do_str rd
               (fun ac a _ ii ->
-                (read_reg_data sz rs1 ii >>> fun v ->
+                (read_reg_ord_sz sz rs1 ii >>> fun v ->
                   do_write_mem sz an aexp ac a v ii) >>|
                   (add_size a sz >>= fun a ->
-                    read_reg_data sz rs2 ii >>> fun v ->
+                    read_reg_ord_sz sz rs2 ii >>> fun v ->
                       do_write_mem sz an aexp ac a v ii))
               sz Annot.N
               (get_ea_idx rd k ii)
@@ -1948,7 +1953,7 @@ module Make
 
       let stlr sz rs rd ii =
         do_str rd (do_write_mem sz Annot.L aexp) sz Annot.L
-          (read_reg_ord rd ii) (read_reg_data sz rs ii) ii
+          (read_reg_addr rd ii) (read_reg_data_sz sz rs ii) ii
 
       and do_stxr ms mw sz t rr rd ii  =
         let open AArch64Base in
@@ -1973,12 +1978,12 @@ module Make
               (fun v -> write_reg rr v ii)
               (mw an ac))
               (to_perms "w" sz)
-              (read_reg_ord rd ii)
+              (read_reg_addr rd ii)
               ms an ii
 
       let stxr sz t rr rs rd ii =
         do_stxr
-          (read_reg_data sz rs ii)
+          (read_reg_ord_sz sz rs ii)
           (fun an ac ea resa v  -> write_mem_atomic sz an aexp ac ea v resa ii)
           sz t rr rd ii
 
@@ -1988,11 +1993,11 @@ module Make
           (M.unitT (V.zero))
           (fun an ac ea resa _ ->
             begin
-              (read_reg_data sz rs1 ii >>> fun v ->
+              (read_reg_ord_sz sz rs1 ii >>> fun v ->
                write_mem_atomic sz an aexp ac ea v resa ii)
               >>||
                 (add_size ea sz >>= fun a ->
-                 read_reg_data sz rs2 ii >>> fun v ->
+                 read_reg_ord_sz sz rs2 ii >>> fun v ->
                  check_morello_for_write
                    (fun a ->
                      check_mixed_write_mem sz an aexp ac a v ii) a v ii)
@@ -2037,14 +2042,14 @@ module Make
               ma
               r1 r2 w1 w2)
           (to_perms "rw" sz)
-          (read_reg_ord r3 ii)
-          (read_reg_data sz r1 ii)
+          (read_reg_addr r3 ii)
+          (read_reg_ord_sz sz r1 ii)
           (rmw_to_read rmw)
           ii
 
       let cas sz rmw rs rt rn ii =
         let an = rmw_to_read rmw in
-        let read_rs = read_reg_data sz rs ii
+        let read_rs = read_reg_data_sz sz rs ii
         and write_rs v = write_reg_sz sz rs v ii in
         let noret = match rs with | AArch64.ZR -> true | _ -> false in
         let branch a =
@@ -2085,13 +2090,13 @@ module Make
           (* CAS succeeds and generates an Explicit Write Effect *)
           (* there must be an update to the dirty bit of the TTD *)
           lift_memop rn Dir.W true memtag mop_success (to_perms "rw" sz)
-            (read_reg_ord rn ii) (read_reg_data sz rt ii) an ii
+            (read_reg_addr rn ii) (read_reg_data_sz sz rt ii) an ii
         )( (* CAS fails *)
           M.altT (
             (* CAS generates an Explicit Write Effect              *)
             (* there must be an update to the dirty bit of the TTD *)
             lift_memop rn Dir.W true memtag mop_fail_with_wb (to_perms "rw" sz)
-              (read_reg_ord rn ii) (read_reg_data sz rt ii) an ii
+              (read_reg_addr rn ii) (read_reg_data_sz sz rt ii) an ii
           )(
             (* CAS does not generate an Explicit Write Effect          *)
             (* It is IMPLEMENTATION SPECIFIC if there is an update to  *)
@@ -2099,15 +2104,15 @@ module Make
             (* Note: the combination of dir=Dir.R and updatedb=true    *)
             (*                    triggers an alternative in check_ptw *)
             lift_memop rn Dir.R true memtag mop_fail_no_wb (to_perms "rw" sz)
-              (read_reg_ord rn ii) (read_reg_data sz rt ii) an ii
+              (read_reg_addr rn ii) (read_reg_data_sz sz rt ii) an ii
           )
         )
 
       let casp sz rmw rs1 rs2 rt1 rt2 rn ii =
         let an = rmw_to_read rmw in
         let (>>>) = M.data_input_next in
-        let read_rs = read_reg_data sz rs1 ii
-          >>| read_reg_data sz rs2 ii
+        let read_rs = read_reg_data_sz sz rs1 ii
+          >>| read_reg_data_sz sz rs2 ii
         and write_rs (v1,v2) = write_reg_sz sz rs1 v1 ii
           >>| write_reg_sz sz rs2 v2 ii
           >>= fun _ -> M.unitT ()
@@ -2147,8 +2152,8 @@ module Make
         in
         let mop_success ac ma _ =
           (* CASP succeeds, there are Explicit Write Effects *)
-          let read_rt = read_reg_data sz rt1 ii
-                >>| read_reg_data sz rt2 ii
+          let read_rt = read_reg_data_sz sz rt1 ii
+                >>| read_reg_data_sz sz rt2 ii
           and read_mem a = rmw_amo_read sz rmw ac a ii
                 >>| (add_size a sz
                 >>= fun a -> rmw_amo_read sz rmw ac a ii)
@@ -2164,16 +2169,16 @@ module Make
           (* CASP succeeds and generates Explicit Write Effects  *)
           (* there must be an update to the dirty bit of the TTD *)
           lift_memop rn Dir.W true memtag mop_success
-            (to_perms "rw" sz) (read_reg_ord rn ii)
-            (read_reg_data sz rt1 ii >>> fun _ -> read_reg_data sz rt2 ii)
+            (to_perms "rw" sz) (read_reg_addr rn ii)
+            (read_reg_data_sz sz rt1 ii >>> fun _ -> read_reg_data_sz sz rt2 ii)
             an ii
         )( (* CASP fails *)
           M.altT (
             (* CASP generates Explicit Write Effects               *)
             (* there must be an update to the dirty bit of the TTD *)
             lift_memop rn Dir.W true memtag mop_fail_with_wb
-              (to_perms "rw" sz) (read_reg_ord rn ii)
-              (read_reg_data sz rt1 ii >>> fun _ -> read_reg_data sz rt2 ii)
+              (to_perms "rw" sz) (read_reg_addr rn ii)
+              (read_reg_data_sz sz rt1 ii >>> fun _ -> read_reg_data_sz sz rt2 ii)
               an ii
           )(
             (* CASP does not generate Explicit Write Effects           *)
@@ -2182,8 +2187,8 @@ module Make
             (* Note: the combination of dir=Dir.R and updatedb=true    *)
             (*                    triggers an alternative in check_ptw *)
             lift_memop rn Dir.R true memtag mop_fail_no_wb
-              (to_perms "rw" sz) (read_reg_ord rn ii)
-              (read_reg_data sz rt1 ii >>> fun _ -> read_reg_data sz rt2 ii)
+              (to_perms "rw" sz) (read_reg_addr rn ii)
+              (read_reg_data_sz sz rt1 ii >>> fun _ -> read_reg_data_sz sz rt2 ii)
               an ii
           )
         )
@@ -2194,7 +2199,7 @@ module Make
         lift_morello
           (fun ac ma mv ->
             let read_mem sz = rmw_amo_read sz rmw in
-            let mrs = read_reg_data sz rs ii in
+            let mrs = read_reg_data_sz sz rs ii in
             let mrt = mv in
             M.delay ma >>| M.delay mrs >>| M.delay mrt
             >>= fun (((_,ma),(_,mrs)),(_,mrt)) ->
@@ -2216,8 +2221,8 @@ module Make
               (mrt >>! ())
             >>| write_rs mmem)
           (to_perms "rw" sz)
-          (read_reg_ord rn ii)
-          (read_reg_data sz rt ii)
+          (read_reg_addr rn ii)
+          (read_reg_data_sz sz rt ii)
           Dir.W (rmw_to_read rmw) ii
 
       let ldop op sz rmw rs rt rn ii =
@@ -2256,8 +2261,8 @@ module Make
                 if noret then M.unitT ()
                 else  write_reg_sz sz rt w ii))
           (to_perms "rw" sz)
-          (read_reg_ord rn ii)
-          (read_reg_data sz rs ii >>= tr_input)
+          (read_reg_addr rn ii)
+          (read_reg_data_sz sz rs ii >>= tr_input)
           an ii
 
       (* Neon/SVE/SME instructions *)
@@ -2332,7 +2337,7 @@ module Make
 
       let do_simd_str an sz ma rd ii =
         ma >>|
-        read_reg_neon true rd ii >>= fun (addr,v) ->
+        read_reg_neon Port.Data rd ii >>= fun (addr,v) ->
         if sz == MachSize.S128 then
           do_write_mem_2_ops sz an aexp Access.VIR addr v ii >>= B.next2T
         else
@@ -2344,7 +2349,7 @@ module Make
 
       let simd_str_p sz ma rd rs k ii =
         ma >>|
-        read_reg_neon true rd ii >>= fun (addr,v) ->
+        read_reg_neon Port.Data rd ii >>= fun (addr,v) ->
         if sz == MachSize.S128 then
           (* 128-bit Neon LDR/STR and friends are split into two 64-bit
            * single-copy atomic accesses. *)
@@ -2375,22 +2380,22 @@ module Make
            * they access. This means that a 2x128-bit LDP/STP with Neon
            * registers results in 4 single-copy atomic accesses. *)
           begin
-            read_reg_neon true rd1 ii >>= fun v1 ->
+            read_reg_neon Port.Data rd1 ii >>= fun v1 ->
             do_write_mem_2_ops sz an aexp Access.VIR addr1 v1 ii
           end >>|
           begin
             M.add addr1 (neon_sz_k var) >>|
-            read_reg_neon true rd2 ii >>= fun (addr2, v2) ->
+            read_reg_neon Port.Data rd2 ii >>= fun (addr2, v2) ->
             do_write_mem_2_ops sz an aexp Access.VIR addr2 v2 ii
           end >>= fun ((a, b), (c, d)) -> B.next4T (((a, b), c), d)
         else
           begin
-            read_reg_neon true rd1 ii >>= fun v1 ->
+            read_reg_neon Port.Data rd1 ii >>= fun v1 ->
             write_mem sz aexp Access.VIR addr1 v1 ii
           end >>|
           begin
             M.add addr1 (neon_sz_k var) >>|
-            read_reg_neon true rd2 ii >>= fun (addr2, v2) ->
+            read_reg_neon Port.Data rd2 ii >>= fun (addr2, v2) ->
             write_mem sz aexp Access.VIR addr2 v2 ii
           end >>= B.next2T
 
@@ -2437,8 +2442,8 @@ module Make
       let simd_add r1 r2 r3 ii =
         let nelem = neon_nelem r1 in
         let esize = neon_esize r1 in
-        read_reg_neon false r3 ii >>|
-        read_reg_neon false r2 ii >>= fun (v1,v2) ->
+        read_reg_neon Port.No r3 ii >>|
+        read_reg_neon Port.No r2 ii >>= fun (v1,v2) ->
           let aux cur_val idx =
             neon_getlane v1 idx esize >>|
             neon_getlane v2 idx esize >>= sum_elems
@@ -2458,10 +2463,10 @@ module Make
         let sz = tr_simd_variant var in
         let rec reduce n op =
           match n with
-          | 0 -> op >>| read_reg_neon_elem false r2 0 ii >>= sum_elems
+          | 0 -> op >>| read_reg_neon_elem Port.No r2 0 ii >>= sum_elems
           | _ ->
              reduce (n-1)
-               (op >>| read_reg_neon_elem false r2 n ii >>= sum_elems)
+               (op >>| read_reg_neon_elem Port.No r2 n ii >>= sum_elems)
         in
         reduce (nelem-1) mzero >>=
           fun v -> write_reg_neon_sz sz r1 v ii
@@ -2470,11 +2475,11 @@ module Make
         let nelem = predicate_nelem src in
         let psize = predicate_psize src in
         let esize = scalable_esize src in
-        read_reg_predicate false p ii >>= fun pred ->
+        read_reg_predicate p ii >>= fun pred ->
           get_predicate_any pred psize nelem >>= fun any ->
             M.choiceT
             any
-            (read_reg_scalable false src ii >>= fun src ->
+            (read_reg_scalable Port.No src ii >>= fun src ->
               let read_active_elem_or_zero idx cur_val =
                 get_predicate_last pred psize idx >>= fun last ->
                   M.choiceT
@@ -2495,8 +2500,8 @@ module Make
       let add_sv r1 r2 r3 ii =
         let nelem = scalable_nelem r1 in
         let esize = scalable_esize r1 in
-        read_reg_scalable false r3 ii >>|
-        read_reg_scalable false r2 ii >>= fun (v1,v2) ->
+        read_reg_scalable Port.No r3 ii >>|
+        read_reg_scalable Port.No r2 ii >>= fun (v1,v2) ->
           let add cur_val idx =
             scalable_getlane v1 idx esize >>|
             scalable_getlane v2 idx esize >>=
@@ -2518,15 +2523,15 @@ module Make
         | AArch64Base.PMreg (_,AArch64Base.Zero)
           -> mzero
         | AArch64Base.PMreg (_,AArch64Base.Merge)
-          -> read_reg_scalable false dst ii
+          -> read_reg_scalable Port.No dst ii
         | _ -> assert false
         in
         orig >>|
-        read_reg_predicate false pg ii >>= fun (orig,pred) ->
+        read_reg_predicate pg ii >>= fun (orig,pred) ->
           get_predicate_any pred psize nelem >>= fun any ->
             M.choiceT
             any
-            (read_reg_scalable false src ii >>= fun src ->
+            (read_reg_scalable Port.No src ii >>= fun src ->
               let copy orig cur_val idx =
                 get_predicate_last pred psize idx >>= fun last ->
                   M.choiceT
@@ -2549,12 +2554,12 @@ module Make
         let nelem = predicate_nelem src in
         let psize = predicate_psize src in
         let esize = scalable_esize dst in
-        read_reg_scalable false dst ii >>|
-        read_reg_predicate false pg ii >>= fun (orig,pred) ->
+        read_reg_scalable Port.No dst ii >>|
+        read_reg_predicate pg ii >>= fun (orig,pred) ->
           get_predicate_any pred psize nelem >>= fun any ->
             M.choiceT
             any
-            (read_reg_scalable false src ii >>= fun src ->
+            (read_reg_scalable Port.No src ii >>= fun src ->
               let negate orig cur_val idx =
                 get_predicate_last pred psize idx >>= fun last ->
                 M.choiceT
@@ -2698,9 +2703,9 @@ module Make
         read_reg_ord ri ii >>= fun index ->
           M.add index (V.intToV k) >>= fun slice ->
             M.op Op.Rem slice (V.intToV dim) >>= fun slice ->
-              read_reg_za false dst ii >>|
-                read_reg_predicate false pg ii >>|
-                  read_reg_scalable false src ii >>= fun ((orig,pred),src) ->
+              read_reg_za dst ii >>|
+                read_reg_predicate pg ii >>|
+                  read_reg_scalable Port.No src ii >>= fun ((orig,pred),src) ->
                     let mova cur_val idx =
                       get_predicate_last pred psize idx >>= fun last ->
                         M.choiceT
@@ -2728,9 +2733,9 @@ module Make
         read_reg_ord ri ii >>= fun index ->
           M.add index (V.intToV k) >>= fun slice ->
             M.op Op.Rem slice (V.intToV dim) >>= fun slice ->
-              read_reg_za false src ii >>|
-                read_reg_predicate false pg ii >>|
-                  read_reg_scalable false dst ii >>= fun ((src,pred),orig) ->
+              read_reg_za src ii >>|
+                read_reg_predicate pg ii >>|
+                  read_reg_scalable Port.No dst ii >>= fun ((src,pred),orig) ->
                     let mova cur_val idx =
                       get_predicate_last pred psize idx >>= fun last ->
                         M.choiceT
@@ -2755,10 +2760,10 @@ module Make
         let psize = predicate_psize src in
         let esize = scalable_esize src in
         let dim = scalable_nbits / esize; in
-        read_reg_za false acc ii >>|
-          read_reg_predicate false pslice ii >>|
-            read_reg_predicate false pelem ii >>|
-              read_reg_scalable false src ii >>= fun (((acc,p1),p2),src) ->
+        read_reg_za acc ii >>|
+          read_reg_predicate pslice ii >>|
+            read_reg_predicate pelem ii >>|
+              read_reg_scalable Port.No src ii >>= fun (((acc,p1),p2),src) ->
                 let add cur_val slice idx =
                   get_predicate_last p1 psize slice >>|
                     get_predicate_last p2 psize idx >>= fun (v1,v2) ->
@@ -2833,12 +2838,12 @@ module Make
         let sz = tr_variant var in
         begin match var, os with
         | V32, S_NOEXT | V64, S_NOEXT ->
-            read_reg_data sz rd ii >>= m_movk msk (V.intToV k)
+            read_reg_ord_sz sz rd ii >>= m_movk msk (V.intToV k)
         | V32, S_LSL(0|16 as s)
         | V64, S_LSL((0|16|32|48 as s)) ->
             let msk = V.op1 (Op.LeftShift s) msk in
             let v1 = V.op1 (Op.LeftShift s) (V.intToV k) in
-            read_reg_data sz rd ii >>= m_movk msk v1
+            read_reg_ord_sz sz rd ii >>= m_movk msk v1
         | _, S_LSL(n) ->
           Warn.fatal
             "illegal shift immediate %d in %s instruction movk"
@@ -2888,7 +2893,7 @@ module Make
         end in
         let shift_sz = if ks >= kr then kr else regsize-kr in
         let shift_op = if ks >= kr then Op.ShiftRight else Op.ShiftLeft in
-        read_reg_data sz rn ii
+        read_reg_ord_sz sz rn ii
         >>= M.op1 (Op.AndK hex_mask)
         >>= fun v -> M.op shift_op v (V.intToV shift_sz)
         >>=
@@ -2925,7 +2930,7 @@ module Make
 
       let do_store_elem an i r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
-        read_reg_neon_elem true r i ii >>= demote >>= fun v ->
+        read_reg_neon_elem Port.Data r i ii >>= demote >>= fun v ->
         do_write_mem access_size an aexp Access.VIR addr v ii
 
       let store_elem = do_store_elem Annot.N
@@ -3031,7 +3036,7 @@ module Make
         let nregs = List.length rlist in
         let>= results =
           let<>= base = ma in
-          let>= pred = read_reg_predicate false p ii in
+          let>= pred = read_reg_predicate p ii in
           let ops i =
             let op idx =
               let load =
@@ -3061,11 +3066,11 @@ module Make
         let esize = scalable_esize r in
         let nregs = List.length rlist in
           let<>= base = ma in
-          let>= pred = read_reg_predicate false p ii in
+          let>= pred = read_reg_predicate p ii in
           let ops i r =
             let<>= v =
               any_active p pred psize nelem ii
-              (read_reg_scalable true r ii)
+              (read_reg_scalable Port.Data r ii)
               mzero
             in
             let op idx =
@@ -3089,7 +3094,7 @@ module Make
         let psize = predicate_psize r in
         let nelem = scalable_nelem r in
         let esize = scalable_esize r in
-        let>= pred = read_reg_predicate false p ii in
+        let>= pred = read_reg_predicate p ii in
         let>= result =
           let<>= (base, offsets) =
             any_active p pred psize nelem ii
@@ -3118,10 +3123,10 @@ module Make
         let psize = predicate_psize r in
         let nelem = scalable_nelem r in
         let esize = scalable_esize r in
-        let>= pred = read_reg_predicate false p ii in
+        let>= pred = read_reg_predicate p ii in
         let<>= ((base, offsets), v) =
           any_active p pred psize nelem ii
-            (ma >>| mo >>| read_reg_scalable true r ii)
+            (ma >>| mo >>| read_reg_scalable Port.Data r ii)
             (M.unitT ((M.A.V.zero, M.A.V.zero), M.A.V.zero))
         in
         let op idx =
@@ -3145,8 +3150,8 @@ module Make
         let psize = predicate_psize dst in
         let dim = scalable_nbits / esize; in
         ma >>|
-        read_reg_za false dst ii >>|
-          read_reg_predicate false p ii >>|
+        read_reg_za dst ii >>|
+          read_reg_predicate p ii >>|
             (read_reg_ord ri ii >>= fun index ->
               M.add index (V.intToV k) >>= fun slice ->
                 M.op Op.Rem slice (V.intToV dim)) >>= fun ((((base,orig)),pred),slice) ->
@@ -3188,8 +3193,8 @@ module Make
         let psize = predicate_psize src in
         let dim = scalable_nbits / esize; in
         ma >>|
-        read_reg_za false src ii >>|
-          read_reg_predicate false p ii >>|
+        read_reg_za src ii >>|
+          read_reg_predicate p ii >>|
             (read_reg_ord ri ii >>= fun index ->
               M.add index (V.intToV k) >>= fun slice ->
                 M.op Op.Rem slice (V.intToV dim)) >>= fun ((((base,orig)),pred),slice) ->
@@ -3234,7 +3239,7 @@ module Make
                 else
                   ma >>= mop ac)
               (to_perms "r" MachSize.Word)
-              (read_reg_ord rd ii) mzero Annot.N ii
+              (read_reg_addr rd ii) mzero Annot.N ii
           end
 
       let do_ic op rd ii =
@@ -3242,7 +3247,7 @@ module Make
           M.mk_singleton_es (Act.CMO (AArch64.CMO.IC op, None)) ii >>= B.next1T
         else
         begin (* IC IVAU *)
-          read_reg_ord rd ii
+          read_reg_addr rd ii
           >>= fun a ->
             let loc = A.Location_global a in
             let act = Act.CMO (AArch64.CMO.IC op,Some loc) in
@@ -3274,7 +3279,7 @@ module Make
 
       let stg d rt rn k ii =
         let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii
-        and mv = read_reg_data MachSize.Quad rt ii >>= tag_extract in
+        and mv = read_reg_data rt ii >>= tag_extract in
         let do_stg ac ma mv =
           let __do_stg a v =
             M.op1 Op.TagLoc a >>= fun a -> do_write_tag a v ii in
@@ -3364,7 +3369,7 @@ module Make
         A.V.cstToV (Constant.Label (proc, lbl_str))
 
       let read_loc_instr a ii =
-        M.read_loc false (mk_fetch Annot.N) a ii
+        M.read_loc Port.No (mk_fetch Annot.N) a ii
 
 (************)
 (* Branches *)
@@ -3594,7 +3599,7 @@ module Make
               >>= fun v -> commit_bcc ii
               >>= fun () -> M.unitT (B.CondJump (v,tgt2tgt ii l))
 
-                      (* Load and Store *)
+        (* Load and Store *)
         | I_LDR(var,rd,rs,e) ->
             let sz = tr_variant var in
             ldr sz rd rs e ii
@@ -3655,11 +3660,11 @@ module Make
               fun v -> write_reg_neon_rep (neon_sz r1) r1 v ii)
         | I_FMOV_TG(_,r1,_,r2) ->
             check_neon inst;
-            read_reg_neon false r2 ii >>= demote
+            read_reg_neon Port.No r2 ii >>= demote
             >>= fun v -> write_reg_dest r1 v ii >>= nextSet r1
         | I_MOV_VE(r1,i1,r2,i2) ->
             check_neon inst;
-            !(read_reg_neon_elem false r2 i2 ii >>=
+            !(read_reg_neon_elem Port.No r2 i2 ii >>=
               fun v -> write_reg_neon_elem MachSize.S128 r1 i1 v ii)
         | I_MOV_FG(r1,i,var,r2) ->
             check_neon inst;
@@ -3668,16 +3673,16 @@ module Make
               fun v -> write_reg_neon_elem MachSize.S128 r1 i v ii)
         | I_MOV_TG(_,r1,r2,i) ->
             check_neon inst;
-            !(read_reg_neon_elem false r2 i ii >>= demote >>=
+            !(read_reg_neon_elem Port.No r2 i ii >>= demote >>=
               fun v -> write_reg r1 v ii)
         | I_MOV_V(r1,r2) ->
             check_neon inst;
-            !(read_reg_neon false r2 ii >>=
+            !(read_reg_neon Port.No r2 ii >>=
               fun v -> write_reg_neon r1 v ii)
         | I_MOV_S(var,r1,r2,i) ->
             check_neon inst;
             !(let sz = tr_simd_variant var in
-              read_reg_neon_elem false r2 i ii >>=
+              read_reg_neon_elem Port.No r2 i ii >>=
               fun v -> write_reg_neon_sz sz r1 v ii)
         | I_MOVI_V(r,k,shift) ->
             check_neon inst;
@@ -3688,8 +3693,8 @@ module Make
         | I_OP3_SIMD(EOR,r1,r2,r3) ->
             check_neon inst;
             let sz = neon_sz r1 in
-            !(read_reg_neon false r3 ii >>|
-              read_reg_neon false r2 ii >>= fun (v1,v2) ->
+            !(read_reg_neon Port.No r3 ii >>|
+              read_reg_neon Port.No r2 ii >>= fun (v1,v2) ->
                 M.op Op.Xor v1 v2 >>= fun v ->
                   write_reg_neon_sz sz r1 v ii)
         | I_ADD_SIMD(r1,r2,r3) ->
@@ -3698,13 +3703,13 @@ module Make
         | I_ADD_SIMD_S(r1,r2,r3) ->
             check_neon inst;
             let sz = MachSize.Quad in
-            !(read_reg_neon false r3 ii >>|
-              read_reg_neon false r2 ii >>= sum_elems
+            !(read_reg_neon Port.No r3 ii >>|
+              read_reg_neon Port.No r2 ii >>= sum_elems
               >>= fun v -> write_reg_neon_sz sz r1 v ii)
         (* Neon loads and stores *)
         | I_LDAP1(rs,i,rA,kr) ->
             check_neon inst;
-            !!!(read_reg_ord rA ii >>= fun addr ->
+            !!!(read_reg_addr rA ii >>= fun addr ->
             (mem_ss (load_elem_ldar MachSize.S128 i) addr rs ii >>|
             post_kr rA addr kr ii))
         | I_LD1(rs,i,rA,kr)
@@ -3712,7 +3717,7 @@ module Make
         | I_LD3(rs,i,rA,kr)
         | I_LD4(rs,i,rA,kr) ->
             check_neon inst;
-            !!!(read_reg_ord rA ii >>= fun addr ->
+            !!!(read_reg_addr rA ii >>= fun addr ->
             (mem_ss (load_elem MachSize.S128 i) addr rs ii >>|
             post_kr rA addr kr ii))
         | I_LD1R(rs,rA,kr)
@@ -3720,24 +3725,24 @@ module Make
         | I_LD3R(rs,rA,kr)
         | I_LD4R(rs,rA,kr) ->
             check_neon inst;
-            !!!(read_reg_ord rA ii >>= fun addr ->
+            !!!(read_reg_addr rA ii >>= fun addr ->
             (mem_ss (load_elem_rep MachSize.S128) addr rs ii >>|
             post_kr rA addr kr ii))
         | I_LD1M(rs,rA,kr) ->
             check_neon inst;
-            !!(read_reg_ord rA ii >>= fun addr ->
+            !!(read_reg_addr rA ii >>= fun addr ->
             (load_m_contigous addr rs ii >>|
             post_kr rA addr kr ii))
         | I_LD2M(rs,rA,kr)
         | I_LD3M(rs,rA,kr)
         | I_LD4M(rs,rA,kr) ->
             check_neon inst;
-            !!(read_reg_ord rA ii >>= fun addr ->
+            !!(read_reg_addr rA ii >>= fun addr ->
             (load_m addr rs ii >>|
             post_kr rA addr kr ii))
         | I_STL1(rs,i,rA,kr) ->
             check_neon inst;
-            !!!(read_reg_ord rA ii >>= fun addr ->
+            !!!(read_reg_addr rA ii >>= fun addr ->
             (mem_ss (store_elem_stlr i) addr rs ii >>|
             post_kr rA addr kr ii))
         | I_ST1(rs,i,rA,kr)
@@ -3745,19 +3750,19 @@ module Make
         | I_ST3(rs,i,rA,kr)
         | I_ST4(rs,i,rA,kr) ->
             check_neon inst;
-            !!!(read_reg_ord rA ii >>= fun addr ->
+            !!!(read_reg_addr rA ii >>= fun addr ->
             (mem_ss (store_elem i) addr rs ii >>|
             post_kr rA addr kr ii))
         | I_ST1M(rs,rA,kr) ->
             check_neon inst;
-            !!!!(read_reg_ord rA ii >>= fun addr ->
+            !!!!(read_reg_addr rA ii >>= fun addr ->
             (store_m_contigous addr rs ii >>|
             post_kr rA addr kr ii))
         | I_ST2M(rs,rA,kr)
         | I_ST3M(rs,rA,kr)
         | I_ST4M(rs,rA,kr) ->
             check_neon inst;
-            !!!!(read_reg_ord rA ii >>= fun addr ->
+            !!!!(read_reg_addr rA ii >>= fun addr ->
             (store_m addr rs ii >>|
             post_kr rA addr kr ii))
         | I_LDR_SIMD(var,r1,rA,MemExt.Reg(v,kr,sext,s)) ->
@@ -3778,7 +3783,7 @@ module Make
         | I_LDR_SIMD(var,r1,rA,MemExt.Imm (k,PostIdx)) ->
             check_neon inst;
             let access_size = tr_simd_variant var in
-            read_reg_ord rA ii >>= fun addr ->
+            read_reg_addr rA ii >>= fun addr ->
             simd_ldr access_size addr r1 ii >>|
             post_kr rA addr (K k) ii >>= B.next2T
         | I_LDUR_SIMD(var,r1,rA,k) ->
@@ -3809,7 +3814,7 @@ module Make
         | I_STR_SIMD(var,r1,rA,MemExt.Imm (k,PostIdx)) ->
             check_neon inst;
             let access_size = tr_simd_variant var in
-            let ma = read_reg_ord rA ii in
+            let ma = read_reg_addr rA ii in
             simd_str_p access_size ma r1 rA (K k) ii
         | I_STUR_SIMD(var,r1,rA,k) ->
             check_neon inst;
@@ -3832,7 +3837,7 @@ module Make
                 get_ea_preindexed r3 k ii >>= fun addr ->
                   simd_ldp tnt var addr r1 r2 ii
             | k,PostIdx ->
-                read_reg_ord r3 ii >>= fun addr ->
+                read_reg_addr r3 ii >>= fun addr ->
                   (simd_ldp tnt var addr r1 r2 ii >>|
                   post_kr r3 addr (K k) ii) >>=
                   fun (b,()) -> M.unitT b
@@ -3848,7 +3853,7 @@ module Make
                 get_ea_preindexed r3 k ii >>= fun addr ->
                   simd_stp tnt var addr r1 r2 ii
             | k,PostIdx ->
-                read_reg_ord r3 ii >>= fun addr ->
+                read_reg_addr r3 ii >>= fun addr ->
                   (simd_stp tnt var addr r1 r2 ii >>|
                     post_kr r3 addr (K k) ii) >>=
                   fun (b,()) -> M.unitT b
@@ -3875,8 +3880,8 @@ module Make
         | I_LD1SP (var,rs,p,rA,MemExt.ZReg (rM,sext,s)) ->
           check_sve inst;
           !(let sz = tr_simd_variant var in
-            let ma = read_reg_ord rA ii in
-            let mo = read_reg_scalable false rM ii in
+            let ma = read_reg_addr rA ii in
+            let mo = read_reg_scalable Port.Addr rM ii in
             load_gather_predicated_elem_or_zero sz p ma mo rs sext s ii)
         | I_ST1SP(var,rs,p,rA,MemExt.Imm (k,Idx))
         | I_ST2SP(var,rs,p,rA,MemExt.Imm (k,Idx))
@@ -3899,8 +3904,8 @@ module Make
         | I_ST1SP (var,rs,p,rA,MemExt.ZReg (rM,sext,s)) ->
           check_sve inst;
           !!!(let sz = tr_simd_variant var in
-              let ma = read_reg_ord rA ii in
-              let mo = read_reg_scalable false rM ii in
+              let ma = read_reg_addr rA ii in
+              let mo = read_reg_scalable Port.Addr rM ii in
               store_scatter_predicated_elem_or_merge sz p ma mo rs sext s ii >>|
               M.unitT ())
         | I_PTRUE(p,pattern) ->
@@ -3924,8 +3929,8 @@ module Make
           !(add_sv r1 r2 r3 ii)
         |  I_OP3_SV (EOR,r1,r2,r3) ->
           check_sve inst;
-          !(read_reg_scalable false r3 ii >>|
-            read_reg_scalable false r2 ii >>= fun (v1,v2) ->
+          !(read_reg_scalable Port.No r3 ii >>|
+            read_reg_scalable Port.No r2 ii >>= fun (v1,v2) ->
               M.op Op.Xor v1 v2 >>= fun v ->
                 write_reg_scalable r1 v ii)
         | I_UADDV(var,v,p,z) ->
@@ -4099,7 +4104,7 @@ module Make
         | I_LD1SPT (var,za,ri,k,p,rA,MemExt.Imm(0,Idx)) ->
            check_sme inst;
            !(let sz = tr_simd_variant var in
-             let ma = read_reg_ord rA ii in
+             let ma = read_reg_addr rA ii in
              load_predicated_slice sz za ri k p ma ii)
         | I_LD1SPT(var,za,ri,k,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s)) ->
           !(let sz = tr_simd_variant var in
@@ -4108,7 +4113,7 @@ module Make
         | I_ST1SPT (var,za,ri,k,p,rA,MemExt.Imm(0,Idx)) ->
            check_sme inst;
            !!!(let sz = tr_simd_variant var in
-               let ma = read_reg_ord rA ii in
+               let ma = read_reg_addr rA ii in
                store_predicated_slice sz za ri k p ma ii >>|
                M.unitT ())
         | I_ST1SPT (var,za,ri,k,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s)) ->
@@ -4199,7 +4204,7 @@ module Make
             check_morello inst ;
             !(begin
               read_reg_ord_sz MachSize.S128 rn ii >>|
-              read_reg_ord_sz MachSize.Quad rm ii
+              read_reg_ord rm ii
             end >>=
             begin fun (cn, xm) -> match op with
               | CLRPERM -> M.op Op.ClrPerm cn xm
@@ -4232,8 +4237,8 @@ module Make
                   (fun (a,v) -> !(do_write_morello_tag a v ii))
                   ii)
               (to_perms "tw" MachSize.S128)
-              (read_reg_ord rn ii)
-              (read_reg_data MachSize.Quad rt ii)
+              (read_reg_addr rn ii)
+              (read_reg_ord rt ii)
               Dir.W Annot.N ii
         | I_LDCT(rt,rn) ->
             check_morello inst ;
@@ -4251,7 +4256,7 @@ module Make
                         >>= fun tag -> !(write_reg_sz quad rt tag ii))
                       ii))
               (to_perms "r" MachSize.S128)
-              (read_reg_ord rn ii)
+              (read_reg_addr rn ii)
               mzero
               Dir.R Annot.N
               ii
@@ -4384,7 +4389,7 @@ module Make
            begin
              (read_reg_ord_sz MachSize.Word rn ii >>= ext)
              >>| (read_reg_ord_sz MachSize.Word rm ii >>= ext)
-             >>| read_reg_ord_sz MachSize.Quad ra ii
+             >>| read_reg_ord ra ii
            end >>= fun ((vn,vm),va) ->
            M.op Op.Mul vn vm
            >>= M.op op va
@@ -4417,15 +4422,17 @@ module Make
             !(if not (C.variant Variant.NotWeakPredicated) then
                 let(>>*=) = M.bind_control_set_data_input_first in
                 let mok = commit_pred_txt (Some (pp_cond c)) ii >>*=
-                  fun () -> read_reg_data sz r2 ii >>=
+                  fun () -> read_reg_ord_sz sz r2 ii >>=
                   fun v -> write_reg r1 v ii in
                 let mno = commit_pred_txt None ii >>*=
-                  fun () -> read_reg_data sz r3 ii >>=
+                  fun () -> read_reg_ord_sz sz r3 ii >>=
                   csel_op op >>= mask (fun v ->  write_reg r1 v ii) in
                 condition_holds ii c >>= fun v -> M.choiceT v mok mno
             else
               begin
-                condition_holds ii c >>|  read_reg_data sz r2 ii >>| read_reg_data sz r3 ii
+                condition_holds ii c
+                >>|  read_reg_data_sz sz r2 ii
+                >>| read_reg_data_sz sz r3 ii
               end >>= fun ((v,v2),v3) ->
               M.condPredT v
                 (M.unitT ())
@@ -4460,7 +4467,7 @@ module Make
             ldop op (bh_to_sz v) rmw rs rt rn ii
 (* Page tables and TLBs *)
         | I_TLBI (op, rd) ->
-            !(read_reg_ord rd ii >>= fun a -> do_inv op a ii)
+            !(read_reg_addr rd ii >>= fun a -> do_inv op a ii)
 (* Data cache instructions *)
         | I_DC (op,rd) -> do_dc op rd ii
 (* Instruction-cache maintenance instruction *)
