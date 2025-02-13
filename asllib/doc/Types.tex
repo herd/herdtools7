@@ -405,6 +405,12 @@ annotates an integer constraint $\vc$ in the static environment $\tenv$ yielding
 integer constraint $\newc$ and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
+\listingref{annotate-constraint} shows examples of \wellconstrainedintegertypes{}
+and the resulting annotated constraints in comments.
+The annotated constraints inline the constant \texttt{N} and the right-hand-side
+expressions of \texttt{let} storage elements.
+\ASLListing{Annotated constraints}{annotate-constraint}{\typingtests/TypingRule.AnnotateConstraint.asl}
+
 \ProseParagraph
 One of the following applies:
 \begin{itemize}

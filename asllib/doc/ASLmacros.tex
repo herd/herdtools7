@@ -1054,7 +1054,7 @@
 \newcommand\DynErrorConfig[0]{\hyperlink{def-errorconfig}{\texttt{\#DE}}}
 \newcommand\OrAbnormal[0]{\;\terminateas \ThrowingConfig, \DynErrorConfig}
 \newcommand\OrDynError[0]{\;\terminateas \DynErrorConfig}
-\newcommand\ProseOtherwiseDynamicError[0]{Otherwise, the result is a dynamic error.}
+\newcommand\ProseOtherwiseDynamicError[0]{Otherwise, the result is a \dynamicerrorterm.}
 \newcommand\ProseOrAbnormal[0]{\ProseTerminateAs{\ThrowingConfig, \DynErrorConfig}}
 \newcommand\ProseOrError[0]{\ProseTerminateAs{\DynErrorConfig}}
 \newcommand\TNormal[0]{\hyperlink{def-tnormal}{\textsf{TNormal}}}
@@ -1160,9 +1160,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand\typingrulecasename[2]{TypingRule.{#1}.\textsc{#2}}
 
-\newcommand\ProseOtherwiseTypeError[0]{Otherwise, the result is a type error.}
+\newcommand\ProseOtherwiseTypeError[0]{Otherwise, the result is a \typingerrorterm.}
 \newcommand\OrTypeError[0]{\;\terminateas \TypeErrorConfig}
-%\newcommand\ProseOrTypeError[0]{or a type error that short-circuits the entire rule}
 \newcommand\ProseOrTypeError[0]{\ProseTerminateAs{\TypeErrorConfig}}
 
 \newcommand\annotaterel[0]{\hyperlink{def-annotaterel}{\textsf{type}}}
@@ -1961,7 +1960,7 @@
 \newcommand\BinopPrecedence[0]{\hyperlink{def-binopprecedence}{\BuildErrorCode{BOP}}}
 \newcommand\BuildBadDeclaration[0]{\hyperlink{def-buildbaddeclaration}{\BuildErrorCode{BD}}}
 
-%% Type Error Codes
+%% Typing Error Codes
 \newcommand\TypeErrorPrefix[0]{\texttt{TE}}
 \newcommand\TypeErrorCode[1]{\texttt{\TypeErrorPrefix\_#1}}
 \newcommand\UndefinedIdentifier[0]{\hyperlink{def-undefinedidentifier}{\TypeErrorCode{UI}}}

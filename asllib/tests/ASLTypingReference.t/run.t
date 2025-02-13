@@ -51,6 +51,8 @@ ASL Typing Tests / annotating types:
   ASL Typing error: a pending constrained integer is illegal here.
   [1]
 
+  $ aslref TypingRule.AnnotateConstraint.asl
+
   $ aslref TypingRule.TBits.asl
   $ aslref TypingRule.TTuple.asl
   $ aslref TypingRule.TArray.asl
