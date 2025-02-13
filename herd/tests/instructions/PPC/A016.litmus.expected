@@ -1,0 +1,12 @@
+Test A016 Forbidden
+States 3
+0:r1=0; 1:r1=0;
+0:r1=0; 1:r1=1;
+0:r1=1; 1:r1=0;
+Ok
+Witnesses
+Positive: 3 Negative: 0
+Condition ~exists (0:r1=1 /\ 1:r1=1)
+Observation A016 Never 0 3
+Hash=c607554517ad6fb9bb06aa75dcdfee10
+

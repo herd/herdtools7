@@ -1,0 +1,12 @@
+Test AMOADDR Allowed
+States 3
+0:X1=0; 1:X1=0; 1:X5=0;
+0:X1=0; 1:X1=1; 1:X5=0;
+0:X1=1; 1:X1=0; 1:X5=0;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:X1=1 /\ 1:X1=1 /\ 1:X5=0)
+Observation AMOADDR Never 0 3
+Hash=44b3d8de235a66c1b7b5e957fa40e24d
+
