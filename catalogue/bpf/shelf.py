@@ -14,6 +14,7 @@ illustrative_tests = [
 	"tests/CoWR+poonceonce+Once.litmus",
 	"tests/CoWW+poonceonce.litmus",
 	"tests/depencency_ordered_before.litmus",
+	"tests/depencency_not_ordered_before.litmus",
 	"tests/IRIW+fencembonceonces+OnceOnce.litmus",
 	"tests/IRIW+poonceonces+OnceOnce.litmus",
 	"tests/ISA2+poonceonces.litmus",
