@@ -23,13 +23,15 @@ type t =
   | Telechat (* Telechat idiosyncrasies *)
   | SVE (* Do nothing *)
   | SME (* Do nothing *)
+  | MemTag           (* Memory Tagging, synonym of MTE *)
+  | MTEPrecision of Precision.t (* MTE tag mismatch handling *)
   | NoInit (* Do not initialise variables *)
 
 let compare = compare
 
 let tags =
-  "noinit"::"s128"::"self"::"mixed"::"vmsa"::"telechat"
-  ::Fault.Handling.tags
+  "noinit"::"s128"::"self"::"mixed"::"vmsa"::"telechat"::"memtag"
+  ::Fault.Handling.tags@Precision.tags
 
 let parse s = match Misc.lowercase s with
 | "noinit" -> Some NoInit
@@ -40,24 +42,30 @@ let parse s = match Misc.lowercase s with
 | "telechat" -> Some Telechat
 | "sve" -> Some SVE
 | "sme" -> Some SME
+| "memtag" | "mte" -> Some MemTag
 | tag ->
   match
    Misc.app_opt (fun p -> FaultHandling p) (Fault.Handling.parse tag)
   with
   | Some _ as r ->  r
   | None ->
-    let len = String.length tag in
-    if len > 4 then
-      let sve = String.sub tag 0 4 = "sve:" in
-      let sme = String.sub tag 0 4 = "sme:" in
-      if sve || sme then
-        Warn.warn_always "Ignoring vector length setting %s" tag ;
-      if sve then
-        Some SVE
-      else if sme then
-        Some SME
+    match
+     Misc.app_opt (fun p -> MTEPrecision p) (Precision.parse tag)
+    with
+    | Some _ as r ->  r
+    | None ->
+      let len = String.length tag in
+      if len > 4 then
+        let sve = String.sub tag 0 4 = "sve:" in
+        let sme = String.sub tag 0 4 = "sme:" in
+        if sve || sme then
+          Warn.warn_always "Ignoring vector length setting %s" tag ;
+        if sve then
+          Some SVE
+        else if sme then
+          Some SME
+        else None
       else None
-    else None
 
 let pp = function
   | NoInit -> "noinit"
@@ -69,6 +77,8 @@ let pp = function
   | FaultHandling p -> Fault.Handling.pp p
   | SVE -> "sve"
   | SME -> "sme"
+  | MemTag -> "memtag"
+  | MTEPrecision p -> Precision.pp p
 
 let ok v a = match v,a with
 | Self,`AArch64 -> true
@@ -78,7 +88,9 @@ let set_fault_handling r = function
 | FaultHandling p -> r := p ; true
 | _ -> false
 
-let set_mte_precision _ _ = false
+let set_mte_precision r = function
+  | MTEPrecision p -> r := p; true
+  | _ -> false
 
 let set_sve_length _ _ = None
 let set_sme_length _ _ = None
