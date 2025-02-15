@@ -648,15 +648,16 @@ we sometimes only care about a subset of the fields $\{f_{i_1},\ldots,f_{i_m}\} 
 In such cases, we write $\{f_{i_1}:t_{i_1},\ldots,f_{i_m}:t_{i_m},\ldots\}$,
 where $\ldots$ stands for fields that are irrelevant for the rule.
 
-For example\footnote{This example is from \SemanticsRuleRef{FCall}.}, the \func\ non-terminal is of a record type and has the following fields:
-$\textsf{name}$, $\textsf{parameters}$, $\textsf{args}$, $\textsf{body}$, $\textsf{return\_type}$, and $\textsf{subprogram\_type}$.
-The notation $\{ \textsf{body}:\SBASL(\texttt{body}),\ \textsf{args}:\texttt{arg\_decls}, \ldots \}$
-allows us to deconstruct a given \func\ node by matching only the \textsf{body} and \textsf{args} fields.
+For example\footnote{This example is from \SemanticsRuleRef{FCall}.}, the \func\ non-terminal is
+of a record type and has the following fields:
+$\funcname$, $\funcparameters$, $\funcargs$, $\funcbody$, $\funcreturntype$, and $\funcsubprogramtype$.
+The notation $\{ \funcbody:\vbody,\ \funcargs:\vargdecls, \ldots \}$
+allows us to deconstruct a given \func\ node by matching only the $\funcbody$ and $\funcargs$ fields.
 
 Recall that a subset of AST nodes are either labels or labelled tuples.
 \hypertarget{def-astlabel}{}
 The partial function $\astlabel$ returns the label $\vl\in\astlabels$ of an AST node, when it exists.
-For example, $\astlabel(\TBool) = \TBool$ and $\astlabel(\TNamed(\texttt{x})) = \TNamed$.
+For example, $\astlabel(\TBool) = \TBool$ and $\astlabel(\TNamed(\vx)) = \TNamed$.
 
 \subsection{How to Parse Rules Efficiently}
 Consider the following examples, which is a simplified version of \SemanticsRuleRef{Binop}

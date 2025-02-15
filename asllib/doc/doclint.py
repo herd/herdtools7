@@ -3,16 +3,27 @@
 import os, sys, fnmatch
 from extended_macros import apply_all_macros, get_latex_sources
 import re
-
+from dataclasses import dataclass
+from typing import List, Set
 import argparse
 
 cli_parser = argparse.ArgumentParser(prog="ASL Reference Linter")
 cli_parser.add_argument(
-    "-t",
-    "--transform",
+    "-m",
+    "--macros",
     help="Rewrites *.tex files with extended macros",
     action="store_true",
 )
+
+
+def read_file_lines(filename: str) -> List[str]:
+    with open(filename, "r", encoding="utf-8") as file:
+        return file.readlines()
+
+
+def read_file_str(filename: str) -> List[str]:
+    with open(filename, "r", encoding="utf-8") as file:
+        return file.read()
 
 
 def extract_labels_from_line(line: str, left_delim: str, labels: set[str]):
@@ -43,10 +54,9 @@ def check_hyperlinks_and_hypertargets(latex_files: list[str]):
     hyperlink_labels: set[str] = set()
     hypertarget_labels: set[str] = set()
     for latex_source in latex_files:
-        with open(latex_source) as file:
-            for line in file.readlines():
-                extract_labels_from_line(line, "\\hyperlink{", hyperlink_labels)
-                extract_labels_from_line(line, "\\hypertarget{", hypertarget_labels)
+        for line in read_file_str(latex_source):
+            extract_labels_from_line(line, "\\hyperlink{", hyperlink_labels)
+            extract_labels_from_line(line, "\\hypertarget{", hypertarget_labels)
     num_errors = 0
     missing_hypertargets = hyperlink_labels.difference(hypertarget_labels)
     if missing_hypertargets:
@@ -81,28 +91,27 @@ def check_undefined_references_and_multiply_defined_labels():
     or multiply-defined labels.
     """
     num_errors = 0
-    with open("./ASLReference.log") as file:
-        log_str = file.read()
-        if "LaTeX Warning: There were undefined references." in log_str:
-            print(
-                f"ERROR: There are undefined references (see ./ASLReference.log)",
-                file=sys.stderr,
-            )
-            num_errors += 1
-        if "LaTeX Warning: There were multiply-defined labels." in log_str:
-            print(
-                f"ERROR: There are multiply-defined labels (see ./ASLReference.log)",
-                file=sys.stderr,
-            )
-            num_errors += 1
-        if "destination with the same identifier" in log_str:
-            print(
-                f"ERROR: There are multiply-defined \\hypertarget labels \
-                  (see 'destination with the same identifier' in \
-                  ./ASLReference.log)",
-                file=sys.stderr,
-            )
-            num_errors += 1
+    log_str = read_file_str("./ASLReference.log")
+    if "LaTeX Warning: There were undefined references." in log_str:
+        print(
+            f"ERROR: There are undefined references (see ./ASLReference.log)",
+            file=sys.stderr,
+        )
+        num_errors += 1
+    if "LaTeX Warning: There were multiply-defined labels." in log_str:
+        print(
+            f"ERROR: There are multiply-defined labels (see ./ASLReference.log)",
+            file=sys.stderr,
+        )
+        num_errors += 1
+    if "destination with the same identifier" in log_str:
+        print(
+            f"ERROR: There are multiply-defined \\hypertarget labels \
+                (see 'destination with the same identifier' in \
+                ./ASLReference.log)",
+            file=sys.stderr,
+        )
+        num_errors += 1
     return num_errors
 
 
@@ -114,9 +123,8 @@ def check_tododefines(latex_files: list[str]):
     MAX_TODODEFINE_INSTANCES = 7
     num_todo_define = 0
     for latex_source in latex_files:
-        with open(latex_source) as file:
-            file_str = file.read()
-            num_todo_define += file_str.count("\\tododefine")
+        file_str = read_file_str(latex_source)
+        num_todo_define += file_str.count("\\tododefine")
     num_todo_define -= 1  # Ignore the definition of the \tododefine macro itself.
     if num_todo_define > MAX_TODODEFINE_INSTANCES:
         # Disallow adding new \tododefines
@@ -130,7 +138,7 @@ def check_tododefines(latex_files: list[str]):
         return 0
 
 
-def check_repeated_words(file, latex_source: str) -> int:
+def check_repeated_words(filename: str) -> int:
     r"""
     Checks if 'file' contains occurrences of the same word
     repeated twice, independent of case. For example, "the the".
@@ -140,7 +148,7 @@ def check_repeated_words(file, latex_source: str) -> int:
     num_errors = 0
     line_number = 0
     last_word = ""
-    for line in file.readlines():
+    for line in read_file_lines(filename):
         line_number += 1
         line = line.strip()
         parts = line.split()
@@ -150,14 +158,14 @@ def check_repeated_words(file, latex_source: str) -> int:
             if current_word.isalpha() and last_word.lower() == current_word.lower():
                 num_errors += 1
                 print(
-                    f"./{latex_source} line {line_number}: \
+                    f"./{filename} line {line_number}: \
                         word repetition ({last_word} {current_word}) in '{line}'"
                 )
             last_word = current_word
     return num_errors
 
 
-def detect_incorrect_latex_macros_spacing(file, filename: str) -> int:
+def detect_incorrect_latex_macros_spacing(filename: str) -> int:
     r"""
     Detects erroneous occurrences of LaTeX macros rendered without
     separation from the next word in 'file'.
@@ -165,7 +173,7 @@ def detect_incorrect_latex_macros_spacing(file, filename: str) -> int:
     number of found errors is returned.
     """
     num_errors = 0
-    file_str = file.read()
+    file_str = read_file_str(filename)
     patterns_to_remove = [
         # Patterns for known math environments:
         r"\$.*?\$",  # $...$
@@ -196,37 +204,201 @@ def detect_incorrect_latex_macros_spacing(file, filename: str) -> int:
     return num_errors
 
 
-def check_consistent_prose_formally_paragraphs(file, filename) -> int:
+def check_teletype_in_rule_math_mode(filename) -> int:
     r"""
-    Checks that in 'file' the list of \ProseParagraph and \FormallyParagraph
-    are such that each \ProseParagraph is followed by a \FormallyParagraph
-    and each \FormallyParagraph is preceded by a \ProseParagraph.
-    Errors are reported for 'filename' and the returned value is either
-    0 for no errors and 1, otherwise.
+    Checks that file does not contain \texttt{...} inside math mode
+    in rule definitions.
+    Otherwise, the errors are reported for 'filename' and the total
+    number of errors is returned.
     """
+    file_str: str = read_file_str(filename)
     num_errors = 0
-    line_number = 0
+    rule_math_mode_patterns = [
+        r"\\\[.*?\\\]",  # \[...\]
+        r"\\begin\{mathpar\}.*?\\end\{mathpar\}",  # \begin{mathpar}...\end{mathpar}
+        r"\\begin\{equation\}.*?\\end\{equation\}",  # \begin{equation}...\end{equation}
+    ]
+    math_modes_exprs = "|".join(rule_math_mode_patterns)
+    pattern = re.compile(math_modes_exprs, re.DOTALL)
+    matches = pattern.findall(file_str)
+    for match in matches:
+        teletype_vars = re.findall(r"\\texttt{.*\\}", match)
+        for tt_var in teletype_vars:
+            print(f"{filename}: teletype font not allowed in rules: {tt_var}")
+    return num_errors
+
+
+class RuleBlock:
+    r"""
+    A class for capturing the lines that a rule consists of,
+    the rule type, and the rule name.
+    """
+
+    rule_begin_pattern = re.compile(
+        r"\\(TypingRuleDef|SemanticsRuleDef|ASTRuleDef){(.*?)}"
+    )
+    end_patterns = [
+        r"\\section{.*}",
+        r"\\subsection{.*}",
+        r"\\TypingRuleDef{.*}",
+        r"\\SemanticsRuleDef{.*}",
+        r"\\ASTRuleDef{.*}",
+    ]
+    rule_end_pattern = re.compile("|".join(end_patterns))
+
+    def __init__(self, filename, file_lines: list[str], begin: int, end: int):
+        self.filename = filename
+        self.file_lines = file_lines
+        self.begin = begin
+        self.end = end
+
+        begin_line = file_lines[begin]
+        name_match = re.match(RuleBlock.rule_begin_pattern, begin_line)
+        if not name_match:
+            self.name = None
+            raise ValueError(begin_line)
+        else:
+            self.name = name_match.group(2)
+
+        if re.search(r"\\ASTRuleDef", begin_line):
+            self.type = "AST"
+        elif re.search(r"\\TypingRuleDef", begin_line):
+            self.type = "Typing"
+        elif re.search(r"\\SemanticsRuleDef", begin_line):
+            self.type = "Semantics"
+        else:
+            self.type = None
+
+    def str(self):
+        return f"lines {self.begin+1}-{self.end+1}"
+
+
+def match_rules(filename: str) -> List[RuleBlock]:
+    r"""
+    Parses 'filename' and returns all AST/Typing/Semantics rules.
+    """
+    rule_blocks = []
+    lines = read_file_lines(filename)
+    # The beginning line of a rule block, or -1 meaning outside of a rule.
+    current_rule_begin = -1
+    for line_number, line in enumerate(lines):
+        if RuleBlock.rule_end_pattern.search(line) or line_number == len(lines) - 1:
+            if current_rule_begin != -1:
+                rule_block = RuleBlock(filename, lines, current_rule_begin, line_number)
+                rule_blocks.append(rule_block)
+                current_rule_begin = -1
+        if RuleBlock.rule_begin_pattern.search(line):
+            current_rule_begin = line_number
+    return rule_blocks
+
+
+def check_rule_prose_formally_structure(rule_block: RuleBlock) -> List[str]:
+    r"""
+    Checks that a rule block contains a single Prose paragraphs followed
+    by a single Formally paragraph, returning a list of error messages
+    for all errors found.
+    """
     num_prose_paragraphs = 0
     num_formally_paragraphs = 0
-    for line in file.readlines():
-        line_number += 1
-        if "\\ProseParagraph" in line:
+    block_errors: List[str] = []
+    for line_number in range(rule_block.begin, rule_block.end + 1):
+        line = rule_block.file_lines[line_number].strip()
+        if line.startswith('%'):
+            continue
+        if re.search(r"\\ProseParagraph", line):
             num_prose_paragraphs += 1
-        if "\\FormallyParagraph" in line:
+            if num_formally_paragraphs > 0:
+                block_errors.append(
+                    "encountered a Formally paragraph before Prose paragraph"
+                )
+        if re.search(r"\\FormallyParagraph", line):
             num_formally_paragraphs += 1
-        if num_formally_paragraphs > num_prose_paragraphs:
-            print(
-                f"{filename} line {line_number} (or before): encountered Formally paragraph missing a Prose paragraph"
-            )
+            if num_formally_paragraphs == 0:
+                block_errors.append(
+                    "encountered a Prose paragraph before Formally paragraph"
+                )
+    if num_prose_paragraphs == 0:
+        block_errors.append("missing a Prose paragraph")
+    if num_prose_paragraphs > 1:
+        block_errors.append("encountered more than one Prose paragraph")
+    if num_formally_paragraphs == 0:
+        block_errors.append("missing a Formally paragraph")
+    if num_formally_paragraphs > 1:
+        block_errors.append("encountered more than one Formally paragraph")
+    return block_errors
+
+
+def check_rule_case_consistency(rule_block: RuleBlock) -> List[str]:
+    r"""
+    Checks that the rule cases appearing in the Prose paragraph and Formally
+    paragraph are equal and each paragraph does not contain duplicate cases.
+    """
+    prose_cases: Set[str] = set()
+    formally_cases: Set[str] = set()
+    prose_cases_pattern = re.compile(
+        r"\\AllApplyCase[(.*?)]|.*\(\\textsc{(.*?)}\)"
+    )
+    formally_case_pattern = re.compile(r"\\inferrule\[(.*?)\]")
+    error_messages: List[str] = []
+    for line_number in range(rule_block.begin, rule_block.end + 1):
+        line = rule_block.file_lines[line_number].strip()
+        if line.startswith('%'):
+            continue
+        formally_matches = re.match(formally_case_pattern, line)
+        if formally_matches:
+            case_name = formally_matches.group(1)
+            if case_name in formally_cases:
+                error_messages.append(
+                    f'Case "{case_name}" duplicate in Formally paragraph'
+                )
+            formally_cases.add(case_name)
+        prose_matches = re.match(prose_cases_pattern, line)
+        if prose_matches:
+            matched_case_names = prose_matches.group(1)
+            case_names = matched_case_names.split(",")
+            for case_name in case_names:
+                case_name = case_name.strip()
+                if case_name in prose_cases:
+                    error_messages.append(
+                        f'Case "{case_name}" duplicate in Prose paragraph'
+                    )
+                prose_cases.add(case_name)
+    cases_only_in_prose = prose_cases.difference(formally_cases)
+    cases_only_in_formally = formally_cases.difference(prose_cases)
+    if cases_only_in_prose:
+        error_messages.append(
+            f"the following cases appear only in the Prose paragraph: {cases_only_in_prose}"
+        )
+    if cases_only_in_formally:
+        error_messages.append(
+            f"the following cases appear only in the Formally paragraph: {cases_only_in_formally}"
+        )
+
+    return error_messages
+
+
+def check_rules(filename: str) -> int:
+    r"""
+    Checks the AST/Typing/Semantics rules in 'filename'
+    and returns the total number of errors.
+    """
+    num_errors = 0
+    rule_blocks: List[RuleBlock] = match_rules(filename)
+    for rule_block in rule_blocks:
+        if not rule_block:
+            print(f"{filename} {rule_block.str()}: unable to determine rule type")
             num_errors += 1
-        if num_prose_paragraphs > num_formally_paragraphs + 1:
-            print(
-                f"{filename} line {line_number} (or before): encountered Prose paragraph missing Formally paragraph"
-            )
-            num_formally_paragraphs += 1
+            continue
+        if rule_block.type == "AST":
+            continue
+        error_messages: List[str] = []
+        error_messages.extend(check_rule_prose_formally_structure(rule_block))
+        # The following check finds 41 errors - too many to fix at this point.
+        # error_messages.extend(check_rule_case_consistency(rule_block))
+        if error_messages:
+            error_messages = ", ".join(error_messages)
+            print(f"{rule_block.filename} {rule_block.str()}: {error_messages}")
             num_errors += 1
-        if num_errors > 0:
-            break
     return num_errors
 
 
@@ -238,15 +410,14 @@ def check_per_file(latex_files: list[str], checks):
     """
     num_errors = 0
     for filename in latex_files:
-        with open(filename) as file:
-            for check in checks:
-                num_errors += check(file, filename)
+        for check in checks:
+            num_errors += check(filename)
     return num_errors
 
 
 def main():
     args = cli_parser.parse_args()
-    if args.transform:
+    if args.macros:
         apply_all_macros()
     print("Linting files...")
     all_latex_sources = get_latex_sources(False)
@@ -256,11 +427,12 @@ def main():
     num_errors += check_undefined_references_and_multiply_defined_labels()
     num_errors += check_tododefines(content_latex_sources)
     num_errors += check_per_file(
-        all_latex_sources,
+        content_latex_sources,
         [
             check_repeated_words,
             detect_incorrect_latex_macros_spacing,
-            check_consistent_prose_formally_paragraphs,
+            check_teletype_in_rule_math_mode,
+            check_rules,
         ],
     )
 

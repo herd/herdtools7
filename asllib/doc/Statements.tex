@@ -2821,6 +2821,7 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 
 \subsection{Typing}
 \TypingRuleDef{SThrow}
+\newcommand\NoNameException[0]{\texttt{\_}}
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
@@ -2829,7 +2830,7 @@ One of the following applies:
     \item $\vs$ is a throw statement with no expression, that is, $\SThrow(\None)$;
     \item $\news$ is $\vs$;
     \item $\newtenv$ is $\tenv$;
-    \item \Proseeqdef{$\vses$}{the singleton set for $\ThrowException(\texttt{\_})$}
+    \item \Proseeqdef{$\vses$}{the singleton set for $\ThrowException(\NoNameException)$}
   \end{itemize}
 
   \item All of the following apply (\textsc{some}):
@@ -2849,7 +2850,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[none]{}{
   \annotatestmt(\tenv, \overname{\SThrow(\None)}{\vs}) \typearrow
-  (\overname{\SThrow(\None)}{\news}, \overname{\tenv}{\newtenv}, \overname{\{\ThrowException(\texttt{\_})\}}{\vses})
+  (\overname{\SThrow(\None)}{\news}, \overname{\tenv}{\newtenv}, \overname{\{\ThrowException(\NoNameException)\}}{\vses})
 }
 \end{mathpar}
 \lrmcomment{Note that \identr{BRCJ} is done in~\cite[SemanticsRule.TopLevel]{ASLSemanticsReference}.}
@@ -3321,21 +3322,47 @@ The helper relation
 concatenates the input values in $\vms$ and generates an execution graph
 by composing the graphs in $\vms$ with Write Effects for the respective values.
 
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{empty}
+  \begin{itemize}
+    \item $\vms$ is the empty list;
+    \item \Proseeqdef{$\vvs$}{the empty list};
+    \item \Proseeqdef{$\newg$}{the empty graph}.
+  \end{itemize}
+
+  \item \AllApplyCase{non\_empty}
+  \begin{itemize}
+    \item $\vms$ is a list with \head{} $\vm$ and \tail{} $\vmsone$;
+    \item view $\vm$ as the \nativevalue{} $\vv$ and the \executiongraph{} $\vg$;
+    \item \Proseeqdef{$\wid$}{a fresh identifier};
+    \item applying $\writeidentifier$ to $\wid$ and $\vv$ yields $\vgone$;
+    \item applying $\writefolder$ to $\vms$ and $\vgone$ yields the pair $(\vvsone, \vgtwo)$;
+    \item \Proseeqdef{$\vvs$}{the list with \head{} $\vv$ and \tail{} $\vvsone$};
+    \item \Proseeqdef{$\newg$}{the ordered composition of $\vg$ and $\vgone$ with the $\aslpo$ edge
+          and $\vgtwo$ with the $\asldata$ edge}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
-  \writefolder(\emptylist) \evalarrow (\emptylist, \emptygraph)
+  \writefolder(\overname{\emptylist}{\vms}) \evalarrow (\overname{\emptylist}{\vvs}, \overname{\emptygraph}{\newg})
 }
-\and
-\inferrule[nonempty]{
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
   \vms \eqname [\vm] \concat \vmsone\\
   \vm \eqdef (\vv, \vg)\\
   \wid \in \Identifiers\text{ is fresh}\\
   \writeidentifier(\wid, \vv) \evalarrow \vgone\\
   \writefolder(\vmsone, \vgone) \evalarrow (\vvsone, \vgtwo)\\
   \vvs \eqdef [\vv] \concat \vvsone\\
-  \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
+  \newg \eqdef \ordered{\vg}{\aslpo}{\ordered{\vgone}{\asldata}{\vgtwo}}
 }{
-  \writefolder(\vms) \evalarrow (\vvs, \ordered{\vg}{\aslpo}{\newg})
+  \writefolder(\vms) \evalarrow (\vvs, \newg)
 }
 \end{mathpar}
 
@@ -3406,7 +3433,7 @@ All of the following apply:
 \subsection{Semantics}
 \SemanticsRuleDef{SPrint}
 
-\subsection{Example (Printing Literals)}
+\ExampleDef{Printing Literals}
 \listingref{semantics-literals} shows examples of printing various types of literals,
 followed by the output to the console resulting from running the specification.
 \ASLListing{Literals and how they are displayed}{semantics-literals}{\semanticstests/SemanticsRule.SPrint.asl}
@@ -3473,7 +3500,6 @@ Notice that empty bitvectors are displayed as \verb|0x|.
 \end{mathpar}
 \CodeSubsection{\EvalSPrintBegin}{\EvalSPrintEnd}{../Interpreter.ml}
 
-\SemanticsRuleDef{OutputToConsole}
 Not all ASL runtimes support printing to a console (see \RequirementRef{Printing}).
 %
 Therefore, the semantics is parameterized by the function
@@ -3485,22 +3511,11 @@ Therefore, the semantics is parameterized by the function
 which takes a string and communicates it to a console, where one exists.
 
 We now explain how printing is modelled when the runtime supports a console
-and how it is modelled when the runtime does not support a console.
+(\SemanticsRuleRef{SupportedOutputToConsole})
+and how it is modelled when the runtime does not support a console
+(\SemanticsRuleRef{UnsupportedOutputToConsole}).
 
-\subsubsection{Runtime Does Not Support a Console}
-The function ignores the string value and returns the environment unchanged.
-
-\ProseParagraph
-\ProseEqdef{$\newenv$}{$\env$}.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[no\_console]{}{
-  \outputtoconsole(\env, \Ignore) \evalarrow \overname{\env}{\newenv}
-}
-\end{mathpar}
-
-\subsubsection{Runtime Supports a Console}
+\SemanticsRuleDef{SupportedOutputToConsole}
 To support a console, the definition of environments needs
 to include an extra component to capture the string of characters sent to the console:
 \[
@@ -3557,8 +3572,21 @@ $\llabel(s)$      & $s$. \\
 }
 \end{mathpar}
 
-\hypertarget{def-unreachablestatementterm}{}
+\SemanticsRuleDef{UnsupportedOutputToConsole}
+The function ignores the string value and returns the environment unchanged.
+
+\ProseParagraph
+\ProseEqdef{$\newenv$}{$\env$}.
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[no\_console]{}{
+  \outputtoconsole(\env, \Ignore) \evalarrow \overname{\env}{\newenv}
+}
+\end{mathpar}
+
 \section{The Unreachable Statement\label{sec:UnreachableStatement}}
+\hypertarget{def-unreachablestatementterm}{}
 \listingref{UnreachableStatement} shows an example of using an \unreachablestatementterm{}
 to implement a custom form of assertion checking.
 \ASLListing{An example use of an \texttt{Unreachable} statement}{UnreachableStatement}{\definitiontests/UnreachableStatement.asl}

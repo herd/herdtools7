@@ -500,10 +500,12 @@ and declares it in environment $\newtenv$.
 It returns the updated environment $\tenvwithparams$ and the annotated parameters $\paramsone$, together with any annotated parameters already in the accumulator $\acc$.
 \ProseOtherwiseTypeError
 
-\subsection{Example}
+\ExampleDef{Annotating Parameters}
 In \listingref{typing-parameterofconstraint}, the list of explicitly defined parameters
-of the function \texttt{signature\_example} is $\{\texttt{A},\texttt{B}\}$.
-Therefore, $\tenvwithparams$ effectively reflects the added declarations \verb|let A: integer{A}| and \verb|let B: integer{B}|.
+of the function \\
+\verb|signature_example| is $\{\texttt{A},\texttt{B}\}$.
+Therefore, $\tenvwithparams$ effectively reflects the added declarations \\
+\verb|let A: integer{A}| and \verb|let B: integer{B}|.
 
 \ASLListing{A function with parameters}{typing-parameterofconstraint}{\typingtests/TypingRule.AnnotateFuncSig.asl}
 
@@ -909,7 +911,7 @@ together with any annotated arguments already in the accumulator $\acc$,
 and a \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
-\subsection{Example}
+\ExampleDef{Annotating Subprogram Arguments}
 In \listingref{typing-parameterofconstraint}, the annotated arguments are
 \texttt{bv}, \texttt{bv2}, \texttt{bv3}, and \texttt{C}.
 

@@ -222,23 +222,48 @@ The function
 \]
 retrieves the \timeframeterm\ $\vt$ from a \sideeffectdescriptorterm\ $\vs$.
 
-% \ProseParagraph
-% \OneApplies
-% \begin{itemize}
-%     \item \AllApplyCase{local}
-%     \begin{itemize}
-%         \item
-%     \end{itemize}
-% \end{itemize}
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+    \item \AllApplyCase{read\_local}
+    \begin{itemize}
+        \item $\vs$ is a \ReadLocalTerm{} for the \timeframeterm{} $\vt$.
+    \end{itemize}
+
+    \item \AllApplyCase{read\_global}
+    \begin{itemize}
+        \item $\vs$ is a \ReadGlobalTerm{} for the \timeframeterm{} $\vt$.
+    \end{itemize}
+
+    \item \AllApplyCase{performs\_assertions}
+    \begin{itemize}
+        \item $\vs$ is a \PerformsAssertionsTerm{};
+        \item \Proseeqdef{$\vt$}{$\timeframeconstant$}.
+    \end{itemize}
+
+    \item \AllApplyCase{other}
+    \begin{itemize}
+        \item $\vs$ is either a \WriteLocalTerm{}, a \WriteGlobalTerm{},
+                a \NonDeterministicTerm{}, a \RecursiveCallTerm{}, or a
+                \ThrowExceptionTerm{};
+        \item \Proseeqdef{$\vt$}{$\timeframeexecution$}.
+    \end{itemize}
+\end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[local]{}{
+\inferrule[read\_local]{}{
     \timeframe(\overname{\ReadLocal(\Ignore, \vt, \Ignore)}{\vs}) \typearrow \vt
 }
 \and
-\inferrule[global]{}{
+\inferrule[read\_global]{}{
     \timeframe(\overname{\ReadGlobal(\Ignore, \vt, \Ignore)}{\vs}) \typearrow \vt
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[performs\_assertions]{}{
+    \timeframe(\overname{\PerformsAssertions}{\vs}) \typearrow \overname{\timeframeconstant}{\vt}
 }
 \end{mathpar}
 
@@ -257,12 +282,6 @@ retrieves the \timeframeterm\ $\vt$ from a \sideeffectdescriptorterm\ $\vs$.
     }
 }{
     \timeframe(\vs) \typearrow \overname{\timeframeexecution}{\vt}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule{}{
-    \timeframe(\overname{\PerformsAssertions}{\vs}) \typearrow \overname{\timeframeconstant}{\vt}
 }
 \end{mathpar}
 

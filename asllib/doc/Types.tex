@@ -9,7 +9,7 @@ how it is represented in the syntax and AST, and how it is typechecked:
 \begin{itemize}
   \item Integer types (see \secref{IntegerTypes})
   \item The \realtypeterm{} (see \secref{RealType})
-  \item The string type (see \secref{StringType})
+  \item The \stringtypeterm{} (see \secref{StringType})
   \item The Boolean type (see \secref{BooleanType})
   \item Bitvector types (see \secref{BitvectorTypes})
   \item Tuple types (see \secref{TupleTypes})
@@ -98,7 +98,7 @@ which is defined in \secref{DomainOfValuesForTypes}.
 
 \hypertarget{integertypeterm}{}
 \section{Integer Types\label{sec:IntegerTypes}}
-The \texttt{integer} type represents mathematical integer value.
+The \emph{\integertypeterm{}} represents mathematical integer value.
 
 There are four kinds of integer types, which we explain next:
 \emph{unconstrained}, \emph{well-constrained},
@@ -459,7 +459,7 @@ One of the following applies:
 
 \hypertarget{realtypeterm}{}
 \section{The Real Type\label{sec:RealType}}
-The \realtypeterm{} represents mathematical rational number values.
+The \emph{\realtypeterm{}} represents mathematical rational number values.
 There is no bound on the minimum and maximum rational value that can be represented,
 and there is no bound on their precision.
 %
@@ -471,7 +471,7 @@ using the \stdlibfunc{Real}.
 Conversions from a \realtypeterm{} value an \integertypeterm{} value to are performed
 using the \stdlibfunc{RoundDown} or \stdlibfunc{RoundUp}.
 
-\subsubsection{Example}
+\ExampleDef{Well-typed Real Types}
 In \listingref{typing-treal}, all the uses of the \realtypeterm{} are well-typed.
 \ASLListing{Well-typed real types}{typing-treal}{\typingtests/TypingRule.TReal.asl}
 
@@ -498,8 +498,8 @@ In \listingref{typing-treal}, all the uses of the \realtypeterm{} are well-typed
 \ProseParagraph
 All of the following apply:
 \begin{itemize}
-  \item $\tty$ is the \realtypeterm{}.
-  \item $\newty$ is the \realtypeterm{};
+  \item $\tty$ is the \realtypeterm{}, $\TReal$.
+  \item $\newty$ is the \realtypeterm{}, $\TReal$;
   \item define $\vses$ as the empty set.
 \end{itemize}
 
@@ -514,6 +514,17 @@ All of the following apply:
 
 \hypertarget{stringtypeterm}{}
 \section{The String Type\label{sec:StringType}}
+The \emph{\stringtypeterm{}} represents strings of characters.
+
+Strings play relatively little role in specifications and the only operations
+on strings are equality and inequality tests.
+String are useful in \printstatementsterm{} for debugging and diagnostic purposes
+on runtimes that support printing.
+
+\ExampleDef{Well-typed String Types}
+In \listingref{typing-tstring}, all the uses of the \stringtypeterm{} are well-typed.
+\ASLListing{Well-typed string types}{typing-tstring}{\typingtests/TypingRule.TString.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nty \derives\ & \Tstring &
@@ -534,16 +545,12 @@ All of the following apply:
 
 \subsection{Typing the String Type\label{sec:TypingStringType}}
 \TypingRuleDef{TString}
-\subsubsection{Example}
-In \listingref{typing-tstring}, all the uses of \texttt{string} are well-typed.
-\ASLListing{Well-typed string types}{typing-tstring}{\typingtests/TypingRule.TString.asl}
-
 \ProseParagraph
 All of the following apply:
 \begin{itemize}
-  \item $\tty$ is the string type \TString.
-  \item $\newty$ is the string type \TString.
-  \item $\vses$ is the empty set.
+  \item $\tty$ is the \stringtypeterm{}, $\TString$.
+  \item $\newty$ is the \stringtypeterm{}, $\TString$.
+  \item \Proseeqdef{$\vses$}{the empty set}.
 \end{itemize}
 
 \FormallyParagraph
@@ -557,6 +564,12 @@ All of the following apply:
 
 \hypertarget{booleantypeterm}{}
 \section{The Boolean Type\label{sec:BooleanType}}
+The \emph{\booleantypeterm{}} represents the algebraic Boolean type.
+
+\subsubsection{Example}
+In \listingref{typing-tbool}, all the uses of \texttt{boolean} are well-typed.
+\ASLListing{Well-typed Boolean types}{typing-tbool}{\typingtests/TypingRule.TBool.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nty \derives\ & \Tboolean &
@@ -577,10 +590,6 @@ All of the following apply:
 
 \subsection{Typing the Boolean Type\label{sec:TypingBooleanType}}
 \TypingRuleDef{TBool}
-\subsubsection{Example}
-In \listingref{typing-tbool}, all the uses of \texttt{boolean} are well-typed.
-\ASLListing{Well-typed Boolean types}{typing-tbool}{\typingtests/TypingRule.TBool.asl}
-
 \ProseParagraph
 All of the following apply:
 \begin{itemize}

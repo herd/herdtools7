@@ -391,10 +391,10 @@ reads the value $\vv_i$ from the vector of values $\vvec$ at the index $\vi$.
 Notice that there is no rule to handle the case where the index is out of range ---
 this is guaranteed by the typechecker not to happen. Specifically,
 \begin{itemize}
-  \item \texttt{TypingRule.EGetArray} ensures that an index is within the bounds of the array
+  \item \TypingRuleRef{EGetArray} ensures that an index is within the bounds of the array
   being accessed via a check that the type of the index satisfies the type of the array size.
-  \item Typing rules \texttt{TypingRule.LEDestructuring}, \texttt{TypingRule.PTuple},
-  and \\ \texttt{TypingRule.LDTuple} use the same index sequences for the tuples
+  \item Typing rules \TypingRuleRef{LEDestructuring}, \TypingRuleRef{PTuple},
+  and \\ \TypingRuleRef{LDTuple} use the same index sequences for the tuples
   involved and the corresponding lists of expressions.
 \end{itemize}
 If the rules listed above do not hold the typechecker fails.
