@@ -303,7 +303,7 @@ def check_rule_prose_formally_structure(rule_block: RuleBlock) -> List[str]:
     block_errors: List[str] = []
     for line_number in range(rule_block.begin, rule_block.end + 1):
         line = rule_block.file_lines[line_number].strip()
-        if line.startswith('%'):
+        if line.startswith("%"):
             continue
         if re.search(r"\\ProseParagraph", line):
             num_prose_paragraphs += 1
@@ -335,14 +335,12 @@ def check_rule_case_consistency(rule_block: RuleBlock) -> List[str]:
     """
     prose_cases: Set[str] = set()
     formally_cases: Set[str] = set()
-    prose_cases_pattern = re.compile(
-        r"\\AllApplyCase[(.*?)]|.*\(\\textsc{(.*?)}\)"
-    )
-    formally_case_pattern = re.compile(r"\\inferrule\[(.*?)\]")
+    prose_cases_pattern = re.compile(r".*\\AllApplyCase{(.*?)}")
+    formally_case_pattern = re.compile(r".*\\inferrule\[(.*?)\]")
     error_messages: List[str] = []
     for line_number in range(rule_block.begin, rule_block.end + 1):
         line = rule_block.file_lines[line_number].strip()
-        if line.startswith('%'):
+        if line.startswith("%"):
             continue
         formally_matches = re.match(formally_case_pattern, line)
         if formally_matches:
@@ -393,7 +391,6 @@ def check_rules(filename: str) -> int:
             continue
         error_messages: List[str] = []
         error_messages.extend(check_rule_prose_formally_structure(rule_block))
-        # The following check finds 41 errors - too many to fix at this point.
         # error_messages.extend(check_rule_case_consistency(rule_block))
         if error_messages:
             error_messages = ", ".join(error_messages)

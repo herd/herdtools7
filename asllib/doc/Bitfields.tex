@@ -160,7 +160,7 @@ resulting in $\newfields$ --- the \typedast\ for $\fields$ and $\ewidth$
 as well as a set of \sideeffectdescriptorsterm\ $\vses$. \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item checking that the list of bitfield names in $\bitfields$ does not contain duplicates yields $\True$\ProseOrTypeError;
   \item symbolically simplifying $\ewidth$ in $\tenv$ via $\staticeval$ yields the literal integer for $\width$\ProseOrTypeError;
@@ -259,13 +259,13 @@ and an empty list if there are none.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{simple\_type}):
+  \item \AllApplyCase{simple\_type}:
   \begin{itemize}
     \item $\vbf$ does not have nested bitfields;
     \item $\vnested$ is the empty list.
   \end{itemize}
 
-  \item All of the following apply (\textsc{nested}):
+  \item \AllApplyCase{nested}:
   \begin{itemize}
     \item $\vbf$ is bitfields with nested bitfields $\vnested$.
   \end{itemize}
@@ -302,13 +302,13 @@ annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
   \item annotating the slices $\vslices$ yields $(\slicesone, \vsesslices)$\ProseOrTypeError;
   \item One of the following applies:
   \begin{itemize}
-    \item All of the following apply (\textsc{simple}):
+    \item \AllApplyCase{simple}:
     \begin{itemize}
       \item checking whether the range of positions in $\slicesone$ fits inside $0..\width-1$ yields $\True$\ProseOrTypeError;
       \item define $\newfield$ as the bitfield named $\name$ with list of slices $\slicesone$, that is, $\BitFieldSimple(\name, \slicesone)$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{nested}):
+    \item \AllApplyCase{nested}:
     \begin{itemize}
       \item converting the $\slicesone$ into a list of positions with $\width$ and static environment $\tenv$
             yields $\positions$\ProseOrTypeError;
@@ -321,7 +321,7 @@ annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
       \item define $\vses$ as the union of $\vsesslices$ and $\vsesbitfields$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{type}):
+    \item \AllApplyCase{type}:
     \begin{itemize}
       \item Annotating the type $\vt$ yields $(\vtp, \vsesty)$\ProseOrTypeError;
       \item checking whether the range of positions in $\slicesone$ fit inside $0..\width$ yields $\True$\ProseOrTypeError;
@@ -401,7 +401,7 @@ checks whether the slices in $\vslices$ fit within the bitvector width given by 
 yielding $\True$. \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
     \item applying $\disjointslicestopositions$ to $\vslices$ in $\tenv$ checks whether the
     slices in $\vslices$ are disjoint and yields the set of their positions\ProseOrTypeError;
@@ -431,7 +431,7 @@ checks whether the set of positions in $\positions$ fit within the bitvector wid
 yielding $\True$. \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
     \item define $\minpos$ as the minimal position in $\positions$;
     \item define $\maxpos$ as the maximal position in $\positions$;
@@ -466,13 +466,13 @@ In particular, this rule checks that the bitfield slices do not overlap and that
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}:
   \begin{itemize}
     \item $\vslices$ is the empty list;
     \item $\positions$ is the empty set.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}:
   \begin{itemize}
     \item $\vslices$ is the list with $\vs$ as its \head\ and $\vslicesone$ as its \tail;
     \item applying $\bitfieldslicetopositions$ to $\vs$ in $\tenv$ yields the optional set of positions \\
@@ -518,14 +518,14 @@ if they can be statically evaluated, or $\None$ if they cannot be statically eva
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{single}):
+  \item \AllApplyCase{single}:
   \begin{itemize}
     \item $\vslice$ is a \singleslice\ defined by the expression $\ve$, that is, $\SliceSingle(\ve)$;
     \item applying $\reducetozopt$ to $\ve$ in $\tenv$ yields the integer literal for $\vx$\ProseTerminateAs{\None};
     \item $\positions$ is the singleton set for $\vx$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{range}):
+  \item \AllApplyCase{range}:
   \begin{itemize}
     \item $\vslice$ is \rangeslice\ defined by expressions $\veone$ and $\vetwo$, that is, \\
           $\SliceRange(\veone, \vetwo)$;
@@ -535,7 +535,7 @@ One of the following applies:
     \item $\positions$ is the set of integers between $\vx$ and $\vy$, inclusive.
   \end{itemize}
 
-  \item All of the following apply (\textsc{length}):
+  \item \AllApplyCase{length}:
   \begin{itemize}
     \item $\vslice$ is \lengthslice\ defined by expressions $\veone$ and $\vetwo$, that is, \\
           $\SliceLength(\veone, \vetwo)$;
@@ -545,7 +545,7 @@ One of the following applies:
     \item $\positions$ is the set of integers between $\vx$ and $\vx+\vy-1$, inclusive.
   \end{itemize}
 
-  \item All of the following apply (\textsc{scaled}):
+  \item \AllApplyCase{scaled}:
   \begin{itemize}
     \item $\vslice$ is \scaledslice\ defined by expressions $\veone$ and $\vetwo$, that is, \\
           $\SliceStar(\veone, \vetwo)$;
@@ -640,13 +640,13 @@ but have different absolute slices}
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}:
   \begin{itemize}
     \item $\vbitfields$ is the empty list;
     \item the result is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}:
   \begin{itemize}
     \item $\vbitfields$ is not the empty list;
     \item define $\vlastindex$ as $\vwidth - 1$;
@@ -698,7 +698,7 @@ of bitfields $\vbitfields$, whose \bitfieldscope\ and \absoluteslice\ is given b
 $\vabsoluteparent$, in the static environment $\tenv$.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item applying $\bitfieldtoabsolute$ to each field $\vf$ in $\vbitfields$ with $\vabsoluteparent$ in $\tenv$,
         yields $\va_\vf$;
@@ -730,7 +730,7 @@ bitfields nested in $\vbf$, including itself, where the \bitfieldscope\ and \abs
 of the bitfield containing $\vbf$ are $\vabsoluteparent$, in the static environment $\tenv$.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item obtaining the name of the bitfield $\vbf$ via $\bitfieldgetname$ yields $\name$;
   \item define the \absolutename\ of $\vbfname$ for $\vbf$ by appending $\name$ to $\vabsname$, the \absolutename{} of $\vabsoluteparent$;
@@ -783,7 +783,7 @@ and returns the sub-list of $\indices$ indicated by the indices in $\sliceindice
 % which represents sequence of indices via intervals.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item view $\sliceindices$ as the list $S_{m..0}$;
   \item view $\indices$ as the list $I_{n..0}$;
@@ -810,7 +810,7 @@ and exist in the same scope. If they do, $\vb$ indicates whether their \absolute
 are equal. Otherwise, the result if $\True$.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vf$ is an \absolutebitfield\ with \absolutename\ $\vf_{1..k}$ and \absoluteslice\ $\vsliceone$;
   \item $\vg$ is an \absolutebitfield\ with \absolutename\ $\vg_{1..n}$ and \absoluteslice\ $\vslicetwo$;
@@ -847,7 +847,7 @@ The function
 returns the list of indices $\indices$ represented by the bitvector slice $\vs$ in the static environment $\tenv$.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is a \lengthslice\ for the expressions $\vi$ and $\vw$;
   \item \Prosestaticeval{$\tenv$}{$\vi$}{the literal for the integer $\vz_\vi$};

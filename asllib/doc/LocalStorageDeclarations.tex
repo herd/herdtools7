@@ -146,7 +146,7 @@ with the type inferred type \texttt{integer{3}}.
 \ASLListing{A local storage declaration}{ldvar}{\typingtests/TypingRule.LDVar.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ldi$ denotes a variable $\vx$, that is, $\LDIVar(\vx)$;
   \item determining whether $\vx$ is not declared in $\tenv$ yields $\True$\ProseOrTypeError;
@@ -170,7 +170,7 @@ All of the following apply:
 \subsection{Semantics}
 \SemanticsRuleDef{LDVar}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ldi$ is a variable declaration, $\LDIVar(\vx)$;
   \item $\vm$ is a pair consisting of the value $\vv$ and execution graph $\vgone$;
@@ -208,7 +208,7 @@ the statement
 \ASLListing{Declaring a tuple in the local storage}{typing-ldtuple}{\typingtests/TypingRule.LDTuple.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ldi$ denotes a tuple of identifiers $\vids_{1..k}$, that is, $\LDITuple(\vids_{1..k})$;
   \item obtaining the \underlyingtype\ of $\tty$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
@@ -252,7 +252,7 @@ evaluation of \texttt{3} in $\env$.
 \ASLListing{Evaluating a tuple declaration in the local storage}{semantics-ldtuple}{\semanticstests/SemanticsRule.LDTuple.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ldi$ declares a list of local variables, $\LDITuple(\vids)$;
   \item $\vm$ is a pair consisting of the native vector $\vv$ and execution graph $\vg$;

@@ -39,7 +39,7 @@ or a dynamic error.
 
 \subsubsection{TopLevelRule.CheckAndInterpret\label{sec:TopLevelRule.CheckAndInterpret}}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
     \item \Proseaslscan{$\vstdtext$}{$\spectoken$}{$\vstdtokens$\ProseTerminateAs{\LexicalErrorConfig}};
     \item \Proseaslparse{$\vstdtokens$}{$\vstdparse$\ProseTerminateAs{\ParseErrorConfig}};
@@ -112,7 +112,7 @@ renames the local storage elements appearing in $\vdecls$,
 yielding the list of declarations $\vnewdecls$.
 
 \ProseParagraph
-\AllApply:
+\AllApply
 \begin{itemize}
   \item \Proserenamelocalsdecl{$\vdecls[\vi]$}{$\vnewdecl_\vi$},
         for each \Proselistrange{$\vi$}{$\vdecls$};

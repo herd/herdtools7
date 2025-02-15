@@ -207,7 +207,7 @@ yielding a modified global static environment $\newgenv$ and annotated global st
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\gsd$ is a global storage declaration with keyword $\keyword$, initial value \\ $\initialvalue$,
         \optional\ type $\tyopt$, and name $\name$;
@@ -303,7 +303,7 @@ that should be associated with the storage element $\declaredt$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{some\_some}):
+  \item \AllApplyCase{some\_some}:
   \begin{itemize}
     \item $\tyoptp$ is the singleton set for the type $\vt$;
     \item $\initialvalue$ is the singleton set for the expression $\ve$;
@@ -318,7 +318,7 @@ One of the following applies:
     \item define $\declaredt$ as $\vtp$;
   \end{itemize}
 
-  \item All of the following apply (\textsc{some\_none}):
+  \item \AllApplyCase{some\_none}:
   \begin{itemize}
     \item $\tyoptp$ is the singleton set for the type $\vt$;
     \item $\initialvalue$ is $\None$;
@@ -331,7 +331,7 @@ One of the following applies:
     \item define $\declaredt$ as $\vtp$;
   \end{itemize}
 
-  \item All of the following apply (\textsc{none\_some}):
+  \item \AllApplyCase{none\_some}:
   \begin{itemize}
     \item $\tyoptp$ is $\None$;
     \item $\initialvalue$ is the singleton set for the expression $\ve$;
@@ -423,7 +423,7 @@ is the type associated with $\name$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{constant}):
+  \item \AllApplyCase{constant}:
   \begin{itemize}
     \item $\gdk$ is $\GDKConstant$;
     \item view $\typedinitialvalue$ as $(\Ignore, \initialvaluep, \vsesinitialvalue)$;
@@ -432,21 +432,21 @@ One of the following applies:
     \item applying $\tryaddglobalconstant$ to $\name$ and $\initialvaluep$ in $\tenv$ yields $\newtenv$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{let\_normalizable}):
+  \item \AllApplyCase{let\_normalizable}:
   \begin{itemize}
     \item $\gdk$ is $\GDKLet$;
     \item applying $\normalizeopt$ to $\ve$ in $\tenv$ yields $\langle\vep\rangle$\ProseOrTypeError;
     \item applying $\addglobalimmutableexpr$ to $\name$ and $\vep$ in $\tenv$ yields $\newtenv$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{let\_non\_normalizable}):
+  \item \AllApplyCase{let\_non\_normalizable}:
   \begin{itemize}
     \item $\gdk$ is $\GDKLet$;
     \item applying $\normalizeopt$ to $\ve$ in $\tenv$ yields $\None$\ProseOrTypeError;
     \item \Proseeqdef{$\newtenv$}{$\tenv$}.
   \end{itemize}
 
-  \item All of the following apply (\textsc{config}):
+  \item \AllApplyCase{config}:
   \begin{itemize}
     \item $\gdk$ is $\GDKConfig$;
     \item view $\typedinitialvalue$ as $(\Ignore, \initialvaluep, \vsesinitialvalue)$;
@@ -455,7 +455,7 @@ One of the following applies:
     \item \Proseeqdef{$\newtenv$}{$\tenv$}.
   \end{itemize}
 
-  \item All of the following apply (\textsc{var}):
+  \item \AllApplyCase{var}:
   \begin{itemize}
     \item $\gdk$ is $\GDKVar$;
     \item \Proseeqdef{$\newtenv$}{$\tenv$}.
@@ -567,13 +567,13 @@ evaluated to one. The resulting static environment is $\newtenv$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{okay}):
+  \item \AllApplyCase{okay}:
   \begin{itemize}
     \item \Prosestaticeval{$\tenv$}{$\ve$}{the literal $\vv$};
     \item applying $\addglobalconstant$ to $\ve$ and $\vv$ in $\tenv$ yields $\newtenv$;
   \end{itemize}
 
-  \item All of the following apply (\textsc{error}):
+  \item \AllApplyCase{error}:
   \begin{itemize}
     \item \Prosestaticeval{$\tenv$}{$\ve$}{a type error};
     \item \Proseeqdef{$\newtenv$}{$\tenv$};
@@ -617,7 +617,7 @@ is bound to the global storage keyword $\keyword$ and type $\declaredt$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item checking that $\name$ is not declared in the global environment of $\tenv$ yields $\True$\ProseOrTypeError;
   \item $\newgenv$ is the global static environment of $\tenv$ with its $\globalstoragetypes$ component updated by binding $\name$ to
@@ -656,13 +656,13 @@ updates the input environment and execution graph by initializing the global sto
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}:
   \begin{itemize}
     \item there are no declarations of global variables;
     \item the result is $\envm$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}:
   \begin{itemize}
     \item $\vdecls$ has $\vd$ as its head and $\vdecls'$ as its tail;
     \item $d$ is the AST node for declaring a global storage element with initial value $\ve$,

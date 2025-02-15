@@ -127,7 +127,7 @@ A literal expression represents a literal as an expression.
 \subsection{Typing}
 \TypingRuleDef{ELit}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
 \item $\ve$ is the literal expression $\vv$;
 \item $\vt$ is the type of the literal $\vv$;
@@ -152,7 +152,7 @@ In \listingref{literalssemantics}, each of the expressions \texttt{3} evaluates 
 
 \SemanticsRuleDef{ELit}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
 \item $\ve$ is the literal expression for $\vl$, that is, $\ELiteral(\vl)$
 \item $\vv$ is the \nativevalue\ corresponding to $\vl$;
@@ -192,12 +192,12 @@ A variable expression consists of an identifier for a storage element.
 \subsection{Typing}
 \TypingRuleDef{EVar}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
   \item One of the following applies:
   \begin{itemize}
-    \item All of the following apply (\textsc{local\_constant}):
+    \item \AllApplyCase{local\_constant}:
     \begin{itemize}
     \item $\vx$ is bound to the type $\vt$ and local declaration keyword $\LDKConstant$
           via the $\localstoragetypes$ map of the local environment component of $\tenv$;
@@ -206,7 +206,7 @@ All of the following apply:
     \item define $\vses$ as the empty set.
     \end{itemize}
 
-    \item All of the following apply (\textsc{local\_non\_constant}):
+    \item \AllApplyCase{local\_non\_constant}:
     \begin{itemize}
     \item $\vx$ is bound to the type $\vt$ and local declaration keyword $k$
           via the \\
@@ -219,7 +219,7 @@ All of the following apply:
           $k$ ($\timeframeofldk$) and the immutability status of $k$ ($\ldkisimmutable$).
     \end{itemize}
 
-    \item All of the following apply (\textsc{global\_constant}):
+    \item \AllApplyCase{global\_constant}:
     \begin{itemize}
     \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
     \item $\vx$ is bound to $(\tty, \GDKConstant)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
@@ -228,7 +228,7 @@ All of the following apply:
     \item define $\vses$ as the empty set.
     \end{itemize}
 
-    \item All of the following apply (\textsc{global\_non\_constant}):
+    \item \AllApplyCase{global\_non\_constant}:
     \begin{itemize}
       \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
       \item $\vx$ is bound to $(\tty, k)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
@@ -238,7 +238,7 @@ All of the following apply:
             $k$ ($\timeframeofgdk$) and the immutability status of $k$ ($\gdkisimmutable$).
     \end{itemize}
 
-    \item All of the following apply (\textsc{error\_undefined}):
+    \item \AllApplyCase{error\_undefined}:
     \begin{itemize}
       \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
       \item $\vx$ is not bound via the $\globalstoragetypes$ map of the local component of $\tenv$;
@@ -305,19 +305,19 @@ function calls) to global constant variables.
 \subsection{Semantics}
 \SemanticsRuleDef{EVar}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes a variable expression, that is, $\EVar(\vx)$;
   \item view $\env$ as an environment where $\denv$ is the dynamic environment;
   \item One of the following applies:
   \begin{itemize}
-    \item All of the following apply (\textsc{local}):
+    \item \AllApplyCase{local}:
     \begin{itemize}
       \item $\vx$ is bound locally in $\env$;
       \item $\vv$ is the value of $\vx$ in the local component of $\env$;
     \end{itemize}
 
-    \item All of the following apply (\textsc{global}):
+    \item \AllApplyCase{global}:
     \begin{itemize}
       \item $\vx$ is bound in the storage map of $\denv$;
       \item $\vv$ is the value of $\vx$ in the global component of $\env$;
@@ -458,13 +458,13 @@ for example: \texttt{(a + b) - c}.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{not\_binop}):
+  \item \AllApplyCase{not\_binop}:
   \begin{itemize}
     \item $\ve$ is not a binary operation expression;
     \item the result is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{binop}):
+  \item \AllApplyCase{binop}:
   \begin{itemize}
     \item $\ve$ is a binary operation expression for the operator $\opp$;
     \item checking whether $\op$ is different from $\opp$ implies that $\op$ and $\opp$ have different precedence levels
@@ -498,7 +498,7 @@ the expression \texttt{3 DIV 0} results in a type error.
 {\semanticstests/SemanticsRule.EBinopDIVBackendDefinedError.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes a binary operation $\op$ over two expressions $\veone$ and $\vetwo$, that is, \\ $\EBinop(\op, \veone, \vetwo)$;
   \item \Proseannotateexpr{$\tenv$}{$\veone$}{\\ $(\vtone, \veonep, \vsesone)$\ProseOrTypeError};
@@ -507,13 +507,13 @@ All of the following apply:
   \item define $\newe$ as the binary expression $\op$ over $\veonep$ and $\vetwop$;
   \item One of the following applies:
   \begin{itemize}
-    \item All of the following applies (\textsc{ordered}):
+    \item \AllApplyCase{ordered}:
     \begin{itemize}
       \item $\op$ is one of $\BAND$, $\BOR$, or $\IMPL$;
       \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$.
     \end{itemize}
 
-    \item All of the following applies (\textsc{unordered}):
+    \item \AllApplyCase{unordered}:
     \begin{itemize}
       \item $\op$ is not one of $\BAND$, $\BOR$, or $\IMPL$;
       \item \Prosenonconflictingunion{consisting of $\vsesone$ and $\vsestwo$}{$\vses$}.
@@ -556,7 +556,7 @@ the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}.
 \ASLListing{Semantics of conjunction}{andsemantics}{\semanticstests/SemanticsRule.EBinopAndFalse.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
 \item $\ve$ denotes a conjunction over two expressions,
       $\EBinop(\BAND, \veone, \vetwo)$;
@@ -617,7 +617,7 @@ In \listingref{semantics-binopor}, the expression \texttt{(0 == 1) || (1 == 1)} 
 \ASLListing{Evaluating a disjunction expression}{semantics-binopor}{\semanticstests/SemanticsRule.EBinopOrTrue.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
 \item $\ve$ denotes a disjunction of two expressions, $\EBinop(\BOR, \veone, \vetwo)$;
 \item $C$ is the result of the evaluation of
@@ -679,7 +679,7 @@ the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \True, acco
 \ASLListing{Evaluating an implication expression}{semantics-binopimpl}{\semanticstests/SemanticsRule.EBinopImplExFalso.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes an implication over two expressions, $\EBinop(\IMPL, \veone, \vetwo)$;
   \item $\ve$ is evaluated as \texttt{if e1 then e2 else true}.
@@ -721,7 +721,7 @@ an if-statement is used to achieve the same effect.
 \hypertarget{def-binopexpressionterm}{}
 \SemanticsRuleDef{Binop}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes a Binary Operator $\op$ over two expressions, $\EBinop(\op, \veone, \vetwo)$;
   \item the operator $\op$ is not one of $\BAND$, $\BOR$, or $\IMPL$.
@@ -830,7 +830,7 @@ order does not affect the result of an expression, including any side-effects.
 \subsection{Typing}
 \TypingRuleDef{Unop}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes a unary operation $\op$ over an expression $\vep$, that is $\EUnop(\op, \vep)$;
   \item annotating $\vep$ in $\tenv$ yields $(\vtpp, \vepp, \vses)$\ProseOrTypeError;
@@ -857,7 +857,7 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 \SemanticsRuleDef{Unop}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
 \item $\ve$ denotes a unary operator $\op$ over an expression, $\EUnop(\op, \veone)$;
 \item the evaluation of the expression $\veone$ in $\env$ yields \\ $\Normal((\vvone, \vg), \newenv)$\ProseOrAbnormal;
@@ -948,7 +948,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \subsection{Typing}
 \TypingRuleDef{ECond}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes a conditional expression with condition $\econd$ with two options $\etrue$ and $\efalse$;
   \item annotating $\econd$ in $\tenv$ results in $(\tcond, \econdp, \vsescond)$\ProseOrTypeError;
@@ -999,7 +999,7 @@ evaluate either \texttt{3} or \texttt{Return42()}, depending on the
 % true and false sub-expressions do not contain function calls. Since this is an
 % optimization, we do not document it.
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes a conditional expression $\econd$ with two options $\veone$ and $\vetwo$,
         that is, $\ECond(\econd, \veone, \vetwo)$;
@@ -1143,7 +1143,7 @@ changes the call type of $\vcall$ to $\texttt{call\_type}$.
 \subsection{Typing}
 \TypingRuleDef{ECall}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes a call to a subprogram, that is, $\ECall(\vcall)$;
   \item applying $\annotatecall$ to $\vcall$ and in $\tenv$
@@ -1171,20 +1171,20 @@ subprogram \texttt{Return42()} is implemented to return the value \texttt{42}.
 
 \SemanticsRuleDef{ECall}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes a subprogram call, $\ECall(\vcall)$;
   \item the evaluation of that subprogram call in $\env$ is either
   $\Normal(\vms, \newenv)$\ProseOrAbnormal;
   \item one of the following applies:
   \begin{itemize}
-    \item all of the following apply (\textsc{single\_returned\_value}):
+    \item \AllApplyCase{single\_returned\_value}:
     \begin{itemize}
       \item $\vms$ consists of a single returned value $(\vv,\vg)$,
       which goes into the output configuration $\Normal((\vv, \vg), \newenv)$.
     \end{itemize}
 
-    \item all of the following apply (\textsc{multiple\_returned\_values}):
+    \item \AllApplyCase{multiple\_returned\_values}:
     \begin{itemize}
       \item $\vms$ consists of a list of returned value $(\vv_i,\vg_i)$, for $i=1..k$;
       \item $\vg$ is the parallel composition of $\vg_i$, for $i=1..k$;
@@ -1246,7 +1246,7 @@ The details of the various types of bitvector slices is deferred to \chapref{Bit
 \subsection{Typing}
 \TypingRuleDef{ESlice}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$, that is, \\
         $\ESlice(\vep, \slices)$;
@@ -1286,7 +1286,7 @@ initializer expression.
 
 \TypingRuleDef{ESliceError}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$;
   \item $(\tep,\vepp)$ is the result of annotating the expression $\vep$ in $\tenv$;
@@ -1314,7 +1314,7 @@ the expression \texttt{'11110000'[6:3]} evaluates to the value \texttt{'1110'}.
 \ASLListing{Evaluating a slice expression}{semantics-eslice}{\semanticstests/SemanticsRule.ESlice.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
 \item $\ve$ denotes a slicing expression, $\ESlice(\ebv, \slices)$;
 \item the evaluation of $\ebv$ in $\env$ yields $\Normal(\mbv, \envone)$\ProseOrAbnormal;
@@ -1383,7 +1383,7 @@ and the $\emph{index}$ subexpressions, respectively.
 \end{definition}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes the \arrayaccess{} expression with base $\ebase$ and index $\eindex$;
   \item \Proseannotateexpr{$\tenv$}{$\ebase$}{\\ $(\tbase,\ebasep, \vsesbase)$}\ProseOrTypeError;
@@ -1436,7 +1436,7 @@ The function returns the type of the annotated expression in $\vt$,
 the annotated expression $\newe$, and the inferred \sideeffectdescriptorterm\ $\vses$.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item \Proseannotateexpr{$\tenv$}{$\eindex$}{(\tindexp, \eindexp, \vsesindex)}\ProseOrTypeError;
   \item applying $\typeofarraylength$ to $\size$, to obtain the type of the array length, yields
@@ -1489,7 +1489,7 @@ which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
 \ASLListing{Evaluating an illegal array access}{semantics-egetarrayerror}{\semanticstests/SemanticsRule.EGetArrayTooSmall.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes an array access expression, $\EGetArray(\earray, \eindex)$;
   \item the evaluation of $\earray$ in $\env$ is $\Normal(\marray, \envone)$\ProseOrAbnormal;
@@ -1526,7 +1526,7 @@ with indices taken from the enumeration type \texttt{Enum}.
 {\semanticstests/SemanticsRule.EGetEnumArray.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes an array access expression, $\EGetArray(\earray, \eindex)$;
   \item the evaluation of $\earray$ in $\env$ is $\Normal(\marray, \envone)$\ProseOrAbnormal;
@@ -1579,7 +1579,7 @@ All of the following apply:
 \subsection{Typing}
 \TypingRuleDef{EGetRecordField}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
@@ -1610,7 +1610,7 @@ All of the following apply:
 
 \TypingRuleDef{EGetBadRecordField}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
@@ -1635,7 +1635,7 @@ All of the following apply:
 
 \TypingRuleDef{EGetBadBitField}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
@@ -1660,7 +1660,7 @@ All of the following apply:
 
 \TypingRuleDef{EGetBitField}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
@@ -1688,7 +1688,7 @@ All of the following apply:
 
 \TypingRuleDef{EGetBitFieldNested}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
@@ -1725,7 +1725,7 @@ All of the following apply:
 
 \TypingRuleDef{EGetBitFieldTyped}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
@@ -1756,7 +1756,7 @@ All of the following apply:
 
 \TypingRuleDef{EGetTupleItem}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
@@ -1789,7 +1789,7 @@ All of the following apply:
 
 \TypingRuleDef{EGetBadField}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
@@ -1817,7 +1817,7 @@ the expression \verb|my_record.a| evaluates to the value \texttt{3}.
 \ASLListing{Evaluating a field access expression}{semantics-egetfield}{\semanticstests/SemanticsRule.ERecord.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
 \item $\ve$ denotes a field access expression, $\EGetField(\erecord, \fieldname)$;
 \item the evaluation of $\erecord$ in $\env$ is $\Normal((\vrecord, \vg), \newenv)$\ProseOrAbnormal;
@@ -1836,7 +1836,7 @@ All of the following apply:
 
 \SemanticsRuleDef{EGetItem}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ is an expression for accessing the component given by the index $\vindex$ of the tuple
         given by the expression $\etuple$, that is, $\EGetItem(\etuple, \vindex)$;
@@ -1885,7 +1885,7 @@ All of the following apply:
 \subsection{Typing}
 \TypingRuleDef{EGetFields}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ is a multi-field access expression for the base expression $\ebase$ and list of fields $\vfields$,
         that is, $\EGetFields(\ebase, \vfields)$;
@@ -1894,7 +1894,7 @@ All of the following apply:
         $\tbaseannotanon$\ProseOrTypeError;
   \item One of the following applies:
   \begin{itemize}
-    \item All of the following apply (\textsc{bits}):
+    \item \AllApplyCase{bits}:
     \begin{itemize}
       \item $\tbaseannotanon$ is a bitvector type with list of bitfields $\vbitfields$\ProseOrTypeError;
       \item applying $\findbitfieldsslices$ to each field name $\name$ and list of bitfields $\vbitfields$ in $\vfields$ yields \\
@@ -1903,7 +1903,7 @@ All of the following apply:
       \item \Proseannotateexpr{$\tenv$}{$\veslice$}{\\ $(\vt, \newe, \vses)$}\ProseOrTypeError.
     \end{itemize}
 
-    \item All of the following apply (\textsc{record}):
+    \item \AllApplyCase{record}:
     \begin{itemize}
       \item $\tbaseannotanon$ is a record type with list of fields $\vbasefields$\ProseOrTypeError;
       \item applying $\getbitfieldwidth$ to $\vf$ in $\vbasefields$ and $\vbasefields$, for each $\vf$ in $\vbasefields$, in $\tenv$ yields $\ewidth_\vf$\ProseOrTypeError;
@@ -1915,7 +1915,7 @@ All of the following apply:
       \item define $\vses$ as $\vsesbase$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{error}):
+    \item \AllApplyCase{error}:
     \begin{itemize}
       \item $\tbaseannotanon$ is neither a bitvector type nor a record type;
       \item the result is a type error indicating an unexpected type.
@@ -1978,21 +1978,21 @@ in $\vslices$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{found}):
+  \item \AllApplyCase{found}:
   \begin{itemize}
     \item $\vbitfields$ is a list with \head\ $\vfield$ and \tail\ $\vbitfieldsone$;
     \item applying $\bitfieldgetname$ to $\vfield$ yields $\name$;
     \item applying $\bitfieldgetslices$ to $\vfield$ yields $\vslices$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{tail}):
+  \item \AllApplyCase{tail}:
   \begin{itemize}
     \item $\vbitfields$ is a list with \head\ $\vfield$ and \tail\ $\vbitfieldsone$;
     \item applying $\bitfieldgetname$ to $\vfield$ yields $\namep$, which is different to $\name$;
     \item applying $\findbitfieldsslices$ to $\name$ and $vbitfieldsone$ yields $\vslices$\ProseOrTypeError.
   \end{itemize}
 
-  \item All of the following apply (\textsc{error}):
+  \item \AllApplyCase{error}:
   \begin{itemize}
     \item $\vbitfields$ is an empty list;
     \item the result is a type error indicating that a bitfield named $\name$ does not exist in $\vbitfields$.
@@ -2042,13 +2042,13 @@ in the list of fields $\tfields$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{okay}):
+  \item \AllApplyCase{okay}:
   \begin{itemize}
     \item applying $\assocopt$ to find the type associated with $\name$ in $\tfields$ yields the type $\vt$;
     \item applying $\getbitvectorwidth$ to $\vt$ in $\tenv$ yields $\ewidth$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{error}):
+  \item \AllApplyCase{error}:
   \begin{itemize}
     \item applying $\assocopt$ to find the type associated with $\name$ in $\tfields$ yields $\None$;
     \item the result is a type error indicating that $\name$ is not associated with any field in $\tfields$.
@@ -2088,13 +2088,13 @@ normalized in the static environment $\tenv$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}:
   \begin{itemize}
     \item $\exprs$ is an empty list;
     \item $\ewidth$ is the literal expression for $0$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}:
   \begin{itemize}
     \item $\exprs$ is the list with \head\ $\ve$ and \tail\ $\exprsone$;
     \item applying $\widthplus$ to $\exprsone$ yields $\ewidthone$;
@@ -2121,7 +2121,7 @@ One of the following applies:
 \subsection{Semantics}
 \SemanticsRuleDef{EGetfields}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ is the multi-field access expression for the expression $\erecord$ and list of field names
         $\vfieldnames$;
@@ -2203,7 +2203,7 @@ is a dynamic error.
 \subsection{Typing}
 \TypingRuleDef{ATC}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes an asserting type conversion with expression $\vep$ and type $\tty$, that is $\EATC(\vep, \tty)$;
   \item annotating the expression $\vep$ in $\tenv$ yields $(\vt, \vepp, \\vsese)$\ProseOrTypeError;
@@ -2256,20 +2256,20 @@ are compatible for a typing assertion in the static environment $\tenv$, yieldin
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{equal}):
+  \item \AllApplyCase{equal}:
   \begin{itemize}
     \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\True$\ProseOrTypeError;
     \item the result is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{different\_labels\_error}):
+  \item \AllApplyCase{different\_labels\_error}:
   \begin{itemize}
     \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item the AST labels of $\vtone$ and $\vttwo$ are different;
     \item the result is a type error indicating that the type assertion will always fail.
   \end{itemize}
 
-  \item All of the following apply (\textsc{int\_bits}):
+  \item \AllApplyCase{int\_bits}:
   \begin{itemize}
     \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item the AST labels of $\vtone$ and $\vttwo$ are the same;
@@ -2277,7 +2277,7 @@ One of the following applies:
     \item the result is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{tuple}):
+  \item \AllApplyCase{tuple}:
   \begin{itemize}
     \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item $\vtone$ is a tuple type with list of tuples $\vlone$, that is, $\TTuple(\vlone)$;
@@ -2287,7 +2287,7 @@ One of the following applies:
     \item the result is $\True$;
   \end{itemize}
 
-  \item All of the following apply (\textsc{other\_error}):
+  \item \AllApplyCase{other\_error}:
   \begin{itemize}
     \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item the AST labels of $\vtone$ and $\vttwo$ are the same;
@@ -2366,19 +2366,19 @@ evaluated:
 \ASLListing{Various type errors and dynamic errors}{semantics-variousatcs}{\semanticstests/SemanticsRule.ATCVariousErrors.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
 \item $\ve$ denotes an asserted type conversion expression, $\EATC(\veone, \vt)$;
 \item evaluating $\veone$ in $\env$ results in $\Normal((\vv, \vgone), \newenv)$\ProseOrAbnormal;
 \item evaluating whether $\vv$ has type $\vt$ in $\env$ results in $(\vb, \vgtwo)$\ProseTerminateAs{\DynErrorConfig};
 \item one of the following applies:
       \begin{itemize}
-      \item all of the following apply (\textsc{okay}):
+      \item \AllApplyCase{okay}:
             \begin{itemize}
             \item $\vb$ is the native Boolean for \True;
             \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
             \end{itemize}
-      \item all of the following apply (\textsc{error}):
+      \item \AllApplyCase{error}:
             \begin{itemize}
             \item $\vb$ is the native Boolean for \False;
             \item the result is a dynamic error indicating that the type assertion failed
@@ -2429,7 +2429,7 @@ all sub-expressions appearing in $\vt$ are side-effect-free.
 
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{type\_equal}):
+  \item \AllApplyCase{type\_equal}:
   \begin{itemize}
     \item the AST label of $\vt$ is not $\TInt$, $\TBits$, or $\TTuple$;
     \item $\vb$ is $\True$ (since \TypingRuleRef{ATC}
@@ -2437,14 +2437,14 @@ One of the following applies:
     \item $\vg$ is the empty graph.
   \end{itemize}
 
-  \item All of the following apply (\textsc{int\_unconstrained}):
+  \item \AllApplyCase{int\_unconstrained}:
   \begin{itemize}
     \item $\vt$ has the structure of the unconstrained integer;
     \item $\vb$ is \True;
     \item $\vg$ is the empty graph.
   \end{itemize}
 
-  \item All of the following apply (\textsc{int\_wellconstrained}):
+  \item \AllApplyCase{int\_wellconstrained}:
   \begin{itemize}
     \item $\vt$ has the structure of a well-constrained integer with constraints $\vc_{1..k}$;
     \item $\vv$ is the \nativevalue\  integer for $n$;
@@ -2454,7 +2454,7 @@ One of the following applies:
     \item $\vg$ is the parallel composition of all execution graphs $\vg_i$, for $i=1..k$;
   \end{itemize}
 
-  \item All of the following apply (\textsc{bits}):
+  \item \AllApplyCase{bits}:
   \begin{itemize}
     \item $\vt$ is a bitvector type with expression $\ve$, that is, $\TBits(\ve, \Ignore)$;
     \item $\vv$ is a native bitvector value for the sequence of bits $\vbits$, that is, \\ $\nvbitvector(\vbits)$;
@@ -2462,7 +2462,7 @@ One of the following applies:
     \item \Proseeqdef{$\vb$}{$\True$ if and only if $\vvp$ is equal to the number of bits in $\vbits$}.
   \end{itemize}
 
-  \item All of the following apply (\textsc{tuple}):
+  \item \AllApplyCase{tuple}:
   \begin{itemize}
     \item $\vt$ is a tuple with types $\vt_i$, for $i=1..k$;
     \item the value at every index $i=1..k$ of $\vv$ is $\vu_i$, for $i=1..k$,
@@ -2548,7 +2548,7 @@ the expressions appearing in $\vc$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{Constraint\_Exact\_Sat}):
+  \item \AllApplyCase{Constraint\_Exact\_Sat}:
   \begin{itemize}
     \item $\vc$ is a constraint for the expression $\ve$;
     \item evaluating the side-effect-free expression $\ve$ in $\env$ yields the \concurrentnativevalue\ given
@@ -2556,7 +2556,7 @@ One of the following applies:
     \item \Proseeqdef{$\vb$}{$\True$ if and only if $m$ is equal to $n$}.
   \end{itemize}
 
-  \item All of the following apply (\textsc{Constraint\_Range\_Sat}):
+  \item \AllApplyCase{Constraint\_Range\_Sat}:
   \begin{itemize}
     \item $\vc$ is a constraint for the expressions $\veone$ and $\vetwo$;
     \item evaluating the side-effect-free expression $\veone$ in $\env$ yields the \concurrentnativevalue\ given
@@ -2647,7 +2647,7 @@ Lists of patterns are also used in case statements.
 \subsection{Typing}
 \TypingRuleDef{EPattern}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes a pattern expression to test whether $\veone$ matches the pattern $\vpat$, that is, \\ $\EPattern(\veone, \vpat)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vtetwo, \vetwo, \vsese)$\ProseOrTypeError;
@@ -2679,7 +2679,7 @@ whereas the expression \texttt{42 IN \{0..3, -4\}} evaluates to $\nvbool(\False)
 \ASLListing{Evaluating a pattern expression}{semantics-epattern}{\semanticstests/SemanticsRule.EPattern.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes a pattern expression, $\EPattern(\ve, \vp)$;
   \item evaluating the expression $\ve$ in an environment $\env$ results in \\
@@ -2739,7 +2739,7 @@ Note that there are two important consequences of producing an arbitrary value w
 \subsection{Typing}
 \TypingRuleDef{EArbitrary}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes an expression \ARBITRARY\ of type $\tty$, that is, $\EArbitrary(\tty)$;
   \item annotating the type $\tty$ in $\tenv$ yields $(\ttyone, \vsesty)$\ProseOrTypeError;
@@ -2783,12 +2783,12 @@ and how to obtain an arbitrary enumeration-indexed array, \texttt{enum\_array}.
 {\semanticstests/SemanticsRule.EArbitraryArray.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes the \texttt{ARBITRARY} expression annotated with type $\vt$;
   \item One of the following applies:
   \begin{itemize}
-    \item All of the following apply (\textsc{okay}):
+    \item \AllApplyCase{okay}:
     \begin{itemize}
       \item the domain of $\vt$ in $\env$ (see \secref{DynDomain}) is not empty;
       \item $\vv$ is an arbitrary value in the domain of $\vt$ in $\env$;
@@ -2796,7 +2796,7 @@ All of the following apply:
       \item $\vg$ is the empty execution graph.
     \end{itemize}
 
-    \item All of the following apply (\textsc{error}):
+    \item \AllApplyCase{error}:
     \begin{itemize}
       \item the domain of $\vt$ in $\env$ is empty;
       \item the result is a dynamic error (\ArbitraryEmptyType) indicating that the type $\vt$ has an empty
@@ -2895,7 +2895,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \subsection{Typing}
 \TypingRuleDef{ERecord}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes the record construction expression (which is also used for creating exceptions) of type $\tty$ with fields $\fields$,
         that is, $\ERecord(\tty, \vfields)$;
@@ -2963,7 +2963,7 @@ with list of fields \\ $\fieldtypes$ and returns the annotated initializing expr
 and its \sideeffectdescriptorterm\ $\vses$. \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item annotating the expression $\vep$ in $\tenv$ yields $(\vtp, \vepp, \vses)$\ProseOrTypeError;
   \item checking whether there exists a type associated with $\name$ in $\fieldtypes$ yields $\True$\ProseOrTypeError;
@@ -2992,7 +2992,7 @@ $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
 \ASLListing{Evaluating a record construction expression}{semantics-erecord}{\semanticstests/SemanticsRule.ERecord.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
 \item $\ve$ denotes a record creation expression, $\ERecord(\names, \efields)$;
 \item the names of the fields are $\id_{1..k}$;
@@ -3044,14 +3044,14 @@ All of the following apply:
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{parenthesized}):
+  \item \AllApplyCase{parenthesized}:
   \begin{itemize}
     \item $\ve$ denotes a tuple expression with list of expressions consisting solely of $\vep$, that is, $\ETuple([\vep])$,
           meaning it represents a parenthesized expression (see \ASTRuleRef{ParenExpr});
     \item annotating $\vep$ in $\tenv$ yields $(\vt, \newe, \vses)$\ProseOrTypeError.
   \end{itemize}
 
-  \item All of the following apply (\textsc{list}):
+  \item \AllApplyCase{list}:
   \begin{itemize}
     \item $\ve$ denotes a tuple expression with list of expressions $\vli$, that is, $ \ETuple(\vli)$;
     \item $\vli$ consists of at least two expressions;
@@ -3090,7 +3090,7 @@ the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
 \ASLListing{Evaluating a tuple expression}{semantics-etuple}{\semanticstests/SemanticsRule.ETuple.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ denotes a tuple expression, $\ETuple(\elist)$;
   \item the evaluation of $\elist$ in $\env$ is $\Normal((\vlist, \vg), \newenv)$\ProseOrAbnormal;
@@ -3150,7 +3150,7 @@ $\annotatetype$ guarantees that expressions in types are side-effect-free.
 
 \SemanticsRuleDef{EArray}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ is an array construction expression with length expression $\elength$ and value expression $\evalue$,
         that is, $\EArray\{\EArrayLength: \elength, \EArrayValue: \evalue\}$;
@@ -3181,7 +3181,7 @@ All of the following apply:
 
 \SemanticsRuleDef{EEnumArray}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ve$ is an array construction expression for an enumerated-index array with
         list of labels $\vlabels$ and value expression $\evalue$,

@@ -121,7 +121,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}:
   \begin{itemize}
     \item the catcher has no named identifier, that is, $\vc$ is $(\overname{\None}{\nameopt}, \tty, \vstmt)$;
     \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
@@ -130,7 +130,7 @@ One of the following applies:
     \item \Proseeqdef{$\newcatcher$}{$(\overname{\None}{\nameopt}, \ttyp, \newstmt)$};
   \end{itemize}
 
-  \item All of the following apply (\textsc{some}):
+  \item \AllApplyCase{some}:
   \begin{itemize}
     \item the catcher has a named identifier, that is, $\vc$ is $(\langle\name\rangle, \tty, \vstmt)$;
     \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
@@ -209,7 +209,7 @@ That is, no dynamic error occurs.
 \ASLListing{Catching an exception}{semantics-catch}{\semanticstests/SemanticsRule.Catch.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
   \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
@@ -246,7 +246,7 @@ The specification in \listingref{semantics-catchnamed}, prints \texttt{My except
 \ASLListing{Catching a named exception}{semantics-catchnamed}{\semanticstests/SemanticsRule.CatchNamed.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
   \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
@@ -294,7 +294,7 @@ The specification in \listingref{semantics-catchotherwise} prints \texttt{Otherw
 \ASLListing{Catching an exception with \texttt{otherwise}}{semantics-catchotherwise}{\semanticstests/SemanticsRule.CatchOtherwise.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
   \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
@@ -335,7 +335,7 @@ that matches the exception type (\texttt{MyExceptionType1}).
 \ASLListing{A catch clause that does not match a thrown exception type}{semantics-catchnone}{\semanticstests/SemanticsRule.CatchNone.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
   \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
@@ -363,7 +363,7 @@ The specification in \listingref{semantics-nothrow} prints \texttt{No exception 
 \ASLListing{A \texttt{try} statement that does not raise an exception}{semantics-nothrow}{\semanticstests/SemanticsRule.CatchNoThrow.asl}
 
 \ProseParagraph
-all of the following apply:
+\AllApply
 \begin{itemize}
   \item One of the following holds:
   \begin{itemize}
@@ -404,13 +404,13 @@ by invoking $\typesat$ with the static environment $\tenv$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}:
   \begin{itemize}
     \item $\catchers$ is an empty list;
     \item the result is $\None$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{match}):
+  \item \AllApplyCase{match}:
   \begin{itemize}
     \item $\catchers$ has $\vc$ as its head and $\catchersone$ as its tail;
     \item $\vc$ consists of $(\nameopt, \ety, \vs)$;
@@ -418,7 +418,7 @@ One of the following applies:
     \item the result is the singleton set for $\vc$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{no\_match}):
+  \item \AllApplyCase{no\_match}:
   \begin{itemize}
     \item $\catchers$ has $\vc$ as its head and $\catchersone$ as its tail;
     \item $\vc$ consists of $(\nameopt, \ety, \vs)$;
@@ -481,13 +481,13 @@ pair with $\vv$ and $\vvty$, respectively.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{implicit\_throwing}):
+  \item \AllApplyCase{implicit\_throwing}:
   \begin{itemize}
     \item $\vres$ is $\Throwing((\None, \vg), \envthrowone)$, which is an implicit throwing configuration;
     \item the result is $\Throwing((\langle(\vv, \vvty)\rangle, \vg), \envthrowone)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{explicit\_throwing}):
+  \item \AllApplyCase{explicit\_throwing}:
   \begin{itemize}
     \item $\vres$ is $\Throwing(\langle(\vv', \vvty')\rangle, \vg)$, which is an explicit throwing configuration
     (due to $(\vv', \vvty')$);
@@ -495,7 +495,7 @@ One of the following applies:
     That is, the same throwing configuration is returned.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_throwing}):
+  \item \AllApplyCase{non\_throwing}:
   \begin{itemize}
     \item the configuration, $C$, domain is non-throwing;
     \item the result is $C$.

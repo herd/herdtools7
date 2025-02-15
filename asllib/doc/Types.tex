@@ -310,12 +310,12 @@ correspond to \CaseName{pending\_constrained}.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{pending\_constrained}):
+  \item \AllApplyCase{pending\_constrained}:
     \begin{itemize}
       \item $\tty$ is a \pendingconstrainedintegertype;
       \item the result is a type error (\UnexpectedType).
     \end{itemize}
-  \item All of the following apply (\textsc{well\_constrained}):
+  \item \AllApplyCase{well\_constrained}:
     \begin{itemize}
       \item $\tty$ is the well-constrained integer type constrained by
         constraints $\vc_i$, for $u=1..k$;
@@ -328,7 +328,7 @@ One of the following applies:
       \item define $\vses$ as the union of all $\vxs_i$, for $i=1..k$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{parameterized}):
+    \item \AllApplyCase{parameterized}:
     \begin{itemize}
       \item $\tty$ is a \parameterizedintegertype\ for $\name$;
       \item define $\vses$ as the singleton set for the singleton \sideeffectdescriptorterm,
@@ -336,7 +336,7 @@ One of the following applies:
       \item $\newty$ is the unconstrained integer type.
     \end{itemize}
 
-    \item All of the following apply (\textsc{unconstrained}):
+    \item \AllApplyCase{unconstrained}:
     \begin{itemize}
       \item $\tty$ is an \unconstrainedintegertype;
       \item $\newty$ is the unconstrained integer type;
@@ -422,7 +422,7 @@ In \listingref{annotate-constraint-unconstrained}, the constraint
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{exact}):
+  \item \AllApplyCase{exact}:
   \begin{itemize}
     \item $\vc$ is the exact integer constraint for the expression $\ve$, that is, \\ $\ConstraintExact(\ve)$;
     \item applying $\annotatesymbolicconstrainedinteger$ to $\ve$ in $\tenv$ yields \\
@@ -430,7 +430,7 @@ One of the following applies:
     \item define $\newc$ as the exact integer constraint for $\vep$, that is, $\ConstraintExact(\vep)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{range}):
+  \item \AllApplyCase{range}:
   \begin{itemize}
     \item $\vc$ is the range integer constraint for expressions $\veone$ and $\vetwo$, that is, \\ $\ConstraintRange(\veone, \vetwo)$;
     \item applying $\annotatesymbolicconstrainedinteger$ to $\veone$ in $\tenv$ yields\\ $(\veonep, \vsesone)$\ProseOrTypeError;
@@ -496,7 +496,7 @@ In \listingref{typing-treal}, all the uses of the \realtypeterm{} are well-typed
 \subsection{Typing the Real Type\label{sec:TypingRealType}}
 \TypingRuleDef{TReal}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\tty$ is the \realtypeterm{}, $\TReal$.
   \item $\newty$ is the \realtypeterm{}, $\TReal$;
@@ -546,7 +546,7 @@ In \listingref{typing-tstring}, all the uses of the \stringtypeterm{} are well-t
 \subsection{Typing the String Type\label{sec:TypingStringType}}
 \TypingRuleDef{TString}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\tty$ is the \stringtypeterm{}, $\TString$.
   \item $\newty$ is the \stringtypeterm{}, $\TString$.
@@ -591,7 +591,7 @@ In \listingref{typing-tbool}, all the uses of \texttt{boolean} are well-typed.
 \subsection{Typing the Boolean Type\label{sec:TypingBooleanType}}
 \TypingRuleDef{TBool}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\tty$ is the boolean type, \TBool;
   \item $\newty$ is the boolean type, \TBool;
@@ -652,7 +652,7 @@ In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
 \ASLListing{Well-typed Bitevector types}{typing-tbits}{\typingtests/TypingRule.TBits.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\tty$ is the bit-vector type with width given by the expression
     $\ewidth$ and the bitfields given by $\bitfields$, that is, $\TBits(\ewidth, \bitfields)$;
@@ -727,7 +727,7 @@ In \listingref{typing-ttuple}, all the uses of tuple types are well-typed.
 
 \TypingRuleDef{TTuple}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\tty$ is the tuple type with member types $\tys$, that is, $\TTuple(\tys)$;
   \item $\tys$ is the list $\tty_i$, for $i=1..k$;
@@ -791,13 +791,13 @@ In \listingref{typing-tarray}, all the uses of array types are well-typed.
 
 \TypingRuleDef{TArray}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\tty$ is the array type with element type $\vt$;
   \item Annotating the type $\vt$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
   \item One of the following applies:
   \begin{itemize}
-    \item All of the following apply (\textsc{expr\_is\_enum}):
+    \item \AllApplyCase{expr\_is\_enum}:
     \begin{itemize}
       \item the array index is $\ve$ and determining whether $\ve$ corresponds to an enumeration in $\tenv$
       via $\getvariableenum$ yields the enumeration variable
@@ -807,7 +807,7 @@ All of the following apply:
       \item define $\vses$ as $\vsest$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{expr\_not\_enum}):
+    \item \AllApplyCase{expr\_not\_enum}:
     \begin{itemize}
       \item the array index is $\ve$ and determining whether $\ve$ corresponds to an enumeration in $\tenv$
       via $\getvariableenum$ yields $\None$ (meaning it does not
@@ -862,20 +862,20 @@ Otherwise, the result is $\None$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{not\_evar}):
+  \item \AllApplyCase{not\_evar}:
   \begin{itemize}
     \item $\ve$ is not a variable expression;
     \item the result is $\None$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{no\_declared\_type}):
+  \item \AllApplyCase{no\_declared\_type}:
   \begin{itemize}
     \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
     \item $\vx$ is not associated with a type in the global environment of $\tenv$;
     \item the result is $\None$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{declared\_enum}):
+  \item \AllApplyCase{declared\_enum}:
   \begin{itemize}
     \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
     \item $\vx$ is associated with a type $\vt$ in the global environment of $\tenv$;
@@ -883,7 +883,7 @@ One of the following applies:
     \item the result is the pair consisting of $\vx$ and $\vlabels$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{declared\_not\_enum}):
+  \item \AllApplyCase{declared\_not\_enum}:
   \begin{itemize}
     \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
     \item $\vx$ is associated with a type $\vt$ in the global environment of $\tenv$;
@@ -942,7 +942,7 @@ yielding the resulting type in $\vt$, the annotated expression in $\vep$ and the
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item \Proseannotateexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$};
   \item \Prosechecksymbolicallyevaluable{$\vses$}.
@@ -971,7 +971,7 @@ and returns the annotated expression $\vepp$ and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item \Proseannotatesymbolicallyevaluableexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$\ProseOrTypeError};
   \item determining whether $\vt$ has the structure of an integer yields $\True$\ProseOrTypeError;
@@ -1003,14 +1003,14 @@ returns $\True$ is $\vt$ is has the \structure\ an integer type and a type error
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{okay}):
+  \item \AllApplyCase{okay}:
   \begin{itemize}
     \item determining the \structure\ of $\vt$ yields $\vtp$\ProseOrTypeError;
     \item $\vtp$ is an integer type;
     \item the result is $\True$;
   \end{itemize}
 
-  \item All of the following apply (\textsc{error}):
+  \item \AllApplyCase{error}:
   \begin{itemize}
     \item determining the \structure\ of $\vt$ yields $\vtp$\ProseOrTypeError;
     \item $\vtp$ is not an integer type;
@@ -1069,7 +1069,7 @@ One of the following applies:
 \TypingRuleDef{TEnumDecl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\tty$ is the enumeration type with enumeration literals
     $\vli$, that is, $\TEnum(\vli)$;
@@ -1119,7 +1119,7 @@ All of the following apply:
 \subsection{Typing Record Types\label{sec:TypingRecordTypes}}
 \TypingRuleDef{TStructuredDecl}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\tty$ is a \structuredtype\ with AST label $L$;
   \item the list of fields of $\tty$ is $\fields$;
@@ -1200,7 +1200,7 @@ The rule for typing exception types is \TypingRuleRef{TStructuredDecl}.
 \subsection{Typing Named Types\label{sec:TypingNamedTypes}}
 \TypingRuleDef{TNamed}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\tty$ is the named type $\vx$, that is $\TNamed(\vx)$;
   \item checking whether $\vx$ is bound to any declared type in $\tenv$ yields $\True$\ProseOrTypeError;
@@ -1254,7 +1254,7 @@ In \listingref{typing-trecorderror}, the use of a record type outside of a decla
 \ASLListing{An erroneous use of a record type}{typing-trecorderror}{\typingtests/TypingRule.TNonDecl.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\tty$ is a \structuredtype\ or an enumeration type;
   \item $\decl$ is $\False$, indicating that $\tty$ should be considered to be outside the context of a declaration

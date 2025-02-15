@@ -82,7 +82,7 @@ yielding an output static environment $\newtenv$ and annotated list of declarati
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item splitting $\decls$ into two sublists by testing each declaration to check whether
         it is that of a pragma yields $\pragmas$ and $\others$, respectively;
@@ -147,14 +147,14 @@ for single declarations and \textsc{mutually\_recursive} for more than one decla
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}:
   \begin{itemize}
     \item $\comps$ is the empty list;
     \item define $\newgenv$ as $\tenv$;
     \item define $\newdecls$ as the empty list.
   \end{itemize}
 
-  \item All of the following apply (\textsc{single}):
+  \item \AllApplyCase{single}:
   \begin{itemize}
     \item $\comps$ is a list with \head\ $\comp$ and \tail\ $\compsone$;
     \item $\comp$ is a single declaration $\vd$;
@@ -163,7 +163,7 @@ One of the following applies:
     \item define $\newdecls$ as the list with \head\ $\vdone$ and \tail\ $\declsone$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{mutually\_recursive}):
+  \item \AllApplyCase{mutually\_recursive}:
   \begin{itemize}
     \item $\comps$ is a list with \head\ $\comp$ and \tail\ $\compsone$;
     \item $\comp$ is a list with more than one declaration (that is, a list of mutually-recursive declarations);
@@ -229,7 +229,7 @@ the corresponding getter should have already been annotated and added to the env
 easy to check this requirement.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item checking that each declaration in $\vd$ is a subprogram declaration yields $\True$\ProseTerminateAs{\BadDeclaration};
   \item applying $\annotatefuncsig$ to each node $\vf$ in $\genv$, where $\DFunc(\vf)$ is a declaration in $\decls$,
@@ -308,7 +308,7 @@ yielding $\True$.
 
 \ProseParagraph
 
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vd$ is a global pragma declaration with any identifier and expression list $\vargs$. that is, $\DPragma(\Ignore, \vargs)$;
   \item applying $\withemptylocal$ to $\genv$ yields $\tenv$;
@@ -351,14 +351,14 @@ consisting of local static environment, annotated $\func$ AST node, and \sideeff
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}:
   \begin{itemize}
     \item $\envandfs$ is the empty list;
     \item define $\newgenv$ as $\genv$;
     \item define $\newenvandfs$ as the empty list.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}:
   \begin{itemize}
     \item $\envandfs$ is the list with \head\ $(\lenv, \vf, \vsesf)$ and \tail\ $\envandfsone$;
     \item define $\tenv$ as the environment where the global environment component is $\genv$ and the local environment component is $\lenv$;
@@ -401,13 +401,13 @@ adds each $\func$ element in $\vfuncs$ to the $\subprograms$ map of $G^\tenv$, y
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}:
   \begin{itemize}
     \item $\vfuncs$ is the empty list;
     \item $\newtenv$ is $\tenv$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}:
   \begin{itemize}
     \item $\vfuncs$ is the list with \head\ $(\vf, \vsesf)$ and \tail\ $\vfuncsone$;
     \item applying $\addsubprogram$ to $\vf.\funcname$, $\vf$, and $\vsesf$ in $\tenv$ yields $\tenvone$;
@@ -446,7 +446,7 @@ consists of the \sideeffectdescriptorsterm\ of all the $\func$ AST nodes of the
 recursive functions it may transitively call.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item define the set $V$ as the set that includes an AST node $\vf$ if and only if $(\vf, \Ignore)$ exists in $\vsess$.
         Intuitively, this is the set of all function definitions in associated with \sideeffectconflictsterm\ in $\vsess$;
@@ -500,7 +500,7 @@ where the declaration of $a$ uses an identifier defined by the declaration of $b
 We refer to this graph as the \emph{\dependencygraphterm} (of $\decls$).
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item define $\defs$ as the union of two sets:
   \begin{enumerate}
@@ -562,17 +562,17 @@ returns the identifier $\name$ being defined by the declaration $\vd$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{d\_func}):
+  \item \AllApplyCase{d\_func}:
   \begin{itemize}
     \item $\vd$ declares a subprogram for the identifier $\name$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{d\_globalstorage}):
+  \item \AllApplyCase{d\_globalstorage}:
   \begin{itemize}
     \item $\vd$ declares a global storage element for the identifier $\name$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{d\_typedecl}):
+  \item \AllApplyCase{d\_typedecl}:
   \begin{itemize}
     \item $\vd$ declares a type for the identifier $\name$.
   \end{itemize}
@@ -605,13 +605,13 @@ if it defines any.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{decl\_enum}):
+  \item \AllApplyCase{decl\_enum}:
   \begin{itemize}
     \item $\vd$ is a declaration of an enumeration type with labels $\vlabels$;
     \item the result is $\vlabels$ as a set (rather than a list).
   \end{itemize}
 
-  \item All of the following apply (\textsc{other}):
+  \item \AllApplyCase{other}:
   \begin{itemize}
     \item $\vd$ is not a declaration of an enumeration type;
     \item define $\vlabels$ as the empty set.
@@ -644,20 +644,20 @@ returns the set of identifiers $\ids$ which the declaration $\vd$ depends on.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{D\_TypeDecl}):
+  \item \AllApplyCase{D\_TypeDecl}:
   \begin{itemize}
     \item $\vd$ declares a type $\tty$ and fields $\fields$, that is,
           $\DTypeDecl(\Ignore, \tty, \fields)$ (the first component is the name, which is being defined);
     \item define $\ids$ as the union of applying $\usety$ to $\tty$ and applying $\usesubtypes$ to $\fields$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{D\_GlobalStorage}):
+  \item \AllApplyCase{D\_GlobalStorage}:
   \begin{itemize}
     \item $\vd$ declares a global storage element with initial value $\initialvalue$ and type $\tty$;
     \item define $\ids$ as the union of applying $\useexpr$ to $\initialvalue$ and applying $\usety$ to $\tty$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{D\_Func}):
+  \item \AllApplyCase{D\_Func}:
   \begin{itemize}
     \item $\vd$ declares a subprogram with arguments $\vargs$, \optional\ return type \\
           $\rettyopt$, parameters $\vparams$, and body statement $\body$;
@@ -722,67 +722,67 @@ returns the set of identifiers $\ids$ which the type or \optional\ type $\vt$ de
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}:
   \begin{itemize}
     \item $\vt$ is $\None$;
     \item define $\ids$ as $\emptyset$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{some}):
+  \item \AllApplyCase{some}:
   \begin{itemize}
     \item $\vt$ is $\langle\tty\rangle$;
     \item applying $\usety$ to $\tty$ yields $\ids$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{simple}):
+  \item \AllApplyCase{simple}:
   \begin{itemize}
     \item $\vt$ is one of the following types: enumeration, Boolean, real, or string;
     \item define $\ids$ as the empty set.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_named}):
+  \item \AllApplyCase{t\_named}:
   \begin{itemize}
     \item $\vt$ is the named type for $\vs$;
     \item define $\ids$ as the singleton set for $\vs$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{int\_no\_constraints}):
+  \item \AllApplyCase{int\_no\_constraints}:
   \begin{itemize}
     \item $\vt$ is either the unconstrained integer type or a \parameterizedintegertype{} or a \pendingconstrainedintegertype;
     \item define $\ids$ as the empty set.
   \end{itemize}
 
-  \item All of the following apply (\textsc{int\_well\_constrained}):
+  \item \AllApplyCase{int\_well\_constrained}:
   \begin{itemize}
     \item $\vt$ is the well-constrained integer type with constraints $\vcs$;
     \item define $\ids$ as the union of applying $\useconstraint$ to each constraint in $\vcs$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_tuple}):
+  \item \AllApplyCase{t\_tuple}:
   \begin{itemize}
     \item $\vt$ is the tuple type with list of types $\vli$;
     \item define $\ids$ as the union of applying $\useconstraint$ to each constraint in $\vcs$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{structured}):
+  \item \AllApplyCase{structured}:
   \begin{itemize}
     \item $\vt$ is a \structuredtype\ with fields $\fields$;
     \item define $\ids$ as the union of applying $\usety$ to each field type in $\fields$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{array\_expr}):
+  \item \AllApplyCase{array\_expr}:
   \begin{itemize}
     \item $\vt$ is an array expression with length expression $\ve$ and element type $\vtp$;
     \item define $\ids$ as the union of applying $\useexpr$ to $\ve$ and applying $\usety$ to $\vtp$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{array\_enum}):
+  \item \AllApplyCase{array\_enum}:
   \begin{itemize}
     \item $\vt$ is an array expression with enumeration type $\vs$ and element type $\vtp$;
     \item define $\ids$ as the union of the singleton set for $\vs$ and applying $\usety$ to $\vtp$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_bits}):
+  \item \AllApplyCase{t\_bits}:
   \begin{itemize}
     \item $\vt$ is a bitvector type with width expression $\ve$ and bitfields $\bitfields$;
     \item define $\ids$ as the union of applying $\useexpr$ to $\ve$ and applying $\usebitfield$ to each field in $\bitfields$.
@@ -869,13 +869,13 @@ identifier $\vx$ (the type being subtyped) and fields $\subfields$ depends on.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}:
   \begin{itemize}
     \item $\fields$ is $\None$;
     \item define $\ids$ as the empty set.
   \end{itemize}
 
-  \item All of the following apply (\textsc{some}):
+  \item \AllApplyCase{some}:
   \begin{itemize}
     \item $\fields$ is $\langle(\vx, \subfields)\rangle$;
     \item define $\ids$ as the union of the singleton set for $\vx$ and the union of applying $\usety$
@@ -907,117 +907,117 @@ returns the set of identifiers $\ids$ which the expression or \optional\ express
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}:
   \begin{itemize}
     \item $\ve$ is $\None$;
     \item define $\ids$ as the empty set.
   \end{itemize}
 
-  \item All of the following apply (\textsc{some}):
+  \item \AllApplyCase{some}:
   \begin{itemize}
     \item $\ve$ is $\langle\veone\rangle$;
     \item applying $\useexpr$ to $\veone$ yields $\ids$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_literal}):
+  \item \AllApplyCase{e\_literal}:
   \begin{itemize}
     \item $\ve$ is a literal expression;
     \item define $\ids$ as the empty set.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_atc}):
+  \item \AllApplyCase{e\_atc}:
   \begin{itemize}
     \item $\ve$ is the typing assertion for expression $\ve$ and type $\tty$;
     \item define $\ids$ as the union of applying $\useexpr$ to $\veone$ and applying $\usety$ to $\tty$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_var}):
+  \item \AllApplyCase{e\_var}:
   \begin{itemize}
     \item $\ve$ is the variable expression for identifier $\vx$;
     \item define $\ids$ as the singleton set for $\vx$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_getarray}):
+  \item \AllApplyCase{e\_getarray}:
   \begin{itemize}
     \item $\ve$ is the \arrayaccess\ expression for base expression $\veone$ and index expression $\vetwo$;
     \item define $\ids$ as the union of applying $\useexpr$ to $\veone$ and applying $\useexpr$ to $\vetwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_getenumarray}):
+  \item \AllApplyCase{e\_getenumarray}:
   \begin{itemize}
     \item $\ve$ is the \arrayaccess\ expression for base expression $\veone$ and enumeration-typed index expression $\vetwo$;
     \item define $\ids$ as the union of applying $\useexpr$ to $\veone$ and applying $\useexpr$ to $\vetwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_binop}):
+  \item \AllApplyCase{e\_binop}:
   \begin{itemize}
     \item $\ve$ is the binary operation expression over expressions $\veone$ and $\vetwo$;
     \item define $\ids$ as the union of applying $\useexpr$ to $\veone$ and applying $\useexpr$ to $\vetwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_unop}):
+  \item \AllApplyCase{e\_unop}:
   \begin{itemize}
     \item $\ve$ is the unary operation expression over any unary operation and an expression $\veone$;
     \item define $\ids$ as the union of applying $\useexpr$ to $\veone$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_call}):
+  \item \AllApplyCase{e\_call}:
   \begin{itemize}
     \item $\ve$ is the call expression of the subprogram named $\vx$ with argument expressions $\vargs$ and parameter expressions $\namedargs$;
     \item define $\ids$ as the union of the singleton set for $\vx$, and the set obtained by applying $\useexpr$ to each expression in
           $\vargs$ and each expression in $\namedargs$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_slice}):
+  \item \AllApplyCase{e\_slice}:
   \begin{itemize}
     \item $\ve$ is the slicing expression over expression $\veone$ and slices $\slices$;
     \item define $\ids$ as the union of applying $\useexpr$ to $\veone$ and applying $\useslice$ to each slice in $\slices$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_cond}):
+  \item \AllApplyCase{e\_cond}:
   \begin{itemize}
     \item $\ve$ is the conditional expression over expressions $\veone$, $\vetwo$, and $\vethree$;
     \item define $\ids$ as the union of applying $\useexpr$ to each of $\veone$, $\vetwo$, and $\vethree$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_getitem}):
+  \item \AllApplyCase{e\_getitem}:
   \begin{itemize}
     \item $\ve$ is the tuple access expression over expression $\veone$;
     \item define $\ids$ as the application of $\useexpr$ to $\veone$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_getfield}):
+  \item \AllApplyCase{e\_getfield}:
   \begin{itemize}
     \item $\ve$ is the field access expression over expression $\veone$;
     \item define $\ids$ as the application of $\useexpr$ to $\veone$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_getfields}):
+  \item \AllApplyCase{e\_getfields}:
   \begin{itemize}
     \item $\ve$ is the multiple field access expression over expression $\veone$;
     \item define $\ids$ as the application of $\useexpr$ to $\veone$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_record}):
+  \item \AllApplyCase{e\_record}:
   \begin{itemize}
     \item $\ve$ is the record construction expression of type $\tty$ and field initializations $\vli$;
     \item define $\ids$ as the union of applying of $\usety$ to $\tty$ and applying $\usety$ to each field type in $\vli$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_tuple}):
+  \item \AllApplyCase{e\_tuple}:
   \begin{itemize}
     \item $\ve$ is the tuple construction expression for the expressions $\ves$;
     \item define $\ids$ as the union of applying of $\useexpr$ to each expression in $\ves$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_array}):
+  \item \AllApplyCase{e\_array}:
   \begin{itemize}
     \item $\ve$ is the array construction expression for the length expression $\veone$ and value expression $\vetwo$,
           that is, $\EArray\{\EArrayLength:\veone, \EArrayValue:\vetwo\}$;
     \item define $\ids$ as the union of applying of $\useexpr$ to each of $\veone$ and $\vetwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_enumarray}):
+  \item \AllApplyCase{e\_enumarray}:
   \begin{itemize}
     \item $\ve$ is the array construction expression for the array with enumeration-typed index for the list of labels
           $\vlabels$ and value expression $\vvalue$,
@@ -1026,13 +1026,13 @@ One of the following applies:
     \item define $\ids$ as the union of labels listed in $\vlabels$ and the result of applying $\useexpr$ to $\vvalue$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_arbitrary}):
+  \item \AllApplyCase{e\_arbitrary}:
   \begin{itemize}
     \item $\ve$ is the arbitrary expression with type $\vt$;
     \item define $\ids$ as the application of $\usety$ to $\vt$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_pattern}):
+  \item \AllApplyCase{e\_pattern}:
   \begin{itemize}
     \item $\ve$ is the pattern testing expression for subexpression $\veone$ and pattern $\vp$;
     \item define $\ids$ as the union of applying $\useexpr$ to $\veone$ and applying $\usepattern$ to $\vp$.
@@ -1171,51 +1171,51 @@ returns the set of identifiers $\ids$ which the left-hand-side expression $\vle$
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{le\_var}):
+  \item \AllApplyCase{le\_var}:
   \begin{itemize}
     \item $\vle$ is a left-hand-side variable expression for $\vx$;
     \item define $\ids$ as the singleton set for $\vx$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{le\_destructuring}):
+  \item \AllApplyCase{le\_destructuring}:
   \begin{itemize}
     \item $\vle$ is a left-hand-side expression for assigning to a list of expressions $\vles$,
           that is $\LEDestructuring(\vles)$;
     \item define $\ids$ as the union of applying $\uselexpr$ to each expression in $\vles$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{le\_discard}):
+  \item \AllApplyCase{le\_discard}:
   \begin{itemize}
     \item $\vle$ is a left-hand-side discard expression;
     \item define $\ids$ as the empty set.
   \end{itemize}
 
-  \item All of the following apply (\textsc{le\_setarray}):
+  \item \AllApplyCase{le\_setarray}:
   \begin{itemize}
     \item $\vle$ is a left-hand-side array update of the array given by the expression $\veone$ and index expression $\vetwo$;
     \item define $\ids$ as the union of applying $\uselexpr$ to $\veone$ and applying $\useexpr$ to $\vetwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{le\_setenumarray}):
+  \item \AllApplyCase{le\_setenumarray}:
   \begin{itemize}
     \item $\vle$ is a left-hand-side array update of the array given by the expression $\veone$ and
           the enumeration-typed index expression $\vetwo$;
     \item define $\ids$ as the union of applying $\uselexpr$ to $\veone$ and applying $\useexpr$ to $\vetwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{le\_setfield}):
+  \item \AllApplyCase{le\_setfield}:
   \begin{itemize}
     \item $\vle$ is a left-hand-side field update of the record given by the expression $\veone$;
     \item define $\ids$ as the application of $\uselexpr$ to $\veone$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{le\_setfields}):
+  \item \AllApplyCase{le\_setfields}:
   \begin{itemize}
     \item $\vle$ is a left-hand-side multiple field updates of the record given by the expression $\veone$;
     \item define $\ids$ as the application of $\uselexpr$ to $\veone$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{le\_slice}):
+  \item \AllApplyCase{le\_slice}:
   \begin{itemize}
     \item $\vle$ is a left-hand-side slicing of the expression $\veone$ by slices $\slices$;
     \item define $\ids$ as the union of applying $\uselexpr$ to $\veone$ and applying $\useslice$ to each slice in $\slices$.
@@ -1278,49 +1278,49 @@ returns the set of identifiers $\ids$ which the declaration $\vd$ depends on.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{mask\_all}):
+  \item \AllApplyCase{mask\_all}:
   \begin{itemize}
     \item $\vp$ is either a mask pattern ($\PatternMask$) or a match-all pattern ($\PatternAll$);
     \item define $\ids$ as the empty set.
   \end{itemize}
 
-  \item All of the following apply (\textsc{tuple}):
+  \item \AllApplyCase{tuple}:
   \begin{itemize}
     \item $\vp$ is a tuple pattern list of patterns $\vli$;
     \item define $\ids$ as the union of the application of $\usepattern$ for each pattern in $\vli$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{any}):
+  \item \AllApplyCase{any}:
   \begin{itemize}
     \item $\vp$ is a pattern for matching any of the patterns in the list of patterns $\vli$;
     \item define $\ids$ as the union of the application of $\usepattern$ for each pattern in $\vli$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{single}):
+  \item \AllApplyCase{single}:
   \begin{itemize}
     \item $\vp$ is a pattern for matching the expression $\ve$;
     \item define $\ids$ as the application of $\useexpr$ to $\ve$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{geq}):
+  \item \AllApplyCase{geq}:
   \begin{itemize}
     \item $\vp$ is a pattern for testing greater-or-equal with respect to the expression $\ve$;
     \item define $\ids$ as the application of $\useexpr$ to $\ve$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{leq}):
+  \item \AllApplyCase{leq}:
   \begin{itemize}
     \item $\vp$ is a pattern for testing less-than-or-equal with respect to the expression $\ve$;
     \item define $\ids$ as the application of $\useexpr$ to $\ve$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{not}):
+  \item \AllApplyCase{not}:
   \begin{itemize}
     \item $\vp$ is a pattern negating the pattern $\vpone$;
     \item define $\ids$ as the application of $\usepattern$ to $\vpone$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{range}):
+  \item \AllApplyCase{range}:
   \begin{itemize}
     \item $\vp$ is a pattern for testing the range of expressions from $\veone$ to $\vetwo$;
     \item define $\ids$ as the union of the application of $\useexpr$ to both $\veone$ and $\vetwo$.
@@ -1389,13 +1389,13 @@ returns the set of identifiers $\ids$ which the slice $\vs$ depends on.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{single}):
+  \item \AllApplyCase{single}:
   \begin{itemize}
     \item $\vs$ is the slice at the position given by the expression $\ve$;
     \item define $\ids$ as the application of $\useexpr$ to $\ve$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{start\_length\_rang}):
+  \item \AllApplyCase{start\_length\_rang}:
   \begin{itemize}
     \item $\vs$ is a slice given by the pair of expressions $\veone$ and $\vetwo$;
     \item define $\ids$ as the union of applying $\useexpr$ to both $\veone$ and $\vetwo$.
@@ -1426,20 +1426,20 @@ returns the set of identifiers $\ids$ which the bitfield $\vbf$ depends on.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{simple}):
+  \item \AllApplyCase{simple}:
   \begin{itemize}
     \item $\vbf$ is the single field with slices $\slices$;
     \item define $\ids$ as the union of applying $\useslice$ to each slice in $\slices$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{nested}):
+  \item \AllApplyCase{nested}:
   \begin{itemize}
     \item $\vbf$ is the nested bitfield with slices $\slices$ and bitfields $\bitfields$;
     \item define $\ids$ as the union of applying $\useslice$ to each slice in $\slices$ and applying
           $\usebitfield$ to each bitfield in $\bitfields$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{type}):
+  \item \AllApplyCase{type}:
   \begin{itemize}
     \item $\vbf$ is the typed bitfield with slices $\slices$ and type $\tty$;
     \item define $\ids$ as the union of applying $\useslice$ to each slice in $\slices$ and applying
@@ -1477,13 +1477,13 @@ returns the set of identifiers $\ids$ which the integer constraint $\vc$ depends
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{exact}):
+  \item \AllApplyCase{exact}:
   \begin{itemize}
     \item $\vc$ is the single-value expression constraint with expression $\ve$;
     \item define $\ids$ as the application of $\useexpr$ to $\ve$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{range}):
+  \item \AllApplyCase{range}:
   \begin{itemize}
     \item $\vc$ is the range constraint with expressions $\veone$ and $\vetwo$;
     \item define $\ids$ as the union of applying $\useexpr$ to both $\veone$ and $\vetwo$.
@@ -1512,32 +1512,32 @@ returns the set of identifiers $\ids$ which the statement $\vs$ depends on.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{pass\_return\_none\_throw\_none}):
+  \item \AllApplyCase{pass\_return\_none\_throw\_none}:
   \begin{itemize}
     \item $\vs$ is either a pass statement $\SPass$, a return-nothing statement $\SReturn(\None)$,
           or a throw-nothing statement ($\SThrow(\None)$);
     \item define $\ids$ as the empty set.
   \end{itemize}
 
-  \item All of the following apply (\textsc{s\_seq}):
+  \item \AllApplyCase{s\_seq}:
   \begin{itemize}
     \item $\vs$ is a sequencing statement for $\vsone$ and $\vstwo$;
     \item define $\ids$ as the union of applying $\usestmt$ to both $\vsone$ and $\vstwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{assert\_return\_some}):
+  \item \AllApplyCase{assert\_return\_some}:
   \begin{itemize}
     \item $\vs$ is either an assertion with expression $\ve$ or a return statement with expression $\ve$;
     \item define $\ids$ as the application of $\useexpr$ to $\ve$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{s\_assign}):
+  \item \AllApplyCase{s\_assign}:
   \begin{itemize}
     \item $\vs$ is an assignment statement with left-hand-side $\vle$ and right-hand-side $\ve$;
     \item define $\ids$ as the union of applying $\uselexpr$ to $\vle$ and $\useexpr$ to $\ve$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{s\_call}):
+  \item \AllApplyCase{s\_call}:
   \begin{itemize}
     \item $\vs$ is a call statement for the subprogram with name $\vx$, arguments $\vargs$, and list of
           pairs consisting of a parameter identifier and associated expression $\namedargs$;
@@ -1546,13 +1546,13 @@ One of the following applies:
           a parameter in $\namedargs$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{s\_cond}):
+  \item \AllApplyCase{s\_cond}:
   \begin{itemize}
     \item $\vs$ is the conditional statement with expression $\ve$ and statements $\vsone$ and $\vstwo$;
     \item define $\ids$ as the union of applying $\useexpr$ to $\ve$ and $\usestmt$ to both of $\vsone$ and $\vstwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{s\_for}):
+  \item \AllApplyCase{s\_for}:
   \begin{itemize}
     \item $\vs$ is the for statement $\SFor\left\{\begin{array}{rcl}
       \Forindexname &:& \Ignore\\
@@ -1565,33 +1565,33 @@ One of the following applies:
     \item define $\ids$ as the union of applying $\useexpr$ to $\vlimit$, $\vstarte$, and $\vende$ and applying $\usestmt$ to $\vsone$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{while\_repeat}):
+  \item \AllApplyCase{while\_repeat}:
   \begin{itemize}
     \item $\vs$ is either a while statement or repeat statement, each with expression $\ve$, body statement $\vsone$,
           and optional limit expression $\vlimit$;
     \item define $\ids$ as the union of applying $\useexpr$ to $\vlimit$ and to $\ve$, and applying $\usestmt$ to $\vsone$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{s\_decl}):
+  \item \AllApplyCase{s\_decl}:
   \begin{itemize}
     \item $\vs$ is a declaration statement with \optional{} type annotation $\vt$ and \optional\ initialization expression $\ve$;
     \item define $\ids$ as the union of applying $\usety$ to $\vt$ and $\useexpr$ to $\ve$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{s\_try}):
+  \item \AllApplyCase{s\_try}:
   \begin{itemize}
     \item $\vs$ is a try statement with statement $\vsone$, catcher list $\catchers$, and otherwise statement $\vstwo$;
     \item define $\ids$ as the union of applying $\usestmt$ to both $\vsone$ and $\vstwo$ and $\usecatcher$ to
           every catcher in $\catchers$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{s\_print}):
+  \item \AllApplyCase{s\_print}:
   \begin{itemize}
     \item $\vs$ is a print statement with list of expressions $\vargs$;
     \item define $\ids$ as the union of applying $\useexpr$ to each expression in $\vargs$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{s\_unreachable}):
+  \item \AllApplyCase{s\_unreachable}:
   \begin{itemize}
     \item $\vs$ is an \texttt{Unreachable()};
     \item define $\ids$ as the empty set.
@@ -1704,7 +1704,7 @@ The function
 returns the set of identifiers $\ids$ which the try statement catcher $\vc$ depends on.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vc$ is a case alternative with type $\tty$ and statement $\vs$;
   \item define $\ids$ as the union of applying $\usety$ to $\ty$ and applying $\usestmt$ to $\vs$.
@@ -1764,13 +1764,13 @@ yielding $\compdecls$
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}:
   \begin{itemize}
     \item $\decls$ is the empty list;
     \item define $\compdecls$ as the empty list.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}:
   \begin{itemize}
     \item $\decls$ is the list with \head\ $\vd$ and \tail\ $declsone$;
     \item define $\declstwo$ as the singleton list for $\vd$ if applying $\defdecl$ to $\vd$ yields an identifier
@@ -1809,12 +1809,12 @@ yielding the native integer value $\vv$ and execution graph $\vg$.
 Otherwise, the result is a dynamic error.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item \Prosebuildgenv{$\tenv$}{$\spec$}{$\env$}{$\vg$}\ProseOrError;
   \item One of the following applies:
   \begin{itemize}
-    \item All of the following apply (\textsc{normal}):
+    \item \AllApplyCase{normal}:
     \begin{itemize}
       \item evaluating the subprogram \texttt{main} with an empty list of actual arguments and empty list of parameters
       in $\env$ yields $\Normal([(\vv, \vgtwo)], \Ignore)$\ProseOrError;
@@ -1822,7 +1822,7 @@ All of the following apply:
       \item the result of the entire evaluation is $(\vv, \vg)$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{throwing}):
+    \item \AllApplyCase{throwing}:
     \begin{itemize}
       \item evaluating the subprogram \texttt{main} with an empty list of actual arguments and empty list of parameters
       in $\env$ yields $\Throwing(\vvopt, \Ignore)$, which is an uncaught exception;
@@ -1870,7 +1870,7 @@ to the \defusedependencyterm\ order
 (see \TypingRuleRef{TypeCheckAST}).
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item define the environment $\env$ as consisting of the static environment $\tenv$ and the empty dynamic environment $\emptydenv$;
   \item evaluating the global storage declarations in $\typedspec$ in $\env$ with the empty execution graph

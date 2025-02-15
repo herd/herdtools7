@@ -61,7 +61,7 @@ We also define helper functions via respective rules:
 
 \TypingRuleDef{AnnotateCall}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item applying $\annotateexprlist$ to annotate the expression list $\vcall.\callargs$ in $\tenv$ yields \\
         $\args$\ProseOrTypeError;
@@ -117,7 +117,7 @@ is similar to $\annotatecall$, except that it accepts annotated version of param
 
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item applying $\unziplistthree$ to $\typedargs$ yields the corresponding list of types $\argtypes$,
         list of expressions $\args$, and a list of \sideeffectdescriptorsetsterm\ $\vsessargs$;
@@ -210,7 +210,7 @@ Note that this function relies on all standard library functions with input para
 
 
 \ProseParagraph
-All of the following applies:
+\AllApply
 \begin{itemize}
   \item $\funcsig.\funcparameters$ is either
     a list with one parameter with a name $\vx$,
@@ -258,13 +258,13 @@ It assumes that $\funcsigparams$ and $\params$ have the same length.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}:
   \begin{itemize}
     \item $\funcsigparams$ is an empty list;
     \item the result is $\True$.
   \end{itemize}
 
-  \item All of the following apply:
+  \item \AllApply
   \begin{itemize}
     \item $\funcsigparams$ is a non-empty list with \head\ $(\vx, \tydeclopt)$ and \\
           \tail\ $\funcsigparamsone$, and
@@ -274,13 +274,13 @@ One of the following applies:
     \item checking that $\tyactual$ represents a \constrainedinteger{} yields $\True$\ProseOrTypeError;
     \item One of the following applies:
     \begin{itemize}
-      \item All of the following apply (\textsc{parameterized}):
+      \item \AllApplyCase{parameterized}:
       \begin{itemize}
         \item $\tyactual$ is a \parameterizedintegertype{} for the parameter $\vx$, that is, \\
               $\langle\TInt(\parameterized(\vx))\rangle$.
       \end{itemize}
 
-      \item All of the following apply (\textsc{other}):
+      \item \AllApplyCase{other}:
       \begin{itemize}
         \item $\tydeclopt$ is not $\None$, that is, $\langle\tydecl\rangle$;
         \item $\tydecl$ is not the \parameterizedintegertype{} for the parameter $\vx$;
@@ -346,14 +346,14 @@ $\eqs$, yielding the type $\newty$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{t\_bits}):
+  \item \AllApplyCase{t\_bits}:
   \begin{itemize}
     \item $\tty$ is a bitvector type with width expression $\ve$ and fields $\fields$, that is, $\TBits(\ve, \fields)$;
     \item applying $\substexprnormalize$ to $\eqs$ and $\ve$ in $\tenv$ yields the expression $\newe$;
     \item define $\newty$ as a bitvector type with expression $\newe$ and fields $\fields$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_int\_wellconstrained}):
+  \item \AllApplyCase{t\_int\_wellconstrained}:
   \begin{itemize}
     \item $\tty$ is a well-constrained integer type with constraints $\constraints$;
     \item applying $\substconstraint$ to each constraint $\constraints[\vi]$, for $\vi$ in \\
@@ -364,7 +364,7 @@ One of the following applies:
           $\newconstraints$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_int\_parameterized}):
+  \item \AllApplyCase{t\_int\_parameterized}:
   \begin{itemize}
     \item $\tty$ is a \parameterizedintegertype\ for the parameter $\name$;
     \item applying $\substexprnormalize$ to $\eqs$ and the expression $\EVar(\name)$ yields $\ve$;
@@ -372,7 +372,7 @@ One of the following applies:
           $\TInt(\wellconstrained(\ConstraintExact(\ve)))$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_tuple}):
+  \item \AllApplyCase{t\_tuple}:
   \begin{itemize}
     \item $\tty$ is the tuple type over the list of tuples $\tys$, that is, $\TTuple(\tys)$;
     \item applying $\renametyeqs$ to $\eqs$ and the type $\tys[\vi]$, for each $\vi$ in \\
@@ -381,7 +381,7 @@ One of the following applies:
     \item define $\newty$ as the tuple type over $\newtys$, that is, $\TTuple(\newtys)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{other}):
+  \item \AllApplyCase{other}:
   \begin{itemize}
     \item $\tty$ is not one of the types in the previous cases,
           that is, $\tty$ is not a bitvector type, nor an integer type, nor a tuple type;
@@ -444,7 +444,7 @@ $\eqs$, and then attempting to symbolically simplify the result, yielding the ex
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item transforming $\ve$ in the static environment $\tenv$, by substituting the parameter expressions
         $\eqs$, yields $\veone$;
@@ -479,14 +479,14 @@ $\substs$, yielding the expression $\newe$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{e\_var\_in\_substs}):
+  \item \AllApplyCase{e\_var\_in\_substs}:
   \begin{itemize}
     \item $\ve$ is a variable expression for the identifier $\vs$, that is, $\EVar(\vs)$;
     \item applying $\assocopt$ to $\vs$ and $\substs$ yields the expression $\newe$.
           That is, $\vs$ is a parameter with an associated expression;
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_var\_not\_in\_substs}):
+  \item \AllApplyCase{e\_var\_not\_in\_substs}:
   \begin{itemize}
     \item $\ve$ is the variable expression for the identifier $\vs$, that is, $\EVar(\vs)$;
     \item applying $\assocopt$ to $\vs$ and $\substs$ yields $\None$.
@@ -494,14 +494,14 @@ One of the following applies:
     \item define $\newe$ is $\ve$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_unop}):
+  \item \AllApplyCase{e\_unop}:
   \begin{itemize}
     \item $\ve$ is the unary operator expression for the operator $\op$ and expression $\ve$, that is, $\EUnop(\op, \veone)$;
     \item applying $\substexpr$ to $\substs$ and $\veone$ in $\tenv$ yields $\veonep$;
     \item define $\newe$ as the unary operator expression for the operator $\op$ and expression $\veonep$, that is, $\EUnop(\op, \veonep)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_binop}):
+  \item \AllApplyCase{e\_binop}:
   \begin{itemize}
     \item $\ve$ is the binary operator expression for the operator $\op$ and expressions $\veone$ and $\vetwo$, that is, $\EBinop(\op, \veone, \vetwo)$;
     \item applying $\substexpr$ to $\substs$ and $\veone$ in $\tenv$ yields $\veonep$;
@@ -509,7 +509,7 @@ One of the following applies:
     \item define $\newe$ as the unary operator expression for the operator $\op$ and expression $\veonep$, that is, $\EUnop(\op, \veonep)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_cond}):
+  \item \AllApplyCase{e\_cond}:
   \begin{itemize}
     \item $\ve$ is the conditional expression for expressions $\veone$, $\vetwo$, and $\vethree$, that is, \\
           $\ECond(\veone, \vetwo, \vethree)$;
@@ -519,7 +519,7 @@ One of the following applies:
     \item define $\newe$ as the conditional expression for expressions $\veonep$, $\vetwop$, and $\vethreep$, that is, $\ECond(\veonep, \vetwop, \vethreep)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_call}):
+  \item \AllApplyCase{e\_call}:
   \begin{itemize}
     \item $\ve$ is the call expression for subprogram $\vx$ with arguments $\vargs$ and parameter expressions $\paramargs$,
           that is, $\ECall(\vx, \vargs, \paramargs)$;
@@ -530,7 +530,7 @@ One of the following applies:
     that is, $\ECall(\vx, \vargsp, \paramargs)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_getarray}):
+  \item \AllApplyCase{e\_getarray}:
   \begin{itemize}
     \item $\ve$ is the \arrayaccess\ expression for base expression $\veone$ and index expression $\vetwo$,
           that is, $\EGetArray(\veone, \vetwo)$;
@@ -540,7 +540,7 @@ One of the following applies:
     that is, $\EGetArray(\veonep, \vetwop)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_getenumarray}):
+  \item \AllApplyCase{e\_getenumarray}:
   \begin{itemize}
     \item $\ve$ is the \arrayaccess\ expression for base expression $\veone$ and an enumeration-typed index expression $\vetwo$,
           that is, $\EGetEnumArray(\veone, \vetwo)$;
@@ -551,7 +551,7 @@ One of the following applies:
           that is, $\EGetEnumArray(\veonep, \vetwop)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_getfield}):
+  \item \AllApplyCase{e\_getfield}:
   \begin{itemize}
     \item $\ve$ is the field access expression for base expression $\ve$ and field $\vx$,
           that is, $\EGetField(\veone, \vx)$;
@@ -560,7 +560,7 @@ One of the following applies:
           that is, $\EGetField(\veonep, \vx)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_getfields}):
+  \item \AllApplyCase{e\_getfields}:
   \begin{itemize}
     \item $\ve$ is the access to fields $\fields$ with base expression $\veone$, that is, \\
           $\EGetFields(\veone, \fields)$;
@@ -568,7 +568,7 @@ One of the following applies:
     \item define $\newe$ as the access to fields $\fields$ with base expression $\veonep$, that is, $\EGetFields(\veonep, \fields)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_getitem}):
+  \item \AllApplyCase{e\_getitem}:
   \begin{itemize}
     \item $\ve$ is the access to tuple item $\vi$ of the tuple expression $\veone$, that is, \\
           $\EGetItem(\veone, \vi)$;
@@ -577,7 +577,7 @@ One of the following applies:
           $\EGetItem(\veonep, \vi)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_pattern}):
+  \item \AllApplyCase{e\_pattern}:
   \begin{itemize}
     \item $\ve$ is the pattern expression of expression $\veone$ and patterns $\vps$, that is, \\
           $\EPattern(\veone, \vps)$;
@@ -585,7 +585,7 @@ One of the following applies:
     \item define $\newe$ as the pattern expression of expression $\veonep$ and patterns $\vps$, that is, $\EPattern(\veonep, \vps)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_record}):
+  \item \AllApplyCase{e\_record}:
   \begin{itemize}
     \item $\ve$ is the record expression of record type $\vt$ and list of fields $\fields$;
     \item for every pair $(\vx,\veone)$ in $\fields$, applying $\substexpr$ to $\substs$ $\veone$ in $\tenv$ yields $\veonep_\vx$;
@@ -593,14 +593,14 @@ One of the following applies:
     \item define $\newe$ as the record expression of record type $\vt$ and list of fields $\fieldsp$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_slice}):
+  \item \AllApplyCase{e\_slice}:
   \begin{itemize}
     \item $\ve$ is the slicing expression for subexpression $\veone$ and list of slices $\vslices$, that is, $\ESlice(\veone, \vslices)$;
     \item applying $\substexpr$ to $\veone$ in $\tenv$ yields $\veonep$;
     \item define $\newe$ as slicing expression for subexpression $\veonep$ and list of slices $\vslices$, that is, $\ESlice(\veonep, \vslices)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_tuple}):
+  \item \AllApplyCase{e\_tuple}:
   \begin{itemize}
     \item $\ve$ is the tuple expression of expressions $\ves$, that is, $\ETuple(\ves)$;
     \item applying $\substexpr$ to $\substs$ and every expression $\ves[\vi]$ in $\tenv$, for every $\vi$ in $\listrange(\ves)$
@@ -609,7 +609,7 @@ One of the following applies:
     \item define $\newe$ as the tuple expression of expressions $\vesp$, that is, $\ETuple(\vesp)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_array}):
+  \item \AllApplyCase{e\_array}:
   \begin{itemize}
     \item $\ve$ is an array construction expression with length expression $\length$ and value expression $\vvalue$, that is,
           $\EArray\{\EArrayLength: \length, \EArrayValue: \vvalue\}$;
@@ -620,7 +620,7 @@ One of the following applies:
           $\EArray\{\EArrayLength: \lengthp, \EArrayValue: \vvaluep\}$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_enumarray}):
+  \item \AllApplyCase{e\_enumarray}:
   \begin{itemize}
     \item $\ve$ is an array construction expression for an enumeration-typed index
           with list of labels $\vlabels$ and initial element value expression $\vvalue$, that is, \\
@@ -631,14 +631,14 @@ One of the following applies:
           $\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \vvaluep\}$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_atc}):
+  \item \AllApplyCase{e\_atc}:
   \begin{itemize}
     \item $\ve$ is the type assertion of expression $\veone$ and type $\vt$, that is, $\EATC(\veone, \vt)$;
     \item applying $\substexpr$ to $\substs$ and $\veone$ in $\tenv$ yields $\veonep$;
     \item define $\newe$ as the type assertion of expression $\veonep$ and type $\vt$, that is, $\EATC(\veonep, \vt)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{other}):
+  \item \AllApplyCase{other}:
   \begin{itemize}
     \item $\ve$ is either a literal expression or an arbitrary value expression;
     \item define $\newe$ as $\ve$.
@@ -842,7 +842,7 @@ yielding the integer constraint $\newc$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{exact}):
+  \item \AllApplyCase{exact}:
   \begin{itemize}
     \item $\vc$ is an exact constraint for the expression $\ve$, that is, $\ConstraintExact(\ve)$;
     \item applying $\substexprnormalize$ in $\tenv$ to $\eqs$ and $\ve$ yields $\newe$;
@@ -850,7 +850,7 @@ One of the following applies:
           $\ConstraintExact(\newe)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{range}):
+  \item \AllApplyCase{range}:
   \begin{itemize}
     \item $\vc$ is a range constraint for the expressions $\veone$ and $\vetwo$, that is, \\
           $\ConstraintRange(\veone, \vetwo)$;
@@ -897,13 +897,13 @@ arguments as per $\eqs$ and results in a type error otherwise.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}:
   \begin{itemize}
     \item both $\funcsigargs$ and $\argtypes$ are empty;
     \item the result is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}:
   \begin{itemize}
     \item view $\funcsigargs$ as a list with \head\ $(\Ignore, \tydecl)$ and \tail\ $\funcsigargsone$;
     \item view $\argtypes$ as a list with \head\ $\tyactual$ and \tail\ \\
@@ -962,7 +962,7 @@ yielding the \optional\ annotated type $\rettyopt$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{function\_or\_getter}):
+  \item \AllApplyCase{function\_or\_getter}:
   \begin{itemize}
     \item $\calltype$ is one of $\STFunction$ or $\STGetter$;
     \item $\funcsig$ is $\langle\tty\rangle$;
@@ -970,14 +970,14 @@ One of the following applies:
     \item $\rettyopt$ is $\langle\ttyone\rangle$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{procedure\_or\_setter}):
+  \item \AllApplyCase{procedure\_or\_setter}:
   \begin{itemize}
     \item $\calltype$ is one of $\STProcedure$ or $\STSetter$;
     \item $\funcsigrettyopt$ is $\None$;
     \item define $\rettyopt$ as $\None$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ret\_type\_mismatch}):
+  \item \AllApplyCase{ret\_type\_mismatch}:
   \begin{itemize}
     \item the condition that $\calltype$ is one of $\STProcedure$ or $\STSetter$
           if and only if $\funcsigrettyopt$ is $\None$ does not hold;
@@ -1062,14 +1062,14 @@ If the second case holds, the function returns a tuple which comprises:
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{undefined}):
+  \item \AllApplyCase{undefined}:
   \begin{itemize}
     \item $\tenv$ does not contain a binding for $\name$ in the $\overloadedsubprograms$ map
           ($G^\tenv.\overloadedsubprograms$);
     \item the result is a type error indicating that the identifier has not been declared (as a subprogram).
   \end{itemize}
 
-  \item All of the following apply (\textsc{no\_candidates}):
+  \item \AllApplyCase{no\_candidates}:
   \begin{itemize}
     \item $\tenv$ binds $\name$ via $\overloadedsubprograms$ map to $\renamingset$ and $\vses$;
     \item filtering the subprograms in $\renamingset$ with the caller argument types $\callerargtypes$
@@ -1078,7 +1078,7 @@ One of the following applies:
           does not match any defined subprogram.
   \end{itemize}
 
-  \item All of the following apply (\textsc{too\_many\_candidates}):
+  \item \AllApplyCase{too\_many\_candidates}:
   \begin{itemize}
     \item $\tenv$ binds $\name$ via $\overloadedsubprograms$ map to $\renamingset$ and $\vses$;
     \item filtering the subprograms in $\renamingset$ with the caller argument types $\callerargtypes$
@@ -1088,7 +1088,7 @@ One of the following applies:
           $\callerargtypes$ matches more than one defined subprogram.
   \end{itemize}
 
-  \item All of the following apply (\textsc{one\_candidate}):
+  \item \AllApplyCase{one\_candidate}:
   \begin{itemize}
     \item $\tenv$ binds $\name$ via $\overloadedsubprograms$ map to $\renamingset$ and $\vses$;
     \item filtering the subprograms in $\renamingset$ with the caller argument types $\callerargtypes$
@@ -1174,13 +1174,13 @@ The names $\candidates$ are assumed to exist in $G^\tenv.\subprograms$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{no\_candidates}):
+  \item \AllApplyCase{no\_candidates}:
   \begin{itemize}
     \item $\candidates$ is empty;
     \item $\matches$ is empty.
   \end{itemize}
 
-  \item All of the following apply (\textsc{candidates\_exist}):
+  \item \AllApplyCase{candidates\_exist}:
   \begin{itemize}
     \item $\candidates$ is a list with \head\ $\name$ and \tail\ $\candidatesone$;
     \item the function definition associated with $\name$ in $\tenv$ is $\funcdef$;
@@ -1226,7 +1226,7 @@ in the list of arguments $\vargs$ in $\tenv$, yielding the result in $\vb$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item equating the list lengths of $\formaltys$ and $\vargs$ either yields $\True$
         or $\False$, which short-circuits the entire rule;
@@ -1264,13 +1264,13 @@ each consisting of a type, an annotated expression, and a \sideeffectsetterm.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}:
   \begin{itemize}
     \item $\exprs$ is empty;
     \item $\typedexprs$ is empty.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}:
   \begin{itemize}
     \item $\exprs$ has $\ve$ as its \head\ expression and $\exprsone$ as its \tail;
     \item annotating $\ve$ in $\tenv$ yields the pair $\typedexpr$ consisting of a type and an expression
@@ -1366,7 +1366,7 @@ We also define the following helper rules:
 
 \SemanticsRuleDef{Call}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item evaluating each expression in $\args$ separately in $\env$ as per \\
         \SemanticsRuleRef{EExprListM} is $\Normal(\vvargs, \envone)$\ProseOrAbnormal;
@@ -1380,7 +1380,7 @@ All of the following apply:
   to the local environment of the caller);
   \item one of the following applies:
   \begin{itemize}
-    \item All of the following apply (\textsc{normal}):
+    \item \AllApplyCase{normal}:
     \begin{itemize}
       \item evaluating the subprogram named $\name$ with parameters $\vvparams$ and arguments $\vvargs$ in
       $\denvtwo'$ is $\Normal(\vms, (\vglobal, \Ignore))$ (that is, we ignore the local environment
@@ -1393,7 +1393,7 @@ All of the following apply:
       \item the entire evaluation results in $\Normal(\vmstwo, \newenv)$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{throwing}):
+    \item \AllApplyCase{throwing}:
     \begin{itemize}
       \item evaluating the subprogram named $\name$ with arguments $\vvargs$ and parameters $\vvparams$ in
             $\denvtwo'$ is $\Throwing(\vv, \envthrow)$\ProseOrError;
@@ -1445,7 +1445,7 @@ All of the following apply:
 
 \SemanticsRuleDef{FPrimitive}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\env$ consists of the static environment $\tenv$ and the dynamic environment with $\genv$ as its
         global component and an empty local component;
@@ -1494,7 +1494,7 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
 \ASLListing{Evaluating function calls}{semantics-fcall}{\semanticstests/SemanticsRule.FCall.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\env$ consists of the static environment $\tenv$ and the dynamic environment with the global
         component $\genv$ and an empty local component;
@@ -1571,13 +1571,13 @@ Otherwise, the result is a dynamic error indicating that the recursion limit has
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}:
   \begin{itemize}
     \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\None, \vg)$\ProseOrError;
     \item define $\vg$ as the empty graph.
   \end{itemize}
 
-  \item All of the following apply (\textsc{some\_ok}):
+  \item \AllApplyCase{some\_ok}:
   \begin{itemize}
     \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\langle\vlimit\rangle, \vg)$\ProseOrError;
     \item view $\env$ as $(\tenv, \denv)$;
@@ -1585,7 +1585,7 @@ One of the following applies:
     \item $\vlimit$ is less than $\vstacksize$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{some\_error}):
+  \item \AllApplyCase{some\_error}:
   \begin{itemize}
     \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\langle\vlimit\rangle, \vg)$\ProseOrError;
     \item view $\env$ as $(\tenv, \denv)$;
@@ -1636,7 +1636,7 @@ generates an execution graph for reading the given value to a variable given
 by the identifier, and pairs it with the given value.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item reading the value $\vv$ into the variable named $\id$ gives $\newg$;
   \item the result is $(\vv, \newg)$.
@@ -1666,13 +1666,13 @@ returned by the evaluation of a primitive subprogram:
 \ProseParagraph
   one of the following applies:
   \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}:
   \begin{itemize}
     \item the list of value-execution graphs $\vvsm$ is empty;
     \item the result is a pair consisting of an empty list and an empty graph.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}:
   \begin{itemize}
     \item the list of value-execution graphs $\vvsm$ has $\vm$ as its head and $\vvsmone$ as its tail;
     \item $\vx$ is a fresh identifier;
@@ -1729,14 +1729,14 @@ yielding the updated pair $(\newenv, \newg)$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}:
   \begin{itemize}
     \item both $\vids$ and $\actuals$ are empty lists;
     \item \Proseeqdef{$\newenv$}{$\env$};
     \item \Proseeqdef{$\newg$}{$\vgone$}.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}:
   \begin{itemize}
     \item $\vids$ has $\vx$ as its head and $\vidsone$ as its tail,
           and $\actuals$ has $\vm$ as its head and $\actualsone$ as its tail;
@@ -1779,14 +1779,14 @@ into corresponding normal configurations that can be returned by a subprogram ev
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{continuing}):
+  \item \AllApplyCase{continuing}:
   \begin{itemize}
     \item the given configuration is $\Continuing(\vg, \env)$. This happens when,
     for example, the subprogram called is either a setter or a procedure;
     \item the result is $\Normal((\emptylist, \vg), \env)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{returning}):
+  \item \AllApplyCase{returning}:
   \begin{itemize}
     \item the given configuration is $\Returning(\xs, \retenv)$, which is the case of a function;
     \item $\xs$ is the list $\vv_i$, for $i=1..k$;

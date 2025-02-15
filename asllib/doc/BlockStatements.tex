@@ -25,7 +25,7 @@ statement $\newstmt$ and inferred \sideeffectsetterm\ $\vses$.
 
 \TypingRuleDef{Block}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item annotating the statement $\vs$ in $\tenv$ yields $(\newstmt, \newtenv, \vses)$\ProseOrTypeError;
   \item the modified environment $\newtenv$ is dropped.
@@ -65,7 +65,7 @@ which drops back to the original local environment of $\env$ when the evaluation
 
 \SemanticsRuleDef{Block}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
     \item evaluating $\stm$ in $\env$, as per \chapref{Statements},
     is $\Continuing(\newg, \envone)$\ProseTerminateAs{\ReturningConfig};

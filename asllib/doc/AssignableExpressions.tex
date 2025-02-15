@@ -482,7 +482,7 @@ via the following rules:
 \subsection{Typing}
 \TypingRuleDef{LEDiscard}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vle$ denotes an expression that can be discarded, that is, $\LEDiscard$;
   \item \Proseeqdef{$\newle$}{$\vle$};
@@ -503,7 +503,7 @@ In \listingref{semantics-lediscard}, the assignment \texttt{- = 42;} does not af
 \ASLListing{Assignment to \texttt{-}}{semantics-lediscard}{\semanticstests/SemanticsRule.LEDiscard.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vle$ is a discarding expression, $\LEDiscard$;
   \item $\newg$ is $\vg$;
@@ -530,7 +530,7 @@ All of the following apply:
 \subsection{Typing}
 \TypingRuleDef{LEVar}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vle$ denotes a left-hand-side variable expression for $\vx$, that is, $\LEVar(\vx)$;
   \item One of the following applies (\textsc{local}):
@@ -610,19 +610,19 @@ In \listingref{semantics-leglobalvar},
 \ASLListing{Assignment to a global variable}{semantics-leglobalvar}{\semanticstests/SemanticsRule.LEGlobalVar.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
     \item $\vle$ denotes a variable, $\LEVar(\vx)$;
     \item view $\env$ as an environment where $\tenv$ is the static environment and $\denv$ is the dynamic environment;
     \item One of the following applies:
     \begin{itemize}
-        \item All of the following apply (\textsc{local}):
+        \item \AllApplyCase{local}:
         \begin{itemize}
             \item $\vx$ is in the local dynamic environment ($L^\denv$);
             \item $\newenv$ is $\env$ where $\vx$ is bound to $\vv$ in the local dynamic environment ($L^\denv$).
         \end{itemize}
 
-        \item All of the following apply (\textsc{global}):
+        \item \AllApplyCase{global}:
         \begin{itemize}
             \item $\vx$ is bound in the global dynamic environment ($G^\denv.\storage$);
             \item $\newenv$ is $\env$ where $\vx$ is bound to $\vv$ in the $\storage$ map of the global dynamic environment $G^\denv$.
@@ -665,7 +665,7 @@ All of the following apply:
 \subsection{Typing}
 \TypingRuleDef{LEDestructuring}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vle$ denotes a tuple of left-hand-side expressions $\les$, that is, $\LEDestructuring(\les)$;
   \item $\les$ is a list $\ve_{1..k}$;
@@ -707,7 +707,7 @@ $\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and
 \ASLListing{Assignment to multiple left-hand-side expressions}{semantics-ledestructuring}{\semanticstests/SemanticsRule.LEDestructuring.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vle$ denotes a list of left-hand-side expressions, $\LEDestructuring(\vlelist)$;
   \item $\vlelist$ is the list of expressions $\vle_{1..n}$;
@@ -788,7 +788,7 @@ The semantics utilizes a rule matching the corresponding type of array ---
 \subsection{Typing}
 \TypingRuleDef{LESetArray}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vle$ denotes the array access of a left-hand-side expression $\ebase$ by the index $\eindex$, that is, $\LESetArray(\ebase, \eindex)$;
   \item annotating the right-hand-side expression corresponding to $\ebase$ in $\tenv$ yields \\ $(\tbase, \Ignore, \Ignore)$\ProseOrTypeError;
@@ -847,7 +847,7 @@ The result is the annotated assignable expression $\newle$ and
 \ProseOrTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item determining that $\telem$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item annotating the index expression $\eindex$ in $\tenv$ yields \\
@@ -900,7 +900,7 @@ of \\
 \ASLListing{Assignment to an array cell}{semantics-lesetarray}{\semanticstests/SemanticsRule.LESetArray.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vle$ denotes an array update expression, $\LESetArray(\rearray, \eindex)$;
   \item evaluating the right-hand-side expression corresponding to $\rearray$ in $\env$
@@ -952,7 +952,7 @@ via \TypingRuleRef{LESetArray}.
 
 \SemanticsRuleDef{LESetEnumArray}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vle$ denotes an array update expression, $\LESetEnumArray(\rearray, \eindex)$;
   \item evaluating the right-hand-side expression corresponding to $\rearray$ in $\env$
@@ -996,7 +996,7 @@ All of the following apply:
 \subsection{Typing}
 \TypingRuleDef{LESlice}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vle$ denotes the slicing of a left-hand-side expression $\vleone$ by the slices $\slices$, that is, $\LESlice(\vleone, \slices)$;
   \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\
@@ -1046,7 +1046,7 @@ tests whether the list of slices $\slices$ do not overlap in $\tenv$, yielding $
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item applying $\disjointslicestopositions$ to $\slices$ in $\tenv$ yields a set of positions\ProseOrTypeError.
   \item the result is $\True$.
@@ -1072,7 +1072,7 @@ in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
 \ASLListing{Assignment to a slice}{semantics-leslice}{\semanticstests/SemanticsRule.LESlice.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vle$ denotes a left-hand-side slicing expression, $\LESlice(\ebv, \slices)$;
   \item evaluating the right-hand-side expression that corresponds to $\ebv$
@@ -1137,7 +1137,7 @@ overlap, yielding $\True$.
 \ProseOrError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item view $\valueranges$ as the list $\vrange_{1..k}$;
   \item for every pair of indices $\vi$ and $\vj$ such that $1 \leq \vi < \vj \leq k$,
@@ -1178,7 +1178,7 @@ ranges $(\vsone, \vlone)$ and $(\vstwo, \vltwo)$ do not intersect, yielding $\Tr
 \ProseOrError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item evaluating $\PLUS$ for $\vsone$ and $\vlone$ via $\binoprel$ yields $\vsonelone$;
   \item evaluating $\LEQ$ for $\vsonelone$ and $\vstwo$ yields $\vsonelonestwo$;
@@ -1213,7 +1213,7 @@ All of the following apply:
 \subsection{Typing}
 \TypingRuleDef{LESetBadField}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vle$ denotes the access to the field named $\field$ in $\vleone$, that is, \\ $\LESetField(\vleone, \field)$;
   \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
@@ -1237,7 +1237,7 @@ All of the following apply:
 
 \TypingRuleDef{LESetStructuredField}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vle$ denotes the access to the field named \texttt{field} in $\vleone$;
   \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
@@ -1277,7 +1277,7 @@ All of the following apply:
 \subsection{Typing}
 \TypingRuleDef{LESetFields}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vle$ is an assignable expression for assigning the list of fields $\vlefields$ of the base
         expression $\lebase$;
@@ -1286,7 +1286,7 @@ All of the following apply:
   \item \Prosemakeanonymous{$\tenv$}{$\tbase$}{\\ $\tbaseanon$}\ProseOrTypeError;
   \item One of the following applies:
   \begin{itemize}
-    \item All of the following apply (\textsc{bits}):
+    \item \AllApplyCase{bits}:
     \begin{itemize}
       \item $\tanonbase$ is a bitvector type with list of bitfields $\vbitfields$;
       \item applying $\findbitfieldsslices$ to $\name$ and $\vbitfields$, for every $\name$ in $\vlefields$, yields $\vslices_\name$\ProseOrTypeError;
@@ -1295,7 +1295,7 @@ All of the following apply:
       \item \Proseannotatelexpr{$\tenv$}{$\vleslice$}{$\vte$}{$(\newle, \vses)$}\ProseOrTypeError.
     \end{itemize}
 
-    \item All of the following apply (\textsc{record}):
+    \item \AllApplyCase{record}:
     \begin{itemize}
       \item $\tanonbase$ is a record type with list of fields $\vbasefields$;
       \item applying $\foldbitvectorfields$ to $\vlefields$ and $\vbasefields$ in $\tenv$ yields $(\vlength, \vslices)$ \ProseOrTypeError;
@@ -1306,7 +1306,7 @@ All of the following apply:
       \item \Proseeqdef{$\vses$}{$\vsesbase$}.
     \end{itemize}
 
-    \item All of the following apply (\textsc{error}):
+    \item \AllApplyCase{error}:
     \begin{itemize}
       \item $\tanonbase$ is neither a bitvector type nor a record type;
       \item the result is a type error indicating that the type of the left-hand-side expression is expected to be
@@ -1375,14 +1375,14 @@ The helper function
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}:
   \begin{itemize}
     \item $\vlefields$ is empty;
     \item \Proseeqdef{$\vlength$}{$0$};
     \item \Proseeqdef{$\vslices$}{the empty list}.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}:
   \begin{itemize}
     \item $\vlefields$ is the list with prefix $\vlefieldsone$ (the elements excluding the last one) and last element $\vfield$;
     \item applying $\foldbitvectorfields$ to $\vbasefields$ and $\vlefieldsone$ in $\tenv$ yields $(\vstart, \vslicesone)$\ProseOrTypeError;
@@ -1422,7 +1422,7 @@ One of the following applies:
 \subsection{Semantics}
 \SemanticsRuleDef{LESetFields}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vle$ is an expression for assigning each of the fields in $\fields$ of the record expression $\vlerecord$
         with the corresponding slices given in $\vslices$ from the bitvector value $\vv$
@@ -1466,13 +1466,13 @@ slices given by $\vslices$ of the \concurrentnativevalue\ $\vm$, yielding the
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}:
   \begin{itemize}
     \item $\fields$ and $\vslices$ are both empty lists;
     \item \Proseeqdef{$\vmtwo$}{$\vmone$}.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}:
   \begin{itemize}
     \item $\fields$ is a list with \head\ $\fieldname$ and \tail\ $\fieldsone$;
     \item $\vslices$ is a list with \head\ $(\vione, \vitwo)$ and \tail\ $\vslicesone$;
@@ -1527,7 +1527,7 @@ One of the following applies:
 \subsection{Typing}
 \TypingRuleDef{LESetBitField}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vle$ denotes the access to the field named $\field$ in $\vleone$, that is, \\ $\LESetField(\vleone, \field)$;
   \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
@@ -1535,14 +1535,14 @@ All of the following apply:
   \item obtaining the \underlyingtype\ of $\vtleone$ in $\tenv$ yields a bitvector type with bitfields $\bitfields$\ProseOrTypeError;
   \item One of the following applies:
   \begin{itemize}
-    \item All of the following applies (\textsc{error\_missing\_field}):
+    \item \AllApplyCase{error\_missing\_field}:
     \begin{itemize}
       \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields $\None$, meaning the field is not declared
             in $\vtleone$;
       \item the result is a type error $\BadField$.
     \end{itemize}
 
-    \item All of the following applies (\textsc{field\_simple}):
+    \item \AllApplyCase{field\_simple}:
     \begin{itemize}
       \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields a bitfield with corresponding slices $\slices$,
             that is, $\BitFieldSimple(\Ignore, \slices)$;
@@ -1553,7 +1553,7 @@ All of the following apply:
       \item annotating the left-hand-side expression $\vletwo$ in $\tenv$ yields \\ $(\newle, \vses)$\ProseOrTypeError.
     \end{itemize}
 
-    \item All of the following applies (\textsc{field\_nested}):
+    \item \AllApplyCase{field\_nested}:
     \begin{itemize}
       \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields a nested bitfield with corresponding
             slices $\slices$ and list of bitfields $\bitfieldsp$, that is, \\ $\BitFieldNested(\Ignore, \slices, \bitfieldsp)$;
@@ -1564,7 +1564,7 @@ All of the following apply:
       \item annotating the left-hand-side expression $\vlethree$ in $\tenv$ yields \\ $(\newle, \vses)$\ProseOrTypeError.
     \end{itemize}
 
-    \item All of the following applies (\textsc{field\_typed}):
+    \item \AllApplyCase{field\_typed}:
     \begin{itemize}
       \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields a typed bitfield with corresponding
             slices $\slices$ and a type $\vt$, that is, \\ $\BitFieldType(\Ignore, \vslices, \vt)$;
@@ -1659,7 +1659,7 @@ in the environment where \texttt{my\_record} is bound to \texttt{\{a: 3, b: 100\
 \ASLListing{Assignment to a field}{semantics-lesetfield}{\semanticstests/SemanticsRule.LESetField.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vle$ denotes a field update expression, $\LESetField(\rerecord, \fieldname)$;
   \item evaluating the right-hand-side expression corresponding to $\rerecord$
