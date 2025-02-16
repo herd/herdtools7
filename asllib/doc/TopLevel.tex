@@ -1377,12 +1377,12 @@ renames the local identifier $\name$,
 yielding the identifier $\newname$.
 
 \ProseParagraph
-\Proseeqdef{$\newname$}{the string concatenation of \texttt{\_\_stdlib\_local\_} and $\name$}.
+\Proseeqdef{$\newname$}{the string concatenation of $\stdliblocalprefix$ and $\name$}.
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \renamelocalsname(\name) \astarrow \overname{\texttt{\_\_stdlib\_local\_}\ \stringconcat\ \name}{\newname}
+  \renamelocalsname(\name) \astarrow \overname{\stdliblocalprefix\ \stringconcat\ \name}{\newname}
 }
 \end{mathpar}
 

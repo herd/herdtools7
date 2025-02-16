@@ -360,17 +360,29 @@ The predicate
   \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 tests whether a type $\vt$ \emph{\typesatisfies} a type $\vs$ in environment $\tenv$,
-returning the result $\vb$ or a type error, if one is detected.
+returning the result $\vb$.
+\ProseOtherwiseTypeError
 
-\hypertarget{def-checktypesat}{}
-We also define
-\[
-  \checktypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
-  \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
-\]
-which is the same as $\typesat$, but yields a type error when \\ $\typesat(\tenv, \vt, \vs)$ is $\False$.
+The function assumes that both $\vt$ and $\vs$ are well-typed according to \secref{Types}.
 
-These functions assume that both $\vt$ and $\vs$ are well-typed according to \secref{Types}.
+\subsubsection{Example}
+In \listingref{typing-typesat1},
+\texttt{var pair: pairT = (1, dataT1)} is legal since the right-hand-side has
+anonymous, non-primitive type \texttt{(integer, T1)}.
+\ASLListing{Type satisfaction example}{typing-typesat1}{\typingtests/TypingRule.TypeSatisfaction1.asl}
+
+\subsubsection{Example}
+In \listingref{typing-typesat2},
+\texttt{pair = (1, dataAsInt);} is legal since the right-hand-side has anonymous,
+primitive type \texttt{(integer, integer)}.
+\ASLListing{Type satisfaction example}{typing-typesat2}{\typingtests/TypingRule.TypeSatisfaction2.asl}
+
+\subsubsection{Example}
+In \listingref{typing-typesat3},
+\texttt{pair = (1, dataT2);} is illegal since the right-hand-side has anonymous,
+non-primitive type \texttt{(integer, T2)} which does not subtype-satisfy named
+type \texttt{pairT}.
+\ASLListing{Type satisfaction example}{typing-typesat3}{\typingtests/TypingRule.TypeSatisfaction3.asl}
 
 \ProseParagraph
 \OneApplies
@@ -426,27 +438,6 @@ These functions assume that both $\vt$ and $\vs$ are well-typed according to \se
     \item $\vb$ is $\False$;
   \end{itemize}
 \end{itemize}
-
-\subsubsection{Example}
-In \listingref{typing-typesat1},
-\texttt{var pair: pairT = (1, dataT1)} is legal since the right-hand-side has
-anonymous, non-primitive type \texttt{(integer, T1)}.
-\ASLListing{Type satisfaction example}{typing-typesat1}{\typingtests/TypingRule.TypeSatisfaction1.asl}
-
-\subsubsection{Example}
-In \listingref{typing-typesat2},
-\texttt{pair = (1, dataAsInt);} is legal since the right-hand-side has anonymous,
-primitive type \texttt{(integer, integer)}.
-\ASLListing{Type satisfaction example}{typing-typesat2}{\typingtests/TypingRule.TypeSatisfaction2.asl}
-
-\subsubsection{Example}
-In \listingref{typing-typesat3},
-\texttt{pair = (1, dataT2);} is illegal since the right-hand-side has anonymous,
-non-primitive type \texttt{(integer, T2)} which does not subtype-satisfy named
-type \texttt{pairT}.
-\ASLListing{Type satisfaction example}{typing-typesat3}{\typingtests/TypingRule.TypeSatisfaction3.asl}
-
-\CodeSubsection{\TypeSatisfactionBegin}{\TypeSatisfactionEnd}{../types.ml}
 
 \FormallyParagraph
 \begin{mathpar}
@@ -514,10 +505,44 @@ type \texttt{pairT}.
 }
 \end{mathpar}
 
-The rules for the checked type-satisfy predicate are:
+\CodeSubsection{\TypeSatisfactionBegin}{\TypeSatisfactionEnd}{../types.ml}
+
+\subsubsection{Comments}
+Since the subtype relation is a partial order, it is reflexive. Therefore
+every type $\vt$ is a subtype of itself, and as a consequence, every type $\vt$
+\typesatisfies\  itself.
+\lrmcomment{This is related to \identr{FMXK} and \identi{NLFD}.}
+
+\TypingRuleDef{CheckTypeSatisfaction}
+\hypertarget{def-checktypesat}{}
+We also define
+\[
+  \checktypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
+  \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+which is the same as $\typesat$, but yields a type error when \\ $\typesat(\tenv, \vt, \vs)$ is $\False$.
+
+The function assumes that both $\vt$ and $\vs$ are well-typed according to \secref{Types}.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{okay}
+  \begin{itemize}
+    \item \ProsetypesatTrue{$\tenv$}{$\vt$}{$\vs$}.
+  \end{itemize}
+
+  \item \AllApplyCase{error}
+  \begin{itemize}
+    \item \ProsetypesatFalse{$\tenv$}{$\vt$}{$\vs$}..
+    \item the result is a \typingerrorterm{} (\TypeSatisfactionFailure).
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
 \begin{mathpar}
-\inferrule[true]{
-  \typesat(\tenv, \vt, \vs) \typearrow \True \OrTypeError\\
+\inferrule[okay]{
+  \typesat(\tenv, \vt, \vs) \typearrow \True
 }{
   \checktypesat(\tenv, \vt, \vs) \typearrow \True
 }
@@ -530,13 +555,6 @@ The rules for the checked type-satisfy predicate are:
   \checktypesat(\tenv, \vt, \vs) \typearrow \TypeErrorVal{\TypeSatisfactionFailure}
 }
 \end{mathpar}
-
-\subsubsection{Comments}
-Since the subtype relation is a partial order, it is reflexive. Therefore
-every type $\vt$ is a subtype of itself, and as a consequence, every type $\vt$
-\typesatisfies\  itself.
-
-\lrmcomment{This is related to \identr{FMXK} and \identi{NLFD}.}
 
 \TypingRuleDef{TypeClash}
 \hypertarget{def-typeclashes}{}
@@ -1807,7 +1825,7 @@ The result is the filtered list of constraints $\newcs$.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[no\_filter]{
+\inferrule[no\_filtering]{
   \op \in \{\MINUS, \MUL, \PLUS\}
 }{
   \binopfilterrhs(\op, \cs) \typearrow \overname{\cs}{\newcs}
@@ -1901,6 +1919,17 @@ If the set of those values is empty the result is $\None$.
             $\veone$ and the top expression the literal expression for $0$ if $\vp$ holds for $0$ and the literal expression for $-1$ otherwise.
     \end{itemize}
   \end{itemize}
+
+  \item \AllApplyCase{none\_reduce\_to\_z}
+  \begin{itemize}
+    \item $\vc$ is a range constraint for the expressions $\veone$ and $\vetwo$, that is, \\
+          $\ConstraintRange(\veone, \vetwo)$;
+    \item applying $\reducetozopt$ to $\veone$ in $\tenv$, in order to symbolically simplify $\veone$ to an integer,
+          yields $\None$;
+    \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$, in order to symbolically simplify $\vetwo$ to an integer,
+          yields $\None$;
+    \item \Proseeqdef{$\vcopt$}{$\vc$}.
+  \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
@@ -1942,6 +1971,7 @@ If the set of those values is empty the result is $\None$.
 
 \begin{mathpar}
 \inferrule[only\_e1\_reduces\_to\_z]{
+  \vc = \ConstraintRange(\veone, \vetwo)\\
   \reducetozopt(\tenv, \veone) \typearrow \langle\vzone\rangle\\
   \reducetozopt(\tenv, \vetwo) \typearrow \None\\
   {
@@ -1953,12 +1983,13 @@ If the set of those values is empty the result is $\None$.
 \end{array}
   }
 }{
-  \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vcopt
+  \refineconstraintbysign(\tenv, \vp, \vc) \typearrow \vcopt
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[only\_e2\_reduces\_to\_z]{
+  \vc = \ConstraintRange(\veone, \vetwo)\\
   \reducetozopt(\tenv, \veone) \typearrow \None\\
   \reducetozopt(\tenv, \vetwo) \typearrow \langle\vztwo\rangle\\
   {
@@ -1970,16 +2001,17 @@ If the set of those values is empty the result is $\None$.
 \end{array}
   }
 }{
-  \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vcopt
+  \refineconstraintbysign(\tenv, \vp, \vc) \typearrow \vcopt
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[none\_reduce\_to\_z]{
+  \vc = \ConstraintRange(\veone, \vetwo)\\
   \reducetozopt(\tenv, \veone) \typearrow \None\\
   \reducetozopt(\tenv, \vetwo) \typearrow \None
 }{
-  \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\vc}{\vcopt}
+  \refineconstraintbysign(\tenv, \vp, \vc) \typearrow \overname{\vc}{\vcopt}
 }
 \end{mathpar}
 
@@ -2059,7 +2091,7 @@ that do not refine to $\None$. The resulting list of constraints is given in $\n
     \item $\newcs$ is $\csonep$.
   \end{itemize}
 
-  \item \AllApplyCase{non\_empty\_somee}
+  \item \AllApplyCase{non\_empty\_some}
   \begin{itemize}
     \item $\cs$ is the list with $\vc$ as its \head\ and $\csone$ as its \tail;
     \item applying $\vf$ to $\vc$ yields $\langle\vcp\rangle$;

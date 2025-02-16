@@ -1118,14 +1118,14 @@ conditional expression evaluates to the \texttt{else} expression.
 Above, $\STFunction$ is inserted as a default call type for any parsed $\call$.
 The helper function
 \[
-  \setcalltype(\overname{\call}{\vcall} \aslsep \overname{\subprogramtype}{\texttt{call\_type}}) \aslto \overname{\call}{\vcallp}
+  \setcalltype(\overname{\call}{\vcall} \aslsep \overname{\subprogramtype}{\calltype}) \aslto \overname{\call}{\vcallp}
 \]
-changes the call type of $\vcall$ to $\texttt{call\_type}$.
+changes the call type of $\vcall$ to $\calltype$.
 
 \begin{mathpar}
 \inferrule{}{
-  \setcalltype(\vcall, \texttt{call\_type}) \aslto
-  \overname{\vcall[\callcalltype\mapsto\texttt{call\_type}]}{\vcallp}
+  \setcalltype(\vcall, \calltype) \aslto
+  \overname{\vcall[\callcalltype\mapsto\calltype]}{\vcallp}
 }
 \end{mathpar}
 
@@ -1752,6 +1752,10 @@ with indices taken from the enumeration type \texttt{Enum}.
 \CodeSubsection{\EGetBitFieldTypedBegin}{\EGetBitFieldTypedEnd}{../Typing.ml}
 
 \TypingRuleDef{EGetTupleItem}
+\newcommand\itemprefix[0]{\texttt{item}}
+In the following rule definition, we use $\itemprefix$ to stand
+for its verbatim string.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1759,7 +1763,7 @@ with indices taken from the enumeration type \texttt{Enum}.
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
   \item $\vtetwo$ is tuple type with list of types $\tys$, that is, $\TTuple(\tys)$;
-  \item $\fieldname$ is an identifier with the prefix \texttt{item} and the suffix $\num$;
+  \item $\fieldname$ is an identifier consisting of the prefix \itemprefix{} and the suffix $\num$;
   \item $\num$ is lexically an integer token with the integer value $\vindex$;
   \item determining whether $\vindex$ is between $0$ and the number of types in $\tys$, inclusive, yields $\True$\ProseOrTypeError;
   \item $\vt$ is the type at position $\vindex$ of $\tys$;
@@ -1772,7 +1776,7 @@ with indices taken from the enumeration type \texttt{Enum}.
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   \vtetwo \eqname \TTuple(\tys)\\
-  \fieldname \eqname \texttt{"item"}\num\\
+  \fieldname = \itemprefix \stringconcat \num\\
   \num \in \Lang(\REintlit)\\
   \decimaltolit(\num) = \Tintlit(\vindex)\\
   \checktrans{0 \leq \vindex \leq \listlen{\tys}}{\BadTupleIndex} \checktransarrow \True \OrTypeError\\\\
@@ -1989,7 +1993,7 @@ in $\vslices$.
     \item applying $\findbitfieldsslices$ to $\name$ and $vbitfieldsone$ yields $\vslices$\ProseOrTypeError.
   \end{itemize}
 
-  \item \AllApplyCase{error}
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\vbitfields$ is an empty list;
     \item the result is a type error indicating that a bitfield named $\name$ does not exist in $\vbitfields$.
@@ -2219,7 +2223,7 @@ is a dynamic error.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[type\_equal]{
+\inferrule{
   \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp, \vsese) \OrTypeError\\\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \annotatetype{\tenv, \tty} \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
@@ -3237,7 +3241,6 @@ since side-effect-free expressions do not modify the environment.
 
 \section{Evaluating a List of Expressions\label{sec:ExprList}}
 \SemanticsRuleDef{EExprList}
-\ProseParagraph
 The relation
 \hypertarget{def-evalexprlist}{}
 \[
@@ -3250,19 +3253,40 @@ and returns the resulting value $\vv$, the parallel composition of the execution
 generated from evaluating each expression, and the new environment $\newenv$.
 If the evaluation of any expression terminates abnormally then the abnormal configuration is returned.
 
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{empty}
+  \begin{itemize}
+    \item \Proseemptylist{$\vle$};
+    \item \Proseemptylist{$\vv$};
+    \item \Proseemptygraph{$\vg$}
+    \item \Proseeqdef{$\newenv$}{$\env$}.
+  \end{itemize}
+
+  \item \AllApplyCase{non\_empty}
+  \begin{itemize}
+    \item $\vle$ is a \Proselist{$\ve$}{$\vle1$};
+    \item \Proseevalexpr{$\env$}{$\ve$}{\\ $\Normal((\vvone, \vgone), \envone)$}\ProseOrAbnormal;
+    \item \Proseeqdef{$\vg$}{the parallel composition of $\vgone$ and $\vgtwo$};
+    \item \Proseeqdef{$\vv$}{the list with \head{} $\vvone$ and \tail{} $\vvs$}.
+  \end{itemize}
+\end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}
 {
-  \evalexprlist{\env, \emptylist} \evalarrow \Normal((\emptylist, \emptygraph), \env)
+  \evalexprlist{\env, \overname{\emptylist}{\vle}} \evalarrow
+  \Normal((\overname{\emptylist}{\vv}, \overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[nonempty]{
-  \texttt{le} \eqname [\ve] \concat \vle1\\
-  \evalexpr{\env, \ve} \evalarrow \Normal((\vvone, \vgone), \envone) \OrAbnormal\\
-  \evalexprlist{\envone, \vle1} \evalarrow \Normal((\vvs, \vgtwo), \newenv) \OrAbnormal\\
+  \vle = [\ve] \concat \vle1\\
+  \evalexpr{\env, \ve} \evalarrow \Normal((\vvone, \vgone), \envone) \OrAbnormal\\\\
+  \evalexprlist{\envone, \vle1} \evalarrow \Normal((\vvs, \vgtwo), \newenv) \OrAbnormal\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo \\
   \vv \eqdef [\vvone] \concat \vvs
 }{

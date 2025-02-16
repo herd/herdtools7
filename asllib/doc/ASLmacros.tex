@@ -284,6 +284,7 @@
 \newcommand\restrictfunc[2]{{#1}\hyperlink{def-restrictfunc}{|}_{#2}}
 
 \newcommand\emptylist[0]{\hyperlink{def-emptylist}{[\ ]}}
+\newcommand\Proseemptylist[1]{#1 is the empty list}
 \newcommand\choice[3]{\hyperlink{def-choice}{\textsf{choice}}(#1,#2,#3)}
 \newcommand\equallength[0]{\hyperlink{def-equallength}{\textfunc{equal\_length}}}
 \newcommand\listrange[0]{\hyperlink{def-listrange}{\textfunc{indices}}}
@@ -895,7 +896,7 @@
 \newcommand\LexSpec[0]{\hyperlink{def-lexspec}{\textsf{LexSpec}}}
 \newcommand\Lang[0]{\hyperlink{def-lang}{\textsf{Lang}}}
 \newcommand\RegExp[0]{\hyperlink{def-regex}{\textsf{RegExp}}}
-\newcommand\ascii[1]{\textsf{ASCII}\texttt{\{#1\}}}
+\newcommand\ascii[1]{\hyperlink{def-ascii}{\textsf{ASCII}}\texttt{\{#1\}}}
 \newcommand\scantoken[0]{\textfunc{scan\_token}}
 \newcommand\scancomment[0]{\textfunc{scan\_comment}}
 
@@ -976,6 +977,8 @@
 \newcommand\emptytenv[0]{\hyperlink{def-emptytenv}{\emptyset_{\mathbb{SE}}}}
 \newcommand\tstruct[0]{\hyperlink{def-tstruct}{\textfunc{get\_structure}}}
 \newcommand\astlabel[0]{\hyperlink{def-astlabel}{\textfunc{ast\_label}}}
+\newcommand\ProsetypesatTrue[3]{#2 \typesatisfies{} #3 in the static environment #1}
+\newcommand\ProsetypesatFalse[3]{#2 does not \typesatisfy{} #3 in the static environment #1}
 \newcommand\typesat[0]{\hyperlink{def-typesatisfies}{\textfunc{type\_satisfies}}}
 
 \newcommand\constantvalues[0]{\hyperlink{def-constantvalues}{\textsf{constant\_values}}}
@@ -1027,6 +1030,7 @@
 \newcommand\stacksize[0]{\hyperlink{def-stacksize}{\textsf{stack\_size}}}
 \newcommand\xgraph[0]{\textsf{g}}
 \newcommand\emptygraph[0]{{\hyperlink{def-emptygraph}{\emptyset_\xgraph}}}
+\newcommand\Proseemptygraph[1]{#1 is the empty \executiongraph{}}
 \newcommand\asldata[0]{\hyperlink{def-asldata}{\mathtt{asl\_data}}}
 \newcommand\aslctrl[0]{\hyperlink{def-aslctrl}{\mathtt{asl\_ctrl}}}
 \newcommand\aslpo[0]{\hyperlink{def-aslpo}{\mathtt{asl\_po}}}
@@ -1067,7 +1071,8 @@
 \newcommand\TOutConfig[0]{\hyperlink{def-toutconfig}{\textsf{TOutConfig}}}
 
 \newcommand\evalexpr[1]{\hyperlink{def-evalexpr}{\textfunc{eval\_expr}}(#1)}
-\newcommand\Proseevalexpr[3]{\hyperlink{def-evalexpr}{evaluating} the expression #2 in the environment #1 yields #3}
+\newcommand\Proseevalexpr[3]{
+    \hyperlink{def-evalexpr}{evaluating} the expression #2 in the environment #1 yields #3}
 \newcommand\evalexprsef[1]{\hyperlink{def-evalexprsef}{\textfunc{eval\_expr\_sef}}(#1)}
 \newcommand\evallexpr[1]{\hyperlink{def-evallexpr}{\textfunc{eval\_lexpr}}(#1)}
 \newcommand\Proseevallexpr[4]{\hyperlink{def-evalexpr}{evaluating} the left-hand-side expression #2 in the environment #1 and #3, yields #4}
@@ -1521,6 +1526,7 @@
 \newcommand\renamelocalsconstraint[0]{\hyperlink{def-renamelocalsconstraint}{\textfunc{rename\_locals\_constraint}}}
 \newcommand\Proserenamelocalsconstraint[2]{\hyperlink{def-renamelocalsconstraint}{renaming}
   the local storage elements in the constraint #1 yields the constraint #2}
+\newcommand\stdliblocalprefix[0]{\texttt{\_\_stdlib\_local\_}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Glossary
@@ -1543,6 +1549,7 @@
 
 \newcommand\head[0]{\hyperlink{def-head}{\texttt{head}}}
 \newcommand\tail[0]{\hyperlink{def-tail}{\texttt{tail}}}
+\newcommand\Proselist[2]{list with \head{} #1 and \tail{} #2}
 \newcommand\optional[0]{\hyperlink{def-optional}{optional}}
 
 \newcommand\inferencerule[0]{\hyperlink{def-inferencerule}{inference rule}}
@@ -2439,6 +2446,7 @@
 \newcommand\slicestwo[0]{\texttt{slices2}}
 \newcommand\slicetwo[0]{\texttt{slice2}}
 \newcommand\sm[0]{\texttt{s\_m}}
+\newcommand\smnew[0]{\texttt{s\_m\_new}}
 \newcommand\src[0]{\texttt{src}}
 \newcommand\start[0]{\texttt{start}}
 \newcommand\stm[0]{\texttt{stm}}
@@ -3141,3 +3149,9 @@
 \newcommand\vrhstys[0]{\texttt{rhs\_tys}}
 \newcommand\vrhstysp[0]{\texttt{rhs\_tys'}}
 \newcommand\vargdecls[0]{\texttt{arg\_decls}}
+\newcommand\vmain[0]{\texttt{main}}
+\newcommand\vread[0]{\texttt{read}}
+\newcommand\vmodify[0]{\texttt{modify}}
+\newcommand\vsetter[0]{\texttt{setter}}
+\newcommand\vgetter[0]{\texttt{sgtter}}
+\newcommand\vcode[0]{\texttt{code}}

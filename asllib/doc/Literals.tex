@@ -117,7 +117,7 @@ annotates a literal $\vl$ in the static environment $\tenv$, resulting in a type
     \item \Proseeqdef{$\vt$}{the \stringtypeterm}.
   \end{itemize}
 
-  \item \AllApplyCase{string}
+  \item \AllApplyCase{bits}
   \begin{itemize}
     \item $\vl$ is a bitvector literal of length $\vn$ and $\vt$;
     \item \Proseeqdef{$\vt$}{the bitvector type of fixed width $\vn$}.
@@ -149,7 +149,7 @@ annotates a literal $\vl$ in the static environment $\tenv$, resulting in a type
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[bitvector]{
+\inferrule[bits]{
   n \eqdef \listlen{\bits}
 }{
   \annotateliteral{\Ignore, \lbitvector(\bits)}\typearrow \TBits(\ELInt{n}, \emptylist)

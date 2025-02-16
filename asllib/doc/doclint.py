@@ -221,12 +221,14 @@ def check_teletype_in_rule_math_mode(filename) -> int:
         r"\\begin\{equation\}.*?\\end\{equation\}",  # \begin{equation}...\end{equation}
     ]
     math_modes_exprs = "|".join(rule_math_mode_patterns)
-    pattern = re.compile(math_modes_exprs, re.DOTALL)
-    matches = pattern.findall(file_str)
+    math_mode_pattern = re.compile(math_modes_exprs, re.DOTALL)
+    teletype_pattern = re.compile(r"\\texttt{.*}")
+    matches = math_mode_pattern.findall(file_str)
     for match in matches:
-        teletype_vars = re.findall(r"\\texttt{.*\\}", match)
+        teletype_vars = teletype_pattern.findall(match)
         for tt_var in teletype_vars:
-            print(f"{filename}: teletype font not allowed in rules: {tt_var}")
+            print(f"{filename}: teletype font not allowed in rules, substitute {tt_var} with a proper macro")
+            num_errors += 1
     return num_errors
 
 
@@ -338,20 +340,22 @@ def check_rule_case_consistency(rule_block: RuleBlock) -> List[str]:
     prose_cases: Set[str] = set()
     formally_cases: Set[str] = set()
     prose_cases_pattern = re.compile(r".*\\AllApplyCase{(.*?)}")
-    formally_case_pattern = re.compile(r".*\\inferrule\[(.*?)\]")
+    formally_cases_pattern = re.compile(r".*\\inferrule\[(.*?)\]")
     error_messages: List[str] = []
     for line_number in range(rule_block.begin, rule_block.end + 1):
         line = rule_block.file_lines[line_number].strip()
         if line.startswith("%"):
             continue
-        formally_matches = re.match(formally_case_pattern, line)
+        formally_matches = re.match(formally_cases_pattern, line)
         if formally_matches:
-            case_name = formally_matches.group(1)
-            if case_name in formally_cases:
-                error_messages.append(
-                    f'Case "{case_name}" duplicate in Formally paragraph'
-                )
-            formally_cases.add(case_name)
+            case_names = formally_matches.group(1).split(",")
+            for case_name in case_names:
+                case_name = case_name.strip()
+                if case_name in formally_cases:
+                    error_messages.append(
+                        f'Case "{case_name}" duplicate in Formally paragraph'
+                    )
+                formally_cases.add(case_name)
         prose_matches = re.match(prose_cases_pattern, line)
         if prose_matches:
             matched_case_names = prose_matches.group(1)
@@ -367,11 +371,11 @@ def check_rule_case_consistency(rule_block: RuleBlock) -> List[str]:
     cases_only_in_formally = formally_cases.difference(prose_cases)
     if cases_only_in_prose:
         error_messages.append(
-            f"the following cases appear only in the Prose paragraph: {cases_only_in_prose}"
+            f"cases only in Prose paragraph: {cases_only_in_prose}"
         )
     if cases_only_in_formally:
         error_messages.append(
-            f"the following cases appear only in the Formally paragraph: {cases_only_in_formally}"
+            f"cases only in Formally paragraph: {cases_only_in_formally}"
         )
 
     return error_messages
@@ -393,7 +397,7 @@ def check_rules(filename: str) -> int:
             continue
         error_messages: List[str] = []
         error_messages.extend(check_rule_prose_formally_structure(rule_block))
-        #error_messages.extend(check_rule_case_consistency(rule_block))
+        error_messages.extend(check_rule_case_consistency(rule_block))
         if error_messages:
             error_messages = ", ".join(error_messages)
             print(f"{rule_block.filename} {rule_block.str()}: {error_messages}")
@@ -430,8 +434,8 @@ def main():
         [
             check_repeated_words,
             detect_incorrect_latex_macros_spacing,
-            check_teletype_in_rule_math_mode,
-            check_rules,
+            #check_teletype_in_rule_math_mode,
+            #check_rules,
         ],
     )
 

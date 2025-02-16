@@ -1395,7 +1395,7 @@ returns the set of identifiers $\ids$ which the slice $\vs$ depends on.
     \item define $\ids$ as the application of $\useexpr$ to $\ve$.
   \end{itemize}
 
-  \item \AllApplyCase{start\_length\_rang}
+  \item \AllApplyCase{start\_length\_range}
   \begin{itemize}
     \item $\vs$ is a slice given by the pair of expressions $\veone$ and $\vetwo$;
     \item define $\ids$ as the union of applying $\useexpr$ to both $\veone$ and $\vetwo$.
@@ -1408,7 +1408,7 @@ returns the set of identifiers $\ids$ which the slice $\vs$ depends on.
   \useslice(\overname{\SliceSingle(\ve)}{\vs}) \typearrow \overname{\useexpr(\ve)}{\ids}
 }
 \and
-\inferrule[star\_length\_range]{
+\inferrule[start\_length\_range]{
   L \in \{\SliceStar, \SliceLength, \SliceRange\}
 }{
   \useslice(\overname{L(\veone, \vetwo)}{\vs}) \typearrow \overname{\useexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
@@ -1835,7 +1835,7 @@ Otherwise, the result is a dynamic error.
 \begin{mathpar}
 \inferrule[normal]{
   \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynError\\\\
-  \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Normal([(\vv, \vgtwo)], \Ignore) \OrDynError\\\\
+  \evalsubprogram{\env, \vmain, \emptylist, \emptylist} \evalarrow \Normal([(\vv, \vgtwo)], \Ignore) \OrDynError\\\\
   \vg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
 }{
   \evalspec(\tenv, \vspec) \evalarrow (\vv, \vg)
@@ -1845,7 +1845,7 @@ Otherwise, the result is a dynamic error.
 \begin{mathpar}
 \inferrule[throwing]{
   \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynError\\\\
-  \evalsubprogram{\env, \texttt{"main"}, \emptylist, \emptylist} \evalarrow \Throwing(\vvopt, \Ignore)
+  \evalsubprogram{\env, \vmain, \emptylist, \emptylist} \evalarrow \Throwing(\vvopt, \Ignore)
 }{
   \evalspec(\tenv, \vspec) \evalarrow \DynamicErrorVal{\UncaughtException}
 }

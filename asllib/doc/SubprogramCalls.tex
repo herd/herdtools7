@@ -1616,7 +1616,7 @@ Otherwise, the result is a dynamic error indicating that the recursion limit has
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[some\_ok]{
+\inferrule[some\_error]{
   \evallimit(\env, \velimitopt) \evalarrow (\langle\vlimit\rangle, \vg) \OrDynError\\\\
   \env \eqname (\tenv, \denv)\\
   \getstacksize(\denv, \name) \evalarrow \vstacksize\\

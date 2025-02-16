@@ -5,9 +5,11 @@
 We define the following rules to allow us asserting that a condition holds,
 returning a type error otherwise:
 \begin{mathpar}
-  \inferrule[check\_trans\_true]{}{ \checktrans{\True}{<message>} \checktransarrow \True }
-  \and
-  \inferrule[check\_trans\_false]{}{ \checktrans{\False}{<message>} \checktransarrow \TypeErrorVal{\texttt{<message>}} }
+\inferrule[check\_trans\_true]{}{ \checktrans{\True}{\vcode} \checktransarrow \True }
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[check\_trans\_false]{}{ \checktrans{\False}{\vcode} \checktransarrow \TypeErrorVal{\vcode} }
 \end{mathpar}
 
 \hypertarget{def-pairstomap}{}
@@ -146,7 +148,7 @@ filters a list of \optional{} elements, removing those which are $\None$ and unw
 
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule[none]{}
+  \inferrule[empty]{}
   {
     \filteroptionlist(\overname{\emptylist}{\vvopts}) \typearrow \overname{\emptylist}{\vvs}
   }

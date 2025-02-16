@@ -323,14 +323,14 @@ builds a statement $\news$ from an assignment of expression $\rhs$ to a setter i
 \inferrule[singleton]{
   \fields \eqname [\field] \\
   \vx \in \Identifiers \text{ is fresh} \\\\
-  \setcalltype(\vcall, \STGetter) \aslto \texttt{getter} \\\\
-  \texttt{read} \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \langle\texttt{getter}\rangle) \\\\
-  \texttt{modify} \eqdef \SAssign(\LESetField(\LEVar(\vx), \field), \rhs) \\\\
-  \makesetter(\vcall, \EVar(\vx)) \aslto \texttt{setter}
+  \setcalltype(\vcall, \STGetter) \aslto \vgetter \\\\
+  \vread \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \langle\vgetter\rangle) \\\\
+  \vmodify \eqdef \SAssign(\LESetField(\LEVar(\vx), \field), \rhs) \\\\
+  \makesetter(\vcall, \EVar(\vx)) \aslto \vsetter
 }{
   \desugarsetter(\vcall, \fields, \rhs)
   \astarrow
-  \SSeq (\SSeq(\texttt{read}, \texttt{modify}), \SCall(\texttt{setter}))
+  \SSeq (\SSeq(\vread, \vmodify), \SCall(\vsetter))
 }
 \end{mathpar}
 
@@ -338,14 +338,14 @@ builds a statement $\news$ from an assignment of expression $\rhs$ to a setter i
 \inferrule[multiple]{
   \listlen{\fields} > 1 \\
   \vx \in \Identifiers \text{ is fresh} \\\\
-  \setcalltype(\vcall, \STGetter) \aslto \texttt{getter} \\\\
-  \texttt{read} \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \langle\texttt{getter}\rangle) \\\\
-  \texttt{modify} \eqdef \SAssign(\LESetFields(\LEVar(\vx), \fields), \rhs) \\\\
-  \makesetter(\vcall, \EVar(\vx)) \aslto \texttt{setter}
+  \setcalltype(\vcall, \STGetter) \aslto \vgetter \\\\
+  \vread \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \langle\vgetter\rangle) \\\\
+  \vmodify \eqdef \SAssign(\LESetFields(\LEVar(\vx), \fields), \rhs) \\\\
+  \makesetter(\vcall, \EVar(\vx)) \aslto \vsetter
 }{
   \desugarsetter(\vcall, \fields, \rhs)
   \astarrow
-  \SSeq (\SSeq(\texttt{read}, \texttt{modify}), \SCall(\texttt{setter}))
+  \SSeq (\SSeq(\vread, \vmodify), \SCall(\vsetter))
 }
 \end{mathpar}
 
@@ -488,6 +488,7 @@ As given by applying the relevant rules to the desugared AST.
   \item define $\news$ as local declaration statement with variable keyword, local declaration item $\ldi$, type annotation $\vtp$, and initializing expression $\veinit$, that is, $\SDecl(\LDKVar, \ldi, \langle\veinit\rangle)$.
   \end{itemize}
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[constant]{
@@ -3485,7 +3486,7 @@ Notice that empty bitvectors are displayed as \verb|0x|.
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[Print]{
+\inferrule[print]{
   \evalexprlist{\env, \elist} \evalarrow \Normal((\vlist, \vg), \env_1) \OrAbnormal\\
   \vi\in\listrange(\vlist): \outputtoconsole(\env_\vi, \vlist[i]) \evalarrow \env_{\vi + 1} \\
   n \eqdef \listlen{\vlist}\\
@@ -3495,10 +3496,12 @@ Notice that empty bitvectors are displayed as \verb|0x|.
 }
 \end{mathpar}
 
+We define the newline character $\vnewline \triangleq \ascii{10}$.
+
 \begin{mathpar}
-\inferrule[Println]{
+\inferrule[println]{
   \evalstmt{\env, \SPrint(\elist, \False)} \evalarrow \Continuing(\vg, \envone) \OrAbnormal\\\\
-  \outputtoconsole(\envone, \nvstring(\texttt{"\char`\\n"})) \evalarrow \newenv
+  \outputtoconsole(\envone, \nvstring(\vnewline)) \evalarrow \newenv
 }{
   \evalstmt{\env, \SPrint(\elist, \True)} \evalarrow \Continuing(\vg, \newenv)
 }
@@ -3569,7 +3572,7 @@ $\llabel(s)$      & $s$. \\
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[console\_exists]{
+\inferrule{
   \env \eqname (\tenv, \denv, \vconsolestream)\\
   \newenv \eqdef (\tenv, \denv, \vconsolestream \concat \literaltostring(\vl))
 }{
@@ -3585,7 +3588,7 @@ The function ignores the string value and returns the environment unchanged.
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[no\_console]{}{
+\inferrule{}{
   \outputtoconsole(\env, \Ignore) \evalarrow \overname{\env}{\newenv}
 }
 \end{mathpar}

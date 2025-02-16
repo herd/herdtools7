@@ -23,7 +23,7 @@ The result is the \sideeffectsetterm\ $\vsesfiltered$, the annotated catcher $\n
 
 The semantic relation for evaluating catchers employs an argument
 that is an output configuration. This argument corresponds to the result
-of evaluating a \texttt{try} statement and its type is defined as follows:
+of evaluating a \trystatementterm{} and its type is defined as follows:
 \hypertarget{def-toutconfig}{}
 \[
   \TOutConfig \triangleq \TNormal \cup  \TThrowing \cup \TContinuing \cup \TReturning \enspace.
@@ -43,9 +43,9 @@ The relation
     \end{array}
   \right)
 \]
-evaluates a list of \texttt{catch} clauses $\catchers$, an \texttt{otherwise} clause,
+evaluates a list of \texttt{catch} clauses $\catchers$, an optional \texttt{otherwise} clause,
 and a configuration $\sm$ resulting from the evaluation of the throwing expression,
-in the environment $\env$. The result is either a continuation configuration,
+in the environment $\env$. The result --- $\smnew$ --- is either a continuation configuration,
 an early return configuration, or an abnormal configuration.
 
 When the statement in a \texttt{try} block, which we will refer to as the try-block statement,
@@ -363,28 +363,18 @@ The specification in \listingref{semantics-nothrow} prints \texttt{No exception 
 \ASLListing{A \texttt{try} statement that does not raise an exception}{semantics-nothrow}{\semanticstests/SemanticsRule.CatchNoThrow.asl}
 
 \ProseParagraph
+\OneApplies
 \AllApply
 \begin{itemize}
-  \item \OneApplies
-  \begin{itemize}
-    \item (\textsc{implicit\_throw}) $\sm$ is $\Throwing((\None, \sg), \envthrow)$ (that is, an implicit throw);
-    \item (\textsc{non\_throwing}) $\sm$ is a normal configuration (that is, the domain of $\sm$ is $\Normal$);
-  \end{itemize}
-  \item the result is $\sm$.
+\item $\sm$ is either $\Throwing((\None, \sg), \envthrow)$ (that is, an implicit throw) or
+    $\sm$ is a normal configuration (that is, the domain of $\sm$ is $\Normal$);
+\item \Proseeqdef{$\smnew$}{$\sm$}.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[implicit\_throw]{
-  \sm \eqname \Throwing((\None, \sg), \envthrow)
-}{
-  \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_throwing]{
-  \configdomain{\sm} = \Normal
+\inferrule{
+  \sm = \Throwing((\None, \sg), \envthrow) \lor \configdomain{\sm} = \Normal
 }{
   \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
 }

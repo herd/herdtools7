@@ -215,24 +215,44 @@ transforms a (possibly empty) list of bitvector \nativevalues\ $\vvs$ into a sin
 $\newvs$.
 
 \ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{empty}
+  \begin{itemize}
+    \item \Proseemptylist{$\vvs$};
+    \item \Proseeqdef{$\newvs$}{the \nativevalue{} bitvector for the empty sequence of bits}.
+  \end{itemize}
+
+  \item \AllApplyCase{non\_empty}
+  \begin{itemize}
+    \item $\vvs$ is a \Proselist{$\vv$}{$\vvs'$};
+    \item view $\vv$ as the \nativevalue{} bitvector for the sequence of bits $\bv$;
+    \item applying $\concatbitvectors$ to $\vvs'$ yields the
+          \nativevalue{} bitvector for the sequence of bits $\bv$;
+    \item \Proseeqdef{$\vres$}{the concatenation of $\bv$ and $\bv'$};
+    \item \Proseeqdef{$\newvs$}{the \nativevalue{} bitvector for sequence of bits $\vres$}.
+  \end{itemize}
+\end{itemize}
+
 Define $\newvs$ as the concatenation of bitvectors listed in $\vvs$.
 
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule[ConcatBitvector.Empty]{}
-  {
-    \concatbitvectors(\emptylist) \evalarrow \nvbitvector(\emptylist)
-  }
-  \and
-  \inferrule[ConcatBitvector.NonEmpty]{
-    \vvs \eqname [\vv] \concat \vvs'\\
-    \vv\eqname\nvbitvector(\bv)\\
-    \concatbitvectors(\vvs') \evalarrow \nvbitvector(\bv')\\
-    \vres \eqdef \bv \concat \bv'
-  }
-  {
-    \concatbitvectors(\vvs) \evalarrow \nvbitvector(\vres)
-  }
+\inferrule[empty]{}
+{
+  \concatbitvectors(\overname{\emptylist}{\vvs}) \evalarrow \overname{\nvbitvector(\emptylist)}{\newvs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \vvs = [\vv] \concat \vvs'\\
+  \vv\eqname\nvbitvector(\bv)\\
+  \concatbitvectors(\vvs') \evalarrow \nvbitvector(\bv')\\
+  \vres \eqdef \bv \concat \bv'
+}{
+  \concatbitvectors(\vvs) \evalarrow \nvbitvector(\vres)
+}
 \end{mathpar}
 
 \SemanticsRuleDef{ReadFromBitvector}
@@ -350,12 +370,12 @@ overwrites the bits of $\dst$ at the positions given by $\slices$ with the bits 
 
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule[WriteToBitvector.Empty]{}
+  \inferrule[empty]{}
   {
     \writetobitvector(\emptylist, \nvbitvector(\emptylist), \nvbitvector(\emptylist)) \evalarrow \nvbitvector(\emptylist)
   }
   \and
-  \inferrule[WriteToBitvector.NonEmpty]{
+  \inferrule[non\_empty]{
     \vs_n \ldots \vs_1 \eqdef \asbitvector(\src)\\
     \vd_n \ldots \vd_1 \eqdef \asbitvector(\dst)\\
     \slicestopositions(n, \slices) \evalarrow \positions \OrDynError\\\\

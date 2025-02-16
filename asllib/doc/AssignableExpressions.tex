@@ -733,7 +733,6 @@ $\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and
 \CodeSubsection{\EvalLEDestructuringBegin}{\EvalLEDestructuringEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{LEMultiAssign}
-\ProseParagraph
 The helper relation
 \hypertarget{def-evalmultiassign}{}
 \[
@@ -746,18 +745,43 @@ That is, the simultaneous assignment of the list of value-execution graph pairs 
 to the corresponding list of left-hand side expressions $\vlelist$, in the environment $\env$.
 The result is either the execution graph $\vg$ and new environment $\newenv$ or an abnormal configuration.
 
+\ProseParagraph
+\begin{itemize}
+  \item \AllApplyCase{empty}
+  \begin{itemize}
+    \item both $\vlelist$ and $\vmlist$ are empty lists;
+    \item \Proseeqdef{$\newg$}{the empth \executiongraph};
+    \item \Proseeqdef{$\newenv$}{$\env$}.
+  \end{itemize}
+
+  \item \AllApplyCase{non\_empty}
+  \begin{itemize}
+    \item $\vle$ is a \Proselist{$\vle$}{$\vlelistone$};
+    \item $\vmlist$ is a \Proselist{$\vm$}{$\vmlistone$};
+    \item \Proseevallexpr{$\env$}{$\vle$}{$\vm$}{$\Normal(\envone, \vgone)$}\ProseOrAbnormal;
+    \item applying $\evalmultiassignment$ to $\envone$, $\vlelistone$, and $\vmlistone$
+          yields \\
+          $\Normal(\newenv, \vgtwo)$\ProseOrAbnormal;
+    \item \Proseeqdef{$\newg$}{the ordered composition of $\vgone$ and $\vgtwo$
+          with the edge $\aslpo$}.
+  \end{itemize}
+\end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}
 {
-  \evalmultiassignment(\env, \emptylist, \emptylist) \evalarrow \Normal(\emptygraph, \env)
+  \evalmultiassignment(\env, \overname{\emptylist}{\vlelist}, \overname{\emptylist}{\vmlist}) \evalarrow
+  \Normal(\overname{\emptygraph}{\newg}, \overname{\env}{\newenv})
 }
-\and
-\inferrule[nonempty]{
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
   \vlelist \eqname [\vle] \concat \vlelistone\\
   \vmlist \eqname [\vm] \concat \vmlistone\\
-  \evallexpr{\env, \vle, \vm} \evalarrow \Normal(\envone, \vgone) \OrAbnormal\\
-  \evalmultiassignment(\envone, \vlelistone, \vmlistone) \evalarrow \Normal(\newenv, \vgtwo) \OrAbnormal\\
+  \evallexpr{\env, \vle, \vm} \evalarrow \Normal(\envone, \vgone) \OrAbnormal\\\\
+  \evalmultiassignment(\envone, \vlelistone, \vmlistone) \evalarrow \Normal(\newenv, \vgtwo) \OrAbnormal\\\\
   \newg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
 }{
   \evalmultiassignment(\env, \vlelist, \vmlist) \evalarrow \Normal(\newg, \newenv)

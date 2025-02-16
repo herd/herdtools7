@@ -474,7 +474,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
     \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 
-  \item \AllApplyCase{ebinop\_shl\_non\_neg\_shift}
+  \item \AllApplyCase{ebinop\_shl\_neg\_shift}
   \begin{itemize}
     \item $\ve$ is a binary shift-left expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\SHL, \veone, \vetwo)$;
     \item $\vetwo$ is an integer literal expression for $\vitwo$;
@@ -533,7 +533,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
     \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 
-  \item \AllApplyCase{ATC}
+  \item \AllApplyCase{atc}
   \begin{itemize}
     \item $\ve$ is an asserting type conversion for the subexpression $\vep$, that is, \\
           $\EATC(\vep, \Ignore)$;
@@ -1375,7 +1375,7 @@ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[TBool\_TReal\_TString]{
+\inferrule[tbool\_treal\_tstring]{
   \astlabel(\vtone) = \astlabel(\vttwo)\\
   \astlabel(\vtone) \in \{\TBool, \TReal, \TString\}
 }{
@@ -1810,7 +1810,7 @@ in environment $\tenv$ and yields the result in $\vb$. \ProseOtherwiseTypeError
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[different\_label]{
+\inferrule[different\_labels]{
   \astlabel(\sliceone) \neq \astlabel(\slicetwo)
 }{
   \slicesequal(\tenv, \sliceone, \slicetwo) \typearrow \False
@@ -2220,7 +2220,7 @@ $\vstwo$                      & -1                         & 0               & 1
     \item $\vs$ is $\vsone$;
   \end{itemize}
 
-  \item \AllApplyCase{same\_sign}
+  \item \AllApplyCase{different\_signs}
   \begin{itemize}
     \item both $\vsone$ and $\vstwo$ are not $0$;
     \item $\vsone$ is different from $\vstwo$;
@@ -2437,7 +2437,7 @@ $\vs$. The result is type error if $\vs$ is not associated with any type.
   \typeof(\tenv, \vs) \typearrow \tty
 }
 \and
-\inferrule[none]{
+\inferrule[error]{
   L^\tenv.\localstoragetypes(\vs) = \bot\\
   G^\tenv.\globalstoragetypes(\vs) = \bot
 }{

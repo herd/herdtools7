@@ -273,7 +273,7 @@ and an empty list if there are none.
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[simple\_typed]{
+\inferrule[simple\_type]{
   \astlabel(\vbf) \neq \BitFieldNested
 }{
   \bitfieldgetname(\vbf) \typearrow \emptylist
@@ -557,7 +557,7 @@ if they can be statically evaluated, or $\None$ if they cannot be statically eva
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[single\_static]{
+\inferrule[single]{
   \reducetozopt(\tenv, \ve) \typearrow \langle\vx\rangle \terminateas\None
 }{
   \bitfieldslicetopositions(\tenv, \overname{\SliceSingle(\ve)}{\vslice}) \typearrow \overname{\langle\{\vx\}\rangle}{\positions}
