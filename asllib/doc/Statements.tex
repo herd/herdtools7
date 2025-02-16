@@ -446,18 +446,18 @@ As given by applying the relevant rules to the desugared AST.
 \subsection{Typing}
 \TypingRuleDef{SDecl}
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{some}:
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\vs$ is a declaration with an initializing expression $\ve$,
           that is, $\SDecl(\ldk, \ldi, \tyopt, \langle\ve\rangle)$;
     \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte,\vep, \vsese)$\ProseOrTypeError;
     \item applying $\annotatelocaldecltypeannot$ to the environment $\tenv$, type annotation $\tyopt$, type $\vte$, local declaration keyword $\ldk$, expression $\vep$, and local declaration item $\ldi$ yields $(\tenvone, \tyoptp, \vsesldi)$\ProseOrTypeError;
     \item \Proseeqdef{$\vses$}{the union of $\vsese$ and $\vsesldi$};
-    \item One of the following applies:
+    \item \OneApplies
     \begin{itemize}
-      \item \AllApplyCase{constant}:
+      \item \AllApplyCase{constant}
       \begin{itemize}
         \item $\ldk$ indicates a local constant declaration, that is, $\LDKConstant$;
         \item checking that all \timeframesterm\ in $\vsese$ are before \timeframeconstant\ yields $\True$\ProseOrTypeError;
@@ -466,7 +466,7 @@ One of the following applies:
         \item $\news$ is a declaration with $\ldk$, $\ldi$, type annotation $\tyoptp$, and an expression $\vep$.
       \end{itemize}
 
-      \item \AllApplyCase{non\_constant}:
+      \item \AllApplyCase{non\_constant}
       \begin{itemize}
         \item $\ldk$ indicates that this is not a local constant declaration, that is, $\ldk\neq\LDKConstant$;
         \item $\news$ is a declaration with $\ldk$, $\ldi$, type annotation $\tyoptp$, and an expression $\vep$;
@@ -475,7 +475,7 @@ One of the following applies:
     \end{itemize}
   \end{itemize}
 
-  \item \AllApplyCase{none}:
+  \item \AllApplyCase{none}
   \begin{itemize}
   \item $\vs$ is a local declaration statement with a variable keyword and no initializing expression,
         that is, $\SDecl(\LDKVar, \ldi, \tyopt, \None)$ (local declarations of \texttt{let} variables and constants require
@@ -544,15 +544,15 @@ adds the literal $\vv$ with the local declaration item $\ldi$ as a constant to t
 yielding the modified static environment $\newtenv$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{var}:
+  \item \AllApplyCase{var}
   \begin{itemize}
     \item $\ldi$ corresponds to a variable declaration for $\vx$, that is, $\LDIVar(\vx)$;
     \item applying $\addlocalconstant$ to $\vx$ and $\vv$ in $\tenv$ yields $\newtenv$.
   \end{itemize}
 
-  \item \AllApplyCase{tuple}:
+  \item \AllApplyCase{tuple}
   \begin{itemize}
     \item $\ldi$ corresponds to a tuple declaration, that is, $\LDIVar(\Ignore)$;
     \item this case is not yet implemented.
@@ -605,9 +605,9 @@ It yields the modified static environment $\newtenv$, the annotated type annotat
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{none}:
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\tyopt$ is $\None$;
     \item $\newtenv$ is the result of $\annotatelocaldeclitem{\tenv, \vte, \ldk, \langle\vep\rangle, \ldi}$\ProseOrTypeError;
@@ -615,7 +615,7 @@ One of the following applies:
     \item \Proseeqdef{$\vses$}{the empty set}.
   \end{itemize}
 
-  \item \AllApplyCase{some}:
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\tyopt$ is $\langle\vt\rangle$;
     \item determining the \structure{} of $\vte$ in $\tenv$ yields $\vtep$\ProseOrTypeError;
@@ -670,7 +670,7 @@ in the \CaseName{int} below.
 {\typingtests/TypingRule.InheritIntegerConstraints.unconstrained.bad.asl}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
   \item \AllApplyCase{int}
   \begin{itemize}
@@ -679,7 +679,7 @@ One of the following applies:
     \item \Proseeqdef{$\lhsp$}{$\rhs$}.
   \end{itemize}
 
-  \item \AllApplyCase{tuple}:
+  \item \AllApplyCase{tuple}
   \begin{itemize}
     \item $\lhs$ is a tuple of types $\vlhstys$;
     \item $\rhs$ is a tuple of types $\vrhstys$;
@@ -689,7 +689,7 @@ One of the following applies:
     \item \Proseeqdef{$\lhsp$}{$\TTuple(\vlhstysp)$}.
   \end{itemize}
 
-  \item \AllApplyCase{other}:
+  \item \AllApplyCase{other}
   \begin{itemize}
     \item $\lhs$ is not a \pendingconstrainedintegertype{}, or one of $\lhs$ and $\rhs$ is not a tuple type;
     \item \Proseeqdef{$\lhsp$}{$\lhs$}.
@@ -741,15 +741,15 @@ $\tenv$.
 If the answer if $\False$, the result is a type error.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{okay}:
+  \item \AllApplyCase{okay}
   \begin{itemize}
     \item testing whether $\vt$ \typesatisfies\ $\vs$ in $\tenv$ yields $\True$;
     \item the result is $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{error}:
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item testing whether $\vt$ \typesatisfies\ $\vs$ in $\tenv$ yields $\False$;
     \item the result is a type error indicating that an expression of type $\vs$ cannot
@@ -789,9 +789,9 @@ In \listingref{semantics-sdeclnone},
 \ASLListing{Evaluating a declaration without a given initial value}{semantics-sdeclnone}{\semanticstests/SemanticsRule.SDeclNone.asl}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{some}:
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\vs$ is a declaration with an initial value,
     $\SDecl(\Ignore, \ldi, \Ignore, \langle\ve\rangle)$;
@@ -801,7 +801,7 @@ One of the following applies:
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
   \end{itemize}
 
-  \item \AllApplyCase{none}:
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\vs$ is a declaration without an initial value, $\SDecl(\Ignore, \ldi, \Ignore, \None)$;
     \item the result is a dynamic error.
@@ -1706,16 +1706,16 @@ evaluating \texttt{assert (42 == 3);} results in an \texttt{AssertionFailed} err
 \AllApply
 \begin{itemize}
   \item $\vs$ is an assertion statement, $\SAssert(\ve)$;
-  \item one of the following holds:
+  \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{okay}:
+    \item \AllApplyCase{okay}
     \begin{itemize}
       \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \newg), \newenv)$\ProseOrAbnormal;
       \item $\vv$ is a native Boolean value for $\True$;
       \item the resulting configuration is $\Continuing(\newg, \newenv)$.
     \end{itemize}
 
-    \item \AllApplyCase{error}:
+    \item \AllApplyCase{error}
     \begin{itemize}
       \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \newg), \newenv)$;
       \item $\vv$ is a native Boolean value for $\False$;
@@ -1723,6 +1723,7 @@ evaluating \texttt{assert (42 == 3);} results in an \texttt{AssertionFailed} err
     \end{itemize}
   \end{itemize}
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[okay]{
@@ -1849,16 +1850,16 @@ yielding a pair consisting of an expression $\vep$ and a \sideeffectsetterm\ $\v
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{none}:
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\ve$ is $\None$;
     \item $\vep$ is $\None$;
     \item \Proseeqdef{$\vses$}{the empty set}.
   \end{itemize}
 
-  \item \AllApplyCase{some}:
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\ve$ is $\langle\vlimit\rangle$;
     \item applying $\annotatesymbolicconstrainedinteger$ to $\vlimit$ in $\tenv$ yields \\
@@ -1953,9 +1954,9 @@ and the specification terminates with exit code $0$.
 
 \CodeSubsection{\EvalLoopBegin}{\EvalLoopEnd}{../Interpreter.ml}
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-\item \AllApplyCase{exit}:
+\item \AllApplyCase{exit}
   \begin{itemize}
     \item evaluating $\econd$ in $\env$ is $\Normal(\condm, \newenv)$\ProseOrAbnormal;
     \item $\condm$ consists of a native Boolean for $\vb$ and an execution graph $\newg$;
@@ -1963,7 +1964,7 @@ One of the following applies:
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$
     and the loop is exited.
   \end{itemize}
-\item \AllApplyCase{continue}:
+\item \AllApplyCase{continue}
   \begin{itemize}
     \item evaluating $\econd$ in $\env$ is $\Normal(\condm, \envone)$;
     \item $\mcond$ consists of a native Boolean for $\vb$ and an execution graph $\vgone$;
@@ -2031,16 +2032,16 @@ guaranteed side-effect-free by the typechecker,
 see \TypingRuleRef{AnnotateLimitExpr}.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{none}:
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\velimitopt$ is $\None$;
     \item $\vvopt$ is $\None$;
     \item $\vg$ is the empty execution graph.
   \end{itemize}
 
-  \item \AllApplyCase{some}:
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\velimitopt$ is the expression $\velimit$;
     \item evaluating the side-effect-free expression $\velimitopt$ in $denv$ yields the native integer for $\vv$ and
@@ -2076,21 +2077,21 @@ the optional integer value $\vvopt$.
 If the value is $0$, the result is a dynamic error.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{none}:
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\vvopt$ is $\None$;
     \item $\vvoptp$ is $\None$.
   \end{itemize}
 
-  \item \AllApplyCase{some\_ok}:
+  \item \AllApplyCase{some\_ok}
   \begin{itemize}
     \item $\vvopt$ is the positive integer $\vv$;
     \item $\vvoptp$ is $\langle\vv-1\rangle$.
   \end{itemize}
 
-  \item \AllApplyCase{some\_error}:
+  \item \AllApplyCase{some\_error}
   \begin{itemize}
     \item $\vvopt$ is the integer $0$;
     \item the result is a dynamic error indicating that a limit has been reached
@@ -2435,23 +2436,23 @@ The result is $\vis$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{not\_integers}:
+  \item \AllApplyCase{not\_integers}
   \begin{itemize}
     \item at least one of $\structone$ and $\structtwo$ is not an integer type;
     \item the result is a type error indicating that the start expression and end expression of \texttt{for} loops
           must have the \structure\ of integer types.
   \end{itemize}
 
-  \item \AllApplyCase{unconstrained}:
+  \item \AllApplyCase{unconstrained}
   \begin{itemize}
     \item both of $\structone$ and $\structtwo$ are integer types;
     \item at least one of $\structone$ and $\structtwo$ is the unconstrained integer type;
     \item define $\vis$ as $\unconstrained$.
   \end{itemize}
 
-  \item \AllApplyCase{well\_constrained}:
+  \item \AllApplyCase{well\_constrained}
   \begin{itemize}
     \item both of $\structone$ and $\structtwo$ are integer types;
     \item neither $\structone$ nor $\structtwo$ is the unconstrained integer type;
@@ -2690,16 +2691,16 @@ or an abnormal configuration.
   \item \Proseticklooplimit{$\vlimitopt$}{$\vnextlimitopt$}\ProseOrError;
   \item $\compfordir$ is either $\LT$ when $\dir$ is $\UP$ or $\GT$ when $\dir$ is $\DOWN$;
   \item reading $\vstart$ into the identifier $\vindexname$ gives $\vgone$;
-  \item One of the following applies:
+  \item \OneApplies
     \begin{itemize}
-    \item \AllApplyCase{return}:
+    \item \AllApplyCase{return}
     \begin{itemize}
       \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native Boolean for $\True$;
       \item $\newg$ is $\vgone$;
       \item $\newenv$ is $\env$;
       \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
     \end{itemize}
-    \item \AllApplyCase{continue}:
+    \item \AllApplyCase{continue}
     \begin{itemize}
       \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native Boolean for $\False$;
       \item evaluating the loop body via $\evalforloop$ with \\ $(\vindexname, \vlimitopt, \vstart, \dir, \vend, \vbody)$
@@ -2827,9 +2828,9 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 \TypingRuleDef{SThrow}
 \newcommand\NoNameException[0]{\texttt{\_}}
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{none}:
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\vs$ is a throw statement with no expression, that is, $\SThrow(\None)$;
     \item $\news$ is $\vs$;
@@ -2837,7 +2838,7 @@ One of the following applies:
     \item \Proseeqdef{$\vses$}{the singleton set for $\ThrowException(\NoNameException)$}
   \end{itemize}
 
-  \item \AllApplyCase{some}:
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\vs$ is a throw statement with expression $\ve$, that is, $\SThrow(\langle\ve\rangle)$;
     \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vsesone)$\ProseOrTypeError;
@@ -2889,9 +2890,9 @@ terminates successfully. That is, no dynamic error occurs.
 \ASLListing{Throwing an exception}{semantics-sthrowsometyped}{\semanticstests/SemanticsRule.SThrowSomeTyped.asl}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{none}:
+  \item \AllApplyCase{none}
   \begin{itemize}
   \item $\vs$ is a \texttt{throw} statement that does not provide an expression, $\SThrow(\None)$;
   \item $\newenv$ is $\env$;
@@ -2900,7 +2901,7 @@ One of the following applies:
   \item an exception is thrown with $\newenv$.
   \end{itemize}
 
-  \item \AllApplyCase{some}:
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\vs$ is a \texttt{throw} statement that provides an expression and a type, \\
           $\SThrow(\langle(\ve, \vt)\rangle)$;
@@ -3009,9 +3010,9 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
         and $\vxs_i$\ProseOrTypeError;
   \item $\catchersp$ is the list of annotated catchers $\vc\_\vi$ for each $\vi\in\listrange(\catchers)$;
   \item \Proseeqdef{$\vsescatchers$}{the union of all $\vxs_\vi$, for \Proselistrange{$\vi$}{$\catchers$}};
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{no\_otherwise}:
+    \item \AllApplyCase{no\_otherwise}
     \begin{itemize}
       \item there is no \texttt{otherwise} statement;
       \item $\news$ is a try statement with statement $\vspp$, list catchers $\catchersp$ and no \texttt{otherwise} statement,
@@ -3021,7 +3022,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
       \item \Proseeqdef{$\vsesthree$}{$\vsestwo$}.
     \end{itemize}
 
-    \item \AllApplyCase{otherwise}:
+    \item \AllApplyCase{otherwise}
     \begin{itemize}
       \item there is an \texttt{otherwise} statement $\otherwise$;
       \item annotating the statement $\otherwise$ as a block statement in $\tenv$ yields $\otherwisep$\ProseOrTypeError;
@@ -3126,9 +3127,9 @@ does not result in any Assertion error, and the specification terminates with th
 \subsection{Typing}
 \TypingRuleDef{SReturn}
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{error}:
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item $\vs$ is a \texttt{return} statement with an optional expression $\veopt$, that is, \\
           $\SReturn(\veopt)$;
@@ -3138,7 +3139,7 @@ One of the following applies:
           and the (existence of the) return expression.
   \end{itemize}
 
-  \item \AllApplyCase{none}:
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\vs$ is a \texttt{return} statement with no expression, that is, $\SReturn(\None)$;
     \item the enclosing subprogram does not have a \texttt{return} type (it is either a setter
@@ -3148,7 +3149,7 @@ One of the following applies:
     \item \Proseeqdef{$\vses$}{the empty set}.
   \end{itemize}
 
-  \item \AllApplyCase{some}:
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\vs$ is a \texttt{return} statement with an expression $\ve$, that is, $\SReturn(\langle \vep \rangle)$;
     \item the enclosing subprogram has a return type $\vt$;
@@ -3208,9 +3209,9 @@ In \listingref{semantics-sreturntuple},
 \ASLListing{Evaluating a \texttt{return} statement with a tuple of values}{semantics-sreturntuple}{\semanticstests/SemanticsRule.SReturnSome.asl}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{none}:
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\vs$ is a \texttt{return} statement, $\SReturn(\None)$;
     \item $\vvs$ is the empty list, $\emptylist$;
@@ -3218,7 +3219,7 @@ One of the following applies:
     \item $\newenv$ is $\env$.
   \end{itemize}
 
-  \item \AllApplyCase{one}:
+  \item \AllApplyCase{one}
   \begin{itemize}
     \item $\vs$ is a \texttt{return} statement;
     \item $\vs$ is a \texttt{return} statement for a single expression, $\SReturn(\langle\ve\rangle)$;
@@ -3228,7 +3229,7 @@ One of the following applies:
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
   \end{itemize}
 
-  \item \AllApplyCase{tuple}:
+  \item \AllApplyCase{tuple}
   \begin{itemize}
     \item $\vs$ is a \texttt{return} statement for a list of expressions, $\SReturn(\langle\ETuple(\es)\rangle)$;
     \item evaluating each expression in $\es$ separately as per \secref{SemanticsRule.EExprListM}
@@ -3279,15 +3280,15 @@ and returns the list of values associated with graphs $\vms$ and the new environ
 If the evaluation of any expression terminates abnormally then the abnormal configuration is returned.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{empty}:
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\vEs$ is an empty list;
     \item $\vms$ is then empty list.
   \end{itemize}
 
-  \item \AllApplyCase{non\_empty}:
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\vEs$ is a list with \head\ $\ve$ and \tail\ $\vesone$;
     \item evaluating $\ve$ in $\env$ yields $\Normal(\vmone, \envone)$\ProseOrAbnormal;

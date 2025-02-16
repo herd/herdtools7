@@ -64,7 +64,7 @@ of type $\vt$ in the static environment $\tenv$.
 
 \TypingRuleDef{BaseValue}
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
     \item \AllApplyCase{t\_bool} \lrmcomment{\identr{CPCK}}
     \begin{itemize}
@@ -111,7 +111,7 @@ One of the following applies:
         \item $\veinit$ is the integer literal expression for $\vzmin$.
     \end{itemize}
 
-    \item \AllApplyCase{t\_named}:
+    \item \AllApplyCase{t\_named}
     \begin{itemize}
         \item $\vt$ is the \namedtype\ for $\id$;
         \item obtaining the \underlyingtype\ for $\id$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
@@ -293,9 +293,9 @@ and an empty list if the constraint represents an empty set.
 Otherwise, the result is $\TypeErrorVal{\NoBaseValue}$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-    \item \AllApplyCase{exact}:
+    \item \AllApplyCase{exact}
     \begin{itemize}
         \item $\vc$ is the constraint given by the expression $\ve$, that is, $\ConstraintExact(\ve)$;
         \item applying $\reducetozopt$ to $\ve$ in $\tenv$ yields the optional integer $\vzopt$;
@@ -304,7 +304,7 @@ One of the following applies:
         \item define $\vzs$ as the single element list containing $\vz$.
     \end{itemize}
 
-    \item \AllApplyCase{range}:
+    \item \AllApplyCase{range}
     \begin{itemize}
         \item $\vc$ is the constraint given by the expression $\veone$ and $\vetwo$, that is, \\
                 $\ConstraintRange(\veone, \vetwo)$;
@@ -372,14 +372,14 @@ The minimal absolute value of $[9, -3]$ is $-3$,
 and the minimal absolute value of $[2, -2]$ is $2$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-    \item \AllApplyCase{one}:
+    \item \AllApplyCase{one}
     \begin{itemize}
         \item $\vl$ is the single element list for $\vz$.
     \end{itemize}
 
-    \item \AllApplyCase{more\_than\_one}:
+    \item \AllApplyCase{more\_than\_one}
     \begin{itemize}
         \item $\vl$ is the list where $\vzone$ is its \head\ and $\vltwo$ is its \tail;
         \item $\vltwo$ is not the empty list;

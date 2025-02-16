@@ -147,21 +147,23 @@ def check_repeated_words(filename: str) -> int:
     """
     num_errors = 0
     line_number = 0
-    last_word = ""
+    last_token = ""
     for line in read_file_lines(filename):
         line_number += 1
         line = line.strip()
-        parts = line.split()
-        if len(parts) < 2:
+        tokens = re.split(' |{|}', line)
+        if not tokens:
             continue
-        for current_word in parts:
-            if current_word.isalpha() and last_word.lower() == current_word.lower():
+        for current_token in tokens:
+            current_token_lower = current_token.lower()
+            last_token_lower = last_token.lower()
+            if current_token_lower.isalpha() and last_token_lower == current_token_lower:
                 num_errors += 1
                 print(
                     f"./{filename} line {line_number}: \
-                        word repetition ({last_word} {current_word}) in '{line}'"
+                        word repetition ({last_token} {current_token}) in '{line}'"
                 )
-            last_word = current_word
+            last_token = current_token
     return num_errors
 
 
@@ -391,7 +393,7 @@ def check_rules(filename: str) -> int:
             continue
         error_messages: List[str] = []
         error_messages.extend(check_rule_prose_formally_structure(rule_block))
-        # error_messages.extend(check_rule_case_consistency(rule_block))
+        #error_messages.extend(check_rule_case_consistency(rule_block))
         if error_messages:
             error_messages = ", ".join(error_messages)
             print(f"{rule_block.filename} {rule_block.str()}: {error_messages}")

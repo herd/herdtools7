@@ -119,9 +119,9 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \section{Typing}
 \TypingRuleDef{Catcher}
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{none}:
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item the catcher has no named identifier, that is, $\vc$ is $(\overname{\None}{\nameopt}, \tty, \vstmt)$;
     \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
@@ -130,7 +130,7 @@ One of the following applies:
     \item \Proseeqdef{$\newcatcher$}{$(\overname{\None}{\nameopt}, \ttyp, \newstmt)$};
   \end{itemize}
 
-  \item \AllApplyCase{some}:
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item the catcher has a named identifier, that is, $\vc$ is $(\langle\name\rangle, \tty, \vstmt)$;
     \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
@@ -365,7 +365,7 @@ The specification in \listingref{semantics-nothrow} prints \texttt{No exception 
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item One of the following holds:
+  \item \OneApplies
   \begin{itemize}
     \item (\textsc{implicit\_throw}) $\sm$ is $\Throwing((\None, \sg), \envthrow)$ (that is, an implicit throw);
     \item (\textsc{non\_throwing}) $\sm$ is a normal configuration (that is, the domain of $\sm$ is $\Normal$);
@@ -402,15 +402,15 @@ returns the first catcher clause in $\catchers$ that matches the type $\vvty$ (a
 by invoking $\typesat$ with the static environment $\tenv$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{empty}:
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\catchers$ is an empty list;
     \item the result is $\None$.
   \end{itemize}
 
-  \item \AllApplyCase{match}:
+  \item \AllApplyCase{match}
   \begin{itemize}
     \item $\catchers$ has $\vc$ as its head and $\catchersone$ as its tail;
     \item $\vc$ consists of $(\nameopt, \ety, \vs)$;
@@ -418,7 +418,7 @@ One of the following applies:
     \item the result is the singleton set for $\vc$.
   \end{itemize}
 
-  \item \AllApplyCase{no\_match}:
+  \item \AllApplyCase{no\_match}
   \begin{itemize}
     \item $\catchers$ has $\vc$ as its head and $\catchersone$ as its tail;
     \item $\vc$ consists of $(\nameopt, \ety, \vs)$;
@@ -479,15 +479,15 @@ Implicit throwing configurations are changed by substituting the optional $\valu
 pair with $\vv$ and $\vvty$, respectively.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{implicit\_throwing}:
+  \item \AllApplyCase{implicit\_throwing}
   \begin{itemize}
     \item $\vres$ is $\Throwing((\None, \vg), \envthrowone)$, which is an implicit throwing configuration;
     \item the result is $\Throwing((\langle(\vv, \vvty)\rangle, \vg), \envthrowone)$.
   \end{itemize}
 
-  \item \AllApplyCase{explicit\_throwing}:
+  \item \AllApplyCase{explicit\_throwing}
   \begin{itemize}
     \item $\vres$ is $\Throwing(\langle(\vv', \vvty')\rangle, \vg)$, which is an explicit throwing configuration
     (due to $(\vv', \vvty')$);
@@ -495,7 +495,7 @@ One of the following applies:
     That is, the same throwing configuration is returned.
   \end{itemize}
 
-  \item \AllApplyCase{non\_throwing}:
+  \item \AllApplyCase{non\_throwing}
   \begin{itemize}
     \item the configuration, $C$, domain is non-throwing;
     \item the result is $C$.

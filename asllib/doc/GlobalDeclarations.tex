@@ -105,9 +105,9 @@ yielding an annotated global declaration $\newd$ and modified global static envi
 
 \TypingRuleDef{TypecheckDecl}
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{func}:
+  \item \AllApplyCase{func}
   \begin{itemize}
     \item $\vd$ is a subprogram AST node with a subprogram definition $\vf$, that is, $\DFunc(\vf)$;
     \item annotating and declaring the subprogram for $\vf$ in $\genv$ as per \\
@@ -119,7 +119,7 @@ One of the following applies:
     \item define $\newgenv$ as the global component of $\newtenv$.
   \end{itemize}
 
-  \item \AllApplyCase{global\_storage}:
+  \item \AllApplyCase{global\_storage}
   \begin{itemize}
     \item $\vd$ is a global storage declaration with description $\gsd$, that is, \\ $\DGlobalStorage(\gsd)$;
     \item declaring the global storage with description $\gsd$ in $\genv$ yields the new environment
@@ -127,7 +127,7 @@ One of the following applies:
     \item define $\newd$ as the global storage declaration with description $\gsdp$, that is, \\ $\DGlobalStorage(\gsdp)$.
   \end{itemize}
 
-  \item \AllApplyCase{type}:
+  \item \AllApplyCase{type}
   \begin{itemize}
     \item $\vd$ is a type declaration with identifier $\vx$, type $\tty$,
           and \optional\ field initializers $\vs$, that is, $\DTypeDecl(\vx, \tty, \vs)$;
@@ -194,14 +194,14 @@ Note that the return type in $\vf$ has already been annotated by $\annotatefuncs
 \AllApply
 \begin{itemize}
   \item annotating $\vf.\funcbody$ in $\tenv$ as per \TypingRuleRef{Block} yields $(\newbody, \vsesbody)$\ProseOrTypeError;
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{procedure}:
+    \item \AllApplyCase{procedure}
     \begin{itemize}
       \item $\vf.\funcreturntype$ is $\None$;
     \end{itemize}
 
-    \item \AllApplyCase{function}:
+    \item \AllApplyCase{function}
     \begin{itemize}
       \item $\vf.\funcreturntype$ is not $\None$;
       \item applying $\checkstmtreturnsorthrows$ to $\newbody$ yields $\True$\ProseOrTypeError;
@@ -308,27 +308,27 @@ and determines the \controlflowsymbolterm\ $\vctrlflow$ to be one of the followi
 \end{description}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{falls\_through}:
+  \item \AllApplyCase{falls\_through}
   \begin{itemize}
     \item the AST label of $\vs$ is $\SPass$, $\SDecl$, $\SAssign$, $\SAssert$, $\SCall$, $\SPrint$ or $\SPragma$;
     \item $\vctrlflow$ is $\maynotinterrupt$;
   \end{itemize}
 
-  \item \AllApplyCase{unreachable}:
+  \item \AllApplyCase{unreachable}
   \begin{itemize}
     \item $\vs$ is $\SUnreachable$;
     \item $\vctrlflow$ is $\assertednotinterrupt$;
   \end{itemize}
 
-  \item \AllApplyCase{return\_throw}:
+  \item \AllApplyCase{return\_throw}
   \begin{itemize}
     \item the AST label of $\vs$ is either $\SReturn$ or $\SThrow$;
     \item $\vctrlflow$ is $\interrupt$;
   \end{itemize}
 
-  \item \AllApplyCase{s\_seq}:
+  \item \AllApplyCase{s\_seq}
   \begin{itemize}
     \item $\vs$ is the \sequencingstatementterm\ for $\vsone$ and $\vstwo$;
     \item applying $\controlflowfromstmt$ to $\vsone$ yields $\vctrlflowone$;
@@ -336,7 +336,7 @@ One of the following applies:
     \item applying $\controlflowseq$ to $\vctrlflowone$ and $\vctrlflowtwo$ yields $\vctrlflow$.
   \end{itemize}
 
-  \item \AllApplyCase{s\_cond}:
+  \item \AllApplyCase{s\_cond}
   \begin{itemize}
     \item $\vs$ is the \conditionalstatementterm\ for an expression and statements $\vsone$ and $\vstwo$;
     \item applying $\controlflowfromstmt$ to $\vsone$ yields $\vctrlflowone$;
@@ -344,19 +344,19 @@ One of the following applies:
     \item applying $\controlflowjoin$ to $\vctrlflowone$ and $\vctrlflowtwo$ yields $\vctrlflow$.
   \end{itemize}
 
-  \item \AllApplyCase{s\_while\_for}:
+  \item \AllApplyCase{s\_while\_for}
   \begin{itemize}
     \item $\vs$ is either a \whilestatementterm\ or a \forstatementterm;
     \item define $\vctrlflow$ as $\maynotinterrupt$.
   \end{itemize}
 
-  \item \AllApplyCase{s\_repeat}:
+  \item \AllApplyCase{s\_repeat}
   \begin{itemize}
     \item $\vs$ is the \repeatstatementterm\ with the body statement $\vbody$;
     \item applying $\controlflowfromstmt$ to $\vbody$ yields $\vctrlflow$.
   \end{itemize}
 
-  \item \AllApplyCase{s\_try}:
+  \item \AllApplyCase{s\_try}
   \begin{itemize}
     \item $\vs$ is the \trystatement{$\vbody$}{\\ $\catchers$}{$\votherwiseopt$};
     \item applying $\controlflowfromstmt$ to $\vbody$ yields $\vreszero$;

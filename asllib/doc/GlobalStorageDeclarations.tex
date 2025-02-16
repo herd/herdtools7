@@ -301,9 +301,9 @@ the annotation of the type in $\tyoptp$ (in case there is a type), and the type
 that should be associated with the storage element $\declaredt$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{some\_some}:
+  \item \AllApplyCase{some\_some}
   \begin{itemize}
     \item $\tyoptp$ is the singleton set for the type $\vt$;
     \item $\initialvalue$ is the singleton set for the expression $\ve$;
@@ -318,7 +318,7 @@ One of the following applies:
     \item define $\declaredt$ as $\vtp$;
   \end{itemize}
 
-  \item \AllApplyCase{some\_none}:
+  \item \AllApplyCase{some\_none}
   \begin{itemize}
     \item $\tyoptp$ is the singleton set for the type $\vt$;
     \item $\initialvalue$ is $\None$;
@@ -331,7 +331,7 @@ One of the following applies:
     \item define $\declaredt$ as $\vtp$;
   \end{itemize}
 
-  \item \AllApplyCase{none\_some}:
+  \item \AllApplyCase{none\_some}
   \begin{itemize}
     \item $\tyoptp$ is $\None$;
     \item $\initialvalue$ is the singleton set for the expression $\ve$;
@@ -421,9 +421,9 @@ This helper function is applied following $\addglobalstorage(\tenv, \name, \gdk,
 is the type associated with $\name$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{constant}:
+  \item \AllApplyCase{constant}
   \begin{itemize}
     \item $\gdk$ is $\GDKConstant$;
     \item view $\typedinitialvalue$ as $(\Ignore, \initialvaluep, \vsesinitialvalue)$;
@@ -432,21 +432,21 @@ One of the following applies:
     \item applying $\tryaddglobalconstant$ to $\name$ and $\initialvaluep$ in $\tenv$ yields $\newtenv$.
   \end{itemize}
 
-  \item \AllApplyCase{let\_normalizable}:
+  \item \AllApplyCase{let\_normalizable}
   \begin{itemize}
     \item $\gdk$ is $\GDKLet$;
     \item applying $\normalizeopt$ to $\ve$ in $\tenv$ yields $\langle\vep\rangle$\ProseOrTypeError;
     \item applying $\addglobalimmutableexpr$ to $\name$ and $\vep$ in $\tenv$ yields $\newtenv$.
   \end{itemize}
 
-  \item \AllApplyCase{let\_non\_normalizable}:
+  \item \AllApplyCase{let\_non\_normalizable}
   \begin{itemize}
     \item $\gdk$ is $\GDKLet$;
     \item applying $\normalizeopt$ to $\ve$ in $\tenv$ yields $\None$\ProseOrTypeError;
     \item \Proseeqdef{$\newtenv$}{$\tenv$}.
   \end{itemize}
 
-  \item \AllApplyCase{config}:
+  \item \AllApplyCase{config}
   \begin{itemize}
     \item $\gdk$ is $\GDKConfig$;
     \item view $\typedinitialvalue$ as $(\Ignore, \initialvaluep, \vsesinitialvalue)$;
@@ -455,7 +455,7 @@ One of the following applies:
     \item \Proseeqdef{$\newtenv$}{$\tenv$}.
   \end{itemize}
 
-  \item \AllApplyCase{var}:
+  \item \AllApplyCase{var}
   \begin{itemize}
     \item $\gdk$ is $\GDKVar$;
     \item \Proseeqdef{$\newtenv$}{$\tenv$}.
@@ -565,15 +565,15 @@ attempts to update $\tenv$ by binding $\name$ to a literal value when $\ve$ can 
 evaluated to one. The resulting static environment is $\newtenv$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{okay}:
+  \item \AllApplyCase{okay}
   \begin{itemize}
     \item \Prosestaticeval{$\tenv$}{$\ve$}{the literal $\vv$};
     \item applying $\addglobalconstant$ to $\ve$ and $\vv$ in $\tenv$ yields $\newtenv$;
   \end{itemize}
 
-  \item \AllApplyCase{error}:
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item \Prosestaticeval{$\tenv$}{$\ve$}{a type error};
     \item \Proseeqdef{$\newtenv$}{$\tenv$};
@@ -654,15 +654,15 @@ The relation
 updates the input environment and execution graph by initializing the global storage declarations.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{empty}:
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item there are no declarations of global variables;
     \item the result is $\envm$.
   \end{itemize}
 
-  \item \AllApplyCase{non\_empty}:
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\vdecls$ has $\vd$ as its head and $\vdecls'$ as its tail;
     \item $d$ is the AST node for declaring a global storage element with initial value $\ve$,

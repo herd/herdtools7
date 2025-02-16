@@ -137,7 +137,7 @@ The predicate
 tests whether the type $\tty$ is a \emph{builtin type}.
 
 \ProseParagraph
-$\tty$ is a builtin type and one of the following applies:
+$\tty$ is a builtin type and \OneApplies
 \begin{itemize}
 \item $\tty$ is singular;
 \item $\tty$ is builtin aggregate.
@@ -348,29 +348,29 @@ The predicate
 tests whether the type $\tty$ is a \emph{non-primitive type}.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{singular}:
+  \item \AllApplyCase{singular}
   \begin{itemize}
   \item $\tty$ is a builtin singular type;
   \item $\vb$ is $\False$.
   \end{itemize}
-  \item \AllApplyCase{named}:
+  \item \AllApplyCase{named}
   \begin{itemize}
     \item $\tty$ is a named type;
     \item $\vb$ is $\True$.
   \end{itemize}
-  \item \AllApplyCase{tuple}:
+  \item \AllApplyCase{tuple}
   \begin{itemize}
     \item $\tty$ is a tuple type $\vli$;
     \item $\vb$ is $\True$ if and only if there exists a non-primitive type in $\vli$.
   \end{itemize}
-  \item \AllApplyCase{array}:
+  \item \AllApplyCase{array}
     \begin{itemize}
     \item $\tty$ is an array of type $\tty'$
     \item $\vb$ is $\True$ if and only if $\tty'$ is non-primitive.
     \end{itemize}
-  \item \AllApplyCase{structured}:
+  \item \AllApplyCase{structured}
     \begin{itemize}
     \item $\tty$ is a \structuredtype\ with fields $\fields$;
     \item $\vb$ is $\True$ if and only if there exists a non-primitive type in $\fields$.
@@ -488,20 +488,20 @@ which ensures that \TypingRuleRef{Structure} terminates\footnote{In mathematical
 this ensures that \TypingRuleRef{Structure} is a proper \emph{structural induction.}}.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-\item \AllApplyCase{named}:
+\item \AllApplyCase{named}
   \begin{itemize}
   \item $\tty$ is a named type $\vx$;
   \item obtaining the declared type associated with $\vx$ in the static environment $\tenv$ yields $\vtone$\ProseOrTypeError;
   \item obtaining the structure of $\vtone$ static environment $\tenv$ yields $\vt$\ProseOrTypeError;
   \end{itemize}
-\item \AllApplyCase{builtin\_singular}:
+\item \AllApplyCase{builtin\_singular}
   \begin{itemize}
   \item $\tty$ is a builtin singular type;
   \item $\vt$ is $\tty$.
   \end{itemize}
-\item \AllApplyCase{tuple}:
+\item \AllApplyCase{tuple}
   \begin{itemize}
   \item $\tty$ is a tuple type with list of types $\tys$;
   \item the types in $\tys$ are indexed as $\vt_i$, for $i=1..k$;
@@ -509,13 +509,13 @@ One of the following applies:
   yields $\vtp_i$\ProseOrTypeError;
   \item $\vt$ is a tuple type with the list of types $\vtp_i$, for $i=1..k$.
   \end{itemize}
-\item \AllApplyCase{array}:
+\item \AllApplyCase{array}
   \begin{itemize}
     \item $\tty$ is an array type of length $\ve$ with element type $\vt$;
     \item obtaining the structure of $\vt$ yields $\vtone$\ProseOrTypeError;
     \item $\vt$ is an array type with of length $\ve$ with element type $\vtone$.
   \end{itemize}
-\item \AllApplyCase{structured}:
+\item \AllApplyCase{structured}
   \begin{itemize}
   \item $\tty$ is a \structuredtype\ with fields $\fields$;
   \item obtaining the structure for each type $\vt$ associated with field $\id$ yields a type $\vt_\id$\ProseOrTypeError;
@@ -617,16 +617,16 @@ The \underlyingtype{} of \texttt{(integer, T2)} and \texttt{T3} is
 \texttt{T2}, which is \texttt{(integer, integer)}.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{named}:
+  \item \AllApplyCase{named}
   \begin{itemize}
     \item $\tty$ is a named type $\vx$;
     \item obtaining the type declared for $\vx$ yields $\vtone$\ProseOrTypeError;
     \item the \underlyingtype\ of $\vtone$ is $\vt$.
   \end{itemize}
 
-  \item \AllApplyCase{non-named}:
+  \item \AllApplyCase{non-named}
   \begin{itemize}
     \item $\tty$ is not a named type $\vx$;
     \item $\vt$ is $\tty$.
@@ -660,27 +660,27 @@ The function
 checks whether the type $\vt$ is a \constrainedinteger. If so, the result is $\True$, otherwise a type error is returned.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{well-constrained}:
+  \item \AllApplyCase{well-constrained}
   \begin{itemize}
     \item $\vt$ is a well-constrained integer;
     \item the result is $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{parameterized}:
+  \item \AllApplyCase{parameterized}
   \begin{itemize}
     \item $\vt$ is a \parameterizedintegertype;
     \item the result is $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{unconstrained}:
+  \item \AllApplyCase{unconstrained}
   \begin{itemize}
     \item $\vt$ is an unconstrained integer or pending constrained integer;
     \item the result is a type error indicating that a constrained integer type is expected.
   \end{itemize}
 
-  \item \AllApplyCase{conflicting\_type}:
+  \item \AllApplyCase{conflicting\_type}
   \begin{itemize}
     \item $\vt$ is not an integer type;
     \item the result is a type error indicating the type conflict.

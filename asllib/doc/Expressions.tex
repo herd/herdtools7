@@ -44,12 +44,9 @@ The relation
             \Normal((\overname{\vals}{\vv} \times \overname{\XGraphs}{\vg}) \aslsep \overname{\envs}{\newenv}) \cup
             \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
-evaluates the expression $\ve$ in an environment $\env$ and one of the following applies:
-\begin{itemize}
-  \item the evaluation terminates normally, returning a \nativevalue\  $\vv$, a concurrent execution graph $\vg$,
-  and a modified environment $\newenv$;
-  \item the evaluation terminates abnormally.
-\end{itemize}
+evaluates the expression $\ve$ in an environment $\env$ and terminates normally with
+a \nativevalue{} $\vv$, an \executiongraph{} $\vg$, and a modified environment $\newenv$.
+Otherwise, the evaluation terminates abnormally.
 
 \section{Evaluation Order}
 It is an error for an expression’s meaning to rely on evaluation order except that conditional expressions, and uses
@@ -195,9 +192,9 @@ A variable expression consists of an identifier for a storage element.
 \AllApply
 \begin{itemize}
   \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{local\_constant}:
+    \item \AllApplyCase{local\_constant}
     \begin{itemize}
     \item $\vx$ is bound to the type $\vt$ and local declaration keyword $\LDKConstant$
           via the $\localstoragetypes$ map of the local environment component of $\tenv$;
@@ -206,7 +203,7 @@ A variable expression consists of an identifier for a storage element.
     \item define $\vses$ as the empty set.
     \end{itemize}
 
-    \item \AllApplyCase{local\_non\_constant}:
+    \item \AllApplyCase{local\_non\_constant}
     \begin{itemize}
     \item $\vx$ is bound to the type $\vt$ and local declaration keyword $k$
           via the \\
@@ -219,7 +216,7 @@ A variable expression consists of an identifier for a storage element.
           $k$ ($\timeframeofldk$) and the immutability status of $k$ ($\ldkisimmutable$).
     \end{itemize}
 
-    \item \AllApplyCase{global\_constant}:
+    \item \AllApplyCase{global\_constant}
     \begin{itemize}
     \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
     \item $\vx$ is bound to $(\tty, \GDKConstant)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
@@ -228,7 +225,7 @@ A variable expression consists of an identifier for a storage element.
     \item define $\vses$ as the empty set.
     \end{itemize}
 
-    \item \AllApplyCase{global\_non\_constant}:
+    \item \AllApplyCase{global\_non\_constant}
     \begin{itemize}
       \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
       \item $\vx$ is bound to $(\tty, k)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
@@ -238,7 +235,7 @@ A variable expression consists of an identifier for a storage element.
             $k$ ($\timeframeofgdk$) and the immutability status of $k$ ($\gdkisimmutable$).
     \end{itemize}
 
-    \item \AllApplyCase{error\_undefined}:
+    \item \AllApplyCase{error\_undefined}
     \begin{itemize}
       \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
       \item $\vx$ is not bound via the $\globalstoragetypes$ map of the local component of $\tenv$;
@@ -309,15 +306,15 @@ function calls) to global constant variables.
 \begin{itemize}
   \item $\ve$ denotes a variable expression, that is, $\EVar(\vx)$;
   \item view $\env$ as an environment where $\denv$ is the dynamic environment;
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{local}:
+    \item \AllApplyCase{local}
     \begin{itemize}
       \item $\vx$ is bound locally in $\env$;
       \item $\vv$ is the value of $\vx$ in the local component of $\env$;
     \end{itemize}
 
-    \item \AllApplyCase{global}:
+    \item \AllApplyCase{global}
     \begin{itemize}
       \item $\vx$ is bound in the storage map of $\denv$;
       \item $\vv$ is the value of $\vx$ in the global component of $\env$;
@@ -456,15 +453,15 @@ same precedence ($3$). To fix this, we can surround one of the subexpressions wi
 for example: \texttt{(a + b) - c}.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{not\_binop}:
+  \item \AllApplyCase{not\_binop}
   \begin{itemize}
     \item $\ve$ is not a binary operation expression;
     \item the result is $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{binop}:
+  \item \AllApplyCase{binop}
   \begin{itemize}
     \item $\ve$ is a binary operation expression for the operator $\opp$;
     \item checking whether $\op$ is different from $\opp$ implies that $\op$ and $\opp$ have different precedence levels
@@ -505,15 +502,15 @@ the expression \texttt{3 DIV 0} results in a type error.
   \item \Proseannotateexpr{$\tenv$}{$\vetwo$}{\\ $(\vttwo, \vetwop, \vsestwo)$\ProseOrTypeError};
   \item \Proseapplybinoptypes{$\tenv$}{\op}{\vtone}{\vttwo}{$\vt$\ProseOrTypeError};
   \item define $\newe$ as the binary expression $\op$ over $\veonep$ and $\vetwop$;
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{ordered}:
+    \item \AllApplyCase{ordered}
     \begin{itemize}
       \item $\op$ is one of $\BAND$, $\BOR$, or $\IMPL$;
       \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$.
     \end{itemize}
 
-    \item \AllApplyCase{unordered}:
+    \item \AllApplyCase{unordered}
     \begin{itemize}
       \item $\op$ is not one of $\BAND$, $\BOR$, or $\IMPL$;
       \item \Prosenonconflictingunion{consisting of $\vsesone$ and $\vsestwo$}{$\vses$}.
@@ -1176,15 +1173,15 @@ subprogram \texttt{Return42()} is implemented to return the value \texttt{42}.
   \item $\ve$ denotes a subprogram call, $\ECall(\vcall)$;
   \item the evaluation of that subprogram call in $\env$ is either
   $\Normal(\vms, \newenv)$\ProseOrAbnormal;
-  \item one of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{single\_returned\_value}:
+    \item \AllApplyCase{single\_returned\_value}
     \begin{itemize}
       \item $\vms$ consists of a single returned value $(\vv,\vg)$,
       which goes into the output configuration $\Normal((\vv, \vg), \newenv)$.
     \end{itemize}
 
-    \item \AllApplyCase{multiple\_returned\_values}:
+    \item \AllApplyCase{multiple\_returned\_values}
     \begin{itemize}
       \item $\vms$ consists of a list of returned value $(\vv_i,\vg_i)$, for $i=1..k$;
       \item $\vg$ is the parallel composition of $\vg_i$, for $i=1..k$;
@@ -1892,9 +1889,9 @@ the expression \verb|my_record.a| evaluates to the value \texttt{3}.
   \item \Proseannotateexpr{$\tenv$}{$\ebase$}{\\ $(\tbaseannot, \vetwo, \vsesbase)$}\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\tbaseannot$ in $\tenv$ yields \\
         $\tbaseannotanon$\ProseOrTypeError;
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{bits}:
+    \item \AllApplyCase{bits}
     \begin{itemize}
       \item $\tbaseannotanon$ is a bitvector type with list of bitfields $\vbitfields$\ProseOrTypeError;
       \item applying $\findbitfieldsslices$ to each field name $\name$ and list of bitfields $\vbitfields$ in $\vfields$ yields \\
@@ -1903,7 +1900,7 @@ the expression \verb|my_record.a| evaluates to the value \texttt{3}.
       \item \Proseannotateexpr{$\tenv$}{$\veslice$}{\\ $(\vt, \newe, \vses)$}\ProseOrTypeError.
     \end{itemize}
 
-    \item \AllApplyCase{record}:
+    \item \AllApplyCase{record}
     \begin{itemize}
       \item $\tbaseannotanon$ is a record type with list of fields $\vbasefields$\ProseOrTypeError;
       \item applying $\getbitfieldwidth$ to $\vf$ in $\vbasefields$ and $\vbasefields$, for each $\vf$ in $\vbasefields$, in $\tenv$ yields $\ewidth_\vf$\ProseOrTypeError;
@@ -1915,7 +1912,7 @@ the expression \verb|my_record.a| evaluates to the value \texttt{3}.
       \item define $\vses$ as $\vsesbase$.
     \end{itemize}
 
-    \item \AllApplyCase{error}:
+    \item \AllApplyCase{error}
     \begin{itemize}
       \item $\tbaseannotanon$ is neither a bitvector type nor a record type;
       \item the result is a type error indicating an unexpected type.
@@ -1976,23 +1973,23 @@ in $\vslices$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{found}:
+  \item \AllApplyCase{found}
   \begin{itemize}
     \item $\vbitfields$ is a list with \head\ $\vfield$ and \tail\ $\vbitfieldsone$;
     \item applying $\bitfieldgetname$ to $\vfield$ yields $\name$;
     \item applying $\bitfieldgetslices$ to $\vfield$ yields $\vslices$.
   \end{itemize}
 
-  \item \AllApplyCase{tail}:
+  \item \AllApplyCase{tail}
   \begin{itemize}
     \item $\vbitfields$ is a list with \head\ $\vfield$ and \tail\ $\vbitfieldsone$;
     \item applying $\bitfieldgetname$ to $\vfield$ yields $\namep$, which is different to $\name$;
     \item applying $\findbitfieldsslices$ to $\name$ and $vbitfieldsone$ yields $\vslices$\ProseOrTypeError.
   \end{itemize}
 
-  \item \AllApplyCase{error}:
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item $\vbitfields$ is an empty list;
     \item the result is a type error indicating that a bitfield named $\name$ does not exist in $\vbitfields$.
@@ -2040,15 +2037,15 @@ in the list of fields $\tfields$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{okay}:
+  \item \AllApplyCase{okay}
   \begin{itemize}
     \item applying $\assocopt$ to find the type associated with $\name$ in $\tfields$ yields the type $\vt$;
     \item applying $\getbitvectorwidth$ to $\vt$ in $\tenv$ yields $\ewidth$.
   \end{itemize}
 
-  \item \AllApplyCase{error}:
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item applying $\assocopt$ to find the type associated with $\name$ in $\tfields$ yields $\None$;
     \item the result is a type error indicating that $\name$ is not associated with any field in $\tfields$.
@@ -2086,15 +2083,15 @@ normalized in the static environment $\tenv$.
 \ProseOrTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{empty}:
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\exprs$ is an empty list;
     \item $\ewidth$ is the literal expression for $0$.
   \end{itemize}
 
-  \item \AllApplyCase{non\_empty}:
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\exprs$ is the list with \head\ $\ve$ and \tail\ $\exprsone$;
     \item applying $\widthplus$ to $\exprsone$ yields $\ewidthone$;
@@ -2254,22 +2251,22 @@ are compatible for a typing assertion in the static environment $\tenv$, yieldin
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{equal}:
+  \item \AllApplyCase{equal}
   \begin{itemize}
     \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\True$\ProseOrTypeError;
     \item the result is $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{different\_labels\_error}:
+  \item \AllApplyCase{different\_labels\_error}
   \begin{itemize}
     \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item the AST labels of $\vtone$ and $\vttwo$ are different;
     \item the result is a type error indicating that the type assertion will always fail.
   \end{itemize}
 
-  \item \AllApplyCase{int\_bits}:
+  \item \AllApplyCase{int\_bits}
   \begin{itemize}
     \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item the AST labels of $\vtone$ and $\vttwo$ are the same;
@@ -2277,7 +2274,7 @@ One of the following applies:
     \item the result is $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{tuple}:
+  \item \AllApplyCase{tuple}
   \begin{itemize}
     \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item $\vtone$ is a tuple type with list of tuples $\vlone$, that is, $\TTuple(\vlone)$;
@@ -2287,7 +2284,7 @@ One of the following applies:
     \item the result is $\True$;
   \end{itemize}
 
-  \item \AllApplyCase{other\_error}:
+  \item \AllApplyCase{other\_error}
   \begin{itemize}
     \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item the AST labels of $\vtone$ and $\vttwo$ are the same;
@@ -2371,14 +2368,14 @@ evaluated:
 \item $\ve$ denotes an asserted type conversion expression, $\EATC(\veone, \vt)$;
 \item evaluating $\veone$ in $\env$ results in $\Normal((\vv, \vgone), \newenv)$\ProseOrAbnormal;
 \item evaluating whether $\vv$ has type $\vt$ in $\env$ results in $(\vb, \vgtwo)$\ProseTerminateAs{\DynErrorConfig};
-\item one of the following applies:
+\item \OneApplies
       \begin{itemize}
-      \item \AllApplyCase{okay}:
+      \item \AllApplyCase{okay}
             \begin{itemize}
             \item $\vb$ is the native Boolean for \True;
             \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
             \end{itemize}
-      \item \AllApplyCase{error}:
+      \item \AllApplyCase{error}
             \begin{itemize}
             \item $\vb$ is the native Boolean for \False;
             \item the result is a dynamic error indicating that the type assertion failed
@@ -2427,9 +2424,9 @@ only returns \False\ in cases where dynamic information is required.
 Recall that the $\vt$ is the result of $\annotatetype$, which ensures that
 all sub-expressions appearing in $\vt$ are side-effect-free.
 
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{type\_equal}:
+  \item \AllApplyCase{type\_equal}
   \begin{itemize}
     \item the AST label of $\vt$ is not $\TInt$, $\TBits$, or $\TTuple$;
     \item $\vb$ is $\True$ (since \TypingRuleRef{ATC}
@@ -2437,14 +2434,14 @@ One of the following applies:
     \item $\vg$ is the empty graph.
   \end{itemize}
 
-  \item \AllApplyCase{int\_unconstrained}:
+  \item \AllApplyCase{int\_unconstrained}
   \begin{itemize}
     \item $\vt$ has the structure of the unconstrained integer;
     \item $\vb$ is \True;
     \item $\vg$ is the empty graph.
   \end{itemize}
 
-  \item \AllApplyCase{int\_wellconstrained}:
+  \item \AllApplyCase{int\_wellconstrained}
   \begin{itemize}
     \item $\vt$ has the structure of a well-constrained integer with constraints $\vc_{1..k}$;
     \item $\vv$ is the \nativevalue\  integer for $n$;
@@ -2454,7 +2451,7 @@ One of the following applies:
     \item $\vg$ is the parallel composition of all execution graphs $\vg_i$, for $i=1..k$;
   \end{itemize}
 
-  \item \AllApplyCase{bits}:
+  \item \AllApplyCase{bits}
   \begin{itemize}
     \item $\vt$ is a bitvector type with expression $\ve$, that is, $\TBits(\ve, \Ignore)$;
     \item $\vv$ is a native bitvector value for the sequence of bits $\vbits$, that is, \\ $\nvbitvector(\vbits)$;
@@ -2462,7 +2459,7 @@ One of the following applies:
     \item \Proseeqdef{$\vb$}{$\True$ if and only if $\vvp$ is equal to the number of bits in $\vbits$}.
   \end{itemize}
 
-  \item \AllApplyCase{tuple}:
+  \item \AllApplyCase{tuple}
   \begin{itemize}
     \item $\vt$ is a tuple with types $\vt_i$, for $i=1..k$;
     \item the value at every index $i=1..k$ of $\vv$ is $\vu_i$, for $i=1..k$,
@@ -2546,9 +2543,9 @@ and returns a Boolean answer $\vb$ and the execution graph $\vg$ resulting from 
 the expressions appearing in $\vc$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{Constraint\_Exact\_Sat}:
+  \item \AllApplyCase{Constraint\_Exact\_Sat}
   \begin{itemize}
     \item $\vc$ is a constraint for the expression $\ve$;
     \item evaluating the side-effect-free expression $\ve$ in $\env$ yields the \concurrentnativevalue\ given
@@ -2556,7 +2553,7 @@ One of the following applies:
     \item \Proseeqdef{$\vb$}{$\True$ if and only if $m$ is equal to $n$}.
   \end{itemize}
 
-  \item \AllApplyCase{Constraint\_Range\_Sat}:
+  \item \AllApplyCase{Constraint\_Range\_Sat}
   \begin{itemize}
     \item $\vc$ is a constraint for the expressions $\veone$ and $\vetwo$;
     \item evaluating the side-effect-free expression $\veone$ in $\env$ yields the \concurrentnativevalue\ given
@@ -2786,9 +2783,9 @@ and how to obtain an arbitrary enumeration-indexed array, \texttt{enum\_array}.
 \AllApply
 \begin{itemize}
   \item $\ve$ denotes the \texttt{ARBITRARY} expression annotated with type $\vt$;
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{okay}:
+    \item \AllApplyCase{okay}
     \begin{itemize}
       \item the domain of $\vt$ in $\env$ (see \secref{DynDomain}) is not empty;
       \item $\vv$ is an arbitrary value in the domain of $\vt$ in $\env$;
@@ -2796,7 +2793,7 @@ and how to obtain an arbitrary enumeration-indexed array, \texttt{enum\_array}.
       \item $\vg$ is the empty execution graph.
     \end{itemize}
 
-    \item \AllApplyCase{error}:
+    \item \AllApplyCase{error}
     \begin{itemize}
       \item the domain of $\vt$ in $\env$ is empty;
       \item the result is a dynamic error (\ArbitraryEmptyType) indicating that the type $\vt$ has an empty
@@ -3042,16 +3039,16 @@ $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
 \subsection{Typing}
 \TypingRuleDef{ETuple}
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{parenthesized}:
+  \item \AllApplyCase{parenthesized}
   \begin{itemize}
     \item $\ve$ denotes a tuple expression with list of expressions consisting solely of $\vep$, that is, $\ETuple([\vep])$,
           meaning it represents a parenthesized expression (see \ASTRuleRef{ParenExpr});
     \item annotating $\vep$ in $\tenv$ yields $(\vt, \newe, \vses)$\ProseOrTypeError.
   \end{itemize}
 
-  \item \AllApplyCase{list}:
+  \item \AllApplyCase{list}
   \begin{itemize}
     \item $\ve$ denotes a tuple expression with list of expressions $\vli$, that is, $ \ETuple(\vli)$;
     \item $\vli$ consists of at least two expressions;

@@ -25,21 +25,21 @@ are bound in $\tenv$. Therefore, a dynamic environment is constructed from the c
 \AllApply
 \begin{itemize}
   \item applying $\staticenvtoenv$ to $\tenv$ yields $\env$;
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{normal\_literal}:
+    \item \AllApplyCase{normal\_literal}
     \begin{itemize}
       \item evaluating $\ve$ in $\env$ yields $\Normal(\nvliteral{\vv}, \Ignore)$.
     \end{itemize}
 
-    \item \AllApplyCase{normal\_non\_literal}:
+    \item \AllApplyCase{normal\_non\_literal}
     \begin{itemize}
       \item evaluating $\ve$ in $\env$ yields $\Normal(\vx, \Ignore)$
             where $\vx$ is not a native value for a literal;
       \item the result is a type error indicating that $\ve$ cannot be statically evaluated to a literal.
     \end{itemize}
 
-    \item \AllApplyCase{abnormal}:
+    \item \AllApplyCase{abnormal}
     \begin{itemize}
       \item evaluating $\ve$ in $\env$ yields an abnormal configuration;
       \item the result is a type error indicating that $\ve$ cannot be statically evaluated to a literal.

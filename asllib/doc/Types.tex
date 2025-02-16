@@ -308,14 +308,14 @@ correspond to \CaseName{pending\_constrained}.
 {\typingtests/TypingRule.TInt.rhs_pending_constrained.bad.asl}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{pending\_constrained}:
+  \item \AllApplyCase{pending\_constrained}
     \begin{itemize}
       \item $\tty$ is a \pendingconstrainedintegertype;
       \item the result is a type error (\UnexpectedType).
     \end{itemize}
-  \item \AllApplyCase{well\_constrained}:
+  \item \AllApplyCase{well\_constrained}
     \begin{itemize}
       \item $\tty$ is the well-constrained integer type constrained by
         constraints $\vc_i$, for $u=1..k$;
@@ -328,7 +328,7 @@ One of the following applies:
       \item define $\vses$ as the union of all $\vxs_i$, for $i=1..k$.
     \end{itemize}
 
-    \item \AllApplyCase{parameterized}:
+    \item \AllApplyCase{parameterized}
     \begin{itemize}
       \item $\tty$ is a \parameterizedintegertype\ for $\name$;
       \item define $\vses$ as the singleton set for the singleton \sideeffectdescriptorterm,
@@ -336,7 +336,7 @@ One of the following applies:
       \item $\newty$ is the unconstrained integer type.
     \end{itemize}
 
-    \item \AllApplyCase{unconstrained}:
+    \item \AllApplyCase{unconstrained}
     \begin{itemize}
       \item $\tty$ is an \unconstrainedintegertype;
       \item $\newty$ is the unconstrained integer type;
@@ -420,9 +420,9 @@ In \listingref{annotate-constraint-unconstrained}, the constraint
 \ASLListing{Ill-typed constraint}{annotate-constraint-unconstrained}{\typingtests/TypingRule.AnnotateConstraint.bad.asl}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{exact}:
+  \item \AllApplyCase{exact}
   \begin{itemize}
     \item $\vc$ is the exact integer constraint for the expression $\ve$, that is, \\ $\ConstraintExact(\ve)$;
     \item applying $\annotatesymbolicconstrainedinteger$ to $\ve$ in $\tenv$ yields \\
@@ -430,7 +430,7 @@ One of the following applies:
     \item define $\newc$ as the exact integer constraint for $\vep$, that is, $\ConstraintExact(\vep)$.
   \end{itemize}
 
-  \item \AllApplyCase{range}:
+  \item \AllApplyCase{range}
   \begin{itemize}
     \item $\vc$ is the range integer constraint for expressions $\veone$ and $\vetwo$, that is, \\ $\ConstraintRange(\veone, \vetwo)$;
     \item applying $\annotatesymbolicconstrainedinteger$ to $\veone$ in $\tenv$ yields\\ $(\veonep, \vsesone)$\ProseOrTypeError;
@@ -795,9 +795,9 @@ In \listingref{typing-tarray}, all the uses of array types are well-typed.
 \begin{itemize}
   \item $\tty$ is the array type with element type $\vt$;
   \item Annotating the type $\vt$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{expr\_is\_enum}:
+    \item \AllApplyCase{expr\_is\_enum}
     \begin{itemize}
       \item the array index is $\ve$ and determining whether $\ve$ corresponds to an enumeration in $\tenv$
       via $\getvariableenum$ yields the enumeration variable
@@ -807,7 +807,7 @@ In \listingref{typing-tarray}, all the uses of array types are well-typed.
       \item define $\vses$ as $\vsest$.
     \end{itemize}
 
-    \item \AllApplyCase{expr\_not\_enum}:
+    \item \AllApplyCase{expr\_not\_enum}
     \begin{itemize}
       \item the array index is $\ve$ and determining whether $\ve$ corresponds to an enumeration in $\tenv$
       via $\getvariableenum$ yields $\None$ (meaning it does not
@@ -860,22 +860,22 @@ declared for the enumeration type.
 Otherwise, the result is $\None$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{not\_evar}:
+  \item \AllApplyCase{not\_evar}
   \begin{itemize}
     \item $\ve$ is not a variable expression;
     \item the result is $\None$.
   \end{itemize}
 
-  \item \AllApplyCase{no\_declared\_type}:
+  \item \AllApplyCase{no\_declared\_type}
   \begin{itemize}
     \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
     \item $\vx$ is not associated with a type in the global environment of $\tenv$;
     \item the result is $\None$.
   \end{itemize}
 
-  \item \AllApplyCase{declared\_enum}:
+  \item \AllApplyCase{declared\_enum}
   \begin{itemize}
     \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
     \item $\vx$ is associated with a type $\vt$ in the global environment of $\tenv$;
@@ -883,7 +883,7 @@ One of the following applies:
     \item the result is the pair consisting of $\vx$ and $\vlabels$.
   \end{itemize}
 
-  \item \AllApplyCase{declared\_not\_enum}:
+  \item \AllApplyCase{declared\_not\_enum}
   \begin{itemize}
     \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
     \item $\vx$ is associated with a type $\vt$ in the global environment of $\tenv$;
@@ -1001,16 +1001,16 @@ The function
 returns $\True$ is $\vt$ is has the \structure\ an integer type and a type error otherwise.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{okay}:
+  \item \AllApplyCase{okay}
   \begin{itemize}
     \item determining the \structure\ of $\vt$ yields $\vtp$\ProseOrTypeError;
     \item $\vtp$ is an integer type;
     \item the result is $\True$;
   \end{itemize}
 
-  \item \AllApplyCase{error}:
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item determining the \structure\ of $\vt$ yields $\vtp$\ProseOrTypeError;
     \item $\vtp$ is not an integer type;

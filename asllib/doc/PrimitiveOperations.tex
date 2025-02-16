@@ -480,34 +480,34 @@ not_bits: NOT '11 01' = 0x2
 % CONSOLE_END
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{error}:
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item $(\op, \astlabel(\vl))$ is not in $\unopsignatures$;
     \item the result is a type error indicating that the combination of $\op$ and $\astlabel(\vl)$
           is not legal.
   \end{itemize}
 
-  \item \AllApplyCase{negate\_int}:
+  \item \AllApplyCase{negate\_int}
   \begin{itemize}
     \item $\op$ is $\NEG$ and $\vl$ is an integer literal for $\vn$;
     \item define $\vr$ as the integer literal for $- \vn$.
   \end{itemize}
 
-  \item \AllApplyCase{negate\_real}:
+  \item \AllApplyCase{negate\_real}
   \begin{itemize}
     \item $\op$ is $\NEG$ and $\vl$ is a real literal for $\vq$;
     \item define $\vr$ as the real literal for $- \vq$.
   \end{itemize}
 
-  \item \AllApplyCase{not\_bool}:
+  \item \AllApplyCase{not\_bool}
   \begin{itemize}
     \item $\op$ is $\BNOT$ and $\vl$ is a Boolean literal for $\vb$;
     \item define $\vr$ as the Boolean literal for $\neg\vb$.
   \end{itemize}
 
-  \item \AllApplyCase{not\_bits\_empty}, \textsc{not\_bits\_empty}:
+  \item \AllApplyCase{not\_bits\_empty}, \textsc{not\_bits\_empty}
   \begin{itemize}
     \item $\op$ is $\NOT$ and $\vl$ is a bitvector literal for the sequence of bits $\bits$;
     \item $\vc$ is the sequence of bits of the same length as $\bits$ where in each position
@@ -780,34 +780,34 @@ and argument types of its operand literals:
 \]
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{error}:
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item $(\op, \astlabel(\vlone), \astlabel(\vltwo))$ is not included in $\binopsignatures$;
     \item the result is a type error indicating the $\op$ cannot be applied to the arguments
           with the types given by $\astlabel(\vlone)$ and $\astlabel(\vltwo)$.
   \end{itemize}
 
-  \item \AllApplyCase{add\_int}:
+  \item \AllApplyCase{add\_int}
   \begin{itemize}
     \item $\op$ is $\PLUS$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the literal integer for $a+b$.
   \end{itemize}
 
-  \item \AllApplyCase{sub\_int}:
+  \item \AllApplyCase{sub\_int}
   \begin{itemize}
     \item $\op$ is $\MINUS$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the literal integer for $a-b$.
   \end{itemize}
 
-  \item \AllApplyCase{mul\_int}:
+  \item \AllApplyCase{mul\_int}
   \begin{itemize}
     \item $\op$ is $\MUL$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the literal integer for $a\times b$.
   \end{itemize}
 
-  \item \AllApplyCase{div\_int}:
+  \item \AllApplyCase{div\_int}
   \begin{itemize}
     \item $\op$ is $\DIV$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item checking that $b$ is positive yields $\True$\ProseOrTypeError;
@@ -816,7 +816,7 @@ One of the following applies:
     \item define $\vr$ as the literal integer for $a\div b$.
   \end{itemize}
 
-  \item \AllApplyCase{fdiv\_int}:
+  \item \AllApplyCase{fdiv\_int}
   \begin{itemize}
     \item $\op$ is $\DIVRM$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item checking that $b$ is positive yields $\True$\ProseOrTypeError;
@@ -824,7 +824,7 @@ One of the following applies:
     \item define $\vr$ as the literal integer for $n$.
   \end{itemize}
 
-  \item \AllApplyCase{frem\_int}:
+  \item \AllApplyCase{frem\_int}
   \begin{itemize}
     \item $\op$ is $\MOD$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item applying $\binopliterals$ to $\DIVRM$ with $\vlone$ and $\vltwo$ yields $c$\ProseOrTypeError;
@@ -832,7 +832,7 @@ One of the following applies:
     \item define $\vr$ as the literal integer for $n$.
   \end{itemize}
 
-  \item \AllApplyCase{exp\_int}:
+  \item \AllApplyCase{exp\_int}
   \begin{itemize}
     \item $\op$ is $\POW$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item checking that $b$ is non-negative yields $\True$\ProseOrTypeError;
@@ -840,7 +840,7 @@ One of the following applies:
     \item define $\vr$ as the literal integer for $n$.
   \end{itemize}
 
-  \item \AllApplyCase{shl}:
+  \item \AllApplyCase{shl}
   \begin{itemize}
     \item $\op$ is $\SHL$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item checking that $b$ is non-negative yields $\True$\ProseOrTypeError;
@@ -848,7 +848,7 @@ One of the following applies:
     \item applying $\binopliterals$ to $\MUL$ with $2$ and the literal integer for $e$ yields $\vr$.
   \end{itemize}
 
-  \item \AllApplyCase{shr}:
+  \item \AllApplyCase{shr}
   \begin{itemize}
     \item $\op$ is $\SHR$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item checking that $b$ is non-negative yields $\True$\ProseOrTypeError;
@@ -856,98 +856,98 @@ One of the following applies:
     \item applying $\binopliterals$ to $\DIVRM$ with $2$ and the literal integer for $e$ yields $\vr$.
   \end{itemize}
 
-  \item \AllApplyCase{eq\_int}:
+  \item \AllApplyCase{eq\_int}
   \begin{itemize}
     \item $\op$ is $\EQOP$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
   \end{itemize}
 
-  \item \AllApplyCase{ne\_int}:
+  \item \AllApplyCase{ne\_int}
   \begin{itemize}
     \item $\op$ is $\NEQ$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$ holds.
   \end{itemize}
 
-  \item \AllApplyCase{le\_int}:
+  \item \AllApplyCase{le\_int}
   \begin{itemize}
     \item $\op$ is $\LEQ$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than or equal to $b$s.
   \end{itemize}
 
-  \item \AllApplyCase{lt\_int}:
+  \item \AllApplyCase{lt\_int}
   \begin{itemize}
     \item $\op$ is $\LT$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than $b$s.
   \end{itemize}
 
-  \item \AllApplyCase{ge\_int}:
+  \item \AllApplyCase{ge\_int}
   \begin{itemize}
     \item $\op$ is $\GEQ$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater or equal than $b$s.
   \end{itemize}
 
-  \item \AllApplyCase{gt\_int}:
+  \item \AllApplyCase{gt\_int}
   \begin{itemize}
     \item $\op$ is $\GT$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater than $b$s.
   \end{itemize}
 
-  \item \AllApplyCase{and\_bool}:
+  \item \AllApplyCase{and\_bool}
   \begin{itemize}
     \item $\op$ is $\BAND$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if both $a$ and $b$ are $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{or\_bool}:
+  \item \AllApplyCase{or\_bool}
   \begin{itemize}
     \item $\op$ is $\BOR$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if at least one of $a$ and $b$ is $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{implies\_bool}:
+  \item \AllApplyCase{implies\_bool}
   \begin{itemize}
     \item $\op$ is $\IMPL$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is $\False$ or $b$ is $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{eq\_bool}:
+  \item \AllApplyCase{eq\_bool}
   \begin{itemize}
     \item $\op$ is $\EQOP$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
   \end{itemize}
 
-  \item \AllApplyCase{ne\_bool}:
+  \item \AllApplyCase{ne\_bool}
   \begin{itemize}
     \item $\op$ is $\NEQ$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
   \end{itemize}
 
-  \item \AllApplyCase{add\_real}:
+  \item \AllApplyCase{add\_real}
   \begin{itemize}
     \item $\op$ is $\PLUS$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the real literal for $a + b$.
   \end{itemize}
 
-  \item \AllApplyCase{sub\_real}:
+  \item \AllApplyCase{sub\_real}
   \begin{itemize}
     \item $\op$ is $\MINUS$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the real literal for $a - b$.
   \end{itemize}
 
-  \item \AllApplyCase{mul\_real}:
+  \item \AllApplyCase{mul\_real}
   \begin{itemize}
     \item $\op$ is $\MUL$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the real literal for $a \times b$.
   \end{itemize}
 
-  \item \AllApplyCase{div\_real}:
+  \item \AllApplyCase{div\_real}
   \begin{itemize}
     \item $\op$ is $\RDIV$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item checking whether $b$ is different from $0$ yields $\True$\ProseOrTypeError;
     \item define $\vr$ as the real literal for $a \div b$.
   \end{itemize}
 
-  \item \AllApplyCase{exp\_real}:
+  \item \AllApplyCase{exp\_real}
   \begin{itemize}
     \item $\op$ is $\POW$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal integer for $b$;
     \item since exponentiation is undefined when $a$ is 0 and $b$ is negative,
@@ -955,43 +955,43 @@ One of the following applies:
     \item define $\vr$ as the real literal for $a^b$.
   \end{itemize}
 
-  \item \AllApplyCase{eq\_real}:
+  \item \AllApplyCase{eq\_real}
   \begin{itemize}
     \item $\op$ is $\EQOP$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
   \end{itemize}
 
-  \item \AllApplyCase{ne\_real}:
+  \item \AllApplyCase{ne\_real}
   \begin{itemize}
     \item $\op$ is $\NEQ$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
   \end{itemize}
 
-  \item \AllApplyCase{le\_real}:
+  \item \AllApplyCase{le\_real}
   \begin{itemize}
     \item $\op$ is $\LEQ$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than or equal to $b$.
   \end{itemize}
 
-  \item \AllApplyCase{lt\_real}:
+  \item \AllApplyCase{lt\_real}
   \begin{itemize}
     \item $\op$ is $\LT$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than $b$.
   \end{itemize}
 
-  \item \AllApplyCase{ge\_real}:
+  \item \AllApplyCase{ge\_real}
   \begin{itemize}
     \item $\op$ is $\GEQ$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater than or equal to $b$.
   \end{itemize}
 
-  \item \AllApplyCase{gt\_real}:
+  \item \AllApplyCase{gt\_real}
   \begin{itemize}
     \item $\op$ is $\GT$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater than $b$.
   \end{itemize}
 
-  \item \AllApplyCase{bitwise\_different\_bitwidths}:
+  \item \AllApplyCase{bitwise\_different\_bitwidths}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a$;
     \item $\vvtwo$ is a bitvector literal for $b$;
@@ -999,7 +999,7 @@ One of the following applies:
     \item the result is a type error indicating that the bitvectors must be of the same width.
   \end{itemize}
 
-  \item \AllApplyCase{bitwise\_empty}:
+  \item \AllApplyCase{bitwise\_empty}
   \begin{itemize}
     \item $\vvone$ is the empty bitvector literal;
     \item $\vvtwo$ is the empty bitvector literal;
@@ -1007,7 +1007,7 @@ One of the following applies:
     \item define $\vr$ as the empty bitvector literal.
   \end{itemize}
 
-  \item \AllApplyCase{eq\_bits\_empty}:
+  \item \AllApplyCase{eq\_bits\_empty}
   \begin{itemize}
     \item $\vvone$ is the empty bitvector literal;
     \item $\vvtwo$ is the empty bitvector literal;
@@ -1015,7 +1015,7 @@ One of the following applies:
     \item define $\vr$ as the Boolean literal for $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{eq\_bits\_not\_empty}:
+  \item \AllApplyCase{eq\_bits\_not\_empty}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a_{1..k}$;
     \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
@@ -1024,7 +1024,7 @@ One of the following applies:
     \item define $\vr$ as the Boolean literal for $\vb$.
   \end{itemize}
 
-  \item \AllApplyCase{ne\_bits}:
+  \item \AllApplyCase{ne\_bits}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a$;
     \item $\vvtwo$ is a bitvector literal for $b$;
@@ -1033,7 +1033,7 @@ One of the following applies:
     \item define $\vr$ as the Boolean literal for $\neg\vb$.
   \end{itemize}
 
-  \item \AllApplyCase{or\_bits}:
+  \item \AllApplyCase{or\_bits}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a_{1..k}$;
     \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
@@ -1042,7 +1042,7 @@ One of the following applies:
     \item define $\vr$ as the bitvector literal for $c_{1..k}$.
   \end{itemize}
 
-  \item \AllApplyCase{and\_bits}:
+  \item \AllApplyCase{and\_bits}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a_{1..k}$;
     \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
@@ -1051,7 +1051,7 @@ One of the following applies:
     \item define $\vr$ as the bitvector literal for $c_{1..k}$.
   \end{itemize}
 
-  \item \AllApplyCase{xor\_bits}:
+  \item \AllApplyCase{xor\_bits}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a_{1..k}$;
     \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
@@ -1060,7 +1060,7 @@ One of the following applies:
     \item define $\vr$ as the bitvector literal for $c_{1..k}$.
   \end{itemize}
 
-  \item \AllApplyCase{add\_bits}:
+  \item \AllApplyCase{add\_bits}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a_{1..k}$;
     \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
@@ -1071,7 +1071,7 @@ One of the following applies:
     \item define $\vr$ as the bitvector literal for $c$.
   \end{itemize}
 
-  \item \AllApplyCase{sub\_bits}:
+  \item \AllApplyCase{sub\_bits}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a_{1..k}$;
     \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
@@ -1082,7 +1082,7 @@ One of the following applies:
     \item define $\vr$ as the bitvector literal for $c$.
   \end{itemize}
 
-  \item \AllApplyCase{concat\_bits}:
+  \item \AllApplyCase{concat\_bits}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a_{1..k}$;
     \item $\vvtwo$ is a bitvector literal for $b_{1..l}$;
@@ -1090,7 +1090,7 @@ One of the following applies:
     \item define $\vr$ as the bitvector literal for $a_{1..k}b_{1..l}$.
   \end{itemize}
 
-  \item \AllApplyCase{add\_bits\_int}:
+  \item \AllApplyCase{add\_bits\_int}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a$;
     \item $\vvtwo$ is an integer literal for $b$;
@@ -1100,7 +1100,7 @@ One of the following applies:
     \item define $\vr$ as the bitvector literal for $c$.
   \end{itemize}
 
-  \item \AllApplyCase{sub\_bits\_int}:
+  \item \AllApplyCase{sub\_bits\_int}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a$;
     \item $\vvtwo$ is an integer literal for $b$;
@@ -1110,25 +1110,25 @@ One of the following applies:
     \item define $\vr$ as the bitvector literal for $c$.
   \end{itemize}
 
-  \item \AllApplyCase{eq\_string}:
+  \item \AllApplyCase{eq\_string}
   \begin{itemize}
     \item $\op$ is $\EQOP$, $\vlone$ is the literal string for $a$, and $\vltwo$ is the literal string for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
   \end{itemize}
 
-  \item \AllApplyCase{ne\_string}:
+  \item \AllApplyCase{ne\_string}
   \begin{itemize}
     \item $\op$ is $\NEQ$, $\vlone$ is the literal string for $a$, and $\vltwo$ is the literal string for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
   \end{itemize}
 
-  \item \AllApplyCase{eq\_label}:
+  \item \AllApplyCase{eq\_label}
   \begin{itemize}
     \item $\op$ is $\EQOP$, $\vlone$ is the literal label for $a$, and $\vltwo$ is the literal label for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
   \end{itemize}
 
-  \item \AllApplyCase{ne\_label}:
+  \item \AllApplyCase{ne\_label}
   \begin{itemize}
     \item $\op$ is $\NEQ$, $\vlone$ is the literal label for $a$, and $\vltwo$ is the literal label for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
@@ -1555,23 +1555,23 @@ translates the resulting type error into the corresponding dynamic error.
 \end{mathpar}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{ok}:
+  \item \AllApplyCase{ok}
   \begin{itemize}
     \item $\vv$ is a literal native value, that is, $\nvliteral{l}$;
     \item statically evaluating $\op$ on the literal $l$ yields a literal $l'$;
     \item $\vw$ is the native literal value for $l'$.
   \end{itemize}
 
-  \item \AllApplyCase{static\_error}:
+  \item \AllApplyCase{static\_error}
   \begin{itemize}
     \item $\vv$ is a literal native value, that is, $\nvliteral{l}$;
     \item statically evaluating $\op$ on $l$ yields a type error;
     \item the result is a dynamic error.
   \end{itemize}
 
-  \item \AllApplyCase{non\_literal}:
+  \item \AllApplyCase{non\_literal}
   \begin{itemize}
     \item $\vv$ is not a literal native value;
     \item the result is a dynamic error indicating the mismatch.
@@ -1640,9 +1640,9 @@ translates the resulting type error into the corresponding dynamic error.
 \end{mathpar}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{ok}:
+  \item \AllApplyCase{ok}
   \begin{itemize}
     \item $\vvone$ is a literal native value, that is, $\nvliteral{l_1}$;
     \item $\vvtwo$ is a literal native value, that is, $\nvliteral{l_2}$;
@@ -1650,7 +1650,7 @@ One of the following applies:
     \item $\vw$ is the native literal value for $l'$.
   \end{itemize}
 
-  \item \AllApplyCase{static\_error}:
+  \item \AllApplyCase{static\_error}
   \begin{itemize}
     \item $\vvone$ is a literal native value, that is, $\nvliteral{l_1}$;
     \item $\vvtwo$ is a literal native value, that is, $\nvliteral{l_2}$;
@@ -1658,7 +1658,7 @@ One of the following applies:
     \item the result is a dynamic error ($\DynamicBadOperands$).
   \end{itemize}
 
-  \item \AllApplyCase{non\_literal}:
+  \item \AllApplyCase{non\_literal}
   \begin{itemize}
     \item either $\vvone$ or $\vvtwo$ is not a literal native value;
     \item the result is a dynamic error indicating the mismatch ($\DynamicBadOperands$).

@@ -190,15 +190,15 @@ in the global static environment $\genv$, resulting in the modified global stati
   \item applying $\maxtimeframe$ to $\vsest$ yields $\vtimeframe$;
   \item applying $\addtype$ to $\name$, $\vttwo$, and $\vtimeframe$ in $\tenv$ yields $\tenvtwo$;
   \item $\tenvtwo$ is $\tenvone$ with its $\declaredtypes$ component updated by binding $\name$ to $\vttwo$;
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{enum}:
+    \item \AllApplyCase{enum}
     \begin{itemize}
       \item $\vttwo$ is an enumeration type with labels $\ids$, that is, $\TEnum(\ids)$;
       \item applying $\declareenumlabels$ to $\vttwo$ in $\tenvtwo$ $\newtenv$\ProseOrTypeError.
     \end{itemize}
 
-    \item \AllApplyCase{not\_enum}:
+    \item \AllApplyCase{not\_enum}
     \begin{itemize}
       \item $\vttwo$ is not an enumeration type;
       \item $\newtenv$ is $\tenvtwo$.
@@ -260,16 +260,16 @@ the modified environment $\newtenv$ and type $\newty$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{none}:
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\vs$ is $\None$;
     \item $\newtenv$ is $\tenv$;
     \item $\newty$ is $\tty$.
   \end{itemize}
 
-  \item \AllApplyCase{empty\_fields}:
+  \item \AllApplyCase{empty\_fields}
   \begin{itemize}
     \item $\vs$ is $\langle(\vsuper, \extrafields)\rangle$;
     \item checking that $\tty$ \subtypesatisfies\ the named type $\vsuper$ (that is, \\ $\TNamed(\vsuper)$) yields
@@ -279,7 +279,7 @@ One of the following applies:
     \item $\newty$ is $\tty$.
   \end{itemize}
 
-  \item \AllApplyCase{no\_super}:
+  \item \AllApplyCase{no\_super}
   \begin{itemize}
     \item $\vs$ is $\langle(\vsuper, \extrafields)\rangle$;
     \item checking that $\tty$ \subtypesatisfies\ the named type $\vsuper$ (that is, \\ $\TNamed(\vsuper)$) yields
@@ -289,7 +289,7 @@ One of the following applies:
     \item the result is a type error indicating that $\vsuper$ is not a declared type.
   \end{itemize}
 
-  \item \AllApplyCase{structured}:
+  \item \AllApplyCase{structured}
   \begin{itemize}
     \item $\vs$ is $\langle(\vsuper, \extrafields)\rangle$;
     \item checking that $\tty$ \subtypesatisfies\ the named type $\vsuper$ (that is,\\ $\TNamed(\vsuper)$) yields
@@ -365,15 +365,15 @@ annotates the type $\vt$ inside an \optional\ $\tyopt$, if there is one, and lea
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{none}:
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\tyopt$ is $\None$;
     \item $\tyoptp$ is $\tyopt$.
   \end{itemize}
 
-  \item \AllApplyCase{some}:
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\tyopt$ contains the type $\vt$;
     \item annotating $\vt$ in $\tenv$ yields $\vtone$\ProseOrTypeError;
@@ -407,15 +407,15 @@ for the type and annotated expression in $\vres$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{none}:
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\expropt$ is $\None$;
     \item $\vres$ is $(\None, \None)$.
   \end{itemize}
 
-  \item \AllApplyCase{some}:
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\expropt$ contains the expression $\ve$;
     \item annotating $\ve$ in $\tenv$ yields $(\vt, \vep)$\ProseOrTypeError;
@@ -456,22 +456,22 @@ The ASL parser ensures that at least one of $\initialvaluetype$ and \\
 $\typeannotation$ should not be $\None$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{both}:
+  \item \AllApplyCase{both}
   \begin{itemize}
     \item $\initialvaluetype$ is $\langle\vtone\rangle$ and $\typeannotation$ is $\langle\vttwo\rangle$;
     \item checking that $\vtone$ \typesatisfies\ $\vttwo$ in $\tenv$ yields $\True$\ProseOrTypeError;
     \item $\declaredtype$ is $\vtone$.
   \end{itemize}
 
-  \item \AllApplyCase{annotated}:
+  \item \AllApplyCase{annotated}
   \begin{itemize}
     \item $\initialvaluetype$ is $\None$ and $\typeannotation$ is $\langle\vttwo\rangle$;
     \item $\declaredtype$ is $\vttwo$.
   \end{itemize}
 
-  \item \AllApplyCase{initial}:
+  \item \AllApplyCase{initial}
   \begin{itemize}
     \item $\initialvaluetype$ is $\langle\vtone\rangle$ and $\typeannotation$ is $\None$;
     \item $\declaredtype$ is $\vtone$.
@@ -508,14 +508,14 @@ retrieves the type associated with the identifier $\id$ in the static environmen
 If the identifier is not associated with a declared type, a type error is returned.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{exists}:
+  \item \AllApplyCase{exists}
   \begin{itemize}
     \item $\id$ is bound in the global environment to the type $\vt$.
   \end{itemize}
 
-  \item \AllApplyCase{type\_not\_declared}:
+  \item \AllApplyCase{type\_not\_declared}
   \begin{itemize}
     \item $\id$ is not bound in the global environment to any type;
     \item the result is a type error indicating the lack of a type declaration for $\id$ (\UndefinedIdentifier).

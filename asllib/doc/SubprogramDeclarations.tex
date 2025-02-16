@@ -510,16 +510,16 @@ Therefore, $\tenvwithparams$ effectively reflects the added declarations \\
 \ASLListing{A function with parameters}{typing-parameterofconstraint}{\typingtests/TypingRule.AnnotateFuncSig.asl}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{empty}:
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\params$ is the empty list;
     \item $\tenvwithparams$ is $\newtenv$;
     \item $\paramsone$ is $\acc$.
   \end{itemize}
 
-  \item \AllApplyCase{non\_empty}:
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\params$ is a list with $(\vx, \tyopt)$ as its \head\ and $\paramsp$ as its \tail;
     \item applying $\annotateoneparam$ to the parameter $(\vx, \tyopt)$ with $\tenv$ and $\newtenv$ yields the pair $\newtenvp$ and $\tty$\ProseOrTypeError;
@@ -567,15 +567,15 @@ The updated environment $\newtenvp$ and annotated parameter type $\tty$ are retu
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{type\_parameterized}:
+    \item \AllApplyCase{type\_parameterized}
     \begin{itemize}
       \item $\tyopt$ is either $\None$ or an \unconstrainedintegertype{};
       \item $\tty$ is defined as the \parameterizedintegertype\ for the identifier $\vx$.
     \end{itemize}
 
-    \item \AllApplyCase{type\_annotated}:
+    \item \AllApplyCase{type\_annotated}
     \begin{itemize}
       \item $\tyopt$ is the type $\langle\ttyp\rangle$, which is not the unconstrained integer type;
       \item annotating $\ttyp$ in $\tenv$ yields $\tty$\ProseOrTypeError.
@@ -681,30 +681,30 @@ finds the list of parameters in the type $\tty$.
 It assumes that $\tty$ appears in a function signature.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 
 \begin{itemize}
-  \item \AllApplyCase{tbits}:
+  \item \AllApplyCase{tbits}
     \begin{itemize}
       \item $\tty$ is a bitvector type, that is, $\TBits(\ve, \Ignore)$;
       \item applying $\paramsofexpr$ to $\ve$ in $\tenv$ yields $\ids$.
     \end{itemize}
 
-  \item \AllApplyCase{ttuple}:
+  \item \AllApplyCase{ttuple}
     \begin{itemize}
       \item $\tty$ is a tuple over a list of types $\tys$, that is, $\TTuple(\tys)$;
       \item applying $\paramsofty$ to each type $\tty_i$ in $\tys$ yields $\ids_i$;
       \item $\ids$ is the concatenation of all the $\ids_i$.
     \end{itemize}
 
-  \item \AllApplyCase{tint\_constrained}:
+  \item \AllApplyCase{tint\_constrained}
     \begin{itemize}
       \item $\tty$ is a \wellconstrainedintegertype, that is, $\TInt(\wellconstrained(\cs))$;
       \item applying $\paramsofconstraint$ to each constraint $\vc_i$ in $\cs$ yields $\ids_i$;
       \item $\ids$ is the concatenation of all the $\ids_i$.
     \end{itemize}
 
-  \item \AllApplyCase{other}:
+  \item \AllApplyCase{other}
     \begin{itemize}
       \item $\tty$ is not a tuple type, bitvector type, or \wellconstrainedintegertype;
       \item $\ids$ is the empty list.
@@ -758,22 +758,22 @@ finds the list of parameters in the expression $\ve$.
 It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellconstrainedintegertype{} in a function signature.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 
 \begin{itemize}
-  \item \AllApplyCase{eval}:
+  \item \AllApplyCase{eval}
     \begin{itemize}
       \item $\ve$ is a variable, that is, $\EVar(\vx)$;
       \item if $\vx$ is undefined in $\tenv$ then $\ids$ is $[\vx]$, otherwise $\ids$ is $\emptylist$.
     \end{itemize}
 
-  \item \AllApplyCase{eunop}:
+  \item \AllApplyCase{eunop}
     \begin{itemize}
       \item $\ve$ is a unary operation, that is, $\EUnop(\Ignore, \ve)$;
       \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\ids$.
     \end{itemize}
 
-  \item \AllApplyCase{ebinop}:
+  \item \AllApplyCase{ebinop}
     \begin{itemize}
       \item $\ve$ is a binary operation, that is, $\EBinop(\Ignore, \veone, \vetwo)$;
       \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\idsone$;
@@ -781,7 +781,7 @@ One of the following applies:
       \item define $\ids$ as the concatenation of $\idsone$ and $\idstwo$.
     \end{itemize}
 
-  \item \AllApplyCase{other}:
+  \item \AllApplyCase{other}
     \begin{itemize}
       \item $\ve$ is not a variable, unary operation, or binary operation;
       \item $\ids$ is the empty list.
@@ -833,16 +833,16 @@ finds the list of parameters in the constraint $\vc$.
 It assumes that $\vc$ appears within a \wellconstrainedintegertype{} in a function signature.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 
 \begin{itemize}
-  \item \AllApplyCase{exact}:
+  \item \AllApplyCase{exact}
     \begin{itemize}
       \item $\vc$ is an exact constraint, that is, $\ConstraintExact(\ve)$;
       \item applying $\paramsofexpr$ to $\ve$ in $\tenv$ yields $ids$.
     \end{itemize}
 
-  \item \AllApplyCase{range}:
+  \item \AllApplyCase{range}
     \begin{itemize}
       \item $\vc$ is an range constraint, that is, $\ConstraintRange(\veone, \vetwo)$;
       \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\idsone$;
@@ -916,9 +916,9 @@ In \listingref{typing-parameterofconstraint}, the annotated arguments are
 \texttt{bv}, \texttt{bv2}, \texttt{bv3}, and \texttt{C}.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{empty}:
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\args$ is the empty list;
     \item $\tenvwithargs$ is $\newtenv$;
@@ -926,7 +926,7 @@ One of the following applies:
     \item \Proseeqdef{$\vses$}{$\vsesin$}
   \end{itemize}
 
-  \item \AllApplyCase{non\_empty}:
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\args$ is a list with $(\vx, \tty)$ as its \head\ and $\vargsp$ as its \tail;
     \item applying $\annotateonearg$ to the argument $(\vx, \tty)$ with $\tenv$ and $\newtenv$ yields
@@ -1018,9 +1018,9 @@ and the inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{no\_return\_type}:
+  \item \AllApplyCase{no\_return\_type}
   \begin{itemize}
     \item $\vreturntype$ is $\None$;
     \item $\newtenv$ is $\tenvwithargs$;
@@ -1028,7 +1028,7 @@ One of the following applies:
     \item \Proseeqdef{$\vses$}{$\vsesin$}.
   \end{itemize}
 
-  \item \AllApplyCase{has\_return\_type}:
+  \item \AllApplyCase{has\_return\_type}
   \begin{itemize}
     \item $\returntype$ is $\langle\tty\rangle$;
     \item annotating $\tty$ in $\tenvwithparams$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
@@ -1250,16 +1250,16 @@ and the environment $\newtenv$, which is updated with $\newname$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{first\_name}:
+  \item \AllApplyCase{first\_name}
   \begin{itemize}
     \item the $\overloadedsubprograms$ map in the global environment of $\tenv$ does not have a binding for $\name$;
     \item $\newtenv$ is $\tenv$ with the $\overloadedsubprograms$ updated by binding $\name$ to the singleton set containing
           $\name$.
   \end{itemize}
 
-  \item \AllApplyCase{name\_exists}:
+  \item \AllApplyCase{name\_exists}
   \begin{itemize}
     \item the $\overloadedsubprograms$ map in the global environment of $\tenv$ binds $\name$ to the set of strings $\othernames$;
     \item $\newname$ is the unique name that will be associated with the subprogram given by the identifier $\name$, list of formals $\formals$,

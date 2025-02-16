@@ -147,29 +147,29 @@ since \texttt{-} matches any value and \texttt{42} in particular.
   \item \Prosechecksymbolicallyevaluable{$\vses$};
   \item obtaining the \underlyingtype\ of $\vt$ yields $\vtstruct$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vte$ yields $\testruct$\ProseOrTypeError;
-  \item One of the following holds:
+  \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{t\_bool, t\_real, t\_int, t\_string}:
+    \item \AllApplyCase{t\_bool, t\_real, t\_int, t\_string}
     \begin{itemize}
       \item the AST label of $\vtstruct$ is one of $\TBool$, $\TReal$, $\TInt$, or $\TString$;
       \item checking that the labels of $\vtstruct$ and $\testruct$ are equal yields $\True$\ProseOrTypeError;
     \end{itemize}
 
-    \item \AllApplyCase{t\_bits}:
+    \item \AllApplyCase{t\_bits}
     \begin{itemize}
       \item the AST label of $\vtstruct$ is $\TBits$;
       \item checking that the labels of $\vtstruct$ and $\testruct$ are equal yields $\True$\ProseOrTypeError;
       \item determining whether the bitwidths of $\vtstruct$ and $\testruct$ are equal yields $\True$\ProseOrTypeError;
     \end{itemize}
 
-    \item \AllApplyCase{t\_enum}:
+    \item \AllApplyCase{t\_enum}
     \begin{itemize}
       \item the AST label of $\vtstruct$ is $\TEnum$;
       \item checking that the labels of $\vtstruct$ and $\testruct$ are equal yields $\True$\ProseOrTypeError;
       \item determining whether the lists of enumeration literals of $\vtstruct$ and $\testruct$ are equal yields $\True$\ProseOrTypeError;
     \end{itemize}
 
-    \item \AllApplyCase{error}:
+    \item \AllApplyCase{error}
     \begin{itemize}
       \item determining whether the labels of $\vtstruct$ and $\testruct$ are the same yields $\True$\ProseOrTypeError;
       \item the label of $\vtstruct$ is not one of $\TBool$, $\TReal$, $\TInt$, $\TBits$, or $\TEnum$;

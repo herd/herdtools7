@@ -25,15 +25,15 @@ defines whether the type $\vtone$ subtypes the type $\vttwo$ in the static envir
 yielding the result in $\vb$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{reflexive}:
+  \item \AllApplyCase{reflexive}
   \begin{itemize}
     \item $\vtone$ and $\vttwo$ are both the same named type;
     \item $\vb$ is $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{transitive}:
+  \item \AllApplyCase{transitive}
   \begin{itemize}
     \item $\vtone$ is a named type with name $\idone$, that is $\TNamed(\idone)$;
     \item $\vttwo$ is a named type with name $\idtwo$, that is $\TNamed(\idtwo)$, such that $\idone$ is different from $\idtwo$;
@@ -42,7 +42,7 @@ One of the following applies:
     gives $\vb$.
   \end{itemize}
 
-  \item \AllApplyCase{no\_supertype}:
+  \item \AllApplyCase{no\_supertype}
   \begin{itemize}
     \item $\vtone$ is a named type with name $\idone$, that is $\TNamed(\idone)$;
     \item $\vttwo$ is a named type with name $\idtwo$, that is $\TNamed(\idtwo)$, such that $\idone$ is different from $\idtwo$;
@@ -50,7 +50,7 @@ One of the following applies:
     \item $\vb$ is $\False$.
   \end{itemize}
 
-  \item \AllApplyCase{not\_named}:
+  \item \AllApplyCase{not\_named}
   \begin{itemize}
     \item at least one of $\vtone$ and $\vttwo$ is not a named type;
     \item $\vb$ is $\False$.
@@ -107,50 +107,50 @@ returning the result $\vb$ or a type error, if one is detected.
 The function assumes that both $\vt$ and $\vs$ are well-typed according to \chapref{Types}.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-\item \AllApplyCase{error1}:
+\item \AllApplyCase{error1}
   \begin{itemize}
   \item obtaining the \underlyingtype\ of $\vt$ gives a type error;
   \item the rule results in a type error.
   \end{itemize}
 
-\item \AllApplyCase{error2}:
+\item \AllApplyCase{error2}
   \begin{itemize}
     \item obtaining the \underlyingtype\ of $\vt$ gives a type $\vttwo$;
     \item obtaining the \underlyingtype\ of $\vs$ gives a type error;
     \item the rule results in a type error.
     \end{itemize}
 
-\item \AllApplyCase{different\_labels}:
+\item \AllApplyCase{different\_labels}
   \begin{itemize}
   \item the underlying types of $\vt$ and $\vs$ have different AST labels
   (for example, \texttt{integer} and \texttt{real});
   \item $\vb$ is $\False$.
   \end{itemize}
 
-\item \AllApplyCase{simple}:
+\item \AllApplyCase{simple}
   \begin{itemize}
   \item the \underlyingtype\ of $\vt$, $\vttwo$, is either \texttt{real}, \texttt{string}, or \texttt{bool};
   \item the \underlyingtype\ of $\vs$, $\vstwo$, is either \texttt{real}, \texttt{string}, or \texttt{bool};
   \item $\vb$ is $\True$ if and only if both $\vttwo$ and $\vstwo$ have the same ASL label.
   \end{itemize}
 
-\item \AllApplyCase{t\_int}:
+\item \AllApplyCase{t\_int}
   \begin{itemize}
   \item the \underlyingtype\ of $\vt$, $\vttwo$, is an \texttt{integer} (any kind);
   \item the \underlyingtype\ of $\vs$, $\vstwo$, is an \texttt{integer} (any kind);
   \item determining whether $\vs$ subsumes $\vt$ in $\tenv$ via symbolic reasoning results in $\vb$.
   \end{itemize}
 
-\item \AllApplyCase{t\_enum}:
+\item \AllApplyCase{t\_enum}
   \begin{itemize}
   \item the \underlyingtype\ of $\vt$ is an enumeration type with list of labels $\vlit$, that is, $\TEnum(\vlit)$;
   \item the \underlyingtype\ of $\vs$ is an enumeration type with list of labels $\vlis$, that is, $\TEnum(\vlis)$;
   \item $\vb$ is $\True$ if and only if $\vlit$ is equal to $\vlis$.
   \end{itemize}
 
-\item \AllApplyCase{t\_bits}:
+\item \AllApplyCase{t\_bits}
   \begin{itemize}
   \item the \underlyingtype\ of $\vs$ is a bitvector type with width $\ws$ and bit fields $\bfss$, that is $\TBits(\ws, \bfss)$;
   \item the \underlyingtype\ of $\vt$ is a bitvector type with width $\wt$ and bit fields $\bfst$, that is $\TBits(\wt, \bfst)$;
@@ -158,7 +158,7 @@ One of the following applies:
   \item determining whether the \symbolicdomain{} of bitwidth $\ws$ subsumes the \symbolicdomain{} of bitwidth $\wt$ in $\tenv$ yields $\vb$.
   \end{itemize}
 
-\item \AllApplyCase{t\_array\_expr}:
+\item \AllApplyCase{t\_array\_expr}
   \begin{itemize}
   \item $\vs$ has the \underlyingtype\ of an array with index $\vlengths$ and element type $\vtys$, that is $\TArray(\vlengths, \vtys)$;
   \item $\vt$ has the \underlyingtype\ of an array with index $\vlengtht$ and element type $\vtyt$, that is $\TArray(\vlengtht, \vtyt)$;
@@ -170,7 +170,7 @@ One of the following applies:
   \item determining whether expressions $\vlengthexprs$ and $\vlengthexprt$ are equivalent gives $\vb$.
   \end{itemize}
 
-  \item \AllApplyCase{t\_array\_enum}:
+  \item \AllApplyCase{t\_array\_enum}
   \begin{itemize}
   \item $\vs$ has the \underlyingtype\ of an array with index $\vlengths$ and element type $\vtys$, that is $\TArray(\vlengths, \vtys)$;
   \item $\vt$ has the \underlyingtype\ of an array with index $\vlengtht$ and element type $\vtyt$, that is $\TArray(\vlengtht, \vtyt)$;
@@ -182,7 +182,7 @@ One of the following applies:
   \item $\vb$ is $\True$ if and only if $\vnames$ and $\vnamet$ are the same.
   \end{itemize}
 
-\item \AllApplyCase{t\_tuple}:
+\item \AllApplyCase{t\_tuple}
   \begin{itemize}
   \item $\vs$ has the \underlyingtype\ of a tuple with type list $\vlis$, that is $\TTuple(\vlis)$;
   \item $\vt$ has the \underlyingtype\ of a tuple with type list $\vlit$, that is $\TTuple(\vlit)$;
@@ -193,7 +193,7 @@ One of the following applies:
   \item $\vb$ is $\True$ if and only if all $\vb_\vi$ are $\True$;
   \end{itemize}
 
-\item \AllApplyCase{structured}:
+\item \AllApplyCase{structured}
   \begin{itemize}
   \item $\vs$ has the \underlyingtype\ $L(\vfieldss)$, which is a \structuredtype;
   \item $\vt$ has the \underlyingtype\ $L(\vfieldst)$, which is a \structuredtype;
@@ -373,15 +373,15 @@ which is the same as $\typesat$, but yields a type error when \\ $\typesat(\tenv
 These functions assume that both $\vt$ and $\vs$ are well-typed according to \secref{Types}.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
  \begin{itemize}
-  \item \AllApplyCase{subtypes}:
+  \item \AllApplyCase{subtypes}
     \begin{itemize}
     \item $\vt$ subtypes $\vs$ in $\tenv$ ;
     \item $\vb$ is $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{anonymous}:
+  \item \AllApplyCase{anonymous}
   \begin{itemize}
     \item $\vt$ does not subtype $\vs$ in $\tenv$;
     \item at least one of $\vt$ and $\vs$ is an anonymous type in $\tenv$;
@@ -389,7 +389,7 @@ One of the following applies:
     \item $\vb$ is $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{t\_bits}:
+  \item \AllApplyCase{t\_bits}
   \begin{itemize}
     \item $\vt$ does not subtype $\vs$ in $\tenv$;
     \item determining whether $\vt$ is anonymous yields $\vbone$;
@@ -402,7 +402,7 @@ One of the following applies:
     \item determining whether $\widtht$ and $\widths$ are \bitwidthequivalent\ yields $\vb$.
   \end{itemize}
 
-  \item \AllApplyCase{otherwise1}:
+  \item \AllApplyCase{otherwise1}
   \begin{itemize}
     \item $\vt$ does not subtype $\vs$ in $\tenv$;
     \item determining whether $\vt$ is anonymous yields $\vbone$;
@@ -413,7 +413,7 @@ One of the following applies:
     \item at least one of $\vt$ and $\vsstruct$ is not a bitvector type;
   \end{itemize}
 
-  \item \AllApplyCase{otherwise2}:
+  \item \AllApplyCase{otherwise2}
   \begin{itemize}
     \item $\vt$ does not subtype $\vs$ in $\tenv$;
     \item determining whether $\vt$ is anonymous yields $\vbone$;
@@ -549,15 +549,15 @@ tests whether a type $\vt$ \emph{type-clashes} with a type $\vs$ in environment 
 returning the result $\vb$ or a type error, if one is detected.
 
 \ProseParagraph
- One of the following applies:
+ \OneApplies
 \begin{itemize}
-  \item \AllApplyCase{subtype}:
+  \item \AllApplyCase{subtype}
   \begin{itemize}
     \item either $\vs$ subtypes $\vt$ or $\vt$ subtypes $\vs$;
     \item $\vb$ is $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{simple}:
+  \item \AllApplyCase{simple}
   \begin{itemize}
     \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
     \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
@@ -566,7 +566,7 @@ returning the result $\vb$ or a type error, if one is detected.
     \item $\vb$ is $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{t\_enum}:
+  \item \AllApplyCase{t\_enum}
   \begin{itemize}
     \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
     \item obtaining the \structure\ of $\vt$ in $\tenv$ yields an enumeration type with labels $\vlit$;
@@ -574,7 +574,7 @@ returning the result $\vb$ or a type error, if one is detected.
     \item $\vb$ is $\True$ if and only if $\vlis$ and $\vlit$ are equal.
   \end{itemize}
 
-  \item \AllApplyCase{t\_array}:
+  \item \AllApplyCase{t\_array}
   \begin{itemize}
     \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
     \item obtaining the \structure\ of $\vt$ in $\tenv$ yields an array type with element type $\vtyt$;
@@ -582,7 +582,7 @@ returning the result $\vb$ or a type error, if one is detected.
     \item $\vb$ is $\True$ if and only if $\vtyt$ and $\vtys$ type-clash.
   \end{itemize}
 
-  \item \AllApplyCase{t\_tuple}:
+  \item \AllApplyCase{t\_tuple}
   \begin{itemize}
     \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
     \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a tuple type with element types $\vt_{1..k}$;
@@ -591,7 +591,7 @@ returning the result $\vb$ or a type error, if one is detected.
     \item $\vb$ is $\True$ if and only if $\vt_i$ type-clashes with $\vs_i$, for all $i=1..k$.
   \end{itemize}
 
-  \item \AllApplyCase{otherwise\_different\_labels}:
+  \item \AllApplyCase{otherwise\_different\_labels}
   \begin{itemize}
     \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
     \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$;
@@ -600,7 +600,7 @@ returning the result $\vb$ or a type error, if one is detected.
     \item $\vb$ is $\False$;
   \end{itemize}
 
-  \item \AllApplyCase{otherwise\_structured}:
+  \item \AllApplyCase{otherwise\_structured}
   \begin{itemize}
     \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
     \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$;
@@ -721,9 +721,9 @@ returns the \emph{lowest common ancestor} of types $\vt$ and $\vs$ in $\tenv$ --
 The result is a type error if a lowest common ancestor does not exist or a type error is detected.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{type\_equal}:
+  \item \AllApplyCase{type\_equal}
   \begin{itemize}
     \item $\vt$ is \typeequal\ to $\vs$ in $\tenv$;
     \item $\tty$ is $\vs$ (can as well be $\vt$).
@@ -731,9 +731,9 @@ One of the following applies:
 
   \item \AllApply
   \begin{itemize}
-    \item $\vt$ is not \typeequal\ to $\vs$ in $\tenv$ and one of the following applies:
+    \item $\vt$ is not \typeequal\ to $\vs$ in $\tenv$ and \OneApplies
 
-    \item \AllApplyCase{named\_subtype1}:
+    \item \AllApplyCase{named\_subtype1}
     \begin{itemize}
       \item $\vt$ is a named type with identifier $\namesubt$, that is, $\TNamed(\namesubt)$;
       \item $\vs$ is a named type with identifier $\namesubs$, that is, $\TNamed(\namesubs)$;
@@ -743,7 +743,7 @@ One of the following applies:
       \item obtaining the lowest common ancestor of $\vanons$ and $\vanont$ in $\tenv$ yields $\tty$\ProseOrTypeError.
     \end{itemize}
 
-    \item \AllApplyCase{named\_subtype2}:
+    \item \AllApplyCase{named\_subtype2}
     \begin{itemize}
       \item $\vt$ is a named type with identifier $\namesubt$, that is, $\TNamed(\namesubt)$;
       \item $\vs$ is a named type with identifier $\namesubs$, that is, $\TNamed(\namesubs)$;
@@ -752,7 +752,7 @@ One of the following applies:
       \item $\tty$ is the named type with identifier $\name$, that is, $\TNamed(\name)$.
     \end{itemize}
 
-    \item \AllApplyCase{one\_named1}:
+    \item \AllApplyCase{one\_named1}
     \begin{itemize}
       \item only one of $\vt$ or $\vs$ is a named type;
       \item obtaining the \underlyingtype\ of $\vs$ yields $\vanons$\ProseOrTypeError;
@@ -761,7 +761,7 @@ One of the following applies:
       \item $\tty$ is $\vt$ if it is a named type (that is, $\astlabel(\vt)=\TNamed$), and $\vs$ otherwise.
     \end{itemize}
 
-    \item \AllApplyCase{one\_named2}:
+    \item \AllApplyCase{one\_named2}
     \begin{itemize}
       \item only one of $\vt$ or $\vs$ is a named type;
       \item obtaining the \underlyingtype\ of $\vs$ yields $\vanons$\ProseOrTypeError;
@@ -770,14 +770,14 @@ One of the following applies:
       \item the lowest common ancestor of $\vanont$ and $\vanons$ in $\tenv$ is $\tty$\ProseOrTypeError.
     \end{itemize}
 
-    \item \AllApplyCase{t\_int\_unconstrained}:
+    \item \AllApplyCase{t\_int\_unconstrained}
     \begin{itemize}
       \item both $\vt$ and $\vs$ are integer types;
       \item at least one of $\vt$ or $\vs$ is an unconstrained integer type;
       \item $\tty$ is the unconstrained integer type.
     \end{itemize}
 
-    \item \AllApplyCase{t\_int\_parameterized}:
+    \item \AllApplyCase{t\_int\_parameterized}
     \begin{itemize}
       \item neither $\vt$ nor $\vs$ are the unconstrained integer type;
       \item one of $\vt$ and $\vs$ is a \parameterizedintegertype;
@@ -786,14 +786,14 @@ One of the following applies:
       \item $\tty$ the lowest common ancestor of $\vtone$ and $\vsone$ in $\tenv$ is $\tty$\ProseOrTypeError.
     \end{itemize}
 
-    \item \AllApplyCase{t\_int\_wellconstrained}:
+    \item \AllApplyCase{t\_int\_wellconstrained}
     \begin{itemize}
       \item $\vt$ is a well-constrained integer type with constraints $\cst$;
       \item $\vs$ is a well-constrained integer type with constraints $\css$;
       \item $\tty$ is the well-constrained integer type with constraints $\cst \concat \css$.
     \end{itemize}
 
-    \item \AllApplyCase{t\_bits}:
+    \item \AllApplyCase{t\_bits}
     \begin{itemize}
       \item $\vt$ is a bitvector type with length expression $\vet$, that is, $\TBits(\vet, \Ignore)$;
       \item $\vs$ is a bitvector type with length expression $\ves$, that is, $\TBits(\ves, \Ignore)$;
@@ -803,7 +803,7 @@ One of the following applies:
       \item $\tty$ is a bitvector type with length expression $\vet$ and an empty bitfield list, that is, $\TBits(\vet, \emptylist)$.
     \end{itemize}
 
-    \item \AllApplyCase{t\_array}:
+    \item \AllApplyCase{t\_array}
     \begin{itemize}
       \item $\vt$ is an array type with width expression $\widtht$ and element type $\vtyt$;
       \item $\vs$ is an array type with width expression $\widths$ and element type $\vtys$;
@@ -814,7 +814,7 @@ One of the following applies:
       \item $\tty$ is an array type with width expression $\widths$ and element type $\vtone$.
     \end{itemize}
 
-    \item \AllApplyCase{t\_tuple}:
+    \item \AllApplyCase{t\_tuple}
     \begin{itemize}
       \item $\vt$ is a tuple type with type list $\vlit$;
       \item $\vs$ is a tuple type with type list $\vlis$;
@@ -827,7 +827,7 @@ One of the following applies:
       \item define $\tty$ as the tuple type with list of types $\vli$, that is, $\TTuple(\vli)$.
     \end{itemize}
 
-    \item \AllApplyCase{error}:
+    \item \AllApplyCase{error}
     \begin{itemize}
       \item either the AST labels of $\vt$ and $\vs$ are different, or one of them is $\TEnum$, $\TRecord$, or $\TException$;
       \item the result is a type error indicating the lack of a lowest common ancestor.
@@ -1001,16 +1001,16 @@ Similarly, we determine the negation of integer constraints.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-\item \AllApplyCase{bnot\_t\_bool}:
+\item \AllApplyCase{bnot\_t\_bool}
   \begin{itemize}
     \item $\op$ is $\BNOT$;
     \item determining whether $\vt$ \typesatisfies\ $\TBool$ yields $\True$\ProseOrTypeError;
     \item $\vs$ is $\TBool$;
   \end{itemize}
 
-\item \AllApplyCase{neg\_error}:
+\item \AllApplyCase{neg\_error}
 \begin{itemize}
   \item $\op$ is $\NEG$;
   \item determining whether $\vt$ \typesatisfies\ $\TReal$ yields $\False$\ProseOrTypeError;
@@ -1018,21 +1018,21 @@ One of the following applies:
   \item the result is a type error indicating the $\NEG$ is appropriate only for \texttt{real} and \texttt{integer} types;
 \end{itemize}
 
-\item \AllApplyCase{neg\_t\_real}:
+\item \AllApplyCase{neg\_t\_real}
 \begin{itemize}
   \item $\op$ is $\NEG$;
   \item determining whether $\vt$ \typesatisfies\ $\TReal$ yields $\True$;
   \item $\vs$ is $\TReal$;
 \end{itemize}
 
-\item \AllApplyCase{neg\_t\_int\_unconstrained}:
+\item \AllApplyCase{neg\_t\_int\_unconstrained}
 \begin{itemize}
   \item $\op$ is $\NEG$;
   \item obtaining the \wellconstrainedstructure\ of $\vt$ yields $\unconstrainedinteger$\ProseOrTypeError;
   \item $\vs$ is $\unconstrainedinteger$;
 \end{itemize}
 
-\item \AllApplyCase{neg\_t\_int\_well\_constrained}:
+\item \AllApplyCase{neg\_t\_int\_well\_constrained}
 \begin{itemize}
   \item $\op$ is $\NEG$;
   \item obtaining the \wellconstrainedstructure\ of $\vt$ yields the well-constrained integer type with constraints $\vcs$\ProseOrTypeError;
@@ -1041,7 +1041,7 @@ One of the following applies:
   $\TInt(\wellconstrained(\vcsnew))$;
 \end{itemize}
 
-\item \AllApplyCase{not\_t\_bits}:
+\item \AllApplyCase{not\_t\_bits}
   \begin{itemize}
   \item $\op$ is $\NOT$;
   \item $\vt$ has the structure of a bitvector;
@@ -1136,9 +1136,9 @@ to operands of type $\vtone$ and $\vttwo$ in the static environment $\tenv$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{named}:
+  \item \AllApplyCase{named}
   \begin{itemize}
     \item at least one of $\vtone$ and $\vttwo$ is a \namedtype;
     \item determining the \underlyingtype\ if $\vtone$ yields $\vtoneanon$\ProseOrTypeError;
@@ -1146,14 +1146,14 @@ One of the following applies:
     \item \Proseapplybinoptypes{$\tenv$}{$\op$}{$\vtoneanon$}{$\vttwoanon$}{$\vt$\ProseOrTypeError}.
   \end{itemize}
 
-  \item \AllApplyCase{boolean}:
+  \item \AllApplyCase{boolean}
   \begin{itemize}
     \item $\op$ is $\AND$, $\OR$, $\EQOP$ or $\IMPL$;
     \item both $\vtone$ and $\vttwo$ are $\TBool$;
     \item $\vt$ is $\TBool$.
   \end{itemize}
 
-  \item \AllApplyCase{bits\_arith}:
+  \item \AllApplyCase{bits\_arith}
   \begin{itemize}
     \item $\op$ is one of $\AND$, $\OR$, $\XOR$, $\PLUS$, and $\MINUS$;
     \item $\vtone$ is a bitvector type with width expression $\vwone$;
@@ -1163,7 +1163,7 @@ One of the following applies:
     \item $\vt$ is the bitvector type of width $\vwone$ and empty list of bitfields, that is, \\ $\TBits(\vwone, \emptylist)$.
   \end{itemize}
 
-  \item \AllApplyCase{bits\_int}:
+  \item \AllApplyCase{bits\_int}
   \begin{itemize}
     \item $\op$ is either $\PLUS$ or $\MINUS$;
     \item $\vtone$ is a bitvector type with width expression $\vw$;
@@ -1171,7 +1171,7 @@ One of the following applies:
     \item $\vt$ is the bitvector type of width $\vw$ and empty list of bitfields, that is, \\ $\TBits(\vw, \emptylist)$.
   \end{itemize}
 
-  \item \AllApplyCase{bits\_concat}:
+  \item \AllApplyCase{bits\_concat}
   \begin{itemize}
     \item $\op$ is $\BVCONCAT$;
     \item $\vtone$ is a bitvector type with width expression $\vwone$;
@@ -1181,7 +1181,7 @@ One of the following applies:
     \item $\vt$ is the bitvector type of width $\vwp$ and empty list of bitfields, that is, \\ $\TBits(\vw, \emptylist)$.
   \end{itemize}
 
-  \item \AllApplyCase{rel}:
+  \item \AllApplyCase{rel}
   \begin{itemize}
     \item the operator $\op$ and types of $\vtone$ and $\vttwo$ match one of the rows in the following table:
     \[
@@ -1209,7 +1209,7 @@ One of the following applies:
     \item $\vt$ is $\TBool$.
   \end{itemize}
 
-  \item \AllApplyCase{eq\_neq\_bits}:
+  \item \AllApplyCase{eq\_neq\_bits}
   \begin{itemize}
     \item $\op$ is either $\EQOP$ or $\NEQ$;
     \item $\vtone$ is a bitvector type with width expression $\vwone$;
@@ -1218,7 +1218,7 @@ One of the following applies:
     \item $\vt$ is $\TBool$.
   \end{itemize}
 
-  \item \AllApplyCase{eq\_neq\_enum}:
+  \item \AllApplyCase{eq\_neq\_enum}
   \begin{itemize}
     \item $\op$ is either $\EQOP$ or $\NEQ$;
     \item $\vtone$ is $\TEnum(\vlione)$;
@@ -1227,14 +1227,14 @@ One of the following applies:
     \item $\vt$ is $\TBool$.
   \end{itemize}
 
-  \item \AllApplyCase{arith\_t\_int\_unconstrained}:
+  \item \AllApplyCase{arith\_t\_int\_unconstrained}
   \begin{itemize}
     \item $\op$ is one of $\{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \PLUS, \MINUS\}$;
     \item both $\vtone$ and $\vttwo$ are integer types and at least one them is the unconstrained integer type;
     \item $\vt$ is the unconstrained integer type;
   \end{itemize}
 
-  \item \AllApplyCase{arith\_t\_int\_parameterized}:
+  \item \AllApplyCase{arith\_t\_int\_parameterized}
   \begin{itemize}
     \item $\op$ is one of $\{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \PLUS, \MINUS\}$;
     \item both $\vtone$ and $\vttwo$ are integer types, neither is an unconstrained integer type, and at least one them is a \parameterizedintegertype;
@@ -1243,7 +1243,7 @@ One of the following applies:
     \item \Proseapplybinoptypes{$\tenv$}{$\op$}{$\vtonewellconstrained$}{$\vttwowellconstrained$}{$\vt$}.
   \end{itemize}
 
-  \item \AllApplyCase{arith\_t\_int\_wellconstrained}:
+  \item \AllApplyCase{arith\_t\_int\_wellconstrained}
   \begin{itemize}
     \item $\op$ is one of $\{\MUL, \POW, \PLUS, \MINUS, \DIVRM, \DIV, \MOD, \SHL, \SHR\}$;
     \item $\vtone$ is the well-constrained integer type with constraints $\csone$;
@@ -1252,7 +1252,7 @@ One of the following applies:
     \item $\vt$ is the integer type with constraint kind $\vc$;
   \end{itemize}
 
-  \item \AllApplyCase{arith\_real}:
+  \item \AllApplyCase{arith\_real}
   \begin{itemize}
     \item the operator $\op$ and types of $\vtone$ and $\vttwo$ match one of the rows in the following table:
     \[
@@ -1269,7 +1269,7 @@ One of the following applies:
     \item $\vt$ is $\TReal$.
   \end{itemize}
 
-  \item \AllApplyCase{error}:
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item obtaining the \underlyingtype\ of $\vtone$ in $\tenv$ yields $\vtoneanon$\ProseOrTypeError;
     \item obtaining the \underlyingtype\ of $\vttwo$ in $\tenv$ yields $\vttwoanon$\ProseOrTypeError;
@@ -1587,23 +1587,23 @@ returns the set of \emph{named supertypes} given via the $\subtypes$ function of
 \]
 
 \ProseParagraph
-One of the following holds:
+\OneApplies
 \begin{itemize}
   \item $\vtsupers$ is in the set of named supertypes of $\vt$;
-  \item \AllApplyCase{found}:
+  \item \AllApplyCase{found}
   \begin{itemize}
     \item $\vs$ is in $\vtsupers$;
     \item $\tty$ is $\vs$;
   \end{itemize}
 
-  \item \AllApplyCase{super}:
+  \item \AllApplyCase{super}
   \begin{itemize}
     \item $\vs$ is not in $\vtsupers$;
     \item $\vs$ has a named super type in $\tenv$ --- $\vsp$;
     \item $\tty$ is the lowest common named \supertypeterm{} of $\vt$ and $\vsp$ in $\tenv$.
   \end{itemize}
 
-  \item \AllApplyCase{none}:
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\vs$ is not in $\vtsupers$;
     \item $\vs$ has no named super type in $\tenv$;
@@ -1756,9 +1756,9 @@ in any environment consisting of the static environment $\tenv$.
 The result is the filtered list of constraints $\newcs$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{greater\_or\_equal}:
+  \item \AllApplyCase{greater\_or\_equal}
   \begin{itemize}
     \item $\op$ is one of $\SHL$, $\SHR$, and $\POW$;
     \item define $\vf$ as the specialization of $\refineconstraintbysign$ for the predicate
@@ -1767,7 +1767,7 @@ One of the following applies:
     \item checking whether $\newcs$ is empty yields $\True$\ProseTerminateAs{\BadOperands}.
   \end{itemize}
 
-  \item \AllApplyCase{greater\_than}:
+  \item \AllApplyCase{greater\_than}
   \begin{itemize}
     \item $\op$ is one of $\MOD$, $\DIV$, and $\DIVRM$;
     \item define $\vf$ as the specialization of $\refineconstraintbysign$ for the predicate
@@ -1776,7 +1776,7 @@ One of the following applies:
     \item checking whether $\newcs$ is empty yields $\True$\ProseTerminateAs{\BadOperands}.
   \end{itemize}
 
-  \item \AllApplyCase{no\_filtering}:
+  \item \AllApplyCase{no\_filtering}
   \begin{itemize}
     \item $\op$ is one of $\MINUS$, $\MUL$, and $\PLUS$;
     \item $\newcs$ is $\cs$.
@@ -1830,9 +1830,9 @@ reasoning may yield.
 If the set of those values is empty the result is $\None$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{exact\_reduces\_to\_z}:
+  \item \AllApplyCase{exact\_reduces\_to\_z}
   \begin{itemize}
     \item $\vc$ is an exact constraint for the expression $\ve$, that is, $\ConstraintExact(\ve)$;
     \item applying $\reducetozopt$ to $\ve$ in $\tenv$, in order to symbolically simplify $\ve$ to an integer,
@@ -1840,7 +1840,7 @@ One of the following applies:
     \item $\vcopt$ is $\langle\vc\rangle$ if $\vp$ holds for $\vz$ and $\None$ otherwise.
   \end{itemize}
 
-  \item \AllApplyCase{exact\_does\_not\_reduce\_to\_z}:
+  \item \AllApplyCase{exact\_does\_not\_reduce\_to\_z}
   \begin{itemize}
     \item $\vc$ is an exact constraint for the expression $\ve$, that is, $\ConstraintExact(\ve)$;
     \item applying $\reducetozopt$ to $\ve$ in $\tenv$, in order to symbolically simplify $\ve$ to an integer,
@@ -1848,7 +1848,7 @@ One of the following applies:
     \item $\vcopt$ is $\langle\vc\rangle$.
   \end{itemize}
 
-  \item \AllApplyCase{range\_both\_reduce\_to\_z}:
+  \item \AllApplyCase{range\_both\_reduce\_to\_z}
   \begin{itemize}
     \item $\vc$ is a range constraint for the expressions $\veone$ and $\vetwo$, that is, \\
           $\ConstraintRange(\veone, \vetwo)$;
@@ -1856,7 +1856,7 @@ One of the following applies:
           yields $\langle\vzone\rangle$;
     \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$, in order to symbolically simplify $\vetwo$ to an integer,
           yields $\langle\vztwo\rangle$;
-    \item One of the following applies (defining $\vcopt$):
+    \item \OneApplies{} (defining $\vcopt$)
     \begin{itemize}
       \item if $\vp$ is $\True$ for both $\vzone$ and $\vztwo$, define $\vcopt$ as $\langle\vc\rangle$;
       \item if $\vp$ is $\False$ for $\vzone$ and $\True$ for $\vztwo$, define $\vcopt$ as the optional range constraint
@@ -1869,7 +1869,7 @@ One of the following applies:
     \end{itemize}
   \end{itemize}
 
-  \item \AllApplyCase{only\_e1\_reduces\_to\_z}:
+  \item \AllApplyCase{only\_e1\_reduces\_to\_z}
   \begin{itemize}
     \item $\vc$ is a range constraint for the expressions $\veone$ and $\vetwo$, that is, \\
           $\ConstraintRange(\veone, \vetwo)$;
@@ -1877,7 +1877,7 @@ One of the following applies:
           yields $\langle\vzone\rangle$;
     \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$, in order to symbolically simplify $\vetwo$ to an integer,
           yields $\None$;
-    \item One of the following applies (defining $\vcopt$):
+    \item \OneApplies{} (defining $\vcopt$):
     \begin{itemize}
       \item if $\vp$ is $\True$ for $\vzone$, define $\vcopt$ as $\langle\vc\rangle$;
       \item if $\vp$ is $\False$ for $\vzone$, define $\vcopt$ as the optional range constraint with the bottom expression
@@ -1886,7 +1886,7 @@ One of the following applies:
     \end{itemize}
   \end{itemize}
 
-  \item \AllApplyCase{only\_e2\_reduces\_to\_z}:
+  \item \AllApplyCase{only\_e2\_reduces\_to\_z}
   \begin{itemize}
     \item $\vc$ is a range constraint for the expressions $\veone$ and $\vetwo$, that is, \\
           $\ConstraintRange(\veone, \vetwo)$;
@@ -1996,15 +1996,15 @@ The expression $\ve$ is assumed to appear in a constraint for a type that has be
 which means that applying $\normalize$ to it should not yield a type error.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{normalizes\_to\_z}:
+  \item \AllApplyCase{normalizes\_to\_z}
   \begin{itemize}
     \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ yields a literal expression for the integer $\vz$;
     \item define $\vzopt$ as $\langle\vz\rangle$.
   \end{itemize}
 
-  \item \AllApplyCase{does\_not\_normalize\_to\_z}:
+  \item \AllApplyCase{does\_not\_normalize\_to\_z}
   \begin{itemize}
     \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ yields an expression that is not an integer literal;
     \item define $\vzopt$ as $\None$.
@@ -2043,15 +2043,15 @@ refines a list of constraints $\cs$ by applying the refinement function $\vf$ to
 that do not refine to $\None$. The resulting list of constraints is given in $\newcs$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{empty}:
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\cs$ is the empty list;
     \item $\newcs$ is the empty list.
   \end{itemize}
 
-  \item \AllApplyCase{non\_empty\_none}:
+  \item \AllApplyCase{non\_empty\_none}
   \begin{itemize}
     \item $\cs$ is the list with $\vc$ as its \head\ and $\csone$ as its \tail;
     \item applying $\vf$ to $\vc$ yields $\None$;
@@ -2059,7 +2059,7 @@ One of the following applies:
     \item $\newcs$ is $\csonep$.
   \end{itemize}
 
-  \item \AllApplyCase{non\_empty\_somee}:
+  \item \AllApplyCase{non\_empty\_somee}
   \begin{itemize}
     \item $\cs$ is the list with $\vc$ as its \head\ and $\csone$ as its \tail;
     \item applying $\vf$ to $\vc$ yields $\langle\vcp\rangle$;
@@ -2106,9 +2106,9 @@ when $\op$ is the division operation.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{div}:
+  \item \AllApplyCase{div}
   \begin{itemize}
     \item $\op$ is $\DIV$;
     \item applying $\filterreduceconstraintdiv$ to each constraint $\cs[\vi]$, for each $\vi$ in $\listrange(\cs)$,
@@ -2118,7 +2118,7 @@ One of the following applies:
     \item checking that $\vres$ is not the empty list yields $\True$\ProseTerminateAs{\BadOperands}.
   \end{itemize}
 
-  \item \AllApplyCase{non\_div}:
+  \item \AllApplyCase{non\_div}
   \begin{itemize}
     \item $\op$ is not $\DIV$;
     \item define $\vres$ as $\cs$.
@@ -2158,9 +2158,9 @@ The result is returned in $\vcopt$.
 This is used to conservatively test whether $\vc$ would always fail dynamically.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{exact}:
+  \item \AllApplyCase{exact}
   \begin{itemize}
     \item $\vc$ is an exact constraint for the expression $\ve$, that is, $\ConstraintExact(\ve)$;
     \item applying $\getliteraldivopt$ to $\ve$ yields $\langle(\vzone, \vztwo)\rangle$\ProseTerminateAs{\None};
@@ -2171,7 +2171,7 @@ One of the following applies:
     \end{itemize}
   \end{itemize}
 
-  \item \AllApplyCase{range}:
+  \item \AllApplyCase{range}
   \begin{itemize}
     \item $\vc$ is a range constraint for $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
     \item applying $\getliteraldivopt$ to $\veone$ yields $\veoneopt$;
@@ -2282,15 +2282,15 @@ applies $\explodedinterval$ to each constraint of $\cs$ in $\tenv$ and concatena
 list, yielding the result in $\newcs$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{empty}:
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\cs$ is the empty list;
     \item $\newcs$ is the empty list.
   \end{itemize}
 
-  \item \AllApplyCase{non\_empty}:
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\cs$ is the list with $\vc$ as its \head\ and $\csone$ as its \tail;
     \item applying $\explodeconstraint$ to $\vc$ in $\tenv$ yields $\vcp$ (a list of constraints);
@@ -2327,15 +2327,15 @@ $\vc$ matches a n ascending range constraint that is not too large in $\tenv$
 and the singleton list for $\vc$ otherwise.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{exact}:
+  \item \AllApplyCase{exact}
   \begin{itemize}
     \item $\vc$ is an exact constraint;
     \item $\vcs$ is the singleton list for $\vc$.
   \end{itemize}
 
-  \item \AllApplyCase{range\_reduced}:
+  \item \AllApplyCase{range\_reduced}
   \begin{itemize}
     \item $\vc$ is a range constraint for the expressions $\va$ and $\vb$;
     \item applying $\reducetozopt$ to $\va$ in $\tenv$ yields $\langle\vza\rangle$;
@@ -2347,7 +2347,7 @@ One of the following applies:
           $\explodedinterval$ otherwise.
   \end{itemize}
 
-  \item \AllApplyCase{range\_not\_reduced}:
+  \item \AllApplyCase{range\_not\_reduced}
   \begin{itemize}
     \item $\vc$ is a range constraint for the expressions $\va$ and $\vb$;
     \item applying $\reducetozopt$ to $\va$ in $\tenv$ yields $\vzaopt$;
@@ -2467,16 +2467,16 @@ The function
 checks whether the bitfield $\vbf$ exists in $\bfstwo$ in the context of $\tenv$, returning the result in $\vb$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{none}:
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item the name associated with the bitfield $\vbfone$ is $\name$;
     \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\None$;
     \item $\vb$ is $\False$.
   \end{itemize}
 
-  \item \AllApplyCase{simple\_any}:
+  \item \AllApplyCase{simple\_any}
   \begin{itemize}
     \item the name associated with the bitfield $\vbfone$ is $\name$;
     \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
@@ -2484,7 +2484,7 @@ One of the following applies:
     \item symbolically checking whether $\vbfone$ is equivalent to $\vbftwo$ in $\tenv$ yields $\vb$.
   \end{itemize}
 
-  \item \AllApplyCase{nested\_simple}:
+  \item \AllApplyCase{nested\_simple}
   \begin{itemize}
     \item the name associated with the bitfield $\vbfone$ is $\name$;
     \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
@@ -2493,7 +2493,7 @@ One of the following applies:
     \item symbolically checking whether $\vbfone$ is equivalent to $\vbftwo$ in $\tenv$ yields $\vb$.
   \end{itemize}
 
-  \item \AllApplyCase{nested\_nested}:
+  \item \AllApplyCase{nested\_nested}
   \begin{itemize}
     \item the name associated with the bitfield $\vbfone$ is $\name$;
     \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
@@ -2505,7 +2505,7 @@ One of the following applies:
     \item $\vb$ is defined as the conjunction of $\vbone$, $\vbtwo$, and $\vbthree$.
   \end{itemize}
 
-  \item \AllApplyCase{nested\_typed}:
+  \item \AllApplyCase{nested\_typed}
   \begin{itemize}
     \item the name associated with the bitfield $\vbfone$ is $\name$;
     \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
@@ -2514,7 +2514,7 @@ One of the following applies:
     \item $\vb$ is $\False$.
   \end{itemize}
 
-  \item \AllApplyCase{typed\_simple}:
+  \item \AllApplyCase{typed\_simple}
   \begin{itemize}
     \item the name associated with the bitfield $\vbfone$ is $\name$;
     \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
@@ -2523,7 +2523,7 @@ One of the following applies:
     \item symbolically checking whether $\vbfone$ is equivalent to $\vbftwo$ in $\tenv$ yields $\vb$.
   \end{itemize}
 
-  \item \AllApplyCase{typed\_nested}:
+  \item \AllApplyCase{typed\_nested}
   \begin{itemize}
     \item the name associated with the bitfield $\vbfone$ is $\name$;
     \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
@@ -2532,7 +2532,7 @@ One of the following applies:
     \item $\vb$ is $\False$.
   \end{itemize}
 
-  \item \AllApplyCase{typed\_typed}:
+  \item \AllApplyCase{typed\_typed}
   \begin{itemize}
     \item the name associated with the bitfield $\vbfone$ is $\name$;
     \item finding the bitfield associated with $\name$ in $\bfstwo$ yields $\vbftwo$;
@@ -2642,16 +2642,16 @@ The function
 returns $\True$ is $\vt$ is has the \structure\ a of type corresponding to the AST label $\vl$ and a type error otherwise.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{okay}:
+  \item \AllApplyCase{okay}
   \begin{itemize}
     \item determining the \structure\ of $\vt$ yields $\vtp$\ProseOrTypeError;
     \item $\vtp$ has the label $\vl$;
     \item the result is $\True$;
   \end{itemize}
 
-  \item \AllApplyCase{error}:
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item determining the \structure\ of $\vt$ yields $\vtp$\ProseOrTypeError;
     \item $\vtp$ does not have the label $\vl$;
@@ -2687,16 +2687,16 @@ The function
 returns the \wellconstrainedversion\ of a type $\vt$ --- $\vtp$, which is defined as follows.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{t\_int\_parameterized}:
+  \item \AllApplyCase{t\_int\_parameterized}
   \begin{itemize}
     \item $\vt$ is a \parameterizedintegertype\ for the variable $\vv$;
     \item $\vtp$ is the well-constrained integer constrained by the variable expression for $\vv$,
     that is, $\TInt(\wellconstrained(\constraintexact(\EVar(\vv))))$.
   \end{itemize}
 
-  \item \AllApplyCase{t\_int\_other, other}:
+  \item \AllApplyCase{t\_int\_other, other}
   \begin{itemize}
     \item $\vt$ is not a \parameterizedintegertype\ for the variable $\vv$;
     \item $\vtp$ is $\vt$.
@@ -2762,16 +2762,16 @@ in the static environment $\tenv$.
 \ProseOrTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{okay}:
+  \item \AllApplyCase{okay}
   \begin{itemize}
     \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a bitvector type with width expression $\ve$,
           that is, $\TBits(\ve, \Ignore)$\ProseOrTypeError;
     \item the result is $\ve$.
   \end{itemize}
 
-  \item \AllApplyCase{error}:
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a type that is not a bitvector type;
     \item the result is a type error indicating that a bitvector type was expected.
@@ -2842,15 +2842,15 @@ If the answer is positive, the result is $\True$. \ProseOtherwiseTypeError
 \begin{itemize}
   \item obtaining the width of $\vtone$ in $\tenv$ (via $\getbitvectorwidth$) yields the expression $\vn$\ProseOrTypeError;
   \item obtaining the width of $\vttwo$ in $\tenv$ (via $\getbitvectorwidth$) yields the expression $\vm$\ProseOrTypeError;
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{true}:
+    \item \AllApplyCase{true}
     \begin{itemize}
       \item symbolically checking whether the bitwidth expressions $\vn$ and $\vm$ are equal (via $\bitwidthequal$) yields $\True$;
       \item the result is $\True$.
     \end{itemize}
 
-    \item \AllApplyCase{error}:
+    \item \AllApplyCase{error}
     \begin{itemize}
       \item symbolically checking whether the bitwidth expressions $\vn$ and $\vm$ are equal (via $\bitwidthequal$) yields $\False$;
       \item the result is a type error indicating that the bitwidths are different.

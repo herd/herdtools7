@@ -21,21 +21,21 @@ of type $T$ into a function mapping each identifier to its respective value in t
 If a duplicate identifier exists in $\pairs$ then a type error is returned.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{empty}:
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\pairs$ is empty;
     \item $f$ is the empty function.
   \end{itemize}
 
-  \item \AllApplyCase{error}:
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item there exist two different positions in the list where the identifier is the same;
     \item the result is a type error indicating the existence of a duplicate identifier.
   \end{itemize}
 
-  \item \AllApplyCase{okay}:
+  \item \AllApplyCase{okay}
   \begin{itemize}
     \item all identifiers occurring in the list are unique;
     \item $f$ is a function that associates to each identifier the value appearing with it in $\pairs$.
@@ -79,15 +79,15 @@ checks whether a non-empty list of identifiers contains a duplicate identifier. 
 is $\True$ and otherwise the result is a type error.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{okay}:
+  \item \AllApplyCase{okay}
   \begin{itemize}
     \item the set containing all identifiers in the list has the same cardinality as the length of the list;
     \item the result is $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{error}:
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item there exist two different positions in the list where the identifier is the same;
     \item the result is a type error indicating the existence of a duplicate identifier.
@@ -122,21 +122,21 @@ The parametric function
 filters a list of \optional{} elements, removing those which are $\None$ and unwrapping those which are $\langle v \rangle$ to $v$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{empty}:
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\vvopts$ is the empty list;
     \item $\vvs$ is the empty list.
   \end{itemize}
 
-  \item \AllApplyCase{non\_empty\_none}:
+  \item \AllApplyCase{non\_empty\_none}
   \begin{itemize}
     \item $\vvopts$ is the non-empty list with head $\None$ and tail $\vvoptsp$;
     \item applying $\filteroptionlist$ to $\vvoptsp$ yields $\vvs$.
   \end{itemize}
 
-  \item \AllApplyCase{non\_empty\_some}:
+  \item \AllApplyCase{non\_empty\_some}
   \begin{itemize}
     \item $\vvopts$ is the non-empty list with head $\langle\vv\rangle$ and tail $\vvoptsp$;
     \item applying $\filteroptionlist$ to $\vvoptsp$ yields $\vvsp$;
@@ -181,15 +181,15 @@ $0$ to mean that $a$ and $b$ can be ordered in any way,
 and $-1$ to mean that $b$ should be ordered before $a$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{empty\_or\_single}:
+  \item \AllApplyCase{empty\_or\_single}
   \begin{itemize}
     \item $\vlone$ is either empty or contains a single element;
     \item $\vltwo$ is $\vlone$.
   \end{itemize}
 
-  \item \AllApplyCase{two\_or\_more}:
+  \item \AllApplyCase{two\_or\_more}
   \begin{itemize}
     \item $\vlone$ contains at least two elements;
     \item $f$ is a permutation of $1..n$;
@@ -228,23 +228,23 @@ returns the bitfield associated with the name $\name$ in the list of bitfields $
 if there is one. Otherwise, the result is $\None$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{match}:
+  \item \AllApplyCase{match}
   \begin{itemize}
     \item $\bitfields$ starts with a bitfield $\vbf$;
     \item obtaining the name associated with $\vbf$ yields $\name$;
     \item the result if $\vbf$.
   \end{itemize}
 
-  \item \AllApplyCase{tail}:
+  \item \AllApplyCase{tail}
   \begin{itemize}
     \item $\bitfields$ starts with a bitfield $\vbf$ and continues with the tail list $\bitfieldsp$;
     \item obtaining the name associated with $\vbf$ yields $\namep$, which is different than $\name$;
     \item finding the bitfield associated with $\name$ in $\bitfieldsp$ yields the result $\vr$.
   \end{itemize}
 
-  \item \AllApplyCase{empty}:
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\bitfields$ is an empty list;
     \item the result is $\None$.
@@ -282,15 +282,15 @@ The function
 returns the type for the array length $\size$ in $\vt$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{enum}:
+  \item \AllApplyCase{enum}
   \begin{itemize}
     \item $\size$ is an enumeration index over the enumeration $\vs$, that is, \\ $\ArrayLengthEnum(\vs, \Ignore)$;
     \item $\vt$ is the named type for $\vs$, that is, $\TNamed(\vs)$.
   \end{itemize}
 
-  \item \AllApplyCase{expr}:
+  \item \AllApplyCase{expr}
   \begin{itemize}
     \item $\size$ is an expression for integer-sized arrays, that is, $\ArrayLengthExpr(\Ignore)$;
     \item $\vt$ is the \unconstrainedintegertype.
@@ -319,15 +319,15 @@ The function
 returns the value $\vv$ associated with the identifier $\id$ in the list of pairs $\vli$ or $\None$, if no such association exists.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{member}:
+  \item \AllApplyCase{member}
   \begin{itemize}
     \item a pair $(\id,\vv)$ exists in the list $\vli$;
     \item the result is $\langle\vv\rangle$.
   \end{itemize}
 
-  \item \AllApplyCase{not\_member}:
+  \item \AllApplyCase{not\_member}
   \begin{itemize}
     \item every pair $(\vx,\Ignore)$ in the list $\vli$ has $\vx\neq\id$;
     \item the result is $\None$.
@@ -564,20 +564,20 @@ looks up the environment $\tenv$ for a constant $\vv$ associated with an identif
 $\vs$. The result is $\bot$ if $\vs$ is not associated with any constant.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{local}:
+  \item \AllApplyCase{local}
   \begin{itemize}
     \item $\vs$ is associated with a constant $\vv$ in the local environment of $\tenv$;
   \end{itemize}
 
-  \item \AllApplyCase{global}:
+  \item \AllApplyCase{global}
   \begin{itemize}
     \item $\vs$ is not associated with a constant in the local environment of $\tenv$;
     \item $\vs$ is associated with a constant $\vv$ in the global environment of $\tenv$;
   \end{itemize}
 
-  \item \AllApplyCase{not\_found}:
+  \item \AllApplyCase{not\_found}
   \begin{itemize}
     \item $\vs$ is not associated with a constant in the local environment of $\tenv$;
     \item $\vs$ is not associated with a constant in the global environment of $\tenv$;
@@ -669,20 +669,20 @@ looks up the static environment $\tenv$ for an immutable expression associated w
 returning $\bot$ if there is none.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{local}:
+  \item \AllApplyCase{local}
   \begin{itemize}
     \item applying $\exprequiv$ to $\vx$ in the local component of $\tenv$, yields $\ve$.
   \end{itemize}
 
-  \item \AllApplyCase{global}:
+  \item \AllApplyCase{global}
   \begin{itemize}
     \item applying $\exprequiv$ to $\vx$ in the local component of $\tenv$, yields $\bot$;
     \item applying $\exprequiv$ to $\vx$ in the global component of $\tenv$, yields $\ve$.
   \end{itemize}
 
-  \item \AllApplyCase{none}:
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item applying $\exprequiv$ to $\vx$ in the local component of $\tenv$, yields $\bot$;
     \item applying $\exprequiv$ to $\vx$ in the global component of $\tenv$, yields $\bot$;
@@ -822,9 +822,9 @@ along with the local declaration keyword $\ldk$. The result is the updated stati
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{ok}:
+  \item \AllApplyCase{ok}
   \begin{itemize}
     \item $\vep$ contains the expression $\ve$ and \sideeffectsetterm\ $\vsese$;
     \item $\ldk$ is either $\LDKConstant$ or $\LDKLet$;
@@ -833,9 +833,9 @@ One of the following applies:
     \item applying $\addlocalimmutableexpr$ to $\vx$ and $\ve$ yields $\newtenv$.
   \end{itemize}
 
-  \item \AllApplyCase{fail}:
+  \item \AllApplyCase{fail}
   \begin{itemize}
-    \item One of the following applies:
+    \item \OneApplies
     \begin{itemize}
       \item $\vep$ is $\None$;
       \item $\ldk$ is neither $\LDKConstant$ nor $\LDKLet$;

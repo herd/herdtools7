@@ -86,22 +86,22 @@ The function
 transforms a type $\vt$ in a static environment $\tenv$ into a symbolic domain $\vd$.
 It assumes its input type has an \underlyingtype{} which is an integer.
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{int\_unconstrained}:
+  \item \AllApplyCase{int\_unconstrained}
   \begin{itemize}
     \item $\vt$ is the unconstrained integer type;
     \item define $\vd$ as $\Top$, which intuitively represents the entire set of integers.
   \end{itemize}
 
-  \item \AllApplyCase{int\_parameterized}:
+  \item \AllApplyCase{int\_parameterized}
   \begin{itemize}
     \item $\vt$ is the \parameterizedintegertype\ for the identifier $\id$;
     \item define $\vd$ as the symbolic constrained integer domain with a single constraint for the variable expression for $\id$,
           that is, \\ $\FromSyntax([\ConstraintExact(\EVar(\id))])$.
   \end{itemize}
 
-  \item \AllApplyCase{int\_well\_constrained\_finite}:
+  \item \AllApplyCase{int\_well\_constrained\_finite}
   \begin{itemize}
     \item $\vt$ is the well-constrained integer type for the list of constraints $\vcs$;
     \item applying $\intsetofintconstraints$ to $\vcs$ in $\tenv$ yields $\vis$;
@@ -109,7 +109,7 @@ One of the following applies:
     \item define $\vd$ as the symbolic finite set integer domain for $\vis$.
   \end{itemize}
 
-  \item \AllApplyCase{int\_well\_constrained\_symbolic}:
+  \item \AllApplyCase{int\_well\_constrained\_symbolic}
   \begin{itemize}
     \item $\vt$ is the well-constrained integer type for the list of constraints $\vcs$;
     \item applying $\intsetofintconstraints$ to $\vcs$ in $\tenv$ yields $\vis$;
@@ -117,7 +117,7 @@ One of the following applies:
     \item define $\vd$ as the symbolic constrained integer domain for the list of constraints $\vcs$, that is, $\FromSyntax(\vcs)$.
   \end{itemize}
 
-  \item \AllApplyCase{t\_named}:
+  \item \AllApplyCase{t\_named}
   \begin{itemize}
     \item $\vt$ is the named type for identifier $\id$;
     \item applying $\makeanonymous$ to $\vt$ in $\tenv$ yields $\vtone$;
@@ -178,22 +178,22 @@ The function
 assigns a symbolic domain $\vd$ to an \underline{integer typed} expression $\ve$ in the static environment $\tenv$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{e\_literal}:
+  \item \AllApplyCase{e\_literal}
   \begin{itemize}
     \item $\ve$ is a literal expression for the literal $\vv$;
     \item applying $\symdomofliteral$ to $\vv$ yields $\vd$.
   \end{itemize}
 
-  \item \AllApplyCase{e\_var\_constant}:
+  \item \AllApplyCase{e\_var\_constant}
   \begin{itemize}
     \item $\ve$ is a variable expression for the identifier $\vx$;
     \item applying $\lookupconstant$ to $\vx$ in $\tenv$ yields the literal $\vv$;
     \item applying $\symdomofliteral$ to $\vv$ yields $\vd$.
   \end{itemize}
 
-  \item \AllApplyCase{e\_var\_type}:
+  \item \AllApplyCase{e\_var\_type}
   \begin{itemize}
     \item $\ve$ is a variable expression for the identifier $\vx$;
     \item applying $\lookupconstant$ to $\vx$ in $\tenv$ yields $\bot$;
@@ -201,20 +201,20 @@ One of the following applies:
     \item applying $\symdomoftype$ to $\vtone$ yields $\vd$.
   \end{itemize}
 
-  \item \AllApplyCase{e\_unop\_minus}:
+  \item \AllApplyCase{e\_unop\_minus}
   \begin{itemize}
     \item $\ve$ is a unary operation expression for the operation $\MINUS$ and subexpression $\veone$;
     \item applying $\symdomofexpr$ to the binary operation expression with the operation $\MINUS$
           and the literal expression for $0$ and $\veone$ in $\tenv$ yields $\vd$.
   \end{itemize}
 
-  \item \AllApplyCase{e\_unop\_unknown}:
+  \item \AllApplyCase{e\_unop\_unknown}
   \begin{itemize}
     \item $\ve$ is a unary operation expression for an operation that is not $\MINUS$;
     \item define $\vd$ as $\FromSyntax([\ConstraintExact(\ve)])$
   \end{itemize}
 
-  \item \AllApplyCase{e\_binop\_supported}:
+  \item \AllApplyCase{e\_binop\_supported}
   \begin{itemize}
     \item $\ve$ is a binary operation expression for an operation that is one of $\PLUS$, $\MINUS$, or $\MUL$
           and subexpressions $\veone$ and $\vetwo$;
@@ -224,13 +224,13 @@ One of the following applies:
     \item define $\vd$ as $\vis$.
   \end{itemize}
 
-  \item \AllApplyCase{e\_binop\_unsupported}:
+  \item \AllApplyCase{e\_binop\_unsupported}
   \begin{itemize}
     \item $\ve$ is a binary operation expression for an operation that is not one of $\PLUS$, $\MINUS$, or $\MUL$;
     \item define $\vd$ as $\FromSyntax([\ConstraintExact(\ve)])$
   \end{itemize}
 
-  \item \AllApplyCase{unsupported}:
+  \item \AllApplyCase{unsupported}
   \begin{itemize}
     \item $\ve$ is not one of the following expression types a literal expression, a variable expression, a unary operation
           expression, or a binary operation expression;
@@ -323,9 +323,9 @@ assigns a symbolic domain $\vd$ to an \underline{integer typed} expression $\ve$
 In contrast to $\symdomofexpr$, $\symdomofwidth$ should be applied to expressions that represent a bitvector width.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{finite\_one\_width}:
+  \item \AllApplyCase{finite\_one\_width}
   \begin{itemize}
     \item applying $\symdomofexpr$ to $\ve$ in $\tenv$ yields $\vdone$;
     \item $\vdone$ is a set of integers, that is, $\Finite(s)$;
@@ -333,7 +333,7 @@ One of the following applies:
     \item $\vd$ is $\vdone$.
   \end{itemize}
 
-  \item \AllApplyCase{finite\_multiple\_widths}:
+  \item \AllApplyCase{finite\_multiple\_widths}
   \begin{itemize}
     \item applying $\symdomofexpr$ to $\ve$ in $\tenv$ yields $\vdone$;
     \item $\vdone$ is a set of integers, that is, $\Finite(s)$;
@@ -341,7 +341,7 @@ One of the following applies:
     \item define $\vd$ as $\FromSyntax([\ConstraintExact(\ve)])$.
   \end{itemize}
 
-  \item \AllApplyCase{non\_finite}:
+  \item \AllApplyCase{non\_finite}
   \begin{itemize}
     \item applying $\symdomofexpr$ to $\ve$ in $\tenv$ yields $\vdone$;
     \item $\vdone$ is not a set of integers, that is, $\astlabel(\vdone)$ is not $\Finite$;
@@ -390,15 +390,15 @@ applies the binary operation $\op$ to the symbolic domains $\visone$ and $\vistw
 yielding the symbolic domain $\vis$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{top}:
+  \item \AllApplyCase{top}
   \begin{itemize}
     \item at least one of $\visone$ and $\vistwo$ is $\Top$;
     \item define $\vis$ as $\Top$.
   \end{itemize}
 
-  \item \AllApplyCase{finite\_finite}:
+  \item \AllApplyCase{finite\_finite}
   \begin{itemize}
     \item $\visone$ is the symbolic finite set integer domain for $\vsone$;
     \item $\vistwo$ is the symbolic finite set integer domain for $\vstwo$;
@@ -406,7 +406,7 @@ One of the following applies:
           by applying $\op$ to each element of $\vsone$ and each element of $\vstwo$.
   \end{itemize}
 
-  \item \AllApplyCase{finite\_syntax}:
+  \item \AllApplyCase{finite\_syntax}
   \begin{itemize}
     \item $\visone$ is the symbolic finite set integer domain for $\vsone$;
     \item $\vistwo$ is the symbolic constrained integer domain for $\vstwo$;
@@ -415,7 +415,7 @@ One of the following applies:
           and $\vistwo$ yields $\vis$.
   \end{itemize}
 
-  \item \AllApplyCase{syntax\_finite}:
+  \item \AllApplyCase{syntax\_finite}
   \begin{itemize}
     \item $\visone$ is the symbolic constrained integer domain for $\csone$;
     \item $\vistwo$ is the symbolic finite set integer domain for $\vstwo$;
@@ -424,7 +424,7 @@ One of the following applies:
           for $\cstwo$, yields $\vis$.
   \end{itemize}
 
-  \item \AllApplyCase{syntax\_syntax\_well\_constrained}:
+  \item \AllApplyCase{syntax\_syntax\_well\_constrained}
   \begin{itemize}
     \item $\visone$ is the symbolic constrained integer domain for $\csone$;
     \item $\vistwo$ is the symbolic constrained integer domain for $\cstwo$;
@@ -485,22 +485,22 @@ The function
 transforms a finite set of integers into the equivalent list of integer constraints.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{empty}:
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\vs$ is the empty set;
     \item define $\cs$ as the empty list.
   \end{itemize}
 
-  \item \AllApplyCase{singleton}:
+  \item \AllApplyCase{singleton}
   \begin{itemize}
     \item $\vs$ is the singleton set for $a$;
     \item define $\cs$ as the list containing the single range constraint for the interval starting from $a$
           and ending at $a$, that is, $\ConstraintRange(\ELInt{a}, \ELInt{a})$.
   \end{itemize}
 
-  \item \AllApplyCase{new\_interval}:
+  \item \AllApplyCase{new\_interval}
   \begin{itemize}
     \item define $a$ as the minimal element of $\vs$;
     \item define $\vsone$ as the set $\vs$ with $a$ removed from it;
@@ -512,7 +512,7 @@ One of the following applies:
           second element a range constraint for the interval from $b$ to $c$, and remaining elements given by $\cstwo$.
   \end{itemize}
 
-  \item \AllApplyCase{merge\_interval}:
+  \item \AllApplyCase{merge\_interval}
   \begin{itemize}
     \item define $a$ as the minimal element of $\vs$;
     \item define $\vsone$ as the set $\vs$ with $a$ removed from it;
@@ -606,16 +606,16 @@ returns the symbolic domain $\vis$ for the list of constraints $\vcs$
 in the static environment $\tenv$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{finite}:
+  \item \AllApplyCase{finite}
   \begin{itemize}
     \item applying $\constrainttointset$ to every constraint $\vcs[\vi]$ in $\tenv$, for $\vi$ in \\ $\listrange(\vcs)$,
           yields a finite set of integers $C_\vi$, that is, $\Finite(C_\vi)$;
     \item define $\vis$ as the union of $C_\vi$ for all $\vi$ in $\listrange(\vcs)$.
   \end{itemize}
 
-  \item \AllApplyCase{symbolic}:
+  \item \AllApplyCase{symbolic}
   \begin{itemize}
     \item there exists a constraint $\vc$ in $\vcs$ such that applying $\constrainttointset$ to $\vc$
           in $\tenv$ does not yield a finite set of integers;
@@ -662,16 +662,16 @@ It produces $\Top$ when the expressions involved in the integer constraints cann
 to integers.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{exact}:
+  \item \AllApplyCase{exact}
   \begin{itemize}
     \item $\vc$ is a single expression constraint for $\ve$, that is, $\ConstraintExact(\ve)$;
     \item applying $\normalizetoint$ to $\ve$ in $\tenv$ yields the integer $n$\ProseTerminateAs{\Top};
     \item define $\vis$ as the singleton set for $n$, that is, $\Finite(\{n\})$.
   \end{itemize}
 
-  \item \AllApplyCase{range}:
+  \item \AllApplyCase{range}
   \begin{itemize}
     \item $\vc$ is a range constraint for $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
     \item applying $\normalizetoint$ to $\veone$ in $\tenv$ yields the integer $b$\ProseTerminateAs{\Top};
@@ -713,15 +713,15 @@ We assume that $\ve$ has been annotated as it is part of the constraint for an i
 and therefore applying $\normalize$ to it does not yield a type error.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{integer}:
+  \item \AllApplyCase{integer}
   \begin{itemize}
     \item applying $\normalize$ to $\ve$ in $\tenv$ yields the expression $\veone$;
     \item applying $\staticeval$ to $\veone$ in $\tenv$ yields the integer literal for $n$.
   \end{itemize}
 
-  \item \AllApplyCase{top}:
+  \item \AllApplyCase{top}
   \begin{itemize}
     \item applying $\normalize$ to $\ve$ in $\tenv$ yields the expression $\veone$;
     \item applying $\staticeval$ to $\veone$ in $\tenv$ yields $\top$.
@@ -784,29 +784,29 @@ and the symbol $\Under$ to stand for \emph{underapproximation}.
 We refer such a symbol as an \approximationdirectionterm.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{right\_top}:
+  \item \AllApplyCase{right\_top}
   \begin{itemize}
     \item $\vistwo$ is $\Top$;
     \item define $\vb$ as $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{left\_top\_right\_not\_top}:
+  \item \AllApplyCase{left\_top\_right\_not\_top}
   \begin{itemize}
     \item $\visone$ is $\Top$;
     \item $\vistwo$ is not $\Top$;
     \item define $\vb$ as $\False$.
   \end{itemize}
 
-  \item \AllApplyCase{finite\_finite}:
+  \item \AllApplyCase{finite\_finite}
   \begin{itemize}
     \item $\visone$ is a finite set of integers for $\vsone$, that is, $\Finite(\vsone)$;
     \item $\vistwo$ is a finite set of integers for $\vstwo$, that is, $\Finite(\vstwo)$;
     \item define $\vb$ as $\True$ if and only if $\vsone$ is a subset of $\vstwo$ or both sets are equal.
   \end{itemize}
 
-  \item \AllApplyCase{syntax\_syntax}:
+  \item \AllApplyCase{syntax\_syntax}
   \begin{itemize}
     \item $\visone$ is a list of constraints $\csone$, that is, $\FromSyntax(\vsone)$;
     \item $\vistwo$ is a list of constraints $\cstwo$, that is, $\FromSyntax(\vstwo)$;
@@ -815,7 +815,7 @@ One of the following applies:
     \item \Proseeqdef{$\vb$}{$\True$ if and only if $\vsone$ is a subset of $\vstwo$}.
   \end{itemize}
 
-  \item \AllApplyCase{finite\_syntax}:
+  \item \AllApplyCase{finite\_syntax}
   \begin{itemize}
     \item $\visone$ is a finite set of integers for $\vsone$, that is, $\Finite(\vsone)$;
     \item $\vistwo$ is a list of constraints $\cstwo$, that is, $\FromSyntax(\vstwo)$;
@@ -823,7 +823,7 @@ One of the following applies:
     \item \Proseeqdef{$\vb$}{$\True$ if and only if $\vsone$ is a subset of $\vstwo$}.
   \end{itemize}
 
-  \item \AllApplyCase{syntax\_finite}:
+  \item \AllApplyCase{syntax\_finite}
   \begin{itemize}
     \item $\visone$ is a list of constraints $\csone$, that is, $\FromSyntax(\vsone)$;
     \item $\vistwo$ is a finite set of integers for $\vstwo$, that is, $\Finite(\vstwo)$;
@@ -1357,9 +1357,9 @@ symbolically applies the binary operation $\op$ to the lists of integer constrai
 yielding the integer constraints $\vics$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{extremities}:
+  \item \AllApplyCase{extremities}
   \begin{itemize}
     \item $\op$ is either $\DIV$, $\DIVRM$, $\MUL$, $\PLUS$, $\MINUS$, $\SHR$, or $\SHL$;
     \item applying $\applybinopextremities$ to every pair of constraints $\csone[\vi]$ and $\cstwo[\vj]$
@@ -1368,14 +1368,14 @@ One of the following applies:
           $\vi\in\listrange(\csone)$ and $\vj\in\listrange(\cstwo)$.
   \end{itemize}
 
-  \item \AllApplyCase{mod}:
+  \item \AllApplyCase{mod}
   \begin{itemize}
     \item $\op$ is $\MOD$;
     \item applying $\constraintmod$ to $\cstwo[\vj]$, for every $\vj\in\listrange(\cstwo)$, yields $\vc_\vj$;
     \item define $\newcs$ as $\vc_\vj$, for every $\vj\in\listrange(\cstwo)$.
   \end{itemize}
 
-  \item \AllApplyCase{pow}:
+  \item \AllApplyCase{pow}
   \begin{itemize}
     \item $\op$ is $\POW$;
     \item applying $\constraintpow$ to every pair of constraints $\csone[\vi]$ and $\cstwo[\vj]$
@@ -1440,16 +1440,16 @@ yields a list of constraints $\newcs$ for the constraints $\vcone$ and $\vctwo$,
 range constraints for cases where the binary operation $\op$ yields a dynamic error.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{exact\_exact}:
+  \item \AllApplyCase{exact\_exact}
   \begin{itemize}
     \item $\vcone$ is a constraint for the expression $\va$;
     \item $\vctwo$ is a constraint for the expression $\vc$;
     \item define $\newcs$ as the list containing the constraint for the binary expression $\AbbrevEBinop{\op}{\va}{\vc}$.
   \end{itemize}
 
-  \item \AllApplyCase{range\_exact}:
+  \item \AllApplyCase{range\_exact}
   \begin{itemize}
     \item $\vcone$ is a range constraint for the expressions $\va$ and $\vb$;
     \item $\vctwo$ is a constraint for the expression $\vc$;
@@ -1458,7 +1458,7 @@ One of the following applies:
           for each pair of expressions $(\vap, \vbp)$ in $\extpairs$.
   \end{itemize}
 
-  \item \AllApplyCase{exact\_range}:
+  \item \AllApplyCase{exact\_range}
   \begin{itemize}
     \item $\vcone$ is a constraint for the expression $\va$;
     \item $\vctwo$ is a range constraint for the expressions $\vc$ and $\vd$;
@@ -1467,7 +1467,7 @@ One of the following applies:
           for each pair of expressions $(\vcp, \vdp)$ in $\extpairs$.
   \end{itemize}
 
-  \item \AllApplyCase{range\_range}:
+  \item \AllApplyCase{range\_range}
   \begin{itemize}
     \item $\vcone$ is a range constraint for the expressions $\va$ and $\vb$;
     \item $\vctwo$ is a range constraint for the expressions $\vc$ and $\vd$;
@@ -1540,13 +1540,13 @@ for cases where applying $\op$ to $\va$ and $\vb$ would lead to a dynamic error.
 
 \ProseParagraph
 \begin{itemize}
-  \item \AllApplyCase{mul}:
+  \item \AllApplyCase{mul}
   \begin{itemize}
     \item $\op$ is $\MUL$;
     \item define $\extpairs$ as the list consisting of $(\va, \va)$, $(\va, \vb)$, $(\vb, \va)$, and $(\vb, \vb)$.
   \end{itemize}
 
-  \item \AllApplyCase{other}:
+  \item \AllApplyCase{other}
   \begin{itemize}
     \item $\op$ is either $\DIV$, $\DIVRM$, $\SHR$, $\SHL$, $\PLUS$, or $\MINUS$;
     \item define $\extpairs$ as the list consisting of $(\va, \vb)$.
@@ -1583,31 +1583,31 @@ for cases where applying $\op$ to $\vc$ and $\vd$ would lead to a dynamic error.
 
 \ProseParagraph
 \begin{itemize}
-  \item \AllApplyCase{plus}:
+  \item \AllApplyCase{plus}
   \begin{itemize}
     \item $\op$ is $\PLUS$;
     \item define $\extpairs$ as the list consisting of $(\vc, \vd)$.
   \end{itemize}
 
-  \item \AllApplyCase{minus}:
+  \item \AllApplyCase{minus}
   \begin{itemize}
     \item $\op$ is $\MINUS$;
     \item define $\extpairs$ as the list consisting of $(\vd, \vc)$.
   \end{itemize}
 
-  \item \AllApplyCase{mul}:
+  \item \AllApplyCase{mul}
   \begin{itemize}
     \item $\op$ is $\MUL$;
     \item define $\extpairs$ as the list consisting of $(\vc, \vc)$, $(\vc, \vd)$, $(\vd, \vc)$, and $(\vd, \vd)$.
   \end{itemize}
 
-  \item \AllApplyCase{shl\_shr}:
+  \item \AllApplyCase{shl\_shr}
   \begin{itemize}
     \item $\op$ is either $\SHL$ or $\SHR$;
     \item define $\extpairs$ as the list consisting of $(\vd, \ELInt{0})$ and $(\ELInt{0}, \vd)$.
   \end{itemize}
 
-  \item \AllApplyCase{div\_divrm}:
+  \item \AllApplyCase{div\_divrm}
   \begin{itemize}
     \item $\op$ is either $\DIV$ or $\DIVRM$;
     \item define $\extpairs$ as the list consisting of $(\vd, \ELInt{1})$ and $(\ELInt{1}, \vd)$.
@@ -1702,9 +1702,9 @@ yields a list of range constraints $\newcs$ that are needed to calculate the res
 applying a $\POW$ operation to the constraints $\vcone$ and $\vctwo$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{exact\_exact}:
+  \item \AllApplyCase{exact\_exact}
   \begin{itemize}
     \item $\vcone$ is the constraint for the expression $\va$;
     \item $\vcone$ is the constraint for the expression $\vc$;
@@ -1712,7 +1712,7 @@ One of the following applies:
     for the expression \\ $\EBinop(\POW, \va, \vc)$.
   \end{itemize}
 
-  \item \AllApplyCase{range\_exact}:
+  \item \AllApplyCase{range\_exact}
   \begin{itemize}
     \item $\vcone$ is the range constraint for the expressions $\va$ and $\vb$;
     \item $\vctwo$ is the constraint for the expression $\vc$;
@@ -1725,7 +1725,7 @@ One of the following applies:
     \end{itemize}
   \end{itemize}
 
-  \item \AllApplyCase{exact\_range}:
+  \item \AllApplyCase{exact\_range}
   \begin{itemize}
     \item $\vcone$ is the constraint for the expression $\va$;
     \item $\vctwo$ is the range constraint for the expressions $\Ignore$ and $\vd$;
@@ -1739,7 +1739,7 @@ One of the following applies:
     \end{itemize}
   \end{itemize}
 
-  \item \AllApplyCase{range\_range}:
+  \item \AllApplyCase{range\_range}
   \begin{itemize}
     \item $\vcone$ is the range constraint for the expressions $\va$ and $\vb$;
     \item $\vctwo$ is the range constraint for the expressions $\Ignore$ and $\vd$;

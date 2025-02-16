@@ -246,7 +246,7 @@ reads from a bitvector $\bv$, or an integer seen as a bitvector, the indices spe
 thereby concatenating their values.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
   \item all indices are in range for $\bv$ and the returned bitvector consists of the concatenated bits specified
   by the slices.
@@ -339,8 +339,9 @@ The relation
   \writetobitvector(\overname{(\tint\times\tint)^*}{\slices} \aslsep \overname{\tbitvector}{\src} \aslsep \overname{\tbitvector}{\dst})
   \;\aslrel\; \overname{\tbitvector}{\vv} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
-overwrites the bits of $\dst$ at the positions given by $\slices$ with the bits of $\src$
-and one of the following applies:
+overwrites the bits of $\dst$ at the positions given by $\slices$ with the bits of $\src$.
+
+\OneApplies
 \begin{itemize}
   \item all positions specified by $\slices$ are within range for $\dst$ and the modified version
   of $\dst$ with the bits of $\src$ at the specified positions is returned;

@@ -345,16 +345,16 @@ defines whether there exists a \emph{\sideeffectconflictterm} between the \sidee
 and the \sideeffectdescriptorterm\ $\vstwo$, yielding the result in $\vb$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-    \item \AllApplyCase{globalread}:
+    \item \AllApplyCase{globalread}
     \begin{itemize}
         \item $\vsone$ is a \ReadGlobalTerm\ for a storage element named $\id$;
         \item define $\vb$ as $\True$ if and only if $\vstwo$ is either
               a \WriteGlobalTerm\ for a storage element named $\id$ or a \RecursiveCallTerm.
     \end{itemize}
 
-    \item \AllApplyCase{globalwrite}:
+    \item \AllApplyCase{globalwrite}
     \begin{itemize}
         \item $\vsone$ is a \WriteGlobalTerm\ for a storage element named $\id$;
         \item define $\vb$ as $\True$ if and only if $\vstwo$ is either
@@ -364,7 +364,7 @@ One of the following applies:
               a \RecursiveCallTerm.
     \end{itemize}
 
-    \item \AllApplyCase{exception}:
+    \item \AllApplyCase{exception}
     \begin{itemize}
         \item $\vsone$ is an \ThrowExceptionTerm;
         \item define $\vb$ as $\True$ if and only if $\vstwo$ is either
@@ -374,7 +374,7 @@ One of the following applies:
                 \RecursiveCallTerm.
     \end{itemize}
 
-    \item \AllApplyCase{localread}:
+    \item \AllApplyCase{localread}
     \begin{itemize}
         \item $\vsone$ is a \ReadLocalTerm\ for a storage element named $\id$;
         \item define $\vb$ as $\True$ if and only if $\vstwo$ is either
@@ -382,7 +382,7 @@ One of the following applies:
                 \RecursiveCallTerm.
     \end{itemize}
 
-    \item \AllApplyCase{localwrite}:
+    \item \AllApplyCase{localwrite}
     \begin{itemize}
         \item $\vsone$ is a \WriteLocalTerm\ for a storage element named $\id$;
         \item define $\vb$ as $\True$ if and only if $\vstwo$ is either
@@ -391,7 +391,7 @@ One of the following applies:
                 \RecursiveCallTerm.
     \end{itemize}
 
-    \item \AllApplyCase{assertion}:
+    \item \AllApplyCase{assertion}
     \begin{itemize}
         \item $\vsone$ is a \PerformsAssertionsTerm;
         \item define $\vb$ as $\True$ if and only if $\vstwo$ is either
@@ -399,13 +399,13 @@ One of the following applies:
             \RecursiveCallTerm.
     \end{itemize}
 
-    \item \AllApplyCase{nondeterminism}:
+    \item \AllApplyCase{nondeterminism}
     \begin{itemize}
         \item $\vsone$ is a \NonDeterministicTerm;
         \item define $\vb$ as $\False$.
     \end{itemize}
 
-    \item \AllApplyCase{recursion}:
+    \item \AllApplyCase{recursion}
     \begin{itemize}
         \item $\vsone$ is a \RecursiveCallTerm;
         \item define $\vb$ as $\True$ if and only if $\vstwo$ is not a \NonDeterministicTerm.
@@ -593,9 +593,9 @@ in $\vf$.
 (If $\vses$ is empty, the result is \timeframeconstant.)
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-    \item \AllApplyCase{execution}:
+    \item \AllApplyCase{execution}
     \begin{itemize}
         \item there exists a \sideeffectdescriptorterm\ in $\vses$ that is either
             a \WriteLocalTerm, a \WriteGlobalTerm, an \ThrowExceptionTerm, a \RecursiveCallTerm, or
@@ -603,7 +603,7 @@ One of the following applies:
         \item define $\vf$ as \timeframeexecution.
     \end{itemize}
 
-    \item \AllApplyCase{reads}:
+    \item \AllApplyCase{reads}
     \begin{itemize}
         \item define $\vreads$ as the subset of $\vses$ that contains only
             \sideeffectdescriptorsterm\ that are either \ReadLocalTerm\ or \ReadGlobalTerm;

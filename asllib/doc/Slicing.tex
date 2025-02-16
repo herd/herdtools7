@@ -82,9 +82,9 @@ The relation
 evaluates a list of slices $\slices$ in an environment $\env$, resulting in either \\
 $\Normal((\ranges, \newg), \newenv)$ or an abnormal configuration.
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{empty}:
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item the list of slices is empty;
     \item $\ranges$ is the empty list;
@@ -92,7 +92,7 @@ One of the following applies:
     \item $\newenv$ is $\env$;
   \end{itemize}
 
-  \item \AllApplyCase{nonempty}:
+  \item \AllApplyCase{nonempty}
   \begin{itemize}
     \item the list of slices has $\slice$ as the head and $\slicesone$ as the tail;
     \item evaluating the slice $\vslice$ in $\env$ results in \\
@@ -220,22 +220,22 @@ annotates a single slice $\vs$ in the static environment $\tenv$,
 resulting in an annotated slice $\vsp$.
 \ProseOtherwiseTypeError
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{single}:
+  \item \AllApplyCase{single}
   \begin{itemize}
     \item $\vs$ is a \singleslice\ at index \vi, that is $\SliceSingle(\vi)$;
     \item annotating the slice at offset $\vi$ of length $1$ yields $\vsp$\ProseOrTypeError.
   \end{itemize}
 
-  \item \AllApplyCase{range}:
+  \item \AllApplyCase{range}
   \begin{itemize}
     \item $\vs$ is a slice for the range \texttt{(j, i)}, that is $\SliceRange(\vj, \vi)$;
     \item $\prelength$ is \texttt{i+:(j-i+1)};
     \item annotating the slice at offset $\vi$ of length $\prelength$ yields $\vsp$\ProseOrTypeError.
   \end{itemize}
 
-  \item \AllApplyCase{length}:
+  \item \AllApplyCase{length}
   \begin{itemize}
     \item $\vs$ is a \lengthslice\ of length $\elength$ and offset $\eoffset$, that is, \\
           $\SliceLength(\eoffset, \elength)$;
@@ -249,7 +249,7 @@ One of the following applies:
      \item define $\vses$ as the union of $\vsesoffset$ and $\vseslength$.
   \end{itemize}
 
-  \item \AllApplyCase{scaled}:
+  \item \AllApplyCase{scaled}
   \begin{itemize}
     \item $\vs$ is a \scaledslice\ \texttt{[factor *: pre\_length]}, that is, \\
           $\SliceStar(\factor, \prelength)$;
@@ -316,15 +316,15 @@ returns an expression $\vslices$ that represents the width of all slices given b
 in the static environment $\tenv$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{empty}:
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\vslices$ is the empty list;
     \item $\vwidth$ is the literal integer expression for $0$.
   \end{itemize}
 
-  \item \AllApplyCase{non\_empty}:
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\vslices$ is the list with \head\ $\vs$ and \tail\ $\slicesone$;
     \item applying $\slicewidth$ to $\vs$ yields $\veone$;
@@ -359,21 +359,21 @@ The helper function
 returns an expression $\vwidth$ that represents the width of the slices given by $\vslice$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{single}:
+  \item \AllApplyCase{single}
   \begin{itemize}
     \item $\vslice$ is a single slice, that is, $\SliceSingle(\Ignore)$;
     \item $\vwidth$ is the literal integer expression for $1$;
   \end{itemize}
 
-  \item \AllApplyCase{star, length}:
+  \item \AllApplyCase{star, length}
   \begin{itemize}
     \item $\vslice$ is either a slice of the form \texttt{\_*:$\ve$} or \texttt{\_+:$\ve$};
     \item $\vwidth$ is $\ve$;
   \end{itemize}
 
-  \item \AllApplyCase{range}:
+  \item \AllApplyCase{range}
   \begin{itemize}
     \item $\vslice$ is a slice of the form \texttt{$\veone$:$\vetwo$};
     \item $\vwidth$ is the expression for $1 + (\veone - \vetwo)$.
@@ -466,16 +466,16 @@ In \listingref{semantics-scaledslice},
 \ASLListing{A scaled slice}{semantics-scaledslice}{\semanticstests/SemanticsRule.SliceStar.asl}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{single}:
+  \item \AllApplyCase{single}
   \begin{itemize}
     \item $\vs$ is a \singleslice\ with the expression $\ve$, $\SliceSingle(\ve)$;
     \item evaluating $\ve$ in $\env$ results in $\Normal((\vstart, \newg)$\newenv)\ProseOrAbnormal;
     \item $\vlength$ is the integer value 1.
   \end{itemize}
 
-  \item \AllApplyCase{range}:
+  \item \AllApplyCase{range}
   \begin{itemize}
     \item $\vs$ is the \rangeslice\ between the
       expressions $\estart$ and $\etop$, that is, \\ $\SliceRange(\etop, \estart)$;
@@ -487,7 +487,7 @@ One of the following applies:
     \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
   \end{itemize}
 
-  \item \AllApplyCase{length}:
+  \item \AllApplyCase{length}
   \begin{itemize}
     \item $\vs$ is the \lengthslice, which starts at expression~$\estart$ with length~$\elength$,
     that is, $\SliceLength(\estart, \elength)$;
@@ -498,7 +498,7 @@ One of the following applies:
     \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
   \end{itemize}
 
-  \item \AllApplyCase{scaled}:
+  \item \AllApplyCase{scaled}
   \begin{itemize}
     \item $\vs$ is the \scaledslice\ with factor given by the
       expression $\efactor$ and length given by the

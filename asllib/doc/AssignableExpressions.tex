@@ -530,10 +530,10 @@ In \listingref{semantics-lediscard}, the assignment \texttt{- = 42;} does not af
 \subsection{Typing}
 \TypingRuleDef{LEVar}
 \ProseParagraph
-\AllApply
+\OneApplies
 \begin{itemize}
   \item $\vle$ denotes a left-hand-side variable expression for $\vx$, that is, $\LEVar(\vx)$;
-  \item One of the following applies (\textsc{local}):
+  \item \AllApplyCase{local}
   \begin{itemize}
     \item $\vx$ is declared in $\tenv$ as a local storage element with type $\tty$ and local declaration keyword $k$;
     \item checking that $k$ corresponds to a mutable variable, that is, $\LDKVar$, yields $\True$\ProseTerminateAs{\AssignmentToImmutable};
@@ -542,7 +542,7 @@ In \listingref{semantics-lediscard}, the assignment \texttt{- = 42;} does not af
     \item \Proseeqdef{$\vses$}{the \WriteLocalTerm\ for $\vx$}.
   \end{itemize}
 
-  \item One of the following applies (\textsc{global}):
+  \item \AllApplyCase{global}
   \begin{itemize}
     \item $\vx$ is declared in $\tenv$ as a global storage element with type $\tty$ and global declaration keyword $k$;
     \item checking that $k$ corresponds to a mutable variable, that is, $\GDKVar$, yields $\True$\ProseTerminateAs{\AssignmentToImmutable};
@@ -551,12 +551,13 @@ In \listingref{semantics-lediscard}, the assignment \texttt{- = 42;} does not af
     \item \Proseeqdef{$\vses$}{the \WriteGlobalTerm\ for $\vx$}.
   \end{itemize}
 
-  \item One of the following applies (\textsc{error\_undefined}):
+  \item \AllApplyCase{error\_undefined}
   \begin{itemize}
     \item $\vx$ is not declared in $\tenv$ as a local storage element nor as a global storage element;
     \item the result is a type error $\UndefinedIdentifier$.
   \end{itemize}
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[local]{
@@ -614,15 +615,15 @@ In \listingref{semantics-leglobalvar},
 \begin{itemize}
     \item $\vle$ denotes a variable, $\LEVar(\vx)$;
     \item view $\env$ as an environment where $\tenv$ is the static environment and $\denv$ is the dynamic environment;
-    \item One of the following applies:
+    \item \OneApplies
     \begin{itemize}
-        \item \AllApplyCase{local}:
+        \item \AllApplyCase{local}
         \begin{itemize}
             \item $\vx$ is in the local dynamic environment ($L^\denv$);
             \item $\newenv$ is $\env$ where $\vx$ is bound to $\vv$ in the local dynamic environment ($L^\denv$).
         \end{itemize}
 
-        \item \AllApplyCase{global}:
+        \item \AllApplyCase{global}
         \begin{itemize}
             \item $\vx$ is bound in the global dynamic environment ($G^\denv.\storage$);
             \item $\newenv$ is $\env$ where $\vx$ is bound to $\vv$ in the $\storage$ map of the global dynamic environment $G^\denv$.
@@ -1284,9 +1285,9 @@ ranges $(\vsone, \vlone)$ and $(\vstwo, \vltwo)$ do not intersect, yielding $\Tr
   \item \Proseannotateexpr{$\tenv$}{the right-hand side expression corresponding to \\ $\lebaseannot$}{$(\tbase, \Ignore, \Ignore)$}\ProseOrTypeError;
   \item \Proseannotatelexpr{$\tenv$}{$\lebase$}{$\tbase$}{$(\lebaseannot, \vsesbase)$}\ProseOrTypeError;
   \item \Prosemakeanonymous{$\tenv$}{$\tbase$}{\\ $\tbaseanon$}\ProseOrTypeError;
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{bits}:
+    \item \AllApplyCase{bits}
     \begin{itemize}
       \item $\tanonbase$ is a bitvector type with list of bitfields $\vbitfields$;
       \item applying $\findbitfieldsslices$ to $\name$ and $\vbitfields$, for every $\name$ in $\vlefields$, yields $\vslices_\name$\ProseOrTypeError;
@@ -1295,7 +1296,7 @@ ranges $(\vsone, \vlone)$ and $(\vstwo, \vltwo)$ do not intersect, yielding $\Tr
       \item \Proseannotatelexpr{$\tenv$}{$\vleslice$}{$\vte$}{$(\newle, \vses)$}\ProseOrTypeError.
     \end{itemize}
 
-    \item \AllApplyCase{record}:
+    \item \AllApplyCase{record}
     \begin{itemize}
       \item $\tanonbase$ is a record type with list of fields $\vbasefields$;
       \item applying $\foldbitvectorfields$ to $\vlefields$ and $\vbasefields$ in $\tenv$ yields $(\vlength, \vslices)$ \ProseOrTypeError;
@@ -1306,7 +1307,7 @@ ranges $(\vsone, \vlone)$ and $(\vstwo, \vltwo)$ do not intersect, yielding $\Tr
       \item \Proseeqdef{$\vses$}{$\vsesbase$}.
     \end{itemize}
 
-    \item \AllApplyCase{error}:
+    \item \AllApplyCase{error}
     \begin{itemize}
       \item $\tanonbase$ is neither a bitvector type nor a record type;
       \item the result is a type error indicating that the type of the left-hand-side expression is expected to be
@@ -1373,16 +1374,16 @@ The helper function
 \]
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{empty}:
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\vlefields$ is empty;
     \item \Proseeqdef{$\vlength$}{$0$};
     \item \Proseeqdef{$\vslices$}{the empty list}.
   \end{itemize}
 
-  \item \AllApplyCase{non\_empty}:
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\vlefields$ is the list with prefix $\vlefieldsone$ (the elements excluding the last one) and last element $\vfield$;
     \item applying $\foldbitvectorfields$ to $\vbasefields$ and $\vlefieldsone$ in $\tenv$ yields $(\vstart, \vslicesone)$\ProseOrTypeError;
@@ -1464,15 +1465,15 @@ slices given by $\vslices$ of the \concurrentnativevalue\ $\vm$, yielding the
 \concurrentnativevalue\ $\vmtwo$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item \AllApplyCase{empty}:
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\fields$ and $\vslices$ are both empty lists;
     \item \Proseeqdef{$\vmtwo$}{$\vmone$}.
   \end{itemize}
 
-  \item \AllApplyCase{non\_empty}:
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\fields$ is a list with \head\ $\fieldname$ and \tail\ $\fieldsone$;
     \item $\vslices$ is a list with \head\ $(\vione, \vitwo)$ and \tail\ $\vslicesone$;
@@ -1533,16 +1534,16 @@ One of the following applies:
   \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
   \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $(\vletwo, \vses)$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vtleone$ in $\tenv$ yields a bitvector type with bitfields $\bitfields$\ProseOrTypeError;
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{error\_missing\_field}:
+    \item \AllApplyCase{error\_missing\_field}
     \begin{itemize}
       \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields $\None$, meaning the field is not declared
             in $\vtleone$;
       \item the result is a type error $\BadField$.
     \end{itemize}
 
-    \item \AllApplyCase{field\_simple}:
+    \item \AllApplyCase{field\_simple}
     \begin{itemize}
       \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields a bitfield with corresponding slices $\slices$,
             that is, $\BitFieldSimple(\Ignore, \slices)$;
@@ -1553,7 +1554,7 @@ One of the following applies:
       \item annotating the left-hand-side expression $\vletwo$ in $\tenv$ yields \\ $(\newle, \vses)$\ProseOrTypeError.
     \end{itemize}
 
-    \item \AllApplyCase{field\_nested}:
+    \item \AllApplyCase{field\_nested}
     \begin{itemize}
       \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields a nested bitfield with corresponding
             slices $\slices$ and list of bitfields $\bitfieldsp$, that is, \\ $\BitFieldNested(\Ignore, \slices, \bitfieldsp)$;
@@ -1564,7 +1565,7 @@ One of the following applies:
       \item annotating the left-hand-side expression $\vlethree$ in $\tenv$ yields \\ $(\newle, \vses)$\ProseOrTypeError.
     \end{itemize}
 
-    \item \AllApplyCase{field\_typed}:
+    \item \AllApplyCase{field\_typed}
     \begin{itemize}
       \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields a typed bitfield with corresponding
             slices $\slices$ and a type $\vt$, that is, \\ $\BitFieldType(\Ignore, \vslices, \vt)$;
