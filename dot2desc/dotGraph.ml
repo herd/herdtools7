@@ -101,7 +101,8 @@ let tr_stmt acc stmt param_map =
     let f = if Str.matched_group 1 value = "R" then read else write in
     let loc, reg = get_loc_and_address_reg value in
     let reg = StringMap.safe_find reg reg param_map in
-    { Node.desc=f loc reg; kind=Node.Mem } in
+    let is_explicit = not (str_contains value "NExp") in
+    { Node.desc=f loc reg is_explicit; kind=Node.Mem } in
 
   let is_gpreg reg =
     let r = Str.regexp {|[BHWXQ][0-9]+|} in
