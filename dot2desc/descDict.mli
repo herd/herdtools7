@@ -20,15 +20,15 @@ val memloc: string -> string
 (* register -> description *)
 val reg: string -> string
 
-(* location -> address register -> description *)
-val mem_read: string -> string -> string
-val mem_write: string -> string -> string
-val tag_read: string -> string -> string
-val tag_write: string -> string -> string
-val pte_read: string -> string -> string
-val pte_write: string -> string -> string
-val pa_read: string -> string -> string
-val pa_write: string -> string -> string
+(* location -> address register -> is_explicit -> description *)
+val mem_read: string -> string -> bool -> string
+val mem_write: string -> string -> bool ->  string
+val tag_read: string -> string -> bool -> string
+val tag_write: string -> string -> bool -> string
+val pte_read: string -> string -> bool -> string
+val pte_write: string -> string -> bool -> string
+val pa_read: string -> string -> bool -> string
+val pa_write: string -> string -> bool -> string
 
 (* label -> instruction -> description *)
 val ifetch: string -> string -> string
