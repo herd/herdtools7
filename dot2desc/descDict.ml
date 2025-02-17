@@ -20,29 +20,53 @@ let memloc loc =
 let reg reg =
   Printf.sprintf "\\reg{%s}" reg
 
-let mem_read loc reg =
-  Printf.sprintf "\\ExpMREof{\\memlocAddrBy{%s}{%s}}" loc reg
+let mre_of arg is_explicit =
+  if is_explicit then
+    Printf.sprintf "\\ExpMREof{%s}" arg
+  else
+    Printf.sprintf "\\ImpMREof{%s}" arg
 
-let mem_write loc reg =
-  Printf.sprintf "\\ExpMWEof{\\memlocAddrBy{%s}{%s}}" loc reg
+let mwe_of arg is_explicit =
+  if is_explicit then
+    Printf.sprintf "\\ExpMWEof{%s}" arg
+  else
+    Printf.sprintf "\\ImpMWEof{%s}" arg
 
-let tag_read loc reg =
-  Printf.sprintf "\\ImpTagMREof{\\taglocOf{%s}{\\memlocAddrBy{%s}{%s}}}" loc loc reg
+let mem_read loc reg is_explicit =
+  let arg = Printf.sprintf "\\memlocAddrBy{%s}{%s}" loc reg in
+  mre_of arg is_explicit
 
-let tag_write loc reg =
-  Printf.sprintf "\\ImpTagMWEof{\\taglocOf{%s}{\\memlocAddrBy{%s}{%s}}}" loc loc reg
+let mem_write loc reg is_explicit =
+  let arg = Printf.sprintf "\\memlocAddrBy{%s}{%s}" loc reg in
+  mwe_of arg is_explicit
 
-let pte_read loc reg =
-  Printf.sprintf "\\ExpMREof{\\PTEof{\\memlocAddrBy{%s}{%s}}}" loc reg
+let tag_read loc reg is_explicit =
+  if is_explicit then
+    Printf.sprintf "\\ExpTagMREof{\\taglocOf{%s}{\\memlocAddrBy{%s}{%s}}}" loc loc reg
+  else
+    Printf.sprintf "\\ImpTagMREof{\\taglocOf{%s}{\\memlocAddrBy{%s}{%s}}}" loc loc reg
 
-let pte_write loc reg =
-  Printf.sprintf "\\ExpMWEof{\\PTEof{\\memlocAddrBy{%s}{%s}}}" loc reg
+let tag_write loc reg is_explicit =
+  if is_explicit then
+    Printf.sprintf "\\ExpTagMWEof{\\taglocOf{%s}{\\memlocAddrBy{%s}{%s}}}" loc loc reg
+  else  
+    Printf.sprintf "\\ImpTagMWEof{\\taglocOf{%s}{\\memlocAddrBy{%s}{%s}}}" loc loc reg
 
-let pa_read loc reg =
-  Printf.sprintf "\\ExpMREof{\\PAof{\\memlocAddrBy{%s}{%s}}}" loc reg
+let pte_read loc reg is_explicit =
+  let arg = Printf.sprintf "\\PTEof{\\memlocAddrBy{%s}{%s}}" loc reg in
+  mre_of arg is_explicit
 
-let pa_write loc reg =
-  Printf.sprintf "\\ExpMWEof{\\PAof{\\memlocAddrBy{%s}{%s}}}" loc reg
+let pte_write loc reg is_explicit =
+  let arg = Printf.sprintf "\\PTEof{\\memlocAddrBy{%s}{%s}}" loc reg in
+  mwe_of arg is_explicit
+
+let pa_read loc reg is_explicit =
+  let arg = Printf.sprintf "\\PAof{\\memlocAddrBy{%s}{%s}}" loc reg in
+  mre_of arg is_explicit
+
+let pa_write loc reg is_explicit =
+  let arg = Printf.sprintf "\\PAof{\\memlocAddrBy{%s}{%s}}" loc reg in
+  mwe_of arg is_explicit
 
 let ifetch label instr =
   Printf.sprintf "\\IFetch{%s}{%s}" label instr
