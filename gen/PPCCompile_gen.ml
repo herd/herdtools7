@@ -233,7 +233,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
       let rB,init,st = U.next_init st p init x in
       rA,init,PPC.lift_code [PPC.Pload (sz,rA,o,rB)],st
 
-    let emit_load st p init x _label = emit_load_mixed naturalsize 0 st p init x
+    let emit_load st p init x = emit_load_mixed naturalsize 0 st p init x
 
     let emit_obs _ = emit_load_mixed naturalsize 0
 
@@ -317,7 +317,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
         | Data loc ->
             begin match d,e.atom with
             | R,None ->
-                let emit = if e.rmw then emit_lwarx else (fun st p init x -> emit_load st p init x None) in
+                let emit = if e.rmw then emit_lwarx else emit_load in
                 let r,init,cs,st = emit st p init loc  in
                 Some r,init,cs,st
             | W,None ->
@@ -448,9 +448,9 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
       | None,_ -> Warn.fatal "TODO"
       | Some R,Data loc ->
           let emit = match e.atom with
-          | None -> ( fun st p init x -> emit_load st p init x None )
+          | None -> emit_load
           | Some (PPC.Mixed (sz,o)) -> emit_load_mixed sz o
-          | Some PPC.Reserve ->emit_lwarx
+          | Some PPC.Reserve -> emit_lwarx
           | Some PPC.Atomic -> emit_lda in
           let r,init,cs,st = emit st p init loc in
           Some r,init,(if isync then insert_isync c cs else c@cs),st

@@ -77,9 +77,9 @@ let emit_joker st init = None,init,[],st
       let rA,st = next_reg st in
       rA,init,pseudo [ld_tagged rA x a],st
 
-    let emit_load st p init x _label = emit_load_tagged st p init x  []
+    let emit_load st p init x = emit_load_tagged st p init x  []
 
-    let emit_obs _ st p init x = emit_load st p init x None
+    let emit_obs _ = emit_load
 
     let emit_load_idx_tagged st _p init x idx a =
       let rA,st = next_reg st in
@@ -168,7 +168,7 @@ zz        (fun r lab -> bcc Ne r rP lab)
     | Some d ->
         match d,e.atom,e.loc with
         | R,None,Data loc ->
-            let r,init,cs,st = emit_load st p init loc None in
+            let r,init,cs,st = emit_load st p init loc in
             Some r,init,cs,st
         | R,Some a,Data loc ->
             let r,init,cs,st = emit_load_tagged st p init loc a in

@@ -105,13 +105,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* loads *)
 (*********)
 
-    let emit_load st p init x _label =
+    let emit_load st p init x =
       let rA,st = next_reg st in
       let rB,init,st = U.next_init st p init x in
       rA,init,lift_code [I_LDR (rA,rB,AL)],st
 
-    (* TODO should we allowed label in emit_obs *)
-    let emit_obs _ st p init x = emit_load st p init x None
+    let emit_obs _ = emit_load
 
     let emit_obs_not_zero st p init x =
       let rA,st = next_reg st in
@@ -256,7 +255,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | Some d ->
         match d,e.atom,e.loc with
         | R,None,Data loc ->
-            let r,init,cs,st = emit_load st p init loc None in
+            let r,init,cs,st = emit_load st p init loc in
             Some r,init,cs,st
         | R,Some Reserve,Data loc ->
             let r,init,cs,st = emit_ldrex st p init loc  in

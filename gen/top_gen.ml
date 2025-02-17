@@ -116,8 +116,7 @@ module U = TopUtils.Make(O)(Comp)
     if ov <= 0 then init,[],st
     else
       let loc_ov = sprintf "%s%i" loc ov in
-      (* TODO is the None correct *)
-      let _,init,i,st = Comp.emit_load st p init loc_ov None in
+      let _,init,i,st = Comp.emit_load st p init loc_ov in
       let init,is,st = emit_overload st p init (ov-1) loc in
       init,i@is,st
 
@@ -134,7 +133,6 @@ module U = TopUtils.Make(O)(Comp)
   | Rmw rmw -> rmw
   | _ -> assert false
 
-  (* TODO pass the fault information *)
   let call_emit_access st p init n =
     let e = n.C.evt in
     if e.C.rmw then match e.C.dir with
@@ -245,14 +243,14 @@ let get_fence n =
             compile_proc pref chk loc_writes st p (edge_to_prev_load ro_prev n1) init ns in
           init,cs@is,finals,st
       | _ ->
-              (* TODO what is the return type *)
+          (* TODO what is the meaning of all the returns? *)
           let o,init,i,st = emit_access ro_prev st p init n in
           let nchk,add_check =
             match O.docheck,n.C.evt.C.dir,o,ns with
             | true,Some R,Some r,_::_ ->
                 true,Comp.check_load p r n.C.evt
             | _ -> chk,no_check_load in
-          (* TODO change this after, so it adds when necessary, e.g. varaible value change *)
+          (* TODO what is the meaning of all the returns? *)
           let init,mk_c,st = add_check init st in
           let init,is,finals,st =
             compile_proc pref nchk loc_writes

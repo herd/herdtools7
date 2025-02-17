@@ -21,7 +21,7 @@ module type S = sig
 
 (* Accesses *)
   val emit_load :
-      A.st -> Code.proc -> A.init -> string -> string option ->
+      A.st -> Code.proc -> A.init -> string ->
         A.reg * A.init * A.pseudo list * A.st
 
 (* Load for observation *)

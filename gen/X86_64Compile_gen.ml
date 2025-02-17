@@ -275,7 +275,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
           Rm64_abs (ParsedConstant.nameToV x),init,st in
       rA,init,pseudo [emit_load_ins sz o rB rA],st
 
-    let emit_load st p init x _label =
+    let emit_load st p init x =
       emit_load_mixed mach_size 0 st p init x
 
     let emit_load_not_zero st _p init x =
@@ -324,7 +324,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
             | R ->
                begin match e.C.atom with
                | None|Some (Plain,None) ->
-                  let r,init,cs,st = emit_load st _p init loc None in
+                  let r,init,cs,st = emit_load st _p init loc in
                   Some r,init, cs,st
                | Some (Atomic,_) ->
                   Warn.fatal "No atomic load for X86_64"
