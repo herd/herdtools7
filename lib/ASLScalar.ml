@@ -335,8 +335,10 @@ let try_divrm s1 s2 =
   | S_Int s1, S_Int s2 when Z.sign s2 = 1 -> Some (S_Int (Z.fdiv s1 s2))
   | _ -> None
 
+(* Notice, ad-hoc polymorphism: in AArch64+ASL, first argument
+   may be an integer. *)
 let try_write_slice positions dst src =
-  match (dst, src) with
+  match (as_bv dst,src) with
   | S_BitVector dst, S_BitVector src ->
       if List.exists (( <= ) (BV.length dst)) positions then None
       else Some (S_BitVector (BV.write_slice dst src positions))
