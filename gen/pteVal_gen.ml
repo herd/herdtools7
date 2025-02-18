@@ -22,7 +22,6 @@ module type S = sig
   val compare : t -> t -> int
   (* TODO function name is confused, it set the pteval based on `pte_atom` *)
   val set_pteval : pte_atom -> t -> (unit -> string) -> t
-  val set_pteval_field : t -> string -> string -> t
   val can_fault : t -> bool
 end
 
@@ -33,7 +32,6 @@ module No(A:sig type arch_atom end) = struct
   let default s = s
   let compare _ _ = 0
   let set_pteval _ p _ = p
-  let set_pteval_field p _ _ = p
   let can_fault _t = false
 end
 

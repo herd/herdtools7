@@ -44,7 +44,6 @@ val eq : t -> t -> bool
 val is_af : t -> bool
 
 val same_oa : t -> t -> bool
-val set_oa : t -> string -> t
 val writable : bool -> bool -> t -> bool
 val get_attrs : t -> string list
 
@@ -57,7 +56,6 @@ val of_pte : string -> t (* Default value for pte page table entry *)
 val is_default : t -> bool
 
 (* Finish parsing *)
-val set_attr: t -> string -> string -> t
 val tr : ParsedPteVal.t -> t
 val pp_norm : ParsedPteVal.t -> string
 

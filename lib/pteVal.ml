@@ -36,16 +36,12 @@ module type S = sig
   val is_af : t -> bool
 
   val same_oa : t -> t -> bool
-  (* TODO check if we actually need this set_oa function *)
-  val set_oa : t -> string -> t
 
   (* Value specifies a writable page *)
   val writable : bool -> bool -> t -> bool
 
   (* Attributes *)
   val get_attrs : t -> string list
-  (* TODO check if we actually need this set_attr function *)
-  val set_attr : t -> string -> string -> t
 
   (* Litmus *)
   val fields : string list
@@ -73,10 +69,8 @@ module No = struct
     let is_af _ = false
 
     let same_oa _ _ = false
-    let set_oa pte _ = pte
     let writable _ _ _ = false
     let get_attrs _ = []
-    let set_attr pte _ _ = pte
 
     let fields = []
     let default_fields = []
