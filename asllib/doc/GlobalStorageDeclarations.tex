@@ -10,6 +10,25 @@ The semantics of a list of global storage declarations is defined in \SemanticsR
 where the list is ordered via \SemanticsRuleRef{BuildGlobalEnv}.
 The semantics of a single global storage declarations is defined in \SemanticsRuleRef{DeclareGlobal}.
 
+\section{Configurable Global Storage Declarations}
+Global storage declarations with keyword \texttt{config} aim to assist implementation-specific support for ``configuration'' of an ASL specification.
+In particular, implementations may provide mechanisms to override \texttt{config} values, such as:
+\begin{itemize}
+  \item Preprocessing source code before typechecking of a specification to rewrite initialisation expressions.
+  \item Internally modifying \texttt{config} values after typechecking but before evaluation of a specification.
+\end{itemize}
+Note that if modifying values after typechecking, care must be taken to ensure that the modified values remain compatible with the expected types of the original values.
+For example, a \texttt{config} value declared with type \texttt{integer{0..10}} can be modified to \texttt{5} but should not be modified to \texttt{11}.
+This is because as \texttt{5} is compatible with \texttt{integer{0..10}}, but \texttt{11} is not.
+
+The language supports such overriding mechanisms (and in particular, simplifies tracking of types for \texttt{config} storage elements) as follows:
+\begin{itemize}
+  \item The \texttt{config} keyword syntactically identifies configurable storage elements.
+  \item Types of \texttt{config} storage elements must be \emph{both} explicitly declared \emph{and} singular (\TypingRuleRef{SingularType}).
+  \item The \timeframeterm{} of \texttt{config} storage elements is $\timeframeexecution$, so their values are not relied upon by typechecking.
+  \item Values of \texttt{config} storage elements must have \timeframeterm{} less than of equal to $\timeframeconstant$, so they can depend only on constant values (and not other \texttt{config} storage elements for example).
+\end{itemize}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Syntax\label{sec:GlobalStorageDeclarationsSyntax}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
