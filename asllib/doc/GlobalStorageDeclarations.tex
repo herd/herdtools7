@@ -16,6 +16,7 @@ The semantics of a single global storage declarations is defined in \SemanticsRu
 \begin{flalign*}
 \Ndecl  \derives \ & \Nglobaldeclkeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep &\\
         & \wrappedline\ \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+  |\ & \Tconfig \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 	|\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
         & \wrappedline\ \Nexpr \parsesep \Tsemicolon &\\
         |\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&\\
@@ -23,7 +24,7 @@ The semantics of a single global storage declarations is defined in \SemanticsRu
 \end{flalign*}
 
 \begin{flalign*}
-\Nglobaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant \;|\; \Tconfig&\\
+\Nglobaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant&\\
 \Nignoredoridentifier \derives \ & \Tminus \;|\; \Tidentifier &
 \end{flalign*}
 
@@ -47,7 +48,7 @@ The semantics of a single global storage declarations is defined in \SemanticsRu
 
 \ASTRuleDef{GlobalStorageDecl}
 \begin{mathpar}
-\inferrule[global\_storage]{
+\inferrule[global\_storage\_let\_or\_constant]{
   \buildglobaldeclkeyword(\keyword) \astarrow \astof{\keyword}\\
   \buildoption[\buildasty](\tty) \astarrow \ttyp\\
   \buildexpr(\vinitialvalue) \typearrow \astof{\vinitialvalue}
@@ -117,6 +118,19 @@ The semantics of a single global storage declarations is defined in \SemanticsRu
 }
 \end{mathpar}
 
+\begin{mathpar}
+\inferrule[global\_storage\_config]{
+  \buildignoredoridentifier(\cname) \astarrow \name
+}{
+  {
+    \begin{array}{r}
+      \builddecl(\overname{\Ndecl(\Tconfig, \namednode{\cname}{\Nignoredoridentifier}, \Tcolon, \punnode{\Nty}, \Teq, \punnode{\Nexpr}, \Tsemicolon)}{\vparsednode}) \astarrow
+    \end{array}
+  } \\
+  \overname{\DGlobalStorage(\{ \GDkeyword: \GDKConfig, \GDname: \name, \GDty: \Some{\astof{\vt}}, \GDinitialvalue: \Some{\astof{\vexpr}}\})}{\vastnode}
+}
+\end{mathpar}
+
 \ASTRuleDef{GlobalDeclKeyword}
 \hypertarget{build-globaldeclkeyword}{}
 The function
@@ -141,17 +155,6 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   \buildglobaldeclkeyword(\overname{\Nglobaldeclkeyword(\Tconstant)}{\vparsednode}) \astarrow \\
   \overname{\GDKConstant}{\vastnode}
 \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[config]{}{
-  {
-  \begin{array}{r}
-    \buildglobaldeclkeyword(\overname{\Nglobaldeclkeyword(\Tconfig)}{\vparsednode}) \astarrow \\
-    \overname{\GDKConfig}{\vastnode}
-  \end{array}
   }
 }
 \end{mathpar}
@@ -213,7 +216,7 @@ yielding a modified global static environment $\newgenv$ and annotated global st
         \optional\ type $\tyopt$, and name $\name$;
   \item checking that $\name$ is not already declared in $\genv$ yields $\True$\ProseOrTypeError;
   \item applying $\withemptylocal$ to $\genv$ yields $\tenv$;
-  \item applying $\timeframeofgdk$ to $\keyword$ yields $\vtargettimeframe$;
+  \item define $\vtargettimeframe$ as $\timeframeconstant$ if $\keyword$ is $\GDKConstant$ or $\GDKConfig$, and $\timeframeexecution$ otherwise;
   \item applying $\annotatetyoptinitialvalue$ to $\vtargettimeframe$, $\tyoptp$, and \\
         $\initialvalue$ in $\tenv$ yields
         $(\typedinitialvalue, \tyoptp, \declaredt)$\ProseOrTypeError;
@@ -238,7 +241,12 @@ yielding a modified global static environment $\newgenv$ and annotated global st
   \}\\
 \checkvarnotingenv{\genv, \name} \typearrow \True \OrTypeError\\\\
 \withemptylocal(\genv) \typearrow \tenv\\
-\timeframeofgdk(\keyword) \typearrow \vtargettimeframe\\
+{
+  \begin{array}{l}
+    \vtargettimeframe \eqdef \hfill \\
+    \choice{\keyword \in \{\GDKConstant, \GDKConfig\}}{\timeframeconstant}{\timeframeexecution}
+  \end{array}
+}\\
 {
   \begin{array}{r}
     \annotatetyoptinitialvalue(\tenv, \vtargettimeframe, \tyopt, \initialvalue) \typearrow \\
@@ -449,9 +457,10 @@ is the type associated with $\name$.
   \item \AllApplyCase{config}
   \begin{itemize}
     \item $\gdk$ is $\GDKConfig$;
-    \item view $\typedinitialvalue$ as $(\Ignore, \initialvaluep, \vsesinitialvalue)$;
+    \item view $\typedinitialvalue$ as \\ $(\initialvaluetype, \initialvaluep, \vsesinitialvalue)$;
     \item checking that all \timeframesterm\ in $\vsesinitialvalue$ are equal to or less than
-          $\timeframeconfig$ via $\sesisbefore$ yields $\True$\ProseOrTypeError;
+          $\timeframeconstant$ via $\sesisbefore$ yields $\True$\ProseOrTypeError;
+    \item checking that $\initialvaluetype$ is a singular type yields $\True$\ProseOrTypeError;
     \item \Proseeqdef{$\newtenv$}{$\tenv$}.
   \end{itemize}
 
@@ -466,7 +475,7 @@ is the type associated with $\name$.
 \begin{mathpar}
 \inferrule[constant]{
   \typedinitialvalue \eqname (\Ignore, \initialvaluep, \vsesinitialvalue)\\
-  \checktrans{\sesisbefore(\vsesinitialvalue, \timeframeconstant)}{BadTimeFrame} \typearrow \True \OrTypeError\\\\
+  \checktrans{\sesisbefore(\vsesinitialvalue, \timeframeconstant)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
   \tryaddglobalconstant(\tenv, \name, \initialvaluep) \typearrow \newtenv
 }{
   {
@@ -519,8 +528,9 @@ is the type associated with $\name$.
 
 \begin{mathpar}
 \inferrule[config]{
-  \typedinitialvalue \eqname (\Ignore, \initialvaluep, \vsesinitialvalue)\\
-  \checktrans{\sesisbefore(\vsesinitialvalue, \timeframeconfig)}{BadTimeFrame} \typearrow \True \OrTypeError\\\\
+  \typedinitialvalue \eqname (\initialvaluetype, \initialvaluep, \vsesinitialvalue)\\
+  \checktrans{\sesisbefore(\vsesinitialvalue, \timeframeconstant)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
+  \issingular(\tenv, \initialvaluetype) \typearrow \True \OrTypeError
 }{
   {
     \begin{array}{r}
