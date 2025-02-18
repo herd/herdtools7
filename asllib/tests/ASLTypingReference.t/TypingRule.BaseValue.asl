@@ -33,9 +33,13 @@ begin
         tuple_base.item2, ")");
 
     var record_base: Packet;
-    println("record_base      = {data=", record_base.data, ", time=", record_base.time, ", flag=", record_base.flag, "}");
+    println("record_base      = {data=", record_base.data,
+        ", time=", record_base.time,
+        ", flag=", record_base.flag, "}");
     var record_base_init: Packet = Packet{data='00000', time=0, flag=FALSE};
-    println("record_base_init = {data=", record_base_init.data, ", time=", record_base_init.time, ", flag=", record_base_init.flag, "}");
+    println("record_base_init = {data=", record_base_init.data,
+         ", time=", record_base_init.time,
+         ", flag=", record_base_init.flag, "}");
 
     var exception_base: MyException;
     println("exception_base = {msg=", exception_base.msg, "}");

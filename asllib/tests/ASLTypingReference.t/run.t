@@ -64,10 +64,18 @@ ASL Typing Tests / annotating types:
   exception_base = {msg=}
   integer_array_base = [[0, 0, 0, 0]]
   enumeration_array_base = [[RED=0, GREEN=0, BLUE=0]]
-  $ aslref TypingRule.BaseValue.bad.asl
-  File TypingRule.BaseValue.bad.asl, line 4, characters 4 to 39:
+  $ aslref TypingRule.BaseValue.bad_parameterized.asl
+  File TypingRule.BaseValue.bad_parameterized.asl, line 4, characters 4 to 39:
   ASL Typing error: base value of type bits(N) cannot be statically determined
     since it consists of N.
+  [1]
+  $ aslref TypingRule.BaseValue.bad_negative_width.asl
+  File TypingRule.BaseValue.bad_negative_width.asl, line 1, characters 0 to 24:
+  ASL Typing error: base value of empty type bits((- 3)).
+  [1]
+  $ aslref TypingRule.BaseValue.bad_empty.asl
+  File TypingRule.BaseValue.bad_empty.asl, line 1, characters 0 to 22:
+  ASL Typing error: base value of empty type integer {5..0}.
   [1]
 
   $ aslref TypingRule.UnopLiterals.asl

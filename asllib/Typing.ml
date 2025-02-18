@@ -2339,7 +2339,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Bool -> L_Bool false |> lit
     | T_Bits (e, _) ->
         let length = reduce_to_z e |> Z.to_int in
-        L_BitVector (Bitvector.zeros length) |> lit
+        if length < 0 then fatal_from ~loc @@ Error.BaseValueEmptyType t
+        else L_BitVector (Bitvector.zeros length) |> lit
     | T_Enum [] -> assert false
     | T_Enum (name :: _) -> lookup_constants env name |> lit
     | T_Int UnConstrained -> L_Int Z.zero |> lit

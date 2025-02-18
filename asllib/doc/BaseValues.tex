@@ -1,11 +1,18 @@
 \section{Base Values\label{sec:BaseValues}}
 \hypertarget{def-basevalueterm}{}
-Each type have a \basevalueterm, which is used
-to initialize storage elements (either local of global),
+Each type, with the exceptions stated below, have a \basevalueterm,
+which is used to initialize storage elements (either local of global),
 if an initializer is not supplied.
-%
-The exception are \parameterizedintegertypes{} and \bitvectortypesterm{}
-whose length depends on a \parameterizedintegertype{}.
+
+\RequirementDef{NoBaseValue}
+The following types do not have a \basevalueterm{}:
+\begin{itemize}
+    \item \parameterizedintegertypes{};
+    \item \bitvectortypesterm{} whose length depends on a \parameterizedintegertype{};
+    \item a \wellconstrainedintegertype{} whose list of constraints
+        represents the empty set;
+    \item a \bitvectortypeterm{} whose length is negative.
+\end{itemize}
 
 \lrmcomment{\identi{WVQZ}}
 Subprogram parameters can be parameterized integers, and since they will be initialized by their
@@ -29,11 +36,21 @@ enumeration_array_base = [[RED=0, GREEN=0, BLUE=0]]
 \end{Verbatim}
 % CONSOLE_END
 
-\subsubsection{Example: No Base Value for Parameterized Integer Types}
+\subsubsection{Example: Types Without Base Value}
 \listingref{base-values-bad} shows an ill-typed specification
 due to the fact that \parameterizedintegertypes{} have no defined \basevalueterm{},
 which is also true for a \bitvectortypeterm{} whose width is parameterized.
-\ASLListing{Ill-typed Base Value}{base-values-bad}{\typingtests/TypingRule.BaseValue.bad.asl}
+\ASLListing{No Base Value for Parameterized Integer Types}{base-values-bad}{\typingtests/TypingRule.BaseValue.bad_parameterized.asl}
+
+\listingref{base-values-bad-negative-width} shows an ill-typed specification
+where the width of a bitvector is negative.
+\ASLListing{No Base Value for Bitvectors of Negative Width}{base-values-bad-negative-width}{\typingtests/TypingRule.BaseValue.bad_negative_width.asl}
+
+\listingref{base-values-bad-empty-type} shows an ill-typed specification
+where the constraint \verb|5..0| represents an empty set.
+Therefore, the domain of values for the type \verb|integer{5..0}| is empty,
+which negates the possibility of having a \basevalueterm.
+\ASLListing{No Base Value for an Empty Integer Type}{base-values-bad-empty-type}{\typingtests/TypingRule.BaseValue.bad_empty.asl}
 
 \hypertarget{def-basevalue}{}
 The function
@@ -61,6 +78,7 @@ One of the following applies:
         \item applying $\reducetozopt$ to $\ve$ in $\tenv$ yields $\vzopt$;
         \item checking that $\vzopt$ is not $\None$ yields $\True$\ProseTerminateAs{\NoBaseValue};
         \item view $\vzopt$ as the singleton integer $\length$;
+        \item checking that $\length$ is greater or equal to $0$ yields $\True$\ProseTerminateAs{\NoBaseValue};
         \item $\veinit$ is the literal expression for a bitvector made of a sequence of $\length$ values of $0$.
     \end{itemize}
 
@@ -160,6 +178,7 @@ One of the following applies:
     \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
     \checktrans{\vzopt \neq \None}{\NoBaseValue} \checktransarrow \True\OrTypeError\\\\
     \vzopt \eqname \langle\length\rangle\\
+    \checktrans{\length \geq 0}{\NoBaseValue} \checktransarrow \True\OrTypeError
 }{
     \basevalue(\tenv, \overname{\TBits(\ve, \Ignore)}{\vt}) \typearrow \overname{\ELiteral(\lbitvector(i=1..\length: 0))}{\veinit}
 }
