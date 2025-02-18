@@ -67,19 +67,6 @@ module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
 
   type typ = Typ of TypBase.t | Array of TypBase.t * int
 
-  (* NOTE:
-    type faults = (Proc.t * FaultSet.t) list
-
-    type cond_final =
-      | Exists of fenv
-      | Forall of (C.A.location * Code.v) list list
-      | Locations of C.A.location list
-
-    type final = cond_final * faults
-
-    type fenv = (C.A.location * vset) list
-   *)
-
   type test =
       {
        name : string ;
@@ -769,8 +756,6 @@ let max_set = IntSet.max_elt
               *)
               let i,cs,(m,fs),ios,env =
                 do_rec (List.length obsc) i splitted in
-              if O.verbose > 2 then
-                eprintf "All final env from `compile_proc`: %s\n" (F.dump_state fs);
               i,obsc@cs,(m,f@fs),ios,env
             else Warn.fatal "Last minute check"
           else  Warn.fatal "Too many procs" in
@@ -876,10 +861,7 @@ let max_set = IntSet.max_elt
               F.run evts m
           | Cycle -> F.check final_value
           | Observe -> F.observe final_value in
-        eprintf "Final condition: %a\n" F.dump_final (fc flts);
-        eprintf "init: %s\n" (A.pp_env i);
         let i = if do_kvm then A.complete_init O.hexa initvals i else i in
-        eprintf "init after complete_init: %s\n" (A.pp_env i);
         (i,c,fc flts,env),
         (U.compile_prefetch_ios (List.length obsc) ios,
          U.compile_coms splitted)
