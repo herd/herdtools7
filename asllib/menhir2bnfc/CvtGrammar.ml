@@ -25,8 +25,8 @@
  *)
 open BNFC
 
-(* Translate ids to be bnfc compliant *)
-let cvt_id id =
+(* Translate ids to be bnfc compliant (CamelCase) *)
+let snake_case_to_camel_case id =
   String.split_on_char '_' id
   |> List.filter (function "" -> false | _ -> true)
   |> List.map (fun n -> String.lowercase_ascii n |> String.capitalize_ascii)
@@ -51,7 +51,7 @@ end = struct
   module TerminalSet = Set.Make (Terminal)
 
   (* Utility functions for easy name extraction *)
-  let n_name nterm = Nonterminal.mangled_name nterm |> cvt_id
+  let n_name nterm = Nonterminal.mangled_name nterm |> snake_case_to_camel_case
   let t_name = Terminal.name
 
   (* A utility function to check if a set of attributes contains any ones which signal the object being internal *)
@@ -68,6 +68,7 @@ end = struct
   (*
      A utility function to check if a production is external
      A production is external when:
+         * Is a regular production (not a builtin special production such as error or #)
          * It doesn't contain an attribute marking it as internal
          * Its parent nonterminal is external
          * All its rhs symbols are external
@@ -77,16 +78,16 @@ end = struct
       match Production.kind prod with `REGULAR -> true | _ -> false
     in
     let is_external_prod = is_external @@ Production.attributes prod in
-    let is_external_nterm = is_external_nterm @@ Production.lhs prod in
+    let parent_nterm_is_external = is_external_nterm @@ Production.lhs prod in
     let is_external_sym (sym, _, attrs) =
-      let check_sym = match sym with | T t -> is_external_term t | N n -> is_external_nterm in
+      let check_sym = match sym with | T t -> is_external_term t | N n -> is_external_nterm n in
       check_sym && is_external attrs
     in
-    let has_external_sym =
+    let rhs_all_external =
       Array.for_all is_external_sym
       @@ Production.rhs prod
     in
-    is_regular && is_external_prod && is_external_nterm && has_external_sym
+    is_regular && is_external_prod && parent_nterm_is_external && rhs_all_external
 
   (* 1. Collect entry points *)
   let entrypoints : string list =
@@ -136,10 +137,9 @@ end = struct
         match opt_set with
         | None -> false
         | Some (_, set) ->
-            not
-            @@ ProductionMap.for_all
-                 (fun _ set2 -> TerminalSet.equal set set2)
-                 prod_map)
+            ProductionMap.exists
+                (fun _ set2 -> not @@ TerminalSet.equal set set2)
+                prod_map)
       production_to_terminals
 
   (* 2.3. (TODO) It may be necessary to verify that the nonterminals are actually related (are part of the same component on the parse graph *)
@@ -151,7 +151,11 @@ end = struct
     if len = 0 then None else Some arr.(len - 1)
 
   (* 2.4. Determine if any of the detected nonterminals can be removed and do so if possible *)
-  (* This is sometimes possible. There seems to be an inefficiency in the LR(1) table which causes the following case to happen:
+  (* If a nonterminal has productions such that all but one production end in a recursive call, we observe that
+     the tokens which reduce the final production must also reduce all the others, since they cannot build
+     otherwise.
+
+     This is sometimes possible. There seems to be an inefficiency in the LR(1) table which causes the following case to happen:
 
          A := ... B [t1, t2]
          A := ... A [t1, t2, t3, ...]
@@ -485,7 +489,7 @@ end = struct
       if Array.length rhs = 0 then [ none_rule_suffix ]
       else
         Array.map
-          (function N n, _, _ -> n_name n | T t, _, _ -> t_name t |> cvt_id)
+          (function N n, _, _ -> n_name n | T t, _, _ -> t_name t |> snake_case_to_camel_case)
           rhs
         |> Array.to_list
     in
@@ -569,6 +573,7 @@ end = struct
 
   (* A utility function to create precedence related bnfc decl data *)
   let mk_precedence_productions prec_levels ast_name_map =
+    (* Create a mapping between each nonterminal and the number of precedence levels it occurs in *)
     let nterm_level_count : int NonterminalMap.t =
       let loop acc level =
         let nterms =
@@ -583,11 +588,18 @@ end = struct
       in
       List.fold_left loop NonterminalMap.empty prec_levels
     in
+    (* Initialize the indexes for each nonterminal at 0 *)
     let indexes = NonterminalMap.map (fun _ -> 0) nterm_level_count in
     let is_last_idx nterm idx =
       Int.equal (NonterminalMap.find nterm nterm_level_count) idx
     in
+    (* Build a single precedence level *)
     let mk_decls (acc, indexes) level =
+
+      (* Update a nontemrinal reference:
+          * Leave it as the nonterminal name if the current index is 0
+          * Append the current index if succ is false
+          * Append the current index + 1 if succ is true *)
       let mk_name ?(succ = false) nterm =
         let nterm_idx =
           let i = NonterminalMap.find nterm indexes in
@@ -599,6 +611,8 @@ end = struct
       let used_nterms =
         List.map Production.lhs level |> List.sort_uniq Nonterminal.compare
       in
+      (* For each nonterminal used at the current level generate a fallthrough state
+         to the next index if a next index exists. e.g. `_. Expr2 := Expr3`  *)
       let fallback_states =
         List.filter_map
           (fun n ->
@@ -614,6 +628,7 @@ end = struct
                    }))
           used_nterms
       in
+      (* Build all the non-fallback productions in a precedence level *)
       let mk_prec_decls level =
         let mk_decl prod =
           let nterm = Production.lhs prod in
@@ -642,6 +657,10 @@ end = struct
             | T t -> LitReference (t_name t)
           in
 
+          (* If it's a binary op, use the inferred associativity rules to name the recursive calls in the following way:
+              * Left associative: `Expr<N> := Expr<N> op Expr<N+1>`
+              * Right associative: `Expr<N> := Expr<N+1> op Expr<N>`
+              * Non associative: `Expr<N> := Expr<N+1> op Expr<N+1>` *)
           if Option.is_some binop_comps then
             let lhs, op, rhs = Option.get binop_comps in
             let l_succ, r_succ =
@@ -655,6 +674,9 @@ end = struct
             let r_term = Reference (mk_name ~succ:r_succ rhs) in
             let terms = [ l_term; op_term; r_term ] in
             Decl { ast_name; name; terms }
+
+          (* If it's a unary op rename the nonterminal reference to recurse at
+             the current level `Expr<N> := op Expr<N>` *)
           else if is_unary used_nterms prod then
             let mk_lit (sym, _, _) =
               match sym with
@@ -665,6 +687,9 @@ end = struct
               Array.map mk_lit (Production.rhs prod) |> Array.to_list
             in
             Decl { ast_name; name; terms }
+
+          (* If a production starts with a self refenrece rename the recursion to be at the current level
+             `Expr<N> := Expr<N> ...` *)
           else if fst_is_rec then
             let rhs = Production.rhs prod |> Array.to_list in
             let fst_term =
@@ -675,6 +700,8 @@ end = struct
             let rem_terms = List.map mk_simple_lit (List.tl rhs) in
             let terms = fst_term :: rem_terms in
             Decl { ast_name; name; terms }
+
+          (* In all other cases - no renaming to be done, build simple decl *)
           else
             let terms =
               Array.map mk_simple_lit (Production.rhs prod) |> Array.to_list
@@ -683,21 +710,10 @@ end = struct
         in
         List.map mk_decl level
       in
-      let level_decls =
-        let rec group_by_nterm level =
-          match level with
-          | [] -> []
-          | prod :: _ ->
-              let nterm = Production.lhs prod in
-              let is_same p = Nonterminal.equal nterm (Production.lhs p) in
-              let same_nterm, rest = List.partition is_same level in
-              same_nterm :: group_by_nterm rest
-        in
-        let grouped_by_nterm = group_by_nterm level in
-        List.map mk_prec_decls grouped_by_nterm |> List.concat
-      in
+      let level_decls = mk_prec_decls level in
       (* Add the new decls, increment the used nonterminal indexes and move to the next level *)
       let acc = acc @ level_decls @ fallback_states in
+      (* Increment all used indexes *)
       let indexes =
         List.fold_left
           (fun acc nterm ->

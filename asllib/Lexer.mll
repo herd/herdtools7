@@ -71,7 +71,9 @@ let is_reserved_keyword: string -> bool =
 (* Get a Tokens.token from the string name of the token.
    A useful utility when working with cmly files.
 
-   Note that this set only contains simple enumerative types, not compound types *)
+   Note that this set only contains simple enumerative types, not compound types
+
+   This function's exhaustivity is guaranteed by the test in tests/Lexer. *)
 let token_of_string =
  let s t = Some t in
  function
@@ -274,7 +276,15 @@ let token_to_symbol = function
   | WHERE              -> "where"
   | WHILE              -> "while"
   | WITH               -> "with"
-  | _ -> assert false (* Not a simple symbol *)
+  | BOOL_LIT _
+  | INT_LIT _
+  | REAL_LIT _
+  | STRING_LIT _
+  | BITVECTOR_LIT _
+  | MASK_LIT _
+  | IDENTIFIER _
+  | EOF
+  | DEBUG -> assert false (* Complex tokens *)
 
 
 module Make (Config : CONFIG) = struct

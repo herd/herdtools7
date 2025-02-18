@@ -44,17 +44,17 @@ end = struct
   let tokens =
     let open GRAMMAR in
     let open Regex in
-    let digit : Regex.part = MatchDigit in
-    let alpha : Regex.part = MatchLetter in
+    let digit : Regex.t = MatchDigit in
+    let alpha : Regex.t = MatchLetter in
     let int_lit : Regex.t =
-      [ digit; zero_or_more @@ choice [ digit ; Char '_' ] ]
+      Seq [ digit; ZeroOrMore (Choice [ digit ; Char '_' ])]
     in
-    let hex_alpha : Regex.part = OneOf "abcdefABCDEF" in
+    let hex_alpha : Regex.t = OneOf "abcdefABCDEF" in
     let hex_lit : Regex.t =
-      [
+      Seq [
         Str "0x";
-        choice [ digit; hex_alpha ];
-        zero_or_more @@ choice [ Char '_'; digit; hex_alpha ];
+        Choice [ digit; hex_alpha ];
+        ZeroOrMore (Choice [ Char '_'; digit; hex_alpha ]);
       ]
     in
     let mk_token terminal acc =
@@ -74,40 +74,40 @@ end = struct
         let tok =
           match t_name with
           | "STRING_LIT" ->
-              re
-                [
+              re (
+                Seq [
                   Char '"';
-                  zero_or_more @@
+                  ZeroOrMore (
                       Choice
                         [
-                          [ Except (MatchAll, OneOf "\"\\") ];
-                          [ Char '\\'; OneOf "nt\"\\" ];
-                        ];
+                          Except (MatchAll, OneOf "\"\\");
+                          Seq [Char '\\'; OneOf "nt\"\\" ];
+                        ]);
                   Char '"';
-                ]
-          | "INT_LIT" -> re [ Choice [ int_lit; hex_lit ] ]
-          | "REAL_LIT" -> re @@ int_lit @ [ Char '.' ] @ int_lit
+                ])
+          | "INT_LIT" -> re @@ Choice [ int_lit; hex_lit ]
+          | "REAL_LIT" -> re (Seq [int_lit; Char '.'; int_lit])
           | "BITVECTOR_LIT" ->
-              re
-                [
+              re (
+                Seq [
                   Char '\'';
-                  zero_or_more @@ OneOf "01 ";
+                  ZeroOrMore (OneOf "01 ");
                   Char '\'';
-                ]
+                ])
           | "MASK_LIT" ->
-              re
-                [
+              re (
+                Seq [
                   Char '\'';
-                  zero_or_more @@ OneOf "01x ";
+                  ZeroOrMore (OneOf "01x ");
                   Char '\'';
-                ]
+                ])
           | "IDENTIFIER" ->
-              re
-                [
-                  choice [ alpha; Char '_' ];
-                  zero_or_more @@ choice [ alpha; digit; Char '_' ]
-                ]
-          | "BOOL_LIT" -> re [ choice [ Str "TRUE"; Str "FALSE" ] ]
+              re (
+                Seq [
+                  Choice [ alpha; Char '_' ];
+                  ZeroOrMore (Choice [ alpha; digit; Char '_' ])
+                ])
+          | "BOOL_LIT" -> re @@ Choice [ Str "TRUE"; Str "FALSE" ]
           | _ ->
               let asl_tok =
                 match Asllib.Lexer.token_of_string t_name with
@@ -118,17 +118,17 @@ end = struct
                 | Some t -> t
               in
               let sym = Asllib.Lexer.token_to_symbol asl_tok in
-              Token { name; regex = [ Str sym ] }
+              Token { name; regex = Str sym }
         in
         tok :: acc
     in
     let reserved_id =
       let name = "RESERVED_IDENTIFIER" in
       let regex : Regex.t =
-        [
+        Seq [
           Str "__";
-          ZeroOrMore
-            [ Choice [ [ MatchLetter ]; [ MatchDigit ]; [ Char '_' ] ] ];
+          ZeroOrMore (
+            Choice [ alpha; digit; Char '_' ]);
         ]
       in
       Token { name; regex }

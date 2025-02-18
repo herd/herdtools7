@@ -12,25 +12,77 @@ Then from the `herdtools7` root directory you can run the following:
 ```
 make
 dune build asllib/menhir2bnfc
-dune build @bnfc_test
-# Note: The last command builds a grammar.cf file, creates a menhir parser using bnfc and runs
-# a parser comparison script on all asl files in asllib/tests. If it succeds,
-# (it should if bnfc is installed)
-# You should have a _build/default/asllib/menhir2bnfc/tests/integration/bnfc_parser/grammar.cf file built
-# If all you're looking for an aslref bnfc file - that's it.
-
-# The rest of the steps are how to build the bnfc file from scratch.
-
-# Note: The following command succeds with errors related to type inference.
-# Since we don't care about the backend this is not relevant.
-menhir --cmly --base Parser asllib/Parser.mly asllib/Tokens.mly
-
-# At this point you should have a Parser.cmly and Lexer.ml file
-# To build the grammar run:
-./_build/default/asllib/menhir2bnfc/menhir2bnfc.exe --with-lexer Parser.cmly grammar.cf
-
-# You should now have a bnfc compliant grammar.cf file!
 ```
+
+To run the bnfc parser tests run:
+```
+dune build @bnfc_test
+```
+You should now have a `_build/default/asllib/menhir2bnfc/tests/integration/bnfc_parser/grammar.cf` file built.
+If all you're looking for an aslref bnfc file - that's it.
+
+The rest of the steps are how to build the bnfc file from scratch.
+
+> Note: The following command succeds with errors related to type inference.
+> Since we don't care about the backend this is not relevant.
+```
+menhir --cmly --base Parser asllib/Parser.mly asllib/Tokens.mly
+```
+At this point you should have a Parser.cmly and Lexer.ml file
+To build the grammar run:
+```
+./_build/default/asllib/menhir2bnfc/menhir2bnfc.exe --with-lexer Parser.cmly grammar.cf
+```
+
+You should now have a bnfc compliant grammar.cf file!
+
+## Tests
+
+The `dune build @bnfc_test` builds a menhir parser from the bnfc grammar
+and runs it against all files under `asllib/tests/**/*.asl`
+
+Failing tests are recorded in `asllib/menhir2bnfc/tests/integration/parser_cmp.expected`
+
+Currently the following tests are recorded:
+```
+FAIL - aslref false | bnfc true: asllib/tests/regressions.t/lhs-tuple-fields-same-field.asl
+```
+
+Aslref produces the following error:
+
+>  File lhs-tuple-fields-same-field.asl, line 8, characters 2 to 4:
+>  ASL Typing error: multiple writes to "bv.fld".
+
+The following statement parses correctly, but is rejected by a check while removing the syntactic sugar in the aslref parser:
+`bv.(fld, -, fld) = ('11', TRUE, '11');`. This is parser valid, but fails in post-processing.
+
+```
+FAIL - aslref false | bnfc true: asllib/tests/regressions.t/lhs-tuple-same-var.asl
+```
+
+Aslref produces the following error:
+
+>  File lhs-tuple-same-var.asl, line 8, characters 2 to 20:
+>  ASL Typing error: multiple writes to "bv".
+
+The following statement parses correctly, but is rejected by a check while removing the syntactic sugar in the aslref parser:
+`(bv[7], -, bv.fld) = ('1', TRUE, '11');`. This is parser valid, but fails in post-processing.
+
+```
+FAIL - aslref false | bnfc true: asllib/tests/regressions.t/same-precedence.asl
+FAIL - aslref false | bnfc true: asllib/tests/regressions.t/same-precedence2.asl
+```
+
+Aslref produces the following errors:
+
+>  File same-precedence.asl, line 6, characters 10 to 15:
+>  ASL Error: Cannot parse.
+
+>  File same-precedence2.asl, line 6, characters 10 to 17:
+>  ASL Error: Cannot parse.
+
+This parse error is coming from a check inside the aslref parser, where equal precedence operators
+are required to be wrapped in parenthesis to disambiguate operation order.
 
 ## Building and running the script
 
@@ -67,37 +119,45 @@ See `menhir2bnfc --help` for more details.
 
  2. Infer operator precedence from the lr(1) state machine.
 
-    2.1. Create an associative list linking each production to the set of terminals which cause the parser to reduce to that production.
-    2.2. Determine the nonterminals with ambiguous precedence
+    1. Create an associative list linking each production to the set of terminals which cause the parser to reduce to that production.
+    2. Determine the nonterminals with ambiguous precedence
         * This is done by grouping productions by their nonterminal identifiers. Nonterminals with ambiguous precedence have varying sets of
           tokens following different productions
-    2.3. (TODO) Verify that the nonterminals are actually related (are part of the same component on the parse graph)
+    3. (TODO) Verify that the nonterminals are actually related (are part of the same component on the parse graph)
         * The next steps likely want to be done for each component
-    2.4. Determine if any of the detected nonterminals can be removed and remove them
+    4. Determine if any of the detected nonterminals can be removed and remove them
         * In cases where a nonterminal has a "final" production (all but one production end with a recursive reference) we can infer that the set of
           terminals which follow that final case must follow all other cases. Similarly, any other rule which terminates by that nonterminal is followed
           by the same set. This feels like an inefficiency in the LR(1) state machine menhir generates?
-    2.5. Determine the associativity of each of the operands in the ambiguous productions
+        * For example consider the following productions:
+            * `e_else := ELSE expr` with set of tokens which reduce it {T1, T2, T3}
+            * `e_else := ELSEIF e_expr` with set of tokens which reduce it {T1, T2, T3, T4, T5}
+            * `expr := IF expr THEN expr e_else` with set of tokens which reduce it {T1, T2, T3, T4, T5}
+            * In this case - we can infer that `e_else := ELSE expr` must always reduce first before the other two productions can.
+              This is because the other two recurse back into `e_else` and the `ELSE` case is effectively the last production before a final
+              `expr` can be reduced. We can therefore infer that the other two productions must also only reduce if the following tokens are {T1, T2, T3}
+              since those are the only ones which reduce the `ELSE` case and all other productions can be reduced all the way to `expr` since `e_else` has terminated.\ff
+    5. Determine the associativity of each of the operands in the ambiguous productions
         * We determine associativity based on what the LR1 state at `expr op expr .` is.
            * If `op` is a shift rule - right associativity
            * if `op` is a reduce rule - left associativity
            * if `op` is neither shifted nor reduced - non-associative
-    2.6. Generate a precedence lists by sorting the productions by the length of terminals following them - shortest meaning lowest precedence
+    6. Generate a precedence lists by sorting the productions by the length of terminals following them - shortest meaning lowest precedence
         * In order to compare the different nonterminals in the same component for each nonterminal's productions we subtract the shortest set from
           all productions. This is done to remove terminals which come from outside the component.
-    2.7. Split off unary ops as their own precedence group (if necessary)
+    7. Split off unary ops as their own precedence group (if necessary)
         * Since unary ops don't usually produce other unary ops (`!Expr !Expr` is not usually valid syntax) any production which starts
           with leading terminals and ends with a recursive reference will appear a level above its precedence level unless the unary op is
           the highest precedence
-    2.8. Correct any binary expr productions which are in the wrong level
+    8. Correct any binary expr productions which are in the wrong level
         * Cases such as `Expr Op <terminal>` appear to mismatch the set of tokens which follow `Expr Op Expr` for the same `Op`.
           Such cases are grouped with ther corresponding `Op` to avoid conflicts
 
  3. Generate bnfc-style lines from the grammar productions
-    3.1. For the precedence order productions - update their terms such that
+    1. For the precedence order productions - update their terms such that
 	    * Unary ops recurse to their own precedence level
 	    * (assumption) Binary ops are left associative.
-    3.2. All remaining productions are trivially mapped onto bnfc equivallents
+    2. All remaining productions are trivially mapped onto bnfc equivallents
 
 ### Limitations
 

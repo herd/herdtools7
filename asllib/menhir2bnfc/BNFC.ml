@@ -31,13 +31,12 @@ open Utils
 (* Lexer regex construction types *)
 
 module Regex = struct
-  type t = part list
-
-  and part =
+  type t =
+    | Seq of t list
     | Char of char
     | Str of string
     | OneOf of string
-    | Except of part * part
+    | Except of t * t
     | Choice of t list
     | OneOrMore of t
     | ZeroOrMore of t
@@ -45,34 +44,27 @@ module Regex = struct
     | MatchDigit (* digit - regex [0-9] *)
     | MatchLetter (* letter - regex [a-zA-Z] *)
 
-  (* Build a Choice/OneOrMore/ZeroOrMore from a list of part objects or a single part object *)
-  let choice (li: part list) : part = Choice (List.map (fun x -> [ x ]) li)
-  let one_or_more (p: part): part = OneOrMore [ p ]
-  let zero_or_more (p: part): part = ZeroOrMore [ p ]
-
   (** Convert token type to string *)
-  let rec string_of_regex regex =
-    let rec str_part part =
-      match part with
+  let rec string_of_regex =
+    let wrap r =
+      match r with
+      | Seq _ -> "(" ^ string_of_regex r ^ ")"
+      | _ -> string_of_regex r
+    in
+    function
+      | Seq r_list -> List.map string_of_regex r_list |> String.concat " "
       | Char chr -> "'" ^ Char.escaped chr ^ "'"
       | Str str -> "{\"" ^ String.escaped str ^ "\"}"
       | OneOf str -> "[\"" ^ String.escaped str ^ "\"]"
-      | Except (t1, t2) -> "(" ^ str_part t1 ^ " - " ^ str_part t2 ^ ")"
-      | Choice t_list ->
-          "(" ^ (List.map string_of_regex t_list |> String.concat "|") ^ ")"
-      | OneOrMore t ->
-          let is_singleton = List.length t == 1 in
-          if is_singleton then string_of_regex t ^ "+"
-          else "(" ^ string_of_regex t ^ ")+"
-      | ZeroOrMore t ->
-          let is_singleton = List.length t == 1 in
-          if is_singleton then string_of_regex t ^ "*"
-          else "(" ^ string_of_regex t ^ ")*"
+      | Except (r1, r2) ->
+          "(" ^ wrap r1 ^ " - " ^ wrap r2 ^ ")"
+      | Choice r_list ->
+          "(" ^ (List.map string_of_regex r_list |> String.concat "|") ^ ")"
+      | OneOrMore r -> wrap r ^ "+"
+      | ZeroOrMore r -> wrap r ^ "*"
       | MatchAll -> "char"
       | MatchDigit -> "digit"
       | MatchLetter -> "letter"
-    in
-    List.map str_part regex |> String.concat " "
 end
 
 (** BNFC row types *)
@@ -119,13 +111,11 @@ let string_of_term term =
 let string_of_entrypoints eps =
   Printf.sprintf "entrypoints %s;" (String.concat ", " eps)
 
-let string_of_comment comment =
+let string_of_comment (Comment comment) =
   let quote s = Printf.sprintf "\"%s\"" s in
-  let comment = match comment with Comment c -> c in
   Printf.sprintf "comment %s;" (String.concat " " @@ List.map quote comment)
 
-let string_of_token (token : token) =
-  let name, regex = match token with Token { name; regex } -> (name, regex) in
+let string_of_token (Token {name; regex}) =
   Printf.sprintf "token %s %s;" name (Regex.string_of_regex regex)
 
 let string_of_decl_list (decl_list : decl list) : string list =
@@ -155,7 +145,7 @@ let string_of_bnfc bnfc =
   let decls = string_of_decl_list bnfc.decls in
   String.concat "\n\n"
   @@ List.filter
-       (fun part -> not @@ String.equal part "")
+       (fun part -> String.length part > 0)
        (eps :: comments :: tokens :: decls)
 
 (** Given a sorting order of the generated BNFC names. Order the bnfc ast
@@ -233,7 +223,7 @@ let simplified_bnfc bnfc =
   let decls = List.map print_decl grouped_decls |> String.concat "\n\n" in
   String.concat "\n\n"
   @@ List.filter
-       (fun part -> not @@ String.equal "" part)
+       (fun part -> String.length part > 0)
        [ eps; comments; tokens; decls ]
 
 (** Collect all referenced names in a bnfc's decls *)
@@ -256,7 +246,7 @@ let embed_literals bnfc =
   let literals, tokens =
     List.partition
       (function
-        | Token { name; regex = [ (Str _ | Char _) ] } ->
+        | Token { name; regex = (Str _ | Char _) } ->
             StringSet.mem name used_ids
         | _ -> false)
       bnfc.tokens
@@ -266,8 +256,8 @@ let embed_literals bnfc =
       (fun acc (Token { name; regex }) ->
         let value =
           match regex with
-          | [ Char c ] -> Literal (String.escaped @@ String.make 1 c)
-          | [ Str s ] -> Literal (String.escaped s)
+          | Char c -> Literal (String.escaped @@ String.make 1 c)
+          | Str s -> Literal (String.escaped s)
           | _ -> assert false
         in
         StringMap.add name value acc)
@@ -276,12 +266,12 @@ let embed_literals bnfc =
   let update_decl_refs (Decl ({ terms } as decl)) =
     let terms =
       List.map
-        (fun ref ->
-          match ref with
+        (fun reference ->
+          match reference with
           | Reference id | LitReference id ->
               let new_lit = StringMap.find_opt id name_map in
-              Option.value ~default:ref new_lit
-          | _ -> ref)
+              Option.value ~default:reference new_lit
+          | _ -> reference)
         terms
     in
     Decl { decl with terms }
