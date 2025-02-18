@@ -19,7 +19,6 @@ open Code
 
 module type S = sig
   type fence
-  (* type edge = { edge: tedge;  a1:atom option; a2: atom option; } *)
   type edge
   module SIMD : Atom.SIMD
   type atom
@@ -248,22 +247,15 @@ module Make (O:Config) (E:Edge.S) :
   let debug_evt e =
     let pp_v =
       match e.bank with
-      | Pte -> "(Pte Value Bank) "^PteVal.pp e.pte
-      | (Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _|Instr) -> "(Plain Value Bank) "^debug_val e.v in
-    sprintf "dir:%s atom:%s loc:%s cell:%s value:%s tag:%s morello:%s vector_value:%s, pte_val: %s, check_fault:%s, check_value:%s"
+      | Pte -> PteVal.pp e.pte
+      | (Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _|Instr) -> debug_val e.v in
+    sprintf "%s%s %s %s%s%s%s%s"
       (debug_dir e.dir)
       (debug_atom e.atom)
       (Code.pp_loc e.loc)
       (match debug_vec e.cell with
        | "" -> "" | s -> "cell=[" ^ s ^"] ")
       pp_v (debug_tag e) (debug_morello e) (debug_vector e)
-      (PteVal.pp e.pte) 
-      ( match e.check_fault with 
-      | None -> "none" 
-      | Some (label, b) -> sprintf "%s,%b" label b )
-      ( match e.check_value with 
-      | None -> "none" 
-      | Some b -> sprintf "%b" b )
 
   let debug_edge = E.pp_edge
 
@@ -1101,12 +1093,10 @@ let set_dep_v nss =
 let set_read_individual_v n cell check_value =
   let e = n.evt in
   let v = E.extract_value cell.(0) e.atom in 
-  if O.verbose > 2 then
-    eprintf "SET READ: loc=%s cell=0x%x, v=0x%x\n" (Code.pp_loc n.evt.loc) cell.(0) v ;
+  (* eprintf "SET READ: loc=%s cell=0x%x, v=0x%x\n" (Code.pp_loc n.evt.loc) cell.(0) v ; *)
   let e = { e with v=v; check_value } in
-  n.evt <- e ;
-  if O.verbose > 2 then
-    eprintf "AFTER %a\n" debug_node n
+  n.evt <- e
+  (* eprintf "AFTER %a\n" debug_node n *)
 
 let set_read_pair_v n cell check_value =
   let e = n.evt in
@@ -1228,9 +1218,6 @@ let finish n =
 (* Set write values *)
   let by_loc,initvals = set_write_v n in
   if O.verbose > 1 then begin
-      eprintf "SPLITED LIST BY LOCATION:\n[%a]\n" debug_list_nodes by_loc;
-  end ;
-  if O.verbose > 1 then begin
     eprintf "INITIAL VALUES: %s\n"
       (String.concat "; "
          (List.map
@@ -1248,8 +1235,8 @@ let finish n =
     debug_cycle stderr n ;
     eprintf "FINAL VALUES [%s]\n"
       (vs |> List.map
-            (fun (loc,(v,pte)) -> sprintf "%s -> {value: %d, PTE_value: %s}"
-                (Code.pp_loc loc) v (PteVal.pp pte))
+            ( fun (loc,(v,_pte)) -> sprintf "%s -> 0x%x"
+                (Code.pp_loc loc) v )
           |> String.concat "," )
   end ;
   if O.variant Variant_gen.Self then check_fetch n;
@@ -1362,7 +1349,7 @@ let merge_changes n nss =
   let debug_proc ns =
     String.concat " " (List.map (fun n -> sprintf "<%s>" (str_node n)) ns)
 
-  let debug_procs nss =  List.iteri (fun index ns -> eprintf "#%d %s\n" index (debug_proc ns)) nss
+  let debug_procs nss =  List.iter (fun ns -> eprintf "%s\n" (debug_proc ns)) nss
 
   let split_procs n =
     let n =
@@ -1499,13 +1486,11 @@ let rec group_rec x ns = function
         let tag_ws = if do_memtag then
           List.map get_tag_locs (get_ord_writes n) else [] in
         let ws = ord_ws@tag_ws in
-        if O.verbose > 1 then begin
-          eprintf "COHERENCE LOC\n";
+        if O.verbose > 1 then
           List.iter
             (fun (loc,n) ->
               eprintf "LOC=%s, node=%a\n" (Code.pp_loc loc) debug_node n)
             ws ;
-        end;
         let r = by_loc ws in
         List.fold_right
           (fun (loc,ws) k -> match ws with
@@ -1549,11 +1534,7 @@ let rec group_rec x ns = function
         let ws = get_pte_writes n in
         let r = by_loc ws in
         List.fold_right
-          (fun (loc,ns) k -> 
-        if O.verbose > 1 then
-           eprintf "pte location: %s\n" (pp_loc loc);
-        
-        match List.flatten ns with
+          (fun (loc,ns) k -> match List.flatten ns with
           | []|[_]|_::_::_::_ -> k
           | [_;n;] ->
               let p = n.evt.pte in
