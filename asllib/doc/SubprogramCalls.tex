@@ -374,17 +374,17 @@ $\eqs$, yielding the type $\newty$.
 
   \item \AllApplyCase{t\_tuple}
   \begin{itemize}
-    \item $\tty$ is the tuple type over the list of tuples $\tys$, that is, $\TTuple(\tys)$;
+    \item $\tty$ is the \tupletypeterm{} over the list of tuples $\tys$, that is, $\TTuple(\tys)$;
     \item applying $\renametyeqs$ to $\eqs$ and the type $\tys[\vi]$, for each $\vi$ in \\
           $\listrange(\tys)$, yields the type $\newty_\vi$;
     \item define $\newtys$ as the list of types $\newty_\vi$, for each $\vi$ in $\listrange(\tys)$;
-    \item define $\newty$ as the tuple type over $\newtys$, that is, $\TTuple(\newtys)$.
+    \item define $\newty$ as the \tupletypeterm{} over $\newtys$, that is, $\TTuple(\newtys)$.
   \end{itemize}
 
   \item \AllApplyCase{other}
   \begin{itemize}
     \item $\tty$ is not one of the types in the previous cases,
-          that is, $\tty$ is not a bitvector type, nor an integer type, nor a tuple type;
+          that is, $\tty$ is not a bitvector type, nor an integer type, nor a \tupletypeterm{};
     \item $\newty$ is $\tty$.
   \end{itemize}
 \end{itemize}

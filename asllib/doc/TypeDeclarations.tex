@@ -194,13 +194,13 @@ in the global static environment $\genv$, resulting in the modified global stati
   \begin{itemize}
     \item \AllApplyCase{enum}
     \begin{itemize}
-      \item $\vttwo$ is an enumeration type with labels $\ids$, that is, $\TEnum(\ids)$;
+      \item $\vttwo$ is an \enumerationtypeterm{} with labels $\ids$, that is, $\TEnum(\ids)$;
       \item applying $\declareenumlabels$ to $\vttwo$ in $\tenvtwo$ $\newtenv$\ProseOrTypeError.
     \end{itemize}
 
     \item \AllApplyCase{not\_enum}
     \begin{itemize}
-      \item $\vttwo$ is not an enumeration type;
+      \item $\vttwo$ is not an \enumerationtypeterm{};
       \item $\newtenv$ is $\tenvtwo$.
     \end{itemize}
   \end{itemize}
@@ -542,7 +542,7 @@ The function
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 )
 \]
-updates the static environment $\tenv$ with the identifiers $\ids$ listed by an enumeration type,
+updates the static environment $\tenv$ with the identifiers $\ids$ listed by an \enumerationtypeterm{},
 yielding the modified environment $\newtenv$.
 \ProseOtherwiseTypeError
 

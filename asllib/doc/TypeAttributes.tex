@@ -33,21 +33,21 @@ tests whether the type $\tty$ is a \emph{builtin singular type}.
 \ProseParagraph
 The \emph{builtin singular types} are:
 \begin{itemize}
-\item \texttt{integer};
-\item \texttt{real};
-\item \texttt{string};
-\item \texttt{boolean};
-\item \texttt{bits} (which also represents \texttt{bit}, as a special case);
-\item \texttt{enumeration}.
+\item the \integertypesterm{};
+\item the \realtypeterm{};
+\item the \stringtypeterm{};
+\item the \booleantypeterm{};
+\item the \bitvectortypeterm{} (which includes \texttt{bit}, as a special case);
+\item the \enumerationtypeterm{}.
 \end{itemize}
 
-\subsubsection{Example}
+\ExampleDef{Builtin singular types}
 \listingref{typing-builtinsingulartype} defines variables of builtin singular types
 \texttt{integer}, \texttt{real},
 \texttt{boolean}, \texttt{bits(4)}, and~\texttt{bits(2)}
 \ASLListing{Examples of builtin singular types}{typing-builtinsingulartype}{\typingtests/TypingRule.BuiltinSingularTypes.asl}
 
-\subsubsection{Example}
+\ExampleDef{Builtin enumeration types}
 In \listingref{typing-builtinenumerationtype},
 the builtin singular type \texttt{Color} consists in two constants:
 \texttt{RED} and~\texttt{BLACK}.
@@ -63,7 +63,7 @@ the builtin singular type \texttt{Color} consists in two constants:
 \end{mathpar}
 \CodeSubsection{\BuiltinSingularBegin}{\BuiltinSingularEnd}{../types.ml}
 
-\isempty{\subsubsection{Comments}}
+
 \lrmcomment{This is related to \identd{PQCK} and \identd{NZWT}.}
 
 \TypingRuleDef{BuiltinAggregateType}
@@ -94,7 +94,7 @@ or enumeration-typed.  In the example above, \texttt{T} is
 declared as an array with an integer-typed index (as indicated
 by the used of the integer-typed constant \texttt{3}) whereas
 \texttt{PointArray} is declared with the index of
-\texttt{Coord}, which is an enumeration type.
+\texttt{Coord}, which is an \enumerationtypeterm{}.
 
 Arrays declared with integer-typed indices can be accessed only by integers ranging from $0$ to
 the size of the array minus $1$. In the example above, $\texttt{T}$ can be accessed with
@@ -125,7 +125,7 @@ omitted in type declarations, as is the case for \texttt{Not\_found}.
 \end{mathpar}
 \CodeSubsection{\BuiltinAggregateBegin}{\BuiltinAggregateEnd}{../types.ml}
 
-\isempty{\subsubsection{Comments}}
+
 \lrmcomment{This is related to \identd{PQCK} and \identd{KNBD}.}
 
 \TypingRuleDef{BuiltinSingularOrAggregate}
@@ -170,7 +170,7 @@ The predicate
 \]
 tests whether the type $\tty$ is a \emph{named type}.
 
-Enumeration types, record types, and exception types must be declared
+\Enumerationtypesterm{}, record types, and exception types must be declared
 and associated with a named type.
 
 \ProseParagraph
@@ -194,41 +194,39 @@ type ticks of integer;
 }
 \end{mathpar}
 
-\isempty{\subsubsection{Comments}}
+
 \lrmcomment{This is related to \identd{vmzx}.}
 
 \TypingRuleDef{AnonymousType}
 \hypertarget{def-isanonymous}{}
+\identd{VMZX}%
 The predicate
 \[
   \isanonymous(\overname{\ty}{\tty}) \;\aslto\; \Bool
 \]
 tests whether the type $\tty$ is an \anonymoustype.
 
-\ProseParagraph
-\Anonymoustypes\ are types that are not declared using the type syntax:
-integer types, the \realtypeterm{}, the \stringtypeterm{}, the Boolean type,
-bitvector types, tuple types, and array types.
-
 \subsubsection{Example}
-The tuple type \texttt{(integer, integer)} is an \anonymoustype.
+The \tupletypeterm{} \texttt{(integer, integer)} is an \anonymoustype.
 
-\CodeSubsection{\AnonymousBegin}{\AnonymousEnd}{../types.ml}
+\ProseParagraph
+\Anonymoustypes\ are types that are not declared using the \texttt{type ... of ...} syntax:
+\integertypesterm{}, the \realtypeterm{}, the \stringtypeterm{}, the \booleantypeterm{},
+\bitvectortypesterm{}, \tupletypesterm{}, and \arraytypesterm{}.
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule{ \vb \eqdef \astlabel(\tty) \neq \TNamed
-}
-{
+\inferrule{
+  \vb \eqdef \astlabel(\tty) \neq \TNamed
+}{
   \isanonymous(\tty) \typearrow \vb
 }
 \end{mathpar}
-
-\isempty{\subsubsection{Comments}}
-\lrmcomment{This is related to \identd{VMZX}.}
+\CodeSubsection{\AnonymousBegin}{\AnonymousEnd}{../types.ml}
 
 \TypingRuleDef{SingularType}
 \hypertarget{def-issingular}{}
+\identr{GVZK}%
 The predicate
 \[
   \issingular(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \;\aslto\;
@@ -238,7 +236,7 @@ tests whether the type $\tty$ is a \emph{singular type} in the static environmen
 yielding the result in $\vb$.
 \ProseOtherwiseTypeError
 
-\subsubsection{Example}
+\ExampleDef{Singular types}
 In the following example, the types \texttt{A}, \texttt{B}, and \texttt{C} are all singular types:
 \begin{lstlisting}
 type A of integer;
@@ -253,20 +251,16 @@ type C of B;
   \item applying $\isbuiltinsingular$ to $\vtone$ yields $\vb$.
 \end{itemize}
 
-\CodeSubsection{\SingularBegin}{\SingularEnd}{../types.ml}
-
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \makeanonymous(\tenv, \tty) \typearrow \vtone \OrTypeError\\\\
   \isbuiltinsingular(\vtone) \typearrow \vb
 }{
-\issingular(\tenv, \tty) \typearrow \vb
+  \issingular(\tenv, \tty) \typearrow \vb
 }
 \end{mathpar}
-
-\isempty{\subsubsection{Comments}}
-\lrmcomment{This is related to \identr{GVZK}.}
+\CodeSubsection{\SingularBegin}{\SingularEnd}{../types.ml}
 
 \TypingRuleDef{AggregateType}
 \hypertarget{def-isaggregate}{}
@@ -336,7 +330,7 @@ type PointRecord of Record {x : real, y: real, z: real};
 }
 \end{mathpar}
 
-\isempty{\subsubsection{Comments}}
+
 \lrmcomment{This is related to \identd{WGQS}, \identd{QXYC}.}
 
 \TypingRuleDef{NonPrimitiveType}
@@ -362,7 +356,7 @@ tests whether the type $\tty$ is a \emph{non-primitive type}.
   \end{itemize}
   \item \AllApplyCase{tuple}
   \begin{itemize}
-    \item $\tty$ is a tuple type $\vli$;
+    \item $\tty$ is a \tupletypeterm{} $\vli$;
     \item $\vb$ is $\True$ if and only if there exists a non-primitive type in $\vli$.
   \end{itemize}
   \item \AllApplyCase{array}
@@ -433,7 +427,7 @@ Boolean variables by using the types denoted by $\vt$ as a subscript.
 }
 \end{mathpar}
 
-\isempty{\subsubsection{Comments}}
+
 \lrmcomment{This is related to \identd{GWXK}.}
 
 \TypingRuleDef{PrimitiveType}
@@ -470,7 +464,7 @@ The following types are primitive:
 }
 \end{mathpar}
 
-\isempty{\subsubsection{Comments}}
+
 \lrmcomment{This is related to \identd{GWXK}.}
 
 \TypingRuleDef{Structure}
@@ -503,11 +497,11 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
   \end{itemize}
 \item \AllApplyCase{tuple}
   \begin{itemize}
-  \item $\tty$ is a tuple type with list of types $\tys$;
+  \item $\tty$ is a \tupletypeterm{} with list of types $\tys$;
   \item the types in $\tys$ are indexed as $\vt_i$, for $i=1..k$;
   \item obtaining the structure of each type $\vt_i$, for $i=1..k$, in $\tys$ in the static environment $\tenv$,
   yields $\vtp_i$\ProseOrTypeError;
-  \item $\vt$ is a tuple type with the list of types $\vtp_i$, for $i=1..k$.
+  \item $\vt$ is a \tupletypeterm{} with the list of types $\vtp_i$, for $i=1..k$.
   \end{itemize}
 \item \AllApplyCase{array}
   \begin{itemize}
@@ -586,7 +580,7 @@ the type of \texttt{z} is the anonymous non-primitive type
 }
 \end{mathpar}
 
-\isempty{\subsubsection{Comments}}
+
 \lrmcomment{This is related to \identd{FXQV}.}
 
 \TypingRuleDef{MakeAnonymous}

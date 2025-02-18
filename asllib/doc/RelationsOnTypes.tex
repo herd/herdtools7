@@ -125,28 +125,28 @@ The function assumes that both $\vt$ and $\vs$ are well-typed according to \chap
 \item \AllApplyCase{different\_labels}
   \begin{itemize}
   \item the underlying types of $\vt$ and $\vs$ have different AST labels
-  (for example, \texttt{integer} and \texttt{real});
+  (for example, $\TInt$ and $\TReal$);
   \item $\vb$ is $\False$.
   \end{itemize}
 
 \item \AllApplyCase{simple}
   \begin{itemize}
-  \item the \underlyingtype\ of $\vt$, $\vttwo$, is either \texttt{real}, \texttt{string}, or \texttt{bool};
-  \item the \underlyingtype\ of $\vs$, $\vstwo$, is either \texttt{real}, \texttt{string}, or \texttt{bool};
+  \item the \underlyingtype\ of $\vt$, $\vttwo$, is either \realtypeterm{}, \stringtypeterm{}, or \booleantypeterm{};
+  \item the \underlyingtype\ of $\vs$, $\vstwo$, is either \realtypeterm{}, \stringtypeterm{}, or \booleantypeterm{};
   \item $\vb$ is $\True$ if and only if both $\vttwo$ and $\vstwo$ have the same ASL label.
   \end{itemize}
 
 \item \AllApplyCase{t\_int}
   \begin{itemize}
-  \item the \underlyingtype\ of $\vt$, $\vttwo$, is an \texttt{integer} (any kind);
-  \item the \underlyingtype\ of $\vs$, $\vstwo$, is an \texttt{integer} (any kind);
+  \item the \underlyingtype\ of $\vt$, $\vttwo$, is an \integertypeterm{} (any kind);
+  \item the \underlyingtype\ of $\vs$, $\vstwo$, is an \integertypeterm{} (any kind);
   \item determining whether $\vs$ subsumes $\vt$ in $\tenv$ via symbolic reasoning results in $\vb$.
   \end{itemize}
 
 \item \AllApplyCase{t\_enum}
   \begin{itemize}
-  \item the \underlyingtype\ of $\vt$ is an enumeration type with list of labels $\vlit$, that is, $\TEnum(\vlit)$;
-  \item the \underlyingtype\ of $\vs$ is an enumeration type with list of labels $\vlis$, that is, $\TEnum(\vlis)$;
+  \item the \underlyingtype\ of $\vt$ is an \enumerationtypeterm{} with list of labels $\vlit$, that is, $\TEnum(\vlit)$;
+  \item the \underlyingtype\ of $\vs$ is an \enumerationtypeterm{} with list of labels $\vlis$, that is, $\TEnum(\vlis)$;
   \item $\vb$ is $\True$ if and only if $\vlit$ is equal to $\vlis$.
   \end{itemize}
 
@@ -580,15 +580,16 @@ returning the result $\vb$ or a type error, if one is detected.
     \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
     \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
     \item obtaining the \structure\ of $\vs$ in $\tenv$ yields $\vsstruct$\ProseOrTypeError;
-    \item both $\vtstruct$ and $\vsstruct$ are one of the following types: \\ \texttt{integer}, \texttt{real}, \texttt{string};
+    \item both $\vtstruct$ and $\vsstruct$ are one of the following types: \\
+          \integertypeterm{}, \realtypeterm{}, or \stringtypeterm{};
     \item $\vb$ is $\True$.
   \end{itemize}
 
   \item \AllApplyCase{t\_enum}
   \begin{itemize}
     \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
-    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields an enumeration type with labels $\vlit$;
-    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields an enumeration type with labels $\vlis$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields an \enumerationtypeterm{} with labels $\vlit$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields an \enumerationtypeterm{} with labels $\vlis$;
     \item $\vb$ is $\True$ if and only if $\vlis$ and $\vlit$ are equal.
   \end{itemize}
 
@@ -603,8 +604,8 @@ returning the result $\vb$ or a type error, if one is detected.
   \item \AllApplyCase{t\_tuple}
   \begin{itemize}
     \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
-    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a tuple type with element types $\vt_{1..k}$;
-    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a tuple type with element types $\vs_{1..n}$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a \tupletypeterm{} with element types $\vt_{1..k}$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a \tupletypeterm{} with element types $\vs_{1..n}$;
     \item if $n \neq k$ the rule short-circuits with $\vb=\False$;
     \item $\vb$ is $\True$ if and only if $\vt_i$ type-clashes with $\vs_i$, for all $i=1..k$.
   \end{itemize}
@@ -834,15 +835,15 @@ The result is a type error if a lowest common ancestor does not exist or a type 
 
     \item \AllApplyCase{t\_tuple}
     \begin{itemize}
-      \item $\vt$ is a tuple type with type list $\vlit$;
-      \item $\vs$ is a tuple type with type list $\vlis$;
+      \item $\vt$ is a \tupletypeterm{} with type list $\vlit$;
+      \item $\vs$ is a \tupletypeterm{} with type list $\vlis$;
       \item checking whether $\vlit$ and $\vlis$ have the same number of elements yields $\True$
             or a type error, which short-circuits the entire rule (indicating that the number of elements in both tuples is expected
             to be the same and thus there is no lowest common ancestor);
       \item applying $\lca$ to $\vlit[\vi]$ and $\vlis[\vi]$ in $\tenv$, for every position of $\vlit$,
             yields $\vt_\vi$\ProseOrTypeError;
       \item define $\vli$ to be the list of types $\vt_\vi$, for every position of $\vlit$;
-      \item define $\tty$ as the tuple type with list of types $\vli$, that is, $\TTuple(\vli)$.
+      \item define $\tty$ as the \tupletypeterm{} with list of types $\vli$, that is, $\TTuple(\vli)$.
     \end{itemize}
 
     \item \AllApplyCase{error}
@@ -1033,7 +1034,7 @@ Similarly, we determine the negation of integer constraints.
   \item $\op$ is $\NEG$;
   \item determining whether $\vt$ \typesatisfies\ $\TReal$ yields $\False$\ProseOrTypeError;
   \item determining whether $\vt$ \typesatisfies\ $\unconstrainedinteger$ yields $\False$\ProseOrTypeError;
-  \item the result is a type error indicating the $\NEG$ is appropriate only for \texttt{real} and \texttt{integer} types;
+  \item the result is a type error indicating the $\NEG$ is appropriate only for the \realtypeterm{} and the \integertypeterm{};
 \end{itemize}
 
 \item \AllApplyCase{neg\_t\_real}

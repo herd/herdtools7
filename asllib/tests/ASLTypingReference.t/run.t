@@ -61,7 +61,19 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.TBits.asl
   $ aslref TypingRule.TTuple.asl
   $ aslref TypingRule.TArray.asl
+  $ aslref TypingRule.TArray.bad.asl
+  File TypingRule.TArray.bad.asl, line 9, characters 31 to 57:
+  ASL Typing error: a pure expression was expected,
+    found non_symbolically_evaluable, which produces the following
+    side-effects: [ReadsLocal "non_symbolically_evaluable"].
+  [1]
+  $ aslref TypingRule.AnnotateSymbolicallyEvaluableExpr.asl
   $ aslref --no-exec TypingRule.TEnumDecl.asl
+  $ aslref --no-exec TypingRule.TEnumDecl.bad.asl
+  File TypingRule.TEnumDecl.bad.asl, line 2, characters 0 to 49:
+  ASL Typing error: cannot declare already declared element "RED".
+  [1]
+  $ aslref --no-exec TypingRule.GetVariableEnum.asl
   $ aslref TypingRule.TRecordExceptionDecl.asl
   $ aslref TypingRule.TNonDecl.asl
   File TypingRule.TNonDecl.asl, line 1, characters 5 to 6:

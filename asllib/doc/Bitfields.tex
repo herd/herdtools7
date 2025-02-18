@@ -1,12 +1,12 @@
 \chapter{Bitfields\label{chap:Bitfields}}
 
 Bitvector types allow defining bitslices of bitvectors, to be treated as named
-fields, which can be read or written. \lrmcomment{\identi{KGMC}}
+fields, which can be read or written. \identi{KGMC}
 
 Individual bitfields are grammatically derived from $\Nbitfield$ and represented as ASTs by $\bitfield$.
 Bitfields are not associated with a semantic relation.
 
-\subsection{Example}
+\ExampleDef{A bitvector type with bitfields}
 \listingref{bitfields1} declares a global variable whose type is a bitvector with bitfields.
 \ASLListing{A bitvector type with bitfields}{bitfields1}{\definitiontests/Bitfields.asl}
 \begin{itemize}
@@ -68,7 +68,7 @@ if they share the same name and exist in the same \bitfieldscope\ then their \ab
 equal.
 This is formalized in \TypingRuleRef{CheckCommonBitfieldsAlign} and exemplified in \listingref{nestedbitfields}.
 
-\subsection{Example}
+\ExampleDef{A bitvector type with nested bitfields}
 \listingref{nestedbitfields} shows a bitvector type with nested bitfields, along with the absolute bitfield
 defined for each bitfield.
 \ASLListing{A bitvector type with nested bitfields}{nestedbitfields}{\definitiontests/Bitfields_nested.asl}

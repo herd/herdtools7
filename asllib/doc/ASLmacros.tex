@@ -1237,7 +1237,7 @@
 \newcommand\sliceswidth[0]{\hyperlink{def-sliceswidth}{\textfunc{slices\_width}}}
 \newcommand\slicewidth[0]{\hyperlink{def-slicewidth}{\textfunc{slice\_width}}}
 \newcommand\checkstructurelabel[0]{\hyperlink{def-checkstructurelabel}{\textfunc{check\_structure}}}
-\newcommand\checkstructureinteger[0]{\hyperlink{def-checkstructureinteger}{\textfunc{check\_structure\_integer}}}
+\newcommand\checkunderlyinginteger[0]{\hyperlink{def-checkunderlyinginteger}{\textfunc{check\_underlying\_integer}}}
 \newcommand\issymbolicallyevaluable[0]{\hyperlink{def-issymbolicallyevaluable}{\textfunc{is\_symbolically\_evaluable}}}
 \newcommand\checksymbolicallyevaluable[0]{\hyperlink{def-checksymbolicallyevaluable}{\textfunc{check\_symbolically\_evaluable}}}
 \newcommand\Prosechecksymbolicallyevaluable[1]{\hyperlink{def-checksymbolicallyevaluable}{checking} that #1 is \symbolicallyevaluable\ yields $\True$\ProseOrTypeError}
@@ -1476,8 +1476,8 @@
 \newcommand\AbbrevConstraintRange[2]{\overbracket{#1..#2}^{\hyperlink{def-abbrevconstraintrange}{\abbrevfont{Constraint\_Range}}}}
 \newcommand\AbbrevEBinop[3]{\overbracket{#2\ #1\ #3}^{\hyperlink{def-abbrevebinop}{\abbrevfont{E\_Binop}}}}
 \newcommand\AbbrevTArray[2]{\overbracket{\texttt{array }[#1]\texttt{ of }#2}^{\hyperlink{def-abbrevtarray}{\abbrevfont{T\_Array}}}}
-\newcommand\AbbrevTArrayLengthExpr[2]{\overbracket{\texttt{array }[#1]\texttt{ of }#2}^{\hyperlink{def-abbrevtarraylengthexpr}{\abbrevfont{T\_Array(ArrayLength\_Expr)}}}}
-\newcommand\AbbrevTArrayLengthEnum[3]{\overbracket{\texttt{array }[#1 \# #2]\texttt{ of }#3}^{\hyperlink{def-abbrevtarraylengthenum}{\abbrevfont{T\_Array(Array\_Length\_Enum)}}}}
+\newcommand\AbbrevTArrayLengthExpr[2]{\overbracket{\texttt{array [[}#1\texttt{]] of }#2}^{\hyperlink{def-abbrevtarraylengthexpr}{\abbrevfont{T\_Array(ArrayLength\_Expr)}}}}
+\newcommand\AbbrevTArrayLengthEnum[3]{\overbracket{\texttt{array [[}#1 \# #2\texttt{]] of }#3}^{\hyperlink{def-abbrevtarraylengthenum}{\abbrevfont{T\_Array(Array\_Length\_Enum)}}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Top level macros
@@ -1569,17 +1569,34 @@
 \newcommand\subtypesterm[0]{\hyperlink{def-subtypes}{subtypes}}
 \newcommand\subtypeterm[0]{\hyperlink{def-subtypes}{subtype}}
 \newcommand\supertypeterm[0]{\hyperlink{def-supertypeterm}{supertype}}
+\newcommand\normalizedterm[0]{\hyperlink{def-normalizedterm}{normalized}}
+\newcommand\normalizedexpressionterm[0]{\hyperlink{def-normalizedterm}{normalized expression}}
 
 %% Type macros
 \newcommand\integertypeterm[0]{\hyperlink{integertypeterm}{integer type}}
+\newcommand\integertypesterm[0]{\hyperlink{integertypeterm}{integer types}}
 \newcommand\bitvectortypeterm[0]{\hyperlink{bitvectortypeterm}{bitvector type}}
 \newcommand\bitvectortypesterm[0]{\hyperlink{bitvectortypeterm}{bitvector types}}
+\newcommand\bitfieldterm[0]{\hyperlink{bitfieldterm}{bitfield}}
+\newcommand\bitfieldsterm[0]{\hyperlink{bitfieldterm}{bitfields}}
+\newcommand\bitsliceterm[0]{\hyperlink{bitsliceterm}{bitslice}}
+\newcommand\bitslicesterm[0]{\hyperlink{bitsliceterm}{bitslices}}
 \newcommand\realtypeterm[0]{\hyperlink{realtypeterm}{real type}}
 \newcommand\stringtypeterm[0]{\hyperlink{stringtypeterm}{string type}}
 \newcommand\booleantypeterm[0]{\hyperlink{booleantypeterm}{boolean type}}
 \newcommand\enumerationtypeterm[0]{\hyperlink{enumerationtypeterm}{enumeration type}}
+\newcommand\enumerationtypesterm[0]{\hyperlink{enumerationtypeterm}{enumeration types}}
+\newcommand\Enumerationtypesterm[0]{\hyperlink{enumerationtypeterm}{Enumeration types}}
 \newcommand\tupletypeterm[0]{\hyperlink{tupletypeterm}{tuple type}}
+\newcommand\tupletypesterm[0]{\hyperlink{tupletypeterm}{tuple types}}
+\newcommand\Tupletypesterm[0]{\hyperlink{tupletypeterm}{Tuple types}}
+\newcommand\Prosetupletype[1]{\tupletypeterm{} with member types #1}
 \newcommand\arraytypeterm[0]{\hyperlink{arraytypeterm}{array type}}
+\newcommand\arraytypesterm[0]{\hyperlink{arraytypeterm}{array types}}
+\newcommand\intarraytypeterm[0]{\hyperlink{intarraytypeterm}{integer-indexed array type}}
+\newcommand\Intarraytypeterm[0]{\hyperlink{intarraytypeterm}{Integer-indexed array type}}
+\newcommand\enumarraytypeterm[0]{\hyperlink{enumarraytypeterm}{enumeration-indexed array type}}
+\newcommand\Enumarraytypeterm[0]{\hyperlink{enumarraytypeterm}{Enumeration-indexed array type}}
 \newcommand\namedtypeterm[0]{\hyperlink{namedtypeterm}{named type}}
 \newcommand\recordtypeterm[0]{\hyperlink{recordtypeterm}{record type}}
 \newcommand\exceptiontypeterm[0]{\hyperlink{exceptiontypeterm}{exception type}}
@@ -1604,7 +1621,7 @@
 \newcommand\bitwidthequivalent[0]{\hyperlink{def-bitwidthequal}{bitwidth-equivalent}}
 \newcommand\typeclash[0]{\hyperlink{def-typeclashes}{type-clash}}
 \newcommand\constrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{constrained integer}}
-\newcommand\structureofinteger[0]{\hyperlink{def-checkstructureinteger}{structure of an integer}}
+\newcommand\structureofinteger[0]{\hyperlink{def-checkunderlyinginteger}{structure of an integer}}
 \newcommand\wellconstrainedstructure[0]{\hyperlink{def-getwellconstrainedstructure}{well-constrained structure}}
 \newcommand\wellconstrainedversion[0]{\hyperlink{def-towellconstrained}{well-constrained version}}
 \newcommand\namedlowestcommonancestor[0]{\hyperlink{def-namedlowestcommonancestor}{named lowest common ancestor}}
@@ -1775,6 +1792,7 @@
 \newcommand\PerformsAssertionsTerm[0]{\hyperlink{def-performsassertionsterm}{assertion side effect descriptor}}
 \newcommand\NonDeterministicTerm[0]{\hyperlink{def-nondeterministicterm}{non-determinism side effect descriptor}}
 
+\newcommand\staticallyevaluable[0]{\hyperlink{def-staticallyevaluable}{statically evaluable}}
 \newcommand\symbolicallyevaluable[0]{\hyperlink{def-symbolicallyevaluable}{symbolically evaluable}}
 \newcommand\timeframeterm[0]{\hyperlink{def-timeframe}{time frame}}
 \newcommand\timeframesterm[0]{\hyperlink{def-timeframe}{time frames}}
@@ -2017,7 +2035,8 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % LRM Ident info
-\newcommand\ident[2]{\texttt{#1}\textsubscript{\texttt{\MakeUppercase{#2}}}}
+\newcommand\ident[2]{}
+%\newcommand\ident[2]{\texttt{#1}\textsubscript{\texttt{\MakeUppercase{#2}}}}
 \newcommand\identi[1]{\ident{I}{#1}}
 \newcommand\identr[1]{\ident{R}{#1}}
 \newcommand\identd[1]{\ident{D}{#1}}

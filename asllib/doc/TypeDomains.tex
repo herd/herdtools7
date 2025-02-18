@@ -89,7 +89,7 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and \O
 
   \item \AllApplyCase{t\_enumeration}
   \begin{itemize}
-    \item $\vt$ is the enumeration type with labels $\vl_{1..k}$, that is $\TEnum(\vl_{1..k})$;
+    \item $\vt$ is the \enumerationtypeterm{} with labels $\vl_{1..k}$, that is $\TEnum(\vl_{1..k})$;
     \item $\vd$ is the set of all native labels $\nvlabel(\vl_\vi)$, for $\vi = 1..k$.
   \end{itemize}
 
@@ -181,7 +181,7 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and \O
 
   \item \AllApplyCase{t\_tuple}
   \begin{itemize}
-    \item $\vt$ is a tuple type over types $\vt_i$, for $i=1..k$, $\TTuple(\vt_{1..k})$;
+    \item $\vt$ is a \tupletypeterm{} over types $\vt_i$, for $i=1..k$, $\TTuple(\vt_{1..k})$;
     \item the domain of each element $\vt_i$ is $D_i$, for $i=1..k$;
     \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
     \item $\vd$ is the set containing all native vectors of $k$ values, where the value at position $i$
@@ -221,7 +221,7 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and \O
     \item $\vt$ is an enumeration-indexed array type with for the enumeration $\id$ with $k$ labels and element type $\telem$,
           $\TArray(\ArrayLengthEnum(\id, k), \telem)$;
     \item view $\env$ as the pair consisting of the static environment $\tenv$ and a dynamic environment;
-    \item the type bound to $\id$ in the $\declaredtypes$ map of the static environment of $\tenv$ is the enumeration type
+    \item the type bound to $\id$ in the $\declaredtypes$ map of the static environment of $\tenv$ is the \enumerationtypeterm{}
           for the labels $\vl_{1..k}$, that is, $\TEnum(\vl_{1..k})$;
     \item the dynamic domain of $\telem$ in $\env$ is $D_\telem$;
     \item $\vd$ is the set of all native records where each $\vl_i$ is mapped to a value taken from $D_\telem$, for $i=1..k$.

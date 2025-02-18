@@ -211,6 +211,9 @@ The function
 yielding an expression $\newe$.
 \ProseOtherwiseTypeError
 
+\hypertarget{def-normalizedterm}{}
+We refer to an expression in the image of $\normalize$ as a \emph{\normalizedexpressionterm}.
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1335,8 +1338,8 @@ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
   \item \AllApplyCase{tenum}
   \begin{itemize}
-    \item $\vtone$ is an enumeration type with identifier $\vlone$, that is $\TEnum(\vlone)$;
-    \item $\vttwo$ is an enumeration type with identifier $\vltwo$, that is $\TEnum(\vltwo)$;
+    \item $\vtone$ is an \enumerationtypeterm{} with identifier $\vlone$, that is $\TEnum(\vlone)$;
+    \item $\vttwo$ is an \enumerationtypeterm{} with identifier $\vltwo$, that is $\TEnum(\vltwo)$;
     \item $\vb$ is $\True$ if and only if $\vlone$ is equal to $\vltwo$.
   \end{itemize}
 
@@ -1355,8 +1358,8 @@ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
   \item \AllApplyCase{ttuple}
   \begin{itemize}
-    \item $\vtone$ is a tuple type with list of types $\vtsone$, that is $\TTuple(\vtsone)$;
-    \item $\vttwo$ is a tuple type with list of types $\vtstwo$, that is $\TTuple(\vtstwo)$;
+    \item $\vtone$ is a \tupletypeterm{} with list of types $\vtsone$, that is $\TTuple(\vtsone)$;
+    \item $\vttwo$ is a \tupletypeterm{} with list of types $\vtstwo$, that is $\TTuple(\vtstwo)$;
     \item checking whether the list of types $\vtsone$ has the same length as the list of types $\vtstwo$ yields $\True$
           or $\False$, which short-circuits the entire rule;
     \item for each index $i$ in the list $\vtsone$, testing whether $\vtsone[i]$ is equivalent to $\vtstwo[i]$ in $\tenv$
@@ -1867,9 +1870,9 @@ in $\vb$. \ProseOtherwiseTypeError
 
   \item \AllApplyCase{enum\_enum}
   \begin{itemize}
-    \item $\vlone$ is an enumeration type index for the identifier $\venumone$ and a list of labels, that is,
+    \item $\vlone$ is an \enumerationtypeterm{} index for the identifier $\venumone$ and a list of labels, that is,
           $\ArrayLengthEnum(\venumone, \Ignore)$;
-    \item $\vltwo$ is an enumeration type index for the identifier $\venumtwo$ and a list of labels, that is,
+    \item $\vltwo$ is an \enumerationtypeterm{} index for the identifier $\venumtwo$ and a list of labels, that is,
            $\ArrayLengthEnum(\venumtwo, \Ignore)$;
     \item $\vb$ is $\True$ if and only if $\venumone$ is equal to $\venumtwo$.
   \end{itemize}

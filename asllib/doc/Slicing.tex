@@ -1,5 +1,5 @@
 \chapter{Bitvector Slicing\label{chap:BitvectorSlicing}}
-
+\hypertarget{bitsliceterm}{}
 \subsubsection{Example}
 \listingref{BitvectorSlices} shows different ways of expressing bitvector slices
 and how they relate to one another in terms of the order of bits they represent.
@@ -281,7 +281,7 @@ resulting in an annotated slice $\vsp$.
 \inferrule[length]{
   \annotateexpr{\tenv, \eoffset} \typearrow (\toffset, \eoffsetp, \vsesoffset) \OrTypeError\\\\
   \annotatesymbolicconstrainedinteger(\tenv, \elength) \typearrow (\elengthp, \vseslength) \OrTypeError\\\\
-  \checkstructureinteger(\tenv, \toffset) \typearrow \True \OrTypeError\\\\
+  \checkunderlyinginteger(\tenv, \toffset) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsesoffset \cup \vseslength
 }{
   {
@@ -471,7 +471,7 @@ In \listingref{semantics-scaledslice},
   \item \AllApplyCase{single}
   \begin{itemize}
     \item $\vs$ is a \singleslice\ with the expression $\ve$, $\SliceSingle(\ve)$;
-    \item evaluating $\ve$ in $\env$ results in $\Normal((\vstart, \newg)$\newenv)\ProseOrAbnormal;
+    \item evaluating $\ve$ in $\env$ results in $\Normal((\vstart, \newg), \newenv)$\ProseOrAbnormal;
     \item $\vlength$ is the integer value 1.
   \end{itemize}
 

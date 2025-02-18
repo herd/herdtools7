@@ -607,13 +607,13 @@ if it defines any.
 \begin{itemize}
   \item \AllApplyCase{decl\_enum}
   \begin{itemize}
-    \item $\vd$ is a declaration of an enumeration type with labels $\vlabels$;
+    \item $\vd$ is a declaration of an \enumerationtypeterm{} with labels $\vlabels$;
     \item the result is $\vlabels$ as a set (rather than a list).
   \end{itemize}
 
   \item \AllApplyCase{other}
   \begin{itemize}
-    \item $\vd$ is not a declaration of an enumeration type;
+    \item $\vd$ is not a declaration of an \enumerationtypeterm{};
     \item define $\vlabels$ as the empty set.
   \end{itemize}
 \end{itemize}
@@ -760,7 +760,7 @@ returns the set of identifiers $\ids$ which the type or \optional\ type $\vt$ de
 
   \item \AllApplyCase{t\_tuple}
   \begin{itemize}
-    \item $\vt$ is the tuple type with list of types $\vli$;
+    \item $\vt$ is the \tupletypeterm{} with list of types $\vli$;
     \item define $\ids$ as the union of applying $\useconstraint$ to each constraint in $\vcs$.
   \end{itemize}
 
@@ -778,7 +778,7 @@ returns the set of identifiers $\ids$ which the type or \optional\ type $\vt$ de
 
   \item \AllApplyCase{array\_enum}
   \begin{itemize}
-    \item $\vt$ is an array expression with enumeration type $\vs$ and element type $\vtp$;
+    \item $\vt$ is an array expression with \enumerationtypeterm{} $\vs$ and element type $\vtp$;
     \item define $\ids$ as the union of the singleton set for $\vs$ and applying $\usety$ to $\vtp$.
   \end{itemize}
 

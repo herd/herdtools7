@@ -692,7 +692,7 @@ in the \CaseName{int} below.
 
   \item \AllApplyCase{other}
   \begin{itemize}
-    \item $\lhs$ is not a \pendingconstrainedintegertype{}, or one of $\lhs$ and $\rhs$ is not a tuple type;
+    \item $\lhs$ is not a \pendingconstrainedintegertype{}, or one of $\lhs$ and $\rhs$ is not a \tupletypeterm{};
     \item \Proseeqdef{$\lhsp$}{$\lhs$}.
   \end{itemize}
 \end{itemize}
@@ -1631,7 +1631,7 @@ they do not appear in the typed AST and thus are not associated with a semantics
 \hypertarget{def-assertionstatementterm}{}
 \section{Assertion Statements\label{sec:AssertionStatements}}
 Assertion statements are used to check that certain conditions are satisfied.
-They take a single \texttt{boolean}-typed operand, which we refer to as the
+They take a single \booleantypeterm{} operand, which we refer to as the
 \emph{condition}. If the condition is \False, the statement fails with a
 \dynamicerrorterm{} (\errorcodeterm{} $\DynamicAssertionFailure$).
 
