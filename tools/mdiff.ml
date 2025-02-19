@@ -17,15 +17,12 @@
 
 open Printf
 open LogState
+open OptNames
 
 type act = Diff | Inter
 
 let verbose = ref 0
 let logs = ref []
-let select = ref []
-let rename = ref []
-let names = ref []
-let excl = ref []
 let hexa = ref false
 let int32 = ref true
 let emptyok = ref false
@@ -56,12 +53,9 @@ let options =
    "<non-default> show various diagnostics, repeat to increase verbosity");
    parse_hexa hexa; parse_int32 int32;
    parse_emptyok emptyok;
-   parse_rename rename;
-   parse_select select; parse_names names;
-   parse_excl excl;
    parse_act act;
    parse_faulttype faulttype;
-  ]
+  ]@parse_withselect
 
 let prog =
   if Array.length Sys.argv > 0 then (Filename.basename Sys.argv.(0))
@@ -110,7 +104,9 @@ module LL =
             let rename = rename
             let select = select
             let names = names
+            let oknames = !oknames
             let excl = excl
+            let nonames = !nonames
           end)
       let hexa = hexa
       let int32 = int32

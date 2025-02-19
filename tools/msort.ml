@@ -258,7 +258,7 @@ let reverse = ref false
 let tnames = ref false
 let keep_bad = ref true
 let names = ref [] and excl = ref []
-
+let oknames = ref StringSet.empty and nonames = ref StringSet.empty
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
   else "msort"
@@ -289,8 +289,8 @@ let () =
      "-cost",
      Arg.String (fun s -> orders := !orders @ [s]),
      "<name> specify order file";
-     CheckName.parse_names names ;
-     CheckName.parse_excl excl ;]
+     CheckName.parse_names names; CheckName.parse_oknames oknames;
+     CheckName.parse_excl excl; CheckName.parse_nonames nonames; ]
     (fun s -> arg := s :: !arg)
     usage
 
@@ -308,7 +308,9 @@ module Check =
       let rename = []
       let select = []
       let names = !names
+      let oknames = !oknames
       let excl = !excl
+      let nonames = !nonames
     end)
 
 module X =

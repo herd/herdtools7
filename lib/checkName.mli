@@ -18,8 +18,10 @@
 
 val parse_select : string list ref ->  Arg.key * Arg.spec * Arg.doc
 val parse_names : string list ref ->  Arg.key * Arg.spec * Arg.doc
+val parse_oknames : StringSet.t ref ->  Arg.key * Arg.spec * Arg.doc
 val parse_rename : string list ref ->  Arg.key * Arg.spec * Arg.doc
 val parse_excl : string list ref ->  Arg.key * Arg.spec * Arg.doc
+val parse_nonames : StringSet.t ref ->  Arg.key * Arg.spec * Arg.doc
 val parse_hexa : bool ref ->  Arg.key * Arg.spec * Arg.doc
 val parse_int32 : bool ref ->  Arg.key * Arg.spec * Arg.doc
 val parse_faulttype : bool ref -> Arg.key * Arg.spec * Arg.doc
@@ -30,7 +32,9 @@ module Make :
      val rename : string list
      val select : string list
      val names : string list
+     val oknames : StringSet.t
      val excl : string list
+     val nonames : StringSet.t
    end) ->
      sig
        val rename : string -> string

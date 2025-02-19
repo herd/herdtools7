@@ -22,6 +22,7 @@ let pgm = if Array.length Sys.argv > 0 then Sys.argv.(0) else "litmus"
 let sources = ref []
 
 open Option
+open OptNames
 
 module PStride = ParseTag.Make(Stride)
 
@@ -199,9 +200,10 @@ let opts =
    argbool "-kind" Option.kind "show kind information in output" ;
 (* Change input *)
    CheckName.parse_names names ;
-   CheckName.parse_excl excl ;
-(* Change input *)
-   CheckName.parse_rename rename ;
+   CheckName.parse_excl excl ;]
+    (* Change input *)
+  @parse_noselect
+  @[
    argstring_withfun "-kinds" set_kinds
      "<file> specify kinds of tests (can be repeated)" ;
    argstring_withfun "-conds" set_conds
@@ -221,9 +223,6 @@ let usage = sprintf   "Usage: %s [opts]* filename" pgm
 let () = Arg.parse opts (fun s -> sources := s :: !sources) usage
 
 let sources = !sources
-let rename = !rename
-let names = !names
-let excl = !excl
 let kinds = !Option.kinds
 let conds = !Option.conds
 let nstates = !Option.nstates
@@ -235,10 +234,12 @@ let () =
       CheckName.Make
         (struct
           let verbose = verbose
-          let rename = rename
+          let rename = !rename
           let select = []
-          let names = names
-          let excl = excl
+          let names = !names
+          let oknames = !oknames
+          let excl = !excl
+          let nonames = !nonames
         end) in
     let module L = LexRename.Make(struct let verbose = verbose end) in
     let kinds =

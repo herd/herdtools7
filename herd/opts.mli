@@ -28,9 +28,6 @@ val includes : string list ref
 val exit_if_failed : bool ref
 val timeout : float option ref
 val debug : Debug_herd.t ref
-val names : string list ref
-val excl : string list ref
-val rename : string list ref
 val kinds : string list ref
 val conds : string list ref
 val model : Model.t option  ref

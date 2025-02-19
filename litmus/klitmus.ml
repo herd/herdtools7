@@ -44,9 +44,6 @@ module KOption : sig
   val size : int ref
   val runs : int ref
   val stride : KStride.t ref
-  val names : string list ref
-  val excl : string list ref
-  val rename : string list ref
   val rcu : Rcu.t ref
   val expedited : bool ref
   val pad : int ref
@@ -75,6 +72,7 @@ end = struct
 end
 
 open KOption
+open OptNames
 
 module PStride = ParseTag.Make(KStride)
 
@@ -130,12 +128,10 @@ let opts =
 (********)
 (* Compilation options *)
    "-ccopts", Arg.String (fun s -> KOption.ccopts := !KOption.ccopts @ [s]),
-   "<string> Additional option for C compiler";
+   "<string> Additional option for C compiler";]
 (* Change input *)
-   CheckName.parse_names names ;
-   CheckName.parse_excl excl ;
-   CheckName.parse_rename rename ;
-   begin let module P = ParseTag.Make(Rcu) in
+  @ parse_noselect
+  @[begin let module P = ParseTag.Make(Rcu) in
    P.parse "-rcu" KOption.rcu "accept RCU tests or not" end ;
    argbool "-expedited" KOption.expedited "translate syncronize_rcu to synchronize_expedited";
  ]
@@ -146,9 +142,6 @@ let usage = sprintf   "Usage: %s [opts]* filename" pgm
 let () = Arg.parse opts (fun s -> sources := s :: !sources) usage
 
 let sources = !sources
-let rename = !rename
-let names = !names
-let excl = !excl
 let verbose = !KOption.verbose
 let () =
   try
@@ -157,10 +150,12 @@ let () =
       CheckName.Make
         (struct
           let verbose = verbose
-          let rename = rename
+          let rename = !rename
           let select = []
-          let names = names
-          let excl = excl
+          let names = !names
+          let oknames = !oknames
+          let excl = !excl
+          let nonames = !nonames
         end) in
     let outname =
       if KOption.is_out () then KOption.get_tar ()

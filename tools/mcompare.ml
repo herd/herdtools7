@@ -32,7 +32,6 @@ type runopts =
      do_sum:bool;
      outputfile:string option;
      restrict_by_first_column:bool;
-     rename:string list;
      forcekind: string option;
      kinds:string list;
      show_kinds: bool;
@@ -45,9 +44,6 @@ type runopts =
      filter : string option ;
      kmg : bool ;
      quiet : bool ;
-     select : string list ;
-     names : string list ;
-     excl : string list ;
      check_hash : bool ;
      texmacro : bool ;
      dump_eq : string option ;
@@ -68,7 +64,6 @@ let default_runopts =
    do_sum = false;
    outputfile = None;
    restrict_by_first_column = false;
-   rename = [] ;
    forcekind = None ;
    kinds = [] ; conds = [] ; orders=[];
    show_litmus = true ;
@@ -79,9 +74,6 @@ let default_runopts =
    filter = None ;
    kmg = false ;
    quiet = false ;
-   names = [];
-   select = [];
-   excl = [];
    check_hash = true ;
    texmacro = false ;
    dump_eq = None;
@@ -103,11 +95,14 @@ let delay_ro f x =
   let prev = !delayed_options in
   delayed_options := (fun ro -> f x (prev ro))
 
+open OptNames
+
 let options =
   [
   ("-v", Arg.Unit (fun _ -> incr verb),
-   "<non-default> show various diagnostics, repeat to increase verbosity");
-   ("-faulttype",
+   "<non-default> show various diagnostics, repeat to increase verbosity")]
+  @parse_withselect
+  @[("-faulttype",
     Arg.Bool
       (delay_ro (fun b ro -> { ro with faulttype = b})),
     sprintf
@@ -156,22 +151,6 @@ let options =
       (delay_ro
           (fun () ro -> { ro with texmacro = true; })),
       " macros in latex/hevea output");
-   ("-names",
-    Arg.String
-      (delay_ro (fun s ro -> { ro with names = s :: ro.names})),
-    "<name> specify selected name file, can be repeated") ;
-   ("-excl",
-    Arg.String
-      (delay_ro (fun s ro -> { ro with excl = s :: ro.excl})),
-    "<name> specify excluded name file, can be repeated") ;
-   ("-select",
-    Arg.String
-      (delay_ro (fun s ro -> { ro with select = s :: ro.select})),
-    "<name> specify selected test file (or index file), can be repeated") ;
-   ("-rename",
-    Arg.String
-      (delay_ro (fun s ro -> { ro with rename = ro.rename @ [s] })),
-    "<name> specify a rename mapping, for changing test names in output") ;
    ("-nohash",
     Arg.Unit
       (delay_ro (fun () ro -> { ro with check_hash = false; })),
@@ -318,10 +297,12 @@ module Check =
   CheckName.Make
     (struct
       let verbose = !verb
-      let rename = runopts.rename
-      let select = runopts.select
-      let names = runopts.names
-      let excl = runopts.excl
+      let rename = !rename
+      let select = !select
+      let names = !names
+      let oknames = !oknames
+      let excl = !excl
+      let nonames = !nonames
     end)
 
 module Config = struct

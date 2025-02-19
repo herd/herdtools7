@@ -36,7 +36,9 @@ module Make(O:Config) =
 
 let with_source = ref true
 let names = ref []
+and oknames = ref StringSet.empty
 and excl = ref []
+and nonames = ref StringSet.empty
 and rename = ref []
 let arg = ref []
 
@@ -48,7 +50,9 @@ let () =
   Arg.parse
     [
      CheckName.parse_names names;
+     CheckName.parse_oknames oknames;
      CheckName.parse_excl excl;
+     CheckName.parse_nonames nonames;
      CheckName.parse_rename rename;
      "-src",Arg.Bool (fun b -> with_source := b),
      (sprintf "<bool> include source file names into output, default %b" !with_source)]
@@ -64,7 +68,9 @@ module Check =
       let rename = !rename
       let select = []
       let names = !names
+      let oknames = !oknames
       let excl = !excl
+      let nonames = !nonames
     end)
 
 module X = Make(Check)

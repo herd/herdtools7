@@ -144,8 +144,10 @@ let verbose = ref 0
 let back = ref false
 let action = ref Action.Check
 let names = ref []
+let oknames = ref StringSet.empty
 let rename = ref []
 let excl = ref []
+let nonames = ref StringSet.empty
 let tests = ref []
 
 let arg = ref []
@@ -163,7 +165,9 @@ let () =
      parse_select tests;
      parse_rename rename;
      parse_names names;
+     parse_oknames oknames;
      parse_excl excl;
+     parse_nonames nonames;
      begin let module P = ParseTag.Make(Action) in
      P.parse "-action" action "action performed" end ;
     ]
@@ -180,7 +184,9 @@ module Check =
       let rename = !rename
       let select = []
       let names = !names
+      let oknames = !oknames
       let excl = !excl
+      let nonames = !nonames
     end)
 
 module X =

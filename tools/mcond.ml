@@ -50,7 +50,7 @@ module Make(Config:Config) =
         end
       with LexMisc.Error (msg,pos) ->
         Printf.eprintf
-	  "%a: Lex error %s (in %s)\n" Pos.pp_pos pos msg fname ;
+          "%a: Lex error %s (in %s)\n" Pos.pp_pos pos msg fname ;
         raise Misc.Exit
 
     let from_file chan name =
@@ -70,16 +70,14 @@ module Make(Config:Config) =
 (**********)
 
 let verbose = ref 0
-let names = ref []
+
+open OptNames
 
 let args = ref []
 
 let opts =
-  [ "-v", Arg.Unit (fun () -> incr verbose)," be verbose";
-    "-names",
-    Arg.String (fun s -> names := [s] @ !names),
-    "<name> select tests whose names are listed in file <name> (cumulate when repeated)";
-  ]
+  ("-v", Arg.Unit (fun () -> incr verbose)," be verbose")
+  ::parse_noselect
 
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
@@ -91,17 +89,23 @@ let () =
     (sprintf "Usage %s [options] [test]*" prog)
 
 (* Read names *)
-let names = match !names with
-| [] -> None
-| names -> Some (ReadNames.from_files names StringSet.add StringSet.empty)
+module Check =
+  CheckName.Make
+    (struct
+      let verbose = !verbose
+      let rename = !rename
+      let select = []
+      let names = !names
+      let oknames = !oknames
+      let excl = !excl
+      let nonames = !nonames
+    end)
 
 module X =
  Make
    (struct
      let verbose = !verbose
-     let check_name = match names with
-     | None -> fun _ -> true
-     | Some names -> (fun name -> StringSet.mem name names)
+     let check_name = Check.ok
    end)
 
 let () = X.from_args !args

@@ -251,6 +251,8 @@ module Make(Config:Config)(Out:OutTests.S) =
 (* Driver *)
 (**********)
 
+open OptNames
+
 let tar = ref None
 and hexa = ref false
 and conds = ref []
@@ -258,8 +260,6 @@ and verbose = ref 0
 and outcomes = ref false
 and asobserved = ref false
 and toexists = ref false
-let names = ref []
-let excl = ref []
 
 let set_conds c = conds := !conds @ [c]
 let set_tar x = tar := Some x
@@ -272,8 +272,6 @@ let opts =
     "-hexa",
     Arg.Bool (fun b -> hexa := b),
     "<bool> set hexadecimal output";
-    CheckName.parse_names names ;
-    CheckName.parse_excl excl ;
     "-conds",
     Arg.String set_conds,
     "<name> specify conditions of tests (can be repeated)";
@@ -291,7 +289,7 @@ let opts =
     sprintf
       "<bool> change quantifier to exists, default %b"
       !toexists;
-  ]
+  ]@parse_noselect
 
 let usage = String.concat "\n" [
   Printf.sprintf "Usage: %s [options] [<path/to/test> ...]" nprog ;
@@ -311,10 +309,12 @@ module Check =
   CheckName.Make
     (struct
       let verbose = !verbose
-      let rename = []
+      let rename = !rename
       let select = []
       let names = !names
+      let oknames = !oknames
       let excl = !excl
+      let nonames = !nonames
     end)
 
 (* Read conditions *)

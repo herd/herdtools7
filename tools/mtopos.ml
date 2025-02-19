@@ -63,9 +63,8 @@ module Make(O:Config) = struct
 
 end
 
+open OptNames
 
-let names = ref []
-let select = ref []
 let verbose = ref 0
 let shownames = ref true
 let faulttype = ref true
@@ -74,13 +73,14 @@ let log = ref None
 let options =
   let open CheckName in
   [
-  ("-v", Arg.Unit (fun _ -> incr verbose),
+    ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
-   ("-shownames", Arg.Bool (fun b -> shownames := b),
-    (sprintf "<bool> show test names in output, default %b" !shownames));
-   parse_select select; parse_names names;
-   parse_faulttype faulttype;
- ]
+  ]@parse_withselect
+  @[
+    ("-shownames", Arg.Bool (fun b -> shownames := b),
+     (sprintf "<bool> show test names in output, default %b" !shownames));
+    parse_faulttype faulttype;
+  ]
 
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
@@ -101,10 +101,12 @@ module Check =
   CheckName.Make
     (struct
       let verbose = !verbose
-      let rename = []
+      let rename = !rename
       let select = !select
       let names = !names
-      let excl = []
+      let oknames = !oknames
+      let excl = !excl
+      let nonames = !nonames
     end)
 
 module Config = struct
