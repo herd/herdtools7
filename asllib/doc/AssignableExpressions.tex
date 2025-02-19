@@ -589,10 +589,8 @@ In \listingref{semantics-lediscard}, the assignment \texttt{- = 42;} does not af
   \annotatelexpr{\tenv, \overname{\LEVar(\vx)}{\vle}, \vte} \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
 \end{mathpar}
-\lrmcomment{
-  This is related to \identr{WDGQ}, \identr{GNTS}, \identi{MMKF},
-  \identi{DGWJ}, \identi{KKCC} and \identr{LXQZ}.
-}
+\identr{WDGQ} \identr{GNTS} \identi{MMKF}
+\identi{DGWJ} \identi{KKCC}  \identr{LXQZ}
 \CodeSubsection{\LEVarBegin}{\LEVarEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -959,7 +957,7 @@ of \\
 \CodeSubsection{\EvalLESetArrayBegin}{\EvalLESetArrayEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
-\lrmcomment{This is related to \identr{WHRS}:}
+\identr{WHRS}
 If the declared type of the \rhsexpression\ of a setter has the structure of a
 bitvector or a type with fields, then if a bitslice or field selection is
 applied to a setter invocation, then the assignment to that bitslice is
@@ -1135,7 +1133,7 @@ in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
 \end{mathpar}
 \CodeSubsection{\EvalLESliceBegin}{\EvalLESliceEnd}{../Interpreter.ml}
 \subsubsection{Comments}
-\lrmcomment{This is related to \identr{WHRS}:}
+\identr{WHRS}
 
 If the declared type of the \rhsexpression\ of a setter has the structure of a
 bitvector or a type with fields, then if a bitslice or field selection is
@@ -1232,7 +1230,7 @@ ranges $(\vsone, \vlone)$ and $(\vstwo, \vltwo)$ do not intersect, yielding $\Tr
 \section{Structured Type Field Assignment Expressions\label{sec:StructuredTypeFieldAssignmentExpressions}}
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\lexpr \derives\ & \LESetField(\lexpr, \identifier) &
+\lexpr \derives\ & \LESetField(\lexpr \identifier) &
 \end{flalign*}
 
 \subsection{Typing}
@@ -1296,7 +1294,7 @@ ranges $(\vsone, \vlone)$ and $(\vstwo, \vltwo)$ do not intersect, yielding $\Tr
 \section{Structured Type Multi-field Assignment Expressions\label{sec:StructuredTypeMultiFieldAssignmentExpressions}}
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\lexpr \derives\ & \LESetFields(\lexpr, \identifier^*) &
+\lexpr \derives\ & \LESetFields(\lexpr \identifier^*) &
 \end{flalign*}
 
 \subsection{Typing}
@@ -1719,7 +1717,7 @@ in the environment where \texttt{my\_record} is bound to \texttt{\{a: 3, b: 100\
 We note that the typechecker guarantees that $\fieldname$ exists in the record given by $\record$
 via \TypingRuleRef{LESetStructuredField}.
 
-\lrmcomment{This is related to \identr{WHRS}:}
+\identr{WHRS}
 If the declared type of the \rhsexpression\ of a setter has the structure of a
 bitvector or a type with fields, then if a bitslice or field selection is
 applied to a setter invocation, then the assignment to that bitslice is

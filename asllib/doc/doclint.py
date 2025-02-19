@@ -15,6 +15,7 @@ cli_parser.add_argument(
     action="store_true",
 )
 
+num_rules = 0
 
 def read_file_lines(filename: str) -> List[str]:
     with open(filename, "r", encoding="utf-8") as file:
@@ -151,13 +152,16 @@ def check_repeated_words(filename: str) -> int:
     for line in read_file_lines(filename):
         line_number += 1
         line = line.strip()
-        tokens = re.split(' |{|}', line)
+        tokens = re.split(" |{|}", line)
         if not tokens:
             continue
         for current_token in tokens:
             current_token_lower = current_token.lower()
             last_token_lower = last_token.lower()
-            if current_token_lower.isalpha() and last_token_lower == current_token_lower:
+            if (
+                current_token_lower.isalpha()
+                and last_token_lower == current_token_lower
+            ):
                 num_errors += 1
                 print(
                     f"./{filename} line {line_number}: \
@@ -227,7 +231,9 @@ def check_teletype_in_rule_math_mode(filename) -> int:
     for match in matches:
         teletype_vars = teletype_pattern.findall(match)
         for tt_var in teletype_vars:
-            print(f"{filename}: teletype font not allowed in rules, substitute {tt_var} with a proper macro")
+            print(
+                f"{filename}: teletype font not allowed in rules, substitute {tt_var} with a proper macro"
+            )
             num_errors += 1
     return num_errors
 
@@ -237,6 +243,10 @@ class RuleBlock:
     A class for capturing the lines that a rule consists of,
     the rule type, and the rule name.
     """
+
+    AST_RULE = "AST"
+    TYPING_RULE = "Typing"
+    SEMANTICS_RULE = "Semantics"
 
     rule_begin_pattern = re.compile(
         r"\\(TypingRuleDef|SemanticsRuleDef|ASTRuleDef){(.*?)}"
@@ -265,16 +275,16 @@ class RuleBlock:
             self.name = name_match.group(2)
 
         if re.search(r"\\ASTRuleDef", begin_line):
-            self.type = "AST"
+            self.type = RuleBlock.AST_RULE
         elif re.search(r"\\TypingRuleDef", begin_line):
-            self.type = "Typing"
+            self.type = RuleBlock.TYPING_RULE
         elif re.search(r"\\SemanticsRuleDef", begin_line):
-            self.type = "Semantics"
+            self.type = RuleBlock.SEMANTICS_RULE
         else:
             self.type = None
 
     def str(self):
-        return f"lines {self.begin+1}-{self.end+1}"
+        return f"lines {self.begin+1}-{self.end+1} {self.type}.{self.name}"
 
 
 def match_rules(filename: str) -> List[RuleBlock]:
@@ -370,9 +380,7 @@ def check_rule_case_consistency(rule_block: RuleBlock) -> List[str]:
     cases_only_in_prose = prose_cases.difference(formally_cases)
     cases_only_in_formally = formally_cases.difference(prose_cases)
     if cases_only_in_prose:
-        error_messages.append(
-            f"cases only in Prose paragraph: {cases_only_in_prose}"
-        )
+        error_messages.append(f"cases only in Prose paragraph: {cases_only_in_prose}")
     if cases_only_in_formally:
         error_messages.append(
             f"cases only in Formally paragraph: {cases_only_in_formally}"
@@ -381,23 +389,41 @@ def check_rule_case_consistency(rule_block: RuleBlock) -> List[str]:
     return error_messages
 
 
+def check_rule_has_example(rule_block: RuleBlock) -> List[str]:
+    example_found = False
+    for line_number in range(rule_block.begin, rule_block.end + 1):
+        line = rule_block.file_lines[line_number].strip()
+        if line.startswith("\\ExampleDef") or "\\ExampleRef" in line:
+            example_found = True
+            break
+    error_messages = []
+    if not example_found:
+        error_messages.append("missing an example")
+    return error_messages
+
 def check_rules(filename: str) -> int:
     r"""
     Checks the AST/Typing/Semantics rules in 'filename'
     and returns the total number of errors.
     """
+    checks = [
+        check_rule_prose_formally_structure,
+        # check_rule_case_consistency,
+        check_rule_has_example,
+    ]
     num_errors = 0
     rule_blocks: List[RuleBlock] = match_rules(filename)
+    rule_blocks = [rule_block for rule_block in rule_blocks if rule_block.type != RuleBlock.AST_RULE]
+    global num_rules
+    num_rules += len(rule_blocks)
     for rule_block in rule_blocks:
         if not rule_block:
             print(f"{filename} {rule_block.str()}: unable to determine rule type")
             num_errors += 1
             continue
-        if rule_block.type == "AST":
-            continue
         error_messages: List[str] = []
-        error_messages.extend(check_rule_prose_formally_structure(rule_block))
-        error_messages.extend(check_rule_case_consistency(rule_block))
+        for check in checks:
+            error_messages.extend(check(rule_block))
         if error_messages:
             error_messages = ", ".join(error_messages)
             print(f"{rule_block.filename} {rule_block.str()}: {error_messages}")
@@ -417,7 +443,6 @@ def check_per_file(latex_files: list[str], checks):
             num_errors += check(filename)
     return num_errors
 
-
 def main():
     args = cli_parser.parse_args()
     if args.macros:
@@ -434,11 +459,12 @@ def main():
         [
             check_repeated_words,
             detect_incorrect_latex_macros_spacing,
-            #check_teletype_in_rule_math_mode,
-            #check_rules,
+            # check_teletype_in_rule_math_mode,
+            check_rules,
         ],
     )
 
+    print(f"There are #{num_rules} rules")
     if num_errors > 0:
         print(f"There were {num_errors} errors!", file=sys.stderr)
         sys.exit(1)

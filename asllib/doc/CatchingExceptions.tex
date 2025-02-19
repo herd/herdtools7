@@ -167,7 +167,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 \CodeSubsection{\CatcherNoneBegin}{\CatcherNoneEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{SDJK}.}
+\identr{SDJK}
 
 \begin{mathpar}
 \inferrule[some]{
@@ -199,7 +199,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 % let ses = SES.union ses_block ses_ty in
 
 \CodeSubsection{\CatcherBegin}{\CatcherEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{SDJK}, \identr{WVXS}, \identi{FCGK}.}
+\identr{SDJK} \identr{WVXS} \identi{FCGK}
 
 \section{Semantics}
 \SemanticsRuleDef{Catch}
@@ -447,7 +447,7 @@ by invoking $\typesat$ with the static environment $\tenv$.
 \CodeSubsection{\EvalFindCatcherBegin}{\EvalFindCatcherEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
-\lrmcomment{This is related to \identr{SPNM}:}
+\identr{SPNM}
 When the \texttt{catch} of a \texttt{try} statement is executed, then the
 thrown exception is caught by the first catcher in that \texttt{catch} which it
 type-satisfies or the \texttt{otherwise\_opt} in that catch if it exists.
@@ -518,6 +518,6 @@ pair with $\vv$ and $\vvty$, respectively.
 \CodeSubsection{\EvalRethrowImplicitBegin}{\EvalRethrowImplicitEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
-\lrmcomment{This is related to \identr{GVKS}:}
+\identr{GVKS}
 An expressionless \texttt{throw} statement causes the exception which the
 currently executing catcher caught to be thrown.

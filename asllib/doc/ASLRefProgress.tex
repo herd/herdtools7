@@ -15,7 +15,7 @@ The following simultaneous declaration of three global variables does not curren
 
 The same line does parse and correctly handled inside a subprogram.
 
-\lrmcomment{This is related to \identr{QDQD}.}
+\identr{QDQD}
 
 \subsection{Guards}
 
@@ -23,8 +23,7 @@ Guards are used on \texttt{case} and \texttt{catch} statements, to restrict
 matching on the evaluation of a boolean expression.
 %
 They are not yet implemented in ASLRef.
-
-\lrmcomment{This relates to \identr{WGSY}.}
+\identr{WGSY}
 
 % ------------------------------------------------------------------------------
 \section{Semantics}
@@ -61,7 +60,7 @@ The analysis currently ignores dynamic errors that are not due to assertions.
 Restrictions on the use of parameterized integer types as storage element types are not
 implemented.
 
-\lrmcomment{This is related to \identr{ZCVD}.}
+\identr{ZCVD}
 
 \subsubsection{\texttt{as} Expression With a Constrained Type}
 
@@ -71,7 +70,7 @@ Asserted Typed Conversion is not implemented in ASLRef.
 For example, the following will not raise a type-error:
 \VerbatimInput[firstline=1,lastline=4]{../tests/regressions.t/under-constrained-used.asl}
 
-\lrmcomment{This is related to \identi{TBHH}, \identr{ZDKC}.}
+\identi{TBHH} \identr{ZDKC}
 
 % ------------------------------------------------------------------------------
 \chapter{Issues Not Yet Addressed by the Reference\label{appendix:MissingTransliteration}}
@@ -82,7 +81,7 @@ For example, the following will not raise a type-error:
 
 The standard library is not yet defined in this reference.
 
-\lrmcomment{This is related to \identr{RXYN}.}
+\identr{RXYN}
 
 % ------------------------------------------------------------------------------
 \section{Typing}
@@ -94,4 +93,4 @@ Type annotations that contain expressions that may fail dynamically are not chec
 % Finding the type of a literal value, or a compile-time constant expression, is
 % not yet transliterated.
 
-% \lrmcomment{This is related to \identr{ZJKY} and \identi{RYRP}.}
+% \identr{ZJKY}  \identi{RYRP}

@@ -51,11 +51,11 @@ Otherwise, the evaluation terminates abnormally.
 \section{Evaluation Order}
 It is an error for an expression’s meaning to rely on evaluation order except that conditional expressions, and uses
 of the boolean operators $\Tband$, $\Tbor$, $\Timpl$, are guaranteed to evaluate from left to right.
-\lrmcomment{\identr{XKGC}}
+\identr{XKGC}
 
 An implementation could enforce this rule by performing a global analysis of all functions to determine whether a
 function can throw an exception and the set of global variables read and written by a function.
-\lrmcomment{\identi{YMRT}}
+\identi{YMRT}
 
 For any function call $F(e_1,\ldots,e_m)$, tuple $(e_1,\ldots, e_m)$, or operation $e_1 \op e_2$
 (with the exception of $\Tband$, $\Tbor$, and$\Timpl$),
@@ -66,14 +66,14 @@ it is an error if the subexpressions conflict with each other by:
   \item one writing to a variable and the other throwing an exception.
   \item both throwing exceptions.
 \end{itemize}
-\lrmcomment{\identi{QJTN}}
+\identi{QJTN}
 
 These conditions are sufficient but not necessary to ensure that evaluation order does not affect the result of an
 expression, including any side-effects.
-\lrmcomment{\identi{GFZT}}
+\identi{GFZT}
 
 Conditional expressions and the operations $\Tband$, $\Tbor$, and$\Timpl$ have short-circuit evaluation.
-\lrmcomment{\identi{QRXP}}
+\identi{QRXP}
 
 We now define the syntax, abstract syntax, typing, and semantics of the following kinds of expressions:
 \begin{itemize}
@@ -576,25 +576,24 @@ the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}.
 The evaluation via the rule above ensures that $\veone$ is evaluated first and
 only if it evaluates to $\True$ is $\vetwo$ evaluated.
 
-\lrmcomment{This is related to \identr{BKNT}: add table}
-
-\lrmcomment{This is related to \identr{XKGC}:}
+\identr{BKNT} % TODO: add table
+\identr{XKGC}
 
 It is an error for an expression’s meaning to rely on evaluation order except
 that conditional expressions, and uses of the boolean operators \texttt{\&\&},
 \texttt{||},\texttt{-->}, are guaranteed to evaluate from left to right.
 
-\lrmcomment{This is related to \identi{YMRT}:}
+\identi{YMRT}
 
 An implementation could enforce this rule by performing a global analysis of
 all functions to determine whether a function can throw an exception and the
 set of global variables read and written by a function.
 
-\lrmcomment{This is related to \identi{QRXP}:}
+\identi{QRXP}
 Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
 \texttt{-->} provide a short-circuit evaluation mechanism:
 
-\lrmcomment{This is related to the note under \identr{LRHD}:}
+% This is related to the note under \identr{LRHD}
 \begin{itemize}
 \item the first operand of \texttt{if} is always evaluated but only one of the
 remaining operands is evaluated;
@@ -636,26 +635,24 @@ The evaluation via the rule above ensures that $\veone$ is evaluated first and o
 it evaluates to $\False$, is $\vetwo$ evaluated.
 
 \subsubsection{Comments}
-\lrmcomment{This is related to \identr{BKNT}: add table}
-
-\lrmcomment{This is related to \identr{XKGC}:}
-
+\identr{BKNT} % TODO: add table
+\identr{XKGC}
 It is an error for an expression’s meaning to rely on
 evaluation order except that conditional expressions, and uses of the boolean
 operators \texttt{\&\&}, \texttt{||}, \texttt{-->}, are guaranteed to evaluate
 from left to right.
 
-\lrmcomment{This is related to \identi{YMRT}:}
+\identi{YMRT}
 
 An implementation could enforce this rule by performing a global analysis of
 all functions to determine whether a function can throw an exception and the
 set of global variables read and written by a function.
 
-\lrmcomment{This is related to \identi{QRXP}:}
+\identi{QRXP}
 Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
 \texttt{-->} provide a short-circuit evaluation mechanism:
 
-\lrmcomment{This is related to the note under \identr{LRHD}:}
+% This is related to the note under \identr{LRHD}
 \begin{itemize}
 \item the first operand of \texttt{if} is always evaluated but only one of the
 remaining operands is evaluated;
@@ -697,7 +694,7 @@ it evaluates to \True, is $\vetwo$ evaluated.
 
 \lrmcomment{This is related to \identr{BKNT}: add table}
 
-\lrmcomment{This is related to \identi{QRXP}:}
+\identi{QRXP}
 Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
 \texttt{-->} provide a short-circuit evaluation mechanism:
 
@@ -763,7 +760,7 @@ as well as \texttt{==}).
 \subsubsection{Comments}
 \lrmcomment{This is related to \identr{BKNT}: add table}
 
-\lrmcomment{This is related to \identr{XKGC}:}
+\identr{XKGC}
 
 The semantics takes a semantic transition over the left subexpression before
 the right subexpression.
@@ -776,13 +773,13 @@ evaluation order except that conditional expressions, and uses of the boolean
 operators \texttt{\&\&}, \texttt{||}, \texttt{-->}, are guaranteed to evaluate
 from left to right.
 
-\lrmcomment{This is related to \identi{YMRT}:}
+\identi{YMRT}
 
 An implementation could enforce this rule by performing a global analysis of
 all functions to determine whether a function can throw an exception and the
 set of global variables read and written by a function.
 
-\lrmcomment{This is related to \identi{QJTN}:}
+\identi{QJTN}
 
 Notice that when one of the subexpressions terminates exceptionally,
 the other expression must be side effect-free and non-throwing.
@@ -798,7 +795,7 @@ subexpressions conflict with each other by:
 \item both throwing exceptions
 \end{itemize}
 
-\lrmcomment{This is related to \identi{GFZT}:}
+\identi{GFZT}
 These conditions are sufficient but not necessary to ensure that evaluation
 order does not affect the result of an expression, including any side-effects.
 
@@ -973,7 +970,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 \CodeSubsection{\ECondBegin}{\ECondEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{XZVT}.}
+\identr{XZVT}
 
 \subsection{Semantics}
 \subsubsection{Example}
@@ -1023,7 +1020,7 @@ evaluate either \texttt{3} or \texttt{Return42()}, depending on the
 \CodeSubsection{\EvalECondBegin}{\EvalECondEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
-\lrmcomment{This is related to \identr{YCDB}:}
+\identr{YCDB}
 
 A conditional expression evaluates to its \texttt{then} expression if the
 condition expression evaluates to $\True$. If the condition expression
@@ -1157,7 +1154,7 @@ changes the call type of $\vcall$ to $\calltype$.
 }
 \end{mathpar}
 \CodeSubsection{\ECallBegin}{\ECallEnd}{../Typing.ml}
-\lrmcomment{This is related to \identd{CFYP}, \identr{BQJG}.}
+\identd{CFYP} \identr{BQJG}
 
 \subsection{Semantics}
 \subsubsection{Example}
@@ -1279,7 +1276,7 @@ The details of the various types of bitvector slices is deferred to \chapref{Bit
 The width of \slices\ might be a symbolic expression if one of the
 widths references a \texttt{let} identifier with a non-compile-time-constant
 initializer expression.
-\lrmcomment{This is related to \identi{MJWM}.}
+\identi{MJWM}
 
 \TypingRuleDef{ESliceError}
 \ProseParagraph
@@ -2147,19 +2144,19 @@ normalized in the static environment $\tenv$.
 
 \hypertarget{def-atceexpressionterm}{}
 \section{Asserting Type Conversion Expressions\label{sec:AssertingTypeConversionExpressions}}
-\lrmcomment{This is related to \identi{TCST}:}
+\identi{TCST}
 The rule about domains in the definitions of subtype-satisfaction and
 type-satisfaction means that it is illegal to use the unconstrained integer
 where a constrained integer is expected. An asserting type conversion (ATC) can
 be used to overcome this.
 
-\lrmcomment{This is related to \identi{CGRH}:}
+\identi{CGRH}
 An ATC allows code to explicitly mark places where uses of constrained types
 would otherwise be a static typechecking error. The intent is to reduce the
 incidence of unintended errors by making such uses fail typechecking unless
 the asserting type conversion is provided.
 
-\lrmcomment{This is related to \identr{WZVX}:}
+\identr{WZVX}
 Note that ATCs are execution-time checks. An execution-time check is a
 condition that is evaluated during the evaluation of an execution-time
 initializer expression or subprogram. If the condition evaluates to $\False$ it
@@ -2238,9 +2235,9 @@ is a dynamic error.
 \end{mathpar}
 \CodeSubsection{\ATCBegin}{\ATCEnd}{../Typing.ml}
 \lrmcomment{
-  This is related to \identr{VBLL}, \identi{KRLL}, \identg{PFRQ}, \identi{XVBG},
-  \identr{GYJZ}, \identi{SZVF}, \identr{PZZJ}, \identr{YCPX}, \identi{ZLBW},
-  \identi{TCST}, \identi{CGRH}, \identi{YJBB}.
+  This is related to \identr{VBLL} \identi{KRLL} \identg{PFRQ} \identi{XVBG},
+  \identr{GYJZ} \identi{SZVF} \identr{PZZJ} \identr{YCPX} \identi{ZLBW},
+  \identi{TCST} \identi{CGRH} \identi{YJBB}.
 }
 
 \TypingRuleDef{CheckATC}
@@ -2354,7 +2351,7 @@ In \listingref{semantics-atcvalue}, both type assertions ---
 \ASLListing{Evaluating a successful type assertion expression}{semantics-atcvalue}{\semanticstests/SemanticsRule.ATCValue.asl}
 
 \subsubsection{Example}
-\lrmcomment{This is related to \identr{YCPX}:}
+\identr{YCPX}
 
 In \listingref{semantics-atcnotevaluated}, the asserting type conversion on \texttt{y}
 does not yield a dynamic error, since the invocation of \texttt{f1} returns $\False$ when
@@ -2827,7 +2824,7 @@ and how to obtain an arbitrary enumeration-indexed array, \texttt{enum\_array}.
 
 \subsubsection{Comments}
 Notice that this rule introduces non-determinism.
-\lrmcomment{This is related to \identr{WLCH}:}
+\identr{WLCH}
 
 \hypertarget{def-recordexpressionterm}{}
 \section{Structured Type Construction Expressions\label{sec:StructuredTypeConstructionExpressions}}
@@ -2944,7 +2941,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 \CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{WBCQ}.}
+\identr{WBCQ}
 
 \hypertarget{def-annotatefieldinit}{}
 \TypingRuleDef{AnnotateFieldInit}

@@ -518,7 +518,7 @@ As given by applying the relevant rules to the desugared AST.
   \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \tyopt, \langle\ve\rangle)}{\vs}) \typearrow (\news, \overname{\tenvone}{\newtenv}, \vses)
 }
 \end{mathpar}
-\lrmcomment{This is related to \identr{YSPM}.}
+\identr{YSPM}
 
 \begin{mathpar}
 \inferrule[none]{
@@ -774,7 +774,7 @@ If the answer if $\False$, the result is a type error.
   \checkcanbeinitializedwith(\tenv, \vs, \vt) \typearrow \TypeErrorVal{\TypeSatisfactionFailure}
 }
 \end{mathpar}
-\lrmcomment{This is related to \identr{ZCVD} and \identr{LXQZ}.}
+\identr{ZCVD}  \identr{LXQZ}
 
 
 \subsection{Semantics}
@@ -1152,7 +1152,7 @@ evaluates \texttt{let y = x + 1}.
 }
 \end{mathpar}
 \CodeSubsection{\SCallBegin}{\SCallEnd}{../Typing.ml}
-\lrmcomment{This is related to \identd{VXKM}.}
+\identd{VXKM}
 
 \subsection{Semantics}
 \SemanticsRuleDef{SCall}
@@ -1179,7 +1179,7 @@ In \listingref{semantics-scall},
 }
 \end{mathpar}
 \CodeSubsection{\EvalSCallBegin}{\EvalSCallEnd}{../Interpreter.ml}
-% \lrmcomment{This is related to \identd{KCYT}:}
+\identd{KCYT}
 
 \hypertarget{def-conditionalstatementterm}{}
 \section{Conditional Statements\label{sec:ConditionalStatements}}
@@ -1268,7 +1268,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 \CodeSubsection{\SCondBegin}{\SCondEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{NBDJ}.}
+\identr{NBDJ}
 
 \subsection{Semantics}
 \SemanticsRuleDef{SCond}
@@ -1622,7 +1622,7 @@ a list of \texttt{case} alternatives already converted to conditionals, into a c
 \subsection{Typing}
 Since case statements are transformed into other statements,
 they do not require type system rules.
-\lrmcomment{This is related to \identr{WGSY}.}
+\identr{WGSY}
 
 \subsection{Semantics}
 Since case statements are transformed into other statements,
@@ -1689,7 +1689,7 @@ The first call to \verb|checked_8bit_add| succeeds, whereas the second call fail
 }
 \end{mathpar}
 \CodeSubsection{\SAssertBegin}{\SAssertEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{JQYF}.}
+\identr{JQYF}
 
 \subsection{Semantics}
 \SemanticsRuleDef{SAssert}
@@ -1744,7 +1744,7 @@ evaluating \texttt{assert (42 == 3);} results in an \texttt{AssertionFailed} err
 }
 \end{mathpar}
 \CodeSubsection{\EvalSAssertBegin}{\EvalSAssertEnd}{../Interpreter.ml}
-\lrmcomment{This is related to \identd{QJYV}, \identr{WZSL}, \identr{WQRN}.}
+\identd{QJYV} \identr{WZSL} \identr{WQRN}
 
 \hypertarget{def-whilestatementterm}{}
 \section{While Statements\label{sec:WhileStatements}}
@@ -1834,7 +1834,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 \CodeSubsection{\SWhileBegin}{\SWhileEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{FTVN}.}
+\identr{FTVN}
 
 \TypingRuleDef{AnnotateLimitExpr}
 \hypertarget{def-annotatelimitexpr}{}
@@ -2182,7 +2182,7 @@ If the value is $0$, the result is a dynamic error.
 }
 \end{mathpar}
 \CodeSubsection{\SRepeatBegin}{\SRepeatEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{FTVN}.}
+\identr{FTVN}
 
 \subsection{Semantics}
 \SemanticsRuleDef{SRepeat}
@@ -2409,7 +2409,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 \CodeSubsection{\SForBegin}{\SForEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{SSBD}, \identr{ZSND}, \identr{VTJW}.}
+\identr{SSBD} \identr{ZSND} \identr{VTJW}
 
 \TypingRuleDef{SForConstraints}
 \hypertarget{def-getforconstraints}{}
@@ -2872,7 +2872,7 @@ $\evalforloop$ (the latter in a mutually recursive manner):
   (\overname{\SThrow(\langle (\vep, \vte) \rangle)}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
-\lrmcomment{This is related to \identr{NXRC}.}
+\identr{NXRC}
 \CodeSubsection{\SThrowBegin}{\SThrowEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -3073,7 +3073,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 \CodeSubsection{\STryBegin}{\STryEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{WVXS}.}
+\identr{WVXS}
 
 \subsection{Semantics}
 \SemanticsRuleDef{STry}
@@ -3190,7 +3190,7 @@ does not result in any Assertion error, and the specification terminates with th
 }
 \end{mathpar}
 \CodeSubsection{\SReturn}{\SReturnEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{FTPK}.}
+\identr{FTPK}
 
 \subsection{Semantics}
 \SemanticsRuleDef{SReturn}
