@@ -251,6 +251,11 @@ Parameterized integers:
   ASL Error: Cannot parse.
   [1]
 
+  $ aslref same-precedence2.asl
+  File same-precedence2.asl, line 6, characters 10 to 17:
+  ASL Error: Cannot parse.
+  [1]
+
   $ aslref rdiv_checks.asl
   File rdiv_checks.asl, line 3, characters 12 to 25:
   ASL Typing error: Illegal application of operator / on types real and string.

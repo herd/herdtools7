@@ -205,7 +205,7 @@ let binop ==
   | AND         ; { AND    }
   | BAND        ; { BAND   }
   | BOR         ; { BOR    }
-  | BEQ         ; { EQ_OP  }
+  | BEQ         ; { BEQ    }
   | DIV         ; { DIV    }
   | DIVRM       ; { DIVRM  }
   | EOR         ; { EOR    }
