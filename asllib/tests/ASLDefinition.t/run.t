@@ -47,3 +47,5 @@ Examples used in ASL High-level Definition:
   $ aslref DynamicErrorReporting.asl
   ASL Dynamic error: Illegal application of operator DIV for values 128 and 7.
   [1]
+
+  $ aslref --no-exec Accessor.asl

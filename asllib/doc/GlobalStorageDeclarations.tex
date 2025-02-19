@@ -82,7 +82,7 @@ The language supports such overriding mechanisms (and in particular, simplifies 
   \right)}{\vparsednode}\right)
   } \astarrow \\
   {
-    \overname{
+    \overname{\left[
   \DGlobalStorage\left(\left\{
     \begin{array}{rcl}
     \GDkeyword &:& \astof{\vkeyword},\\
@@ -91,7 +91,7 @@ The language supports such overriding mechanisms (and in particular, simplifies 
     \GDinitialvalue &:& \astof{\vinitialvalue}
   \end{array}
   \right\}\right)
-  }{\vastnode}
+  \right]}{\vastnode}
   }
 }
 \end{mathpar}
@@ -110,7 +110,7 @@ The language supports such overriding mechanisms (and in particular, simplifies 
   \right)}{\vparsednode}\right)
   } \astarrow \\
   {
-    \overname{
+    \overname{\left[
   \DGlobalStorage\left(\left\{
     \begin{array}{rcl}
     \GDkeyword &:& \GDKVar,\\
@@ -119,7 +119,7 @@ The language supports such overriding mechanisms (and in particular, simplifies 
     \GDinitialvalue &:& \astof{\vinitialvalue}
   \end{array}
   \right\}\right)
-  }{\vastnode}
+  \right]}{\vastnode}
   }
 }
 \end{mathpar}
@@ -133,7 +133,7 @@ The language supports such overriding mechanisms (and in particular, simplifies 
       \builddecl(\overname{\Ndecl(\Tvar, \namednode{\cname}{\Nignoredoridentifier}, \Nasty, \Tsemicolon)}{\vparsednode}) \astarrow
     \end{array}
   } \\
-  \overname{\DGlobalStorage(\{\GDkeyword: \GDKVar, \GDname: \name, \GDty: \langle\astof{\Nasty}\rangle, \GDinitialvalue: \None\})}{\vastnode}
+  \overname{\left[\DGlobalStorage(\{\GDkeyword: \GDKVar, \GDname: \name, \GDty: \langle\astof{\Nasty}\rangle, \GDinitialvalue: \None\})\right]}{\vastnode}
 }
 \end{mathpar}
 

@@ -214,9 +214,8 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \Ndecl  \derives \ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \parsesep &\\
                    & \wrappedline\ \Nfuncbody\\
 |\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
-|\ & \Tgetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody &\\
-|\ & \Tsetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Teq \parsesep \Ntypedidentifier & \\
-   & \wrappedline\ \parsesep \Nfuncbody &\\
+|\ & \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbiarrow \parsesep \Nty &\\
+   & \wrappedline\ \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon &\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon &\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon &\\
 |\ & \Nglobaldeclkeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} &\\
@@ -304,6 +303,15 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \hypertarget{def-nignoredoridentifier}{}
 \begin{flalign*}
 \Nignoredoridentifier \derives \ & \Tminus \;|\; \Tidentifier &
+\end{flalign*}
+
+\hypertarget{def-naccessors}{}
+\begin{flalign*}
+   \Naccessors \derives \ &
+      \Tgetter \parsesep \Nfuncbody \parsesep
+      \Tsetter \parsesep \Teq \parsesep \Tidentifier \parsesep \Nfuncbody &\\
+   |\ & \Tsetter \parsesep \Teq \parsesep \Tidentifier \parsesep \Nfuncbody \parsesep
+        \Tgetter \parsesep \Nfuncbody &\\
 \end{flalign*}
 
 \vspace*{-\baselineskip}

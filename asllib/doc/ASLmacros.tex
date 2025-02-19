@@ -16,6 +16,7 @@
 \lstdefinelanguage{ASL}
 {
     morekeywords={
+      accessor,
       AND,
       array,
       as,
@@ -298,6 +299,7 @@
 \newcommand\uniquelist[0]{\hyperlink{def-uniquelist}{\textfunc{unique}}}
 \newcommand\listset[0]{\hyperlink{def-listset}{\textfunc{list\_set}}}
 \newcommand\concat[0]{\hyperlink{def-concat}{+}}
+\newcommand\concatlist[0]{\hyperlink{def-concatlist}{\textfunc{concat}}}
 \newcommand\listprefix[0]{\hyperlink{def-listprefix}{\textfunc{prefix}}}
 \newcommand\listcomprehension[2]{[#1 : #2]} % #1 is a list element predicate, #2 is the output list element.
 \newcommand\setcomprehension[2]{\{#1 : #2\}} % #1 is a set element predicate, #2 is the output set element.
@@ -368,6 +370,7 @@
 % Macros for terminal tokens
 \newcommand\Tlooplimit[0]{\verbatimterminal{LOOPLIMIT}{looplimit}}
 \newcommand\Trecurselimit[0]{\verbatimterminal{RECURSELIMIT}{recurselimit}}
+\newcommand\Taccessor[0]{\verbatimterminal{ACCESSOR}{accessor}}
 \newcommand\Tand[0]{\verbatimterminal{AND}{AND}}
 \newcommand\Tarray[0]{\verbatimterminal{ARRAY}{array}}
 \newcommand\Tarrow[0]{\verbatimterminal{ARROW}{=>}}
@@ -376,6 +379,7 @@
 \newcommand\Tband[0]{\verbatimterminal{BAND}{\&\&}}
 \newcommand\Tbegin[0]{\verbatimterminal{BEGIN}{begin}}
 \newcommand\Tbeq[0]{\verbatimterminal{BEQ}{<->}}
+\newcommand\Tbiarrow[0]{\verbatimterminal{BIARROW}{<=>}}
 \newcommand\Tbit[0]{\verbatimterminal{BIT}{bit}}
 \newcommand\Tbits[0]{\verbatimterminal{BITS}{bits}}
 \newcommand\Tbnot[0]{\verbatimterminal{BNOT}{!}}
@@ -485,6 +489,7 @@
 \newcommand\Ncall[0]{\hyperlink{def-ncall}{\nonterminal{call}}}
 \newcommand\Nelidedparamcall[0]{\hyperlink{def-nelidedparamcall}{\nonterminal{elided\_param\_call}}}
 \newcommand\Nfuncargs[0]{\hyperlink{def-nfuncargs}{\nonterminal{func\_args}}}
+\newcommand\Naccessors[0]{\hyperlink{def-naccessors}{\nonterminal{accessors}}}
 \newcommand\Nreturntype[0]{\hyperlink{def-nreturntype}{\nonterminal{return\_type}}}
 \newcommand\Nfuncbody[0]{\hyperlink{def-nfuncbody}{\nonterminal{func\_body}}}
 \newcommand\Ntypedidentifier[0]{\hyperlink{def-ntypedidentifier}{\nonterminal{typed\_identifier}}}
@@ -632,6 +637,7 @@
 \newcommand\subprogramtype[0]{\hyperlink{ast-subprogramtype}{\textsf{sub\_program\_type}}}
 \newcommand\subprogrambody[0]{\hyperlink{ast-subprogrambody}{\textsf{sub\_program\_body}}}
 \newcommand\func[0]{\hyperlink{ast-func}{\textsf{func}}}
+\newcommand\accessorpair[0]{\hyperlink{ast-accessorpair}{\textsf{accessor\_pair}}}
 \newcommand\Field[0]{\hyperlink{ast-field}{\textsf{field}}}
 \newcommand\call[0]{\hyperlink{ast-call}{\textsf{call}}}
 
@@ -783,6 +789,7 @@
 \newcommand\builddeclitem[0]{\hyperlink{build-declitem}{\textfunc{build\_decl\_item}}}
 \newcommand\makesetter[0]{\hyperlink{def-makesetter}{\textfunc{make\_setter}}}
 \newcommand\desugarsetter[0]{\hyperlink{def-desugarsetter}{\textfunc{desugar\_setter}}}
+\newcommand\desugaraccessorpair[0]{\hyperlink{def-desugaraccessorpair}{\textfunc{desugar\_accessor\_pair}}}
 \newcommand\buildlooplimit[0]{\hyperlink{build-looplimit}{\textfunc{build\_looplimit}}}
 \newcommand\buildrecurselimit[0]{\hyperlink{build-recurselimit}{\textfunc{build\_recurselimit}}}
 \newcommand\desugarelidedparameter[0]{\hyperlink{def-desugarelidedparameter}{\textfunc{desugar\_elided\_parameter}}}
@@ -806,6 +813,7 @@
 \newcommand\setcalltype[0]{\hyperlink{def-setcalltype}{\textfunc{set\_call\_type}}}
 \newcommand\buildreturntype[0]{\hyperlink{build-returntype}{\textfunc{build\_return\_type}}}
 \newcommand\buildfuncbody[0]{\hyperlink{build-funcbody}{\textfunc{build\_func\_body}}}
+\newcommand\buildaccessors[0]{\hyperlink{build-accessors}{\textfunc{build\_accessors}}}
 \newcommand\buildtypedidentifier[0]{\hyperlink{build-typedidentifier}{\textfunc{build\_typed\_identifier}}}
 \newcommand\buildopttypedidentifier[0]{\hyperlink{build-opttypedidentifier}{\textfunc{build\_opt\_typed\_identifier}}}
 \newcommand\buildtydecl[0]{\hyperlink{build-tydecl}{\textfunc{build\_ty\_decl}}}
@@ -952,6 +960,9 @@
 \newcommand\lhsaccessindex[0]{\text{index}}
 \newcommand\lhsaccessfields[0]{\text{fields}}
 \newcommand\lhsaccessslices[0]{\text{slices}}
+\newcommand\accessorpairgetter[0]{\text{getter}}
+\newcommand\accessorpairsetter[0]{\text{setter}}
+\newcommand\accessorpairsetterarg[0]{\text{setter\_arg}}
 
 \newcommand\True[0]{\hyperlink{def-true}{\texttt{TRUE}}}
 \newcommand\False[0]{\hyperlink{def-false}{\texttt{FALSE}}}
@@ -1262,7 +1273,6 @@
 \newcommand\paramsofexpr[0]{\hyperlink{def-paramsofexpr}{\textfunc{parameters\_of\_expr}}}
 \newcommand\paramsofconstraint[0]{\hyperlink{def-paramsofconstraint}{\textfunc{parameters\_of\_constraint}}}
 \newcommand\declareonefunc[0]{\hyperlink{def-declareonefunc}{\textfunc{declare\_one\_func}}}
-\newcommand\checksetterhasgetter[0]{\hyperlink{def-checksetterhashgetter}{\textfunc{check\_setter\_has\_getter}}}
 \newcommand\withemptylocal[0]{\hyperlink{def-withemptylocal}{\textfunc{with\_empty\_local}}}
 \newcommand\addnewfunc[0]{\hyperlink{def-addnewfunc}{\textfunc{add\_new\_func}}}
 \newcommand\addsubprogram[0]{\hyperlink{def-addsubprogram}{\textfunc{add\_subprogram}}}
@@ -2543,6 +2553,8 @@
 \newcommand\vapprox[0]{\texttt{approx}}
 \newcommand\vap[0]{\texttt{a'}}
 \newcommand\vacc[0]{\texttt{acc}}
+\newcommand\vaccessors[0]{\texttt{accessors}}
+\newcommand\vaccessorpair[0]{\texttt{accessor\_pair}}
 \newcommand\vad[0]{\texttt{ad}}
 \newcommand\vabsname[0]{\texttt{absolute\_name}}
 \newcommand\vabsslice[0]{\texttt{absolute\_slice}}
@@ -2910,6 +2922,7 @@
 \newcommand\vret[0]{\texttt{ret}}
 \newcommand\vreturntype[0]{\texttt{return\_type}}
 \newcommand\vs[0]{\texttt{s}}
+\newcommand\vsetterargs[0]{\texttt{setter\_args}}
 \newcommand\vscopeone[0]{\texttt{scope1}}
 \newcommand\vscopetwo[0]{\texttt{scope2}}
 \newcommand\vscond[0]{\texttt{s\_cond}}

@@ -38,7 +38,7 @@ Type declarations have no associated semantics.
     \begin{array}{c}
       \builddecl(\overname{\Ndecl(\Ttype, \Tidentifier(\vx), \Tof, \punnode{\Ntydecl}, \Nsubtypeopt, \Tsemicolon)}{\vparsednode})
   \astarrow \\
-  \overname{\DTypeDecl(\vx, \astof{\vt}, \astof{\vsubtypeopt})}{\vastnode}
+  \overname{\left[\DTypeDecl(\vx, \astof{\vt}, \astof{\vsubtypeopt})\right]}{\vastnode}
     \end{array}
   }
 }
@@ -53,7 +53,7 @@ Type declarations have no associated semantics.
     \begin{array}{c}
       \builddecl(\overname{\Ndecl(\Ttype, \Tidentifier(\vx), \Tof, \punnode{\Nsubtype}, \Tsemicolon)}{\vparsednode})
   \astarrow \\
-  \overname{\DTypeDecl(\vx, \TNamed(\name), \langle(\name, \vfields)\rangle)}{\vastnode}
+  \overname{\left[\DTypeDecl(\vx, \TNamed(\name), \langle(\name, \vfields)\rangle)\right]}{\vastnode}
     \end{array}
   }
 }
