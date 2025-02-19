@@ -2027,6 +2027,11 @@ of~\litmus{} --- see Sec.~\ref{change:input}.
 \begin{description}
 \item[{\tt -names <file>}] Run \herd{} only on tests whose names are
 listed in \texttt{<file>}.
+\item[{\tt -oknames <name,...,name>}] Run \herd{} only on tests whose names are
+given as a comma-separated list.
+\item[{\tt -excl <file>}] Do \emph{not} run \herd{} on tests whose names are
+listed in \texttt{<file>}.
+\item[{\tt -nonames <name,...,name>}] Do \emph{not} run \herd{} on tests whose names are given as a comma-separated list.
 \item[{\tt -rename <file>}] Change test names.
 \item[{\tt -kinds <file>}] Change test kinds.
 This amonts to changing the quantifier of final conditions, with
