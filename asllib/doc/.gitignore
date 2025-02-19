@@ -5,3 +5,4 @@ comment.cut
 *.bbl
 *.blg
 *.dvi
+__pycache__
