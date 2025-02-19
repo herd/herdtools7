@@ -83,7 +83,7 @@ The builtin aggregate types are:
 \item \texttt{exception}.
 \end{itemize}
 
-\subsubsection{Example}
+\ExampleDef{Builtin Aggreate Types}
 \listingref{typing-builtinaggregatetypes} provides examples of some builtin aggregate types.
 \ASLListing{Builtin aggregate types}{typing-builtinaggregatetypes}{\typingtests/TypingRule.BuiltinAggregateTypes.asl}
 
@@ -107,7 +107,7 @@ enumeration. In the example above, \texttt{PointArray} can only be accessed with
 The (builtin aggregate) type \verb|{ x : real, y : real, z : real }| is a record type with three fields
 \texttt{x}, \texttt{y} and \texttt{z}.
 
-\subsubsection{Example}
+\subsubsection{Builtin Aggregate Exception Types}
 \listingref{typing-builtinexceptiontype} defines two (builtin aggregate) exception types:
 \begin{itemize}
 \item \verb|exception{}| (for \texttt{Not\_found}), which carries no value; and
@@ -135,21 +135,19 @@ The predicate
 \]
 tests whether the type $\tty$ is a \emph{builtin type}.
 
-\ProseParagraph
-$\tty$ is a builtin type and \OneApplies
-\begin{itemize}
-\item $\tty$ is singular;
-\item $\tty$ is builtin aggregate.
-\end{itemize}
-
-\subsubsection{Example}
+\ExampleDef{BUiltin Types}
 In the specification
 \begin{lstlisting}
 type ticks of integer;
 \end{lstlisting}
 the type \texttt{integer} is a builtin type but the type of \texttt{ticks} is not.
 
-\CodeSubsection{\BuiltinSingularOrAggregateBegin}{\BuiltinSingularOrAggregateEnd}{../types.ml}
+\ProseParagraph
+$\tty$ is a builtin type and \OneApplies
+\begin{itemize}
+\item $\tty$ is singular;
+\item $\tty$ is builtin aggregate.
+\end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
@@ -160,6 +158,7 @@ the type \texttt{integer} is a builtin type but the type of \texttt{ticks} is no
     \isbuiltin(\tty) \typearrow \vbone \lor \vbtwo
   }
 \end{mathpar}
+\CodeSubsection{\BuiltinSingularOrAggregateBegin}{\BuiltinSingularOrAggregateEnd}{../types.ml}
 
 \TypingRuleDef{NamedType}
 \hypertarget{def-isnamed}{}
@@ -172,17 +171,15 @@ tests whether the type $\tty$ is a \emph{named type}.
 \Enumerationtypesterm{}, record types, and exception types must be declared
 and associated with a named type.
 
-\ProseParagraph
-A named type is a type that is declared by using the \texttt{type of} syntax.
-
-\subsubsection{Example}
+\ExampleDef{Named Types}
 In the specification
 \begin{lstlisting}
 type ticks of integer;
 \end{lstlisting}
 \texttt{ticks} is a named type.
 
-\CodeSubsection{\NamedBegin}{\NamedEnd}{../types.ml}
+\ProseParagraph
+A named type is a type that is declared by using the \texttt{type of} syntax.
 
 \FormallyParagraph
 \begin{mathpar}
@@ -192,8 +189,7 @@ type ticks of integer;
   \isnamed(\tty) \typearrow \vb
 }
 \end{mathpar}
-
-
+\CodeSubsection{\NamedBegin}{\NamedEnd}{../types.ml}
 \identd{vmzx}
 
 \TypingRuleDef{AnonymousType}
@@ -205,7 +201,7 @@ The predicate
 \]
 tests whether the type $\tty$ is an \anonymoustype.
 
-\subsubsection{Example}
+\ExampleDef{Anonymous Types}
 The \tupletypeterm{} \texttt{(integer, integer)} is an \anonymoustype.
 
 \ProseParagraph
@@ -310,17 +306,17 @@ The predicate
 \]
 tests whether the type $\tty$ is a \structuredtype\ and yields the result in $\vb$.
 
-\ProseParagraph
-The result $\vb$ is $\True$ if and only if $\tty$ is either a record type or an exception type,
-which is determined via the AST label of $\tty$.
-
-\subsubsection{Example}
+\ExampleDef{Structured Types}
 In the following example, the types \texttt{SyntaxException} and \texttt{PointRecord}
 are each an example of a \structuredtype:
 \begin{lstlisting}
 type SyntaxException of exception {message: string };
 type PointRecord of Record {x : real, y: real, z: real};
 \end{lstlisting}
+
+\ProseParagraph
+The result $\vb$ is $\True$ if and only if $\tty$ is either a record type or an exception type,
+which is determined via the AST label of $\tty$.
 
 \FormallyParagraph
 \begin{mathpar}
@@ -338,6 +334,18 @@ The predicate
   \isnonprimitive(\overname{\ty}{\tty}) \;\aslto\; \overname{\Bool}{\vb}
 \]
 tests whether the type $\tty$ is a \emph{non-primitive type}.
+
+\ExampleDef{Non-primitive Types}
+The following types are non-primitive:
+
+\begin{tabular}{ll}
+\textbf{Type definition} & \textbf{Reason for being non-primitive}\\
+\hline
+\texttt{type A of integer}  & Named types are non-primitive\\
+\texttt{(integer, A)}       & The second component, \texttt{A}, has non-primitive type\\
+\texttt{array[6] of A}      & Element type \texttt{A} has a non-primitive type\\
+\verb|record { a : A }|     & The field \texttt{a} has a non-primitive type
+\end{tabular}
 
 \ProseParagraph
 \OneApplies
@@ -368,20 +376,6 @@ tests whether the type $\tty$ is a \emph{non-primitive type}.
     \item $\vb$ is $\True$ if and only if there exists a non-primitive type in $\fields$.
     \end{itemize}
 \end{itemize}
-
-\subsubsection{Example}
-The following types are non-primitive:
-
-\begin{tabular}{ll}
-\textbf{Type definition} & \textbf{Reason for being non-primitive}\\
-\hline
-\texttt{type A of integer}  & Named types are non-primitive\\
-\texttt{(integer, A)}       & The second component, \texttt{A}, has non-primitive type\\
-\texttt{array[6] of A}      & Element type \texttt{A} has a non-primitive type\\
-\verb|record { a : A }|     & The field \texttt{a} has a non-primitive type
-\end{tabular}
-
-\CodeSubsection{\NonPrimitiveBegin}{\NonPrimitiveEnd}{../types.ml}
 
 \FormallyParagraph
 The cases \textsc{tuple} and \textsc{structured} below, use the notation $\vb_\vt$ to name
@@ -424,8 +418,7 @@ Boolean variables by using the types denoted by $\vt$ as a subscript.
   \isnonprimitive(\overname{L(\fields)}{\tty}) \typearrow \vb
 }
 \end{mathpar}
-
-
+\CodeSubsection{\NonPrimitiveBegin}{\NonPrimitiveEnd}{../types.ml}
 \identd{GWXK}
 
 \TypingRuleDef{PrimitiveType}
@@ -436,10 +429,7 @@ The predicate
 \]
 tests whether the type $\tty$ is a \emph{primitive type}.
 
-\ProseParagraph
-A type $\tty$ is primitive if it is not non-primitive.
-
-\subsubsection{Example}
+\ExampleDef{Primitive Types}
 The following types are primitive:
 
 \begin{tabular}{ll}
@@ -451,7 +441,8 @@ The following types are primitive:
 \verb|record {ticks : integer}| & The single field \texttt{ticks} has a primitive type
 \end{tabular}
 
-\CodeSubsection{\PrimitiveBegin}{\PrimitiveEnd}{../types.ml}
+\ProseParagraph
+A type $\tty$ is primitive if it is not non-primitive.
 
 \FormallyParagraph
 \begin{mathpar}
@@ -461,8 +452,7 @@ The following types are primitive:
   \isprimitive(\tty) \typearrow \neg\vb
 }
 \end{mathpar}
-
-
+\CodeSubsection{\PrimitiveBegin}{\PrimitiveEnd}{../types.ml}
 \identd{GWXK}
 
 \TypingRuleDef{Structure}
@@ -478,6 +468,30 @@ If a named type is not associated with a declared type in $\tenv$, a type error 
 \TypingRuleRef{TypeCheckAST} ensures the absence of circular type definitions,
 which ensures that \TypingRuleRef{Structure} terminates\footnote{In mathematical terms,
 this ensures that \TypingRuleRef{Structure} is a proper \emph{structural induction.}}.
+
+\ExampleDef{The Structure of a Type}
+In this example:
+\texttt{type T1 of integer;} is the named type \texttt{T1}
+whose structure is \texttt{integer}.
+
+In this example:
+\texttt{type T2 of (integer, T1);}
+is the named type \texttt{T2} whose structure is (integer, integer). In this
+example, \texttt{(integer, T1)} is non-primitive since it uses \texttt{T1}, which is builtin aggregate.
+
+In this example:
+\texttt{var x: T1;}
+the type of $\vx$ is the named (hence non-primitive) type \texttt{T1}, whose structure
+is \texttt{integer}.
+
+In this example:
+\texttt{var y: integer;}
+the type of \texttt{y} is the anonymous primitive type \texttt{integer}.
+
+In this example:
+\texttt{var z: (integer, T1);}
+the type of \texttt{z} is the anonymous non-primitive type
+\texttt{(integer, T1)} whose structure is \texttt{(integer, integer)}.
 
 \ProseParagraph
 \OneApplies
@@ -515,32 +529,6 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
   \end{itemize}
 \end{itemize}
 
-\subsubsection{Example}
-In this example:
-\texttt{type T1 of integer;} is the named type \texttt{T1}
-whose structure is \texttt{integer}.
-
-In this example:
-\texttt{type T2 of (integer, T1);}
-is the named type \texttt{T2} whose structure is (integer, integer). In this
-example, \texttt{(integer, T1)} is non-primitive since it uses \texttt{T1}, which is builtin aggregate.
-
-In this example:
-\texttt{var x: T1;}
-the type of $\vx$ is the named (hence non-primitive) type \texttt{T1}, whose structure
-is \texttt{integer}.
-
-In this example:
-\texttt{var y: integer;}
-the type of \texttt{y} is the anonymous primitive type \texttt{integer}.
-
-In this example:
-\texttt{var z: (integer, T1);}
-the type of \texttt{z} is the anonymous non-primitive type
-\texttt{(integer, T1)} whose structure is \texttt{(integer, integer)}.
-
-\CodeSubsection{\StructureBegin}{\StructureEnd}{../types.ml}
-
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[named]{
@@ -577,8 +565,7 @@ the type of \texttt{z} is the anonymous non-primitive type
  L([ (\id,\vt) \in \fields : (\id,\vt_\id) ])
 }
 \end{mathpar}
-
-
+\CodeSubsection{\StructureBegin}{\StructureEnd}{../types.ml}
 \identd{FXQV}
 
 \TypingRuleDef{MakeAnonymous}
@@ -593,7 +580,7 @@ Intuitively, $\tty$ is the first non-named type that is used to define $\tty$. U
 $\makeanonymous$ replaces named types by their definition until the first non-named type is found but
 does not recurse further.
 
-\subsubsection{Example}
+\ExampleDef{The Underlying Type of a Type}
 Consider the following example:
 \begin{lstlisting}
 type T1 of integer;

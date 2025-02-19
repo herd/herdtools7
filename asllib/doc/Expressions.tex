@@ -143,7 +143,7 @@ A literal expression represents a literal as an expression.
 \CodeSubsection{\ELitBegin}{\ELitEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Literal Expressions}
 In \listingref{literalssemantics}, each of the expressions \texttt{3} evaluates to the \nativevalue\ $\nvint(3)$.
 \ASLListing{Semantics of literals}{literalssemantics}{\semanticstests/SemanticsRule.Lit.asl}
 
@@ -301,6 +301,17 @@ function calls) to global constant variables.
 
 \subsection{Semantics}
 \SemanticsRuleDef{EVar}
+
+\ExampleDef{Evaluation of a Local Variable Expression}
+In \listingref{localvarsemantics}, the evaluation of \texttt{x} within \texttt{assert x == 3;}
+uses \\ \SemanticsRuleRef{EVar}.LOCAL.
+\ASLListing{Semantics of local variables}{localvarsemantics}{\semanticstests/SemanticsRule.ELocalVar.asl}
+
+\ExampleDef{Evaluation of a Global Variable Expression}
+In \listingref{globalvarsemantics}, the evaluation of~\texttt{global\_x} within~\texttt{assert global\_x == 3;}
+uses the rule \SemanticsRuleRef{EVar}.GLOBAL.
+\ASLListing{Semantics of global variables}{globalvarsemantics}{\semanticstests/SemanticsRule.EGlobalVar.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -351,16 +362,6 @@ This is enforced by \TypingRuleRef{LDVar} in the Chapter ``Typing of Local Decla
 and
 \TypingRuleRef{DeclareGlobalStorage} and \TypingRuleRef{DeclareOneFunc},
 both in the Chapter ``Typing of Global Declarations''.
-
-\subsubsection{Example}
-In \listingref{localvarsemantics}, the evaluation of \texttt{x} within \texttt{assert x == 3;}
-uses \\ \SemanticsRuleRef{EVar}.LOCAL.
-\ASLListing{Semantics of local variables}{localvarsemantics}{\semanticstests/SemanticsRule.ELocalVar.asl}
-
-\subsubsection{Example}
-In \listingref{globalvarsemantics}, the evaluation of~\texttt{global\_x} within~\texttt{assert global\_x == 3;}
-uses the rule \SemanticsRuleRef{EVar}.GLOBAL.
-\ASLListing{Semantics of global variables}{globalvarsemantics}{\semanticstests/SemanticsRule.EGlobalVar.asl}
 
 \section{Binary Expressions\label{sec:BinaryExpressions}}
 \subsection{Syntax}
@@ -488,7 +489,7 @@ for example: \texttt{(a + b) - c}.
 
 \subsection{Typing}
 \TypingRuleDef{EBinop}
-\subsubsection{Example}
+\ExampleDef{Typing of Binary Expressions}
 In \listingref{typing-binoperror},
 the expression \texttt{3 DIV 0} results in a type error.
 \ASLListing{Evaluating a binary expression resulting in a type error}{typing-binoperror}
@@ -547,7 +548,7 @@ the expression \texttt{3 DIV 0} results in a type error.
 
 \subsection{Semantics}
 \SemanticsRuleDef{BinopAnd}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Binary And Expressions}
 In \listingref{andsemantics},
 the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}. Notice that the function \texttt{fail} is never called.
 \ASLListing{Semantics of conjunction}{andsemantics}{\semanticstests/SemanticsRule.EBinopAndFalse.asl}
@@ -608,7 +609,7 @@ for readers of ASL specifications and as a consequence it is recommended that
 an if-statement is used to achieve the same effect.
 
 \SemanticsRuleDef{BinopOr}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Binary Or Expressions}
 In \listingref{semantics-binopor}, the expression \texttt{(0 == 1) || (1 == 1)} evaluates to the value \True.
 \ASLListing{Evaluating a disjunction expression}{semantics-binopor}{\semanticstests/SemanticsRule.EBinopOrTrue.asl}
 
@@ -667,7 +668,7 @@ for readers of ASL specifications and as a consequence it is recommended that
 an if-statement is used to achieve the same effect.
 
 \SemanticsRuleDef{BinopImpl}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Implication Expressions}
 In \listingref{semantics-binopimpl},
 the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \True, according to the definition of implication.
 \ASLListing{Evaluating an implication expression}{semantics-binopimpl}{\semanticstests/SemanticsRule.EBinopImplExFalso.asl}
@@ -714,6 +715,11 @@ an if-statement is used to achieve the same effect.
 
 \hypertarget{def-binopexpressionterm}{}
 \SemanticsRuleDef{Binop}
+\ExampleDef{Evaluation of Binary Expressions}
+In \listingref{semantics-binopassert},
+the expression \texttt{3 + 2} evaluates to the value \texttt{5}.
+\ASLListing{Evaluating a binary expression}{semantics-binopassert}{\semanticstests/SemanticsRule.EBinopPlusAssert.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -732,11 +738,6 @@ an if-statement is used to achieve the same effect.
   \item applying the Binary Operator $\op$ to $\vvone$ and $\vvtwo$ results in $\vv$\ProseOrError;
   \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
 \end{itemize}
-
-\subsubsection{Example}
-In \listingref{semantics-binopassert},
-the expression \texttt{3 + 2} evaluates to the value \texttt{5}.
-\ASLListing{Evaluating a binary expression}{semantics-binopassert}{\semanticstests/SemanticsRule.EBinopPlusAssert.asl}
 
 \FormallyParagraph
 \begin{mathpar}
@@ -843,12 +844,11 @@ order does not affect the result of an expression, including any side-effects.
 \CodeSubsection{\UnopBegin}{\UnopEnd}{../Typing.ml}
 
 \subsection{Semantics}
-\subsubsection{Example}
+\SemanticsRuleDef{Unop}
+\ExampleDef{Evaluation of }
 In \listingref{semantics-unopassert},
 the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 \ASLListing{Evaluating a unary expression}{semantics-unopassert}{\semanticstests/SemanticsRule.EUnopAssert.asl}
-
-\SemanticsRuleDef{Unop}
 
 \ProseParagraph
 \AllApply
@@ -973,22 +973,22 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \identr{XZVT}
 
 \subsection{Semantics}
-\subsubsection{Example}
+\SemanticsRuleDef{ECond}
+\ExampleDef{Evaluation of Conditional Expressions}
 In \listingref{semantics-econdfalse},
 the expression \texttt{if FALSE then Return42() else 3} evaluates to the value \texttt{3}.
 \ASLListing{Evaluating a conditional expression yielding the result of the \texttt{else} subexpression}
 {semantics-econdfalse}{\semanticstests/SemanticsRule.ECondFalse.asl}
 
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Non-deterministic Conditional Expression}
 In \listingref{semantics-econdarbitrary},
 the expression \texttt{if ARBITRARY: boolean then 3 else Return42()} will
-evaluate either \texttt{3} or \texttt{Return42()}, depending on the
+evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
 (non-deterministic) result of \\
 \texttt{ARBITRARY: boolean}.
 \ASLListing{Evaluating a conditional expression with non-determinic choice}{semantics-econdarbitrary}
 {\semanticstests/SemanticsRule.ECondARBITRARY3or42.asl}
 
-\SemanticsRuleDef{ECond}
 % Transliteration note: the code uses an optimized semantics for the case where
 % true and false sub-expressions do not contain function calls. Since this is an
 % optimization, we do not document it.
@@ -1157,13 +1157,13 @@ changes the call type of $\vcall$ to $\calltype$.
 \identd{CFYP} \identr{BQJG}
 
 \subsection{Semantics}
-\subsubsection{Example}
+\SemanticsRuleDef{ECall}
+\ExampleDef{Evaluation of Call Expressions}
 In \listingref{semantics-ecall},
 the expression \texttt{Return42()} evaluates to the value \texttt{42} because the
 subprogram \texttt{Return42()} is implemented to return the value \texttt{42}.
 \ASLListing{Evaluating a call expression}{semantics-ecall}{\semanticstests/SemanticsRule.ECall.asl}
 
-\SemanticsRuleDef{ECall}
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1302,7 +1302,7 @@ initializer expression.
 
 \subsection{Semantics}
 \SemanticsRuleDef{ESlice}
-\subsubsection{Example}
+\subsubsection{Evaluation of Slicing Expressions}
 In \listingref{semantics-eslice},
 the expression \texttt{'11110000'[6:3]} evaluates to the value \texttt{'1110'}.
 \ASLListing{Evaluating a slice expression}{semantics-eslice}{\semanticstests/SemanticsRule.ESlice.asl}
@@ -1469,13 +1469,13 @@ the annotated expression $\newe$, and the inferred \sideeffectdescriptorterm\ $\
 \CodeSubsection{\AnnotateGetArrayBegin}{\AnnotateGetArrayEnd}{../Typing.ml}
 
 \SemanticsRuleDef{EGetArray}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Array Reading Expressions}
 In \listingref{semantics-egetarray},
 the expression \verb|my_array[[2]]| appearing in the assertion evaluates to the value \texttt{42} since the element
 indexed by \texttt{2} in \texttt{my\_array} is \texttt{42}.
 \ASLListing{Evaluating an array access expression}{semantics-egetarray}{\semanticstests/SemanticsRule.EGetArray.asl}
 
-\subsubsection{Example}
+\ExampleDef{Evaluation of an Illegal Array Read}
 In \listingref{semantics-egetarrayerror}.
 evaluating the array access expression \verb|my_array[[3]]| results in a dynamic error,
 since we are trying to access index \texttt{3} of an array
@@ -1512,7 +1512,7 @@ which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
 \CodeSubsection{\EvalEGetArrayBegin}{\EvalEGetArrayEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{EGetEnumArray}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Reading from an Enumeration-indexed Array}
 In \listingref{semantics-egetenumarray},
 the enumeration-typed array \texttt{Arr} is accessed for reading and writing
 with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
@@ -1809,7 +1809,7 @@ for its verbatim string.
 
 \subsection{Semantics}
 \SemanticsRuleDef{EGetField}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Field Read Expression}
 In \listingref{semantics-egetfield},
 the expression \verb|my_record.a| evaluates to the value \texttt{3}.
 \ASLListing{Evaluating a field access expression}{semantics-egetfield}{\semanticstests/SemanticsRule.ERecord.asl}
@@ -2345,21 +2345,20 @@ are compatible for a typing assertion in the static environment $\tenv$, yieldin
 
 \subsection{Semantics}
 \SemanticsRuleDef{ATC}
-\subsubsection{Example}
+\ExampleDef{Evaluation of an Asserting Type Conversion Expressions}
 In \listingref{semantics-atcvalue}, both type assertions ---
 \verb|3 as integer| and \verb|3 as integer{3..5}| --- succeed.
 \ASLListing{Evaluating a successful type assertion expression}{semantics-atcvalue}{\semanticstests/SemanticsRule.ATCValue.asl}
 
-\subsubsection{Example}
+\ExampleDef{An Unevaluated Asserting Type Conversion}
 \identr{YCPX}
-
 In \listingref{semantics-atcnotevaluated}, the asserting type conversion on \texttt{y}
 does not yield a dynamic error, since the invocation of \texttt{f1} returns $\False$ when
 evaluated:
 \ASLListing{A asserting type conversion that is never evaluated}{semantics-atcnotevaluated}
 {\semanticstests/SemanticsRule.ATCNotDynamicErrorIfFalse.asl}
 
-\subsubsection{Example}
+\ExampleDef{Asserting Type Conversions with Typing Errors and Dynamic Errors}
 \listingref{semantics-variousatcs} shows various type errors and dynamic errors:
 \ASLListing{Various type errors and dynamic errors}{semantics-variousatcs}{\semanticstests/SemanticsRule.ATCVariousErrors.asl}
 
@@ -2670,7 +2669,7 @@ Lists of patterns are also used in case statements.
 
 \subsection{Semantics}
 \SemanticsRuleDef{EPattern}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Pattern Expressions}
 In \listingref{semantics-epattern},
 the expression \texttt{42 IN \{0..3, 42\}} evaluates to $\nvbool(\True)$
 whereas the expression \texttt{42 IN \{0..3, -4\}} evaluates to $\nvbool(\False)$.
@@ -2760,20 +2759,20 @@ Note that there are two important consequences of producing an arbitrary value w
 
 \subsection{Semantics}
 \SemanticsRuleDef{EArbitrary}
-\subsubsection{Example}
+\ExampleDef{Evaluation of ARBITRARY for an Uncostrained Integer Type}
 In \listingref{semantics-earbitraryunconstrained},
 the expression \verb|ARBITRARY : integer| evaluates to an arbitrary integer value.
 \ASLListing{Evaluating an \texttt{ARBITRARY} expression for an unconstrained integer}{semantics-earbitraryunconstrained}
 {\semanticstests/SemanticsRule.EArbitraryInteger3.asl}
 
-\subsubsection{Example}
+\subsubsection{Evaluation of ARBITRARY for a Costrained Integer Type}
 In \listingref{semantics-earbitraryconstrained},
 the expression \verb|ARBITRARY : integer {3, 42}| evaluates to either \\
 $\nvint(3)$ or $\nvint(42)$.
 \ASLListing{Evaluating an \texttt{ARBITRARY} expression for a constrained integer}{semantics-earbitraryconstrained}
 {\semanticstests/SemanticsRule.EArbitraryIntegerRange3-42-3.asl}
 
-\subsubsection{Example}
+\subsubsection{Evaluation of ARBITRARY for an Integer-indexed Array}
 \listingref{semantics-earbitraryarray}
 demonstrates how to obtain an arbitrary integer-indexed array, \texttt{int\_array},
 and how to obtain an arbitrary enumeration-indexed array, \texttt{enum\_array}.
@@ -2983,7 +2982,7 @@ and its \sideeffectdescriptorterm\ $\vses$. \ProseOtherwiseTypeError
 
 \subsection{Semantics}
 \SemanticsRuleDef{ERecord}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Record Construction Expressions}
 In \listingref{semantics-erecord},
 the expression \verb|MyRecordType{a=3, b=42}| evaluates to the native record value \\
 $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
@@ -3082,7 +3081,7 @@ $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
 
 \subsection{Semantics}
 \SemanticsRuleDef{ETuple}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Tuple Expressions}
 In \listingref{semantics-etuple},
 the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
 \ASLListing{Evaluating a tuple expression}{semantics-etuple}{\semanticstests/SemanticsRule.ETuple.asl}

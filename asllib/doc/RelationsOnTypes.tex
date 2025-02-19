@@ -15,6 +15,13 @@ This section defines the following relations over types and operators:
 The \emph{subtype} relation is a partial order over \underline{named types}.
 The \emph{\supertypeterm} is the inverse relation. That is, \tty\ is a supertype of \tsy\ if and only if \tsy\ is a subtype of \tty.
 
+\ExampleDef{Subtypes and Supertypes}
+In the following example \texttt{subInt} is a subtype of itself and of \texttt{superInt}:
+\begin{lstlisting}
+type superInt of integer;
+type subInt of integer subtypes superInt;
+\end{lstlisting}
+
 \hypertarget{def-subtypesrel}{}
 The predicate
 \[
@@ -56,42 +63,35 @@ yielding the result in $\vb$.
     \item $\vb$ is $\False$.
   \end{itemize}
 \end{itemize}
-\subsubsection{Example}
-In the following example \texttt{subInt} is a subtype of itself and of \texttt{superInt}:
-\begin{lstlisting}
-type superInt of integer;
-type subInt of integer subtypes superInt;
-\end{lstlisting}
-
-\CodeSubsection{\SubtypeBegin}{\SubtypeEnd}{../types.ml}
 
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule[reflexive]{}{
-    \subtypesrel(\tenv, \TNamed(\id), \TNamed(\id)) \typearrow \True
-  }
-  \and
-  \inferrule[transitive]{
-    \idone \neq \idtwo\\
-    G^\tenv.\subtypes(\idone) = \idthree\\
-    \subtypesrel(\tenv, \TNamed(\idthree), \vttwo) \typearrow \vb
-  }{
-    \subtypesrel(\tenv, \TNamed(\idone), \TNamed(\idtwo)) \typearrow \vb
-  }
-  \and
-  \inferrule[no\_supertype]{
-    \idone \neq \idtwo\\
-    G^\tenv.\subtypes(\idone) = \bot
-  }{
-    \subtypesrel(\tenv, \TNamed(\idone), \TNamed(\idtwo)) \typearrow \False
-  }
-  \and
-  \inferrule[not\_named]{
-    (\astlabel(\vtone) \neq \TNamed \lor \astlabel(\vttwo) \neq \TNamed)
-  }{
-    \subtypesrel(\tenv, \vtone, \vttwo) \typearrow \False
-  }
+\inferrule[reflexive]{}{
+  \subtypesrel(\tenv, \TNamed(\id), \TNamed(\id)) \typearrow \True
+}
+\and
+\inferrule[transitive]{
+  \idone \neq \idtwo\\
+  G^\tenv.\subtypes(\idone) = \idthree\\
+  \subtypesrel(\tenv, \TNamed(\idthree), \vttwo) \typearrow \vb
+}{
+  \subtypesrel(\tenv, \TNamed(\idone), \TNamed(\idtwo)) \typearrow \vb
+}
+\and
+\inferrule[no\_supertype]{
+  \idone \neq \idtwo\\
+  G^\tenv.\subtypes(\idone) = \bot
+}{
+  \subtypesrel(\tenv, \TNamed(\idone), \TNamed(\idtwo)) \typearrow \False
+}
+\and
+\inferrule[not\_named]{
+  (\astlabel(\vtone) \neq \TNamed \lor \astlabel(\vttwo) \neq \TNamed)
+}{
+  \subtypesrel(\tenv, \vtone, \vttwo) \typearrow \False
+}
 \end{mathpar}
+\CodeSubsection{\SubtypeBegin}{\SubtypeEnd}{../types.ml}
 
 \identr{NXRX} \identi{KGKS} \identi{MTML} \identi{JVRM} \identi{CHMP}
 
@@ -365,19 +365,19 @@ returning the result $\vb$.
 
 The function assumes that both $\vt$ and $\vs$ are well-typed according to \secref{Types}.
 
-\subsubsection{Example}
+\ExampleDef{Type-satisfaction Examples}
 In \listingref{typing-typesat1},
 \texttt{var pair: pairT = (1, dataT1)} is legal since the right-hand-side has
 anonymous, non-primitive type \texttt{(integer, T1)}.
 \ASLListing{Type satisfaction example}{typing-typesat1}{\typingtests/TypingRule.TypeSatisfaction1.asl}
 
-\subsubsection{Example}
+\ExampleDef{More Type-satisfaction Examples}
 In \listingref{typing-typesat2},
 \texttt{pair = (1, dataAsInt);} is legal since the right-hand-side has anonymous,
 primitive type \texttt{(integer, integer)}.
 \ASLListing{Type satisfaction example}{typing-typesat2}{\typingtests/TypingRule.TypeSatisfaction2.asl}
 
-\subsubsection{Example}
+\ExampleDef{Failing Type-satisfaction}
 In \listingref{typing-typesat3},
 \texttt{pair = (1, dataT2);} is illegal since the right-hand-side has anonymous,
 non-primitive type \texttt{(integer, T2)} which does not subtype-satisfy named

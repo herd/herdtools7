@@ -384,7 +384,7 @@ annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
 }
 \end{mathpar}
 
-\subsubsection{Example}
+\ExampleDef{Well-typed Bitfields}
 In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bitfields are well-typed.
 \ASLListing{Well-typed bitfields}{welltypedbitvectortypes}{\typingtests/TypingRule.TBitField.asl}
 
@@ -626,12 +626,12 @@ via a list of intervals, each represented by its limits.}
 
 Premises in \TypingRuleRef{TBits} guarantee that $\vwidth > 0$ holds.
 
-\subsubsection{Example}
+\ExampleDef{Ill-typed Bitfields}
 \listingref{CommonBitfieldsAlignError} shows an example where the two bitfields named \texttt{common}
 exist in the same \bitfieldscope, but their \absoluteslices\ are not the same.
 Specifically, the \absoluteslice\ for the bitfield \texttt{common} is \texttt{[1:0]}
 whereas the \absoluteslice\ for the bitfield \texttt{sub.common} is \texttt{[0, 1]}.
-Typechecking this example results in the type error \BadSlices.
+Typechecking this example results in the \typingerrorterm{} \BadSlices.
 
 \ASLListing{An example where two bitfields of the same name (\texttt{common}) exist in the same scope
 but have different absolute slices}

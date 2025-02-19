@@ -18,7 +18,7 @@ The following types do not have a \basevalueterm{}:
 Subprogram parameters can be parameterized integers, and since they will be initialized by their
 invocation, there is no need to have a \basevalueterm{} for them.
 
-\subsubsection{Example: Base Values}
+\ExampleDef{Base Values}
 \listingref{base-values} shows a specification with examples of well-typed \basevalueterm{}
 for various types, followed by the output to the console.
 \ASLListing{Well-typed Base Values}{base-values}{\typingtests/TypingRule.BaseValue.asl}
@@ -36,7 +36,7 @@ enumeration_array_base = [[RED=0, GREEN=0, BLUE=0]]
 \end{Verbatim}
 % CONSOLE_END
 
-\subsubsection{Example: Types Without Base Value}
+\ExampleDef{Types Without Base Value}
 \listingref{base-values-bad} shows an ill-typed specification
 due to the fact that \parameterizedintegertypes{} have no defined \basevalueterm{},
 which is also true for a \bitvectortypeterm{} whose width is parameterized.
@@ -63,6 +63,8 @@ of type $\vt$ in the static environment $\tenv$.
 \ProseOtherwiseTypeError
 
 \TypingRuleDef{BaseValue}
+See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -292,6 +294,13 @@ returns a single element list containing the integer closest to $0$ that satisfi
 and an empty list if the constraint represents an empty set.
 Otherwise, the result is $\TypeErrorVal{\NoBaseValue}$.
 
+\ExampleDef{Minimal Absolute Value in a Constraint List}
+The minimal absolute value of \verb|{7, -2}| is \verb|-2|.\\
+%
+The minimal absolute value of \verb|{2, -2}| is \verb|2|.\\
+%
+The minimal absolute value of \verb|{-2..2, 5}| is \verb|0|.
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -367,7 +376,7 @@ of integers in the list $\vl$. The result is biased towards positive integers. T
 if two integers $x$ and $y$ have the same absolute value and $x$ is positive and $y$ is negative
 then $x$ is considered closer to $0$.
 
-\subsubsection{Example: Minimal Absolute Value}
+\ExampleDef{Minimal Absolute Value}
 The minimal absolute value of $[9, -3]$ is $-3$,
 and the minimal absolute value of $[2, -2]$ is $2$.
 

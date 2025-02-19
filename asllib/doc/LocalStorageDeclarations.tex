@@ -139,7 +139,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \section{Variable Declarations\label{sec:VariableDeclarations}}
 \subsection{Typing}
 \TypingRuleDef{LDVar}
-\subsubsection{Example}
+\ExampleDef{Well-typed Local Variable Declarations}
 In \listingref{ldvar}, the statement \texttt{let x = 3;} is legal, since
 \texttt{x} is not defined elsewhere. It is added to the type environment
 with the type inferred type \texttt{integer{3}}.
@@ -169,6 +169,10 @@ with the type inferred type \texttt{integer{3}}.
 
 \subsection{Semantics}
 \SemanticsRuleDef{LDVar}
+\ExampleDef{Evaluation of a Local Variable Declaration}
+The statement \texttt{var x = 3;} in \listingref{ldvar} binds \texttt{x}
+to the evaluation of \texttt{3} in $\env$.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -177,17 +181,6 @@ with the type inferred type \texttt{integer{3}}.
   \item declaring $\vx$ in $\env$ is $(\newenv, \vgtwo)$;
   \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
 \end{itemize}
-
-\subsubsection{Example}
-The statement \texttt{var x = 3;} in \listingref{ldvar} binds \texttt{x}
-to the evaluation of \texttt{3} in $\env$.
-
-\subsubsection{Example}
-In \listingref{semantics-ldvar1},
-the statement
-\texttt{var x : integer = 3;} binds \texttt{x} to the evaluation of
-\texttt{3} in $\env$.
-\ASLListing{Binding a local variable to a literal integer}{semantics-ldvar1}{\semanticstests/SemanticsRule.LDVar1.asl}
 
 \FormallyParagraph
 \begin{mathpar}
@@ -204,7 +197,7 @@ the statement
 \section{Tuple Declarations\label{sec:TupleDeclarations}}
 \subsection{Typing}
 \TypingRuleDef{LDTuple}
-\subsubsection{Example}
+\ExampleDef{Well-typed Tuple Declarations}
 \ASLListing{Declaring a tuple in the local storage}{typing-ldtuple}{\typingtests/TypingRule.LDTuple.asl}
 
 \ProseParagraph
@@ -244,7 +237,7 @@ the statement
 
 \subsection{Semantics}
 \SemanticsRuleDef{LDTuple}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Tuple Declarations}
 In \listingref{semantics-ldtuple},
 \texttt{var (x,y,z) = (1,2,3);} binds \texttt{x} to the evaluation of
 \texttt{1}, \texttt{y} to the evaluation of \texttt{2}, and \texttt{z} to the

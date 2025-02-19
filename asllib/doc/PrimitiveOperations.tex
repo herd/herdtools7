@@ -461,7 +461,7 @@ for a given unary operator:
 \right\}
 \]
 
-\subsubsection{Example (Unary Operations)}
+\ExampleDef{Unary Operations}
 \listingref{unary-operations} shows applications of unary operations
 (invalid applications appear in comments),
 followed by the resulting console output.
@@ -564,7 +564,7 @@ and returns the resulting literal $\vr$.
 The result is a type error, if it is illegal to apply the operator
 to the given values, or a different kind of type error is detected.
 
-\subsubsection{Example (Boolean Operations)\label{sec:BooleanOperations}}
+\ExampleDef{Boolean Operations}
 \listingref{binary-operations-boolean} shows applications
 of operations to Boolean-typed literals (invalid applications in comments),
 followed by the resulting console output.
@@ -594,7 +594,7 @@ equiv_bool: FALSE <-> TRUE = FALSE
 \end{Verbatim}
 % CONSOLE_END
 
-\subsubsection{Example (Integer Arithmetic)\label{sec:IntegerArithmetic}}
+\ExampleDef{Integer Arithmetic}
 \listingref{binary-operations-integer-arithmetic} shows applications
 of integer arithmetic operations to literals (invalid applications in comments),
 followed by the resulting console output.
@@ -628,7 +628,7 @@ shiftright_int: -1 >> 10 = -1
 \end{Verbatim}
 % CONSOLE_END
 
-\subsubsection{Example (Integer Comparison)\label{sec:IntegerComparison}}
+\ExampleDef{Integer Comparison}
 \listingref{binary-operations-integer-relational} shows applications
 of integer comparison operations to literals (invalid applications in comments),
 followed by the resulting console output.
@@ -650,7 +650,7 @@ ge_int: 6 >= 10 = FALSE
 \end{Verbatim}
 % CONSOLE_END
 
-\subsubsection{Example (Real Operations)\label{sec:RealOperations}}
+\ExampleDef{Real Operations}
 \listingref{binary-operations-real} shows applications
 of operations on real-typed literals (invalid applications in comments),
 followed by the resulting console output.
@@ -674,7 +674,7 @@ ge_real: 10.0 >= 0.5 = TRUE
 \end{Verbatim}
 % CONSOLE_END
 
-\subsubsection{Example (Bitvector Operations)\label{sec:ExampleBitvectorOperations}}
+\ExampleDef{Bitvector Operations}
 \listingref{binary-operations-bitvector} shows applications
 of operations on bitvector-typed literals (invalid applications in comments),
 followed by the resulting console output.
@@ -702,7 +702,7 @@ concat_bits: '100' :: '' = 0x4
 \end{Verbatim}
 % CONSOLE_END
 
-\subsubsection{Example (String and Enumeration Label Operations)\label{sec:StringLabelOperations}}
+\ExampleDef{String and Enumeration Label Operations}
 \listingref{binary-operations-stringslabels} shows applications
 of operations on string-typed literals and enumeration-typed literals (invalid applications in comments),
 followed by the resulting console output.
@@ -1530,7 +1530,7 @@ The function
 \]
 evaluates a unary operator $\op$ over a \nativevalue{} $\vv$ and returns the \nativevalue{} $\vw$ or an error.
 
-\subsubsection{Example (Valid Unary Operation)}
+\ExampleDef{Valid Unary Operation}
 The following grounded rule shows how the application of negation
 to the literal integer for $1$
 translates into the application of negation to the \nativevalue\ for $1$.
@@ -1542,7 +1542,7 @@ translates into the application of negation to the \nativevalue\ for $1$.
 }
 \end{mathpar}
 
-\subsubsection{Example (Invalid Unary Operation)}
+\ExampleDef{Invalid Unary Operation}
 The following grounded rule shows how the application of negation
 to the literal Boolean for $\True$
 translates the resulting type error into the corresponding dynamic error.
@@ -1614,7 +1614,7 @@ The function
 evaluates a binary operator $\op$ over a pair of \nativevalues\  --- $\vvone$ and $\vvtwo$ --- and returns the
 \nativevalue\  $\vw$ or an error.
 
-\subsubsection{Example (Valid Binary Operation)}
+\ExampleDef{Valid Binary Operation}
 The following grounded rule shows how the application of addition
 to the literal integer for $2$ and the literal integer for $3$
 translates into the application of addition to the \nativevalue\ for $2$
@@ -1627,7 +1627,7 @@ and the \nativevalue\ for $3$.
 }
 \end{mathpar}
 
-\subsubsection{Example (Invalid Binary Operation)}
+\ExampleDef{Invalid Binary Operation}
 The following grounded rule shows how the invalid application of addition
 to the literal integer for $2$ and the literal real for $1/2$
 translates the resulting type error into the corresponding dynamic error.

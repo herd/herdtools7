@@ -203,7 +203,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \section{Semantics}
 \SemanticsRuleDef{Catch}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Catch}
 The specification in \listingref{semantics-catch} terminates successfully.
 That is, no dynamic error occurs.
 \ASLListing{Catching an exception}{semantics-catch}{\semanticstests/SemanticsRule.Catch.asl}
@@ -241,7 +241,7 @@ That is, no dynamic error occurs.
 \CodeSubsection{\EvalCatchBegin}{\EvalCatchEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{CatchNamed}
-\subsubsection{Example}
+\ExampleDef{Catching a Named Exception}
 The specification in \listingref{semantics-catchnamed}, prints \texttt{My exception with my message}.
 \ASLListing{Catching a named exception}{semantics-catchnamed}{\semanticstests/SemanticsRule.CatchNamed.asl}
 
@@ -289,7 +289,7 @@ The specification in \listingref{semantics-catchnamed}, prints \texttt{My except
 \CodeSubsection{\EvalCatchNamedBegin}{\EvalCatchNamedEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{CatchOtherwise}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Catch with an Otherwise}
 The specification in \listingref{semantics-catchotherwise} prints \texttt{Otherwise}.
 \ASLListing{Catching an exception with \texttt{otherwise}}{semantics-catchotherwise}{\semanticstests/SemanticsRule.CatchOtherwise.asl}
 
@@ -328,7 +328,7 @@ The specification in \listingref{semantics-catchotherwise} prints \texttt{Otherw
 \CodeSubsection{\EvalCatchOtherwiseBegin}{\EvalCatchOtherwiseEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{CatchNone}
-\subsubsection{Example}
+\ExampleDef{Evaluation of an Uncaught Exception}
 The specification in \listingref{semantics-catchnone} does not print anything.
 It shows how a \texttt{try} statement (the inner one) may not have a \texttt{catch} clause
 that matches the exception type (\texttt{MyExceptionType1}).
@@ -358,7 +358,7 @@ that matches the exception type (\texttt{MyExceptionType1}).
 \CodeSubsection{\EvalCatchNoneBegin}{\EvalCatchNoneEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{CatchNoThrow}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Try Statement that Does Not Raise an Exception}
 The specification in \listingref{semantics-nothrow} prints \texttt{No exception raised}.
 \ASLListing{A \texttt{try} statement that does not raise an exception}{semantics-nothrow}{\semanticstests/SemanticsRule.CatchNoThrow.asl}
 

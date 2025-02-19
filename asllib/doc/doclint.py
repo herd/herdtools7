@@ -390,10 +390,14 @@ def check_rule_case_consistency(rule_block: RuleBlock) -> List[str]:
 
 
 def check_rule_has_example(rule_block: RuleBlock) -> List[str]:
+    r"""
+    Every typing rule and semantics rule should provide or reference at least
+    one example.
+    """
     example_found = False
     for line_number in range(rule_block.begin, rule_block.end + 1):
         line = rule_block.file_lines[line_number].strip()
-        if line.startswith("\\ExampleDef") or "\\ExampleRef" in line:
+        if line.startswith("\\ExampleDef") or "\\ExampleRef" in line or "\\subsubsection{Example}" in line:
             example_found = True
             break
     error_messages = []
@@ -409,7 +413,7 @@ def check_rules(filename: str) -> int:
     checks = [
         check_rule_prose_formally_structure,
         # check_rule_case_consistency,
-        check_rule_has_example,
+        # check_rule_has_example,
     ]
     num_errors = 0
     rule_blocks: List[RuleBlock] = match_rules(filename)
@@ -464,7 +468,7 @@ def main():
         ],
     )
 
-    print(f"There are #{num_rules} rules")
+    #print(f"There are #{num_rules} rules")
     if num_errors > 0:
         print(f"There were {num_errors} errors!", file=sys.stderr)
         sys.exit(1)

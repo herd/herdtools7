@@ -564,11 +564,11 @@ In \listingref{typing-tstring}, all the uses of the \stringtypeterm{} are well-t
 \end{mathpar}
 \CodeSubsection{\TStringBegin}{\TStringEnd}{../Typing.ml}
 
-\hypertarget{booleantypeterm}{}
 \section{The Boolean Type\label{sec:BooleanType}}
+\hypertarget{booleantypeterm}{}
 The \emph{\booleantypeterm{}} represents the algebraic Boolean type.
 
-\subsubsection{Example}
+\ExampleDef{Boolean Type}
 In \listingref{typing-tbool}, all the uses of \booleantypeterm{} are well-typed.
 \ASLListing{Well-typed Boolean types}{typing-tbool}{\typingtests/TypingRule.TBool.asl}
 
@@ -591,6 +591,7 @@ In \listingref{typing-tbool}, all the uses of \booleantypeterm{} are well-typed.
 \end{mathpar}
 
 \subsection{Typing the Boolean Type\label{sec:TypingBooleanType}}
+See \ExampleRef{Boolean Type}.
 \TypingRuleDef{TBool}
 \ProseParagraph
 \AllApply
@@ -1367,7 +1368,12 @@ The rule for typing exception types is \TypingRuleRef{TStructuredDecl}.
 \end{mathpar}
 
 \subsection{Typing Named Types\label{sec:TypingNamedTypes}}
+\ExampleDef{Well-typed Named Types}
+In \listingref{typing-tnamed}, all the uses of \texttt{MyType} are well-typed.
+\ASLListing{Well-typed named types}{typing-tnamed}{\typingtests/TypingRule.TNamed.asl}
+
 \TypingRuleDef{TNamed}
+See \ExampleRef{Well-typed Named Types}.
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1388,10 +1394,6 @@ The rule for typing exception types is \TypingRuleRef{TStructuredDecl}.
 }
 \end{mathpar}
 \CodeSubsection{\TNamedBegin}{\TNamedEnd}{../Typing.ml}
-
-\subsubsection{Example}
-In \listingref{typing-tnamed}, all the uses of \texttt{MyType} are well-typed.
-\ASLListing{Well-typed named types}{typing-tnamed}{\typingtests/TypingRule.TNamed.asl}
 
 \section{Declared Types\label{sec:DeclaredTypes}}
 A declared type can be an \enumerationtypeterm{}, a record type, an exception type, or an \anonymoustype.
@@ -1418,7 +1420,7 @@ are only permitted in named type declarations. This is enforced by \TypingRuleRe
 See \ExampleRef{Ill-typed pending-constrained integer type}.
 
 \TypingRuleDef{TNonDecl}
-\subsubsection{Example}
+\ExampleDef{Ill-typed Type Declarations}
 In \listingref{typing-trecorderror}, the use of a record type outside of a declaration is erroneous.
 \ASLListing{An erroneous use of a record type}{typing-trecorderror}{\typingtests/TypingRule.TNonDecl.asl}
 

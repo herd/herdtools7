@@ -96,7 +96,7 @@ $\evalexprsef\empty$.
 
 \subsection{Semantics}
 \SemanticsRuleDef{PAll}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Match-all Pattern}
 In \listingref{semantics-pall}, \texttt{match\_me} evaluates to \True,
 since \texttt{-} matches any value and \texttt{42} in particular.
 \ASLListing{Matching any value}{semantics-pall}{\semanticstests/SemanticsRule.PAll.asl}
@@ -243,7 +243,7 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 
 \subsection{Semantics}
 \SemanticsRuleDef{PSingle}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Single-expression Pattern}
 In \listingref{semantics-psingle},
 \texttt{match\_true} evaluates to \True, since \texttt{42} matches \verb|{42}|,
 whereas \\
@@ -337,7 +337,7 @@ whereas \\
 
 \subsection{Semantics}
 \SemanticsRuleDef{PRange}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Range Pattern}
 In \listingref{semantics-prange},
 \texttt{match\_true} evaluates to \True, since \texttt{42} is in the range given by
 \texttt{3..42},
@@ -434,7 +434,7 @@ which short-circuits the entire rule;
 
 \subsection{Semantics}
 \SemanticsRuleDef{PLeq}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Less-or-equal Pattern}
 In \listingref{semantics-pleq},
 \texttt{match\_true} evaluates to \True, since \texttt{3} is less than or equal to \texttt{42},
 whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less than or equal to \texttt{3}.
@@ -519,7 +519,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 
 \subsection{Semantics}
 \SemanticsRuleDef{PGeq}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Greater-or-equal Pattern}
 In \listingref{semantics-pgeq},
 \texttt{match\_true} evaluates to \True, since \texttt{42} is greater or equal to \texttt{3},
 whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not greater or equal to \texttt{42}.
@@ -593,7 +593,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 
 \subsection{Semantics}
 \SemanticsRuleDef{PMask}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Mask Pattern}
 In \listingref{semantics-pmask}, \texttt{match\_true} evaluates to \True, since
 \texttt{101010} matches the bitmask \texttt{xx1010},
 whereas \texttt{match\_false} evaluates to \False, since
@@ -693,7 +693,7 @@ is defined by the following table:
 
 \subsection{Semantics}
 \SemanticsRuleDef{PTuple}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Tuple Pattern}
 In \listingref{semantics-ptuple},
 \texttt{match\_true} evaluates to \True, since
 the tuple of expression \\
@@ -817,7 +817,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \subsection{Semantics}
 \SemanticsRuleDef{PAny}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Match-any Pattern}
 In \listingref{semantics-pany},
 \texttt{match\_true} evaluates to \True, since \texttt{42} matches the second pattern in \verb|{3, 42}|,
 whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does not match
@@ -881,7 +881,7 @@ The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
 
 \subsection{Semantics}
 \SemanticsRuleDef{PNot}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Negated Pattern}
 In \listingref{semantics-pnot},
 \texttt{match\_true} evaluates to \True, since \texttt{42} does not match the pattern \verb|{3}|,
 whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does match the pattern \verb|{42}|.

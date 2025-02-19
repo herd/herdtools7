@@ -105,7 +105,7 @@ We now define the syntax, abstract syntax, typing, and semantics for the followi
 
 \subsection{Semantics}
 \SemanticsRuleDef{SPass}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Pass Statements}
 In \listingref{semantics-spass}, \texttt{pass;} does nothing.:
 \ASLListing{Evaluating a \texttt{pass} statement}{semantics-spass}{\semanticstests/SemanticsRule.SPass.asl}
 
@@ -173,7 +173,7 @@ In \listingref{semantics-spass}, \texttt{pass;} does nothing.:
 
 \subsection{Semantics}
 \SemanticsRuleDef{SAssign}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Assignment Statements}
 In \listingref{semantics-sassign},
 \texttt{x = 3;} binds \texttt{x} to $\nvint(3)$ in the environment where \texttt{x} is bound to
 $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
@@ -215,7 +215,7 @@ and then completes the update via an appropriate rule for evaluating the
 etc.
 
 \SemanticsRuleDef{SAssignCall}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Assignment from Subprogram Calls}
 In \listingref{assigncallsemantics}, given that the function call \texttt{f(1)} returns a triple of values ---
 $\nvint(1)$, $\nvint(2)$, and $\nvint(3)$
 (each with its own associated execution graph),
@@ -779,12 +779,12 @@ If the answer if $\False$, the result is a type error.
 
 \subsection{Semantics}
 \SemanticsRuleDef{SDeclSome}
-\subsubsection{Example (Declaration With an Initializing Value)}
+\ExampleDef{Declaration With an Initializing Value}
 In \listingref{semantics-sdeclsome},
 \texttt{let x = 3;} binds \texttt{x} to $\nvint(3)$ in the empty environment.
 \ASLListing{Evaluating a declaration with a given initial value}{semantics-sdeclsome}{\semanticstests/SemanticsRule.SDeclSome.asl}
 
-\subsubsection{Example (Declaration Without an Initializing Value)}
+\ExampleDef{Declaration Without an Initializing Value}
 In \listingref{semantics-sdeclnone},
 \texttt{var x : integer;} binds \texttt{x} in $\env$ to the base value of \texttt{integer}.
 \ASLListing{Evaluating a declaration without a given initial value}{semantics-sdeclnone}{\semanticstests/SemanticsRule.SDeclNone.asl}
@@ -1064,7 +1064,7 @@ instances of $\SPass$.
 
 \subsection{Semantics}
 \SemanticsRuleDef{SSeq}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Sequencing Statements}
 In \listingref{semantics-sseq},
 the evaluation of \texttt{let x = 3; let y = x + 1} first evaluates \texttt{let x = 3} and only then
 evaluates \texttt{let y = x + 1}.
@@ -1156,7 +1156,7 @@ evaluates \texttt{let y = x + 1}.
 
 \subsection{Semantics}
 \SemanticsRuleDef{SCall}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Call Statements}
 In \listingref{semantics-scall},
 \verb|Zeros{3}| evaluates to \texttt{'000'}.
 \ASLListing{Evaluating a call statement}{semantics-scall}{\semanticstests/SemanticsRule.SCall.asl}
@@ -1272,7 +1272,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \subsection{Semantics}
 \SemanticsRuleDef{SCond}
-\subsubsection{Examples}
+\ExampleDef{Conditional Statements}
 The specification in \listingref{semantics-scond} does not result in any Assertion Error.
 \ASLListing{Evaluating a conditional statement}{semantics-scond}{\semanticstests/SemanticsRule.SCond.asl}
 
@@ -1404,7 +1404,7 @@ That is, they are transformed into an untyped AST node that does not have
 an explicit representation for \texttt{case} statements.
 This is achieved via \ASTRuleRef{DesugarCaseStmt}.
 
-\subsubsection{Example}
+\ExampleDef{Case Statement Desugaring}
 \listingref{ast-case1} shows an example of how a \texttt{case} statement can be transformed into a corresponding
 compound condition statement.
 \ASLListing{Transforming a case statement with a variable as the case discriminant}{ast-case1}{\syntaxtests/ASTRule.Desugar_SCase1.asl}
@@ -1693,14 +1693,14 @@ The first call to \verb|checked_8bit_add| succeeds, whereas the second call fail
 
 \subsection{Semantics}
 \SemanticsRuleDef{SAssert}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Assertions: Success}
 In \listingref{semantics-sasertok},
 \texttt{assert (42 != 3);} ensures that \texttt{3} is not equal to \texttt{42}.
 \ASLListing{Evaluating an assertion that succeeds}{semantics-sasertok}{\semanticstests/SemanticsRule.SAssertOk.asl}
 
-\subsubsection{Example}
+\ExampleDef{Evaluation of Assertions: Failure}
 In \listingref{semantics-sassertno},
-evaluating \texttt{assert (42 == 3);} results in an \texttt{AssertionFailed} error.
+evaluating \texttt{assert (42 == 3);} results in an \DynamicAssertionFailure{} error.
 \ASLListing{Evaluating an assertion that fails}{semantics-sassertno}{\semanticstests/SemanticsRule.SAssertNo.asl}
 
 \ProseParagraph
@@ -1886,7 +1886,7 @@ yielding a pair consisting of an expression $\vep$ and a \sideeffectsetterm\ $\v
 
 \subsection{Semantics}
 \SemanticsRuleDef{SWhile}
-\subsubsection{Example}
+\ExampleDef{Evaluation of While Statements}
 The specification in \listingref{semantics-swhile} prints \texttt{0123}.
 \ASLListing{Evaluating a \texttt{while} loop}{semantics-swhile}{\semanticstests/SemanticsRule.SWhile.asl}
 
@@ -1948,12 +1948,11 @@ the result is a dynamic error.
 The result is either the continuing configuration \\ $\Continuing(\newg,\newenv)$,
 an early return configuration, or an abnormal configuration.
 
-\subsubsection{Example}
+\ExampleDef{Evaluation of Loops}
 The specification in \listingref{semantics-loop} does not result in any Assertion Error
 and the specification terminates with exit code $0$.
 \ASLListing{Evaluating a loop}{semantics-loop}{\semanticstests/SemanticsRule.Loop.asl}
 
-\CodeSubsection{\EvalLoopBegin}{\EvalLoopEnd}{../Interpreter.ml}
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2015,6 +2014,7 @@ The negation of the condition is used to decide whether to continue the loop ite
   \evalloop{\env, \iswhile, \vlimitopt, \econd, \vbody} \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
+\CodeSubsection{\EvalLoopBegin}{\EvalLoopEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{EvalLimit}
 The relation
@@ -2186,7 +2186,7 @@ If the value is $0$, the result is a dynamic error.
 
 \subsection{Semantics}
 \SemanticsRuleDef{SRepeat}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Repeat Statements}
 The specification in \listingref{semantics-srepeat} is followed by its output to the console.
 \ASLListing{Evaluating a \texttt{repeat} loop}{semantics-srepeat}{\semanticstests/SemanticsRule.SRepeat.asl}
 % CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.SRepeat.asl
@@ -2504,7 +2504,7 @@ environment. The type system ensures, via \TypingRuleRef{SFor}, that the index v
 is not already declared in the scope of the subprogram containing the \texttt{for}
 statement.
 
-\subsubsection{Example}
+\ExampleDef{Evaluation of For Statements}
 The specification in \listingref{semantics-sfor} is followed by its output to the console.
 \ASLListing{Evaluating a \texttt{for} loop}{semantics-sfor}{\semanticstests/SemanticsRule.SFor.asl}
 % CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.SFor.asl
@@ -2678,7 +2678,7 @@ iterations.
 \end{itemize}
 
 \subsubsection{Overall Evaluation}
-\subsubsection{Example}
+\ExampleDef{Overall Evaluation of For Statements}
 The specification in \listingref{semantics-sfor}
 does not result in any assertion error, and terminates with exit-code $0$.
 
@@ -2877,7 +2877,7 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 
 \subsection{Semantics}
 subsubsection{SemanticsRule.SThrow\label{sec:SemanticsRule.SThrow}}
-\subsubsection{Example (Rethrowing an Exception)}
+\ExampleDef{Rethrowing an Exception}
 The specification in \listingref{semantics-sthrownone}
 first catches the exception raised by \\
 \verb|throw MyExceptionType{a=42}|
@@ -2885,7 +2885,7 @@ and then raises it in the catch clause via \verb|throw;|,
 catching it again in the outer \texttt{try-catch} statement.
 \ASLListing{Rethrowing an exception}{semantics-sthrownone}{\semanticstests/SemanticsRule.SThrowNone.asl}
 
-\subsubsection{Example (Throwing a Typed Exception)}
+\ExampleDef{Throwing a Typed Exception}
 The specification in \listingref{semantics-sthrowsometyped}
 terminates successfully. That is, no dynamic error occurs.
 \ASLListing{Throwing an exception}{semantics-sthrowsometyped}{\semanticstests/SemanticsRule.SThrowSomeTyped.asl}
@@ -3077,7 +3077,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \subsection{Semantics}
 \SemanticsRuleDef{STry}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Try Statements}
 Evaluating the specification in \listingref{semantics-stry}
 does not result in any Assertion error, and the specification terminates with the exit code $0$.
 \ASLListing{Evaluating a \texttt{try} statement}{semantics-stry}{\semanticstests/SemanticsRule.STry.asl}
@@ -3194,17 +3194,17 @@ does not result in any Assertion error, and the specification terminates with th
 
 \subsection{Semantics}
 \SemanticsRuleDef{SReturn}
-\subsubsection{Example (No Return Value)}
+\ExampleDef{No Return Value}
 The specification in \listingref{semantics-sreturn} exits the procedure \texttt{println\_me}
 by evaluating the \texttt{return;} statement.
 \ASLListing{Evaluating a \texttt{return} statement with no value}{semantics-sreturn}{\semanticstests/SemanticsRule.SReturnNone.asl}
 
-\subsubsection{Example (Returning a Single Value)}
+\ExampleDef{Returning a Single Value}
 In \listingref{semantic-ssreturnone},
 \texttt{return 3;} exits the function \texttt{f} with value \texttt{3}.
 \ASLListing{Evaluating a \texttt{return} statement with a single value}{semantic-ssreturnone}{\semanticstests/SemanticsRule.SReturnOne.asl}
 
-\subsubsection{Example (Returning a Tuple of Values)}
+\ExampleDef{Returning a Tuple of Values}
 In \listingref{semantics-sreturntuple},
 \texttt{return (3, 42);} exits the function \texttt{f} with the value \texttt{(3, 42)}.
 \ASLListing{Evaluating a \texttt{return} statement with a tuple of values}{semantics-sreturntuple}{\semanticstests/SemanticsRule.SReturnSome.asl}

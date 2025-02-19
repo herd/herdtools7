@@ -74,7 +74,8 @@ ASL Typing Tests / annotating types:
   ASL Typing error: cannot declare already declared element "RED".
   [1]
   $ aslref --no-exec TypingRule.GetVariableEnum.asl
-  $ aslref TypingRule.TRecordExceptionDecl.asl
+  $ aslref TypingRule.TRecordDecl.asl
+  $ aslref TypingRule.TExceptionDecl.asl
   $ aslref TypingRule.TNonDecl.asl
   File TypingRule.TNonDecl.asl, line 1, characters 5 to 6:
   ASL Error: Cannot parse.

@@ -128,7 +128,6 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.LESlice.asl
   $ aslref SemanticsRule.LESetField.asl
   $ aslref SemanticsRule.LEDestructuring.asl
-  $ aslref SemanticsRule.LDVar1.asl
   $ aslref SemanticsRule.SliceSingle.asl
   $ aslref SemanticsRule.SliceLength.asl
   $ aslref SemanticsRule.SliceRange.asl

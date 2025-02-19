@@ -1,6 +1,6 @@
 \chapter{Bitvector Slicing\label{chap:BitvectorSlicing}}
 \hypertarget{bitsliceterm}{}
-\subsubsection{Example}
+\ExampleDef{Well-typed Bitvector Slices}
 \listingref{BitvectorSlices} shows different ways of expressing bitvector slices
 and how they relate to one another in terms of the order of bits they represent.
 \ASLListing{Examples of bitvector slices and operations on slices}{BitvectorSlices}{\definitiontests/Bitvector_slices.asl}
@@ -49,6 +49,9 @@ The function
 annotates a list of slices $\vslices$ in the static environment $\tenv$, yielding a list of annotated slices (that is,
 slices in the \typedast) and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
+
+See \ExampleRef{Well-typed Bitvector Slices}.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -446,21 +449,21 @@ evaluates an individual slice $\vs$ in an environment $\env$ is,
 resulting either in \\
 $\Normal(((\vstart, \vlength), \vg), \newenv)$, a throwing configuration, or a dynamic error configuration.
 
-\subsubsection{Example (Single Slice)}
+\ExampleDef{Single Slice}
 In \listingref{semantics-slicesingle},
 the slice \texttt{[2]} evaluates to \texttt{(2, 1)}, that is, the slice of
 length 1 starting at index 2.
 \ASLListing{A single expression slice}{semantics-slicesingle}{\semanticstests/SemanticsRule.SliceSingle.asl}
 
-\subsubsection{Example (Range Slice)}
+\ExampleDef{Range Slice}
 In \listingref{semantics-slicerange}, \texttt{4:2} evaluates to \texttt{(2, 3)}.
 \ASLListing{A range slice}{semantics-slicerange}{\semanticstests/SemanticsRule.SliceRange.asl}
 
-\subsubsection{Example (Length Slice)}
+\ExampleDef{Length Slice}
 In \listingref{semantics-slicelength}, \texttt{2+:3} evaluates to \texttt{(2, 3)}.
 \ASLListing{A slice by length}{semantics-slicelength}{\semanticstests/SemanticsRule.SliceLength.asl}
 
-\subsubsection{Example (Scaled Slice)}
+\ExampleDef{Scaled Slice}
 In \listingref{semantics-scaledslice},
 \texttt{x[3*:2]} evaluates to \texttt{'11'}.
 \ASLListing{A scaled slice}{semantics-scaledslice}{\semanticstests/SemanticsRule.SliceStar.asl}

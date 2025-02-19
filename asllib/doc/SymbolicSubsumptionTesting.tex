@@ -1658,12 +1658,12 @@ The function
 yields a range constraint $\newc$ from $0$ to the expression in $\vc$ that is maximal.
 This is needed to apply the modulus operation to a pair of constraints.
 
-\subsubsection{Example}
+\ExampleDef{Ill-typed Modulus Constraint Assignment}
 In \listingref{typing-constraintmod}, the assignment to \texttt{z} is illegal, since the type
 inferred for \texttt{z} is\\
 \verb|integer{0..2}|.
 
-\ASLListing{An illegal value for }{typing-constraintmod}{\typingtests/TypingRule.ConstraintMod.bad.asl}
+\ASLListing{An ill-typed modulus constraint assignment}{typing-constraintmod}{\typingtests/TypingRule.ConstraintMod.bad.asl}
 
 \ProseParagraph
 \AllApply
