@@ -55,7 +55,7 @@ type error_desc =
   | BadTypesForBinop of binop * ty * ty
   | CircularDeclarations of string
   | ImpureExpression of expr * SideEffect.SES.t
-  | UnreconciliableTypes of ty * ty
+  | UnreconcilableTypes of ty * ty
   | AssignToImmutable of string
   | AlreadyDeclaredIdentifier of string
   | BadReturnStmt of ty option
@@ -96,6 +96,7 @@ type error_desc =
   | MultipleWrites of identifier
   | UnexpectedInitialisationThrow of
       ty * identifier (* Exception type and global storage element name. *)
+  | NegativeArrayLength of expr * int
 
 type error = error_desc annotated
 
@@ -165,7 +166,7 @@ let error_label = function
   | BadTypesForBinop _ -> "BadTypesForBinop"
   | CircularDeclarations _ -> "CircularDeclarations"
   | ImpureExpression _ -> "ImpureExpression"
-  | UnreconciliableTypes _ -> "UnreconciliableTypes"
+  | UnreconcilableTypes _ -> "UnreconcilableTypes"
   | AssignToImmutable _ -> "AssignToImmutable"
   | AlreadyDeclaredIdentifier _ -> "AlreadyDeclaredIdentifier"
   | BadReturnStmt _ -> "BadReturnStmt"
@@ -198,6 +199,7 @@ let error_label = function
   | ConstantTimeBroken _ -> "ConstantTimeBroken"
   | MultipleWrites _ -> "MultipleWrites"
   | UnexpectedInitialisationThrow _ -> "UnexpectedInitialisationThrow"
+  | NegativeArrayLength _ -> "NegativeArrayLength"
 
 let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
@@ -344,7 +346,7 @@ module PPrint = struct
           "ASL Typing error:@ a pure expression was expected,@ found %a,@ \
            which@ produces@ the@ following@ side-effects:@ %a."
           pp_expr e SideEffect.SES.pp_print ses
-    | UnreconciliableTypes (t1, t2) ->
+    | UnreconcilableTypes (t1, t2) ->
         fprintf f
           "ASL Typing error:@ cannot@ find@ a@ common@ ancestor@ to@ those@ \
            two@ types@ %a@ and@ %a."
@@ -475,6 +477,11 @@ module PPrint = struct
            the@ evaluation@ of@ the@ initialisation@ of@ the global@ storage@ \
            element@ %S."
           pp_ty exception_ty global_storage_element_name
+    | NegativeArrayLength (e_length, length) ->
+        fprintf f
+          "ASL Execution error:@ array@ length@ expression@ %a@ has@ negative@ \
+           length@a: %i."
+          pp_expr e_length length
     | MultipleWrites id ->
         fprintf f "ASL Typing error:@ multiple@ writes@ to@ %S." id);
     pp_close_box f ()

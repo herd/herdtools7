@@ -1,8 +1,56 @@
 \section{Base Values\label{sec:BaseValues}}
-
 \hypertarget{def-basevalueterm}{}
-Each type has a \basevalueterm, which is used to initialize storage elements (either local of global)
+Each type, with the exceptions stated below, have a \basevalueterm,
+which is used to initialize storage elements (either local of global),
 if an initializer is not supplied.
+
+\RequirementDef{NoBaseValue}
+The following types do not have a \basevalueterm{}:
+\begin{itemize}
+    \item \parameterizedintegertypes{};
+    \item \bitvectortypesterm{} whose length depends on a \parameterizedintegertype{};
+    \item a \wellconstrainedintegertype{} whose list of constraints
+        represents the empty set;
+    \item a \bitvectortypeterm{} whose length is negative.
+\end{itemize}
+
+\lrmcomment{\identi{WVQZ}}
+Subprogram parameters can be parameterized integers, and since they will be initialized by their
+invocation, there is no need to have a \basevalueterm{} for them.
+
+\subsubsection{Example: Base Values}
+\listingref{base-values} shows a specification with examples of well-typed \basevalueterm{}
+for various types, followed by the output to the console.
+\ASLListing{Well-typed Base Values}{base-values}{\typingtests/TypingRule.BaseValue.asl}
+% CONSOLE_BEGIN aslref \typingtests/TypingRule.BaseValue.asl
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
+global_base = 0, unconstrained_integer_base = 0, constrained_integer_base = -3
+bool_base = FALSE, real_base = 0, string_base = , enumeration_base = RED
+bits_base = 0x00
+tuple_base = (0, -3, RED)
+record_base      = {data=0x00, time=0, flag=FALSE}
+record_base_init = {data=0x00, time=0, flag=FALSE}
+exception_base = {msg=}
+integer_array_base = [[0, 0, 0, 0]]
+enumeration_array_base = [[RED=0, GREEN=0, BLUE=0]]
+\end{Verbatim}
+% CONSOLE_END
+
+\subsubsection{Example: Types Without Base Value}
+\listingref{base-values-bad} shows an ill-typed specification
+due to the fact that \parameterizedintegertypes{} have no defined \basevalueterm{},
+which is also true for a \bitvectortypeterm{} whose width is parameterized.
+\ASLListing{No Base Value for Parameterized Integer Types}{base-values-bad}{\typingtests/TypingRule.BaseValue.bad_parameterized.asl}
+
+\listingref{base-values-bad-negative-width} shows an ill-typed specification
+where the width of a bitvector is negative.
+\ASLListing{No Base Value for Bitvectors of Negative Width}{base-values-bad-negative-width}{\typingtests/TypingRule.BaseValue.bad_negative_width.asl}
+
+\listingref{base-values-bad-empty-type} shows an ill-typed specification
+where the constraint \verb|5..0| represents an empty set.
+Therefore, the domain of values for the type \verb|integer{5..0}| is empty,
+which negates the possibility of having a \basevalueterm.
+\ASLListing{No Base Value for an Empty Integer Type}{base-values-bad-empty-type}{\typingtests/TypingRule.BaseValue.bad_empty.asl}
 
 \hypertarget{def-basevalue}{}
 The function
@@ -18,41 +66,42 @@ of type $\vt$ in the static environment $\tenv$.
 \ProseParagraph
 One of the following applies:
 \begin{itemize}
-    \item All of the following apply (\textsc{t\_bool}):
+    \item All of the following apply (\textsc{t\_bool}): \lrmcomment{\identr{CPCK}}
     \begin{itemize}
         \item $\vt$ is the Boolean type;
         \item $\veinit$ is the literal expression for $\False$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_bits}):
+    \item All of the following apply (\textsc{t\_bits}): \lrmcomment{\identr{ZVPT}}
     \begin{itemize}
         \item $\vt$ is the bitvector type with width expression $\ve$;
         \item applying $\reducetozopt$ to $\ve$ in $\tenv$ yields $\vzopt$;
         \item checking that $\vzopt$ is not $\None$ yields $\True$\ProseTerminateAs{\NoBaseValue};
         \item view $\vzopt$ as the singleton integer $\length$;
+        \item checking that $\length$ is greater or equal to $0$ yields $\True$\ProseTerminateAs{\NoBaseValue};
         \item $\veinit$ is the literal expression for a bitvector made of a sequence of $\length$ values of $0$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_enum}):
+    \item All of the following apply (\textsc{t\_enum}): \lrmcomment{\identr{LCCN}}
     \begin{itemize}
         \item $\vt$ is the enumeration type with a list of labels where $\name$ as its \head;
         \item $\name$ is bound to the literal $\vl$ by the $\constantvalues$ in the global static environment of $\tenv$;
         \item $\veinit$ is the literal expression for $\vl$, that is, $\eliteral{\vl}$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_int\_unconstrained}):
+    \item All of the following apply (\textsc{t\_int\_unconstrained}): \lrmcomment{\identr{NJDZ}}
     \begin{itemize}
         \item $\vt$ is the \unconstrainedintegertype;
         \item $\veinit$ is the literal expression for $0$, that is, $\ELiteral(\lint(0))$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_int\_parameterized}):
+    \item All of the following apply (\textsc{t\_int\_parameterized}): \lrmcomment{\identr{QGGH}}
     \begin{itemize}
         \item $\vt$ is the \parameterizedintegertype;
         \item the result is a type error indicating the lack of a statically known base value.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_int\_wellconstrained}):
+    \item All of the following apply (\textsc{t\_int\_wellconstrained}): \lrmcomment{\identr{CFTD}}
     \begin{itemize}
         \item $\vt$ is the \wellconstrainedintegertype\ with a list of constraints $\cs$;
         \item define $\vzminlist$ as the concatenation of lists obtained for each
@@ -69,13 +118,13 @@ One of the following applies:
         \item applying $\basevalue$ to $\vtp$ in $\tenv$ yields $\veinit$\ProseOrTypeError.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_real}):
+    \item All of the following apply (\textsc{t\_real}): \lrmcomment{\identr{GYCG}}
     \begin{itemize}
         \item $\vt$ is the real type;
         \item $\veinit$ is the real literal expression for $0$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{structured}):
+    \item All of the following apply (\textsc{structured}): \lrmcomment{\identr{MBRM}, \ident{SVJB}}
     \begin{itemize}
         \item $\vt$ is a \structuredtype\ with list of fields $\fields$;
         \item applying $\basevalue$ to $\vtefield$ in $\tenv$ for each $(\name, \vtefield)$ in $\fields$
@@ -85,13 +134,13 @@ One of the following applies:
               $\ERecord((\name, \vtefield) \in \fields: (\name, \ve_\name))$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_string}):
+    \item All of the following apply (\textsc{t\_string}): \lrmcomment{\identr{WKCY}}
     \begin{itemize}
         \item $\vt$ is the string type;
         \item $\veinit$ is the string literal expression for the empty list of characters.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_tuple}):
+    \item All of the following apply (\textsc{t\_tuple}): \lrmcomment{\identr{QWSQ}}
     \begin{itemize}
         \item $\vt$ is the tuple type over the list of types $\vt_{1..k}$, that is, $\TTuple(\vt_{1..k})$;
         \item applying $\basevalue$ to each type $\vt_\vi$ in $\tenv$ for $\vi=1..k$; yields the list of expressions $\ve_{1..k}$;
@@ -107,7 +156,7 @@ One of the following applies:
               that is, $\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \vvalue\}$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_array\_expr}):
+    \item All of the following apply (\textsc{t\_array\_expr}): \lrmcomment{\identr{WGVR}}
     \begin{itemize}
         \item $\vt$ is the array type over an integer index expression $\vlength$ and element type $\tty$, that is,
               $\TArray(\ArrayLengthExpr(\vlength), \tty)$ ;
@@ -116,6 +165,7 @@ One of the following applies:
               that is, $\EArray\{\EArrayLength: \length, \EArrayValue: \vvalue\}$.
     \end{itemize}
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[t\_bool]{}{
@@ -128,6 +178,7 @@ One of the following applies:
     \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
     \checktrans{\vzopt \neq \None}{\NoBaseValue} \checktransarrow \True\OrTypeError\\\\
     \vzopt \eqname \langle\length\rangle\\
+    \checktrans{\length \geq 0}{\NoBaseValue} \checktransarrow \True\OrTypeError
 }{
     \basevalue(\tenv, \overname{\TBits(\ve, \Ignore)}{\vt}) \typearrow \overname{\ELiteral(\lbitvector(i=1..\length: 0))}{\veinit}
 }
@@ -307,7 +358,6 @@ One of the following applies:
 \end{mathpar}
 
 \TypingRuleDef{ListMinAbs}
-\ProseParagraph
 \hypertarget{def-listminabs}{}
 The function
 \[
@@ -317,6 +367,10 @@ returns $\vz$ --- the integer closest to $0$ among the list
 of integers in the list $\vl$. The result is biased towards positive integers. That is,
 if two integers $x$ and $y$ have the same absolute value and $x$ is positive and $y$ is negative
 then $x$ is considered closer to $0$.
+
+\subsubsection{Example: Minimal Absolute Value}
+The minimal absolute value of $[9, -3]$ is $-3$,
+and the minimal absolute value of $[2, -2]$ is $2$.
 
 \ProseParagraph
 One of the following applies:
@@ -341,6 +395,7 @@ One of the following applies:
         \end{itemize}
     \end{itemize}
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[one]{}{

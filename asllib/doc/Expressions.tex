@@ -3153,6 +3153,7 @@ All of the following apply:
   \item evaluating the side-effect-free expression $\elength$ in $\env$ yields \\
         $\Normal((\vlength, \vgtwo))$\ProseOrError;
   \item $\vlength$ is a native integer value for $\nlength$;
+  \item checking that $\nlength$ is non-negative yields $\True$\ProseTerminateAs{\NegativeArrayLength};
   \item define $\vv$ as the native vector of length $\nlength$ where each position has the value $\vvalue$;
   \item define $\vg$ as the parallel composition of $\vgone$ and $\vgtwo$.
 \end{itemize}
@@ -3163,6 +3164,7 @@ All of the following apply:
   \evalexpr{\env, \evalue} \evalarrow \Normal((\vvalue, \vgone), \newenv) \OrAbnormal\\\\
   \evalexprsef{\env, \elength} \evalarrow \Normal((\vlength, \vgtwo)) \OrDynError\\\\
   \vlength \eqname \nvint(\nlength)\\
+  \checktrans{\nlength \geq 0}{\NegativeArrayLength} \checktransarrow \True \OrDynError\\\\
   \vv \eqdef \nvvector{i=1..\nlength: \vvalue}\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{

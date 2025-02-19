@@ -618,7 +618,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let check_bits_equal_width ~loc env t1 t2 () =
     try check_bits_equal_width' env t1 t2 ()
     with TypingAssumptionFailed ->
-      fatal_from ~loc (Error.UnreconciliableTypes (t1, t2))
+      fatal_from ~loc (Error.UnreconcilableTypes (t1, t2))
   (* End *)
 
   let binop_is_ordered = function
@@ -1967,7 +1967,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           best_effort t_true (fun _ ->
               match Types.lowest_common_ancestor env t_true t_false with
               | None ->
-                  fatal_from ~loc (Error.UnreconciliableTypes (t_true, t_false))
+                  fatal_from ~loc (Error.UnreconcilableTypes (t_true, t_false))
               | Some t -> t)
         in
         let ses = SES.union3 ses_cond ses_true ses_false in
@@ -2339,7 +2339,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Bool -> L_Bool false |> lit
     | T_Bits (e, _) ->
         let length = reduce_to_z e |> Z.to_int in
-        L_BitVector (Bitvector.zeros length) |> lit
+        if length < 0 then fatal_from ~loc @@ Error.BaseValueEmptyType t
+        else L_BitVector (Bitvector.zeros length) |> lit
     | T_Enum [] -> assert false
     | T_Enum (name :: _) -> lookup_constants env name |> lit
     | T_Int UnConstrained -> L_Int Z.zero |> lit
