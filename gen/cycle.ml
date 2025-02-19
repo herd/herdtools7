@@ -287,13 +287,6 @@ module Make (O:Config) (E:Edge.S) :
       | n::ns -> fprintf chan "%a,%a" debug_node n iter ns in
     iter chan ns
   
-  let debug_list_nodes chan nss =
-    let rec iter chan = function
-      | [] -> ()
-      | [n] -> debug_nodes chan n
-      | n::nss -> fprintf chan "%a\n%a" debug_nodes n iter nss in
-    iter chan nss
-
   let debug_cycle chan n =
     let rec do_rec m =
       fprintf chan "%a\n" debug_node m ;
@@ -589,13 +582,6 @@ module CoSt = struct
     let lst = fst+E.SIMD.nregs n in
     { st with co_cell=E.SIMD.step n fst st.co_cell;
       map=M.add Ord lst st.map; }
-
-  let pp chan st = 
-      fprintf chan "coherence state:{ map: %s, co_cell[%d]: [%s], pte_cell: %s}"
-      (M.pp_str (fun k v -> sprintf "%s -> %d" (pp_bank k) v) st.map)
-      (Array.length st.co_cell)
-      (Array.fold_left (fun acc v -> sprintf "%s,%d" acc v) "" st.co_cell)
-      (PteVal.pp st.pte_value)
 end
 
 let pte_val_init loc = match loc with
