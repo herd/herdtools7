@@ -39,8 +39,8 @@ module type S = sig
     | IndirectJump of v * Label.Full.Set.t * bds
     (* Stop now *)
     | Exit
-    (* Raise Fault *)
-    | Fault of bds
+    (* Raise Fault, boolean specifies system call *)
+    | Fault of bool * bds
     (* Return from Fault Handler *)
     | FaultRet of tgt
 
@@ -58,6 +58,9 @@ module type S = sig
 (* Conditional branch *)
   val bccT : v -> lbl -> t monad
   val faultRetT : lbl -> t monad
+  (* Faults and syscalls *)
+  val fault : bds -> t
+  val syscall : bds -> t
 end
 
 
@@ -82,7 +85,7 @@ module Make(M:Monad.S) = struct
     (* Stop now *)
     | Exit
     (* Raise Fault *)
-    | Fault of bds
+    | Fault of bool * bds
     (* Return from Fault Handler *)
     | FaultRet of tgt
 
@@ -99,4 +102,6 @@ module Make(M:Monad.S) = struct
   let indirectBranchT v lbls bds = M.unitT (IndirectJump (v,lbls,bds))
   let bccT v lbl = M.unitT (CondJump (v,Lbl lbl))
   let faultRetT lbl = M.unitT (FaultRet (Lbl lbl))
+  let fault bds = Fault (false,bds)
+  let syscall bds = Fault (true,bds)
 end
