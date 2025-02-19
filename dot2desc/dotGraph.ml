@@ -31,7 +31,7 @@ module Edge = struct
 end
 
 module Node = struct
-  type kind = Fault | Mem | Reg_Data | Branching | Reg_Other | Empty
+  type kind = Fault | Mem | Reg_Data | Branching | Reg_Other | TLBI | Empty
   type t = {
     desc: string;
     kind: kind;
@@ -90,6 +90,9 @@ let is_init_event n =
   with
   | Not_found -> false
 
+let make_monospace str =
+  Printf.sprintf "`%s`" str
+
 let tr_stmt acc stmt param_map =
 
   (* To be called after Str.string_match was called on the appropriate regex
@@ -113,7 +116,7 @@ let tr_stmt acc stmt param_map =
     | "NZCV" -> "PSTATE.NZCV"
     | r -> r in
     let tr_reg = StringMap.safe_find reg reg param_map in
-    if is_gpreg reg then tr_reg else "`" ^ tr_reg ^ "`" in
+    if is_gpreg reg then tr_reg else make_monospace tr_reg in
 
   (* To be called after Str.string_match was called on the fault or exc_entry regexes *)
   let get_fault_name value =
@@ -131,11 +134,23 @@ let tr_stmt acc stmt param_map =
       (* Skip init events *)
       acc
     else begin
+      let symbol = "\\([a-zA-Z0-9_\\+]+\\)" in
+      let tag = Printf.sprintf "tag(%s)" symbol in
+      let pte = Printf.sprintf "PTE(%s)" symbol in
+      let pa = Printf.sprintf "PA(%s)" symbol in
+      let tlb = Printf.sprintf "TLB(%s)" symbol in
+      let memloc_regex = Str.regexp symbol in
+      let tag_regex = Str.regexp tag in
+      let pte_regex = Str.regexp pte in
+      let pa_regex = Str.regexp pa in
+      let tlb_regex = Str.regexp tlb in
       let mem_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[\([a-zA-Z0-9_\+]+\)\]|} in
       let tag_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[tag(\([a-zA-Z0-9_\+]+\))\]|} in
       let pte_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[PTE(\([a-zA-Z0-9_\+]+\))\]|} in
       let pa_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[PA(\([a-zA-Z0-9_\+]+\))\]|} in
       let ifetch = Str.regexp {|[a-zA-Z0-9_]*: R\[label:\\"P[0-9]:\([a-zA-Z0-9_]+\)\\"\]IFetch=\([][,a-zA-Z0-9_ ]+\)|} in
+      let tlbi = Str.regexp {|[a-zA-Z0-9_]*: TLBI(\([A-Z0-9]+\),\[\([a-zA-Z0-9_\+()]+\)\])|} in
+      let generic_tlbi = Str.regexp {|[a-zA-Z0-9_]*: TLBI(\([A-Z0-9]+\))|} in
       let reg_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)[0-9]:\([A-Z_]+[0-9]*\)|} in
       let branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(\(\[[a-zA-Z0-9_\+]+\]\|[0-9]:[A-Z_]+[0-9]*\)\(==\|!=\)\(\[[a-zA-Z0-9_\+]+\]\|[0-9]:[A-Z_]+[0-9]*\))|} in
       let branching_mte_tag = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(color)(tag(\([a-zA-Z0-9_\+]+\)), \([A-Z_]+[0-9]*\))|} in
@@ -158,6 +173,41 @@ let tr_stmt acc stmt param_map =
         let label = Str.matched_group 1 value in
         let instr = Str.matched_group 2 value in
         { Node.desc=f label instr; kind=Node.Mem }
+      end
+      else if Str.string_match tlbi value 0 then begin
+        let f = DescDict.tlbi in
+        let typ = make_monospace (Str.matched_group 1 value) in
+        let loc = Str.matched_group 2 value in
+
+        let reg_regex = Str.regexp {|[A-Z_]+[0-9]*|} in
+        let reg = try
+          ignore (Str.search_backward reg_regex value (String.length value - 1));
+          Str.matched_group 0 value
+        with Not_found ->
+          Warn.fatal "Could not find register as part of TLBI instruction" in
+
+        let loc = if Str.string_match tag_regex loc 0 then
+          let loc = Str.matched_group 1 loc in
+          DescDict.tagloc_of loc reg
+        else if Str.string_match pte_regex loc 0 then
+          let loc = Str.matched_group 1 loc in
+          DescDict.pte_of loc reg
+        else if Str.string_match pa_regex loc 0 then
+          let loc = Str.matched_group 1 loc in
+          DescDict.pa_of loc reg
+        else if Str.string_match tlb_regex loc 0 then
+          let loc = Str.matched_group 1 loc in
+          DescDict.tlb_of loc reg
+        else if Str.string_match memloc_regex loc 0 then begin
+          DescDict.memloc_addr_by loc reg end
+        else
+          Warn.fatal "Unrecognised type of location %s" loc in
+        { Node.desc=f typ loc; kind=Node.TLBI }
+      end
+      else if Str.string_match generic_tlbi value 0 then begin
+        let f = DescDict.generic_tlbi in
+        let typ = make_monospace (Str.matched_group 1 value) in
+        { Node.desc=f typ; kind=Node.TLBI }
       end
       else if Str.string_match reg_access value 0 then begin
         let f = if Str.matched_group 1 value = "R" then DescDict.reg_read else DescDict.reg_write in
