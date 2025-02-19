@@ -615,6 +615,10 @@ module Make (B : Backend.S) (C : Config) = struct
            evaluable, i.e. side-effect-free. *)
         let* v_length = eval_expr_sef env e_length in
         let n_length = v_to_int ~loc:e v_length in
+        let () =
+          if n_length < 0 then
+            fatal_from e_length (Error.NegativeArrayLength (e_length, n_length))
+        in
         let* v = B.create_vector (List.init n_length (Fun.const v_value)) in
         return_normal (v, new_env) |: SemanticsRule.EArray
     (* End *)

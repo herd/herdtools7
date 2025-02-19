@@ -165,6 +165,7 @@ The following table summarises all error codes.
   $\UncaughtException$           & Uncaught exception             & "             \\
   $\BadIndex$                    & Bad index                      & "             \\
   $\OverlappingSliceAssignment$  & Overlapping slice assignment   & "             \\
+  $\NegativeArrayLength$         & Negative array length          & "             \\
 \end{tabular}
 \end{center}
 
@@ -424,4 +425,10 @@ The following table summarises all error codes.
   (\SemanticsRuleRef{CheckNonOverlappingSlices}).
   Note that overlapping \emph{bitfields} are \typingerrorsterm{},
   and that if the overlapping slices are \symbolicallyevaluable{} this too is a \typingerrorterm{} ($\BadSlices$).
+
+\hypertarget{def-negativearraylength}{}
+\item[$\NegativeArrayLength$]
+  \textit{Negative array length.}
+  The expression used to determine the length of the array evaluates to a negative integer value
+  (see \SemanticsRuleRef{EArray}).
 \end{description}
