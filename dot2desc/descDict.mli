@@ -17,6 +17,13 @@
 (* location -> description *)
 val memloc: string -> string
 
+(* location -> address register -> description *)
+val memloc_addr_by: string -> string -> string
+val tagloc_of: string -> string -> string
+val pte_of: string -> string -> string
+val pa_of: string -> string -> string
+val tlb_of: string -> string -> string
+
 (* register -> description *)
 val reg: string -> string
 
@@ -32,6 +39,12 @@ val pa_write: string -> string -> bool -> string
 
 (* label -> instruction -> description *)
 val ifetch: string -> string -> string
+
+(* type -> location -> description *)
+val tlbi: string -> string -> string
+
+(* type -> description *)
+val generic_tlbi: string -> string
 
 (* register -> description *)
 val reg_read: string -> string
