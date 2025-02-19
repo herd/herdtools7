@@ -38,9 +38,6 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
   module AArch64S = AArch64Sem.Make (TopConf) (V)
   include AArch64S
 
-  let ( ||| ) = M.( ||| )
-  let ( let* ) = M.( >>= )
-  let return = M.unitT
   let _dbg = TopConf.C.debug.Debug_herd.monad
   let _profile = TopConf.C.debug.Debug_herd.profile_asl
 
@@ -776,9 +773,18 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         (fun _ -> Warn.fatal "Cannot translate instruction")
 
     let aarch64_to_asl_bv = function
-      | V.Var v -> ASLS.A.V.Var v
+      | V.Var _ as v ->
+          let nv = V.fresh_var () in
+          let nid =
+            match nv with
+            | V.Var n -> n
+            | _ -> assert false in
+          let eq =
+            let op = AArch64Op.Extra (ASLOp.ToBV 64) in
+            M.VC.Assign (nv,M.VC.Unop (Op.ArchOp1 op,v))  in
+          ASLS.A.V.Var nid,[eq]
       | V.Val cst ->
-          ASLS.A.V.Val (tr_cst ASLScalar.as_bv cst)
+          ASLS.A.V.Val (tr_cst ASLScalar.as_bv cst),[]
 
     let aarch64_to_asl = function
       | V.Var v -> ASLS.A.V.Var v
@@ -841,7 +847,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         Name.{ name = "ASL (fake)"; file = ""; texname = ""; doc = "" }
       in
       let test = ASLTH.build name t in
-      let init =
+      let init,eqs_init =
         let global_loc name =
           ASLS.A.Location_reg
             (ii.A.proc, ASLBase.(ASLLocalId (Scope.Global true, name)))
@@ -860,20 +866,20 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         let nzcv = AArch64Base.NZCV
         and _nzcv =
           global_loc (if is_experimental then "_NZCV" else "PSTATE") in
-        let st =
+        let st,eqs =
           match A.look_reg nzcv ii.A.env.A.regs with
           | Some v ->
-              let v = aarch64_to_asl_bv v in
-              ASLS.A.state_add st _nzcv v
-          | _ -> st
+              let v,eqs = aarch64_to_asl_bv v in
+              ASLS.A.state_add st _nzcv v,eqs
+          | _ -> st,[]
         in
         let regq = AArch64Base.ResAddr and resaddr = global_loc "RESADDR" in
         let v =
           match A.look_reg regq ii.A.env.A.regs with
           | Some v -> Some (aarch64_to_asl v)
           | None -> None
-        in
-        match v with Some v -> ASLS.A.state_add st resaddr v | None -> st
+        in    
+        (match v with Some v -> ASLS.A.state_add st resaddr v | None -> st),eqs
       in
       let test = { test with Test_herd.init_state = init } in
       let () =
@@ -881,13 +887,17 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           Printf.eprintf "Building fake test with initial state:\n\t%s\n"
             (ASLS.A.dump_state test.Test_herd.init_state)
       in
-      test
+      test,eqs_init
 
     module Translator : sig
       val tr_execution :
-        AArch64.inst_instance_id -> asl_exec -> (proc * branch) M.t
+        AArch64.inst_instance_id -> M.VC.cnstrnts
+        -> asl_exec -> (proc * branch) M.t
     end = struct
-      module IMap = Map.Make (Int)
+
+      let ( ||| ) = M.( ||| )
+      let ( let* ) = M.( >>= )
+      let return = M.unitT
 
       let tr_v v = asl_to_aarch64 v
 
@@ -1029,7 +1039,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         Seq.fold_left ( ||| ) (return ()) monads
 
 
-      let tr_execution ii (conc, cs, set_pp, vbpp) =
+      let tr_execution ii eqs_test (conc, cs, set_pp, vbpp) =
         profile "translate execution" @@ fun () ->
         let get_cat_show get x =
           match StringMap.find_opt x set_pp with
@@ -1157,7 +1167,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         let () = if _dbg then Printf.eprintf "\n" in
         let* () =
           events_m ||| iico_data ||| iico_ctrl
-          ||| iico_order ||| constraints
+          ||| iico_order ||| constraints ||| M.restrict eqs_test
         in
         M.addT (A.next_po_index ii.A.program_order_index) (return branch)
     end
@@ -1243,7 +1253,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | Some _ when AArch64.is_mixed -> check_strict test_aarch64 ii
       | Some (fname, args) -> (
           profile "build AArch64 semantics from ASL" @@ fun () ->
-          let test_asl = fake_test ii fname args in
+          let test_asl,eqs_test = fake_test ii fname args in
           let model = build_model_from_file "asl.cat" in
           let { MC.event_structures = rfms; _ }, test_asl =
             profile "run ASL Semantics" @@ fun () ->
@@ -1273,7 +1283,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               let () = if _dbg then prerr_endline "ASL cat, success" in
               let c = (conc, cs, Lazy.force out_sets, Lazy.force out_show) in
               let () = end_profile t0 "ASL cat, success" in
-              Translator.tr_execution ii c :: acc
+              Translator.tr_execution ii eqs_test c :: acc
             in
             check_event_structure model test_asl conc kfail ksuccess acc
           in

@@ -1,0 +1,11 @@
+Test CSET02 Required
+States 2
+0:X3=0; 0:X4=1; 0:X5=1;
+0:X3=1; 0:X4=0; 0:X5=1;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall (0:X5=1)
+Observation CSET02 Always 2 0
+Hash=88cd8ae0c0bba2fe4756a882959e75ad
+
