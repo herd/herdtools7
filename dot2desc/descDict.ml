@@ -110,6 +110,12 @@ let pte_cond loc reg pred =
 let instr_cond cond =
   Printf.sprintf "\\cond{%s}" cond
 
+let any_active r =
+  Printf.sprintf "\\AnyActive{%s}" (reg r)
+
+let active_elem r idx =
+  Printf.sprintf "\\ActiveElem{%s}{%s}" (reg r) idx
+
 let eq_contents lhs rhs =
   Printf.sprintf "\\eqContentsCheck{%s}{%s}" lhs rhs
 
