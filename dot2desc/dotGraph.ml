@@ -107,10 +107,16 @@ let tr_stmt acc stmt param_map =
     let is_explicit = not (str_contains value "NExp") in
     { Node.desc=f loc reg is_explicit; kind=Node.Mem } in
 
+  (* Makes use of Str.string_match. If caller uses matching functions on
+     previously used regexes, make sure this function is called after
+     all other matching has been performed *)
   let is_gpreg reg =
     let r = Str.regexp {|[BHWXQ][0-9]+|} in
     Str.string_match r reg 0 in
 
+  (* Makes use of Str.string_match. If caller uses matching functions on
+     previously used regexes, make sure this function is called after
+     all other matching has been performed *)
   let pp_reg reg =
     let reg = match reg with
     | "NZCV" -> "PSTATE.NZCV"
@@ -152,7 +158,7 @@ let tr_stmt acc stmt param_map =
       let tlbi = Str.regexp {|[a-zA-Z0-9_]*: TLBI(\([A-Z0-9]+\),\[\([a-zA-Z0-9_\+()]+\)\])|} in
       let generic_tlbi = Str.regexp {|[a-zA-Z0-9_]*: TLBI(\([A-Z0-9]+\))|} in
       let reg_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)[0-9]:\([A-Z_]+[0-9]*\)|} in
-      let branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(\(\[[a-zA-Z0-9_\+]+\]\|[0-9]:[A-Z_]+[0-9]*\)\(==\|!=\)\(\[[a-zA-Z0-9_\+]+\]\|[0-9]:[A-Z_]+[0-9]*\))|} in
+      let branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(\([][,a-zA-Z0-9_\+:{}]+\)\(==\|!=\)\([][,a-zA-Z0-9_\+:{}]+\))|} in
       let branching_mte_tag = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(color)(tag(\([a-zA-Z0-9_\+]+\)), \([A-Z_]+[0-9]*\))|} in
       let branching_pte = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(PTE(\([a-zA-Z0-9_\+]+\)), \([A-Z_]+[0-9]*\))\((\([a-zA-Z0-9_,:&|() ]+\))\)?|} in
       let branching_instr_cond = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)|} in
@@ -224,16 +230,23 @@ let tr_stmt acc stmt param_map =
         let rel = Str.matched_group 2 value in
         let rhs = Str.matched_group 3 value in
 
-        (* Extracts the memory location or register name out of a lhs or rhs *)
+        (* Extracts the memory location or register (pair) name(s) out of a lhs or rhs *)
         let mem_or_reg str =
           let mem = Str.regexp {|\[\([a-zA-Z0-9_\+]+\)\]|} in
           let reg = Str.regexp {|[0-9]:\([A-Z_]+[0-9]*\)|} in
+          let reg_pair = Str.regexp {|{[0-9]:\([A-Z_]+[0-9]*\),[0-9]:\([A-Z_]+[0-9]*\)}|} in
           if Str.string_match mem str 0 then
             DescDict.memloc (Str.matched_group 1 str)
           else if Str.string_match reg str 0 then
             DescDict.reg (pp_reg (Str.matched_group 1 str))
+          else if Str.string_match reg_pair str 0 then begin
+            let reg1 = Str.matched_group 1 str in
+            let reg2 = Str.matched_group 2 str in
+            DescDict.reg_pair (pp_reg reg1) (pp_reg reg2)
+          end
           else
-            Warn.fatal "String %s contains neither a register nor a memory address" str in
+            Warn.fatal "String %s contains neither a register, register pair \
+              nor a memory address" str in
         
         let lhs = mem_or_reg lhs in
         let rhs = mem_or_reg rhs in

@@ -35,6 +35,9 @@ let tlb_of loc reg =
 let reg reg =
   Printf.sprintf "\\reg{%s}" reg
 
+let reg_pair reg1 reg2 =
+  Printf.sprintf "\\regPair{%s}{%s}" reg1 reg2
+
 let mre_of arg is_explicit =
   if is_explicit then
     Printf.sprintf "\\ExpMREof{%s}" arg

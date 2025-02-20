@@ -27,6 +27,9 @@ val tlb_of: string -> string -> string
 (* register -> description *)
 val reg: string -> string
 
+(* register1 -> register2 -> description *)
+val reg_pair: string -> string -> string
+
 (* location -> address register -> is_explicit -> description *)
 val mem_read: string -> string -> bool -> string
 val mem_write: string -> string -> bool ->  string
