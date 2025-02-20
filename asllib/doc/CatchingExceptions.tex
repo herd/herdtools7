@@ -1,6 +1,7 @@
 \chapter{Catching Exceptions\label{chap:CatchingExceptions}}
 
-Exception catchers are grammatically derived from $\Ncatcher$ and represented as ASTs by $\catcher$.
+Exception catchers are grammatically derived from $\Ncatcher$ and represented
+in the \untypedast{} by $\catcher$.
 
 \hypertarget{def-annotatecatcher}{}
 The function
@@ -190,13 +191,6 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   \annotatecatcher{\tenv, \vsesin, \vc} \typearrow (\vsesfiltered, \newcatcher, \vses)
 }
 \end{mathpar}
-% and ses_filtered =
-% let ty_name = match ty'.desc with T_Named s -> s | _ -> assert false in
-% SES.filter_thrown_exceptions
-%   (fun s -> not (Types.subtypes_names env s ty_name))
-%   ses_in
-% in
-% let ses = SES.union ses_block ses_ty in
 
 \CodeSubsection{\CatcherBegin}{\CatcherEnd}{../Typing.ml}
 \identr{SDJK} \identr{WVXS} \identi{FCGK}

@@ -153,8 +153,8 @@ The function assumes that both $\vt$ and $\vs$ are well-typed according to \chap
   \begin{itemize}
   \item the \underlyingtype\ of $\vs$ is a bitvector type with width $\ws$ and bit fields $\bfss$, that is $\TBits(\ws, \bfss)$;
   \item the \underlyingtype\ of $\vt$ is a bitvector type with width $\wt$ and bit fields $\bfst$, that is $\TBits(\wt, \bfst)$;
-  \item determining whether the bit fields $\bfss$ are included in the bit fields $\bfst$ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item determining whether the \symbolicdomain{} of bitwidth $\ws$ subsumes the \symbolicdomain{} of bitwidth $\wt$ in $\tenv$ yields $\vb$.
+  \item determining whether the bitfields $\bfss$ are included in the bitfields $\bfst$ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item determining whether the \symbolicdomain{} of $\ws$ subsumes the \symbolicdomain{} of $\wt$ in $\tenv$ yields $\vb$.
   \end{itemize}
 
 \item \AllApplyCase{t\_array\_expr}

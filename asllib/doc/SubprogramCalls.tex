@@ -97,29 +97,30 @@ We also define helper functions via respective rules:
 \hypertarget{def-annotatecallactualstyped}{}
 The function
 \[
-  \begin{array}{r}
-  \annotatecallactualstyped(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\identifier}{\name} \aslsep
-    \overname{(\ty \times\expr \times \TSideEffectSet)^*}{\params} \aslsep
-    \overname{(\ty \times\expr)^*}{\typedargs} \aslsep
-    \overname{\subprogramtype}{\calltype}
-  ) \\ \aslto
+  \annotatecallactualstyped\left(
+    \begin{array}{c}
+      \overname{\staticenvs}{\tenv} \aslsep\\
+      \overname{\identifier}{\name} \aslsep\\
+      \overname{(\ty \times\expr \times \TSideEffectSet)^*}{\params} \aslsep\\
+      \overname{(\ty \times\expr)^*}{\typedargs} \aslsep\\
+      \overname{\subprogramtype}{\calltype}
+    \end{array}
+  \right) \aslto
+  \begin{array}{c}
   (\overname{\call}{\vcall} \aslsep
-  \overname{\langle \ty \rangle}{\rettyopt})
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
-\end{array}
+  \overname{\langle \ty \rangle}{\rettyopt})\\
+  \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+  \end{array}
 \]
 is similar to $\annotatecall$, except that it accepts annotated version of parameter/argument expressions as inputs (that is, pairs consisting of a type and an expression).
 \ProseOtherwiseTypeError
-
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
   \item applying $\unziplistthree$ to $\typedargs$ yields the corresponding list of types $\argtypes$,
         list of expressions $\args$, and a list of \sideeffectdescriptorsetsterm\ $\vsessargs$;
-  \item \Prosenonconflictingunion{$\vsessargs$}{$\vsesargs$};
+  \item \Prosenonconflictingunion{$\vsessargs$}{$\vsesargs$}\ProseOrError;
   \item applying $\subprogramforname$ to match $\name$ and $\argtypes$ in $\tenv$
         yields \\ $(\namep, \funcsig, \vsescall)$\ProseOrTypeError;
   \item define $\vses$ as the union of $\vsesargs$ and $\vsescall$;

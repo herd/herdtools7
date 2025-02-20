@@ -2359,7 +2359,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
         optional limit expression $\vlimit$;
   \item $\newtenv$ is $\tenv$ (notice that this means $\vindexname$ is only declared for annotating $\vbodyp$ but then goes
         out of scope);
-  \item \Prosenonconflictingunion{$\vsesblock$ and $\vsescond$}{$\vses$}.
+  \item \Prosenonconflictingunion{$\vsesblock$ and $\vsescond$}{$\vses$}\ProseOrError.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
@@ -3668,7 +3668,7 @@ Evaluating $\SUnreachable$ in an environment $\env$ results in a dynamic error i
 \begin{itemize}
   \item $\vs$ is a pragma statement with identifier $\id$ and expression list $\vargs$. that is, $\SPragma(\id, \vargs)$;
   \item for each \Proselistrange{$i$}{$\vargs$}, \Proseannotateexpr{$\tenv$}{$\vargs[i]$}{$(\Ignore, \Ignore, \vxs_i)$}\ProseOrTypeError;
-  \item define $\vsess$ as the list of $\vxs_i$m \Proselistrange{$i$}{$\vargs$};
+  \item define $\vsess$ as the list of $\vxs_i$, for every \Proselistrange{$i$}{$\vargs$};
   \item define $\news$ as the \passstatementterm, that is, $\SPass$
   \item $\newtenv$ is $\tenv$;
   \item \Prosenonconflictingunion{$\vsess$}{$\vses$}\ProseOrTypeError.

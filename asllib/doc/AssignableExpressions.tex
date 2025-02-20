@@ -748,7 +748,7 @@ The result is either the execution graph $\vg$ and new environment $\newenv$ or 
   \item \AllApplyCase{empty}
   \begin{itemize}
     \item both $\vlelist$ and $\vmlist$ are empty lists;
-    \item \Proseeqdef{$\newg$}{the empth \executiongraph};
+    \item \Proseeqdef{$\newg$}{the empty \executiongraph};
     \item \Proseeqdef{$\newenv$}{$\env$}.
   \end{itemize}
 
@@ -879,7 +879,7 @@ The result is the annotated assignable expression $\newle$ and
         $\wantedtindex$;
   \item determining whether $\tindexp$ \typesatisfies\ $\wantedtindex$ in $\tenv$ yields \\
         $\True$\ProseOrTypeError;
-  \item \Prosenonconflictingunion{$\vsesbase$ and $\vsesindex$}{$\vses$};
+  \item \Prosenonconflictingunion{$\vsesbase$ and $\vsesindex$}{$\vses$}\ProseOrError;
   \item \Proseeqdef{$\newle$}{
     an integer-based array update for $\ebasep$ at index $\eindexp$, that is, $\LESetArray(\ebasep, \eindexp)$,
     if $\size$ is an integer-typed array index, and
@@ -1034,7 +1034,7 @@ via \TypingRuleRef{LESetArray}.
   \item checking that the slices $\slicestwo$ are all disjoint yields $\True$\ProseOrTypeError;
   \item checking that $\slices$ is not empty yields $\True$\ProseTerminateAs{\BadSlices};
   \item $\newle$ is the slicing of $\vletwo$ by $\slicestwo$, that is, $\LESlice(\vletwo, \slicestwo)$;
-  \item \Prosenonconflictingunion{$\vsesone$ and $\vsestwo$}{$\vses$}.
+  \item \Prosenonconflictingunion{$\vsesone$ and $\vsestwo$}{$\vses$}\ProseOrError.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}

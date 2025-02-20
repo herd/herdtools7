@@ -514,7 +514,7 @@ the expression \texttt{3 DIV 0} results in a type error.
     \item \AllApplyCase{unordered}
     \begin{itemize}
       \item $\op$ is not one of $\BAND$, $\BOR$, or $\IMPL$;
-      \item \Prosenonconflictingunion{consisting of $\vsesone$ and $\vsestwo$}{$\vses$}.
+      \item \Prosenonconflictingunion{consisting of $\vsesone$ and $\vsestwo$}{$\vses$}\ProseOrError.
     \end{itemize}
   \end{itemize}
 \end{itemize}
@@ -1436,7 +1436,7 @@ the annotated expression $\newe$, and the inferred \sideeffectdescriptorterm\ $\
   \item applying $\typeofarraylength$ to $\size$, to obtain the type of the array length, yields
         $\wantedtindex$;
   \item checking that $\tindexp$ \typesatisfies\ $\wantedtindex$ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item \Prosenonconflictingunion{$\vsesindex$ and $\vsesbase$}{$\vses$};
+  \item \Prosenonconflictingunion{$\vsesindex$ and $\vsesbase$}{$\vses$}\ProseOrError;
   \item \Proseeqdef{$\newe$}{
     an access to an integer-indexed array for $\ebase$ and $\eindexp$, that is, $\EGetArray(\ebase, \eindexp)$ if $\size$ is an integer-typed array index,
     and an access to an enumeration-indexed array for $\ebase$ and $\eindexp$, that is,\\
@@ -2912,7 +2912,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   \item $\vt$ is $\tty$;
   \item define $\newe$ as the record expression with type $\tty$ and field initializers $\fieldsp$, that is, $\ERecord(\tty, \fieldsp)$;
   \item define $\vsess$ as the list of \sideeffectdescriptorsetsterm\ given by $\vxs_\name$ for each $\field$ element $(\name,\Ignore)$ of $\vfields$;
-  \item \Prosenonconflictingunion{$\vsess$}{$\vses$}.
+  \item \Prosenonconflictingunion{$\vsess$}{$\vses$}\ProseOrError.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
