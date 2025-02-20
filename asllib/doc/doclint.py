@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import List, Set
 import argparse
 import pathlib
+import pathlib
 
 cli_parser = argparse.ArgumentParser(prog="ASL Reference Linter")
 cli_parser.add_argument(
