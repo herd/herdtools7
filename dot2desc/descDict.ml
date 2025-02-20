@@ -127,6 +127,8 @@ let branching cond =
 
 let bcc_branching = "\\BccBranching{}"
 
+let exc_return = "\\ExcReturn{}"
+
 let fault name =
   Printf.sprintf "\\genericFault{%s}" name
 
