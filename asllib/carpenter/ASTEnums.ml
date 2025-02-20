@@ -324,6 +324,7 @@ module Make (C : Config.S) = struct
             return_type;
             subprogram_type;
             recurse_limit;
+            override = None;
             builtin = false;
           }
         |> annot;
@@ -411,6 +412,7 @@ module Make (C : Config.S) = struct
             return_type;
             subprogram_type;
             recurse_limit;
+            override = None;
             builtin = false;
           }
       in

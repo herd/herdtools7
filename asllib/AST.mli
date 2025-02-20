@@ -405,6 +405,11 @@ type subprogram_body =
   | SB_ASL of stmt  (** A normal body of a subprogram *)
   | SB_Primitive of bool  (** Whether or not this primitive is side-effecting *)
 
+type override_info =
+  | Impdef  (** A function which can be overridden *)
+  | Implementation
+      (** A function which overrides a corresponding [Impdef] function *)
+
 type func = {
   name : identifier;
   parameters : (identifier * ty option) list;
@@ -413,6 +418,7 @@ type func = {
   return_type : ty option;
   subprogram_type : subprogram_type;
   recurse_limit : expr option;
+  override : override_info option;
   builtin : bool;
       (** Builtin functions are treated specially when checking parameters at
           call sites - see [Typing.insert_stdlib_param]. *)

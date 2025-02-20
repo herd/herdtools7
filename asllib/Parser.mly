@@ -585,6 +585,10 @@ let recurse_limit := ioption(RECURSELIMIT; expr)
 let ignored_or_identifier :=
   | MINUS; { global_ignored () }
   | IDENTIFIER
+let override ==
+  ioption(
+    | IMPDEF; { Impdef }
+    | IMPLEMENTATION; { Implementation })
 
 let accessors :=
   | GETTER; getter=func_body;
@@ -597,7 +601,7 @@ let accessors :=
 let decl :=
   | d=annotated (
     (* Begin func_decl *)
-    | FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type; ~=recurse_limit; body=func_body;
+    | ~=override; FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type; ~=recurse_limit; body=func_body;
         {
           D_Func {
             name;
@@ -607,12 +611,13 @@ let decl :=
             return_type = Some return_type;
             subprogram_type = ST_Function;
             recurse_limit;
+            override;
             builtin = false;
           }
         }
     (* End *)
     (* Begin procedure_decl *)
-    | FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; body=func_body;
+    | ~=override; FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; body=func_body;
         {
           D_Func {
             name;
@@ -622,6 +627,7 @@ let decl :=
             return_type = None;
             subprogram_type = ST_Procedure;
             recurse_limit = None;
+            override;
             builtin = false;
           }
         }
@@ -653,9 +659,9 @@ let decl :=
       (* End *)
     )
   ); { [d] }
-  | ACCESSOR; name=IDENTIFIER; ~=params_opt; ~=func_args; BIARROW; ~=ty;
+  | ~=override; ACCESSOR; name=IDENTIFIER; ~=params_opt; ~=func_args; BIARROW; ~=ty;
     BEGIN; ~=accessors; end_semicolon;
-    { desugar_accessor_pair name params_opt func_args ty accessors }
+    { desugar_accessor_pair override name params_opt func_args ty accessors }
 
 (* Begin AST *)
 let spec := ~=terminated(list(decl), EOF); < List.concat >
@@ -673,6 +679,7 @@ let opn [@internal true] := body=stmt; EOF;
             return_type = None;
             subprogram_type = ST_Procedure;
             recurse_limit = None;
+            override = None;
             builtin = false;
           }
         |> ASTUtils.add_pos_from body

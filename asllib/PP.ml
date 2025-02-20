@@ -373,7 +373,15 @@ let pp_decl f =
     | { name = _; keyword = _; ty = None; initial_value = None } -> assert false
   in
   let pp_func_sig f
-      { name; args; return_type; parameters; subprogram_type; body = _ } =
+      {
+        name;
+        args;
+        return_type;
+        parameters;
+        subprogram_type;
+        body = _;
+        override;
+      } =
     let pp_args = pp_comma_list pp_typed_identifier in
     let pp_return_type_opt f = function
       | Some return_type -> fprintf f "@;<1 -2>=> %a" pp_ty return_type
@@ -388,24 +396,32 @@ let pp_decl f =
           in
           fprintf f "@ {%a}" (pp_comma_list pp_one) parameters
     in
+    let override_keyword =
+      match override with
+      | None -> ""
+      | Some Impdef -> "impdef "
+      | Some Implementation -> "implementation "
+    in
     match subprogram_type with
     | ST_Function | ST_Procedure ->
-        fprintf f "@[<hv 4>func @[%s%a@] (@,%a)%a@]" name pp_parameters
-          parameters pp_args args pp_return_type_opt return_type
+        fprintf f "@[<hv 4>%sfunc @[%s%a@] (@,%a)%a@]" override_keyword name
+          pp_parameters parameters pp_args args pp_return_type_opt return_type
     | ST_Getter ->
-        fprintf f "@[<hv 4>getter %s%a [@,%a]%a@]" name pp_parameters parameters
-          pp_args args pp_return_type_opt return_type
+        fprintf f "@[<hv 4>%sgetter %s%a [@,%a]%a@]" override_keyword name
+          pp_parameters parameters pp_args args pp_return_type_opt return_type
     | ST_EmptyGetter ->
-        fprintf f "@[<hv 4>getter %s%a@]" name pp_return_type_opt return_type
+        fprintf f "@[<hv 4>%sgetter %s%a@]" override_keyword name
+          pp_return_type_opt return_type
     | ST_Setter ->
         let new_v, args =
           match args with [] -> assert false | h :: t -> (h, t)
         in
-        fprintf f "@[<hv 4>setter %s%a [@,%a]@ = %a@]" name pp_parameters
-          parameters pp_args args pp_typed_identifier new_v
+        fprintf f "@[<hv 4>%ssetter %s%a [@,%a]@ = %a@]" override_keyword name
+          pp_parameters parameters pp_args args pp_typed_identifier new_v
     | ST_EmptySetter ->
         let new_v = match args with [ h ] -> h | _ -> assert false in
-        fprintf f "@[<hv 4>setter %s@ = %a]" name pp_typed_identifier new_v
+        fprintf f "@[<hv 4>%ssetter %s@ = %a]" override_keyword name
+          pp_typed_identifier new_v
   in
   let pp_body f = function
     | SB_ASL s -> pp_stmt f s
