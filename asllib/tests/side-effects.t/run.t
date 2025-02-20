@@ -321,3 +321,9 @@
   ASL Execution error: unexpected exception E thrown during the evaluation of
     the initialisation of the global storage element "X".
   [1]
+
+  $ aslref config-type-uses-let.asl
+  File config-type-uses-let.asl, line 2, characters 0 to 36:
+  ASL Typing error: expected constant-time expression, got 0 as integer {0..2},
+    which produces the following side-effects: [ReadsGlobal "X"].
+  [1]
