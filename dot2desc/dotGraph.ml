@@ -161,6 +161,8 @@ let tr_stmt acc stmt param_map =
       let branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(\([][,a-zA-Z0-9_\+:{}]+\)\(==\|!=\)\([][,a-zA-Z0-9_\+:{}]+\))|} in
       let branching_mte_tag = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(color)(tag(\([a-zA-Z0-9_\+]+\)), \([A-Z_]+[0-9]*\))|} in
       let branching_pte = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(PTE(\([a-zA-Z0-9_\+]+\)), \([A-Z_]+[0-9]*\))\((\([a-zA-Z0-9_,:&|() ]+\))\)?|} in
+      let any_active = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(AnyActive(\([A-Z_]+[0-9]*\)))|} in
+      let active_elem = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(ActiveElem(\([A-Z_]+[0-9]*\), \([0-9]+\)))|} in
       let branching_instr_cond = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)|} in
       let bcc_branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(bcc)|} in
       let fault = Str.regexp {|[a-zA-Z0-9_]*: Fault(\([a-zA-Z0-9_:,]*\))|} in
@@ -274,6 +276,19 @@ let tr_stmt acc stmt param_map =
         with Not_found -> "valid:1 && af:1" in
         let reg = pp_reg (Str.matched_group 2 value) in
         let cond = DescDict.pte_cond loc reg pred in
+        { Node.desc=f cond; kind=Node.Branching }
+      end
+      else if Str.string_match any_active value 0 then begin
+        let f = DescDict.branching in
+        let reg = Str.matched_group 1 value in
+        let cond = DescDict.any_active reg in
+        { Node.desc=f cond; kind=Node.Branching }
+      end
+      else if Str.string_match active_elem value 0 then begin
+        let f = DescDict.branching in
+        let reg = Str.matched_group 1 value in
+        let idx = Str.matched_group 2 value in
+        let cond = DescDict.active_elem reg idx in
         { Node.desc=f cond; kind=Node.Branching }
       end
       else if Str.string_match branching_instr_cond value 0 then begin
