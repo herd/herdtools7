@@ -247,9 +247,11 @@ class RuleBlock:
     AST_RULE = "AST"
     TYPING_RULE = "Typing"
     SEMANTICS_RULE = "Semantics"
+    GUIDE_RULE = "Guide"
+    CONVENTION_RULE = "Convention"
 
     rule_begin_pattern = re.compile(
-        r"\\(TypingRuleDef|SemanticsRuleDef|ASTRuleDef){(.*?)}"
+        r"\\(TypingRuleDef|SemanticsRuleDef|ASTRuleDef|ConventionDef|RequirementDef){(.*?)}"
     )
     end_patterns = [
         r"\\section{.*}",
@@ -261,10 +263,10 @@ class RuleBlock:
     rule_end_pattern = re.compile("|".join(end_patterns))
 
     def __init__(self, filename, file_lines: list[str], begin: int, end: int):
-        self.filename = filename
-        self.file_lines = file_lines
-        self.begin = begin
-        self.end = end
+        self.filename : str = filename
+        self.file_lines : list[str] = file_lines
+        self.begin : int = begin
+        self.end : int = end
 
         begin_line = file_lines[begin]
         name_match = re.match(RuleBlock.rule_begin_pattern, begin_line)
@@ -312,6 +314,8 @@ def check_rule_prose_formally_structure(rule_block: RuleBlock) -> List[str]:
     by a single Formally paragraph, returning a list of error messages
     for all errors found.
     """
+    if not rule_block.type in [RuleBlock.TYPING_RULE, RuleBlock.SEMANTICS_RULE]:
+        return []
     num_prose_paragraphs = 0
     num_formally_paragraphs = 0
     block_errors: List[str] = []
@@ -347,6 +351,9 @@ def check_rule_case_consistency(rule_block: RuleBlock) -> List[str]:
     Checks that the rule cases appearing in the Prose paragraph and Formally
     paragraph are equal and each paragraph does not contain duplicate cases.
     """
+    if not rule_block.type in [RuleBlock.TYPING_RULE, RuleBlock.SEMANTICS_RULE]:
+        return []
+
     prose_cases: Set[str] = set()
     formally_cases: Set[str] = set()
     prose_cases_pattern = re.compile(r".*\\AllApplyCase{(.*?)}")
@@ -394,6 +401,15 @@ def check_rule_has_example(rule_block: RuleBlock) -> List[str]:
     Every typing rule and semantics rule should provide or reference at least
     one example.
     """
+    if not rule_block.type in [
+        RuleBlock.TYPING_RULE,
+        RuleBlock.SEMANTICS_RULE,
+        RuleBlock.GUIDE_RULE,
+        RuleBlock.CONVENTION_RULE,
+    ]:
+        return []
+    if not rule_block.filename == 'RelationsOnTypes.tex':
+        return []
     example_found = False
     for line_number in range(rule_block.begin, rule_block.end + 1):
         line = rule_block.file_lines[line_number].strip()
@@ -407,17 +423,16 @@ def check_rule_has_example(rule_block: RuleBlock) -> List[str]:
 
 def check_rules(filename: str) -> int:
     r"""
-    Checks the AST/Typing/Semantics rules in 'filename'
+    Checks the AST/Typing/Semantics/Guide/Convention rules in 'filename'
     and returns the total number of errors.
     """
     checks = [
         check_rule_prose_formally_structure,
         # check_rule_case_consistency,
-        # check_rule_has_example,
+        check_rule_has_example,
     ]
     num_errors = 0
     rule_blocks: List[RuleBlock] = match_rules(filename)
-    rule_blocks = [rule_block for rule_block in rule_blocks if rule_block.type != RuleBlock.AST_RULE]
     global num_rules
     num_rules += len(rule_blocks)
     for rule_block in rule_blocks:

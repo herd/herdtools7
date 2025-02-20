@@ -675,10 +675,8 @@ checks whether the type $\vt$ is a \constrainedinteger. If so, the result is $\T
 \and
 \inferrule[unconstrained]{
   \astlabel(\vc) = \unconstrained \;\lor\; \astlabel(\vc) = \pendingconstrained
-}
-{
-  \checkconstrainedinteger(\tenv, \TInt(\vc)) \typearrow \\
-  \TypeErrorVal{\UnexpectedType}
+}{
+  \checkconstrainedinteger(\tenv, \TInt(\vc)) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \and
 \inferrule[conflicting\_type]{
@@ -688,18 +686,3 @@ checks whether the type $\vt$ is a \constrainedinteger. If so, the result is $\T
 }
 \end{mathpar}
 \CodeSubsection{\CheckConstrainedIntegerBegin}{\CheckConstrainedIntegerEnd}{../Typing.ml}
-
-\section{Constrained Types\label{sec:ConstrainedTypes}}
-\begin{itemize}
-  \item A \emph{constrained type} is a type whose definition is parameterized by an expression.
-        In ASL only integer types and bitvector types can be constrained.
-        An integer type with a non-empty list of constrained is referred to as a
-        \hypertarget{def-wellconstrainedintegertype}{\wellconstrainedintegertype}.
-  \item A type which is not constrained is \emph{unconstrained}.
-        Specifically, the \hypertarget{def-unconstrainedintegertype}{\unconstrainedintegertype}.
-  \item A constrained type with a non-empty constraint is \emph{well-constrained}.
-  \hypertarget{def-parameterizedintegertype}
-  \item A \hypertarget{def-pendingconstrainedintegertype}{\emph{\pendingconstrainedintegertype}} is an integer type whose constraints will be inferred during typechecking.
-  \item A \emph{\parameterizedintegertype} is an implicit type of a subprogram parameter.
-  \end{itemize}
-The widths of bitvector storage elements are constrained integers.

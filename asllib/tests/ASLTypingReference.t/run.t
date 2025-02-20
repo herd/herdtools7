@@ -73,6 +73,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.TEnumDecl.bad.asl, line 2, characters 0 to 49:
   ASL Typing error: cannot declare already declared element "RED".
   [1]
+  $ aslref --no-exec TypingRule.Subtype.asl
   $ aslref --no-exec TypingRule.GetVariableEnum.asl
   $ aslref TypingRule.TRecordDecl.asl
   $ aslref TypingRule.TExceptionDecl.asl
