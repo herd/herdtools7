@@ -33,7 +33,7 @@ cpdir () {
 }
 
 # Copy binaries
-dune install --prefix "${prefix}"
+dune install --only-packages herdtools7 --prefix "${prefix}"
 
 # Copy libfiles
 cpdir herd/libdir   "${libdir}/herd"
