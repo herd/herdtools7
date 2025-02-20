@@ -165,6 +165,7 @@ let tr_stmt acc stmt param_map =
       let active_elem = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(ActiveElem(\([A-Z_]+[0-9]*\), \([0-9]+\)))|} in
       let branching_instr_cond = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)|} in
       let bcc_branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(bcc)|} in
+      let exc_return = Str.regexp {|[a-zA-Z0-9_]*: ExcReturn|} in
       let fault = Str.regexp {|[a-zA-Z0-9_]*: Fault(\([a-zA-Z0-9_:,]*\))|} in
       let exc_entry = Str.regexp {|[a-zA-Z0-9_]*: ExcEntry(\([a-zA-Z0-9_:,]*\))|} in
       let empty = Str.regexp {|[a-zA-Z0-9_]*: \\|} in
@@ -306,6 +307,8 @@ let tr_stmt acc stmt param_map =
       end
       else if Str.string_match bcc_branching value 0 then
         { Node.desc=DescDict.bcc_branching; kind=Node.Branching }
+      else if Str.string_match exc_return value 0 then
+        { Node.desc=DescDict.exc_return; kind=Node.Branching }
       else if Str.string_match fault value 0 then begin
         let f = DescDict.fault in
         let name = get_fault_name value in

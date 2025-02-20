@@ -77,6 +77,7 @@ val branching: string -> string
 
 (* description *)
 val bcc_branching: string
+val exc_return: string
 
 (* name -> description *)
 val fault: string -> string
