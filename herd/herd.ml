@@ -19,6 +19,7 @@
 open Printf
 open Archs
 open Opts
+open OptNames
 
 (* Command line arguments *)
 let args = ref []
@@ -324,13 +325,11 @@ let options = [
         raise
           (Arg.Bad
              (sprintf "bad argument for option -edgeattr: '%s'" tag))),
-  "<label,attribute,value> specify an attribute for edges labelled by label";
+  "<label,attribute,value> specify an attribute for edges labelled by label";]
 (* Select input *)
-  CheckName.parse_names names ;
-  CheckName.parse_excl excl ;
+  @parse_noselect
 (* Change input *)
-  CheckName.parse_rename rename ;
-  ( "-kinds",
+  @[( "-kinds",
     Arg.String (fun s -> kinds := !kinds @ [s]),
     "<name> specify kind of tests (can be repeated)");
   ( "-conds",
@@ -392,6 +391,7 @@ let model,model_opts = match !model with
 | None -> None,ModelOption.default
 
 (* Check names, NB no select argument! *)
+
 module Verbose =
   struct let verbose = if !debug.Debug_herd.lexer  then !verbose else 0 end
 
@@ -402,7 +402,9 @@ module Check =
       let rename = !rename
       let select = []
       let names = !names
+      let oknames = !oknames
       let excl = !excl
+      let nonames = !nonames
     end)
 
 (* Read kinds/conds files *)

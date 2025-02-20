@@ -89,10 +89,9 @@ module Make(O:Opt) = struct
         Warn.user_error "%s operates on two log files" prog
 end
 
+open OptNames
+
 let verbose = ref 0
-let select = ref []
-let names = ref []
-let excl = ref []
 let pos = ref None
 let neg = ref None
 let quiet = ref false
@@ -113,11 +112,7 @@ let options =
    ("-neg",
      Arg.String (fun s -> neg := Some s),
     "<file> dump negative differences, default "^ (match !neg with None -> "don't dump" | Some s -> s));
-   CheckName.parse_select select;
-   CheckName.parse_names names;
-   CheckName.parse_excl excl;
-   CheckName.parse_faulttype faulttype;
- ]
+ ]@parse_withselect
 let logs = ref []
 
 
@@ -133,10 +128,12 @@ module Check =
   CheckName.Make
     (struct
       let verbose = !verbose
-      let rename = []
+      let rename = !rename
       let select = !select
       let names = !names
+      let oknames = !oknames
       let excl = !excl
+      let nonames = !nonames
     end)
 
 module M =

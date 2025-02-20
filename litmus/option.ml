@@ -151,9 +151,6 @@ let get_numeric_labels () = match !gas with
 let timeloop = ref (-1)
 let set_timeloop i = timeloop :=  i
 let kind = ref true
-let names = ref []
-let excl = ref []
-let rename = ref []
 let kinds = ref []
 let set_kinds s = kinds := !kinds @ [s]
 let conds = ref []

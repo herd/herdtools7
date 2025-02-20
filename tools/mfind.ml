@@ -19,23 +19,21 @@
 (*********************************************)
 
 open Printf
+open OptNames
 
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
   else "mfind"
 
 let args = ref []
-let names = ref []
-let excl = ref []
 let uniq = ref false
 let neg = ref false
 
 let () =
   Arg.parse
-    [CheckName.parse_names names ;
-     CheckName.parse_excl excl ;
-     "-u", Arg.Set uniq, " one source per matching sources";
-     "-neg", Arg.Set neg, " find sources whose names are not given";]
+    (OptNames.parse_noselect @
+    ["-u", Arg.Set uniq, " one source per matching sources";
+     "-neg", Arg.Set neg, " find sources whose names are not given";])
     (fun s -> args := s :: !args)
     (sprintf "Usage: %s [test]*" prog)
 
@@ -52,7 +50,9 @@ module Check =
       let rename = []
       let select = []
       let names = !names
+      let oknames = !oknames
       let excl = !excl
+      let nonames = !nonames
     end)
 
 let from_file name = name,Names.from_fname name

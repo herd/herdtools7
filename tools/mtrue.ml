@@ -123,7 +123,9 @@ let tar = ref None
 and verbose = ref 0
 and aarch64 = ref false
 let names = ref []
+let oknames = ref StringSet.empty
 let excl = ref []
+let nonames = ref StringSet.empty
 let set_tar x = tar := Some x
 let args = ref []
 
@@ -135,9 +137,11 @@ let opts =
     "<name> output to directory or tar file <name>" ;
     "-aarch64",
     Arg.Bool (fun b -> aarch64 := b),
-    sprintf "<bool> reduce tests for aarc64 (no deref, no sync) default %b" !aarch64;
+    sprintf "<bool> reduce tests for aarch64 (no deref, no sync) default %b" !aarch64;
     CheckName.parse_names names ;
+    CheckName.parse_oknames oknames ;
     CheckName.parse_excl excl ;
+    CheckName.parse_nonames nonames ;
   ]
 
 let prog =
@@ -158,7 +162,9 @@ let from_args =
         let rename = []
         let select = []
         let names = !names
+        let oknames = !oknames
         let excl = !excl
+        let nonames = !nonames
       end) in
   let module X =
     Make

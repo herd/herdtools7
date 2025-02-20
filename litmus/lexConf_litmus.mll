@@ -16,6 +16,7 @@
 
 {
 open Option
+open OptNames
 open Printf
 
 exception Error of string

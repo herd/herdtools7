@@ -77,11 +77,13 @@ module Make(Opt:Opt)(Out:OutTests.S) =
   end
 
 
+open OptNames
+
 let verbose = ref 0
 let tar = ref None
 let arg = ref []
 let hashes = ref []
-let names = ref []
+
 
 let set_list r c = r := !r @ [c]
 let set_tar x = tar := Some x
@@ -92,11 +94,9 @@ let prog =
   else "mrehash"
 
 let opts =
-  [ "-v",Arg.Unit (fun () -> incr verbose)," be verbose";
-    "-names",
-    Arg.String (set_list names),
-    "<name> select tests whose names are listed in file <name>";
-    "-hashes",Arg.String (set_list hashes), "<name> specify hashes";
+  [ "-v",Arg.Unit (fun () -> incr verbose)," be verbose";]
+  @parse_noselect
+  @["-hashes",Arg.String (set_list hashes), "<name> specify hashes";
     "-o", Arg.String set_tar,
     "<name> output to directory or tar file <name>" ;]
 
@@ -108,9 +108,17 @@ let () =
 
 let tests = List.rev !arg
 
-let names = match !names with
-| [] -> None
-| names -> Some (ReadNames.from_files names StringSet.add StringSet.empty)
+module Check =
+  CheckName.Make
+    (struct
+      let verbose = !verbose
+      let rename = !rename
+      let select = []
+      let names = !names
+      let oknames = !oknames
+      let excl = !excl
+      let nonames = !nonames
+    end)
 
 module LR = LexRename.Make(struct let verbose = !verbose end)
 let hashes = LR.read_from_files !hashes (fun s -> Some s)
@@ -121,12 +129,8 @@ let from_args =
     Make
       (struct
         let verbose = !verbose
-        let check_name = match names with
-        | None -> fun _ -> true
-        | Some names -> (fun name -> StringSet.mem name names)
-
+        let check_name = Check.ok
         let get_hash name = TblRename.find_value hashes name
-
       end) in
   match !tar with
   | None ->

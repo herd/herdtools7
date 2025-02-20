@@ -17,13 +17,10 @@
 
 open Printf
 open LogState
+open OptNames
 
 let verbose = ref 0
 let logs = ref []
-let select = ref []
-let names = ref []
-let rename = ref []
-let excl = ref []
 let npar = ref 1
 let hexa = ref false
 let int32 = ref true
@@ -33,18 +30,18 @@ let faulttype = ref true
 let options =
   let open CheckName in
   [
-  ("-q", Arg.Unit (fun _ -> verbose := -1),
-   "<non-default> be silent");
-  ("-v", Arg.Unit (fun _ -> incr verbose),
-   "<non-default> show various diagnostics, repeat to increase verbosity");
-  ("-j", Arg.Int (fun i -> npar := i),
-   (sprintf "<int> parallel sum using <n> processeses, default %i" !npar)) ;
-  ("-width", Arg.Int (fun i -> nargs := i),
-  (sprintf "<int>  merge width, when parallel sum enabled %i" !nargs)) ;
-   parse_hexa hexa; parse_int32 int32;
-   parse_rename rename;
-   parse_select select; parse_names names; parse_excl excl;
-   parse_faulttype faulttype;
+    ("-q", Arg.Unit (fun _ -> verbose := -1),
+     "<non-default> be silent");
+    ("-v", Arg.Unit (fun _ -> incr verbose),
+     "<non-default> show various diagnostics, repeat to increase verbosity");
+  ]@parse_withselect
+  @[
+    ("-j", Arg.Int (fun i -> npar := i),
+     (sprintf "<int> parallel sum using <n> processeses, default %i" !npar)) ;
+    ("-width", Arg.Int (fun i -> nargs := i),
+     (sprintf "<int>  merge width, when parallel sum enabled %i" !nargs)) ;
+    parse_hexa hexa; parse_int32 int32;
+    parse_faulttype faulttype;
  ]
 
 let prog =
@@ -67,7 +64,9 @@ let nargs = !nargs
 let select = !select
 let rename = !rename
 let names = !names
+let oknames_elts = StringSet.elements !oknames
 let excl = !excl
+let nonames_elts = StringSet.elements !nonames
 let verbose = !verbose
 let hexa = !hexa
 let int32 = !int32
@@ -83,14 +82,15 @@ let expn_opt opt xs k =
     xs k
 
 let par_opts =
-  expn_opt "-select" select
-    (expn_opt "-rename" rename
-       (expn_opt "-names" names
-          (expn_opt "-excl" excl [])))
+  expn_opt "-nonames" nonames_elts []
+  |> expn_opt "-excl" excl
+  |> expn_opt "-oknames" oknames_elts
+  |> expn_opt "-names" names
+  |> expn_opt "-select" select
+  |> expn_opt "-rename" rename
 
 (* Now handle the same options, which are to be
-   honored only when there are no recursive calls *)
-
+   activated only when there are no recursive calls *)
 
 module Check =
   CheckName.Make
@@ -99,7 +99,9 @@ module Check =
       let rename = rename
       let select = select
       let names = names
+      let oknames = !oknames
       let excl = excl
+      let nonames = !nonames
     end)
 
 let fnames = match !logs with

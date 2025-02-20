@@ -86,7 +86,9 @@ let tests = ref []
 let archs = ref []
 
 let names = ref []
+and oknames = ref StringSet.empty
 and excl = ref []
+and nonames = ref StringSet.empty
 and rename = ref []
 
 let prog =
@@ -100,8 +102,8 @@ let () =
      begin let module P = ParseTag.Make(Archs) in
      P.parse_fun
        "-arch" (fun a -> archs := !archs @ [a]) "select architecture, can be repeated" end ;
-     CheckName.parse_names names ;
-     CheckName.parse_excl excl ;
+     CheckName.parse_names names; CheckName.parse_oknames oknames;
+     CheckName.parse_excl excl; CheckName.parse_nonames nonames;
      CheckName.parse_rename rename ;
      "-ins", Arg.String (set_inter ins),
      sprintf "<inter> instruction count, default %s" (Interval.pp !ins);
@@ -117,7 +119,9 @@ module Check =
       let rename = []
       let select = []
       let names = !names
+      let oknames = !oknames
       let excl = !excl
+      let nonames = !nonames
     end)
 
 module X = Top

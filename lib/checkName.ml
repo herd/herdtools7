@@ -1,5 +1,5 @@
 (****************************************************************************)
-(*                           the diy toolsuite                              *)
+(*                           The Diy Toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
@@ -28,6 +28,10 @@ let parse_names names =
   Arg.String (fun s ->  names := !names @ [s]),
   "<name> specify file of names, can be repeated"
 
+let parse_oknames  oknames =
+  ArgUtils.parse_stringset "-oknames" oknames
+    "<name,...,name> names of tests to be selected"
+
 let parse_rename rename =
   "-rename", Arg.String (fun s -> rename := !rename @ [s]),
   "<name> specify a rename mapping, hashes are checked"
@@ -35,6 +39,10 @@ let parse_rename rename =
 let parse_excl excl =
   "-excl", Arg.String (fun s -> excl := !excl @ [s]),
   "<name> specify file of names to be excluded, can be repeated"
+
+let parse_nonames  nonames =
+  ArgUtils.parse_stringset "-nonames" nonames
+    "<name,...,name> names of tests to be excluded"
 
 let parse_hexa hexa =
   "-hexa", Arg.Bool (fun b -> hexa := b),
@@ -56,7 +64,9 @@ module
       val rename : string list
       val select : string list
       val names : string list
+      val oknames : StringSet.t
       val excl : string list
+      val nonames : StringSet.t
     end) =
   struct
 (******************)
@@ -75,13 +85,16 @@ module
 (******************)
 (* Name selection *)
 (******************)
+
     let names1 = match I.select with
-    | [] -> None
+    | [] ->
+        if StringSet.is_empty I.oknames then None
+        else Some I.oknames
     | args ->
         let names = Names.from_fnames (Misc.expand_argv args) in
         let names = List.rev_map rename names in
         let set = StringSet.of_list names in
-        Some set
+        Some (StringSet.union set I.oknames)
 
     let names2 = match I.names with
     | [] -> None
@@ -94,8 +107,8 @@ module
         Some set
 
 
-    let names_excl = match I.excl with
-    | [] -> None
+    let names_excl_files = match I.excl with
+    | [] -> StringSet.empty
     | args ->
         let names =
           List.fold_left
@@ -104,7 +117,9 @@ module
         let set = StringSet.of_list names in
         if I.verbose > 0 then
           Printf.eprintf "Excl {%s}\n" (StringSet.pp_str "," (fun s -> s) set) ;
-        Some set
+        set
+
+    let names_excl = StringSet.union names_excl_files I.nonames
 
     let names3 = match names1,names2 with
     | (None,ns)|(ns,None) -> ns
@@ -112,21 +127,17 @@ module
 
     let names = match names3 with
     | None -> None
-    | Some ns -> match names_excl with
-      | None -> names3
-      | Some e -> Some (StringSet.diff ns e)
+    | Some ns -> Some (StringSet.diff ns names_excl)
 
-    let ok = match names with
-    | None ->
-        begin match names_excl with
-        | None ->fun _ -> true
-        | Some e ->
-            if I.verbose > 0 then
-              fun n ->
-                let b = not (StringSet.mem n e) in
-                Printf.eprintf "Check %s -> %b\n" n b ;
-                b
-            else fun n -> not (StringSet.mem n e)
-        end
-    | Some ns -> fun n -> StringSet.mem n ns
+    let ok =
+      match names with
+      | None ->
+          let is_ok n = not (StringSet.mem n names_excl) in
+          if I.verbose > 0 then
+            fun n ->
+              let b = is_ok n in
+              Printf.eprintf "Check %s -> %b\n" n b ;
+              b
+          else is_ok
+      | Some ns -> fun n -> StringSet.mem n ns
   end

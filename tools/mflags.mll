@@ -63,24 +63,28 @@ let zyva name_ok fname = Misc.input_protect (zyva name_ok) fname
 
 
 let args = ref []
-let names = ref []
+open OptNames
 
 let () =
   Arg.parse
-    [
-     "-v", Arg.Unit (fun () -> verbose := true), "be verbose" ;
-     "-names", Arg.String (fun s -> names := !names @ [s]),
-     "<name> read name file";
-    ]
+      (("-v", Arg.Unit (fun () -> verbose := true), "be verbose")
+       ::parse_withselect)
     (fun s -> args := !args @ [s])
     "Usage: mflags [opts] log1 log2"
 
 (* Read names *)
-let name_ok = match !names with
-| [] -> fun _ -> true
-| names ->
-    let set = ReadNames.from_files names StringSet.add StringSet.empty in
-    fun n -> StringSet.mem n set
+(* Read names *)
+module Check =
+  CheckName.Make
+    (struct
+      let verbose = if !verbose then 1 else 0
+      let rename = !rename
+      let select = []
+      let names = !names
+      let oknames = !oknames
+      let excl = !excl
+      let nonames = !nonames
+    end)
 
 let flag name tst fs =
   printf "Only in %s, flags {%s}, test %s\n" name
@@ -100,8 +104,8 @@ let check name k1 k2 =
 
 let () = match !args with
 | [f1;f2;] ->
-    let k1 = zyva name_ok f1
-    and k2 = zyva name_ok f2 in
+    let k1 = zyva Check.ok f1
+    and k2 = zyva Check.ok f2 in
     check f1 k1 k2 ;
     check f2 k2 k1 ;
     exit 0

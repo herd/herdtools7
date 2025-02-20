@@ -1675,8 +1675,11 @@ included in double quotes~``\texttt{"}.''.
 \begin{description}
 \item[{\tt -names <file>}] Run \litmus{} only on tests whose names are
 listed in \texttt{<file>}.
-\item[{\tt -excl <file>}] Do not run \litmus{} on tests whose names are
+\item[{\tt -oknames <name,...,name>}] Run \litmus{} only on tests whose
+names are given as a comma-separated list.
+\item[{\tt -excl <file>}] Do \emph{not} run \litmus{} on tests whose names are
 listed in \texttt{<file>}.
+\item[{\tt -nonames <name,...,name>}] Do \emph{not} run \litmus{} on tests whose names are given as a comma-separated list.
 \item[{\tt -rename <file>}] Change test names.
 \item[{\tt -kinds <file>}] Change test kinds.
 This amounts to changing the quantifier of final conditions, with
@@ -2044,7 +2047,6 @@ equivalent to \opt{-affinity none}.
 test threads to logical processors.
 \end{enumerate}
 \item[{\tt -i <n>}] Alias for \opt{-affinity incr<n>}.
-
 \item[{\tt -barrier (userfence|tb)}]
 Set synchronisation mode. Default is \opt{userfence}.
 One may notice that this option offers less variety than
@@ -2055,10 +2057,13 @@ that those two setting are the most useful ones.
 
 \paragraph*{Change input}
 \begin{description}
-\item[{\tt -names <file>}] Run \litmus{} only on tests whose names are
+\item[{\tt -names <file>}] Run \klitmus{} only on tests whose names are
 listed in \texttt{<file>}.
-\item[{\tt -excl <file>}] Do not run \litmus{} on tests whose names are
+\item[{\tt -oknames <name,...,name>}] Run \klitmus{} only on tests whose
+names are given as a comma-separated list.
+\item[{\tt -excl <file>}] Do \emh{not} run \klitmus{} on tests whose names are
 listed in \texttt{<file>}.
+\item[{\tt -nonames <name,...,name>}] Do \emph{not} run \klitmus{} on tests whose names are given as a comma-separated list.
 \item[{\tt -rename <file>}] Change test names.
 \item[{\tt -rcu (yes|no|only)}]
 Accept or not tests that contain RCU (read-copy-update) primitives,

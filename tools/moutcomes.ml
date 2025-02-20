@@ -16,17 +16,14 @@
 
 
 open Printf
-
+open OptNames
 
 let verbose = ref 0
 let logs = ref []
-let rename = ref []
-let select = ref []
-let names = ref []
-let excl = ref []
 let hexa = ref false
 let int32 = ref true
 let faulttype = ref true
+
 let options =
   let open CheckName in
   [
@@ -36,12 +33,8 @@ let options =
    "<non-default> show various diagnostics, repeat to increase verbosity");
      parse_hexa hexa;
      parse_int32 int32;
-     parse_rename rename;
-     parse_select select;
-     parse_names names;
-     parse_excl excl;
      parse_faulttype faulttype;
-  ]
+  ]@parse_withselect
 
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
@@ -57,7 +50,9 @@ Options are:" prog)
 let rename = !rename
 let select = !select
 let names = !names
+let oknames = !oknames
 let excl = !excl
+let nonames = !nonames
 let verbose = !verbose
 let hexa = !hexa
 let int32 = !int32
@@ -82,7 +77,9 @@ module LL =
             let rename = rename
             let select = select
             let names = names
+            let oknames = oknames
             let excl = excl
+            let nonames = nonames
           end)
       let hexa = hexa
       let int32 = int32

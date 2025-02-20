@@ -19,6 +19,7 @@
 {
 open Printf
 open Opts
+open OptNames
 open LexMisc
 
 exception LocError of string
@@ -128,8 +129,12 @@ let handle_key main key arg = match key with
 (* Change input *)
 | "names" ->
     names := !names @ [arg]
+| "oknames" ->
+    lex_stringset oknames arg
 | "excl" ->
     excl := !excl @ [arg]
+| "nonames" ->
+    lex_stringset nonames arg
 | "rename" ->
     rename := !rename @ [arg]
 | "kinds" ->
