@@ -53,6 +53,8 @@ jobs:
 
       - run: opam exec -- make test DUNE_PROFILE=dev
 
+      - run: opam exec -- make install
+
       - run: opam install ocamlformat.0.26.2
         if: ${{ matrix.cfg.with-fmt }}
 
