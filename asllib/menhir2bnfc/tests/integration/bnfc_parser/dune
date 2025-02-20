@@ -1,0 +1,26 @@
+(rule
+ (target grammar.cf)
+ (deps
+  (:par %{workspace_root}/asllib/Parser.cmly))
+ (action
+  (run %{bin:menhir2bnfc} --with-lexer %{par} grammar.cf)))
+
+(rule
+ (targets AbsGrammar.ml LexGrammar.mll ParGrammar.mly)
+ (deps
+  (:gr grammar.cf))
+ (action
+  (run %{bin:bnfc} --ocaml-menhir %{gr})))
+
+(ocamllex LexGrammar)
+
+(menhir
+ (modules ParGrammar)
+ (flags --unused-tokens))
+
+(library
+ (name bnfc_parser)
+ (modules :standard)
+ (flags -w -33)
+ (optional)
+ (libraries menhir2bnfc_lib))

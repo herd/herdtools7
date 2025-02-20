@@ -1,0 +1,15 @@
+entrypoints Main;
+
+Main__Rule. Main ::= Expr EOL;
+
+Expr_Expr_Plus.  Expr ::= Expr PLUS Expr1;
+Expr_Expr_Minus. Expr ::= Expr MINUS Expr1;
+_.               Expr ::= Expr1;
+
+Expr_Expr_Times. Expr1 ::= Expr1 TIMES Expr2;
+Expr_Expr_Div.   Expr1 ::= Expr1 DIV Expr2;
+_.               Expr1 ::= Expr2;
+
+Expr_Int.    Expr2 ::= INT;
+Expr_Lparen. Expr2 ::= LPAREN Expr RPAREN;
+Expr_Minus.  Expr2 ::= MINUS Expr2;

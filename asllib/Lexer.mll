@@ -32,6 +32,261 @@ module type CONFIG = sig
     val allow_unknown : bool
 end
 
+let reserved_keywords = [
+    "SAMPLE";
+    "UNSTABLE";
+    "_"; "any";
+    "assume"; "assumes";
+    "call"; "cast";
+    "class"; "dict";
+    "endcase"; "endcatch"; "endclass";
+    "endevent"; "endfor"; "endfunc"; "endgetter";
+    "endif"; "endmodule"; "endnamespace"; "endpackage";
+    "endproperty"; "endrule"; "endsetter"; "endtemplate";
+    "endtry"; "endwhile";
+    "event"; "export";
+    "extends"; "extern"; "feature";
+    "gives";
+    "iff"; "implies"; "import";
+    "intersect"; "intrinsic";
+    "invariant"; "list";
+    "map"; "module"; "namespace"; "newevent";
+    "newmap"; "original";
+    "package"; "parallel";
+    "port"; "private";
+    "profile"; "property"; "protected"; "public";
+    "requires"; "rethrow"; "rule";
+    "shared"; "signal";
+    "template";
+    "typeof"; "union";
+    "using";
+    "ztype";
+]
+
+let is_reserved_keyword: string -> bool =
+  let tbl: (string, unit) Hashtbl.t = Hashtbl.create (List.length reserved_keywords) in
+  let () = List.iter (fun s -> Hashtbl.add tbl s ()) reserved_keywords in
+  fun s -> Hashtbl.mem tbl s
+
+(* Get a Tokens.token from the string name of the token.
+   A useful utility when working with cmly files.
+
+   Note that this set only contains simple enumerative types, not compound types
+
+   This function's exhaustivity is guaranteed by the test in tests/Lexer. *)
+let token_of_string =
+ let s t = Some t in
+ function
+ | "AND"                -> s AND
+ | "ARRAY"              -> s ARRAY
+ | "ARROW"              -> s ARROW
+ | "AS"                 -> s AS
+ | "ASSERT"             -> s ASSERT
+ | "BAND"               -> s BAND
+ | "BEGIN"              -> s BEGIN
+ | "BEQ"                -> s BEQ
+ | "BIT"                -> s BIT
+ | "BITS"               -> s BITS
+ | "BNOT"               -> s BNOT
+ | "BOOLEAN"            -> s BOOLEAN
+ | "BOR"                -> s BOR
+ | "CASE"               -> s CASE
+ | "CATCH"              -> s CATCH
+ | "COLON"              -> s COLON
+ | "COLON_COLON"        -> s COLON_COLON
+ | "COMMA"              -> s COMMA
+ | "CONFIG"             -> s CONFIG
+ | "CONSTANT"           -> s CONSTANT
+ | "DEBUG"              -> s DEBUG
+ | "DIV"                -> s DIV
+ | "DIVRM"              -> s DIVRM
+ | "DO"                 -> s DO
+ | "DOT"                -> s DOT
+ | "DOWNTO"             -> s DOWNTO
+ | "ELSE"               -> s ELSE
+ | "ELSIF"              -> s ELSIF
+ | "END"                -> s END
+ | "ENUMERATION"        -> s ENUMERATION
+ | "EOF"                -> s EOF
+ | "EOR"                -> s EOR
+ | "EQ"                 -> s EQ
+ | "EQ_OP"              -> s EQ_OP
+ | "EXCEPTION"          -> s EXCEPTION
+ | "FOR"                -> s FOR
+ | "FUNC"               -> s FUNC
+ | "GEQ"                -> s GEQ
+ | "GETTER"             -> s GETTER
+ | "GT"                 -> s GT
+ | "IF"                 -> s IF
+ | "IMPL"               -> s IMPL
+ | "IN"                 -> s IN
+ | "INTEGER"            -> s INTEGER
+ | "LBRACE"             -> s LBRACE
+ | "LBRACKET"           -> s LBRACKET
+ | "LEQ"                -> s LEQ
+ | "LET"                -> s LET
+ | "LOOPLIMIT"          -> s LOOPLIMIT
+ | "LPAR"               -> s LPAR
+ | "LT"                 -> s LT
+ | "MINUS"              -> s MINUS
+ | "MOD"                -> s MOD
+ | "MUL"                -> s MUL
+ | "NEQ"                -> s NEQ
+ | "NOT"                -> s NOT
+ | "OF"                 -> s OF
+ | "OR"                 -> s OR
+ | "OTHERWISE"          -> s OTHERWISE
+ | "PASS"               -> s PASS
+ | "PLUS"               -> s PLUS
+ | "PLUS_COLON"         -> s PLUS_COLON
+ | "POW"                -> s POW
+ | "PRAGMA"             -> s PRAGMA
+ | "PRINTLN"            -> s PRINTLN
+ | "PRINT"              -> s PRINT
+ | "RBRACE"             -> s RBRACE
+ | "RBRACKET"           -> s RBRACKET
+ | "RDIV"               -> s RDIV
+ | "REAL"               -> s REAL
+ | "RECORD"             -> s RECORD
+ | "RECURSELIMIT"       -> s RECURSELIMIT
+ | "REPEAT"             -> s REPEAT
+ | "RETURN"             -> s RETURN
+ | "RPAR"               -> s RPAR
+ | "STAR_COLON"         -> s STAR_COLON
+ | "SEMI_COLON"         -> s SEMI_COLON
+ | "SETTER"             -> s SETTER
+ | "SHL"                -> s SHL
+ | "SHR"                -> s SHR
+ | "SLICING"            -> s SLICING
+ | "STRING"             -> s STRING
+ | "SUBTYPES"           -> s SUBTYPES
+ | "THEN"               -> s THEN
+ | "THROW"              -> s THROW
+ | "TO"                 -> s TO
+ | "TRY"                -> s TRY
+ | "TYPE"               -> s TYPE
+ | "ARBITRARY"          -> s ARBITRARY
+ | "UNREACHABLE"        -> s UNREACHABLE
+ | "UNTIL"              -> s UNTIL
+ | "VAR"                -> s VAR
+ | "WHEN"               -> s WHEN
+ | "WHERE"              -> s WHERE
+ | "WHILE"              -> s WHILE
+ | "WITH"               -> s WITH
+ | "LLBRACKET"          -> s LLBRACKET
+ | "RRBRACKET"          -> s RRBRACKET
+ | _ -> None
+
+(** Convert a lexical token to the symbol it lexes *)
+let token_to_symbol = function
+  | BNOT               -> "!"
+  | COMMA              -> ","
+  | LT                 -> "<"
+  | SHR                -> ">>"
+  | BAND               -> "&&"
+  | IMPL               -> "-->"
+  | SHL                -> "<<"
+  | RBRACKET           -> "]"
+  | RRBRACKET          -> "]]"
+  | RPAR               -> ")"
+  | SLICING            -> ".."
+  | EQ                 -> "="
+  | LBRACE             -> "{"
+  | NEQ                -> "!="
+  | MINUS              -> "-"
+  | BEQ                -> "<->"
+  | LBRACKET           -> "["
+  | LLBRACKET          -> "[["
+  | LPAR               -> "("
+  | DOT                -> "."
+  | LEQ                -> "<="
+  | POW                -> "^"
+  | MUL                -> "*"
+  | RDIV               -> "/"
+  | EQ_OP              -> "=="
+  | BOR                -> "||"
+  | PLUS               -> "+"
+  | COLON              -> ":"
+  | ARROW              -> "=>"
+  | RBRACE             -> "}"
+  | COLON_COLON        -> "::"
+  | GT                 -> ">"
+  | PLUS_COLON         -> "+:"
+  | STAR_COLON         -> "*:"
+  | SEMI_COLON         -> ";"
+  | GEQ                -> ">="
+  (* Keywords *)
+  | AND                -> "AND"
+  | ARRAY              -> "array"
+  | AS                 -> "as"
+  | ASSERT             -> "assert"
+  | BEGIN              -> "begin"
+  | BIT                -> "bit"
+  | BITS               -> "bits"
+  | BOOLEAN            -> "boolean"
+  | CASE               -> "case"
+  | CATCH              -> "catch"
+  | CONFIG             -> "config"
+  | CONSTANT           -> "constant"
+  | DIV                -> "DIV"
+  | DIVRM              -> "DIVRM"
+  | DO                 -> "do"
+  | DOWNTO             -> "downto"
+  | ELSE               -> "else"
+  | ELSIF              -> "elsif"
+  | END                -> "end"
+  | ENUMERATION        -> "enumeration"
+  | EOR                -> "XOR"
+  | EXCEPTION          -> "exception"
+  | FOR                -> "for"
+  | FUNC               -> "func"
+  | GETTER             -> "getter"
+  | IF                 -> "if"
+  | IN                 -> "IN"
+  | INTEGER            -> "integer"
+  | LET                -> "let"
+  | LOOPLIMIT          -> "looplimit"
+  | MOD                -> "MOD"
+  | NOT                -> "NOT"
+  | OF                 -> "of"
+  | OR                 -> "OR"
+  | OTHERWISE          -> "otherwise"
+  | PASS               -> "pass"
+  | PRAGMA             -> "pragma"
+  | PRINTLN            -> "println"
+  | PRINT              -> "print"
+  | REAL               -> "real"
+  | RECORD             -> "record"
+  | RECURSELIMIT       -> "recurselimit"
+  | REPEAT             -> "repeat"
+  | RETURN             -> "return"
+  | SETTER             -> "setter"
+  | STRING             -> "string"
+  | SUBTYPES           -> "subtypes"
+  | THEN               -> "then"
+  | THROW              -> "throw"
+  | TO                 -> "to"
+  | TRY                -> "try"
+  | TYPE               -> "type"
+  | ARBITRARY          -> "ARBITRARY"
+  | UNREACHABLE        -> "Unreachable"
+  | UNTIL              -> "until"
+  | VAR                -> "var"
+  | WHEN               -> "when"
+  | WHERE              -> "where"
+  | WHILE              -> "while"
+  | WITH               -> "with"
+  | BOOL_LIT _
+  | INT_LIT _
+  | REAL_LIT _
+  | STRING_LIT _
+  | BITVECTOR_LIT _
+  | MASK_LIT _
+  | IDENTIFIER _
+  | EOF
+  | DEBUG -> assert false (* Complex tokens *)
+
+
 module Make (Config : CONFIG) = struct
 
 exception LexerError
@@ -120,33 +375,7 @@ let tr_name s = match s with
 | "while"         -> WHILE
 | "with"          -> WITH
 (* Reserved identifiers *)
-| "SAMPLE" | "UNSTABLE"
-| "_" | "any"
-| "assume" | "assumes"
-| "call" | "cast"
-| "class" | "dict"
-| "endcase" | "endcatch" | "endclass"
-| "endevent" | "endfor" | "endfunc" | "endgetter"
-| "endif" | "endmodule" | "endnamespace" | "endpackage"
-| "endproperty" | "endrule" | "endsetter" | "endtemplate"
-| "endtry" | "endwhile"
-| "event" | "export"
-| "extends" | "extern" | "feature"
-| "gives"
-| "iff" | "implies" | "import"
-| "intersect" | "intrinsic"
-| "invariant" | "list"
-| "map" | "module" | "namespace" | "newevent"
-| "newmap" | "original"
-| "package" | "parallel"
-| "port" | "private"
-| "profile" | "property" | "protected" | "public"
-| "requires" | "rethrow" | "rule"
-| "shared" | "signal"
-| "template"
-| "typeof" | "union"
-| "using"
-| "ztype" -> reserved_err s
+| x when is_reserved_keyword x -> reserved_err x
 | x when not Config.allow_double_underscore
          && ASTUtils.string_starts_with ~prefix:"__" x -> reserved_err x
 (* End of reserved identifiers *)
@@ -157,7 +386,7 @@ let digit = ['0'-'9']
 let int_lit = digit ('_' | digit)*
 let hex_alpha = ['a'-'f' 'A'-'F']
 let hex_lit = '0' 'x' (digit | hex_alpha) ('_' | digit | hex_alpha)*
-let real_lit = digit ('_' | digit)* '.' digit ('_' | digit)*
+let real_lit = int_lit '.' int_lit
 let alpha = ['a'-'z' 'A'-'Z']
 let string_lit = '"' [^ '"']* '"'
 let bits = ['0' '1' ' ']*

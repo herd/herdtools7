@@ -6,3 +6,4 @@ begin
   let - = a + b - c;
 
   return 0;
+end;

@@ -344,6 +344,10 @@ diy-test-aarch64:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diycross7 tests: OK"
 
+test-bnfc:
+	@ echo
+	dune build @bnfc_test
+	@ echo "BNFC tests: OK"
 
 ### CATALOGUE testing, catalogue must be here
 CATATEST := $(shell if test -d catalogue; then echo cata-test; fi)

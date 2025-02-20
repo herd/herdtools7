@@ -1,0 +1,6 @@
+(lang dune 2.7)
+(name menhir2bnfc)
+(using menhir 2.0)
+(cram enable)
+(package
+ (name menhir2bnfc))

@@ -14,7 +14,7 @@
 (menhir
  (modules Tokens Parser)
  (merge_into Parser)
- (flags --external-tokens Tokens))
+ (flags --cmly --external-tokens Tokens))
 
 (menhir
  (modules Parser0)
