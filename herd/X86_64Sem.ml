@@ -62,7 +62,7 @@ module
         let ac = Act.access_of_location_std loc in
         Act.Access (Dir.R, loc, v, an, (), sz, ac)
 
-      let read_loc sz is_d = M.read_loc is_d (mk_read sz X86_64.Plain)
+      let read_loc sz is_addr = M.read_loc is_addr (mk_read sz X86_64.Plain)
 
       let plain = X86_64.Plain
       and atomic = X86_64.Atomic
@@ -95,15 +95,15 @@ module
            | I_CMPXCHG (sz, _, _) | I_CMOVC (sz, _, _)
            | I_MOVNTI (sz,_,_) | I_MOVD (sz,_,_) -> sz
 
-      let read_reg is_data r ii =
-        if is_data then
-          match r with
-          | X86_64.Ireg (_, p) ->
-             let sz = reg_size_to_mach_size p in
-             read_loc sz is_data (A.Location_reg (ii.A.proc,r)) ii >>= mask_from_reg_part p
-          | _ -> read_loc nat_sz is_data (A.Location_reg (ii.A.proc,r)) ii
-        else
-          read_loc nat_sz is_data (A.Location_reg (ii.A.proc,r)) ii
+      let read_reg is_addr r ii =
+        match r with
+        | X86_64.Ireg (_, p) ->
+            let sz = reg_size_to_mach_size p in
+            read_loc sz is_addr
+              (A.Location_reg (ii.A.proc,r)) ii >>= mask_from_reg_part p
+        | _ ->
+            read_loc nat_sz is_addr (A.Location_reg (ii.A.proc,r)) ii
+
 
       let read_mem sz _data an a ii =
         let data = false in
@@ -186,19 +186,19 @@ module
         | X86_64.Effaddr_rm64 (X86_64.Rm64_reg r)->
            M.unitT (X86_64.Location_reg (ii.A.proc,r))
         | X86_64.Effaddr_rm64 (X86_64.Rm64_deref (r,o)) ->
-           read_reg false r ii >>=
+           read_reg true r ii >>=
              fun v -> M.add v (V.intToV o) >>=
              fun vreg -> M.unitT (X86_64.Location_global vreg)
         | X86_64.Effaddr_rm64 (X86_64.Rm64_scaled (o1,r1,r2,o2)) ->
-           (read_reg false r1 ii >>= fun v -> M.add v (V.intToV o1)) >>|
-           (read_reg false r2 ii >>= fun v ->M.op Op.Mul v (V.intToV o2))
+           (read_reg true r1 ii >>= fun v -> M.add v (V.intToV o1)) >>|
+           (read_reg true r2 ii >>= fun v ->M.op Op.Mul v (V.intToV o2))
           >>= fun (vreg,a) -> M.add vreg a
           >>= fun vreg -> M.unitT (X86_64.Location_global vreg)
         | X86_64.Effaddr_rm64 (X86_64.Rm64_abs v)->
            M.unitT (X86_64.maybev_to_location v)
 
       let rval_ea sz locked ea ii =
-        lval_ea ea ii >>= fun loc -> read_loc_gen sz true locked loc ii
+        lval_ea ea ii >>= fun loc -> read_loc_gen sz false locked loc ii
 
       let rval_op sz locked op ii = match op with
         | X86_64.Operand_effaddr ea  -> rval_ea sz locked ea ii
@@ -249,7 +249,8 @@ module
           | (A.I_MOV|A.I_CMP) -> assert false in
         (lval_ea ea ii >>=
            fun loc ->
-           M.addT loc (read_loc_gen sz true locked loc ii) >>| rval_op sz locked op ii)
+           M.addT loc (read_loc_gen sz true locked loc ii)
+           >>| rval_op sz locked op ii)
         >>=
           fun ((loc,v_ea),v_op) ->
           M.op o v_ea v_op >>=
@@ -289,7 +290,7 @@ module
           match ii.A.inst with
           | X86_64.I_NOP -> B.nextT
           | X86_64.I_RET as i when C.variant Variant.Telechat ->
-            read_reg true X86_64.RIP ii
+            read_reg false X86_64.RIP ii
             >>= do_indirect_jump test [] i
           | X86_64.I_EFF_OP (X86_64.I_CMP, sz, ea, op) ->
              let sz = inst_size_to_mach_size sz in
@@ -304,7 +305,7 @@ module
 (* TODO add NTI annotation, at movnti is an ordinary store *)
           | X86_64.I_MOVNTI (sz,ea,r) ->
               let sz = inst_size_to_mach_size sz in
-              (lval_ea ea ii >>| read_reg true r ii) >>=
+              (lval_ea ea ii >>| read_reg false r ii) >>=
               fun (loc,v) ->
               write_loc_gen sz X86_64.NonTemporal loc v ii >>= B.next1T
           | X86_64.I_EFF_OP (x86_op, sz, ea, op) ->
@@ -319,8 +320,9 @@ module
           | X86_64.I_EFF (inst, sz, ea) ->
              let sz = inst_size_to_mach_size sz in
              lval_ea ea ii >>=
-               fun loc -> read_loc_gen sz true locked loc ii >>=
-               fun v -> begin
+               fun loc -> read_loc_gen sz false locked loc ii >>=
+               fun v ->
+                 begin
                    if inst = X86_64.I_DEC
                    then M.op Op.Sub v V.one
                    else M.add v V.one

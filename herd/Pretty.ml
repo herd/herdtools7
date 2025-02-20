@@ -1085,8 +1085,8 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       let act = pp_action e in
       let act =
         if PC.verbose > 0 then begin
-          if E.EventSet.mem e es.E.data_ports then
-            act ^ " (data)"
+          if E.EventSet.mem e es.E.addr_ports then
+            act ^ " (addr)"
           else if E.EventSet.mem e es.E.success_ports then
             act ^ " (success)"
           else act
@@ -1099,7 +1099,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
               (pp_node_eiid e) (pp_node_eiid_label e)
               (escape_label dm act)
               (if is_ghost then " (ghost)" else "")
-              (if E.EventSet.mem e es.E.data_ports then " (data)" else "")
+              (if E.EventSet.mem e es.E.addr_ports then " (addr)" else "")
               pp_node_ii e.E.iiid
               (pp_instruction dm m) e.E.iiid
 

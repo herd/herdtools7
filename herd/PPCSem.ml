@@ -57,11 +57,12 @@ module
         let ac = Act.access_of_location_std loc in
         Act.Access (Dir.R, loc, v, ato, (), sz, ac)
 
-      let read_reg is_data r ii =
-        M.read_loc is_data (mk_read nat_sz false) (A.Location_reg (ii.A.proc,r)) ii
+      let read_reg is_addr r ii =
+        M.read_loc is_addr (mk_read nat_sz false) (A.Location_reg (ii.A.proc,r)) ii
 
-      let read_reg_data = read_reg true
+      let read_reg_data = read_reg false
       and read_reg_ord = read_reg false
+      and read_reg_addr = read_reg true
 
       let do_read_mem sz ato a ii =
         if mixed then
@@ -118,11 +119,11 @@ module
       let read_addr a ii = read_mem a ii
       let read_addr_res a ii = read_mem_atomic a ii
 
-      let read_reg_or_zero is_data r ii = match r with
+      let read_reg_or_zero_addr r ii = match r with
       | PPC.Ireg PPC.GPR0 ->
           M.unitT V.zero
       | _ ->
-          read_reg is_data r ii
+          read_reg true r ii
 
 (**********************)
 (* Condition register *)
@@ -371,20 +372,20 @@ module
               fun v -> write_reg rA v ii >>= B.next1T
 (* memory loads/stores *)
           | PPC.Pload(sz,rD,d,rA) ->
-              read_reg_ord rA ii >>=
+              read_reg_addr rA ii >>=
               fun aA ->
                 M.add aA (V.intToV d) >>=
                 fun a ->
                   read_addr sz a ii >>=
                   fun v -> write_reg rD v ii >>= B.next1T
           | PPC.Plwa(rD,d,rA) ->
-              read_reg_ord rA ii >>= fun aA ->
+              read_reg_addr rA ii >>= fun aA ->
               M.add aA (V.intToV d) >>= fun a ->
               read_addr Word a ii >>=
               M.op1 (Op.Sxt Word) >>= fun v ->
               write_reg rD v ii >>= B.next1T
           | PPC.Plwzu (rD,d,rA) ->
-              read_reg_ord rA ii >>=
+              read_reg_addr rA ii >>=
               fun aA ->
                 M.add aA (V.intToV d) >>=
                 (fun a ->
@@ -394,7 +395,7 @@ module
                   else load >>= B.next1T)
           | PPC.Plwax(sz,rD,rA,rB)
           | PPC.Ploadx(sz,rD,rA,rB) as i ->
-              (read_reg_or_zero false rA ii >>| read_reg_ord rB ii) >>=
+              (read_reg_or_zero_addr rA ii >>| read_reg_addr rB ii) >>=
               fun (aA,aB) ->
                 M.add aA aB >>=
                 fun a ->
@@ -404,7 +405,7 @@ module
                    | _ -> M.unitT) >>=
                   fun v -> write_reg rD v ii >>= B.next1T
           | PPC.Pstore(sz,rS,d,rA) ->
-              (read_reg_data rS ii >>| read_reg_ord rA ii) >>=
+              (read_reg_data rS ii >>| read_reg_addr rA ii) >>=
               (fun (vS,aA) ->
                 M.add aA (V.intToV d) >>=
                 fun a -> write_addr sz a vS ii >>= B.next1T)
@@ -412,11 +413,11 @@ module
               if rA <> PPC.r0 then
                 M.stu
                   (read_reg_data rS ii)
-                  (read_reg_ord rA ii >>= fun a -> M.add a (V.intToV d))
+                  (read_reg_addr rA ii >>= fun a -> M.add a (V.intToV d))
                   (fun a -> write_reg rA a ii)
                   (fun (vS,a) -> write_addr Word a vS ii) >>= B.next1T
               else
-                (read_reg_data rS ii >>| read_reg_ord rA ii) >>=
+                (read_reg_data rS ii >>| read_reg_addr rA ii) >>=
                 (fun (vS,aA) ->
                   M.add aA (V.intToV d) >>=
                   fun a -> write_addr Word a vS ii >>= B.next1T)
@@ -424,13 +425,13 @@ module
           | PPC.Pstorex(sz,rS,rA,rB) ->
               (read_reg_data rS ii
                  >>| (* Enforce right associativity of >>| *)
-                 (read_reg_or_zero false rA ii
-                    >>| read_reg_ord rB ii)) >>=
+                 (read_reg_or_zero_addr rA ii
+                    >>| read_reg_addr rB ii)) >>=
               (fun (vS,(aA,aB)) ->
                 M.add aA aB  >>=
                 fun a -> write_addr sz a vS ii >>= B.next1T)
           | PPC.Plwarx(rD,rA,rB) ->
-              (read_reg_or_zero false rA ii >>| read_reg_ord rB ii) >>=
+              (read_reg_or_zero_addr rA ii >>| read_reg_addr rB ii) >>=
               fun (aA,aB) ->
                 M.add aA aB >>=
                 (fun a ->
@@ -439,9 +440,9 @@ module
                   >>= fun (((),()),()) -> B.nextT
           | PPC.Pstwcx(rS,rA,rB) ->
               ((read_reg_data rS ii >>|
-              read_reg_data PPC.RES ii >>| read_reg_data PPC.RESADDR ii)
+              read_reg_ord PPC.RES ii >>| read_reg_ord PPC.RESADDR ii)
                  >>| (* Enforce right associativity of >>| *)
-                 (read_reg_or_zero false rA ii >>| read_reg_ord rB ii)) >>=
+                 (read_reg_or_zero_addr rA ii >>| read_reg_addr rB ii)) >>=
               fun (((vS,vR),aR),(aA,aB)) ->
                 M.add aA aB  >>=
                 fun a ->

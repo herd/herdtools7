@@ -1,0 +1,12 @@
+Test T10 Allowed
+States 3
+0:$2=0; 1:$2=0;
+0:$2=0; 1:$2=1;
+0:$2=1; 1:$2=0;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:$2=1 /\ 1:$2=1)
+Observation T10 Never 0 3
+Hash=358d2bf2d74ab7847519c1aa615460c7
+

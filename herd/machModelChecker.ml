@@ -459,8 +459,8 @@ module Make
       let m =
         let spec = conc.S.str.E.speculated in
         let is_spec = (fun e -> E.EventSet.mem e spec) in
-        let data_ports = conc.S.str.E.data_ports in
-        let is_data_port = (fun e -> E.EventSet.mem e data_ports) in
+        let addr_ports = conc.S.str.E.addr_ports in
+        let is_addr_port = (fun e -> E.EventSet.mem e addr_ports) in
         let are_memtypes =
           let module MT = S.A.MemType in
           let mts = MT.parse test.Test_herd.info in
@@ -501,8 +501,7 @@ module Make
                  "F", E.is_barrier;
                  "Rreg", E.is_reg_load_any;
                  "Wreg", E.is_reg_store_any;
-                 "DATA", is_data_port;
-                 "NDATA", (fun e -> not (is_data_port e));])) in
+                 "ADDR", is_addr_port;])) in
       let m =
         if kvm then begin
             let attrs_of_evt e =

@@ -1,0 +1,4 @@
+#CAS tests yield the same outcomes but less execution candidates...
+CAS02
+#No mix size for this tests with addresses in memory
+ADDRDEP03
