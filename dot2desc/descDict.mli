@@ -62,6 +62,12 @@ val pte_cond: string -> string -> string -> string
 (* condition -> description *)
 val instr_cond: string -> string
 
+(* register -> description *)
+val any_active: string -> string
+
+(* register -> index -> description *)
+val active_elem: string -> string -> string
+
 (* lhs -> rhs -> description *)
 val eq_contents: string -> string -> string
 val neq_contents: string -> string -> string
