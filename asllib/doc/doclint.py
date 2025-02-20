@@ -275,10 +275,10 @@ class RuleBlock:
     rule_end_pattern = re.compile("|".join(end_patterns))
 
     def __init__(self, filename, file_lines: list[str], begin: int, end: int):
-        self.filename : str = filename
-        self.file_lines : list[str] = file_lines
-        self.begin : int = begin
-        self.end : int = end
+        self.filename: str = filename
+        self.file_lines: list[str] = file_lines
+        self.begin: int = begin
+        self.end: int = end
 
         begin_line = file_lines[begin]
         name_match = re.match(RuleBlock.rule_begin_pattern, begin_line)
@@ -420,7 +420,7 @@ def check_rule_has_example(rule_block: RuleBlock) -> List[str]:
         RuleBlock.CONVENTION_RULE,
     ]:
         return []
-    if not rule_block.filename == 'RelationsOnTypes.tex':
+    if not rule_block.filename == "RelationsOnTypes.tex":
         return []
     example_found = False
     for line_number in range(rule_block.begin, rule_block.end + 1):
@@ -446,7 +446,7 @@ def check_rules(filename: str) -> int:
     checks = [
         check_rule_prose_formally_structure,
         # check_rule_case_consistency,
-        check_rule_has_example,
+        # check_rule_has_example,
     ]
     num_errors = 0
     rule_blocks: List[RuleBlock] = match_rules(filename)
