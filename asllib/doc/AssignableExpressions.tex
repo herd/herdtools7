@@ -1230,7 +1230,7 @@ ranges $(\vsone, \vlone)$ and $(\vstwo, \vltwo)$ do not intersect, yielding $\Tr
 \section{Structured Type Field Assignment Expressions\label{sec:StructuredTypeFieldAssignmentExpressions}}
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\lexpr \derives\ & \LESetField(\lexpr \identifier) &
+\lexpr \derives\ & \LESetField(\lexpr, \identifier) &
 \end{flalign*}
 
 \subsection{Typing}
@@ -1294,7 +1294,7 @@ ranges $(\vsone, \vlone)$ and $(\vstwo, \vltwo)$ do not intersect, yielding $\Tr
 \section{Structured Type Multi-field Assignment Expressions\label{sec:StructuredTypeMultiFieldAssignmentExpressions}}
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\lexpr \derives\ & \LESetFields(\lexpr \identifier^*) &
+\lexpr \derives\ & \LESetFields(\lexpr, \identifier^*) &
 \end{flalign*}
 
 \subsection{Typing}

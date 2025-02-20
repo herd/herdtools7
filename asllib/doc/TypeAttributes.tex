@@ -131,11 +131,11 @@ omitted in type declarations, as is the case for \texttt{Not\_found}.
 \hypertarget{def-isbuiltin}{}
 The predicate
 \[
-  \isbuiltin(\overname{\ty}{\tty}) \;\aslto\; \Bool
+  \isbuiltin(\overname{\ty}{\tty}) \;\aslto\; \overname{\Bool}{\vb}
 \]
-tests whether the type $\tty$ is a \emph{builtin type}.
+tests whether the type $\tty$ is a \emph{builtin type}, yielding the result in $\vb$.
 
-\ExampleDef{BUiltin Types}
+\ExampleDef{Builtin Types}
 In the specification
 \begin{lstlisting}
 type ticks of integer;
@@ -143,20 +143,15 @@ type ticks of integer;
 the type \texttt{integer} is a builtin type but the type of \texttt{ticks} is not.
 
 \ProseParagraph
-$\tty$ is a builtin type and \OneApplies
-\begin{itemize}
-\item $\tty$ is singular;
-\item $\tty$ is builtin aggregate.
-\end{itemize}
+\Proseeqdef{$\vb$}{$\True$ if and only if either $\tty$ is singular or $\tty$ is builtin aggregate}.
 
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule{
-    \isbuiltinsingular(\tty) \typearrow \vbone\\
-    \isbuiltinaggregate(\tty) \typearrow \vbtwo
-  }{
-    \isbuiltin(\tty) \typearrow \vbone \lor \vbtwo
-  }
+\inferrule{
+  \isbuiltinsingular(\tty) \lor \isbuiltinaggregate(\tty)
+}{
+  \isbuiltin(\tty) \typearrow \vbone \lor \vbtwo
+}
 \end{mathpar}
 \CodeSubsection{\BuiltinSingularOrAggregateBegin}{\BuiltinSingularOrAggregateEnd}{../types.ml}
 
@@ -179,7 +174,7 @@ type ticks of integer;
 \texttt{ticks} is a named type.
 
 \ProseParagraph
-A named type is a type that is declared by using the \texttt{type of} syntax.
+A named type is a type that is declared by using the \texttt{type ... of ...} syntax.
 
 \FormallyParagraph
 \begin{mathpar}
@@ -242,7 +237,7 @@ type C of B;
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item obtaining the \underlyingtype\ of $\tty$ in the environment $\tenv$ yields $\vtone$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\tty$ in the static environment $\tenv$ yields $\vtone$\ProseOrTypeError;
   \item applying $\isbuiltinsingular$ to $\vtone$ yields $\vb$.
 \end{itemize}
 
@@ -471,11 +466,11 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
 
 \ExampleDef{The Structure of a Type}
 In this example:
-\texttt{type T1 of integer;} is the named type \texttt{T1}
+\texttt{type T1 of integer;}, \texttt{T1}, is the named type \texttt{T1}
 whose structure is \texttt{integer}.
 
 In this example:
-\texttt{type T2 of (integer, T1);}
+\texttt{type T2 of (integer, T1);}, \texttt{T2},
 is the named type \texttt{T2} whose structure is (integer, integer). In this
 example, \texttt{(integer, T1)} is non-primitive since it uses \texttt{T1}, which is builtin aggregate.
 

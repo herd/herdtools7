@@ -648,9 +648,10 @@ we sometimes only care about a subset of the fields $\{f_{i_1},\ldots,f_{i_m}\} 
 In such cases, we write $\{f_{i_1}:t_{i_1},\ldots,f_{i_m}:t_{i_m},\ldots\}$,
 where $\ldots$ stands for fields that are irrelevant for the rule.
 
-For example\footnote{This example is from \SemanticsRuleRef{FCall}.}, the \func\ non-terminal is
+For example, the \func\ non-terminal is
 of a record type and has the following fields:
-$\funcname$, $\funcparameters$, $\funcargs$, $\funcbody$, $\funcreturntype$, and $\funcsubprogramtype$.
+$\funcname$, $\funcparameters$, $\funcargs$, $\funcbody$, $\funcreturntype$, $\funcsubprogramtype$,
+$\funcrecurselimit$, and $\funcbuiltin$.
 The notation $\{ \funcbody:\vbody,\ \funcargs:\vargdecls, \ldots \}$
 allows us to deconstruct a given \func\ node by matching only the $\funcbody$ and $\funcargs$ fields.
 

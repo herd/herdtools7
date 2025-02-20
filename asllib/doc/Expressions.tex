@@ -845,10 +845,10 @@ order does not affect the result of an expression, including any side-effects.
 
 \subsection{Semantics}
 \SemanticsRuleDef{Unop}
-\ExampleDef{Evaluation of }
+\ExampleDef{Evaluation of a Unary Operation Expression}
 In \listingref{semantics-unopassert},
 the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
-\ASLListing{Evaluating a unary expression}{semantics-unopassert}{\semanticstests/SemanticsRule.EUnopAssert.asl}
+\ASLListing{Evaluating a unary operation expression}{semantics-unopassert}{\semanticstests/SemanticsRule.EUnopAssert.asl}
 
 \ProseParagraph
 \AllApply
@@ -2759,7 +2759,7 @@ Note that there are two important consequences of producing an arbitrary value w
 
 \subsection{Semantics}
 \SemanticsRuleDef{EArbitrary}
-\ExampleDef{Evaluation of ARBITRARY for an Uncostrained Integer Type}
+\ExampleDef{Evaluation of ARBITRARY for an Unconstrained Integer Type}
 In \listingref{semantics-earbitraryunconstrained},
 the expression \verb|ARBITRARY : integer| evaluates to an arbitrary integer value.
 \ASLListing{Evaluating an \texttt{ARBITRARY} expression for an unconstrained integer}{semantics-earbitraryunconstrained}
@@ -3256,7 +3256,7 @@ If the evaluation of any expression terminates abnormally then the abnormal conf
   \begin{itemize}
     \item \Proseemptylist{$\vle$};
     \item \Proseemptylist{$\vv$};
-    \item \Proseemptygraph{$\vg$}
+    \item \Proseemptygraph{$\vg$};
     \item \Proseeqdef{$\newenv$}{$\env$}.
   \end{itemize}
 

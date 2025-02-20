@@ -471,7 +471,7 @@ Conversions from an \integertypeterm{} value to a \realtypeterm{} value are perf
 using the \stdlibfunc{Real}.
 %
 Conversions from a \realtypeterm{} value an \integertypeterm{} value to are performed
-using the \stdlibfunc{RoundDown} or \stdlibfunc{RoundUp}.
+using the \stdlibfunc{RoundDown}, \stdlibfunc{RoundUp}. and \stdlibfunc{RoundTowardsZero}.
 
 \ExampleDef{Well-typed Real Types}
 In \listingref{typing-treal}, all the uses of the \realtypeterm{} are well-typed.
@@ -520,7 +520,7 @@ The \emph{\stringtypeterm{}} represents strings of characters.
 
 Strings play relatively little role in specifications and the only operations
 on strings are equality and inequality tests.
-String are useful in \printstatementsterm{} for debugging and diagnostic purposes
+Strings are useful in \printstatementsterm{} for debugging and diagnostic purposes
 on runtimes that support printing.
 
 \ExampleDef{Well-typed String Types}
@@ -566,7 +566,7 @@ In \listingref{typing-tstring}, all the uses of the \stringtypeterm{} are well-t
 
 \section{The Boolean Type\label{sec:BooleanType}}
 \hypertarget{booleantypeterm}{}
-The \emph{\booleantypeterm{}} represents the algebraic Boolean type.
+The \emph{\booleantypeterm{}} represents Booleans.
 
 \ExampleDef{Boolean Type}
 In \listingref{typing-tbool}, all the uses of \booleantypeterm{} are well-typed.
@@ -612,7 +612,7 @@ See \ExampleRef{Boolean Type}.
 
 \section{Bitvector Types\label{sec:BitvectorTypes}}
 \hypertarget{bitvectortypeterm}{}
-\emph{Bitvectors} represent sequences of $0$ and $1$.
+\emph{Bitvectors} represent sequences of $0$ and $1$ bits.
 %
 The \texttt{bits(N)} type represents a bitvector of length \texttt{N},
 where \texttt{N} may specify a fixed width or a constrained width.
@@ -637,16 +637,16 @@ limit.
 It is recognized that zero-length bitvectors might not be supported in systems
 to which ASL might be translated (such as SMT solvers),
 and an implementation might need to lower bitvector
-expressions to a form where they do not exist.
+expressions to a form where zero-length bitvectors do not exist.
 
 \RequirementDef{BitvectorWidthKind}
 The width of a \bitvectortypeterm{} can be either \staticallyevaluable{}
-or a \symbolicallyevaluable{} \constrainedinteger{}.
+or \emph{constrained}. That is, a \symbolicallyevaluable{} \constrainedinteger{}.
 
 \ExampleDef{Rotating a Bitvector}
-\listingref{bits-rotate} shows a specification with a fixed-width bitvector type
-(\verb|bits(5)| for \texttt{bv}), a constrained-width bitvector types
-(\verb|bits(N)|, \verb|bits(i)|, and \verb|bits(N-i)|),
+\listingref{bits-rotate} shows a specification where the width of the bitvector type
+\texttt{bv} is a literal (\verb|bits(5)|), and bitvector types where the width is
+constrained (\verb|bits(N)|, \verb|bits(i)|, and \verb|bits(N-i)|),
 and related operations,
 followed by the output to the console.
 \ASLListing{Rotating a bitevector}{bits-rotate}{\definitiontests/Bitvector_rotate.asl}
@@ -708,7 +708,7 @@ In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
   \item annotating the expression $\ewidth$ yields $(\twidth, \ewidthp, \seswidth)$\ProseOrTypeError;
   \item \Prosechecksymbolicallyevaluable{\seswidth};
   \item \Prosecheckconstrainedinteger{$\tenv$}{$\twidth$};
-  \OneApplies
+  \item \OneApplies
   \begin{itemize}
     \item \AllApplyCase{with\_bitfields}
     \begin{itemize}
@@ -725,7 +725,7 @@ In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
 
     \item \AllApplyCase{no\_bitfields}
     \begin{itemize}
-      \item $\bitfields$ is not empty;
+      \item $\bitfields$ is empty;
       \item \Proseeqdef{$\newty$}{the \bitvectortypeterm{} with width given by the expression
             $\ewidthp$ and an empty list of bitfields, that is,
             $\TBits(\ewidthp, \emptylist)$};
@@ -1061,10 +1061,10 @@ If so, the result is $\vx$ --- the name of the variable and the list of labels $
 declared for the \enumerationtypeterm{}.
 Otherwise, the result is $\None$.
 
-\ExampleDef{Retriving Enumeration Labels from Variable Expressions}
+\ExampleDef{Retrieving Enumeration Labels from Variable Expressions}
 \listingref{typing-getvariableenum} shows examples of retrieving
 enumeration labels from variable expressions.
-\ASLListing{Retriving enumeration labels from expressions}{typing-getvariableenum}{\typingtests/TypingRule.GetVariableEnum.asl}
+\ASLListing{Retrieving enumeration labels from expressions}{typing-getvariableenum}{\typingtests/TypingRule.GetVariableEnum.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1256,12 +1256,12 @@ returns $\True$ is $\vt$ is has the \structure\ an integer type and a type error
 
 \section{Record Types\label{sec:RecordTypes}}
 \hypertarget{recordtypeterm}{}
-\identd{WGQS}
+\identd{WGQS}%
 A record is a \structuredtype{} consisting of a list of field identifiers which denote individual storage elements.
-\identr{DXWN}
+\identr{DXWN}%
 A record type is described by specifying for each field identifier its type.
 
-\identr{WFMF}
+\identr{WFMF}%
 The syntax \verb|record| (with no field list) is syntactic sugar for \verb|record {}|.
 
 \ExampleDef{Well-typed Record Types}

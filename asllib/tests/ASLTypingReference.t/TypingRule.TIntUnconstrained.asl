@@ -11,7 +11,7 @@ begin
   x = 4;
   x = (x + foo (x as integer)) - 1000;
 
-  let z: integer{5} = 5;
+  let z: integer = 5;
   let w = foo(z);
   let y: integer = x * z;
 

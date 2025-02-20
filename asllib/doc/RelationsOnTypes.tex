@@ -529,7 +529,8 @@ The function assumes that both $\vt$ and $\vs$ are well-typed according to \secr
 \begin{itemize}
   \item \AllApplyCase{okay}
   \begin{itemize}
-    \item \ProsetypesatTrue{$\tenv$}{$\vt$}{$\vs$}.
+    \item \ProsetypesatTrue{$\tenv$}{$\vt$}{$\vs$};
+    \item the result is $\True$.
   \end{itemize}
 
   \item \AllApplyCase{error}
@@ -750,106 +751,108 @@ The result is a type error if a lowest common ancestor does not exist or a type 
 
   \item \AllApply
   \begin{itemize}
-    \item $\vt$ is not \typeequal\ to $\vs$ in $\tenv$ and \OneApplies
-
-    \item \AllApplyCase{named\_subtype1}
+    \item $\vt$ is not \typeequal\ to $\vs$ in $\tenv$;
+    \item \OneApplies
     \begin{itemize}
-      \item $\vt$ is a named type with identifier $\namesubt$, that is, $\TNamed(\namesubt)$;
-      \item $\vs$ is a named type with identifier $\namesubs$, that is, $\TNamed(\namesubs)$;
-      \item there is no \namedlowestcommonancestor\ of $\namesubs$ and $\namesubt$ in $\tenv$;
-      \item obtaining the \underlyingtype\ of $\vs$ yields $\vanons$\ProseOrTypeError;
-      \item obtaining the \underlyingtype\ of $\vt$ yields $\vanont$\ProseOrTypeError;
-      \item obtaining the lowest common ancestor of $\vanons$ and $\vanont$ in $\tenv$ yields $\tty$\ProseOrTypeError.
-    \end{itemize}
+      \item \AllApplyCase{named\_subtype1}
+      \begin{itemize}
+        \item $\vt$ is a named type with identifier $\namesubt$, that is, $\TNamed(\namesubt)$;
+        \item $\vs$ is a named type with identifier $\namesubs$, that is, $\TNamed(\namesubs)$;
+        \item there is no \namedlowestcommonancestor\ of $\namesubs$ and $\namesubt$ in $\tenv$;
+        \item obtaining the \underlyingtype\ of $\vs$ yields $\vanons$\ProseOrTypeError;
+        \item obtaining the \underlyingtype\ of $\vt$ yields $\vanont$\ProseOrTypeError;
+        \item obtaining the lowest common ancestor of $\vanons$ and $\vanont$ in $\tenv$ yields $\tty$\ProseOrTypeError.
+      \end{itemize}
 
-    \item \AllApplyCase{named\_subtype2}
-    \begin{itemize}
-      \item $\vt$ is a named type with identifier $\namesubt$, that is, $\TNamed(\namesubt)$;
-      \item $\vs$ is a named type with identifier $\namesubs$, that is, $\TNamed(\namesubs)$;
-      \item the \namedlowestcommonancestor\ of $\namesubs$ and $\namesubt$ in $\tenv$ is \\
-            $\name$\ProseOrTypeError;
-      \item $\tty$ is the named type with identifier $\name$, that is, $\TNamed(\name)$.
-    \end{itemize}
+      \item \AllApplyCase{named\_subtype2}
+      \begin{itemize}
+        \item $\vt$ is a named type with identifier $\namesubt$, that is, $\TNamed(\namesubt)$;
+        \item $\vs$ is a named type with identifier $\namesubs$, that is, $\TNamed(\namesubs)$;
+        \item the \namedlowestcommonancestor\ of $\namesubs$ and $\namesubt$ in $\tenv$ is \\
+              $\name$\ProseOrTypeError;
+        \item $\tty$ is the named type with identifier $\name$, that is, $\TNamed(\name)$.
+      \end{itemize}
 
-    \item \AllApplyCase{one\_named1}
-    \begin{itemize}
-      \item only one of $\vt$ or $\vs$ is a named type;
-      \item obtaining the \underlyingtype\ of $\vs$ yields $\vanons$\ProseOrTypeError;
-      \item obtaining the \underlyingtype\ of $\vt$ yields $\vanont$\ProseOrTypeError;
-      \item $\vanont$ is \typeequal\ to $\vanons$;
-      \item $\tty$ is $\vt$ if it is a named type (that is, $\astlabel(\vt)=\TNamed$), and $\vs$ otherwise.
-    \end{itemize}
+      \item \AllApplyCase{one\_named1}
+      \begin{itemize}
+        \item only one of $\vt$ or $\vs$ is a named type;
+        \item obtaining the \underlyingtype\ of $\vs$ yields $\vanons$\ProseOrTypeError;
+        \item obtaining the \underlyingtype\ of $\vt$ yields $\vanont$\ProseOrTypeError;
+        \item $\vanont$ is \typeequal\ to $\vanons$;
+        \item $\tty$ is $\vt$ if it is a named type (that is, $\astlabel(\vt)=\TNamed$), and $\vs$ otherwise.
+      \end{itemize}
 
-    \item \AllApplyCase{one\_named2}
-    \begin{itemize}
-      \item only one of $\vt$ or $\vs$ is a named type;
-      \item obtaining the \underlyingtype\ of $\vs$ yields $\vanons$\ProseOrTypeError;
-      \item obtaining the \underlyingtype\ of $\vt$ yields $\vanont$\ProseOrTypeError;
-      \item $\vanont$ is not \typeequal\ to $\vanons$;
-      \item the lowest common ancestor of $\vanont$ and $\vanons$ in $\tenv$ is $\tty$\ProseOrTypeError.
-    \end{itemize}
+      \item \AllApplyCase{one\_named2}
+      \begin{itemize}
+        \item only one of $\vt$ or $\vs$ is a named type;
+        \item obtaining the \underlyingtype\ of $\vs$ yields $\vanons$\ProseOrTypeError;
+        \item obtaining the \underlyingtype\ of $\vt$ yields $\vanont$\ProseOrTypeError;
+        \item $\vanont$ is not \typeequal\ to $\vanons$;
+        \item the lowest common ancestor of $\vanont$ and $\vanons$ in $\tenv$ is $\tty$\ProseOrTypeError.
+      \end{itemize}
 
-    \item \AllApplyCase{t\_int\_unconstrained}
-    \begin{itemize}
-      \item both $\vt$ and $\vs$ are integer types;
-      \item at least one of $\vt$ or $\vs$ is an unconstrained integer type;
-      \item $\tty$ is the unconstrained integer type.
-    \end{itemize}
+      \item \AllApplyCase{t\_int\_unconstrained}
+      \begin{itemize}
+        \item both $\vt$ and $\vs$ are integer types;
+        \item at least one of $\vt$ or $\vs$ is an unconstrained integer type;
+        \item $\tty$ is the unconstrained integer type.
+      \end{itemize}
 
-    \item \AllApplyCase{t\_int\_parameterized}
-    \begin{itemize}
-      \item neither $\vt$ nor $\vs$ are the unconstrained integer type;
-      \item one of $\vt$ and $\vs$ is a \parameterizedintegertype;
-      \item the \wellconstrainedversion\ of $\vt$ is $\vtone$;
-      \item the \wellconstrainedversion\ of $\vs$ is $\vsone$;
-      \item $\tty$ the lowest common ancestor of $\vtone$ and $\vsone$ in $\tenv$ is $\tty$\ProseOrTypeError.
-    \end{itemize}
+      \item \AllApplyCase{t\_int\_parameterized}
+      \begin{itemize}
+        \item neither $\vt$ nor $\vs$ are the unconstrained integer type;
+        \item one of $\vt$ and $\vs$ is a \parameterizedintegertype;
+        \item the \wellconstrainedversion\ of $\vt$ is $\vtone$;
+        \item the \wellconstrainedversion\ of $\vs$ is $\vsone$;
+        \item $\tty$ the lowest common ancestor of $\vtone$ and $\vsone$ in $\tenv$ is $\tty$\ProseOrTypeError.
+      \end{itemize}
 
-    \item \AllApplyCase{t\_int\_wellconstrained}
-    \begin{itemize}
-      \item $\vt$ is a well-constrained integer type with constraints $\cst$;
-      \item $\vs$ is a well-constrained integer type with constraints $\css$;
-      \item $\tty$ is the well-constrained integer type with constraints $\cst \concat \css$.
-    \end{itemize}
+      \item \AllApplyCase{t\_int\_wellconstrained}
+      \begin{itemize}
+        \item $\vt$ is a well-constrained integer type with constraints $\cst$;
+        \item $\vs$ is a well-constrained integer type with constraints $\css$;
+        \item $\tty$ is the well-constrained integer type with constraints $\cst \concat \css$.
+      \end{itemize}
 
-    \item \AllApplyCase{t\_bits}
-    \begin{itemize}
-      \item $\vt$ is a bitvector type with length expression $\vet$, that is, $\TBits(\vet, \Ignore)$;
-      \item $\vs$ is a bitvector type with length expression $\ves$, that is, $\TBits(\ves, \Ignore)$;
-      \item applying $\typeequal$ to $\vt$ and $\vs$ in $\tenv$ yields $\False$;
-      \item applying $\exprequal$ to $\vet$ and $\ves$ in $\tenv$ yields $\vbequal$;
-      \item checking whether $\vbequal$ is $\True$ yields $\True$\ProseTerminateAs{\NoLCA};
-      \item $\tty$ is a bitvector type with length expression $\vet$ and an empty bitfield list, that is, $\TBits(\vet, \emptylist)$.
-    \end{itemize}
+      \item \AllApplyCase{t\_bits}
+      \begin{itemize}
+        \item $\vt$ is a bitvector type with length expression $\vet$, that is, $\TBits(\vet, \Ignore)$;
+        \item $\vs$ is a bitvector type with length expression $\ves$, that is, $\TBits(\ves, \Ignore)$;
+        \item applying $\typeequal$ to $\vt$ and $\vs$ in $\tenv$ yields $\False$;
+        \item applying $\exprequal$ to $\vet$ and $\ves$ in $\tenv$ yields $\vbequal$;
+        \item checking whether $\vbequal$ is $\True$ yields $\True$\ProseTerminateAs{\NoLCA};
+        \item $\tty$ is a bitvector type with length expression $\vet$ and an empty bitfield list, that is, $\TBits(\vet, \emptylist)$.
+      \end{itemize}
 
-    \item \AllApplyCase{t\_array}
-    \begin{itemize}
-      \item $\vt$ is an array type with width expression $\widtht$ and element type $\vtyt$;
-      \item $\vs$ is an array type with width expression $\widths$ and element type $\vtys$;
-      \item applying $\arraylengthequal$ to $\widtht$ and $\widths$ in $\tenv$ to equate the array lengths,
-            yields $\vbequallength$\ProseOrTypeError;
-      \item checking that $\vbequallength$ is $\True$ yields $\True$\ProseTerminateAs{\NoLCA};
-      \item the lowest common ancestor of $\vtyt$ and $\vtys$ is $\vtone$\ProseOrTypeError;
-      \item $\tty$ is an array type with width expression $\widths$ and element type $\vtone$.
-    \end{itemize}
+      \item \AllApplyCase{t\_array}
+      \begin{itemize}
+        \item $\vt$ is an array type with width expression $\widtht$ and element type $\vtyt$;
+        \item $\vs$ is an array type with width expression $\widths$ and element type $\vtys$;
+        \item applying $\arraylengthequal$ to $\widtht$ and $\widths$ in $\tenv$ to equate the array lengths,
+              yields $\vbequallength$\ProseOrTypeError;
+        \item checking that $\vbequallength$ is $\True$ yields $\True$\ProseTerminateAs{\NoLCA};
+        \item the lowest common ancestor of $\vtyt$ and $\vtys$ is $\vtone$\ProseOrTypeError;
+        \item $\tty$ is an array type with width expression $\widths$ and element type $\vtone$.
+      \end{itemize}
 
-    \item \AllApplyCase{t\_tuple}
-    \begin{itemize}
-      \item $\vt$ is a \tupletypeterm{} with type list $\vlit$;
-      \item $\vs$ is a \tupletypeterm{} with type list $\vlis$;
-      \item checking whether $\vlit$ and $\vlis$ have the same number of elements yields $\True$
-            or a type error, which short-circuits the entire rule (indicating that the number of elements in both tuples is expected
-            to be the same and thus there is no lowest common ancestor);
-      \item applying $\lca$ to $\vlit[\vi]$ and $\vlis[\vi]$ in $\tenv$, for every position of $\vlit$,
-            yields $\vt_\vi$\ProseOrTypeError;
-      \item define $\vli$ to be the list of types $\vt_\vi$, for every position of $\vlit$;
-      \item define $\tty$ as the \tupletypeterm{} with list of types $\vli$, that is, $\TTuple(\vli)$.
-    \end{itemize}
+      \item \AllApplyCase{t\_tuple}
+      \begin{itemize}
+        \item $\vt$ is a \tupletypeterm{} with type list $\vlit$;
+        \item $\vs$ is a \tupletypeterm{} with type list $\vlis$;
+        \item checking whether $\vlit$ and $\vlis$ have the same number of elements yields $\True$
+              or a type error, which short-circuits the entire rule (indicating that the number of elements in both tuples is expected
+              to be the same and thus there is no lowest common ancestor);
+        \item applying $\lca$ to $\vlit[\vi]$ and $\vlis[\vi]$ in $\tenv$, for every position of $\vlit$,
+              yields $\vt_\vi$\ProseOrTypeError;
+        \item define $\vli$ to be the list of types $\vt_\vi$, for every position of $\vlit$;
+        \item define $\tty$ as the \tupletypeterm{} with list of types $\vli$, that is, $\TTuple(\vli)$.
+      \end{itemize}
 
-    \item \AllApplyCase{error}
-    \begin{itemize}
-      \item either the AST labels of $\vt$ and $\vs$ are different, or one of them is $\TEnum$, $\TRecord$, or $\TException$;
-      \item the result is a type error indicating the lack of a lowest common ancestor.
+      \item \AllApplyCase{error}
+      \begin{itemize}
+        \item either the AST labels of $\vt$ and $\vs$ are different, or one of them is $\TEnum$, $\TRecord$, or $\TException$;
+        \item the result is a type error indicating the lack of a lowest common ancestor.
+      \end{itemize}
     \end{itemize}
   \end{itemize}
 \end{itemize}
