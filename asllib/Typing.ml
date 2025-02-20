@@ -3750,12 +3750,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       match (ty_opt, initial_value) with
       | Some t, Some e ->
           let t', ses_t = annotate_type ~loc env t
-          and ((t_e, _e', _vses_e) as typed_e) = annotate_expr env e in
+          and ((t_e, _e', ses_e) as typed_e) = annotate_expr env e in
           let+ () = check_type_satisfies ~loc env t_e t' in
           let+ () =
             let fake_e_for_error = E_ATC (e, t') |> here in
             check_is_time_frame ~loc target_time_frame
-              (t', fake_e_for_error, ses_t)
+              (t', fake_e_for_error, SES.union ses_e ses_t)
           in
           (typed_e, Some t', t')
       | Some t, None ->
@@ -3769,6 +3769,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           ((t', e', SES.empty), Some t', t')
       | None, Some e ->
           let ((t_e, _e', _ses_e) as typed_e) = annotate_expr env e in
+          let+ () = check_is_time_frame ~loc target_time_frame typed_e in
           (typed_e, None, t_e)
       | None, None -> fatal_from ~loc UnrespectedParserInvariant
       (* AnnotateTyOptInitialValue) *)
@@ -3781,15 +3782,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* UpdateGlobalStorage( *)
     let env2 =
       match keyword with
-      | GDK_Constant ->
-          let+ () = check_leq_constant_time ~loc typed_initial_value in
-          try_add_global_constant name env1 initial_value'
+      | GDK_Constant -> try_add_global_constant name env1 initial_value'
       | GDK_Let when should_remember_immutable_expression ses_initial_value -> (
           match StaticModel.normalize_opt env1 initial_value' with
           | Some e' -> add_global_immutable_expr name e' env1
           | None -> env1)
       | GDK_Config ->
-          let+ () = check_leq_constant_time ~loc typed_initial_value in
           let+ () =
             check_true (Types.is_singular env initial_value_ty) @@ fun () ->
             Error.fatal_from loc (Error.ExpectedSingularType initial_value_ty)
