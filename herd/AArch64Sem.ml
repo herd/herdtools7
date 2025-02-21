@@ -2045,7 +2045,7 @@ module Make
           >>= fun _ -> M.unitT ()
         and branch a =
           let cond = Printf.sprintf "[%s]=={%d:%s,%d:%s}" (V.pp_v a)
-            ii.A.proc (A.pp_reg rs1) ii.A.proc (A.pp_reg rs1) in
+            ii.A.proc (A.pp_reg rs1) ii.A.proc (A.pp_reg rs2) in
           commit_pred_txt (Some cond) ii in
         let neqp (v1,v2) (x1,x2) =
             M.op Op.Eq v1 x1 >>| M.op Op.Eq v2 x2
