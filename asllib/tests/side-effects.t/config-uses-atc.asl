@@ -3,7 +3,7 @@ begin
   return 0 as integer {10};
 end;
 
-config Y = foo ();
+config Y: integer = foo ();
 
 func main () => integer
 begin

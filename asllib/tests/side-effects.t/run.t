@@ -125,30 +125,38 @@
   [1]
 
   $ aslref config-uses-var.asl
-  File config-uses-var.asl, line 2, characters 0 to 17:
-  ASL Typing error: expected config-time expression, got (X + 3), which
-    produces the following side-effects: [ReadsGlobal "X"].
+  File config-uses-var.asl, line 2, characters 0 to 26:
+  ASL Typing error: expected constant-time expression, got (X + 3) as integer,
+    which produces the following side-effects: [ReadsGlobal "X"].
   [1]
   $ aslref config-uses-config.asl
+  File config-uses-config.asl, line 2, characters 0 to 22:
+  ASL Typing error: expected constant-time expression, got X as integer, which
+    produces the following side-effects: [ReadsGlobal "X"].
+  [1]
   $ aslref config-uses-let.asl
-  File config-uses-let.asl, line 2, characters 0 to 13:
-  ASL Typing error: expected config-time expression, got X, which produces the
-    following side-effects: [ReadsGlobal "X"].
+  File config-uses-let.asl, line 2, characters 0 to 22:
+  ASL Typing error: expected constant-time expression, got X as integer, which
+    produces the following side-effects: [ReadsGlobal "X"].
   [1]
   $ aslref config-uses-constant.asl
   $ aslref config-uses-local-var.asl
   $ aslref config-uses-local-let.asl
   $ aslref config-uses-local-constant.asl
   $ aslref config-uses-var-through-func.asl
-  File config-uses-var-through-func.asl, line 8, characters 0 to 18:
-  ASL Typing error: expected config-time expression, got foo(), which produces
-    the following side-effects: [ReadsGlobal "X"].
+  File config-uses-var-through-func.asl, line 8, characters 0 to 27:
+  ASL Typing error: expected constant-time expression, got foo() as integer,
+    which produces the following side-effects: [ReadsGlobal "X"].
   [1]
   $ aslref config-uses-config-through-func.asl
+  File config-uses-config-through-func.asl, line 8, characters 0 to 27:
+  ASL Typing error: expected constant-time expression, got foo() as integer,
+    which produces the following side-effects: [ReadsGlobal "X"].
+  [1]
   $ aslref config-uses-let-through-func.asl
-  File config-uses-let-through-func.asl, line 8, characters 0 to 18:
-  ASL Typing error: expected config-time expression, got foo(), which produces
-    the following side-effects: [ReadsGlobal "X"].
+  File config-uses-let-through-func.asl, line 8, characters 0 to 27:
+  ASL Typing error: expected constant-time expression, got foo() as integer,
+    which produces the following side-effects: [ReadsGlobal "X"].
   [1]
   $ aslref config-uses-constant-through-func.asl
   $ aslref config-uses-atc.asl
@@ -157,9 +165,9 @@
     value 0 does not belong to type integer {10}.
   [1]
   $ aslref config-uses-unknown.asl
-  File config-uses-unknown.asl, line 6, characters 0 to 18:
-  ASL Typing error: expected config-time expression, got foo(), which produces
-    the following side-effects: [NonDeterministic].
+  File config-uses-unknown.asl, line 6, characters 0 to 27:
+  ASL Typing error: expected constant-time expression, got foo() as integer,
+    which produces the following side-effects: [NonDeterministic].
   [1]
 
   $ aslref assert-read.asl
@@ -312,4 +320,10 @@
   File global-throw-initialisation.asl, line 8, characters 0 to 29:
   ASL Execution error: unexpected exception E thrown during the evaluation of
     the initialisation of the global storage element "X".
+  [1]
+
+  $ aslref config-type-uses-let.asl
+  File config-type-uses-let.asl, line 2, characters 0 to 36:
+  ASL Typing error: expected constant-time expression, got 0 as integer {0..2},
+    which produces the following side-effects: [ReadsGlobal "X"].
   [1]

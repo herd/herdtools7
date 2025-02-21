@@ -1,7 +1,7 @@
 type identifier = string
 
 module TimeFrame : sig
-  type t = Constant | Config | Execution
+  type t = Constant | Execution
 
   val is_before : t -> t -> bool
   val max : t -> t -> t

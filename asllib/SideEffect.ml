@@ -4,21 +4,18 @@ module ISet = ASTUtils.ISet
 module IMap = ASTUtils.IMap
 
 module TimeFrame = struct
-  type t = Constant | Config | Execution
+  type t = Constant | Execution
 
   let equal t1 t2 =
     match (t1, t2) with
-    | Constant, Constant | Config, Config | Execution, Execution -> true
-    | Constant, (Config | Execution)
-    | Config, (Constant | Execution)
-    | Execution, (Config | Constant) ->
-        false
+    | Constant, Constant | Execution, Execution -> true
+    | Constant, Execution | Execution, Constant -> false
 
   let is_before t1 t2 =
     match (t1, t2) with
-    | Constant, Constant | Config, Config | Execution, Execution -> true
-    | Config, Execution | Constant, (Config | Execution) -> true
-    | Execution, Config | (Config | Execution), Constant -> false
+    | Constant, Constant | Execution, Execution -> true
+    | Constant, Execution -> true
+    | Execution, Constant -> false
 
   let max t1 t2 = if is_before t1 t2 then t2 else t1
 
@@ -29,9 +26,7 @@ module TimeFrame = struct
   let of_gdk =
     let open AST in
     function
-    | GDK_Constant -> Constant
-    | GDK_Config -> Config
-    | GDK_Let | GDK_Var -> Execution
+    | GDK_Constant -> Constant | GDK_Config | GDK_Let | GDK_Var -> Execution
 end
 
 type read = { name : identifier; time_frame : TimeFrame.t; immutable : bool }

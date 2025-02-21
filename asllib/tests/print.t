@@ -65,7 +65,6 @@
 
   $ aslref print4.asl
   File print4.asl, line 2, characters 11 to 17:
-  ASL Typing error: print and println only accept singular types, found
-    (integer {1}, integer {2}).
+  ASL Typing error: expected singular type, found (integer {1}, integer {2}).
   [1]
 

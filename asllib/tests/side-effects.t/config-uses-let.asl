@@ -1,5 +1,5 @@
 let X: integer = 0;
-config Y = X;
+config Y: integer = X;
 
 func main () => integer
 begin

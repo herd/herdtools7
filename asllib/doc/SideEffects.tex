@@ -72,7 +72,6 @@ Along the way, we also define the concept of \emph{pure expressions} and \symbol
 We divide side effects by \emph{\timeframesterm}, which indicate the phase where a side effect occurs:
 \begin{description}
     \item[Constant] Contains effects that take place during static evaluation (see \chapref{StaticEvaluation}). That is, during typechecking.
-    \item[Configuration] Contains effects that take place while rewriting the initializing value of a \texttt{config} storage element.
     \item[Execution] Contains effects that take place during semantic evaluation.
 \end{description}
 
@@ -81,9 +80,8 @@ Formally, \timeframesterm\ are totally ordered via $\timeframeless$ as follows:
 \hypertarget{def-timeframeless}{}
 \hypertarget{def-timeframeconstant}{}
 \hypertarget{def-timeframeexecution}{}
-\hypertarget{def-timeframeconfig}{}
 \[
-\TTimeFrame \triangleq \{ \timeframeconstant \timeframeless \timeframeconfig \timeframeless \timeframeexecution \}
+\TTimeFrame \triangleq \{ \timeframeconstant \timeframeless \timeframeexecution \}
 \]
 Additionally, we define the less-than-or-equal ordering as follows:
 \hypertarget{def-timeframeleq}{}
@@ -136,7 +134,7 @@ constructs a \timeframeterm\ $\vt$ from a global declaration keyword $\gdk$.
 
 \ProseParagraph
 \ProseEqdef{$\vt$}{$\timeframeconstant$ if $\gdk$ is $\GDKConstant$,
-    $\timeframeconfig$ if $\gdk$ is $\GDKConfig$,
+    $\timeframeexecution$ if $\gdk$ is $\GDKConfig$,
     $\timeframeexecution$ if $\gdk$ is $\GDKLet$, and
     $\timeframeexecution$ if $\gdk$ is $\GDKVar$.
 }
@@ -148,7 +146,7 @@ constructs a \timeframeterm\ $\vt$ from a global declaration keyword $\gdk$.
         \timeframeofgdk(\gdk) \typearrow
     \begin{cases}
         \timeframeconstant  & \text{if }\gdk = \GDKConstant\\
-        \timeframeconfig & \text{if }\gdk = \GDKConfig\\
+        \timeframeexecution & \text{if }\gdk = \GDKConfig\\
         \timeframeexecution & \text{if }\gdk = \GDKLet\\
         \timeframeexecution & \text{if }\gdk = \GDKVar\\
     \end{cases}
@@ -745,7 +743,7 @@ The function
 \]
 tests whether the \timeframesterm\ of \sideeffectdescriptorsterm\ in $\vses$ are all less than or equal to the \timeframeterm\
 $\vt$, yielding the result in $\vb$.
-% Transliteration note: this abstracts both leq_config_time and leq_constant_time
+% Transliteration note: this abstracts leq_constant_time
 
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if the maximal \timeframeterm\ of all \sideeffectdescriptorsterm\ in $\vses$

@@ -3,7 +3,7 @@ begin
   return ARBITRARY: integer {0..10};
 end;
 
-config Y = foo ();
+config Y: integer = foo ();
 
 func main () => integer
 begin
