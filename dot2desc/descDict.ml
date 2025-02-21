@@ -95,6 +95,18 @@ let tlbi typ loc =
 let generic_tlbi typ =
   Printf.sprintf "\\genericTLBI{%s}" typ
 
+let dc typ label =
+  Printf.sprintf "\\DCof{%s}{%s}" typ label
+
+let generic_dc typ =
+  Printf.sprintf "\\genericDC{%s}" typ
+
+let ic typ label =
+  Printf.sprintf "\\ICof{%s}{%s}" typ label
+
+let generic_ic typ =
+  Printf.sprintf "\\genericIC{%s}" typ
+
 let reg_read reg =
   Printf.sprintf "\\RREof{%s}" reg
 
