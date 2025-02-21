@@ -45,6 +45,7 @@ ASL Semantics Tests:
     value 3 does not belong to type integer {0..2}.
   [1]
   $ aslref SemanticsRule.ERecord.asl
+  $ aslref SemanticsRule.EGetItem.asl
   $ aslref SemanticsRule.EConcat.asl
   $ aslref SemanticsRule.ETuple.asl
   $ aslref SemanticsRule.EArbitraryInteger0.asl

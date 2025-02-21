@@ -450,18 +450,25 @@ In \listingref{annotate-constraint-unconstrained}, the constraint
 }{
   \annotateconstraint(\tenv, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow (\overname{\ConstraintExact(\vep)}{\newc}, \vses)
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[range]{
   \annotatesymbolicconstrainedinteger(\tenv, \veone) \typearrow (\veonep, \vsesone) \OrTypeError\\\\
   \annotatesymbolicconstrainedinteger(\tenv, \vetwo) \typearrow (\vetwop, \vsestwo) \OrTypeError\\\\
   \vses \eqdef \vsesone \cup \vsestwo
 }{
-  \annotateconstraint(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
+  {
+  \begin{array}{r}
+    \annotateconstraint(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \\
+    (\overname{\ConstraintRange(\veonep, \vetwop)}{\newc}, \vses)
+  \end{array}
+  }
 }
 \end{mathpar}
 
-\hypertarget{realtypeterm}{}
 \section{The Real Type\label{sec:RealType}}
+\hypertarget{realtypeterm}{}
 The \emph{\realtypeterm{}} represents mathematical rational number values.
 There is no bound on the minimum and maximum rational value that can be represented,
 and there is no bound on their precision.

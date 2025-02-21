@@ -17,8 +17,21 @@ The \emph{\supertypeterm} is the inverse relation.
 That is, \tty\ is a \supertypeterm{} of \tsy\ if and only if \tsy\ is a \subtypeterm{} of \tty.
 
 \ExampleDef{Subtypes and Supertypes}
-In \listingref{subtype},
-\texttt{subInt} is a subtype of itself and of \texttt{superInt}
+The following table determines whether the type \vAbf{}
+subtypes the type \vBbf{} with respect to the types
+declared in \listingref{subtype}:\\
+\begin{tabular}{llll}
+  \textbf{type A} & \textbf{type B}   & \textbf{subtypes?}  & \textbf{reason}\\
+\hline
+  \texttt{subInt}     & \texttt{subInt}   & yes             & subtyping is reflexive for \namedtypesterm{}\\
+  \texttt{subInt}     & \texttt{superInt} & yes             & declared as a \subtypeterm{}\\
+  \texttt{superInt}   & \texttt{subInt}   & no              & subtyping is anti-symmetric\\
+  \texttt{subsubInt}  & \texttt{superInt} & yes             & subtyping is transitive\\
+  \texttt{otherInt}   & \texttt{superInt} & no              & no chain of subtyping between the types\\
+  \texttt{superInt}   & \texttt{integer}  & no              & \texttt{integer} is not a \namedtypeterm{}\\
+  \texttt{integer}    & \texttt{integer}  & no              & \texttt{integer} is not a \namedtypeterm{}\\
+\end{tabular}
+
 \ASLListing{Subtypes and Supertypes}{subtype}{\typingtests/TypingRule.Subtype.asl}
 
 \hypertarget{def-subtypesrel}{}
@@ -101,9 +114,25 @@ The predicate
   \subtypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-tests whether a type $\vt$ \emph{subtype-satisfies} a type $\vs$ in environment $\tenv$,
-returning the result $\vb$ or a type error, if one is detected.
+determines whether a type $\vt$ \emph{subtype-satisfies} a type $\vs$ in environment $\tenv$,
+returning the result in $\vb$.
+\ProseOtherwiseTypeError
+
 The function assumes that both $\vt$ and $\vs$ are well-typed according to \chapref{Types}.
+
+\ExampleDef{Subtype Satisfaction}
+\listingref{subtypesat1} shows examples
+where the types of the right-hand-side expressions \subtypesatisfy{}
+the types of the left-hand-side expressions.
+\ASLListing{Subtype Satisfaction}{subtypesat1}{\typingtests/TypingRule.SubtypeSatisfaction1.asl}
+
+\listingref{subtypesat2} shows examples of legal and illegal assignments involving
+subtyping.
+\ASLListing{More Examples of Subtype Satisfaction}{subtypesat2}{\typingtests/TypingRule.SubtypeSatisfaction2.asl}
+
+\listingref{subtypesat3} shows more examples of legal and illegal assignments involving
+subtyping.
+\ASLListing{Even More Examples of More Subtype Satisfaction}{subtypesat3}{\typingtests/TypingRule.SubtypeSatisfaction3.asl}
 
 \ProseParagraph
 \OneApplies
@@ -350,13 +379,14 @@ if there is a unique one, as follows:
 \CodeSubsection{\SubtypeSatisfactionBegin}{\SubtypeSatisfactionEnd}{../types.ml}
 
 \TypingRuleDef{TypeSatisfaction}
+\identr{FMXK}
 \hypertarget{def-typesatisfies}{}
 The predicate
 \[
   \typesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-tests whether a type $\vt$ \emph{\typesatisfies} a type $\vs$ in environment $\tenv$,
+determines whether a type $\vt$ \emph{\typesatisfies} a type $\vs$ in environment $\tenv$,
 returning the result $\vb$.
 \ProseOtherwiseTypeError
 
@@ -501,14 +531,7 @@ type \texttt{pairT}.
   \typesat(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
 }
 \end{mathpar}
-
 \CodeSubsection{\TypeSatisfactionBegin}{\TypeSatisfactionEnd}{../types.ml}
-
-\subsubsection{Comments}
-Since the subtype relation is a partial order, it is reflexive. Therefore
-every type $\vt$ is a subtype of itself, and as a consequence, every type $\vt$
-\typesatisfies\  itself.
-\identr{FMXK}  \identi{NLFD}
 
 \TypingRuleDef{CheckTypeSatisfaction}
 \hypertarget{def-checktypesat}{}
@@ -520,6 +543,15 @@ We also define
 which is the same as $\typesat$, but yields a type error when \\ $\typesat(\tenv, \vt, \vs)$ is $\False$.
 
 The function assumes that both $\vt$ and $\vs$ are well-typed according to \secref{Types}.
+
+\ExampleDef{Checking Type Satisfaction}
+In \listingref{typing-typesat1},
+checking whether \verb|(integer, T1)| \typesatisfies{} \verb|pairT|
+for the assignment \verb|var pair: pairT = (1, dataT1)| yields $\True$.
+
+In \listingref{typing-typesat3}, checking whether \verb|(intege, T2)|
+\typesatisfies{} \verb|pairT| for the assignment \verb|pair = (1, dataT2);|
+yields a \typingerrorterm.
 
 \ProseParagraph
 \OneApplies
@@ -561,8 +593,25 @@ The predicate
   \typeclashes(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-tests whether a type $\vt$ \emph{type-clashes} with a type $\vs$ in environment $\tenv$,
-returning the result $\vb$ or a type error, if one is detected.
+determines whether a type $\vt$ \emph{\Prosetypeclashes} with a type $\vs$ in environment $\tenv$,
+returning the result $\vb$.
+\ProseOtherwiseTypeError
+
+This is used in \TypingRuleRef{HasArgClash} to determine whether the signatures
+of two subprograms allow them to be declared simultaneously.
+
+\identd{VPZZ} \identi{PQCT}  \identi{WZKM}
+\RequirementDef{TypeClashEquivalence}
+\identi{WZKM}
+Note that \Prosetypeclashing{} is an equivalence relation.
+In particular note that if $T$ \Prosetypeclashes{} with $A$ and $B$ then $A$ and
+$B$ \Prosetypeclash{}.
+
+\ExampleDef{Type Clash}
+\listingref{type-clashes} shows examples of types ---
+the arguments of procedures -- that do not clash and types that do clash
+(shown in comments).
+\ASLListing{Examples of Type Clashing}{type-clashes}{\typingtests/TypingRule.TypeClashes.asl}
 
 \ProseParagraph
  \OneApplies
@@ -579,7 +628,7 @@ returning the result $\vb$ or a type error, if one is detected.
     \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
     \item obtaining the \structure\ of $\vs$ in $\tenv$ yields $\vsstruct$\ProseOrTypeError;
     \item both $\vtstruct$ and $\vsstruct$ are one of the following types: \\
-          \integertypeterm{}, \realtypeterm{}, or \stringtypeterm{};
+          \booleantypesterm{}, \integertypeterm{}, \realtypeterm{}, or \stringtypeterm{};
     \item $\vb$ is $\True$.
   \end{itemize}
 
@@ -628,10 +677,6 @@ returning the result $\vb$ or a type error, if one is detected.
   \end{itemize}
 \end{itemize}
 
-
-
-\CodeSubsection{\TypeClashBegin}{\TypeClashEnd}{../types.ml}
-
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[subtype]{
@@ -648,7 +693,7 @@ returning the result $\vb$ or a type error, if one is detected.
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError \\
   \tstruct(\tenv, \vs) \typearrow \vsstruct \OrTypeError \\
   \astlabel(\vtstruct)=\astlabel(\vsstruct)\\
-  \astlabel(\vtstruct) \in \{\TInt, \TReal, \TString, \TBits\}
+  \astlabel(\vtstruct) \in \{\TBool, \TInt, \TReal, \TString, \TBits\}
 }{
   \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\True}{\vb}
 }
@@ -715,27 +760,31 @@ returning the result $\vb$ or a type error, if one is detected.
   \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
 }
 \end{mathpar}
+\CodeSubsection{\TypeClashBegin}{\TypeClashEnd}{../types.ml}
 
-\subsubsection{Comments}
-Note that if $\vt$ subtype-satisfies $\vs$ then $\vt$ and $\vs$ type-clash, but not the other
+\subsubsection{Comment}
+Note that if $\vt$ \subtypesatisfies{} $\vs$ then $\vt$ and $\vs$ \Prosetypeclash, but not the other
 way around.
-
-Note that type-clashing is an equivalence relation. Therefore if $\vt$
-type-clashes with \texttt{A} and \texttt{B} then it is also the case that \texttt{A} and \texttt{B} type-clash.
-
-\identd{VPZZ} \identi{PQCT}  \identi{WZKM}
 
 \TypingRuleDef{LowestCommonAncestor}
 \hypertarget{def-lowestcommonancestor}{}
 Annotating a conditional expression (see \TypingRuleRef{ECond}),
 requires finding a single type that can be used to annotate the results of both subexpressions.
+We refer to such a type as a \emph{\Proselca}, or LCA, for short, and define it next.
+
 The function
 \[
   \lca(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \overname{\ty}{\tty} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-returns the \emph{lowest common ancestor} of types $\vt$ and $\vs$ in $\tenv$ --- $\tty$.
-The result is a type error if a lowest common ancestor does not exist or a type error is detected.
+returns the \Proselca{} of types $\vt$ and $\vs$ in $\tenv$ --- $\tty$.
+The result is a type error if a \Proselca{} does not exist or a type error is detected.
+
+\ExampleDef{Lowest Common Ancestor}
+\listingref{example-lca} shows examples of conditional expressions and the resulting
+\emph{\Proselca}.
+\pagebreak
+\ASLListing{Lowest Common Ancestor}{example-lca}{\typingtests/TypingRule.LowestCommonAncestor.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1019,6 +1068,10 @@ determines the result type of applying a unary operator when the type of its ope
 Similarly, we determine the negation of integer constraints.
 \ProseOtherwiseTypeError
 
+\ExampleDef{Applying Unary Operations to Types}
+\listingref{apply-unop-type} shows examples of typing applications of unary operations.
+\ASLListing{Applying unary operations to types}{apply-unop-type}{\typingtests/TypingRule.ApplyUnopType.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1078,27 +1131,6 @@ Similarly, we determine the negation of integer constraints.
 \end{mathpar}
 \CodeSubsection{\ApplyUnopTypeBegin}{\ApplyUnopTypeEnd}{../Typing.ml}
 
-\hypertarget{def-negateconstraint}{}
-We now define the helper function
-\[
-  \negateconstraint(\intconstraint) \aslto \intconstraint
-\]
-which takes an integer constraint and returns the constraint that corresponds to the negation of all
-the values it represents:
-
-\begin{mathpar}
-\inferrule{}
-{
-  \negateconstraint(\ConstraintExact(\ve)) \typearrow \ConstraintExact(\EUnop(\MINUS, \ve))
-}
-\and
-\inferrule{}
-{
-  \negateconstraint(\ConstraintRange(\vvtop, \vbot)) \typearrow \\
-  \ConstraintRange(\EUnop(\MINUS, \vbot), \EUnop(\MINUS, \vvtop))
-}
-\end{mathpar}
-
 \begin{mathpar}
 \inferrule[neg\_error]{
   \typesat(\tenv, \vt, \unconstrainedinteger) \typearrow \False \OrTypeError\\\\
@@ -1142,6 +1174,52 @@ the values it represents:
 }
 \end{mathpar}
 
+\TypingRuleDef{NegateConstraint}
+\hypertarget{def-negateconstraint}{}
+The helper function
+\[
+  \negateconstraint(\overname{\intconstraint}{\vc}) \aslto \overname{\intconstraint}{\newc}
+\]
+takes an integer constraint $\vc$ and returns the constraint $\newc$,
+which corresponds to the negation of all the values that $\vc$ represents.
+
+\ExampleRef{Applying Unary Operations to Types} shows examples of negating single expression
+constraints and range constraints.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{exact}
+  \begin{itemize}
+    \item $\vc$ is the \Proseexactconstraint{$\ve$};
+    \item \Proseeqdef{$\newc$}{the \Proseexactconstraint{the unary expression negating $\ve$}}.
+  \end{itemize}
+
+  \item \AllApplyCase{range}
+  \begin{itemize}
+    \item $\vc$ is the \Proserangeconstraint{$\vstart$}{$\vend$}
+    \item \Proseeqdef{$\newc$}{the \Proserangeconstraint{that is the unary expression negating $\vend$}
+    {that is the unary expression negating $\vstart$}}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[exact]{}
+{
+  \negateconstraint(\overname{\ConstraintExact(\ve)}{\vc}) \typearrow
+  \overname{\ConstraintExact(\EUnop(\MINUS, \ve))}{\newc}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range]{}
+{
+  \negateconstraint(\overname{\ConstraintRange(\vstart, \vend)}{\vc}) \typearrow \\
+  \overname{\ConstraintRange(\EUnop(\MINUS, \vend), \EUnop(\MINUS, \vstart))}{\newc}
+}
+\end{mathpar}
+
 \TypingRuleDef{ApplyBinopTypes}
 \hypertarget{def-applybinoptypes}{}
 The function
@@ -1153,6 +1231,25 @@ The function
 determines the result type $\vt$ of applying the binary operator $\op$
 to operands of type $\vtone$ and $\vttwo$ in the static environment $\tenv$.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Applying Binary Operations to Types}
+\listingref{apply-binop-type} shows examples of typing binary operations.
+\ASLListing{Applying binary operations to types}{apply-binop-type}
+          {\typingtests/TypingRule.ApplyBinopTypes.asl}
+
+\ExampleDef{Applying Binary Operations to Constrained Integers}
+\listingref{apply-binop-constraints} shows examples of typing binary operations
+applied to \constrainedinteger{} types.
+
+Importantly, note that the AST for constraints is not closed under binary operations.
+For example, given a range constraint \verb|A..B| and an exact constraint |2|,
+there is no AST to express \verb|(A..B) * 2|. Therefore, they constraints for typing
+\verb|ab_times_2| approximate the set of values for \verb|(A..B) * 2| via four
+range constraints. More precisely, they are a superset of the values for \verb|(A..B) * 2|.
+
+\pagebreak
+\ASLListing{Applying binary operations to constrained integers}{apply-binop-constraints}
+          {\typingtests/TypingRule.ApplyBinopTypes.constraints.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1588,13 +1685,14 @@ The function
 \]
 returns the lowest common named super type --- $\tty$ --- of the types $\vt$ and $\vs$ in $\tenv$.
 
-\newcommand\supers[0]{\texttt{supers}}
+\newcommand\supers[0]{\hyperlink{def-supers}{\textfunc{supers}}}
 The helper function
 \[
   \supers(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt})
   \aslto \pow{\ty}
 \]
-returns the set of \emph{named supertypes} given via the $\subtypes$ function of the global environment:
+returns the set of \emph{named supertypes} of a type $\vt$
+in the $\subtypes$ function of a global static environment $\tenv$:
 \[
   \supers(\tenv, \vt) \triangleq
   \begin{cases}
@@ -1602,6 +1700,16 @@ returns the set of \emph{named supertypes} given via the $\subtypes$ function of
     \{\vt\}  & \text{ otherwise } (\text{that is, }G^\tenv.\subtypes(\vt) = \bot)\\
   \end{cases}
 \]
+
+\ExampleDef{Finding Named Lowest Common Ancestors}
+In \listingref{find-named-lca},
+the set of named supertypes for \verb|B2| is \verb|{A1, A2, B1, B2}|,
+set of named supertypes for \verb|C2| is \verb|{A1, A2, C1, C2}|,
+therefore the named lowest common ancestor of \verb|B2| and \verb|C2|
+is \verb|A2|, while \verb|B2| and \verb|D1| have no
+named lowest common ancestor.
+
+\ASLListing{Finding named lowest common ancestors}{find-named-lca}{\typingtests/TypingRule.FindNamedLCA.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1679,16 +1787,20 @@ $\{\SHL, \SHR, \POW, \MOD, \DIVRM, \MINUS, \MUL, \PLUS, \DIV\}$.
 The rule employs $\binopisexploding$ to decide whether range constraints can be maintained
 as range constraints or have to be converted to a list of exact constraints.
 
-For example, applying $\PLUS$ to
+\ExampleDef{Annotating Constraints for Binary Operations}
+Applying $\PLUS$ to
 $\{ \AbbrevConstraintRange{\ELInt{2}}{\ELInt{4}}\}$ and
-$\{\AbbrevConstraintExact{\ELInt{2}}\}$ results in
+$\{\AbbrevConstraintExact{\ELInt{2}}\}$ results in\\
 $\{\AbbrevConstraintRange{\ELInt{4}}{\ELInt{6}}\}$,
+since $\binopisexploding(\PLUS) \typearrow \False$
 while applying $\MUL$ to the same lists of constraints results in
 $\{\AbbrevConstraintExact{\ELInt{4}}, \AbbrevConstraintExact{\ELInt{6}}, \AbbrevConstraintExact{\ELInt{8}}\}$,
-which is why $\binopisexploding(\MUL) \typearrow \True$.
+since $\binopisexploding(\MUL) \typearrow \True$.
 
 Annotating the constraints involves applying symbolic reasoning and in particular filtering out values that
 will definitely result in a dynamic error.
+
+Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
 
 \ProseParagraph
 \AllApply
@@ -1771,6 +1883,12 @@ filters the list of constraints $\cs$ by removing values that will definitely re
 error if found on the right-hand-side of a binary operation expression with the operator $\op$
 in any environment consisting of the static environment $\tenv$.
 The result is the filtered list of constraints $\newcs$.
+
+\ExampleDef{Filtering Right-hand-side Constraints}
+An example of filtering constraints appears in \listingref{apply-binop-constraints},
+where the constraints inferred for \verb|a_div| filter out \verb|-5..0|
+from the constraint \verb|-5..3|, thus avoiding including constraints
+\verb|A DIV -5| and \verb|A DIV 0|.
 
 \ProseParagraph
 \OneApplies
@@ -2427,7 +2545,7 @@ The function
 \[
 \intervaltoolarge(\overname{\Z}{\vzone} \aslsep \overname{\Z}{\vztwo}) \aslto \overname{\Bool}{\vb}
 \]
-tests whether the set of numbers between $\vzone$ and $\vztwo$, inclusive, contains more than $\maxexplodedintervalsize$
+determines whether the set of numbers between $\vzone$ and $\vztwo$, inclusive, contains more than $\maxexplodedintervalsize$
 integers, yielding the result in $\vb$.
 
 \ProseParagraph
@@ -2450,6 +2568,8 @@ determines whether the binary operation $\op$ should lead to applying $\explodei
 when the $\op$ is applied to a pair of constraint lists.
 It is assumed that $\op$ is one of $\MUL$, $\SHL$, $\POW$, $\PLUS$, $\DIV$, $\MINUS$, $\MOD$, $\SHR$,
 and $\DIVRM$.
+
+See \ExampleRef{Annotating Constraints for Binary Operations}.
 
 \ProseParagraph
 The value $\vb$ is $\True$ if and only if $\op$ is one of $\MUL$, $\SHL$, and $\POW$.
@@ -2672,6 +2792,8 @@ The function
 \]
 returns $\True$ is $\vt$ is has the \structure\ a of type corresponding to the AST label $\vl$ and a type error otherwise.
 
+See \ExampleRef{The Structure of a Type}.
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2715,7 +2837,21 @@ The function
 \[
   \towellconstrained(\overname{\ty}{\vt}) \aslto \overname{\ty}{\vtp}
 \]
-returns the \wellconstrainedversion\ of a type $\vt$ --- $\vtp$, which is defined as follows.
+returns the \wellconstrainedversion\ of a type $\vt$ --- $\vtp$,
+which converts \parameterizedintegertypes{} to \wellconstrainedintegertypes{},
+and leaves all other types as are.
+
+\ExampleDef{Converting Parameterized Integer Types to Well-constrainted Integer Types}
+The following table shows examples of applying $\towellconstrained$ to various types:
+\[
+\begin{array}{rl}
+\textbf{input type}           & \textbf{output type}\\
+\hline
+\TInt(\parameterized(\vx))    & \TInt(\wellconstrained(\ConstraintExact(\EVar(\vx))))\\
+\TInt(\unconstrainedinteger)  & \TInt(\unconstrainedinteger)\\
+\TReal                        & \TReal\\
+\end{array}
+\]
 
 \ProseParagraph
 \OneApplies

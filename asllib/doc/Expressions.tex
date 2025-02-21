@@ -103,6 +103,8 @@ and define how to evaluate a list of expressions (see \secref{ExprList}).
 \section{Literal Expressions\label{sec:LiteralExpressions}}
 A literal expression represents a literal as an expression.
 
+\ASLListing{Literal Expressions}{literalssemantics}{\semanticstests/SemanticsRule.Lit.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nexpr \derives\  & \Nvalue &\
@@ -123,6 +125,10 @@ A literal expression represents a literal as an expression.
 
 \subsection{Typing}
 \TypingRuleDef{ELit}
+\ExampleDef{Typing of Literal Expressions}
+In \listingref{literalssemantics}, each of the expressions \texttt{3}
+is annotated with the type \verb|integer{3}|.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -143,11 +149,10 @@ A literal expression represents a literal as an expression.
 \CodeSubsection{\ELitBegin}{\ELitEnd}{../Typing.ml}
 
 \subsection{Semantics}
+\SemanticsRuleDef{ELit}
 \ExampleDef{Evaluation of Literal Expressions}
 In \listingref{literalssemantics}, each of the expressions \texttt{3} evaluates to the \nativevalue\ $\nvint(3)$.
-\ASLListing{Semantics of literals}{literalssemantics}{\semanticstests/SemanticsRule.Lit.asl}
 
-\SemanticsRuleDef{ELit}
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -188,6 +193,19 @@ A variable expression consists of an identifier for a storage element.
 
 \subsection{Typing}
 \TypingRuleDef{EVar}
+\ExampleDef{Typing Variable Expressions}
+All of the variable expressions in \listingref{expressions-evar}
+are well-typed.
+\ASLListing{Variable expressions}{expressions-evar}{\typingtests/TypingRule.EVar.asl}
+
+The type system annotates the expression \verb|LOCAL_CONSTANT| as the literal for \verb|7|,
+since it is declared as a \verb|constant|, whereas the expression \verb|var_x|
+on the right-hand-side of the assignment \verb|var y = var_x;| is annotated as \verb|var_x|,
+since \verb|var_x| is not declared as a \verb|constant|.
+
+The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
+\ASLListing{An undefined variable}{expressions-evar-undefined}{\typingtests/TypingRule.EVar.undefined.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -293,11 +311,6 @@ A variable expression consists of an identifier for a storage element.
   \annotateexpr{\tenv,\overname{\EVar(\vx)}{\ve}} \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
 \end{mathpar}
-
-\subsubsection{Comments}
-Our type system does not currently address assignments of non-constant expressions (for example,
-function calls) to global constant variables.
-\CodeSubsection{\EUndefIdentBegin}{\EUndefIdentEnd}{../Typing.ml}
 
 \subsection{Semantics}
 \SemanticsRuleDef{EVar}
@@ -824,6 +837,9 @@ order does not affect the result of an expression, including any side-effects.
 
 \subsection{Typing}
 \TypingRuleDef{Unop}
+\ExampleRef{Applying Unary Operations to Types} shows examples
+of well-typed unary operation expressions.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -941,6 +957,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \subsection{Typing}
 \TypingRuleDef{ECond}
+\ExampleRef{Lowest Common Ancestor} shows examples of typing conditional expressions.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1032,6 +1050,8 @@ conditional expression evaluates to the \texttt{else} expression.
 
 \hypertarget{def-callexpressionterm}{}
 \section{Call Expressions\label{sec:CallExpressions}}
+\ASLListing{Call expressions}{semantics-ecall}{\semanticstests/SemanticsRule.ECall.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nexpr \derives\  & \Ncall &
@@ -1136,6 +1156,10 @@ changes the call type of $\vcall$ to $\calltype$.
 
 \subsection{Typing}
 \TypingRuleDef{ECall}
+\ExampleDef{Typing Call Expressions}
+\listingref{semantics-ecall} shows call expressions (on the right-hand-side of assignments)
+and the inferred types of the expressions, as type annotations on the left-hand-side variables.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1159,10 +1183,8 @@ changes the call type of $\vcall$ to $\calltype$.
 \subsection{Semantics}
 \SemanticsRuleDef{ECall}
 \ExampleDef{Evaluation of Call Expressions}
-In \listingref{semantics-ecall},
-the expression \texttt{Return42()} evaluates to the value \texttt{42} because the
-subprogram \texttt{Return42()} is implemented to return the value \texttt{42}.
-\ASLListing{Evaluating a call expression}{semantics-ecall}{\semanticstests/SemanticsRule.ECall.asl}
+\listingref{semantics-ecall} shows call expressions (on the right-hand-side of assignments)
+and the values they evaluate to, as assertions on the values assigned.
 
 \ProseParagraph
 \AllApply
@@ -1210,11 +1232,13 @@ subprogram \texttt{Return42()} is implemented to return the value \texttt{42}.
 \end{mathpar}
 \CodeSubsection{\EvalECallBegin}{\EvalECallEnd}{../Interpreter.ml}
 
-\hypertarget{def-sliceexpressionterm}{}
 \section{Slicing Expressions\label{sec:SlicingExpressions}}
+\hypertarget{def-sliceexpressionterm}{}
 This section details the high-level form of the syntax and abstract syntax of slicing expressions,
 and defines the semantics of bitvector slices.
-The details of the various types of bitvector slices is deferred to \chapref{BitvectorSlicing}.
+The details of the various types of bitvector slices are deferred to \chapref{BitvectorSlicing}.
+
+\ASLListing{Slicing Expressions}{semantics-eslice}{\semanticstests/SemanticsRule.ESlice.asl}
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -1230,15 +1254,26 @@ The details of the various types of bitvector slices is deferred to \chapref{Bit
 \begin{mathpar}
 \inferrule{
   \buildexpr(\vexpr) \astarrow \astversion{\vexpr} \OrBuildError\\\\
-  \buildslice(\vslice) \astarrow \astversion{\vslice} \OrBuildError
+  \buildslices(\vslices) \astarrow \astversion{\vslices} \OrBuildError
 }{
-  \buildexpr(\overname{\Nexpr(\vexpr: \Nexpr, \vslice: \Nslice)}{\vparsednode}) \astarrow
-  \overname{\ESlice(\astversion{\vexpr}, \astversion{\vslice})}{\vastnode}
+  \buildexpr(\overname{\Nexpr(\vexpr: \Nexpr, \vslices: \Nslices)}{\vparsednode}) \astarrow
+  \overname{\ESlice(\astversion{\vexpr}, \astversion{\vslices})}{\vastnode}
 }
 \end{mathpar}
 
 \subsection{Typing}
 \TypingRuleDef{ESlice}
+\ExampleDef{Typing of Slicing Expressions}
+\listingref{semantics-eslice} the type inferred for the
+slicing expression \verb|'1 1110 000'[6:3, 7]| is \\
+\verb|bits(5){}|.
+That is, a bitvector of width \verb|5| without any bitfields.
+%
+The same type is inferred for the slicing expressions
+\verb|240[6:3, 7]| and \verb|496[6:3, 7]|
+(\verb|240| is equivalent to \verb|'1 111 0 000'|
+and \verb|496| is equivalent to \verb|'11 111 0 000'|).
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1279,6 +1314,10 @@ initializer expression.
 \identi{MJWM}
 
 \TypingRuleDef{ESliceError}
+\ExampleDef{Ill-typed Slicing Expressions}
+The expression \verb|5.0[2:0]| is ill-typed, since the type of \verb|5.0|
+is an \integertypeterm{} nor a \bitvectortypeterm.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1302,10 +1341,14 @@ initializer expression.
 
 \subsection{Semantics}
 \SemanticsRuleDef{ESlice}
-\subsubsection{Evaluation of Slicing Expressions}
-In \listingref{semantics-eslice},
-the expression \texttt{'11110000'[6:3]} evaluates to the value \texttt{'1110'}.
-\ASLListing{Evaluating a slice expression}{semantics-eslice}{\semanticstests/SemanticsRule.ESlice.asl}
+\ExampleDef{Evaluation of Slicing Expressions}
+\listingref{semantics-eslice} the slicing expression \verb|'1 1110 000'[6:3, 7]|
+evaluates to the bitvector value \texttt{'1110 1'},
+same as the slicing expressions
+\verb|240[6:3, 7]| and \verb|496[6:3, 7]|.
+
+Note that in the following definition,
+the function $\readfrombitvector$ takes care of converting integers to bitvectors.
 
 \ProseParagraph
 \AllApply
@@ -1320,6 +1363,7 @@ resulting bitvector --- and the execution graph $\vgone$;
       which concatenates all of the values from the indicates indices\ProseOrError;
 \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
@@ -1335,9 +1379,9 @@ resulting bitvector --- and the execution graph $\vgone$;
 \end{mathpar}
 \CodeSubsection{\EvalESliceBegin}{\EvalESliceEnd}{../Interpreter.ml}
 
+\section{Array Access Expressions\label{sec:ArrayAccessExpressions}}
 \hypertarget{def-getarrayexpressionterm}{}
 \hypertarget{def-getenumarrayexpression}{}
-\section{Array Access Expressions\label{sec:ArrayAccessExpressions}}
 This section details the syntax, abstract syntax, semantics, and typing of array read expressions.
 In the untyped AST, a read from either an integer-indexed array or an enumeration-indexed arrays is represented
 the same way. They type system infers the kind of array and outputs a typed AST node differentiating
@@ -1370,11 +1414,17 @@ The semantics utilizes a rule matching the corresponding type of array ---
 \TypingRuleDef{EGetArray}
 \hypertarget{def-arrayaccess}{}
 \begin{definition}[Array Access]
-We refer to a right-hand-side expression of the form \texttt{b[[i]]},
+We refer to a right-hand-side expression of the form \verb|b[[i]]|,
 where $b, i$ are subexpressions, as an \arrayaccess\ expression.
 We refer to $b$ and $i$ as the \emph{base}
 and the $\emph{index}$ subexpressions, respectively.
 \end{definition}
+
+\ExampleDef{Array Access Expressions}
+\listingref{typing-tarray} shows examples of well-typed
+array access expressions on the right-hand-side of the
+assignments to \verb|int_arr| and \verb|big_little_arr|
+and the types inferred for them via the added \verb|as <inferred-type>|.
 
 \ProseParagraph
 \AllApply
@@ -1429,6 +1479,8 @@ $\eindex$ is the index expression.
 The function returns the type of the annotated expression in $\vt$,
 the annotated expression $\newe$, and the inferred \sideeffectdescriptorterm\ $\vses$.
 
+See \ExampleRef{Array Access Expressions}.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1476,7 +1528,7 @@ indexed by \texttt{2} in \texttt{my\_array} is \texttt{42}.
 \ASLListing{Evaluating an array access expression}{semantics-egetarray}{\semanticstests/SemanticsRule.EGetArray.asl}
 
 \ExampleDef{Evaluation of an Illegal Array Read}
-In \listingref{semantics-egetarrayerror}.
+In \listingref{semantics-egetarrayerror},
 evaluating the array access expression \verb|my_array[[3]]| results in a dynamic error,
 since we are trying to access index \texttt{3} of an array
 which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
@@ -1572,6 +1624,12 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 
 \subsection{Typing}
 \TypingRuleDef{EGetRecordField}
+\ExampleDef{Typing Record Field Expressions}
+\listingref{eget-record-field} shows field reading expressions
+as the right-hand-side expressions of assignments
+and the types inferred for them via the added \verb|as <inferred-type>|.
+\ASLListing{Typing record field expressions}{eget-record-field}{\typingtests/TypingRule.EGetRecordField.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1588,7 +1646,7 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  \vtetwo \eqname L(\fields)\\
+  \vtetwo = L(\fields)\\
   L \in \{\TRecord, \TException\}\\
   \assocopt(\fields, \fieldname) \typearrow \langle \vt\rangle
 }{
@@ -1603,6 +1661,10 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \CodeSubsection{\EGetRecordFieldBegin}{\EGetRecordFieldEnd}{../Typing.ml}
 
 \TypingRuleDef{EGetBadRecordField}
+\ExampleDef{Ill-typed Record Field Expressions}
+\listingref{eget-bad-record-field} shows an ill-typed field expression.
+\ASLListing{An ill-typed record field expression}{eget-bad-record-field}{\typingtests/TypingRule.EGetBadRecordField.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1618,7 +1680,7 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  \vtetwo \eqname L(\fields)\\
+  \vtetwo = L(\fields)\\
   L \in \{\TRecord, \TException\}\\
   \assocopt(\fields, \fieldname) \typearrow \None
 }{
@@ -1628,6 +1690,10 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \CodeSubsection{\EGetBadRecordFieldBegin}{\EGetBadRecordFieldEnd}{../Typing.ml}
 
 \TypingRuleDef{EGetBadBitField}
+\ExampleDef{Ill-typed Bitfield Expressions}
+\listingref{eget-bad-bitfield} shows an ill-typed bitfield expression.
+\ASLListing{An ill-typed bitfield expression}{eget-bad-bitfield}{\typingtests/TypingRule.EGetBadBitfield.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1644,7 +1710,7 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
+  \vtetwo = \TBits(\Ignore, \bitfields)\\
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \None
 }{
   \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow \TypeErrorVal{\BadField}
@@ -1653,6 +1719,12 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \CodeSubsection{\EGetBadBitFieldBegin}{\EGetBadBitFieldEnd}{../Typing.ml}
 
 \TypingRuleDef{EGetBitField}
+\ExampleDef{Well-typed Bitfield Expressions}
+\listingref{eget-bitfield} shows well-typed bitfield expressions
+as the right-hand-side expressions of assignment statements,
+and the types inferred for them via the added \verb|as <inferred-type>|.
+\ASLListing{Well-typed bitfield expressions}{eget-bitfield}{\typingtests/TypingRule.EGetBitfield.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1670,7 +1742,7 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
+  \vtetwo = \TBits(\Ignore, \bitfields)\\
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \langle \BitFieldSimple(\Ignore, \slices)\rangle\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
   \annotateexpr{\tenv, \vethree} \typearrow (\vt, \newe, \vses) \OrTypeError
@@ -1681,6 +1753,11 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \CodeSubsection{\EGetBitFieldBegin}{\EGetBitFieldEnd}{../Typing.ml}
 
 \TypingRuleDef{EGetBitFieldNested}
+\ExampleDef{Nested Bitfield Expressions}
+\listingref{eget-bitfield} shows the expression \verb|p.detailed_data.info|,
+which refers to the bitfield \verb|info|, which is nested in the bitfield
+\verb|detailed_data|.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1701,7 +1778,7 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  \vtetwo \eqname \TBits(\Ignore, \bitfields)\\\\
+  \vtetwo = \TBits(\Ignore, \bitfields)\\\\
   {
     \begin{array}{r}
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \\ \langle \BitFieldNested(\Ignore, \slices, \bitfieldsp)\rangle
@@ -1718,6 +1795,10 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \CodeSubsection{\EGetBitFieldNestedBegin}{\EGetBitFieldNestedEnd}{../Typing.ml}
 
 \TypingRuleDef{EGetBitFieldTyped}
+\ExampleDef{Typed Bitfield Expressions}
+\listingref{eget-bitfield} shows the expression \verb|p.detailed_data.info|,
+which includes the type annotation \verb|bits(4)|.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1737,7 +1818,7 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  \vtetwo \eqname \TBits(\Ignore, \bitfields)\\
+  \vtetwo = \TBits(\Ignore, \bitfields)\\
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \langle \BitFieldType(\Ignore, \slices, \vt)\rangle\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
   \annotateexpr{\tenv, \vethree} \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\\\\
@@ -1749,7 +1830,10 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \CodeSubsection{\EGetBitFieldTypedBegin}{\EGetBitFieldTypedEnd}{../Typing.ml}
 
 \TypingRuleDef{EGetTupleItem}
-\newcommand\itemprefix[0]{\texttt{item}}
+\ExampleDef{Typing of a Tuple Item Expression}
+In \listingref{semantics-egetitem}, the type of the expression \verb|t.item0|
+is the \integertypeterm.
+
 In the following rule definition, we use $\itemprefix$ to stand
 for its verbatim string.
 
@@ -1761,7 +1845,7 @@ for its verbatim string.
   \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
   \item $\vtetwo$ is \tupletypeterm{} with list of types $\tys$, that is, $\TTuple(\tys)$;
   \item $\fieldname$ is an identifier consisting of the prefix \itemprefix{} and the suffix $\num$;
-  \item $\num$ is lexically an integer token with the integer value $\vindex$;
+  \item $\num$ is lexically an integer numeral with the integer value $\vindex$;
   \item determining whether $\vindex$ is between $0$ and the number of types in $\tys$, inclusive, yields $\True$\ProseOrTypeError;
   \item $\vt$ is the type at position $\vindex$ of $\tys$;
   \item $\newe$ is the expression for obtaining the item at index $\vindex$ from the expression $\vetwo$, that is, $\EGetItem(\vetwo, \vindex)$;
@@ -1772,7 +1856,7 @@ for its verbatim string.
 \inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  \vtetwo \eqname \TTuple(\tys)\\
+  \vtetwo = \TTuple(\tys)\\
   \fieldname = \itemprefix \stringconcat \num\\
   \num \in \Lang(\REintlit)\\
   \decimaltolit(\num) = \Tintlit(\vindex)\\
@@ -1786,6 +1870,11 @@ for its verbatim string.
 \CodeSubsection{\EGetTupleItemBegin}{\EGetTupleItemEnd}{../Typing.ml}
 
 \TypingRuleDef{EGetBadField}
+\ExampleDef{An Ill-typed Field Expression}
+\listingref{eget-bad-field} shows an example of an ill-typed field expression
+\verb|a.f|.
+\ASLListing{An ill-typed field expression}{eget-bad-field}{\typingtests/TypingRule.EGetBadBitField.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1833,6 +1922,13 @@ the expression \verb|my_record.a| evaluates to the value \texttt{3}.
 \CodeSubsection{\EvalEGetFieldBegin}{\EvalEGetFieldEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{EGetItem}
+\ExampleDef{Evaluation of a Tuple Item Expression}
+In \listingref{semantics-egetitem},
+the expression \verb|t.item0| evaluates to the value \texttt{1}
+and
+the expression \verb|t.item1| evaluates to the value \texttt{2}.
+\ASLListing{Evaluating a tuple item access expression}{semantics-egetitem}{\semanticstests/SemanticsRule.EGetItem.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1882,6 +1978,11 @@ the expression \verb|my_record.a| evaluates to the value \texttt{3}.
 
 \subsection{Typing}
 \TypingRuleDef{EGetFields}
+\ExampleDef{Typing Multi-field Expressions}
+\pagebreak
+\listingref{egetfields} shows examples of well-typed multi-field expressions.
+\ASLListing{Typing multi-field expressions}{egetfields}{\typingtests/TypingRule.EGetFields.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1973,6 +2074,15 @@ returns the slices associated with the bitfield named $\name$ in the list of bit
 in $\vslices$.
 \ProseOtherwiseTypeError
 
+\ExampleDef{Finding the Slices of a Bitfield}
+In \listingref{eget-bitfield},
+given the list of bitfields of the \verb|Packet| type,
+the list of slices associated with
+\verb|data| is \verb|7:1|.
+Attempting to obtain the list of slices associated with
+\verb|crc|, given the list of bitfields of the \verb|Packet| type,
+yields a \typingerrorterm, since it is a nested bitfield.
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2030,12 +2140,18 @@ The helper function
   \getbitfieldwidth(
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\identifier}{\name} \aslsep
-    \overname{\field^*}{\tfields})
+    \overname{\Field^*}{\tfields})
   \aslto \overname{\expr}{\ewidth} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 returns the expression $\ewidth$ that describes the width of the bitfield named $\name$
 in the list of fields $\tfields$.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Obtaining the Width of a Bitfield}
+In \listingref{egetfields},
+obtaining the width of the field \verb|bits3_2|,
+given the list of fields of the type \verb|RecordWithBits|
+yields the literal expression for \verb|2|.
 
 \ProseParagraph
 \OneApplies
@@ -2043,7 +2159,7 @@ in the list of fields $\tfields$.
   \item \AllApplyCase{okay}
   \begin{itemize}
     \item applying $\assocopt$ to find the type associated with $\name$ in $\tfields$ yields the type $\vt$;
-    \item applying $\getbitvectorwidth$ to $\vt$ in $\tenv$ yields $\ewidth$.
+    \item applying $\getbitvectorwidth$ to $\vt$ in $\tenv$ yields $\ewidth$\ProseOrTypeError.
   \end{itemize}
 
   \item \AllApplyCase{error}
@@ -2057,7 +2173,7 @@ in the list of fields $\tfields$.
 \begin{mathpar}
 \inferrule[okay]{
   \assocopt(\name, \tfields) \typearrow \langle\vt\rangle\\
-  \getbitvectorwidth(\tenv, \vt) \typearrow \ewidth
+  \getbitvectorwidth(\tenv, \vt) \typearrow \ewidth \OrTypeError
 }{
   \getbitfieldwidth(\tenv, \name, \tfields) \typearrow \ewidth
 }
@@ -2082,6 +2198,12 @@ The helper function
 generates the expression $\ewidth$, which represents the summation of all expressions in the list $\exprs$,
 normalized in the static environment $\tenv$.
 \ProseOrTypeError
+
+\ExampleDef{Summing Widths}
+Summing the list of expression \verb|2, 3|,
+yields the expression \verb|2+3|,
+(in AST terms, \\
+$\AbbrevEBinop{\PLUS}{\ELInt{2}}{\ELInt{2}}$).
 
 \ProseParagraph
 \OneApplies
@@ -2118,6 +2240,16 @@ normalized in the static environment $\tenv$.
 
 \subsection{Semantics}
 \SemanticsRuleDef{EGetfields}
+\ExampleDef{Evaluating Multi-field Expressions}
+In \listingref{egetfields},
+evaluating the multi-field expression \\
+\verb|bits_var.[bits3_2, bit1, bit0, info_and_bits]|
+yields the bitvector value \\
+\verb|'00101010'|,
+and evaluating the multi-field expression \\
+\verb|record_var.[bits3_2, bit1, bit0, info]|
+yields the bitvector value \verb|'001010'|.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -2147,8 +2279,8 @@ normalized in the static environment $\tenv$.
 \identi{TCST}
 The rule about domains in the definitions of subtype-satisfaction and
 type-satisfaction means that it is illegal to use the unconstrained integer
-where a constrained integer is expected. An asserting type conversion (ATC) can
-be used to overcome this.
+where a constrained integer is expected.
+An asserting type conversion, ATC for short, can be used to overcome this.
 
 \identi{CGRH}
 An ATC allows code to explicitly mark places where uses of constrained types
@@ -2161,6 +2293,8 @@ Note that ATCs are execution-time checks. An execution-time check is a
 condition that is evaluated during the evaluation of an execution-time
 initializer expression or subprogram. If the condition evaluates to $\False$ it
 is a dynamic error.
+
+\ASLListing{ATC expressions}{typing-atc}{\typingtests/TypingRule.ATC.asl}
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -2200,11 +2334,15 @@ is a dynamic error.
 
 \subsection{Typing}
 \TypingRuleDef{ATC}
+\ExampleDef{Well-typed Asserting Type Conversion Expressions}
+\listingref{typing-atc} shows examples of ATC expressions
+and the corresponding annotated expressions in comments.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
   \item $\ve$ denotes an asserting type conversion with expression $\vep$ and type $\tty$, that is $\EATC(\vep, \tty)$;
-  \item annotating the expression $\vep$ in $\tenv$ yields $(\vt, \vepp, \\vsese)$\ProseOrTypeError;
+  \item annotating the expression $\vep$ in $\tenv$ yields $(\vt, \vepp, \vsese)$\ProseOrTypeError;
   \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
   \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
   \item obtaining the \structure\ of $\tty'$ in $\tenv$ yields $\vtystruct$\ProseOrTypeError;
@@ -2250,6 +2388,10 @@ The helper function
 checks whether the types $\vtone$ and $\vttwo$, which are assumed to not be named types,
 are compatible for a typing assertion in the static environment $\tenv$, yielding $\True$.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Ill-typed ATC Expressions}
+\listingref{checkatc} shows examples of ill-typed ATC expressions.
+\ASLListing{Ill-typed ATC expressions}{checkatc}{\typingtests/TypingRule.CheckATC.asl}
 
 \ProseParagraph
 \OneApplies
@@ -2424,6 +2566,12 @@ only returns \False\ in cases where dynamic information is required.
 Recall that the $\vt$ is the result of $\annotatetype$, which ensures that
 all sub-expressions appearing in $\vt$ are side-effect-free.
 
+\ExampleDef{Checking Whether a Value Belongs to a Type}
+In \listingref{semantics-variousatcs},
+checking whether the value \verb|2| is a member of the type \verb|integer{1,2,3}|
+succeeds whereas checking whether the value \verb|2| is a member
+of the type \verb|integer{4, 5, 6}| fails.
+
 \OneApplies
 \begin{itemize}
   \item \AllApplyCase{type\_equal}
@@ -2471,6 +2619,7 @@ all sub-expressions appearing in $\vt$ are side-effect-free.
     of the constraints.
   \end{itemize}
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[type\_equal]{
@@ -2518,6 +2667,7 @@ all sub-expressions appearing in $\vt$ are side-effect-free.
 \end{mathpar}
 \CodeSubsection{\EvalValOfTypeBegin}{\EvalValOfTypeEnd}{../Interpreter.ml}
 
+\subsubsection{Comments}
 Notice that these rules cover all types, including named types ($\TNamed$),
 since the \typedast\ returned from \TypingRuleRef{ATC} is the \structure\ of the type
 given in the specification.
@@ -2541,6 +2691,8 @@ tests whether the integer value $n$ \emph{satisfies the constraint} $\vc$
 (that is, whether $n$ is within the range of values defined by $\vc$) in the environment $\env$
 and returns a Boolean answer $\vb$ and the execution graph $\vg$ resulting from evaluating
 the expressions appearing in $\vc$.
+
+See \ExampleRef{Checking Whether a Value Belongs to a Type}.
 
 \ProseParagraph
 \OneApplies
@@ -2596,6 +2748,8 @@ Lists of patterns are also used in case statements.
 %
 \chapref{PatternMatching} goes into the details of the various types of patterns that can be matched against.
 
+\ASLListing{Pattern expressions}{semantics-epattern}{\semanticstests/SemanticsRule.EPattern.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nexpr \derives\  & \Nexpr \parsesep \Tin \parsesep \Npatternset &\\
@@ -2643,6 +2797,8 @@ Lists of patterns are also used in case statements.
 
 \subsection{Typing}
 \TypingRuleDef{EPattern}
+\listingref{semantics-epattern} shows examples of pattern expressions.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -2673,7 +2829,9 @@ Lists of patterns are also used in case statements.
 In \listingref{semantics-epattern},
 the expression \texttt{42 IN \{0..3, 42\}} evaluates to $\nvbool(\True)$
 whereas the expression \texttt{42 IN \{0..3, -4\}} evaluates to $\nvbool(\False)$.
-\ASLListing{Evaluating a pattern expression}{semantics-epattern}{\semanticstests/SemanticsRule.EPattern.asl}
+%
+In addition, all assertions, which demonstrate pattern expression involving bitmasks,
+succeed.
 
 \ProseParagraph
 \AllApply
@@ -2712,7 +2870,6 @@ Note that there are two important consequences of producing an arbitrary value w
     In particular, the language does not define which valid member it is, and ASL specifications must not rely on the value (for example, there is no way to test whether a value was produced by evaluating \ARBITRARY{}).
 \end{enumerate}
 
-
 \subsection{Syntax}
 \begin{flalign*}
 \Nexpr \derives\  & \Tarbitrary \parsesep \Tcolon \parsesep \Nty &
@@ -2735,6 +2892,11 @@ Note that there are two important consequences of producing an arbitrary value w
 
 \subsection{Typing}
 \TypingRuleDef{EArbitrary}
+\listingref{semantics-earbitraryunconstrained},
+\listingref{semantics-earbitraryconstrained}, and
+\listingref{semantics-earbitraryarray}
+show examples of well-typed arbitrary value expressions.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -2825,8 +2987,10 @@ and how to obtain an arbitrary enumeration-indexed array, \texttt{enum\_array}.
 Notice that this rule introduces non-determinism.
 \identr{WLCH}
 
-\hypertarget{def-recordexpressionterm}{}
 \section{Structured Type Construction Expressions\label{sec:StructuredTypeConstructionExpressions}}
+\hypertarget{def-recordexpressionterm}{}
+\ASLListing{Record construction expression}{semantics-erecord}{\semanticstests/SemanticsRule.ERecord.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nexpr \derives\  & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace &\\
@@ -2891,13 +3055,16 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \subsection{Typing}
 \TypingRuleDef{ERecord}
+\listingref{semantics-erecord} shows an example of a well-typed record construction expression
+and an example (in comment) where the same field is initialized twice, which is incalid..
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
   \item $\ve$ denotes the record construction expression (which is also used for creating exceptions) of type $\tty$ with fields $\fields$,
         that is, $\ERecord(\tty, \vfields)$;
   \item obtaining the \underlyingtype\ of $\tty$ in $\tenv$ yields $\ttyanon$\ProseOrTypeError;
-  \item checking that $\ttyanon$ is a \structuredtype\ yields $\True$\ProseOrTypeError;% \ProseTerminateAs{\TypeErrorVal{\ExpectedStructuredType}};
+  \item checking that $\ttyanon$ is a \structuredtype\ yields $\True$\ProseTerminateAs{\UnexpectedType};
   \item $\ttyanon$ is a \structuredtype\ with a list of $\field$ elements (consisting of a field name and a field type);
   \item obtaining the list of field names from $\vfields$ yields the list of identifiers \\
         $\initializedfields$;
@@ -2957,7 +3124,10 @@ The function
 \]
 annotates a field initializers $(\name, \vep)$ in a record expression
 with list of fields \\ $\fieldtypes$ and returns the annotated initializing expression $\vepp$
-and its \sideeffectdescriptorterm\ $\vses$. \ProseOtherwiseTypeError
+and its \sideeffectdescriptorterm\ $\vses$.
+\ProseOtherwiseTypeError
+
+See \listingref{semantics-erecord} for an example.
 
 \ProseParagraph
 \AllApply
@@ -2986,7 +3156,6 @@ and its \sideeffectdescriptorterm\ $\vses$. \ProseOtherwiseTypeError
 In \listingref{semantics-erecord},
 the expression \verb|MyRecordType{a=3, b=42}| evaluates to the native record value \\
 $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
-\ASLListing{Evaluating a record construction expression}{semantics-erecord}{\semanticstests/SemanticsRule.ERecord.asl}
 
 \ProseParagraph
 \AllApply
@@ -3014,8 +3183,11 @@ $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
 \end{mathpar}
 \CodeSubsection{\EvalERecordBegin}{\EvalERecordEnd}{../Interpreter.ml}
 
-\hypertarget{def-tupleexpressionterm}{}
 \section{Tuple Expressions\label{sec:TupleExpressions}}
+\hypertarget{def-tupleexpressionterm}{}
+
+\ASLListing{Tuple expression}{semantics-etuple}{\semanticstests/SemanticsRule.ETuple.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nexpr \derives\  & \Plisttwo{\Nexpr} &
@@ -3038,6 +3210,8 @@ $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
 
 \subsection{Typing}
 \TypingRuleDef{ETuple}
+\listingref{semantics-etuple} shows an example of a well-typed tuple expressions.
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -3084,7 +3258,6 @@ $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
 \ExampleDef{Evaluation of Tuple Expressions}
 In \listingref{semantics-etuple},
 the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
-\ASLListing{Evaluating a tuple expression}{semantics-etuple}{\semanticstests/SemanticsRule.ETuple.asl}
 
 \ProseParagraph
 \AllApply
@@ -3146,6 +3319,15 @@ The Semantic Rules use $\evalexprsef\empty$ because the typechecker in
 $\annotatetype$ guarantees that expressions in types are side-effect-free.
 
 \SemanticsRuleDef{EArray}
+In \listingref{typing-tarray},
+the variable \verb|int_arr| is initialized with an array construction expression
+(which is not expressible in ASL text, only in \typedast, but conceptually could be
+represented as \verb|array[[4]] of 0|),
+which evaluates to
+\[
+\nvvector{[\nvint(0), \nvint(0), \nvint(0), \nvint(0)]} \enspace.
+\]
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -3177,6 +3359,15 @@ $\annotatetype$ guarantees that expressions in types are side-effect-free.
 \CodeSubsection{\EvalEArrayBegin}{\EvalEArrayEnd}{../Typing.ml}
 
 \SemanticsRuleDef{EEnumArray}
+In \listingref{typing-tarray},
+the variable \verb|big_little_arr| is initialized with an array construction expression
+(which is not expressible in ASL text, only in \typedast, but conceptually could be
+represented as \verb|array[[Labels]] of '0000'|),
+which evaluates to
+\[
+\nvrecord{\{\texttt{BIG}\mapsto\nvbitvector(0000), \texttt{LITTLE}\mapsto\nvbitvector(0000)\}} \enspace.
+\]
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -3224,6 +3415,11 @@ The helper relation
 specializes the expression evaluation relation for side-effect-free expressions
 by omitting throwing configurations as possible output configurations.
 
+\ExampleDef{Evaluating a Side-effect-free Expression}
+Evaluating the literal expression $\lint(1)$ in any environment $\env$,
+yields \\
+$\Normal(\nvint(1), \emptygraph)$.
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
@@ -3237,8 +3433,8 @@ since side-effect-free expressions do not modify the environment.
 
 \section{Evaluating a List of Expressions\label{sec:ExprList}}
 \SemanticsRuleDef{EExprList}
-The relation
 \hypertarget{def-evalexprlist}{}
+The relation
 \[
   \evalexprlist{\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vle}} \;\aslrel\;
   \Normal((\overname{\vals^*}{\vv} \times \overname{\XGraphs}{\vg})\aslsep \overname{\envs}{\newenv}) \cup
@@ -3248,6 +3444,12 @@ evaluates the list of expressions $\vle$ in left-to-right order in the initial e
 and returns the resulting value $\vv$, the parallel composition of the execution graphs
 generated from evaluating each expression, and the new environment $\newenv$.
 If the evaluation of any expression terminates abnormally then the abnormal configuration is returned.
+
+\ExampleDef{Evaluating a List of Expressions}
+In \listingref{semantics-erecord},
+evaluating the expression \verb|MyRecordType{a=3, b=42}| entails evaluating
+the expression list \verb|3, 42|, which yields
+the list of values $[\nvint(3), \nvint(42)]$.
 
 \ProseParagraph
 \OneApplies

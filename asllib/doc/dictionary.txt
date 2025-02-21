@@ -84,6 +84,7 @@ analyzers
 analyzes
 analyzing
 ancestor
+ancestors
 and
 annotate
 annotated
@@ -171,6 +172,7 @@ auxiliary
 available
 avoid
 avoidance
+avoiding
 avoids
 away
 axiom
@@ -196,6 +198,7 @@ behave
 behavior
 behaviors
 being
+belongs
 below
 better
 between
@@ -622,6 +625,7 @@ ensure
 ensured
 ensures
 ensuring
+entails
 entire
 entirely
 entries
@@ -702,6 +706,7 @@ export
 exposes
 express
 expressed
+expressible
 expressing
 expression
 expressionless
@@ -1196,6 +1201,7 @@ now
 number
 numbered
 numbers
+numeral
 numerator
 object
 observe
@@ -1378,6 +1384,7 @@ priori
 priorities
 priority
 procedure
+procedures
 process
 processed
 processes
@@ -1460,6 +1467,7 @@ reference
 references
 referred
 referring
+refers
 refine
 refinement
 refines
@@ -1486,9 +1494,6 @@ relies
 rely
 relying
 remain
-relies
-rely
-relying
 remainder
 remaining
 remove
@@ -1766,6 +1771,7 @@ summation
 summing
 sums
 super
+supers
 superset
 supertypes
 support
