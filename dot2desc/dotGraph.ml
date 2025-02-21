@@ -63,8 +63,9 @@ module ParsedSubgraph = ParsedDotGraph.Subgraph
 
 (* To be called after Str.string_match was called on the appropriate regex and
    string. The regex must contain 2 groups, the second of which matching the
-   location, and the instruction must contain register addressing using the
-   "[Xn]" syntax. *)
+   location. This will search for the address register in the instruction
+   using the "[Xn]" syntax. If no such register is found, it returns None in
+   its place. *)
 let get_loc_and_address_reg value =
   let loc = Str.matched_group 2 value in
   (* Look for the register that was used to address memory, which
@@ -72,9 +73,8 @@ let get_loc_and_address_reg value =
   let address_reg = Str.regexp {|\[\([A-Z_]+[0-9]*\)\]|} in
   let reg = try
     ignore (Str.search_backward address_reg value (String.length value - 1));
-    Str.matched_group 1 value
-  with Not_found ->
-    Warn.fatal "Could not find address register for memory access" in
+    Some (Str.matched_group 1 value)
+  with Not_found -> None in
   (loc, reg)
 
 let get_label_value attrs =
@@ -98,12 +98,11 @@ let tr_stmt acc stmt param_map =
   (* To be called after Str.string_match was called on the appropriate regex
     and string. The regex must contain 2 groups: the first is a (R|W) denoting
     whether the access is a read or a write effect, and the second matches the
-    location. The instruction must contain register addressing using the "[Xn]"
-    syntax. *)
+    location. *)
   let do_mem_access value read write =
     let f = if Str.matched_group 1 value = "R" then read else write in
     let loc, reg = get_loc_and_address_reg value in
-    let reg = StringMap.safe_find reg reg param_map in
+    let reg = Option.map (fun reg -> StringMap.safe_find reg reg param_map) reg in
     let is_explicit = not (str_contains value "NExp") in
     { Node.desc=f loc reg is_explicit; kind=Node.Mem } in
 
@@ -171,14 +170,27 @@ let tr_stmt acc stmt param_map =
       let fault = Str.regexp {|[a-zA-Z0-9_]*: Fault(\([a-zA-Z0-9_:,]*\))|} in
       let exc_entry = Str.regexp {|[a-zA-Z0-9_]*: ExcEntry(\([a-zA-Z0-9_:,]*\))|} in
       let empty = Str.regexp {|[a-zA-Z0-9_]*: \\|} in
+
+      let require_address_reg f name loc reg is_explicit =
+        match reg with
+        | Some r -> f loc r is_explicit
+        | None -> Warn.fatal "No address register found for %s access\n" name in
+
+      let tag_read = require_address_reg DescDict.tag_read "tag read" in
+      let tag_write = require_address_reg DescDict.tag_write "tag write" in
+      let pte_read = require_address_reg DescDict.pte_read "PTE read" in
+      let pte_write = require_address_reg DescDict.pte_write "PTE write" in
+      let pa_read = require_address_reg DescDict.pa_read "PA read" in
+      let pa_write = require_address_reg DescDict.pa_write "PA write" in
+
       let node = if Str.string_match mem_access value 0 then
         do_mem_access value DescDict.mem_read DescDict.mem_write
       else if Str.string_match tag_access value 0 then
-        do_mem_access value DescDict.tag_read DescDict.tag_write
+        do_mem_access value tag_read tag_write
       else if Str.string_match pte_access value 0 then
-        do_mem_access value DescDict.pte_read DescDict.pte_write
+        do_mem_access value pte_read pte_write
       else if Str.string_match pa_access value 0 then
-        do_mem_access value DescDict.pa_read DescDict.pa_write
+        do_mem_access value pa_read pa_write
       else if Str.string_match ifetch value 0 then begin
         let f = DescDict.ifetch in
         let label = Str.matched_group 1 value in
@@ -418,15 +430,21 @@ let convert_bnodes stmts =
   let branching_mte_tag = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(color)|} in
   let branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)|} in
   let tag_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[tag(\([a-zA-Z0-9_\+]+\))\]|} in
-  let pte_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[PTE(\([a-zA-Z0-9_\+]+\))\]|} in
+  let pte_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[PTE(\([a-zA-Z0-9_\+]+\))\]|} in 
 
   let bcolour_nodes = update_labels branching_mte_tag tag_access (fun p_val ->
     (* The address register should be the same in the p_val as in value *)
     let loc, reg = get_loc_and_address_reg p_val in
+    let reg = match reg with
+    | Some r -> r
+    | None -> Warn.fatal "Missing address register for MTE access\n" in
     Printf.sprintf "\\0(tag(%s), %s)" loc reg
   ) in
   let b_pte_nodes = update_labels branching pte_access (fun p_val ->
     let loc, reg = get_loc_and_address_reg p_val in
+    let reg = match reg with
+    | Some r -> r
+    | None -> Warn.fatal "Missing address register for PTE access\n" in
     Printf.sprintf "\\0(PTE(%s), %s)" loc reg
   ) in
   let b_nodes = StringMap.union_std (fun key _ _ ->
