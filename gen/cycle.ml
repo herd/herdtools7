@@ -903,29 +903,37 @@ let set_same_loc st n0 =
     List.fold_left ( fun (next_x_ok, st) n ->
     (* Update the `cell` in `st` if there is a `.store *)
       let st = if n.store == nil then st else set_write_val_ord st n.store in
+      (* Update tag and instruction value in `st` no matter `W`, `R` etc. *)
+      (* TODO: potentially rework the if-elseif-else here as it is confused *)
+      begin if Code.is_data n.evt.loc then
+         begin if do_memtag then
+             let tag = CoSt.get_co st Tag in
+             n.evt <- { n.evt with tag=tag; }
+           else if do_morello then
+             let ord = CoSt.get_co st Ord in
+             let ctag = CoSt.get_co st CapaTag in
+             let cseal = CoSt.get_co st CapaSeal in
+             n.evt <- { n.evt with ord=ord; ctag=ctag; cseal=cseal; }
+           end
+         else begin
+           let instr = CoSt.get_co st Instr in
+           n.evt <- { n.evt with ins=instr}
+         end
+ (*
+           else if do_neon then (* set both fields, it cannot harm *)
+             let ord = get_co st Ord in
+             let v = get_co st VecReg in
+             let vecreg = [|v;v;v;v;|] in
+             n.evt <- { n.evt with ord=ord; vecreg=vecreg; }
+ *)
+      end ;
+      (* END of `if Code.is_data n.evt.loc` *)
       match n.evt.dir with
       | Some W ->
           begin 
           let check_value = Some (CoSt.get_check_value st) in
           match n.evt.loc with
           | Data _ ->
-              begin
-              if do_memtag then
-                let tag = CoSt.get_co st Tag in
-                n.evt <- { n.evt with tag=tag; }
-              else if do_morello then
-                let ord = CoSt.get_co st Ord in
-                let ctag = CoSt.get_co st CapaTag in
-                let cseal = CoSt.get_co st CapaSeal in
-                n.evt <- { n.evt with ord=ord; ctag=ctag; cseal=cseal; }
-(*
-              else if do_neon then (* set both fields, it cannot harm *)
-                let ord = get_co st Ord in
-                let v = get_co st VecReg in
-                let vecreg = [|v;v;v;v;|] in
-                n.evt <- { n.evt with ord=ord; vecreg=vecreg; }
-*)
-              end ;
               (* Helper function returns a fresh label and a boolean for if it should fault, 
                  if a fault check is need. Otherwise return `None` *)
               let fault_update st =
@@ -934,7 +942,7 @@ let set_same_loc st n0 =
                   (if do_kvm && check_fault then label_fault pte_val else None), st in 
               let bank = n.evt.bank in
               begin match bank with
-              | Instr -> Warn.fatal "not letting instr write happen"
+              | Instr -> Warn.fatal "instruction annotation to data bank not possible?"
               | Ord ->
                  let st = set_write_val_ord st n in
                  let check_fault, st = fault_update st in
