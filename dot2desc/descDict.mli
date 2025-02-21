@@ -31,8 +31,8 @@ val reg: string -> string
 val reg_pair: string -> string -> string
 
 (* location -> address register -> is_explicit -> description *)
-val mem_read: string -> string -> bool -> string
-val mem_write: string -> string -> bool ->  string
+val mem_read: string -> string option -> bool -> string
+val mem_write: string -> string option -> bool ->  string
 val tag_read: string -> string -> bool -> string
 val tag_write: string -> string -> bool -> string
 val pte_read: string -> string -> bool -> string
