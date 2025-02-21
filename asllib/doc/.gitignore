@@ -6,3 +6,4 @@ comment.cut
 *.blg
 *.dvi
 __pycache__
+ASLReference.synctex(busy)

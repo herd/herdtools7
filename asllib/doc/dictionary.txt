@@ -84,6 +84,7 @@ analyzers
 analyzes
 analyzing
 ancestor
+ancestors
 and
 annotate
 annotated
@@ -171,6 +172,7 @@ auxiliary
 available
 avoid
 avoidance
+avoiding
 avoids
 away
 axiom
@@ -1373,6 +1375,7 @@ priori
 priorities
 priority
 procedure
+procedures
 process
 processed
 processes
@@ -1481,9 +1484,6 @@ relies
 rely
 relying
 remain
-relies
-rely
-relying
 remainder
 remaining
 remove
@@ -1759,6 +1759,7 @@ summation
 summing
 sums
 super
+supers
 superset
 supertypes
 support
