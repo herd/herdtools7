@@ -51,11 +51,15 @@ let mwe_of arg is_explicit =
     Printf.sprintf "\\ImpMWEof{%s}" arg
 
 let mem_read loc reg is_explicit =
-  let arg = memloc_addr_by loc reg in
+  let arg = match reg with
+  | Some r -> memloc_addr_by loc r
+  | None -> memloc loc in
   mre_of arg is_explicit
 
 let mem_write loc reg is_explicit =
-  let arg = memloc_addr_by loc reg in
+  let arg = match reg with
+  | Some r -> memloc_addr_by loc r
+  | None -> memloc loc in
   mwe_of arg is_explicit
 
 let tag_read loc reg is_explicit =
