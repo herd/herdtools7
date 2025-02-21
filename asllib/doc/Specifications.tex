@@ -34,7 +34,8 @@ We define this function for subprogram declarations, type declarations, and glob
 
 \begin{mathpar}
 \inferrule[ast]{
-    \buildlist[\builddecl](\vdecls) \astarrow \vadecls
+    \buildlist[\builddecl](\vdecls) \astarrow \vdeclsone \\
+    \concatlist(\vdeclsone) \astarrow \vadecls
 }{
     \buildast(\overname{\Nspec(\namednode{\vdecls}{\maybeemptylist{\Ndecl}})}{\vparsednode}) \astarrow \overname{\vadecls}{\vastnode}
 }
@@ -222,23 +223,14 @@ $\decls$ in the global static environment $\genv$,
 yielding the annotated list of subprogram declarations $\newdecls$
 and modified global static environment $\newgenv$.
 
-One of the requirements from an ASL specification is that each setter has a corresponding getter.
-To facilitate checking this requirement, the type-system annotates the declarations of all subprograms
-that are not setters before annotating the declarations of setters. This way, when annotating a setter,
-the corresponding getter should have already been annotated and added to the environment, making it
-easy to check this requirement.
-
 \ProseParagraph
 \AllApply
 \begin{itemize}
   \item checking that each declaration in $\vd$ is a subprogram declaration yields $\True$\ProseTerminateAs{\BadDeclaration};
   \item applying $\annotatefuncsig$ to each node $\vf$ in $\genv$, where $\DFunc(\vf)$ is a declaration in $\decls$,
         yields $(\tenv_\vf, \vd_\vf, \vses_\vf)$\ProseOrTypeError;
-  \item define $\envandfs$ as the list of pairs, each consisting of the local environment component of $\tenv_\vf$
+  \item define $\envandfsone$ as the list of pairs, each consisting of the local environment component of $\tenv_\vf$
         the annotated subprogram $\vd_\vf$, and the \sideeffectsetterm\ $\vses_\vf$, for each subprogram declaration $\DFunc(\vf)$ in $\decls$;
-  \item splitting $\envandfs$ into two sublists by testing each pair to check whether the subprogram declaration
-        component is that of a setter yields $\setters$ and $\others$, respectively;
-  \item define $\envandfsone$ as the concatenation of $\others$ and $\setters$;
   \item applying $\declaresubprograms$ to $\genv$ and $\envandfsone$ yields \\
         $(\genvtwo, \envandfstwo)$\ProseOrTypeError;
   \item for tuple in $\envandfstwo$ consisting of a local static environment, an element of $\func$,
@@ -259,20 +251,7 @@ easy to check this requirement.
 \inferrule{
   \vd\in\decls: \checktrans{\astlabel(\vd) = \DFunc}{\BadDeclaration} \typearrow \True\OrTypeError\\\\
   \DFunc(\vf)\in\decls: \annotatefuncsig(\genv, \vf) \typearrow (\tenv_\vf, \vd_\vf, \vses_\vf)\OrTypeError\\\\
-  \envandfs \eqdef [\DFunc(\vf)\in\decls: (L^{\tenv_\vf}, \vd_\vf, \vses_\vf)]\\
-  {
-  \setters \eqdef \left[ \begin{array}{r|l}
-    (\lenv,\vf, \vses) & (\lenv, \vf, \vses) \in \envandfs\ \land \\
-                & \vf.\funcsubprogramtype = \STSetter
-  \end{array}\right]
-  }\\
-  {
-  \others \eqdef \left[ \begin{array}{r|l}
-    (\lenv,\vf, \vses) & (\lenv, \vf, \vses) \in \envandfs\ \land \\
-                & \vf.\funcsubprogramtype\neq \STSetter
-  \end{array}\right]
-  }\\
-  \envandfsone \eqdef \others \concat \setters \\
+  \envandfsone \eqdef [\DFunc(\vf)\in\decls: (L^{\tenv_\vf}, \vd_\vf, \vses_\vf)]\\
   \declaresubprograms(\genv, \envandfsone) \typearrow (\genvtwo, \envandfstwo) \OrTypeError\\\\
   {
     \begin{array}{r}

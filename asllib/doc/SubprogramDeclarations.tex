@@ -15,9 +15,8 @@ Subprogram declarations have no associated semantics.
 \Ndecl  \derives \ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \\
 & \wrappedline\ \parsesep \Nfuncbody &\\
 |\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
-|\ & \Tgetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody&\\
-|\ & \Tsetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Teq \parsesep \Ntypedidentifier & \\
-    & \wrappedline\ \parsesep \Nfuncbody &\\
+|\ & \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbiarrow \parsesep \Nty &\\
+   & \wrappedline\ \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon &\\
 \end{flalign*}
 
 \begin{flalign*}
@@ -29,7 +28,12 @@ Subprogram declarations have no associated semantics.
 \Nfuncargs          \derives \ & \Tlpar \parsesep \ClistZero{\Ntypedidentifier} \parsesep \Trpar &\\
 \Nreturntype        \derives \ & \Tarrow \parsesep \Nty &\\
 \Nfuncbody          \derives \ & \Tbegin \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
-\Nmaybeemptystmtlist \derives \ & \emptysentence \;|\; \Nstmtlist &
+\Nmaybeemptystmtlist \derives \ & \emptysentence \;|\; \Nstmtlist &\\
+\Naccessors \derives \ &
+  \Tgetter \parsesep \Nfuncbody \parsesep
+  \Tsetter \parsesep \Teq \parsesep \Tidentifier \parsesep \Nfuncbody &\\
+|\ & \Tsetter \parsesep \Teq \parsesep \Tidentifier \parsesep \Nfuncbody \parsesep
+    \Tgetter \parsesep \Nfuncbody &\\
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -64,9 +68,26 @@ Subprogram declarations have no associated semantics.
 \ASTRuleDef{GlobalDecl}
 The relation
 \[
-  \builddecl : \overname{\parsenode{\Ndecl}}{\vparsednode} \;\aslrel\; \overname{\decl}{\vastnode}
+  \builddecl : \overname{\parsenode{\Ndecl}}{\vparsednode} \;\aslrel\; \overname{\decl^*}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+We first define $\accessorpair$, which we use in this section as an intermediate representation between the syntax forms of accessors and their corresponding abstract syntax.
+In particular, rather than directly building the abstract syntax for accessors, we first build an $\accessorpair$ structure, which we then desugar into abstract syntax.
+
+\hypertarget{ast-accessorpair}{}
+\begin{flalign*}
+\accessorpair \derives\ &
+{
+\left\{
+  \begin{array}{rcl}
+    \accessorpairgetter &:& \stmt, \\
+    \accessorpairsetter &:& \stmt,\\
+    \accessorpairsetterarg &:& \identifier
+\end{array}
+\right\}
+} &
+\end{flalign*}
 
 \begin{mathpar}
 \inferrule[func\_decl]{}{
@@ -80,7 +101,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \astarrow \\
 {
     \overname{
-  \DFunc\left(\left\{
+  \left[\DFunc\left(\left\{
     \begin{array}{rcl}
             \funcname &:& \name,\\
             \funcparameters &:& \astof{\vparamsopt},\\
@@ -91,7 +112,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
             \funcrecurselimit   &:& \langle\astof{\vrecurselimit}\rangle\\
             \funcbuiltin &:& \False
     \end{array}
-  \right\}\right)}{\vastnode}
+  \right\}\right)\right]}{\vastnode}
   }
 }
 \end{mathpar}
@@ -104,7 +125,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   \astarrow \\
   {
     \overname{
-  \DFunc\left(\left\{
+  \left[\DFunc\left(\left\{
     \begin{array}{rcl}
             \funcname &:& \name,\\
             \funcparameters &:& \astof{\vparamsopt},\\
@@ -115,71 +136,38 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
             \funcrecurselimit   &:& \None\\
             \funcbuiltin &:& \False
     \end{array}
-  \right\}\right)
+  \right\}\right)\right]
     }{\vastnode}
   }
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[getter]{}{
+\inferrule[accessor]{
+  \buildaccessors(\vaccessors) \astarrow \vaccessorpair \\
+  \desugaraccessorpair(\name, \astof{\vparamsopt}, \astof{\vfuncargs}, \astof{\tty}, \vaccessorpair) \astarrow \vastnode
+}{
   {
-    \begin{array}{r}
-  \builddecl\left(\overname{\Ndecl\left(
-    \begin{array}{l}
-      \Tgetter, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \\
-      \wrappedline\ \punnode{\Nreturntype}, \punnode{\Nfuncbody}
-    \end{array}
-      \right)}{\vparsednode}\right)
-  \astarrow \\
-  \overname{
-  \DFunc\left(\left\{
-    \begin{array}{rcl}
-            \funcname &:& \name,\\
-            \funcparameters &:& \astof{\vparamsopt},\\
-            \funcargs &:& \astof{\vfuncargs},\\
-            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
-            \funcreturntype &:& \langle \astof{\vreturntype}\rangle,\\
-            \funcsubprogramtype &:& \STGetter,\\
-            \funcrecurselimit   &:& \None\\
-            \funcbuiltin &:& \False
-    \end{array}
-  \right\}\right)
-  }{\vastnode}
+  \begin{array}{r}
+    \builddecl\left(\overname{\Ndecl\left(
+      \begin{array}{l}
+        \Taccessor, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs},
+        \Tbiarrow, \punnode{\Nty}, \\
+        \wrappedline\ \Tbegin, \namednode{\vaccessors}{\Naccessors}, \Tend, \Tsemicolon
+      \end{array}
+    \right)}{\vparsednode}\right)
+  \\ \astarrow \vastnode
   \end{array}
   }
 }
 \end{mathpar}
 
-\begin{mathpar}
-\inferrule[setter]{}{
-  {
-      \builddecl\left(\overname{\Ndecl\left(
-        \begin{array}{r}
-          \Tsetter, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \Teq, \\
-   \wrappedline\ \namednode{\vv}{\Ntypedidentifier}, \punnode{\Nfuncbody}
-        \end{array}
-   \right)}{\vparsednode}\right)
-  } \astarrow
-  \\
-  {
-    \overname{
-  \DFunc\left(\left\{
-    \begin{array}{rcl}
-            \funcname &:& \name,\\
-            \funcparameters &:& \astof{\vparamsopt},\\
-            \funcargs &:& [\vv] \concat \astof{\vfuncargs},\\
-            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
-            \funcreturntype &:& \None,\\
-            \funcsubprogramtype &:& \STSetter,\\
-            \funcrecurselimit   &:& \None\\
-            \funcbuiltin &:& \False
-    \end{array}
-  \right\}\right)
-    }{\vastnode}
-  }
-}
-\end{mathpar}
+\subsection{Example}
+\listingref{AccessorDeclaration} shows an accessor declaration.
+The accessor \texttt{X} is used to read and write underlying storage element \texttt{R}.
+For example, this could model a register file consisting of 32 registers, each of 64-bits, the last of which is always zero.
+
+\ASLListing{An accessor declaration}{AccessorDeclaration}{\definitiontests/Accessor.asl}
 
 \ASTRuleDef{RecurseLimit}
 \hypertarget{build-recurselimit}{}
@@ -341,6 +329,129 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
+\ASTRuleDef{Accessors}
+\hypertarget{build-accessors}{}
+The function
+\[
+\buildaccessors(\overname{\parsenode{\Naccessors}}{\vparsednode}) \aslto
+  \overname{\accessorpair}{\vaccessorpair}
+\]
+transforms a parse node $\vparsednode$ into an $\accessorpair$.
+
+\begin{mathpar}
+\inferrule{
+  \buildstmt(\vgetter) \astarrow \astversion{\vgetter} \\\\
+  \buildstmt(\vsetter) \astarrow \astversion{\vsetter} \\\\
+  {
+  \vaccessorpair \eqdef
+  \left\{
+  \begin{array}{rcl}
+    \accessorpairgetter    &:& \astversion{\vgetter},\\
+    \accessorpairsetter    &:& \astversion{\vsetter},\\
+    \accessorpairsetterarg &:& \name
+  \end{array}
+  \right\}
+  }
+}{
+  {
+  \begin{array}{r}
+    \buildaccessors(
+      \Tgetter, \namednode{\vgetter}{\Nfuncbody},
+      \Tsetter, \Tidentifier(\name), \namednode{\vsetter}{\Nfuncbody}
+    ) \\
+    \astarrow \vaccessorpair
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{
+  \buildstmt(\vgetter) \astarrow \astversion{\vgetter} \\\\
+  \buildstmt(\vsetter) \astarrow \astversion{\vsetter} \\\\
+  {
+  \vaccessorpair \eqdef
+  \left\{
+  \begin{array}{rcl}
+    \accessorpairgetter    &:& \astversion{\vgetter},\\
+    \accessorpairsetter    &:& \astversion{\vsetter},\\
+    \accessorpairsetterarg &:& \name
+  \end{array}
+  \right\}
+  }
+}{
+  {
+  \begin{array}{r}
+    \buildaccessors(
+      \Tsetter, \Tidentifier(\name), \namednode{\vsetter}{\Nfuncbody},
+      \Tgetter, \namednode{\vgetter}{\Nfuncbody}
+    ) \\
+    \astarrow \vaccessorpair
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\ASTRuleDef{DesugarAccessorPair}
+\hypertarget{def-desugaraccessorpair}{}
+The function
+\[
+\begin{array}{r}
+  \desugaraccessorpair(
+    \overname{\identifier}{\name} \aslsep
+    \overname{(\identifier \times \Some{\ty})^*}{\vparameters} \aslsep
+    \overname{\typedidentifier^*}{\vargs} \aslsep
+    \overname{\ty}{\tty} \aslsep
+    \overname{\accessorpair}{\vaccessorpair}
+  ) \\ \aslto
+  \overname{\decl^*}{\vastnode}
+\end{array}
+\]
+transforms an $\accessorpair$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{
+  {
+  \vgetter \eqdef
+      \DFunc\left\{
+      \begin{array}{rcl}
+        \funcname &:& \name,\\
+        \funcparameters &:& \vparameters,\\
+        \funcargs &:& \vargs,\\
+        \funcbody &:& \SBASL(\vaccessorpair.\accessorpairgetter),\\
+        \funcreturntype &:& \Some{\tty},\\
+        \funcsubprogramtype &:& \STGetter,\\
+        \funcrecurselimit   &:& \None\\
+        \funcbuiltin &:& \False
+      \end{array}
+      \right\}
+  } \\\\
+  \vsetterargs \eqdef [(\vaccessorpair.\accessorpairsetterarg, \tty)] \concat \vargs \\\\
+  {
+  \vsetter \eqdef
+      \DFunc\left\{
+      \begin{array}{rcl}
+        \funcname &:& \name,\\
+        \funcparameters &:& \vparameters,\\
+        \funcargs &:& \vsetterargs,\\
+        \funcbody &:& \SBASL(\vaccessorpair.\accessorpairsetter),\\
+        \funcreturntype &:& \None,\\
+        \funcsubprogramtype &:& \STSetter,\\
+        \funcrecurselimit   &:& \None\\
+        \funcbuiltin &:& \False
+      \end{array}
+      \right\}
+  }
+}{
+  {
+  \begin{array}{r}
+    \desugaraccessorpair(\name, \vparameters, \vargs, \tty, \vaccessorpair)
+    \astarrow [\vgetter, \vsetter]
+  \end{array}
+  }
+}
+\end{mathpar}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Typing}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -362,7 +473,6 @@ We also define the following helper rules:
   \item \TypingRuleRef{DeclareOneFunc}
   \item \TypingRuleRef{SubprogramClash}
   \item \TypingRuleRef{AddNewFunc}
-  \item \TypingRuleRef{CheckSetterHasGetter}
   \item \TypingRuleRef{AddSubprogram}
 \end{itemize}
 
@@ -1104,7 +1214,6 @@ resulting in an annotated function definition $\newfuncdef$ and new static envir
         environment $\tenvone$ and new name $\namep$\ProseOrTypeError;
   \item checking that $\namep$ is not already declared in the global environment of $\tenvone$
         yields $\True$\ProseOrTypeError;
-  \item ensuring that each setter has a getter given $\funcsig$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item $\funcsigone$ is $\funcsig$ with $\name$ substituted by $\nameone$;
   \item \Proseeqdef{$\initses$}{the union of $\vsesfuncsig$ and the singleton set for
         a \RecursiveCallTerm\ for $\namep$};
@@ -1131,7 +1240,6 @@ resulting in an annotated function definition $\newfuncdef$ and new static envir
   \addnewfunc(\tenv, \name, \vargs, \subprogramtype) \typearrow
   (\tenvone, \namep) \OrTypeError\\\\
   \checkvarnotingenv{G^\tenvone, \namep} \typearrow \True \OrTypeError\\\\
-  \checksetterhasgetter(\tenvone, \funcsig) \typearrow \True \OrTypeError\\\\
   {
   \begin{array}{rrcl}
     \newfuncsig \eqdef \{
@@ -1307,54 +1415,3 @@ and the environment $\newtenv$, which is updated with $\newname$.
 \end{mathpar}
 \identr{PGFC}
 \CodeSubsection{\AddNewFuncBegin}{\AddNewFuncEnd}{../Typing.ml}
-
-\TypingRuleDef{CheckSetterHasGetter}
-\hypertarget{def-checksetterhashgetter}{}
-The function
-\[
-  \checksetterhasgetter(\overname{\staticenvs}{\tenv} \aslsep \overname{\func}{\funcsig})
-  \aslto \overname{\True}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
-\]
-checks whether the setter procedure given by $\funcsig$ has a corresponding getter,
-returning $\True$ if this condition holds and a type error otherwise.
-
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item checking that the subprogram type of $\funcsig$ is $\STSetter$ has one of two outcomes:
-        $\False$, which satisfies the premise;
-        or $\True$, which short-circuits the entire rule
-        (since the subprogram is not any kind of setter and no getter is required);
-  \item \view\ the list of arguments of $\funcsig$ (that is, $\funcsig.\funcargs$) as follows:
-        the \head\ is an argument that has the type $\rettype$;
-        the \tail\ is a list with arguments that have the types $\argtypes$;
-  \item applying $\subprogramforname$ to look up $\tenv$ for a subprogram with the name given by $\funcsig$ (that is, $\funcsig.\funcname$)
-        yields a subprogram definition AST node $\funcsigp$\ProseOrTypeError;
-  \item checking that $\funcsigp.\funcsubprogramtype$ is $\STGetter$ yields $\True$\ProseOrTypeError;
-  \item define $\argtypesp$ as the list of types appearing in the signature of $\funcsigp$ (that is, in $\funcsigp.\funcargs$);
-  \item checking, for each index $\vi$ in the indices for $\argtypes$, that the type at $\argtypes[\vi]$ and the type at $\argtypesp[\vi]$
-        are \typeequivalent\ yields $\True$\ProseOrTypeError;
-  \item checking that $\rettype$ and $\funcsigp.\funcreturntype$ are \typeequivalent\ yields \\
-        $\True$\ProseOrTypeError;
-  \item define $\vb$ as $\True$ (that is, unless the rule short-circuited with a type error).
-\end{itemize}
-\CodeSubsection{\CheckSetterHasGetterBegin}{\CheckSetterHasGetterEnd}{../Typing.ml}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \issetter \eqdef \funcsig.\subprogramtype = \STSetter\\
-  \booltrans{\issetter} \booltransarrow \False \terminateas \True\\\\
-  \funcsig.\funcargs \eqname (\Ignore, \rettype) \concat \vargs\\
-  \argtypes \eqdef [(\Ignore, \vt) \in \vargs: \vt]\\
-  \subprogramforname(\tenv, \funcsig.\funcname, \argtypes) \typearrow (\Ignore, \Ignore, \funcsigp) \OrTypeError\\\\
-  \checktrans{\funcsigp.\funcsubprogramtype = \STGetter}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError\\\\
-  \argtypesp \eqdef [(\Ignore, \vt) \in \funcsigp.\funcargs : \vt]\\
-  \vi\in\listrange(\argtypes): \typeequal(\argtypes[\vi], \argtypesp[\vi]) \typearrow \vb_\vi \OrTypeError\\\\
-  \vi\in\listrange(\argtypes): \checktrans{\vb_\vi}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError\\\\
-  \typeequal(\rettype, \funcsigp.\funcreturntype) \typearrow \vb_\ret \OrTypeError\\\\
-  \checktrans{\vb_\ret}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError
-}{
-  \checksetterhasgetter(\tenv, \funcsig) \typearrow \overname{\True}{\vb}
-}
-\end{mathpar}

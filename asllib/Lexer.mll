@@ -77,6 +77,7 @@ let is_reserved_keyword: string -> bool =
 let token_of_string =
  let s t = Some t in
  function
+ | "ACCESSOR"           -> s ACCESSOR
  | "AND"                -> s AND
  | "ARRAY"              -> s ARRAY
  | "ARROW"              -> s ARROW
@@ -85,6 +86,7 @@ let token_of_string =
  | "BAND"               -> s BAND
  | "BEGIN"              -> s BEGIN
  | "BEQ"                -> s BEQ
+ | "BIARROW"            -> s BIARROW
  | "BIT"                -> s BIT
  | "BITS"               -> s BITS
  | "BNOT"               -> s BNOT
@@ -208,6 +210,7 @@ let token_to_symbol = function
   | PLUS               -> "+"
   | COLON              -> ":"
   | ARROW              -> "=>"
+  | BIARROW            -> "<=>"
   | RBRACE             -> "}"
   | COLON_COLON        -> "::"
   | GT                 -> ">"
@@ -216,6 +219,7 @@ let token_to_symbol = function
   | SEMI_COLON         -> ";"
   | GEQ                -> ">="
   (* Keywords *)
+  | ACCESSOR           -> "accessor"
   | AND                -> "AND"
   | ARRAY              -> "array"
   | AS                 -> "as"
@@ -307,6 +311,7 @@ let fatal lexbuf desc =
   |> Error.fatal
 
 let tr_name s = match s with
+| "accessor"      -> ACCESSOR
 | "AND"           -> AND
 | "array"         -> ARRAY
 | "as"            -> AS
@@ -484,6 +489,7 @@ and token = parse
     | '+'                      { PLUS                             }
     | ':'                      { COLON                            }
     | "=>"                     { ARROW                            }
+    | "<=>"                    { BIARROW                          }
     | '}'                      { RBRACE                           }
     | "++"                     { fatal lexbuf (ObsoleteSyntax "string concatenation with ++") }
     | "::"                     { COLON_COLON                      }

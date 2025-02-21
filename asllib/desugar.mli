@@ -89,3 +89,21 @@ val desugar_case_stmt :
     statement [otherwise].
     The result is a conditional statement, possibly preceded by an assignment
     of the condition [e0] to a fresh variable). *)
+
+type accessor_pair = {
+  getter : stmt;  (** getter body *)
+  setter : stmt;  (** setter body *)
+  setter_arg : identifier;  (** name of setter input argument *)
+}
+(** A getter/setter pair *)
+
+val desugar_accessor_pair :
+  identifier ->
+  (identifier * ty option) list ->
+  typed_identifier list ->
+  ty ->
+  accessor_pair ->
+  decl list
+(** [desugar_accessor_pair name params args ty accessor_pair] desugars the accessor
+    pair into two function declarations, with shared [name], [params], [args],
+    and input/return type [ty]. *)

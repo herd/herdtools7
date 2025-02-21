@@ -230,9 +230,13 @@ Parameterized integers:
   [1]
 
   $ aslref setter_without_getter.asl
-  File setter_without_getter.asl, line 1, character 0 to line 4, character 4:
-  ASL Typing error: setter "f" does not have a corresponding getter of
-    signature integer -> integer.
+  File setter_without_getter.asl, line 6, characters 0 to 3:
+  ASL Error: Cannot parse.
+  [1]
+
+  $ aslref getter_without_setter.asl
+  File getter_without_setter.asl, line 6, characters 0 to 3:
+  ASL Error: Cannot parse.
   [1]
 
   $ aslref tuple_items.asl
@@ -389,16 +393,16 @@ Base values
 
 Getters/setters
   $ aslref nonempty-getter-called-without-slices.asl
-  File nonempty-getter-called-without-slices.asl, line 8, characters 10 to 12:
+  File nonempty-getter-called-without-slices.asl, line 14, characters 10 to 12:
   ASL Error: Undefined identifier: 'f1'
   [1]
   $ aslref nonempty-setter-called-without-slices.asl
-  File nonempty-setter-called-without-slices.asl, line 13, characters 2 to 4:
+  File nonempty-setter-called-without-slices.asl, line 14, characters 2 to 4:
   ASL Error: Undefined identifier: 'f1'
   [1]
   $ aslref setter_subfield.asl
   $ aslref setter_subslice.asl
-  File setter_subslice.asl, line 15, characters 5 to 6:
+  File setter_subslice.asl, line 16, characters 5 to 6:
   ASL Error: Cannot parse.
   [1]
   $ aslref getter_subfield.asl

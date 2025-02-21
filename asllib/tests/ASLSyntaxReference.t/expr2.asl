@@ -1,11 +1,23 @@
-getter g0_bits() => bits(4)
+accessor g0_bits() <=> bits(4)
 begin
-  return '1000';
+  getter begin
+    return '1000';
+  end;
+
+  setter = value_in begin
+    Unreachable();
+  end;
 end;
 
-getter g1_bits(p: integer) => bits(4)
+accessor g1_bits(p: integer) <=> bits(4)
 begin
-  return '1000'[p, 2:0];
+  getter begin
+    return '1000'[p, 2:0];
+  end;
+
+  setter = value_in begin
+    Unreachable();
+  end;
 end;
 
 type point of record{x: bits(4), y: bits(4)};

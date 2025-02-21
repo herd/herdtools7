@@ -5,10 +5,16 @@ type ExtendType of enumeration
   {ExtendType_SXTB, ExtendType_SXTH, ExtendType_SXTW, ExtendType_SXTX,
   ExtendType_UXTB, ExtendType_UXTH, ExtendType_UXTW, ExtendType_UXTX};
 
-getter X{width : ElementSize}(n : Rnum_X) => bits(width)
+accessor X{width : ElementSize}(n : Rnum_X) <=> bits(width)
 begin
-    assert width IN {8,16,32,64};
-    return n[width-1:0];
+  getter begin
+      assert width IN {8,16,32,64};
+      return n[width-1:0];
+  end;
+
+  setter = value_in begin
+    Unreachable();
+  end;
 end;
 
 func ExtendReg{N : ElementSize}(reg : Rnum_X, exttype : ExtendType, shift : integer{0..4}) => bits(N)

@@ -24,9 +24,8 @@ Subprogram declarations:
 \begin{flalign*}
 \Ndecl  \derives \ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody &\\
 |\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
-|\ & \Tgetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody&\\
-|\ & \Tsetter \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Teq \parsesep \Ntypedidentifier & \\
-    & \wrappedline\ \parsesep \Nfuncbody &\\
+|\ & \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbiarrow \parsesep \Nty &\\
+   & \wrappedline\ \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon &\\
 \end{flalign*}
 
 Type declarations:
@@ -61,7 +60,7 @@ Pragmas:
 \hypertarget{build-decl}{}
 The relation
 \[
-  \builddecl : \overname{\parsenode{\Ndecl}}{\vparsednode} \;\aslrel\; \overname{\decl}{\vastnode}
+  \builddecl : \overname{\parsenode{\Ndecl}}{\vparsednode} \;\aslrel\; \overname{\decl^*}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -81,7 +80,7 @@ The case rules for building global declarations are the following:
   \begin{array}{r}
   \builddecl(\overname{\Ndecl(\Tpragma, \Tidentifier(\id), \namednode{\vargs}{\ClistZero{\Nexpr}}, \Tsemicolon)}{\vparsednode})
   \astarrow \\
-    \overname{\DPragma(\id, \astversion{\vargs})}{\vastnode}
+    \overname{\left[\DPragma(\id, \astversion{\vargs})\right]}{\vastnode}
   \end{array}
   }
 }

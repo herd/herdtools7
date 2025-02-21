@@ -1,11 +1,12 @@
-getter f1() => integer
+accessor f1() <=> integer
 begin
-  return 4;
-end;
+  getter begin
+    return 4;
+  end;
 
-setter f1() = v: integer
-begin
-  pass;
+  setter = v begin
+    pass;
+  end;
 end;
 
 func main () => integer

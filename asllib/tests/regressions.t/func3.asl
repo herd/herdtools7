@@ -1,42 +1,47 @@
-getter f1() => integer
+accessor f1() <=> integer
 begin
-  return 3;
+  getter begin
+    return 3;
+  end;
+
+  setter = v begin
+    assert v == 3;
+  end;
 end;
 
-setter f1() = v : integer
+accessor f1b() <=> integer
 begin
-  assert v == 3;
+  getter begin
+    return 4;
+  end;
+
+  setter = v begin
+    assert v == 4;
+  end;
 end;
 
-getter f1b() => integer
+accessor f2(x:integer) <=> integer
 begin
-  return 4;
+  getter begin
+    return f1b() + x;
+  end;
+
+  setter = v begin
+    f1b() = 4 * (v - x);
+  end;
 end;
 
-setter f1b() = v : integer
-begin
-  assert v == 4;
-end;
 
-getter f2(x:integer) => integer
+accessor f3(x:integer) <=> integer
 begin
-  return f1b() + x;
-end;
+  getter begin
+    return 0;
+  end;
 
-setter f2(x:integer) = v : integer
-begin
-  f1b() = 4 * (v - x);
-end;
-
-getter f3(x:integer) => integer
-begin
-  return 0;
-end;
-
-setter f3(x:integer) = v : integer
-begin
-  assert x == 12;
-  assert v == 13;
+  setter = v begin
+    assert x == 12;
+    assert v == 13;
+  end;
 end;
 
 func main() => integer

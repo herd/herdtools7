@@ -1,8 +1,14 @@
-getter ReadMem{size}(address : integer, unknown : boolean) => bits(size*8)
+accessor ReadMem{size}(address : integer, unknown : boolean) <=> bits(size*8)
 begin
-    var value : bits(size*8) = Zeros{}();
-    value = Read{size}(address, unknown);
-    return value;
+    getter begin
+      var value : bits(size*8) = Zeros{}();
+      value = Read{size}(address, unknown);
+      return value;
+    end;
+
+    setter = value_in begin
+      Unreachable();
+    end;
 end;
 
 func Read{size}(address : integer, unknown : boolean) => bits(8*size)

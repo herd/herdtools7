@@ -260,6 +260,18 @@ The parametric function $\concat : T^* \cartimes T^* \rightarrow T^*$ concatenat
 \]
 \end{definition}
 
+\hypertarget{def-concatlist}{}
+\begin{definition}[Concatenation of a List of Lists]
+The parametric function\\
+$\concatlist : \left(T^*\right)^* \rightarrow T^*$ concatenates a list of lists:
+\[
+  \begin{array}{rcl}
+    \concatlist(\emptylist) &\triangleq& \emptylist\\
+    \concatlist(l_{1..k}) &\triangleq& l_1 \concat \ldots \concat l_k \\
+  \end{array}
+\]
+\end{definition}
+
 \hypertarget{def-equallength}{}
 \begin{definition}[Equating List Lengths]
 The parametric function

@@ -1,13 +1,14 @@
 type MyBV of bits(8) { [5] bitfield };
 
-getter F() => MyBV
+accessor F() <=> MyBV
 begin
-  return Zeros{8} as MyBV;
-end;
+  getter begin
+    return Zeros{8} as MyBV;
+  end;
 
-setter F() = v: MyBV
-begin
-  assert v[0] == '0';
+  setter = v begin
+    assert v[0] == '0';
+  end;
 end;
 
 func main () => integer
