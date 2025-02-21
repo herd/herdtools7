@@ -151,17 +151,6 @@
 
 \fvset{fontsize=\small}
 
-\newcommand\tododefine[1]{\hyperlink{tododefine}{\color{red}{\texttt{#1}}}}
-\newcommand\lrmcomment[1]{}
-\newcommand\textfunc[1]{\textit{#1}}
-\newcommand\ProseParagraph[0]{\subsubsection{Prose}}
-\newcommand\FormallyParagraph[0]{\subsubsection{Formally}}
-\newcommand\AllApply[0]{All of the following apply:}
-\newcommand\AllApplyCase[1]{All of the following apply (\textsc{#1}):}
-\newcommand\OneApplies[0]{One of the following applies:}
-\newcommand\Proseeqdef[2]{define #1 as #2}
-\newcommand\ProseEqdef[2]{Define #1 as #2}
-
 \usepackage{enumitem}
 \renewlist{itemize}{itemize}{20}
 \setlist[itemize,1]{label=\textbullet}
@@ -184,6 +173,21 @@
 \setlist[itemize,18]{label=\textasteriskcentered}
 \setlist[itemize,19]{label=\textendash}
 \setlist[itemize,20]{label=\textendash}
+
+\newcommand\tododefine[1]{\hyperlink{tododefine}{\color{red}{\texttt{#1}}}}
+\newcommand\lrmcomment[1]{}
+\newcommand\textfunc[1]{\textit{#1}}
+\newcommand\ProseParagraph[0]{\subsubsection{Prose}}
+\newcommand\FormallyParagraph[0]{\subsubsection{Formally}}
+\newcommand\CaseDef[1]{\textsc{#1}}
+\newcommand\CaseName[1]{case \textsc{#1}}
+\newcommand\AllApply[0]{All of the following apply:}
+\newcommand\AllApplyCase[1]{All of the following apply (\CaseDef{#1}):}
+\newcommand\OneApplies[0]{One of the following applies:}
+\newcommand\Proseeqdef[2]{define #1 as #2}
+\newcommand\ProseEqdef[2]{Define #1 as #2}
+\newcommand\ExampleDef[1]{\subsubsection{Example: #1\label{Example:#1}}}
+\newcommand\ExampleRef[1]{Example~\ref{Example:#1}}
 
 \ifcode
 % First argument is \<rule>Begin, second is \<rule>End, third is the file name.
@@ -225,8 +229,8 @@
 \newtheorem{definition}{Definition}
 \newtheorem{example}{Example}
 \newcommand\ConventionDef[1]{\paragraph{Convention.#1:\label{sec:Convention.#1}}}
-\newcommand\RequirementDef[1]{\paragraph{Requirement.#1\label{Requirement.#1}}}
-\newcommand\RequirementDefExample[1]{\emph{Requirement.#1}}
+\newcommand\RequirementDef[1]{\paragraph{Guide.#1\label{Guide.#1}}}
+\newcommand\RequirementDefExample[1]{\emph{Guide.#1}}
 \newcommand\LexicalRuleDef[1]{\subsubsection{LexicalRule.#1\label{sec:LexicalRule.#1}}}
 \newcommand\ASTRuleDef[1]{\subsubsection{ASTRule.#1\label{sec:ASTRule.#1}}}
 \newcommand\ASTRuleDefExample[1]{\emph{ASTRule.#1}}
@@ -243,7 +247,7 @@
 \newcommand\appendixref[1]{Appendix~\ref{appendix:#1}}
 \newcommand\ASTRuleRef[1]{\nameref{sec:ASTRule.#1}}
 \newcommand\ConventionRef[1]{\nameref{sec:Convention.#1}}
-\newcommand\RequirementRef[1]{\nameref{Requirement.#1}}
+\newcommand\RequirementRef[1]{\nameref{Guide.#1}}
 \newcommand\LexicalRuleRef[1]{\nameref{sec:LexicalRule.#1}}
 \newcommand\TypingRuleRef[1]{\nameref{sec:TypingRule.#1}}
 \newcommand\SemanticsRuleRef[1]{\nameref{sec:SemanticsRule.#1}}
@@ -254,6 +258,8 @@
 \newcommand\wrappedline[0]{{\hyperlink{def-wrapline}{\color{red}\hookrightarrow}}}
 \newcommand\commonprefixline[0]{{\hyperlink{def-commonprefixline}{\color{cyan}{\text{\tiny******** common prefix ********}} }}}
 \newcommand\commonsuffixline[0]{{\hyperlink{def-commonsuffixline}{\color{cyan}{\text{\tiny******** common suffix ********}} }}}
+\newcommand\stdlibfunc[1]{standard library function \texttt{#1}}
+\newcommand\stdlibfuncname[1]{\texttt{#1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%$%%%%%
 %% Mathematical notations and Inference Rule macros
@@ -278,6 +284,7 @@
 \newcommand\restrictfunc[2]{{#1}\hyperlink{def-restrictfunc}{|}_{#2}}
 
 \newcommand\emptylist[0]{\hyperlink{def-emptylist}{[\ ]}}
+\newcommand\Proseemptylist[1]{#1 is the empty list}
 \newcommand\choice[3]{\hyperlink{def-choice}{\textsf{choice}}(#1,#2,#3)}
 \newcommand\equallength[0]{\hyperlink{def-equallength}{\textfunc{equal\_length}}}
 \newcommand\listrange[0]{\hyperlink{def-listrange}{\textfunc{indices}}}
@@ -889,7 +896,7 @@
 \newcommand\LexSpec[0]{\hyperlink{def-lexspec}{\textsf{LexSpec}}}
 \newcommand\Lang[0]{\hyperlink{def-lang}{\textsf{Lang}}}
 \newcommand\RegExp[0]{\hyperlink{def-regex}{\textsf{RegExp}}}
-\newcommand\ascii[1]{\textsf{ASCII}\texttt{\{#1\}}}
+\newcommand\ascii[1]{\hyperlink{def-ascii}{\textsf{ASCII}}\texttt{\{#1\}}}
 \newcommand\scantoken[0]{\textfunc{scan\_token}}
 \newcommand\scancomment[0]{\textfunc{scan\_comment}}
 
@@ -970,6 +977,8 @@
 \newcommand\emptytenv[0]{\hyperlink{def-emptytenv}{\emptyset_{\mathbb{SE}}}}
 \newcommand\tstruct[0]{\hyperlink{def-tstruct}{\textfunc{get\_structure}}}
 \newcommand\astlabel[0]{\hyperlink{def-astlabel}{\textfunc{ast\_label}}}
+\newcommand\ProsetypesatTrue[3]{#2 \typesatisfies{} #3 in the static environment #1}
+\newcommand\ProsetypesatFalse[3]{#2 does not \typesatisfy{} #3 in the static environment #1}
 \newcommand\typesat[0]{\hyperlink{def-typesatisfies}{\textfunc{type\_satisfies}}}
 
 \newcommand\constantvalues[0]{\hyperlink{def-constantvalues}{\textsf{constant\_values}}}
@@ -1021,6 +1030,7 @@
 \newcommand\stacksize[0]{\hyperlink{def-stacksize}{\textsf{stack\_size}}}
 \newcommand\xgraph[0]{\textsf{g}}
 \newcommand\emptygraph[0]{{\hyperlink{def-emptygraph}{\emptyset_\xgraph}}}
+\newcommand\Proseemptygraph[1]{#1 is the empty \executiongraph{}}
 \newcommand\asldata[0]{\hyperlink{def-asldata}{\mathtt{asl\_data}}}
 \newcommand\aslctrl[0]{\hyperlink{def-aslctrl}{\mathtt{asl\_ctrl}}}
 \newcommand\aslpo[0]{\hyperlink{def-aslpo}{\mathtt{asl\_po}}}
@@ -1050,18 +1060,19 @@
 \newcommand\DynErrorConfig[0]{\hyperlink{def-errorconfig}{\texttt{\#DE}}}
 \newcommand\OrAbnormal[0]{\;\terminateas \ThrowingConfig, \DynErrorConfig}
 \newcommand\OrDynError[0]{\;\terminateas \DynErrorConfig}
-\newcommand\ProseOtherwiseDynamicError[0]{Otherwise, the result is a dynamic error.}
+\newcommand\ProseOtherwiseDynamicError[0]{Otherwise, the result is a \dynamicerrorterm.}
 \newcommand\ProseOrAbnormal[0]{\ProseTerminateAs{\ThrowingConfig, \DynErrorConfig}}
 \newcommand\ProseOrError[0]{\ProseTerminateAs{\DynErrorConfig}}
 \newcommand\TNormal[0]{\hyperlink{def-tnormal}{\textsf{TNormal}}}
-\newcommand\TDynError[0]{\hyperlink{def-terror}{\textsf{TDynError}}}
+\newcommand\TDynError[0]{\hyperlink{def-tdynerror}{\textsf{TDynError}}}
 \newcommand\TThrowing[0]{\hyperlink{def-tthrowing}{\textsf{TThrowing}}}
 \newcommand\TContinuing[0]{\hyperlink{def-tcontinuing}{\textsf{TContinuing}}}
 \newcommand\TReturning[0]{\hyperlink{def-treturning}{\textsf{TReturning}}}
 \newcommand\TOutConfig[0]{\hyperlink{def-toutconfig}{\textsf{TOutConfig}}}
 
 \newcommand\evalexpr[1]{\hyperlink{def-evalexpr}{\textfunc{eval\_expr}}(#1)}
-\newcommand\Proseevalexpr[3]{\hyperlink{def-evalexpr}{evaluating} the expression #2 in the environment #1 yields #3}
+\newcommand\Proseevalexpr[3]{
+    \hyperlink{def-evalexpr}{evaluating} the expression #2 in the environment #1 yields #3}
 \newcommand\evalexprsef[1]{\hyperlink{def-evalexprsef}{\textfunc{eval\_expr\_sef}}(#1)}
 \newcommand\evallexpr[1]{\hyperlink{def-evallexpr}{\textfunc{eval\_lexpr}}(#1)}
 \newcommand\Proseevallexpr[4]{\hyperlink{def-evalexpr}{evaluating} the left-hand-side expression #2 in the environment #1 and #3, yields #4}
@@ -1156,9 +1167,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand\typingrulecasename[2]{TypingRule.{#1}.\textsc{#2}}
 
-\newcommand\ProseOtherwiseTypeError[0]{Otherwise, the result is a type error.}
+\newcommand\ProseOtherwiseTypeError[0]{Otherwise, the result is a \typingerrorterm.}
 \newcommand\OrTypeError[0]{\;\terminateas \TypeErrorConfig}
-%\newcommand\ProseOrTypeError[0]{or a type error that short-circuits the entire rule}
 \newcommand\ProseOrTypeError[0]{\ProseTerminateAs{\TypeErrorConfig}}
 
 \newcommand\annotaterel[0]{\hyperlink{def-annotaterel}{\textsf{type}}}
@@ -1227,7 +1237,7 @@
 \newcommand\sliceswidth[0]{\hyperlink{def-sliceswidth}{\textfunc{slices\_width}}}
 \newcommand\slicewidth[0]{\hyperlink{def-slicewidth}{\textfunc{slice\_width}}}
 \newcommand\checkstructurelabel[0]{\hyperlink{def-checkstructurelabel}{\textfunc{check\_structure}}}
-\newcommand\checkstructureinteger[0]{\hyperlink{def-checkstructureinteger}{\textfunc{check\_structure\_integer}}}
+\newcommand\checkunderlyinginteger[0]{\hyperlink{def-checkunderlyinginteger}{\textfunc{check\_underlying\_integer}}}
 \newcommand\issymbolicallyevaluable[0]{\hyperlink{def-issymbolicallyevaluable}{\textfunc{is\_symbolically\_evaluable}}}
 \newcommand\checksymbolicallyevaluable[0]{\hyperlink{def-checksymbolicallyevaluable}{\textfunc{check\_symbolically\_evaluable}}}
 \newcommand\Prosechecksymbolicallyevaluable[1]{\hyperlink{def-checksymbolicallyevaluable}{checking} that #1 is \symbolicallyevaluable\ yields $\True$\ProseOrTypeError}
@@ -1466,8 +1476,8 @@
 \newcommand\AbbrevConstraintRange[2]{\overbracket{#1..#2}^{\hyperlink{def-abbrevconstraintrange}{\abbrevfont{Constraint\_Range}}}}
 \newcommand\AbbrevEBinop[3]{\overbracket{#2\ #1\ #3}^{\hyperlink{def-abbrevebinop}{\abbrevfont{E\_Binop}}}}
 \newcommand\AbbrevTArray[2]{\overbracket{\texttt{array }[#1]\texttt{ of }#2}^{\hyperlink{def-abbrevtarray}{\abbrevfont{T\_Array}}}}
-\newcommand\AbbrevTArrayLengthExpr[2]{\overbracket{\texttt{array }[#1]\texttt{ of }#2}^{\hyperlink{def-abbrevtarraylengthexpr}{\abbrevfont{T\_Array(ArrayLength\_Expr)}}}}
-\newcommand\AbbrevTArrayLengthEnum[3]{\overbracket{\texttt{array }[#1 \# #2]\texttt{ of }#3}^{\hyperlink{def-abbrevtarraylengthenum}{\abbrevfont{T\_Array(Array\_Length\_Enum)}}}}
+\newcommand\AbbrevTArrayLengthExpr[2]{\overbracket{\texttt{array [[}#1\texttt{]] of }#2}^{\hyperlink{def-abbrevtarraylengthexpr}{\abbrevfont{T\_Array(ArrayLength\_Expr)}}}}
+\newcommand\AbbrevTArrayLengthEnum[3]{\overbracket{\texttt{array [[}#1 \# #2\texttt{]] of }#3}^{\hyperlink{def-abbrevtarraylengthenum}{\abbrevfont{T\_Array(Array\_Length\_Enum)}}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Top level macros
@@ -1516,6 +1526,7 @@
 \newcommand\renamelocalsconstraint[0]{\hyperlink{def-renamelocalsconstraint}{\textfunc{rename\_locals\_constraint}}}
 \newcommand\Proserenamelocalsconstraint[2]{\hyperlink{def-renamelocalsconstraint}{renaming}
   the local storage elements in the constraint #1 yields the constraint #2}
+\newcommand\stdliblocalprefix[0]{\texttt{\_\_stdlib\_local\_}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Glossary
@@ -1538,6 +1549,7 @@
 
 \newcommand\head[0]{\hyperlink{def-head}{\texttt{head}}}
 \newcommand\tail[0]{\hyperlink{def-tail}{\texttt{tail}}}
+\newcommand\Proselist[2]{list with \head{} #1 and \tail{} #2}
 \newcommand\optional[0]{\hyperlink{def-optional}{optional}}
 
 \newcommand\inferencerule[0]{\hyperlink{def-inferencerule}{inference rule}}
@@ -1557,17 +1569,34 @@
 \newcommand\subtypesterm[0]{\hyperlink{def-subtypes}{subtypes}}
 \newcommand\subtypeterm[0]{\hyperlink{def-subtypes}{subtype}}
 \newcommand\supertypeterm[0]{\hyperlink{def-supertypeterm}{supertype}}
+\newcommand\normalizedterm[0]{\hyperlink{def-normalizedterm}{normalized}}
+\newcommand\normalizedexpressionterm[0]{\hyperlink{def-normalizedterm}{normalized expression}}
 
 %% Type macros
 \newcommand\integertypeterm[0]{\hyperlink{integertypeterm}{integer type}}
+\newcommand\integertypesterm[0]{\hyperlink{integertypeterm}{integer types}}
 \newcommand\bitvectortypeterm[0]{\hyperlink{bitvectortypeterm}{bitvector type}}
 \newcommand\bitvectortypesterm[0]{\hyperlink{bitvectortypeterm}{bitvector types}}
+\newcommand\bitfieldterm[0]{\hyperlink{bitfieldterm}{bitfield}}
+\newcommand\bitfieldsterm[0]{\hyperlink{bitfieldterm}{bitfields}}
+\newcommand\bitsliceterm[0]{\hyperlink{bitsliceterm}{bitslice}}
+\newcommand\bitslicesterm[0]{\hyperlink{bitsliceterm}{bitslices}}
 \newcommand\realtypeterm[0]{\hyperlink{realtypeterm}{real type}}
 \newcommand\stringtypeterm[0]{\hyperlink{stringtypeterm}{string type}}
 \newcommand\booleantypeterm[0]{\hyperlink{booleantypeterm}{boolean type}}
 \newcommand\enumerationtypeterm[0]{\hyperlink{enumerationtypeterm}{enumeration type}}
+\newcommand\enumerationtypesterm[0]{\hyperlink{enumerationtypeterm}{enumeration types}}
+\newcommand\Enumerationtypesterm[0]{\hyperlink{enumerationtypeterm}{Enumeration types}}
 \newcommand\tupletypeterm[0]{\hyperlink{tupletypeterm}{tuple type}}
+\newcommand\tupletypesterm[0]{\hyperlink{tupletypeterm}{tuple types}}
+\newcommand\Tupletypesterm[0]{\hyperlink{tupletypeterm}{Tuple types}}
+\newcommand\Prosetupletype[1]{\tupletypeterm{} with member types #1}
 \newcommand\arraytypeterm[0]{\hyperlink{arraytypeterm}{array type}}
+\newcommand\arraytypesterm[0]{\hyperlink{arraytypeterm}{array types}}
+\newcommand\intarraytypeterm[0]{\hyperlink{intarraytypeterm}{integer-indexed array type}}
+\newcommand\Intarraytypeterm[0]{\hyperlink{intarraytypeterm}{Integer-indexed array type}}
+\newcommand\enumarraytypeterm[0]{\hyperlink{enumarraytypeterm}{enumeration-indexed array type}}
+\newcommand\Enumarraytypeterm[0]{\hyperlink{enumarraytypeterm}{Enumeration-indexed array type}}
 \newcommand\namedtypeterm[0]{\hyperlink{namedtypeterm}{named type}}
 \newcommand\recordtypeterm[0]{\hyperlink{recordtypeterm}{record type}}
 \newcommand\exceptiontypeterm[0]{\hyperlink{exceptiontypeterm}{exception type}}
@@ -1592,7 +1621,7 @@
 \newcommand\bitwidthequivalent[0]{\hyperlink{def-bitwidthequal}{bitwidth-equivalent}}
 \newcommand\typeclash[0]{\hyperlink{def-typeclashes}{type-clash}}
 \newcommand\constrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{constrained integer}}
-\newcommand\structureofinteger[0]{\hyperlink{def-checkstructureinteger}{structure of an integer}}
+\newcommand\structureofinteger[0]{\hyperlink{def-checkunderlyinginteger}{structure of an integer}}
 \newcommand\wellconstrainedstructure[0]{\hyperlink{def-getwellconstrainedstructure}{well-constrained structure}}
 \newcommand\wellconstrainedversion[0]{\hyperlink{def-towellconstrained}{well-constrained version}}
 \newcommand\namedlowestcommonancestor[0]{\hyperlink{def-namedlowestcommonancestor}{named lowest common ancestor}}
@@ -1633,10 +1662,10 @@
 \newcommand\otherwisecaseterm[0]{\hyperlink{def-otherwisecaseterm}{otherwise case}}
 
 %% Constraint macros
-\newcommand\constraintexactterm[0]{an exact constraint}
-\newcommand\Proseconstraintexact[1]{an exact constraint for the expression #1}
-\newcommand\constraintrangeterm[0]{a range constraint}
-\newcommand\Proseconstraintrange[2]{a range constraint for the lower end expression #1 and upper end expression #2}
+\newcommand\exactconstraintterm[0]{\hyperlink{def-exactconstraintterm}{exact constraint}}
+\newcommand\Proseexactconstraint[1]{\hyperlink{def-exactconstraintterm}{exact constraint} for the expression #1}
+\newcommand\rangeconstraintterm[0]{\hyperlink{def-rangeconstraintterm}{range constraint}}
+\newcommand\Proserangeconstraint[2]{\hyperlink{def-rangeconstraintterm}{range constraint} for the lower end expression #1 and upper end expression #2}
 
 %% Expression macros
 \newcommand\literalexpressionterm[0]{\hyperlink{def-literalexpressionterm}{literal expression}}
@@ -1740,6 +1769,7 @@
 \newcommand\returnstatementterm[0]{\hyperlink{def-returnstatementterm}{return statement}}
 \newcommand\returnstatement[1]{\hyperlink{def-returnstatementterm}{return statement} for the optional expression #1}
 \newcommand\printstatementterm[0]{\hyperlink{def-printstatementterm}{print statement}}
+\newcommand\printstatementsterm[0]{\hyperlink{def-printstatementterm}{print statements}}
 \newcommand\printstatement[2]{\hyperlink{def-printstatementterm}{print statement} with list of expressions #1 and newline flag #2}
 \newcommand\unreachablestatementterm[0]{\hyperlink{def-unreachablestatementterm}{unreachable statement}}
 \newcommand\pragmastatementterm[0]{\hyperlink{def-pragmastatementterm}{pragma statement}}
@@ -1762,6 +1792,7 @@
 \newcommand\PerformsAssertionsTerm[0]{\hyperlink{def-performsassertionsterm}{assertion side effect descriptor}}
 \newcommand\NonDeterministicTerm[0]{\hyperlink{def-nondeterministicterm}{non-determinism side effect descriptor}}
 
+\newcommand\staticallyevaluable[0]{\hyperlink{def-staticallyevaluable}{statically evaluable}}
 \newcommand\symbolicallyevaluable[0]{\hyperlink{def-symbolicallyevaluable}{symbolically evaluable}}
 \newcommand\timeframeterm[0]{\hyperlink{def-timeframe}{time frame}}
 \newcommand\timeframesterm[0]{\hyperlink{def-timeframe}{time frames}}
@@ -1957,7 +1988,7 @@
 \newcommand\BinopPrecedence[0]{\hyperlink{def-binopprecedence}{\BuildErrorCode{BOP}}}
 \newcommand\BuildBadDeclaration[0]{\hyperlink{def-buildbaddeclaration}{\BuildErrorCode{BD}}}
 
-%% Type Error Codes
+%% Typing Error Codes
 \newcommand\TypeErrorPrefix[0]{\texttt{TE}}
 \newcommand\TypeErrorCode[1]{\texttt{\TypeErrorPrefix\_#1}}
 \newcommand\UndefinedIdentifier[0]{\hyperlink{def-undefinedidentifier}{\TypeErrorCode{UI}}}
@@ -2004,7 +2035,8 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % LRM Ident info
-\newcommand\ident[2]{\texttt{#1}\textsubscript{\texttt{\MakeUppercase{#2}}}}
+\newcommand\ident[2]{}
+%\newcommand\ident[2]{\texttt{#1}\textsubscript{\texttt{\MakeUppercase{#2}}}}
 \newcommand\identi[1]{\ident{I}{#1}}
 \newcommand\identr[1]{\ident{R}{#1}}
 \newcommand\identd[1]{\ident{D}{#1}}
@@ -2433,6 +2465,7 @@
 \newcommand\slicestwo[0]{\texttt{slices2}}
 \newcommand\slicetwo[0]{\texttt{slice2}}
 \newcommand\sm[0]{\texttt{s\_m}}
+\newcommand\smnew[0]{\texttt{s\_m\_new}}
 \newcommand\src[0]{\texttt{src}}
 \newcommand\start[0]{\texttt{start}}
 \newcommand\stm[0]{\texttt{stm}}
@@ -2600,6 +2633,7 @@
 \newcommand\vcondexpr[0]{\texttt{cond\_expr}}
 \newcommand\vcone[0]{\texttt{c1}}
 \newcommand\vconstraintasts[0]{\texttt{constraint\_asts}}
+\newcommand\vcsasts[0]{\texttt{cs\_asts}}
 \newcommand\vconstraints[0]{\texttt{constraints}}
 \newcommand\vconstraintkind[0]{\texttt{constraint\_kind}}
 \newcommand\vconstraintkindopt[0]{\texttt{constraint\_kind\_opt}}
@@ -3129,3 +3163,14 @@
 \newcommand\vfieldnames[0]{\texttt{field\_names}}
 \newcommand\vexpectedconstraintlength[0]{\texttt{expected\_constraint\_length}}
 \newcommand\vconsolestream[0]{\texttt{consolestream}}
+\newcommand\vlhstys[0]{\texttt{lhs\_tys}}
+\newcommand\vlhstysp[0]{\texttt{lhs\_tys'}}
+\newcommand\vrhstys[0]{\texttt{rhs\_tys}}
+\newcommand\vrhstysp[0]{\texttt{rhs\_tys'}}
+\newcommand\vargdecls[0]{\texttt{arg\_decls}}
+\newcommand\vmain[0]{\texttt{main}}
+\newcommand\vread[0]{\texttt{read}}
+\newcommand\vmodify[0]{\texttt{modify}}
+\newcommand\vsetter[0]{\texttt{setter}}
+\newcommand\vgetter[0]{\texttt{sgtter}}
+\newcommand\vcode[0]{\texttt{code}}

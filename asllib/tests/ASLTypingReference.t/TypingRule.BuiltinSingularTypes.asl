@@ -6,5 +6,6 @@ begin
   let b : boolean = TRUE;
   let z4 : bits(4) = '0000';
   let o2 : bits(2) = '11';
+  let o: bit = '1';
   return 0;
 end;

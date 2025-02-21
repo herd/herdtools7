@@ -77,7 +77,7 @@ The function
 increments the value associated with $\name$ in $\genv.\stacksize$, yielding the updated global dynamic environment $\newgenv$.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item applying $\getstacksize$ to $\name$ in $(\genv, \emptyfunc)$ yields $\vprev$;
   \item applying $\setstacksize$ to $\name$ and $\vprev + 1$ in $\genv$ yields $\newgenv$.
@@ -104,7 +104,7 @@ decrements the value associated with $\name$ in $\genv.\stacksize$, yielding the
 It is assumed that $\getstacksize((\genv, \emptyfunc), \name)$ yields a positive value.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item applying $\getstacksize$ to $\name$ in $(\genv, \emptyfunc)$ yields $\vprev$;
   \item applying $\setstacksize$ to $\name$ and $\vprev - 1$ in $\genv$ yields $\newgenv$.
@@ -127,10 +127,10 @@ The relation
 \[
   \removelocal(\overname{\envs}{\env} \aslsep \overname{\Identifiers}{\name}) \;\aslrel\; \overname{\envs}{\newenv}
 \]
-removes the binding of the identifier $\name$ from the local storage of the environment $\env$.
+removes the binding of the identifier $\name$ from the local storage of the environment $\env$,
+yielding the environment $\newenv$.
 
-Removal of the identifier $\name$ from the local storage of the environment $\env$
-is the environment $\newenv$ and all of the following apply:
+\AllApply
 \begin{itemize}
   \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
   \item $\newenv$ consists of the static environment $\tenv$ and the dynamic environment
@@ -215,24 +215,44 @@ transforms a (possibly empty) list of bitvector \nativevalues\ $\vvs$ into a sin
 $\newvs$.
 
 \ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{empty}
+  \begin{itemize}
+    \item \Proseemptylist{$\vvs$};
+    \item \Proseeqdef{$\newvs$}{the \nativevalue{} bitvector for the empty sequence of bits}.
+  \end{itemize}
+
+  \item \AllApplyCase{non\_empty}
+  \begin{itemize}
+    \item $\vvs$ is a \Proselist{$\vv$}{$\vvs'$};
+    \item view $\vv$ as the \nativevalue{} bitvector for the sequence of bits $\bv$;
+    \item applying $\concatbitvectors$ to $\vvs'$ yields the
+          \nativevalue{} bitvector for the sequence of bits $\bv$;
+    \item \Proseeqdef{$\vres$}{the concatenation of $\bv$ and $\bv'$};
+    \item \Proseeqdef{$\newvs$}{the \nativevalue{} bitvector for sequence of bits $\vres$}.
+  \end{itemize}
+\end{itemize}
+
 Define $\newvs$ as the concatenation of bitvectors listed in $\vvs$.
 
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule[ConcatBitvector.Empty]{}
-  {
-    \concatbitvectors(\emptylist) \evalarrow \nvbitvector(\emptylist)
-  }
-  \and
-  \inferrule[ConcatBitvector.NonEmpty]{
-    \vvs \eqname [\vv] \concat \vvs'\\
-    \vv\eqname\nvbitvector(\bv)\\
-    \concatbitvectors(\vvs') \evalarrow \nvbitvector(\bv')\\
-    \vres \eqdef \bv \concat \bv'
-  }
-  {
-    \concatbitvectors(\vvs) \evalarrow \nvbitvector(\vres)
-  }
+\inferrule[empty]{}
+{
+  \concatbitvectors(\overname{\emptylist}{\vvs}) \evalarrow \overname{\nvbitvector(\emptylist)}{\newvs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \vvs = [\vv] \concat \vvs'\\
+  \vv\eqname\nvbitvector(\bv)\\
+  \concatbitvectors(\vvs') \evalarrow \nvbitvector(\bv')\\
+  \vres \eqdef \bv \concat \bv'
+}{
+  \concatbitvectors(\vvs) \evalarrow \nvbitvector(\vres)
+}
 \end{mathpar}
 
 \SemanticsRuleDef{ReadFromBitvector}
@@ -246,7 +266,7 @@ reads from a bitvector $\bv$, or an integer seen as a bitvector, the indices spe
 thereby concatenating their values.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
   \item all indices are in range for $\bv$ and the returned bitvector consists of the concatenated bits specified
   by the slices.
@@ -339,8 +359,9 @@ The relation
   \writetobitvector(\overname{(\tint\times\tint)^*}{\slices} \aslsep \overname{\tbitvector}{\src} \aslsep \overname{\tbitvector}{\dst})
   \;\aslrel\; \overname{\tbitvector}{\vv} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
-overwrites the bits of $\dst$ at the positions given by $\slices$ with the bits of $\src$
-and one of the following applies:
+overwrites the bits of $\dst$ at the positions given by $\slices$ with the bits of $\src$.
+
+\OneApplies
 \begin{itemize}
   \item all positions specified by $\slices$ are within range for $\dst$ and the modified version
   of $\dst$ with the bits of $\src$ at the specified positions is returned;
@@ -349,12 +370,12 @@ and one of the following applies:
 
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule[WriteToBitvector.Empty]{}
+  \inferrule[empty]{}
   {
     \writetobitvector(\emptylist, \nvbitvector(\emptylist), \nvbitvector(\emptylist)) \evalarrow \nvbitvector(\emptylist)
   }
   \and
-  \inferrule[WriteToBitvector.NonEmpty]{
+  \inferrule[non\_empty]{
     \vs_n \ldots \vs_1 \eqdef \asbitvector(\src)\\
     \vd_n \ldots \vd_1 \eqdef \asbitvector(\dst)\\
     \slicestopositions(n, \slices) \evalarrow \positions \OrDynError\\\\
@@ -391,10 +412,10 @@ reads the value $\vv_i$ from the vector of values $\vvec$ at the index $\vi$.
 Notice that there is no rule to handle the case where the index is out of range ---
 this is guaranteed by the typechecker not to happen. Specifically,
 \begin{itemize}
-  \item \texttt{TypingRule.EGetArray} ensures that an index is within the bounds of the array
+  \item \TypingRuleRef{EGetArray} ensures that an index is within the bounds of the array
   being accessed via a check that the type of the index satisfies the type of the array size.
-  \item Typing rules \texttt{TypingRule.LEDestructuring}, \texttt{TypingRule.PTuple},
-  and \\ \texttt{TypingRule.LDTuple} use the same index sequences for the tuples
+  \item Typing rules \TypingRuleRef{LEDestructuring}, \TypingRuleRef{PTuple},
+  and \\ \TypingRuleRef{LDTuple} use the same index sequences for the tuples
   involved and the corresponding lists of expressions.
 \end{itemize}
 If the rules listed above do not hold the typechecker fails.
@@ -496,12 +517,15 @@ The relation
   (\overname{\envs}{\newenv} \times \overname{\XGraphs}{\newg})
 \]
 declares the local identifier $\vx$ in the environment $\env$, in the context
-of the value-graph pair $(\vv, \vg)$, and all of the following apply:
+of the value-graph pair $(\vv, \vg)$, yielding a pair consisting
+of the environment $\newenv$ and \executiongraph{} $\newg$.
+
+\AllApply
 \begin{itemize}
   \item \newenv\ is the environment $\env$ modified to declare the variable $\vx$ as a local storage element;
   \item $\vgone$ is the execution graph resulting from the declaration of $\vx$;
-  \item $\vgtwo$ is the execution graph resulting from the ordered composition of $\vg$ and $\vgone$
-  with the $\asldata$ edge.
+  \item \Proseeqdef{$\newg$}{\executiongraph{} resulting from the ordered composition
+        of $\vg$ and $\vgone$ with the $\asldata$ edge}.
 \end{itemize}
 
 \FormallyParagraph
@@ -524,25 +548,27 @@ The relation
   \declarelocalidentifiermm(\overname{\envs}{\env} \aslsep
    \overname{\Identifiers}{\vx} \aslsep
    \overname{(\overname{\vals}{\vv}\times\overname{\XGraphs}{\vg})}{\vm}) \;\aslrel\;
-  (\overname{\envs}{\newenv} \times \overname{\XGraphs}{\vgtwo})
+  (\overname{\envs}{\newenv} \times \overname{\XGraphs}{\newg})
 \]
 declares the local identifier $\vx$ in the environment $\env$,
 in the context of the value-graph pair $(\vv, \vg)$,
-and all of the following apply:
+yielding a pair consisting of an environment $\newenv$
+and an \executiongraph{} $\vgtwo$.
+
+\AllApply
 \begin{itemize}
   \item \newenv\ is the environment $\env$ modified to declare the variable $\vx$ as a local storage element;
   \item $\vgone$ is the execution graph resulting from the declaration of $\vx$;
-  \item $\vgtwo$ is the execution graph resulting from the ordered composition of $\vg$ and $\vgone$
-  with the $\aslpo$ edge.
+  \item \Proseeqdef{$\newg$}{the execution graph resulting from the ordered composition
+        of $\vg$ and $\vgone$ with the $\aslpo$ edge.}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule{
-    \declarelocalidentifierm(\env, \vm) \evalarrow (\newenv, \vgone)\\
-    \vgtwo \eqdef \ordered{\vg}{\aslpo}{\vgone}
-  }
-  {
-    \declarelocalidentifiermm(\env, \vx, \vm) \evalarrow (\newenv, \vgtwo)
-  }
+\inferrule{
+  \declarelocalidentifierm(\env, \vm) \evalarrow (\newenv, \vgone)\\
+  \newg \eqdef \ordered{\vg}{\aslpo}{\vgone}
+}{
+  \declarelocalidentifiermm(\env, \vx, \vm) \evalarrow (\newenv, \newg)
+}
 \end{mathpar}

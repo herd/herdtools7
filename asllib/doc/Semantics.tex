@@ -392,7 +392,7 @@ We define the following shorthands for types of output semantic configurations:
 \hypertarget{def-tcontinuing}{}
 \hypertarget{def-tthrowing}{}
 \hypertarget{def-treturning}{}
-\hypertarget{def-terror}{}
+\hypertarget{def-tdynerror}{}
 \[
   \begin{array}{rcl}
     \TNormal          & \triangleq & \Normal(\vals, \XGraphs) \cup \Normal((\vals \times \XGraphs), \envs)\ \cup \\
@@ -443,7 +443,7 @@ $\graphof{C}$, and the environment of the semantic configuration, $\environof{C}
   \hline
   \Normal(\vv,\vg) & \vg & \text{undefined}\\
   \Normal((\vv,\vg), \env) & \vg & \env\\
-  \Normal(([i=1..k: (\texttt{va}_i,\texttt{vb})],\vg), \env) & \vg & \env\\
+  \Normal(([i=1..k: (\va_i,\vb)],\vg), \env) & \vg & \env\\
   \Normal(\vg, \env) & \vg & \env\\
   \Normal([\vv_{1..k}], \vg) & \vg & \env\\
   \Normal([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined} & \env\\
@@ -462,7 +462,7 @@ like $C$ where the graph component is substituted with $\vgp$:
   \hline
   \Normal(\vv,\vg) & \Normal(\vv,\vgp)\\
   \Normal((\vv,\vg), \env) & \Normal((\vv,\vgp), \env)\\
-  \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vg), \env) & \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vgp), \env)\\
+  \Normal((i=1..k: (\va_i,\vb),\vg), \env) & \Normal((i=1..k: (\va_i,\vb),\vgp), \env)\\
   \Normal(\vg, \env) & \Normal(\vgp, \env)\\
   \Normal(i=1..k: \vv_i, \vg) & \Normal(i=1..k: \vv_i, \vgp)\\
   \Normal([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined}\\
@@ -480,7 +480,7 @@ like $C$ where the environment component, if one exists, is substituted with $\e
   \hline
   \Normal(\vv,\vg) & \text{undefined}\\
   \Normal((\vv,\vg), \env) & \Normal((\vv,\vg), \envp)\\
-  \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vg), \env) & \Normal((i=1..k: (\texttt{va}_i,\texttt{vb}),\vg), \envp)\\
+  \Normal((i=1..k: (\va_i,\vb),\vg), \env) & \Normal((i=1..k: (\va_i,\vb),\vg), \envp)\\
   \Normal(\vg, \env) & \Normal(\vg, \envp)\\
   \Normal(i=1..k: \vv_i, \vg) & \Normal(i=1..k: \vv_i, \vg)\\
   \Normal([i=1..k: (\vv_i,\vg_i)], \env) & \Normal([i=1..k: (\vv_i,\vg_i)], \envp)\\

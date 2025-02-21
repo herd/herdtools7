@@ -23,7 +23,7 @@ The result is the \sideeffectsetterm\ $\vsesfiltered$, the annotated catcher $\n
 
 The semantic relation for evaluating catchers employs an argument
 that is an output configuration. This argument corresponds to the result
-of evaluating a \texttt{try} statement and its type is defined as follows:
+of evaluating a \trystatementterm{} and its type is defined as follows:
 \hypertarget{def-toutconfig}{}
 \[
   \TOutConfig \triangleq \TNormal \cup  \TThrowing \cup \TContinuing \cup \TReturning \enspace.
@@ -43,9 +43,9 @@ The relation
     \end{array}
   \right)
 \]
-evaluates a list of \texttt{catch} clauses $\catchers$, an \texttt{otherwise} clause,
+evaluates a list of \texttt{catch} clauses $\catchers$, an optional \texttt{otherwise} clause,
 and a configuration $\sm$ resulting from the evaluation of the throwing expression,
-in the environment $\env$. The result is either a continuation configuration,
+in the environment $\env$. The result --- $\smnew$ --- is either a continuation configuration,
 an early return configuration, or an abnormal configuration.
 
 When the statement in a \texttt{try} block, which we will refer to as the try-block statement,
@@ -119,9 +119,9 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \section{Typing}
 \TypingRuleDef{Catcher}
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item the catcher has no named identifier, that is, $\vc$ is $(\overname{\None}{\nameopt}, \tty, \vstmt)$;
     \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
@@ -130,7 +130,7 @@ One of the following applies:
     \item \Proseeqdef{$\newcatcher$}{$(\overname{\None}{\nameopt}, \ttyp, \newstmt)$};
   \end{itemize}
 
-  \item All of the following apply (\textsc{some}):
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item the catcher has a named identifier, that is, $\vc$ is $(\langle\name\rangle, \tty, \vstmt)$;
     \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
@@ -167,7 +167,7 @@ One of the following applies:
 }
 \end{mathpar}
 \CodeSubsection{\CatcherNoneBegin}{\CatcherNoneEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{SDJK}.}
+\identr{SDJK}
 
 \begin{mathpar}
 \inferrule[some]{
@@ -199,17 +199,17 @@ One of the following applies:
 % let ses = SES.union ses_block ses_ty in
 
 \CodeSubsection{\CatcherBegin}{\CatcherEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{SDJK}, \identr{WVXS}, \identi{FCGK}.}
+\identr{SDJK} \identr{WVXS} \identi{FCGK}
 
 \section{Semantics}
 \SemanticsRuleDef{Catch}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Catch}
 The specification in \listingref{semantics-catch} terminates successfully.
 That is, no dynamic error occurs.
 \ASLListing{Catching an exception}{semantics-catch}{\semanticstests/SemanticsRule.Catch.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
   \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
@@ -241,12 +241,12 @@ All of the following apply:
 \CodeSubsection{\EvalCatchBegin}{\EvalCatchEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{CatchNamed}
-\subsubsection{Example}
+\ExampleDef{Catching a Named Exception}
 The specification in \listingref{semantics-catchnamed}, prints \texttt{My exception with my message}.
 \ASLListing{Catching a named exception}{semantics-catchnamed}{\semanticstests/SemanticsRule.CatchNamed.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
   \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
@@ -289,12 +289,12 @@ All of the following apply:
 \CodeSubsection{\EvalCatchNamedBegin}{\EvalCatchNamedEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{CatchOtherwise}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Catch with an Otherwise}
 The specification in \listingref{semantics-catchotherwise} prints \texttt{Otherwise}.
 \ASLListing{Catching an exception with \texttt{otherwise}}{semantics-catchotherwise}{\semanticstests/SemanticsRule.CatchOtherwise.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
   \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
@@ -328,14 +328,14 @@ All of the following apply:
 \CodeSubsection{\EvalCatchOtherwiseBegin}{\EvalCatchOtherwiseEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{CatchNone}
-\subsubsection{Example}
+\ExampleDef{Evaluation of an Uncaught Exception}
 The specification in \listingref{semantics-catchnone} does not print anything.
 It shows how a \texttt{try} statement (the inner one) may not have a \texttt{catch} clause
 that matches the exception type (\texttt{MyExceptionType1}).
 \ASLListing{A catch clause that does not match a thrown exception type}{semantics-catchnone}{\semanticstests/SemanticsRule.CatchNone.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
   \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
@@ -358,33 +358,22 @@ All of the following apply:
 \CodeSubsection{\EvalCatchNoneBegin}{\EvalCatchNoneEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{CatchNoThrow}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Try Statement that Does Not Raise an Exception}
 The specification in \listingref{semantics-nothrow} prints \texttt{No exception raised}.
 \ASLListing{A \texttt{try} statement that does not raise an exception}{semantics-nothrow}{\semanticstests/SemanticsRule.CatchNoThrow.asl}
 
 \ProseParagraph
-all of the following apply:
+\AllApply
 \begin{itemize}
-  \item One of the following holds:
-  \begin{itemize}
-    \item (\textsc{implicit\_throw}) $\sm$ is $\Throwing((\None, \sg), \envthrow)$ (that is, an implicit throw);
-    \item (\textsc{non\_throwing}) $\sm$ is a normal configuration (that is, the domain of $\sm$ is $\Normal$);
-  \end{itemize}
-  \item the result is $\sm$.
+\item $\sm$ is either $\Throwing((\None, \sg), \envthrow)$ (that is, an implicit throw) or
+    $\sm$ is a normal configuration (that is, the domain of $\sm$ is $\Normal$);
+\item \Proseeqdef{$\smnew$}{$\sm$}.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[implicit\_throw]{
-  \sm \eqname \Throwing((\None, \sg), \envthrow)
-}{
-  \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_throwing]{
-  \configdomain{\sm} = \Normal
+\inferrule{
+  \sm = \Throwing((\None, \sg), \envthrow) \lor \configdomain{\sm} = \Normal
 }{
   \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
 }
@@ -402,15 +391,15 @@ returns the first catcher clause in $\catchers$ that matches the type $\vvty$ (a
 by invoking $\typesat$ with the static environment $\tenv$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\catchers$ is an empty list;
     \item the result is $\None$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{match}):
+  \item \AllApplyCase{match}
   \begin{itemize}
     \item $\catchers$ has $\vc$ as its head and $\catchersone$ as its tail;
     \item $\vc$ consists of $(\nameopt, \ety, \vs)$;
@@ -418,7 +407,7 @@ One of the following applies:
     \item the result is the singleton set for $\vc$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{no\_match}):
+  \item \AllApplyCase{no\_match}
   \begin{itemize}
     \item $\catchers$ has $\vc$ as its head and $\catchersone$ as its tail;
     \item $\vc$ consists of $(\nameopt, \ety, \vs)$;
@@ -457,7 +446,7 @@ One of the following applies:
 \CodeSubsection{\EvalFindCatcherBegin}{\EvalFindCatcherEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
-\lrmcomment{This is related to \identr{SPNM}:}
+\identr{SPNM}
 When the \texttt{catch} of a \texttt{try} statement is executed, then the
 thrown exception is caught by the first catcher in that \texttt{catch} which it
 type-satisfies or the \texttt{otherwise\_opt} in that catch if it exists.
@@ -479,15 +468,15 @@ Implicit throwing configurations are changed by substituting the optional $\valu
 pair with $\vv$ and $\vvty$, respectively.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{implicit\_throwing}):
+  \item \AllApplyCase{implicit\_throwing}
   \begin{itemize}
     \item $\vres$ is $\Throwing((\None, \vg), \envthrowone)$, which is an implicit throwing configuration;
     \item the result is $\Throwing((\langle(\vv, \vvty)\rangle, \vg), \envthrowone)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{explicit\_throwing}):
+  \item \AllApplyCase{explicit\_throwing}
   \begin{itemize}
     \item $\vres$ is $\Throwing(\langle(\vv', \vvty')\rangle, \vg)$, which is an explicit throwing configuration
     (due to $(\vv', \vvty')$);
@@ -495,7 +484,7 @@ One of the following applies:
     That is, the same throwing configuration is returned.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_throwing}):
+  \item \AllApplyCase{non\_throwing}
   \begin{itemize}
     \item the configuration, $C$, domain is non-throwing;
     \item the result is $C$.
@@ -528,6 +517,6 @@ One of the following applies:
 \CodeSubsection{\EvalRethrowImplicitBegin}{\EvalRethrowImplicitEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
-\lrmcomment{This is related to \identr{GVKS}:}
+\identr{GVKS}
 An expressionless \texttt{throw} statement causes the exception which the
 currently executing catcher caught to be thrown.

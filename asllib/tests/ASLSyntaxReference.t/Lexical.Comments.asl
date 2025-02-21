@@ -1,7 +1,7 @@
 // Comment example 1.
 
-// In next line, the two strings "/*" and "*/" are regular characters within the comment
-// start of comment, /* still in comment */ and still in comment which ends with newline
+// In the next line, "/*" and "*/" are regular strings within the comment
+// start of comment, /* still in comment */ and still in comment, ending with newline
 
 /* line 1 of example 2, a single comment 4 lines long.
 line 2 of the comment

@@ -39,7 +39,7 @@ or a dynamic error.
 
 \subsubsection{TopLevelRule.CheckAndInterpret\label{sec:TopLevelRule.CheckAndInterpret}}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
     \item \Proseaslscan{$\vstdtext$}{$\spectoken$}{$\vstdtokens$\ProseTerminateAs{\LexicalErrorConfig}};
     \item \Proseaslparse{$\vstdtokens$}{$\vstdparse$\ProseTerminateAs{\ParseErrorConfig}};
@@ -112,7 +112,7 @@ renames the local storage elements appearing in $\vdecls$,
 yielding the list of declarations $\vnewdecls$.
 
 \ProseParagraph
-\AllApply:
+\AllApply
 \begin{itemize}
   \item \Proserenamelocalsdecl{$\vdecls[\vi]$}{$\vnewdecl_\vi$},
         for each \Proselistrange{$\vi$}{$\vdecls$};
@@ -1287,17 +1287,17 @@ yielding the constraint $\newc$.
 \begin{itemize}
   \item \AllApplyCase{exact}
   \begin{itemize}
-    \item $\vx$ is a \Proseconstraintexact{$\ve$};
+    \item $\vx$ is an \Proseexactconstraint{$\ve$};
     \item \Proserenamelocals{$\ve$}{$\vep$};
-    \item \Proseeqdef{$\newc$}{\Proseconstraintexact{$\vep$}}.
+    \item \Proseeqdef{$\newc$}{\Proseexactconstraint{$\vep$}}.
   \end{itemize}
 
   \item \AllApplyCase{range}
   \begin{itemize}
-    \item $\vx$ is a \Proseconstraintrange{$\veone$}{$\vetwo$};
+    \item $\vx$ is a \Proserangeconstraint{$\veone$}{$\vetwo$};
     \item \Proserenamelocals{$\veone$}{$\veonep$};
     \item \Proserenamelocals{$\vetwo$}{$\vetwop$};
-    \item \Proseeqdef{$\newc$}{\Proseconstraintrange{$\veonep$}{$\vetwop$}}.
+    \item \Proseeqdef{$\newc$}{the \Proserangeconstraint{$\veonep$}{$\vetwop$}}.
   \end{itemize}
 \end{itemize}
 
@@ -1377,12 +1377,12 @@ renames the local identifier $\name$,
 yielding the identifier $\newname$.
 
 \ProseParagraph
-\Proseeqdef{$\newname$}{the string concatenation of \texttt{\_\_stdlib\_local\_} and $\name$}.
+\Proseeqdef{$\newname$}{the string concatenation of $\stdliblocalprefix$ and $\name$}.
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \renamelocalsname(\name) \astarrow \overname{\texttt{\_\_stdlib\_local\_}\ \stringconcat\ \name}{\newname}
+  \renamelocalsname(\name) \astarrow \overname{\stdliblocalprefix\ \stringconcat\ \name}{\newname}
 }
 \end{mathpar}
 

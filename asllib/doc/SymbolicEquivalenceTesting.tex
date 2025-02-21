@@ -211,16 +211,19 @@ The function
 yielding an expression $\newe$.
 \ProseOtherwiseTypeError
 
+\hypertarget{def-normalizedterm}{}
+We refer to an expression in the image of $\normalize$ as a \emph{\normalizedexpressionterm}.
+
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{normalizable})
+  \item \AllApplyCase{normalizable}
   \begin{itemize}
     \item applying $\toir$ to $\ve$ in $\tenv$ to obtain a symbolic expression yields a symbolic expression $\vpone$\ProseOrTypeError;
     \item applying $\polynomialtoexpr$ to $\vpone$ to transform it into an expression yields $\newe$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{not\_normalizable})
+  \item \AllApplyCase{not\_normalizable}
   \begin{itemize}
     \item applying $\toir$ to $\ve$ in $\tenv$ to obtain a symbolic expression yields $\CannotBeTransformed$,
           indicating it cannot be transformed to a corresponding symbolic expression;
@@ -258,16 +261,16 @@ The function
 \symbolicallysimplifies\ an integer constraint $\vc$, yielding the integer constraint $\newc$
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{exact}):
+  \item \AllApplyCase{exact}
   \begin{itemize}
     \item $\vc$ is an exact integer constraint for $\ve$, that is, $\ConstraintExact(\ve)$;
     \item applying $\normalize$ to $\ve$ in $\tenv$ yields $\vep$;
     \item define $\newc$ as the exact integer constraint for $\vep$, that is, $\ConstraintExact(\ve)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{range}):
+  \item \AllApplyCase{range}
   \begin{itemize}
     \item $\vc$ is an range integer constraint for $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
     \item applying $\normalize$ to $\veone$ in $\tenv$ yields $\veonep$;
@@ -309,7 +312,7 @@ The function
 \symbolicallysimplifies\ a list of integer constraints $\cs$, yielding a list of integer constraints $\newcs$
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item applying $\reduceconstraint$ to every constraint $\cs[\vi]$ in $\tenv$ for every $\vi$ in \\
         $\listrange(\cs)$ yields $\vc_\vi$;
@@ -342,21 +345,21 @@ the special value $\CannotBeTransformed$ is returned.
 \ProseParagraph
 Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expression corresponds to a polynomial.
 
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{literal\_int}):
+  \item \AllApplyCase{literal\_int}
   \begin{itemize}
     \item $\ve$ is an integer literal expression for $\vi$, that is, $\ELiteral(\lint(\vi))$;
     \item $\vp$ is the symbolic expression for $\vi$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{literal\_other}):
+  \item \AllApplyCase{literal\_other}
   \begin{itemize}
     \item $\ve$ is a variable expression other than an integer literal;
     \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{evar\_int\_constant}):
+  \item \AllApplyCase{evar\_int\_constant}
   \begin{itemize}
     \item $\ve$ is a variable expression with identifier $\vs$, that is, $\EVar(\vs)$;
     \item looking up the constant associated with $\vs$ in $\tenv$ via $\lookupconstant$ yields the literal expression for $\vv$, that is, $\ELiteral(\vv)$;
@@ -365,7 +368,7 @@ One of the following applies:
     \item $\vp$ is the symbolic expression for $\vi$, that is, $\{ \emptyfunc\mapsto \vi \}$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{evar\_immutable\_expr}):
+  \item \AllApplyCase{evar\_immutable\_expr}
   \begin{itemize}
     \item $\ve$ is a variable expression with identifier $\vs$, that is, $\EVar(\vs)$;
     \item looking up the constant associated with $\vs$ in $\tenv$ via $\lookupconstant$ yields $\bot$;
@@ -374,7 +377,7 @@ One of the following applies:
     \item applying $\toir$ to $\vep$ in $\tenv$ yields $\vp$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{evar\_exact\_constraint}):
+  \item \AllApplyCase{evar\_exact\_constraint}
   \begin{itemize}
     \item $\ve$ is a variable expression with identifier $\vs$, that is, $\EVar(\vs)$;
     \item looking up the constant associated with $\vs$ in $\tenv$ via $\lookupconstant$ yields $\bot$;
@@ -387,7 +390,7 @@ One of the following applies:
     \item converting $\ve$ to a symbolic expression yields $\vp$\ProseTerminateAs{\CannotBeTransformed}.
   \end{itemize}
 
-  \item All of the following apply (\textsc{int\_var}):
+  \item \AllApplyCase{int\_var}
   \begin{itemize}
     \item $\ve$ is a variable expression with identifier $\vs$, that is, $\EVar(\vs)$;
     \item looking up the constant associated with $\vs$ in $\tenv$ yields $\bot$;
@@ -398,7 +401,7 @@ One of the following applies:
     \item $\vp$ is the symbolic expression for the variable $\vs$, that is, $\{ \{\vs\mapsto 1\}\mapsto 1 \}$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ebinop\_plus}):
+  \item \AllApplyCase{ebinop\_plus}
   \begin{itemize}
     \item $\ve$ is a binary addition expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\PLUS, \veone, \vetwo)$;
     \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeErrorOrCannotBeTransformed;
@@ -406,14 +409,14 @@ One of the following applies:
     \item $\vp$ is the symbolic expression adding up $\irone$ and $\irtwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ebinop\_minus}):
+  \item \AllApplyCase{ebinop\_minus}
   \begin{itemize}
     \item $\ve$ is a binary subtraction expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\MINUS, \veone, \vetwo)$;
     \item $\vep$ is the addition expression with operands $\veone$ and the negation of $\vetwo$, that is, \\ $\EBinop(\PLUS, \veone, \EUnop(\MINUS, \vetwo))$;
     \item converting $\vep$ into a symbolic expression in $\tenv$ yields $\vp$\ProseOrTypeErrorOrCannotBeTransformed.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ebinop\_mul\_div\_left}):
+  \item \AllApplyCase{ebinop\_mul\_div\_left}
   \begin{itemize}
     \item $\ve$ is a binary multiplication expression where the left operand is a binary division expression over $\veone$ and $\vetwo$
           and the right operand is $\vethree$, that is, \\ $\EBinop(\MUL, \EBinop(\DIV, \veone, \vetwo), \vethree)$;
@@ -421,7 +424,7 @@ One of the following applies:
           and $\vethree$ and the right operand is $\vetwo$ yields $\vp$\ProseOrTypeErrorOrCannotBeTransformed.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ebinop\_mul\_div\_right}):
+  \item \AllApplyCase{ebinop\_mul\_div\_right}
   \begin{itemize}
     \item $\ve$ is a binary multiplication expression where the left operand is $\veone$ and the right operand
           is the division expression over $\vetwo$ and $\vethree$, that is, \\
@@ -431,7 +434,7 @@ One of the following applies:
           and $\vetwo$ and the right operand is $\vethree$ yields $\vp$\ProseOrTypeErrorOrCannotBeTransformed.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ebinop\_mul}):
+  \item \AllApplyCase{ebinop\_mul}
   \begin{itemize}
     \item $\ve$ is a binary multiplication expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\MUL, \veone, \vetwo)$;
     \item neither $\veone$ nor $\vetwo$ are binary vision expressions;
@@ -440,7 +443,7 @@ One of the following applies:
     \item $\vp$ is the symbolic expression multiplying $\irone$ and $\irtwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ebinop\_div\_int\_denominator}):
+  \item \AllApplyCase{ebinop\_div\_int\_denominator}
   \begin{itemize}
     \item $\ve$ is a binary division expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\DIV, \veone, \vetwo)$;
     \item $\vetwo$ is an integer literal expression for $\vitwo$;
@@ -449,7 +452,7 @@ One of the following applies:
     \item $\vp$ is the polynomial $\irone$ with each monomial multiplied by $\vftwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ebinop\_div\_monomial\_denominator}):
+  \item \AllApplyCase{ebinop\_div\_monomial\_denominator}
   \begin{itemize}
     \item $\ve$ is a binary division expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\DIV, \veone, \vetwo)$;
     \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeErrorOrCannotBeTransformed;
@@ -458,7 +461,7 @@ One of the following applies:
     \item applying $\polynomialdividebyterm$ to $\irone$, $\vfactor$, and $\vmono$ yields $\vp$\ProseTerminateAs{\CannotBeTransformed}.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ebinop\_div\_non\_monomial\_denominator}):
+  \item \AllApplyCase{ebinop\_div\_non\_monomial\_denominator}
   \begin{itemize}
     \item $\ve$ is a binary division expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\DIV, \veone, \vetwo)$;
     \item converting $\veone$ to a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeErrorOrCannotBeTransformed;
@@ -467,14 +470,14 @@ One of the following applies:
     \item the result is $\CannotBeTransformed$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ebinop\_shl\_non\_lint\_exponent}):
+  \item \AllApplyCase{ebinop\_shl\_non\_lint\_exponent}
   \begin{itemize}
     \item $\ve$ is a binary shift-left expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\SHL, \veone, \vetwo)$;
     \item $\vetwo$ is not an integer literal expression;
     \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ebinop\_shl\_non\_neg\_shift}):
+  \item \AllApplyCase{ebinop\_shl\_neg\_shift}
   \begin{itemize}
     \item $\ve$ is a binary shift-left expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\SHL, \veone, \vetwo)$;
     \item $\vetwo$ is an integer literal expression for $\vitwo$;
@@ -482,7 +485,7 @@ One of the following applies:
     \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ebinop\_shl\_okay}):
+  \item \AllApplyCase{ebinop\_shl\_okay}
   \begin{itemize}
     \item $\ve$ is a binary shift-left expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\SHL, \veone, \vetwo)$;
     \item $\vetwo$ is an integer literal expression for $\vitwo$;
@@ -492,7 +495,7 @@ One of the following applies:
     \item $\vp$ is the polynomial $\irone$ with each monomial multiplied by $\vftwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ebinop\_other\_non\_literals}):
+  \item \AllApplyCase{ebinop\_other\_non\_literals}
   \begin{itemize}
     \item $\ve$ is a binary expression with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, or $\SHL$,
           applied to the operand expressions $\veone$ and $\vetwo$;
@@ -500,7 +503,7 @@ One of the following applies:
     \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ebinop\_other\_literals\_non\_int\_result}):
+  \item \AllApplyCase{ebinop\_other\_literals\_non\_int\_result}
   \begin{itemize}
     \item $\ve$ is a binary expression with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, $\DIV$, or $\SHL$,
           applied to the operand expressions $\veone$ and $\vetwo$;
@@ -510,7 +513,7 @@ One of the following applies:
     \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ebinop\_other\_literals\_int\_result}):
+  \item \AllApplyCase{ebinop\_other\_literals\_int\_result}
   \begin{itemize}
     \item $\ve$ is a binary expression with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, or $\SHL$,
           applied to the operand expressions $\veone$ and $\vetwo$;
@@ -520,27 +523,27 @@ One of the following applies:
     \item $\vp$ is the symbolic expression for the integer $k$, that is, $\{ \emptyfunc\mapsto k \}$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{eunop\_neg}):
+  \item \AllApplyCase{eunop\_neg}
   \begin{itemize}
     \item $\ve$ is a unary expression with the negation operator $\NEG$ and operand $\veone$;
     \item converting the binary expression with operator $\MUL$ and left-hand-side operand for the integer literal $-1$ and
     right-hand-side operand $\veone$ in $\tenv$ yields $\vp$\ProseOrTypeErrorOrCannotBeTransformed.
   \end{itemize}
 
-  \item All of the following apply (\textsc{eunop\_other}):
+  \item \AllApplyCase{eunop\_other}
   \begin{itemize}
     \item $\ve$ is a unary expression with an operator other than $\NEG$;
     \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ATC}):
+  \item \AllApplyCase{atc}
   \begin{itemize}
     \item $\ve$ is an asserting type conversion for the subexpression $\vep$, that is, \\
           $\EATC(\vep, \Ignore)$;
     \item applying $\toir$ to $\vep$ yields $\vp$\ProseOrTypeErrorOrCannotBeTransformed.
   \end{itemize}
 
-  \item All of the following apply (\textsc{other}):
+  \item \AllApplyCase{other}
   \begin{itemize}
     \item $\ve$ is an expression with a label other than $\ELiteral$, $\EVar$, $\EBinop$, $\EUnop$, and $\EATC$;
     \item $\vp$ is $\CannotBeTransformed$.
@@ -784,15 +787,15 @@ conservatively checks whether the expression $\veone$ is equivalent to the expre
 The result is given in $\vb$ or a type error, if one is detected.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{norm\_true}):
+  \item \AllApplyCase{norm\_true}
   \begin{itemize}
     \item comparing $\veone$ to $\vetwo$ in $\tenv$ via $\exprequalnorm$ yields $\True$\ProseOrTypeError;
     \item $\vb$ is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{norm\_false}):
+  \item \AllApplyCase{norm\_false}
   \begin{itemize}
     \item comparing $\veone$ to $\vetwo$ in $\tenv$ via $\exprequalnorm$ yields $\False$;
     \item comparing $\veone$ to $\vetwo$ by case analysis via $\exprequalcase$ yields $\vb$\ProseOrTypeError.
@@ -828,22 +831,22 @@ and, if successful, comparing the resulting normal forms for equality.
 The result is given in $\vb$ or a type error, if one is detected.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{all\_supported}):
+  \item \AllApplyCase{all\_supported}
   \begin{itemize}
     \item transforming $\veone$ into a symbolic expression in $\tenv$ yields $\irone$\ProseOrTypeError;
     \item transforming $\vetwo$ into a symbolic expression in $\tenv$ yields $\irtwo$\ProseOrTypeError;
     \item $\vb$ is the result of equating $\irone$ and $\irtwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{unsupported1}):
+  \item \AllApplyCase{unsupported1}
   \begin{itemize}
     \item transforming $\veone$ into a symbolic expression in $\tenv$ yields $\CannotBeTransformed$;
     \item $\vb$ is $\False$;
   \end{itemize}
 
-  \item All of the following apply (\textsc{unsupported2}):
+  \item \AllApplyCase{unsupported2}
   \begin{itemize}
     \item transforming $\veone$ into a symbolic expression in $\tenv$ yields $\irone$;
     \item transforming $\vetwo$ into a symbolic expression in $\tenv$ yields $\CannotBeTransformed$;
@@ -886,15 +889,15 @@ for the different types of expressions.
 The result is given in $\vb$ or a type error, if one is detected.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{different\_labels}):
+  \item \AllApplyCase{different\_labels}
   \begin{itemize}
     \item the AST labels of $\veone$ and $\vetwo$ are different;
     \item $\vb$ is $\False$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_binop}):
+  \item \AllApplyCase{e\_binop}
   \begin{itemize}
     \item $\veone$ is a binary expression with operator $\opone$ and operands $\veoneone$ and $\veonetwo$,
           that is, $\EBinop(\opone, \veoneone, \veonetwo)$;
@@ -905,7 +908,7 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only if $\opone$ is equal to $\optwo$ and both $\vbone$ and $\vbtwo$ are $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_call}):
+  \item \AllApplyCase{e\_call}
   \begin{itemize}
     \item $\veone$ is a call expression with subprogram name $\nameone$ and list of arguments $\vargsone$,
           that is, $\ECall(\nameone, \vargsone, \Ignore)$;
@@ -919,7 +922,7 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only if $\vb_i$ is $\True$ for each index $i$ in the list of indices for $\vargsone$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_cond}):
+  \item \AllApplyCase{e\_cond}
   \begin{itemize}
     \item $\veone$ is a conditional expression with expressions $\veoneone$, $\veonetwo$, and $\veonethree$,
           that is, $\ECond(\veoneone, \veonetwo, \veonethree)$;
@@ -931,7 +934,7 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only if all of $\vbone$, $\vbtwo$, and $\vbthree$ are $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_slice}):
+  \item \AllApplyCase{e\_slice}
   \begin{itemize}
     \item $\veone$ is a slicing expression with expression $\veoneone$ and list of slices $\slicesone$,
           that is, $\ESlice(\veoneone, \slicesone)$;
@@ -942,7 +945,7 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only both $\vbone$ and $\vbtwo$ are $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_getarray}):
+  \item \AllApplyCase{e\_getarray}
   \begin{itemize}
     \item $\veone$ is an \arrayaccess\ expression with array expression $\veoneone$ and position expression $\veonetwo$,
           that is, $\EGetArray(\veoneone, \veonetwo)$;
@@ -953,7 +956,7 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only both $\vbone$ and $\vbtwo$ are $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_getfield}):
+  \item \AllApplyCase{e\_getfield}
   \begin{itemize}
     \item $\veone$ is a field access expression with subexpression $\veoneone$ and field name $\vfieldone$,
           that is, $\EGetField(\veoneone, \vfieldone)$;
@@ -964,7 +967,7 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only both $\vbone$ and $\vbtwo$ are $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_getfields}):
+  \item \AllApplyCase{e\_getfields}
   \begin{itemize}
     \item $\veone$ is a fields access expression with subexpression $\veoneone$ and list of field names $\vfieldsone$,
           that is, $\EGetFields(\veoneone, \vfieldsone)$;
@@ -975,7 +978,7 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only both $\vbone$ and $\vbtwo$ are $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_getitem}):
+  \item \AllApplyCase{e\_getitem}
   \begin{itemize}
     \item $\veone$ is a tuple access expression with subexpression $\veoneone$ and position $\vione$,
           that is, $\EGetItem(\veoneone, \vione)$;
@@ -986,26 +989,26 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only both $\vbone$ and $\vbtwo$ are $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_literal}):
+  \item \AllApplyCase{e\_literal}
   \begin{itemize}
     \item $\veone$ is the literal expression with literal $\vvone$;
     \item $\vetwo$ is the literal expression with literal $\vvtwo$;
     \item $\vb$ is $\True$ if and only if $\vvone$ is equivalent to $\vvtwo$ in $\tenv$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_pattern}):
+  \item \AllApplyCase{e\_pattern}
   \begin{itemize}
     \item both $\veone$ and $\vetwo$ are pattern expressions;
     \item $\vb$ is $\False$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_record}):
+  \item \AllApplyCase{e\_record}
   \begin{itemize}
     \item both $\veone$ and $\vetwo$ are record expressions;
     \item $\vb$ is $\False$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_tuple}):
+  \item \AllApplyCase{e\_tuple}
   \begin{itemize}
     \item $\veone$ is a tuple expression with subexpression list $\vlone$,
           that is, $\ETuple(\vlone)$;
@@ -1018,7 +1021,7 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only if $\vb_i$ is $\True$ for each index $i$ in the list of indices for $\vlone$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_array}):
+  \item \AllApplyCase{e\_array}
   \begin{itemize}
     \item $\veone$ is an array construction expression with length expression $\vlone$ and value expression $\vvone$,
           that is, $\EArray\{\EArrayLength: \vlone, \EArrayValue: \vvone\}$;
@@ -1029,7 +1032,7 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_unop}):
+  \item \AllApplyCase{e\_unop}
   \begin{itemize}
     \item $\veone$ is a unary operator expression with operator $\opone$ and operand expressions $\veoneone$,
           that is, $\EUnop(\opone, \veoneone)$;
@@ -1039,13 +1042,13 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only if $\opone$ is equal to $\optwo$ and $\vbone$ is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_arbitrary}):
+  \item \AllApplyCase{e\_arbitrary}
   \begin{itemize}
     \item both $\veone$ and $\vetwo$ are $\ARBITRARY$ expressions;
     \item $\vb$ is $\False$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_atc}):
+  \item \AllApplyCase{e\_atc}
   \begin{itemize}
     \item $\veone$ is a type assertion with subexpression with operator $\veoneone$ and type $\vtone$,
           that is, $\EATC(\veoneone, \vtone)$;
@@ -1056,7 +1059,7 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{e\_var}):
+  \item \AllApplyCase{e\_var}
   \begin{itemize}
     \item $\veone$ is a variable expression with identifier $\nameone$, that is, $\EVar(\nameone)$;
     \item $\vetwo$ is a variable expression with identifier $\nametwo$, that is, $\EVar(\nametwo)$;
@@ -1274,41 +1277,41 @@ conservatively tests whether the type $\vtone$ is equivalent to the type $\vttwo
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{different\_labels}):
+  \item \AllApplyCase{different\_labels}
   \begin{itemize}
     \item the AST labels of $\vtone$ and $\vttwo$ are different;
     \item $\vb$ is $\False$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{tbool\_treal\_tstring}):
+  \item \AllApplyCase{tbool\_treal\_tstring}
   \begin{itemize}
     \item both $\vtone$ and $\vttwo$ are both either $\TBool$, $\TReal$, or $\TString$;
     \item $\vb$ is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{tint\_unconstrained}):
+  \item \AllApplyCase{tint\_unconstrained}
   \begin{itemize}
     \item both $\vtone$ and $\vttwo$ are the unconstrained integer type $\unconstrainedinteger$;
     \item $\vb$ is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{tint\_parameterized}):
+  \item \AllApplyCase{tint\_parameterized}
   \begin{itemize}
     \item $\vtone$ is the \parameterizedintegertype\  with identifier $\vione$, that is, \\ $\TInt(\parameterized(\vione))$;
     \item $\vttwo$ is the \parameterizedintegertype\ with identifier $\vitwo$, that is, \\ $\TInt(\parameterized(\vitwo))$;
     \item $\vb$ is $\True$ if and only if $\vione$ is equal to $\vitwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{tint\_wellconstrained}):
+  \item \AllApplyCase{tint\_wellconstrained}
   \begin{itemize}
     \item $\vtone$ is the well-constrained integer type with list of constraints $\vcone$, that is, \\ $\TInt(\wellconstrained(\vcone))$;
     \item $\vttwo$ is the well-constrained integer type with list of constraints $\vctwo$, that is, \\ $\TInt(\wellconstrained(\vctwo))$;
     \item testing whether $\vcone$ and $\vctwo$ are equivalent in $\tenv$ yields $\vb$\ProseOrTypeError.
   \end{itemize}
 
-  \item All of the following apply (\textsc{tbits}):
+  \item \AllApplyCase{tbits}
   \begin{itemize}
     \item $\vtone$ is the bitvector type with width expression $\vwone$ and list of bitfields $\bfone$, that is, $\TBits(\vwone, \bfone)$;
     \item $\vttwo$ is the bitvector type with width expression $\vwtwo$ and list of bitfields $\bftwo$, that is, $\TBits(\vwtwo, \bftwo)$;
@@ -1317,7 +1320,7 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{tarray}):
+  \item \AllApplyCase{tarray}
   \begin{itemize}
     \item $\vtone$ is an array type with index $\vlone$ and element type $\vtone$, that is, $\TArray(\vlone, \vtone)$;
     \item $\vttwo$ is an array type with index $\vltwo$ and element type $\vttwo$, that is, $\TArray(\vltwo, \vttwo)$;
@@ -1326,21 +1329,21 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{tnamed}):
+  \item \AllApplyCase{tnamed}
   \begin{itemize}
     \item $\vtone$ is a named type with identifier $\vsone$, that is $\TNamed(\vsone)$;
     \item $\vttwo$ is a named type with identifier $\vstwo$, that is $\TNamed(\vstwo)$;
     \item $\vb$ is $\True$ if and only if $\vsone$ is equal to $\vstwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{tenum}):
+  \item \AllApplyCase{tenum}
   \begin{itemize}
-    \item $\vtone$ is an enumeration type with identifier $\vlone$, that is $\TEnum(\vlone)$;
-    \item $\vttwo$ is an enumeration type with identifier $\vltwo$, that is $\TEnum(\vltwo)$;
+    \item $\vtone$ is an \enumerationtypeterm{} with identifier $\vlone$, that is $\TEnum(\vlone)$;
+    \item $\vttwo$ is an \enumerationtypeterm{} with identifier $\vltwo$, that is $\TEnum(\vltwo)$;
     \item $\vb$ is $\True$ if and only if $\vlone$ is equal to $\vltwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{tstructured}):
+  \item \AllApplyCase{tstructured}
   \begin{itemize}
     \item $L$ is either $\TRecord$ or $\TException$;
     \item $\vtone$ is a \structuredtype\ with list of fields $\vfieldsone$, that is $L(\vfieldsone)$;
@@ -1353,10 +1356,10 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only if $\vb_\vf$ is $\True$ for each field $\vf$ in the set of fields of $\vfieldsone$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ttuple}):
+  \item \AllApplyCase{ttuple}
   \begin{itemize}
-    \item $\vtone$ is a tuple type with list of types $\vtsone$, that is $\TTuple(\vtsone)$;
-    \item $\vttwo$ is a tuple type with list of types $\vtstwo$, that is $\TTuple(\vtstwo)$;
+    \item $\vtone$ is a \tupletypeterm{} with list of types $\vtsone$, that is $\TTuple(\vtsone)$;
+    \item $\vttwo$ is a \tupletypeterm{} with list of types $\vtstwo$, that is $\TTuple(\vtstwo)$;
     \item checking whether the list of types $\vtsone$ has the same length as the list of types $\vtstwo$ yields $\True$
           or $\False$, which short-circuits the entire rule;
     \item for each index $i$ in the list $\vtsone$, testing whether $\vtsone[i]$ is equivalent to $\vtstwo[i]$ in $\tenv$
@@ -1375,7 +1378,7 @@ One of the following applies:
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[TBool\_TReal\_TString]{
+\inferrule[tbool\_treal\_tstring]{
   \astlabel(\vtone) = \astlabel(\vttwo)\\
   \astlabel(\vtone) \in \{\TBool, \TReal, \TString\}
 }{
@@ -1497,15 +1500,15 @@ conservatively tests whether the list of bitfields $\bfone$ is equivalent to the
 in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{different\_lengths}):
+  \item \AllApplyCase{different\_lengths}
   \begin{itemize}
     \item the number of bitfields in $\bfone$ is different from the number of bitfields in $\bftwo$;
     \item $\vb$ is $\False$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{same\_lengths}):
+  \item \AllApplyCase{same\_lengths}
   \begin{itemize}
     \item the number of bitfields in $\bfone$ is the same as the number of bitfields in $\bftwo$;
     \item testing whether the bitfield $\bfone[i]$ is equivalent to $\bftwo[i]$ in $\tenv$ for every index
@@ -1541,15 +1544,16 @@ The function
 conservatively tests whether the bitfield $\bfone$ is equivalent to the bitfield $\bftwo$ in environment $\tenv$
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
-One of the following applies:
+\ProseParagraph
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{different\_labels}):
+  \item \AllApplyCase{different\_labels}
   \begin{itemize}
     \item the AST labels of $\bfone$ and $\bftwo$ are different;
     \item $\vb$ is $\False$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{bitfield\_simple}):
+  \item \AllApplyCase{bitfield\_simple}
   \begin{itemize}
     \item $\bfone$ is a simple bitfield with name $\nameone$ and list of slices $\slicesone$, that is, \\ $\BitFieldSimple(\nameone, \slicesone)$;
     \item $\bftwo$ is a simple bitfield with name $\nametwo$ and list of slices $\slicestwo$, that is, \\ $\BitFieldSimple(\nametwo, \slicestwo)$;
@@ -1558,7 +1562,7 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{bitfield\_nested}):
+  \item \AllApplyCase{bitfield\_nested}
   \begin{itemize}
     \item $\bfone$ is a nested bitfield with name $\nameone$, list of slices $\slicesone$, and nested bitfields $\bfoneone$, that is,
           $\BitFieldNested(\nameone, \slicesone, \bfoneone)$;
@@ -1570,7 +1574,7 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{bitfield\_typed}):
+  \item \AllApplyCase{bitfield\_typed}
   \begin{itemize}
     \item $\bfone$ is a typed bitfield with name $\nameone$, list of slices $\slicesone$, and type $\vtone$, that is,
           $\BitFieldType(\nameone, \slicesone, \vtone)$;
@@ -1634,7 +1638,7 @@ conservatively tests whether the constraint list $\csone$ is equivalent to the c
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item checking whether the number of constraints in $\csone$ is the same as the number of constraints in $\cstwo$
         yields $\True$\ProseTerminateAs{\False};
@@ -1665,22 +1669,22 @@ conservatively tests whether the constraint $\vcone$ is equivalent to the constr
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{different\_labels}):
+  \item \AllApplyCase{different\_labels}
   \begin{itemize}
     \item the AST labels of $\vcone$ and $\vctwo$ are different;
     \item define $\vb$ as $\False$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{constraint\_exact}):
+  \item \AllApplyCase{constraint\_exact}
   \begin{itemize}
     \item $\vcone$ is an exact constraint with subexpression $\veone$, that is, $\ConstraintExact(\veone)$;
     \item $\vctwo$ is an exact constraint with subexpression $\vetwo$, that is, $\ConstraintExact(\vetwo)$;
     \item applying $\exprequal$ to $\veone$ and $\vetwo$ yields $\vb$\ProseOrTypeError.
   \end{itemize}
 
-  \item All of the following apply (\textsc{constraint\_range}):
+  \item \AllApplyCase{constraint\_range}
   \begin{itemize}
     \item $\vcone$ is a range constraint with subexpressions $\veoneone$ and $\veonetwo$, that is, \\ $\ConstraintRange(\veoneone, \veonetwo)$;
     \item $\vctwo$ is a range constraint with subexpressions $\vetwoone$ and $\vetwotwo$, that is, \\ $\ConstraintRange(\vetwoone, \vetwotwo)$;
@@ -1727,16 +1731,16 @@ The function
 conservatively tests whether the list of slices $\slicesone$ is equivalent to the list of slices $\slicestwo$
 in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
-\FormallyParagraph
-One of the following applies:
+\ProseParagraph
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{different\_lengths}):
+  \item \AllApplyCase{different\_lengths}
   \begin{itemize}
     \item checking whether the number of slices in $\slicesone$ is equal to the number of slice in $\slicestwo$ yields $\False$;
     \item $\vb$ is $\False$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{same\_lengths}):
+  \item \AllApplyCase{same\_lengths}
   \begin{itemize}
     \item checking whether the number of slices in $\slicesone$ is equal to the number of slice in $\slicestwo$ yields $\True$;
     \item determining whether the expression $\slicesone[i]$ is equivalent to $\slicestwo[i]$ in $\tenv$
@@ -1773,22 +1777,22 @@ conservatively tests whether the slice $\sliceone$ is equivalent to the slice $\
 in environment $\tenv$ and yields the result in $\vb$. \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{different\_labels}):
+  \item \AllApplyCase{different\_labels}
   \begin{itemize}
     \item $\sliceone$ and $\slicetwo$ have different AST labels;
     \item $\vb$ is $\False$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{slice\_single}):
+  \item \AllApplyCase{slice\_single}
   \begin{itemize}
     \item $\sliceone$ is a slice for a single position, given by the expression $\veone$, that is, $\SliceSingle(\veone)$;
     \item $\slicetwo$ is a slice for a single position, given by the expression $\vetwo$, that is, $\SliceSingle(\vetwo)$;
     \item testing $\veone$ and $\vetwo$ for equivalence yields $\vb$\ProseOrTypeError.
   \end{itemize}
 
-  \item All of the following apply (\textsc{slice\_range}):
+  \item \AllApplyCase{slice\_range}
   \begin{itemize}
     \item $\sliceone$ is a slice for a range of positions, given by the expressions $\veoneone$ and $\veonetwo$, that is, $\SliceRange(\veoneone, \veonetwo)$;
     \item $\slicetwo$ is a slice for a range of positions, given by the expressions $\vetwoone$ and $\vetwotwo$, that is, $\SliceRange(\vetwoone, \vetwotwo)$;
@@ -1797,7 +1801,7 @@ One of the following applies:
     \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{slice\_length}):
+  \item \AllApplyCase{slice\_length}
   \begin{itemize}
     \item $\sliceone$ is a slice for a range of positions, given by the start expression $\veoneone$ and length expression $\veonetwo$, that is, $\SliceLength(\veoneone, \veonetwo)$;
     \item $\slicetwo$ is a slice for a range of positions, given by the start expression $\vetwoone$ and length expression $\vetwotwo$, that is, $\SliceLength(\vetwoone, \vetwotwo)$;
@@ -1809,7 +1813,7 @@ One of the following applies:
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[different\_label]{
+\inferrule[different\_labels]{
   \astlabel(\sliceone) \neq \astlabel(\slicetwo)
 }{
   \slicesequal(\tenv, \sliceone, \slicetwo) \typearrow \False
@@ -1849,26 +1853,26 @@ tests whether the array lengths $\vlone$ and $\vltwo$ are equivalent and yields 
 in $\vb$. \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{different\_labels}):
+  \item \AllApplyCase{different\_labels}
   \begin{itemize}
     \item $\vlone$ and $\vltwo$ have different AST labels;
     \item $\vb$ is $\False$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{expr\_expr}):
+  \item \AllApplyCase{expr\_expr}
   \begin{itemize}
     \item $\vlone$ is an integer type length expression with subexpression $\veoneone$, that is, \\ $\ArrayLengthExpr(\veoneone)$;
     \item $\vltwo$ is an integer type length expression with subexpression $\vetwoone$, that is, \\ $\ArrayLengthExpr(\vetwoone)$;
     \item testing whether $\veoneone$ and $\vetwoone$ are equivalent in $\tenv$ yields $\vb$\ProseOrTypeError.
   \end{itemize}
 
-  \item All of the following apply (\textsc{enum\_enum}):
+  \item \AllApplyCase{enum\_enum}
   \begin{itemize}
-    \item $\vlone$ is an enumeration type index for the identifier $\venumone$ and a list of labels, that is,
+    \item $\vlone$ is an \enumerationtypeterm{} index for the identifier $\venumone$ and a list of labels, that is,
           $\ArrayLengthEnum(\venumone, \Ignore)$;
-    \item $\vltwo$ is an enumeration type index for the identifier $\venumtwo$ and a list of labels, that is,
+    \item $\vltwo$ is an \enumerationtypeterm{} index for the identifier $\venumtwo$ and a list of labels, that is,
            $\ArrayLengthEnum(\venumtwo, \Ignore)$;
     \item $\vb$ is $\True$ if and only if $\venumone$ is equal to $\venumtwo$.
   \end{itemize}
@@ -1928,15 +1932,15 @@ The function
 transforms a polynomial $\vp$ into the corresponding expression $\ve$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\vp$ is the polynomial with an empty list of monomials, that is, $\emptyfunc$;
     \item define $\ve$ as the literal expression for $0$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\vp$ is the polynomial $f$;
     \item sorting (see $\sort$ for details) the graph of $f$ (see $\funcgraph$ for details)
@@ -1989,16 +1993,16 @@ $0$ to mean that any ordering of the monomial bindings is acceptable,
 and $1$ to mean that the second monomial binding should be ordered before the first.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{equal\_monomials}):
+  \item \AllApplyCase{equal\_monomials}
   \begin{itemize}
     \item $\vmone$ is $f$ and $\vmtwo$ is $g$;
     \item $f$ is equal to $g$;
     \item $\vs$ is the sign of $\vqtwo - \vqone$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{different\_monomials}):
+  \item \AllApplyCase{different\_monomials}
   \begin{itemize}
     \item $\vmone$ is $f$ and $\vmtwo$ is $g$;
     \item $f$ is different from to $g$;
@@ -2055,15 +2059,15 @@ into an expression $\ve$, which represents the absolute value of the sum of all 
 and a sign value $\vs$, which indicates the sign of the resulting sum.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\monoms$ is an empty list;
     \item $\ve$ is the literal expression for the integer $0$ and $\vs$ is $0$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\monoms$ is a list with $(\vm,q)$ as its \head\ and $\monomsone$ as its \tail;
     \item transforming the unitary monomial $\vm$ to an expression via \\ $\unitarymonomialstoexpr$ yields $\veonep$;
@@ -2101,23 +2105,23 @@ transforms an expression $\ve$ and rational $q$ into the expression $\newe$,
 which represents the absolute value of $\ve$ multiplied by $q$, and the sign of $q$ as $\vs$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{q\_zero}):
+  \item \AllApplyCase{q\_zero}
   \begin{itemize}
     \item $q$ is $0$;
     \item $\newe$ is the literal expression for $0$;
     \item $\vs$ is $0$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{q\_natural}):
+  \item \AllApplyCase{q\_natural}
   \begin{itemize}
     \item $q$ a strictly positive;
     \item symbolically multiplying the literal expression for $q$ and $\ve$ via $\symmulexpr$ yields $\newe$;
     \item $\vs$ is $1$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{q\_positive\_fraction}):
+  \item \AllApplyCase{q\_positive\_fraction}
   \begin{itemize}
     \item $q$ a strictly positive fraction, that is, not an integer;
     \item the reduced representation of the fraction $q$ is $\frac{d}{n}$;
@@ -2126,7 +2130,7 @@ One of the following applies:
     \item $\vs$ is $1$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{q\_negative}):
+  \item \AllApplyCase{q\_negative}
   \begin{itemize}
     \item $q$ a strictly negative;
     \item transforming $\ve$ with $-q$ to an expression and a sign via $\monomialtoexpr$ yields $(\newe, 1)$;
@@ -2202,15 +2206,15 @@ $\vstwo$                      & -1                         & 0               & 1
 \end{center}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{zero}):
+  \item \AllApplyCase{zero}
   \begin{itemize}
     \item either $\vsone$ is $0$ or $\vstwo$ is $0$;
     \item the result is $(\vetwo, \vstwo)$ if $\vsone$ is $0$ and $(\veone, \vsone)$, otherwise.
   \end{itemize}
 
-  \item All of the following apply (\textsc{same\_sign}):
+  \item \AllApplyCase{same\_sign}
   \begin{itemize}
     \item both $\vsone$ and $\vstwo$ are not $0$;
     \item $\vsone$ is equal to $\vstwo$;
@@ -2219,7 +2223,7 @@ One of the following applies:
     \item $\vs$ is $\vsone$;
   \end{itemize}
 
-  \item All of the following apply (\textsc{same\_sign}):
+  \item \AllApplyCase{different\_signs}
   \begin{itemize}
     \item both $\vsone$ and $\vstwo$ are not $0$;
     \item $\vsone$ is different from $\vstwo$;
@@ -2263,21 +2267,21 @@ transforms a list of single-variable unitary monomials $\monoms$ into an express
 Intuitively, $\monoms$ represented a multiplication of the single-variable unitary monomials.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\monoms$ is the empty list;
     \item $\ve$ is the literal expression for $1$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{exp\_zero}):
+  \item \AllApplyCase{exp\_zero}
   \begin{itemize}
     \item $\monoms$ is a list where the first element is $(\vv, 0)$ and its tail is $\monoms$;
     \item transforming $\monomsone$ to an expression yields $\ve$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{exp\_one}):
+  \item \AllApplyCase{exp\_one}
   \begin{itemize}
     \item $\monoms$ is a list where the first element is $(\vv, 1)$ and its tail is $\monoms$;
     \item $\veone$ is the variable expression for $\vv$;
@@ -2285,7 +2289,7 @@ One of the following applies:
     \item symbolically multiplying $\veone$ and $\vetwo$ via $\symmulexpr$ yields $\ve$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{exp\_two}):
+  \item \AllApplyCase{exp\_two}
   \begin{itemize}
     \item $\monoms$ is a list where the first element is $(\vv, 2)$ and its tail is $\monoms$;
     \item $\veone$ is the binary expression with operator $\MUL$ and operands $\EVar(\vv)$ and $\EVar(\vv)$
@@ -2294,7 +2298,7 @@ One of the following applies:
     \item symbolically multiplying $\veone$ and $\vetwo$ via $\symmulexpr$ yields $\ve$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{exp\_gt\_two}):
+  \item \AllApplyCase{exp\_gt\_two}
   \begin{itemize}
     \item $\monoms$ is a list where the first element is $(\vv, n)$ and its tail is $\monoms$;
     \item $n$ is greater than $1$;
@@ -2362,9 +2366,9 @@ produces an expression representing the multiplication of expressions $\veone$ a
 simplifying away the case where one of the operands is the literal one.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{one\_operand}):
+  \item \AllApplyCase{one\_operand}
   \begin{itemize}
     \item either $\veone$ or $\vetwo$ is the literal expression for $1$;
     \item $\ve$ is $\vetwo$ if $\veone$ is the literal expression for $1$ and $\veone$, otherwise.
@@ -2388,7 +2392,7 @@ One of the following applies:
 }
 \end{mathpar}
 
-\subsubsection{TypingRule.TypeOf}
+\TypingRuleDef{TypeOf}
 \hypertarget{def-typeof}{}
 The function
 \[
@@ -2399,20 +2403,20 @@ looks up the environment $\tenv$ for a type $\tty$ associated with an identifier
 $\vs$. The result is type error if $\vs$ is not associated with any type.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{local}):
+  \item \AllApplyCase{local}
   \begin{itemize}
     \item $\vs$ is associated with a type $\tty$ in the local environment of $\tenv$;
   \end{itemize}
 
-  \item All of the following apply (\textsc{global}):
+  \item \AllApplyCase{global}
   \begin{itemize}
     \item $\vs$ is not associated with a type in the local environment of $\tenv$;
     \item $\vs$ is associated with a type $\tty$ in the global environment of $\tenv$;
   \end{itemize}
 
-  \item All of the following apply (\textsc{error}):
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item $\vs$ is not associated with a type in the local environment of $\tenv$;
     \item $\vs$ is not associated with a type in the global environment of $\tenv$;
@@ -2436,7 +2440,7 @@ One of the following applies:
   \typeof(\tenv, \vs) \typearrow \tty
 }
 \and
-\inferrule[none]{
+\inferrule[error]{
   L^\tenv.\localstoragetypes(\vs) = \bot\\
   G^\tenv.\globalstoragetypes(\vs) = \bot
 }{
@@ -2457,9 +2461,9 @@ expression that can be symbolically simplified.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{normalizable})
+  \item \AllApplyCase{normalizable}
   \begin{itemize}
     \item applying $\toir$ to $\ve$ in $\tenv$ to obtain a symbolic expression yields a symbolic expression $\vpone$
     (that is, not $\CannotBeTransformed$)\ProseOrTypeError;
@@ -2467,7 +2471,7 @@ One of the following applies:
     \item \Proseeqdef{$\neweopt$}{$\langle\newe\rangle$}.
   \end{itemize}
 
-  \item All of the following apply (\textsc{not\_normalizable})
+  \item \AllApplyCase{not\_normalizable}
   \begin{itemize}
     \item applying $\toir$ to $\ve$ in $\tenv$ to obtain a symbolic expression yields $\CannotBeTransformed$;
     \item \Proseeqdef{$\neweopt$}{$\None$}.

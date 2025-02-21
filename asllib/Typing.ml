@@ -539,8 +539,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | _ -> conflict ~loc [ default_t_bits ] t
   (* End *)
 
-  (* Begin CheckStructureInteger *)
-  let check_structure_integer ~loc env t () =
+  (* Begin CheckUnderlyingInteger *)
+  let check_underlying_integer ~loc env t () =
     let () =
       if false then
         Format.eprintf "Checking that %a is an integer.@." PP.pp_ty t
@@ -1374,7 +1374,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* Begin AnnotateSymbolicInteger *)
   and annotate_symbolic_integer ~(loc : 'a annotated) env e =
     let t, e', ses = annotate_symbolically_evaluable_expr env e in
-    let+ () = check_structure_integer ~loc env t in
+    let+ () = check_underlying_integer ~loc env t in
     (StaticModel.try_normalize env e', ses)
   (* End *)
 
@@ -1419,7 +1419,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           and length', ses_length =
             annotate_symbolic_constrained_integer ~loc env length
           in
-          let+ () = check_structure_integer ~loc:offset env t_offset in
+          let+ () = check_underlying_integer ~loc:offset env t_offset in
           let ses = SES.union ses_length ses_offset in
           (Slice_Length (offset', length'), ses |: TypingRule.Slice)
       | Slice_Range (j, i) ->
@@ -2902,7 +2902,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               WellConstrained [ Constraint_Range (e_bot, e_top) ]
           | T_Int _, _ -> conflict ~loc [ integer' ] end_t
           | _, _ -> conflict ~loc [ integer' ] start_t
-          (* only happens in relaxed type-checking mode because of check_structure_integer earlier. *)
+          (* only happens in relaxed type-checking mode because of check_underlying_integer earlier. *)
           (* TypingRule.ForConstraint) *)
         in
         let ty = T_Int cs |> here in

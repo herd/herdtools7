@@ -10,6 +10,8 @@ Examples used in ASL High-level Definition:
   $ aslref --no-exec Bitfields.asl
   $ aslref Bitfields_nested.asl
   $ aslref Bitvector_slices.asl
+  $ aslref Bitvector_rotate.asl
+  bv=0x14, rotated twice=0x05
 
   $ aslref CaseStatement.discriminant.asl
   num_tests: 0

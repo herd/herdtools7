@@ -380,7 +380,7 @@ $\newtenv$, and an inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item annotating the signature of $\funcsig$ in $\genv$ as per
         \TypingRuleRef{AnnotateFuncSig} yields
@@ -417,7 +417,7 @@ an inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\tenv$ is the static environment which comprises of the global static environment $\genv$ and an empty local environment;
   \item applying $\annotatelimitexpr$ to $\funcsig.\funcrecurselimit$ in $\tenvone$ yields \\
@@ -500,24 +500,26 @@ and declares it in environment $\newtenv$.
 It returns the updated environment $\tenvwithparams$ and the annotated parameters $\paramsone$, together with any annotated parameters already in the accumulator $\acc$.
 \ProseOtherwiseTypeError
 
-\subsection{Example}
+\ExampleDef{Annotating Parameters}
 In \listingref{typing-parameterofconstraint}, the list of explicitly defined parameters
-of the function \texttt{signature\_example} is $\{\texttt{A},\texttt{B}\}$.
-Therefore, $\tenvwithparams$ effectively reflects the added declarations \verb|let A: integer{A}| and \verb|let B: integer{B}|.
+of the function \\
+\verb|signature_example| is $\{\texttt{A},\texttt{B}\}$.
+Therefore, $\tenvwithparams$ effectively reflects the added declarations \\
+\verb|let A: integer{A}| and \verb|let B: integer{B}|.
 
 \ASLListing{A function with parameters}{typing-parameterofconstraint}{\typingtests/TypingRule.AnnotateFuncSig.asl}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\params$ is the empty list;
     \item $\tenvwithparams$ is $\newtenv$;
     \item $\paramsone$ is $\acc$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\params$ is a list with $(\vx, \tyopt)$ as its \head\ and $\paramsp$ as its \tail;
     \item applying $\annotateoneparam$ to the parameter $(\vx, \tyopt)$ with $\tenv$ and $\newtenv$ yields the pair $\newtenvp$ and $\tty$\ProseOrTypeError;
@@ -563,17 +565,17 @@ The updated environment $\newtenvp$ and annotated parameter type $\tty$ are retu
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item All of the following apply (\textsc{type\_parameterized}):
+    \item \AllApplyCase{type\_parameterized}
     \begin{itemize}
       \item $\tyopt$ is either $\None$ or an \unconstrainedintegertype{};
       \item $\tty$ is defined as the \parameterizedintegertype\ for the identifier $\vx$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{type\_annotated}):
+    \item \AllApplyCase{type\_annotated}
     \begin{itemize}
       \item $\tyopt$ is the type $\langle\ttyp\rangle$, which is not the unconstrained integer type;
       \item annotating $\ttyp$ in $\tenv$ yields $\tty$\ProseOrTypeError.
@@ -618,7 +620,7 @@ The function
 checks the parameters declared in $\funcsig$ for validity.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item Finding the list of types in $\funcsig$ using $\typesinfuncsig$ yields $\tys$;
   \item Applying $\paramsofty$ to each type in $\tys$ and concatenating the results yields the list of parameter identifiers $\params$;
@@ -679,32 +681,32 @@ finds the list of parameters in the type $\tty$.
 It assumes that $\tty$ appears in a function signature.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 
 \begin{itemize}
-  \item All of the following apply (\textsc{tbits}):
+  \item \AllApplyCase{tbits}
     \begin{itemize}
       \item $\tty$ is a bitvector type, that is, $\TBits(\ve, \Ignore)$;
       \item applying $\paramsofexpr$ to $\ve$ in $\tenv$ yields $\ids$.
     \end{itemize}
 
-  \item All of the following apply (\textsc{ttuple}):
+  \item \AllApplyCase{ttuple}
     \begin{itemize}
       \item $\tty$ is a tuple over a list of types $\tys$, that is, $\TTuple(\tys)$;
       \item applying $\paramsofty$ to each type $\tty_i$ in $\tys$ yields $\ids_i$;
       \item $\ids$ is the concatenation of all the $\ids_i$.
     \end{itemize}
 
-  \item All of the following apply (\textsc{tint\_constrained}):
+  \item \AllApplyCase{tint\_constrained}
     \begin{itemize}
       \item $\tty$ is a \wellconstrainedintegertype, that is, $\TInt(\wellconstrained(\cs))$;
       \item applying $\paramsofconstraint$ to each constraint $\vc_i$ in $\cs$ yields $\ids_i$;
       \item $\ids$ is the concatenation of all the $\ids_i$.
     \end{itemize}
 
-  \item All of the following apply (\textsc{other}):
+  \item \AllApplyCase{other}
     \begin{itemize}
-      \item $\tty$ is not a tuple type, bitvector type, or \wellconstrainedintegertype;
+      \item $\tty$ is not a \tupletypeterm{}, bitvector type, or \wellconstrainedintegertype;
       \item $\ids$ is the empty list.
     \end{itemize}
 \end{itemize}
@@ -739,7 +741,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[other]{
   \astlabel(\tty) \notin \{ \TBits, \TTuple \} \\
-  \tty \neq \TInt(\wellconstrained(\Ignore))
+  \neg \iswellconstrainedinteger(\tty)
 }{
   \paramsofty(\tenv, \tty) \typearrow \overname{\emptylist}{\ids}
 }
@@ -756,22 +758,22 @@ finds the list of parameters in the expression $\ve$.
 It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellconstrainedintegertype{} in a function signature.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 
 \begin{itemize}
-  \item All of the following apply (\textsc{eval}):
+  \item \AllApplyCase{eval}
     \begin{itemize}
       \item $\ve$ is a variable, that is, $\EVar(\vx)$;
       \item if $\vx$ is undefined in $\tenv$ then $\ids$ is $[\vx]$, otherwise $\ids$ is $\emptylist$.
     \end{itemize}
 
-  \item All of the following apply (\textsc{eunop}):
+  \item \AllApplyCase{eunop}
     \begin{itemize}
       \item $\ve$ is a unary operation, that is, $\EUnop(\Ignore, \ve)$;
       \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\ids$.
     \end{itemize}
 
-  \item All of the following apply (\textsc{ebinop}):
+  \item \AllApplyCase{ebinop}
     \begin{itemize}
       \item $\ve$ is a binary operation, that is, $\EBinop(\Ignore, \veone, \vetwo)$;
       \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\idsone$;
@@ -779,7 +781,7 @@ One of the following applies:
       \item define $\ids$ as the concatenation of $\idsone$ and $\idstwo$.
     \end{itemize}
 
-  \item All of the following apply (\textsc{other}):
+  \item \AllApplyCase{other}
     \begin{itemize}
       \item $\ve$ is not a variable, unary operation, or binary operation;
       \item $\ids$ is the empty list.
@@ -831,16 +833,16 @@ finds the list of parameters in the constraint $\vc$.
 It assumes that $\vc$ appears within a \wellconstrainedintegertype{} in a function signature.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 
 \begin{itemize}
-  \item All of the following apply (\textsc{exact}):
+  \item \AllApplyCase{exact}
     \begin{itemize}
       \item $\vc$ is an exact constraint, that is, $\ConstraintExact(\ve)$;
       \item applying $\paramsofexpr$ to $\ve$ in $\tenv$ yields $ids$.
     \end{itemize}
 
-  \item All of the following apply (\textsc{range}):
+  \item \AllApplyCase{range}
     \begin{itemize}
       \item $\vc$ is an range constraint, that is, $\ConstraintRange(\veone, \vetwo)$;
       \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\idsone$;
@@ -909,14 +911,14 @@ together with any annotated arguments already in the accumulator $\acc$,
 and a \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
-\subsection{Example}
+\ExampleDef{Annotating Subprogram Arguments}
 In \listingref{typing-parameterofconstraint}, the annotated arguments are
 \texttt{bv}, \texttt{bv2}, \texttt{bv3}, and \texttt{C}.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\args$ is the empty list;
     \item $\tenvwithargs$ is $\newtenv$;
@@ -924,7 +926,7 @@ One of the following applies:
     \item \Proseeqdef{$\vses$}{$\vsesin$}
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\args$ is a list with $(\vx, \tty)$ as its \head\ and $\vargsp$ as its \tail;
     \item applying $\annotateonearg$ to the argument $(\vx, \tty)$ with $\tenv$ and $\newtenv$ yields
@@ -972,7 +974,7 @@ and inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vses)$\ProseOrTypeError;
   \item checking that $\vx$ is not defined in $\newtenv$ yields $\True$\ProseOrTypeError;
@@ -1016,9 +1018,9 @@ and the inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{no\_return\_type}):
+  \item \AllApplyCase{no\_return\_type}
   \begin{itemize}
     \item $\vreturntype$ is $\None$;
     \item $\newtenv$ is $\tenvwithargs$;
@@ -1026,7 +1028,7 @@ One of the following applies:
     \item \Proseeqdef{$\vses$}{$\vsesin$}.
   \end{itemize}
 
-  \item All of the following apply (\textsc{has\_return\_type}):
+  \item \AllApplyCase{has\_return\_type}
   \begin{itemize}
     \item $\returntype$ is $\langle\tty\rangle$;
     \item annotating $\tty$ in $\tenvwithparams$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
@@ -1082,7 +1084,7 @@ resulting in an annotated function definition $\newfuncdef$ and new static envir
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\funcsig$ has name $\name$, arguments $\vargs$, and type $\subprogramtype$, that is,
   \[
@@ -1150,7 +1152,7 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\DeclareOneFuncBegin}{\DeclareOneFuncEnd}{../Typing.ml}
-\lrmcomment{This relates to \identi{HJRD}, \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}, and \identr{PGFC}.}
+\identi{HJRD} \identd{BTBR} \identi{FSFQ} \identi{PFGQ} \identr{PGFC}
 
 \TypingRuleDef{SubprogramClash}
 \hypertarget{def-subprogramclash}{}
@@ -1175,7 +1177,7 @@ The function is only defined when there exists a binding for $\name$ in the
 $\subprograms$ map of $\tenv$.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item the identifier $\name$ is bound to the $\func$ AST node $\otherfuncsig$ in the \\
         $\subprograms$ map
@@ -1222,7 +1224,7 @@ which defines whether two subprogram types are considered to be clashing:
   \subprogramclash(\tenv, \name, \subpgmtype, \formaltypes) \typearrow \vb
 }
 \end{mathpar}
-\lrmcomment{This is related to \identd{BTBR}, \identi{FSFQ}, \identi{PFGQ}.}
+\identd{BTBR} \identi{FSFQ} \identi{PFGQ}
 
 \TypingRuleDef{AddNewFunc}
 \hypertarget{def-addnewfunc}{}
@@ -1248,16 +1250,16 @@ and the environment $\newtenv$, which is updated with $\newname$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{first\_name}):
+  \item \AllApplyCase{first\_name}
   \begin{itemize}
     \item the $\overloadedsubprograms$ map in the global environment of $\tenv$ does not have a binding for $\name$;
     \item $\newtenv$ is $\tenv$ with the $\overloadedsubprograms$ updated by binding $\name$ to the singleton set containing
           $\name$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{name\_exists}):
+  \item \AllApplyCase{name\_exists}
   \begin{itemize}
     \item the $\overloadedsubprograms$ map in the global environment of $\tenv$ binds $\name$ to the set of strings $\othernames$;
     \item $\newname$ is the unique name that will be associated with the subprogram given by the identifier $\name$, list of formals $\formals$,
@@ -1303,7 +1305,7 @@ One of the following applies:
   (\newtenv, \newname)
 }
 \end{mathpar}
-\lrmcomment{This is related to \identr{PGFC}.}
+\identr{PGFC}
 \CodeSubsection{\AddNewFuncBegin}{\AddNewFuncEnd}{../Typing.ml}
 
 \TypingRuleDef{CheckSetterHasGetter}
@@ -1317,7 +1319,7 @@ checks whether the setter procedure given by $\funcsig$ has a corresponding gett
 returning $\True$ if this condition holds and a type error otherwise.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item checking that the subprogram type of $\funcsig$ is $\STSetter$ has one of two outcomes:
         $\False$, which satisfies the premise;

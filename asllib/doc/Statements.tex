@@ -90,7 +90,7 @@ We now define the syntax, abstract syntax, typing, and semantics for the followi
 \subsection{Typing}
 \TypingRuleDef{SPass}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is a pass statement, that is, $\SPass$;
   \item $\news$ is $\vs$;
@@ -105,12 +105,12 @@ All of the following apply:
 
 \subsection{Semantics}
 \SemanticsRuleDef{SPass}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Pass Statements}
 In \listingref{semantics-spass}, \texttt{pass;} does nothing.:
 \ASLListing{Evaluating a \texttt{pass} statement}{semantics-spass}{\semanticstests/SemanticsRule.SPass.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
 \item $\vs$ is a \passstatementterm, $\SPass$;
 \item $\newg$ is the empty graph;
@@ -149,7 +149,7 @@ All of the following apply:
 \subsection{Typing}
 \TypingRuleDef{SAssign}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is an assignment \texttt{le = re}, that is, $\SAssign(\vle, \vre)$;
   \item annotating the right-hand-side expression $\vre$ in $\tenv$ yields $(\vtre, \vreone, \vsesre)$\ProseOrTypeError;
@@ -173,14 +173,14 @@ All of the following apply:
 
 \subsection{Semantics}
 \SemanticsRuleDef{SAssign}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Assignment Statements}
 In \listingref{semantics-sassign},
 \texttt{x = 3;} binds \texttt{x} to $\nvint(3)$ in the environment where \texttt{x} is bound to
 $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
 \ASLListing{Evaluating an assignment}{semantics-sassign}{\semanticstests/SemanticsRule.SAssign.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is an assignment statement, $\SAssign(\vle, \vre)$;
   \item $\vre$ is not a call expression;
@@ -215,7 +215,7 @@ and then completes the update via an appropriate rule for evaluating the
 etc.
 
 \SemanticsRuleDef{SAssignCall}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Assignment from Subprogram Calls}
 In \listingref{assigncallsemantics}, given that the function call \texttt{f(1)} returns a triple of values ---
 $\nvint(1)$, $\nvint(2)$, and $\nvint(3)$
 (each with its own associated execution graph),
@@ -225,7 +225,7 @@ and the value $\nvint(2)$ to the mutable variable~\texttt{b}, and discards $\nvi
 \ASLListing{Assignment from a call expression.}{assigncallsemantics}{\semanticstests/SemanticsRule.SAssignCall.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ assigns an \assignableexpression\ list from a subprogram call, \\
         $\SAssign(\LEDestructuring(\les),\ECall(\vcall))$;
@@ -323,14 +323,14 @@ builds a statement $\news$ from an assignment of expression $\rhs$ to a setter i
 \inferrule[singleton]{
   \fields \eqname [\field] \\
   \vx \in \Identifiers \text{ is fresh} \\\\
-  \setcalltype(\vcall, \STGetter) \aslto \texttt{getter} \\\\
-  \texttt{read} \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \langle\texttt{getter}\rangle) \\\\
-  \texttt{modify} \eqdef \SAssign(\LESetField(\LEVar(\vx), \field), \rhs) \\\\
-  \makesetter(\vcall, \EVar(\vx)) \aslto \texttt{setter}
+  \setcalltype(\vcall, \STGetter) \aslto \vgetter \\\\
+  \vread \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \langle\vgetter\rangle) \\\\
+  \vmodify \eqdef \SAssign(\LESetField(\LEVar(\vx), \field), \rhs) \\\\
+  \makesetter(\vcall, \EVar(\vx)) \aslto \vsetter
 }{
   \desugarsetter(\vcall, \fields, \rhs)
   \astarrow
-  \SSeq (\SSeq(\texttt{read}, \texttt{modify}), \SCall(\texttt{setter}))
+  \SSeq (\SSeq(\vread, \vmodify), \SCall(\vsetter))
 }
 \end{mathpar}
 
@@ -338,14 +338,14 @@ builds a statement $\news$ from an assignment of expression $\rhs$ to a setter i
 \inferrule[multiple]{
   \listlen{\fields} > 1 \\
   \vx \in \Identifiers \text{ is fresh} \\\\
-  \setcalltype(\vcall, \STGetter) \aslto \texttt{getter} \\\\
-  \texttt{read} \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \langle\texttt{getter}\rangle) \\\\
-  \texttt{modify} \eqdef \SAssign(\LESetFields(\LEVar(\vx), \fields), \rhs) \\\\
-  \makesetter(\vcall, \EVar(\vx)) \aslto \texttt{setter}
+  \setcalltype(\vcall, \STGetter) \aslto \vgetter \\\\
+  \vread \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \langle\vgetter\rangle) \\\\
+  \vmodify \eqdef \SAssign(\LESetFields(\LEVar(\vx), \fields), \rhs) \\\\
+  \makesetter(\vcall, \EVar(\vx)) \aslto \vsetter
 }{
   \desugarsetter(\vcall, \fields, \rhs)
   \astarrow
-  \SSeq (\SSeq(\texttt{read}, \texttt{modify}), \SCall(\texttt{setter}))
+  \SSeq (\SSeq(\vread, \vmodify), \SCall(\vsetter))
 }
 \end{mathpar}
 
@@ -446,18 +446,18 @@ As given by applying the relevant rules to the desugared AST.
 \subsection{Typing}
 \TypingRuleDef{SDecl}
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{some}):
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\vs$ is a declaration with an initializing expression $\ve$,
           that is, $\SDecl(\ldk, \ldi, \tyopt, \langle\ve\rangle)$;
     \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte,\vep, \vsese)$\ProseOrTypeError;
     \item applying $\annotatelocaldecltypeannot$ to the environment $\tenv$, type annotation $\tyopt$, type $\vte$, local declaration keyword $\ldk$, expression $\vep$, and local declaration item $\ldi$ yields $(\tenvone, \tyoptp, \vsesldi)$\ProseOrTypeError;
     \item \Proseeqdef{$\vses$}{the union of $\vsese$ and $\vsesldi$};
-    \item One of the following applies:
+    \item \OneApplies
     \begin{itemize}
-      \item All of the following apply (\textsc{constant}):
+      \item \AllApplyCase{constant}
       \begin{itemize}
         \item $\ldk$ indicates a local constant declaration, that is, $\LDKConstant$;
         \item checking that all \timeframesterm\ in $\vsese$ are before \timeframeconstant\ yields $\True$\ProseOrTypeError;
@@ -466,7 +466,7 @@ One of the following applies:
         \item $\news$ is a declaration with $\ldk$, $\ldi$, type annotation $\tyoptp$, and an expression $\vep$.
       \end{itemize}
 
-      \item All of the following apply (\textsc{non\_constant}):
+      \item \AllApplyCase{non\_constant}
       \begin{itemize}
         \item $\ldk$ indicates that this is not a local constant declaration, that is, $\ldk\neq\LDKConstant$;
         \item $\news$ is a declaration with $\ldk$, $\ldi$, type annotation $\tyoptp$, and an expression $\vep$;
@@ -475,7 +475,7 @@ One of the following applies:
     \end{itemize}
   \end{itemize}
 
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}
   \begin{itemize}
   \item $\vs$ is a local declaration statement with a variable keyword and no initializing expression,
         that is, $\SDecl(\LDKVar, \ldi, \tyopt, \None)$ (local declarations of \texttt{let} variables and constants require
@@ -488,6 +488,7 @@ One of the following applies:
   \item define $\news$ as local declaration statement with variable keyword, local declaration item $\ldi$, type annotation $\vtp$, and initializing expression $\veinit$, that is, $\SDecl(\LDKVar, \ldi, \langle\veinit\rangle)$.
   \end{itemize}
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[constant]{
@@ -517,7 +518,7 @@ One of the following applies:
   \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \tyopt, \langle\ve\rangle)}{\vs}) \typearrow (\news, \overname{\tenvone}{\newtenv}, \vses)
 }
 \end{mathpar}
-\lrmcomment{This is related to \identr{YSPM}.}
+\identr{YSPM}
 
 \begin{mathpar}
 \inferrule[none]{
@@ -544,15 +545,15 @@ adds the literal $\vv$ with the local declaration item $\ldi$ as a constant to t
 yielding the modified static environment $\newtenv$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{var}):
+  \item \AllApplyCase{var}
   \begin{itemize}
     \item $\ldi$ corresponds to a variable declaration for $\vx$, that is, $\LDIVar(\vx)$;
     \item applying $\addlocalconstant$ to $\vx$ and $\vv$ in $\tenv$ yields $\newtenv$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{tuple}):
+  \item \AllApplyCase{tuple}
   \begin{itemize}
     \item $\ldi$ corresponds to a tuple declaration, that is, $\LDIVar(\Ignore)$;
     \item this case is not yet implemented.
@@ -605,9 +606,9 @@ It yields the modified static environment $\newtenv$, the annotated type annotat
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\tyopt$ is $\None$;
     \item $\newtenv$ is the result of $\annotatelocaldeclitem{\tenv, \vte, \ldk, \langle\vep\rangle, \ldi}$\ProseOrTypeError;
@@ -615,7 +616,7 @@ One of the following applies:
     \item \Proseeqdef{$\vses$}{the empty set}.
   \end{itemize}
 
-  \item All of the following apply (\textsc{some}):
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\tyopt$ is $\langle\vt\rangle$;
     \item determining the \structure{} of $\vte$ in $\tenv$ yields $\vtep$\ProseOrTypeError;
@@ -654,42 +655,52 @@ One of the following applies:
 The helper function
 \[
 \inheritintegerconstraints(\overname{\ty}{\lhs} \aslsep \overname{\ty}{\rhs})
-\typearrow \lhsp \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\aslto \overname{\ty}{\lhsp} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
 propagates integer constraints from the right-hand side type $\rhs$ to the left-hand side type annotation $\lhs$.
-In particular, each occurence of \pendingconstrainedintegertype{} on the left-hand side should inherit constraints from a corresponding \wellconstrainedintegertype{} on the right-hand side.
+In particular, each occurrence of \pendingconstrainedintegertype{} on the left-hand side should inherit constraints from a corresponding \wellconstrainedintegertype{} on the right-hand side.
 If the corresponding right-hand side type is not a \wellconstrainedintegertype{} (including if it is an \unconstrainedintegertype{}), the result is a type error.
 
+\listingref{typing-pendingconstrained} shows examples of pending-constrained
+integer types.
+
+\ExampleDef{Pending-constrained integer type vs. unconstrained integer type}
+\listingref{pending-constrained-unconstrained} corresponds to the type error
+in the \CaseName{int} below.
+\ASLListing{An ill-typed pending-constrained integer type}{pending-constrained-unconstrained}
+{\typingtests/TypingRule.InheritIntegerConstraints.unconstrained.bad.asl}
+
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{int}):
+  \item \AllApplyCase{int}
   \begin{itemize}
     \item $\lhs$ is a \pendingconstrainedintegertype{};
-    \item $\rhs$ is a \wellconstrainedintegertype{}\ProseOrTypeError;
-    \item $\lhsp$ is $\rhs$.
+    \item checking that $\rhs$ is a \wellconstrainedintegertype{} yields $\True$\ProseOrTypeError;
+    \item \Proseeqdef{$\lhsp$}{$\rhs$}.
   \end{itemize}
 
-  \item All of the following apply (\textsc{tuple}):
+  \item \AllApplyCase{tuple}
   \begin{itemize}
-    \item $\lhs$ is a tuple of types \texttt{lhs\_tys};
-    \item $\rhs$ is a tuple of types \texttt{rhs\_tys};
-    \item the lengths of \texttt{lhs\_tys} and \texttt{rhs\_tys} are equal\ProseOrTypeError;
-    \item define \texttt{lhs\_tys'} by applying $\inheritintegerconstraints$ to each element of \texttt{lhs\_tys} and \texttt{rhs\_tys}\ProseOrTypeError;
-    \item $\lhsp$ is $\TTuple(\texttt{lhs\_tys'})$.
+    \item $\lhs$ is a tuple of types $\vlhstys$;
+    \item $\rhs$ is a tuple of types $\vrhstys$;
+    \item checking that the lengths of $\vlhstys$ and $\vrhstys$ are equal yields $\True$\ProseOrTypeError;
+    \item define $\vlhstysp$ by applying $\inheritintegerconstraints$ to each element of \\
+         $ \vlhstys$ and $\vrhstys$\ProseOrTypeError;
+    \item \Proseeqdef{$\lhsp$}{$\TTuple(\vlhstysp)$}.
   \end{itemize}
 
-  \item All of the following apply (\textsc{other}):
+  \item \AllApplyCase{other}
   \begin{itemize}
-    \item $\lhs$ is not a \pendingconstrainedintegertype{}, or one of $\lhs$ and $\rhs$ is not a tuple type;
-    \item $\lhsp$ is $\lhs$.
+    \item $\lhs$ is not a \pendingconstrainedintegertype{}, or one of $\lhs$ and $\rhs$ is not a \tupletypeterm{};
+    \item \Proseeqdef{$\lhsp$}{$\lhs$}.
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[int]{
-  \rhs \eqname \TInt(\wellconstrained(\Ignore)) \OrTypeError
+  \checktrans{\iswellconstrainedinteger(\rhs)}{\UnexpectedType} \checktransarrow \True\OrTypeError
 }{
   \inheritintegerconstraints(\overname{\TInt(\pendingconstrained)}{\lhs}, \rhs) \typearrow \overname{\rhs}{\lhsp}
 }
@@ -697,18 +708,23 @@ One of the following applies:
 
 \begin{mathpar}
 \inferrule[tuple]{
-  \lhs \eqname \TTuple(\texttt{lhs\_tys}) \\
-  \rhs \eqname \TTuple(\texttt{rhs\_tys}) \\\\
-  \equallength(\texttt{lhs\_tys}, \texttt{rhs\_tys}) \typearrow \True \OrTypeError \\
-  \vi \in \listrange(\lhs): \inheritintegerconstraints(\texttt{lhs\_tys}_i, \texttt{rhs\_tys}_i) \typearrow \texttt{lhs\_tys'}_i \OrTypeError \\
+  \lhs = \TTuple(\vlhstys) \\
+  \rhs = \TTuple(\vrhstys) \\\\
+  \checktrans{\equallength(\vlhstys, \vrhstys)}{\UnexpectedType} \typearrow \True \OrTypeError \\\\
+  {
+  \begin{array}{r}
+  \vi \in \listrange(\lhs): \inheritintegerconstraints(\vlhstys_\vi, \vrhstys_\vi) \typearrow \\
+  \vlhstysp_\vi \OrTypeError
+  \end{array}
+  }
 }{
-  \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\TTuple(\texttt{lhs\_tys'})}{\lhsp}
+  \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\TTuple(\vlhstysp)}{\lhsp}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[other]{
-  \lhs \neq \TInt(\pendingconstrained) \;\lor\; \astlabel(\lhs) \neq \TTuple \;\lor\; \astlabel(\rhs) \neq \TTuple
+  \lhs \neq \TInt(\pendingconstrained) \lor \astlabel(\lhs) \neq \TTuple \lor \astlabel(\rhs) \neq \TTuple
 }{
   \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\lhs}{\lhsp}
 }
@@ -726,15 +742,15 @@ $\tenv$.
 If the answer if $\False$, the result is a type error.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{okay}):
+  \item \AllApplyCase{okay}
   \begin{itemize}
     \item testing whether $\vt$ \typesatisfies\ $\vs$ in $\tenv$ yields $\True$;
     \item the result is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{error}):
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item testing whether $\vt$ \typesatisfies\ $\vs$ in $\tenv$ yields $\False$;
     \item the result is a type error indicating that an expression of type $\vs$ cannot
@@ -758,25 +774,25 @@ One of the following applies:
   \checkcanbeinitializedwith(\tenv, \vs, \vt) \typearrow \TypeErrorVal{\TypeSatisfactionFailure}
 }
 \end{mathpar}
-\lrmcomment{This is related to \identr{ZCVD} and \identr{LXQZ}.}
+\identr{ZCVD}  \identr{LXQZ}
 
 
 \subsection{Semantics}
 \SemanticsRuleDef{SDeclSome}
-\subsubsection{Example (Declaration With an Initializing Value)}
+\ExampleDef{Declaration With an Initializing Value}
 In \listingref{semantics-sdeclsome},
 \texttt{let x = 3;} binds \texttt{x} to $\nvint(3)$ in the empty environment.
 \ASLListing{Evaluating a declaration with a given initial value}{semantics-sdeclsome}{\semanticstests/SemanticsRule.SDeclSome.asl}
 
-\subsubsection{Example (Declaration Without an Initializing Value)}
+\ExampleDef{Declaration Without an Initializing Value}
 In \listingref{semantics-sdeclnone},
 \texttt{var x : integer;} binds \texttt{x} in $\env$ to the base value of \texttt{integer}.
 \ASLListing{Evaluating a declaration without a given initial value}{semantics-sdeclnone}{\semanticstests/SemanticsRule.SDeclNone.asl}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{some}):
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\vs$ is a declaration with an initial value,
     $\SDecl(\Ignore, \ldi, \Ignore, \langle\ve\rangle)$;
@@ -786,7 +802,7 @@ One of the following applies:
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\vs$ is a declaration without an initial value, $\SDecl(\Ignore, \ldi, \Ignore, \None)$;
     \item the result is a dynamic error.
@@ -1026,7 +1042,7 @@ instances of $\SPass$.
 \subsection{Typing}
 \TypingRuleDef{SSeq}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is the AST node for the sequence of statements $\vsone$ and $\vstwo$, that is, $\SSeq(\vsone, \vstwo)$;
   \item annotating $\vsone$ in $\tenv$ yields $(\newsone, \tenvone, \vsesone)$\ProseOrTypeError;
@@ -1048,14 +1064,14 @@ All of the following apply:
 
 \subsection{Semantics}
 \SemanticsRuleDef{SSeq}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Sequencing Statements}
 In \listingref{semantics-sseq},
 the evaluation of \texttt{let x = 3; let y = x + 1} first evaluates \texttt{let x = 3} and only then
 evaluates \texttt{let y = x + 1}.
 \ASLListing{Evaluating a sequence of statements}{semantics-sseq}{\semanticstests/SemanticsRule.SSeq.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is a \emph{sequencing statement} \texttt{s1; s2}, that is, $\SSeq(\vsone, \vstwo)$;
   \item evaluating $\vsone$ in $\env$ is either $\Continuing(\vgone, \envone)$ in which case
@@ -1109,11 +1125,12 @@ All of the following apply:
 \subsection{Typing}
 \TypingRuleDef{SCall}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is a call to a subprogram, that is, $\SCall(\vcall)$;
   \item annotating the subprogram call $\vcall$ as per \chapref{SubprogramCalls}
-        yields $(\vcallp, \None, \vses)$\ProseOrTypeError;
+        yields \\
+        $(\vcallp, \None, \vses)$\ProseOrTypeError;
   \item $\news$ is the call using $\vcallp$, that is, $\SCall(\vcallp)$;
   \item $\newtenv$ is $\tenv$.
 \end{itemize}
@@ -1135,17 +1152,17 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\SCallBegin}{\SCallEnd}{../Typing.ml}
-\lrmcomment{This is related to \identd{VXKM}.}
+\identd{VXKM}
 
 \subsection{Semantics}
 \SemanticsRuleDef{SCall}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Call Statements}
 In \listingref{semantics-scall},
 \verb|Zeros{3}| evaluates to \texttt{'000'}.
 \ASLListing{Evaluating a call statement}{semantics-scall}{\semanticstests/SemanticsRule.SCall.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is a call statement, $\SCall(\vcall)$;
   \item evaluating the subprogram call as per \chapref{SubprogramCalls} is
@@ -1162,7 +1179,7 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\EvalSCallBegin}{\EvalSCallEnd}{../Interpreter.ml}
-% \lrmcomment{This is related to \identd{KCYT}:}
+\identd{KCYT}
 
 \hypertarget{def-conditionalstatementterm}{}
 \section{Conditional Statements\label{sec:ConditionalStatements}}
@@ -1226,7 +1243,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \subsection{Typing}
 \TypingRuleDef{SCond}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is a condition $\ve$ with the statements $\vsone$ and $\vstwo$, that is, $\SCond(\ve, \vsone, \vstwo)$;
   \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\tcond, \econd, \vsescond)$\ProseOrTypeError;
@@ -1251,11 +1268,11 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\SCondBegin}{\SCondEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{NBDJ}.}
+\identr{NBDJ}
 
 \subsection{Semantics}
 \SemanticsRuleDef{SCond}
-\subsubsection{Examples}
+\ExampleDef{Conditional Statements}
 The specification in \listingref{semantics-scond} does not result in any Assertion Error.
 \ASLListing{Evaluating a conditional statement}{semantics-scond}{\semanticstests/SemanticsRule.SCond.asl}
 
@@ -1271,7 +1288,7 @@ The specification in \listingref{semantics-scond4} does not result in any error.
 \ASLListing{Evaluating a condition statement with only a \texttt{then} branch}{semantics-scond4}{\semanticstests/SemanticsRule.SCond4.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
 \item $\vs$ is a condition statement, $\SCond(\ve, \vsone, \vstwo)$;
 \item evaluating $\ve$ in $\env$ is $\Normal(\vv, \vgone)$\ProseOrAbnormal;
@@ -1315,6 +1332,8 @@ num_tests: 0
 selected case 2
 \end{Verbatim}
 % CONSOLE_END
+\listingref{case-discriminant} shows an example of a \casestatementterm{}
+and the output to a console when it is evaluated.
 
 \hypertarget{def-casediscriminantterm}{}
 \hypertarget{def-casealternativeterm}{}
@@ -1385,7 +1404,7 @@ That is, they are transformed into an untyped AST node that does not have
 an explicit representation for \texttt{case} statements.
 This is achieved via \ASTRuleRef{DesugarCaseStmt}.
 
-\subsubsection{Example}
+\ExampleDef{Case Statement Desugaring}
 \listingref{ast-case1} shows an example of how a \texttt{case} statement can be transformed into a corresponding
 compound condition statement.
 \ASLListing{Transforming a case statement with a variable as the case discriminant}{ast-case1}{\syntaxtests/ASTRule.Desugar_SCase1.asl}
@@ -1603,7 +1622,7 @@ a list of \texttt{case} alternatives already converted to conditionals, into a c
 \subsection{Typing}
 Since case statements are transformed into other statements,
 they do not require type system rules.
-\lrmcomment{This is related to \identr{WGSY}.}
+\identr{WGSY}
 
 \subsection{Semantics}
 Since case statements are transformed into other statements,
@@ -1612,7 +1631,7 @@ they do not appear in the typed AST and thus are not associated with a semantics
 \hypertarget{def-assertionstatementterm}{}
 \section{Assertion Statements\label{sec:AssertionStatements}}
 Assertion statements are used to check that certain conditions are satisfied.
-They take a single \texttt{boolean}-typed operand, which we refer to as the
+They take a single \booleantypeterm{} operand, which we refer to as the
 \emph{condition}. If the condition is \False, the statement fails with a
 \dynamicerrorterm{} (\errorcodeterm{} $\DynamicAssertionFailure$).
 
@@ -1648,7 +1667,7 @@ The first call to \verb|checked_8bit_add| succeeds, whereas the second call fail
 \subsection{Typing}
 \TypingRuleDef{SAssert}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is an assert statement with expression $\ve$, that is, $\SAssert(\ve)$;
   \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\tep,\vep, \vsese)$\ProseOrTypeError;
@@ -1670,34 +1689,34 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\SAssertBegin}{\SAssertEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{JQYF}.}
+\identr{JQYF}
 
 \subsection{Semantics}
 \SemanticsRuleDef{SAssert}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Assertions: Success}
 In \listingref{semantics-sasertok},
 \texttt{assert (42 != 3);} ensures that \texttt{3} is not equal to \texttt{42}.
 \ASLListing{Evaluating an assertion that succeeds}{semantics-sasertok}{\semanticstests/SemanticsRule.SAssertOk.asl}
 
-\subsubsection{Example}
+\ExampleDef{Evaluation of Assertions: Failure}
 In \listingref{semantics-sassertno},
-evaluating \texttt{assert (42 == 3);} results in an \texttt{AssertionFailed} error.
+evaluating \texttt{assert (42 == 3);} results in an \DynamicAssertionFailure{} error.
 \ASLListing{Evaluating an assertion that fails}{semantics-sassertno}{\semanticstests/SemanticsRule.SAssertNo.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is an assertion statement, $\SAssert(\ve)$;
-  \item one of the following holds:
+  \item \OneApplies
   \begin{itemize}
-    \item all of the following hold (\textsc{okay}):
+    \item \AllApplyCase{okay}
     \begin{itemize}
       \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \newg), \newenv)$\ProseOrAbnormal;
       \item $\vv$ is a native Boolean value for $\True$;
       \item the resulting configuration is $\Continuing(\newg, \newenv)$.
     \end{itemize}
 
-    \item all of the following hold (\textsc{error}):
+    \item \AllApplyCase{error}
     \begin{itemize}
       \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \newg), \newenv)$;
       \item $\vv$ is a native Boolean value for $\False$;
@@ -1705,6 +1724,7 @@ All of the following apply:
     \end{itemize}
   \end{itemize}
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[okay]{
@@ -1724,7 +1744,7 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\EvalSAssertBegin}{\EvalSAssertEnd}{../Interpreter.ml}
-\lrmcomment{This is related to \identd{QJYV}, \identr{WZSL}, \identr{WQRN}.}
+\identd{QJYV} \identr{WZSL} \identr{WQRN}
 
 \hypertarget{def-whilestatementterm}{}
 \section{While Statements\label{sec:WhileStatements}}
@@ -1786,7 +1806,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \subsection{Typing}
 \TypingRuleDef{SWhile}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
 \item $\vs$ is a \texttt{while} statement with expression $\veone$, optional limit expression $\vlimitone$,
       and statement block $\vsone$, that is, $\SWhile(\veone, \vsone)$;
@@ -1814,7 +1834,7 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\SWhileBegin}{\SWhileEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{FTVN}.}
+\identr{FTVN}
 
 \TypingRuleDef{AnnotateLimitExpr}
 \hypertarget{def-annotatelimitexpr}{}
@@ -1831,16 +1851,16 @@ yielding a pair consisting of an expression $\vep$ and a \sideeffectsetterm\ $\v
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\ve$ is $\None$;
     \item $\vep$ is $\None$;
     \item \Proseeqdef{$\vses$}{the empty set}.
   \end{itemize}
 
-  \item All of the following apply (\textsc{some}):
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\ve$ is $\langle\vlimit\rangle$;
     \item applying $\annotatesymbolicconstrainedinteger$ to $\vlimit$ in $\tenv$ yields \\
@@ -1866,13 +1886,14 @@ One of the following applies:
 
 \subsection{Semantics}
 \SemanticsRuleDef{SWhile}
-\subsubsection{Example}
+\ExampleDef{Evaluation of While Statements}
 The specification in \listingref{semantics-swhile} prints \texttt{0123}.
 \ASLListing{Evaluating a \texttt{while} loop}{semantics-swhile}{\semanticstests/SemanticsRule.SWhile.asl}
 
 \ProseParagraph
-Evaluation of the statement $\vs$ in an environment $\env$ is
-the output configuration $C$ and all of the following apply:
+Evaluation of the statement $\vs$ in an environment $\env$ yields
+the output configuration $C$.
+\AllApply
 \begin{itemize}
   \item $\vs$ is a \texttt{while} statement, $\SWhile(\ve, \velimitopt, \vbody)$;
   \item evaluating the optional limit expression $\velimitopt$ via $\evallimit$ in $\env$
@@ -1927,16 +1948,15 @@ the result is a dynamic error.
 The result is either the continuing configuration \\ $\Continuing(\newg,\newenv)$,
 an early return configuration, or an abnormal configuration.
 
-\subsubsection{Example}
+\ExampleDef{Evaluation of Loops}
 The specification in \listingref{semantics-loop} does not result in any Assertion Error
 and the specification terminates with exit code $0$.
 \ASLListing{Evaluating a loop}{semantics-loop}{\semanticstests/SemanticsRule.Loop.asl}
 
-\CodeSubsection{\EvalLoopBegin}{\EvalLoopEnd}{../Interpreter.ml}
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-\item all of the following apply (\textsc{exit}):
+\item \AllApplyCase{exit}
   \begin{itemize}
     \item evaluating $\econd$ in $\env$ is $\Normal(\condm, \newenv)$\ProseOrAbnormal;
     \item $\condm$ consists of a native Boolean for $\vb$ and an execution graph $\newg$;
@@ -1944,7 +1964,7 @@ One of the following applies:
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$
     and the loop is exited.
   \end{itemize}
-\item all of the following apply (\textsc{continue}):
+\item \AllApplyCase{continue}
   \begin{itemize}
     \item evaluating $\econd$ in $\env$ is $\Normal(\condm, \envone)$;
     \item $\mcond$ consists of a native Boolean for $\vb$ and an execution graph $\vgone$;
@@ -1994,6 +2014,7 @@ The negation of the condition is used to decide whether to continue the loop ite
   \evalloop{\env, \iswhile, \vlimitopt, \econd, \vbody} \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
+\CodeSubsection{\EvalLoopBegin}{\EvalLoopEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{EvalLimit}
 The relation
@@ -2012,16 +2033,16 @@ guaranteed side-effect-free by the typechecker,
 see \TypingRuleRef{AnnotateLimitExpr}.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\velimitopt$ is $\None$;
     \item $\vvopt$ is $\None$;
     \item $\vg$ is the empty execution graph.
   \end{itemize}
 
-  \item All of the following apply (\textsc{some}):
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\velimitopt$ is the expression $\velimit$;
     \item evaluating the side-effect-free expression $\velimitopt$ in $denv$ yields the native integer for $\vv$ and
@@ -2057,21 +2078,21 @@ the optional integer value $\vvopt$.
 If the value is $0$, the result is a dynamic error.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\vvopt$ is $\None$;
     \item $\vvoptp$ is $\None$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{some\_ok}):
+  \item \AllApplyCase{some\_ok}
   \begin{itemize}
     \item $\vvopt$ is the positive integer $\vv$;
     \item $\vvoptp$ is $\langle\vv-1\rangle$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{some\_error}):
+  \item \AllApplyCase{some\_error}
   \begin{itemize}
     \item $\vvopt$ is the integer $0$;
     \item the result is a dynamic error indicating that a limit has been reached
@@ -2134,7 +2155,7 @@ One of the following applies:
 \subsection{Typing}
 \TypingRuleDef{SRepeat}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is a \texttt{repeat} statement with statement block $\vsone$,
         optional limit expression $\vlimitone$, and expression $\veone$, that is, $\SRepeat(\vsone, \veone, \vlimitone)$;
@@ -2161,11 +2182,11 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\SRepeatBegin}{\SRepeatEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{FTVN}.}
+\identr{FTVN}
 
 \subsection{Semantics}
 \SemanticsRuleDef{SRepeat}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Repeat Statements}
 The specification in \listingref{semantics-srepeat} is followed by its output to the console.
 \ASLListing{Evaluating a \texttt{repeat} loop}{semantics-srepeat}{\semanticstests/SemanticsRule.SRepeat.asl}
 % CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.SRepeat.asl
@@ -2178,8 +2199,10 @@ The specification in \listingref{semantics-srepeat} is followed by its output to
 % CONSOLE_END
 
 \ProseParagraph
-Evaluation of the statement $\vs$ in an environment $\env$ is
-either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$ and all of the following apply:
+Evaluation of the statement $\vs$ in an environment $\env$ yields
+either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$.
+
+\AllApply
 \begin{itemize}
   \item $\vs$ is a \texttt{repeat} statement, $\SRepeat(\ve, \vbody, \velimitopt)$;
   \item evaluating the optional limit expression $\velimitopt$ via $\evallimit$ in $\env$
@@ -2293,7 +2316,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \subsection{Typing}
 \TypingRuleDef{SFor}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is a \texttt{for} statement with index $\vindexname$,
         start expression $\vstarte$,
@@ -2386,7 +2409,7 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\SForBegin}{\SForEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{SSBD}, \identr{ZSND}, \identr{VTJW}.}
+\identr{SSBD} \identr{ZSND} \identr{VTJW}
 
 \TypingRuleDef{SForConstraints}
 \hypertarget{def-getforconstraints}{}
@@ -2414,23 +2437,23 @@ The result is $\vis$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{not\_integers}):
+  \item \AllApplyCase{not\_integers}
   \begin{itemize}
     \item at least one of $\structone$ and $\structtwo$ is not an integer type;
     \item the result is a type error indicating that the start expression and end expression of \texttt{for} loops
           must have the \structure\ of integer types.
   \end{itemize}
 
-  \item All of the following apply (\textsc{unconstrained}):
+  \item \AllApplyCase{unconstrained}
   \begin{itemize}
     \item both of $\structone$ and $\structtwo$ are integer types;
     \item at least one of $\structone$ and $\structtwo$ is the unconstrained integer type;
     \item define $\vis$ as $\unconstrained$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{well\_constrained}):
+  \item \AllApplyCase{well\_constrained}
   \begin{itemize}
     \item both of $\structone$ and $\structtwo$ are integer types;
     \item neither $\structone$ nor $\structtwo$ is the unconstrained integer type;
@@ -2481,7 +2504,7 @@ environment. The type system ensures, via \TypingRuleRef{SFor}, that the index v
 is not already declared in the scope of the subprogram containing the \texttt{for}
 statement.
 
-\subsubsection{Example}
+\ExampleDef{Evaluation of For Statements}
 The specification in \listingref{semantics-sfor} is followed by its output to the console.
 \ASLListing{Evaluating a \texttt{for} loop}{semantics-sfor}{\semanticstests/SemanticsRule.SFor.asl}
 % CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.SFor.asl
@@ -2494,7 +2517,7 @@ The specification in \listingref{semantics-sfor} is followed by its output to th
 % CONSOLE_END
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is a \texttt{for} statement, $\SFor\left\{\begin{array}{rcl}
     \Forindexname &:& \vindexname\\
@@ -2629,7 +2652,7 @@ iterations.
 
 \ProseParagraph
 \subsubsection{Stepping the Index Variable}
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\opfordir$ is either $\PLUS$ when $\dir$ is $\UP$ or $\MINUS$ when $\dir$ is $\DOWN$;
   \item reading $\vstart$ into the identifier $\vindexname$ gives $\vgone$;
@@ -2641,7 +2664,7 @@ All of the following apply:
 \end{itemize}
 
 \subsubsection{Running the Loop Body}
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item evaluating $\vbody$ as a block statement (see \SemanticsRuleRef{Block}) in $\env$
         yields \\ $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
@@ -2655,29 +2678,30 @@ All of the following apply:
 \end{itemize}
 
 \subsubsection{Overall Evaluation}
-\subsubsection{Example}
+\ExampleDef{Overall Evaluation of For Statements}
 The specification in \listingref{semantics-sfor}
 does not result in any assertion error, and terminates with exit-code $0$.
 
-Evaluating $(\vindexname, \vstart, \dir, \vend, \vbody)$ in $\env$ is either
-a continuing configuration $\Continuing(\newg, \newenv)$ or a returning configuration
-(in case the body of the loop results in an early return)
-or an abnormal configuration,
-and All of the following apply:
+Evaluating $(\vindexname, \vstart, \dir, \vend, \vbody)$ in $\env$ yields either
+a continuing configuration $\Continuing(\newg, \newenv)$, or a returning configuration
+(in case the body of the loop results in an early return),
+or an abnormal configuration.
+
+\AllApply
 \begin{itemize}
   \item \Proseticklooplimit{$\vlimitopt$}{$\vnextlimitopt$}\ProseOrError;
   \item $\compfordir$ is either $\LT$ when $\dir$ is $\UP$ or $\GT$ when $\dir$ is $\DOWN$;
   \item reading $\vstart$ into the identifier $\vindexname$ gives $\vgone$;
-  \item One of the following applies:
+  \item \OneApplies
     \begin{itemize}
-    \item All of the following apply (\textsc{return}):
+    \item \AllApplyCase{return}
     \begin{itemize}
       \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native Boolean for $\True$;
       \item $\newg$ is $\vgone$;
       \item $\newenv$ is $\env$;
       \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
     \end{itemize}
-    \item All of the following apply (\textsc{continue}):
+    \item \AllApplyCase{continue}
     \begin{itemize}
       \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native Boolean for $\False$;
       \item evaluating the loop body via $\evalforloop$ with \\ $(\vindexname, \vlimitopt, \vstart, \dir, \vend, \vbody)$
@@ -2803,18 +2827,19 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 
 \subsection{Typing}
 \TypingRuleDef{SThrow}
+\newcommand\NoNameException[0]{\texttt{\_}}
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\vs$ is a throw statement with no expression, that is, $\SThrow(\None)$;
     \item $\news$ is $\vs$;
     \item $\newtenv$ is $\tenv$;
-    \item \Proseeqdef{$\vses$}{the singleton set for $\ThrowException(\texttt{\_})$}
+    \item \Proseeqdef{$\vses$}{the singleton set for $\ThrowException(\NoNameException)$}
   \end{itemize}
 
-  \item All of the following apply (\textsc{some}):
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\vs$ is a throw statement with expression $\ve$, that is, $\SThrow(\langle\ve\rangle)$;
     \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vsesone)$\ProseOrTypeError;
@@ -2831,7 +2856,7 @@ One of the following applies:
 \begin{mathpar}
 \inferrule[none]{}{
   \annotatestmt(\tenv, \overname{\SThrow(\None)}{\vs}) \typearrow
-  (\overname{\SThrow(\None)}{\news}, \overname{\tenv}{\newtenv}, \overname{\{\ThrowException(\texttt{\_})\}}{\vses})
+  (\overname{\SThrow(\None)}{\news}, \overname{\tenv}{\newtenv}, \overname{\{\ThrowException(\NoNameException)\}}{\vses})
 }
 \end{mathpar}
 \lrmcomment{Note that \identr{BRCJ} is done in~\cite[SemanticsRule.TopLevel]{ASLSemanticsReference}.}
@@ -2847,12 +2872,12 @@ One of the following applies:
   (\overname{\SThrow(\langle (\vep, \vte) \rangle)}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
-\lrmcomment{This is related to \identr{NXRC}.}
+\identr{NXRC}
 \CodeSubsection{\SThrowBegin}{\SThrowEnd}{../Typing.ml}
 
 \subsection{Semantics}
 subsubsection{SemanticsRule.SThrow\label{sec:SemanticsRule.SThrow}}
-\subsubsection{Example (Rethrowing an Exception)}
+\ExampleDef{Rethrowing an Exception}
 The specification in \listingref{semantics-sthrownone}
 first catches the exception raised by \\
 \verb|throw MyExceptionType{a=42}|
@@ -2860,15 +2885,15 @@ and then raises it in the catch clause via \verb|throw;|,
 catching it again in the outer \texttt{try-catch} statement.
 \ASLListing{Rethrowing an exception}{semantics-sthrownone}{\semanticstests/SemanticsRule.SThrowNone.asl}
 
-\subsubsection{Example (Throwing a Typed Exception)}
+\ExampleDef{Throwing a Typed Exception}
 The specification in \listingref{semantics-sthrowsometyped}
 terminates successfully. That is, no dynamic error occurs.
 \ASLListing{Throwing an exception}{semantics-sthrowsometyped}{\semanticstests/SemanticsRule.SThrowSomeTyped.asl}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}
   \begin{itemize}
   \item $\vs$ is a \texttt{throw} statement that does not provide an expression, $\SThrow(\None)$;
   \item $\newenv$ is $\env$;
@@ -2877,7 +2902,7 @@ One of the following applies:
   \item an exception is thrown with $\newenv$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{some}):
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\vs$ is a \texttt{throw} statement that provides an expression and a type, \\
           $\SThrow(\langle(\ve, \vt)\rangle)$;
@@ -2978,7 +3003,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \subsection{Typing}
 \TypingRuleDef{STry}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is a try statement with statement $\vsp$, list of catchers $\catchers$ and an \optional\ \texttt{otherwise} block;
   \item annotating the statement $\vsp$ as a block statement yields $(\vspp, \vsesone)$\ProseOrTypeError;
@@ -2986,9 +3011,9 @@ All of the following apply:
         and $\vxs_i$\ProseOrTypeError;
   \item $\catchersp$ is the list of annotated catchers $\vc\_\vi$ for each $\vi\in\listrange(\catchers)$;
   \item \Proseeqdef{$\vsescatchers$}{the union of all $\vxs_\vi$, for \Proselistrange{$\vi$}{$\catchers$}};
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item All of the following apply (\textsc{no\_otherwise}):
+    \item \AllApplyCase{no\_otherwise}
     \begin{itemize}
       \item there is no \texttt{otherwise} statement;
       \item $\news$ is a try statement with statement $\vspp$, list catchers $\catchersp$ and no \texttt{otherwise} statement,
@@ -2998,7 +3023,7 @@ All of the following apply:
       \item \Proseeqdef{$\vsesthree$}{$\vsestwo$}.
     \end{itemize}
 
-    \item All of the following apply (\textsc{otherwise}):
+    \item \AllApplyCase{otherwise}
     \begin{itemize}
       \item there is an \texttt{otherwise} statement $\otherwise$;
       \item annotating the statement $\otherwise$ as a block statement in $\tenv$ yields $\otherwisep$\ProseOrTypeError;
@@ -3048,17 +3073,17 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\STryBegin}{\STryEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{WVXS}.}
+\identr{WVXS}
 
 \subsection{Semantics}
 \SemanticsRuleDef{STry}
-\subsubsection{Example}
+\ExampleDef{Evaluation of Try Statements}
 Evaluating the specification in \listingref{semantics-stry}
 does not result in any Assertion error, and the specification terminates with the exit code $0$.
 \ASLListing{Evaluating a \texttt{try} statement}{semantics-stry}{\semanticstests/SemanticsRule.STry.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is a \texttt{try} statement, $\STry(\vs, \catchers, \otherwiseopt)$;
   \item evaluating $\vsone$ in $\env$ as per \chapref{BlockStatements}
@@ -3103,9 +3128,9 @@ All of the following apply:
 \subsection{Typing}
 \TypingRuleDef{SReturn}
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{error}):
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item $\vs$ is a \texttt{return} statement with an optional expression $\veopt$, that is, \\
           $\SReturn(\veopt)$;
@@ -3115,7 +3140,7 @@ One of the following applies:
           and the (existence of the) return expression.
   \end{itemize}
 
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\vs$ is a \texttt{return} statement with no expression, that is, $\SReturn(\None)$;
     \item the enclosing subprogram does not have a \texttt{return} type (it is either a setter
@@ -3125,7 +3150,7 @@ One of the following applies:
     \item \Proseeqdef{$\vses$}{the empty set}.
   \end{itemize}
 
-  \item All of the following apply (\textsc{some}):
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\vs$ is a \texttt{return} statement with an expression $\ve$, that is, $\SReturn(\langle \vep \rangle)$;
     \item the enclosing subprogram has a return type $\vt$;
@@ -3165,29 +3190,29 @@ One of the following applies:
 }
 \end{mathpar}
 \CodeSubsection{\SReturn}{\SReturnEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{FTPK}.}
+\identr{FTPK}
 
 \subsection{Semantics}
 \SemanticsRuleDef{SReturn}
-\subsubsection{Example (No Return Value)}
+\ExampleDef{No Return Value}
 The specification in \listingref{semantics-sreturn} exits the procedure \texttt{println\_me}
 by evaluating the \texttt{return;} statement.
 \ASLListing{Evaluating a \texttt{return} statement with no value}{semantics-sreturn}{\semanticstests/SemanticsRule.SReturnNone.asl}
 
-\subsubsection{Example (Returning a Single Value)}
+\ExampleDef{Returning a Single Value}
 In \listingref{semantic-ssreturnone},
 \texttt{return 3;} exits the function \texttt{f} with value \texttt{3}.
 \ASLListing{Evaluating a \texttt{return} statement with a single value}{semantic-ssreturnone}{\semanticstests/SemanticsRule.SReturnOne.asl}
 
-\subsubsection{Example (Returning a Tuple of Values)}
+\ExampleDef{Returning a Tuple of Values}
 In \listingref{semantics-sreturntuple},
 \texttt{return (3, 42);} exits the function \texttt{f} with the value \texttt{(3, 42)}.
 \ASLListing{Evaluating a \texttt{return} statement with a tuple of values}{semantics-sreturntuple}{\semanticstests/SemanticsRule.SReturnSome.asl}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\vs$ is a \texttt{return} statement, $\SReturn(\None)$;
     \item $\vvs$ is the empty list, $\emptylist$;
@@ -3195,7 +3220,7 @@ One of the following applies:
     \item $\newenv$ is $\env$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{one}):
+  \item \AllApplyCase{one}
   \begin{itemize}
     \item $\vs$ is a \texttt{return} statement;
     \item $\vs$ is a \texttt{return} statement for a single expression, $\SReturn(\langle\ve\rangle)$;
@@ -3205,7 +3230,7 @@ One of the following applies:
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
   \end{itemize}
 
-  \item All of the following apply (\textsc{tuple}):
+  \item \AllApplyCase{tuple}
   \begin{itemize}
     \item $\vs$ is a \texttt{return} statement for a list of expressions, $\SReturn(\langle\ETuple(\es)\rangle)$;
     \item evaluating each expression in $\es$ separately as per \secref{SemanticsRule.EExprListM}
@@ -3214,6 +3239,7 @@ One of the following applies:
   \end{itemize}
 \end{itemize}
 
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{}
 {
@@ -3255,15 +3281,15 @@ and returns the list of values associated with graphs $\vms$ and the new environ
 If the evaluation of any expression terminates abnormally then the abnormal configuration is returned.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\vEs$ is an empty list;
     \item $\vms$ is then empty list.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\vEs$ is a list with \head\ $\ve$ and \tail\ $\vesone$;
     \item evaluating $\ve$ in $\env$ yields $\Normal(\vmone, \envone)$\ProseOrAbnormal;
@@ -3302,21 +3328,47 @@ The helper relation
 concatenates the input values in $\vms$ and generates an execution graph
 by composing the graphs in $\vms$ with Write Effects for the respective values.
 
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{empty}
+  \begin{itemize}
+    \item $\vms$ is the empty list;
+    \item \Proseeqdef{$\vvs$}{the empty list};
+    \item \Proseeqdef{$\newg$}{the empty graph}.
+  \end{itemize}
+
+  \item \AllApplyCase{non\_empty}
+  \begin{itemize}
+    \item $\vms$ is a list with \head{} $\vm$ and \tail{} $\vmsone$;
+    \item view $\vm$ as the \nativevalue{} $\vv$ and the \executiongraph{} $\vg$;
+    \item \Proseeqdef{$\wid$}{a fresh identifier};
+    \item applying $\writeidentifier$ to $\wid$ and $\vv$ yields $\vgone$;
+    \item applying $\writefolder$ to $\vms$ and $\vgone$ yields the pair $(\vvsone, \vgtwo)$;
+    \item \Proseeqdef{$\vvs$}{the list with \head{} $\vv$ and \tail{} $\vvsone$};
+    \item \Proseeqdef{$\newg$}{the ordered composition of $\vg$ and $\vgone$ with the $\aslpo$ edge
+          and $\vgtwo$ with the $\asldata$ edge}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
-  \writefolder(\emptylist) \evalarrow (\emptylist, \emptygraph)
+  \writefolder(\overname{\emptylist}{\vms}) \evalarrow (\overname{\emptylist}{\vvs}, \overname{\emptygraph}{\newg})
 }
-\and
-\inferrule[nonempty]{
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
   \vms \eqname [\vm] \concat \vmsone\\
   \vm \eqdef (\vv, \vg)\\
   \wid \in \Identifiers\text{ is fresh}\\
   \writeidentifier(\wid, \vv) \evalarrow \vgone\\
   \writefolder(\vmsone, \vgone) \evalarrow (\vvsone, \vgtwo)\\
   \vvs \eqdef [\vv] \concat \vvsone\\
-  \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
+  \newg \eqdef \ordered{\vg}{\aslpo}{\ordered{\vgone}{\asldata}{\vgtwo}}
 }{
-  \writefolder(\vms) \evalarrow (\vvs, \ordered{\vg}{\aslpo}{\newg})
+  \writefolder(\vms) \evalarrow (\vvs, \newg)
 }
 \end{mathpar}
 
@@ -3362,7 +3414,7 @@ by composing the graphs in $\vms$ with Write Effects for the respective values.
 \listingref{literals1} shows literals and their corresponding types in comments.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ denotes the print statement with arguments $\vargs$ and newline indicator $\vnewline$;
   \item annotating for each \Proselistrange{$i$}{$\vargs$}, the expression $\vargs_i$ in $\tenv$ yields $(\vt_i, \vargsp_i, \vxs_i)$\ProseOrTypeError;
@@ -3387,7 +3439,7 @@ All of the following apply:
 \subsection{Semantics}
 \SemanticsRuleDef{SPrint}
 
-\subsection{Example (Printing Literals)}
+\ExampleDef{Printing Literals}
 \listingref{semantics-literals} shows examples of printing various types of literals,
 followed by the output to the console resulting from running the specification.
 \ASLListing{Literals and how they are displayed}{semantics-literals}{\semanticstests/SemanticsRule.SPrint.asl}
@@ -3434,7 +3486,7 @@ Notice that empty bitvectors are displayed as \verb|0x|.
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[Print]{
+\inferrule[print]{
   \evalexprlist{\env, \elist} \evalarrow \Normal((\vlist, \vg), \env_1) \OrAbnormal\\
   \vi\in\listrange(\vlist): \outputtoconsole(\env_\vi, \vlist[i]) \evalarrow \env_{\vi + 1} \\
   n \eqdef \listlen{\vlist}\\
@@ -3444,17 +3496,18 @@ Notice that empty bitvectors are displayed as \verb|0x|.
 }
 \end{mathpar}
 
+We define the newline character $\vnewline \triangleq \ascii{10}$.
+
 \begin{mathpar}
-\inferrule[Println]{
+\inferrule[println]{
   \evalstmt{\env, \SPrint(\elist, \False)} \evalarrow \Continuing(\vg, \envone) \OrAbnormal\\\\
-  \outputtoconsole(\envone, \nvstring(\texttt{"\char`\\n"})) \evalarrow \newenv
+  \outputtoconsole(\envone, \nvstring(\vnewline)) \evalarrow \newenv
 }{
   \evalstmt{\env, \SPrint(\elist, \True)} \evalarrow \Continuing(\vg, \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalSPrintBegin}{\EvalSPrintEnd}{../Interpreter.ml}
 
-\SemanticsRuleDef{OutputToConsole}
 Not all ASL runtimes support printing to a console (see \RequirementRef{Printing}).
 %
 Therefore, the semantics is parameterized by the function
@@ -3466,22 +3519,11 @@ Therefore, the semantics is parameterized by the function
 which takes a string and communicates it to a console, where one exists.
 
 We now explain how printing is modelled when the runtime supports a console
-and how it is modelled when the runtime does not support a console.
+(\SemanticsRuleRef{SupportedOutputToConsole})
+and how it is modelled when the runtime does not support a console
+(\SemanticsRuleRef{UnsupportedOutputToConsole}).
 
-\subsubsection{Runtime Does Not Support a Console}
-The function ignores the string value and returns the environment unchanged.
-
-\ProseParagraph
-\ProseEqdef{$\newenv$}{$\env$}.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[no\_console]{}{
-  \outputtoconsole(\env, \Ignore) \evalarrow \overname{\env}{\newenv}
-}
-\end{mathpar}
-
-\subsubsection{Runtime Supports a Console}
+\SemanticsRuleDef{SupportedOutputToConsole}
 To support a console, the definition of environments needs
 to include an extra component to capture the string of characters sent to the console:
 \[
@@ -3530,7 +3572,7 @@ $\llabel(s)$      & $s$. \\
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[console\_exists]{
+\inferrule{
   \env \eqname (\tenv, \denv, \vconsolestream)\\
   \newenv \eqdef (\tenv, \denv, \vconsolestream \concat \literaltostring(\vl))
 }{
@@ -3538,8 +3580,21 @@ $\llabel(s)$      & $s$. \\
 }
 \end{mathpar}
 
-\hypertarget{def-unreachablestatementterm}{}
+\SemanticsRuleDef{UnsupportedOutputToConsole}
+The function ignores the string value and returns the environment unchanged.
+
+\ProseParagraph
+\ProseEqdef{$\newenv$}{$\env$}.
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{}{
+  \outputtoconsole(\env, \Ignore) \evalarrow \overname{\env}{\newenv}
+}
+\end{mathpar}
+
 \section{The Unreachable Statement\label{sec:UnreachableStatement}}
+\hypertarget{def-unreachablestatementterm}{}
 \listingref{UnreachableStatement} shows an example of using an \unreachablestatementterm{}
 to implement a custom form of assertion checking.
 \ASLListing{An example use of an \texttt{Unreachable} statement}{UnreachableStatement}{\definitiontests/UnreachableStatement.asl}
@@ -3609,7 +3664,7 @@ Evaluating $\SUnreachable$ in an environment $\env$ results in a dynamic error i
 
 \TypingRuleDef{SPragma}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is a pragma statement with identifier $\id$ and expression list $\vargs$. that is, $\SPragma(\id, \vargs)$;
   \item for each \Proselistrange{$i$}{$\vargs$}, \Proseannotateexpr{$\tenv$}{$\vargs[i]$}{$(\Ignore, \Ignore, \vxs_i)$}\ProseOrTypeError;
@@ -3634,7 +3689,7 @@ All of the following apply:
 \subsection{Semantics\label{sec:PragmaSemantics}}
 
 \ProseParagraph
-Pragmas are structures present in the \untypedast \ which are designed to be used
+Pragmas are structures present in the \untypedast{} that are designed to be used
 by third-party tools.
 
 To avoid conflicts between different ASL parsers, it is recommended that the pragma's identifier $\Tidentifier(\id)$ be prefixed by the name of the ASL tool that supports that pragma

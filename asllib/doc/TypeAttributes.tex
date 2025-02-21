@@ -33,21 +33,21 @@ tests whether the type $\tty$ is a \emph{builtin singular type}.
 \ProseParagraph
 The \emph{builtin singular types} are:
 \begin{itemize}
-\item \texttt{integer};
-\item \texttt{real};
-\item \texttt{string};
-\item \texttt{boolean};
-\item \texttt{bits} (which also represents \texttt{bit}, as a special case);
-\item \texttt{enumeration}.
+\item the \integertypesterm{};
+\item the \realtypeterm{};
+\item the \stringtypeterm{};
+\item the \booleantypeterm{};
+\item the \bitvectortypeterm{} (which includes \texttt{bit}, as a special case);
+\item the \enumerationtypeterm{}.
 \end{itemize}
 
-\subsubsection{Example}
+\ExampleDef{Builtin singular types}
 \listingref{typing-builtinsingulartype} defines variables of builtin singular types
 \texttt{integer}, \texttt{real},
 \texttt{boolean}, \texttt{bits(4)}, and~\texttt{bits(2)}
 \ASLListing{Examples of builtin singular types}{typing-builtinsingulartype}{\typingtests/TypingRule.BuiltinSingularTypes.asl}
 
-\subsubsection{Example}
+\ExampleDef{Builtin enumeration types}
 In \listingref{typing-builtinenumerationtype},
 the builtin singular type \texttt{Color} consists in two constants:
 \texttt{RED} and~\texttt{BLACK}.
@@ -63,8 +63,8 @@ the builtin singular type \texttt{Color} consists in two constants:
 \end{mathpar}
 \CodeSubsection{\BuiltinSingularBegin}{\BuiltinSingularEnd}{../types.ml}
 
-\isempty{\subsubsection{Comments}}
-\lrmcomment{This is related to \identd{PQCK} and \identd{NZWT}.}
+
+\identd{PQCK} \identd{NZWT}
 
 \TypingRuleDef{BuiltinAggregateType}
 \hypertarget{def-isbuiltinaggregate}{}
@@ -83,7 +83,7 @@ The builtin aggregate types are:
 \item \texttt{exception}.
 \end{itemize}
 
-\subsubsection{Example}
+\ExampleDef{Builtin Aggreate Types}
 \listingref{typing-builtinaggregatetypes} provides examples of some builtin aggregate types.
 \ASLListing{Builtin aggregate types}{typing-builtinaggregatetypes}{\typingtests/TypingRule.BuiltinAggregateTypes.asl}
 
@@ -94,7 +94,7 @@ or enumeration-typed.  In the example above, \texttt{T} is
 declared as an array with an integer-typed index (as indicated
 by the used of the integer-typed constant \texttt{3}) whereas
 \texttt{PointArray} is declared with the index of
-\texttt{Coord}, which is an enumeration type.
+\texttt{Coord}, which is an \enumerationtypeterm{}.
 
 Arrays declared with integer-typed indices can be accessed only by integers ranging from $0$ to
 the size of the array minus $1$. In the example above, $\texttt{T}$ can be accessed with
@@ -107,7 +107,7 @@ enumeration. In the example above, \texttt{PointArray} can only be accessed with
 The (builtin aggregate) type \verb|{ x : real, y : real, z : real }| is a record type with three fields
 \texttt{x}, \texttt{y} and \texttt{z}.
 
-\subsubsection{Example}
+\subsubsection{Builtin Aggregate Exception Types}
 \listingref{typing-builtinexceptiontype} defines two (builtin aggregate) exception types:
 \begin{itemize}
 \item \verb|exception{}| (for \texttt{Not\_found}), which carries no value; and
@@ -125,42 +125,35 @@ omitted in type declarations, as is the case for \texttt{Not\_found}.
 \end{mathpar}
 \CodeSubsection{\BuiltinAggregateBegin}{\BuiltinAggregateEnd}{../types.ml}
 
-\isempty{\subsubsection{Comments}}
-\lrmcomment{This is related to \identd{PQCK} and \identd{KNBD}.}
+\identd{PQCK} \identd{KNBD}
 
 \TypingRuleDef{BuiltinSingularOrAggregate}
 \hypertarget{def-isbuiltin}{}
 The predicate
 \[
-  \isbuiltin(\overname{\ty}{\tty}) \;\aslto\; \Bool
+  \isbuiltin(\overname{\ty}{\tty}) \;\aslto\; \overname{\Bool}{\vb}
 \]
-tests whether the type $\tty$ is a \emph{builtin type}.
+tests whether the type $\tty$ is a \emph{builtin type}, yielding the result in $\vb$.
 
-\ProseParagraph
-$\tty$ is a builtin type and one of the following applies:
-\begin{itemize}
-\item $\tty$ is singular;
-\item $\tty$ is builtin aggregate.
-\end{itemize}
-
-\subsubsection{Example}
+\ExampleDef{Builtin Types}
 In the specification
 \begin{lstlisting}
 type ticks of integer;
 \end{lstlisting}
 the type \texttt{integer} is a builtin type but the type of \texttt{ticks} is not.
 
-\CodeSubsection{\BuiltinSingularOrAggregateBegin}{\BuiltinSingularOrAggregateEnd}{../types.ml}
+\ProseParagraph
+\Proseeqdef{$\vb$}{$\True$ if and only if either $\tty$ is singular or $\tty$ is builtin aggregate}.
 
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule{
-    \isbuiltinsingular(\tty) \typearrow \vbone\\
-    \isbuiltinaggregate(\tty) \typearrow \vbtwo
-  }{
-    \isbuiltin(\tty) \typearrow \vbone \lor \vbtwo
-  }
+\inferrule{
+  \isbuiltinsingular(\tty) \lor \isbuiltinaggregate(\tty)
+}{
+  \isbuiltin(\tty) \typearrow \vbone \lor \vbtwo
+}
 \end{mathpar}
+\CodeSubsection{\BuiltinSingularOrAggregateBegin}{\BuiltinSingularOrAggregateEnd}{../types.ml}
 
 \TypingRuleDef{NamedType}
 \hypertarget{def-isnamed}{}
@@ -170,20 +163,18 @@ The predicate
 \]
 tests whether the type $\tty$ is a \emph{named type}.
 
-Enumeration types, record types, and exception types must be declared
+\Enumerationtypesterm{}, record types, and exception types must be declared
 and associated with a named type.
 
-\ProseParagraph
-A named type is a type that is declared by using the \texttt{type of} syntax.
-
-\subsubsection{Example}
+\ExampleDef{Named Types}
 In the specification
 \begin{lstlisting}
 type ticks of integer;
 \end{lstlisting}
 \texttt{ticks} is a named type.
 
-\CodeSubsection{\NamedBegin}{\NamedEnd}{../types.ml}
+\ProseParagraph
+A named type is a type that is declared by using the \texttt{type ... of ...} syntax.
 
 \FormallyParagraph
 \begin{mathpar}
@@ -193,57 +184,49 @@ type ticks of integer;
   \isnamed(\tty) \typearrow \vb
 }
 \end{mathpar}
-
-\isempty{\subsubsection{Comments}}
-\lrmcomment{This is related to \identd{vmzx}.}
+\CodeSubsection{\NamedBegin}{\NamedEnd}{../types.ml}
+\identd{vmzx}
 
 \TypingRuleDef{AnonymousType}
 \hypertarget{def-isanonymous}{}
+\identd{VMZX}%
 The predicate
 \[
   \isanonymous(\overname{\ty}{\tty}) \;\aslto\; \Bool
 \]
 tests whether the type $\tty$ is an \anonymoustype.
 
+\ExampleDef{Anonymous Types}
+The \tupletypeterm{} \texttt{(integer, integer)} is an \anonymoustype.
+
 \ProseParagraph
-\Anonymoustypes\ are types that are not declared using the type syntax:
-integer types, the real type, the string type, the Boolean type,
-bitvector types, tuple types, and array types.
-
-\subsubsection{Example}
-The tuple type \texttt{(integer, integer)} is an \anonymoustype.
-
-\CodeSubsection{\AnonymousBegin}{\AnonymousEnd}{../types.ml}
+\Anonymoustypes\ are types that are not declared using the \texttt{type ... of ...} syntax:
+\integertypesterm{}, the \realtypeterm{}, the \stringtypeterm{}, the \booleantypeterm{},
+\bitvectortypesterm{}, \tupletypesterm{}, and \arraytypesterm{}.
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule{ \vb \eqdef \astlabel(\tty) \neq \TNamed
-}
-{
+\inferrule{
+  \vb \eqdef \astlabel(\tty) \neq \TNamed
+}{
   \isanonymous(\tty) \typearrow \vb
 }
 \end{mathpar}
-
-\isempty{\subsubsection{Comments}}
-\lrmcomment{This is related to \identd{VMZX}.}
+\CodeSubsection{\AnonymousBegin}{\AnonymousEnd}{../types.ml}
 
 \TypingRuleDef{SingularType}
 \hypertarget{def-issingular}{}
+\identr{GVZK}%
 The predicate
 \[
   \issingular(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \;\aslto\;
   \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-tests whether the type $\tty$ is a \emph{singular type} in the static environment $\tenv$.
+tests whether the type $\tty$ is a \emph{singular type} in the static environment $\tenv$,
+yielding the result in $\vb$.
+\ProseOtherwiseTypeError
 
-\ProseParagraph
-A type $\tty$ is singular if and only if all of the following apply:
-\begin{itemize}
-  \item obtaining the \underlyingtype\ of $\tty$ in the environment $\tenv$ yields $\vtone$\ProseOrTypeError;
-  \item $\vtone$ is a builtin singular type.
-\end{itemize}
-
-\subsubsection{Example}
+\ExampleDef{Singular types}
 In the following example, the types \texttt{A}, \texttt{B}, and \texttt{C} are all singular types:
 \begin{lstlisting}
 type A of integer;
@@ -251,7 +234,12 @@ type B of A;
 type C of B;
 \end{lstlisting}
 
-\CodeSubsection{\SingularBegin}{\SingularEnd}{../types.ml}
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item obtaining the \underlyingtype\ of $\tty$ in the static environment $\tenv$ yields $\vtone$\ProseOrTypeError;
+  \item applying $\isbuiltinsingular$ to $\vtone$ yields $\vb$.
+\end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
@@ -259,12 +247,10 @@ type C of B;
   \makeanonymous(\tenv, \tty) \typearrow \vtone \OrTypeError\\\\
   \isbuiltinsingular(\vtone) \typearrow \vb
 }{
-\issingular(\tenv, \tty) \typearrow \vb
+  \issingular(\tenv, \tty) \typearrow \vb
 }
 \end{mathpar}
-
-\isempty{\subsubsection{Comments}}
-\lrmcomment{This is related to \identr{GVZK}.}
+\CodeSubsection{\SingularBegin}{\SingularEnd}{../types.ml}
 
 \TypingRuleDef{AggregateType}
 \hypertarget{def-isaggregate}{}
@@ -273,16 +259,10 @@ The predicate
   \isaggregate(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \;\aslto\;
   \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-tests whether the type $\tty$ is an \emph{aggregate type} in the static environment $\tenv$.
+tests whether the type $\tty$ is an \emph{aggregate type} in the static environment $\tenv$,
+yielding the result in $\vb$.
 
-\ProseParagraph
-A type $\tty$ is aggregate in an environment $\tenv$ if and only if all of the following apply:
-\begin{itemize}
-  \item obtaining the \underlyingtype\ of $\tty$ in the environment $\tenv$ yields $\vtone$\ProseOrTypeError;
-  \item $\vtone$ is a builtin aggregate.
-\end{itemize}
-
-\subsubsection{Example}
+\ExampleDef{Aggregate Types}
 In the following example, the types \texttt{A}, \texttt{B}, and \texttt{C} are all aggregate types:
 \begin{lstlisting}
 type A of (integer, integer);
@@ -290,7 +270,12 @@ type B of A;
 type C of B;
 \end{lstlisting}
 
-\CodeSubsection{\AggregateBegin}{\AggregateEnd}{../types.ml}
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item obtaining the \underlyingtype\ of $\tty$ in the environment $\tenv$ yields $\vtone$\ProseOrTypeError;
+  \item $\vtone$ is a builtin aggregate.
+\end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
@@ -301,9 +286,8 @@ type C of B;
   \isaggregate(\tenv, \tty) \typearrow \vb
 }
 \end{mathpar}
-
-\isempty{\subsubsection{Comments}}
-\lrmcomment{This is related to \identr{GVZK}.}
+\identr{GVZK}
+\CodeSubsection{\AggregateBegin}{\AggregateEnd}{../types.ml}
 
 \TypingRuleDef{StructuredType}
 \hypertarget{def-isstructured}{}
@@ -317,17 +301,17 @@ The predicate
 \]
 tests whether the type $\tty$ is a \structuredtype\ and yields the result in $\vb$.
 
-\ProseParagraph
-The result $\vb$ is $\True$ if and only if $\tty$ is either a record type or an exception type,
-which is determined via the AST label of $\tty$.
-
-\subsubsection{Example}
+\ExampleDef{Structured Types}
 In the following example, the types \texttt{SyntaxException} and \texttt{PointRecord}
 are each an example of a \structuredtype:
 \begin{lstlisting}
 type SyntaxException of exception {message: string };
 type PointRecord of Record {x : real, y: real, z: real};
 \end{lstlisting}
+
+\ProseParagraph
+The result $\vb$ is $\True$ if and only if $\tty$ is either a record type or an exception type,
+which is determined via the AST label of $\tty$.
 
 \FormallyParagraph
 \begin{mathpar}
@@ -336,8 +320,7 @@ type PointRecord of Record {x : real, y: real, z: real};
 }
 \end{mathpar}
 
-\isempty{\subsubsection{Comments}}
-\lrmcomment{This is related to \identd{WGQS}, \identd{QXYC}.}
+\identd{WGQS} \identd{QXYC}
 
 \TypingRuleDef{NonPrimitiveType}
 \hypertarget{def-isnonprimitive}{}
@@ -347,37 +330,7 @@ The predicate
 \]
 tests whether the type $\tty$ is a \emph{non-primitive type}.
 
-\ProseParagraph
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{singular}):
-  \begin{itemize}
-  \item $\tty$ is a builtin singular type;
-  \item $\vb$ is $\False$.
-  \end{itemize}
-  \item All of the following apply (\textsc{named}):
-  \begin{itemize}
-    \item $\tty$ is a named type;
-    \item $\vb$ is $\True$.
-  \end{itemize}
-  \item All of the following apply (\textsc{tuple}):
-  \begin{itemize}
-    \item $\tty$ is a tuple type $\vli$;
-    \item $\vb$ is $\True$ if and only if there exists a non-primitive type in $\vli$.
-  \end{itemize}
-  \item All of the following apply (\textsc{array}):
-    \begin{itemize}
-    \item $\tty$ is an array of type $\tty'$
-    \item $\vb$ is $\True$ if and only if $\tty'$ is non-primitive.
-    \end{itemize}
-  \item All of the following apply (\textsc{structured}):
-    \begin{itemize}
-    \item $\tty$ is a \structuredtype\ with fields $\fields$;
-    \item $\vb$ is $\True$ if and only if there exists a non-primitive type in $\fields$.
-    \end{itemize}
-\end{itemize}
-
-\subsubsection{Example}
+\ExampleDef{Non-primitive Types}
 The following types are non-primitive:
 
 \begin{tabular}{ll}
@@ -389,7 +342,35 @@ The following types are non-primitive:
 \verb|record { a : A }|     & The field \texttt{a} has a non-primitive type
 \end{tabular}
 
-\CodeSubsection{\NonPrimitiveBegin}{\NonPrimitiveEnd}{../types.ml}
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{singular}
+  \begin{itemize}
+  \item $\tty$ is a builtin singular type;
+  \item $\vb$ is $\False$.
+  \end{itemize}
+  \item \AllApplyCase{named}
+  \begin{itemize}
+    \item $\tty$ is a named type;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+  \item \AllApplyCase{tuple}
+  \begin{itemize}
+    \item $\tty$ is a \tupletypeterm{} $\vli$;
+    \item $\vb$ is $\True$ if and only if there exists a non-primitive type in $\vli$.
+  \end{itemize}
+  \item \AllApplyCase{array}
+    \begin{itemize}
+    \item $\tty$ is an array of type $\tty'$
+    \item $\vb$ is $\True$ if and only if $\tty'$ is non-primitive.
+    \end{itemize}
+  \item \AllApplyCase{structured}
+    \begin{itemize}
+    \item $\tty$ is a \structuredtype\ with fields $\fields$;
+    \item $\vb$ is $\True$ if and only if there exists a non-primitive type in $\fields$.
+    \end{itemize}
+\end{itemize}
 
 \FormallyParagraph
 The cases \textsc{tuple} and \textsc{structured} below, use the notation $\vb_\vt$ to name
@@ -432,9 +413,8 @@ Boolean variables by using the types denoted by $\vt$ as a subscript.
   \isnonprimitive(\overname{L(\fields)}{\tty}) \typearrow \vb
 }
 \end{mathpar}
-
-\isempty{\subsubsection{Comments}}
-\lrmcomment{This is related to \identd{GWXK}.}
+\CodeSubsection{\NonPrimitiveBegin}{\NonPrimitiveEnd}{../types.ml}
+\identd{GWXK}
 
 \TypingRuleDef{PrimitiveType}
 \hypertarget{def-isprimitive}{}
@@ -444,10 +424,7 @@ The predicate
 \]
 tests whether the type $\tty$ is a \emph{primitive type}.
 
-\ProseParagraph
-A type $\tty$ is primitive if it is not non-primitive.
-
-\subsubsection{Example}
+\ExampleDef{Primitive Types}
 The following types are primitive:
 
 \begin{tabular}{ll}
@@ -459,7 +436,8 @@ The following types are primitive:
 \verb|record {ticks : integer}| & The single field \texttt{ticks} has a primitive type
 \end{tabular}
 
-\CodeSubsection{\PrimitiveBegin}{\PrimitiveEnd}{../types.ml}
+\ProseParagraph
+A type $\tty$ is primitive if it is not non-primitive.
 
 \FormallyParagraph
 \begin{mathpar}
@@ -469,9 +447,8 @@ The following types are primitive:
   \isprimitive(\tty) \typearrow \neg\vb
 }
 \end{mathpar}
-
-\isempty{\subsubsection{Comments}}
-\lrmcomment{This is related to \identd{GWXK}.}
+\CodeSubsection{\PrimitiveBegin}{\PrimitiveEnd}{../types.ml}
+\identd{GWXK}
 
 \TypingRuleDef{Structure}
 \hypertarget{def-structure}{}
@@ -487,49 +464,13 @@ If a named type is not associated with a declared type in $\tenv$, a type error 
 which ensures that \TypingRuleRef{Structure} terminates\footnote{In mathematical terms,
 this ensures that \TypingRuleRef{Structure} is a proper \emph{structural induction.}}.
 
-\ProseParagraph
-One of the following applies:
-\begin{itemize}
-\item All of the following apply (\textsc{named}):
-  \begin{itemize}
-  \item $\tty$ is a named type $\vx$;
-  \item obtaining the declared type associated with $\vx$ in the static environment $\tenv$ yields $\vtone$\ProseOrTypeError;
-  \item obtaining the structure of $\vtone$ static environment $\tenv$ yields $\vt$\ProseOrTypeError;
-  \end{itemize}
-\item All of the following apply (\textsc{builtin\_singular}):
-  \begin{itemize}
-  \item $\tty$ is a builtin singular type;
-  \item $\vt$ is $\tty$.
-  \end{itemize}
-\item All of the following apply (\textsc{tuple}):
-  \begin{itemize}
-  \item $\tty$ is a tuple type with list of types $\tys$;
-  \item the types in $\tys$ are indexed as $\vt_i$, for $i=1..k$;
-  \item obtaining the structure of each type $\vt_i$, for $i=1..k$, in $\tys$ in the static environment $\tenv$,
-  yields $\vtp_i$\ProseOrTypeError;
-  \item $\vt$ is a tuple type with the list of types $\vtp_i$, for $i=1..k$.
-  \end{itemize}
-\item All of the following apply (\textsc{array}):
-  \begin{itemize}
-    \item $\tty$ is an array type of length $\ve$ with element type $\vt$;
-    \item obtaining the structure of $\vt$ yields $\vtone$\ProseOrTypeError;
-    \item $\vt$ is an array type with of length $\ve$ with element type $\vtone$.
-  \end{itemize}
-\item All of the following apply (\textsc{structured}):
-  \begin{itemize}
-  \item $\tty$ is a \structuredtype\ with fields $\fields$;
-  \item obtaining the structure for each type $\vt$ associated with field $\id$ yields a type $\vt_\id$\ProseOrTypeError;
-  \item $\vt$ is a record or an exception, in correspondence to $\tty$, with the list of pairs $(\id, \vt\_\id)$;
-  \end{itemize}
-\end{itemize}
-
-\subsubsection{Example}
+\ExampleDef{The Structure of a Type}
 In this example:
-\texttt{type T1 of integer;} is the named type \texttt{T1}
+\texttt{type T1 of integer;}, \texttt{T1}, is the named type \texttt{T1}
 whose structure is \texttt{integer}.
 
 In this example:
-\texttt{type T2 of (integer, T1);}
+\texttt{type T2 of (integer, T1);}, \texttt{T2},
 is the named type \texttt{T2} whose structure is (integer, integer). In this
 example, \texttt{(integer, T1)} is non-primitive since it uses \texttt{T1}, which is builtin aggregate.
 
@@ -547,7 +488,41 @@ In this example:
 the type of \texttt{z} is the anonymous non-primitive type
 \texttt{(integer, T1)} whose structure is \texttt{(integer, integer)}.
 
-\CodeSubsection{\StructureBegin}{\StructureEnd}{../types.ml}
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+\item \AllApplyCase{named}
+  \begin{itemize}
+  \item $\tty$ is a named type $\vx$;
+  \item obtaining the declared type associated with $\vx$ in the static environment $\tenv$ yields $\vtone$\ProseOrTypeError;
+  \item obtaining the structure of $\vtone$ static environment $\tenv$ yields $\vt$\ProseOrTypeError;
+  \end{itemize}
+\item \AllApplyCase{builtin\_singular}
+  \begin{itemize}
+  \item $\tty$ is a builtin singular type;
+  \item $\vt$ is $\tty$.
+  \end{itemize}
+\item \AllApplyCase{tuple}
+  \begin{itemize}
+  \item $\tty$ is a \tupletypeterm{} with list of types $\tys$;
+  \item the types in $\tys$ are indexed as $\vt_i$, for $i=1..k$;
+  \item obtaining the structure of each type $\vt_i$, for $i=1..k$, in $\tys$ in the static environment $\tenv$,
+  yields $\vtp_i$\ProseOrTypeError;
+  \item $\vt$ is a \tupletypeterm{} with the list of types $\vtp_i$, for $i=1..k$.
+  \end{itemize}
+\item \AllApplyCase{array}
+  \begin{itemize}
+    \item $\tty$ is an array type of length $\ve$ with element type $\vt$;
+    \item obtaining the structure of $\vt$ yields $\vtone$\ProseOrTypeError;
+    \item $\vt$ is an array type with of length $\ve$ with element type $\vtone$.
+  \end{itemize}
+\item \AllApplyCase{structured}
+  \begin{itemize}
+  \item $\tty$ is a \structuredtype\ with fields $\fields$;
+  \item obtaining the structure for each type $\vt$ associated with field $\id$ yields a type $\vt_\id$\ProseOrTypeError;
+  \item $\vt$ is a record or an exception, in correspondence to $\tty$, with the list of pairs $(\id, \vt\_\id)$;
+  \end{itemize}
+\end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
@@ -585,9 +560,8 @@ the type of \texttt{z} is the anonymous non-primitive type
  L([ (\id,\vt) \in \fields : (\id,\vt_\id) ])
 }
 \end{mathpar}
-
-\isempty{\subsubsection{Comments}}
-\lrmcomment{This is related to \identd{FXQV}.}
+\CodeSubsection{\StructureBegin}{\StructureEnd}{../types.ml}
+\identd{FXQV}
 
 \TypingRuleDef{MakeAnonymous}
 \hypertarget{def-makeanonymous}{}
@@ -601,7 +575,7 @@ Intuitively, $\tty$ is the first non-named type that is used to define $\tty$. U
 $\makeanonymous$ replaces named types by their definition until the first non-named type is found but
 does not recurse further.
 
-\subsubsection{Example}
+\ExampleDef{The Underlying Type of a Type}
 Consider the following example:
 \begin{lstlisting}
 type T1 of integer;
@@ -617,16 +591,16 @@ The \underlyingtype{} of \texttt{(integer, T2)} and \texttt{T3} is
 \texttt{T2}, which is \texttt{(integer, integer)}.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{named}):
+  \item \AllApplyCase{named}
   \begin{itemize}
     \item $\tty$ is a named type $\vx$;
     \item obtaining the type declared for $\vx$ yields $\vtone$\ProseOrTypeError;
     \item the \underlyingtype\ of $\vtone$ is $\vt$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non-named}):
+  \item \AllApplyCase{non-named}
   \begin{itemize}
     \item $\tty$ is not a named type $\vx$;
     \item $\vt$ is $\tty$.
@@ -660,27 +634,27 @@ The function
 checks whether the type $\vt$ is a \constrainedinteger. If so, the result is $\True$, otherwise a type error is returned.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{well-constrained}):
+  \item \AllApplyCase{well-constrained}
   \begin{itemize}
     \item $\vt$ is a well-constrained integer;
     \item the result is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{parameterized}):
+  \item \AllApplyCase{parameterized}
   \begin{itemize}
     \item $\vt$ is a \parameterizedintegertype;
     \item the result is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{unconstrained}):
+  \item \AllApplyCase{unconstrained}
   \begin{itemize}
     \item $\vt$ is an unconstrained integer or pending constrained integer;
     \item the result is a type error indicating that a constrained integer type is expected.
   \end{itemize}
 
-  \item All of the following apply (\textsc{conflicting\_type}):
+  \item \AllApplyCase{conflicting\_type}
   \begin{itemize}
     \item $\vt$ is not an integer type;
     \item the result is a type error indicating the type conflict.
@@ -729,28 +703,3 @@ One of the following applies:
   \item A \emph{\parameterizedintegertype} is an implicit type of a subprogram parameter.
   \end{itemize}
 The widths of bitvector storage elements are constrained integers.
-
-\hypertarget{def-isunconstrainedinteger}{}
-\hypertarget{def-isparameterizedinteger}{}
-\hypertarget{def-iswellconstrainedinteger}{}
-We use the following helper predicates to classify integer types:
-\[
-  \begin{array}{rcl}
-  \isunconstrainedinteger(\overname{\ty}{\vt}) &\aslto& \Bool\\
-  \isparameterizedinteger(\overname{\ty}{\vt}) &\aslto& \Bool\\
-  \iswellconstrainedinteger(\overname{\ty}{\vt}) &\aslto& \Bool
-  \end{array}
-\]
-Those are defined as follows:
-\[
-  \begin{array}{rcl}
-  \isunconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\unconstrained\\
-  \isparameterizedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\parameterized\\
-  \iswellconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\wellconstrained\\
-\end{array}
-\]\lrmcomment{This is related to \identd{ZTPP}, \identr{WJYH}, \identr{HJPN}, \identr{CZTX}, \identr{TPHR}.}
-
-\paragraph{Shorthand Notations:}
-
-\hypertarget{def-unconstrainedinteger}{}
-We use the shorthand notation $\unconstrainedinteger$ to denote the unconstrained integer type: $\TInt(\unconstrained)$.

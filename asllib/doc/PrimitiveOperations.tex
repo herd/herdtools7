@@ -1,7 +1,7 @@
 \chapter{Primitive Operations\label{chap:PrimitiveOperations}}
 
-\lrmcomment{\identd{KXWT}}
-\lrmcomment{\identi{HSQL}}
+\identd{KXWT}
+\identi{HSQL}
 The term \emph{Primitive Operations} denotes the set of operations available
 in the expression syntax that use an \emph{Operator} derived from either
 $\unop$ or $\binop$.
@@ -34,25 +34,19 @@ on \nativevalues\ via $\unoprel$ and $\binoprel$.
 
 \section{Abstract Syntax\label{sec:PrimitiveOperationsAbstractSyntax}}
 \begin{flalign*}
-\unop \derives\ & \overname{\BNOT}{\texttt{"!"}} \;|\; \overname{\NEG}{\texttt{"-"}} \;|\; \overname{\NOT}{\texttt{"NOT"}}
-& \hypertarget{ast-binop}{} \hypertarget{ast-bor}{} \hypertarget{ast-impl}{} \hypertarget{ast-beq}{} \hypertarget{ast-band}{}
-\\
+\unop \derives\ & \overname{\BNOT}{\texttt{"!"}} \;|\; \overname{\NEG}{\texttt{"-"}} \;|\; \overname{\NOT}{\texttt{"NOT"}} & \\
 \binop  \derives\ & \overname{\BAND}{\texttt{"\&\&"}} \;|\; \overname{\BOR}{\texttt{"||"}} \;|\; \overname{\IMPL}{\texttt{"-->"}}
               \;|\; \overname{\BEQ}{\texttt{"<->"}}
-              & \hypertarget{ast-eqop}{} \hypertarget{ast-neq}{} \hypertarget{ast-gt}{} \hypertarget{ast-geq}{} \hypertarget{ast-lt}{} \hypertarget{ast-leq}{}
-\\
+        & \\
         |\ & \overname{\EQOP}{\texttt{"=="}} \;|\; \overname{\NEQ}{\texttt{"!="}} \;|\; \overname{\GT}{\texttt{"<"}}
         \;|\; \overname{\GEQ}{\texttt{">="}} \;|\; \overname{\LT}{\texttt{"<"}} \;|\; \overname{\LEQ}{\texttt{"<="}}
-        & \hypertarget{ast-plus}{} \hypertarget{ast-minus}{} \hypertarget{ast-or}{} \hypertarget{ast-xor}{} \hypertarget{ast-and}{}
-\\
+        & \\
         |\ & \overname{\PLUS}{\texttt{"+"}} \;|\; \overname{\MINUS}{\texttt{"-"}} \;|\; \overname{\OR}{\texttt{"OR"}}
         \;|\; \overname{\XOR}{\texttt{"XOR"}} \;|\; \overname{\AND}{\texttt{"AND"}}
-        & \hypertarget{ast-mul}{} \hypertarget{ast-div}{} \hypertarget{ast-divrm}{} \hypertarget{ast-mod}{} \hypertarget{ast-shl}{} \hypertarget{ast-shr}{}
-\\
+        & \\
         |\ & \overname{\MUL}{\texttt{"*"}} \;|\; \overname{\DIV}{\texttt{"DIV"}} \;|\; \overname{\DIVRM}{\texttt{"DIVRM"}}
         \;|\; \overname{\MOD}{\texttt{"MOD"}} \;|\; \overname{\SHL}{\texttt{"<<"}}  \;|\; \overname{\SHR}{\texttt{">>"}}
-        & \hypertarget{ast-rdiv}{} \hypertarget{ast-pow}{}
-\\
+        & \\
         |\ & \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}} \;|\; \overname{\BVCONCAT}{\texttt{"::"}}
         &
 \end{flalign*}
@@ -244,7 +238,7 @@ to refer to one of several different operations.
 for each primitive operation, the kinds of input literals and the kind of output literals,
 as well as assigning each primitive operation a unique name.
 
-\lrmcomment{BKNT}
+\identr{BKNT}
 \RequirementDef{PrimitiveOperatorImplements}
 An operation implements an operator if it appears in the same row as the operator in one
 of the tables in this section.
@@ -252,7 +246,7 @@ of the tables in this section.
 For example, the operation $\aslnotbool$ implements the operator $\Tbnot$
 as it appears on the first two of \taref{BooleanOperators}.
 
-\lrmcomment{JGWF}
+\identr{JGWF}
 \RequirementDef{PrimitiveOperatorMatches}
 An expression which invokes a primitive operator \emph{matches} an operation
 if the operation implements the operator and the operands of the expression
@@ -261,9 +255,9 @@ tables in this section.
 %
 For example, the expression \verb|!TRUE|, which invokes the primitive operator
 $\Tbnot$, matches the primitive operation $\aslnotbool$, since the operand $\True$
-\typesatisfies{} the \texttt{boolean} type.
+\typesatisfies{} the \booleantypeterm{}.
 
-\lrmcomment{TTGQ}
+\identr{TTGQ}
 \RequirementDef{PrimitiveOperationError}
 It is a type error if an expression which invokes a
 primitive operator does not match exactly one primitive operation
@@ -287,13 +281,13 @@ operation.
 \hline
 \textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
 \hline
-\Tbnot & \lbool & -        & \lbool & \aslnotbool\\
-\Tband & \lbool & \lbool  & \lbool & \andbool\\
-\Tbor & \lbool & \lbool  & \lbool & \orbool\\
-\Teqop & \lbool & \lbool  & \lbool & \eqbool\\
-\Tneq & \lbool & \lbool  & \lbool & \nebool\\
-\Timpl & \lbool & \lbool  & \lbool & \impliesbool\\
-\Tbeq & \lbool & \lbool  & \lbool & \equivbool\\
+$\Tbnot$  & $\lbool$ & -        & $\lbool$ & $\aslnotbool$\\
+$\Tband$  & $\lbool$ & $\lbool$ & $\lbool$ & $\andbool$\\
+$\Tbor$   & $\lbool$ & $\lbool$ & $\lbool$ & $\orbool$\\
+$\Teqop$  & $\lbool$ & $\lbool$ & $\lbool$ & $\eqbool$\\
+$\Tneq$   & $\lbool$ & $\lbool$ & $\lbool$ & $\nebool$\\
+$\Timpl$  & $\lbool$ & $\lbool$ & $\lbool$ & $\impliesbool$\\
+$\Tbeq$   & $\lbool$ & $\lbool$ & $\lbool$ & $\equivbool$\\
 \hline
 \end{tabular}
 \end{table}
@@ -321,22 +315,22 @@ operation.
 \hline
 \textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
 \hline
-\Tminus & \lint & - & \lint & \negateint\\
-\Tplus & \lint & \lint & \lint & \addint\\
-\Tminus & \lint & \lint & \lint & \subint\\
-\Tmul & \lint & \lint & \lint & \mulint\\
-\Tpow & \lint & \lint & \lint & \expint\\
-\Tshl & \lint & \lint & \lint & \shiftleftint\\
-\Tshr & \lint & \lint & \lint & \shiftrightint\\
-\Tdiv & \lint & \lint & \lint & \divint\\
-\Tdivrm & \lint & \lint & \lint & \fdivint\\
-\Tmod & \lint & \lint & \lint & \fremint\\
-\Teqop & \lint & \lint & \lbool & \eqint\\
-\Tneq & \lint & \lint & \lbool & \neint\\
-\Tleq & \lint & \lint & \lbool & \leint\\
-\Tlt & \lint & \lint & \lbool & \ltint\\
-\Tgt & \lint & \lint & \lbool & \gtint\\
-\Tgeq & \lint & \lint & \lbool & \geint\\
+$\Tminus$ & $\lint$ & - & $\lint$ & $\negateint$\\
+$\Tplus$  & $\lint$ & $\lint$ & $\lint$   & $\addint$\\
+$\Tminus$ & $\lint$ & $\lint$ & $\lint$   & $\subint$\\
+$\Tmul$   & $\lint$ & $\lint$ & $\lint$   & $\mulint$\\
+$\Tpow$   & $\lint$ & $\lint$ & $\lint$   & $\expint$\\
+$\Tshl$   & $\lint$ & $\lint$ & $\lint$   & $\shiftleftint$\\
+$\Tshr$   & $\lint$ & $\lint$ & $\lint$   & $\shiftrightint$\\
+$\Tdiv$   & $\lint$ & $\lint$ & $\lint$   & $\divint$\\
+$\Tdivrm$ & $\lint$ & $\lint$ & $\lint$   & $\fdivint$\\
+$\Tmod$   & $\lint$ & $\lint$ & $\lint$   & $\fremint$\\
+$\Teqop$  & $\lint$ & $\lint$ & $\lbool$  & $\eqint$\\
+$\Tneq$   & $\lint$ & $\lint$ & $\lbool$  & $\neint$\\
+$\Tleq$   & $\lint$ & $\lint$ & $\lbool$  & $\leint$\\
+$\Tlt$    & $\lint$ & $\lint$ & $\lbool$  & $\ltint$\\
+$\Tgt$    & $\lint$ & $\lint$ & $\lbool$  & $\gtint$\\
+$\Tgeq$   & $\lint$ & $\lint$ & $\lbool$  & $\geint$\\
 \hline
 \end{tabular}
 \end{table}
@@ -360,18 +354,18 @@ operation.
 \hline
 \textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
 \hline
-\Tminus & \lreal & - & \lreal & \negatereal\\
-\Tplus & \lreal & \lreal & \lreal & \addreal\\
-\Tminus & \lreal & \lreal & \lreal & \subreal\\
-\Tmul & \lreal & \lreal & \lreal & \mulreal\\
-\Tpow & \lreal & \lint & \lreal & \expreal\\
-\Trdiv & \lreal & \lreal & \lreal & \divreal\\
-\Teqop & \lreal & \lreal & \lbool & \eqreal\\
-\Tneq  & \lreal & \lreal & \lbool & \nereal\\
-\Tleq  & \lreal & \lreal & \lbool & \lereal\\
-\Tlt & \lreal & \lreal & \lbool & \ltreal\\
-\Tgt & \lreal & \lreal & \lbool & \gtreal\\
-\Tgeq  & \lreal & \lreal & \lbool & \gereal\\
+$\Tminus$ & $\lreal$ & - & $\lreal$ & $\negatereal$\\
+$\Tplus$  & $\lreal$ & $\lreal$ & $\lreal$ & $\addreal$\\
+$\Tminus$ & $\lreal$ & $\lreal$ & $\lreal$ & $\subreal$\\
+$\Tmul$   & $\lreal$ & $\lreal$ & $\lreal$ & $\mulreal$\\
+$\Tpow$   & $\lreal$ & $\lint$  & $\lreal$ & $\expreal$\\
+$\Trdiv$  & $\lreal$ & $\lreal$ & $\lreal$ & $\divreal$\\
+$\Teqop$  & $\lreal$ & $\lreal$ & $\lbool$ & $\eqreal$\\
+$\Tneq$   & $\lreal$ & $\lreal$ & $\lbool$ & $\nereal$\\
+$\Tleq$   & $\lreal$ & $\lreal$ & $\lbool$ & $\lereal$\\
+$\Tlt$    & $\lreal$ & $\lreal$ & $\lbool$ & $\ltreal$\\
+$\Tgt$    & $\lreal$ & $\lreal$ & $\lbool$ & $\gtreal$\\
+$\Tgeq$   & $\lreal$ & $\lreal$ & $\lbool$ & $\gereal$\\
 \hline
 \end{tabular}
 \end{table}
@@ -394,17 +388,17 @@ operation.
 \hline
 \textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
 \hline
-\Tplus  & \lbitvector & \lbitvector & \lbitvector & \addbits\\
-\Tplus  & \lbitvector & \lint  & \lbitvector & \addbitsint\\
-\Tminus & \lbitvector & \lbitvector & \lbitvector & \subbits\\
-\Tminus & \lbitvector & \lint  & \lbitvector & \subbitsint\\
-\Tnot   & \lbitvector & -      & \lbitvector & \notbits\\
-\Tand   & \lbitvector & \lbitvector & \lbitvector & \andbits\\
-\Tor    & \lbitvector & \lbitvector & \lbitvector & \orbits\\
-\Txor   & \lbitvector & \lbitvector & \lbitvector & \xorbits\\
-\Teqop  & \lbitvector & \lbitvector & \lbool & \eqbits\\
-\Tneq   & \lbitvector & \lbitvector & \lbool & \nebits\\
-\Tcoloncolon & \lbitvector & \lbitvector & \lbitvector & \concatbits\\
+$\Tplus$        & $\lbitvector$ & $\$lbitvector$ & $\lbitvector$ & $\addbits$\\
+$\Tplus$        & $\lbitvector$ & $\$lint$       & $\lbitvector$ & $\addbitsint$\\
+$\Tminus$       & $\lbitvector$ & $\$lbitvector$ & $\lbitvector$ & $\subbits$\\
+$\Tminus$       & $\lbitvector$ & $\$lint$       & $\lbitvector$ & $\subbitsint$\\
+$\Tnot$         & $\lbitvector$ & -              & $\lbitvector$ & $\notbits$\\
+$\Tand$         & $\lbitvector$ & $\$lbitvector$ & $\lbitvector$ & $\andbits$\\
+$\Tor$          & $\lbitvector$ & $\$lbitvector$ & $\lbitvector$ & $\orbits$\\
+$\Txor$         & $\lbitvector$ & $\$lbitvector$ & $\lbitvector$ & $\xorbits$\\
+$\Teqop$        & $\lbitvector$ & $\$lbitvector$ & $\lbool$      & $\eqbits$\\
+$\Tneq$         & $\lbitvector$ & $\$lbitvector$ & $\lbool$      & $\nebits$\\
+$\Tcoloncolon$  & $\lbitvector$ & $\$lbitvector$ & $\lbitvector$ & $\concatbits$\\
 \hline
 \end{tabular}
 \end{table}
@@ -418,8 +412,8 @@ operation.
 \hline
 \textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
 \hline
-\Teqop  & \lstring & \lstring & \lbool & \eqstring\\
-\Tneq   & \lstring & \lstring & \lbool & \nestring\\
+$\Teqop$  & $\lstring$ & $\lstring$ & $\lbool$ & $\eqstring$\\
+$\Tneq$   & $\lstring$ & $\lstring$ & $\lbool$ & $\nestring$\\
 \hline
 \end{tabular}
 \end{table}
@@ -433,8 +427,8 @@ operation.
 \hline
 \textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
 \hline
-\Teqop  & \llabel & \llabel & \lbool & \eqenum\\
-\Tneq   & \llabel & \llabel & \lbool & \neenum\\
+$\Teqop$  & $\llabel$ & $\llabel$ & $\lbool$ & $\eqenum$\\
+$\Tneq$   & $\llabel$ & $\llabel$ & $\lbool$ & $\neenum$\\
 \hline
 \end{tabular}
 \end{table}
@@ -467,7 +461,7 @@ for a given unary operator:
 \right\}
 \]
 
-\subsubsection{Example (Unary Operations)}
+\ExampleDef{Unary Operations}
 \listingref{unary-operations} shows applications of unary operations
 (invalid applications appear in comments),
 followed by the resulting console output.
@@ -486,34 +480,34 @@ not_bits: NOT '11 01' = 0x2
 % CONSOLE_END
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{error}):
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item $(\op, \astlabel(\vl))$ is not in $\unopsignatures$;
     \item the result is a type error indicating that the combination of $\op$ and $\astlabel(\vl)$
           is not legal.
   \end{itemize}
 
-  \item All of the following apply (\textsc{negate\_int}):
+  \item \AllApplyCase{negate\_int}
   \begin{itemize}
     \item $\op$ is $\NEG$ and $\vl$ is an integer literal for $\vn$;
     \item define $\vr$ as the integer literal for $- \vn$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{negate\_real}):
+  \item \AllApplyCase{negate\_real}
   \begin{itemize}
     \item $\op$ is $\NEG$ and $\vl$ is a real literal for $\vq$;
     \item define $\vr$ as the real literal for $- \vq$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{not\_bool}):
+  \item \AllApplyCase{not\_bool}
   \begin{itemize}
     \item $\op$ is $\BNOT$ and $\vl$ is a Boolean literal for $\vb$;
     \item define $\vr$ as the Boolean literal for $\neg\vb$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{not\_bits\_empty}, \textsc{not\_bits\_empty}):
+  \item \AllApplyCase{not\_bits\_empty, not\_bits\_not\_empty}
   \begin{itemize}
     \item $\op$ is $\NOT$ and $\vl$ is a bitvector literal for the sequence of bits $\bits$;
     \item $\vc$ is the sequence of bits of the same length as $\bits$ where in each position
@@ -570,7 +564,7 @@ and returns the resulting literal $\vr$.
 The result is a type error, if it is illegal to apply the operator
 to the given values, or a different kind of type error is detected.
 
-\subsubsection{Example (Boolean Operations)\label{sec:BooleanOperations}}
+\ExampleDef{Boolean Operations}
 \listingref{binary-operations-boolean} shows applications
 of operations to Boolean-typed literals (invalid applications in comments),
 followed by the resulting console output.
@@ -600,7 +594,7 @@ equiv_bool: FALSE <-> TRUE = FALSE
 \end{Verbatim}
 % CONSOLE_END
 
-\subsubsection{Example (Integer Arithmetic)\label{sec:IntegerArithmetic}}
+\ExampleDef{Integer Arithmetic}
 \listingref{binary-operations-integer-arithmetic} shows applications
 of integer arithmetic operations to literals (invalid applications in comments),
 followed by the resulting console output.
@@ -634,7 +628,7 @@ shiftright_int: -1 >> 10 = -1
 \end{Verbatim}
 % CONSOLE_END
 
-\subsubsection{Example (Integer Comparison)\label{sec:IntegerComparison}}
+\ExampleDef{Integer Comparison}
 \listingref{binary-operations-integer-relational} shows applications
 of integer comparison operations to literals (invalid applications in comments),
 followed by the resulting console output.
@@ -656,7 +650,7 @@ ge_int: 6 >= 10 = FALSE
 \end{Verbatim}
 % CONSOLE_END
 
-\subsubsection{Example (Real Operations)\label{sec:RealOperations}}
+\ExampleDef{Real Operations}
 \listingref{binary-operations-real} shows applications
 of operations on real-typed literals (invalid applications in comments),
 followed by the resulting console output.
@@ -680,7 +674,7 @@ ge_real: 10.0 >= 0.5 = TRUE
 \end{Verbatim}
 % CONSOLE_END
 
-\subsubsection{Example (Bitvector Operations)\label{sec:ExampleBitvectorOperations}}
+\ExampleDef{Bitvector Operations}
 \listingref{binary-operations-bitvector} shows applications
 of operations on bitvector-typed literals (invalid applications in comments),
 followed by the resulting console output.
@@ -708,7 +702,7 @@ concat_bits: '100' :: '' = 0x4
 \end{Verbatim}
 % CONSOLE_END
 
-\subsubsection{Example (String and Enumeration Label Operations)\label{sec:StringLabelOperations}}
+\ExampleDef{String and Enumeration Label Operations}
 \listingref{binary-operations-stringslabels} shows applications
 of operations on string-typed literals and enumeration-typed literals (invalid applications in comments),
 followed by the resulting console output.
@@ -786,34 +780,34 @@ and argument types of its operand literals:
 \]
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{error}):
+  \item \AllApplyCase{error}
   \begin{itemize}
     \item $(\op, \astlabel(\vlone), \astlabel(\vltwo))$ is not included in $\binopsignatures$;
     \item the result is a type error indicating the $\op$ cannot be applied to the arguments
           with the types given by $\astlabel(\vlone)$ and $\astlabel(\vltwo)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{add\_int}):
+  \item \AllApplyCase{add\_int}
   \begin{itemize}
     \item $\op$ is $\PLUS$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the literal integer for $a+b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{sub\_int}):
+  \item \AllApplyCase{sub\_int}
   \begin{itemize}
     \item $\op$ is $\MINUS$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the literal integer for $a-b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{mul\_int}):
+  \item \AllApplyCase{mul\_int}
   \begin{itemize}
     \item $\op$ is $\MUL$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the literal integer for $a\times b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{div\_int}):
+  \item \AllApplyCase{div\_int}
   \begin{itemize}
     \item $\op$ is $\DIV$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item checking that $b$ is positive yields $\True$\ProseOrTypeError;
@@ -822,7 +816,7 @@ One of the following applies:
     \item define $\vr$ as the literal integer for $a\div b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{fdiv\_int}):
+  \item \AllApplyCase{fdiv\_int}
   \begin{itemize}
     \item $\op$ is $\DIVRM$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item checking that $b$ is positive yields $\True$\ProseOrTypeError;
@@ -830,7 +824,7 @@ One of the following applies:
     \item define $\vr$ as the literal integer for $n$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{frem\_int}):
+  \item \AllApplyCase{frem\_int}
   \begin{itemize}
     \item $\op$ is $\MOD$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item applying $\binopliterals$ to $\DIVRM$ with $\vlone$ and $\vltwo$ yields $c$\ProseOrTypeError;
@@ -838,7 +832,7 @@ One of the following applies:
     \item define $\vr$ as the literal integer for $n$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{exp\_int}):
+  \item \AllApplyCase{exp\_int}
   \begin{itemize}
     \item $\op$ is $\POW$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item checking that $b$ is non-negative yields $\True$\ProseOrTypeError;
@@ -846,7 +840,7 @@ One of the following applies:
     \item define $\vr$ as the literal integer for $n$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{shl}):
+  \item \AllApplyCase{shl}
   \begin{itemize}
     \item $\op$ is $\SHL$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item checking that $b$ is non-negative yields $\True$\ProseOrTypeError;
@@ -854,7 +848,7 @@ One of the following applies:
     \item applying $\binopliterals$ to $\MUL$ with $2$ and the literal integer for $e$ yields $\vr$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{shr}):
+  \item \AllApplyCase{shr}
   \begin{itemize}
     \item $\op$ is $\SHR$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item checking that $b$ is non-negative yields $\True$\ProseOrTypeError;
@@ -862,98 +856,98 @@ One of the following applies:
     \item applying $\binopliterals$ to $\DIVRM$ with $2$ and the literal integer for $e$ yields $\vr$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{eq\_int}):
+  \item \AllApplyCase{eq\_int}
   \begin{itemize}
     \item $\op$ is $\EQOP$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ne\_int}):
+  \item \AllApplyCase{ne\_int}
   \begin{itemize}
     \item $\op$ is $\NEQ$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$ holds.
   \end{itemize}
 
-  \item All of the following apply (\textsc{le\_int}):
+  \item \AllApplyCase{le\_int}
   \begin{itemize}
     \item $\op$ is $\LEQ$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than or equal to $b$s.
   \end{itemize}
 
-  \item All of the following apply (\textsc{lt\_int}):
+  \item \AllApplyCase{lt\_int}
   \begin{itemize}
     \item $\op$ is $\LT$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than $b$s.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ge\_int}):
+  \item \AllApplyCase{ge\_int}
   \begin{itemize}
     \item $\op$ is $\GEQ$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater or equal than $b$s.
   \end{itemize}
 
-  \item All of the following apply (\textsc{gt\_int}):
+  \item \AllApplyCase{gt\_int}
   \begin{itemize}
     \item $\op$ is $\GT$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater than $b$s.
   \end{itemize}
 
-  \item All of the following apply (\textsc{and\_bool}):
+  \item \AllApplyCase{and\_bool}
   \begin{itemize}
     \item $\op$ is $\BAND$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if both $a$ and $b$ are $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{or\_bool}):
+  \item \AllApplyCase{or\_bool}
   \begin{itemize}
     \item $\op$ is $\BOR$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if at least one of $a$ and $b$ is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{implies\_bool}):
+  \item \AllApplyCase{implies\_bool}
   \begin{itemize}
     \item $\op$ is $\IMPL$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is $\False$ or $b$ is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{eq\_bool}):
+  \item \AllApplyCase{eq\_bool}
   \begin{itemize}
     \item $\op$ is $\EQOP$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ne\_bool}):
+  \item \AllApplyCase{ne\_bool}
   \begin{itemize}
     \item $\op$ is $\NEQ$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{add\_real}):
+  \item \AllApplyCase{add\_real}
   \begin{itemize}
     \item $\op$ is $\PLUS$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the real literal for $a + b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{sub\_real}):
+  \item \AllApplyCase{sub\_real}
   \begin{itemize}
     \item $\op$ is $\MINUS$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the real literal for $a - b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{mul\_real}):
+  \item \AllApplyCase{mul\_real}
   \begin{itemize}
     \item $\op$ is $\MUL$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the real literal for $a \times b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{div\_real}):
+  \item \AllApplyCase{div\_real}
   \begin{itemize}
     \item $\op$ is $\RDIV$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item checking whether $b$ is different from $0$ yields $\True$\ProseOrTypeError;
     \item define $\vr$ as the real literal for $a \div b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{exp\_real}):
+  \item \AllApplyCase{exp\_real}
   \begin{itemize}
     \item $\op$ is $\POW$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal integer for $b$;
     \item since exponentiation is undefined when $a$ is 0 and $b$ is negative,
@@ -961,43 +955,43 @@ One of the following applies:
     \item define $\vr$ as the real literal for $a^b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{eq\_real}):
+  \item \AllApplyCase{eq\_real}
   \begin{itemize}
     \item $\op$ is $\EQOP$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ne\_real}):
+  \item \AllApplyCase{ne\_real}
   \begin{itemize}
     \item $\op$ is $\NEQ$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{le\_real}):
+  \item \AllApplyCase{le\_real}
   \begin{itemize}
     \item $\op$ is $\LEQ$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than or equal to $b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{lt\_real}):
+  \item \AllApplyCase{lt\_real}
   \begin{itemize}
     \item $\op$ is $\LT$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than $b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ge\_real}):
+  \item \AllApplyCase{ge\_real}
   \begin{itemize}
     \item $\op$ is $\GEQ$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater than or equal to $b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{gt\_real}):
+  \item \AllApplyCase{gt\_real}
   \begin{itemize}
     \item $\op$ is $\GT$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater than $b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{bitwise\_different\_bitwidths}):
+  \item \AllApplyCase{bitwise\_different\_bitwidths}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a$;
     \item $\vvtwo$ is a bitvector literal for $b$;
@@ -1005,7 +999,7 @@ One of the following applies:
     \item the result is a type error indicating that the bitvectors must be of the same width.
   \end{itemize}
 
-  \item All of the following apply (\textsc{bitwise\_empty}):
+  \item \AllApplyCase{bitwise\_empty}
   \begin{itemize}
     \item $\vvone$ is the empty bitvector literal;
     \item $\vvtwo$ is the empty bitvector literal;
@@ -1013,7 +1007,7 @@ One of the following applies:
     \item define $\vr$ as the empty bitvector literal.
   \end{itemize}
 
-  \item All of the following apply (\textsc{eq\_bits\_empty}):
+  \item \AllApplyCase{eq\_bits\_empty}
   \begin{itemize}
     \item $\vvone$ is the empty bitvector literal;
     \item $\vvtwo$ is the empty bitvector literal;
@@ -1021,7 +1015,7 @@ One of the following applies:
     \item define $\vr$ as the Boolean literal for $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{eq\_bits\_not\_empty}):
+  \item \AllApplyCase{eq\_bits\_not\_empty}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a_{1..k}$;
     \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
@@ -1030,7 +1024,7 @@ One of the following applies:
     \item define $\vr$ as the Boolean literal for $\vb$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ne\_bits}):
+  \item \AllApplyCase{ne\_bits}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a$;
     \item $\vvtwo$ is a bitvector literal for $b$;
@@ -1039,7 +1033,7 @@ One of the following applies:
     \item define $\vr$ as the Boolean literal for $\neg\vb$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{or\_bits}):
+  \item \AllApplyCase{or\_bits}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a_{1..k}$;
     \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
@@ -1048,7 +1042,7 @@ One of the following applies:
     \item define $\vr$ as the bitvector literal for $c_{1..k}$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{and\_bits}):
+  \item \AllApplyCase{and\_bits}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a_{1..k}$;
     \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
@@ -1057,7 +1051,7 @@ One of the following applies:
     \item define $\vr$ as the bitvector literal for $c_{1..k}$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{xor\_bits}):
+  \item \AllApplyCase{xor\_bits}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a_{1..k}$;
     \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
@@ -1066,7 +1060,7 @@ One of the following applies:
     \item define $\vr$ as the bitvector literal for $c_{1..k}$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{add\_bits}):
+  \item \AllApplyCase{add\_bits}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a_{1..k}$;
     \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
@@ -1077,7 +1071,7 @@ One of the following applies:
     \item define $\vr$ as the bitvector literal for $c$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{sub\_bits}):
+  \item \AllApplyCase{sub\_bits}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a_{1..k}$;
     \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
@@ -1088,7 +1082,7 @@ One of the following applies:
     \item define $\vr$ as the bitvector literal for $c$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{concat\_bits}):
+  \item \AllApplyCase{concat\_bits}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a_{1..k}$;
     \item $\vvtwo$ is a bitvector literal for $b_{1..l}$;
@@ -1096,7 +1090,7 @@ One of the following applies:
     \item define $\vr$ as the bitvector literal for $a_{1..k}b_{1..l}$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{add\_bits\_int}):
+  \item \AllApplyCase{add\_bits\_int}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a$;
     \item $\vvtwo$ is an integer literal for $b$;
@@ -1106,7 +1100,7 @@ One of the following applies:
     \item define $\vr$ as the bitvector literal for $c$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{sub\_bits\_int}):
+  \item \AllApplyCase{sub\_bits\_int}
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a$;
     \item $\vvtwo$ is an integer literal for $b$;
@@ -1116,25 +1110,25 @@ One of the following applies:
     \item define $\vr$ as the bitvector literal for $c$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{eq\_string}):
+  \item \AllApplyCase{eq\_string}
   \begin{itemize}
     \item $\op$ is $\EQOP$, $\vlone$ is the literal string for $a$, and $\vltwo$ is the literal string for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ne\_string}):
+  \item \AllApplyCase{ne\_string}
   \begin{itemize}
     \item $\op$ is $\NEQ$, $\vlone$ is the literal string for $a$, and $\vltwo$ is the literal string for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{eq\_label}):
+  \item \AllApplyCase{eq\_label}
   \begin{itemize}
     \item $\op$ is $\EQOP$, $\vlone$ is the literal label for $a$, and $\vltwo$ is the literal label for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{ne\_label}):
+  \item \AllApplyCase{ne\_label}
   \begin{itemize}
     \item $\op$ is $\NEQ$, $\vlone$ is the literal label for $a$, and $\vltwo$ is the literal label for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
@@ -1536,7 +1530,7 @@ The function
 \]
 evaluates a unary operator $\op$ over a \nativevalue{} $\vv$ and returns the \nativevalue{} $\vw$ or an error.
 
-\subsubsection{Example (Valid Unary Operation)}
+\ExampleDef{Valid Unary Operation}
 The following grounded rule shows how the application of negation
 to the literal integer for $1$
 translates into the application of negation to the \nativevalue\ for $1$.
@@ -1548,7 +1542,7 @@ translates into the application of negation to the \nativevalue\ for $1$.
 }
 \end{mathpar}
 
-\subsubsection{Example (Invalid Unary Operation)}
+\ExampleDef{Invalid Unary Operation}
 The following grounded rule shows how the application of negation
 to the literal Boolean for $\True$
 translates the resulting type error into the corresponding dynamic error.
@@ -1561,23 +1555,23 @@ translates the resulting type error into the corresponding dynamic error.
 \end{mathpar}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{ok}):
+  \item \AllApplyCase{ok}
   \begin{itemize}
     \item $\vv$ is a literal native value, that is, $\nvliteral{l}$;
     \item statically evaluating $\op$ on the literal $l$ yields a literal $l'$;
     \item $\vw$ is the native literal value for $l'$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{static\_error}):
+  \item \AllApplyCase{static\_error}
   \begin{itemize}
     \item $\vv$ is a literal native value, that is, $\nvliteral{l}$;
     \item statically evaluating $\op$ on $l$ yields a type error;
     \item the result is a dynamic error.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_literal}):
+  \item \AllApplyCase{non\_literal}
   \begin{itemize}
     \item $\vv$ is not a literal native value;
     \item the result is a dynamic error indicating the mismatch.
@@ -1620,7 +1614,7 @@ The function
 evaluates a binary operator $\op$ over a pair of \nativevalues\  --- $\vvone$ and $\vvtwo$ --- and returns the
 \nativevalue\  $\vw$ or an error.
 
-\subsubsection{Example (Valid Binary Operation)}
+\ExampleDef{Valid Binary Operation}
 The following grounded rule shows how the application of addition
 to the literal integer for $2$ and the literal integer for $3$
 translates into the application of addition to the \nativevalue\ for $2$
@@ -1633,7 +1627,7 @@ and the \nativevalue\ for $3$.
 }
 \end{mathpar}
 
-\subsubsection{Example (Invalid Binary Operation)}
+\ExampleDef{Invalid Binary Operation}
 The following grounded rule shows how the invalid application of addition
 to the literal integer for $2$ and the literal real for $1/2$
 translates the resulting type error into the corresponding dynamic error.
@@ -1646,9 +1640,9 @@ translates the resulting type error into the corresponding dynamic error.
 \end{mathpar}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{ok}):
+  \item \AllApplyCase{ok}
   \begin{itemize}
     \item $\vvone$ is a literal native value, that is, $\nvliteral{l_1}$;
     \item $\vvtwo$ is a literal native value, that is, $\nvliteral{l_2}$;
@@ -1656,7 +1650,7 @@ One of the following applies:
     \item $\vw$ is the native literal value for $l'$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{static\_error}):
+  \item \AllApplyCase{static\_error}
   \begin{itemize}
     \item $\vvone$ is a literal native value, that is, $\nvliteral{l_1}$;
     \item $\vvtwo$ is a literal native value, that is, $\nvliteral{l_2}$;
@@ -1664,7 +1658,7 @@ One of the following applies:
     \item the result is a dynamic error ($\DynamicBadOperands$).
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_literal}):
+  \item \AllApplyCase{non\_literal}
   \begin{itemize}
     \item either $\vvone$ or $\vvtwo$ is not a literal native value;
     \item the result is a dynamic error indicating the mismatch ($\DynamicBadOperands$).

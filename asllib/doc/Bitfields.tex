@@ -1,12 +1,12 @@
 \chapter{Bitfields\label{chap:Bitfields}}
 
 Bitvector types allow defining bitslices of bitvectors, to be treated as named
-fields, which can be read or written. \lrmcomment{\identi{KGMC}}
+fields, which can be read or written. \identi{KGMC}
 
 Individual bitfields are grammatically derived from $\Nbitfield$ and represented as ASTs by $\bitfield$.
 Bitfields are not associated with a semantic relation.
 
-\subsection{Example}
+\ExampleDef{A bitvector type with bitfields}
 \listingref{bitfields1} declares a global variable whose type is a bitvector with bitfields.
 \ASLListing{A bitvector type with bitfields}{bitfields1}{\definitiontests/Bitfields.asl}
 \begin{itemize}
@@ -68,7 +68,7 @@ if they share the same name and exist in the same \bitfieldscope\ then their \ab
 equal.
 This is formalized in \TypingRuleRef{CheckCommonBitfieldsAlign} and exemplified in \listingref{nestedbitfields}.
 
-\subsection{Example}
+\ExampleDef{A bitvector type with nested bitfields}
 \listingref{nestedbitfields} shows a bitvector type with nested bitfields, along with the absolute bitfield
 defined for each bitfield.
 \ASLListing{A bitvector type with nested bitfields}{nestedbitfields}{\definitiontests/Bitfields_nested.asl}
@@ -84,9 +84,9 @@ defined for each bitfield.
 \subsection{Abstract Syntax}
 \begin{flalign*}
 \bitfield \derives\ & \BitFieldSimple(\identifier, \slice^{*})
-  & \hypertarget{ast-bitfieldnested}{}\\
+  & \\
   |\ & \BitFieldNested(\identifier, \slice^{*}, \bitfield^{*})
-  & \hypertarget{ast-bitfieldtype}{}\\
+  & \\
   |\ & \BitFieldType(\identifier, \slice^{*}, \ty) &
 \end{flalign*}
 
@@ -160,7 +160,7 @@ resulting in $\newfields$ --- the \typedast\ for $\fields$ and $\ewidth$
 as well as a set of \sideeffectdescriptorsterm\ $\vses$. \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item checking that the list of bitfield names in $\bitfields$ does not contain duplicates yields $\True$\ProseOrTypeError;
   \item symbolically simplifying $\ewidth$ in $\tenv$ via $\staticeval$ yields the literal integer for $\width$\ProseOrTypeError;
@@ -194,7 +194,7 @@ The function
 returns the name of a bitfield --- $\name$, given a bitfield $\vbf$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
   \item $\vbf$ is a simple bitfield with name $\name$, that is, $\BitFieldSimple(\name, \Ignore)$;
   \item $\vbf$ is a nested bitfield with name $\name$, that is, $\BitFieldNested(\name, \Ignore, \Ignore)$;
@@ -225,7 +225,7 @@ The function
 returns the list of slices $\vslices$ associated with the bitfield $\vbf$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
   \item $\vbf$ is a simple bitfield with list of slices $\vslices$, that is, $\BitFieldSimple(\Ignore, \vslices)$;
   \item $\vbf$ is a nested bitfield with list of slices $\vslices$, that is, $\BitFieldNested(\Ignore, \vslices, \Ignore)$;
@@ -257,15 +257,15 @@ returns the list of bitfields $\vnested$ nested within the bitfield $\vbf$, if t
 and an empty list if there are none.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{simple\_type}):
+  \item \AllApplyCase{simple\_type}
   \begin{itemize}
     \item $\vbf$ does not have nested bitfields;
     \item $\vnested$ is the empty list.
   \end{itemize}
 
-  \item All of the following apply (\textsc{nested}):
+  \item \AllApplyCase{nested}
   \begin{itemize}
     \item $\vbf$ is bitfields with nested bitfields $\vnested$.
   \end{itemize}
@@ -273,7 +273,7 @@ One of the following applies:
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[simple\_typed]{
+\inferrule[simple\_type]{
   \astlabel(\vbf) \neq \BitFieldNested
 }{
   \bitfieldgetname(\vbf) \typearrow \emptylist
@@ -300,15 +300,15 @@ annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
 \begin{itemize}
   \item $\vfield$ is a bitfield with list of slices $\vslices$;
   \item annotating the slices $\vslices$ yields $(\slicesone, \vsesslices)$\ProseOrTypeError;
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item All of the following apply (\textsc{simple}):
+    \item \AllApplyCase{simple}
     \begin{itemize}
       \item checking whether the range of positions in $\slicesone$ fits inside $0..\width-1$ yields $\True$\ProseOrTypeError;
       \item define $\newfield$ as the bitfield named $\name$ with list of slices $\slicesone$, that is, $\BitFieldSimple(\name, \slicesone)$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{nested}):
+    \item \AllApplyCase{nested}
     \begin{itemize}
       \item converting the $\slicesone$ into a list of positions with $\width$ and static environment $\tenv$
             yields $\positions$\ProseOrTypeError;
@@ -321,7 +321,7 @@ annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
       \item define $\vses$ as the union of $\vsesslices$ and $\vsesbitfields$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{type}):
+    \item \AllApplyCase{type}
     \begin{itemize}
       \item Annotating the type $\vt$ yields $(\vtp, \vsesty)$\ProseOrTypeError;
       \item checking whether the range of positions in $\slicesone$ fit inside $0..\width$ yields $\True$\ProseOrTypeError;
@@ -355,7 +355,11 @@ annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
   \disjointslicestopositions(\tenv, \slicesone) \typearrow \positions \OrTypeError\\\\
   \checkpositionsinwidth(\tenv, \width, \positions) \typearrow \True \OrTypeError\\\\
   \widthp \eqdef \listlen{\positions}\\
-  \annotatebitfields(\tenv, \widthp, \bitfieldsp) \typearrow (\bitfieldspp, \vsesbitfields) \OrTypeError\\
+  {
+  \begin{array}{r}
+  \annotatebitfields(\tenv, \widthp, \bitfieldsp) \typearrow \\ (\bitfieldspp, \vsesbitfields) \OrTypeError
+  \end{array}
+  }\\
   \vses \eqdef \vsesslices \cup \vsesbitfields
 }{
   \annotatebitfield(\tenv, \width, \BitFieldNested(\name, \vslices, \bitfieldsp)) \typearrow \\
@@ -380,7 +384,7 @@ annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
 }
 \end{mathpar}
 
-\subsubsection{Example}
+\ExampleDef{Well-typed Bitfields}
 In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bitfields are well-typed.
 \ASLListing{Well-typed bitfields}{welltypedbitvectortypes}{\typingtests/TypingRule.TBitField.asl}
 
@@ -397,7 +401,7 @@ checks whether the slices in $\vslices$ fit within the bitvector width given by 
 yielding $\True$. \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
     \item applying $\disjointslicestopositions$ to $\vslices$ in $\tenv$ checks whether the
     slices in $\vslices$ are disjoint and yields the set of their positions\ProseOrTypeError;
@@ -427,7 +431,7 @@ checks whether the set of positions in $\positions$ fit within the bitvector wid
 yielding $\True$. \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
     \item define $\minpos$ as the minimal position in $\positions$;
     \item define $\maxpos$ as the maximal position in $\positions$;
@@ -460,15 +464,15 @@ In particular, this rule checks that the bitfield slices do not overlap and that
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\vslices$ is the empty list;
     \item $\positions$ is the empty set.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\vslices$ is the list with $\vs$ as its \head\ and $\vslicesone$ as its \tail;
     \item applying $\bitfieldslicetopositions$ to $\vs$ in $\tenv$ yields the optional set of positions \\
@@ -512,16 +516,16 @@ if they can be statically evaluated, or $\None$ if they cannot be statically eva
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{single}):
+  \item \AllApplyCase{single}
   \begin{itemize}
     \item $\vslice$ is a \singleslice\ defined by the expression $\ve$, that is, $\SliceSingle(\ve)$;
     \item applying $\reducetozopt$ to $\ve$ in $\tenv$ yields the integer literal for $\vx$\ProseTerminateAs{\None};
     \item $\positions$ is the singleton set for $\vx$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{range}):
+  \item \AllApplyCase{range}
   \begin{itemize}
     \item $\vslice$ is \rangeslice\ defined by expressions $\veone$ and $\vetwo$, that is, \\
           $\SliceRange(\veone, \vetwo)$;
@@ -531,7 +535,7 @@ One of the following applies:
     \item $\positions$ is the set of integers between $\vx$ and $\vy$, inclusive.
   \end{itemize}
 
-  \item All of the following apply (\textsc{length}):
+  \item \AllApplyCase{length}
   \begin{itemize}
     \item $\vslice$ is \lengthslice\ defined by expressions $\veone$ and $\vetwo$, that is, \\
           $\SliceLength(\veone, \vetwo)$;
@@ -541,7 +545,7 @@ One of the following applies:
     \item $\positions$ is the set of integers between $\vx$ and $\vx+\vy-1$, inclusive.
   \end{itemize}
 
-  \item All of the following apply (\textsc{scaled}):
+  \item \AllApplyCase{scaled}
   \begin{itemize}
     \item $\vslice$ is \scaledslice\ defined by expressions $\veone$ and $\vetwo$, that is, \\
           $\SliceStar(\veone, \vetwo)$;
@@ -553,7 +557,7 @@ One of the following applies:
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[single\_static]{
+\inferrule[single]{
   \reducetozopt(\tenv, \ve) \typearrow \langle\vx\rangle \terminateas\None
 }{
   \bitfieldslicetopositions(\tenv, \overname{\SliceSingle(\ve)}{\vslice}) \typearrow \overname{\langle\{\vx\}\rangle}{\positions}
@@ -586,10 +590,14 @@ One of the following applies:
 \inferrule[scaled]{
   \reducetozopt(\tenv, \veone) \typearrow \langle\vx\rangle \terminateas\None\\\\
   \reducetozopt(\tenv, \vetwo) \typearrow \langle\vy\rangle \terminateas\None\\\\
-  \checktrans{\vx > 0}{\BadSlices} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{\vx > 0}{\BadSlices} \checktransarrow \True \OrTypeError
 }{
-  \bitfieldslicetopositions(\tenv, \overname{\SliceStar(\veone, \vetwo)}{\vslice}) \typearrow
+  {
+  \begin{array}{r}
+  \bitfieldslicetopositions(\tenv, \overname{\SliceStar(\veone, \vetwo)}{\vslice}) \typearrow \\
   \overname{\langle\{n \;|\; \vx \times \vy \leq n \leq \vx \times (\vy + 1) - 1\}\rangle}{\positions}
+  \end{array}
+  }
 }
 \end{mathpar}
 
@@ -618,27 +626,27 @@ via a list of intervals, each represented by its limits.}
 
 Premises in \TypingRuleRef{TBits} guarantee that $\vwidth > 0$ holds.
 
-\subsubsection{Example}
+\ExampleDef{Ill-typed Bitfields}
 \listingref{CommonBitfieldsAlignError} shows an example where the two bitfields named \texttt{common}
 exist in the same \bitfieldscope, but their \absoluteslices\ are not the same.
 Specifically, the \absoluteslice\ for the bitfield \texttt{common} is \texttt{[1:0]}
 whereas the \absoluteslice\ for the bitfield \texttt{sub.common} is \texttt{[0, 1]}.
-Typechecking this example results in the type error \BadSlices.
+Typechecking this example results in the \typingerrorterm{} \BadSlices.
 
 \ASLListing{An example where two bitfields of the same name (\texttt{common}) exist in the same scope
 but have different absolute slices}
 {CommonBitfieldsAlignError}{\typingtests/TypingRule.CheckCommonBitfieldsAlign.Error.asl}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{empty}):
+  \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\vbitfields$ is the empty list;
     \item the result is $\True$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{non\_empty}):
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\vbitfields$ is not the empty list;
     \item define $\vlastindex$ as $\vwidth - 1$;
@@ -690,7 +698,7 @@ of bitfields $\vbitfields$, whose \bitfieldscope\ and \absoluteslice\ is given b
 $\vabsoluteparent$, in the static environment $\tenv$.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item applying $\bitfieldtoabsolute$ to each field $\vf$ in $\vbitfields$ with $\vabsoluteparent$ in $\tenv$,
         yields $\va_\vf$;
@@ -722,7 +730,7 @@ bitfields nested in $\vbf$, including itself, where the \bitfieldscope\ and \abs
 of the bitfield containing $\vbf$ are $\vabsoluteparent$, in the static environment $\tenv$.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item obtaining the name of the bitfield $\vbf$ via $\bitfieldgetname$ yields $\name$;
   \item define the \absolutename\ of $\vbfname$ for $\vbf$ by appending $\name$ to $\vabsname$, the \absolutename{} of $\vabsoluteparent$;
@@ -775,7 +783,7 @@ and returns the sub-list of $\indices$ indicated by the indices in $\sliceindice
 % which represents sequence of indices via intervals.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item view $\sliceindices$ as the list $S_{m..0}$;
   \item view $\indices$ as the list $I_{n..0}$;
@@ -802,7 +810,7 @@ and exist in the same scope. If they do, $\vb$ indicates whether their \absolute
 are equal. Otherwise, the result if $\True$.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vf$ is an \absolutebitfield\ with \absolutename\ $\vf_{1..k}$ and \absoluteslice\ $\vsliceone$;
   \item $\vg$ is an \absolutebitfield\ with \absolutename\ $\vg_{1..n}$ and \absoluteslice\ $\vslicetwo$;
@@ -839,7 +847,7 @@ The function
 returns the list of indices $\indices$ represented by the bitvector slice $\vs$ in the static environment $\tenv$.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vs$ is a \lengthslice\ for the expressions $\vi$ and $\vw$;
   \item \Prosestaticeval{$\tenv$}{$\vi$}{the literal for the integer $\vz_\vi$};

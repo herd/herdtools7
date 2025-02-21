@@ -1,35 +1,64 @@
 \chapter{Types\label{chap:Types}}
 
 Types describe the allowed values of variables, constants, function arguments, etc.
-\lrmcomment{\identi{BYVL}}
-This chapter first defines for each type how it is represented by the ASL syntax,
-by the abstract syntax, and how it is typechecked:
+\identi{BYVL}
+
+This chapter first describes how types are represented formally (see \secref{FormalRepresentationofTypes}).
+Next, we introduce each type available in ASL and define
+how it is represented in the syntax and AST, and how it is typechecked:
 \begin{itemize}
-  \item Integer types (see \secref{IntegerTypes})
-  \item The real type (see \secref{RealType})
-  \item The string type (see \secref{StringType})
-  \item The Boolean type (see \secref{BooleanType})
-  \item Bitvector types (see \secref{BitvectorTypes})
-  \item Tuple types (see \secref{TupleTypes})
+  \item The \integertypeterm{} (see \secref{IntegerTypes})
+  \item The \realtypeterm{} (see \secref{RealType})
+  \item The \stringtypeterm{} (see \secref{StringType})
+  \item The \booleantypeterm{} (see \secref{BooleanType})
+  \item The \bitvectortypeterm{} (see \secref{BitvectorTypes})
+  \item \Tupletypesterm{} (see \secref{TupleTypes})
+  \item \Enumerationtypesterm{} (see \secref{EnumerationTypes})
   \item Array types (see \secref{ArrayTypes})
-  \item Enumeration types (see \secref{EnumerationTypes})
   \item Record types (see \secref{RecordTypes})
   \item Exception types (see \secref{ExceptionTypes})
   \item Named types (see \secref{NamedTypes})
 \end{itemize}
 
+The chapter then defines the following aspects of types:
+\begin{itemize}
+\item \secref{DeclaredTypes} defines \emph{declared types} and restrictions over them;
+\item \secref{DomainOfValuesForTypes} defines how values are associated with each type;
+\item \secref{BasicTypeAttributes} assigns basic properties to types, which are useful
+in classifying them;
+\item \secref{RelationsOnTypes} defines relations on types that are needed to typecheck
+expressions and statements; and
+\item \secref{BaseValues} defines how to produce an expression to initialize storage
+      elements of a given type (for which no initializing expression is supplied).
+\end{itemize}
+
+\section{Formal Representation of Types\label{sec:FormalRepresentationofTypes}}
 \Anonymoustypes\ are grammatically derived from the non-terminal $\Nty$
 and types that must be declared and named are grammatically derived from the non-terminal $\Ntydecl$.
-All types are represented as ASTs derived from the AST non-terminal $\ty$.
+The type system represents types by their AST, which is derived from the non-terminal $\ty$.
 
+\subsection{Abstract Syntax}
 \hypertarget{build-ty}{}
 The function
 \[
   \buildty(\overname{\parsenode{\Nty}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
   \cup \overname{\TBuildError}{\BuildErrorConfig}
 \]
-transforms an anonymous type parse node $\vparsednode$ into a type AST node $\vastnode$.
+transforms an anonymous type parse node $\vparsednode$ into the corresponding AST node $\vastnode$.
 \ProseOtherwiseBuildError
+
+We define $\buildty$ per type in the following sections.
+
+\hypertarget{build-tydecl}{}
+The function
+\[
+  \buildtydecl(\overname{\parsenode{\Ntydecl}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
+  \cup \overname{\TBuildError}{\BuildErrorConfig}
+\]
+transforms a \namedtype\ parse node $\vparsednode$ into an AST node $\vastnode$.
+\ProseOtherwiseBuildError
+
+We define $\buildtydecl$ per the corresponding type in the following sections.
 
 \hypertarget{build-as-ty}{}
 The function
@@ -41,7 +70,6 @@ transforms a type annotation parse node $\vparsednode$ into a type AST node $\va
 \ProseOtherwiseBuildError
 
 Formally:
-
 \begin{mathpar}
 \inferrule{
   \buildty(\vt) \astarrow \astversion{\vt}
@@ -50,53 +78,83 @@ Formally:
 }
 \end{mathpar}
 
-\hypertarget{build-tydecl}{}
-The function
-\[
-  \buildtydecl(\overname{\parsenode{\Ntydecl}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
-  \cup \overname{\TBuildError}{\BuildErrorConfig}
-\]
-transforms a \namedtype\ parse node $\vparsednode$ into an AST node $\vastnode$.
-\ProseOtherwiseBuildError
-
+\subsection{Typing}
 \hypertarget{def-annotatetype}{}
 The function
 \[
   \annotatetype{\overname{\Bool}{\vdecl} \aslsep \overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}}
   \aslto (\overname{\ty}{\newty} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-typechecks a type $\tty$ in an environment $\tenv$, resulting in a \typedast\ $\newty$
-and a \sideeffectsetterm\ $\vses$.
-The flag $\decl$ indicates whether $\tty$ is a type currently being declared,
-and makes a difference only when $\tty$ is an enumeration type or a \structuredtype.
+typechecks a type $\tty$ in a static environment $\tenv$,
+resulting in a \typedast\ $\newty$ and a \sideeffectsetterm\ $\vses$.
+The flag $\decl$ indicates whether $\tty$ is a type currently being declared or not,
+and makes a difference only when $\tty$ is an \enumerationtypeterm{} or a \structuredtype.
 \ProseOtherwiseTypeError
 
-Types are not associated with a semantic relation.
-
-The rest of this chapter defines the following aspects of types:
-\begin{itemize}
-\item \secref{DomainOfValuesForTypes} defines how values are associated with each type.
-\item \secref{BasicTypeAttributes} assigns basic properties to types, which are useful
-in classifying them.
-\item \secref{RelationsOnTypes} defines relations on types that are needed to typecheck
-expressions and statements.
-\item \secref{BaseValues} defines how to produce an expression to initialize storage
-      elements of a given type (for which no initializing expression is supplied).
-\end{itemize}
+\subsection{Semantics}
+Types are not evaluated dynamically.
+However, the dynamic semantics of types is given by their \emph{domain of values},
+which is defined in \secref{DomainOfValuesForTypes}.
 
 \hypertarget{integertypeterm}{}
 \section{Integer Types\label{sec:IntegerTypes}}
-\begin{center}
-\begin{tabular}{lll}
-\hline
-\secreflink{IntegerTypesSyntax} & \secreflink{IntegerTypesAST} & \secreflink{TypingIntegerTypes}\\
-& \secreflink{ASTRule.Ty.TInt} & \secreflink{TypingRule.TInt}\\
-& \secreflink{ASTRule.IntConstraintsOpt} & \secreflink{TypingRule.AnnotateConstraint}\\
-& \secreflink{ASTRule.IntConstraints} & \\
-& \secreflink{ASTRule.IntConstraint} &\\
-\hline
-\end{tabular}
-\end{center}
+The \emph{\integertypesterm{}} represent mathematical integer value.
+
+There are four kinds of integer types, and we
+use the term \integertypeterm{} to refer to them collectively:
+\emph{unconstrained}, \emph{well-constrained},
+\emph{pending constrained}, and \emph{parameterized}.
+
+\subsection{Unconstrained Integer Types}
+The type \verb|integer| represents all integer values.
+\identi{HJBH}%
+There is no bound on the minimum and maximum integer value that can be represented.
+
+\ExampleDef{Unconstrained Integer Types}
+\listingref{typing-unconstrained} shows examples of unconstrained integer types.
+\ASLListing{Well-typed unconstrained integer types}{typing-unconstrained}{\typingtests/TypingRule.TIntUnConstrained.asl}
+
+\subsection{Well-constrained Integer Types}
+\identr{GWCP}%
+The type \texttt{integer\{$c_1,\ldots,c_n$\}} represents the
+union of sets of integers represented by the \emph{integer constraints} $c_1,\ldots,c_n$.
+\hypertarget{def-exactconstraintterm}{}
+\hypertarget{def-rangeconstraintterm}{}
+A constraint can either be an \emph{\exactconstraintterm}, consisting of a single expression like \texttt{4},
+or a \emph{\rangeconstraintterm}, consisting of a pair of expressions like \texttt{1..10}.
+
+\ExampleDef{Well-constrained Integer Types}
+\listingref{typing-wellconstrained} shows examples of well-constrained integer types.
+\ASLListing{Well-typed well-constrained integer types}{typing-wellconstrained}{\typingtests/TypingRule.TIntWellConstrained.asl}
+
+\subsection{Pending-constrained Integer Types}
+The type \verb|integer{-}| represents a well-constrained integer type whose
+constraints have yet to be determined.
+These constraints are inferred by the type system based on the expression used to initialize
+the storage element (see \TypingRuleRef{InheritIntegerConstraints}).
+
+\RequirementDef{PendingConstrainedLocal}
+Pending-constrained integer types may only appear on the left-hand-side
+of local storage element declarations.
+%
+\listingref{global-pending-constrained} shows an ill-typed specification.
+
+\ExampleDef{Well-typed pending-constrained types}
+\listingref{typing-pendingconstrained} shows examples of well-typed pending-constrained
+integer types.
+\ASLListing{Well-typed pending-constrained integer types}{typing-pendingconstrained}{\typingtests/TypingRule.InheritIntegerConstraints.asl}
+
+\subsection{Parameterized Integer Types}
+Subprogram parameters are implicitly \emph{parameterized integer types},
+which represent a singleton set for the integer passed to the parameter
+at the call site.
+
+\ExampleDef{Parameterized Integer Types}
+\listingref{typing-parameterized} shows examples of well-typed parameterized
+integer types.
+Notice that the type of the parameter \texttt{M} of the function \texttt{bar}
+is a parameterized integer type, \underline{not} an unconstrained integer type.
+\ASLListing{Well-typed parameterized integer types}{typing-parameterized}{\typingtests/TypingRule.TIntParameterized.asl}
 
 \subsection{Syntax\label{sec:IntegerTypesSyntax}}
 \begin{flalign*}
@@ -167,12 +225,12 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[well\_constrained]{
-  \buildclist[\buildintconstraint](\vconstraints) \astarrow \vconstraintasts
+  \buildclist[\buildintconstraint](\cs) \astarrow \vcsasts
 }{
   {
     \begin{array}{r}
-  \buildconstraintkind(\Nconstraintkind(\Tlbrace, \namednode{\vconstraints}{\ClistOne{\Nintconstraint}}, \Trbrace)) \astarrow\\
-  \overname{\wellconstrained(\vconstraintasts)}{\vastnode}
+  \buildconstraintkind(\Nconstraintkind(\Tlbrace, \namednode{\cs}{\ClistOne{\Nintconstraint}}, \Trbrace)) \astarrow\\
+  \overname{\wellconstrained(\vcsasts)}{\vastnode}
     \end{array}
   }
 }
@@ -215,25 +273,51 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \subsection{Typing Integer Types\label{sec:TypingIntegerTypes}}
+\hypertarget{def-isunconstrainedinteger}{}
+\hypertarget{def-isparameterizedinteger}{}
+\hypertarget{def-iswellconstrainedinteger}{}
+We use the following helper predicates to classify integer types:
+\[
+  \begin{array}{rcl}
+  \isunconstrainedinteger(\overname{\ty}{\vt}) &\aslto& \Bool\\
+  \isparameterizedinteger(\overname{\ty}{\vt}) &\aslto& \Bool\\
+  \iswellconstrainedinteger(\overname{\ty}{\vt}) &\aslto& \Bool
+  \end{array}
+\]
+Those are defined as follows:
+\[
+  \begin{array}{rcl}
+  \isunconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\unconstrained\\
+  \isparameterizedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\parameterized\\
+  \iswellconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\wellconstrained\\
+\end{array}
+\]
+\identd{ZTPP} \identr{WJYH} \identr{HJPN} \identr{CZTX} \identr{TPHR}
+
+\hypertarget{def-unconstrainedinteger}{}
+We use the shorthand notation $\unconstrainedinteger \triangleq \TInt(\unconstrained)$
+for unconstrained integers.
+
 \TypingRuleDef{TInt}
-\subsubsection{Example}
-In \listingref{typing-unconstrained}, \listingref{typing-wellconstrained},
-and \listingref{typing-parameterized} all examples of
-\unconstrainedintegertypes, \wellconstrainedintegertypes,
-and \parameterizedintegertypes, respectively, are well-typed.
-\ASLListing{Well-typed unconstrained integer types}{typing-unconstrained}{\typingtests/TypingRule.TIntUnConstrained.asl}
-\ASLListing{Well-typed well-constrained integer types}{typing-wellconstrained}{\typingtests/TypingRule.TIntWellConstrained.asl}
-\ASLListing{Well-typed parameterized integer types}{typing-parameterized}{\typingtests/TypingRule.TIntParameterized.asl}
+\ExampleDef{Ill-typed pending-constrained integer type}
+\listingref{global-pending-constrained}
+and \listingref{rhs-pending-constrained}
+correspond to \CaseName{pending\_constrained}.
+\ASLListing{Ill-typed pending-constrained integer type}{global-pending-constrained}
+{\typingtests/TypingRule.TInt.global_pending_constrained.bad.asl}
+
+\ASLListing{Ill-typed pending-constrained integer type}{rhs-pending-constrained}
+{\typingtests/TypingRule.TInt.rhs_pending_constrained.bad.asl}
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{pending\_constrained}):
+  \item \AllApplyCase{pending\_constrained}
     \begin{itemize}
       \item $\tty$ is a \pendingconstrainedintegertype;
       \item the result is a type error (\UnexpectedType).
     \end{itemize}
-  \item All of the following apply (\textsc{well\_constrained}):
+  \item \AllApplyCase{well\_constrained}
     \begin{itemize}
       \item $\tty$ is the well-constrained integer type constrained by
         constraints $\vc_i$, for $u=1..k$;
@@ -246,7 +330,7 @@ One of the following applies:
       \item define $\vses$ as the union of all $\vxs_i$, for $i=1..k$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{parameterized}):
+    \item \AllApplyCase{parameterized}
     \begin{itemize}
       \item $\tty$ is a \parameterizedintegertype\ for $\name$;
       \item define $\vses$ as the singleton set for the singleton \sideeffectdescriptorterm,
@@ -254,7 +338,7 @@ One of the following applies:
       \item $\newty$ is the unconstrained integer type.
     \end{itemize}
 
-    \item All of the following apply (\textsc{unconstrained}):
+    \item \AllApplyCase{unconstrained}
     \begin{itemize}
       \item $\tty$ is an \unconstrainedintegertype;
       \item $\newty$ is the unconstrained integer type;
@@ -313,24 +397,42 @@ One of the following applies:
 \hypertarget{def-annotateconstraint}{}
 The function
 \[
+\begin{array}{r}
 \annotateconstraint(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vc})
-\aslto (\overname{\intconstraint}{\newc} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
+\aslto (\overname{\intconstraint}{\newc} \times \overname{\TSideEffectSet}{\vses})\ \cup \\
+\overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
 \]
 annotates an integer constraint $\vc$ in the static environment $\tenv$ yielding the annotated
 integer constraint $\newc$ and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
+\listingref{annotate-constraint} shows examples of \wellconstrainedintegertypes{}
+and the resulting annotated constraints in comments.
+The annotated constraints inline the constant \texttt{N} and the right-hand-side
+expressions of \texttt{let} storage elements.
+\ASLListing{Annotated constraints}{annotate-constraint}{\typingtests/TypingRule.AnnotateConstraint.asl}
+
+\RequirementDef{ConstraintSymbolicallyConstrained}
+The expressions appearing in integer constraints must be both
+\symbolicallyevaluable{} and \constrainedinteger{} types.
+%
+In \listingref{annotate-constraint-unconstrained}, the constraint
+\verb|x..x+1| is ill-typed, since the type of \texttt{x} is not constrained.
+\ASLListing{Ill-typed constraint}{annotate-constraint-unconstrained}{\typingtests/TypingRule.AnnotateConstraint.bad.asl}
+
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{exact}):
+  \item \AllApplyCase{exact}
   \begin{itemize}
     \item $\vc$ is the exact integer constraint for the expression $\ve$, that is, \\ $\ConstraintExact(\ve)$;
-    \item applying $\annotatesymbolicconstrainedinteger$ to $\ve$ in $\tenv$ yields $(\vep, \vses)$\ProseOrTypeError;
+    \item applying $\annotatesymbolicconstrainedinteger$ to $\ve$ in $\tenv$ yields \\
+          $(\vep, \vses)$\ProseOrTypeError;
     \item define $\newc$ as the exact integer constraint for $\vep$, that is, $\ConstraintExact(\vep)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{range}):
+  \item \AllApplyCase{range}
   \begin{itemize}
     \item $\vc$ is the range integer constraint for expressions $\veone$ and $\vetwo$, that is, \\ $\ConstraintRange(\veone, \vetwo)$;
     \item applying $\annotatesymbolicconstrainedinteger$ to $\veone$ in $\tenv$ yields\\ $(\veonep, \vsesone)$\ProseOrTypeError;
@@ -359,6 +461,22 @@ One of the following applies:
 
 \hypertarget{realtypeterm}{}
 \section{The Real Type\label{sec:RealType}}
+The \emph{\realtypeterm{}} represents mathematical rational number values.
+There is no bound on the minimum and maximum rational value that can be represented,
+and there is no bound on their precision.
+%
+There is no mechanism in the language to generate an irrational value of \realtypeterm.
+
+Conversions from an \integertypeterm{} value to a \realtypeterm{} value are performed
+using the \stdlibfunc{Real}.
+%
+Conversions from a \realtypeterm{} value an \integertypeterm{} value to are performed
+using the \stdlibfunc{RoundDown}, \stdlibfunc{RoundUp}. and \stdlibfunc{RoundTowardsZero}.
+
+\ExampleDef{Well-typed Real Types}
+In \listingref{typing-treal}, all the uses of the \realtypeterm{} are well-typed.
+\ASLListing{Well-typed real types}{typing-treal}{\typingtests/TypingRule.TReal.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nty \derives\ & \Treal &
@@ -379,15 +497,11 @@ One of the following applies:
 
 \subsection{Typing the Real Type\label{sec:TypingRealType}}
 \TypingRuleDef{TReal}
-\subsubsection{Example}
-In \listingref{typing-treal}, all the uses of \texttt{real} are well-typed.
-\ASLListing{Well-typed real types}{typing-treal}{\typingtests/TypingRule.TReal.asl}
-
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
-  \item $\tty$ is the real type \TReal.
-  \item $\newty$ is the real type \TReal;
+  \item $\tty$ is the \realtypeterm{}, $\TReal$.
+  \item $\newty$ is the \realtypeterm{}, $\TReal$;
   \item define $\vses$ as the empty set.
 \end{itemize}
 
@@ -402,6 +516,17 @@ All of the following apply:
 
 \hypertarget{stringtypeterm}{}
 \section{The String Type\label{sec:StringType}}
+The \emph{\stringtypeterm{}} represents strings of characters.
+
+Strings play relatively little role in specifications and the only operations
+on strings are equality and inequality tests.
+Strings are useful in \printstatementsterm{} for debugging and diagnostic purposes
+on runtimes that support printing.
+
+\ExampleDef{Well-typed String Types}
+In \listingref{typing-tstring}, all the uses of the \stringtypeterm{} are well-typed.
+\ASLListing{Well-typed string types}{typing-tstring}{\typingtests/TypingRule.TString.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nty \derives\ & \Tstring &
@@ -422,16 +547,12 @@ All of the following apply:
 
 \subsection{Typing the String Type\label{sec:TypingStringType}}
 \TypingRuleDef{TString}
-\subsubsection{Example}
-In \listingref{typing-tstring}, all the uses of \texttt{string} are well-typed.
-\ASLListing{Well-typed string types}{typing-tstring}{\typingtests/TypingRule.TString.asl}
-
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
-  \item $\tty$ is the string type \TString.
-  \item $\newty$ is the string type \TString.
-  \item $\vses$ is the empty set.
+  \item $\tty$ is the \stringtypeterm{}, $\TString$.
+  \item $\newty$ is the \stringtypeterm{}, $\TString$.
+  \item \Proseeqdef{$\vses$}{the empty set}.
 \end{itemize}
 
 \FormallyParagraph
@@ -443,8 +564,14 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\TStringBegin}{\TStringEnd}{../Typing.ml}
 
-\hypertarget{booleantypeterm}{}
 \section{The Boolean Type\label{sec:BooleanType}}
+\hypertarget{booleantypeterm}{}
+The \emph{\booleantypeterm{}} represents Booleans.
+
+\ExampleDef{Boolean Type}
+In \listingref{typing-tbool}, all the uses of \booleantypeterm{} are well-typed.
+\ASLListing{Well-typed Boolean types}{typing-tbool}{\typingtests/TypingRule.TBool.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nty \derives\ & \Tboolean &
@@ -464,13 +591,10 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Typing the Boolean Type\label{sec:TypingBooleanType}}
+See \ExampleRef{Boolean Type}.
 \TypingRuleDef{TBool}
-\subsubsection{Example}
-In \listingref{typing-tbool}, all the uses of \texttt{boolean} are well-typed.
-\ASLListing{Well-typed Boolean types}{typing-tbool}{\typingtests/TypingRule.TBool.asl}
-
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\tty$ is the boolean type, \TBool;
   \item $\newty$ is the boolean type, \TBool;
@@ -486,8 +610,52 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\TBoolBegin}{\TBoolEnd}{../Typing.ml}
 
-\hypertarget{bitvectortypeterm}{}
 \section{Bitvector Types\label{sec:BitvectorTypes}}
+\hypertarget{bitvectortypeterm}{}
+\emph{Bitvectors} represent sequences of $0$ and $1$ bits.
+%
+The \texttt{bits(N)} type represents a bitvector of length \texttt{N},
+where \texttt{N} may specify a fixed width or a constrained width.
+%
+The \texttt{bit} type is syntactic sugar for \texttt{bits(1)} (see \ASTRuleRef{Ty.TBits}.\texttt{BIT}).
+
+\identi{KGMC}%
+The syntax for \bitvectortypesterm{} has an optional $\Nbitfields$,
+which allows specifying \emph{\bitfieldsterm} ---
+\bitslicesterm{} of bitvectors --- to be treated as named
+fields that can be read or written.
+\chapref{Bitfields} defines \bitfieldsterm{}
+and \chapref{BitvectorSlicing} defines \bitslicesterm{}.
+
+\RequirementDef{BitvectorWidthImmutable}
+The width of a bitvector cannot be modified.
+
+\RequirementDef{BitvectorWidthBounds}
+There is no bound on the maximum bitvector width allowed, although an implementation may specify an upper
+limit.
+%The minimum bound is zero.
+It is recognized that zero-length bitvectors might not be supported in systems
+to which ASL might be translated (such as SMT solvers),
+and an implementation might need to lower bitvector
+expressions to a form where zero-length bitvectors do not exist.
+
+\RequirementDef{BitvectorWidthKind}
+The width of a \bitvectortypeterm{} can be either \staticallyevaluable{}
+or \emph{constrained}. That is, a \symbolicallyevaluable{} \constrainedinteger{}.
+
+\ExampleDef{Rotating a Bitvector}
+\listingref{bits-rotate} shows a specification where the width of the bitvector type
+\texttt{bv} is a literal (\verb|bits(5)|), and bitvector types where the width is
+constrained (\verb|bits(N)|, \verb|bits(i)|, and \verb|bits(N-i)|),
+and related operations,
+followed by the output to the console.
+\ASLListing{Rotating a bitevector}{bits-rotate}{\definitiontests/Bitvector_rotate.asl}
+% CONSOLE_BEGIN aslref \definitiontests/Bitvector_rotate.asl
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
+bv=0x14, rotated twice=0x05
+\end{Verbatim}
+% CONSOLE_END
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nty \derives\ & \Tbit &\\
@@ -525,35 +693,62 @@ All of the following apply:
 \end{mathpar}
 
 \subsection{Typing}
-\TypingRuleDef{TBits}
-\subsubsection{Example}
+\ExampleDef{Bitvector examples}
 In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
 \ASLListing{Well-typed Bitevector types}{typing-tbits}{\typingtests/TypingRule.TBits.asl}
 
+\ExampleRef{A bitvector type with bitfields} shows a \bitvectortypeterm{} with bitfields.
+
+\TypingRuleDef{TBits}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
-  \item $\tty$ is the bit-vector type with width given by the expression
+  \item $\tty$ is the \bitvectortypeterm{} with width given by the expression
     $\ewidth$ and the bitfields given by $\bitfields$, that is, $\TBits(\ewidth, \bitfields)$;
   \item annotating the expression $\ewidth$ yields $(\twidth, \ewidthp, \seswidth)$\ProseOrTypeError;
   \item \Prosechecksymbolicallyevaluable{\seswidth};
   \item \Prosecheckconstrainedinteger{$\tenv$}{$\twidth$};
-  \item annotating the bitfields $\bitfields$ yields $(\bitfieldsp, \vsesbitfields)$\ProseOrTypeError;
-  \item \Prosestaticeval{$\tenv$}{$\ewidthp$}{$\lint(\vwidth)$};
-  \item \Prosecheckcommonbitfieldsalign{$\tenv$}{$\bitfieldsp$}{$\vwidth$}\ProseOrTypeError;
-  \item $\newty$ is the bit-vector type with width given by the expression
-    $\ewidthp$ and the bitfields given by $\bitfieldsp$, that is, $\TBits(\ewidthp, \bitfieldsp)$;
-  \item define $\vses$ as the union of $\seswidth$ and $\vsesbitfields$.
+  \item \OneApplies
+  \begin{itemize}
+    \item \AllApplyCase{with\_bitfields}
+    \begin{itemize}
+      \item $\bitfields$ is not empty;
+      \item annotating the bitfields $\bitfields$ yields \\
+            $(\bitfieldsp, \vsesbitfields)$\ProseOrTypeError;
+      \item \Prosestaticeval{$\tenv$}{$\ewidthp$}{$\lint(\vwidth)$};
+      \item \Prosecheckcommonbitfieldsalign{$\tenv$}{$\bitfieldsp$}{$\vwidth$}\ProseOrTypeError;
+      \item \Proseeqdef{$\newty$}{the \bitvectortypeterm{} with width given by the expression
+            $\ewidthp$ and the bitfields given by $\bitfieldsp$, that is, \\
+            $\TBits(\ewidthp, \bitfieldsp)$};
+      \item \Proseeqdef{$\vses$}{the union of $\seswidth$ and $\vsesbitfields$}.
+    \end{itemize}
+
+    \item \AllApplyCase{no\_bitfields}
+    \begin{itemize}
+      \item $\bitfields$ is empty;
+      \item \Proseeqdef{$\newty$}{the \bitvectortypeterm{} with width given by the expression
+            $\ewidthp$ and an empty list of bitfields, that is,
+            $\TBits(\ewidthp, \emptylist)$};
+      \item \Proseeqdef{$\vses$}{$\seswidth$}.
+    \end{itemize}
+  \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule{
+\inferrule[with\_bitfields]{
   \annotateexpr{\tenv, \ewidth} \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\\\\
   \checksymbolicallyevaluable(\seswidth) \typearrow \True \OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\\\\
-  \annotatebitfields(\tenv, \ewidthp, \bitfields) \typearrow (\bitfieldsp, \vsesbitfields) \OrTypeError\\\\
-  \staticeval(\tenv, \ewidthp) \typearrow \lint(\vwidth)\\
+  \commonprefixline\\\\
+  \bitfields \neq \emptylist\\\\
+  {
+  \begin{array}{r}
+    \annotatebitfields(\tenv, \ewidthp, \bitfields) \typearrow \\
+    (\bitfieldsp, \vsesbitfields) \OrTypeError
+  \end{array}
+  }\\
+  \staticeval(\tenv, \ewidthp) \typearrow \lint(\vwidth) \OrTypeError\\\\
   \checkcommonbitfieldsalign(\tenv, \bitfieldsp, \vwidth) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \seswidth \cup \vsesbitfields
 }{
@@ -565,15 +760,46 @@ All of the following apply:
   }
 }
 \end{mathpar}
+
+\begin{mathpar}
+\inferrule[no\_bitfields]{
+  \annotateexpr{\tenv, \ewidth} \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\\\\
+  \checksymbolicallyevaluable(\seswidth) \typearrow \True \OrTypeError\\\\
+  \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\\\\
+  \commonprefixline\\\\
+  \bitfields = \emptylist
+}{
+  {
+    \begin{array}{r}
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \TBits(\ewidth, \bitfields)} \typearrow \\
+  (\overname{\TBits(\ewidthp, \bitfieldsp)}{\newty}, \overname{}{\seswidth})
+    \end{array}
+  }
+}
+\end{mathpar}
 \CodeSubsection{\TBitsBegin}{\TBitsEnd}{../Typing.ml}
 
-\subsubsection{Comments}
-The width of a bitvector type $\TBits(\ewidth, \bitfields)$, given by the expression \\
-$\ewidth$,
-must be non-negative.
-
-\hypertarget{tupletypeterm}{}
 \section{Tuple Types\label{sec:TupleTypes}}
+\hypertarget{tupletypeterm}{}
+
+Types can be combined into \tupletypesterm{} whose values consist of tuples of values of those types.
+For example, the expression \verb|(TRUE, Zeros{32})| has type \verb|(boolean, bits(32))|.
+
+\ExampleDef{Well-typed Tuples}
+In \listingref{typing-ttuple}, all the uses of \tupletypesterm{} are well-typed.
+\ASLListing{Well-typed tuple types}{typing-ttuple}{\typingtests/TypingRule.TTuple.asl}
+
+\RequirementDef{TupleLength}
+A \tupletypeterm{} must contain at least two elements.
+
+\RequirementDef{TupleImmutability}
+The value and type of tuple elements cannot be modified.
+
+\RequirementDef{TupleElementAccess}
+The $k+1$ element of a tuple \verb|t| with $n>1$ elements
+can be accessed via the \texttt{t.item$k$} notation,
+as long as $0 \leq k < n$.
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nty \derives\ & \PlistZero{\Nty} &
@@ -595,19 +821,15 @@ must be non-negative.
 \end{mathpar}
 
 \subsection{Typing Tuple Types\label{sec:TypingTupleTypes}}
-\subsubsection{Example}
-In \listingref{typing-ttuple}, all the uses of tuple types are well-typed.
-\ASLListing{Well-typed tuple types}{typing-ttuple}{\typingtests/TypingRule.TTuple.asl}
-
 \TypingRuleDef{TTuple}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
-  \item $\tty$ is the tuple type with member types $\tys$, that is, $\TTuple(\tys)$;
-  \item $\tys$ is the list $\tty_i$, for $i=1..k$;
+  \item $\tty$ is the \Prosetupletype{$\tys$}, that is, $\TTuple(\tys)$;
+  \item $\tys$ is the list $\tty_i$, for $i=1..k$ and $k>1$;
   \item annotating each type $\tty_i$ in $\tenv$, for $i=1..k$,
-  yields $(\ttyp_i, \vxs_i)$\ProseOrTypeError;
-  \item $\newty$ is the tuple type with member types $\ttyp$, for $i=1..k$;
+        yields $(\ttyp_i, \vxs_i)$\ProseOrTypeError;
+  \item $\newty$ is the \Prosetupletype{$\ttyp_i$}, for $i=1..k$;
   \item define $\vses$ as the union of all $\vxs_i$, for $i=1..k$.
 \end{itemize}
 
@@ -616,7 +838,7 @@ All of the following apply:
 \inferrule{
   k \geq 2\\
   \tys \eqname \tty_{1..k}\\
-  i=1..k: \annotatetype{\False, \tenv, \tty_i} \typearrow (\ttyp_i, \vxs_i) \OrTypeError\\
+  i=1..k: \annotatetype{\False, \tenv, \tty_i} \typearrow (\ttyp_i, \vxs_i) \OrTypeError\\\\
   \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
   \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \TTuple(\tys)} \typearrow (\overname{\TTuple(\tysp)}{\newty}, \vses)
@@ -624,293 +846,36 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\TTupleBegin}{\TTupleEnd}{../Typing.ml}
 
-\hypertarget{arraytypeterm}{}
-\section{Array Types\label{sec:ArrayTypes}}
-ASL offers two kinds of arrays:
-\begin{description}
-  \item[Integer-indexed arrays] representing a consecutive list of elements at positions $0$ to the size
-      specified for the array. The array elements can be accessed via an \texttt{integer}
-      type that specifies the $0$-based position of the element to read/update.
-  \item[Enumeration-indexed arrays] representing a dictionary-like data type where the keys are defined
-      by a given enumeration type. The array elements can be accessed via values of the \texttt{enumeration}
-      type specified for the array type.
-\end{description}
-
-\subsection{Syntax}
-\begin{flalign*}
-\Nty \derives\ & \Tarray \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket \parsesep \Tof \parsesep \Nty &
-\end{flalign*}
-
-\subsection{Abstract Syntax}
-\begin{flalign*}
-\ty \derives\ & \TArray(\arrayindex, \ty) &\\
-\arrayindex \derives\ &  \ArrayLengthExpr(\overtext{\expr}{array length}) &
-\end{flalign*}
-
-\ASTRuleDef{Ty.TArray}
-\begin{mathpar}
-\inferrule{}{
-  \buildty(\Nty(\Tarray, \Tllbracket, \punnode{\Nexpr}, \Trrbracket, \Tof, \punnode{\Nty})) \astarrow
-  \overname{\TArray(\ArrayLengthExpr(\astof{\vexpr}), \astof{\tty})}{\vastnode}
-}
-\end{mathpar}
-\subsection{Typing Array Types\label{sec:TypingArrayTypes}}
-\subsubsection{Example}
-In \listingref{typing-tarray}, all the uses of array types are well-typed.
-\ASLListing{Well-typed array types}{typing-tarray}{\typingtests/TypingRule.TArray.asl}
-
-\TypingRuleDef{TArray}
-\ProseParagraph
-All of the following apply:
-\begin{itemize}
-  \item $\tty$ is the array type with element type $\vt$;
-  \item Annotating the type $\vt$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
-  \item One of the following applies:
-  \begin{itemize}
-    \item All of the following apply (\textsc{expr\_is\_enum}):
-    \begin{itemize}
-      \item the array index is $\ve$ and determining whether $\ve$ corresponds to an enumeration in $\tenv$
-      via $\getvariableenum$ yields the enumeration variable
-      name $\vs$ of size $\vi$, that is, $\langle \vs, \vi \rangle$\ProseOrTypeError;
-      \item $\newty$ is the array type indexed by an enumeration type
-      named $\vs$ of length $\vi$ and of elements of type $\vtp$, that is, $\TArray(\ArrayLengthEnum(\vs, \vi), \vtp)$;
-      \item define $\vses$ as $\vsest$.
-    \end{itemize}
-
-    \item All of the following apply (\textsc{expr\_not\_enum}):
-    \begin{itemize}
-      \item the array index is $\ve$ and determining whether $\ve$ corresponds to an enumeration in $\tenv$
-      via $\getvariableenum$ yields $\None$ (meaning it does not
-      correspond to an enumeration)\ProseOrTypeError;
-      \item annotating the \symbolicallyevaluable{} integer expression $\ve$ yields\\
-      $(\vep, \vsesindex)$\ProseOrTypeError;
-      \item $\newty$ the array type indexed by integer bounded by
-      the expression $\vep$ and of elements of type $\vtp$, that is,
-      $\TArray(\ArrayLengthExpr(\vep), \vtp)$;
-      \item define $\vses$ as the union of $\vsest$ and $\vsesindex$.
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[expr\_is\_enum]{
-  \annotatetype{\False, \tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
-  \commonprefixline\\\\
-  \getvariableenum(\tenv, \ve) \typearrow \langle \vs, \vlabels \rangle\OrTypeError
-}{
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\AbbrevTArrayLengthExpr{\ve}{\vt}}{\tty}} \typearrow
-  (\overname{\AbbrevTArrayLengthEnum{\ve}{\vlabels}{\vtp}}{\newty}, \overname{\emptyset}{\vsest})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[expr\_not\_enum]{
-  \annotatetype{\False, \tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
-  \commonprefixline\\\\
-  \getvariableenum(\tenv, \ve) \typearrow \None \OrTypeError\\\\
-  \annotatesymbolicinteger(\tenv, \ve) \typearrow (\vep, \vsesindex) \OrTypeError\\\\
-  \vses \eqdef \vsest \cup \vsesindex
-}{
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\AbbrevTArrayLengthExpr{\ve}{\vt}}{\tty}} \typearrow
-  (\overname{\AbbrevTArrayLengthExpr{\vep}{\vtp}}{\newty}, \vses)
-}
-\end{mathpar}
-\CodeSubsection{\TArrayBegin}{\TArrayEnd}{../Typing.ml}
-
-\TypingRuleDef{GetVariableEnum}
-\hypertarget{def-getvariableenum}{}
-The function
-\[
-\getvariableenum(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-\langle (\overname{\identifier}{\vx}, \overname{\identifier^+}{\vlabels})\rangle
-\]
-tests whether the expression $\ve$ represents a variable of an enumeration type.
-If so, the result is $\vx$ --- the name of the variable and the list of labels $\vlabels$,
-declared for the enumeration type.
-Otherwise, the result is $\None$.
-
-\ProseParagraph
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{not\_evar}):
-  \begin{itemize}
-    \item $\ve$ is not a variable expression;
-    \item the result is $\None$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{no\_declared\_type}):
-  \begin{itemize}
-    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
-    \item $\vx$ is not associated with a type in the global environment of $\tenv$;
-    \item the result is $\None$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{declared\_enum}):
-  \begin{itemize}
-    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
-    \item $\vx$ is associated with a type $\vt$ in the global environment of $\tenv$;
-    \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields an enumeration type with labels $\vlabels$\ProseOrTypeError;
-    \item the result is the pair consisting of $\vx$ and $\vlabels$.
-  \end{itemize}
-
-  \item All of the following apply (\textsc{declared\_not\_enum}):
-  \begin{itemize}
-    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
-    \item $\vx$ is associated with a type $\vt$ in the global environment of $\tenv$;
-    \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields a type that is not an enumeration type;
-    \item the result is $\None$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[not\_evar]{
-  \astlabel(\ve) \neq \EVar
-}{
-  \getvariableenum(\tenv, \ve) \typearrow \None
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[no\_declared\_type]{
-  G^\tenv.\declaredtypes(\vx) = \bot
-}{
-  \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \None
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[declared\_enum]{
-  G^\tenv.\declaredtypes(\vx) = (\vt, \Ignore)\\
-  \makeanonymous(\tenv, \vt) \typearrow \TEnum(\vlabels) \OrTypeError
-}{
-  \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \langle(\vx, \vlabels)\rangle
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[declared\_not\_enum]{
-  G^\tenv.\declaredtypes(\vx) = (\vt, \Ignore)\\
-  \makeanonymous(\tenv, \vt) \typearrow \vtone\\
-  \astlabel(\vtone) \neq \TEnum
-}{
-  \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \None
-}
-\end{mathpar}
-
-\TypingRuleDef{AnnotateSymbolicallyEvaluableExpr}
-\hypertarget{def-annotatesymbolicallyevaluableexpr}{}
-The function
-\[
-\begin{array}{r}
-  \annotatesymbolicallyevaluableexpr(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto \\
-  (\overname{\ty}{\vt}\times\overname{\expr}{\vep}\times\overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
-\end{array}
-\]
-annotates the expression $\ve$ in the static environment $\tenv$ and checks that it is \symbolicallyevaluable,
-yielding the resulting type in $\vt$, the annotated expression in $\vep$ and the \sideeffectsetterm\ in $\vses$.
-\ProseOtherwiseTypeError
-
-\ProseParagraph
-All of the following apply:
-\begin{itemize}
-  \item \Proseannotateexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$};
-  \item \Prosechecksymbolicallyevaluable{$\vses$}.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr{\tenv, \ve} \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
-  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError
-}{
-  \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses)
-}
-\end{mathpar}
-\CodeSubsection{\AnnotateSymbolicallyEvaluableExprBegin}{\AnnotateSymbolicallyEvaluableExprEnd}{../Typing.ml}
-
-\TypingRuleDef{AnnotateSymbolicInteger}
-\hypertarget{def-annotatesymbolicinteger}{}
-The function
-\[
-  \annotatesymbolicinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-  (\overname{\expr}{\vepp} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
-\]
-annotates a \symbolicallyevaluable\ integer expression $\ve$ in the static environment $\tenv$
-and returns the annotated expression $\vepp$ and \sideeffectsetterm\ $\vses$.
-\ProseOtherwiseTypeError
-
-\ProseParagraph
-All of the following apply:
-\begin{itemize}
-  \item \Proseannotatesymbolicallyevaluableexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$\ProseOrTypeError};
-  \item determining whether $\vt$ has the structure of an integer yields $\True$\ProseOrTypeError;
-  \item determining whether $\vep$ is \symbolicallyevaluable\ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item applying $\normalize$ to $\vep$ in $\tenv$ yields $\vepp$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
-  \checkstructureinteger(\tenv, \vt) \typearrow \True \OrTypeError\\\\
-  \checksymbolicallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
-  \normalize(\tenv, \vep) \typearrow \vepp
-}{
-  \annotatesymbolicinteger(\tenv, \ve) \typearrow (\vepp, \vses)
-}
-\end{mathpar}
-\CodeSubsection{\AnnotateSymbolicIntegerBegin}{\AnnotateSymbolicIntegerEnd}{../Typing.ml}
-
-\hypertarget{def-checkstructureinteger}{}
-\TypingRuleDef{CheckStructureInteger}
-The function
-\[
-  \checkstructureinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto
-  \{\True\} \cup \TTypeError
-\]
-returns $\True$ is $\vt$ is has the \structure\ an integer type and a type error otherwise.
-
-\ProseParagraph
-One of the following applies:
-\begin{itemize}
-  \item All of the following apply (\textsc{okay}):
-  \begin{itemize}
-    \item determining the \structure\ of $\vt$ yields $\vtp$\ProseOrTypeError;
-    \item $\vtp$ is an integer type;
-    \item the result is $\True$;
-  \end{itemize}
-
-  \item All of the following apply (\textsc{error}):
-  \begin{itemize}
-    \item determining the \structure\ of $\vt$ yields $\vtp$\ProseOrTypeError;
-    \item $\vtp$ is not an integer type;
-    \item the result is a type error indicating that $\vt$ was expected to have the \structure\ of an integer.
-  \end{itemize}
-\end{itemize}
-
-\CodeSubsection{\CheckStructureIntegerBegin}{\CheckStructureIntegerEnd}{../Typing.ml}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[okay]{
-  \tstruct(\vt) \typearrow \vtp \OrTypeError\\\\
-  \astlabel(\vtp) = \TInt
-}
-{
-  \checkstructureinteger(\tenv, \vt) \typearrow \True
-}
-\and
-\inferrule[error]{
-  \tstruct(\vt) \typearrow \vtp\\
-  \astlabel(\vtp) \neq \TInt
-}
-{
-  \checkstructureinteger(\tenv, \vt) \typearrow \TypeErrorVal{\UnexpectedType}
-}
-\end{mathpar}
-
-\hypertarget{enumerationtypeterm}{}
 \section{Enumeration Types\label{sec:EnumerationTypes}}
+\hypertarget{enumerationtypeterm}{}
+The \emph{\enumerationtypeterm} defines a list of enumeration literals,
+also referred to as \emph{labels}, that act
+as global constants that can be compared for equality and inequality and used
+as indices in enumeration-indexed arrays.
+%
+The type of an enumeration literal is the anonymous \enumerationtypeterm{}
+that defined the literal.
+\identd{YZBQ} \identr{HJYJ}
+
+\identi{PRPY}%
+Unlike many languages, there is no ordering defined for enumeration literals
+and therefore enumeration types do not support ordering comparisons such as \verb|<=|.
+
+\ExampleDef{Well-typed Enumeration Types}
+\listingref{typing-tenum} shows an example of a well-typed enumeration type declaration.
+\ASLListing{Well-typed enumeration type}{typing-tenum}{\typingtests/TypingRule.TEnumDecl.asl}
+
+\identr{DWSP} \identr{QMWT} \identi{MZXL}%
+\RequirementDef{LabelNamespace}
+Enumeration literals exist in the same namespace as all other declared objects,
+including storage elements and subprograms, so no other declared object
+may have the same name in the same scope.
+In particular, this means that an enumeration literal can be declared in
+at most one \enumerationtypeterm{} declaration.
+
+\RequirementDef{AnonymousEnumerations}
+Enumeration types are only allowed in declarations.
+
 \subsection{Syntax}
 \begin{flalign*}
 \Ntydecl \derives\ & \Tenumeration \parsesep \Tlbrace \parsesep \TClistOne{\Tidentifier} \parsesep \Trbrace &
@@ -936,20 +901,24 @@ One of the following applies:
 \end{mathpar}
 
 \subsection{Typing Enumeration Types\label{sec:TypingEnumerationTypes}}
-\TypingRuleDef{TEnumDecl}
+\ExampleDef{Ill-typed enumeration type declarations}
+\listingref{typing-tenum-bad} shows examples of ill-typed enumeration type declarations.
+\ASLListing{Ill-typed enumeration types}{typing-tenum-bad}{\typingtests/TypingRule.TEnumDecl.bad.asl}
 
+\TypingRuleDef{TEnumDecl}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
-  \item $\tty$ is the enumeration type with enumeration literals
-    $\vli$, that is, $\TEnum(\vli)$;
+  \item $\tty$ is the \enumerationtypeterm{} with enumeration literals
+        $\vli$, that is, $\TEnum(\vli)$;
   \item $\decl$ is $\True$, indicating that $\tty$ should be considered in the context of a declaration;
   \item determining that $\vli$ does not contain duplicates yields $\True$\ProseOrTypeError;
   \item determining that none of the labels in $\vli$ is declared in the global environment
   yields $\True$\ProseOrTypeError;
-  \item $\newty$ is the enumeration type $\tty$;
+  \item $\newty$ is the \enumerationtypeterm{} $\tty$;
   \item define $\vses$ as the empty set.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
@@ -958,16 +927,347 @@ All of the following apply:
 }{
   \annotatetype{\True, \tenv, \TEnum(\vli)} \typearrow (\overname{\TEnum(\vli)}{\newty}, \overname{\emptyset}{\vses})
 }
+\end{mathpar}
 \CodeSubsection{\TEnumDeclBegin}{\TEnumDeclEnd}{../Typing.ml}
 
-\end{mathpar}
-\lrmcomment{This is related to \identd{YZBQ}, \identr{DWSP}, \identi{MZXL}.}
-\subsubsection{Example}
-\listingref{typing-tenum} shows an example of a well-typed enumeration type declaration.
-\ASLListing{Well-typed enumeration type}{typing-tenum}{\typingtests/TypingRule.TEnumDecl.asl}
+\section{Array Types\label{sec:ArrayTypes}}
+\hypertarget{arraytypeterm}{}
+\identr{DFXJ}%
+Arrays are sequences of values of a single given type.
+The syntax \verb|array [[expr]] of ty| declares a single-dimensional array of type \texttt{ty}
+with an index type derived from the expression \texttt{expr}.
+%
+\identr{YHNV}%
+ASL offers two kinds of arrays:
+\hypertarget{intarraytypeterm}{}
+\hypertarget{enumarraytypeterm}{}
+\begin{description}
+  \item[\Intarraytypeterm] represents a consecutive list of elements at positions $0$ to the size
+      specified for the array. The array elements can be accessed via an \integertypeterm{}
+      that specifies the $0$-based position of the element to read/update.
+  \item[\Enumarraytypeterm] represents a dictionary-like data type where the keys are defined
+      by a given \enumerationtypeterm{}. The array elements can be accessed via values of the
+      \enumerationtypeterm{} specified for the array type.
+\end{description}
 
-\hypertarget{recordtypeterm}{}
+\RequirementDef{ArrayLengthImmutable}
+The length of an \intarraytypeterm{} cannot be modified.
+
+\RequirementDef{ArrayLengthExpression}
+The length expression of an \intarraytypeterm{} must be a \symbolicallyevaluable{}
+expression whose \underlyingtype{} is an \integertypeterm{} .
+
+\ExampleDef{Well-typed Array Types}
+In \listingref{typing-tarray}, all the uses of array types are well-typed.
+\ASLListing{Well-typed array types}{typing-tarray}{\typingtests/TypingRule.TArray.asl}
+
+\subsection{Syntax}
+\begin{flalign*}
+\Nty \derives\ & \Tarray \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket \parsesep \Tof \parsesep \Nty &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\ty \derives\ & \TArray(\arrayindex, \ty) &\\
+\arrayindex \derives\ &  \ArrayLengthExpr(\overtext{\expr}{array length}) &
+\end{flalign*}
+
+\ASTRuleDef{Ty.TArray}
+\begin{mathpar}
+\inferrule{}{
+  {
+  \begin{array}{r}
+    \buildty(\Nty(\Tarray, \Tllbracket, \punnode{\Nexpr}, \Trrbracket, \Tof, \punnode{\Nty})) \astarrow\\
+    \overname{\TArray(\ArrayLengthExpr(\astof{\vexpr}), \astof{\tty})}{\vastnode}
+  \end{array}
+  }
+}
+\end{mathpar}
+\subsection{Typing Array Types\label{sec:TypingArrayTypes}}
+\ExampleDef{Ill-typed Array Types}
+In \listingref{typing-tarray-bad}, the array type for \verb|illegal_array|
+is ill-typed, since the expression \verb|non_symbolically_evaluable|
+is not \symbolicallyevaluable{}.
+\ASLListing{Ill-typed array types}{typing-tarray-bad}{\typingtests/TypingRule.TArray.bad.asl}
+
+\TypingRuleDef{TArray}
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item $\tty$ is the array type with element type $\vt$;
+  \item Annotating the type $\vt$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
+  \item \OneApplies
+  \begin{itemize}
+    \item \AllApplyCase{expr\_is\_enum}
+    \begin{itemize}
+      \item the array index is $\ve$ and determining whether $\ve$ corresponds to an enumeration in $\tenv$
+      via $\getvariableenum$ yields the enumeration variable
+      name $\vs$ of size $\vi$, that is, $\langle \vs, \vi \rangle$\ProseOrTypeError;
+      \item $\newty$ is the array type indexed by an \enumerationtypeterm{}
+      named $\vs$ of length $\vi$ and of elements of type $\vtp$, that is, $\TArray(\ArrayLengthEnum(\vs, \vi), \vtp)$;
+      \item define $\vses$ as $\vsest$.
+    \end{itemize}
+
+    \item \AllApplyCase{expr\_not\_enum}
+    \begin{itemize}
+      \item the array index is $\ve$ and determining whether $\ve$ corresponds to an enumeration in $\tenv$
+      via $\getvariableenum$ yields $\None$ (meaning it does not
+      correspond to an enumeration)\ProseOrTypeError;
+      \item annotating the \symbolicallyevaluable{} integer expression $\ve$ yields\\
+      $(\vep, \vsesindex)$\ProseOrTypeError;
+      \item $\newty$ the array type indexed by integer bounded by
+      the expression $\vep$ and of elements of type $\vtp$, that is,
+      $\TArray(\ArrayLengthExpr(\vep), \vtp)$;
+      \item define $\vses$ as the union of $\vsest$ and $\vsesindex$.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[expr\_is\_enum]{
+  \annotatetype{\False, \tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
+  \commonprefixline\\\\
+  \getvariableenum(\tenv, \ve) \typearrow \langle \vs, \vlabels \rangle
+}{
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\AbbrevTArrayLengthExpr{\ve}{\vt}}{\tty}} \typearrow
+  (\overname{\AbbrevTArrayLengthEnum{\ve}{\vlabels}{\vtp}}{\newty}, \overname{\emptyset}{\vsest})
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[expr\_not\_enum]{
+  \annotatetype{\False, \tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
+  \commonprefixline\\\\
+  \getvariableenum(\tenv, \ve) \typearrow \None\\
+  \annotatesymbolicinteger(\tenv, \ve) \typearrow (\vep, \vsesindex) \OrTypeError\\\\
+  \vses \eqdef \vsest \cup \vsesindex
+}{
+  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\AbbrevTArrayLengthExpr{\ve}{\vt}}{\tty}} \typearrow
+  (\overname{\AbbrevTArrayLengthExpr{\vep}{\vtp}}{\newty}, \vses)
+}
+\end{mathpar}
+\CodeSubsection{\TArrayBegin}{\TArrayEnd}{../Typing.ml}
+
+\TypingRuleDef{GetVariableEnum}
+\hypertarget{def-getvariableenum}{}
+The function
+\[
+\getvariableenum(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
+\langle (\overname{\identifier}{\vx}, \overname{\identifier^+}{\vlabels})\rangle
+\]
+tests whether the expression $\ve$ represents a variable of an \enumerationtypeterm{}.
+If so, the result is $\vx$ --- the name of the variable and the list of labels $\vlabels$,
+declared for the \enumerationtypeterm{}.
+Otherwise, the result is $\None$.
+
+\ExampleDef{Retrieving Enumeration Labels from Variable Expressions}
+\listingref{typing-getvariableenum} shows examples of retrieving
+enumeration labels from variable expressions.
+\ASLListing{Retrieving enumeration labels from expressions}{typing-getvariableenum}{\typingtests/TypingRule.GetVariableEnum.asl}
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{not\_evar}
+  \begin{itemize}
+    \item $\ve$ is not a variable expression;
+    \item the result is $\None$.
+  \end{itemize}
+
+  \item \AllApplyCase{no\_declared\_type}
+  \begin{itemize}
+    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
+    \item $\vx$ is not associated with a type in the global environment of $\tenv$;
+    \item the result is $\None$.
+  \end{itemize}
+
+  \item \AllApplyCase{declared\_enum}
+  \begin{itemize}
+    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
+    \item $\vx$ is associated with a type $\vt$ in the global environment of $\tenv$;
+    \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields an \enumerationtypeterm{} with labels $\vlabels$;
+    \item the result is the pair consisting of $\vx$ and $\vlabels$.
+  \end{itemize}
+
+  \item \AllApplyCase{declared\_not\_enum}
+  \begin{itemize}
+    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
+    \item $\vx$ is associated with a type $\vt$ in the global environment of $\tenv$;
+    \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields a type that is not an \enumerationtypeterm{};
+    \item the result is $\None$.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[not\_evar]{
+  \astlabel(\ve) \neq \EVar
+}{
+  \getvariableenum(\tenv, \ve) \typearrow \None
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[no\_declared\_type]{
+  G^\tenv.\declaredtypes(\vx) = \bot
+}{
+  \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \None
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[declared\_enum]{
+  G^\tenv.\declaredtypes(\vx) = (\vt, \Ignore)\\
+  \makeanonymous(\tenv, \vt) \typearrow \TEnum(\vlabels)
+}{
+  \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \langle(\vx, \vlabels)\rangle
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[declared\_not\_enum]{
+  G^\tenv.\declaredtypes(\vx) = (\vt, \Ignore)\\
+  \makeanonymous(\tenv, \vt) \typearrow \vtone\\
+  \astlabel(\vtone) \neq \TEnum
+}{
+  \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \None
+}
+\end{mathpar}
+
+\TypingRuleDef{AnnotateSymbolicallyEvaluableExpr}
+\hypertarget{def-annotatesymbolicallyevaluableexpr}{}
+The function
+\[
+\begin{array}{r}
+  \annotatesymbolicallyevaluableexpr(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto \\
+  (\overname{\ty}{\vt}\times\overname{\expr}{\vep}\times\overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
+\]
+annotates the expression $\ve$ in the static environment $\tenv$ and checks that it is \symbolicallyevaluable,
+yielding the type in $\vt$, the annotated expression $\vep$ and the \sideeffectsetterm{} $\vses$.
+\ProseOtherwiseTypeError
+
+\identi{PKXK} \identd{YYDW}%
+\RequirementDef{SymbolicallyEvaluable}
+An expression is \symbolicallyevaluable{} if its evaluation only involves
+the use of immutable values.
+
+\ExampleDef{Annotating Symbolically Evaluable Expressions}
+\listingref{typing-annotatesymbolicallyevaluableexpr} shows examples of
+expressions and classifies them as either \symbolicallyevaluable{} or not.
+\ASLListing{Annotating symbolically evaluable Expressions}{typing-annotatesymbolicallyevaluableexpr}
+{\typingtests/TypingRule.AnnotateSymbolicallyEvaluableExpr.asl}
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item \Proseannotateexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$};
+  \item \Prosechecksymbolicallyevaluable{$\vses$}.
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \ve} \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
+  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError
+}{
+  \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses)
+}
+\end{mathpar}
+\CodeSubsection{\AnnotateSymbolicallyEvaluableExprBegin}{\AnnotateSymbolicallyEvaluableExprEnd}{../Typing.ml}
+
+\TypingRuleDef{AnnotateSymbolicInteger}
+\hypertarget{def-annotatesymbolicinteger}{}
+The function
+\[
+  \annotatesymbolicinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
+  (\overname{\expr}{\vepp} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+annotates a \symbolicallyevaluable\ integer expression $\ve$ in the static environment $\tenv$
+and returns the annotated expression $\vepp$ as a \normalizedexpressionterm{} and \sideeffectsetterm\ $\vses$.
+\ProseOtherwiseTypeError
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item \Proseannotatesymbolicallyevaluableexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$\ProseOrTypeError};
+  \item determining whether the \underlyingtype{} of $\vt$ is an \integertypeterm{} yields $\True$\ProseOrTypeError;
+  \item applying $\normalize$ to $\vep$ in $\tenv$ yields $\vepp$.
+\end{itemize}
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{
+  \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
+  \checkunderlyinginteger(\tenv, \vt) \typearrow \True \OrTypeError\\\\
+  \normalize(\tenv, \vep) \typearrow \vepp
+}{
+  \annotatesymbolicinteger(\tenv, \ve) \typearrow (\vepp, \vses)
+}
+\end{mathpar}
+\CodeSubsection{\AnnotateSymbolicIntegerBegin}{\AnnotateSymbolicIntegerEnd}{../Typing.ml}
+
+\hypertarget{def-checkunderlyinginteger}{}
+\TypingRuleDef{CheckUnderlyingInteger}
+The function
+\[
+  \checkunderlyinginteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto
+  \{\True\} \cup \TTypeError
+\]
+returns $\True$ is $\vt$ is has the \structure\ an integer type and a type error otherwise.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{okay}
+  \begin{itemize}
+    \item determining the \structure\ of $\vt$ yields $\vtp$\ProseOrTypeError;
+    \item $\vtp$ is an integer type;
+    \item the result is $\True$;
+  \end{itemize}
+
+  \item \AllApplyCase{error}
+  \begin{itemize}
+    \item determining the \structure\ of $\vt$ yields $\vtp$\ProseOrTypeError;
+    \item $\vtp$ is not an integer type;
+    \item the result is a type error indicating that $\vt$ was expected to have the \structure\ of an integer.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[okay]{
+  \tstruct(\vt) \typearrow \vtp \OrTypeError\\\\
+  \astlabel(\vtp) = \TInt
+}{
+  \checkunderlyinginteger(\tenv, \vt) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[error]{
+  \tstruct(\vt) \typearrow \vtp\\
+  \astlabel(\vtp) \neq \TInt
+}{
+  \checkunderlyinginteger(\tenv, \vt) \typearrow \TypeErrorVal{\UnexpectedType}
+}
+\end{mathpar}
+\CodeSubsection{\CheckUnderlyingIntegerBegin}{\CheckUnderlyingIntegerEnd}{../Typing.ml}
+
 \section{Record Types\label{sec:RecordTypes}}
+\hypertarget{recordtypeterm}{}
+\identd{WGQS}%
+A record is a \structuredtype{} consisting of a list of field identifiers which denote individual storage elements.
+\identr{DXWN}%
+A record type is described by specifying for each field identifier its type.
+
+\identr{WFMF}%
+The syntax \verb|record| (with no field list) is syntactic sugar for \verb|record {}|.
+
+\ExampleDef{Well-typed Record Types}
+In \listingref{typing-trecord}, all the uses of record or exception types are well-typed.
+\ASLListing{Well-typed structured types}{typing-trecord}{\typingtests/TypingRule.TRecordDecl.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Ntydecl \derives\ & \Trecord \parsesep \Nfieldsopt &
@@ -989,7 +1289,7 @@ All of the following apply:
 \subsection{Typing Record Types\label{sec:TypingRecordTypes}}
 \TypingRuleDef{TStructuredDecl}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\tty$ is a \structuredtype\ with AST label $L$;
   \item the list of fields of $\tty$ is $\fields$;
@@ -1020,12 +1320,12 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\TStructuredDeclBegin}{\TStructuredDeclEnd}{../Typing.ml}
 
-\subsubsection{Example}
-In \listingref{typing-trecord}, all the uses of record or exception types are well-typed.
-\ASLListing{Well-typed structured types}{typing-trecord}{\typingtests/TypingRule.TRecordExceptionDecl.asl}
-
-\hypertarget{exceptiontypeterm}{}
 \section{Exception Types\label{sec:ExceptionTypes}}
+\hypertarget{exceptiontypeterm}{}
+\ExampleDef{Well-typed Exception Types}
+In \listingref{typing-texception}, all the uses of record or exception types are well-typed.
+\ASLListing{Well-typed structured types}{typing-texception}{\typingtests/TypingRule.TExceptionDecl.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Ntydecl \derives\ & \Texception \parsesep \Nfieldsopt &
@@ -1044,6 +1344,9 @@ In \listingref{typing-trecord}, all the uses of record or exception types are we
 }
 \end{mathpar}
 
+\subsection{Typing Exception Types}
+The rule for typing exception types is \TypingRuleRef{TStructuredDecl}.
+
 \hypertarget{namedtypeterm}{}
 \section{Named Types\label{sec:NamedTypes}}
 \subsection{Syntax}
@@ -1056,9 +1359,6 @@ In \listingref{typing-trecord}, all the uses of record or exception types are we
 \ty \derives\ & \TNamed(\overtext{\identifier}{type name}) &
 \end{flalign*}
 
-\subsection{Typing Exception Types}
-The rule for typing exception type is \TypingRuleRef{TStructuredDecl}.
-
 \ASTRuleDef{Ty.TNamed}
 \begin{mathpar}
 \inferrule{}{
@@ -1068,9 +1368,14 @@ The rule for typing exception type is \TypingRuleRef{TStructuredDecl}.
 \end{mathpar}
 
 \subsection{Typing Named Types\label{sec:TypingNamedTypes}}
+\ExampleDef{Well-typed Named Types}
+In \listingref{typing-tnamed}, all the uses of \texttt{MyType} are well-typed.
+\ASLListing{Well-typed named types}{typing-tnamed}{\typingtests/TypingRule.TNamed.asl}
+
 \TypingRuleDef{TNamed}
+See \ExampleRef{Well-typed Named Types}.
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\tty$ is the named type $\vx$, that is $\TNamed(\vx)$;
   \item checking whether $\vx$ is bound to any declared type in $\tenv$ yields $\True$\ProseOrTypeError;
@@ -1090,12 +1395,8 @@ All of the following apply:
 \end{mathpar}
 \CodeSubsection{\TNamedBegin}{\TNamedEnd}{../Typing.ml}
 
-\subsubsection{Example}
-In \listingref{typing-tnamed}, all the uses of \texttt{MyType} are well-typed.
-\ASLListing{Well-typed named types}{typing-tnamed}{\typingtests/TypingRule.TNamed.asl}
-
-\section{Declared Types}
-A declared type can be an enumeration type, a record type, an exception type, or an \anonymoustype.
+\section{Declared Types\label{sec:DeclaredTypes}}
+A declared type can be an \enumerationtypeterm{}, a record type, an exception type, or an \anonymoustype.
 \subsection{Syntax}
 \begin{flalign*}
 \Ntydecl \derives\ & \Nty &
@@ -1111,15 +1412,22 @@ A declared type can be an enumeration type, a record type, an exception type, or
 \end{mathpar}
 
 \subsection{Typing Declared Types}
+\identr{RGRVJ}%
+\RequirementDef{RestrictionsOnAnonymousTypes}
+A declared type for an enumeration, a record type, or an exception type
+are only permitted in named type declarations. This is enforced by \TypingRuleRef{TNonDecl}.
+%
+See \ExampleRef{Ill-typed pending-constrained integer type}.
+
 \TypingRuleDef{TNonDecl}
-\subsubsection{Example}
+\ExampleDef{Ill-typed Type Declarations}
 In \listingref{typing-trecorderror}, the use of a record type outside of a declaration is erroneous.
 \ASLListing{An erroneous use of a record type}{typing-trecorderror}{\typingtests/TypingRule.TNonDecl.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
-  \item $\tty$ is a \structuredtype\ or an enumeration type;
+  \item $\tty$ is a \structuredtype\ or an \enumerationtypeterm{};
   \item $\decl$ is $\False$, indicating that $\tty$ should be considered to be outside the context of a declaration
   of $\tty$;
   \item a type error is returned, indicating that the use of anonymous form of enumerations, record,

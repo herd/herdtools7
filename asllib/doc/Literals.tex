@@ -77,6 +77,10 @@ transforms a parse node $\vparsednode$ for $\Nvalue$ into an AST node $\vastnode
 \end{mathpar}
 
 \section{Typing}
+\ExampleDef{Well-typed literals}
+\listingref{literals1} shows literals and their corresponding types in comments:
+\ASLListing{Literals and their corresponding types}{literals1}{\typingtests/TypingRule.Lit.asl}
+
 \TypingRuleDef{Lit}
 \hypertarget{def-annotateliteral}{}
 The function
@@ -85,21 +89,48 @@ The function
 \]
 annotates a literal $\vl$ in the static environment $\tenv$, resulting in a type $\vt$.
 
-\subsection{Example}
-\listingref{literals1} shows literals and their corresponding types in comments:
-\ASLListing{Literals and their corresponding types}{literals1}{\typingtests/TypingRule.Lit.asl}
+See \ExampleRef{Well-typed literals}.
 
 \ProseParagraph
-The result of annotating a literal $\vl$ in a static environment $\tenv$ is $\vt$ and one of the following applies:
+\OneApplies
 \begin{itemize}
-\item (\textsc{int}): $\vl$ is an integer literal $\vn$ and $\vt$ is the well-constrained integer type, constraining
-its set to the single value $\vn$;
-\item (\textsc{bool}): $\vl$ is a Boolean literal and $\vt$ is the Boolean type;
-\item (\textsc{real}): $\vl$ is a real literal and $\vt$ is the real type;
-\item (\textsc{string}): $\vl$ is a string literal and $\vt$ is the string type;
-\item (\textsc{bitvector}): $\vl$ is a bitvector literal of length $\vn$ and $\vt$ is the bitvector type of fixed width $\vn$.
-\item (\textsc{label}): $\vl$ is an enumeration label for $\vlabel$ and $\vlabel$ is bound to the type $\vt$ in the
-      $\declaredtypes$ map of the global environment $\tenv$.
+  \item \AllApplyCase{int}
+  \begin{itemize}
+    \item $\vl$ is an integer literal $\vn$;
+    \item \Proseeqdef{$\vt$}{the well-constrained integer type, constraining
+          its set to the single value $\vn$}.
+  \end{itemize}
+
+  \item \AllApplyCase{bool}
+  \begin{itemize}
+    \item $\vl$ is a Boolean literal;
+    \item \Proseeqdef{$\vt$}{the \booleantypeterm}.
+  \end{itemize}
+
+  \item \AllApplyCase{real}
+  \begin{itemize}
+    \item $\vl$ is real literal;
+    \item \Proseeqdef{$\vt$}{the \realtypeterm}.
+  \end{itemize}
+
+  \item \AllApplyCase{string}
+  \begin{itemize}
+    \item $\vl$ is a string literal;
+    \item \Proseeqdef{$\vt$}{the \stringtypeterm}.
+  \end{itemize}
+
+  \item \AllApplyCase{bits}
+  \begin{itemize}
+    \item $\vl$ is a bitvector literal of length $\vn$;
+    \item \Proseeqdef{$\vt$}{the bitvector type of fixed width $\vn$}.
+  \end{itemize}
+
+  \item \AllApplyCase{label}
+  \begin{itemize}
+    \item $\vl$ is an enumeration label for $\vlabel$;
+    \item \Proseeqdef{$\vt$}{the type to which $\vlabel$ is bound in the
+        $\declaredtypes$ map of the global environment $\tenv$}.
+  \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
@@ -120,7 +151,7 @@ its set to the single value $\vn$;
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[bitvector]{
+\inferrule[bits]{
   n \eqdef \listlen{\bits}
 }{
   \annotateliteral{\Ignore, \lbitvector(\bits)}\typearrow \TBits(\ELInt{n}, \emptylist)
@@ -139,6 +170,6 @@ its set to the single value $\vn$;
 \section{Semantics}
 A literal $\vl$ can be converted to the \nativevalue\ $\nvliteral{\vl}$.
 
-\subsubsection{Example}
+\ExampleDef{Converting a Literal to a Value}
 The literal $\lint(5)$ can be used as a \nativevalue\ $\nvliteral{\lint(5)}$,
 which we will usually abbreviate as $\nvint(5)$.

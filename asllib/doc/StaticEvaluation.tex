@@ -16,30 +16,34 @@ in the static environment $\tenv$, returning a literal $\vv$.
 If the evaluation terminates by a thrown exception of a value that is not a literal
 (for example, a record value), the result is a type error.
 
+\hypertarget{def-staticallyevaluable}{}
+We say that an expression $\ve$ is \staticallyevaluable{} in a given static environment $\tenv$ if
+applying $\staticeval(\tenv, \ve) \typearrow \vv$ and $\vv$ is a literal value.
+
 Static evaluation employs the dynamic semantics to evaluate $\ve$ and inspects the result to extract
 a literal. The evaluation should be able to access global constants as well as local constants that
 are bound in $\tenv$. Therefore, a dynamic environment is constructed from the constants defined in $\tenv$
 (see \TypingRuleRef{StaticEnvToEnv}).
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item applying $\staticenvtoenv$ to $\tenv$ yields $\env$;
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item All of the following apply (\textsc{normal\_literal}):
+    \item \AllApplyCase{normal\_literal}
     \begin{itemize}
       \item evaluating $\ve$ in $\env$ yields $\Normal(\nvliteral{\vv}, \Ignore)$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{normal\_non\_literal}):
+    \item \AllApplyCase{normal\_non\_literal}
     \begin{itemize}
       \item evaluating $\ve$ in $\env$ yields $\Normal(\vx, \Ignore)$
             where $\vx$ is not a native value for a literal;
       \item the result is a type error indicating that $\ve$ cannot be statically evaluated to a literal.
     \end{itemize}
 
-    \item All of the following apply (\textsc{abnormal}):
+    \item \AllApplyCase{abnormal}
     \begin{itemize}
       \item evaluating $\ve$ in $\env$ yields an abnormal configuration;
       \item the result is a type error indicating that $\ve$ cannot be statically evaluated to a literal.
@@ -87,7 +91,7 @@ The function
 transforms the constants defined in the static environment $\tenv$ into an environment $\env$.
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item define the global dynamic environment $\vglobal$ as the map that bind
         each $\id$ in the domain of $G^\tenv.\constantvalues$ to $\nvliteral{\vl}$

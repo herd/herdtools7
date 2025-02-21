@@ -67,59 +67,59 @@ by overloading $\dynamicdomain$:
 \]
 
 \ProseParagraph
-For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and one of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{t\_bool}):
+  \item \AllApplyCase{t\_bool}
   \begin{itemize}
     \item $\vt$ is the Boolean type, $\TBool$;
     \item $\vd$ is the set of native Boolean values, $\tbool$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_string}):
+  \item \AllApplyCase{t\_string}
   \begin{itemize}
-    \item $\vt$ is the string type, $\TString$;
+    \item $\vt$ is the \stringtypeterm{}, $\TString$;
     \item $\vd$ is the set of all native string values, $\tstring$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_real}):
+  \item \AllApplyCase{t\_real}
   \begin{itemize}
-    \item $\vt$ is the real type, $\TReal$;
+    \item $\vt$ is the \realtypeterm{}, $\TReal$;
     \item $\vd$ is the set of all native real values, $\treal$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_enumeration}):
+  \item \AllApplyCase{t\_enumeration}
   \begin{itemize}
-    \item $\vt$ is the enumeration type with labels $\vl_{1..k}$, that is $\TEnum(\vl_{1..k})$;
+    \item $\vt$ is the \enumerationtypeterm{} with labels $\vl_{1..k}$, that is $\TEnum(\vl_{1..k})$;
     \item $\vd$ is the set of all native labels $\nvlabel(\vl_\vi)$, for $\vi = 1..k$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_int\_unconstrained}):
+  \item \AllApplyCase{t\_int\_unconstrained}
   \begin{itemize}
     \item $\vt$ is the unconstrained integer type, $\unconstrainedinteger$;
     \item $\vd$ is the set of all native integer values, $\tint$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_int\_well\_constrained}):
+  \item \AllApplyCase{t\_int\_well\_constrained}
   \begin{itemize}
     \item $\vt$ is the well-constrained integer type $\TInt(\wellconstrained(\vc_{1..k}))$;
     \item $\vd$ is the union of the dynamic domains of each of the constraints $\vc_{1..k}$ in $\env$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{constraint\_exact\_okay}):
+  \item \AllApplyCase{constraint\_exact\_okay}
   \begin{itemize}
     \item $\vc$ is a constraint consisting of a single side-effect-free expression $\ve$, that is, $\ConstraintExact(\ve)$;
     \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $n$;
     \item $\vd$ is the set containing the single native integer value for $n$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{constraint\_exact\_dynamic\_error}):
+  \item \AllApplyCase{constraint\_exact\_dynamic\_error}
   \begin{itemize}
     \item $\vc$ is a constraint consisting of a single side-effect-free expression $\ve$, that is, $\ConstraintExact(\ve)$;
     \item evaluating $\ve$ in $\env$ results in a dynamic error configuration;
     \item $\vd$ is the empty set.
   \end{itemize}
 
-  \item All of the following apply (\textsc{constraint\_range\_okay}):
+  \item \AllApplyCase{constraint\_range\_okay}
   \begin{itemize}
     \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
     \item evaluating $\veone$ in $\env$ results in a configuration with the native integer for $a$;
@@ -127,14 +127,14 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
     \item $\vd$ is the set containing all native integer values for integers greater or equal to $a$ and less than or equal to $b$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{constraint\_range\_dynamic\_error1}):
+  \item \AllApplyCase{constraint\_range\_dynamic\_error1}
   \begin{itemize}
     \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
     \item evaluating $\veone$ in $\env$ results in a dynamic error configuration;
     \item $\vd$ is the empty set.
   \end{itemize}
 
-  \item All of the following apply (\textsc{constraint\_range\_dynamic\_error2}):
+  \item \AllApplyCase{constraint\_range\_dynamic\_error2}
   \begin{itemize}
     \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
     \item evaluating $\veone$ in $\env$ results in a configuration with the native integer for $a$;
@@ -142,21 +142,21 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
     \item $\vd$ is the empty set.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_int\_parameterized}):
+  \item \AllApplyCase{t\_int\_parameterized}
   \begin{itemize}
     \item $\vt$ is a \parameterizedintegertype\ for parameter $\id$, \\ $\TInt(\parameterized(\id))$;
     \item the \nativevalue\ associated with $\id$ in the local dynamic environment is the native integer value for $n$;
     \item $\vd$ is the set containing the single integer value for $n$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_bits\_dynamic\_error}):
+  \item \AllApplyCase{t\_bits\_dynamic\_error}
   \begin{itemize}
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
     \item evaluating $\ve$ in $\env$ results in a dynamic error configuration;
     \item $\vd$ is the empty set.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_bits\_negative\_width\_error}):
+  \item \AllApplyCase{t\_bits\_negative\_width\_error}
   \begin{itemize}
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
     \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
@@ -164,14 +164,14 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
     \item $\vd$ is the empty set.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_bits\_empty}):
+  \item \AllApplyCase{t\_bits\_empty}
   \begin{itemize}
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
     \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $0$;
     \item $\vd$ is the set containing the single \nativevalue\ for an empty bitvector.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_bits\_non\_empty}):
+  \item \AllApplyCase{t\_bits\_non\_empty}
   \begin{itemize}
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
     \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
@@ -179,34 +179,34 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
     \item $\vd$ is the set containing all \nativevalues\ for bitvectors of size exactly $k$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_tuple}):
+  \item \AllApplyCase{t\_tuple}
   \begin{itemize}
-    \item $\vt$ is a tuple type over types $\vt_i$, for $i=1..k$, $\TTuple(\vt_{1..k})$;
+    \item $\vt$ is a \tupletypeterm{} over types $\vt_i$, for $i=1..k$, $\TTuple(\vt_{1..k})$;
     \item the domain of each element $\vt_i$ is $D_i$, for $i=1..k$;
     \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
     \item $\vd$ is the set containing all native vectors of $k$ values, where the value at position $i$
     is from $D_i$.
   \end{itemize}
 
-  \item All of the following apply:
+  \item \AllApply
   \begin{itemize}
     \item $\vt$ is an integer-indexed array type with length expression $\ve$ and element type $\telem$, $\TArray(\ArrayLengthExpr(\ve), \telem)$;
-    \item One of the following applies:
+    \item \OneApplies
       \begin{itemize}
-      \item All of the following apply (\textsc{t\_array\_dynamic\_error}):
+      \item \AllApplyCase{t\_array\_dynamic\_error}
       \begin{itemize}
         \item evaluating $\ve$ in $\env$ results in a dynamic error configuration;
         \item $\vd$ is the empty set.
       \end{itemize}
 
-      \item All of the following apply (\textsc{t\_array\_negative\_length\_error}):
+      \item \AllApplyCase{t\_array\_negative\_length\_error}
       \begin{itemize}
         \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
         \item $k$ is negative;
         \item $\vd$ is the empty set.
       \end{itemize}
 
-      \item All of the following apply (\textsc{t\_array\_okay}):
+      \item \AllApplyCase{t\_array\_okay}
       \begin{itemize}
         \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
         \item $k$ is greater than or equal to $0$;
@@ -216,18 +216,18 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
     \end{itemize}
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_enum\_array}):
+  \item \AllApplyCase{t\_enum\_array}
   \begin{itemize}
     \item $\vt$ is an enumeration-indexed array type with for the enumeration $\id$ with $k$ labels and element type $\telem$,
           $\TArray(\ArrayLengthEnum(\id, k), \telem)$;
     \item view $\env$ as the pair consisting of the static environment $\tenv$ and a dynamic environment;
-    \item the type bound to $\id$ in the $\declaredtypes$ map of the static environment of $\tenv$ is the enumeration type
+    \item the type bound to $\id$ in the $\declaredtypes$ map of the static environment of $\tenv$ is the \enumerationtypeterm{}
           for the labels $\vl_{1..k}$, that is, $\TEnum(\vl_{1..k})$;
     \item the dynamic domain of $\telem$ in $\env$ is $D_\telem$;
     \item $\vd$ is the set of all native records where each $\vl_i$ is mapped to a value taken from $D_\telem$, for $i=1..k$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_structured}):
+  \item \AllApplyCase{t\_structured}
   \begin{itemize}
     \item $\vt$ is a \structuredtype\ with typed fields $(\id_i, \vt_i)$, for $i=1..k$, that is $L([i=1..k: (\id_i,\vt_i))]$
     where $L\in\{\TRecord, \TException\}$;
@@ -235,7 +235,7 @@ For an environment $\env \in \envs$ and a type $\vt$, the domain is $\vd$ and on
     \item $\vd$ is the set containing all native records where $\id_i$ is mapped to a value taken from $D_i$, for $i=1..k$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{t\_named}):
+  \item \AllApplyCase{t\_named}
   \begin{itemize}
     \item $\vt$ is a named type with name $\id$, $\TNamed(\id)$;
     \item the type associated with $\id$ in $\tenv$ is $\tty$;
@@ -409,7 +409,7 @@ in the \emph{local dynamic environment} of $\denv$.
 }
 \end{mathpar}
 
-\subsubsection{Examples}
+\ExampleDef{Type Domains}
 The domain of \texttt{integer} is the infinite set of all integers.
 
 The domain of \verb|integer {2,16}| is the set $\{\nvint(2), \nvint(16)\}$.
@@ -439,12 +439,10 @@ the native integer value $c$,
 which is assigned to \texttt{N} by a given dynamic environment. The static domain of that parameter
 is the infinite set of all native integer values.
 
-\lrmcomment{
-This is related to \identd{BMGM}, \identr{PHRL}, \identr{PZNR},
-\identr{RLQP}, \identr{LYDS}, \identr{SVDJ}, \identi{WLPJ}, \identr{FWMM},
-\identi{WPWL}, \identi{CDVY}, \identi{KFCR}, \identi{BBQR}, \identr{ZWGH},
-\identr{DKGQ}, \identr{DHZT}, \identi{HSWR}, \identd{YZBQ}.
-}
+\identd{BMGM} \identr{PHRL} \identr{PZNR}
+\identr{RLQP} \identr{LYDS} \identr{SVDJ} \identi{WLPJ} \identr{FWMM}
+\identi{WPWL} \identi{CDVY} \identi{KFCR} \identi{BBQR} \identr{ZWGH}
+\identr{DKGQ} \identr{DHZT} \identi{HSWR} \identd{YZBQ}
 
 \subsection{Subsumption Testing\label{sec:subsumptiontesting}}
 Whether an assignment statement is well-typed depends on whether the dynamic domain of the

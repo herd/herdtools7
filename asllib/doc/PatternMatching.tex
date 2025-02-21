@@ -79,7 +79,7 @@ $\evalexprsef\empty$.
 \subsection{Typing}
 \TypingRuleDef{PAll}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vp$ is the pattern matching everything, that is, $\PatternAll$;
   \item $\newp$ is $\vp$;
@@ -96,13 +96,13 @@ All of the following apply:
 
 \subsection{Semantics}
 \SemanticsRuleDef{PAll}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Match-all Pattern}
 In \listingref{semantics-pall}, \texttt{match\_me} evaluates to \True,
 since \texttt{-} matches any value and \texttt{42} in particular.
 \ASLListing{Matching any value}{semantics-pall}{\semanticstests/SemanticsRule.PAll.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vp$ is the pattern which matches everything, $\PatternAll$, and therefore
     matches $\vv$;
@@ -140,36 +140,36 @@ All of the following apply:
 \subsection{Typing}
 \TypingRuleDef{PSingle}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vp$ is the pattern that matches the expression $\ve$, that is, $\PatternSingle(\ve)$;
   \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vses)$\ProseOrTypeError;
   \item \Prosechecksymbolicallyevaluable{$\vses$};
   \item obtaining the \underlyingtype\ of $\vt$ yields $\vtstruct$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vte$ yields $\testruct$\ProseOrTypeError;
-  \item One of the following holds:
+  \item \OneApplies
   \begin{itemize}
-    \item All of the following apply (\textsc{t\_bool, t\_real, t\_int, t\_string}):
+    \item \AllApplyCase{t\_bool, t\_real, t\_int, t\_string}
     \begin{itemize}
       \item the AST label of $\vtstruct$ is one of $\TBool$, $\TReal$, $\TInt$, or $\TString$;
       \item checking that the labels of $\vtstruct$ and $\testruct$ are equal yields $\True$\ProseOrTypeError;
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_bits}):
+    \item \AllApplyCase{t\_bits}
     \begin{itemize}
       \item the AST label of $\vtstruct$ is $\TBits$;
       \item checking that the labels of $\vtstruct$ and $\testruct$ are equal yields $\True$\ProseOrTypeError;
       \item determining whether the bitwidths of $\vtstruct$ and $\testruct$ are equal yields $\True$\ProseOrTypeError;
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_enum}):
+    \item \AllApplyCase{t\_enum}
     \begin{itemize}
       \item the AST label of $\vtstruct$ is $\TEnum$;
       \item checking that the labels of $\vtstruct$ and $\testruct$ are equal yields $\True$\ProseOrTypeError;
       \item determining whether the lists of enumeration literals of $\vtstruct$ and $\testruct$ are equal yields $\True$\ProseOrTypeError;
     \end{itemize}
 
-    \item All of the following apply (\textsc{error}):
+    \item \AllApplyCase{error}
     \begin{itemize}
       \item determining whether the labels of $\vtstruct$ and $\testruct$ are the same yields $\True$\ProseOrTypeError;
       \item the label of $\vtstruct$ is not one of $\TBool$, $\TReal$, $\TInt$, $\TBits$, or $\TEnum$;
@@ -243,7 +243,7 @@ All of the following apply:
 
 \subsection{Semantics}
 \SemanticsRuleDef{PSingle}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Single-expression Pattern}
 In \listingref{semantics-psingle},
 \texttt{match\_true} evaluates to \True, since \texttt{42} matches \verb|{42}|,
 whereas \\
@@ -251,7 +251,7 @@ whereas \\
 \ASLListing{Matching against a single value}{semantics-psingle}{\semanticstests/SemanticsRule.PSingle.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vp$ is the condition corresponding to being equal to the
     side-effect-free expression $\ve$, $\PatternSingle(\ve)$;
@@ -297,7 +297,7 @@ All of the following apply:
 \subsection{Typing}
 \TypingRuleDef{PRange}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vp$ is the pattern which matches anything within the range given by
   expressions $\veone$ and $\vetwo$, that is, $\PatternRange(\veone, \vetwo)$;
@@ -310,7 +310,7 @@ All of the following apply:
   \item a check the AST labels of $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$ are all the same and are either
         $\TInt$ or $\TReal$ yields $\True$. Otherwise, the result is a type error, which short-circuits the entire rule.
         The type error indicates that the types of
-        $\veone$, $\vetwo$ and the type $\vt$ must be either of integer type or of real type.
+        $\veone$, $\vetwo$ and the type $\vt$ must be either of integer type or of \realtypeterm{}.
   \item $\newp$ is a range pattern with bounds $\veonep$ and $\vetwop$, that is, $\PatternRange(\veonep, \vetwop)$.
 \end{itemize}
 \FormallyParagraph
@@ -337,7 +337,7 @@ All of the following apply:
 
 \subsection{Semantics}
 \SemanticsRuleDef{PRange}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Range Pattern}
 In \listingref{semantics-prange},
 \texttt{match\_true} evaluates to \True, since \texttt{42} is in the range given by
 \texttt{3..42},
@@ -346,7 +346,7 @@ range given by \texttt{3..42}.
 \ASLListing{Matching against a range of values}{semantics-prange}{\semanticstests/SemanticsRule.PRange.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vp$ is the condition corresponding to being greater than or equal
     to $\veone$, and lesser or equal to $\vetwo$, that is, $\PatternRange(\veone, \vetwo)$;
@@ -398,7 +398,7 @@ All of the following apply:
 \subsection{Typing}
 \TypingRuleDef{PLeq}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
 \item $\vp$ is the pattern which matches anything less than or equal to an expression $\ve$,
 that is, $\PatternLeq(\ve)$;
@@ -406,7 +406,7 @@ that is, $\PatternLeq(\ve)$;
 \item \Prosechecksymbolicallyevaluable{$\vses$};
 \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
 \item obtaining the \underlyingtype\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
-\item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both real types;
+\item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both the \realtypeterm{};
 \item if $\vb$ is $\False$ a type error is returned (indicating that the types of $\vt$ and $\vte$
       are inappropriate for the $\LEQ$ operator),
 which short-circuits the entire rule;
@@ -434,14 +434,14 @@ which short-circuits the entire rule;
 
 \subsection{Semantics}
 \SemanticsRuleDef{PLeq}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Less-or-equal Pattern}
 In \listingref{semantics-pleq},
 \texttt{match\_true} evaluates to \True, since \texttt{3} is less than or equal to \texttt{42},
 whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less than or equal to \texttt{3}.
 \ASLListing{Matching against an upper bound value}{semantics-pleq}{\semanticstests/SemanticsRule.PLeq.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vp$ is the condition corresponding to being less than or equal
     to the side-effect-free expression $\ve$, $\PatternLeq(\ve)$;
@@ -483,7 +483,7 @@ All of the following apply:
 \subsection{Typing}
 \TypingRuleDef{PGeq}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
 \item $\vp$ is the pattern which matches anything greater than or equal to an expression $\ve$,
       that is, $\PatternGeq(\ve)$;
@@ -491,7 +491,7 @@ All of the following apply:
 \item \Prosechecksymbolicallyevaluable{$\vses$};
 \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
 \item obtaining the \underlyingtype\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
-\item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both real types;
+\item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both the \realtypeterm{};
 \item if $\vb$ is $\False$ a type error is returned (indicating that the types of $\vt$ and $\vte$
       are inappropriate for the $\GEQ$ operator),
       which short-circuits the entire rule;
@@ -519,14 +519,14 @@ All of the following apply:
 
 \subsection{Semantics}
 \SemanticsRuleDef{PGeq}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Greater-or-equal Pattern}
 In \listingref{semantics-pgeq},
 \texttt{match\_true} evaluates to \True, since \texttt{42} is greater or equal to \texttt{3},
 whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not greater or equal to \texttt{42}.
 \ASLListing{Matching against a lower bound}{semantics-pgeq}{\semanticstests/SemanticsRule.PGeq.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vp$ is the condition corresponding to being greater than or equal
     than the side-effect-free expression $\ve$, $\PatternGeq(\ve)$;
@@ -568,7 +568,7 @@ All of the following apply:
 \subsection{Typing}
 \TypingRuleDef{PMask}
 \ProseParagraph
-All of the following apply:
+\AllApply
   \begin{itemize}
   \item $\vp$ is the pattern which matches a mask $\vm$, that is, $\PatternMask(\vm)$;
   \item determining whether $\vt$ has the structure of a bitvector type yields $\True$\ProseOrTypeError;
@@ -589,11 +589,11 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\PMaskBegin}{\PMaskEnd}{../Typing.ml}
-\lrmcomment{This is related to \identi{VMKF}.}
+\identi{VMKF}
 
 \subsection{Semantics}
 \SemanticsRuleDef{PMask}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Mask Pattern}
 In \listingref{semantics-pmask}, \texttt{match\_true} evaluates to \True, since
 \texttt{101010} matches the bitmask \texttt{xx1010},
 whereas \texttt{match\_false} evaluates to \False, since
@@ -601,7 +601,7 @@ whereas \texttt{match\_false} evaluates to \False, since
 \ASLListing{Matching against a bitmask}{semantics-pmask}{\semanticstests/SemanticsRule.PMask.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vp$ is a mask pattern, $\PatternMask(\vm)$,
   of length $n$ (with spaces removed);
@@ -662,12 +662,12 @@ is defined by the following table:
 \subsection{Typing}
 \TypingRuleDef{PTuple}
 \ProseParagraph
-All of the following apply:
+\AllApply
   \begin{itemize}
   \item $\vp$ is the pattern which matches a tuple $\vli$, that is, $\PatternTuple(\vli)$;
   \item obtaining the \structure\ of $\vt$ yields $\vtstruct$\ProseOrTypeError;
-  \item determining whether $\vtstruct$ is a tuple type yields $\True$\ProseOrTypeError;
-  \item $\vtstruct$ is a tuple type with list of tuple $\vts$;
+  \item determining whether $\vtstruct$ is a \tupletypeterm{} yields $\True$\ProseOrTypeError;
+  \item $\vtstruct$ is a \tupletypeterm{} with list of tuple $\vts$;
   \item determining whether $\vts$ is a list of the same size as $\vli$ yields $\True$\ProseOrTypeError;
   \item annotating each pattern in $\vli$ with the corresponding type in $\vts$ for each \Proselistrange{$i$}{$\vli$},
         yields $(\vlip[i], \vxs_i)$\ProseOrTypeError;
@@ -693,7 +693,7 @@ All of the following apply:
 
 \subsection{Semantics}
 \SemanticsRuleDef{PTuple}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Tuple Pattern}
 In \listingref{semantics-ptuple},
 \texttt{match\_true} evaluates to \True, since
 the tuple of expression \\
@@ -704,7 +704,7 @@ the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patt
 \ASLListing{Matching against a tuple of patterns}{semantics-ptuple}{\semanticstests/SemanticsRule.PTuple.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vp$ gives a list of patterns $\vps$ of length $k$, $\PatternTuple(\vps)$;
   \item $\vv$ gives a tuple of values $\vvs$ of length $k$;
@@ -792,7 +792,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \subsection{Typing}
 \TypingRuleDef{PAny}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
 \item $\vp$ is the pattern which matches anything in a list $\vli$, that is, $\PatternAny(\vli)$;
 \item annotating each pattern $\vl$ in $\vli$ yields $(\newl_\vl, \vxs_\vl)$\ProseOrTypeError;
@@ -817,7 +817,7 @@ All of the following apply:
 
 \subsection{Semantics}
 \SemanticsRuleDef{PAny}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Match-any Pattern}
 In \listingref{semantics-pany},
 \texttt{match\_true} evaluates to \True, since \texttt{42} matches the second pattern in \verb|{3, 42}|,
 whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does not match
@@ -825,7 +825,7 @@ any pattern in \verb|{3, 4}|.
 \ASLListing{Matching against any pattern in a list of patterns}{semantics-pany}{\semanticstests/SemanticsRule.PAny.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vp$ is a list of patterns, $\PatternAny(\vps)$;
   \item $\vps$ is $\vp_{1..k}$;
@@ -863,7 +863,7 @@ The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
 \subsection{Typing}
 \TypingRuleDef{PNot}
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vp$ is the pattern which matches the negation of a pattern $\vq$, that is, $\PatternNot(\vq)$;
   \item annotating $\vq$ in $\tenv$ yields $(\newq, \vses)$\ProseOrTypeError;
@@ -881,14 +881,14 @@ All of the following apply:
 
 \subsection{Semantics}
 \SemanticsRuleDef{PNot}
-\subsubsection{Example}
+\ExampleDef{Evaluation of a Negated Pattern}
 In \listingref{semantics-pnot},
 \texttt{match\_true} evaluates to \True, since \texttt{42} does not match the pattern \verb|{3}|,
 whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does match the pattern \verb|{42}|.
 \ASLListing{Matching against a negated pattern}{semantics-pnot}{\semanticstests/SemanticsRule.PNot.asl}
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\vp$ is a negation pattern, $\PatternNot(\vpone)$;
   \item evaluating that pattern $\vpone$ in an environment $\env$ is \\

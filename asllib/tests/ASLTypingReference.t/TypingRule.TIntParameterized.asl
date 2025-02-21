@@ -3,9 +3,9 @@ begin
   return N;
 end;
 
-func bar{N}() => bits(N)
+func bar{M: integer}() => bits(M)
 begin
-  return Zeros{N};
+  return Zeros{M};
 end;
 
 func main() => integer

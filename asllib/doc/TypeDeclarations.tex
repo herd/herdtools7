@@ -67,7 +67,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
-\hypertarget{build-subtype}{}
 \begin{mathpar}
 \inferrule[with\_fields]{}{
   {
@@ -180,7 +179,7 @@ in the global static environment $\genv$, resulting in the modified global stati
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item checking that $\name$ is not already declared in the global environment of $\genv$ yields $\True$\ProseOrTypeError;
   \item define $\tenv$ as the static environment whose global component is $\genv$ and its local component is the empty local
@@ -191,17 +190,17 @@ All of the following apply:
   \item applying $\maxtimeframe$ to $\vsest$ yields $\vtimeframe$;
   \item applying $\addtype$ to $\name$, $\vttwo$, and $\vtimeframe$ in $\tenv$ yields $\tenvtwo$;
   \item $\tenvtwo$ is $\tenvone$ with its $\declaredtypes$ component updated by binding $\name$ to $\vttwo$;
-  \item One of the following applies:
+  \item \OneApplies
   \begin{itemize}
-    \item All of the following apply (\textsc{enum}):
+    \item \AllApplyCase{enum}
     \begin{itemize}
-      \item $\vttwo$ is an enumeration type with labels $\ids$, that is, $\TEnum(\ids)$;
+      \item $\vttwo$ is an \enumerationtypeterm{} with labels $\ids$, that is, $\TEnum(\ids)$;
       \item applying $\declareenumlabels$ to $\vttwo$ in $\tenvtwo$ $\newtenv$\ProseOrTypeError.
     \end{itemize}
 
-    \item All of the following apply (\textsc{not\_enum}):
+    \item \AllApplyCase{not\_enum}
     \begin{itemize}
-      \item $\vttwo$ is not an enumeration type;
+      \item $\vttwo$ is not an \enumerationtypeterm{};
       \item $\newtenv$ is $\tenvtwo$.
     \end{itemize}
   \end{itemize}
@@ -239,7 +238,7 @@ All of the following apply:
 }
 \end{mathpar}
 \CodeSubsection{\DeclareTypeBegin}{\DeclareTypeEnd}{../Typing.ml}
-\lrmcomment{This is related to \identr{DHRC}, \identd{YZBQ}, \identr{DWSP}, \identi{MZXL}, \identr{MDZD}, \identr{CHKR}.}
+\identr{DHRC} \identd{YZBQ} \identr{DWSP} \identi{MZXL} \identr{MDZD} \identr{CHKR}
 
 \TypingRuleDef{AnnotateExtraFields}
 \hypertarget{def-annotateextrafields}{}
@@ -261,16 +260,16 @@ the modified environment $\newtenv$ and type $\newty$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\vs$ is $\None$;
     \item $\newtenv$ is $\tenv$;
     \item $\newty$ is $\tty$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{empty\_fields}):
+  \item \AllApplyCase{empty\_fields}
   \begin{itemize}
     \item $\vs$ is $\langle(\vsuper, \extrafields)\rangle$;
     \item checking that $\tty$ \subtypesatisfies\ the named type $\vsuper$ (that is, \\ $\TNamed(\vsuper)$) yields
@@ -280,7 +279,7 @@ One of the following applies:
     \item $\newty$ is $\tty$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{no\_super}):
+  \item \AllApplyCase{no\_super}
   \begin{itemize}
     \item $\vs$ is $\langle(\vsuper, \extrafields)\rangle$;
     \item checking that $\tty$ \subtypesatisfies\ the named type $\vsuper$ (that is, \\ $\TNamed(\vsuper)$) yields
@@ -290,7 +289,7 @@ One of the following applies:
     \item the result is a type error indicating that $\vsuper$ is not a declared type.
   \end{itemize}
 
-  \item All of the following apply (\textsc{structured}):
+  \item \AllApplyCase{structured}
   \begin{itemize}
     \item $\vs$ is $\langle(\vsuper, \extrafields)\rangle$;
     \item checking that $\tty$ \subtypesatisfies\ the named type $\vsuper$ (that is,\\ $\TNamed(\vsuper)$) yields
@@ -366,15 +365,15 @@ annotates the type $\vt$ inside an \optional\ $\tyopt$, if there is one, and lea
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\tyopt$ is $\None$;
     \item $\tyoptp$ is $\tyopt$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{some}):
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\tyopt$ contains the type $\vt$;
     \item annotating $\vt$ in $\tenv$ yields $\vtone$\ProseOrTypeError;
@@ -408,15 +407,15 @@ for the type and annotated expression in $\vres$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{none}):
+  \item \AllApplyCase{none}
   \begin{itemize}
     \item $\expropt$ is $\None$;
     \item $\vres$ is $(\None, \None)$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{some}):
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\expropt$ contains the expression $\ve$;
     \item annotating $\ve$ in $\tenv$ yields $(\vt, \vep)$\ProseOrTypeError;
@@ -457,28 +456,29 @@ The ASL parser ensures that at least one of $\initialvaluetype$ and \\
 $\typeannotation$ should not be $\None$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{both}):
+  \item \AllApplyCase{both}
   \begin{itemize}
     \item $\initialvaluetype$ is $\langle\vtone\rangle$ and $\typeannotation$ is $\langle\vttwo\rangle$;
     \item checking that $\vtone$ \typesatisfies\ $\vttwo$ in $\tenv$ yields $\True$\ProseOrTypeError;
     \item $\declaredtype$ is $\vtone$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{annotated}):
+  \item \AllApplyCase{annotated}
   \begin{itemize}
     \item $\initialvaluetype$ is $\None$ and $\typeannotation$ is $\langle\vttwo\rangle$;
     \item $\declaredtype$ is $\vttwo$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{initial}):
+  \item \AllApplyCase{initial}
   \begin{itemize}
     \item $\initialvaluetype$ is $\langle\vtone\rangle$ and $\typeannotation$ is $\None$;
     \item $\declaredtype$ is $\vtone$.
   \end{itemize}
 \end{itemize}
 
+\FormallyParagraph
 \begin{mathpar}
 \inferrule[both]{
   \checktypesat(\tenv, \vtone, \vttwo) \typearrow \True \OrTypeError
@@ -508,14 +508,14 @@ retrieves the type associated with the identifier $\id$ in the static environmen
 If the identifier is not associated with a declared type, a type error is returned.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-  \item All of the following apply (\textsc{exists}):
+  \item \AllApplyCase{exists}
   \begin{itemize}
     \item $\id$ is bound in the global environment to the type $\vt$.
   \end{itemize}
 
-  \item All of the following apply (\textsc{type\_not\_declared}):
+  \item \AllApplyCase{type\_not\_declared}
   \begin{itemize}
     \item $\id$ is not bound in the global environment to any type;
     \item the result is a type error indicating the lack of a type declaration for $\id$ (\UndefinedIdentifier).
@@ -542,12 +542,12 @@ The function
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 )
 \]
-updates the static environment $\tenv$ with the identifiers $\ids$ listed by an enumeration type,
+updates the static environment $\tenv$ with the identifiers $\ids$ listed by an \enumerationtypeterm{},
 yielding the modified environment $\newtenv$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item $\ids$ is the (non-empty) list of labels $\id_{1..k}$;
   \item $\tenv_0$ is $\tenv$;
@@ -589,7 +589,7 @@ global static environment $\genv$, yielding the modified environment $\newgenv$.
 \ProseOtherwiseTypeError
 
 \ProseParagraph
-All of the following apply:
+\AllApply
 \begin{itemize}
   \item adding the global storage given by the identifier $\name$, global declaration keyword $\GDKConstant$,
         and type $\tty$ to $\genv$ yields $\genvone$;

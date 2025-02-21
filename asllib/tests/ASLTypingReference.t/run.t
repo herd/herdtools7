@@ -29,14 +29,53 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.TReal.asl
   $ aslref TypingRule.TBool.asl
   $ aslref TypingRule.TNamed.asl
-  $ aslref TypingRule.TIntUnConstrained.asl
+  $ aslref TypingRule.TIntUnconstrained.asl
   $ aslref TypingRule.TIntWellConstrained.asl
   $ aslref TypingRule.TIntParameterized.asl
+  $ aslref TypingRule.InheritIntegerConstraints.asl
+  $ aslref TypingRule.InheritIntegerConstraints.unconstrained.bad.asl
+  File TypingRule.InheritIntegerConstraints.unconstrained.bad.asl, line 5,
+    characters 4 to 27:
+  ASL Typing error: constrained integer expected, provided integer.
+  [1]
+
+  $ aslref TypingRule.TInt.global_pending_constrained.bad.asl
+  File TypingRule.TInt.global_pending_constrained.bad.asl, line 2,
+    characters 0 to 23:
+  ASL Typing error: a pending constrained integer is illegal here.
+  [1]
+
+  $ aslref TypingRule.TInt.rhs_pending_constrained.bad.asl
+  File TypingRule.TInt.rhs_pending_constrained.bad.asl, line 5,
+    characters 28 to 43:
+  ASL Typing error: a pending constrained integer is illegal here.
+  [1]
+
+  $ aslref TypingRule.AnnotateConstraint.asl
+  $ aslref TypingRule.AnnotateConstraint.bad.asl
+  File TypingRule.AnnotateConstraint.bad.asl, line 4, characters 17 to 18:
+  ASL Typing error: a pure expression was expected, found x, which produces the
+    following side-effects: [ReadsLocal "x"].
+  [1]
+
   $ aslref TypingRule.TBits.asl
   $ aslref TypingRule.TTuple.asl
   $ aslref TypingRule.TArray.asl
+  $ aslref TypingRule.TArray.bad.asl
+  File TypingRule.TArray.bad.asl, line 9, characters 31 to 57:
+  ASL Typing error: a pure expression was expected,
+    found non_symbolically_evaluable, which produces the following
+    side-effects: [ReadsLocal "non_symbolically_evaluable"].
+  [1]
+  $ aslref TypingRule.AnnotateSymbolicallyEvaluableExpr.asl
   $ aslref --no-exec TypingRule.TEnumDecl.asl
-  $ aslref TypingRule.TRecordExceptionDecl.asl
+  $ aslref --no-exec TypingRule.TEnumDecl.bad.asl
+  File TypingRule.TEnumDecl.bad.asl, line 2, characters 0 to 49:
+  ASL Typing error: cannot declare already declared element "RED".
+  [1]
+  $ aslref --no-exec TypingRule.GetVariableEnum.asl
+  $ aslref TypingRule.TRecordDecl.asl
+  $ aslref TypingRule.TExceptionDecl.asl
   $ aslref TypingRule.TNonDecl.asl
   File TypingRule.TNonDecl.asl, line 1, characters 5 to 6:
   ASL Error: Cannot parse.

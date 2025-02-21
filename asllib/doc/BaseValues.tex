@@ -14,11 +14,11 @@ The following types do not have a \basevalueterm{}:
     \item a \bitvectortypeterm{} whose length is negative.
 \end{itemize}
 
-\lrmcomment{\identi{WVQZ}}
+\identi{WVQZ}
 Subprogram parameters can be parameterized integers, and since they will be initialized by their
 invocation, there is no need to have a \basevalueterm{} for them.
 
-\subsubsection{Example: Base Values}
+\ExampleDef{Base Values}
 \listingref{base-values} shows a specification with examples of well-typed \basevalueterm{}
 for various types, followed by the output to the console.
 \ASLListing{Well-typed Base Values}{base-values}{\typingtests/TypingRule.BaseValue.asl}
@@ -36,7 +36,7 @@ enumeration_array_base = [[RED=0, GREEN=0, BLUE=0]]
 \end{Verbatim}
 % CONSOLE_END
 
-\subsubsection{Example: Types Without Base Value}
+\ExampleDef{Types Without Base Value}
 \listingref{base-values-bad} shows an ill-typed specification
 due to the fact that \parameterizedintegertypes{} have no defined \basevalueterm{},
 which is also true for a \bitvectortypeterm{} whose width is parameterized.
@@ -63,16 +63,18 @@ of type $\vt$ in the static environment $\tenv$.
 \ProseOtherwiseTypeError
 
 \TypingRuleDef{BaseValue}
+See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
+
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-    \item All of the following apply (\textsc{t\_bool}): \lrmcomment{\identr{CPCK}}
+    \item \AllApplyCase{t\_bool} \identr{CPCK}
     \begin{itemize}
         \item $\vt$ is the Boolean type;
         \item $\veinit$ is the literal expression for $\False$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_bits}): \lrmcomment{\identr{ZVPT}}
+    \item \AllApplyCase{t\_bits} \identr{ZVPT}
     \begin{itemize}
         \item $\vt$ is the bitvector type with width expression $\ve$;
         \item applying $\reducetozopt$ to $\ve$ in $\tenv$ yields $\vzopt$;
@@ -82,26 +84,26 @@ One of the following applies:
         \item $\veinit$ is the literal expression for a bitvector made of a sequence of $\length$ values of $0$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_enum}): \lrmcomment{\identr{LCCN}}
+    \item \AllApplyCase{t\_enum} \identr{LCCN}
     \begin{itemize}
-        \item $\vt$ is the enumeration type with a list of labels where $\name$ as its \head;
+        \item $\vt$ is the \enumerationtypeterm{} with a list of labels where $\name$ as its \head;
         \item $\name$ is bound to the literal $\vl$ by the $\constantvalues$ in the global static environment of $\tenv$;
         \item $\veinit$ is the literal expression for $\vl$, that is, $\eliteral{\vl}$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_int\_unconstrained}): \lrmcomment{\identr{NJDZ}}
+    \item \AllApplyCase{t\_int\_unconstrained} \identr{NJDZ}
     \begin{itemize}
         \item $\vt$ is the \unconstrainedintegertype;
         \item $\veinit$ is the literal expression for $0$, that is, $\ELiteral(\lint(0))$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_int\_parameterized}): \lrmcomment{\identr{QGGH}}
+    \item \AllApplyCase{t\_int\_parameterized} \identr{QGGH}
     \begin{itemize}
         \item $\vt$ is the \parameterizedintegertype;
         \item the result is a type error indicating the lack of a statically known base value.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_int\_wellconstrained}): \lrmcomment{\identr{CFTD}}
+    \item \AllApplyCase{t\_int\_wellconstrained} \identr{CFTD}
     \begin{itemize}
         \item $\vt$ is the \wellconstrainedintegertype\ with a list of constraints $\cs$;
         \item define $\vzminlist$ as the concatenation of lists obtained for each
@@ -111,20 +113,20 @@ One of the following applies:
         \item $\veinit$ is the integer literal expression for $\vzmin$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_named}):
+    \item \AllApplyCase{t\_named}
     \begin{itemize}
         \item $\vt$ is the \namedtype\ for $\id$;
         \item obtaining the \underlyingtype\ for $\id$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
         \item applying $\basevalue$ to $\vtp$ in $\tenv$ yields $\veinit$\ProseOrTypeError.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_real}): \lrmcomment{\identr{GYCG}}
+    \item \AllApplyCase{t\_real} \identr{GYCG}
     \begin{itemize}
-        \item $\vt$ is the real type;
+        \item $\vt$ is the \realtypeterm{};
         \item $\veinit$ is the real literal expression for $0$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{structured}): \lrmcomment{\identr{MBRM}, \ident{SVJB}}
+    \item \AllApplyCase{structured} \identr{MBRM} \identr{SVJB}
     \begin{itemize}
         \item $\vt$ is a \structuredtype\ with list of fields $\fields$;
         \item applying $\basevalue$ to $\vtefield$ in $\tenv$ for each $(\name, \vtefield)$ in $\fields$
@@ -134,20 +136,20 @@ One of the following applies:
               $\ERecord((\name, \vtefield) \in \fields: (\name, \ve_\name))$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_string}): \lrmcomment{\identr{WKCY}}
+    \item \AllApplyCase{t\_string} \identr{WKCY}
     \begin{itemize}
-        \item $\vt$ is the string type;
+        \item $\vt$ is the \stringtypeterm{};
         \item $\veinit$ is the string literal expression for the empty list of characters.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_tuple}): \lrmcomment{\identr{QWSQ}}
+    \item \AllApplyCase{t\_tuple} \identr{QWSQ}
     \begin{itemize}
-        \item $\vt$ is the tuple type over the list of types $\vt_{1..k}$, that is, $\TTuple(\vt_{1..k})$;
+        \item $\vt$ is the \tupletypeterm{} over the list of types $\vt_{1..k}$, that is, $\TTuple(\vt_{1..k})$;
         \item applying $\basevalue$ to each type $\vt_\vi$ in $\tenv$ for $\vi=1..k$; yields the list of expressions $\ve_{1..k}$;
         \item $\veinit$ is the tuple expression $\ETuple(\ve_{1..k})$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_array\_enum}):
+    \item \AllApplyCase{t\_array\_enum}
     \begin{itemize}
         \item $\vt$ is the enumerated array type over for the enumeration $\venum$ and labels $\vlabels$ and element type $\tty$,
               that is, $\TArray(\ArrayLengthEnum(\venum, \vlabels), \tty)$ ;
@@ -156,7 +158,7 @@ One of the following applies:
               that is, $\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \vvalue\}$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{t\_array\_expr}): \lrmcomment{\identr{WGVR}}
+    \item \AllApplyCase{t\_array\_expr} \identr{WGVR}
     \begin{itemize}
         \item $\vt$ is the array type over an integer index expression $\vlength$ and element type $\tty$, that is,
               $\TArray(\ArrayLengthExpr(\vlength), \tty)$ ;
@@ -281,7 +283,6 @@ One of the following applies:
 \end{mathpar}
 
 \TypingRuleDef{ConstraintAbsMin}
-\ProseParagraph
 \hypertarget{def-constraintabsmin}{}
 The function
 \[
@@ -293,10 +294,17 @@ returns a single element list containing the integer closest to $0$ that satisfi
 and an empty list if the constraint represents an empty set.
 Otherwise, the result is $\TypeErrorVal{\NoBaseValue}$.
 
+\ExampleDef{Minimal Absolute Value in a Constraint List}
+The minimal absolute value of \verb|{7, -2}| is \verb|-2|.\\
+%
+The minimal absolute value of \verb|{2, -2}| is \verb|2|.\\
+%
+The minimal absolute value of \verb|{-2..2, 5}| is \verb|0|.
+
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-    \item All of the following apply (\textsc{exact}):
+    \item \AllApplyCase{exact}
     \begin{itemize}
         \item $\vc$ is the constraint given by the expression $\ve$, that is, $\ConstraintExact(\ve)$;
         \item applying $\reducetozopt$ to $\ve$ in $\tenv$ yields the optional integer $\vzopt$;
@@ -305,7 +313,7 @@ One of the following applies:
         \item define $\vzs$ as the single element list containing $\vz$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{range}):
+    \item \AllApplyCase{range}
     \begin{itemize}
         \item $\vc$ is the constraint given by the expression $\veone$ and $\vetwo$, that is, \\
                 $\ConstraintRange(\veone, \vetwo)$;
@@ -368,19 +376,19 @@ of integers in the list $\vl$. The result is biased towards positive integers. T
 if two integers $x$ and $y$ have the same absolute value and $x$ is positive and $y$ is negative
 then $x$ is considered closer to $0$.
 
-\subsubsection{Example: Minimal Absolute Value}
+\ExampleDef{Minimal Absolute Value}
 The minimal absolute value of $[9, -3]$ is $-3$,
 and the minimal absolute value of $[2, -2]$ is $2$.
 
 \ProseParagraph
-One of the following applies:
+\OneApplies
 \begin{itemize}
-    \item All of the following apply (\textsc{one}):
+    \item \AllApplyCase{one}
     \begin{itemize}
         \item $\vl$ is the single element list for $\vz$.
     \end{itemize}
 
-    \item All of the following apply (\textsc{more\_than\_one}):
+    \item \AllApplyCase{more\_than\_one}
     \begin{itemize}
         \item $\vl$ is the list where $\vzone$ is its \head\ and $\vltwo$ is its \tail;
         \item $\vltwo$ is not the empty list;
