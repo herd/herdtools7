@@ -25,7 +25,7 @@ module Edge : sig
 end
   
 module Node : sig
-  type kind = Fault | Mem | Reg_Data | Branching | Reg_Other | TLBI | Empty
+  type kind = Fault | Mem | Reg_Data | Branching | Reg_Other | TLBI | DC_IC | Empty
   type t = {
     desc: string;
     kind: kind;

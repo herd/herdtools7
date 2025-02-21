@@ -31,7 +31,7 @@ module Edge = struct
 end
 
 module Node = struct
-  type kind = Fault | Mem | Reg_Data | Branching | Reg_Other | TLBI | Empty
+  type kind = Fault | Mem | Reg_Data | Branching | Reg_Other | TLBI | DC_IC | Empty
   type t = {
     desc: string;
     kind: kind;
@@ -157,6 +157,8 @@ let tr_stmt acc stmt param_map =
       let ifetch = Str.regexp {|[a-zA-Z0-9_]*: R\[label:\\"P[0-9]:\([a-zA-Z0-9_]+\)\\"\]IFetch=\([][,a-zA-Z0-9_ ]+\)|} in
       let tlbi = Str.regexp {|[a-zA-Z0-9_]*: TLBI(\([A-Z0-9]+\),\[\([a-zA-Z0-9_\+()]+\)\])|} in
       let generic_tlbi = Str.regexp {|[a-zA-Z0-9_]*: TLBI(\([A-Z0-9]+\))|} in
+      let dc_ic = Str.regexp {|[a-zA-Z0-9_]*: \(DC\|IC\)(\([A-Z]+\),\[label:\\"P[0-9]:\([a-zA-Z0-9_]+\)\\"\])|} in
+      let generic_dc_ic = Str.regexp {|[a-zA-Z0-9_]*: \(DC\|IC\)(\([A-Z]+\))|} in
       let reg_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)[0-9]:\([A-Z_]+[0-9]*\)|} in
       let branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(\([][,a-zA-Z0-9_\+:{}]+\)\(==\|!=\)\([][,a-zA-Z0-9_\+:{}]+\))|} in
       let branching_mte_tag = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(color)(tag(\([a-zA-Z0-9_\+]+\)), \([A-Z_]+[0-9]*\))|} in
@@ -217,6 +219,19 @@ let tr_stmt acc stmt param_map =
         let f = DescDict.generic_tlbi in
         let typ = make_monospace (Str.matched_group 1 value) in
         { Node.desc=f typ; kind=Node.TLBI }
+      end
+      else if Str.string_match dc_ic value 0 then begin
+        let f = if Str.matched_group 1 value = "DC" then DescDict.dc
+        else DescDict.ic in
+        let typ = Str.matched_group 2 value in
+        let label = Str.matched_group 3 value in
+        { Node.desc= f typ label; kind=Node.DC_IC }
+      end
+      else if Str.string_match generic_dc_ic value 0 then begin
+        let f = if Str.matched_group 1 value = "DC" then DescDict.generic_dc
+        else DescDict.generic_ic in
+        let typ = Str.matched_group 2 value in
+        { Node.desc= f typ; kind=Node.DC_IC }
       end
       else if Str.string_match reg_access value 0 then begin
         let f = if Str.matched_group 1 value = "R" then DescDict.reg_read else DescDict.reg_write in

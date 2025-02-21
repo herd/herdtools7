@@ -46,8 +46,14 @@ val ifetch: string -> string -> string
 (* type -> location -> description *)
 val tlbi: string -> string -> string
 
+(* type -> label -> description *)
+val dc: string -> string -> string
+val ic: string -> string -> string
+
 (* type -> description *)
 val generic_tlbi: string -> string
+val generic_dc: string -> string
+val generic_ic: string -> string
 
 (* register -> description *)
 val reg_read: string -> string
