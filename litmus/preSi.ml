@@ -488,12 +488,23 @@ module Make
                 (ProcsUser.is procs_user p)
                 (sprintf "%d" p) (sprintf "asm_handler%d" p))
             ok ;
+           List.iter
+             (fun p ->
+                if ProcsUser.is procs_user p then
+                  dump_vector_table
+                    (ProcsUser.is procs_user p)
+                    (sprintf "%d" p) (sprintf "asm_handler%d" p))
+             no ;
           Insert.insert O.o "asmhandler.c" ;
           O.o "" ;
-          begin match ok with
+          let no_ok,no_no =
+            List.partition
+              (ProcsUser.is procs_user)
+              no in             
+          begin match ok@no_ok with
           | [] ->
              O.o "static void set_fault_vector(int role) { }"
-          | _::_ ->
+          | _::_ as ok ->
              O.o "static void set_fault_vector(int role) {" ;
              O.oi "ins_t *r = NULL;" ;
              O.oi "switch(role) {" ;
@@ -503,7 +514,7 @@ module Make
                  O.fii "r = get_vector_table%d();" p ;
                  O.oii "break;")
                ok ;
-             begin match no with
+             begin match no_no with
              | [] -> ()
              | _::_ ->
                 O.oi "default:" ;
@@ -1483,13 +1494,20 @@ module Make
         let args0 =
           let open Template in
           if user then
+            let default_handler = A.default_sync_handler user in
             { trashed=["tr0"];
-              inputs=[(CType.word,"cpu"),("sp_usr","user_stack[cpu]")];
+              inputs=
+                (fun k ->
+                   if A.Out.has_asmhandler out then k
+                   else
+                     ([],("default_handler","&"^default_handler))::k)
+                @@
+                [[CType.word,"cpu"],("sp_usr","user_stack[cpu]")];
               constants=[];
-              clobbers=
-                if A.Out.has_asmhandler out then
-                  A.user_handler_clobbers
-                else [];
+              clobbers=A.user_handler_clobbers;
+              externs=
+                if A.Out.has_asmhandler out then []
+                else [(CType.quad,default_handler)];
             }
           else no_extra_args in
         Lang.dump_fun ~user

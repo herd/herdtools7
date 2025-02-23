@@ -49,11 +49,13 @@ end
 
 type extra_args =
   { trashed: string list;
-    inputs: ((CType.t * string) * (string * string)) list;
+    inputs: ((CType.t * string) list * (string * string)) list;
     constants: (string * string) list;
-    clobbers: string list; }
+    clobbers: string list;
+    externs : (CType.t * string) list; }
 
-let no_extra_args = { trashed=[]; inputs=[]; constants=[]; clobbers=[]; }
+let no_extra_args =
+  { trashed=[]; inputs=[]; constants=[]; clobbers=[]; externs=[]; }
 
 module type S = sig
   module V : Constant.S
