@@ -1906,7 +1906,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             | _ -> assert false in
             let r,init,cs,st = emit A64.V64 st p init (Misc.add_pte loc) in
             Some r,init,cs,st
-        | W,Some (Pte (Set _),None) ->
+        | W,Some (Pte (Set _|SetOne _|SetZero _),None) ->
             let init,cs,st =
               emit_set_pteval false st p init e.C.pte (Misc.add_pte loc) in
             None,init,cs,st
@@ -2628,7 +2628,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (Tag, None) ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
-          | Some (Pte (Set _),None) ->
+          | Some (Pte (Set _|SetOne _|SetZero _),None) ->
               let init,cs,st = emit_set_pteval_reg false st p init r2 (Misc.add_pte loc) in
               None,init,cs2@cs,st
           | Some (Pte (SetRel _),None) ->
@@ -2671,6 +2671,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              None,init,cs2@cs,st
           | Some (Pair _,Some _) -> assert false
           end
+      (* END of `Some W` *)
       | Some J,_ -> emit_joker st init
       | _,Code _ -> Warn.fatal "Not Yet (%s,dep_data)" (C.debug_evt e)
       (* END of emit_access_dep_data *)
