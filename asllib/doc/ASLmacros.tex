@@ -44,6 +44,8 @@
       func,
       getter,
       if,
+      impdef,
+      implementation,
       IN,
       integer,
       let,
@@ -412,6 +414,8 @@
 \newcommand\Tgetter[0]{\verbatimterminal{GETTER}{getter}}
 \newcommand\Tgt[0]{\verbatimterminal{GT}{>}}
 \newcommand\Tif[0]{\verbatimterminal{IF}{if}}
+\newcommand\Timpdef[0]{\verbatimterminal{IMPDEF}{impdef}}
+\newcommand\Timplementation[0]{\verbatimterminal{IMPLEMENTATION}{implementation}}
 \newcommand\Timpl[0]{\verbatimterminal{IMPL}{-->}}
 \newcommand\Tin[0]{\verbatimterminal{IN}{IN}}
 \newcommand\Tinteger[0]{\verbatimterminal{INTEGER}{integer}}
@@ -490,6 +494,7 @@
 \newcommand\Nelidedparamcall[0]{\hyperlink{def-nelidedparamcall}{\nonterminal{elided\_param\_call}}}
 \newcommand\Nfuncargs[0]{\hyperlink{def-nfuncargs}{\nonterminal{func\_args}}}
 \newcommand\Naccessors[0]{\hyperlink{def-naccessors}{\nonterminal{accessors}}}
+\newcommand\Noverride[0]{\hyperlink{def-noverride}{\nonterminal{override}}}
 \newcommand\Nreturntype[0]{\hyperlink{def-nreturntype}{\nonterminal{return\_type}}}
 \newcommand\Nfuncbody[0]{\hyperlink{def-nfuncbody}{\nonterminal{func\_body}}}
 \newcommand\Ntypedidentifier[0]{\hyperlink{def-ntypedidentifier}{\nonterminal{typed\_identifier}}}
@@ -636,6 +641,7 @@
 \newcommand\catcher[0]{\hyperlink{ast-catcher}{\textsf{catcher}}}
 \newcommand\subprogramtype[0]{\hyperlink{ast-subprogramtype}{\textsf{sub\_program\_type}}}
 \newcommand\subprogrambody[0]{\hyperlink{ast-subprogrambody}{\textsf{sub\_program\_body}}}
+\newcommand\overrideinfo[0]{\hyperlink{ast-overrideinfo}{\textsf{override\_info}}}
 \newcommand\func[0]{\hyperlink{ast-func}{\textsf{func}}}
 \newcommand\accessorpair[0]{\hyperlink{ast-accessorpair}{\textsf{accessor\_pair}}}
 \newcommand\Field[0]{\hyperlink{ast-field}{\textsf{field}}}
@@ -756,6 +762,9 @@
 \newcommand\SBASL[0]{\hyperlink{ast-sbasl}{\textsf{SB\_ASL}}}
 \newcommand\SBPrimitive[0]{\hyperlink{ast-sbprimitive}{\textsf{SB\_Primitive}}}
 
+\newcommand\Impdef[0]{\hyperlink{ast-impdef}{\textsf{Impdef}}}
+\newcommand\Implementation[0]{\hyperlink{ast-implementation}{\textsf{Implementation}}}
+
 \newcommand\STFunction[0]{\hyperlink{ast-stfunction}{\texttt{ST\_Function}}}
 \newcommand\STGetter[0]{\hyperlink{ast-stgetter}{\texttt{ST\_Getter}}}
 \newcommand\STSetter[0]{\hyperlink{ast-stsetter}{\texttt{ST\_Setter}}}
@@ -814,6 +823,7 @@
 \newcommand\buildreturntype[0]{\hyperlink{build-returntype}{\textfunc{build\_return\_type}}}
 \newcommand\buildfuncbody[0]{\hyperlink{build-funcbody}{\textfunc{build\_func\_body}}}
 \newcommand\buildaccessors[0]{\hyperlink{build-accessors}{\textfunc{build\_accessors}}}
+\newcommand\buildoverride[0]{\hyperlink{build-override}{\textfunc{build\_override}}}
 \newcommand\buildtypedidentifier[0]{\hyperlink{build-typedidentifier}{\textfunc{build\_typed\_identifier}}}
 \newcommand\buildopttypedidentifier[0]{\hyperlink{build-opttypedidentifier}{\textfunc{build\_opt\_typed\_identifier}}}
 \newcommand\buildtydecl[0]{\hyperlink{build-tydecl}{\textfunc{build\_ty\_decl}}}
@@ -936,6 +946,7 @@
 \newcommand\funcsubprogramtype[0]{\text{subprogram\_type}}
 \newcommand\funcrecurselimit[0]{\text{recurse\_limit}}
 \newcommand\funcbuiltin[0]{\text{builtin}}
+\newcommand\funcoverride[0]{\text{override}}
 \newcommand\GDkeyword[0]{\text{keyword}}
 \newcommand\GDname[0]{\text{name}}
 \newcommand\GDty[0]{\text{ty}}
@@ -2580,6 +2591,7 @@
 \newcommand\vcasealtlistast[0]{\texttt{case\_alt\_list\_ast}}
 \newcommand\vcaseotherwise[0]{\texttt{case\_otherwise}}
 \newcommand\votherwise[0]{\texttt{otherwise}}
+\newcommand\voverride[0]{\texttt{override}}
 \newcommand\vanons[0]{\texttt{anon\_s}}
 \newcommand\vanont[0]{\texttt{anon\_t}}
 \newcommand\vaoptfields[0]{\texttt{aopt\_fields}}
