@@ -31,6 +31,9 @@ begin
     // Only symbolically evaluable expressions whose underlying type is an
     // integer type can be used as array length expressions:
     var - : array[[pure_func(5, 6) + 9 + I]] of integer;
+    // Normalization simplifies (3*I + 9) - 2*I into I+9.
+    var - : array[[(3*I + 9) - 2*I]] of integer;
+    // Normalization simplifies i-3 into 6.
     var - : array[[i - 3]] of integer;
     return 0;
 end;

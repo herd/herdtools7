@@ -1206,6 +1206,9 @@ The expression \verb|(pure_func(5, 6) + 9) + I| in \listingref{typing-annotatesy
 is both \symbolicallyevaluable{} and its \underlyingtype{} is an \integertypeterm{},
 and annotating and normalizing it yields the same expression.
 %
+Annotating the expression \verb|(3*I + 9) - 2*I|, which is also \symbolicallyevaluable{} and has an
+\underlyingtype{} is an \integertypeterm{}, yields the expression \verb|I + 9| after normalization.
+%
 Annotating the expression \verb|i - 3|, which is also \symbolicallyevaluable{} and has an
 \underlyingtype{} is an \integertypeterm{}, yields the expression \verb|6| after normalization.
 
