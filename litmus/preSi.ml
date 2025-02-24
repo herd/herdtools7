@@ -1509,6 +1509,15 @@ module Make
         let vss = List.map2 (@) rems vs in
         List.combine rems (responsible vss)
 
+      let memattrs_change a pte_init =
+        match Misc.Simple.assoc_opt a pte_init with
+        | Some (V (_,pteval)) when not (A.V.PteVal.is_default pteval) -> begin
+            match A.V.PteVal.get_attrs pteval with
+            | _::_ -> true
+            | [] -> false
+        end
+        | _ -> false
+
       let dump_run_thread procs_user faults
           pte_init env test _some_ptr stats global_env
           (_vars,inits) (proc,(out,(_outregs,envVolatile)))  =
@@ -1611,6 +1620,17 @@ module Make
                   | V (o,pteval) ->
                       let is_default = A.V.PteVal.is_default pteval in
                       if not (o = None && is_default) then begin
+                        (* Initialisation happens before we change the memory
+                           attributes. Clean the cache to make sure we don't
+                           create the conditions for mismatched memory
+                           attributes accidentally. *)
+                        begin match A.V.PteVal.get_attrs pteval with
+                        | _::_ when not is_default ->
+                          assert have_cache ;
+                          O.fii "cache_flush((void *)%s);" x
+                        | _ ->
+                          ()
+                        end ;
                         let arg = match o with
                         | None -> sprintf "_vars->saved_pte_%s" x
                         | Some s -> sprintf "_vars->saved_pte_%s" s in
@@ -1618,10 +1638,9 @@ module Make
                           x x (PU.dump_pteval_flags arg pteval);
                         List.iter
                           (fun attr ->
-                            let attr = sprintf "attr_%s" (MyName.name_as_symbol attr) in
                             O.fii "litmus_set_pte_attribute(_vars->pte_%s, %s);"
                               x attr)
-                          (A.V.PteVal.get_attrs pteval)
+                          (A.V.PteVal.attrs_as_kvm_symbols pteval)
                       end
                   end ;
                   true
@@ -1672,6 +1691,16 @@ module Make
                 inits in
           List.iter
             (fun a ->
+               (* We check the final value of a location using the
+                  default memory attributes. For locations that might
+                  have been written to with memory attributes other
+                  than the default, we clean the cache to make sure we
+                  don't create the conditions for mismatched memory
+                  attributes accidentally. *)
+              if memattrs_change a pte_init then begin
+                assert have_cache ;
+                O.fii "cache_flush((void *)%s);" a
+              end ;
               let pte = OutUtils.fmt_pte_kvm a
               and phy = OutUtils.fmt_phy_kvm a in
               let rhs =
