@@ -166,7 +166,8 @@ module WPTE = struct
 
   type t = AF | DB | OA | DBM | VALID
 
-  let all= [AF; DB; OA; DBM; VALID;]
+  let all = [AF; DB; OA; DBM; VALID;]
+  let fold f r = List.fold_right f all r
 
   let compare w1 w2 = match w1,w2 with
   | (AF,AF) | (DB,DB) | (OA,OA) | (DBM,DBM) | (VALID,VALID)
@@ -188,14 +189,27 @@ module WPTE = struct
      | DBM -> "DBM"
      | VALID -> "VA"
      | OA -> "OA"
+
+   let pp_alt = function
+     | AF -> "AF"
+     | DB -> "DB"
+     | DBM -> "DBM"
+     (* Avoid the use of `VA`, which often means virtual address *)
+     | VALID -> "VALID"
+     | OA -> "OA"
 end
 
 module WPTESet = MySet.Make(WPTE)
 
 type atom_pte =
   | Read|ReadAcq|ReadAcqPc
-  | Set of  WPTESet.t
-  | SetRel of  WPTESet.t
+  (* Toggle the value between 0 and 1 *)
+  | Set of WPTESet.t
+  | SetRel of WPTESet.t
+  (* Precise value of 0 to 1 *)
+  | SetOne of WPTE.t
+  (* Precise value of 1 to 0 *)
+  | SetZero of WPTE.t
 
 type neon_opt = SIMD.atom
 
@@ -220,7 +234,7 @@ let applies_atom (a,_) d = match a,d with
 | AcqPc _,R
 | Rel _,W
 | Pte (Read|ReadAcq|ReadAcqPc),R
-| Pte (Set _|SetRel _),W
+| Pte (Set _|SetRel _| SetOne _| SetZero _),W
 | Instr, R
 | (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _),(R|W)
   -> true
@@ -252,6 +266,8 @@ let is_ifetch a = match a with
      | ReadAcqPc -> "Q"
      | Set set -> pp_w_pte set
      | SetRel set -> pp_w_pte set ^"L"
+     | SetOne set -> "One" ^ WPTE.pp_alt set
+     | SetZero set -> "Zero" ^ WPTE.pp_alt set
 
    let pp_pair_opt = function
      | Pa -> ""
@@ -337,9 +353,10 @@ let is_ifetch a = match a with
 
    let fold_pte f r =
      if do_kvm then
-       let g fs r = f (Set fs) (f (SetRel fs) r) in
-       let r = fold_subsets g r in
-       f Read (f ReadAcq (f ReadAcqPc r))
+       let pte_toggle_f fs r = r |> f (SetRel fs) |> f (Set fs) in
+       let pte_write_f flag r = r |> f (SetOne flag) |> f (SetZero flag) in
+       r |> fold_subsets pte_toggle_f |> WPTE.fold pte_write_f
+       |> f Read |> f ReadAcq |> f ReadAcqPc
      else r
 
    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
@@ -565,24 +582,126 @@ let overwrite_value v ao w = match ao with
 
     let default = AArch64PteVal.default
 
+    (* toggle or flip the value of pte field *)
+    let toggle_pte flag_set pteval loc =
+      let open AArch64PteVal in
+      let open WPTE in
+      WPTESet.fold
+      (fun f p ->
+        match f with
+        | AF -> { p with af = 1-p.af; }
+        | DB -> { p with db = 1-p.db; }
+        | DBM -> { p with dbm = 1-p.dbm; }
+        | VALID -> { p with valid = 1-p.valid; }
+        | OA -> { p with oa=OutputAddress.PHY (loc ()); })
+      flag_set pteval
+
+    (* Decide the initial pte value for location `loc`
+       and align up with the atom_pte_list *)
+    let init loc pte_atom_list =
+      let open WPTE in
+      let open Fun in
+      let pte_val = default loc in
+      (* loc_fun is a dummy function that should never be called *)
+      let loc_fun () = Warn.user_error "Adjust initial OA is not supprted" in
+      let pte_atom_list = List.filter_map
+        ( fun (atom, _mach_size) -> match atom with
+          | Pte(pte_atom) -> Some(pte_atom)
+          | _ -> None
+        ) pte_atom_list in
+      (* Accumulator `acc` is `(af,db,dbm,valid,pteval)`.
+         The entire process decides if we want to flip the initial value of fields.
+         Boolean option accumulator `valid,af,db,dbm` tracks if the default
+         value is (not) needed to be flipped.
+         - None, all good,
+         - Some true, must flip
+         - Some false must not flip
+         Conflict initial values cause warning.
+         The final `pteval` should be throw away as of no meaning. *)
+      let (af,db,dbm,valid,_) = List.fold_left ( fun acc atom_pte ->
+        (* Helper function to wrap `toggle_pte` *)
+        let toggle_pte_wrap field_sets (af,db,dbm,valid,pteval) =
+          (* Remove `OA` on purpose as changing the initial value of
+             physical address is not supprted yet *)
+          let field_sets = WPTESet.remove OA field_sets in
+          let new_pteval = toggle_pte field_sets pteval loc_fun in
+            (af,db,dbm,valid,new_pteval) in
+        (* Helper function to udpate `pteval` `field` to value` *)
+        let update_pte (af,db,dbm,valid,pteval) field value =
+          let open AArch64PteVal in
+          match field with
+          | AF ->
+            if value <> pteval.af then
+              if af <> None then Warn.user_error "Fail to set VA."
+              else (Some true,db,dbm,valid,{pteval with af = value})
+              else (Some (Option.value ~default:false af),db,dbm,valid,pteval)
+          | DB ->
+            if value <> pteval.db then
+              if db <> None then Warn.user_error "Fail to set DB."
+              else (af,Some true,dbm,valid,{pteval with db = value})
+            else (af,Some (Option.value ~default:false db),dbm,valid,pteval)
+          | DBM ->
+            if value <> pteval.dbm then
+              if dbm <> None then Warn.user_error "Fail to set DBM."
+              else (af,db,Some true,valid,{pteval with dbm = value})
+            else (af,db,Some (Option.value ~default:false dbm),valid,pteval)
+          | VALID ->
+            if value <> pteval.valid then
+              if valid <> None then Warn.user_error "Fail to set VALID."
+              else (af,db,dbm,Some true,{pteval with valid = value})
+            else (af,db,dbm,Some (Option.value ~default:false valid),pteval)
+          | OA ->
+                  Warn.user_error "PTESetOneOA and PTESetZeroOA is not supported."
+        in (* END of helper function `update_pte` *)
+        match atom_pte with
+        | SetOne(field) -> update_pte acc field 0 |> toggle_pte_wrap (WPTESet.singleton field)
+        | SetZero(field)-> update_pte acc field 1 |> toggle_pte_wrap (WPTESet.singleton field)
+        | Set(field_set) -> toggle_pte_wrap field_set acc
+        | SetRel(field_set) -> toggle_pte_wrap field_set acc
+        | _ -> acc
+        ) (None,None,None,None,pte_val) pte_atom_list in
+      (* Create a new WPTESet to adjust the default value *)
+      let adjust_value =
+        WPTESet.empty
+        (* Create a new WPTESet to adjust the inital value.
+           Collapse None to false as it means no need to change default value *)
+        |> (if Option.value ~default:false af then WPTESet.add AF else Fun.id)
+        |> (if Option.value ~default:false db then WPTESet.add DB else Fun.id)
+        |> (if Option.value ~default:false dbm then WPTESet.add DBM else Fun.id)
+        |> (if Option.value ~default:false valid then WPTESet.add VALID else Fun.id) in
+      toggle_pte adjust_value pte_val loc_fun
+    let as_virtual p = AArch64PteVal.as_virtual p
+
     let compare = AArch64PteVal.compare
 
-    let do_setpteval a f p loc =
+    let do_setpteval a flags pte loc =
+(*TODO TODO TODO REMOVE
       let open AArch64PteVal in
-      let fs = match f with
-        | Set f|SetRel f -> f
+      let open WPTE in
+      let check_init_or_warning init actual name =
+          if init <> actual then
+            Warn.user_error "The init value of %s is not %d" name init in
+      let precise_pte flag init pteval =
+          match flag with
+          | AF -> check_init_or_warning init pteval.af "AF";
+                  { pteval with af = 1-pteval.af; }
+          | DB -> check_init_or_warning init pteval.db "DB";
+                  { pteval with db = 1-pteval.db; }
+          | DBM -> check_init_or_warning init pteval.dbm "DBM";
+                   { pteval with dbm = 1-pteval.dbm; }
+          | VALID -> check_init_or_warning init pteval.valid "VALID";
+                     { pteval with valid = 1-pteval.valid; }
+          | OA -> Warn.user_error "(Set-) One and Zero is not support for OA" in
+*)
+      match flags with
+        (* In the case of `SetOne` and `SetZero`,
+          the `init` function above already ensure and assign
+          a valid inital value, hence here those two
+          will behave the same as `Set`, i.e.e toggle the pte value *)
+        | Set f|SetRel f -> toggle_pte f pte loc
+        | SetOne f|SetZero f -> toggle_pte (WPTESet.singleton f) pte loc
         | Read|ReadAcq|ReadAcqPc ->
-           Warn.user_error "Atom %s is not a pteval write" (pp_atom a) in
-      WPTESet.fold
-        (fun f p ->
-          let open WPTE in
-          match f with
-          | AF -> { p with af = 1-p.af; }
-          | DB -> { p with db = 1-p.db; }
-          | DBM -> { p with dbm = 1-p.dbm; }
-          | VALID -> { p with valid = 1-p.valid; }
-          | OA -> { p with oa=OutputAddress.PHY (loc ()); })
-      fs p
+                Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
 
     let set_pteval a p =
       match a with
@@ -923,6 +1042,7 @@ include
       let specials = vregs
       let specials2 = pregs
       let specials3 = zaslices
+      module PteVal_gen = PteVal
     end)
 
 end
