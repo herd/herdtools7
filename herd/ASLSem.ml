@@ -703,11 +703,36 @@ module Make (Conf : Config) = struct
               (V.pp true write)
       and ft =
         let open FaultType.AArch64 in
-        match  Option.bind (V.as_scalar statuscode) ASLScalar.as_int with
-        | Some 1 -> MMU AccessFlag
-        | Some 6 -> MMU Translation
-        | Some 5 -> MMU Permission
-        | _ -> assert false
+        let open ASLScalar in
+        let ft =
+          match V.as_scalar statuscode with
+          | Some (S_Int i) ->
+              begin
+                match Z.to_int i with
+                | 1 -> MMU AccessFlag |> Option.some
+                | 5 -> MMU Permission |> Option.some
+                | 6 -> MMU Translation  |> Option.some
+                | _ -> None
+              end
+          | Some (S_Label s) ->
+              begin
+                match s with
+                | "Fault_AccessFlag" ->
+                    MMU AccessFlag |> Option.some
+                | "Fault_Permission" ->
+                    MMU Permission |> Option.some
+                | "Fault_Translation" ->
+                    MMU Translation  |> Option.some
+                | _ -> None
+              end
+          | _ -> None in
+        match ft with
+        | Some ft -> ft
+        | None ->
+            let () =
+              Printf.eprintf "This fault number is not handled: %s\n%!"
+                (V.pp_v statuscode) in
+            assert false
       and loc = A.Location_global loc in
       M.mk_singleton_es (Act.Fault (ii,loc,d,ft)) ii >>! []
 

@@ -120,6 +120,7 @@ let to_int64 = function
 
 let as_bool = function
   | S_Bool b -> Some b
+  | S_Int i -> Some (not (Z.equal i Z.one))
   | _ -> None
 
 let s_true = S_Bool true

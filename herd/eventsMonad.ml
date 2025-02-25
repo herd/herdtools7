@@ -824,7 +824,10 @@ Monad type:
         if V.is_var_determined v then begin
           match V.as_bool v with
           | Some b -> if b then l eiid else r eiid
-          | None -> assert false
+          | None ->
+              let () =
+                Printf.eprintf "Not a bool: %s\n%!" (V.pp_v v) in
+              assert false
         end else
           let (eiid, (lact,lspec)) = l eiid in
           assert (lspec = None);
