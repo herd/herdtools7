@@ -232,8 +232,6 @@ Large constraint sets
   ASL Typing error: type used to define storage item is the result of precision
     loss.
   [1]
-  $ if [ $(ocaml -vnum | cut -b 1) = "5" ]; then aslref TDegraded13.asl 2>/dev/null; fi
-  [1]
   $ aslref --no-exec TDegraded13-sets1.asl
   File TDegraded13-sets1.asl, line 3, characters 10 to 27:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
