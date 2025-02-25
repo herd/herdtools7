@@ -457,7 +457,46 @@ recursive functions it may transitively call.
 \end{mathpar}
 
 \section{Overriding Subprograms\label{sec:Overriding}}
-We now define how to override subprograms marked by \texttt{impdef} and \texttt{implementation} in a specification.
+We now define how to override subprograms in a specification.
+In particular, a subprogram marked by \texttt{impdef} can be overridden by a subprogram marked by \texttt{implementation}.
+
+\RequirementDef{OverridingMatch}
+An overriding \Proseimplementationsubprogram{} subprogram must match the overridden \Proseimpdefsubprogram{} subprogram in all of the following:
+\begin{itemize}
+  \item name of subprogram;
+  \item number, names, types, and order of arguments;
+  \item number, names, types, and order of parameters;
+  \item return type.
+\end{itemize}
+In \ExampleRef{Overriding Subprograms}, the \verb|Foo| subprograms marked \texttt{impdef} and \texttt{implementation} match in all of the above.
+
+\ExampleDef{Overriding Subprograms}
+\listingref{overriding} shows a specification which defines \Proseimpdefsubprograms{} \verb|Foo| and \verb|Bar|.
+The definition of \verb|Foo| is overridden by a corresponding \Proseimplementationsubprogram{}.
+\ASLListing{Overriding subprograms}{overriding}{\definitiontests/Overriding.asl}
+
+\noindent
+Subprograms marked with \texttt{implementation} are subject to the following restrictions.
+
+\RequirementDef{NonClashingImplementations}
+No two \Proseimplementationsubprograms{} can match each other according to \RequirementRef{OverridingMatch}.
+In \ExampleRef{Invalid Overriding}, the \verb|Foo| subprograms marked \texttt{implementation} match and are therefore invalid.
+
+\RequirementDef{SingleOverrideCandidate}
+Each \Proseimplementationsubprogram{} subprogram must override exactly one \Proseimpdefsubprogram{} subprogram. \\
+In \ExampleRef{Invalid Overriding}, the \Proseimplementationsubprogram{} \verb|Bar| is invalid as it has no corresponding \Proseimpdefsubprogram{}.
+
+\ExampleDef{Invalid Overriding}
+\listingref{overriding-bad} shows a specification which attempts to define clashing \Proseimplementationsubprograms{} named \verb|Foo|, and define a \Proseimplementationsubprogram{} \verb|Bar| without a corresponding \Proseimpdefsubprogram{}.
+\ASLListing{Invalid overriding}{overriding-bad}{\definitiontests/OverridingBad.asl}
+
+\noindent
+Note that overridden \Proseimpdefsubprograms{} are discarded and not typechecked.
+Therefore, implementations may wish to emit user-configurable warnings to check either:
+\begin{itemize}
+  \item All \Proseimpdefsubprograms{} have been overridden by corresponding \Proseimplementationsubprograms{}.
+  \item There are no \Proseimplementationsubprograms{}, so no \Proseimpdefsubprograms{} are overridden.
+\end{itemize}
 
 \TypingRuleDef{OverrideSubprograms}
 \hypertarget{def-overridesubprograms}{}
@@ -467,7 +506,8 @@ The function
 \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 overrides subprograms in a list of declarations $\decls$, yielding the new list of declarations $\declsp$.
-\ProseOtherwiseTypeError
+\ProseOtherwiseTypeError{}
+See \ExampleRef{Overriding Subprograms} for an example of valid overriding.
 
 \ProseParagraph
 \AllApply
@@ -503,7 +543,8 @@ The function
 \checkimplementationsunique(\overname{\func^*}{\vimpls}) \aslto \{\True\} \cup \TTypeError
 \]
 checks that the \Proseimplementationsubprograms{} $\vimpls$ have unique signatures.
-\ProseOtherwiseTypeError
+\ProseOtherwiseTypeError{}
+See \ExampleRef{Invalid Overriding} for an example of non-unique \Proseimplementationsubprograms{}.
 
 \ProseParagraph
 \OneApplies
@@ -545,7 +586,8 @@ The function
 \signaturesmatch(\overname{\func}{\vfuncone} \aslsep \overname{\func}{\vfunctwo}) \aslto \Bool
 \]
 checks whether the signatures of subprograms $\vfuncone$ and $\vfunctwo$ match for overriding purposes.
-\ProseOtherwiseTypeError
+\ProseOtherwiseTypeError{}
+See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
 
 \ProseParagraph
 \AllApply
@@ -593,7 +635,8 @@ The function
 \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 overrides the \Proseimpdefsubprograms{} $\vimpdefs$ with the \Proseimplementationsubprograms{} $\vimpls$, yielding the new \Proseimpdefsubprograms{} $\vimpdefs$.
-\ProseOtherwiseTypeError
+\ProseOtherwiseTypeError{}
+See \ExampleRef{Overriding Subprograms} for an example of valid replacement of an \Proseimplementationsubprogram{}.
 
 \ProseParagraph
 \OneApplies
