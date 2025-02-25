@@ -605,6 +605,7 @@ enable
 enables
 enabling
 encapsulate
+enclosed
 enclosing
 encoded
 encoding
