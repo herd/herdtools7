@@ -18,3 +18,20 @@
   ASL Typing error:
     bitfields `sub.sub.lowest` and `lowest` are in the same scope but define different slices of the containing bitvector type: [0, 1] and [1:0], respectively.
   [1]
+
+  $ aslref non-constant-width.asl
+  File non-constant-width.asl, line 4, characters 10 to 47:
+  ASL Typing error: expected constant-time expression, got sub_k, which
+    produces the following side-effects: [ReadsLocal "sub_k"].
+  [1]
+  $ aslref non-constant-global-width.asl
+  File non-constant-global-width.asl, line 3, character 0 to line 5,
+    character 2:
+  ASL Typing error: expected constant-time expression, got sub_k, which
+    produces the following side-effects: [ReadsGlobal "sub_k"].
+  [1]
+  $ aslref config-global-width.asl
+  File config-global-width.asl, line 3, character 0 to line 5, character 2:
+  ASL Typing error: expected constant-time expression, got sub_k, which
+    produces the following side-effects: [ReadsGlobal "sub_k"].
+  [1]

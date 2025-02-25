@@ -1267,12 +1267,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         |: TypingRule.TInt
     (* Begin TBits *)
     | T_Bits (e_width, bitfields) ->
-        let t_width, e_width', ses_width = annotate_expr env e_width in
+        let ((t_width, e_width', ses_width) as typed_e_width) =
+          annotate_expr env e_width
+        in
         let+ () = check_symbolically_evaluable e_width ses_width in
         let+ () = check_constrained_integer ~loc:e_width env t_width in
         let bitfields', ses_bitfields =
           if bitfields = [] then (bitfields, SES.empty)
           else
+            let+ () = check_leq_constant_time ~loc typed_e_width in
             let annotated_bitfields, ses_bitfields =
               annotate_bitfields ~loc env e_width' bitfields
             in
