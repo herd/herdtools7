@@ -297,6 +297,7 @@ choosing
 circular
 clash
 clashes
+clashing
 classed
 classifies
 classify
@@ -591,6 +592,7 @@ element
 elements
 elided
 else
+emit
 emphasize
 empirical
 employ
@@ -1264,7 +1266,9 @@ overlaps
 overload
 overloaded
 overloading
+overridden
 override
+overrides
 overriding
 overwrites
 own
@@ -1493,6 +1497,7 @@ renaming
 repeat
 replace
 replaced
+replacement
 replaces
 replacing
 report
@@ -1720,6 +1725,7 @@ style
 styles
 subexpression
 subexpressions
+subject
 sublist
 sublists
 subprogram
@@ -1986,6 +1992,7 @@ visual
 walk
 want
 warning
+warnings
 was
 way
 ways
@@ -2009,6 +2016,7 @@ why
 width
 widths
 will
+wish
 with
 within
 without
