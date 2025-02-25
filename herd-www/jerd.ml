@@ -18,6 +18,7 @@
 open Js_of_ocaml
 open Printf
 open Opts
+open OptNames
 
 let dbg = false
 
@@ -132,6 +133,8 @@ let run_herd bell cat litmus cfg =
         let select = []
         let names = !names
         let excl = !excl
+        let oknames = !oknames
+        let nonames = !nonames
       end) in
 
   (* Read kinds/conds files *)
