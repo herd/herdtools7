@@ -3755,8 +3755,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       (* AnnotateTyOptInitialValue( *)
       match (ty_opt, initial_value) with
       | Some t, Some e ->
-          let t', ses_t = annotate_type ~loc env t
-          and ((t_e, _e', ses_e) as typed_e) = annotate_expr env e in
+          let ((t_e, _e', ses_e) as typed_e) = annotate_expr env e in
+          let t =
+            match keyword with
+            | GDK_Config -> t
+            | _ ->
+                let t_e' = Types.get_structure env t_e in
+                inherit_integer_constraints ~loc t t_e'
+          in
+          let t', ses_t = annotate_type ~loc env t in
           let+ () = check_type_satisfies ~loc env t_e t' in
           let+ () =
             let fake_e_for_error = E_ATC (e, t') |> here in
