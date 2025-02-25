@@ -449,6 +449,11 @@ Inherit integer constraints on left-hand sides
   ASL Typing error: a pending constrained integer is illegal here.
   [1]
 
+  $ aslref inherit-integer-constraints-bad-config.asl
+  File inherit-integer-constraints-bad-config.asl, line 1, characters 0 to 26:
+  ASL Typing error: a pending constrained integer is illegal here.
+  [1]
+
 Left-hand sides
   $ aslref lhs-tuple-fields.asl
   $ aslref lhs-tuple-fields-same-field.asl

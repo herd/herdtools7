@@ -39,11 +39,7 @@ ASL Typing Tests / annotating types:
   ASL Typing error: constrained integer expected, provided integer.
   [1]
 
-  $ aslref TypingRule.TInt.global_pending_constrained.bad.asl
-  File TypingRule.TInt.global_pending_constrained.bad.asl, line 2,
-    characters 0 to 23:
-  ASL Typing error: a pending constrained integer is illegal here.
-  [1]
+  $ aslref --no-exec TypingRule.TInt.global_pending_constrained.asl
 
   $ aslref TypingRule.TInt.rhs_pending_constrained.bad.asl
   File TypingRule.TInt.rhs_pending_constrained.bad.asl, line 5,
