@@ -219,7 +219,7 @@ module Untyped (C : Config.S) = struct
     and t_int n =
       Fun.flip Option.map ctnt @@ fun ctnt ->
       let+ ctnts = Nat.list_sized ctnt n in
-      T_Int (WellConstrained ctnts) |> annot
+      well_constrained ctnts
     and t_bits n =
       let+ width = expr n and+ bitfields = pure [] (* TODO *) in
       T_Bits (width, bitfields) |> annot
@@ -717,7 +717,7 @@ module Typed (C : Config.S) = struct
         (if n >= 1 && max = None then
            Fun.flip Option.map cnts @@ fun cnts ->
            let+ cnts = cnts n in
-           T_Int (WellConstrained cnts) |> annot
+           well_constrained cnts
          else None);
       ]
       |> filter_oneof

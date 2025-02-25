@@ -68,10 +68,10 @@
   Exploding sets for the binary operation DIVRM could result in a constraint
   set bigger than 2^17 with constraints 0..512 and 1..512. Continuing with the
   non-expanded constraints.
-  File constraint-mul-06.asl, line 7, characters 13 to 18:
-  Exploding sets for the binary operation * could result in a constraint set
-  bigger than 2^17 with constraints 0..512 and 0..512. Continuing with the
-  non-expanded constraints.
+  File constraint-mul-06.asl, line 6, characters 4 to 22:
+  ASL Typing error: type used to define storage item is the result of precision
+    loss.
+  [1]
 
   $ aslref constraint-mul-07.asl
   File constraint-mul-07.asl, line 6, characters 12 to 21:
@@ -81,10 +81,10 @@
   Exploding sets for the binary operation DIVRM could result in a constraint
   set bigger than 2^17 with constraints 0..1024 and 1..1024. Continuing with
   the non-expanded constraints.
-  File constraint-mul-07.asl, line 7, characters 13 to 18:
-  Exploding sets for the binary operation * could result in a constraint set
-  bigger than 2^17 with constraints 0..1024 and 0..1024. Continuing with the
-  non-expanded constraints.
+  File constraint-mul-07.asl, line 6, characters 4 to 22:
+  ASL Typing error: type used to define storage item is the result of precision
+    loss.
+  [1]
 
   $ aslref constraint-mul-08.asl
   File constraint-mul-08.asl, line 6, characters 12 to 21:
@@ -94,10 +94,10 @@
   Exploding sets for the binary operation DIVRM could result in a constraint
   set bigger than 2^17 with constraints 0..2048 and 1..2048. Continuing with
   the non-expanded constraints.
-  File constraint-mul-08.asl, line 7, characters 13 to 18:
-  Exploding sets for the binary operation * could result in a constraint set
-  bigger than 2^17 with constraints 0..2048 and 0..2048. Continuing with the
-  non-expanded constraints.
+  File constraint-mul-08.asl, line 6, characters 4 to 22:
+  ASL Typing error: type used to define storage item is the result of precision
+    loss.
+  [1]
 
   $ aslref constraint-mul-09.asl
   File constraint-mul-09.asl, line 6, characters 12 to 21:
@@ -107,10 +107,10 @@
   Exploding sets for the binary operation DIVRM could result in a constraint
   set bigger than 2^17 with constraints 0..4096 and 1..4096. Continuing with
   the non-expanded constraints.
-  File constraint-mul-09.asl, line 7, characters 13 to 18:
-  Exploding sets for the binary operation * could result in a constraint set
-  bigger than 2^17 with constraints 0..4096 and 0..4096. Continuing with the
-  non-expanded constraints.
+  File constraint-mul-09.asl, line 6, characters 4 to 22:
+  ASL Typing error: type used to define storage item is the result of precision
+    loss.
+  [1]
 
   $ aslref constraint-mul-10.asl
   File constraint-mul-10.asl, line 6, characters 12 to 21:
@@ -120,7 +120,7 @@
   Exploding sets for the binary operation DIVRM could result in a constraint
   set bigger than 2^17 with constraints 0..8192 and 1..8192. Continuing with
   the non-expanded constraints.
-  File constraint-mul-10.asl, line 7, characters 13 to 18:
-  Exploding sets for the binary operation * could result in a constraint set
-  bigger than 2^17 with constraints 0..8192 and 0..8192. Continuing with the
-  non-expanded constraints.
+  File constraint-mul-10.asl, line 6, characters 4 to 22:
+  ASL Typing error: type used to define storage item is the result of precision
+    loss.
+  [1]

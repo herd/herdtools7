@@ -40,17 +40,9 @@ ASL Typing Tests:
   File TypingRule.ApplyBinopTypes.constraints.asl, line 26, characters 39 to 65:
   Warning: Removing some values that would fail with op MOD from constraint set
   {0..3} gave {1..3}. Continuing with this constraint set.
-  File TypingRule.ApplyBinopTypes.constraints.asl, line 41, characters 31 to 80:
-  Exploding sets for the binary operation * could result in a constraint set
-  bigger than 2^17 with constraints 0..16384 and 0..16384. Continuing with the
-  non-expanded constraints.
   File TypingRule.ApplyBinopTypes.constraints.asl, line 42, characters 31 to 82:
   Warning: Removing some values that would fail with op DIV from constraint set
   {0..16384} gave {1..16384}. Continuing with this constraint set.
-  File TypingRule.ApplyBinopTypes.constraints.asl, line 42, characters 31 to 82:
-  Exploding sets for the binary operation DIV could result in a constraint set
-  bigger than 2^17 with constraints 0..16384 and 1..16384. Continuing with the
-  non-expanded constraints.
   ASL Error: Undefined identifier: 'main'
   [1]
   $ aslref TypingRule.LDDiscard.asl

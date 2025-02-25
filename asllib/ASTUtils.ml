@@ -82,6 +82,11 @@ let add_pos_from pos desc = { pos with desc }
 let map_desc f thing = f thing |> add_pos_from thing
 let map_desc_st' thing f = f thing.desc |> add_pos_from thing
 
+let add_maybe_loc ?loc thing =
+  match loc with
+  | None -> add_dummy_annotation thing
+  | Some loc -> add_pos_from loc thing
+
 let add_pos_from_pos_of ((fname, lnum, cnum, enum), desc) =
   let open Lexing in
   let common =
@@ -207,12 +212,21 @@ let map2_desc f thing1 thing2 =
 let s_pass = add_dummy_annotation S_Pass
 let s_then = map2_desc (fun s1 s2 -> S_Seq (s1, s2))
 let boolean = T_Bool |> add_dummy_annotation
-let integer' = T_Int UnConstrained
-let integer = integer' |> add_dummy_annotation
-let integer_exact' e = T_Int (WellConstrained [ Constraint_Exact e ])
-let integer_exact e = integer_exact' e |> add_dummy_annotation
 let string = T_String |> add_dummy_annotation
 let real = T_Real |> add_dummy_annotation
+let integer' = T_Int UnConstrained
+let integer = integer' |> add_dummy_annotation
+
+let well_constrained' ?(precision = Precision_Full) cs =
+  T_Int (WellConstrained (cs, precision))
+
+let well_constrained ?loc ?precision cs =
+  well_constrained' ?precision cs |> add_maybe_loc ?loc
+
+let integer_exact' e = well_constrained' [ Constraint_Exact e ]
+let integer_exact ?loc e = integer_exact' e |> add_maybe_loc ?loc
+let integer_range' e1 e2 = well_constrained' [ Constraint_Range (e1, e2) ]
+let integer_range ?loc e1 e2 = integer_range' e1 e2 |> add_maybe_loc ?loc
 
 let stmt_from_list : stmt list -> stmt =
   let is_not_s_pass = function { desc = S_Pass; _ } -> false | _ -> true in
@@ -227,6 +241,18 @@ let stmt_from_list : stmt list -> stmt =
     | l -> aux @@ one_step [] l
   in
   fun l -> List.filter is_not_s_pass l |> aux
+
+let precision_join p1 p2 =
+  match (p1, p2) with
+  | Precision_Full, Precision_Full -> Precision_Full
+  | Precision_Lost _, Precision_Full -> p1
+  | Precision_Full, Precision_Lost _ -> p2
+  | Precision_Lost l1, Precision_Lost l2 ->
+      Precision_Lost (List.rev_append l1 l2)
+
+let register_precision_loss p w =
+  let ws = match p with Precision_Full -> [] | Precision_Lost l -> l in
+  Precision_Lost (w :: ws)
 
 let mask_from_set_bits_positions size pos =
   let buf = Bytes.make size '0' in
@@ -370,7 +396,7 @@ and type_equal eq t1 t2 =
   | T_Int UnConstrained, T_Int UnConstrained ->
       true
   | T_Int (Parameterized (i1, _)), T_Int (Parameterized (i2, _)) -> i1 == i2
-  | T_Int (WellConstrained c1), T_Int (WellConstrained c2) ->
+  | T_Int (WellConstrained (c1, _)), T_Int (WellConstrained (c2, _)) ->
       constraints_equal eq c1 c2
   | T_Bits (w1, bf1), T_Bits (w2, bf2) ->
       bitwidth_equal eq w1 w2 && bitfields_equal eq bf1 bf2
@@ -690,7 +716,7 @@ let rename_locals map_name ast =
         t.desc
     | T_Int (Parameterized _) ->
         failwith "Not yet implemented: obfuscate parametrized types"
-    | T_Int (WellConstrained cs) -> T_Int (WellConstrained (map_cs cs))
+    | T_Int (WellConstrained (cs, p)) -> T_Int (WellConstrained (map_cs cs, p))
     | T_Bits (e, bitfields) -> T_Bits (map_e e, bitfields)
     | T_Tuple li -> T_Tuple (List.map map_t li)
     | T_Array (_, _) -> failwith "Not yet implemented: obfuscate array types"

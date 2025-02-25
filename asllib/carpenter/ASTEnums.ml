@@ -214,7 +214,6 @@ module Make (C : Config.S) = struct
     and t_bool = just T_Bool
     and t_real = just T_Real
     and t_integer =
-      let make_t_integer cs = T_Int (WellConstrained cs) in
       let cntt_range =
         let make_cntt_range (e1, e2) = Constraint_Range (e1, e2) in
         exprs ** exprs |> map make_cntt_range
@@ -223,7 +222,7 @@ module Make (C : Config.S) = struct
         exprs |> map make_cntt_single
       in
       just (T_Int UnConstrained)
-      ++ (list1 (cntt_range ++ cntt_single) |> map make_t_integer)
+      ++ (list1 (cntt_range ++ cntt_single) |> map ASTUtils.well_constrained')
     and t_tuple =
       let make_t_tuple li = T_Tuple li in
       list2 tys |> map make_t_tuple

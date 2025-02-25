@@ -140,8 +140,8 @@ module NativeBackend (C : Config) = struct
   let non_tuple_exception v = mismatch_type v [ T_Tuple [] ]
 
   let bad_index i n =
-    let range = Constraint_Range (expr_of_int 0, expr_of_int (n - 1)) in
-    mismatch_type (v_of_int i) [ T_Int (WellConstrained [ range ]) ]
+    mismatch_type (v_of_int i)
+      [ integer_range' zero_expr (expr_of_int (n - 1)) ]
 
   let doesnt_have_fields_exception v =
     mismatch_type v [ T_Record []; T_Exception [] ]
@@ -217,21 +217,9 @@ module NativeBackend (C : Config) = struct
       | NV_Literal (L_BitVector bv) when Bitvector.length bv > max_pos -> bv
       | NV_Literal (L_Int i) -> Bitvector.of_z (max_pos + 1) i
       | _ ->
-          mismatch_type bv
-            [
-              T_Bits
-                ( E_ATC
-                    ( E_Var "-" |> add_dummy_annotation,
-                      T_Int
-                        (WellConstrained
-                           [
-                             Constraint_Range
-                               (expr_of_int 0, expr_of_int max_pos);
-                           ])
-                      |> add_dummy_annotation )
-                  |> add_dummy_annotation,
-                  [] );
-            ]
+          let ( ~! ) = add_dummy_annotation in
+          let t = integer_range zero_expr (expr_of_int max_pos) in
+          mismatch_type bv [ T_Bits (~!(E_ATC (~!(E_Var "-"), t)), []) ]
     in
     let res = Bitvector.extract_slice bv positions in
     bitvector_to_value res
@@ -286,8 +274,7 @@ module NativeBackend (C : Config) = struct
           Error.fatal_unknown_pos
           @@ Error.BadArity (Dynamic, "DecStr", 1, List.length li)
 
-    let ascii_range = Constraint_Range (!$0, !$127)
-    let ascii_integer = T_Int (WellConstrained [ ascii_range ])
+    let ascii_integer = integer_range' !$0 !$127
 
     let ascii_str =
       let open! Z in
@@ -342,11 +329,6 @@ module NativeBackend (C : Config) = struct
       let neg e = E_Unop (NEG, e) |> add_pos_from e in
       (* [t_bits "N"] is the bitvector type of length [N]. *)
       let t_bits x = T_Bits (e_var x, []) |> add_dummy_annotation in
-      (* [t_int_ctnt e1 e2] is [integer {e1..e2}] *)
-      let t_int_ctnt e1 e2 =
-        T_Int (WellConstrained [ Constraint_Range (e1, e2) ])
-        |> add_dummy_annotation
-      in
       (* [p ~parameters ~args ~returns name f] declares a primtive named [name]
          with body [f], and signature specified by [parameters] [args] and
          [returns]. *)
@@ -373,7 +355,7 @@ module NativeBackend (C : Config) = struct
       in
       [
         (let two_pow_n_minus_one = minus_one (pow_2 (e_var "N")) in
-         let returns = t_int_ctnt (eoi 0) two_pow_n_minus_one in
+         let returns = integer_range (eoi 0) two_pow_n_minus_one in
          p
            ~parameters:[ ("N", None) ]
            ~args:[ ("x", t_bits "N") ]
@@ -382,7 +364,7 @@ module NativeBackend (C : Config) = struct
          let minus_two_pow_n_minus_one = neg two_pow_n_minus_one
          and two_pow_n_minus_one_minus_one = minus_one two_pow_n_minus_one in
          let returns =
-           t_int_ctnt minus_two_pow_n_minus_one two_pow_n_minus_one_minus_one
+           integer_range minus_two_pow_n_minus_one two_pow_n_minus_one_minus_one
          in
          p
            ~parameters:[ ("N", None) ]
@@ -471,7 +453,7 @@ module DeterministicBackend = struct
     | T_String -> NV_Literal (L_String "")
     | T_Real -> NV_Literal (L_Real Q.zero)
     | T_Int UnConstrained -> NV_Literal (L_Int Z.zero)
-    | T_Int (WellConstrained constraints) ->
+    | T_Int (WellConstrained (constraints, _)) ->
         deterministic_unknown_of_constraints ~eval_expr_sef ty constraints
     | T_Int (Parameterized (_, x)) -> eval_expr_sef (E_Var x |> add_pos_from ty)
     | T_Bits (e, _) -> (

@@ -316,7 +316,7 @@ module Domain = struct
     | T_Int UnConstrained -> Top
     | T_Int (Parameterized (_uid, var)) ->
         FromSyntax [ Constraint_Exact (var_ var) ]
-    | T_Int (WellConstrained constraints) ->
+    | T_Int (WellConstrained (constraints, _)) ->
         int_set_of_int_constraints env constraints
     | T_Int PendingConstrained -> assert false
     | T_Bool | T_String | T_Real ->
@@ -406,7 +406,7 @@ module Domain = struct
     and approx_type approx env t =
       match t.desc with
       | T_Named _ -> make_anonymous env t |> approx_type approx env
-      | T_Int (WellConstrained cs) -> approx_constraints approx env cs
+      | T_Int (WellConstrained (cs, _)) -> approx_constraints approx env cs
       | _ -> bottom_top approx
     (* End *)
 
@@ -753,13 +753,11 @@ let rec lowest_common_ancestor env s t =
       Some integer
   | T_Int _, T_Int (Parameterized _) | T_Int (Parameterized _), T_Int _ ->
       lowest_common_ancestor env (to_well_constrained s) (to_well_constrained t)
-  | T_Int (WellConstrained cs_s), T_Int (WellConstrained cs_t) ->
+  | T_Int (WellConstrained (cs_s, p1)), T_Int (WellConstrained (cs_t, p2)) ->
       (* If S and T both are well-constrained integer types: the
          well-constrained integer type with domain the union of the
          domains of S and T. *)
-      (* TODO: simplify domains ? If domains use a form of diets,
-         this could be more efficient. *)
-      Some (add_dummy_annotation (T_Int (WellConstrained (cs_s @ cs_t))))
+      Some (well_constrained ~precision:(precision_join p1 p2) (cs_s @ cs_t))
   | T_Bits (e_s, _), T_Bits (e_t, _) when expr_equal env e_s e_t ->
       (* We forget the bitfields if they are not equal. *)
       Some (T_Bits (e_s, []) |> add_dummy_annotation)

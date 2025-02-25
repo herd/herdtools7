@@ -46,6 +46,16 @@ type identifier = string
 type uid = int
 (** Unique identifiers *)
 
+type delayed_warning = unit -> unit
+(** Represents a delayed warning by a continuation that will print the warning
+    message. *)
+
+(** Indicates if any precision loss occurred. *)
+type precision_loss_flag =
+  | Precision_Full  (** No loss of precision *)
+  | Precision_Lost of delayed_warning list
+      (** A loss of precision comes with a list of warnings that can explain why the loss of precision happened. *)
+
 (* -------------------------------------------------------------------------
 
                                    Operations
@@ -256,7 +266,7 @@ and int_constraint =
 (** The constraint_kind constrains an integer type to a certain subset. *)
 and constraint_kind =
   | UnConstrained  (** The normal, unconstrained, integer type. *)
-  | WellConstrained of int_constraint list
+  | WellConstrained of int_constraint list * precision_loss_flag
       (** An integer type constrained from ASL syntax: it is the union of each
           constraint in the list. *)
   | PendingConstrained

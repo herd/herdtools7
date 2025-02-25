@@ -226,11 +226,16 @@ and pp_int_constraint f = function
 
 and pp_int_constraints f = function
   | UnConstrained -> addb f "UnConstrained"
-  | WellConstrained cs ->
-      addb f "WellConstrained ";
-      pp_list pp_int_constraint f cs
+  | WellConstrained (cs, precision_loss) ->
+      bprintf f "WellConstrained (%a, %a)"
+        (pp_list pp_int_constraint)
+        cs pp_precision_loss precision_loss
   | PendingConstrained -> addb f "PendingConstrained"
   | Parameterized (i, x) -> bprintf f "Parameterized (%d, %S)" i x
+
+and pp_precision_loss f = function
+  | Precision_Full -> addb f "PrecisionFull"
+  | Precision_Lost _ -> addb f "PrecisionLost []"
 
 let rec pp_lexpr =
   let pp_desc f = function
