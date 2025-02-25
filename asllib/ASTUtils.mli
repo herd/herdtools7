@@ -180,6 +180,15 @@ val conj_expr : expr -> expr -> expr
 val cond_expr : expr -> expr -> expr -> expr
 (** [cond_expr e e1 e2] is an expression representing [if e then e1 else e2]. *)
 
+val precision_join :
+  precision_loss_flag -> precision_loss_flag -> precision_loss_flag
+(** [precision_join p1 p2] is the precision lost by [p1] or [p2]. *)
+
+val precision_loose :
+  precision_loss_flag -> delayed_warning -> precision_loss_flag
+(** [precision_loose warn] register a precision lost with the delayed warning
+    [warn]. *)
+
 val fresh_var : string -> identifier
 (** [fresh_var "doc"] is a fresh variable whose name begins with "doc". *)
 

@@ -214,7 +214,7 @@ module Make (C : Config.S) = struct
     and t_bool = just T_Bool
     and t_real = just T_Real
     and t_integer =
-      let make_t_integer cs = T_Int (WellConstrained cs) in
+      let make_t_integer cs = T_Int (WellConstrained (cs, Precision_Full)) in
       let cntt_range =
         let make_cntt_range (e1, e2) = Constraint_Range (e1, e2) in
         exprs ** exprs |> map make_cntt_range

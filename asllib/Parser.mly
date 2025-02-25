@@ -295,7 +295,7 @@ let expr :=
 
 let constraint_kind_opt := constraint_kind | { UnConstrained }
 let constraint_kind :=
-  | ~=braced(clist1(int_constraint)); < WellConstrained >
+  | cs=braced(clist1(int_constraint)); { WellConstrained (cs, Precision_Full) }
   | braced(MINUS); { PendingConstrained }
 
 let int_constraint :=

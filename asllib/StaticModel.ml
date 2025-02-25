@@ -428,7 +428,7 @@ let rec to_ir env (e : expr) =
           in
           let ty1 = make_anonymous env t in
           match ty1.desc with
-          | T_Int (WellConstrained [ Constraint_Exact e ]) -> to_ir env e
+          | T_Int (WellConstrained ([ Constraint_Exact e ], _)) -> to_ir env e
           | T_Int _ -> IR.of_var s
           | _ -> raise NotSupported)))
   | E_Binop (`PLUS, e1, e2) ->

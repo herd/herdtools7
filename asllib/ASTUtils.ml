@@ -209,7 +209,10 @@ let s_then = map2_desc (fun s1 s2 -> S_Seq (s1, s2))
 let boolean = T_Bool |> add_dummy_annotation
 let integer' = T_Int UnConstrained
 let integer = integer' |> add_dummy_annotation
-let integer_exact' e = T_Int (WellConstrained [ Constraint_Exact e ])
+
+let integer_exact' e =
+  T_Int (WellConstrained ([ Constraint_Exact e ], Precision_Full))
+
 let integer_exact e = integer_exact' e |> add_dummy_annotation
 let string = T_String |> add_dummy_annotation
 let real = T_Real |> add_dummy_annotation
@@ -227,6 +230,18 @@ let stmt_from_list : stmt list -> stmt =
     | l -> aux @@ one_step [] l
   in
   fun l -> List.filter is_not_s_pass l |> aux
+
+let precision_join p1 p2 =
+  match (p1, p2) with
+  | Precision_Full, Precision_Full -> Precision_Full
+  | Precision_Lost _, Precision_Full -> p1
+  | Precision_Full, Precision_Lost _ -> p2
+  | Precision_Lost l1, Precision_Lost l2 ->
+      Precision_Lost (List.rev_append l1 l2)
+
+let precision_loose p w =
+  let ws = match p with Precision_Full -> [] | Precision_Lost l -> l in
+  Precision_Lost (w :: ws)
 
 let mask_from_set_bits_positions size pos =
   let buf = Bytes.make size '0' in
@@ -303,7 +318,7 @@ and use_ty t =
   | T_Int (UnConstrained | Parameterized _ | PendingConstrained)
   | T_Enum _ | T_Bool | T_Real | T_String ->
       Fun.id
-  | T_Int (WellConstrained cs) -> use_constraints cs
+  | T_Int (WellConstrained (cs, _)) -> use_constraints cs
   | T_Tuple li -> use_list use_ty li
   | T_Record fields | T_Exception fields -> use_named_list use_ty fields
   | T_Array (ArrayLength_Expr e, t') -> use_e e $ use_ty t'
@@ -499,7 +514,7 @@ and type_equal eq t1 t2 =
   | T_Int UnConstrained, T_Int UnConstrained ->
       true
   | T_Int (Parameterized (i1, _)), T_Int (Parameterized (i2, _)) -> i1 == i2
-  | T_Int (WellConstrained c1), T_Int (WellConstrained c2) ->
+  | T_Int (WellConstrained (c1, _)), T_Int (WellConstrained (c2, _)) ->
       constraints_equal eq c1 c2
   | T_Bits (w1, bf1), T_Bits (w2, bf2) ->
       bitwidth_equal eq w1 w2 && bitfields_equal eq bf1 bf2
@@ -815,7 +830,7 @@ let rename_locals map_name ast =
         t.desc
     | T_Int (Parameterized _) ->
         failwith "Not yet implemented: obfuscate parametrized types"
-    | T_Int (WellConstrained cs) -> T_Int (WellConstrained (map_cs cs))
+    | T_Int (WellConstrained (cs, p)) -> T_Int (WellConstrained (map_cs cs, p))
     | T_Bits (e, bitfields) -> T_Bits (map_e e, bitfields)
     | T_Tuple li -> T_Tuple (List.map map_t li)
     | T_Array (_, _) -> failwith "Not yet implemented: obfuscate array types"
