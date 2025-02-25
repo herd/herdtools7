@@ -455,7 +455,7 @@ module Domain = struct
     (match (is1, is2) with
     | _, Top -> true
     | Top, _ -> false
-    | Finite ints1, Finite ints2 -> IntSet.(is_empty (diff ints1 ints2))
+    | Finite ints1, Finite ints2 -> IntSet.subset ints1 ints2
     | FromSyntax cs1, FromSyntax cs2 -> (
         constraints_equal env cs1 cs2
         ||
