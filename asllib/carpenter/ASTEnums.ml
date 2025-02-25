@@ -53,7 +53,7 @@ module Make (C : Config.S) = struct
       (if C.Syntax.beq then Some BEQ else None);
       (if C.Syntax.bor then Some BOR else None);
       (if C.Syntax.div then Some DIV else None);
-      (if C.Syntax.eor then Some EOR else None);
+      (if C.Syntax.xor then Some XOR else None);
       (if C.Syntax.eq_op then Some EQ_OP else None);
       (if C.Syntax.gt then Some GT else None);
       (if C.Syntax.geq then Some GEQ else None);

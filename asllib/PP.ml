@@ -96,7 +96,7 @@ let binop_to_string : binop -> string = function
   | BOR -> "||"
   | DIV -> "DIV"
   | DIVRM -> "DIVRM"
-  | EOR -> "EOR"
+  | XOR -> "XOR"
   | EQ_OP -> "=="
   | GT -> ">"
   | GEQ -> ">="

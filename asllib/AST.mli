@@ -69,7 +69,7 @@ type binop =
   | DIV  (** Integer division *)
   | DIVRM
       (** Inexact integer division, with rounding towards negative infinity. *)
-  | EOR  (** Bitvector bitwise exclusive or *)
+  | XOR  (** Bitvector bitwise exclusive or *)
   | EQ_OP  (** Equality on two base values of same type *)
   | GT  (** Greater than for int or reals *)
   | GEQ  (** Greater or equal for int or reals *)

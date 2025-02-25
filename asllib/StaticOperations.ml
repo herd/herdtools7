@@ -126,7 +126,7 @@ let constraint_binop op cs1 cs2 =
       |: TypingRule.ConstraintBinop
   | MOD -> List.map constraint_mod cs2
   | POW -> list_flat_cross constraint_pow cs1 cs2
-  | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
+  | AND | BAND | BEQ | BOR | XOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
   | RDIV | BV_CONCAT ->
       assert false
 (* End *)
@@ -272,7 +272,7 @@ module Make (C : CONFIG) = struct
     | SHL | SHR | POW -> filter_sign ~loc env op @@ fun x -> x >= 0
     | MOD | DIV | DIVRM -> filter_sign ~loc env op @@ fun x -> x > 0
     | MINUS | MUL | PLUS -> Fun.id
-    | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
+    | AND | BAND | BEQ | BOR | XOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
     | OR | RDIV | BV_CONCAT ->
         assert false
   (* End *)
@@ -347,7 +347,7 @@ module Make (C : CONFIG) = struct
   let binop_is_exploding = function
     | PLUS | MINUS -> false
     | MUL | SHL | POW | DIV | DIVRM | MOD | SHR -> true
-    | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
+    | AND | BAND | BEQ | BOR | XOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
     | OR | RDIV | BV_CONCAT ->
         assert false
 
@@ -437,7 +437,7 @@ module Make (C : CONFIG) = struct
               PP.pp_int_constraints cs2_arg PP.pp_int_constraints annotated_cs
         in
         annotated_cs |: TypingRule.AnnotateConstraintBinop
-    | AND | BAND | BEQ | BOR | EOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
+    | AND | BAND | BEQ | BOR | XOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
     | OR | RDIV | BV_CONCAT ->
         assert false
   (* End *)

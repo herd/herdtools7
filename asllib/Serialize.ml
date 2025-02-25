@@ -66,7 +66,7 @@ let pp_binop : binop -> string = function
   | BOR -> "BOR"
   | DIV -> "DIV"
   | DIVRM -> "DIVRM"
-  | EOR -> "EOR"
+  | XOR -> "XOR"
   | EQ_OP -> "EQ_OP"
   | GT -> "GT"
   | GEQ -> "GEQ"
