@@ -85,7 +85,8 @@ yielding an output static environment $\newtenv$ and annotated list of declarati
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item splitting $\decls$ into two sublists by testing each declaration to check whether
+  \item \Proseoverridesubprograms{} in $\decls$ yields $\declsp$;
+  \item splitting $\declsp$ into two sublists by testing each declaration to check whether
         it is that of a pragma yields $\pragmas$ and $\others$, respectively;
   \item \Prosebuilddependencies{\others}{$(\defs, \dependencies)$};
   \item define $\reverseddependencies$ as the relation $\dependencies$ with its elements in reversed order.
@@ -105,17 +106,18 @@ yielding an output static environment $\newtenv$ and annotated list of declarati
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \pragmas \eqdef [\ \vd \;|\; \vd \in \decls\ \land \astlabel(\vd) = \DPragma\ ]\\
+  \overridesubprograms(\decls) \typearrow \declsp \OrTypeError \\\\
+  \pragmas \eqdef [\ \vd \;|\; \vd \in \declsp\ \land \astlabel(\vd) = \DPragma\ ]\\
   {
   \others \eqdef \left[ \begin{array}{r|l}
-    \vd & \vd \in \decls\ \land \astlabel(\vd) \neq \DPragma
+    \vd & \vd \in \declsp\ \land \astlabel(\vd) \neq \DPragma
   \end{array}\right]
   }\\
   \builddependencies(\others) \typearrow (\defs, \dependencies)\\
   \reverseddependencies \eqdef [(a,b) \in \dependencies: (b,a)]\\
   \SCC(\defs, \reverseddependencies) = \comps\\
   \orderedcomps \in \topologicalorderingcomps(\comps, \reverseddependencies)\\
-  \compdecls \eqdef [ \vc\in\orderedcomps: \declsofcomp(\vc, \decls) ]\\
+  \compdecls \eqdef [ \vc\in\orderedcomps: \declsofcomp(\vc, \declsp) ]\\
   \annotatedeclcomps(\genv, \compdecls) \typearrow (\newdecls, \newtenv) \OrTypeError \\\\
   \vd\in\pragmas: \checkglobalpragma(\newtenv, \vd) \typearrow \True \OrTypeError
 }{
@@ -451,6 +453,183 @@ recursive functions it may transitively call.
   \vfone\in V: \propagatedeffects(\vfone) \eqdef \bigcup \{ \vses_\vftwo \;|\; (\vfone, \vftwo) \in \graphtransitive{E} \text{ and } (\vftwo, \vses_\vftwo \in \vsess)\}\\
 }{
   \propagaterecursivecallssess(\vsess) \typearrow \overname{[\vf\in V: (\vf, \propagatedeffects(\vf))]}{\vsessnew}
+}
+\end{mathpar}
+
+\section{Overriding Subprograms\label{sec:Overriding}}
+We now define how to override subprograms marked by \texttt{impdef} and \texttt{implementation} in a specification.
+
+\TypingRuleDef{OverrideSubprograms}
+\hypertarget{def-overridesubprograms}{}
+The function
+\[
+\overridesubprograms(\overname{\decl^*}{\decls}) \aslto \overname{\decl^*}{\declsp}
+\cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+overrides subprograms in a list of declarations $\decls$, yielding the new list of declarations $\declsp$.
+\ProseOtherwiseTypeError
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item define $\vimpdefs$ as the sublist of \Proseimpdefsubprogram{} declarations in $\decls$;
+  \item define $\vimpls$ as the sublist of implementation subprogram declarations in $\decls$;
+  \item define $\vnormal$ as the sublist of remaining functions in $\decls$;
+  \item \Prosecheckimplementationsunique{$\vimpls$} yields $\True$\ProseOrTypeError;
+  \item \Proseprocessoverrides{$\vimpdefs$}{$\vimpls$} yields $\vimpdefsp$\ProseOrTypeError;
+  \item define $\voverridden$ as the concatenation of $\vimpdefsp$ and $\vimpls$;
+  \item $\declsp$ is concatenation of subprogram declarations in $\voverridden$ and $\vnormal$.
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{
+  \vimpdefs \eqdef [\vd : \DFunc(\vd) \in \decls \land \vd.\funcoverride = \Impdef] \\
+  \vimpls \eqdef [\vd : \DFunc(\vd) \in \decls \land \vd.\funcoverride = \Implementation] \\
+  \vnormal \eqdef [\vd : \DFunc(\vd) \in \decls \land \vd.\funcoverride \notin \{\Impdef, \Implementation\}] \\
+  \checkimplementationsunique(\vimpls) \typearrow \True \OrTypeError \\\\
+  \processoverrides(\vimpdefs, \vimpls) \typearrow \vimpdefsp \OrTypeError \\
+  \voverridden \eqdef \vimpdefsp \concat \vimpls \\
+  \declsp \eqdef [\DFunc(\vd) : \vd \in \voverridden] \concat \vnormal
+}{
+  \overridesubprograms(\decls) \typearrow \declsp
+}
+\end{mathpar}
+
+\TypingRuleDef{CheckImplementationsUnique}
+\hypertarget{def-checkimplementationsunique}{}
+The function
+\[
+\checkimplementationsunique(\overname{\func^*}{\vimpls}) \aslto \{\True\} \cup \TTypeError
+\]
+checks that the \Proseimplementationsubprograms{} $\vimpls$ have unique signatures.
+\ProseOtherwiseTypeError
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{empty}
+    \begin{itemize}
+      \item \Proseemptylist{$\vimpls$};
+      \item the result is $\True$.
+    \end{itemize}
+  \item \AllApplyCase{non\_empty}
+    \begin{itemize}
+      \item $\vimpls$ is a \Proselist{$\vh$}{$\vt$};
+      \item for each \Proselistrange{$i$}{$\vt$}, \Prosesignaturesmatch{$\vh$}{$\vt[i]$} yields $\False$\ProseTerminateAs{\OverridingError};
+      \item \Prosecheckimplementationsunique{$\vt$} yields $\True$\ProseOrTypeError;
+      \item the result is $\True$.
+    \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[empty]{}{
+  \checkimplementationsunique(\overname{\emptylist}{\vimpls}) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  i \in \listrange(\vt): \signaturesmatch(\vh, \vt[i]) \typearrow \False \terminateas \OverridingError \\\\
+  \checkimplementationsunique(\vt) \typearrow \True \OrTypeError
+}{
+  \checkimplementationsunique(\overname{[\vh] \concat \vt}{\vimpls}) \typearrow \True
+}
+\end{mathpar}
+
+\TypingRuleDef{SignaturesMatch}
+\hypertarget{def-signaturesmatch}{}
+The function
+\[
+\signaturesmatch(\overname{\func}{\vfuncone} \aslsep \overname{\func}{\vfunctwo}) \aslto \Bool
+\]
+checks whether the signatures of subprograms $\vfuncone$ and $\vfunctwo$ match for overriding purposes.
+\ProseOtherwiseTypeError
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item checking that the names of $\vfuncone$ and $\vfunctwo$ are equal yields $\True$ \ProseTerminateAs{\False};
+  \item checking that the declared arguments of $\vfuncone$ and $\vfunctwo$ are equal in both name and type yields $\True$ \ProseTerminateAs{\False};
+  \item checking that the declared parameters of $\vfuncone$ and $\vfunctwo$ are equal in both name and type yields $\True$ \ProseTerminateAs{\False};
+  \item checking that the return types of $\vfuncone$ and $\vfunctwo$ are equal yields $\True$ \ProseTerminateAs{\False}.
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+  \inferrule{
+    \booltrans{\vfuncone.\funcname = \vfunctwo.\funcname} \booltransarrow \True \terminateas \False \\
+    \equallength(\vfuncone.\funcargs, \vfunctwo.\funcargs) \typearrow \True \terminateas \False \\
+    {
+    \begin{array}{r}
+      i \in \indices(\vfuncone.\funcargs),\;
+        \vfuncone.\funcargs[i] \eqname (\idone, \ttyone),\;
+        \vfunctwo.\funcargs[i] \eqname (\idtwo, \ttytwo): \\
+        \booltrans{\idone = \idtwo \land \ttyone = \ttytwo} \booltransarrow \vbone_{i}
+    \end{array}
+    } \\
+    \booltrans{\bigwedge_{i \in \indices(\vfuncone.\funcargs)} \vbone_{i}} \booltransarrow \True \terminateas \False \\
+    {
+    \begin{array}{r}
+      i \in \indices(\vfuncone.\funcparameters), \hfill \\
+        \vfuncone.\funcparameters[i] \eqname (\idone, \ttyone),\;
+        \vfunctwo.\funcparameters[i] \eqname (\idtwo, \ttytwo): \hfill \\
+        \booltrans{\idone = \idtwo \land \ttyone = \ttytwo} \booltransarrow \vbtwo_{i}
+    \end{array}
+    } \\
+    \booltrans{\bigwedge_{i \in \indices(\vfuncone.\funcparameters)} \vbtwo_{i}} \booltransarrow \True \terminateas \False \\
+    \booltrans{\vfuncone.\funcreturntype = \vfunctwo.\funcreturntype} \booltransarrow \True \terminateas \False
+  }{
+    \signaturesmatch(\vfuncone, \vfunctwo) \typearrow \True
+  }
+\end{mathpar}
+
+\TypingRuleDef{ProcessOverrides}
+\hypertarget{def-processoverrides}{}
+The function
+\[
+\processoverrides(\overname{\func^*}{\vimpdefs} \aslsep \overname{\func^*}{\vimpls}) \aslto \overname{\func^*}{\vimpdefsp}
+\cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+overrides the \Proseimpdefsubprograms{} $\vimpdefs$ with the \Proseimplementationsubprograms{} $\vimpls$, yielding the new \Proseimpdefsubprograms{} $\vimpdefs$.
+\ProseOtherwiseTypeError
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{empty}
+    \begin{itemize}
+      \item \Proseemptylist{$\vimpls$};
+      \item $\vimpdefsp$ is $\vimpdefs$.
+    \end{itemize}
+  \item \AllApplyCase{non\_empty}
+    \begin{itemize}
+      \item $\vimpls$ is a \Proselist{$\vh$}{$\vt$};
+      \item for each \Proselistrange{$i$}{$\vimpdefs$}, \Prosesignaturesmatch{$\vh$}{$\vimpdefs[i]$} yields $\vb_i$;
+      \item define $\vmatching$ as the sublist of $\vimpdefs$ for which $\vb_i$ is $\True$;
+      \item define $\vnonmatching$ as the sublist of $\vimpdefs$ for which $\vb_i$ is $\False$;
+      \item \Prosechecktrans{the length of $\vmatching$ is 1}{\OverridingError};
+      \item \Proseprocessoverrides{$\vimpls$}{$\vnonmatching$} yields \vimpdefsp.
+    \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[empty]{}{
+  \processoverrides(\vimpdefs, \overname{\emptylist}{\vimpls}) \typearrow \overname{\vimpdefs}{\vimpdefsp}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  i \in \listrange(\vimpdefs): \signaturesmatch(\vh, \vimpdefs[i]) \typearrow \vb_i \\
+  \vmatching \eqdef [\vimpdefs[i] \;|\; i \in \listrange(\vimpdefs) \land \vb_i = \True] \\
+  \vnonmatching \eqdef [\vimpdefs[i] \;|\; i \in \listrange(\vimpdefs) \land \vb_i = \False] \\
+  \checktrans{\listlen{\vmatching} = 1}{\OverridingError} \checktransarrow \True \terminateas \OverridingError \\\\
+  \processoverrides(\vnonmatching, \vt) \typearrow \vimpdefsp
+}{
+  \processoverrides(\vimpdefs, \overname{[\vh] \concat \vt}{\vimpls}) \typearrow \vimpdefsp
 }
 \end{mathpar}
 

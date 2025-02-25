@@ -763,7 +763,11 @@
 \newcommand\SBPrimitive[0]{\hyperlink{ast-sbprimitive}{\textsf{SB\_Primitive}}}
 
 \newcommand\Impdef[0]{\hyperlink{ast-impdef}{\textsf{Impdef}}}
+\newcommand\Proseimpdefsubprogram[0]{implementation-defined subprogram}
+\newcommand\Proseimpdefsubprograms[0]{implementation-defined subprograms}
 \newcommand\Implementation[0]{\hyperlink{ast-implementation}{\textsf{Implementation}}}
+\newcommand\Proseimplementationsubprogram[0]{implementation subprogram}
+\newcommand\Proseimplementationsubprograms[0]{implementation subprograms}
 
 \newcommand\STFunction[0]{\hyperlink{ast-stfunction}{\texttt{ST\_Function}}}
 \newcommand\STGetter[0]{\hyperlink{ast-stgetter}{\texttt{ST\_Getter}}}
@@ -1901,6 +1905,14 @@
 
 \newcommand\Prosetypecheckast[4]{\hyperlink{def-typecheckast}{typechecking} #1 in #2 yields the typed AST #3 and static environment #4}
 \newcommand\typecheckast[0]{\hyperlink{def-typecheckast}{\textfunc{type\_check\_ast}}}
+\newcommand\Proseoverridesubprograms[0]{\hyperlink{def-overriding}{overriding subprograms}}
+\newcommand\overridesubprograms[0]{\hyperlink{def-overridesubprograms}{\textfunc{override\_subprograms}}}
+\newcommand\Proseprocessoverrides[2]{\hyperlink{def-processoverrides}{processing overrides} in #1 and #2}
+\newcommand\processoverrides[0]{\hyperlink{def-processoverrides}{\textfunc{process\_overrides}}}
+\newcommand\Prosecheckimplementationsunique[1]{\hyperlink{def-checkimplementationsunique}{checking} that implementations are unique in #1}
+\newcommand\checkimplementationsunique[0]{\hyperlink{def-checkimplementationsunique}{\textfunc{check\_implementations\_unique}}}
+\newcommand\Prosesignaturesmatch[2]{\hyperlink{def-signaturesmatch}{checking} that the signatures of #1 and #2 match}
+\newcommand\signaturesmatch[0]{\hyperlink{def-signaturesmatch}{\textfunc{signatures\_match}}}
 \newcommand\ProseSCC[3]{\hyperlink{def-scc}{partitioning} the set of declarations #1 with the set of edges #2 yields the list of strongly-connected components #3}
 \newcommand\SCC[0]{\hyperlink{def-scc}{\textfunc{SCC}}}
 \newcommand\topologicalorderingcomps[0]{\hyperlink{def-topologicalorderingcomps}{\textfunc{topological\_ordering\_comps}}}
@@ -2032,6 +2044,7 @@
 \newcommand\BadDeclaration[0]{\hyperlink{def-baddeclaration}{\TypeErrorCode{BD}}}
 \newcommand\BadCall[0]{\hyperlink{def-badcall}{\TypeErrorCode{BC}}}
 \newcommand\SideEffectViolation[0]{\hyperlink{def-sideeffectviolation}{\TypeErrorCode{SEV}}}
+\newcommand\OverridingError[0]{\hyperlink{def-overridingerror}{\TypeErrorCode{OE}}}
 
 %% Dynamic Error Codes
 \newcommand\DynamicErrorPrefix[1]{\texttt{DE}}
@@ -2592,6 +2605,7 @@
 \newcommand\vcaseotherwise[0]{\texttt{case\_otherwise}}
 \newcommand\votherwise[0]{\texttt{otherwise}}
 \newcommand\voverride[0]{\texttt{override}}
+\newcommand\voverridden[0]{\texttt{overridden}}
 \newcommand\vanons[0]{\texttt{anon\_s}}
 \newcommand\vanont[0]{\texttt{anon\_t}}
 \newcommand\vaoptfields[0]{\texttt{aopt\_fields}}
@@ -2774,6 +2788,8 @@
 \newcommand\vfromexpr[0]{\texttt{from\_expr}}
 \newcommand\vftwo[0]{\texttt{f2}}
 \newcommand\vfunc[0]{\texttt{func}}
+\newcommand\vfuncone[0]{\texttt{func1}}
+\newcommand\vfunctwo[0]{\texttt{func2}}
 \newcommand\vfuncs[0]{\texttt{funcs}}
 \newcommand\vfuncsone[0]{\texttt{funcs1}}
 \newcommand\vfuncargs[0]{\texttt{func\_args}}
@@ -2781,6 +2797,7 @@
 \newcommand\vg[0]{\texttt{g}}
 \newcommand\vgfour[0]{\texttt{g4}}
 \newcommand\vgfive[0]{\texttt{g5}}
+\newcommand\vh[0]{\texttt{h}}
 \newcommand\vlhsaccess[0]{\texttt{lhs\_access}}
 \newcommand\vlhsaccesses[0]{\texttt{lhs\_accesses}}
 \newcommand\vlhsaccessopt[0]{\texttt{lhs\_access\_opt}}
@@ -2802,6 +2819,9 @@
 \newcommand\vids[0]{\texttt{ids}}
 \newcommand\vidsone[0]{\texttt{ids1}}
 \newcommand\vignoredoridentifier[0]{\texttt{ignored\_or\_identifier}}
+\newcommand\vimpdefs[0]{\texttt{impdefs}}
+\newcommand\vimpdefsp[0]{\texttt{impdefs'}}
+\newcommand\vimpls[0]{\texttt{impls}}
 \newcommand\vindex[0]{\texttt{index}}
 \newcommand\vindexname[0]{\texttt{index\_name}}
 \newcommand\vinitialvalue[0]{\texttt{initial\_value}}
@@ -2868,6 +2888,7 @@
 \newcommand\extpairscd[0]{\texttt{extpairs\_c\_d}}
 \newcommand\vmac[0]{\texttt{mac}}
 \newcommand\vmad[0]{\texttt{mad}}
+\newcommand\vmatching[0]{\texttt{matching}}
 \newcommand\vmaybeemptystmtlist[0]{\texttt{maybe\_empty\_stmt\_list}}
 \newcommand\vmlist[0]{\texttt{vm\_list}}
 \newcommand\vmlistone[0]{\texttt{vm\_list1}}
@@ -2887,6 +2908,8 @@
 \newcommand\vnestedfields[0]{\texttt{nested\_fields}}
 \newcommand\vnextlimitopt[0]{\texttt{next\_limit\_opt}}
 \newcommand\vnew[0]{\texttt{new}}
+\newcommand\vnonmatching[0]{\texttt{nonmatching}}
+\newcommand\vnormal[0]{\texttt{normal}}
 \newcommand\vds[0]{\texttt{ds}}
 \newcommand\vnewarg[0]{\texttt{new\_arg}}
 \newcommand\vnewargs[0]{\texttt{new\_args}}
