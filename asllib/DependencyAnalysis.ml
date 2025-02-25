@@ -100,7 +100,7 @@ and use_ty t =
   | T_Int (UnConstrained | Parameterized _ | PendingConstrained)
   | T_Enum _ | T_Bool | T_Real | T_String ->
       Fun.id
-  | T_Int (WellConstrained cs) -> use_constraints cs
+  | T_Int (WellConstrained (cs, _)) -> use_constraints cs
   | T_Tuple li -> use_list use_ty li
   | T_Record fields | T_Exception fields -> use_named_list use_ty fields
   | T_Array (ArrayLength_Expr e, t') -> use_e e $ use_ty t'

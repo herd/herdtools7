@@ -364,8 +364,8 @@ module Make (C : CONFIG) = struct
       let expected_size = Z.sub z2 z1 in
       Z.lt max_exploded_interval_size expected_size
     in
-    let explode_constraint ~loc env = function
-      | Constraint_Exact _ as c -> [ c ]
+    let explode_constraint ~loc env (prev_constraints, prev_prec) = function
+      | Constraint_Exact _ as c -> (c :: prev_constraints, prev_prec)
       | Constraint_Range (a, b) as c -> (
           match
             ( StaticModel.reduce_to_z_opt env a,
@@ -373,14 +373,16 @@ module Make (C : CONFIG) = struct
           with
           | Some za, Some zb ->
               if interval_too_large za zb then
-                let () =
+                let warn () =
                   C.warn_from ~loc Error.(IntervalTooBigToBeExploded (za, zb))
                 in
-                [ c ]
-              else make_interval [] ~loc za zb
-          | _ -> [ c ])
+                let prec = register_precision_loss prev_prec warn in
+                (c :: prev_constraints, prec)
+              else (make_interval [] ~loc za zb, prev_prec)
+          | _ -> (c :: prev_constraints, prev_prec))
     in
-    fun ~loc env -> list_concat_map (explode_constraint ~loc env)
+    fun ~loc env cs ->
+      List.fold_left (explode_constraint ~loc env) ([], Precision_Full) cs
   (* End *)
 
   (* Begin AnnotateConstraintBinop *)
@@ -392,18 +394,19 @@ module Make (C : CONFIG) = struct
           (PP.binop_to_string (op :> binop))
           PP.pp_int_constraints cs1 PP.pp_int_constraints cs2
     in
-    let cs1_arg, cs2_arg =
+    let cs1_arg, cs2_arg, precision_loss =
       if binop_is_exploding op then
-        let ex_cs1 = explode_intervals ~loc env cs1
-        and ex_cs2 = explode_intervals ~loc env cs2_f in
+        let ex_cs1, p1 = explode_intervals ~loc env cs1
+        and ex_cs2, p2 = explode_intervals ~loc env cs2_f in
         let l1 = List.length ex_cs1 and l2 = List.length ex_cs2 in
+        let p0 = precision_join p1 p2 in
         let expected_constraint_length =
           Z.(if op = `MOD then ~$l2 else mul ~$l1 ~$l2)
         in
         if Z.leq expected_constraint_length max_constraint_size then
-          (ex_cs1, ex_cs2)
+          (ex_cs1, ex_cs2, p0)
         else
-          let () =
+          let warn () =
             C.warn_from ~loc
               Error.(
                 ConstraintSetPairToBigToBeExploded
@@ -414,8 +417,9 @@ module Make (C : CONFIG) = struct
                     log_max = log_max_constraint_size;
                   })
           in
-          (cs1, cs2_f)
-      else (cs1, cs2_f)
+          let p = register_precision_loss p0 warn in
+          (cs1, cs2_f, p)
+      else (cs1, cs2_f, Precision_Full)
     in
     let annotated_cs =
       constraint_binop op cs1_arg cs2_arg
@@ -430,6 +434,6 @@ module Make (C : CONFIG) = struct
           PP.pp_int_constraints cs1_arg PP.pp_int_constraints cs2_arg
           PP.pp_int_constraints annotated_cs
     in
-    annotated_cs |: TypingRule.AnnotateConstraintBinop
+    (annotated_cs, precision_loss) |: TypingRule.AnnotateConstraintBinop
   (* End *)
 end
