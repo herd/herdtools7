@@ -12,15 +12,14 @@ This section defines the following relations over types and operators:
 
 \TypingRuleDef{Subtype}
 \hypertarget{def-supertypeterm}{}
-The \emph{subtype} relation is a partial order over \underline{named types}.
-The \emph{\supertypeterm} is the inverse relation. That is, \tty\ is a supertype of \tsy\ if and only if \tsy\ is a subtype of \tty.
+The \emph{\subtypeterm} relation is a partial order over \underline{named types}.
+The \emph{\supertypeterm} is the inverse relation.
+That is, \tty\ is a \supertypeterm{} of \tsy\ if and only if \tsy\ is a \subtypeterm{} of \tty.
 
 \ExampleDef{Subtypes and Supertypes}
-In the following example \texttt{subInt} is a subtype of itself and of \texttt{superInt}:
-\begin{lstlisting}
-type superInt of integer;
-type subInt of integer subtypes superInt;
-\end{lstlisting}
+In \listingref{subtype},
+\texttt{subInt} is a subtype of itself and of \texttt{superInt}
+\ASLListing{Subtypes and Supertypes}{subtype}{\typingtests/TypingRule.Subtype.asl}
 
 \hypertarget{def-subtypesrel}{}
 The predicate
@@ -154,8 +153,8 @@ The function assumes that both $\vt$ and $\vs$ are well-typed according to \chap
   \begin{itemize}
   \item the \underlyingtype\ of $\vs$ is a bitvector type with width $\ws$ and bit fields $\bfss$, that is $\TBits(\ws, \bfss)$;
   \item the \underlyingtype\ of $\vt$ is a bitvector type with width $\wt$ and bit fields $\bfst$, that is $\TBits(\wt, \bfst)$;
-  \item determining whether the bit fields $\bfss$ are included in the bit fields $\bfst$ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item determining whether the \symbolicdomain{} of bitwidth $\ws$ subsumes the \symbolicdomain{} of bitwidth $\wt$ in $\tenv$ yields $\vb$.
+  \item determining whether the bitfields $\bfss$ are included in the bitfields $\bfst$ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item determining whether the \symbolicdomain{} of $\ws$ subsumes the \symbolicdomain{} of $\wt$ in $\tenv$ yields $\vb$.
   \end{itemize}
 
 \item \AllApplyCase{t\_array\_expr}
@@ -206,29 +205,30 @@ The function assumes that both $\vt$ and $\vs$ are well-typed according to \chap
 
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule[error1]{
-    \makeanonymous(\tenv, \vt) \typearrow \TypeErrorConfig
-  }
-  {
-    \subtypesat(\tenv, \vt, \vs) \typearrow \TypeErrorConfig
-  }
-  \and
-  \inferrule[error2]{
-    \makeanonymous(\tenv, \vt) \typearrow \vttwo\\
-    \makeanonymous(\tenv, \vs) \typearrow \TypeErrorConfig
-  }
-  {
-    \subtypesat(\tenv, \vt, \vs) \typearrow \TypeErrorConfig
-  }
-  \and
-  \inferrule[different\_labels]{
-    \makeanonymous(\tenv, \vt) \typearrow \vttwo\\
-    \makeanonymous(\tenv, \vs) \typearrow \vstwo\\
-    \astlabel(\vttwo) \neq \astlabel(\vstwo)
-  }
-  {
-    \subtypesat(\tenv, \vt, \vs) \typearrow \False
-  }
+\inferrule[error1]{
+  \makeanonymous(\tenv, \vt) \typearrow \TypeErrorConfig
+}{
+  \subtypesat(\tenv, \vt, \vs) \typearrow \TypeErrorConfig
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[error2]{
+  \makeanonymous(\tenv, \vt) \typearrow \vttwo\\
+  \makeanonymous(\tenv, \vs) \typearrow \TypeErrorConfig
+}{
+  \subtypesat(\tenv, \vt, \vs) \typearrow \TypeErrorConfig
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[different\_labels]{
+  \makeanonymous(\tenv, \vt) \typearrow \vttwo\\
+  \makeanonymous(\tenv, \vs) \typearrow \vstwo\\
+  \astlabel(\vttwo) \neq \astlabel(\vstwo)
+}{
+  \subtypesat(\tenv, \vt, \vs) \typearrow \False
+}
 \end{mathpar}
 
 \begin{mathpar}
@@ -288,7 +288,9 @@ The function assumes that both $\vt$ and $\vs$ are well-typed according to \chap
 }{
   \subtypesat(\tenv, \vt, \vs) \typearrow \vb
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[t\_array\_enum]{
   \makeanonymous(\tenv, \vs) \typearrow \TArray(\vlengths,\vtys) \\
   \makeanonymous(\tenv, \vt) \typearrow \TArray(\vlengtht,\vtyt) \\
@@ -344,12 +346,7 @@ if there is a unique one, as follows:
   \subtypesat(\tenv, \vs, \vt) \typearrow \vb
 }
 \end{mathpar}
-
-\isempty{\subsection{Comments}}
 \identd{TRVR} \identi{SJDC} \identi{MHYB} \identi{TWTZ} \identi{GYSK} \identi{KXSD} \identi{KNXJ}
-
-\isempty{\subsection{Example}}
-
 \CodeSubsection{\SubtypeSatisfactionBegin}{\SubtypeSatisfactionEnd}{../types.ml}
 
 \TypingRuleDef{TypeSatisfaction}

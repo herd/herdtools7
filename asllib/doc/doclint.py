@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass
 from typing import List, Set
 import argparse
+import pathlib
 
 cli_parser = argparse.ArgumentParser(prog="ASL Reference Linter")
 cli_parser.add_argument(
@@ -14,8 +15,16 @@ cli_parser.add_argument(
     help="Rewrites *.tex files with extended macros",
     action="store_true",
 )
+cli_parser.add_argument(
+    "-d",
+    "--dictionary",
+    help="Specifies reference dictionary file for spellchecking",
+    metavar="<path-to-dictionary-file>",
+    type=pathlib.Path,
+)
 
-num_rules = 0
+INTERNAL_DICTIONARY_FILENAME = "dictionary.txt"
+
 
 def read_file_lines(filename: str) -> List[str]:
     with open(filename, "r", encoding="utf-8") as file:
@@ -247,9 +256,11 @@ class RuleBlock:
     AST_RULE = "AST"
     TYPING_RULE = "Typing"
     SEMANTICS_RULE = "Semantics"
+    GUIDE_RULE = "Guide"
+    CONVENTION_RULE = "Convention"
 
     rule_begin_pattern = re.compile(
-        r"\\(TypingRuleDef|SemanticsRuleDef|ASTRuleDef){(.*?)}"
+        r"\\(TypingRuleDef|SemanticsRuleDef|ASTRuleDef|ConventionDef|RequirementDef){(.*?)}"
     )
     end_patterns = [
         r"\\section{.*}",
@@ -261,10 +272,10 @@ class RuleBlock:
     rule_end_pattern = re.compile("|".join(end_patterns))
 
     def __init__(self, filename, file_lines: list[str], begin: int, end: int):
-        self.filename = filename
-        self.file_lines = file_lines
-        self.begin = begin
-        self.end = end
+        self.filename: str = filename
+        self.file_lines: list[str] = file_lines
+        self.begin: int = begin
+        self.end: int = end
 
         begin_line = file_lines[begin]
         name_match = re.match(RuleBlock.rule_begin_pattern, begin_line)
@@ -312,6 +323,8 @@ def check_rule_prose_formally_structure(rule_block: RuleBlock) -> List[str]:
     by a single Formally paragraph, returning a list of error messages
     for all errors found.
     """
+    if not rule_block.type in [RuleBlock.TYPING_RULE, RuleBlock.SEMANTICS_RULE]:
+        return []
     num_prose_paragraphs = 0
     num_formally_paragraphs = 0
     block_errors: List[str] = []
@@ -347,6 +360,9 @@ def check_rule_case_consistency(rule_block: RuleBlock) -> List[str]:
     Checks that the rule cases appearing in the Prose paragraph and Formally
     paragraph are equal and each paragraph does not contain duplicate cases.
     """
+    if not rule_block.type in [RuleBlock.TYPING_RULE, RuleBlock.SEMANTICS_RULE]:
+        return []
+
     prose_cases: Set[str] = set()
     formally_cases: Set[str] = set()
     prose_cases_pattern = re.compile(r".*\\AllApplyCase{(.*?)}")
@@ -394,10 +410,23 @@ def check_rule_has_example(rule_block: RuleBlock) -> List[str]:
     Every typing rule and semantics rule should provide or reference at least
     one example.
     """
+    if not rule_block.type in [
+        RuleBlock.TYPING_RULE,
+        RuleBlock.SEMANTICS_RULE,
+        RuleBlock.GUIDE_RULE,
+        RuleBlock.CONVENTION_RULE,
+    ]:
+        return []
+    if not rule_block.filename == "RelationsOnTypes.tex":
+        return []
     example_found = False
     for line_number in range(rule_block.begin, rule_block.end + 1):
         line = rule_block.file_lines[line_number].strip()
-        if line.startswith("\\ExampleDef") or "\\ExampleRef" in line or "\\subsubsection{Example}" in line:
+        if (
+            line.startswith("\\ExampleDef")
+            or "\\ExampleRef" in line
+            or "\\subsubsection{Example}" in line
+        ):
             example_found = True
             break
     error_messages = []
@@ -405,9 +434,10 @@ def check_rule_has_example(rule_block: RuleBlock) -> List[str]:
         error_messages.append("missing an example")
     return error_messages
 
+
 def check_rules(filename: str) -> int:
     r"""
-    Checks the AST/Typing/Semantics rules in 'filename'
+    Checks the AST/Typing/Semantics/Guide/Convention rules in 'filename'
     and returns the total number of errors.
     """
     checks = [
@@ -417,9 +447,6 @@ def check_rules(filename: str) -> int:
     ]
     num_errors = 0
     rule_blocks: List[RuleBlock] = match_rules(filename)
-    rule_blocks = [rule_block for rule_block in rule_blocks if rule_block.type != RuleBlock.AST_RULE]
-    global num_rules
-    num_rules += len(rule_blocks)
     for rule_block in rule_blocks:
         if not rule_block:
             print(f"{filename} {rule_block.str()}: unable to determine rule type")
@@ -435,6 +462,114 @@ def check_rules(filename: str) -> int:
     return num_errors
 
 
+def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
+    r"""
+    Attempts to find spelling error in the files listed in 'latex_files'
+    by consulting the internal dictionary file iINTERNAL_DICTIONARY_FILENAME
+    and an optional reference dictionary in 'reference_dictionary_path'.
+    """
+    dict_word_list = read_file_str(INTERNAL_DICTIONARY_FILENAME).splitlines()
+    dict_words = set(dict_word_list)
+    reference_words: set[str] = set()
+    if reference_dictionary_path:
+        reference_word_list = read_file_str(reference_dictionary_path).splitlines()
+        reference_words = set(reference_word_list)
+
+    patterns_to_remove = [
+        # Patterns for environments inside which spellchecking is not needed:
+        r"\$.*?\$",  # $...$
+        r"\\\[.*?\\\]",  # \[...\]
+        r"\\begin\{mathpar\}.*?\\end\{mathpar\}",
+        r"\\begin\{equation\}.*?\\end\{equation\}",
+        r"\\begin\{flalign\*\}.*?\\end\{flalign\*\}",
+        r"\\begin{table}.*?\\end{table}",
+        r"\\begin{lstlisting}.*?\\end{lstlisting}",
+        r"\\begin\{Verbatim\}.*?\\end\{Verbatim\}",
+        r"\\begin\{verbatim\}.*?\\end\{verbatim\}",
+        r"\\begin{tabular}.*?\\end{tabular}",
+        r"subsubsection",
+        r"\\verb\|.*?\|",
+        r"\\lrmcomment{.*?}",
+        r"\\stdlibfunc{.*?}",
+        r"\\defref{.*?}",
+        r"\\ASLListing{.*?}{.*?}{.*?}",
+        r"\\LexicalRuleDef{.*?}",
+        r"\\LexicalRuleRef{.*?}",
+        r"\\ASTRuleRef{.*?}",
+        r"\\ASTRuleDef{.*?}",
+        r"\\TypingRuleRef{.*?}",
+        r"\\TypingRuleDef{.*?}",
+        r"\\SemanticsRuleRef{.*?}",
+        r"\\SemanticsRuleDef{.*?}",
+        r"\\RequirementDef{.*?}",
+        r"\\RequirementRef{.*?}",
+        r"\\ConventionDef{.*?}",
+        r"\\AllApplyCase{.*?}",
+        r"\% CONSOLE_BEGIN.*\% CONSOLE_END",
+        r"\\hypertarget{.*?}",
+        r"\\href{.*?}",
+        r"\\begin{.*?}",
+        r"\\end{.*?}",
+        r"\\secref{.*?}",
+        r"\\chapref{.*?}",
+        r"\\taref{.*?}",
+        r"\\cite{.*?}",
+        r"\\cite\[.*?\]{.*?}",
+        r"\\identi{.*?}",
+        r"\\identd{.*?}",
+        r"\\identg{.*?}",
+        r"\\identr{.*?}",
+        r"\\textit{.*?}",
+        r"\\texttt{.*?}",
+        r"\\listingref{.*?}",
+        r"\\appendixref{.*?}",
+    ]
+
+    num_errors = 0
+    for filename in latex_files:
+        file_str: str = read_file_str(filename)
+        file_lines = file_str.splitlines()
+        # Hash lines to line numbers in an attempt to later match them.
+        line_to_line_number = dict()
+        for line_number, line in enumerate(file_lines, start=1):
+            line_to_line_number[line.strip()] = line_number
+        # Remove text blocks where spelling is not needed.
+        for pattern in patterns_to_remove:
+            file_str = re.sub(pattern, "", file_str, flags=re.DOTALL)
+        file_lines = file_str.splitlines()
+        for line in file_lines:
+            tokens = re.split(" |{|}", line)
+            tokens = [token.lower() for token in tokens if token.isalpha()]
+            for token in tokens:
+                token_in_dict = token in dict_words
+                token_in_reference = token in reference_words
+                if not token_in_dict:
+                    if token_in_reference:
+                        dict_words.add(token)
+                        print(f"adding new word to internal dictionary: {token}")
+                    else:
+                        num_errors += 1
+                        if line.strip() in line_to_line_number:
+                            line_number = line_to_line_number[line.strip()]
+                            print(
+                                f'{filename} line {line_number}: "{token}" may be misspelled in "{line}"'
+                            )
+                        else:
+                            print(
+                                f'{filename}: "{token}" may be misspelled in "{line}"'
+                            )
+
+    # Update the internal dictionary filename, if it has changed.
+    sorted_words = sorted(list([word.lower() for word in dict_words]))
+    if sorted_words != dict_word_list:
+        with open(INTERNAL_DICTIONARY_FILENAME, "w", encoding="utf-8") as file:
+            file_str = "\n".join(sorted_words)
+            print(f"Updating dictionary file {INTERNAL_DICTIONARY_FILENAME}")
+            file.write(file_str)
+
+    return num_errors
+
+
 def check_per_file(latex_files: list[str], checks):
     r"""
     Applies the list of functions in 'checks' to each file in 'latex files',
@@ -447,6 +582,7 @@ def check_per_file(latex_files: list[str], checks):
             num_errors += check(filename)
     return num_errors
 
+
 def main():
     args = cli_parser.parse_args()
     if args.macros:
@@ -455,6 +591,14 @@ def main():
     all_latex_sources = get_latex_sources(False)
     content_latex_sources = get_latex_sources(True)
     num_errors = 0
+    num_spelling_errors = spellcheck(args.dictionary, content_latex_sources)
+    if num_spelling_errors > 0:
+        print(
+            f"There were possible spelling errors. "
+            "Please either fix them or add new words to "
+            "{INTERNAL_DICTIONARY_FILENAME}."
+        )
+    num_errors += num_spelling_errors
     num_errors += check_hyperlinks_and_hypertargets(all_latex_sources)
     num_errors += check_undefined_references_and_multiply_defined_labels()
     num_errors += check_tododefines(content_latex_sources)
@@ -468,7 +612,6 @@ def main():
         ],
     )
 
-    #print(f"There are #{num_rules} rules")
     if num_errors > 0:
         print(f"There were {num_errors} errors!", file=sys.stderr)
         sys.exit(1)
