@@ -108,7 +108,8 @@ end;
 // ======================
 // Returns whether output address is expressed in the configured size number of bits
 
-func AArch64_OAOutOfRange(address:bits(56), d128:bit, ps:bits(3), tgx:TGx)
+func AArch64_OAOutOfRange
+  (address:bits(56), d128:bit, ps:bits(3), ds:bit, tgx:TGx)
 => boolean
 begin
   return FALSE;
@@ -206,10 +207,10 @@ end;
 
 type SilentExit of exception;
 
-func AArch64_DataAbort(vaddress:bits(64),fault:FaultRecord)
+func AArch64_DataAbort(fault:FaultRecord)
 begin
-//  __DEBUG__(vaddress);
-  DataAbortPrimitive(vaddress,fault.write,fault.statuscode);
+//  __DEBUG__(fault.vaddress);
+  DataAbortPrimitive(fault.vaddress,fault.write,fault.statuscode);
   throw SilentExit {};
 end;
 
@@ -329,4 +330,16 @@ begin
   memattrs.notagaccess = FALSE;
   memattrs.shareability = Shareability_ISH;
   return memattrs;
+end;
+
+// AArch64.CheckDebug()
+// ====================
+// Called on each access to check for a debug exception or entry to Debug state.
+
+func AArch64_CheckDebug
+  (vaddress:bits(64), accdesc:AccessDescriptor, size:integer)
+=> FaultRecord
+begin
+    let fault = NoFault(accdesc, vaddress);
+    return fault;
 end;
