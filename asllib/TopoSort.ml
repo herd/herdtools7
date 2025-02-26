@@ -194,7 +194,7 @@ module ASTFold = struct
         name
     | D_Pragma _ -> assert false
 
-  let use d = ASTUtils.use_decl d OSet.empty
+  let use d = DependencyAnalysis.used_identifiers_decl d
 
   let extra_def d =
     let open AST in

@@ -87,7 +87,7 @@ let has_been_handled state name =
   | Some (Parsed _) | Some NotFound | Some BlackListed -> true
 
 let update_state_and_queue_from_ast ast (state, queue) =
-  let uses = ASTUtils.used_identifiers ast in
+  let uses = DependencyAnalysis.used_identifiers ast in
   let state =
     ISet.fold (fun name -> IMap.update name add_if_not_there) uses state
   and queue =

@@ -289,18 +289,6 @@ val is_simple_expr : expr -> bool
 (** [is_simple_expr e] is true if [e] does not contain any call to any other
     subprogram. It has false negative. *)
 
-(** {1 Def/use analysis} *)
-
-val use_e : expr -> ISet.t -> ISet.t
-val use_ty : ty -> ISet.t -> ISet.t
-
-val use_decl : decl -> ISet.t -> ISet.t
-(** [use_decl d] is the set of other declared names required to have
-    in the environment to be able to type-check d. *)
-
-val used_identifiers : decl list -> ISet.t
-val used_identifiers_stmt : stmt -> ISet.t
-
 val identifier_of_decl : decl -> identifier
 (** [identifier_of_decl d] is the name of the global element defined by [d]. *)
 
