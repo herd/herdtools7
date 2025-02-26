@@ -309,10 +309,10 @@ module
        cannot be disabled in some versions ?  *)
     | (Val (PteVal _),Val cst)
         when Cst.eq cst Cst.zero ->
-          Val (Cst.one)
+          one
     | (Val cst,Val (PteVal _))
         when Cst.eq cst Cst.zero ->
-          Val (Cst.one)
+          one
     | (Val (Symbolic (Virtual ({offset=o;_} as sym))),Val (Concrete d)) ->
         let d = Cst.Scalar.to_int d in
         Val (Symbolic (Virtual {sym with offset=o-d}))
@@ -421,13 +421,13 @@ module
       binop Op.AndNot2
         (fun x1 x2 -> Cst.Scalar.logand x1 (Cst.Scalar.lognot x2)) v1 v2
 
-  let bool_to_v f v1 v2 = match f v1 v2 with
-  | false -> v_false
-  | true -> v_true
-
   let bool_to_scalar b = match b with
   | false -> Cst.Scalar.s_false
   | true -> Cst.Scalar.s_true
+
+  let bool_to_v = function
+    | true -> v_true
+    | false -> v_false
 
   let scalar_to_bool v =
     match Cst.Scalar.as_bool v with
@@ -437,7 +437,7 @@ module
   let eq v1 v2 = match v1,v2 with
   | Var i1,Var i2 when Misc.int_eq i1 i2 -> v_true
   | Val (Symbolic _|Label _|Tag _|PteVal _|ConcreteVector _|Instruction _ as s1),Val (Symbolic _|Label _|Tag _|PteVal _|ConcreteVector _|Instruction _ as s2) ->
-      bool_to_v Cst.eq s1 s2
+      Cst.eq s1 s2 |> bool_to_v
 (* Assume concrete and others always to differ *)
   | (Val (Symbolic _|Label _|Tag _|ConcreteVector _|PteVal _|Instruction _), Val (Concrete _))
   | (Val (Concrete _), Val (Symbolic _|Label _|Tag _|ConcreteVector _|PteVal _|Instruction _)) -> v_false
@@ -454,8 +454,8 @@ module
 
   let lt v1 v2 = match v1,v2 with
 (* Need to compare symbols to zero, for setting X86_64 flags *)
-    | Val (Symbolic _),Val c when Cst.eq c Cst.zero -> zero
-    | Val c,Val (Symbolic _) when Cst.eq c Cst.zero -> one
+    | Val (Symbolic _),Val c when Cst.eq c Cst.zero -> v_false
+    | Val c,Val (Symbolic _) when Cst.eq c Cst.zero -> v_true
     | _,_ ->
        binop Op.Lt
          (fun s1 s2 -> bool_to_scalar (Cst.Scalar.lt s1 s2)) v1 v2
@@ -590,7 +590,7 @@ module
   | Val c -> Constant.as_virtual c
   | Var _ -> raise Undetermined
 
-  let is_virtual_v v =  if is_virtual v then one else zero
+  let is_virtual_v v =  if is_virtual v then v_true else v_false
 
   let is_instrloc v = match v with
   | Val c -> Constant.is_label c
@@ -598,8 +598,8 @@ module
 
   let is_instr_v =
     function
-    | Val (Constant.Instruction _) -> one
-    | Val _ -> zero
+    | Val (Constant.Instruction _) -> v_true
+    | Val _ -> v_false
     | Var _ -> raise Undetermined
 
   let andnot x1 x2 =
