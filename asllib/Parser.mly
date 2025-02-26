@@ -90,7 +90,7 @@ let prec =
   function
   | BOR | BAND | IMPL | BEQ -> 1
   | EQ_OP | NEQ -> 2
-  | PLUS | MINUS | OR | EOR | AND | BV_CONCAT -> 3
+  | PLUS | MINUS | OR | XOR | AND | BV_CONCAT -> 3
   | MUL | DIV | DIVRM | RDIV | MOD | SHL | SHR -> 4
   | POW -> 5
   | GT | GEQ | LT | LEQ -> 0 (* Non assoc *)
@@ -221,7 +221,7 @@ let binop ==
   | BEQ         ; { BEQ    }
   | DIV         ; { DIV    }
   | DIVRM       ; { DIVRM  }
-  | EOR         ; { EOR    }
+  | XOR         ; { XOR    }
   | EQ_OP       ; { EQ_OP  }
   | NEQ         ; { NEQ    }
   | GT          ; { GT     }

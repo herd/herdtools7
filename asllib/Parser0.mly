@@ -119,7 +119,7 @@
 %token ENUMERATION
 %token EOF
 %token EOL
-%token EOR
+%token XOR
 %token EQ
 %token EQ_EQ
 %token EQ_GT
@@ -221,7 +221,7 @@
 %left AMP_AMP BAR_BAR IMPLIES
 %left EQ_EQ BANG_EQ
 %nonassoc GT_EQ LT_EQ LT GT IN
-%left PLUS MINUS EOR AND OR
+%left PLUS MINUS XOR AND OR
 %left STAR SLASH MOD LT_LT GT_GT DIV
 %left CARET
 %nonassoc UNOPS
@@ -789,7 +789,7 @@ let abinop ==
   | AMP_AMP    ; { AST.BAND   }
   | BAR_BAR    ; { AST.BOR    }
   | DIV        ; { AST.DIV    }
-  | EOR        ; { AST.EOR    }
+  | XOR        ; { AST.XOR    }
   | EQ_EQ      ; { AST.EQ_OP  }
   | BANG_EQ    ; { AST.NEQ    }
   | GT_EQ      ; { AST.GEQ    }

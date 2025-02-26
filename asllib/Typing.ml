@@ -617,7 +617,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   let binop_is_ordered = function
     | BAND | BOR | IMPL -> true
-    | AND | BEQ | DIV | DIVRM | EOR | EQ_OP | GT | GEQ | LT | LEQ | MOD | MINUS
+    | AND | BEQ | DIV | DIVRM | XOR | EQ_OP | GT | GEQ | LT | LEQ | MOD | MINUS
     | MUL | NEQ | OR | PLUS | POW | RDIV | SHL | SHR | BV_CONCAT ->
         false
 
@@ -641,7 +641,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         and t2_anon = Types.make_anonymous env t2 in
         apply_binop_types ~loc env op t1_anon t2_anon
     | (BAND | BOR | BEQ | IMPL), (T_Bool, T_Bool) -> T_Bool |> here
-    | (AND | OR | EOR | PLUS | MINUS), (T_Bits (w1, _), T_Bits (w2, _))
+    | (AND | OR | XOR | PLUS | MINUS), (T_Bits (w1, _), T_Bits (w2, _))
       when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
         T_Bits (w1, []) |> here
     | BV_CONCAT, (T_Bits (w1, _), T_Bits (w2, _)) ->

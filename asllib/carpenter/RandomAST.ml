@@ -53,7 +53,7 @@ module Untyped (C : Config.S) = struct
       (if C.Syntax.bor then Some BOR else None);
       (if C.Syntax.div then Some DIV else None);
       (if C.Syntax.divrm then Some DIVRM else None);
-      (if C.Syntax.eor then Some EOR else None);
+      (if C.Syntax.xor then Some XOR else None);
       (if C.Syntax.eq_op then Some EQ_OP else None);
       (if C.Syntax.gt then Some GT else None);
       (if C.Syntax.geq then Some GEQ else None);
@@ -530,7 +530,7 @@ module Typed (C : Config.S) = struct
             [| PLUS; MINUS; MUL |] |> oneofa |> map (fun op -> (op, real, real))
         | T_Bits _ ->
             [
-              [| AND; OR; EOR; BV_CONCAT |]
+              [| AND; OR; XOR; BV_CONCAT |]
               |> oneofa
               |> map (fun op -> (op, ty, ty));
               [| PLUS; MINUS |] |> oneofa |> map (fun op -> (op, ty, integer));

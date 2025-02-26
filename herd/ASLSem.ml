@@ -331,7 +331,7 @@ module Make (C : Config) = struct
       | DIV -> M.op Op.Div
       | MOD -> M.op Op.Rem
       | DIVRM -> M.op (Op.ArchOp ASLOp.Divrm)
-      | EOR -> M.op Op.Xor
+      | XOR -> M.op Op.Xor
       | EQ_OP -> M.op Op.Eq
       | GT -> M.op Op.Gt
       | GEQ -> M.op Op.Ge
@@ -394,7 +394,7 @@ module Make (C : Config) = struct
         A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.ResAddr)
       else A.Location_reg (ii.A.proc, ASLBase.ASLLocalId (scope, x))
 
-    (* AArch64 registers hold integers, not bitvectors *) 
+    (* AArch64 registers hold integers, not bitvectors *)
     let is_aarch64_reg = function
       | A.Location_reg (_, ASLBase.ArchReg _) -> true
       | _ -> false

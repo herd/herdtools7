@@ -29,7 +29,7 @@ let tr_name = function
   | "AND" -> AND
   | "CONSTRAINED_UNPREDICTABLE" -> CONSTRAINED_UNPRED
   | "DIV" -> DIV
-  | "EOR" -> EOR
+  | "EOR" -> XOR
   | "IMPLEMENTATION_DEFINED" -> IMPLEM_DEFINED
   | "IN" -> IN
   | "IFF" -> IFF
@@ -130,7 +130,7 @@ let string_of_token = function
   | ELSE -> "else"
   | ELSIF -> "elsif"
   | ENUMERATION -> "enumeration"
-  | EOR -> "EOR"
+  | XOR -> "EOR"
   | FOR -> "for"
   | IF -> "if"
   | IFF -> "IFF"

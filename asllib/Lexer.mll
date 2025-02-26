@@ -110,7 +110,7 @@ let token_of_string =
  | "END"                -> s END
  | "ENUMERATION"        -> s ENUMERATION
  | "EOF"                -> s EOF
- | "EOR"                -> s EOR
+ | "XOR"                -> s XOR
  | "EQ"                 -> s EQ
  | "EQ_OP"              -> s EQ_OP
  | "EXCEPTION"          -> s EXCEPTION
@@ -242,7 +242,7 @@ let token_to_symbol = function
   | ELSIF              -> "elsif"
   | END                -> "end"
   | ENUMERATION        -> "enumeration"
-  | EOR                -> "XOR"
+  | XOR                -> "XOR"
   | EXCEPTION          -> "exception"
   | FOR                -> "for"
   | FUNC               -> "func"
@@ -338,7 +338,7 @@ let tr_name s = match s with
 | "elsif"         -> ELSIF
 | "end"           -> END
 | "enumeration"   -> ENUMERATION
-| "XOR"           -> EOR
+| "XOR"           -> XOR
 | "exception"     -> EXCEPTION
 | "FALSE"         -> BOOL_LIT false
 | "for"           -> FOR
