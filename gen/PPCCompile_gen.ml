@@ -312,6 +312,8 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
     let emit_access st p init e = match e.dir with
     | None -> Warn.fatal "TODO"
     | Some d ->
+        (* collapse the value `v` in event `e` to integer *)
+        let value = Code.value_to_int e.v in
         begin match e.loc with
         | Code _ -> Warn.fatal "No code location for PPC"
         | Data loc ->
@@ -321,13 +323,13 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
                 let r,init,cs,st = emit st p init loc  in
                 Some r,init,cs,st
             | W,None ->
-                let init,cs,st = emit_store st p init loc e.v in
+                let init,cs,st = emit_store st p init loc value in
                 None,init,cs,st
             | R,Some PPC.Atomic ->
                 let r,init,cs,st = emit_lda st p init loc in
                 Some r,init,cs,st
             | W,Some PPC.Atomic ->
-                let r,init,cs,st = emit_sta st p init loc e.v in
+                let r,init,cs,st = emit_sta st p init loc value in
                 Some r,init,cs,st
             | R,Some PPC.Reserve ->
                 let r,init,cs,st = emit_lwarx st p init loc  in
@@ -338,7 +340,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
                 let r,init,cs,st = emit_load_mixed sz o st p init loc  in
                 Some r,init,cs,st
             | W,Some (PPC.Mixed (sz,o)) ->
-                let init,cs,st = emit_store_mixed sz o st p init loc e.v in
+                let init,cs,st = emit_store_mixed sz o st p init loc value in
                 None,init,cs,st
             | J,_ -> emit_joker st init
             end
@@ -347,7 +349,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
     let emit_exch_idx st p init er ew idx =
       let rA,init,st = U.next_init st p init (as_data er.loc) in
       let rR,st = next_reg st in
-      let rW,init,csi,st = U.emit_mov st p init ew.v in
+      let rW,init,csi,st = U.emit_mov st p init (Code.value_to_int ew.v) in
       let cs,st = emit_pair p st rR rW idx rA in
       rR,init,csi@cs,st
 
@@ -368,6 +370,8 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
       | None,_ -> Warn.fatal "TODO"
       | _,Code _ -> Warn.fatal "No code location for PPC"
       | Some d,Data loc ->
+          (* collapse the value `v` in event `e` to integer *)
+          let value = Code.value_to_int e.v in
           begin match d,e.atom with
           | R,None ->
               let r,init,cs,st = emit_load_idx st p init loc r2 in
@@ -376,13 +380,13 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
               let r,init,cs,st = emit_lwarx_idx st p init loc r2 in
               Some r,init, PPC.Instruction c::cs,st
           | W,None ->
-              let init,cs,st = emit_store_idx st p init loc r2 e.v in
+              let init,cs,st = emit_store_idx st p init loc r2 value in
               None,init,PPC.Instruction c::cs,st
           | R,Some PPC.Atomic ->
               let r,init,cs,st = emit_lda_idx st p init loc r2 in
               Some r,init, PPC.Instruction c::cs,st
           | W,Some PPC.Atomic ->
-              let r,init,cs,st = emit_sta_idx st p init loc r2 e.v in
+              let r,init,cs,st = emit_sta_idx st p init loc r2 value in
               Some r,init,PPC.Instruction c::cs,st
           | W,Some PPC.Reserve ->
               Warn.fatal "No store with reservation"
@@ -399,17 +403,19 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
 
     let emit_access_dep_data st p init e  r1 =
+      (* collapse the value `v` in event `e` to integer *)
+      let value = Code.value_to_int e.v in
       match e.dir,e.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some R,_ ->Warn.fatal "data dependency to load"
       | _,Code _ -> Warn.fatal "No code location for PPC"
       | Some W,Data loc ->
           let rW,st = next_reg st in
-          let ro,init,st = U.emit_const st p init e.v in
+          let ro,init,st = U.emit_const st p init value in
           let cs2 = match ro with
           | None ->
               [PPC.Instruction (calc_zero rW r1) ;
-               PPC.Instruction (PPC.Paddi (rW,rW,e.v)) ; ]
+               PPC.Instruction (PPC.Paddi (rW,rW,value)) ; ]
           | Some rC ->
               [PPC.Instruction (calc_zero rW r1) ;
                PPC.Instruction (PPC.Padd (PPC.DontSetCR0,rW,rW,rC)) ; ] in
@@ -444,6 +450,8 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
           [PPC.Instruction (PPC.Pcmpw (0,r1,r1));
            PPC.Instruction (PPC.Pbcc (PPC.Eq,lab));
            PPC.Label (lab,PPC.Nop);],st in
+      (* collapse the value `v` in event `e` to integer *)
+      let value = Code.value_to_int e.v in
       match e.dir,e.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some R,Data loc ->
@@ -458,14 +466,14 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
           let ro,init,cs,st =
             match e.atom with
             | None ->
-                let init,cs,st = emit_store st p init loc e.v in
+                let init,cs,st = emit_store st p init loc value in
                 None,init,cs,st
             | Some (PPC.Mixed (sz,o)) ->
-                let init,cs,st = emit_store_mixed sz o st p init loc e.v in
+                let init,cs,st = emit_store_mixed sz o st p init loc value in
                 None,init,cs,st
             | Some PPC.Reserve -> Warn.fatal "No store with reservation"
             | Some PPC.Atomic ->
-                let r,init,cs,st = emit_sta st p init loc e.v in
+                let r,init,cs,st = emit_sta st p init loc value in
                 Some r,init,cs,st in
           ro,init,(if isync then insert_isync c cs else c@cs),st
       | Some J,_ -> emit_joker st init
@@ -478,13 +486,13 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
          PPC.Instruction (PPC.Pbcc (PPC.Eq,lab));
          PPC.Label (lab,PPC.Nop);] in
       let r,init,csr,st = emit_lwarx st p init (as_data er.loc)  in
-      let init,csw,st = emit_one_stwcx st p init (as_data ew.loc) ew.v in
+      let init,csw,st = emit_one_stwcx st p init (as_data ew.loc) (Code.value_to_int ew.v) in
       let cs = csr@csw in
       let cs = if isync then insert_isync c cs else c@cs in
       r,init,cs,st
 
     let emit_access_dep st p init e dp r1 n1 =
-      let v1 = n1.C.evt.C.v in
+      let v1 = Code.value_to_int n1.C.evt.C.v in
       match dp with
       | PPC.ADDR -> emit_access_dep_addr st p init e r1
       | PPC.DATA -> emit_access_dep_data st p init e r1
@@ -520,7 +528,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
     let do_check_load p st r e =
       let ok,st = A.ok_reg st in
       (fun k ->
-        PPC.Instruction (PPC.Pcmpwi (0,r,e.v))::
+        PPC.Instruction (PPC.Pcmpwi (0,r,(Code.value_to_int e.v)))::
         PPC.Instruction (PPC.Pbcc (PPC.Ne,Label.last p))::
         PPC.Instruction (inc ok)::
         k),
