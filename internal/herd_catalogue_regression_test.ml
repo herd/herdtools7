@@ -27,7 +27,8 @@ type flags = {
   herd       : path ;
   libdir     : path ;
   shelf_path : path ;
-  kinds_path  : path ;
+  kinds_path : path ;
+  conf_path  : path ;
   variants   : string list ;
 }
 
@@ -73,13 +74,18 @@ let kinds_path_of_permutation kinds_dir p =
   in
   Filename.concat kinds_dir (escape_filename (filename_of_permutation p))
 
+let (>>=) o1 o2 = match o1 with
+| "" -> o2
+| _ -> Some o1
+
+
 let herd_kinds_of_permutation ?j ?timeout flags shelf_dir litmuses p =
   let prepend path = Filename.concat shelf_dir path in
   let cmd =
     TestHerd.run_herd
       ~bell:(Option.map prepend p.bell)
       ~cat:(Some (prepend p.cat))
-      ~conf:(Base.Option.map prepend p.cfg)
+      ~conf:(flags.conf_path >>= Option.map prepend p.cfg)
       ~variants:flags.variants
       ~libdir:flags.libdir
       flags.herd ?j ?timeout
@@ -123,7 +129,7 @@ let show_tests ?j ?timeout flags =
       TestHerd.herd_command
         ~bell:(Option.map prepend p.bell)
         ~cat:(Some (prepend p.cat))
-        ~conf:(Base.Option.map prepend p.cfg)
+        ~conf:(flags.conf_path >>= Option.map prepend p.cfg)
         ~variants:flags.variants
         ~libdir:flags.libdir
         flags.herd ?j ?timeout
@@ -203,6 +209,7 @@ let () =
   let libdir = ref "" in
   let shelf_path = ref "" in
   let kinds_path = ref "" in
+  let conf_path = ref "" in
 
   (* Optional arguments. *)
   let variants = ref [] in
@@ -216,6 +223,7 @@ let () =
     Args.is_file ("-herd-path",   Arg.Set_string herd,         "path to herd binary") ;
     Args.is_dir  ("-libdir-path", Arg.Set_string libdir,       "path to herd libdir") ;
     Args.is_file  ("-kinds-path",   Arg.Set_string kinds_path,    "path to directory of kinds files to test against") ;
+    Args.is_file  ("-conf-path",   Arg.Set_string conf_path,    "path to configuration files (overrides cfg of shelf)") ;
     Args.is_file ("-shelf-path",  Arg.Set_string shelf_path,   "path to shelf.py to test") ;
                   "-variant",     Args.append_string variants, "variant to pass to herd7" ;
   ] in
@@ -241,6 +249,7 @@ let () =
     libdir = !libdir ;
     shelf_path = !shelf_path ;
     kinds_path = !kinds_path ;
+    conf_path = !conf_path ;
     variants = !variants ;
     } in
   try
