@@ -82,7 +82,7 @@ let binop_values pos t op v1 v2 =
       L_BitVector (Bitvector.logor b1 b2)
   | AND, L_BitVector b1, L_BitVector b2 when bv_same_length b1 b2 ->
       L_BitVector (Bitvector.logand b1 b2)
-  | EOR, L_BitVector b1, L_BitVector b2 when bv_same_length b1 b2 ->
+  | XOR, L_BitVector b1, L_BitVector b2 when bv_same_length b1 b2 ->
       L_BitVector (Bitvector.logxor b1 b2)
   | PLUS, L_BitVector b1, L_BitVector b2 when bv_same_length b1 b2 ->
       L_BitVector

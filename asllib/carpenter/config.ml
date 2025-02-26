@@ -13,7 +13,7 @@ module type Syntax = sig
   val bor : bool
   val div : bool
   val divrm : bool
-  val eor : bool
+  val xor : bool
   val eq_op : bool
   val gt : bool
   val geq : bool
@@ -132,7 +132,7 @@ module All : Syntax = struct
   let bor = true
   let div = true
   let divrm = true
-  let eor = true
+  let xor = true
   let eq_op = true
   let gt = true
   let geq = true
@@ -266,7 +266,7 @@ module Parse = struct
         ("bor", true);
         ("div", true);
         ("divrm", true);
-        ("eor", true);
+        ("xor", true);
         ("eq_op", true);
         ("gt", true);
         ("geq", true);
@@ -385,7 +385,7 @@ module Parse = struct
       let bor = Tbl.find tbl "bor"
       let div = Tbl.find tbl "div"
       let divrm = Tbl.find tbl "divrm"
-      let eor = Tbl.find tbl "eor"
+      let xor = Tbl.find tbl "xor"
       let eq_op = Tbl.find tbl "eq_op"
       let gt = Tbl.find tbl "gt"
       let geq = Tbl.find tbl "geq"
