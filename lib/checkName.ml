@@ -115,7 +115,7 @@ module
             (fun r name -> ReadNames.from_file (rename name) Misc.cons r)
             [] args in
         let set = StringSet.of_list names in
-        if I.verbose > 0 then
+        if I.verbose > 1 then
           Printf.eprintf "Excl {%s}\n" (StringSet.pp_str "," (fun s -> s) set) ;
         set
 
@@ -133,7 +133,7 @@ module
       match names with
       | None ->
           let is_ok n = not (StringSet.mem n names_excl) in
-          if I.verbose > 0 then
+          if I.verbose > 1 then
             fun n ->
               let b = is_ok n in
               Printf.eprintf "Check %s -> %b\n" n b ;
