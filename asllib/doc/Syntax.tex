@@ -211,10 +211,10 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-ndecl}{}
 \begin{flalign*}
-\Ndecl  \derives \ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \parsesep &\\
+\Ndecl  \derives \ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \parsesep &\\
                    & \wrappedline\ \Nfuncbody\\
-|\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
-|\ & \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbiarrow \parsesep \Nty &\\
+|\ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
+|\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbiarrow \parsesep \Nty &\\
    & \wrappedline\ \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon &\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon &\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon &\\
@@ -312,6 +312,11 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
       \Tsetter \parsesep \Teq \parsesep \Tidentifier \parsesep \Nfuncbody &\\
    |\ & \Tsetter \parsesep \Teq \parsesep \Tidentifier \parsesep \Nfuncbody \parsesep
         \Tgetter \parsesep \Nfuncbody &\\
+\end{flalign*}
+
+\hypertarget{def-noverride}{}
+\begin{flalign*}
+\Noverride \derivesinline\ & \emptysentence \;|\; \Timpdef \;|\;\Timplementation &
 \end{flalign*}
 
 \vspace*{-\baselineskip}

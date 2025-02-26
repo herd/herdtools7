@@ -156,6 +156,7 @@ The following table summarises all error codes.
   $\BadDeclaration$              & Bad declaration                & "             \\
   $\BadCall$                     & Bad call                       & "             \\
   $\SideEffectViolation$         & Side effect violation          & "             \\
+  $\OverridingError$             & Overriding error               & "             \\
   \hline
   $\UnreachableError$            & Unreachable error              & Dynamic       \\
   $\DynamicTypeAssertionFailure$ & Dynamic type assertion failure & "             \\
@@ -359,6 +360,16 @@ The following table summarises all error codes.
       (\TypingRuleRef{SAssert}).
     \item A non-constant-time initialization expression was provided for a constant declaration (\TypingRuleRef{SDecl}.\textsc{constant}).
     \item A \sideeffectconflictterm{} was found during an attempt to combine two sets of \sideeffectdescriptorsterm{} (\TypingRuleRef{NonConflictingUnion}).
+  \end{itemize}
+
+\hypertarget{def-overridingerror}{}
+\item[$\OverridingError$]
+  \textit{Overriding error.}
+  An error was encountered during overriding.
+  For example:
+  \begin{itemize}
+    \item Two \texttt{implementation} subprograms had clashing signatures \\ (\TypingRuleRef{CheckImplementationsUnique}).
+    \item An \texttt{implementation} subprogram did not have exactly one corresponding \texttt{impdef} subprogram (\TypingRuleRef{ProcessOverrides}).
   \end{itemize}
 
 \end{description}

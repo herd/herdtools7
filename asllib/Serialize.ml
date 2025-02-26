@@ -323,15 +323,24 @@ let pp_body f = function
   | SB_ASL s -> bprintf f "SB_ASL (%a)" pp_stmt s
   | SB_Primitive b -> bprintf f "SB_Primitive %B" b
 
+let pp_override_info f override =
+  addb f
+  @@
+  match override with Impdef -> "Impdef" | Implementation -> "Implementation"
+
 let pp_decl f d =
   match d.desc with
-  | D_Func { name; args; body; return_type; parameters; subprogram_type } ->
+  | D_Func
+      { name; args; body; return_type; parameters; subprogram_type; override }
+    ->
       bprintf f
         "D_Func { name=%S; args=%a; body=%a; return_type=%a; parameters=%a; \
-         subprogram_type=%a }"
+         subprogram_type=%a; override=%a }"
         name (pp_id_assoc pp_ty) args pp_body body (pp_option pp_ty) return_type
         (pp_list (pp_pair pp_string (pp_option pp_ty)))
         parameters pp_subprogram_type subprogram_type
+        (pp_option pp_override_info)
+        override
   | D_GlobalStorage { name; keyword; ty; initial_value } ->
       bprintf f "D_GlobalConst { name=%S; keyword=%a; ty=%a; initial_value=%a}"
         name pp_gdk keyword (pp_option pp_ty) ty (pp_option pp_expr)

@@ -116,6 +116,7 @@ module Make (C : Config) = struct
     let output_format = Asllib.Error.HumanReadable
     let print_typed = false
     let use_field_getter_extension = is_experimental
+    let override_mode = Asllib.Typing.Permissive
   end)
 
   module ASLInterpreterConfig = struct
@@ -644,6 +645,7 @@ module Make (C : Config) = struct
           subprogram_type;
           recurse_limit;
           builtin = true;
+          override = None;
         }
         [@warning "-40-42"],
         f )

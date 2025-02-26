@@ -120,6 +120,8 @@ let token_of_string =
  | "GETTER"             -> s GETTER
  | "GT"                 -> s GT
  | "IF"                 -> s IF
+ | "IMPLEMENTATION"     -> s IMPLEMENTATION
+ | "IMPDEF"             -> s IMPDEF
  | "IMPL"               -> s IMPL
  | "IN"                 -> s IN
  | "INTEGER"            -> s INTEGER
@@ -246,6 +248,8 @@ let token_to_symbol = function
   | FUNC               -> "func"
   | GETTER             -> "getter"
   | IF                 -> "if"
+  | IMPLEMENTATION     -> "implementation"
+  | IMPDEF             -> "impdef"
   | IN                 -> "IN"
   | INTEGER            -> "integer"
   | LET                -> "let"
@@ -341,6 +345,8 @@ let tr_name s = match s with
 | "func"          -> FUNC
 | "getter"        -> GETTER
 | "if"            -> IF
+| "impdef"        -> IMPDEF
+| "implementation" -> IMPLEMENTATION
 | "IN"            -> IN
 | "integer"       -> INTEGER
 | "let"           -> LET

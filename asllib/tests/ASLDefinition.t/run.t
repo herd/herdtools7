@@ -49,3 +49,10 @@ Examples used in ASL High-level Definition:
   [1]
 
   $ aslref --no-exec Accessor.asl
+  $ aslref --no-exec Overriding.asl
+  $ aslref --no-exec OverridingBad.asl
+  File OverridingBad.asl, line 1, character 0 to line 4, character 4:
+  ASL Typing error: multiple overlapping `implementation` functions for Foo:
+    File OverridingBad.asl, line 1, character 0 to line 4, character 4
+    File OverridingBad.asl, line 11, character 0 to line 14, character 4
+  [1]

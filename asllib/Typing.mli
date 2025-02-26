@@ -28,11 +28,18 @@
 (** Possible strictness of type-checking. *)
 type strictness = Silence | Warn | TypeCheck | TypeCheckNoWarn
 
+(** Overriding modes *)
+type override_mode =
+  | Permissive  (** Allow both `impdef` and `implementation` *)
+  | NoImplementations  (** Warn if there are any `implementation`s *)
+  | AllImpdefsOverridden  (** Warn if an `impdef` has no `implementation` *)
+
 module type ANNOTATE_CONFIG = sig
   val check : strictness
   val output_format : Error.output_format
   val print_typed : bool
   val use_field_getter_extension : bool
+  val override_mode : override_mode
 end
 
 module type S = sig

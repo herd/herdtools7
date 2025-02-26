@@ -496,6 +496,11 @@ the local declaration item is
 \subprogrambody \derives\ & \SBASL(\stmt) \hypertarget{ast-sbprimitive}{} \;|\; \SBPrimitive &
 \end{flalign*}
 
+\hypertarget{ast-overrideinfo}{} \hypertarget{ast-impdef}{}
+\begin{flalign*}
+\overrideinfo \derives\ & \Impdef \hypertarget{ast-implementation}{} \;|\; \Implementation &
+\end{flalign*}
+
 \hypertarget{ast-func}{}
 \begin{flalign*}
 \func \derives\ &
@@ -509,7 +514,8 @@ the local declaration item is
  \funcreturntype &:& \ty?,\\
  \funcsubprogramtype &:& \subprogramtype\\
  \funcrecurselimit    &:& \expr?\\
- \funcbuiltin &:& \Bool
+ \funcbuiltin &:& \Bool\\
+ \funcoverride &:& \Some{\overrideinfo}\\
 \end{array}
 \right\}
 } &

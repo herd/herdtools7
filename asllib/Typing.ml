@@ -135,12 +135,14 @@ let set_filter_map f set =
    ---------------------------------------------------------------------------*)
 
 type strictness = Silence | Warn | TypeCheck | TypeCheckNoWarn
+type override_mode = Permissive | NoImplementations | AllImpdefsOverridden
 
 module type ANNOTATE_CONFIG = sig
   val check : strictness
   val output_format : Error.output_format
   val print_typed : bool
   val use_field_getter_extension : bool
+  val override_mode : override_mode
 end
 
 module type S = sig
@@ -4018,6 +4020,95 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (List.rev_append ds acc, env3.global) |: TypingRule.TypeCheckMutuallyRec
   (* End *)
 
+  (** A module for overriding subprograms. *)
+  module Overriding : sig
+    val override_subprograms : override_mode -> t -> t
+  end = struct
+    let signatures_match { desc = func1 } { desc = func2 } =
+      let ty_equal = type_equal (fun _ _ -> false) in
+      let args_match =
+        list_equal
+          (fun (id1, t1) (id2, t2) -> String.equal id1 id2 && ty_equal t1 t2)
+          func1.args func2.args
+      in
+      let parameters_match =
+        list_equal
+          (fun (id1, ty_opt1) (id2, ty_opt2) ->
+            String.equal id1 id2 && Option.equal ty_equal ty_opt1 ty_opt2)
+          func1.parameters func2.parameters
+      in
+      let returns_match =
+        Option.equal ty_equal func1.return_type func2.return_type
+      in
+      String.equal func1.name func2.name
+      && args_match && parameters_match && returns_match
+
+    let check_implementations_unique impls () =
+      let rec scan l =
+        match l with
+        | [] -> ()
+        | h :: t -> (
+            match List.find_opt (signatures_match h) t with
+            | Some matching ->
+                fatal_from ~loc:h (MultipleImplementations (h, matching))
+            | None -> scan t)
+      in
+      scan impls
+
+    (** Override (i.e. delete) subprograms in [impdefs] if they have matching
+        subprograms in [impls]. Also check that there is exactly one override
+        candidate for each subprogram in [impdefs]. *)
+    let process_overrides ~impdefs ~impls =
+      let process_one impdefs impl =
+        let matching, nonmatching =
+          List.partition (signatures_match impl) impdefs
+        in
+        match List.length matching with
+        | 0 -> fatal_from ~loc:impl NoOverrideCandidate
+        | 1 -> nonmatching
+        | _ -> fatal_from ~loc:impl (TooManyOverrideCandidates matching)
+      in
+      List.fold_left process_one impdefs impls
+
+    let override_subprograms override_mode ast =
+      let impdefs, impls, normals =
+        List.fold_left
+          (fun (impdefs, impls, normals) decl ->
+            match decl.desc with
+            | D_Func ({ override = Some Impdef } as f) ->
+                let f_annotated = add_pos_from ~loc:decl f in
+                (f_annotated :: impdefs, impls, normals)
+            | D_Func ({ override = Some Implementation } as f) ->
+                let f_annotated = add_pos_from ~loc:decl f in
+                (impdefs, f_annotated :: impls, normals)
+            | _ -> (impdefs, impls, decl :: normals))
+          ([], [], []) ast
+      in
+      let normals = List.rev normals in
+      let+ () = check_implementations_unique impls in
+      let overridden =
+        match override_mode with
+        | Permissive ->
+            let impdefs' = process_overrides ~impdefs ~impls in
+            impdefs' @ impls
+        | NoImplementations ->
+            let+ () =
+              check_true (list_is_empty impls) (fun () ->
+                  warn_from ~loc:(List.hd impls) UnexpectedImplementation)
+            in
+            impdefs
+        | AllImpdefsOverridden ->
+            let impdefs' = process_overrides ~impdefs ~impls in
+            let+ () =
+              check_true (list_is_empty impdefs') (fun () ->
+                  warn_from ~loc:(List.hd impdefs') MissingOverride)
+            in
+            impls
+      in
+      List.map (fun f -> D_Func f.desc |> add_pos_from ~loc:f) overridden
+      @ normals
+  end
+
   (* Begin TypeCheckAST *)
   let type_check_ast_in_env =
     let fold = function
@@ -4033,6 +4124,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let fold_topo ast acc = TopoSort.ASTFold.fold fold ast acc in
     fun env ast ->
+      let ast = Overriding.override_subprograms C.override_mode ast in
       (* Type check D_Pragma declarations separately from the main AST
          We can do this because no other declaration depends on a pragma *)
       let is_pragma d = match d.desc with D_Pragma _ -> true | _ -> false in
@@ -4050,6 +4142,7 @@ module TypeCheckDefault = Annotate (struct
   let output_format = Error.HumanReadable
   let print_typed = false
   let use_field_getter_extension = false
+  let override_mode = Permissive
 end)
 
 let type_and_run ?instrumentation ast =

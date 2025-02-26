@@ -12,10 +12,10 @@ Subprogram declarations have no associated semantics.
 \section{Syntax\label{sec:SubprogramDeclarationsSyntax}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
-\Ndecl  \derives \ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \\
+\Ndecl  \derives \ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \\
 & \wrappedline\ \parsesep \Nfuncbody &\\
-|\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
-|\ & \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbiarrow \parsesep \Nty &\\
+|\ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
+|\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbiarrow \parsesep \Nty &\\
    & \wrappedline\ \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon &\\
 \end{flalign*}
 
@@ -34,6 +34,7 @@ Subprogram declarations have no associated semantics.
   \Tsetter \parsesep \Teq \parsesep \Tidentifier \parsesep \Nfuncbody &\\
 |\ & \Tsetter \parsesep \Teq \parsesep \Tidentifier \parsesep \Nfuncbody \parsesep
     \Tgetter \parsesep \Nfuncbody &\\
+\Noverride \derivesinline\ & \emptysentence \;|\; \Timpdef \;|\;\Timplementation &
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,14 +56,16 @@ Subprogram declarations have no associated semantics.
  \funcreturntype &:& \ty?,\\
  \funcsubprogramtype &:& \subprogramtype,\\
  \funcrecurselimit    &:& \expr?\\
- \funcbuiltin &:& \Bool
+ \funcbuiltin &:& \Bool\\
+ \funcoverride &:& \Some{\overrideinfo}\\
 \end{array}
 \right\}
 } &\\
 \typedidentifier \derives\ & (\identifier, \ty) &\\
 \subprogrambody \derives\ & \SBASL(\stmt) \;|\; \SBPrimitive &\\
 \subprogramtype \derives\ & \STProcedure \;|\; \STFunction &\\
-                |\  & \STGetter \;|\; \STSetter &
+                |\  & \STGetter \;|\; \STSetter &\\
+\overrideinfo \derives\ & \Impdef \;|\; \Implementation &
 \end{flalign*}
 
 \ASTRuleDef{GlobalDecl}
@@ -94,7 +97,7 @@ In particular, rather than directly building the abstract syntax for accessors, 
   \builddecl\left(
     \overname{\Ndecl\left(
       \begin{array}{l}
-    \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \punnode{\Nreturntype}, \\
+    \punnode{\Noverride}, \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \punnode{\Nreturntype}, \\
     \wrappedline\ \punnode{\Nrecurselimit}, \punnode{\Nfuncbody}
       \end{array}
   \right)}{\vparsednode}\right)
@@ -110,7 +113,8 @@ In particular, rather than directly building the abstract syntax for accessors, 
             \funcreturntype &:& \langle \astof{\vreturntype} \rangle,\\
             \funcsubprogramtype &:& \STFunction,\\
             \funcrecurselimit   &:& \langle\astof{\vrecurselimit}\rangle\\
-            \funcbuiltin &:& \False
+            \funcbuiltin &:& \False\\
+            \funcoverride &:& \astof{\voverride}
     \end{array}
   \right\}\right)\right]}{\vastnode}
   }
@@ -120,7 +124,7 @@ In particular, rather than directly building the abstract syntax for accessors, 
 \begin{mathpar}
 \inferrule[procedure\_decl]{}{
   \builddecl(
-    \overname{\Ndecl(\Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \punnode{\Nfuncbody})}{\vparsednode}
+    \overname{\Ndecl(\punnode{\Noverride}, \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \punnode{\Nfuncbody})}{\vparsednode}
     )
   \astarrow \\
   {
@@ -134,7 +138,8 @@ In particular, rather than directly building the abstract syntax for accessors, 
             \funcreturntype &:& \None,\\
             \funcsubprogramtype &:& \STProcedure,\\
             \funcrecurselimit   &:& \None\\
-            \funcbuiltin &:& \False
+            \funcbuiltin &:& \False\\
+            \funcoverride &:& \astof{\voverride}
     \end{array}
   \right\}\right)\right]
     }{\vastnode}
@@ -145,13 +150,13 @@ In particular, rather than directly building the abstract syntax for accessors, 
 \begin{mathpar}
 \inferrule[accessor]{
   \buildaccessors(\vaccessors) \astarrow \vaccessorpair \\
-  \desugaraccessorpair(\name, \astof{\vparamsopt}, \astof{\vfuncargs}, \astof{\tty}, \vaccessorpair) \astarrow \vastnode
+  \desugaraccessorpair(\voverride, \name, \astof{\vparamsopt}, \astof{\vfuncargs}, \astof{\tty}, \vaccessorpair) \astarrow \vastnode
 }{
   {
   \begin{array}{r}
     \builddecl\left(\overname{\Ndecl\left(
       \begin{array}{l}
-        \Taccessor, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs},
+        \punnode{\Noverride}, \Taccessor, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs},
         \Tbiarrow, \punnode{\Nty}, \\
         \wrappedline\ \Tbegin, \namednode{\vaccessors}{\Naccessors}, \Tend, \Tsemicolon
       \end{array}
@@ -398,6 +403,7 @@ The function
 \[
 \begin{array}{r}
   \desugaraccessorpair(
+    \overname{\overrideinfo}{\voverride} \aslsep
     \overname{\identifier}{\name} \aslsep
     \overname{(\identifier \times \Some{\ty})^*}{\vparameters} \aslsep
     \overname{\typedidentifier^*}{\vargs} \aslsep
@@ -422,7 +428,8 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
         \funcreturntype &:& \Some{\tty},\\
         \funcsubprogramtype &:& \STGetter,\\
         \funcrecurselimit   &:& \None\\
-        \funcbuiltin &:& \False
+        \funcbuiltin &:& \False\\
+        \funcoverride &:& \voverride
       \end{array}
       \right\}
   } \\\\
@@ -438,17 +445,45 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
         \funcreturntype &:& \None,\\
         \funcsubprogramtype &:& \STSetter,\\
         \funcrecurselimit   &:& \None\\
-        \funcbuiltin &:& \False
+        \funcbuiltin &:& \False\\
+        \funcoverride &:& \voverride
       \end{array}
       \right\}
   }
 }{
   {
   \begin{array}{r}
-    \desugaraccessorpair(\name, \vparameters, \vargs, \tty, \vaccessorpair)
+    \desugaraccessorpair(\voverride, \name, \vparameters, \vargs, \tty, \vaccessorpair)
     \astarrow [\vgetter, \vsetter]
   \end{array}
   }
+}
+\end{mathpar}
+
+\ASTRuleDef{Override}
+\hypertarget{build-override}{}
+The function
+\[
+\buildoverride(\overname{\parsenode{\Noverride}}{\vparsednode}) \aslto
+  \overname{\Some{\overrideinfo}}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{}{
+  \buildoverride(\overname{\Noverride(\emptysentence)}{\vparsednode}) \astarrow \None
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{}{
+  \buildoverride(\overname{\Noverride(\Timpdef)}{\vparsednode}) \astarrow \Some{\Impdef}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{}{
+  \buildoverride(\overname{\Noverride(\Timplementation)}{\vparsednode}) \astarrow \Some{\Implementation}
 }
 \end{mathpar}
 

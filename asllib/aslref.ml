@@ -39,6 +39,7 @@ type args = {
   strictness : strictness;
   output_format : Error.output_format;
   use_field_getter_extension : bool;
+  override_mode : override_mode;
 }
 
 let push thing ref = ref := thing :: !ref
@@ -60,6 +61,8 @@ let parse_args () =
   let push_file file_type s = target_files := (file_type, s) :: !target_files in
   let output_format = ref Error.HumanReadable in
   let use_field_getter_extension = ref false in
+  let override_mode = ref Permissive in
+  let set_override_mode m () = override_mode := m in
 
   let speclist =
     [
@@ -123,6 +126,16 @@ let parse_args () =
         Arg.String (push_file NormalV1),
         "Use ASLv1 parser for this file. (default)" );
       ("--version", Arg.Set show_version, " Print version and exit.");
+      ( "--overriding-permissive",
+        Arg.Unit (set_override_mode Permissive),
+        " Allow both `impdef` and `implementation` functions (default)." );
+      ( "--overriding-no-implementations",
+        Arg.Unit (set_override_mode NoImplementations),
+        " Warn if any `implementation` functions are defined." );
+      ( "--overriding-all-impdefs-overridden",
+        Arg.Unit (set_override_mode AllImpdefsOverridden),
+        " Warn if any `impdef` functions are not overridden by corresponding \
+         `implementation`s." );
     ]
     |> Arg.align ?limit:None
   in
@@ -154,6 +167,7 @@ let parse_args () =
       show_rules = !show_rules;
       output_format = !output_format;
       use_field_getter_extension = !use_field_getter_extension;
+      override_mode = !override_mode;
     }
   in
 
@@ -251,6 +265,7 @@ let () =
       let check = args.strictness
       let print_typed = args.print_typed
       let use_field_getter_extension = args.use_field_getter_extension
+      let override_mode = args.override_mode
     end in
     let module T = Annotate (C) in
     or_exit @@ fun () -> T.type_check_ast ast

@@ -98,12 +98,13 @@ type accessor_pair = {
 (** A getter/setter pair *)
 
 val desugar_accessor_pair :
+  override_info option ->
   identifier ->
   (identifier * ty option) list ->
   typed_identifier list ->
   ty ->
   accessor_pair ->
   decl list
-(** [desugar_accessor_pair name params args ty accessor_pair] desugars the accessor
-    pair into two function declarations, with shared [name], [params], [args],
-    and input/return type [ty]. *)
+(** [desugar_accessor_pair override name params args ty accessor_pair] desugars
+    the accessor pair into two function declarations, with shared [override],
+    [name], [params], [args], and input/return type [ty]. *)
