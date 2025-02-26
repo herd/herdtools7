@@ -108,7 +108,8 @@ end;
 // ======================
 // Returns whether output address is expressed in the configured size number of bits
 
-func AArch64_OAOutOfRange(address:bits(56), d128:bit, ps:bits(3), tgx:TGx)
+func AArch64_OAOutOfRange
+  (address:bits(56), d128:bit, ps:bits(3), ds:bit, tgx:TGx)
 => boolean
 begin
   return FALSE;
@@ -172,14 +173,12 @@ var oa : FullAddress;
   return oa;
 end;
 
-// AArch64.LeafBase()
-// ==================
+// AArch64.S1LeafBase()
+// ====================
 // Extract the address embedded in a block and page descriptor pointing to the
 // base of a memory block
-// Modified -> extract oa field from descriptor
-
 func
-  AArch64_LeafBase(descriptor:bits(N),d128:bit,ds:bit,tgx:TGx,level:integer)
+  AArch64_S1LeafBase(descriptor:bits(N),walkparams:S1TTWParams,level:integer)
   => bits(56)
 begin
   return GetOAPrimitive(descriptor);
@@ -193,7 +192,7 @@ end;
 
 func AArch64_MemSwapTableDesc
   (fault_in:FaultRecord,prev_desc:bits(N),new_desc:bits(N),
-   ee:bit,descaccess:AccessDescriptor,descpaddr:AddressDescriptor)
+   ee:bit,descaccess:AccessDescriptor,descpaddr:AddressDescriptor,n:integer)
 => (FaultRecord, bits(N))
 begin
    let addr = descpaddr.paddress.address;
@@ -204,12 +203,12 @@ end;
 // AArch64.DataAbort()
 // ===================
 
-type SilentExit of exception;
+type SilentExit of exception {-};
 
-func AArch64_DataAbort(vaddress:bits(64),fault:FaultRecord)
+func AArch64_DataAbort(fault:FaultRecord)
 begin
-//  __DEBUG__(vaddress);
-  DataAbortPrimitive(vaddress,fault.write,fault.statuscode);
+//  __DEBUG__(fault.vaddress);
+  DataAbortPrimitive(fault.vaddress,fault.write,fault.statuscode);
   throw SilentExit {-};
 end;
 
@@ -284,7 +283,7 @@ end;
 // System registers.
 // Luc: we assume EL10 regime, return minimal parameters
 func AArch64_GetS1TTWParams
-  (regime:Regime, ss:SecurityState, va:bits(64))
+  (regime:Regime, el:bits(2), ss:SecurityState, va:bits(64))
   => S1TTWParams
 begin
   var walkparams : S1TTWParams;
@@ -313,7 +312,7 @@ end;
 func
   S1DecodeMemAttrs
   (attr_in:bits(8), sh:bits(2), s1aarch64:boolean,
-  walparams:S1TTWParams)
+  walparams:S1TTWParams,acctype:AccessType)
   => MemoryAttributes
 begin
   var memattrs : MemoryAttributes;
@@ -329,4 +328,25 @@ begin
   memattrs.notagaccess = FALSE;
   memattrs.shareability = Shareability_ISH;
   return memattrs;
+end;
+
+// AArch64.CheckDebug()
+// ====================
+// Called on each access to check for a debug exception or entry to Debug state.
+
+func AArch64_CheckDebug
+  (vaddress:bits(64), accdesc:AccessDescriptor, size:integer)
+=> FaultRecord
+begin
+    let fault = NoFault(accdesc, vaddress);
+    return fault;
+end;
+// AArch64.BlocknTFaults()
+// =======================
+// Identify whether the nT bit in a block descriptor is effectively set
+// causing a translation fault
+
+func AArch64_BlocknTFaults{N}(d128:bit,descriptor:bits(N)) => boolean
+begin
+  return FALSE;
 end;
