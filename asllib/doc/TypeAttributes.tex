@@ -624,12 +624,22 @@ The \underlyingtype{} of \texttt{(integer, T2)} and \texttt{T3} is
 \CodeSubsection{\MakeAnonymousBegin}{\MakeAnonymousEnd}{../types.ml}
 
 \TypingRuleDef{CheckConstrainedInteger}
+A type is a \emph{\constrainedinteger} if it is either a \wellconstrainedintegertype{}
+or a \parameterizedintegertype.
+
 \hypertarget{def-checkconstrainedinteger}{}
 The function
 \[
   \checkconstrainedinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-checks whether the type $\vt$ is a \constrainedinteger. If so, the result is $\True$, otherwise a type error is returned.
+checks whether the type $\vt$ is a \constrainedinteger{} type.
+If so, the result is $\True$, otherwise the result is a \typingerrorterm.
+
+\ExampleDef{Checking for Constrained Integers}
+\listingref{check-constrained-integer}
+shows examples of checking whether a type (used for the width of a bitvector type)
+is a \constrainedinteger{} type.
+\ASLListing{Checking for constrained integers}{check-constrained-integer}{\typingtests/TypingRule.CheckConstrainedInteger.asl}
 
 \ProseParagraph
 \OneApplies
