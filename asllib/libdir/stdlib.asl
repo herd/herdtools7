@@ -292,6 +292,12 @@ begin
   return result as integer {0..N};
 end;
 
+// LowestSetBit
+// ============
+// Returns the position of the lowest 1 bit in a bitvector, and the length of
+// the bitvector if it constains only 0 bits.
+
+
 func LowestSetBit{N}(x: bits(N)) => integer{0..N}
 begin
   for i = 0 to N-1 do
@@ -302,6 +308,22 @@ begin
   return N as integer {0..N};
 end;
 
+// LowestSetBitNZ
+// ==============
+// Returns the position of the lowest 1 bit in a bitvector.
+// An assertion checks that the bitvector contains at least one 1 bit.
+
+func LowestSetBitNZ{N}(x: bits(N)) => integer{0..N-1}
+begin
+    assert !IsZero(x);
+    return LowestSetBit(x) as integer{0..N-1};
+end;
+
+// HighestSetBit
+// =============
+// Returns the position of the highest 1 bit in a bitvector, and -1 if all
+// bits are 0.
+
 func HighestSetBit{N}(x: bits(N)) => integer{-1..N-1}
 begin
   for i = N-1 downto 0 do
@@ -310,6 +332,17 @@ begin
     end;
   end;
   return -1 as {-1..N-1};
+end;
+
+// HighestSetBitNZ
+// ===============
+// Returns the position of the highest 1 bit in a bitvector.
+// An assertion checks that there is at least one 1 bit in the bitvector.
+
+func HighestSetBitNZ{N}(x: bits(N)) => integer{0..N-1}
+begin
+    assert !IsZero(x);
+    return HighestSetBit(x) as integer{0..N-1};
 end;
 
 func Zeros{N}() => bits(N)
