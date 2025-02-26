@@ -222,11 +222,12 @@
 %left COLON
 %left AMP_AMP BAR_BAR IMPLIES
 %left EQ_EQ BANG_EQ
-%nonassoc GT_EQ LT_EQ LT GT IN
+%nonassoc GT_EQ LT_EQ LT GT
 %left PLUS MINUS XOR AND OR
 %left STAR SLASH MOD LT_LT GT_GT DIV
 %left CARET
 %nonassoc UNOPS
+%nonassoc IN
 %left LBRACK
 %left DOT
 
