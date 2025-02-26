@@ -19,7 +19,21 @@ begin
   return z;
 end;
 
+// Globals
+var A : integer{-} = 1;
+let B : integer{-} = 1;
+constant C : integer{-} = 1;
+
+func acceptOnlyOne(x: integer{1})
+begin
+  pass;
+end;
+
 func main() => integer
 begin
+  acceptOnlyOne(A);
+  acceptOnlyOne(B);
+  acceptOnlyOne(C);
+
   return 0;
 end;

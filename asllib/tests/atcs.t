@@ -101,7 +101,7 @@ ATCs on other types
 
 ATCs in types:
   $ cat > atcs9.asl <<EOF
-  > let bv : bits(1 as integer{2}) = Ones(1);
+  > let bv : bits(1 as integer{2}) = Ones{1};
   > EOF
 
   $ aslref atcs9.asl
