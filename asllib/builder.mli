@@ -71,6 +71,14 @@ val from_file_multi_version :
   string ->
   AST.t Error.result
 
+val from_string :
+  ?ast_type:ast_type ->
+  ?parser_config:parser_config ->
+  filename:string ->
+  ast_string:string ->
+  version ->
+  AST.t
+
 val stdlib : AST.t Lazy.t
 val with_stdlib : AST.t -> AST.t
 val is_stdlib_name : AST.identifier -> bool
