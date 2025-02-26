@@ -197,3 +197,22 @@ func
 begin
   return  Zeros(24);
 end;
+
+type S1PIRType of bits(64) {
+ [3:0] Perm0,
+ [7:4] Perm1,
+ [11:8] Perm2,
+ [15:12] Perm3,
+ [19:16] Perm4,
+ [23:20] Perm5,
+ [27:24] Perm6,
+ [31:28] Perm7,
+ [35:32] Perm8,
+ [39:36] Perm9,
+ [43:30] Perm10,
+ [47:44] Perm11,
+ [51:48] Perm12,
+ [55:52] Perm13,
+ [59:56] Perm14,
+ [63:60] Perm15,
+};
