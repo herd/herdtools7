@@ -1756,12 +1756,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             assert (Misc.is_none m) ;
             Some (a,Some (MachSize.S128,0))
           | _ -> Some (a,m) end in
-        begin match d,atom with
+        (* Compute the base value for
+           - `regs`, registers
+           - `inits`, initial values
+           - `cs`, instructions
+           - `st`, states
+        *)
+        let regs,inits,cs,st = begin match d,atom with
         | R,None ->
             let r,init,cs,st = LDR.emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (Acq _,None) ->
-            let r,init,cs,st = LDAR.emit_load st p init loc  in
+            let r,init,cs,st = LDAR.emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (Acq a,Some (sz,o)) ->
             let module L =
@@ -1777,7 +1783,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let cs2 = emit_ldr_addon a r in
             Some r,init,cs@pseudo cs2,st
         | R,Some (AcqPc _,None) ->
-            let r,init,cs,st = LDAPR.emit_load st p init loc  in
+            let r,init,cs,st = LDAPR.emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (AcqPc a,Some (sz,o)) ->
             let module L =
@@ -1867,7 +1873,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   let emit_mov = emit_mov_sz sz
                 end) in
             let init,cs,st = S.emit_store st p init loc e.C.v a e in
-            None,init,cs,st
+          None,init,cs,st
         | W,Some (Tag,None) ->
             let init,cs,st = STG.emit_store st p init e in
             None,init,cs,st
@@ -1926,7 +1932,22 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
            let init,cs,st = emit_store st p init loc e.C.v in
            None,init,cs,st
         | W,Some (Neon _,Some _) -> assert false
-        end
+        end in
+        (* Add the instruction label to `cs`,
+           when the corresponding node requires a fault check. *)
+        let cs = match e.C.check_fault with
+        | Some (label_name, _) -> 
+          (* Always label the last instruction,
+             which should be the actual load or store. *)
+          let length = List.length cs in
+          List.mapi 
+          ( fun index instr ->
+              if index = (length - 1) then
+                  Label(label_name, instr)
+              else instr ) cs
+        | None -> cs in
+        regs,inits,cs,st
+    (* END of emit_access *)
 
     let same_sz sz1 sz2 = match sz1,sz2 with
       | None,None -> true
