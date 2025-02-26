@@ -47,28 +47,28 @@ module Make (C : Config.S) = struct
 
   let binops : binop enum =
     [
-      (if C.Syntax.plus then Some PLUS else None);
-      (if C.Syntax.and_ then Some AND else None);
-      (if C.Syntax.band then Some BAND else None);
-      (if C.Syntax.beq then Some BEQ else None);
-      (if C.Syntax.bor then Some BOR else None);
-      (if C.Syntax.div then Some DIV else None);
-      (if C.Syntax.xor then Some XOR else None);
-      (if C.Syntax.eq_op then Some EQ_OP else None);
-      (if C.Syntax.gt then Some GT else None);
-      (if C.Syntax.geq then Some GEQ else None);
-      (if C.Syntax.impl then Some IMPL else None);
-      (if C.Syntax.lt then Some LT else None);
-      (if C.Syntax.leq then Some LEQ else None);
-      (if C.Syntax.mod_ then Some MOD else None);
-      (if C.Syntax.minus then Some MINUS else None);
-      (if C.Syntax.mul then Some MUL else None);
-      (if C.Syntax.neq then Some NEQ else None);
-      (if C.Syntax.or_ then Some OR else None);
-      (if C.Syntax.rdiv then Some RDIV else None);
-      (if C.Syntax.shl then Some SHL else None);
-      (if C.Syntax.shr then Some SHR else None);
-      (if C.Syntax.bv_concat then Some BV_CONCAT else None);
+      (if C.Syntax.plus then Some `PLUS else None);
+      (if C.Syntax.and_ then Some `AND else None);
+      (if C.Syntax.band then Some `BAND else None);
+      (if C.Syntax.beq then Some `BEQ else None);
+      (if C.Syntax.bor then Some `BOR else None);
+      (if C.Syntax.div then Some `DIV else None);
+      (if C.Syntax.xor then Some `XOR else None);
+      (if C.Syntax.eq_op then Some `EQ_OP else None);
+      (if C.Syntax.gt then Some `GT else None);
+      (if C.Syntax.geq then Some `GEQ else None);
+      (if C.Syntax.impl then Some `IMPL else None);
+      (if C.Syntax.lt then Some `LT else None);
+      (if C.Syntax.leq then Some `LEQ else None);
+      (if C.Syntax.mod_ then Some `MOD else None);
+      (if C.Syntax.minus then Some `MINUS else None);
+      (if C.Syntax.mul then Some `MUL else None);
+      (if C.Syntax.neq then Some `NEQ else None);
+      (if C.Syntax.or_ then Some `OR else None);
+      (if C.Syntax.rdiv then Some `RDIV else None);
+      (if C.Syntax.shl then Some `SHL else None);
+      (if C.Syntax.shr then Some `SHR else None);
+      (if C.Syntax.bv_concat then Some `BV_CONCAT else None);
     ]
     |> filter_none |> scaled_finite
 

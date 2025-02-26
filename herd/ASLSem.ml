@@ -324,28 +324,28 @@ module Make (C : Config) = struct
       let v_true = V.Val (Constant.Concrete (ASLScalar.S_Bool true))
       and v_false = V.Val (Constant.Concrete (ASLScalar.S_Bool false)) in
       function
-      | AND -> M.op Op.And
-      | BAND -> boolop Op.And (fun b v -> if b then v else v_false)
-      | BEQ -> M.op Op.Eq
-      | BOR -> boolop Op.Or (fun b v -> if b then v_true else v)
-      | DIV -> M.op Op.Div
-      | MOD -> M.op Op.Rem
-      | DIVRM -> M.op (Op.ArchOp ASLOp.Divrm)
-      | XOR -> M.op Op.Xor
-      | EQ_OP -> M.op Op.Eq
-      | GT -> M.op Op.Gt
-      | GEQ -> M.op Op.Ge
-      | LT -> M.op Op.Lt
-      | LEQ -> M.op Op.Le
-      | MINUS -> M.op Op.Sub
-      | MUL -> M.op Op.Mul
-      | NEQ -> M.op Op.Ne
-      | OR -> logor
-      | PLUS -> M.op Op.Add
-      | SHL -> M.op Op.ShiftLeft
-      | SHR -> M.op Op.ShiftRight
-      | BV_CONCAT -> concat
-      | (POW | IMPL | RDIV) as op ->
+      | `AND -> M.op Op.And
+      | `BAND -> boolop Op.And (fun b v -> if b then v else v_false)
+      | `BEQ -> M.op Op.Eq
+      | `BOR -> boolop Op.Or (fun b v -> if b then v_true else v)
+      | `DIV -> M.op Op.Div
+      | `MOD -> M.op Op.Rem
+      | `DIVRM -> M.op (Op.ArchOp ASLOp.Divrm)
+      | `XOR -> M.op Op.Xor
+      | `EQ_OP -> M.op Op.Eq
+      | `GT -> M.op Op.Gt
+      | `GEQ -> M.op Op.Ge
+      | `LT -> M.op Op.Lt
+      | `LEQ -> M.op Op.Le
+      | `MINUS -> M.op Op.Sub
+      | `MUL -> M.op Op.Mul
+      | `NEQ -> M.op Op.Ne
+      | `OR -> logor
+      | `PLUS -> M.op Op.Add
+      | `SHL -> M.op Op.ShiftLeft
+      | `SHR -> M.op Op.ShiftRight
+      | `BV_CONCAT -> concat
+      | (`POW | `IMPL | `RDIV) as op ->
           Warn.fatal "ASL operation %s not yet implement in ASLSem."
             (Asllib.PP.binop_to_string op)
 
@@ -770,8 +770,8 @@ module Make (C : Config) = struct
       let bv_lit x = bv @@ lit x in
       let bv_64 = bv_lit 64 in
       let binop = Asllib.ASTUtils.binop in
-      let minus_one e = binop MINUS e (lit 1) in
-      let pow_2 = binop POW (lit 2) in
+      let minus_one e = binop `MINUS e (lit 1) in
+      let pow_2 = binop `POW (lit 2) in
       let t_named x = T_Named x |> with_pos in
       let side_effecting = true in
       let uint_returns = int_ctnt (lit 0) (minus_one (pow_2 (var "N")))

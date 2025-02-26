@@ -46,7 +46,7 @@ let ses_non_conflicting_unions ~loc =
 let conflict ~loc expected provided =
   fatal_from ~loc (Error.ConflictingTypes (expected, provided))
 
-let plus = binop PLUS
+let plus = binop `PLUS
 let t_bits_bitwidth e = T_Bits (e, [])
 
 let rec list_mapi2 f i l1 l2 =
@@ -69,7 +69,7 @@ let sum = function [] -> !$0 | [ x ] -> x | h :: t -> List.fold_left plus h t
 
 (* Begin SlicesWidth *)
 let slices_width env =
-  let minus = binop MINUS in
+  let minus = binop `MINUS in
   let slice_width = function
     | Slice_Single _ -> one_expr
     | Slice_Star (_, e) | Slice_Length (_, e) -> e
@@ -615,10 +615,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       fatal_from ~loc (Error.UnreconcilableTypes (t1, t2))
   (* End *)
 
-  let binop_is_ordered = function
-    | BAND | BOR | IMPL -> true
-    | AND | BEQ | DIV | DIVRM | XOR | EQ_OP | GT | GEQ | LT | LEQ | MOD | MINUS
-    | MUL | NEQ | OR | PLUS | POW | RDIV | SHL | SHR | BV_CONCAT ->
+  let binop_is_ordered : binop -> bool = function
+    | `BAND | `BOR | `IMPL -> true
+    | `AND | `BEQ | `DIV | `DIVRM | `XOR | `EQ_OP | `GT | `GEQ | `LT | `LEQ
+    | `MOD | `MINUS | `MUL | `NEQ | `OR | `PLUS | `POW | `RDIV | `SHL | `SHR
+    | `BV_CONCAT ->
         false
 
   (* Begin TypeOfArrayLength *)
@@ -640,26 +641,25 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let t1_anon = Types.make_anonymous env t1
         and t2_anon = Types.make_anonymous env t2 in
         apply_binop_types ~loc env op t1_anon t2_anon
-    | (BAND | BOR | BEQ | IMPL), (T_Bool, T_Bool) -> T_Bool |> here
-    | (AND | OR | XOR | PLUS | MINUS), (T_Bits (w1, _), T_Bits (w2, _))
+    | (`BAND | `BOR | `BEQ | `IMPL), (T_Bool, T_Bool) -> T_Bool |> here
+    | (`AND | `OR | `XOR | `PLUS | `MINUS), (T_Bits (w1, _), T_Bits (w2, _))
       when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
         T_Bits (w1, []) |> here
-    | BV_CONCAT, (T_Bits (w1, _), T_Bits (w2, _)) ->
+    | `BV_CONCAT, (T_Bits (w1, _), T_Bits (w2, _)) ->
         T_Bits (width_plus env w1 w2, []) |> here
-    | (PLUS | MINUS), (T_Bits (w, _), T_Int _) -> T_Bits (w, []) |> here
-    | (LEQ | GEQ | GT | LT), (T_Int _, T_Int _ | T_Real, T_Real)
-    | ( (EQ_OP | NEQ),
+    | (`PLUS | `MINUS), (T_Bits (w, _), T_Int _) -> T_Bits (w, []) |> here
+    | (`LEQ | `GEQ | `GT | `LT), (T_Int _, T_Int _ | T_Real, T_Real)
+    | ( (`EQ_OP | `NEQ),
         (T_Int _, T_Int _ | T_Bool, T_Bool | T_Real, T_Real | T_String, T_String)
       ) ->
         T_Bool |> here
-    | (EQ_OP | NEQ), (T_Bits (w1, _), T_Bits (w2, _))
+    | (`EQ_OP | `NEQ), (T_Bits (w1, _), T_Bits (w2, _))
       when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
         T_Bool |> here
-    | (EQ_OP | NEQ), (T_Enum li1, T_Enum li2)
+    | (`EQ_OP | `NEQ), (T_Enum li1, T_Enum li2)
       when list_equal String.equal li1 li2 ->
         T_Bool |> here
-    | ( (MUL | DIV | DIVRM | MOD | SHL | SHR | POW | PLUS | MINUS),
-        (T_Int c1, T_Int c2) ) -> (
+    | (#StaticOperations.int3_binop as op), (T_Int c1, T_Int c2) -> (
         match (c1, c2) with
         | PendingConstrained, _ | _, PendingConstrained -> assert false
         | UnConstrained, _ | _, UnConstrained -> T_Int UnConstrained |> here
@@ -675,9 +675,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               T_Int (WellConstrained cs) |> here
             with TypingAssumptionFailed ->
               fatal_from ~loc (Error.BadTypesForBinop (op, t1, t2))))
-    | (PLUS | MINUS | MUL), (T_Real, T_Real)
-    | POW, (T_Real, T_Int _)
-    | RDIV, (T_Real, T_Real) ->
+    | (`PLUS | `MINUS | `MUL), (T_Real, T_Real)
+    | `POW, (T_Real, T_Int _)
+    | `RDIV, (T_Real, T_Real) ->
         T_Real |> here
     | _ -> fatal_from ~loc (Error.BadTypesForBinop (op, t1, t2)))
     |: TypingRule.ApplyBinopTypes
@@ -1423,13 +1423,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           (* LRM R_GXKG:
              The notation b[j:i] is syntactic sugar for b[i +: j-i+1].
           *)
-          let pre_length = binop MINUS j i |> binop PLUS !$1 in
+          let pre_length = binop `MINUS j i |> binop `PLUS !$1 in
           annotate_slice (Slice_Length (i, pre_length)) |: TypingRule.Slice
       | Slice_Star (factor, pre_length) ->
           (* LRM R_GXQG:
              The notation b[i *: n] is syntactic sugar for b[i*n +: n]
           *)
-          let pre_offset = binop MUL factor pre_length in
+          let pre_offset = binop `MUL factor pre_length in
           annotate_slice (Slice_Length (pre_offset, pre_length))
           |: TypingRule.Slice
       (* End *)

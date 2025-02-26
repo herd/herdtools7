@@ -139,7 +139,7 @@ let desugar_case_stmt e0 cases otherwise =
     let cond =
       match where with
       | None -> e_pattern
-      | Some e_where -> binop BAND e_pattern e_where
+      | Some e_where -> binop `BAND e_pattern e_where
     in
     S_Cond (cond, stmt, tail) |> add_pos_from case
     (* End *)

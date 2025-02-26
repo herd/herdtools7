@@ -72,7 +72,7 @@
       match es with
       | [] -> E_Literal (L_BitVector Bitvector.empty)
       | [ bv ] -> bv |> desc
-      | bv :: bvs -> List.fold_left (binop BV_CONCAT) bv bvs |> desc
+      | bv :: bvs -> List.fold_left (binop `BV_CONCAT) bv bvs |> desc
 
   end
 
@@ -358,7 +358,7 @@ let expr :=
   | binop_expr(expr, binop)
   | annotated (
       e1=expr; COLON; e2=expr;
-          { AST.E_Binop (BV_CONCAT, e1, e2) }
+          { AST.E_Binop (`BV_CONCAT, e1, e2) }
   )
 
 let binop_expr(e, b) ==
@@ -782,27 +782,27 @@ let unop ==
   | MINUS ; { AST.NEG }
   | NOT   ; { AST.NOT }
 
-let unimplemented_binop(x) == x ; { AST.PLUS }
+let unimplemented_binop(x) == x ; { `PLUS }
 
 let abinop ==
-  | AND        ; { AST.AND    }
-  | AMP_AMP    ; { AST.BAND   }
-  | BAR_BAR    ; { AST.BOR    }
-  | DIV        ; { AST.DIV    }
-  | XOR        ; { AST.XOR    }
-  | EQ_EQ      ; { AST.EQ_OP  }
-  | BANG_EQ    ; { AST.NEQ    }
-  | GT_EQ      ; { AST.GEQ    }
-  | IMPLIES    ; { AST.IMPL   }
-  | LT_EQ      ; { AST.LEQ    }
-  | PLUS       ; { AST.PLUS   }
-  | MINUS      ; { AST.MINUS  }
-  | MOD        ; { AST.MOD    }
-  | STAR       ; { AST.MUL    }
-  | OR         ; { AST.OR     }
-  | SLASH      ; { AST.RDIV   }
-  | LT_LT      ; { AST.SHL    }
-  | GT_GT      ; { AST.SHR    }
+  | AND        ; { `AND    }
+  | AMP_AMP    ; { `BAND   }
+  | BAR_BAR    ; { `BOR    }
+  | DIV        ; { `DIV    }
+  | XOR        ; { `XOR    }
+  | EQ_EQ      ; { `EQ_OP  }
+  | BANG_EQ    ; { `NEQ    }
+  | GT_EQ      ; { `GEQ    }
+  | IMPLIES    ; { `IMPL   }
+  | LT_EQ      ; { `LEQ    }
+  | PLUS       ; { `PLUS   }
+  | MINUS      ; { `MINUS  }
+  | MOD        ; { `MOD    }
+  | STAR       ; { `MUL    }
+  | OR         ; { `OR     }
+  | SLASH      ; { `RDIV   }
+  | LT_LT      ; { `SHL    }
+  | GT_GT      ; { `SHR    }
 
   | unimplemented_binop(
     | CARET
@@ -810,5 +810,5 @@ let abinop ==
 
 let binop ==
   | abinop
-  | LT         ; { AST.LT     }
-  | GT         ; { AST.GT     }
+  | LT         ; { `LT     }
+  | GT         ; { `GT     }

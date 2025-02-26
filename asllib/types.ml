@@ -280,16 +280,15 @@ module Domain = struct
           try SEnv.type_of env x |> of_type env
           with Not_found -> Error.fatal_from e (Error.UndefinedIdentifier x)))
     | E_Unop (NEG, e1) ->
-        of_expr env (E_Binop (MINUS, !$0, e1) |> add_pos_from e)
-    | E_Binop (((PLUS | MINUS | MUL) as op), e1, e2) ->
+        of_expr env (E_Binop (`MINUS, !$0, e1) |> add_pos_from e)
+    | E_Binop (((`PLUS | `MINUS | `MUL) as op), e1, e2) ->
         let is1 = of_expr env e1
         and is2 = of_expr env e2
         and fop =
           match op with
-          | PLUS -> monotone_interval_op Z.add
-          | MINUS -> anti_monotone_interval_op Z.sub
-          | MUL -> monotone_interval_op Z.mul
-          | _ -> assert false
+          | `PLUS -> monotone_interval_op Z.add
+          | `MINUS -> anti_monotone_interval_op Z.sub
+          | `MUL -> monotone_interval_op Z.mul
         in
         int_set_raise_interval_op fop op is1 is2
     | _ ->

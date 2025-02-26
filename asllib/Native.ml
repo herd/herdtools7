@@ -343,8 +343,8 @@ module NativeBackend (C : Config) = struct
       let e_var x = E_Var x |> add_dummy_annotation in
       let eoi i = expr_of_int i in
       let binop = ASTUtils.binop in
-      let minus_one e = binop MINUS e (eoi 1) in
-      let pow_2 = binop POW (eoi 2) in
+      let minus_one e = binop `MINUS e (eoi 1) in
+      let pow_2 = binop `POW (eoi 2) in
       let neg e = E_Unop (NEG, e) |> add_pos_from e in
       (* [t_bits "N"] is the bitvector type of length [N]. *)
       let t_bits x = T_Bits (e_var x, []) |> add_dummy_annotation in

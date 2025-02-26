@@ -210,7 +210,7 @@ end = struct
     let s = match s with Zero -> "= 0" | NonZero -> "!= 0" in
     Format.pp_print_string f s
 
-  let eq_to_op = function Zero -> EQ_OP | NonZero -> NEQ
+  let eq_to_op = function Zero -> `EQ_OP | NonZero -> `NEQ
 
   module PolynomialMap = Map.Make (Polynomial)
   (** Map from polynomials. *)
@@ -431,23 +431,23 @@ let rec to_ir env (e : expr) =
           | T_Int (WellConstrained [ Constraint_Exact e ]) -> to_ir env e
           | T_Int _ -> IR.of_var s
           | _ -> raise NotSupported)))
-  | E_Binop (PLUS, e1, e2) ->
+  | E_Binop (`PLUS, e1, e2) ->
       let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
       IR.cross_combine Polynomial.add ir1 ir2
-  | E_Binop (MINUS, e1, e2) ->
+  | E_Binop (`MINUS, e1, e2) ->
       let e2 = E_Unop (NEG, e2) |> ASTUtils.add_pos_from_st e2 in
-      E_Binop (PLUS, e1, e2) |> ASTUtils.add_pos_from_st e |> to_ir env
-  | E_Binop (MUL, { desc = E_Binop (DIV, e1, e2); _ }, e3) ->
-      to_ir env (binop DIV (binop MUL e1 e3) e2)
-  | E_Binop (MUL, e1, { desc = E_Binop (DIV, e2, e3); _ }) ->
-      to_ir env (binop DIV (binop MUL e1 e2) e3)
-  | E_Binop (MUL, e1, e2) ->
+      E_Binop (`PLUS, e1, e2) |> ASTUtils.add_pos_from_st e |> to_ir env
+  | E_Binop (`MUL, { desc = E_Binop (`DIV, e1, e2); _ }, e3) ->
+      to_ir env (binop `DIV (binop `MUL e1 e3) e2)
+  | E_Binop (`MUL, e1, { desc = E_Binop (`DIV, e2, e3); _ }) ->
+      to_ir env (binop `DIV (binop `MUL e1 e2) e3)
+  | E_Binop (`MUL, e1, e2) ->
       let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
       IR.cross_combine Polynomial.mult ir1 ir2
-  | E_Binop (DIV, e1, { desc = E_Literal (L_Int i2); _ }) ->
+  | E_Binop (`DIV, e1, { desc = E_Literal (L_Int i2); _ }) ->
       let ir1 = to_ir env e1 and f2 = Q.(Z.one /// i2) in
       IR.map (Polynomial.scale f2) ir1
-  | E_Binop (DIV, e1, e2) ->
+  | E_Binop (`DIV, e1, e2) ->
       let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
       IR.cross_combine
         (fun poly1 poly2 ->
@@ -455,7 +455,7 @@ let rec to_ir env (e : expr) =
           | Some (mono, factor) -> Polynomial.divide_by_term poly1 factor mono
           | None -> raise NotSupported)
         ir1 ir2
-  | E_Binop (SHL, e1, { desc = E_Literal (L_Int i2); _ }) when Z.leq Z.zero i2
+  | E_Binop (`SHL, e1, { desc = E_Literal (L_Int i2); _ }) when Z.leq Z.zero i2
     ->
       let ir1 = to_ir env e1
       and f2 = Z.to_int i2 |> Z.shift_left Z.one |> Q.of_bigint in
@@ -478,14 +478,14 @@ and to_cond env (e : expr) : Conjunction.t list * Conjunction.t list =
   match e.desc with
   | E_Literal (L_Bool b) ->
       ([ Conjunction.of_bool b ], [ Conjunction.of_bool (not b) ])
-  | E_Binop (BAND, e1, e2) ->
+  | E_Binop (`BAND, e1, e2) ->
       let cjs1, neg_cjs1 = to_cond env e1 and cjs2, neg_cjs2 = to_cond env e2 in
       (cjs1 &&& cjs2, neg_cjs1 ||| neg_cjs2)
-  | E_Binop (BOR, e1, e2) ->
+  | E_Binop (`BOR, e1, e2) ->
       let cjs1, neg_cjs1 = to_cond env e1 and cjs2, neg_cjs2 = to_cond env e2 in
       (cjs1 ||| cjs2, neg_cjs1 &&& neg_cjs2)
-  | E_Binop (EQ_OP, e1, e2) ->
-      let e' = E_Binop (MINUS, e1, e2) |> ASTUtils.add_pos_from_st e in
+  | E_Binop (`EQ_OP, e1, e2) ->
+      let e' = E_Binop (`MINUS, e1, e2) |> ASTUtils.add_pos_from_st e in
       let ir = to_ir env e' in
       (IR.to_conjuncts Zero ir, IR.to_conjuncts NonZero ir)
   | E_Cond (cond, e1, e2) ->
