@@ -357,3 +357,4 @@ Extra tests by ASLRef team
     provided integer {0}.
   [1]
 
+  $ aslref --no-exec order-insensitive.asl
