@@ -133,11 +133,12 @@ constraints have yet to be determined.
 These constraints are inferred by the type system based on the expression used to initialize
 the storage element (see \TypingRuleRef{InheritIntegerConstraints}).
 
-\RequirementDef{PendingConstrainedLocal}
+\RequirementDef{PendingConstrainedLHS}
 Pending-constrained integer types may only appear on the left-hand-side
-of local storage element declarations.
+of local and global storage element declarations.
+They may not appear in \texttt{config} declarations.
 %
-\listingref{global-pending-constrained} shows an ill-typed specification.
+\listingref{config-pending-constrained} shows an ill-typed specification.
 
 \ExampleDef{Well-typed pending-constrained types}
 \listingref{typing-pendingconstrained} shows examples of well-typed pending-constrained
@@ -300,11 +301,11 @@ for unconstrained integers.
 
 \TypingRuleDef{TInt}
 \ExampleDef{Ill-typed pending-constrained integer type}
-\listingref{global-pending-constrained}
+\listingref{config-pending-constrained}
 and \listingref{rhs-pending-constrained}
 correspond to \CaseName{pending\_constrained}.
-\ASLListing{Ill-typed pending-constrained integer type}{global-pending-constrained}
-{\typingtests/TypingRule.TInt.global_pending_constrained.bad.asl}
+\ASLListing{Ill-typed pending-constrained integer type}{config-pending-constrained}
+{\typingtests/TypingRule.TInt.config_pending_constrained.bad.asl}
 
 \ASLListing{Ill-typed pending-constrained integer type}{rhs-pending-constrained}
 {\typingtests/TypingRule.TInt.rhs_pending_constrained.bad.asl}
