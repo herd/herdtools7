@@ -205,13 +205,6 @@ module type S =
                 unit t
 
     val aarch64_cas_no :
-      bool -> (* physical access *)
-        'loc t -> 'v t ->
-          ('v -> unit t) -> ('loc -> 'v t) ->
-           ('loc -> unit t) -> unit t ->
-            ('v -> 'v -> unit t) -> unit t
-
-    val aarch64_cas_no_with_writeback :
           bool -> (* physical access *)
             'loc t -> 'v t ->
               ('v -> unit t) -> ('loc -> 'v t) -> ('loc -> 'v -> unit t) ->
