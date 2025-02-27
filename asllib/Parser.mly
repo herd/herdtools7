@@ -88,12 +88,12 @@ let make_ty_decl_subtype (x, s) =
 let prec =
   let open AST in
   function
-  | BOR | BAND | IMPL | BEQ -> 1
-  | EQ_OP | NEQ -> 2
-  | PLUS | MINUS | OR | XOR | AND | BV_CONCAT -> 3
-  | MUL | DIV | DIVRM | RDIV | MOD | SHL | SHR -> 4
-  | POW -> 5
-  | GT | GEQ | LT | LEQ -> 0 (* Non assoc *)
+  | `BOR | `BAND | `IMPL | `BEQ -> 1
+  | `EQ_OP | `NEQ -> 2
+  | `PLUS | `MINUS | `OR | `XOR | `AND | `BV_CONCAT -> 3
+  | `MUL | `DIV | `DIVRM | `RDIV | `MOD | `SHL | `SHR -> 4
+  | `POW -> 5
+  | `GT | `GEQ | `LT | `LEQ -> 0 (* Non assoc *)
 
 let check_not_same_prec loc op op' =
   if prec op = prec op' then Error.(fatal_from loc CannotParse)
@@ -215,30 +215,30 @@ let unop ==
   | NOT   ; { NOT }
 
 let binop ==
-  | AND         ; { AND    }
-  | BAND        ; { BAND   }
-  | BOR         ; { BOR    }
-  | BEQ         ; { BEQ    }
-  | DIV         ; { DIV    }
-  | DIVRM       ; { DIVRM  }
-  | XOR         ; { XOR    }
-  | EQ_OP       ; { EQ_OP  }
-  | NEQ         ; { NEQ    }
-  | GT          ; { GT     }
-  | GEQ         ; { GEQ    }
-  | IMPL        ; { IMPL   }
-  | LT          ; { LT     }
-  | LEQ         ; { LEQ    }
-  | PLUS        ; { PLUS   }
-  | MINUS       ; { MINUS  }
-  | MOD         ; { MOD    }
-  | MUL         ; { MUL    }
-  | OR          ; { OR     }
-  | RDIV        ; { RDIV   }
-  | SHL         ; { SHL    }
-  | SHR         ; { SHR    }
-  | POW         ; { POW    }
-  | COLON_COLON ; { BV_CONCAT }
+  | AND         ; { `AND    }
+  | BAND        ; { `BAND   }
+  | BOR         ; { `BOR    }
+  | BEQ         ; { `BEQ    }
+  | DIV         ; { `DIV    }
+  | DIVRM       ; { `DIVRM  }
+  | XOR         ; { `XOR    }
+  | EQ_OP       ; { `EQ_OP  }
+  | NEQ         ; { `NEQ    }
+  | GT          ; { `GT     }
+  | GEQ         ; { `GEQ    }
+  | IMPL        ; { `IMPL   }
+  | LT          ; { `LT     }
+  | LEQ         ; { `LEQ    }
+  | PLUS        ; { `PLUS   }
+  | MINUS       ; { `MINUS  }
+  | MOD         ; { `MOD    }
+  | MUL         ; { `MUL    }
+  | OR          ; { `OR     }
+  | RDIV        ; { `RDIV   }
+  | SHL         ; { `SHL    }
+  | SHR         ; { `SHR    }
+  | POW         ; { `POW    }
+  | COLON_COLON ; { `BV_CONCAT }
 
 (* ------------------------------------------------------------------------
 

@@ -109,7 +109,7 @@ let subtype_examples () =
   assert (subtype_satisfies empty_env bits_btifields bits_btifields);
 
   let bits_n = !!(T_Bits (!%"N", [])) in
-  let bits_n_1 = !!(T_Bits (binop MUL !%"N" !$1, [])) in
+  let bits_n_1 = !!(T_Bits (binop `MUL !%"N" !$1, [])) in
 
   assert (subtype_satisfies env_with_n bits_n bits_n_1);
 

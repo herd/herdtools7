@@ -56,15 +56,17 @@ let normalize () =
 
   List.iter do_one
     [
-      (binop MINUS !$4 !$2, !$2, StaticEnv.empty);
-      ( binop PLUS (binop MINUS !%"N" !%"m") (binop MINUS !%"m" !$1),
-        binop MINUS !%"N" !$1,
+      (binop `MINUS !$4 !$2, !$2, StaticEnv.empty);
+      ( binop `PLUS (binop `MINUS !%"N" !%"m") (binop `MINUS !%"m" !$1),
+        binop `MINUS !%"N" !$1,
         StaticEnv.add_local "m" integer LDK_Let env_with_N );
       (unop NEG !$3, !$(-3), StaticEnv.empty);
     ]
 
 let fpzero_example () =
-  let ( -~ ) = binop MINUS and ( ==~ ) = binop EQ_OP and ( +~ ) = binop PLUS in
+  let ( -~ ) = binop `MINUS
+  and ( ==~ ) = binop `EQ_OP
+  and ( +~ ) = binop `PLUS in
   let e =
     !!(E_Cond (!%"N" ==~ !$16, !$5, !!(E_Cond (!%"N" ==~ !$32, !$8, !$11))))
   in

@@ -6,10 +6,15 @@ let ( |: ) = Instrumentation.TypingNoInstr.use_with
 let exact e = Constraint_Exact e
 let range a b = Constraint_Range (a, b)
 
+type int3_binop =
+  [ `PLUS | `MINUS | `DIV | `DIVRM | `SHR | `SHL | `POW | `MOD | `MUL ]
+
+type extremities_binops = [ `PLUS | `MINUS | `DIV | `DIVRM | `SHR | `SHL | `MUL ]
+
 (* Begin ConstraintMod *)
 let constraint_mod = function
   | Constraint_Exact e | Constraint_Range (_, e) ->
-      range zero_expr (binop MINUS e one_expr) |: TypingRule.ConstraintMod
+      range zero_expr (binop `MINUS e one_expr) |: TypingRule.ConstraintMod
 (* End *)
 
 (* Begin PossibleExtremitiesLeft *)
@@ -17,19 +22,18 @@ let constraint_mod = function
 (** [possible_extremities_left op a b] is given a range [a..b] the set of
     needed extremities of intervals for the left-hand-side of an operation
     [op]. *)
-let possible_extremities_left op a b =
+let possible_extremities_left (op : extremities_binops) a b =
   match op with
   (* MUL is not left-increasing: if c is negative, then the following is not
      true: if x < y then x op c < y op c This is why we have to add the
      reversed intervals. We also have to add the intervals (a, a) and (b, b)
      for the case where a < 0 < b and c < 0 < d. *)
-  | MUL ->
+  | `MUL ->
       [ (a, a); (a, b); (b, a); (b, b) ] |: TypingRule.PossibleExtremitiesLeft
   (* All the following operations are left-increasing:
      for any operation op among those, if x < y, and c a valid value for the
      right-hand side of op, x op c < y op c *)
-  | DIV | DIVRM | SHR | SHL | PLUS | MINUS -> [ (a, b) ]
-  | _ -> assert false
+  | `DIV | `DIVRM | `SHR | `SHL | `PLUS | `MINUS -> [ (a, b) ]
 (* End *)
 
 (* Begin PossibleExtremitiesRIght *)
@@ -37,24 +41,23 @@ let possible_extremities_left op a b =
 (** [possible_extremities_right op a b] is given a range [a..b] the set of
     needed extremities of intervals for the right-hand-side of an operation
     [op]. *)
-let possible_extremities_right op c d =
+let possible_extremities_right (op : extremities_binops) c d =
   match op with
   (* PLUS is right-increasing. *)
-  | PLUS -> [ (c, d) ] |: TypingRule.PossibleExtremitiesRight
+  | `PLUS -> [ (c, d) ] |: TypingRule.PossibleExtremitiesRight
   (* MINUS simply reverse the intervals. *)
-  | MINUS -> [ (d, c) ]
+  | `MINUS -> [ (d, c) ]
   (* We need:
       - the normal interval if the left-hand-side value is positive
       - the reversed interval if the right-hand-side value is negative
       - the singletons at bounds for the case where a < 0 < b and c < 0 < d. *)
-  | MUL -> [ (c, c); (c, d); (d, c); (d, d) ]
+  | `MUL -> [ (c, c); (c, d); (d, c); (d, d) ]
   (* For SHR and SHL, we can replace [c] by [0] because this handle the case where c is
      negative, that will need to be treated anyway. Then if the right-hand side
      is negative, we need to reverse the intervals. *)
-  | SHL | SHR -> [ (d, zero_expr); (zero_expr, d) ]
+  | `SHL | `SHR -> [ (d, zero_expr); (zero_expr, d) ]
   (* Same as SHR/SHL, but with [1] for divisions. *)
-  | DIV | DIVRM -> [ (one_expr, d); (d, one_expr) ]
-  | _ -> assert false
+  | `DIV | `DIVRM -> [ (one_expr, d); (d, one_expr) ]
 (* End *)
 
 (* Begin ApplyBinopExtremities *)
@@ -64,21 +67,22 @@ let possible_extremities_right op c d =
     It produces a list of all possible slices, by using the functions
     [possible_extremities_left/right], and taking the cartesian product of
     their results. *)
-let apply_binop_extremities op c1 c2 =
+let apply_binop_extremities (op : extremities_binops) c1 c2 =
+  let op' = (op :> binop) in
   match (c1, c2) with
   | Constraint_Exact a, Constraint_Exact c ->
-      [ exact (binop op a c) ] |: TypingRule.ApplyBinopExtremities
+      [ exact (binop op' a c) ] |: TypingRule.ApplyBinopExtremities
   | Constraint_Range (a, b), Constraint_Exact c ->
       List.map
-        (fun (a', b') -> range (binop op a' c) (binop op b' c))
+        (fun (a', b') -> range (binop op' a' c) (binop op' b' c))
         (possible_extremities_left op a b)
   | Constraint_Exact a, Constraint_Range (c, d) ->
       List.map
-        (fun (c', d') -> range (binop op a c') (binop op a d'))
+        (fun (c', d') -> range (binop op' a c') (binop op' a d'))
         (possible_extremities_right op c d)
   | Constraint_Range (a, b), Constraint_Range (c, d) ->
       list_cross
-        (fun (a', b') (c', d') -> range (binop op a' c') (binop op b' d'))
+        (fun (a', b') (c', d') -> range (binop op' a' c') (binop op' b' d'))
         (possible_extremities_left op a b)
         (possible_extremities_right op c d)
 (* End *)
@@ -87,7 +91,7 @@ let apply_binop_extremities op c1 c2 =
 
 (** [constraint_pow c1 c2] applies [POW] to [c1] and [c2]. *)
 let constraint_pow c1 c2 =
-  let pow = binop POW and neg = unop NEG in
+  let pow = binop `POW and neg = unop NEG in
   match (c1, c2) with
   | Constraint_Exact a, Constraint_Exact c ->
       [ exact (pow a c) ] |: TypingRule.ConstraintPow
@@ -119,23 +123,20 @@ let constraint_pow c1 c2 =
 (* End *)
 
 (* Begin ConstraintBinop *)
-let constraint_binop op cs1 cs2 =
+let constraint_binop (op : int3_binop) cs1 cs2 =
   match op with
-  | DIV | DIVRM | MUL | PLUS | MINUS | SHR | SHL ->
+  | #extremities_binops as op ->
       list_flat_cross (apply_binop_extremities op) cs1 cs2
       |: TypingRule.ConstraintBinop
-  | MOD -> List.map constraint_mod cs2
-  | POW -> list_flat_cross constraint_pow cs1 cs2
-  | AND | BAND | BEQ | BOR | XOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ | OR
-  | RDIV | BV_CONCAT ->
-      assert false
+  | `MOD -> List.map constraint_mod cs2
+  | `POW -> list_flat_cross constraint_pow cs1 cs2
 (* End *)
 
 (* Begin FilterReduceConstraintDiv *)
 let filter_reduce_constraint_div =
   let get_literal_div_opt e =
     match e.desc with
-    | E_Binop (DIV, a, b) -> (
+    | E_Binop (`DIV, a, b) -> (
         match (a.desc, b.desc) with
         | E_Literal (L_Int z1), E_Literal (L_Int z2) -> Some (z1, z2)
         | _ -> None)
@@ -228,7 +229,7 @@ module Make (C : CONFIG) = struct
   (* End *)
 
   (* Begin RefineConstraints *)
-  let refine_constraints ~loc op filter constraints =
+  let refine_constraints ~loc (op : binop) filter constraints =
     let pp_constraints f cs =
       Format.fprintf f "@[<h>{%a}@]" PP.pp_int_constraints cs
     in
@@ -258,8 +259,9 @@ module Make (C : CONFIG) = struct
         constraints'
   (* End *)
 
-  let filter_sign ~loc env op sign_predicate constraints =
-    refine_constraints ~loc op
+  let filter_sign ~loc env (op : int3_binop) sign_predicate constraints =
+    refine_constraints ~loc
+      (op :> binop)
       (refine_constraint_by_sign env sign_predicate)
       constraints
 
@@ -267,20 +269,17 @@ module Make (C : CONFIG) = struct
 
   (** Filters out values from the right-hand-side operand of [op] that will definitely
   result in a dynamic error. *)
-  let binop_filter_rhs ~loc env op =
+  let binop_filter_rhs ~loc env (op : int3_binop) =
     match op with
-    | SHL | SHR | POW -> filter_sign ~loc env op @@ fun x -> x >= 0
-    | MOD | DIV | DIVRM -> filter_sign ~loc env op @@ fun x -> x > 0
-    | MINUS | MUL | PLUS -> Fun.id
-    | AND | BAND | BEQ | BOR | XOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
-    | OR | RDIV | BV_CONCAT ->
-        assert false
+    | `SHL | `SHR | `POW -> filter_sign ~loc env op @@ fun x -> x >= 0
+    | `MOD | `DIV | `DIVRM -> filter_sign ~loc env op @@ fun x -> x > 0
+    | `MINUS | `MUL | `PLUS -> Fun.id
   (* End *)
 
   (* Begin RefineConstraintForDIV *)
   let refine_constraint_for_div ~loc op cs =
     match op with
-    | DIV -> (
+    | `DIV -> (
         let res = List.filter_map filter_reduce_constraint_div cs in
         match res with
         | [] ->
@@ -344,12 +343,9 @@ module Make (C : CONFIG) = struct
 
   (** [binop_is_exploding op] returns [true] if [constraint_binop op] loses
       precision on intervals. *)
-  let binop_is_exploding = function
-    | PLUS | MINUS -> false
-    | MUL | SHL | POW | DIV | DIVRM | MOD | SHR -> true
-    | AND | BAND | BEQ | BOR | XOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
-    | OR | RDIV | BV_CONCAT ->
-        assert false
+  let binop_is_exploding : int3_binop -> bool = function
+    | `PLUS | `MINUS -> false
+    | `MUL | `SHL | `POW | `DIV | `DIVRM | `MOD | `SHR -> true
 
   let log_max_constraint_size = 17
   let max_constraint_size = Z.shift_left Z.one log_max_constraint_size
@@ -388,57 +384,52 @@ module Make (C : CONFIG) = struct
   (* End *)
 
   (* Begin AnnotateConstraintBinop *)
-  let annotate_constraint_binop ~loc env op cs1 cs2 =
-    match op with
-    | SHL | SHR | POW | MOD | DIVRM | MINUS | MUL | PLUS | DIV ->
-        let cs2_f = binop_filter_rhs ~loc env op cs2 in
-        let () =
-          if false then
-            Format.eprintf
-              "Reduction of binop %s@ on@ constraints@ %a@ and@ %a@."
-              (PP.binop_to_string op) PP.pp_int_constraints cs1
-              PP.pp_int_constraints cs2
+  let annotate_constraint_binop ~loc env (op : int3_binop) cs1 cs2 =
+    let cs2_f = binop_filter_rhs ~loc env op cs2 in
+    let () =
+      if false then
+        Format.eprintf "Reduction of binop %s@ on@ constraints@ %a@ and@ %a@."
+          (PP.binop_to_string (op :> binop))
+          PP.pp_int_constraints cs1 PP.pp_int_constraints cs2
+    in
+    let cs1_arg, cs2_arg =
+      if binop_is_exploding op then
+        let ex_cs1 = explode_intervals ~loc env cs1
+        and ex_cs2 = explode_intervals ~loc env cs2_f in
+        let l1 = List.length ex_cs1 and l2 = List.length ex_cs2 in
+        let expected_constraint_length =
+          Z.(if op = `MOD then ~$l2 else mul ~$l1 ~$l2)
         in
-        let cs1_arg, cs2_arg =
-          if binop_is_exploding op then
-            let ex_cs1 = explode_intervals ~loc env cs1
-            and ex_cs2 = explode_intervals ~loc env cs2_f in
-            let l1 = List.length ex_cs1 and l2 = List.length ex_cs2 in
-            let expected_constraint_length =
-              Z.(if op = MOD then ~$l2 else mul ~$l1 ~$l2)
-            in
-            if Z.leq expected_constraint_length max_constraint_size then
-              (ex_cs1, ex_cs2)
-            else
-              let () =
-                C.warn_from ~loc
-                  Error.(
-                    ConstraintSetPairToBigToBeExploded
-                      {
-                        op;
-                        left = cs1;
-                        right = cs2_f;
-                        log_max = log_max_constraint_size;
-                      })
-              in
-              (cs1, cs2_f)
-          else (cs1, cs2_f)
-        in
-        let annotated_cs =
-          constraint_binop op cs1_arg cs2_arg
-          |> refine_constraint_for_div ~loc op
-          |> reduce_constraints env
-        in
-        let () =
-          if false then
-            Format.eprintf
-              "Reduction of binop %s@ on@ constraints@ %a@ and@ %a@ gave@ %a@."
-              (PP.binop_to_string op) PP.pp_int_constraints cs1_arg
-              PP.pp_int_constraints cs2_arg PP.pp_int_constraints annotated_cs
-        in
-        annotated_cs |: TypingRule.AnnotateConstraintBinop
-    | AND | BAND | BEQ | BOR | XOR | EQ_OP | GT | GEQ | IMPL | LT | LEQ | NEQ
-    | OR | RDIV | BV_CONCAT ->
-        assert false
+        if Z.leq expected_constraint_length max_constraint_size then
+          (ex_cs1, ex_cs2)
+        else
+          let () =
+            C.warn_from ~loc
+              Error.(
+                ConstraintSetPairToBigToBeExploded
+                  {
+                    op :> binop;
+                    left = cs1;
+                    right = cs2_f;
+                    log_max = log_max_constraint_size;
+                  })
+          in
+          (cs1, cs2_f)
+      else (cs1, cs2_f)
+    in
+    let annotated_cs =
+      constraint_binop op cs1_arg cs2_arg
+      |> refine_constraint_for_div ~loc op
+      |> reduce_constraints env
+    in
+    let () =
+      if false then
+        Format.eprintf
+          "Reduction of binop %s@ on@ constraints@ %a@ and@ %a@ gave@ %a@."
+          (PP.binop_to_string (op :> binop))
+          PP.pp_int_constraints cs1_arg PP.pp_int_constraints cs2_arg
+          PP.pp_int_constraints annotated_cs
+    in
+    annotated_cs |: TypingRule.AnnotateConstraintBinop
   (* End *)
 end

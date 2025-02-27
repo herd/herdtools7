@@ -398,13 +398,13 @@ module Make (B : Backend.S) (C : Config) = struct
       let* () = m in
       let cond =
         let* s1l1s2 =
-          let* s1l1 = B.binop PLUS s1 l1 in
-          B.binop LEQ s1l1 s2
+          let* s1l1 = B.binop `PLUS s1 l1 in
+          B.binop `LEQ s1l1 s2
         and* s2l2s1 =
-          let* s2l2 = B.binop PLUS s2 l2 in
-          B.binop LEQ s2l2 s1
+          let* s2l2 = B.binop `PLUS s2 l2 in
+          B.binop `LEQ s2l2 s1
         in
-        B.binop BOR s1l1s2 s2l2s1
+        B.binop `BOR s1l1s2 s2l2s1
       in
       let* b = choice cond true false in
       if b then return ()
@@ -459,7 +459,7 @@ module Make (B : Backend.S) (C : Config) = struct
         | NotFound -> fatal_from e @@ Error.UndefinedIdentifier x)
         |: SemanticsRule.EVar
     (* End *)
-    | E_Binop (((BAND | BOR | IMPL) as op), e1, e2)
+    | E_Binop (((`BAND | `BOR | `IMPL) as op), e1, e2)
       when is_simple_expr e1 && is_simple_expr e2 ->
         let*= v1 = eval_expr_sef env e1 in
         if B.is_undetermined v1 then
@@ -474,27 +474,26 @@ module Make (B : Backend.S) (C : Config) = struct
           let ret_true () = m_true and ret_false () = m_false in
           let on_true, on_false =
             match op with
-            | BAND -> (eval_e2, ret_false)
-            | BOR -> (ret_true, eval_e2)
-            | IMPL -> (eval_e2, ret_true)
-            | _ -> assert false
+            | `BAND -> (eval_e2, ret_false)
+            | `BOR -> (ret_true, eval_e2)
+            | `IMPL -> (eval_e2, ret_true)
           in
           let* v = B.ternary v1 on_true on_false in
           return_normal (v, env)
     (* Begin EvalBinopAnd *)
-    | E_Binop (BAND, e1, e2) ->
+    | E_Binop (`BAND, e1, e2) ->
         (* if e1 then e2 else false *)
         E_Cond (e1, e2, false')
         |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopAnd
     (* End *)
     (* Begin EvalBinopOr *)
-    | E_Binop (BOR, e1, e2) ->
+    | E_Binop (`BOR, e1, e2) ->
         (* if e1 then true else e2 *)
         E_Cond (e1, true', e2)
         |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopOr
     (* End *)
     (* Begin EvalBinopImpl *)
-    | E_Binop (IMPL, e1, e2) ->
+    | E_Binop (`IMPL, e1, e2) ->
         (* if e1 then e2 else true *)
         E_Cond (e1, e2, true')
         |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopImpl
@@ -676,7 +675,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Begin EvalValOfType *)
   and is_val_of_type loc env v ty : bool B.m =
-    let big_or = big_op m_false (B.binop BOR) in
+    let big_or = big_op m_false (B.binop `BOR) in
     let rec in_values v ty =
       match ty.desc with
       | T_Int UnConstrained -> m_true
@@ -696,7 +695,7 @@ module Make (B : Backend.S) (C : Config) = struct
              checks that all expressions on which a type depends are statically
              evaluable, i.e. side-effect-free. *)
           let* v' = eval_expr_sef env e and* v_length = B.bitvector_length v in
-          B.binop EQ_OP v_length v'
+          B.binop `EQ_OP v_length v'
       | T_Int (WellConstrained constraints) ->
           (* The calls to [eval_expr_sef] are justified since annotate_type
              checks that all expressions on which a type depends are statically
@@ -704,11 +703,11 @@ module Make (B : Backend.S) (C : Config) = struct
           let is_constraint_sat = function
             | Constraint_Exact e ->
                 let* v' = eval_expr_sef env e in
-                B.binop EQ_OP v v' |: SemanticsRule.IsConstraintSat
+                B.binop `EQ_OP v v' |: SemanticsRule.IsConstraintSat
             | Constraint_Range (e1, e2) ->
                 let* v1 = eval_expr_sef env e1 and* v2 = eval_expr_sef env e2 in
-                let* c1 = B.binop LEQ v1 v and* c2 = B.binop LEQ v v2 in
-                B.binop BAND c1 c2 |: SemanticsRule.IsConstraintSat
+                let* c1 = B.binop `LEQ v1 v and* c2 = B.binop `LEQ v v2 in
+                B.binop `BAND c1 c2 |: SemanticsRule.IsConstraintSat
           in
           List.map is_constraint_sat constraints |> big_or
       | T_Tuple tys ->
@@ -716,7 +715,7 @@ module Make (B : Backend.S) (C : Config) = struct
             let m =
               let* v' = B.get_index i v in
               let* here = in_values v' ty' in
-              prev >>= B.binop BAND here
+              prev >>= B.binop `BAND here
             in
             (i + 1, m)
           in
@@ -864,13 +863,13 @@ module Make (B : Backend.S) (C : Config) = struct
           let*^ m_top, env1 = eval_expr env e_top in
           let*^ m_start, new_env = eval_expr env1 e_start in
           let* v_top = m_top and* v_start = m_start in
-          let* v_length = B.binop MINUS v_top v_start >>= B.binop PLUS one in
+          let* v_length = B.binop `MINUS v_top v_start >>= B.binop `PLUS one in
           return_normal ((v_start, v_length), new_env) |: SemanticsRule.Slice
       | Slice_Star (e_factor, e_length) ->
           let*^ m_factor, env1 = eval_expr env e_factor in
           let*^ m_length, new_env = eval_expr env1 e_length in
           let* v_factor = m_factor and* v_length = m_length in
-          let* v_start = B.binop MUL v_factor v_length in
+          let* v_start = B.binop `MUL v_factor v_length in
           return_normal ((v_start, v_length), new_env) |: SemanticsRule.Slice
       (* End *)
     in
@@ -885,8 +884,8 @@ module Make (B : Backend.S) (C : Config) = struct
   and eval_pattern env pos v : pattern -> B.value m =
     let true_ = B.v_of_literal (L_Bool true) |> return in
     let false_ = B.v_of_literal (L_Bool false) |> return in
-    let disjunction = big_op false_ (B.binop BOR)
-    and conjunction = big_op true_ (B.binop BAND) in
+    let disjunction = big_op false_ (B.binop `BOR)
+    and conjunction = big_op true_ (B.binop `BAND) in
     (* The calls to [eval_expr_sef] are justified since annotate_pattern
        checks that all expressions on which a type depends are statically
        evaluable, i.e. side-effect-free. *)
@@ -903,12 +902,12 @@ module Make (B : Backend.S) (C : Config) = struct
       (* Begin EvalPGeq *)
       | Pattern_Geq e ->
           let* v1 = eval_expr_sef env e in
-          B.binop GEQ v v1 |: SemanticsRule.PGeq
+          B.binop `GEQ v v1 |: SemanticsRule.PGeq
       (* End *)
       (* Begin EvalPLeq *)
       | Pattern_Leq e ->
           let* v1 = eval_expr_sef env e in
-          B.binop LEQ v v1 |: SemanticsRule.PLeq
+          B.binop `LEQ v v1 |: SemanticsRule.PLeq
       (* End *)
       (* Begin EvalPNot *)
       | Pattern_Not p1 ->
@@ -919,17 +918,17 @@ module Make (B : Backend.S) (C : Config) = struct
       | Pattern_Range (e1, e2) ->
           let* b1 =
             let* v1 = eval_expr_sef env e1 in
-            B.binop GEQ v v1
+            B.binop `GEQ v v1
           and* b2 =
             let* v2 = eval_expr_sef env e2 in
-            B.binop LEQ v v2
+            B.binop `LEQ v v2
           in
-          B.binop BAND b1 b2 |: SemanticsRule.PRange
+          B.binop `BAND b1 b2 |: SemanticsRule.PRange
       (* End *)
       (* Begin EvalPSingle *)
       | Pattern_Single e ->
           let* v1 = eval_expr_sef env e in
-          B.binop EQ_OP v v1 |: SemanticsRule.PSingle
+          B.binop `EQ_OP v v1 |: SemanticsRule.PSingle
       (* End *)
       (* Begin EvalPMask *)
       | Pattern_Mask m ->
@@ -938,10 +937,10 @@ module Make (B : Backend.S) (C : Config) = struct
           and m_unset = Bitvector.mask_unset m in
           let m_specified = Bitvector.logor m_set m_unset in
           let* nv = B.unop NOT v in
-          let* v_set = B.binop AND (bv m_set) v
-          and* v_unset = B.binop AND (bv m_unset) nv in
-          let* v_set_or_unset = B.binop OR v_set v_unset in
-          B.binop EQ_OP v_set_or_unset (bv m_specified) |: SemanticsRule.PMask
+          let* v_set = B.binop `AND (bv m_set) v
+          and* v_unset = B.binop `AND (bv m_unset) nv in
+          let* v_set_or_unset = B.binop `OR v_set v_unset in
+          B.binop `EQ_OP v_set_or_unset (bv m_specified) |: SemanticsRule.PMask
       (* End *)
       (* Begin EvalPTuple *)
       | Pattern_Tuple ps ->
@@ -1212,13 +1211,13 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Evaluate the condition: "has the for loop terminated?" *)
     let* next_limit_opt = tick_loop_limit body limit_opt in
     let cond_m =
-      let comp_for_dir = match dir with Up -> LT | Down -> GT in
+      let comp_for_dir = match dir with Up -> `LT | Down -> `GT in
       let* () = B.on_read_identifier index_name (IEnv.get_scope env) v_start in
       B.binop comp_for_dir v_end v_start
     in
     (* Increase the loop counter *)
     let step env index_name v_start dir =
-      let op_for_dir = match dir with Up -> PLUS | Down -> MINUS in
+      let op_for_dir = match dir with Up -> `PLUS | Down -> `MINUS in
       let* () = B.on_read_identifier index_name (IEnv.get_scope env) v_start in
       let* v_step = B.binop op_for_dir v_start one in
       let* new_env = assign_local_identifier env index_name v_step in

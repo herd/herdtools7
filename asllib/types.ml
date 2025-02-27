@@ -41,6 +41,7 @@ let array_length_equal = thing_equal array_length_equal
 let bitwidth_equal = thing_equal bitwidth_equal
 let slices_equal = thing_equal slices_equal
 let bitfield_equal = thing_equal bitfield_equal
+let constraint_equal = thing_equal constraint_equal
 let constraints_equal = thing_equal constraints_equal
 let assoc_map map li = List.map (fun (x, y) -> (x, map y)) li
 
@@ -280,16 +281,15 @@ module Domain = struct
           try SEnv.type_of env x |> of_type env
           with Not_found -> Error.fatal_from e (Error.UndefinedIdentifier x)))
     | E_Unop (NEG, e1) ->
-        of_expr env (E_Binop (MINUS, !$0, e1) |> add_pos_from e)
-    | E_Binop (((PLUS | MINUS | MUL) as op), e1, e2) ->
+        of_expr env (E_Binop (`MINUS, !$0, e1) |> add_pos_from e)
+    | E_Binop (((`PLUS | `MINUS | `MUL) as op), e1, e2) ->
         let is1 = of_expr env e1
         and is2 = of_expr env e2
         and fop =
           match op with
-          | PLUS -> monotone_interval_op Z.add
-          | MINUS -> anti_monotone_interval_op Z.sub
-          | MUL -> monotone_interval_op Z.mul
-          | _ -> assert false
+          | `PLUS -> monotone_interval_op Z.add
+          | `MINUS -> anti_monotone_interval_op Z.sub
+          | `MUL -> monotone_interval_op Z.mul
         in
         int_set_raise_interval_op fop op is1 is2
     | _ ->
@@ -455,15 +455,18 @@ module Domain = struct
     (match (is1, is2) with
     | _, Top -> true
     | Top, _ -> false
-    | Finite ints1, Finite ints2 -> IntSet.(is_empty (diff ints1 ints2))
+    | Finite ints1, Finite ints2 -> IntSet.subset ints1 ints2
     | FromSyntax cs1, FromSyntax cs2 -> (
         constraints_equal env cs1 cs2
-        ||
-        try
-          let s1 = approx_constraints Over env cs1
-          and s2 = approx_constraints Under env cs2 in
-          IntSet.subset s1 s2
-        with CannotOverApproximate -> false)
+        || Fun.flip List.for_all cs1 @@ fun c1 ->
+           Fun.flip List.exists cs2 @@ fun c2 ->
+           constraint_equal env c1 c2
+           ||
+           try
+             let s1 = approx_constraint Over env c1
+             and s2 = approx_constraint Under env c2 in
+             IntSet.subset s1 s2
+           with CannotOverApproximate -> false)
     | Finite s1, FromSyntax cs2 ->
         let s2 = approx_constraints Under env cs2 in
         IntSet.subset s1 s2

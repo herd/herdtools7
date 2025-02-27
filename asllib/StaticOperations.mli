@@ -1,12 +1,15 @@
 open AST
 
+type int3_binop =
+  [ `PLUS | `MINUS | `DIV | `DIVRM | `SHR | `SHL | `POW | `MOD | `MUL ]
+
 val constraint_binop :
-  binop -> int_constraint list -> int_constraint list -> int_constraint list
+  int3_binop ->
+  int_constraint list ->
+  int_constraint list ->
+  int_constraint list
 (** [constraint_binop op cs1 cs2] is the set of constraints given by the
     element wise application of [op].
-
-    Supported [op]s: [DIV], [DIVRM], [MUL], [PLUS], [MINUS], [SHR], [SHL],
-    [MOD], [POW].
 *)
 
 module type CONFIG = sig
@@ -18,7 +21,7 @@ module Make : functor (C : CONFIG) -> sig
   val annotate_constraint_binop :
     loc:'a annotated ->
     StaticEnv.env ->
-    binop ->
+    int3_binop ->
     int_constraint list ->
     int_constraint list ->
     int_constraint list

@@ -19,3 +19,17 @@
  (enabled_if %{lib-available:bnfc_parser})
  (action
   (diff parser_cmp.expected parser_cmp.out)))
+
+(executable
+ (name cmp_binops)
+ (public_name cmp_binops)
+ (modules cmp_binops)
+ (optional)
+ (libraries bnfc_parser herdtools7.asllib feat))
+
+(rule
+ (alias bnfc_test)
+ (enabled_if
+  (and %{lib-available:bnfc_parser} %{lib-available:feat}))
+ (action
+  (run %{bin:cmp_binops})))
