@@ -725,6 +725,8 @@ In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
     \item \AllApplyCase{with\_bitfields}
     \begin{itemize}
       \item $\bitfields$ is not empty;
+      \item checking whether all \timeframesterm{} in $\seswidth$ are less than or equal to $\timeframeconstant$
+            yields $\True$\ProseTerminateAs{\SideEffectViolation};
       \item annotating the bitfields $\bitfields$ yields \\
             $(\bitfieldsp, \vsesbitfields)$\ProseOrTypeError;
       \item \Prosestaticeval{$\tenv$}{$\ewidthp$}{$\lint(\vwidth)$};
@@ -754,6 +756,7 @@ In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
   \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\\\\
   \commonprefixline\\\\
   \bitfields \neq \emptylist\\\\
+  \checktrans{\sesisbefore(\seswidth, \timeframeconstant)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
   {
   \begin{array}{r}
     \annotatebitfields(\tenv, \ewidthp, \bitfields) \typearrow \\
