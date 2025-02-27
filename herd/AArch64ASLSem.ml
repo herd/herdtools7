@@ -259,7 +259,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "n" ^= reg rn;
                   "datasize" ^= variant v;
                   "regsize" ^= variant v;
-                  "acquire" ^= litb (decode_acquire t);
+                  "acquire" ^= litb (decode_acquire t && rs <> ZR);
                   "release" ^= litb (decode_release t);
                   "tagchecked" ^= litb (rn <> SP);
                 ] )
