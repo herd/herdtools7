@@ -1,6 +1,40 @@
 open AST
 open ASTUtils
 
+module Name = struct
+  type t = Subprogram of string | Other of string
+
+  let hash : t -> int = Hashtbl.hash [@@warning "-32"]
+
+  let to_string = function
+    | Subprogram s -> "Subprogram " ^ s
+    | Other s -> "Var " ^ s
+
+  let pp_print f n = Format.pp_print_string f (to_string n)
+
+  let compare n1 n2 =
+    match (n1, n2) with
+    | Subprogram s1, Subprogram s2 | Other s1, Other s2 -> String.compare s1 s2
+    | Subprogram _, Other _ -> -1
+    | Other _, Subprogram _ -> 1
+
+  let equal n1 n2 =
+    match (n1, n2) with
+    | Subprogram s1, Subprogram s2 | Other s1, Other s2 -> String.equal s1 s2
+    | _ -> false
+end
+
+module NameSet = struct
+  include Set.Make (Name)
+
+  let pp_print f t =
+    let open Format in
+    let pp_comma f () = fprintf f ",@ " in
+    fprintf f "@[{@,%a}@]"
+      (pp_print_list ~pp_sep:pp_comma Name.pp_print)
+      (elements t)
+end
+
 let fold_named_list folder acc list =
   List.fold_left (fun acc (_, v) -> folder acc v) acc list
 
@@ -11,15 +45,23 @@ let use_list use_elt elts acc = List.fold_left (Fun.flip use_elt) acc elts
 let use_named_list use_elt named_elts acc =
   fold_named_list (Fun.flip use_elt) acc named_elts
 
+(* For V0, things that look like variables can actually be subprograms - so we
+   must add both a dependency on a variable and a subprogram. *)
+let add_other pos x =
+  match pos.version with
+  | V0 -> NameSet.add (Other x) $ NameSet.add (Subprogram x)
+  | V1 -> NameSet.add (Other x)
+
 let rec use_e e =
   match e.desc with
   | E_Literal _ -> Fun.id
   | E_ATC (e, ty) -> use_ty ty $ use_e e
-  | E_Var x -> ISet.add x
+  | E_Var x -> add_other e x
   | E_GetArray (e1, e2) | E_GetEnumArray (e1, e2) | E_Binop (_, e1, e2) ->
       use_e e1 $ use_e e2
   | E_Unop (_op, e) -> use_e e
-  | E_Call { name; args; params } -> ISet.add name $ use_es params $ use_es args
+  | E_Call { name; args; params } ->
+      NameSet.add (Subprogram name) $ use_es params $ use_es args
   | E_Slice (e, slices) -> use_e e $ use_slices slices
   | E_Cond (e1, e2, e3) -> use_e e1 $ use_e e2 $ use_e e3
   | E_GetItem (e, _) -> use_e e
@@ -28,7 +70,8 @@ let rec use_e e =
   | E_Record (ty, li) -> use_ty ty $ use_fields li
   | E_Tuple es -> use_es es
   | E_Array { length; value } -> use_e length $ use_e value
-  | E_EnumArray { labels; value } -> use_list ISet.add labels $ use_e value
+  | E_EnumArray { labels; value } ->
+      use_list (fun id -> NameSet.add (Other id)) labels $ use_e value
   | E_Arbitrary t -> use_ty t
   | E_Pattern (e, p) -> use_e e $ use_pattern p
 
@@ -53,7 +96,7 @@ and use_slices slices = use_list use_slice slices
 (** [use_ty t s] adds the identifiers that appear in [t] to the set of identifiers [s] *)
 and use_ty t =
   match t.desc with
-  | T_Named s -> ISet.add s
+  | T_Named s -> NameSet.add (Other s)
   | T_Int (UnConstrained | Parameterized _ | PendingConstrained)
   | T_Enum _ | T_Bool | T_Real | T_String ->
       Fun.id
@@ -61,7 +104,7 @@ and use_ty t =
   | T_Tuple li -> use_list use_ty li
   | T_Record fields | T_Exception fields -> use_named_list use_ty fields
   | T_Array (ArrayLength_Expr e, t') -> use_e e $ use_ty t'
-  | T_Array (ArrayLength_Enum (s, _), t') -> ISet.add s $ use_ty t'
+  | T_Array (ArrayLength_Enum (s, _), t') -> NameSet.add (Other s) $ use_ty t'
   | T_Bits (e, bit_fields) -> use_e e $ use_bitfields bit_fields
 
 and use_bitfields bitfields = use_list use_bitfield bitfields
@@ -84,7 +127,8 @@ let rec use_s s =
   | S_Seq (s1, s2) -> use_s s1 $ use_s s2
   | S_Assert e | S_Return (Some e) -> use_e e
   | S_Assign (le, e) -> use_e e $ use_le le
-  | S_Call { name; args; params } -> ISet.add name $ use_es params $ use_es args
+  | S_Call { name; args; params } ->
+      NameSet.add (Subprogram name) $ use_es params $ use_es args
   | S_Cond (e, s1, s2) -> use_s s1 $ use_s s2 $ use_e e
   | S_For { start_e; end_e; body; index_name = _; dir = _; limit } ->
       use_option use_e limit $ use_e start_e $ use_e end_e $ use_s body
@@ -96,12 +140,12 @@ let rec use_s s =
   | S_Try (s, catchers, s') ->
       use_s s $ use_option use_s s' $ use_catchers catchers
   | S_Print { args; debug = _ } -> use_es args
-  | S_Pragma (name, args) -> ISet.add name $ use_es args
+  | S_Pragma (name, args) -> NameSet.add (Other name) $ use_es args
   | S_Unreachable -> Fun.id
 
 and use_le le =
   match le.desc with
-  | LE_Var x -> ISet.add x
+  | LE_Var x -> add_other le x
   | LE_Destructuring les -> List.fold_right use_le les
   | LE_Discard -> Fun.id
   | LE_SetArray (le, e) | LE_SetEnumArray (le, e) -> use_le le $ use_e e
@@ -123,9 +167,10 @@ and use_decl d =
       $ use_option use_ty return_type
       $ use_named_list (use_option use_ty) parameters
       $ match body with SB_ASL s -> use_s s | SB_Primitive _ -> Fun.id)
-  | D_Pragma (name, args) -> ISet.add name $ use_es args
+  | D_Pragma (name, args) -> NameSet.add (Other name) $ use_es args
 
-and use_subtypes (x, subfields) = ISet.add x $ use_named_list use_ty subfields
+and use_subtypes (x, subfields) =
+  NameSet.add (Other x) $ use_named_list use_ty subfields
 
-let used_identifiers_decl d = use_decl d ISet.empty
-let used_identifiers ast = use_list use_decl ast ISet.empty
+let used_identifiers_decl d = use_decl d NameSet.empty
+let used_identifiers_decls ast = use_list use_decl ast NameSet.empty
