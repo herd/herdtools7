@@ -144,10 +144,20 @@ Boolean literals are written using \texttt{TRUE} or \texttt{FALSE}.
 
 \section{Bitvector Literals}
 Constant bitvectors are written using 1, 0 and spaces surrounded by single-quotes.
+
+We first define a regular expression for a bit character:
+\hypertarget{def-rebit}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\REbit$ &$\triangleq$& \anycharacter{\texttt{01}\square}
+\end{tabular}
+\end{center}
+
+Now, we define a regular expression for bit vector literals:
 \hypertarget{def-rebitvectorlit}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\REbitvectorlit$ &$\triangleq$& \anycharacter{\texttt{'}} (\anycharacter{\texttt{01}\square})* \anycharacter{\texttt{'}}
+$\REbitvectorlit$ &$\triangleq$& \anycharacter{\texttt{'}} \REbit* \anycharacter{\texttt{'}}
 \end{tabular}
 \end{center}
 
@@ -155,17 +165,24 @@ The spaces in a bitvector are not significant and are only used to improve reada
 For example, \texttt{'1111 1111 1111 1111'} is the same as \texttt{'1111111111111111'}.
 
 \section{Bitmasks}
-Constant bitmasks are written using \texttt{1}, \texttt{0}, \texttt{x} and spaces surrounded by single-quotes.
-The \texttt{x} represents a don’t care character.
+Constant bitmasks are written in one of two ways:
+\begin{itemize}
+  \item Using \texttt{1}, \texttt{0}, \texttt{x}, and spaces surrounded by single-quotes.
+    The \texttt{x} represents a don't care character.
+  \item Using \texttt{1}, \texttt{0}, and spaces surrounded by single-quotes, with don't care characters enclosed in parentheses.
+\end{itemize}
 
 \hypertarget{def-rebitmasklit}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\REbitmasklit$ &$\triangleq$& \anycharacter{\texttt{'}} (\anycharacter{\texttt{01x}\square})* \anycharacter{\texttt{'}}
+$\REbitmasklit$ &$\triangleq$& \anycharacter{\texttt{'}} ($\REbit$ \texttt{|} \anycharacter{\texttt{x}})* \anycharacter{\texttt{'}}
+\texttt{ | } \anycharacter{\texttt{'}} \big( $\REbit$ \texttt{|} \anycharacter{\texttt{(}} $\REbit$+ \anycharacter{\texttt{)}} \big)* \anycharacter{\texttt{'}}
 \end{tabular}
 \end{center}
 
 The spaces in a constant bitmask are not significant and are only used to improve readability.
+Similarly, the specific characters enclosed within parentheses are not significant, as each \texttt{0} or \texttt{1} is equivalent to an \texttt{x}.
+For example, the bitmask \verb|'0xx1'| is equivalent to \verb|'0(00)1'|, \verb|'0(01)1'|, \verb|'0(10)1'|, and \verb|'0(11)1'|.
 
 \section{String Literals}
 

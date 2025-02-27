@@ -57,6 +57,7 @@ end = struct
         ZeroOrMore (Choice [ Char '_'; digit; hex_alpha ]);
       ]
     in
+    let bit : Regex.t = OneOf "01 " in
     let mk_token terminal acc =
       let t_name = Terminal.name terminal in
       let name = slug_str t_name in
@@ -91,15 +92,25 @@ end = struct
               re (
                 Seq [
                   Char '\'';
-                  ZeroOrMore (OneOf "01 ");
+                  ZeroOrMore bit;
                   Char '\'';
                 ])
           | "MASK_LIT" ->
               re (
-                Seq [
-                  Char '\'';
-                  ZeroOrMore (OneOf "01x ");
-                  Char '\'';
+                Choice [
+                  Seq [
+                    Char '\'';
+                    ZeroOrMore (Choice [bit; Char 'x']);
+                    Char '\'';
+                  ];
+                  Seq [
+                    Char '\'';
+                    ZeroOrMore (Choice [
+                      bit;
+                      Seq [Char '('; OneOrMore bit; Char ')']
+                    ]);
+                    Char '\'';
+                  ];
                 ])
           | "IDENTIFIER" ->
               re (

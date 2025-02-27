@@ -197,7 +197,11 @@ val mask_length : mask -> int
 (** Returns the length of bitvectors matched by this mask. *)
 
 val mask_of_string : string -> mask
-(** Build a mask from its ASL representation. *)
+(** Build a mask which uses `x` as "don't-care" from its ASL representation. *)
+
+val mask_of_alt_string : string -> mask
+(** Build a mask which uses parentheses to represent "don't-care" from its ASL
+    representation, by preprocessing the parentheses to `x`s *)
 
 val mask_of_bitvector : t -> mask
 (** Build a mask that matches a bitvector. *)
