@@ -1,0 +1,60 @@
+name: Run BNFC dependent tests
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/menhir2bnfc.yml'
+      - 'asllib/menhir2bnfc/**'
+      - 'asllib/Parser.mly'
+      - 'asllib/Lexer.mll'
+      - 'asllib/Tokens.mly'
+  # push:
+  workflow_dispatch:
+  schedule:
+    # Prime the caches every Monday
+    - cron: 0 1 * * MON
+
+permissions: read-all
+
+# Copy-pasted from https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and run menhir2bnfc
+
+    runs-on: ubuntu-latest
+
+    env:
+      DUNE_CACHE: 'enabled-except-user-rules'
+
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+
+      - name: Set-up OCaml .5.2
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 5.2
+          dune-cache: true
+
+      - name: Install herdtools's dependencies
+        run: opam install . --deps-only --with-test
+
+      - name: Install carpenter dependencies
+        run: opam install feat qcheck re logs cmdliner
+
+      - name: Update apt database
+        run: sudo apt-get update --quiet --yes
+
+      - name: Install BNFC
+        run: sudo apt-get install --quiet --yes bnfc
+
+      - run: opam exec -- make build DUNE_PROFILE=dev
+
+      - run: opam exec -- make test DUNE_PROFILE=dev
+
+      - run: opam exec -- make test-bnfc DUNE_PROFILE=dev
+
