@@ -124,15 +124,23 @@ The function assumes that both $\vt$ and $\vs$ are well-typed according to \chap
 \listingref{subtypesat1} shows examples
 where the types of the right-hand-side expressions \subtypesatisfy{}
 the types of the left-hand-side expressions.
+\pagebreak
 \ASLListing{Subtype Satisfaction}{subtypesat1}{\typingtests/TypingRule.SubtypeSatisfaction1.asl}
+
+\listingref{subtypesat-bad1} and \listingref{subtypesat-bad2}
+shows examples of nuanced \typingerrorsterm.
+Specifically where a type consisting of a range of values does not \subtypesatisfy{}
+a type consisting of one variable expression.
+\ASLListing{Subtype satisfaction error 1}{subtypesat-bad1}{\typingtests/TypingRule.SubtypeSatisfaction.bad1.asl}
+\ASLListing{Subtype satisfaction error 2}{subtypesat-bad2}{\typingtests/TypingRule.SubtypeSatisfaction.bad2.asl}
 
 \listingref{subtypesat2} shows examples of legal and illegal assignments involving
 subtyping.
-\ASLListing{More Examples of Subtype Satisfaction}{subtypesat2}{\typingtests/TypingRule.SubtypeSatisfaction2.asl}
+\ASLListing{More Examples of subtype satisfaction}{subtypesat2}{\typingtests/TypingRule.SubtypeSatisfaction2.asl}
 
 \listingref{subtypesat3} shows more examples of legal and illegal assignments involving
 subtyping.
-\ASLListing{Even More Examples of More Subtype Satisfaction}{subtypesat3}{\typingtests/TypingRule.SubtypeSatisfaction3.asl}
+\ASLListing{Even more examples of subtype satisfaction}{subtypesat3}{\typingtests/TypingRule.SubtypeSatisfaction3.asl}
 
 \ProseParagraph
 \OneApplies

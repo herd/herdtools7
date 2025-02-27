@@ -10,6 +10,16 @@ ASL Typing Tests:
   File TypingRule.SubtypeSatisfaction3.asl, line 9, characters 4 to 45:
   ASL Typing error: a subtype of AnimalLegs was expected, provided ShapeSides.
   [1]
+  $ aslref TypingRule.SubtypeSatisfaction.bad1.asl
+  File TypingRule.SubtypeSatisfaction.bad1.asl, line 8, characters 0 to 31:
+  ASL Typing error: a subtype of integer {2} was expected,
+    provided integer {1..2}.
+  [1]
+  $ aslref TypingRule.SubtypeSatisfaction.bad2.asl
+  File TypingRule.SubtypeSatisfaction.bad2.asl, line 7, characters 4 to 13:
+  ASL Typing error: a subtype of integer {N} was expected,
+    provided integer {2, 4}.
+  [1]
   $ aslref TypingRule.TypeSatisfaction1.asl
   $ aslref TypingRule.TypeSatisfaction2.asl
   $ aslref TypingRule.TypeSatisfaction3.asl
