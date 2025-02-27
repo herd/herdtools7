@@ -1,0 +1,56 @@
+name: Make all tests
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/make-test-all.yml"
+  # push:
+  workflow_dispatch:
+  schedule:
+    # Prime the caches every Monday
+    - cron: 0 1 * * MON
+
+permissions: read-all
+
+# Copy-pasted from https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        ocaml-version:
+          - "4.08.1"
+          - "4.14"
+          - "5.3"
+
+    name: Make test on OCaml v${{ matrix.ocaml-version }}
+
+    runs-on: ubuntu-latest
+
+    env:
+      DUNE_CACHE: 'enabled-except-user-rules'
+
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+
+      - name: Set-up OCaml ${{ matrix.ocaml-version }}
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-version }}
+          dune-cache: true
+
+      - name: Install herdtools7's dependencies
+        run: opam install . --deps-only --with-test
+
+      - name: Install carpenter dependencies
+        run: opam install feat qcheck re logs cmdliner
+
+      - run: opam exec -- make build DUNE_PROFILE=dev
+
+      - run: opam exec -- make test-all DUNE_PROFILE=dev
+
