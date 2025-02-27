@@ -299,6 +299,14 @@ Those are defined as follows:
 We use the shorthand notation $\unconstrainedinteger \triangleq \TInt(\unconstrained)$
 for unconstrained integers.
 
+\RequirementDef{ConstraintSymbolicallyConstrained}
+The expressions appearing in integer constraints must be both
+\symbolicallyevaluable{} and \constrainedinteger{} types.
+%
+In \listingref{annotate-constraint-unconstrained}, the constraint
+\verb|x..x+1| is ill-typed, since the type of \texttt{x} is not constrained.
+\ASLListing{Ill-typed constraint}{annotate-constraint-unconstrained}{\typingtests/TypingRule.AnnotateConstraint.bad.asl}
+
 \TypingRuleDef{TInt}
 \ExampleDef{Ill-typed pending-constrained integer type}
 \listingref{config-pending-constrained}
@@ -391,7 +399,6 @@ correspond to \CaseName{pending\_constrained}.
   \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \tty} \typearrow (\overname{\tty}{\newty}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
-
 \CodeSubsection{\TIntBegin}{\TIntEnd}{../Typing.ml}
 
 \TypingRuleDef{AnnotateConstraint}
@@ -413,14 +420,6 @@ and the resulting annotated constraints in comments.
 The annotated constraints inline the constant \texttt{N} and the right-hand-side
 expressions of \texttt{let} storage elements.
 \ASLListing{Annotated constraints}{annotate-constraint}{\typingtests/TypingRule.AnnotateConstraint.asl}
-
-\RequirementDef{ConstraintSymbolicallyConstrained}
-The expressions appearing in integer constraints must be both
-\symbolicallyevaluable{} and \constrainedinteger{} types.
-%
-In \listingref{annotate-constraint-unconstrained}, the constraint
-\verb|x..x+1| is ill-typed, since the type of \texttt{x} is not constrained.
-\ASLListing{Ill-typed constraint}{annotate-constraint-unconstrained}{\typingtests/TypingRule.AnnotateConstraint.bad.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1156,6 +1155,11 @@ enumeration labels from variable expressions.
 }
 \end{mathpar}
 
+\identi{PKXK} \identd{YYDW}%
+\RequirementDef{SymbolicallyEvaluable}
+An expression is \symbolicallyevaluable{} if its evaluation only involves
+the use of immutable values.
+
 \TypingRuleDef{AnnotateSymbolicallyEvaluableExpr}
 \hypertarget{def-annotatesymbolicallyevaluableexpr}{}
 The function
@@ -1168,11 +1172,6 @@ The function
 annotates the expression $\ve$ in the static environment $\tenv$ and checks that it is \symbolicallyevaluable,
 yielding the type in $\vt$, the annotated expression $\vep$ and the \sideeffectsetterm{} $\vses$.
 \ProseOtherwiseTypeError
-
-\identi{PKXK} \identd{YYDW}%
-\RequirementDef{SymbolicallyEvaluable}
-An expression is \symbolicallyevaluable{} if its evaluation only involves
-the use of immutable values.
 
 \ExampleDef{Annotating Symbolically Evaluable Expressions}
 \listingref{typing-annotatesymbolicallyevaluableexpr} shows examples of
