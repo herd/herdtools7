@@ -1,0 +1,14 @@
+RISCV A012
+{
+0:x6=x; 0:x9=y; 0:x12=z;
+1:x6=z; 1:x8=x;
+}
+ P0            | P1             ;
+ lw x5,0(x6)   | lw x5,0(x6)    ;
+ xor x7,x5,x5  | ori x7,x0,1    ;
+ ori x8,x0,1   | sw.rl x7,0(x8) ;
+ add x10,x9,x7 |                ;
+ sw x8,0(x10)  |                ;
+ ori x11,x0,1  |                ;
+ sw x11,0(x12) |                ;
+~exists (0:x5=1 /\ 1:x5=1)
