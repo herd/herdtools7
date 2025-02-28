@@ -250,7 +250,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_joker st init = None,init,[],st
 
-    let emit_access  st p init e =  match e.dir with
+    let emit_access  st p init e =  
+    (* collapse the value `v` in event `e` to integer *)
+    let value = Code.value_to_int e.v in
+    match e.dir with
     | None ->  Warn.fatal "ARMCompile.emit_access"
     | Some d ->
         match d,e.atom,e.loc with
@@ -264,11 +267,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let r,init,cs,st = emit_lda st p init loc  in
             Some r,init,cs,st
         | W,None,Data loc ->
-            let init,cs,st = emit_store st p init loc e.v in
+            let init,cs,st = emit_store st p init loc value in
             None,init,cs,st
         | W,Some Reserve,Data _ -> Warn.fatal "No store with reservation"
         | W,Some Atomic,Data loc ->
-            let ro,init,cs,st = emit_sta st p init loc e.v in
+            let ro,init,cs,st = emit_sta st p init loc value in
             ro,init,cs,st
         | _,Some (Mixed _),Data _ -> assert false
         | Code.J,_,Data _ -> emit_joker st init
@@ -276,7 +279,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_exch st p init er ew =
       let rA,init,st = U.next_init st p init (as_data er.loc) in
-      let rW,init,csi,st = U.emit_mov st p init ew.v in
+      let rW,init,csi,st = U.emit_mov st p init (Code.value_to_int ew.v) in
       let rR,st = next_reg st in
       let cs,st = emit_pair p st rR rW rA in
       Some rR,init,csi@cs,st
@@ -290,6 +293,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         fun r2 r1 -> I_XOR (DontSetFlags,r2,r1,r1)
 
     let emit_access_dep_addr st p init e  r1 =
+      (* collapse the value `v` in event `e` to integer *)
+      let value = Code.value_to_int e.v in
       let r2,st = next_reg st in
       let c =  calc0 r2 r1 in
       match Misc.as_some e.dir,e.atom,e.loc with
@@ -303,11 +308,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let r,init,cs,st = emit_lda_idx st p init loc r2 in
           Some r,init, Instruction c::cs,st
       | W,None,Data loc ->
-          let init,cs,st = emit_store_idx st p init loc r2 e.v in
+          let init,cs,st = emit_store_idx st p init loc r2 value in
           None,init,Instruction c::cs,st
       | W,Some Reserve,Data _ -> Warn.fatal "No store with reservation"
       | W,Some Atomic,Data loc ->
-          let ro,init,cs,st = emit_sta_idx st p init loc r2 e.v in
+          let ro,init,cs,st = emit_sta_idx st p init loc r2 value in
           ro,init,Instruction c::cs,st
       | _,Some (Mixed _),Data _ -> assert false
       | Code.J,_,Data _ -> emit_joker st init
@@ -319,7 +324,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         [Instruction (calc0 tempo1 rd);
          Instruction (I_ADD3 (DontSetFlags,tempo1,rA,tempo1));] in
       let r,init,csr,st = emit_ldrex_reg st p init tempo1 in
-      let init,csw,st = emit_one_strex_reg st p init tempo1 ew.v in
+      let init,csw,st = emit_one_strex_reg st p init tempo1 (Code.value_to_int ew.v) in
       r,init,c@csr@csw,st
 
 
@@ -331,7 +336,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let r2,st = next_reg st in
           let cs2 =
             [Instruction (calc0 r2 r1) ;
-             Instruction (I_ADD (DontSetFlags,r2,r2,e.v)) ; ] in
+             Instruction (I_ADD (DontSetFlags,r2,r2,(Code.value_to_int e.v))) ; ] in
           begin match e.atom,e.loc with
           | None,Data loc ->
               let init,cs,st = emit_store_reg st p init loc r2 in
@@ -401,7 +406,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let do_check_load p st r e =
       let ok,st = A.ok_reg st in
       (fun k ->
-        Instruction (I_CMPI (r,e.v))::
+        Instruction (I_CMPI (r, (Code.value_to_int e.v)))::
         Instruction (I_BNE (Label.last p))::
         Instruction (I_ADD (DontSetFlags,ok,ok,1))::
         k),
