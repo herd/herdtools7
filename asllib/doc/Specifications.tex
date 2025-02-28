@@ -686,6 +686,14 @@ which is formally defined by $\defdecl$.
 The set of \defusedependenciesterm\ associated with a declaration $\vd$ is given by
 $\decldependencies(\vd)$ (see \TypingRuleRef{DeclDependencies}).
 
+\RequirementDef{GlobalNamespace}
+The global namespace effectively consists of two independent namespaces: one for subprogram names, and the other for all other identifiers.
+In \ExampleRef{Global Namespace}, the \verb|X| subprogram does not interfere with the variable declaration also named \verb|X|.
+
+\ExampleDef{Global Namespace}
+\listingref{globalnamespace} shows a specification which defines a subprogram \verb|X| and a variable \verb|X|.
+\ASLListing{Global namespace}{globalnamespace}{\definitiontests/GlobalNamespace.asl}
+
 We distinguish between subprogram identifiers, and all other identifiers (storage elements and \namedtypes{}).
 We use the following type to track \defusedependenciesterm{} between subprogram identifiers and other identifiers:
 \hypertarget{ast-defusename}{} \hypertarget{ast-subprogram}{} \hypertarget{ast-other}{}

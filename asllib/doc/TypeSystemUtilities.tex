@@ -495,7 +495,12 @@ The function
 \[
 \isglobalundefined(\overname{\globalstaticenvs}{\genv} \aslsep \overname{\identifier}{\vx}) \aslto \overname{\Bool}{\vb}
 \]
-checks whether the identifier $\vx$ is defined in the global static environment $\genv$ when subprogram definitions are ignored, yielding the result in $\vb$.
+checks whether the identifier $\vx$ is defined in the global static environment $\genv$ when subprogram definitions are ignored (see \RequirementRef{GlobalNamespace}), yielding the result in $\vb$.
+
+\ExampleDef{Global Undefined}
+\listingref{isglobalundefined} shows a specification which defines a variable \verb|X| and a subprogram \verb|Y|.
+In the typing environment obtained by typechecking this specification, $\isglobalundefined$ will yield $\False$ for \verb|X| and $\True$ for \verb|Y|.
+\ASLListing{IsGlobalUndefined}{isglobalundefined}{\typingtests/TypingRule.IsGlobalUndefined.asl}
 
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if $\vx$ is not bound in any of the following maps of $\genv$:

@@ -287,3 +287,4 @@ ASL Typing Tests / annotating types:
   ASL Typing error: cannot perform Asserted Type Conversion on real by
     integer {1, 2}.
   [1]
+  $ aslref --no-exec TypingRule.IsGlobalUndefined.asl
