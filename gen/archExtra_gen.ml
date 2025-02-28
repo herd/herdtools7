@@ -62,6 +62,7 @@ module type S = sig
 
 (* complete init with necessary information *)
   val complete_init : bool (* hexa *) -> Code.env -> init -> init
+  val pp_env: init -> string
 
 
 (***********************)
@@ -150,6 +151,8 @@ and type special3 = I.special3
   let of_loc loc = Loc (Code.as_data loc)
   let of_reg p r = Reg (p,r)
 
+  (* - S of a plain value, a pte_* address or a phy_* address 
+     - P of a PteVal *)
   type initval = S of string | P of AArch64PteVal.t
   let pp_initval = function
     | S v ->  pp_symbol v
@@ -162,11 +165,15 @@ and type special3 = I.special3
 
   type init = (location * initval option) list
 
+  (* convert to `Some`, if input `s`
+     is not a pteval nor a number *)
   let as_virtual s = match Misc.tr_pte s with
   | Some _ -> None
   | None ->
       if LexScan.is_num s then None else Some s
 
+  (* convert to `Some`, if input `s` 
+     is neither a pteval or a physical location *)
   let refers_virtual s = match Misc.tr_pte s with
   | Some _ as r -> r
   | None -> match Misc.tr_physical s with
@@ -181,21 +188,25 @@ and type special3 = I.special3
     | None -> "-"
     | Some v -> pp_initval v
 
-  let _pp_env env =
+  let pp_env env =
     String.concat ", "
        (List.map (fun (loc,v) -> pp_location loc ^ "->" ^ ppo v) env)
 
   let complete_init hexa iv i =
     let i =
+      (* Add the locs `loc` and values `v` inside `iv` to `i` *)
       List.fold_left
         (fun env (loc,v) -> (Loc loc,Some (S (Code.pp_v ~hexa:hexa v)))::env) i iv in
     let already_here =
       List.fold_left
         (fun k (loc,v) ->
           let k = match loc with
+          (* Add Loc `s` into `k` if `s` is not a pte address nor a number *)
           | Loc s -> add_some (as_virtual s) k
+          (* No process on register *)
           | Reg _  -> k in
           let k = match v with
+          (* TODO Add value `s` into `k` if `s` is not a pte nor a number *)
           | Some (S s) -> add_some (as_virtual s) k
           | _ -> k in
           k)
@@ -204,16 +215,22 @@ and type special3 = I.special3
       List.fold_left
         (fun k (loc,v) ->
           let k = match loc with
+          (* Add Loc `s` into `k` if `s` is a pte or physical address *)
           | Loc s -> add_some (refers_virtual s) k
+          (* No process on register *)
           | Reg _ -> k in
           let k = match v with
+          (* Add value `s` into `k` if `s` is a pte or physical address *)
           | Some (S s) -> add_some (refers_virtual s) k
+          (* Add the associated physical address in a pteval `p` into `k` *)
           | Some (P p) ->
              add_some
                (OutputAddress.refers_virtual p.AArch64PteVal.oa) k
           | None -> k in
           k)
         StringSet.empty i in
+    (* If a `refer` exist but there is no entry, 
+       then add it into init state `i` *)
     let i =
       StringSet.fold
         (fun x i -> (Loc x,None)::i)
