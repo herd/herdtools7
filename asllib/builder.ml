@@ -201,11 +201,13 @@ let is_stdlib_name =
   in
   fun name -> ISet.mem name (Lazy.force set)
 
-let with_primitives ?(loc = ASTUtils.dummy_annotated) primitives =
-  List.map
-    AST.(
-      fun (f, _) ->
-        D_Func { f with builtin = true } |> ASTUtils.add_pos_from loc)
-    primitives
-  |> obfuscate "__primitive_local_"
-  |> List.rev_append
+let with_primitives ?(loc = ASTUtils.dummy_annotated) primitives ast =
+  let primitive_decls =
+    List.map
+      AST.(
+        fun (f, _) ->
+          D_Func { f with builtin = true } |> ASTUtils.add_pos_from loc)
+      primitives
+    |> obfuscate "__primitive_local_"
+  in
+  ASTUtils.patch ~src:ast ~patches:primitive_decls
