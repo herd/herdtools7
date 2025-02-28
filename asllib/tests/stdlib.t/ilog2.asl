@@ -10,12 +10,12 @@ begin
     let lgx = ILog2(x);
     assert (Abs(lgx + ILog2(1.0 / x)) < 2);
     if i >= 0 then
-      assert Log2(3 ^ (i as integer)) == lgx;
+      assert Log2(FloorPow2(3 ^ (i as integer))) == lgx;
     end;
   end;
 
   for i = 10 to 1000 do
-    assert Log2(i DIVRM 10) == ILog2 (Real (i) / 10.0);
+    assert Log2(FloorPow2(i DIVRM 10)) == ILog2 (Real (i) / 10.0);
   end;
 
   return 0;

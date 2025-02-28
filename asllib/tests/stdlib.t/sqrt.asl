@@ -52,48 +52,50 @@ begin
   end;
 
   // Use exact checking with SqrtRoundedCorrect
-  for i = 1 to 2^4 do
-    let l = Log2(i);
+  for l = 0 to 4 do
+    for i = 2^l to 2^(l + 1) - 1 do
+      let p = Real(i);
+      assert SqrtRoundedCorrect(p, 1, SqrtRounded(p, 1));
+      assert SqrtRoundedCorrect(p, 2, SqrtRounded(p, 2));
+      assert SqrtRoundedCorrect(p, 3, SqrtRounded(p, 3));
+      assert SqrtRoundedCorrect(p, 4, SqrtRounded(p, 4));
+      assert SqrtRoundedCorrect(p, 100, SqrtRounded(p, 100));
 
-    let p = Real(i);
-    assert SqrtRoundedCorrect(p, 1, SqrtRounded(p, 1));
-    assert SqrtRoundedCorrect(p, 2, SqrtRounded(p, 2));
-    assert SqrtRoundedCorrect(p, 3, SqrtRounded(p, 3));
-    assert SqrtRoundedCorrect(p, 4, SqrtRounded(p, 4));
-    assert SqrtRoundedCorrect(p, 100, SqrtRounded(p, 100));
-
-    let q = p * (2.0 ^ (-400));
-    assert SqrtRoundedCorrect(q, 1, SqrtRounded(q, 1));
-    assert SqrtRoundedCorrect(q, 2, SqrtRounded(q, 2));
-    assert SqrtRoundedCorrect(q, 3, SqrtRounded(q, 3));
-    assert SqrtRoundedCorrect(q, 4, SqrtRounded(q, 4));
-    assert SqrtRoundedCorrect(q, 100, SqrtRounded(q, 100));
+      let q = p * (2.0 ^ (-400));
+      assert SqrtRoundedCorrect(q, 1, SqrtRounded(q, 1));
+      assert SqrtRoundedCorrect(q, 2, SqrtRounded(q, 2));
+      assert SqrtRoundedCorrect(q, 3, SqrtRounded(q, 3));
+      assert SqrtRoundedCorrect(q, 4, SqrtRounded(q, 4));
+      assert SqrtRoundedCorrect(q, 100, SqrtRounded(q, 100));
+    end;
   end;
-  for i = 2^4 to 2^10 do
-    let l = Log2(i);
-    let l2 = l DIVRM 2;
 
-    let p = Real(i);
-    assert SqrtRoundedCorrect(p, 1, SqrtRounded(p, 1));
-    assert SqrtRoundedCorrect(p, 2, SqrtRounded(p, 2));
-    assert SqrtRoundedCorrect(p, l2 - 1, SqrtRounded(p, l2 - 1));
-    assert SqrtRoundedCorrect(p, l2, SqrtRounded(p, l2));
-    assert SqrtRoundedCorrect(p, l2 + 1, SqrtRounded(p, l2 + 1));
-    assert SqrtRoundedCorrect(p, l - 1, SqrtRounded(p, l - 1));
-    assert SqrtRoundedCorrect(p, l, SqrtRounded(p, l));
-    assert SqrtRoundedCorrect(p, l + 1, SqrtRounded(p, l + 1));
-    assert SqrtRoundedCorrect(p, 100, SqrtRounded(p, 100));
+  for l = 4 to 10 do
+    for i = 2^l to 2^(l + 1) - 1 do
+      let l2 = l DIVRM 2;
 
-    let q = p * (2.0 ^ (-400));
-    assert SqrtRoundedCorrect(q, 1, SqrtRounded(q, 1));
-    assert SqrtRoundedCorrect(q, 2, SqrtRounded(q, 2));
-    assert SqrtRoundedCorrect(q, l2 - 1, SqrtRounded(q, l2 - 1));
-    assert SqrtRoundedCorrect(q, l2, SqrtRounded(q, l2));
-    assert SqrtRoundedCorrect(q, l2 + 1, SqrtRounded(q, l2 + 1));
-    assert SqrtRoundedCorrect(q, l - 1, SqrtRounded(q, l - 1));
-    assert SqrtRoundedCorrect(q, l, SqrtRounded(q, l));
-    assert SqrtRoundedCorrect(q, l + 1, SqrtRounded(q, l + 1));
-    assert SqrtRoundedCorrect(q, 100, SqrtRounded(q, 100));
+      let p = Real(i);
+      assert SqrtRoundedCorrect(p, 1, SqrtRounded(p, 1));
+      assert SqrtRoundedCorrect(p, 2, SqrtRounded(p, 2));
+      assert SqrtRoundedCorrect(p, l2 - 1, SqrtRounded(p, l2 - 1));
+      assert SqrtRoundedCorrect(p, l2, SqrtRounded(p, l2));
+      assert SqrtRoundedCorrect(p, l2 + 1, SqrtRounded(p, l2 + 1));
+      assert SqrtRoundedCorrect(p, l - 1, SqrtRounded(p, l - 1));
+      assert SqrtRoundedCorrect(p, l, SqrtRounded(p, l));
+      assert SqrtRoundedCorrect(p, l + 1, SqrtRounded(p, l + 1));
+      assert SqrtRoundedCorrect(p, 100, SqrtRounded(p, 100));
+
+      let q = p * (2.0 ^ (-400));
+      assert SqrtRoundedCorrect(q, 1, SqrtRounded(q, 1));
+      assert SqrtRoundedCorrect(q, 2, SqrtRounded(q, 2));
+      assert SqrtRoundedCorrect(q, l2 - 1, SqrtRounded(q, l2 - 1));
+      assert SqrtRoundedCorrect(q, l2, SqrtRounded(q, l2));
+      assert SqrtRoundedCorrect(q, l2 + 1, SqrtRounded(q, l2 + 1));
+      assert SqrtRoundedCorrect(q, l - 1, SqrtRounded(q, l - 1));
+      assert SqrtRoundedCorrect(q, l, SqrtRounded(q, l));
+      assert SqrtRoundedCorrect(q, l + 1, SqrtRounded(q, l + 1));
+      assert SqrtRoundedCorrect(q, 100, SqrtRounded(q, 100));
+    end;
   end;
 
   return 0;

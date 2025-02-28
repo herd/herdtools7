@@ -300,8 +300,10 @@ module NativeBackend (C : Config) = struct
           Error.fatal_unknown_pos
           @@ Error.BadArity (Dynamic, "DecStr", 1, List.length li)
 
+    let is_power_of_2 z = Int.equal (Z.log2 z) (Z.log2up z)
+
     let log2 = function
-      | [ NV_Literal (L_Int i) ] when Z.gt i Z.zero ->
+      | [ NV_Literal (L_Int i) ] when Z.gt i Z.zero && is_power_of_2 i ->
           [ L_Int (Z.log2 i |> Z.of_int) |> nv_literal ]
       | [ v ] -> mismatch_type v [ integer' ]
       | li ->
