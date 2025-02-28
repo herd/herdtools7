@@ -1349,11 +1349,7 @@ returned values.
 The main subprogram call relation is given by
 SemanticsRule.Call (see \SemanticsRuleRef{Call}).
 %
-The different types of subprogram calls are evaluated via one of the following rules:
-\begin{itemize}
-\item \SemanticsRuleRef{FPrimitive}
-\item \SemanticsRuleRef{FCall}
-\end{itemize}
+This relies on the helper rule \SemanticsRuleRef{FCall}.
 
 We also define the following helper rules:
 \begin{itemize}
@@ -1442,50 +1438,6 @@ We also define the following helper rules:
 \end{mathpar}
 \CodeSubsection{\EvalCallBegin}{\EvalCallEnd}{../Interpreter.ml}
 
-\SemanticsRuleDef{FPrimitive}
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\env$ consists of the static environment $\tenv$ and the dynamic environment with $\genv$ as its
-        global component and an empty local component;
-  \item finding the function named $\name$ in the static environment $\tenv$ gives a $\func$ AST node
-        with the body field \SBPrimitive;
-  \item evaluating the primitive subprogram $\name$ with the actual arguments $\args$
-        is $\Normal(\vms, \vgone)$\ProseOrError;
-  \item writing the returned values $\vms$ as per \SemanticsRuleRef{WriteRetVals} gives $\vvsm$;
-  \item $\vvsm$ is a pair consisting of the list of values $\vvs$ and execution graph $\vgtwo$;
-  \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ label;
-  \item $\newenv$ is the environment with $\tenv$ as its static environment component
-        and the dynamic environment consisting of $\genv$ as its global component and an empty local component;
-  \item the result of the entire evaluation is $\Normal((\vvs, \newg), \newenv)$.
-\end{itemize}
-
-\FormallyParagraph
-The following rule utilizes the transition relation
-\hypertarget{def-evalprimitive}{}
-\[
-  \evalprimitive{\overname{\Identifiers}{\name} \aslsep \overname{(\vals\times\XGraphs)^*}{\args}} \bigtimes
-  \Normal(\overname{(\vals\times\XGraphs)^*}{\vms} \aslsep \overname{\XGraphs}{\vgone}) \cup \overname{\TDynError}{\DynErrorConfig} \enspace,
-\]
-which parameterizes the ASL semantics and allows evaluating primitive subprograms.
-\hypertarget{def-evalprimitivearrow}{}
-That is, it is not a part of $\evalarrow$ but rather a separate transition relation denoted $\evalprimitivearrow$.
-
-\begin{mathpar}
-\inferrule{
-  \env \eqname (\tenv, (\genv, \emptyfunc))\\
-  G^\tenv.\subprograms(\name) = \{ \body = \SBPrimitive \ldots \}\\
-  \evalprimitive{\name, \args} \evalprimitivearrow \Normal(\vms, \vgone) \OrDynError\\\\
-  \writeretvals(\vms) \evalarrow \vvsm\\
-  \vvsm \eqname (\vvs, \vgtwo)\\
-  \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}\\
-  \newenv \eqdef (\tenv, (\genv, \emptyfunc))
-}{
-  \evalsubprogram{\env, \name, \params, \args} \evalarrow \Normal((\vvs, \newg), \newenv)
-}
-\end{mathpar}
-\CodeSubsection{\EvalFPrimitiveBegin}{\EvalFPrimitiveEnd}{../Interpreter.ml}
-
 \SemanticsRuleDef{FCall}
 \ExampleDef{Subprogram Calls}
 In \listingref{semantics-fcall},
@@ -1499,7 +1451,7 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
         component $\genv$ and an empty local component;
   \item finding the function named $\name$ in $\tenv$ (via the $\subprograms$ component of the static global environment of $\tenv$)
         gives the AST $\func$ node with body
-        $\SBASL(\vbody)$, parameters $\paramdecls$, arguments $\argdecls$, and optional recursion limit expression $\vrecurselimit$;
+        $\vbody$, parameters $\paramdecls$, arguments $\argdecls$, and optional recursion limit expression $\vrecurselimit$;
   \item $\envone$ is the environment consisting of the static environment $\tenv$ and the dynamic
         environment consisting of the dynamic component from $\denv$ and an empty local component;
   \item applying $\checkrecurselimit$ to $\name$ and $\vrecurselimit$ in $\envone$ yields $\vgone$\ProseOrError;
@@ -1528,7 +1480,7 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
   {
     G^\tenv.\subprograms(\name) \eqname \left\{
       \begin{array}{rcl}
-      \funcbody &:& \SBASL(\vbody),\\
+      \funcbody &:& \vbody,\\
       \funcargs &:& \argdecls,\\
       \funcparameters &:& \paramdecls,\\
       \funcrecurselimit &:& \vrecurselimit, \\
