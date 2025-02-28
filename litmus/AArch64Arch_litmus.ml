@@ -117,13 +117,19 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 
       let nop = I_NOP
 
+
       let user_handler_clobber = "x29"
       let user_handler_clobbers = [ user_handler_clobber; ]
 
+      let default_sync_handler user =
+        if user then "el0_sync_64"
+        else "el1h_sync"
+
+
       let vector_table is_user name =
         let el1h_sync,el0_sync_64 =
-          if is_user then "el1h_sync",name
-          else name,"el0_sync_64" in
+          if is_user then default_sync_handler false,name
+          else name, default_sync_handler true in
         let ventry label k = ".align 7"::Printf.sprintf "b %s" label::k
         and wentry _label k =
           ".align 7"

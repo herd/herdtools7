@@ -66,6 +66,9 @@ module type Base = sig
 
   val features : ((instruction -> bool) * string) list
   val user_handler_clobbers : string list
+
+  (* In the following two functions first argument specifies user mode *)
+  val default_sync_handler : bool -> string
   val vector_table : bool -> string -> string list
 
 (* Reaction to different types, fail or warn *)
