@@ -810,9 +810,13 @@ We refer such a symbol as an \approximationdirectionterm.
   \begin{itemize}
     \item $\visone$ is a list of constraints $\csone$, that is, $\FromSyntax(\vsone)$;
     \item $\vistwo$ is a list of constraints $\cstwo$, that is, $\FromSyntax(\vstwo)$;
-    \item \ProseapproxconstraintsOver{$\tenv$}{$\csone$}{$\vsone$};
-    \item \ProseapproxconstraintsUnder{$\tenv$}{$\cstwo$}{$\vstwo$};
-    \item \Proseeqdef{$\vb$}{$\True$ if and only if $\vsone$ is a subset of $\vstwo$}.
+    \item \Proseapproxconstraint{$\tenv$}{$\csone[\vi]$}{$\Over$}{$\vsone_\vi$}, for every \Proselistrange{$\vi$}{$\csone$};
+    \item \Proseapproxconstraint{$\tenv$}{$\cstwo[\vj]$}{$\Under$}{$\vstwo_\vj$}, for every \Proselistrange{$\vj$}{$\cstwo$};
+    \item \Proseeqdef{$\vb$}{$\True$ if and only if
+          for every \Proselistrange{$\vi$}{$\csone$} there exists
+          an index $\vj$ in the list of indices for $\cstwo$ such that
+          either $\constraintequal$ determines that $\csone[\vi]$ is equivalent to $\cstwo[\vj]$
+          in $\tenv$ or $\vsone_\vi$ is a subset of $\vstwo_\vj$}.
   \end{itemize}
 
   \item \AllApplyCase{finite\_syntax}
@@ -857,14 +861,19 @@ We refer such a symbol as an \approximationdirectionterm.
 \end{mathpar}
 
 % Transliteration comment: instead of the symbol CannotOverApproximate, we use the set of all integers.
-% Transliteration comment: the use of constraints_equal is an optimization and is thus not reflected here.
 \begin{mathpar}
 \inferrule[syntax\_syntax]{
-  \approxconstraints(\tenv, \Over, \csone) \typearrow \vsone\\
-  \approxconstraints(\tenv, \Under, \cstwo) \typearrow \vstwo
+  \vi\in\listrange(\csone): \approxconstraint(\tenv, \Over, \csone[\vi]) \typearrow \vsone_\vi\\
+  \vj\in\listrange(\cstwo): \approxconstraint(\tenv, \Under, \cstwo[\vi]) \typearrow \vstwo_\vj\\
+  {
+  \begin{array}{rl}
+  \vb \eqdef  & \forall \vi\in\listrange(\csone).\ \exists \vj\in\listrange(\cstwo).\\
+              & \constraintequal(\tenv, \csone[\vi], \cstwo[\vi]) \lor \vsone_\vi \subseteq \vstwo_\vj
+  \end{array}
+  }
 }{
   \symdomissubset(\tenv, \overname{\FromSyntax(\csone)}{\visone}, \overname{\FromSyntax(\cstwo)}{\vistwo}) \typearrow
-  \overname{\vsone \subseteq \vstwo}{\vb}
+  \vb
 }
 \end{mathpar}
 

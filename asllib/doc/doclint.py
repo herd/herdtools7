@@ -274,6 +274,8 @@ class RuleBlock:
         r"\\TypingRuleDef{.*}",
         r"\\SemanticsRuleDef{.*}",
         r"\\ASTRuleDef{.*}",
+        r"\\ConventionDef{.*}",
+        r"\\RequirementDef{.*}",
     ]
     rule_end_pattern = re.compile("|".join(end_patterns))
 
@@ -297,6 +299,10 @@ class RuleBlock:
             self.type = RuleBlock.TYPING_RULE
         elif re.search(r"\\SemanticsRuleDef", begin_line):
             self.type = RuleBlock.SEMANTICS_RULE
+        elif re.search(r"\\RequirementDef", begin_line):
+            self.type = RuleBlock.GUIDE_RULE
+        elif re.search(r"\\ConventionDef", begin_line):
+            self.type = RuleBlock.CONVENTION_RULE
         else:
             self.type = None
 
@@ -416,16 +422,17 @@ def check_rule_has_example(rule_block: RuleBlock) -> List[str]:
     Every typing rule and semantics rule should provide or reference at least
     one example.
     """
+    if not rule_block.filename in [
+        # "RelationsOnTypes.tex"
+        # "Bitfields.tex"
+        # "Types.tex"
+    ]:
+        return []
     if not rule_block.type in [
         RuleBlock.TYPING_RULE,
         RuleBlock.SEMANTICS_RULE,
         RuleBlock.GUIDE_RULE,
         RuleBlock.CONVENTION_RULE,
-    ]:
-        return []
-    if not rule_block.filename in [
-        # "RelationsOnTypes.tex"
-        # "Bitfields.tex"
     ]:
         return []
     example_found = False
