@@ -675,6 +675,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               T_Int (WellConstrained cs) |> here
             with TypingAssumptionFailed ->
               fatal_from ~loc (Error.BadTypesForBinop (op, t1, t2))))
+    | `MUL, (T_Real, T_Int _ | T_Int _, T_Real)
     | (`PLUS | `MINUS | `MUL), (T_Real, T_Real)
     | `POW, (T_Real, T_Int _)
     | `RDIV, (T_Real, T_Real) ->
