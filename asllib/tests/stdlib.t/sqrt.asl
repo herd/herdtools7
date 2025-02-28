@@ -53,7 +53,7 @@ begin
 
   // Use exact checking with SqrtRoundedCorrect
   for i = 1 to 2^4 do
-    let l = Log2(i);
+    let l = Log2(FloorPow2(i));
 
     let p = Real(i);
     assert SqrtRoundedCorrect(p, 1, SqrtRounded(p, 1));
@@ -70,7 +70,7 @@ begin
     assert SqrtRoundedCorrect(q, 100, SqrtRounded(q, 100));
   end;
   for i = 2^4 to 2^10 do
-    let l = Log2(i);
+    let l = Log2(FloorPow2(i));
     let l2 = l DIVRM 2;
 
     let p = Real(i);
