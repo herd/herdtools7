@@ -296,6 +296,10 @@ the bitvector type that contains $\field$,
 in an environment $\tenv$, resulting in an
 annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
 
+\ExampleDef{Well-typed Bitfields}
+In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bitfields are well-typed.
+\ASLListing{Well-typed bitfields}{welltypedbitvectortypes}{\typingtests/TypingRule.TBitField.asl}
+
 \ProseParagraph
 \begin{itemize}
   \item $\vfield$ is a bitfield with list of slices $\vslices$;
@@ -383,11 +387,6 @@ annotated bitfield --- $\newfield$ --- or a type error, if one is detected.
   (\overname{\BitFieldType(\name, \slicesone, \vtp)}{\newfield}, \vses)
 }
 \end{mathpar}
-
-\ExampleDef{Well-typed Bitfields}
-In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bitfields are well-typed.
-\ASLListing{Well-typed bitfields}{welltypedbitvectortypes}{\typingtests/TypingRule.TBitField.asl}
-
 \CodeSubsection{\TBitFieldBegin}{\TBitFieldEnd}{../Typing.ml}
 
 \TypingRuleDef{CheckSlicesInWidth}

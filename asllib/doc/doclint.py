@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import List, Set
 import argparse
 import pathlib
+import pathlib
 
 cli_parser = argparse.ArgumentParser(prog="ASL Reference Linter")
 cli_parser.add_argument(
@@ -162,8 +163,6 @@ def check_repeated_words(filename: str) -> int:
         line_number += 1
         line = line.strip()
         tokens = re.split(" |{|}", line)
-        if not tokens:
-            continue
         for current_token in tokens:
             current_token_lower = current_token.lower()
             last_token_lower = last_token.lower()
@@ -189,6 +188,11 @@ def detect_incorrect_latex_macros_spacing(filename: str) -> int:
     """
     num_errors = 0
     file_str = read_file_str(filename)
+    double_backslash_matches = re.findall(r"\\\\[a-zA-Z]+", file_str)
+    for match in double_backslash_matches:
+        print(f"./{filename}: double \\ in macro {match}")
+        num_errors += 1
+
     patterns_to_remove = [
         # Patterns for known math environments:
         r"\$.*?\$",  # $...$
@@ -256,6 +260,8 @@ class RuleBlock:
     AST_RULE = "AST"
     TYPING_RULE = "Typing"
     SEMANTICS_RULE = "Semantics"
+    GUIDE_RULE = "Guide"
+    CONVENTION_RULE = "Convention"
     GUIDE_RULE = "Guide"
     CONVENTION_RULE = "Convention"
 
@@ -417,7 +423,10 @@ def check_rule_has_example(rule_block: RuleBlock) -> List[str]:
         RuleBlock.CONVENTION_RULE,
     ]:
         return []
-    if not rule_block.filename == "RelationsOnTypes.tex":
+    if not rule_block.filename in [
+        # "RelationsOnTypes.tex"
+        # "Bitfields.tex"
+    ]:
         return []
     example_found = False
     for line_number in range(rule_block.begin, rule_block.end + 1):
@@ -426,6 +435,7 @@ def check_rule_has_example(rule_block: RuleBlock) -> List[str]:
             line.startswith("\\ExampleDef")
             or "\\ExampleRef" in line
             or "\\subsubsection{Example}" in line
+            or "\\listingref" in line
         ):
             example_found = True
             break
@@ -443,7 +453,7 @@ def check_rules(filename: str) -> int:
     checks = [
         check_rule_prose_formally_structure,
         # check_rule_case_consistency,
-        # check_rule_has_example,
+        check_rule_has_example,
     ]
     num_errors = 0
     rule_blocks: List[RuleBlock] = match_rules(filename)
@@ -465,7 +475,7 @@ def check_rules(filename: str) -> int:
 def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
     r"""
     Attempts to find spelling error in the files listed in 'latex_files'
-    by consulting the internal dictionary file iINTERNAL_DICTIONARY_FILENAME
+    by consulting the internal dictionary file INTERNAL_DICTIONARY_FILENAME
     and an optional reference dictionary in 'reference_dictionary_path'.
     """
     dict_word_list = read_file_str(INTERNAL_DICTIONARY_FILENAME).splitlines()
@@ -594,9 +604,9 @@ def main():
     num_spelling_errors = spellcheck(args.dictionary, content_latex_sources)
     if num_spelling_errors > 0:
         print(
-            f"There were possible spelling errors. "
+            "There were possible spelling errors. "
             "Please either fix them or add new words to "
-            "{INTERNAL_DICTIONARY_FILENAME}."
+            f"{INTERNAL_DICTIONARY_FILENAME}."
         )
     num_errors += num_spelling_errors
     num_errors += check_hyperlinks_and_hypertargets(all_latex_sources)

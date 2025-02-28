@@ -4,6 +4,12 @@ Hello world should work:
   Hello, world!
 
 ASL Typing Tests:
+  $ aslref TypingRule.SubtypeSatisfaction1.asl
+  $ aslref --no-exec TypingRule.SubtypeSatisfaction2.asl
+  $ aslref TypingRule.SubtypeSatisfaction3.asl
+  File TypingRule.SubtypeSatisfaction3.asl, line 9, characters 4 to 45:
+  ASL Typing error: a subtype of AnimalLegs was expected, provided ShapeSides.
+  [1]
   $ aslref TypingRule.TypeSatisfaction1.asl
   $ aslref TypingRule.TypeSatisfaction2.asl
   $ aslref TypingRule.TypeSatisfaction3.asl
@@ -11,8 +17,32 @@ ASL Typing Tests:
   ASL Typing error: a subtype of pairT was expected,
     provided (integer {1}, T2).
   [1]
+  $ aslref --no-exec TypingRule.TypeClashes.asl
+  $ aslref TypingRule.LowestCommonAncestor.asl
+  $ aslref TypingRule.FindNamedLCA.asl
+  $ aslref TypingRule.ApplyUnopType.asl
 //  $ aslref TypingRule.EConcatUnresolvableToInteger.asl
   $ aslref TypingRule.ApplyBinopTypes.asl
+  $ aslref TypingRule.ApplyBinopTypes.constraints.asl
+  File TypingRule.ApplyBinopTypes.constraints.asl, line 22, characters 51 to 78:
+  Warning: Removing some values that would fail with op DIV from constraint set
+  {-5..3} gave {1..3}. Continuing with this constraint set.
+  File TypingRule.ApplyBinopTypes.constraints.asl, line 26, characters 39 to 65:
+  Warning: Removing some values that would fail with op MOD from constraint set
+  {0..3} gave {1..3}. Continuing with this constraint set.
+  File TypingRule.ApplyBinopTypes.constraints.asl, line 41, characters 31 to 80:
+  Exploding sets for the binary operation * could result in a constraint set
+  bigger than 2^17 with constraints 0..16384 and 0..16384. Continuing with the
+  non-expanded constraints.
+  File TypingRule.ApplyBinopTypes.constraints.asl, line 42, characters 31 to 82:
+  Warning: Removing some values that would fail with op DIV from constraint set
+  {0..16384} gave {1..16384}. Continuing with this constraint set.
+  File TypingRule.ApplyBinopTypes.constraints.asl, line 42, characters 31 to 82:
+  Exploding sets for the binary operation DIV could result in a constraint set
+  bigger than 2^17 with constraints 0..16384 and 1..16384. Continuing with the
+  non-expanded constraints.
+  ASL Error: Undefined identifier: 'main'
+  [1]
   $ aslref TypingRule.LDDiscard.asl
   $ aslref TypingRule.LDVar.asl
   $ aslref TypingRule.LDTyped.asl
@@ -93,6 +123,7 @@ ASL Typing Tests / annotating types:
   ASL Typing error: a subtype of integer {0..2} was expected,
     provided integer {3}.
   [1]
+  $ aslref --no-exec TypingRule.CheckConstrainedInteger.asl
 
   $ aslref TypingRule.BaseValue.asl
   global_base = 0, unconstrained_integer_base = 0, constrained_integer_base = -3
@@ -218,3 +249,31 @@ ASL Typing Tests / annotating types:
   eq_enum: RED == GREEN = FALSE
   eq_enum: RED != RED = FALSE
   eq_enum: RED != GREEN = TRUE
+
+  $ aslref TypingRule.EVar.asl
+  $ aslref TypingRule.EVar.undefined.asl
+  File TypingRule.EVar.undefined.asl, line 3, characters 12 to 13:
+  ASL Error: Undefined identifier: 't'
+  [1]
+
+  $ aslref TypingRule.EGetRecordField.asl
+  $ aslref TypingRule.EGetBadRecordField.asl
+  File TypingRule.EGetBadRecordField.asl, line 7, characters 10 to 36:
+  ASL Error: There is no field 'undeclared_field' on type MyRecordType.
+  [1]
+  $ aslref TypingRule.EGetBitfield.asl
+  $ aslref TypingRule.EGetBadBitField.asl
+  File TypingRule.EGetBadBitField.asl, line 7, characters 12 to 33:
+  ASL Error: There is no field 'undeclared_bitfield' on type Packet.
+  [1]
+  $ aslref TypingRule.EGetBadField.asl
+  File TypingRule.EGetBadField.asl, line 6, characters 12 to 15:
+  ASL Error: There is no field 'f' on type array [[5]] of integer.
+  [1]
+  $ aslref TypingRule.EGetFields.asl
+  $ aslref --no-exec TypingRule.ATC.asl
+  $ aslref --no-exec TypingRule.CheckATC.asl
+  File TypingRule.CheckATC.asl, line 8, characters 12 to 32:
+  ASL Typing error: cannot perform Asserted Type Conversion on real by
+    integer {1, 2}.
+  [1]

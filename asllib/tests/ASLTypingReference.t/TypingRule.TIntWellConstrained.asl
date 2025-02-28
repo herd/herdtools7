@@ -22,5 +22,9 @@ begin
 
   var c = 3; // The type of 'c' is inferred to be integer{3}.
 
+  // The following is illegal as '2 as integer{3}'
+  // is considered side-effecting, which is not allowed in type
+  // definitions.
+  // var - = 3 as integer{2 as integer{3}};
   return 0;
 end;
