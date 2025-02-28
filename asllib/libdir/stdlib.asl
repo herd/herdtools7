@@ -4,18 +4,36 @@
 //
 //-----------------------------------------------------------------------------
 
-
 //------------------------------------------------------------------------------
-// Externals
+// Standard integer functions
 
-// UInt
-// SInt
+// UInt()
+// ======
+// Convert a bitvector to an unsigned integer, where bit 0 is LSB.
 
-//------------------------------------------------------------------------------
-// Standard integer functions and procedures
+func UInt{N}(x: bits(N)) => integer{0..2^N-1}
+begin
+    var result: integer = 0;
+    for i = 0 to N-1 do
+        if x[i] == '1' then
+            result = result + 2^i;
+        end;
+    end;
+    return result as {0..2^N-1};
+end;
 
-// SInt
-// UInt
+// SInt()
+// ======
+// Convert a 2s complement bitvector to a signed integer.
+
+func SInt{N}(x: bits(N)) => integer{-(2^(N-1)) .. 2^(N-1)-1}
+begin
+    var result: integer = UInt(x);
+    if N > 0 && x[N-1] == '1' then
+        result = result - 2^N;
+    end;
+    return result as {-(2^(N-1)) .. 2^(N-1)-1};
+end;
 
 func Min(a: integer, b: integer) => integer
 begin
@@ -32,7 +50,25 @@ begin
   return if x < 0 then -x else x;
 end;
 
-// Log2
+// Log2()
+// ======
+// Calculate the logarithm base 2 of the input integer.
+// Input must be a power of 2.
+
+func Log2(a: integer) => integer
+begin
+
+    var result : integer = 0;
+    var current : integer = 1;
+
+    while a > current looplimit 2^128 do // i.e. unbounded
+        current = current * 2;
+        result = result + 1;
+    end;
+
+    assert a == current;
+    return result;
+end;
 
 // Return true if integer is even (0 modulo 2).
 func IsEven(a: integer) => boolean
@@ -132,17 +168,71 @@ end;
 //------------------------------------------------------------------------------
 // Functions on reals
 
-// Convert integer to rational value.
-// func Real(x: integer) => real;
+// Real()
+// ======
+// Convert an integer to a rational value.
 
-// Nearest integer, rounding towards negative infinity.
-// func RoundDown(x: real) => integer;
+func Real(x: integer) => real
+begin
+    return x * 1.0;
+end;
 
-// Nearest integer, rounding towards positive infinity.
-// func RoundUp(x: real) => integer;
+// RoundDown()
+// ===========
+// Round a rational value down to the nearest integer
+// (round towards negative infinity).
 
-// Nearest integer, rounding towards zero.
-// func RoundTowardsZero(x: real) => integer;
+func RoundDown(x: real) => integer
+begin
+    let round = RoundTowardsZero(x);
+
+    if x >= 0.0 || x == Real(round) then
+        return round;
+    else
+        return round - 1;
+    end;
+end;
+
+// RoundUp()
+// =========
+// Round a rational value up to the nearest integer
+// (round towards positive infinity).
+
+func RoundUp(x: real) => integer
+begin
+    let round = RoundTowardsZero(x);
+
+    if x <= 0.0 || x == Real(round) then
+        return round;
+    else
+        return round + 1;
+    end;
+end;
+
+// RoundTowardsZero()
+// ==================
+// Round a rational value towards zero.
+
+func RoundTowardsZero(x: real) => integer
+begin
+    let x_pos = Abs(x);
+
+    if x_pos < 1.0 then
+        return 0;
+    end;
+
+    let log = ILog2(x_pos);
+    var acc : integer = 2^log;
+
+    for i=log-1 downto 0 do
+        let next = acc + 2^i;
+        if x_pos >= Real(next) then
+          acc = next;
+        end;
+    end;
+
+    return if x < 0.0 then -acc else acc;
+end;
 
 // Absolute value.
 func Abs(x: real) => real

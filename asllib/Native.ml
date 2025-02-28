@@ -310,14 +310,6 @@ module NativeBackend (C : Config) = struct
           Error.fatal_unknown_pos
           @@ Error.BadArity (Dynamic, "Log2", 1, List.length li)
 
-    let int_to_real = function
-      | [ NV_Literal (L_Int i) ] ->
-          L_Real (Q.of_bigint i) |> nv_literal |> return_one
-      | [ v ] -> mismatch_type v [ integer' ]
-      | li ->
-          Error.fatal_unknown_pos
-          @@ Error.BadArity (Dynamic, "Real", 1, List.length li)
-
     let truncate q = Q.to_bigint q
 
     let floor q =
@@ -400,7 +392,6 @@ module NativeBackend (C : Config) = struct
         p ~args:[ ("x", integer) ] ~returns:string "HexStr" hex_str;
         p ~args:[ ("x", integer) ] ~returns:string "AsciiStr" ascii_str;
         p ~args:[ ("x", integer) ] ~returns:integer "Log2" log2;
-        p ~args:[ ("x", integer) ] ~returns:real "Real" int_to_real;
         p ~args:[ ("x", real) ] ~returns:integer "RoundDown" round_down;
         p ~args:[ ("x", real) ] ~returns:integer "RoundUp" round_up;
         p
