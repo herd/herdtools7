@@ -51,12 +51,7 @@ These semantic rules are defined by induction over the typed AST.
 \paragraph{Execution:}
 A valid execution of an ASL specification transitions from an \emph{initial semantic configuration},
 which consists of the given specification and the standard library specification, to an output semantic configuration
-consisting of an output value and a concurrent execution graph.
-
-\paragraph{Primitive Subprograms:}
-The semantics of ASL are parameterized by a set of primitive subprograms ---
-subprograms whose implementation is not defined by ASL statements and whose effect on the dynamic environment
-is defined externally. Critically, access to memory is given by primitive subprograms.
+consisting of an output value and a concurrent execution graph.\\
 
 We define two types of semantics --- \emph{sequential semantics} and \emph{concurrent semantics}.
 
@@ -492,14 +487,10 @@ like $C$ where the environment component, if one exists, is substituted with $\e
 
 \section{Semantic Evaluation}
 \hypertarget{def-evalrel}{}
-\hypertarget{def-primitiverel}{}
-The semantics of ASL is given by the relations\footnote{The reason that relations, rather than functions, are used is due to the
-potential non-determinism in the primitive subprograms
-and the non-determinism inherent in the \texttt{ARBITRARY} expression.}
-\evalrel\ and \primitiverel.
+The semantics of ASL is given by the relation\footnote{The reason that a relation, rather than a function, is used is due to
+the non-determinism inherent in the \texttt{ARBITRARY} expression.}
+\evalrel.
 The relation \evalrel\ is defined as the disjoint union of the relations defined in this reference.
-The relation \primitiverel\ provides the semantics of primitive subprograms and is not otherwise defined
-constructively.
 
 \subsection{Natural Operational Semantics}
 We define the ASL dynamic semantics in the style of \emph{natural operational semantics}~\cite{SemanticsWithApplicationsBook}
