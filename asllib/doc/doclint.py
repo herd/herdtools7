@@ -422,9 +422,34 @@ def check_rule_has_example(rule_block: RuleBlock) -> List[str]:
     one example.
     """
     if not rule_block.filename in [
-        # "RelationsOnTypes.tex"
-        # "Bitfields.tex"
-        # "Types.tex"
+        "Literals.tex",
+        "PrimitiveOperations.tex",
+        # "Bitfields.tex",
+        # "Types.tex",
+        "RelationsOnTypes.tex",
+        "TypeAttributes.tex",
+        # "Expressions.tex",
+        # "Slicing.tex",
+        # "PatternMatching.tex",
+        # "AssignableExpressions.tex",
+        # "LocalStorageDeclarations.tex",
+        # "Statements.tex",
+        # "BlockStatements.tex",
+        "CatchingExceptions.tex",
+        # "SubprogramCalls.tex",
+        # "GlobalDeclarations.tex",
+        # "GlobalStorageDeclarations.tex",
+        # "TypeDeclarations.tex",
+        # "SubprogramDeclarations.tex",
+        # "Specifications.tex",
+        "TopLevel.tex",
+        # "SideEffects.tex",
+        "StaticEvaluation.tex",
+        # "SymbolicSubsumptionTesting.tex",
+        # "SymbolicEquivalenceTesting.tex",
+        # "TypeSystemUtilities.tex",
+        # "SemanticsUtilities.tex",
+        "RuntimeEnvironment.tex",
     ]:
         return []
     if not rule_block.type in [
