@@ -342,6 +342,7 @@ compatible
 compiler
 compilers
 complement
+complete
 completes
 complex
 complexity
