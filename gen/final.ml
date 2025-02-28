@@ -210,7 +210,6 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
            assert (evt.C.C.bank = Code.Ord || evt.C.C.bank = Code.CapaSeal) ;
            Some (I (prev_value evt.C.C.v))
         | None|Some Code.J -> None in
-        (* *)
         if show_in_cond n then match v with
         | Some v ->
            let add_to_fs r v fs =

@@ -35,9 +35,9 @@ module type S = sig
         ctag : int; cseal : int; dep : int ;
         v   : v ; (* Value read or written *)
         vecreg: v list list ; (* Alternative for SIMD *)
-        (* Pte vaulue *)
+        (* Pte value *)
         pte : PteVal.t ;
-        (* for instruction fecth, label number *)
+        (* for instruction fetch, label number *)
         ins : int ;
         dir : dir option ;
         (* TODO use an option type on code.proc, rather than default -1 *)

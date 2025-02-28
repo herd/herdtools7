@@ -567,7 +567,6 @@ let overwrite_value v ao w = match ao with
 
     let compare = AArch64PteVal.compare
 
-    (* TODO what is `loc` *)
     let do_setpteval a f p loc =
       let open AArch64PteVal in
       let fs = match f with
@@ -585,15 +584,14 @@ let overwrite_value v ao w = match ao with
           | OA -> { p with oa=OutputAddress.PHY (loc ()); })
       fs p
 
-    (* function name is confused, it sets the pteval based on atom `a` *)
     let set_pteval a p =
       match a with
       | Pte f,None -> do_setpteval a f p
       | _ -> Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
 
-    open AArch64PteVal
     let can_fault pte_val = 
-        pte_val.valid = 0
+      let open AArch64PteVal in
+      pte_val.valid = 0
 
   end
 

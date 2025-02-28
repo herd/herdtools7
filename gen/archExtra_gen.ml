@@ -192,7 +192,6 @@ and type special3 = I.special3
     String.concat ", "
        (List.map (fun (loc,v) -> pp_location loc ^ "->" ^ ppo v) env)
 
-(* iv:Code.env = (string * v) list *)
   let complete_init hexa iv i =
     let i =
       (* Add the locs `loc` and values `v` inside `iv` to `i` *)

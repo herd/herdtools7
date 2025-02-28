@@ -167,9 +167,7 @@ module U = TopUtils.Make(O)(Comp)
           let r,init,i,st =
             Comp.emit_load_one st p init loc in
           Some r,init,i,st
-        else begin
-          call_emit_access st p init n
-        end
+        else call_emit_access st p init n
     | No,Code _ -> call_emit_access st p init n
     | Yes (dp,r1,n1),_ -> call_emit_access_dep st p init n dp r1 n1 in
     o,init,ip@i,st
@@ -443,8 +441,10 @@ let max_set = IntSet.max_elt
       if (not (StringSet.mem loc atoms) && O.optcond) then k
       else cons_one loc v k in
 
-    (* `p` -> process number, `i` -> accumulator?, input -> type `U.cos`, the final values of write events for all locations *)
-    let check_rec p i xvs =
+    (* - `p`, process number, 
+       - `i`. initial value, 
+       - `xvs`, type `U.cos`, the final values of write events for all locations *)
+    let check p i xvs =
       let open Config in
       let _p,i,cs,fs = List.fold_left (fun (p, i, cs, fs) (x, vs) ->
         let i,c,f = match O.cond with
@@ -501,8 +501,8 @@ let max_set = IntSet.max_elt
         (p+List.length c), i, cs@c, fs@f
       ) (p, i, [], []) xvs in
       i,cs,fs in
-      (* END of check_rec definition *)
-    check_rec
+      (* END of check definition *)
+    check
 (* END of check_writes *)
 
   let compile_store st p init n =
