@@ -491,11 +491,6 @@ the local declaration item is
                 |\  & \STGetter \;|\; \STSetter &
 \end{flalign*}
 
-\hypertarget{ast-subprogrambody}{} \hypertarget{ast-sbasl}{}
-\begin{flalign*}
-\subprogrambody \derives\ & \SBASL(\stmt) \hypertarget{ast-sbprimitive}{} \;|\; \SBPrimitive &
-\end{flalign*}
-
 \hypertarget{ast-overrideinfo}{} \hypertarget{ast-impdef}{}
 \begin{flalign*}
 \overrideinfo \derives\ & \Impdef \hypertarget{ast-implementation}{} \;|\; \Implementation &
@@ -510,7 +505,7 @@ the local declaration item is
  \funcname &:& \Strings, \\
  \funcparameters &:& (\identifier, \ty?)^*,\\
  \funcargs &:& \typedidentifier^*,\\
- \funcbody &:& \subprogrambody,\\
+ \funcbody &:& \stmt,\\
  \funcreturntype &:& \ty?,\\
  \funcsubprogramtype &:& \subprogramtype\\
  \funcrecurselimit    &:& \expr?\\
