@@ -286,10 +286,7 @@ let add_subtype s t env =
 
 (* Begin IsGlobalUndefined *)
 let is_global_undefined x (genv : global) =
-  (not
-     (IMap.mem x genv.storage_types
-     || IMap.mem x genv.subprograms
-     || IMap.mem x genv.declared_types))
+  (not (IMap.mem x genv.storage_types || IMap.mem x genv.declared_types))
   |: TypingRule.IsGlobalUndefined
 (* End *)
 

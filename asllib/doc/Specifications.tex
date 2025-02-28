@@ -686,13 +686,28 @@ which is formally defined by $\defdecl$.
 The set of \defusedependenciesterm\ associated with a declaration $\vd$ is given by
 $\decldependencies(\vd)$ (see \TypingRuleRef{DeclDependencies}).
 
+\RequirementDef{GlobalNamespace}
+The global namespace effectively consists of two independent namespaces: one for subprogram names, and the other for all other identifiers.
+In \ExampleRef{Global Namespace}, the \verb|X| subprogram does not interfere with the variable declaration also named \verb|X|.
+
+\ExampleDef{Global Namespace}
+\listingref{globalnamespace} shows a specification which defines a subprogram \verb|X| and a variable \verb|X|.
+\ASLListing{Global namespace}{globalnamespace}{\definitiontests/GlobalNamespace.asl}
+
+We distinguish between subprogram identifiers, and all other identifiers (storage elements and \namedtypes{}).
+We use the following type to track \defusedependenciesterm{} between subprogram identifiers and other identifiers:
+\hypertarget{ast-defusename}{} \hypertarget{ast-subprogram}{} \hypertarget{ast-other}{}
+\begin{flalign*}
+\defusename \derives\ & \Subprogram(\identifier) \;|\; \Other(\identifier) &
+\end{flalign*}
+
 \TypingRuleDef{BuildDependencies}
 \hypertarget{def-builddependencies}{}
 The function
 \[
 \builddependencies(\overname{\decl^*}{\decls})
 \aslto
-(\overname{\identifier^*}{\defs}, \overname{(\identifier\times\identifier)^*}{\dependencies})
+(\overname{\defusename^*}{\defs}, \overname{(\defusename\times\defusename)^*}{\dependencies})
 \]
 takes a set of declarations $\decls$ and
 returns a graph whose set of nodes --- $\defs$ --- consists of the identifiers that are used to name declarations
@@ -725,7 +740,7 @@ We refer to this graph as the \emph{\dependencygraphterm} (of $\decls$).
 \hypertarget{def-decldependencies}{}
 The function
 \[
-\decldependencies(\overname{\decl}{\vd}) \aslto \overname{(\identifier\times\identifier)^*}{\dependencies}
+\decldependencies(\overname{\decl}{\vd}) \aslto \overname{(\defusename\times\defusename)^*}{\dependencies}
 \]
 returns the set of dependent pairs of identifiers $\dependencies$ induced by the declaration $\vd$.
 
@@ -756,7 +771,7 @@ Define $\dependencies$ as the union of the following two sets of pairs:
 \hypertarget{def-defdecl}{}
 The function
 \[
-\defdecl(\overname{\decl}{\vd}) \aslto \overname{\identifier}{\name}
+\defdecl(\overname{\decl}{\vd}) \aslto \overname{\defusename}{\name}
 \]
 returns the identifier $\name$ being defined by the declaration $\vd$.
 
@@ -765,32 +780,35 @@ returns the identifier $\name$ being defined by the declaration $\vd$.
 \begin{itemize}
   \item \AllApplyCase{d\_func}
   \begin{itemize}
-    \item $\vd$ declares a subprogram for the identifier $\name$.
+    \item $\vd$ declares a subprogram for the identifier $\id$;
+    \item $\name$ is $\Subprogram(\id)$.
   \end{itemize}
 
   \item \AllApplyCase{d\_globalstorage}
   \begin{itemize}
-    \item $\vd$ declares a global storage element for the identifier $\name$.
+    \item $\vd$ declares a global storage element for the identifier $\id$;
+    \item $\name$ is $\Other(\id)$.
   \end{itemize}
 
   \item \AllApplyCase{d\_typedecl}
   \begin{itemize}
-    \item $\vd$ declares a type for the identifier $\name$.
+    \item $\vd$ declares a type for the identifier $\id$.
+    \item $\name$ is $\Other(\id)$.
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[d\_func]{}{
-  \defdecl(\overname{\DFunc(\funcname: \name, \ldots)}{\vd}) \typearrow \name
+  \defdecl(\overname{\DFunc(\funcname: \id, \ldots)}{\vd}) \typearrow \overname{\Subprogram(\id)}{\name}
 }
 \and
 \inferrule[d\_globalstorage]{}{
-  \defdecl(\overname{\DGlobalStorage(\GDname: \name, \ldots)}{\vd}) \typearrow \name
+  \defdecl(\overname{\DGlobalStorage(\GDname: \id, \ldots)}{\vd}) \typearrow \overname{\Other(\id)}{\name}
 }
 \and
 \inferrule[d\_typedecl]{}{
-  \defdecl(\overname{\DTypeDecl(\name, \Ignore, \Ignore)}{\vd}) \typearrow \name
+  \defdecl(\overname{\DTypeDecl(\id, \Ignore, \Ignore)}{\vd}) \typearrow \overname{\Other(\id)}{\name}
 }
 \end{mathpar}
 
@@ -798,7 +816,7 @@ returns the identifier $\name$ being defined by the declaration $\vd$.
 \hypertarget{def-defenumlabels}{}
 The function
 \[
-\defenumlabels(\overname{\decl}{\vd}) \aslto \overname{\pow{\identifier}}{\vlabels}
+\defenumlabels(\overname{\decl}{\vd}) \aslto \overname{\pow{\defusename}}{\vlabels}
 \]
 takes a declaration $\vd$ and returns the set of enumeration labels it defines --- $\vlabels$ --
 if it defines any.
@@ -808,8 +826,8 @@ if it defines any.
 \begin{itemize}
   \item \AllApplyCase{decl\_enum}
   \begin{itemize}
-    \item $\vd$ is a declaration of an \enumerationtypeterm{} with labels $\vlabels$;
-    \item the result is $\vlabels$ as a set (rather than a list).
+    \item $\vd$ is a declaration of an \enumerationtypeterm{} with labels $\vlabelsone$;
+    \item $\vlabels$ is the set consisting of $\Other(\vlabel)$ for each $\vlabel$ in $\vlabelsone$.
   \end{itemize}
 
   \item \AllApplyCase{other}
@@ -822,13 +840,14 @@ if it defines any.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[decl\_enum]{
-  \vd = \DTypeDecl(\name, \TEnum(\vlabels, \Ignore))
+  \vd = \DTypeDecl(\name, \TEnum(\vlabelsone, \Ignore)) \\
+  \vlabels \eqdef \{ \Other(\vlabel) \;|\; \vlabel \in \vlabelsone \}
 }{
-  \defenumlabels(\vd) \typearrow \overname{\{\vlabels\}}{\vlabels}
+  \defenumlabels(\vd) \typearrow \vlabels
 }
 \and
 \inferrule[other]{
-  \vd \neq \DTypeDecl(\name, \TEnum(\vlabels, \Ignore))
+  \vd \neq \DTypeDecl(\name, \TEnum(\Ignore, \Ignore))
 }{
   \defenumlabels(\vd) \typearrow \overname{\emptyset}{\vlabels}
 }
@@ -838,7 +857,7 @@ if it defines any.
 \hypertarget{def-usedecl}{}
 The function
 \[
-\usedecl(\overname{\decl}{\vd}) \aslto \overname{\pow{\identifier}}{\ids}
+\usedecl(\overname{\decl}{\vd}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the declaration $\vd$ depends on.
 
@@ -916,7 +935,7 @@ returns the set of identifiers $\ids$ which the declaration $\vd$ depends on.
 \hypertarget{def-usety}{}
 The function
 \[
-\usety(\overname{\ty \cup \langle\ty\rangle}{\vt}) \aslto \overname{\pow{\identifier}}{\ids}
+\usety(\overname{\ty \cup \langle\ty\rangle}{\vt}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the type or \optional\ type $\vt$ depends on.
 
@@ -944,7 +963,7 @@ returns the set of identifiers $\ids$ which the type or \optional\ type $\vt$ de
   \item \AllApplyCase{t\_named}
   \begin{itemize}
     \item $\vt$ is the named type for $\vs$;
-    \item define $\ids$ as the singleton set for $\vs$.
+    \item define $\ids$ as the singleton set for $\Other(\vs)$.
   \end{itemize}
 
   \item \AllApplyCase{int\_no\_constraints}
@@ -980,7 +999,7 @@ returns the set of identifiers $\ids$ which the type or \optional\ type $\vt$ de
   \item \AllApplyCase{array\_enum}
   \begin{itemize}
     \item $\vt$ is an array expression with \enumerationtypeterm{} $\vs$ and element type $\vtp$;
-    \item define $\ids$ as the union of the singleton set for $\vs$ and applying $\usety$ to $\vtp$.
+    \item define $\ids$ as the union of the singleton set for $\Other(\vs)$ and applying $\usety$ to $\vtp$.
   \end{itemize}
 
   \item \AllApplyCase{t\_bits}
@@ -1009,7 +1028,7 @@ returns the set of identifiers $\ids$ which the type or \optional\ type $\vt$ de
 }
 \and
 \inferrule[t\_named]{}{
-  \usety(\overname{\TNamed(\vs)}{\vt}) \typearrow \overname{\{\vs\}}{\ids}
+  \usety(\overname{\TNamed(\vs)}{\vt}) \typearrow \overname{\{\Other(\vs)\}}{\ids}
 }
 \end{mathpar}
 
@@ -1048,7 +1067,7 @@ returns the set of identifiers $\ids$ which the type or \optional\ type $\vt$ de
 
 \begin{mathpar}
 \inferrule[array\_enum]{}{
-  \usety(\overname{\TArray(\ArrayLengthEnum(\vs, \Ignore), \vtp)}{\vt}) \typearrow \overname{\{\vs\} \cup \usety(\vtp)}{\ids}
+  \usety(\overname{\TArray(\ArrayLengthEnum(\vs, \Ignore), \vtp)}{\vt}) \typearrow \overname{\{\Other(\vs)\} \cup \usety(\vtp)}{\ids}
 }
 \end{mathpar}
 
@@ -1062,7 +1081,7 @@ returns the set of identifiers $\ids$ which the type or \optional\ type $\vt$ de
 \hypertarget{def-usesubtypes}{}
 The function
 \[
-\usesubtypes(\overname{\langle(\overname{\identifier}{\vx}\times\overname{\field^*}{\subfields})\rangle}{\fields}) \aslto \overname{\pow{\identifier}}{\ids}
+\usesubtypes(\overname{\langle(\overname{\identifier}{\vx}\times\overname{\field^*}{\subfields})\rangle}{\fields}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the \optional\ pair consisting of
 identifier $\vx$ (the type being subtyped) and fields $\subfields$ depends on.
@@ -1079,7 +1098,7 @@ identifier $\vx$ (the type being subtyped) and fields $\subfields$ depends on.
   \item \AllApplyCase{some}
   \begin{itemize}
     \item $\fields$ is $\langle(\vx, \subfields)\rangle$;
-    \item define $\ids$ as the union of the singleton set for $\vx$ and the union of applying $\usety$
+    \item define $\ids$ as the union of the singleton set for $\Other(\vx)$ and the union of applying $\usety$
           to each field type in $\subfields$.
   \end{itemize}
 \end{itemize}
@@ -1091,7 +1110,7 @@ identifier $\vx$ (the type being subtyped) and fields $\subfields$ depends on.
 }
 \and
 \inferrule[some]{
-  \ids \eqdef \{\vx\} \cup \bigcup_{(\Ignore, \vt) \usety(\vt)}
+  \ids \eqdef \{\Other(\vx)\} \cup \bigcup_{(\Ignore, \vt) \usety(\vt)}
 }{
   \usesubtypes(\langle(\vx, \subfields)\rangle) \typearrow \ids
 }
@@ -1101,7 +1120,7 @@ identifier $\vx$ (the type being subtyped) and fields $\subfields$ depends on.
 \hypertarget{def-useexpr}{}
 The function
 \[
-\useexpr(\overname{\expr}{\ve} \cup \langle\overname{\expr}{\ve}\rangle) \aslto \overname{\pow{\identifier}}{\ids}
+\useexpr(\overname{\expr}{\ve} \cup \langle\overname{\expr}{\ve}\rangle) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the expression or \optional\ expression $\ve$ depends on.
 
@@ -1135,7 +1154,7 @@ returns the set of identifiers $\ids$ which the expression or \optional\ express
   \item \AllApplyCase{e\_var}
   \begin{itemize}
     \item $\ve$ is the variable expression for identifier $\vx$;
-    \item define $\ids$ as the singleton set for $\vx$.
+    \item define $\ids$ as the singleton set for $\Other(\vx)$.
   \end{itemize}
 
   \item \AllApplyCase{e\_getarray}
@@ -1165,7 +1184,7 @@ returns the set of identifiers $\ids$ which the expression or \optional\ express
   \item \AllApplyCase{e\_call}
   \begin{itemize}
     \item $\ve$ is the call expression of the subprogram named $\vx$ with argument expressions $\vargs$ and parameter expressions $\namedargs$;
-    \item define $\ids$ as the union of the singleton set for $\vx$, and the set obtained by applying $\useexpr$ to each expression in
+    \item define $\ids$ as the union of the singleton set for $\Subprogram(\vx)$, and the set obtained by applying $\useexpr$ to each expression in
           $\vargs$ and each expression in $\namedargs$.
   \end{itemize}
 
@@ -1224,7 +1243,8 @@ returns the set of identifiers $\ids$ which the expression or \optional\ express
           $\vlabels$ and value expression $\vvalue$,
           that is, \\
           $\EEnumArray\{\EArrayLabels:\vlabels, \EArrayValue:\vvalue\}$;
-    \item define $\ids$ as the union of labels listed in $\vlabels$ and the result of applying $\useexpr$ to $\vvalue$.
+    \item define $\idsone$ as the set consisting of $\Other$ applied to each label in $\vlabels$;
+    \item define $\ids$ as the union $\idsone$ and the result of applying $\useexpr$ to $\vvalue$.
   \end{itemize}
 
   \item \AllApplyCase{e\_arbitrary}
@@ -1261,7 +1281,7 @@ returns the set of identifiers $\ids$ which the expression or \optional\ express
 }
 \and
 \inferrule[e\_var]{}{
-  \useexpr(\overname{\EVar(\vx)}{\ve}) \typearrow \overname{\{\vx\}}{\ids}
+  \useexpr(\overname{\EVar(\vx)}{\ve}) \typearrow \overname{\{\Other(\vx)\}}{\ids}
 }
 \end{mathpar}
 
@@ -1291,7 +1311,7 @@ returns the set of identifiers $\ids$ which the expression or \optional\ express
 
 \begin{mathpar}
 \inferrule[e\_call]{
-  \ids \eqdef \{\vx\} \cup  \bigcup_{\veone\in\vargs}\useexpr(\veone) \cup \bigcup_{(\Ignore, \vt)\in\namedargs}\usety(\vt)
+  \ids \eqdef \{\Subprogram(\vx)\} \cup  \bigcup_{\veone\in\vargs}\useexpr(\veone) \cup \bigcup_{(\Ignore, \vt)\in\namedargs}\usety(\vt)
 }{
   \useexpr(\overname{\ECall(\vx, \vargs, \namedargs)}{\ve}) \typearrow \ids
 }
@@ -1344,7 +1364,9 @@ returns the set of identifiers $\ids$ which the expression or \optional\ express
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[e\_enumarray]{}{
+\inferrule[e\_enumarray]{
+  \idsone \eqdef \bigcup_{\vlabel\in\listrange(\vlabels)}\Other(\vlabel)
+}{
   \useexpr(\overname{\EEnumArray\{\EArrayLabels:\vlabels, \EArrayValue:\vvalue\}}{\ve}) \typearrow \overname{\{\vlabels\} \cup \useexpr(\vvalue)}{\ids}
 }
 \end{mathpar}
@@ -1365,7 +1387,7 @@ returns the set of identifiers $\ids$ which the expression or \optional\ express
 \hypertarget{def-uselexpr}{}
 The function
 \[
-\uselexpr(\overname{\lexpr}{\vle}) \aslto \overname{\pow{\identifier}}{\ids}
+\uselexpr(\overname{\lexpr}{\vle}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the left-hand-side expression $\vle$ depends on.
 
@@ -1375,7 +1397,7 @@ returns the set of identifiers $\ids$ which the left-hand-side expression $\vle$
   \item \AllApplyCase{le\_var}
   \begin{itemize}
     \item $\vle$ is a left-hand-side variable expression for $\vx$;
-    \item define $\ids$ as the singleton set for $\vx$.
+    \item define $\ids$ as the singleton set for $\Other(\vx)$.
   \end{itemize}
 
   \item \AllApplyCase{le\_destructuring}
@@ -1426,7 +1448,7 @@ returns the set of identifiers $\ids$ which the left-hand-side expression $\vle$
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[le\_var]{}{
-  \uselexpr(\overname{\LEVar(\vx)}{\vle}) \typearrow \overname{\vx}{\ids}
+  \uselexpr(\overname{\LEVar(\vx)}{\vle}) \typearrow \overname{\Other(\vx)}{\ids}
 }
 \and
 \inferrule[le\_destructuring]{}{
@@ -1472,7 +1494,7 @@ returns the set of identifiers $\ids$ which the left-hand-side expression $\vle$
 \hypertarget{def-usepattern}{}
 The function
 \[
-\usepattern(\overname{\pattern}{\vp}) \aslto \overname{\pow{\identifier}}{\ids}
+\usepattern(\overname{\pattern}{\vp}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the declaration $\vd$ depends on.
 
@@ -1583,7 +1605,7 @@ returns the set of identifiers $\ids$ which the declaration $\vd$ depends on.
 \hypertarget{def-useslice}{}
 The function
 \[
-\useslice(\overname{\slice}{\vs}) \aslto \overname{\pow{\identifier}}{\ids}
+\useslice(\overname{\slice}{\vs}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the slice $\vs$ depends on.
 
@@ -1620,7 +1642,7 @@ returns the set of identifiers $\ids$ which the slice $\vs$ depends on.
 \hypertarget{def-usebitfield}{}
 The function
 \[
-\usebitfield(\overname{\decl}{\vbf}) \aslto \overname{\pow{\identifier}}{\ids}
+\usebitfield(\overname{\decl}{\vbf}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the bitfield $\vbf$ depends on.
 
@@ -1671,7 +1693,7 @@ returns the set of identifiers $\ids$ which the bitfield $\vbf$ depends on.
 \hypertarget{def-useconstraint}{}
 The function
 \[
-\useconstraint(\overname{\intconstraint}{\vc}) \aslto \overname{\pow{\identifier}}{\ids}
+\useconstraint(\overname{\intconstraint}{\vc}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the integer constraint $\vc$ depends on.
 
@@ -1706,7 +1728,7 @@ returns the set of identifiers $\ids$ which the integer constraint $\vc$ depends
 \hypertarget{def-usestmt}{}
 The function
 \[
-\usestmt(\overname{\stmt}{\vs}) \aslto \overname{\pow{\identifier}}{\ids}
+\usestmt(\overname{\stmt}{\vs}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the statement $\vs$ depends on.
 
@@ -1742,7 +1764,7 @@ returns the set of identifiers $\ids$ which the statement $\vs$ depends on.
   \begin{itemize}
     \item $\vs$ is a call statement for the subprogram with name $\vx$, arguments $\vargs$, and list of
           pairs consisting of a parameter identifier and associated expression $\namedargs$;
-    \item define $\ids$ as the union of the singleton set for $\vx$, applying $\useexpr$ to
+    \item define $\ids$ as the union of the singleton set for $\Subprogram(\vx)$, applying $\useexpr$ to
           every expression in $\vargs$ and applying $\useexpr$ to every expression associated with
           a parameter in $\namedargs$.
   \end{itemize}
@@ -1829,7 +1851,7 @@ returns the set of identifiers $\ids$ which the statement $\vs$ depends on.
 
 \begin{mathpar}
 \inferrule[s\_call]{
-  \ids \eqdef \{\vx\} \cup \bigcup_{\ve\in\vargs}\useexpr(\ve) \cup \bigcup_{(\Ignore, \ve)\in\namedargs} \useexpr(\ve)
+  \ids \eqdef \{\Subprogram(\vx)\} \cup \bigcup_{\ve\in\vargs}\useexpr(\ve) \cup \bigcup_{(\Ignore, \ve)\in\namedargs} \useexpr(\ve)
 }{
   \usestmt(\overname{\SCall(\vx, \vargs, \namedargs)}{\vs}) \typearrow \ids
 }
@@ -1900,7 +1922,7 @@ returns the set of identifiers $\ids$ which the statement $\vs$ depends on.
 \hypertarget{def-usecatcher}{}
 The function
 \[
-\usecatcher(\overname{\catcher}{\vc}) \aslto \overname{\pow{\identifier}}{\ids}
+\usecatcher(\overname{\catcher}{\vc}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the try statement catcher $\vc$ depends on.
 
@@ -1955,7 +1977,7 @@ $C_{1..k} \in \topologicalorderingcomps(\comps, E)$, if the following condition 
 The helper function
 \[
 \declsofcomp(
-  \overname{\pow{\identifier}}{\comp} \aslsep
+  \overname{\pow{\defusename}}{\comp} \aslsep
   \overname{\decl^*}{\decls}
 ) \aslto \overname{\decl^*}{\compdecls}
 \]

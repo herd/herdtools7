@@ -156,30 +156,21 @@ module Make (O : OrderedHashedType) = struct
 end
 
 module ASTFold = struct
-  (* Compatibility layer around String. *)
-  module O = struct
-    let hash : string -> int = Hashtbl.hash [@@warning "-32"]
-
-    include String
-
-    let to_string s = s
-  end
-
-  module OSet = ASTUtils.ISet
-  module TS = Make (O)
+  open DependencyAnalysis
+  module TS = Make (Name)
   module Tbl = TS.OTbl
 
   type t = {
-    nodes : string list;
+    nodes : Name.t list;
         (**  [succs(a)] returns the identifiers on which [a] depends. *)
-    succs : string -> string list;
+    succs : Name.t -> Name.t list;
     decls : AST.decl list Tbl.t;
   }
 
   let tbl_add_set tbl key values =
     match Tbl.find_opt tbl key with
     | None -> Tbl.add tbl key values
-    | Some prev -> Tbl.replace tbl key (OSet.union values prev)
+    | Some prev -> Tbl.replace tbl key (NameSet.union values prev)
 
   let tbl_add_list tbl key values =
     match Tbl.find_opt tbl key with
@@ -189,17 +180,17 @@ module ASTFold = struct
   let def d =
     let open AST in
     match d.desc with
-    | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _)
-      ->
-        name
+    | D_Func { name; _ } -> Name.Subprogram name
+    | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _) -> Other name
     | D_Pragma _ -> assert false
 
-  let use d = ASTUtils.use_decl d OSet.empty
+  let use d = DependencyAnalysis.used_identifiers_decl d
 
   let extra_def d =
     let open AST in
     match d.desc with
-    | D_TypeDecl (_, { desc = T_Enum names; _ }, _) -> names
+    | D_TypeDecl (_, { desc = T_Enum names; _ }, _) ->
+        List.map (fun n -> Name.Other n) names
     | _ -> []
 
   let build ast : t =
@@ -209,7 +200,7 @@ module ASTFold = struct
       tbl_add_list decl_tbl v [ d ];
       List.iter
         (fun v' ->
-          tbl_add_set succ_tbl v' (OSet.singleton v);
+          tbl_add_set succ_tbl v' (NameSet.singleton v);
           tbl_add_list decl_tbl v' [])
         (extra_def d);
       v
@@ -218,7 +209,7 @@ module ASTFold = struct
     let nodes = List.map (add_one (succ_tbl, decls)) ast in
     let () =
       Tbl.filter_map_inplace
-        (fun _v d -> OSet.filter (Tbl.mem decls) d |> Option.some)
+        (fun _v d -> NameSet.filter (Tbl.mem decls) d |> Option.some)
         succ_tbl
     in
     let () =
@@ -226,11 +217,12 @@ module ASTFold = struct
         let open Format in
         eprintf "@[<v 2>Dependencies:@ ";
         Tbl.iter
-          (fun v -> eprintf "@[<h>%s <-- %a@]@ " v OSet.pp_print)
+          (fun v ->
+            eprintf "@[<h>%a <-- %a@]@ " Name.pp_print v NameSet.pp_print)
           succ_tbl;
         eprintf "@]@.")
     in
-    let succs s = Tbl.find succ_tbl s |> OSet.elements in
+    let succs s = Tbl.find succ_tbl s |> NameSet.elements in
     { nodes; succs; decls }
 
   type step = Single of AST.decl | Recursive of AST.decl list

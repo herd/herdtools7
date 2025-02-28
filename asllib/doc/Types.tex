@@ -884,8 +884,8 @@ and therefore enumeration types do not support ordering comparisons such as \ver
 
 \identr{DWSP} \identr{QMWT} \identi{MZXL}%
 \RequirementDef{LabelNamespace}
-Enumeration literals exist in the same namespace as all other declared objects,
-including storage elements and subprograms, so no other declared object
+Enumeration literals exist in the same namespace as all other declared identifiers except subprograms (see \RequirementRef{GlobalNamespace}),
+including storage elements and named types, so no other declared identifier
 may have the same name in the same scope.
 In particular, this means that an enumeration literal can be declared in
 at most one \enumerationtypeterm{} declaration.

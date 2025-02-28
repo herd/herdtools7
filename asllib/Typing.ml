@@ -3646,7 +3646,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           (pp_print_list ~pp_sep:pp_print_space PP.pp_typed_identifier)
           func_sig.args
     in
-    let+ () = check_var_not_in_genv ~loc env1.global name' in
+    let+ () =
+     fun () ->
+      if not (IMap.mem name' env.global.subprograms) then ()
+      else fatal_from ~loc (Error.AlreadyDeclaredIdentifier name')
+    in
     let+ () =
      fun () ->
       if loc.version = V0 then check_setter_has_getter ~loc env1 func_sig ()

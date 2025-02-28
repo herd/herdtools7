@@ -1274,7 +1274,7 @@ resulting in an annotated function definition $\newfuncdef$ and new static envir
     }\\
   \addnewfunc(\tenv, \name, \vargs, \subprogramtype) \typearrow
   (\tenvone, \namep) \OrTypeError\\\\
-  \checkvarnotingenv{G^\tenvone, \namep} \typearrow \True \OrTypeError\\\\
+  \checktrans{G^\tenvone.\subprograms(\namep) = \bot}{\IdentifierAlreadyDeclared} \checktransarrow \True \terminateas \IdentifierAlreadyDeclared \\\\
   {
   \begin{array}{rrcl}
     \newfuncsig \eqdef \{

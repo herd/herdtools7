@@ -371,6 +371,8 @@ Required tests:
   $ aslref --no-type-check -0 typing-assign-v0.asl
   $ aslref constant-functions.asl
   $ aslref alt-mask-syntax.asl
+  $ aslref subprogram-global-name-clash.asl
+  $ aslref subprogram-local-name-clash.asl
 
   $ aslref undeclared-variable.asl
   File undeclared-variable.asl, line 3, characters 2 to 5:

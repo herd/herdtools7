@@ -87,7 +87,17 @@ let has_been_handled state name =
   | Some (Parsed _) | Some NotFound | Some BlackListed -> true
 
 let update_state_and_queue_from_ast ast (state, queue) =
-  let uses = ASTUtils.used_identifiers ast in
+  let uses =
+    let open DependencyAnalysis in
+    let names = used_identifiers_decls ast in
+    let name_list =
+      NameSet.fold
+        (fun name acc ->
+          match name with Name.Other s | Name.Subprogram s -> s :: acc)
+        names []
+    in
+    ISet.of_list name_list
+  in
   let state =
     ISet.fold (fun name -> IMap.update name add_if_not_there) uses state
   and queue =
