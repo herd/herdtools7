@@ -137,6 +137,10 @@ end = struct
            if Cfg.stdio then utils
            else
              "platform_io.o" :: "litmus_io.o" :: utils in
+         let utils =
+           if Cfg.variant Variant_litmus.Pac then
+             "auth.o"::utils
+           else utils in
          fprintf chan "UTILS=%s\n"
            (String.concat " " utils)
     end ;

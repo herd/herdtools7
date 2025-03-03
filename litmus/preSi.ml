@@ -266,9 +266,7 @@ module Make
           end
         end ;
         if Cfg.variant Variant_litmus.Pac then begin
-          Insert.insert O.o "kvm_auth.c" ;
-          if Cfg.variant Variant_litmus.ConstPacField then
-            Insert.insert O.o "kvm_constpacfield.c"
+          O.o "#include \"auth.h\""
         end;
         O.o "" ;
         O.o "typedef uint32_t count_t;" ;
