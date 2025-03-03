@@ -926,9 +926,16 @@ It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellcon
       \item define $\ids$ as the concatenation of $\idsone$ and $\idstwo$.
     \end{itemize}
 
+  \item \AllApplyCase{etuple}
+    \begin{itemize}
+      \item $\ve$ is a tuple over a list of expressions, that is, $\ETuple(\es)$;
+      \item applying $\paramsofexpr$ to each expression $\ve_i$ in $\es$ yields $\ids_i$;
+      \item $\ids$ is the concatenation of all the $\ids_i$.
+    \end{itemize}
+
   \item \AllApplyCase{other}
     \begin{itemize}
-      \item $\ve$ is not a variable, unary operation, or binary operation;
+      \item $\ve$ is not a variable, unary operation, binary operation, or tuple;
       \item $\ids$ is the empty list.
     \end{itemize}
 \end{itemize}
@@ -961,8 +968,17 @@ It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellcon
 \end{mathpar}
 
 \begin{mathpar}
+\inferrule[etuple]{
+  \ve_i \in \es: \paramsofexpr(\tenv, \ve_i) \typearrow \ids_i \\
+  \ids \eqdef \ids_1 \concat \ldots \concat \ids_{\listlen{\es}}
+}{
+  \paramsofexpr(\tenv, \ETuple(\es)) \typearrow \ids
+}
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[other]{
-  \astlabel(\ve) \notin \{ \EVar, \EUnop, \EBinop \}
+  \astlabel(\ve) \notin \{ \EVar, \EUnop, \EBinop, \ETuple \}
 }{
   \paramsofexpr(\tenv, \ve) \typearrow \overname{\emptylist}{\ids}
 }
