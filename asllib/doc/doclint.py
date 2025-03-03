@@ -229,12 +229,14 @@ def check_teletype_in_rule_math_mode(filename) -> int:
     Otherwise, the errors are reported for 'filename' and the total
     number of errors is returned.
     """
+    if filename == "LexicalStructure.tex":
+        return 0
     file_str: str = read_file_str(filename)
     num_errors = 0
     rule_math_mode_patterns = [
         r"\\\[.*?\\\]",  # \[...\]
-        r"\\begin\{mathpar\}.*?\\end\{mathpar\}",  # \begin{mathpar}...\end{mathpar}
-        r"\\begin\{equation\}.*?\\end\{equation\}",  # \begin{equation}...\end{equation}
+        r"\\begin\{mathpar\}.*?\\end\{mathpar\}",
+        r"\\begin\{equation\}.*?\\end\{equation\}",
     ]
     math_modes_exprs = "|".join(rule_math_mode_patterns)
     math_mode_pattern = re.compile(math_modes_exprs, re.DOTALL)
@@ -244,7 +246,7 @@ def check_teletype_in_rule_math_mode(filename) -> int:
         teletype_vars = teletype_pattern.findall(match)
         for tt_var in teletype_vars:
             print(
-                f"{filename}: teletype font not allowed in rules, substitute {tt_var} with a proper macro"
+                f"ERROR! {filename}: teletype font not allowed in rules, substitute {tt_var} with a proper macro"
             )
             num_errors += 1
     return num_errors
@@ -418,40 +420,11 @@ def check_rule_case_consistency(rule_block: RuleBlock) -> List[str]:
 
 def check_rule_has_example(rule_block: RuleBlock) -> List[str]:
     r"""
-    Every typing rule and semantics rule should provide or reference at least
-    one example.
+    Every typing/semantics/convention/guide rule should provide
+    or reference at least one example.
+    The return value is a list of error message --- one per rule
+    that does not have an example.
     """
-    if not rule_block.filename in [
-        "Literals.tex",
-        "PrimitiveOperations.tex",
-        # "Bitfields.tex",
-        # "Types.tex",
-        "RelationsOnTypes.tex",
-        "TypeAttributes.tex",
-        # "Expressions.tex",
-        # "Slicing.tex",
-        # "PatternMatching.tex",
-        # "AssignableExpressions.tex",
-        # "LocalStorageDeclarations.tex",
-        # "Statements.tex",
-        # "BlockStatements.tex",
-        "CatchingExceptions.tex",
-        # "SubprogramCalls.tex",
-        # "GlobalDeclarations.tex",
-        # "GlobalStorageDeclarations.tex",
-        # "TypeDeclarations.tex",
-        # "SubprogramDeclarations.tex",
-        # "Specifications.tex",
-        "TopLevel.tex",
-        # "SideEffects.tex",
-        "StaticEvaluation.tex",
-        # "SymbolicSubsumptionTesting.tex",
-        # "SymbolicEquivalenceTesting.tex",
-        # "TypeSystemUtilities.tex",
-        # "SemanticsUtilities.tex",
-        "RuntimeEnvironment.tex",
-    ]:
-        return []
     if not rule_block.type in [
         RuleBlock.TYPING_RULE,
         RuleBlock.SEMANTICS_RULE,
@@ -467,6 +440,7 @@ def check_rule_has_example(rule_block: RuleBlock) -> List[str]:
             or "\\ExampleRef" in line
             or "\\subsubsection{Example}" in line
             or "\\listingref" in line
+            or "% NO_EXAMPLE" in line
         ):
             example_found = True
             break
@@ -481,9 +455,38 @@ def check_rules(filename: str) -> int:
     Checks the AST/Typing/Semantics/Guide/Convention rules in 'filename'
     and returns the total number of errors.
     """
+    # Treat existing issues as warnings and new issues as error.
+    file_to_num_expected_errors = {
+        "Bitfields.tex" : 15,
+        "GlobalDeclarations.tex" : 6,
+        "GlobalStorageDeclarations.tex" : 7,
+        "LexicalStructure.tex" : 6,
+        "PatternMatching.tex" : 9,
+        "PrimitiveOperations.tex" : 3,
+        "RelationsOnTypes.tex" : 15,
+        "SemanticsUtilities.tex" : 20,
+        "SideEffects.tex" : 16,
+        "Slicing.tex" : 5,
+        "Specifications.tex" : 26,
+        "SubprogramCalls.tex" : 21,
+        "SubprogramDeclarations.tex" : 13,
+        "SymbolicEquivalenceTesting.tex" : 27,
+        "SymbolicSubsumptionTesting.tex" : 23,
+        "TypeDeclarations.tex" : 8,
+        "TypeSystemUtilities.tex" : 23,
+        "Types.tex" : 9,
+    }
+    total_expected = 0
+    for num_expected in file_to_num_expected_errors.values():
+        total_expected += num_expected
+    if False and total_expected > 0:
+        print(f"#expected errors is {total_expected}")
+
+    max_error_for_filename = file_to_num_expected_errors.get(filename, 0)
+
     checks = [
         check_rule_prose_formally_structure,
-        # check_rule_case_consistency,
+        check_rule_case_consistency,
         check_rule_has_example,
     ]
     num_errors = 0
@@ -497,10 +500,19 @@ def check_rules(filename: str) -> int:
         for check in checks:
             error_messages.extend(check(rule_block))
         if error_messages:
-            error_messages = ", ".join(error_messages)
-            print(f"{rule_block.filename} {rule_block.str()}: {error_messages}")
-            num_errors += 1
-    return num_errors
+            error_messages_str = ", ".join(error_messages)
+            num_errors += len(error_messages)
+            if num_errors > max_error_for_filename:
+                print(f"ERROR! {rule_block.filename} {rule_block.str()}: {error_messages_str}")
+            else:
+                print(f"WARNING! {rule_block.filename} {rule_block.str()}: {error_messages_str}")
+
+    if num_errors > max_error_for_filename:
+        return num_errors
+    else:
+        if num_errors < max_error_for_filename:
+            print(f"WARNING! {rule_block.filename}: update number of expected errors to {num_errors}")
+        return 0
 
 
 def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
@@ -631,6 +643,7 @@ def main():
     print("Linting files...")
     all_latex_sources = get_latex_sources(False)
     content_latex_sources = get_latex_sources(True)
+    # content_latex_sources = ["Statements.tex"]
     num_errors = 0
     num_spelling_errors = spellcheck(args.dictionary, content_latex_sources)
     if num_spelling_errors > 0:
@@ -648,7 +661,7 @@ def main():
         [
             check_repeated_words,
             detect_incorrect_latex_macros_spacing,
-            # check_teletype_in_rule_math_mode,
+            check_teletype_in_rule_math_mode,
             check_rules,
         ],
     )

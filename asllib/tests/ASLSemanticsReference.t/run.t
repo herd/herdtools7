@@ -63,20 +63,54 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.EPattern.asl
   $ aslref SemanticsRule.LELocalVar.asl
   $ aslref SemanticsRule.LESetArray.asl
+  $ aslref SemanticsRule.LESetEnumArray.asl
   $ aslref SemanticsRule.SReturnNone.asl
   $ aslref SemanticsRule.SCond.asl
   $ aslref SemanticsRule.SCase.asl
   $ aslref SemanticsRule.SWhile.asl
+  evaluated limit = 4
+  testing 0 <= 3
+  i = 0
+  testing 1 <= 3
+  i = 1
+  testing 2 <= 3
+  i = 2
+  testing 3 <= 3
+  i = 3
+  testing 4 <= 3
+  $ aslref SemanticsRule.SWhile.limit_reached.asl
+  File SemanticsRule.SWhile.limit_reached.asl, line 4, character 2 to line 7,
+    character 7:
+  ASL Dynamic error: loop limit reached.
+  [1]
   $ aslref SemanticsRule.SRepeat.asl
-  0
-  1
-  2
-  3
+  File SemanticsRule.SRepeat.asl, line 24, character 4 to line 31, character 17:
+  ASL Warning: Loop does not have a limit.
+  j = 0
+  j = 1
+  j = 2
+  j = 3
+  j = 4
+  #ones in x = 5
+  i = 0
+  i = 1
+  i = 2
+  i = 3
+  i = 4
+  #ones in x = 5
   $ aslref SemanticsRule.SFor.asl
-  0
-  1
-  2
-  3
+  j = 0
+  j = 1
+  j = 2
+  j = 3
+  j = 4
+  #ones in x = 5
+  i = 4
+  i = 3
+  i = 2
+  i = 1
+  i = 0
+  #ones in x = 5
   $ aslref SemanticsRule.SThrowNone.asl
   $ aslref SemanticsRule.SThrowSomeTyped.asl
   $ aslref SemanticsRule.SThrowSTry.asl
@@ -96,6 +130,9 @@ ASL Semantics Tests:
   0xd
   0x
   LABEL_B
+  $ aslref SemanticsRule.RethrowImplicit.asl
+  Exception value A
+  Exception value A
   $ aslref SemanticsRule.Loop.asl
   $ aslref SemanticsRule.For.asl
   $ aslref SemanticsRule.Catch.asl
@@ -174,6 +211,13 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.LEGlobalVar.asl
   $ aslref SemanticsRule.SCond2.asl
   $ aslref SemanticsRule.SCond3.asl
+  File SemanticsRule.SCond3.asl, line 3, characters 9 to 14:
+  ASL Execution error: Assertion failed: FALSE.
+  [1]
   $ aslref SemanticsRule.SCond4.asl
   $ aslref SemanticsRule.STry.asl
   $ aslref SemanticsRule.EGetEnumArray.asl
+  $ aslref SemanticsRule.CheckNonOverlappingSlices.asl
+  $ aslref SemanticsRule.CheckNonOverlappingSlices.bad.asl
+  ASL Dynamic error: overlapping slices (N - 2)+:2, 0+:1.
+  [1]

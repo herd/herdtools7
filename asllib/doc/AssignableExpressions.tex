@@ -17,7 +17,7 @@ We then define the abstract syntax, typing, and semantics of the different kinds
 \item Bitvector slice assignment expressions (see \secref{BitvectorSliceAssignmentExpressions})
 \item Structured type field assignment expressions (\secref{StructuredTypeFieldAssignmentExpressions})
 \item Structured type multi-field assignment expressions (\secref{StructuredTypeMultiFieldAssignmentExpressions})
-\item Bitfield assignment expressions (see \secref{BitfieldAssignmentExpressions})
+\item Bitfield assignment expressions (see \secref{BitfieldAssignableExpressions})
 \end{itemize}
 
 \hypertarget{def-annotatelexpr}{}
@@ -481,6 +481,10 @@ via the following rules:
 
 \subsection{Typing}
 \TypingRuleDef{LEDiscard}
+\ExampleDef{Well-typed Discarding Assignments}
+All discarding assignments in \listingref{typing-lediscard} are well-typed.
+\ASLListing{Well-typed discarding assignments}{typing-lediscard}{\typingtests/TypingRule.LEDiscard.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -529,6 +533,14 @@ In \listingref{semantics-lediscard}, the assignment \texttt{- = 42;} does not af
 
 \subsection{Typing}
 \TypingRuleDef{LEVar}
+\ExampleDef{Variable Assignments}
+In \listingref{typing-levar}, all variable assignments are well-typed.
+\ASLListing{Well-typed variable assignments}{typing-levar}{\typingtests/TypingRule.LEVar.asl}
+
+In \listingref{typing-levar-undefined}, the assignment to \verb|x| is ill-typed,
+since \verb|x| is not defined as either a local storage element or as a global storage element.
+\ASLListing{An ill-typed variable assignment}{typing-levar-undefined}{\typingtests/TypingRule.LEVar.undefined.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -654,8 +666,10 @@ In \listingref{semantics-leglobalvar},
 \end{mathpar}
 \CodeSubsection{\EvalLEVarBegin}{\EvalLEVarEnd}{../Interpreter.ml}
 
-\hypertarget{def-destructuringlexprterm}{}
 \section{Multi-assignment Expressions\label{sec:MultiAssignmentExpressions}}
+\hypertarget{def-destructuringlexprterm}{}
+\ASLListing{Assignment to multiple left-hand-side expressions}{semantics-ledestructuring}{\semanticstests/SemanticsRule.LEDestructuring.asl}
+
 \subsection{Abstract Syntax}
 \begin{flalign*}
 \lexpr \derives\ & \LEDestructuring(\lexpr^*) &
@@ -663,6 +677,10 @@ In \listingref{semantics-leglobalvar},
 
 \subsection{Typing}
 \TypingRuleDef{LEDestructuring}
+\ExampleDef{Well-typed Multi-variable Assignment}
+In \listingref{semantics-ledestructuring}, the multi-assignment
+\verb|(x, y) = (3, 42)| is well-typed.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -698,12 +716,11 @@ In \listingref{semantics-leglobalvar},
 
 \subsection{Semantics}
 \SemanticsRuleDef{LEDestructuring}
-\ExampleDef{Multi-variable Assignments}
-In \listingref{semantics-ledestructuring}, the assignment \texttt{(x, y) = (3, 42)} binds
+\ExampleDef{Multi-assignments}
+In \listingref{semantics-ledestructuring}, the multi-assignment \verb|(x, y) = (3, 42)| binds
 \texttt{x} to $\nvint(3)$ and \texttt{y} to
 $\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and
 \texttt{y} is bound to $\nvint(3)$.
-\ASLListing{Assignment to multiple left-hand-side expressions}{semantics-ledestructuring}{\semanticstests/SemanticsRule.LEDestructuring.asl}
 
 \ProseParagraph
 \AllApply
@@ -742,6 +759,8 @@ evaluates multi-assignments.
 That is, the simultaneous assignment of the list of value-execution graph pairs $\vmlist$
 to the corresponding list of left-hand side expressions $\vlelist$, in the environment $\env$.
 The result is either the execution graph $\vg$ and new environment $\newenv$ or an abnormal configuration.
+
+See \ExampleRef{Multi-assignments}.
 
 \ProseParagraph
 \begin{itemize}
@@ -810,6 +829,10 @@ The semantics utilizes a rule matching the corresponding type of array ---
 
 \subsection{Typing}
 \TypingRuleDef{LESetArray}
+The assignable expressions in
+\listingref{semantics-lesetarray} and \listingref{semantics-lesetenumarray}
+are well-typed.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -869,6 +892,9 @@ The result is the annotated assignable expression $\newle$ and
 \sideeffectsetterm\ for the annotated expression $\vses$.
 \ProseOrTypeError
 
+See \listingref{semantics-lesetarray} and \listingref{semantics-lesetenumarray}
+for examples of well-typed assignable array expressions.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -916,11 +942,11 @@ The result is the annotated assignable expression $\newle$ and
 
 \subsection{Semantics}
 \SemanticsRuleDef{LESetArray}
-\ExampleDef{Array Update Assignments}
+\ExampleDef{Integer-indexed Array Update Assignments}
 In \listingref{semantics-lesetarray}, the assignment \verb|my_array[[3]] = 53;| binds the third element
 of \\
 \texttt{my\_array} to the value \texttt{53}.
-\ASLListing{Assignment to an array cell}{semantics-lesetarray}{\semanticstests/SemanticsRule.LESetArray.asl}
+\ASLListing{Assignment to an integer-indexed array cell}{semantics-lesetarray}{\semanticstests/SemanticsRule.LESetArray.asl}
 
 \ProseParagraph
 \AllApply
@@ -974,6 +1000,12 @@ We note that the index is guaranteed by the typechecker to be within the array b
 via \TypingRuleRef{LESetArray}.
 
 \SemanticsRuleDef{LESetEnumArray}
+\ExampleDef{Enumeration-indexed Array Update Assignments}
+In \listingref{semantics-lesetenumarray}, the assignment \verb|my_array[[RED]] = 53;| binds the \verb|RED|
+cell of
+\texttt{my\_array} to the value \texttt{53}.
+\ASLListing{Assignment to an enumeration-indexed array cell}{semantics-lesetenumarray}{\semanticstests/SemanticsRule.LESetEnumArray.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1018,6 +1050,15 @@ via \TypingRuleRef{LESetArray}.
 
 \subsection{Typing}
 \TypingRuleDef{LESlice}
+\ExampleDef{Typing Assignable Slice Expression}
+In \listingref{typing-leslice}, the assignable slice expression \verb|x[3:0, 7:6]| is well-typed.
+\ASLListing{Well-typed assignable slice expression}{typing-leslice}{\typingtests/TypingRule.LESlice.asl}
+
+In \listingref{typing-leslice-bad}, the assignable slice expression \verb|x[3:0, 3]| is ill-typed,
+since the slice \verb|3:0| overlaps with the slice \verb|3| at position $3$.
+The specification is ill-typed, even though both slices assign \verb|0| to the bit at position $3$.
+\ASLListing{An ill-typed assignable slice expression}{typing-leslice-bad}{\typingtests/TypingRule.LESlice.bad.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1067,6 +1108,8 @@ The function
 \]
 tests whether the list of slices $\slices$ do not overlap in $\tenv$, yielding $\True$.
 \ProseOtherwiseTypeError
+
+See \ExampleRef{Typing Assignable Slice Expression}.
 
 \ProseParagraph
 \AllApply
@@ -1157,7 +1200,19 @@ The helper function
 \]
 checks whether the sets of integers represented by the list of ranges $\valueranges$
 overlap, yielding $\True$.
-\ProseOrError
+\ProseOtherwiseDynamicError
+
+\ExampleDef{Checking Slices for Overlaps}
+In \listingref{semantics-checknonoverlappingslices},
+the slices \verb|N-1:N-2| and \verb|0| do not overlap, and $\checknonoverlappingslices$
+yields $\True$.
+\ASLListing{Non-overlapping slices}{semantics-checknonoverlappingslices}{\semanticstests/SemanticsRule.CheckNonOverlappingSlices.asl}
+
+In \listingref{semantics-checknonoverlappingslices-bad},
+the slices \verb|N-1:N-2| and \verb|0| overlap, and $\checknonoverlappingslices$
+yields a \dynamicerrorterm, even though the assignment \verb|y[N-1:N-2, 0] = '111';|
+writes \verb|0| to the common position $0$.
+\ASLListing{Overlapping slices}{semantics-checknonoverlappingslices-bad}{\semanticstests/SemanticsRule.CheckNonOverlappingSlices.bad.asl}
 
 \ProseParagraph
 \AllApply
@@ -1200,6 +1255,8 @@ checks whether two sets of integers represented by the
 ranges $(\vsone, \vlone)$ and $(\vstwo, \vltwo)$ do not intersect, yielding $\True$.
 \ProseOrError
 
+See \ExampleRef{Checking Slices for Overlaps}.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1235,6 +1292,11 @@ ranges $(\vsone, \vlone)$ and $(\vstwo, \vltwo)$ do not intersect, yielding $\Tr
 
 \subsection{Typing}
 \TypingRuleDef{LESetBadField}
+\ExampleDef{Assigning a Field in an Inappropriate Type}
+In \listingref{typing-lesetbadfield}, the statement \verb|x.RED = 42;| is ill-typed,
+since \verb|x| is not a \bitvectortypeterm{} nor a \structuredtype.
+\ASLListing{Assigning a field in an inappropriate type}{typing-lesetbadfield}{\typingtests/TypingRule.LESetBadField.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1259,6 +1321,11 @@ ranges $(\vsone, \vlone)$ and $(\vstwo, \vltwo)$ do not intersect, yielding $\Tr
 \CodeSubsection{\LESetBadFieldBegin}{\LESetBadFieldEnd}{../Typing.ml}
 
 \TypingRuleDef{LESetStructuredField}
+\ExampleDef{Typing a Structured Type Field Assignment}
+In \listingref{typing-lestructuredfield}, all field assignment statements
+are well-typed.
+\ASLListing{Typing a structured type field assignment}{typing-lestructuredfield}{\typingtests/TypingRule.LESetStructuredField.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1292,6 +1359,9 @@ ranges $(\vsone, \vlone)$ and $(\vstwo, \vltwo)$ do not intersect, yielding $\Tr
 
 \hypertarget{def-setfieldslexprterm}{}
 \section{Structured Type Multi-field Assignment Expressions\label{sec:StructuredTypeMultiFieldAssignmentExpressions}}
+
+\ASLListing{Multi-field assignment expression}{lesetfields}{\typingtests/TypingRule.LESetFields.asl}
+
 \subsection{Abstract Syntax}
 \begin{flalign*}
 \lexpr \derives\ & \LESetFields(\lexpr, \identifier^*) &
@@ -1299,6 +1369,8 @@ ranges $(\vsone, \vlone)$ and $(\vstwo, \vltwo)$ do not intersect, yielding $\Tr
 
 \subsection{Typing}
 \TypingRuleDef{LESetFields}
+All multi-field assignment expressions in \listingref{lesetfields} are well-typed.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1394,6 +1466,17 @@ The helper function
 \foldbitvectorfields(\overname{\staticenvs}{\tenv} \aslsep \overname{\Field^*}{\vbasefields} \aslsep \overname{\bitfield^*}{\vlefields})
 \aslto (\overname{\N}\vlength \times \overname{(\N \times N)^*}{\vslices})
 \]
+accepts a static environment $\tenv$, the list of all fields $\vbasefields$ for a \recordtypeterm{},
+and a list of fields $\vlefields$ that are the subset of $\vbasefields$ about to be assigned to,
+and yields the total width across $\vlefields$ and the ranges corresponding to $\vlefields$
+in terms of pairs where the first component is the start position and the second component is
+the width of the field.
+
+\ExampleDef{Obtaining the Total Width and Ranges of Bitvector-typed Fields}
+In \listingref{lesetfields}, applying $\foldbitvectorfields$ to the list of fields
+[\verb|data, time, status|] in the statement \verb|x.[status, time, data] = '1' :: Zeros{16} :: Ones{8};|,
+yields the total width $25$ and ranges
+$(17, 8)$ for \verb|data|, $(1, 16)$ for \verb|time|, and $(0, 1)$ for \verb|status|.
 
 \ProseParagraph
 \OneApplies
@@ -1409,7 +1492,7 @@ The helper function
   \begin{itemize}
     \item $\vlefields$ is the list with prefix $\vlefieldsone$ (the elements excluding the last one) and last element $\vfield$;
     \item applying $\foldbitvectorfields$ to $\vbasefields$ and $\vlefieldsone$ in $\tenv$ yields $(\vstart, \vslicesone)$\ProseOrTypeError;
-    \item applying $\assocopt$ to $\vfields$ and $\vbasefields$ yields $\tyopt$;
+    \item applying $\assocopt$ to $\vbasefields$ and $\vfield$ yields $\tyopt$;
     \item checking that $\tyopt$ is different to $\None$ yields $\True$\ProseTerminateAs{\BadField};
     \item view $\tyopt$ as $\langle\vtfield\rangle$;
     \item applying $\getbitvectorconstwidth$ to $\vtfield$ in $\tenv$ yields $\vfieldwidth$\ProseOrTypeError;
@@ -1428,7 +1511,7 @@ The helper function
 \begin{mathpar}
 \inferrule[non\_empty]{
   \foldbitvectorfields(\tenv, \vbasefields, \vlefieldsone) \typearrow (\vstart, \vslicesone)\OrTypeError\\\\
-  \assocopt(\vfields, \vbasefields) \typearrow \tyopt\\
+  \assocopt(\vbasefields, \vfield) \typearrow \tyopt\\
   \checktrans{\tyopt \neq \None}{\BadField} \typearrow \True \OrTypeError\\\\
   \tyoptp \eqname \langle\vtfield\rangle\\
   \getbitvectorconstwidth(\tenv, \vtfield) \typearrow \vfieldwidth \OrTypeError\\\\
@@ -1444,6 +1527,8 @@ The helper function
 
 \subsection{Semantics}
 \SemanticsRuleDef{LESetFields}
+The multi-field assignments in \listingref{lesetfields} evaluate without yielding a \dynamicerrorterm.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1485,6 +1570,13 @@ The helper function
 updates the list of fields $\fields$ of \concurrentnativevalue\ $\vmone$ with the
 slices given by $\vslices$ of the \concurrentnativevalue\ $\vm$, yielding the
 \concurrentnativevalue\ $\vmtwo$.
+
+\ExampleDef{Assignment Bitvector-typed Fields}
+The statement \verb|y.[data, time, status] = Ones{8} :: Zeros{16} :: '1';|
+in \listingref{lesetfields}
+assigns the fields \verb|data|, \verb|time|, and \verb|status|,
+yielding \\
+$\nvbitvector('11111111 0000000000000000 1')$.
 
 \ProseParagraph
 \OneApplies
@@ -1541,7 +1633,7 @@ slices given by $\vslices$ of the \concurrentnativevalue\ $\vm$, yielding the
 }
 \end{mathpar}
 
-\section{Bitfield Assignment Expressions\label{sec:BitfieldAssignmentExpressions}}
+\section{Bitfield Assignable Expressions\label{sec:BitfieldAssignableExpressions}}
 \subsection{Abstract Syntax}
 \begin{flalign*}
 \lexpr \derives\ & \LESlice(\lexpr, \slice^*) &
@@ -1549,6 +1641,12 @@ slices given by $\vslices$ of the \concurrentnativevalue\ $\vm$, yielding the
 
 \subsection{Typing}
 \TypingRuleDef{LESetBitField}
+
+\ExampleDef{Typing Bitfield Assignable Expressions}
+All of the bitfield assignable expressions in \listingref{typing-lesetfield}
+are well-typed.
+\ASLListing{Typing bitfield assignment expressions}{typing-lesetfield}{\typingtests/TypingRule.LESetField.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1600,6 +1698,7 @@ slices given by $\vslices$ of the \concurrentnativevalue\ $\vm$, yielding the
     \end{itemize}
   \end{itemize}
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[error\_missing\_field]{
@@ -1676,8 +1775,8 @@ as the type system transforms the \untypedast\ for assigning to an individual bi
 
 \ExampleDef{Field Assignment}
 In \listingref{semantics-lesetfield}, the assignment
-\verb|my\_record.a = 42;| binds \texttt{my\_record} to \texttt{\{a: 42, b: 100\}}
-in the environment where \texttt{my\_record} is bound to \texttt{\{a: 3, b: 100\}}.
+\verb|my_record.a = 42;| binds \verb|my_record| to \verb|{a: 42, b: 100}|
+in the environment where \verb|my_record| is bound to \verb|{a: 3, b: 100}|.
 
 \ASLListing{Assignment to a field}{semantics-lesetfield}{\semanticstests/SemanticsRule.LESetField.asl}
 

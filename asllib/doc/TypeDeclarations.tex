@@ -531,6 +531,14 @@ If the identifier is not associated with a declared type, a type error is return
 }
 \end{mathpar}
 
+\begin{mathpar}
+\inferrule[type\_not\_declared]{
+  G^\tenv.\declaredtypes(\id) = \bot
+}{
+  \declaredtype(\tenv, \id) \typearrow \TypeErrorVal{\UndefinedIdentifier}
+}
+\end{mathpar}
+
 \TypingRuleDef{AnnotateEnumLabels}
 \hypertarget{def-annotateenumlabels}{}
 The function

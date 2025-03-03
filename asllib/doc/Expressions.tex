@@ -2892,10 +2892,9 @@ Note that there are two important consequences of producing an arbitrary value w
 
 \subsection{Typing}
 \TypingRuleDef{EArbitrary}
-\listingref{semantics-earbitraryunconstrained},
-\listingref{semantics-earbitraryconstrained}, and
-\listingref{semantics-earbitraryarray}
-show examples of well-typed arbitrary value expressions.
+\ExampleDef{Well-typed Arbitrary Value Expressions}
+\listingref{typing-arbitrary} show examples of well-typed arbitrary value expressions.
+\ASLListing{Well-typed arbirary value expressions}{typing-arbitrary}{\typingtests/TypingRule.EArbitrary.asl}
 
 \ProseParagraph
 \AllApply
@@ -3365,7 +3364,7 @@ the variable \verb|big_little_arr| is initialized with an array construction exp
 represented as \verb|array[[Labels]] of '0000'|),
 which evaluates to
 \[
-\nvrecord{\{\texttt{BIG}\mapsto\nvbitvector(0000), \texttt{LITTLE}\mapsto\nvbitvector(0000)\}} \enspace.
+\nvrecord{\{\vBIG\mapsto\nvbitvector(0000), \vLITTLE\mapsto\nvbitvector(0000)\}} \enspace.
 \]
 
 \ProseParagraph
@@ -3481,7 +3480,7 @@ the list of values $[\nvint(3), \nvint(42)]$.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[nonempty]{
+\inferrule[non\_empty]{
   \vle = [\ve] \concat \vle1\\
   \evalexpr{\env, \ve} \evalarrow \Normal((\vvone, \vgone), \envone) \OrAbnormal\\\\
   \evalexprlist{\envone, \vle1} \evalarrow \Normal((\vvs, \vgtwo), \newenv) \OrAbnormal\\\\
