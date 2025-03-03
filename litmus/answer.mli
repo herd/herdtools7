@@ -27,5 +27,6 @@ type answer =
         * StringSet.t    (* cycles *)
         * hash_env       (* name -> hash *)
         * int            (* number of threads *)
+        * bool           (* Requires PAC code *)
   | Interrupted of Archs.t * exn
   | Absent of Archs.t

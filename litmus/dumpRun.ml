@@ -189,9 +189,9 @@ let run_tests names out_chan =
   let exp = match Cfg.index with
   | None -> None
   | Some exp -> Some (open_out exp) in
-  let  arch,docs,sources,_,_,nts =
+  let  arch,docs,sources,_,_,nts,some_pac =
     Misc.fold_argv_or_stdin
-      (fun name (a0,docs,srcs,cycles,hash_env,nts) ->
+      (fun name (a0,docs,srcs,cycles,hash_env,nts,some_pac) ->
         let ans =
           try CT.from_file cycles hash_env name out_chan
           with
@@ -199,14 +199,14 @@ let run_tests names out_chan =
               if Cfg.nocatch then raise e ;
               Interrupted (a0,e) in
         match ans with
-        | Completed (a,doc,src,cycles,hash_env,nt) ->
+        | Completed (a,doc,src,cycles,hash_env,nt,pac) ->
             begin match exp with
             | None -> ()
             | Some exp -> fprintf exp "%s\n" name
             end ;
             a,(doc::docs),(src::srcs),cycles,hash_env,
-            IntSet.add nt nts
-        | Absent a -> a,docs,srcs,cycles,hash_env,nts
+            IntSet.add nt nts,(pac || some_pac)
+        | Absent a -> a,docs,srcs,cycles,hash_env,nts,some_pac
         | Interrupted (a,e) ->
             let msg =  match e with
             | Misc.Exit -> "None"
@@ -220,8 +220,8 @@ let run_tests names out_chan =
                 eprintf "%a %s\n%!" Pos.pp_pos0 name msg ;
                 msg in
             report_failure name msg out_chan ;
-            a,docs,srcs,cycles,hash_env,nts)
-      names (`X86,[],[],StringSet.empty,StringMap.empty,IntSet.empty) in
+            a,docs,srcs,cycles,hash_env,nts,some_pac)
+      names (`X86,[],[],StringSet.empty,StringMap.empty,IntSet.empty,false) in
   begin match exp with
   | None -> ()
   | Some exp -> close_out exp
@@ -235,7 +235,7 @@ let run_tests names out_chan =
       let sysarch  = Archs.get_sysarch arch Cfg.carch
     end in
     let module Obj = ObjUtil.Make(O)(Tar) in
-    Obj.dump () in
+    Obj.dump some_pac in
   arch,docs,sources,utils,nts
 
 (* Run tests (command line mode) *)
