@@ -891,6 +891,7 @@ implied
 implies
 important
 impose
+imprecise
 improve
 impure
 in
@@ -1081,6 +1082,8 @@ looking
 looks
 loop
 loops
+loss
+lost
 lower
 lowest
 macro
@@ -1358,6 +1361,7 @@ pragmas
 precedence
 precise
 precisely
+precision
 predicate
 predicates
 prefix
