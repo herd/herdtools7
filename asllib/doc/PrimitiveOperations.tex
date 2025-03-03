@@ -338,6 +338,8 @@ $\Tgeq$   & $\lint$ & $\lint$ & $\lbool$  & $\geint$\\
 \begin{table}[!htbp]
 \caption{Real Operation Signatures\label{ta:RealOperators}}
 \centering
+\hypertarget{def-mulintreal}{}
+\hypertarget{def-mulrealint}{}
 \hypertarget{def-negatereal}{}
 \hypertarget{def-addreal}{}
 \hypertarget{def-subreal}{}
@@ -355,6 +357,8 @@ $\Tgeq$   & $\lint$ & $\lint$ & $\lbool$  & $\geint$\\
 \textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
 \hline
 $\Tminus$ & $\lreal$ & - & $\lreal$ & $\negatereal$\\
+$\Tmul$   & $\lint$  & $\lreal$ & $\lreal$ & $\mulintreal$\\
+$\Tmul$   & $\lreal$ & $\lint$  & $\lreal$ & $\mulrealint$\\
 $\Tplus$  & $\lreal$ & $\lreal$ & $\lreal$ & $\addreal$\\
 $\Tminus$ & $\lreal$ & $\lreal$ & $\lreal$ & $\subreal$\\
 $\Tmul$   & $\lreal$ & $\lreal$ & $\lreal$ & $\mulreal$\\
@@ -750,6 +754,8 @@ and argument types of its operand literals:
   (\IMPL      &,& \lbool &,& \lbool)&,\\
   (\EQOP      &,& \lbool &,& \lbool)&,\\
   (\NEQ       &,& \lbool &,& \lbool)&,\\
+  (\MUL       &,& \lint  &,& \real)&,\\
+  (\MUL       &,& \lreal &,& \lint)&,\\
   (\PLUS      &,& \lreal &,& \lreal)&,\\
   (\MINUS     &,& \lreal &,& \lreal)&,\\
   (\MUL       &,& \lreal &,& \lreal)&,\\
@@ -920,6 +926,18 @@ and argument types of its operand literals:
   \begin{itemize}
     \item $\op$ is $\NEQ$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
+  \end{itemize}
+
+  \item \AllApplyCase{mul\_int\_real}
+  \begin{itemize}
+    \item $\op$ is $\MUL$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal real for $b$;
+    \item define $\vr$ as the literal real for $a\times b$.
+  \end{itemize}
+
+  \item \AllApplyCase{mul\_real\_int}
+  \begin{itemize}
+    \item $\op$ is $\MUL$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item define $\vr$ as the literal real for $a\times b$.
   \end{itemize}
 
   \item \AllApplyCase{add\_real}
@@ -1287,6 +1305,18 @@ and argument types of its operand literals:
 \end{mathpar}
 
 \subsubsection{Arithmetic Operators Over Real Values \label{sec:AthimeticOverReal}}
+\begin{mathpar}
+\inferrule[mul\_int\_real]{}{
+  \binopliterals(\overname{\MUL}{\op}, \overname{\lint(a)}{\vvone}, \overname{\lreal(b)}{\vvtwo}) \typearrow \overname{\lreal(a\times b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[mul\_real\_int]{}{
+  \binopliterals(\overname{\MUL}{\op}, \overname{\lreal(a)}{\vvone}, \overname{\lint(b)}{\vvtwo}) \typearrow \overname{\lreal(a\times b)}{\vr}
+}
+\end{mathpar}
+
 \begin{mathpar}
 \inferrule[add\_real]{}{
   \binopliterals(\overname{\PLUS}{\op}, \overname{\lreal(a)}{\vvone}, \overname{\lreal(b)}{\vvtwo}) \typearrow \overname{\lreal(a+b)}{\vr}

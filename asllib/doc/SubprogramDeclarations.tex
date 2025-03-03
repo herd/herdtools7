@@ -52,7 +52,7 @@ Subprogram declarations have no associated semantics.
  \funcname &:& \Strings, \\
  \funcparameters &:& (\identifier, \ty?)^*,\\
  \funcargs &:& \typedidentifier^*,\\
- \funcbody &:& \subprogrambody,\\
+ \funcbody &:& \stmt,\\
  \funcreturntype &:& \ty?,\\
  \funcsubprogramtype &:& \subprogramtype,\\
  \funcrecurselimit    &:& \expr?\\
@@ -62,7 +62,6 @@ Subprogram declarations have no associated semantics.
 \right\}
 } &\\
 \typedidentifier \derives\ & (\identifier, \ty) &\\
-\subprogrambody \derives\ & \SBASL(\stmt) \;|\; \SBPrimitive &\\
 \subprogramtype \derives\ & \STProcedure \;|\; \STFunction &\\
                 |\  & \STGetter \;|\; \STSetter &\\
 \overrideinfo \derives\ & \Impdef \;|\; \Implementation &
@@ -109,7 +108,7 @@ In particular, rather than directly building the abstract syntax for accessors, 
             \funcname &:& \name,\\
             \funcparameters &:& \astof{\vparamsopt},\\
             \funcargs &:& \astof{\vfuncargs},\\
-            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
+            \funcbody &:& \astof{\vfuncbody},\\
             \funcreturntype &:& \langle \astof{\vreturntype} \rangle,\\
             \funcsubprogramtype &:& \STFunction,\\
             \funcrecurselimit   &:& \langle\astof{\vrecurselimit}\rangle\\
@@ -134,7 +133,7 @@ In particular, rather than directly building the abstract syntax for accessors, 
             \funcname &:& \name,\\
             \funcparameters &:& \astof{\vparamsopt},\\
             \funcargs &:& \astof{\vfuncargs},\\
-            \funcbody &:& \SBASL(\astof{\vfuncbody}),\\
+            \funcbody &:& \astof{\vfuncbody},\\
             \funcreturntype &:& \None,\\
             \funcsubprogramtype &:& \STProcedure,\\
             \funcrecurselimit   &:& \None\\
@@ -424,7 +423,7 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
         \funcname &:& \name,\\
         \funcparameters &:& \vparameters,\\
         \funcargs &:& \vargs,\\
-        \funcbody &:& \SBASL(\vaccessorpair.\accessorpairgetter),\\
+        \funcbody &:& \vaccessorpair.\accessorpairgetter,\\
         \funcreturntype &:& \Some{\tty},\\
         \funcsubprogramtype &:& \STGetter,\\
         \funcrecurselimit   &:& \None\\
@@ -441,7 +440,7 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
         \funcname &:& \name,\\
         \funcparameters &:& \vparameters,\\
         \funcargs &:& \vsetterargs,\\
-        \funcbody &:& \SBASL(\vaccessorpair.\accessorpairsetter),\\
+        \funcbody &:& \vaccessorpair.\accessorpairsetter,\\
         \funcreturntype &:& \None,\\
         \funcsubprogramtype &:& \STSetter,\\
         \funcrecurselimit   &:& \None\\
@@ -926,9 +925,16 @@ It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellcon
       \item define $\ids$ as the concatenation of $\idsone$ and $\idstwo$.
     \end{itemize}
 
+  \item \AllApplyCase{etuple}
+    \begin{itemize}
+      \item $\ve$ is a tuple over a list of expressions, that is, $\ETuple(\es)$;
+      \item applying $\paramsofexpr$ to each expression $\ve_i$ in $\es$ yields $\ids_i$;
+      \item $\ids$ is the concatenation of all the $\ids_i$.
+    \end{itemize}
+
   \item \AllApplyCase{other}
     \begin{itemize}
-      \item $\ve$ is not a variable, unary operation, or binary operation;
+      \item $\ve$ is not a variable, unary operation, binary operation, or tuple;
       \item $\ids$ is the empty list.
     \end{itemize}
 \end{itemize}
@@ -961,8 +967,17 @@ It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellcon
 \end{mathpar}
 
 \begin{mathpar}
+\inferrule[etuple]{
+  \ve_i \in \es: \paramsofexpr(\tenv, \ve_i) \typearrow \ids_i \\
+  \ids \eqdef \ids_1 \concat \ldots \concat \ids_{\listlen{\es}}
+}{
+  \paramsofexpr(\tenv, \ETuple(\es)) \typearrow \ids
+}
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[other]{
-  \astlabel(\ve) \notin \{ \EVar, \EUnop, \EBinop \}
+  \astlabel(\ve) \notin \{ \EVar, \EUnop, \EBinop, \ETuple \}
 }{
   \paramsofexpr(\tenv, \ve) \typearrow \overname{\emptylist}{\ids}
 }
@@ -1238,7 +1253,7 @@ resulting in an annotated function definition $\newfuncdef$ and new static envir
                       & \funcname            &:& \name,\\
                       & \funcparameters      &:& \vp,\\
                       & \funcargs            &:& \vargs,\\
-                      & \funcbody            &:& \SBASL(\bd),\\
+                      & \funcbody            &:& \bd,\\
                       & \funcreturntype      &:& \vt,\\
                       & \funcsubprogramtype  &:& \subprogramtype, \\
                       & \funcbuiltin         &:& \vb \\
@@ -1265,7 +1280,7 @@ resulting in an annotated function definition $\newfuncdef$ and new static envir
                     & \funcname            &:& \name,\\
                     & \funcparameters      &:& \vp,\\
                     & \funcargs            &:& \vargs,\\
-                    & \funcbody            &:& \SBASL(\bd),\\
+                    & \funcbody            &:& \bd,\\
                     & \funcreturntype      &:& \vt,\\
                     & \funcsubprogramtype  &:& \subprogramtype, \\
                     & \funcbuiltin         &:& \vb \\
@@ -1281,7 +1296,7 @@ resulting in an annotated function definition $\newfuncdef$ and new static envir
                     & \funcname            &:& \namep,\\
                     & \funcparameters      &:& \vp,\\
                     & \funcargs            &:& \vargs,\\
-                    & \funcbody            &:& \SBASL(\bd),\\
+                    & \funcbody            &:& \bd,\\
                     & \funcreturntype      &:& \vt,\\
                     & \funcsubprogramtype  &:& \subprogramtype, \\
                     & \funcbuiltin         &:& \vb \\
