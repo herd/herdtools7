@@ -120,7 +120,7 @@ is similar to $\annotatecall$, except that it accepts annotated version of param
 \begin{itemize}
   \item applying $\unziplistthree$ to $\typedargs$ yields the corresponding list of types $\argtypes$,
         list of expressions $\args$, and a list of \sideeffectdescriptorsetsterm\ $\vsessargs$;
-  \item \Prosenonconflictingunion{$\vsessargs$}{$\vsesargs$}\ProseOrError;
+  \item define $\vsesargs$ as the union of $\vsessargs$;
   \item applying $\subprogramforname$ to match $\name$ and $\argtypes$ in $\tenv$
         yields \\ $(\namep, \funcsig, \vsescall)$\ProseOrTypeError;
   \item define $\vses$ as the union of $\vsesargs$ and $\vsescall$;
@@ -146,7 +146,7 @@ is similar to $\annotatecall$, except that it accepts annotated version of param
 \begin{mathpar}
 \inferrule{
   \unziplistthree(\typedargs) = (\argtypes, \args, \vsessargs)\\
-  \nonconflictingunion(\vsessargs) \typearrow \vsesargs \OrTypeError\\\\
+  \vsesargs \eqdef \bigcup \vsessargs \\
   \subprogramforname(\tenv, \name, \argtypes) \typearrow
   (\nameone, \funcsig, \vsescall) \OrTypeError \\
   {

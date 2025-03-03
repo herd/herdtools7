@@ -430,17 +430,17 @@ recursive functions it may transitively call.
 \AllApply
 \begin{itemize}
   \item define the set $V$ as the set that includes an AST node $\vf$ if and only if $(\vf, \Ignore)$ exists in $\vsess$.
-        Intuitively, this is the set of all function definitions in associated with \sideeffectconflictsterm\ in $\vsess$;
+        Intuitively, this is the set of all function definitions in associated with \sideeffectdescriptorsterm\ in $\vsess$;
   \item define the relation $E : \func \times \func$ as follows:
         a pair $(\vfone, \vftwo)$ is included in $E$ if the pair $(\vfone, \vses_\vfone)$ exists in $\vsess$
         and the \RecursiveCallTerm\ for $\vftwo.\funcname$ exists in $\vses_\vfone$.
-        Intuitively, there exists an edge $(\vfone, \vftwo)$ if the \sideeffectconflictsterm\ of $\vfone$ indicate that it
+        Intuitively, there exists an edge $(\vfone, \vftwo)$ if the \sideeffectdescriptorsterm\ of $\vfone$ indicate that it
         may call the recursive function $\vftwo$;
   \item recall that $\graphtransitive{E}$ is the transitive closure of $E$, which intuitively means that
         $(\vfone, \vftwo)$ is included in $\graphtransitive{E}$ if there exists a path of edges in $E$ connecting $\vfone$
         to $\vftwo$;
   \item define the function $\propagatedeffects : \func \aslto \TSideEffectSet$, which binds a function definition $\vfone$
-        to the set including any \sideeffectconflictterm\ $\vs$ such that $(\vfone, \vftwo) \in \graphtransitive{E}$ and
+        to the set including any \sideeffectdescriptorsterm\ $\vs$ such that $(\vfone, \vftwo) \in \graphtransitive{E}$ and
         $\vs$ is associated with $\vftwo$ in $\vsess$;
   \item define $\vsesnew$ as any listing of the set of pairs $(\vf, \propagatedeffects(\vf))$ such $\vf$ is a member of $V$.
 \end{itemize}

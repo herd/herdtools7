@@ -905,7 +905,7 @@ for examples of well-typed assignable array expressions.
         $\wantedtindex$;
   \item determining whether $\tindexp$ \typesatisfies\ $\wantedtindex$ in $\tenv$ yields \\
         $\True$\ProseOrTypeError;
-  \item \Prosenonconflictingunion{$\vsesbase$ and $\vsesindex$}{$\vses$}\ProseOrError;
+  \item define $\vses$ as the union of $\vsesbase$ and $\vsesindex$;
   \item \Proseeqdef{$\newle$}{
     an integer-based array update for $\ebasep$ at index $\eindexp$, that is, $\LESetArray(\ebasep, \eindexp)$,
     if $\size$ is an integer-typed array index, and
@@ -921,7 +921,7 @@ for examples of well-typed assignable array expressions.
   \annotateexpr{\tenv, \eindex} \typearrow (\tindexp, \eindexp, \vsesindex) \OrTypeError\\\\
   \typeofarraylength(\tenv, \size) \typearrow \wantedtindex\\
   \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\\\
-  \nonconflictingunion(\vsesbase, \vsesindex) \typearrow \vses \OrTypeError\\\\
+  \vses \eqdef \vsesbase \cup \vsesindex \\
   \newleint \eqdef \LESetArray(\ebasep, \eindexp)\\
   \newleenum \eqdef \LESetEnumArray(\ebasep, \eindexp)\\
   {
@@ -1075,7 +1075,7 @@ The specification is ill-typed, even though both slices assign \verb|0| to the b
   \item checking that the slices $\slicestwo$ are all disjoint yields $\True$\ProseOrTypeError;
   \item checking that $\slices$ is not empty yields $\True$\ProseTerminateAs{\BadSlices};
   \item $\newle$ is the slicing of $\vletwo$ by $\slicestwo$, that is, $\LESlice(\vletwo, \slicestwo)$;
-  \item \Prosenonconflictingunion{$\vsesone$ and $\vsestwo$}{$\vses$}\ProseOrError.
+  \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
@@ -1092,7 +1092,7 @@ The specification is ill-typed, even though both slices assign \verb|0| to the b
   \checkdisjointslices(\tenv, \slicestwo) \typearrow \True \OrTypeError\\\\
   \checktrans{\slices \neq \emptylist}{\BadSlices} \typearrow \True \OrTypeError\\\\
   \newle \eqdef \LESlice(\vletwo, \slicestwo)\\
-  \nonconflictingunion([\vsesone, \vsestwo]) \typearrow \vses \OrTypeError
+  \vses \eqdef \vsesone \cup \vsestwo \\
 }{
   \annotatelexpr{\tenv, \overname{\LESlice(\vleone, \slices)}{\vle}, \vte} \typearrow (\newle, \vses)
 }
