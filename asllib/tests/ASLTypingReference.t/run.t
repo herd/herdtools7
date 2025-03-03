@@ -288,3 +288,5 @@ ASL Typing Tests / annotating types:
     integer {1, 2}.
   [1]
   $ aslref --no-exec TypingRule.IsGlobalUndefined.asl
+  $ aslref TypingRule.EArbitrary.asl
+

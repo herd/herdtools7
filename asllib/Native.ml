@@ -449,11 +449,7 @@ let rec unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef ty =
       |> List.map (fun (field_name, t) -> (field_name, unknown_of_type t))
       |> IMap.of_list
       |> fun record -> NV_Record record
-  | T_Enum li ->
-      let n = List.length li |> expr_of_int in
-      let range = Constraint_Range (expr_of_int 0, n) in
-      let t = T_Int (WellConstrained [ range ]) |> add_pos_from ty in
-      unknown_of_singular_type ~eval_expr_sef t
+  | T_Enum li -> NV_Literal (L_Label (List.hd li))
   | T_Tuple types -> NV_Vector (List.map (fun t -> unknown_of_type t) types)
   | T_Named _ -> Error.(fatal_from ty TypeInferenceNeeded)
 
