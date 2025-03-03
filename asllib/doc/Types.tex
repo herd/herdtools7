@@ -339,7 +339,7 @@ correspond to \CaseName{pending\_constrained}.
       \item $\newconstraints$ is the list of annotated constraints $\newc_i$,
       for $i=1..k$;
       \item $\newty$ is the well-constrained integer type constrained
-        by $\newconstraints$;
+        by $\newconstraints$ with $\PrecisionFull$;
       \item define $\vses$ as the union of all $\vxs_i$, for $i=1..k$.
     \end{itemize}
 
@@ -381,7 +381,7 @@ correspond to \CaseName{pending\_constrained}.
   {
     \begin{array}{r}
   \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TInt(\wellconstrained(\constraints))}{\tty}} \typearrow \\
-  (\overname{\TInt(\wellconstrained(\newconstraints))}{\newty}, \vses)
+  (\overname{\TInt(\wellconstrained(\newconstraints, \PrecisionFull))}{\newty}, \vses)
     \end{array}
   }
 }

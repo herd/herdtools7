@@ -667,6 +667,7 @@ See \ExampleRef{Typing Declaration Statements}.
   \item \AllApplyCase{none}
   \begin{itemize}
     \item $\tyopt$ is $\None$;
+    \item \Prosenoprecisionloss{\vte};
     \item $\newtenv$ is the result of $\annotatelocaldeclitem{\tenv, \vte, \ldk, \langle\vep\rangle, \ldi}$\ProseOrTypeError;
     \item $\tyoptp$ is $\tyopt$;
     \item \Proseeqdef{$\vses$}{the empty set}.
@@ -732,6 +733,7 @@ in the \CaseName{int} below.
   \item \AllApplyCase{int}
   \begin{itemize}
     \item $\lhs$ is a \pendingconstrainedintegertype{};
+    \item \Prosenoprecisionloss{$\rhs$};
     \item checking that $\rhs$ is a \wellconstrainedintegertype{} yields $\True$\ProseOrTypeError;
     \item \Proseeqdef{$\lhsp$}{$\rhs$}.
   \end{itemize}
@@ -756,6 +758,7 @@ in the \CaseName{int} below.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[int]{
+  \checknoprecisionloss{\rhs} \typearrow \True \OrTypeError\\\\
   \checktrans{\iswellconstrainedinteger(\rhs)}{\UnexpectedType} \checktransarrow \True\OrTypeError
 }{
   \inheritintegerconstraints(\overname{\TInt(\pendingconstrained)}{\lhs}, \rhs) \typearrow \overname{\rhs}{\lhsp}
@@ -785,6 +788,68 @@ in the \CaseName{int} below.
   \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\lhs}{\lhsp}
 }
 \end{mathpar}
+
+\TypingRuleDef{CheckNoPrecisionLoss}
+\hypertarget{def-checknoprecisionloss}{}
+The helper function
+\[
+  \checknoprecisionloss(\overname{\ty}{\vt})
+  \typearrow \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks whether the type $\vt$ is the result of a precision loss in its
+constraint computation (see for example \TypingRuleRef{ApplyBinopTypes}).
+
+\ExampleDef{Rejected Declaration because of Precision Loss}
+In \listingref{typing-imprecisetype}, the statement \verb|var b = a * a;|
+corresponds to the \typingerrorterm{} raised in the \CaseName{Well-Constrained}
+below.
+The type of the right-hand-side (\texttt{a * a}) is imprecise because the multiplication of two
+constant types would result in more than $2^17$ elements, see
+\TypingRuleRef{ApplyBinopTypes}.
+\ASLListing{Type-checking a declaration with an imprecise type}{typing-imprecisetype}{\typingtests/TypingRule.CheckNoPrecisionLoss.asl}
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{Well-Constrained}
+    \begin{itemize}
+      \item $\vt$ is a \wellconstrainedintegertype{} with a precision $\PrecisionFull$ or $\vt$ is a \wellconstrainedintegertype{} with a precision $\PrecisionLost$
+      \item a \typingerrorterm{} is raised;
+    \end{itemize}
+  \item \AllApplyCase{Integer}
+    \begin{itemize}
+      \item $\vt$ is not a \wellconstrainedintegertype{};
+      \item no \typingerrorterm{} is raised.
+    \end{itemize}
+  \item \AllApplyCase{Other}
+    \begin{itemize}
+      \item $\vt$ is not an \integertypeterm{};
+      \item no \typingerrorterm{} is raised.
+    \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+  \inferrule[Well-Constrained]{%
+    \checktrans{p = \PrecisionFull}{PrecisionLostDefining}
+  }{%
+    \checknoprecisionloss{\overname{\TInt(\wellconstrained(_, p))}{\vt}} \typearrow \True
+  }
+  \and
+  \inferrule[Integer]{%
+    \astlabel{\vc} \neq \wellconstrained
+  }{%
+    \checknoprecisionloss{\overname{\TInt(\vc)}{\vt}} \typearrow \True
+  }
+  \and
+  \inferrule[Other]{%
+    \astlabel{\vt} \neq \TInt
+  }{%
+    \checknoprecisionloss{\vt} \typearrow \True
+  }
+\end{mathpar}
+
+\CodeSubsection{\CheckNoPrecisionLossBegin}{\CheckNoPreciisonLossEnd}{../Typing.ml}
 
 \TypingRuleDef{CheckCanBeInitializedWith}
 \hypertarget{def-checkcanbeinitializedwith}{}

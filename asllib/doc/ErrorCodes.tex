@@ -157,6 +157,7 @@ The following table summarises all error codes.
   $\BadCall$                     & Bad call                       & "             \\
   $\SideEffectViolation$         & Side effect violation          & "             \\
   $\OverridingError$             & Overriding error               & "             \\
+  $\PrecisionLostDefining$       & Declaration with an imprecise type & "         \\
   \hline
   $\UnreachableError$            & Unreachable error              & Dynamic       \\
   $\DynamicTypeAssertionFailure$ & Dynamic type assertion failure & "             \\
@@ -372,6 +373,11 @@ The following table summarises all error codes.
     \item An \texttt{implementation} subprogram did not have exactly one corresponding \texttt{impdef} subprogram (\TypingRuleRef{ProcessOverrides}).
   \end{itemize}
 
+\item[$\PrecisionLostDefining$]%
+  \hypertarget{def-precisionlostdefining}{}
+  \textit{Declaration with an imprecise type.}
+  An attempt to declare a storage element with an implicit and imprecise type.
+  See \TypingRuleRef{LDVar}.
 \end{description}
 
 \section{Dynamic Errors\label{sec:DynamicErrors}}

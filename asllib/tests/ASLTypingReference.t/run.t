@@ -360,3 +360,23 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.SPragma.asl
   File TypingRule.SPragma.asl, line 3, characters 4 to 39:
   ASL Warning: pragma implementation_hidden will be ignored.
+
+  $ aslref TypingRule.CheckNoPrecisionLoss.asl
+  File TypingRule.CheckNoPrecisionLoss.asl, line 3, characters 8 to 13:
+  Exploding sets for the binary operation * could result in a constraint set
+  bigger than 2^17 with constraints 1..1024 and 1..1024. Continuing with the
+  non-expanded constraints.
+  File TypingRule.CheckNoPrecisionLoss.asl, line 3, characters 0 to 14:
+  ASL Typing error: type used to define storage item is the result of precision
+    loss.
+  [1]
+  $ aslref TypingRule.PrecisionJoin.asl
+  File TypingRule.PrecisionJoin.asl, line 3, characters 9 to 14:
+  Exploding sets for the binary operation * could result in a constraint set
+  bigger than 2^17 with constraints 1..1024 and 1..1024. Continuing with the
+  non-expanded constraints.
+  File TypingRule.PrecisionJoin.asl, line 3, characters 0 to 20:
+  ASL Typing error: type used to define storage item is the result of precision
+    loss.
+  [1]
+
