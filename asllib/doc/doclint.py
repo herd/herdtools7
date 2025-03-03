@@ -65,7 +65,7 @@ def check_hyperlinks_and_hypertargets(latex_files: list[str]):
     hyperlink_labels: set[str] = set()
     hypertarget_labels: set[str] = set()
     for latex_source in latex_files:
-        for line in read_file_str(latex_source):
+        for line in read_file_lines(latex_source):
             extract_labels_from_line(line, "\\hyperlink{", hyperlink_labels)
             extract_labels_from_line(line, "\\hypertarget{", hypertarget_labels)
     num_errors = 0
@@ -74,8 +74,7 @@ def check_hyperlinks_and_hypertargets(latex_files: list[str]):
         num_missing_hypertargets = len(missing_hypertargets)
         num_errors += num_missing_hypertargets
         print(
-            f"ERROR: found {num_missing_hypertargets} hyperlinks without \
-              matching hypertargets: ",
+            f"ERROR: found {num_missing_hypertargets} hyperlinks without matching hypertargets: ",
             file=sys.stderr,
         )
         for label in missing_hypertargets:
