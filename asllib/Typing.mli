@@ -39,6 +39,7 @@ module type ANNOTATE_CONFIG = sig
   val output_format : Error.output_format
   val print_typed : bool
   val use_field_getter_extension : bool
+  val use_conflicting_side_effects_extension : bool
   val override_mode : override_mode
 end
 

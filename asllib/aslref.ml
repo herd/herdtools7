@@ -39,6 +39,7 @@ type args = {
   strictness : strictness;
   output_format : Error.output_format;
   use_field_getter_extension : bool;
+  use_conflicting_side_effects_extension : bool;
   override_mode : override_mode;
   no_primitives : bool;
 }
@@ -65,6 +66,7 @@ let parse_args () =
   let override_mode = ref Permissive in
   let set_override_mode m () = override_mode := m in
   let no_primitives = ref false in
+  let use_side_effects_extension = ref false in
 
   let speclist =
     [
@@ -114,6 +116,10 @@ let parse_args () =
       ( "--use-field-getter-extension",
         Arg.Set use_field_getter_extension,
         " Instruct the type-checker to use the field getter extension." );
+      ( "--use-conflicting-side-effects-extension",
+        Arg.Set use_side_effects_extension,
+        " Instruct the type-checker to use the conflicting side-effects \
+         extension." );
       ( "--show-rules",
         Arg.Set show_rules,
         " Instrument the interpreter and log to std rules used." );
@@ -172,6 +178,7 @@ let parse_args () =
       show_rules = !show_rules;
       output_format = !output_format;
       use_field_getter_extension = !use_field_getter_extension;
+      use_conflicting_side_effects_extension = !use_side_effects_extension;
       override_mode = !override_mode;
       no_primitives = !no_primitives;
     }
@@ -274,6 +281,9 @@ let () =
       let print_typed = args.print_typed
       let use_field_getter_extension = args.use_field_getter_extension
       let override_mode = args.override_mode
+
+      let use_conflicting_side_effects_extension =
+        args.use_conflicting_side_effects_extension
     end in
     let module T = Annotate (C) in
     or_exit @@ fun () -> T.type_check_ast ast
