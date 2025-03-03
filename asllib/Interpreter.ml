@@ -696,7 +696,7 @@ module Make (B : Backend.S) (C : Config) = struct
              evaluable, i.e. side-effect-free. *)
           let* v' = eval_expr_sef env e and* v_length = B.bitvector_length v in
           B.binop `EQ_OP v_length v'
-      | T_Int (WellConstrained constraints) ->
+      | T_Int (WellConstrained (constraints, _)) ->
           (* The calls to [eval_expr_sef] are justified since annotate_type
              checks that all expressions on which a type depends are statically
              evaluable, i.e., side-effect-free. *)

@@ -100,6 +100,7 @@ type error_desc =
   | MultipleImplementations of func annotated * func annotated
   | NoOverrideCandidate
   | TooManyOverrideCandidates of func annotated list
+  | PrecisionLostDefining
 
 type error = error_desc annotated
 
@@ -208,6 +209,7 @@ let error_label = function
   | MultipleImplementations _ -> "ClashingImplementations"
   | NoOverrideCandidate -> "NoOverrideCandidate"
   | TooManyOverrideCandidates _ -> "TooManyOverrideCandidates"
+  | PrecisionLostDefining -> "PrecisionLostDefining"
 
 let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
@@ -487,6 +489,10 @@ module PPrint = struct
            the@ evaluation@ of@ the@ initialisation@ of@ the global@ storage@ \
            element@ %S."
           pp_ty exception_ty global_storage_element_name
+    | PrecisionLostDefining ->
+        fprintf f
+          "ASL Typing error:@ type@ used@ to@ define@ storage@ item@ is@ the@ \
+           result@ of@ precision@ loss."
     | NegativeArrayLength (e_length, length) ->
         fprintf f
           "ASL Execution error:@ array@ length@ expression@ %a@ has@ negative@ \

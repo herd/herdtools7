@@ -759,7 +759,8 @@ module Make (C : Config) = struct
       let with_pos e = Asllib.ASTUtils.add_dummy_annotation ~version:V0 e in
       let integer = Asllib.ASTUtils.integer in
       let int_ctnt e1 e2 =
-        T_Int (WellConstrained [ Constraint_Range (e1, e2) ]) |> with_pos
+        T_Int (WellConstrained ([ Constraint_Range (e1, e2) ], Precision_Full))
+        |> with_pos
       in
       let boolean = Asllib.ASTUtils.boolean in
       let reg = integer in

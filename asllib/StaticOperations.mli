@@ -24,7 +24,7 @@ module Make : functor (C : CONFIG) -> sig
     int3_binop ->
     int_constraint list ->
     int_constraint list ->
-    int_constraint list
+    int_constraint list * precision_loss_flag
 end
 
 (* Used by asllib/tests/ConstraintBinops.ml *)

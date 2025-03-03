@@ -101,11 +101,32 @@ val integer : ty
 val integer' : type_desc
 (** [integer], without the position annotation. *)
 
-val integer_exact : expr -> ty
+val integer_exact : ?loc:'a annotated -> expr -> ty
 (** [integer_exact e] is the integer type constrained to be equal to [e]. *)
 
 val integer_exact' : expr -> type_desc
 (** [integer_exact' e] is [integer_exact e] without the position annotation. *)
+
+val integer_range : ?loc:'a annotated -> expr -> expr -> ty
+(* [integer_range e1 e2] is the integer type constrained to be in the range
+   [e1..e2]. *)
+
+val integer_range' : expr -> expr -> type_desc
+(** [integer_range' e1 e2] is [integer_range e1 e2] without the position
+    annotation. *)
+
+val well_constrained :
+  ?loc:'a annotated ->
+  ?precision:precision_loss_flag ->
+  int_constraint list ->
+  ty
+(** [make_well_constrained cs] builds a constrained integer type with
+    constraints [cs]. *)
+
+val well_constrained' :
+  ?precision:precision_loss_flag -> int_constraint list -> type_desc
+(** [well_constrained' cs] is the [well_constrained cs], without the position
+    annotation. *)
 
 val boolean : ty
 (** The ASL boolean type. *)
@@ -179,6 +200,15 @@ val conj_expr : expr -> expr -> expr
 
 val cond_expr : expr -> expr -> expr -> expr
 (** [cond_expr e e1 e2] is an expression representing [if e then e1 else e2]. *)
+
+val precision_join :
+  precision_loss_flag -> precision_loss_flag -> precision_loss_flag
+(** [precision_join p1 p2] is the precision lost by [p1] or [p2]. *)
+
+val register_precision_loss :
+  precision_loss_flag -> delayed_warning -> precision_loss_flag
+(** [register_lost_precision p warn] register that a precision [p] has lost
+    precision with the delayed warning [warn]. *)
 
 val fresh_var : string -> identifier
 (** [fresh_var "doc"] is a fresh variable whose name begins with "doc". *)
