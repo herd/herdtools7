@@ -251,7 +251,12 @@ let default_config =
   end : S)
 
 module Parse = struct
-  module Tbl = Hashtbl.Make (String)
+  module Tbl = Hashtbl.Make (struct
+    let hash = Hashtbl.hash
+    let _remove_warning_32 = hash
+
+    include String
+  end)
 
   let default_hashtbl =
     let tbl : bool Tbl.t = Tbl.create 128 in
