@@ -102,7 +102,8 @@ and use_ty t =
       Fun.id
   | T_Int (WellConstrained (cs, _)) -> use_constraints cs
   | T_Tuple li -> use_list use_ty li
-  | T_Record fields | T_Exception fields -> use_named_list use_ty fields
+  | T_Record fields | T_Collection fields | T_Exception fields ->
+      use_named_list use_ty fields
   | T_Array (ArrayLength_Expr e, t') -> use_e e $ use_ty t'
   | T_Array (ArrayLength_Enum (s, _), t') -> NameSet.add (Other s) $ use_ty t'
   | T_Bits (e, bit_fields) -> use_e e $ use_bitfields bit_fields

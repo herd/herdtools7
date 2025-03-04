@@ -396,7 +396,7 @@ module Typed (C : Config.S) = struct
     | T_Named _ -> assert false
     | T_Array _ -> 1000000000
     | T_Tuple li -> list_sum ~init:2 (minimal_direct_fuel_ty env) li
-    | T_Record fields | T_Exception fields ->
+    | T_Record fields | T_Exception fields | T_Collection fields ->
         list_sum ~init:2 (fun (_, ty) -> minimal_direct_fuel_ty env ty) fields
 
   let literal ty : literal gen =

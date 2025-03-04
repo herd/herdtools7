@@ -193,6 +193,9 @@ and pp_ty =
         pp_list pp_ty f li
     | T_Array (length, elt_type) ->
         bprintf f "T_Array (%a, %a)" pp_array_length length pp_ty elt_type
+    | T_Collection li ->
+        addb f "T_Collection ";
+        pp_id_assoc pp_ty f li
     | T_Record li ->
         addb f "T_Record ";
         pp_id_assoc pp_ty f li

@@ -720,6 +720,8 @@ let rename_locals map_name ast =
     | T_Bits (e, bitfields) -> T_Bits (map_e e, bitfields)
     | T_Tuple li -> T_Tuple (List.map map_t li)
     | T_Array (_, _) -> failwith "Not yet implemented: obfuscate array types"
+    | T_Collection _ ->
+        failwith "Not yet implemented: obfuscate collection types"
     | T_Record li -> T_Record (List.map (fun (f, t) -> (f, map_t t)) li)
     | T_Exception li -> T_Exception (List.map (fun (f, t) -> (f, map_t t)) li)
   (* End *)

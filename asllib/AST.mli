@@ -252,6 +252,7 @@ and type_desc =
   | T_Array of array_index * ty
   | T_Record of field list
   | T_Exception of field list
+  | T_Collection of field list
   | T_Named of identifier  (** A type variable. *)
 
 and ty = type_desc annotated

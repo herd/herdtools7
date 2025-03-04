@@ -1324,7 +1324,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let ses = SES.union ses_t ses_index in
         (T_Array (index', t') |> here, ses) |: TypingRule.TArray
     (* Begin TStructuredDecl *)
-    | (T_Record fields | T_Exception fields) when decl -> (
+    | (T_Record fields | T_Exception fields | T_Collection fields) when decl
+      -> (
         let+ () =
           match get_first_duplicate (List.map fst fields) with
           | None -> ok
@@ -1344,6 +1345,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             (T_Record fields' |> here, ses) |: TypingRule.TStructuredDecl
         | T_Exception _ ->
             (T_Exception fields' |> here, ses) |: TypingRule.TStructuredDecl
+        | T_Collection _ ->
+            (T_Collection fields' |> here, ses) |: TypingRule.TStructuredDecl
         | _ -> assert false
         (* Begin TEnumDecl *))
     | T_Enum li when decl ->
@@ -1359,7 +1362,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         (ty, SES.empty) |: TypingRule.TEnumDecl
         (* Begin TNonDecl *)
-    | T_Enum _ | T_Record _ | T_Exception _ ->
+    | T_Enum _ | T_Record _ | T_Exception _ | T_Collection _ ->
         if decl then assert false
         else
           fatal_from ~loc
@@ -2371,7 +2374,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           L_Int z_min |> lit
     | T_Named _ -> Types.make_anonymous env t |> base_value_v1 ~loc env
     | T_Real -> L_Real Q.zero |> lit
-    | T_Exception fields | T_Record fields ->
+    | T_Exception fields | T_Record fields | T_Collection fields ->
         let one_field (name, t_field) =
           (name, base_value_v1 ~loc env t_field)
         in
@@ -2413,7 +2416,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           ((Constraint_Exact e | Constraint_Range (e, _)) :: _, _)) ->
         e
     | T_Tuple li -> E_Tuple (List.map (base_value_v0 ~loc env) li) |> here
-    | T_Exception fields | T_Record fields ->
+    | T_Exception fields | T_Record fields | T_Collection fields ->
         let fields =
           List.map
             (fun (name, t_field) -> (name, base_value_v0 ~loc env t_field))
