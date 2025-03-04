@@ -106,6 +106,7 @@ use the term \integertypeterm{} to refer to them collectively:
 \emph{pending constrained}, and \emph{parameterized}.
 
 \subsection{Unconstrained Integer Types}
+\hypertarget{def-unconstrainedintegertype}{}
 The type \verb|integer| represents all integer values.
 \identi{HJBH}%
 There is no bound on the minimum and maximum integer value that can be represented.
@@ -124,10 +125,12 @@ A constraint can either be an \emph{\exactconstraintterm}, consisting of a singl
 or a \emph{\rangeconstraintterm}, consisting of a pair of expressions like \texttt{1..10}.
 
 \ExampleDef{Well-constrained Integer Types}
+\hypertarget{def-wellconstrainedintegertype}{}
 \listingref{typing-wellconstrained} shows examples of well-constrained integer types.
 \ASLListing{Well-typed well-constrained integer types}{typing-wellconstrained}{\typingtests/TypingRule.TIntWellConstrained.asl}
 
 \subsection{Pending-constrained Integer Types}
+\hypertarget{def-pendingconstrainedintegertype}{}
 The type \verb|integer{-}| represents a well-constrained integer type whose
 constraints have yet to be determined.
 These constraints are inferred by the type system based on the expression used to initialize
@@ -146,6 +149,7 @@ integer types.
 \ASLListing{Well-typed pending-constrained integer types}{typing-pendingconstrained}{\typingtests/TypingRule.InheritIntegerConstraints.asl}
 
 \subsection{Parameterized Integer Types}
+\hypertarget{def-parameterizedintegertype}{}
 Subprogram parameters are implicitly \emph{parameterized integer types},
 which represent a singleton set for the integer passed to the parameter
 at the call site.
@@ -523,8 +527,9 @@ See \ExampleRef{Well-typed Real Types} for examples of well-typed \realtypeterm{
 \end{mathpar}
 \CodeSubsection{\TRealBegin}{\TRealEnd}{../Typing.ml}
 
-\hypertarget{stringtypeterm}{}
 \section{The String Type\label{sec:StringType}}
+\hypertarget{stringtypeterm}{}
+\hypertarget{stringtypesterm}{}
 The \emph{\stringtypeterm{}} represents strings of characters.
 
 Strings play relatively little role in specifications and the only operations
