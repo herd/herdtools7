@@ -2813,6 +2813,7 @@ Note that there are two important consequences of producing an arbitrary value w
   \item $\ve$ denotes an expression \ARBITRARY\ of type $\tty$, that is, $\EArbitrary(\tty)$;
   \item annotating the type $\tty$ in $\tenv$ yields $(\ttyone, \vsesty)$\ProseOrTypeError;
   \item obtaining the \structure\ of $\ttyone$ in $\tenv$ yields $\ttytwo$\ProseOrTypeError;
+  \item \Prosecheckisnotcollection{$\tenv$}{$\ttytwo$};
   \item $\vt$ is $\ttyone$;
   \item define $\newe$ as an expression \ARBITRARY\ of type $\ttytwo$, that is, $\EArbitrary(\ttytwo)$;
   \item define $\vses$ as the union of $\vsesty$ and the singleton set for the \NonDeterministicTerm.
@@ -2822,6 +2823,7 @@ Note that there are two important consequences of producing an arbitrary value w
 \inferrule{
   \annotatetype{\tenv, \tty} \typearrow (\ttyone, \vsesty) \OrTypeError\\\\
   \tstruct(\tenv, \ttyone) \typearrow \ttytwo \OrTypeError\\\\
+  \checkisnotcollection(\tenv, \ttytwo) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsesty \cup \{ \NonDeterministic \}
 }{
   \annotateexpr{\tenv, \EArbitrary(\tty)} \typearrow (\ttyone, \EArbitrary(\ttytwo), \vses)

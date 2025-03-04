@@ -101,6 +101,7 @@ type error_desc =
   | NoOverrideCandidate
   | TooManyOverrideCandidates of func annotated list
   | PrecisionLostDefining
+  | UnexpectedCollection
 
 type error = error_desc annotated
 
@@ -210,6 +211,7 @@ let error_label = function
   | NoOverrideCandidate -> "NoOverrideCandidate"
   | TooManyOverrideCandidates _ -> "TooManyOverrideCandidates"
   | PrecisionLostDefining -> "PrecisionLostDefining"
+  | UnexpectedCollection -> "UnexpectedCollection"
 
 let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
@@ -508,6 +510,8 @@ module PPrint = struct
     | NoOverrideCandidate ->
         fprintf f "@[%a@]" pp_print_text
           "ASL Typing error: no `impdef` for `implementation` function."
+    | UnexpectedCollection ->
+        pp_print_text f "ASL typing error: unexpected collection."
     | TooManyOverrideCandidates impdefs ->
         fprintf f
           "ASL Typing error:@ multiple@ `impdef`@ candidates@ for@ \

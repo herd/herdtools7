@@ -390,6 +390,7 @@ ASL Typing Tests / annotating types:
   ASL Typing error: type used to define storage item is the result of precision
     loss.
   [1]
+
   $ aslref TypingRule.PSingle.asl
   $ aslref TypingRule.PSingle.bad.asl
   File TypingRule.PSingle.bad.asl, line 4, characters 11 to 30:
@@ -427,4 +428,9 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.PAny.bad.asl
   File TypingRule.PAny.bad.asl, line 5, characters 11 to 29:
   ASL Typing error: Erroneous pattern 5 for expression of type boolean.
+  [1]
+
+  $ aslref TypingRule.CheckIsNotCollection.asl
+  File TypingRule.CheckIsNotCollection.asl, line 8, characters 2 to 25:
+  ASL typing error: unexpected collection.
   [1]

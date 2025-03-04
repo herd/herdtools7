@@ -419,14 +419,14 @@ let rec unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef ty =
               labels
           in
           NV_Record (IMap.of_list fields))
-  | T_Record fields | T_Exception fields | T_Collection fields ->
+  | T_Record fields | T_Exception fields ->
       fields
       |> List.map (fun (field_name, t) -> (field_name, unknown_of_type t))
       |> IMap.of_list
       |> fun record -> NV_Record record
   | T_Enum li -> NV_Literal (L_Label (List.hd li))
   | T_Tuple types -> NV_Vector (List.map (fun t -> unknown_of_type t) types)
-  | T_Named _ -> Error.(fatal_from ty TypeInferenceNeeded)
+  | T_Collection _ | T_Named _ -> Error.(fatal_from ty TypeInferenceNeeded)
 
 module DeterministicBackend = struct
   include NativeBackend (struct

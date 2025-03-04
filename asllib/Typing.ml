@@ -528,10 +528,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* CheckStructureBits *)
-  let check_structure_bits ~loc env t () =
-    match (Types.get_structure env t).desc with
-    | T_Bits _ -> ()
-    | _ -> conflict ~loc [ default_t_bits ] t
+  let has_structure_bits env t =
+    match (Types.make_anonymous env t).desc with T_Bits _ -> true | _ -> false
+
+  let check_structure_bits ~loc env t =
+    check_true (has_structure_bits env t) @@ fun () ->
+    conflict ~loc [ default_t_bits ] t
   (* End *)
 
   (* Begin CheckUnderlyingInteger *)
@@ -758,6 +760,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             | _ -> None)
         | None -> None)
     | _ -> None
+  (* End *)
+
+  (* Begin CheckIsNotCollection *)
+  let check_is_not_collection ~loc env t () =
+    let t_struct = Types.make_anonymous env t in
+    match t_struct.desc with
+    | T_Collection _ -> fatal_from ~loc Error.UnexpectedCollection
+    | _ -> ()
   (* End *)
 
   (* Begin CheckPositionsInWidth *)
@@ -1346,6 +1356,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | T_Exception _ ->
             (T_Exception fields' |> here, ses) |: TypingRule.TStructuredDecl
         | T_Collection _ ->
+            let+ () =
+              check_true
+                (List.for_all (fun (_, t) -> has_structure_bits env t) fields)
+              @@ fun () -> fatal_from ~loc Error.(UnsupportedTy (Static, ty))
+            in
             (T_Collection fields' |> here, ses) |: TypingRule.TStructuredDecl
         | _ -> assert false
         (* Begin TEnumDecl *))
@@ -2043,6 +2058,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | E_Arbitrary ty ->
         let ty1, ses_ty = annotate_type ~loc env ty in
         let ty2 = Types.get_structure env ty1 in
+        let+ () = check_is_not_collection ~loc env ty2 in
         let ses = SES.add_non_determinism ses_ty in
         (ty1, E_Arbitrary ty2 |> here, ses) |: TypingRule.EArbitrary
     (* End *)
@@ -2720,6 +2736,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | LDI_Var x ->
         (* Rule LCFD: A ~local declaration shall not declare an identifier
            which is already in scope at the point of declaration. *)
+        let+ () = check_is_not_collection ~loc env ty in
         let+ () = check_var_not_in_env ~loc env x in
         let env2 = add_local x ty ldk env in
         let new_env = add_immutable_expression env2 ldk e x in
@@ -3397,6 +3414,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (* valid in environment with only parameters declared *)
         let ty, ses_ty = annotate_type ~loc env_with_params ty in
         let+ () = check_var_not_in_env ~loc new_env x in
+        let+ () = check_is_not_collection ~loc env_with_params ty in
         let new_env = add_local x ty LDK_Let new_env
         and ses = SES.union new_ses ses_ty in
         ((new_env, ses), (x, ty))
@@ -3412,6 +3430,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | Some ty ->
           (* valid in environment with parameters declared *)
           let new_ty, ses_ty = annotate_type ~loc env_with_params ty in
+          let+ () = check_is_not_collection ~loc env new_ty in
           let return_type = Some new_ty in
           let local_env = { env_with_args.local with return_type } in
           let new_ses = SES.union ses_ty ses_with_args in
