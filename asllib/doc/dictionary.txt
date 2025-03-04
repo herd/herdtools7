@@ -316,6 +316,7 @@ closure
 code
 codes
 collection
+collections
 collectively
 combination
 combinations
