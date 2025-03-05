@@ -472,7 +472,7 @@ val same_instance : event -> event -> bool
 
   val aarch64_cas :
     bool (* Physical memory access *) ->
-    [`DataFromRRs | `DataFromRx | `NoWriteRt] ->
+    [< `DataFromRRs | `DataFromRx | `NoRRt] ->
     event_structure -> event_structure -> event_structure ->
     event_structure ->  event_structure ->  event_structure ->
     event_structure -> event_structure
@@ -2326,8 +2326,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           resa.aligned @ data.aligned @ addr.aligned
           @ wres.aligned @ wresult.aligned @ wmem.aligned ;}
 
-(* AArch64 CAS, success *)
-    let aarch64_cas is_phy prov_data rn rs rt wrs rm wm br =
+(* AArch64 CAS *)
+    let aarch64_cas is_phy mode rn rs rt wrs rm wm br =
       let input_wrs = minimals wrs
       and input_rm = minimals rm
       and input_wm = minimals wm
@@ -2356,22 +2356,23 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
                 rm.intra_causality_data;
                 br.intra_causality_data;
                 wm.intra_causality_data])
-          (let output_rn = get_output rn in
-           let rels = match prov_data with
+          (let rels = match mode with
              | `DataFromRRs ->
                [EventRel.cartesian (get_output rs) input_wrs; ]
              | `DataFromRx ->
                [EventRel.cartesian (get_output rm) input_wrs; ]
-             | `NoWriteRt ->
+             | `NoRRt ->
                assert (is_empty_event_structure rt) ;
-               []
+               [EventRel.cartesian (get_output rm) input_wm; ]
            in
+           let output_rn = get_output rn in
            let rels = rels @
-             match EventSet.as_singleton wm.events with
-             | Some evt when is_mem_store evt ->
+             match EventSet.elements wm.events with
+             | [evt] when is_no_action evt -> []
+             | evts when List.for_all is_mem_store evts  ->
                [(EventRel.cartesian output_rn input_wm);       (* Ds2 *)
                 (EventRel.cartesian (get_output rt) input_wm); (* Ds3 *) ]
-             | _ -> [] in
+             | _ -> assert false in
            let rels =
              rels @
              [(EventRel.cartesian output_rn input_rm);          (* D1 *)
@@ -2395,10 +2396,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
                 EventRel.cartesian (get_ctrl_output_commits rn)
                   (EventSet.union input_rm input_wm)
               else EventRel.empty)
-             (match prov_data with
+             (match mode with
               | `DataFromRRs -> EventRel.cartesian output_br input_wrs
               | `DataFromRx
-              | `NoWriteRt -> EventRel.empty)
+              | `NoRRt -> EventRel.empty)
              (EventRel.cartesian output_br input_wm)   (* Cs1 *)
              (EventRel.cartesian output_br input_wm)); (* Cs2 *)
         intra_causality_order =
