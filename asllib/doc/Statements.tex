@@ -3835,11 +3835,13 @@ only here to explain the modeling of a console.
 \hypertarget{def-literaltostring}{}
 The helper function $\literaltostring : \literal \aslto \Strings$,
 which defines how a literal is represented by a string,
-is defined by the following table.
+is defined by \taref{literaltostringtable}.
 %
 Please note that surrounding quotations mark for $\lstring(S)$ are not included
 in $\literaltostring(S)$, so they will appear in the printed string.
 
+\begin{table}
+\caption{How literals should be represented as strings\label{ta:literaltostringtable}}
 \begin{tabular}{rl}
 \textbf{literal $\vl$} & \textbf{$\literaltostring(\vl)$} \\
 \hline
@@ -3857,6 +3859,7 @@ $\lbitvector(b)$  & $b$ in hexadecimal, preceded by ``\texttt{0x}'', with enough
 $\lstring(S)$     & $S$. \\
 $\llabel(s)$      & $s$. \\
 \end{tabular}
+\end{table}
 
 \ProseParagraph
 \AllApply

@@ -160,6 +160,10 @@ in an environment $\tenv$,
 resulting in $\newfields$ --- the \typedast\ for $\fields$ and $\ewidth$
 as well as a set of \sideeffectdescriptorsterm\ $\vses$. \ProseOtherwiseTypeError
 
+\ExampleDef{Typing Bitfields}
+The bitfields declared in \listingref{bitfields1} are well-typed and their total width
+is $16$.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -194,12 +198,26 @@ The function
 \]
 returns the name of a bitfield --- $\name$, given a bitfield $\vbf$.
 
+\ExampleDef{Bitfield Names}
+In \listingref{nestedbitfields}, the names of bitfields are:
+\verb|fmt|, \verb|common|, \verb|layer1|, \verb|remainder|, \verb|moving|,
+\verb|extra|, and \verb|fmt1|.
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
-  \item $\vbf$ is a simple bitfield with name $\name$, that is, $\BitFieldSimple(\name, \Ignore)$;
-  \item $\vbf$ is a nested bitfield with name $\name$, that is, $\BitFieldNested(\name, \Ignore, \Ignore)$;
-  \item $\vbf$ is a typed bitfield with name $\name$, that is, $\BitFieldType(\name, \Ignore, \Ignore)$.
+  \item \AllApplyCase{simple}
+  \begin{itemize}
+    \item $\vbf$ is a simple bitfield with name $\name$, that is, $\BitFieldSimple(\name, \Ignore)$;
+  \end{itemize}
+  \item \AllApplyCase{nested}
+  \begin{itemize}
+    \item $\vbf$ is a nested bitfield with name $\name$, that is, $\BitFieldNested(\name, \Ignore, \Ignore)$;
+  \end{itemize}
+  \item \AllApplyCase{type}
+  \begin{itemize}
+    \item $\vbf$ is a typed bitfield with name $\name$, that is, $\BitFieldType(\name, \Ignore, \Ignore)$.
+  \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
@@ -225,12 +243,28 @@ The function
 \]
 returns the list of slices $\vslices$ associated with the bitfield $\vbf$.
 
+\ExampleDef{The Slices of a Bitfield}
+In \listingref{nestedbitfields},
+the slices associated with the bitfield \verb|layer1| are \verb|4:13, 12:2, 1, 0|.
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
-  \item $\vbf$ is a simple bitfield with list of slices $\vslices$, that is, $\BitFieldSimple(\Ignore, \vslices)$;
-  \item $\vbf$ is a nested bitfield with list of slices $\vslices$, that is, $\BitFieldNested(\Ignore, \vslices, \Ignore)$;
-  \item $\vbf$ is a typed bitfield with list of slices $\vslices$, that is, $\BitFieldType(\Ignore, \vslices, \Ignore)$.
+  \item \AllApplyCase{simple}
+  \begin{itemize}
+    \item $\vbf$ is a simple bitfield with list of slices $\vslices$, that is, \\
+    $\BitFieldSimple(\Ignore, \vslices)$;
+  \end{itemize}
+  \item \AllApplyCase{nested}
+  \begin{itemize}
+    \item $\vbf$ is a nested bitfield with list of slices $\vslices$, that is, \\
+    $\BitFieldNested(\Ignore, \vslices, \Ignore)$;
+  \end{itemize}
+  \item \AllApplyCase{type}
+  \begin{itemize}
+    \item $\vbf$ is a typed bitfield with list of slices $\vslices$, that is, \\
+    $\BitFieldType(\Ignore, \vslices, \Ignore)$.
+  \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
@@ -256,6 +290,12 @@ The function
 \]
 returns the list of bitfields $\vnested$ nested within the bitfield $\vbf$, if there are any,
 and an empty list if there are none.
+
+\ExampleDef{The Bitfields Nested in a Bitfield}
+In \listingref{nestedbitfields},
+the bitfields nested in the bitfield \verb|layer1| consist in the singleton list \verb|remainder|,
+which does not include \verb|moving| and \verb|extra| -- those are nested in \verb|remainder|.
+The bitfields nested in the bitfield \verb|fmt| make up an empty list.
 
 \ProseParagraph
 \OneApplies
@@ -400,6 +440,10 @@ The function
 checks whether the slices in $\vslices$ fit within the bitvector width given by $\vwidth$ in $\tenv$,
 yielding $\True$. \ProseOtherwiseTypeError
 
+See
+\ExampleRef{Converting Disjoint Slices to Positions} and
+\ExampleRef{Checking Whether Slice Positions Fit in a Bitvector Width}.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -429,6 +473,13 @@ The function
 \]
 checks whether the set of positions in $\positions$ fit within the bitvector width given by $\vwidth$,
 yielding $\True$. \ProseOtherwiseTypeError
+
+\ExampleDef{Checking Whether Slice Positions Fit in a Bitvector Width}
+In \listingref{bitfieldslicetopositions}, all slices declared for all bitfields
+fit in the bitvector width $16$, whereas the positions defined for the bitfield
+\verb|value| in \listingref{checkpositionsinwidth} exceed the bitvector width $16$.
+
+\ASLListing{An Out of Width Slice}{checkpositionsinwidth}{\typingtests/TypingRule.CheckPositionsInWidth.bad.asl}
 
 \ProseParagraph
 \AllApply
@@ -462,6 +513,14 @@ returns the set of integers defined by the list of slices in $\vslices$ in $\pos
 In particular, this rule checks that the bitfield slices do not overlap and that they are not defined in reverse
 (e.g., \texttt{0:1} rather than \texttt{1:0})
 \ProseOtherwiseTypeError
+
+\ExampleDef{Converting Disjoint Slices to Positions}
+In \listingref{bitfieldslicetopositions}, the slices \verb|3:0| and \verb|5+:3|, declared for the bitfield \verb|data|
+yield the set of positions $\{0, 1, 2, 3, 5, 6, 7\}$.
+Whereas the slices \verb|3:0| and \verb|5:3|, declared for the bitfield \verb|data|
+in \listingref{disjointslicestopositions} overlap, since they have $3$ in common.
+
+\ASLListing{Overlapping Slices}{disjointslicestopositions}{\typingtests/TypingRule.DisjointSlicesToPositions.bad.asl}
 
 \ProseParagraph
 \OneApplies
@@ -514,6 +573,28 @@ The function
 returns the set of integers defined by the bitfield slice $\vslice$ in $\positions$,
 if they can be statically evaluated, or $\None$ if they cannot be statically evaluated.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Converting Bitfield Slices to Positions}
+\taref{bitfieldslicetopositions} shows the optional set of positions associated with each slice
+in \listingref{bitfieldslicetopositions}, followed by examples of erroneous slices.
+
+\begin{table}[h]
+\caption{Converting Bitfield Slices to Positions\label{ta:bitfieldslicetopositions}}
+\begin{tabular}{ll}
+  \textbf{Slice} & \textbf{Optional Set of Positions}\\
+  \hline
+  \verb|4|    & $\Some{\{4\}}$ \\
+  \verb|3:0|  & $\Some{\{0, 1, 2, 3\}}$\\
+  \verb|5+:3| & $\Some{\{5, 6, 7\}}$\\
+  \verb|3*:4| & $\Some{\{12, 13, 14, 15\}}$\\
+  \hline
+  \verb|0:3|  & $\BadSlices$\\
+  \verb|5+:0| & $\BadSlices$\\
+  \verb|0*:4| & $\BadSlices$\\
+\end{tabular}
+\end{table}
+
+\ASLListing{Converting bitfield slices to positions}{bitfieldslicetopositions}{\typingtests/TypingRule.BitfieldSliceToPositions.asl}
 
 \ProseParagraph
 \OneApplies
@@ -697,6 +778,8 @@ returns the set of \absolutebitfields\ $\vabsbitfields$ that correspond to the l
 of bitfields $\vbitfields$, whose \bitfieldscope\ and \absoluteslice\ is given by
 $\vabsoluteparent$, in the static environment $\tenv$.
 
+See \ExampleRef{A bitvector type with nested bitfields}.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -728,6 +811,8 @@ The function
 returns the set of \absolutebitfields\ $\vabsbitfields$ that correspond to the
 bitfields nested in $\vbf$, including itself, where the \bitfieldscope\ and \absoluteslice\
 of the bitfield containing $\vbf$ are $\vabsoluteparent$, in the static environment $\tenv$.
+
+See \ExampleRef{A bitvector type with nested bitfields}.
 
 \ProseParagraph
 \AllApply
@@ -769,7 +854,7 @@ of the bitfield containing $\vbf$ are $\vabsoluteparent$, in the static environm
 }
 \end{mathpar}
 
-\TypingRuleDef{SliceIndicesBySlices}
+\TypingRuleDef{SelectIndicesBySlices}
 \hypertarget{def-selectindicesbyslices}{}
 The function
 \[
@@ -781,6 +866,16 @@ and the list $\sliceindices$ as a list of indices into $\indices$ (a slice of a 
 and returns the sub-list of $\indices$ indicated by the indices in $\sliceindices$.
 % The reference abstracts away from the implementation,
 % which represents sequence of indices via intervals.
+
+\ExampleDef{Selecting from a List of Indices}
+The following are some examples of selecting indices:
+\[
+\begin{array}{lcl}
+\selectindicesbyslices([9,4,6,1,13], [4,3,2,1,0]) &\typearrow& [9,4,6,1,13]\\
+\selectindicesbyslices([9,4,6,1,13], [0,1,2,3,4]) &\typearrow& [13,1,6,4,9]\\
+\selectindicesbyslices([9,4,6,1,13], [3,2,4,0])   &\typearrow& [4,6,9,13]\\
+\end{array}
+\]
 
 \ProseParagraph
 \AllApply
@@ -805,9 +900,12 @@ The function
 \absolutebitfieldsalign(\overname{\TAbsField}{\vf}, \overname{\TAbsField}{\vg})
 \aslto \overname{\Bool}{\vb}
 \]
-tests whether the \absolutebitfields\ $\vfone$ and $\vftwo$ share the same name
+tests whether the \absolutebitfields{} $\vfone$ and $\vftwo$ share the same name
 and exist in the same scope. If they do, $\vb$ indicates whether their \absoluteslices\
 are equal. Otherwise, the result if $\True$.
+
+See \ExampleRef{A bitvector type with nested bitfields} where all \absolutebitfields{} align
+and \ExampleRef{Ill-typed Bitfields} where not all \absolutebitfields{} align.
 
 \ProseParagraph
 \AllApply
@@ -845,6 +943,11 @@ The function
 \slicetoindices(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\vs}) \aslto \overname{\N^*}{\indices}
 \]
 returns the list of indices $\indices$ represented by the bitvector slice $\vs$ in the static environment $\tenv$.
+
+\ExampleDef{Converting a Slice to a List of Indices}
+The list of indices for the slice \\
+$\SliceLength(\AbbrevEBinop{\PLUS}{\ELInt{1}}{\ELInt{4}}, \ELInt{3})$ is
+$[7, 6, 5]$.
 
 \ProseParagraph
 \AllApply

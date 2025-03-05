@@ -360,6 +360,17 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.SPragma.asl
   File TypingRule.SPragma.asl, line 3, characters 4 to 39:
   ASL Warning: pragma implementation_hidden will be ignored.
+  $ aslref --no-exec TypingRule.BitfieldSliceToPositions.asl
+  $ aslref TypingRule.DisjointSlicesToPositions.bad.asl
+  File TypingRule.DisjointSlicesToPositions.bad.asl, line 1, character 0 to
+    line 6, character 2:
+  ASL Static error: overlapping slices 0+:4, 3+:3.
+  [1]
+  $ aslref --no-exec TypingRule.CheckPositionsInWidth.bad.asl
+  File TypingRule.CheckPositionsInWidth.bad.asl, line 1, character 0 to line 5,
+    character 2:
+  ASL Static error: Cannot extract from bitvector of length 16 slice (3 * 5)+:5.
+  [1]
 
   $ aslref TypingRule.CheckNoPrecisionLoss.asl
   File TypingRule.CheckNoPrecisionLoss.asl, line 3, characters 8 to 13:

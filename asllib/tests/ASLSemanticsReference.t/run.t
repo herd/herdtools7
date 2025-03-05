@@ -170,6 +170,8 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.SliceLength.asl
   $ aslref SemanticsRule.SliceRange.asl
   $ aslref SemanticsRule.SliceStar.asl
+  $ aslref SemanticsRule.SliceFromZero.asl
+  $ aslref SemanticsRule.Slices.asl
   $ aslref SemanticsRule.LDTuple.asl
   $ aslref SemanticsRule.LDTypedTuple.asl
   $ aslref SemanticsRule.LDTypedVar.asl

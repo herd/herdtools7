@@ -19,6 +19,9 @@ begin
     var bits_var : BitvectorType = '10100010';
     //              Multi-field expression                          inferred type
     let bits_flds = bits_var.[bits3_2, bit1, bit0, info_and_bits]   as bits(8);
+    // Notice that 'bit0' and 'info_and_bits' overlap on position 0,
+    // which is legal for expression on the right-hand-side of assignments,
+    // but not for left-hand-side expressions.
     assert bits_flds == '00101010';
 
     var record_var : RecordWithBits = RecordWithBits{

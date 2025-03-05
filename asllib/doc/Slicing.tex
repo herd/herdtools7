@@ -85,6 +85,17 @@ The relation
 evaluates a list of slices $\slices$ in an environment $\env$, resulting in either \\
 $\Normal((\ranges, \newg), \newenv)$ or an abnormal configuration.
 \ProseParagraph
+
+$\evalslices(\env, \vslices)$ is the list of pairs \texttt{(start\_n, length\_n)} that
+correspond to the start (included) and the length of each slice in
+$\slices$.
+
+\ExampleDef{Evaluating a List of Slices}
+In \listingref{eval-slices}, evaluating the list of slices \verb|[2, 7:5, 0+:3]|
+yields the list of ranges $[(2,1), (5,2), (0,3)]$.
+
+\ASLListing{Evaluating a list of slices}{eval-slices}{\semanticstests/SemanticsRule.Slices.asl}
+
 \OneApplies
 \begin{itemize}
   \item \AllApplyCase{empty}
@@ -106,10 +117,6 @@ $\Normal((\ranges, \newg), \newenv)$ or an abnormal configuration.
     \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
   \end{itemize}
 \end{itemize}
-
-$\evalslices(\env, \vslices)$ is the list of pairs \texttt{(start\_n, length\_n)} that
-correspond to the start (included) and the length of each slice in
-$\slices$.
 
 \FormallyParagraph
 \begin{mathpar}
@@ -222,6 +229,16 @@ the function
 annotates a single slice $\vs$ in the static environment $\tenv$,
 resulting in an annotated slice $\vsp$.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Annotating Slices}
+The slices in \listingref{semantics-slicesingle},
+\listingref{semantics-slicesingle},
+\listingref{semantics-slicerange},
+\listingref{semantics-slicelength},
+\listingref{semantics-scaledslice}, and
+\listingref{semantics-scaledfromzero}
+are all well-typed.
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -318,6 +335,10 @@ The helper function
 returns an expression $\vslices$ that represents the width of all slices given by $\vslices$
 in the static environment $\tenv$.
 
+\ExampleDef{The Width of a List of Slices}
+In \listingref{eval-slices}
+The width of the list of slices \verb|[2, 7:5, 0+:3]| is $7$.
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -360,6 +381,22 @@ The helper function
   \overname{\expr}{\vwidth}
 \]
 returns an expression $\vwidth$ that represents the width of the slices given by $\vslice$.
+
+\ExampleDef{The Width of a Slice}
+In \listingref{semantics-slicesingle},
+the width of the slice \texttt{[2]} is $1$.
+
+In \listingref{semantics-slicerange},
+the width of the slice \texttt{4:2} is $3$.
+
+In \listingref{semantics-slicelength},
+the width of the slice \texttt{2+:3} is $3$.
+
+In \listingref{semantics-scaledslice},
+the width of the slice \texttt{x[3*:2]} is $2$.
+
+In \listingref{semantics-scaledfromzero},
+the width of the slice \texttt{x[:3]} is $3$.
 
 \ProseParagraph
 \OneApplies
@@ -406,27 +443,39 @@ returns an expression $\vwidth$ that represents the width of the slices given by
 \hypertarget{def-annotatesymbolicconstrainedinteger}{}
 The function
 \[
-  \annotatesymbolicconstrainedinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-  (\overname{\expr}{\vepp} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
+\begin{array}{r}
+  \annotatesymbolicconstrainedinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto\\
+  (\overname{\expr}{\vepp} \times \overname{\TSideEffectSet}{\vses})\ \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
 \]
-annotates a \symbolicallyevaluable\ integer expression $\ve$ of a constrained integer type in the static environment $\tenv$
+annotates a \symbolicallyevaluable{} integer expression $\ve$ of a constrained integer type in the static environment $\tenv$
 and returns the annotated expression $\vepp$ and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Annotating Symbolically Evaluable Constrained Integer Expressions}
+In \listingref{typing-annotatesymbolicallyevaluableexpr}, all of the symbolically evaluable
+expressions (as noted by the comments) are not constrained as their \underlyingtypes{} are
+the \unconstrainedintegertype.
+
+On the other hand, in \listingref{check-constrained-integer}
+all of the right-hand-side expressions of assignments are both symbolically
+evaluable \underline{and} their \underlyingtypes{} are \constrainedinteger{} types,
+since they consist of \staticallyevaluable{} expressions (literals) and
+the parameter \verb|N|.
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
   \item \Proseannotatesymbolicallyevaluableexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$\ProseOrTypeError};
-  \item determining whether $\vt$ is a symbolically \constrainedinteger\ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item determining whether $\vep$ is \symbolicallyevaluable\  in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item determining whether $\vt$ is a symbolically \constrainedinteger{} in $\tenv$ yields $\True$\ProseOrTypeError;
   \item applying $\normalize$ to $\vep$ in $\tenv$ yields $\vepp$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \vt) \typearrow \True \OrTypeError\\\\
-  \checksymbolicallyevaluable(\tenv, \vep) \typearrow \True \OrTypeError\\\\
   \normalize(\tenv, \vep) \typearrow \vepp
 }{
   \annotatesymbolicconstrainedinteger(\tenv, \ve) \typearrow (\vepp, \vses)
@@ -449,24 +498,25 @@ evaluates an individual slice $\vs$ in an environment $\env$ is,
 resulting either in \\
 $\Normal(((\vstart, \vlength), \vg), \newenv)$, a throwing configuration, or a dynamic error configuration.
 
-\ExampleDef{Single Slice}
+\ExampleDef{Evaluating Slices}
 In \listingref{semantics-slicesingle},
 the slice \texttt{[2]} evaluates to \texttt{(2, 1)}, that is, the slice of
 length 1 starting at index 2.
 \ASLListing{A single expression slice}{semantics-slicesingle}{\semanticstests/SemanticsRule.SliceSingle.asl}
 
-\ExampleDef{Range Slice}
 In \listingref{semantics-slicerange}, \texttt{4:2} evaluates to \texttt{(2, 3)}.
 \ASLListing{A range slice}{semantics-slicerange}{\semanticstests/SemanticsRule.SliceRange.asl}
 
-\ExampleDef{Length Slice}
 In \listingref{semantics-slicelength}, \texttt{2+:3} evaluates to \texttt{(2, 3)}.
 \ASLListing{A slice by length}{semantics-slicelength}{\semanticstests/SemanticsRule.SliceLength.asl}
 
-\ExampleDef{Scaled Slice}
 In \listingref{semantics-scaledslice},
 \texttt{x[3*:2]} evaluates to \texttt{'11'}.
 \ASLListing{A scaled slice}{semantics-scaledslice}{\semanticstests/SemanticsRule.SliceStar.asl}
+
+In \listingref{semantics-scaledfromzero},
+\texttt{x[:3]} evaluates to \texttt{'100'}.
+\ASLListing{A syntactic sugar slice}{semantics-scaledfromzero}{\semanticstests/SemanticsRule.SliceFromZero.asl}
 
 \ProseParagraph
 \OneApplies

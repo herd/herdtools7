@@ -455,26 +455,24 @@ def check_rules(filename: str) -> int:
     Checks the AST/Typing/Semantics/Guide/Convention rules in 'filename'
     and returns the total number of errors.
     """
-    # Treat existing issues as warnings and new issues as error.
+    # Treat existing issues as warnings and new issues as errors.
     file_to_num_expected_errors = {
-        "Bitfields.tex" : 15,
         "GlobalDeclarations.tex" : 6,
         "GlobalStorageDeclarations.tex" : 7,
-        "LexicalStructure.tex" : 6,
         "PatternMatching.tex" : 9,
         "PrimitiveOperations.tex" : 3,
         "RelationsOnTypes.tex" : 15,
-        "SemanticsUtilities.tex" : 20,
-        "SideEffects.tex" : 16,
-        "Slicing.tex" : 5,
         "Specifications.tex" : 26,
-        "SubprogramCalls.tex" : 21,
+        "SubprogramCalls.tex" : 19,
         "SubprogramDeclarations.tex" : 13,
-        "SymbolicEquivalenceTesting.tex" : 27,
+        "SymbolicEquivalenceTesting.tex" : 26,
         "SymbolicSubsumptionTesting.tex" : 23,
         "TypeDeclarations.tex" : 8,
-        "TypeSystemUtilities.tex" : 23,
         "Types.tex" : 9,
+        "SideEffects.tex" : 16,
+        "TypeSystemUtilities.tex" : 23,
+        "SemanticsUtilities.tex" : 20,
+        "LexicalStructure.tex" : 6,
     }
     total_expected = 0
     for num_expected in file_to_num_expected_errors.values():
@@ -616,7 +614,7 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
     sorted_words = sorted(list([word.lower() for word in dict_words]))
     if sorted_words != dict_word_list:
         with open(INTERNAL_DICTIONARY_FILENAME, "w", encoding="utf-8") as file:
-            file_str = "\n".join(sorted_words)
+            file_str = "\n".join(sorted_words) + "\n"
             print(f"Updating dictionary file {INTERNAL_DICTIONARY_FILENAME}")
             file.write(file_str)
 
@@ -643,7 +641,7 @@ def main():
     print("Linting files...")
     all_latex_sources = get_latex_sources(False)
     content_latex_sources = get_latex_sources(True)
-    # content_latex_sources = ["Statements.tex"]
+    # content_latex_sources = ["Slicing.tex"]
     num_errors = 0
     num_spelling_errors = spellcheck(args.dictionary, content_latex_sources)
     if num_spelling_errors > 0:
