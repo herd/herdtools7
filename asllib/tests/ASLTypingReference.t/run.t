@@ -222,6 +222,8 @@ ASL Typing Tests / annotating types:
   ge_int: 6 >= 10 = FALSE
 
   $ aslref TypingRule.BinopLiterals.real.asl
+  mul_int_real: 10 * 0.5 = 5
+  mul_real_int: 0.5 * 10 = 5
   add_real: 10.0 + 0.5 = 21/2
   sub_real: 10.0 - 0.5 = 19/2
   mul_real: 10.0 * 0.5 = 5

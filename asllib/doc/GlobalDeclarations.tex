@@ -142,7 +142,6 @@ yielding an annotated global declaration $\newd$ and modified global static envi
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[func]{
-  \vf \eqname \{\text{body}: \SBASL, \ldots\}\\
   \annotateanddeclarefunc(\genv, \vf) \typearrow (\tenvone, \vfone) \OrTypeError\\\\
   \annotatesubprogram(\tenvone, \vfone) \typearrow \vftwo \OrTypeError\\\\
   \addsubprogram(\tenvone, \vftwo.\funcname, \vftwo) \typearrow \newtenv
@@ -219,7 +218,7 @@ Note that the return type in $\vf$ has already been annotated by $\annotatefuncs
   \commonprefixline\\\\
   \vf.\funcreturntype = \None\\\\
   \commonsuffixline\\\\
-  \vfp \eqdef \substrecordfield(\vf, \funcbody, \SBASL(\newbody))\\
+  \vfp \eqdef \substrecordfield(\vf, \funcbody, \newbody)\\
   \vses \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} \in \{\ReadLocal, \WriteLocal\} \})
 }{
   \annotatesubprogram(\tenv, \vf, \vsesfuncsig) \typearrow \vfp
@@ -233,7 +232,7 @@ Note that the return type in $\vf$ has already been annotated by $\annotatefuncs
   \vf.\funcreturntype \neq \None\\
   \checkstmtreturnsorthrows(\newbody) \typearrow \True \OrTypeError\\\\
   \commonsuffixline\\\\
-  \vfp \eqdef \substrecordfield(\vf, \funcbody, \SBASL(\newbody))\\
+  \vfp \eqdef \substrecordfield(\vf, \funcbody, \newbody)\\
   \vses \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} \in \{\ReadLocal, \WriteLocal\} \})
 }{
   \annotatesubprogram(\tenv, \vf, \vsesfuncsig) \typearrow \vfp

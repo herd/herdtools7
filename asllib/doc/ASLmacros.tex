@@ -640,7 +640,6 @@
 \newcommand\casealt[0]{\hyperlink{ast-casealt}{\textsf{case\_alt}}}
 \newcommand\catcher[0]{\hyperlink{ast-catcher}{\textsf{catcher}}}
 \newcommand\subprogramtype[0]{\hyperlink{ast-subprogramtype}{\textsf{sub\_program\_type}}}
-\newcommand\subprogrambody[0]{\hyperlink{ast-subprogrambody}{\textsf{sub\_program\_body}}}
 \newcommand\overrideinfo[0]{\hyperlink{ast-overrideinfo}{\textsf{override\_info}}}
 \newcommand\func[0]{\hyperlink{ast-func}{\textsf{func}}}
 \newcommand\accessorpair[0]{\hyperlink{ast-accessorpair}{\textsf{accessor\_pair}}}
@@ -758,9 +757,6 @@
 \newcommand\GDKConfig[0]{\hyperlink{ast-gdkconfig}{\textsf{GDK\_Config}}}
 \newcommand\GDKLet[0]{\hyperlink{ast-gdklet}{\textsf{GDK\_Let}}}
 \newcommand\GDKVar[0]{\hyperlink{ast-gdkvar}{\textsf{GDK\_Var}}}
-
-\newcommand\SBASL[0]{\hyperlink{ast-sbasl}{\textsf{SB\_ASL}}}
-\newcommand\SBPrimitive[0]{\hyperlink{ast-sbprimitive}{\textsf{SB\_Primitive}}}
 
 \newcommand\Impdef[0]{\hyperlink{ast-impdef}{\textsf{Impdef}}}
 \newcommand\Proseimpdefsubprogram[0]{implementation-defined subprogram}
@@ -1081,8 +1077,6 @@
 \newcommand\environof[1]{\hyperlink{def-environof}{\textfunc{environ}}({#1})}
 \newcommand\withenviron[2]{{#1}(\hyperlink{def-withenviron}{\textfunc{environ}}\mapsto{#2})}
 
-\newcommand\primitiverel[0]{\hyperlink{def-primitiverel}{\textsf{primitive}}}
-\newcommand\evalprimitivearrow[0]{\hyperlink{def-evalprimitivearrow}{\stackrel{\primitiverel}{\rightsquigarrow}}}
 \newcommand\ContinuingConfig[0]{\hyperlink{def-continuingconfig}{\texttt{\#C}}}
 \newcommand\ReturningConfig[0]{\hyperlink{def-returningconfig}{\texttt{\#R}}}
 \newcommand\ThrowingConfig[0]{\hyperlink{def-throwingconfig}{\texttt{\#T}}}
@@ -1122,7 +1116,6 @@
 \newcommand\evalcatchers[1]{\hyperlink{def-evalcatchers}{\textfunc{eval\_catchers}}(#1)}
 \newcommand\evalsubprogram[1]{\hyperlink{def-evalsubprogram}{\textfunc{eval\_subprogram}}(#1)}
 \newcommand\evalcall[1]{\hyperlink{def-evalcall}{\textfunc{eval\_call}}(#1)}
-\newcommand\evalprimitive[1]{\hyperlink{def-evalprimitive}{\textfunc{eval\_primitive}}(#1)}
 \newcommand\evalmultiassignment[0]{\hyperlink{def-evalmultiassign}{\textfunc{multi\_assign}}}
 \newcommand\rethrowimplicit[0]{\hyperlink{def-rethrowimplicit}{\textfunc{rethrow\_implicit}}}
 \newcommand\assignargs[0]{\hyperlink{def-assignargs}{\textfunc{assign\_args}}}
@@ -1173,7 +1166,6 @@
 \newcommand\positioninrange[0]{\hyperlink{def-positioninrange}{\textfunc{position\_in\_range}}}
 \newcommand\isconstaintsat[0]{\hyperlink{def-isconstraintsat}{\textfunc{is\_constraint\_sat}}}
 \newcommand\readvaluefrom[0]{\hyperlink{def-readvaluefrom}{\textfunc{read\_value\_from}}}
-\newcommand\writeretvals[0]{\hyperlink{def-writeretvals}{\textfunc{write\_ret\_vals}}}
 \newcommand\outputtoconsole[0]{\hyperlink{def-outputtoconsole}{\textfunc{output\_to\_console}}}
 \newcommand\literaltostring[0]{\hyperlink{def-literaltostring}{\textfunc{literal\_to\_string}}}
 \newcommand\Proseoutputtoconsole[1]{\hyperlink{def-outputtoconsole}{outputs} #1 to the console, if one exists}
@@ -1482,6 +1474,8 @@
 \newcommand\gtint[0]{\hyperlink{def-gtint}{\text{gt\_int}}}
 \newcommand\geint[0]{\hyperlink{def-geint}{\text{ge\_int}}}
 
+\newcommand\mulintreal[0]{\hyperlink{def-mulintreal}{\text{mul\_int\_real}}}
+\newcommand\mulrealint[0]{\hyperlink{def-mulrealint}{\text{mul\_real\_int}}}
 \newcommand\negatereal[0]{\hyperlink{def-negatereal}{\text{negate\_real}}}
 \newcommand\addreal[0]{\hyperlink{def-addreal}{\text{add\_real}}}
 \newcommand\subreal[0]{\hyperlink{def-subreal}{\text{sub\_real}}}

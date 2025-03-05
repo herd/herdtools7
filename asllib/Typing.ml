@@ -675,6 +675,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               T_Int (WellConstrained cs) |> here
             with TypingAssumptionFailed ->
               fatal_from ~loc (Error.BadTypesForBinop (op, t1, t2))))
+    | `MUL, (T_Real, T_Int _ | T_Int _, T_Real)
     | (`PLUS | `MINUS | `MUL), (T_Real, T_Real)
     | `POW, (T_Real, T_Int _)
     | `RDIV, (T_Real, T_Real) ->
@@ -3286,6 +3287,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           parameters_of_expr ~env e1 @ parameters_of_expr ~env e2
       | E_Unop (_, e) -> parameters_of_expr ~env e
       | E_Literal _ -> []
+      | E_Tuple es ->
+          (* [extract_parameters] operates over untyped AST, so it must handle
+             tuples - these are used to check binary operator precedence and are
+             removed during typechecking) *)
+          list_concat_map (parameters_of_expr ~env) es
       | _ -> Error.fatal_from (to_pos e) (Error.UnsupportedExpr (Static, e))
     in
     let parameters_of_constraint ~env c =

@@ -529,7 +529,11 @@ let patch ~src ~patches =
   let to_remove =
     patches |> List.to_seq |> Seq.map identifier_of_decl |> ISet.of_seq
   in
-  let filter d = not (ISet.mem (identifier_of_decl d) to_remove) in
+  let filter d =
+    match d.desc with
+    | D_Pragma _ -> true
+    | _ -> not (ISet.mem (identifier_of_decl d) to_remove)
+  in
   src |> List.filter filter |> List.rev_append patches
 
 let list_cross f li1 li2 =

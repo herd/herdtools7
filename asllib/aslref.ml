@@ -40,6 +40,7 @@ type args = {
   output_format : Error.output_format;
   use_field_getter_extension : bool;
   override_mode : override_mode;
+  no_primitives : bool;
 }
 
 let push thing ref = ref := thing :: !ref
@@ -63,6 +64,7 @@ let parse_args () =
   let use_field_getter_extension = ref false in
   let override_mode = ref Permissive in
   let set_override_mode m () = override_mode := m in
+  let no_primitives = ref false in
 
   let speclist =
     [
@@ -136,6 +138,9 @@ let parse_args () =
         Arg.Unit (set_override_mode AllImpdefsOverridden),
         " Warn if any `impdef` functions are not overridden by corresponding \
          `implementation`s." );
+      ( "--no-primitives",
+        Arg.Set no_primitives,
+        " Do not use internal definitions for standard library subprograms." );
     ]
     |> Arg.align ?limit:None
   in
@@ -168,6 +173,7 @@ let parse_args () =
       output_format = !output_format;
       use_field_getter_extension = !use_field_getter_extension;
       override_mode = !override_mode;
+      no_primitives = !no_primitives;
     }
   in
 
@@ -245,7 +251,9 @@ let () =
 
   let ast =
     let open Builder in
-    with_primitives Native.DeterministicBackend.primitives ast |> with_stdlib
+    let added_stdlib = with_stdlib ast in
+    if args.no_primitives then added_stdlib
+    else with_primitives Native.DeterministicBackend.primitives added_stdlib
   in
 
   let () = if false then Format.eprintf "%a@." PP.pp_t ast in

@@ -300,21 +300,15 @@ module NativeBackend (C : Config) = struct
           Error.fatal_unknown_pos
           @@ Error.BadArity (Dynamic, "DecStr", 1, List.length li)
 
+    let is_power_of_2 z = Int.equal (Z.log2 z) (Z.log2up z)
+
     let log2 = function
-      | [ NV_Literal (L_Int i) ] when Z.gt i Z.zero ->
+      | [ NV_Literal (L_Int i) ] when Z.gt i Z.zero && is_power_of_2 i ->
           [ L_Int (Z.log2 i |> Z.of_int) |> nv_literal ]
       | [ v ] -> mismatch_type v [ integer' ]
       | li ->
           Error.fatal_unknown_pos
           @@ Error.BadArity (Dynamic, "Log2", 1, List.length li)
-
-    let int_to_real = function
-      | [ NV_Literal (L_Int i) ] ->
-          L_Real (Q.of_bigint i) |> nv_literal |> return_one
-      | [ v ] -> mismatch_type v [ integer' ]
-      | li ->
-          Error.fatal_unknown_pos
-          @@ Error.BadArity (Dynamic, "Real", 1, List.length li)
 
     let truncate q = Q.to_bigint q
 
@@ -398,7 +392,6 @@ module NativeBackend (C : Config) = struct
         p ~args:[ ("x", integer) ] ~returns:string "HexStr" hex_str;
         p ~args:[ ("x", integer) ] ~returns:string "AsciiStr" ascii_str;
         p ~args:[ ("x", integer) ] ~returns:integer "Log2" log2;
-        p ~args:[ ("x", integer) ] ~returns:real "Real" int_to_real;
         p ~args:[ ("x", real) ] ~returns:integer "RoundDown" round_down;
         p ~args:[ ("x", real) ] ~returns:integer "RoundUp" round_up;
         p
