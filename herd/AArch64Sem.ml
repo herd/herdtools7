@@ -2068,9 +2068,9 @@ module Make
         let mop_fail_with_wb ac ma _ =
           (* CASP fails, there are Explicit Write Effects writing back *)
           (* the value that is already in memory                       *)
-          let read_mem a = do_read_mem_ret sz an aexp ac a ii
+          let read_mem a = rmw_amo_read sz rmw ac a ii
                 >>| (add_size a sz
-                >>= fun a -> do_read_mem_ret sz an aexp ac a ii)
+                >>= fun a -> rmw_amo_read sz rmw ac a ii)
           and write_mem a (v1,v2) =
               rmw_amo_write sz rmw ac a v1 ii
               >>| (add_size a sz >>= fun a2 ->
