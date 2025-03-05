@@ -1362,10 +1362,10 @@ We also define the following helper rules:
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item evaluating each expression in $\args$ separately in $\env$ as per \\
-        \SemanticsRuleRef{EExprListM} is $\Normal(\vvargs, \envone)$\ProseOrAbnormal;
   \item evaluating each expression in $\params$ separately in $\env$ as per\\
-        \SemanticsRuleRef{EExprListM} is $\Normal(\vvparams, \envtwo)$\ProseOrAbnormal;
+        \SemanticsRuleRef{EExprListM} is $\Normal(\vvparams, \envone)$\ProseOrAbnormal;
+  \item evaluating each expression in $\args$ separately in $\envone$ as per \\
+        \SemanticsRuleRef{EExprListM} is $\Normal(\vvargs, \envtwo)$\ProseOrAbnormal;
   \item $\envtwo$ consists of the static environment $\tenv$ and the dynamic environment $\denvtwo$;
   \item applying $\incrstacksize$ to $G^\denvtwo$ and $\name$ yields $\genv$;
   \item the environment $\envtwo'$ is defined as the environment
@@ -1404,8 +1404,8 @@ We also define the following helper rules:
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[normal]{
-  \evalexprlistm(\env, \args) \evalarrow \Normal(\vvargs, \envone)\OrAbnormal\\
-  \evalexprlistm(\envone, \params) \evalarrow \Normal(\vvparams, \envtwo)\OrAbnormal\\
+  \evalexprlistm(\env, \params) \evalarrow \Normal(\vvparams, \envone)\OrAbnormal\\
+  \evalexprlistm(\envone, \args) \evalarrow \Normal(\vvargs, \envtwo)\OrAbnormal\\
   \envtwo \eqname (\tenv, \denvtwo)\\
   \incrstacksize(G^\denvtwo, \name) \evalarrow \genv\\\\
   \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
