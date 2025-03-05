@@ -672,7 +672,7 @@ we apply $\buildstmtlist$ to transform the parse node $\vstmtlist$ for the body 
 and finally return the AST node for \texttt{while} loops --- $\SWhile$ --- with the two nodes as its children.
 
 We define some builders as relations rather than functions. This is due to the non-determinism
-in creating identifiers for auxiliary variables that stand in for instances of \texttt{-} on the left-hand-side
+in creating identifiers for auxiliary variables that stand in for instances of \discardvar{} on the left-hand-side
 of assignments and declarations.
 For example, \texttt{- = 5;} will effectively create some auxiliary variable, which will result in
 an AST node such as $\SAssign(\EVar(\texttt{aux-1}), \ELiteral(\lint(5)))$.
@@ -890,7 +890,7 @@ which is utilized both for the type system and semantics:
   \torexpr(\LESetEnumArray(\vle, \ve)) &=& \EGetEnumArray(\torexpr(\vle), \ve)\\
   \torexpr(\LESetField(\vle, \vx)) &=& \EGetField(\torexpr(\vle), \vx)\\
   \torexpr(\LESetFields(\vle, \vx)) &=& \EGetFields(\torexpr(\vle), \vx)\\
-  \torexpr(\LEDiscard) &=& \EVar(\texttt{-})\\
+  \torexpr(\LEDiscard) &=& \EVar(\discardvar)\\
   \torexpr(\LEDestructuring([\vle_{1..k}])) &=& \ETuple([i=1..k: \torexpr(\vle_i)])\\
 \end{array}
 \]

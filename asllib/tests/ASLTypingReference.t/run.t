@@ -289,4 +289,80 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref --no-exec TypingRule.IsGlobalUndefined.asl
   $ aslref TypingRule.EArbitrary.asl
-
+  $ aslref TypingRule.StaticEval.asl
+  $ aslref TypingRule.StaticEval.bad.asl
+  File TypingRule.StaticEval.bad.asl, line 3, characters 5 to 20: Division will
+  result in empty constraint set, so will always fail.
+  File TypingRule.StaticEval.bad.asl, line 3, characters 5 to 20:
+  ASL Typing error: Illegal application of operator DIV on types integer {64}
+    and integer {3}.
+  [1]
+  $ aslref TypingRule.Catcher.asl
+  ExceptionType2 : x=2, g= 1
+  $ aslref TypingRule.FindCatcher.None.asl
+  ExceptionType2 : x=2, g= 1
+  $ aslref TypingRule.LEDiscard.asl
+  $ aslref TypingRule.LEVar.asl
+  $ aslref TypingRule.LEVar.undefined.asl
+  File TypingRule.LEVar.undefined.asl, line 3, characters 4 to 5:
+  ASL Error: Undefined identifier: 'x'
+  [1]
+  $ aslref TypingRule.LESetBadField.asl
+  File TypingRule.LESetBadField.asl, line 6, characters 4 to 5:
+  ASL Typing error: integer {42} does not subtype any of: bits(-), record {  },
+    exception {  }.
+  [1]
+  $ aslref TypingRule.LESetBadField.asl
+  File TypingRule.LESetBadField.asl, line 6, characters 4 to 5:
+  ASL Typing error: integer {42} does not subtype any of: bits(-), record {  },
+    exception {  }.
+  [1]
+  $ aslref TypingRule.LESetStructuredField.asl
+  $ aslref TypingRule.LESetField.asl
+  $ aslref TypingRule.LESetFields.asl
+  $ aslref TypingRule.LESlice.asl
+  $ aslref TypingRule.LESlice.bad.asl
+  File TypingRule.LESlice.bad.asl, line 4, characters 3 to 11:
+  ASL Static error: overlapping slices 0+:4, 3+:1.
+  [1]
+  $ aslref --no-exec TypingRule.DeclareGlobalStorage.asl
+  $ aslref TypingRule.SDecl.asl
+  $ aslref TypingRule.SAssert.bad.asl
+  File TypingRule.SAssert.bad.asl, line 11, characters 10 to 23:
+  ASL Typing error: a pure expression was expected, found (increment()), which
+    produces the following side-effects: [WritesGlobal "g", ReadsGlobal "g"].
+  [1]
+  $ aslref TypingRule.SWhile.asl
+  File TypingRule.SWhile.asl, line 23, character 4 to line 29, character 8:
+  ASL Warning: Loop does not have a limit.
+  20
+  20
+  $ aslref TypingRule.SWhile.bad_limit.asl
+  File TypingRule.SWhile.bad_limit.asl, line 8, characters 26 to 33:
+  ASL Typing error: a pure expression was expected, found i_limit, which
+    produces the following side-effects: [ReadsLocal "i_limit"].
+  [1]
+  $ aslref TypingRule.SFor.bad1.asl
+  File TypingRule.SFor.bad1.asl, line 5, character 4 to line 7, character 8:
+  ASL Typing error: cannot declare already declared element "i".
+  [1]
+  $ aslref TypingRule.SFor.bad2.asl
+  File TypingRule.SFor.bad2.asl, line 5, characters 8 to 9:
+  ASL Typing error: cannot assign to immutable storage "i".
+  [1]
+  $ aslref TypingRule.SFor.bad3.asl
+  File TypingRule.SFor.bad3.asl, line 7, characters 4 to 5:
+  ASL Error: Undefined identifier: 'j'
+  [1]
+  $ aslref TypingRule.SFor.bad4.asl
+  File TypingRule.SFor.bad4.asl, line 11, characters 17 to 30:
+  ASL Typing error: a pure expression was expected, found upper_bound(), which
+    produces the following side-effects: [WritesGlobal "g"].
+  [1]
+  $ aslref TypingRule.SReturn.bad.asl
+  File TypingRule.SReturn.bad.asl, line 3, characters 4 to 13:
+  ASL Typing error: cannot return something from a procedure.
+  [1]
+  $ aslref --no-exec TypingRule.SPragma.asl
+  File TypingRule.SPragma.asl, line 3, characters 4 to 39:
+  ASL Warning: pragma implementation_hidden will be ignored.

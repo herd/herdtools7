@@ -279,6 +279,7 @@ caught
 cause
 caused
 causes
+cell
 certain
 changed
 changes
@@ -342,6 +343,7 @@ compatible
 compiler
 compilers
 complement
+complete
 completes
 complex
 complexity
@@ -558,6 +560,7 @@ distinguishing
 divide
 divided
 dividing
+divisible
 division
 do
 document
@@ -994,6 +997,7 @@ intuitively
 invalid
 inverse
 invocation
+invoke
 invokes
 invoking
 involved
@@ -1837,6 +1841,7 @@ think
 third
 this
 those
+though
 thread
 three
 through
@@ -1909,6 +1914,7 @@ typed
 types
 typically
 typing
+typo
 typographical
 unable
 unambiguous
@@ -1939,6 +1945,7 @@ universally
 unlabelled
 unless
 unlike
+unnamed
 unordered
 unpredictable
 unprintable

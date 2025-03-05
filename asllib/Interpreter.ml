@@ -760,12 +760,14 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin EvalLESlice *)
     | LE_Slice (e_bv, slices) ->
-        let*^ m_bv, env1 = expr_of_lexpr e_bv |> eval_expr env in
+        let*^ m_bv_lhs, env1 = expr_of_lexpr e_bv |> eval_expr env in
         let*^ m_slice_ranges, env2 = eval_slices env1 slices in
         let new_m_bv =
-          let* v = m and* slice_ranges = m_slice_ranges and* v_bv = m_bv in
+          let* v_rhs = m
+          and* slice_ranges = m_slice_ranges
+          and* v_bv_lhs = m_bv_lhs in
           let* () = check_non_overlapping_slices slices slice_ranges in
-          B.write_to_bitvector slice_ranges v v_bv
+          B.write_to_bitvector slice_ranges v_rhs v_bv_lhs
         in
         eval_lexpr ver e_bv env2 new_m_bv |: SemanticsRule.LESlice
     (* End *)

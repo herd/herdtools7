@@ -352,7 +352,6 @@ Also notice that bitvector bits are numbered from 1 and onwards, which is why we
 by the slices when accessing a bit.
 
 \SemanticsRuleDef{WriteToBitvector}
-\ProseParagraph
 \hypertarget{def-writetobitvector}{}
 The relation
 \[
@@ -361,6 +360,7 @@ The relation
 \]
 overwrites the bits of $\dst$ at the positions given by $\slices$ with the bits of $\src$.
 
+\ProseParagraph
 \OneApplies
 \begin{itemize}
   \item all positions specified by $\slices$ are within range for $\dst$ and the modified version

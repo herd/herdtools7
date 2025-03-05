@@ -1433,7 +1433,7 @@ and the environment $\newtenv$, which is updated with $\newname$.
 \inferrule[name\_exists]{
   G^\tenv.\overloadedsubprograms(\name) = \othernames\\
   k \eqdef \cardinality{\othernames}\\
-  \newname \eqdef \name\ \stringconcat\ \texttt{"-"}\ \stringconcat\ \stringofnat(k)\\
+  \newname \eqdef \name\ \stringconcat\ \discardvarstr\ \stringconcat\ \stringofnat(k)\\
   \formaltypes \eqdef [(\id,\vt) \in \formals : \vt]\\
   {
     \left(\begin{array}{l}

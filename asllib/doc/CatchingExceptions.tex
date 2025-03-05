@@ -3,77 +3,6 @@
 Exception catchers are grammatically derived from $\Ncatcher$ and represented
 in the \untypedast{} by $\catcher$.
 
-\hypertarget{def-annotatecatcher}{}
-The function
-\[
-\begin{array}{r}
-  \annotatecatcher{
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\TSideEffectSet}{\vsesin} \aslsep
-    \overname{\catcher}{\vc}
-  } \aslto \\
-  (\overname{\TSideEffectSet}{\vsesfiltered} \times (\overname{\catcher}{\newcatcher}, \overname{\TSideEffectSet}{\vses}))
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
-\end{array}
-\]
-annotates a catcher $\vc$ in the static environment $\tenv$
-and \sideeffectsetterm\ $\vsesin$.
-The result is the \sideeffectsetterm\ $\vsesfiltered$, the annotated catcher $\newcatcher$ and the
-\sideeffectsetterm\ $\vses$.
-\ProseOtherwiseTypeError
-
-The semantic relation for evaluating catchers employs an argument
-that is an output configuration. This argument corresponds to the result
-of evaluating a \trystatementterm{} and its type is defined as follows:
-\hypertarget{def-toutconfig}{}
-\[
-  \TOutConfig \triangleq \TNormal \cup  \TThrowing \cup \TContinuing \cup \TReturning \enspace.
-\]
-
-The relation
-\hypertarget{def-evalcatchers}{}
-\[
-  \evalcatchers{\overname{\envs}{\env} \aslsep \overname{\catcher^*}{\catchers} \aslsep \overname{\langle\stmt\rangle}{\otherwiseopt}
-   \aslsep \overname{\TOutConfig}{\sm}} \;\aslrel\;
-  \left(
-    \begin{array}{cl}
-      \TReturning   & \cup\\
-      \TContinuing  & \cup\\
-      \TThrowing    & \cup \\
-      \TDynError       &
-    \end{array}
-  \right)
-\]
-evaluates a list of \texttt{catch} clauses $\catchers$, an optional \texttt{otherwise} clause,
-and a configuration $\sm$ resulting from the evaluation of the throwing expression,
-in the environment $\env$. The result --- $\smnew$ --- is either a continuation configuration,
-an early return configuration, or an abnormal configuration.
-
-When the statement in a \texttt{try} block, which we will refer to as the try-block statement,
-is evaluated, it may call a function that updates
-the global environment. If evaluation of the \texttt{try} block raises an exception that is caught,
-either by a \texttt{catch} clause or an \texttt{otherwise} clause,
-the statement associated with that clause, which we will refer to as the clause statement, is evaluated.
-It is important to evaluate the clause statement in an environment that includes any updates
-to the global environment made by evaluating the try-block statement.
-%
-We demonstrate this with the following example.
-
-\ASLListing{Semantics of exception catching}{semantics-evalcatchers}{\semanticstests/EvalCatchers.asl}
-
-In \listingref{semantics-evalcatchers}, the statement \verb|update_and_throw();|
-makes up the whole try-block.
-Evaluating the call to \verb|update_and_throw| employs an environment $\env$ where
-\texttt{g} is bound to $0$.
-Notice that the call to \verb|update_and_throw| binds \texttt{g} to $1$ before raising an exception.
-Therefore, evaluating the call to \verb|update_and_throw| returns a configuration
-of the form
-$\Throwing(\Ignore, \envthrow)$ where $\envthrow$ binds \texttt{g} to $1$.
-When the catch clause is evaluated the semantics takes the global environment from $\envthrow$
-to account for the update to \texttt{g} and the local environment from $\env$ to account for the
-updates to the local environment in \texttt{main}, which binds \texttt{x} to $2$, and use this
-environment to evaluate \texttt{print(x, g)}, resulting in the output \texttt{2 1}.
-
 \section{Syntax}
 \begin{flalign*}
 \Ncatcher \derives      \ & \Twhen \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
@@ -118,7 +47,32 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \section{Typing}
+\hypertarget{def-annotatecatcher}{}
+The function
+\[
+\begin{array}{r}
+  \annotatecatcher{
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\TSideEffectSet}{\vsesin} \aslsep
+    \overname{\catcher}{\vc}
+  } \aslto \\
+  (\overname{\TSideEffectSet}{\vsesfiltered} \times (\overname{\catcher}{\newcatcher}, \overname{\TSideEffectSet}{\vses}))
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
+\]
+annotates a catcher $\vc$ in the static environment $\tenv$
+and \sideeffectsetterm\ $\vsesin$.
+The result is the \sideeffectsetterm\ $\vsesfiltered$, the annotated catcher $\newcatcher$ and the
+\sideeffectsetterm\ $\vses$.
+\ProseOtherwiseTypeError
+
 \TypingRuleDef{Catcher}
+\ExampleDef{Annotating Catch Clauses}
+\listingref{annotate-catcher} shows a \trystatementterm{}
+with catch clauses for unnamed exception values for the exception types \verb|ExceptionType1| and \verb|ExceptionType3|,
+and a catch clause for the named exception value for the exception type \verb|ExceptionType2|.
+\ASLListing{Annotating catch clauses}{annotate-catcher}{\typingtests/TypingRule.Catcher.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -196,6 +150,60 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \identr{SDJK} \identr{WVXS} \identi{FCGK}
 
 \section{Semantics}
+The semantic relation for evaluating catchers employs an argument
+that is an output configuration. This argument corresponds to the result
+of evaluating a \trystatementterm{} and its type is defined as follows:
+\hypertarget{def-toutconfig}{}
+\[
+  \TOutConfig \triangleq \TNormal \cup  \TThrowing \cup \TContinuing \cup \TReturning \enspace.
+\]
+
+The relation
+\hypertarget{def-evalcatchers}{}
+\[
+  \evalcatchers{\overname{\envs}{\env} \aslsep \overname{\catcher^*}{\catchers} \aslsep \overname{\langle\stmt\rangle}{\otherwiseopt}
+   \aslsep \overname{\TOutConfig}{\sm}} \;\aslrel\;
+  \left(
+    \begin{array}{cl}
+      \TReturning   & \cup\\
+      \TContinuing  & \cup\\
+      \TThrowing    & \cup \\
+      \TDynError       &
+    \end{array}
+  \right)
+\]
+evaluates a list of \texttt{catch} clauses $\catchers$, an optional \texttt{otherwise} clause,
+and a configuration $\sm$ resulting from the evaluation of the throwing expression,
+in the environment $\env$. The result --- $\smnew$ --- is either a continuation configuration,
+an early return configuration, or an abnormal configuration.
+
+We refer to the block statement in a
+\trystatementterm{} as the \emph{try-block statement}.
+When the try-block statement is evaluated, it may call a function that updates
+the global environment. If evaluation of the \texttt{try} block raises an exception that is caught,
+either by a \texttt{catch} clause or an \texttt{otherwise} clause,
+the statement associated with that clause, which we will refer to as the clause statement, is evaluated.
+It is important to evaluate the clause statement in an environment that includes any updates
+to the global environment made by evaluating the try-block statement.
+%
+We demonstrate this with the following example.
+
+\ExampleDef{Evaluating a Try Statement}
+In \listingref{semantics-evalcatchers}, the statement \verb|update_and_throw();|
+makes up the whole try-block.
+Evaluating the call to \verb|update_and_throw| employs an environment $\env$ where
+\texttt{g} is bound to $0$.
+Notice that the call to \verb|update_and_throw| binds \texttt{g} to $1$ before raising an exception.
+Therefore, evaluating the call to \verb|update_and_throw| returns a configuration
+of the form
+$\Throwing(\Ignore, \envthrow)$ where $\envthrow$ binds \texttt{g} to $1$.
+When the catch clause is evaluated the semantics takes the global environment from $\envthrow$
+to account for the update to \texttt{g} and the local environment from $\env$ to account for the
+updates to the local environment in \texttt{main}, which binds \texttt{x} to $2$, and use this
+environment to evaluate \texttt{print(x, g)}, resulting in the output \texttt{2 1}.
+
+\ASLListing{Semantics of exception catching}{semantics-evalcatchers}{\semanticstests/EvalCatchers.asl}
+
 \SemanticsRuleDef{Catch}
 \ExampleDef{Evaluation of a Catch}
 The specification in \listingref{semantics-catch} terminates successfully.
@@ -384,6 +392,14 @@ The (recursively-defined) helper relation
 returns the first catcher clause in $\catchers$ that matches the type $\vvty$ (as a singleton set), or an empty set ($\None$),
 by invoking $\typesat$ with the static environment $\tenv$.
 
+\ExampleDef{Finding a Catch Clause}
+In \listingref{annotate-catcher}, the second catch clause --- for the exception type ExceptionType2
+is matched for the type of the exception value thrown by \verb|update_and_throw|.
+
+In \listingref{annotate-catcher}, no catch clause is matched for the type of the exception value thrown by \verb|update_and_throw|,
+resulting in a \dynamicerrorterm{}.
+\ASLListing{Looking for a catch clause and failing to find one}{catcher-not-found}{\typingtests/TypingRule.FindCatcher.None.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -446,6 +462,9 @@ thrown exception is caught by the first catcher in that \texttt{catch} which it
 type-satisfies or the \texttt{otherwise\_opt} in that catch if it exists.
 
 \SemanticsRuleDef{RethrowImplicit}
+\identr{GVKS}
+An expressionless \texttt{throw} statement causes the exception which the
+currently executing catcher caught to be thrown.
 
 The helper relation
 \hypertarget{def-rethrowimplicit}{}
@@ -454,12 +473,26 @@ The helper relation
 \]
 
 changes \emph{implicit throwing configurations} into \emph{explicit throwing configurations}.
-That is, configurations of the form $\Throwing((\None, \vg), \envthrowone))$.
+That is, configurations of the form $\Throwing((\None, \vg), \envthrowone)$.
 
 $\rethrowimplicit$ leaves non-throwing configurations, and \emph{explicit throwing configurations},
 which have the form $\Throwing(\langle(\valuereadfrom(\vv', \eid), \vvty')\rangle, \vg)$, as is.
 Implicit throwing configurations are changed by substituting the optional $\valuereadfrom$ configuration-exception type
 pair with $\vv$ and $\vvty$, respectively.
+
+\ExampleDef{Re-throwing an Exception}
+\listingref{rethrow-implicit} shows a specification where the exception thrown
+by the statement \\
+\verb|MyExceptionType{msg="A"}| is re-thrown by the expressionless \verb|throw;|
+statement inside the first catch clause,
+resulting in the following output to the console.
+\ASLListing{Re-throwing an exception}{rethrow-implicit}{\semanticstests/SemanticsRule.RethrowImplicit.asl}
+% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.RethrowImplicit.asl
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
+Exception value A
+Exception value A
+\end{Verbatim}
+% CONSOLE_END
 
 \ProseParagraph
 \OneApplies
@@ -509,8 +542,3 @@ pair with $\vv$ and $\vvty$, respectively.
 }
 \end{mathpar}
 \CodeSubsection{\EvalRethrowImplicitBegin}{\EvalRethrowImplicitEnd}{../Interpreter.ml}
-
-\subsubsection{Comments}
-\identr{GVKS}
-An expressionless \texttt{throw} statement causes the exception which the
-currently executing catcher caught to be thrown.

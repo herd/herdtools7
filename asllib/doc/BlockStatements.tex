@@ -5,7 +5,7 @@ Block statements are statements executing in their own scope within the scope of
 In \listingref{block},
 the conditional statement \verb|if TRUE then ... end;| defines a
 block structure. Thus, the scope of the declaration \texttt{let y = 2;} is
-limited to its declaring block---or the binding for \texttt{y} no longer exists
+limited to its declaring block --- the binding for \texttt{y} no longer exists
 once the block is exited. As a consequence, the subsequent declaration
 \texttt{let y = 1} is valid.  By contrast, the assignment of the mutable
 variable~\texttt{x} persists after block end. However, observe that \texttt{x}
@@ -65,6 +65,8 @@ evaluates a statement $\stm$ as a \emph{block}. That is, $\stm$ is evaluated in 
 which drops back to the original local environment of $\env$ when the evaluation terminates.
 
 \SemanticsRuleDef{Block}
+See \ExampleRef{Block Statements}.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -75,6 +77,7 @@ which drops back to the original local environment of $\env$ when the evaluation
     The effect is that of discarding the bindings for variables declared inside $\stm$;
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{

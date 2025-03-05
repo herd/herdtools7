@@ -10,8 +10,11 @@ a Verilog simulator, and Linux process (native executable).
 The default entry point is the \texttt{main} function, which has the signature
 \verb|func main() => integer|.
 
+See for example \listingref{main0}.
+
 \RequirementDef{RuntimeReturn}
-When evaluation from the entry point returns (without throwing an exception)
+When evaluation from the entry point returns (without \\
+throwing an exception)
 the runtime should pass the return value to the hosting environment.
 %
 An ASL runtime for native executables may use the return value
@@ -22,7 +25,8 @@ one indicates failure.
 %
 An alternative (non-default) entry point may be specified by the user if
 supported by the runtime. Not all runtimes may support alternative entry points.
-%
+
+\ExampleDef{Returning a Value from the Entry Point}
 In a \linuxbashshell{}, the return status of the specification \texttt{main0.asl},
 shown in \listingref{main0},
 when evaluated with the \aslref{}
@@ -38,7 +42,8 @@ interpreter can be printed to the console as follows:
 Uncaught exceptions cause termination of the application by the runtime.
 If an exception is thrown from the entry point, it is an uncaught exception.
 The runtime should signal an error to the hosting environment.
-%
+
+\ExampleDef{An Uncaught Exception}
 \listingref{main-uncaught} shows a specification throwing an exception
 without catching it and the error status it returns --- \texttt{1} ---
 when evaluated with the \aslref{} in a \linuxbashshell{}:
