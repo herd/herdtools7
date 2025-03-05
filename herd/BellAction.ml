@@ -200,6 +200,8 @@ end = struct
 
   let is_commit = is_bcc
 
+  let is_no_action _ = false
+
 (* Unroll control *)
   let cutoff msg = CutOff msg
   let is_cutoff = function

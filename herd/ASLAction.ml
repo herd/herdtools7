@@ -265,6 +265,10 @@ module Make (C: Config) (A : S) = struct
     | Branching _ -> true
     | Access _|Barrier _|CutOff _|NoAction -> false
 
+  let is_no_action = function
+    | NoAction -> true
+    | _ -> false
+
   (* Unrolling control *)
   let cutoff msg = CutOff msg
   let is_cutoff = function
