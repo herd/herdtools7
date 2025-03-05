@@ -475,6 +475,10 @@ end = struct
   | Commit _ -> true
   | _ -> false
 
+  let is_no_action = function
+  | NoAction -> true
+  | _ -> false
+
 (* Unroll control *)
   let cutoff msg = CutOff msg
 
