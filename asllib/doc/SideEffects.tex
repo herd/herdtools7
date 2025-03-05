@@ -1,69 +1,12 @@
 \chapter{Side Effects\label{chap:SideEffects}}
 
 This chapter defines a static \emph{side effect analysis}.
-The analysis aims to \emph{soundly} answer which pairs of expressions are \emph{order independent}.
-By \emph{soundly}, we mean that the analysis proves that a \underline{sufficient condition}
-for \emph{order independence} holds.
+The analysis aims to answer which expressions are \emph{pure} or \symbolicallyevaluable{}.
+For purity, the analysis is \emph{sound}: it proves that a \underline{sufficient condition} for purity holds.
 
-Intuitively, two expressions --- $\veone$ and $\vetwo$ --- are \emph{order independent}
-if they can be evaluated in any order (first $\veone$ and then $\vetwo$ or first $\vetwo$ and then $\veone$),
-starting from any initial environment $\env$,
-and terminate in the same configuration.
-
-To formalize this intuition, we need to consider the following:
-\begin{description}
-    \item[Evaluation] We employ $\evalexprlist{\cdot}$ to evaluate a list of expressions;
-
-    \item[Non-determinism] Recall that the semantics is non-deterministic, which means evaluation of any
-    expression in the same environment may terminate with different configurations. We therefore compare
-    the \underline{sets} of output configurations resulting from each order of evaluation.
-
-    \item[Order Sensitivity] evaluating two expressions yields a list consisting of two
-    corresponding values. Further, evaluating two expressions in two different orders results in the values
-    appearing in reverse order relative to one another. Therefore to enable comparison, we need to reverse one of
-    the lists (see $\reversevals$ below).
-
-    \item[Dynamic Errors] if both orders of evaluation terminate in dynamic errors, we consider them
-    equivalent even if the error codes are different. This abstraction is carried out by $\abstractdynerror$.
-    We ignore all dynamic errors that are not assertions, by abstracting them away.
-\end{description}
-
-\begin{definition}[Order Independence]
-Two expressions $\veone$ and $\vetwo$ are \emph{order independent}
-if the following condition holds for every
-environment $\env \in \dynamicenvs$:
-\[
-\begin{array}{l}
-\{\ \abstractdynerror(C) \;|\; \evalexprlist{\env, [\veone, \vetwo]} \evalarrow C\ \} \setminus \{\bot\} = \\
-\{\ \abstractdynerror(C) \;|\; \reversevals(\evalexprlist{\env, [\vetwo, \veone]}) \evalarrow C\ \} \setminus \{\bot\} \enspace.
-\end{array}
-\]
-\hypertarget{def-reversevals}{}
-where $\reversevals$ reverses the order of values resulting from evaluating $\vetwo$ first
-and $\veone$ second into configurations resulting from evaluating $\veone$ first
-and $\vetwo$ second, leaving abnormal configurations unchanged:
-\[
-    \reversevals(C) \triangleq \begin{cases}
-        \Normal(([\vvone, \vvtwo], \vg), \env) & \text{if }C=\Normal(([\vvtwo, \vvone], \vg), \env)\\
-        C & \text{else}
-    \end{cases}
-\]
-\hypertarget{def-abstractdynerror}{}
-and $\abstractdynerror$ abstracts assertion errors into $\top$,
-all other dynamic errors into $\bot$ (which are ignored)
-and leaves all other configurations unchanged:
-\[
-\abstractdynerror(C) \triangleq \begin{cases}
-    C       & \text{if }\configdomain{C} \in \{\Normal, \Throwing\}\\
-    \top    & \text{if }C \in \{ \DynamicErrorVal{\DynamicAssertionFailure}, \DynamicErrorVal{\DynamicTypeAssertionFailure} \}\\
-    \bot    & \text{else}\\
-\end{cases}
-\]
-That is, evaluating the expressions results in the same set of configurations,
-up to the order of values, and ignoring dynamic errors that are not due to assertions.
-\end{definition}
-
-Along the way, we also define the concept of \emph{pure expressions} and \symbolicallyevaluable\ expressions.
+Intuitively, a pure expression is one whose evaluation does not affect the evaluation of any further expressions.
+In other words, a pure expression can be evaluated multiple times (or not at all) with no effect on the overall specification.
+A \symbolicallyevaluable{} expression is compatible with symbolic reduction and equivalence testing (\chapref{SymbolicEquivalenceTesting}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Time Frames\label{sec:TimeFrames}}

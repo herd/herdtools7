@@ -575,3 +575,68 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
     \Normal(\nvint(27), \emptyenv)
   }
 \end{mathpar}
+
+\subsection{Evaluation Order\label{sec:EvaluationOrder}}
+ASL specifies an evaluation order to ensure predictability of side-effects and exceptions.
+In particular, semantic rules use short-circuiting rule macros to impose an ordering on premises and their associated side-effects, errors, and exceptions.
+
+For example, \SemanticsRuleRef{ECond} is duplicated below:
+\begin{mathpar}
+\inferrule{
+  \evalexpr{\env, \econd} \evalarrow \Normal(\mcond, \envone) \OrAbnormal\\\\
+  \mcond \eqname (\nvbool(\vb), \vgone)\\
+  \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\\\
+  \evalexpr{\envone, \vep} \evalarrow \Normal((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
+  \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
+}{
+  \evalexpr{\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}} \evalarrow
+  \Normal((\vv, \vg), \newenv)
+}
+\end{mathpar}
+The use of $\OrAbnormal$ rule macros here define an evaluation order: $\econd$ must be evaluated first, then exactly one of $\veone$ or $\vetwo$.
+
+For most ASL constructs, there is only one evaluation order that makes sense for the intended purpose of the construct.
+In the example above, it is not feasible to evaluate $\veone$ before evaluating $\econd$.
+However, some ASL constructs could feasibly be evaluated in different ways.
+These are:
+\begin{itemize}
+  \item arguments and parameters to a function call (\SemanticsRuleRef{ECall} and \SemanticsRuleRef{SCall});
+  \item tuple expressions (\SemanticsRuleRef{ETuple} and \SemanticsRuleRef{LEDestructuring});
+  \item non-short-circuiting binary operations (\SemanticsRuleRef{Binop});
+  \item array-indexing (\SemanticsRuleRef{EGetArray}, \SemanticsRuleRef{EGetEnumArray}) --- in particular, for \verb|arr[[idx]]| whether \verb|arr| or \verb|idx| is evaluated first;
+  \item slicing expressions (\SemanticsRuleRef{ESlice} and \SemanticsRuleRef{LESlice});
+  \item record construction expressions (\SemanticsRuleRef{ERecord});
+  \item arguments to \verb|print| and \verb|println| (\SemanticsRuleRef{SPrint});
+  \item for-loop start/end expressions (\SemanticsRuleRef{SFor}).
+\end{itemize}
+
+For these constructs, ASL defines an evaluation order of \underline{left-to-right}.
+That is, when there are multiple feasible choices for the next evaluation transition, ASL is defined to take the syntactically leftmost transition.
+Note that the usage of \emph{left-to-right} here is in a technical sense rather than a literal one: it applies only when there are multiple feasible choices for the next evaluation transition.
+For example, assignment statements (\secref{AssignmentStatements}) must still evaluate their right-hand side before considering their left-hand side.
+
+\ExampleDef{Left-to-right Evaluation}
+\listingref{left-to-right} shows examples of the constructs above, followed by output to the console from running the specification.
+\textbf{Note:} the ordering for slicing expressions seems not to be left-to-right because some forms of slice are elaborated during typechecking (see \TypingRuleRef{Slice}).
+\ASLListing{Left-to-right evaluation}{left-to-right}{\definitiontests/LeftToRight.asl}
+% CONSOLE_BEGIN aslref \definitiontests/LeftToRight.asl
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
+Function calls:
+1234
+Tuples:
+12
+Non-short-circuiting binary operations:
+123
+Array-indexing:
+1
+2
+Slicing:
+132345677
+Record construction:
+12
+Print statements:
+12341234
+For-loop start/end expressions:
+1234
+\end{Verbatim}
+% CONSOLE_END

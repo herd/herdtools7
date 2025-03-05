@@ -2,8 +2,8 @@
 
 \hypertarget{def-rhsexpression}{}
 Expressions calculate values.
-Expressions can have side effects and can raise exceptions and, therefore, there are constraints on the evaluation
-order and on the side-effects/exceptions to avoid surprising or unpredictable behavior (see \secref{PriorityAndAssociativity}).
+Expressions can have side effects and can raise exceptions.
+Therefore, ASL specifies an evaluation order to ensure that the side-effects/exceptions are predictable (see \secref{EvaluationOrder}).
 
 Expressions are grammatically derived from $\Nexpr$ and represented as ASTs by $\expr$.
 We will often refer to expressions defined in this chapter as \rhsexpressions\ to distinguish them
