@@ -612,6 +612,7 @@ and subtype_satisfies env t s =
      If S has the structure of a record type then T must have the
      structure of a record type with at least the same fields
      (each with the same type) as S. *)
+  | T_Collection fields_s, T_Collection fields_t
   | T_Exception fields_s, T_Exception fields_t
   | T_Record fields_s, T_Record fields_t ->
       List.for_all

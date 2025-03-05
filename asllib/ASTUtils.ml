@@ -405,7 +405,9 @@ and type_equal eq t1 t2 =
   | T_Named s1, T_Named s2 -> String.equal s1 s2
   | T_Enum li1, T_Enum li2 ->
       (* TODO: order of fields? *) list_equal String.equal li1 li2
-  | T_Exception f1, T_Exception f2 | T_Record f1, T_Record f2 ->
+  | T_Exception f1, T_Exception f2
+  | T_Record f1, T_Record f2
+  | T_Collection f1, T_Collection f2 ->
       list_equal
         (pair_equal String.equal (type_equal eq))
         (canonical_fields f1) (canonical_fields f2)

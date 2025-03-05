@@ -2021,7 +2021,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         best_effort (ty, e, SES.empty) @@ fun _ ->
         let field_types =
           match (Types.make_anonymous env ty).desc with
-          | T_Exception fields | T_Record fields -> fields
+          | T_Exception fields | T_Record fields | T_Collection fields -> fields
           | _ -> conflict ~loc [ T_Record [] ] ty
         in
         (* Rule DYQZ: A record expression shall assign every field of the record. *)
@@ -2129,7 +2129,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | None -> (
             let t_e2, e2, ses1 = annotate_expr env e1 in
             match (Types.make_anonymous env t_e2).desc with
-            | T_Exception fields | T_Record fields -> (
+            | T_Exception fields | T_Record fields | T_Collection fields -> (
                 match List.assoc_opt field_name fields with
                 (* Begin EGetBadRecordField *)
                 | None ->
@@ -2223,7 +2223,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 in
                 E_Slice (e_base, list_concat_map one_field fields)
                 |> here |> annotate_expr env |: TypingRule.EGetFields
-            | T_Record base_fields ->
+            | T_Record base_fields
+            | T_Exception base_fields
+            | T_Collection base_fields ->
                 let get_bitfield_width name =
                   match List.assoc_opt name base_fields with
                   | None ->
@@ -2560,7 +2562,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
          let t_le1_anon = Types.make_anonymous env t_le1 in
          match t_le1_anon.desc with
          (* Begin LESetStructuredField *)
-         | T_Exception fields | T_Record fields ->
+         | T_Exception fields | T_Record fields | T_Collection fields ->
              let t =
                match List.assoc_opt field fields with
                | None -> fatal_from ~loc (Error.BadField (field, t_le1))
@@ -2595,7 +2597,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
          (* Begin LESetBadField *)
          | _ ->
              conflict ~loc:le1
-               [ default_t_bits; T_Record []; T_Exception [] ]
+               [ default_t_bits; T_Record []; T_Exception []; T_Collection [] ]
                t_e)
         |: TypingRule.LESetBadField
     (* End *)
@@ -2617,7 +2619,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               |> here
             in
             annotate_lexpr env le_slice t_e |: TypingRule.LESetFields
-        | T_Record base_fields ->
+        | T_Record base_fields
+        | T_Exception base_fields
+        | T_Collection base_fields ->
             let fold_bitvector_fields field (start, slices) =
               match List.assoc_opt field base_fields with
               | None -> fatal_from ~loc (Error.BadField (field, t_base_anon))

@@ -144,7 +144,7 @@ module NativeBackend (C : Config) = struct
       [ integer_range' zero_expr (expr_of_int (n - 1)) ]
 
   let doesnt_have_fields_exception v =
-    mismatch_type v [ T_Record []; T_Exception [] ]
+    mismatch_type v [ T_Record []; T_Exception []; T_Collection [] ]
 
   let get_index i vec =
     match vec with

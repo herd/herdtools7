@@ -304,12 +304,12 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.LESetBadField.asl
   File TypingRule.LESetBadField.asl, line 6, characters 4 to 5:
   ASL Typing error: integer {42} does not subtype any of: bits(-), record {  },
-    exception {  }.
+    exception {  }, collection {  }.
   [1]
   $ aslref TypingRule.LESetBadField.asl
   File TypingRule.LESetBadField.asl, line 6, characters 4 to 5:
   ASL Typing error: integer {42} does not subtype any of: bits(-), record {  },
-    exception {  }.
+    exception {  }, collection {  }.
   [1]
   $ aslref TypingRule.LESetStructuredField.asl
   $ aslref TypingRule.LESetField.asl
