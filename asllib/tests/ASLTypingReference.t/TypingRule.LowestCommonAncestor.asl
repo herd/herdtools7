@@ -54,7 +54,7 @@ begin
     var - : SuperRec =  if nondet() then sup as SuperRec else r1 as SubRec1;
     var - : SuperRec =  if nondet() then r1  as SubRec1  else r2 as SubRec2;
     var ex : Exc;
-    // The following statement is illegal as SuperRec and Exc do not have
+    // The following statement in comment is illegal as SuperRec and Exc do not have
     // lowest common ancestor.
     // var -  = if nondet() then r1 else ex;
     return 0;

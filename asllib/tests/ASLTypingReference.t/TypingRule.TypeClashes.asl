@@ -12,8 +12,9 @@ func enum_procedure(c : Color) begin pass; end;
 func enum_procedure(s : Status) begin pass; end;
 
 func array_procedure(int_arr2 : array[[2]] of integer) begin pass; end;
-// The following declarations are illegal as the array index does not distinguish
-// between array types for the purpose of determining type-clashing.
+// The following declarations in comments are illegal as the array index
+// does not distinguish between array types for the purpose of determining
+// type-clashing.
 // func array_procedure(int_arr3 : array[[3]] of integer) begin pass; end;
 // func array_procedure(enum_arr : array[[Color]] of integer) begin pass; end;
 
@@ -30,7 +31,8 @@ func structured_procedure(e: Exc1) begin pass; end;
 func structured_procedure(e: Exc2) begin pass; end;
 
 func tuple_procedure(t: (integer, boolean, real)) begin pass; end;
-// The following is illegal as the argument clashes with (integer, boolean, real).
+// The following declaration in comment illegal as the argument clashes
+// with (integer, boolean, real).
 // func tuple_procedure(t: (integer{5..7}, boolean, real)) begin pass; end;
 func tuple_procedure(t: (integer, boolean)) begin pass; end;
 func tuple_procedure(t: (integer, real)) begin pass; end;

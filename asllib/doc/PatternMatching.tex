@@ -58,6 +58,8 @@ $\checksymbolicallyevaluable$, and thus in the semantics we can use
 $\evalexprsef\empty$.
 
 \section{Matching All Values\label{sec:MatchingAllValues}}
+\ASLListing{Matching any value}{semantics-pall}{\semanticstests/SemanticsRule.PAll.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Npattern \derives\ & \Tminus &
@@ -78,12 +80,14 @@ $\evalexprsef\empty$.
 
 \subsection{Typing}
 \TypingRuleDef{PAll}
+The pattern \verb|-| in \listingref{semantics-pall} is well-typed.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
   \item $\vp$ is the pattern matching everything, that is, $\PatternAll$;
-  \item $\newp$ is $\vp$;
-  \item define $\vses$ to be the empty set.
+  \item \Proseeqdef{$\newp$}{$\vp$};
+  \item \Proseeqdef{$\vses$}{the empty set}.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
@@ -99,7 +103,6 @@ $\evalexprsef\empty$.
 \ExampleDef{Evaluation of a Match-all Pattern}
 In \listingref{semantics-pall}, \texttt{match\_me} evaluates to \True,
 since \texttt{-} matches any value and \texttt{42} in particular.
-\ASLListing{Matching any value}{semantics-pall}{\semanticstests/SemanticsRule.PAll.asl}
 
 \ProseParagraph
 \AllApply
@@ -139,6 +142,13 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 
 \subsection{Typing}
 \TypingRuleDef{PSingle}
+\ExampleDef{Typing Single-expression Patterns}
+\listingref{typing-psingle} shows examples of well-typed single-expression patterns.
+\ASLListing{Typing single-expression patterns}{typing-psingle}{\typingtests/TypingRule.PSingle.asl}
+
+\listingref{typing-psingle-bad} shows an ill-typed single-expression pattern.
+\ASLListing{Ill-typed single-expression pattern}{typing-psingle-bad}{\typingtests/TypingRule.PSingle.bad.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -296,6 +306,13 @@ whereas \\
 
 \subsection{Typing}
 \TypingRuleDef{PRange}
+\ExampleDef{Typing Range Patterns}
+\listingref{typing-prange} shows examples of well-typed range patterns.
+\ASLListing{Well-typed range patterns}{typing-prange}{\typingtests/TypingRule.PRange.asl}
+
+\listingref{typing-prange-bad} shows ill-typed range patterns.
+\ASLListing{Ill-typed range patterns}{typing-prange-bad}{\typingtests/TypingRule.PRange.bad.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -397,6 +414,13 @@ range given by \texttt{3..42}.
 
 \subsection{Typing}
 \TypingRuleDef{PLeq}
+\ExampleDef{Typing Less-or-equal Patterns}
+\listingref{typing-pleq} shows examples of well-typed less-or-equal patterns.
+\ASLListing{Well-typed less-or-equal patterns}{typing-pleq}{\typingtests/TypingRule.PLeq.asl}
+
+\listingref{typing-pleq-bad} shows examples of ill-typed less-or-equal patterns.
+\ASLListing{Ill-typed less-or-equal patterns}{typing-pleq-bad}{\typingtests/TypingRule.PLeq.bad.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -407,11 +431,12 @@ that is, $\PatternLeq(\ve)$;
 \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
 \item obtaining the \underlyingtype\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
 \item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both the \realtypeterm{};
-\item if $\vb$ is $\False$ a type error is returned (indicating that the types of $\vt$ and $\vte$
+\item if $\vb$ is $\False$ a \typingerrorterm{} (\BadOperands) is returned (indicating that the types of $\vt$ and $\vte$
       are inappropriate for the $\LEQ$ operator),
-which short-circuits the entire rule;
+      which short-circuits the entire rule;
 \item $\newp$ is the pattern which matches anything less than or equal to $\vep$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
@@ -425,7 +450,7 @@ which short-circuits the entire rule;
                 & \astlabel(\vtstruct) \in \{\TInt, \TReal\}
     \end{array}
   }\\
-  \checktrans{\vb}{InvalidTypesForBinop} \checktransarrow \True \OrTypeError
+  \checktrans{\vb}{\BadOperands} \checktransarrow \True \OrTypeError
 }{
   \annotatepattern(\tenv, \vt, \overname{\PatternLeq(\ve)}{\vp}) \typearrow (\overname{\PatternLeq(\vep)}{\newp}, \vses)
 }
@@ -482,6 +507,13 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 
 \subsection{Typing}
 \TypingRuleDef{PGeq}
+\ExampleDef{Typing Greater-or-equal Patterns}
+\listingref{typing-pgeq} shows examples of well-typed greater-or-equal patterns.
+\ASLListing{Well-typed greater-or-equal patterns}{typing-pgeq}{\typingtests/TypingRule.PGeq.asl}
+
+\listingref{typing-pgeq-bad} shows examples of ill-typed greater-or-equal patterns.
+\ASLListing{Ill-typed greater-or-equal patterns}{typing-pgeq-bad}{\typingtests/TypingRule.PGeq.bad.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -567,6 +599,13 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 
 \subsection{Typing}
 \TypingRuleDef{PMask}
+\ExampleDef{Typing Mask Patterns}
+\listingref{typing-pmask} shows examples of well-typed mask patterns.
+\ASLListing{Well-typed mask patterns}{typing-pmask}{\typingtests/TypingRule.PMask.asl}
+
+\listingref{typing-pmask-bad} shows an example of an ill-typed mask pattern.
+\ASLListing{An Ill-typed mask pattern}{typing-pmask-bad}{\typingtests/TypingRule.PMask.bad.asl}
+
 \ProseParagraph
 \AllApply
   \begin{itemize}
@@ -661,27 +700,34 @@ is defined by the following table:
 
 \subsection{Typing}
 \TypingRuleDef{PTuple}
+\ExampleDef{Typing Tuple Patterns}
+The tuple patterns in \listingref{semantics-ptuple} are well-typed.
+
+The tuple patterns in \listingref{typing-ptuple-bad} are ill-typed.
+\ASLListing{Ill-typed tuple patterns}{typing-ptuple-bad}{\typingtests/TypingRule.PTuple.bad.asl}
+
 \ProseParagraph
 \AllApply
-  \begin{itemize}
+\begin{itemize}
   \item $\vp$ is the pattern which matches a tuple $\vli$, that is, $\PatternTuple(\vli)$;
   \item obtaining the \structure\ of $\vt$ yields $\vtstruct$\ProseOrTypeError;
-  \item determining whether $\vtstruct$ is a \tupletypeterm{} yields $\True$\ProseOrTypeError;
+  \item determining whether $\vtstruct$ is a \tupletypeterm{} yields $\True$\ProseTerminateAs{\UnexpectedType};
   \item $\vtstruct$ is a \tupletypeterm{} with list of tuple $\vts$;
-  \item determining whether $\vts$ is a list of the same size as $\vli$ yields $\True$\ProseOrTypeError;
+  \item determining whether $\vts$ is a list of the same size as $\vli$ yields $\True$\ProseTerminateAs{\UnexpectedType};
   \item annotating each pattern in $\vli$ with the corresponding type in $\vts$ for each \Proselistrange{$i$}{$\vli$},
         yields $(\vlip[i], \vxs_i)$\ProseOrTypeError;
   \item $\newli$ is the list of annotated patterns $\vlip[\vi]$ at the same positions those of $\vli$;
   \item $\newp$ is the pattern which matches the tuple $\newli$, that is, $\PatternTuple(\newli)$;
   \item define $\vses$ as the union of all $\vxs_i$, for each \Proselistrange{$i$}{$\vli$}.
-  \end{itemize}
+\end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \checktrans{\astlabel(\vtstruct) = \TTuple}{TypeConflict} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{\astlabel(\vtstruct) = \TTuple}{\UnexpectedType} \checktransarrow \True \OrTypeError\\\\
   \vtstruct \eqname \TTuple(\vts)\\
-  \checktrans{\equallength(\vli, \vts)}{InvalidArity} \checktransarrow \True \OrTypeError\\\\
+  \checktrans{\equallength(\vli, \vts)}{\UnexpectedType} \checktransarrow \True \OrTypeError\\\\
   i\in\listrange(\vli): \annotatepattern(\tenv, \vts[i], \vli[i]) \typearrow (\vlip[i], \vxs_i) \OrTypeError\\\\
   \newli \eqdef \vi\in\listrange(\vli): \vlip[\vi]\\
   \vses \eqdef \bigcup_{i\in\listrange(\vli)} \vxs_i
@@ -791,6 +837,13 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \subsection{Typing}
 \TypingRuleDef{PAny}
+\ExampleDef{Typing Any Patterns}
+\listingref{typing-pany} shows examples of well-typed Any patterns.
+\ASLListing{Well-typed Any patterns}{typing-pany}{\typingtests/TypingRule.PAny.asl}
+
+\listingref{typing-pany-bad} shows an example of an ill-typed Any pattern.
+\ASLListing{An ill-typed Any pattern}{typing-pany-bad}{\typingtests/TypingRule.PAny.bad.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -860,6 +913,8 @@ The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
 
 \subsection{Typing}
 \TypingRuleDef{PNot}
+\listingref{semantics-pnot} shows an example of a well-typed Negated pattern.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1093,21 +1148,21 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[record\_non\_empty]]{
+  \inferrule[record\_non\_empty]{
     \buildclist[\buildfieldassign](\vfieldassigns) \astarrow \vfieldassignasts
   }{
     {
-      \begin{array}{r}
-  \buildexprpattern\left(\Nexprpattern\left(
-    \begin{array}{l}
-    \Tidentifier(\vt), \Tlbrace, \\
-    \wrappedline\ \namednode{\vfieldassigns}{\ClistZero{\Nfieldassign}}, \\
-    \wrappedline\ \Trbrace
-    \end{array}
-    \right)\right) \\
-    \astarrow\ \overname{\ERecord(\TNamed(\vt), \vfieldassignasts)}{\vastnode}
-\end{array}
-}
+    \begin{array}{r}
+      \buildexprpattern\left(\Nexprpattern\left(
+      \begin{array}{l}
+      \Tidentifier(\vt), \Tlbrace, \\
+      \wrappedline\ \namednode{\vfieldassigns}{\ClistZero{\Nfieldassign}}, \\
+      \wrappedline\ \Trbrace
+      \end{array}
+      \right)\right) \\
+      \astarrow\ \overname{\ERecord(\TNamed(\vt), \vfieldassignasts)}{\vastnode}
+  \end{array}
+  }
 }
 \end{mathpar}
 

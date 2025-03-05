@@ -242,7 +242,7 @@ as well as assigning each primitive operation a unique name.
 \RequirementDef{PrimitiveOperatorImplements}
 An operation implements an operator if it appears in the same row as the operator in one
 of the tables in this section.
-%
+% INLINED_EXAMPLE
 For example, the operation $\aslnotbool$ implements the operator $\Tbnot$
 as it appears on the first two of \taref{BooleanOperators}.
 
@@ -252,7 +252,7 @@ An expression which invokes a primitive operator \emph{matches} an operation
 if the operation implements the operator and the operands of the expression
 \typesatisfy\ the corresponding operands of the operation as shown in the
 tables in this section.
-%
+% INLINED_EXAMPLE
 For example, the expression \verb|!TRUE|, which invokes the primitive operator
 $\Tbnot$, matches the primitive operation $\aslnotbool$, since the operand $\True$
 \typesatisfies{} the \booleantypeterm{}.
@@ -262,7 +262,7 @@ $\Tbnot$, matches the primitive operation $\aslnotbool$, since the operand $\Tru
 It is a type error if an expression which invokes a
 primitive operator does not match exactly one primitive operation
 (see \BadOperands).
-%
+% INLINED_EXAMPLE
 For example, including the expression \verb|!1| in any specification
 would lead to a \typingerrorterm{}, since it does not match any primitive
 operation.

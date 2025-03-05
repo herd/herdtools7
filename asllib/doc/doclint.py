@@ -440,6 +440,7 @@ def check_rule_has_example(rule_block: RuleBlock) -> List[str]:
             or "\\ExampleRef" in line
             or "\\subsubsection{Example}" in line
             or "\\listingref" in line
+            or "% INLINED_EXAMPLE" in line
             or "% NO_EXAMPLE" in line
         ):
             example_found = True
@@ -456,23 +457,23 @@ def check_rules(filename: str) -> int:
     and returns the total number of errors.
     """
     # Treat existing issues as warnings and new issues as errors.
+    # Treat existing issues as warnings and new issues as errors.
     file_to_num_expected_errors = {
+        "TypeDeclarations.tex" : 8,
         "GlobalDeclarations.tex" : 6,
         "GlobalStorageDeclarations.tex" : 7,
-        "PatternMatching.tex" : 9,
-        "PrimitiveOperations.tex" : 3,
         "RelationsOnTypes.tex" : 15,
         "Specifications.tex" : 26,
         "SubprogramCalls.tex" : 19,
+        "SubprogramCalls.tex" : 19,
         "SubprogramDeclarations.tex" : 13,
         "SymbolicEquivalenceTesting.tex" : 26,
+        "SymbolicEquivalenceTesting.tex" : 26,
         "SymbolicSubsumptionTesting.tex" : 23,
-        "TypeDeclarations.tex" : 8,
         "Types.tex" : 9,
         "SideEffects.tex" : 16,
         "TypeSystemUtilities.tex" : 23,
         "SemanticsUtilities.tex" : 20,
-        "LexicalStructure.tex" : 6,
     }
     total_expected = 0
     for num_expected in file_to_num_expected_errors.values():
@@ -615,6 +616,7 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
     if sorted_words != dict_word_list:
         with open(INTERNAL_DICTIONARY_FILENAME, "w", encoding="utf-8") as file:
             file_str = "\n".join(sorted_words) + "\n"
+            file_str = "\n".join(sorted_words) + "\n"
             print(f"Updating dictionary file {INTERNAL_DICTIONARY_FILENAME}")
             file.write(file_str)
 
@@ -641,7 +643,7 @@ def main():
     print("Linting files...")
     all_latex_sources = get_latex_sources(False)
     content_latex_sources = get_latex_sources(True)
-    # content_latex_sources = ["Slicing.tex"]
+    # content_latex_sources = ["LexicalStructure.tex"]
     num_errors = 0
     num_spelling_errors = spellcheck(args.dictionary, content_latex_sources)
     if num_spelling_errors > 0:

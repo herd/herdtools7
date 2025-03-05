@@ -22,7 +22,7 @@ begin
     catenate_into_g{4, 3}(x, y, TRUE);
     assert g == '1101 111';
 
-    // The following is illegal as 'zero' is not a procedure.
+    // The following statement in comment is illegal as 'zero' is not a procedure.
     // zero();
     return 0;
 end;

@@ -390,4 +390,41 @@ ASL Typing Tests / annotating types:
   ASL Typing error: type used to define storage item is the result of precision
     loss.
   [1]
-
+  $ aslref TypingRule.PSingle.asl
+  $ aslref TypingRule.PSingle.bad.asl
+  File TypingRule.PSingle.bad.asl, line 4, characters 11 to 30:
+  ASL Typing error: cannot find a common ancestor to those two types bits(3)
+    and bits(4).
+  [1]
+  $ aslref TypingRule.PRange.asl
+  $ aslref TypingRule.PRange.bad.asl
+  File TypingRule.PRange.bad.asl, line 4, characters 11 to 32:
+  ASL Typing error: Erroneous pattern (- (9.0 / 5.0)) .. 143 for expression of
+    type real.
+  [1]
+  $ aslref TypingRule.PLeq.asl
+  $ aslref TypingRule.PLeq.bad.asl
+  File TypingRule.PLeq.bad.asl, line 4, characters 12 to 28:
+  ASL Typing error: Erroneous pattern <= (42.0 / 1.0) for expression of type
+    integer {3}.
+  [1]
+  $ aslref TypingRule.PGeq.asl
+  $ aslref TypingRule.PGeq.bad.asl
+  File TypingRule.PGeq.bad.asl, line 4, characters 11 to 27:
+  ASL Typing error: Erroneous pattern >= (3.0 / 1.0) for expression of type
+    integer {42}.
+  [1]
+  $ aslref TypingRule.PTuple.bad.asl
+  File TypingRule.PTuple.bad.asl, line 8, characters 11 to 45:
+  ASL Typing error: a subtype of bits(-) was expected, provided integer {3}.
+  [1]
+  $ aslref TypingRule.PMask.asl
+  $ aslref TypingRule.PMask.bad.asl
+  File TypingRule.PMask.bad.asl, line 5, characters 11 to 34:
+  ASL Typing error: a subtype of bits(7) was expected, provided bits(6).
+  [1]
+  $ aslref TypingRule.PAny.asl
+  $ aslref TypingRule.PAny.bad.asl
+  File TypingRule.PAny.bad.asl, line 5, characters 11 to 29:
+  ASL Typing error: Erroneous pattern 5 for expression of type boolean.
+  [1]
