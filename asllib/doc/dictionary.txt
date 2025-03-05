@@ -356,7 +356,9 @@ composition
 compound
 comprised
 comprises
+computation
 computational
+compute
 computed
 concatenated
 concatenates
@@ -704,6 +706,7 @@ explaining
 explanation
 explicit
 explicitly
+exploded
 exponent
 export
 exposes
@@ -894,6 +897,7 @@ implied
 implies
 important
 impose
+imprecise
 improve
 impure
 in
@@ -1014,6 +1018,7 @@ iterates
 iterations
 its
 itself
+join
 just
 justified
 keep
@@ -1085,6 +1090,8 @@ looking
 looks
 loop
 loops
+loss
+lost
 lower
 lowest
 macro
@@ -1362,6 +1369,7 @@ pragmas
 precedence
 precise
 precisely
+precision
 predicate
 predicates
 prefix
@@ -1893,6 +1901,7 @@ treating
 tree
 trees
 trial
+tries
 triple
 triples
 trivial

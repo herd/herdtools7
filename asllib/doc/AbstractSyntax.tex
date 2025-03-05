@@ -602,6 +602,17 @@ The following extra rule enables expressing array indices based on enumeration:
 \arrayindex \derives\ &  \ArrayLengthEnum(\overtext{\identifier}{name of enumeration}, \overtext{\identifier^+}{enumeration labels}) &
 \end{flalign*}
 
+The rules for constraint kinds refine the well-constrained kind by a precision
+indicator, which indicates whether precision has been lost during the typing of
+binary operations over well-constrained integer types (see
+\TypingRuleRef{IntervalTooLarge}).
+\begin{flalign*}
+  \hypertarget{ast-precisionlossindicator}{}%
+  \precisionlossindicator \derives\ & \PrecisionFull & \hypertarget{precision-full}{} \\
+                                 |\ & \PrecisionLost & \hypertarget{precision-lost}{} \\
+          \constraintkind \derives\ & \wellconstrained(\intconstraint^{+}, \precisionlossindicator) & \\
+\end{flalign*}
+
 In the \untypedast, the $\globaldecl$ child node in the abstract syntax nodes of the form $\DGlobalStorage(\globaldecl)$
 contains an optional expression field assigned to the $\GDinitialvalue$ field. In the \typedast, this field
 always contains an expression (that is, it is never $\None$).

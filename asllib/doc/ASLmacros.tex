@@ -618,6 +618,8 @@
 
 \newcommand\ty[0]{\hyperlink{ast-ty}{\textsf{ty}}}
 \newcommand\pattern[0]{\hyperlink{ast-pattern}{\textsf{pattern}}}
+\newcommand\precisionlossindicator[0]{\hyperlink{ast-precisionlossindicator}{\textsf{precision\_loss\_indicator}}}
+\newcommand\Proseprecisionlossindicator[0]{\hyperlink{ast-precisionlossindicator}{precision loss indicator}}
 \newcommand\constraintkind[0]{\hyperlink{ast-constraintkind}{\textsf{constraint\_kind}}}
 \newcommand\intconstraint[0]{\hyperlink{ast-intconstraint}{\textsf{int\_constraint}}}
 \newcommand\unconstrained[0]{\hyperlink{ast-unconstrained}{\textsf{Unconstrained}}}
@@ -645,6 +647,8 @@
 \newcommand\accessorpair[0]{\hyperlink{ast-accessorpair}{\textsf{accessor\_pair}}}
 \newcommand\Field[0]{\hyperlink{ast-field}{\textsf{field}}}
 \newcommand\call[0]{\hyperlink{ast-call}{\textsf{call}}}
+\newcommand\PrecisionFull[0]{\hyperlink{precision-full}{\textsf{Precision\_Full}}}
+\newcommand\PrecisionLost[0]{\hyperlink{precision-lost}{\textsf{Precision\_Lost}}}
 
 % Expression labels
 \newcommand\ELiteral[0]{\hyperlink{ast-eliteral}{\textsf{E\_Literal}}}
@@ -1900,6 +1904,9 @@
 \newcommand\annotatelocaldecltypeannot[0]{\hyperlink{def-annotatelocaldecltypeannot}{\textfunc{annotate\_local\_decl\_type\_annot}}}
 \newcommand\checkvarnotinenv[1]{\hyperlink{def-checkvarnotinenv}{\textfunc{check\_var\_not\_in\_env}}(#1)}
 \newcommand\checkvarnotingenv[1]{\hyperlink{def-checkvarnotingenv}{\textfunc{check\_var\_not\_in\_genv}}(#1)}
+\newcommand\checknoprecisionloss[1]{\hyperlink{def-checknoprecisionloss}{\textfunc{check\_no\_precision\_loss}}(#1)}
+\newcommand\precisionjoin[0]{\hyperlink{def-precisionjoin}{\textfunc{precision\_join}}}
+\newcommand\Prosenoprecisionloss[1]{determining whether #1 has been computed with no precision loss using $\checknoprecisionloss$ yields $\True$\ProseOrTypeError}
 \newcommand\annotatesubprogram[0]{\hyperlink{def-annotatesubprogram}{\textfunc{annotate\_subprogram}}}
 \newcommand\Proseannotatesubprogram[3]{\hyperlink{def-annotatesubprogram}{annotating} the subprogram definition #1 in the static environment #2 yields the subprogram definition #3}
 \newcommand\checkstmtreturnsorthrows[0]{\hyperlink{def-checkstmtreturnsorthrows}{\textfunc{check\_stmt\_returns\_or\_throws}}}
@@ -2039,6 +2046,7 @@
 \newcommand\TypeErrorCode[1]{\texttt{\TypeErrorPrefix\_#1}}
 \newcommand\UndefinedIdentifier[0]{\hyperlink{def-undefinedidentifier}{\TypeErrorCode{UI}}}
 \newcommand\IdentifierAlreadyDeclared[0]{\hyperlink{def-identifieralreadydeclared}{\TypeErrorCode{IAD}}}
+\newcommand\PrecisionLostDefining[0]{\hyperlink{def-precisionlostdefining}{\TypeErrorCode{PLD}}}
 \newcommand\AssignmentToImmutable[0]{\hyperlink{def-aim}{\TypeErrorCode{AIM}}}
 \newcommand\TypeSatisfactionFailure[0]{\hyperlink{def-typesatisfactionfailure}{\TypeErrorCode{TSF}}}
 \newcommand\StaticEvaluationFailure[0]{\hyperlink{def-staticevaluationfailure}{\TypeErrorCode{SEF}}}
@@ -2952,6 +2960,7 @@
 \newcommand\vpp[0]{\texttt{p'}}
 \newcommand\vps[0]{\texttt{ps}}
 \newcommand\vptwo[0]{\texttt{p2}}
+\newcommand\vpthree[0]{\texttt{p3}}
 \newcommand\vpzero[0]{\texttt{p0}}
 \newcommand\vq[0]{\texttt{q}}
 \newcommand\vqone[0]{\texttt{q1}}

@@ -219,24 +219,37 @@ Large constraint sets
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
   File TPositive13.asl, line 8, characters 17 to 34:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
-  File TPositive13.asl, line 10, characters 17 to 34:
-  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  File TPositive13.asl, line 8, characters 4 to 35:
+  ASL Typing error: type used to define storage item is the result of precision
+    loss.
+  [1]
   $ aslref --no-exec TDegraded13.asl
   File TDegraded13.asl, line 7, characters 29 to 46:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
   File TDegraded13.asl, line 7, characters 29 to 46:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
-  $ if [ $(ocaml -vnum | cut -b 1) = "5" ]; then aslref TDegraded13.asl 2>/dev/null; fi
+  File TDegraded13.asl, line 7, characters 4 to 47:
+  ASL Typing error: type used to define storage item is the result of precision
+    loss.
+  [1]
   $ aslref --no-exec TDegraded13-sets1.asl
   File TDegraded13-sets1.asl, line 3, characters 10 to 27:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
   File TDegraded13-sets1.asl, line 3, characters 10 to 27:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  File TDegraded13-sets1.asl, line 3, characters 2 to 28:
+  ASL Typing error: type used to define storage item is the result of precision
+    loss.
+  [1]
   $ aslref --no-exec TDegraded13-sets2.asl
   File TDegraded13-sets2.asl, line 3, characters 10 to 27:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
   File TDegraded13-sets2.asl, line 3, characters 10 to 27:
   Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  File TDegraded13-sets2.asl, line 3, characters 2 to 28:
+  ASL Typing error: type used to define storage item is the result of precision
+    loss.
+  [1]
 
 Named types for bit vector widths
   $ aslref --no-exec TPositive14.asl

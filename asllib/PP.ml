@@ -191,7 +191,7 @@ and pp_slice_list f = pp_comma_list pp_slice f
 and pp_ty f t =
   match t.desc with
   | T_Int UnConstrained -> pp_print_string f "integer"
-  | T_Int (WellConstrained cs) ->
+  | T_Int (WellConstrained (cs, _)) ->
       fprintf f "@[integer {%a}@]" pp_int_constraints cs
   | T_Int PendingConstrained -> pp_print_string f "integer{-}"
   | T_Int (Parameterized (_uid, var)) -> fprintf f "@[integer {%s}@]" var

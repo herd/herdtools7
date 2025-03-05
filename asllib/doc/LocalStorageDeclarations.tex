@@ -150,6 +150,7 @@ with the type inferred type \texttt{integer{3}}.
 \begin{itemize}
   \item $\ldi$ denotes a variable $\vx$, that is, $\LDIVar(\vx)$;
   \item determining whether $\vx$ is not declared in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item \Prosenoprecisionloss{$\tty$};
   \item $\tenvtwo$ is $\tenv$ modified so that $\vx$ is locally declared to have type $\tty$;
   \item applying $\addimmutableexpression$ to $\ldk$, $\veopt$, and $\vx$ in $\tenv$ (to conditionally
         update $\tenvtwo$) yields $\newtenv$.
@@ -158,6 +159,7 @@ with the type inferred type \texttt{integer{3}}.
 \begin{mathpar}
 \inferrule{
   \checkvarnotinenv{\tenv, \vx} \typearrow \True \OrTypeError\\\\
+  \checknoprecisionloss{\tty} \typearrow \True \OrTypeError\\\\
   \addlocal(\tenv, \vx, \tty, \ldk) \typearrow \tenvtwo\\
   \addimmutableexpression(\tenvtwo, \ldk, \veopt, \vx) \typearrow \newtenv
 }{

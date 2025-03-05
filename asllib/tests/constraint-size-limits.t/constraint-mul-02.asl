@@ -1,7 +1,7 @@
-constant A = 1 << 8;
-constant B = 1 << 8;
+constant A = 1 << 5;
+constant B = 1 << 5;
 
-func myfunction(a : integer{0..A}, b : integer{0..B})
+func myfunction(a : integer{0..A}, b : integer{1..B})
 begin
     let n = a DIVRM b;     // 10 DIVRM 3 == 3
     var b1 = n * b;
@@ -17,5 +17,3 @@ begin
     myfunction(A DIVRM 2, B DIVRM 4);
     return 0;
 end;
-
-

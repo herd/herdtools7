@@ -40,17 +40,9 @@ ASL Typing Tests:
   File TypingRule.ApplyBinopTypes.constraints.asl, line 26, characters 39 to 65:
   Warning: Removing some values that would fail with op MOD from constraint set
   {0..3} gave {1..3}. Continuing with this constraint set.
-  File TypingRule.ApplyBinopTypes.constraints.asl, line 41, characters 31 to 80:
-  Exploding sets for the binary operation * could result in a constraint set
-  bigger than 2^17 with constraints 0..16384 and 0..16384. Continuing with the
-  non-expanded constraints.
   File TypingRule.ApplyBinopTypes.constraints.asl, line 42, characters 31 to 82:
   Warning: Removing some values that would fail with op DIV from constraint set
   {0..16384} gave {1..16384}. Continuing with this constraint set.
-  File TypingRule.ApplyBinopTypes.constraints.asl, line 42, characters 31 to 82:
-  Exploding sets for the binary operation DIV could result in a constraint set
-  bigger than 2^17 with constraints 0..16384 and 1..16384. Continuing with the
-  non-expanded constraints.
   ASL Error: Undefined identifier: 'main'
   [1]
   $ aslref TypingRule.LDDiscard.asl
@@ -368,3 +360,23 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.SPragma.asl
   File TypingRule.SPragma.asl, line 3, characters 4 to 39:
   ASL Warning: pragma implementation_hidden will be ignored.
+
+  $ aslref TypingRule.CheckNoPrecisionLoss.asl
+  File TypingRule.CheckNoPrecisionLoss.asl, line 3, characters 8 to 13:
+  Exploding sets for the binary operation * could result in a constraint set
+  bigger than 2^17 with constraints 1..1024 and 1..1024. Continuing with the
+  non-expanded constraints.
+  File TypingRule.CheckNoPrecisionLoss.asl, line 3, characters 0 to 14:
+  ASL Typing error: type used to define storage item is the result of precision
+    loss.
+  [1]
+  $ aslref TypingRule.PrecisionJoin.asl
+  File TypingRule.PrecisionJoin.asl, line 3, characters 9 to 14:
+  Exploding sets for the binary operation * could result in a constraint set
+  bigger than 2^17 with constraints 1..1024 and 1..1024. Continuing with the
+  non-expanded constraints.
+  File TypingRule.PrecisionJoin.asl, line 3, characters 0 to 20:
+  ASL Typing error: type used to define storage item is the result of precision
+    loss.
+  [1]
+

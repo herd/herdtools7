@@ -94,16 +94,17 @@ let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
   in
   let subst_constraints env eqs = List.map (subst_constraint env eqs) in
   let rec rename env eqs ty =
-    let here desc = add_pos_from ~loc:ty desc in
+    let loc = to_pos ty in
+    let here desc = add_pos_from ~loc desc in
     match ty.desc with
     | T_Bits (e, fields) ->
         T_Bits (subst_expr_normalize env eqs e, fields) |> here
-    | T_Int (WellConstrained constraints) ->
+    | T_Int (WellConstrained (constraints, precision)) ->
         let constraints = subst_constraints env eqs constraints in
-        T_Int (WellConstrained constraints) |> here
+        well_constrained ~loc ~precision constraints
     | T_Int (Parameterized (_uid, name)) ->
         let e = E_Var name |> here |> subst_expr_normalize env eqs in
-        T_Int (WellConstrained [ Constraint_Exact e ]) |> here
+        integer_exact ~loc e
     | T_Tuple tys -> T_Tuple (List.map (rename env eqs) tys) |> here
     | _ -> ty
   in
@@ -668,11 +669,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             and t2_well_constrained = Types.to_well_constrained t2 in
             apply_binop_types ~loc env op t1_well_constrained
               t2_well_constrained
-        | WellConstrained cs1, WellConstrained cs2 -> (
+        | WellConstrained (cs1, p1), WellConstrained (cs2, p2) -> (
             best_effort integer @@ fun _ ->
             try
-              let cs = SOp.annotate_constraint_binop ~loc env op cs1 cs2 in
-              T_Int (WellConstrained cs) |> here
+              let cs, p3 = SOp.annotate_constraint_binop ~loc env op cs1 cs2 in
+              let precision = precision_join p1 (precision_join p2 p3) in
+              well_constrained ~loc ~precision cs
             with TypingAssumptionFailed ->
               fatal_from ~loc (Error.BadTypesForBinop (op, t1, t2))))
     | `MUL, (T_Real, T_Int _ | T_Int _, T_Real)
@@ -700,14 +702,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let t_struct = Types.get_well_constrained_structure env t in
         match t_struct.desc with
         | T_Int UnConstrained -> T_Int UnConstrained |> here
-        | T_Int (WellConstrained cs) ->
+        | T_Int (WellConstrained (cs, precision)) ->
             let neg e = unop NEG e in
             let constraint_minus = function
               | Constraint_Exact e -> Constraint_Exact (neg e)
               | Constraint_Range (top, bot) ->
                   Constraint_Range (neg bot, neg top)
             in
-            T_Int (WellConstrained (List.map constraint_minus cs)) |> here
+            well_constrained ~loc ~precision (List.map constraint_minus cs)
         | T_Int (Parameterized _) ->
             assert false (* We used to_well_constrained just before. *)
         | _ -> (* fail case *) t)
@@ -1255,13 +1257,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (match constraints with
         | PendingConstrained ->
             fatal_from ~loc Error.UnexpectedPendingConstrained
-        | WellConstrained [] -> fatal_from ~loc Error.EmptyConstraints
-        | WellConstrained constraints ->
+        | WellConstrained ([], _) -> fatal_from ~loc Error.EmptyConstraints
+        | WellConstrained (constraints, precision) ->
             let new_constraints, sess =
               list_map_split (annotate_constraint ~loc env) constraints
             in
             let ses = SES.unions sess in
-            (T_Int (WellConstrained new_constraints) |> here, ses)
+            (well_constrained ~loc:ty ~precision new_constraints, ses)
         | Parameterized (_, name) ->
             (ty, SES.reads_local name TimeFrame.Constant true)
         | UnConstrained -> (ty, SES.empty))
@@ -2344,7 +2346,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Int UnConstrained -> L_Int Z.zero |> lit
     | T_Int (Parameterized (_, id)) -> E_Var id |> here |> fatal_non_static
     | T_Int PendingConstrained -> assert false
-    | T_Int (WellConstrained cs) ->
+    | T_Int (WellConstrained (cs, _)) ->
         let constraint_abs_min = function
           | Constraint_Exact e -> Some (reduce_to_z e)
           | Constraint_Range (e1, e2) ->
@@ -2400,10 +2402,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let _, e', _ = annotate_expr env (here e) in
         e'
     | T_Int (Parameterized (_, id)) -> E_Var id |> here
-    | T_Int (WellConstrained [] | PendingConstrained) -> assert false
+    | T_Int (WellConstrained ([], _) | PendingConstrained) -> assert false
     | T_Int
-        (WellConstrained ((Constraint_Exact e | Constraint_Range (e, _)) :: _))
-      ->
+        (WellConstrained
+          ((Constraint_Exact e | Constraint_Range (e, _)) :: _, _)) ->
         e
     | T_Tuple li -> E_Tuple (List.map (base_value_v0 ~loc env) li) |> here
     | T_Exception fields | T_Record fields ->
@@ -2668,9 +2670,20 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | _ -> env
   (* End *)
 
+  (* Begin CheckNoPrecisionLoss *)
+  let check_no_precision_loss ~loc t () =
+    match t.desc with
+    | T_Int (WellConstrained (_, Precision_Lost ws)) ->
+        let () = List.iter (fun w -> w ()) ws in
+        fatal_from ~loc Error.PrecisionLostDefining
+    | _ -> ()
+  (* End *)
+
   let rec inherit_integer_constraints ~loc lhs_ty rhs_ty =
     match (lhs_ty.desc, rhs_ty.desc) with
-    | T_Int PendingConstrained, T_Int (WellConstrained _) -> rhs_ty
+    | T_Int PendingConstrained, T_Int (WellConstrained _) ->
+        let+ () = check_no_precision_loss ~loc rhs_ty in
+        rhs_ty
     | T_Int PendingConstrained, _ ->
         fatal_from ~loc (Error.ConstrainedIntegerExpected rhs_ty)
     | T_Tuple lhs_tys, T_Tuple rhs_tys ->
@@ -2897,7 +2910,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 | Up -> (start_n, end_n)
                 | Down -> (end_n, start_n)
               in
-              WellConstrained [ Constraint_Range (e_bot, e_top) ]
+              WellConstrained
+                ([ Constraint_Range (e_bot, e_top) ], Precision_Full)
           | T_Int _, _ -> conflict ~loc [ integer' ] end_t
           | _, _ -> conflict ~loc [ integer' ] start_t
           (* only happens in relaxed type-checking mode because of check_underlying_integer earlier. *)
@@ -2937,6 +2951,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let env1, ty_opt', ses_ldi =
               match ty_opt with
               | None ->
+                  let+ () = check_no_precision_loss ~loc t_e in
                   let env1 =
                     annotate_local_decl_item ~loc env t_e ldk ~e:typed_e ldi
                   in
@@ -3304,10 +3319,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       match ty.desc with
       | T_Bits (e, _) -> parameters_of_expr ~env e
       | T_Tuple tys -> list_concat_map (parameters_of_ty ~env) tys
-      | T_Int (WellConstrained cs) ->
+      | T_Int (WellConstrained (cs, Precision_Full)) ->
           list_concat_map (parameters_of_constraint ~env) cs
-      | T_Int UnConstrained | T_Real | T_String | T_Bool | T_Array _ | T_Named _
-        ->
+      | T_Int (WellConstrained (_, Precision_Lost _))
+      | T_Int UnConstrained
+      | T_Real | T_String | T_Bool | T_Array _ | T_Named _ ->
           []
       | _ -> Error.fatal_from (to_pos ty) (Error.UnsupportedTy (Static, ty))
     in
@@ -3795,6 +3811,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           ((t', e', SES.empty), Some t', t')
       | None, Some e ->
           let ((t_e, _e', _ses_e) as typed_e) = annotate_expr env e in
+          let+ () = check_no_precision_loss ~loc t_e in
           let+ () = check_is_time_frame ~loc target_time_frame typed_e in
           (typed_e, None, t_e)
       | None, None -> fatal_from ~loc UnrespectedParserInvariant
