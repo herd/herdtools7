@@ -2129,7 +2129,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | None -> (
             let t_e2, e2, ses1 = annotate_expr env e1 in
             match (Types.make_anonymous env t_e2).desc with
-            | T_Exception fields | T_Record fields | T_Collection fields -> (
+            | T_Exception fields | T_Record fields -> (
                 match List.assoc_opt field_name fields with
                 (* Begin EGetBadRecordField *)
                 | None ->
@@ -2141,6 +2141,26 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                     (t, E_GetField (e2, field_name) |> here, ses1)
                     |: TypingRule.EGetRecordField
                     (* End *))
+            | T_Collection fields -> (
+                let collection_var_name =
+                  match e2.desc with
+                  | E_Var x -> x
+                  | _ -> fatal_from ~loc Error.(UnsupportedExpr (Static, e))
+                in
+                match List.assoc_opt field_name fields with
+                (* Begin EGetBadRecordField *)
+                | None ->
+                    fatal_from ~loc (Error.BadField (field_name, t_e2))
+                    |: TypingRule.EGetBadRecordField
+                (* End *)
+                (* Begin EGetRecordField *)
+                | Some t ->
+                    ( t,
+                      E_GetCollectionFields (collection_var_name, [ field_name ])
+                      |> here,
+                      ses1 )
+                    |: TypingRule.EGetRecordField
+                (* End *))
             | T_Bits (_, bitfields) -> (
                 match find_bitfield_opt field_name bitfields with
                 (* Begin EGetBadBitField *)
@@ -2223,9 +2243,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 in
                 E_Slice (e_base, list_concat_map one_field fields)
                 |> here |> annotate_expr env |: TypingRule.EGetFields
-            | T_Record base_fields
-            | T_Exception base_fields
-            | T_Collection base_fields ->
+            | T_Record base_fields | T_Exception base_fields ->
                 let get_bitfield_width name =
                   match List.assoc_opt name base_fields with
                   | None ->
@@ -2239,6 +2257,27 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 in
                 ( T_Bits (e_slice_width, []) |> here,
                   E_GetFields (e_base_annot, fields) |> here,
+                  ses_base )
+                |: TypingRule.EGetFields
+            | T_Collection base_fields ->
+                let base_collection_name =
+                  match e_base_annot.desc with
+                  | E_Var x -> x
+                  | _ -> fatal_from ~loc Error.(UnsupportedExpr (Static, e))
+                in
+                let get_bitfield_width name =
+                  match List.assoc_opt name base_fields with
+                  | None ->
+                      fatal_from ~loc (Error.BadField (name, t_base_annot))
+                  | Some t -> get_bitvector_width ~loc env t
+                in
+                let widths = List.map get_bitfield_width fields in
+                let e_slice_width =
+                  let wh = List.hd widths and wts = List.tl widths in
+                  List.fold_left (width_plus env) wh wts
+                in
+                ( T_Bits (e_slice_width, []) |> here,
+                  E_GetCollectionFields (base_collection_name, fields) |> here,
                   ses_base )
                 |: TypingRule.EGetFields
             | _ -> conflict ~loc [ default_t_bits ] t_base_annot))
@@ -2293,7 +2332,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | _ -> conflict ~loc [ default_array_ty ] t_base |: TypingRule.EGetArray
         )
     (* End *)
-    | E_GetItem _ | E_EnumArray _ | E_GetEnumArray _ -> assert false
+    | E_GetItem _ | E_EnumArray _ | E_GetEnumArray _ | E_GetCollectionFields _
+      ->
+        assert false
 
   (* Begin AnnotateGetArray *)
   and annotate_get_array ~loc env (size, t_elem) (e_base, ses_base, e_index) =
@@ -2562,7 +2603,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
          let t_le1_anon = Types.make_anonymous env t_le1 in
          match t_le1_anon.desc with
          (* Begin LESetStructuredField *)
-         | T_Exception fields | T_Record fields | T_Collection fields ->
+         | T_Exception fields | T_Record fields ->
              let t =
                match List.assoc_opt field fields with
                | None -> fatal_from ~loc (Error.BadField (field, t_le1))
@@ -2570,6 +2611,20 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
              in
              let+ () = check_type_satisfies ~loc env t_e t in
              ( LE_SetField (le2, field) |> here,
+               ses |: TypingRule.LESetStructuredField )
+         | T_Collection fields ->
+             let collection_var_name =
+               match le2.desc with LE_Var x -> x | _ -> assert false
+             in
+             let t =
+               match List.assoc_opt field fields with
+               | None -> fatal_from ~loc (Error.BadField (field, t_le1))
+               | Some t -> t
+             in
+             let+ () = check_type_satisfies ~loc env t_e t in
+             ( LE_SetCollectionFields
+                 (collection_var_name, [ field ], [ (0, 0) ])
+               |> here,
                ses |: TypingRule.LESetStructuredField )
          (* End *)
          (* Begin LESetBitField *)
@@ -2619,9 +2674,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               |> here
             in
             annotate_lexpr env le_slice t_e |: TypingRule.LESetFields
-        | T_Record base_fields
-        | T_Exception base_fields
-        | T_Collection base_fields ->
+        | T_Record base_fields | T_Exception base_fields ->
             let fold_bitvector_fields field (start, slices) =
               match List.assoc_opt field base_fields with
               | None -> fatal_from ~loc (Error.BadField (field, t_base_anon))
@@ -2637,6 +2690,31 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let t_lhs = T_Bits (expr_of_int length, []) |> here in
             let+ () = check_type_satisfies ~loc env t_e t_lhs in
             (LE_SetFields (le_base_annot, le_fields, slices) |> here, ses_base)
+        | T_Collection base_fields ->
+            let collection_var_name =
+              match le_base.desc with
+              | LE_Var x -> x
+              | _ ->
+                  fatal_from ~loc
+                    Error.(UnsupportedExpr (Static, expr_of_lexpr le))
+            in
+            let fold_bitvector_fields field (start, slices) =
+              match List.assoc_opt field base_fields with
+              | None -> fatal_from ~loc (Error.BadField (field, t_base_anon))
+              | Some t_field ->
+                  let field_width =
+                    get_bitvector_const_width ~loc env t_field
+                  in
+                  (start + field_width, (start, field_width) :: slices)
+            in
+            let length, slices =
+              List.fold_right fold_bitvector_fields le_fields (0, [])
+            in
+            let t_lhs = T_Bits (expr_of_int length, []) |> here in
+            let+ () = check_type_satisfies ~loc env t_e t_lhs in
+            ( LE_SetCollectionFields (collection_var_name, le_fields, slices)
+              |> here,
+              ses_base )
         | _ -> conflict ~loc [ default_t_bits ] t_base |: TypingRule.LESetFields
         )
     (* End *)
@@ -2651,7 +2729,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               (e_base', ses_base, e_index)
         | _ -> conflict ~loc [ default_array_ty ] t_base)
     (* End *)
-    | LE_SetFields (_, _, _ :: _) | LE_SetEnumArray _ -> assert false
+    | LE_SetFields (_, _, _ :: _) | LE_SetEnumArray _ | LE_SetCollectionFields _
+      ->
+        assert false
 
   (* Begin CheckCanBeInitializedWith *)
   let can_be_initialized_with env s t =
@@ -3311,7 +3391,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let ses = SES.union ses_call ses_e in
           Some (S_Call call |> here, ses)
         else None
-    | LE_SetArray _ | LE_SetEnumArray _ -> assert false
+    | LE_SetArray _ | LE_SetEnumArray _ | LE_SetCollectionFields _ ->
+        assert false
 
   (** [func_sig_types f] returns a list of the types in the signature [f].
       The return type is first, followed by the argument types in order. *)
@@ -3825,6 +3906,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           in
           let t', ses_t = annotate_type ~loc env t in
           let+ () = check_type_satisfies ~loc env t_e t' in
+          let+ () = check_is_not_collection ~loc env t' in
           let+ () =
             let fake_e_for_error = E_ATC (e, t') |> here in
             check_is_time_frame ~loc target_time_frame
@@ -3843,6 +3925,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | None, Some e ->
           let ((t_e, _e', _ses_e) as typed_e) = annotate_expr env e in
           let+ () = check_no_precision_loss ~loc t_e in
+          let+ () = check_is_not_collection ~loc env t_e in
           let+ () = check_is_time_frame ~loc target_time_frame typed_e in
           (typed_e, None, t_e)
       | None, None -> fatal_from ~loc UnrespectedParserInvariant

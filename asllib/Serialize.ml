@@ -55,6 +55,7 @@ let pp_pair pp_left pp_right f (left, right) =
   bprintf f "(%a, %a)" pp_left left pp_right right
 
 let pp_pair_list pp_left pp_right = pp_list (pp_pair pp_left pp_right)
+let pp_int f = bprintf f "%d"
 let pp_string f = bprintf f "%S"
 let pp_id_assoc pp_elt = pp_pair_list pp_string pp_elt
 let pp_annotated f buf { desc; _ } = bprintf buf "annot (%a)" f desc
@@ -128,6 +129,8 @@ let rec pp_expr =
     | E_GetField (e, x) -> bprintf f "E_GetField (%a, %S)" pp_expr e x
     | E_GetFields (e, x) ->
         bprintf f "E_GetFields (%a, %a)" pp_expr e (pp_list pp_string) x
+    | E_GetCollectionFields (x, fs) ->
+        bprintf f "E_GetCollectionFields (%S, %a)" x (pp_list pp_string) fs
     | E_GetItem (e, i) -> bprintf f "E_GetItem (%a, %d)" pp_expr e i
     | E_Record (ty, li) ->
         bprintf f "E_Record (%a, %a)" pp_ty ty (pp_id_assoc pp_expr) li
@@ -252,6 +255,11 @@ let rec pp_lexpr =
     | LE_SetField (le, x) -> bprintf f "LE_SetField (%a, %S)" pp_lexpr le x
     | LE_SetFields (le, x, _) ->
         bprintf f "LE_SetFields (%a, %a)" pp_lexpr le (pp_list pp_string) x
+    | LE_SetCollectionFields (le, fields, slices) ->
+        bprintf f "LE_SetCollectionFields (%S, %a, %a)" le (pp_list pp_string)
+          fields
+          (pp_pair_list pp_int pp_int)
+          slices
     | LE_Discard -> addb f "LE_Discard"
     | LE_Destructuring les ->
         addb f "LE_Destructuring ";

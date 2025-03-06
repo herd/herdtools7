@@ -87,6 +87,9 @@ module type S = sig
   val find : identifier -> env -> v env_result
   (** Fetches an identifier from the environment. *)
 
+  val find_global : identifier -> env -> v
+  (** Fetches a global storage element. *)
+
   val mem : identifier -> env -> bool
   (** [mem x env] is true iff [x] is bound in [env]. *)
 

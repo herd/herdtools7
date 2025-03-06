@@ -152,6 +152,8 @@ let rec pp_expr f e =
   | E_GetField (e, x) -> fprintf f "@[%a@,.%s@]" pp_expr e x
   | E_GetFields (e, xs) ->
       fprintf f "@[%a@,.[@[%a@]]@]" pp_expr e (pp_comma_list pp_print_string) xs
+  | E_GetCollectionFields (e, fields) ->
+      fprintf f "@[%s@,.[@[%a@]]@]" e (pp_comma_list pp_print_string) fields
   | E_GetItem (e, i) -> fprintf f "@[%a@,.item%d@]" pp_expr e i
   | E_Record (ty, li) ->
       let pp_one f (x, e) = fprintf f "@[<h>%s =@ %a@]" x pp_expr e in
@@ -261,6 +263,8 @@ let rec pp_lexpr f le =
   | LE_SetArray (le, e) -> fprintf f "%a[[%a]]" pp_lexpr le pp_expr e
   | LE_SetEnumArray (le, e) -> fprintf f "%a[[%a]]" pp_lexpr le pp_expr e
   | LE_SetField (le, x) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
+  | LE_SetCollectionFields (x, fields, _) ->
+      fprintf f "@[%s@,.[@[%a@]]@]" x (pp_comma_list pp_print_string) fields
   | LE_SetFields (le, li, _) ->
       fprintf f "@[%a@,.@[[%a]@]@]" pp_lexpr le
         (pp_comma_list pp_print_string)
