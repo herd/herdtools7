@@ -95,7 +95,7 @@ module
 
     let getel0 = op_get_pteval (fun p -> p.el0 <> 0)
 
-    let gettagged = op_get_pteval (fun p -> Attrs.mem "TaggedNormal" p.attrs)
+    let gettagged = op_get_pteval (fun p -> Attrs.is_tagged p.attrs)
 
     let getoa v =
       let open Constant in
