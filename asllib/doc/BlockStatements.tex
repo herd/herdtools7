@@ -71,10 +71,10 @@ See \ExampleRef{Block Statements}.
 \AllApply
 \begin{itemize}
     \item evaluating $\stm$ in $\env$, as per \chapref{Statements},
-    is $\Continuing(\newg, \envone)$\ProseTerminateAs{\ReturningConfig};
+          is $\Continuing(\newg, \envone)$\ProseTerminateAs{\ReturningConfig,\ThrowingConfig,\DynErrorConfig};
     \item $\newenv$ is formed from $\envone$ after restoring the
-    variable bindings of $\env$ with the updated values of $\envone$.
-    The effect is that of discarding the bindings for variables declared inside $\stm$;
+          variable bindings of $\env$ with the updated values of $\envone$.
+          The effect is that of discarding the bindings for variables declared inside $\stm$;
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
 \end{itemize}
 

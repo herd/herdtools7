@@ -3115,6 +3115,7 @@ show examples of well-typed \throwstatementsterm.
           $\ThrowException(\exnname)$}.
   \end{itemize}
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{}{
@@ -3185,6 +3186,7 @@ terminates successfully. That is, no dynamic error occurs.
   \evalstmt{\env, \SThrow(\None)} \evalarrow \Throwing((\None, \emptygraph), \env)
 }
 \end{mathpar}
+
 \begin{mathpar}
 \inferrule[some]{
   \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \newenv) \OrAbnormal\\
@@ -3361,14 +3363,14 @@ does not result in any Assertion error, and the specification terminates with th
 \begin{itemize}
   \item $\vs$ is a \texttt{try} statement, $\STry(\vs, \catchers, \otherwiseopt)$;
   \item evaluating $\vsone$ in $\env$ as per \chapref{BlockStatements}
-  is a non-abnormal (that is, either $\Normal$ or $\Continuing$) configuration $\sm$\ProseOrAbnormal;
+        yields the configuration $\sm$\ProseOrError;
   \item evaluating $(\catchers, \otherwiseopt, \sm)$ as per \chapref{CatchingExceptions}
-  is $C$, which is the result of the entire evaluation.
+        is $C$, which is the result of the entire evaluation.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalblock{\env, \vsone} \evalarrow \sm \OrAbnormal\\
+  \evalblock{\env, \vsone} \evalarrow \sm \OrDynError\\\\
   \evalcatchers{\env, \catchers, \otherwiseopt, \sm} \evalarrow C
 }{
   \evalstmt{\env, \STry(\vsone, \catchers, \otherwiseopt)} \evalarrow C
