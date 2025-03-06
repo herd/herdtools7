@@ -50,13 +50,32 @@ begin
   return if x < 0 then -x else x;
 end;
 
-// Log2()
+// FloorLog2()
 // ======
-// Calculate the logarithm base 2 of the input integer.
-// Input must be a power of 2.
+// Calculate the logarithm base 2 of the input integer, rounded down.
 
-func Log2(a: integer) => integer
+func FloorLog2(a: integer) => integer
 begin
+    assert a > 0;
+
+    var result : integer = 0;
+    var current : integer = 2;
+
+    while a >= current looplimit 2^128 do // i.e. unbounded
+        current = current * 2;
+        result = result + 1;
+    end;
+
+    return result;
+end;
+
+// CeilLog2()
+// ==========
+// Calculate the logarithm base 2 of the input integer, rounded up.
+
+func CeilLog2(a: integer) => integer
+begin
+    assert a > 0;
 
     var result : integer = 0;
     var current : integer = 1;
@@ -66,7 +85,6 @@ begin
         result = result + 1;
     end;
 
-    assert a == current;
     return result;
 end;
 

@@ -44,12 +44,11 @@ Tests using ASLRef OCaml primitives for some stdlib functions
 Checking that --no-primitives option actually removes OCaml primitives
 (different errors are produced)
   $ aslref no-primitives-test.asl
-  ASL Execution error: Mismatch type: value 3 does not belong to type integer.
+  ASL Execution error: Mismatch type: value -1 does not belong to type integer.
   [1]
   $ aslref --no-primitives no-primitives-test.asl
-  File ASL Standard Library, line 69, characters 11 to 23:
-  ASL Execution error: Assertion failed:
-    (__stdlib_local_a == __stdlib_local_current).
+  File ASL Standard Library, line 59, characters 11 to 16:
+  ASL Execution error: Assertion failed: (__stdlib_local_a > 0).
   [1]
 
 Tests using ASL stdlib only
