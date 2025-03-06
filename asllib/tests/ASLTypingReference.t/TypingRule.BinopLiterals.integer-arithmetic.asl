@@ -9,7 +9,7 @@ begin
     println("fdiv_int: 20 DIVRM 3 = ", 20 DIVRM 3);
     println("fdiv_int: -20 DIVRM 3 = ", -20 DIVRM 3);
     // println("invalid", "fdiv_int: 20 DIVRM -3 = ", 20 DIVRM -3);
-    println("frem_int: 20 MOD 3 = ", -20 MOD 3);
+    println("frem_int: 20 MOD 3 = ", 20 MOD 3);
     println("frem_int: -20 MOD 3 = ", -20 MOD 3);
     // println("invalid", "frem_int: 20 MOD -3 = ", 20 MOD -3);
     println("exp_int: 2 ^ 10 = ", 2 ^ 10);

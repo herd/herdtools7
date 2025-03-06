@@ -186,7 +186,7 @@ ASL Typing Tests / annotating types:
   div_int: 20 DIV 10 = 2
   fdiv_int: 20 DIVRM 3 = 6
   fdiv_int: -20 DIVRM 3 = -7
-  frem_int: 20 MOD 3 = 1
+  frem_int: 20 MOD 3 = 2
   frem_int: -20 MOD 3 = 1
   exp_int: 2 ^ 10 = 1024
   exp_int: -2 ^ 10 = 1024
