@@ -672,6 +672,7 @@ exactly
 examining
 example
 examples
+exceed
 exceeded
 except
 exception
@@ -1207,6 +1208,7 @@ not
 notation
 notations
 note
+noted
 notice
 notion
 now
@@ -1614,6 +1616,7 @@ second
 section
 see
 seen
+selecting
 selection
 selectors
 semantic

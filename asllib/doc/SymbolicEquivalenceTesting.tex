@@ -2373,6 +2373,12 @@ simplifying away the case where one of the operands is the literal one.
     \item either $\veone$ or $\vetwo$ is the literal expression for $1$;
     \item $\ve$ is $\vetwo$ if $\veone$ is the literal expression for $1$ and $\veone$, otherwise.
   \end{itemize}
+
+  \item \AllApplyCase{no\_one\_operand}
+  \begin{itemize}
+    \item both $\veone$ and $\vetwo$ are not the literal expression for $1$;
+    \item $\ve$ is the binary expression for multiplying $\vetwo$ and $\veone$.
+  \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
@@ -2381,14 +2387,15 @@ simplifying away the case where one of the operands is the literal one.
   (\veone = \ELiteral(\lint(1)) \lor \vetwo = \ELiteral(\lint(1)))\\
   \ve \eqdef \choice{\veone = \ELiteral(\lint(1))}{\vetwo}{\veone}
 }{
-  \symmulexpr(\EBinop(\MUL, \veone, \vetwo)) \typearrow \ve
+  \symmulexpr(\veone, \vetwo) \typearrow \ve
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[no\_one\_operand]{
-  (\veone \neq \ELiteral(\lint(1)) \land \vetwo \neq \ELiteral(\lint(1)))\\
-  \ve \eqdef \EBinop(\MUL, \veone, \vetwo)
+  (\veone \neq \ELiteral(\lint(1)) \land \vetwo \neq \ELiteral(\lint(1)))
 }{
-  \symmulexpr(\EBinop(\MUL, \veone, \vetwo)) \typearrow \ve
+  \symmulexpr(\veone, \vetwo) \typearrow \overname{\EBinop(\MUL, \veone, \vetwo)}{\ve}
 }
 \end{mathpar}
 
