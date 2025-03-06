@@ -609,21 +609,55 @@ begin
   return (ASR{N}(x, shift), x[Min(shift-1, N-1)]);
 end;
 
-// Rotate right.
-// This function shifts by [shift] bits to the right, the bits deleted are
-// reinserted on the left. This makes it operate effectively modulo N.
+// ROR()
+// =====
+// Rotate right by [shift] bits. The bits are deleted on the right and
+// reinserted on the left, so the operation is effectively modulo N.
+
 func ROR{N}(x: bits(N), shift: integer) => bits(N)
 begin
   assert shift >= 0;
+  if N == 0 then return x; end;
   let cshift = (shift MOD N) as integer{0..N-1};
   return x[0+:cshift] :: x[N-1:cshift];
 end;
 
+
+// ROR_C()
+// =======
 // Rotate right with carry out.
-// As ROR, the function effectively operates modulo N.
+// As with [ROR], the operation is effectively modulo N.
+// The carry bit is equal to the MSB of the result.
+
 func ROR_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
 begin
   assert shift > 0;
+  if N == 0 then return (x, '0'); end;
   let cpos = (shift-1) MOD N;
   return (ROR{N}(x, shift), x[cpos]);
+end;
+
+// ROL()
+// =====
+// Rotate left by [shift] bits.
+// This corresponds to a right rotation by [-shift] bits.
+
+func ROL{N}(x: bits(N), shift: integer) => bits(N)
+begin
+  assert shift >= 0;
+  if N == 0 then return x; end;
+  return ROR{N}(x, -shift MOD N);
+end;
+
+// ROL_C()
+// =======
+// Rotate left with carry out.
+// The carry bit is equal to the LSB of the result.
+
+func ROL_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
+begin
+  assert shift > 0;
+  if N == 0 then return (x, '0'); end;
+  let rshift = -shift MOD N;
+  return (ROR{N}(x, rshift), x[rshift]);
 end;

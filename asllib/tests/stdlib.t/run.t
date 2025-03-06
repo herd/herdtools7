@@ -15,6 +15,30 @@ Tests using ASLRef OCaml primitives for some stdlib functions
   {1, 1..(2 ^ (n + 1)), (- ((- 2) ^ (n + 1)))..((- 2) ^ (n + 1))}. Continuing
   with this constraint set.
 
+  $ aslref rotate.asl
+  V = '100'
+  
+  ROR(V,0) = '100'
+  ROR(V,1) = '010'
+  ROR(V,2) = '001'
+  ROR(V,3) = '100'
+  
+  ROR_C(V,1) = ('010', '0')
+  ROR_C(V,2) = ('001', '0')
+  ROR_C(V,3) = ('100', '1')
+  ROR_C(V,4) = ('010', '0')
+  
+  ROL(V,0) = '100'
+  ROL(V,1) = '001'
+  ROL(V,2) = '010'
+  ROL(V,3) = '100'
+  
+  ROL_C(V,1) = ('001', '1')
+  ROL_C(V,2) = ('010', '0')
+  ROL_C(V,3) = ('100', '0')
+  ROL_C(V,4) = ('001', '1')
+  
+
   $ aslref misc.asl
 
 Checking that --no-primitives option actually removes OCaml primitives
@@ -46,6 +70,30 @@ Tests using ASL stdlib only
   {0..(2 ^ (n + 1)), 1, (- ((- 2) ^ (n + 1)))..((- 2) ^ (n + 1))} gave
   {1, 1..(2 ^ (n + 1)), (- ((- 2) ^ (n + 1)))..((- 2) ^ (n + 1))}. Continuing
   with this constraint set.
+
+  $ aslref --no-primitives rotate.asl
+  V = '100'
+  
+  ROR(V,0) = '100'
+  ROR(V,1) = '010'
+  ROR(V,2) = '001'
+  ROR(V,3) = '100'
+  
+  ROR_C(V,1) = ('010', '0')
+  ROR_C(V,2) = ('001', '0')
+  ROR_C(V,3) = ('100', '1')
+  ROR_C(V,4) = ('010', '0')
+  
+  ROL(V,0) = '100'
+  ROL(V,1) = '001'
+  ROL(V,2) = '010'
+  ROL(V,3) = '100'
+  
+  ROL_C(V,1) = ('001', '1')
+  ROL_C(V,2) = ('010', '0')
+  ROL_C(V,3) = ('100', '0')
+  ROL_C(V,4) = ('001', '1')
+  
 
   $ aslref --no-primitives misc.asl
 
