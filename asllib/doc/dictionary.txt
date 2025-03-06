@@ -481,6 +481,7 @@ deconstruct
 deconstructing
 deconstructs
 decrements
+dedicated
 deduced
 default
 deferred
@@ -711,6 +712,7 @@ explanation
 explicit
 explicitly
 exploded
+exploding
 exponent
 export
 exposes
@@ -721,6 +723,7 @@ expressing
 expression
 expressionless
 expressions
+extend
 extensions
 extent
 extra
@@ -1076,6 +1079,7 @@ like
 limit
 limitation
 limited
+limits
 line
 linux
 list
@@ -1302,6 +1306,7 @@ overwrites
 own
 page
 pair
+paired
 pairs
 paragraph
 parallel
@@ -1380,9 +1385,9 @@ precisely
 precision
 predicate
 predicates
-preferred
 predictability
 predictable
+preferred
 prefix
 prefixed
 premature
@@ -1425,6 +1430,7 @@ program
 programming
 prohibited
 propagate
+propagated
 propagates
 propagating
 proper
@@ -1469,6 +1475,7 @@ readers
 reading
 reads
 real
+reals
 reason
 reasoning
 recall
@@ -2009,6 +2016,7 @@ valueless
 values
 variable
 variables
+variant
 variations
 varies
 various
