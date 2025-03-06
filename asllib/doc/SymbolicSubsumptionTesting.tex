@@ -924,7 +924,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
   \begin{itemize}
     \item $\vapprox$ is $\Under$;
     \item \Proseapproxconstraint{$\tenv$}{$\vc$}{$\Under$}{$\vs_\vc$}, for every constraint $\vc$ in $\cs$;
-    \item \Proseeqdef{$\vs$}{the union of all sets $\vs_\vc$, for every constraint $\vc$ in $\cs$}.
+    \item \Proseeqdef{$\vs$}{the intersection of all sets $\vs_\vc$, for every constraint $\vc$ in $\cs$}.
   \end{itemize}
 \end{itemize}
 
@@ -940,9 +940,9 @@ based on the \approximationdirectionterm\ $\vapprox$.
 
 \begin{mathpar}
 \inferrule[under]{
-  \vc \in \cs: \approxconstraint(\tenv, \Over, \vc) \typearrow \vs_\vc
+  \vc \in \cs: \approxconstraint(\tenv, \vapprox, \vc) \typearrow \vs_\vc
 }{
-  \approxconstraints(\tenv, \overname{\Under}{\vapprox}, \cs) \typearrow
+  \approxconstraints(\tenv, \vapprox, \cs) \typearrow
   \overname{\bigcap_{\vc \in \cs} \vs_\vc}{\vs}
 }
 \end{mathpar}
@@ -1012,25 +1012,27 @@ $\forall z\in\Z.\ -\infty < z$ and $\forall z\in\Z.\ z < +\infty$.
 % use of conditionals in rules (i.e., choice functions).
 \begin{mathpar}
 \inferrule[range\_over]{
+  \vapprox = \Over\\
   \approxexprmin(\tenv, \veone) \typearrow \vzone\\
   \approxexprmax(\tenv, \vetwo) \typearrow \vztwo\\
   \vsinterval \eqdef \{ \vz \;|\; \vzone \leq \vz \leq \vztwo \}\\
   \approxbottomtop(\vapprox) \typearrow \vsbottomtop\\
   \vs \eqdef \choice{\vzone \leq \vztwo}{\vsinterval}{\vsbottomtop}
 }{
-  \approxconstraint(\tenv, \overname{\Over}{\vapprox}, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vs
+  \approxconstraint(\tenv, \vapprox, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vs
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[range\_under]{
+  \vapprox = \Under\\
   \approxexprmax(\tenv, \veone) \typearrow \vzone\\
   \approxexprmin(\tenv, \vetwo) \typearrow \vztwo\\
   \vsinterval \eqdef \{ \vz \;|\; \vzone \leq \vz \leq \vztwo \}\\
   \approxbottomtop(\vapprox) \typearrow \vsbottomtop\\
   \vs \eqdef \choice{\vzone \leq \vztwo}{\vsinterval}{\vsbottomtop}
 }{
-  \approxconstraint(\tenv, \overname{\Under}{\vapprox}, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vs
+  \approxconstraint(\tenv, \vapprox, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vs
 }
 \end{mathpar}
 
@@ -1246,7 +1248,7 @@ types.
   \approxexpr(\tenv, \vapprox, \vep) \typearrow \vsp\\
   \vs \eqdef \{ \unopliterals(\op, \lint(\vz)) \;|\; \vz \in \vsp\}
 }{
-  \approxexpr(\tenv, \overname{\Under}{\vapprox}, \overname{\EUnop(\op, \vep)}{\ve}) \typearrow \vs
+  \approxexpr(\tenv, \vapprox, \overname{\EUnop(\op, \vep)}{\ve}) \typearrow \vs
 }
 \end{mathpar}
 
@@ -1261,7 +1263,7 @@ types.
     \end{array}
   }
 }{
-  \approxexpr(\tenv, \overname{\Under}{\vapprox}, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \vs
+  \approxexpr(\tenv, \vapprox, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \vs
 }
 \end{mathpar}
 
@@ -1271,7 +1273,7 @@ types.
   \approxexpr(\tenv, \vapprox, \vethree) \typearrow \vsthree\\
   \vs \eqdef \choice{\vapprox = \Over}{\vstwo \cup \vsthree}{\vstwo \cap \vsthree}
 }{
-  \approxexpr(\tenv, \overname{\Under}{\vapprox}, \overname{\ECond(\Ignore, \vetwo, \vethree)}{\ve}) \typearrow \vs
+  \approxexpr(\tenv, \vapprox, \overname{\ECond(\Ignore, \vetwo, \vethree)}{\ve}) \typearrow \vs
 }
 \end{mathpar}
 
@@ -1280,7 +1282,7 @@ types.
   \astlabel(\ve) \not\in \{\ELiteral, \EVar, \EUnop, \EBinop, \ECond\}\\
   \approxbottomtop(\vapprox) \typearrow \vs
 }{
-  \approxexpr(\tenv, \overname{\Under}{\vapprox}, \ve) \typearrow \vs
+  \approxexpr(\tenv, \vapprox, \ve) \typearrow \vs
 }
 \end{mathpar}
 
