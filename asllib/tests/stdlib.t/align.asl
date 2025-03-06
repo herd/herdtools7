@@ -25,7 +25,7 @@ begin
   assert AlignUpP2('001000', 5) == '100000';
   assert AlignUpP2('001000', 6) == '000000';
 
-  for N = 0 to 5 do
+  for N = 1 to 5 do
     let pN = 2 ^ N;
     for x = -pN to pN do
       for y = 0 to N do

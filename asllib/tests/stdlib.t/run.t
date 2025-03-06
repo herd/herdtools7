@@ -54,8 +54,6 @@ Checking that --no-primitives option actually removes OCaml primitives
 Tests using ASL stdlib only
   $ aslref --no-primitives uint.asl
   $ aslref --no-primitives sint.asl
-  ASL Dynamic error: Illegal application of operator ^ for values 2 and -1.
-  [1]
   $ aslref --no-primitives pow2.asl
   $ aslref --no-primitives log2.asl
   $ aslref --no-primitives ilog2.asl
