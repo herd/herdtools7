@@ -1113,6 +1113,8 @@
 \newcommand\evalslice[0]{\hyperlink{def-evalslice}{\textfunc{eval\_slice}}}
 \newcommand\evalstmt[1]{\hyperlink{def-evalstmt}{\textfunc{eval\_stmt}}(#1)}
 \newcommand\evalblock[1]{\hyperlink{def-evalblock}{\textfunc{eval\_block}}(#1)}
+\newcommand\poplocalscope[0]{\hyperlink{def-poplocalscope}{\textfunc{pop\_local\_scope}}}
+\newcommand\Prosepoplocalscope[2]{#2 after \hyperlink{def-poplocalscope}{restoring} the variable bindings of #1 with the updated values of #2}
 \newcommand\evalloop[1]{\hyperlink{def-evalloop}{\textfunc{eval\_loop}}(#1)}
 \newcommand\evalfor[0]{\hyperlink{def-evalfor}{\textfunc{eval\_for}}}
 \newcommand\evalforloop[0]{\hyperlink{def-evalforloop}{\textfunc{eval\_for\_loop}}}
@@ -2234,10 +2236,12 @@
 \newcommand\envandfs[0]{\texttt{env\_and\_fs}}
 \newcommand\envandfsone[0]{\texttt{env\_and\_fs1}}
 \newcommand\envandfstwo[0]{\texttt{env\_and\_fs2}}
+\newcommand\envcont[0]{\texttt{env\_cont}}
 \newcommand\envfour[0]{\texttt{env4}}
 \newcommand\envm[0]{\texttt{envm}}
 \newcommand\envone[0]{\texttt{env1}}
 \newcommand\envp[0]{\texttt{env'}}
+\newcommand\envret[0]{\texttt{env\_ret}}
 \newcommand\envthree[0]{\texttt{env3}}
 \newcommand\envthrow[0]{\texttt{env\_throw}}
 \newcommand\envthrowone[0]{\texttt{env\_throw1}}
@@ -2836,6 +2840,7 @@
 \newcommand\vindex[0]{\texttt{index}}
 \newcommand\vindexname[0]{\texttt{index\_name}}
 \newcommand\vinitialvalue[0]{\texttt{initial\_value}}
+\newcommand\vinnerenv[0]{\texttt{inner\_env}}
 \newcommand\vione[0]{\texttt{i1}}
 \newcommand\vis[0]{\texttt{vis}}
 \newcommand\visone[0]{\texttt{is1}}
@@ -2930,6 +2935,7 @@
 \newcommand\voptfields[0]{\texttt{opt\_fields}}
 \newcommand\voptlimit[0]{\texttt{opt\_limit}}
 \newcommand\votherwiseopt[0]{\texttt{otherwise\_opt}}
+\newcommand\vouterenv[0]{\texttt{outer\_env}}
 \newcommand\vp[0]{\texttt{p}}
 \newcommand\vprefixcases[0]{\texttt{prefix\_cases}}
 \newcommand\vprev[0]{\texttt{prev}}

@@ -1140,9 +1140,15 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Begin EvalBlock *)
   and eval_block env stm =
     let block_env = IEnv.push_scope env in
-    let*> block_env1 = eval_stmt block_env stm in
-    IEnv.pop_scope env block_env1 |> return_continue |: SemanticsRule.Block
-  (* End *)
+    let*| res = eval_stmt block_env stm in
+    match res with
+    | Normal (Returning _) -> return res
+    | Normal (Continuing env_cont) ->
+        let new_env = IEnv.pop_scope env env_cont in
+        return_continue new_env
+    | Throwing (v, env_throw) ->
+        let new_env = IEnv.pop_scope env env_throw in
+        return (Throwing (v, new_env))
 
   (* Evaluation of while and repeat loops *)
   (* ------------------------------------ *)
