@@ -464,12 +464,11 @@ def check_rules(filename: str) -> int:
         "RelationsOnTypes.tex" : 15,
         "Specifications.tex" : 26,
         "SubprogramCalls.tex" : 19,
-        "SubprogramCalls.tex" : 19,
         "SubprogramDeclarations.tex" : 13,
         "SymbolicEquivalenceTesting.tex" : 26,
         "SymbolicSubsumptionTesting.tex" : 23,
         "Types.tex" : 9,
-        "SideEffects.tex" : 16,
+        "SideEffects.tex" : 13,
         "TypeSystemUtilities.tex" : 23,
         "SemanticsUtilities.tex" : 20,
     }

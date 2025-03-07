@@ -7,7 +7,7 @@ import re
 
 ASLREF_EXE = "aslref"
 
-debug = False
+debug = True
 
 
 def yellow_error_message(msg: str) -> str:
@@ -107,8 +107,8 @@ class BlockMacro(ABC):
             all_blocks.append((block, True))
             last_end_line = block.end + 1
         # Append any lines after the last block to transform.
-        if last_end_line < num_lines - 1:
-            all_blocks.append((Block(last_end_line, num_lines), False))
+        if last_end_line < num_lines:
+            all_blocks.append((Block(last_end_line, num_lines - 1), False))
         return all_blocks
 
     @classmethod
@@ -122,7 +122,7 @@ class BlockMacro(ABC):
             assert block.end >= block.begin
             assert block.begin == last_line_number + 1
             last_line_number = block.end
-        assert last_line_number == num_lines
+        assert last_line_number == num_lines - 1
 
     @classmethod
     def apply_to_file(cls, source: str):
