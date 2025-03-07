@@ -434,3 +434,4 @@ ASL Typing Tests / annotating types:
   File TypingRule.CheckIsNotCollection.asl, line 8, characters 2 to 25:
   ASL typing error: unexpected collection.
   [1]
+  $ aslref TypingRule.LESetCollectionFields.asl

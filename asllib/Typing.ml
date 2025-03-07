@@ -2148,12 +2148,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   | _ -> fatal_from ~loc Error.(UnsupportedExpr (Static, e))
                 in
                 match List.assoc_opt field_name fields with
-                (* Begin EGetBadRecordField *)
                 | None ->
                     fatal_from ~loc (Error.BadField (field_name, t_e2))
                     |: TypingRule.EGetBadRecordField
-                (* End *)
-                (* Begin EGetRecordField *)
+                (* Begin EGetCollectionField *)
                 | Some t ->
                     ( t,
                       E_GetCollectionFields (collection_var_name, [ field_name ])
@@ -2622,8 +2620,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                | Some t -> t
              in
              let+ () = check_type_satisfies ~loc env t_e t in
+             let n = get_bitvector_const_width ~loc env t in
              ( LE_SetCollectionFields
-                 (collection_var_name, [ field ], [ (0, 0) ])
+                 (collection_var_name, [ field ], [ (0, n) ])
                |> here,
                ses |: TypingRule.LESetStructuredField )
          (* End *)

@@ -1307,13 +1307,14 @@ since \verb|x| is not a \bitvectortypeterm{} nor a \structuredtype.
   \item $\vt$ is neither a \structuredtype\ nor a bitvector type;
   \item the result is an error indicating that the type of $\vle$ conflicts with the requirements of a field access expression.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
   \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow (\vletwo, \vses) \OrTypeError\\\\
   \makeanonymous(\tenv, \vtleone) \typearrow \tleoneanon \OrTypeError\\\\
-  \astlabel(\tleoneanon) \not\in \{\TException, \TRecord, \TBits\}
+  \astlabel(\tleoneanon) \not\in \{\TException, \TRecord, \TCollection, \TBits\}
 }{
   \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \TypeErrorVal{\UnexpectedType}
 }
@@ -1332,13 +1333,14 @@ are well-typed.
   \item $\vle$ denotes the access to the field named \texttt{field} in $\vleone$;
   \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
   \item annotating the left-hand-side expression  $\vleone$ with type $\vtleone$ in $\tenv$ yields \\ $(\vletwo, \vses)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vtleone$ in $\tenv$ yields a \structuredtype\ with fields \\
-        $\fields$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vtleone$ in $\tenv$ yields a record
+    or exception type with fields $\fields$\ProseOrTypeError;
   \item checking that there exists a type associated with the field $\field$ in $\fields$ $\True$ \ProseTerminateAs{\BadField};
   \item the type associated with the field $\field$ in $\fields$ is $\vt$;
   \item determining whether $\vte$ \typesatisfies\ $\vt$ yields $\True$\ProseOrTypeError;
   \item $\newle$ is the access to the field $\field$ in $\vletwo$, that is, $\LESetField(\vletwo, \field)$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
@@ -1355,6 +1357,53 @@ are well-typed.
   \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow (\newle, \vses)
 }
 \end{mathpar}
+
+\CodeSubsection{\LESetStructuredFieldBegin}{\LESetStructuredFieldEnd}{../Typing.ml}
+
+\TypingRuleDef{LESetCollectionField}
+
+\ExampleDef{Typing Collection Field Assignable Expressions}
+All of the collection field assignable expressions in
+\listingref{typing-lesetcollectionfields} are well-typed.
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item $\vle$ denotes the access to the field named \texttt{field} in
+    $\vleone$;
+  \item annotating the right-hand-side expression corresponding to $\vleone$
+    in $\tenv$ yields \\ $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
+  \item annotating the left-hand-side expression  $\vleone$ with type
+    $\vtleone$ in $\tenv$ yields \\ $(\vletwo, \vses)$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vtleone$ in $\tenv$ yields a
+    collection type with fields $\fields$\ProseOrTypeError;
+  \item $\vletwo$ denotes a left-hand-side variable expression for $\vbase$,
+    that is, $\LEVar(\vbase)$;
+  \item checking that there exists a type associated with the field $\field$
+    in $\fields$ $\True$ \ProseTerminateAs{\BadField};
+  \item the type associated with the field $\field$ in $\fields$ is $\vt$;
+  \item determining whether $\vte$ \typesatisfies\ $\vt$ yields
+    $\True$\ProseOrTypeError;
+  \item $\newle$ is the access to the field $\field$ in $\vletwo$, that is,
+    $\LESetCollectionFields(\vbase, [\field])$.
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow (\vletwo, \vses) \OrTypeError\\\\
+  \makeanonymous(\tenv, \vtleone) \typearrow \TCollection(\fields) \OrTypeError\\\\
+  \assocopt(\fields, \field) \typearrow \tyopt\\
+  \checktrans{\tyopt \neq \None}{\BadField} \checktransarrow \True \OrTypeError\\\\
+  \tyopt \eqname \langle\vt\rangle\\
+  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \newle \eqdef \LESetCollectionFields(\vbase, [\field])
+}{
+  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow (\newle, \vses)
+}
+\end{mathpar}
+
 \CodeSubsection{\LESetStructuredFieldBegin}{\LESetStructuredFieldEnd}{../Typing.ml}
 
 \hypertarget{def-setfieldslexprterm}{}
@@ -1398,6 +1447,24 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
       \item checking that $\vte$ \typesatisfies\ $\vtlhs$ in $\tenv$ yields $\True$\ProseOrTypeError;
       \item define $\newle$ as the assignable expression of the list of fields $\vlefields$ to the base expression $\lebase$, that is,
             $\LESetFields(\lebase, \vlefields)$;
+      \item \Proseeqdef{$\vses$}{$\vsesbase$}.
+    \end{itemize}
+
+    \item \AllApplyCase{collection}
+    \begin{itemize}
+      \item $\tanonbase$ is a collection type with list of fields
+        $\vbasefields$;
+      \item $\lebase$ denotes a left-hand-side variable expression for
+        $\vbase$, that is, $\LEVar(\vbase)$;
+      \item applying $\foldbitvectorfields$ to $\vlefields$ and $\vbasefields$
+        in $\tenv$ yields $(\vlength, \vslices)$ \ProseOrTypeError;
+      \item \Proseeqdef{$\vtlhs$}{the bitvector type of length $\vlength$ and
+        no bitfields, that is, $\TBits(\ELInt{\vlength}, \emptylist)$};
+      \item checking that $\vte$ \typesatisfies\ $\vtlhs$ in $\tenv$ yields
+        $\True$\ProseOrTypeError;
+      \item define $\newle$ as the assignable expression of the list of fields
+        $\vlefields$ to the collection base expression $\vbase$, that is, \\
+        $\LESetCollectionFields(\vbase, \vlefields)$;
       \item \Proseeqdef{$\vses$}{$\vsesbase$}.
     \end{itemize}
 
@@ -1447,12 +1514,33 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
 \end{mathpar}
 
 \begin{mathpar}
+  \inferrule[collection]{
+  \annotateexpr{\tenv, \torexpr(\lebase)} \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \lebase, \tbase} \typearrow (\lebaseannot, \vsesbase) \OrTypeError\\\\
+  \makeanonymous(\tenv, \tbase) \typearrow \tbaseanon \OrTypeError\\\\
+  \commonprefixline\\\\
+  \tbaseanon = \TCollection(\vbasefields)\\
+  \lebase = \LEVar(\vbase) \\
+  \foldbitvectorfields(\tenv, \vbasefields, \vlefields) \typearrow (\vlength, \vslices) \OrTypeError\\\\
+  \vtlhs \eqdef \TBits(\ELInt{\vlength}, \emptylist)\\
+  \checktypesat(\tenv, \vte, \vtlhs) \typearrow \True \OrTypeError
+}{
+  {
+   \begin{array}{r}
+    \annotatelexpr{\tenv, \overname{\LESetFields(\lebase, \vlefields)}{\vle}, \vte} \typearrow\\
+    (\overname{\LESetCollectionFields(\vbase, \vlefields, \vslices)}{\newle}, \overname{\vsesbase}{\vses})
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
   \inferrule[error]{
   \annotateexpr{\tenv, \torexpr(\lebase)} \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\\\\
   \annotatelexpr{\tenv, \lebase, \tbase} \typearrow (\lebaseannot, \vsesbase) \OrTypeError\\\\
   \makeanonymous(\tenv, \tbase) \typearrow \tbaseanon \OrTypeError\\\\
   \commonprefixline\\\\
-  \checktrans{\astlabel(\tbaseanon) \not\in \{\TBits, \TRecord\}}{\UnexpectedType} \typearrow \True \OrTypeError
+  \checktrans{\astlabel(\tbaseanon) \not\in \{\TBits, \TRecord, \TCollection\}}{\UnexpectedType} \typearrow \True \OrTypeError
 }{
   \annotatelexpr{\tenv, \overname{\LESetFields(\lebase, \vlefields)}{\vle}, \vte} \typearrow (\newle, \vses)
 }
@@ -1552,7 +1640,7 @@ The multi-field assignments in \listingref{lesetfields} evaluate without yieldin
   \vmtwo \eqname (\vvtwo, \vgtwo)\\
   \evallexpr{\envone, \vlerecord, (\vvtwo, \vg \parallelcomp \vgtwo)} \evalarrow C
 }{
-  \evalexpr{\env, \overname{\LESetFields(\vlerecord, \fields, \vslices)}{\vle}, (\vv,\vg)} \evalarrow C
+  \evallexpr{\env, \overname{\LESetFields(\vlerecord, \fields, \vslices)}{\vle}, (\vv,\vg)} \evalarrow C
 }
 \end{mathpar}
 
@@ -1561,7 +1649,7 @@ The multi-field assignments in \listingref{lesetfields} evaluate without yieldin
 The helper function
 \[
   \assignbitvectorfields(
-    \overname{(\trecord\times\XGraphs)}{\vm} \aslsep
+    \overname{(\tbitvector\times\XGraphs)}{\vm} \aslsep
     \overname{(\trecord\times\XGraphs)}{\vmone} \aslsep
     \overname{\identifier^*}{\fields} \aslsep
     \overname{(\N\times\N)^*}{\vslices}) \aslto
@@ -1630,6 +1718,53 @@ $\nvbitvector('11111111 0000000000000000 1')$.
     \vmtwo
     \end{array}
   }
+}
+\end{mathpar}
+
+\SemanticsRuleDef{LESetCollectionFields}
+
+\ExampleDef{Typing Collection Fields Assignable Expressions}
+All of the collection field assignable expressions in
+\listingref{typing-lesetcollectionfields} are well-typed.
+\ASLListing{Typing collection fields assignment expressions}{typing-lesetcollectionfields}{\typingtests/TypingRule.LESetCollectionFields.asl}
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item $\vle$ is an expression for assigning each of the fields in $\fields$
+    of the collection global storage element $\vbase$ with the corresponding
+    slices given in $\vslices$ from the bitvector value $\vv$ (the rule
+    \TypingRuleRef{LESetFields} ensures that the length of $\fields$ and
+    $\vslices$ is the same);
+  \item view $\env$ as an environment where $\tenv$ is the static environment
+    and $\denv$ is the dynamic environment;
+  \item $\vbase$ is bound in the global dynamic environment ($G^\denv.\storage$);
+  \item $\vvone$ is the value of $\vbase$ in the global component of $\env$ ;
+  \item \Proseeqdef{$\vm$}{$(\vv, \vg)$};
+  \item \Proseeqdef{$\vrmrecord$}{$(\vvone, \{\})$};
+  \item applying $\assignbitvectorfields$ to $\vm$, $\vrmrecord$,
+    $\fields$, and $\vslices$, yields $((\vvtwo, \vgtwo), \envone)$\ProseOrError;
+  \item \Proseeqdef{$\vgzero$}{the graph containing a Write Effect for each
+    $\fieldname$ in $\fields$};
+  \item $\newenv$ is $\env$ where $\vbase$ is bound to $\vv$ in the $\storage$ map
+    of the global dynamic environment $G^\denv$.
+  \item $\newg$ is the ordered composition with the $\asldata$ edge of $\vgtwo$
+    and $\vgzero$;
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{
+  \env \eqname (\tenv, \denv)\\
+  \vbase \in \dom(G^\denv)\\
+  \vrmrecord \eqdef (G^\denv[\vbase], \{\}) \\
+  \vm \eqdef (\vv,\vg) \\
+  \assignbitvectorfields(\vm, \vrmrecord, \fields, \vslices) \evalarrow ((\vvtwo, \vgtwo), \envone) \OrDynError\\\\
+  \vgzero \eqdef \{\fieldname \in \fieldnames: \WriteEffect(\vbase + \ttdotstr + \fieldname)\}\\
+  \newenv \eqdef (\tenv, (G^\denv[\vx \mapsto \vvtwo], L^\denv))\\
+  \newg \eqdef \ordered{\vgtwo}{\asldata}{\vgzero} \\
+}{
+  \evallexpr{\env, \overname{\LESetCollectionFields(\vbase, \fields, \vslices)}{\vle}, (\vv,\vg)} \evalarrow \Normal(\newg,\newenv)
 }
 \end{mathpar}
 
