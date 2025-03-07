@@ -284,7 +284,7 @@ subtyping.
   \makeanonymous(\tenv, \vt) \typearrow \vttwo\\
   \makeanonymous(\tenv, \vs) \typearrow \vstwo\\
   \astlabel(\vttwo) = \astlabel(\vstwo) = \TInt\\
-  \symsubsumes(\tenv, \vs, \vt) \typearrow \vb
+  \symdomainsubset(\tenv, \vs, \vt) \typearrow \vb
 }{
   \subtypesat(\tenv, \vt, \vs) \typearrow \vb
 }
@@ -3109,7 +3109,7 @@ precision lost, the type of \verb|(a * a) + 2| also denotes a precision lost.
 \FormallyParagraph
 \begin{mathpar}
   \inferrule[Loss]{
-    \vpone = \PrecisionLost \lor 
+    \vpone = \PrecisionLost \lor
     \vptwo = \PrecisionLost
   }{
     \vp = \PrecisionLost
