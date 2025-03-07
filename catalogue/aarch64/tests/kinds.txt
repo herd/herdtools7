@@ -31,6 +31,9 @@ SB+dmb.sy+po   Allowed
 SB+dmb.sys     Forbidden
 SB             Allowed
 LB+rel+CAS     Forbidden
+LB+rel+CAS+BIS     Forbidden
+LB+rel+LDADD   Forbidden
+LB+rel+STADD   Forbidden
 LB+rel+CAS-ok-RsRs-addr     Allowed
 LB+rel+CAS-ok-MRs-addr     Forbidden
 MP+rel+CAS-addr Allowed
