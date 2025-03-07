@@ -62,3 +62,4 @@ MP+rel+acq                      Forbidden
 MP+rel+acqpc                    Forbidden
 MP+rel+swp-acq                  Forbidden
 MP+rel+swp-acqpc                Forbidden
+MP+rel+addr-po-loc-addr         Allowed

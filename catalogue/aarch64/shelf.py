@@ -88,4 +88,5 @@ illustrative_tests = [
 #    "tests/R+CAS-rfi-ctrl+DMBST.litmus",
 #    "tests/SB+CAS-rfi-addr+DMBSY.litmus",
 #    "tests/SB+SWP-rfi-addr+DMBSY.litmus",
+     "tests/MP+rel+addr-po-loc-addr.litmus",
 ]

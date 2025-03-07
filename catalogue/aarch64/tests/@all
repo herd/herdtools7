@@ -50,3 +50,4 @@ MP+rel+swp-acq.litmus
 # SB+dmb.sy+rel-acqpc.litmus
 # MP+rel+acqpc.litmus
 # MP+rel+swp-acqpc.litmus
+MP+rel+addr-po-loc-addr.litmus
