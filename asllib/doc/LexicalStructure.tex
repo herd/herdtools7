@@ -18,6 +18,7 @@ The end of file character is denoted by $\eof$.
 The content text does not contain an end-of-file character.
 
 \RequirementDef{TabCharacter}
+% NO_EXAMPLE
 In particular, it is an error to use a tab character in ASL specification text (decimal encoding 9).
 
 \section{Lexical Regular Expressions}
@@ -75,18 +76,12 @@ That is, the set of strings that match that regular expression.
 Comments, newlines and space characters are treated as whitespace.
 %
 For example,
-\begin{lstlisting}
-var x    = 5; var y
-= x // comment
-
-;
-\end{lstlisting}
-is equivalent to
-\begin{lstlisting}
-var x = 5;
-var y = x;
-\end{lstlisting}
-in terms of the resulting AST.
+the specification in \listingref{syntax-whitespace1}
+is equivalent to \listingref{syntax-whitespace2}
+in the sense that they both parse to the same AST.
+Of course, \listingref{syntax-whitespace2} is preferred in terms of style.
+\ASLListing{A badly-formatted specification}{syntax-whitespace1}{\syntaxtests/GuideRule.Whitespace1.asl}
+\ASLListing{A well-formatted specification}{syntax-whitespace2}{\syntaxtests/GuideRule.Whitespace2.asl}
 
 \section{Comments}
 ASL supports comments in the style of C++:
@@ -247,34 +242,27 @@ in the expression \verb|(1, 2).item0|.
 \RequirementDef{ReservedIdentifiers}
 Identifiers that begin with double-underscore are reserved for use in the implementation and should
 not be used in specifications (see \LexicalRuleRef{ReservedIdentifiers}).
-%
-For example, the statement \verb|var __internal_var = TRUE;|
-should yield a lexical error by the lexical analysis.
+
+For example, \listingref{reserved-identifiers} shows an illegal specification that uses the reserved
+identifier \verb|__internal_var| in an attempt to declare a local variable,
+which yields a lexical error by the lexical analysis.
+\ASLListing{A specification using a reserved identifier}{reserved-identifiers}{\syntaxtests/GuideRule.ReservedIdentifiers.bad.asl}
 
 \RequirementDef{IdentifiersKeywords}
 Keywords cannot be used as identifiers.
-%
-For example,
-\begin{lstlisting}
-var case = 5;
-\end{lstlisting}
-should yield a lexical error by the lexical analysis.
+
+For example, the specification in \listingref{identifiers-keywords}
+uses the keyword \verb|case| in an attempt to declare a local variable,
+which yields a lexical error by the lexical analysis.
+\ASLListing{A specification using a keyword for an identifier}{identifiers-keywords}{\syntaxtests/GuideRule.IdentifiersKeywords.bad.asl}
 
 \ConventionDef{IdentifiersDifferingByCase}
 To improve readability, it is recommended to avoid the use of identifiers that differ
 only by the case of some characters.
 %
-For example, a specification containing the following declarations
-may confuse readers and the variable names are better renamed:
-\begin{lstlisting}
-func baz()
-begin
-  var color = foo();
-  var Color = bar();
-  // ...
-  var c = color; // should this be Color?
-end;
-\end{lstlisting}
+For example, the specification in \listingref{IdentifiersDifferingByCase}
+may confuse readers and the variable names \verb|color| and \verb|Color| are better renamed.
+\ASLListing{Two identifiers differing only by case}{IdentifiersDifferingByCase}{\syntaxtests/ConventionRule.IdentifiersDifferingByCase.asl}
 
 \ConventionDef{IdentifierSingleUnderscore}
 Any identifier with a single underscore followed by an alphanumeric character
@@ -282,11 +270,9 @@ is treated as a normal identifier. We recommend that these are only
 for use by platform-specific code, which should not clash with the rest of a
 portable ASL specification.
 %
-For example,
-\begin{lstlisting}
-constant _my_platform_num_regs = 200;
-\end{lstlisting}
+For example, \listingref{IdentifierSingleUnderscore}
 can be useful for declaring a constant specific to the platform \verb|my_platform|.
+\ASLListing{An identifier starting with a single underscore}{IdentifierSingleUnderscore}{\syntaxtests/ConventionRule.IdentifierSingleUnderscore.asl}
 
 \section{Lexical Analysis} \label{sec:LexicalAnalysis}
 Lexical analysis, which is also referred to as \emph{scanning}, is defined via the function

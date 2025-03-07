@@ -314,7 +314,7 @@ the modified environment $\newtenv$ and type $\newty$.
 \begin{mathpar}
 \inferrule[empty\_fields]{
   \subtypesat(\tty, \TNamed(\vsuper)) \typearrow \vb\\
-  \checktrans{\vb}{TypeConflict} \typearrow \True \OrTypeError\\\\
+  \checktrans{\vb}{\UnexpectedType} \typearrow \True \OrTypeError\\\\
   \extrafields = \emptylist \\
   \newtenv \eqdef (G^\tenv.\subtypes[\name\mapsto\vsuper], L^\tenv)
 }{
@@ -325,7 +325,7 @@ the modified environment $\newtenv$ and type $\newty$.
 \begin{mathpar}
 \inferrule[no\_super]{
   \subtypesat(\tty, \TNamed(\vsuper)) \typearrow \vb\\
-  \checktrans{\vb}{TypeConflict} \typearrow \True \OrTypeError\\\\
+  \checktrans{\vb}{\UnexpectedType} \typearrow \True \OrTypeError\\\\
   \extrafields \neq \emptylist\\\\
   G^\tenv.\declaredtypes(\vsuper) = \bot
 }{
@@ -337,7 +337,7 @@ the modified environment $\newtenv$ and type $\newty$.
 \begin{mathpar}
 \inferrule[structured]{
   \subtypesat(\tty, \TNamed(\vsuper)) \typearrow \vb\\
-  \checktrans{\vb}{TypeConflict} \typearrow \True \OrTypeError\\\\
+  \checktrans{\vb}{\UnexpectedType} \typearrow \True \OrTypeError\\\\
   \extrafields \neq \emptylist\\\\
   G^\tenv.\declaredtypes(\vsuper) = (\vt, \Ignore)\\
   {
