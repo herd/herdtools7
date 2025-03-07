@@ -1,8 +1,8 @@
-\chapter{Symbolic Subsumption Testing\label{chap:SymbolicSubsumptionTesting}}
+\chapter{Symbolic Domain Subset Testing\label{chap:SymbolicDomainSubsetTesting}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-This chapter is concerned with implementing a \hyperlink{def-soundsubsumptiontest}{sound subsumption test}
-for integer types, as defined in \secref{subsumptiontesting} and employed by
-TypingRule.SubtypeSatisfaction (see \TypingRuleRef{SubtypeSatisfaction}).
+This chapter is concerned with implementing a \hyperlink{def-sounddomainsubsettest}{sound domain subset test}
+for integer types, as defined in \secref{domainsubsettesting} and employed by
+\TypingRuleRef{SubtypeSatisfaction}.
 
 \hypertarget{def-symbolicdomain}{}
 The symbolic reasoning operates by first transforming types into expressions in a \emph{symbolic domain} AST
@@ -27,8 +27,8 @@ The symbolic reasoning operates by first transforming types into expressions in 
         which represents the set of all integers.
 \end{itemize}
 
-The main rule is of this chapter is \TypingRuleRef{SymSubsumes}, which defines the function
-$\symsubsumes$.
+The main rule is of this chapter is \TypingRuleRef{SymSubset}, which defines the function
+$\symdomainsubset$.
 
 Other helper rules are as follows:
 \begin{itemize}
@@ -45,14 +45,14 @@ Other helper rules are as follows:
   \item \TypingRuleRef{ConstraintBinop}
 \end{itemize}
 
-\TypingRuleDef{SymSubsumes}
-\hypertarget{def-symsubsumes}{}
+\TypingRuleDef{SymSubset}
+\hypertarget{def-symdomainsubset}{}
 The predicate
 \[
-  \symsubsumes(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
+  \symdomainsubset(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \overname{\Bool}{\vb}
 \]
-soundly approximates $\subsumes(\tenv, \vt, \vs)$ for integer types.
+soundly approximates $\domainsubset(\tenv, \vt, \vs)$ for integer types.
 \ProseOtherwiseTypeError
 
 We assume that both $\vt$ and $\vs$ have been successfully annotated to integer types as per \chapref{Types}
@@ -73,7 +73,7 @@ We assume that both $\vt$ and $\vs$ have been successfully annotated to integer 
   \symdomoftype(\tenv, \vs) \typearrow \ds\\
   \symdomissubset(\tenv, \dt, \ds) \typearrow \vb
 }{
-  \symsubsumes(\tenv, \vt, \vs) \typearrow \vb
+  \symdomainsubset(\tenv, \vt, \vt) \typearrow \vb
 }
 \end{mathpar}
 
@@ -101,20 +101,11 @@ It assumes its input type has an \underlyingtype{} which is an integer.
           that is, \\ $\FromSyntax([\ConstraintExact(\EVar(\id))])$.
   \end{itemize}
 
-  \item \AllApplyCase{int\_well\_constrained\_finite}
+  \item \AllApplyCase{int\_well\_constrained}
   \begin{itemize}
     \item $\vt$ is the well-constrained integer type for the list of constraints $\vcs$;
     \item applying $\intsetofintconstraints$ to $\vcs$ in $\tenv$ yields $\vis$;
-    \item $\vis$ is a set of integers, that is, $\astlabel(\vis)$ is $\Finite$;
-    \item define $\vd$ as the symbolic finite set integer domain for $\vis$.
-  \end{itemize}
-
-  \item \AllApplyCase{int\_well\_constrained\_symbolic}
-  \begin{itemize}
-    \item $\vt$ is the well-constrained integer type for the list of constraints $\vcs$;
-    \item applying $\intsetofintconstraints$ to $\vcs$ in $\tenv$ yields $\vis$;
-    \item $\vis$ is not a set of integers, that is, $\astlabel(\vis)$ is not $\Finite$;
-    \item define $\vd$ as the symbolic constrained integer domain for the list of constraints $\vcs$, that is, $\FromSyntax(\vcs)$.
+    \item \Proseeqdef{$\vd$}{$\vis$}.
   \end{itemize}
 
   \item \AllApplyCase{t\_named}
@@ -138,20 +129,10 @@ It assumes its input type has an \underlyingtype{} which is an integer.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[int\_well\_constrained\_finite]{
-  \intsetofintconstraints(\tenv, \vcs) \typearrow \vis\\
-  \astlabel(\vis) = \Finite
+\inferrule[int\_well\_constrained]{
+  \intsetofintconstraints(\tenv, \vcs) \typearrow \vis
 }{
   \symdomoftype(\tenv, \overname{\TInt(\wellconstrained(\vcs))}{\vt}) \typearrow \overname{\vis}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[int\_well\_constrained\_symbolic]{
-  \intsetofintconstraints(\tenv, \vcs) \typearrow \vis\\
-  \astlabel(\vis) \neq \Finite
-}{
-  \symdomoftype(\tenv, \overname{\TInt(\wellconstrained(\vcs))}{\vt}) \typearrow \overname{\FromSyntax(\vcs)}{\vd}
 }
 \end{mathpar}
 
@@ -760,7 +741,7 @@ The function
 conservatively tests whether the values represented by the \symbolicdomain\ $\visone$
 is a subset of the values represented by the \symbolicdomain\ $\vistwo$ in any environment
 consisting of the static environment $\tenv$
-(see \secref{subsumptiontesting} for a precise definition).
+(see \secref{domainsubsettesting} for a precise definition).
 
 The test first \emph{overapproximates} $\visone$ by a set of integers $\vsone$.
 That is, $\vsone$ represents a superset of the set of numbers represented by $\visone$.
@@ -1226,7 +1207,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
 \end{mathpar}
 
 In the following inference rule, the application of $\typeof$ is guaranteed not
-to result in a type error, since $\symsubsumes$ is only applied to annotated
+to result in a type error, since $\symdomainsubset$ is only applied to annotated
 types.
 \begin{mathpar}
 \inferrule[var\_over]{
