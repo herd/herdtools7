@@ -262,6 +262,8 @@ end = struct
   let is_pred ?cond:_ _ = false
   let is_commit _ = false
 
+  let is_no_action _ = false
+
 (* Unrolling control *)
   let cutoff msg = CutOff msg
   let is_cutoff = function

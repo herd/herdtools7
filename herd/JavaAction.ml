@@ -200,6 +200,8 @@ end = struct
   let is_pred ?cond:_ _ = false
   let is_commit _ = false
 
+  let is_no_action _ = false
+
   include Explicit.NoAction
 
   let annot_in_list _ _ = false
