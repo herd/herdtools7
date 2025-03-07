@@ -303,7 +303,7 @@ whereas \\
   expressions $\veone$ and $\vetwo$, that is, $\PatternRange(\veone, \vetwo)$;
   \item \Proseannotatesymbolicallyevaluableexpr{$\tenv$}{$\veone$}{$(\vteone, \veonep, \vsesone)$}\ProseOrTypeError;
   \item \Proseannotatesymbolicallyevaluableexpr{$\tenv$}{$\vetwo$}{$(\vtetwo, \vetwop, \vsestwo)$}\ProseOrTypeError;
-  \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$ (which do not conflict since that are both \symbolicallyevaluable);
+  \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$;
   \item determining whether both $\veonep$ and $\vetwop$ are compile-time constant expressions yields $\True$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ for $\vt$, $\vteone$, and $\vtetwo$ yields
         $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$, respectively\ProseOrTypeError;
@@ -799,8 +799,6 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \item define $\newli$ as the list of patterns $\newl_\vl$, for each $\vl$ in $\vli$;
 \item $\newp$ is the pattern which matches anything in $\newli$, that is, \\ $\PatternAny(\newli)$;
 \item define $\vses$ as the union of all $\vxs_\vl$, for each $\vl$ in $\vli$.
-      (Checking for absence of conflicts is not required as all patterns are ensured to be
-      \symbolicallyevaluable. See, for example, \TypingRuleRef{PSingle}.)
 \end{itemize}
 
 \FormallyParagraph

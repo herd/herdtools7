@@ -172,7 +172,7 @@ is $16$.
   \item annotating each bitfield $\vf$ in $\fields$ with width $\width$ in $\tenv$ yields the corresponding annotated
   bitfield $\vfp$ and \sideeffectsetterm\ $\vxs_\vf$\ProseOrTypeError;
   \item define $\newfields$ as the list of annotated bitfields;
-  \item \Prosenonconflictingunion{$\vxs_\vf$ for every field $\vf$ in $\fields$}{$\vses$}\ProseOrError.
+  \item define $\vses$ as the union of $\vxs_\vf$ for every field $\vf$ in $\fields$.
 \end{itemize}
 
 \FormallyParagraph
@@ -183,7 +183,7 @@ is $16$.
   \staticeval(\tenv, \ewidth) \typearrow \lint(\width) \OrTypeError\\\\
   \vf\in\fields: \annotatebitfield(\tenv, \width, \field) \typearrow (\vfp, \vxs_\vf) \OrTypeError\\\\
   \newfields \eqdef [\vf\in\fields: \vfp]\\
-  \nonconflictingunion(\vf\in\fields: \vxs_\vf) \typearrow \vses \OrTypeError
+  \vses \eqdef \bigcup_{\vf\in\fields}{\vxs_\vf}
 }{
   \annotatebitfields(\tenv, \ewidth, \fields) \typearrow (\newfields, \vses)
 }

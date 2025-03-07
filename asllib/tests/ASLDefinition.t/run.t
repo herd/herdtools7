@@ -58,3 +58,21 @@ Examples used in ASL High-level Definition:
   [1]
 
   $ aslref GlobalNamespace.asl
+  $ aslref LeftToRight.asl
+  Function calls:
+  1234
+  Tuples:
+  12
+  Non-short-circuiting binary operations:
+  123
+  Array-indexing:
+  1
+  2
+  Slicing:
+  132345677
+  Record construction:
+  12
+  Print statements:
+  12341234
+  For-loop start/end expressions:
+  1234

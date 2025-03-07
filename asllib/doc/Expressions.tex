@@ -2,8 +2,8 @@
 
 \hypertarget{def-rhsexpression}{}
 Expressions calculate values.
-Expressions can have side effects and can raise exceptions and, therefore, there are constraints on the evaluation
-order and on the side-effects/exceptions to avoid surprising or unpredictable behavior (see \secref{PriorityAndAssociativity}).
+Expressions can have side effects and can raise exceptions.
+Therefore, ASL specifies an evaluation order to ensure that the side-effects/exceptions are predictable (see \secref{EvaluationOrder}).
 
 Expressions are grammatically derived from $\Nexpr$ and represented as ASTs by $\expr$.
 We will often refer to expressions defined in this chapter as \rhsexpressions\ to distinguish them
@@ -47,33 +47,6 @@ The relation
 evaluates the expression $\ve$ in an environment $\env$ and terminates normally with
 a \nativevalue{} $\vv$, an \executiongraph{} $\vg$, and a modified environment $\newenv$.
 Otherwise, the evaluation terminates abnormally.
-
-\section{Evaluation Order}
-It is an error for an expression’s meaning to rely on evaluation order except that conditional expressions, and uses
-of the boolean operators $\Tband$, $\Tbor$, $\Timpl$, are guaranteed to evaluate from left to right.
-\identr{XKGC}
-
-An implementation could enforce this rule by performing a global analysis of all functions to determine whether a
-function can throw an exception and the set of global variables read and written by a function.
-\identi{YMRT}
-
-For any function call $F(e_1,\ldots,e_m)$, tuple $(e_1,\ldots, e_m)$, or operation $e_1 \op e_2$
-(with the exception of $\Tband$, $\Tbor$, and$\Timpl$),
-it is an error if the subexpressions conflict with each other by:
-\begin{itemize}
-  \item both writing to the same variable.
-  \item one writing to a variable and the other reading from that same variable.
-  \item one writing to a variable and the other throwing an exception.
-  \item both throwing exceptions.
-\end{itemize}
-\identi{QJTN}
-
-These conditions are sufficient but not necessary to ensure that evaluation order does not affect the result of an
-expression, including any side-effects.
-\identi{GFZT}
-
-Conditional expressions and the operations $\Tband$, $\Tbor$, and$\Timpl$ have short-circuit evaluation.
-\identi{QRXP}
 
 We now define the syntax, abstract syntax, typing, and semantics of the following kinds of expressions:
 \begin{itemize}
@@ -527,7 +500,7 @@ the expression \texttt{3 DIV 0} results in a type error.
     \item \AllApplyCase{unordered}
     \begin{itemize}
       \item $\op$ is not one of $\BAND$, $\BOR$, or $\IMPL$;
-      \item \Prosenonconflictingunion{consisting of $\vsesone$ and $\vsestwo$}{$\vses$}\ProseOrError.
+      \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$.
     \end{itemize}
   \end{itemize}
 \end{itemize}
@@ -552,7 +525,7 @@ the expression \texttt{3 DIV 0} results in a type error.
   \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \vt \OrTypeError\\\\
   \op \not\in \{\BAND, \BOR, \IMPL\}\\\\
   \commonprefixline\\\\
-  \nonconflictingunion([\vsesone, \vsestwo]) \typearrow \vses \OrTypeError
+  \vses \eqdef \vsesone \cup \vsestwo \\
 }{
   \annotateexpr{\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}} \typearrow (\vt, \overname{\EBinop(\op, \veone', \vetwo')}{\newe}, \vses)
 }
@@ -591,17 +564,6 @@ The evaluation via the rule above ensures that $\veone$ is evaluated first and
 only if it evaluates to $\True$ is $\vetwo$ evaluated.
 
 \identr{BKNT} % TODO: add table
-\identr{XKGC}
-
-It is an error for an expression’s meaning to rely on evaluation order except
-that conditional expressions, and uses of the boolean operators \texttt{\&\&},
-\texttt{||},\texttt{-->}, are guaranteed to evaluate from left to right.
-
-\identi{YMRT}
-
-An implementation could enforce this rule by performing a global analysis of
-all functions to determine whether a function can throw an exception and the
-set of global variables read and written by a function.
 
 \identi{QRXP}
 Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
@@ -650,17 +612,6 @@ it evaluates to $\False$, is $\vetwo$ evaluated.
 
 \subsubsection{Comments}
 \identr{BKNT} % TODO: add table
-\identr{XKGC}
-It is an error for an expression’s meaning to rely on
-evaluation order except that conditional expressions, and uses of the boolean
-operators \texttt{\&\&}, \texttt{||}, \texttt{-->}, are guaranteed to evaluate
-from left to right.
-
-\identi{YMRT}
-
-An implementation could enforce this rule by performing a global analysis of
-all functions to determine whether a function can throw an exception and the
-set of global variables read and written by a function.
 
 \identi{QRXP}
 Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
@@ -773,45 +724,6 @@ as well as \texttt{==}).
 
 \subsubsection{Comments}
 \lrmcomment{This is related to \identr{BKNT}: add table}
-
-\identr{XKGC}
-
-The semantics takes a semantic transition over the left subexpression before
-the right subexpression.
-
-This is an arbitrary choice as the typechecker must ensure that either order
-of evaluation of the operands yields the same result.
-
-In other words, it is an error for an expression’s meaning to rely on
-evaluation order except that conditional expressions, and uses of the boolean
-operators \texttt{\&\&}, \texttt{||}, \texttt{-->}, are guaranteed to evaluate
-from left to right.
-
-\identi{YMRT}
-
-An implementation could enforce this rule by performing a global analysis of
-all functions to determine whether a function can throw an exception and the
-set of global variables read and written by a function.
-
-\identi{QJTN}
-
-Notice that when one of the subexpressions terminates exceptionally,
-the other expression must be side effect-free and non-throwing.
-
-In other words, for any function call \texttt{F (e1, ..., em)}, tuple
-\texttt{(e1, ..., em)}, or operation \texttt{e1 op e2} (with the exception of
-\texttt{\&\&}, \texttt{||} and \texttt{-->}), it is an error if the
-subexpressions conflict with each other by:
-\begin{itemize}
-\item both writing to the same variable.
-\item one writing to a variable and the other reading from that same variable
-\item one writing to a variable and the other throwing an exception
-\item both throwing exceptions
-\end{itemize}
-
-\identi{GFZT}
-These conditions are sufficient but not necessary to ensure that evaluation
-order does not affect the result of an expression, including any side-effects.
 
 \hypertarget{def-unopexpressionterm}{}
 \section{Unary Expressions\label{sec:UnaryExpressions}}
@@ -1488,7 +1400,7 @@ See \ExampleRef{Array Access Expressions}.
   \item applying $\typeofarraylength$ to $\size$, to obtain the type of the array length, yields
         $\wantedtindex$;
   \item checking that $\tindexp$ \typesatisfies\ $\wantedtindex$ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item \Prosenonconflictingunion{$\vsesindex$ and $\vsesbase$}{$\vses$}\ProseOrError;
+  \item define $\vses$ as the union of $\vsesindex$ and $\vsesbase$;
   \item \Proseeqdef{$\newe$}{
     an access to an integer-indexed array for $\ebase$ and $\eindexp$, that is, $\EGetArray(\ebase, \eindexp)$ if $\size$ is an integer-typed array index,
     and an access to an enumeration-indexed array for $\ebase$ and $\eindexp$, that is,\\
@@ -1502,7 +1414,7 @@ See \ExampleRef{Array Access Expressions}.
   \annotateexpr{\tenv, \eindex} \typearrow (\tindexp, \eindexp, \vsesindex) \OrTypeError\\\\
   \typeofarraylength(\size) \typearrow \wantedtindex\\
   \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\\\
-  \nonconflictingunion([\vsesindex, \vsesbase]) \typearrow \vses \OrTypeError\\\\
+  \vses \eqdef \vsesindex \cup \vsesbase \\
   {
     \newe \eqdef \begin{cases}
       \EGetArray(\ebase, \eindexp)     & \text{if }\astlabel(\size) = \ArrayLengthExpr\\
@@ -2808,8 +2720,7 @@ Lists of patterns are also used in case statements.
   \item define $\vt$ as $\TBool$;
   \item define $\newe$ as the pattern expression for $\vetwo$ and the pattern $\vpatp$, that is, \\
         $\EPattern(\vetwo, \vpatp)$;
-  \item define $\vses$ as the union of $\vsese$ and $\vsespat$ (there is no need to check for conflicts,
-        since the $\veone$ is evaluated before $\vpat$, see \SemanticsRuleRef{EPattern}).
+  \item define $\vses$ as the union of $\vsese$ and $\vsespat$.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
@@ -3077,8 +2988,7 @@ and an example (in comment) where the same field is initialized twice, which is 
   \item define $\fieldsp$ as the list containing $(\name,\ve_\name)$ for each $\field$ element $(\name,\vep)$ of $\vfields$;
   \item $\vt$ is $\tty$;
   \item define $\newe$ as the record expression with type $\tty$ and field initializers $\fieldsp$, that is, $\ERecord(\tty, \fieldsp)$;
-  \item define $\vsess$ as the list of \sideeffectdescriptorsetsterm\ given by $\vxs_\name$ for each $\field$ element $(\name,\Ignore)$ of $\vfields$;
-  \item \Prosenonconflictingunion{$\vsess$}{$\vses$}\ProseOrError.
+  \item define $\vsess$ as the union of the \sideeffectdescriptorsetsterm\ given by $\vxs_\name$ for each $\field$ element $(\name,\Ignore)$ of $\vfields$.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
@@ -3098,8 +3008,7 @@ and an example (in comment) where the same field is initialized twice, which is 
     \end{array}
   }\\
   \fieldsp \eqdef [(\name, \vep) \in \fields : (\name, \ve_\name)]\\
-  \vsess \eqdef [(\name, \Ignore) \in \fields : \vxs_\name]\\
-  \nonconflictingunion(\vsess) \typearrow \vses \OrTypeError
+  \vses \eqdef \bigcup_{(\name, \Ignore) \in \fields} \vxs_\name\\
 }{
   \annotateexpr{\tenv, \overname{\ERecord(\tty, \vfields)}{\ve}} \typearrow
   (\overname{\tty}{\vt}, \overname{\ERecord(\tty, \fieldsp)}{\newe}, \vses)
@@ -3228,7 +3137,7 @@ $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
     \item annotating each expression $\vle[i]$ in $\tenv$, for $i=1..k$, yields $(\vt_i, \ve_i, \vxs_i$)\ProseOrTypeError;
     \item $\vt$ is the \tupletypeterm{} with list of types $\vt_i$, for $i=1..k$;
     \item $\newe$ is tuple expression over list of expressions $\ve_i$, for $i=1..k$;
-    \item \Prosenonconflictingunion{consisting of $\vxs_i$, for $i=1..k$,}{$\vses$}\ProseOrTypeError.
+    \item defining $\vses$ as the union of $\vxs_i$ for $i=1..k$.
   \end{itemize}
 \end{itemize}
 
@@ -3245,7 +3154,7 @@ $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
 \inferrule[list]{
   |\vli| > 1\\
   i=1..k: \annotateexpr{\tenv, \vle[i]} \typearrow (\vt_i, \ve_i, \vxs_i) \OrTypeError\\\\
-  \nonconflictingunion(i=1..k: \vxs_i) \typearrow \vses \OrTypeError
+  \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
   \annotateexpr{\tenv, \overname{\ETuple(\vli)}{\ve}} \typearrow (\overname{\TTuple(\vt_{1..k})}{\vt}, \overname{\ETuple(\ve_{1..k})}{\newe}, \vses)
 }
@@ -3465,6 +3374,7 @@ the list of values $[\nvint(3), \nvint(42)]$.
   \begin{itemize}
     \item $\vle$ is a \Proselist{$\ve$}{$\vle1$};
     \item \Proseevalexpr{$\env$}{$\ve$}{\\ $\Normal((\vvone, \vgone), \envone)$}\ProseOrAbnormal;
+    \item evaluating the list of expressions $\vle1$ in the environment $\envone$ yields $\Normal((\vvs, \vgtwo), \envtwo)$\ProseOrAbnormal;
     \item \Proseeqdef{$\vg$}{the parallel composition of $\vgone$ and $\vgtwo$};
     \item \Proseeqdef{$\vv$}{the list with \head{} $\vvone$ and \tail{} $\vvs$}.
   \end{itemize}

@@ -1323,8 +1323,8 @@ module Make (B : Backend.S) (C : Config) = struct
       The arguments/parameters are labelled to avoid confusion. *)
   (* Begin EvalCall *)
   and eval_call pos name env ~params ~args =
-    let*^ vargs, env1 = eval_expr_list_m env args in
-    let*^ vparams, env2 = eval_expr_list_m env1 params in
+    let*^ vparams, env1 = eval_expr_list_m env params in
+    let*^ vargs, env2 = eval_expr_list_m env1 args in
     let* vargs = vargs and* vparams = vparams in
     let genv = IEnv.incr_stack_size name env2.global in
     let res = eval_subprogram genv name pos ~params:vparams ~args:vargs in

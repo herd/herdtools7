@@ -295,6 +295,7 @@ checks
 child
 children
 choice
+choices
 choose
 chooses
 choosing
@@ -578,6 +579,7 @@ dropping
 drops
 due
 duplicate
+duplicated
 duplicates
 duplication
 during
@@ -596,6 +598,7 @@ effectively
 effects
 efficiently
 either
+elaborated
 element
 elements
 elided
@@ -736,6 +739,8 @@ false
 familiarity
 far
 favor
+feasible
+feasibly
 feature
 feed
 few
@@ -1049,6 +1054,7 @@ least
 leaves
 leaving
 left
+leftmost
 legal
 length
 lengths
@@ -1374,6 +1380,8 @@ precisely
 precision
 predicate
 predicates
+predictability
+predictable
 prefix
 prefixed
 premature
@@ -1433,6 +1441,7 @@ provides
 prs
 punctuation
 pure
+purity
 purpose
 purposes
 quality
@@ -1615,6 +1624,7 @@ scoping
 second
 section
 see
+seems
 seen
 selecting
 selection
@@ -1623,6 +1633,7 @@ semantic
 semantically
 semantics
 semicolon
+sense
 sent
 sentence
 sentences
@@ -1862,6 +1873,7 @@ throwing
 thrown
 thus
 time
+times
 titled
 to
 together

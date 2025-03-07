@@ -34,15 +34,6 @@ let undefined_identifier ~loc x = fatal_from ~loc (Error.UndefinedIdentifier x)
 let invalid_expr e = fatal_from ~loc:e (Error.InvalidExpr e)
 let add_pos_from ~loc = add_pos_from loc
 
-let conflicting_side_effects_error ~loc (s1, s2) =
-  fatal_from ~loc Error.(ConflictingSideEffects (s1, s2))
-
-let ses_non_conflicting_union ~loc =
-  SES.non_conflicting_union ~fail:(conflicting_side_effects_error ~loc)
-
-let ses_non_conflicting_unions ~loc =
-  SES.non_conflicting_unions ~fail:(conflicting_side_effects_error ~loc)
-
 let conflict ~loc expected provided =
   fatal_from ~loc (Error.ConflictingTypes (expected, provided))
 
@@ -143,6 +134,7 @@ module type ANNOTATE_CONFIG = sig
   val output_format : Error.output_format
   val print_typed : bool
   val use_field_getter_extension : bool
+  val use_conflicting_side_effects_extension : bool
   val override_mode : override_mode
 end
 
@@ -569,6 +561,19 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Exception _ -> ()
     | _ -> conflict ~loc [ T_Exception [] ] t_struct
   (* End *)
+
+  let conflicting_side_effects_error ~loc (s1, s2) =
+    fatal_from ~loc Error.(ConflictingSideEffects (s1, s2))
+
+  let ses_non_conflicting_union ~loc =
+    if C.use_conflicting_side_effects_extension then
+      SES.non_conflicting_union ~fail:(conflicting_side_effects_error ~loc)
+    else SES.union
+
+  let ses_non_conflicting_unions ~loc =
+    if C.use_conflicting_side_effects_extension then
+      SES.non_conflicting_unions ~fail:(conflicting_side_effects_error ~loc)
+    else SES.unions
 
   (* Begin CheckSymbolicallyEvaluable *)
   let check_symbolically_evaluable expr_for_error ses () =
@@ -4179,6 +4184,7 @@ module TypeCheckDefault = Annotate (struct
   let output_format = Error.HumanReadable
   let print_typed = false
   let use_field_getter_extension = false
+  let use_conflicting_side_effects_extension = false
   let override_mode = Permissive
 end)
 

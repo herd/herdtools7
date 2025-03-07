@@ -2606,7 +2606,7 @@ show examples of ill-typed \texttt{for} loops.
         optional limit expression $\vlimit$;
   \item $\newtenv$ is $\tenv$ (notice that this means $\vindexname$ is only declared for annotating $\vbodyp$ but then goes
         out of scope);
-  \item \Prosenonconflictingunion{$\vsesblock$ and $\vsescond$}{$\vses$}\ProseOrError.
+  \item define $\vses$ as the union of $\vsesblock$ and $\vsescond$.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
@@ -2631,7 +2631,7 @@ show examples of ill-typed \texttt{for} loops.
   \checkvarnotinenv{\tenv, \vindexname} \typearrow \True \OrTypeError\\\\
   \addlocal(\tenv, \tty, \vindexname, \LDKLet) \typearrow \tenvp\\
   \annotateblock{\tenvp, \vbody} \typearrow (\vbodyp, \vsesblock) \OrTypeError\\\\
-  \nonconflictingunion([\vsesblock, \vsescond]) \typearrow \vses \OrTypeError
+  \vses \eqdef \vsesblock \cup \vsescond
 }{
   {
     \begin{array}{r}
@@ -3719,7 +3719,7 @@ empty \executiongraph{}.
   \item checking for each \Proselistrange{$i$}{$\vargs$}, that $\vt_i$ is a singular type yields $\True$\ProseOrTypeError;
   \item $\news$ denotes the print statement with arguments $\vargsp$ and newline indicator $\vnewline$;
   \item $\newtenv$ is $\tenv$;
-  \item \Prosenonconflictingunion{$\vxs_i$, \Proselistrange{$i$}{$\vargs$}, }{$\vses$}\ProseOrTypeError.
+  \item define $\vses$ as the union of $\vxs_i$, \Proselistrange{$i$}{$\vargs$}.
 \end{itemize}
 
 \FormallyParagraph
@@ -3727,7 +3727,7 @@ empty \executiongraph{}.
   \inferrule{%
     \vi\in\listrange(\vargs): \annotateexpr{\vargs[i], \tenv} \typearrow (\vt_i, \vargsp[i], \vxs_i)\OrTypeError \\\\
     \vi\in\listrange(\vargs): \checktrans{\issingular(\vt_i)}{\UnexpectedType} \typearrow \True \OrTypeError \\\\
-    \nonconflictingunion([\vi\in\listrange(\vargs): \vxs_i]) \typearrow \vses \OrTypeError
+    \vses \eqdef \bigcup_{\vi\in\listrange(\vargs)} \vxs_i
   }{%
     \annotatestmt (\tenv, \overname{\SPrint(\vargs, \vnewline)}{\vs}) \typearrow (\SPrint(\vargsp, \vnewline), \tenv, \vses)
   }
@@ -3992,18 +3992,17 @@ The \pragmastatementterm{} in \listingref{typing-spragma} is well-typed.
 \begin{itemize}
   \item $\vs$ is a pragma statement with identifier $\id$ and expression list $\vargs$. that is, $\SPragma(\id, \vargs)$;
   \item for each \Proselistrange{$i$}{$\vargs$}, \Proseannotateexpr{$\tenv$}{$\vargs[i]$}{$(\Ignore, \Ignore, \vxs_i)$}\ProseOrTypeError;
-  \item define $\vsess$ as the list of $\vxs_i$, for every \Proselistrange{$i$}{$\vargs$};
+  \item define $\vses$ as the union of $\vxs_i$, for every \Proselistrange{$i$}{$\vargs$};
   \item define $\news$ as the \passstatementterm, that is, $\SPass$
   \item $\newtenv$ is $\tenv$;
-  \item \Prosenonconflictingunion{$\vsess$}{$\vses$}\ProseOrTypeError.
+  \item define $\vses$ as the union of $\vsess$.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   i\in\listrange(\vargs): \annotateexpr{\tenv, \vargs[i]} \typearrow (\Ignore, \Ignore, \vxs_i) \OrTypeError\\\\
-  \vsess \eqdef [i\in\listrange(\vargs): \vxs_i]\\
-  \nonconflictingunion(\vsess) \typearrow \vses \OrTypeError
+  \vses \eqdef \bigcup_{i\in\listrange(\vargs)} \vxs_i
 }{
   \annotatestmt(\tenv, \overname{\SPragma(\id, \vargs)}{\vs}) \typearrow (\overname{\SPass}{\news}, \tenv)
 }
