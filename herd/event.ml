@@ -136,8 +136,6 @@ val same_instance : event -> event -> bool
   val is_pred_txt : string option -> event -> bool
   val is_commit : event -> bool
 
-  val is_no_action : event -> bool
-
 (* The "CutOff" effect flags stepping beyond unrolling limit *)
   val is_cutoff : event -> bool
   val as_cutoff : event -> string option
@@ -723,8 +721,6 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let is_pred e = Act.is_pred e.action
     let is_pred_txt cond e = Act.is_pred ~cond e.action
     let is_commit e = Act.is_commit e.action
-
-    let is_no_action e = Act.is_no_action e.action
 
 (*  Unrolling control *)
     let is_cutoff e = Act.is_cutoff e.action
@@ -2368,7 +2364,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
            let output_rn = get_output rn in
            let rels = rels @
              match EventSet.elements wm.events with
-             | [evt] when is_no_action evt -> []
+             | [evt] when Act.is_no_action evt.action -> []
              | evts when List.for_all is_mem_store evts  ->
                [(EventRel.cartesian output_rn input_wm);       (* Ds2 *)
                 (EventRel.cartesian (get_output rt) input_wm); (* Ds3 *) ]
