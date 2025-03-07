@@ -692,7 +692,7 @@ Monad type:
             let (),cl_ne,eseq =  Evt.as_singleton_nospecul nem in
             assert (E.is_empty_event_structure eseq) ;
             let es =
-              E.aarch64_cas is_physical `DataFromRx es_rn es_rs E.empty_event_structure es_wrs es_rm es_wm es_br in
+              E.aarch64_cas is_physical `No es_rn es_rs E.empty_event_structure es_wrs es_rm es_wm es_br in
             let cls = cl_a@cl_cv@cl_rm@cl_wm@cl_wrs@cl_br@cl_ne  in
             eiid,Evt.add ((),cls,es) acts)
           acts_rn (eiid,Evt.empty) in
