@@ -1,0 +1,1 @@
+Warning: File "./herd/tests/instructions/AArch64.PAC/A08.litmus": addPAC: pacda(x, 0x2a, 0) already contain a PAC field (User error)

@@ -35,6 +35,7 @@ module type AArch64Sig = sig
     | TagCheck
     | UndefinedInstruction
     | SupervisorCall
+    | PacCheck of PAC.key
 
   include S with type t := t
 end
