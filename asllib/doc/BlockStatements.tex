@@ -67,26 +67,84 @@ which drops back to the original local environment of $\env$ when the evaluation
 \SemanticsRuleDef{Block}
 See \ExampleRef{Block Statements}.
 
+We first define the helper function $\poplocalscope$:
+\hypertarget{def-poplocalscope}{}
+\[
+  \begin{array}{c}
+    \poplocalscope : \overname{\dynamicenvs}{\vouterenv} \cartimes \overname{\dynamicenvs}{\vinnerenv} \rightarrow \dynamicenvs \\
+    \poplocalscope(\vouterenv, \vinnerenv) \triangleq
+      (G^{\vinnerenv}, \restrictfunc{L^{\vinnerenv}}{{\dom(L^\vouterenv)}})
+  \end{array}
+\]
+The $\poplocalscope$ function is used below to effectively discard the bindings for variables declared inside the block statement $\stm$.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
     \item evaluating $\stm$ in $\env$, as per \chapref{Statements},
-          is $\Continuing(\newg, \envone)$\ProseTerminateAs{\ReturningConfig,\ThrowingConfig,\DynErrorConfig};
-    \item $\newenv$ is formed from $\envone$ after restoring the
-          variable bindings of $\env$ with the updated values of $\envone$.
-          The effect is that of discarding the bindings for variables declared inside $\stm$;
-    \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
+          is $\vres$;
+    \item \OneApplies
+      \begin{itemize}
+        \item \AllApplyCase{returning}
+        \begin{itemize}
+          \item $\vres$ is $\Returning((\vvs, \newg), \envret)$;
+          \item \Proseeqdef{$\newenv$}{\Prosepoplocalscope{$\env$}{$\envret$}}.
+          \item the result of the entire evaluation is $\Returning((\vvs, \newg), \newenv)$.
+        \end{itemize}
+
+        \item \AllApplyCase{continuing}
+        \begin{itemize}
+          \item $\vres$ is $\Continuing(\newg, \envcont)$;
+          \item \Proseeqdef{$\newenv$}{\Prosepoplocalscope{$\env$}{$\envcont$}}.
+          \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
+        \end{itemize}
+
+        \item \AllApplyCase{throwing}
+        \begin{itemize}
+          \item $\vres$ is $\Throwing((\vv, \newg), \envthrow)$;
+          \item \Proseeqdef{$\newenv$}{\Prosepoplocalscope{$\env$}{$\envthrow$}}.
+          \item the result of the entire evaluation is $\Throwing((\vv, \newg), \newenv)$.
+        \end{itemize}
+      \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule{
+\inferrule[returning]{
   \env \eqname (\tenv,\denv)\\
-  \evalstmt{\env, \stm} \evalarrow \Continuing(\newg, \envone) \terminateas \ReturningConfig,\ThrowingConfig,\DynErrorConfig\\\\
-  \envone\eqname(\tenvone, \denvone)\\
-  \newenv \eqdef(\tenv, (G^{\denvone}, \restrictfunc{L^{\denvone}}{{\dom(L^\denv)}}))
+  \evalstmt{\env, \stm} \evalarrow \vres \\\\
+  \commonprefixline \\\\
+  \vres = \Returning((\vvs, \newg), \envret) \\
+  \envret \eqname (\tenvone, \denvone) \\
+  \newenv \eqdef (\tenv, \poplocalscope(\denv,\denvone))
+}{
+  \evalblock{\env, \stm} \evalarrow \Returning((\vvs, \newg), \newenv)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[continuing]{
+  \env \eqname (\tenv,\denv)\\
+  \evalstmt{\env, \stm} \evalarrow \vres \\\\
+  \commonprefixline \\\\
+  \vres = \Continuing(\newg, \envcont) \\
+  \envcont \eqname (\tenvone, \denvone) \\
+  \newenv \eqdef (\tenv, \poplocalscope(\denv,\denvone))
 }{
   \evalblock{\env, \stm} \evalarrow \Continuing(\newg, \newenv)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[throwing]{
+  \env \eqname (\tenv,\denv)\\
+  \evalstmt{\env, \stm} \evalarrow \vres \\\\
+  \commonprefixline \\\\
+  \vres = \Throwing((\vv,\newg), \envthrow) \\
+  \envthrow \eqname (\tenvone, \denvone) \\
+  \newenv \eqdef (\tenv, \poplocalscope(\denv,\denvone))
+}{
+  \evalblock{\env, \stm} \evalarrow \Throwing((\vv,\newg), \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalBlockBegin}{\EvalBlockEnd}{../Interpreter.ml}
