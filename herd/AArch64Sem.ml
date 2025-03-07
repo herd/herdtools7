@@ -77,6 +77,12 @@ module Make
           "SME instruction %s requires -variant sme"
           (AArch64.dump_instruction inst)
 
+    let check_pac inst =
+      if not pac then
+        Warn.user_error
+          "Pauth instruction %s requires -variant pac"
+          (AArch64.dump_instruction inst)
+
 (* Barrier pretty print *)
     let barriers =
       let bs = AArch64Base.do_fold_dmb_dsb false true (fun h t -> h::t) []
@@ -4405,18 +4411,23 @@ module Make
            let lbl_v = get_instr_label ii in
            m_fault >>| set_elr_el1 lbl_v ii
            >>! B.fault [AArch64Base.elr_el1, lbl_v]
-(* Pointer Anthentication Code `FEAT_Pauth2` with `FEAT_FPAC` *)
+(* Pointer Anthentication Code `FEAT_Pauth2` *)
         | I_PAC (key, rd, rn) ->
             begin
+              (* TODO: understand the bahaviour of PAC if `FEAT_PAuth is not
+                 activated` *)
+              check_pac inst;
               read_reg_ord rd ii >>|
               read_reg_ord rn ii >>= fun (addr, modifier) ->
               M.op (Op.AddPAC (not const_pac_field, key)) addr modifier >>= fun v ->
               write_reg_dest rd v ii >>= fun v ->
               B.nextSetT rd v
             end
-        (* Implement `FEAT_FPAC`: raise a fault if the PAC field doesn't match *)
         | I_AUT (key, rd, rn) ->
             begin
+              (* TODO: understand the bahaviour of PAC if `FEAT_PAuth is not
+                 activated` *)
+              check_pac inst;
               let (>>!) = M.(>>!) in
 
               let mfault =
@@ -4447,6 +4458,9 @@ module Make
         | I_XPACI r | I_XPACD r
         ->
           begin
+            (* TODO: understand the bahaviour of PAC if `FEAT_PAuth is not
+               activated` *)
+            check_pac inst;
             read_reg_ord r ii >>= fun v ->
             M.op1 Op.SetCanonical v >>= fun v ->
             write_reg_dest r v ii >>= fun v ->
