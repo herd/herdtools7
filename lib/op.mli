@@ -93,7 +93,7 @@ type 'aop op1 =
   | Demote  (* Demote to lower precision *)
   | ArchOp1 of 'aop
   | CheckCanonical (* Check if a virtual address is canonical *)
-  | SetCanonical (* Remove the PAC field of a virtual address *)
+  | MakeCanonical (* Remove the PAC field of a virtual address *)
 
 val pp_op1 : bool -> (bool -> 'aop -> string) -> 'aop op1 -> string
 

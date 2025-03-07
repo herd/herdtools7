@@ -4462,7 +4462,7 @@ module Make
                activated` *)
             check_pac inst;
             read_reg_ord r ii >>= fun v ->
-            M.op1 Op.SetCanonical v >>= fun v ->
+            M.op1 Op.MakeCanonical v >>= fun v ->
             write_reg_dest r v ii >>= fun v ->
             B.nextSetT r v
           end

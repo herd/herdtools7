@@ -144,7 +144,7 @@ type 'aop op1 =
   | Demote  (* Demote to lower precision *)
   | ArchOp1 of 'aop
   | CheckCanonical (* Check that the PAC field of a virtual address is canonical *)
-  | SetCanonical (* Remove the PAC field of a virtual address *)
+  | MakeCanonical (* Remove the PAC field of a virtual address *)
 
 let pp_op1 hexa pp_aop o = match o with
 | Not -> "!"
@@ -180,7 +180,7 @@ let pp_op1 hexa pp_aop o = match o with
 | Demote -> "demote"
 | ArchOp1 aop -> pp_aop hexa aop
 | CheckCanonical -> "CheckCanonical"
-| SetCanonical -> "SetCanonical"
+| MakeCanonical -> "MakeCanonical"
 
 (***********)
 

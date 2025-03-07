@@ -721,11 +721,11 @@ module
     | Var _ -> raise Undetermined
 
   (* Remove the PAC field of a virtual address *)
-  let setCanonical = function
+  let makeCanonical = function
     | Val (Symbolic (Virtual v)) ->
         Val (Symbolic (Virtual {v with pac= PAC.canonical}))
     | Val cst ->
-        Warn.user_error "setCanonical: %s is not a valid virtual address" (Cst.pp_v cst)
+        Warn.user_error "makeCanonical: %s is not a valid virtual address" (Cst.pp_v cst)
     | Var _ -> raise Undetermined
 
   let alignd c k =
@@ -949,7 +949,7 @@ module
                | Some c -> Val c
              end)
     | CheckCanonical -> checkCanonical
-    | SetCanonical -> setCanonical
+    | MakeCanonical -> makeCanonical
 
   let op op = match op with
   | Add -> add
