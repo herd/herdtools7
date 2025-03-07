@@ -444,77 +444,81 @@ is the infinite set of all native integer values.
 \identi{WPWL} \identi{CDVY} \identi{KFCR} \identi{BBQR} \identr{ZWGH}
 \identr{DKGQ} \identr{DHZT} \identi{HSWR} \identd{YZBQ}
 
-\subsection{Subsumption Testing\label{sec:subsumptiontesting}}
+\subsection{Domain Subset Testing\label{sec:domainsubsettesting}}
 Whether an assignment statement is well-typed depends on whether the dynamic domain of the
 right hand side type is contained in the dynamic domain of the left hand side type,
 for any given dynamic environment
 (see \TypingRuleRef{SubtypeSatisfaction} where this is checked).
 
-\begin{definition}[Subsumption]
+\begin{definition}[Domain Subset]
 For any given types $\vt$ and $\vs$ and static environment $\tenv$,
-we say that $\vt$ \emph{subsumes} $\vs$ in $\tenv$,
+we say that $\vt$ is a \emph{domain subset} of $\vs$ in $\tenv$,
 if the following condition holds:
-\hypertarget{def-subsumes}{}
+\hypertarget{def-domainsubset}{}
 \begin{equation}
-  \subsumes(\tenv, \vt, \vs) \triangleq \forall \denv\in\dynamicenvs.\ \dynamicdomain((\tenv, \denv), \vt) \supseteq \dynamicdomain((\tenv, \denv), \vs) \enspace.
+\begin{array}{l}
+\domainsubset(\tenv, \vt, \vs) \triangleq \\
+\qquad \forall \denv\in\dynamicenvs.\
+\dynamicdomain((\tenv, \denv), \vt) \subseteq \dynamicdomain((\tenv, \denv), \vs) \enspace.
+\end{array}
 \end{equation}
 \end{definition}
 
 For example, consider the assignment
 \begin{center}
-\verb|var x : integer{1,2,3} = ARBITRARY : integer{1,2};|
+\texttt{var x : $\overname{\texttt{integer\{1,2,3\}}}{\vs}$ = ARBITRARY : $\overname{\texttt{integer\{1,2\}}}{\vt}$;}
 \end{center}
 
-It is legal, since (in any static environment), the domain of \verb|integer{1,2,3}|
+It is well-typed, since (in any static environment), the domain of \verb|integer{1,2,3}|
 is \\
 $\{\nvint(1), \nvint(2), \nvint(3)\}$, which subsumes
 the domain of \verb|integer{1,2}|, which is \\ $\{\nvint(1), \nvint(2)\}$.
 
 Since dynamic domains are potentially infinite, this requires \emph{symbolic reasoning}.
 Furthermore, since any (\symbolicallyevaluable{}) expressions may appear inside integer and bitvector
-types, testing subsumption is undecidable.
-We therefore approximate subsumption testing \emph{conservatively} via the predicate $\symsubsumes(\tenv, \vt, \vs)$.
+types, domain subset testing is undecidable.
+We therefore approximate domain subset testing \emph{conservatively} via the predicate $\symdomainsubset(\tenv, \vt, \vs)$.
 
-\hypertarget{def-soundsubsumptiontest}{}
-\begin{definition}[Sound Subsumption Test]
+\hypertarget{def-sounddomainsubsettest}{}
+\begin{definition}[Sound Domain Subset Test]
 A predicate
 \[
-  \symsubsumes(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs}) \aslto \Bool
+  \symdomainsubset(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs}) \aslto \Bool
 \]
 is \emph{sound} if the following condition holds:
 \begin{equation}
   \begin{array}{l}
   \forall \vt,\vs\in\ty.\ \tenv\in\staticenvs. \\
-  \;\;\;\; \symsubsumes(\tenv, \vt, \vs) \typearrow \True \;\Longrightarrow\; \subsumes(\tenv, \vt, \vs)  \enspace.
+  \;\;\;\; \symdomainsubset(\tenv, \vt, \vs) \typearrow \True \;\Longrightarrow\; \domainsubset(\tenv, \vt, \vs)  \enspace.
   \end{array}
 \end{equation}
 \end{definition}
 
-That is, if a sound subsumption test returns a positive answer, it means that
-$\vt$ definitely \emph{subsumes} $\vs$ in the static environment $\tenv$.
+That is, if a sound domain subset test returns a positive answer, it means that
+$\vt$ is definitely a domain subset of $\vs$ in the static environment $\tenv$.
 This is referred to as a \emph{true positive}.
 However, a negative answer means one of two things:
 \begin{description}
-  \item[True Negative:] indeed, $\vt$ does not subsume $\vs$ in the static environment $\tenv$; or
+  \item[True Negative:] indeed, $\vt$ is not a domain subset of $\vs$ in the static environment $\tenv$; or
   \item[False Negative:] the symbolic reasoning is unable to decide.
 \end{description}
 
-In other words, $\symsubsumes(\tenv, \vt, \vs)$ errs on the \emph{safe side} ---
+In other words, $\symdomainsubset(\tenv, \vt, \vs)$ errs on the \emph{safe side} ---
 it never answers $\True$ when the real answer is $\False$, which would (undesirably)
 determine the following statement as well-typed:
 \begin{center}
-  \verb|var x : integer{1,2} = ARBITRARY: integer;|
+\texttt{var x : $\overname{\texttt{integer\{1,2\}}}{\vs}$ = ARBITRARY : $\overname{\texttt{integer}}{\vt}$;}
 \end{center}
 
-A sound but trivial subsumption test is one that always returns $\False$.
+A sound but trivial domain subset test is one that always returns $\False$.
 However, that would make all assignments be considered as not well-typed.
 Indeed, it has the maximal set of false negatives.
 Reducing the set of false negatives requires stronger symbolic reasoning algorithms,
 which inevitably leads to higher computational complexity.
 %
-The symbolic subsumption test in \chapref{SymbolicSubsumptionTesting}
+The symbolic domain subset test in \chapref{SymbolicDomainSubsetTesting}
 attempts to accept a large enough set of true positives, based on empirical trial and error,
 while maintaining the computational complexity of the symbolic reasoning relatively low.
 %
-In particular, it serves as the definitive subsumption test that must be utilized
+In particular, it serves as the definitive domain subset test that must be utilized
 by any implementation of the ASL type system.
