@@ -52,6 +52,7 @@ module type S = sig
   type 'a env_result = Local of 'a | Global of 'a | NotFound
 
   val find : identifier -> env -> v env_result
+  val find_global : identifier -> env -> v
   val mem : identifier -> env -> bool
   val declare_local : identifier -> v -> env -> env
   val assign_local : identifier -> v -> env -> env
@@ -145,6 +146,8 @@ module RunTime (C : RunTimeConf) = struct
       try Global (Storage.find x env.global.storage)
       with Not_found -> NotFound)
   (* End *)
+
+  let find_global x env = Storage.find x env.global.storage
 
   let mem x env =
     Storage.mem x env.local.storage || Storage.mem x env.global.storage

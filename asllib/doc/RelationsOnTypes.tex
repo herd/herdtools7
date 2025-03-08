@@ -233,7 +233,7 @@ subtyping.
   \begin{itemize}
   \item $\vs$ has the \underlyingtype\ $L(\vfieldss)$, which is a \structuredtype;
   \item $\vt$ has the \underlyingtype\ $L(\vfieldst)$, which is a \structuredtype;
-  \item since both underlying types have the same AST label they are either both record types or both exception types;
+  \item since both underlying types have the same AST label they are either both record types or both exception types or both collection types;
   \item $\vb$ is $\True$ if and only if for each field in $\vfieldss$ with type $\vtys$
   there exists a field in $\vfieldst$ with type $\vtyt$ such that both $\vtys$ and $\vtyt$
   are determined to be \typeequivalent\ in $\tenv$.
@@ -371,7 +371,7 @@ if there is a unique one, as follows:
 
 \begin{mathpar}
 \inferrule[structured]{
-  L \in \{\TRecord, \TException\}\\
+  L \in \{\TRecord, \TException, \TCollection\}\\
   \makeanonymous(\tenv, \vs)\typearrow L(\vfieldss) \\
   \makeanonymous(\tenv, \vt)\typearrow L(\vfieldst) \\
   \vnamess \eqdef \fieldnames(\vfieldss)\\
@@ -761,7 +761,7 @@ the arguments of procedures -- that do not clash and types that do clash
   \tstruct(\tenv, \vt) \typearrow \vtstruct \\
   \tstruct(\tenv, \vs) \typearrow \vsstruct \\
   \astlabel(\vtstruct) = \astlabel(\vsstruct)\\
-  \vb \eqdef \astlabel(\vtstruct) \in \{\TRecord, \TException\}\\
+  \vb \eqdef \astlabel(\vtstruct) \in \{\TRecord, \TException, \TCollection\}\\
 }{
   \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
 }
@@ -903,7 +903,7 @@ The result is a type error if a \Proselca{} does not exist or a type error is de
 
       \item \AllApplyCase{error}
       \begin{itemize}
-        \item either the AST labels of $\vt$ and $\vs$ are different, or one of them is $\TEnum$, $\TRecord$, or $\TException$;
+        \item either the AST labels of $\vt$ and $\vs$ are different, or one of them is $\TEnum$, $\TRecord$, $\TCollection$, or $\TException$;
         \item the result is a type error indicating the lack of a lowest common ancestor.
       \end{itemize}
     \end{itemize}
@@ -1057,7 +1057,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
 \inferrule[error]{
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   (\astlabel(\vt) \neq \astlabel(\vs)) \lor
-  \astlabel(\vt) \in \{\TEnum, \TRecord, \TException\}
+  \astlabel(\vt) \in \{\TEnum, \TRecord, \TException, \TCollection\}
 }{
   \lca(\tenv, \vt, \vs) \typearrow \TypeErrorVal{\NoLCA}
 }

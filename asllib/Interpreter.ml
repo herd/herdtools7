@@ -374,6 +374,10 @@ module Make (B : Backend.S) (C : Config) = struct
   let return_identifier i = "return-" ^ string_of_int i
   let throw_identifier () = fresh_var "thrown"
 
+  (* Begin CollectionFieldEffectVar *)
+  let collection_field_effect_var base field = (base ^ ".") ^ field
+  (* End *)
+
   (* Begin EvalReadValueFrom *)
   let read_value_from ((v, name, scope) : value_read_from) =
     let* () = B.on_read_identifier name scope v in
@@ -641,7 +645,26 @@ module Make (B : Backend.S) (C : Config) = struct
         let** v1, new_env = eval_expr env e in
         let* v = eval_pattern env e v1 p in
         return_normal (v, new_env) |: SemanticsRule.EPattern
-  (* End *)
+    (* End *)
+    (* Begin EvalEGetCollectionFields *)
+    | E_GetCollectionFields (base, field_names) ->
+        let v_record = IEnv.find_global base env in
+        let scope = B.Scope.global ~init:false in
+        let* v_list =
+          List.map
+            (fun field_name ->
+              let* v = B.get_field field_name v_record in
+              let* () =
+                B.on_read_identifier
+                  (collection_field_effect_var base field_name)
+                  scope v
+              in
+              return v)
+            field_names
+          |> sync_list
+        in
+        let* v = B.concat_bitvectors v_list in
+        return_normal (v, env)
 
   (* Evaluation of Side-Effect-Free Expressions *)
   (* ------------------------------------------ *)
@@ -817,18 +840,46 @@ module Make (B : Backend.S) (C : Config) = struct
             fatal_from le Error.TypeInferenceNeeded
         in
         let*^ rm_record, env1 = expr_of_lexpr le_record |> eval_expr env in
-        (* AssignBitvectorFields( *)
-        let m2 =
-          List.fold_left2
-            (fun m1 field_name (i1, i2) ->
-              let slice = [ (B.v_of_int i1, B.v_of_int i2) ] in
-              let* v_record_slices = m >>= B.read_from_bitvector slice
-              and* rv_record = m1 in
-              B.set_field field_name v_record_slices rv_record)
-            rm_record fields slices
-          (* AssignBitvectorFields) *)
-        in
+        let onwrite _ m = m in
+        let m2 = assign_bitvector_fields onwrite m rm_record slices fields in
         eval_lexpr ver le_record env1 m2 |: SemanticsRule.LESetFields
+    (* End *)
+    (* Begin EvalLESetCollectionFields *)
+    | LE_SetCollectionFields (base, fieldnames, slices) ->
+        let rv_record =
+          match IEnv.find base env with
+          | Global v -> return v
+          | Local _ | NotFound -> assert false
+        in
+        let scope = B.Scope.global ~init:false in
+        let onwrite field_name m =
+          let* v = m in
+          let* () =
+            B.on_write_identifier
+              (collection_field_effect_var base field_name)
+              scope v
+          in
+          return v
+        in
+        let* rv_record2 =
+          assign_bitvector_fields onwrite m rv_record slices fieldnames
+        in
+        let new_env = IEnv.assign_global base rv_record2 env in
+        return_normal new_env
+  (* End *)
+
+  (* Begin AssignBitvectorFields *)
+  and assign_bitvector_fields onwrite mbitvector mrecord slices fieldnames =
+    match (slices, fieldnames) with
+    | (i1, i2) :: slices, field_name :: fieldnames ->
+        let slice = [ (B.v_of_int i1, B.v_of_int i2) ] in
+        let* v_record_slices =
+          mbitvector >>= B.read_from_bitvector slice |> onwrite field_name
+        and* rv_record = mrecord in
+        let m2 = B.set_field field_name v_record_slices rv_record in
+        assign_bitvector_fields onwrite mbitvector m2 slices fieldnames
+    | [], [] -> mrecord
+    | [], _ :: _ | _ :: _, [] -> assert false
   (* End *)
 
   (* Evaluation of Expression Lists *)

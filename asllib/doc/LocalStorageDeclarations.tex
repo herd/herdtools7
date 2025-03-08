@@ -149,6 +149,7 @@ with the type inferred type \texttt{integer{3}}.
 \AllApply
 \begin{itemize}
   \item $\ldi$ denotes a variable $\vx$, that is, $\LDIVar(\vx)$;
+  \item \Prosecheckisnotcollection{$\tenv$}{$\tty$};
   \item determining whether $\vx$ is not declared in $\tenv$ yields $\True$\ProseOrTypeError;
   \item \Prosenoprecisionloss{$\tty$};
   \item $\tenvtwo$ is $\tenv$ modified so that $\vx$ is locally declared to have type $\tty$;
@@ -168,6 +169,62 @@ with the type inferred type \texttt{integer{3}}.
 \end{mathpar}
 \CodeSubsection{\LDVarBegin}{\LDVarEnd}{../Typing.ml}
 \identr{YSPM} \identd{FXST}
+
+\TypingRuleDef{CheckIsNotCollection}%
+\hypertarget{def-checkisnotcollection}{}
+The helper function
+\[
+  \checkisnotcollection(\overname{\staticenvs}{\tenv} \aslsep
+  \overname{\ty}{\vt})
+  \typearrow \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks whether the type $\vt$ has the structure of a \collectiontypeterm{}, and if so,
+raises a \typingerrorterm{}. Otherwise, the result is $\True$.
+
+\ExampleDef{Check is not collection}
+In \listingref{checkisnotcollection}, the statement
+\verb|var test: MyCollection;| fails with a \typingerrorterm{} because
+\TypingRuleRef{LDVar} calls \TypingRuleRef{CheckIsNotCollection}.
+\ASLListing{Declaring a local variable with a collection type}{checkisnotcollection}{\typingtests/TypingRule.CheckIsNotCollection.asl}
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item
+    \AllApplyCase{Not-Collection}
+    \begin{itemize}
+      \item \Prosemakeanonymous{\tenv}{\vt}{\vtstruct};
+      \item $\vtstruct$ is not a \collectiontypeterm{};
+      \item the result is $\True$.
+    \end{itemize}
+  \item \AllApplyCase{Collection}
+    \begin{itemize}
+      \item \Prosemakeanonymous{\tenv}{\vt}{\vtstruct};
+      \item $\vtstruct$ is a \collectiontypeterm{};
+      \item the result is a \typingerrorterm{}.
+    \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+  \inferrule[Collection]{
+    \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+    \astlabel(\vtstruct) = \TCollection \\
+  }{%
+    \checkisnotcollection(\tenv, \vt) \typearrow
+    \TypeErrorVal{\UnexpectedType}
+  }
+\end{mathpar}
+\begin{mathpar}
+  \inferrule[Not-Collection]{
+    \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+    \astlabel(\vtstruct) \neq \TCollection \\
+  }{%
+    \checkisnotcollection(\tenv, \vt) \typearrow \True
+  }
+\end{mathpar}
+
+\CodeSubsection{\CheckIsNotCollectionBegin}{\CheckIsNotCollectionEnd}{../Typing.ml}
 
 \subsection{Semantics}
 \SemanticsRuleDef{LDVar}

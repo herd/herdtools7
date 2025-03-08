@@ -316,6 +316,7 @@ closure
 code
 codes
 collection
+collections
 collectively
 combination
 combinations
@@ -1380,9 +1381,9 @@ precisely
 precision
 predicate
 predicates
-preferred
 predictability
 predictable
+preferred
 prefix
 prefixed
 premature

@@ -7,6 +7,6 @@
  *)
 
 
-acyclic iico_data | iico_ctrl | rf-reg | rf
+acyclic iico_data | iico_ctrl | rf-reg | rf as single-requirement
 
 

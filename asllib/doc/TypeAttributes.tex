@@ -78,7 +78,8 @@ The builtin aggregate types are:
 \item tuple;
 \item \texttt{array};
 \item \texttt{record};
-\item \texttt{exception}.
+\item \texttt{exception};
+\item \texttt{collection}.
 \end{itemize}
 
 \ExampleDef{Builtin Aggregate Types}
@@ -118,7 +119,7 @@ omitted in type declarations, as is the case for \texttt{Not\_found}.
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule{ \vb \eqdef \astlabel(\tty) \in \{\TTuple, \TArray, \TRecord, \TException\} }
+\inferrule{ \vb \eqdef \astlabel(\tty) \in \{\TTuple, \TArray, \TRecord, \TException, \TCollection\} }
 { \isbuiltinaggregate(\tty) \typearrow \vb }
 \end{mathpar}
 \CodeSubsection{\BuiltinAggregateBegin}{\BuiltinAggregateEnd}{../types.ml}
@@ -161,8 +162,8 @@ The predicate
 \]
 tests whether the type $\tty$ is a \emph{named type}.
 
-\Enumerationtypesterm{}, record types, and exception types must be declared
-and associated with a named type.
+\Enumerationtypesterm{}, record types, collection types, and exception types
+must be declared and associated with a named type.
 
 \ExampleDef{Named Types}
 In the specification
@@ -290,8 +291,10 @@ type C of B;
 \TypingRuleDef{StructuredType}
 \hypertarget{def-isstructured}{}
 \hypertarget{def-structuredtype}{}
-A \emph{\structuredtype} is any type that consists of a list of field identifiers
-that denote individual storage elements. In ASL there are two such types --- record types and exception types.
+A \emph{\structuredtype} is any type that consists of a list of field
+identifiers that denote individual storage elements.
+In ASL there are three such types --- record types, collection types, and
+exception types.
 
 The predicate
 \[
@@ -308,13 +311,14 @@ type PointRecord of Record {x : real, y: real, z: real};
 \end{lstlisting}
 
 \ProseParagraph
-The result $\vb$ is $\True$ if and only if $\tty$ is either a record type or an exception type,
-which is determined via the AST label of $\tty$.
+The result $\vb$ is $\True$ if and only if $\tty$ is either a record type, a
+collection type or an exception type, which is determined via the AST label of
+$\tty$.
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \isstructured(\tty) \typearrow \overname{\astlabel(\tty) \in \{\TRecord, \TException\}}{\vb}
+  \isstructured(\tty) \typearrow \overname{\astlabel(\tty) \in \{\TRecord, \TException, \TCollection\}}{\vb}
 }
 \end{mathpar}
 
@@ -404,7 +408,7 @@ Boolean variables by using the types denoted by $\vt$ as a subscript.
 
 \begin{mathpar}
 \inferrule[structured]{
-  L \in \{\TRecord, \TException\}\\
+  L \in \{\TRecord, \TException, \TCollection\}\\
   (\Ignore,\vt) \in \fields : \isnonprimitive(\vt) \typearrow \vb_\vt\\
   \vb \eqdef \bigvee_{\vt \in \vli} \vb_{\vt}
 }{
@@ -518,7 +522,7 @@ the type of \texttt{z} is the anonymous non-primitive type
   \begin{itemize}
   \item $\tty$ is a \structuredtype\ with fields $\fields$;
   \item obtaining the structure for each type $\vt$ associated with field $\id$ yields a type $\vt_\id$\ProseOrTypeError;
-  \item $\vt$ is a record or an exception, in correspondence to $\tty$, with the list of pairs $(\id, \vt\_\id)$;
+  \item $\vt$ is a record, a collection or an exception, in correspondence to $\tty$, with the list of pairs $(\id, \vt\_\id)$;
   \end{itemize}
 \end{itemize}
 
@@ -551,7 +555,7 @@ the type of \texttt{z} is the anonymous non-primitive type
 }
 \and
 \inferrule[structured]{
-  L \in \{\TRecord, \TException\}\\\\
+  L \in \{\TRecord, \TException, \TCollection\}\\\\
   (\id,\vt) \in \fields : \tstruct(\tenv, \vt) \typearrow \vt_\id \OrTypeError
 }{
   \tstruct(\tenv, L(\fields)) \typearrow

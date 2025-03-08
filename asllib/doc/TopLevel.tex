@@ -459,7 +459,7 @@ yielding the type $\newty$.
 
 \begin{mathpar}
 \inferrule[structured]{
-  L \in \{\TRecord, \TException\}\\
+  L \in \{\TRecord, \TException, \TCollection\} \\
   \newli \eqdef [(\name, \vt) \in \vli: (\name, \renamelocalsty(\vt))]
 }{
   \renamelocalsty(\overname{L(\vli)}{\tty}) \astarrow \overname{L(\newli)}{\newty}

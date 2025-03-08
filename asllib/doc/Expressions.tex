@@ -1548,11 +1548,12 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
-  \item $\vtetwo$ is a \structuredtype\ with fields $\fields$;
+  \item $\vtetwo$ is a record or exception type with fields $\fields$;
   \item the field $\fieldname$ is associated with the type $\vt$ in $\fields$
   \item define $\newe$ as the access of field $\fieldname$ on the record or exception object $\vetwo$, that is, $\EGetField(\vetwo, \fieldname)$;
   \item define $\vses$ as $\vsesone$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
@@ -1570,6 +1571,7 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
   }
 }
 \end{mathpar}
+
 \CodeSubsection{\EGetRecordFieldBegin}{\EGetRecordFieldEnd}{../Typing.ml}
 
 \TypingRuleDef{EGetBadRecordField}
@@ -1583,10 +1585,11 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
-  \item $\vtetwo$ is a \structuredtype\ with fields $\fields$;
+  \item $\vtetwo$ is a record or exception type with fields $\fields$;
   \item the field $\fieldname$ is not associated with any type in $\fields$
   \item the result is a type error indicating the missing field.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
@@ -1629,6 +1632,45 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
 }
 \end{mathpar}
 \CodeSubsection{\EGetBadBitFieldBegin}{\EGetBadBitFieldEnd}{../Typing.ml}
+
+\TypingRuleDef{EGetCollectionField}
+
+\ExampleDef{Typing Collection Field Expressions}
+All of the collection field expressions in
+\listingref{typing-lesetcollectionfields} are well-typed.
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
+  \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
+  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  \item $\vetwo$ is a variable expression for $\vbase$, that is, $\EVar(\vbase)$;
+  \item $\vtetwo$ is a collection type with fields $\fields$;
+  \item the field $\fieldname$ is associated with the type $\vt$ in $\fields$
+  \item define $\newe$ as the access of field $\fieldname$ on the collection object $\vbase$, that is, $\EGetCollectionFields(\vbase, [\fieldname])$;
+  \item define $\vses$ as $\vsesone$.
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{
+  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  \vetwo = \EVar(\vbase) \\
+  \vtetwo = \TCollection(\fields)\\
+  \assocopt(\fields, \fieldname) \typearrow \langle \vt\rangle
+}{
+  {
+    \begin{array}{r}
+      \annotateexpr{\tenv, \EGetField(\veone, \fieldname)} \typearrow \\
+      (\vt, \EGetCollectionFields(\vbase, [\fieldname]), \overname{\vsesone}{\vses})
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\CodeSubsection{\EGetCollectionFieldBegin}{\EGetCollectionFieldEnd}{../Typing.ml}
 
 \TypingRuleDef{EGetBitField}
 \ExampleDef{Well-typed Bitfield Expressions}
@@ -1916,13 +1958,26 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 
     \item \AllApplyCase{record}
     \begin{itemize}
-      \item $\tbaseannotanon$ is a record type with list of fields $\vbasefields$\ProseOrTypeError;
+      \item $\tbaseannotanon$ is a record or exception type with list of fields $\vbasefields$\ProseOrTypeError;
       \item applying $\getbitfieldwidth$ to $\vf$ in $\vbasefields$ and $\vbasefields$, for each $\vf$ in $\vbasefields$, in $\tenv$ yields $\ewidth_\vf$\ProseOrTypeError;
       \item applying $\widthplus$ to the list of expressions $\ewidth_\vf$,
             for each $\vf$ in $\vbasefields$, yields $\veslicewidth$\ProseOrTypeError;
       \item define $\vt$ as the bitvector type with width $\veslicewidth$ and an empty list of bitfields;
       \item define $\ve$ as the multi-field access for $\ebaseannot$ and list of fields \\
             $\vbasefields$;
+      \item define $\vses$ as $\vsesbase$.
+    \end{itemize}
+
+    \item \AllApplyCase{collection}
+    \begin{itemize}
+      \item $\tbaseannotanon$ is a collection type with list of fields $\vbasefields$\ProseOrTypeError;
+      \item $\ebaseannot$ denotes a variable expression for $\vbase$, that is, $\EVar(\vbase)$;
+      \item applying $\getbitfieldwidth$ to $\vf$ in $\vbasefields$ and $\vbasefields$, for each $\vf$ in $\vbasefields$, in $\tenv$ yields $\ewidth_\vf$\ProseOrTypeError;
+      \item applying $\widthplus$ to the list of expressions $\ewidth_\vf$,
+            for each $\vf$ in $\vbasefields$, yields $\veslicewidth$\ProseOrTypeError;
+      \item define $\vt$ as the bitvector type with width $\veslicewidth$ and an empty list of bitfields;
+      \item define $\ve$ as the collection multi-field access for $\vbase$ and list of fields \\
+            $\vbasefields$, that is, $\EGetCollectionFields(\vbase, \vbasefields)$;
       \item define $\vses$ as $\vsesbase$.
     \end{itemize}
 
@@ -1958,6 +2013,23 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
   \begin{array}{r}
     \annotateexpr{\tenv, \overname{\EGetFields(\ebase, \vfields)}{\ve}} \typearrow \\
     (\overname{\TBits(\veslicewidth, \emptylist)}{\vt}, \overname{\EGetFields(\ebaseannot, \vfields)}{\newe}, \overname{\vsesbase}{\vses})
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[collection]{
+  \annotateexpr{\tenv, \ebase} \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\\\\
+  \ebaseannot = \EVar(\vbase)\\
+  \makeanonymous(\tenv, \tbaseannot) \typearrow \TRecord(\vbasefields) \OrTypeError\\\\
+  \vf \in \vbasefields: \getbitfieldwidth(\tenv, \vf, \tfields) \typearrow \ewidth_\vf \OrTypeError\\\\
+  \widthplus(\tenv, [\vf \in \vbasefields: \ewidth_\vf]) \typearrow \veslicewidth\OrTypeError
+}{
+  {
+  \begin{array}{r}
+    \annotateexpr{\tenv, \overname{\EGetFields(\ebase, \vfields)}{\ve}} \typearrow \\
+    (\overname{\TBits(\veslicewidth, \emptylist)}{\vt}, \overname{\EGetCollectionFields(\vbase, \vfields)}{\newe}, \overname{\vsesbase}{\vses})
   \end{array}
   }
 }
@@ -2185,6 +2257,45 @@ yields the bitvector value \verb|'001010'|.
 }
 \end{mathpar}
 \CodeSubsection{\EvalEGetFieldsBegin}{\EvalEGetFieldsEnd}{../interpreter.ml}
+
+\SemanticsRuleDef{EGetCollectionFields}
+
+\ExampleDef{Typing Collection Fields Expressions}
+All of the collection field expressions in
+\listingref{typing-lesetcollectionfields} are well-typed.
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item $\ve$ is the collection multi-field access expression for the
+    collection global storage element $\vbase$ and list of field names
+    $\vfieldnames$;
+  \item $\vbase$ is bound in the storage map of $\denv$;
+  \item $\vv$ is the value of $\vbase$ in the global component of $\env$;
+  \item obtaining the value associated with the field $\fieldname$ in $\vv$,
+    for each $\fieldname$ in $\vfieldnames$, yields $\vv_\fieldname$;
+  \item define $\vv$ as the concatenation of $\vv_\fieldname$, for each
+    $\fieldname$ in $\vfieldnames$.
+  \item $\vg$ is the graph containing a Read Effect for each field $\fieldname$
+    in $\vfieldnames$.
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{
+  \env \eqname (\Ignore, \denv)\\
+  \vbase \in \dom(G^\denv.\storage) \\
+  \vv \eqdef G^\denv.\storage(\vbase) \\
+  \fieldname\in\vfieldnames: \getfield(\fieldname, \vv) \evalarrow \vv_\fieldname \\
+  \vg \eqdef \left\{ \fieldname\in\vfieldnames: \ReadEffect(\vbase + \ttdotstr + \fieldname) \right\} \\
+  \concatbitvectors([\fieldname\in\vfieldnames: \vv_\fieldname]) \evalarrow \vv \\
+}{
+  \evalexpr{\env, \overname{\EGetCollectionFields(\vbase, \vfieldnames)}{\ve}} \evalarrow
+  ((\vv, \vg), \newenv)
+}
+\end{mathpar}
+
+\CodeSubsection{\EvalEGetCollectionFieldsBegin}{\EvalEGetCollectionFieldsEnd}{../interpreter.ml}
 
 \hypertarget{def-atceexpressionterm}{}
 \section{Asserting Type Conversion Expressions\label{sec:AssertingTypeConversionExpressions}}
@@ -2813,6 +2924,7 @@ Note that there are two important consequences of producing an arbitrary value w
   \item $\ve$ denotes an expression \ARBITRARY\ of type $\tty$, that is, $\EArbitrary(\tty)$;
   \item annotating the type $\tty$ in $\tenv$ yields $(\ttyone, \vsesty)$\ProseOrTypeError;
   \item obtaining the \structure\ of $\ttyone$ in $\tenv$ yields $\ttytwo$\ProseOrTypeError;
+  \item \Prosecheckisnotcollection{$\tenv$}{$\ttytwo$};
   \item $\vt$ is $\ttyone$;
   \item define $\newe$ as an expression \ARBITRARY\ of type $\ttytwo$, that is, $\EArbitrary(\ttytwo)$;
   \item define $\vses$ as the union of $\vsesty$ and the singleton set for the \NonDeterministicTerm.
@@ -2822,6 +2934,7 @@ Note that there are two important consequences of producing an arbitrary value w
 \inferrule{
   \annotatetype{\tenv, \tty} \typearrow (\ttyone, \vsesty) \OrTypeError\\\\
   \tstruct(\tenv, \ttyone) \typearrow \ttytwo \OrTypeError\\\\
+  \checkisnotcollection(\tenv, \ttytwo) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsesty \cup \{ \NonDeterministic \}
 }{
   \annotateexpr{\tenv, \EArbitrary(\tty)} \typearrow (\ttyone, \EArbitrary(\ttytwo), \vses)

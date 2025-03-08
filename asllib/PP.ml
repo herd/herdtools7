@@ -152,6 +152,8 @@ let rec pp_expr f e =
   | E_GetField (e, x) -> fprintf f "@[%a@,.%s@]" pp_expr e x
   | E_GetFields (e, xs) ->
       fprintf f "@[%a@,.[@[%a@]]@]" pp_expr e (pp_comma_list pp_print_string) xs
+  | E_GetCollectionFields (e, fields) ->
+      fprintf f "@[%s@,.[@[%a@]]@]" e (pp_comma_list pp_print_string) fields
   | E_GetItem (e, i) -> fprintf f "@[%a@,.item%d@]" pp_expr e i
   | E_Record (ty, li) ->
       let pp_one f (x, e) = fprintf f "@[<h>%s =@ %a@]" x pp_expr e in
@@ -206,15 +208,19 @@ and pp_ty f t =
         (pp_comma_list pp_print_string)
         enum_ty
   | T_Tuple ty_list -> fprintf f "@[(%a)@]" (pp_comma_list pp_ty) ty_list
-  | T_Array (ArrayLength_Expr e, elt_type) ->
-      fprintf f "@[array [[%a]] of %a@]" pp_expr e pp_ty elt_type
-  | T_Array (ArrayLength_Enum (enum, _), elt_type) ->
-      fprintf f "@[array [[%s]] of %a@]" enum pp_ty elt_type
-  | T_Record record_ty ->
-      fprintf f "@[<hv 2>record {@ %a@;<1 -2>}@]" pp_fields record_ty
-  | T_Exception record_ty ->
-      fprintf f "@[exception { %a@;<1 -2>}@]" pp_fields record_ty
+  | T_Array (length, elt_type) ->
+      fprintf f "@[array [[%a]] of %a@]" pp_array_index length pp_ty elt_type
+  | T_Collection record_ty -> pp_record_like f "collection" record_ty
+  | T_Record record_ty -> pp_record_like f "record" record_ty
+  | T_Exception record_ty -> pp_record_like f "exception" record_ty
   | T_Named x -> pp_print_string f x
+
+and pp_record_like f label record_ty =
+  fprintf f "@[<hv 2>%s {@ %a@;<1 -2>}@]" label pp_fields record_ty
+
+and pp_array_index f = function
+  | ArrayLength_Expr e -> pp_expr f e
+  | ArrayLength_Enum (enum, _) -> pp_print_string f enum
 
 and pp_bitfield f = function
   | BitField_Simple (name, slices) ->
@@ -257,6 +263,8 @@ let rec pp_lexpr f le =
   | LE_SetArray (le, e) -> fprintf f "%a[[%a]]" pp_lexpr le pp_expr e
   | LE_SetEnumArray (le, e) -> fprintf f "%a[[%a]]" pp_lexpr le pp_expr e
   | LE_SetField (le, x) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
+  | LE_SetCollectionFields (x, fields, _) ->
+      fprintf f "@[%s@,.[@[%a@]]@]" x (pp_comma_list pp_print_string) fields
   | LE_SetFields (le, li, _) ->
       fprintf f "@[%a@,.@[[%a]@]@]" pp_lexpr le
         (pp_comma_list pp_print_string)

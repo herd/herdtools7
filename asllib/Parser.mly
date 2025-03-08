@@ -379,22 +379,23 @@ let bitfield :=
 (* Also called ty in grammar.bnf *)
 let ty :=
   annotated (
-    | INTEGER; c = constraint_kind_opt;                 < T_Int       >
-    | REAL;                                             { T_Real      }
-    | BOOLEAN;                                          { T_Bool      }
-    | STRING;                                           { T_String    }
-    | BIT;                                              { t_bit       }
-    | BITS; ~=pared(expr); ~=bitfields_opt;             < T_Bits      >
-    | l=plist0(ty);                                      < T_Tuple     >
-    | name=IDENTIFIER;                                  < T_Named     >
+    | INTEGER; c = constraint_kind_opt;                 < T_Int        >
+    | REAL;                                             { T_Real       }
+    | BOOLEAN;                                          { T_Bool       }
+    | STRING;                                           { T_String     }
+    | BIT;                                              { t_bit        }
+    | BITS; ~=pared(expr); ~=bitfields_opt;             < T_Bits       >
+    | l=plist0(ty);                                     < T_Tuple      >
+    | name=IDENTIFIER;                                  < T_Named      >
     | ARRAY; LLBRACKET; e=expr; RRBRACKET; OF; t=ty;    { T_Array (ArrayLength_Expr e, t) }
   )
 
 let ty_decl := ty |
   annotated (
-    | ENUMERATION; l=braced(tclist1(IDENTIFIER));       < T_Enum      >
-    | RECORD; l=fields_opt;                             < T_Record    >
-    | EXCEPTION; l=fields_opt;                          < T_Exception >
+    | ENUMERATION; l=braced(tclist1(IDENTIFIER));       < T_Enum       >
+    | RECORD; l=fields_opt;                             < T_Record     >
+    | EXCEPTION; l=fields_opt;                          < T_Exception  >
+    | COLLECTION; l=fields_opt;                         < T_Collection >
   )
 
 (* Constructs on ty *)

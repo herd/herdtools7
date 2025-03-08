@@ -94,6 +94,7 @@ let token_of_string =
  | "BOR"                -> s BOR
  | "CASE"               -> s CASE
  | "CATCH"              -> s CATCH
+ | "COLLECTION"         -> s COLLECTION
  | "COLON"              -> s COLON
  | "COLON_COLON"        -> s COLON_COLON
  | "COMMA"              -> s COMMA
@@ -232,6 +233,7 @@ let token_to_symbol = function
   | BOOLEAN            -> "boolean"
   | CASE               -> "case"
   | CATCH              -> "catch"
+  | COLLECTION         -> "collection"
   | CONFIG             -> "config"
   | CONSTANT           -> "constant"
   | DIV                -> "DIV"
@@ -327,6 +329,7 @@ let tr_name s = match s with
 | "boolean"       -> BOOLEAN
 | "case"          -> CASE
 | "catch"         -> CATCH
+| "collection"    -> COLLECTION
 | "config"        -> CONFIG
 | "constant"      -> CONSTANT
 | "__debug__"
