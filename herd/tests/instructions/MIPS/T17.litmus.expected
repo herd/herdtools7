@@ -1,0 +1,13 @@
+Test T17 Allowed
+States 4
+1:$3=0; [y]=1;
+1:$3=0; [y]=2;
+1:$3=1; [y]=1;
+1:$3=1; [y]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([y]=2 /\ 1:$3=0)
+Observation T17 Sometimes 1 3
+Hash=e9eb68ec8b44b9822b8e4fd69c1db13d
+
