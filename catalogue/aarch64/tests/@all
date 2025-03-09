@@ -51,3 +51,7 @@ MP+rel+swp-acq.litmus
 # MP+rel+acqpc.litmus
 # MP+rel+swp-acqpc.litmus
 MP+rel+addr-po-loc-addr.litmus
+MP+rel+addr-lrs-acq.litmus
+MP+rel+data-lrs-acq.litmus
+MP+rel+ctrl-lrs-acq.litmus
+MP+rel+rmw-lrs-acq.litmus
