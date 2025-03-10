@@ -25,6 +25,7 @@ illustrative_tests = [
 	"tests/LB+fcas-ctrl-once+once-scas.litmus",
 	"tests/LB+fcas-data-once+once-scas.litmus",
 	"tests/LB+poonceonces.litmus",
+    	"tests/LB+data+addr.litmus",
     "tests/LB+release-oa+acquire.litmus",
 	"tests/MP+fcas-addr-fcas+scas-scas.litmus",
     "tests/MP+fcas-ctrl-fcas+scas-scas.litmus",
