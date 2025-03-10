@@ -314,7 +314,6 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.LESetStructuredField.asl
   $ aslref TypingRule.LESetField.asl
   $ aslref TypingRule.LESetFields.asl
-  $ aslref TypingRule.LESlice.asl
   $ aslref TypingRule.LESlice.bad.asl
   File TypingRule.LESlice.bad.asl, line 4, characters 3 to 11:
   ASL Static error: overlapping slices 0+:4, 3+:1.

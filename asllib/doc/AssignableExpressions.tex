@@ -1043,6 +1043,8 @@ cell of
 
 \hypertarget{def-slicelexprterm}{}
 \section{Bitvector Slice Assignment Expressions\label{sec:BitvectorSliceAssignmentExpressions}}
+\ASLListing{Assignable slice expressions}{semantics-leslice}{\semanticstests/SemanticsRule.LESlice.asl}
+
 \subsection{Abstract Syntax}
 \begin{flalign*}
 \lexpr \derives\ & \LESlice(\lexpr, \slice^*) &
@@ -1051,8 +1053,7 @@ cell of
 \subsection{Typing}
 \TypingRuleDef{LESlice}
 \ExampleDef{Typing Assignable Slice Expression}
-In \listingref{typing-leslice}, the assignable slice expression \verb|x[3:0, 7:6]| is well-typed.
-\ASLListing{Well-typed assignable slice expression}{typing-leslice}{\typingtests/TypingRule.LESlice.asl}
+In \listingref{semantics-leslice}, the assignable slice expression \verb|x[3:0, 7:6]| is well-typed.
 
 In \listingref{typing-leslice-bad}, the assignable slice expression \verb|x[3:0, 3]| is ill-typed,
 since the slice \verb|3:0| overlaps with the slice \verb|3| at position $3$.
@@ -1130,12 +1131,10 @@ See \ExampleRef{Typing Assignable Slice Expression}.
 \subsection{Semantics}
 \SemanticsRuleDef{LESlice}
 \ExampleDef{Slice Assignments}
-In \listingref{semantics-leslice}, the assignment \texttt{x[3:0] = '0000'} binds
-\texttt{x} to $\nvbitvector(11110000)$
+In \listingref{semantics-leslice}, the assignment \texttt{x[3:0, 7:6] = '000000';} binds
+\texttt{x} to \\ $\nvbitvector(00110000)$
 via the rule \SemanticsRuleRef{LESlice}
 in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
-
-\ASLListing{Assignment to a slice}{semantics-leslice}{\semanticstests/SemanticsRule.LESlice.asl}
 
 \ProseParagraph
 \AllApply

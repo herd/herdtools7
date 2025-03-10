@@ -1801,6 +1801,12 @@ returns the set of identifiers $\ids$ which the statement $\vs$ depends on.
     \item define $\ids$ as the union of applying $\usety$ to $\vt$ and $\useexpr$ to $\ve$.
   \end{itemize}
 
+  \item \AllApplyCase{s\_throw\_some}
+  \begin{itemize}
+    \item $\vs$ is a \throwstatementsterm{} with an \optional{} expression $\ve$;
+    \item \Proseeqdef{$\ids$}{the result of applying $\useexpr$ to $\ve$}.
+  \end{itemize}
+
   \item \AllApplyCase{s\_try}
   \begin{itemize}
     \item $\vs$ is a try statement with statement $\vsone$, catcher list $\catchers$, and otherwise statement $\vstwo$;

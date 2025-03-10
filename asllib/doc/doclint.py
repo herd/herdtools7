@@ -243,12 +243,13 @@ def check_teletype_in_rule_math_mode(filename) -> int:
     teletype_pattern = re.compile(r"\\texttt{.*}")
     matches = math_mode_pattern.findall(file_str)
     for match in matches:
-        teletype_vars = teletype_pattern.findall(match)
-        for tt_var in teletype_vars:
-            print(
-                f"ERROR! {filename}: teletype font not allowed in rules, substitute {tt_var} with a proper macro"
-            )
-            num_errors += 1
+        if not "SUPPRESS_TEXTTT_LINTER" in match:
+            teletype_vars = teletype_pattern.findall(match)
+            for tt_var in teletype_vars:
+                print(
+                    f"ERROR! {filename}: teletype font not allowed in rules, substitute {tt_var} with a proper macro"
+                )
+                num_errors += 1
     return num_errors
 
 
@@ -462,7 +463,7 @@ def check_rules(filename: str) -> int:
         "GlobalDeclarations.tex" : 6,
         "GlobalStorageDeclarations.tex" : 7,
         "RelationsOnTypes.tex" : 15,
-        "Specifications.tex" : 26,
+        "Specifications.tex" : 25,
         "SubprogramCalls.tex" : 19,
         "SubprogramDeclarations.tex" : 13,
         "SymbolicEquivalenceTesting.tex" : 26,
@@ -470,7 +471,7 @@ def check_rules(filename: str) -> int:
         "Types.tex" : 9,
         "SideEffects.tex" : 13,
         "TypeSystemUtilities.tex" : 23,
-        "SemanticsUtilities.tex" : 20,
+        "SemanticsUtilities.tex" : 19,
     }
     total_expected = 0
     for num_expected in file_to_num_expected_errors.values():
