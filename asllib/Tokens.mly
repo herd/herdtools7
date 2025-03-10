@@ -26,16 +26,110 @@
 
   ------------------------------------------------------------------------- *)
 
+%token ACCESSOR
+%token AND
+%token ARBITRARY
+%token ARRAY
+%token ARROW
+%token AS
+%token ASSERT
+%token BAND
+%token BEGIN
+%token BEQ
+%token BIARROW
+%token BIT
+%token BITS
+%token BNOT
+%token BOOLEAN
+%token BOR
+%token CASE
+%token CATCH
+%token COLLECTION
+%token COLON
+%token COLON_COLON
+%token COMMA
+%token CONFIG
+%token CONSTANT
+%token DIV
+%token DIVRM
+%token DO
+%token DOT
+%token DOWNTO
+%token ELSE
+%token ELSIF
+%token END
+%token ENUMERATION
+%token EOF
+%token EQ
+%token EQ_OP
+%token EXCEPTION
+%token FOR
+%token FUNC
+%token GEQ
+%token GETTER
+%token GT
+%token IF
+%token IMPDEF
+%token IMPL
+%token IMPLEMENTATION
+%token IN
+%token INTEGER
+%token LBRACE
+%token LBRACKET
+%token LEQ
+%token LET
+%token LLBRACKET
+%token LOOPLIMIT
+%token LPAR
+%token LT
+%token MINUS
+%token MOD
+%token MUL
+%token NEQ
+%token NOT
+%token OF
+%token OR
+%token OTHERWISE
+%token PASS
+%token PLUS
+%token PLUS_COLON
+%token POW
+%token PRAGMA
+%token PRINT
+%token PRINTLN
+%token RBRACE
+%token RBRACKET
+%token RDIV
+%token REAL
+%token RECORD
+%token RECURSELIMIT
+%token REPEAT
+%token RETURN
+%token RPAR
+%token RRBRACKET
+%token SEMI_COLON
+%token SETTER
+%token SHL
+%token SHR
+%token SLICING
+%token STAR_COLON
+%token STRING
+%token SUBTYPES
+%token THEN
+%token THROW
+%token TO
+%token TRY
+%token TYPE
+%token UNREACHABLE
+%token UNTIL
+%token VAR
+%token WHEN
+%token WHERE
+%token WHILE
+%token WITH
+%token XOR
+
 %token DEBUG [@internal true]
-%token ACCESSOR AND ARRAY ARROW AS ASSERT BAND BEGIN BEQ BIARROW BIT BITS BNOT
-%token BOOLEAN BOR CASE CATCH COLON COLON_COLON COMMA CONFIG CONSTANT DIV DIVRM
-%token DO DOT DOWNTO ELSE ELSIF END ENUMERATION EOF XOR EQ EQ_OP EXCEPTION FOR
-%token FUNC GEQ GETTER GT IF IMPDEF IMPLEMENTATION IMPL IN INTEGER LBRACE
-%token LBRACKET LEQ LET LOOPLIMIT LPAR LT MINUS MOD MUL NEQ NOT OF OR OTHERWISE
-%token PASS PLUS PLUS_COLON POW PRAGMA PRINTLN PRINT RBRACE RBRACKET RDIV REAL
-%token RECORD RECURSELIMIT REPEAT RETURN RPAR STAR_COLON SEMI_COLON SETTER SHL
-%token SHR SLICING STRING SUBTYPES THEN THROW TO TRY TYPE ARBITRARY UNREACHABLE
-%token UNTIL VAR WHEN WHERE WHILE WITH LLBRACKET RRBRACKET
 
 %token <string> IDENTIFIER STRING_LIT
 %token <Bitvector.mask> MASK_LIT

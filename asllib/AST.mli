@@ -172,6 +172,7 @@ type expr_desc =
     *)
   | E_GetField of expr * identifier
   | E_GetFields of expr * identifier list
+  | E_GetCollectionFields of identifier * identifier list
   | E_GetItem of expr * int
   | E_Record of ty * (identifier * expr) list
       (** Represents a record or an exception construction expression. *)
@@ -252,6 +253,7 @@ and type_desc =
   | T_Array of array_index * ty
   | T_Record of field list
   | T_Exception of field list
+  | T_Collection of field list
   | T_Named of identifier  (** A type variable. *)
 
 and ty = type_desc annotated
@@ -325,7 +327,11 @@ type lexpr_desc =
     *)
   | LE_SetField of lexpr * identifier
   | LE_SetFields of lexpr * identifier list * (int * int) list
-      (** LE_SetFields (le, fields, _) unpacks the various fields. Third argument is a type annotation. *)
+      (** [LE_SetFields (le, fields, _)] unpacks the various fields. Third
+          argument is a type annotation. *)
+  | LE_SetCollectionFields of identifier * identifier list * (int * int) list
+      (** [LE_SetCollectionFields (x, fields, _)] unpacks the various fields.
+          Third argument is a type annotation. *)
   | LE_Destructuring of lexpr list
 
 and lexpr = lexpr_desc annotated

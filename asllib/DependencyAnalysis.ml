@@ -67,6 +67,7 @@ let rec use_e e =
   | E_GetItem (e, _) -> use_e e
   | E_GetField (e, _) -> use_e e
   | E_GetFields (e, _) -> use_e e
+  | E_GetCollectionFields (x, _) -> add_other e x
   | E_Record (ty, li) -> use_ty ty $ use_fields li
   | E_Tuple es -> use_es es
   | E_Array { length; value } -> use_e length $ use_e value
@@ -102,7 +103,8 @@ and use_ty t =
       Fun.id
   | T_Int (WellConstrained (cs, _)) -> use_constraints cs
   | T_Tuple li -> use_list use_ty li
-  | T_Record fields | T_Exception fields -> use_named_list use_ty fields
+  | T_Record fields | T_Collection fields | T_Exception fields ->
+      use_named_list use_ty fields
   | T_Array (ArrayLength_Expr e, t') -> use_e e $ use_ty t'
   | T_Array (ArrayLength_Enum (s, _), t') -> NameSet.add (Other s) $ use_ty t'
   | T_Bits (e, bit_fields) -> use_e e $ use_bitfields bit_fields
@@ -151,6 +153,7 @@ and use_le le =
   | LE_SetArray (le, e) | LE_SetEnumArray (le, e) -> use_le le $ use_e e
   | LE_SetField (le, _) | LE_SetFields (le, _, _) -> use_le le
   | LE_Slice (le, slices) -> use_slices slices $ use_le le
+  | LE_SetCollectionFields (x, _, _) -> add_other le x
 
 and use_catcher (_name, ty, s) = use_s s $ use_ty ty
 and use_catchers catchers = use_list use_catcher catchers

@@ -329,6 +329,9 @@ let rec expr_equal eq e1 e2 =
   | E_GetFields (e1', f1s), E_GetFields (e2', f2s) ->
       list_equal String.equal f1s f2s && expr_equal eq e1' e2'
   | E_GetFields _, _ | _, E_GetFields _ -> false
+  | E_GetCollectionFields (x1, f1s), E_GetCollectionFields (x2, f2s) ->
+      String.equal x1 x2 && list_equal String.equal f1s f2s
+  | E_GetCollectionFields _, _ | _, E_GetCollectionFields _ -> false
   | E_GetItem (e1', i1), E_GetItem (e2', i2) ->
       Int.equal i1 i2 && expr_equal eq e1' e2'
   | E_GetItem _, _ | _, E_GetItem _ -> false
@@ -405,7 +408,9 @@ and type_equal eq t1 t2 =
   | T_Named s1, T_Named s2 -> String.equal s1 s2
   | T_Enum li1, T_Enum li2 ->
       (* TODO: order of fields? *) list_equal String.equal li1 li2
-  | T_Exception f1, T_Exception f2 | T_Record f1, T_Record f2 ->
+  | T_Exception f1, T_Exception f2
+  | T_Record f1, T_Record f2
+  | T_Collection f1, T_Collection f2 ->
       list_equal
         (pair_equal String.equal (type_equal eq))
         (canonical_fields f1) (canonical_fields f2)
@@ -509,6 +514,7 @@ let expr_of_lexpr : lexpr -> expr =
     | LE_SetEnumArray (le, e) -> E_GetEnumArray (map_desc aux le, e)
     | LE_SetField (le, x) -> E_GetField (map_desc aux le, x)
     | LE_SetFields (le, x, _) -> E_GetFields (map_desc aux le, x)
+    | LE_SetCollectionFields (x, fields, _) -> E_GetCollectionFields (x, fields)
     | LE_Discard -> E_Var "-"
     | LE_Destructuring les -> E_Tuple (List.map (map_desc aux) les)
   in
@@ -598,6 +604,7 @@ let rec subst_expr substs e =
   | E_GetEnumArray (e1, e2) -> E_GetEnumArray (tr e1, tr e2)
   | E_GetField (e, x) -> E_GetField (tr e, x)
   | E_GetFields (e, fields) -> E_GetFields (tr e, fields)
+  | E_GetCollectionFields _ -> failwith "No collection should be used here"
   | E_GetItem (e, i) -> E_GetItem (tr e, i)
   | E_Literal _ -> e.desc
   | E_Pattern (e, ps) -> E_Pattern (tr e, ps)
@@ -616,7 +623,7 @@ let rec subst_expr substs e =
 
 let rec is_simple_expr e =
   match e.desc with
-  | E_Var _ | E_Literal _ | E_Arbitrary _ -> true
+  | E_Var _ | E_Literal _ | E_Arbitrary _ | E_GetCollectionFields _ -> true
   | E_Array { length = e1; value = e2 }
   | E_GetArray (e1, e2)
   | E_GetEnumArray (e1, e2)
@@ -690,6 +697,7 @@ let rename_locals map_name ast =
     | E_GetEnumArray (e1, e2) -> E_GetEnumArray (map_e e1, map_e e2)
     | E_GetField (e1, f) -> E_GetField (map_e e1, f)
     | E_GetFields (e1, li) -> E_GetFields (map_e e1, li)
+    | E_GetCollectionFields (x, li) -> E_GetCollectionFields (map_name x, li)
     | E_GetItem (e1, i) -> E_GetItem (map_e e1, i)
     | E_Record (t, li) -> E_Record (t, List.map (fun (f, e) -> (f, map_e e)) li)
     | E_Tuple li -> E_Tuple (map_es li)
@@ -720,6 +728,8 @@ let rename_locals map_name ast =
     | T_Bits (e, bitfields) -> T_Bits (map_e e, bitfields)
     | T_Tuple li -> T_Tuple (List.map map_t li)
     | T_Array (_, _) -> failwith "Not yet implemented: obfuscate array types"
+    | T_Collection _ ->
+        failwith "Not yet implemented: obfuscate collection types"
     | T_Record li -> T_Record (List.map (fun (f, t) -> (f, map_t t)) li)
     | T_Exception li -> T_Exception (List.map (fun (f, t) -> (f, map_t t)) li)
   (* End *)
@@ -773,6 +783,7 @@ let rename_locals map_name ast =
     | LE_SetEnumArray (le, i) -> LE_SetEnumArray (map_le le, map_e i)
     | LE_SetField (le1, f) -> LE_SetField (map_le le1, f)
     | LE_SetFields (le1, fl, annot) -> LE_SetFields (map_le le1, fl, annot)
+    | LE_SetCollectionFields _ as le -> le (* No collection is local *)
     | LE_Destructuring les -> LE_Destructuring (List.map map_le les)
   (* End *)
   (* Begin RenameLocalsLDI *)

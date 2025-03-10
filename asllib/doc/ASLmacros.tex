@@ -389,6 +389,7 @@
 \newcommand\Tbor[0]{\verbatimterminal{BOR}{||}}
 \newcommand\Tcase[0]{\verbatimterminal{CASE}{case}}
 \newcommand\Tcatch[0]{\verbatimterminal{CATCH}{catch}}
+\newcommand\Tcollection[0]{\verbatimterminal{COLLECTION}{collection}}
 \newcommand\Tcolon[0]{\verbatimterminal{COLON}{:}}
 \newcommand\Tcoloncolon[0]{\verbatimterminal{COLON\_COLON}{::}}
 \newcommand\Tcomma[0]{\verbatimterminal{COMMA}{,}}
@@ -661,6 +662,7 @@
 \newcommand\ECond[0]{\hyperlink{ast-econd}{\textsf{E\_Cond}}}
 \newcommand\EGetArray[0]{\hyperlink{ast-egetarray}{\textsf{E\_GetArray}}}
 \newcommand\EGetEnumArray[0]{\hyperlink{ast-egetenumarray}{\textsf{E\_GetEnumArray}}}
+\newcommand\EGetCollectionFields[0]{\hyperlink{ast-egetcollectionfields}{\textsf{E\_GetCollectionFields}}}
 \newcommand\EGetField[0]{\hyperlink{ast-egetfield}{\textsf{E\_GetField}}}
 \newcommand\EGetItem[0]{\hyperlink{ast-egetitem}{\textsf{E\_GetItem}}}
 \newcommand\EGetFields[0]{\hyperlink{ast-egetfields}{\textsf{E\_GetFields}}}
@@ -678,6 +680,7 @@
 \newcommand\LESlice{\hyperlink{ast-leslice}{\textsf{LE\_Slice}}}
 \newcommand\LESetArray[0]{\hyperlink{ast-lesetarray}{\textsf{LE\_SetArray}}}
 \newcommand\LESetEnumArray[0]{\hyperlink{ast-lesetenumarray}{\textsf{LE\_SetEnumArray}}}
+\newcommand\LESetCollectionFields[0]{\hyperlink{ast-lesetcollectionfields}{\textsf{LE\_SetCollectionFields}}}
 \newcommand\LESetField[0]{\hyperlink{ast-lesetfield}{\textsf{LE\_SetField}}}
 \newcommand\LESetFields[0]{\hyperlink{ast-lesetfields}{\textsf{LE\_SetFields}}}
 \newcommand\LEDestructuring[0]{\hyperlink{ast-ledestructuring}{\textsf{LE\_Destructuring}}}
@@ -719,6 +722,7 @@
 \newcommand\TArray[0]{\hyperlink{ast-tarray}{\textsf{T\_Array}}}
 \newcommand\TRecord[0]{\hyperlink{ast-trecord}{\textsf{T\_Record}}}
 \newcommand\TException[0]{\hyperlink{ast-texception}{\textsf{T\_Exception}}}
+\newcommand\TCollection[0]{\hyperlink{ast-tcollection}{\textsf{T\_Collection}}}
 \newcommand\TNamed[0]{\hyperlink{ast-tnamed}{\textsf{T\_Named}}}
 
 \newcommand\BitFieldSimple[0]{\hyperlink{ast-bitfieldsimple}{\textsf{BitField\_Simple}}}
@@ -1244,6 +1248,9 @@
 \newcommand\bitfieldsincluded[0]{\hyperlink{def-bitfieldsincluded}{\textfunc{bitfields\_included}}}
 \newcommand\membfs[0]{\hyperlink{def-membfs}{\textfunc{mem\_bfs}}}
 \newcommand\instantiate[0]{\textfunc{instantiate}}
+\newcommand\checkisnotcollection[0]{\hyperlink{def-checkisnotcollection}{\textfunc{check\_is\_not\_collection}}}
+\newcommand\Prosecheckisnotcollection[2]{\hyperlink{def-checkisnotcollection}{determining}
+  whether #2 is not a \collectiontypeterm{} in #1 yields $\True$\ProseOrTypeError}
 \newcommand\checkcanbeinitializedwith[0]{\hyperlink{def-checkcanbeinitializedwith}{\textfunc{check\_can\_be\_initialized\_with}}}
 \newcommand\getbitvectorwidth[0]{\hyperlink{def-getbitvectorwidth}{\textfunc{get\_bitvector\_width}}}
 \newcommand\getbitvectorconstwidth[0]{\hyperlink{def-getbitvectorconstwidth}{\textfunc{get\_bitvector\_const\_width}}}
@@ -1626,6 +1633,7 @@
 \newcommand\namedtypeterm[0]{\hyperlink{namedtypeterm}{named type}}
 \newcommand\namedtypesterm[0]{\hyperlink{namedtypeterm}{named types}}
 \newcommand\recordtypeterm[0]{\hyperlink{recordtypeterm}{record type}}
+\newcommand\collectiontypeterm[0]{\hyperlink{collectiontypeterm}{collection type}}
 \newcommand\recordtypesterm[0]{\hyperlink{recordtypeterm}{record types}}
 \newcommand\exceptiontypeterm[0]{\hyperlink{exceptiontypeterm}{exception type}}
 \newcommand\unconstrainedintegertype[0]{\hyperlink{def-unconstrainedintegertype}{unconstrained integer type}}
@@ -2082,6 +2090,7 @@
 
 \newcommand\discardvar[0]{\texttt{-}}
 \newcommand\discardvarstr[0]{\texttt{"-"}}
+\newcommand\ttdotstr[0]{\texttt{"."}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % LRM Ident info
@@ -2648,6 +2657,7 @@
 \newcommand\vbits[0]{\texttt{bits}}
 \newcommand\vbp[0]{\texttt{b'}}
 \newcommand\vbase[0]{\texttt{base}}
+\newcommand\vbaseone[0]{\texttt{base1}}
 \newcommand\vbasefields[0]{\texttt{base\_fields}}
 \newcommand\vbasiclexpr[0]{\texttt{basic\_lexpr}}
 \newcommand\vbequal[0]{\texttt{b\_equal}}
@@ -2824,6 +2834,7 @@
 \newcommand\vgp[0]{\texttt{g'}}
 \newcommand\vgthree[0]{\texttt{g3}}
 \newcommand\vgtwo[0]{\texttt{g2}}
+\newcommand\vgzero[0]{\texttt{g0}}
 \newcommand\vi[0]{\texttt{i}}
 \newcommand\vip[0]{\texttt{i'}}
 \newcommand\annotatedcs[0]{\texttt{annotated\_cs}}

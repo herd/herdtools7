@@ -16,6 +16,7 @@ how it is represented in the syntax and AST, and how it is typechecked:
   \item \Enumerationtypesterm{} (see \secref{EnumerationTypes})
   \item Array types (see \secref{ArrayTypes})
   \item Record types (see \secref{RecordTypes})
+  \item Collection types (see \secref{CollectionTypes})
   \item Exception types (see \secref{ExceptionTypes})
   \item Named types (see \secref{NamedTypes})
 \end{itemize}
@@ -1349,6 +1350,34 @@ In \listingref{typing-trecord}, all the uses of record types are well-typed.
 }
 \end{mathpar}
 \CodeSubsection{\TStructuredDeclBegin}{\TStructuredDeclEnd}{../Typing.ml}
+
+\section{Collection Types\label{sec:CollectionTypes}}%
+\hypertarget{collectiontypeterm}{}
+
+A collection is a \structuredtype{} consisting of a list of field identifiers
+which denote individual storage elements.
+
+\RequirementDef{CollectionsGlobal}
+Collections can only be used for global storage elements.
+See \listingref{checkisnotcollection} for an ill-typed specification.
+
+\subsection{Syntax}
+\begin{flalign*}
+  \Ntydecl \derives\ & \Tcollection \parsesep \Nfieldsopt &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+  \ty \derives\ & \TCollection(\Field^{*}) &
+\end{flalign*}
+
+\ASTRuleDef{TyDecl.TCollection}
+\begin{mathpar}
+\inferrule{}{%
+  \buildtydecl(\Ntydecl(\Tcollection, \punnode{\Nfieldsopt})) \astarrow
+  \overname{\TCollection(\astof{\vfieldsopt})}{\vastnode}
+}
+\end{mathpar}
 
 \section{Exception Types\label{sec:ExceptionTypes}}
 \hypertarget{exceptiontypeterm}{}
