@@ -11,7 +11,7 @@
 // ======
 // Convert a bitvector to an unsigned integer, where bit 0 is LSB.
 
-func UInt{N}(x: bits(N)) => integer{0..2^N-1}
+func UInt{N: integer{1..128}} (x: bits(N)) => integer{0..2^N-1}
 begin
     var result: integer = 0;
     for i = 0 to N-1 do
@@ -26,7 +26,7 @@ end;
 // ======
 // Convert a 2s complement bitvector to a signed integer.
 
-func SInt{N}(x: bits(N)) => integer{-(2^(N-1)) .. 2^(N-1)-1}
+func SInt{N: integer{1..128}} (x: bits(N)) => integer{-(2^(N-1)) .. 2^(N-1)-1}
 begin
     var result: integer = UInt(x);
     if N > 0 && x[N-1] == '1' then
@@ -50,13 +50,32 @@ begin
   return if x < 0 then -x else x;
 end;
 
-// Log2()
+// FloorLog2()
 // ======
-// Calculate the logarithm base 2 of the input integer.
-// Input must be a power of 2.
+// Calculate the logarithm base 2 of the input integer, rounded down.
 
-func Log2(a: integer) => integer
+func FloorLog2(a: integer) => integer
 begin
+    assert a > 0;
+
+    var result : integer = 0;
+    var current : integer = 2;
+
+    while a >= current looplimit 2^128 do // i.e. unbounded
+        current = current * 2;
+        result = result + 1;
+    end;
+
+    return result;
+end;
+
+// CeilLog2()
+// ==========
+// Calculate the logarithm base 2 of the input integer, rounded up.
+
+func CeilLog2(a: integer) => integer
+begin
+    assert a > 0;
 
     var result : integer = 0;
     var current : integer = 1;
@@ -66,7 +85,6 @@ begin
         result = result + 1;
     end;
 
-    assert a == current;
     return result;
 end;
 
@@ -509,7 +527,7 @@ end;
 // A variant of AlignDownSize where the bitvector x is viewed as an unsigned
 // integer and the resulting integer is represented by its first N bits.
 
-func AlignDownSize{N}(x: bits(N), size: integer {1..2^N}) => bits(N)
+func AlignDownSize{N: integer{1..128}}(x: bits(N), size: integer {1..2^N}) => bits(N)
 begin
     return AlignDownSize(UInt(x), size)[:N];
 end;
@@ -519,7 +537,7 @@ end;
 // A variant of AlignUpSize where the bitvector x is viewed as an unsigned
 // integer and the resulting integer is represented by its first N bits.
 
-func AlignUpSize{N}(x: bits(N), size: integer {1..2^N}) => bits(N)
+func AlignUpSize{N: integer{1..128}}(x: bits(N), size: integer {1..2^N}) => bits(N)
 begin
     return AlignUpSize(UInt(x), size)[:N];
 end;
@@ -609,21 +627,55 @@ begin
   return (ASR{N}(x, shift), x[Min(shift-1, N-1)]);
 end;
 
-// Rotate right.
-// This function shifts by [shift] bits to the right, the bits deleted are
-// reinserted on the left. This makes it operate effectively modulo N.
+// ROR()
+// =====
+// Rotate right by [shift] bits. The bits are deleted on the right and
+// reinserted on the left, so the operation is effectively modulo N.
+
 func ROR{N}(x: bits(N), shift: integer) => bits(N)
 begin
   assert shift >= 0;
+  if N == 0 then return x; end;
   let cshift = (shift MOD N) as integer{0..N-1};
   return x[0+:cshift] :: x[N-1:cshift];
 end;
 
+
+// ROR_C()
+// =======
 // Rotate right with carry out.
-// As ROR, the function effectively operates modulo N.
+// As with [ROR], the operation is effectively modulo N.
+// The carry bit is equal to the MSB of the result.
+
 func ROR_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
 begin
   assert shift > 0;
+  if N == 0 then return (x, '0'); end;
   let cpos = (shift-1) MOD N;
   return (ROR{N}(x, shift), x[cpos]);
+end;
+
+// ROL()
+// =====
+// Rotate left by [shift] bits.
+// This corresponds to a right rotation by [-shift] bits.
+
+func ROL{N}(x: bits(N), shift: integer) => bits(N)
+begin
+  assert shift >= 0;
+  if N == 0 then return x; end;
+  return ROR{N}(x, -shift MOD N);
+end;
+
+// ROL_C()
+// =======
+// Rotate left with carry out.
+// The carry bit is equal to the LSB of the result.
+
+func ROL_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
+begin
+  assert shift > 0;
+  if N == 0 then return (x, '0'); end;
+  let rshift = -shift MOD N;
+  return (ROR{N}(x, rshift), x[rshift]);
 end;

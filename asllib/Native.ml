@@ -287,10 +287,8 @@ module NativeBackend (C : Config) = struct
           Error.fatal_unknown_pos
           @@ Error.BadArity (Dynamic, "DecStr", 1, List.length li)
 
-    let is_power_of_2 z = Int.equal (Z.log2 z) (Z.log2up z)
-
-    let log2 = function
-      | [ NV_Literal (L_Int i) ] when Z.gt i Z.zero && is_power_of_2 i ->
+    let floor_log2 = function
+      | [ NV_Literal (L_Int i) ] when Z.gt i Z.zero ->
           [ L_Int (Z.log2 i |> Z.of_int) |> nv_literal ]
       | [ v ] -> mismatch_type v [ integer' ]
       | li ->
@@ -357,7 +355,7 @@ module NativeBackend (C : Config) = struct
         (let two_pow_n_minus_one = minus_one (pow_2 (e_var "N")) in
          let returns = integer_range (eoi 0) two_pow_n_minus_one in
          p
-           ~parameters:[ ("N", None) ]
+           ~parameters:[ ("N", Some (integer_range (eoi 1) (eoi 128))) ]
            ~args:[ ("x", t_bits "N") ]
            ~returns "UInt" uint);
         (let two_pow_n_minus_one = pow_2 (minus_one (e_var "N")) in
@@ -367,13 +365,13 @@ module NativeBackend (C : Config) = struct
            integer_range minus_two_pow_n_minus_one two_pow_n_minus_one_minus_one
          in
          p
-           ~parameters:[ ("N", None) ]
+           ~parameters:[ ("N", Some (integer_range (eoi 1) (eoi 128))) ]
            ~args:[ ("x", t_bits "N") ]
            ~returns "SInt" sint);
         p ~args:[ ("x", integer) ] ~returns:string "DecStr" dec_str;
         p ~args:[ ("x", integer) ] ~returns:string "HexStr" hex_str;
         p ~args:[ ("x", integer) ] ~returns:string "AsciiStr" ascii_str;
-        p ~args:[ ("x", integer) ] ~returns:integer "Log2" log2;
+        p ~args:[ ("x", integer) ] ~returns:integer "FloorLog2" floor_log2;
         p ~args:[ ("x", real) ] ~returns:integer "RoundDown" round_down;
         p ~args:[ ("x", real) ] ~returns:integer "RoundUp" round_up;
         p
