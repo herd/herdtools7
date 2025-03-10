@@ -79,8 +79,8 @@ struct
       Act.Access (Dir.R, loc, v, ato, (), sz, Act.access_of_location_std loc)
     ;;
 
-    let read_reg is_addr r ii =
-      M.read_loc is_addr (mk_read nat_sz BPF.N) (A.Location_reg (ii.A.proc, r)) ii
+    let read_reg port r ii =
+      M.read_loc port (mk_read nat_sz BPF.N) (A.Location_reg (ii.A.proc, r)) ii
     ;;
 
     let read_reg_ord = read_reg Port.No

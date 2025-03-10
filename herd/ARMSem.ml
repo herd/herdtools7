@@ -94,8 +94,8 @@ module
       let mk_read ato sz loc v =
         Act.Access (Dir.R, loc, v, ato,ARM.Exp, sz, Act.access_of_location_std loc)
 
-      let read_reg is_addr r ii =
-        M.read_loc is_addr
+      let read_reg port r ii =
+        M.read_loc port
           (mk_read ARM.N reg_sz)
           (A.Location_reg (ii.A.proc,r)) ii
 
