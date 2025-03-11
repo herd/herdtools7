@@ -1,0 +1,21 @@
+AArch64 LB+rel+CAS-ok-RsRs-addr
+
+{
+  x = 0;
+  y = 0;
+  z = 0;
+
+  0: X0 = x;         1: X0 = x;
+  0: X1 = y;         1: X1 = y;
+                     1: X2 = z;
+}
+
+P0                 | P1                     ;
+LDR W3, [X0]       | LDR W3, [X1]           ;
+MOV W4, #1         | EOR W5, W3, W3         ;
+STLR W4, [X1]      | CAS W5, W30, [X2]      ;
+                   | EOR W5, W5, W5         ;
+                   | MOV W4, #1             ;
+                   | STR W4, [X0, W5, SXTW] ;
+
+exists (0: X3 = 1 /\ 1: X3 = 1)
