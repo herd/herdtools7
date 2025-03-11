@@ -48,7 +48,8 @@ evaluates the expression $\ve$ in an environment $\env$ and terminates normally 
 a \nativevalue{} $\vv$, an \executiongraph{} $\vg$, and a modified environment $\newenv$.
 Otherwise, the evaluation terminates abnormally.
 
-We now define the syntax, abstract syntax, typing, and semantics of the following kinds of expressions:
+The rest of this chapter defines the syntax, abstract syntax, typing,
+and semantics of the following kinds of expressions:
 \begin{itemize}
   \item Literal expressions (see \secref{LiteralExpressions})
   \item Variable expressions (see \secref{VariablExpressions})
@@ -1296,7 +1297,7 @@ resulting bitvector --- and the execution graph $\vgone$;
 \hypertarget{def-getenumarrayexpression}{}
 This section details the syntax, abstract syntax, semantics, and typing of array read expressions.
 In the untyped AST, a read from either an integer-indexed array or an enumeration-indexed arrays is represented
-the same way. They type system infers the kind of array and outputs a typed AST node differentiating
+the same way. The type system infers the kind of array and outputs a typed AST node differentiating
 the two kinds of arrays, either a $\EGetArray$ or a $\EGetEnumArray$, via \TypingRuleRef{EGetArray}.
 The semantics utilizes a rule matching the corresponding type of array ---
 \SemanticsRuleRef{EGetArray} for integer-indexed arrays and

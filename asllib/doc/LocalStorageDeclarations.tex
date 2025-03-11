@@ -314,33 +314,8 @@ evaluation of \texttt{3} in $\env$.
   \item the output configuration is obtained by declaring each identifier $\id_i$
   with the corresponding value ($\vm$ component) $(\vv_i, \vg)$.
 \end{itemize}
-\FormallyParagraph
-\hypertarget{def-ldituplefolder}{}
-We first define the helper semantic relation
-\[
-    \ldituplefolder(\overname{\envs}{\env} \aslsep \overname{\identifier^*}{\vids} \aslsep \overname{(\vals \times \XGraphs)^*}{\liv}) \;\aslrel\;
-     \Normal(\overname{\XGraphs}{\vg} \aslsep \overname{\envs}{\newenv})
-\]
-via the following rules:
-\begin{mathpar}
-\inferrule{}
-{
-  \ldituplefolder(\env, \emptylist, \emptylist) \evalarrow \Normal(\emptygraph, \env)
-}
-\and
-\inferrule{
-  \vids \eqname [\id] \concat \vids'\\
-  \liv \eqname [\vm] \concat \liv'\\
-  \vm \eqname (\vv, \vgone)\\\\
-  \declarelocalidentifier(\env, \id, \vv) \evalarrow (\envone, \vgtwo)\\
-  \ldituplefolder(\envone, \vids', \liv') \evalarrow \Normal(\vgthree, \newenv)\\
-  \newg \eqdef (\ordered{\vgone}{\asldata}{\vgtwo}) \parallelcomp \vgthree\\
-}{
-  \ldituplefolder(\env, \vids, \liv) \evalarrow \Normal(\newg, \newenv)
-}
-\end{mathpar}
 
-We now use the helper rules to define the rule for local declaration item tuples:
+\FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \vm \eqname (\vv, \vg)\\
@@ -353,3 +328,56 @@ We now use the helper rules to define the rule for local declaration item tuples
 }
 \end{mathpar}
 \CodeSubsection{\EvalLDTupleBegin}{\EvalLDTupleEnd}{../Interpreter.ml}
+
+\SemanticsRuleDef{LDITupleFolder}
+\hypertarget{def-ldituplefolder}{}
+The helper semantic relation
+\[
+    \ldituplefolder(\overname{\envs}{\env} \aslsep \overname{\identifier^*}{\vids} \aslsep \overname{(\vals \times \XGraphs)^*}{\liv}) \;\aslrel\;
+     \Normal(\overname{\XGraphs}{\vg} \aslsep \overname{\envs}{\newenv})
+\]
+is defined as follows.
+
+See \ExampleRef{Evaluation of Tuple Declarations}.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{empty}
+  \begin{itemize}
+    \item both $\vids$ and $\liv$ are empty lists;
+    \item \Proseeqdef{$\vg$}{the empty \executiongraph};
+    \item \Proseeqdef{$\newenv$}{$\env$}.
+  \end{itemize}
+
+  \item \AllApplyCase{non\_empty}
+  \begin{itemize}
+    \item $\vids$ is a list with \head{} $\id$ and \tail{} $\vids'$;
+    \item $\liv$ is a list with \head{} $\vm$ and \tail{} $\liv'$;
+    \item applying $\declarelocalidentifier$ to $\id$ and $\vv$ in $\env$ yields $(\envone, \vgtwo)$;
+    \item applying $\ldituplefolder$ to $\vids'$ and $\liv'$ in $\envone$ yields $\Normal(\vgthree, \newenv)$;
+    \item \Proseeqdef{$\newg$}{the parallel composition of the ordered composition of $\vgone$ and $\vgtwo$
+          with the $\asldata$ edge, and $\vgthree$}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[empty]{}
+{
+  \ldituplefolder(\env, \overname{\emptylist}{\vids}, \overname{\emptylist}{\liv}) \evalarrow \Normal(\emptygraph, \env)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \vids \eqname [\id] \concat \vids'\\
+  \liv \eqname [\vm] \concat \liv'\\
+  \vm \eqname (\vv, \vgone)\\\\
+  \declarelocalidentifier(\env, \id, \vv) \evalarrow (\envone, \vgtwo)\\
+  \ldituplefolder(\envone, \vids', \liv') \evalarrow \Normal(\vgthree, \newenv)\\
+  \newg \eqdef (\ordered{\vgone}{\asldata}{\vgtwo}) \parallelcomp \vgthree\\
+}{
+  \ldituplefolder(\env, \vids, \liv) \evalarrow \Normal(\newg, \newenv)
+}
+\end{mathpar}

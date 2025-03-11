@@ -16,8 +16,8 @@ how it is represented in the syntax and AST, and how it is typechecked:
   \item \Enumerationtypesterm{} (see \secref{EnumerationTypes})
   \item Array types (see \secref{ArrayTypes})
   \item Record types (see \secref{RecordTypes})
-  \item Collection types (see \secref{CollectionTypes})
   \item Exception types (see \secref{ExceptionTypes})
+  \item Collection types (see \secref{CollectionTypes})
   \item Named types (see \secref{NamedTypes})
 \end{itemize}
 
@@ -1346,38 +1346,10 @@ In \listingref{typing-trecord}, all the uses of record types are well-typed.
   \fieldsp \eqdef [i=1..k: (\vx_i, \vtp_i)]\\
   \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
-  \annotatetype{\True, \tenv, L(\fields)} \typearrow (\overname{L(\fieldsp)}{\newty}, \vses)
+  \annotatetype{\True, \tenv, \overname{L(\fields)}{\tty}} \typearrow (\overname{L(\fieldsp)}{\newty}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\TStructuredDeclBegin}{\TStructuredDeclEnd}{../Typing.ml}
-
-\section{Collection Types\label{sec:CollectionTypes}}%
-\hypertarget{collectiontypeterm}{}
-
-A collection is a \structuredtype{} consisting of a list of field identifiers
-which denote individual storage elements.
-
-\RequirementDef{CollectionsGlobal}
-Collections can only be used for global storage elements.
-See \listingref{checkisnotcollection} for an ill-typed specification.
-
-\subsection{Syntax}
-\begin{flalign*}
-  \Ntydecl \derives\ & \Tcollection \parsesep \Nfieldsopt &
-\end{flalign*}
-
-\subsection{Abstract Syntax}
-\begin{flalign*}
-  \ty \derives\ & \TCollection(\Field^{*}) &
-\end{flalign*}
-
-\ASTRuleDef{TyDecl.TCollection}
-\begin{mathpar}
-\inferrule{}{%
-  \buildtydecl(\Ntydecl(\Tcollection, \punnode{\Nfieldsopt})) \astarrow
-  \overname{\TCollection(\astof{\vfieldsopt})}{\vastnode}
-}
-\end{mathpar}
 
 \section{Exception Types\label{sec:ExceptionTypes}}
 \hypertarget{exceptiontypeterm}{}
@@ -1412,8 +1384,78 @@ In \listingref{typing-texception}, all the uses of exception types are well-type
 \subsection{Typing Exception Types}
 The rule for typing exception types is \TypingRuleRef{TStructuredDecl}.
 
-\hypertarget{namedtypeterm}{}
+\section{Collection Types\label{sec:CollectionTypes}}
+\hypertarget{collectiontypeterm}{}
+
+\ASLListing{Collection types}{TCollection}{\typingtests/TypingRule.TCollection.asl}
+
+A collection is a \structuredtype{} consisting of a list of field identifiers
+which denote individual storage elements.
+
+\RequirementDef{CollectionsGlobal}
+Collections can only be used for global storage elements.
+See \listingref{checkisnotcollection} for an ill-typed specification.
+
+\subsection{Syntax}
+\begin{flalign*}
+  \Ntydecl \derives\ & \Tcollection \parsesep \Nfieldsopt &
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+  \ty \derives\ & \TCollection(\Field^{*}) &
+\end{flalign*}
+
+\ASTRuleDef{TyDecl.TCollection}
+\begin{mathpar}
+\inferrule{}{
+  \buildtydecl(\Ntydecl(\Tcollection, \punnode{\Nfieldsopt})) \astarrow
+  \overname{\TCollection(\astof{\vfieldsopt})}{\vastnode}
+}
+\end{mathpar}
+
+\section{Typing Collection Types}
+\ExampleDef{Typing Collection Types}
+\listingref{TCollection} shows examples of well-typed collection types
+and ill-typed collection types in comments.
+In addition, \listingref{TCollection} shows well-typed storage declarations
+utilizing collection types and ill-typed storage declarations utilizing
+collection types in comments.
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item $\tty$ is a \collectiontypeterm{} with the list of fields of $\fields$;
+  \item $\decl$ is $\True$, indicating that $\tty$ should be considered in the context of a declaration;
+  \item $\fields$ is a list of pairs where the first element is an identifier and the second is a type --- $(\vx_i, \vt_i)$, for $i=1..k$;
+  \item checking that the list of field identifiers $\vx_{1..k}$ does not contain duplicates
+  yields $\True$\ProseOrTypeError;
+  \item annotating each field type $\vt_i$, for $i=1..k$, yields $(\vtp_i, \vxs_i)$
+        \ProseOrTypeError;
+  \item $\fieldsp$ is the list with $(\vx_i, \vtp_i)$, for $i=1..k$;
+  \item checking that the \structure{} of the type $\vtp_i$ in the static environment $\tenv$
+        is a \bitvectortypeterm, for every $i$ in $1..k$, yields $\True$\ProseOrTypeError;
+  \item $\newty$ is the AST node with AST label $L$ (either record type or exception type,
+        corresponding to the type $\tty$) and fields $\fieldsp$;
+  \item define $\vses$ as the union of all $\vxs_i$, for $i=1..k$.
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{
+  \fields \eqname [i=1..k: (\vx_i, \vt_i)]\\
+  \checknoduplicates(\vx_{1..k}) \typearrow \True \OrTypeError\\\\
+  i=1..k: \annotatetype{\False, \tenv, \vt_i} \typearrow (\vtp_i, \vxs_i) \OrTypeError\\\\
+  \fieldsp \eqdef [i=1..k: (\vx_i, \vtp_i)]\\
+  i=1..k: \checkstructurelabel(\tenv, \vtp_i, \TBits) \typearrow \True \OrTypeError\\\\
+  \vses \eqdef \bigcup_{i=1..k} \vxs_i
+}{
+  \annotatetype{\True, \tenv, \overname{\TCollection(\fields)}{\tty}} \typearrow (\overname{\TCollection(\fieldsp)}{\newty}, \vses)
+}
+\end{mathpar}
+
 \section{Named Types\label{sec:NamedTypes}}
+\hypertarget{namedtypeterm}{}
 \subsection{Syntax}
 \begin{flalign*}
 \Nty \derives\ & \Tidentifier &

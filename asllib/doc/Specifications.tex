@@ -457,11 +457,13 @@ recursive functions it may transitively call.
 \end{mathpar}
 
 \section{Overriding Subprograms\label{sec:Overriding}}
-We now define how to override subprograms in a specification.
-In particular, a subprogram marked by \texttt{impdef} can be overridden by a subprogram marked by \texttt{implementation}.
+This section defines how to override subprograms in a specification.
+In particular, a subprogram marked by \texttt{impdef} can be overridden by a subprogram marked by \\
+\texttt{implementation}.
 
 \RequirementDef{OverridingMatch}
-An overriding \Proseimplementationsubprogram{} subprogram must match the overridden \Proseimpdefsubprogram{} subprogram in all of the following:
+An overriding \Proseimplementationsubprogram{} subprogram \\
+must match the overridden \Proseimpdefsubprogram{} subprogram in all of the following:
 \begin{itemize}
   \item name of subprogram;
   \item number, names, types, and order of arguments;
@@ -479,12 +481,15 @@ The definition of \verb|Foo| is overridden by a corresponding \Proseimplementati
 Subprograms marked with \texttt{implementation} are subject to the following restrictions.
 
 \RequirementDef{NonClashingImplementations}
-No two \Proseimplementationsubprograms{} can match each other according to \RequirementRef{OverridingMatch}.
-In \ExampleRef{Invalid Overriding}, the \verb|Foo| subprograms marked \texttt{implementation} match and are therefore invalid.
+No two \Proseimplementationsubprograms{} can \\
+match each other according to \RequirementRef{OverridingMatch}.
+In \ExampleRef{Invalid Overriding}, the \verb|Foo| subprograms marked \texttt{implementation}
+match and are therefore invalid.
 
 \RequirementDef{SingleOverrideCandidate}
-Each \Proseimplementationsubprogram{} subprogram must override exactly one \Proseimpdefsubprogram{} subprogram. \\
-In \ExampleRef{Invalid Overriding}, the \Proseimplementationsubprogram{} \verb|Bar| is invalid as it has no corresponding \Proseimpdefsubprogram{}.
+Each \Proseimplementationsubprogram{} must override exactly one \Proseimpdefsubprogram.
+In \ExampleRef{Invalid Overriding}, the \Proseimplementationsubprogram{} \verb|Bar| is
+invalid as it has no corresponding \Proseimpdefsubprogram{}.
 
 \ExampleDef{Invalid Overriding}
 \listingref{overriding-bad} shows a specification which attempts to define clashing \Proseimplementationsubprograms{} named \verb|Foo|, and define a \Proseimplementationsubprogram{} \verb|Bar| without a corresponding \Proseimpdefsubprogram{}.
@@ -676,8 +681,8 @@ See \ExampleRef{Overriding Subprograms} for an example of valid replacement of a
 }
 \end{mathpar}
 
-\section{Establishing Def-Use Dependencies Between Global Declarations\label{sec:TopologicalOrdering}}
-We now define how to construct a graph of \defusedependenciesterm\ between the identifiers associated
+\section{Establishing Def-Use Dependencies \\ Between Global Declarations\label{sec:TopologicalOrdering}}
+This section defines how to construct a graph of \defusedependenciesterm\ between the identifiers associated
 with global declarations.
 This is achieved by associating, for each declaration $d$, the set identifiers \emph{used} by $d$,
 which is formally defined by $\usedecl$, and the identifier \emph{defined} by $d$,
@@ -688,10 +693,10 @@ $\decldependencies(\vd)$ (see \TypingRuleRef{DeclDependencies}).
 
 \RequirementDef{GlobalNamespace}
 The global namespace effectively consists of two independent namespaces: one for subprogram names, and the other for all other identifiers.
-In \ExampleRef{Global Namespace}, the \verb|X| subprogram does not interfere with the variable declaration also named \verb|X|.
 
 \ExampleDef{Global Namespace}
-\listingref{globalnamespace} shows a specification which defines a subprogram \verb|X| and a variable \verb|X|.
+\listingref{globalnamespace} shows a specification which defines a subprogram \verb|X|
+that does not interfere with the variable declaration also named \verb|X|.
 \ASLListing{Global namespace}{globalnamespace}{\definitiontests/GlobalNamespace.asl}
 
 We distinguish between subprogram identifiers, and all other identifiers (storage elements and \namedtypes{}).

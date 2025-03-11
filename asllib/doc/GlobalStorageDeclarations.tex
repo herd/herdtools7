@@ -18,8 +18,8 @@ In particular, implementations may provide mechanisms to override \texttt{config
   \item Internally modifying \texttt{config} values after typechecking but before evaluation of a specification.
 \end{itemize}
 Note that if modifying values after typechecking, care must be taken to ensure that the modified values remain compatible with the expected types of the original values.
-For example, a \texttt{config} value declared with type \texttt{integer{0..10}} can be modified to \texttt{5} but should not be modified to \texttt{11}.
-This is because as \texttt{5} is compatible with \texttt{integer{0..10}}, but \texttt{11} is not.
+For example, a \texttt{config} value declared with type \verb|integer{0..10}| can be modified to \texttt{5} but should not be modified to \texttt{11}.
+This is because as \texttt{5} is compatible with \verb|integer{0..10}|, but \texttt{11} is not.
 
 The language supports such overriding mechanisms (and in particular, simplifies tracking of types for \texttt{config} storage elements) as follows:
 \begin{itemize}
@@ -707,7 +707,7 @@ is bound to the global storage keyword $\keyword$ and type $\declaredt$.
 \section{Semantics\label{sec:GlobalStorageDeclarationsSemantics}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-We now define the following relations:
+This section defines the following relations:
 \begin{itemize}
   \item \SemanticsRuleRef{EvalGlobals}
   \item \SemanticsRuleRef{DeclareGlobal}

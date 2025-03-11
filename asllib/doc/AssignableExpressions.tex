@@ -391,6 +391,7 @@ transforms an $\lhsaccess$ into an AST node $\vlexpr$.
   }{\vlhsaccess} \astarrow \overname{\vsliced}{\vlexpr}
 }
 \end{mathpar}
+
 \ASTRuleDef{DesugarLHSTuple}
 \hypertarget{def-desugarlhstuple}{}
 The function
@@ -399,12 +400,26 @@ The function
 \]
 transforms a list of \optional{} $\lhsaccess$ elements into an AST node $\vlexpr$. \\
 
+\begin{mathpar}
+\inferrule{
+  \vlhsaccesses \eqdef \filteroptionlist(\vlhsaccessopts) \\
+  \vids \eqdef [i \in 1..|\vlhsaccesses|: \vlhsaccesses_i.\lhsaccessbase] \\
+  \checknoduplicates(\vids) \typearrow \True \OrTypeError \\
+  i \in 1..|\vlhsaccessopts|: \desugarlhsaccessopt(\vlhsaccessopt_i) \astarrow \vlexpr_i \\
+  \vlexprs \eqdef [i \in 1..|\vlhsaccessopts|: \vlexpr_i]
+}{
+  \desugarlhstuple(\vlhsaccessopts) \astarrow \overname{\LEDestructuring(\vlexprs)}{\vlexpr}
+}
+\end{mathpar}
+
+\ASTRuleDef{DesugarLHSAccessOpt}
 \hypertarget{def-desugarlhsaccessopt}{}
-\noindent We first define the helper AST function
+The helper AST function
 \[
     \desugarlhsaccessopt(\overname{\langle\lhsaccess\rangle}{\vlhsaccessopt}) \;\aslto\; \overname{\lexpr}{\vlexpr}
 \]
-via the following rules:
+is defined via the following rules:
+
 \begin{mathpar}
 \inferrule[none]{}
 {
@@ -420,19 +435,6 @@ via the following rules:
 }
 \end{mathpar}
 
-\noindent We now use the helper rules to define $\desugarlhstuple$:
-\begin{mathpar}
-\inferrule{
-  \vlhsaccesses \eqdef \filteroptionlist(\vlhsaccessopts) \\
-  \vids \eqdef [i \in 1..|\vlhsaccesses|: \vlhsaccesses_i.\lhsaccessbase] \\
-  \checknoduplicates(\vids) \typearrow \True \OrTypeError \\
-  i \in 1..|\vlhsaccessopts|: \desugarlhsaccessopt(\vlhsaccessopt_i) \astarrow \vlexpr_i \\
-  \vlexprs \eqdef [i \in 1..|\vlhsaccessopts|: \vlexpr_i]
-}{
-  \desugarlhstuple(\vlhsaccessopts) \astarrow \overname{\LEDestructuring(\vlexprs)}{\vlexpr}
-}
-\end{mathpar}
-
 \ASTRuleDef{DesugarLHSFieldsTuple}
 \hypertarget{def-desugarlhsfieldstuple}{}
 The function
@@ -441,12 +443,24 @@ The function
 \]
 transforms an assignment to a tuple of fields $\fields$ of variable $\id$ into an AST node $\vlexpr$. \\
 
+\begin{mathpar}
+\inferrule{
+  \fields \eqdef \filteroptionlist(\fieldopts) \\
+  \checknoduplicates(\fields) \typearrow \True \OrTypeError \\
+  i \in 1..|\fieldopts|: \desugarlhsfieldopt(\fieldopts_i) \astarrow \vlexpr_i \\
+  \vlexprs \eqdef [i \in 1..|\fieldopts|: \vlexpr_i]
+}{
+  \desugarlhsfieldstuple(\id, \fieldopts) \astarrow \overname{\LEDestructuring(\vlexprs)}{\vlexpr}
+}
+\end{mathpar}
+
+\ASTRuleDef{DesugarLHSFieldOpt}
 \hypertarget{def-desugarlhsfieldopt}{}
-\noindent We first define the helper AST function
+The helper AST function
 \[
     \desugarlhsfieldopt(\overname{\identifier}{\id} \aslsep \overname{\langle\identifier\rangle}{\fieldopt}) \;\aslto\; \overname{\lexpr}{\vlexpr}
 \]
-via the following rules:
+is defined via the following rules:
 \begin{mathpar}
 \inferrule[none]{}
 {
@@ -457,18 +471,6 @@ via the following rules:
 \begin{mathpar}
 \inferrule{}{
   \desugarlhsfieldopt(\id, \overname{\langle\vfield\rangle}{\fieldopt}) \astarrow \overname{\LESetField(\LEVar(\id), \vfield)}{\vlexpr}
-}
-\end{mathpar}
-
-\noindent We now use the helper rules to define $\desugarlhsfieldstuple$:
-\begin{mathpar}
-\inferrule{
-  \fields \eqdef \filteroptionlist(\fieldopts) \\
-  \checknoduplicates(\fields) \typearrow \True \OrTypeError \\
-  i \in 1..|\fieldopts|: \desugarlhsfieldopt(\fieldopts_i) \astarrow \vlexpr_i \\
-  \vlexprs \eqdef [i \in 1..|\fieldopts|: \vlexpr_i]
-}{
-  \desugarlhsfieldstuple(\id, \fieldopts) \astarrow \overname{\LEDestructuring(\vlexprs)}{\vlexpr}
 }
 \end{mathpar}
 
@@ -815,7 +817,7 @@ which is when the \textsc{empty} axiom case is used.
 \section{Array Assignment Expressions\label{sec:ArrayAssignmentExpressions}}
 This section details the syntax, abstract syntax, semantics, and typing of array write expressions.
 In the untyped AST, a write to either an integer-indexed array or an enumeration-indexed array is represented
-the same way. They type system infers the kind of array and outputs a typed AST node differentiating
+the same way. The type system infers the kind of array and outputs a typed AST node differentiating
 the two kinds of arrays, either a $\LESetArray$ or a $\LESetEnumArray$, via \TypingRuleRef{LESetArray}.
 The semantics utilizes a rule matching the corresponding type of array ---
 \SemanticsRuleRef{LESetArray} for integer-indexed arrays and

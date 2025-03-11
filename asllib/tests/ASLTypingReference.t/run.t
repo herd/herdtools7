@@ -109,6 +109,7 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.GetVariableEnum.asl
   $ aslref TypingRule.TRecordDecl.asl
   $ aslref TypingRule.TExceptionDecl.asl
+  $ aslref TypingRule.TCollection.asl
   $ aslref TypingRule.TNonDecl.asl
   File TypingRule.TNonDecl.asl, line 1, characters 5 to 6:
   ASL Error: Cannot parse.
