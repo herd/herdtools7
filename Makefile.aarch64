@@ -17,6 +17,24 @@ litmus-cata-aarch64-test-std:
 	$(RM) -r $(TEMP_DIR)
 	@ echo "litmus7 in -mode std catalogue aarch64 tests: OK"
 
+catalogue/aarch64-cas/tests/@all:
+	@ cd catalogue/aarch64-cas/tests/ && ls *.litmus > @all
+
+litmus-aarch64-test:: litmus-cata-aarch64-test-cas
+litmus-cata-aarch64-test-cas: TEMP_DIR:=$(shell mktemp -d)
+litmus-cata-aarch64-test-cas: catalogue/aarch64-cas/tests/@all
+	$(LITMUS)					\
+		-set-libdir $(LITMUS_LIB_DIR)	        \
+		-gcc=$(AARCH64_PREFIX)gcc		\
+		-ccopts='-march=armv8-a+lse'		\
+		-o $(TEMP_DIR)				\
+		-mode std -a 4				\
+		catalogue/aarch64-cas/tests/@all
+	make $(SILENTOPT) -C $(TEMP_DIR) -j $(J)
+	if $(RUN_TESTS); then ( cd $(TEMP_DIR) && sh run.sh ); fi
+	$(RM) -r $(TEMP_DIR)
+	@ echo "litmus7 in -mode std catalogue aarch64-cas tests: OK"
+
 litmus-aarch64-test:: litmus-cata-aarch64-test-presi
 litmus-cata-aarch64-test-presi: TEMP_DIR:=$(shell mktemp -d)
 litmus-cata-aarch64-test-presi:

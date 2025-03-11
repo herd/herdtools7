@@ -1,0 +1,19 @@
+AArch64 MP+rel+CAS-ok-RsM-addr
+
+{
+  z = 0;
+  0: X0 = x;         1: X0 = x;
+  0: X1 = y;         1: X1 = y;
+                     1: X2 = z;
+}
+
+P0            | P1                      ;
+
+MOV W3, #1    | LDR W3, [X1]            ;
+STR W3, [X0]  | EOR W4, W3, W3          ;
+STLR W3, [X1] | CAS W4, W5, [X2]        ;
+              | LDR W6, [X2]            ;
+              | EOR W6, W6, W6          ;
+              | LDR W7, [X0, W6, SXTW]  ;
+
+exists (1: X3 = 1 /\ 1: X7 = 0)
