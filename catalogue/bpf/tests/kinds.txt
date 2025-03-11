@@ -1,4 +1,5 @@
 ARMv8DOB5-PPC Forbidden
+ARMv8DOB5-PPC-DATA Allowed
 CoRR+poonceonce+Once Forbidden
 CoRW+poonceonce+Once Forbidden
 CoWR+poonceonce Forbidden
@@ -12,6 +13,7 @@ LB+fcas-ctrl-once+once-scas Forbidden
 LB+fcas-ctrlcvg-once+once-scas Forbidden
 LB+fcas-data-once+once-scas Forbidden
 LB+poonceonces Allowed
+LB+data+addr Forbidden
 LB+release-oa+acquire Forbidden
 LockTwice Required
 MP+fcas-addr-fcas+scas-scas Forbidden

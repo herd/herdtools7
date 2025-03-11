@@ -21,7 +21,8 @@ module Make : functor (O:Model.Config) -> functor (S:SemExtra.S) -> sig
 (*******************************************)
 (* Complete re-computation of dependencies *)
 (*******************************************)
-
+  val is_addr_port : S.event_structure -> S.event -> bool
+  val is_data_port : S.event_structure -> S.event -> bool
   val make_procrels : (S.event -> bool) -> S.concrete -> S.procrels
   val pp_procrels : string option -> S.procrels -> S.rel_pp
 

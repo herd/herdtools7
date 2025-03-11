@@ -1,0 +1,13 @@
+Test T09 Allowed
+States 4
+1:$2=0; [x]=1;
+1:$2=0; [x]=2;
+1:$2=1; [x]=1;
+1:$2=1; [x]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([x]=2 /\ 1:$2=1)
+Observation T09 Sometimes 1 3
+Hash=ac63e3ea34fdf0d20fede32d4cc3dca1
+
