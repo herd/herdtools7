@@ -86,7 +86,7 @@ let symbolic_data_eq s1 s2 =
   && Misc.int_eq s1.offset s2.offset
   && PAC.equal s1.pac s2.pac
 
-(* Return if two symbolic address are syntatically differents and can be equals
+(* Return if two symbolic address are syntatically different and can be equal
  modulo a hash collision between two pac fields *)
 let symbolic_data_collision s1 s2 =
   if
@@ -297,8 +297,8 @@ let rec eq scalar_eq pteval_eq instr_eq c1 c2 = match c1,c2 with
   | (Tag _,(Concrete _|Symbolic _|Label _|ConcreteRecord _|ConcreteVector _|PteVal _|Instruction _|Frozen _))
     -> false
 
-(* Return if two constants are syntactically differents and can be semantically
- equals if their is a hash collision between two pac fields *)
+(* Return if two constants are syntactically different and can be semantically
+ equal if there is a hash collision between two pac fields *)
 let collision s1 s2 = match s1,s2 with
   | Symbolic (Virtual v1), Symbolic (Virtual v2) ->
       symbolic_data_collision v1 v2

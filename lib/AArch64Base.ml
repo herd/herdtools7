@@ -1710,54 +1710,54 @@ type 'k kinstruction =
   | I_LDG of reg * reg * 'k
   | I_UDF of 'k
 (* Pointer Authentication Code: Basic instruction only
-   See C3.1.10 for the complete list of instructions
+   See ARM Arm Issue K.a, C3.1.10 for the complete list of instructions
     - First part: Add PAC to a register or SP, and and return the value in a
     general purpose register
 *)
-  (* see C6.2.266
+  (* see ARM Arm Issue K.a, C6.2.266
    * PACIA <Xd>, <Xn|Sp>
    * PACIZA <Xd>, <X31>
    * PACIASP <X30>, <Sp>
    * PACIAZ <X30>, <X31>
    * PACIA1716 <X17>, <X16>
    *
-   * see C6.2.267
+   * see ARM Arm Issue K.a, C6.2.267
    * PACIB <Xd>, <Xn|Sp>
    * PACIZA <Xd>, <X31>
    * PACIBSP <X30>, <Sp>
    * PACIBZ <X30>, <X31>
    * PACIB1716 <X17>, <X16>
    *
-   * see C6.2.263
+   * see ARM Arm Issue K.a, C6.2.263
    * PACDA <Xd>, <Xn|Sp>
    * PACDZA <Xd>, <X31>
    *
-   * see C6.2.264
+   * see ARM Arm Issue K.a, C6.2.264
    * PACDB <Xd>, <Xn|Sp>
    * PACDZB <Xd>, <X31>
    *)
-  | I_PAC of PAC.key * reg * reg     (* detination <- AddPACIA(source) *)
+  | I_PAC of PAC.key * reg * reg     (* destination <- AddPACIA(source) *)
 
 (*  - Second part: check the PAC of a register *)
-  (* see C6.2.23
+  (* see ARM Arm Issue K.a, C6.2.23
    * AUTIA <Xd>, <Xn|Sp>
    * AUTIZA <Xd>, <X31>
    * AUTIASP <X30>, <Sp>
    * AUTIAZ <X30>, <X31>
    * AUTIA1716 <X17>, <X16>
    *
-   * see C6.2.24
+   * see ARM Arm Issue K.a, C6.2.24
    * AUTIB <Xd>, <Xn|Sp>
    * AUTIZB <Xd>, <X31>
    * AUTIBSP <X30>, <Sp>
    * AUTIBZ <X30>, <X31>
    * AUTIB1716 <X17>, <X16>
    *
-   * see C6.2.21
+   * see ARM Arm Issue K.a, C6.2.21
    * AUTDA <Xd>, <Xn|Sp>
    * AUTDZA <Xd>, <X31>
    *
-   * see C6.2.22
+   * see ARM Arm Issue K.a, C6.2.22
    * AUTDB <Xd>, <Xn|Sp>
    * AUTDZB <Xd>, <X31>
    *)
@@ -3351,7 +3351,7 @@ let is_valid i =
      -> true
   | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _
      -> false
-  | I_ST1SP (v,_,_,_,ext) 
+  | I_ST1SP (v,_,_,_,ext)
   | I_LD1SP (v,_,_,_,ext) ->
      let open MemExt in
      begin match (v,ext) with

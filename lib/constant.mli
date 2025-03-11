@@ -106,8 +106,8 @@ val eq :
         ('instr -> 'instr -> bool) ->
           ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t -> bool
 
-(* Return if the collision of two PAC fields can implies equality of the two
-   syntactically differents constants *)
+(* Return if the collision of two PAC fields can imply equality of the two
+   syntactically different constants *)
 val collision :
   ('scalar, 'pte, 'instr) t ->
     ('scalar, 'pte, 'instr) t ->
