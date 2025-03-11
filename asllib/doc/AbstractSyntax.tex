@@ -565,7 +565,7 @@ The rules for expressions have the following extra derivation rules:
 \expr \derives\ & \EGetItem(\expr, \N) &\\ \hypertarget{ast-earray}{}
              |\ & \EArray \{\EArrayLength: \expr, \EArrayValue: \expr\} & \hypertarget{ast-eenumarray}{}\\
              |\ & \EEnumArray \{\EArrayLabels: \identifier^+, \EArrayValue: \expr\} & \hypertarget{ast-egetenumarray}{}\\
-             |\ & \EGetEnumArray(\overtext{\expr}{base}, \overtext{\expr}{key}) &\hypertarget{ast-egetcollectionfields}{}\\ 
+             |\ & \EGetEnumArray(\overtext{\expr}{base}, \overtext{\expr}{key}) &\hypertarget{ast-egetcollectionfields}{}\\
              |\ & \EGetCollectionFields(\overtext{\identifier}{collection}, \overtext{\identifier^{*}}{field names}) & \\
 \end{flalign*}
 
@@ -681,13 +681,13 @@ We also employ the following rule:
   \buildexpr(\ve) \astarrow \astversion{\ve}\\
   \buildstmtlist(\vstmtlist) \astarrow \astversion{\vstmtlist}
 }{
-{
-\begin{array}{r}
-  \buildstmt(\Nstmt(\Twhile, \namednode{\ve}{\Nexpr}, \Tdo, \namednode{\vstmtlist}{\Nstmtlist}, \Tend, \Tsemicolon))
-  \astarrow\\
-  \SWhile(\astversion{\ve}, \None, \astversion{\vstmtlist})
-\end{array}
-}
+  {
+  \begin{array}{r}
+    \buildstmt(\Nstmt(\Twhile, \namednode{\ve}{\Nexpr}, \Tdo, \namednode{\vstmtlist}{\Nstmtlist}, \Tend, \Tsemicolon))
+    \astarrow\\
+    \SWhile(\astversion{\ve}, \None, \astversion{\vstmtlist})
+  \end{array}
+  }
 }
 \end{mathpar}
 That is, we apply the $\buildexpr$ to transform the condition parse node $\ve$ into the corresponding AST node,

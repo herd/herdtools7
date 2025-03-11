@@ -224,6 +224,7 @@ bitwidths
 bitwise
 block
 blocks
+bodies
 body
 boolean
 both
@@ -695,6 +696,7 @@ executes
 executing
 execution
 exemplified
+exemplifies
 exemplify
 exist
 existence
@@ -1793,6 +1795,7 @@ subtraction
 subtype
 subtypes
 succeed
+succeeding
 succeeds
 success
 successfully

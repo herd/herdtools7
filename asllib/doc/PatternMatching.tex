@@ -1082,13 +1082,13 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[atc\_int\_constraints]{}{
-    {
-      \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tas, \punnode{\Nconstraintkind})) \astarrow\\
-  \overname{\EATC(\astof{\vexprpattern}, \TInt(\astof{\vconstraintkind}))}{\vastnode}
-\end{array}
-}
+\inferrule[atc\_int\_constraints]{}{
+  {
+  \begin{array}{r}
+    \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tas, \punnode{\Nconstraintkind})) \astarrow\\
+    \overname{\EATC(\astof{\vexprpattern}, \TInt(\astof{\vconstraintkind}))}{\vastnode}
+  \end{array}
+  }
 }
 \end{mathpar}
 
@@ -1134,16 +1134,16 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
 
 \begin{mathpar}
   \inferrule[record\_empty]{}{
-    {
-      \begin{array}{r}
+  {
+  \begin{array}{r}
   \buildexprpattern\left(\Nexprpattern\left(
     \begin{array}{l}
     \Tidentifier(\vt), \Tlbrace, \Trbrace \\
     \end{array}
     \right)\right) \\
     \astarrow\ \overname{\ERecord(\TNamed(\vt), \emptylist)}{\vastnode}
-\end{array}
-}
+  \end{array}
+  }
 }
 \end{mathpar}
 

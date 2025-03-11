@@ -452,12 +452,12 @@ As given by applying the relevant rules to the desugared AST.
   \buildoption[\buildexpr](\ve) \astarrow \astversion{\ve}
 }{
   {
-    \begin{array}{r}
-  \buildstmt(\overname{\Nstmt(\Tvar, \Ndeclitem, \namednode{\vt}{\option{\Nasty}}, \namednode{\ve}{\option{\Teq, \Nexpr}}, \Tsemicolon)}{\vparsednode})
-  \astarrow \\
-  \overname{\SDecl(\LDKVar, \astof{\vdeclitem}, \astversion{\vt}, \astversion{\ve})}{\vastnode}
-\end{array}
-}
+  \begin{array}{r}
+    \buildstmt(\overname{\Nstmt(\Tvar, \Ndeclitem, \namednode{\vt}{\option{\Nasty}}, \namednode{\ve}{\option{\Teq, \Nexpr}}, \Tsemicolon)}{\vparsednode})
+    \astarrow \\
+    \overname{\SDecl(\LDKVar, \astof{\vdeclitem}, \astversion{\vt}, \astversion{\ve})}{\vastnode}
+  \end{array}
+  }
 }
 \end{mathpar}
 
@@ -3270,7 +3270,6 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \ExampleDef{Typing Try Statements}
 \TypingRuleDef{STry}
 In
-\listingref{semantics-catchnamed},
 \listingref{semantics-catchnamed},
 \listingref{semantics-catchotherwise},
 \listingref{semantics-catchnone},

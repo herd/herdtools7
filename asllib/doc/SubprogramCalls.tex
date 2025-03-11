@@ -1028,17 +1028,17 @@ The function
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\Strings}{\name} \aslsep
     \overname{\ty^*}{\callerargtypes}
-  )
-  \aslto &
-  \begin{array}{l}
-    (
-    \overname{\Strings}{\namep} \aslsep
-    \overname{\func}{\callee} \aslsep
-    \overname{\TSideEffectSet}{\vses}
-    )\
-  \cup\\
-   \overname{\TTypeError}{\TypeErrorConfig}
-  \end{array}
+    )
+    \aslto &
+    \begin{array}{l}
+      (
+      \overname{\Strings}{\namep} \aslsep
+      \overname{\func}{\callee} \aslsep
+      \overname{\TSideEffectSet}{\vses}
+      )\
+    \cup\\
+    \overname{\TTypeError}{\TypeErrorConfig}
+    \end{array}
   \end{array}
 \]
 looks up the static environment $\tenv$ for a subprogram associated with $\name$
