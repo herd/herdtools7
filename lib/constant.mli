@@ -162,7 +162,7 @@ val as_pte : ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t option
 val is_pt : ('scalar,'pte,'instr)  t -> bool
 
 (* Remove the Pac field of a virtual address *)
-val strip_pauth : ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t
+val make_canonical : ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t
 
 module type S =  sig
 

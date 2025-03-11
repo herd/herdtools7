@@ -115,12 +115,10 @@ module
           None
 
     (* Remove the PAC field of a virtual address *)
-    let makeCanonical =
-      let open Constant in function
-      | Symbolic (Virtual v) ->
-          Some (Symbolic (Virtual {v with pac= PAC.canonical}))
-      | _ ->
-          None
+    let makeCanonical cst =
+      if Constant.is_virtual cst
+      then Some (Constant.make_canonical cst)
+      else None
 
     let getaf = op_get_pteval (fun p -> p.af <> 0)
     let setaf = op_set_pteval (fun p -> { p with af=1; })

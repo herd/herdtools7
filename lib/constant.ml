@@ -495,7 +495,7 @@ let is_pt v = match v with
 | Symbolic (System ((PTE|PTE2),_)) -> true
 | _ -> false
 
-let strip_pauth = function
+let make_canonical = function
   | Symbolic (Virtual v) -> Symbolic (Virtual {v with pac=PAC.canonical})
   | cst -> cst
 
