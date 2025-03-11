@@ -4,8 +4,8 @@ States 2
 [PTE(x)]=(oa:PA(x), dbm:1);
 Ok
 Witnesses
-Positive: 2 Negative: 3
+Positive: 1 Negative: 2
 Condition exists ([PTE(x)]=(oa:PA(x), db:0, dbm:1))
-Observation A019 Sometimes 2 3
+Observation A019 Sometimes 1 2
 Hash=f45eee29aa2a126c7370f37a156463ea
 

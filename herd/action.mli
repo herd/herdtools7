@@ -97,6 +97,8 @@ module type S = sig
   val is_pred : ?cond:string option -> action -> bool
   val is_commit : action -> bool
 
+  val is_no_action : action -> bool
+
 (* Unrolling control *)
   val cutoff : string -> action
   val is_cutoff : action -> bool

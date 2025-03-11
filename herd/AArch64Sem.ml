@@ -1989,7 +1989,9 @@ module Make
           let read_mem a =
             if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
             else do_read_mem_ret sz an aexp ac a ii in
-          M.aarch64_cas_no (Access.is_physical ac) ma read_rs write_rs read_mem branch M.neqT
+          let noact _ _ = M.mk_singleton_es Act.NoAction ii in
+          M.aarch64_cas_no (Access.is_physical ac) ma read_rs write_rs read_mem
+            noact branch M.neqT
         in
         let mop_fail_with_wb ac ma _ =
           (* CAS fails, there is an Explicit Write Effect writing back *)
@@ -1998,8 +2000,8 @@ module Make
             if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
             else rmw_amo_read sz rmw ac a ii
           and write_mem a v = rmw_amo_write sz rmw ac a v ii in
-          M.aarch64_cas_no_with_writeback (Access.is_physical ac) ma read_rs write_rs
-                                      read_mem write_mem branch M.neqT
+          M.aarch64_cas_no (Access.is_physical ac) ma read_rs write_rs
+            read_mem write_mem branch M.neqT
         in
         let mop_success ac ma mv =
           (* CAS succeeds, there is an Explicit Write Effect *)
@@ -2058,22 +2060,23 @@ module Make
           (* CASP fails, there are no Explicit Write Effects *)
           let read_mem a = do_read_mem_ret sz an aexp ac a ii
                 >>| (add_size a sz
-                >>= fun a -> do_read_mem_ret sz an aexp ac a ii) in
+                     >>= fun a -> do_read_mem_ret sz an aexp ac a ii) in
+          let noact _ _ = M.mk_singleton_es Act.NoAction ii in
           M.aarch64_cas_no (Access.is_physical ac) ma read_rs
-              write_rs read_mem branch neqp
+              write_rs read_mem noact branch neqp
         in
         let mop_fail_with_wb ac ma _ =
           (* CASP fails, there are Explicit Write Effects writing back *)
           (* the value that is already in memory                       *)
-          let read_mem a = do_read_mem_ret sz an aexp ac a ii
+          let read_mem a = rmw_amo_read sz rmw ac a ii
                 >>| (add_size a sz
-                >>= fun a -> do_read_mem_ret sz an aexp ac a ii)
+                >>= fun a -> rmw_amo_read sz rmw ac a ii)
           and write_mem a (v1,v2) =
               rmw_amo_write sz rmw ac a v1 ii
               >>| (add_size a sz >>= fun a2 ->
                   rmw_amo_write sz rmw ac a2 v2 ii)
               >>= fun _ -> M.unitT () in
-          M.aarch64_cas_no_with_writeback (Access.is_physical ac) ma read_rs
+          M.aarch64_cas_no (Access.is_physical ac) ma read_rs
               write_rs read_mem write_mem branch neqp
         in
         let mop_success ac ma _ =

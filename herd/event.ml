@@ -468,14 +468,9 @@ val same_instance : event -> event -> bool
           event_structure ->  event_structure ->  event_structure ->
             event_structure
 
-  val aarch64_cas_no :
-    bool -> (* Physical memory access *)
-    bool -> (* Add an iico_ctrl between the Branch and the Register Write *)
-    event_structure -> event_structure -> event_structure ->
-    event_structure -> event_structure -> event_structure
-
-  val aarch64_cas_ok :
-    bool (* Physical memory access *) -> [`DataFromRRs | `DataFromRx] ->
+  val aarch64_cas :
+    bool (* Physical memory access *) ->
+    [< `DataFromRRs | `DataFromRx | `No] ->
     event_structure -> event_structure -> event_structure ->
     event_structure ->  event_structure ->  event_structure ->
     event_structure -> event_structure
@@ -2327,79 +2322,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           resa.aligned @ data.aligned @ addr.aligned
           @ wres.aligned @ wresult.aligned @ wmem.aligned ;}
 
-(* AArch64 CAS, failure *)
-    let aarch64_cas_no is_phy add_ctrl rn rs wrs rm br =
-      let input_wrs = minimals wrs
-      and input_rm = minimals rm
-      and input_br = minimals br in
-      { procs = [] ;
-        events =
-        EventSet.union5
-          rn.events rs.events wrs.events rm.events br.events;
-        speculated =
-        if do_deps then
-          EventSet.union5
-            rn.speculated rs.speculated wrs.speculated rm.speculated br.speculated
-        else rn.speculated;
-        po = po_union5 rn rs wrs rm br;
-        partial_po = partial_po_union5 rn rs wrs rm br;
-        intra_causality_data =
-        EventRel.union
-          (EventRel.union5
-             rn.intra_causality_data
-             rs.intra_causality_data
-             wrs.intra_causality_data
-             rm.intra_causality_data
-             br.intra_causality_data)
-          (EventRel.union4
-             (EventRel.cartesian (get_output rn) input_rm) (* D1 *)
-             (EventRel.cartesian (get_output rm) input_wrs)    (* Df1 *)
-             (EventRel.cartesian (get_output rm) input_br)
-             (EventRel.cartesian (get_output rs) input_br)
-          );
-        intra_causality_control =
-          (if is_branching && is_phy then
-             EventRel.union
-               (EventRel.cartesian (get_ctrl_output_commits rn) input_rm)
-           else Misc.identity)
-          ((if add_ctrl then
-             EventRel.union
-               (EventRel.cartesian (get_output br) input_wrs)
-            else Misc.identity)
-          (EventRel.union5
-             rn.intra_causality_control rs.intra_causality_control
-             wrs.intra_causality_control rm.intra_causality_control
-             br.intra_causality_control)) ;
-        intra_causality_order =
-          EventRel.union5
-            rn.intra_causality_order rs.intra_causality_order
-            wrs.intra_causality_order rm.intra_causality_order
-            br.intra_causality_order;
-        control =
-        EventRel.union5 rn.control rs.control rm.control wrs.control br.control;
-        data_ports =
-        EventSet.union5
-          rn.data_ports rs.data_ports
-          wrs.data_ports rm.data_ports br.data_ports;
-        success_ports =
-        EventSet.union5
-          rn.success_ports rs.success_ports
-          wrs.success_ports rm.success_ports br.success_ports;
-        sca =
-        EventSetSet.union5
-          rn.sca rs.sca wrs.sca rm.sca br.sca;
-        mem_accesses =
-        EventSet.union5
-          rn.mem_accesses rs.mem_accesses
-          wrs.mem_accesses rm.mem_accesses br.mem_accesses;
-        input=None; data_input=None;
-        output = Some (maximals wrs);
-        ctrl_output = None ;
-        aligned = rn.aligned @ rs.aligned @ wrs.aligned @ rm.aligned @ br.aligned;
-      }
-
-(* AArch64 CAS, success *)
-    let aarch64_cas_ok is_phy prov_data rn rs rt wrs rm wm br =
+(* AArch64 CAS *)
+    let aarch64_cas is_phy mode rn rs rt wrs rm wm br =
       let input_wrs = minimals wrs
       and input_rm = minimals rm
       and input_wm = minimals wm
@@ -2428,18 +2352,34 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
                 rm.intra_causality_data;
                 br.intra_causality_data;
                 wm.intra_causality_data])
-          (let output_rn = get_output rn
-           and output_prov_data = match prov_data with
-             | `DataFromRRs -> get_output rs
-             | `DataFromRx -> get_output rm
-           in
-           EventRel.unions
-             [(EventRel.cartesian output_rn input_rm);          (* D1 *)
-              (EventRel.cartesian output_rn input_wm);          (* Ds2 *)
-              (EventRel.cartesian (get_output rt) input_wm);    (* Ds3 *)
-              (EventRel.cartesian output_prov_data input_wrs);
+          (let output_rn = get_output rn in
+           (* Data for the Register Write Effect of Ws *)
+           let wrs_data =  match mode with
+             | `DataFromRRs ->
+               [EventRel.cartesian (get_output rs) input_wrs; ]
+             | `DataFromRx | `No ->
+               [EventRel.cartesian (get_output rm) input_wrs; ] in
+           (* Address for the Write Memory Effect *)
+           let wm_addr = [EventRel.cartesian output_rn input_wm; ]
+           (* Data for the Write Memory Effect *)
+           and wm_data = match mode with
+             | `DataFromRRs | `DataFromRx ->
+               [EventRel.cartesian (get_output rt) input_wm; ]
+             | `No ->
+               [EventRel.cartesian (get_output rm) input_wm; ] in
+           (* Handle the case where wm is NoAction *)
+           let wm_rels = match EventSet.elements wm.events with
+             | [evt] when Act.is_no_action evt.action ->
+               []
+             | evts when List.for_all is_mem_store evts  ->
+               wm_data @ wm_addr
+             | _ -> assert false in
+           let rels =
+             wrs_data @ wm_rels @
+             [(EventRel.cartesian output_rn input_rm);
               (EventRel.cartesian (get_output rs) input_br);
-              (EventRel.cartesian (get_output rm) input_br);]
+              (EventRel.cartesian (get_output rm) input_br);] in
+           EventRel.unions rels
           );
         intra_causality_control =
         EventRel.union
@@ -2457,9 +2397,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
                 EventRel.cartesian (get_ctrl_output_commits rn)
                   (EventSet.union input_rm input_wm)
               else EventRel.empty)
-             (match prov_data with
+             (match mode with
               | `DataFromRRs -> EventRel.cartesian output_br input_wrs
-              | `DataFromRx -> EventRel.empty)
+              | `DataFromRx
+              | `No -> EventRel.empty)
              (EventRel.cartesian output_br input_wm)   (* Cs1 *)
              (EventRel.cartesian output_br input_wm)); (* Cs2 *)
         intra_causality_order =

@@ -208,7 +208,7 @@ end = struct
       Printf.sprintf "TLBI(%s,%s)" (A.TLBI.pp_op op) (A.pp_location loc)
   | CMO (cmo,loc) ->
      A.CMO.pp cmo (Option.map A.pp_location loc)
-  | NoAction -> ""
+  | NoAction -> "Empty"
   | Arch a -> A.ArchAction.pp a
 
 (* Utility functions to pick out components *)
@@ -473,6 +473,10 @@ end = struct
 
   let is_commit a = match a with
   | Commit _ -> true
+  | _ -> false
+
+  let is_no_action = function
+  | NoAction -> true
   | _ -> false
 
 (* Unroll control *)
