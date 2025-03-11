@@ -20,6 +20,7 @@ type tag = string option
 type cap = Int64.t
 type offset = int
 
+
 (* Symbolic location metadata*)
 (* Memory cell, with optional tag, capability<128:95>,optional vector metadata, and offset *)
 type symbolic_data =
@@ -28,6 +29,7 @@ type symbolic_data =
    tag : tag ;
    cap : cap ;
    offset : offset ;
+   pac : PAC.t ;
   }
 
 val default_symbolic_data : symbolic_data
@@ -43,7 +45,7 @@ type syskind =
   | PTE2 (* Page table entry of page table entry (non-writable) *)
   | TLB  (* TLB key *)
 
-(* 
+(*
  * Tag location are based upon physical or virtual addresses.
  * In effect the two kinds of tag locations cannot co-exists,
  * as teh formet is for VMSA mode and the latter for
@@ -104,6 +106,13 @@ val eq :
         ('instr -> 'instr -> bool) ->
           ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t -> bool
 
+(* Return if the collision of two PAC fields can imply equality of the two
+   syntactically different constants *)
+val collision :
+  ('scalar, 'pte, 'instr) t ->
+    ('scalar, 'pte, 'instr) t ->
+      (PAC.t * PAC.t) option
+
 (* New style: PTE(s), PHY(s), etc. *)
 val pp :
   ('scalar -> string) -> ('pte -> string) -> ('instr -> string) ->
@@ -151,6 +160,9 @@ val of_symbolic_data : symbolic_data -> ('scalar,'pte,'instr) t
 
 val as_pte : ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t option
 val is_pt : ('scalar,'pte,'instr)  t -> bool
+
+(* Remove the Pac field of a virtual address *)
+val make_canonical : ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t
 
 module type S =  sig
 

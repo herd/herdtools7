@@ -20,9 +20,10 @@ end
 module
   Make
     (Conf:Config)
-    (V:Value.S with type Cst.Instr.t = CBase.instruction and type arch_op = CBase.arch_op)
-    =
-  struct
+    (V:Value.S with
+      type Cst.Instr.t = CBase.instruction
+      and type arch_extra_op = CBase.arch_extra_op
+      and type 'a arch_constr_op = 'a CBase.arch_constr_op) = struct
     let unroll =
       match Conf.unroll with
       | None -> Opts.unroll_default `C
