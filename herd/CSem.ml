@@ -170,6 +170,7 @@ module
       | C.Const v -> M.unitT (V.maybevToV v)
       | C.LoadReg r -> read_reg port r ii
       | C.LoadMem(loc,mo) ->
+          let port = Port.Addr in
           let open MemOrderOrAnnot in
           (match mo with
           | AN [] | MO _ -> build_semantics_expr port loc ii
