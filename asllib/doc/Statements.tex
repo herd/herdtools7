@@ -43,7 +43,8 @@ evaluates a statement $\vs$ in an environment $\env$, resulting in one of four t
   \item error configurations.
 \end{itemize}
 
-We now define the syntax, abstract syntax, typing, and semantics for the following kinds of statements:
+The rest of this chapter defines the syntax, abstract syntax, typing,
+and semantics for the following kinds of statements:
 \begin{itemize}
 \item Pass statements (see \secref{PassStatements})
 \item Assignment statements (see \secref{AssignmentStatements})
@@ -227,7 +228,7 @@ $\nvint(2)$ to the mutable variable~\texttt{b}, and discards $\nvint(3)$.
 
 \FormallyParagraph
 \hypertarget{def-lexprisvar}{}
-We first define the syntactic predicate
+The rule uses the syntactic predicate defined as follows:
 \[
   \lexprisvar(\lexpr) \aslto \True
 \]
@@ -237,7 +238,8 @@ represents a variable or a discarded left-hand-side expression:
 \inferrule{}{ \lexprisvar(\vle) \evalarrow \astlabel(\vle) \in \{\LEVar, \LEDiscard\}}
 \end{mathpar}
 
-We now define the evaluation of assigning from a subprogram call:
+The inference rules defining the evaluation of assigning
+from a subprogram call are as follows:
 \begin{mathpar}
 \inferrule{
   \vles \eqdef \vle_{1..k}\\
@@ -452,12 +454,12 @@ As given by applying the relevant rules to the desugared AST.
   \buildoption[\buildexpr](\ve) \astarrow \astversion{\ve}
 }{
   {
-    \begin{array}{r}
-  \buildstmt(\overname{\Nstmt(\Tvar, \Ndeclitem, \namednode{\vt}{\option{\Nasty}}, \namednode{\ve}{\option{\Teq, \Nexpr}}, \Tsemicolon)}{\vparsednode})
-  \astarrow \\
-  \overname{\SDecl(\LDKVar, \astof{\vdeclitem}, \astversion{\vt}, \astversion{\ve})}{\vastnode}
-\end{array}
-}
+  \begin{array}{r}
+    \buildstmt(\overname{\Nstmt(\Tvar, \Ndeclitem, \namednode{\vt}{\option{\Nasty}}, \namednode{\ve}{\option{\Teq, \Nexpr}}, \Tsemicolon)}{\vparsednode})
+    \astarrow \\
+    \overname{\SDecl(\LDKVar, \astof{\vdeclitem}, \astversion{\vt}, \astversion{\ve})}{\vastnode}
+  \end{array}
+  }
 }
 \end{mathpar}
 
@@ -793,7 +795,7 @@ in the \CaseName{int} below.
 \hypertarget{def-checknoprecisionloss}{}
 The helper function
 \[
-  \checknoprecisionloss(\overname{\ty}{\vt})
+  \checknoprecisionloss{\overname{\ty}{\vt}}
   \typearrow \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 checks whether the type $\vt$ is the result of a precision loss in its
@@ -3270,7 +3272,6 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \ExampleDef{Typing Try Statements}
 \TypingRuleDef{STry}
 In
-\listingref{semantics-catchnamed},
 \listingref{semantics-catchnamed},
 \listingref{semantics-catchotherwise},
 \listingref{semantics-catchnone},

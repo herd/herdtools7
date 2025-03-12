@@ -1,7 +1,7 @@
 \chapter{Type System Utility Rules\label{chap:TypeSystemUtilityRules}}
 
-\hypertarget{def-checktrans}{}
 \subsection{Checked Transitions}
+\hypertarget{def-checktrans}{}
 We define the following rules to allow us asserting that a condition holds,
 returning a type error otherwise:
 \begin{mathpar}
@@ -12,8 +12,8 @@ returning a type error otherwise:
 \inferrule[check\_trans\_false]{}{ \checktrans{\False}{\vcode} \checktransarrow \TypeErrorVal{\vcode} }
 \end{mathpar}
 
-\hypertarget{def-pairstomap}{}
 \subsection{Converting a List of Pairs to a Map \label{sec:PairsToMap}}
+\hypertarget{def-pairstomap}{}
 The parametric function
 \[
   \pairstomap(\overname{(\identifier\times T)^*}{\pairs}) \aslto \overname{(\identifier\partialto T)}{f} \cup \TTypeError
@@ -71,8 +71,8 @@ If a duplicate identifier exists in $\pairs$ then a type error is returned.
 }
 \end{mathpar}
 
-\hypertarget{def-checknoduplicates}{}
 \TypingRuleDef{CheckNoDuplicates}
+\hypertarget{def-checknoduplicates}{}
 The function
 \[
   \checknoduplicates(\overname{\identifier^*}{\id_{1..k}}) \aslto \{\True\} \cup \TTypeError
@@ -274,8 +274,8 @@ if there is one. Otherwise, the result is $\None$.
 }
 \end{mathpar}
 
-\hypertarget{def-typeofarraylength}{}
 \TypingRuleDef{TypeOfArrayLength}
+\hypertarget{def-typeofarraylength}{}
 The function
 \[
   \typeofarraylength(\overname{\arrayindex}{\size}) \aslto
@@ -374,8 +374,8 @@ is the local static environment of $\emptytenv$.
 \end{mathpar}
 \CodeSubsection{\WithEmptyLocalBegin}{\WithEmptyLocalEnd}{../types.ml}
 
-\hypertarget{def-checkvarnotinenv}{}
 \TypingRuleDef{CheckVarNotInEnv}
+\hypertarget{def-checkvarnotinenv}{}
 The function
 \[
   \checkvarnotinenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\Strings}{\id}}
@@ -429,8 +429,8 @@ If it is, the result is a type error, and otherwise the result is $\True$.
 \end{mathpar}
 \CodeSubsection{\CheckVarNotInGEnvBegin}{\CheckVarNotInGEnvEnd}{../Interpreter.ml}
 
-\hypertarget{def-addlocal}{}
 \TypingRuleDef{AddLocal}
+\hypertarget{def-addlocal}{}
 The function
 \[
   \addlocal(

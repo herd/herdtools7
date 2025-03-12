@@ -109,6 +109,7 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.GetVariableEnum.asl
   $ aslref TypingRule.TRecordDecl.asl
   $ aslref TypingRule.TExceptionDecl.asl
+  $ aslref TypingRule.TCollection.asl
   $ aslref TypingRule.TNonDecl.asl
   File TypingRule.TNonDecl.asl, line 1, characters 5 to 6:
   ASL Error: Cannot parse.
@@ -314,7 +315,6 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.LESetStructuredField.asl
   $ aslref TypingRule.LESetField.asl
   $ aslref TypingRule.LESetFields.asl
-  $ aslref TypingRule.LESlice.asl
   $ aslref TypingRule.LESlice.bad.asl
   File TypingRule.LESlice.bad.asl, line 4, characters 3 to 11:
   ASL Static error: overlapping slices 0+:4, 3+:1.
@@ -435,3 +435,27 @@ ASL Typing Tests / annotating types:
   ASL typing error: unexpected collection.
   [1]
   $ aslref TypingRule.LESetCollectionFields.asl
+  $ aslref TypingRule.TypecheckDecl.asl
+  0x0000000000000000
+  0xffffffffffffffff
+  $ aslref TypingRule.Subprogram.asl
+  0x04
+  $ aslref --no-exec TypingRule.CheckStmtReturnsOrThrows.asl
+  $ aslref TypingRule.CheckStmtReturnsOrThrows.bad.asl
+  File TypingRule.CheckStmtReturnsOrThrows.bad.asl, line 6, character 4 to
+    line 16, character 8:
+  ASL Typing error: the function "incorrect_terminating_path" may not terminate
+    by returning a value or raising an exception..
+  [1]
+  $ aslref TypingRule.ControlFlowFromStmt.asl
+  File TypingRule.ControlFlowFromStmt.asl, line 8, characters 4 to 30:
+  ASL Warning: pragma require_positive will be ignored.
+  $ aslref TypingRule.ControlFlowFromStmt.bad1.asl
+  File TypingRule.ControlFlowFromStmt.bad1.asl, line 8, character 4 to line 10,
+    character 8:
+  ASL Warning: Loop does not have a limit.
+  File TypingRule.ControlFlowFromStmt.bad1.asl, line 8, character 4 to line 10,
+    character 8:
+  ASL Typing error: the function "loop_forever" may not terminate by returning
+    a value or raising an exception..
+  [1]

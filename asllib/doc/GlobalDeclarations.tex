@@ -14,7 +14,7 @@ The typing of global declarations is defined in \secref{GlobalDeclarationsTyping
 As the only kind of global declarations that are associated with semantics are global storage declarations,
 their semantics is given in \secref{GlobalStorageDeclarationsSemantics}.
 
-Global pragmas are statically checked by the typechecker, but do not produce type AST nodes,
+Global pragmas are statically checked by the typechecker, but do not produce \typedast{} nodes,
 and thus are not associated with a dynamic semantics.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -104,6 +104,12 @@ yielding an annotated global declaration $\newd$ and modified global static envi
 \ProseOtherwiseTypeError
 
 \TypingRuleDef{TypecheckDecl}
+\ExampleDef{Typing Global Declarations}
+\listingref{TypecheckDecl} exemplifies various kinds of global declarations ---
+types, global storage elements, and subprograms.
+All global declarations in \listingref{TypecheckDecl} are well-typed.
+\ASLListing{Typing global declarations}{TypecheckDecl}{\typingtests/TypingRule.TypecheckDecl.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -189,6 +195,11 @@ and inferred \sideeffectsetterm\ $\vses$.
 
 Note that the return type in $\vf$ has already been annotated by $\annotatefuncsig$.
 
+\ExampleDef{Annotating Subprograms}
+\listingref{typing-subprogram} shows an example of a well-typed procedure --- \verb|my_procedure|
+and an example of a well-typed function --- \verb|flip_bits|.
+\ASLListing{Typing subprograms}{typing-subprogram}{\typingtests/TypingRule.Subprogram.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -252,6 +263,20 @@ The helper function
 checks whether all control-flow paths defined by the statement $\vs$ terminate by either
 a statement returning a value, a \texttt{throw} statement, or the \texttt{Unreachable()} statement.
 
+\ExampleDef{Ensuring All Terminating Paths Terminate Correctly}
+In \listingref{CheckStmtReturnsOrThrows}, every evaluation of the function body for\\
+\verb|all_terminating_paths_correct| terminates by either returning
+a value, throwing an exception, or evaluating an \unreachablestatementterm.
+\ASLListing{All terminating paths terminate correctly}{CheckStmtReturnsOrThrows}{\typingtests/TypingRule.CheckStmtReturnsOrThrows.asl}
+
+In \listingref{CheckStmtReturnsOrThrows-bad}, the path through the function body
+for \verb|incorrect_terminating_path|
+where \verb|v != Zeros{N}| evaluates to
+$\True$ and \verb|flag| evaluates to $\False$ terminates without
+returning a value, throwing an exception, or evaluating an \unreachablestatementterm,
+which is a \typingerrorterm.
+\ASLListing{An incorrectly terminating path}{CheckStmtReturnsOrThrows-bad}{\typingtests/TypingRule.CheckStmtReturnsOrThrows.bad.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -282,6 +307,19 @@ We define \controlflowsymbolsterm\ as follows:
 \[
   \assertednotinterrupt\ \controlflowleq \interrupt \controlflowleq \maynotinterrupt \enspace.
 \]
+
+\ExampleDef{Determining the Control-flow State of Statements}
+In \listingref{ControlFlowFromStmt}, the function bodies of all functions
+terminate by either returning a value, throwing an exception, or executing
+the \unreachablestatementterm.
+\ASLListing{Determining the control-flow state of statements}{ControlFlowFromStmt}{\typingtests/TypingRule.ControlFlowFromStmt.asl}
+
+In \listingref{ControlFlowFromStmt-bad1}, the function body of \verb|loop_forever|
+is ill-typed, since the conservative analysis of \TypingRuleRef{ControlFlowFromStmt}
+cannot determine that the \whilestatementterm{} never terminates.
+To make the function body well-typed, another statement following the loop
+can be added, for example, an \unreachablestatementterm.
+\ASLListing{An ill-typed function body}{ControlFlowFromStmt-bad1}{\typingtests/TypingRule.ControlFlowFromStmt.bad1.asl}
 
 \hypertarget{def-controlflowfromstmt}{}
 The helper function
@@ -484,6 +522,19 @@ combines two \controlflowsymbolterm{s} considering them as part of a control flo
 path prefix yields $\vtone$ and the analysis of the path suffix yields $\vttwo$,
 into a single \controlflowsymbolterm\ $\vctrlflow$.
 
+\ExampleDef{Determining the Control-flow State of a Sequence of Statements}
+In \listingref{ControlFlowFromStmt},
+the function body of \verb|sequencing1| is determined to have
+the control-flow state $\interrupt$ by the statement
+\verb|throw invalid_state{}|, effectively ignoring the succeeding statement
+\verb|var x = 5;|
+
+On the other hand, in the function body of \verb|sequencing2|,
+analysis of the \passstatementterm{} yields the control-flow state
+$\maynotinterrupt$, but analysis of the statement \\ \verb|return 5;|
+yields control-flow state $\interrupt$, which is why the analysis
+of the sequence of these two statements yields $\interrupt$.
+
 \ProseParagraph
 Define $\vctrlflow$ as $\vttwo$ if $\vtone$ is $\maynotinterrupt$ and $\vtone$, otherwise.
 
@@ -499,13 +550,19 @@ Define $\vctrlflow$ as $\vttwo$ if $\vtone$ is $\maynotinterrupt$ and $\vtone$, 
 \TypingRuleDef{ControlFlowJoin}
 \hypertarget{def-controlflowjoin}{}
 The helper function
-The helper function
 \[
 \controlflowjoin(\overname{\pow{\controlflowstate}}{\vs})
 \aslto \overname{\controlflowstate}{\vctrlflow}
 \]
 returns the maximal element in the set of \controlflowsymbolsterm\ $\vs$,
 with respect to $\controlflowleq$ in $\vctrlflow$.
+
+\ExampleDef{Determining the Control-flow State of a Conditional Statement}
+In \listingref{ControlFlowFromStmt},
+the function body for \verb|conditional| is well-typed, since the
+control-flow state analysis
+for both statements \verb|return 5;| and \verb|throw invalid_state{};|
+yields the control-flow state $\interrupt$.
 
 \ProseParagraph
 \Proseeqdef{$\vctrlflow$}{the maximal element in the set of \controlflowsymbolsterm\ $\vs$,

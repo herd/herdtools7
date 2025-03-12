@@ -224,6 +224,7 @@ bitwidths
 bitwise
 block
 blocks
+bodies
 body
 boolean
 both
@@ -358,6 +359,7 @@ composition
 compound
 comprised
 comprises
+comprising
 computation
 computational
 compute
@@ -463,6 +465,7 @@ create
 creates
 creating
 creation
+current
 currently
 custom
 customers
@@ -694,6 +697,7 @@ executes
 executing
 execution
 exemplified
+exemplifies
 exemplify
 exist
 existence
@@ -709,6 +713,7 @@ expects
 explain
 explained
 explaining
+explains
 explanation
 explicit
 explicitly
@@ -746,6 +751,7 @@ favor
 feasible
 feasibly
 feature
+features
 feed
 few
 field
@@ -1792,6 +1798,7 @@ subtraction
 subtype
 subtypes
 succeed
+succeeding
 succeeds
 success
 successfully

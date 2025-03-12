@@ -27,6 +27,7 @@
       boolean,
       case,
       catch,
+      collection,
       config,
       constant,
       DIV,
@@ -1414,8 +1415,8 @@
 \newcommand\unitarymonomialstoexpr[0]{\hyperlink{def-unitarymonomialstoexpr}{\textfunc{unitary\_monomials\_to\_expr}}}
 \newcommand\compareidentifier[0]{\hyperlink{def-compareidentifier}{\textfunc{compare\_identifier}}}
 
-\newcommand\subsumes[0]{\hyperlink{def-subsumes}{\textfunc{subsumes}}}
-\newcommand\symsubsumes[0]{\hyperlink{def-symsubsumes}{\textfunc{sym\_subsumes}}}
+\newcommand\domainsubset[0]{\hyperlink{def-domainsubset}{\textfunc{domain\_subset}}}
+\newcommand\symdomainsubset[0]{\hyperlink{def-symdomainsubset}{\textfunc{sym\_domain\_subset}}}
 
 \newcommand\toir[0]{\hyperlink{def-toir}{\textfunc{to\_ir}}}
 \newcommand\ProseOrTypeErrorOrCannotBeTransformed[0]{\ProseTerminateAs{\CannotBeTransformed,\TypeErrorConfig}}
@@ -2065,7 +2066,7 @@
 \newcommand\OverridingError[0]{\hyperlink{def-overridingerror}{\TypeErrorCode{OE}}}
 
 %% Dynamic Error Codes
-\newcommand\DynamicErrorPrefix[1]{\texttt{DE}}
+\newcommand\DynamicErrorPrefix[0]{\texttt{DE}}
 \newcommand\DynamicErrorVal[1]{\Error(\texttt{#1})}
 \newcommand\DynamicErrorCode[1]{\texttt{\DynamicErrorPrefix\_#1}}
 \newcommand\UnreachableError[0]{\hyperlink{def-unreachableerror}{\DynamicErrorCode{UNR}}}

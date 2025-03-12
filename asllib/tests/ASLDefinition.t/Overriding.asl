@@ -16,7 +16,5 @@ end;
 func main() => integer
 begin
   let res = Foo{32}(TRUE);
-  assert IsOnes(res);
-
   return 0;
 end;

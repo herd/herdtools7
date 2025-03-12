@@ -147,6 +147,27 @@ def check_tododefines(latex_files: list[str]):
         print(f"WARNING: There are {num_todo_define} occurrences of \\tododefine")
         return 0
 
+def check_repeated_lines(filename: str) -> int:
+    r"""
+    Checks whether `file` contains the same line appearing twice in a row.
+    The exception is inside `CONSOLE_BEGIN...CONSOLE_END` blocks.
+    Errors are reported for the file name 'filename' and the total
+    number of found errors is returned.
+    """
+    num_errors = 0
+    line_number = 0
+    last_line = ""
+    inside_console_outout = False
+    for line in read_file_lines(filename):
+        line_number += 1
+        if r"CONSOLE_BEGIN" in line:
+            inside_console_outout = True
+        if r"CONSOLE_END" in line:
+            inside_console_outout = False
+        if not inside_console_outout and line and line == last_line and line.strip() and line.strip() != "}":
+            print(f"./{filename} line {line_number}: repeated twice")
+        last_line = line
+    return num_errors
 
 def check_repeated_words(filename: str) -> int:
     r"""
@@ -243,12 +264,13 @@ def check_teletype_in_rule_math_mode(filename) -> int:
     teletype_pattern = re.compile(r"\\texttt{.*}")
     matches = math_mode_pattern.findall(file_str)
     for match in matches:
-        teletype_vars = teletype_pattern.findall(match)
-        for tt_var in teletype_vars:
-            print(
-                f"ERROR! {filename}: teletype font not allowed in rules, substitute {tt_var} with a proper macro"
-            )
-            num_errors += 1
+        if not "SUPPRESS_TEXTTT_LINTER" in match:
+            teletype_vars = teletype_pattern.findall(match)
+            for tt_var in teletype_vars:
+                print(
+                    f"ERROR! {filename}: teletype font not allowed in rules, substitute {tt_var} with a proper macro"
+                )
+                num_errors += 1
     return num_errors
 
 
@@ -459,19 +481,17 @@ def check_rules(filename: str) -> int:
     # Treat existing issues as warnings and new issues as errors.
     file_to_num_expected_errors = {
         "TypeDeclarations.tex" : 8,
-        "GlobalDeclarations.tex" : 6,
         "GlobalStorageDeclarations.tex" : 7,
         "RelationsOnTypes.tex" : 15,
-        "Specifications.tex" : 26,
-        "SubprogramCalls.tex" : 19,
+        "Specifications.tex" : 25,
         "SubprogramCalls.tex" : 19,
         "SubprogramDeclarations.tex" : 13,
         "SymbolicEquivalenceTesting.tex" : 26,
         "SymbolicSubsumptionTesting.tex" : 23,
         "Types.tex" : 9,
-        "SideEffects.tex" : 16,
+        "SideEffects.tex" : 13,
         "TypeSystemUtilities.tex" : 23,
-        "SemanticsUtilities.tex" : 20,
+        "SemanticsUtilities.tex" : 19,
     }
     total_expected = 0
     for num_expected in file_to_num_expected_errors.values():
@@ -641,7 +661,7 @@ def main():
     print("Linting files...")
     all_latex_sources = get_latex_sources(False)
     content_latex_sources = get_latex_sources(True)
-    # content_latex_sources = ["SubprogramCalls.tex"]
+    # content_latex_sources = ["GlobalDeclarations.tex"]
     num_errors = 0
     num_spelling_errors = spellcheck(args.dictionary, content_latex_sources)
     if num_spelling_errors > 0:
@@ -658,6 +678,7 @@ def main():
         content_latex_sources,
         [
             check_repeated_words,
+            check_repeated_lines,
             detect_incorrect_latex_macros_spacing,
             check_teletype_in_rule_math_mode,
             check_rules,

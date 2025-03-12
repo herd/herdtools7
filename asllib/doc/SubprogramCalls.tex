@@ -1028,17 +1028,17 @@ The function
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\Strings}{\name} \aslsep
     \overname{\ty^*}{\callerargtypes}
-  )
-  \aslto &
-  \begin{array}{l}
-    (
-    \overname{\Strings}{\namep} \aslsep
-    \overname{\func}{\callee} \aslsep
-    \overname{\TSideEffectSet}{\vses}
-    )\
-  \cup\\
-   \overname{\TTypeError}{\TypeErrorConfig}
-  \end{array}
+    )
+    \aslto &
+    \begin{array}{l}
+      (
+      \overname{\Strings}{\namep} \aslsep
+      \overname{\func}{\callee} \aslsep
+      \overname{\TSideEffectSet}{\vses}
+      )\
+    \cup\\
+    \overname{\TTypeError}{\TypeErrorConfig}
+    \end{array}
   \end{array}
 \]
 looks up the static environment $\tenv$ for a subprogram associated with $\name$
@@ -1532,7 +1532,7 @@ Otherwise, the result is a dynamic error indicating that the recursion limit has
     \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\langle\vlimit\rangle, \vg)$\ProseOrError;
     \item view $\env$ as $(\tenv, \denv)$;
     \item applying $\getstacksize$ to $\name$ in $\denv$ yields $\vstacksize$;
-    \item $\vlimit$ is less than $\vstacksize$.
+    \item $\vstacksize$ is less than $\vlimit$.
   \end{itemize}
 
   \item \AllApplyCase{some\_error}
@@ -1540,7 +1540,7 @@ Otherwise, the result is a dynamic error indicating that the recursion limit has
     \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\langle\vlimit\rangle, \vg)$\ProseOrError;
     \item view $\env$ as $(\tenv, \denv)$;
     \item applying $\getstacksize$ to $\name$ in $\denv$ yields $\vstacksize$;
-    \item $\vlimit$ is greater or equal to $\vstacksize$;
+    \item $\vstacksize$ is greater or equal to $\vlimit$;
     \item the result is a dynamic
   \end{itemize}
 \end{itemize}
@@ -1559,7 +1559,7 @@ Otherwise, the result is a dynamic error indicating that the recursion limit has
   \evallimit(\env, \velimitopt) \evalarrow (\langle\vlimit\rangle, \vg) \OrDynError\\\\
   \env \eqname (\tenv, \denv)\\
   \getstacksize(\denv, \name) \evalarrow \vstacksize\\
-  \vlimit < \vstacksize
+  \vstacksize < \vlimit
 }{
   \checkrecurselimit(\env, \name, \velimitopt) \evalarrow \vg
 }
@@ -1570,7 +1570,7 @@ Otherwise, the result is a dynamic error indicating that the recursion limit has
   \evallimit(\env, \velimitopt) \evalarrow (\langle\vlimit\rangle, \vg) \OrDynError\\\\
   \env \eqname (\tenv, \denv)\\
   \getstacksize(\denv, \name) \evalarrow \vstacksize\\
-  \vlimit \geq \vstacksize
+  \vstacksize \geq \vlimit
 }{
   \checkrecurselimit(\env, \name, \velimitopt) \evalarrow \DynamicErrorVal{\LimitExceeded}
 }
