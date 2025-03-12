@@ -603,7 +603,7 @@ module Make
 
      (* Tag checking, MTE *)
 
-      let delayed_check_tags a_virt a_phy ma ii m1 m2 =
+      let delayed_check_tags dir a_virt a_phy ma ii m1 m2 =
         let (+++) = M.data_input_union in
         let rtag  =
           read_tag_mem (match a_phy with None -> a_virt | Some a -> a) ii in
@@ -615,7 +615,7 @@ module Make
         let m =
           let (>>=) = match a_phy with None -> (+++) | Some _ -> (>>=) in
           m >>= fun cond -> commit +++ fun _ -> M.unitT cond in
-        M.delay_kont "check_tags" m
+        let check = M.delay_kont "check_tags" m
           (fun c m ->
             let ma = (* NB output to initial ma *)
               match a_phy with
@@ -623,7 +623,16 @@ module Make
                 ma >>== fun a -> m >>== fun _ -> loc_extract a
               | Some _ ->
                 M.bind_ctrldata ma (fun a -> m >>== fun _ -> M.unitT a) in
-            choice c ma)
+            choice c ma) in
+        match (dir,C.mte_store_only) with
+          | Dir.W,_
+          | Dir.R,false
+            -> check
+          | Dir.R,true
+            ->
+            (* The case of a failed CAS with no write, but with a tag check *)
+            let ma = ma >>= fun a -> loc_extract a in
+            M.altT (check) (m1 ma)
 
       (* Tag checking Morello *)
       let do_append_commit ma txt ii =
@@ -1377,7 +1386,7 @@ module Make
             fault ma >>! B.fault [] in
           let check_tag moa a_virt =
             let do_check_tag a_phy moa =
-              delayed_check_tags a_virt (Some a_phy) moa ii mok mno in
+              delayed_check_tags dir a_virt (Some a_phy) moa ii mok mno in
             M.delay_kont "check_tag" moa do_check_tag in
           let cond_check_tag mpte_t a_virt =
             (* Only read and check the tag if the PTE of the tag op allows it *)
@@ -1410,7 +1419,7 @@ module Make
           (fun a_virt ma  ->
              let mm = mop Access.VIR in
              let ft = Some FaultType.AArch64.TagCheck in
-             delayed_check_tags a_virt None ma ii
+             delayed_check_tags dir a_virt None ma ii
                (fun ma -> mm ma >>= M.ignore >>= B.next1T)
                (lift_fault_memtag
                   (mk_fault (Some a_virt) dir an ii ft None) mm dir ii))
@@ -1479,16 +1488,18 @@ module Make
           else if checked then
             lift_memtag_virt mop ma dir an ii
           else
+            let ma = if C.mte_store_only then ma >>= fun a -> loc_extract a else ma in
             mop Access.VIR ma >>= M.ignore >>= B.next1T
 
       let do_ldr rA sz an mop ma ii =
 (* Generic load *)
-        lift_memop rA Dir.R false memtag
+        let checked = memtag && not C.mte_store_only in
+        lift_memop rA Dir.R false checked
           (fun ac ma _mv -> (* value fake here *)
             let open Precision in
             let memtag_sync =
-              memtag && (C.mte_precision = Synchronous ||
-                         C.mte_precision = Asymmetric) in
+              checked && (C.mte_precision = Synchronous ||
+                          C.mte_precision = Asymmetric) in
             if memtag_sync || Access.is_physical ac then
               M.bind_ctrldata ma (mop ac)
             else
