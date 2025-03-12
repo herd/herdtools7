@@ -701,6 +701,7 @@ exemplifies
 exemplify
 exist
 existence
+existing
 exists
 exit
 expand
@@ -1761,6 +1762,7 @@ step
 steps
 still
 storage
+store
 stored
 strictly
 string

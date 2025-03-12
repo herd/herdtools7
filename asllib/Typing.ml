@@ -2649,10 +2649,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
              annotate_lexpr env le3 t_e |: TypingRule.LESetBitField
          (* End *)
          (* Begin LESetBadField *)
+         | T_Tuple _ -> fatal_from ~loc @@ Error.AssignToTupleElement le1
          | _ ->
              conflict ~loc:le1
                [ default_t_bits; T_Record []; T_Exception []; T_Collection [] ]
-               t_e)
+               t_le1)
         |: TypingRule.LESetBadField
     (* End *)
     (* Begin LESetFields *)

@@ -57,6 +57,7 @@ type error_desc =
   | ImpureExpression of expr * SideEffect.SES.t
   | UnreconcilableTypes of ty * ty
   | AssignToImmutable of string
+  | AssignToTupleElement of lexpr
   | AlreadyDeclaredIdentifier of string
   | BadReturnStmt of ty option
   | UnexpectedSideEffect of string
@@ -175,6 +176,7 @@ let error_label = function
   | ImpureExpression _ -> "ImpureExpression"
   | UnreconcilableTypes _ -> "UnreconcilableTypes"
   | AssignToImmutable _ -> "AssignToImmutable"
+  | AssignToTupleElement _ -> "AssignToTupleElement"
   | AlreadyDeclaredIdentifier _ -> "AlreadyDeclaredIdentifier"
   | BadReturnStmt _ -> "BadReturnStmt"
   | UnexpectedSideEffect _ -> "UnexpectedSideEffect"
@@ -368,6 +370,11 @@ module PPrint = struct
     | AssignToImmutable x ->
         fprintf f
           "ASL Typing error:@ cannot@ assign@ to@ immutable@ storage@ %S." x
+    | AssignToTupleElement tuple_e ->
+        fprintf f
+          "ASL Typing error:@ cannot@ assign@ to@ the@ (immutable)@ tuple@ \
+           value@ %a."
+          pp_lexpr tuple_e
     | AlreadyDeclaredIdentifier x ->
         fprintf f
           "ASL Typing error:@ cannot@ declare@ already@ declared@ element@ %S."

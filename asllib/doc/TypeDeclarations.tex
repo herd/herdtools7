@@ -178,6 +178,14 @@ over another type $\vs$
 in the global static environment $\genv$, resulting in the modified global static environment $\newgenv$.
 \ProseOtherwiseTypeError
 
+\ExampleDef{Type Declarations}
+\listingref{DeclareType} shows examples of well-typed type declarations
+and ill-typed type declarations in comments.
+
+The only \sideeffectdescriptorsterm{} for \verb|Record| is
+$\ReadGlobal(\texttt{num\_bits}, \timeframeconstant, \True)$.
+\ASLListing{Type declarations}{DeclareType}{\typingtests/TypingRule.DeclareType.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -214,7 +222,7 @@ in the global static environment $\genv$, resulting in the modified global stati
   \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\tenvone, \vtone)\\
   \annotatetype{\True, \tenvone, \vtone} \typearrow (\vttwo, \vsest) \OrTypeError\\\\
   \maxtimeframe(\vsest) \typearrow \vtimeframe\\
-  \addtype(\tenvone, \name, \vttwo, \vtimeframe) \typearrow \tenvtwo\\
+  \addtype(\tenvone, \name, \vttwo, \vtimeframe) \typearrow \tenvtwo\\\\
   \commonprefixline\\\\
   \vttwo = \TEnum(\ids)\\
   \declareenumlabels(\tenvtwo, \vttwo) \typearrow \newtenv \OrTypeError
@@ -230,7 +238,7 @@ in the global static environment $\genv$, resulting in the modified global stati
   \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\tenvone, \vtone)\\
   \annotatetype{\True, \tenvone, \vtone} \typearrow (\vttwo, \vsest) \OrTypeError\\\\
   \maxtimeframe(\vsest) \typearrow \vtimeframe\\
-  \addtype(\tenvone, \name, \vttwo, \vtimeframe) \typearrow \tenvtwo\\
+  \addtype(\tenvone, \name, \vttwo, \vtimeframe) \typearrow \tenvtwo\\\\
   \commonprefixline\\\\
   \astlabel(\vttwo) \neq \TEnum
 }{

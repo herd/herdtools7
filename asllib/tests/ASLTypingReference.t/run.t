@@ -304,13 +304,13 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref TypingRule.LESetBadField.asl
   File TypingRule.LESetBadField.asl, line 6, characters 4 to 5:
-  ASL Typing error: integer {42} does not subtype any of: bits(-), record {  },
-    exception {  }, collection {  }.
+  ASL Typing error: array [[Color]] of integer does not subtype any of:
+    bits(-), record {  }, exception {  }, collection {  }.
   [1]
   $ aslref TypingRule.LESetBadField.asl
   File TypingRule.LESetBadField.asl, line 6, characters 4 to 5:
-  ASL Typing error: integer {42} does not subtype any of: bits(-), record {  },
-    exception {  }, collection {  }.
+  ASL Typing error: array [[Color]] of integer does not subtype any of:
+    bits(-), record {  }, exception {  }, collection {  }.
   [1]
   $ aslref TypingRule.LESetStructuredField.asl
   $ aslref TypingRule.LESetField.asl
@@ -459,3 +459,4 @@ ASL Typing Tests / annotating types:
   ASL Typing error: the function "loop_forever" may not terminate by returning
     a value or raising an exception..
   [1]
+  $ aslref --no-exec TypingRule.DeclareType.asl

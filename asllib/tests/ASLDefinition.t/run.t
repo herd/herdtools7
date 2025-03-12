@@ -76,3 +76,14 @@ Examples used in ASL High-level Definition:
   12341234
   For-loop start/end expressions:
   1234
+  $ aslref --no-exec GuideRule.BitvectorWidthBounds.asl
+  $ aslref GuideRule.TupleLength.asl
+  $ aslref GuideRule.TupleElementAccess.asl
+  $ aslref GuideRule.AnonymousEnumerations.bad.asl
+  File GuideRule.AnonymousEnumerations.bad.asl, line 4, characters 12 to 23:
+  ASL Error: Cannot parse.
+  [1]
+  $ aslref GuideRule.TupleImmutability.asl
+  File GuideRule.TupleImmutability.asl, line 7, characters 6 to 11:
+  ASL Typing error: cannot assign to the (immutable) tuple value x.
+  [1]
