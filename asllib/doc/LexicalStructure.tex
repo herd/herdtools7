@@ -240,8 +240,10 @@ in the expression \verb|(1, 2).item0|.
 \identi{TSXL}
 
 \RequirementDef{ReservedIdentifiers}
-Identifiers that begin with double-underscore are reserved for use in the implementation and should
-not be used in specifications (see \LexicalRuleRef{ReservedIdentifiers}).
+Identifiers that begin with double-underscore are reserved for use
+by the typechecker and should
+not be used in specifications \\
+(see \LexicalRuleRef{ReservedIdentifiers}).
 
 For example, \listingref{reserved-identifiers} shows an illegal specification that uses the reserved
 identifier \verb|__internal_var| in an attempt to declare a local variable,
