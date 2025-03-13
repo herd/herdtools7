@@ -13,6 +13,7 @@ begin
     // The following assertion is not statically proved by the type
     // system and therefore a dynamic check occurs, which always fails.
     var - = 3 as integer{1, 2};                     // 3 as integer{1, 2}
+    // The following assertion will always fail.
     var - = 3 as integer{2 as integer{2, 3}};       // 3 as integer{2}
 
     var - = RED as Color;                           // RED
@@ -20,6 +21,7 @@ begin
     var - = (RED, 3) as (SubColor, integer{2, 3});  // (RED, 3)
     // The following right-hand-side expression is annotated as
     // (RED, 3) as (enumeration {RED, GREEN, BLUE}, integer {1, 2})
+    // Evaluating this statement will result in a dynamic error.
     var - = (RED, 3) as (SubColor, integer{1, 2});
 
     var x = Packet{data = Zeros{8}, status = TRUE};

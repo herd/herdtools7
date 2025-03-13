@@ -212,6 +212,12 @@ def detect_incorrect_latex_macros_spacing(filename: str) -> int:
     for match in double_backslash_matches:
         print(f"./{filename}: double \\ in macro {match}")
         num_errors += 1
+    for match in re.findall(r"\\overname\{\}\{.+?\}", file_str):
+        print(f"./{filename}: empty \\overname: {match}")
+        num_errors += 1
+    for match in re.findall(r"\\overname\{.+?\}\{\}", file_str):
+        print(f"./{filename}: empty \\overname label: {match}")
+        num_errors += 1
 
     patterns_to_remove = [
         # Patterns for known math environments:

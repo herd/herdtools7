@@ -290,7 +290,7 @@ the keyword \texttt{let}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \ldkisimmutable(\ldk) \typearrow \overname{\ldk \in \{\LDKConstant, \LDKLet\}}{}
+  \ldkisimmutable(\ldk) \typearrow \overname{\ldk \in \{\LDKConstant, \LDKLet\}}{\vb}
 }
 \end{mathpar}
 
@@ -310,7 +310,7 @@ the keyword \texttt{config}, or the keyword \texttt{let}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \gdkisimmutable(\gdk) \typearrow \overname{\gdk \in \{\GDKConstant, \GDKConfig, \GDKLet\}}{}
+  \gdkisimmutable(\gdk) \typearrow \overname{\gdk \in \{\GDKConstant, \GDKConfig, \GDKLet\}}{\vb}
 }
 \end{mathpar}
 
