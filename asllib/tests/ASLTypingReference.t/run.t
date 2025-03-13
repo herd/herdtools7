@@ -460,3 +460,13 @@ ASL Typing Tests / annotating types:
     a value or raising an exception..
   [1]
   $ aslref --no-exec TypingRule.DeclareType.asl
+  $ aslref TypingRule.AnnotateExtraFields.bad.asl
+  File TypingRule.AnnotateExtraFields.bad.asl, line 1, characters 15 to 39:
+  ASL Error: Undefined identifier: 'Record'
+  [1]
+  $ aslref --no-exec TypingRule.DeclaredType.asl
+  $ aslref --no-exec TypingRule.DeclaredType.bad.asl
+  File TypingRule.DeclaredType.bad.asl, line 3, characters 12 to 23:
+  ASL Error: Undefined identifier: 'MyInt'
+  [1]
+  $ aslref --no-exec TypingRule.DeclareConst.asl

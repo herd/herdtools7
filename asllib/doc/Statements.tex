@@ -718,13 +718,13 @@ The helper function
 \]
 propagates integer constraints from the right-hand side type $\rhs$ to the left-hand side type annotation $\lhs$.
 In particular, each occurrence of \pendingconstrainedintegertype{} on the left-hand side should inherit constraints from a corresponding \wellconstrainedintegertype{} on the right-hand side.
-If the corresponding right-hand side type is not a \wellconstrainedintegertype{} (including if it is an \unconstrainedintegertype{}), the result is a type error.
+If the corresponding right-hand side type is not a \wellconstrainedintegertype{} (including if it is an \unconstrainedintegertype{}), the result is a \typingerrorterm{}.
 
 \listingref{typing-pendingconstrained} shows examples of pending-constrained
 integer types.
 
 \ExampleDef{Pending-constrained integer type vs. unconstrained integer type}
-\listingref{pending-constrained-unconstrained} corresponds to the type error
+\listingref{pending-constrained-unconstrained} corresponds to the \typingerrorterm{}
 in the \CaseName{int} below.
 \ASLListing{An ill-typed pending-constrained integer type}{pending-constrained-unconstrained}
 {\typingtests/TypingRule.InheritIntegerConstraints.unconstrained.bad.asl}
@@ -878,7 +878,7 @@ See \ExampleRef{Type-satisfaction Examples}.
   \item \AllApplyCase{error}
   \begin{itemize}
     \item testing whether $\vt$ \typesatisfies\ $\vs$ in $\tenv$ yields $\False$;
-    \item the result is a type error indicating that an expression of type $\vs$ cannot
+    \item the result is a \typingerrorterm{} indicating that an expression of type $\vs$ cannot
           be used to initialize a storage element of type $\vt$.
   \end{itemize}
 \end{itemize}
@@ -2696,7 +2696,7 @@ and the constraints for the loop index variable \verb|i| in \verb|main| are \ver
   \item \AllApplyCase{not\_integers}
   \begin{itemize}
     \item at least one of $\structone$ and $\structtwo$ is not an integer type;
-    \item the result is a type error indicating that the start expression and end expression of \texttt{for} loops
+    \item the result is a \typingerrorterm{} indicating that the start expression and end expression of \texttt{for} loops
           must have the \structure\ of integer types.
   \end{itemize}
 

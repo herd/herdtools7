@@ -329,7 +329,7 @@ correspond to \CaseName{pending\_constrained}.
   \item \AllApplyCase{pending\_constrained}
     \begin{itemize}
       \item $\tty$ is a \pendingconstrainedintegertype;
-      \item the result is a type error (\UnexpectedType).
+      \item the result is a \typingerrorterm{} (\UnexpectedType).
     \end{itemize}
   \item \AllApplyCase{well\_constrained}
     \begin{itemize}
@@ -1568,7 +1568,7 @@ In \listingref{typing-trecorderror}, the use of a record type outside of a decla
   \item $\tty$ is a \structuredtype\ or an \enumerationtypeterm{};
   \item $\decl$ is $\False$, indicating that $\tty$ should be considered to be outside the context of a declaration
   of $\tty$;
-  \item a type error is returned, indicating that the use of anonymous form of enumerations, record,
+  \item a \typingerrorterm{} is returned, indicating that the use of anonymous form of enumerations, record,
   and exceptions types is not allowed here.
 \end{itemize}
 

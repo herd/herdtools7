@@ -3,7 +3,7 @@
 \subsection{Checked Transitions}
 \hypertarget{def-checktrans}{}
 We define the following rules to allow us asserting that a condition holds,
-returning a type error otherwise:
+returning a \typingerrorterm{} otherwise:
 \begin{mathpar}
 \inferrule[check\_trans\_true]{}{ \checktrans{\True}{\vcode} \checktransarrow \True }
 \end{mathpar}
@@ -20,7 +20,7 @@ The parametric function
 \]
 converts a list of pairs --- $\pairs$ --- where each pair consists of an identifier and a value
 of type $T$ into a function mapping each identifier to its respective value in the list.
-If a duplicate identifier exists in $\pairs$ then a type error is returned.
+If a duplicate identifier exists in $\pairs$ then a \typingerrorterm{} is returned.
 
 \ProseParagraph
 \OneApplies
@@ -34,7 +34,7 @@ If a duplicate identifier exists in $\pairs$ then a type error is returned.
   \item \AllApplyCase{error}
   \begin{itemize}
     \item there exist two different positions in the list where the identifier is the same;
-    \item the result is a type error indicating the existence of a duplicate identifier.
+    \item the result is a \typingerrorterm{} indicating the existence of a duplicate identifier.
   \end{itemize}
 
   \item \AllApplyCase{okay}
@@ -78,7 +78,7 @@ The function
   \checknoduplicates(\overname{\identifier^*}{\id_{1..k}}) \aslto \{\True\} \cup \TTypeError
 \]
 checks whether a non-empty list of identifiers contains a duplicate identifier. If it does not, the result
-is $\True$ and otherwise the result is a type error.
+is $\True$ and otherwise the result is a \typingerrorterm{}.
 
 \ProseParagraph
 \OneApplies
@@ -92,7 +92,7 @@ is $\True$ and otherwise the result is a type error.
   \item \AllApplyCase{error}
   \begin{itemize}
     \item there exist two different positions in the list where the identifier is the same;
-    \item the result is a type error indicating the existence of a duplicate identifier.
+    \item the result is a \typingerrorterm{} indicating the existence of a duplicate identifier.
   \end{itemize}
 \end{itemize}
 
@@ -381,7 +381,7 @@ The function
   \checkvarnotinenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\Strings}{\id}}
   \aslto \{\True\} \cup \TTypeError
 \]
-checks whether $\id$ is already declared in $\tenv$. If it is, the result is a type error,
+checks whether $\id$ is already declared in $\tenv$. If it is, the result is a \typingerrorterm{},
 and otherwise the result is $\True$.
 
 \ProseParagraph
@@ -409,7 +409,7 @@ The function
   \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 checks whether $\id$ is already declared in the global static environment $\genv$.
-If it is, the result is a type error, and otherwise the result is $\True$.
+If it is, the result is a \typingerrorterm{}, and otherwise the result is $\True$.
 
 \ProseParagraph
 \AllApply

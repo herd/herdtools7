@@ -568,7 +568,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
   \item \AllApplyCase{error\_undefined}
   \begin{itemize}
     \item $\vx$ is not declared in $\tenv$ as a local storage element nor as a global storage element;
-    \item the result is a type error $\UndefinedIdentifier$.
+    \item the result is a \typingerrorterm{} $\UndefinedIdentifier$.
   \end{itemize}
 \end{itemize}
 
@@ -1500,7 +1500,7 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
     \item \AllApplyCase{error}
     \begin{itemize}
       \item $\tanonbase$ is neither a bitvector type nor a record type;
-      \item the result is a type error indicating that the type of the left-hand-side expression is expected to be
+      \item the result is a \typingerrorterm{} indicating that the type of the left-hand-side expression is expected to be
             either a bitvector type or a record type.
     \end{itemize}
   \end{itemize}
@@ -1824,7 +1824,7 @@ are well-typed.
     \begin{itemize}
       \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields $\None$, meaning the field is not declared
             in $\vtleone$;
-      \item the result is a type error $\BadField$.
+      \item the result is a \typingerrorterm{} $\BadField$.
     \end{itemize}
 
     \item \AllApplyCase{field\_simple}

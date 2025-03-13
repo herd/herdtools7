@@ -210,7 +210,6 @@ We also define the following helper rules:
 \begin{itemize}
   \item \TypingRuleRef{DeclareGlobalStorage}
   \item \TypingRuleRef{AnnotateTyOptInitialValue}
-  \item \TypingRuleRef{AnnotateInitType}
   \item \TypingRuleRef{AddGlobalStorage}
 \end{itemize}
 
@@ -644,7 +643,7 @@ evaluated to one. The resulting static environment is $\newtenv$.
 
   \item \AllApplyCase{error}
   \begin{itemize}
-    \item \Prosestaticeval{$\tenv$}{$\ve$}{a type error};
+    \item \Prosestaticeval{$\tenv$}{$\ve$}{a \typingerrorterm{}};
     \item \Proseeqdef{$\newtenv$}{$\tenv$};
   \end{itemize}
 \end{itemize}

@@ -3860,10 +3860,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       match t2.desc with
       | T_Enum ids ->
           let t = T_Named name |> here in
+          (* DeclareEnumLabels( *)
           let declare_one env2 label =
             declare_const ~loc label t (L_Label label) env2
           in
           let genv3 = List.fold_left declare_one env2.global ids in
+          (* DeclareEnumLabels) *)
           { env2 with global = genv3 }
       | _ -> env2
     in

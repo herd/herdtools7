@@ -480,7 +480,6 @@ def check_rules(filename: str) -> int:
     """
     # Treat existing issues as warnings and new issues as errors.
     file_to_num_expected_errors = {
-        "TypeDeclarations.tex" : 8,
         "GlobalStorageDeclarations.tex" : 7,
         "RelationsOnTypes.tex" : 15,
         "Specifications.tex" : 25,
@@ -660,7 +659,7 @@ def main():
     print("Linting files...")
     all_latex_sources = get_latex_sources(False)
     content_latex_sources = get_latex_sources(True)
-    content_latex_sources = ["TypeDeclarations.tex"]
+    # content_latex_sources = ["TypeDeclarations.tex"]
     num_errors = 0
     num_spelling_errors = spellcheck(args.dictionary, content_latex_sources)
     if num_spelling_errors > 0:

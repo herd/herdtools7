@@ -18,7 +18,7 @@ rules of the type system to the untyped AST. If it is successful, the specificat
 is considered \emph{well-typed} and the result is a pair consisting of
 a \emph{static environment} and a \emph{typed AST},
 which are used in defining the ASL semantics (\chapref{Semantics}).
-Otherwise, the typechecker returns a type error.
+Otherwise, the typechecker returns a \typingerrorterm{}.
 
 \hypertarget{def-annotaterel}{}
 The type system of ASL is given by the relation $\annotaterel$, which is defined as the disjoint union
@@ -153,11 +153,11 @@ The output configurations of type system assertions have two flavors:
   \hypertarget{def-typeerror}{}
   \item[Type Errors.] Configurations in $\TypeError(\Strings)$
   represent type errors, for example, using an integer type as a condition expression, as in \verb|if 5 then 1 else 2|.
-  The ASL type system is designed such that when these \emph{type error configurations} appear,
+  The ASL type system is designed such that when these \emph{\typingerrorterm{} configurations} appear,
   the typing of the entire specification terminates by outputting them.
 \end{description}
 
-We define the mathematical type of type error configurations
+We define the mathematical type of \typingerrorterm{} configurations
 (which is needed to define the types of functions in the ASL type system)
 as follows:
 \hypertarget{def-ttypeerror}{}
@@ -166,10 +166,10 @@ as follows:
 \]
 
 \hypertarget{def-typeerrorconfig}{}
-and the shorthand $\TypeErrorConfig \triangleq \TypeError(\vs)$ for type error configurations.
+and the shorthand $\TypeErrorConfig \triangleq \TypeError(\vs)$ for \typingerrorterm{} configurations.
 
-% Specifically,\ProseOrTypeError\ means: ``or a type error configuration $\TypeErrorConfig$, which short-circuits the rule,
-% making it transition into the type error configuration $\TypeErrorConfig$.''.
+% Specifically,\ProseOrTypeError\ means: ``or a \typingerrorterm{} configuration $\TypeErrorConfig$, which short-circuits the rule,
+% making it transition into the \typingerrorterm{} configuration $\TypeErrorConfig$.''.
 %
 When several \hyperlink{def-caserules}{case rules} for the same function use the same short-circuiting transition assertion,
 we do not repeat the\ProseOrTypeError, but rather include it only in the first rule.

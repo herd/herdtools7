@@ -4,7 +4,7 @@ The dynamic semantics of ASL define all valid behaviors of a given ASL specifica
 More precisely, an ASL specification is first parsed into an \emph{abstract syntax tree},
 or AST, for short. Second, a typechecker analyzes the \emph{untyped AST} to determine whether it
 is well-typed and, if successful, returns a \emph{static environment} and a \emph{typed AST}.
-Otherwise, it returns a type error.
+Otherwise, it returns a \typingerrorterm{}.
 
 Tools such as interpreters, Verilog simulators, and verifiers can operate over the typed AST, based on the definition
 of the semantics in this reference, to test and analyze a given specification.
@@ -20,7 +20,7 @@ of the ASL dynamic semantics appears in \chapref{FormalSystem} and \secref{seman
 \section{When Do ASL Specifications Have Meaning\label{sec:MeaningfulASLSpecifications}}
 The ASL dynamic semantics defined here assign meaning only to \emph{well-typed specifications}.
 That is, specifications for which the typechecker produces a static environment rather than
-a type error.
+a \typingerrorterm{}.
 Specifications that are not well-typed have no defined semantics.
 In the rest of this reference, we assume well-typed specifications.
 

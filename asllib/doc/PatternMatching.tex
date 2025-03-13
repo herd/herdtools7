@@ -184,7 +184,7 @@ since \texttt{-} matches any value and \texttt{42} in particular.
     \begin{itemize}
       \item determining whether the labels of $\vtstruct$ and $\testruct$ are the same yields $\True$\ProseOrTypeError;
       \item the label of $\vtstruct$ is not one of $\TBool$, $\TReal$, $\TInt$, $\TBits$, or $\TEnum$;
-      \item the result is a type error indicating that the types $\vt$ and $\vte$ are inappropriate for this pattern.
+      \item the result is a \typingerrorterm{} indicating that the types $\vt$ and $\vte$ are inappropriate for this pattern.
     \end{itemize}
   \end{itemize}
   \item $\newp$ is the pattern that matches the expression $\vep$, that is, $\PatternSingle(\vep)$.
@@ -326,8 +326,8 @@ whereas \\
   \item obtaining the \underlyingtype\ for $\vt$, $\vteone$, and $\vtetwo$ yields
         $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$, respectively\ProseOrTypeError;
   \item a check the AST labels of $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$ are all the same and are either
-        $\TInt$ or $\TReal$ yields $\True$. Otherwise, the result is a type error, which short-circuits the entire rule.
-        The type error indicates that the types of
+        $\TInt$ or $\TReal$ yields $\True$. Otherwise, the result is a \typingerrorterm{}, which short-circuits the entire rule.
+        The \typingerrorterm{} indicates that the types of
         $\veone$, $\vetwo$ and the type $\vt$ must be either of integer type or of \realtypeterm{}.
   \item $\newp$ is a range pattern with bounds $\veonep$ and $\vetwop$, that is, $\PatternRange(\veonep, \vetwop)$.
 \end{itemize}
@@ -525,7 +525,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
 \item obtaining the \underlyingtype\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
 \item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both the \realtypeterm{};
-\item if $\vb$ is $\False$ a type error is returned (indicating that the types of $\vt$ and $\vte$
+\item if $\vb$ is $\False$ a \typingerrorterm{} is returned (indicating that the types of $\vt$ and $\vte$
       are inappropriate for the $\GEQ$ operator),
       which short-circuits the entire rule;
 \item $\newp$ is the pattern which matches anything greater than or equal to $\vep$.

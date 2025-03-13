@@ -1194,6 +1194,7 @@ native
 natural
 nearest
 necessary
+necessitates
 need
 needed
 needs
@@ -1758,6 +1759,7 @@ static
 statically
 stating
 status
+stay
 step
 steps
 still
@@ -1965,6 +1967,7 @@ unbounded
 uncaught
 unchanging
 unconstrained
+undeclared
 undefined
 under
 underapproximates
