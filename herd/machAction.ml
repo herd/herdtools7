@@ -355,6 +355,7 @@ end = struct
 
   let get_mem_dir a = match a with
   | Access (d,A.Location_global _,_,_,_,_,_) -> d
+  | Access (d, A.Location_reg (_, r),_,_,_,_,_) when A.is_sysreg r && not (A.is_spsysreg r) -> d
   | _ -> assert false
 
   let get_mem_size a = match a with
@@ -437,12 +438,28 @@ end = struct
   | Access (_,A.Location_reg _,_,_,_,_,_) -> true
   | _ -> false
 
+  let is_sysreg_any a = match a with
+  | Access (_,A.Location_reg (_, r),_,_,_,_,_) -> A.is_sysreg r
+  | _ -> false
+
+  let is_spsysreg_any a = match a with
+  | Access (_,A.Location_reg (_, r),_,_,_,_,_) -> A.is_spsysreg r
+  | _ -> false
+
   let is_reg_store_any a = match a with
   | Access (W,A.Location_reg _,_,_,_,_,_) -> true
   | _ -> false
 
+  let is_non_sp_sysreg_store_any a = match a with
+  | Access (W,A.Location_reg (_, r),_,_,_,_,_) -> A.is_sysreg r && not (A.is_spsysreg r)
+  | _ -> false
+
   let is_reg_load_any a = match a with
   | Access (R,A.Location_reg _,_,_,_,_,_) -> true
+  | _ -> false
+
+  let is_non_sp_sysreg_load_any a = match a with
+  | Access (R,A.Location_reg (_, r),_,_,_,_,_) -> A.is_sysreg r && not (A.is_spsysreg r)
   | _ -> false
 
 (* Barriers *)
@@ -574,6 +591,7 @@ end = struct
     ("T",is_tag)::
     ("TLBI",is_inv)::
     ("no-loc", fun a -> Misc.is_none (location_of a))::
+    ("SysReg", is_sysreg_any)::
     (if kvm then
       fun k ->
         ("PA",is_PA_access)::
