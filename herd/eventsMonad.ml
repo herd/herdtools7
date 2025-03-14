@@ -293,6 +293,8 @@ Monad type:
 
     let asl_ctrl s f = data_comp E.bind_ctrl_sequence_data_po s f
 
+    let bind_ctrl_to_output s f = data_comp E.ctrl_to_output s f
+
     let bind_data_to_minimals s f =  data_comp E.data_to_minimals s f
 
     let bind_data_to_output s f = data_comp E.data_to_output s f
@@ -829,7 +831,7 @@ Monad type:
               (Evt.map fr ract) in
           (eiid, (un, None))
 
-(* Extract speculaive behaviout, base case is to speculate active branch *)
+(* Extract speculaive behaviour, base case is to speculate active branch *)
     let as_speculated (act,spec) = match spec with
     | Some spec -> spec
     | None -> do_speculates act
@@ -1713,6 +1715,18 @@ Monad type:
 
     let cutoffT msg ii v =
       forceT v (mk_singleton_es (E.Act.cutoff msg) ii)
+
+    let bitT : V.v -> V.v -> VC.atom t
+        = fun v1 v2 ->
+        op Op.ShiftRight v1 v2 >>= op Op.And V.one
+
+    let isBitSetT : V.v -> V.v -> unit t
+        = fun v1 v2 ->
+          bitT v1 v2 >>= eqT V.one
+
+    let isBitUnsetT : V.v -> V.v -> unit t
+        = fun v1 v2 ->
+          bitT v1 v2 >>= eqT V.zero
 
     type evt_struct = E.event_structure
     type output = VC.cnstrnts * evt_struct

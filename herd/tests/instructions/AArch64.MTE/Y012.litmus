@@ -1,0 +1,13 @@
+AArch64 Y012
+(* IRG with SP *)
+{
+  int x=100;
+  0:SP=x;
+  0:GCR_EL1=0x17FFF;  (* RRND=1, Exclude=0x7FFF *)
+}
+
+P0        ;
+IRG SP,SP ;
+
+forall (0:SP=x:t15)
+

@@ -398,6 +398,10 @@ val same_instance : event -> event -> bool
   val bind_ctrl_sequence_data_po :
     event_structure -> event_structure -> event_structure option
 
+  val ctrl_to_output : (* input to second es output *)
+    event_structure -> event_structure -> event_structure option
+
+
 (***********************)
 (* Custom compositions *)
 (***********************)
@@ -1125,7 +1129,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       if dbg then eprintf " %a\n" (debug_opt debug_events) r ;
       r
 
-(* Control sequencing, in all circonstances es1 output must be discarded *)
+(* Control sequencing, in all circumstances es1 output must be discarded *)
     let sequence_control_output _es1 es2 = Some (get_output es2)
 
 (*******************************)
@@ -1578,6 +1582,18 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         control_comp get_ctrl_output minimals sequence_data_output es1 es2
       in
       Some { r with partial_po = seq_partial_po es1 es2 }
+
+    let ctrl_to_output es1 es2 =
+      let r =
+        control_comp
+          get_ctrl_output
+          maximals
+          sequence_control_output es1 es2 in
+      let r =
+        { r with
+          input = union_input_seq es1 es2 ;
+        } in
+      Some r
 
     let partial_po_union3 =
       if is_po_partial then fun es1 es2 es3 ->
