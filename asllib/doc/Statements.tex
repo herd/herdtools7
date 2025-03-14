@@ -837,15 +837,19 @@ constant types would result in more than $2^17$ elements, see
   }{%
     \checknoprecisionloss{\overname{\TInt(\wellconstrained(_, p))}{\vt}} \typearrow \True
   }
-  \and
+\end{mathpar}
+
+\begin{mathpar}
   \inferrule[Integer]{%
-    \astlabel{\vc} \neq \wellconstrained
+    \astlabel(\vc) \neq \wellconstrained
   }{%
     \checknoprecisionloss{\overname{\TInt(\vc)}{\vt}} \typearrow \True
   }
-  \and
+\end{mathpar}
+
+\begin{mathpar}
   \inferrule[Other]{%
-    \astlabel{\vt} \neq \TInt
+    \astlabel(\vt) \neq \TInt
   }{%
     \checknoprecisionloss{\vt} \typearrow \True
   }
@@ -1317,7 +1321,12 @@ can only be used for procedures, not functions.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalcall{\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs} \evalarrow \Normal(\newg, \newenv) \OrAbnormal
+{
+\begin{array}{r}
+  \evalcall{\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs} \evalarrow \\
+  \Normal(\newg, \newenv) \OrAbnormal
+\end{array}
+}
 }{
   \evalstmt{\env, \overname{\SCall(\vcall)}{\vs}} \evalarrow \Continuing(\newg, \newenv)
 }
