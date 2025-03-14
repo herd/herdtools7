@@ -227,6 +227,23 @@ annotates the global storage declaration $\gsd$ in the global static environment
 yielding a modified global static environment $\newgenv$ and annotated global storage declaration $\newgsd$.
 \ProseOtherwiseTypeError
 
+\ExampleDef{Declaring Global Storage}
+\listingref{DeclareGlobalStorage} shows examples of well-typed global storage declarations.
+\ASLListing{Well-typed optional initial values}{DeclareGlobalStorage}{\typingtests/TypingRule.DeclareGlobalStorage.asl}
+
+The specification in \listingref{DeclareGlobalStorage-bad3} is illegal since
+\texttt{config} storage elements must have an initializing expression.
+\ASLListing{Uninitialized config declaration}{DeclareGlobalStorage-bad3}{\typingtests/TypingRule.DeclareGlobalStorage.bad3.asl}
+
+The specifications in \listingref{DeclareGlobalStorage-bad1} and \listingref{DeclareGlobalStorage-bad2}
+are ill-typed since
+\texttt{config} storage elements have the $\timeframeconstant$ \timeframeterm,
+which requires that all expressions used in its type annotation and initializing expression
+also have the $\timeframeconstant$ \timeframeterm,
+whereas \verb|b| has the $\timeframeexecution$ \timeframeterm.
+\ASLListing{Ill-typed config declaration}{DeclareGlobalStorage-bad1}{\typingtests/TypingRule.DeclareGlobalStorage.bad1.asl}
+\ASLListing{Ill-typed config declaration}{DeclareGlobalStorage-bad2}{\typingtests/TypingRule.DeclareGlobalStorage.bad2.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -236,7 +253,7 @@ yielding a modified global static environment $\newgenv$ and annotated global st
   \item applying $\withemptylocal$ to $\genv$ yields $\tenv$;
   \item define $\vtargettimeframe$ as $\timeframeconstant$ if $\keyword$ is $\GDKConstant$ or $\GDKConfig$, and $\timeframeexecution$ otherwise;
   \item applying $\annotatetyoptinitialvalue$ to $\keyword$, $\vtargettimeframe$, $\tyoptp$, \\
-        and $\initialvalue$ in $\tenv$ yields
+        and $\initialvalue$ in $\tenv$ yields\\
         $(\typedinitialvalue, \tyoptp, \declaredt)$\ProseOrTypeError;
   \item adding a global storage element with name $\name$, global declaration keyword \\ $\keyword$ and type $\declaredt$
         to $\tenv$ via $\addglobalstorage$ yields $\tenvone$\ProseOrTypeError;
@@ -248,6 +265,7 @@ yielding a modified global static environment $\newgenv$ and annotated global st
         ($\GDinitialvalue$) set to $\initialvaluep$;
   \item define $\newgenv$ as the global component of $\tenvtwo$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{

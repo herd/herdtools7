@@ -470,3 +470,18 @@ ASL Typing Tests / annotating types:
   ASL Error: Undefined identifier: 'MyInt'
   [1]
   $ aslref --no-exec TypingRule.DeclareConst.asl
+  $ aslref --no-exec TypingRule.DeclareGlobalStorage.asl
+  $ aslref --no-exec TypingRule.DeclareGlobalStorage.bad1.asl
+  File TypingRule.DeclareGlobalStorage.bad1.asl, line 3, characters 0 to 29:
+  ASL Typing error: expected constant-time expression, got x as integer {1..5},
+    which produces the following side-effects: [ReadsGlobal "x"].
+  [1]
+  $ aslref --no-exec TypingRule.DeclareGlobalStorage.bad2.asl
+  File TypingRule.DeclareGlobalStorage.bad2.asl, line 3, characters 0 to 29:
+  ASL Typing error: expected constant-time expression, got 2 as integer {1..5},
+    which produces the following side-effects: [ReadsGlobal "x"].
+  [1]
+  $ aslref --no-exec TypingRule.DeclareGlobalStorage.bad3.asl
+  File TypingRule.DeclareGlobalStorage.bad3.asl, line 2, characters 37 to 38:
+  ASL Error: Cannot parse.
+  [1]
