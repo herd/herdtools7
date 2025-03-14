@@ -691,7 +691,7 @@ The function
 the result of the simplification is not an integer.
 
 We assume that $\ve$ has been annotated as it is part of the constraint for an integer type,
-and therefore applying $\normalize$ to it does not yield a type error.
+and therefore applying $\normalize$ to it does not yield a \typingerrorterm{}.
 
 \ProseParagraph
 \OneApplies
@@ -1169,7 +1169,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
     \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vetwo$}{$\vstwo$};
     \item \Proseeqdef{$\vs$}{the set obtained by applying $\binopliterals$ to $\op$ and
       every pair of integers from the $\vsone$ and $\vstwo$, respectively,
-      and maintaining only the values for which $\binopliterals$ does not produce a type error}.
+      and maintaining only the values for which $\binopliterals$ does not produce a \typingerrorterm{}}.
   \end{itemize}
 
   \item \AllApplyCase{cond}
@@ -1207,7 +1207,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
 \end{mathpar}
 
 In the following inference rule, the application of $\typeof$ is guaranteed not
-to result in a type error, since $\symdomainsubset$ is only applied to annotated
+to result in a \typingerrorterm{}, since $\symdomainsubset$ is only applied to annotated
 types.
 \begin{mathpar}
 \inferrule[var\_over]{

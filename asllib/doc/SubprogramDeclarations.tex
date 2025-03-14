@@ -1432,7 +1432,7 @@ and the environment $\newtenv$, which is updated with $\newname$.
     \item $\formaltypes$ is the list of types that appear in $\formals$ in the same order;
     \item checking for each $\namep$ in $\othernames$ whether the subprogram associated with $\namep$ clashes
           with the subprogram type $\subpgmtype$ and list of types $\formaltypes$ yields $\False$
-          or a type error that indicates there are multiply defined subprograms, which short-circuits the entire rule;
+          or a \typingerrorterm{} that indicates there are multiply defined subprograms, which short-circuits the entire rule;
     \item $\newtenv$ is $\tenv$ with the $\overloadedsubprograms$ updated by binding $\name$ to the union of $\othernames$ and
           $\{\newname\}$.
   \end{itemize}

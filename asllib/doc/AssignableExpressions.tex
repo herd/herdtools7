@@ -568,7 +568,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
   \item \AllApplyCase{error\_undefined}
   \begin{itemize}
     \item $\vx$ is not declared in $\tenv$ as a local storage element nor as a global storage element;
-    \item the result is a type error $\UndefinedIdentifier$.
+    \item the result is a \typingerrorterm{} $\UndefinedIdentifier$.
   \end{itemize}
 \end{itemize}
 
@@ -1298,6 +1298,8 @@ In \listingref{typing-lesetbadfield}, the statement \verb|x.RED = 42;| is ill-ty
 since \verb|x| is not a \bitvectortypeterm{} nor a \structuredtype.
 \ASLListing{Assigning a field in an inappropriate type}{typing-lesetbadfield}{\typingtests/TypingRule.LESetBadField.asl}
 
+See \RequirementRef{TupleImmutability} for an example of assigning to a tuple type.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1305,17 +1307,43 @@ since \verb|x| is not a \bitvectortypeterm{} nor a \structuredtype.
   \item annotating the right-hand-side expression corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
   \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $(\vletwo, \vses)$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vtleone$ in $\tenv$ yields a type $\tleoneanon$\ProseOrTypeError;
-  \item $\vt$ is neither a \structuredtype\ nor a bitvector type;
-  \item the result is an error indicating that the type of $\vle$ conflicts with the requirements of a field access expression.
+  \item \OneApplies
+  \begin{itemize}
+    \item \AllApplyCase{tuple}
+    \begin{itemize}
+      \item $\vt$ is a \tupletypeterm;
+      \item the result is an error indicating assigning to immutable types is illegal ($\AssignmentToImmutable$).
+    \end{itemize}
+
+    \item \AllApplyCase{structured}
+    \begin{itemize}
+      \item $\vt$ is neither a \tupletypeterm{}, nor a \structuredtype, nor a \bitvectortypeterm;
+      \item the result is an error indicating that the type of $\vle$ conflicts with the requirements
+            of a field access expression ($\UnexpectedType$).
+    \end{itemize}
+  \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule{
+\inferrule[tuple]{
   \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
   \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow (\vletwo, \vses) \OrTypeError\\\\
   \makeanonymous(\tenv, \vtleone) \typearrow \tleoneanon \OrTypeError\\\\
-  \astlabel(\tleoneanon) \not\in \{\TException, \TRecord, \TCollection, \TBits\}
+  \commonprefixline\\\\
+  \astlabel(\tleoneanon) = \TTuple
+}{
+  \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \TypeErrorVal{\AssignmentToImmutable}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[structured]{
+  \annotateexpr{\tenv, \torexpr(\vleone)} \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
+  \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow (\vletwo, \vses) \OrTypeError\\\\
+  \makeanonymous(\tenv, \vtleone) \typearrow \tleoneanon \OrTypeError\\\\
+  \commonprefixline\\\\
+  \astlabel(\tleoneanon) \not\in \{\TTuple, \TException, \TRecord, \TCollection, \TBits\}
 }{
   \annotatelexpr{\tenv, \overname{\LESetField(\vleone, \field)}{\vle}, \vte} \typearrow \TypeErrorVal{\UnexpectedType}
 }
@@ -1472,7 +1500,7 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
     \item \AllApplyCase{error}
     \begin{itemize}
       \item $\tanonbase$ is neither a bitvector type nor a record type;
-      \item the result is a type error indicating that the type of the left-hand-side expression is expected to be
+      \item the result is a \typingerrorterm{} indicating that the type of the left-hand-side expression is expected to be
             either a bitvector type or a record type.
     \end{itemize}
   \end{itemize}
@@ -1796,7 +1824,7 @@ are well-typed.
     \begin{itemize}
       \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields $\None$, meaning the field is not declared
             in $\vtleone$;
-      \item the result is a type error $\BadField$.
+      \item the result is a \typingerrorterm{} $\BadField$.
     \end{itemize}
 
     \item \AllApplyCase{field\_simple}

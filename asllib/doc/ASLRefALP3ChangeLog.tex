@@ -98,13 +98,24 @@ Modified the following signatures (ASL-788):
 \begin{itemize}
   \item \texttt{UInt}:
     \begin{itemize}
-      \item previously \verb|UInt{N} (x: bits(N)) => integer{0..2^N-1}|
-      \item now \verb|UInt{N: integer{1..128}} ...|
+      \item previously \begin{small}\verb|UInt{N} (x: bits(N)) => integer{0..2^N-1}|\end{small}
+      \item now \begin{small}\verb|UInt{N: integer{1..128}}|\end{small}
     \end{itemize}
   \item \texttt{SInt}:
     \begin{itemize}
-      \item previously \verb|SInt{N} (x: bits(N)) => integer{-(2^(N-1)) .. 2^(N-1)-1}|
-      \item now \verb|SInt{N: integer{1..128}} ...|
+      \item previously \begin{small}\verb|SInt{N} (x: bits(N)) => integer{-(2^(N-1)) .. 2^(N-1)-1}|\end{small}
+      \item now \begin{small}\verb|SInt{N: integer{1..128}}|\end{small}
+    \end{itemize}
+    \item \texttt{AlignDownSize}:
+    \begin{itemize}
+      \item previously
+      \begin{small}\verb|AlignDownSize{N}(x: bits(N), size: integer {1..2^N}) => bits(N)|\end{small}
+      \item now \begin{small}\verb|AlignDownSize{N: integer{1..128}}(x: bits(N), size: integer {1..2^N}) => bits(N)|\end{small}
+    \end{itemize}
+    \item \texttt{AlignUpSize}:
+    \begin{itemize}
+      \item previously \begin{small}\verb|AlignUpSize{N}(x: bits(N), size: integer {1..2^N}) => bits(N)|\end{small}
+      \item now \begin{small}\verb|AlignUpSize{N: integer{1..128}}(x: bits(N), size: integer {1..2^N}) => bits(N) ...|\end{small}
     \end{itemize}
 \end{itemize}
 

@@ -48,14 +48,14 @@ We define this function for subprogram declarations, type declarations, and glob
 The untyped AST of an ASL specification consists of a list of global declarations.
 Typechecking the untyped AST succeeds if all declarations can be successfully annotated,
 which is achieved via \TypingRuleRef{TypeCheckAST}. Otherwise, the result is a
-type error.
+\typingerrorterm{}.
 
 We note that whether typechecking a specification succeeds or fails with a type
 error, does not depend on the order in which the declarations appear in the specification.
 That is, if typechecking a specification with one ordering of its declarations leads to
-a type error, then typechecking that specification with any other ordering of its
-declarations also leads to a type error, but the type errors may not be the same
-(since there may be two erroneous declarations and the type error returned
+a \typingerrorterm{}, then typechecking that specification with any other ordering of its
+declarations also leads to a \typingerrorterm{}, but the type errors may not be the same
+(since there may be two erroneous declarations and the \typingerrorterm{} returned
 depends on which declaration is processed first).
 
 When typechecking declarations, it is important to process them in a certain order,
@@ -492,7 +492,9 @@ In \ExampleRef{Invalid Overriding}, the \Proseimplementationsubprogram{} \verb|B
 invalid as it has no corresponding \Proseimpdefsubprogram{}.
 
 \ExampleDef{Invalid Overriding}
-\listingref{overriding-bad} shows a specification which attempts to define clashing \Proseimplementationsubprograms{} named \verb|Foo|, and define a \Proseimplementationsubprogram{} \verb|Bar| without a corresponding \Proseimpdefsubprogram{}.
+\listingref{overriding-bad} shows a specification which attempts to define clashing
+\Proseimplementationsubprograms{} named \verb|Foo|, and define an
+\Proseimplementationsubprogram{} \verb|Bar| without a corresponding \Proseimpdefsubprogram{}.
 \ASLListing{Invalid overriding}{overriding-bad}{\definitiontests/OverridingBad.asl}
 
 \noindent

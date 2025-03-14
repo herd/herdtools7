@@ -304,13 +304,13 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref TypingRule.LESetBadField.asl
   File TypingRule.LESetBadField.asl, line 6, characters 4 to 5:
-  ASL Typing error: integer {42} does not subtype any of: bits(-), record {  },
-    exception {  }, collection {  }.
+  ASL Typing error: array [[Color]] of integer does not subtype any of:
+    bits(-), record {  }, exception {  }, collection {  }.
   [1]
   $ aslref TypingRule.LESetBadField.asl
   File TypingRule.LESetBadField.asl, line 6, characters 4 to 5:
-  ASL Typing error: integer {42} does not subtype any of: bits(-), record {  },
-    exception {  }, collection {  }.
+  ASL Typing error: array [[Color]] of integer does not subtype any of:
+    bits(-), record {  }, exception {  }, collection {  }.
   [1]
   $ aslref TypingRule.LESetStructuredField.asl
   $ aslref TypingRule.LESetField.asl
@@ -459,3 +459,14 @@ ASL Typing Tests / annotating types:
   ASL Typing error: the function "loop_forever" may not terminate by returning
     a value or raising an exception..
   [1]
+  $ aslref --no-exec TypingRule.DeclareType.asl
+  $ aslref TypingRule.AnnotateExtraFields.bad.asl
+  File TypingRule.AnnotateExtraFields.bad.asl, line 1, characters 15 to 39:
+  ASL Error: Undefined identifier: 'Record'
+  [1]
+  $ aslref --no-exec TypingRule.DeclaredType.asl
+  $ aslref --no-exec TypingRule.DeclaredType.bad.asl
+  File TypingRule.DeclaredType.bad.asl, line 3, characters 12 to 23:
+  ASL Error: Undefined identifier: 'MyInt'
+  [1]
+  $ aslref --no-exec TypingRule.DeclareConst.asl

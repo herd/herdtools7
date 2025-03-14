@@ -891,7 +891,7 @@ The function
 \]
 checks that the types $\argtypes$ \typesatisfy\ the types of the corresponding
 formal arguments $\funcsigargs$ with the parameters substituted with their corresponding
-arguments as per $\eqs$ and results in a type error otherwise.
+arguments as per $\eqs$ and results in a \typingerrorterm{} otherwise.
 
 \ProseParagraph
 \OneApplies
@@ -980,7 +980,7 @@ yielding the \optional\ annotated type $\rettyopt$.
   \begin{itemize}
     \item the condition that $\calltype$ is one of $\STProcedure$ or $\STSetter$
           if and only if $\funcsigrettyopt$ is $\None$ does not hold;
-    \item the result is a type error indicating the mismatch.
+    \item the result is a \typingerrorterm{} indicating the mismatch.
   \end{itemize}
 \end{itemize}
 
@@ -1049,7 +1049,7 @@ cases holds:
   \item there is exactly one subprogram that matches $\name$ and $\calleeargtypes$;
   \item there is more than one subprogram that matches $\name$ and $\calleeargtypes$;
 \end{itemize}
-The first and last cases result in a type error.
+The first and last cases result in a \typingerrorterm{}.
 If the second case holds, the function returns a tuple which comprises:
 \begin{itemize}
 \item $\namep$ --- the string that uniquely identifies this subprogram;
@@ -1065,7 +1065,7 @@ If the second case holds, the function returns a tuple which comprises:
   \begin{itemize}
     \item $\tenv$ does not contain a binding for $\name$ in the $\overloadedsubprograms$ map
           ($G^\tenv.\overloadedsubprograms$);
-    \item the result is a type error indicating that the identifier has not been declared (as a subprogram).
+    \item the result is a \typingerrorterm{} indicating that the identifier has not been declared (as a subprogram).
   \end{itemize}
 
   \item \AllApplyCase{no\_candidates}
@@ -1073,7 +1073,7 @@ If the second case holds, the function returns a tuple which comprises:
     \item $\tenv$ binds $\name$ via $\overloadedsubprograms$ map to $\renamingset$ and $\vses$;
     \item filtering the subprograms in $\renamingset$ with the caller argument types $\callerargtypes$
           in $\tenv$ (see \TypingRuleRef{FilterCallCandidates}) yields an empty set\ProseOrTypeError;
-    \item the result is a type error indicating that the call given by $\name$ and \\ $\callerargtypes$
+    \item the result is a \typingerrorterm{} indicating that the call given by $\name$ and \\ $\callerargtypes$
           does not match any defined subprogram.
   \end{itemize}
 
@@ -1083,7 +1083,7 @@ If the second case holds, the function returns a tuple which comprises:
     \item filtering the subprograms in $\renamingset$ with the caller argument types $\callerargtypes$
           in $\tenv$ (see \TypingRuleRef{FilterCallCandidates}) yields $\matchingrenamings$\ProseOrTypeError;
     \item $\matchingrenamings$ contains at least two elements;
-    \item the result is a type error indicating that the call given by $\name$ and \\
+    \item the result is a \typingerrorterm{} indicating that the call given by $\name$ and \\
           $\callerargtypes$ matches more than one defined subprogram.
   \end{itemize}
 
@@ -1232,7 +1232,7 @@ in the list of arguments $\vargs$ in $\tenv$, yielding the result in $\vb$.
   \item $\argtys$ is the list of types appearing in $\vargs$, in the same order;
   \item for each $\vi$ in the list of indices of $\formaltys$, applying $\typeclashes$ to
         $\formaltys[\vi]$ and $\argtys[\vi]$ in $\tenv$ yields $\True$\ProseTerminateAs{\False, \TypeErrorConfig};
-  \item $\vb$ is $\True$ (unless the rule short-circuited with $\False$ or a type error).
+  \item $\vb$ is $\True$ (unless the rule short-circuited with $\False$ or a \typingerrorterm{}).
 \end{itemize}
 
 \CodeSubsection{\HasArgClashBegin}{\HasArgClashEnd}{../Typing.ml}

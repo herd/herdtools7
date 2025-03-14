@@ -231,7 +231,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
     \begin{itemize}
       \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
       \item $\vx$ is not bound via the $\globalstoragetypes$ map of the local component of $\tenv$;
-      \item the result is a type error indicating that $\vx$ is an undefined identifier ($\UndefinedIdentifier$).
+      \item the result is a \typingerrorterm{} indicating that $\vx$ is an undefined identifier ($\UndefinedIdentifier$).
     \end{itemize}
   \end{itemize}
 \end{itemize}
@@ -478,8 +478,8 @@ for example: \texttt{(a + b) - c}.
 \TypingRuleDef{EBinop}
 \ExampleDef{Typing of Binary Expressions}
 In \listingref{typing-binoperror},
-the expression \texttt{3 DIV 0} results in a type error.
-\ASLListing{Evaluating a binary expression resulting in a type error}{typing-binoperror}
+the expression \texttt{3 DIV 0} results in a \typingerrorterm{}.
+\ASLListing{Evaluating a binary expression resulting in a typing error}{typing-binoperror}
 {\semanticstests/SemanticsRule.EBinopDIVBackendDefinedError.asl}
 
 \ProseParagraph
@@ -1588,7 +1588,7 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
   \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
   \item $\vtetwo$ is a record or exception type with fields $\fields$;
   \item the field $\fieldname$ is not associated with any type in $\fields$
-  \item the result is a type error indicating the missing field.
+  \item the result is a \typingerrorterm{} indicating the missing field.
 \end{itemize}
 
 \FormallyParagraph
@@ -1618,7 +1618,7 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
   \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
   \item $\vtetwo$ is a bitvector type with bit fields $\bitfields$;
   \item the field $\fieldname$ is not found in $\bitfields$
-  \item the result is a type error indicating the missing field.
+  \item the result is a \typingerrorterm{} indicating the missing field.
 \end{itemize}
 
 \FormallyParagraph
@@ -1985,7 +1985,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
     \item \AllApplyCase{error}
     \begin{itemize}
       \item $\tbaseannotanon$ is neither a bitvector type nor a record type;
-      \item the result is a type error indicating an unexpected type.
+      \item the result is a \typingerrorterm{} indicating an unexpected type.
     \end{itemize}
   \end{itemize}
 \end{itemize}
@@ -2049,7 +2049,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 
 \TypingRuleDef{FindBitFieldsSlices}
 \hypertarget{def-findbitfieldsslices}{}
-% Transliteration note: The implementation returns an optional, but all of its uses raise a type error if the result is None.
+% Transliteration note: The implementation returns an optional, but all of its uses raise a \typingerrorterm{} if the result is None.
 The helper function
 \[
   \findbitfieldsslices(\overname{\identifier}{\name} \aslsep \overname{\bitfield^*}{\vbitfields})
@@ -2088,7 +2088,7 @@ yields a \typingerrorterm, since it is a nested bitfield.
   \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\vbitfields$ is an empty list;
-    \item the result is a type error indicating that a bitfield named $\name$ does not exist in $\vbitfields$.
+    \item the result is a \typingerrorterm{} indicating that a bitfield named $\name$ does not exist in $\vbitfields$.
   \end{itemize}
 \end{itemize}
 
@@ -2150,7 +2150,7 @@ yields the literal expression for \verb|2|.
   \item \AllApplyCase{error}
   \begin{itemize}
     \item applying $\assocopt$ to find the type associated with $\name$ in $\tfields$ yields $\None$;
-    \item the result is a type error indicating that $\name$ is not associated with any field in $\tfields$.
+    \item the result is a \typingerrorterm{} indicating that $\name$ is not associated with any field in $\tfields$.
   \end{itemize}
 \end{itemize}
 
@@ -2430,7 +2430,7 @@ are compatible for a typing assertion in the static environment $\tenv$, yieldin
   \begin{itemize}
     \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item the AST labels of $\vtone$ and $\vttwo$ are different;
-    \item the result is a type error indicating that the type assertion will always fail.
+    \item the result is a \typingerrorterm{} indicating that the type assertion will always fail.
   \end{itemize}
 
   \item \AllApplyCase{int\_bits}
@@ -2456,7 +2456,7 @@ are compatible for a typing assertion in the static environment $\tenv$, yieldin
     \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item the AST labels of $\vtone$ and $\vttwo$ are the same;
     \item the AST label of $\vtone$ is neither $\TInt$, nor $\TBits$, nor $\TTuple$;
-    \item the result is a type error indicating that the type assertion will always fail ($\TypeAssertionFailure$).
+    \item the result is a \typingerrorterm{} indicating that the type assertion will always fail ($\TypeAssertionFailure$).
   \end{itemize}
 \end{itemize}
 \FormallyParagraph

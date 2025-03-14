@@ -8,3 +8,10 @@ begin
         when RED => return GREEN;
     end;
 end;
+
+// Legal: subprograms and enumeration labels exist
+// in separate namespaces.
+func GREEN() => integer
+begin
+    return 0;
+end;

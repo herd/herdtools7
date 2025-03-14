@@ -701,6 +701,7 @@ exemplifies
 exemplify
 exist
 existence
+existing
 exists
 exit
 expand
@@ -1193,6 +1194,7 @@ native
 natural
 nearest
 necessary
+necessitates
 need
 needed
 needs
@@ -1757,10 +1759,12 @@ static
 statically
 stating
 status
+stay
 step
 steps
 still
 storage
+store
 stored
 strictly
 string
@@ -1963,6 +1967,7 @@ unbounded
 uncaught
 unchanging
 unconstrained
+undeclared
 undefined
 under
 underapproximates

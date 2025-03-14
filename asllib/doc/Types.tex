@@ -329,7 +329,7 @@ correspond to \CaseName{pending\_constrained}.
   \item \AllApplyCase{pending\_constrained}
     \begin{itemize}
       \item $\tty$ is a \pendingconstrainedintegertype;
-      \item the result is a type error (\UnexpectedType).
+      \item the result is a \typingerrorterm{} (\UnexpectedType).
     \end{itemize}
   \item \AllApplyCase{well\_constrained}
     \begin{itemize}
@@ -632,7 +632,7 @@ See \ExampleRef{Well-typed Boolean Types} for examples of well-typed \booleantyp
 \hypertarget{bitvectortypeterm}{}
 \emph{Bitvectors} represent sequences of $0$ and $1$ bits.
 %
-The \texttt{bits(N)} type represents a bitvector of length \texttt{N},
+The \texttt{bits(N)} type represents a bitvector of width \texttt{N},
 where \texttt{N} may specify a fixed width or a constrained width.
 %
 The \texttt{bit} type is syntactic sugar for \texttt{bits(1)} (see \ASTRuleRef{Ty.TBits}.\texttt{BIT}).
@@ -648,14 +648,24 @@ and \chapref{BitvectorSlicing} defines \bitslicesterm{}.
 \RequirementDef{BitvectorWidthImmutable}
 The width of a bitvector cannot be modified.
 
+In \listingref{BitvectorSlices}, slicing expressions such as \verb|bv[5:0]|
+and bitvector concatenation expressions such as \verb|bv[5:5] :: bv[4:4]|
+create new bitvector values without affecting the widths (or values)
+of existing bitvector values.
+
 \RequirementDef{BitvectorWidthBounds}
 There is no bound on the maximum bitvector width allowed, although an implementation may specify an upper
 limit.
 %The minimum bound is zero.
-It is recognized that zero-length bitvectors might not be supported in systems
+It is recognized that zero-width bitvectors might not be supported in systems
 to which ASL might be translated (such as SMT solvers),
 and an implementation might need to lower bitvector
-expressions to a form where zero-length bitvectors do not exist.
+expressions to a form where zero-width bitvectors do not exist.
+
+In \listingref{BitvectorWidthBounds}, any number can be used instead of \verb|2^20| for
+\verb|large_bitvector|, and \verb|zero_width_bitvector| is an example of a zero-width bitvector.
+
+\ASLListing{Large and small bitvectors}{BitvectorWidthBounds}{\definitiontests/GuideRule.BitvectorWidthBounds.asl}
 
 \RequirementDef{BitvectorWidthKind}
 The width of a \bitvectortypeterm{} can be either \staticallyevaluable{}
@@ -793,7 +803,7 @@ In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
   {
     \begin{array}{r}
   \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \TBits(\ewidth, \bitfields)} \typearrow \\
-  (\overname{\TBits(\ewidthp, \bitfieldsp)}{\newty}, \overname{}{\seswidth})
+  (\overname{\TBits(\ewidthp, \bitfieldsp)}{\newty}, \overname{\seswidth}{\seswidth})
     \end{array}
   }
 }
@@ -813,13 +823,26 @@ In \listingref{typing-ttuple}, all the uses of \tupletypesterm{} are well-typed.
 \RequirementDef{TupleLength}
 A \tupletypeterm{} must contain at least two elements.
 
+In \listingref{TupleLength}, both \verb|x| and \verb|y| have tuple types,
+whereas \verb|w| and \verb|z| are of the \integertypeterm, since \verb|(5)|
+is considered a parenthesized expressions, not a tuple expression.
+\ASLListing{Tuples and parenthesized expressions}{TupleLength}{\definitiontests/GuideRule.TupleLength.asl}
+
 \RequirementDef{TupleImmutability}
 The value and type of tuple elements cannot be modified.
+
+\listingref{TupleImmutability} demonstrates how variables of a \tupletypeterm{} may be assigned,
+but the tuple values they store may not be modified.
+\ASLListing{Immutability of tuple values}{TupleImmutability}{\definitiontests/GuideRule.TupleImmutability.asl}
 
 \RequirementDef{TupleElementAccess}
 The $k+1$ element of a tuple \verb|t| with $n>1$ elements
 can be accessed via the \texttt{t.item$k$} notation,
 as long as $0 \leq k < n$.
+
+\listingref{TupleElementAccess} shows examples of accessing the elements
+of the tuple stored in \verb|x|.
+\ASLListing{Accesssing tuple elements}{TupleElementAccess}{\definitiontests/GuideRule.TupleElementAccess.asl}
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -896,8 +919,14 @@ may have the same name in the same scope.
 In particular, this means that an enumeration literal can be declared in
 at most one \enumerationtypeterm{} declaration.
 
+See \ExampleRef{Well-typed Enumeration Types} and \ExampleRef{Ill-typed Enumeration Type Declarations}.
+
 \RequirementDef{AnonymousEnumerations}
 Enumeration types are only allowed in declarations.
+
+\listingref{AnonymousEnumerations} shows an illegal specification
+where an enumeration is used outside of a type definition.
+\ASLListing{An illegal enumeration use}{AnonymousEnumerations}{\definitiontests/GuideRule.AnonymousEnumerations.bad.asl}
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -978,6 +1007,7 @@ ASL offers two kinds of arrays:
 
 \RequirementDef{ArrayLengthImmutable}
 The length of an \intarraytypeterm{} cannot be modified.
+% NO_EXAMPLE
 
 \RequirementDef{ArrayLengthExpression}
 The length expression of an \intarraytypeterm{} must be a \symbolicallyevaluable{}
@@ -1168,6 +1198,8 @@ enumeration labels from variable expressions.
 \RequirementDef{SymbolicallyEvaluable}
 An expression is \symbolicallyevaluable{} if its evaluation only involves
 the use of immutable values.
+
+See \ExampleRef{Annotating Symbolically Evaluable Expressions}.
 
 \TypingRuleDef{AnnotateSymbolicallyEvaluableExpr}
 \hypertarget{def-annotatesymbolicallyevaluableexpr}{}
@@ -1536,7 +1568,7 @@ In \listingref{typing-trecorderror}, the use of a record type outside of a decla
   \item $\tty$ is a \structuredtype\ or an \enumerationtypeterm{};
   \item $\decl$ is $\False$, indicating that $\tty$ should be considered to be outside the context of a declaration
   of $\tty$;
-  \item a type error is returned, indicating that the use of anonymous form of enumerations, record,
+  \item a \typingerrorterm{} is returned, indicating that the use of anonymous form of enumerations, record,
   and exceptions types is not allowed here.
 \end{itemize}
 

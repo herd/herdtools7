@@ -460,7 +460,7 @@ The function
 \]
 assigns a type to its \hypertarget{def-tstruct}{\emph{\structure}}, which is the type formed by
 recursively replacing named types by their type definition in the static environment $\tenv$.
-If a named type is not associated with a declared type in $\tenv$, a type error is returned.
+If a named type is not associated with a declared type in $\tenv$, a \typingerrorterm{} is returned.
 
 \TypingRuleRef{TypeCheckAST} ensures the absence of circular type definitions,
 which ensures that \TypingRuleRef{Structure} terminates\footnote{In mathematical terms,
@@ -534,26 +534,34 @@ the type of \texttt{z} is the anonymous non-primitive type
 }{
   \tstruct(\tenv, \TNamed(\vx)) \typearrow \vt
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[builtin\_singular]{
   \isbuiltinsingular(\tty) \typearrow \True
 }{
   \tstruct(\tenv, \tty) \typearrow \tty
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[tuple]{
   \tys \eqname \vt_{1..k}\\
   i=1..k: \tstruct(\tenv, \vt_i) \typearrow \vtp_i \OrTypeError
 }{
   \tstruct(\tenv, \TTuple(\tys)) \typearrow  \TTuple(i=1..k: \vtp_i)
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[array]{
   \tstruct(\tenv, \vt) \typearrow \vtone \OrTypeError
 }{
   \tstruct(\tenv, \TArray(\ve, \vt)) \typearrow \TArray(\ve, \vtone)
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[structured]{
   L \in \{\TRecord, \TException, \TCollection\}\\\\
   (\id,\vt) \in \fields : \tstruct(\tenv, \vt) \typearrow \vt_\id \OrTypeError
@@ -572,7 +580,7 @@ The function
 \[
   \makeanonymous(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \overname{\ty}{\vt} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-returns the \emph{\underlyingtype} --- $\vt$ --- of the type $\tty$ in the static environment $\tenv$ or a type error.
+returns the \emph{\underlyingtype} --- $\vt$ --- of the type $\tty$ in the static environment $\tenv$ or a \typingerrorterm{}.
 Intuitively, $\tty$ is the first non-named type that is used to define $\tty$. Unlike $\tstruct$,
 $\makeanonymous$ replaces named types by their definition until the first non-named type is found but
 does not recurse further.
@@ -663,13 +671,13 @@ is a \constrainedinteger{} type.
   \item \AllApplyCase{unconstrained}
   \begin{itemize}
     \item $\vt$ is an unconstrained integer or pending constrained integer;
-    \item the result is a type error indicating that a constrained integer type is expected.
+    \item the result is a \typingerrorterm{} indicating that a constrained integer type is expected.
   \end{itemize}
 
   \item \AllApplyCase{conflicting\_type}
   \begin{itemize}
     \item $\vt$ is not an integer type;
-    \item the result is a type error indicating the type conflict.
+    \item the result is a \typingerrorterm{} indicating the type conflict.
   \end{itemize}
 \end{itemize}
 

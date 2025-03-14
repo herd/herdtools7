@@ -2649,10 +2649,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
              annotate_lexpr env le3 t_e |: TypingRule.LESetBitField
          (* End *)
          (* Begin LESetBadField *)
+         | T_Tuple _ -> fatal_from ~loc @@ Error.AssignToTupleElement le1
          | _ ->
              conflict ~loc:le1
                [ default_t_bits; T_Record []; T_Exception []; T_Collection [] ]
-               t_e)
+               t_le1)
         |: TypingRule.LESetBadField
     (* End *)
     (* Begin LESetFields *)
@@ -3859,10 +3860,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       match t2.desc with
       | T_Enum ids ->
           let t = T_Named name |> here in
+          (* DeclareEnumLabels( *)
           let declare_one env2 label =
             declare_const ~loc label t (L_Label label) env2
           in
           let genv3 = List.fold_left declare_one env2.global ids in
+          (* DeclareEnumLabels) *)
           { env2 with global = genv3 }
       | _ -> env2
     in

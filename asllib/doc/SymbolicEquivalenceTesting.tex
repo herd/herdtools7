@@ -784,7 +784,7 @@ The function
   \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively checks whether the expression $\veone$ is equivalent to the expression $\vetwo$ in environment $\tenv$.
-The result is given in $\vb$ or a type error, if one is detected.
+The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
 
 \ProseParagraph
 \OneApplies
@@ -828,7 +828,7 @@ The helper function
 conservatively tests whether the expression $\veone$ is equivalent to the expression $\vetwo$ in environment $\tenv$
 by attempting to transform both expressions to their symbolic expression form
 and, if successful, comparing the resulting normal forms for equality.
-The result is given in $\vb$ or a type error, if one is detected.
+The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
 
 \ProseParagraph
 \OneApplies
@@ -886,7 +886,7 @@ The helper function
 \]
 specializes the equivalence test for expressions $\veone$ and $\vetwo$ in $\tenv$
 for the different types of expressions.
-The result is given in $\vb$ or a type error, if one is detected.
+The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
 
 \ProseParagraph
 \OneApplies
@@ -2407,7 +2407,7 @@ The function
   \;\aslto\; \overname{\ty}{\tty}\ \cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
 looks up the environment $\tenv$ for a type $\tty$ associated with an identifier
-$\vs$. The result is type error if $\vs$ is not associated with any type.
+$\vs$. The result is \typingerrorterm{} if $\vs$ is not associated with any type.
 
 \ProseParagraph
 \OneApplies
@@ -2427,7 +2427,7 @@ $\vs$. The result is type error if $\vs$ is not associated with any type.
   \begin{itemize}
     \item $\vs$ is not associated with a type in the local environment of $\tenv$;
     \item $\vs$ is not associated with a type in the global environment of $\tenv$;
-    \item the result is a type error indicating that $\vs$ was expected to be associated
+    \item the result is a \typingerrorterm{} indicating that $\vs$ was expected to be associated
           with a type.
   \end{itemize}
 \end{itemize}

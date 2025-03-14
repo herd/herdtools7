@@ -40,6 +40,8 @@ def execute_and_capture_output(command: str, error_expected: bool) -> str:
     Executes `command` and returns the output in a string.
     """
     args = shlex.split(command)
+    if not args:
+        raise ValueError(f"Missing command after CONSOLE_BEGIN!")
     if "aslref" not in args[0]:
         raise ValueError(f"Command {command} does not refer to aslref!")
     try:

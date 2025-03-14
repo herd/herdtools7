@@ -147,15 +147,15 @@ subtyping.
 \begin{itemize}
 \item \AllApplyCase{error1}
   \begin{itemize}
-  \item obtaining the \underlyingtype\ of $\vt$ gives a type error;
-  \item the rule results in a type error.
+  \item obtaining the \underlyingtype\ of $\vt$ gives a \typingerrorterm{};
+  \item the rule results in a \typingerrorterm{}.
   \end{itemize}
 
 \item \AllApplyCase{error2}
   \begin{itemize}
     \item obtaining the \underlyingtype\ of $\vt$ gives a type $\vttwo$;
-    \item obtaining the \underlyingtype\ of $\vs$ gives a type error;
-    \item the rule results in a type error.
+    \item obtaining the \underlyingtype\ of $\vs$ gives a \typingerrorterm{};
+    \item the rule results in a \typingerrorterm{}.
     \end{itemize}
 
 \item \AllApplyCase{different\_labels}
@@ -548,7 +548,7 @@ We also define
   \checktypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-which is the same as $\typesat$, but yields a type error when \\ $\typesat(\tenv, \vt, \vs)$ is $\False$.
+which is the same as $\typesat$, but yields a \typingerrorterm{} when \\ $\typesat(\tenv, \vt, \vs)$ is $\False$.
 
 The function assumes that both $\vt$ and $\vs$ are well-typed according to \secref{Types}.
 
@@ -784,7 +784,7 @@ The function
   \aslto \overname{\ty}{\tty} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 returns the \Proselca{} of types $\vt$ and $\vs$ in $\tenv$ --- $\tty$.
-The result is a type error if a \Proselca{} does not exist or a type error is detected.
+The result is a \typingerrorterm{} if a \Proselca{} does not exist or a \typingerrorterm{} is detected.
 
 \ExampleDef{Lowest Common Ancestor}
 \listingref{example-lca} shows examples of conditional expressions and the resulting
@@ -893,7 +893,7 @@ The result is a type error if a \Proselca{} does not exist or a type error is de
         \item $\vt$ is a \tupletypeterm{} with type list $\vlit$;
         \item $\vs$ is a \tupletypeterm{} with type list $\vlis$;
         \item checking whether $\vlit$ and $\vlis$ have the same number of elements yields $\True$
-              or a type error, which short-circuits the entire rule (indicating that the number of elements in both tuples is expected
+              or a \typingerrorterm{}, which short-circuits the entire rule (indicating that the number of elements in both tuples is expected
               to be the same and thus there is no lowest common ancestor);
         \item applying $\lca$ to $\vlit[\vi]$ and $\vlis[\vi]$ in $\tenv$, for every position of $\vlit$,
               yields $\vt_\vi$\ProseOrTypeError;
@@ -904,7 +904,7 @@ The result is a type error if a \Proselca{} does not exist or a type error is de
       \item \AllApplyCase{error}
       \begin{itemize}
         \item either the AST labels of $\vt$ and $\vs$ are different, or one of them is $\TEnum$, $\TRecord$, $\TCollection$, or $\TException$;
-        \item the result is a type error indicating the lack of a lowest common ancestor.
+        \item the result is a \typingerrorterm{} indicating the lack of a lowest common ancestor.
       \end{itemize}
     \end{itemize}
   \end{itemize}
@@ -1095,7 +1095,7 @@ Similarly, we determine the negation of integer constraints.
   \item $\op$ is $\NEG$;
   \item determining whether $\vt$ \typesatisfies\ $\TReal$ yields $\False$\ProseOrTypeError;
   \item determining whether $\vt$ \typesatisfies\ $\unconstrainedinteger$ yields $\False$\ProseOrTypeError;
-  \item the result is a type error indicating the $\NEG$ is appropriate only for the \realtypeterm{} and the \integertypeterm{};
+  \item the result is a \typingerrorterm{} indicating the $\NEG$ is appropriate only for the \realtypeterm{} and the \integertypeterm{};
 \end{itemize}
 
 \item \AllApplyCase{neg\_t\_real}
@@ -2159,7 +2159,7 @@ The function
 returns an integer inside an optional if $\ve$ can be symbolically simplified into an integer in $\tenv$
 and $\None$ otherwise.
 The expression $\ve$ is assumed to appear in a constraint for a type that has been successfully annotated,
-which means that applying $\normalize$ to it should not yield a type error.
+which means that applying $\normalize$ to it should not yield a \typingerrorterm{}.
 
 \ProseParagraph
 \OneApplies
@@ -2610,7 +2610,7 @@ The predicate
   \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 tests whether the set of bit fields $\bfsone$ is included in the set of bit fields $\bfstwo$ in environment $\tenv$,
-returning a type error, if one is detected.
+returning a \typingerrorterm{}, if one is detected.
 
 \ProseParagraph
 \AllApply
@@ -2811,7 +2811,7 @@ The function
   \checkstructurelabel(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\astlabels}{\vl}) \aslto
   \{\True\} \cup \TTypeError
 \]
-returns $\True$ is $\vt$ is has the \structure\ a of type corresponding to the AST label $\vl$ and a type error otherwise.
+returns $\True$ is $\vt$ is has the \structure\ a of type corresponding to the AST label $\vl$ and a \typingerrorterm{} otherwise.
 
 See \ExampleRef{The Structure of a Type}.
 
@@ -2829,7 +2829,7 @@ See \ExampleRef{The Structure of a Type}.
   \begin{itemize}
     \item determining the \structure\ of $\vt$ yields $\vtp$\ProseOrTypeError;
     \item $\vtp$ does not have the label $\vl$;
-    \item the result is a type error indicating that $\vt$ was expected to have the \structure\ of a type with the AST label $\vl$.
+    \item the result is a \typingerrorterm{} indicating that $\vt$ was expected to have the \structure\ of a type with the AST label $\vl$.
   \end{itemize}
 \end{itemize}
 
@@ -2962,7 +2962,7 @@ in the static environment $\tenv$.
   \item \AllApplyCase{error}
   \begin{itemize}
     \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a type that is not a bitvector type;
-    \item the result is a type error indicating that a bitvector type was expected.
+    \item the result is a \typingerrorterm{} indicating that a bitvector type was expected.
   \end{itemize}
 \end{itemize}
 
@@ -3041,7 +3041,7 @@ If the answer is positive, the result is $\True$. \ProseOtherwiseTypeError
     \item \AllApplyCase{error}
     \begin{itemize}
       \item symbolically checking whether the bitwidth expressions $\vn$ and $\vm$ are equal (via $\bitwidthequal$) yields $\False$;
-      \item the result is a type error indicating that the bitwidths are different.
+      \item the result is a \typingerrorterm{} indicating that the bitwidths are different.
     \end{itemize}
   \end{itemize}
 \end{itemize}

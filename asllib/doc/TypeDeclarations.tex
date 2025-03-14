@@ -154,11 +154,10 @@ We also define the following helper rules:
 \begin{itemize}
   \item\TypingRuleRef{AnnotateTypeOpt}
   \item\TypingRuleRef{AnnotateExprOpt}
-  \item\TypingRuleRef{AnnotateInitType}
   \item\TypingRuleRef{AddGlobalStorage}
   \item\TypingRuleRef{DeclareType}
   \item\TypingRuleRef{AnnotateExtraFields}
-  \item\TypingRuleRef{AnnotateEnumLabels}
+  \item\TypingRuleRef{DeclareEnumLabels}
   \item\TypingRuleRef{DeclareConst}
 \end{itemize}
 
@@ -177,6 +176,14 @@ declares a type named $\name$ with type $\tty$ and \optional\ additional fields
 over another type $\vs$
 in the global static environment $\genv$, resulting in the modified global static environment $\newgenv$.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Type Declarations}
+\listingref{DeclareType} shows examples of well-typed type declarations
+and ill-typed type declarations in comments.
+
+The only \sideeffectdescriptorsterm{} for \verb|Record| is
+$\ReadGlobal(\texttt{num\_bits}, \timeframeconstant, \True)$.
+\ASLListing{Type declarations}{DeclareType}{\typingtests/TypingRule.DeclareType.asl}
 
 \ProseParagraph
 \AllApply
@@ -214,7 +221,7 @@ in the global static environment $\genv$, resulting in the modified global stati
   \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\tenvone, \vtone)\\
   \annotatetype{\True, \tenvone, \vtone} \typearrow (\vttwo, \vsest) \OrTypeError\\\\
   \maxtimeframe(\vsest) \typearrow \vtimeframe\\
-  \addtype(\tenvone, \name, \vttwo, \vtimeframe) \typearrow \tenvtwo\\
+  \addtype(\tenvone, \name, \vttwo, \vtimeframe) \typearrow \tenvtwo\\\\
   \commonprefixline\\\\
   \vttwo = \TEnum(\ids)\\
   \declareenumlabels(\tenvtwo, \vttwo) \typearrow \newtenv \OrTypeError
@@ -230,7 +237,7 @@ in the global static environment $\genv$, resulting in the modified global stati
   \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\tenvone, \vtone)\\
   \annotatetype{\True, \tenvone, \vtone} \typearrow (\vttwo, \vsest) \OrTypeError\\\\
   \maxtimeframe(\vsest) \typearrow \vtimeframe\\
-  \addtype(\tenvone, \name, \vttwo, \vtimeframe) \typearrow \tenvtwo\\
+  \addtype(\tenvone, \name, \vttwo, \vtimeframe) \typearrow \tenvtwo\\\\
   \commonprefixline\\\\
   \astlabel(\vttwo) \neq \TEnum
 }{
@@ -259,6 +266,17 @@ annotates the type $\tty$ with the \optional\ extra fields $\vs$ in $\tenv$, yie
 the modified environment $\newtenv$ and type $\newty$.
 \ProseOtherwiseTypeError
 
+\ExampleDef{Type Declarations with Fields and Without Fields}
+In \listingref{DeclareType} shows type declarations where one type subtypes
+another, with and without extra fields.
+Specifically, both \verb|SubRecordEmptyExtraFields| and \\
+\verb|SubRecordNoExtraFields|
+subtype \verb|Record| with no extra fields.
+
+In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| is declared to subtype
+\verb|SubRecord| is ill-typed, since \verb|SubRecord| is not defined as a type.
+\ASLListing{Subtyping an undefined typed}{AnnotateExtraFields-bad}{\typingtests/TypingRule.AnnotateExtraFields.bad.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -286,7 +304,7 @@ the modified environment $\newtenv$ and type $\newty$.
           $\True$\ProseOrTypeError;
     \item $\extrafields$ is not an empty list;
     \item $\vsuper$ is not bound to a type in $\tenv$;
-    \item the result is a type error indicating that $\vsuper$ is not a declared type.
+    \item the result is a \typingerrorterm{} indicating that $\vsuper$ is not a declared type.
   \end{itemize}
 
   \item \AllApplyCase{structured}
@@ -296,7 +314,7 @@ the modified environment $\newtenv$ and type $\newty$.
           $\True$\ProseOrTypeError;
     \item $\extrafields$ is not an empty list;
     \item $\vsuper$ is bound to a type $\vt$ in $\tenv$;
-    \item checking that $\vt$ is a \structuredtype\ yields $\True$ or a type error
+    \item checking that $\vt$ is a \structuredtype\ yields $\True$ or a \typingerrorterm{}
           indicating that a \structuredtype\ was expected, thereby short-circuiting the entire rule;
     \item $\vt$ has AST label $L$ and fields $\fields$;
     \item $\newty$ is the type with AST label $L$ and list fields that is the concatenation of $\fields$ and $\extrafields$;
@@ -357,12 +375,21 @@ the modified environment $\newtenv$ and type $\newty$.
 \hypertarget{def-annotatetypeopt}{}
 The function
 \[
-\annotatetypeopt(\overname{\staticenvs}{\tenv} \aslsep \overname{\langle\overname{\ty}{\vt}\rangle}{\tyopt})
+\annotatetypeopt(\overname{\staticenvs}{\tenv} \aslsep \overname{\Some{\overname{\ty}{\vt}}}{\tyopt})
 \typearrow \overname{\langle\ty\rangle}{\tyoptp}
 \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates the type $\vt$ inside an \optional\ $\tyopt$, if there is one, and leaves it as is if $\tyopt$ is $\None$.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Annotating Optional Types}
+The following are examples of annotating a type inside an \optional{} with the empty static environment:
+\[
+\begin{array}{rcl}
+\annotatetypeopt(\emptytenv, \None) &\typearrow& \None\\
+\annotatetypeopt(\emptytenv, \Some{\unconstrainedinteger}) &\typearrow& \Some{\unconstrainedinteger}
+\end{array}
+\]
 
 \ProseParagraph
 \OneApplies
@@ -398,13 +425,22 @@ annotates the type $\vt$ inside an \optional\ $\tyopt$, if there is one, and lea
 \hypertarget{def-annotateexpropt}{}
 The function
 \[
-  \annotateexpropt(\overname{\staticenvs}{\tenv} \aslsep \overname{\langle\ve\rangle}{\expropt})
-  \aslto \overname{(\langle\expr\rangle \times \langle\ty\rangle)}{\vres}
+  \annotateexpropt(\overname{\staticenvs}{\tenv} \aslsep \overname{\Some{\expr}}{\expropt})
+  \aslto \overname{(\Some{\expr} \times \Some{\ty})}{\vres}
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates the \optional\ expression $\expropt$ in $\tenv$ and returns a pair of \optional\ expressions
 for the type and annotated expression in $\vres$.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Annotating Optional Expressions}
+The following are examples of annotating an expression inside an \optional{} with the empty static environment:
+\[
+\begin{array}{rcl}
+\annotateexpropt(\emptytenv, \None) &\typearrow& (\None, \None)\\
+\annotateexpropt(\emptytenv, \Some{\lint(5)}) &\typearrow& (\Some{\lint(5)}, \Some{\TInt(\wellconstrained(\AbbrevConstraintExact{\lint(5)}))})
+\end{array}
+\]
 
 \ProseParagraph
 \OneApplies
@@ -436,76 +472,25 @@ for the type and annotated expression in $\vres$.
 }
 \end{mathpar}
 
-\TypingRuleDef{AnnotateInitType}
-\hypertarget{def-annotateinittype}{}
-The function
-\[
-  \annotateinittype(\overname{\staticenvs}{\tenv} \aslsep
-  \overname{\langle\ty\rangle}{\initialvaluetype} \aslsep
-  \overname{\langle\ty\rangle}{\typeannotation}
-  )
-  \aslto \overname{\ty}{\declaredtype}
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
-\]
-takes the \optional\ type associated with the initialization value of a global storage declaration --- $\initialvaluetype$ ---
-and the \optional\ type annotation for the same global storage declaration --- $\typeannotation$ ---
-and chooses the type that should be associated with the declaration --- $\declaredtype$ -- in $\tenv$.
-\ProseOtherwiseTypeError
-
-The ASL parser ensures that at least one of $\initialvaluetype$ and \\
-$\typeannotation$ should not be $\None$.
-
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{both}
-  \begin{itemize}
-    \item $\initialvaluetype$ is $\langle\vtone\rangle$ and $\typeannotation$ is $\langle\vttwo\rangle$;
-    \item checking that $\vtone$ \typesatisfies\ $\vttwo$ in $\tenv$ yields $\True$\ProseOrTypeError;
-    \item $\declaredtype$ is $\vtone$.
-  \end{itemize}
-
-  \item \AllApplyCase{annotated}
-  \begin{itemize}
-    \item $\initialvaluetype$ is $\None$ and $\typeannotation$ is $\langle\vttwo\rangle$;
-    \item $\declaredtype$ is $\vttwo$.
-  \end{itemize}
-
-  \item \AllApplyCase{initial}
-  \begin{itemize}
-    \item $\initialvaluetype$ is $\langle\vtone\rangle$ and $\typeannotation$ is $\None$;
-    \item $\declaredtype$ is $\vtone$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[both]{
-  \checktypesat(\tenv, \vtone, \vttwo) \typearrow \True \OrTypeError
-}{
-  \annotateinittype(\tenv, \overname{\langle\vtone\rangle}{\initialvaluetype}, \overname{\langle\vttwo\rangle}{\typeannotation})
-  \typearrow \vttwo
-}
-\and
-\inferrule[annotated]{}{
-  \annotateinittype(\tenv, \overname{\None}{\initialvaluetype}, \overname{\langle\vttwo\rangle}{\typeannotation})
-  \typearrow \vttwo
-}
-\and
-\inferrule[initial]{}{
-  \annotateinittype(\tenv, \overname{\langle\vtone\rangle}{\initialvaluetype}, \overname{\None}{\typeannotation})
-  \typearrow \vtone
-}
-\end{mathpar}
-
-\hypertarget{def-declaredtype}{}
 \TypingRuleDef{DeclaredType}
-The function
+\hypertarget{def-declaredtype}{}
+The helper function
 \[
   \declaredtype(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\id}) \aslto \overname{\ty}{\vt} \cup \TTypeError
 \]
 retrieves the type associated with the identifier $\id$ in the static environment $\tenv$.
-If the identifier is not associated with a declared type, a type error is returned.
+If the identifier is not associated with a declared type, the result is a \typingerrorterm.
+
+\ExampleDef{Retrieving the Type Declared for an Identifier}
+
+In \listingref{DeclaredType}, the expression \verb|(20 * x) as MyInt|
+necessitates retrieving the type \\
+\verb|integer{0..400}|, which is associated with \verb|MyInt|.
+\ASLListing{The type associated with an identifier}{DeclaredType}{\typingtests/TypingRule.DeclaredType.asl}
+
+The specification in \listingref{DeclaredType} is ill-typed,
+since the expression \verb|20 as MyInt| refers to the undeclared type \verb|MyInt|.
+\ASLListing{Referring to an undeclared type}{DeclaredType-bad}{\typingtests/TypingRule.DeclaredType.bad.asl}
 
 \ProseParagraph
 \OneApplies
@@ -518,7 +503,7 @@ If the identifier is not associated with a declared type, a type error is return
   \item \AllApplyCase{type\_not\_declared}
   \begin{itemize}
     \item $\id$ is not bound in the global environment to any type;
-    \item the result is a type error indicating the lack of a type declaration for $\id$ (\UndefinedIdentifier).
+    \item the result is a \typingerrorterm{} indicating the lack of a type declaration for $\id$ (\UndefinedIdentifier).
   \end{itemize}
 \end{itemize}
 
@@ -539,8 +524,8 @@ If the identifier is not associated with a declared type, a type error is return
 }
 \end{mathpar}
 
-\TypingRuleDef{AnnotateEnumLabels}
-\hypertarget{def-annotateenumlabels}{}
+\TypingRuleDef{DeclareEnumLabels}
+\hypertarget{def-declareenumlabels}{}
 The function
 \[
 \declareenumlabels(\overname{\staticenvs}{\tenv} \aslsep
@@ -553,6 +538,26 @@ The function
 updates the static environment $\tenv$ with the identifiers $\ids$ listed by an \enumerationtypeterm{},
 yielding the modified environment $\newtenv$.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Declaring Enumeration Labels}
+
+In \listingref{typing-tenum}, the declaration of the \verb|Color| enumeration type
+updates the static environment with the following constant variables:
+
+\newcommand\ColorType[0]{\texttt{Color}}
+\newcommand\RedLabel[0]{\texttt{RED}}
+\newcommand\GreenLabel[0]{\texttt{GREEN}}
+\newcommand\BlueLabel[0]{\texttt{BLUE}}
+
+\begin{center}
+\begin{tabular}{lll}
+\textbf{identifier} & \textbf{associated type} & \textbf{associated constant value}\\
+\hline
+$\RedLabel$ & $\TNamed(\ColorType)$ & $\llabel(\RedLabel)$\\
+$\GreenLabel$ & $\TNamed(\ColorType)$ & $\llabel(\GreenLabel)$\\
+$\BlueLabel$ & $\TNamed(\ColorType)$ & $\llabel(\BlueLabel)$\\
+\end{tabular}
+\end{center}
 
 \ProseParagraph
 \AllApply
@@ -596,18 +601,37 @@ adds a constant given by the identifier $\name$, type $\tty$, and literal $\vv$ 
 global static environment $\genv$, yielding the modified environment $\newgenv$.
 \ProseOtherwiseTypeError
 
+\ExampleDef{Declaring a Global Constant}
+\newcommand\PI[0]{\texttt{PI}}
+In \listingref{DeclareConst}, declaring the constant \PI{}
+in the empty global static environment yields the following global static environment:
+\[
+\begin{array}{l}
+  \declareconst(G^{\emptytenv}, \PI, \TReal, \lreal(157 / 50)) \typearrow \\
+  G^{\emptytenv}\left[
+    \begin{array}{l}
+    \globalstoragetypes\mapsto\{\PI\mapsto(\TReal, \GDKConstant)\},\\
+    \constantvalues[\PI\mapsto\lreal(157 / 50)]
+    \end{array}
+  \right]
+\end{array}
+\]
+(that is, all maps other than $\globalstoragetypes$ and $\constantvalues$, remain the same.)
+
+\ASLListing{Declaring a global constant}{DeclareConst}{\typingtests/TypingRule.DeclareConst.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
   \item adding the global storage given by the identifier $\name$, global declaration keyword $\GDKConstant$,
-        and type $\tty$ to $\genv$ yields $\genvone$;
+        and type $\tty$ to $\genv$ yields $\genvone$\ProseOrTypeError;
   \item applying $\addglobalconstant$ to $\name$ and $\vv$ in $\genvone$ yields $\newgenv$.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \addglobalstorage(\genv, \name, \GDKConstant, \tty) \typearrow \genvone\\
+  \addglobalstorage(\genv, \name, \GDKConstant, \tty) \typearrow \genvone \OrTypeError\\\\
   \addglobalconstant(\genvone, \name, \vv) \typearrow \newgenv
 }{
   \declareconst(\genv, \name, \tty, \vv) \typearrow \newgenv

@@ -212,6 +212,12 @@ def detect_incorrect_latex_macros_spacing(filename: str) -> int:
     for match in double_backslash_matches:
         print(f"./{filename}: double \\ in macro {match}")
         num_errors += 1
+    for match in re.findall(r"\\overname\{\}\{.+?\}", file_str):
+        print(f"./{filename}: empty \\overname: {match}")
+        num_errors += 1
+    for match in re.findall(r"\\overname\{.+?\}\{\}", file_str):
+        print(f"./{filename}: empty \\overname label: {match}")
+        num_errors += 1
 
     patterns_to_remove = [
         # Patterns for known math environments:
@@ -480,7 +486,6 @@ def check_rules(filename: str) -> int:
     """
     # Treat existing issues as warnings and new issues as errors.
     file_to_num_expected_errors = {
-        "TypeDeclarations.tex" : 8,
         "GlobalStorageDeclarations.tex" : 7,
         "RelationsOnTypes.tex" : 15,
         "Specifications.tex" : 25,
@@ -488,7 +493,6 @@ def check_rules(filename: str) -> int:
         "SubprogramDeclarations.tex" : 13,
         "SymbolicEquivalenceTesting.tex" : 26,
         "SymbolicSubsumptionTesting.tex" : 23,
-        "Types.tex" : 9,
         "SideEffects.tex" : 13,
         "TypeSystemUtilities.tex" : 23,
         "SemanticsUtilities.tex" : 19,
@@ -661,7 +665,7 @@ def main():
     print("Linting files...")
     all_latex_sources = get_latex_sources(False)
     content_latex_sources = get_latex_sources(True)
-    # content_latex_sources = ["GlobalDeclarations.tex"]
+    # content_latex_sources = ["TypeDeclarations.tex"]
     num_errors = 0
     num_spelling_errors = spellcheck(args.dictionary, content_latex_sources)
     if num_spelling_errors > 0:

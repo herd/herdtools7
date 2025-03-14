@@ -6,7 +6,7 @@ and then formalizes the lexical analysis as a function that takes a text and ret
 a list of \emph{tokens} or a lexical error.
 
 \section{ASL Specification Text}
-An ASL specification is a string --- a list of ASCII characters --- consisting of a \emph{content text}
+An ASL specification is a string, that is a list of ASCII characters, consisting of a \emph{content text}
 followed by an \emph{end-of-file}.
 The content text is a list of
 ASCII characters that have the decimal encoding of 32 through 126 (inclusive),
@@ -240,8 +240,10 @@ in the expression \verb|(1, 2).item0|.
 \identi{TSXL}
 
 \RequirementDef{ReservedIdentifiers}
-Identifiers that begin with double-underscore are reserved for use in the implementation and should
-not be used in specifications (see \LexicalRuleRef{ReservedIdentifiers}).
+Identifiers that begin with double-underscore are reserved for use
+by the typechecker and should
+not be used in specifications \\
+(see \LexicalRuleRef{ReservedIdentifiers}).
 
 For example, \listingref{reserved-identifiers} shows an illegal specification that uses the reserved
 identifier \verb|__internal_var| in an attempt to declare a local variable,

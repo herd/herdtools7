@@ -259,7 +259,7 @@ $\Tbnot$, matches the primitive operation $\aslnotbool$, since the operand $\Tru
 
 \identr{TTGQ}
 \RequirementDef{PrimitiveOperationError}
-It is a type error if an expression which invokes a
+It is a \typingerrorterm{} if an expression which invokes a
 primitive operator does not match exactly one primitive operation
 (see \BadOperands).
 % INLINED_EXAMPLE
@@ -392,17 +392,17 @@ $\Tgeq$   & $\lreal$ & $\lreal$ & $\lbool$ & $\gereal$\\
 \hline
 \textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
 \hline
-$\Tplus$        & $\lbitvector$ & $\$lbitvector$ & $\lbitvector$ & $\addbits$\\
-$\Tplus$        & $\lbitvector$ & $\$lint$       & $\lbitvector$ & $\addbitsint$\\
-$\Tminus$       & $\lbitvector$ & $\$lbitvector$ & $\lbitvector$ & $\subbits$\\
-$\Tminus$       & $\lbitvector$ & $\$lint$       & $\lbitvector$ & $\subbitsint$\\
-$\Tnot$         & $\lbitvector$ & -              & $\lbitvector$ & $\notbits$\\
-$\Tand$         & $\lbitvector$ & $\$lbitvector$ & $\lbitvector$ & $\andbits$\\
-$\Tor$          & $\lbitvector$ & $\$lbitvector$ & $\lbitvector$ & $\orbits$\\
-$\Txor$         & $\lbitvector$ & $\$lbitvector$ & $\lbitvector$ & $\xorbits$\\
-$\Teqop$        & $\lbitvector$ & $\$lbitvector$ & $\lbool$      & $\eqbits$\\
-$\Tneq$         & $\lbitvector$ & $\$lbitvector$ & $\lbool$      & $\nebits$\\
-$\Tcoloncolon$  & $\lbitvector$ & $\$lbitvector$ & $\lbitvector$ & $\concatbits$\\
+$\Tplus$        & $\lbitvector$ & $\lbitvector$ & $\lbitvector$ & $\addbits$\\
+$\Tplus$        & $\lbitvector$ & $\lint$       & $\lbitvector$ & $\addbitsint$\\
+$\Tminus$       & $\lbitvector$ & $\lbitvector$ & $\lbitvector$ & $\subbits$\\
+$\Tminus$       & $\lbitvector$ & $\lint$       & $\lbitvector$ & $\subbitsint$\\
+$\Tnot$         & $\lbitvector$ & -             & $\lbitvector$ & $\notbits$\\
+$\Tand$         & $\lbitvector$ & $\lbitvector$ & $\lbitvector$ & $\andbits$\\
+$\Tor$          & $\lbitvector$ & $\lbitvector$ & $\lbitvector$ & $\orbits$\\
+$\Txor$         & $\lbitvector$ & $\lbitvector$ & $\lbitvector$ & $\xorbits$\\
+$\Teqop$        & $\lbitvector$ & $\lbitvector$ & $\lbool$      & $\eqbits$\\
+$\Tneq$         & $\lbitvector$ & $\lbitvector$ & $\lbool$      & $\nebits$\\
+$\Tcoloncolon$  & $\lbitvector$ & $\lbitvector$ & $\lbitvector$ & $\concatbits$\\
 \hline
 \end{tabular}
 \end{table}
@@ -489,7 +489,7 @@ not_bits: NOT '11 01' = 0x2
   \item \AllApplyCase{error}
   \begin{itemize}
     \item $(\op, \astlabel(\vl))$ is not in $\unopsignatures$;
-    \item the result is a type error indicating that the combination of $\op$ and $\astlabel(\vl)$
+    \item the result is a \typingerrorterm{} indicating that the combination of $\op$ and $\astlabel(\vl)$
           is not legal.
   \end{itemize}
 
@@ -565,8 +565,8 @@ The function
 statically evaluates a binary operator $\op$ (a terminal derived from the AST non-terminal for binary operators)
 over a pair of literals $\vlone$ and $\vltwo$
 and returns the resulting literal $\vr$.
-The result is a type error, if it is illegal to apply the operator
-to the given values, or a different kind of type error is detected.
+The result is a \typingerrorterm{}, if it is illegal to apply the operator
+to the given values, or a different kind of \typingerrorterm{} is detected.
 
 \ExampleDef{Boolean Operations}
 \listingref{binary-operations-boolean} shows applications
@@ -756,7 +756,7 @@ and argument types of its operand literals:
   (\IMPL      &,& \lbool &,& \lbool)&,\\
   (\EQOP      &,& \lbool &,& \lbool)&,\\
   (\NEQ       &,& \lbool &,& \lbool)&,\\
-  (\MUL       &,& \lint  &,& \real)&,\\
+  (\MUL       &,& \lint  &,& \lreal)&,\\
   (\MUL       &,& \lreal &,& \lint)&,\\
   (\PLUS      &,& \lreal &,& \lreal)&,\\
   (\MINUS     &,& \lreal &,& \lreal)&,\\
@@ -793,7 +793,7 @@ and argument types of its operand literals:
   \item \AllApplyCase{error}
   \begin{itemize}
     \item $(\op, \astlabel(\vlone), \astlabel(\vltwo))$ is not included in $\binopsignatures$;
-    \item the result is a type error indicating the $\op$ cannot be applied to the arguments
+    \item the result is a \typingerrorterm{} indicating the $\op$ cannot be applied to the arguments
           with the types given by $\astlabel(\vlone)$ and $\astlabel(\vltwo)$.
   \end{itemize}
 
@@ -1016,7 +1016,7 @@ and argument types of its operand literals:
     \item $\vvone$ is a bitvector literal for $a$;
     \item $\vvtwo$ is a bitvector literal for $b$;
     \item the lengths of $a$ and $b$ are different;
-    \item the result is a type error indicating that the bitvectors must be of the same width.
+    \item the result is a \typingerrorterm{} indicating that the bitvectors must be of the same width.
   \end{itemize}
 
   \item \AllApplyCase{bitwise\_empty}
@@ -1577,7 +1577,7 @@ translates into the application of negation to the \nativevalue\ for $1$.
 \ExampleDef{Invalid Unary Operation}
 The following grounded rule shows how the application of negation
 to the literal Boolean for $\True$
-translates the resulting type error into the corresponding dynamic error.
+translates the resulting \typingerrorterm{} into the corresponding dynamic error.
 \begin{mathpar}
 \inferrule{
   \unopliterals(\NEG, \lbool(\True)) \typearrow \TypeErrorVal{\BadOperands}
@@ -1599,7 +1599,7 @@ translates the resulting type error into the corresponding dynamic error.
   \item \AllApplyCase{static\_error}
   \begin{itemize}
     \item $\vv$ is a literal native value, that is, $\nvliteral{l}$;
-    \item statically evaluating $\op$ on $l$ yields a type error;
+    \item statically evaluating $\op$ on $l$ yields a \typingerrorterm{};
     \item the result is a dynamic error.
   \end{itemize}
 
@@ -1662,7 +1662,7 @@ and the \nativevalue\ for $3$.
 \ExampleDef{Invalid Binary Operation}
 The following grounded rule shows how the invalid application of addition
 to the literal integer for $2$ and the literal real for $1/2$
-translates the resulting type error into the corresponding dynamic error.
+translates the resulting \typingerrorterm{} into the corresponding dynamic error.
 \begin{mathpar}
 \inferrule{
   \binopliterals(\PLUS, \lint(2), \lreal(1/2)) \typearrow \TypeErrorVal{\BadOperands}
@@ -1686,7 +1686,7 @@ translates the resulting type error into the corresponding dynamic error.
   \begin{itemize}
     \item $\vvone$ is a literal native value, that is, $\nvliteral{l_1}$;
     \item $\vvtwo$ is a literal native value, that is, $\nvliteral{l_2}$;
-    \item statically evaluating $\op$ on the literals $l_1$ and $l_2$ yields a type error;
+    \item statically evaluating $\op$ on the literals $l_1$ and $l_2$ yields a \typingerrorterm{};
     \item the result is a dynamic error ($\DynamicBadOperands$).
   \end{itemize}
 
