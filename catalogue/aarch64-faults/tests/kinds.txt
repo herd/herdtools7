@@ -4,3 +4,6 @@ LDRredF Required
 noUDF   Forbid
 STRdb0F Required
 UDF     Required
+SVC     Required
+SVCctrl Allowed
+SVCifetch.litmus Forbid
