@@ -1,0 +1,6 @@
+AArch64 UDF
+variant=ASL+AArch64+UDF
+{ }
+P0     ;
+UDF 1  ;
+
