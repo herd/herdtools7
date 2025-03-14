@@ -1391,6 +1391,8 @@ We also define the following helper rules:
     \begin{itemize}
       \item evaluating the subprogram named $\name$ with arguments $\vvargs$ and parameters $\vvparams$ in
             $\denvtwo'$ is $\Throwing(\vv, \envthrow)$\ProseOrError;
+      \item view $\envthrow$ as the environment consisting of the static environment $\tenv$,
+            and the dynamic environment whose global component is $\vglobal$;
       \item applying the helper relation $\readvaluefrom$ to $\vms$ yields $\vmstwo$;
       \item applying $\decrstacksize$ to $\vglobal$ and $\name$ yields $\genvtwo$;
       \item define $\newenv$ as the environment where the static environment is $\tenv$ and the dynamic environment consists
@@ -1413,7 +1415,7 @@ We also define the following helper rules:
   \evalsubprogram{\envtwo', \name, \vvparams, \vvargs} \evalarrow \Normal(\vms, (\vglobal, \Ignore)) \OrDynError\\\\
   \readvaluefrom(\vms) \evalarrow \vmstwo\\
   \decrstacksize(\vglobal, \name) \evalarrow \genvtwo\\
-  \newenv \eqdef (\tenv, (\vglobal, L^{\denvtwo}))
+  \newenv \eqdef (\tenv, (\genvtwo, L^{\denvtwo}))
 }{
   \evalcall{\env, \name, \params, \args} \evalarrow \Normal(\vmstwo, \newenv)
 }
@@ -1428,7 +1430,7 @@ We also define the following helper rules:
   \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
   \commonprefixline\\\\
   \evalsubprogram{\envtwo', \name, \vvparams, \vvargs} \evalarrow \Throwing(\vv, \envthrow) \OrDynError\\\\
-  \envthrow \eqname (\tenv, \denvthrow)\\
+  \envthrow \eqname (\tenv, (\vglobal, \Ignore))\\
   \decrstacksize(\vglobal, \name) \evalarrow \genvtwo\\
   \newenv \eqdef (\tenv, (\genvtwo, L^{\denvtwo}))
 }{
