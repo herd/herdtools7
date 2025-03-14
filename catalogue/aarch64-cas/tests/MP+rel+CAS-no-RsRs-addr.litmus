@@ -1,0 +1,19 @@
+AArch64 MP+rel+CAS-no-RsRs-addr
+
+{
+  z = 2;
+
+  0: X0 = x;    1: X0 = x;
+  0: X2 = y;    1: X2 = y;
+                1: X4 = z;
+}
+
+P0            | P1                     ;
+
+MOV W1, #1    | LDR W9, [X2]           ;
+STR W1, [X0]  | EOR W1, W9, W9         ;
+MOV W3, #1    | CAS W1, W3, [X4]       ;
+STLR W3, [X2] | EOR W1, W5, W5         ;
+              | LDR W7, [X0, W5, SXTW] ;
+
+exists (1:X9=1 /\ 1:X7=0)
