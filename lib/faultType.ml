@@ -65,7 +65,7 @@ module AArch64 = struct
       "Permission", [MMU Permission];
       "TagCheck", [TagCheck];
       "UndefinedInstruction",[UndefinedInstruction];
-      "SupervisorCall", [SupervisorCall];
+      "SVC", [SupervisorCall];
     ]
 
   let pp = function
