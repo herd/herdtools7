@@ -1,0 +1,10 @@
+Test UDF Required
+States 1
+
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation UDF Always 1 0
+Hash=15a3d77018dcebd0a34de1f611ff42c3
+

@@ -757,7 +757,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "types" ^= var (barrier_typ btyp);
                 ] )
       | I_UDF k when C.variant Variant.ASL_AArch64_UDF ->
-          Some ("udf/UDF_only_perm_undef.opn", stmt [ "imm16" ^= litbv 16 k ])
+          Some ("reserved/perm_undef/UDF_only_perm_undef.opn", stmt [ "imm16" ^= litbv 16 k ])
       | i ->
           let () =
             if _dbg then
