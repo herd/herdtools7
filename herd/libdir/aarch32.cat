@@ -15,6 +15,7 @@ let DC.CVAU = emptyset
 let TLBInXS = emptyset
 let TLBIIS = emptyset
 let Q = emptyset
+let SVC = emptyset
 
 let DMB.SY = DMB
 let DSB.SY = DSB
