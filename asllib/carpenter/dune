@@ -4,6 +4,8 @@
   (:standard -w -40-42-44-48))
  (modules :standard \ main)
  (optional)
+ (enabled_if
+  (>= %{ocaml_version} 4.14))
  (libraries herdtools7.asllib qcheck-core zarith re feat fix logs))
 
 (executable
@@ -13,4 +15,6 @@
   (:standard -w -40-42-44-48))
  (modules main)
  (optional)
+ (enabled_if
+  (>= %{ocaml_version} 4.14))
  (libraries cmdliner carpenter_lib logs.cli))
