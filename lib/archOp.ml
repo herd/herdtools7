@@ -32,12 +32,6 @@ module type S = sig
   type instr
   type cst = (scalar, pteval, instr) Constant.t
 
-  (* A type of predicate to represent computation with a result dependent of the
-   satisfaction of a formula, those predicates are added to the constraints of
-   the solver in valconstraint.ml *)
-  type predicate
-  exception Constraint of predicate * cst * cst
-
   (* Specific operations *)
   val do_op : op -> cst -> cst -> cst option
   val do_op1 : op1 -> cst -> cst option
@@ -57,9 +51,15 @@ module type S = sig
   (* Masking some structured constant *)
   val mask : cst -> MachSize.sz -> cst option
 
-  (* Compare constants and raise an `Constraint(pred,c1,c2)` exception if the
-     result depend of the satisfiability of a predicate *)
-  val eq_cst : cst -> cst -> bool
+  (* A type of predicate to represent computation with a result dependent of the
+   satisfaction of a formula, those predicates are added to the constraints of
+   the solver in valconstraint.ml *)
+  type predicate
+  exception Constraint of predicate * cst * cst
+
+  (* Return if two different constants may be equals modulo the satisfiability
+     of a predicate *)
+  val eq_satisfiable : cst -> cst -> predicate option
 end
 
 type no_predicate
@@ -105,7 +105,7 @@ module No (Cst : Constant.S) :
   let andop _ _ = None
   let mask _ _ = None
 
-  let eq_cst = Cst.eq
+  let eq_satisfiable _ _ = None
 end
 
 module type S1 = sig
@@ -126,7 +126,6 @@ module type S1 = sig
   val andnot2 : pteval -> scalar -> pteval option
   val andop : pteval -> scalar -> scalar option
   val mask : cst -> MachSize.sz -> cst option
-  val eq_cst : cst -> cst -> bool
 end
 
 module OnlyArchOp1 (A : S1) :
@@ -148,6 +147,7 @@ module OnlyArchOp1 (A : S1) :
 
   type predicate = no_predicate
   exception Constraint of predicate * cst * cst
+  let eq_satisfiable _ _ = None
 
   let pp_op _ = assert false
   let do_op _ _ _ = None

@@ -85,16 +85,10 @@ module
     type nonrec predicate = predicate
     exception Constraint of predicate * cst * cst
 
-    let eq_cst =
-      Constant.eq S.equal AArch64PteVal.eq (=)
-
-    let eq_cst c1 c2 =
-      let open Constant in
-      let zero = Concrete S.zero
-      and one = Concrete S.one in
-      match collision c1 c2 with
-      | Some (p1,p2) -> raise (Constraint (Eq (p1,p2),one,zero))
-      | None -> eq_cst c1 c2
+    let eq_satisfiable c1 c2 =
+      match Constant.collision c1 c2 with
+      | Some (p1,p2) -> Some (Eq (p1,p2))
+      | None -> None
 
     let pp_cst hexa v =
       let module InstrPP = AArch64Base.MakePP(struct

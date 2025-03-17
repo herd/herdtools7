@@ -100,11 +100,6 @@ module type S =
 
       exception Undetermined
 
-      (* The equality tests may raise an CollisionPAC execption to info the
-         solver that the result depend of the presence of a hash collision
-         between two PAC fields *)
-      exception CollisionPAC of PAC.t * PAC.t * v * v
-
 (* Bit-Twiddling Ops *)
       val bit_at: int -> v -> v
 
@@ -138,8 +133,7 @@ module type S =
       val map_csym : (csym -> v) -> v -> v
 
 (* Functions to interact with a constraint solver *)
-      type solver_state =
-            PAC.solver_state
+      type solver_state
       val add_equality : Cst.v -> Cst.v -> solver_state -> solver_state option
       val add_inequality : Cst.v -> Cst.v -> solver_state -> solver_state option
       val add_predicate : bool -> predicate -> solver_state -> solver_state option
@@ -156,6 +150,7 @@ module type AArch64 =
   and type 'a arch_constr_op1 = 'a AArch64Op.unop
   and type 'a arch_constr_op = 'a AArch64Op.binop
   and type predicate = AArch64Op.predicate
+  and type solver_state = PAC.solver_state
 
 module type AArch64ASL =
   AArch64

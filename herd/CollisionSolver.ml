@@ -56,7 +56,6 @@ module type S = sig
   type cnstrnts = cnstrnt list
   val pp_cnstrnts : cnstrnt list -> string
 
-  (* Pointer Authentication collision solver state *)
   type solver_state
 
   type solution
@@ -465,20 +464,6 @@ and type state = A.state =
       | Some state -> set_state state
       | None -> contradiction
 
-    (* Assert the presence or abscence of a collision *)
-    let collision x y (vtrue:'a) (vfalse:'a) : 'a solver_monad =
-      let* solver = get_solver in
-      match PAC.add_equality x y solver,PAC.add_inequality x y solver with
-      | Some s1,Some s2 ->
-          alternative
-            (let+ _ = set_solver s1 in vtrue)
-            (let+ _ = set_solver s2 in vfalse)
-      | None,Some s2 ->
-          let+ _ = set_solver s2 in vfalse
-      | Some s1,None ->
-          let+ _ = set_solver s1 in vtrue
-      | None,None -> assert false
-
     let solve_predicate (p: V.predicate) (vfalse:'a) (vtrue:'a) : 'a solver_monad =
       let* st = get_state in
       match V.add_predicate true p st.solver, V.add_predicate false p st.solver with
@@ -547,9 +532,6 @@ and type state = A.state =
           | Terop (op, v1, v2, v3) ->
               V.op3 op v1 v2 v3))))
         with
-        | V.CollisionPAC (px, py, vtrue, vfalse) ->
-            let+ value = collision px py vtrue vfalse in
-            Assign (v, Atom value)
         | V.Constraint (pred,vtrue,vfalse) ->
             let+ value = solve_predicate pred vtrue vfalse in
             Assign (v, Atom value)
@@ -607,7 +589,7 @@ and type state = A.state =
       let solutions = solve_iter constraints state in
       List.map (fun (state, constraints) ->
         if debug_solver then
-          Printf.printf "found solver state: \n%s" (PAC.pp_solver state.solver);
+          Printf.printf "found solver state: \n%s" (V.pp_solver_state state.solver);
         let solution = add_vars_solns m state.solution in
         (solution, constraints, state.solver)
       ) solutions
@@ -661,7 +643,7 @@ and type state = A.state =
       let solutions = solve_many constraints state in
       List.map (fun (state, constraints) ->
         if debug_solver then
-          Printf.printf "found solver state: \n%s" (PAC.pp_solver state.solver);
+          Printf.printf "found solver state: \n%s" (V.pp_solver_state state.solver);
         let solution = add_vars_solns m state.solution in
         (solution, constraints, state.solver)
       ) solutions
