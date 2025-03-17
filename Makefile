@@ -397,6 +397,23 @@ cata-aarch64-test-asl: asl-pseudocode
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64 tests (ASL): OK"
 
+test-all:: cata-aarch64-cas-test-asl
+cata-test-asl:: cata-aarch64-cas-test-asl
+cata-aarch64-cas-test-asl: asl-pseudocode
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-variant asl+exp \
+		-variant strict \
+		-herd-timeout $(TIMEOUT) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-cas/tests/kinds.txt \
+		-shelf-path catalogue/aarch64-cas/shelf.py \
+		-conf-path catalogue/aarch64-cas/cfgs/asl.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 catalogue aarch64-cas tests (ASL): OK"
+
 cata-test:: aarch64-test-mixed
 aarch64-test-mixed:
 	@ echo
@@ -516,6 +533,19 @@ vmsa-test:
 		-shelf-path catalogue/aarch64-VMSA/shelf.py \
 		$(REGRESSION_TEST_MODE)
 		@ echo "herd7 catalogue aarch64-VMSA tests: OK"
+
+test-all:: cata-aarch64-cas-test
+cata-aarch64-cas-test:
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-herd-timeout $(TIMEOUT) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-cas/tests/kinds.txt \
+		-shelf-path catalogue/aarch64-cas/shelf.py \
+		$(REGRESSION_TEST_MODE)
+		@ echo "herd7 catalogue aarch64-cas tests: OK"
 
 test-all:: ets2-test
 ets2-test:
