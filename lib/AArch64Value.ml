@@ -30,8 +30,8 @@ end) : Value.AArch64 = struct
     match pred with
     | AArch64Op'.Eq (p1,p2) ->
         begin
-          match add_pred p1 p2 st.solver with
-          | Some solver -> Some {st with solver}
+          match add_pred p1 p2 st with
+          | Some st -> Some st
           | None -> None
         end
 end

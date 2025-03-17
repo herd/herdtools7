@@ -259,7 +259,7 @@ module Make(O:Config)(M:XXXMem.S) =
           (* Fold over all the possible results of hash collisions *)
           List.fold_right (fun (ok, solver) c ->
             let st = A.map_state
-                (A.V.map_const (fun v -> S.M.VC.normalize v solver)) st in
+                (A.V.map_const (fun v -> A.V.normalize v solver)) st in
             let show_exec =
               let open PrettyConf in
               match O.show with
@@ -451,7 +451,7 @@ module Make(O:Config)(M:XXXMem.S) =
         if O.statelessrc11
         then let module SL = Slrc11.Make(struct include MC let skipchecks = O.skipchecks end) in
              SL.check_event_structure test rfms kfail (fun _ c -> c)
-          (model_kont S.M.VC.init_solver ochan test final_state_restrict_locs cstr) start
+          (model_kont A.V.empty_solver ochan test final_state_restrict_locs cstr) start
         else
         try iter_rfms test rfms owls call_model start
         with

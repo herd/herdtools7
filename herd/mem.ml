@@ -839,7 +839,7 @@ let match_reg_events es =
           rfm csn in
       if  C.debug.Debug_herd.solver then
         prerr_endline "++ Solve  registers" ;
-      let solved = VC.solve VC.init_solver csn in
+      let solved = VC.solve A.V.empty_solver csn in
       if List.is_empty solved && C.debug.Debug_herd.solver then
         pp_nosol "register" test es rfm ;
       List.map (fun (sol,csn,solver) ->

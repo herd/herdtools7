@@ -59,18 +59,6 @@ module type S = sig
   (* Pointer Authentication collision solver state *)
   type solver_state
 
-  (* Return the initial state of the solver *)
-  val init_solver : solver_state
-
-  (* Add an equality in the consraints solver state *)
-  val add_equality : cst -> cst -> solver_state -> solver_state option
-
-  (* Add an inequality in the constraints solver state *)
-  val add_inequality : cst -> cst -> solver_state -> solver_state option
-
-  (* Normalize a constant using the current solver state *)
-  val normalize : cst -> solver_state -> cst
-
   type solution
 
   type answer =
@@ -403,42 +391,52 @@ and type state = A.state =
 
     type solution = V.solution
 
-    type solver_state = A.V.solver_state
+    type solver_state = V.solver_state
+
+    type monad_state =
+      { solver: V.solver_state
+      ; solution: cst V.Solution.t }
 
     type answer =
       (solution * cnstrnts * solver_state) list
 
     let init_solver = A.V.empty_solver
 
-    let add_equality = V.add_equality
+    let add_equality x y st =
+      match V.add_equality x y st.solver with
+      | Some solver -> Some {st with solver}
+      | None -> None
 
-    let add_inequality = V.add_inequality
+    let add_inequality x y st =
+      match V.add_inequality x y st.solver with
+      | Some solver -> Some {st with solver}
+      | None -> None
 
-    let normalize cst st = V.normalize cst st
+    let normalize cst st = V.normalize cst st.solver
 
     type 'a solver_monad =
-      solver_state -> (solver_state * 'a) list
+      monad_state -> (monad_state * 'a) list
 
     (* return ths solver state *)
-    let get_state : solver_state solver_monad =
+    let get_state : monad_state solver_monad =
       fun st -> [st,st]
 
     (* Return the current value of the PAC collision solver *)
-    let get_solver : PAC.solver_state solver_monad =
-      fun st -> [st,st.V.solver]
+    let get_solver : V.solver_state solver_monad =
+      fun st -> [st,st.solver]
 
     (* Return the current assignation of variables *)
     let get_solution : cst V.Solution.t solver_monad =
-      fun st -> [st,st.V.solution]
+      fun st -> [st,st.solution]
 
-    let set_state : solver_state -> unit solver_monad =
+    let set_state : monad_state -> unit solver_monad =
       fun st _ -> [st,()]
 
-    let set_solver : PAC.solver_state -> unit solver_monad =
-      fun solver st -> [{st with V.solver},()]
+    let set_solver : V.solver_state -> unit solver_monad =
+      fun solver st -> [{st with solver},()]
 
     let set_solution : cst V.Solution.t -> unit solver_monad =
-      fun solution st -> [{st with V.solution},()]
+      fun solution st -> [{st with solution},()]
 
     let (let*) (x: 'a solver_monad) (f: 'a -> 'b solver_monad) : 'b solver_monad =
       fun st ->
@@ -483,15 +481,15 @@ and type state = A.state =
 
     let solve_predicate (p: V.predicate) (vfalse:'a) (vtrue:'a) : 'a solver_monad =
       let* st = get_state in
-      match V.add_predicate true p st, V.add_predicate false p st with
+      match V.add_predicate true p st.solver, V.add_predicate false p st.solver with
       | Some s1,Some s2 ->
           alternative
-            (let+ _ = set_state s1 in vtrue)
-            (let+ _ = set_state s2 in vfalse)
+            (let+ _ = set_solver s1 in vtrue)
+            (let+ _ = set_solver s2 in vfalse)
       | None,Some s2 ->
-          let+ _ = set_state s2 in vfalse
+          let+ _ = set_solver s2 in vfalse
       | Some s1,None ->
-          let+ _ = set_state s1 in vtrue
+          let+ _ = set_solver s1 in vtrue
       | None,None ->
           assert false
 
@@ -601,16 +599,17 @@ and type state = A.state =
       then pure unsolved
       else solve_iter unsolved
 
-    let solve_std (state: solver_state) (constraints : cnstrnts) : answer =
+    let solve_std (solver: solver_state) (constraints : cnstrnts) : answer =
+      let state = {solver; solution = V.Solution.empty} in
       let m,constraints = normalize_vars constraints in
       if debug_solver then
         Printf.printf "*** Solve ***\n%s\n" (pp_cnstrnts constraints);
-      let solutions : (V.solver_state * cnstrnts) list = solve_iter constraints state in
+      let solutions = solve_iter constraints state in
       List.map (fun (state, constraints) ->
         if debug_solver then
-          Printf.printf "found solver state: \n%s" (PAC.pp_solver state.V.solver);
-        let solution = add_vars_solns m state.V.solution in
-        (solution, constraints, state)
+          Printf.printf "found solver state: \n%s" (PAC.pp_solver state.solver);
+        let solution = add_vars_solns m state.solution in
+        (solution, constraints, state.solver)
       ) solutions
 
 (***********************************)
@@ -650,7 +649,8 @@ and type state = A.state =
       | [] ->
           pure []
 
-    let solve_topo (state: solver_state) (constraints : cnstrnts) : answer =
+    let solve_topo (solver: solver_state) (constraints : cnstrnts) : answer =
+      let state = {solver; solution = V.Solution.empty} in
       let m,constraints = normalize_vars constraints in
       if debug_solver then
         Printf.printf "*** Solve ***\n%s\n" (pp_cnstrnts constraints);
@@ -661,9 +661,9 @@ and type state = A.state =
       let solutions = solve_many constraints state in
       List.map (fun (state, constraints) ->
         if debug_solver then
-          Printf.printf "found solver state: \n%s" (PAC.pp_solver state.V.solver);
-        let solution = add_vars_solns m state.V.solution in
-        (solution, constraints, state)
+          Printf.printf "found solver state: \n%s" (PAC.pp_solver state.solver);
+        let solution = add_vars_solns m state.solution in
+        (solution, constraints, state.solver)
       ) solutions
 
     let get_failed cns =

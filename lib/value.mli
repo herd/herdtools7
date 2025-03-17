@@ -139,8 +139,7 @@ module type S =
 
 (* Functions to interact with a constraint solver *)
       type solver_state =
-            { solver: PAC.solver_state (* Collision solver *)
-            ; solution: Cst.v Solution.t} (* Current variable assignation to constants *)
+            PAC.solver_state
       val add_equality : Cst.v -> Cst.v -> solver_state -> solver_state option
       val add_inequality : Cst.v -> Cst.v -> solver_state -> solver_state option
       val add_predicate : bool -> predicate -> solver_state -> solver_state option

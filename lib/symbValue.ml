@@ -1061,20 +1061,17 @@ module
   let map_scalar f = map_const (Constant.map_scalar f)
 
   type solver_state =
-        { solver: PAC.solver_state (* Collision solver *)
-        ; solution: Cst.v Solution.t} (* Current variable assignation to constants *)
+        PAC.solver_state
 
-  let empty_solver =
-    { solver= PAC.empty_solver
-    ; solution= Solution.empty}
+  let empty_solver = PAC.empty_solver
 
-  let pp_solver_state st = PAC.pp_solver st.solver
+  let pp_solver_state st = PAC.pp_solver st
 
   let add_equality c1 c2 st =
     match Constant.collision c1 c2 with
     | Some (p1, p2) -> begin
-      match PAC.add_equality p1 p2 st.solver with
-      | Some solver -> Some {st with solver}
+      match PAC.add_equality p1 p2 st with
+      | Some st -> Some st
       | None -> None
     end
     | None -> if Cst.eq c1 c2 then Some st else None
@@ -1082,18 +1079,18 @@ module
   let add_inequality c1 c2 st =
     match Constant.collision c1 c2 with
     | Some (p1, p2) -> begin
-      match PAC.add_inequality p1 p2 st.solver with
-      | Some solver -> Some {st with solver}
+      match PAC.add_inequality p1 p2 st with
+      | Some st -> Some st
       | None -> None
     end
     | None -> if Cst.eq c1 c2 then None else Some st
 
-  let add_predicate b pred st = failwith ""
+  let add_predicate _ _ _ = failwith ""
 
-  let normalize cst st = Constant.normalize cst st.solver
+  let normalize cst st = Constant.normalize cst st
 
+  let compare_solver_state s1 s2 =
   (* Comparison is only used to group the final states before pretty printing so
    we only compare the equalities of the internal collision solvers *)
-  let compare_solver_state s1 s2 =
-    PAC.compare_solver_state s1.solver s2.solver
+    PAC.compare_solver_state s1 s2
 end
