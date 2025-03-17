@@ -470,7 +470,7 @@ ASL Typing Tests / annotating types:
   ASL Error: Undefined identifier: 'MyInt'
   [1]
   $ aslref --no-exec TypingRule.DeclareConst.asl
-  $ aslref --no-exec TypingRule.DeclareGlobalStorage.asl
+  $ aslref --no-exec TypingRule.DeclareGlobalStorage.config.asl
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.bad1.asl
   File TypingRule.DeclareGlobalStorage.bad1.asl, line 3, characters 0 to 29:
   ASL Typing error: expected constant-time expression, got x as integer {1..5},
@@ -484,4 +484,12 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.bad3.asl
   File TypingRule.DeclareGlobalStorage.bad3.asl, line 2, characters 37 to 38:
   ASL Error: Cannot parse.
+  [1]
+  $ aslref --no-exec TypingRule.DeclareGlobalStorage.non_config.asl
+  $ aslref --no-exec TypingRule.UpdateGlobalStorage.constant.asl
+  $ aslref --no-exec TypingRule.UpdateGlobalStorage.config.asl
+  $ aslref --no-exec TypingRule.UpdateGlobalStorage.config.bad.asl
+  File TypingRule.UpdateGlobalStorage.config.bad.asl, line 3,
+    characters 0 to 38:
+  ASL Typing error: expected singular type, found MyException.
   [1]
