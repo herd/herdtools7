@@ -44,6 +44,7 @@ module type Config = sig
   val exit_cond : bool
   include DumpParams.Config
   val precision : Fault.Handling.t
+  val tagcheck : Precision.t
   val variant : Variant_litmus.t -> bool
 end
 
@@ -213,7 +214,6 @@ module Make
           if have_timebase then O.f "#define DELTA_TB %s" delta
         end ;
         O.o "/* Includes */" ;
-        Insert.insert_when_exists O.o "intrinsics.h" ;
         if do_dynalloc then O.o "#define DYNALLOC 1" ;
         if do_stats then O.o "#define STATS 1" ;
         if Cfg.is_kvm then begin
@@ -257,6 +257,7 @@ module Make
             end
           end
         end ;
+        Insert.insert_when_exists O.o "intrinsics.h" ;
         O.o "" ;
         O.o "typedef uint32_t count_t;" ;
         O.o "#define PCTR PRIu32" ;
@@ -616,6 +617,23 @@ module Make
               env []
         else fun _ -> []
 
+      let get_tag_init =
+        if Cfg.is_kvm then
+          fun env ->
+            let open Constant in
+            List.fold_right
+              (fun bd k -> match bd with
+              | A.Location_global (G.Tag (s,_)), v ->
+                begin match v with
+                | Tag (t) -> (s, Misc.int_of_tag t)::k
+                | _ ->
+                  Warn.user_error "litmus cannot handle tag initialisation with '%s'"
+                    (A.V.pp_v v)
+                end
+              | _,_ -> k)
+            env []
+        else fun _ -> []
+
       let get_addrs test =
         List.map
           (fun (_,(out,_)) -> fst (A.Out.get_addrs out))
@@ -791,7 +809,8 @@ module Make
         List.iter
           (fun (t,rloc) ->
             if CType.is_ptr t then
-              O.fi "int %s;"
+              O.fi "%s %s;"
+                (CType.dump (CType.pointer_type t))
                 (dump_loc_tag_coded (ConstrGen.loc_of_rloc rloc))
             else match rloc with
             | ConstrGen.Loc (A.Location_global a as loc) ->
@@ -821,7 +840,9 @@ module Make
             A.RLocSet.iter
               (fun rloc ->
                 let t = U.find_rloc_type rloc env in
-                if CType.is_ptr t || CType.is_pte t then
+                if CType.is_tag_ptr t then
+                  O.fi "%s %s;"  (CType.dump (CType.pointer_type t)) (A.dump_rloc_tag rloc)
+                else if CType.is_ptr t || CType.is_pte t then
                   O.fi "%s %s;"  (CType.dump t) (A.dump_rloc_tag rloc))
               rlocs ;
             O.o "} log_ptr_t;" ;
@@ -887,6 +908,7 @@ module Make
           O.o ""
         end ;
         UD.dump_opcode env test ;
+        UD.dump_tag env test;
         O.o "/* Dump of outcome */" ;
         O.o "static void pp_log(FILE *chan,log_t *p) {"  ;
         let fmt = fmt_outcome test env rlocs
@@ -896,6 +918,10 @@ module Make
             | Pointer _ when U.is_rloc_label rloc env ->
                 None,
                 [sprintf "instr_symb_name[p->%s]" (dump_rloc_tag_coded rloc)]
+            | Pointer _  when U.is_rloc_tag_ptr rloc env ->
+                None,
+                [sprintf "pretty_addr[untagged(p->%s)]" (dump_rloc_tag_coded rloc);
+                sprintf "pretty_tag(tag_of(p->%s))" (dump_rloc_tag_coded rloc)]
             | Pointer _ ->
                 None,
                 [sprintf "pretty_addr[p->%s]" (dump_rloc_tag_coded rloc)]
@@ -914,6 +940,9 @@ module Make
                     (fun f -> sprintf "unpack_%s(%s)" f v)
                     A.V.PteVal.fields in
                 Some v,fs
+            | Base "tag_t" ->
+                None,
+                [sprintf "pretty_tag(p->%s)" (A.dump_rloc_tag rloc)]
             | t ->
                 None,
                 [(if CType.is_ins_t t then sprintf "pretty_opcode(p->%s)"
@@ -1017,10 +1046,15 @@ module Make
               let dump_with_instr v =
                 A.GetInstr.dump_instr (T.C.V.pp O.hexa) v
 
-              let dump_value loc v = match v with
-              | Constant.Symbolic _ -> SkelUtil.data_symb_id (T.C.V.pp O.hexa v)
-              | Constant.PteVal p ->
+              let dump_value loc v =
+              let open Constant in
+              match v with
+              | Symbolic (Virtual {name=s; tag=Some(t); cap=0L; offset=0;}) ->
+                  sprintf "tagged(%s,%d)" (SkelUtil.data_symb_id s) (Misc.int_of_tag t)
+              | Symbolic _ -> SkelUtil.data_symb_id (T.C.V.pp O.hexa v)
+              | PteVal p ->
                  A.V.PteVal.dump_pack SkelUtil.data_symb_id p
+              | Tag t -> Misc.int_of_tag t |> string_of_int
               | _ ->
                   begin match loc with
                   | Some loc ->
@@ -1365,7 +1399,9 @@ module Make
               O.o ""
             end ;
           List.iter
-            (fun (a,_) ->
+            (fun (a,t) ->
+              O.oi "litmus_set_pte_attribute(litmus_tr_pte((void *)_mem), attr_TaggedNormal);" ;
+              O.oi "litmus_flush_tlb((void *)_mem);" ;
               O.fi "_vars->%s = _mem;" a ;
               O.fi "_vars->%s = _p = litmus_tr_pte((void *)_mem);" (OutUtils.fmt_pte_tag a) ;
               O.fi "_vars->%s = *_p;" (OutUtils.fmt_phy_tag a) ;
@@ -1373,6 +1409,7 @@ module Make
                 O.oi "_p = litmus_tr_pte((void *)_p);";
                 O.oi "unset_el0(_p);"
               end ;
+              O.fi "set_tag_range(_vars->%s, sizeof(%s), %d);" a  (SkelUtil.dump_global_type a t) (Misc.int_of_tag "green") ;
               O.oi "_mem += _sz ;")
             test.T.globals ;
           if has_user then O.oi "flush_tlb_all();"
@@ -1528,7 +1565,7 @@ module Make
         List.combine rems (responsible vss)
 
       let dump_run_thread procs_user faults
-          pte_init env test _some_ptr stats global_env
+          pte_init tag_init env test _some_ptr stats global_env
           (_vars,inits) (proc,(out,(_outregs,envVolatile)))  =
         let user_mode = List.exists (Proc.equal proc) procs_user in
         if dbg then eprintf "P%i: inits={%s}\n" proc (String.concat "," inits) ;
@@ -1606,6 +1643,16 @@ module Make
               O.fii "else if (_p->%s == cflush) cache_flush((void *)%s);"
                 (pctag (proc,addr)) addr)
             addrs
+        end ;
+        begin match tag_init with
+        | [] -> ()
+        | tags ->
+          O.oii "barrier_wait(_b);" ;
+          List.iter
+            (fun (loc,tag) ->
+              let t = find_addr_type loc env in
+              O.fii "set_tag_range(%s, sizeof(%s), %d);" loc (SkelUtil.dump_global_type loc t) tag
+            ) tags
         end ;
         let mem_map =
           let open BellInfo in
@@ -1705,6 +1752,25 @@ module Make
             (fun a -> O.fii "litmus_flush_tlb((void *)%s);" a)
             inits
         end ;
+(* Save/Restore memtags *)
+        O.oii "barrier_wait(_b);" ;
+        if proc = 0 then begin
+          A.RLocSet.iter
+            (fun rloc ->
+              if U.is_rloc_tag rloc env then
+                let as_addr = function
+                | A.Location_global (G.Tag (s,_)) -> A.Location_global (G.Addr s)
+                | _ -> assert false in
+              O.fii "%s = tag_of(get_tag(%s));"
+              (OutUtils.fmt_presi_index (A.dump_rloc_tag rloc))
+              (A.dump_loc_tag (as_addr (ConstrGen.loc_of_rloc rloc))))
+          (U.get_displayed_locs test) ;
+          (* Reset tags, so globals can access *)
+          List.iter
+            (fun (a,t) ->
+              O.fii "set_tag_range(%s, sizeof(%s), %d);" a  (SkelUtil.dump_global_type a t) (Misc.int_of_tag "green");)
+            test.T.globals ;
+        end;
 (* Collect shared locations final values, if appropriate *)
         let globs = U.get_displayed_globals test in
         if not (G.DisplayedSet.is_empty globs) then begin
@@ -1736,7 +1802,7 @@ module Make
                       match loc with
                       | Deref (v,i) ->
                          sprintf "%s[%d]" (A.dump_loc_tag v) i
-                      | _ -> "*"^tag in
+                      | _ -> "*untagged("^tag^")" in
 
                   O.fii "%s = %s;" lhs rhs)
             to_collect
@@ -1751,13 +1817,17 @@ module Make
                  O.fii "%s = get_instr_symb_id(&_vars->labels, %s);"
                    (OutUtils.fmt_presi_index (dump_rloc_tag_coded rloc))
                    (OutUtils.fmt_presi_ptr_index (A.dump_rloc_tag rloc))
+               else if U.is_rloc_tag_ptr rloc env then
+                 let src = OutUtils.fmt_presi_ptr_index (A.dump_rloc_tag rloc) in
+                 O.fii "%s = tagged(idx_addr((intmax_t *)untagged(%s),_vars),tag_of(%s));"
+                  (OutUtils.fmt_presi_index (dump_rloc_tag_coded rloc)) src src
                else if U.is_rloc_ptr rloc env then
                  O.fii "%s = idx_addr((intmax_t *)%s,_vars);"
                   (OutUtils.fmt_presi_index (dump_rloc_tag_coded rloc))
                   (OutUtils.fmt_presi_ptr_index (A.dump_rloc_tag rloc))
-              else if U.is_rloc_pte rloc env then
-                let src = OutUtils.fmt_presi_ptr_index (A.dump_rloc_tag rloc) in
-                O.fii "%s = pack_pte(idx_physical(%s,_vars),%s);"
+               else if U.is_rloc_pte rloc env then
+                 let src = OutUtils.fmt_presi_ptr_index (A.dump_rloc_tag rloc) in
+                 O.fii "%s = pack_pte(idx_physical(%s,_vars),%s);"
                   (OutUtils.fmt_presi_index (A.dump_rloc_tag rloc)) src src)
             (U.get_displayed_locs test) ;
           (* condition *)
@@ -1866,10 +1936,11 @@ module Make
    { global; aligned; volatile=[]; } in
  *)
         let global_env = U.select_global env
-        and pte_init = get_pte_init test.T.init in
+        and pte_init = get_pte_init test.T.init
+        and tag_init = get_tag_init test.T.init in
         List.iter2
           (dump_run_thread
-             procs_user faults pte_init env test some_ptr stats global_env)
+             procs_user faults pte_init tag_init env test some_ptr stats global_env)
           (part_vars test)
           test.T.code ;
         O.oi "}" ;
@@ -2068,7 +2139,13 @@ module Make
               (* Set vector table once for all, as it does not depend on role *)
               O.oi "extern ins_t vector_table;" ;
               O.oi "exceptions_init_test(&vector_table);"
-            end
+            end ;
+            let pp_tag_check = function
+            | Precision.Synchronous -> "tag_check_Sync"
+            | Precision.Asynchronous -> "tag_check_Async"
+            | Precision.Asymmetric -> "tag_check_Asymm"
+            in
+            O.fi "mte_init(%s);" (pp_tag_check Cfg.tagcheck);
           end
         end ;
         if do_affinity then begin
