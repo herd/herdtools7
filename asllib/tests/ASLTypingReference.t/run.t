@@ -493,3 +493,34 @@ ASL Typing Tests / annotating types:
     characters 0 to 38:
   ASL Typing error: expected singular type, found MyException.
   [1]
+  $ aslref --no-exec TypingRule.DefDecl.asl
+  $ aslref --no-exec TypingRule.UseDecl.asl
+  $ aslref --no-exec TypingRule.DefEnumLabels.asl
+  $ aslref --no-exec TypingRule.UseTy.asl
+  $ aslref --no-exec TypingRule.UseExpr.asl
+  $ aslref --no-exec TypingRule.UseLexpr.asl
+  $ aslref --no-exec TypingRule.UsePattern.asl
+  $ aslref --no-exec TypingRule.UseSlice.asl
+  $ aslref --no-exec TypingRule.UseBitfield.asl
+  $ aslref --no-exec TypingRule.UseConstraint.asl
+  $ aslref --no-exec TypingRule.UseStmt.asl
+  $ aslref --no-exec TypingRule.DeclDependencies.asl
+  $ aslref --no-exec TypingRule.CheckGlobalPragma.asl
+  File TypingRule.CheckGlobalPragma.asl, line 2, characters 0 to 32:
+  ASL Warning: pragma good_pragma will be ignored.
+  $ aslref --no-exec TypingRule.CheckGlobalPragma.bad.asl
+  File TypingRule.CheckGlobalPragma.bad.asl, line 2, characters 0 to 33:
+  ASL Warning: pragma bad_pragma will be ignored.
+  File TypingRule.CheckGlobalPragma.bad.asl, line 2, characters 22 to 28:
+  ASL Typing error: Illegal application of operator == on types integer {2}
+    and real.
+  [1]
+  $ aslref --no-exec TypingRule.AddSubprogramDecls.asl
+  $ aslref --no-exec TypingRule.TypeCheckAST.asl
+  File TypingRule.TypeCheckAST.asl, line 8, characters 0 to 15:
+  ASL Warning: pragma pragma1 will be ignored.
+  $ aslref --no-exec TypingRule.TypeCheckMutuallyRec.bad.asl
+  File TypingRule.TypeCheckMutuallyRec.bad.asl, line 1, characters 0 to 15:
+  ASL Typing error: multiple recursive declarations: "foo", "g".
+  [1]
+  $ aslref --no-exec TypingRule.DeclareSubprograms.asl

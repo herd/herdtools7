@@ -1520,7 +1520,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | Throwing (v_opt, _genv) ->
         let msg =
           match v_opt with
-          | None -> "implicitely thrown out of a try-catch."
+          | None -> "implicitly thrown out of a try-catch."
           | Some ((v, _, _scope), ty) ->
               Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v)
         in
