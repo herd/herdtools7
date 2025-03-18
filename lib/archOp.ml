@@ -52,13 +52,13 @@ module type S = sig
   val mask : cst -> MachSize.sz -> cst option
 
   (* A type of predicate to represent computation with a result dependent of the
-   satisfaction of a formula, those predicates are added to the constraints of
-   the solver in valconstraint.ml *)
+   * satisfaction of a formula, those predicates are added to the constraints of
+   * the solver in valconstraint.ml *)
   type predicate
   exception Constraint of predicate * cst * cst
 
-  (* Return if two different constants may be equals modulo the satisfiability
-     of a predicate *)
+  (* Return if two syntactically different constants may be equal modulo the
+   * satisfaction of a predicate *)
   val eq_satisfiable : cst -> cst -> predicate option
 end
 
