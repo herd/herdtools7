@@ -323,7 +323,6 @@ module Make (C:Config) (A : Arch_herd.S) :
           type 'a monad = A.V.solver_state -> ('a * A.V.solver_state) list
           let (let*) x f = fun st ->
             List.concat (List.map (fun (a,s) -> f a s) (x st))
-          let (let+) x f = fun st -> List.map (fun (a,s) -> (f a,s)) (x st)
           let pure : 'a -> 'a monad = fun x st -> [x,st]
           let contradiction : 'a monad = fun _ -> []
           let test_cond c = if c then pure () else contradiction
@@ -419,7 +418,7 @@ module Make (C:Config) (A : Arch_herd.S) :
             let y = V.map_const (fun c -> V.normalize c solver) y in
             match x,y with
             | V.Val a, V.Val b when Option.is_some (Constant.collision a b) ->
-                Formula.mk_atom (Eq (x,y))
+                Formula.mk_atom (Var.Eq (x,y))
             | _, _ ->
                 Formula.of_bool (V.equal x y)
 
