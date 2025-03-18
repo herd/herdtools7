@@ -1062,9 +1062,11 @@ module
 
   let pp_solver_state _ = ""
 
-  let add_equality _ _ _ = Some ()
+  let add_equality x y _ =
+    if Cst.eq x y then Some () else None
 
-  let add_inequality _ _ _ = Some ()
+  let add_inequality x y _ =
+    if Cst.eq x y then None else Some ()
 
   let add_predicate _ _ _ = Some ()
 
