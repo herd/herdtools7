@@ -132,7 +132,20 @@ module type S =
       val map_scalar : (Cst.Scalar.t -> Cst.Scalar.t) -> v -> v
       val map_csym : (csym -> v) -> v -> v
 
-(* Functions to interact with a constraint solver *)
+(* Functions to interact with a constraint solver, this constraint solver must
+ * support at least the computation of equalities/inequalities (modulo the
+ * theory represented by the solver), plus the resolution of a set of predicates
+ * given by the architecture. As example for AArch64, the solver must sopport
+ * the equalities/disequalities of Pointer Authentication Codes (hash
+ * collisions).
+ *
+ * Each of the `add_*` functions return the new solver state if the new
+ * constraint is satisfiable in the current environment.
+ *
+ * In addition the compare function may only compare the part of the solver
+ * state we print in `pp_solver_state`, as example the PAC solver of `AArch64`
+ * only show it's equalities.
+ *)
       type solver_state
       val add_equality : Cst.v -> Cst.v -> solver_state -> solver_state option
       val add_inequality : Cst.v -> Cst.v -> solver_state -> solver_state option
