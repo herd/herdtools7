@@ -74,8 +74,12 @@ module type S = sig
 
 (* Reg events, proc not specified *)
   val is_reg_store_any : action -> bool
+  val is_non_sp_sysreg_store_any : action -> bool
   val is_reg_load_any : action -> bool
+  val is_non_sp_sysreg_load_any : action -> bool
   val is_reg_any : action -> bool
+  val is_sysreg_any : action -> bool
+  val is_spsysreg_any : action -> bool
 
 (* Store/Load to memory or register *)
   val is_store : action -> bool
