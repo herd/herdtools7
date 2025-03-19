@@ -801,7 +801,7 @@ The helper function
 checks whether the type $\vt$ is the result of a precision loss in its
 constraint computation (see for example \TypingRuleRef{ApplyBinopTypes}).
 
-\ExampleDef{Rejected Declaration because of Precision Loss}
+\ExampleDef{Rejected Declaration Because of Precision Loss}
 In \listingref{typing-imprecisetype}, the statement \verb|var b = a * a;|
 corresponds to the \typingerrorterm{} raised in the \CaseName{Well-Constrained}
 below.
@@ -835,17 +835,21 @@ constant types would result in more than $2^17$ elements, see
   \inferrule[Well-Constrained]{%
     \checktrans{p = \PrecisionFull}{PrecisionLostDefining}
   }{%
-    \checknoprecisionloss{\overname{\TInt(\wellconstrained(_, p))}{\vt}} \typearrow \True
+    \checknoprecisionloss{\overname{\TInt(\wellconstrained(\Ignore, p))}{\vt}} \typearrow \True
   }
-  \and
+\end{mathpar}
+
+\begin{mathpar}
   \inferrule[Integer]{%
-    \astlabel{\vc} \neq \wellconstrained
+    \astlabel(\vc) \neq \wellconstrained
   }{%
     \checknoprecisionloss{\overname{\TInt(\vc)}{\vt}} \typearrow \True
   }
-  \and
+\end{mathpar}
+
+\begin{mathpar}
   \inferrule[Other]{%
-    \astlabel{\vt} \neq \TInt
+    \astlabel(\vt) \neq \TInt
   }{%
     \checknoprecisionloss{\vt} \typearrow \True
   }
@@ -1317,7 +1321,12 @@ can only be used for procedures, not functions.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalcall{\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs} \evalarrow \Normal(\newg, \newenv) \OrAbnormal
+{
+\begin{array}{r}
+  \evalcall{\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs} \evalarrow \\
+  \Normal(\newg, \newenv) \OrAbnormal
+\end{array}
+}
 }{
   \evalstmt{\env, \overname{\SCall(\vcall)}{\vs}} \evalarrow \Continuing(\newg, \newenv)
 }

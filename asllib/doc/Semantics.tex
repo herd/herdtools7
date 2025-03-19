@@ -578,7 +578,9 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
 
 \subsection{Evaluation Order\label{sec:EvaluationOrder}}
 ASL specifies an evaluation order to ensure predictability of side-effects and exceptions.
-In particular, semantic rules use short-circuiting rule macros to impose an ordering on premises and their associated side-effects, errors, and exceptions.
+In particular, semantic rules use short-circuiting rule macros to
+impose an ordering on premises and their associated side-effects, errors, and exceptions.
+Further, the threading through of environments similarly impose an ordering.
 
 For example, \SemanticsRuleRef{ECond} is duplicated below:
 \begin{mathpar}
@@ -593,7 +595,11 @@ For example, \SemanticsRuleRef{ECond} is duplicated below:
   \Normal((\vv, \vg), \newenv)
 }
 \end{mathpar}
-The use of $\OrAbnormal$ rule macros here define an evaluation order: $\econd$ must be evaluated first, then exactly one of $\veone$ or $\vetwo$.
+The use of $\OrAbnormal$ rule macros here define an evaluation order:
+$\econd$ must be evaluated first, then exactly one of $\veone$ or $\vetwo$.
+This order is also reflected by the fact that evaluation of the conditional
+expression produces the environment $\envone$, which is then used to evaluate
+the chosen expression $\vep$.
 
 For most ASL constructs, there is only one evaluation order that makes sense for the intended purpose of the construct.
 In the example above, it is not feasible to evaluate $\veone$ before evaluating $\econd$.

@@ -300,6 +300,7 @@ choices
 choose
 chooses
 choosing
+chosen
 circular
 clash
 clashes
@@ -781,6 +782,7 @@ flavors
 floating
 flow
 flows
+focused
 fold
 follow
 followed
@@ -1695,6 +1697,7 @@ signifying
 signs
 similar
 similarity
+similarly
 simple
 simpler
 simplification
@@ -1885,6 +1888,7 @@ this
 those
 though
 thread
+threading
 three
 through
 throughout

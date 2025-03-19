@@ -22,7 +22,10 @@ begin
     catenate_into_g{4, 3}(x, y, TRUE);
     assert g == '1101 111';
 
-    // The following statement in comment is illegal as 'zero' is not a procedure.
+    - = zero();
+    // The following statement in comment is illegal as 'zero'
+    // a function, not a procedure, and its returned value
+    // must be consumed.
     // zero();
     return 0;
 end;

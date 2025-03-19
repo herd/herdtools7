@@ -274,10 +274,10 @@ whereas \\
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexprsef{\env, \veone} \evalarrow \Normal(\vvone, \newg) \OrDynError\\\\
-  \binoprel(\EQOP, \vvone, \vvone) \evalarrow \vb
+  \evalexprsef{\env, \ve} \evalarrow \Normal(\vvone, \newg) \OrDynError\\\\
+  \binoprel(\EQOP, \vv, \vvone) \evalarrow \vb
 }{
-  \evalpattern{\env, \vv, \PatternSingle(\ve)} \evalarrow \Normal(\vb, \newg)
+  \evalpattern{\env, \vv, \overname{\PatternSingle(\ve)}{\vp}} \evalarrow \Normal(\vb, \newg)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPSingleBegin}{\EvalPSingleEnd}{../Interpreter.ml}
@@ -730,7 +730,7 @@ The tuple patterns in \listingref{typing-ptuple-bad} are ill-typed.
   \vtstruct \eqname \TTuple(\vts)\\
   \checktrans{\equallength(\vli, \vts)}{\UnexpectedType} \checktransarrow \True \OrTypeError\\\\
   i\in\listrange(\vli): \annotatepattern(\tenv, \vts[i], \vli[i]) \typearrow (\vlip[i], \vxs_i) \OrTypeError\\\\
-  \newli \eqdef \vi\in\listrange(\vli): \vlip[\vi]\\
+  \newli \eqdef i\in\listrange(\vli): \vlip[i]\\
   \vses \eqdef \bigcup_{i\in\listrange(\vli)} \vxs_i
 }{
   \annotatepattern(\tenv, \vt, \overname{\PatternTuple(\vli)}{\vp}) \typearrow (\overname{\PatternTuple(\newli)}{\newp}, \vses)

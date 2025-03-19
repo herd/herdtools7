@@ -3873,14 +3873,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     new_tenv.global
   (* End *)
 
-  (* Begin TryAddGlobalConstant *)
-  let try_add_global_constant name env e =
-    try
-      let v = StaticInterpreter.static_eval env e in
-      { env with global = add_global_constant name v env.global }
-    with Error.(ASLException { desc = UnsupportedExpr _; _ }) -> env
-  (* End *)
-
   (* Begin DeclareGlobalStorage *)
   let declare_global_storage ~loc gsd genv =
     let () = if false then Format.eprintf "Declaring %s@." gsd.name in
@@ -3941,7 +3933,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* UpdateGlobalStorage( *)
     let env2 =
       match keyword with
-      | GDK_Constant -> try_add_global_constant name env1 initial_value'
+      | GDK_Constant ->
+          let v = StaticInterpreter.static_eval env1 initial_value' in
+          { env1 with global = add_global_constant name v env1.global }
       | GDK_Let when should_remember_immutable_expression ses_initial_value -> (
           match StaticModel.normalize_opt env1 initial_value' with
           | Some e' -> add_global_immutable_expr name e' env1

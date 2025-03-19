@@ -227,6 +227,33 @@ annotates the global storage declaration $\gsd$ in the global static environment
 yielding a modified global static environment $\newgenv$ and annotated global storage declaration $\newgsd$.
 \ProseOtherwiseTypeError
 
+\ExampleDef{Declaring Global Storage}
+\listingref{DeclareGlobalStorage-config} shows examples of well-typed global storage declarations
+and ill-typed global storage declarations in comments,
+focused on \verb|config| storage elements.
+\ASLListing{Config storage elements}{DeclareGlobalStorage-config}{\typingtests/TypingRule.DeclareGlobalStorage.config.asl}
+
+\listingref{DeclareGlobalStorage-non-config} shows examples of well-typed global storage declarations,
+and ill-typed global storage declarations in comments,
+focused on storage elements that are not \verb|config|.
+\ASLListing{Well-typed non-config storage elements}{DeclareGlobalStorage-non-config}{\typingtests/TypingRule.DeclareGlobalStorage.non_config.asl}
+
+The specification in \listingref{DeclareGlobalStorage-bad3} is illegal since
+\texttt{config} storage elements must have an initializing expression.
+\ASLListing{Uninitialized config declaration}{DeclareGlobalStorage-bad3}{\typingtests/TypingRule.DeclareGlobalStorage.bad3.asl}
+
+The specifications in \listingref{DeclareGlobalStorage-bad1} and \listingref{DeclareGlobalStorage-bad2}
+are ill-typed since
+\texttt{config} storage elements have the $\timeframeconstant$ \timeframeterm,
+which requires that all expressions used in its type annotation and initializing expression
+also have the $\timeframeconstant$ \timeframeterm,
+whereas \verb|b| has the $\timeframeexecution$ \timeframeterm.
+\ASLListing{Ill-typed config declaration}{DeclareGlobalStorage-bad1}{\typingtests/TypingRule.DeclareGlobalStorage.bad1.asl}
+\ASLListing{Ill-typed config declaration}{DeclareGlobalStorage-bad2}{\typingtests/TypingRule.DeclareGlobalStorage.bad2.asl}
+
+See \ExampleRef{Rejected Declaration Because of Precision Loss} for an example
+of an ill-typed global storage declaration due to precision loss.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -236,7 +263,7 @@ yielding a modified global static environment $\newgenv$ and annotated global st
   \item applying $\withemptylocal$ to $\genv$ yields $\tenv$;
   \item define $\vtargettimeframe$ as $\timeframeconstant$ if $\keyword$ is $\GDKConstant$ or $\GDKConfig$, and $\timeframeexecution$ otherwise;
   \item applying $\annotatetyoptinitialvalue$ to $\keyword$, $\vtargettimeframe$, $\tyoptp$, \\
-        and $\initialvalue$ in $\tenv$ yields
+        and $\initialvalue$ in $\tenv$ yields\\
         $(\typedinitialvalue, \tyoptp, \declaredt)$\ProseOrTypeError;
   \item adding a global storage element with name $\name$, global declaration keyword \\ $\keyword$ and type $\declaredt$
         to $\tenv$ via $\addglobalstorage$ yields $\tenvone$\ProseOrTypeError;
@@ -248,6 +275,7 @@ yielding a modified global static environment $\newgenv$ and annotated global st
         ($\GDinitialvalue$) set to $\initialvaluep$;
   \item define $\newgenv$ as the global component of $\tenvtwo$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
@@ -326,6 +354,8 @@ It determines $\typedinitialvalue$, which consists
 of an expression, a type, and a \sideeffectsetterm,
 the annotation of the type in $\tyoptp$ (in case there is a type), and the type
 that should be associated with the storage element $\declaredt$.
+
+See \ExampleRef{Declaring Global Storage}.
 
 \ProseParagraph
 \OneApplies
@@ -492,6 +522,20 @@ The result is the updated static environment $\newtenv$.
 This helper function is applied following $\addglobalstorage(\tenv, \name, \gdk, \vt)$ where $\vt$
 is the type associated with $\name$.
 
+\ExampleDef{Updating the Global Storage for a Constant}
+The specification in \listingref{UpdateGlobalStorage-constant}
+binds $\vy$ to $\lint(5040)$ in the $\constantvalues$ map of the global static environment.
+\ASLListing{Updating the global storage for a constant}{UpdateGlobalStorage-constant}{\typingtests/TypingRule.UpdateGlobalStorage.constant.asl}
+
+\ExampleDef{Updating the Global Storage for Configuration Storage Elements}
+The specification in \listingref{UpdateGlobalStorage-config}
+shows well-typed global storage \texttt{config} elements.
+\ASLListing{Updating the global storage for config storage elements}{UpdateGlobalStorage-config}{\typingtests/TypingRule.UpdateGlobalStorage.config.asl}
+
+The specification in \listingref{UpdateGlobalStorage-config-bad}
+is ill-typed, since only a \Prosesingulartype{} can be used for \texttt{config} storage elements.
+\ASLListing{An ill-typed global storage config storage element}{UpdateGlobalStorage-config-bad}{\typingtests/TypingRule.UpdateGlobalStorage.config.bad.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -499,7 +543,10 @@ is the type associated with $\name$.
   \begin{itemize}
     \item $\gdk$ is $\GDKConstant$;
     \item view $\typedinitialvalue$ as $(\Ignore, \initialvaluep, \vsesinitialvalue)$;
-    \item applying $\tryaddglobalconstant$ to $\name$ and $\initialvaluep$ in $\tenv$ yields $\newtenv$.
+    \item \Prosestaticeval{$\tenv$}{$\initialvaluep$}{$\vv$};
+    \item applying $\addglobalconstant$ to $G^\tenv$, $\name$ and $\vv$ yields $G'$;
+    \item \Proseeqdef{$\newtenv$}{the static environment whose global component is $G'$ and local component is
+    the local component of $\tenv$}.
   \end{itemize}
 
   \item \AllApplyCase{let\_normalizable}
@@ -535,7 +582,9 @@ is the type associated with $\name$.
 \begin{mathpar}
 \inferrule[constant]{
   \typedinitialvalue \eqname (\Ignore, \initialvaluep, \vsesinitialvalue)\\
-  \tryaddglobalconstant(\tenv, \name, \initialvaluep) \typearrow \newtenv
+  \staticeval(\tenv, \initialvaluep) \typearrow \vv\\
+  \addglobalconstant(G^\tenv, \name, \vv) \typearrow G'\\
+  \newtenv \eqdef (G', L^\tenv)
 }{
   {
     \begin{array}{r}
@@ -618,54 +667,6 @@ is the type associated with $\name$.
 }
 \end{mathpar}
 
-\TypingRuleDef{TryAddGlobalConstant}
-\hypertarget{def-tryaddglobalconstant}{}
-The helper function
-\[
-\tryaddglobalconstant(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\identifier}{\name} \aslsep
-  \overname{\expr}{\ve}
-  )
-  \typearrow \overname{\staticenvs}{\newtenv}
-\]
-attempts to update $\tenv$ by binding $\name$ to a literal value when $\ve$ can be statically
-evaluated to one. The resulting static environment is $\newtenv$.
-
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{okay}
-  \begin{itemize}
-    \item \Prosestaticeval{$\tenv$}{$\ve$}{the literal $\vv$};
-    \item applying $\addglobalconstant$ to $\ve$ and $\vv$ in $\tenv$ yields $\newtenv$;
-  \end{itemize}
-
-  \item \AllApplyCase{error}
-  \begin{itemize}
-    \item \Prosestaticeval{$\tenv$}{$\ve$}{a \typingerrorterm{}};
-    \item \Proseeqdef{$\newtenv$}{$\tenv$};
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[okay]{
-  \staticeval(\tenv, \ve) \typearrow \vv\\
-  \addglobalconstant(\tenv, \ve, \vv) \typearrow \newtenv
-}{
-  \tryaddglobalconstant(\tenv, \name, \ve) \typearrow \newtenv
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[error]{
-  \staticeval(\tenv, \ve) \typearrow \TypeErrorConfig
-}{
-  \tryaddglobalconstant(\tenv, \name, \ve) \typearrow \overname{\tenv}{\newtenv}
-}
-\end{mathpar}
-
 \TypingRuleDef{AddGlobalStorage}
 \hypertarget{def-addglobalstorage}{}
 The function
@@ -683,6 +684,18 @@ returns a global static environment $\newgenv$ which is identical to the global 
 except that the identifier $\name$, which is assumed to name a global storage element,
 is bound to the global storage keyword $\keyword$ and type $\declaredt$.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Adding Global Storage Elements to the Static Environment}
+Adding the global storage elements in \listingref{EvalGlobals},
+adds the following bindings to the $\globalstoragetypes$ map of a given
+static environments:
+\[
+\begin{array}{rcl}
+  \PI &\mapsto& (\TReal, \GDKConstant)\\
+  \vx &\mapsto& (\unconstrainedinteger, \GDKVar)\\
+  \vc &\mapsto& (\TInt(\wellconstrained(\AbbrevConstraintExact{\lint(42)})), \GDKConfig)
+\end{array}
+\]
 
 \ProseParagraph
 \AllApply
@@ -721,6 +734,14 @@ The relation
 \]
 updates the input environment and execution graph by initializing the global storage declarations.
 
+\ExampleDef{Evaluating a List of Global Declarations}
+Evaluating the global storage declarations in \listingref{EvalGlobals}
+results in updating the $\storage$ map of global dynamic environment by binding
+\verb|PI| is bound to $\nvreal(157/50)$,
+\verb|x| is bound to $\nvint(5)$, and \verb|c| is bound to $\nvint(42)$.
+
+\ASLListing{Evaluating a list of global declarations}{EvalGlobals}{\semanticstests/SemanticsRule.EvalGlobals.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -734,12 +755,12 @@ updates the input environment and execution graph by initializing the global sto
   \begin{itemize}
     \item $\vdecls$ has $\vd$ as its head and $\vdecls'$ as its tail;
     \item $d$ is the AST node for declaring a global storage element with initial value $\ve$,
-    name $\name$, and type $\vt$;
+          name $\name$, and type $\vt$;
     \item $\envm$ is the environment-execution graph pair $(\env, \vgone)$;
     \item the evaluation of the expression $\ve$ in $\env$ yields $\Normal((\vv, \vgtwo), \envtwo)$\ProseOrAbnormal;
     \item declaring the global $\name$ with value $\vv$ in $\envtwo$ gives $\envthree$;
     \item evaluating the remaining global declarations $\vdecls'$ with the environment $\envthree$ and the execution graph
-    that is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ label gives $C$;
+          that is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ label gives $C$;
     \item the result of the entire evaluation is $C$.
   \end{itemize}
 \end{itemize}
@@ -747,13 +768,13 @@ updates the input environment and execution graph by initializing the global sto
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
-  \evalglobals(\overname{\emptylist}{\vdecls}, \envm) \evalarrow \envm
+  \evalglobals(\overname{\emptylist}{\vdecls}, \envm) \evalarrow \overname{\envm}{C}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \vd \eqname \DGlobalStorage(\{ \text{initial\_value}=\langle\ve\rangle, \text{name}:\name, \ldots \})\\
+  \vd \eqname \DGlobalStorage(\{ \GDinitialvalue:\langle\ve\rangle, \GDname:\name, \ldots \})\\
   \envm \eqname (\env, \vgone)\\
   \evalexpr{ \env, \ve} \evalarrow \Normal((\vv,\vgtwo), \envtwo) \OrAbnormal\\\\
   \declareglobal(\name, \vv, \envtwo) \evalarrow \envthree\\
@@ -772,6 +793,11 @@ The relation
   \declareglobal(\overname{\Identifiers}{\name} \aslsep \overname{\vals}{\vv} \aslsep \overname{\envs}{\env}) \;\aslrel\; \overname{\envs}{\newenv}
 \]
 updates the environment $\env$ by mapping $\name$ to $\vv$ in the $\storage$ map of the global dynamic environment $G^\denv$.
+
+\ExampleDef{Declaring a Global Storage Element}
+Evaluating the specification in \listingref{DeclareGlobal}, results in updating the $\storage$ map
+of the global dynamic environment by binding $\vx$ to $\nvint(5)$.
+\ASLListing{Declaring a global storage element}{DeclareGlobal}{\semanticstests/SemanticsRule.DeclareGlobal.asl}
 
 \FormallyParagraph
 \begin{mathpar}
