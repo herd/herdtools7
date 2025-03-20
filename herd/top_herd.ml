@@ -373,7 +373,7 @@ module Make(O:Config)(M:XXXMem.S) =
          (* Warn and ignore *)
          Warn.warn_always "%s, legal outcomes may be missing" msg ;
          c
-      | Some (Assign _)|None ->
+      | Some (Assign _)|Some (Predicate _)|None ->
           if not showcutoff && Misc.is_some cutoff then c
           else
             model_kont solver
@@ -406,9 +406,8 @@ module Make(O:Config)(M:XXXMem.S) =
         and senv = S.size_env test
         and tenv = S.type_env test in
         let fsc,flts,solver = fsc in
-        AM.state_restrict_locs O.outcomereads dlocs tenv senv fsc,
-        restrict_faults flts,
-        solver in
+        AM.state_restrict_locs
+          O.outcomereads dlocs tenv senv fsc,restrict_faults flts,solver in
 
 (* Open *)
       let ochan = open_dot test in

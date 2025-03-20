@@ -60,6 +60,8 @@ module type S = sig
   (* Return if two syntactically different constants may be equal modulo the
    * satisfaction of a predicate *)
   val eq_satisfiable : cst -> cst -> predicate option
+  val compare_predicate : predicate -> predicate -> int
+  val pp_predicate : predicate -> string
 end
 
 type no_predicate
@@ -106,6 +108,8 @@ module No (Cst : Constant.S) :
   let mask _ _ = None
 
   let eq_satisfiable _ _ = None
+  let compare_predicate _ _ = assert false
+  let pp_predicate _ = assert false
 end
 
 module type S1 = sig
@@ -147,6 +151,8 @@ module OnlyArchOp1 (A : S1) :
 
   type predicate = no_predicate
   exception Constraint of predicate * cst * cst
+  let compare_predicate _ _ = assert false
+  let pp_predicate _ = assert false
   let eq_satisfiable _ _ = None
 
   let pp_op _ = assert false

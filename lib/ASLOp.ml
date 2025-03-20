@@ -65,6 +65,8 @@ type cst = (scalar, pteval, instr) Constant.t
 type predicate = ArchOp.no_predicate
 exception Constraint of predicate * cst * cst
 
+let compare_predicate _ _ = assert false
+let pp_predicate _ = assert false
 let eq_satisfiable _ _ = None
 
 let pp_op = function

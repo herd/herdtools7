@@ -80,6 +80,9 @@ module
 
   type predicate = ArchOp.predicate
   exception Constraint of predicate * v * v
+  let compare_predicate = ArchOp.compare_predicate
+  let eq_satisfiable = ArchOp.eq_satisfiable
+  let pp_predicate = ArchOp.pp_predicate
 
 (* Basic utilities *)
 
@@ -1061,12 +1064,6 @@ module
   let empty_solver = ()
 
   let pp_solver_state _ = ""
-
-  let add_equality x y _ =
-    if Cst.eq x y then Some () else None
-
-  let add_inequality x y _ =
-    if Cst.eq x y then None else Some ()
 
   let add_predicate _ _ _ = Some ()
 

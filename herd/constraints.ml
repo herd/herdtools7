@@ -336,9 +336,16 @@ module Make (C:Config) (A : Arch_herd.S) :
           let add_equality x y : unit monad = fun st ->
             match x, y with
             | V.Val c1, V.Val c2 -> begin
-              match A.V.add_equality c1 c2 st with
-              | None -> contradiction st
-              | Some st -> pure () st
+              match A.V.eq_satisfiable c1 c2 with
+              | Some pred -> begin
+                match A.V.add_predicate true pred st with
+                | None -> contradiction st
+                | Some st -> pure () st
+              end
+              | None ->
+                  if V.equal x y
+                  then pure () st
+                  else contradiction st
             end
             | _, _ ->
                 if V.equal x y
@@ -348,9 +355,16 @@ module Make (C:Config) (A : Arch_herd.S) :
           let add_inequality x y : unit monad = fun st ->
             match x, y with
             | V.Val c1, V.Val c2 -> begin
-              match A.V.add_inequality c1 c2 st with
-              | None -> contradiction st
-              | Some st -> pure () st
+              match A.V.eq_satisfiable c1 c2 with
+              | Some pred -> begin
+                match A.V.add_predicate false pred st with
+                | None -> contradiction st
+                | Some st -> pure () st
+              end
+              | None ->
+                  if V.equal x y
+                  then contradiction st
+                  else pure () st
             end
             | _, _ ->
                 if V.equal x y

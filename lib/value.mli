@@ -140,20 +140,34 @@ module type S =
  * collisions).
  *
  * Each of the `add_*` functions return the new solver state if the new
- * constraint is satisfiable in the current environment.
+ * constraint is satisfiable in the current environment. And `None` otherwise.
  *
  * In addition the compare function may only compare the part of the solver
  * state we print in `pp_solver_state`, as example the PAC solver of `AArch64`
  * only show it's equalities.
  *)
       type solver_state
-      val add_equality : Cst.v -> Cst.v -> solver_state -> solver_state option
-      val add_inequality : Cst.v -> Cst.v -> solver_state -> solver_state option
-      val add_predicate : bool -> predicate -> solver_state -> solver_state option
-      val normalize : Cst.v -> solver_state -> Cst.v
-      val pp_solver_state : solver_state -> string
-      val compare_solver_state : solver_state -> solver_state -> int
       val empty_solver : solver_state
+      val eq_satisfiable : Cst.v -> Cst.v -> predicate option
+      val compare_predicate : predicate -> predicate -> int
+      val pp_predicate : predicate -> string
+
+      val add_predicate : bool -> predicate -> solver_state -> solver_state option
+
+      (* Some constraint solvers may support normalisation, for example if the
+       * solver contain an Union-Find data structure, then it's possible to
+       * normalize the elements of an equivalence class using the representant
+       * of their class... *)
+      val normalize : Cst.v -> solver_state -> Cst.v
+
+      val pp_solver_state : solver_state -> string
+
+      (* The comparison is used to store the final state in a Map before pretty
+       * printing, but not before doing any resolution of predicates. So the
+       * `compare` function may be imprecise. As example if we don't show the
+       * inequalities at pretty-printing, then the comparison may return that
+       * two solver are equals even if they contains different inequalities. *)
+      val compare_solver_state : solver_state -> solver_state -> int
     end
 
 module type AArch64 =

@@ -85,6 +85,16 @@ module
     type nonrec predicate = predicate
     exception Constraint of predicate * cst * cst
 
+    let compare_predicate eq1 eq2 =
+      match eq1,eq2 with
+      | Eq (p1,p2), Eq (p3,p4) -> begin
+        match PAC.compare p1 p3 with
+        | 0 -> PAC.compare p2 p4
+        | r -> r
+      end
+
+    let pp_predicate _ = ""
+
     let eq_satisfiable c1 c2 =
       match Constant.collision c1 c2 with
       | Some (p1,p2) -> Some (Eq (p1,p2))
