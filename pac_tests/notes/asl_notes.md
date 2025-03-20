@@ -26,9 +26,8 @@ result<63:56> = result<63:56> EOR PAC<63:56>;
 if (bottom_PAC_bit < 55) then
     result<54:bottom_PAC_bit> = result<54:bottom_PAC_bit> EOR PAC<54:bottom_PAC_bit>;
 
-if (IsFeatureImplemented(FEAT_FPAC)) then
-    if (result<63:bottom_PAC_bit> != Replicate(result<55>, 64-bottom_PAC_bit)) then
-        raise a fault;
+if (result<63:bottom_PAC_bit> != Replicate(result<55>, 64-bottom_PAC_bit)) then
+    raise a fault;
 return result;
 ```
 
@@ -54,11 +53,10 @@ result<63:56> = result<63:56> EOR PAC<63:56>;
 if (bottom_PAC_bit < 55) then
     result<54:bottom_PAC_bit> = result<54:bottom_PAC_bit> EOR PAC<54:bottom_PAC_bit>;
 
-if (IsFeatureImplemented(FEAT_FPAC)) then
-    if (result<63:bottom_PAC_bit> != Replicate(result<55>, 64-bottom_PAC_bit)) then
-        raise a fault;
-    else
-        result = result;
+if (result<63:bottom_PAC_bit> != Replicate(result<55>, 64-bottom_PAC_bit)) then
+    raise a fault;
+else
+    result = result;
 return result;
 ```
 
@@ -80,11 +78,10 @@ result<63:56> = result<63:56> EOR PAC<63:56>;
 if (bottom_PAC_bit < 55) then
     result<54:bottom_PAC_bit> = result<54:bottom_PAC_bit> EOR PAC<54:bottom_PAC_bit>;
 
-if (IsFeatureImplemented(FEAT_FPAC)) then
-    if (result<63:bottom_PAC_bit> != Replicate(result<55>, 64-bottom_PAC_bit)) then
-        raise a fault;
-    else
-        result = original_ptr;
+if (result<63:bottom_PAC_bit> != Replicate(result<55>, 64-bottom_PAC_bit)) then
+    raise a fault;
+else
+    result = original_ptr;
 return result;
 ```
 
