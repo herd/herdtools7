@@ -1,0 +1,14 @@
+AArch64 Y003
+(* IRG with exclusion *)
+{
+  int x=100;
+  0:X0=x;
+  0:X2=0x3;          (* 0b11 *)
+  0:GCR_EL1=0x10000; (* RRND=1, Exclude=0 *)
+}
+
+P0            ;
+IRG X1,X0,X2  ;
+
+forall (not (0:X1=x:t0) /\ not (0:X1=x:t1))
+
