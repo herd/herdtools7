@@ -616,16 +616,16 @@ These are:
   \item for-loop start/end expressions (\SemanticsRuleRef{SFor}).
 \end{itemize}
 
-For these constructs, ASL defines an evaluation order of \underline{left-to-right}.
-That is, when there are multiple feasible choices for the next evaluation transition, ASL is defined to take the syntactically leftmost transition.
-Note that the usage of \emph{left-to-right} here is in a technical sense rather than a literal one: it applies only when there are multiple feasible choices for the next evaluation transition.
-For example, assignment statements (\secref{AssignmentStatements}) must still evaluate their right-hand side before considering their left-hand side.
+For these constructs, ASL defines an evaluation order.
+When there are multiple feasible choices for the next evaluation transition, ASL is defined to take the syntactically leftmost transition.
+This applies \underline{only} when there are multiple feasible choices.
+For example, assignment statements (\secref{AssignmentStatements}) must still evaluate their right-hand side before considering their left-hand side, as the evaluation transition for left-hand sides requires the right-hand side value (\chapref{AssignableExpressions}).
 
-\ExampleDef{Left-to-right Evaluation}
-\listingref{left-to-right} shows examples of the constructs above, followed by output to the console from running the specification.
-\textbf{Note:} the ordering for slicing expressions seems not to be left-to-right because some forms of slice are elaborated during typechecking (see \TypingRuleRef{Slice}).
-\ASLListing{Left-to-right evaluation}{left-to-right}{\definitiontests/LeftToRight.asl}
-% CONSOLE_BEGIN aslref \definitiontests/LeftToRight.asl
+\ExampleDef{Evaluation order}
+\listingref{evaluation-order} shows examples of the constructs above, followed by output to the console from running the specification.
+\textbf{Note:} the ordering for slicing expressions may, at first glance, seem not to follow the evaluation order specification; this is because some forms of slice are elaborated during typechecking (see \TypingRuleRef{Slice}).
+\ASLListing{Evaluation order}{evaluation-order}{\definitiontests/EvaluationOrder.asl}
+% CONSOLE_BEGIN aslref \definitiontests/EvaluationOrder.asl
 \begin{Verbatim}[fontsize=\footnotesize, frame=single]
 Function calls:
 1234
