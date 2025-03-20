@@ -524,3 +524,4 @@ ASL Typing Tests / annotating types:
   ASL Typing error: multiple recursive declarations: "foo", "g".
   [1]
   $ aslref --no-exec TypingRule.DeclareSubprograms.asl
+  $ aslref --no-exec TypingRule.InsertStdlibParam.asl
