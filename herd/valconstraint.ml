@@ -62,6 +62,10 @@ module type S = sig
 
   type solution
 
+  (* The answer contains for each solution
+   * - The variable assignation
+   * - The unsolved constraints + the predicates added to the solver state
+   * - the final solver state *)
   type answer =
     (solution * cnstrnts * solver_state) list
 
@@ -70,7 +74,7 @@ module type S = sig
 (* Extract delayed exception, if present, or warning, if present. *)
   val get_failed :  cnstrnts -> cnstrnt option
 
-  val solve : solver_state -> cnstrnt list -> answer
+  val solve : cnstrnt list -> answer
 end
 
 module type Config = sig
@@ -596,7 +600,7 @@ and type state = A.state =
         if debug_solver then
           Printf.printf "found solver state: \n%s" (V.pp_solver_state state.solver);
         let solution = add_vars_solns m state.solution in
-        (solution, constraints, state.solver)
+        (solution, constraints @ state.predicates, state.solver)
       ) solutions
 
 (***********************************)
@@ -653,7 +657,7 @@ and type state = A.state =
         if debug_solver then
           Printf.printf "found solver state: \n%s" (V.pp_solver_state state.solver);
         let solution = add_vars_solns m state.solution in
-        (solution, constraints, state.solver)
+        (solution, constraints @ state.predicates, state.solver)
       ) solutions
 
     let get_failed cns =
@@ -689,7 +693,9 @@ and type state = A.state =
               (if Misc.int_eq (String.length s) 0 then s else " and " ^ s)
           ) solns ""
 
-    let solve state cs =
+    let solve cs =
+      let state =
+        V.empty_solver in
       let answer =
         if C.old_solver then solve_std state cs else solve_topo state cs in
       if debug_solver then Printf.printf "Answer: %s\n" (pp_answer answer);

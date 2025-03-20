@@ -1327,7 +1327,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             in
             ASLS.{ ASLS.conc_zero with str; rfmap; partial_po; }
           in
-          let check_rfm_and_translate acc (es, rfm, cs, _) =
+          let check_rfm_and_translate acc (es, rfm, cs) =
             let conc = build_conc es rfm in
             let t0 = start_profile () in
             let kfail acc =

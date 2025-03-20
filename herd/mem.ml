@@ -108,10 +108,10 @@ module type S = sig
 
   val solve_regs :
       S.test -> S.E.event_structure -> S.M.VC.cnstrnt list ->
-        (S.E.event_structure * S.read_from S.RFMap.t * S.M.VC.cnstrnt list * S.M.VC.solver_state) list
+        (S.E.event_structure * S.read_from S.RFMap.t * S.M.VC.cnstrnt list) list
 
   val solve_mem :
-      S.test ->S.E.event_structure -> S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> S.M.VC.solver_state ->
+      S.test ->S.E.event_structure -> S.read_from S.RFMap.t -> S.M.VC.cnstrnt list ->
         (S.E.event_structure ->
           S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> S.M.VC.solver_state -> 'a -> 'a) ->
             'a -> 'a
@@ -839,13 +839,13 @@ let match_reg_events es =
           rfm csn in
       if  C.debug.Debug_herd.solver then
         prerr_endline "++ Solve  registers" ;
-      let solved = VC.solve A.V.empty_solver csn in
+      let solved = VC.solve csn in
       if List.is_empty solved && C.debug.Debug_herd.solver then
         pp_nosol "register" test es rfm ;
-      List.map (fun (sol,csn,solver) ->
+      List.map (fun (sol,csn,_) ->
         (E.simplify_vars_in_event_structure sol es,
          S.simplify_vars_in_rfmap sol rfm,
-         csn, solver)
+         csn)
       ) solved
 
 (**************************************)
@@ -1051,7 +1051,7 @@ let match_reg_events es =
       List.fold_right2
         (List.fold_right2 (fun r w ->  S.RFMap.add (S.Load r) (S.Store w)))
 
-    let solve_mem_or_res test es rfm cns solver kont res loads stores compat_locs add_eqs =
+    let solve_mem_or_res test es rfm cns kont res loads stores compat_locs add_eqs =
       let possible =
         map_load_possible_stores test es rfm loads stores compat_locs in
       let possible =
@@ -1081,7 +1081,7 @@ let match_reg_events es =
             (* And solve *)
             if C.debug.Debug_herd.solver then
               prerr_endline "++ Solve memory" ;
-            let solved = VC.solve solver cns in
+            let solved = VC.solve cns in
             if List.is_empty solved && C.debug.Debug_herd.solver then begin
               let rfm = add_some_mem loads stores rfm in
               pp_nosol "memory" test es rfm
@@ -1119,7 +1119,7 @@ let match_reg_events es =
       assert (true || rfmap_is_cyclic es rfm);
       res
 
-    let solve_mem_non_mixed test es rfm cns solver kont res =
+    let solve_mem_non_mixed test es rfm cns kont res =
       let compat_locs = compatible_locs_mem in
       if self then
         let code_store e =
@@ -1134,7 +1134,7 @@ let match_reg_events es =
           E.EventSet.filter E.is_ifetch es.E.events
         and code_stores =
           E.EventSet.filter code_store es.E.events in
-        let kont es rfm cns solver res =
+        let kont es rfm cns _solver res =
           (* We get here once code accesses are solved *)
           let loads =  E.EventSet.filter E.is_mem_load es.E.events
           and stores = E.EventSet.filter E.is_mem_store es.E.events in
@@ -1145,13 +1145,13 @@ let match_reg_events es =
             eprintf "Left loads : %a\n"E.debug_events loads ;
             eprintf "All stores: %a\n"E.debug_events stores
           end ;
-          solve_mem_or_res test es rfm cns solver kont res
+          solve_mem_or_res test es rfm cns kont res
             loads stores compat_locs add_mem_eqs in
         if dbg then begin
             eprintf "Code loads : %a\n"E.debug_events code_loads ;
             eprintf "Code stores: %a\n"E.debug_events code_stores
           end ;
-        solve_mem_or_res test es rfm cns solver kont res
+        solve_mem_or_res test es rfm cns kont res
           code_loads code_stores compat_locs add_mem_eqs
       else
         let loads = E.EventSet.filter E.is_mem_load es.E.events
@@ -1160,7 +1160,7 @@ let match_reg_events es =
           eprintf "Loads : %a\n"E.debug_events loads ;
           eprintf "Stores: %a\n"E.debug_events stores
           end ;
-        solve_mem_or_res test es rfm cns solver kont res
+        solve_mem_or_res test es rfm cns kont res
           loads stores compat_locs add_mem_eqs
 
 (*************************************)
@@ -1340,7 +1340,7 @@ let match_reg_events es =
         map_load_possible_stores test es rfm loads stores compatible_locs_mem in
       m
 
-    let solve_mem_mixed test es rfm cns solver kont res =
+    let solve_mem_mixed test es rfm cns kont res =
       let match_tags = if morello then []
         else pair_tags test es rfm in
       let tag_loads,tag_possible_stores = List.split match_tags in
@@ -1376,7 +1376,7 @@ let match_reg_events es =
                   let es = E.simplify_vars_in_event_structure sol es
                   and rfm = S.simplify_vars_in_rfmap sol rfm in
                   kont es rfm cs solver res
-                ) (VC.solve solver cns) res
+                ) (VC.solve cns) res
               with
               | e ->
                   if C.debug.Debug_herd.top then begin
@@ -1389,13 +1389,13 @@ let match_reg_events es =
             res)   (* can be raised by add_eq *)
         res
 
-    let solve_mem test es rfm cns solver kont res =
+    let solve_mem test es rfm cns kont res =
       try
-        if mixed && not C.debug.Debug_herd.mixed then solve_mem_mixed test es rfm cns solver kont res
-        else solve_mem_non_mixed test es rfm cns solver kont res
+        if mixed && not C.debug.Debug_herd.mixed then solve_mem_mixed test es rfm cns kont res
+        else solve_mem_non_mixed test es rfm cns kont res
       with
       | CannotSca ->
-         solve_mem_non_mixed test es rfm cns solver kont res
+         solve_mem_non_mixed test es rfm cns kont res
 
 
 (*************************************)
@@ -2058,14 +2058,16 @@ Please use `-variant self` as an argument to herd7 to enable it."
       ) stores
 
     let calculate_rf_with_cnstrnts test owls es cs kont res =
-      List.fold_right (fun (es,rfm,cs,solver) res ->
+      List.fold_right (fun (es,rfm,cs) res ->
         if C.debug.Debug_herd.solver && C.verbose > 0 then begin
           let module PP = Pretty.Make(S) in
           prerr_endline "Reg solved" ;
           PP.show_es_rfm test es rfm ;
         end ;
-        solve_mem test es rfm cs solver
+        solve_mem test es rfm cs
           (fun es rfm cs solver res ->
+            let only_preds =
+              List.for_all (function | VC.Predicate _ -> true | _ -> false) cs in
             let ofail = VC.get_failed cs in
             match cs with
             | _::_
@@ -2073,6 +2075,7 @@ Please use `-variant self` as an argument to herd7 to enable it."
                    (not oota)
                    && (not C.initwrites || not do_deps)
                    && not asl
+                   && not only_preds
                    && Misc.is_none ofail
               ->
 (*

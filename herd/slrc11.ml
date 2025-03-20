@@ -224,8 +224,8 @@ module Make (M:Cfg)
 
     let solve test es cs =
       match M.solve_regs test es cs with
-      | [] -> (es, M.S.RFMap.empty, cs, A.V.empty_solver)
-      | (es, rfm, cs, solver) :: _ -> (es, rfm, cs, solver)
+      | [] -> (es, M.S.RFMap.empty, cs)
+      | (es, rfm, cs) :: _ -> (es, rfm, cs)
 
 
 
@@ -356,7 +356,7 @@ module Make (M:Cfg)
       let check_cns ex cs =
         let ncs = (List.append cs (make_cnstrnts
                                      {ex with rf = added ex.safe ex.rf})) in
-        match M.S.M.VC.solve A.V.empty_solver ncs with
+        match M.S.M.VC.solve ncs with
         | [] -> false
         | _ -> true
 
@@ -827,9 +827,9 @@ module Make (M:Cfg)
       {ex with added = nadded; rf = nrf; mo = nmo; po = npo; debug_rels = ndebugrels}
 
 
-    let mykont test model_kont es cs solver = (fun e res ->
+    let mykont test model_kont es cs = (fun e res ->
         let ncs = (List.append cs (make_cnstrnts e)) in
-        M.solve_mem test es e.rfm ncs solver
+        M.solve_mem test es e.rfm ncs
           (fun es0 rfm0 cs0 solver res0 ->
             match cs0 with
             | [] ->
@@ -880,7 +880,7 @@ module Make (M:Cfg)
 
     let check_rfms test rfms _kfail _kont model_kont res =
       let (_, cs0, es0) = rfms in
-      List.fold_right (fun (es,rfm,cs,solver) res ->
+      List.fold_right (fun (es,rfm,cs) res ->
         let rmws = M.make_atomic_load_store es in
         let evts = E.EventSet.filter real es.E.events in
         let inits = E.EventSet.filter E.is_mem_store_init evts in
@@ -912,7 +912,7 @@ module Make (M:Cfg)
             psc = E.EventRel.empty;
             debug_rels = []
           } in
-        (visit ex_init cs (mykont test model_kont es cs solver) res)
+        (visit ex_init cs (mykont test model_kont es cs) res)
       ) (M.solve_regs test es0 cs0) res
 
     let check_event_structure test (rfms : (_ * S.M.VC.cnstrnts * S.event_structure) list) kfail kont model_kont  (res : 'a) =
