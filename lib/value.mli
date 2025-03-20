@@ -50,8 +50,9 @@ module type S =
       val pp : bool (* hexa *) -> v -> string
       val pp_unsigned : bool (* hexa *) -> v -> string
 
-      type predicate
-      exception Constraint of predicate * v * v
+(* Architecture specific predicate *)
+      type arch_pred
+      exception Constraint of arch_pred * v * v
 
 (* Extracting constants and scalars *)
       val as_constant : v -> Cst.v option
@@ -148,11 +149,11 @@ module type S =
  *)
       type solver_state
       val empty_solver : solver_state
-      val eq_satisfiable : Cst.v -> Cst.v -> predicate option
-      val compare_predicate : predicate -> predicate -> int
-      val pp_predicate : predicate -> string
+      val eq_satisfiable : Cst.v -> Cst.v -> arch_pred option
+      val compare_predicate : arch_pred -> arch_pred -> int
+      val pp_predicate : arch_pred -> string
 
-      val add_predicate : bool -> predicate -> solver_state -> solver_state option
+      val add_predicate : bool -> arch_pred -> solver_state -> solver_state option
 
       (* Some constraint solvers may support normalisation, for example if the
        * solver contain an Union-Find data structure, then it's possible to
@@ -176,7 +177,7 @@ module type AArch64 =
   and type Cst.Instr.t = AArch64Base.instruction
   and type 'a arch_constr_op1 = 'a AArch64Op.unop
   and type 'a arch_constr_op = 'a AArch64Op.binop
-  and type predicate = AArch64Op.predicate
+  and type arch_pred = AArch64Op.predicate
   and type solver_state = PAC.solver_state
 
 module type AArch64ASL =

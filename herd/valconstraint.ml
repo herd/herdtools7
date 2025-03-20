@@ -38,7 +38,7 @@ module type S = sig
   type state
   type arch_op
   type arch_op1
-  type predicate
+  type arch_pred
 
   type expr =
     | Atom of atom
@@ -50,7 +50,7 @@ module type S = sig
   type rvalue = expr
 
   type cnstrnt =
-    | Predicate of bool * predicate
+    | Predicate of bool * arch_pred
     | Assign of atom * rvalue
     | Failed of exn (* Delay exceptions *)
     | Warn of string
@@ -88,7 +88,7 @@ and type arch_op1 = A.V.arch_op1
 and type solution = A.V.solution
 and type location = A.location
 and type solver_state = A.V.solver_state
-and type predicate = A.V.predicate
+and type arch_pred = A.V.arch_pred
 and type state = A.state =
   struct
 
@@ -103,7 +103,7 @@ and type state = A.state =
     type state = A.state
     type arch_op = V.arch_op
     type arch_op1 = V.arch_op1
-    type predicate = V.predicate
+    type arch_pred = V.arch_pred
 
     type expr =
       | Atom of atom
@@ -140,7 +140,7 @@ and type state = A.state =
     type rvalue = expr
 
     type cnstrnt =
-      | Predicate of bool * predicate
+      | Predicate of bool * arch_pred
       | Assign of V.v * rvalue
       | Failed of exn
       | Warn of string
@@ -458,7 +458,7 @@ and type state = A.state =
       'a solver_monad = fun st ->
         List.concat [f st; g st]
 
-    let add_predicate (b: bool) (p: V.predicate) : unit solver_monad =
+    let add_predicate (b: bool) (p: V.arch_pred) : unit solver_monad =
       let* solver = get_solver in
       let* preds = get_predicates in
       let* _ = set_predicates (Predicate (b,p) :: preds) in
@@ -475,7 +475,7 @@ and type state = A.state =
           then pure ()
           else contradiction
 
-    let solve_predicate (p: V.predicate) (vtrue:'a) (vfalse:'a) : 'a solver_monad =
+    let solve_predicate (p: V.arch_pred) (vtrue:'a) (vfalse:'a) : 'a solver_monad =
       alternative
         (let+ _ = add_predicate true p in vtrue)
         (let+ _ = add_predicate false p in vfalse)

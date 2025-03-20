@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 module Make : functor
-  (V: Value.S with type predicate = AArch64Op.predicate)
+  (V: Value.S with type arch_pred = AArch64Op.predicate)
   ->
   Value.S
     with module Cst = V.Cst
@@ -24,5 +24,5 @@ module Make : functor
      and type 'a arch_constr_op1 = 'a V.arch_constr_op1
      and type arch_extra_op = V.arch_extra_op
      and type 'a arch_constr_op = 'a V.arch_constr_op
-     and type predicate = V.predicate
      and type solver_state = PAC.solver_state
+     and type arch_pred = V.arch_pred

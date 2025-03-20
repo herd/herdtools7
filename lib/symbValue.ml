@@ -78,8 +78,8 @@ module
   let pp_v =  do_pp Cst.pp_v
   let pp_v_old =  do_pp Cst.pp_v_old
 
-  type predicate = ArchOp.predicate
-  exception Constraint of predicate * v * v
+  type arch_pred = ArchOp.predicate
+  exception Constraint of arch_pred * v * v
   let compare_predicate = ArchOp.compare_predicate
   let eq_satisfiable = ArchOp.eq_satisfiable
   let pp_predicate = ArchOp.pp_predicate
