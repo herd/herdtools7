@@ -50,10 +50,6 @@ module type S =
       val pp : bool (* hexa *) -> v -> string
       val pp_unsigned : bool (* hexa *) -> v -> string
 
-(* Architecture specific predicate *)
-      type arch_pred
-      exception Constraint of arch_pred * v * v
-
 (* Extracting constants and scalars *)
       val as_constant : v -> Cst.v option
       val as_scalar : v -> Cst.Scalar.t option
@@ -133,6 +129,16 @@ module type S =
       val map_scalar : (Cst.Scalar.t -> Cst.Scalar.t) -> v -> v
       val map_csym : (csym -> v) -> v -> v
 
+(* Architecture specific predicate *)
+      type arch_pred
+      exception Constraint of arch_pred * v * v
+      val compare_predicate : arch_pred -> arch_pred -> int
+      val pp_predicate : arch_pred -> string
+
+(* Return if an equality of two syntactically different constants may be equals
+ * modulo a predicate. This may represent a hash or random generator collision *)
+      val eq_satisfiable : Cst.v -> Cst.v -> arch_pred option
+
 (* Functions to interact with a constraint solver, this constraint solver must
  * support at least the computation of equalities/inequalities (modulo the
  * theory represented by the solver), plus the resolution of a set of predicates
@@ -149,9 +155,6 @@ module type S =
  *)
       type solver_state
       val empty_solver : solver_state
-      val eq_satisfiable : Cst.v -> Cst.v -> arch_pred option
-      val compare_predicate : arch_pred -> arch_pred -> int
-      val pp_predicate : arch_pred -> string
 
       val add_predicate : bool -> arch_pred -> solver_state -> solver_state option
 

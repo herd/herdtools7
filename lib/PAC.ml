@@ -116,7 +116,7 @@ type solver_state =
     (* a set of inequalities of the form n_1 ^ ... ^ n_k != 0, k must be
        at least 1, such that each inequality is not empty (otherwise we found
        a contradiction), {n_1, ..., n_k} must be a set of non-basic variables *)
-    inequalities: PacSetSet.t;
+    inequalities: PacSet.t list;
   }
 
 (* Comparison is used for final state pretty printing so we don't compare using
@@ -136,7 +136,7 @@ let pp_solver solver =
     Printf.sprintf " %s=%s;%s" (pp_signature x x.name) (pp_xor x.name def) s)
   solver.equalities ""
 
-let empty_solver = {equalities= PacMap.empty; inequalities= PacSetSet.empty}
+let empty_solver = {equalities= PacMap.empty; inequalities= []}
 
 (* simplify all the basic variables by their definition *)
 (* so the output only contain non-basic variables *)
@@ -170,7 +170,7 @@ let add_equality (x: t) (y: t) (state: solver_state) : solver_state option =
     in
 
     (* simplify all the current inequations with the new one *)
-    let simplified_inequalities = PacSetSet.map
+    let simplified_inequalities = List.map
       (fun x -> simplify x (PacMap.singleton pivot def))
       state.inequalities
     in
@@ -181,7 +181,7 @@ let add_equality (x: t) (y: t) (state: solver_state) : solver_state option =
       inequalities = simplified_inequalities
     } in
 
-    if PacSetSet.exists PacSet.is_empty new_state.inequalities
+    if List.exists PacSet.is_empty new_state.inequalities
     then None (* We found a contradiction *)
     else Some new_state (* No contradiction found *)
   end
@@ -192,7 +192,37 @@ let add_inequality (x: t) (y: t) (state: solver_state) : solver_state option =
   if PacSet.is_empty inequality
   then None
   else
-    (* If we have more than 2^n - 1 inequalities the pivot algorithm is not sound *)
-    if PacSetSet.cardinal state.inequalities > 32767
+    (* If we have more than `2^n - 1` inequalities the pivot algorithm is not
+     * sound with `n` the size of the pac field in bits, and this size is at
+     * least `15` bits *)
+    if List.length state.inequalities > 32767
     then Warn.user_error "PAC fields solver: too many inequalities to be sound"
-    else Some {state with inequalities = PacSetSet.add inequality state.inequalities}
+    else Some {state with inequalities = inequality :: state.inequalities}
+
+let get_equalities (st: solver_state) : (t * t) list =
+  PacMap.fold (fun x y acc -> (PacSet.singleton x, y) :: acc) st.equalities []
+
+let get_inequalities (st: solver_state) : (t * t) list =
+  List.map (fun x -> (x,canonical)) st.inequalities
+
+let rec add_equalities (eqs: (t * t) list) (st: solver_state) : solver_state option =
+  match eqs with
+  | (x,y) :: eqs ->
+    Option.bind (add_equality x y st) (add_equalities eqs)
+  | [] ->
+      Some st
+
+let rec add_inequalities (eqs: (t * t) list) (st: solver_state) : solver_state option =
+  match eqs with
+  | (x,y) :: eqs ->
+    Option.bind (add_inequality x y st) (add_inequalities eqs)
+  | [] ->
+      Some st
+
+let rec conjunction s1 s2 : solver_state option =
+  if PacMap.cardinal s1.equalities < PacMap.cardinal s2.equalities
+  then conjunction s2 s1
+  else
+    match add_equalities (get_equalities s2) s1 with
+    | Some s1 -> add_inequalities (get_inequalities s2) s1
+    | None -> None

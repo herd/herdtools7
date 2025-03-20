@@ -60,5 +60,7 @@ val add_equality : t -> t -> solver_state -> solver_state option
  * inequality introduce a contradiction *)
 val add_inequality : t -> t -> solver_state -> solver_state option
 
+val conjunction : solver_state -> solver_state -> solver_state option
+
 (* Normalize a PAC field in the current solver state *)
 val normalize : t -> solver_state -> t
