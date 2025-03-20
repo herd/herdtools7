@@ -1643,6 +1643,7 @@ scoping
 second
 section
 see
+seem
 seems
 seen
 selecting
@@ -1687,6 +1688,7 @@ show
 shown
 shows
 side
+sides
 sign
 signal
 signals
@@ -2003,6 +2005,7 @@ unreleased
 unspecified
 until
 untyped
+unusual
 unwrapping
 up
 update
