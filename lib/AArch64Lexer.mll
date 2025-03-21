@@ -248,7 +248,9 @@ match name with
 | "mul3" | "MUL3" -> TOK_MUL3
 | "all" | "ALL" -> TOK_ALL
 | "movprfx" | "MOVPRFX" -> MOVPRFX
-(* Scalabel Matrix Extension *)
+| "ctermeq"|"CTERMEQ" -> CTERM AArch64Base.CTERM.EQ
+| "ctermne"|"CTERMNE" -> CTERM AArch64Base.CTERM.NE
+(* Scalable Matrix Extension *)
 | "addva" | "ADDVA" -> ADDA (AArch64Base.Vertical)
 | "addha" | "ADDHA" -> ADDA (AArch64Base.Horizontal)
 | "mova" | "MOVA" -> MOVA

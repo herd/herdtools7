@@ -1286,6 +1286,12 @@ module Make(V:Constant.S)(C:Config) =
            | INC -> rd);
         reg_env = add_q rd; }
 
+    let cterm cond v r1 r2 =
+       let rs,f1,f2 = do_arg2i v r1 r2 0 in
+       { empty_ins with
+         memo = sprintf "%s %s,%s" (CTERM.pp cond |> Misc.lowercase) f1 f2;
+         inputs = rs; reg_env = add_v v rs; }
+
     let adda s rD p1 p2 rS =
       { empty_ins with
         memo = sprintf "add%sa %s,%s,%s,%s"
@@ -1864,6 +1870,7 @@ module Make(V:Constant.S)(C:Config) =
     | I_RDVL (r1,k1) -> rdvl r1 k1::k
     | I_ADDVL (r1,r2,k1) -> addvl r1 r2 k1::k
     | I_CNT_INC_SVE  (op,rd,pat,k1) -> cnt_inc_sve op rd pat k1::k
+    | I_CTERM (cond,v,rn,rm) -> cterm cond v rn rm::k
 (* Scalable Matrix Extension *)
     | I_LD1SPT (v,r,ri,k1,p,ra,idx) -> ld1spt v r ri k1 p ra idx::k
     | I_ST1SPT (v,r,ri,k1,p,ra,idx) -> st1spt v r ri k1 p ra idx::k
