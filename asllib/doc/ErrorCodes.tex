@@ -345,7 +345,8 @@ The following table summarises all error codes.
   A function or procedure call is invalid.
   For example:
   \begin{itemize}
-    \item The call does not match any defined subprograms, or matches too many (\TypingRuleRef{SubprogramForName}).
+    \item The call does not match any defined subprograms \\
+          (\TypingRuleRef{SubprogramForName}).
     \item An incorrect number of arguments or parameters was passed \\
       (\TypingRuleRef{AnnotateCallActualsTyped}).
     \item The call site expects a function or getter, but instead finds a procedure or setter, or \textit{vice versa} (\TypingRuleRef{AnnotateCallActualsTyped}).
@@ -369,7 +370,8 @@ The following table summarises all error codes.
   For example:
   \begin{itemize}
     \item Two \texttt{implementation} subprograms had clashing signatures \\ (\TypingRuleRef{CheckImplementationsUnique}).
-    \item An \texttt{implementation} subprogram did not have exactly one corresponding \texttt{impdef} subprogram (\TypingRuleRef{ProcessOverrides}).
+    \item An \texttt{implementation} subprogram did not have exactly one corresponding \\
+          \texttt{impdef} subprogram (\TypingRuleRef{ProcessOverrides}).
   \end{itemize}
 
 \item[$\PrecisionLostDefining$]%
