@@ -149,7 +149,6 @@
 \input{ifcode}
 \input{control}
 
-\newcommand\herd[0]{\texttt{herd7}}
 \newcommand\aslref[0]{\href{https://github.com/herd/herdtools7/tree/master/asllib}{aslref}}
 \newcommand\linuxbashshell[0]{Linux bash shell}
 
@@ -203,15 +202,6 @@
 \fi
 
 \definecolor{verylightgray}{RGB}{240,240,240}
-\newcommand\CodeExample[1]{
-  \begin{center}
-  \colorbox{verylightgray}{
-    \begin{minipage}{\textwidth - 0.5cm}
-      \VerbatimInput{#1}
-    \end{minipage}
-  }
-  \end{center}
-}
 
 \newcommand\ASLListing[3]{
 \begin{center}
@@ -247,23 +237,18 @@
 \newcommand\defref[1]{Definition~\ref{def:#1}}
 \newcommand\secref[1]{Section~\ref{sec:#1}}
 \newcommand\chapref[1]{Chapter~\ref{chap:#1}}
-\newcommand\partref[1]{Part~\ref{part:#1}}
 \newcommand\appendixref[1]{Appendix~\ref{appendix:#1}}
 \newcommand\ASTRuleRef[1]{\nameref{sec:ASTRule.#1}}
-\newcommand\ConventionRef[1]{\nameref{sec:Convention.#1}}
 \newcommand\RequirementRef[1]{\nameref{Guide.#1}}
 \newcommand\LexicalRuleRef[1]{\nameref{sec:LexicalRule.#1}}
 \newcommand\TypingRuleRef[1]{\nameref{sec:TypingRule.#1}}
 \newcommand\SemanticsRuleRef[1]{\nameref{sec:SemanticsRule.#1}}
-\newcommand\secreflink[1]{\small\nameref{sec:#1}}
-\newcommand\prosesection[0]{\ProseParagraph}
 \newcommand\ie{i.\,e.}
 \newcommand\eg{e.\,g.}
 \newcommand\wrappedline[0]{{\hyperlink{def-wrapline}{\color{red}\hookrightarrow}}}
 \newcommand\commonprefixline[0]{{\hyperlink{def-commonprefixline}{\color{cyan}{\text{\tiny******** common prefix ********}} }}}
 \newcommand\commonsuffixline[0]{{\hyperlink{def-commonsuffixline}{\color{cyan}{\text{\tiny******** common suffix ********}} }}}
 \newcommand\stdlibfunc[1]{standard library function \texttt{#1}}
-\newcommand\stdlibfuncname[1]{\texttt{#1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%$%%%%%
 %% Mathematical notations and Inference Rule macros
@@ -279,7 +264,6 @@
 \renewcommand\triangleq[0]{\hyperlink{def-triangleq}{\OldTriangleq}}
 \newcommand\cartimes[0]{\hyperlink{def-cartimes}{\times}}
 
-\newcommand\view[0]{\hyperlink{def-deconstruction}{view}}
 \newcommand\eqname[0]{\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}}
 \newcommand\eqdef[0]{\hyperlink{def-eqdef}{:=}}
 \newcommand\overname[2]{\overbrace{#1}^{#2}}
@@ -304,8 +288,6 @@
 \newcommand\concat[0]{\hyperlink{def-concat}{+}}
 \newcommand\concatlist[0]{\hyperlink{def-concatlist}{\textfunc{concat}}}
 \newcommand\listprefix[0]{\hyperlink{def-listprefix}{\textfunc{prefix}}}
-\newcommand\listcomprehension[2]{[#1 : #2]} % #1 is a list element predicate, #2 is the output list element.
-\newcommand\setcomprehension[2]{\{#1 : #2\}} % #1 is a set element predicate, #2 is the output set element.
 \newcommand\stringconcat[0]{\hyperlink{def-stringconcat}{\texttt{+}}}
 \newcommand\stringofnat[0]{\hyperlink{def-stringofnat}{\texttt{string\_of\_nat}}}
 
@@ -339,7 +321,6 @@
 \newcommand\booltrans[1]{\hyperlink{def-booltrans}{\textfunc{bool\_transition}}(#1)}
 \newcommand\booltransarrow[0]{\longrightarrow}
 \newcommand\checktrans[2]{\hyperlink{def-checktrans}{\textfunc{check}}(#1, \texttt{#2})}
-\newcommand\checkassertion[2]{\hyperlink{def-checktrans}{\textfunc{check}}\ #1 \terminateas \texttt{#2}}
 \newcommand\Prosechecktrans[2]{\hyperlink{def-checktrans}{checking} #1 yields $\True$\ProseTerminateAs{#2}}
 \newcommand\checktransarrow[0]{\longrightarrow}
 
@@ -396,7 +377,6 @@
 \newcommand\Tcomma[0]{\verbatimterminal{COMMA}{,}}
 \newcommand\Tconfig[0]{\verbatimterminal{CONFIG}{config}}
 \newcommand\Tconstant[0]{\verbatimterminal{CONSTANT}{constant}}
-\newcommand\Tdebug[0]{\verbatimterminal{DEBUG}{debug}}
 \newcommand\Tdiv[0]{\verbatimterminal{DIV}{DIV}}
 \newcommand\Tdivrm[0]{\verbatimterminal{DIVRM}{DIVRM}}
 \newcommand\Tdo[0]{\verbatimterminal{DO}{do}}
@@ -879,7 +859,6 @@
 \newcommand\eof[0]{\hyperlink{def-eof}{\textsf{eof}}}
 
 \newcommand\anycharacter[1]{$\underbracket{#1}$}
-\newcommand\SpaceChar[0]{\framebox[1cm]{\color{white}A}}
 \newcommand\Underscore[0]{\anycharacter{\texttt{ \_ }}}
 
 \newcommand\REasciichar[0]{\hyperlink{def-reasciichar}{\texttt{<}\textsf{ascii\_char}\texttt{>}}}
@@ -925,8 +904,6 @@
 \newcommand\Lang[0]{\hyperlink{def-lang}{\textsf{Lang}}}
 \newcommand\RegExp[0]{\hyperlink{def-regex}{\textsf{RegExp}}}
 \newcommand\ascii[1]{\hyperlink{def-ascii}{\textsf{ASCII}}\texttt{\{#1\}}}
-\newcommand\scantoken[0]{\textfunc{scan\_token}}
-\newcommand\scancomment[0]{\textfunc{scan\_comment}}
 
 \newcommand\spectoken[0]{\hyperlink{def-spectoken}{\textsc{spec\_token}}}
 \newcommand\specstring[0]{\hyperlink{def-specstring}{\textsc{spec\_string}}}
@@ -1002,7 +979,6 @@
 \newcommand\TypeError[0]{\hyperlink{def-typeerror}{\textsf{TypeError}}}
 \newcommand\TypeErrorVal[1]{\TypeError(\texttt{#1})}
 
-\newcommand\Val[0]{\textsf{Val}}
 \newcommand\aslto[0]{\longrightarrow}
 
 \newcommand\staticenvs[0]{\hyperlink{def-staticenvs}{\mathbb{SE}}}
@@ -1197,7 +1173,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Typing macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newcommand\typingrulecasename[2]{TypingRule.{#1}.\textsc{#2}}
 
 \newcommand\ProseOtherwiseTypeError[0]{Otherwise, the result is a \typingerrorterm.}
 \newcommand\OrTypeError[0]{\;\terminateas \TypeErrorConfig}
@@ -1248,7 +1223,6 @@
 \newcommand\supers[0]{\hyperlink{def-supers}{\textfunc{supers}}}
 \newcommand\bitfieldsincluded[0]{\hyperlink{def-bitfieldsincluded}{\textfunc{bitfields\_included}}}
 \newcommand\membfs[0]{\hyperlink{def-membfs}{\textfunc{mem\_bfs}}}
-\newcommand\instantiate[0]{\textfunc{instantiate}}
 \newcommand\checkisnotcollection[0]{\hyperlink{def-checkisnotcollection}{\textfunc{check\_is\_not\_collection}}}
 \newcommand\Prosecheckisnotcollection[2]{\hyperlink{def-checkisnotcollection}{determining}
   whether #2 is not a \collectiontypeterm{} in #1 yields $\True$\ProseOrTypeError}
@@ -1258,10 +1232,7 @@
 \newcommand\getbitfieldwidth[0]{\hyperlink{def-getbitfieldwidth}{\textfunc{get\_bitfield\_width}}}
 \newcommand\widthplus[0]{\hyperlink{def-widthplus}{\textfunc{width\_plus}}}
 \newcommand\checkbitsequalwidth[0]{\hyperlink{def-checkbitsequalwidth}{\textfunc{check\_bits\_equal\_width}}}
-\newcommand\subprogramtypeclash[0]{\textfunc{subprogram\_type\_clash}}
-\newcommand\hassubprogramtypeclash[0]{\textfunc{subprogram\_type\_clash}}
 \newcommand\subprogramclash[0]{\hyperlink{def-subprogramclash}{\textfunc{subprogram\_clash}}}
-\newcommand\argsclash[0]{\textfunc{args\_clash}}
 \newcommand\bitfieldgetname[0]{\hyperlink{def-bitfieldgetname}{\textfunc{bitfield\_get\_name}}}
 \newcommand\bitfieldgetslices[0]{\hyperlink{def-bitfieldgetslices}{\textfunc{bitfield\_get\_slices}}}
 \newcommand\bitfieldgetnested[0]{\hyperlink{def-bitfieldgetnested}{\textfunc{bitfield\_get\_nested}}}
@@ -1552,11 +1523,7 @@
 \newcommand\Proserenamelocalsty[2]{\hyperlink{def-renamelocalsty}{renaming}
   the local storage elements in the type #1 yields the type #2}
 \newcommand\renamelocalsslice[0]{\hyperlink{def-renamelocalsslice}{\textfunc{rename\_locals\_slice}}}
-\newcommand\Proserenamelocalsslice[2]{\hyperlink{def-renamelocalsslice}{renaming}
-  the local storage elements in the slice #1 yields the slice #2}
 \newcommand\renamelocalsconstraint[0]{\hyperlink{def-renamelocalsconstraint}{\textfunc{rename\_locals\_constraint}}}
-\newcommand\Proserenamelocalsconstraint[2]{\hyperlink{def-renamelocalsconstraint}{renaming}
-  the local storage elements in the constraint #1 yields the constraint #2}
 \newcommand\stdliblocalprefix[0]{\texttt{\_\_stdlib\_local\_}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1566,11 +1533,9 @@
 \newcommand\errorcodesterm[0]{\hyperlink{def-errorcodeterm}{error codes}}
 \newcommand\staticerrorterm[0]{\hyperlink{def-staticerrorterm}{static error}}
 \newcommand\staticerrorsterm[0]{\hyperlink{def-staticerrorterm}{static errors}}
-\newcommand\Staticerrorsterm[0]{\hyperlink{def-staticerrorterm}{Static errors}}
 \newcommand\typingerrorterm[0]{\hyperlink{def-typingerrorterm}{typing error}}
 \newcommand\typingerrorsterm[0]{\hyperlink{def-typingerrorterm}{typing errors}}
 \newcommand\Typingerrorsterm[0]{\hyperlink{def-typingerrorterm}{Typing errors}}
-\newcommand\builderrorterm[0]{\hyperlink{def-builderrorterm}{build error}}
 \newcommand\builderrorsterm[0]{\hyperlink{def-builderrorterm}{build errors}}
 \newcommand\Builderrorsterm[0]{\hyperlink{def-builderrorterm}{Build errors}}
 \newcommand\dynamicerrorterm[0]{\hyperlink{def-dynamicerrorterm}{dynamic error}}
@@ -1586,8 +1551,6 @@
 \newcommand\inferencerule[0]{\hyperlink{def-inferencerule}{inference rule}}
 \newcommand\inferencerules[0]{\hyperlink{def-inferencerule}{inference rules}}
 \newcommand\specificationterm[0]{\hyperlink{def-specificationterm}{specification}}
-\newcommand\specificationsterm[0]{\hyperlink{def-specificationterm}{specifications}}
-\newcommand\globaldeclarationterm[0]{\hyperlink{def-globaldeclarationterm}{global declaration}}
 \newcommand\globaldeclarationsterm[0]{\hyperlink{def-globaldeclarationterm}{global declarations}}
 
 \newcommand\typedast[0]{\hyperlink{def-typedast}{typed AST}}
@@ -1600,7 +1563,6 @@
 \newcommand\subtypesterm[0]{\hyperlink{def-subtypes}{subtypes}}
 \newcommand\subtypeterm[0]{\hyperlink{def-subtypes}{subtype}}
 \newcommand\supertypeterm[0]{\hyperlink{def-supertypeterm}{supertype}}
-\newcommand\normalizedterm[0]{\hyperlink{def-normalizedterm}{normalized}}
 \newcommand\normalizedexpressionterm[0]{\hyperlink{def-normalizedterm}{normalized expression}}
 
 %% Type macros
@@ -1608,9 +1570,7 @@
 \newcommand\integertypesterm[0]{\hyperlink{integertypeterm}{integer types}}
 \newcommand\bitvectortypeterm[0]{\hyperlink{bitvectortypeterm}{bitvector type}}
 \newcommand\bitvectortypesterm[0]{\hyperlink{bitvectortypeterm}{bitvector types}}
-\newcommand\bitfieldterm[0]{\hyperlink{bitfieldterm}{bitfield}}
 \newcommand\bitfieldsterm[0]{\hyperlink{bitfieldterm}{bitfields}}
-\newcommand\bitsliceterm[0]{\hyperlink{bitsliceterm}{bitslice}}
 \newcommand\bitslicesterm[0]{\hyperlink{bitsliceterm}{bitslices}}
 \newcommand\realtypeterm[0]{\hyperlink{realtypeterm}{real type}}
 \newcommand\stringtypeterm[0]{\hyperlink{stringtypeterm}{string type}}
@@ -1628,16 +1588,13 @@
 \newcommand\arraytypesterm[0]{\hyperlink{arraytypeterm}{array types}}
 \newcommand\intarraytypeterm[0]{\hyperlink{intarraytypeterm}{integer-indexed array type}}
 \newcommand\Intarraytypeterm[0]{\hyperlink{intarraytypeterm}{Integer-indexed array type}}
-\newcommand\enumarraytypeterm[0]{\hyperlink{enumarraytypeterm}{enumeration-indexed array type}}
 \newcommand\Enumarraytypeterm[0]{\hyperlink{enumarraytypeterm}{Enumeration-indexed array type}}
 \newcommand\namedtypeterm[0]{\hyperlink{namedtypeterm}{named type}}
 \newcommand\namedtypesterm[0]{\hyperlink{namedtypeterm}{named types}}
 \newcommand\recordtypeterm[0]{\hyperlink{recordtypeterm}{record type}}
 \newcommand\collectiontypeterm[0]{\hyperlink{collectiontypeterm}{collection type}}
 \newcommand\recordtypesterm[0]{\hyperlink{recordtypeterm}{record types}}
-\newcommand\exceptiontypeterm[0]{\hyperlink{exceptiontypeterm}{exception type}}
 \newcommand\unconstrainedintegertype[0]{\hyperlink{def-unconstrainedintegertype}{unconstrained integer type}}
-\newcommand\unconstrainedintegertypes[0]{\hyperlink{def-unconstrainedintegertype}{unconstrained integer types}}
 \newcommand\parameterizedintegertype[0]{\hyperlink{def-parameterizedintegertype}{parameterized integer type}}
 \newcommand\parameterizedintegertypes[0]{\hyperlink{def-parameterizedintegertype}{parameterized integer types}}
 \newcommand\wellconstrainedintegertype[0]{\hyperlink{def-wellconstrainedintegertype}{well-constrained integer type}}
@@ -1650,13 +1607,10 @@
 \newcommand\symbolicdomain[0]{\hyperlink{def-symbolicdomain}{symbolic domain}}
 \newcommand\typesatisfies[0]{\hyperlink{def-typesatisfies}{type-satisfies}}
 \newcommand\typesatisfy[0]{\hyperlink{def-typesatisfies}{type-satisfy}}
-\newcommand\checkedtypesatisfies[0]{\hyperlink{def-checktypesat}{checked-type-satisfies}}
-\newcommand\typesatisft[0]{\hyperlink{def-typesatisfies}{type-satisft}}
 \newcommand\subtypesatisfies[0]{\hyperlink{def-subtypesat}{subtype-satisfies}}
 \newcommand\subtypesatisfy[0]{\hyperlink{def-subtypesat}{subtype-satisfy}}
 \newcommand\typeequivalent[0]{\hyperlink{def-typeequal}{type-equivalent}}
 \newcommand\bitwidthequivalent[0]{\hyperlink{def-bitwidthequal}{bitwidth-equivalent}}
-\newcommand\typeclash[0]{\hyperlink{def-typeclashes}{type-clash}}
 \newcommand\constrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{constrained integer}}
 \newcommand\structureofinteger[0]{\hyperlink{def-checkunderlyinginteger}{structure of an integer}}
 \newcommand\wellconstrainedstructure[0]{\hyperlink{def-getwellconstrainedstructure}{well-constrained structure}}
@@ -1685,7 +1639,6 @@
 \newcommand\localdeclarationkeyword[0]{\hyperlink{def-localdeclarationkeyword}{local declaration keyword}}
 \newcommand\localdeclarationitem[0]{\hyperlink{def-localdeclarationitem}{local declaration item}}
 \newcommand\localdeclaration[0]{\hyperlink{def-localdeclaration}{local declaration}}
-\newcommand\localdeclarations[0]{\hyperlink{def-localdeclaration}{local declarations}}
 
 \newcommand\basevalueterm[0]{\hyperlink{def-basevalueterm}{base value}}
 \newcommand\controlflowsymbolterm[0]{\hyperlink{def-controlflowsymbolterm}{control flow state}}
@@ -1711,10 +1664,8 @@
 
 %% Expression macros
 \newcommand\literalexpressionterm[0]{\hyperlink{def-literalexpressionterm}{literal expression}}
-\newcommand\literalexpression[1]{\hyperlink{def-literalexpressionterm}{literal expression} for the literal #1}
 \newcommand\variableexpressionterm[0]{\hyperlink{def-variableexpressionterm}{variable expression}}
 \newcommand\variableexpression[1]{\hyperlink{def-variableexpressionterm}{variable expression} for the identifier #1}
-\newcommand\atcexpressionterm[0]{\hyperlink{def-atceexpressionterm}{asserting type conversion expression}}
 \newcommand\atcexpression[2]{\hyperlink{def-atceexpressionterm}{asserting type conversion} for the expression #1 and type #2}
 \newcommand\binopexpressionterm[0]{\hyperlink{def-binopexpressionterm}{binary operation expression}}
 \newcommand\binopexpression[3]{\hyperlink{def-binopexpressionterm}
@@ -1725,69 +1676,44 @@
 \newcommand\callexpressionterm[0]{\hyperlink{def-callexpressionterm}{call expression}}
 \newcommand\callexpression[4]{\hyperlink{def-callexpressionterm}
   {call expression} for the subprogram #1, list of parameters #2, list of arguments #3, and subprogram type #4}
-\newcommand\sliceexpressionterm[0]{\hyperlink{def-sliceexpressionterm}{slicing expression}}
 \newcommand\sliceexpression[2]{\hyperlink{def-sliceexpressionterm}{slicing expression} for the bitvector expression #1 and list of slices #2}
 \newcommand\condexpressionterm[0]{\hyperlink{def-conditionexpressionterm}{conditional expression}}
 \newcommand\condexpression[3]{\hyperlink{def-conditionexpressionterm}
   {conditional expression} for the condition expression #1, left-hand-side expression #2, and right-hand-side expression #3}
-\newcommand\getarrayexpressionterm[0]{\hyperlink{def-getarrayexpressionterm}{array read expression}}
 \newcommand\getarrayexpression[2]{\hyperlink{def-getarrayexpressionterm}
   {array read expression} for the array base expression #1 and index expression #2}
-\newcommand\getarrayintexpression[2]{\hyperlink{def-getarrayexpressionterm}
-{array read expression} for the array base expression #1 and integer-typed index expression #2}
 \newcommand\getenumarrayexpression[2]{\hyperlink{def-getenumarrayexpression}
 {array read expression} for the array base expression #1 and enumeration-typed index expression #2}
-\newcommand\getfieldexpressionterm[0]{\hyperlink{def-getfieldexpressionterm}{field read expression}}
 \newcommand\getfieldexpression[2]{\hyperlink{def-getfieldexpressionterm}
   {field read expression} for the record base expression #1 and field identifier #2}
-\newcommand\getfieldsexpressionterm[0]{\hyperlink{def-getfieldsexpressionterm}{multi-field read expression}}
 \newcommand\getfieldsexpression[2]{\hyperlink{def-getfieldsexpressionterm}
   {multi-field read expression} for the record base expression #1 and list of field identifiers #2}
-\newcommand\getitemexpressionterm[2]{\hyperlink{def-getfieldexpressionterm}{tuple item expression}}
 \newcommand\getitemexpression[2]{\hyperlink{def-getfieldexpressionterm}
 {tuple item expression} for the tuple base expression #1 and item index #2}
-\newcommand\recordexpressionterm[0]{\hyperlink{def-recordexpressionterm}{record construction expression}}
 \newcommand\recordexpression[2]{\hyperlink{def-recordexpressionterm}
   {record construction expression} for the record type #1 and list of field initializers #2}
-\newcommand\tupleexpressionterm[0]{\hyperlink{def-tupleexpressionterm}{tuple expression}}
 \newcommand\tupleexpression[1]{\hyperlink{def-tupleexpressionterm}
   {tuple expression} for the list of expressions #1}
-\newcommand\arbitraryexpressionterm[0]{\hyperlink{def-arbitraryexpressionterm}{\texttt{ARBITRARY} expression}}
 \newcommand\arbitraryexpression[1]{\hyperlink{def-arbitraryexpressionterm}
   {\texttt{ARBITRARY} expression} for the type #1}
 \newcommand\patternexpressionterm[0]{\hyperlink{def-patternexpressionterm}{pattern expression}}
-\newcommand\patternexpression[2]{\hyperlink{def-patternexpressionterm}
-  {pattern expression} for the expression #1 and pattern #2}
 
 %% Assignable expression macros
 \newcommand\discardlexprterm[0]{\hyperlink{def-discardlexprterm}{discarding assignment expression}}
-\newcommand\varlexprterm[0]{\hyperlink{def-varlexprterm}{assignable variable expression}}
 \newcommand\varlexpr[1]{\hyperlink{def-varlexprterm}{assignable variable expression} for the identifier #1}
-\newcommand\slicelexprterm[0]{\hyperlink{def-slicelexprterm}{assignable slicing expression}}
 \newcommand\slicelexpr[2]{\hyperlink{def-slicelexprterm}{assignable slicing expression} for the assignable expression #1 and list of slices #1}
-\newcommand\setarraylexprterm[0]{\hyperlink{def-setarraylexprterm}{assignable array expression}}
 \newcommand\setarraylexpr[2]{\hyperlink{def-setarraylexprterm}{assignable array expression} for the assignable array base expression #1 and index expression #2}
-\newcommand\setfieldlexprterm[0]{\hyperlink{def-setfieldlexprterm}{assignable field expression}}
-\newcommand\setfieldlexpr[2]{\hyperlink{def-setfieldlexprterm}{assignable field expression} for the assignable record base expression #1 and field identifier #2}
-\newcommand\setfieldslexprterm[0]{\hyperlink{def-setfieldslexprterm}{assignable multi-field expression}}
 \newcommand\setfieldslexpr[2]{\hyperlink{def-setfieldlexprterm}{assignable multi-field expression} for the assignable record base expression #1 and list of field identifier #2}
-\newcommand\destructuringlexprterm[0]{\hyperlink{def-destructuringlexprterm}{assignable multi-expression}}
 \newcommand\destructuringlexpr[1]{\hyperlink{def-destructuringlexprterm}{assignable multi-expression} for the list of assignable expressions #1}
 
 %% Statement macros
 \newcommand\passstatementterm[0]{\hyperlink{def-passstatementterm}{pass statement}}
 \newcommand\passstatementsterm[0]{\hyperlink{def-passstatementterm}{pass statements}}
-\newcommand\assignmentstatementterm[0]{\hyperlink{def-assignmentstatementterm}{assignment statement}}
 \newcommand\assignmentstatement[2]{\hyperlink{def-assignmentstatementterm}
   {assignment statement} for the assignable expression #1 and right-hand-side expression #2}
-\newcommand\setterassignmentstatementterm[0]{\hyperlink{def-setterassignmentstatementterm}{setter assignment statement}}
-\newcommand\declarationstatementterm[0]{\hyperlink{def-declarationstatementterm}{declaration statement}}
 \newcommand\declarationstatement[4]{\hyperlink{def-declarationstatementterm}
   {declaration statement} for the local declaration keyword #1, local declaration item #2, optional type annotation #3, and optional initializing expression #4}
-\newcommand\declarationstatementelidedparameterterm[0]{\hyperlink{def-declarationstatementelidedparameterterm}
-  {declaration statement with an elided parameter}}
 \newcommand\sequencingstatementterm[0]{\hyperlink{def-sequencestatementterm}{sequencing statement}}
-\newcommand\callstatementterm[0]{\hyperlink{def-callstatementterm}{call statement}}
 \newcommand\callstatement[4]{\hyperlink{def-callstatementterm}{call statement} for the subprogram #1 with list of arguments #2, list of parameters #3, and subprogram type #4}
 \newcommand\conditionalstatementterm[0]{\hyperlink{def-conditionalstatementterm}{conditional statement}}
 \newcommand\conditionalstatement[3]{\hyperlink{def-conditionalstatementterm}
@@ -1805,13 +1731,11 @@
 \newcommand\forstatementterm[0]{\hyperlink{def-forstatementterm}{for statement}}
 \newcommand\forstatement[6]{\hyperlink{def-forstatementterm}
   {for statement} for the index variable #1, start expression #2, direction #3, end expression #4, body statement #5, and optional limit expression #6}
-\newcommand\throwstatementterm[0]{\hyperlink{def-throwstatementterm}{throw statement}}
 \newcommand\throwstatementsterm[0]{\hyperlink{def-throwstatementterm}{throw statements}}
 \newcommand\throwstatement[1]{\hyperlink{def-throwstatementterm}{throw statement} for the optional exception expression #1}
 \newcommand\trystatementterm[0]{\hyperlink{def-trystatementterm}{try statement}}
 \newcommand\trystatementsterm[0]{\hyperlink{def-trystatementterm}{try statements}}
 \newcommand\trystatement[3]{\hyperlink{def-trystatementterm}{try statement} with body statement #1, list of \texttt{catch} clauses #2, and optional \texttt{otherwise} statement #3}
-\newcommand\returnstatementterm[0]{\hyperlink{def-returnstatementterm}{return statement}}
 \newcommand\returnstatementsterm[0]{\hyperlink{def-returnstatementterm}{return statements}}
 \newcommand\returnstatement[1]{\hyperlink{def-returnstatementterm}{return statement} for the optional expression #1}
 \newcommand\printstatementterm[0]{\hyperlink{def-printstatementterm}{print statement}}
@@ -1889,7 +1813,6 @@
 \newcommand\annotateexprlist[0]{\hyperlink{def-annotateexprs}{\textfunc{annotate\_exprs}}}
 \newcommand\annotatelimitexpr[0]{\hyperlink{def-annotatelimitexpr}{\textfunc{annotate\_limit\_expr}}}
 \newcommand\annotatelexpr[1]{\hyperlink{def-annotatelexpr}{\textfunc{annotate\_lexpr}}(#1)}
-\newcommand\annotatearrayindex[0]{\textfunc{annotate\_array\_index}}
 \newcommand\annotateslice[0]{\hyperlink{def-annotateslice}{\textfunc{annotate\_slice}}}
 \newcommand\annotateslices[0]{\hyperlink{def-annotateslices}{\textfunc{annotate\_slices}}}
 \newcommand\annotatepattern[0]{\hyperlink{def-annotatepattern}{\textfunc{annotate\_pattern}}}
@@ -1938,7 +1861,6 @@
 \newcommand\Prosetopologicalorderingcomps[3]{\hyperlink{def-topologicalorderingcomps}{ordering} the set of strongly-connected components #1, with respect to #2, yields the list of strongly-connected components #3}
 \newcommand\annotatedeclcomps[0]{\hyperlink{def-annotatedeclcomps}{\textfunc{annotate\_decl\_comps}}}
 \newcommand\Proseannotatedeclcomps[4]{\hyperlink{def-annotatedeclcomps}{annotating} the list of declaration components #2 in the global static environment #1 yields the list of annotated declarations #3 and new global static environment #4}
-\newcommand\evalconstraint[1]{\textfunc{eval\_constraint}(#1)}
 \newcommand\annotateliteral[1]{\hyperlink{def-annotateliteral}{\textfunc{annotate\_literal}}(#1)}
 \newcommand\exprequalcase[0]{\hyperlink{def-exprequalcase}{\textfunc{expr\_equal\_case}}}
 \newcommand\exprequalnorm[0]{\hyperlink{def-exprequalnorm}{\textfunc{expr\_equal\_norm}}}
@@ -2109,13 +2031,10 @@
 \newcommand\actualargs[0]{\texttt{actual\_args}}
 \newcommand\actuals[0]{\texttt{actuals}}
 \newcommand\actualsone[0]{\texttt{actuals1}}
-\newcommand\annotateddecls[0]{\texttt{annotated\_decls}}
 \newcommand\argdecls[0]{\texttt{arg\_decls}}
-\newcommand\argparams[0]{\texttt{arg\_params}}
 \newcommand\args[0]{\texttt{args}}
 \newcommand\argnames[0]{\texttt{arg\_names}}
 \newcommand\argtypes[0]{\texttt{arg\_types}}
-\newcommand\argtypesp[0]{\texttt{arg\_types'}}
 \newcommand\argtypesone[0]{\texttt{arg\_types1}}
 \newcommand\argtys[0]{\texttt{a\_tys}}
 \newcommand\aritymatch[0]{\texttt{arity\_match}}
@@ -2133,46 +2052,15 @@
 \newcommand\bitfieldsp[0]{\texttt{bitfields'}}
 \newcommand\bitfieldspp[0]{\texttt{bitfields''}}
 \newcommand\bits[0]{\texttt{bits}}
-\newcommand\blockenv[0]{\texttt{block\_env}}
-\newcommand\blockenvone[0]{\texttt{block\_env1}}
 \newcommand\body[0]{\texttt{body}}
-\newcommand\botcs[0]{\texttt{bot\_cs}}
 \newcommand\buff[0]{\texttt{buf}}
 \newcommand\bv[0]{\texttt{bv}}
-\newcommand\bvone[0]{\texttt{bv1}}
-\newcommand\bvtwo[0]{\texttt{bv2}}
 \newcommand\callee[0]{\texttt{callee}}
-\newcommand\calleearg[0]{\texttt{callee\_arg}}
-\newcommand\calleeargisparam[0]{\texttt{callee\_arg\_is\_param}}
-\newcommand\calleeargname[0]{\texttt{callee\_arg\_name}}
-\newcommand\calleeargone[0]{\texttt{callee\_arg1}}
-\newcommand\calleeargs[0]{\texttt{callee\_args}}
-\newcommand\calleeargsone[0]{\texttt{callee\_args\_one}}
 \newcommand\calleeargtypes[0]{\texttt{callee\_arg\_types}}
-\newcommand\calleeparam[0]{\texttt{callee\_param}}
-\newcommand\calleeparams[0]{\texttt{callee\_params}}
-\newcommand\calleeparamsone[0]{\texttt{callee\_params1}}
-\newcommand\calleeparamt[0]{\texttt{callee\_param\_t}}
-\newcommand\calleeparamtrenamed[0]{\texttt{callee\_param\_t\_renamed}}
-\newcommand\calleerettyopt[0]{\texttt{callee\_ret\_ty\_opt}}
-\newcommand\calleex[0]{\texttt{callee\_x}}
-\newcommand\caller[0]{\texttt{caller}}
-\newcommand\callerarg[0]{\texttt{caller\_arg}}
-\newcommand\callerargstyped[0]{\texttt{caller\_args\_typed}}
-\newcommand\callerargstypedone[0]{\texttt{caller\_args\_typed1}}
-\newcommand\callerargtyped[0]{\texttt{caller\_arg\_typed}}
 \newcommand\callerargtypes[0]{\texttt{caller\_arg\_types}}
-\newcommand\callerargtypesone[0]{\texttt{caller\_arg\_types1}}
-\newcommand\callere[0]{\texttt{caller\_e}}
-\newcommand\callerparame[0]{\texttt{caller\_param\_e}}
-\newcommand\callerparamname[0]{\texttt{caller\_param\_name}}
-\newcommand\callerparamt[0]{\texttt{caller\_param\_t}}
-\newcommand\callerty[0]{\texttt{caller\_ty}}
 \newcommand\calltype[0]{\texttt{call\_type}}
 \newcommand\candidates[0]{\texttt{candidates}}
 \newcommand\candidatesone[0]{\texttt{candidates1}}
-\newcommand\casecond[0]{\texttt{case\_cond}}
-\newcommand\caselist[0]{\texttt{case\_list}}
 \newcommand\catchers[0]{\texttt{catchers}}
 \newcommand\catchersone[0]{\texttt{catchers1}}
 \newcommand\catchersp[0]{\texttt{catchers'}}
@@ -2184,15 +2072,9 @@
 \newcommand\orderedcomps[0]{\texttt{orderedcomps}}
 \newcommand\comps[0]{\texttt{comps}}
 \newcommand\compsone[0]{\texttt{comps1}}
-\newcommand\compstwo[0]{\texttt{comps2}}
-\newcommand\condg[0]{\texttt{cond\_g}}
 \newcommand\condm[0]{\texttt{cond\_m}}
-\newcommand\condv[0]{\texttt{cond\_v}}
 \newcommand\constraints[0]{\texttt{constraints}}
-\newcommand\constraintsp[0]{\texttt{constraints'}}
 \newcommand\cs[0]{\texttt{cs}}
-\newcommand\cslist[0]{\texttt{cs\_list}}
-\newcommand\cslistfiltered[0]{\texttt{cs\_list\_filtered}}
 \newcommand\csone[0]{\texttt{cs1}}
 \newcommand\csonearg[0]{\texttt{cs1\_arg}}
 \newcommand\csonee[0]{\texttt{cs1\_e}}
@@ -2204,12 +2086,10 @@
 \newcommand\cstwoe[0]{\texttt{cs2\_e}}
 \newcommand\cstwof[0]{\texttt{cs2\_f}}
 \newcommand\csvanilla[0]{\texttt{cs\_vanilla}}
-\newcommand\declaredparams[0]{\texttt{declared\_params}}
 \newcommand\declaredt[0]{\texttt{declared\_t}}
 \newcommand\decls[0]{\texttt{decls}}
 \newcommand\declsone[0]{\texttt{decls1}}
 \newcommand\declsp[0]{\texttt{decls'}}
-\newcommand\declsthree[0]{\texttt{decls3}}
 \newcommand\declstwo[0]{\texttt{decls2}}
 \newcommand\defs[0]{\texttt{defs}}
 \newcommand\denvone[0]{\textsf{denv1}}
@@ -2228,9 +2108,7 @@
 \newcommand\ebaseannot[0]{\texttt{e\_base\_annot}}
 \newcommand\lebaseannot[0]{\texttt{le\_base\_annot}}
 \newcommand\ebasep[0]{\texttt{e\_base'}}
-\newcommand\ebot[0]{\texttt{e\_bot}}
 \newcommand\ebv[0]{\texttt{e\_bv}}
-\newcommand\ecaller[0]{\texttt{e\_caller}}
 \newcommand\econd[0]{\texttt{e\_cond}}
 \newcommand\econdp[0]{\texttt{e\_cond'}}
 \newcommand\efactor[0]{\texttt{factor}}
@@ -2260,12 +2138,7 @@
 \newcommand\eoffsetp[0]{\texttt{offset'}}
 \newcommand\eonen[0]{\texttt{e1\_n}}
 \newcommand\eqs[0]{\texttt{eqs}}
-\newcommand\eqsfour[0]{\texttt{eqs4}}
-\newcommand\eqsone[0]{\texttt{eqs1}}
-\newcommand\eqsp[0]{\texttt{eqs'}}
 \newcommand\eqsthree[0]{\texttt{eqs3}}
-\newcommand\eqsthreep[0]{\texttt{eqs3'}}
-\newcommand\eqstwo[0]{\texttt{eqs2}}
 \newcommand\erecord[0]{\ERecord}
 \newcommand\es[0]{\texttt{es}}
 \newcommand\estart[0]{\texttt{e\_start}}
@@ -2285,11 +2158,9 @@
 \newcommand\ewidthp[0]{\texttt{e\_width'}}
 \newcommand\explodedinterval[0]{\texttt{exploded\_interval}}
 \newcommand\expropt[0]{\texttt{expr\_opt}}
-\newcommand\exproptp[0]{\texttt{expr\_opt'}}
 \newcommand\exprs[0]{\texttt{exprs}}
 \newcommand\exprsone[0]{\texttt{exprs1}}
 \newcommand\extrafields[0]{\texttt{extra\_fields}}
-\newcommand\extranargs[0]{\texttt{extra\_nargs}}
 \newcommand\factor[0]{\texttt{factor}}
 \newcommand\falsep[0]{\texttt{false'}}
 \newcommand\field[0]{\texttt{field}}
@@ -2301,13 +2172,11 @@
 \newcommand\fieldopt[0]{\texttt{field\_opt}}
 \newcommand\fieldopts[0]{\texttt{field\_opts}}
 \newcommand\fieldsp[0]{\texttt{fields'}}
-\newcommand\fieldstwo[0]{\texttt{fields2}}
 \newcommand\fieldtypes[0]{\texttt{field\_types}}
 \newcommand\formals[0]{\texttt{formals}}
 \newcommand\formaltypes[0]{\texttt{formal\_types}}
 \newcommand\formaltys[0]{\texttt{f\_tys}}
 \newcommand\funcdef[0]{\texttt{func\_def}}
-\newcommand\funcdefone[0]{\texttt{func\_def1}}
 \newcommand\funcsig[0]{\texttt{func\_sig}}
 \newcommand\funcsigone[0]{\texttt{func\_sig1}}
 \newcommand\funcsigargs[0]{\texttt{func\_sig\_args}}
@@ -2321,7 +2190,6 @@
 \newcommand\genv[0]{\texttt{genv}}
 \newcommand\genvone[0]{\texttt{genv1}}
 \newcommand\genvtwo[0]{\texttt{genv2}}
-\newcommand\genvthree[0]{\texttt{genv3}}
 \newcommand\gsd[0]{\texttt{gsd}}
 \newcommand\gsdp[0]{\texttt{gsd'}}
 \newcommand\icsdown[0]{\texttt{ics\_down}}
@@ -2341,13 +2209,9 @@
 \newcommand\initialvaluetype[0]{\texttt{initial\_value\_type}}
 \newcommand\irone[0]{\texttt{ir1}}
 \newcommand\irtwo[0]{\texttt{ir2}}
-\newcommand\isone[0]{\texttt{is1}}
-\newcommand\issetter[0]{\texttt{is\_setter}}
-\newcommand\istwo[0]{\texttt{is2}}
 \newcommand\iswhile[0]{\texttt{is\_while}}
 \newcommand\keyword[0]{\texttt{keyword}}
 \newcommand\ldi[0]{\texttt{ldi}}
-\newcommand\ldione[0]{\texttt{ldi1}}
 \newcommand\ldip[0]{\texttt{ldi'}}
 \newcommand\ldis[0]{\texttt{ldis}}
 \newcommand\ldk[0]{\texttt{ldk}}
@@ -2356,13 +2220,11 @@
 \newcommand\lenv[0]{\texttt{lenv}}
 \newcommand\lenvtwo[0]{\texttt{lenv2}}
 \newcommand\les[0]{\texttt{les}}
-\newcommand\lesone[0]{\texttt{les1}}
 \newcommand\lesp[0]{\texttt{les'}}
 \newcommand\lhs[0]{\texttt{lhs}}
 \newcommand\lhsp[0]{\texttt{lhs'}}
 \newcommand\liv[0]{\texttt{liv}}
 \newcommand\marray[0]{\texttt{m\_array}}
-\newcommand\matchedname[0]{\texttt{matched\_name}}
 \newcommand\matches[0]{\texttt{matches}}
 \newcommand\matchesone[0]{\texttt{matches1}}
 \newcommand\matchingrenamings[0]{\texttt{matching\_renamings}}
@@ -2373,36 +2235,23 @@
 \newcommand\mindex[0]{\texttt{m\_index}}
 \newcommand\minpos[0]{\texttt{min\_pos}}
 \newcommand\mlength[0]{\texttt{m\_length}}
-\newcommand\monome[0]{\texttt{monome}}
 \newcommand\monoms[0]{\texttt{monoms}}
 \newcommand\monomsone[0]{\texttt{monoms1}}
 \newcommand\mpositions[0]{\texttt{m\_positions}}
 \newcommand\msliceranges[0]{\texttt{m\_sliceranges}}
 \newcommand\ms[0]{\texttt{ms}}
-\newcommand\msout[0]{\texttt{ms\_out}}
 \newcommand\mstart[0]{\texttt{m\_start}}
 \newcommand\mtop[0]{\texttt{m\_top}}
 \newcommand\name[0]{\texttt{name}}
-\newcommand\nameargs[0]{\texttt{name\_args}}
 \newcommand\namedargs[0]{\texttt{named\_args}}
-\newcommand\nameformals[0]{\texttt{name\_formals}}
-\newcommand\nameformaltypes[0]{\texttt{name\_formal\_types}}
 \newcommand\nameone[0]{\texttt{name1}}
 \newcommand\nameopt[0]{\texttt{name\_opt}}
 \newcommand\namep[0]{\texttt{name'}}
-\newcommand\namepp[0]{\texttt{name''}}
 \newcommand\names[0]{\texttt{names}}
 \newcommand\namesp[0]{\texttt{names'}}
-\newcommand\namesubpgmtype[0]{\texttt{name\_subpgmtype}}
 \newcommand\namesubs[0]{\texttt{name\_s}}
 \newcommand\namesubt[0]{\texttt{name\_t}}
 \newcommand\nametwo[0]{\texttt{name2}}
-\newcommand\nargs[0]{\texttt{nargs}}
-\newcommand\nargsm[0]{\texttt{nargs\_m}}
-\newcommand\nargsone[0]{\texttt{nargs1}}
-\newcommand\nargsthree[0]{\texttt{nargs3}}
-\newcommand\nargstwo[0]{\texttt{nargs2}}
-\newcommand\nargstwom[0]{\texttt{nargs2\_m}}
 \newcommand\newargs[0]{\texttt{new\_args}}
 \newcommand\newbody[0]{\texttt{new\_body}}
 \newcommand\newc[0]{\texttt{new\_c}}
@@ -2415,8 +2264,6 @@
 \newcommand\neweopt[0]{\texttt{new\_e\_opt}}
 \newcommand\newenv[0]{\texttt{new\_env}}
 \newcommand\newenvandfs[0]{\texttt{new\_env\_and\_fs}}
-\newcommand\neweqs[0]{\texttt{new\_eqs}}
-\newcommand\newes[0]{\texttt{new\_e\_s}}
 \newcommand\newfield[0]{\texttt{new\_field}}
 \newcommand\newfields[0]{\texttt{new\_fields}}
 \newcommand\newfuncdef[0]{\texttt{new\_func\_def}}
@@ -2424,11 +2271,8 @@
 \newcommand\newg[0]{\texttt{new\_g}}
 \newcommand\newgenv[0]{\texttt{new\_genv}}
 \newcommand\newgsd[0]{\texttt{new\_gsd}}
-\newcommand\newids[0]{\texttt{new\_ids}}
 \newcommand\newl[0]{\texttt{new\_l}}
 \newcommand\newldi[0]{\texttt{new\_ldi}}
-\newcommand\newldip[0]{\texttt{new\_ldi'}}
-\newcommand\newldis[0]{\texttt{new\_ldis'}}
 \newcommand\newle[0]{\texttt{new\_le}}
 \newcommand\newli[0]{\texttt{new\_li}}
 \newcommand\newleint[0]{\texttt{new\_le\_int}}
@@ -2436,15 +2280,12 @@
 \newcommand\newlocalstoragetypes[0]{\texttt{new\_local\_storagetypes}}
 \newcommand\newmbv[0]{\texttt{new\_m\_bv}}
 \newcommand\newname[0]{\texttt{new\_name}}
-\newcommand\newopt[0]{\texttt{new\_opt}}
 \newcommand\newp[0]{\texttt{new\_p}}
 \newcommand\newq[0]{\texttt{new\_q}}
-\newcommand\newrenamings[0]{\texttt{new\_renamings}}
 \newcommand\newreturntype[0]{\texttt{new\_return\_type}}
 \newcommand\news[0]{\texttt{new\_s}}
 \newcommand\newsone[0]{\texttt{new\_s1}}
 \newcommand\newstmt[0]{\texttt{new\_stmt}}
-\newcommand\newstmtp[0]{\texttt{new\_stmt'}}
 \newcommand\newstwo[0]{\texttt{new\_s2}}
 \newcommand\newtenv[0]{\texttt{new\_tenv}}
 \newcommand\newtenvp[0]{\texttt{new\_tenv'}}
@@ -2458,7 +2299,6 @@
 \newcommand\opfordir[0]{\texttt{op\_for\_dir}}
 \newcommand\opone[0]{\texttt{op1}}
 \newcommand\optwo[0]{\texttt{op2}}
-\newcommand\ordereddecls[0]{\texttt{ordered\_decls}}
 \newcommand\orderedps[0]{\texttt{ordered\_ps}}
 \newcommand\otherfuncsig[0]{\texttt{other\_func\_sig}}
 \newcommand\othernames[0]{\texttt{other\_names}}
@@ -2471,25 +2311,18 @@
 \newcommand\paramargs[0]{\texttt{param\_args}}
 \newcommand\paramaritymatch[0]{\texttt{param\_arity\_match}}
 \newcommand\paramdecls[0]{\texttt{param\_decls}}
-\newcommand\paramname[0]{\texttt{param\_name}}
 \newcommand\params[0]{\texttt{params}}
 \newcommand\newparams[0]{\texttt{new\_params}}
 \newcommand\paramnames[0]{\texttt{param\_names}}
 \newcommand\paramsp[0]{\texttt{params'}}
 \newcommand\paramsone[0]{\texttt{params1}}
 \newcommand\paramsonep[0]{\texttt{params1'}}
-\newcommand\parsedast[0]{\texttt{parsed\_ast}}
-\newcommand\parsedspec[0]{\texttt{parsed\_spec}}
-\newcommand\parsedstd[0]{\texttt{parsed\_std}}
-\newcommand\parsedstdp[0]{\texttt{parsed\_std'}}
 \newcommand\positions[0]{\texttt{positions}}
 \newcommand\sliceranges[0]{\texttt{slice\_ranges}}
 \newcommand\positionsone[0]{\texttt{positions1}}
 \newcommand\positionstwo[0]{\texttt{positions2}}
 \newcommand\positionsoneopt[0]{\texttt{positions1\_opt}}
 \newcommand\positionstwoopt[0]{\texttt{positions2\_opt}}
-\newcommand\posmax[0]{\texttt{pos\_max}}
-\newcommand\potentialparams[0]{\texttt{potential\_params}}
 \newcommand\prelength[0]{\texttt{pre\_length}}
 \newcommand\prelengthp[0]{\texttt{pre\_length'}}
 \newcommand\preoffset[0]{\texttt{pre\_offset}}
@@ -2499,24 +2332,18 @@
 \newcommand\rangesone[0]{\texttt{ranges1}}
 \newcommand\rearray[0]{\texttt{re\_array}}
 \newcommand\record[0]{\texttt{record}}
-\newcommand\reduced[0]{\texttt{reduced}}
 \newcommand\renamingset[0]{\texttt{renaming\_set}}
 \newcommand\rerecord[0]{\texttt{re\_record}}
-\newcommand\ret[0]{\texttt{ret}}
 \newcommand\retenv[0]{\texttt{ret\_env}}
 \newcommand\retty[0]{\texttt{ret\_ty}}
-\newcommand\rettyone[0]{\texttt{ret\_ty1}}
 \newcommand\rettyopt[0]{\texttt{ret\_ty\_opt}}
 \newcommand\newrettyopt[0]{\texttt{new\_ret\_ty\_opt}}
-\newcommand\rettype[0]{\texttt{ret\_type}}
 \newcommand\rhs[0]{\texttt{rhs}}
-\newcommand\rid[0]{\texttt{rid}}
 \newcommand\rmarray[0]{\texttt{rm\_array}}
 \newcommand\rmrecord[0]{\texttt{rm\_record}}
 \newcommand\rvarray[0]{\texttt{rv\_array}}
 \newcommand\rvrecord[0]{\texttt{rv\_record}}
 \newcommand\rvrecordone[0]{\texttt{rv\_record1}}
-\newcommand\setters[0]{\texttt{setters}}
 \newcommand\pragmas[0]{\texttt{pragmas}}
 \newcommand\sg[0]{\texttt{s\_g}}
 \newcommand\size[0]{\texttt{size}}
@@ -2529,11 +2356,9 @@
 \newcommand\sm[0]{\texttt{s\_m}}
 \newcommand\smnew[0]{\texttt{s\_m\_new}}
 \newcommand\src[0]{\texttt{src}}
-\newcommand\start[0]{\texttt{start}}
 \newcommand\stm[0]{\texttt{stm}}
 \newcommand\structone[0]{\texttt{struct1}}
 \newcommand\structtep[0]{\texttt{struct\_t\_e'}}
-\newcommand\structtleone[0]{\texttt{struct\_t\_le1}}
 \newcommand\tleoneanon[0]{\texttt{t\_le1\_anon}}
 \newcommand\structtwo[0]{\texttt{struct2}}
 \newcommand\subfields[0]{\texttt{subfields}}
@@ -2542,25 +2367,16 @@
 \newcommand\subpgmtypetwo[0]{\texttt{subpgm\_type2}}
 \newcommand\substs[0]{\texttt{substs}}
 \newcommand\subtys[0]{\texttt{sub\_tys}}
-\newcommand\ta[0]{\texttt{ta}}
 \newcommand\tbase[0]{\texttt{t\_base}}
 \newcommand\tbaseannot[0]{\texttt{t\_base\_annot}}
 \newcommand\tbaseanon[0]{\texttt{t\_base\_anon}}
 \newcommand\tbaseannotanon[0]{\texttt{t\_base\_annot\_anon}}
 \newcommand\tcond[0]{\texttt{t\_cond}}
 \newcommand\telem[0]{\texttt{t\_elem}}
-\newcommand\tenvfive[0]{\texttt{tenv5}}
-\newcommand\tenvfour[0]{\texttt{tenv4}}
 \newcommand\tenvone[0]{\texttt{tenv1}}
-\newcommand\tenvonep[0]{\texttt{tenv1'}}
-\newcommand\tenvonepp[0]{\texttt{tenv1''}}
 \newcommand\tenvp[0]{\texttt{tenv'}}
 \newcommand\tenvthree[0]{\texttt{tenv3}}
-\newcommand\tenvthreep[0]{\texttt{tenv3'}}
 \newcommand\tenvtwo[0]{\texttt{tenv2}}
-\newcommand\tenvtwop[0]{\texttt{tenv2'}}
-\newcommand\tenvtwopp[0]{\texttt{tenv2''}}
-\newcommand\vtenv[0]{\texttt{tenv}}
 \newcommand\vtfield[0]{\texttt{t\_field}}
 \newcommand\vtopabsolute[0]{\texttt{top\_absolute}}
 \newcommand\tenvwithparams[0]{\texttt{tenv\_with\_params}}
@@ -2568,21 +2384,15 @@
 \newcommand\tep[0]{\texttt{t\_e'}}
 \newcommand\testruct[0]{\texttt{t\_e\_struct}}
 \newcommand\tfalse[0]{\texttt{t\_false}}
-\newcommand\tindex[0]{\texttt{t\_index}}
 \newcommand\tindexp[0]{\texttt{t\_index'}}
-\newcommand\tlength[0]{\texttt{t\_length}}
 \newcommand\toffset[0]{\texttt{t\_offset}}
-\newcommand\topcs[0]{\texttt{top\_cs}}
 \newcommand\truep[0]{\texttt{true'}}
 \newcommand\ts[0]{\textit{ts}}
-\newcommand\tsanon[0]{\texttt{t\_s\_anon}}
 \newcommand\tspecp[0]{\texttt{t\_spec'}}
 \newcommand\tstwo[0]{\textit{ts2}}
-\newcommand\tsubs[0]{\texttt{t\_s}}
 \newcommand\tsy[0]{\texttt{sy}}
 \newcommand\ttrue[0]{\texttt{t\_true}}
 \newcommand\tty[0]{\texttt{ty}}
-\newcommand\ttyname[0]{\texttt{ty\_name}}
 \newcommand\ttyanon[0]{\texttt{ty\_anon}}
 \newcommand\tyactual[0]{\texttt{ty\_actual}}
 \newcommand\tydecl[0]{\texttt{ty\_decl}}
@@ -2593,7 +2403,6 @@
 \newcommand\ttytwo[0]{\texttt{ty2}}
 \newcommand\tyopt[0]{\texttt{ty\_opt}}
 \newcommand\tyoptp[0]{\texttt{ty\_opt'}}
-\newcommand\typeannotation[0]{\texttt{type\_annotation}}
 \newcommand\typedargs[0]{\texttt{typed\_args}}
 \newcommand\typedexpr[0]{\texttt{typed\_expr}}
 \newcommand\typedexprs[0]{\texttt{typed\_exprs}}
@@ -2601,14 +2410,11 @@
 \newcommand\typedspec[0]{\texttt{typed\_spec}}
 \newcommand\tys[0]{\texttt{tys}}
 \newcommand\tysp[0]{\texttt{tys'}}
-\newcommand\useset[0]{\texttt{use\_set}}
 \newcommand\va[0]{\texttt{a}}
 \newcommand\vapprox[0]{\texttt{approx}}
 \newcommand\vap[0]{\texttt{a'}}
-\newcommand\vacc[0]{\texttt{acc}}
 \newcommand\vaccessors[0]{\texttt{accessors}}
 \newcommand\vaccessorpair[0]{\texttt{accessor\_pair}}
-\newcommand\vad[0]{\texttt{ad}}
 \newcommand\vabsname[0]{\texttt{absolute\_name}}
 \newcommand\vabsslice[0]{\texttt{absolute\_slice}}
 \newcommand\vabsslices[0]{\texttt{absolute\_slices}}
@@ -2616,61 +2422,47 @@
 \newcommand\vabsoluteparent[0]{\texttt{absolute\_parent}}
 \newcommand\vabsbitfields[0]{\texttt{abs\_bitfields}}
 \newcommand\vabsbitfieldsone[0]{\texttt{abs\_bitfields1}}
-\newcommand\vdeclnew[0]{\texttt{decl\_new}}
 \newcommand\vdeclx[0]{\texttt{decl\_x}}
 \newcommand\vadecls[0]{\texttt{adecls}}
 \newcommand\vcf[0]{\texttt{cf}}
 \newcommand\vctrlflow[0]{\texttt{ctrl\_flow}}
 \newcommand\vctrlflowone[0]{\texttt{ctrl\_flow1}}
 \newcommand\vctrlflowtwo[0]{\texttt{ctrl\_flow2}}
-\newcommand\vcasevarid[0]{\texttt{case\_var\_id}}
 \newcommand\vcases[0]{\texttt{cases}}
 \newcommand\vcasealtlist[0]{\texttt{case\_alt\_list}}
 \newcommand\vcasealtlistast[0]{\texttt{case\_alt\_list\_ast}}
-\newcommand\vcaseotherwise[0]{\texttt{case\_otherwise}}
 \newcommand\votherwise[0]{\texttt{otherwise}}
 \newcommand\voverride[0]{\texttt{override}}
 \newcommand\voverridden[0]{\texttt{overridden}}
 \newcommand\vanons[0]{\texttt{anon\_s}}
 \newcommand\vanont[0]{\texttt{anon\_t}}
-\newcommand\vaoptfields[0]{\texttt{aopt\_fields}}
-\newcommand\vardecl[0]{\texttt{vardecl}}
 \newcommand\varg[0]{\texttt{arg}}
 \newcommand\vargasts[0]{\texttt{arg\_asts}}
-\newcommand\vargone[0]{\texttt{arg1}}
 \newcommand\vargs[0]{\texttt{args}}
-\newcommand\vargsm[0]{\texttt{vargs\_m}}
 \newcommand\vargsone[0]{\texttt{args1}}
 \newcommand\vargsonep[0]{\texttt{args1'}}
 \newcommand\vargsp[0]{\texttt{args'}}
 \newcommand\vargstwo[0]{\texttt{args2}}
-\newcommand\vargtwo[0]{\texttt{arg2}}
 \newcommand\varray[0]{\texttt{v\_array}}
-\newcommand\vast[0]{\texttt{ast}}
 \newcommand\vastnode[0]{\texttt{ast\_node}}
 \newcommand\vasty[0]{\texttt{as\_ty}}
 \newcommand\vastyopt[0]{\texttt{as\_ty\_opt}}
 \newcommand\vsamescope[0]{\texttt{same\_scope}}
-\newcommand\vsamenameandscope[0]{\texttt{same\_name\_and\_scope}}
 \newcommand\vallwayssucceeds[0]{\texttt{allways\_succeeds}}
 \newcommand\vb[0]{\texttt{b}}
 \newcommand\vbuiltin[0]{\texttt{builtin}}
 \newcommand\vbits[0]{\texttt{bits}}
 \newcommand\vbp[0]{\texttt{b'}}
 \newcommand\vbase[0]{\texttt{base}}
-\newcommand\vbaseone[0]{\texttt{base1}}
 \newcommand\vbasefields[0]{\texttt{base\_fields}}
 \newcommand\vbasiclexpr[0]{\texttt{basic\_lexpr}}
 \newcommand\vbequal[0]{\texttt{b\_equal}}
 \newcommand\vbequallength[0]{\texttt{b\_equal\_length}}
-\newcommand\vbexploding[0]{\texttt{b\_exploding}}
 \newcommand\vbf[0]{\texttt{bf}}
 \newcommand\vbfindices[0]{\texttt{bf\_indices}}
 \newcommand\vbfabsolute[0]{\texttt{bf\_absolute}}
 \newcommand\vbfname[0]{\texttt{bf\_name}}
 \newcommand\vbfone[0]{\texttt{bf1}}
-\newcommand\vbfopt[0]{\texttt{bf\_opt}}
-\newcommand\vbfour[0]{\texttt{b4}}
 \newcommand\vbftwo[0]{\texttt{bf2}}
 \newcommand\vbinop[0]{\texttt{binop}}
 \newcommand\vbitfieldasts[0]{\texttt{bitfield\_asts}}
@@ -2680,7 +2472,6 @@
 \newcommand\vnewbody[0]{\texttt{new\_body}}
 \newcommand\vbodyp[0]{\texttt{body'}}
 \newcommand\vbone[0]{\texttt{b1}}
-\newcommand\vbot[0]{\texttt{bot}}
 \newcommand\vbs[0]{\texttt{bs}}
 \newcommand\vbthree[0]{\texttt{b3}}
 \newcommand\vbtoolarge[0]{\texttt{b\_too\_large}}
@@ -2690,18 +2481,13 @@
 \newcommand\vcp[0]{\texttt{c'}}
 \newcommand\vcall[0]{\texttt{call}}
 \newcommand\vcallp[0]{\texttt{call'}}
-\newcommand\vcallpp[0]{\texttt{call''}}
 \newcommand\vcase[0]{\texttt{case}}
-\newcommand\vcaseone[0]{\texttt{case1}}
 \newcommand\vcasesone[0]{\texttt{cases1}}
 \newcommand\vcatcherlist[0]{\texttt{catcher\_list}}
-\newcommand\vcds[0]{\texttt{vds}}
 \newcommand\vcond[0]{\texttt{v\_cond}}
 \newcommand\vcondexpr[0]{\texttt{cond\_expr}}
 \newcommand\vcone[0]{\texttt{c1}}
-\newcommand\vconstraintasts[0]{\texttt{constraint\_asts}}
 \newcommand\vcsasts[0]{\texttt{cs\_asts}}
-\newcommand\vconstraints[0]{\texttt{constraints}}
 \newcommand\vconstraintkind[0]{\texttt{constraint\_kind}}
 \newcommand\vconstraintkindopt[0]{\texttt{constraint\_kind\_opt}}
 \newcommand\vcopt[0]{\texttt{c\_opt}}
@@ -2716,8 +2502,6 @@
 \newcommand\vdecl[0]{\texttt{decl}}
 \newcommand\vdeclp[0]{\texttt{decl'}}
 \newcommand\vdeclitem[0]{\texttt{decl\_item}}
-\newcommand\vdeclitemasts[0]{\texttt{decls\_item\_asts}}
-\newcommand\vdeclitems[0]{\texttt{decls\_items}}
 \newcommand\vdecls[0]{\texttt{decls}}
 \newcommand\vdeclsone[0]{\texttt{decls1}}
 \newcommand\vnewdecl[0]{\texttt{new\_decl}}
@@ -2736,12 +2520,10 @@
 \newcommand\vefive[0]{\texttt{e5}}
 \newcommand\vefour[0]{\texttt{e4}}
 \newcommand\vefourfive[0]{\texttt{e45}}
-\newcommand\velem[0]{\texttt{v\_elem}}
 \newcommand\velimit[0]{\texttt{e\_limit}}
 \newcommand\velimitopt[0]{\texttt{e\_limit\_opt}}
 \newcommand\velimitoptp[0]{\texttt{e\_limit\_opt'}}
 \newcommand\velse[0]{\texttt{else}}
-\newcommand\velseexpr[0]{\texttt{else\_expr}}
 \newcommand\vend[0]{\texttt{v\_end}}
 \newcommand\vende[0]{\texttt{end\_e}}
 \newcommand\vendep[0]{\texttt{end\_e'}}
@@ -2766,7 +2548,6 @@
 \newcommand\vep[0]{\texttt{e'}}
 \newcommand\vepp[0]{\texttt{e''}}
 \newcommand\vepattern[0]{\texttt{e\_pattern}}
-\newcommand\veq[0]{\texttt{eq}}
 \newcommand\ves[0]{\texttt{e\_s}}
 \newcommand\vesp[0]{\texttt{es'}}
 \newcommand\vet[0]{\texttt{e\_t}}
@@ -2777,9 +2558,7 @@
 \newcommand\vetwop[0]{\texttt{e2'}}
 \newcommand\vetwothree[0]{\texttt{e2\_3}}
 \newcommand\vetwotwo[0]{\texttt{e2\_2}}
-\newcommand\vewone[0]{\texttt{e\_w1}}
 \newcommand\vewhere[0]{\texttt{e\_where}}
-\newcommand\vewzero[0]{\texttt{e\_w0}}
 \newcommand\vex[0]{\texttt{ex}}
 \newcommand\vexpr[0]{\texttt{expr}}
 \newcommand\vexprasts[0]{\texttt{expr\_asts}}
@@ -2789,10 +2568,8 @@
 \newcommand\vfl[0]{\texttt{fl}}
 \newcommand\vnewf[0]{\texttt{f\_new}}
 \newcommand\vfs[0]{\texttt{fs}}
-\newcommand\vfsthree[0]{\texttt{fs3}}
 \newcommand\vfactor[0]{\texttt{v\_factor}}
 \newcommand\vfield[0]{\texttt{field}}
-\newcommand\vfieldinits[0]{\texttt{field\_inits}}
 \newcommand\vfieldwidth[0]{\texttt{field\_width}}
 \newcommand\vfieldassignasts[0]{\texttt{field\_assign\_asts}}
 \newcommand\vfieldassigns[0]{\texttt{field\_assigns}}
@@ -2808,12 +2585,10 @@
 \newcommand\vfieldst[0]{\texttt{fields\_t}}
 \newcommand\vfieldstwo[0]{\texttt{fields2}}
 \newcommand\vfieldtwo[0]{\texttt{field2}}
-\newcommand\vfilter[0]{\texttt{filter}}
 \newcommand\vfone[0]{\texttt{f1}}
 \newcommand\vfp[0]{\texttt{f'}}
 \newcommand\vfromexpr[0]{\texttt{from\_expr}}
 \newcommand\vftwo[0]{\texttt{f2}}
-\newcommand\vfunc[0]{\texttt{func}}
 \newcommand\vfuncone[0]{\texttt{func1}}
 \newcommand\vfunctwo[0]{\texttt{func2}}
 \newcommand\vfuncs[0]{\texttt{funcs}}
@@ -2842,7 +2617,6 @@
 \newcommand\refinedcs[0]{\texttt{refined\_cs}}
 \newcommand\vics[0]{\texttt{ics}}
 \newcommand\vidasts[0]{\texttt{id\_asts}}
-\newcommand\vidopt[0]{\texttt{id\_opt}}
 \newcommand\vids[0]{\texttt{ids}}
 \newcommand\vidsone[0]{\texttt{ids1}}
 \newcommand\vignoredoridentifier[0]{\texttt{ignored\_or\_identifier}}
@@ -2859,20 +2633,17 @@
 \newcommand\vistwo[0]{\texttt{is2}}
 \newcommand\vitwo[0]{\texttt{i2}}
 \newcommand\vj[0]{\texttt{j}}
-\newcommand\vk[0]{\texttt{k}}
 \newcommand\vkeyword[0]{\texttt{keyword}}
 \newcommand\vl[0]{\texttt{l}}
 \newcommand\vlabel[0]{\texttt{label}}
 \newcommand\vlabels[0]{\texttt{labels}}
 \newcommand\vlabelsone[0]{\texttt{labels1}}
-\newcommand\vlabelstwo[0]{\texttt{labels2}}
 \newcommand\vlastindex[0]{\texttt{last\_index}}
 \newcommand\vle[0]{\texttt{le}}
 \newcommand\vlep[0]{\texttt{le'}}
 \newcommand\vlelist[0]{\texttt{le\_list}}
 \newcommand\vlelistone[0]{\texttt{le\_list1}}
 \newcommand\vlength[0]{\texttt{v\_length}}
-\newcommand\vlengthp[0]{\texttt{v\_length'}}
 \newcommand\vlengthexprs[0]{\texttt{length\_expr\_s}}
 \newcommand\vlengthexprt[0]{\texttt{length\_expr\_t}}
 \newcommand\vlengths[0]{\texttt{length\_s}}
@@ -2904,9 +2675,6 @@
 \newcommand\vlitwo[0]{\texttt{li2}}
 \newcommand\vlocaldeclkeyword[0]{\texttt{local\_decl\_keyword}}
 \newcommand\vlone[0]{\texttt{l1}}
-\newcommand\vlp[0]{\texttt{l'}}
-\newcommand\vls[0]{\texttt{l\_s}}
-\newcommand\vlt[0]{\texttt{l\_t}}
 \newcommand\vltwo[0]{\texttt{l2}}
 \newcommand\vlthree[0]{\texttt{l3}}
 \newcommand\vimmutable[0]{\texttt{immutable}}
@@ -2927,7 +2695,6 @@
 \newcommand\vmstwo[0]{\texttt{vms2}}
 \newcommand\vmtwo[0]{\texttt{m2}}
 \newcommand\vn[0]{\texttt{n}}
-\newcommand\vnp[0]{\texttt{n'}}
 \newcommand\vnames[0]{\texttt{name\_s}}
 \newcommand\vnamess[0]{\texttt{names\_s}}
 \newcommand\vnamest[0]{\texttt{names\_t}}
@@ -2939,23 +2706,16 @@
 \newcommand\vnew[0]{\texttt{new}}
 \newcommand\vnonmatching[0]{\texttt{nonmatching}}
 \newcommand\vnormal[0]{\texttt{normal}}
-\newcommand\vds[0]{\texttt{ds}}
-\newcommand\vnewarg[0]{\texttt{new\_arg}}
 \newcommand\vnewargs[0]{\texttt{new\_args}}
-\newcommand\vnonspassstmts[0]{\texttt{non\_spass\_stmts}}
 \newcommand\vnewline[0]{\texttt{newline}}
 \newcommand\vo[0]{\texttt{o}}
-\newcommand\voptfields[0]{\texttt{opt\_fields}}
 \newcommand\voptlimit[0]{\texttt{opt\_limit}}
 \newcommand\votherwiseopt[0]{\texttt{otherwise\_opt}}
 \newcommand\vouterenv[0]{\texttt{outer\_env}}
 \newcommand\vp[0]{\texttt{p}}
 \newcommand\paramtype[0]{\texttt{param\_type}}
-\newcommand\vprefixcases[0]{\texttt{prefix\_cases}}
 \newcommand\vprev[0]{\texttt{prev}}
-\newcommand\vparam[0]{\texttt{param}}
 \newcommand\vparameters[0]{\texttt{parameters}}
-\newcommand\vparametersone[0]{\texttt{parameters1}}
 \newcommand\vparams[0]{\texttt{params}}
 \newcommand\vparamsopt[0]{\texttt{params\_opt}}
 \newcommand\vparsednode[0]{\texttt{parsed\_node}}
@@ -2997,7 +2757,6 @@
 \newcommand\vscopeone[0]{\texttt{scope1}}
 \newcommand\vscopetwo[0]{\texttt{scope2}}
 \newcommand\vscond[0]{\texttt{s\_cond}}
-\newcommand\vse[0]{\texttt{se}}
 \newcommand\vselse[0]{\texttt{s\_else}}
 \newcommand\initses[0]{\texttt{init\_ses}}
 \newcommand\vsesinitialvalue[0]{\texttt{ses\_initial\_value}}
@@ -3012,7 +2771,6 @@
 \newcommand\vsesbody[0]{\texttt{ses\_body}}
 \newcommand\vsesfuncsig[0]{\texttt{ses\_func\_sig}}
 \newcommand\vsesin[0]{\texttt{ses\_in}}
-\newcommand\vsefiltered[0]{\texttt{ses\_filtered}}
 \newcommand\vsesotherwise[0]{\texttt{ses\_otherwise}}
 \newcommand\vsesldi[0]{\texttt{ses\_ldi}}
 \newcommand\vsesblock[0]{\texttt{ses\_block}}
@@ -3091,8 +2849,6 @@
 \newcommand\vstmtlist[0]{\texttt{stmt\_list}}
 \newcommand\vstmts[0]{\texttt{stmts}}
 \newcommand\vstmtsone[0]{\texttt{stmts1}}
-\newcommand\vstructs[0]{\texttt{struct\_s}}
-\newcommand\vstructt[0]{\texttt{struct\_t}}
 \newcommand\vstwo[0]{\texttt{s2}}
 \newcommand\vstwop[0]{\texttt{s2'}}
 \newcommand\vsthree[0]{\texttt{s3}}
@@ -3107,32 +2863,25 @@
 \newcommand\vsymastsone[0]{\texttt{sym\_asts1}}
 \newcommand\vsyms[0]{\texttt{syms}}
 \newcommand\vsymsone[0]{\texttt{syms1}}
-\newcommand\vszero[0]{\texttt{s0}}
 \newcommand\vt[0]{\texttt{t}}
 \newcommand\vtail[0]{\texttt{tail}}
 \newcommand\vte[0]{\texttt{t\_e}}
-\newcommand\vteeq[0]{\texttt{t\_e\_eq}}
-\newcommand\vtefive[0]{\texttt{t\_e5}}
 \newcommand\vtefour[0]{\texttt{t\_e4}}
 \newcommand\vteone[0]{\texttt{t\_e1}}
 \newcommand\vteonestruct[0]{\texttt{t\_e1\_struct}}
 \newcommand\vtep[0]{\texttt{t\_e'}}
 \newcommand\vtestruct[0]{\texttt{t\_e\_struct}}
-\newcommand\vtethree[0]{\texttt{t\_e3}}
 \newcommand\vtetwo[0]{\texttt{t\_e2}}
 \newcommand\vtefield[0]{\texttt{t\_field}}
 \newcommand\vtetwostruct[0]{\texttt{t\_e2\_struct}}
-\newcommand\vtetwoanon[0]{\texttt{t\_e2\_anon}}
 \newcommand\vthenexpr[0]{\texttt{then\_expr}}
 \newcommand\vtlhs[0]{\texttt{t\_lhs}}
 \newcommand\vtleone[0]{\texttt{t\_le1}}
-\newcommand\vtleonestruct[0]{\texttt{t\_le1\_struct}}
 \newcommand\vtoexpr[0]{\texttt{to\_expr}}
 \newcommand\vtone[0]{\texttt{t1}}
 \newcommand\vtonewellconstrained[0]{\texttt{t1\_well\_constrained}}
 \newcommand\vttwowellconstrained[0]{\texttt{t2\_well\_constrained}}
 \newcommand\vtoneanon[0]{\texttt{t1\_anon}}
-\newcommand\vtonestruct[0]{\texttt{t1\_struct}}
 \newcommand\vtp[0]{\texttt{t'}}
 \newcommand\vtpp[0]{\texttt{t''}}
 \newcommand\vtre[0]{\texttt{t\_re}}
@@ -3141,12 +2890,8 @@
 \newcommand\vtstruct[0]{\texttt{t\_struct}}
 \newcommand\vtstwo[0]{\texttt{ts2}}
 \newcommand\vtsupers[0]{\texttt{t\_supers}}
-\newcommand\vtt[0]{\texttt{t\_t}}
-\newcommand\vtthree[0]{\texttt{t3}}
 \newcommand\vttwo[0]{\texttt{t2}}
 \newcommand\vttwoanon[0]{\texttt{t2\_anon}}
-\newcommand\vttwostruct[0]{\texttt{t2\_struct}}
-\newcommand\vtwe[0]{\texttt{twe}}
 \newcommand\vtypedast[0]{\texttt{typed\_ast}}
 \newcommand\vtypeasts[0]{\texttt{type\_asts}}
 \newcommand\vtypes[0]{\texttt{types}}
@@ -3156,8 +2901,6 @@
 \newcommand\vu[0]{\texttt{u}}
 \newcommand\vunop[0]{\texttt{unop}}
 \newcommand\vuntypedast[0]{\texttt{untyped\_ast}}
-\newcommand\vused[0]{\texttt{used}}
-\newcommand\vusedone[0]{\texttt{used1}}
 \newcommand\vv[0]{\texttt{v}}
 \newcommand\vvrecordslices[0]{\texttt{v\_record\_slices}}
 \newcommand\vvalue[0]{\texttt{value}}
@@ -3177,12 +2920,8 @@
 \newcommand\vvs[0]{\texttt{vs}}
 \newcommand\newvs[0]{\texttt{new\_vs}}
 \newcommand\vvsp[0]{\texttt{vs'}}
-\newcommand\vvsg[0]{\texttt{vsg}}
-\newcommand\vvsm[0]{\texttt{vsm}}
-\newcommand\vvsmone[0]{\texttt{vsm1}}
 \newcommand\vvsone[0]{\texttt{vs1}}
 \newcommand\vvsubtop[0]{\texttt{v\_top}}
-\newcommand\vvtop[0]{\texttt{top}}
 \newcommand\vvtwo[0]{\texttt{v2}}
 \newcommand\vvtuple[0]{\texttt{v\_tuple}}
 \newcommand\vvty[0]{\texttt{v\_ty}}
@@ -3191,11 +2930,9 @@
 \newcommand\vwhereast[0]{\texttt{where\_ast}}
 \newcommand\vwhereopt[0]{\texttt{where\_opt}}
 \newcommand\vwidth[0]{\texttt{width}}
-\newcommand\vwidths[0]{\texttt{widths}}
 \newcommand\vwone[0]{\texttt{w1}}
 \newcommand\vwp[0]{\texttt{w'}}
 \newcommand\vwtwo[0]{\texttt{w2}}
-\newcommand\vwzero[0]{\texttt{w0}}
 \newcommand\vx[0]{\texttt{x}}
 \newcommand\vxp[0]{\texttt{x'}}
 \newcommand\vxs[0]{\texttt{xs}}
@@ -3222,7 +2959,6 @@
 \newcommand\width[0]{\texttt{width}}
 \newcommand\widthp[0]{\texttt{width'}}
 \newcommand\widths[0]{\texttt{width\_s}}
-\newcommand\widthsum[0]{\texttt{width\_sum}}
 \newcommand\widtht[0]{\texttt{width\_t}}
 \newcommand\ws[0]{\texttt{w\_s}}
 \newcommand\wt[0]{\texttt{w\_t}}
@@ -3249,7 +2985,6 @@
 \newcommand\vlhstys[0]{\texttt{lhs\_tys}}
 \newcommand\vlhstysp[0]{\texttt{lhs\_tys'}}
 \newcommand\vrhstys[0]{\texttt{rhs\_tys}}
-\newcommand\vrhstysp[0]{\texttt{rhs\_tys'}}
 \newcommand\vargdecls[0]{\texttt{arg\_decls}}
 \newcommand\vmain[0]{\texttt{main}}
 \newcommand\vread[0]{\texttt{read}}
