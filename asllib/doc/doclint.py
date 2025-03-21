@@ -55,6 +55,29 @@ def extract_labels_from_line(line: str, left_delim: str, labels: set[str]):
         labels.add(label)
         label_pos = right_brace_pos + 1
 
+def check_unused_latex_macros(latex_files: list[str]):
+    r"""
+    Checks whether there are LaTeX macros that are defined but never used.
+    """
+    defined_macros: set[str] = set()
+    used_macros: set[str] = set()
+    macro_def_pattern = re.compile(r"\\newcommand(\\[a-zA-Z]*)\[")
+    macro_use_pattern = re.compile(r"(?<!\\newcommand)\\[a-zA-Z]+")
+    num_errors = 0
+    for latex_source in latex_files:
+        source_str = read_file_str(latex_source)
+        for def_match in re.findall(macro_def_pattern, source_str):
+            # print(f"found macro definition {def_match}")
+            defined_macros.add(def_match)
+        for use_match in re.findall(macro_use_pattern, source_str):
+            # print(f"found macro usage {use_match}")
+            used_macros.add(use_match)
+    unused_macros = defined_macros.difference(used_macros)
+    for unused in unused_macros:
+        print(f"LaTeX macro {unused} defined but never used!")
+        num_errors += 1
+    return num_errors
+
 
 def check_hyperlinks_and_hypertargets(latex_files: list[str]):
     r"""
@@ -487,7 +510,7 @@ def check_rules(filename: str) -> int:
     # Treat existing issues as warnings and new issues as errors.
     file_to_num_expected_errors = {
         "RelationsOnTypes.tex" : 15,
-        "SubprogramCalls.tex" : 19,
+        "SubprogramCalls.tex" : 20,
         "SubprogramDeclarations.tex" : 13,
         "SymbolicEquivalenceTesting.tex" : 26,
         "SymbolicSubsumptionTesting.tex" : 23,
@@ -675,6 +698,7 @@ def main():
     num_errors += check_hyperlinks_and_hypertargets(all_latex_sources)
     num_errors += check_undefined_references_and_multiply_defined_labels()
     num_errors += check_tododefines(content_latex_sources)
+    num_errors += check_unused_latex_macros(all_latex_sources)
     num_errors += check_per_file(
         content_latex_sources,
         [
