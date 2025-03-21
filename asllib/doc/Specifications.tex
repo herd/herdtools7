@@ -82,6 +82,68 @@ annotates a list of declarations $\decls$ in an input global static environment 
 yielding an output static environment $\newtenv$ and annotated list of declarations $\newdecls$.
 \ProseOtherwiseTypeError
 
+\ExampleDef{Typechecking a List of Global Declarations}
+The specification in \listingref{TypeCheckAST} contains numerous global declarations.
+
+\ASLListing{Typechecking a list of global declarations}{TypeCheckAST}{\typingtests/TypingRule.TypecheckAST.asl}
+
+The typechecker first processes subprogram overrides. Since there are none in this specification,
+the list of global subprogram declarations remains the same.
+The global declarations are separated into the list of pragmas --- \verb|pragma1| --- and the remaining
+global declarations.
+
+The \dependencygraphterm{} for this specifications contains a node for each one of
+$\vWORDSIZE$, $\MyRecord$, $\vmain$,
+$\Color$, $\RED$, $\GREEN$, $\BLUE$,
+$\rotatecolor$, $\rotatezero$, $\rotateone$, $\vg$,
+and the following edges
+\[
+\begin{array}{rcl}
+  (\Other(\MyRecord)    &,& \Other(\vWORDSIZE))\\
+  (\Other(\MyRecord)    &,& \Other(\Color))\\
+  (\Other(\RED)       &,& \Other(\Color))\\
+  (\Other(\GREEN)       &,& \Other(\Color))\\
+  (\Other(\BLUE)       &,& \Other(\Color))\\
+  (\Other(\vg)       &,& \Other(\MyRecord))\\
+  (\Subprogram(\vmain)  &,& \Other(\vg))\\
+  (\Subprogram(\vmain)  &,& \Subprogram(\rotatezero))\\
+  (\Subprogram(\rotatecolor)   &,& \Other(\Color))\\
+  (\Subprogram(\rotatecolor)   &,& \Other(\RED))\\
+  (\Subprogram(\rotatecolor)   &,& \Other(\GREEN))\\
+  (\Subprogram(\rotatecolor)   &,& \Other(\BLUE))\\
+  (\Subprogram(\rotatezero)    &,& \Other(\Color))\\
+  (\Subprogram(\rotatezero)    &,& \Other(\rotatecolor))\\
+  (\Subprogram(\rotatezero)    &,& \Other(\rotateone))\\
+  (\Subprogram(\rotateone)     &,& \Other(\Color))\\
+  (\Subprogram(\rotateone)     &,& \Other(\rotatecolor))\\
+  (\Subprogram(\rotateone)     &,& \Other(\rotatezero))\\
+\end{array}
+\]
+
+Constructing the strongly-connected components for this graph with its edges reversed,
+and topologically ordering the strongly-connected yields the following list of
+components:
+\[
+\begin{array}{l}
+  \{ \Other(\vWORDSIZE) \},\\
+  \{ \Other(\MyRecord) \},\\
+  \{ \Other(\vg) \},\\
+  \{ \Other(\Color) \},\\
+  \{ \Other(\RED) \},\\
+  \{ \Other(\GREEN) \},\\
+  \{ \Other(\BLUE) \},\\
+  \{ \Subprogram(\rotatecolor) \},\\
+  \{ \Subprogram(\rotatezero), \Subprogram(\rotateone) \},\\
+  \{ \Subprogram(\vmain) \}
+\end{array}
+\]
+The only non-trivial component (that is, a component with more than a single global declaration)
+is $\{ \Subprogram(\rotatezero), \Subprogram(\rotateone) \}$, since these are the only
+mutually-recursive subprograms in this specification.
+
+The typechecker annotates each strongly-connected component listed above,
+and finally checks that the pragma \verb|pragma pragma1;| is well-typed, which it is.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -95,8 +157,9 @@ yielding an output static environment $\newtenv$ and annotated list of declarati
         that depends on it;
   \item \ProseSCC{$\defs$}{$\reverseddependencies$}{$\comps$};
   \item \Prosetopologicalorderingcomps{$\comps$}{$\reverseddependencies$}{$\orderedcomps$};
-  \item $\compdecls$ applies $\declsofcomp$ to each component $\vc$ in $\orderedcomps$ to transform it into a list,
-        yielding a list of lists where each sublist corresponds to one strongly connected component;
+  \item transforming each component, which is a set, into a list, yields $\compdecls$.
+        That is, $\compdecls$ is a list of lists where each sublist corresponds to one
+        strongly connected component;
   \item \Proseannotatedeclcomps{$\genv$}{$\compdecls$}{$\newdecls$}{$\newtenv$\ProseOrTypeError}.
   \item for each $\vd$ in $\pragmas$, \Prosecheckglobalpragma{$\newtenv$}{$\vd$}\ProseOrTypeError;
   \item $\pragmas$ is ignored;
@@ -117,7 +180,7 @@ yielding an output static environment $\newtenv$ and annotated list of declarati
   \reverseddependencies \eqdef [(a,b) \in \dependencies: (b,a)]\\
   \SCC(\defs, \reverseddependencies) = \comps\\
   \orderedcomps \in \topologicalorderingcomps(\comps, \reverseddependencies)\\
-  \compdecls \eqdef [ \vc\in\orderedcomps: \declsofcomp(\vc, \declsp) ]\\
+  \compdecls \eqdef [ \vc\in\orderedcomps: \listset(\vc) ]\\
   \annotatedeclcomps(\genv, \compdecls) \typearrow (\newdecls, \newtenv) \OrTypeError \\\\
   \vd\in\pragmas: \checkglobalpragma(\newtenv, \vd) \typearrow \True \OrTypeError
 }{
@@ -146,6 +209,11 @@ whereas a strongly-connected component containing multiple declarations must be 
 to contain only subprograms. This is because the only type of mutually-recursive declarations
 allows in ASL are between subprograms. The rules below handle these cases separately (\textsc{single}
 for single declarations and \textsc{mutually\_recursive} for more than one declaration).
+
+\ExampleDef{Annotating Strongly-connected Components of Declarations}
+In \ExampleRef{Typechecking a List of Global Declarations},
+each declaration is in its own strongly-connected component,
+except for $\{ \Subprogram(\rotatezero), \Subprogram(\rotateone) \}$.
 
 \ProseParagraph
 \OneApplies
@@ -225,6 +293,24 @@ $\decls$ in the global static environment $\genv$,
 yielding the annotated list of subprogram declarations $\newdecls$
 and modified global static environment $\newgenv$.
 
+\ExampleDef{Checking Mutually-recursive Declarations}
+In \ExampleRef{Typechecking a List of Global Declarations},
+the strongly-connected component \\
+$\{ \Subprogram(\rotatezero), \Subprogram(\rotateone) \}$
+contains only subprogram declarations.
+
+In the specification in \listingref{TypeCheckMutuallyRec-bad},
+the global storage element \verb|g| is defined in terms of the
+subprogram \verb|foo|, which is defined in terms of \verb|g|.
+%
+Technically, the \dependencygraphterm{} contains the strongly-connected
+component $\{\Other(\vg), \Subprogram(\foo)\}$.
+%
+Since mutual recursion is allowed only between subprograms,
+this specification is ill-typed.
+
+\ASLListing{Illegal recursion among global declarations}{TypeCheckMutuallyRec-bad}{\typingtests/TypingRule.TypeCheckMutuallyRec.bad.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -287,8 +373,16 @@ typechecks a global pragma declaration $\vd$ in the global static environment $\
 yielding $\True$.
 \ProseOtherwiseTypeError
 
-\ProseParagraph
+\ExampleDef{Checking Global Pragmas}
+The specification in \listingref{CheckGlobalPragma} shows a well-typed global pragma,
+whereas the specification in \listingref{CheckGlobalPragma-bad} shows an ill-typed
+global pragma where the expression \verb|x| is ill-typed, since the identifier \verb|x|
+is undefined and the expression \verb|(2==3.0)| uses the operator \verb|==|
+without matching any operation.
+\ASLListing{A well-typed global pragma}{CheckGlobalPragma}{\typingtests/TypingRule.CheckGlobalPragma.asl}
+\ASLListing{An ill-typed global pragma}{CheckGlobalPragma-bad}{\typingtests/TypingRule.CheckGlobalPragma.bad.asl}
 
+\ProseParagraph
 \AllApply
 \begin{itemize}
   \item $\vd$ is a global pragma declaration with any identifier and expression list $\vargs$. that is, $\DPragma(\Ignore, \vargs)$;
@@ -298,7 +392,6 @@ yielding $\True$.
 \end{itemize}
 
 \FormallyParagraph
-
 \begin{mathpar}
 \inferrule{
   \withemptylocal(\genv) \typearrow \tenv \\
@@ -307,20 +400,21 @@ yielding $\True$.
   \checkglobalpragma(\genv, \overtext{\DPragma(\Ignore, \vargs)}{\vd}) \typearrow \True
 }
 \end{mathpar}
-
 \CodeSubsection{\CheckGlobalPragmaBegin}{\CheckGlobalPragmaEnd}{../Typing.ml}
 
 \TypingRuleDef{DeclareSubprograms}
 \hypertarget{def-declaresubprograms}{}
 The function
 \[
+\begin{array}{r}
   \declaresubprograms(
     \overname{\globalstaticenvs}{\genv} \aslsep
     \overname{(\localstaticenvs\times\func)^*}{\envandfs}
-  ) \aslto
+  ) \aslto \\
   \overname{\globalstaticenvs}{\newgenv} \times
   \overname{(\localstaticenvs\times\func\times\TSideEffectSet)^*}{\newenvandfs}
   \cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
 \]
 processes a list of pairs, each consisting of a local static environment and a subprogram declaration, $\envandfs$,
 in the context of a global static environment $\genv$,
@@ -328,6 +422,36 @@ declaring each subprogram in the environment consisting of $\genv$ and the stati
 each subprogram.
 The result is a modified global static environment $\newgenv$ and list of tuples $\newenvandfs$
 consisting of local static environment, annotated $\func$ AST node, and \sideeffectdescriptorsetsterm.
+
+\ExampleDef{Updating Static Environments for Subprogram Declarations}
+Applying $\declaresubprograms$ for the subprogram declarations in \listingref{DeclareSubprograms}
+adds the following bindings to the $\overloadedsubprograms$ map
+\[
+\begin{array}{rcl}
+  \flipbits &\mapsto& \{\flipbits\} \\
+  \addten    &\mapsto& \{\addten, \addtenone\} \\
+  \factorial  &\mapsto& \{\factorial\} \\
+\end{array}
+\]
+and updates the $\subprograms$ map by binding
+strings representing unique subprogram names to the $\func$ nodes corresponding to
+the subprogram signatures:
+\begin{center}
+\begin{tabular}{ll}
+\textbf{string}     & \textbf{signature}\\
+\texttt{flip\_bits} & \verb|func flip_bits{N}(bv: bits(N)) => bits(N)|\\
+\texttt{add\_10}    & \verb|func add_10(x: real) => real|\\
+\texttt{add\_10-1}  & \verb|func add_10(x: integer) => integer|\\
+\texttt{factorial}  & \verb|func factorial(x: integer) => integer recurselimit 100|
+\end{tabular}
+\end{center}
+
+Using the name \texttt{add\_10-1} for \verb|func add_10(x: integer) => integer|
+and \texttt{add\_10} for \verb|func add_10(x: real) => real|, rather than
+the other way around is due to the arbitrary choice of a topological ordering
+of the subprogram declarations.
+
+\ASLListing{Updating static environments for subprogram declarations}{DeclareSubprograms}{\typingtests/TypingRule.DeclareSubprograms.asl}
 
 \ProseParagraph
 \OneApplies
@@ -377,7 +501,16 @@ The function
   ) \aslto
   \overname{\staticenvs}{\newtenv}
 \]
-adds each $\func$ element in $\vfuncs$ to the $\subprograms$ map of $G^\tenv$, yielding $\newtenv$.
+adds each subprogram definition given by a $\func$ AST node in $\vfuncs$
+to the $\subprograms$ map of $G^\tenv$, yielding $\newtenv$.
+
+\ExampleDef{Adding Subprogram Declarations}
+The specification in \listingref{AddSubprogramDecls}
+contains two subprogram declarations,
+which are added to the static environment.
+The subprogram with the \integertypeterm{} argument is named \verb|increment|
+and the subprogram with the \realtypeterm{} argument is named \verb|increment-1|.
+\ASLListing{Adding subprogram declarations}{AddSubprogramDecls}{\typingtests/TypingRule.AddSubprogramDecls.asl}
 
 \ProseParagraph
 \OneApplies
@@ -425,6 +558,79 @@ accepts a list of $\func$ AST nodes and their associated \sideeffectdescriptorse
 ensures that the \sideeffectdescriptorsterm\ of a given $\func$
 consists of the \sideeffectdescriptorsterm\ of all the $\func$ AST nodes of the
 recursive functions it may transitively call.
+
+\ExampleDef{Propagating Recursive Call Side Effects}
+Given the specification in \listingref{TypeCheckAST},
+the following sets of \sideeffectdescriptorsterm{} are inferred for each subprogram
+separately:
+\begin{center}
+\begin{tabular}{c}
+$\left(\vmain,  \left\{\begin{array}{l}
+                \ReadGlobal(\vg, \timeframeexecution, \False),\\
+                \ReadLocal(\vx, \timeframeexecution, \False),\\
+                \WriteLocal(\vx, \timeframeexecution, \True),\\
+                \RecursiveCall(\rotatezero)
+                \end{array}\right\}
+                \right)$\\
+$\left(\rotatecolor  ,\left\{ \begin{array}{l} \ReadLocal(\vc, \timeframeexecution, \True) \end{array}\right\}\right)$\\
+$\left(\rotatezero   ,\left\{\begin{array}{l}
+                \ReadLocal(\vc, \timeframeexecution, \True),\\
+                \ReadLocal(\rotate, \timeframeexecution, \True),\\
+                \RecursiveCall(\rotateone)
+                \end{array}\right\}\right)$\\
+$\left(\rotateone    ,\left\{\begin{array}{l}
+                \ReadLocal(\vc, \timeframeexecution, \True),\\
+                \ReadLocal(\rotate, \timeframeexecution, \True),\\
+                \RecursiveCall(\rotatezero)
+                \end{array}\right\}\right)$\\
+\end{tabular}
+\end{center}
+
+$\propagaterecursivecallssess$ first infers the following edges between the following subprograms:
+\begin{center}
+\begin{tabular}{lcl}
+$(\vmain$       &,& $\rotatecolor)$\\
+$(\vmain$       &,& $\rotatezero)$\\
+$(\vmain$       &,& $\rotateone)$\\
+$(\rotateone$   &,& $\rotateone)$\\
+$(\rotateone$   &,& $\rotatezero)$\\
+$(\rotateone$   &,& $\rotatecolor)$\\
+$(\rotatezero$  &,& $\rotateone)$\\
+$(\rotatezero$  &,& $\rotatezero)$\\
+$(\rotatezero$  &,& $\rotatecolor)$\\
+\end{tabular}
+\end{center}
+
+Then, the \sideeffectdescriptorterm{} are accumulated, resulting in the following:
+\begin{center}
+\begin{tabular}{c}
+$\left(\vmain,  \left\{\begin{array}{l}
+                \ReadGlobal(\vg, \timeframeexecution, \False),\\
+                \ReadLocal(\vx, \timeframeexecution, \False),\\
+                \WriteLocal(\vx, \timeframeexecution, \True),\\
+                \RecursiveCall(\rotatezero),\\
+                \RecursiveCall(\rotateone),\\
+                \ReadLocal(\vc, \timeframeexecution, \True),\\
+                \ReadLocal(\rotate, \timeframeexecution, \True),\\
+                \end{array}\right\}
+                \right)$\\
+$\left(\rotatecolor,\left\{ \begin{array}{l}
+                \ReadLocal(\vc, \timeframeexecution, \True)
+              \end{array}\right\}\right)$\\
+$\left(\rotatezero   ,\left\{\begin{array}{l}
+                \ReadLocal(\vc, \timeframeexecution, \True),\\
+                \ReadLocal(\rotate, \timeframeexecution, \True),\\
+                \RecursiveCall(\rotateone),
+                \RecursiveCall(\rotatezero)
+                \end{array}\right\}\right)$\\
+$\left(\rotateone    ,\left\{\begin{array}{l}
+                \ReadLocal(\vc, \timeframeexecution, \True),\\
+                \ReadLocal(\rotate, \timeframeexecution, \True),\\
+                \RecursiveCall(\rotatezero),
+                \RecursiveCall(\rotateone)
+                \end{array}\right\}\right)$\\
+\end{tabular}
+\end{center}
 
 \ProseParagraph
 \AllApply
@@ -722,6 +928,25 @@ and whose set of edges $\dependencies$ consists of pairs $(a,b)$
 where the declaration of $a$ uses an identifier defined by the declaration of $b$.
 We refer to this graph as the \emph{\dependencygraphterm} (of $\decls$).
 
+\ExampleDef{The Dependency Graph for a List of Global Declarations}
+The \dependencygraphterm{} generated for the specification in \listingref{DeclDependencies}
+is as follows:
+\[
+\left(
+\begin{array}{c}
+  \{ \Other(\vg), \Other(\MyRecord), \Other(\Color), \Other(\vWORDSIZE), \Subprogram(\vmain) \},\\
+  \left\{\begin{array}{rcl}
+    ( \Other(\vg) &,&          \Other(\MyRecord) ),\\
+    ( \Other(\MyRecord) &,&    \Other(\vWORDSIZE) ),\\
+    ( \Other(\Color) &,&       \Other(\RED) ),\\
+    ( \Other(\Color) &,&       \Other(\GREEN) ),\\
+    ( \Other(\Color) &,&       \Other(\BLUE) ),\\
+    ( \Subprogram(\vmain) &,&  \Other(\vg) )\\
+  \end{array}\right\}
+\end{array}
+\right)
+\]
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -750,6 +975,13 @@ The function
 \decldependencies(\overname{\decl}{\vd}) \aslto \overname{(\defusename\times\defusename)^*}{\dependencies}
 \]
 returns the set of dependent pairs of identifiers $\dependencies$ induced by the declaration $\vd$.
+
+\ExampleDef{The Dependencies of Global Declarations}
+The specification in \listingref{DeclDependencies}
+shows the dependencies generated for each global declarations
+in comments appearing to the right of them or just above them.
+A dependency $(d_1,d_2)$ is depicted as \texttt{$d_1$ -> $d_2$}.
+\ASLListing{Dependencies of global declarations}{DeclDependencies}{\typingtests/TypingRule.DeclDependencies.asl}
 
 \ProseParagraph
 Define $\dependencies$ as the union of the following two sets of pairs:
@@ -781,6 +1013,12 @@ The function
 \defdecl(\overname{\decl}{\vd}) \aslto \overname{\defusename}{\name}
 \]
 returns the identifier $\name$ being defined by the declaration $\vd$.
+
+\ExampleDef{The Identifiers Defined by Global Declarations}
+The specification given in \listingref{DefDecl},
+shows examples of global declarations and the identifiers they define,
+which appear in comments to their right.
+\ASLListing{Identifiers defined by global declarations}{DefDecl}{\typingtests/TypingRule.DefDecl.asl}
 
 \ProseParagraph
 \OneApplies
@@ -825,8 +1063,14 @@ The function
 \[
 \defenumlabels(\overname{\decl}{\vd}) \aslto \overname{\pow{\defusename}}{\vlabels}
 \]
-takes a declaration $\vd$ and returns the set of enumeration labels it defines --- $\vlabels$ --
+takes a declaration $\vd$ and returns the set of enumeration labels it defines in $\vlabels$,
 if it defines any.
+
+\ExampleDef{Identifiers Defined by Declaring an Enumeration Type}
+The set of identifiers defined by the enumeration declaration
+in \listingref{DefEnumLabels} is \\
+$\{\Other(\RED), \Other(\GREEN), \Other(\BLUE)\}$.
+\ASLListing{Identifiers defined by declaring an enumeration type}{DefEnumLabels}{\typingtests/TypingRule.DefEnumLabels.asl}
 
 \ProseParagraph
 \OneApplies
@@ -868,6 +1112,11 @@ The function
 \]
 returns the set of identifiers $\ids$ which the declaration $\vd$ depends on.
 
+\ExampleDef{Identifiers Used by Global Declarations}
+The specification in \listingref{UseDecl} shows the set of identifiers
+used by each global declaration via comments above it.
+\ASLListing{Identifiers used by global declarations}{UseDecl}{\typingtests/TypingRule.UseDecl.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -890,7 +1139,7 @@ returns the set of identifiers $\ids$ which the declaration $\vd$ depends on.
           $\rettyopt$, parameters $\vparams$, and body statement $\body$;
     \item define $\ids$ as the union of applying $\usety$ to each type of an argument in $\vargs$,
           applying $\usety$ to $\rettyopt$, applying $\usety$ to each type of a parameter in $\vparams$,
-          and applying $\useexpr$ to $\body$.
+          and applying $\usestmt$ to $\body$.
   \end{itemize}
 \end{itemize}
 
@@ -912,10 +1161,10 @@ returns the set of identifiers $\ids$ which the declaration $\vd$ depends on.
 \inferrule[D\_Func]{
   {
     \begin{array}{rcll}
-  \ids &\eqdef& \{ (\Ignore, \vt) \in \usety(\vt) : \id \} &\cup\\
+  \ids &\eqdef& \{ (\Ignore, \vt) \in \vargs : \usety(\vt) \} &\cup\\
   && \usety(\rettyopt) &\cup\\
   && \{ (\Ignore, \vt) \in \vparams : \usety(\vt) \} &\cup \\
-  && \useexpr(\body) &
+  && \usestmt(\body) &
     \end{array}
   }
 }{
@@ -945,6 +1194,11 @@ The function
 \usety(\overname{\ty \cup \langle\ty\rangle}{\vt}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the type or \optional\ type $\vt$ depends on.
+
+\ExampleDef{The Identifiers Used by a Type}
+The specification in \listingref{UseTy} shows type annotations and the identifiers
+used by them appearing as comments to their right.
+\ASLListing{The identifiers used by a type}{UseTy}{\typingtests/TypingRule.UseTy.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1088,10 +1342,15 @@ returns the set of identifiers $\ids$ which the type or \optional\ type $\vt$ de
 \hypertarget{def-usesubtypes}{}
 The function
 \[
-\usesubtypes(\overname{\langle(\overname{\identifier}{\vx}\times\overname{\field^*}{\subfields})\rangle}{\fields}) \aslto \overname{\pow{\defusename}}{\ids}
+\usesubtypes(\overname{\langle(\overname{\identifier}{\vx}\times\overname{\Field^*}{\subfields})\rangle}{\fields}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the \optional\ pair consisting of
 identifier $\vx$ (the type being subtyped) and fields $\subfields$ depends on.
+
+\ExampleDef{The Identifiers Used by a Subtyping Declaration}
+In \listingref{UseDecl}, applying $\usesubtypes$ at
+the type declaration of \verb|MyRecord| yields \\
+$\{\ \Other(\RecordBase), \Other(\HalfWordBits)\ \}$.
 
 \ProseParagraph
 \OneApplies
@@ -1117,7 +1376,7 @@ identifier $\vx$ (the type being subtyped) and fields $\subfields$ depends on.
 }
 \and
 \inferrule[some]{
-  \ids \eqdef \{\Other(\vx)\} \cup \bigcup_{(\Ignore, \vt) \usety(\vt)}
+  \ids \eqdef \{\Other(\vx)\} \cup \bigcup_{(\Ignore, \vt) \in \subfields}\usety(\vt)
 }{
   \usesubtypes(\langle(\vx, \subfields)\rangle) \typearrow \ids
 }
@@ -1130,6 +1389,11 @@ The function
 \useexpr(\overname{\expr}{\ve} \cup \langle\overname{\expr}{\ve}\rangle) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the expression or \optional\ expression $\ve$ depends on.
+
+\ExampleDef{The Identifiers Used by Expressions}
+The specification in \listingref{UseExpr} shows the identifiers used
+by expressions on the right-hand-side of assignments in comments appearing to their right.
+\ASLListing{Identifiers used by expressions}{UseExpr}{\typingtests/TypingRule.UseExpr.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1372,7 +1636,7 @@ returns the set of identifiers $\ids$ which the expression or \optional\ express
 
 \begin{mathpar}
 \inferrule[e\_enumarray]{
-  \idsone \eqdef \bigcup_{\vlabel\in\listrange(\vlabels)}\Other(\vlabel)
+  \idsone \eqdef \bigcup_{\vlabel\in\vlabels}\Other(\vlabel)
 }{
   \useexpr(\overname{\EEnumArray\{\EArrayLabels:\vlabels, \EArrayValue:\vvalue\}}{\ve}) \typearrow \overname{\{\vlabels\} \cup \useexpr(\vvalue)}{\ids}
 }
@@ -1397,6 +1661,11 @@ The function
 \uselexpr(\overname{\lexpr}{\vle}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the left-hand-side expression $\vle$ depends on.
+
+\ExampleDef{The Identifiers Used by Assignable Expressions}
+The specification in \listingref{UseLexpr} shows the identifiers used
+by the assignable expressions on the left-hand-side of assignments in comments appearing to their right.
+\ASLListing{Identifiers used by assignable expressions}{UseLexpr}{\typingtests/TypingRule.UseLexpr.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1504,6 +1773,11 @@ The function
 \usepattern(\overname{\pattern}{\vp}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the declaration $\vd$ depends on.
+
+\ExampleDef{The Identifiers Used by a Pattern}
+The specification in \listingref{UsePattern} shows examples of patterns
+and the identifiers used by them, appearing in comments to their right.
+\ASLListing{Identifiers used by a pattern}{UsePattern}{\typingtests/TypingRule.UsePattern.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1616,6 +1890,11 @@ The function
 \]
 returns the set of identifiers $\ids$ which the slice $\vs$ depends on.
 
+\ExampleDef{The Identifiers Used by a Slice}
+The specification in \listingref{UseSlice} shows slicing expressions
+and the identifiers they use, appearing in comments to their right.
+\ASLListing{Identifiers used by a slice}{UseSlice}{\typingtests/TypingRule.UseSlice.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1652,6 +1931,12 @@ The function
 \usebitfield(\overname{\decl}{\vbf}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the bitfield $\vbf$ depends on.
+
+\ExampleDef{The Identifiers Used by a Bitfield Declaration}
+The specification in \listingref{UseBitfield} shows examples
+of bitfield declarations and the identifiers they use,
+appearing as comments to their right.
+\ASLListing{Identifiers used by a bitfield declaration}{UseBitfield}{\typingtests/TypingRule.UseBitfield.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1704,6 +1989,12 @@ The function
 \]
 returns the set of identifiers $\ids$ which the integer constraint $\vc$ depends on.
 
+\ExampleDef{The Identifiers Used by Constraints}
+The specification in \listingref{UseConstraint}
+shows constraints in type annotations, and the identifiers they use,
+appearing in comments to their right.
+\ASLListing{Identifiers used by constraints}{UseConstraint}{\typingtests/TypingRule.UseConstraint.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1738,6 +2029,11 @@ The function
 \usestmt(\overname{\stmt}{\vs}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the statement $\vs$ depends on.
+
+\ExampleDef{The Identifiers Used by Statements}
+The specification in \listingref{UseStmt} shows examples of statements
+and the identifiers used by them, appearing in comments to their right.
+\ASLListing{Identifiers used by statements}{UseStmt}{\typingtests/TypingRule.UseStmt.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1939,6 +2235,11 @@ The function
 \]
 returns the set of identifiers $\ids$ which the try statement catcher $\vc$ depends on.
 
+\ExampleDef{The Identifiers Used by a Catcher}
+The specification in \listingref{UseStmt} shows an example
+of a catcher clause (towards the end of \verb|main|)
+and the identifiers used by it, appearing in comments to its right.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1985,51 +2286,6 @@ $C_{1..k} \in \topologicalorderingcomps(\comps, E)$, if the following condition 
 \]
 \end{definition}
 
-\TypingRuleDef{DeclsOfComp}
-\hypertarget{def-declsofcomp}{}
-The helper function
-\[
-\declsofcomp(
-  \overname{\pow{\defusename}}{\comp} \aslsep
-  \overname{\decl^*}{\decls}
-) \aslto \overname{\decl^*}{\compdecls}
-\]
-filters $\decls$ in order to retain the declarations whose identifiers are members of $\comp$,
-yielding $\compdecls$
-
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item $\decls$ is the empty list;
-    \item define $\compdecls$ as the empty list.
-  \end{itemize}
-
-  \item \AllApplyCase{non\_empty}
-  \begin{itemize}
-    \item $\decls$ is the list with \head\ $\vd$ and \tail\ $declsone$;
-    \item define $\declstwo$ as the singleton list for $\vd$ if applying $\defdecl$ to $\vd$ yields an identifier
-          that is a member of $\comp$ and the empty list, otherwise;
-    \item applying $\declsofcomp$ to $\comp$ and $\declsone$ yields $\declsthree$;
-    \item define $\compdecls$ as the concatenation of $\declstwo$ and $\declsthree$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[empty]{}{
-  \declsofcomp(\comp, \overname{\emptylist}{\decls}) \typearrow \overname{\emptylist}{\compdecls}
-}
-\and
-\inferrule[non\_empty]{
-  \declstwo \eqdef \choice{\defdecl(\vd) \in \comp}{[\vd]}{\emptylist}\\
-  \declsofcomp(\comp, \declsone) \typearrow \declsthree
-}{
-  \declsofcomp(\comp, \overname{[\vd]\concat\declsone}{\decls}) \typearrow \overname{\declstwo\concat\declsthree}{\compdecls}
-}
-\end{mathpar}
-
 \section{Semantics of Specifications\label{sec:SemanticsOfSpecifications}}
 The semantics of specifications is defined via the relation $\evalspec$, which is defined next.
 
@@ -2043,6 +2299,12 @@ The relation
 evaluates the specification $\vspec$ with the static environment $\tenv$,
 yielding the native integer value $\vv$ and execution graph $\vg$.
 Otherwise, the result is a dynamic error.
+
+\ExampleRef{Returning a Value from the Entry Point} shows a specification
+whose evaluation results in returning the value $\nvint(0)$.
+
+\ExampleRef{An Uncaught Exception} shows a specification whose evaluation
+results in a \dynamicerrorterm.
 
 \ProseParagraph
 \AllApply
@@ -2104,6 +2366,8 @@ and updating the environment accordingly.
 It is assumed that $\typedspec$ lists the declarations in reverse order with respect
 to the \defusedependencyterm\ order
 (see \TypingRuleRef{TypeCheckAST}).
+
+See \ExampleRef{Evaluating a List of Global Declarations}.
 
 \ProseParagraph
 \AllApply

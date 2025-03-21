@@ -125,6 +125,7 @@ arises
 arising
 arithmetic
 arm
+around
 array
 arrays
 artificial
@@ -1239,6 +1240,7 @@ numbered
 numbers
 numeral
 numerator
+numerous
 object
 observe
 obtain
@@ -1540,6 +1542,7 @@ relying
 remain
 remainder
 remaining
+remains
 remove
 removed
 removes
@@ -1806,6 +1809,7 @@ subtracting
 subtraction
 subtype
 subtypes
+subtyping
 succeed
 succeeding
 succeeds
@@ -1910,6 +1914,7 @@ tool
 tools
 top
 topological
+topologically
 total
 totally
 toward

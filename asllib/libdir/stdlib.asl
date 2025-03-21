@@ -358,7 +358,7 @@ end;
 //------------------------------------------------------------------------------
 // Standard bitvector functions and procedures
 
-// For most of these functions, some implicitely dependently typed version
+// For most of these functions, some implicitly dependently typed version
 // exists in the specification. We do not yet support those.
 
 // Externals
