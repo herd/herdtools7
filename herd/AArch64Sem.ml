@@ -3982,6 +3982,29 @@ module Make
         | I_CNT_INC_SVE (op,r,pat,k) ->
            check_sve inst;
            cnt_inc op r pat k ii >>= nextSet r
+        | I_CTERM (cond,v,rn,rm) ->
+            check_sve inst;
+            let sz = tr_variant v in
+            let op =
+              let open CTERM in
+              match cond with
+              | EQ -> Op.Eq
+              | NE -> Op.Ne in
+            let reg_n = PState PSTATE.N
+            and reg_c = PState PSTATE.C
+            and reg_v =  PState PSTATE.V in
+            (read_reg_ord_sz sz rn ii >>| read_reg_ord_sz sz rm ii)
+            >>= fun (v1,v2) -> M.op op v1 v2
+            >>= fun v -> M.choiceT v
+              (write_reg_dest reg_n V.one ii >>| write_reg_dest reg_v V.zero ii)
+              (write_reg_dest reg_n V.zero ii
+               >>|
+               begin
+                 read_reg_ord reg_c ii (* V <- !C *)
+                 >>= M.op Op.Xor V.one
+                 >>= fun v -> write_reg_dest reg_v v ii
+               end)
+            >>= fun (n,v) -> B.nextBdsT [ reg_n,n ; reg_v,v; ]
         | I_SMSTART (None) ->
            check_sme inst;
            let ops1,vals1 = reset_sm V.one ii in

@@ -138,6 +138,7 @@ let check_op3 op e =
 %token <AArch64Base.cnt_inc_op_variant> CNT_INC_SVE
 %token <AArch64Base.adda_op_variant> ADDA
 %token SMSTART SMSTOP TOK_SM TOK_ZA MOVA
+%token <AArch64Base.CTERM.cond> CTERM
 /*
 /*
 %token LDUMAX LDUMAXA LDUMAXL LDUMAXAL LDUMAXH LDUMAXAH LDUMAXLH LDUMAXALH
@@ -1079,6 +1080,10 @@ instr:
   { I_NEG_SV ($2,$4,$6) }
 | MOVPRFX zreg COMMA pmreg COMMA zreg
   { I_MOVPRFX ($2,$4,$6) }
+| CTERM xreg COMMA xreg
+  { I_CTERM ($1,V64,$2,$4) }
+| CTERM wreg COMMA wreg
+  { I_CTERM ($1,V32,$2,$4) }
 /* Scalable Matrix Extention */
 | SMSTART smopt
   { I_SMSTART $2}

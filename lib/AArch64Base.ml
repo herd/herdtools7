@@ -995,6 +995,14 @@ type simd_variant = VSIMD8 | VSIMD16 | VSIMD32 | VSIMD64 | VSIMD128
 type cnt_inc_op_variant = cnt_inc_op * simd_variant
 type adda_op_variant = za_direction
 
+module CTERM = struct
+  type cond = EQ|NE
+
+  let pp = function
+    | EQ -> "CTERMEQ"
+    | NE -> "CTERMNE"
+end
+
 module Ext = struct (* Arguments of extended ADD and SUB operations *)
 
   type op = ADD|ADDS|SUB|SUBS
@@ -1599,6 +1607,8 @@ type 'k kinstruction =
   | I_ADDVL of reg * reg * 'k
 (* {CNT,INC}<B|H|W|D> <Xd>{, pattern{, MULL #imm}} *)
   | I_CNT_INC_SVE of ( cnt_inc_op * simd_variant ) * reg * pattern * 'k
+  (* CTERM{EQ,NE} <Rn>,<Rm> *)
+  | I_CTERM of CTERM.cond * variant * reg * reg
 (* Scalable Matrix Extension *)
   (*
    * LD1{B,H,W,D,Q} (scalar plus scalar, tile slice)
@@ -2271,6 +2281,8 @@ let do_pp_instruction m =
       sprintf "ADDVL %s,%s,%s" (pp_xreg r1) (pp_xreg r2) (m.pp_k k1)
   | I_CNT_INC_SVE (op,r,pat,k) ->
       pp_cnt_inc op r pat k
+  | I_CTERM (cond,v,rn,rm) ->
+      pp_rr (CTERM.pp cond) v rn rm
 (* Scalable Matrix Extention *)
   | I_LD1SPT (v,r,ri,k,p,ra,idx) ->
       sprintf "LD1%s {%s[%s,%s]},%s,%s" (pp_simd_variant v) (pp_zareg r) (pp_wreg ri) (m.pp_k k) (pp_preg p) (pp_addr ra idx)
@@ -2600,7 +2612,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDG (r1,r2,_) | I_STZG (r1,r2,_)
   | I_STZ2G (r1,r2,_) | I_STG (r1,r2,_)
   | I_ALIGND (r1,r2,_) | I_ALIGNU (r1,r2,_)
-  | I_ADDVL (r1,r2,_)
+  | I_ADDVL (r1,r2,_) | I_CTERM (_,_,r1,r2)
     -> fold_reg r1 (fold_reg r2 c)
   | I_MRS (r,sr) | I_MSR (sr,r)
     -> fold_reg (SysReg sr) (fold_reg r c)
@@ -2909,6 +2921,8 @@ let map_regs f_reg f_symb =
      I_ADDVL (map_reg r1,map_reg r2,k1)
   | I_CNT_INC_SVE (op,r1,pat,k1) ->
      I_CNT_INC_SVE (op,map_reg r1,pat,k1)
+  | I_CTERM (cond,v,rn,rm) ->
+     I_CTERM (cond,v,map_reg rn, map_reg rm)
   | I_LD1SPT (v,r1,r2,k,r3,r4,idx) ->
      I_LD1SPT (v,map_reg r1,map_reg r2,k,map_reg r3,map_reg r4,map_idx idx)
   | I_ST1SPT (v,r1,r2,k,r3,r4,idx) ->
@@ -3152,7 +3166,7 @@ let get_next =
   | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
   | I_UADDV _ | I_DUP_SV _ | I_PTRUE _
   | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
-  | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
+  | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _ | I_CTERM _
   | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
   | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
   | I_MOV_SV _ | I_ADD_SV _ | I_NEG_SV _ | I_OP3_SV _ | I_MOVPRFX _
@@ -3544,6 +3558,7 @@ module PseudoI = struct
         | I_SMSTART _ | I_SMSTOP _ | I_ADDA _
         | I_PAC _ | I_AUT _
         | I_XPACI _ | I_XPACD _
+        | I_CTERM _
             as keep -> keep
         | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,ext_tr idx)
         | I_LDRSW (r1,r2,idx) -> I_LDRSW (r1,r2,ext_tr idx)
@@ -3733,7 +3748,7 @@ module PseudoI = struct
         | I_INDEX_SI _ | I_INDEX_IS _  | I_INDEX_SS _ | I_INDEX_II _
         | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
         | I_MOV_SV _ | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
-        | I_SMSTART _ | I_SMSTOP _
+        | I_SMSTART _ | I_SMSTOP _ | I_CTERM _
           -> 0
         | I_LD1M (rs, _, _)
         | I_LD2M (rs, _, _)
