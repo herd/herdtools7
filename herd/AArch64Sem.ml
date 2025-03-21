@@ -3843,6 +3843,26 @@ module Make
         | I_CNT_INC_SVE (op,r,pat,k) ->
            check_sve inst;
            cnt_inc op r pat k ii >>= nextSet r
+        | I_CTERM (cond,v,rn,rm) ->
+            check_sve inst;
+            let sz = tr_variant v in
+            let op =
+              let open CTERM in
+              match cond with
+              | EQ -> Op.Eq
+              | NE -> Op.Ne in
+            (read_reg_ord_sz sz rn ii >>| read_reg_ord_sz sz rm ii
+             >>| read_reg_ord NZCV ii)
+            >>= fun ((v1,v2),nzcv) -> M.op op v1 v2
+            (* Computation of flags N and V may not follow intended dependencies *)
+            >>= fun v -> M.choiceT v
+               (M.op1 (Op.SetBit 3) nzcv >>= M.op1 (Op.UnSetBit 0))
+               (M.op1 (Op.UnSetBit 3) nzcv
+                >>= fun nzcv -> (* V <- not C *)
+                M.op1 (Op.ReadBit 1) nzcv
+                >>= M.op Op.Xor nzcv)
+            >>= fun flags -> write_reg_dest NZCV flags ii
+            >>= nextSet NZCV
         | I_SMSTART (None) ->
            check_sme inst;
            let ops1,vals1 = reset_sm V.one ii in
