@@ -169,6 +169,7 @@ attempt
 attempting
 attempts
 authoritative
+automatically
 auxiliary
 available
 avoid

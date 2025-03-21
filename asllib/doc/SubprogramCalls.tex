@@ -207,33 +207,123 @@ Note that this function relies on all standard library functions with input para
   func stdlibB{M,N}(arg1: bits(N), ...) => bits(...M...)
 \end{lstlisting}
 
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \Proseeqdef{$\caninsertstdlibparam$}{the conjunction of the following conditions:
+    \begin{itemize}
+      \item $\canommitstdlibparam$ holds for $\funcsig$;
+      \item the number of parameters $\params$ is less than the number of parameters in $\funcsig$;
+      \item $\argtypes$ is not the empty list.
+    \end{itemize}
+  }
+  \item \OneApplies
+  \begin{itemize}
+    \item \AllApplyCase{can\_insert}
+    \begin{itemize}
+      \item \Proseeqdef{$\vt$}{the \head{} of $\argtypes$};
+      \item applying $\getbitvectorwidth$ to $\tenv$ and $\vt$ yields $\vwidth$\ProseOrTypeError;
+      \item \Proseeqdef{$paramtype$}{the \wellconstrainedintegertype{} for the single
+            constraint consisting of the \exactconstraintterm{} for $\vwidth$};
+      \item \Proseeqdef{$\paramsone$}{the list whose \head{} is $\params$ and \tail{} is
+            the tuple consisting of $\paramtype$, $\vwidth$, and the empty list of \sideeffectdescriptorsetsterm}.
+    \end{itemize}
+  \end{itemize}
+
+  \begin{itemize}
+    \item \AllApplyCase{cannot\_insert}
+    \begin{itemize}
+      \item $\caninsertstdlibparam$ is $\False$;
+      \item \Proseeqdef{$\paramsone$}{$\params$}.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+
+% \AllApply
+% \begin{itemize}
+%   \item $\funcsig.\funcparameters$ is either
+%     a list with one parameter with a name $\vx$,
+%     or a list with two parameters, the second of which has a name $\vx$\ProseTerminateAs{\params};
+%   \item $\funcsig.\funcargs$ has a \head{} formal argument whose type is $\TBits(\EVar(\vx))$\ProseTerminateAs{\params};
+%   \item $\argtypes$ has a \head{} actual argument type of $\TBits(\ve)$\ProseTerminateAs{\params};
+%   \item $\funcsig.\funcbuiltin$ is $\True$\ProseTerminateAs{\params};
+%   \item the length of $\params$ is less than the length of $\funcsig.\funcparameters$\ProseTerminateAs{\params};
+%   \item $\paramsone$ is the \constrainedinteger{} for $\ve$ with an empty set of \sideeffectdescriptorsterm,
+%         appended to $\params$\ProseTerminateAs{\params}.
+% \end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[can\_insert]{
+  {
+    \caninsertstdlibparam \eqdef \left(\begin{array}{ll}
+      \canommitstdlibparam(\funcsig) & \land\\
+      \listlen{\params} < \listlen{\funcsig.\funcparameters} & \land\\
+      \argtypes \neq \emptylist &
+    \end{array}\right)
+  }\\
+  \caninsertstdlibparam\\\\
+  \argtypes \eqname [\vt] \concat \Ignore\\
+  \getbitvectorwidth(\tenv, \vt) \typearrow \vwidth \OrTypeError\\\\
+  \paramtype \eqdef \TInt(\wellconstrained([\AbbrevConstraintExact{\vwidth}]))\\
+  \paramsone \eqdef \params \concat [(\paramtype, \vwidth, \emptyset)]
+}{
+  \insertstdlibparam(\funcsig, \params, \argtypes) \aslto \paramsone
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[cannot\_insert]{
+  {
+    \caninsertstdlibparam \eqdef \left(\begin{array}{ll}
+      \canommitstdlibparam(\funcsig) & \land\\
+      \listlen{\params} < \listlen{\funcsig.\funcparameters} & \land\\
+      \argtypes \neq \emptylist &
+    \end{array}\right)
+  }\\
+  \neg\caninsertstdlibparam\\\\
+}{
+  \insertstdlibparam(\funcsig, \params, \argtypes) \aslto \overname{\params}{\paramsone}
+}
+\end{mathpar}
+
+\TypingRuleDef{CanOmmitStdlibParam}
+\hypertarget{def-canommitstdlibparam}{}
+The function
+\[
+  \canommitstdlibparam(\overname{\func}{\funcsig}) \aslto \overname{\Bool}{\vb}
+\]
+tests whether the first parameter of the subprogram defined by
+$\funcsig$ can automatically inserted, yielding the result in $\vb$.
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\funcsig.\funcparameters$ is either
-    a list with one parameter with a name $\vx$,
-    or a list with two parameters, the second of which has a name $\vx$\ProseTerminateAs{\params};
-  \item $\funcsig.\funcargs$ has a \head{} formal argument whose type is $\TBits(\EVar(\vx))$\ProseTerminateAs{\params};
-  \item $\argtypes$ has a \head{} actual argument type of $\TBits(\ve)$\ProseTerminateAs{\params};
-  \item $\funcsig.\funcbuiltin$ is $\True$\ProseTerminateAs{\params};
-  \item the length of $\params$ is less than the length of $\funcsig.\funcparameters$\ProseTerminateAs{\params};
-  \item $\paramsone$ is the \constrainedinteger{} for $\ve$ with an empty set of \sideeffectdescriptorsterm,
-        appended to $\params$\ProseTerminateAs{\params}.
+  \item $\funcsig$ is in the standard library;
+  \item \Proseeqdef{$\declaredparam$}{
+    $\Some{\vn}$ if the list of parameters in $\funcsig$ contains a single parameter whose name is $\vn$
+    or the list contains two parameters and the second parameter name is $\vn$;
+    and $\None$ otherwise
+  };
+  \item \Proseeqdef{$\vb$}{$\True$ if and only if the first argument of $\funcsig$
+        has a \bitvectortypeterm{} where the width is defined as the variable expression for $\vn$}.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \funcsig.\funcparameters \eqname [(\vx, \Ignore)] \;\lor\;
-  \funcsig.\funcparameters \eqname [\Ignore, (\vx, \Ignore)] \; \terminateas \params \\\\
-  \funcsig.\funcargs \eqname [(\Ignore, \TBits(\EVar(\vx)))] \concat \Ignore \; \terminateas \params \\\\
-  \argtypes \eqname [\TBits(\ve)] \concat \Ignore \; \terminateas \params \\\\
-  \funcsig.\funcbuiltin = \True \; \terminateas \params \\\\
-  \listlen{\params} < \listlen{\funcsig.\funcparameters} \; \terminateas \params \\\\
-  \paramsone \eqdef \params \concat [(\TInt(\wellconstrained(\AbbrevConstraintExact{\ve})), \ve, \emptyset)] \; \terminateas \params
+  \funcsig.\funcbuiltin\\\\
+  {
+    \declaredparam \eqdef \begin{cases}
+      \Some{\vn} & \text{if }\funcsig.\funcparameters = [(\vn, \Ignore)]\\
+      \Some{\vn} & \text{if }\funcsig.\funcparameters = [\Ignore, (\vn, \Ignore)]\\
+      \None      & \text{else}
+    \end{cases}
+  }\\
+  \vb \eqdef \funcsig.\funcargs = (\Ignore, \TBits(\EVar(\vn), \Ignore))
 }{
-  \insertstdlibparam(\funcsig, \params, \argtypes) \aslto \paramsone
+  \canommitstdlibparam(\funcsig) \typearrow \vb
 }
 \end{mathpar}
 

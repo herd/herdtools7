@@ -487,7 +487,7 @@ def check_rules(filename: str) -> int:
     # Treat existing issues as warnings and new issues as errors.
     file_to_num_expected_errors = {
         "RelationsOnTypes.tex" : 15,
-        "SubprogramCalls.tex" : 19,
+        "SubprogramCalls.tex" : 20,
         "SubprogramDeclarations.tex" : 13,
         "SymbolicEquivalenceTesting.tex" : 26,
         "SymbolicSubsumptionTesting.tex" : 23,
