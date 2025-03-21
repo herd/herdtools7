@@ -1047,9 +1047,14 @@ cases holds:
 \begin{itemize}
   \item there is no declared subprogram that matches $\name$ and $\calleeargtypes$;
   \item there is exactly one subprogram that matches $\name$ and $\calleeargtypes$;
-  \item there is more than one subprogram that matches $\name$ and $\calleeargtypes$;
 \end{itemize}
-The first and last cases result in a \typingerrorterm{}.
+If more than one subprogram that matches $\name$ and $\calleeargtypes$,
+this is detected by the rule \TypingRuleRef{DeclareSubprograms},
+which invokes the rule \TypingRuleRef{DeclareOneFunc},
+which invokes the rule \TypingRuleRef{AddNewFunc},
+which results in a \typingerrorterm{}.
+
+The first case results in a \typingerrorterm{}.
 If the second case holds, the function returns a tuple which comprises:
 \begin{itemize}
 \item $\namep$ --- the string that uniquely identifies this subprogram;
@@ -1075,16 +1080,6 @@ If the second case holds, the function returns a tuple which comprises:
           in $\tenv$ (see \TypingRuleRef{FilterCallCandidates}) yields an empty set\ProseOrTypeError;
     \item the result is a \typingerrorterm{} indicating that the call given by $\name$ and \\ $\callerargtypes$
           does not match any defined subprogram.
-  \end{itemize}
-
-  \item \AllApplyCase{too\_many\_candidates}
-  \begin{itemize}
-    \item $\tenv$ binds $\name$ via $\overloadedsubprograms$ map to $\renamingset$ and $\vses$;
-    \item filtering the subprograms in $\renamingset$ with the caller argument types $\callerargtypes$
-          in $\tenv$ (see \TypingRuleRef{FilterCallCandidates}) yields $\matchingrenamings$\ProseOrTypeError;
-    \item $\matchingrenamings$ contains at least two elements;
-    \item the result is a \typingerrorterm{} indicating that the call given by $\name$ and \\
-          $\callerargtypes$ matches more than one defined subprogram.
   \end{itemize}
 
   \item \AllApplyCase{one\_candidate}
@@ -1113,20 +1108,6 @@ If the second case holds, the function returns a tuple which comprises:
       \filtercallcandidates(\tenv, \callerargtypes, \renamingset) \typearrow \emptyset \OrTypeError
     \end{array}
   }
-}{
-  \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \TypeErrorVal{\BadCall}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[too\_many\_candidates]{
-  G^\tenv.\overloadedsubprograms(\name) = (\renamingset, \vses)\\
-  {
-    \begin{array}{r}
-      \filtercallcandidates(\tenv, \callerargtypes, \renamingset) \typearrow \\ \matchingrenamings \OrTypeError
-    \end{array}
-  }\\\\
-  \cardinality{\matchingrenamings} \geq 2
 }{
   \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \TypeErrorVal{\BadCall}
 }

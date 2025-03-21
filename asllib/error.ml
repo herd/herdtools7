@@ -51,7 +51,6 @@ type error_desc =
   | CannotParse
   | UnknownSymbol
   | NoCallCandidate of string * ty list
-  | TooManyCallCandidates of string * ty list
   | BadTypesForBinop of binop * ty * ty
   | CircularDeclarations of string
   | ImpureExpression of expr * SideEffect.SES.t
@@ -170,7 +169,6 @@ let error_label = function
   | CannotParse -> "CannotParse"
   | UnknownSymbol -> "UnknownSymbol"
   | NoCallCandidate _ -> "NoCallCandidate"
-  | TooManyCallCandidates _ -> "TooManyCallCandidates"
   | BadTypesForBinop _ -> "BadTypesForBinop"
   | CircularDeclarations _ -> "CircularDeclarations"
   | ImpureExpression _ -> "ImpureExpression"
@@ -340,11 +338,6 @@ module PPrint = struct
     | NoCallCandidate (name, types) ->
         fprintf f
           "ASL Typing error: No subprogram declaration matches the \
-           invocation:@ %s(%a)."
-          name (pp_comma_list pp_ty) types
-    | TooManyCallCandidates (name, types) ->
-        fprintf f
-          "ASL Typing error: Too many subprogram declaration match the \
            invocation:@ %s(%a)."
           name (pp_comma_list pp_ty) types
     | BadTypesForBinop (op, t1, t2) ->

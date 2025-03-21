@@ -305,7 +305,9 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
         | V1 -> ([], name', func_sig, ses) |: TypingRule.SubprogramForName)
     | [] -> fatal_from ~loc (Error.NoCallCandidate (name, caller_arg_types))
     | _ :: _ ->
-        fatal_from ~loc (Error.TooManyCallCandidates (name, caller_arg_types))
+        (* If more than one candidate exists, the candidate signature should clash,
+           which is detected when typechecking the corresponding declarations. *)
+        assert false
   (* End *)
 
   let try_subprogram_for_name =
@@ -3729,12 +3731,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         let _, _, func_sig', _ =
           try Fn.subprogram_for_name ~loc env V1 func_sig.name arg_types
-          with
-          | Error.(
-              ASLException
-                { desc = NoCallCandidate _ | TooManyCallCandidates _; _ })
-          ->
-            fail ()
+          with Error.(ASLException { desc = NoCallCandidate _ }) -> fail ()
         in
         (* Check that func_sig' is a getter *)
         let wanted_getter_type =
