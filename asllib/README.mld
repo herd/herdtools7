@@ -3,7 +3,7 @@
 {1 Disclaimer}
 The material here covers:
 
-- ASLv0 which is the existing ASL code that appears in the Arm Architecture Reference Manual, 
+- ASLv0 which is the existing ASL code that appears in the Arm Architecture Reference Manual: 
 https://developer.arm.com/documentation/ddi0487/latest
 - ASLv1, a new, experimental, and as yet unreleased version of ASL. Together with changes in
 this repository, Arm releases and oficially maintain the ASL Reference Specification for ASLv1 on
