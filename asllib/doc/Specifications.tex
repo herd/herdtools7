@@ -976,12 +976,12 @@ The function
 \]
 returns the set of dependent pairs of identifiers $\dependencies$ induced by the declaration $\vd$.
 
-\ExampleDef{The Dependencies of Global Declarations}
+\ExampleDef{The Dependencies Global Declarations}
 The specification in \listingref{DeclDependencies}
 shows the dependencies generated for each global declarations
 in comments appearing to the right of them or just above them.
 A dependency $(d_1,d_2)$ is depicted as \texttt{$d_1$ -> $d_2$}.
-\ASLListing{Dependencies of global declarations}{DeclDependencies}{\typingtests/TypingRule.DeclDependencies.asl}
+\ASLListing{Dependencies of global decalrations}{DeclDependencies}{\typingtests/TypingRule.DeclDependencies.asl}
 
 \ProseParagraph
 Define $\dependencies$ as the union of the following two sets of pairs:
@@ -1016,7 +1016,7 @@ returns the identifier $\name$ being defined by the declaration $\vd$.
 
 \ExampleDef{The Identifiers Defined by Global Declarations}
 The specification given in \listingref{DefDecl},
-shows examples of global declarations and the identifiers they define,
+shows examples of global declarations and the identifiers the use,
 which appear in comments to their right.
 \ASLListing{Identifiers defined by global declarations}{DefDecl}{\typingtests/TypingRule.DefDecl.asl}
 
@@ -1115,7 +1115,7 @@ returns the set of identifiers $\ids$ which the declaration $\vd$ depends on.
 \ExampleDef{Identifiers Used by Global Declarations}
 The specification in \listingref{UseDecl} shows the set of identifiers
 used by each global declaration via comments above it.
-\ASLListing{Identifiers used by global declarations}{UseDecl}{\typingtests/TypingRule.UseDecl.asl}
+\ASLListing{Identifiers used by global decalrations}{UseDecl}{\typingtests/TypingRule.UseDecl.asl}
 
 \ProseParagraph
 \OneApplies

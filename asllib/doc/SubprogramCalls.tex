@@ -207,6 +207,12 @@ Note that this function relies on all standard library functions with input para
   func stdlibB{M,N}(arg1: bits(N), ...) => bits(...M...)
 \end{lstlisting}
 
+% \ExampleDef{Inserting Parameters in Calls to Standard Library Subprograms}
+% The specification in \listingref{InsertStdlibParam}
+% shows examples of calls to \stdlibfunc{Zeros} and \stdlibfunc{Extend}
+% where some of the parameters and/or arguments are omitted,
+% and the equivalent calls with the parameters and arguments added.
+% \ASLListing{Inserting parameters in calls to standard library subprograms}{InsertStdlibParam}{\typingtests/TypingRule.InsertStdlibParam.asl}
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1126,8 +1132,8 @@ The function
       \overname{\func}{\callee} \aslsep
       \overname{\TSideEffectSet}{\vses}
       )\
-    \cup\\
-    \overname{\TTypeError}{\TypeErrorConfig}
+    \\
+    \cup \overname{\TTypeError}{\TypeErrorConfig}
     \end{array}
   \end{array}
 \]
@@ -1739,6 +1745,18 @@ The helper relation
 \]
 converts continuing configurations and returning configurations
 into corresponding normal configurations that can be returned by a subprogram evaluation.
+
+\ExampleDef{Converting Configurations Upon Subprogram Return}
+In \listingref{MatchFuncRes},
+the final configuration resulting from evaluating the call \verb|proc()|
+is a \Prosecontinuingconfiguration{}, which is converted into
+a \Prosenormalconfiguration{} with no return value.
+On the other hand, the configuration resulting from evaluating the
+call \verb|returns_values()| is a \Prosereturningconfiguration{} with the value
+$\nvint(5)$, which is converted into a \Prosenormalconfiguration{}
+with the same value and a fresh identifier for it.
+
+\ASLListing{Converting configurations upon subprogram return}{MatchFuncRes}{\semanticstests/SemanticsRule.MatchFuncRes.asl}
 
 \ProseParagraph
 \OneApplies
