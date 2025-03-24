@@ -93,7 +93,6 @@ module Make
       |> StringMap.add "hw-reqs" "hwreqs"
       |> StringMap.add "sca-class" "sca"
       |> StringMap.add "Instr-read-ordered-before" "Instrreadob"
-      |> StringMap.add "L" "REL"
       |> StringMap.add "id" "sameEffect"
 
     let defs =
@@ -591,32 +590,14 @@ and cons_seqs (fs:exp list) (es:exp list) =
          and a = tr_evts e1 a
          and b =  tr_evts e1 b in
          IfCond (c,a,b)
-      | App
-          (_,Var (_,"range"),
-           Op (_,Seq,
-               [Op1 (_,ToId,Var (_,"A"));
-                Var (_,"amo");
-                Op1 (_,ToId,Var (_,"L"));]))
-        -> pp_evts_id e1 "rangeAamoL"
+      | App (_,Var (_,"range"), Op (loc2,Seq,es)) ->
+        let e3 = Next.next () in
+        begin match tr_rel e3 e1 (Op (loc2,Seq,es)) with
+        | List (op,intro_txt,sep_txt,es) -> List (op,intro_txt,sep_txt,List.rev es)
+        | _ as i -> i
+        end
       | App (_,Var (_,"range"),Var (_,"lxsx")) ->
          pp_evts_id e1 "rangelxsx"
-      |  App (_,
-              Var (_,"range"),
-              Op (_,
-                  Seq,
-                  [Op1 (_,ToId,e);Op1 (_,Inv,Var (_,"tr-ib"));]))
-         ->
-          begin
-            match tr_evts 0 e with
-            | Item txt0 ->
-               let txt =
-                 do_pp_evts_id e1 "rangetribminus"
-                 ^ sprintf "{%s}" (pp_evt 0)
-                 ^ sprintf "{%s}" txt0 in
-               Item txt
-            | _ ->
-               Item (fail (ASTUtils.exp2loc e) "ignoring expression")
-          end
       | e ->
          Item (fail (ASTUtils.exp2loc e) "ignoring expression")
 

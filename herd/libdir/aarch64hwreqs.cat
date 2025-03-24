@@ -114,7 +114,7 @@ let pob =
 (* Atomic-ordered-before *)
 let aob =
  [Exp & M]; rmw; [Exp & M]
- | [Exp & M]; rmw; lmrs; [A | Q]
+ | [Exp & M]; rmw; lmrs; [(Exp & R & A) | (Exp & R & Q)]
  | [Imp & TTD & R]; rmw; [HU]
 
 (* Barrier-ordered-before *)
@@ -125,12 +125,12 @@ let bob =
  | [DC.CVAU]; po; [dmb.full]; po; [DC.CVAU]
  | [Exp & (R \ NoRet) | Imp & Tag & R]; po; [dmb.ld]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
  | [Exp & W]; po; [dmb.st]; po; [Exp & W | MMU & FAULT]
- | [range([A];amo;[L])]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
- | [L]; po; [A]
- | [A | Q]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
- | [A | Q]; iico_order; [Exp & M | Imp & Tag & R | MMU & FAULT]
- | [Exp & M | Imp & Tag & R]; po; [L]
- | [Exp & M | Imp & Tag & R]; iico_order; [L]
+ | [range([(Exp & R & A)]; amo; [(Exp & W & L) | (FAULT & L)])]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ | [(Exp & W & L) | (FAULT & L)]; po; [Exp & R & A]
+ | [(Exp & R & A) | (Exp & R & Q)]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ | [(Exp & R & A) | (Exp & R & Q)]; iico_order; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ | [Exp & M | Imp & Tag & R]; po; [(Exp & W & L) | (FAULT & L)]
+ | [Exp & M | Imp & Tag & R]; iico_order; [(Exp & W & L) | (FAULT & L)]
 
 let po-scl-ob =
  [Exp & M]; (po & scl); [DC.CVAU]
