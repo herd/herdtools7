@@ -146,10 +146,10 @@ module type S =
  * the equalities/disequalities of Pointer Authentication Codes (hash
  * collisions).
  *
- * Each of the `add_*` functions return the new solver state if the new
+ * The `add_predicate` function return the new solver state if the new
  * constraint is satisfiable in the current environment. And `None` otherwise.
  *
- * In addition the compare function may only compare the part of the solver
+ * In addition the compare function must only compare the part of the solver
  * state we print in `pp_solver_state`, as example the PAC solver of `AArch64`
  * only show it's equalities.
  *)
@@ -164,6 +164,9 @@ module type S =
        * of their class... *)
       val normalize : Cst.v -> solver_state -> Cst.v
 
+      (* Pretty print the current solver state, must verify
+       * `pp_solver_state empty_solver = ""` otherwise the final result may be
+       * invalid if "-debug pred-solver" is not set *)
       val pp_solver_state : solver_state -> string
 
       (* The comparison is used to store the final state in a Map before pretty
