@@ -510,7 +510,7 @@ def check_rules(filename: str) -> int:
     # Treat existing issues as warnings and new issues as errors.
     file_to_num_expected_errors = {
         "RelationsOnTypes.tex" : 15,
-        "SubprogramCalls.tex" : 20,
+        "SubprogramCalls.tex" : 16,
         "SubprogramDeclarations.tex" : 13,
         "SymbolicEquivalenceTesting.tex" : 26,
         "SymbolicSubsumptionTesting.tex" : 23,
@@ -686,6 +686,7 @@ def main():
     print("Linting files...")
     all_latex_sources = get_latex_sources(False)
     content_latex_sources = get_latex_sources(True)
+    # content_latex_sources = ["SubprogramCalls.tex"]
     num_errors = 0
     num_spelling_errors = spellcheck(args.dictionary, content_latex_sources)
     if num_spelling_errors > 0:

@@ -449,6 +449,7 @@ converted
 converting
 converts
 conveys
+copied
 copyright
 corporate
 correct
@@ -610,6 +611,7 @@ elaborated
 element
 elements
 elided
+elision
 else
 emit
 emphasize
@@ -979,6 +981,7 @@ inner
 input
 inputs
 inserted
+inserting
 inserts
 inside
 inspect
