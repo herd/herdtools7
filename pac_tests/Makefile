@@ -10,7 +10,7 @@ my_herd:
 		-set-libdir ../herd/libdir \
 		-show all -showevents all \
 		-doshow iico_ctrl -doshow ctrl -doshow all \
-		-squished false -variant pac -debug pac
+		-squished false -variant pac -debug pac,pred-solver
 
 # Run my modified version of herd on a user given file
 %.expected:

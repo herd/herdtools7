@@ -507,6 +507,9 @@ module Make(O:Config)(M:XXXMem.S) =
 (**********)
         let tr_out = tr_out test in
         printf "States %i\n" nfinals ;
+        let finals =
+          if O.debug.Debug_herd.pred_solver then finals
+          else A.StateSet.map (fun (x,y,_) -> (x,y,A.V.empty_solver)) finals in
         A.StateSet.pp stdout ""
           (fun chan st ->
             fprintf chan "%s\n"
