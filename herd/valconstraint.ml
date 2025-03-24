@@ -74,6 +74,9 @@ module type S = sig
 (* Extract delayed exception, if present, or warning, if present. *)
   val get_failed :  cnstrnts -> cnstrnt option
 
+  (* Solve doesn't take a solver state as argument, instead is rebuild the
+   * solver state using the predicates in the input constraints, but it return
+   * the solver state such that it can be propagated to `constraints.ml` *)
   val solve : cnstrnt list -> answer
 end
 
