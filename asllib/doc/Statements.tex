@@ -971,7 +971,8 @@ In \listingref{semantics-sdeclnone},
 
 \ASTRuleDef{ElidedParamCall}
 \hypertarget{build-elided-param-call}{}
-The helper function $\buildelidedparamcall$ builds a $\call$ from a parsed $\Nelidedparamcall$.
+The helper function $\buildelidedparamcall$ builds a $\call$ from a parsed \\
+$\Nelidedparamcall$.
 
 \begin{mathpar}
 \inferrule{
@@ -1022,16 +1023,24 @@ The helper function $\buildelidedparamcall$ builds a $\call$ from a parsed $\Nel
 \hypertarget{def-desugarelidedparameter}{}
 The helper function
 \[
+\begin{array}{r}
 \desugarelidedparameter(
   \overname{\localdeclkeyword}{\ldk} \aslsep
   \overname{\localdeclitem}{\ldi} \aslsep
   \overname{\ty}{\vt} \aslsep
   \overname{\call}{\vcall})
-\aslto \overname{\stmt}{\news}
-\cup\ \{\ParseErrorConfig\}
+\aslto \\
+\overname{\stmt}{\news}
+\cup\ \overname{\TBuildError}{\ParseErrorConfig}
+\end{array}
 \]
 builds a declaration statement $\news$ from an assignment of the call $\vcall$ to the left-hand side $\ldi$ with keyword $\ldk$ and type annotation $\vt$, where the call has an elided parameter.
 Otherwise, the result is a parse error.
+
+\ExampleDef{Desugaring Parameter Elision Based on Declared Type Annotation}
+\listingref{DesugarElidedParameter} shows examples of how parameters can be elided
+if they can be copied from the type annotation in declaration statements.
+\ASLListing{Desugaring parameter elision based on declared type annotation}{DesugarElidedParameter}{\syntaxtests/ASTRule.DesugarElidedParameter.asl}
 
 \begin{mathpar}
 \inferrule{

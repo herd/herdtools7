@@ -207,6 +207,12 @@ Note that this function relies on all standard library functions with input para
   func stdlibB{M,N}(arg1: bits(N), ...) => bits(...M...)
 \end{lstlisting}
 
+\ExampleDef{Inserting Parameters in Calls to Standard Library Subprograms}
+The specification in \listingref{InsertStdlibParam}
+shows examples of calls to standard library functions with some or all of their
+parameters elided, and the equivalent calls with all parameters included.
+\ASLListing{Inserting parameters in calls to standard library subprograms}{InsertStdlibParam}{\typingtests/TypingRule.InsertStdlibParam.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -239,20 +245,6 @@ Note that this function relies on all standard library functions with input para
   \end{itemize}
 \end{itemize}
 
-
-% \AllApply
-% \begin{itemize}
-%   \item $\funcsig.\funcparameters$ is either
-%     a list with one parameter with a name $\vx$,
-%     or a list with two parameters, the second of which has a name $\vx$\ProseTerminateAs{\params};
-%   \item $\funcsig.\funcargs$ has a \head{} formal argument whose type is $\TBits(\EVar(\vx))$\ProseTerminateAs{\params};
-%   \item $\argtypes$ has a \head{} actual argument type of $\TBits(\ve)$\ProseTerminateAs{\params};
-%   \item $\funcsig.\funcbuiltin$ is $\True$\ProseTerminateAs{\params};
-%   \item the length of $\params$ is less than the length of $\funcsig.\funcparameters$\ProseTerminateAs{\params};
-%   \item $\paramsone$ is the \constrainedinteger{} for $\ve$ with an empty set of \sideeffectdescriptorsterm,
-%         appended to $\params$\ProseTerminateAs{\params}.
-% \end{itemize}
-
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[can\_insert]{
@@ -263,7 +255,7 @@ Note that this function relies on all standard library functions with input para
       \argtypes \neq \emptylist &
     \end{array}\right)
   }\\
-  \caninsertstdlibparam\\\\
+  \caninsertstdlibparam = \True\\\\
   \argtypes \eqname [\vt] \concat \Ignore\\
   \getbitvectorwidth(\tenv, \vt) \typearrow \vwidth \OrTypeError\\\\
   \paramtype \eqdef \TInt(\wellconstrained([\AbbrevConstraintExact{\vwidth}]))\\
@@ -282,7 +274,7 @@ Note that this function relies on all standard library functions with input para
       \argtypes \neq \emptylist &
     \end{array}\right)
   }\\
-  \neg\caninsertstdlibparam\\\\
+  \caninsertstdlibparam = \False
 }{
   \insertstdlibparam(\funcsig, \params, \argtypes) \aslto \overname{\params}{\paramsone}
 }
@@ -295,7 +287,23 @@ The function
   \canommitstdlibparam(\overname{\func}{\funcsig}) \aslto \overname{\Bool}{\vb}
 \]
 tests whether the first parameter of the subprogram defined by
-$\funcsig$ can automatically inserted, yielding the result in $\vb$.
+$\funcsig$ can be omitted (and thus automatically inserted), yielding the result in $\vb$.
+
+\ExampleDef{Determining Whether a Parameter Can be Omitted}
+The following are examples of subprogram signatures
+where the first parameter can be omitted:
+\begin{lstlisting}
+func UInt{N: integer{1..128}} (x: bits(N)) => integer{0..2^N-1}
+func Len{N}(x: bits(N)) => integer {N}
+func ZeroExtend {N,M} (x: bits(M)) => bits(N)
+\end{lstlisting}
+
+The following are examples of subprogram signatures
+where the first parameter cannot be omitted:
+\begin{lstlisting}
+func ReplicateBit{N}(isZero: boolean) => bits(N)
+func Ones{N}() => bits(N)
+\end{lstlisting}
 
 \ProseParagraph
 \AllApply
@@ -306,7 +314,8 @@ $\funcsig$ can automatically inserted, yielding the result in $\vb$.
     or the list contains two parameters and the second parameter name is $\vn$;
     and $\None$ otherwise
   };
-  \item \Proseeqdef{$\vb$}{$\True$ if and only if the first argument of $\funcsig$
+  \item \Proseeqdef{$\vb$}{$\True$ if and only if
+        $\declaredparam$ is $\Some{\vn}$ and the first argument of $\funcsig$
         has a \bitvectortypeterm{} where the width is defined as the variable expression for $\vn$}.
 \end{itemize}
 
@@ -321,7 +330,8 @@ $\funcsig$ can automatically inserted, yielding the result in $\vb$.
       \None      & \text{else}
     \end{cases}
   }\\
-  \vb \eqdef \funcsig.\funcargs = (\Ignore, \TBits(\EVar(\vn), \Ignore))
+  \vb \eqdef \declaredparam = \Some{\vn} \land
+  \funcsig.\funcargs = (\Ignore, \TBits(\EVar(\vn), \Ignore))
 }{
   \canommitstdlibparam(\funcsig) \typearrow \vb
 }
@@ -1126,21 +1136,21 @@ The function
       \overname{\func}{\callee} \aslsep
       \overname{\TSideEffectSet}{\vses}
       )\
-    \cup\\
-    \overname{\TTypeError}{\TypeErrorConfig}
+    \\
+    \cup\ \overname{\TTypeError}{\TypeErrorConfig}
     \end{array}
   \end{array}
 \]
 looks up the static environment $\tenv$ for a subprogram associated with $\name$
 and the list of argument types $\calleeargtypes$ and determines which one of the following
 cases holds:
-\begin{itemize}
+\begin{enumerate}
   \item there is no declared subprogram that matches $\name$ and $\calleeargtypes$;
   \item there is exactly one subprogram that matches $\name$ and $\calleeargtypes$;
-\end{itemize}
+\end{enumerate}
 If more than one subprogram that matches $\name$ and $\calleeargtypes$,
 this is detected by the rule \TypingRuleRef{DeclareSubprograms},
-which invokes the rule \TypingRuleRef{DeclareOneFunc},
+which invokes the rule \\ \TypingRuleRef{DeclareOneFunc},
 which invokes the rule \TypingRuleRef{AddNewFunc},
 which results in a \typingerrorterm{}.
 
@@ -1152,6 +1162,23 @@ If the second case holds, the function returns a tuple which comprises:
 \item $\vses$ --- the set of \sideeffectdescriptorsterm{} associated with $\name$.
 \end{itemize}
 \ProseOtherwiseTypeError
+
+\ExampleDef{Matching a Subprogram to an Identifier}
+
+\listingref{SubprogramForName} shows an example where all subprogram calls
+match subprogram declarations.
+\ASLListing{Successfully matching subprogram names to definitions}{SubprogramForName}{\typingtests/TypingRule.SubprogramForName.asl}
+
+\listingref{SubprogramForName-undefined} shows an example where
+the subprogram call \verb|add_10(5)| is illegal, since no subprogram named \verb|add_10|
+is declared.
+\ASLListing{Subprogram name undefined}{SubprogramForName-undefined}{\typingtests/TypingRule.SubprogramForName.bad.undefined.asl}
+
+\listingref{SubprogramForName} shows an example where
+the subprogram call \verb|add_10(5.0)| is illegal, since, although a subprogram named \verb|add_10|
+is declared, it does not match the required signature (the type of the first argument is
+the \integertypeterm{} rather than the \realtypeterm).
+\ASLListing{Subprogram name does not match signature}{SubprogramForName-no-candidates}{\typingtests/TypingRule.SubprogramForName.bad.no_candidates.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1176,7 +1203,8 @@ If the second case holds, the function returns a tuple which comprises:
   \begin{itemize}
     \item $\tenv$ binds $\name$ via $\overloadedsubprograms$ map to $\renamingset$ and $\vses$;
     \item filtering the subprograms in $\renamingset$ with the caller argument types $\callerargtypes$
-          in $\tenv$ (see \TypingRuleRef{FilterCallCandidates}) yields $\matchingrenamings$\ProseOrTypeError;
+          in $\tenv$ (see \TypingRuleRef{FilterCallCandidates}) yields \\
+          $\matchingrenamings$\ProseOrTypeError;
     \item $\matchingrenamings$ contains a single element --- $(\namep, \callee)$\ProseOrTypeError;
   \end{itemize}
 \end{itemize}
@@ -1739,6 +1767,18 @@ The helper relation
 \]
 converts continuing configurations and returning configurations
 into corresponding normal configurations that can be returned by a subprogram evaluation.
+
+\ExampleDef{Converting Configurations Upon Subprogram Return}
+In \listingref{MatchFuncRes},
+the final configuration resulting from evaluating the call \verb|proc()|
+is a \Prosecontinuingconfiguration{}, which is converted into
+a \Prosenormalconfiguration{} with no return value.
+On the other hand, the configuration resulting from evaluating the
+call \verb|returns_values()| is a \Prosereturningconfiguration{} with the value
+$\nvint(5)$, which is converted into a \Prosenormalconfiguration{}
+with the same value and a fresh identifier for it.
+
+\ASLListing{Converting configurations upon subprogram return}{MatchFuncRes}{\semanticstests/SemanticsRule.MatchFuncRes.asl}
 
 \ProseParagraph
 \OneApplies

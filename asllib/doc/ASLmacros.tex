@@ -1529,6 +1529,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Glossary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\Prosenormalconfiguration[0]{\hyperlink{def-normal}{normal configuration}}
+\newcommand\Prosereturningconfiguration[0]{\hyperlink{def-returning}{returning configuration}}
+\newcommand\Prosecontinuingconfiguration[0]{\hyperlink{def-continuing}{continuing configuration}}
 \newcommand\errorcodeterm[0]{\hyperlink{def-errorcodeterm}{error code}}
 \newcommand\errorcodesterm[0]{\hyperlink{def-errorcodeterm}{error codes}}
 \newcommand\staticerrorterm[0]{\hyperlink{def-staticerrorterm}{static error}}
@@ -1959,7 +1962,7 @@
 \newcommand\LexicalError[0]{\hyperlink{def-lexicalerrorresult}{\BuildErrorCode{LE}}}
 \newcommand\LexicalErrorConfig[0]{\texttt{\#}\LexicalError}
 \newcommand\ParseError[0]{\hyperlink{def-parseerror}{\BuildErrorCode{PE}}}
-\newcommand\ParseErrorConfig[0]{\texttt{\#}\ParseError}
+\newcommand\ParseErrorConfig[0]{\hyperlink{def-parseerror}{\#\BuildErrorCode{PE}}}
 \newcommand\ReservedIdentifier[0]{\hyperlink{def-reservedidentifier}{\BuildErrorCode{RI}}}
 \newcommand\BinopPrecedence[0]{\hyperlink{def-binopprecedence}{\BuildErrorCode{BOP}}}
 \newcommand\BuildBadDeclaration[0]{\hyperlink{def-buildbaddeclaration}{\BuildErrorCode{BD}}}
@@ -2999,8 +3002,6 @@
 \newcommand\vHALFWORDSIZE[0]{\texttt{HALF\_WORD\_SIZE}}
 \newcommand\vWORDSIZE[0]{\texttt{WORD\_SIZE}}
 \newcommand\PI[0]{\texttt{PI}}
-\newcommand\declaredparam[0]{\texttt{declared\_param}}
-\newcommand\caninsertstdlibparam[0]{\texttt{can\_insert\_stdlib\_param}}
 \newcommand\RED[0]{\texttt{RED}}
 \newcommand\GREEN[0]{\texttt{GREEN}}
 \newcommand\BLUE[0]{\texttt{BLUE}}
@@ -3017,3 +3018,5 @@
 \newcommand\addtenone[0]{add\_10-1}
 \newcommand\factorial[0]{\texttt{factorial}}
 \newcommand\rotate[0]{\texttt{rotate}}
+\newcommand\declaredparam[0]{\texttt{declared\_param}}
+\newcommand\caninsertstdlibparam[0]{\texttt{can\_insert\_stdlib\_param}}

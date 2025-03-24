@@ -15,3 +15,4 @@ Examples used to test syntax and AST building rules:
   [1]
   $ aslref ConventionRule.IdentifiersDifferingByCase.asl
   $ aslref --no-exec ConventionRule.IdentifierSingleUnderscore.asl
+  $ aslref --no-exec ASTRule.DesugarElidedParameter.asl

@@ -524,3 +524,17 @@ ASL Typing Tests / annotating types:
   ASL Typing error: multiple recursive declarations: "foo", "g".
   [1]
   $ aslref --no-exec TypingRule.DeclareSubprograms.asl
+  $ aslref --no-exec TypingRule.SubprogramForName.asl
+  $ aslref --no-exec TypingRule.InsertStdlibParam.asl
+  $ aslref TypingRule.SubprogramForName.asl
+  $ aslref TypingRule.SubprogramForName.bad.undefined.asl
+  File TypingRule.SubprogramForName.bad.undefined.asl, line 3,
+    characters 8 to 17:
+  ASL Error: Undefined identifier: 'add_10'
+  [1]
+  $ aslref TypingRule.SubprogramForName.bad.no_candidates.asl
+  File TypingRule.SubprogramForName.bad.no_candidates.asl, line 8,
+    characters 8 to 19:
+  ASL Typing error: No subprogram declaration matches the invocation:
+    add_10(real).
+  [1]
