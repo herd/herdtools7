@@ -199,6 +199,7 @@ beginning
 behave
 behavior
 behaviors
+behaviour
 being
 belongs
 below
@@ -392,6 +393,7 @@ configurable
 configuration
 configurations
 conflict
+conflicting
 conflicts
 confuse
 confused
@@ -1457,6 +1459,7 @@ property
 proprietary
 prose
 protected
+prototype
 prove
 proves
 provide
@@ -1539,6 +1542,7 @@ relationship
 relative
 relatively
 relevant
+reliable
 relied
 relies
 rely
@@ -2029,6 +2033,7 @@ use
 used
 useful
 user
+users
 uses
 using
 usual
@@ -2074,6 +2079,7 @@ walk
 want
 warning
 warnings
+warns
 was
 way
 ways

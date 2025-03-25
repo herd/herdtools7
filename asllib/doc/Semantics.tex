@@ -620,6 +620,10 @@ When there are multiple feasible choices for the next evaluation transition, ASL
 This applies \underline{only} when there are multiple feasible choices.
 For example, assignment statements (\secref{AssignmentStatements}) must still evaluate their right-hand side before considering their left-hand side, as the evaluation transition for left-hand sides requires the right-hand side value (\chapref{AssignableExpressions}).
 
+\ConventionDef{EvaluationOrderIndependence}
+To assist reliable translation of ASL to other representations that may not specify an evaluation order, implementations may choose to enforce independence from evaluation order using a conservative static analysis that warns users of possibly conflicting side-effects which may affect behaviour if reordered.
+An initial prototype of such an analysis can be found in \href{https://github.com/herd/herdtools7/blob/ASLRefALP2.1/asllib/SideEffect.ml}{ASLRef}.
+
 \ExampleDef{Evaluation order}
 \listingref{evaluation-order} shows examples of the constructs above, followed by output to the console from running the specification.
 \textbf{Note:} the ordering for slicing expressions may, at first glance, seem not to follow the evaluation order specification; this is because some forms of slice are elaborated during typechecking (see \TypingRuleRef{Slice}).
