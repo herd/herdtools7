@@ -236,12 +236,19 @@
 \newcommand{\valocemph}[2]{#1 and #2 are to the \emph{Same Virtual Address}}
 \newcommand{\valoc}[2]{#1 and #2 are to the Same Virtual Address}
 \newcommand{\loc}[2]{#1 and #2 are to the same Physical Address}
-\newcommand{\lrsname}{a Local read successor of}
-\newcommand{\lrs}[2]{#2 is a Local read successor of #1}
-\newcommand{\lwfsname}{a Local write or MMU Fault successor of}
-\newcommand{\lwfs}[2]{#2 is a Local write or MMU Fault successor of #1}
-% \edef\povaloc#1#2{\po{#1}{#2} and \valoc{#1}{#2}}
 \newcommand{\povaloc}[2]{\po{#1}{#2} and \valoc{#1}{#2}}
+
+\newcommand{\lrsname}{Local read successor}
+\newcommand{\lrs}[2]{#2 is a \lrsname{} of #1}
+\newcommand{\lrsemph}[2]{#2 is a \emph{\lrsname} of #1}
+
+\newcommand{\lwsname}{Local write successor}
+\newcommand{\lws}[2]{#2 is a \lwsname{}  of #1}
+\newcommand{\lwsemph}[2]{#2 is a \emph{\lwsname}  of #1}
+
+\newcommand{\lfsname}{Local MMU Fault successor}
+\newcommand{\lfs}[2]{#2 is a \lfsname{} of #1}
+\newcommand{\lfsemph}[2]{#2 is a \emph{\lfsname} of #1}
 
 \newcommand{\samereg}[2]{#1 and #2 are to the Same Register}
 \newcommand{\sameval}[2]{#2 takes its data from #1}
