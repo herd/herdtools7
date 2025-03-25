@@ -1323,6 +1323,12 @@ checks whether a list of types $\formaltys$ clashes with the list of types appea
 in the list of arguments $\vargs$ in $\tenv$, yielding the result in $\vb$.
 \ProseOtherwiseTypeError
 
+\ExampleDef{Argument Clashing}
+\listingref{type-clashes} shows examples of types ---
+the arguments of procedures -- that do not clash and types that do clash
+(shown in comments).
+\ASLListing{Examples of Argument clashing}{type-clashes}{\typingtests/TypingRule.TypeClashes.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1334,18 +1340,188 @@ in the list of arguments $\vargs$ in $\tenv$, yielding the result in $\vb$.
   \item $\vb$ is $\True$ (unless the rule short-circuited with $\False$ or a \typingerrorterm{}).
 \end{itemize}
 
-\CodeSubsection{\HasArgClashBegin}{\HasArgClashEnd}{../Typing.ml}
-
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \equallength(\formaltypes, \vargs) \typearrow \True \terminateas \False\\
+  \equallength(\formaltypes, \vargs) \typearrow \True \terminateas \False\\\\
   \argtys \eqdef [(\Ignore, \vt) \in \vargs: \vt]\\
   \vi\in\listrange(\formaltys): \typeclashes(\tenv, \formaltys[\vi], \argtys[\vi]) \typearrow \True \terminateas \False,\TypeErrorConfig
 }{
   \hasargclash(\tenv, \formaltys, \vargs) \typearrow \overname{\True}{\vb}
 }
 \end{mathpar}
+\CodeSubsection{\HasArgClashBegin}{\HasArgClashEnd}{../Typing.ml}
+
+\TypingRuleDef{TypeClash}
+\hypertarget{def-typeclashes}{}
+The helper function
+\[
+  \typeclashes(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
+  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+determines whether a type $\vt$ \emph{\Prosetypeclashes} with a type $\vs$ in environment $\tenv$,
+returning the result $\vb$.
+\ProseOtherwiseTypeError
+
+\identd{VPZZ} \identi{PQCT} \identi{WZKM} \identi{WZKM}
+Note that \Prosetypeclashing{} is an equivalence relation.
+In particular note that if $T$ \Prosetypeclashes{} with $A$ and $B$ then $A$ and
+$B$ \Prosetypeclash{}.
+
+See \ExampleRef{Argument Clashing}
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{subtype}
+  \begin{itemize}
+    \item either $\vs$ subtypes $\vt$ or $\vt$ subtypes $\vs$;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item \AllApplyCase{simple}
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields $\vsstruct$\ProseOrTypeError;
+    \item both $\vtstruct$ and $\vsstruct$ are one of the following types: \\
+          \booleantypesterm{}, \integertypeterm{}, \realtypeterm{}, or \stringtypeterm{};
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item \AllApplyCase{t\_enum}
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields an \enumerationtypeterm{} with labels $\vlit$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields an \enumerationtypeterm{} with labels $\vlis$;
+    \item $\vb$ is $\True$ if and only if $\vlis$ and $\vlit$ are equal.
+  \end{itemize}
+
+  \item \AllApplyCase{t\_array}
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields an array type with element type $\vtyt$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields an array type with element type $\vtys$;
+    \item $\vb$ is $\True$ if and only if $\vtyt$ and $\vtys$ type-clash.
+  \end{itemize}
+
+  \item \AllApplyCase{t\_tuple}
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a \tupletypeterm{} with element types $\vt_{1..k}$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a \tupletypeterm{} with element types $\vs_{1..n}$;
+    \item if $n \neq k$ the rule short-circuits with $\vb=\False$;
+    \item $\vb$ is $\True$ if and only if $\vt_i$ type-clashes with $\vs_i$, for all $i=1..k$.
+  \end{itemize}
+
+  \item \AllApplyCase{otherwise\_different\_labels}
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields $\vsstruct$;
+    \item $\vsstruct$ and $\vtstruct$ have different AST labels;
+    \item $\vb$ is $\False$;
+  \end{itemize}
+
+  \item \AllApplyCase{otherwise\_structured}
+  \begin{itemize}
+    \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
+    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$;
+    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields $\vsstruct$;
+    \item $\vsstruct$ and $\vtstruct$ have the same AST label;
+    \item $\vtstruct$ (and thus $\vsstruct$) is a \structuredtype;
+    \item $\vb$ is $\False$;
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[subtype]{
+  (\subtypesrel(\tenv, \vs, \vt) \typearrow \True) \lor (\subtypesrel(\tenv, \vt, \vs) \typearrow \True)
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\True}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[simple]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError \\
+  \tstruct(\tenv, \vs) \typearrow \vsstruct \OrTypeError \\
+  \astlabel(\vtstruct)=\astlabel(\vsstruct)\\
+  \astlabel(\vtstruct) \in \{\TBool, \TInt, \TReal, \TString, \TBits\}
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\True}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_enum]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \tstruct(\tenv, \vt) \typearrow \TEnum(\Ignore, \vlis) \\
+  \tstruct(\tenv, \vs) \typearrow \TEnum(\Ignore, \vlit)
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\vlis = \vlit}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_array]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \tstruct(\tenv, \vt) \typearrow \TArray(\Ignore, \vtyt) \\
+  \tstruct(\tenv, \vs) \typearrow \TArray(\Ignore, \vtys) \\
+  \typeclashes(\tenv, \vtyt, \vtys) \typearrow \vb
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_tuple]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \tstruct(\tenv, \vt) \typearrow \TTuple(\vt_{1..k}) \\
+  \tstruct(\tenv, \vs) \typearrow \TTuple(\vs_{1..n}) \\
+  \booltrans{n = k} \booltransarrow \True \terminateas \False\\
+  i=1..k: \typeclashes(\tenv, \vt_i, \vs_i) \typearrow \vb_i\\
+  \vb \eqdef \bigwedge_{\vi=1}^k \vb_i
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[otherwise\_different\_labels]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \\
+  \tstruct(\tenv, \vs) \typearrow \vsstruct \\
+  \astlabel(\vtstruct) \neq \astlabel(\vsstruct)
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[otherwise\_structured]{
+  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
+  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \\
+  \tstruct(\tenv, \vs) \typearrow \vsstruct \\
+  \astlabel(\vtstruct) = \astlabel(\vsstruct)\\
+  \vb \eqdef \astlabel(\vtstruct) \in \{\TRecord, \TException, \TCollection\}\\
+}{
+  \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
+}
+\end{mathpar}
+\CodeSubsection{\TypeClashBegin}{\TypeClashEnd}{../types.ml}
+
+\subsubsection{Comment}
+Note that if $\vt$ \subtypesatisfies{} $\vs$ then $\vt$ and $\vs$ \Prosetypeclash, but not the other
+way around.
 
 \TypingRuleDef{ExpressionList}
 \hypertarget{def-annotateexprs}{}
