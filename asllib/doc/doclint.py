@@ -74,7 +74,7 @@ def check_unused_latex_macros(latex_files: list[str]):
             used_macros.add(use_match)
     unused_macros = defined_macros.difference(used_macros)
     for unused in unused_macros:
-        print(f"LaTeX macro {unused} defined but never used!")
+        print(f"LaTeX macro {unused} is defined but never used!")
         num_errors += 1
     return num_errors
 
@@ -510,7 +510,7 @@ def check_rules(filename: str) -> int:
     # Treat existing issues as warnings and new issues as errors.
     file_to_num_expected_errors = {
         "RelationsOnTypes.tex" : 15,
-        "SubprogramCalls.tex" : 16,
+        "SubprogramCalls.tex" : 15,
         "SubprogramDeclarations.tex" : 13,
         "SymbolicEquivalenceTesting.tex" : 26,
         "SymbolicSubsumptionTesting.tex" : 23,

@@ -1436,15 +1436,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           (* LRM R_GXKG:
              The notation b[j:i] is syntactic sugar for b[i +: j-i+1].
           *)
-          let pre_length = binop `MINUS j i |> binop `PLUS !$1 in
-          annotate_slice (Slice_Length (i, pre_length)) |: TypingRule.Slice
-      | Slice_Star (factor, pre_length) ->
+          let length = binop `MINUS j i |> binop `PLUS !$1 in
+          annotate_slice (Slice_Length (i, length)) |: TypingRule.Slice
+      | Slice_Star (factor, length) ->
           (* LRM R_GXQG:
              The notation b[i *: n] is syntactic sugar for b[i*n +: n]
           *)
-          let pre_offset = binop `MUL factor pre_length in
-          annotate_slice (Slice_Length (pre_offset, pre_length))
-          |: TypingRule.Slice
+          let offset = binop `MUL factor length in
+          annotate_slice (Slice_Length (offset, length)) |: TypingRule.Slice
       (* End *)
     in
     fun slices ->
