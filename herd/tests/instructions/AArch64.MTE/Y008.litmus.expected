@@ -1,0 +1,10 @@
+Test Y008 Required
+States 1
+0:X1=x:t3; 0:RGSR_EL1=3145987;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=x:t3 /\ 0:RGSR_EL1=3145987)
+Observation Y008 Always 1 0
+Hash=fbb85f77dfa0c46db6367f09d5c77bbd
+

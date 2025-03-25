@@ -1,0 +1,17 @@
+AArch64 Y007
+(* IRG GCR_EL1 RRND=0, RGSR_EL1 tag and seed update *)
+{
+  int x=100;
+  0:X0=x;
+  0:GCR_EL1=0;
+  0:RGSR_EL1=0;
+}
+
+P0         ;
+IRG X1,X0  ;
+
+(* After IRG, RGSR_EL1 TAG=0, SEED=0 *)
+(* SEED stays 0, so maybe not a good test *)
+
+forall (0:X1=x:t0 /\ 0:RGSR_EL1=0)
+

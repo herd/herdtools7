@@ -1,0 +1,10 @@
+Test Y005 Required
+States 1
+0:X1=x:t0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=x:t0)
+Observation Y005 Always 1 0
+Hash=621cf0020a8a09fe413e6f91186d4979
+
