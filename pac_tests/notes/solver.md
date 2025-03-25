@@ -256,36 +256,81 @@ assign `S2` to the value of the representant of it's equivalence class).
 
 ## Adding the collision solver
 
-### Changes in `eventsMonad.ml` and `symbValue.lm`
 
-First we must change the way we interpret the oprations in case of PAC
-collision, now each times we perform an operation with a result that depend of
-the presence of a PAC collision (like an equality of two same virtual address
-but with different PAC fields), the interpretation of the opration
-(`SymbValue.op op v1 v2` or `SymbValue.op1 op1 v`) will raise a
-`CollisionPAC (px, py, vtrue, vfalse)` fault with `px, py` two PAC fields and
-`vtrue, vfalse` the return value of the opration in case of success or failure.
-Then the event monad will catch this exception (in `eventsMonad.ml`) and add the
-assignation to the constraint solver like the `Undertermined` exception. So the
-constraint solver will be in charge of solving all the PAC collisions.
+### Changes in `archOp.ml`, `AArch64Op.ml` and `value.mli`
+
+Now each architecture can declare it's own type of constraint, using a generic
+interface like:
+
+```ocaml
+type predicate
+
+exception Constraint of predicate * cst * cst
+
+val eq_satisfiable : cst -> cst -> predicate option
+```
+
+The new `predicate` type represent a constraint that a constraint solver
+(declared in `value.mli`) have to check, when an architecture specific operation
+raise the exception `Constraint (pred, ctrue, cfalse)`, then the result must be
+interpreted as `if pred then ctrue else cfalse`. And each times this
+exception is raise, `eventsMonad.ml` will delay the resolution of the operation
+in a similar way that the `Undetermined` exception.
+
+And if we have to look for the equality of two constants, now the result of the
+equality must be interpreted using:
+
+```ocaml
+if Cst.eq c1 c2 then c_true (* In this case eq_satisfiable must return None *)
+else
+    match eq_satisfiable c1 c2 with
+    | Some pred -> raise (Constraint (pred, c_true, c_false))
+    | None -> c_false
+```
+
+In particular this function is used in `symbValue.ml` as example to compare two
+virtual addresses with te instruction `CMP`, or to assume the equality of two
+constants during the resolution of the assignations in `valconstraint.ml`.
+
+Then the satisfiability of the conjunction of literal (a predicate  or it's
+negation) generated during an execution will be solved in `valconstraint.ml` and
+`constraints.ml` using an architecture specific constraint solver declared in
+`value.mli` with this interface:
+
+```ocaml
+type solver_state
+
+val empty_solver
+
+val add_predicate : bool -> predicate -> solver_state -> solver_state option
+```
+
+At any times the solver state represent a conjunction of literals and the
+`add_predicate` must return `None` if the conjunction of the previous literals
+represented by the solver plus the new literal is unsatisfiable, or
+`Some new_solver` otherwise.
+
 
 ### Changes in the constraints solver
 
-To solve the PAC collision we must change the second pass, and in particular the
-way we solve each constraints (and continue to do one pass on each SCC in
-topological order). In particular we must:
+Now `valconstraint.ml` need to solve some sets of assignations and literals
+(used to propagate the predicates from one resolution to another) knowing that
+the resolution of some assignations will raise a
+`Constraint (pred, ctrue, cfalse)` exception. Each of those exceptions split the
+resolution in two (the case assuming the predicate, and the case assuming it's
+negation), and as a consequence the solver must return a list of solution
+instead of a unique solution, and this have some consequence it's design.
 
-- Keep an up-to-date version of the PAC constraints solver (the union-find or
-    simplex state)
-- Keep a list of solutions and solver states instead of one, to represent the
-    set of possible solutions depending of the PAC collision constraints we
-    assume.
 
 To do so I use a new ***monad***!
 
 ```ocaml
-type solver_state = {solution: cst V.Solution.t; solver: PAC.solver_state}
-type 'a solver_monad = solver_state -> (solver_state * 'a) list
+type monad_state =
+    { solution: cst V.Solution.t
+    ; solver: V.solver_state
+    ; predicates: cnstrnts }
+
+type 'a solver_monad = monad_state -> (monad_state * 'a) list
 
 (* Bind operator *)
 let (let*) (x: 'a solver_monad) (f: 'a -> 'b solver_monad) : 'b solver_monad =
@@ -313,30 +358,29 @@ the empty set of executions, and `alternative` take two computations, and perfor
 them in "parallel".
 
 With this in mind we can build a function to be call in case we try to solve an
-operation that raise a `CollisionPAC` exception:
+operation that raise a `Constraint` exception:
 
 ```ocaml
-let collision (px py: PAC.t) (vtrue vfalse: V.v) : V.v solver_monad =
+let add_predicate (b: bool) (p: V.arch_pred) : unit solver_monad =
+    (* Add the new literal to propagate them to the next calls of the solver *)
+    let* preds = get_predicates in
+    let* _ = set_predicates (Predicate (b,p) :: preds) in
+
     let* solver = get_solver in
-    match PAC.add_equality px py solver, PAC.add_inequality px py solver with
-    | Some s1, Some s2 ->
-        alternative
-            (let+ _ = set_solver s1 in vtrue)
-            (let+ _ = set_solver s2 in vfalse)
-    | Some s1, None ->
-        let+ _ = set_solver s1 in vtrue
-    | None, Some s2 ->
-        let+ _ = set_solver s2 in vfalse
-    | None, None ->
-        (* Unreachable state *)
-        assert false
+    match V.add_predicate b p solver with
+    | Some solver -> set_solver solver
+    | None -> contradiction
+
+let solve_predicate (pred: V.arch_pred) (vtrue vfalse: V.v) : V.v solver_monad =
+    alternatice
+        (let+ _ = add_predicate true pred in vtrue)
+        (let+ _ = add_predicate false pred in vfalse)
 ```
 
-This function just take the current solver state, check if an equality or an
-inequality is possible, update the solver state and return the corresponding
-value (`vtrue` if the collision is assumed as present, `vfalse` otherwise).
-
-And we may use these operators to implement all the primitive we need:
+This function take a literal, and split it's state in two to solve the case
+asssuming the predicate, and the case assuming it's negation in two in two
+independant traces. Then we can use those functions to define all the operators
+we need for the resolution:
 
 ```ocaml
 val assume_equality : cst -> cst -> unit solver_monad
