@@ -1,5 +1,5 @@
 NAME = example7
-DEBUG=pac
+DEBUG=-debug pac
 
 all: #my_herd
 	touch build/example.svg
@@ -10,8 +10,8 @@ my_herd:
 		-gv $(NAME).litmus -o build \
 		-set-libdir ../herd/libdir \
 		-show all -showevents all \
-		-doshow iico_ctrl -doshow ctrl -doshow all \
-		-squished false -debug $(DEBUG)
+		-doshow all \
+		-squished true $(DEBUG)
 
 # Run my modified version of herd on a user given file
 %.expected:

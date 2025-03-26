@@ -43,6 +43,7 @@ address but the `pac*` instruction use the bit 63 (but the bit 55 if
 
 ```
 AArch64 switch VA range
+Variant=pac
 { 0:x0=x }
 P0        ;
 pacdza x0 ;
@@ -67,8 +68,10 @@ in another context. In particular this means that this litmus test:
 
 ```
 AArch64 Collisions in loads
-{ 0:x0=pac(x, da, 0) }
+Variant=pac
+{ 0:x0=x }
 P0              ;
+  pacdza x0     ;
   ldr x1, [x0]  ;
 exists ( ~Fault(P0, MMU:Translation) )
 ```
@@ -77,38 +80,18 @@ will succeed with a probability `p`, and this test too:
 
 ```
 AArch64 Collisions in aut*
-{ 0:x0=pac(x, da, 0) }
+Variant=pac,fpac
+{ 0:x0=x }
 P0          ;
+  pacdza x0 ;
   autdzb x0 ;
 exists ( ~Fault(P0, PacCheck:DB) )
 ```
 
-But their is also some collisions in the final state, as example
-
-```
-AArch64 Collisions with the final state
-{ 0:x0=pac(x, da, 0) }
-P0    ;
-  nop ;
-exists ( 0:x0=pac(x, da, 42) )
-```
-
-and
-
-```
-AArch64 Collisions with the final state 2
-{ 0:x0=pac(x, da, 0) }
-P0    ;
-  nop ;
-exists ( 0:x0=x )
-```
-
-may succeed with a probability `p`.
-
 This means that each times we see an equality test that compare two pac fields,
 if this test may fail, we must split the states in two because even if the pac
 fields use different key or modifiers, they may be equal because of a hash
-collusion. But `pac(x, da, 0)` wil always be different to `pac(y, da, 0)` in
+collision. But `pac(x, da, 0)` wil always be different to `pac(y, da, 0)` in
 abscence of aliasing because the less significant bits of `pac(x, da, 0)` are
 equals to the less significant bits of `x` (and the bit 55), and these bits are
 enough to see the difference between `x` and `y` (because all the other bits
@@ -118,58 +101,90 @@ The difficulty here is that the set of collisions we found must be coherent, as
 example:
 
 ```
-AArch64 Incoherent collisions (aut*)
+AArch64 Incoherent collisions 1
+Variant=pac,fpac
 {
-    0:x0=pac(x, da, 0);
-    0:x1=pac(x, db, 0)
+    0:x0=x;
+    1:x0=x
 }
-P0          ;
-  autdzb x0 ;
-exists ( 0:x1=pac(x, da, 0) /\ Fault(P0, PacCheck:DB) )
+P0        | P1        ;
+pacdza x0 | pacdza x0 ;
+autdzb x0 | autdzb x0 ;
+exists ( Fault(P0, PacCheck:DB) /\ ~Fault(P1) )
 ```
 
 and
 
 ```
-AArch64 Incoherent collisions (final state)
+AArch64 Incoherent collisions 2
+Variant=pac,fpac
 {
-    0:x0=pac(x, da, 0);
-    0:x1=pac(x, db, 0)
+    0:x0=x;
+    1:x0=x
 }
-P0    ;
-  nop ;
-exists ( 0:x0=pac(x, db, 0) /\ ~(0:x1=pac(x, da, 0)) )
+P0            | P1        ;
+  pacdzb x0   | autdzb x0 ;
+  ldr x1,[x0] |           ;
+exists ( ~Fault(P0) /\ Fault(P1) )
 ```
 
 and
 
 ```
-AArch64 Incoherent collisions (cmp and autdzb)
+AArch64 Incoherent collisions 3
+Variant=pac,fpac
 {
-    0:x0=pac(x, da, 0);
-    0:x1=pac(x, db, 0)
+    0:x0=x;
+    0:x1=x
 }
 P0            ;
+  pacdza x0   ;
+  pacdzb x1   ;
   cmp x0, x1  ;
-  b.eq finish ;
+  b.ne finish ;
   autdzb x0   ;
-  mov x2,#1   ;
 finish:       ;
-exists ( 0:x2=1 )
+exists ( Fault(P0, PacCheck:DB) )
 ```
 
 will never succeed because at two different points they require that a same
-collision (`pac(x, da, 0) = pac(x, db, 0)`) is observed and not observed in the
-same execution.
+collision is observed and not observed in the time.
 
 ## Memory ordering
 
 Pointer signature and authentication may add new ordering dependencies in the
 memory model, in particular data dependency because the output of `pac*`, `aut*`
-and `xpac*` depend syntacticly of their inputs. But also control dependencies
+and `xpac*` depend of both of their inputs. But also control dependencies
 because `aut*` may fail and memory operation may fail if the virtual address
 they use as input is not canonical.
 
+### `xpac*` instruction:
+
+The `xpacd Xd` and `xpaci Xd` instrucitons strip the PAC field of their inputs.
+It must create a `basic-dependency` between the register-read event of the
+register `Xd` and the register-write event of `Xd`. We can observe
+this with this litmus test:
+
+```
+AArch64 observe xpacd basic-dep
+{
+    void* y=t;
+    0:x0=x; 0:x1=y; 0:x2=z;
+    1:x0=x; 1:x1=y
+}
+P0          | P1           ;
+str x2,[x0] | ldr x2,[x1]  ;
+dmb sy      | xpacd x2     ;
+str x2,[x1] | eor x3,x2,x2 ;
+            | add x0,x0,x3 ;
+            | ldr x4,[x0]  ;
+exists ( 1:x2=z /\ 1:x4=0 )
+(* Forbidden because of the `addr` dependency *)
+```
+
+and here is the graph expected for the execution of the `xpacd x0` instruction:
+
+![dependency graph of the `xpacd` instruction](xpacd.png)
 
 ### `pac*` instruction:
 
@@ -179,86 +194,245 @@ value `pacda(x, da, 0x0)` in the destination register (`x0` in this example).
 
 So here is an example of litmus test with the pacda instruction:
 
+The `pac*` instruction semantic depend of the status of the register
+`SCTLR_EL1.En*` represented in the litmus test by the presence of the variant
+`pac`:
+
+- If `pac` is not set, then `pac*` ececute like a nop, it doesn't read or write
+    into any register.
+- If `pac` is set the their is a `basic dependency` between the register-read
+    event of `Xd` and the register-write event of
+    `Xd`. And a `basic-dependency` between the regisger-read event of the
+    register `Xn` and the register-write event of `Xd`.
+
+
 ```
-AArch64 pacda
+AArch64 pac: RXd ---basic-dep--> WXd
 {
-  0:x0=x;
+    void* y=t;
+    0:x0=x; 0:x1=y; 0:x2=z;
+    1:x0=x; 1:x1=y;
 }
-P0               ;
-  pacda x0,x1      ;
-exists
-(0:x0=pac(x, da, 0))
+P0          | P1           ;
+str x2,[x0] | ldr x2,[x1]  ;
+dmb sy      | pacdza x2    ;
+str x2,[x1] | eor x3,x2,x2 ;
+            | add x0,x0,x3 ;
+            | ldr x4,[x0]  ;
+exists ( 1:x2=z /\ 1:x4=0 )
+(* Forbidden because of the `addr` dependency *)
 ```
 
-And here is the expected event graph for an execution of this litmus test:
+```
+AArch64 pac: RXn ---basic-dep--> WXd
+{
+    0:x0=x; 0:x1=y; 0:x2=1;
+    1:x0=x; 1:x1=y;
+}
+P0          | P1           ;
+str x2,[x0] | ldr x2,[x1]  ;
+dmb sy      | pacda x0,x2  ;
+str x2,[x1] | xpacd x0     ;
+            | ldr x4,[x0]  ;
+exists ( 1:x2=1 /\ 1:x4=0 )
+(* Forbidden if `SCTLR_EL1.EnDA = 1` because of the `addr` dependency *)
+(* Allowed otherwise *)
+```
+
+And here is the expected event graph for an execution of `pacda x0,x1`:
 
 ![Expected event graph for `pacda`](pacda.png)
 
-### `xpac*` instruction:
+### `aut*` instruction with `FEAT_PAuth` but without `FEAT_PAuth2`
 
-The `xpacd` and `xpaci` instructions take a register and clear it's PAC field
-(set it to `0...0` or `1...1` depending of the bit 55 of the virtual address).
-So it add a data dependency between the input event and the output event.
+If the key associated with an authentication instruction is disable, as example
+if we try to execute `autda Xd,Xn` with `SCTLR_EL1.EnDA = 0`, then `autda` will
+execute like a `nop` instruction, so their is no read or write event in any
+register.
+Otherwise if `SCTLR_EL1.EnDA = 1`, then
+- If the authentication succede, then their is a `basic-dep` between the
+    register-read event of `Xd` and the register-write event of the
+    register `Xd`. And a `pick-basic-dep` between the register-read event of the
+    register `Xn` and the register-write event of `Xd`.
+- Otherwise, their is a `basic-dep` between the register-read event of the
+    register `Xd` and the register-write event of `Xd`. And a
+    `pick-basic-dep` between the register-read event of `Xn` and the
+    register-write event of `Xd`.
 
-As example the `xpacd` instruction must generate these events:
-
-```
-AArch64 xpacd
-{ 0:x0=pac(x, da, 42) }
-P0         ;
-  xpacd x0 ;
-exists
-( 0:x0=x )
-```
-
-![Expected event graph for `xpacd`](xpacd.png)
-
-### `aut*` instruction:
-
-In presence of `FEAT_FPAC`, the `aut*` instruction is different to the `pacd*`
-instruction because it can raise a fault, so it add some `iico_ctrl`
-dependencies. And the presence of data dependencies depend of the success of the
-operation because the fault handling doesn't dirrectly use the output register
-of `aut*` but only set the error code and add to the `esr_el1` register the
-the key (`ia`, `da`, `ib`, or `db`) that generate the fail.
-
-Here is a litmus test with `aut*` that must succede:
+One can observe those dependencies using some litmus tests. Here is two litmus
+test to observe the basic dependency between the register-read/write events in
+`Xd` (one in case of an authentication susccess, and the other in case of a fail
+):
 
 ```
-AArch64 autda success
-{ 0:x0=pac(x, da, 0) }
-P0            ;
-  autda x0,x1 ;
-exists
-( 0:x0=x /\ ~Fault(P0) )
+AArch64 PAuth1 auth success: RXd ---basic-dep--> WXd
+{
+    void* x=z; (* Overwrite by P0 to `x` *)
+    void* y=z; (* Overwrite by P0 to `pacdza(x,x0)` *)
+    0:x0=x; 0:x1=y; 0:x2=x;
+    1:x0=x; 1:x1=y;
+
+}
+P0          | P1           ;
+str x2,[x0] |              ;
+dmb sy      | ldr x2,[x1]  ;
+pacdza x2   | autdza x2    ;
+str x2,[x1] | eor x3,x2,x2 ;
+            | add x0,x0,x3 ;
+            | ldr x4,[x0]  ;
+exists ( 1:x2=x /\ 1:x4=z )
+(* Always forbidden *)
 ```
 
-![Expected event graph for an `autda` success](autda_success.png)
+```
+AArch64 PAuth1 auth failt: RXd ---basic-dep--> WXd
+{
+    void* x=z; (* Overwrite by P0 to `x` *)
+    void* y=z; (* Overwrite by P0 to `pacdza(x,0)` *)
+    0:x0=x; 0:x1=y; 0:x2=x;
+    1:x0=x; 1:x1=y;
+    2:x0=x; (* Ensure no hash collision between `pacda(x,0)` and `pacdb(x,0)` *)
+}
+P0          | P1           | P2          ;
+str x2,[x0] |              | pacdzb x0   ;
+dmb sy      | ldr x2,[x1]  | autdza x0   ;
+pacdzb x2   | autdza x2    | ldr x1,[x0] ;
+str x2,[x1] | eor x3,x2,x2 |             ;
+            | add x0,x0,x3 |             ;
+            | ldr x4,[x0]  |             ;
+exists ( 1:x2=x /\ 1:x4=z /\ Fault(P2) )
+(* Always forbidden *)
+```
 
-And here is a litmut test that may fail (in abscence of a hash collision):
+Then we can observe the presence of a `pick-basic-dep` between the register-read
+event of `Xn` to the register-read event of `Xd`:
 
 ```
-AArch64 autdb failure
-{ 0:x0=pac(x, da, 0) }
-P0            ;
-  autdb x0,x1 ;
-exists
-( 0:x0=pac(x, da, 0) /\ Fault(P0, PacCheck:DB) )
+AArch64 PAuth1 auth success: RXn ---pick-basic-dep--> WXd
+{
+    0:x0=x; 0:x1=y; 0:x2=1;
+    1:x0=x; 1:x1=y;         1:x3=1; 1:x4=2;
+}
+P0          | P1           ;
+str x2,[x0] | pacda x0,x3  ;
+dmb sy      | ldr x2,[x1]  ;
+str x2,[x1] | autda x0,x2  ;
+            | xpacd x0     ;
+            | str x4,[x0]  ;
+exists ( 1:x2=1 /\ [x]=1 )
+(* Forbidden if `SCTLR_EL1.EnDA = 1` *)
+(* Allowed otherwise *)
 ```
 
-![Expected event graph for an `autdb` failure](autdb_failure.png)
+```
+AArch64 PAuth1 auth fail: RXn ---pick-basic-dep--> WXd
+{
+    0:x0=x; 0:x1=y; 0:x2=1;
+    1:x0=x; 1:x1=y;         1:x4=2;
+    2:x0=x; 2:x1=1; (* Ensure no hash collision between `pacda(x,0)` and `pacdb(x,0)` *)
+}
+P0          | P1           | P2          ;
+str x2,[x0] |              | pacda x0,x1 ;
+dmb sy      | ldr x2,[x1]  | ldr x1,[x0] ;
+str x2,[x1] | autda x0,x2  |             ;
+            | xpacd x0     |             ;
+            | str x4,[x0]  |             ;
+exists ( 1:x2=x /\ [x]=1 /\ Fault(P2) )
+(* Forbidden if `SCTLR_EL1.EnDA = 1` *)
+(* Allowed otherwise *)
+```
+
+And those tests show that it's not required to have a `basic-dep` between the
+register-read event of `Xn` and the register-write event of `Xd` in case of
+success or failure:
+
+```
+AArch64 PAuth1 auth success: RXn ---no-basic-dep--> WXd
+{
+    0:x0=x; 0:x1=y; 0:x2=1;
+    1:x0=x; 1:x1=y;         1:x3=1;
+}
+P0          | P1           ;
+str x2,[x0] | pacda x0,x3  ;
+dmb sy      | ldr x2,[x1]  ;
+str x2,[x1] | autda x0,x2  ;
+            | xpacd x0     ;
+            | ldr x4,[x0]  ;
+exists ( 1:x2=1 /\ 1:x4=0 )
+(* Always allowed *)
+```
+
+```
+AArch64 PAuth1 auth fail: RXn ---no-basic-dep--> WXd
+{
+    0:x0=x; 0:x1=y; 0:x2=1;
+    1:x0=x; 1:x1=y;
+    2:x0=x; 2:x1=1; (* Ensure no hash collision between `pacda(x,0)` and `pacdb(x,0)` *)
+}
+P0          | P1           | P2          ;
+str x2,[x0] |              | pacda x0,x1 ;
+dmb sy      | ldr x2,[x1]  | ldr x1,[x0] ;
+str x2,[x1] | autda x0,x2  |             ;
+            | xpacd x0     |             ;
+            | ldr x4,[x0]  |             ;
+exists ( 1:x2=x /\ 1:x4=0 /\ Fault(P2) )
+(* Always allowed *)
+```
 
 
-***Observation:*** If my understanting of PAC is correct, the write event in
-the register `x0` has a data dependency in the read event in the register `x1`
-in the success case. Even if the value we write in `x0` doesn't semantically
-depend of the value of `x1` (the value is `x` in case of success that doesn't
-depend of the modifier, and nothing is write in case of failure). This is
-because according to the Arm ARM the output value in `x0` contains in it's most
-significant bits the exclusive `OR` of the pac field of `x0` and the pac field
-of `ComputePAC(x, X[1, 64], ...)`, so the output has a syntactic dependency even
-if the ASL code raise a fault if this pac field is not equal to a constant 7
-lines after this EOR.
+### `aut*` instruction with `FEAT_PAuth2` but without `FEAT_FPAC`
+
+If the key associated with an authentication instruction is disable, as example
+if we try to execute `autda Xd,Xn` with `SCTLR_EL1.EnDA = 0`, then `autda` will
+execute like a `nop` instruction, so their is no read or write event in any
+register.
+Otherwise if `SCTLR_EL1.EnDA = 1`, then
+- If the authentication succede, then their is a `basic-dep` between the
+    register-read event of `Xd` and the register-write event of the
+    register `Xd`. And a `pick-basic-dep` between the register-read event of the
+    register `Xn` and the register-write event of `Xd`.
+- Otherwise, their is a `basic-dep` between the register-read event of the
+    register `Xd` and the register-write event of `Xd`. And a
+    `basic-dep` between the register-read event of `Xn` and the
+    register-write event of `Xd`.
+
+### `aut*` instruction with `FEAT_FPAC`:
+
+If the key associated with an authentication instruction is disable, as example
+if we try to execute `autda Xd,Xn` with `SCTLR_EL1.EnDA = 0`, then `autda` will
+execute like a `nop` instruction, so their is no read or write event in any
+register.
+Otherwise if `SCTLR_EL1.EnDA = 1`, then
+- If the authentication succede, then their is a `basic-dep` between the
+    register-read event of `Xd` and the register-write event of the
+    register `Xd`. And a `pick-basic-dep` between the register-read event of the
+    register `Xn` and the register-write event of `Xd`.
+- Otherwise, their a fault is generated with a `pick-basic-dep` dependency
+    between the register-read ofs `Xd` and `Xn`, and the fault
+    event.
+
+### `aut*` conclusion
+
+Here is a table that show the dependency between the register-read event
+in `Xd` and the register-write event in `Xd` for the instruction `autda Xd,Xn`
+for all the possible set of feature that change this dependency (note that we
+may replace `FEAT_FPAC` by `FEAT_FPACCOMBINE` in case of a combined instruction):
+
+`FEAT_PAuth` | `FEAT_PAuth2` | `FEAT_FPAC` | Success         | Fail             |
+No           | No            | No          | `N/A` (no read) | `N/A` (no read)  |
+Yes          | No            | No          | `basic-dep`     | `basic-dep`      |
+Yes          | Yes           | No          | `basic-dep`     | `basic-dep`      |
+Yes          | Yes           | Yes         | `basic-dep`     | Fault (no write) |
+
+Here is a table that show the minimal dependency between the register-read event
+in `Xn` and the register-write event in `Xd` for the instruction `autda Xd,Xn`
+for all the possible set of feature that change this dependency:
+
+`FEAT_PAuth` | `FEAT_PAuth2` | `FEAT_FPAC` | Success          | Fail             |
+No           | No            | No          | `N/A`            | `N/A`            |
+Yes          | No            | No          | `pick-basic-dep` | `pick-basic-dep` |
+Yes          | Yes           | No          | `pick-basic-dep` | `basic-dep`      |
+Yes          | Yes           | Yes         | `pick-basic-dep` | Fault (no write) |
 
 ### `ldr` instruction:
 
