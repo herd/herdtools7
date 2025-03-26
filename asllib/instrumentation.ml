@@ -515,6 +515,7 @@ module TypingRule = struct
     | AnnotateSetArray
     | GetBitvectorWidth
     | GetBitvectorConstWidth
+    | CheckParamDecls
 
   let to_string : t -> string = function
     | BuiltinSingularType -> "BuiltinSingularType"
@@ -705,6 +706,7 @@ module TypingRule = struct
     | AnnotateSetArray -> "AnnotateSetArray"
     | GetBitvectorWidth -> "GetBitvectorWidth"
     | GetBitvectorConstWidth -> "GetBitvectorConstWidth"
+    | CheckParamDecls -> "CheckParamDecls"
 
   let pp f r = to_string r |> Format.pp_print_string f
 
@@ -879,6 +881,7 @@ module TypingRule = struct
       AnnotateSetArray;
       GetBitvectorWidth;
       GetBitvectorConstWidth;
+      CheckParamDecls;
     ]
 
   let all_nb = List.length all

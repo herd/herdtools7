@@ -759,37 +759,83 @@ The updated environment $\newtenvp$ and annotated parameter type $\tty$ are retu
 \hypertarget{def-checkparamdecls}{}
 The function
 \[
-\checkparamdecls(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\checkparamdecls(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-checks the parameters declared in $\funcsig$ for validity.
+checks the validity of the parameters declared in $\funcsig$.
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item Finding the list of types in $\funcsig$ using $\typesinfuncsig$ yields $\tys$;
-  \item Applying $\paramsofty$ to each type in $\tys$ and concatenating the results yields the list of parameter identifiers $\params$;
-  \item Finding unique elements in $\params$ yields $\paramsone$;
-  \item Checking that the expected parameters $\paramsone$ and the declared parameters $\funcsig.\funcparameters$ are equal yields $\vb$\ProseOrTypeError.
+  \item applying $\extractparameters$ to $\tenv$ and $\funcsig$ yields $\inferredparameters$\ProseOrTypeError;
+  \item \Proseeqdef{$\declaredparameters$}{the list of parameter names in the order they are listed in $\funcsig.\funcparameters$};
+  \item checking that $\inferredparameters$ is equal to $\declaredparameters$ yields \\
+        $\True$\ProseOrTypeError.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \typesinfuncsig(\funcsig) \typearrow \tys \\
-  \vi \in \listrange(\tys): \paramsofty(\tenv, \tty_i) \typearrow \params_i \\
-  \params \eqdef \params_1 \concat \ldots \concat \params_{\listlen{\tys}} \\
-  \paramsone \eqdef \uniquelist(\params) \\\\
-  \checktrans{\paramsone = \funcsig.\funcparameters}{\BadSubprogramDeclaration} \checktransarrow \vb \OrTypeError
+  \extractparameters(\tenv, \funcsig) \typearrow \inferredparameters \OrTypeError\\\\
+  \declaredparameters \eqdef [(\vp, \Ignore) \in \funcsig.\funcparameters: \vp]\\
+  \checktrans{\inferredparameters = \declaredparameters}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError
 }{
   \checkparamdecls(\tenv, \funcsig) \typearrow \vb
 }
 \end{mathpar}
 
-\TypingRuleDef{TypesInFuncSig}
-\hypertarget{def-typesinfuncsig}{}
+\TypingRuleDef{ExtractParameters}
+\hypertarget{def-extractparameters}{}
 The function
 \[
-\typesinfuncsig(\overname{\func}{\funcsig}) \aslto \overname{\ty^*}{\tys}
+\extractparameters(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \aslto \overname{\identifier^*}{\allparameters}
+  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+returns the parameter names declared in $\funcsig$ into $\allparameters$, while checking their validity in the static environment $\tenv$.
+\ProseOtherwiseTypeError
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{empty}
+  \begin{itemize}
+    \item applying $\funcsigtypes$ to $\funcsig$ yields the empty list;
+    \item \Proseeqdef{$\allparameters$}{the empty list}.
+  \end{itemize}
+
+  \item \AllApplyCase{non\_empty}
+  \begin{itemize}
+    \item applying $\funcsigtypes$ to $\funcsig$ yields the list of types $\vt_{1..k}$;
+    \item applying $\paramsofty$ to $\tenv$ and $\vtypes[\vi]$ yields the list of parameter names $\vparams_\vi$, for every $\vi=1..k$;
+    \item \Proseeqdef{$\allparameters$}{the concatenation of lists $\vparams_\vi$, for every $\vi=1..k$};
+    \item checking that $\allparameters$ does not contain duplicate names yields $\True$\ProseOrTypeError.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[empty]{
+  \funcsigtypes(\funcsig) \typearrow \emptylist
+}{
+  \extractparameters(\tenv, \funcsig) \typearrow \overname{\emptylist}{\allparameters}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \funcsigtypes(\funcsig) \typearrow \vt_{1..k}\\
+  \vi=1..k: \paramsofty(\tenv, \vtypes[\vi]) \typearrow \vparams_\vi\\
+  \allparameters \eqdef \vparams_1 \concat \ldots \concat \vparams_k\\
+  \checktrans{\uniquelist(\allparameters) = \allparameters}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError
+}{
+  \extractparameters(\tenv, \funcsig) \typearrow \allparameters
+}
+\end{mathpar}
+
+\TypingRuleDef{FuncSigTypes}
+\hypertarget{def-funcsigtypes}{}
+The function
+\[
+\funcsigtypes(\overname{\func}{\funcsig}) \aslto \overname{\ty^*}{\tys}
 \]
 returns the list of types $\tys$ in the function signature $\funcsig$.
 Their ordering is return type first (if any), followed by argument types left-to-right.
@@ -810,10 +856,9 @@ Define $\tys$ as the return type (if any) concatenated with the argument types.
   } \\\\
   \argtypes \eqdef [(\Ignore, \ttyp)\in\funcsig.\funcargs: \ttyp]
 }{
-  \typesinfuncsig(\funcsig) \typearrow \overname{\vreturntype \concat \argtypes}{\tys}
+  \funcsigtypes(\funcsig) \typearrow \overname{\vreturntype \concat \argtypes}{\tys}
 }
 \end{mathpar}
-
 
 \TypingRuleDef{ParametersOfTy}
 \hypertarget{def-paramsofty}{}

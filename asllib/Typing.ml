@@ -3441,6 +3441,21 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       (ISet.of_list (List.map fst f.args))
       types
 
+  (* Begin CheckParameterDecls *)
+  let check_parameter_decls ~loc env func_sig =
+    let inferred_parameters = extract_parameters ~env func_sig in
+    let declared_parameters = List.map fst func_sig.parameters in
+    let all_parameters_declared =
+      list_equal String.equal inferred_parameters declared_parameters
+    in
+    if all_parameters_declared then ()
+    else
+      fatal_from ~loc
+        (BadParameterDecl
+           (func_sig.name, inferred_parameters, declared_parameters))
+      |: TypingRule.CheckParamDecls
+  (* End *)
+
   let annotate_func_sig_v1 ~loc genv func_sig =
     let env = with_empty_local genv in
     (* Check recursion limit *)
@@ -3448,6 +3463,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       annotate_limit_expr ~warn:false ~loc env func_sig.recurse_limit
     in
     (* Annotate and declare parameters *)
+    (* AnnotateParams( *)
     let (env_with_params, ses_with_params), parameters =
       let declare_parameter (new_env, new_ses) (x, ty_opt) =
         let ty, ses_ty =
@@ -3466,19 +3482,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       in
       list_fold_left_map declare_parameter (env, ses_recurse_limit)
         func_sig.parameters
+      |: TypingRule.AnnotateParams
+      (* AnnotateParams) *)
     in
     (* Check parameters are declared correctly - in order and unique *)
-    let+ () =
-      let inferred_parameters = extract_parameters ~env func_sig in
-      let declared_parameters = List.map fst func_sig.parameters in
-      let all_parameters_declared =
-        list_equal String.equal inferred_parameters declared_parameters
-      in
-      check_true all_parameters_declared @@ fun () ->
-      fatal_from ~loc
-        (BadParameterDecl
-           (func_sig.name, inferred_parameters, declared_parameters))
-    in
+    let () = check_parameter_decls env ~loc func_sig in
     (* Annotate and declare arguments *)
     let (env_with_args, ses_with_args), args =
       let declare_argument (new_env, new_ses) (x, ty) =
