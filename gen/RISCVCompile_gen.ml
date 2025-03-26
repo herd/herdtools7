@@ -368,6 +368,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     let emit_access  st p init e = match e.dir,e.loc with
     | None,_ -> Warn.fatal "TODO"
     | Some d,Data loc ->
+        (* collapse the value `v` in event `e` to integer *)
+        let value = Code.value_to_int e.v in
         begin match d,e.atom with
         | Code.R,None ->
             let r,init,cs,st = LOAD.emit_load AV.Rlx st p init loc in
@@ -382,16 +384,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
             let r,init,cs,st = emit_load_mixed sz o st p init loc in
             Some r,init,cs,st
         | Code.W,None ->
-            let init,cs,st = STORE.emit_store AV.Rlx st p init loc e.v in
+            let init,cs,st = STORE.emit_store AV.Rlx st p init loc value in
             None,init,cs,st
         | Code.W,(Some (MO mo)) ->
-            let init,cs,st = STORE.emit_store mo st p init loc e.v in
+            let init,cs,st = STORE.emit_store mo st p init loc value in
             None,init,cs,st
         | Code.W,Some (Atomic (mo1,mo2)) ->
-            let r,init,cs,st = emit_sta mo1 mo2 st p init loc e.v in
+            let r,init,cs,st = emit_sta mo1 mo2 st p init loc value in
             Some r,init,cs,st
         | Code.W,Some (Mixed (sz,o)) ->
-            let init,cs,st = emit_store_mixed sz o st p init loc e.v in
+            let init,cs,st = emit_store_mixed sz o st p init loc value in
             None,init,cs,st
         | Code.J, _ -> emit_joker st init
         end
@@ -425,7 +427,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     let emit_exch st p init er ew =
       let rA,init,st = U.next_init st p init (Code.as_data er.loc) in
       let rR,st = next_reg st in
-      let rW,init,csv,st = U.emit_mov st p init ew.v in
+      let rW,init,csv,st = U.emit_mov st p init (Code.value_to_int ew.v) in
       let mo = tr_swap er.C.atom ew.C.atom in
       rR,init,csv@[Instruction (amoswap mo rR rW rA)],st
 
@@ -453,6 +455,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     let emit_access_dep_addr st p init e rd =
       let r2,st = next_reg st in
       let c = calc0 r2 rd in
+      (* collapse the value `v` in event `e` to integer *)
+      let value = Code.value_to_int e.v in
       match e.dir,e.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some d,Data loc ->
@@ -468,13 +472,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
               Some r,init, Instruction c::cs,st
           | Code.W,None ->
               let init,cs,st =
-                STORE.emit_store_idx AV.Rlx st p init loc r2 e.v in
+                STORE.emit_store_idx AV.Rlx st p init loc r2 value in
               None,init,Instruction c::cs,st
           | Code.W,Some (MO mo) ->
-              let init,cs,st = STORE.emit_store_idx mo st p init loc r2 e.v in
+              let init,cs,st = STORE.emit_store_idx mo st p init loc r2 value in
               None,init,Instruction c::cs,st
           | Code.W,Some (Atomic (mo1,mo2)) ->
-              let r,init,cs,st = emit_sta_idx mo1 mo2 st p init loc r2 e.v in
+              let r,init,cs,st = emit_sta_idx mo1 mo2 st p init loc r2 value in
               Some r,init,Instruction c::cs,st
           | _,Some (Mixed _) ->
               Warn.fatal "addr dep with mixed"
@@ -486,7 +490,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       let r2,st = next_reg st in let c = calc0 r2 rd in
       let loc = Code.as_data er.loc in
       let rA,init,st = U.next_init st p init loc in
-      let rW,init,csv,st = U.emit_mov st p init ew.v in
+      let rW,init,csv,st = U.emit_mov st p init (Code.value_to_int ew.v) in
       let rR,st = next_reg st in
       let mo = tr_swap er.C.atom ew.C.atom in
       let swap = Instruction (amoswap mo rR rW rA) in
@@ -501,7 +505,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
           let r2,st = next_reg st in
           let cs2 =
             [Instruction (calc0 r2 r1) ;
-             Instruction (ori r2 r2 e.v) ; ] in
+             Instruction (ori r2 r2 (Code.value_to_int e.v)) ; ] in
           begin match e.atom with
           | None ->
               let init,cs,st = STORE.emit_store_reg AV.Rlx st p init loc r2 in
@@ -558,7 +562,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 
     let check_load p r e init st =
       let ok,st = A.ok_reg st in
-      let rI,init,ci,st = U.emit_mov st p init e.v in
+      let rI,init,ci,st = U.emit_mov st p init (Code.value_to_int e.v) in
       init,
       (fun k ->
         ci@

@@ -315,7 +315,10 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let emit_joker st init = None,init,[],st
 
-    let emit_access st _p init e = match e.C.dir with
+    let emit_access st _p init e = 
+      (* collapse the value `v` in event `e` to integer *)
+      let value = Code.value_to_int e.C.v in
+      match e.C.dir with
       | None -> Warn.fatal "TODO"
       | Some d ->
          begin match e.C.loc with
@@ -343,24 +346,24 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
             | W ->
                begin match e.C.atom with
                | None|Some (Plain,None) ->
-                  let init,cs,st = emit_store st _p init loc e.C.v in
+                  let init,cs,st = emit_store st _p init loc value in
                   None,init,cs,st
                | Some (NonTemporal,None) ->
-                   let init,cs,st = emit_store_nti st _p init loc e.C.v in
+                   let init,cs,st = emit_store_nti st _p init loc value in
                    None,init,cs,st
                | Some (Atomic,None) ->
                    let rX,st = next_reg st in
-                   Some rX,init,pseudo (emit_sta mach_size loc rX e.C.v), st
+                   Some rX,init,pseudo (emit_sta mach_size loc rX value), st
                | Some (NonTemporal,Some (sz,o)) ->
                    let init,cs,st =
-                     emit_store_nti_mixed sz o st _p init loc e.C.v in
+                     emit_store_nti_mixed sz o st _p init loc value in
                    None,init,cs,st
                | Some (Atomic,Some (sz,o)) ->
                    let r,init,cs,st =
-                     emit_sta_mixed sz o st _p init loc e.C.v in
+                     emit_sta_mixed sz o st _p init loc value in
                   Some r,init,cs,st
                | Some (Plain,Some (sz, o)) ->
-                  let init,cs,st = emit_store_mixed sz o st _p init loc e.C.v in
+                  let init,cs,st = emit_store_mixed sz o st _p init loc value in
                   None,init,cs,st
                end
             | J -> emit_joker st init
@@ -377,7 +380,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let emit_exch st p init er ew =
       let loc = Code.as_data er.C.loc in
-      let v = ew.C.v in
+      let v = Code.value_to_int ew.C.v in
       match get_access_exch er ew with
       | None ->
           let rA,st = next_reg st in
@@ -435,7 +438,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let do_check_load p st r e =
       let ok,st = A.ok_reg st in
       (fun k ->
-        Instruction (emit_cmp_int_ins r e.C.v)::
+        Instruction (emit_cmp_int_ins r (Code.value_to_int e.C.v))::
         Instruction (emit_jne_ins (Label.last p))::
         Instruction (emit_inc Word ok)::
         k),
