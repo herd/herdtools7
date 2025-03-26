@@ -379,25 +379,20 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | None -> raise NonStatic
     in
     let interval_of_slice env slice =
-      let make_interval x y =
-        if x > y then fatal_from ~loc @@ Error.(BadSlice slice)
-        else DI.Interval.make x y
+      let e1, e2 =
+        match slice with
+        | Slice_Length (e1, e2) -> (e1, e2)
+        (* all other forms of slice should have been reduced to Slice_Length *)
+        | _ -> assert false
       in
-      match slice with
-      | Slice_Single e ->
-          let x = eval env e in
-          make_interval x x |: TypingRule.BitfieldSliceToPositions
-      | Slice_Range (e1, e2) ->
-          let x = eval env e2 and y = eval env e1 in
-          make_interval x y |: TypingRule.BitfieldSliceToPositions
-      | Slice_Length (e1, e2) ->
-          let x = eval env e1 and y = eval env e2 in
-          make_interval x (x + y - 1) |: TypingRule.BitfieldSliceToPositions
-      | Slice_Star (e1, e2) ->
-          let x = eval env e1 and y = eval env e2 in
-          make_interval (x * y) ((x * (y + 1)) - 1)
-          |: TypingRule.BitfieldSliceToPositions
+      let offset = eval env e1 and length = eval env e2 in
+      if offset > offset + length - 1 then
+        fatal_from ~loc @@ Error.(BadSlice slice)
+      else
+        DI.Interval.make offset (offset + length - 1)
+        |: TypingRule.BitfieldSliceToPositions
     in
+
     let bitfield_slice_to_positions ~loc env diet slice =
       try
         let interval = interval_of_slice env slice in
@@ -430,7 +425,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let one slice acc =
       match slice with
-      | Slice_Single e -> e :: acc
       | Slice_Length (e1, e2) ->
           let i1 = eval e1 and i2 = eval e2 in
           let rec do_rec n =
@@ -442,16 +436,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               e :: do_rec (n + 1)
           in
           do_rec 0
-      | Slice_Range (e1, e2) ->
-          let i1 = eval e1 and i2 = eval e2 in
-          let rec do_rec i =
-            if i > i1 then acc
-            else
-              let e = E_Literal (L_Int (Z.of_int i)) |> add_dummy_annotation in
-              e :: do_rec (i + 1)
-          in
-          do_rec i2
-      | Slice_Star _ -> raise NoSingleField
+      | _ -> assert false (* Annotated slices should be only Slice_Length *)
     in
     fun slices -> List.fold_right one slices []
 
