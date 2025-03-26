@@ -55,7 +55,8 @@
   bento
   miaou
   cat2lisp
-  dot2desc)
+  dot2desc
+  cat2table)
  (public_names
   mfind7
   moutcomes7
@@ -97,6 +98,7 @@
   bento
   miaou7
   cat2lisp
-  dot2desc7)
+  dot2desc7
+  cat2table7)
  (libraries herdtools unix str)
  (modules_without_implementation arch_tools))
