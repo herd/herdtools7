@@ -354,6 +354,22 @@ checks that annotated parameters $\params$ are correct with respect to the decla
 \ProseOtherwiseTypeError\
 It assumes that $\funcsigparams$ and $\params$ have the same length.
 
+\ExampleDef{Checking that Expression Types Type-satisfy Parameters}
+In \listingref{CheckParamsTypeSat},
+annotating the call expression \verb|FlipSlice{FOUR, EIGHT}(bv)|
+requires checking that both expression \verb|FOUR| and \verb|EIGHT| are \symbolicallyevaluable{}
+and constrained, which they are.
+Since the parameter \verb|M| is annotated with the type \\
+\verb|integer{0..64}|,
+the typechecker checks that the type of \verb|FOUR|, which is \verb|integer{4}| \typesatisfies{}
+\verb|integer{0..64}|.
+The parameter \verb|N| is not annotated with a type --- its type is
+determined to be \\
+$\TInt(\parameterized(\texttt{N}))$ --- and there is no need to check that
+the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfies{} $\TInt(\parameterized(\texttt{N}))$.
+
+\ASLListing{Checking that expression types type-satisfy parameters}{CheckParamsTypeSat}{\typingtests/TypingRule.CheckParamsTypeSat.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -441,6 +457,13 @@ transforms the type $\tty$ in the static environment $\tenv$,
 by substituting parameter names with their corresponding expressions in
 $\eqs$, yielding the type $\newty$.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Transforming Parameterized Types Based on Actual Arguments}
+In \listingref{RenameTyEqs}, annotating the call expression \verb|FlipPrefix{8}(bv, 4)|
+requires substituting \verb|8| for \verb|N| in the types
+\verb|bits(N)| and \verb|integer{0..N}|, yielding the types
+\verb|bits(8)| and \verb|integer{0..8}|.
+\ASLListing{Transforming parameterized types based on actual arguments}{RenameTyEqs}{\typingtests/TypingRule.RenameTyEqs.asl}
 
 \ProseParagraph
 \OneApplies
@@ -993,6 +1016,18 @@ checks that the types $\argtypes$ \typesatisfy\ the types of the corresponding
 formal arguments $\funcsigargs$ with the parameters substituted with their corresponding
 arguments as per $\eqs$ and results in a \typingerrorterm{} otherwise.
 
+\ExampleDef{Checking that Actual Arguments Type-satisfy the Formal Arguments}
+In \listingref{RenameTyEqs}, checking that the call \verb|FlipPrefix{8}(bv, 4)| is well-typed
+requires checking that the types of the arguments --- \verb|bits(8)| and \verb|integer{4}| ---
+\typesatisfy{} the corresponding types of the formal arguments --- \verb|bits(N)| and \verb|integer{0..N}| ---
+once the parameter \verb|N| is substituted for \verb|8|.
+That is, that \verb|bits(8)| \typesatisfies{} \verb|bits(8)| and that
+\verb|integer{4}| \typesatisfies{} \verb|integer{0..8}|.
+Since both these checks hold, the call is indeed well-typed.
+
+In contrast, a call \verb|FlipPrefix{8}(bv, 9)| is ill-typed since
+\verb|integer{9}| does not \typesatisfy{} \verb|integer{0..8}|.
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1269,6 +1304,15 @@ subprograms whose arguments clash in $\candidates$.
 
 The names $\candidates$ are assumed to exist in $G^\tenv.\subprograms$.
 
+\ExampleDef{Filtering Subprograms Matching a Call}
+In \listingref{SubprogramForName}, filtering the
+set of declared subprograms for the call expression \verb|add_10(5)| yields
+the (singleton list containing the) subprogram \\
+\verb|func add_10(x: integer) => integer|.
+In contrast, filtering the set of declared subprograms for the call expression
+\verb|add_10(5.0)| in \listingref{SubprogramForName-no-candidates},
+yields an empty list.
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1296,7 +1340,9 @@ The names $\candidates$ are assumed to exist in $G^\tenv.\subprograms$.
 {}{
   \filtercallcandidates(\tenv, \formaltypes, \overname{\emptylist}{\candidates}) \typearrow \overname{\emptylist}{\matches}
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[candidates\_exist]
 {
   \funcdef \eqdef G^\tenv.\subprograms(\name) \\
@@ -1531,9 +1577,23 @@ The helper function
   \aslto \overname{(\ty \times \expr \times \TSideEffectSet)^*}{\typedexprs}
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates a list of expressions $\exprs$ from left to right, yielding a list of tuples $\typedexprs$,
+annotates a list of expressions $\exprs$ from left to right, yielding a list of tuples \\
+$\typedexprs$,
 each consisting of a type, an annotated expression, and a \sideeffectsetterm.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Annotating a List of Expressions}
+In \listingref{ExpressionList}, the list of expressions \verb|10, 20.0|
+is annotated as
+\[
+\left[
+\begin{array}{lll}
+(\TInt(\wellconstrained([\AbbrevConstraintExact{\ELInt{10}}])),& \eliteral{\lint(10)},& \emptyset),\\
+(\TReal,& \eliteral{\lreal(20)},& \emptyset)
+\end{array}
+\right]
+\]
+\ASLListing{Annotating a list of expressions}{ExpressionList}{\typingtests/TypingRule.ExpressionList.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1547,11 +1607,11 @@ each consisting of a type, an annotated expression, and a \sideeffectsetterm.
   \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\exprs$ has $\ve$ as its \head\ expression and $\exprsone$ as its \tail;
-    \item annotating $\ve$ in $\tenv$ yields the pair $\typedexpr$ consisting of a type and an expression
-    \ProseOrTypeError;
+    \item annotating $\ve$ in $\tenv$ yields the pair $\typedexpr$ consisting of a type
+          and an expression\ProseOrTypeError;
     \item annotating the expression list $\exprsone$ in $\tenv$ yields
-    $\typedexprs$\ProseOrTypeError;
-    \item $\typedexprs$ is the list with $\typedexpr$ as its \head\ and $\typedexprs$ as its \tail.
+          $\typedexprs$\ProseOrTypeError;
+    \item \Proseeqdef{$\typedexprs$}{the \Proselist{$\typedexpr$}{$\typedexprs$}}.
   \end{itemize}
 \end{itemize}
 

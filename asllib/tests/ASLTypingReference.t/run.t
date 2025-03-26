@@ -538,3 +538,5 @@ ASL Typing Tests / annotating types:
   ASL Typing error: No subprogram declaration matches the invocation:
     add_10(real).
   [1]
+  $ aslref TypingRule.ExpressionList.asl
+  $ aslref TypingRule.RenameTyEqs.asl

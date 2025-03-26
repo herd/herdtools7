@@ -1,5 +1,5 @@
 func simple_procedure(i: integer) begin pass; end;
-// The following declaration is illegal as the argument is integer-typed:
+// The following declaration in comment is illegal as the argument is integer-typed:
 // func simple_procedure(i: integer{0..32}) begin pass; end;
 func simple_procedure(b: boolean) begin pass; end;
 func simple_procedure(r: real) begin pass; end;

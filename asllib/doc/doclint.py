@@ -686,7 +686,7 @@ def main():
     print("Linting files...")
     all_latex_sources = get_latex_sources(False)
     content_latex_sources = get_latex_sources(True)
-    # content_latex_sources = ["SubprogramCalls.tex"]
+    content_latex_sources = ["SubprogramCalls.tex"]
     num_errors = 0
     num_spelling_errors = spellcheck(args.dictionary, content_latex_sources)
     if num_spelling_errors > 0:
