@@ -742,7 +742,9 @@ extensions
 extent
 extra
 extract
+extracted
 extracting
+extracts
 facilitate
 fact
 factor
@@ -1158,6 +1160,7 @@ meaning
 means
 mechanism
 mechanisms
+meets
 member
 members
 memory
@@ -1559,6 +1562,7 @@ rename
 renames
 renaming
 repeat
+repeating
 replace
 replaced
 replacement
@@ -2045,6 +2049,7 @@ utilized
 utilizes
 utilizing
 valid
+validity
 value
 valueless
 values

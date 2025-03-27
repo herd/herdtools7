@@ -214,10 +214,11 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
   (* End *)
 
   (* Return true if two subprogram are forbidden with the same argument types. *)
-  let has_subprogram_type_clash s1 s2 =
+  let subprogram_types_clash s1 s2 =
     match (s1, s2) with
     | ST_Getter, ST_Setter
     | ST_Setter, ST_Getter
+    (* The following cases are for v0 *)
     | ST_EmptyGetter, ST_EmptySetter
     | ST_EmptySetter, ST_EmptyGetter ->
         false
@@ -256,7 +257,7 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
                  let other_func_sig, _ses =
                    IMap.find name' env.global.subprograms
                  in
-                 has_subprogram_type_clash subpgm_type
+                 subprogram_types_clash subpgm_type
                    other_func_sig.subprogram_type
                  && has_arg_clash env formal_types other_func_sig.args)
                other_names
@@ -3398,12 +3399,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           parameters_of_expr ~env e1 @ parameters_of_expr ~env e2
       | E_Unop (_, e) -> parameters_of_expr ~env e
       | E_Literal _ -> []
-      | E_Tuple es ->
+      | E_Tuple [ e ] ->
           (* [extract_parameters] operates over untyped AST, so it must handle
              tuples - these are used to check binary operator precedence and are
              removed during typechecking) *)
-          list_concat_map (parameters_of_expr ~env) es
-      | _ -> Error.fatal_from (to_pos e) (Error.UnsupportedExpr (Static, e))
+          parameters_of_expr ~env e
+      | E_Tuple _ | _ ->
+          Error.fatal_from (to_pos e) (Error.UnsupportedExpr (Static, e))
     in
     let parameters_of_constraint ~env c =
       match c with
@@ -3448,12 +3450,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let all_parameters_declared =
       list_equal String.equal inferred_parameters declared_parameters
     in
-    if all_parameters_declared then ()
-    else
-      fatal_from ~loc
-        (BadParameterDecl
-           (func_sig.name, inferred_parameters, declared_parameters))
-      |: TypingRule.CheckParamDecls
+    check_true all_parameters_declared @@ fun () ->
+    fatal_from ~loc
+      (BadParameterDecl (func_sig.name, inferred_parameters, declared_parameters))
+    |: TypingRule.CheckParamDecls
   (* End *)
 
   let annotate_func_sig_v1 ~loc genv func_sig =
@@ -3486,7 +3486,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       (* AnnotateParams) *)
     in
     (* Check parameters are declared correctly - in order and unique *)
-    let () = check_parameter_decls env ~loc func_sig in
+    let+ () = check_parameter_decls env ~loc func_sig in
     (* Annotate and declare arguments *)
     let (env_with_args, ses_with_args), args =
       let declare_argument (new_env, new_ses) (x, ty) =

@@ -497,7 +497,7 @@ We also define the following helper rules:
   \item \TypingRuleRef{AnnotateParams}
   \item \TypingRuleRef{AnnotateOneParam}
   \item \TypingRuleRef{CheckParamDecls}
-  \item \TypingRuleRef{TypesInFuncSig}
+  \item \TypingRuleRef{FuncSigTypes}
   \item \TypingRuleRef{ParametersOfTy}
   \item \TypingRuleRef{ParametersOfExpr}
   \item \TypingRuleRef{ParametersOfConstraint}
@@ -787,11 +787,17 @@ checks the validity of the parameters declared in $\funcsig$.
 \hypertarget{def-extractparameters}{}
 The function
 \[
-\extractparameters(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \aslto \overname{\identifier^*}{\allparameters}
+\extractparameters(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \aslto \overname{\identifier^*}{\uniqueparameters}
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 returns the parameter names declared in $\funcsig$ into $\allparameters$, while checking their validity in the static environment $\tenv$.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Extracting Parameters from Subprogram Signatures}
+
+The list of parameters extracted from the signature of \verb|parameters_of_expressions|
+in \listingref{ParametersOfExpr} is
+\verb|B, C, D, E, F, G|.
 
 \ProseParagraph
 \OneApplies
@@ -799,15 +805,15 @@ returns the parameter names declared in $\funcsig$ into $\allparameters$, while 
   \item \AllApplyCase{empty}
   \begin{itemize}
     \item applying $\funcsigtypes$ to $\funcsig$ yields the empty list;
-    \item \Proseeqdef{$\allparameters$}{the empty list}.
+    \item \Proseeqdef{$\uniqueparameters$}{the empty list}.
   \end{itemize}
 
   \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item applying $\funcsigtypes$ to $\funcsig$ yields the list of types $\vt_{1..k}$;
-    \item applying $\paramsofty$ to $\tenv$ and $\vtypes[\vi]$ yields the list of parameter names $\vparams_\vi$, for every $\vi=1..k$;
+    \item applying $\paramsofty$ to $\tenv$ and $\vtypes[\vi]$, for every $\vi=1..k$, yields the list of parameter names $\vparams_\vi$\ProseOrTypeError;
     \item \Proseeqdef{$\allparameters$}{the concatenation of lists $\vparams_\vi$, for every $\vi=1..k$};
-    \item checking that $\allparameters$ does not contain duplicate names yields $\True$\ProseOrTypeError.
+    \item \Proseeqdef{$\uniqueparameters$}{the list of parameters in $\allparameters$, with repeating parameters removed}.
   \end{itemize}
 \end{itemize}
 
@@ -816,18 +822,18 @@ returns the parameter names declared in $\funcsig$ into $\allparameters$, while 
 \inferrule[empty]{
   \funcsigtypes(\funcsig) \typearrow \emptylist
 }{
-  \extractparameters(\tenv, \funcsig) \typearrow \overname{\emptylist}{\allparameters}
+  \extractparameters(\tenv, \funcsig) \typearrow \overname{\emptylist}{\uniqueparameters}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[non\_empty]{
   \funcsigtypes(\funcsig) \typearrow \vt_{1..k}\\
-  \vi=1..k: \paramsofty(\tenv, \vtypes[\vi]) \typearrow \vparams_\vi\\
+  \vi=1..k: \paramsofty(\tenv, \vtypes[\vi]) \typearrow \vparams_\vi \OrTypeError\\\\
   \allparameters \eqdef \vparams_1 \concat \ldots \concat \vparams_k\\
-  \checktrans{\uniquelist(\allparameters) = \allparameters}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError
+  \uniqueparameters \eqdef \uniquelist(\allparameters)
 }{
-  \extractparameters(\tenv, \funcsig) \typearrow \allparameters
+  \extractparameters(\tenv, \funcsig) \typearrow \uniqueparameters
 }
 \end{mathpar}
 
@@ -837,22 +843,33 @@ The function
 \[
 \funcsigtypes(\overname{\func}{\funcsig}) \aslto \overname{\ty^*}{\tys}
 \]
-returns the list of types $\tys$ in the function signature $\funcsig$.
+returns the list of types $\tys$ in the subprogram signature $\funcsig$.
 Their ordering is return type first (if any), followed by argument types left-to-right.
 
+\ExampleDef{Listing Signature Types}
+\listingref{FuncSigTypes} shows the list of signature types for a procedure and a function
+in comments above their declarations.
+\ASLListing{Listing signature types}{FuncSigTypes}{\typingtests/TypingRule.FuncSigTypes.asl}
+
 \ProseParagraph
-Define $\tys$ as the return type (if any) concatenated with the argument types.
+\AllApply
+\begin{itemize}
+  \item \Proseeqdef{$\vreturntype$}{the singleton list for $\ttyp$ if
+        $\funcsig.\funcreturntype$ if the singleton set for $\ttyp$,
+        and the empty list, otherwise.}
+  \item \Proseeqdef{$\argtypes$}{the types of arguments in $\funcsig.\funcargs$};
+  \item \Proseeqdef{$tys$}{the \Proselist{$\vreturntype$}{$\argtypes$}}.
+\end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   {
-    \left(
-    \begin{array}{l}
-    \funcsig.\funcreturntype \eqname \None \;\land\; \vreturntype \eqdef \emptylist \;\lor\\
-    \funcsig.\funcreturntype \eqname \langle\ttyp\rangle \;\land\; \vreturntype \eqdef [\ttyp]
-    \end{array}
-    \right)
+    \vreturntype \eqdef
+    \begin{cases}
+      [\ttyp] & \text{if }\funcsig.\funcreturntype = \langle\ttyp\rangle\\
+      \emptylist & \text{if }\funcsig.\funcreturntype = \None
+    \end{cases}
   } \\\\
   \argtypes \eqdef [(\Ignore, \ttyp)\in\funcsig.\funcargs: \ttyp]
 }{
@@ -865,39 +882,72 @@ Define $\tys$ as the return type (if any) concatenated with the argument types.
 The function
 \[
 \paramsofty(\overname{\staticenvs}{\tenv}, \overname{\ty}{\tty}) \typearrow \overname{\identifier^*}{\ids}
+\cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-finds the list of parameters in the type $\tty$.
-It assumes that $\tty$ appears in a function signature.
+extracts the list of parameters appearing in the type $\tty$,
+assuming that $\tty$ appears in a function signature.
+\ProseOtherwiseTypeError
+
+\ExampleDef{The Parameters Extracted from Argument Types}
+The parameters extracted from the types of arguments appearing in the signature of \verb|parameters_of_types|
+(starting with the return type)
+in \listingref{ParametersOfTy} are as follows:
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Type} & \textbf{Parameters}\\
+\hline
+\verb|bits(A)|            & $[\texttt{A}]$\\
+\verb|(bits(B), bits(C))| & $[\texttt{B}, \texttt{C}]$\\
+\verb|integer{D..E}|      & $[\texttt{D}, \texttt{E}]$\\
+\verb|real|               & $\emptylist$\\
+\verb|integer|            & $\emptylist$\\
+\end{tabular}
+\end{center}
+
+\ASLListing{The parameters extracted from argument types}{ParametersOfTy}{\typingtests/TypingRule.ParametersOfTy.asl}
+
+\ExampleRef{Ill-typed Type Declarations} shows an ill-typed argument type.
 
 \ProseParagraph
 \OneApplies
-
 \begin{itemize}
   \item \AllApplyCase{tbits}
     \begin{itemize}
       \item $\tty$ is a bitvector type, that is, $\TBits(\ve, \Ignore)$;
-      \item applying $\paramsofexpr$ to $\ve$ in $\tenv$ yields $\ids$.
+      \item applying $\paramsofexpr$ to $\ve$ in $\tenv$ yields $\ids$\ProseOrTypeError.
     \end{itemize}
 
   \item \AllApplyCase{ttuple}
     \begin{itemize}
       \item $\tty$ is a tuple over a list of types $\tys$, that is, $\TTuple(\tys)$;
-      \item applying $\paramsofty$ to each type $\tty_i$ in $\tys$ yields $\ids_i$;
+      \item applying $\paramsofty$ to each type $\tty_i$ in $\tys$ yields $\ids_i$\ProseOrTypeError;
       \item $\ids$ is the concatenation of all the $\ids_i$.
     \end{itemize}
 
-  \item \AllApplyCase{tint\_constrained}
+  \item \AllApplyCase{tint\_constrained\_precise}
     \begin{itemize}
       \item $\tty$ is a \wellconstrainedintegertype, that is, $\TInt(\wellconstrained(\cs))$;
-      \item applying $\paramsofconstraint$ to each constraint $\vc_i$ in $\cs$ yields $\ids_i$;
+      \item applying $\paramsofconstraint$ to each constraint $\vc_i$ in $\cs$ yields $\ids_i$\ProseOrTypeError;
       \item $\ids$ is the concatenation of all the $\ids_i$.
     \end{itemize}
 
   \item \AllApplyCase{other}
     \begin{itemize}
-      \item $\tty$ is not a \tupletypeterm{}, bitvector type, or \wellconstrainedintegertype;
+      \item $\tty$ meets one of the following conditions:
+      \begin{itemize}
+        \item $\tty$ is one of the following types: \realtypeterm, \stringtypeterm, \booleantypeterm, \arraytypeterm, \namedtypeterm;
+        \item $\tty$ is an \unconstrainedintegertype;
+        \item $\tty$ is a \wellconstrainedintegertype{} with a $\False$ precision flag, that is, $\TInt(\wellconstrained(\Ignore, \False))$;
+        \item $\tty$ is a \parameterizedintegertype;
+      \end{itemize}
       \item $\ids$ is the empty list.
     \end{itemize}
+
+  \item \AllApplyCase{error}
+  \begin{itemize}
+    \item $\tty$ either a \structuredtype{} or an \enumerationtypeterm;
+    \item the result is a \typingerrorterm{} ($\BadSubprogramDeclaration$).
+  \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
@@ -911,7 +961,7 @@ It assumes that $\tty$ appears in a function signature.
 
 \begin{mathpar}
 \inferrule[ttuple]{
-  \tty_i \in \tys: \paramsofty(\tenv, \tty_i) \typearrow \ids_i \\
+  \tty_i \in \tys: \paramsofty(\tenv, \tty_i) \typearrow \ids_i \OrTypeError\\\\
   \ids \eqdef \ids_1 \concat \ldots \concat \ids_{\listlen{\tys}}
 }{
   \paramsofty(\tenv, \TTuple(\tys)) \typearrow \ids
@@ -919,36 +969,73 @@ It assumes that $\tty$ appears in a function signature.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[tint\_constrained]{
-  \vc_i \in \cs: \paramsofconstraint(\tenv, \vc_i) \typearrow \ids_i \\
+\inferrule[tint\_constrained\_precise]{
+  \vc_i \in \cs: \paramsofconstraint(\tenv, \vc_i) \typearrow \ids_i \OrTypeError\\\\
   \ids \eqdef \ids_1 \concat \ldots \concat \ids_{\listlen{\tys}}
 }{
-  \paramsofty(\tenv, \TInt(\wellconstrained(\cs)) \typearrow \ids
+  \paramsofty(\tenv, \TInt(\wellconstrained(\cs, \True))) \typearrow \ids
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[other]{
-  \astlabel(\tty) \notin \{ \TBits, \TTuple \} \\
-  \neg \iswellconstrainedinteger(\tty)
+  {
+  \begin{array}{ll}
+  \astlabel(\tty) \in \{ \TReal, \TString, \TBool, \TArray, \TNamed \}  & \lor\\
+  \tty = \unconstrainedinteger                                          &\lor\\
+  \tty = \TInt(\wellconstrained(\Ignore, \False))                       & \lor\\
+  \tty = \TInt(\parameterized(\Ignore))                                 &
+  \end{array}
+  }
 }{
   \paramsofty(\tenv, \tty) \typearrow \overname{\emptylist}{\ids}
 }
 \end{mathpar}
 
+\begin{mathpar}
+\inferrule[error]{
+  \isstructured(\tty) \lor \astlabel(\tty) = \TEnum
+}{
+  \paramsofty(\tenv, \tty) \typearrow \TypeErrorVal{\BadSubprogramDeclaration}
+}
+\end{mathpar}
 
 \TypingRuleDef{ParametersOfExpr}
 \hypertarget{def-paramsofexpr}{}
 The function
 \[
 \paramsofexpr(\overname{\staticenvs}{\tenv}, \overname{\expr}{\ve}) \typearrow \overname{\identifier^*}{\ids}
+\cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-finds the list of parameters in the expression $\ve$.
+extracts the list of parameters appearing in the expression $\ve$.
 It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellconstrainedintegertype{} in a function signature.
+\ProseOtherwiseTypeError
+
+\ExampleDef{Extracting the Parameters from Expressions}
+In \listingref{ParametersOfExpr}, extracting parameters from expressions appearing
+in the types of signature arguments (starting with the return type) yield the following lists of parameters:
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Expression} & \textbf{Parameters}\\
+\hline
+\verb|A|      & $\emptylist$\\
+\verb|B|      & $[\texttt{B}]$\\
+\verb|C|      & $[\texttt{C}]$\\
+\verb|-D|      & $[\texttt{D}]$\\
+\verb|E+F|      & $[\texttt{E}, \texttt{F}]$\\
+\verb|(G)|      & $[\texttt{G}]$\\
+\end{tabular}
+\end{center}
+Notice that, since \verb|A| is declared as a global storage element, it is not extracted as a parameter
+for the expression \verb|A| appearing in the return type.
+
+\ASLListing{Extracting the parameters from expressions}{ParametersOfExpr}{\typingtests/TypingRule.ParametersOfExpr.asl}
+
+\listingref{ParametersOfExpr-bad} shows examples of expressions that are illegal in types of arguments.
+\ASLListing{Ill-typed expressions in signature types}{ParametersOfExpr-bad}{\typingtests/TypingRule.ParametersOfExpr.bad.asl}
 
 \ProseParagraph
 \OneApplies
-
 \begin{itemize}
   \item \AllApplyCase{eval}
     \begin{itemize}
@@ -959,28 +1046,29 @@ It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellcon
   \item \AllApplyCase{eunop}
     \begin{itemize}
       \item $\ve$ is a unary operation, that is, $\EUnop(\Ignore, \ve)$;
-      \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\ids$.
+      \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\ids$\ProseOrTypeError.
     \end{itemize}
 
   \item \AllApplyCase{ebinop}
     \begin{itemize}
       \item $\ve$ is a binary operation, that is, $\EBinop(\Ignore, \veone, \vetwo)$;
-      \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\idsone$;
-      \item applying $\paramsofexpr$ to $\vetwo$ in $\tenv$ yields $\idstwo$;
+      \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\idsone$\ProseOrTypeError;
+      \item applying $\paramsofexpr$ to $\vetwo$ in $\tenv$ yields $\idstwo$\ProseOrTypeError;
       \item define $\ids$ as the concatenation of $\idsone$ and $\idstwo$.
     \end{itemize}
 
   \item \AllApplyCase{etuple}
     \begin{itemize}
-      \item $\ve$ is a tuple over a list of expressions, that is, $\ETuple(\es)$;
-      \item applying $\paramsofexpr$ to each expression $\ve_i$ in $\es$ yields $\ids_i$;
-      \item $\ids$ is the concatenation of all the $\ids_i$.
+      \item $\ve$ is a tuple over the list of expression $\es$, that is, $\ETuple(\es)$;
+      \item checking that $\es$ is a singleton list yields $\True$\ProseTerminateAs{\BadSubprogramDeclaration};
+      \item view $\es$ as the singleton list for the expression $\ve$;
+      \item applying $\paramsofexpr$ to $\ve$ $\ids$\ProseOrTypeError.
     \end{itemize}
 
   \item \AllApplyCase{other}
     \begin{itemize}
       \item $\ve$ is not a variable, unary operation, binary operation, or tuple;
-      \item $\ids$ is the empty list.
+      \item the result is a \typingerrorterm{} ($\BadSubprogramDeclaration$).
     \end{itemize}
 \end{itemize}
 
@@ -996,7 +1084,7 @@ It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellcon
 
 \begin{mathpar}
 \inferrule[eunop]{
-  \paramsofexpr(\tenv, \veone) \typearrow \ids
+  \paramsofexpr(\tenv, \veone) \typearrow \ids \OrTypeError
 }{
   \paramsofexpr(\tenv, \EUnop(\Ignore, \veone)) \typearrow \ids
 }
@@ -1004,8 +1092,8 @@ It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellcon
 
 \begin{mathpar}
 \inferrule[ebinop]{
-  \paramsofexpr(\tenv, \veone) \typearrow \idsone \\
-  \paramsofexpr(\tenv, \vetwo) \typearrow \idstwo
+  \paramsofexpr(\tenv, \veone) \typearrow \idsone \OrTypeError\\\\
+  \paramsofexpr(\tenv, \vetwo) \typearrow \idstwo \OrTypeError
 }{
   \paramsofexpr(\tenv, \EBinop(\Ignore, \veone, \vetwo)) \typearrow \overname{\idsone \concat \idstwo}{\ids}
 }
@@ -1013,8 +1101,9 @@ It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellcon
 
 \begin{mathpar}
 \inferrule[etuple]{
-  \ve_i \in \es: \paramsofexpr(\tenv, \ve_i) \typearrow \ids_i \\
-  \ids \eqdef \ids_1 \concat \ldots \concat \ids_{\listlen{\es}}
+  \checktrans{|\es| = 1}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError\\\\
+  \es \eqname [\ve]\\
+  \paramsofexpr(\tenv, \ve) \typearrow \ids \OrTypeError\
 }{
   \paramsofexpr(\tenv, \ETuple(\es)) \typearrow \ids
 }
@@ -1024,7 +1113,7 @@ It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellcon
 \inferrule[other]{
   \astlabel(\ve) \notin \{ \EVar, \EUnop, \EBinop, \ETuple \}
 }{
-  \paramsofexpr(\tenv, \ve) \typearrow \overname{\emptylist}{\ids}
+  \paramsofexpr(\tenv, \ve) \typearrow \TypeErrorVal{\BadSubprogramDeclaration}
 }
 \end{mathpar}
 
@@ -1037,9 +1126,14 @@ The function
 finds the list of parameters in the constraint $\vc$.
 It assumes that $\vc$ appears within a \wellconstrainedintegertype{} in a function signature.
 
+\ExampleDef{The Parameters Extracted from a Constraint}
+In \listingref{ParametersOfTy}, the list of parameters extracted from the constraint
+\verb|{D..E}| is $[\texttt{D}, \texttt{E}]$.
+
+See also \ExampleRef{Extracting the Parameters from Expressions}.
+
 \ProseParagraph
 \OneApplies
-
 \begin{itemize}
   \item \AllApplyCase{exact}
     \begin{itemize}
@@ -1397,41 +1491,66 @@ $\subprograms$ map of $\tenv$.
   \item determining whether there is an argument clash between $\formaltypes$ and \\
         the formal arguments of $\otherfuncsig$ ($\otherfuncsig.\funcargs$) in $\tenv$ yields $\vb$\ProseOrTypeError.
 \end{itemize}
+
 \FormallyParagraph
-\hypertarget{def-subprogramtypeclash}{}
-We first introduce the helper predicate
-\[
-  \subprogramtypesclash(
-    \overname{\subprogramtype}{\subpgmtypeone} \aslsep
-    \overname{\subprogramtype}{\subpgmtypetwo}
-  ) \aslto \overname{\Bool}{\vb}
-\]
-which defines whether two subprogram types are considered to be clashing:
 \begin{mathpar}
 \inferrule{
-  \vbone \eqdef
+  G^\tenv.\subprograms(\name) = (\otherfuncsig, \Ignore)\\
+  \subprogramtypesclash(\otherfuncsig.\subprogramtype, \subpgmtype) \typearrow \vbone\\
+  \hasargclash(\formaltypes, \otherfuncsig.\funcargs) \typearrow \vbtwo
+}{
+  \subprogramclash(\tenv, \name, \subpgmtype, \formaltypes) \typearrow \overname{\vbone \land \vbtwo}{\vb}
+}
+\end{mathpar}
+\identd{BTBR} \identi{FSFQ} \identi{PFGQ}
+
+\TypingRuleDef{SubprogramTypesClash}
+\hypertarget{def-subprogramtypeclash}{}
+The function
+\[
+  \subprogramtypesclash(
+    \overname{\subprogramtype}{\vsone} \aslsep
+    \overname{\subprogramtype}{\vstwo}
+  ) \aslto \overname{\Bool}{\vb}
+\]
+defines whether the subprogram types $\vsone$ and
+$\vstwo$ clash, yielding the result in $\vb$.
+
+\ExampleDef{Clashing Subprogram Types}
+
+The specification in \listingref{SubprogramTypesClash} contains an accessor for \verb|X|.
+The subprogram type of its getter does not clash with the subprogram type of its setter.
+\ASLListing{Non-clashing subprogram types}{SubprogramTypesClash}{\typingtests/TypingRule.SubprogramTypesClash.asl}
+
+The specification in \listingref{SubprogramTypesClash-bad1} contains an accessor for \verb|X|.
+The subprogram types of its getter and setter both clash with the subprogram type of the procedure \verb|X| ($\STProcedure$).
+\ASLListing{Clashing subprogram types}{SubprogramTypesClash-bad1}{\typingtests/TypingRule.SubprogramTypesClash.bad1.asl}
+
+The specification in \listingref{SubprogramTypesClash-bad2} contains a function \verb|X| and a procedure \verb|X|
+whose subprogram types ($\STFunction$ and $\STProcedure$, respectively) clash.
+\ASLListing{Clashing subprogram types}{SubprogramTypesClash-bad2}{\typingtests/TypingRule.SubprogramTypesClash.bad2.asl}
+
+\ProseParagraph
+\ProseEqdef{$\vb$}{$\True$ unless
+$\vsone$ is $\STGetter$ and $\vstwo$ is $\STSetter$ or
+$\vsone$ is $\STSetter$ and $\vstwo$ is $\STGetter$}.
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{
   {
-    \begin{array}{l}
-  (\subpgmtypeone=\STGetter \land \subpgmtypetwo=\STSetter)\ \lor\\
-  (\subpgmtypeone=\STSetter \land \subpgmtypetwo=\STGetter)
-    \end{array}
-  }\\\\
-  \vb \eqdef \neg\vbone
+  \vb \eqdef (\vsone, \vstwo) \not\in
+  \left\{
+  \begin{array}{l}
+    (\STGetter,       \STSetter),\\
+    (\STSetter,       \STGetter)
+  \end{array}
+  \right\}
+  }
 }{
   \subprogramtypesclash(\subpgmtypeone, \subpgmtypetwo) \typearrow \vb
 }
 \end{mathpar}
-
-\begin{mathpar}
-\inferrule{
-  G^\tenv.\subprograms(\name) = (\otherfuncsig, \Ignore)\\
-  \subprogramtypesclash(\otherfuncsig.\subprogramtype, \subpgmtype) \typearrow \True \terminateas \False\\
-  \hasargclash(\formaltypes, \otherfuncsig.\funcargs) \typearrow \vb
-}{
-  \subprogramclash(\tenv, \name, \subpgmtype, \formaltypes) \typearrow \vb
-}
-\end{mathpar}
-\identd{BTBR} \identi{FSFQ} \identi{PFGQ}
 
 \TypingRuleDef{AddNewFunc}
 \hypertarget{def-addnewfunc}{}

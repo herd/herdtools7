@@ -540,3 +540,20 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref TypingRule.ExpressionList.asl
   $ aslref TypingRule.RenameTyEqs.asl
+  $ aslref TypingRule.CheckParamsTypeSat.asl
+  $ aslref --no-exec TypingRule.ParametersOfTy.asl
+  $ aslref --no-exec TypingRule.ParametersOfExpr.asl
+  $ aslref --no-exec TypingRule.ParametersOfExpr.bad.asl
+  File TypingRule.ParametersOfExpr.bad.asl, line 4, characters 19 to 40:
+  ASL Static Error: Unsupported expression if TRUE then B else C.
+  [1]
+  $ aslref --no-exec TypingRule.FuncSigTypes.asl
+  $ aslref --no-exec TypingRule.SubprogramTypesClash.asl
+  $ aslref TypingRule.SubprogramTypesClash.bad1.asl
+  File TypingRule.SubprogramTypesClash.bad1.asl, line 4, characters 8 to 22:
+  ASL Typing error: cannot declare already declared element "X".
+  [1]
+  $ aslref TypingRule.SubprogramTypesClash.bad2.asl
+  File TypingRule.SubprogramTypesClash.bad2.asl, line 1, characters 0 to 40:
+  ASL Typing error: cannot declare already declared element "X".
+  [1]
