@@ -385,6 +385,15 @@ exists ( 1:x2=1 /\ 1:x4=0 /\ Fault(P2) )
  * `P2` if `SCTLR_EL1.EnDA = 0` *)
 ```
 
+Here is the expected graph of the execution of the `autda Xd,Xn` instruction in
+case of a success:
+
+![`autda Xd,Xn` instruction success](pauth1_autda_success.png)
+
+Here is the expected graph of the execution of the `autda Xd,Xn` instruction in
+case of a failure:
+
+![`autda Xd,Xn` instruction success](pauth1_autda_failure.png)
 
 ### `aut*` instruction with `FEAT_PAuth2` but without `FEAT_FPAC`
 
@@ -424,28 +433,26 @@ in `Xd` and the register-write event in `Xd` for the instruction `autda Xd,Xn`
 for all the possible set of feature that change this dependency (note that we
 may replace `FEAT_FPAC` by `FEAT_FPACCOMBINE` in case of a combined instruction):
 
-| `FEAT_PAuth` | `FEAT_PAuth2` | `FEAT_FPAC` | Success         | Fail             |
-|:-------------|:--------------|:------------|:----------------|:-----------------|
-| No           | No            | No          | `basic-dep`[^1] | `N/A`            |
-| Yes          | No            | No          | `basic-dep`[^1] | `basic-dep`[^1]  |
-| Yes          | Yes           | No          | `basic-dep`[^1] | `basic-dep`[^1]  |
-| Yes          | Yes           | Yes         | `basic-dep`[^1] | Fault (no write) |
+| `FEAT_PAuth2` | `FEAT_FPAC` | Success         | Fail             |
+|:--------------|:------------|:----------------|:-----------------|
+| No            | No          | `basic-dep`[^1] | `basic-dep`[^1]  |
+| Yes           | No          | `basic-dep`[^1] | `basic-dep`[^1]  |
+| Yes           | Yes         | `basic-dep`[^1] | Fault (no write) |
 
 Here is a table that show the minimal dependency between the register-read event
 in `Xn` and the register-write event in `Xd` for the instruction `autda Xd,Xn`
 for all the possible set of feature that change this dependency:
 
-| `FEAT_PAuth` | `FEAT_PAuth2` | `FEAT_FPAC` | Success              | Fail                 |
-|:-------------|:--------------|:------------|:---------------------|:---------------------|
-| No           | No            | No          | `N/A`                | `N/A`                |
-| Yes          | No            | No          | `pick-basic-dep`[^1] | `pick-basic-dep`[^1] |
-| Yes          | Yes           | No          | `pick-basic-dep`[^2] | `basic-dep`[^1]      |
-| Yes          | Yes           | Yes         | `pick-basic-dep`[^2] | Fault (no write)     |
+| `FEAT_PAuth2` | `FEAT_FPAC` | Success              | Fail                 |
+|:--------------|:------------|:---------------------|:---------------------|
+| No            | No          | `pick-basic-dep`[^1] | `pick-basic-dep`[^1] |
+| Yes           | No          | `pick-basic-dep`[^2] | `basic-dep`[^1]      |
+| Yes           | Yes         | `pick-basic-dep`[^2] | Fault (no write)     |
 
 [^1]: Memory model from the ASL implementation
 [^2]: Correspond to the possibility of the `aut*` instruction to predict it's
     success, because this was one of the demand of the architects in
-    ![this ticket](https://jira.arm.com/browse/AARCH-21866)
+    [this ticket](https://jira.arm.com/browse/AARCH-21866)
 
 ### `ldr` instruction:
 
