@@ -31,6 +31,7 @@ module Make
          val libdir : string
          val expand : bool
          val flatten : bool
+         val std : bool
 (* Definitons *)
          val names : StringSet.t
          val testmode : bool
@@ -255,11 +256,14 @@ module Make
     let do_pp_rel_id  e1 e2 id =
       sprintf "\\%s{%s}{%s}" id (pp_evt e1) (pp_evt e2)
 
+    let makeuppercase =
+      if O.std then
+        sprintf "\\expandafter\\MakeUppercase%s"
+      else
+        sprintf "\\expandafter{\\MakeUppercase%s}"
+
     let pp_rel_id e1 e2 id =
-      Item
-        (sprintf
-           "\\expandafter{\\MakeUppercase%s}"
-           (do_pp_rel_id e1 e2 id))
+      Item (makeuppercase  @@ do_pp_rel_id e1 e2 id)
 
     let tr_rel_id e1 e2 loc id = pp_rel_id  e1 e2 (pp_id loc id)
 
@@ -440,9 +444,13 @@ module Make
       | Item txt ->
          Some
            (Item
-              (sprintf "\\expandafter{\\MakeUppercase\\notthecase{%s}}" txt))
+              (makeuppercase @@ sprintf "\\notthecase{%s}" txt))
       | List (op,intro_txt,sep_txt,es) ->
-         Some (List (op,(sprintf "\\expandafter{\\MakeUppercase\\notthecase{%s}}" intro_txt),sep_txt,es))
+          Some
+            (List
+               (op,
+                makeuppercase @@ sprintf "\\notthecase{%s}" intro_txt,
+                sep_txt,es))
       | DiffPair _|IfCond _ ->
          None
 
@@ -667,12 +675,16 @@ module Make
           (* assumes /<name>emph macro *)
           let def_txt = (pp_id loc id) ^ "emph" in
            sprintf
-             "\\expandafter{\\MakeUppercase\\%s{an Effect %s}{an Effect %s}} if"
-              def_txt (pp_evt 1) (pp_evt 2)
+             "%s if"
+             (makeuppercase
+              @@ sprintf "\\%s{an Effect %s}{an Effect %s}"
+                   def_txt (pp_evt 1) (pp_evt 2))
         | Some SET ->
            sprintf
-             "\\expandafter{\\MakeUppercase\\%s{an Effect %s}} if"
-             (pp_id loc id) (pp_evt 1) in
+             "%s if"
+             (makeuppercase
+              @@ sprintf "\\%s{an Effect %s}"
+                   (pp_id loc id) (pp_evt 1)) in
       let d =
         if O.flatten then
          ASTUtils.flatten d |> tr |> flatten_out 
@@ -772,6 +784,7 @@ let testmode = ref false
 let texfile = ref None
 let expand = ref true
 let flatten = ref true
+let std = ref false
 
 let options =
   [
@@ -793,6 +806,7 @@ let options =
     ArgUtils.parse_bool "-test" testmode "translate as many names as possible";
     ArgUtils.parse_bool "-expand" expand "expand include statements";
     ArgUtils.parse_bool "-flatten" flatten "flatten associative operators";
+    ArgUtils.parse_bool "-stdlatex" std "output for standard latex";
     ArgUtils.parse_string_opt "-tex" texfile "file of LaTeX definitions";
   ]
 
@@ -820,6 +834,7 @@ let () =
         let names = !names
         let expand = !expand
         let flatten = !flatten
+        let std = !std
         let testmode = !testmode
         let texfile = !texfile
       end) in
