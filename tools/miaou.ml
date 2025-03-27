@@ -95,6 +95,7 @@ module Make
       |> StringMap.add "Instr-read-ordered-before" "Instrreadob"
       |> StringMap.add "L" "REL"
       |> StringMap.add "id" "sameEffect"
+
     let defs =
       match O.texfile with
       | None -> None
@@ -305,6 +306,10 @@ module Make
               mk_list Inter [tr a; c;]
          end
 
+    let flatten_if_not =
+      if O.flatten then Fun.id
+      else ASTUtils.flatten
+
     let rec tr_rel e1 e2 = function
       | Konst (loc,Empty _) ->
          tr_rel_id e1 e2 loc "norel"
@@ -321,7 +326,7 @@ module Make
       | Op (_,Diff,[a;b]) ->
          tr_rel_diff e1 e2 a b
       | Op (_,Cartesian,[a;b;]) ->
-         let a = tr_evts e1 a and b = tr_evts e2 b in
+         let a = tr_evts_from_rel e1 a and b = tr_evts_from_rel e2 b in
          mk_list Cartesian [a;b;]
       | Var (loc,id) ->
          tr_rel_id e1 e2 loc id
@@ -341,7 +346,7 @@ module Make
       | Op1 (loc,ToId,Konst (_,Universe _)) ->
          tr_rel_id e1 e2 loc "id"
       | Op1 (_,ToId,e) ->
-         tr_evts e1 e
+         tr_evts_from_rel e1 e
       | Op1 (_,Inv,Op (loc2,Seq,es)) ->
          let es =
            List.rev_map
@@ -368,8 +373,10 @@ module Make
          Item (txt1 ^ txt2)
       | e -> tr_fail (ASTUtils.exp2loc e)
 
+    and tr_evts_from_rel e1 e2 = tr_evts e1 @@ flatten_if_not e2
+
     and tr_rel_not e1 e2 = function
-      | Op1 (_,ToId,e) -> tr_evts_not e1 e
+      | Op1 (_,ToId,e) -> tr_evts_not e1 @@ flatten_if_not e
       | e -> notItem (tr_rel e1 e2 e)
 
     and tr_op e1 e2 op es = List.map (tr_rel e1 e2) es |> mk_list op
@@ -419,7 +426,7 @@ module Make
          tr_rel e1 e2 id
          ::tr_seq e1 e2 es
       | Op1 (_,ToId,e)::es ->
-         tr_evts e1 e::tr_seq e1 e2 es
+         tr_evts_from_rel e1 e::tr_seq e1 e2 es
       | [e] ->
          [tr_rel e1 e2 e]
       | Var (loc1,id1)::Op1 (_,Opt,Var (loc2,id2))::es ->
@@ -435,7 +442,7 @@ module Make
             (pp_id loc2 id2) (pp_evt e3))
          ::tr_seq e3 e2 es
       | [e;Op1 (_,ToId,f);] ->
-         [tr_rel e1 e2 e; tr_evts e2 f;]
+         [tr_rel e1 e2 e; tr_evts_from_rel e2 f;]
       | e::es ->
          let e3 = next_event e1 in
          tr_rel e1 e3 e::tr_seq e3 e2 es
@@ -468,7 +475,7 @@ module Make
            | Some r -> r
          end
       | Op (loc,Inter,es)
-           when List.for_all ASTUtils.is_var es
+           when O.flatten && List.for_all ASTUtils.is_var es
         ->
          let id =
            List.map (function Var (_,id) -> id | _ -> assert false) es
