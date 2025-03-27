@@ -5,4 +5,4 @@ Variant=pac
 }
 P0          ;
 autda x0,x1 ;
-exists (Fault(P0))
+exists (~Fault(P0))

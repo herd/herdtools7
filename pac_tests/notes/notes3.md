@@ -411,6 +411,128 @@ Otherwise if `SCTLR_EL1.EnDA = 1`, then
     `basic-dep` between the register-read event of `Xn` and the
     register-write event of `Xd`.
 
+One can observe those dependencies using some litmus tests. Here is two litmus
+tests to observe the basic dependency between the register-read/write events in
+`Xd` (one in case of an authentication susccess, and the other in case of a fail
+):
+
+```
+AArch64 PAuth2 without FPAC auth success: RXd ---basic-dep--> WXd
+{
+    void* x=z; (* Overwrite by P0 to `x` *)
+    void* y=z; (* Overwrite by P0 to `pacdza(x,x0)` *)
+    0:x0=x; 0:x1=y; 0:x2=x;
+    1:x0=x; 1:x1=y;
+
+}
+P0          | P1           ;
+str x2,[x0] |              ;
+dmb sy      | ldr x2,[x1]  ;
+pacdza x2   | autdza x2    ;
+str x2,[x1] | eor x3,x2,x2 ;
+            | add x0,x0,x3 ;
+            | ldr x4,[x0]  ;
+exists ( 1:x2=x /\ 1:x4=z )
+(* Always forbidden without fpac because their is an `addr` dependency between
+ * the load and the store in `P1` *)
+```
+
+```
+AArch64 PAuth2 without FPAC auth fail: RXd ---basic-dep--> WXd
+{
+    void* x=z; (* Overwrite by P0 to `x` *)
+    void* y=z; (* Overwrite by P0 to `x` *)
+    0:x0=x; 0:x1=y; 0:x2=x;
+    1:x0=x; 1:x1=y;
+    2:x0=x; (* Ensure no hash collision between `pacda(x,0)` and `x` *)
+}
+P0          | P1           | P2          ;
+str x2,[x0] |              | pacdza x0   ;
+dmb sy      | ldr x2,[x1]  | ldr x1,[x0] ;
+str x2,[x1] | autdza x2    |             ;
+            | eor x3,x2,x2 |             ;
+            | add x0,x0,x3 |             ;
+            | ldr x4,[x0]  |             ;
+exists ( 1:x2=x /\ 1:x4=z /\ Fault(P2) )
+(* Always forbidden without fpac because their is an `addr` dependency between
+ * the load and the store in `P1` *)
+```
+
+Then one can observe the presence of a `pick-basic` dependency between the
+register-read event of `Xn` and the register-write event of `Xd` in case of
+success:
+
+```
+AArch64 PAuth2 without FPAC auth success: RXn ---pick-basic-dep--> WXd
+{
+    0:x0=x; 0:x1=y; 0:x2=1;
+    1:x0=x; 1:x1=y;         1:x3=1; 1:x4=2;
+}
+P0          | P1           ;
+str x2,[x0] | pacda x0,x3  ;
+dmb sy      | ldr x2,[x1]  ;
+str x2,[x1] | autda x0,x2  ;
+            | xpacd x0     ;
+            | str x4,[x0]  ;
+exists ( 1:x2=1 /\ [x]=1 )
+(* Forbidden if `SCTLR_EL1.EnDA = 1` *)
+(* Allowed otherwise *)
+```
+
+and the absence of a `basic-dep` between the register-read event of `Xn` and the
+register-write event of `Xd`:
+
+```
+AArch64 PAuth2 without FPAC auth success: RXn ---no-basic-dep--> WXd
+{
+    0:x0=x; 0:x1=y; 0:x2=1;
+    1:x0=x; 1:x1=y;         1:x3=1;
+}
+P0          | P1           ;
+str x2,[x0] | pacda x0,x3  ;
+dmb sy      | ldr x2,[x1]  ;
+str x2,[x1] | autda x0,x2  ;
+            | xpacd x0     ;
+            | ldr x4,[x0]  ;
+exists ( 1:x2=1 /\ 1:x4=0 )
+(* Always allowed *)
+```
+
+But the ordering difference of `PAuth2` without `FPAC` and `PAuth1` is the
+presence of a `basic-dependency` between the register-read event of `Xn` and the
+register-write event of `Xd` in case of failure, and we can observe it in this
+test:
+
+```
+AArch64 PAuth2 without FPAC auth fail: RXn ---basic-dep--> WXd
+{
+    0:x0=x; 0:x1=y; 0:x2=1;
+    1:x0=x; 1:x1=y;
+    2:x0=x; 2:x1=1; (* Ensure no hash collision between `pacda(x,1)` and `x` *)
+}
+P0          | P1           | P2          ;
+str x2,[x0] |              | pacda x0,x1 ;
+dmb sy      | ldr x2,[x1]  | ldr x1,[x0] ;
+str x2,[x1] | autda x0,x2  |             ;
+            | xpacd x0     |             ;
+            | ldr x4,[x0]  |             ;
+exists ( 1:x2=1 /\ 1:x4=0 /\ Fault(P2) )
+(* Forbidden if `SCTLR_EL1.EnDA = 1` because the `addr` dependency between
+ * the two loads is enough to force their order *)
+(* Forbidden otherwise because the MMU translation will not fail in the process
+ * `P2` if `SCTLR_EL1.EnDA = 0` *)
+```
+
+Here is the expected graph of the execution of the `autda Xd,Xn` instruction in
+case of a success:
+
+![`autda Xd,Xn` instruction success](pauth2_without_fpac_autda_success.png)
+
+Here is the expected graph of the execution of the `autda Xd,Xn` instruction in
+case of a failure:
+
+![`autda Xd,Xn` instruction success](pauth2_without_fpac_autda_failure.png)
+
 ### `aut*` instruction with `FEAT_FPAC`:
 
 If the key associated with an authentication instruction is disable, as example
