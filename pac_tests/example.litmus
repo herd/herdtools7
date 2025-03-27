@@ -1,16 +1,12 @@
-AArch64 pacda
-Variant=pac
+AArch64 PAuth1 auth fail: RXn ---no-basic-dep--> WXd
+Variant=pac,fpac
 {
-  0:x0=x; 0:x1=y; 0:x2=1;
-  1:x0=x; 1:x1=y;         1:x3=1; 1:x4=2;
+    void* x=y;
+    0:x0=x; 0:x1=x;
 }
-P0          | P1           ;
-            | pacda x0,x3  ;
-            | ldr x2,[x1]  ;
-str x2,[x0] | autda x0,x2 ;
-            | xpacd x0  ;
-            |              ;
-dmb sy      | str x4,[x0]  ;
-str x2,[x1] |              ;
-locations [1:x2; x]
-exists ( ~Fault(P0) /\ ~Fault(P1) )
+P0          | P0.F        ;
+autdza x0   |             ;
+            | mov x1,#42 ;
+locations[0:x0; 0:x1; 0:x2;]
+exists ( 0:x1=y /\ Fault(P0) )
+(* Always allowed *)

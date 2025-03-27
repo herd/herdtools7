@@ -1504,12 +1504,14 @@ module Make
         (* Addresses of memory operations must be canonical for the construction
          * of the rf, co and fr maps... *)
         let mok ma = mok (ma >>= M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical)) in
+        let lbl_v = get_instr_label ii in
         let mfault ma =
           do_insert_commit ma (fun a ->
+            set_elr_el1 lbl_v ii >>|
             mk_fault (Some a) dir an ii
               (Some (FaultType.AArch64.MMU FaultType.AArch64.Translation))
               None) ii
-          >>! B.Exit
+          >>! B.fault [AArch64Base.elr_el1, lbl_v]
         in
         let ma_with_commit ma =
           do_append_commit ma (Some "pac") ii
@@ -4486,11 +4488,13 @@ module Make
             if pac then begin
               let (>>!) = M.(>>!) in
 
+              let lbl_v = get_instr_label ii in
               let mfault =
+                  set_elr_el1 lbl_v ii >>|
                   mk_fault None Dir.R Annot.N ii
                     (Some (FaultType.AArch64.PacCheck key))
                     None
-                  >>! B.Exit
+                  >>! B.fault [AArch64Base.elr_el1, lbl_v]
               in
 
               let mop ma =

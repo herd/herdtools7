@@ -198,8 +198,9 @@ The `pac*` instruction semantic depend of the status of the register
 `SCTLR_EL1.En*` represented in the litmus test by the presence of the variant
 `pac`:
 
-- If `pac` is not set, then `pac*` ececute like a nop, it doesn't read or write
-    into any register.
+- If `pac` is not set, then `pac*` ececute like a `mov Xd,Xd`, si their is a
+    `basic-dep` between the register-read event of `Xd` and the register-write
+    event of `Xd`.
 - If `pac` is set the their is a `basic dependency` between the register-read
     event of `Xd` and the register-write event of
     `Xd`. And a `basic-dependency` between the regisger-read event of the
@@ -247,8 +248,8 @@ And here is the expected event graph for an execution of `pacda x0,x1`:
 
 If the key associated with an authentication instruction is disable, as example
 if we try to execute `autda Xd,Xn` with `SCTLR_EL1.EnDA = 0`, then `autda` will
-execute like a `nop` instruction, so their is no read or write event in any
-register.
+execute like a `mov Xd,Xd` instruction, so their is a `basic-dep` between the
+register-read event of `Xd` and the register-write event of `Xd`.
 Otherwise if `SCTLR_EL1.EnDA = 1`, then
 - If the authentication succede, then their is a `basic-dep` between the
     register-read event of `Xd` and the register-write event of the
@@ -260,7 +261,7 @@ Otherwise if `SCTLR_EL1.EnDA = 1`, then
     register-write event of `Xd`.
 
 One can observe those dependencies using some litmus tests. Here is two litmus
-test to observe the basic dependency between the register-read/write events in
+tests to observe the basic dependency between the register-read/write events in
 `Xd` (one in case of an authentication susccess, and the other in case of a fail
 ):
 
@@ -281,27 +282,29 @@ str x2,[x1] | eor x3,x2,x2 ;
             | add x0,x0,x3 ;
             | ldr x4,[x0]  ;
 exists ( 1:x2=x /\ 1:x4=z )
-(* Always forbidden *)
+(* Always forbidden with pauth1 because their is an `addr` dependency between
+ * the load and the store in `P1` *)
 ```
 
 ```
-AArch64 PAuth1 auth failt: RXd ---basic-dep--> WXd
+AArch64 PAuth1 auth fail: RXd ---basic-dep--> WXd
 {
     void* x=z; (* Overwrite by P0 to `x` *)
-    void* y=z; (* Overwrite by P0 to `pacdza(x,0)` *)
+    void* y=z; (* Overwrite by P0 to `x` *)
     0:x0=x; 0:x1=y; 0:x2=x;
     1:x0=x; 1:x1=y;
-    2:x0=x; (* Ensure no hash collision between `pacda(x,0)` and `pacdb(x,0)` *)
+    2:x0=x; (* Ensure no hash collision between `pacda(x,0)` and `x` *)
 }
 P0          | P1           | P2          ;
-str x2,[x0] |              | pacdzb x0   ;
-dmb sy      | ldr x2,[x1]  | autdza x0   ;
-pacdzb x2   | autdza x2    | ldr x1,[x0] ;
-str x2,[x1] | eor x3,x2,x2 |             ;
+str x2,[x0] |              | pacdza x0   ;
+dmb sy      | ldr x2,[x1]  | ldr x1,[x0] ;
+str x2,[x1] | autdza x2    |             ;
+            | eor x3,x2,x2 |             ;
             | add x0,x0,x3 |             ;
             | ldr x4,[x0]  |             ;
 exists ( 1:x2=x /\ 1:x4=z /\ Fault(P2) )
-(* Always forbidden *)
+(* Always forbidden with pauth1 because their is an `addr` dependency between
+ * the load and the store in `P1` *)
 ```
 
 Then we can observe the presence of a `pick-basic-dep` between the register-read
@@ -329,7 +332,7 @@ AArch64 PAuth1 auth fail: RXn ---pick-basic-dep--> WXd
 {
     0:x0=x; 0:x1=y; 0:x2=1;
     1:x0=x; 1:x1=y;         1:x4=2;
-    2:x0=x; 2:x1=1; (* Ensure no hash collision between `pacda(x,0)` and `pacdb(x,0)` *)
+    2:x0=x; 2:x1=1; (* Ensure no hash collision between `pacda(x,1)` and `x` *)
 }
 P0          | P1           | P2          ;
 str x2,[x0] |              | pacda x0,x1 ;
@@ -337,9 +340,9 @@ dmb sy      | ldr x2,[x1]  | ldr x1,[x0] ;
 str x2,[x1] | autda x0,x2  |             ;
             | xpacd x0     |             ;
             | str x4,[x0]  |             ;
-exists ( 1:x2=x /\ [x]=1 /\ Fault(P2) )
+exists ( 1:x2=1 /\ [x]=1 /\ Fault(P2) )
 (* Forbidden if `SCTLR_EL1.EnDA = 1` *)
-(* Allowed otherwise *)
+(* Forbidden otherwise because the fault  in `P2` is unreachable *)
 ```
 
 And those tests show that it's not required to have a `basic-dep` between the
@@ -367,7 +370,7 @@ AArch64 PAuth1 auth fail: RXn ---no-basic-dep--> WXd
 {
     0:x0=x; 0:x1=y; 0:x2=1;
     1:x0=x; 1:x1=y;
-    2:x0=x; 2:x1=1; (* Ensure no hash collision between `pacda(x,0)` and `pacdb(x,0)` *)
+    2:x0=x; 2:x1=1; (* Ensure no hash collision between `pacda(x,1)` and `x` *)
 }
 P0          | P1           | P2          ;
 str x2,[x0] |              | pacda x0,x1 ;
@@ -375,8 +378,11 @@ dmb sy      | ldr x2,[x1]  | ldr x1,[x0] ;
 str x2,[x1] | autda x0,x2  |             ;
             | xpacd x0     |             ;
             | ldr x4,[x0]  |             ;
-exists ( 1:x2=x /\ 1:x4=0 /\ Fault(P2) )
-(* Always allowed *)
+exists ( 1:x2=1 /\ 1:x4=0 /\ Fault(P2) )
+(* Allowed if `SCTLR_EL1.EnDA = 1` because the `pick-addr` dependency between
+ * the two loads is not enough to force their order *)
+(* Forbidden otherwise because the MMU translation will not fail in the process
+ * `P2` if `SCTLR_EL1.EnDA = 0` *)
 ```
 
 
@@ -384,8 +390,8 @@ exists ( 1:x2=x /\ 1:x4=0 /\ Fault(P2) )
 
 If the key associated with an authentication instruction is disable, as example
 if we try to execute `autda Xd,Xn` with `SCTLR_EL1.EnDA = 0`, then `autda` will
-execute like a `nop` instruction, so their is no read or write event in any
-register.
+execute like a `mov Xd,Xd` instruction, so their is a `basic-dep` between the
+register-read event of `Xd` and the register-write event of `Xd`.
 Otherwise if `SCTLR_EL1.EnDA = 1`, then
 - If the authentication succede, then their is a `basic-dep` between the
     register-read event of `Xd` and the register-write event of the
@@ -400,8 +406,8 @@ Otherwise if `SCTLR_EL1.EnDA = 1`, then
 
 If the key associated with an authentication instruction is disable, as example
 if we try to execute `autda Xd,Xn` with `SCTLR_EL1.EnDA = 0`, then `autda` will
-execute like a `nop` instruction, so their is no read or write event in any
-register.
+execute like a `mov Xd,Xd` instruction, so their is a `basic-dep` between the
+register-read event of `Xd` and the register-write event of `Xd`.
 Otherwise if `SCTLR_EL1.EnDA = 1`, then
 - If the authentication succede, then their is a `basic-dep` between the
     register-read event of `Xd` and the register-write event of the
@@ -418,21 +424,28 @@ in `Xd` and the register-write event in `Xd` for the instruction `autda Xd,Xn`
 for all the possible set of feature that change this dependency (note that we
 may replace `FEAT_FPAC` by `FEAT_FPACCOMBINE` in case of a combined instruction):
 
-`FEAT_PAuth` | `FEAT_PAuth2` | `FEAT_FPAC` | Success         | Fail             |
-No           | No            | No          | `N/A` (no read) | `N/A` (no read)  |
-Yes          | No            | No          | `basic-dep`     | `basic-dep`      |
-Yes          | Yes           | No          | `basic-dep`     | `basic-dep`      |
-Yes          | Yes           | Yes         | `basic-dep`     | Fault (no write) |
+| `FEAT_PAuth` | `FEAT_PAuth2` | `FEAT_FPAC` | Success         | Fail             |
+|:-------------|:--------------|:------------|:----------------|:-----------------|
+| No           | No            | No          | `basic-dep`[^1] | `N/A`            |
+| Yes          | No            | No          | `basic-dep`[^1] | `basic-dep`[^1]  |
+| Yes          | Yes           | No          | `basic-dep`[^1] | `basic-dep`[^1]  |
+| Yes          | Yes           | Yes         | `basic-dep`[^1] | Fault (no write) |
 
 Here is a table that show the minimal dependency between the register-read event
 in `Xn` and the register-write event in `Xd` for the instruction `autda Xd,Xn`
 for all the possible set of feature that change this dependency:
 
-`FEAT_PAuth` | `FEAT_PAuth2` | `FEAT_FPAC` | Success          | Fail             |
-No           | No            | No          | `N/A`            | `N/A`            |
-Yes          | No            | No          | `pick-basic-dep` | `pick-basic-dep` |
-Yes          | Yes           | No          | `pick-basic-dep` | `basic-dep`      |
-Yes          | Yes           | Yes         | `pick-basic-dep` | Fault (no write) |
+| `FEAT_PAuth` | `FEAT_PAuth2` | `FEAT_FPAC` | Success              | Fail                 |
+|:-------------|:--------------|:------------|:---------------------|:---------------------|
+| No           | No            | No          | `N/A`                | `N/A`                |
+| Yes          | No            | No          | `pick-basic-dep`[^1] | `pick-basic-dep`[^1] |
+| Yes          | Yes           | No          | `pick-basic-dep`[^2] | `basic-dep`[^1]      |
+| Yes          | Yes           | Yes         | `pick-basic-dep`[^2] | Fault (no write)     |
+
+[^1]: Memory model from the ASL implementation
+[^2]: Correspond to the possibility of the `aut*` instruction to predict it's
+    success, because this was one of the demand of the architects in
+    ![this ticket](https://jira.arm.com/browse/AARCH-21866)
 
 ### `ldr` instruction:
 
