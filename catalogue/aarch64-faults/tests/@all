@@ -4,3 +4,6 @@ LDRredF.litmus
 STRdb0F.litmus
 UDF.litmus
 noUDF.litmus
+SVC.litmus
+SVCctrl.litmus
+SVCifetch.litmus

@@ -73,7 +73,7 @@ let DSB-ob =
  | (if "ETS2" || "ETS3" then [Exp & W]; po; [dsb.st]; po; [Imp & TTD & M] else 0)
 
 (* IFB-ordered-before *)
-let EXC-ENTRY-IFB = EXC-ENTRY
+let EXC-ENTRY-IFB = if not "ExS" || "EIS" then EXC-ENTRY else EXC-ENTRY \ SVC
 let EXC-RET-IFB = if not "ExS" || "EOS" then EXC-RET else {}
 let IFB = ISB | EXC-ENTRY-IFB | EXC-RET-IFB
 
