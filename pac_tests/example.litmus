@@ -1,8 +1,9 @@
-AArch64 PAuth1 auth fail: RXn ---no-basic-dep--> WXd
-Variant=pac
+AArch64 PAuth2 with FPAC auth success: RXd ---no-basic-dep--> Fault
+Variant=pac,fpac
 {
-    0:x0=x; 0:x1=42
+    0:x0=x;
 }
-P0          ;
-autda x0,x1 ;
-exists (~Fault(P0))
+P0 ;
+pacdza x0;
+ldr x1,[x0];
+exists (Fault(P0))

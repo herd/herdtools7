@@ -269,7 +269,7 @@ tests to observe the basic dependency between the register-read/write events in
 AArch64 PAuth1 auth success: RXd ---basic-dep--> WXd
 {
     void* x=z; (* Overwrite by P0 to `x` *)
-    void* y=z; (* Overwrite by P0 to `pacdza(x,x0)` *)
+    void* y=z; (* Overwrite by P0 to `pacda(x,0)` *)
     0:x0=x; 0:x1=y; 0:x2=x;
     1:x0=x; 1:x1=y;
 
@@ -420,7 +420,7 @@ tests to observe the basic dependency between the register-read/write events in
 AArch64 PAuth2 without FPAC auth success: RXd ---basic-dep--> WXd
 {
     void* x=z; (* Overwrite by P0 to `x` *)
-    void* y=z; (* Overwrite by P0 to `pacdza(x,x0)` *)
+    void* y=z; (* Overwrite by P0 to `pacda(x,0)` *)
     0:x0=x; 0:x1=y; 0:x2=x;
     1:x0=x; 1:x1=y;
 
@@ -471,8 +471,7 @@ AArch64 PAuth2 without FPAC auth success: RXn ---pick-basic-dep--> WXd
 P0          | P1           ;
 str x2,[x0] | pacda x0,x3  ;
 dmb sy      | ldr x2,[x1]  ;
-str x2,[x1] | autda x0,x2  ;
-            | xpacd x0     ;
+str x2,[x1] | autda x0,x2  ; (* succede if 1:x2=1 *)
             | str x4,[x0]  ;
 exists ( 1:x2=1 /\ [x]=1 )
 (* Forbidden if `SCTLR_EL1.EnDA = 1` *)
@@ -491,8 +490,7 @@ AArch64 PAuth2 without FPAC auth success: RXn ---no-basic-dep--> WXd
 P0          | P1           ;
 str x2,[x0] | pacda x0,x3  ;
 dmb sy      | ldr x2,[x1]  ;
-str x2,[x1] | autda x0,x2  ;
-            | xpacd x0     ;
+str x2,[x1] | autda x0,x2  ; (* succede if 1:x2=1 *)
             | ldr x4,[x0]  ;
 exists ( 1:x2=1 /\ 1:x4=0 )
 (* Always allowed *)
@@ -545,8 +543,108 @@ Otherwise if `SCTLR_EL1.EnDA = 1`, then
     register `Xd`. And a `pick-basic-dep` between the register-read event of the
     register `Xn` and the register-write event of `Xd`.
 - Otherwise, their a fault is generated with a `pick-basic-dep` dependency
-    between the register-read ofs `Xd` and `Xn`, and the fault
+    between the register-read of `Xd` and `Xn`, and the fault
     event.
+
+One can observe those dependencies, as example this is a litmus test to see the
+`basic-dependency` between the register-read event of `Xd` and the
+register-write event of `Xd` in case of success:
+
+```
+AArch64 PAuth2 with FPAC auth success: RXd ---basic-dep--> WXd
+{
+    void* x=z; (* Overwrite by P0 to `x` *)
+    void* y=z; (* Overwrite by P0 to `pacda(x,0)` *)
+    0:x0=x; 0:x1=y; 0:x2=x;
+    1:x0=x; 1:x1=y;
+
+}
+P0          | P1           ;
+str x2,[x0] |              ;
+dmb sy      | ldr x2,[x1]  ;
+pacdza x2   | autdza x2    ;
+str x2,[x1] | eor x3,x2,x2 ;
+            | add x0,x0,x3 ;
+            | ldr x4,[x0]  ;
+exists ( 1:x2=x /\ 1:x4=z )
+(* Always forbidden with fpac because their is an `addr` dependency between
+ * the load and the store in `P1` *)
+```
+
+And here is a litmus test to observe the `pick-basic-dep` between the
+register-read event of `Xn` and the register-write event of `Xd`:
+
+```
+AArch64 PAuth2 with FPAC auth success: RXn ---pick-basic-dep--> WXd
+{
+    0:x0=x; 0:x1=y; 0:x2=1;
+    1:x0=x; 1:x1=y;         1:x3=1; 1:x4=2;
+}
+P0          | P1           ;
+str x2,[x0] | pacda x0,x3  ;
+dmb sy      | ldr x2,[x1]  ;
+str x2,[x1] | autda x0,x2  ; (* succede if 1:x2=1 *)
+            | str x4,[x0]  ;
+exists ( 1:x2=1 /\ [x]=1 )
+(* Forbidden if `SCTLR_EL1.EnDA = 1` *)
+(* Allowed otherwise *)
+```
+
+and a litmus test to see the absence of a `basic-dep`:
+
+```
+AArch64 PAuth2 with FPAC auth success: RXn ---no-basic-dep--> WXd
+{
+    0:x0=x; 0:x1=y; 0:x2=1;
+    1:x0=x; 1:x1=y;         1:x3=1;
+}
+P0          | P1           ;
+str x2,[x0] | pacda x0,x3  ;
+dmb sy      | ldr x2,[x1]  ;
+str x2,[x1] | autda x0,x2  ; (* succede if 1:x2=1 *)
+            | ldr x4,[x0]  ;
+exists ( 1:x2=1 /\ 1:x4=0 )
+(* Always allowed *)
+```
+
+And here are two litmus tests to see the `pick-basic-dep` between the read event
+of `Xd` and `Xn` and the fault event in case of failure:
+
+```
+AArch64 PAuth2 with FPAC auth success: RXn ---pick-basic-dep--> Fault
+{
+    0:x0=x; 0:x1=y; 0:x2=1;
+    1:x0=x; 1:x1=y;
+}
+P0          | P1          | P1.F        ;
+str x2,[x0] |             | ldr x3,[x0] ;
+dmb sy      | ldr x2,[x1] |             ;
+str x2,[x1] | autda x0,x2 |             ;
+            | mov x4,#1   |             ;
+exists ( 1:x2=1 /\ 1:x4=0 /\ 1:x3=0 )
+(* Forbidden if `SCTLR_EL1.EnDA = 1` bebcause of the `pick-basic-dep` *)
+(* Forbidden otherwise bebcause P1 doesn't fault before the `mov x4` instruction *)
+```
+
+And
+
+```
+AArch64 PAuth2 with FPAC auth success: RXd ---pick-basic-dep--> Fault
+{
+    void* x = z;
+    void* y = z;
+    0:x0=x; 0:x1=y; 0:x2=x;
+    1:x0=x; 1:x1=y;
+}
+P0          | P1          | P1.F        ;
+str x2,[x0] |             | ldr x3,[x0] ;
+dmb sy      | ldr x2,[x1] |             ;
+str x2,[x1] | autdza x2   |             ;
+            | mov x4,#1   |             ;
+exists ( 1:x2=x /\ 1:x4=0 /\ 1:x3=0 )
+(* Forbidden if `SCTLR_EL1.EnDA = 1` bebcause of the `pick-basic-dep` *)
+(* Forbidden otherwise bebcause P1 doesn't fault before the `mov x4` instruction *)
+```
 
 ### `aut*` conclusion
 

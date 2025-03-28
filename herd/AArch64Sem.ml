@@ -1505,12 +1505,11 @@ module Make
          * of the rf, co and fr maps... *)
         let mok ma = mok (ma >>= M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical)) in
         let lbl_v = get_instr_label ii in
-        let mfault ma =
-          do_insert_commit ma (fun a ->
-            set_elr_el1 lbl_v ii >>|
-            mk_fault (Some a) dir an ii
-              (Some (FaultType.AArch64.MMU FaultType.AArch64.Translation))
-              None) ii
+        let ft = Some (FaultType.AArch64.MMU FaultType.AArch64.Translation) in
+        let mfault ma a =
+          insert_commit_to_fault ma
+            (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
+            None ii
           >>! B.fault [AArch64Base.elr_el1, lbl_v]
         in
         let ma_with_commit ma =
@@ -1519,7 +1518,7 @@ module Make
         let mcheck ma =
           M.delay_kont "pac check" ma (fun a ma ->
             M.op1 (Op.ArchOp1 AArch64Op.CheckCanonical) a >>= fun c ->
-            M.choiceT c (mok (ma_with_commit ma)) (mfault ma))
+            M.choiceT c (mok (ma_with_commit ma)) (mfault ma a))
         in
         M.delay_kont "pac check virtual" ma (fun a ma ->
           M.op1 Op.IsVirtual a >>= fun virt ->
