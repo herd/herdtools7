@@ -251,8 +251,8 @@ are all well-typed.
   \item \AllApplyCase{range}
   \begin{itemize}
     \item $\vs$ is a slice for the range \texttt{(j, i)}, that is $\SliceRange(\vj, \vi)$;
-    \item $\prelength$ is \texttt{i+:(j-i+1)};
-    \item annotating the slice at offset $\vi$ of length $\prelength$ yields $\vsp$\ProseOrTypeError.
+    \item \Prosebinopliterals{\texttt{j-1+1}}{$\length$};
+    \item annotating the slice at offset $\vi$ of length $\length$ yields $\vsp$\ProseOrTypeError.
   \end{itemize}
 
   \item \AllApplyCase{length}
@@ -271,10 +271,10 @@ are all well-typed.
 
   \item \AllApplyCase{scaled}
   \begin{itemize}
-    \item $\vs$ is a \scaledslice\ \texttt{[factor *: pre\_length]}, that is, \\
-          $\SliceStar(\factor, \prelength)$;
-    \item $\preoffset$ is $\factor * \prelength$;
-    \item annotating the slice at offset $\preoffset$ of length $\prelength$ yields $\vsp$\ProseOrTypeError.
+    \item $\vs$ is a \scaledslice\ \texttt{[factor *:length]}, that is, \\
+          $\SliceStar(\factor, \length)$;
+    \item $\offset$ is $\factor * \length$;
+    \item annotating the slice at offset $\offset$ of length $\length$ yields $\vsp$\ProseOrTypeError.
   \end{itemize}
 \end{itemize}
 
@@ -289,9 +289,9 @@ are all well-typed.
 
 \begin{mathpar}
 \inferrule[range]{
-  \binopliterals(\MINUS, \vj, \vi) \typearrow \prelengthp\\
-  \binopliterals(\PLUS, \prelengthp, \eliteral{1}) \typearrow \prelength\\
-  \annotateslice(\SliceLength(\vi, \prelength)) \typearrow \vsp \OrTypeError
+  \binopliterals(\MINUS, \vj, \vi) \typearrow \lengthp\\
+  \binopliterals(\PLUS, \lengthp, \eliteral{1}) \typearrow \length\\
+  \annotateslice(\SliceLength(\vi, \length)) \typearrow \vsp \OrTypeError
 }{
   \annotateslice(\tenv, \overname{\SliceRange(\vj, \vi)}{\vs}) \typearrow \vsp
 }
@@ -315,10 +315,10 @@ are all well-typed.
 
 \begin{mathpar}
 \inferrule[scaled]{
-  \binopliterals(\MUL, \factor, \prelength) \typearrow \preoffset\\
-  \annotateslice(\SliceLength(\preoffset, \prelength)) \typearrow \vsp \OrTypeError
+  \binopliterals(\MUL, \factor, \length) \typearrow \offset\\
+  \annotateslice(\SliceLength(\offset, \length)) \typearrow \vsp \OrTypeError
 }{
-  \annotateslice(\tenv, \overname{\SliceStar(\factor, \prelength)}{\vs}) \typearrow \vsp
+  \annotateslice(\tenv, \overname{\SliceStar(\factor, \length)}{\vs}) \typearrow \vsp
 }
 \end{mathpar}
 \lrmcomment{\identr{GXKG}: The notation \texttt{b[j:i]} is syntactic sugar for \texttt{b[i+:(j-i+1)]}.}

@@ -1003,6 +1003,7 @@
 
 \newcommand\unopliterals[0]{\hyperlink{def-unopliterals}{\textfunc{unop\_literals}}}
 \newcommand\binopliterals[0]{\hyperlink{def-binopliterals}{\textfunc{binop\_literals}}}
+\newcommand\Prosebinopliterals[2]{statically evaluating #1 yields #2}
 \newcommand\foldbitvectorfields[0]{\hyperlink{def-foldbitvectorfields}{\textfunc{fold\_bitvector\_fields}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1268,7 +1269,8 @@
 \newcommand\declareglobalstorage[0]{\hyperlink{def-declareglobalstorage}{\textfunc{declare\_global\_storage}}}
 \newcommand\annotatefuncsig[0]{\hyperlink{def-annotatefuncsig}{\textfunc{annotate\_func\_sig}}}
 \newcommand\checkparamdecls[0]{\hyperlink{def-checkparamdecls}{\textfunc{check\_param\_decls}}}
-\newcommand\typesinfuncsig[0]{\hyperlink{def-typesinfuncsig}{\textfunc{types\_in\_func\_sig}}}
+\newcommand\extractparameters[0]{\hyperlink{def-extractparameters}{\textfunc{extract\_parameters}}}
+\newcommand\funcsigtypes[0]{\hyperlink{def-funcsigtypes}{\textfunc{func\_sig\_types}}}
 \newcommand\paramsofty[0]{\hyperlink{def-paramsofty}{\textfunc{parameters\_of\_ty}}}
 \newcommand\paramsofexpr[0]{\hyperlink{def-paramsofexpr}{\textfunc{parameters\_of\_expr}}}
 \newcommand\paramsofconstraint[0]{\hyperlink{def-paramsofconstraint}{\textfunc{parameters\_of\_constraint}}}
@@ -2327,9 +2329,6 @@
 \newcommand\positionstwo[0]{\texttt{positions2}}
 \newcommand\positionsoneopt[0]{\texttt{positions1\_opt}}
 \newcommand\positionstwoopt[0]{\texttt{positions2\_opt}}
-\newcommand\prelength[0]{\texttt{pre\_length}}
-\newcommand\prelengthp[0]{\texttt{pre\_length'}}
-\newcommand\preoffset[0]{\texttt{pre\_offset}}
 \newcommand\range[0]{\texttt{range}}
 \newcommand\rangeopt[0]{\texttt{range\_opt}}
 \newcommand\ranges[0]{\texttt{ranges}}
@@ -3021,3 +3020,7 @@
 \newcommand\rotate[0]{\texttt{rotate}}
 \newcommand\declaredparam[0]{\texttt{declared\_param}}
 \newcommand\caninsertstdlibparam[0]{\texttt{can\_insert\_stdlib\_param}}
+\newcommand\inferredparameters[0]{\texttt{inferred\_parameters}}
+\newcommand\declaredparameters[0]{\texttt{declared\_parameters}}
+\newcommand\allparameters[0]{\texttt{all\_parameters}}
+\newcommand\uniqueparameters[0]{\texttt{unique\_parameters}}

@@ -15,11 +15,12 @@ Bitfields are not associated with a semantic relation.
   \item The expression \texttt{myData.data} evaluates to the same value as \\
         \verb|myData[3:0] :: myData[8:5]|, with type \verb|bits(8)|;
   \item There is no bitfield which accesses \verb|myData[15:10]|;
-  \item The value field overlaps with the other fields;
-  \item The slices \verb|3:0| and \verb|8:5| which define \texttt{data} do not overlap.
+  \item The \verb|value| field overlaps with the other fields;
+  \item The slices \verb|3:0| and \verb|8:5| which define \texttt{data} do not overlap each other,
+        but they do overlap \verb|value|.
 \end{itemize}
-Note that in the \texttt{data} bitfield, bits |3:0| come before bits |8:5|,
-which is a different order from their occurrence in \texttt{myData}.
+Note that in the \texttt{data} bitfield, bits |3:0| come before and are more significant than
+bits |8:5|, which is a different order from their occurrence in \texttt{myData}.
 
 \hypertarget{def-singleslice}{}
 \hypertarget{def-rangeslice}{}
@@ -472,7 +473,8 @@ The function
   \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 checks whether the set of positions in $\positions$ fit within the bitvector width given by $\vwidth$,
-yielding $\True$. \ProseOtherwiseTypeError
+yielding $\True$.
+\ProseOtherwiseTypeError
 
 \ExampleDef{Checking Whether Slice Positions Fit in a Bitvector Width}
 In \listingref{bitfieldslicetopositions}, all slices declared for all bitfields
@@ -486,8 +488,8 @@ fit in the bitvector width $16$, whereas the positions defined for the bitfield
 \begin{itemize}
     \item define $\minpos$ as the minimal position in $\positions$;
     \item define $\maxpos$ as the maximal position in $\positions$;
-    \item checking that $\minpos$ is non-negative and that $\maxpos$ is less than or equal to $\vwidth$
-            yields $\True$\ProseTerminateAs{\BadSlices}.
+    \item checking that $\minpos$ is non-negative and that $\maxpos$ is less than $\vwidth$
+          yields $\True$\ProseTerminateAs{\BadSlices}.
     \item the result is $\True$.
 \end{itemize}
 
@@ -496,7 +498,7 @@ fit in the bitvector width $16$, whereas the positions defined for the bitfield
 \inferrule{
     \minpos \eqdef \min(\positions)\\
     \maxpos \eqdef \max(\positions)\\
-    \checktrans{0 \leq \minpos \land \maxpos \leq \vwidth}{\BadSlices} \typearrow \True \OrTypeError
+    \checktrans{0 \leq \minpos \land \maxpos < \vwidth}{\BadSlices} \typearrow \True \OrTypeError
 }{
     \checkpositionsinwidth(\vwidth, \positions) \typearrow \True
 }
@@ -583,6 +585,7 @@ in \listingref{bitfieldslicetopositions}, followed by examples of erroneous slic
 
 \begin{table}[h]
 \caption{Converting Bitfield Slices to Positions\label{ta:bitfieldslicetopositions}}
+\begin{center}
 \begin{tabular}{ll}
   \textbf{Slice} & \textbf{Optional Set of Positions}\\
   \hline
@@ -595,6 +598,7 @@ in \listingref{bitfieldslicetopositions}, followed by examples of erroneous slic
   \verb|5+:0| & $\BadSlices$\\
   \verb|4*:0| & $\BadSlices$\\
 \end{tabular}
+\end{center}
 \end{table}
 
 \ASLListing{Converting bitfield slices to positions}{bitfieldslicetopositions}{\typingtests/TypingRule.BitfieldSliceToPositions.asl}
