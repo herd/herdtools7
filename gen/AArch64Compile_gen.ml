@@ -1725,6 +1725,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let get_tagged_loc e = add_tag (as_data e.C.loc) e.C.tag
 
+    let add_label_to_instructions e cs =
+      match e.C.check_fault with
+      | Some (label_name, _) -> 
+        (* Always label the last instruction,
+           which should be the actual load or store. *)
+        let length = List.length cs in
+        List.mapi 
+        ( fun index instr ->
+            if index = (length - 1) then
+                Label(label_name, instr)
+            else instr ) cs
+      | None -> cs 
+
     let emit_access  st p init e = match e.C.dir,e.C.loc with
     | None,_ -> Warn.fatal "AArchCompile.emit_access"
     | Some d,Code lab ->
@@ -1756,12 +1769,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             assert (Misc.is_none m) ;
             Some (a,Some (MachSize.S128,0))
           | _ -> Some (a,m) end in
-        begin match d,atom with
+        (* Compile the node.
+           - `regs`, registers
+           - `inits`, initial values
+           - `cs`, instructions
+           - `st`, states
+        *)
+        let regs,inits,cs,st = begin match d,atom with
         | R,None ->
             let r,init,cs,st = LDR.emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (Acq _,None) ->
-            let r,init,cs,st = LDAR.emit_load st p init loc  in
+            let r,init,cs,st = LDAR.emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (Acq a,Some (sz,o)) ->
             let module L =
@@ -1777,7 +1796,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let cs2 = emit_ldr_addon a r in
             Some r,init,cs@pseudo cs2,st
         | R,Some (AcqPc _,None) ->
-            let r,init,cs,st = LDAPR.emit_load st p init loc  in
+            let r,init,cs,st = LDAPR.emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (AcqPc a,Some (sz,o)) ->
             let module L =
@@ -1926,7 +1945,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
            let init,cs,st = emit_store st p init loc e.C.v in
            None,init,cs,st
         | W,Some (Neon _,Some _) -> assert false
-        end
+        end in
+        (* Add a label to instructions `cs`, when a fault check is required. *)
+        let cs = add_label_to_instructions e cs in
+        regs,inits,cs,st
+    (* END of emit_access *)
 
     let same_sz sz1 sz2 = match sz1,sz2 with
       | None,None -> true
