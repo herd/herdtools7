@@ -1303,8 +1303,8 @@ The function
 \annotatereturntype(
   \overname{\staticenvs}{\tenvwithparams} \aslsep
   \overname{\staticenvs}{\tenvwithargs} \aslsep
-  \overname{\langle\ty\rangle}{\vreturntype \aslsep
-  \overname{\TSideEffectSet}{\vsesin}}
+  \overname{\langle\ty\rangle}{\vreturntype} \aslsep
+  \overname{\TSideEffectSet}{\vsesin}
 ) & \aslto \\
 (\overname{\staticenvs}{\newtenv} \times \overname{\ty}{\newreturntype} \times \overname{\TSideEffectSet}{\vses})
 \cup \overname{\TTypeError}{\TypeErrorConfig} &
@@ -1331,7 +1331,7 @@ and the inferred \sideeffectsetterm\ $\vses$.
 
   \item \AllApplyCase{has\_return\_type}
   \begin{itemize}
-    \item $\returntype$ is $\langle\tty\rangle$;
+    \item $\vreturntype$ is $\langle\tty\rangle$;
     \item annotating $\tty$ in $\tenvwithparams$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
     \item \Prosecheckisnotcollection{$\tenv$}{$\ttyp$};
     \item $\newreturntype$ is $\langle\ttyp\rangle$;
