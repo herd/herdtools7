@@ -231,7 +231,7 @@ yielding a modified global static environment $\newgenv$ and annotated global st
 \listingref{DeclareGlobalStorage-config} shows examples of well-typed global storage declarations
 and ill-typed global storage declarations in comments,
 focused on \verb|config| storage elements.
-\ASLListing{Config storage elements}{DeclareGlobalStorage-config}{\typingtests/TypingRule.DeclareGlobalStorage.config.asl}
+\ASLListing{Configuration storage elements}{DeclareGlobalStorage-config}{\typingtests/TypingRule.DeclareGlobalStorage.config.asl}
 
 \listingref{DeclareGlobalStorage-non-config} shows examples of well-typed global storage declarations,
 and ill-typed global storage declarations in comments,
@@ -240,7 +240,7 @@ focused on storage elements that are not \verb|config|.
 
 The specification in \listingref{DeclareGlobalStorage-bad3} is illegal since
 \texttt{config} storage elements must have an initializing expression.
-\ASLListing{Uninitialized config declaration}{DeclareGlobalStorage-bad3}{\typingtests/TypingRule.DeclareGlobalStorage.bad3.asl}
+\ASLListing{Uninitialized configuration storage declaration}{DeclareGlobalStorage-bad3}{\typingtests/TypingRule.DeclareGlobalStorage.bad3.asl}
 
 The specifications in \listingref{DeclareGlobalStorage-bad1} and \listingref{DeclareGlobalStorage-bad2}
 are ill-typed since
@@ -248,8 +248,8 @@ are ill-typed since
 which requires that all expressions used in its type annotation and initializing expression
 also have the $\timeframeconstant$ \timeframeterm,
 whereas \verb|b| has the $\timeframeexecution$ \timeframeterm.
-\ASLListing{Ill-typed config declaration}{DeclareGlobalStorage-bad1}{\typingtests/TypingRule.DeclareGlobalStorage.bad1.asl}
-\ASLListing{Ill-typed config declaration}{DeclareGlobalStorage-bad2}{\typingtests/TypingRule.DeclareGlobalStorage.bad2.asl}
+\ASLListing{Ill-typed configuration storage declaration}{DeclareGlobalStorage-bad1}{\typingtests/TypingRule.DeclareGlobalStorage.bad1.asl}
+\ASLListing{Ill-typed configuration storage declaration}{DeclareGlobalStorage-bad2}{\typingtests/TypingRule.DeclareGlobalStorage.bad2.asl}
 
 See \ExampleRef{Rejected Declaration Because of Precision Loss} for an example
 of an ill-typed global storage declaration due to precision loss.
@@ -530,11 +530,11 @@ binds $\vy$ to $\lint(5040)$ in the $\constantvalues$ map of the global static e
 \ExampleDef{Updating the Global Storage for Configuration Storage Elements}
 The specification in \listingref{UpdateGlobalStorage-config}
 shows well-typed global storage \texttt{config} elements.
-\ASLListing{Updating the global storage for config storage elements}{UpdateGlobalStorage-config}{\typingtests/TypingRule.UpdateGlobalStorage.config.asl}
+\ASLListing{Updating the global storage for configuration storage elements}{UpdateGlobalStorage-config}{\typingtests/TypingRule.UpdateGlobalStorage.config.asl}
 
 The specification in \listingref{UpdateGlobalStorage-config-bad}
 is ill-typed, since only a \Prosesingulartype{} can be used for \texttt{config} storage elements.
-\ASLListing{An ill-typed global storage config storage element}{UpdateGlobalStorage-config-bad}{\typingtests/TypingRule.UpdateGlobalStorage.config.bad.asl}
+\ASLListing{An ill-typed configuration storage element}{UpdateGlobalStorage-config-bad}{\typingtests/TypingRule.UpdateGlobalStorage.config.bad.asl}
 
 \ProseParagraph
 \OneApplies

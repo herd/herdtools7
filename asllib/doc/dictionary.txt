@@ -315,6 +315,7 @@ classify
 classifying
 clause
 clauses
+closed
 closer
 closest
 closing
@@ -554,6 +555,7 @@ difference
 different
 differentiating
 differently
+differing
 digits
 directive
 directly
@@ -563,6 +565,7 @@ discarding
 discards
 disclaimer
 disclosure
+discriminant
 discussed
 disjoint
 disjunction
@@ -729,6 +732,7 @@ explicitly
 exploded
 exploding
 exponent
+exponentiation
 export
 exposes
 express
@@ -938,6 +942,7 @@ includes
 including
 incomplete
 incorrect
+incorrectly
 increasing
 increments
 indeed
@@ -1828,6 +1833,7 @@ succeed
 succeeding
 succeeds
 success
+successful
 successfully
 successive
 succinctly
@@ -2005,6 +2011,7 @@ understanding
 undertaken
 unevaluated
 unexpected
+uninitialized
 unintended
 union
 unique
