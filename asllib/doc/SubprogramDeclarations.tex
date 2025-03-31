@@ -515,8 +515,11 @@ We also define the following helper rules:
 The function
 \[
   \annotateanddeclarefunc(\overname{\globalstaticenvs}{\tenv}, \overname{\func}{\funcsig})
-  \aslto (\overname{\staticenvs}{\tenv} \times \overname{\func}{\newfuncsig} \times \overname{\TSideEffectSet}{\vses})
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto
+  \begin{array}{l}
+  (\overname{\staticenvs}{\tenv} \times \overname{\func}{\newfuncsig} \times \overname{\TSideEffectSet}{\vses})\ \cup\\
+  \overname{\TTypeError}{\TypeErrorConfig}
+  \end{array}
 \]
 annotates a subprogram definition $\funcsig$ in the global static environment $\genv$,
 yielding a new subprogram definition $\newfuncsig$, a modified static environment
@@ -534,7 +537,6 @@ $\newtenv$, and an inferred \sideeffectsetterm\ $\vses$.
         and new $\func$ node $\newfuncsig$\ProseOrTypeError;
   \item \Proseeqdef{$\vses$}{$\vsesfone$}.
 \end{itemize}
-\CodeSubsection{\AnnotateAndDeclareFuncBegin}{\AnnotateAndDeclareFuncEnd}{../Typing.ml}
 
 \FormallyParagraph
 \begin{mathpar}
@@ -545,6 +547,7 @@ $\newtenv$, and an inferred \sideeffectsetterm\ $\vses$.
   \annotateanddeclarefunc(\genv, \funcsig) \typearrow (\newtenv, \newfuncsig, \overname{\vsesfone}{\vses})
 }
 \end{mathpar}
+\CodeSubsection{\AnnotateAndDeclareFuncBegin}{\AnnotateAndDeclareFuncEnd}{../Typing.ml}
 
 \TypingRuleDef{AnnotateFuncSig}
 \hypertarget{def-annotatefuncsig}{}
@@ -552,7 +555,7 @@ The function
 \[
   \annotatefuncsig(\overname{\globalstaticenvs}{\genv}, \overname{\func}{\funcsig})
   \aslto (\overname{\staticenvs}{\newtenv} \times \overname{\func}{\newfuncsig} \times \overname{\TSideEffect}{\vses})
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates the signature of a function definition $\funcsig$ in the global static environment $\genv$,
 yielding a new function definition $\newfuncsig$,
@@ -570,15 +573,14 @@ an inferred \sideeffectsetterm\ $\vses$.
         $\annotateparams$ yields $(\tenvwithparams, \vseswithparams, \params)$\ProseOrTypeError;
   \item checking that the parameters $\funcsig.\funcparameters$ are declared correctly using $\checkparamdecls$, yields $\True$\ProseOrTypeError;
   \item annotating and declaring the arguments $\funcsig.\funcargs$ in $\tenvwithparams$ using $\annotateargs$
-        and $\vseswithparams$ yields
+        and $\vseswithparams$ yields\\
         $(\tenvwithargs, \vseswithargs, \vargs)$\ProseOrTypeError;
-  \item annotating the return type of $\funcsig$ in $\tenvwithparams$ using \\ $\annotatereturntype$ and $\vseswithargs$, yields
+  \item annotating the return type of $\funcsig$ in $\tenvwithparams$ using \\ $\annotatereturntype$ and $\vseswithargs$, yields\\
         $(\newtenv, \vreturntype, \vseswithreturn)$\ProseOrTypeError;
   \item \Proseeqdef{$\vses$}{$\vseswithreturn$ with all instances of \ReadLocal\ and \WriteLocalTerm\ removed};
   \item $\newfuncsig$ is $\funcsig$ with the annotated parameters $\vparams$, annotated arguments $\vargs$, annotated return type $\vreturntype$,
         and $\vrecurselimit$ as its recursion limit.
 \end{itemize}
-\CodeSubsection{\AnnotateFuncSigBegin}{\AnnotateFuncSigEnd}{../Typing.ml}
 
 \FormallyParagraph
 \begin{mathpar}
@@ -624,6 +626,7 @@ an inferred \sideeffectsetterm\ $\vses$.
   \annotatefuncsig(\genv, \funcsig) \typearrow (\newtenv, \newfuncsig, \vses)
 }
 \end{mathpar}
+\CodeSubsection{\AnnotateFuncSigBegin}{\AnnotateFuncSigEnd}{../Typing.ml}
 
 \TypingRuleDef{AnnotateParams}
 \hypertarget{def-annotateparams}{}
@@ -636,7 +639,7 @@ The function
   (\overname{\staticenvs}{\newtenv} \times \overname{(\identifier\times\ty)^*}{\acc})
 ) \aslto \\
 (\overname{\staticenvs}{\tenvwithparams} \times \overname{\identifier\times\ty}{\paramsone})
-\cup \overname{\TTypeError}{\TypeErrorConfig}
+\cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
 annotates each parameter in $\params$ with respect to $\tenv$,
@@ -700,7 +703,7 @@ The function
   (\overname{\identifier}{\vx} \times \overname{\langle\ty\rangle}{\tyopt})
 ) \aslto
 (\overname{\staticenvs}{\newtenvp} \times \overname{\ty}{\tty})
-\cup \overname{\TTypeError}{\TypeErrorConfig}
+\cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
 annotates the parameter given by $\vx$ and the \optional\ type $\tyopt$
@@ -759,9 +762,18 @@ The updated environment $\newtenvp$ and annotated parameter type $\tty$ are retu
 \hypertarget{def-checkparamdecls}{}
 The function
 \[
-\checkparamdecls(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\checkparamdecls(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \aslto \overname{\Bool}{\vb} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
 checks the validity of the parameters declared in $\funcsig$.
+
+\ExampleDef{Checking Parameter Declarations}
+
+In \listingref{ParametersOfExpr}, the list of extracted parameters \verb|B, C, D, E, F, G|
+is equal to the list of declared parameters.
+
+The specification in \listingref{CheckParamDecls-bad} is ill-typed, since the list of extracted
+\verb|D, A, B, C| while the list of declared parameters is \verb|A, B, C, D|.
+\ASLListing{Incorrectly declaring subprogram parameters}{CheckParamDecls-bad}{\typingtests/TypingRule.CheckParamDecls.bad.asl}
 
 \ProseParagraph
 \AllApply
@@ -788,7 +800,7 @@ checks the validity of the parameters declared in $\funcsig$.
 The function
 \[
 \extractparameters(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \aslto \overname{\identifier^*}{\uniqueparameters}
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
 returns the parameter names declared in $\funcsig$ into $\allparameters$, while checking their validity in the static environment $\tenv$.
 \ProseOtherwiseTypeError
@@ -882,7 +894,7 @@ in comments above their declarations.
 The function
 \[
 \paramsofty(\overname{\staticenvs}{\tenv}, \overname{\ty}{\tty}) \typearrow \overname{\identifier^*}{\ids}
-\cup \overname{\TTypeError}{\TypeErrorConfig}
+\cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
 extracts the list of parameters appearing in the type $\tty$,
 assuming that $\tty$ appears in a function signature.
@@ -1005,7 +1017,7 @@ in \listingref{ParametersOfTy} are as follows:
 The function
 \[
 \paramsofexpr(\overname{\staticenvs}{\tenv}, \overname{\expr}{\ve}) \typearrow \overname{\identifier^*}{\ids}
-\cup \overname{\TTypeError}{\TypeErrorConfig}
+\cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
 extracts the list of parameters appearing in the expression $\ve$.
 It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellconstrainedintegertype{} in a function signature.
@@ -1200,7 +1212,7 @@ The function
   \overname{\TSideEffectSet}{\vsesin})
 ) \aslto \\
 (\overname{\staticenvs}{\tenvwithargs} \times \overname{(\identifier\times\ty)^*}{\vnewargs} \times \overname{\TSideEffectSet}{\vses})
-\cup \overname{\TTypeError}{\TypeErrorConfig}
+\cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
 annotates each argument in $\args$ with respect to $\tenv$ and a \sideeffectsetterm\ $\vsesin$,
@@ -1248,7 +1260,7 @@ In \listingref{typing-parameterofconstraint}, the annotated arguments are
   \annotateonearg(\tenv, \newtenv, (\vx, \tty)) \typearrow (\newtenvp, \ttyp, \vsesty) \OrTypeError \\\\
   \accp \eqdef \acc \concat [(\vx, \ttyp)] \\\\
   \annotateargs(\tenv, \vargsp, (\newtenvp, \accp), \vsesin) \typearrow (\tenvwithargs, \newargs, \newses) \OrTypeError\\\\
-  \vses \eqdef \vsesty \cup \newses
+  \vses \eqdef \vsesty \cup\ \newses
 }{
   \annotateargs(\tenv, \args, (\newtenv, \acc), \vsesin) \typearrow (\tenvwithargs, \newargs, \vses)
 }
@@ -1264,7 +1276,7 @@ The function
   (\overname{\identifier}{\vx} \times \overname{\ty}{\tty})
 ) \aslto
 (\overname{\staticenvs}{\newtenvp} \times\ \overname{\ty}{\ttyp} \times \overname{\TSideEffectSet}{\vses})
-\cup \overname{\TTypeError}{\TypeErrorConfig}
+\cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates the argument given by the identifier $\vx$ and the type $\tty$
 with respect to $\tenv$ and then declares the parameter $\vx$ in environment $\newtenv$.
@@ -1307,7 +1319,7 @@ The function
   \overname{\TSideEffectSet}{\vsesin}
 ) & \aslto \\
 (\overname{\staticenvs}{\newtenv} \times \overname{\ty}{\newreturntype} \times \overname{\TSideEffectSet}{\vses})
-\cup \overname{\TTypeError}{\TypeErrorConfig} &
+\cup\ \overname{\TTypeError}{\TypeErrorConfig} &
 \end{array}
 \]
 annotates the \optional\ return type $\vreturntype$ in the context of the static environment
@@ -1317,6 +1329,17 @@ The result is $\newtenv$, which is the input $\tenvwithargs$ (where all paramete
 with the \optional{} annotated return type $\newreturntype$ added
 and the inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Annotating Subprogram Return Types}
+In \listingref{MatchFuncRes}, the subprogram \verb|proc| has no return type.
+Annotating its return type does not modify the static environment, and the optional annotated return type is $\None$.
+In contrast, the subprogram \verb|returns_value| updates the static environment by
+binding $\funcreturntype$ to $\unconstrainedinteger$ and returning $\unconstrainedinteger$
+as the optional return type.
+
+The specification in \listingref{AnnotateReturnType-bad} is ill-typed, since collection types are not allowed
+as return types.
+\ASLListing{An ill-typed return type}{AnnotateReturnType-bad}{\typingtests/TypingRule.AnnotateReturnType.bad.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1358,7 +1381,7 @@ and the inferred \sideeffectsetterm\ $\vses$.
   \checkisnotcollection(\tenv, \ttyp) \typearrow \True \OrTypeError\\\\
   \newreturntype \eqdef \langle\ttyp\rangle\\
   \newtenv \eqdef (G^\tenvwithargs, L^\tenvwithargs[\funcreturntype\mapsto\newreturntype])\\
-  \vses \eqdef \vsesin \cup \vsesty
+  \vses \eqdef \vsesin \cup\ \vsesty
 }{
   {
   \begin{array}{r}
@@ -1378,7 +1401,7 @@ The function
     \overname{\func}{\funcsig} \aslsep
     \overname{\TSideEffectSet}{\vsesfuncsig})
   \aslto (\overname{\staticenvs}{\newtenv} \times \overname{\func}{\newfuncsig})
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
 checks that a subprogram defined by $\funcsig$
 and associated with the \sideeffectsetterm\ $\vsesfuncsig$
@@ -1446,7 +1469,7 @@ resulting in an annotated function definition $\newfuncdef$ and new static envir
                 \} &&&
       \end{array}
     }\\
-    \initses \eqdef \vsesfuncsig \cup \{ \RecursiveCall(\namep) \}\\
+    \initses \eqdef \vsesfuncsig \cup\ \{ \RecursiveCall(\namep) \}\\
     \addsubprogram(\tenvone, \namep, \funcsigone, \initses) \typearrow \newtenv \OrTypeError
 }{
   \declareonefunc(\tenv, \funcsig) \typearrow (\newtenv, \newfuncsig)
@@ -1459,14 +1482,15 @@ resulting in an annotated function definition $\newfuncdef$ and new static envir
 \hypertarget{def-subprogramclash}{}
 The function
 \[
-  \subprogramclash(
+\subprogramclash
+  (
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\Strings}{\name} \aslsep
     \overname{\subprogramtype}{\subpgmtype} \aslsep
     \overname{\ty^*}{\formaltypes}
   )
   \aslto
-  \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \overname{\Bool}{\vb} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
 checks whether the unique subprogram associated with $\name$
 clashes with another subprogram
@@ -1474,8 +1498,18 @@ that has subprogram type $\subpgmtype$ and list of formal types $\formaltypes$,
 yielding a Boolean value in $\vb$.
 \ProseOtherwiseTypeError
 
-The function is only defined when there exists a binding for $\name$ in the
+The function assumes there exists a binding for $\name$ in the
 $\subprograms$ map of $\tenv$.
+
+\ExampleDef{Subprogram Clashing}
+In \listingref{SubprogramTypesClash}, the getter for \verb|X| and the setter for \verb|X| do not clash,
+since they have non-clashing subprogram types (see \TypingRuleRef{SubprogramTypesClash}).
+
+In \listingref{SubprogramTypesClash-bad1}, the getter for \verb|X| and the function \verb|X| clash,
+since their subprogram types clash and their signatures clash (see \TypingRuleRef{HasArgClash}).
+
+In \listingref{SubprogramTypesClash-bad2}, the function \verb|X| and the procedure \verb|X| clash
+since their subprogram types clash and their signatures clash.
 
 \ProseParagraph
 \AllApply
@@ -1564,7 +1598,7 @@ The function
     \overname{\subprogramtype}{\subpgmtype})
   & \aslto\\
   (\overname{\staticenvs}{\newtenv} \times \overname{\Strings}{\newname})
-  \cup \overname{\TTypeError}{\TypeErrorConfig} &
+  \cup\ \overname{\TTypeError}{\TypeErrorConfig} &
   \end{array}
 \]
 ensures that the subprogram given by the identifier $\name$, list of formals $\formals$,
@@ -1574,6 +1608,27 @@ The result is the unique subprogram identifier $\newname$, which is used to dist
 of overloaded subprograms (that is, other subprograms that share the same name)
 and the environment $\newtenv$, which is updated with $\newname$.
 \ProseOtherwiseTypeError
+
+The function $\addnewfunc$ updates the $\overloadedsubprograms$ map in the static environment,
+and must be followed by $\addsubprogram$, which updates the $\subprograms$ map (see \TypingRuleRef{AddSubprogram}).
+
+\ExampleDef{Updating the Static Environment for a Subprogram}
+The specification in \listingref{DeclareSubprograms}
+contains two subprograms named \verb|add_10| with the signatures
+\verb|func add_10(x: integer) => integer| and
+\verb|func add_10(x: real) => real|, which for brevity we will refer to by
+$I$ and $R$, respectively.
+These subprograms are added to the static environment
+based on the dependency ordering \\
+(see \TypingRuleRef{DeclDependencies}).
+In this case, there is no ordering between these two subprograms.
+Assuming $I$ is processed before $R$, adding $I$ to the
+static environment, the static environment has
+$\overloadedsubprograms(\addten) = \bot$
+and is then updated by binding $\addten$ to $\{\addten\}$ in $\overloadedsubprograms$.
+Then, processing $R$, results in
+binding $\addten$ to
+$\{\addten, \addtenone\}$ where \addtenone{} will be used for $R$.
 
 \ProseParagraph
 \OneApplies
@@ -1601,6 +1656,7 @@ and the environment $\newtenv$, which is updated with $\newname$.
           $\{\newname\}$.
   \end{itemize}
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[first\_name]{
@@ -1625,7 +1681,7 @@ and the environment $\newtenv$, which is updated with $\newname$.
     \end{array}\right)
   }\\\\
   \namep \in \othernames: \checktrans{\neg\vb_{\namep}}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError\\\\
-  \newtenv \eqdef (G^\tenv.\overloadedsubprograms[\name\mapsto \othernames \cup \{\newname\}],  L^\tenv)
+  \newtenv \eqdef (G^\tenv.\overloadedsubprograms[\name\mapsto \othernames \cup\ \{\newname\}],  L^\tenv)
 }{
   \addnewfunc(\tenv, \name, \formals, \subpgmtype) \typearrow
   (\newtenv, \newname)

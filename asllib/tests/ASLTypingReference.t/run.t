@@ -557,3 +557,14 @@ ASL Typing Tests / annotating types:
   File TypingRule.SubprogramTypesClash.bad2.asl, line 1, characters 0 to 40:
   ASL Typing error: cannot declare already declared element "X".
   [1]
+  $ aslref TypingRule.CheckParamDecls.bad.asl
+  File TypingRule.CheckParamDecls.bad.asl, line 3, character 0 to line 9,
+    character 4:
+  ASL Typing error: incorrect parameter declaration for "parameter_lists",
+    expected {D, A, B, C} but {A, B, C, D} provided
+  [1]
+  $ aslref TypingRule.AnnotateReturnType.bad.asl
+  File TypingRule.AnnotateReturnType.bad.asl, line 4, character 0 to line 7,
+    character 4:
+  ASL typing error: unexpected collection.
+  [1]
