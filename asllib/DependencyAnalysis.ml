@@ -164,12 +164,20 @@ and use_decl d =
   | D_GlobalStorage { initial_value; ty; name = _; keyword = _ } ->
       use_option use_e initial_value $ use_option use_ty ty
   | D_Func
-      { body; name = _; args; return_type; parameters; subprogram_type = _ }
-    -> (
+      {
+        body;
+        name = _;
+        args;
+        return_type;
+        parameters;
+        subprogram_type = _;
+        recurse_limit;
+      } ->
       use_named_list use_ty args
       $ use_option use_ty return_type
       $ use_named_list (use_option use_ty) parameters
-      $ match body with SB_ASL s -> use_s s | SB_Primitive _ -> Fun.id)
+      $ (match body with SB_ASL s -> use_s s | SB_Primitive _ -> Fun.id)
+      $ use_option use_e recurse_limit
   | D_Pragma (name, args) -> NameSet.add (Other name) $ use_es args
 
 and use_subtypes (x, subfields) =
