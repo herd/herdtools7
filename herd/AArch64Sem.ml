@@ -1085,14 +1085,13 @@ module Make
             (fun loc v -> Act.tag_access quad Dir.W loc v) ii
         else m a
 
-(* Perform the authentication operation of the `AUT*` instruction, assume that
- * the CPU can "predict" if the authentication will succede, such that in case
- * of success, their is no basic-dep (only a pick-basic-dep) between the
- * register-read event of the morifier, and the register-write event of the
- * destination *)
-      let pauth2_with_fpac pointer modifier key ii mok mfault =
-        let mfault md mn =
-          (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ -> mfault in
+      let authentication pointer modifier key ii mop mfault =
+        let mfail md mn = if fpac then
+            (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ -> mfault
+          else
+            md >>| mn >>= fun (xd,xn) ->
+            mop (M.op (Op.ArchOp (AArch64Op.AddPAC (false,key))) xd xn)
+        in
 
         let original_pointer md =
           md >>= M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical) in
@@ -1100,41 +1099,6 @@ module Make
         (* data_input_next allow to not have a control depedency between the
          * commit event and the register-read event in Xd *)
         let mok md mn =
-          (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ ->
-          (M.data_input_next (original_pointer md) (fun ptr -> mok (M.unitT ptr)))
-        in
-
-        let auth_check xd xn =
-          M.op (Op.ArchOp (AArch64Op.AddPAC (false,key))) xd xn >>=
-          M.op1 (Op.ArchOp1 AArch64Op.CheckCanonical)
-        in
-
-        M.delay_kont "read pointer" pointer (fun xd md ->
-          M.delay_kont "read modifier" modifier (fun xn mn ->
-            auth_check xd xn >>= fun c ->
-            M.choiceT c
-              (mok md mn)
-              (mfault md mn)
-          )
-        )
-
-(* Perform the authentication operation of the `AUT*` instruction, assume that
- * the CPU can "predict" if the authentication will succede, such that in case
- * of success, their is no basic-dep (only a pick-basic-dep) between the
- * register-read event of the morifier, and the register-write event of the
- * destination *)
-      let pauth2_without_fpac pointer modifier key ii mop =
-        let mfail md mn =
-          md >>| mn >>= fun (xd,xn) ->
-          mop (M.op (Op.ArchOp (AArch64Op.AddPAC (false,key))) xd xn)
-        in
-
-        let original_pointer md =
-          md >>= M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical) in
-
-        (* data_input_next allow to not have a control depedency between the
-         * commit event and the register-read event in Xd *)
-        let mop md mn =
           (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ ->
           (M.data_input_next (original_pointer md) (fun ptr -> mop (M.unitT ptr)))
         in
@@ -1148,7 +1112,7 @@ module Make
           M.delay_kont "read modifier" modifier (fun xn mn ->
             auth_check xd xn >>= fun c ->
             M.choiceT c
-              (mop md mn)
+              (mok md mn)
               (mfail md mn)
           )
         )
@@ -1507,7 +1471,7 @@ module Make
         let lbl_v = get_instr_label ii in
         let ft = Some (FaultType.AArch64.MMU FaultType.AArch64.Translation) in
         let mfault ma a =
-          insert_commit_to_fault ma
+          do_insert_commit_to_fault ma
             (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
             None ii
           >>! B.fault [AArch64Base.elr_el1, lbl_v]
@@ -1586,17 +1550,16 @@ module Make
             let m = lift_kvm dir updatedb mop ma an ii mphy in
             (* M.short will add an iico_data only if memtag is enabled *)
             M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
+          else if pac then
+            lift_pac_virt mop ma dir an ii
           else if checked then
-            if pac then
-              lift_pac_virt mop ma dir an ii
-            else
-              lift_memtag_virt mop ma dir an ii
+            lift_memtag_virt mop ma dir an ii
           else
             mop Access.VIR ma >>= M.ignore >>= B.next1T
 
       let do_ldr rA sz an mop ma ii =
 (* Generic load *)
-        lift_memop rA Dir.R false (memtag || pac)
+        lift_memop rA Dir.R false memtag
           (fun ac ma _mv -> (* value fake here *)
             let open Precision in
             let memtag_sync =
@@ -1611,7 +1574,7 @@ module Make
 
 (* Generic store *)
       let do_str rA mop sz an ma mv ii =
-        lift_memop rA Dir.W true (memtag || pac)
+        lift_memop rA Dir.W true memtag
           (fun ac ma mv ->
             let open Precision in
             let memtag_sync = memtag && C.mte_precision = Synchronous in
@@ -2002,7 +1965,7 @@ module Make
         let an = match t with
           | YY -> Annot.X
           | LY -> Annot.XL in
-        lift_memop rd Dir.W true (memtag || pac)
+        lift_memop rd Dir.W true memtag
           (fun ac ma mv ->
             let must_fail =
               begin
@@ -2070,7 +2033,7 @@ module Make
 
       let swp sz rmw r1 r2 r3 ii =
         lift_memop r3 Dir.W true (* swp is a write for the purpose of DB *)
-          (memtag || pac)
+          memtag
           (fun ac ma mv ->
             let noret = match r2 with | AArch64.ZR -> true | _ -> false in
             let r2 = mv
@@ -2129,13 +2092,13 @@ module Make
         M.altT (
           (* CAS succeeds and generates an Explicit Write Effect *)
           (* there must be an update to the dirty bit of the TTD *)
-          lift_memop rn Dir.W true (memtag || pac) mop_success (to_perms "rw" sz)
+          lift_memop rn Dir.W true memtag mop_success (to_perms "rw" sz)
             (read_reg_ord rn ii) (read_reg_data sz rt ii) an ii
         )( (* CAS fails *)
           M.altT (
             (* CAS generates an Explicit Write Effect              *)
             (* there must be an update to the dirty bit of the TTD *)
-            lift_memop rn Dir.W true (memtag || pac) mop_fail_with_wb (to_perms "rw" sz)
+            lift_memop rn Dir.W true memtag mop_fail_with_wb (to_perms "rw" sz)
               (read_reg_ord rn ii) (read_reg_data sz rt ii) an ii
           )(
             (* CAS does not generate an Explicit Write Effect          *)
@@ -2143,7 +2106,7 @@ module Make
             (*                                the dirty bit of the TTD *)
             (* Note: the combination of dir=Dir.R and updatedb=true    *)
             (*                    triggers an alternative in check_ptw *)
-            lift_memop rn Dir.R true (memtag || pac) mop_fail_no_wb (to_perms "rw" sz)
+            lift_memop rn Dir.R true memtag mop_fail_no_wb (to_perms "rw" sz)
               (read_reg_ord rn ii) (read_reg_data sz rt ii) an ii
           )
         )
@@ -2207,7 +2170,7 @@ module Make
         M.altT (
           (* CASP succeeds and generates Explicit Write Effects  *)
           (* there must be an update to the dirty bit of the TTD *)
-          lift_memop rn Dir.W true (memtag || pac) mop_success
+          lift_memop rn Dir.W true memtag mop_success
             (to_perms "rw" sz) (read_reg_ord rn ii)
             (read_reg_data sz rt1 ii >>> fun _ -> read_reg_data sz rt2 ii)
             an ii
@@ -2215,7 +2178,7 @@ module Make
           M.altT (
             (* CASP generates Explicit Write Effects               *)
             (* there must be an update to the dirty bit of the TTD *)
-            lift_memop rn Dir.W true (memtag || pac) mop_fail_with_wb
+            lift_memop rn Dir.W true memtag mop_fail_with_wb
               (to_perms "rw" sz) (read_reg_ord rn ii)
               (read_reg_data sz rt1 ii >>> fun _ -> read_reg_data sz rt2 ii)
               an ii
@@ -2225,7 +2188,7 @@ module Make
             (*                                the dirty bit of the TTD *)
             (* Note: the combination of dir=Dir.R and updatedb=true    *)
             (*                    triggers an alternative in check_ptw *)
-            lift_memop rn Dir.R true (memtag || pac) mop_fail_no_wb
+            lift_memop rn Dir.R true memtag mop_fail_no_wb
               (to_perms "rw" sz) (read_reg_ord rn ii)
               (read_reg_data sz rt1 ii >>> fun _ -> read_reg_data sz rt2 ii)
               an ii
@@ -2274,7 +2237,7 @@ module Make
           |A_ADD|A_EOR|A_SET|A_CLR|A_UMAX|A_UMIN -> M.unitT in
 
         let an = rmw_to_read rmw in
-        lift_memop rn Dir.W true (memtag || pac)
+        lift_memop rn Dir.W true memtag
           (fun ac ma mv ->
             let noret = match rt with | ZR -> true | _ -> false in
             let op = match op with
@@ -4502,17 +4465,10 @@ module Make
                 B.nextSetT rd v
               in
 
-              if fpac
-              then
-                pauth2_with_fpac
-                  (read_reg_ord rd ii)
-                  (read_reg_ord rn ii)
-                  key ii mop mfault
-              else
-                pauth2_without_fpac
-                  (read_reg_ord rd ii)
-                  (read_reg_ord rn ii)
-                  key ii mop
+              authentication
+                (read_reg_ord rd ii)
+                (read_reg_ord rn ii)
+                key ii mop mfault
             end else
               !(M.mk_singleton_es (Act.NoAction) ii)
         (* If address tagging and logical address tagging is not enabled then

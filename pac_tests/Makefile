@@ -1,4 +1,4 @@
-NAME = example7
+NAME = example
 DEBUG=-debug pac
 
 all: #my_herd
