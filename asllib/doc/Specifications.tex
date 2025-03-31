@@ -1136,10 +1136,11 @@ used by each global declaration via comments above it.
   \item \AllApplyCase{D\_Func}
   \begin{itemize}
     \item $\vd$ declares a subprogram with arguments $\vargs$, \optional\ return type \\
-          $\rettyopt$, parameters $\vparams$, and body statement $\body$;
+          $\rettyopt$, parameters $\vparams$, body statement $\body$, and optional recursion limit expression $\vrecurselimit$;
     \item define $\ids$ as the union of applying $\usety$ to each type of an argument in $\vargs$,
           applying $\usety$ to $\rettyopt$, applying $\usety$ to each type of a parameter in $\vparams$,
-          and applying $\usestmt$ to $\body$.
+          applying $\usestmt$ to $\body$,
+          and applying $\useexpr$ to $\vrecurselimit$.
   \end{itemize}
 \end{itemize}
 
@@ -1164,7 +1165,8 @@ used by each global declaration via comments above it.
   \ids &\eqdef& \{ (\Ignore, \vt) \in \vargs : \usety(\vt) \} &\cup\\
   && \usety(\rettyopt) &\cup\\
   && \{ (\Ignore, \vt) \in \vparams : \usety(\vt) \} &\cup \\
-  && \usestmt(\body) &
+  && \usestmt(\body) &\cup\\
+  && \useexpr(\vrecurselimit) &
     \end{array}
   }
 }{
@@ -1177,6 +1179,7 @@ used by each global declaration via comments above it.
     \funcargs: \vargs,\\
     \funcreturntype: \rettyopt,\\
     \funcparameters: \vparams,\\
+    \funcrecurselimit: \vrecurselimit,\\
     \ldots\\
     \end{array}
   \right\}
