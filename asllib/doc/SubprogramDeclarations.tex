@@ -526,6 +526,9 @@ yielding a new subprogram definition $\newfuncsig$, a modified static environmen
 $\newtenv$, and an inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
+See \ExampleRef{Annotating Subprogram Signatures} and
+\ExampleRef{Updating the Static Environment for a Subprogram}.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -562,6 +565,22 @@ yielding a new function definition $\newfuncsig$,
 a modified static environment $\newtenv$, and
 an inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Annotating Subprogram Signatures}
+\ExampleRef{Annotating Parameters},
+\ExampleRef{Checking Parameter Declarations},
+\ExampleRef{Annotating Subprogram Arguments},
+and
+\ExampleRef{Annotating Subprogram Return Types}
+show well-typed subprogram signatures and ill-typed subprogram signatures.
+
+The specification in \listingref{AnnotateFuncSig} shows a subprogram
+with an associated recursion limit.
+\ASLListing{Annotating a subprogram signature with a recursion limit}{AnnotateFuncSig}{\typingtests/TypingRule.AnnotateFuncSig.asl}
+
+The specification in \listingref{AnnotateFuncSig-bad} is ill-typed, since the recursion limit expression \verb|W|
+is not a constrained expression.
+\ASLListing{An ill-typed subprogram signature}{AnnotateFuncSig-bad}{\typingtests/TypingRule.AnnotateFuncSig.bad.asl}
 
 \ProseParagraph
 \AllApply
@@ -696,20 +715,32 @@ Therefore, $\tenvwithparams$ effectively reflects the added declarations \\
 The function
 \hypertarget{def-annotateoneparam}{}
 \[
-\begin{array}{r}
 \annotateoneparam(
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\staticenvs}{\newtenv} \aslsep
   (\overname{\identifier}{\vx} \times \overname{\langle\ty\rangle}{\tyopt})
 ) \aslto
-(\overname{\staticenvs}{\newtenvp} \times \overname{\ty}{\tty})
-\cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\begin{array}{l}
+  (\overname{\staticenvs}{\newtenvp} \times \overname{\ty}{\tty})\ \cup\\
+  \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
 annotates the parameter given by $\vx$ and the \optional\ type $\tyopt$
 with respect to $\tenv$ and then declares the parameter $\vx$ in environment $\newtenv$.
 The updated environment $\newtenvp$ and annotated parameter type $\tty$ are returned.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Annotating Subprogram Parameters}
+In \listingref{AnnotateOneParam},
+the parameters \verb|A| and \verb|B| are annotated as \parameterizedintegertypes,
+and \verb|C| is annotated as a \wellconstrainedintegertype.
+The specification demonstrates how \verb|A|, \verb|B|, and \verb|C| exist as local storage elements
+of \verb|parameterized|.
+\ASLListing{Annotating subprogram parameters}{AnnotateOneParam}{\typingtests/TypingRule.AnnotateOneParam.asl}
+
+In \listingref{AnnotateOneParam-bad1}, the declaration of the parameter \verb|A| is illegal,
+since \verb|A| is also declared as a global storage element.
+\ASLListing{An ill-typed subprogram parameter}{AnnotateOneParam-bad1}{\typingtests/TypingRule.AnnotateOneParam.bad1.asl}
 
 \ProseParagraph
 \AllApply
@@ -739,7 +770,8 @@ The updated environment $\newtenvp$ and annotated parameter type $\tty$ are retu
 \begin{mathpar}
 \inferrule[type\_parameterized]{
   (\tyopt = \None \lor \tyopt = \langle \unconstrainedinteger\rangle) \\
-  \tty \eqdef \TInt(\parameterized(\vx))\\
+  \tty \eqdef \TInt(\parameterized(\vx))\\\\
+  \commonsuffixline\\\\
   \checkvarnotinenv{\newtenv, \vx} \typearrow \True \OrTypeError\\\\
   \checkconstrainedinteger(\newtenv, \tty) \typearrow \True \OrTypeError\\\\
   \addlocal(\newtenv, \vx, \tty, \LDKLet) \typearrow \newtenvp
@@ -750,6 +782,7 @@ The updated environment $\newtenvp$ and annotated parameter type $\tty$ are retu
 \inferrule[type\_annotated]{
   \ttyp \neq \unconstrainedinteger\\
   \annotatetype{\False, \tenv, \ttyp} \typearrow \tty \OrTypeError\\\\
+  \commonsuffixline\\\\
   \checkvarnotinenv{\newtenv, \vx} \typearrow \True \OrTypeError\\\\
   \checkconstrainedinteger(\newtenv, \tty) \typearrow \True \OrTypeError\\\\
   \addlocal(\newtenv, \vx, \tty, \LDKLet) \typearrow \newtenvp
@@ -767,7 +800,6 @@ The function
 checks the validity of the parameters declared in $\funcsig$.
 
 \ExampleDef{Checking Parameter Declarations}
-
 In \listingref{ParametersOfExpr}, the list of extracted parameters \verb|B, C, D, E, F, G|
 is equal to the list of declared parameters.
 
@@ -1270,19 +1302,34 @@ In \listingref{typing-parameterofconstraint}, the annotated arguments are
 \hypertarget{def-annotateonearg}{}
 The function
 \[
-\annotateonearg(
+\begin{array}{r}
+  \annotateonearg(
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\staticenvs}{\newtenv} \aslsep
   (\overname{\identifier}{\vx} \times \overname{\ty}{\tty})
-) \aslto
-(\overname{\staticenvs}{\newtenvp} \times\ \overname{\ty}{\ttyp} \times \overname{\TSideEffectSet}{\vses})
-\cup\ \overname{\TTypeError}{\TypeErrorConfig}
+) \aslto\\
+(\overname{\staticenvs}{\newtenvp} \times\ \overname{\ty}{\ttyp} \times \overname{\TSideEffectSet}{\vses})\ \cup
+\overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
 \]
 annotates the argument given by the identifier $\vx$ and the type $\tty$
 with respect to $\tenv$ and then declares the parameter $\vx$ in environment $\newtenv$.
 The result is the updated environment $\newtenvp$, annotated argument type $\ttyp$,
 and inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Annotating a Subprogram Argument}
+The specification in \listingref{AnnotateOneArg} shows well-typed argument declarations
+and demonstrates how they exist as local storage elements in the subprogram body.
+\ASLListing{Well-typed subprogram arguments}{AnnotateOneArg}{\typingtests/TypingRule.AnnotateOneArg.asl}
+
+The specification in \listingref{AnnotateOneArg-bad1} is illegal, since arguments cannot share a name
+with global storage elements, \verb|b| in this example.
+\ASLListing{An ill-typed subprogram argument}{AnnotateOneArg-bad1}{\typingtests/TypingRule.AnnotateOneArg.bad1.asl}
+
+The specification in \listingref{AnnotateOneArg-bad2} is illegal, since arguments cannot be typed
+as \collectiontypesterm.
+\ASLListing{An ill-typed subprogram argument}{AnnotateOneArg-bad2}{\typingtests/TypingRule.AnnotateOneArg.bad2.asl}
 
 \ProseParagraph
 \AllApply
@@ -1337,7 +1384,7 @@ In contrast, the subprogram \verb|returns_value| updates the static environment 
 binding $\funcreturntype$ to $\unconstrainedinteger$ and returning $\unconstrainedinteger$
 as the optional return type.
 
-The specification in \listingref{AnnotateReturnType-bad} is ill-typed, since collection types are not allowed
+The specification in \listingref{AnnotateReturnType-bad} is ill-typed, since \collectiontypesterm{} are not allowed
 as return types.
 \ASLListing{An ill-typed return type}{AnnotateReturnType-bad}{\typingtests/TypingRule.AnnotateReturnType.bad.asl}
 
@@ -1408,6 +1455,8 @@ and associated with the \sideeffectsetterm\ $\vsesfuncsig$
 can be added to the static environment $\tenv$,
 resulting in an annotated function definition $\newfuncdef$ and new static environment $\newtenv$.
 \ProseOtherwiseTypeError
+
+See \ExampleRef{Updating the Static Environment for a Subprogram}.
 
 \ProseParagraph
 \AllApply

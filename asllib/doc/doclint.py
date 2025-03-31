@@ -511,7 +511,6 @@ def check_rules(filename: str) -> int:
     file_to_num_expected_errors = {
         "RelationsOnTypes.tex" : 15,
         "SubprogramCalls.tex" : 15,
-        "SubprogramDeclarations.tex" : 11,
         "SymbolicEquivalenceTesting.tex" : 26,
         "SymbolicSubsumptionTesting.tex" : 23,
         "SideEffects.tex" : 13,
@@ -687,7 +686,6 @@ def main():
     all_latex_sources = get_latex_sources(False)
     content_latex_sources = get_latex_sources(True)
     # content_latex_sources = ["SubprogramCalls.tex"]
-    # content_latex_sources = ["SubprogramDeclarations.tex"]
     num_errors = 0
     num_spelling_errors = spellcheck(args.dictionary, content_latex_sources)
     if num_spelling_errors > 0:
