@@ -1,0 +1,34 @@
+digraph G {
+
+
+/* legend */
+label="Test PAuth2, Generic[withcatdep](Unknown)";
+
+
+/* init events */
+eiid0 [label="ix:W[pointer]=0", shape="none", fixedsize="false", height="0.194444", width="1.166667"];
+
+/* the unlocked events */
+subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
+eiid1 [label="b: R0:X0q=pacda(pointer, modifier1)", shape="none", fixedsize="false", height="0.194444", width="1.555556"];
+eiid2 [label="c: R0:X1q=modifier2", shape="none", fixedsize="false", height="0.194444", width="1.555556"];
+eiid3 [label="d: Branching(pred)", shape="none", fixedsize="false", height="0.194444", width="2.916667"];
+eiid4 [label="e: W0:ELR_EL1q=10000", shape="none", fixedsize="false", height="0.194444", width="3.305556"];
+eiid5 [label="f: ExcEntry(R,PacCheck:DA)", shape="none", fixedsize="false", height="0.194444", width="4.472222"];
+}
+
+/* the intra_causality_data edges */
+
+eiid1 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
+eiid2 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
+
+/* the intra_causality_control edges */
+eiid3 -> eiid4 [label="iico_ctrl", color="grey", fontcolor="grey"];
+eiid3 -> eiid5 [label="iico_ctrl", color="grey", fontcolor="grey"];
+
+/* the poi edges */
+/* the rfmap edges */
+
+
+/* The viewed-before edges */
+}

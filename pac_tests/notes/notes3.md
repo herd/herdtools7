@@ -646,6 +646,16 @@ exists ( 1:x2=x /\ 1:x4=0 /\ 1:x3=0 )
 (* Forbidden otherwise bebcause P1 doesn't fault before the `mov x4` instruction *)
 ```
 
+Here is the expected graph of the execution of the `autda Xd,Xn` instruction in
+case of a success:
+
+![`autda Xd,Xn` instruction success](pauth2_with_fpac_autda_success.png)
+
+Here is the expected graph of the execution of the `autda Xd,Xn` instruction in
+case of a failure:
+
+![`autda Xd,Xn` instruction success](pauth2_with_fpac_autda_failure.png)
+
 ### `aut*` conclusion
 
 Here is a table that show the dependency between the register-read event
