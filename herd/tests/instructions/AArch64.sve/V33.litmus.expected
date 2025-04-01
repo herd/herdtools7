@@ -1,0 +1,14 @@
+Test V33 Allowed
+States 4
+1:X1=0; 1:X6=0;
+1:X1=0; 1:X6=1;
+1:X1=1; 1:X6=0;
+1:X1=1; 1:X6=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Flag Scalable-Vector-Extensions-is-work-in-progress
+Condition exists (1:X1=1 /\ 1:X6=0)
+Observation V33 Sometimes 1 3
+Hash=915bafc00284d7bda6bae357bdfc48ee
+
