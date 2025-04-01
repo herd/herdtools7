@@ -29,5 +29,7 @@ val pp : out_channel -> t -> unit
 
 module Extract() :
 sig
+ (* Caches file contents for faster retrieval during extraction *)
+ val cache : fname:string -> cts:string -> unit
  val extract : t -> string
 end

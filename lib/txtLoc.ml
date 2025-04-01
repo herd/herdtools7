@@ -43,6 +43,9 @@ module Extract() =
 
     let t = Hashtbl.create 13
 
+    let cache ~fname ~cts =
+      Hashtbl.add t fname cts
+
     let read_chan chan =
       let len = in_channel_length chan in
       really_input_string chan len
