@@ -52,6 +52,14 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       res
     else f ()
 
+  let sve = TopConf.C.(variant Variant.SVE || variant Variant.SME)
+
+  let check_sve inst =
+    if not sve then
+      Warn.user_error
+        "SVE instruction %s requires -variant sve"
+        (AArch64.dump_instruction inst)
+
   module Mixed (SZ : ByteSize.S) : sig
     val build_semantics : test -> A.inst_instance_id -> (proc * branch) M.t
     val spurious_setaf : V.v -> unit M.t
@@ -758,6 +766,23 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 ] )
       | I_UDF k when C.variant Variant.ASL_AArch64_UDF ->
           Some ("reserved/perm_undef/UDF_only_perm_undef.opn", stmt [ "imm16" ^= litbv 16 k ])
+      (* SVE, for specific computation of N and V flags *)
+      | I_CTERM (cc,v,rn,rm) as inst ->
+          check_sve inst ;
+          let cc =
+            let open CTERM in
+            match cc with
+            | EQ -> "Cmp_EQ"
+            | NE -> "Cmp_NE" in
+          Some
+            ("sve/sve_cmpgpr/sve_int_cterm/ctermeq_rr_.opn",
+             stmt
+               [
+                 "n" ^= reg rn;
+                 "m" ^= reg rm;
+                 "esize" ^= variant v;
+                 "cmp_op" ^= var cc;
+               ])
       | i ->
           let () =
             if _dbg then
