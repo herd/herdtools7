@@ -83,6 +83,16 @@ struct
     | e -> pp_expr_with_loc e in
     do_pp_expr false
 
+  let parse_effect_from_string name value =
+    Cache.cache name value;
+    let module ML = ModelLexer.Make(struct
+      let debug = false
+    end) in
+    let open Lexing in
+    let lexbuf = Lexing.from_string value in
+    lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = name };
+    GenParserUtils.call_parser "effect" lexbuf ML.token ModelParser.base_start
+
   (* Adds special character to distinguish between non-terminals and primitives
     and replaces shadowed variables with their definitions *)
   let convert_defs num_defs crt_nums def_id is_rec expr =
@@ -161,7 +171,7 @@ struct
       | _ -> defs
     ) defs bds
 
-  let tr_ast fname =
+  let tr_ast fname e1 e2 =
     let num_defs, _ = tr_ast StringMap.empty (fun _ num_defs id _ ->
       let num = StringMap.safe_find 0 id num_defs in
       StringMap.add id (num + 1) num_defs
@@ -177,13 +187,20 @@ struct
         defs, crt_nums
       ) StringSet.empty fname in
     let _ = StringMap.map ASTUtils.flatten defs in
-    ()
+    match e1, e2 with
+    | Some e1, Some e2 ->
+      let _ = parse_effect_from_string "e1" e1 |> ASTUtils.flatten in
+      let _ = parse_effect_from_string "e2" e2 |> ASTUtils.flatten in
+      ()
+    | _ -> Warn.fatal "Omission of e1 or e2 not implemented yet"
 
 end
 
 let verbose = ref false
 let libdir = ref (Filename.concat Version.libdir "herd")
 let includes = ref []
+let e1 = ref None
+let e2 = ref None
 
 let options = [
   ("-version", Arg.Unit
@@ -193,6 +210,8 @@ let options = [
     " show installation directory and exit");
   ("-set-libdir", Arg.String (fun s -> libdir := s),
     "<path> set installation directory to <path>");
+  ("-e1", Arg.String (fun s -> e1 := Some s), "<str> first effect");
+  ("-e2", Arg.String (fun s -> e2 := Some s), "<str> second effect");
   (ArgUtils.parse_bool "-v" verbose "show various diagnostics");
 ]
 
@@ -218,4 +237,4 @@ let () =
         let includes = !includes
         let libdir = !libdir
       end) in
-  ignore (Run.tr_ast cat_file)
+  ignore (Run.tr_ast cat_file !e1 !e2)
