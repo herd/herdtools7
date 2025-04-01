@@ -1464,7 +1464,7 @@ module Make
  * iico_data dependency between `mv` and `mop` in case of a success.
  *)
       let lift_pac_virt mop ma dir an ii =
-        let mok ma = mop Access.VIR ma >>= M.ignore >>= B.next1T in
+        let mok ma = mop ma >>= M.ignore >>= B.next1T in
         (* Addresses of memory operations must be canonical for the construction
          * of the rf, co and fr maps... *)
         let mok ma = mok (ma >>= M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical)) in
@@ -1551,7 +1551,7 @@ module Make
             (* M.short will add an iico_data only if memtag is enabled *)
             M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
           else if pac then
-            lift_pac_virt mop ma dir an ii
+            lift_pac_virt (mop Access.VIR) ma dir an ii
           else if checked then
             lift_memtag_virt mop ma dir an ii
           else
