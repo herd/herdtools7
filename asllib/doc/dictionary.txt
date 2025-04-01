@@ -693,6 +693,7 @@ example
 examples
 exceed
 exceeded
+exceeding
 except
 exception
 exceptional
@@ -2076,6 +2077,7 @@ verifiers
 verifying
 verilog
 version
+versions
 vertex
 vertices
 very

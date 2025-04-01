@@ -19,6 +19,26 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Typing}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The rule for typing calls is \TypingRuleRef{AnnotateCall}.
+
+We also define helper functions via respective rules:
+\begin{itemize}
+  \item \TypingRuleRef{AnnotateCallActualsTyped}
+  \item \TypingRuleRef{InsertStdlibParam}
+  \item \TypingRuleRef{CheckParamsTypeSat}
+  \item \TypingRuleRef{RenameTyEqs}
+  \item \TypingRuleRef{SubstExprNormalize}
+  \item \TypingRuleRef{SubstExpr}
+  \item \TypingRuleRef{SubstConstraint}
+  \item \TypingRuleRef{CheckArgsTypeSat}
+  \item \TypingRuleRef{AnnotateRetTy}
+  \item \TypingRuleRef{SubprogramForName}
+  \item \TypingRuleRef{FilterCallCandidates}
+  \item \TypingRuleRef{HasArgClash}
+  \item \TypingRuleRef{ExpressionList}
+\end{itemize}
+
+\TypingRuleDef{AnnotateCall}
 \hypertarget{def-annotatecall}{}
 The function
 \[
@@ -40,26 +60,8 @@ annotates the call $\vcall$ to a subprogram with call type $\calltype$, resultin
 \end{itemize}
 \ProseOtherwiseTypeError
 
-The function is defined by the rule \TypingRuleRef{AnnotateCall}.
+See \ExampleRef{Annotating Calls with Typed Parameters and Typed Arguments}.
 
-We also define helper functions via respective rules:
-\begin{itemize}
-  \item \TypingRuleRef{AnnotateCallActualsTyped}
-  \item \TypingRuleRef{InsertStdlibParam}
-  \item \TypingRuleRef{CheckParamsTypeSat}
-  \item \TypingRuleRef{RenameTyEqs}
-  \item \TypingRuleRef{SubstExprNormalize}
-  \item \TypingRuleRef{SubstExpr}
-  \item \TypingRuleRef{SubstConstraint}
-  \item \TypingRuleRef{CheckArgsTypeSat}
-  \item \TypingRuleRef{AnnotateRetTy}
-  \item \TypingRuleRef{SubprogramForName}
-  \item \TypingRuleRef{FilterCallCandidates}
-  \item \TypingRuleRef{HasArgClash}
-  \item \TypingRuleRef{ExpressionList}
-\end{itemize}
-
-\TypingRuleDef{AnnotateCall}
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -102,7 +104,7 @@ The function
       \overname{\staticenvs}{\tenv} \aslsep\\
       \overname{\identifier}{\name} \aslsep\\
       \overname{(\ty \times\expr \times \TSideEffectSet)^*}{\params} \aslsep\\
-      \overname{(\ty \times\expr)^*}{\typedargs} \aslsep\\
+      \overname{(\ty \times\expr \times \TSideEffectSet)^*}{\typedargs} \aslsep\\
       \overname{\subprogramtype}{\calltype}
     \end{array}
   \right) \aslto
@@ -112,8 +114,29 @@ The function
   \cup\ \overname{\TTypeError}{\TypeErrorConfig}
   \end{array}
 \]
-is similar to $\annotatecall$, except that it accepts annotated version of parameter/argument expressions as inputs (that is, pairs consisting of a type and an expression).
+is similar to $\annotatecall$, except that it accepts the annotated versions of
+the parameter and argument expressions as inputs,
+that is, tuples consisting of types, annotated expressions, and \sideeffectdescriptorsetsterm.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Annotating Calls with Typed Parameters and Typed Arguments}
+In \listingref{AnnotateCallActualsTyped-bad1}, the call expression \verb|xor_extend{64}(bv1, bv2)|
+is ill-typed, since \\
+\verb|xor_extend| has two parameters and only one was supplied.
+\ASLListing{An ill-typed call expression}{AnnotateCallActualsTyped-bad1}{\typingtests/TypingRule.AnnotateCallActualsTyped.bad1.asl}
+
+In \listingref{AnnotateCallActualsTyped-bad2}, the call expression \verb|xor_extend{64, 32}(bv1)|
+is ill-typed, since \\
+\verb|xor_extend| has two arguments and only one was supplied.
+\ASLListing{An ill-typed call expression}{AnnotateCallActualsTyped-bad2}{\typingtests/TypingRule.AnnotateCallActualsTyped.bad2.asl}
+
+In \listingref{AnnotateCallActualsTyped-bad3}, the call expression \verb|plus{64}(bv1, w)|
+is ill-typed, since \\
+the type of the argument \verb|w|, which is \verb|integer{0..128}|, does not \typesatisfy{}
+the type of the formal argument \verb|z| (\verb|integer{0..N}|), with \verb|N| substituted by \verb|64|.
+That is, \\
+\verb|integer{0..64}|.
+\ASLListing{An ill-typed call expression}{AnnotateCallActualsTyped-bad3}{\typingtests/TypingRule.AnnotateCallActualsTyped.bad3.asl}
 
 \ProseParagraph
 \AllApply
@@ -124,8 +147,8 @@ is similar to $\annotatecall$, except that it accepts annotated version of param
   \item applying $\subprogramforname$ to match $\name$ and $\argtypes$ in $\tenv$
         yields \\ $(\namep, \funcsig, \vsescall)$\ProseOrTypeError;
   \item define $\vses$ as the union of $\vsesargs$ and $\vsescall$;
-  \item either the $\subprogramtype$ of $\funcsig$ equals $\calltype$,
-        or the $\subprogramtype$ of $\funcsig$ is $\STGetter$ and $\calltype$ is $\STFunction$\ProseTerminateAs{\BadCall};
+  \item checking that either the $\subprogramtype$ of $\funcsig$ equals $\calltype$,
+        or the $\subprogramtype$ of $\funcsig$ is $\STGetter$ and $\calltype$ is $\STFunction$ yields $\True$\ProseTerminateAs{\BadCall};
   \item applying $\insertstdlibparam$ to $\funcsig$, $\params$, and $\argtypes$ yields new parameters $\paramsone$;
   \item checking that the lengths of $\funcsig.\funcparameters$ and $\paramsone$ are the same yields $\True$\ProseTerminateAs{\BadCall};
   \item checking that the lengths of $\funcsig.\funcargs$ and $\args$ are the same yields $\True$\ProseTerminateAs{\BadCall};
@@ -142,6 +165,7 @@ is similar to $\annotatecall$, except that it accepts annotated version of param
   \item define $\vcall$ as the call with name $\namep$, parameters taken from $\paramsone$, arguments $\vargs$,
         and call type $\funcsig.\funcsubprogramtype$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
@@ -150,23 +174,22 @@ is similar to $\annotatecall$, except that it accepts annotated version of param
   \subprogramforname(\tenv, \name, \argtypes) \typearrow
   (\nameone, \funcsig, \vsescall) \OrTypeError \\
   {
-    \vb \eqdef
+    \checktrans{
     \left(
     \begin{array}{l}
       \funcsig.\funcsubprogramtype = \calltype \; \lor \\
       (\funcsig.\funcsubprogramtype = \STGetter \; \land \\ \quad \calltype = \STFunction)
     \end{array}
-    \right)
+    \right)}{\BadCall} \checktransarrow \True \OrTypeError
   }\\\\
   \vses \eqdef \vsesargs \cup \vsescall\\
-  \checktrans{\vb}{\BadCall} \checktransarrow \True \OrTypeError \\
   \insertstdlibparam(\funcsig, \params, \argtypes) \typearrow \paramsone\\\\
   \equallength(\funcsig.\funcparameters, \paramsone) \typearrow \paramaritymatch \\\\
   \checktrans{\paramaritymatch}{\BadCall} \checktransarrow \True \OrTypeError\\\\
   \equallength(\funcsig.\funcargs, \args) \typearrow \aritymatch\\
   \checktrans{\aritymatch}{\BadCall} \checktransarrow \True \OrTypeError\\\\
   \checkparamstypesat(\tenv, \funcsig.\funcparameters, \paramsone) \typearrow \True \OrTypeError\\\\
-  \eqs \eqdef [(\vx_i, \Ignore) \in \funcsig.\funcargs_i ,\; (\Ignore, \vv_i, \Ignore) \in \paramsone: (\vx_i, \vv_i) ] \\
+  \eqs \eqdef [(\vx_i, \Ignore) \in \funcsig.\funcsigparams_i ,\; (\Ignore, \vv_i, \Ignore) \in \paramsone: (\vx_i, \vv_i) ] \\
   \checkargstypesat(\tenv, \funcsig.\funcargs, \argtypes, \eqs) \typearrow \True \OrTypeError\\\\
   \annotateretty(\tenv, \calltype, \funcsig.\funcreturntype, \eqs) \typearrow \rettyopt \OrTypeError
 }{
@@ -565,6 +588,14 @@ by substituting parameter names with their corresponding expressions in
 $\eqs$, and then attempting to symbolically simplify the result, yielding the expression $\newe$.
 \ProseOtherwiseTypeError
 
+\ExampleDef{Substituting Parameter Expressions and Normalizing}
+In \listingref{SubstExpr},
+considering the call expression \verb|plus{z + 22}(bv1, z)|,
+the expression \verb|z + 22| is substituted for the parameter \verb|N| in the type
+\verb|bits(N + 2)| used for the argument \verb|x| and as the return type of \verb|plus|,
+resulting in the expression \verb|(40 + 22) + 2|, which is then normalized into \verb|64|.
+\ASLListing{Substituting Parameter Expressions}{SubstExpr}{\typingtests/TypingRule.SubstExpr.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -600,6 +631,8 @@ $\substs$, yielding the expression $\newe$.
 
 The function assumes that $\ve$ appears in the declaration of a parameter,
 which means it is in the subset allowed by $\extractparameters$.
+
+See \ExampleRef{Substituting Parameter Expressions and Normalizing}.
 
 \ProseParagraph
 \OneApplies
@@ -722,7 +755,8 @@ which means it is in the subset allowed by $\extractparameters$.
   \begin{itemize}
     \item $\ve$ is the slicing expression for subexpression $\veone$ and list of slices $\vslices$, that is, $\ESlice(\veone, \vslices)$;
     \item applying $\substexpr$ to $\veone$ in $\tenv$ yields $\veonep$;
-    \item define $\newe$ as slicing expression for subexpression $\veonep$ and list of slices $\vslices$, that is, $\ESlice(\veonep, \vslices)$.
+    \item define $\newe$ as slicing expression for subexpression $\veonep$ and list of slices \\
+          $\vslices$, that is, $\ESlice(\veonep, \vslices)$.
   \end{itemize}
 
   \item \AllApplyCase{e\_tuple}
@@ -964,6 +998,13 @@ $\eqs$, and then attempting to symbolically simplify the result,
 yielding the integer constraint $\newc$.
 \ProseOtherwiseTypeError
 
+\ExampleDef{Substituting Parameter Expressions in Constraints}
+In \listingref{SubstExpr},
+considering the call expression \verb|plus{z + 22}(bv1, z)|,
+the expression \verb|z + 22| is substituted for the parameter \verb|N| in the type
+\verb|integer{0..N}| used for the argument \verb|z|,
+resulting in the type \verb|integer{0..64}|.
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1095,6 +1136,19 @@ annotates the \optional\ return type $\funcsigrettyopt$ given with the subprogra
 $\calltype$ with respect to the parameter expressions $\eqs$,
 yielding the \optional\ annotated type $\rettyopt$.
 \ProseOtherwiseTypeError
+
+\ExampleDef{Annotating the Return Type of a Subprogram Call}
+In \listingref{AnnotateRetTy}, annotating the return type \verb|bits(N)| of the subprogram \verb|flip|
+for call expression \verb|flip{64}(bv)|, yields the annotated type \verb|bits(64)|.
+
+Since \verb|proc| does not have a return type, the call statement \verb|proc()| does not require
+annotating a return type (thus $\annotateretty$ yields $\None$ for $\rettyopt$).
+\ASLListing{Annotating the Return Type of a Subprogram Call}{AnnotateRetTy}{\typingtests/TypingRule.AnnotateRetTy.asl}
+
+\listingref{AnnotateRetTy-bad} shows an example of an ill-typed call statement \verb|flip{64}(bv);|
+and an ill-typed call expression \verb|proc()|, since procedures can only be used in call statements
+and functions can only be used in call expressions.
+\ASLListing{Ill-typed Subprogram Calls}{AnnotateRetTy-bad}{\typingtests/TypingRule.AnnotateRetTy.bad.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1638,14 +1692,25 @@ is annotated as
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Semantics}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The rule for evaluating subprogram calls is \SemanticsRuleRef{Call}.
+
+We also define the following helper rules:
+\begin{itemize}
+  \item \SemanticsRuleRef{EvalSubprogram}
+  \item \SemanticsRuleRef{ReadValueFrom}
+  \item \SemanticsRuleRef{AssignArgs}
+  \item \SemanticsRuleRef{MatchFuncRes}
+\end{itemize}
+
+\SemanticsRuleDef{Call}
 The relation
 \hypertarget{def-evalcall}{}
 \[
   \begin{array}{c}
-    \evalcall{\overname{\envs}{\env} \aslsep
+    \evalcall(\overname{\envs}{\env} \aslsep
     \overname{\Identifiers}{\name} \aslsep
     \overname{\expr^*}{\params} \aslsep
-    \overname{\expr^*}{\args}} \;\aslrel\; \\
+    \overname{\expr^*}{\args}) \;\aslrel\; \\
     \Normal(\overbracket{(\vals\times\XGraphs)^*}^{\vmstwo}, \overname{\envs}{\newenv}) \cup
     \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
   \end{array}
@@ -1659,44 +1724,13 @@ or an abnormal configuration.
 
 The evaluation first evaluates the expressions corresponding to the arguments
 and parameters and then passes their values in a resulting configuration
-to the helper relation \texttt{eval\_subprogram}.
+to the helper relation $\evalsubprogram$.
 
-The relation
-\hypertarget{def-evalsubprogram}{}
-\[
-  \begin{array}{c}
-    \evalsubprogram{\overname{\envs}{\env} \aslsep
-    \overname{\Identifiers}{\name} \aslsep
-    \overname{(\vals \times \XGraphs)^*}{\params} \aslsep
-    \overname{(\vals \times \XGraphs)^*}{\args}} \aslrel \\
-    \Normal(\overname{(\vals^* \aslsep \XGraphs)}{\vvs}, \overname{\envs}{\newenv}) \cup
-    \overname{\TThrowing}{\ThrowingConfig} \cup
-    \overname{\TDynError}{\DynErrorConfig}
-  \end{array}
-\]
-evaluates the subprogram named $\name$ in the environment $\env$, with
-$\actualargs$ the list of actual arguments, and $\params$ the
-list of arguments deduced by type equality.
-The result is either a normal configuration or an abnormal configuration.
-In the case of a normal configuration, it consists of a list of pairs
-with a value and an identifier, and a new environment $\newenv$.
-The values represent values returned by the subprogram call and the
-identifiers are used in generating execution graph constraints for the
-returned values.
+\ExampleDef{Calling Subprograms}
+In \listingref{Call}, calling \verb|non_throwing_func| terminates normally,
+while calling \verb|throwing_func| terminates by throwing an exception.
+\ASLListing{Calling subprograms}{Call}{\semanticstests/SemanticsRule.Call.asl}
 
-The main subprogram call relation is given by
-SemanticsRule.Call (see \SemanticsRuleRef{Call}).
-%
-This relies on the helper rule \SemanticsRuleRef{FCall}.
-
-We also define the following helper rules:
-\begin{itemize}
-  \item \SemanticsRuleRef{ReadValueFrom}
-  \item \SemanticsRuleRef{AssignArgs}
-  \item \SemanticsRuleRef{MatchFuncRes}
-\end{itemize}
-
-\SemanticsRuleDef{Call}
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1750,12 +1784,12 @@ We also define the following helper rules:
   \incrstacksize(G^\denvtwo, \name) \evalarrow \genv\\\\
   \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
   \commonprefixline\\\\
-  \evalsubprogram{\envtwo', \name, \vvparams, \vvargs} \evalarrow \Normal(\vms, (\vglobal, \Ignore)) \OrDynError\\\\
+  \evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \Normal(\vms, (\vglobal, \Ignore)) \OrDynError\\\\
   \readvaluefrom(\vms) \evalarrow \vmstwo\\
   \decrstacksize(\vglobal, \name) \evalarrow \genvtwo\\
   \newenv \eqdef (\tenv, (\genvtwo, L^{\denvtwo}))
 }{
-  \evalcall{\env, \name, \params, \args} \evalarrow \Normal(\vmstwo, \newenv)
+  \evalcall(\env, \name, \params, \args) \evalarrow \Normal(\vmstwo, \newenv)
 }
 \end{mathpar}
 
@@ -1767,17 +1801,40 @@ We also define the following helper rules:
   \incrstacksize(G^\denvtwo, \name) \evalarrow \genv\\\\
   \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
   \commonprefixline\\\\
-  \evalsubprogram{\envtwo', \name, \vvparams, \vvargs} \evalarrow \Throwing(\vv, \envthrow) \OrDynError\\\\
+  \evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \Throwing(\vv, \envthrow) \OrDynError\\\\
   \envthrow \eqname (\tenv, (\vglobal, \Ignore))\\
   \decrstacksize(\vglobal, \name) \evalarrow \genvtwo\\
   \newenv \eqdef (\tenv, (\genvtwo, L^{\denvtwo}))
 }{
-  \evalcall{\env, \name, \params, \args} \evalarrow \Throwing(\vv, \newenv)
+  \evalcall(\env, \name, \params, \args) \evalarrow \Throwing(\vv, \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalCallBegin}{\EvalCallEnd}{../Interpreter.ml}
 
-\SemanticsRuleDef{FCall}
+\SemanticsRuleDef{EvalSubprogram}
+The relation
+\hypertarget{def-evalsubprogram}{}
+\[
+  \begin{array}{c}
+    \evalsubprogram(\overname{\envs}{\env} \aslsep
+    \overname{\Identifiers}{\name} \aslsep
+    \overname{(\vals \times \XGraphs)^*}{\params} \aslsep
+    \overname{(\vals \times \XGraphs)^*}{\args}) \aslrel \\
+    \Normal(\overname{(\vals^* \aslsep \XGraphs)}{\vvs}, \overname{\envs}{\newenv}) \cup
+    \overname{\TThrowing}{\ThrowingConfig} \cup
+    \overname{\TDynError}{\DynErrorConfig}
+  \end{array}
+\]
+evaluates the subprogram named $\name$ in the environment $\env$, with
+$\actualargs$ the list of actual arguments, and $\params$ the
+list of arguments deduced by type equality.
+The result is either a normal configuration or an abnormal configuration.
+In the case of a normal configuration, it consists of a list of pairs
+with a value and an identifier, and a new environment $\newenv$.
+The values represent values returned by the subprogram call and the
+identifiers are used in generating execution graph constraints for the
+returned values.
+
 \ExampleDef{Subprogram Calls}
 In \listingref{semantics-fcall},
 the function \texttt{main} calls the function \texttt{foo} and the procedure \texttt{bar}.
@@ -1837,7 +1894,7 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
   \matchfuncres(\vres) \evalarrow C\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\ordered{\vgtwo}{\aslpo}{\vgthree}}\\
 }{
-  \evalsubprogram{\env, \name, \actualargs, \params} \evalarrow \withgraph{C}{\newg}
+  \evalsubprogram(\env, \name, \actualargs, \params) \evalarrow \withgraph{C}{\newg}
 }
 \end{mathpar}
 \CodeSubsection{\EvalFCallBegin}{\EvalFCallEnd}{../Interpreter.ml}
@@ -1858,6 +1915,19 @@ checks whether the value in the optional expression $\velimitopt$ has reached th
 in $\env$, yielding the execution graph resulting from evaluating the optional expression in $\vg$.
 Otherwise, the result is a dynamic error indicating that the recursion limit has been reached.
 
+\ExampleDef{Checking the Recursion Limit of a Subprogram Call}
+In \listingref{CheckRecurseLimit-nolimit}, the function \verb|factorial| is specified without a limit expression,
+and evaluating \verb|main| terminates normally.
+\ASLListing{A recursive function with no limit expression}{CheckRecurseLimit-nolimit}{\semanticstests/SemanticsRule.CheckRecurseLimit.no_limit.asl}
+
+In \listingref{CheckRecurseLimit}, the function \verb|factorial| specifies the limit expression \verb|11|,
+and evaluating \verb|main| terminates normally.
+\ASLListing{A recursive function with a limit expression}{CheckRecurseLimit}{\semanticstests/SemanticsRule.CheckRecurseLimit.asl}
+
+In \listingref{CheckRecurseLimit-limitreached}, the function \verb|factorial| specifies the limit expression \verb|10|,
+and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded), since the limit is exceeded.
+\ASLListing{A recursive call exceeding the specified limit}{CheckRecurseLimit-limitreached}{\semanticstests/SemanticsRule.CheckRecurseLimit.limit_reached.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1875,13 +1945,13 @@ Otherwise, the result is a dynamic error indicating that the recursion limit has
     \item $\vstacksize$ is less than $\vlimit$.
   \end{itemize}
 
-  \item \AllApplyCase{some\_error}
+  \item \AllApplyCase{limit\_exceeded}
   \begin{itemize}
     \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\langle\vlimit\rangle, \vg)$\ProseOrError;
     \item view $\env$ as $(\tenv, \denv)$;
     \item applying $\getstacksize$ to $\name$ in $\denv$ yields $\vstacksize$;
     \item $\vstacksize$ is greater or equal to $\vlimit$;
-    \item the result is a dynamic
+    \item the result is a \dynamicerrorterm{} (\LimitExceeded).
   \end{itemize}
 \end{itemize}
 
@@ -1906,7 +1976,7 @@ Otherwise, the result is a dynamic error indicating that the recursion limit has
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[some\_error]{
+\inferrule[limit\_exceeded]{
   \evallimit(\env, \velimitopt) \evalarrow (\langle\vlimit\rangle, \vg) \OrDynError\\\\
   \env \eqname (\tenv, \denv)\\
   \getstacksize(\denv, \name) \evalarrow \vstacksize\\
@@ -1932,8 +2002,6 @@ by the identifier, and pairs it with the given value.
   \item the result is $(\vv, \newg)$.
 \end{itemize}
 
-\CodeSubsection{\EvalReadValueFromBegin}{\EvalReadValueFromEnd}{../Interpreter.ml}
-
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
@@ -1942,9 +2010,10 @@ by the identifier, and pairs it with the given value.
   \readvaluefrom(\vv, \id) \evalarrow (\vv, \newg)
 }
 \end{mathpar}
+\CodeSubsection{\EvalReadValueFromBegin}{\EvalReadValueFromEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{AssignArgs}
-The helper relation
+The relation
 \hypertarget{def-assignargs}{}
 \[
   \assignargs(
@@ -1956,6 +2025,12 @@ The helper relation
 updates the pair consisting of the environments $\env$ and \executiongraph\ $\vgone$
 by assigning the values given by $\actuals$ to the identifiers given by $\vids$,
 yielding the updated pair $(\newenv, \newg)$.
+
+\ExampleDef{Assigning Arguments}
+In \listingref{AssignArgs}, the call expression \verb|plus(10, 5)| binds \verb|x| to $\nvint(10)$
+and $\verb|y|$ to $\nvint(5)$. The expression \verb|x + y| then accesses
+these variable values and evaluates to $\nvint(15)$.
+\ASLListing{Assigning arguments}{AssignArgs}{\semanticstests/SemanticsRule.AssignArgs.asl}
 
 \ProseParagraph
 \OneApplies
