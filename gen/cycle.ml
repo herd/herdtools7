@@ -572,10 +572,12 @@ module CoSt = struct
 
   let get_check_value st = st.check_value
 
+  let set_check_fault st = {st with check_fault = true }
   (* read the check_fault flag, and reset/clean it *)
   let read_and_unset_check_fault st =
     st.check_fault, {st with check_fault = false }
 
+  (* TODO the `st` has never been updated ? *)
   let set_tcell st e = match e.bank with
     | Tag ->
        {e with tcell=[| e.v; |];},st
@@ -885,6 +887,13 @@ let set_same_loc st n0 =
       ( fun n -> match n.evt.bank,n.evt.dir with
       |Pte,Some W -> true
       |_ -> false ) ns
+
+  let exist_mem_tag_write ns =
+      List.exists
+      ( fun n -> match n.evt.bank,n.evt.dir with
+      |Tag,Some W -> true
+      |_ -> false ) ns
+
   let tr_value e v = E.tr_value e.atom v
 
   let set_write_val_ord st n =
@@ -1161,7 +1170,19 @@ let do_set_read_v =
         let fault_update st =
           let check_fault, st = CoSt.read_and_unset_check_fault st in
           let pte_val = CoSt.get_pte_value st in
-            (if do_kvm && check_fault then label_fault pte_val else None), st in
+          let fault =
+            if check_fault then
+              if do_kvm then label_fault pte_val
+              (* While `memory tag` mode, any memory tag write to a variable
+                 invalidates the tag, hence leads to fault. However, due to
+                 potential weak memory behaviour, the final postcondition checks
+                 if memory load to the variable can still observe the default,
+                 and valid memory tag. Therefore we take a short cut here by
+                 always inject a negtive check once a tag to the variable changes.*)
+              else if do_memtag then begin  Some ((Label.next_label "L"), false) end
+              else None
+            else None in
+          fault, st in
         let fault, st = fault_update st in
         n.evt <- { n.evt with check_fault = fault };
         st
@@ -1169,7 +1190,9 @@ let do_set_read_v =
       | Some W ->
         let st =
           match bank with
-          | Tag|CapaTag|CapaSeal ->
+          | Tag -> CoSt.set_co st bank (Code.value_to_int n.evt.v)
+                   |> CoSt.set_check_fault
+          |CapaTag|CapaSeal ->
              CoSt.set_co st bank (Code.value_to_int n.evt.v)
           |Ord|Pair|VecReg _ ->
               (* Record the cell value in `st` in
@@ -1197,7 +1220,7 @@ let do_set_read_v =
        between `do_set_read_v` and `set_all_write_val` *)
     let pte_val = pte_val_init ns n.evt.loc in
     let check_value = exist_plain_value_write ns in
-    let check_fault = exist_pte_value_write ns in
+    let check_fault = exist_pte_value_write ns || exist_mem_tag_write ns in
     (* TODO: `co_cell` in `st` and indivudal `cell` seem overlap functionality. *)
     let init_st = CoSt.create 0 sz pte_val check_value check_fault in
     let final_st = do_rec init_st ns in

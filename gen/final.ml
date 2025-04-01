@@ -103,6 +103,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
   struct
 
     let do_kvm = Variant_gen.is_kvm O.variant
+    let do_memtag = O.variant Variant_gen.MemTag
 
     (* TODO change the type? *)
     type v = I of Code.v | S of string | P of C.A.PteVal.t
@@ -326,17 +327,17 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     let dump_flt sep (p,xs) = FaultSet.pp_str sep (dump_one_flt p) xs
 
     let dump_flts flts =
-      if do_kvm then
-        List.map (dump_flt " /\\ ") flts
-        |> String.concat " /\\ "
-      else
-       (* The following are for memtag etc *)
-       let pp = List.map (dump_flt " \\/ ") flts in
-       let pp = String.concat " \\/ " pp in
-       match flts with
-       | [] -> ""
-       | [_,xs] when FaultSet.is_singleton xs -> "~" ^ pp
-       | _ -> sprintf "~(%s)" pp
+      if do_kvm || do_memtag then
+        flts
+          |> List.map (dump_flt " /\\ ")
+          |> String.concat " /\\ "
+      else (* The following are for morello etc *)
+        let pp = flts |> List.map (dump_flt " \\/ ")
+                      |> String.concat " \\/ " in
+        match flts with
+        | [] -> ""
+        | [_,xs] when FaultSet.is_singleton xs -> "~" ^ pp
+        | _ -> sprintf "~(%s)" pp
 
     let faults_to_string flts =
         flts |> List.map
