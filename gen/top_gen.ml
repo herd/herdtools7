@@ -820,26 +820,6 @@ let max_set = IntSet.max_elt
           (* TODO: the `if-else` pattern on flags is not a good idea as it may short circuit *)
             if O.variant Variant_gen.NoFault then
               Final.FaultSet.empty
-            else if do_memtag then
-              let tagchange =
-                (* Filter all the write event when tag changes in `splitted`. *)
-                splitted
-                |> List.map
-                  ( fun ns -> List.filter_map
-                    ( fun n -> let evt = n.C.evt in
-                        match evt.C.dir,evt.C.loc,evt.C.bank with
-                        | Some W,Data x,Tag -> Some x
-                        | _ -> None 
-                    ) ns ) 
-                |> List.flatten
-                |> StringSet.of_list in
-              ns
-              |> List.filter_map
-                (fun n -> match n.C.evt.C.loc,n.C.evt.C.bank with
-                | Data x,Ord when StringSet.mem x tagchange 
-                    -> Some (None, None, (* no instruction label *) x)
-                | _ -> None)
-              |> Final.FaultSet.of_list
             else if do_morello then
               ns
               |> List.filter_map
@@ -851,7 +831,7 @@ let max_set = IntSet.max_elt
                           -> Some (None, None, (* no instruction label *) x)
                 | _ -> None)
               |> Final.FaultSet.of_list
-            else if do_kvm then
+            else if do_kvm || do_memtag then
               ns
               |> List.filter_map
                   (fun n -> let e = n.C.evt in
