@@ -61,6 +61,8 @@ let tuple_pat = function
 %token CATDEP
 %type <AST.t> main
 %start main
+%type <AST.exp> base_start
+%start base_start
 
 /* Precedences */
 %right UNION
@@ -83,6 +85,9 @@ main:
   let catdep = $2 in
   ModelOption.set_arch a
     (ModelOption.set_catdep catdep ModelOption.default), id, $3 }
+
+base_start:
+| base EOF { $1 }
 
 identity:
 | VAR VAR { $1,$2 }
