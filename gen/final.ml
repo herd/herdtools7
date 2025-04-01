@@ -333,9 +333,9 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           and ppflts = dump_flts pos_flts neg_flts in
           let cc = match ppfs,ppflts with
           | "","" -> ""
-          | "",_ -> "(" ^ ppflts ^ ")"
-          | _,"" -> "(" ^ ppfs ^ ")"
-          | _,_ -> sprintf "(%s) /\\ %s" ppfs ppflts in
+          | "",_ -> ppflts
+          | _,"" -> ppfs
+          | _,_ -> sprintf "%s /\\ %s" ppfs ppflts in
           if cc <> "" then
             fprintf chan "%sexists %s\n" (if !Config.neg then "~" else "") cc
       | Forall ffs ->
