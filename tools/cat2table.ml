@@ -85,6 +85,16 @@ struct
     | e -> pp_expr_with_loc e in
     do_pp_expr false
 
+  let parse_effect_from_string name value =
+    Cache.cache ~fname:name ~cts:value;
+    let module ML = ModelLexer.Make(struct
+      let debug = false
+    end) in
+    let open Lexing in
+    let lexbuf = Lexing.from_string value in
+    lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = name };
+    GenParserUtils.call_parser "effect" lexbuf ML.token ModelParser.base_start
+
   (* Adds special character to distinguish between non-terminals and primitives
     and replaces shadowed variables with their definitions *)
   let convert_defs num_defs crt_nums def_id is_rec expr =
@@ -171,7 +181,7 @@ struct
       ) StringSet.empty fname in
     defs, crt_nums
 
-  let execute fname =
+  let execute fname e1 e2 =
     let stdlib_fname = Filename.concat O.libdir "stdlib.cat" in
     let stdlib_num_defs = count_defs stdlib_fname StringMap.empty in
     let num_defs = count_defs fname stdlib_num_defs in
@@ -182,7 +192,12 @@ struct
     let defs, _ = get_defs fname ~existing_defs:stdlib_defs
       ~num_defs ~crt_nums in
     let _ = StringMap.map ASTUtils.flatten defs in
-    ()
+    match e1, e2 with
+    | Some e1, Some e2 ->
+      let _ = parse_effect_from_string "e1" e1 |> ASTUtils.flatten in
+      let _ = parse_effect_from_string "e2" e2 |> ASTUtils.flatten in
+      ()
+    | _ -> Warn.fatal "Omission of e1 or e2 not implemented yet"
 
 end
 
@@ -190,6 +205,8 @@ let verbose = ref false
 let libdir = ref (Filename.concat Version.libdir "herd")
 let includes = ref []
 let model = ref (Filename.concat !libdir "aarch64.cat")
+let e1 = ref None
+let e2 = ref None
 
 let options = [
   ("-version", Arg.Unit
@@ -200,6 +217,8 @@ let options = [
   ("-set-libdir", Arg.String (fun s -> libdir := s),
     "<path> set installation directory to <path>");
   (ArgUtils.parse_string "-model" model "path to cat model");
+  (ArgUtils.parse_string_opt "-e1" e1 "first effect");
+  (ArgUtils.parse_string_opt "-e2" e2 "second effect");
   (ArgUtils.parse_bool "-v" verbose "show various diagnostics");
 ]
 
@@ -223,4 +242,4 @@ let () =
         let includes = !includes
         let libdir = !libdir
       end) in
-  ignore (Run.execute !model)
+  ignore (Run.execute !model !e1 !e2)
