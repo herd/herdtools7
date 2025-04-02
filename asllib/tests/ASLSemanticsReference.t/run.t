@@ -226,3 +226,16 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.DeclareGlobal.asl
   $ aslref SemanticsRule.EvalGlobals.asl
   $ aslref SemanticsRule.MatchFuncRes.asl
+  $ aslref SemanticsRule.CheckRecurseLimit.asl
+  $ aslref SemanticsRule.CheckRecurseLimit.no_limit.asl
+  File SemanticsRule.CheckRecurseLimit.no_limit.asl, line 1, character 0 to
+    line 4, character 4:
+  ASL Warning: the recursive function factorial has no recursive limit
+  annotation.
+  $ aslref SemanticsRule.CheckRecurseLimit.limit_reached.asl
+  File SemanticsRule.CheckRecurseLimit.limit_reached.asl, line 3,
+    characters 37 to 53:
+  ASL Dynamic error: recursion limit reached.
+  [1]
+  $ aslref SemanticsRule.AssignArgs.asl
+  $ aslref SemanticsRule.Call.asl

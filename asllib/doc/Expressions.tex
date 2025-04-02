@@ -1126,7 +1126,7 @@ and the values they evaluate to, as assertions on the values assigned.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[single\_returned\_value]{
-  \evalcall{\env, \vcall.\name, \vcall.\params, \vcall.\args} \evalarrow \Normal(\vms, \newenv) \OrAbnormal\\
+  \evalcall(\env, \vcall.\name, \vcall.\params, \vcall.\args) \evalarrow \Normal(\vms, \newenv) \OrAbnormal\\
   \vms \eqname [(\vv, \vg)]
 }{
   \evalexpr{\env, \ECall(\vcall)} \evalarrow \Normal((\vv, \vg), \newenv)
@@ -1135,7 +1135,7 @@ and the values they evaluate to, as assertions on the values assigned.
 
 \begin{mathpar}
 \inferrule[multiple\_returned\_values]{
-  \evalcall{\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs} \evalarrow \Normal(\vms, \newenv) \OrAbnormal\\
+  \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \Normal(\vms, \newenv) \OrAbnormal\\
   \vms \eqname [i=1..k: (\vv_i, \vg_i)]\\
   \vg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k \\
   \vv \eqdef \nvvector{\vv_{1..k}}
@@ -2917,7 +2917,7 @@ Note that there are two important consequences of producing an arbitrary value w
 \TypingRuleDef{EArbitrary}
 \ExampleDef{Well-typed Arbitrary Value Expressions}
 \listingref{typing-arbitrary} show examples of well-typed arbitrary value expressions.
-\ASLListing{Well-typed arbirary value expressions}{typing-arbitrary}{\typingtests/TypingRule.EArbitrary.asl}
+\ASLListing{Well-typed arbitrary value expressions}{typing-arbitrary}{\typingtests/TypingRule.EArbitrary.asl}
 
 \ProseParagraph
 \AllApply
@@ -2951,7 +2951,7 @@ the expression \verb|ARBITRARY : integer| evaluates to an arbitrary integer valu
 \ASLListing{Evaluating an \texttt{ARBITRARY} expression for an unconstrained integer}{semantics-earbitraryunconstrained}
 {\semanticstests/SemanticsRule.EArbitraryInteger3.asl}
 
-\subsubsection{Evaluation of ARBITRARY for a Costrained Integer Type}
+\subsubsection{Evaluation of ARBITRARY for a Constrained Integer Type}
 In \listingref{semantics-earbitraryconstrained},
 the expression \verb|ARBITRARY : integer {3, 42}| evaluates to either \\
 $\nvint(3)$ or $\nvint(42)$.
