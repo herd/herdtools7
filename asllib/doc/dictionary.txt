@@ -533,6 +533,7 @@ described
 describes
 description
 descriptions
+descriptors
 designed
 desired
 destination

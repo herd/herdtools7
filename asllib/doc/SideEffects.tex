@@ -34,20 +34,18 @@ f \timeframeleq f' \triangleq f \timeframeless f' \lor f = f' \enspace.
 
 We now define some helper functions for constructing time frames.
 
-\hypertarget{def-timeframemax}{}
-We define the maximum of a set of time frames $\timeframemax : \pow{\TTimeFrame} \rightarrow \TTimeFrame$
-as follows:
-\[
-    \timeframemax(T) \triangleq t \text{ such that } t\in T \land \forall t'\in T.\ t' \timeframeleq t \enspace.
-\]
-
 \TypingRuleDef{TimeFrameLDK}
 \hypertarget{def-timeframeofldk}{}
 The function
 \[
     \timeframeofldk(\overname{\localdeclkeyword}{\ldk}) \aslto \overname{\TTimeFrame}{\vt}
 \]
-constructs a \timeframeterm\ $\vt$ from a local declaration keyword $\ldk$.
+constructs a \timeframeterm{} $\vt$ from a local declaration keyword $\ldk$.
+
+\ExampleDef{The Time Frame of Local Storage Declarations}
+The specification in \listingref{TimeFrameLDK} shows examples of local storage declarations
+and their corresponding \timeframesterm{} (in comments).
+\ASLListing{The time frame of local storage declarations}{TimeFrameLDK}{\typingtests/TypingRule.TimeFrameLDK.asl}
 
 \ProseParagraph
 \ProseEqdef{$\vt$}{$\timeframeconstant$ if $\ldk$ is $\LDKConstant$, and
@@ -74,6 +72,11 @@ The function
     \timeframeofgdk(\overname{\globaldeclkeyword}{\gdk}) \aslto \overname{\TTimeFrame}{\vt}
 \]
 constructs a \timeframeterm\ $\vt$ from a global declaration keyword $\gdk$.
+
+\ExampleDef{The Time Frame of Global Storage Declarations}
+The specification in \listingref{TimeFrameGDK} shows examples of global storage declarations
+and their corresponding \timeframesterm{} (in comments).
+\ASLListing{The time frame of global storage declarations}{TimeFrameGDK}{\typingtests/TypingRule.TimeFrameGDK.asl}
 
 \ProseParagraph
 \ProseEqdef{$\vt$}{$\timeframeconstant$ if $\gdk$ is $\GDKConstant$,
@@ -163,6 +166,12 @@ The function
 \]
 retrieves the \timeframeterm\ $\vt$ from a \sideeffectdescriptorterm\ $\vs$.
 
+\ExampleDef{The Time Frame of Side Effect Descriptors}
+The specification in \listingref{TimeFrame} shows examples
+of expressions and statements and, in comments, their corresponding \sideeffectdescriptorsetsterm{}
+and \timeframesterm.
+\ASLListing{The time frame of side effect descriptors}{TimeFrame}{\typingtests/TypingRule.TimeFrame.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -231,10 +240,16 @@ retrieves the \timeframeterm\ $\vt$ from a \sideeffectdescriptorterm\ $\vs$.
 \[
     \sideeffectispure(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
 \]
-defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{pure},
+defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{\pure},
 yielding the result in $\vb$.
-Intuitively, a \emph{pure} \sideeffectdescriptorterm\ helps to establish that
+Intuitively, a \emph{\pure} \sideeffectdescriptorterm\ helps to establish that
 an expression evaluates without modifying values of storage elements.
+
+\ExampleDef{Pure and Symbolically Evaluable Side Effect Descriptors}
+The specification in \listingref{SideEffectIsPure} shows examples of expressions
+and statements, and their corresponding \sideeffectdescriptorsterm{} and whether
+those are \pure{} or not and whether they are \symbolicallyevaluable{} or not (in comments).
+\ASLListing{Side effect descriptors and whether they are pure and symbolically evaluable}{SideEffectIsPure}{\typingtests/TypingRule.SideEffectIsPure.asl}
 
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if $\vt$ is either a \ReadLocalTerm, a \ReadGlobalTerm,
@@ -260,6 +275,8 @@ Intuitively, a \emph{symbolically evaluable} \sideeffectdescriptorterm\ helps es
 an expression evaluates without failing assertions, without modifying any storage element,
 and always yielding the same result, that is, deterministically.
 
+See \ExampleRef{Pure and Symbolically Evaluable Side Effect Descriptors}.
+
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if $\vs$ is either
 a \ReadLocalTerm\ associated with an immutable storage element, or
@@ -283,6 +300,20 @@ The function
 tests whether the local declaration keyword $\ldk$ relates to an immutable storage element,
 yielding the result in $\vb$.
 
+\ExampleDef{Immutability of Local Declarations}
+The following table shows local declarations appearing in \listingref{TimeFrame}
+and whether their corresponding local declaration keywords are considered immutable or not.
+
+\begin{center}
+\begin{tabular}{lll}
+\textbf{Local Declaration} & \textbf{Immutable?}\\
+\hline
+\verb|var x : integer;|         & $\False$\\
+\verb|constant cl = 10;|        & $\True$\\
+\verb|let ll : integer = 20;|   & $\True$\\
+\end{tabular}
+\end{center}
+
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if $\ldk$ corresponds to either the keyword \texttt{constant} or
 the keyword \texttt{let}.
@@ -302,6 +333,21 @@ The function
 \]
 tests whether the global declaration keyword $\gdk$ relates to an immutable storage element,
 yielding the result in $\vb$.
+
+\ExampleDef{Immutability of Global Declarations}
+The following table shows global declarations appearing in \listingref{TimeFrame}
+and whether their corresponding global declaration keywords are considered immutable or not.
+
+\begin{center}
+\begin{tabular}{lll}
+\textbf{Global Declaration}                 & \textbf{Immutable?}\\
+\hline
+\verb|constant cg = 20;|                    & $\True$\\
+\verb|let lg = 30;|                         & $\True$\\
+\verb|config cfg : integer{0..100} = 40;|   & $\True$\\
+\verb|var vg : integer = 50;|               & $\False$\\
+\end{tabular}
+\end{center}
 
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if $\gdk$ corresponds to either the keyword \texttt{constant},
@@ -328,43 +374,42 @@ defines the maximal \timeframeterm\ for a \sideeffectsetterm\ $\vses$, which is 
 in $\vf$.
 (If $\vses$ is empty, the result is \timeframeconstant.)
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-    \item \AllApplyCase{execution}
-    \begin{itemize}
-        \item there exists a \sideeffectdescriptorterm\ in $\vses$ that is either
-            a \WriteLocalTerm, a \WriteGlobalTerm, an \ThrowExceptionTerm, a \RecursiveCallTerm, or
-            a \NonDeterministicTerm;
-        \item define $\vf$ as \timeframeexecution.
-    \end{itemize}
+\hypertarget{def-timeframemax}{}
+We define the maximum of a set of time frames $\timeframemax : \pow{\TTimeFrame} \rightarrow \TTimeFrame$
+as follows:
+\[
+    \timeframemax(T) \triangleq t \text{ such that } t\in T \land \forall t'\in T.\ t' \timeframeleq t \enspace.
+\]
 
-    \item \AllApplyCase{reads}
+\ProseParagraph
+\AllApply
+\begin{itemize}
+    \item define $\vreads$ as the subset of $\vses$ that contains only
+    \sideeffectdescriptorsterm\ that are either \ReadLocalTerm\ or \ReadGlobalTerm;
+    \item \OneApplies
     \begin{itemize}
-        \item define $\vreads$ as the subset of $\vses$ that contains only
-            \sideeffectdescriptorsterm\ that are either \ReadLocalTerm\ or \ReadGlobalTerm;
-        \item $\vreads$ is equal to $\vses$;
-        \item define $\vtimeframes$ as the \timeframesterm\ appearing in the \sideeffectdescriptorsterm\
-            in $\vreads$;
-        \item define $\vf$ as the greatest time frame in the union of $\vtimeframes$ and the singleton set for \timeframeconstant,
-              where $\timeframeleq$ is used to compare any two \timeframesterm.
+        \item \AllApplyCase{execution}
+        \begin{itemize}
+            \item $\vreads$ is not equal to $\vses$;
+            \item define $\vf$ as \timeframeexecution.
+        \end{itemize}
+
+        \item \AllApplyCase{reads}
+        \begin{itemize}
+            \item $\vreads$ is equal to $\vses$;
+            \item define $\vtimeframes$ as the \timeframesterm\ appearing in the \sideeffectdescriptorsterm\
+                in $\vreads$;
+            \item define $\vf$ as the greatest time frame in the union of $\vtimeframes$ and the singleton set for \timeframeconstant,
+                where $\timeframeleq$ is used to compare any two \timeframesterm.
+        \end{itemize}
     \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[execution]{
-    {
-    \exists \vs \in \vses.\ \configdomain{\vs} \in \left\{
-        \begin{array}{c}
-            \WriteLocal, \\
-            \WriteGlobal, \\
-            \ThrowException, \\
-            \RecursiveCall, \\
-            \NonDeterministic
-        \end{array}
-        \right\}
-    }
+    \vreads \eqdef \{ \vs \in \vses \;|\; \configdomain{\vs} \in \{\ReadLocal, \ReadGlobal\} \}\\
+    \vses \neq \vreads
 }{
     \maxtimeframe(\vses) \typearrow \overname{\timeframeexecution}{\vf}
 }
@@ -373,7 +418,7 @@ in $\vf$.
 \begin{mathpar}
 \inferrule[reads]{
     \vreads \eqdef \{ \vs \in \vses \;|\; \configdomain{\vs} \in \{\ReadLocal, \ReadGlobal\} \}\\
-    \vses = \vreads\\
+    \vses = \vreads\\\\
     \vtimeframes \eqdef \{ \timeframe(\vfp) \;|\; \vfp\in\vreads \} \\
     \vf \eqdef \timeframemax(\vtimeframes \cup \{\timeframeconstant\})
 }{

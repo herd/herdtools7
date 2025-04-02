@@ -613,3 +613,7 @@ ASL Typing Tests / annotating types:
     provided integer {0..128}.
   [1]
   $ aslref TypingRule.SubstExpr.asl
+  $ aslref --no-exec TypingRule.TimeFrameLDK.asl
+  $ aslref --no-exec TypingRule.TimeFrameGDK.asl
+  $ aslref --no-exec TypingRule.TimeFrame.asl
+  $ aslref --no-exec TypingRule.SideEffectIsPure.asl
