@@ -270,8 +270,11 @@ let applies_atom_rmw _ ar aw = match ar,aw with
 let show_rmw_reg _ = true
 
 let compute_rmw rmw old co =
-  match rmw with
+  let old = Code.value_to_int old in
+  let co = Code.value_to_int co in
+  let new_value = match rmw with
   | Exch -> co
-  | Add -> old+co
+  | Add -> old+co in
+  Code.value_of_int new_value
 
 include NoEdge

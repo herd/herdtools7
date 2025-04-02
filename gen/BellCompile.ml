@@ -166,6 +166,8 @@ zz        (fun r lab -> bcc Ne r rP lab)
     let emit_access  st p init e = match e.dir with
     | None -> Warn.fatal "BellCompile.emit_access"
     | Some d ->
+        (* collapse the value `v` in event `e` to integer *)
+        let value = Code.value_to_int e.v in
         match d,e.atom,e.loc with
         | R,None,Data loc ->
             let r,init,cs,st = emit_load st p init loc in
@@ -174,10 +176,10 @@ zz        (fun r lab -> bcc Ne r rP lab)
             let r,init,cs,st = emit_load_tagged st p init loc a in
             Some r,init,cs,st
         | W,None,Data loc ->
-            let init,cs,st = emit_store st p init loc e.v in
+            let init,cs,st = emit_store st p init loc value in
             None,init,cs,st
         | W,Some a,Data loc ->
-            let init,cs,st = emit_store_tagged st p init loc e.v a in
+            let init,cs,st = emit_store_tagged st p init loc value a in
             None,init,cs,st
         | J,_,_ -> emit_joker st init
         | _,_,Code _ -> Warn.fatal "No code location in Bell"
@@ -221,6 +223,8 @@ let emit_rmw _ = assert false
     let emit_access_dep_addr st p init e r1 =
       let idx,st = next_reg st in
       let cA = calc_zero idx r1 in
+      (* collapse the value `v` in event `e` to integer *)
+      let value = Code.value_to_int e.v in
       begin match Misc.as_some e.dir,e.atom,e.loc with
       | R,None,Data loc ->
           let rC,init,cs,st = emit_load_idx st p init loc idx in
@@ -229,10 +233,10 @@ let emit_rmw _ = assert false
           let rC,init,cs,st = emit_load_idx_tagged st p init loc idx a in
           Some rC,init,cA::cs,st
       | W,None,Data loc ->
-          let init,cs,st = emit_store_idx st p init loc e.v idx in
+          let init,cs,st = emit_store_idx st p init loc value idx in
           None,init,cA::cs,st
       | W,Some a,Data loc ->
-          let init,cs,st = emit_store_idx_tagged st p init loc e.v idx a in
+          let init,cs,st = emit_store_idx_tagged st p init loc value idx a in
           None,init,cA::cs,st
       | J,_,Data _ -> emit_joker st init
       | _,_,Code _ -> Warn.fatal "No code location for Bell"
@@ -243,7 +247,7 @@ let emit_rmw _ = assert false
     | Some R,_ ->  Warn.fatal "data dependency to load"
     | Some W,Data loc ->
         let r2,st = next_reg st in
-        let cs2 =  [calc_zero r2 r1;Instruction (addk r2 r2 e.v);] in
+        let cs2 =  [calc_zero r2 r1;Instruction (addk r2 r2 (Code.value_to_int e.v));] in
         begin match e.atom with
         | None ->
             let init,cs,st = emit_store_reg st p init loc r2 in
@@ -262,7 +266,7 @@ let emit_rmw _ = assert false
         let st = A.next_ok st in
         let rd,st = next_reg st in
         let c =
-          [Instruction (movne rd r1 v1) ;
+          [Instruction (movne rd r1 (Code.value_to_int v1)) ;
            Instruction (branchcc rd lab) ;
            Instruction (inc ok);] in
         let ropt,init,cs,st = emit_access st p init e in
@@ -291,7 +295,7 @@ let emit_rmw _ = assert false
     let do_check_load p st r e =
       let ok,st = A.ok_reg st in
       (fun k ->
-        Instruction (movne tempo1 r e.v)::
+        Instruction (movne tempo1 r (Code.value_to_int e.v))::
         Instruction (branchcc tempo1 (Label.last p))::
         Instruction (inc ok)::k),
       A.next_ok st

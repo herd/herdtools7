@@ -84,7 +84,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     let do_kvm = Variant_gen.is_kvm O.variant
 
-    type v = I of int | S of string | P of C.A.PteVal.t
+    (* TODO change the type? *)
+    type v = I of Code.v | S of string | P of C.A.PteVal.t
     let pte_def = P (C.A.PteVal.default "*")
     let () = ignore pte_def
 
@@ -136,7 +137,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         (fun _ -> true)
 
     let intset2vset is =
-      IntSet.fold (fun v k -> VSet.add (I v) k) is VSet.empty
+      IntSet.fold (fun v k -> VSet.add (I (Code.value_of_int v)) k) is VSet.empty
 
     let add_final_v p r v finals = (C.A.of_reg p r,intset2vset v)::finals
 
@@ -146,7 +147,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       let loc = C.A.of_reg p r in
       (loc,VSet.singleton (S v))::finals
 
-    let cons_int loc i fs = (loc,VSet.singleton (I i))::fs
+    let cons_int loc i fs = (loc,VSet.singleton (I (Code.value_of_int i)))::fs
 
     let cons_vec loc t fs =
       let vec = Code.add_vector O.hexa (Array.to_list t) in
@@ -181,16 +182,18 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                  match evt.C.C.vecreg with
                  | [] -> assert false
                  | v0::_ -> v0 in
-                let vec = Code.add_vector O.hexa v0 in
+                let vec = v0
+                 |> List.map Code.value_to_int 
+                 |> Code.add_vector O.hexa in
                 Some (S vec)
             | Code.Tag ->
-                Some (S (Code.add_tag (Code.as_data evt.C.C.loc) evt.C.C.v))
+                Some (S (Code.add_tag (Code.as_data evt.C.C.loc) (Code.value_to_int evt.C.C.v)))
             | Code.Pte ->
                 Some (P evt.C.C.pte)
             end
         | Some Code.W ->
            assert (evt.C.C.bank = Code.Ord || evt.C.C.bank = Code.CapaSeal) ;
-           Some (I (prev_value evt.C.C.v))
+           Some (I ( evt.C.C.v |> Code.value_to_int |> prev_value |> Code.value_of_int ) )
         | None|Some Code.J -> None in
         if show_in_cond n then match v with
         | Some v ->
@@ -201,7 +204,9 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
              | Code.VecReg _ ->
                 begin match evt.C.C.vecreg with
                 | _::vs ->
-                   List.map (fun v -> S (Code.add_vector O.hexa v)) vs
+                   List.map (fun v -> S 
+                   ( v |> List.map Code.value_to_int
+                     |> Code.add_vector O.hexa ) ) vs
                 | _ -> assert false
                 end
              | _ -> [] in
@@ -239,13 +244,14 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     let dump_val = function
       | I i ->
+          let i = Code.value_to_int i in
           if O.hexa then sprintf "0x%x" i
           else sprintf "%i" i
       | S s -> s
       | P p -> C.A.PteVal.pp p
 
     let dump_tag = function
-      | I i -> i
+      | I i -> Code.value_to_int i
       | _ -> Warn.fatal "Tags can only be of type integer"
 
     let dump_atom r v = match Misc.tr_atag (C.A.pp_location r) with

@@ -258,7 +258,7 @@ let get_fence n =
               | None   -> finals (* Code write *)
               | Some r -> (* fetch! *)
                   let m,fenv =  finals in
-                  m,F.add_final_v p r (IntSet.singleton (U.fetch_val n))
+                  m,F.add_final_v p r (IntSet.singleton (Code.value_to_int (U.fetch_val n)))
                     fenv
               end),
           st
@@ -441,7 +441,9 @@ let max_set = IntSet.max_elt
       let open Config in
       function
       | [] -> i,[],[]
+      (* `vs` : (IntSet.elt array * IntSet.t) list list *)
       | (x,vs)::xvs ->
+         let vs = List.map ( List.map ( fun (v, vset) -> (Array.map Code.value_to_int v, vset) ) ) vs in
          let i,c,f = match O.cond with
            | Observe ->
               let vs = List.flatten vs in
@@ -561,7 +563,7 @@ let max_set = IntSet.max_elt
     let rs = r::A.get_friends st r in
     let f =
       List.fold_right2
-        (fun r v -> F.add_final_loc p r (Code.add_vector O.hexa v))
+        (fun r v -> F.add_final_loc p r (v |> List.map Code.value_to_int |> Code.add_vector O.hexa))
         rs vs f in
     i,code@c,f,st
 
@@ -595,8 +597,8 @@ let max_set = IntSet.max_elt
          | VecReg _ ->
             do_observe_local_simd st p i code f x bank nxt
          | _ ->
-            let v = nxt.C.v
-            and prev_v = lst.C.evt.C.v in
+            let v = Code.value_to_int nxt.C.v
+            and prev_v = Code.value_to_int lst.C.evt.C.v in
             let all_lst =
               try StringMap.find x lsts
               with Not_found -> C.evt_null in
@@ -611,15 +613,15 @@ let max_set = IntSet.max_elt
               do_observe_local  bank O.obs_type st p i code f x (Some prev_v) v
          end
       | Data x,Tag ->
-          let v = lst.C.next.C.evt.C.v in
+          let v = Code.value_to_int lst.C.next.C.evt.C.v in
           let r,i,c,st = Comp.emit_obs Tag st p i x in
           i,code@c,F.add_final_loc p r (Code.add_tag x v) f,st
       | Data x,CapaTag ->
-          let v = lst.C.next.C.evt.C.v in
+          let v = Code.value_to_int lst.C.next.C.evt.C.v in
           let r,i,c,st = Comp.emit_obs CapaTag st p i x in
           i,code@c,F.add_final_loc p r (Code.add_capability x v) f,st
       | Data x,CapaSeal ->
-          let v = lst.C.next.C.evt.C.v in
+          let v = Code.value_to_int lst.C.next.C.evt.C.v in
           let r,i,c,st = Comp.emit_obs CapaSeal st p i x in
           i,code@c,F.add_final_loc p r (Code.add_capability x v) f,st
       | Data x,Pte ->
@@ -629,7 +631,7 @@ let max_set = IntSet.max_elt
          let bank = nxt.C.bank in
          begin match bank with
          | Ord|Pair ->
-            let v = nxt.C.v in
+            let v = Code.value_to_int nxt.C.v in
             do_observe_local bank O.obs_type st p i code f x None v
          | VecReg _ ->
             do_observe_local_simd st p i code f x bank nxt

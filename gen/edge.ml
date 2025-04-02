@@ -68,7 +68,7 @@ module type S = sig
   val is_node : tedge -> bool
   val is_insert_store : tedge -> bool
   val is_non_pseudo : tedge -> bool
-  val compute_rmw : rmw -> int -> int -> int
+  val compute_rmw : rmw -> Code.v -> Code.v -> Code.v
 
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
 

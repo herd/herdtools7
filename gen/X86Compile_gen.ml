@@ -112,7 +112,10 @@ struct
 
   let emit_joker st init = None,init,[],st
 
-  let emit_access st _p init e = match e.C.dir,e.C.loc with
+  let emit_access st _p init e = 
+  (* collapse the value `v` in event `e` to integer *)
+  let value = Code.value_to_int e.C.v in
+  match e.C.dir,e.C.loc with
   | None,_ -> Warn.fatal "TODO"
   | Some R,Data loc ->
       let rA,st = next_reg st in
@@ -127,17 +130,17 @@ struct
         (match e.C.atom with Some Atomic -> true | None -> false)
       then
         let rX,st = next_reg st in
-        None,init,pseudo (emit_sta loc rX e.C.v),
+        None,init,pseudo (emit_sta loc rX value),
         st
       else
-        None,init,pseudo [emit_store loc e.C.v],st
+        None,init,pseudo [emit_store loc value],st
   | Some J,_ -> emit_joker st init
   | _,Code _ -> Warn.fatal "No code location for X86"
 
   let emit_exch st _p init er ew =
     let rA,st = next_reg st in
     rA,init,
-    pseudo  (emit_sta (Code.as_data er.C.loc) rA ew.C.v),
+    pseudo  (emit_sta (Code.as_data er.C.loc) rA (Code.value_to_int ew.C.v)),
     st
 
   let emit_rmw () st p init er ew  =
@@ -166,7 +169,7 @@ struct
   let do_check_load p st r e =
     let ok,st = A.ok_reg st in
     (fun k ->
-      Instruction (emit_cmp_int_ins r e.C.v)::
+      Instruction (emit_cmp_int_ins r (Code.value_to_int e.C.v))::
       Instruction (emit_jne_ins (Label.last p))::
       Instruction (emit_inc ok)::
       k),

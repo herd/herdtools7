@@ -33,8 +33,12 @@ val myok_proc : int -> loc
 
 
 
-type v = int
+type v = NoValue | Plain of int
 val pp_v : ?hexa:bool -> v -> string
+val no_value : v
+val value_to_int : v -> int
+val value_of_int : int -> v
+val value_compare : v -> v -> int
 
 type proc = Proc.t
 val pp_proc : proc -> string
@@ -94,8 +98,11 @@ type 'a bank = Ord | Tag | CapaTag | CapaSeal | Pte | VecReg of 'a | Pair | Inst
 
 val pp_bank : 'a bank -> string
 
-val add_tag : string -> v -> string
+(* TODO consider change the type `v` *)
+val add_tag : string -> int -> string
 
-val add_capability : string -> v -> string
+(* TODO consider change the type `v` *)
+val add_capability : string -> int -> string
 
+(* TODO consider change the type `v` *)
 val add_vector : bool -> int list -> string
