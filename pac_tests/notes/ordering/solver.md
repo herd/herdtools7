@@ -26,8 +26,8 @@ exists
 ( ~Fault(P0) /\ 0:x0=x /\ not (0:x1=pac(x, db, 0)) )
 ```
 
-and in this case the final condition is unreachable because it ensure that their
-is no hash collisions. To solve this problem we may use a constraints solver to
+And in this case the final condition is unreachable because it ensures that there
+is no hash collisions. To solve this problem we may use a constraint solver to
 check that the current set of collisions doesn't generate a contradiction.
 
 ## Solving in presence of `FEAT_FPAC` and without `FEAT_CONSTPACFIELD`
@@ -45,8 +45,8 @@ of the form
 
 (with `pac(varrd, key, modifier) == concat(pac_field(vaddr, key, modifier), lsb(x))`)
 
-So we can solve these equations by using an union find data structure to
-maintain the set of equalities, and raise a contradiction each times that the two
+So we can solve these equations by using a union find data structure to
+maintain the set of equalities, and raise a contradiction each time that the two
 operands of an inequality are in different equivalence classes. This method works
 until `2^n - 1` inequalities, with `n` the number of bits in the pac fields, as
 explained in the second part.
@@ -66,8 +66,8 @@ exists
 (0:x0=pac(pac(x, db, 0), da, 42))
 ```
 
-and we can note that the `pac` function is commutative, associative, and is it's
-own inverse. Because it use an exclusive OR and never depend of the previous
+and we can note that the `pac` function is commutative, associative, and is its
+own inverse. Because it use an exclusive OR and never depend on the previous
 pac fields but only of the original virtual address `x`, and canonical act as a
 zero (no pac field is present).
 
@@ -85,41 +85,41 @@ simplex algorithm). The idea is to maintain a partition of the variables using a
 set of "basic" variables and a set of "non-basic" variables and maintain the
 equations in a canonical form:
 
-- forall `x` basic, `x = y(1) ^ ... ^ y(n)` with `y` a set of non basic
+- forall `x` basic, `x = y(1) ^ ... ^ y(n)` with `y` a set of non-basic
     variables, so `y(1) ^ ... ^ y(n)` act as the "definition" of `x`
-- each inequality is of the form `y(1) ^ ... ^ y(n) != 0` with `y` a set of non
-    basic variables
+- each inequality is of the form `y(1) ^ ... ^ y(n) != 0` with `y` a set of
+    non-basic variables
 
 ### Proof
 
-With this method the equalities are rewrite in a way such that they act as
+With this method the equalities are rewriting in a way such that they act as
 definitions for the basic variables, and the non-basic variables are
 unconstrained, so solving the set of inequality is relatively easy: If an
 inequality is of the form `0 != 0` (`y` is empty), we found a contradiction.
-Otherwise if we assume that their is less than `2^n - 1` inequalities (with `n`
-the number of bits in the PAC field), then their is no contradiction:
+Otherwise, if we assume that there is less than `2^n - 1` inequalities (with `n`
+the number of bits in the PAC field), then there is no contradiction:
 
-- if `N` is the set of non basic variables, we can iterate over it's elements:
+- if `N` is the set of non-basic variables, we can iterate over its elements:
     - let `N(1) != f1(N(2), N(3), ...)`, `N(1) != f2(N(2),...)`... the inequalities
-        that contains `N(1)`, if their is less than `2^n - 1` such inequalities,
+        that contain `N(1)`, if there is less than `2^n - 1` such inequalities,
         for all values of `N(2)`, `N(3)` we can find a value for `N(1)`
         different to `f1(N(2), ...)`, `f2(N(3), ...)`, ...
-    - and we continue by using the inequalities that doesn't contains `N(1)`...
+    - and we continue by using the inequalities that doesn't contain `N(1)`...
 
-So if the program have more than `2^n - 1` inequalities I just raise an user
+So if the program have more than `2^n - 1` inequalities I just raise a user
 error. This method also prove the soundness of the previous union-find
 algorithm.
 
 ### Algorithm
 
-So all we have to do is to maintains the canonical form each times we add a new
-equation and check if all the inequalities are not empty. To do it each times we
+So all we have to do is to maintain the canonical form each time we add a new
+equation and check if all the inequalities are not empty. To do it each time we
 want to add an equation `x(1) ^ ... ^ x(n) == 0` or `x(n) ^ ... ^ x(n) != 0` we
-start by replacing all the basic variables by their definition in term of
-non-basic variables so we can assume that all the variables are non-basic, and:
+start by replacing all the basic variables by their definition in terms of
+non-basic variables, so we can assume that all the variables are non-basic, and:
 
 - if this is an equality, if it is not empty, we set `x(1)` as a new basic
-    variable of definition `x(2) ^ ... ^ x(n)` and remplace it by it's
+    variable of definition `x(2) ^ ... ^ x(n)` and remplace it by its
     definition in all the current equations (equalities and inequalities). And
     if an inequality became empty, then we found a contradiction. This operation
     is call a pivot, and the new problem is equivalent to the oringinal problem.
@@ -163,7 +163,7 @@ pivot variable and find the new solver state:
 - equalities: `{a := b ^ c}`
 - inequalities: `{}`
 
-Finally we add the inequality `a ^ b != 0` that we simplify using the equality
+Finally, we add the inequality `a ^ b != 0` that we simplify using the equality
 `a == b ^ c`: `a ^ b != 0 <==> (b ^ c) ^ b != 0 <==> c != 0` because `XOR`
 is associative, commutative and involutive. So the final state of the solver is
 
@@ -171,20 +171,20 @@ is associative, commutative and involutive. So the final state of the solver is
 - equalities: `{a := b ^ c}`
 - inequalities: `{c != 0}`
 
-and this state is satisfiable because it contains less than `2^n - 1`
+And this state is satisfiable because it contains less than `2^n - 1`
 inequalities, and they are non-empty.
 
 ### Discussion about the hypothesis
 
-This approach is not perfect because it suppose that we have less than `2^n`
-inequalities but it is very unlikely to have this number of inequalities because
+This approach is not perfect because it supposes that we have less than `2^n`
+inequalities, but it is very unlikely to have this number of inequalities because
 this number is per execution (with `n=15` for kvm-unit-tests). So the program
 must either have a loop that we unfold 32768 times, or have more than 32768
 lines of assembly...
 
-An other assumption is that we don't use virtual addresses with non-canonical
+Another assumption is that we don't use virtual addresses with non-canonical
 pac fields as modifier for the pac computation. This assumption may change the
-soundness: without it we must improve the union-find algorithm with a congruence
+soundness: without it, we must improve the union-find algorithm with a congruence
 closure algorithm, and the simplex-like algorithm with a Nelson-Oppen algorithm
 to combine it with a congruence closure algorithm and this make the
 implementation of the solver very hard.
@@ -211,14 +211,14 @@ solver is in charge of solving the constraints generated by the event monad (in
 
 To solve the constraints, the solver use a two phases algorithm:
 
-- The first phase is an union find algorithm to solve all the constraints of the
+- The first phase is a union find algorithm to solve all the constraints of the
     form `Assign (V.Var i, Atom (V.Var j))` and generate a new system of
     equations without these constraints by replacing each variable by the
-    representant of it's equivalence class.
+    representant of its equivalence class.
 - The second phase is a topological sort to identify the strong connected
     components. Then the solver complete a solution (a map from variables to
     constants) following the topological order, and perform one pass on each
-    SCC (strong connected components). Then it return the solution and the set
+    SCC (strong connected components). Then it returns the solution and the set
     of unsolved constraints if it doesn't find a contradiction.
 
 
@@ -251,7 +251,7 @@ SCC2: { B: S0 := S0 + S1 }
 ```
 
 And the solver will find a solution `{S0 := 0; S1 := 0; S2 := 0}` (the solver
-assign `S2` to the value of the representant of it's equivalence class).
+assign `S2` to the value of the representant of its equivalence class).
 
 
 ## Adding the collision solver
@@ -259,7 +259,7 @@ assign `S2` to the value of the representant of it's equivalence class).
 
 ### Changes in `archOp.ml`, `AArch64Op.ml` and `value.mli`
 
-Now each architecture can declare it's own type of constraint, using a generic
+Now each architecture can declare its own type of constraint, using a generic
 interface like:
 
 ```ocaml
@@ -275,7 +275,7 @@ The new `predicate` type represent a constraint that a constraint solver
 raise the exception `Constraint (pred, ctrue, cfalse)`, then the result must be
 interpreted as `if pred then ctrue else cfalse`. And each times this
 exception is raise, `eventsMonad.ml` will delay the resolution of the operation
-in a similar way that the `Undetermined` exception.
+similarly that the `Undetermined` exception.
 
 And if we have to look for the equality of two constants, now the result of the
 equality must be interpreted using:
@@ -377,8 +377,8 @@ let solve_predicate (pred: V.arch_pred) (vtrue vfalse: V.v) : V.v solver_monad =
         (let+ _ = add_predicate false pred in vfalse)
 ```
 
-This function take a literal, and split it's state in two to solve the case
-asssuming the predicate, and the case assuming it's negation in two in two
+This function take a literal, and split its state in two to solve the case
+asssuming the predicate, and the case assuming its negation in two
 independant traces. Then we can use those functions to define all the operators
 we need for the resolution:
 

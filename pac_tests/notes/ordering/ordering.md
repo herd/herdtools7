@@ -12,8 +12,8 @@ Pointer authentication add some new instructions, some basic instructions, and
 some combined instruction to do the `pac/aut` instruction and the associated
 memory operation (load, branch, store...) in one cycle, the basic instructions
 are:
-- `pac* x,y` with `*`the correponding authentication key (may be `da`, `db`,
-    `ia` or `ib`), and their is some special instruction for diffent specific
+- `pac* x,y` with `*`the correponding authentication key (`da`, `db`,
+    `ia` or `ib`), and there is some special instruction for diffent specific
     values of `y`, like `pacdza x` for `y=XZR`. This instruction add a pac field
     (a cryptographic signature of `(x, y)` using the given key) in the most
     significant bits of the virtual address `x`. We call `y` the modifier.
@@ -21,20 +21,20 @@ are:
     abscence of address tagging the two instruction have the same semantic.
 - `aut* x, y`: authenticate the pac field of a virtual address using a given
     key, a virtual address `x` and a modifier `y`. If the anthentication is a
-    success then this instruction return the initial value of `x` (it remove
+    success then this instruction return the initial value of `x` (it removes
     it's pac field), otherwise a fault is generated.
 
-To understand the sequencial behaviour of these instruction we can write the
+To understand the sequencial behaviour of these instructions we can write the
 following simplified table (in abscence of hash collisions):
 
 | x0:         | x                  | pac(x,da,0)        | pac(x,ia,0)        |
 |:------------|:-------------------|:-------------------|:-------------------|
 | ldr x1,[x0] | `x1 <- mem[x]`     | Fault(Translation) | Fault(Translation) |
-| pacdza x0   | pad(x,da,0)        | non deterministic  | non deterministic  |
+| pacdza x0   | pad(x,da,0)        | non-deterministic  | non-deterministic  |
 | autdza x0   | Fault(PacCheck:DA) | x                  | Fault(PacCheck:DA) |
 | xpacd x0    | x                  | x                  | x                  |
 
-Here the non-deterministic means that `pacda` apply to a non-canonical virtual
+Here, the non-deterministic means that `pacda` apply to a non-canonical virtual
 address (most significant bits to `0...0` or `1...1`) can overwrite the bit 55
 by the bit 63, and "forget" the virtual address range of the original pointer:
 the `aut*` and `xpac*` use the bit 55 to deduce the virtual address range of the
@@ -53,7 +53,7 @@ xpacd x0  ;
 
 can write `x` in `x0` with probability `0.5`, or `0b1...10...0 ^ x` with
 probability `0.5` (the number of `1` is the number of bits in the pac field).
-For this reason my implementation in herd7 will raise an user error if we try to
+For this reason my implementation in herd7 will raise a user error if we try to
 add two pac field in a pointer using the `pac*` instruction.
 
 ## Hash collisions
@@ -63,7 +63,7 @@ significant bits of a virtual address. As example according to the tests I did
 in `KVM-unit-tests`, they are `15` bits (the PAC field is `16` bits long but the
 bit `55` is reserved to know the virtual address range of the signed pointer),
 so the probability that two random pac fields are equals is `p=1 / 32768` but
-this number depend of the size of the virutal address and may be lower or higher
+this number depend on the size of the virutal address and may be lower or higher
 in another context. In particular this means that this litmus test:
 
 ```
@@ -88,10 +88,10 @@ P0          ;
 exists ( ~Fault(P0, PacCheck:DB) )
 ```
 
-This means that each times we see an equality test that compare two pac fields,
+This means that each time we see an equality test that compare two pac fields,
 if this test may fail, we must split the states in two because even if the pac
 fields use different key or modifiers, they may be equal because of a hash
-collision. But `pac(x, da, 0)` wil always be different to `pac(y, da, 0)` in
+collision. But `pac(x, da, 0)` will be always different to `pac(y, da, 0)` in
 abscence of aliasing because the less significant bits of `pac(x, da, 0)` are
 equals to the less significant bits of `x` (and the bit 55), and these bits are
 enough to see the difference between `x` and `y` (because all the other bits
@@ -154,8 +154,8 @@ collision is observed and not observed in the time.
 
 Pointer signature and authentication may add new ordering dependencies in the
 memory model, in particular data dependency because the output of `pac*`, `aut*`
-and `xpac*` depend of both of their inputs. But also control dependencies
-because `aut*` may fail and memory operation may fail if the virtual address
+and `xpac*` depend on both of their inputs. But also some control dependencies
+because `aut*` may fail, and any memory operation may fail if the virtual address
 they use as input is not canonical.
 
 ### `xpac*` instruction:
@@ -194,14 +194,14 @@ value `pacda(x, da, 0x0)` in the destination register (`x0` in this example).
 
 So here is an example of litmus test with the pacda instruction:
 
-The `pac*` instruction semantic depend of the status of the register
+The `pac*` instruction semantic depend on the status of the register
 `SCTLR_EL1.En*` represented in the litmus test by the presence of the variant
 `pac`:
 
-- If `pac` is not set, then `pac*` ececute like a `mov Xd,Xd`, si their is a
+- If `pac` is not set, then `pac*` ececute like a `mov Xd,Xd`, si there is a
     `basic-dep` between the register-read event of `Xd` and the register-write
     event of `Xd`.
-- If `pac` is set the their is a `basic dependency` between the register-read
+- If `pac` is set then there is a `basic dependency` between the register-read
     event of `Xd` and the register-write event of
     `Xd`. And a `basic-dependency` between the regisger-read event of the
     register `Xn` and the register-write event of `Xd`.
@@ -246,21 +246,21 @@ And here is the expected event graph for an execution of `pacda x0,x1`:
 
 ### `aut*` instruction with `FEAT_PAuth` but without `FEAT_PAuth2`
 
-If the key associated with an authentication instruction is disable, as example
+If the key associated with an authentication instruction is disabled, as example
 if we try to execute `autda Xd,Xn` with `SCTLR_EL1.EnDA = 0`, then `autda` will
 execute like a `mov Xd,Xd` instruction, so their is a `basic-dep` between the
 register-read event of `Xd` and the register-write event of `Xd`.
-Otherwise if `SCTLR_EL1.EnDA = 1`, then
-- If the authentication succede, then their is a `basic-dep` between the
+Otherwise, if `SCTLR_EL1.EnDA = 1`, then
+- If the authentication succede, then there is a `basic-dep` between the
     register-read event of `Xd` and the register-write event of the
     register `Xd`. And a `pick-basic-dep` between the register-read event of the
     register `Xn` and the register-write event of `Xd`.
-- Otherwise, their is a `basic-dep` between the register-read event of the
+- Otherwise, there is a `basic-dep` between the register-read event of the
     register `Xd` and the register-write event of `Xd`. And a
     `pick-basic-dep` between the register-read event of `Xn` and the
     register-write event of `Xd`.
 
-One can observe those dependencies using some litmus tests. Here is two litmus
+One can observe those dependencies using some litmus tests. Here are two litmus
 tests to observe the basic dependency between the register-read/write events in
 `Xd` (one in case of an authentication susccess, and the other in case of a fail
 ):
@@ -282,7 +282,7 @@ str x2,[x1] | eor x3,x2,x2 ;
             | add x0,x0,x3 ;
             | ldr x4,[x0]  ;
 exists ( 1:x2=x /\ 1:x4=z )
-(* Always forbidden with pauth1 because their is an `addr` dependency between
+(* Always forbidden with pauth1 because there is an `addr` dependency between
  * the load and the store in `P1` *)
 ```
 
@@ -303,7 +303,7 @@ str x2,[x1] | autdza x2    |             ;
             | add x0,x0,x3 |             ;
             | ldr x4,[x0]  |             ;
 exists ( 1:x2=x /\ 1:x4=z /\ Fault(P2) )
-(* Always forbidden with pauth1 because their is an `addr` dependency between
+(* Always forbidden with pauth1 because there is an `addr` dependency between
  * the load and the store in `P1` *)
 ```
 
@@ -397,21 +397,21 @@ case of a failure:
 
 ### `aut*` instruction with `FEAT_PAuth2` but without `FEAT_FPAC`
 
-If the key associated with an authentication instruction is disable, as example
+If the key associated with an authentication instruction is disabled, as example
 if we try to execute `autda Xd,Xn` with `SCTLR_EL1.EnDA = 0`, then `autda` will
-execute like a `mov Xd,Xd` instruction, so their is a `basic-dep` between the
+execute like a `mov Xd,Xd` instruction, so there is a `basic-dep` between the
 register-read event of `Xd` and the register-write event of `Xd`.
-Otherwise if `SCTLR_EL1.EnDA = 1`, then
-- If the authentication succede, then their is a `basic-dep` between the
+Otherwise, if `SCTLR_EL1.EnDA = 1`, then
+- If the authentication succede, then there is a `basic-dep` between the
     register-read event of `Xd` and the register-write event of the
     register `Xd`. And a `pick-basic-dep` between the register-read event of the
     register `Xn` and the register-write event of `Xd`.
-- Otherwise, their is a `basic-dep` between the register-read event of the
+- Otherwise, there is a `basic-dep` between the register-read event of the
     register `Xd` and the register-write event of `Xd`. And a
     `basic-dep` between the register-read event of `Xn` and the
     register-write event of `Xd`.
 
-One can observe those dependencies using some litmus tests. Here is two litmus
+One can observe those dependencies using some litmus tests. Here are two litmus
 tests to observe the basic dependency between the register-read/write events in
 `Xd` (one in case of an authentication susccess, and the other in case of a fail
 ):
@@ -433,7 +433,7 @@ str x2,[x1] | eor x3,x2,x2 ;
             | add x0,x0,x3 ;
             | ldr x4,[x0]  ;
 exists ( 1:x2=x /\ 1:x4=z )
-(* Always forbidden without fpac because their is an `addr` dependency between
+(* Always forbidden without fpac because there is an `addr` dependency between
  * the load and the store in `P1` *)
 ```
 
@@ -454,7 +454,7 @@ str x2,[x1] | autdza x2    |             ;
             | add x0,x0,x3 |             ;
             | ldr x4,[x0]  |             ;
 exists ( 1:x2=x /\ 1:x4=z /\ Fault(P2) )
-(* Always forbidden without fpac because their is an `addr` dependency between
+(* Always forbidden without fpac because there is an `addr` dependency between
  * the load and the store in `P1` *)
 ```
 
@@ -533,16 +533,16 @@ case of a failure:
 
 ### `aut*` instruction with `FEAT_FPAC`:
 
-If the key associated with an authentication instruction is disable, as example
+If the key associated with an authentication instruction is disabled, as example
 if we try to execute `autda Xd,Xn` with `SCTLR_EL1.EnDA = 0`, then `autda` will
-execute like a `mov Xd,Xd` instruction, so their is a `basic-dep` between the
+execute like a `mov Xd,Xd` instruction, so there is a `basic-dep` between the
 register-read event of `Xd` and the register-write event of `Xd`.
-Otherwise if `SCTLR_EL1.EnDA = 1`, then
-- If the authentication succede, then their is a `basic-dep` between the
+Otherwise, if `SCTLR_EL1.EnDA = 1`, then
+- If the authentication succede, then there is a `basic-dep` between the
     register-read event of `Xd` and the register-write event of the
     register `Xd`. And a `pick-basic-dep` between the register-read event of the
     register `Xn` and the register-write event of `Xd`.
-- Otherwise, their a fault is generated with a `pick-basic-dep` dependency
+- Otherwise, there a fault is generated with a `pick-basic-dep` dependency
     between the register-read of `Xd` and `Xn`, and the fault
     event.
 
@@ -567,7 +567,7 @@ str x2,[x1] | eor x3,x2,x2 ;
             | add x0,x0,x3 ;
             | ldr x4,[x0]  ;
 exists ( 1:x2=x /\ 1:x4=z )
-(* Always forbidden with fpac because their is an `addr` dependency between
+(* Always forbidden with fpac because there is an `addr` dependency between
  * the load and the store in `P1` *)
 ```
 
@@ -680,7 +680,7 @@ for all the possible set of feature that change this dependency:
 | Yes           | Yes         | `pick-basic-dep`[^2] | Fault (no write)     |
 
 [^1]: Memory model from the ASL implementation
-[^2]: Correspond to the possibility of the `aut*` instruction to predict it's
+[^2]: Correspond to the possibility of the `aut*` instruction to predict its
     success, because this was one of the demand of the architects in
     [this ticket](https://jira.arm.com/browse/AARCH-21866)
 
@@ -688,10 +688,10 @@ for all the possible set of feature that change this dependency:
 
 Load instruction, in case we use virtual addresses, may have some additional
 dependencies to check that the virtual address is canonical. These dependencies
-are present also without Pointer Authentication, but PAC allow to generate non
-canonical pointers. To do this we must add a branching event at each load that
-depend of the input address, and an intrinsic control dependency between this
-event and the load event each times we see an `ldr` instruction.
+are present also without Pointer Authentication, but PAC allow generating
+non-canonical pointers. To do this we must add a branching event at each load that
+depend on the input address, and an intrinsic control dependency between this
+event and the load event each time we see an `ldr` instruction.
 
 Here is an example of `ldr` success:
 
@@ -724,7 +724,7 @@ exists
 Like the load instruction, the `str` instruction may fail because of an address
 translation failure.
 
-Here an example of litmus test to illustrate a `str` success:
+Here is an example of litmus test to illustrate a `str` success:
 
 ```
 AArch64 str success
