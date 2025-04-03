@@ -1725,7 +1725,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let get_tagged_loc e = add_tag (as_data e.C.loc) e.C.tag
 
-    let emit_access st p init e = 
+    let add_label_to_instructions e cs =
+      match e.C.check_fault with
+      | Some (label_name, _) ->
+        (* Always label the last instruction,
+           which should be the actual load or store. *)
+        let rec do_rec = function
+          | [] -> assert false (* the `cs` should not be empty *)
+          | [instr] -> [Label(label_name, instr)]
+          | instr::rem -> instr::do_rec rem in
+        do_rec cs
+      | None -> cs
+
+    let emit_access st p init e =
     (* collapse the value `v` in event `e` to integer *)
     let value = Code.value_to_int e.C.v in
     match e.C.dir,e.C.loc with
@@ -1735,7 +1747,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some (Instr, None) ->
             let r,init,cs,st = LDR.emit_fetch st p init lab in
             Some r,init,cs,st
-        (* Plain read from an instruction label is currently not supported, 
+        (* Plain read from an instruction label is currently not supported,
            but will be implemented in a future patch
         | R, None ->
             let r,init,cs,st = LDR.emit_load st p init lab in
@@ -1759,12 +1771,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             assert (Misc.is_none m) ;
             Some (a,Some (MachSize.S128,0))
           | _ -> Some (a,m) end in
-        begin match d,atom with
+        (* Compile the node.
+           - `regs`, registers
+           - `inits`, initial values
+           - `cs`, instructions
+           - `st`, states
+        *)
+        let regs,inits,cs,st = begin match d,atom with
         | R,None ->
             let r,init,cs,st = LDR.emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (Acq _,None) ->
-            let r,init,cs,st = LDAR.emit_load st p init loc  in
+            let r,init,cs,st = LDAR.emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (Acq a,Some (sz,o)) ->
             let module L =
@@ -1780,7 +1798,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let cs2 = emit_ldr_addon a r in
             Some r,init,cs@pseudo cs2,st
         | R,Some (AcqPc _,None) ->
-            let r,init,cs,st = LDAPR.emit_load st p init loc  in
+            let r,init,cs,st = LDAPR.emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (AcqPc a,Some (sz,o)) ->
             let module L =
@@ -1929,7 +1947,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
            let init,cs,st = emit_store st p init loc value in
            None,init,cs,st
         | W,Some (Neon _,Some _) -> assert false
-        end
+        end in
+        (* Add a label to instructions `cs`, when a fault check is required. *)
+        let cs = add_label_to_instructions e cs in
+        regs,inits,cs,st
     (* END of emit_access *)
 
     let same_sz sz1 sz2 = match sz1,sz2 with
