@@ -62,6 +62,7 @@ module type S = sig
 
 (* complete init with necessary information *)
   val complete_init : bool (* hexa *) -> Code.env -> init -> init
+  val _pp_env: init -> string
 
 
 (***********************)
