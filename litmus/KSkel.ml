@@ -110,6 +110,7 @@ module Make
     module DC =
       CompCond.Make(O)
         (struct
+          let use_symbolic = false
           let with_ok = false
           module C = T.C
           let dump_value _loc (* ignored, see preSi.ml *) = C.V.pp O.hexa

@@ -27,6 +27,8 @@ end
 module type I = sig
   val with_ok : bool
   module C : Constr.S
+  (* Use `symbolic_eq` instead of `==` for pointer comparison *)
+  val use_symbolic : bool
   (* When present the first, location, argument allows retrieving type *)
   val dump_value : C.location option -> C.V.v -> string
   module Loc : X with type  location = C.location
