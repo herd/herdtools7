@@ -278,3 +278,15 @@ func MemSingleGranule() => integer
     assert (size >= 16) && (size <= 4096);
     return size;
   end;
+
+
+// CheckOriginalSVEEnabled()
+// =========================
+// Checks for traps on SVE instructions and instructions that access SVE System
+// registers.
+// LUC, just allow
+
+func CheckOriginalSVEEnabled()
+begin
+  return;
+end;
