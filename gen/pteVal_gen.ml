@@ -33,5 +33,3 @@ module No(A:sig type arch_atom end) = struct
   let set_pteval _ p _ = p
   let can_fault _t = false
 end
-
-

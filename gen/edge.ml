@@ -586,7 +586,7 @@ let fold_tedges f r =
   let iter_edges = Misc.fold_to_iter fold_edges
 
 
-  let t = Hashtbl.create 101
+  let t = Hashtbl.create 40000
 
   let add_lxm lxm e =
     if dbg > 1 then eprintf "LXM: %s\n" lxm ;
