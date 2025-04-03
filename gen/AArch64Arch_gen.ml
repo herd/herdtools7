@@ -588,6 +588,11 @@ let overwrite_value v ao w = match ao with
       match a with
       | Pte f,None -> do_setpteval a f p
       | _ -> Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
+
+    let can_fault pte_val = 
+      let open AArch64PteVal in
+      pte_val.valid = 0
+
   end
 
 (* Wide accesses *)
@@ -877,10 +882,10 @@ let get_ie e = match e with
 
 let fold_edge f r = Code.fold_ie (fun ie r -> f (IFF ie) (f (FIF ie) r)) r
 
-let compute_rmw r old co = 
+let compute_rmw r old co =
     let old = Code.value_to_int old in
     let co = Code.value_to_int co in
-    let new_value = match r with 
+    let new_value = match r with
     | LdOp op | StOp op ->
       begin match op with
         | A_ADD -> old + co
