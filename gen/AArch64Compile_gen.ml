@@ -1745,7 +1745,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some (Instr, None) ->
             let r,init,cs,st = LDR.emit_fetch st p init lab in
             Some r,init,cs,st
-        (* Plain read from an instruction label is currently not supported, 
+        (* Plain read from an instruction label is currently not supported,
            but will be implemented in a future patch
         | R, None ->
             let r,init,cs,st = LDR.emit_load st p init lab in
@@ -1769,6 +1769,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             assert (Misc.is_none m) ;
             Some (a,Some (MachSize.S128,0))
           | _ -> Some (a,m) end in
+        (* Compile the node.
+           - `regs`, registers
+           - `inits`, initial values
+           - `cs`, instructions
+           - `st`, states
+        *)
         let regs,inits,cs,st = begin match d,atom with
         | R,None ->
             let r,init,cs,st = LDR.emit_load st p init loc in
