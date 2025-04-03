@@ -324,7 +324,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
             | R ->
                begin match e.C.atom with
                | None|Some (Plain,None) ->
-                  let r,init,cs,st = emit_load st _p init loc  in
+                  let r,init,cs,st = emit_load st _p init loc in
                   Some r,init, cs,st
                | Some (Atomic,_) ->
                   Warn.fatal "No atomic load for X86_64"
