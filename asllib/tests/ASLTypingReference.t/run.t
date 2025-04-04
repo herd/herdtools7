@@ -617,3 +617,4 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.TimeFrameGDK.asl
   $ aslref --no-exec TypingRule.TimeFrame.asl
   $ aslref --no-exec TypingRule.SideEffectIsPure.asl
+  $ aslref --no-exec TypingRule.CheckSymbolicallyEvaluable.asl
