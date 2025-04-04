@@ -760,10 +760,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* Begin CheckPositionsInWidth *)
   let check_diet_in_width ~loc slices width diet () =
-    let min_pos = Diet.Int.min_elt diet and max_pos = Diet.Int.max_elt diet in
-    if 0 <= min_pos && max_pos < width then
-      () |: TypingRule.CheckPositionsInWidth
-    else fatal_from ~loc (BadSlices (Error.Static, slices, width))
+    if Diet.Int.is_empty diet then ()
+    else
+      let min_pos = Diet.Int.min_elt diet and max_pos = Diet.Int.max_elt diet in
+      if 0 <= min_pos && max_pos < width then
+        () |: TypingRule.CheckPositionsInWidth
+      else fatal_from ~loc (BadSlices (Error.Static, slices, width))
   (* End *)
 
   (* Begin CheckSlicesInWidth *)

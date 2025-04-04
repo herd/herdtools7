@@ -484,18 +484,33 @@ fit in the bitvector width $16$, whereas the positions defined for the bitfield
 \ASLListing{An Out of Width Slice}{checkpositionsinwidth}{\typingtests/TypingRule.CheckPositionsInWidth.bad.asl}
 
 \ProseParagraph
-\AllApply
+\OneApplies
 \begin{itemize}
-    \item define $\minpos$ as the minimal position in $\positions$;
-    \item define $\maxpos$ as the maximal position in $\positions$;
-    \item checking that $\minpos$ is non-negative and that $\maxpos$ is less than $\vwidth$
-          yields $\True$\ProseTerminateAs{\BadSlices}.
-    \item the result is $\True$.
+  \item \AllApplyCase{empty}
+  \begin{itemize}
+      \item $\positions$ is the empty set.
+      \item the result is $\True$.
+  \end{itemize}
+
+  \item \AllApplyCase{non\_empty}
+  \begin{itemize}
+      \item define $\minpos$ as the minimal position in $\positions$;
+      \item define $\maxpos$ as the maximal position in $\positions$;
+      \item checking that $\minpos$ is non-negative and that $\maxpos$ is less than $\vwidth$
+            yields $\True$\ProseTerminateAs{\BadSlices}.
+      \item the result is $\True$.
+  \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule{
+\inferrule[empty]{}{
+    \checkpositionsinwidth(\vwidth, \overname{\emptyset}{\positions}) \typearrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
     \minpos \eqdef \min(\positions)\\
     \maxpos \eqdef \max(\positions)\\
     \checktrans{0 \leq \minpos \land \maxpos < \vwidth}{\BadSlices} \typearrow \True \OrTypeError
