@@ -1,4 +1,4 @@
-(ocamllex AArch64Lexer ARMLexer BPFLexer BellLexer CLexer lexHint
+(ocamllex AArch64Lexer ARMLexer BPFLexer BellLexer CLexer dotLexer lexHint
   lexOutMapping lexRename lexSplit lexUtils MIPSLexer modelLexer PPCLexer
   RISCVLexer scopeLexer splitter stateLexer X86Lexer X86_64Lexer echo
   dirtyBit cacheType lexScan JavaLexer)
@@ -13,6 +13,10 @@
 
 (menhir
  (modules BPFParser)
+ (flags --fixed-exception))
+
+(menhir
+ (modules dotParser)
  (flags --fixed-exception))
 
 (menhir
