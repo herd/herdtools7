@@ -163,10 +163,11 @@ module Make
         M.mk_singleton_es
           (Act.Fault (ii,loc,dir,annot,fh || is_sync_exc_entry,ft,msg)) ii
 
-      let read_reg is_data r ii = match r with
+      let read_reg ?(sysreg_exp=AArch64.(NExp Other)) is_data r ii = match r with
       | AArch64.ZR -> M.unitT V.zero
       | _ ->
-          M.read_loc is_data (mk_read quad Annot.N aexp) (A.Location_reg (ii.A.proc,r)) ii
+          let anexp = if A.is_sysreg r then sysreg_exp else aexp in
+          M.read_loc is_data (mk_read quad Annot.N anexp) (A.Location_reg (ii.A.proc,r)) ii
 
       let read_reg_morello is_data r ii =
         if not morello then Warn.user_error "capabilities require -variant morello" ;
@@ -196,15 +197,15 @@ module Make
           neon_getlane cur_val idx esize
       | _ -> assert false
 
-      let read_reg_sz sz is_data r ii = match sz with
+      let read_reg_sz ?(sysreg_exp=AArch64.(NExp Other)) sz is_data r ii = match sz with
       | MachSize.S128 -> read_reg_morello is_data r ii
-      | MachSize.Quad when not morello || not is_data -> read_reg is_data r ii
+      | MachSize.Quad when not morello || not is_data -> read_reg ~sysreg_exp is_data r ii
       | MachSize.Quad|MachSize.Word|MachSize.Short|MachSize.Byte ->
-          read_reg is_data r ii >>= uxt_op sz
+          read_reg ~sysreg_exp is_data r ii >>= uxt_op sz
 
-      let read_reg_ord = read_reg_sz quad false
-      let read_reg_ord_sz sz = read_reg_sz sz false
-      let read_reg_data sz = read_reg_sz sz true
+      let read_reg_ord ?(sysreg_exp=AArch64.(NExp Other)) = read_reg_sz ~sysreg_exp quad false
+      let read_reg_ord_sz ?(sysreg_exp=AArch64.(NExp Other)) sz = read_reg_sz ~sysreg_exp sz false
+      let read_reg_data ?(sysreg_exp=AArch64.(NExp Other)) sz = read_reg_sz ~sysreg_exp sz true
 
 (* Fetch of an instruction, i.e., a read from a label *)
       let mk_fetch an loc v =
@@ -215,17 +216,18 @@ module Make
       let mk_write sz an anexp ac v loc =
         Act.Access (Dir.W, loc, v, an, anexp, sz, ac)
 
-      let write_reg r v ii = match r with
+      let write_reg r v ?(sysreg_exp=AArch64.(NExp Other)) ii = match r with
       | AArch64.ZR -> M.unitT ()
       | _ ->
+          let anexp = if A.is_sysreg r then sysreg_exp else aexp in
           M.write_loc
-            (mk_write quad Annot.N aexp Access.REG v)
+            (mk_write quad Annot.N anexp Access.REG v)
             (A.Location_reg (ii.A.proc,r)) ii
 
-      let write_reg_dest r v ii = match r with
+      let write_reg_dest r v ?(sysreg_exp=AArch64.(NExp Other)) ii = match r with
         | AArch64.ZR -> M.unitT V.zero
         | _ ->
-            write_reg r v ii >>= fun () -> M.unitT v
+            write_reg r v ~sysreg_exp ii >>= fun () -> M.unitT v
 
       let write_reg_morello r v ii =
         if not morello then
@@ -516,7 +518,7 @@ module Make
               op v >>= fun v -> write_reg r v ii
 
       let write_reg_sz_non_mixed =
-        if mixed then fun _sz -> write_reg
+        if mixed then fun _sz -> write_reg ~sysreg_exp:AArch64.(NExp Other)
         else write_reg_sz
 
 (* Emit commit event *)
@@ -4318,7 +4320,7 @@ module Make
               read_reg_ord_sz sz xt ii
               >>= fun v -> M.op1 (Op.LogicalRightShift 28) v
               >>= M.op1 (Op.AndK "0b1111")
-              >>= fun v -> write_reg_dest NZCV v ii
+              >>= fun v -> write_reg_dest NZCV v ~sysreg_exp:aexp ii
               >>= nextSet NZCV
             | _ -> begin
               let off = AArch64.sysreg_nv2off sreg in
@@ -4328,7 +4330,7 @@ module Make
                 str_simple sz xt rd (get_ea_idx rd off ii) ii
               | _, _ ->
                 read_reg_ord_sz sz xt ii
-                >>= fun v -> write_reg_dest (SysReg sreg) v ii
+                >>= fun v -> write_reg_dest (SysReg sreg) v ~sysreg_exp:aexp ii
                 >>= nextSet (SysReg sreg)
             end
           end
@@ -4336,7 +4338,7 @@ module Make
           begin
             match sreg with
             | SYS_NZCV ->
-               read_reg_ord NZCV ii
+               read_reg_ord ~sysreg_exp:aexp NZCV ii
                >>= M.op1 (Op.LeftShift 28)
                >>= fun v -> write_reg_dest xt v ii
                >>= nextSet xt
@@ -4349,7 +4351,7 @@ module Make
                 let e = MemExt.Imm (off, Idx) in
                 ldr sz xt rs e ii
               | _, _ ->
-                read_reg_ord_sz sz (SysReg sreg) ii
+                read_reg_ord_sz ~sysreg_exp:aexp sz (SysReg sreg) ii
                 >>= fun v -> write_reg_dest xt v ii
                 >>= nextSet xt
             end

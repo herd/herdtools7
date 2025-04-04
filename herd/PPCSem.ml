@@ -80,7 +80,7 @@ module
 
       let write_reg r v ii =
         M.mk_singleton_es
-          (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, (), nat_sz,Access.REG)) ii
+          (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, (), nat_sz, Access.REG)) ii
 
       let do_write_mem sz ato a v ii =
         if mixed then
