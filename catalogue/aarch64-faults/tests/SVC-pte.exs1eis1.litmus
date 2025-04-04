@@ -1,0 +1,17 @@
+AArch64 SVC-pte.exs1eis1
+Variant=vmsa,exs,eis
+{
+  [x]=1;
+  [PTE(x)]=(valid:0);
+  0:X0=(oa:PA(x),valid:1); 0:X1=PTE(x);
+  0:X2=x;
+  0:X3=0;
+}
+
+ P0           | P0.F           ;
+ STR X0,[X1]  | ADR X8,L0      ;
+ DSB ISH      | MSR ELR_EL1,X8 ;
+ SVC #0       | ERET           ;
+L0:           |;
+ LDR W3,[X2]  |;
+exists(Fault(P0:L0,MMU:Translation))

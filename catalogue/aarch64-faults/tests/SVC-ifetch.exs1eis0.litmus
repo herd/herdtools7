@@ -1,0 +1,16 @@
+AArch64 SVC-ifetch.exs1eis0
+variant=ifetch,exs
+CacheType=DIC
+{
+  0:X0=instr:"NOP"; 0:X1=P0:L2;
+}
+ P0          | P0.F       ;
+ STR W0,[X1] | ERET       ;
+ DSB ISH     |;
+ SVC #0      |;
+L2:          |;
+ B L1        |;
+ MOV W9,#1   |;
+L1:          |;
+
+exists(0:X9=0)
