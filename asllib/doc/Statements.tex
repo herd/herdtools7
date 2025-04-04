@@ -244,7 +244,7 @@ from a subprogram call are as follows:
 \inferrule{
   \vles \eqdef \vle_{1..k}\\
   i=1..k: \lexprisvar(\vle_i) \evalarrow \True\\
-  \evalcall{\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs} \evalarrow \Normal(\vms, \envone) \OrAbnormal\\\\
+  \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \Normal(\vms, \envone) \OrAbnormal\\\\
   \evalmultiassignment(\envone, \vles, \vms) \evalarrow \Normal(\newg, \newenv) \OrAbnormal
 }{
   \evalstmt{\env, \SAssign(\LEDestructuring(\les),\ECall(\vcall))} \\
@@ -1330,7 +1330,7 @@ can only be used for procedures, not functions.
 \inferrule{
 {
 \begin{array}{r}
-  \evalcall{\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs} \evalarrow \\
+  \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \\
   \Normal(\newg, \newenv) \OrAbnormal
 \end{array}
 }

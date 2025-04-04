@@ -33,6 +33,7 @@ achieves
 across
 act
 action
+actively
 actual
 adapt
 add
@@ -315,6 +316,7 @@ classify
 classifying
 clause
 clauses
+closed
 closer
 closest
 closing
@@ -431,6 +433,7 @@ constructing
 construction
 constructively
 constructs
+contact
 contain
 contained
 containing
@@ -442,6 +445,7 @@ continue
 continues
 continuing
 contrast
+contributes
 control
 convenient
 convention
@@ -554,6 +558,7 @@ difference
 different
 differentiating
 differently
+differing
 digits
 directive
 directly
@@ -563,6 +568,7 @@ discarding
 discards
 disclaimer
 disclosure
+discriminant
 discussed
 disjoint
 disjunction
@@ -690,6 +696,7 @@ example
 examples
 exceed
 exceeded
+exceeding
 except
 exception
 exceptional
@@ -729,6 +736,7 @@ explicitly
 exploded
 exploding
 exponent
+exponentiation
 export
 exposes
 express
@@ -938,6 +946,7 @@ includes
 including
 incomplete
 incorrect
+incorrectly
 increasing
 increments
 indeed
@@ -1471,6 +1480,7 @@ provide
 provided
 provides
 prs
+pull
 punctuation
 pure
 purity
@@ -1546,6 +1556,7 @@ relations
 relationship
 relative
 relatively
+release
 relevant
 reliable
 relied
@@ -1581,6 +1592,7 @@ representing
 represents
 reproduced
 request
+requests
 require
 required
 requirement
@@ -1828,6 +1840,7 @@ succeed
 succeeding
 succeeds
 success
+successful
 successfully
 successive
 succinctly
@@ -2005,6 +2018,7 @@ understanding
 undertaken
 unevaluated
 unexpected
+uninitialized
 unintended
 union
 unique
@@ -2069,6 +2083,7 @@ verifiers
 verifying
 verilog
 version
+versions
 vertex
 vertices
 very
@@ -2091,6 +2106,7 @@ was
 way
 ways
 we
+welcome
 well
 were
 what

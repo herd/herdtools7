@@ -510,7 +510,7 @@ def check_rules(filename: str) -> int:
     # Treat existing issues as warnings and new issues as errors.
     file_to_num_expected_errors = {
         "RelationsOnTypes.tex" : 15,
-        "SubprogramCalls.tex" : 15,
+        "SubprogramCalls.tex" : 1,
         "SymbolicEquivalenceTesting.tex" : 26,
         "SymbolicSubsumptionTesting.tex" : 23,
         "SideEffects.tex" : 13,
@@ -571,8 +571,8 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
 
     patterns_to_remove = [
         # Patterns for environments inside which spellchecking is not needed:
-        r"\$.*?\$",  # $...$
-        r"\\\[.*?\\\]",  # \[...\]
+        r"\$.*?\$",
+        r"\\\[.*?\\\]",
         r"\\begin\{mathpar\}.*?\\end\{mathpar\}",
         r"\\begin\{equation\}.*?\\end\{equation\}",
         r"\\begin\{flalign\*\}.*?\\end\{flalign\*\}",
@@ -586,7 +586,6 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\lrmcomment{.*?}",
         r"\\stdlibfunc{.*?}",
         r"\\defref{.*?}",
-        r"\\ASLListing{.*?}{.*?}{.*?}",
         r"\\LexicalRuleDef{.*?}",
         r"\\LexicalRuleRef{.*?}",
         r"\\ASTRuleRef{.*?}",
@@ -618,6 +617,7 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\listingref{.*?}",
         r"\\appendixref{.*?}",
     ]
+    asl_listing_pattern = r"\\ASLListing\{(.*?)\}\{.*?\}\{.*?\}"
 
     num_errors = 0
     for filename in latex_files:
@@ -630,6 +630,8 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         # Remove text blocks where spelling is not needed.
         for pattern in patterns_to_remove:
             file_str = re.sub(pattern, "", file_str, flags=re.DOTALL)
+        # Replace instances of \ASLListing with just the caption.
+        file_str = re.sub(asl_listing_pattern, r"\1", file_str)
         file_lines = file_str.splitlines()
         for line in file_lines:
             tokens = re.split(" |{|}", line)

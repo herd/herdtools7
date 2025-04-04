@@ -2336,7 +2336,7 @@ results in a \dynamicerrorterm.
 \begin{mathpar}
 \inferrule[normal]{
   \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynError\\\\
-  \evalsubprogram{\env, \vmain, \emptylist, \emptylist} \evalarrow \Normal([(\vv, \vgtwo)], \Ignore) \OrDynError\\\\
+  \evalsubprogram(\env, \vmain, \emptylist, \emptylist)\evalarrow \Normal([(\vv, \vgtwo)], \Ignore) \OrDynError\\\\
   \vg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
 }{
   \evalspec(\tenv, \vspec) \evalarrow (\vv, \vg)
@@ -2346,7 +2346,7 @@ results in a \dynamicerrorterm.
 \begin{mathpar}
 \inferrule[throwing]{
   \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynError\\\\
-  \evalsubprogram{\env, \vmain, \emptylist, \emptylist} \evalarrow \Throwing(\vvopt, \Ignore)
+  \evalsubprogram(\env, \vmain, \emptylist, \emptylist) \evalarrow \Throwing(\vvopt, \Ignore)
 }{
   \evalspec(\tenv, \vspec) \evalarrow \DynamicErrorVal{\UncaughtException}
 }

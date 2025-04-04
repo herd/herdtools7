@@ -589,3 +589,27 @@ ASL Typing Tests / annotating types:
     character 16:
   ASL typing error: unexpected collection.
   [1]
+  $ aslref TypingRule.AnnotateRetTy.asl
+  $ aslref TypingRule.AnnotateRetTy.bad.asl
+  File TypingRule.AnnotateRetTy.bad.asl, line 15, characters 4 to 17:
+  ASL Error: Mismatched use of return value from call to 'flip'.
+  [1]
+  $ aslref TypingRule.AnnotateCallActualsTyped.bad1.asl
+  File TypingRule.AnnotateCallActualsTyped.bad1.asl, line 11,
+    characters 8 to 32:
+  ASL Static Error: Arity error while calling 'xor_extend':
+    2 parameters expected and 1 provided
+  [1]
+  $ aslref TypingRule.AnnotateCallActualsTyped.bad2.asl
+  File TypingRule.AnnotateCallActualsTyped.bad2.asl, line 13,
+    characters 8 to 31:
+  ASL Typing error: No subprogram declaration matches the invocation:
+    xor_extend(bits(64)).
+  [1]
+  $ aslref TypingRule.AnnotateCallActualsTyped.bad3.asl
+  File TypingRule.AnnotateCallActualsTyped.bad3.asl, line 14,
+    characters 8 to 24:
+  ASL Typing error: a subtype of integer {0..64} was expected,
+    provided integer {0..128}.
+  [1]
+  $ aslref TypingRule.SubstExpr.asl
