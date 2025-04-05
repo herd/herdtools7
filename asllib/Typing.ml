@@ -371,13 +371,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin DisjointSlicesToPositions *)
-  let disjoint_slices_to_positions ~loc env slices =
+  let disjoint_slices_to_positions ~loc ~static env slices =
     let module DI = Diet.Int in
     let exception NonStatic in
     let eval env e =
-      match StaticModel.reduce_to_z_opt env e with
-      | Some z -> Z.to_int z
-      | None -> raise NonStatic
+      if static then
+        match StaticInterpreter.static_eval env e with
+        | L_Int z -> Z.to_int z
+        | _ -> raise NonStatic
+      else
+        match StaticModel.reduce_to_z_opt env e with
+        | Some z -> Z.to_int z
+        | None -> raise NonStatic
     in
     let interval_of_slice env slice =
       let e1, e2 =
@@ -410,7 +415,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let check_disjoint_slices ~loc env slices =
     if List.length slices <= 1 then ok
     else fun () ->
-      let _ = disjoint_slices_to_positions ~loc env slices in
+      let _ = disjoint_slices_to_positions ~loc ~static:false env slices in
       () |: TypingRule.CheckDisjointSlices
   (* End *)
 
@@ -768,7 +773,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* Begin CheckSlicesInWidth *)
   let check_slices_in_width ~loc env width slices () =
-    let diet = disjoint_slices_to_positions ~loc env slices in
+    let diet = disjoint_slices_to_positions ~loc ~static:true env slices in
     check_diet_in_width ~loc slices width diet ()
     |: TypingRule.CheckSlicesInWidth
   (* End *)
@@ -1186,7 +1191,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (BitField_Simple (name, slices1), ses_slices) |: TypingRule.TBitField
     | BitField_Nested (name, slices, bitfields') ->
         let slices1, ses_slices = annotate_slices ~loc env slices in
-        let diet = disjoint_slices_to_positions ~loc env slices1 in
+        let diet = disjoint_slices_to_positions ~loc ~static:true env slices1 in
         let+ () = check_diet_in_width ~loc slices1 width diet in
         let width' = Diet.Int.cardinal diet |> expr_of_int in
         let new_bitfields, ses_bitfields =
@@ -1198,7 +1203,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | BitField_Type (name, slices, ty) ->
         let ty', ses_ty = annotate_type ~loc env ty in
         let slices1, ses_slices = annotate_slices ~loc env slices in
-        let diet = disjoint_slices_to_positions ~loc env slices1 in
+        let diet = disjoint_slices_to_positions ~loc ~static:true env slices1 in
         let+ () = check_diet_in_width ~loc slices1 width diet in
         let width' = Diet.Int.cardinal diet |> expr_of_int in
         let+ () =
