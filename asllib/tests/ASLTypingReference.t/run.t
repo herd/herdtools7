@@ -613,3 +613,10 @@ ASL Typing Tests / annotating types:
     provided integer {0..128}.
   [1]
   $ aslref TypingRule.SubstExpr.asl
+  $ aslref --no-exec TypingRule.CheckSymbolicallyEvaluable.asl
+  $ aslref --no-exec TypingRule.CheckSymbolicallyEvaluable.bad.asl
+  File TypingRule.CheckSymbolicallyEvaluable.bad.asl, line 10,
+    characters 5 to 28:
+  ASL Static Error: Unsupported expression symbolic_throwing{4}(4).
+  [1]
+  $ aslref TypingRule.EvalSliceExpr.asl
