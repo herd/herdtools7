@@ -50,6 +50,13 @@ struct
 
   module Cache = TxtLoc.Extract()
 
+  let rec fold_left_short f stop acc = function
+  | [] -> acc
+  | x :: xs ->
+    let acc' = f acc x in
+    if stop acc' then acc'
+    else fold_left_short f stop acc' xs
+
   let universe_effect = Konst (TxtLoc.none, (Universe SET))
   let empty_effect = Konst (TxtLoc.none, (Empty SET))
 
@@ -80,7 +87,7 @@ struct
     and do_pp_expr paran = function
     | Konst (_, (Empty _)) -> "empty"
     | Konst (_, (Universe _)) -> "universe"
-    | Var (_, id) -> id
+    | Var (_, id) -> from_alias id
     | Op1 (_, Comp, e) -> Printf.sprintf "~%s" (do_pp_expr true e)
     | Op (_, Inter, es) -> pp_with_sep paran true " & " es
     | Op (_, Union, es) -> pp_with_sep paran true " | " es
@@ -345,12 +352,12 @@ struct
     ("inv-domain", [(pte_effect, tlbi_effect); (tlbi_effect, pte_effect)])
   ]
 
-  let check_map map e1 e2 =
+  let check_map_of_sets map e1 e2 =
     let sups = StringMap.safe_find StringSet.empty e1 map in
     StringSet.mem e2 sups
 
-  let id_is_subset_of = check_map supersets
-  let id_intersects_with = check_map intersects
+  let id_is_subset_of = check_map_of_sets supersets
+  let id_intersects_with = check_map_of_sets intersects
 
   let rec is_subset_of defs e1 e2 = match e1, e2 with
   | e, _ when is_empty e -> true
@@ -662,6 +669,113 @@ struct
     ) in
     fun () -> Lazy.force lazy_map
 
+  let tr_rel e1 e2 id defs =
+    let any_match e2 = List.exists (fun e ->
+      not (is_empty (intersect defs e e2))) in
+
+    let rec do_tr_effect e1s = function
+    | App (_, f, e) ->
+      let e = apply_func defs f e in
+      do_tr_effect e1s e
+    | Tag (_, _) | Bind (_, _, _) | BindRec (_, _, _) | Fun (_, _, _, _, _)
+    | ExplicitSet (_, _) | Match (_, _, _, _) | MatchSet (_, _, _, _) as e ->
+      Printf.eprintf "Matching %s not supported\n" (pp_expr e);
+      []
+    | e ->
+      List.filter (fun e -> not (is_empty e))
+        (List.map (intersect defs e) e1s) in
+
+    (* TODO: Rewrite this so it filters out duplicates in the result *)
+    let rec do_tr_chain looked_up_ids ret_sol sol e1s is_inv = function
+    | Op (_, Seq, es) ->
+      let es = if is_inv then List.rev es else es in
+      let e2s = fold_left_short (fun e1s e ->
+        let _, e1s = do_tr_chain looked_up_ids false [] e1s is_inv e in
+        e1s
+      ) (fun l -> l = []) e1s es in
+      sol, e2s
+    | Var (_, id) -> do_tr_rel looked_up_ids ret_sol sol e1s is_inv id
+    | Op1 (_, ToId, e) -> sol, do_tr_effect e1s e
+    | Op1 (_, Inv, e) ->
+      do_tr_chain looked_up_ids ret_sol sol e1s (not is_inv) e
+    | Op1 (_, Comp, Op1 (_, ToId, e)) ->
+      sol, do_tr_effect e1s (Op1 (TxtLoc.none, Comp, e))
+    | Op1 (_, Comp, _) -> sol, [universe_effect] (* over-approximation *)
+    | Op1 (_, Plus, e) -> do_tr_chain looked_up_ids ret_sol sol e1s is_inv e
+    | Op1 (_, (Star | Opt), e) ->
+      let sol, e2s = do_tr_chain looked_up_ids ret_sol sol e1s is_inv e in
+      sol, e1s @ e2s
+    | Op (_, Cartesian, [e1; e2]) ->
+      if not (List.is_empty (do_tr_effect e1s e1)) then sol, [e2]
+      else sol, []
+    | Op (_, Cartesian, _) as e ->
+      Warn.fatal "Cartesian product of more than 2 effects is not a relation: %s\n"
+        (pp_expr e)
+    | App (_, f, e) ->
+      let e = apply_func defs f e in
+      do_tr_chain looked_up_ids ret_sol sol e1s is_inv e
+    | Op (_, Inter, es) ->
+      let results = List.map (fun e -> 
+        let _, res = do_tr_chain looked_up_ids false [] e1s is_inv e in
+        res
+      ) es in
+      sol, Misc.fold_cross results (fun effs acc ->
+        let inter = List.fold_left (intersect defs) universe_effect effs in
+        match inter with
+        | Konst (_, (Empty _)) -> acc
+        | _ -> inter :: acc
+      ) []
+    | Op (_, Union, es) ->
+      (* TODO: This can be one big disjunction. Would help eliminate
+        duplicates. *)
+      let results = List.fold_right (fun e acc ->
+        let _, res = do_tr_chain looked_up_ids false [] e1s is_inv e in
+        res @ acc
+      ) es [] in
+      sol, results
+    | e ->
+      Printf.eprintf "Traversing %s not supported\n" (pp_expr e);
+      sol, []
+    
+    and do_tr_rel looked_up_ids ret_sol sol e1s is_inv id =
+      if StringMap.mem id defs then begin
+        if StringSet.mem id looked_up_ids then sol, []
+        else
+          let looked_up_ids = StringSet.add id looked_up_ids in
+          let chain = StringMap.find id defs in
+          if ret_sol then
+            let chains = match chain with
+            | Op (_, Union, es) -> es
+            | e -> [e] in
+            List.fold_right (fun chain (sol, e2s_acc) ->
+              let sol, e2s = do_tr_chain looked_up_ids ret_sol sol e1s is_inv chain in
+              if any_match e2 e2s then chain :: sol, e2s @ e2s_acc
+              else sol, e2s_acc
+            ) chains (sol, [])
+          else
+            do_tr_chain looked_up_ids ret_sol sol e1s is_inv chain
+      end
+      else
+        let id = from_alias id in
+        if id = "same-instance" then
+          sol, e1s
+        else
+          let pairs = try StringMap.find id rel_effects
+          with Not_found ->
+            Printf.eprintf "Relation %s not supported\n" id;
+            [] in
+          let pairs = if is_inv then
+            List.map (fun (a, b) -> b, a) pairs
+          else pairs in
+          let res = List.fold_left (fun res (e_left, e_right) ->
+            if any_match e_left e1s then e_right :: res
+            else res
+          ) [] pairs in
+          sol, res in
+
+    let sol, e2s = do_tr_rel StringSet.empty true [] [e1] false id in
+    if any_match e2 e2s then Var (TxtLoc.none, id) :: sol else sol
+
   let parse_effect_from_string name value =
     Cache.cache name value;
     let module ML = ModelLexer.Make(struct
@@ -782,7 +896,7 @@ struct
       | _ -> defs
     ) defs bds
 
-  let tr_ast fname e1 e2 =
+  let tr_ast fname e1 e2 start_rel =
     let num_defs, _ = tr_ast StringMap.empty (fun _ num_defs id _ ->
       let num = StringMap.safe_find 0 id num_defs in
       StringMap.add id (num + 1) num_defs
@@ -804,7 +918,11 @@ struct
     | Some e1, Some e2 ->
       let e1 = parse_effect_from_string "e1" e1 |> ASTUtils.flatten in
       let e2 = parse_effect_from_string "e2" e2 |> ASTUtils.flatten in
-      Printf.printf "%s\n" (pp_expr (intersect defs e1 e2))
+      let sol = tr_rel e1 e2 start_rel defs in
+      if sol = [] then
+        Printf.printf "No solutions\n"
+      else
+        Printf.printf "%s\n" (String.concat "\n" (List.map pp_expr sol))
     | _ -> Warn.fatal "Omission of e1 or e2 not implemented yet"
 
 end
@@ -814,6 +932,7 @@ let libdir = ref (Filename.concat Version.libdir "herd")
 let includes = ref []
 let e1 = ref None
 let e2 = ref None
+let start_rel = ref "ob"
 
 let options = [
   ("-version", Arg.Unit
@@ -825,6 +944,7 @@ let options = [
     "<path> set installation directory to <path>");
   ("-e1", Arg.String (fun s -> e1 := Some s), "<str> first effect");
   ("-e2", Arg.String (fun s -> e2 := Some s), "<str> second effect");
+  ("-start", Arg.String (fun s -> start_rel := s), "<str> top level relation");
   (ArgUtils.parse_bool "-v" verbose "show various diagnostics");
 ]
 
@@ -850,4 +970,4 @@ let () =
         let includes = !includes
         let libdir = !libdir
       end) in
-  ignore (Run.tr_ast cat_file !e1 !e2)
+  ignore (Run.tr_ast cat_file !e1 !e2 !start_rel)
