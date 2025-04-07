@@ -50,6 +50,13 @@ struct
 
   module Cache = TxtLoc.Extract()
 
+  let rec fold_left_short f stop acc = function
+  | [] -> acc
+  | x :: xs ->
+    let acc' = f acc x in
+    if stop acc' then acc'
+    else fold_left_short f stop acc' xs
+
   let universe_effect = Konst (TxtLoc.none, (Universe SET))
   let empty_effect = Konst (TxtLoc.none, (Empty SET))
 
@@ -192,6 +199,59 @@ struct
 
   let expr_equal e1 e2 = compare_expr e1 e2 = 0
 
+  module MakeGraph
+    (VSet: MySet.S)
+    (VMap: MyMap.S with type key = VSet.elt)
+  = struct
+    module VSet = VSet
+    module VMap = VMap
+    type vertex = VMap.key
+    type t = vertex list VMap.t   (* adjacency: v -> neighbors *)
+
+    let empty : t = VMap.empty
+
+    let neighbours (v : vertex) (g : t) : vertex list =
+      match VMap.find_opt v g with
+      | Some l -> l
+      | None -> []
+
+    let add_edge (src : vertex) (dst : vertex) (g : t) : t =
+      let ns = neighbours src g in
+      VMap.add src (dst :: ns) g
+
+    (* Generic DFS “engine”: you control what happens on enter/exit, and what
+      is threaded through (acc). Also returns the set of visited vertices. *)
+    let dfs_fold
+        ~(per_vertex : vertex -> int -> 'acc -> 'acc)
+        ~(per_neighbour  : vertex -> vertex -> 'acc -> 'acc)
+        (g : t)
+        (start : vertex)
+        (seen : VSet.t)
+        (acc0 : 'acc)
+      : VSet.t * 'acc =
+      let rec go v lvl seen acc =
+        if VSet.mem v seen then (seen, acc)
+        else
+          let seen = VSet.add v seen in
+          let acc = per_vertex v lvl acc in
+          List.fold_left (fun (seen, acc) n -> 
+            let seen, acc = go n (lvl + 1) seen acc in
+            let acc = per_neighbour v n acc in
+            seen, acc
+          ) (seen, acc) (neighbours v g)
+      in
+      go start 1 seen acc0
+  end
+
+  module OrderedExpr = struct
+    type t = AST.exp
+    let compare = compare_expr
+  end
+
+  module ExprSet = MySet.Make(OrderedExpr)
+  module ExprMap = MyMap.Make(OrderedExpr)
+  module ExprGraph = MakeGraph(ExprSet)(ExprMap)
+
   let barriers = ["DMB.ISH"; "DMB.ISHLD"; "DMB.ISHST"; "DMB.LD"; "DMB.OSH";
     "DMB.OSHLD"; "DMB.OSHST"; "DMB.ST"; "DMB.SY"; "DSB.ISH"; "DSB.ISHLD";
     "DSB.ISHST"; "DSB.LD"; "DSB.OSH"; "DSB.OSHST"; "DSB.ST"; "DSB.SY"; "ISB"]
@@ -318,12 +378,12 @@ struct
     ("inv-domain", [(pte_effect, tlbi_effect); (tlbi_effect, pte_effect)])
   ]
 
-  let check_map map e1 e2 =
+  let check_map_of_sets map e1 e2 =
     let sups = StringMap.safe_find StringSet.empty e1 map in
     StringSet.mem e2 sups
 
-  let id_is_subset_of = check_map supersets
-  let id_intersects_with = check_map intersects
+  let id_is_subset_of = check_map_of_sets supersets
+  let id_intersects_with = check_map_of_sets intersects
 
   let rec is_subset_of defs e1 e2 = match e1, e2 with
   | e, _ when is_empty e -> true
@@ -627,6 +687,144 @@ struct
     unite defs d1 d2
   | _ -> Warn.fatal "Range called on an invalid expression"
 
+  let tr_rel e1 e2 id defs =
+    let any_match e2 = List.exists (fun e ->
+      not (is_empty (intersect defs e e2))) in
+
+    let add_to_sol id chain sols =
+      let rel = make_var id in
+      ExprGraph.add_edge rel chain sols in
+
+    let rec do_tr_effect e1s = function
+    | App (_, f, e) ->
+      let e = apply_func defs f e in
+      do_tr_effect e1s e
+    | Tag (_, _) | Bind (_, _, _) | BindRec (_, _, _) | Fun (_, _, _, _, _)
+    | ExplicitSet (_, _) | Match (_, _, _, _) | MatchSet (_, _, _, _) as e ->
+      Printf.eprintf "Matching %s not supported\n" (pp_expr e);
+      []
+    | e ->
+      List.filter (fun e -> not (is_empty e))
+        (List.map (intersect defs e) e1s) in
+
+    (* Traverses a cat clause as part of a relation. Takes as arguments:
+       - looked_up_ids: List of Vars that are defined in the cat file
+       and have already been replaced with their expansions. Useful
+       for shadowing.
+       - ret_sol: A boolean denoting whether the return value of the current
+       call of this function needs to be part of the final solution. This
+       happens, for example, when dealing with a complete `ob` expansion,
+       but not when recursing into relations that are in the middle of
+       a chain.
+       - sol: List of current top level solutions
+       - e1s: List of effects that we need to check if we can traverse this
+        relation with. These can come, for example, from the rhs of a previous
+       relation in the chain.
+       - is_inv: A boolean denoting whether the chain needs to be traversed in
+       reverse. This can be because its parent relation r has been included
+       as r^-1 in a chain further up the stack.
+        *)
+    let rec do_tr_chain
+      (looked_up_ids : StringSet.t)
+      (ret_sol : bool)
+      (sol: ExprGraph.t)
+      (e1s : AST.exp list)
+      (is_inv : bool) = function
+    | Op (_, Seq, es) ->
+      let es = if is_inv then List.rev es else es in
+      let e2s = fold_left_short (fun e1s e ->
+        let _, e1s = do_tr_chain looked_up_ids false ExprGraph.empty e1s is_inv e in
+        e1s
+      ) (fun l -> l = []) e1s es in
+      sol, e2s
+    | Var (_, id) -> do_tr_rel looked_up_ids ret_sol sol e1s is_inv id
+    | Op1 (_, ToId, e) -> sol, do_tr_effect e1s e
+    | Op1 (_, Inv, e) ->
+      do_tr_chain looked_up_ids ret_sol sol e1s (not is_inv) e
+    | Op1 (_, Comp, Op1 (_, ToId, e)) ->
+      sol, do_tr_effect e1s (Op1 (TxtLoc.none, Comp, e))
+    | Op1 (_, Comp, _) -> sol, [universe_effect] (* over-approximation *)
+    | Op1 (_, Plus, e) -> do_tr_chain looked_up_ids ret_sol sol e1s is_inv e
+    | Op1 (_, (Star | Opt), e) ->
+      let sol, e2s = do_tr_chain looked_up_ids ret_sol sol e1s is_inv e in
+      sol, e1s @ e2s
+    | Op (_, Cartesian, [e1; e2]) ->
+      if not (do_tr_effect e1s e1 = []) then sol, [e2]
+      else sol, []
+    | Op (_, Cartesian, _) as e ->
+      Warn.fatal "Cartesian product of more than 2 effects is not a relation: %s\n"
+        (pp_expr e)
+    | App (_, f, e) ->
+      let e = apply_func defs f e in
+      do_tr_chain looked_up_ids ret_sol sol e1s is_inv e
+    | Op (_, Inter, es) ->
+      let results = List.map (fun e -> 
+        let _, res = do_tr_chain looked_up_ids false ExprGraph.empty e1s is_inv e in
+        res
+      ) es in
+      sol, Misc.fold_cross results (fun effs acc ->
+        let inter = List.fold_left (intersect defs) universe_effect effs in
+        match inter with
+        | Konst (_, (Empty _)) -> acc
+        | _ -> inter :: acc
+      ) []
+    | Op (_, Union, es) ->
+      (* TODO: This can be one big disjunction. Would help eliminate
+        duplicates. *)
+      let results = List.fold_right (fun e acc ->
+        let _, res = do_tr_chain looked_up_ids false ExprGraph.empty e1s is_inv e in
+        res @ acc
+      ) es [] in
+      sol, results
+    | e ->
+      Printf.eprintf "Traversing %s not supported\n" (pp_expr e);
+      sol, []
+    
+    and do_tr_rel
+        (looked_up_ids : StringSet.t)
+        (ret_sol : bool)
+        (sol: ExprGraph.t)
+        (e1s : AST.exp list)
+        (is_inv : bool)
+        (id : string) =
+      if StringMap.mem id defs then begin
+        if StringSet.mem id looked_up_ids then sol, []
+        else
+          let looked_up_ids = StringSet.add id looked_up_ids in
+          let chain = StringMap.find id defs in
+          if ret_sol then
+            let chains = match chain with
+            | Op (_, Union, es) -> es
+            | e -> [e] in
+            List.fold_right (fun chain (sol, e2s_acc) ->
+              let sol, e2s = do_tr_chain looked_up_ids ret_sol sol e1s is_inv chain in
+              if any_match e2 e2s then (add_to_sol id chain sol), e2s @ e2s_acc
+              else sol, e2s_acc
+            ) chains (sol, [])
+          else
+            do_tr_chain looked_up_ids ret_sol sol e1s is_inv chain
+      end
+      else
+        let id = from_alias id in
+        if id = "same-instance" then
+          sol, e1s
+        else
+          let pairs = try StringMap.find id rel_effects
+          with Not_found ->
+            Printf.eprintf "Relation %s not supported\n" id;
+            [] in
+          let pairs = if is_inv then
+            List.map (fun (a, b) -> b, a) pairs
+          else pairs in
+          let res = List.fold_left (fun res (e_left, e_right) ->
+            if any_match e_left e1s then e_right :: res
+            else res
+          ) [] pairs in
+          sol, res in
+
+    let sol, _ = do_tr_rel StringSet.empty true ExprGraph.empty [e1] false id in
+    sol
+
   let parse_effect_from_string name value =
     Cache.cache ~fname:name ~cts:value;
     let module ML = ModelLexer.Make(struct
@@ -755,7 +953,7 @@ struct
       ) StringSet.empty fname in
     defs, crt_nums
 
-  let execute fname e1 e2 =
+  let execute fname e1 e2 start_rel =
     let stdlib_fname = Filename.concat O.libdir "stdlib.cat" in
     let stdlib_num_defs = count_defs stdlib_fname StringMap.empty in
     let num_defs = count_defs fname stdlib_num_defs in
@@ -772,7 +970,20 @@ struct
     | Some e1, Some e2 ->
       let e1 = parse_effect_from_string "e1" e1 |> ASTUtils.flatten in
       let e2 = parse_effect_from_string "e2" e2 |> ASTUtils.flatten in
-      Printf.printf "%s\n" (pp_expr (intersect defs e1 e2))
+      let sol = tr_rel e1 e2 start_rel defs in
+      if sol = ExprGraph.empty then
+        Printf.printf "No solutions\n"
+      else
+        ignore (ExprGraph.dfs_fold
+          ~per_vertex:(fun rel lvl _ ->
+            Printf.printf "%s-%s\n" (String.make (lvl - 1) ' ') (pp_expr rel)
+          )
+          ~per_neighbour:(fun _ _ _ -> ())
+          sol
+          (make_var start_rel)
+          ExprGraph.VSet.empty
+          ()
+        )
     | _ -> Warn.fatal "Omission of e1 or e2 not implemented yet"
 
 end
@@ -783,6 +994,7 @@ let includes = ref []
 let model = ref (Filename.concat !libdir "aarch64.cat")
 let e1 = ref None
 let e2 = ref None
+let start_rel = ref "ob"
 
 let options = [
   ("-version", Arg.Unit
@@ -795,6 +1007,7 @@ let options = [
   (ArgUtils.parse_string "-model" model "path to cat model");
   (ArgUtils.parse_string_opt "-e1" e1 "first effect");
   (ArgUtils.parse_string_opt "-e2" e2 "second effect");
+  (ArgUtils.parse_string "-start-rel" start_rel "top level relation");
   (ArgUtils.parse_bool "-v" verbose "show various diagnostics");
 ]
 
@@ -818,4 +1031,4 @@ let () =
         let includes = !includes
         let libdir = !libdir
       end) in
-  ignore (Run.execute !model !e1 !e2)
+  ignore (Run.execute !model !e1 !e2 !start_rel)
