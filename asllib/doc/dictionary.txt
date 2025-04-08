@@ -534,6 +534,7 @@ described
 describes
 description
 descriptions
+descriptors
 designed
 desired
 destination
@@ -550,6 +551,7 @@ determine
 determined
 determines
 determining
+deterministic
 development
 diagnostic
 dictates
