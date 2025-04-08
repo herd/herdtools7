@@ -130,7 +130,7 @@ such as \texttt{0xefff\_fffe}, \texttt{1\_000\_000} or \texttt{3.141\_592\_654} 
 This is formalized by the following lexical regular expression:
 \begin{center}
 \begin{tabular}{rcl}
-$\REreallit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* '.' \REdigit\ (\Underscore\ | \REdigit)*}
+$\REreallit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)*} $\underbracket{\texttt{.}}$ \texttt{\REdigit\ (\Underscore\ | \REdigit)*}
 \end{tabular}
 \end{center}
 
@@ -225,7 +225,7 @@ Identifiers are case sensitive.
 \hypertarget{def-reidentifier}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\REletter$ &$\triangleq$& \texttt{'a-z' $|$ 'A-Z'}\\
+$\REletter$ &$\triangleq$& $\underbracket{\texttt{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ}}$\\
 $\REidentifier$ &$\triangleq$& \texttt{($\REletter$ $|$ $\underbracket{\texttt{ \_ } }$) ($\REletter$ $|$ $\underbracket{\texttt{ \_ } }$ $|$ $\REdigit$)*}\\
 \end{tabular}
 \end{center}
