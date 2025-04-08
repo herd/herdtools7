@@ -620,3 +620,36 @@ ASL Typing Tests / annotating types:
   ASL Static Error: Unsupported expression symbolic_throwing{4}(4).
   [1]
   $ aslref TypingRule.EvalSliceExpr.asl
+  $ aslref --no-exec TypingRule.TimeFrameLDK.asl
+  $ aslref --no-exec TypingRule.TimeFrameGDK.asl
+  $ aslref --no-exec TypingRule.TimeFrame.asl
+  $ aslref --no-exec TypingRule.SideEffectIsPure.asl
+  $ aslref TypingRule.CheckSymbolicallyEvaluable.asl
+  $ aslref TypingRule.SESIsPure.asl
+  $ aslref TypingRule.SESIsPure.bad1.asl
+  File TypingRule.SESIsPure.bad1.asl, line 17, characters 11 to 37:
+  ASL Typing error: a pure expression was expected,
+    found (y > write_side_effecting()), which produces the following
+    side-effects: [WritesGlobal "g", ReadsLocal "y", ReadsGlobal "g"].
+  [1]
+  $ aslref TypingRule.SESIsPure.bad2.asl
+  File TypingRule.SESIsPure.bad2.asl, line 16, characters 17 to 39:
+  ASL Typing error: a pure expression was expected,
+    found write_side_effecting(), which produces the following side-effects:
+    [WritesGlobal "g", ReadsGlobal "g"].
+  [1]
+  $ aslref TypingRule.SESIsDeterministic.asl
+  $ aslref TypingRule.SESIsDeterministic.bad.asl
+  File TypingRule.SESIsDeterministic.bad.asl, line 10, characters 17 to 45:
+  ASL Typing error: a pure expression was expected,
+    found ARBITRARY : integer {1..1000}, which produces the following
+    side-effects: [NonDeterministic].
+  [1]
+  $ aslref TypingRule.SESIsBefore.asl
+  $ aslref TypingRule.SESIsBefore.bad.asl
+  File TypingRule.SESIsBefore.bad.asl, line 4, character 0 to line 6,
+    character 2:
+  ASL Typing error: expected constant-time expression, got (g * 2), which
+    produces the following side-effects: [ReadsGlobal "g"].
+  [1]
+  $ aslref --no-exec TypingRule.MaxTimeFrame.asl
