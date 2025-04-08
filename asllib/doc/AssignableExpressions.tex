@@ -1117,13 +1117,15 @@ See \ExampleRef{Typing Assignable Slice Expression}.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item applying $\disjointslicestopositions$ to $\slices$ in $\tenv$ yields a set of positions\ProseOrTypeError.
+  \item applying $\disjointslicestopositions$ to $\tenv$,
+  $\False$ (indicating that the expressions comprising $\slices$ need not be \staticallyevaluable), and $\slices$ yields a set of positions\ProseOrTypeError.
   \item the result is $\True$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \disjointslicestopositions(\tenv, \slices) \typearrow \positions \OrTypeError
+  \disjointslicestopositions(\tenv, \False, \slices) \typearrow \positions \OrTypeError
 }{
   \checkdisjointslices(\tenv, \slices) \typearrow \True
 }

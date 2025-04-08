@@ -356,8 +356,10 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
 
     \item \AllApplyCase{nested}
     \begin{itemize}
-      \item converting the $\slicesone$ into a list of positions with $\width$ and static environment $\tenv$
-            yields $\positions$\ProseOrTypeError;
+      \item applying $\disjointslicestopositions$ to $\tenv$,
+            $\True$ (indicating that the expressions comprising of $\slicesone$ must be \staticallyevaluable), \\
+            and $\slicesone$
+            yields the list of positions $\positions$\ProseOrTypeError;
       \item checking that all positions in $\positions$ fit inside $0..\width$ yields \\
             $\True$\ProseOrTypeError;
       \item let $\widthp$ be the length of the list $\positions$;
@@ -371,7 +373,10 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
     \begin{itemize}
       \item Annotating the type $\vt$ yields $(\vtp, \vsesty)$\ProseOrTypeError;
       \item checking whether the range of positions in $\slicesone$ fit inside $0..\width$ yields $\True$\ProseOrTypeError;
-      \item converting the list of slices $\slicesone$ into a list of positions in $\tenv$ yields $\positions$\ProseOrTypeError;
+      \item applying $\disjointslicestopositions$ to $\tenv$,
+            $\True$ (indicating that the expressions comprising of $\slicesone$ must be \staticallyevaluable), \\
+            and $\slicesone$
+            yields the list of positions $\positions$\ProseOrTypeError;
       \item checking that all positions in $\positions$ fit inside $0..\width$ yields $\True$\ProseOrTypeError;
       \item let $\widthp$ be the length of the list $\positions$;
       \item checking whether the $\vt$ and the bitvector with $\widthp$ bits have the same width yields $\True$\ProseOrTypeError
@@ -398,7 +403,7 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
 \inferrule[nested]{
   \annotateslices(\tenv, \vslices) \typearrow (\slicesone, \vsesslices) \OrTypeError\\\\
   \commonprefixline\\\\
-  \disjointslicestopositions(\tenv, \slicesone) \typearrow \positions \OrTypeError\\\\
+  \disjointslicestopositions(\tenv, \True, \slicesone) \typearrow \positions \OrTypeError\\\\
   \checkpositionsinwidth(\tenv, \width, \positions) \typearrow \True \OrTypeError\\\\
   \widthp \eqdef \listlen{\positions}\\
   {
@@ -419,7 +424,7 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
   \commonprefixline\\\\
   \annotatetype{\tenv, \vt} \typearrow (\vtp, \vsesty) \OrTypeError\\\\
   \checkslicesinwidth(\tenv, \width, \slicesone) \typearrow \True \OrTypeError\\\\
-  \disjointslicestopositions(\tenv, \slicesone) \typearrow \positions \OrTypeError\\\\
+  \disjointslicestopositions(\tenv, \True, \slicesone) \typearrow \positions \OrTypeError\\\\
   \checkpositionsinwidth(\tenv, \slicesone, \width, \positions) \typearrow \True \OrTypeError\\\\
   \widthp \eqdef \listlen{\positions}\\
   \checkbitsequalwidth(\TBits(\widthp, \emptylist), \vt) \typearrow \True \OrTypeError\\\\
@@ -448,7 +453,8 @@ See
 \ProseParagraph
 \AllApply
 \begin{itemize}
-    \item applying $\disjointslicestopositions$ to $\vslices$ in $\tenv$ checks whether the
+    \item applying $\disjointslicestopositions$ to $\tenv$,
+    $\True$ (indicating that the expressions comprising the slices must be \staticallyevaluable), and $\vslices$ checks whether the
     slices in $\vslices$ are disjoint and yields the set of their positions\ProseOrTypeError;
     \item applying $\checkpositionsinwidth$ to $\vwidth$ and $\positions$ to check that
     all of the positions fit with the width given by $\vwidth$ yields $\True$\ProseOrError.
@@ -457,7 +463,7 @@ See
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-    \disjointslicestopositions(\tenv, \vslices) \typearrow \positions \OrTypeError\\\\
+    \disjointslicestopositions(\tenv, \True, \vslices) \typearrow \positions \OrTypeError\\\\
     \checkpositionsinwidth(\vwidth, \positions) \typearrow \True \OrTypeError
 }{
     \checkslicesinwidth(\tenv, \vwidth, \vslices) \typearrow \True
@@ -508,12 +514,24 @@ fit in the bitvector width $16$, whereas the positions defined for the bitfield
 \hypertarget{def-disjointslicestopositions}{}
 The function
 \[
-  \disjointslicestopositions(\overname{\staticenvs}{\tenv}, \overname{\slice^*}{\vslices})
+  \disjointslicestopositions(
+    \overname{\staticenvs}{\tenv},
+    \overname{\Bool}{\isstatic},
+    \overname{\slice^*}{\vslices}
+  )
   \aslto \overname{\powfin{\Z}}{\positions} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 returns the set of integers defined by the list of slices in $\vslices$ in $\positions$.
-In particular, this rule checks that the bitfield slices do not overlap and that they are not defined in reverse
-(e.g., \texttt{0:1} rather than \texttt{1:0})
+In particular, this rule checks that the following properties:
+\begin{itemize}
+  \item bitfield slices do not overlap; and
+  \item bitfield slices are not defined in reverse (e.g., \texttt{0:1} rather than \texttt{1:0})
+\end{itemize}
+Conducting the checks for these properties requires evaluating the expressions comprising the
+slices, either via static evaluation of via normalization.
+The flag $\isstatic$ determines whether the slice is assumed to consist of \staticallyevaluable{}
+expressions. If so, the slice expressions are statically evaluated, and otherwise they are
+normalized.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Converting Disjoint Slices to Positions}
@@ -536,10 +554,10 @@ in \listingref{disjointslicestopositions} overlap, since they have $3$ in common
   \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\vslices$ is the list with $\vs$ as its \head\ and $\vslicesone$ as its \tail;
-    \item applying $\bitfieldslicetopositions$ to $\vs$ in $\tenv$ yields the optional set of positions \\
+    \item applying $\bitfieldslicetopositions$ to $\tenv$, $\isstatic$, and $\vs$, yields the optional set of positions \\
           $\positionsoneopt$\ProseOrTypeError;
     \item define $\positionsone$ as $\vsone$ if $\positionsoneopt$ is $\langle\vsone\rangle$ and the empty set, otherwise;
-    \item applying $\disjointslicestopositions$ to $\vslicesone$ in $\tenv$ yields the optional set of positions
+    \item applying $\disjointslicestopositions$ to $\tenv$, $\isstatic$, and $\vslicesone$, yields the optional set of positions
           $\positionstwoopt$\ProseOrTypeError;
     \item define $\positionstwo$ as $\vsone$ if $\positionstwoopt$ is $\langle\vstwo\rangle$ and the empty set, otherwise;
     \item checking that $\positionsone$ is disjoint from $\positionstwo$ yields $\True$\ProseTerminateAs{\BadSlices}
@@ -549,19 +567,19 @@ in \listingref{disjointslicestopositions} overlap, since they have $3$ in common
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
-  \disjointslicestopositions(\tenv, \overname{\emptylist}{\vslices}) \typearrow \overname{\emptyset}{\positions}
+  \disjointslicestopositions(\tenv, \isstatic, \overname{\emptylist}{\vslices}) \typearrow \overname{\emptyset}{\positions}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \bitfieldslicetopositions(\tenv, \vs) \typearrow \positionsoneopt \OrTypeError\\\\
+  \bitfieldslicetopositions(\tenv, \isstatic, \vs) \typearrow \positionsoneopt \OrTypeError\\\\
   \positionsone \eqdef \choice{\positionsoneopt = \langle\vsone\rangle}{\vsone}{\emptyset}\\
-  \disjointslicestopositions(\tenv, \vslicesone) \typearrow \positionstwoopt \OrTypeError\\\\
+  \disjointslicestopositions(\tenv, \isstatic, \vslicesone) \typearrow \positionstwoopt \OrTypeError\\\\
   \positionstwo \eqdef \choice{\positionstwoopt = \langle\vstwo\rangle}{\vstwo}{\emptyset}\\
   \checktrans{\positionsone \cap \positionstwo = \emptyset}{\BadSlices} \checktransarrow \True \OrTypeError
 }{
-  \disjointslicestopositions(\tenv, \overname{\vs \concat \vslicesone}{\vslices}) \typearrow \overname{\positionsone \cup \positionstwo}{\positions}
+  \disjointslicestopositions(\tenv, \isstatic, \overname{\vs \concat \vslicesone}{\vslices}) \typearrow \overname{\positionsone \cup \positionstwo}{\positions}
 }
 \end{mathpar}
 
@@ -569,11 +587,16 @@ in \listingref{disjointslicestopositions} overlap, since they have $3$ in common
 \hypertarget{def-bitfieldslicetopositions}{}
 The function
 \[
-  \bitfieldslicetopositions(\overname{\staticenvs}{\tenv}, \overname{\slice}{\vslice})
+  \bitfieldslicetopositions(
+    \overname{\staticenvs}{\tenv},
+    \overname{\Bool}{\isstatic},
+    \overname{\slice}{\vslice}
+  )
   \aslto \overname{\langle\powfin{\Z}\rangle}{\positions} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 returns the set of integers defined by the bitfield slice $\vslice$ in $\positions$,
-if they can be statically evaluated, or $\None$ if they cannot be statically evaluated.
+if it can be determined via static evaluation or normalization, depending on $\isstatic$,
+and $\None$ if it cannot be determined.
 \ProseOtherwiseTypeError
 
 The function assumes that AST nodes labelled with $\SliceSingle$, $\SliceRange$, and $\SliceStar$ have been reduced
@@ -608,8 +631,8 @@ in \listingref{bitfieldslicetopositions}, followed by examples of erroneous slic
 \begin{itemize}
   \item $\vslice$ is \lengthslice\ defined by expressions $\veone$ and $\vetwo$, that is, \\
         $\SliceLength(\veone, \vetwo)$;
-  \item applying $\reducetozopt$ to $\veone$ in $\tenv$ yields the integer literal for $\offset$\ProseTerminateAs{\None};
-  \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$ yields the integer literal for $\length$\ProseTerminateAs{\None};
+  \item applying $\evalsliceexpr$ to $\tenv$, $\isstatic$, and $\veone$, yields the integer literal for $\offset$\ProseTerminateAs{\TypeErrorConfig, \None};
+  \item applying $\evalsliceexpr$ to $\tenv$, $\isstatic$, and $\vetwo$, yields the integer literal for $\length$\ProseTerminateAs{\TypeErrorConfig, \None};
   \item checking that $\offset$ is less than or equal to $\offset + \length - 1$ holds yields $\True$\ProseTerminateAs{\BadSlices};
   \item $\positions$ is the set of integers between $\offset$ and $\offset+\length-1$, inclusive.
 \end{itemize}
@@ -617,16 +640,75 @@ in \listingref{bitfieldslicetopositions}, followed by examples of erroneous slic
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \reducetozopt(\tenv, \veone) \typearrow \langle\offset\rangle \terminateas\None\\\\
-  \reducetozopt(\tenv, \vetwo) \typearrow \langle\length\rangle \terminateas\None\\\\
+  \evalsliceexpr(\tenv, \isstatic, \veone) \typearrow \langle\offset\rangle \terminateas\TypeErrorConfig, \None\\\\
+  \evalsliceexpr(\tenv, \isstatic, \vetwo) \typearrow \langle\length\rangle \terminateas\TypeErrorConfig, \None\\\\
   \checktrans{\offset \leq \offset + \length - 1}{\BadSlices} \checktransarrow \True \OrTypeError
 }{
   {
   \begin{array}{r}
-  \bitfieldslicetopositions(\tenv, \overname{\SliceLength(\veone, \vetwo)}{\vslice}) \typearrow\\
+  \bitfieldslicetopositions(\tenv, \isstatic, \overname{\SliceLength(\veone, \vetwo)}{\vslice}) \typearrow\\
   \overname{\langle\{n \;|\; \offset \leq n \leq \offset+\length-1\}\rangle}{\positions}
   \end{array}
   }
+}
+\end{mathpar}
+
+\TypingRuleDef{EvalSliceExpr}
+\hypertarget{def-evalsliceexpr}{}
+The function
+\[
+\evalsliceexpr(
+  \overname{\staticenvs}{\tenv},
+  \overname{\Bool}{\isstatic},
+  \overname{\expr}{\ve}
+) \aslto \overname{\Some{\Z}}{\vzopt} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\]
+attempts to transform the expression $\ve$ into a constant integer in the static environment $\tenv$,
+yielding the result in $\vzopt$, where $\None$ indicates it could not be transformed into a constant integer.
+If $\isstatic$ is $\True$, then $\ve$ is known to be \staticallyevaluable, and the transformation is
+carried out via static evaluation. Otherwise, the transformation is carried out via normalization.
+\ProseOtherwiseTypeError
+
+\ExampleDef{Evaluating Expressions in Slices}
+The specifications in \listingref{EvalSliceExpr} shows two kinds of slices:
+the slice \\
+\verb|static_func{4}(4):0| is used to define a bitfield (\verb|data|)
+and therefore must be \staticallyevaluable,
+whereas the slice \verb|N DIV 2:0| is used in an \assignableexpression, which means
+it need not be \staticallyevaluable{} (it is indeed not, in this example).
+\ASLListing{Expressions in slices}{EvalSliceExpr}{\typingtests/TypingRule.EvalSliceExpr.asl}
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{static}
+  \begin{itemize}
+    \item $\isstatic$ is $\True$;
+    \item \Prosestaticeval{$\tenv$}{$\ve$}{$\vz$}\ProseOrTypeError;
+    \item \Proseeqdef{$\vzopt$}{the singleton set for $\vz$}.
+  \end{itemize}
+
+  \item \AllApplyCase{symbolic}
+  \begin{itemize}
+    \item $\isstatic$ is $\False$;
+    \item applying $\reducetozopt$ to $\tenv$ and $\ve$ yields $\vzopt$.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[static]{
+  \staticeval(\tenv, \ve) \typearrow \vz \OrTypeError
+}{
+  \evalsliceexpr(\tenv, \overname{\True}{\isstatic}, \ve) \typearrow \overname{\Some{\vz}}{\vzopt}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[symbolic]{
+  \reducetozopt(\tenv, \ve) \typearrow \vzopt
+}{
+  \evalsliceexpr(\tenv, \overname{\False}{\isstatic}, \ve) \typearrow \vzopt
 }
 \end{mathpar}
 
