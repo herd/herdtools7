@@ -197,7 +197,7 @@ We assume that the static environment supports the following functions:
 \[
   \begin{array}{rcl}
     \findfunc       &:& \staticenvs \times \Identifiers \partialto \func\\
-    \typesat  &:& \staticenvs \times (\ty \times \ty) \rightarrow \{\True, \False\}
+    \typesat  &:& \staticenvs \times (\ty \times \ty) \rightarrow \Bool
   \end{array}
 \]
 The partial function $\findfunc$ returns the typed AST of the subprogram for a given identifier.

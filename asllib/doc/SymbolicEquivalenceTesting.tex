@@ -781,7 +781,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 The function
 \[
   \exprequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo}) \aslto
-  \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively checks whether the expression $\veone$ is equivalent to the expression $\vetwo$ in environment $\tenv$.
 The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
@@ -823,7 +823,7 @@ The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
 The helper function
 \[
   \exprequalnorm(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo})
-  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the expression $\veone$ is equivalent to the expression $\vetwo$ in environment $\tenv$
 by attempting to transform both expressions to their symbolic expression form
@@ -882,7 +882,7 @@ The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
 The helper function
 \[
   \exprequalcase(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo})
-  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 specializes the equivalence test for expressions $\veone$ and $\vetwo$ in $\tenv$
 for the different types of expressions.
@@ -1271,7 +1271,7 @@ The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
 The function
 \[
   \typeequal(\overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo}) \aslto
-   \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+   \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the type $\vtone$ is equivalent to the type $\vttwo$ in environment $\tenv$
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
@@ -1472,7 +1472,7 @@ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 The function
 \[
   \bitwidthequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\vwone} \aslsep \overname{\expr}{\vwtwo})
-  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the bitwidth expression $\vwone$ is equivalent to the bitwidth expression $\vwtwo$
 in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
@@ -1494,7 +1494,7 @@ Testing whether the expressions $\vwone$ and $\vwtwo$ are equivalent in $\tenv$ 
 The function
 \[
   \bitfieldsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\bitfield^*}{\bfone} \aslsep \overname{\bitfield^*}{\bftwo})
-  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the list of bitfields $\bfone$ is equivalent to the list of bitfields $\bftwo$
 in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
@@ -1539,7 +1539,7 @@ in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 The function
 \[
   \bitfieldequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\bitfield}{\bfone} \aslsep \overname{\bitfield}{\bftwo})
-  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the bitfield $\bfone$ is equivalent to the bitfield $\bftwo$ in environment $\tenv$
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
@@ -1632,7 +1632,7 @@ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 The function
 \[
   \constraintsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint^*}{\csone} \aslsep \overname{\intconstraint^*}{\cstwo})
-  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the constraint list $\csone$ is equivalent to the constraint list $\cstwo$ in environment $\tenv$
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
@@ -1663,7 +1663,7 @@ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 The function
 \[
   \constraintequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vcone} \aslsep \overname{\intconstraint}{\vstwo})
-  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the constraint $\vcone$ is equivalent to the constraint $\vctwo$ in environment $\tenv$
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
@@ -1726,7 +1726,7 @@ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 The function
 \[
   \slicesequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice^*}{\slicesone} \aslsep \overname{\slice^*}{\slicestwo})
-  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the list of slices $\slicesone$ is equivalent to the list of slices $\slicestwo$
 in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
@@ -1771,74 +1771,32 @@ in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 The function
 \[
   \sliceequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\sliceone} \aslsep \overname{\slice}{\slicetwo})
-  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 conservatively tests whether the slice $\sliceone$ is equivalent to the slice $\slicetwo$
 in environment $\tenv$ and yields the result in $\vb$. \ProseOtherwiseTypeError
 
+This function assumes both $\sliceone$ and $\slicetwo$ are \typedast{} nodes,
+which means that they have the form $\SliceLength(\ \cdot\ ,\ \cdot\ )$.
+
 \ProseParagraph
-\OneApplies
+\AllApply
 \begin{itemize}
-  \item \AllApplyCase{different\_labels}
-  \begin{itemize}
-    \item $\sliceone$ and $\slicetwo$ have different AST labels;
-    \item $\vb$ is $\False$.
-  \end{itemize}
-
-  \item \AllApplyCase{slice\_single}
-  \begin{itemize}
-    \item $\sliceone$ is a slice for a single position, given by the expression $\veone$, that is, $\SliceSingle(\veone)$;
-    \item $\slicetwo$ is a slice for a single position, given by the expression $\vetwo$, that is, $\SliceSingle(\vetwo)$;
-    \item testing $\veone$ and $\vetwo$ for equivalence yields $\vb$\ProseOrTypeError.
-  \end{itemize}
-
-  \item \AllApplyCase{slice\_range}
-  \begin{itemize}
-    \item $\sliceone$ is a slice for a range of positions, given by the expressions $\veoneone$ and $\veonetwo$, that is, $\SliceRange(\veoneone, \veonetwo)$;
-    \item $\slicetwo$ is a slice for a range of positions, given by the expressions $\vetwoone$ and $\vetwotwo$, that is, $\SliceRange(\vetwoone, \vetwotwo)$;
-    \item testing $\veoneone$ and $\vetwoone$ for equivalence yields $\vbone$\ProseOrTypeError;
-    \item testing $\veonetwo$ and $\vetwotwo$ for equivalence yields $\vbtwo$\ProseOrTypeError;
-    \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
-  \end{itemize}
-
-  \item \AllApplyCase{slice\_length}
-  \begin{itemize}
-    \item $\sliceone$ is a slice for a range of positions, given by the start expression $\veoneone$ and length expression $\veonetwo$, that is, $\SliceLength(\veoneone, \veonetwo)$;
-    \item $\slicetwo$ is a slice for a range of positions, given by the start expression $\vetwoone$ and length expression $\vetwotwo$, that is, $\SliceLength(\vetwoone, \vetwotwo)$;
-    \item testing $\veoneone$ and $\vetwoone$ for equivalence yields $\vbone$\ProseOrTypeError;
-    \item testing $\veonetwo$ and $\vetwotwo$ for equivalence yields $\vbtwo$\ProseOrTypeError;
-    \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
-  \end{itemize}
+  \item $\sliceone$ is a slice for a range of positions, given by the start expression $\veoneone$ and length expression $\veonetwo$, that is, $\SliceLength(\veoneone, \veonetwo)$;
+  \item $\slicetwo$ is a slice for a range of positions, given by the start expression $\vetwoone$ and length expression $\vetwotwo$, that is, $\SliceLength(\vetwoone, \vetwotwo)$;
+  \item testing $\veoneone$ and $\vetwoone$ for equivalence yields $\vbone$\ProseOrTypeError;
+  \item testing $\veonetwo$ and $\vetwotwo$ for equivalence yields $\vbtwo$\ProseOrTypeError;
+  \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[different\_labels]{
-  \astlabel(\sliceone) \neq \astlabel(\slicetwo)
-}{
-  \slicesequal(\tenv, \sliceone, \slicetwo) \typearrow \False
-}
-\and
-\inferrule[slice\_single]{
-  \exprequal(\tenv, \veone, \vetwo) \typearrow \vb \OrTypeError
-}{
-  \slicesequal(\tenv, \SliceSingle(\veone), \SliceSingle(\vetwo)) \typearrow \vb
-}
-\and
-\inferrule[slice\_range]{
+\inferrule{
   \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
   \exprequal(\tenv, \vetwoone, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
-  \slicesequal(\tenv, \SliceRange(\veoneone, \veonetwo), \SliceRange(\vetwoone, \vetwotwo)) \typearrow \vb
-}
-\and
-\inferrule[slice\_length]{
-  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
-  \exprequal(\tenv, \vetwoone, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
-  \vb \eqdef \vbone \land \vbtwo
-}{
-  \slicesequal(\tenv, \SliceLength(\veoneone, \veonetwo), \SliceLength(\vetwoone, \vetwotwo)) \typearrow \vb
+  \slicesequal(\tenv, \overname{\SliceLength(\veoneone, \veonetwo)}{\sliceone}, \overname{\SliceLength(\vetwoone, \vetwotwo)}{\slicetwo}) \typearrow \vb
 }
 \end{mathpar}
 
@@ -1847,7 +1805,7 @@ in environment $\tenv$ and yields the result in $\vb$. \ProseOtherwiseTypeError
 The function
 \[
   \arraylengthequal(\overname{\arrayindex}{\vlone} \aslsep \overname{\arrayindex}{\vltwo})
-  \aslto \overname{\{\True, \False\}}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 tests whether the array lengths $\vlone$ and $\vltwo$ are equivalent and yields the result
 in $\vb$. \ProseOtherwiseTypeError
@@ -1907,7 +1865,7 @@ in $\vb$. \ProseOtherwiseTypeError
 \hypertarget{def-literalequal}{}
 The function
 \[
-  \literalequal(\overname{\literal}{\vvone} \aslsep \overname{\literal}{\vvtwo}) \rightarrow \overname{\{\True, \False\}}{\vb}
+  \literalequal(\overname{\literal}{\vvone} \aslsep \overname{\literal}{\vvtwo}) \rightarrow \overname{\Bool}{\vb}
 \]
 tests whether literal $\vvone$ is $\vvtwo$ by equating them.
 

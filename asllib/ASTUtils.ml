@@ -362,11 +362,9 @@ and slice_equal eq slice1 slice2 =
   slice1 == slice2
   ||
   match (slice1, slice2) with
-  | Slice_Single e1, Slice_Single e2 -> expr_equal eq e1 e2
-  | Slice_Range (e11, e21), Slice_Range (e12, e22)
   | Slice_Length (e11, e21), Slice_Length (e12, e22) ->
       expr_equal eq e11 e12 && expr_equal eq e21 e22
-  | _ -> false
+  | _ -> assert false
 
 and constraint_equal eq c1 c2 =
   c1 == c2
