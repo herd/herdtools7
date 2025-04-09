@@ -61,7 +61,7 @@ module ParsedStmt = ParsedDotGraph.Stmt
 module ParsedEdge = ParsedDotGraph.Edge
 module ParsedSubgraph = ParsedDotGraph.Subgraph
 
-(* To be called after Str.string_match was called on the appropriate regex and
+(** To be called after Str.string_match was called on the appropriate regex and
    string. The regex must contain 2 groups, the second of which matching the
    location. This will search for the address register in the instruction
    using the "[Xn]" syntax. If no such register is found, it returns None in
@@ -76,6 +76,17 @@ let get_loc_and_address_reg value =
     Some (Str.matched_group 1 value)
   with Not_found -> None in
   (loc, reg)
+
+(** To be called after Str.string_match was called on the appropriate regex
+  and string. The regex must contain 2 groups: the first is a (R|W) denoting
+  whether the access is a read or a write effect, and the second matches the
+  location. *)
+let do_mem_access param_map value read write =
+  let f = if Str.matched_group 1 value = "R" then read else write in
+  let loc, reg = get_loc_and_address_reg value in
+  let reg = Option.map (fun reg -> StringMap.safe_find reg reg param_map) reg in
+  let is_explicit = not (str_contains value "NExp") in
+  { Node.desc=f loc reg is_explicit; kind=Node.Mem }
 
 let get_label_value attrs =
   let label = List.find (fun a -> a.ParsedAttr.name = "label") attrs in
@@ -93,111 +104,109 @@ let is_init_event n =
 let make_monospace str =
   Printf.sprintf "`%s`" str
 
+let check_regex regex value = Str.string_match regex value 0
+
+(** Makes use of Str.string_match. If caller uses matching functions on
+    previously used regexes, make sure this function is called after
+    all other matching has been performed *)
+let is_gpreg reg =
+  let r = Str.regexp {|[BHWXQ][0-9]+|} in
+  check_regex r reg
+
+(** Makes use of Str.string_match. If caller uses matching functions on
+  previously used regexes, make sure this function is called after
+  all other matching has been performed *)
+let pp_reg param_map reg =
+  let reg = match reg with
+  | "NZCV" -> "PSTATE.NZCV"
+  | r -> r in
+  let tr_reg = StringMap.safe_find reg reg param_map in
+  if is_gpreg reg then tr_reg else make_monospace tr_reg
+
+(** To be called after Str.string_match was called on the fault or
+  exc_entry regexes *)
+let get_fault_name value =
+  let gr = Str.matched_group 1 value in
+  let els = String.split_on_char ',' gr in
+  (* The name of the event should be at the end *)
+  let last = List.hd (List.rev els) in
+  let words = String.split_on_char ':' last in
+  String.concat " " words
+
+let require_address_reg f name loc reg is_explicit =
+  match reg with
+  | Some r -> f loc r is_explicit
+  | None -> Warn.fatal "No address register found for %s access\n" name
+
+let tag_read = require_address_reg DescDict.tag_read "tag read"
+let tag_write = require_address_reg DescDict.tag_write "tag write"
+let pte_read = require_address_reg DescDict.pte_read "PTE read"
+let pte_write = require_address_reg DescDict.pte_write "PTE write"
+let pa_read = require_address_reg DescDict.pa_read "PA read"
+let pa_write = require_address_reg DescDict.pa_write "PA write"
+
+(* Effect matching regexes *)
+let symbol = "\\([a-zA-Z0-9_\\+]+\\)"
+let tag = Printf.sprintf "tag(%s)" symbol
+let pte = Printf.sprintf "PTE(%s)" symbol
+let pa = Printf.sprintf "PA(%s)" symbol
+let tlb = Printf.sprintf "TLB(%s)" symbol
+let memloc_regex = Str.regexp symbol
+let tag_regex = Str.regexp tag
+let pte_regex = Str.regexp pte
+let pa_regex = Str.regexp pa
+let tlb_regex = Str.regexp tlb
+let mem_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[\([a-zA-Z0-9_\+]+\)\]|} (* eg. a: R[x] *)
+let tag_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[tag(\([a-zA-Z0-9_\+]+\))\]|} (* eg. a: R[tag(x)] *)
+let pte_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[PTE(\([a-zA-Z0-9_\+]+\))\]|} (* eg. a: R[PTE(x)] *)
+let pa_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[PA(\([a-zA-Z0-9_\+]+\))\]|} (* eg. a: R[PA(x)] *)
+let ifetch = Str.regexp {|[a-zA-Z0-9_]*: R\[label:\\"P[0-9]:\([a-zA-Z0-9_]+\)\\"\]IFetch=\([][,a-zA-Z0-9_ ]+\)|} (* eg. a: R[label:\\"P0:L0\\"]IFetch=NOP *)
+let tlbi = Str.regexp {|[a-zA-Z0-9_]*: TLBI(\([A-Z0-9]+\),\[\([a-zA-Z0-9_\+()]+\)\])|} (* eg. a: TLBI(VAAE1IS,[TLB(x)]) *)
+let generic_tlbi = Str.regexp {|[a-zA-Z0-9_]*: TLBI(\([A-Z0-9]+\))|} (* no location specified - eg. a: TLBI(VAAE1IS) *)
+let dc_ic = Str.regexp {|[a-zA-Z0-9_]*: \(DC\|IC\)(\([A-Z]+\),\[label:\\"P[0-9]:\([a-zA-Z0-9_]+\)\\"\])|} (* eg. a: DC(CVAU,label:\\"P0:m0\\") *)
+let generic_dc_ic = Str.regexp {|[a-zA-Z0-9_]*: \(DC\|IC\)(\([A-Z]+\))|} (* no label specified - eg. a: DC(CVAU) *)
+let reg_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)[0-9]:\([A-Z_]+[0-9]*\)|} (* eg. a: R0:X0 *)
+let branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(\([][,a-zA-Z0-9_\+:{}]+\)\(==\|!=\)\([][,a-zA-Z0-9_\+:{}]+\))|} (* eg. a: Branching(pred)([x]==0:X0) *)
+let branching_mte_tag = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(color)(tag(\([a-zA-Z0-9_\+]+\)), \([A-Z_]+[0-9]*\))|} (* eg. a: Branching(pred)(tag(x), X1) *)
+let branching_pte = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(PTE(\([a-zA-Z0-9_\+]+\)), \([A-Z_]+[0-9]*\))\((\([a-zA-Z0-9_,:&|() ]+\))\)?|} (* eg. a: Branching(pred)(PTE[x], X1)(valid:1 && af:1) *)
+let any_active = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(AnyActive(\([A-Z_]+[0-9]*\)))|} (* eg. a: Branching(pred)(AnyActive(P0)) *)
+let active_elem = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(ActiveElem(\([A-Z_]+[0-9]*\), \([0-9]+\)))|} (* eg. a: Branching(pred)(ActiveElem(P0, 0)) *)
+let branching_instr_cond = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)|} (* Only match after the above branching regexes have failed, since they are not exclusive with this one. eg. a: Branching(pred) *)
+let bcc_branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(bcc)|} (* eg. a: Branching(bcc) *)
+let exc_return = Str.regexp {|[a-zA-Z0-9_]*: ExcReturn|} (* eg. a: ExcReturn *)
+let fault = Str.regexp {|[a-zA-Z0-9_]*: Fault(\([a-zA-Z0-9_:,]*\))|} (* eg. a: Fault(W,loc:x:red,TagCheck)*)
+let exc_entry = Str.regexp {|[a-zA-Z0-9_]*: ExcEntry(\([a-zA-Z0-9_:,]*\))|} (* eg. a: ExcEntry(W,loc:x:red,TagCheck)*)
+let empty_effect = Str.regexp {|[a-zA-Z0-9_]*: \\|} (* eg. a: \*)
+
 let tr_stmt acc stmt param_map =
-
-  (* To be called after Str.string_match was called on the appropriate regex
-    and string. The regex must contain 2 groups: the first is a (R|W) denoting
-    whether the access is a read or a write effect, and the second matches the
-    location. *)
-  let do_mem_access value read write =
-    let f = if Str.matched_group 1 value = "R" then read else write in
-    let loc, reg = get_loc_and_address_reg value in
-    let reg = Option.map (fun reg -> StringMap.safe_find reg reg param_map) reg in
-    let is_explicit = not (str_contains value "NExp") in
-    { Node.desc=f loc reg is_explicit; kind=Node.Mem } in
-
-  (* Makes use of Str.string_match. If caller uses matching functions on
-     previously used regexes, make sure this function is called after
-     all other matching has been performed *)
-  let is_gpreg reg =
-    let r = Str.regexp {|[BHWXQ][0-9]+|} in
-    Str.string_match r reg 0 in
-
-  (* Makes use of Str.string_match. If caller uses matching functions on
-     previously used regexes, make sure this function is called after
-     all other matching has been performed *)
-  let pp_reg reg =
-    let reg = match reg with
-    | "NZCV" -> "PSTATE.NZCV"
-    | r -> r in
-    let tr_reg = StringMap.safe_find reg reg param_map in
-    if is_gpreg reg then tr_reg else make_monospace tr_reg in
-
-  (* To be called after Str.string_match was called on the fault or exc_entry regexes *)
-  let get_fault_name value =
-    let gr = Str.matched_group 1 value in
-    let els = String.split_on_char ',' gr in
-    (* The name of the event should be at the end *)
-    let last = List.hd (List.rev els) in
-    let words = String.split_on_char ':' last in
-    String.concat " " words in
-
+  let pp_reg = pp_reg param_map in
   match stmt with
   | ParsedStmt.Node n ->
     let value = get_label_value n.ParsedNode.attrs in
+    let do_mem_access = do_mem_access param_map value in
+    let check_node r = check_regex r value in
     if is_init_event n then
       (* Skip init events *)
       acc
     else begin
-      let symbol = "\\([a-zA-Z0-9_\\+]+\\)" in
-      let tag = Printf.sprintf "tag(%s)" symbol in
-      let pte = Printf.sprintf "PTE(%s)" symbol in
-      let pa = Printf.sprintf "PA(%s)" symbol in
-      let tlb = Printf.sprintf "TLB(%s)" symbol in
-      let memloc_regex = Str.regexp symbol in
-      let tag_regex = Str.regexp tag in
-      let pte_regex = Str.regexp pte in
-      let pa_regex = Str.regexp pa in
-      let tlb_regex = Str.regexp tlb in
-      let mem_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[\([a-zA-Z0-9_\+]+\)\]|} in
-      let tag_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[tag(\([a-zA-Z0-9_\+]+\))\]|} in
-      let pte_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[PTE(\([a-zA-Z0-9_\+]+\))\]|} in
-      let pa_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[PA(\([a-zA-Z0-9_\+]+\))\]|} in
-      let ifetch = Str.regexp {|[a-zA-Z0-9_]*: R\[label:\\"P[0-9]:\([a-zA-Z0-9_]+\)\\"\]IFetch=\([][,a-zA-Z0-9_ ]+\)|} in
-      let tlbi = Str.regexp {|[a-zA-Z0-9_]*: TLBI(\([A-Z0-9]+\),\[\([a-zA-Z0-9_\+()]+\)\])|} in
-      let generic_tlbi = Str.regexp {|[a-zA-Z0-9_]*: TLBI(\([A-Z0-9]+\))|} in
-      let dc_ic = Str.regexp {|[a-zA-Z0-9_]*: \(DC\|IC\)(\([A-Z]+\),\[label:\\"P[0-9]:\([a-zA-Z0-9_]+\)\\"\])|} in
-      let generic_dc_ic = Str.regexp {|[a-zA-Z0-9_]*: \(DC\|IC\)(\([A-Z]+\))|} in
-      let reg_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)[0-9]:\([A-Z_]+[0-9]*\)|} in
-      let branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(\([][,a-zA-Z0-9_\+:{}]+\)\(==\|!=\)\([][,a-zA-Z0-9_\+:{}]+\))|} in
-      let branching_mte_tag = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(color)(tag(\([a-zA-Z0-9_\+]+\)), \([A-Z_]+[0-9]*\))|} in
-      let branching_pte = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(PTE(\([a-zA-Z0-9_\+]+\)), \([A-Z_]+[0-9]*\))\((\([a-zA-Z0-9_,:&|() ]+\))\)?|} in
-      let any_active = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(AnyActive(\([A-Z_]+[0-9]*\)))|} in
-      let active_elem = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(ActiveElem(\([A-Z_]+[0-9]*\), \([0-9]+\)))|} in
-      let branching_instr_cond = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)|} in
-      let bcc_branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(bcc)|} in
-      let exc_return = Str.regexp {|[a-zA-Z0-9_]*: ExcReturn|} in
-      let fault = Str.regexp {|[a-zA-Z0-9_]*: Fault(\([a-zA-Z0-9_:,]*\))|} in
-      let exc_entry = Str.regexp {|[a-zA-Z0-9_]*: ExcEntry(\([a-zA-Z0-9_:,]*\))|} in
-      let empty = Str.regexp {|[a-zA-Z0-9_]*: \\|} in
-
-      let require_address_reg f name loc reg is_explicit =
-        match reg with
-        | Some r -> f loc r is_explicit
-        | None -> Warn.fatal "No address register found for %s access\n" name in
-
-      let tag_read = require_address_reg DescDict.tag_read "tag read" in
-      let tag_write = require_address_reg DescDict.tag_write "tag write" in
-      let pte_read = require_address_reg DescDict.pte_read "PTE read" in
-      let pte_write = require_address_reg DescDict.pte_write "PTE write" in
-      let pa_read = require_address_reg DescDict.pa_read "PA read" in
-      let pa_write = require_address_reg DescDict.pa_write "PA write" in
-
-      let node = if Str.string_match mem_access value 0 then
-        do_mem_access value DescDict.mem_read DescDict.mem_write
-      else if Str.string_match tag_access value 0 then
-        do_mem_access value tag_read tag_write
-      else if Str.string_match pte_access value 0 then
-        do_mem_access value pte_read pte_write
-      else if Str.string_match pa_access value 0 then
-        do_mem_access value pa_read pa_write
-      else if Str.string_match ifetch value 0 then begin
+      (* Identify the type of the effect. Only one regex should match.
+      Ensure branching_instr_cond is only checked after all the other
+      branching regexes defined above it, since they are not exclusive. *)
+      let node = if check_node mem_access then
+        do_mem_access DescDict.mem_read DescDict.mem_write
+      else if check_node tag_access then
+        do_mem_access tag_read tag_write
+      else if check_node pte_access then
+        do_mem_access pte_read pte_write
+      else if check_node pa_access then
+        do_mem_access pa_read pa_write
+      else if check_node ifetch then begin
         let f = DescDict.ifetch in
         let label = Str.matched_group 1 value in
         let instr = Str.matched_group 2 value in
         { Node.desc=f label instr; kind=Node.Mem }
       end
-      else if Str.string_match tlbi value 0 then begin
+      else if check_node tlbi then begin
         let f = DescDict.tlbi in
         let typ = make_monospace (Str.matched_group 1 value) in
         let loc = Str.matched_group 2 value in
@@ -209,43 +218,44 @@ let tr_stmt acc stmt param_map =
         with Not_found ->
           Warn.fatal "Could not find register as part of TLBI instruction" in
 
-        let loc = if Str.string_match tag_regex loc 0 then
+        let check_loc r = check_regex r loc in
+        let loc = if check_loc tag_regex then
           let loc = Str.matched_group 1 loc in
           DescDict.tagloc_of loc reg
-        else if Str.string_match pte_regex loc 0 then
+        else if check_loc pte_regex then
           let loc = Str.matched_group 1 loc in
           DescDict.pte_of loc reg
-        else if Str.string_match pa_regex loc 0 then
+        else if check_loc pa_regex then
           let loc = Str.matched_group 1 loc in
           DescDict.pa_of loc reg
-        else if Str.string_match tlb_regex loc 0 then
+        else if check_loc tlb_regex then
           let loc = Str.matched_group 1 loc in
           DescDict.tlb_of loc reg
-        else if Str.string_match memloc_regex loc 0 then begin
+        else if check_loc memloc_regex then begin
           DescDict.memloc_addr_by loc reg end
         else
           Warn.fatal "Unrecognised type of location %s" loc in
         { Node.desc=f typ loc; kind=Node.TLBI }
       end
-      else if Str.string_match generic_tlbi value 0 then begin
+      else if check_node generic_tlbi then begin
         let f = DescDict.generic_tlbi in
         let typ = make_monospace (Str.matched_group 1 value) in
         { Node.desc=f typ; kind=Node.TLBI }
       end
-      else if Str.string_match dc_ic value 0 then begin
+      else if check_node dc_ic then begin
         let f = if Str.matched_group 1 value = "DC" then DescDict.dc
         else DescDict.ic in
         let typ = Str.matched_group 2 value in
         let label = Str.matched_group 3 value in
         { Node.desc= f typ label; kind=Node.DC_IC }
       end
-      else if Str.string_match generic_dc_ic value 0 then begin
+      else if check_node generic_dc_ic then begin
         let f = if Str.matched_group 1 value = "DC" then DescDict.generic_dc
         else DescDict.generic_ic in
         let typ = Str.matched_group 2 value in
         { Node.desc= f typ; kind=Node.DC_IC }
       end
-      else if Str.string_match reg_access value 0 then begin
+      else if check_node reg_access then begin
         let f = if Str.matched_group 1 value = "R" then DescDict.reg_read else DescDict.reg_write in
         let reg = pp_reg (Str.matched_group 2 value) in
         let kind = if str_contains value "(data)" then
@@ -254,7 +264,7 @@ let tr_stmt acc stmt param_map =
           Node.Reg_Other in
         { Node.desc=f reg; kind=kind }
       end
-      else if Str.string_match branching value 0 then begin
+      else if check_node branching then begin
         let f = DescDict.branching in
         let lhs = Str.matched_group 1 value in
         let rel = Str.matched_group 2 value in
@@ -265,11 +275,12 @@ let tr_stmt acc stmt param_map =
           let mem = Str.regexp {|\[\([a-zA-Z0-9_\+]+\)\]|} in
           let reg = Str.regexp {|[0-9]:\([A-Z_]+[0-9]*\)|} in
           let reg_pair = Str.regexp {|{[0-9]:\([A-Z_]+[0-9]*\),[0-9]:\([A-Z_]+[0-9]*\)}|} in
-          if Str.string_match mem str 0 then
+          let check_str r = check_regex r str in
+          if check_str mem then
             DescDict.memloc (Str.matched_group 1 str)
-          else if Str.string_match reg str 0 then
+          else if check_str reg then
             DescDict.reg (pp_reg (Str.matched_group 1 str))
-          else if Str.string_match reg_pair str 0 then begin
+          else if check_str reg_pair then begin
             let reg1 = Str.matched_group 1 str in
             let reg2 = Str.matched_group 2 str in
             DescDict.reg_pair (pp_reg reg1) (pp_reg reg2)
@@ -286,14 +297,14 @@ let tr_stmt acc stmt param_map =
           DescDict.neq_contents lhs rhs in
         { Node.desc=f cond; kind=Node.Branching }
       end
-      else if Str.string_match branching_mte_tag value 0 then begin
+      else if check_node branching_mte_tag then begin
         let f = DescDict.branching in
         let loc = Str.matched_group 1 value in
         let reg = pp_reg (Str.matched_group 2 value) in
         let cond = DescDict.mte_cond loc reg in
         { Node.desc=f cond; kind=Node.Branching }
       end
-      else if Str.string_match branching_pte value 0 then begin
+      else if check_node branching_pte then begin
         let f = DescDict.branching in
         let loc = Str.matched_group 1 value in
         let pred = try
@@ -306,20 +317,20 @@ let tr_stmt acc stmt param_map =
         let cond = DescDict.pte_cond loc reg pred in
         { Node.desc=f cond; kind=Node.Branching }
       end
-      else if Str.string_match any_active value 0 then begin
+      else if check_node any_active then begin
         let f = DescDict.branching in
         let reg = Str.matched_group 1 value in
         let cond = DescDict.any_active reg in
         { Node.desc=f cond; kind=Node.Branching }
       end
-      else if Str.string_match active_elem value 0 then begin
+      else if check_node active_elem then begin
         let f = DescDict.branching in
         let reg = Str.matched_group 1 value in
         let idx = Str.matched_group 2 value in
         let cond = DescDict.active_elem reg idx in
         { Node.desc=f cond; kind=Node.Branching }
       end
-      else if Str.string_match branching_instr_cond value 0 then begin
+      else if check_node branching_instr_cond then begin
         let f = DescDict.branching in
         let cond = Str.regexp {|\(EQ\|NE\)|} in
         try
@@ -332,21 +343,21 @@ let tr_stmt acc stmt param_map =
           (* Fallback to Bcc Branching *)
           { Node.desc=DescDict.bcc_branching; kind=Node.Branching }
       end
-      else if Str.string_match bcc_branching value 0 then
+      else if check_node bcc_branching then
         { Node.desc=DescDict.bcc_branching; kind=Node.Branching }
-      else if Str.string_match exc_return value 0 then
+      else if check_node exc_return then
         { Node.desc=DescDict.exc_return; kind=Node.Branching }
-      else if Str.string_match fault value 0 then begin
+      else if check_node fault then begin
         let f = DescDict.fault in
         let name = get_fault_name value in
         { Node.desc=f name; kind=Node.Fault }
         end
-      else if Str.string_match exc_entry value 0 then begin
+      else if check_node exc_entry then begin
         let f = DescDict.exc_entry in
         let name = get_fault_name value in
         { Node.desc=f name; kind=Node.Fault }
         end
-      else if Str.string_match empty value 0 then
+      else if check_node empty_effect then
         { Node.desc=DescDict.empty; kind=Node.Empty }
       else
         Warn.fatal "Unsupported type of effect label: %s" value in
@@ -369,21 +380,27 @@ let tr_stmt acc stmt param_map =
   | ParsedStmt.Subgraph _ ->
     Warn.fatal "Found dot subgraph even after flattenning was performed"
 
-let convert_bnodes stmts =
-  let node_map = List.fold_left (fun map stmt ->
-    match stmt with
-    | ParsedStmt.Node n ->
-      let name = n.ParsedNode.name in
-      let value = get_label_value n.ParsedNode.attrs in
-      StringMap.add name value map
-    | _ -> map
-  ) StringMap.empty stmts in
+(** Build map from node id to the value of its 'label' attribute *)
+let build_node_map stmts = List.fold_left (fun map stmt ->
+  match stmt with
+  | ParsedStmt.Node n ->
+    let name = n.ParsedNode.name in
+    let value = get_label_value n.ParsedNode.attrs in
+    StringMap.add name value map
+  | _ -> map
+) StringMap.empty stmts
 
-  (* Compute the list of direct iico_data predecessors for every node *)
-  let preds = StringMap.fold (fun key _ acc ->
-    StringMap.add key [] acc
-  ) node_map StringMap.empty in
-  let preds = List.fold_left (fun map stmt ->
+(** Filter out all nodes that don't match regex *)
+let get_matching_nodes node_map regex =
+  StringMap.filter (fun key ->
+    let value = StringMap.find key node_map in
+    check_regex regex value
+  ) node_map
+
+(** Compute the list of direct iico_data predecessors for every node *)
+let get_iico_preds node_map stmts =
+  let preds = StringMap.map (fun _ -> []) node_map in
+  List.fold_left (fun map stmt ->
     match stmt with
     | ParsedStmt.Edge e ->
       let value = get_label_value e.ParsedEdge.attrs in
@@ -394,43 +411,43 @@ let convert_bnodes stmts =
         StringMap.add right (left :: preds) map
       else map
     | _ -> map
-  ) preds stmts in
+  ) preds stmts
 
-  let get_matching_nodes regex =
-    StringMap.fold (fun key value m ->
-      if Str.string_match regex value 0 then
-        StringMap.add key value m
-      else
-        m
-    ) node_map StringMap.empty in
 
-  (* Get all predecessors that match pred_regex and extract the information
-     (in practice location and address register), and then insert it into
-     the nodes matching node_regex *)
-  let update_labels node_regex pred_regex build_templ =
-    let nodes = get_matching_nodes node_regex in
-    StringMap.fold (fun key value map ->
-      let ps = StringMap.find key preds in
-      let matching_ps = List.fold_left (fun acc p ->
-        let p_val = StringMap.find p node_map in
-        if Str.string_match pred_regex p_val 0 then p_val :: acc else acc
-      ) [] ps in
-      match matching_ps with
-      | [] -> map
-      | p_val :: _ ->
-        ignore (Str.string_match pred_regex p_val 0);
-        let templ = build_templ p_val in
-        let new_value = Str.replace_first node_regex templ value in
-        StringMap.add key new_value map
-    ) nodes StringMap.empty in
+(** Get all predecessors that match pred_regex, build a regex template with
+  the information extracted from them (in practice location and address
+  register) and then insert it into the nodes matching node_regex *)
+let update_labels node_map preds node_regex pred_regex build_templ =
+  let nodes = get_matching_nodes node_map node_regex in
+  StringMap.fold (fun key value map ->
+    let ps = StringMap.find key preds in
+    let matching_ps = List.fold_left (fun acc p ->
+      let p_val = StringMap.find p node_map in
+      if check_regex pred_regex p_val then p_val :: acc else acc
+    ) [] ps in
+    match matching_ps with
+    | [] -> map
+    | p_val :: _ ->
+      ignore (check_regex pred_regex p_val);
+      let templ = build_templ p_val in
+      let new_value = Str.replace_first node_regex templ value in
+      StringMap.add key new_value map
+  ) nodes StringMap.empty
+
+(** Considers all nodes that have an iico_data arrow from them to a PTE or MTE
+  branching node, extracts the location and register from them (most likely
+  they will have this information) and inserts them into the corresponding
+  branching nodes.  *)
+let convert_bnodes stmts =
+  let node_map = build_node_map stmts in
+  let preds = get_iico_preds node_map stmts in
+  let update_labels = update_labels node_map preds in
 
   (* Heuristic: If there is a PTE/MTE R/W predecessor that feeds its data to a
      branching effect, then probably the condition of that branching effect
      checks those values *)
   let branching_mte_tag = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(color)|} in
   let branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)|} in
-  let tag_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[tag(\([a-zA-Z0-9_\+]+\))\]|} in
-  let pte_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[PTE(\([a-zA-Z0-9_\+]+\))\]|} in 
 
   let bcolour_nodes = update_labels branching_mte_tag tag_access (fun p_val ->
     (* The address register should be the same in the p_val as in value *)
@@ -451,14 +468,14 @@ let convert_bnodes stmts =
     Warn.fatal "Found %s which is both a colour and pte branching effect\n" key
   ) bcolour_nodes b_pte_nodes in
 
+  (* Add the extra information to the MTE and PTE branching nodes *)
   List.map (function
     | ParsedStmt.Node n when StringMap.mem n.ParsedNode.name b_nodes ->
       let value = StringMap.find n.ParsedNode.name b_nodes in
       let attrs = List.map (fun a ->
         if a.ParsedAttr.name = "label" then
           { a with ParsedAttr.value=value }
-        else
-          a
+        else a
       ) n.ParsedNode.attrs in
       ParsedStmt.Node { n with ParsedNode.attrs = attrs }
     | stmt -> stmt
@@ -471,9 +488,16 @@ let flatten_subgraphs stmts =
   | stmt -> stmt :: acc in
   List.fold_right flatten stmts []
 
+(** Takes [instr] as passed through the command line, which must match the
+  instruction that produced the dot graph, and maps the parameters of [instr]
+  with the parameters the instruction uses in the dot graph. This allows us to
+  replace concrete registers like [X1], and [X2] with architectural registers
+  like [Xn] and [Xm]. For example, the dot graph nodes contain
+  [CAS X0, X1, [X2]] in their label, and [instr] is [CAS Xs, Xt, [Xn]]. The map
+  will contain the entries [X0] -> [Xs], [X1] -> [Xt] and [X2] -> [Xn]. *)
 let get_param_maps stmts instr =
   let regex = Str.regexp {|\([A-Z]+\)\( \([][,a-zA-Z0-9_]+\)\)?|} in
-  if not (Str.string_match regex instr 0) then
+  if not (check_regex regex instr) then
     Warn.fatal "Instr validation did not work. %s is malformed" instr;
   let instr_mnemonic = Str.matched_group 1 instr in
   let instr_params = try
@@ -482,12 +506,12 @@ let get_param_maps stmts instr =
   with Not_found -> [] in
   let gpreg_regex = Str.regexp {|\[?\([BHWXQ]\)\([a-z0-9]+\)\]?|} in
   let md_instr_params = List.map (fun param ->
-    if Str.string_match gpreg_regex param 0 then
+    if check_regex gpreg_regex param then
       Str.matched_group 1 param ^ "~" ^ Str.matched_group 2 param ^ "~"
     else param
   ) instr_params in
   let graph_instr_params = List.map (fun param ->
-    if Str.string_match gpreg_regex param 0 then
+    if check_regex gpreg_regex param then
       Str.matched_group 1 param ^ Str.matched_group 2 param
     else param
   ) instr_params in
@@ -517,7 +541,7 @@ let get_param_maps stmts instr =
   with Not_found -> [] in
   let gpreg_regex = Str.regexp {|\[?[BHWXQ]\([0-9]+\)\]?|} in
   let read_params = List.map (fun param ->
-    if Str.string_match gpreg_regex param 0 then
+    if check_regex gpreg_regex param then
       let index = Str.matched_group 1 param in
       "X" ^ index, "[BHWXQ]" ^ index
     else param, param
@@ -661,7 +685,7 @@ let tr parsed_graph instr =
   let newline_regex = Str.regexp {|\\l|} in
   let adapted_parsed_nodes = List.mapi (fun i n ->
     let value = get_label_value n.ParsedNode.attrs in
-    let value = if Str.string_match tag_regex value 0 then
+    let value = if check_regex tag_regex value then
       let tag = Printf.sprintf "E%d" (i + 1) in
       let templ = tag ^ ":" in
       Str.replace_first tag_regex templ value
