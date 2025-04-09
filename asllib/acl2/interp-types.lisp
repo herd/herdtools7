@@ -91,7 +91,8 @@
 (in-theory (enable (:t unit)
                    (:t unit-fix)))
 
-(fty::deflist integer-list :pred integer-listp :elt-type integerp :true-listp t)
+(fty::deflist integer-list :pred integer-listp :elt-type integerp :true-listp t
+  :elementp-of-nil nil)
 
 
 (defprod local-env
