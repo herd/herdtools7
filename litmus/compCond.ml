@@ -52,6 +52,10 @@ module Make (O:Indent.S) (I:CompCondUtils.I) =
             begin match v with
             | Constant.ConcreteVector vs ->
                 O.fprintf "(%s)" (dump_vec loc vs)
+            | Constant.Symbolic _ when I.use_symbolic ->
+                O.fprintf "symbolic_equal(%s, %s)"
+                  (I.Loc.dump loc)
+                  (dump_v (Some (ConstrGen.loc_of_rloc loc)) v)
             | _ ->
                 O.fprintf "%s == %s"
                   (I.Loc.dump loc)
