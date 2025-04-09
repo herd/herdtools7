@@ -63,11 +63,14 @@ let () =
     if List.length !args > 1 then
       invalid_arg (Printf.sprintf "Cannot run %s on more than one dot file at once" prog);
 
+    (* Command line parameter denoting the instruction that produced the dot
+    graph, with its parameters replaced 1-for-1 with the symbolic registers
+    we want to use in the description. eg. CAS Xs,Xt,[Xn] *)
     begin match !instr with
     | None -> ()
     | Some s ->
-      let regex = Str.regexp {|\([A-Z]+\)\( \([][a-zA-Z0-9_]+\)\)?\(,\([][a-zA-Z0-9_]+\)\)*$|} in
-      if not (Str.string_match regex s 0) then
+      let instr_regex = Str.regexp {|\([A-Z]+\)\( \([][a-zA-Z0-9_]+\)\)?\(,\([][a-zA-Z0-9_]+\)\)*$|} in
+      if not (Str.string_match instr_regex s 0) then
         invalid_arg "Invalid format for command. Command must have arguments separated by \
         commas, and with no whitespaces between them. The mnemonic and the first argument \
         are separated by exactly one space (eg. LDR X0,[X1])"
