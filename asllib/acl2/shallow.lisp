@@ -227,7 +227,7 @@
 (defines weak-ty-satisfied
   :flag-local nil
   (define weak-ty-satisfied ((x val-p)
-                          (ty ty-p))
+                             (ty ty-p))
     :measure (acl2::two-nats-measure (ty-count ty) 0)
     (b* ((ty (ty->val ty)))
       (fty::multicase ((type_desc-case ty)
@@ -255,7 +255,7 @@
         (- nil))))
 
   (define weak-tuple-type-satisfied ((x vallist-p)
-                                (types tylist-p))
+                                     (types tylist-p))
     :measure (acl2::two-nats-measure (tylist-count types) 0)
     (if (atom types)
         (atom x)
@@ -264,7 +264,7 @@
            (weak-tuple-type-satisfied (cdr x) (Cdr types)))))
 
   (define weak-array-type-satisfied ((x vallist-p)
-                                (ty ty-p))
+                                     (ty ty-p))
     :measure (acl2::two-nats-measure (ty-count ty) (len x))
     (if (atom x)
         t
@@ -272,7 +272,7 @@
            (weak-array-type-satisfied (cdr x) ty))))
 
   (define weak-record-type-satisfied ((x val-imap-p)
-                                 (fields typed_identifierlist-p))
+                                      (fields typed_identifierlist-p))
     :measure (acl2::two-nats-measure (typed_identifierlist-count fields) 0)
     (b* ((x (val-imap-fix x)))
       (if (atom fields)
@@ -285,11 +285,29 @@
                     (weak-ty-satisfied val f1.type)))
              (weak-record-type-satisfied (cdr x) (cdr fields))))))
   ///
-  (fty::deffixequiv-mutual weak-ty-satisfied))
+  (fty::deffixequiv-mutual weak-ty-satisfied)
+
+  (defopener open-weak-ty-satisfied weak-ty-satisfied
+    :hyp (syntaxp (or (quotep ty)
+                      (case-match ty
+                        (('ty (ctor . &))
+                         (member-eq ctor
+                                    '(t_int t_bits t_real t_string t_bool t_enum
+                                            t_tuple t_array t_record t_exception
+                                            t_collection t_named)))
+                        (& nil)))))
+  (defopener open-weak-tuple-type-satisfied weak-tuple-type-satisfied :hyp (syntaxp (or (quotep types)
+                                                                                        (case-match types
+                                                                                          (('cons . &) t) (& nil)))))
+  (defopener open-weak-array-type-satisfied weak-array-type-satisfied)
+  (defopener open-weak-record-type-satisfied weak-record-type-satisfied :hyp (syntaxp (or (quotep fields)
+                                                                                          (case-match fields
+                                                                                            (('cons . &) t) (& nil))))))
 
 
 
 
+(local (in-theory (acl2::disable* openers)))
 
 
 (defines weak-ty-satisfied-native
@@ -355,7 +373,6 @@
              (weak-record-type-satisfied-native (cdr x) (cdr fields))))))
   ///
   (fty::deffixequiv-mutual weak-ty-satisfied-native)
-
 
   (defthm-weak-ty-satisfied-flag
     (defthm weak-ty-satisfied-native-of-val-to-native
@@ -508,15 +525,19 @@
                                     '(t_int t_bits t_real t_string t_bool t_enum
                                             t_tuple t_array t_record t_exception
                                             t_collection t_named)))
-                        (& nil))))))
+                        (& nil)))))
+  
+  (defopener open-tuple-val-to-native tuple-val-to-native
+    :hyp (syntaxp (or (quotep types)
+                      (and (consp types) (eq (car types) 'cons))))))
 
 
 
 
-(defines weak-resolve-ty
+(defines name-resolve-ty
   :verify-guards nil
     
-  (define weak-resolve-ty ((env static_env_global-p)
+  (define name-resolve-ty ((env static_env_global-p)
                            (x ty-p)
                            &key ((clk natp) 'clk))
     :returns (res (and (eval_result-p res)
@@ -525,18 +546,18 @@
     :measure (nats-measure clk 0 (ty-count x) 0)
     (b* ((ty (ty->val x)))
       (type_desc-case ty
-        :t_tuple (b* (((ev tys) (weak-resolve-tylist env ty.types)))
+        :t_tuple (b* (((ev tys) (name-resolve-tylist env ty.types)))
                    (ev_normal (ty (t_tuple tys))))
-        :t_array (b* (((ev base) (weak-resolve-ty env ty.type)))
+        :t_array (b* (((ev base) (name-resolve-ty env ty.type)))
                    (ev_normal (ty (t_array ty.index base))))
         :t_record (b* (((ev fields)
-                        (weak-resolve-typed_identifierlist env ty.fields)))
+                        (name-resolve-typed_identifierlist env ty.fields)))
                     (ev_normal (ty (t_record fields))))
         :t_exception (b* (((ev fields)
-                           (weak-resolve-typed_identifierlist env ty.fields)))
+                           (name-resolve-typed_identifierlist env ty.fields)))
                        (ev_normal (ty (t_exception fields))))
         :t_collection (b* (((ev fields)
-                            (weak-resolve-typed_identifierlist env ty.fields)))
+                            (name-resolve-typed_identifierlist env ty.fields)))
                         (ev_normal (ty (t_collection fields))))
         :t_named  (b* ((decl_types (static_env_global->declared_types env))
                        (look (hons-assoc-equal ty.name decl_types))
@@ -545,10 +566,10 @@
                        ((when (zp clk))
                         (ev_error "Clock ran out resolving named type" x))
                        (type (ty-timeframe->ty (cdr look))))
-                    (weak-resolve-ty env type :clk (1- clk)))
+                    (name-resolve-ty env type :clk (1- clk)))
         :otherwise (ev_normal (ty ty)))))
   
-  (define weak-resolve-tylist ((env static_env_global-p)
+  (define name-resolve-tylist ((env static_env_global-p)
                                (x tylist-p)
                                &key ((clk natp) 'clk))
     :returns (res (and (eval_result-p res)
@@ -557,11 +578,11 @@
     :measure (nats-measure clk 0 (tylist-count x) 0)
     (if (atom x)
         (ev_normal nil)
-      (b* (((ev first) (weak-resolve-ty env (car x)))
-           ((ev rest) (weak-resolve-tylist env (cdr x))))
+      (b* (((ev first) (name-resolve-ty env (car x)))
+           ((ev rest) (name-resolve-tylist env (cdr x))))
         (ev_normal (cons first rest)))))
 
-  (define weak-resolve-typed_identifierlist ((env static_env_global-p)
+  (define name-resolve-typed_identifierlist ((env static_env_global-p)
                                              (x typed_identifierlist-p)
                                              &key ((clk natp) 'clk))
     :returns (res (and (eval_result-p res)
@@ -570,11 +591,111 @@
     :measure (nats-measure clk 0 (typed_identifierlist-count x) 0)
     (b* (((when (atom x)) (ev_normal nil))
          ((typed_identifier x1) (car x))
-         ((ev first) (weak-resolve-ty env x1.type))
-         ((ev rest) (weak-resolve-typed_identifierlist env (cdr x))))
+         ((ev first) (name-resolve-ty env x1.type))
+         ((ev rest) (name-resolve-typed_identifierlist env (cdr x))))
       (ev_normal (cons (typed_identifier x1.name first) rest))))
   ///
-  (Verify-guards weak-resolve-ty-fn))
+  (Verify-guards name-resolve-ty-fn))
+
+
+
+(defines partial-resolve-ty
+  ;; Resolves named types, bitvector widths, and array lengths but not integer constraints.
+  :verify-guards nil
+  (define partial-resolve-tylist ((env env-p)
+                                  (x tylist-p)
+                                  &key ((clk natp) 'clk) (orac 'orac))
+    :returns (mv (res (and (eval_result-p res)
+                           (implies (eval_result-case res :ev_normal)
+                                    (tylist-p (ev_normal->res res)))))
+                 new-orac)
+    :measure (nats-measure clk 0 (tylist-count x) 0)
+    (if (atom x)
+        (evo_normal nil)
+      (b* (((mv (evo first) orac) (partial-resolve-ty env (car x)))
+           ((mv (evo rest) orac) (partial-resolve-tylist env (cdr x))))
+        (evo_normal (cons first rest)))))
+
+  (define partial-resolve-typed_identifierlist ((env env-p)
+                                                (x typed_identifierlist-p)
+                                                &key ((clk natp) 'clk) (orac 'orac))
+    :returns (mv (res (and (eval_result-p res)
+                           (implies (eval_result-case res :ev_normal)
+                                    (typed_identifierlist-p (ev_normal->res res)))))
+                 new-orac)
+    :measure (nats-measure clk 0 (typed_identifierlist-count x) 0)
+    (b* (((when (atom x)) (evo_normal nil))
+         ((typed_identifier x1) (car x))
+         ((mv (evo first) orac) (partial-resolve-ty env x1.type))
+         ((mv (evo rest) orac) (partial-resolve-typed_identifierlist env (cdr x))))
+      (evo_normal (cons (typed_identifier x1.name first) rest))))
+    
+  (define partial-resolve-ty ((env env-p)
+                              (x ty-p)
+                              &key ((clk natp) 'clk) (orac 'orac))
+    :returns (mv (res (and (eval_result-p res)
+                           (implies (eval_result-case res :ev_normal)
+                                    (ty-p (ev_normal->res res)))))
+                 new-orac)
+    :measure (nats-measure clk 0 (ty-count x) 0)
+    (b* ((ty (ty->val x)))
+      (type_desc-case ty
+        :t_int (evo_normal (ty (t_int (unconstrained))))
+        :t_bits (b* (((mv (evo (expr_result width)) orac) (eval_expr env ty.expr)))
+                  (val-case width.val
+                    :v_int ;;(if (<= 0 width.val.val)
+                    (evo_normal (ty (t_bits
+                                     (expr (e_literal (l_int width.val.val)))
+                                     ty.fields)))
+                    ;; NOTE -- separation of concerns: we once threw an error if we resolved
+                    ;; the bitvector width to a negative value. But instead we'll
+                    ;; rely on the consumer of this type to deal with it.
+                    ;; (evo_error "Negative bitvector width resolving type" x))
+                    :otherwise (evo_error "Unexpected type of bitvector width type" x)))
+        :t_tuple (b* (((mv (evo tys) orac) (partial-resolve-tylist env ty.types)))
+                   (evo_normal (ty (t_tuple tys))))
+        :t_array (b* (((mv (evo base) orac) (partial-resolve-ty env ty.type)))
+                   (array_index-case ty.index
+                     :arraylength_expr (b* (((mv (evo (expr_result len)) orac) (eval_expr env ty.index.length)))
+                                         (val-case len.val
+                                           :v_int ;;(if (<= 0 len.val.val)
+                                           (evo_normal (ty (t_array
+                                                            (arraylength_expr
+                                                             (expr (e_literal (l_int len.val.val))))
+                                                            base)))
+                                           ;; (evo_error "Negative array length resolving type" x))
+                                           :otherwise (evo_error "Unexpected type of array length" x)))
+                     :arraylength_enum (evo_normal (ty (t_array ty.index base)))))
+        :t_record (b* (((mv (evo fields) orac)
+                        (partial-resolve-typed_identifierlist env ty.fields)))
+                    (evo_normal (ty (t_record fields))))
+        :t_exception (b* (((mv (evo fields) orac)
+                           (partial-resolve-typed_identifierlist env ty.fields)))
+                       (evo_normal (ty (t_exception fields))))
+        :t_collection (b* (((mv (evo fields) orac)
+                            (partial-resolve-typed_identifierlist env ty.fields)))
+                        (evo_normal (ty (t_collection fields))))
+        :t_named  (b* ((decl_types (static_env_global->declared_types
+                                    (global-env->static (env->global env))))
+                       (look (hons-assoc-equal ty.name decl_types))
+                       ((unless look)
+                        (evo_error "Named type not found" x))
+                       ((when (zp clk))
+                        (evo_error "Clock ran out resolving named type" x))
+                       (type (ty-timeframe->ty (cdr look))))
+                    (partial-resolve-ty env type :clk (1- clk)))
+        :otherwise (evo_normal (ty ty)))))
+  ///
+  (verify-guards partial-resolve-ty-fn)
+  (defopener open-partial-resolve-ty partial-resolve-ty :hyp (syntaxp (quotep x)))
+  (defopener open-partial-resolve-tylist partial-resolve-tylist :hyp (syntaxp (quotep x)))
+  (defopener open-partial-resolve-typed_identifierlist partial-resolve-typed_identifierlist :hyp (syntaxp (quotep x))))
+
+(local (in-theory (acl2::disable* openers)))
+
+
+
+
 
 
 
@@ -732,6 +853,9 @@
       :rule-classes :forward-chaining
       :flag tuple-type-satisfied-native)
     :skip-others t))
+
+
+
 
 
 
@@ -1064,6 +1188,35 @@
         t
       (and (ty-weakly-satisfiable-p (typed_identifier->type (car x)))
            (typed_identifierlist-weakly-satisfiable-p (cdr x))))))
+
+
+(defines ty-bitwidths-nonneg-p
+  (define ty-bitwidths-nonneg-p ((x ty-p))
+    :measure (ty-count x)
+    :guard (ty-resolved-p x)
+    (b* ((ty (ty->val x)))
+      (type_desc-case ty
+        :t_bits (<= 0 (int-literal-expr->val ty.expr))
+        :t_tuple (tylist-bitwidths-nonneg-p ty.types)
+        :t_array (ty-bitwidths-nonneg-p ty.type)
+        :t_record (typed_identifierlist-bitwidths-nonneg-p ty.fields)
+        :t_exception (typed_identifierlist-bitwidths-nonneg-p ty.fields)
+        :t_collection (typed_identifierlist-bitwidths-nonneg-p ty.fields)
+        :otherwise t)))
+  (define tylist-bitwidths-nonneg-p ((x tylist-p))
+    :measure (tylist-count x)
+    :guard (tylist-resolved-p x)
+    (if (atom x)
+        t
+      (and (ty-bitwidths-nonneg-p (car x))
+           (tylist-bitwidths-nonneg-p (cdr x)))))
+  (define typed_identifierlist-bitwidths-nonneg-p ((x typed_identifierlist-p))
+    :measure (typed_identifierlist-count x)
+    :guard (typed_identifierlist-resolved-p x)
+    (if (atom x)
+        t
+      (and (ty-bitwidths-nonneg-p (typed_identifier->type (car x)))
+           (typed_identifierlist-bitwidths-nonneg-p (cdr x))))))
   
 
 (defines weak-ty-fix-native
@@ -1367,6 +1520,16 @@
                                           t_collection t_named)))
                       (& nil)))))
 
+(defopener open-ty-bitwidths-nonneg-p ty-bitwidths-nonneg-p
+  :hyp (syntaxp (or (quotep x)
+                    (case-match x
+                      (('ty (ctor . &))
+                       (member-eq ctor
+                                  '(t_int t_bits t_real t_string t_bool t_enum
+                                          t_tuple t_array t_record t_exception
+                                          t_collection t_named)))
+                      (& nil)))))
+
 (defopener open-constraint_kind-satisfying-val constraint_kind-satisfying-val
   :hyp (syntaxp (or (quotep x)
                     (and (consp x)
@@ -1465,18 +1628,21 @@
 ;; and the resolved term when we assume that it did resolve (resolved-ty-term).
 ;; The former should generally be true unless some variable referenced in the
 ;; type is missing from local-storage or is not known to be a v_int.
-(define shallow-resolve-type ((type ty-p)
+(define shallow-resolve-type (partialp
+                              (type ty-p)
                               hyp
                               env-term
                               state)
   (b* (((er ty-resolves-term)
-        (simplify-for-shallow `(mv-let (res orac) (resolve-ty ,env-term ',type :clk 1000)
+        (simplify-for-shallow `(mv-let (res orac) (,(if partialp 'partial-resolve-ty 'resolve-ty)
+                                                   ,env-term ',type :clk 1000)
                                  (declare (ignore orac))
                                  (eval_result-case res :ev_normal))
                               hyp 'iff state))
        (hyp (list 'and ty-resolves-term hyp))
        ((er resolved-ty-term)
-        (simplify-for-shallow `(mv-let (res orac) (resolve-ty ,env-term ',type :clk 1000)
+        (simplify-for-shallow `(mv-let (res orac) (,(if partialp 'partial-resolve-ty 'resolve-ty)
+                                                   ,env-term ',type :clk 1000)
                                  (declare (ignore orac))
                                  (ev_normal->res res))
                               hyp 'equal state))
@@ -1493,13 +1659,13 @@
         (er soft 'shallow-arg-req "Seems like type didn't resolve: ~x0 -- result ~x1" type resolved-ty-term)))
     (value resolved-ty-term)))
 
-(define shallow-resolve-type-list ((types tylist-p)
+(define shallow-resolve-type-list (partialp (types tylist-p)
                                    hyp
                                    env-term
                                    state)
   (b* (((when (atom types)) (value nil))
-       ((er type1) (shallow-resolve-type (car types) hyp env-term state))
-       ((er rest) (shallow-resolve-type-list (cdr types) hyp env-term state)))
+       ((er type1) (shallow-resolve-type partialp (car types) hyp env-term state))
+       ((er rest) (shallow-resolve-type-list partialp (cdr types) hyp env-term state)))
     (value (cons type1 rest))))
 
 
@@ -1615,20 +1781,28 @@
 
 
 
+(define params-to-typed_identifierlist ((x maybe-typed_identifierlist-p))
+  :returns (new-x typed_identifierlist-p)
+  (if (atom x)
+      nil
+    (b* (((maybe-typed_identifier x1) (car x)))
+      (cons (typed_identifier x1.name (or x1.type (ty (t_int (unconstrained)))))
+            (params-to-typed_identifierlist (cdr x))))))
+
 ;; ---------------------------------------------------------------------------------
 ;; Fills in a local-storage-term with parameter bindings, for use with shallow-resolve-type.
 (define shallow-local-storage-param-bindings ((params symbol-listp)
-                                              (fn-params maybe-typed_identifierlist-p)
+                                              (fn-params typed_identifierlist-p)
                                               local-storage-term)
   ;; Forms a term representing a val-imap in which each ASL parameter name is bound to (v_int v)
   ;; where v is the corresponding ACL2 variable.
   (b* (((when (atom params)) local-storage-term)
-       ((maybe-typed_identifier p1) (car fn-params))
+       ((typed_identifier p1) (car fn-params))
        (new-term `(put-assoc-equal ,p1.name (v_int ,(car params)) ,local-storage-term)))
     (shallow-local-storage-param-bindings (cdr params) (cdr fn-params) new-term)))
 
 
-(define shallow-param-env ((params symbol-listp) (fn-params maybe-typed_identifierlist-p))
+(define shallow-param-env ((params symbol-listp) (fn-params typed_identifierlist-p))
   (let ((storage-term (shallow-local-storage-param-bindings params fn-params 'env.local.storage)))
     `(change-env env :local (change-local-env (empty-local-env) :storage ,storage-term))))
 
@@ -1644,17 +1818,17 @@
 ;; Fills in a local-storage-term with parameter bindings, but leaves out the v_int constructors --
 ;; i.e. we're assuming the param variables are all bound to ASL values (v_int-p).
 (define shallow-local-storage-asl-param-bindings ((params symbol-listp)
-                                                  (fn-params maybe-typed_identifierlist-p)
+                                                  (fn-params typed_identifierlist-p)
                                                   local-storage-term)
   ;; Forms a term representing a val-imap in which each ASL parameter name is bound to (v_int v)
   ;; where v is the corresponding ACL2 variable.
   (b* (((when (atom params)) local-storage-term)
-       ((maybe-typed_identifier p1) (car fn-params))
+       ((typed_identifier p1) (car fn-params))
        (new-term `(put-assoc-equal ,p1.name ,(car params) ,local-storage-term)))
     (shallow-local-storage-asl-param-bindings (cdr params) (cdr fn-params) new-term)))
 
 
-(define shallow-asl-param-env ((params symbol-listp) (fn-params maybe-typed_identifierlist-p))
+(define shallow-asl-param-env ((params symbol-listp) (fn-params typed_identifierlist-p))
   (let ((storage-term (shallow-local-storage-asl-param-bindings params fn-params 'env.local.storage)))
     `(change-env env :local (change-local-env (empty-local-env) :storage ,storage-term))))
 
@@ -1668,55 +1842,28 @@
        
 
 
-;; ---------------------------------------------------------------------------------
-;; Computes the resolved types of the function's parameters.
-;; Hyp here just needs to assume all parameters are integerp.
-;; Just returns the ordered list of resolved types.
-(define shallow-resolve-param-types ((fn-params maybe-typed_identifierlist-p)
-                                     param-env-term
-                                     hyp
-                                     state)
-  (b* (((when (atom fn-params)) (value nil))
-       ((maybe-typed_identifier p1) (car fn-params))
-       (type (or p1.type (ty (t_int (unconstrained)))))
-       ((er type-term) (shallow-resolve-type type hyp param-env-term state))
-       ((er rest) (shallow-resolve-param-types (cdr fn-params) param-env-term hyp state)))
-    (value (cons type-term rest))))
-
-(define shallow-resolve-weak-param-types ((fn-params maybe-typed_identifierlist-p)
-                                          (static-env static_env_global-p))
-  (b* (((when (atom fn-params)) nil)
-       ((maybe-typed_identifier p1) (car fn-params))
-       (type (or p1.type (ty (t_int (unconstrained)))))
-       (type-res (weak-resolve-ty static-env type :clk 1000))
-       ((unless (eval_result-case type-res :ev_normal))
-        (er hard? 'shallow-resolve-weak-param-types
-            "Couldn't resolve type for ~x0: type ~x1, error ~x2"
-            p1.name p1.type type-res))
-       (type-term (kwote (ev_normal->res type-res))))
-    (cons type-term
-          (shallow-resolve-weak-param-types (cdr fn-params) static-env))))
 
 ;; ---------------------------------------------------------------------------------
 ;; Computes the resolved types of the function's arguments.
 ;; Hyp here just needs to assume all parameters are integerp.
 ;; Just returns the ordered list of resolved types.
-(define shallow-resolve-arg-types ((fn-args typed_identifierlist-p)
+(define shallow-resolve-arg-types (partialp
+                                   (fn-args typed_identifierlist-p)
                                    param-env-term
                                    hyp
                                    state)
   (b* (((when (atom fn-args)) (value nil))
        ((typed_identifier p1) (car fn-args))
-       ((er type-term) (shallow-resolve-type p1.type hyp param-env-term state))
-       ((er rest) (shallow-resolve-arg-types (cdr fn-args) param-env-term hyp state)))
+       ((er type-term) (shallow-resolve-type partialp p1.type hyp param-env-term state))
+       ((er rest) (shallow-resolve-arg-types partialp (cdr fn-args) param-env-term hyp state)))
     (value (cons type-term rest))))
 
 
-(define shallow-resolve-weak-arg-types ((fn-args maybe-typed_identifierlist-p)
+(define shallow-resolve-weak-arg-types ((fn-args typed_identifierlist-p)
                                         (static-env static_env_global-p))
   (b* (((when (atom fn-args)) nil)
        ((typed_identifier p1) (car fn-args))
-       (type-res (weak-resolve-ty static-env p1.type :clk 1000))
+       (type-res (name-resolve-ty static-env p1.type :clk 1000))
        ((unless (eval_result-case type-res :ev_normal))
         (er hard? 'shallow-resolve-weak-arg-types
             "Couldn't resolve type for ~x0: type ~x1, error ~x2"
@@ -1741,6 +1888,23 @@
                                              hyp state))
        ((er rest) (shallow-define-formals weakp (cdr args) (cdr resolved-types) hyp state)))
     (value (cons `(,(car args) ,satisfies-term) rest))))
+
+;; ---------------------------------------------------------------------------------
+;; Additional guard for weak-types method to ensure bitvector width expressions are nonnegative.
+;; When we're not using weak-types, we have an unsigned-byte-p guard that implies this.
+;; Given resolved types for the parameters and args, pair (varname type-satisfied-term).
+;; The full set of guard assumptions can be derived from this using strip-cadrs.
+(define shallow-bitwidth-nonneg-exprs (resolved-types ;; term list, one per arg
+                                       hyp ;; params integer-listp
+                                       state)
+  (b* (((when (atom resolved-types)) (value nil))
+       ((er first)
+        (simplify-for-shallow `(ty-bitwidths-nonneg-p ,(car resolved-types))
+                              hyp 'iff state))
+       ((er rest) (shallow-bitwidth-nonneg-exprs (cdr resolved-types) hyp state)))
+    (value (if (eq first t)
+               rest
+             (cons first rest)))))
 
 
 ;; ---------------------------------------------------------------------------------
@@ -1883,7 +2047,7 @@
 
 (define shallow-let-abstract (x state)
   (b* (((er x-trans) (acl2::translate x t nil t 'shallow-let-abstract (w state) state))
-       (letabs (cmr::let-abstract-term-preserving-ifs x-trans 'tmp-)))
+       ((mv letabs &) (cmr::let-abstract-term-preserving-ifs x-trans 'tmp- 0)))
     (value (untranslate letabs nil (w state)))))
 
 
@@ -1935,6 +2099,7 @@
         args)
 
        (weak-types t)
+       (partialp t)
        
        ((when bad-args)
         (er soft 'def-asl-shallow "Bad arguments: ~x0" bad-args))
@@ -1996,14 +2161,15 @@
        (param-env-term (shallow-param-env params f.parameters))
        (params-integerp-hyps (shallow-param-integerp-hyps params))
        (params-integerp-hyp `(and . ,params-integerp-hyps))
+       (f.parameters (params-to-typed_identifierlist f.parameters))
        ((er param-types)
-        (shallow-resolve-param-types f.parameters param-env-term params-integerp-hyp state))
+        (shallow-resolve-arg-types partialp f.parameters param-env-term params-integerp-hyp state))
        (weak-param-types
         (if weak-types
-            (shallow-resolve-weak-param-types f.parameters static-env-val)
+            (shallow-resolve-weak-arg-types f.parameters static-env-val)
           param-types))
        ((er arg-types)
-        (shallow-resolve-arg-types f.args param-env-term params-integerp-hyp state))
+        (shallow-resolve-arg-types partialp f.args param-env-term params-integerp-hyp state))
        (weak-arg-types
         (if weak-types
             (shallow-resolve-weak-arg-types f.args static-env-val)
@@ -2022,9 +2188,13 @@
        ((er arg-formals)
         (shallow-define-formals weak-types nondup-args nondup-arg-types params-integerp-hyp state))
        (formals (append param-formals arg-formals))
-       (guard-hyps (acl2::strip-cadrs formals))
+       ((er additional-guards)
+        (if weak-types
+            (shallow-bitwidth-nonneg-exprs arg-types params-integerp-hyp state)
+          (value nil)))
        
-
+       (guard-hyps (append additional-guards (acl2::strip-cadrs formals)))
+       
        ((er param-fixer-al)
         (shallow-formal-fixer-alist weak-types params weak-param-types t state))
        ((er arg-fixer-al)
@@ -2055,10 +2225,10 @@
        (always-normal (eq normalp-simp t))
 
        ((er return-type)
-        (shallow-resolve-type f.return_type t param-env-term state))
+        (shallow-resolve-type partialp f.return_type t param-env-term state))
        (weak-return-type
         (if weak-types
-            (b* ((res (weak-resolve-ty static-env-val f.return_type :clk 1000))
+            (b* ((res (name-resolve-ty static-env-val f.return_type :clk 1000))
                  ((unless (eval_result-case res :ev_normal))
                   (er hard? 'def-asl-shallow "Couldn't resolve return type")))
               (kwote (ev_normal->res res)))
@@ -2066,7 +2236,7 @@
        ((er return-type/s)
         (b* ((returntype (ty->val f.return_type)))
           (type_desc-case returntype
-            :t_tuple (shallow-resolve-type-list returntype.types t param-env-term state)
+            :t_tuple (shallow-resolve-type-list partialp returntype.types t param-env-term state)
             :otherwise (value return-type))))
 
        ;; ((er errorp-simp) (if always-normal
@@ -2160,9 +2330,9 @@
        (asl-params-v_int-hyps (shallow-asl-param-v_int-hyps params))
        (asl-params-v_int-hyp `(and . ,asl-params-v_int-hyps))
        ((er asl-param-types)
-        (shallow-resolve-param-types f.parameters asl-param-env-term asl-params-v_int-hyp state))
+        (shallow-resolve-arg-types partialp f.parameters asl-param-env-term asl-params-v_int-hyp state))
        ((er asl-arg-types)
-        (shallow-resolve-arg-types f.args asl-param-env-term asl-params-v_int-hyp state))
+        (shallow-resolve-arg-types partialp f.args asl-param-env-term asl-params-v_int-hyp state))
 
        (nondup-asl-arg-types (remove-corresponding-elements args asl-arg-types params))
 
@@ -2170,17 +2340,15 @@
                                  (append params nondup-args)
                                  (append asl-param-types nondup-asl-arg-types)
                                  asl-params-v_int-hyp state))
-
-       
        
        (return-binder (if (symbolp returns) returns `(list . ,returns)))
 
        ((er asl-return-type)
-        (shallow-resolve-type f.return_type asl-params-v_int-hyp asl-param-env-term state))
+        (shallow-resolve-type partialp f.return_type asl-params-v_int-hyp asl-param-env-term state))
        ((er asl-return-type/s)
         (b* ((returntype (ty->val f.return_type)))
           (type_desc-case returntype
-            :t_tuple (shallow-resolve-type-list returntype.types asl-params-v_int-hyp asl-param-env-term state)
+            :t_tuple (shallow-resolve-type-list partialp returntype.types asl-params-v_int-hyp asl-param-env-term state)
             :otherwise (value asl-return-type))))
 
        ((er asl-return-exprs)
@@ -2191,6 +2359,7 @@
     (value `(define ,name ,formals
               :returns (returnval ,return-concl
                                   :rule-classes nil :name ,return-sig-thmname)
+              :guard (and . ,additional-guards)
               (let* ,fixers
                 ,body)
               ///
@@ -2477,14 +2646,275 @@
 
 
 
+(define typed_identifierlist-lookup ((name identifier-p)
+                                     (x typed_identifierlist-p))
+  :returns (ty maybe-ty-p)
+  (if (atom x)
+      nil
+    (if (equal (typed_identifier->name (car x)) (identifier-fix name))
+        (typed_identifier->type (car x))
+      (typed_identifierlist-lookup name (cdr x)))))
+
+
+
+(local (defthm >=-len-elim
+         (equal (acl2::>=-len x n)
+                (and (natp n)
+                     (<= n (len x))))))
+
+(local (defthm doublet-listp-implies-all->=-len-2
+         (implies (doublet-listp x)
+                  (acl2::all->=-len x 2))
+         :hints(("Goal" :in-theory (enable acl2::>=-len)))))
+
+(define shallow-loop-reorder-local-vars ((decls typed_identifierlist-p)
+                                         (local-vars doublet-listp)) ;; pairs such as ((x "__stdlib_local_x") ...)
+  :hooks nil
+  (b* ((acl2-vars (strip-cars local-vars))
+       (asl-vars (acl2::strip-cadrs local-vars))
+       (alist (pairlis$ asl-vars acl2-vars))
+       (reord (acl2::fal-extract (typed_identifierlist->names decls) alist))
+       (- (let ((diff (set-difference-equal asl-vars (acl2::alist-keys reord))))
+            (and diff
+                 (er hard? 'shallow-loop-reorder-local-vars "Local variables not found: ~x0" diff)))))
+    (pairlis$ (acl2::alist-vals reord)
+              (pairlis$ (acl2::alist-keys reord) nil))))
+
+
+(defines expr-vars
+  (define expr-vars ((x expr-p))
+    :measure (expr-count x)
+    :returns (vars (and (identifierlist-p vars)
+                        (setp vars)))
+    :verify-guards nil
+    (b* ((x (expr->desc x)))
+      (expr_desc-case x
+        :e_var (list x.name)
+        :e_atc (union (expr-vars x.expr)
+                      (ty-vars x.type))
+        :e_binop (union (expr-vars x.arg1)
+                        (expr-vars x.arg2))
+        :e_unop (expr-vars x.arg)
+        :e_call (b* (((call x.call)))
+                  (union (exprlist-vars x.call.params)
+                         (exprlist-vars x.call.args)))
+        :e_slice (union (expr-vars x.expr)
+                        (slicelist-vars x.slices))
+        :e_cond (union (expr-vars x.test)
+                       (union (expr-vars x.then)
+                              (expr-vars x.else)))
+        :e_getarray (union (expr-vars x.base)
+                           (expr-vars x.index))
+        :e_getenumarray (union (expr-vars x.base)
+                               (expr-vars x.index))
+        :e_getfield (expr-vars x.base)
+        :e_getfields (expr-vars x.base)
+        :e_getcollectionfields (list x.base)
+        :e_getitem (expr-vars x.base)
+        :e_record (union (ty-vars x.type)
+                         (named_exprlist-vars x.fields))
+        :e_tuple (exprlist-vars x.exprs)
+        :e_array (union (expr-vars x.length)
+                        (expr-vars x.value))
+        :e_enumarray (expr-vars x.value)
+        :e_arbitrary (ty-vars x.type)
+        :e_pattern (union (expr-vars x.expr)
+                          (pattern-vars x.pattern))
+        :otherwise nil)))
+
+  (define exprlist-vars ((x exprlist-p))
+    :measure (exprlist-count x)
+    :returns (vars (and (identifierlist-p vars)
+                        (setp vars)))
+    (if (atom x)
+        nil
+      (union (expr-vars (car x))
+             (exprlist-vars (cdr x)))))
+
+  (define pattern-vars ((x pattern-p))
+    :measure (pattern-count x)
+    :returns (vars (and (identifierlist-p vars)
+                        (setp vars)))
+    (b* ((x (pattern->val x)))
+      (pattern_desc-case x
+        :pattern_any (patternlist-vars x.patterns)
+        :pattern_geq (expr-vars x.expr)
+        :pattern_leq (expr-vars x.expr)
+        :pattern_not (pattern-vars x.pattern)
+        :pattern_range (union (expr-vars x.upper) (expr-vars x.lower))
+        :pattern_single (expr-vars x.expr)
+        :pattern_tuple (patternlist-vars x.patterns)
+        :otherwise nil)))
+
+  (define patternlist-vars ((x patternlist-p))
+    :measure (patternlist-count x)
+    :returns (vars (and (identifierlist-p vars)
+                        (setp vars)))
+    (if (atom x)
+        nil
+      (union (pattern-vars (car x))
+             (patternlist-vars (cdr x)))))
+
+  (define slice-vars ((x slice-p))
+    :measure (slice-count x)
+    :returns (vars (and (identifierlist-p vars)
+                        (setp vars)))
+    (slice-case x
+      :slice_single (expr-vars x.index)
+      :slice_range (union (expr-vars x.end) (expr-vars x.start))
+      :slice_length (union (expr-vars x.start) (expr-vars x.length))
+      :slice_star (union (expr-vars x.factor) (expr-vars x.length))))
+
+  (define slicelist-vars ((x slicelist-p))
+    :measure (slicelist-count x)
+    :returns (vars (and (identifierlist-p vars)
+                        (setp vars)))
+    (if (atom x)
+        nil
+      (union (slice-vars (car x))
+             (slicelist-vars (cdr x)))))
+
+  (define ty-vars ((x ty-p))
+    :measure (ty-count x)
+    :returns (vars (and (identifierlist-p vars)
+                        (setp vars)))
+    (b* ((x (ty->val x)))
+      (type_desc-case x
+        :t_int (constraint_kind-vars x.constraint)
+        :t_bits (expr-vars x.expr)
+        :t_tuple (tylist-vars x.types)
+        :t_array (union (array_index-vars x.index)
+                        (ty-vars x.type))
+        :t_record (typed_identifierlist-vars x.fields)
+        :t_exception (typed_identifierlist-vars x.fields)
+        :t_collection (typed_identifierlist-vars x.fields)
+        :otherwise nil)))
+
+  (define tylist-vars ((x tylist-p))
+    :measure (tylist-count x)
+    :returns (vars (and (identifierlist-p vars)
+                        (setp vars)))
+    (if (atom x)
+        nil
+      (union (ty-vars (car x))
+             (tylist-vars (cdr x)))))
+
+  (define constraint_kind-vars ((x constraint_kind-p))
+    :measure (constraint_kind-count x)
+    :returns (vars (and (identifierlist-p vars)
+                        (setp vars)))
+    (constraint_kind-case x
+      :wellconstrained (int_constraintlist-vars x.constraints)
+      :otherwise nil))
+
+  (define int_constraint-vars ((x int_constraint-p))
+    :measure (int_constraint-count x)
+    :returns (vars (and (identifierlist-p vars)
+                        (setp vars)))
+    (int_constraint-case x
+      :constraint_exact (expr-vars x.val)
+      :constraint_range (union (expr-vars x.from)
+                               (expr-vars x.to))))
+
+  (define int_constraintlist-vars ((x int_constraintlist-p))
+    :measure (int_constraintlist-count x)
+    :returns (vars (and (identifierlist-p vars)
+                        (setp vars)))
+    (if (atom x)
+        nil
+      (union (int_constraint-vars (car x))
+             (int_constraintlist-vars (cdr x)))))
+
+  (define array_index-vars ((x array_index-p))
+    :measure (array_index-count x)
+    :returns (vars (and (identifierlist-p vars)
+                        (setp vars)))
+    (array_index-case x
+      :arraylength_expr (expr-vars x.length)
+      :otherwise nil))
+
+  (define typed_identifier-vars ((x typed_identifier-p))
+    :measure (typed_identifier-count x)
+    :returns (vars (and (identifierlist-p vars)
+                        (setp vars)))
+    (ty-vars (typed_identifier->type x)))
+
+  (define typed_identifierlist-vars ((x typed_identifierlist-p))
+    :measure (typed_identifierlist-count x)
+    :returns (vars (and (identifierlist-p vars)
+                        (setp vars)))
+    (if (atom x)
+        nil
+      (union (typed_identifier-vars (car x))
+             (typed_identifierlist-vars (cdr x)))))
+
+  (define named_expr-vars ((x named_expr-p))
+    :measure (named_expr-count x)
+    :returns (vars (and (identifierlist-p vars)
+                        (setp vars)))
+    (expr-vars (named_expr->expr x)))
+
+  (define named_exprlist-vars ((x named_exprlist-p))
+    :measure (named_exprlist-count x)
+    :returns (vars (and (identifierlist-p vars)
+                        (setp vars)))
+    (if (atom x)
+        nil
+      (union (named_expr-vars (car x))
+             (named_exprlist-vars (cdr x)))))
+  ///
+  (verify-guards expr-vars))
+      
+    
+        
+    
 
 
 
 (program)
 
 
+(define shallow-loop-var-types (asl-vars decls)
+  (b* (((when (atom asl-vars)) nil)
+       (type (typed_identifierlist-lookup (car asl-vars) decls))
+       (- (and (not type)
+               (er hard? 'shallow-loop-formals
+                   "type not found for variable: ~x0" (car asl-vars)))))
+    (cons type (shallow-loop-var-types (cdr asl-vars) decls))))
 
 
+
+;; ---------------------------------------------------------------------------------
+;; Computes the resolved types of the variables, which should be in topological order.
+;; At the same time, accumulates an env storage expression (nesting of put-assoc-equal terms)
+;; and a list of hyps accumulating the type assumptions.
+;; Env expressions associate ASL vars with value expressions in terms of ACL2 vars,
+;; by simplifying native-to-typed-val.
+;; Hyps are derived using (weak-?)ty-satisfied-native
+;; Returns (list resolved-type-exprs env-term hyps).
+
+;; (define shallow-resolve-var-types (partialp
+;;                                    weakp
+;;                                    (asl-vars identifierlist-p)
+;;                                    (acl2-vars symbol-listp)
+;;                                    (types tylist-p)
+;;                                    env-term ;; accumulator
+;;                                    hyps
+;;                                    state)
+;;   (b* (((when (atom fn-args)) (value (list nil env-term hyps)))
+;;        (hyp `(and . ,hyps))
+;;        ((er type-term) (shallow-resolve-type partialp (car types) hyp env-term state))
+;;        ((er type-hyp) (simplify-for-shallow `(,(if weakp 'weak-ty-satisfied-native 'ty-satisfied-native)
+;;                                               ,(car acl2-vars) ,type-term)
+;;                                              hyp 'iff state))
+;;        (new-hyps (cons type-hyp hyps))
+;;        ((er val-term) (simplify-for-shallow `(native-to-typed-val ,(car acl2-vars) ,type-term)
+;;                                             `(and . ,new-hyps) 'equal state))
+;;        (new-env-term `(put-assoc-equal ,(car asl-vars) ,val-term ,env-term))
+;;        ((er (list rest env-term hyps))
+;;         (shallow-resolve-var-types partialp weakp (cdr asl-vars) (cdr acl2-vars) (cdr types)
+;;                                    new-env-term new-hyps state)))
+;;     (value (list (cons type-term rest) env-term hyps))))
 
 
 
@@ -2513,12 +2943,21 @@
 ;;         (er soft 'def-asl-shallow-loop "Bad arguments: ~x0" bad-args))
 ;;        ((unless (stringp function))
 ;;         (er soft 'def-asl-shallow-loop "Function should be a string: ~x0" function))
+;;        ((unless (and (doublet-listp local-vars)
+;;                      (symbol-listp (strip-cars local-vars))
+;;                      (identifierlist-p (acl2::strip-cadrs local-vars))))
+;;         (er soft 'def-asl-shallow-loop "Local-vars should be a list of pairs such as ~x0" '(acl2var "asl_var")))
+
 ;;        (orig-looptype looptype)
 ;;        (looptype (case orig-looptype
 ;;                    ((:while :s_while) :s_while)
 ;;                    ((:for :s_for) :s_for)
 ;;                    ((:repeat :s_repeat) :s_repeat)
 ;;                    (t nil)))
+;;        ((unless looptype)
+;;         (er soft 'defloop "Bad looptype: ~x0" orig-looptype))
+;;        ((unless (natp nth))
+;;         (er soft 'defloop "Bad nth: ~x0" nth))
 ;;        ((acl2::er (cons & static-env-val))
 ;;         (acl2::simple-translate-and-eval static-env nil nil
 ;;                                          (msg "static env ~x0" static-env)
@@ -2533,23 +2972,43 @@
 ;;        ((func f) fn-struct.fn)
 ;;        ((unless (subprogram_body-case f.body :sb_asl))
 ;;         (er soft 'def-asl-shallow-loop "Function is a primitive rather than an ASL function"))
-;;        (body (sb_asl->stmt f.body))
+;;        (fn-body (sb_asl->stmt f.body))
        
 ;;        ((mv loopstmt decls &)
-;;         (shallow-loop-and-decls nth looptype body))
+;;         (shallow-loop-and-decls nth looptype fn-body))
 
-;;        ((unless loopstmt)
+;;        (decls (append (params-to-typed_identifierlist f.parameters)
+;;                       f.args
+;;                       decls))
+
+;;        ((unless form)
 ;;         (er soft 'def-asl-shallow-loop "Loop not found: nth ~x0 in function ~x1"
 ;;             nth function))
 
-;;        (local-vars-names (acl2::strip-cadrs local-vars))
+;;        ((when (and (eq looptype :s_for)
+;;                    (not index-var)))
+;;         (er soft 'defloop "Index var must be specified for for loops"))
+;;        ((when (and index-var (not (eq looptype :s_for))))
+;;         (er soft 'defloop "Index var specified for non-for loop"))
+
+;;        (local-vars (if (eq looptype :s_for)
+;;                        (cons (list index-var (s_for->index_name form))
+;;                              local-vars)
+;;                      local-vars))
+
+;;        (local-vars (shallow-loop-reorder-local-vars decls local-vars))
+    
+;;        (varnames (strip-cars local-vars))
+;;        (asl-vars (acl2::strip-cadrs local-vars))
+       
 ;;        (decl-names (typed_identifierlist->names decls))
-;;        (diff (difference (mergesort local-vars-names) (mergesort decl-names)))
+;;        (diff (difference (mergesort asl-vars) (mergesort decl-names)))
 ;;        ((when diff)
 ;;         (er soft 'def-asl-shallow-loop "Variables in local-vars (not declared in function): ~x0" diff))
 
-;;        (written-vars (shallow-written-vars loopstmt decl-names))
-;;        (diff (difference (mergesort written-vars) (mergesort local-vars-names)))
+;;        (written-vars (shallow-written-vars form decl-names))
+;;        (written-vars (if (eq looptype :s_for) (set::insert index-var written-vars) written-vars))
+;;        (diff (difference (mergesort written-vars) (mergesort asl-vars)))
 ;;        ((when diff)
 ;;         (er soft 'def-asl-shallow-loop "Loop writes variables missing from local-vars: ~x0" diff))
             
@@ -2565,6 +3024,92 @@
 ;;        ;; For now, we'll just get the basic argument types from the types,
 ;;        ;; without anything requiring parameters. This is implemented by the
 ;;        ;; weak-*-satisfied* functions.
+;;        (partialp t) (weakp t)
+;;        (var-types (shallow-loop-var-types asl-vars decl-names))
+;;        ((er (list resolved-var-types env-term type-assums))
+;;         (shallow-resolve-var-types partialp weakp
+;;                                    asl-vars varnames var-types
+;;                                    '(local-env->storage (env->local env))
+;;                                    nil state))
+                                                  
+;;        (resolved-var-types-res (name-resolve-tylist static-env-val var-types :clk 1000))
+;;        ((unless (eval_result-case resolved-var-types-res :ev_normal))
+;;         (er soft 'def-asl-shallow-loop "Couldn't resolve some named types in local vars: ~x0" resolved-var-types-res))
+;;        (weak-resolved-var-types (ev_normal->res resolved-var-types-res))
+;;        (weak-var-type-terms
+;;         (if weakp
+;;             (kwote-lst resolved-var-types)
+;;           resolved-var-types)
+
+;;        ((er formals) (shallow-define-formals weakp varnames weak-var-type-terms t state))
+
+;;        (guard-hyps (acl2::strip-cadrs formals))
+
+;;        ((er fixer-al)
+;;         (shallow-formal-fixer-alist weakp varnames weak-var-type-terms t state))
+;;        (fixers (shallow-formal-fixer-bindings fixer-al))
+
+;;        (direct-subprograms (collect-direct-subprograms form nil))
+;;        (subprog-table  (table-alist 'asl-subprogram-table (w state)))
+;;        (subprograms (collect-transitive-subprograms direct-subprograms subprog-table nil))
+;;        (clk-val
+;;         (or safe-clock
+;;             (+ 1 (maximize-const-clocks direct-subprograms table -1))))
+
+;;        (match-hyp `(subprograms-match ',subprograms
+;;                                       (global-env->static (env->global env))
+;;                                       ,static-env))
+;;        (measure-reqs (if (eql clk-val 0)
+;;                          t
+;;                        `(<= ,clk-val (ifix clk))))
+
+       
+;;        (body-hyp (list* 'and match-hyp measure-reqs
+;;                         '(no-duplicatesp-equal (acl2::alist-keys env.local.storage))
+;;                         guard-hyps))
+
+;;        ;; To get the body of the function, we want to rewrite the test
+;;        ;; expression and evaluation of the body under an environment where, when we look up an ASL variable, we get a value expressed in terms of
+;;        ;; the associated formal of the function.
+;;        ;; E.g., if the function input signature is foo {N} (x : integer, y : bits(N)) and the ACL2 formals are (n x y),
+;;        ;; then we need (cdr (hons-assoc-equal "N" env.local.storage)) to be a v_int whose value is n,
+;;        ;; similarly for x, and for y we need a v_bitvector object whose length is n and value is y.
+;;        ;; A complication is that while we'd like bitvector widths to be associated with known values when possible (as in the case above), we might have
+;;        ;; some that are expressed in terms of other variables that don't need to be inputs to our function.
+;;        ;; So this leads to a complicated compromise: When a bitvector's bitwidth is expressed in terms of variables that we know about, we'll assume that it equals that expression's evaluation,
+;;        ;; otherwise we won't assume anything about it.
+       
+;;        ;; As a hack for doing this, we'll collect these environment conditions
+;;        ;; for each variable in the order they were declared, under the
+;;        ;; environment conditions produced by the previous variables, plus the
+;;        ;; assumption that no other variables are set in the environment. We
+;;        ;; rewrite the evaluations of all such bitwidth expressions and
+;;        ;; determine whether they always evaluate to a normal, integer value; if
+;;        ;; so, we include the assumption that the bitvector's width is that value.
+;;        ((er env-assums)
+;;         (shallow-loop-variable-constraints varnames asl-vars resolved-var-types nil
+;;                                            ;; Add a way to add user specified assumptions?
+;;                                            (list match-hyp)
+;;                                            state))
+
+;;        ;; test: eval result of boolean where if true, loop is done
+;;        (test-term (case looptype
+;;                     (:s_for `(ev_normal (for_loop-test ,start-var ,end-var ,(s_for->dir form))))
+;;                     (otherwise
+;;                      `(b* (((mv (evo (expr_result cres)) orac) (eval_expr env e_cond))
+;;                            ((evo cbool) (v_to_bool cres.val)))
+;;                         (ev_normal ,(if (eq looptype :s_while)
+;;                                         '(not cbool)
+;;                                       'cbool))))))
+
+;;        ((er test-term-simp) (simplify-for-shallow test-term body-hyp
+
+       
+       
+;;        (body-term `(eval_block env ,(case looptype
+;;                                       (:s_for (s_for->body form))
+;;                                       (:s_while (s_while->body form))
+;;                                       (:s_repeat (s_repeat->body form)))))
        
 ;;        )
        
