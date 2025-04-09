@@ -113,8 +113,10 @@ type t =
   | OldSolver
 (* Accept cyclic equation sets as being solvable *)
   | OOTA
-(* Pointer authentication code *)
+(* Pointer authentication code, use FEAT_PAuth2 by default *)
   | Pac
+(* Restrict Pointer Authentication Code to FEAT_PAuth1 *)
+  | PAuth1
 (* Fault generation with Pointer authentication code *)
   | FPac
 (* Allow to use pac(pac(...)) using the XOR of two pac fields *)

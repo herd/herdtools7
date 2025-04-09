@@ -26,6 +26,7 @@ type 'op1 unop =
   | Tagged (* get Tag attribute from PTE entry *)
   | CheckCanonical (* Check is a virtual address is canonical *)
   | MakeCanonical (* Make a virtual address canonical *)
+  | AddErrorCode of PAC.key (* Add a PAC error code in a virtual address *)
   | Extra1 of 'op1
 
 type 'op binop =
@@ -75,6 +76,7 @@ module
       | Tagged -> "Tagged"
       | CheckCanonical -> "CheckCanonical"
       | MakeCanonical -> "MakeCanonical"
+      | AddErrorCode k -> Printf.sprintf "ErrorCode:%s" (PAC.pp_upper_key k)
       | Extra1 op1 -> Extra.pp_op1 hexa op1
 
     type scalar = S.t
@@ -140,6 +142,14 @@ module
           if PAC.is_canonical pac
           then Some one
           else raise (Constraint (Eq (pac,PAC.canonical),one,zero))
+      | _ ->
+          None
+
+    let addErrorCode key =
+      let open Constant in function
+      | Symbolic (Virtual ({name;offset} as v)) ->
+          let pac = PAC.error name key offset in
+          Some (Symbolic (Virtual {v with pac}))
       | _ ->
           None
 
@@ -224,6 +234,7 @@ module
       | Tagged -> gettagged
       | CheckCanonical -> checkCanonical
       | MakeCanonical -> makeCanonical
+      | AddErrorCode k -> addErrorCode k
       | Extra1 op1 ->
          fun cst ->
            try

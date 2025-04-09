@@ -28,36 +28,83 @@ let compare_key x y =
 (* A vritual address must have a PAC field represented in the most significant
    bits of the pointer, this PAC field may contani multiple PAC signatures using
    the XOR off all the signatures *)
-type signature =
+type signature_ok =
   {
     (* the name of the varaible used as a virtual address to compute the pac
        field *)
-    name: string ;
+    ok_name: string ;
     (* "ia", "da", "ib" or "db" *)
     key : key ;
     (* modifier: a string used as a "salt" added to the hash *)
     modifier : string ;
     (* the offset of the pointer at the time we compute the PAC field *)
-    offset : int ;
+    ok_offset : int ;
   }
 
-let pp_signature p s =
-  if Misc.int_eq p.offset 0
-  then Printf.sprintf "pac%s(%s, %s)" (pp_lower_key p.key) s p.modifier
-  else Printf.sprintf "pac%s(%s, %s, %d)" (pp_lower_key p.key) s p.modifier p.offset
+(* A pac field representing an error code used with pauth1 to represent the
+   result of an authentication failure *)
+type signature_err =
+  {
+    (* The name of the original virtual address *)
+    err_name : string ;
+    (* the offset of the virtual address compared to it's associated variable *)
+    err_offset : int ;
+    (* the error code is `true` for `DA`or `IA` otherwise *)
+    is_key_a : bool ;
+  }
 
-let compare_signature p1 p2 =
+type signature
+  = Ok of signature_ok
+  | Err of signature_err
+
+let signature_name = function
+  | Ok ok -> ok.ok_name
+  | Err err -> err.err_name
+
+let pp_signature pac s =
+  match pac with
+  | Ok ok ->
+      if Misc.int_eq ok.ok_offset 0
+      then Printf.sprintf "pac%s(%s, %s)" (pp_lower_key ok.key) s ok.modifier
+      else Printf.sprintf "pac%s(%s, %s, %d)" (pp_lower_key ok.key) s ok.modifier ok.ok_offset
+  | Err err ->
+      if err.is_key_a
+      then Printf.sprintf "non-canonical(%s,A)" s
+      else Printf.sprintf "non-canonical(%s,B)" s
+
+let compare_signature_ok p1 p2 =
   match compare_key p1.key p2.key with
   | 0 ->
       begin match String.compare p1.modifier p2.modifier with
       | 0 -> begin
-        match Int.compare p1.offset p2.offset with
-        | 0 -> String.compare p1.name p2.name
+        match Int.compare p1.ok_offset p2.ok_offset with
+        | 0 -> String.compare p1.ok_name p2.ok_name
         | r -> r
       end
       | r -> r
       end
   | r -> r
+
+let compare_signature_err p1 p2 =
+  match String.compare p1.err_name p2.err_name with
+  | 0 ->
+      begin match Int.compare p1.err_offset p2.err_offset with
+      | 0 ->
+          begin match (p1.is_key_a,p2.is_key_a) with
+          | true,true | false,false -> 0
+          | true,false -> -1
+          | false,true -> 1
+          end
+      | r -> r
+      end
+  | r -> r
+
+let compare_signature p1 p2 =
+  match p1,p2 with
+  | Ok ok1, Ok ok2 -> compare_signature_ok ok1 ok2
+  | Err err1,Err err2 -> compare_signature_err err1 err2
+  | Ok _,Err _ -> -1
+  | Err _,Ok _ -> 1
 
 module PacSet = Set.Make (struct
   type t = signature
@@ -80,10 +127,17 @@ let is_canonical pac =
 
 (* add a PAC signature in a PAC field using an exclusive OR *)
 let add name key modifier offset pac =
-  if PacSet.mem {name; modifier; key; offset} pac then
-    PacSet.remove {name; modifier; key; offset} pac
-  else
-    PacSet.add {name; modifier; key; offset} pac
+  let x = Ok {ok_name=name; ok_offset=offset; key; modifier} in
+  if PacSet.mem x pac
+  then PacSet.remove x pac
+  else PacSet.add x pac
+
+let error name key offset =
+  match key with
+  | DA | IA ->
+      PacSet.singleton (Err {err_name= name; err_offset= offset; is_key_a= true})
+  | DB | IB ->
+      PacSet.singleton (Err {err_name= name; err_offset= offset; is_key_a= false})
 
 (* Return the exclusive XOR of two sets of PAC fields, can be optimised but
    it's probably not very usefull as the size of the equations will be very
@@ -111,6 +165,9 @@ type solver_state =
     (* For each basic variables, an equality of the form
           b_i = n_1 ^ ... ^ n_k
       with {n_1, ..., n_k} a set of non basic variables
+      In addition, all the basic variables must be of
+      the form `Ok _`, to ensure we never have an
+      unsatisfiable of the form `Err b_i = Err n_j`
     *)
     equalities: PacSet.t PacMap.t;
     (* a set of inequalities of the form n_1 ^ ... ^ n_k != 0, k must be
@@ -133,7 +190,8 @@ let pp_solver solver =
   in
   let pp_xor name set = aux name (PacSet.to_list set) in
   PacMap.fold (fun x def s ->
-    Printf.sprintf " %s=%s;%s" (pp_signature x x.name) (pp_xor x.name def) s)
+    let name = signature_name x in
+    Printf.sprintf " %s=%s;%s" (pp_signature x name) (pp_xor name def) s)
   solver.equalities ""
 
 let empty_solver = {equalities= PacMap.empty; inequalities= []}
@@ -154,13 +212,30 @@ let simplify (x: t) (equations: t PacMap.t) : t =
 
 let normalize (x: t) {equalities} = simplify x equalities
 
+(* Return the minimal `Ok _` variable from a simplified formula *)
+let new_basic_variable (x: t) : signature option =
+  PacSet.fold (fun p min_opt ->
+    match (p,min_opt) with
+    | Ok _, None -> Some p
+    | Ok _, Some min ->
+        if compare_signature p min > 0
+        then Some min
+        else Some p
+    | Err _,_ ->
+        min_opt
+  ) x None
+
 (* Add the equality in a solver state and return the new solver state *)
 let add_equality (x: t) (y: t) (state: solver_state) : solver_state option =
   (* the "new equality" to add to the solver if not empty *)
   let new_eq = simplify (xor x y) state.equalities in
 
-  if PacSet.is_empty new_eq then Some state else begin
-    let pivot = PacSet.min_elt new_eq in
+  match new_basic_variable new_eq with
+  | None ->
+      if PacSet.is_empty new_eq
+      then Some state
+      else None
+  | Some pivot ->
     let def = PacSet.remove pivot new_eq in
 
     (* simplify all the current equations with the new one *)
@@ -184,7 +259,6 @@ let add_equality (x: t) (y: t) (state: solver_state) : solver_state option =
     if List.exists PacSet.is_empty new_state.inequalities
     then None (* We found a contradiction *)
     else Some new_state (* No contradiction found *)
-  end
 
 (* Add the inequality x != y (rewrite x ^ y != 0) to the solver state *)
 let add_inequality (x: t) (y: t) (state: solver_state) : solver_state option =

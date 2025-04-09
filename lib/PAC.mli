@@ -41,6 +41,10 @@ val is_canonical : t -> bool
  *)
 val add : string -> key -> string -> int -> t -> t
 
+(* Return a pac field representing an error core in case of an authentication
+ * failure using `FEAT_PAuth` without `FEAT_PAuth2` *)
+val error : string -> key -> int -> t
+
 (* A type of solver to reason about equality constraints on the PAC fields of
  * virtual addresses*)
 type solver_state

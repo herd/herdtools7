@@ -43,6 +43,7 @@ module Make
     let self = C.variant Variant.Ifetch
     let pac = C.variant Variant.Pac
     let const_pac_field = C.variant Variant.ConstPacField
+    let pauth1 = C.variant Variant.PAuth1
     let fpac = C.variant Variant.FPac
 
     let check_mixed ins =
@@ -1086,13 +1087,6 @@ module Make
         else m a
 
       let authentication pointer modifier key ii mop mfault =
-        let mfail md mn = if fpac then
-            (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ -> mfault
-          else
-            md >>| mn >>= fun (xd,xn) ->
-            mop (M.op (Op.ArchOp (AArch64Op.AddPAC (false,key))) xd xn)
-        in
-
         let original_pointer md =
           md >>= M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical) in
 
@@ -1101,6 +1095,19 @@ module Make
         let mok md mn =
           (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ ->
           (M.data_input_next (original_pointer md) (fun ptr -> mop (M.unitT ptr)))
+        in
+
+        let error_code md =
+          md >>= M.op1 (Op.ArchOp1 (AArch64Op.AddErrorCode key)) in
+
+        let mfail md mn = if fpac then
+            (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ -> mfault
+          else if pauth1 then
+            (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ ->
+            (M.data_input_next (error_code md) (fun ptr -> mop (M.unitT ptr)))
+          else
+            md >>| mn >>= fun (xd,xn) ->
+            mop (M.op (Op.ArchOp (AArch64Op.AddPAC (false,key))) xd xn)
         in
 
         let auth_check xd xn =

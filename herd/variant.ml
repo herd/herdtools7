@@ -114,6 +114,8 @@ type t =
   | OOTA
 (* Pointer Authentication Code *)
   | Pac
+(* doesn't use FEAT_PAuth2 *)
+  | PAuth1
 (* Fault generation with Pointer authentication code *)
   | FPac
 (* Allow to use pac(pac(...)) using the XOR of two pac fields *)
@@ -192,6 +194,7 @@ let parse s = match Misc.lowercase s with
 | "oldsolver" -> Some OldSolver
 | "oota" -> Some OOTA
 | "pac" -> Some Pac
+| "pauth1" -> Some PAuth1
 | "const-pac-field" -> Some ConstPacField
 | "fpac" -> Some FPac
 | s ->
@@ -297,6 +300,7 @@ let pp = function
   | OldSolver -> "OldSolver"
   | OOTA -> "oota"
   | Pac -> "pac"
+  | PAuth1 -> "pauth1"
   | ConstPacField -> "const-pac-field"
   | FPac -> "fpac"
 
