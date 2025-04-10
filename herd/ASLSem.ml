@@ -104,8 +104,6 @@ module Make (C : Config) = struct
   module Act = ASLAction.Make (C.PC) (ASL64AH)
   include SemExtra.Make (C) (ASL64AH) (Act)
 
-  let is_experimental = C.variant Variant.ASLExperimental
-
   module TypeCheck = Asllib.Typing.Annotate (struct
     let check =
       let open Asllib.Typing in
@@ -115,7 +113,7 @@ module Make (C : Config) = struct
 
     let output_format = Asllib.Error.HumanReadable
     let print_typed = false
-    let use_field_getter_extension = is_experimental
+    let use_field_getter_extension = false
     let use_conflicting_side_effects_extension = false
     let override_mode = Asllib.Typing.Permissive
     let control_flow_analysis = true
@@ -368,23 +366,17 @@ module Make (C : Config) = struct
             let* v1 = m1 () and* v2 = m2 () in
             M.op3 Op.If v v1 v2
 
-    (*
-     * Any access to `PSTATE` (experimental `_NZCV`)
-     * emits an access to NZCV.
-     * Notice that the value is casted into an integer.
-     *)
-
-    let reg_of_scoped_id x scope =
+    let reg_of_scope_id x scope =
       match (x, scope) with
-      | "_PSTATE_N", Scope.Global false -> ASLBase.ArchReg AArch64Base.(PState PSTATE.N)
-      | "_PSTATE_Z", Scope.Global false -> ASLBase.ArchReg AArch64Base.(PState PSTATE.Z)
-      | "_PSTATE_C", Scope.Global false -> ASLBase.ArchReg AArch64Base.(PState PSTATE.C)
-      | "_PSTATE_V", Scope.Global false -> ASLBase.ArchReg AArch64Base.(PState PSTATE.V)
-      | "RESADDR", Scope.Global false -> ASLBase.ArchReg AArch64Base.ResAddr
-      | _ -> ASLBase.ASLLocalId (scope, x)
+      | "RESADDR", Scope.Global false -> ArchReg AArch64Base.ResAddr
+      | "PSTATE.N", Scope.Global false -> ArchReg AArch64Base.(PState PSTATE.N)
+      | "PSTATE.Z", Scope.Global false -> ArchReg AArch64Base.(PState PSTATE.Z)
+      | "PSTATE.C", Scope.Global false -> ArchReg AArch64Base.(PState PSTATE.C)
+      | "PSTATE.V", Scope.Global false -> ArchReg AArch64Base.(PState PSTATE.V)
+      | _ -> ASLLocalId (scope, x)
 
     let loc_of_scoped_id ii x scope =
-      A.Location_reg (ii.A.proc, reg_of_scoped_id x scope)
+      A.Location_reg (ii.A.proc, reg_of_scope_id x scope)
 
     (* AArch64 registers hold integers, not bitvectors *)
     let is_aarch64_reg = function
@@ -557,15 +549,23 @@ module Make (C : Config) = struct
       let loc = virtual_to_loc_reg r ii in
       write_loc MachSize.Quad loc v aneutral (use_ii_with_poi ii poi) >>! []
 
-    let loc_pc ii = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.PC)
+    let loc_arch_reg reg ii = A.Location_reg (ii.A.proc, ASLBase.ArchReg reg)
 
-    let read_pc (ii,poi) () =
-      read_loc MachSize.Quad (loc_pc ii) aneutral (use_ii_with_poi ii poi)
+    let read_aarch64_reg reg (ii, poi) () =
+      read_loc MachSize.Quad (loc_arch_reg reg ii)
+        aneutral (use_ii_with_poi ii poi)
 
-    let write_pc (ii,poi) v_m =
-      let* v = v_m >>= to_int_unsigned in
-      write_loc MachSize.Quad (loc_pc ii)
-        v aneutral (use_ii_with_poi ii poi) >>! []
+    let write_aarch64_reg reg (ii, poi) v_m =
+      let* v = v_m >>= to_int_signed in
+      write_loc MachSize.Quad (loc_arch_reg reg ii) v aneutral (use_ii_with_poi ii poi)
+      >>! []
+
+    let read_sp = read_aarch64_reg AArch64Base.SP
+    let write_sp = write_aarch64_reg AArch64Base.SP
+    let read_pc = read_aarch64_reg AArch64Base.PC
+    let write_pc = write_aarch64_reg AArch64Base.PC
+    let read_res_addr = read_aarch64_reg AArch64Base.ResAddr
+    let write_res_addr = write_aarch64_reg AArch64Base.ResAddr
 
     let do_read_memory (ii, poi) addr_m datasize_m an =
       let* addr = addr_m and* datasize = datasize_m in
@@ -594,15 +594,6 @@ module Make (C : Config) = struct
       do_write_memory ii addr_m datasize_m value_m
         (accdesc_to_annot false accdesc)
 
-    let loc_sp ii = A.Location_reg (ii.A.proc, ASLBase.ArchReg AArch64Base.SP)
-
-    let read_sp (ii, poi) () =
-      read_loc MachSize.Quad (loc_sp ii) aneutral (use_ii_with_poi ii poi)
-
-    let write_sp (ii, poi) v_m =
-      let* v = v_m >>= to_int_signed in
-      write_loc MachSize.Quad (loc_sp ii) v aneutral (use_ii_with_poi ii poi)
-      >>! []
 
     let uint _ bv_m = bv_m >>= to_int_unsigned
     let sint _ bv_m = bv_m >>= to_int_signed
@@ -785,6 +776,8 @@ module Make (C : Config) = struct
         p1 "write_pc" ~side_effecting ("data", bv_64) write_pc;
         p0r "SP_EL0" ~side_effecting ~returns:bv_64 read_sp;
         p1 "SP_EL0" ~side_effecting ("data", bv_64) write_sp;
+        p0r "read_res_addr" ~side_effecting ~returns:bv_64 read_res_addr;
+        p1 "write_res_addr" ~side_effecting ("data", bv_64) write_res_addr;
         (* Memory *)
         p1a1r "read_memory" ("N", None) ("addr", bv_64) ~returns:(bv_var "N")
           ~side_effecting read_memory;
@@ -840,18 +833,7 @@ module Make (C : Config) = struct
         |> C.libfind
         |> ASLBase.build_ast_from_file ?ast_type version
       in
-      let patches =
-        let patches = build `ASLv1 "patches.asl" in
-        if is_experimental then
-          (* Replace default "PSTATE" definition by experimental ones. *)
-          let pstate = build `ASLv1 "pstate-exp.asl" in
-          List.fold_right
-            (fun d k ->
-              match identifier_of_decl d with
-              | "PSTATE" -> pstate @ k
-              | _ -> d :: k)
-            patches []
-        else patches
+      let patches = build `ASLv1 "patches.asl"
       and custom_implems =
         List.append (build `ASLv1 "implementations.asl")
                     (build `ASLv0 "implementations0.asl")

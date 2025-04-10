@@ -143,53 +143,48 @@ end;
 
 // ProcState
 // =========
-// Armv8 processor state bits.
+// Processor state bits.
 // There is no significance to the field order.
 
-// From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/shared-functions-system?lang=en#ProcState
-// Rewritten from record to bitfields
+// From https://developer.arm.com/documentation/ddi0602/2023-12/Shared-Pseudocode/shared-functions-system?lang=en#ProcState
+// Rewritten from ASLv0 record to ASLv1 collection
 
-type ProcState of bits(64) {
-    [3] N,        // Negative condition flag
-    [2] Z,        // Zero condition flag
-    [1] C,        // Carry condition flag
-    [0] V,        // Overflow condition flag
-    [4] D,        // Debug mask bit                     [AArch64 only]
-    [5] A,        // SError interrupt mask bit
-    [6] I,        // IRQ mask bit
-    [7] F,        // FIQ mask bit
-    [8] EXLOCK,   // Lock exception return state
-    [9] PAN,      // Privileged Access Never Bit        [v8.1]
-    [10] UAO,      // User Access Override               [v8.2]
-    [11] DIT,      // Data Independent Timing            [v8.4]
-    [12] TCO,      // Tag Check Override                 [v8.5, AArch64 only]
-    [13] PM,       // PMU exception Mask
-    [14] PPEND,     // synchronous PMU exception to be_observed
-    [16:15] BTYPE,    // Branch Type                        [v8.5]
-    [17] ZA,       // Accumulation array enabled         [SME]
-    [18] SM,       // Streaming SVE mode enabled         [SME]
-    [19] ALLINT,   // Interrupt mask bit
-    [20] SS,       // Software step bit
-    [21] IL,       // Illegal Execution state bit
-    [23:22] EL,       // Exception level
-    [24] nRW,      // Execution state: 0=AArch64, 1=AArch32
-    [25] SP,       // Stack pointer select: 0=SP0, 1=SPx [AArch64 only]
-    [26] Q,        // Cumulative saturation flag         [AArch32 only]
-    [30:27] GE,       // Greater than or Equal flags        [AArch32 only]
-    [31] SSBS,     // Speculative Store Bypass Safe
-    [39:32] IT,       // If-then bits, RES0 in CPSR         [AArch32 only]
-    [40] J,        // J bit, RES0                        [AArch32 only, RES0 in SPSR and CPSR]
-    [41] T,        // T32 bit, RES0 in CPSR              [AArch32 only]
-    [42] E,        // Endianness bit                     [AArch32 only]
-    [47:42] M         // Mode field                         [AArch32 only]
+type ProcState of collection {
+    N: bits (1),        // Negative condition flag
+    Z: bits (1),        // Zero condition flag
+    C: bits (1),        // Carry condition flag
+    V: bits (1),        // Overflow condition flag
+    D: bits (1),        // Debug mask bit                     [AArch64 only]
+    A: bits (1),        // SError interrupt mask bit
+    I: bits (1),        // IRQ mask bit
+    F: bits (1),        // FIQ mask bit
+    EXLOCK: bits (1),   // Lock exception return state
+    PAN: bits (1),      // Privileged Access Never Bit        [v8.1]
+    UAO: bits (1),      // User Access Override               [v8.2]
+    DIT: bits (1),      // Data Independent Timing            [v8.4]
+    TCO: bits (1),      // Tag Check Override                 [v8.5, AArch64 only]
+    PM: bits (1),       // PMU exception Mask
+    PPEND: bits (1),     // synchronous PMU exception to be observed
+    BTYPE: bits (2),    // Branch Type                        [v8.5]
+    PACM: bits (1),     // PAC instruction modifier
+    ZA: bits (1),       // Accumulation array enabled         [SME]
+    SM: bits (1),       // Streaming SVE mode enabled         [SME]
+    ALLINT: bits (1),   // Interrupt mask bit
+    UINJ: bits (1),     // Undefined Exception Injection
+    SS: bits (1),       // Software step bit
+    IL: bits (1),       // Illegal Execution state bit
+    EL: bits (2),       // Exception level
+    nRW: bits (1),      // Execution state: 0=AArch64, 1=AArch32
+    SP: bits (1),       // Stack pointer select: 0=SP0, 1=SPx [AArch64 only]
+    Q: bits (1),        // Cumulative saturation flag         [AArch32 only]
+    GE: bits (4),       // Greater than or Equal flags        [AArch32 only]
+    SSBS: bits (1),     // Speculative Store Bypass Safe
+    IT: bits (8),       // If-then bits, RES0 in CPSR         [AArch32 only]
+    J: bits (1),        // J bit, RES0                        [AArch32 only, RES0 in SPSR and CPSR]
+    T: bits (1),        // T32 bit, RES0 in CPSR              [AArch32 only]
+    E: bits (1),        // Endianness bit                     [AArch32 only]
+    M: bits (5)         // Mode field                         [AArch32 only]
 };
-
-// =============================================================================
-
-// From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/shared-functions-system?lang=en#PSTATE
-// Not really modified
-
-var PSTATE : ProcState;
 
 // =============================================================================
 
@@ -278,3 +273,4 @@ func MemSingleGranule() => integer
     assert (size >= 16) && (size <= 4096);
     return size;
   end;
+
