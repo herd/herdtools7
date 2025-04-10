@@ -1,5 +1,5 @@
 AArch64 autda-disable-no-pick-basic-dep-modifier
-Variant=pauth1,no-key-da
+Variant=pauth2,no-key-da
 {
   int64_t x=0;
   int64_t y=0;
