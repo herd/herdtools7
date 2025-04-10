@@ -1,5 +1,5 @@
 AArch64 example
-Variant=pauth2,no-key-ib,fpac,no-key-da
+Variant=pauth2,fpac
 {
   int64_t x=0;
   int64_t y=0;
@@ -8,7 +8,9 @@ Variant=pauth2,no-key-ib,fpac,no-key-da
 P0;
 ADD X0,X0,#4;
 PACDZA X0;
-SUB X0,X0,#42;
+SUB X0,X0,#4;
+AUTDZA X0;
+LDR X1,[X0];
 
 locations [0:X10;0:X0; 0:X1; 0:X2;]
 exists (~Fault(P0))

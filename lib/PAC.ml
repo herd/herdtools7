@@ -59,17 +59,6 @@ let signature_name = function
   | Ok ok -> ok.ok_name
   | Err err -> err.err_name
 
-let pp_signature pac s =
-  match pac with
-  | Ok ok ->
-      if Misc.int_eq ok.offset 0
-      then Printf.sprintf "pac%s(%s, %s)" (pp_lower_key ok.key) s ok.modifier
-      else Printf.sprintf "pac%s(%s, %s, %d)" (pp_lower_key ok.key) s ok.modifier ok.offset
-  | Err err ->
-      if err.is_key_a
-      then Printf.sprintf "non-canonical(%s,A)" s
-      else Printf.sprintf "non-canonical(%s,B)" s
-
 let compare_signature_ok p1 p2 =
   match compare_key p1.key p2.key with
   | 0 ->
@@ -197,15 +186,10 @@ let compare_solver_state s1 s2 =
 
 (* Only pretty print the equalities: by default every elements are differents *)
 let pp_solver solver =
-  let rec aux name = function
-    | x :: xs ->
-        pp_signature x (aux name xs)
-    | [] -> name
-  in
-  let pp_xor name set = aux name (PacSet.elements set) in
+  let pp_xor name set = pp set name 0 in
   PacMap.fold (fun x def s ->
     let name = signature_name x in
-    Printf.sprintf " %s=%s;%s" (pp_signature x name) (pp_xor name def) s)
+    Printf.sprintf " %s=%s;%s" (pp_xor name (PacSet.singleton x)) (pp_xor name def) s)
   solver.equalities ""
 
 let empty_solver = {equalities= PacMap.empty; inequalities= []}
