@@ -163,6 +163,7 @@ module Make (C: Config) (A : S) = struct
 
   let get_mem_dir = function
     | Access (d, A.Location_global _, _, _, _) -> d
+    | Access (d, A.Location_reg (_, r), _, _, _) when A.is_sysreg r && not (A.is_spsysreg r) -> d
     | Access _| Branching _|Barrier _|CutOff _|NoAction
       -> assert false
 
@@ -208,16 +209,35 @@ module Make (C: Config) (A : S) = struct
     | Access _|Barrier _|Branching _|CutOff _|NoAction
       -> false
 
+  let is_non_sp_sysreg_store_any = function
+  | Access (W, A.Location_reg (_, r), _, _, _) -> A.is_sysreg r && not (A.is_spsysreg r)
+  | Access _|Barrier _|Branching _|CutOff _|NoAction
+    -> false
+
   let is_reg_load_any = function
     | Access (R, A.Location_reg _, _, _, _) -> true
       | Access _|Barrier _|Branching _|CutOff _|NoAction
       -> false
 
+  let is_non_sp_sysreg_load_any = function
+  | Access (R, A.Location_reg (_, r), _, _, _) -> A.is_sysreg r && not (A.is_spsysreg r)
+  | Access _|Barrier _|Branching _|CutOff _|NoAction
+    -> false
 
   let is_reg_any = function
     | Access (_, A.Location_reg _, _, _, _) -> true
     | Access _|Barrier _|Branching _|CutOff _|NoAction
       -> false
+
+  let is_sysreg_any = function
+  | Access (_, A.Location_reg (_, r), _, _, _) -> A.is_sysreg r
+  | Access _|Barrier _|Branching _|CutOff _|NoAction
+    -> false
+
+  let is_spsysreg_any = function
+  | Access (_, A.Location_reg (_, r), _, _, _) -> A.is_spsysreg r
+  | Access _|Barrier _|Branching _|CutOff _|NoAction
+    -> false
 
   (* Store/Load to memory or register *)
   let is_store =

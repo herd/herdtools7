@@ -50,6 +50,7 @@ module Make (B : ArchBaseHerd) (C : Arch_herd.Config) (V : Value.S) = struct
         let reg_compare = reg_compare
         let fromto_of_instr _ = None
         let get_val _ v = v
+        let is_non_sp_sysreg _ = false
       end)
 
   module MemType = MemoryType.No

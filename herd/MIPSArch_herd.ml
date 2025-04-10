@@ -69,6 +69,7 @@ module Make
           let fromto_of_instr _ = None
 
           let get_val _ v = v
+          let is_non_sp_sysreg _ = false
 
           module FaultType=FaultType.No
 	end)

@@ -25,6 +25,7 @@ module type I = sig
   val pp_reg : arch_reg -> string
   val reg_compare : arch_reg -> arch_reg -> int
   val get_val : arch_reg -> V.v -> V.v
+  val is_non_sp_sysreg : arch_reg -> bool
 
   val fromto_of_instr : V.Cst.Instr.t -> (Label.Set.t * Label.Set.t) option
 
@@ -578,7 +579,7 @@ module Make(C:Config) (I:I) : S with module I = I
         LocMap.fold
           (fun loc v k ->
             match loc with
-            | Location_reg (q,r) when Proc.equal p q ->
+            | Location_reg (q,r) when Proc.equal p q && not (I.is_non_sp_sysreg r) ->
                RegMap.add r v k
             | _ -> k)
           st

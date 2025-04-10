@@ -364,10 +364,13 @@ let lift_proc_info i evts =
       es.E.events LocEnv.empty
 
   let not_speculated es e = not (E.EventSet.mem e es.E.speculated)
-  let collect_reg_loads es = collect_by_loc es E.is_reg_load_any
-  and collect_reg_stores es = collect_by_loc es E.is_reg_store_any
+  let collect_gpreg_and_spsysreg_reads es = collect_by_loc es (fun e ->
+    E.is_reg_load_any e && (E.is_spsysreg_any e || not (E.is_sysreg_any e)))
+  and collect_gpreg_and_spsysreg_writes es = collect_by_loc es (fun e ->
+    E.is_reg_store_any e && (E.is_spsysreg_any e || not (E.is_sysreg_any e)))
   and collect_mem_loads es = collect_by_loc es E.is_mem_load
   and collect_mem_stores es = collect_by_loc es E.is_mem_store
+  and collect_mem_and_non_sp_sysreg_writes es = collect_by_loc es (fun e -> E.is_mem_store e || E.is_non_sp_sysreg_store_any e)
   and collect_mem es = collect_by_loc es E.is_mem
   and collect_mem_non_init es =
     collect_by_loc es (fun e -> E.is_mem e && Misc.is_some (E.proc_of e))
@@ -390,6 +393,12 @@ let lift_proc_info i evts =
 (********************************************)
 (* Write serialization candidate generator. *)
 (********************************************)
+
+  let restrict_to_mem_or_non_sp_sysreg_writes rel =
+    let pred e = E.is_mem_store e || E.is_non_sp_sysreg_store_any e in
+    E.EventRel.filter
+      (fun (e1,e2) -> pred e1 && pred e2)
+      rel
 
   let restrict_to_mem_stores rel =
     E.EventRel.filter
@@ -445,7 +454,7 @@ let lift_proc_info i evts =
 
 (* Init store to loc is co-before stores to x *)
   let compute_pco_init es =
-    let stores = collect_mem_stores es in
+    let stores = collect_mem_and_non_sp_sysreg_writes es in
     let xs =
       LocEnv.fold
         (fun _loc ews k ->
