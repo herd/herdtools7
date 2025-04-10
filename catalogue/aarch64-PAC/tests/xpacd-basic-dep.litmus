@@ -1,5 +1,5 @@
 AArch64 xpacd-basic-dep
-Variant=pac
+Variant=pauth2
 {
   int64_t x=0;
   int64_t y=0;

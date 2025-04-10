@@ -1,5 +1,5 @@
 AArch64 autda-fpac-success-no-basic-dep-modifier
-variant=pac,fpac
+variant=pauth2,fpac
 {
   int64_t x=0;
   int64_t y=0;

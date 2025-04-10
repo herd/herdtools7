@@ -1,5 +1,5 @@
 AArch64 autda-fpac-failure-pick-basic-dep-modifier
-Variant=pac,fpac
+Variant=pauth2,fpac
 {
     int64_t x=0;
     int64_t y=0;

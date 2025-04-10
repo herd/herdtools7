@@ -1,5 +1,5 @@
 AArch64 autda-failure-basic-dep-pointer
-Variant=pac
+Variant=pauth2
 {
     int64_t x=0;
     int64_t y=0;
