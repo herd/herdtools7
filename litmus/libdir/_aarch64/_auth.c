@@ -108,7 +108,7 @@ int check_pauth1_variant(char* tname) {
     case 0b0011:
     case 0b0101:
       printf(
-        "Warning %s: PAC is only available with FEAT_PAuth2 on this system\n",
+        "Test %s: PAC is only available with FEAT_PAuth2 on this system\n",
         tname);
       return 0;
     default:

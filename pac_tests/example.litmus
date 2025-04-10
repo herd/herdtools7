@@ -1,5 +1,5 @@
 AArch64 example
-Variant=pauth2,fpac,no-key-da
+Variant=pauth2,no-key-ib,fpac,no-key-da
 {
   int64_t x=0;
   int64_t y=0;

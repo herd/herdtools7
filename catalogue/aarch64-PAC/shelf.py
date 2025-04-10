@@ -30,4 +30,10 @@ illustrative_tests = [
     "tests/autda-fpac-failure-pick-basic-dep-modifier.litmus",
     "tests/autda-fpac-basic-dep-branch.litmus",
     "tests/autda-fpac-pick-basic-dep-branch.litmus",
+    "tests/pauth1-autda-success-basic-dep-pointer.litmus",
+    "tests/pauth1-autda-success-no-basic-dep-modifier.litmus",
+    "tests/pauth1-autda-success-pick-basic-dep-modifier.litmus",
+    "tests/pauth1-autda-failure-pick-basic-dep-modifier.litmus",
+    "tests/pauth1-autda-failure-no-basic-dep-modifier.litmus",
+    "tests/pauth1-autda-failure-basic-dep-pointer.litmus",
 ]
