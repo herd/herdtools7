@@ -41,9 +41,11 @@ module Make
     let pte2 = kvm && C.variant Variant.PTE2
     let do_cu = C.variant Variant.ConstrainedUnpredictable
     let self = C.variant Variant.Ifetch
-    let pac = C.variant Variant.Pac
+    let pauth1 = C.variant (Variant.PacVersion `PAuth1)
+    let pauth2 = C.variant (Variant.PacVersion `PAuth2)
+    let pac = pauth1 || pauth2
+    let key_enable key = not (C.variant (Variant.NoPacKey key))
     let const_pac_field = C.variant Variant.ConstPacField
-    let pauth1 = C.variant Variant.PAuth1
     let fpac = C.variant Variant.FPac
 
     let check_mixed ins =
@@ -81,7 +83,7 @@ module Make
     let check_pac inst =
       if not pac then
         Warn.user_error
-          "Pauth instruction %s requires -variant pac"
+          "Pauth instruction %s requires -variant pauth1 or pauth2"
           (AArch64.dump_instruction inst)
 
 (* Barrier pretty print *)
@@ -1085,44 +1087,6 @@ module Make
           M.add_atomic_tag_write (m a) a tag
             (fun loc v -> Act.tag_access quad Dir.W loc v) ii
         else m a
-
-      let authentication pointer modifier key ii mop mfault =
-        let original_pointer md =
-          md >>= M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical) in
-
-        (* data_input_next allow to not have a control depedency between the
-         * commit event and the register-read event in Xd *)
-        let mok md mn =
-          (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ ->
-          (M.data_input_next (original_pointer md) (fun ptr -> mop (M.unitT ptr)))
-        in
-
-        let error_code md =
-          md >>= M.op1 (Op.ArchOp1 (AArch64Op.AddErrorCode key)) in
-
-        let mfail md mn = if fpac then
-            (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ -> mfault
-          else if pauth1 then
-            (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ ->
-            (M.data_input_next (error_code md) (fun ptr -> mop (M.unitT ptr)))
-          else
-            md >>| mn >>= fun (xd,xn) ->
-            mop (M.op (Op.ArchOp (AArch64Op.AddPAC (false,key))) xd xn)
-        in
-
-        let auth_check xd xn =
-          M.op (Op.ArchOp (AArch64Op.AddPAC (false,key))) xd xn >>=
-          M.op1 (Op.ArchOp1 AArch64Op.CheckCanonical)
-        in
-
-        M.delay_kont "read pointer" pointer (fun xd md ->
-          M.delay_kont "read modifier" modifier (fun xn mn ->
-            auth_check xd xn >>= fun c ->
-            M.choiceT c
-              (mok md mn)
-              (mfail md mn)
-          )
-        )
 
       let do_write_mem sz an anexp ac a v ii =
         check_morello_for_write
@@ -3430,6 +3394,96 @@ module Make
         | Some l -> ii.A.addr2v l
         | None ->  V.intToV (ii.A.addr + 4)
 
+(*******************************)
+(* Pointer Authentication Code *)
+(*******************************)
+
+      let do_pac key rd rn ii =
+        if key_enable key then begin
+          read_reg_ord rd ii >>|
+          read_reg_ord rn ii >>= fun (addr, modifier) ->
+          M.op
+            (Op.ArchOp (AArch64Op.AddPAC (not const_pac_field, key)))
+            addr modifier >>= fun v ->
+          write_reg_dest rd v ii >>= fun v ->
+          B.nextSetT rd v
+        end else
+          read_reg_ord rd ii >>= fun v ->
+          write_reg_dest rd v ii >>= fun v ->
+          B.nextSetT rd v
+
+      let authenticate pointer modifier key ii mop mfault =
+        let original_pointer md =
+          md >>= M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical) in
+
+        (* data_input_next allow to not have a control depedency between the
+         * commit event and the register-read event in Xd *)
+        let mok md mn =
+          (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ ->
+          (M.data_input_next (original_pointer md) (fun ptr -> mop (M.unitT ptr)))
+        in
+
+        let error_code md =
+          md >>= M.op1 (Op.ArchOp1 (AArch64Op.AddErrorCode key)) in
+
+        let mfail md mn = if fpac then
+            (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ -> mfault
+          else if pauth1 then
+            (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ ->
+            (M.data_input_next (error_code md) (fun ptr -> mop (M.unitT ptr)))
+          else
+            md >>| mn >>= fun (xd,xn) ->
+            mop (M.op (Op.ArchOp (AArch64Op.AddPAC (false,key))) xd xn)
+        in
+
+        let auth_check xd xn =
+          M.op (Op.ArchOp (AArch64Op.AddPAC (false,key))) xd xn >>=
+          M.op1 (Op.ArchOp1 AArch64Op.CheckCanonical)
+        in
+
+        M.delay_kont "read pointer" pointer (fun xd md ->
+          M.delay_kont "read modifier" modifier (fun xn mn ->
+            auth_check xd xn >>= fun c ->
+            M.choiceT c
+              (mok md mn)
+              (mfail md mn)
+          )
+        )
+
+      let do_aut key rd rn ii =
+        if key_enable key then begin
+          let (>>!) = M.(>>!) in
+
+          let lbl_v = get_instr_label ii in
+          let mfault =
+              set_elr_el1 lbl_v ii >>|
+              mk_fault None Dir.R Annot.N ii
+                (Some (FaultType.AArch64.PacCheck key))
+                None
+              >>! B.fault [AArch64Base.elr_el1, lbl_v]
+          in
+
+          let mop ma =
+            ma >>= fun v ->
+            write_reg_dest rd v ii >>= fun v ->
+            B.nextSetT rd v
+          in
+
+          authenticate
+            (read_reg_ord rd ii)
+            (read_reg_ord rn ii)
+            key ii mop mfault
+        end else
+          read_reg_ord rd ii >>= fun v ->
+          write_reg_dest rd v ii >>= fun v ->
+          B.nextSetT rd v
+
+      let do_xpac r ii =
+        read_reg_ord r ii >>= fun v ->
+        M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical) v >>= fun v ->
+        write_reg_dest r v ii >>= fun v ->
+        B.nextSetT r v
+
 (********************)
 (* Main entry point *)
 (********************)
@@ -4441,55 +4495,16 @@ module Make
            let lbl_v = get_instr_label ii in
            m_fault >>| set_elr_el1 lbl_v ii
            >>! B.fault [AArch64Base.elr_el1, lbl_v]
-           (* Pointer Anthentication Code `FEAT_Pauth2` *)
+(* Pointer Anthentication Code *)
         | I_PAC (key, rd, rn) ->
-            if pac then begin
-              read_reg_ord rd ii >>|
-              read_reg_ord rn ii >>= fun (addr, modifier) ->
-              M.op
-                (Op.ArchOp (AArch64Op.AddPAC (not const_pac_field, key)))
-                addr modifier >>= fun v ->
-              write_reg_dest rd v ii >>= fun v ->
-              B.nextSetT rd v
-            end else
-              !(M.mk_singleton_es (Act.NoAction) ii)
+            check_pac inst;
+            do_pac key rd rn ii
         | I_AUT (key, rd, rn) ->
-            if pac then begin
-              let (>>!) = M.(>>!) in
-
-              let lbl_v = get_instr_label ii in
-              let mfault =
-                  set_elr_el1 lbl_v ii >>|
-                  mk_fault None Dir.R Annot.N ii
-                    (Some (FaultType.AArch64.PacCheck key))
-                    None
-                  >>! B.fault [AArch64Base.elr_el1, lbl_v]
-              in
-
-              let mop ma =
-                ma >>= fun v ->
-                write_reg_dest rd v ii >>= fun v ->
-                B.nextSetT rd v
-              in
-
-              authentication
-                (read_reg_ord rd ii)
-                (read_reg_ord rn ii)
-                key ii mop mfault
-            end else
-              !(M.mk_singleton_es (Act.NoAction) ii)
-        (* If address tagging and logical address tagging is not enabled then
-          xpacd and xpaci have the same behaviour *)
+            check_pac inst;
+            do_aut key rd rn ii
         | I_XPACI r | I_XPACD r ->
-            if pac then begin
-              read_reg_ord r ii >>= fun v ->
-              M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical) v >>= fun v ->
-              write_reg_dest r v ii >>= fun v ->
-              B.nextSetT r v
-            end else begin
-              (* If PAC is not activated then `XPAC*` is a nop instruction *)
-              !(M.mk_singleton_es (Act.NoAction) ii)
-            end
+            check_pac inst;
+            do_xpac r ii
 (*  Cannot handle *)
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | (I_STG _|I_STZG _|I_STZ2G _

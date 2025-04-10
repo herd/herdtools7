@@ -38,7 +38,7 @@ type signature_ok =
     (* modifier: a string used as a "salt" added to the hash *)
     modifier : string ;
     (* the offset of the pointer at the time we compute the PAC field *)
-    ok_offset : int ;
+    offset : int ;
   }
 
 (* A pac field representing an error code used with pauth1 to represent the
@@ -47,8 +47,6 @@ type signature_err =
   {
     (* The name of the original virtual address *)
     err_name : string ;
-    (* the offset of the virtual address compared to it's associated variable *)
-    err_offset : int ;
     (* the error code is `true` for `DA`or `IA` otherwise *)
     is_key_a : bool ;
   }
@@ -64,9 +62,9 @@ let signature_name = function
 let pp_signature pac s =
   match pac with
   | Ok ok ->
-      if Misc.int_eq ok.ok_offset 0
+      if Misc.int_eq ok.offset 0
       then Printf.sprintf "pac%s(%s, %s)" (pp_lower_key ok.key) s ok.modifier
-      else Printf.sprintf "pac%s(%s, %s, %d)" (pp_lower_key ok.key) s ok.modifier ok.ok_offset
+      else Printf.sprintf "pac%s(%s, %s, %d)" (pp_lower_key ok.key) s ok.modifier ok.offset
   | Err err ->
       if err.is_key_a
       then Printf.sprintf "non-canonical(%s,A)" s
@@ -77,7 +75,7 @@ let compare_signature_ok p1 p2 =
   | 0 ->
       begin match String.compare p1.modifier p2.modifier with
       | 0 -> begin
-        match Int.compare p1.ok_offset p2.ok_offset with
+        match Int.compare p1.offset p2.offset with
         | 0 -> String.compare p1.ok_name p2.ok_name
         | r -> r
       end
@@ -88,14 +86,10 @@ let compare_signature_ok p1 p2 =
 let compare_signature_err p1 p2 =
   match String.compare p1.err_name p2.err_name with
   | 0 ->
-      begin match Int.compare p1.err_offset p2.err_offset with
-      | 0 ->
-          begin match (p1.is_key_a,p2.is_key_a) with
-          | true,true | false,false -> 0
-          | true,false -> -1
-          | false,true -> 1
-          end
-      | r -> r
+      begin match (p1.is_key_a,p2.is_key_a) with
+      | true,true | false,false -> 0
+      | true,false -> -1
+      | false,true -> 1
       end
   | r -> r
 
@@ -127,17 +121,17 @@ let is_canonical pac =
 
 (* add a PAC signature in a PAC field using an exclusive OR *)
 let add name key modifier offset pac =
-  let x = Ok {ok_name=name; ok_offset=offset; key; modifier} in
+  let x = Ok {ok_name=name; offset; key; modifier} in
   if PacSet.mem x pac
   then PacSet.remove x pac
   else PacSet.add x pac
 
-let error name key offset =
+let error name key  =
   match key with
   | DA | IA ->
-      PacSet.singleton (Err {err_name= name; err_offset= offset; is_key_a= true})
+      PacSet.singleton (Err {err_name= name; is_key_a= true})
   | DB | IB ->
-      PacSet.singleton (Err {err_name= name; err_offset= offset; is_key_a= false})
+      PacSet.singleton (Err {err_name= name; is_key_a= false})
 
 (* Return the exclusive XOR of two sets of PAC fields, can be optimised but
    it's probably not very usefull as the size of the equations will be very
@@ -149,12 +143,32 @@ let compare = PacSet.compare
 
 let equal = PacSet.equal
 
-let pp pac s =
-  let rec aux = function
-    | x :: xs -> pp_signature x (aux xs)
-    | [] -> s
+let pp pac s offset =
+  (* Pretty print s+offset *)
+  let pp_index s offset =
+    if offset > 0
+    then Printf.sprintf "%s+%d" s offset
+    else if offset < 0
+      then Printf.sprintf "%s-%d" s (-offset)
+      else s in
+  (* Take a PAC field as a list of signatures `l`, and an offset and pretty
+     print `l_offset` *)
+  let rec do_rec offset = function
+    | [] -> pp_index s offset
+    | Ok ok :: xs ->
+        pp_index
+          (Printf.sprintf "pac%s(%s,%s)"
+            (pp_lower_key ok.key) (do_rec ok.offset xs) ok.modifier)
+          (offset - ok.offset)
+    | Err err :: xs ->
+        pp_index
+          (Printf.sprintf "non-canonical(%s,%s)"
+            (do_rec 0 xs) (if err.is_key_a then "A" else "B"))
+          offset
   in
-  aux (PacSet.to_list pac)
+  do_rec offset (PacSet.elements pac)
+
+
 
 (* A simplex like solver for linear constraints over PAC fields (linear
    because of the XOR), it use a bi-partition of the variables in two set:
@@ -188,7 +202,7 @@ let pp_solver solver =
         pp_signature x (aux name xs)
     | [] -> name
   in
-  let pp_xor name set = aux name (PacSet.to_list set) in
+  let pp_xor name set = aux name (PacSet.elements set) in
   PacMap.fold (fun x def s ->
     let name = signature_name x in
     Printf.sprintf " %s=%s;%s" (pp_signature x name) (pp_xor name def) s)

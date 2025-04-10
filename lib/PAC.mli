@@ -20,7 +20,7 @@ type t
 (* pretty print a PAC field, but only the PAC field, as example
  * `pp (add "x" DA "42" 7 empty) "x+4" := "pacda(x+4,42,7)"`
  *)
-val pp : t -> string -> string
+val pp : t -> string -> int -> string
 
 (* Ordering relation over PAC fields *)
 val compare : t -> t -> int
@@ -43,7 +43,7 @@ val add : string -> key -> string -> int -> t -> t
 
 (* Return a pac field representing an error core in case of an authentication
  * failure using `FEAT_PAuth` without `FEAT_PAuth2` *)
-val error : string -> key -> int -> t
+val error : string -> key -> t
 
 (* A type of solver to reason about equality constraints on the PAC fields of
  * virtual addresses*)

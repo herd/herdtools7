@@ -147,8 +147,8 @@ module
 
     let addErrorCode key =
       let open Constant in function
-      | Symbolic (Virtual ({name;offset} as v)) ->
-          let pac = PAC.error name key offset in
+      | Symbolic (Virtual ({name} as v)) ->
+          let pac = PAC.error name key in
           Some (Symbolic (Virtual {v with pac}))
       | _ ->
           None

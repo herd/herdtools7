@@ -1,13 +1,14 @@
 AArch64 example
-Variant=pac,pauth1
+Variant=pauth1
 {
   int64_t x=0;
   int64_t y=0;
-  0:X0=x; 0:X1=y; int64_t 0:X2=1;
+  0:X0=x; 0:X1=x;
 }
 P0;
-AUTDZA X0;
-LDR X3,[X0];
+ADD X0,X0,#4;
+PACDZA X0;
+SUB X0,X0,#42;
 
-locations [0:X0;]
+locations [0:X10;0:X0; 0:X1; 0:X2;]
 exists (~Fault(P0))
