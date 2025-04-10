@@ -772,7 +772,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         (fun _ -> Warn.fatal "Cannot translate PTE")
         (fun _ -> Warn.fatal "Cannot translate instruction")
 
-    let aarch64_to_asl_bv sz = function
+    let aarch64_to_asl_bv_cst sz = function
       | V.Var _ as v ->
           let nv = V.fresh_var () in
           let nid =
@@ -782,9 +782,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           let eq =
             let op = AArch64Op.Extra1 (ASLOp.ToBV sz) in
             M.VC.Assign (nv,M.VC.Unop (Op.ArchOp1 op,v))  in
-          ASLS.A.V.Var nid,[eq]
-      | V.Val cst ->
-          ASLS.A.V.Val (tr_cst (ASLScalar.convert_to_bv sz) cst),[]
+          (ASLS.A.V.freeze nid, [eq])
+      | V.Val cst -> (tr_cst (ASLScalar.convert_to_bv sz) cst, [])
 
     let aarch64_to_asl = function
       | V.Var v -> ASLS.A.V.Var v
@@ -794,8 +793,84 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | ASLS.A.V.Var v -> V.Var v
       | ASLS.A.V.Val cst -> V.Val (tr_cst Misc.identity cst)
 
-    let is_experimental = TopConf.C.variant Variant.ASLExperimental
     let not_cutoff = not (TopConf.C.variant Variant.CutOff)
+
+    let pstate_default_fields =
+      let open Asllib.AST in
+      lazy
+        (let proc_state_decl =
+           C.libfind "asl-pseudocode/patches.asl"
+           |> ASLBase.build_ast_from_file ~ast_type:`Ast `ASLv1
+           |> List.find (fun d ->
+                  match d.desc with
+                  | D_TypeDecl ("ProcState", _ty, None) -> true
+                  | _ -> false)
+         in
+         let proc_state_fields =
+           match proc_state_decl.desc with
+           | D_TypeDecl ("ProcState", ty, None) -> (
+               match ty.desc with
+               | T_Collection fields -> fields
+               | _ -> assert false)
+           | _ -> assert false
+         in
+         List.map
+           (fun (name, ty) ->
+             match ty.desc with
+             | T_Bits (e_length, []) -> (
+                 match e_length.desc with
+                 | E_Literal (L_Int z) ->
+                     ( name,
+                       Constant.Concrete
+                         (ASLScalar.S_BitVector
+                            (Asllib.Bitvector.zeros (Z.to_int z))) )
+                 | _ -> assert false)
+             | _ -> assert false)
+           proc_state_fields
+         |> StringMap.from_bindings)
+
+    let build_pstate_val ii =
+      let fields_to_update =
+        [
+          ("N", AArch64Base.PSTATE.N);
+          ("Z", AArch64Base.PSTATE.Z);
+          ("C", AArch64Base.PSTATE.C);
+          ("V", AArch64Base.PSTATE.V);
+        ]
+      in
+      let pstate_updated_fields, eqs =
+        List.fold_left
+          (fun (fields, eqs) (field_name, reg) ->
+            match A.look_reg (AArch64Base.PState reg) ii.A.env.A.regs with
+            | Some v ->
+                let c, eqs0 = aarch64_to_asl_bv_cst 1 v in
+                (StringMap.add field_name c fields, eqs0 @ eqs)
+            | None -> (fields, eqs))
+          (Lazy.force pstate_default_fields, []) fields_to_update
+      in
+      (ASLS.A.V.Val (Constant.ConcreteRecord pstate_updated_fields), eqs)
+
+    let build_test_init ii =
+      let state_add loc v st =
+        ASLS.A.state_add st (ASLS.A.Location_reg (ii.A.proc, loc)) v
+      in
+      let add_reg_if_present reg loc st =
+        match A.look_reg reg ii.A.env.A.regs with
+        | Some v -> state_add loc (aarch64_to_asl v) st
+        | _ -> st
+      in
+      let add_arch_reg_if_present reg =
+        add_reg_if_present reg (ASLBase.ArchReg reg)
+      in
+      let global_loc name = ASLBase.(ASLLocalId (Scope.Global true, name)) in
+      let pstate_val, eqs = build_pstate_val ii in
+      let st =
+        ASLS.A.state_empty
+        |> state_add (global_loc "PSTATE") pstate_val
+        |> List.fold_right add_arch_reg_if_present ASLBase.gregs
+        |> add_reg_if_present AArch64Base.ResAddr (global_loc "RESADDR")
+      in
+      (st, eqs)
 
     let fake_test ii fname decode =
       profile "build fake test" @@ fun () ->
@@ -849,50 +924,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         Name.{ name = "ASL (fake)"; file = ""; texname = ""; doc = "" }
       in
       let test = ASLTH.build name t in
-      let init, eqs_init =
-        let add_reg_if_present reg loc st =
-          match A.look_reg reg ii.A.env.A.regs with
-          | Some v ->
-              ASLS.A.state_add st
-                (ASLS.A.Location_reg (ii.A.proc, loc))
-                (aarch64_to_asl v)
-          | _ -> st
-        in
-        let add_arch_reg_if_present reg =
-          add_reg_if_present reg (ASLBase.ArchReg reg)
-        in
-        let global_loc name = ASLBase.(ASLLocalId (Scope.Global true, name)) in
-        let add_bit1_reg_if_present reg loc (st, eqs) =
-          match A.look_reg reg ii.A.env.A.regs with
-          | Some v0 ->
-              let v, eqs0 = aarch64_to_asl_bv 1 v0 in
-              let st =
-                ASLS.A.state_add st (ASLS.A.Location_reg (ii.A.proc, loc)) v
-              in
-              (st, eqs0 @ eqs)
-          | _ -> (st, eqs)
-        in
-        let st =
-          ASLS.A.state_empty
-          |> List.fold_right add_arch_reg_if_present ASLBase.gregs
-          |> add_reg_if_present AArch64Base.ResAddr (global_loc "RESADDR")
-        in
-        if is_experimental then
-          (st, [])
-          |> add_bit1_reg_if_present
-               AArch64Base.(PState PSTATE.N)
-               (global_loc "_PSTATE_N")
-          |> add_bit1_reg_if_present
-               AArch64Base.(PState PSTATE.Z)
-               (global_loc "_PSTATE_Z")
-          |> add_bit1_reg_if_present
-               AArch64Base.(PState PSTATE.C)
-               (global_loc "_PSTATE_C")
-          |> add_bit1_reg_if_present
-               AArch64Base.(PState PSTATE.V)
-               (global_loc "_PSTATE_V")
-        else assert false
-      in
+      let init, eqs_init = build_test_init ii in
       let test = { test with Test_herd.init_state = init } in
       let () =
         if _dbg then
