@@ -1,0 +1,13 @@
+AArch64 Y006
+(* IRG GCR_EL1 Exclude test *)
+{
+  int x=100;
+  0:X0=x;
+  0:GCR_EL1=0x1FE00; (* RRND=1, Exclude=0xFE00 *)
+  0:X2=0x03F0;
+}
+
+P0           ;
+IRG X1,X0,X2 ; (* OR'ed Exclude=0xFFF0 *)
+forall (0:X1=x:t0 \/ 0:X1=x:t1 \/ 0:X1=x:t2 \/ 0:X1=x:t3)
+

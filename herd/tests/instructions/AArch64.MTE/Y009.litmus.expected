@@ -1,0 +1,10 @@
+Test Y009 Required
+States 1
+0:X1=x:t11; 0:RGSR_EL1=2097931;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=x:t11 /\ 0:RGSR_EL1=2097931)
+Observation Y009 Always 1 0
+Hash=cc7d81d9c276d72222dec3f920679c21
+

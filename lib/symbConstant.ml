@@ -29,6 +29,7 @@ module Make
   let tr c = Constant.map Scalar.of_string PteVal.tr Instr.tr c
 
   let intToV i = Concrete (Scalar.of_int i)
+  let int64ToV i = Concrete (Scalar.of_int64 i)
   and nameToV s = Constant.mk_sym s
   and stringToV s = Concrete (Scalar.of_string s)
 

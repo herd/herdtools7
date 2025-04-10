@@ -126,7 +126,7 @@ module type S =
     (* Same as bind_ctrldata, all output from first argument *)
     val (>>**==) : 'a t -> ('a -> 'b t) -> 'b t
 
-    (* Identical control dep only, all output from firtst argument *)
+    (* Identical control dep only, all output from first argument *)
     val bind_ctrl_first_outputs : 'a t -> ('a -> 'b t) -> 'b t
 
     (* Same as [>>=] but with order deps instead of data between the arguments. *)
@@ -364,6 +364,9 @@ module type S =
     val eqT : A.V.v -> A.V.v -> unit t
 (* Acts as an inequality equation *)
     val neqT : A.V.v -> A.V.v -> unit t
+(* Bits *)
+    val add_constraint_bit_set : A.V.v -> int -> unit t
+    val add_constraint_bit_unset : A.V.v -> int -> unit t
 
 (* Read out monad *)
     type evt_struct
