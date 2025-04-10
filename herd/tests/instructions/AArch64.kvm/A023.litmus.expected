@@ -1,0 +1,13 @@
+Test A023 Forbidden
+States 3
+1:X2=0;  ~Fault(P1,x,MMU:Translation);
+1:X2=0; Fault(P1,x,MMU:Translation);
+1:X2=1; Fault(P1,x,MMU:Translation);
+Ok
+Witnesses
+Positive: 3 Negative: 0
+Flag Assuming-common-inner-shareable-domain
+Condition ~exists (1:X2=1 /\ not (fault(P1,x,MMU:Translation)))
+Observation A023 Never 0 3
+Hash=d0d7852320686e857f9c57a4128fa1c0
+
