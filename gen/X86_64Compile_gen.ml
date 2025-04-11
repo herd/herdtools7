@@ -315,7 +315,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let emit_access st _p init e = 
       (* collapse the value `v` in event `e` to integer *)
-      let value = Code.value_to_int e.C.v in
+      let value = PteVal.value_to_int e.C.v in
       match e.C.dir with
       | None -> Warn.fatal "TODO"
       | Some d ->
@@ -377,7 +377,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let emit_exch st p init er ew =
       let loc = Code.as_data er.C.loc in
-      let v = Code.value_to_int ew.C.v in
+      let v = PteVal.value_to_int ew.C.v in
       match get_access_exch er ew with
       | None ->
           let rA,st = next_reg st in
@@ -435,7 +435,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let do_check_load p st r e =
       let ok,st = A.ok_reg st in
       (fun k ->
-        Instruction (emit_cmp_int_ins r (Code.value_to_int e.C.v))::
+        Instruction (emit_cmp_int_ins r (PteVal.value_to_int e.C.v))::
         Instruction (emit_jne_ins (Label.last p))::
         Instruction (emit_inc Word ok)::
         k),

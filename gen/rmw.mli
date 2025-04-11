@@ -19,6 +19,7 @@
 module type S = sig
   type rmw
   type rmw_atom
+  type rmw_value
 
   val pp_rmw : bool (* backward compatibility *) -> rmw -> string
   val is_one_instruction : rmw -> bool
@@ -27,5 +28,5 @@ module type S = sig
   val fold_rmw_compat : (rmw -> 'a -> 'a) -> 'a -> 'a
   val applies_atom_rmw : rmw -> rmw_atom option -> rmw_atom option -> bool
   val show_rmw_reg : rmw -> bool
-  val compute_rmw : rmw  -> Code.v -> Code.v -> Code.v
+  val compute_rmw : rmw  -> rmw_value -> rmw_value -> rmw_value
 end

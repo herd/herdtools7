@@ -35,13 +35,14 @@ module type S = sig
   type atom
   module PteVal : PteVal_gen.S with type pte_atom = atom
   type rmw
+  type value = PteVal.v
 
   val pp_atom : atom -> string
-  val tr_value : atom option -> Code.v -> Code.v
-  val overwrite_value : Code.v -> atom option -> Code.v -> Code.v
-  val extract_value : Code.v -> atom option -> Code.v
+  val tr_value : atom option -> value -> value
+  val overwrite_value : value -> atom option -> value -> value
+  val extract_value : value -> atom option -> value
   val set_pteval :
-    atom option -> PteVal.t -> (unit -> string) -> PteVal.t
+    atom option -> PteVal.pte -> (unit -> string) -> PteVal.pte
   val merge_atoms : atom -> atom -> atom option
   val is_ifetch : atom option -> bool
   val atom_to_bank : atom option -> SIMD.atom Code.bank
@@ -68,7 +69,7 @@ module type S = sig
   val is_node : tedge -> bool
   val is_insert_store : tedge -> bool
   val is_non_pseudo : tedge -> bool
-  val compute_rmw : rmw -> Code.v -> Code.v -> Code.v
+  val compute_rmw : rmw -> value -> value -> value
 
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
 
@@ -170,6 +171,7 @@ and type dp = F.dp
 and module SIMD = F.SIMD
 and type atom = F.atom
 and module PteVal = F.PteVal
+and type value = F.PteVal.v
 and type rmw = F.rmw = struct
   let ()  = ignore (Cfg.naturalsize)
   let do_self = Cfg.variant Variant_gen.Self
@@ -188,6 +190,7 @@ and type rmw = F.rmw = struct
 
   type atom = F.atom
   type rmw = F.rmw
+  type value = F.PteVal.v
 
   let compute_rmw = F.compute_rmw
 

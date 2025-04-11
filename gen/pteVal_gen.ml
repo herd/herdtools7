@@ -15,23 +15,61 @@
 (****************************************************************************)
 
 module type S = sig
+  (* `pte_atom` should NOT be used outside. *)
   type pte_atom
-  type t
-  val pp : t -> string
-  val default : string -> t
-  val compare : t -> t -> int
-  val set_pteval : pte_atom -> t -> (unit -> string) -> t
-  val can_fault : t -> bool
+  type pte
+  val pp_pte : pte -> string
+  val default_pte : string -> pte
+  val pte_compare : pte -> pte -> int
+  val set_pteval : pte_atom -> pte -> (unit -> string) -> pte
+  val can_fault : pte -> bool
+  val refers_virtual : pte -> string option
+
+  type v = NoValue | Plain of int | PteValue of pte
+  type env = (string * v) list
+  val pp_v : ?hexa:bool -> v -> string
+  val no_value : v
+  val value_to_int : v -> int
+  val value_of_int : int -> v
+  val value_compare : v -> v -> int
 end
 
 module No(A:sig type arch_atom end) = struct
   type pte_atom = A.arch_atom
-  type t = string
-  let pp a = a
-  let default s = s
-  let compare _ _ = 0
+  type pte = string
+  let pp_pte a = a
+  let default_pte s = s
+  let pte_compare _ _ = 0
   let set_pteval _ p _ = p
   let can_fault _t = false
+  let refers_virtual _ = None
+
+  type v = NoValue | Plain of int | PteValue of pte
+  let value_to_int = function
+      | NoValue -> -1
+      | Plain v -> v
+      (* TODO change *)
+      | PteValue _ -> -1
+  let no_value = NoValue
+  let value_of_int v = Plain v
+  let value_compare lhs rhs =
+      match lhs, rhs with
+      | NoValue, NoValue -> 0
+      | NoValue, Plain _ -> -1
+      | NoValue, PteValue _ -> -1
+      | Plain _, NoValue -> 1
+      | Plain lhs, Plain rhs -> Misc.int_compare lhs rhs
+      | Plain _, PteValue _ -> -1
+      | PteValue _, NoValue -> 1
+      | PteValue _, Plain _ -> 1
+      | PteValue lhs, PteValue rhs -> pte_compare lhs rhs
+
+  let pp_v ?(hexa=false) = function
+    | NoValue -> "**"
+    | Plain v -> Printf.sprintf (if hexa then "0x%x" else "%d") v
+    | PteValue p -> pp_pte p
+
+  type env = (string * v) list
 end
 
 

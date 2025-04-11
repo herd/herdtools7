@@ -29,7 +29,9 @@ module type S = sig
   include Atom.S
 
 (* Page table entry *)
+(*
   module PteVal : PteVal_gen.S with type pte_atom = atom
+*)
 
 (* Fences *)
   type fence
@@ -73,6 +75,6 @@ module type S = sig
   val sequence_dp : dp -> dp -> dp list
 
 (* Read-Modify-Write *)
-  include Rmw.S with type rmw_atom = atom
+  include Rmw.S with type rmw_atom = atom and type rmw_value = PteVal.v
 
 end
