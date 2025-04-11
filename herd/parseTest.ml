@@ -75,6 +75,48 @@ module Top (TopConf:RunTest.Config) = struct
         GetModel.parse
           Conf.archcheck arch Conf.libfind Conf.variant Conf.model in
 
+      (* Variant compatibility check *)
+      let () =
+        let key_disable key = Conf.variant (Variant.NoPacKey key) in
+        let pauth1 = Conf.variant (Variant.PacVersion `PAuth1) in
+        let pauth2 = Conf.variant (Variant.PacVersion `PAuth2) in
+
+        if Conf.variant Variant.FPac && not pauth2 then
+          Warn.user_error "\"fpac\" variant require \"pauth2\" variant" ;
+
+        if Conf.variant Variant.ConstPacField && not pauth2 then
+          Warn.user_error "\"const-pac-field\" variant require \"pauth2\" variant" ;
+
+        if pauth1 && pauth2 then begin
+          let msg =
+            "\"pauth1\" and \"pauth2\" variants are incompatible, " ^
+            "\"pauth1\" is suppose to represent \"FEAT_PAuth\" without " ^
+            "\"FEAT_PAuth2\", but \"pauth2\" is suppose to represent " ^
+            "\"FEAT_PAuth\" and \"FEAT_PAuth2\""
+          in
+          Warn.user_error "%s" msg
+        end;
+
+        let no_key_da = key_disable PAC.DA in
+        let no_key_db = key_disable PAC.DB in
+        let no_key_ia = key_disable PAC.IA in
+        let no_key_ib = key_disable PAC.IB in
+        if (no_key_da || no_key_db || no_key_ia || no_key_ib) && not (pauth1 || pauth2) then
+          Warn.user_error "\"no-key-*\" variants require \"pauth1\" or \"pauth2\" variants" ;
+
+        if pauth1 && Conf.variant Variant.VMSA then
+          Warn.warn_always "\"pauth1\" and \"vmsa\" variants are not supported together now" ;
+
+        if pauth2 && Conf.variant Variant.VMSA then
+          Warn.warn_always "\"pauth2\" and \"vmsa\" variants are not supported together now" ;
+
+        if pauth1 && Conf.variant Variant.MemTag then
+          Warn.warn_always "\"pauth1\" and \"memtag\" variants are not supported together now" ;
+
+        if pauth2 && Conf.variant Variant.MemTag then
+          Warn.warn_always "\"pauth2\" and \"memtag\" variants are not supported together now"
+      in
+
       let cache_type = CacheType.get splitted.Splitter.info in
       let variant_patched_with_cache_type =
          let dic_pred, idc_pred =

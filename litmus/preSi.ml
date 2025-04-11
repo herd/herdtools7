@@ -91,7 +91,12 @@ module Make
 
   let () =
     if pauth1 && pauth2 then
-      Warn.user_error "\"pauth1\" and \"pauth2\" variants are incompatible"
+      let msg =
+        "\"pauth1\" and \"pauth2\" variants are incompatible, " ^
+        "\"pauth1\" is suppose to represent \"FEAT_PAuth\" without " ^
+        "\"FEAT_PAuth2\", but \"pauth2\" is suppose to represent " ^
+        "\"FEAT_PAuth\" and \"FEAT_PAuth2\""
+      in Warn.user_error "%s" msg
 
   let () =
     let no_key_da = key_disable PAC.DA in
