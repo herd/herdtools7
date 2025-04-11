@@ -43,7 +43,7 @@ address but the `pac*` instruction use the bit 63 (but the bit 55 if
 
 ```
 AArch64 switch VA range
-Variant=pac
+Variant=pauth2
 { 0:x0=x }
 P0        ;
 pacdza x0 ;
@@ -68,7 +68,7 @@ in another context. In particular this means that this litmus test:
 
 ```
 AArch64 Collisions in loads
-Variant=pac
+Variant=pauth2
 { 0:x0=x }
 P0              ;
   pacdza x0     ;
@@ -80,7 +80,7 @@ will succeed with a probability `p`, and this test too:
 
 ```
 AArch64 Collisions in aut*
-Variant=pac,fpac
+Variant=pauth2,fpac
 { 0:x0=x }
 P0          ;
   pacdza x0 ;
@@ -102,7 +102,7 @@ example:
 
 ```
 AArch64 Incoherent collisions 1
-Variant=pac,fpac
+Variant=pauth2,fpac
 {
   0:x0=x;
   1:x0=x
@@ -117,7 +117,7 @@ and
 
 ```
 AArch64 Incoherent collisions 2
-Variant=pac,fpac
+Variant=pauth2,fpac
 {
   0:x0=x;
   1:x0=x
@@ -132,7 +132,7 @@ and
 
 ```
 AArch64 Incoherent collisions 3
-Variant=pac,fpac
+Variant=pauth2,fpac
 {
   0:x0=x;
   0:x1=x
@@ -167,7 +167,7 @@ this with this litmus test:
 
 ```
 AArch64 xpacd-basic-dep
-Variant=pac
+Variant=pauth2
 {
   int64_t x=0;
   int64_t y=0;
@@ -198,12 +198,12 @@ So here is an example of litmus test with the pacda instruction:
 
 The `pac*` instruction semantic depend on the status of the register
 `SCTLR_EL1.En*` represented in the litmus test by the presence of the variant
-`pac`:
+`no-key-*`:
 
-- If `pac` is not set, then `pac*` ececute like a `mov Xd,Xd`, si there is a
+- If `no-key-da` is set, then `pacda` ececute like a `mov Xd,Xd`, so there is a
     `basic-dep` between the register-read event of `Xd` and the register-write
     event of `Xd`.
-- If `pac` is set then there is a `basic dependency` between the register-read
+- Otherwise there is a `basic dependency` between the register-read
     event of `Xd` and the register-write event of
     `Xd`. And a `basic-dependency` between the regisger-read event of the
     register `Xn` and the register-write event of `Xd`.
@@ -211,6 +211,7 @@ The `pac*` instruction semantic depend on the status of the register
 
 ```
 AArch64 pac: RXd ---basic-dep--> WXd
+Variant=pauth2
 {
   int64_t x=0;
   int64_t y=0;
@@ -229,6 +230,7 @@ exists ( 1:X2=1 /\ 1:X3=0 )
 
 ```
 AArch64 pac: RXn ---basic-dep--> WXd
+Variant=pauth2
 {
   int64_t x=0;
   int64_t y=0;
@@ -272,6 +274,7 @@ tests to observe the basic dependency between the register-read/write events in
 
 ```
 AArch64 PAuth1 auth success: RXd ---basic-dep--> WXd
+Variant=pauth1
 {
     int64_t x=0;
     int64_t y=0;
@@ -293,6 +296,7 @@ exists ( 1:X2=1 /\ 1:X4=0 )
 
 ```
 AArch64 PAuth1 auth fail: RXd ---basic-dep--> WXd
+Variant=pauth1
 {
     int64_t x=0;
     int64_t y=0;
@@ -317,6 +321,7 @@ event of `Xn` to the register-read event of `Xd`:
 
 ```
 AArch64 PAuth1 auth success: RXn ---pick-basic-dep--> WXd
+Variant=pauth1
 {
   int64_t x=0;
   int64_t y=0;
@@ -336,6 +341,7 @@ exists ( 1:X2=1 /\ [x]=1 )
 
 ```
 AArch64 PAuth1 auth fail: RXn ---pick-basic-dep--> WXd
+Variant=pauth1
 {
   int64_t x=0;
   int64_t y=0;
@@ -360,6 +366,7 @@ success or failure:
 
 ```
 AArch64 PAuth1 auth success: RXn ---no-basic-dep--> WXd
+Variant=pauth1
 {
   int64_t x=0;
   int64_t y=0;
@@ -378,6 +385,7 @@ exists ( 1:X2=1 /\ 1:X3=0 )
 
 ```
 AArch64 PAuth1 auth fail: RXn ---no-basic-dep--> WXd
+Variant=pauth1
 {
     int64_t x=0;
     int64_t y=0;
@@ -431,6 +439,7 @@ tests to observe the basic dependency between the register-read/write events in
 
 ```
 AArch64 PAuth2 without FPAC auth success: RXd ---basic-dep--> WXd
+Variant=pauth2
 {
     int64_t x=0;
     int64_t y=0;
@@ -452,6 +461,7 @@ exists ( 1:X2=1 /\ 1:X4=0 )
 
 ```
 AArch64 PAuth2 without FPAC auth fail: RXd ---basic-dep--> WXd
+Variant=pauth2
 {
     int64_t x=0;
     int64_t y=0;
@@ -477,6 +487,7 @@ success:
 
 ```
 AArch64 PAuth2 without FPAC auth success: RXn ---pick-basic-dep--> WXd
+Variant=pauth2
 {
   int64_t x=0;
   int64_t y=0;
@@ -499,6 +510,7 @@ register-write event of `Xd`:
 
 ```
 AArch64 PAuth2 without FPAC auth success: RXn ---no-basic-dep--> WXd
+Variant=pauth2
 {
   int64_t x=0;
   int64_t y=0;
@@ -522,6 +534,7 @@ test:
 
 ```
 AArch64 PAuth2 without FPAC auth fail: RXn ---basic-dep--> WXd
+Variant=pauth2
 {
     int64_t x=0;
     int64_t y=0;
@@ -573,6 +586,7 @@ register-write event of `Xd` in case of success:
 
 ```
 AArch64 PAuth2 with FPAC auth success: RXd ---basic-dep--> WXd
+Variant=pauth2,fpac
 {
     int64_t x=0;
     int64_t y=0;
@@ -597,6 +611,7 @@ register-read event of `Xn` and the register-write event of `Xd`:
 
 ```
 AArch64 PAuth2 with FPAC auth success: RXn ---pick-basic-dep--> WXd
+Variant=pauth2,fpac
 {
   int64_t x=0;
   int64_t y=0;
@@ -618,6 +633,7 @@ and a litmus test to see the absence of a `basic-dep`:
 
 ```
 AArch64 PAuth2 with FPAC auth success: RXn ---no-basic-dep--> WXd
+Variant=pauth2,fpac
 {
   int64_t x=0;
   int64_t y=0;
@@ -639,6 +655,7 @@ of `Xd` and `Xn` and the fault event in case of failure:
 
 ```
 AArch64 PAuth2 with FPAC auth success: RXn ---pick-basic-dep--> Fault
+Variant=pauth2,fpac
 {
     int64_t x=0;
     int64_t y=0;
@@ -659,6 +676,7 @@ And
 
 ```
 AArch64 PAuth2 with FPAC auth success: RXd ---pick-basic-dep--> Fault
+Variant=pauth2,fpac
 {
     int64_t x=0;
     int64_t y=0;
@@ -727,6 +745,7 @@ Here is an example of `ldr` success:
 
 ```
 AArch64 load success
+Variant=pauth2
 { 0:x0=x; int x = 42; }
 P0;
   ldr x1,[x0];
@@ -740,6 +759,7 @@ And here is an example of `ldr` failure:
 
 ```
 AArch64 load failure
+Variant=pauth2
 { 0:x0=pac(x, da, 0); int x = 42; }
 P0;
   ldr x1,[x0];
@@ -758,6 +778,7 @@ Here is an example of litmus test to illustrate a `str` success:
 
 ```
 AArch64 str success
+Variant=pauth2
 { 0:x0=x; 0:x1=42 }
 P0;
   str x1,[x0];
@@ -771,6 +792,7 @@ And here is an example of a `str` failure:
 
 ```
 AArch64 str failure
+Variant=pauth2
 { 0:x0=pac(x, da, 0); int x = 42 }
 P0;
   str x1,[x0];
