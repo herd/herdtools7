@@ -38,8 +38,15 @@
 ;; Make sure there's a theorem for every stdlib function.
 
 (assert-event
- (equal (mergesort
-         (acl2::alist-keys (table-alist 'asl-subprogram-table (w state))))
-        (mergesort
-         (acl2::alist-keys
-          (static_env_global->subprograms (stdlib-static-env))))))
+ (or
+  (equal (mergesort
+          (acl2::alist-keys (table-alist 'asl-subprogram-table (w state))))
+         (mergesort
+          (acl2::alist-keys
+           (static_env_global->subprograms (stdlib-static-env)))))
+  (cw "~%########################################################~%")
+  (cw "## COMPLETION CHECK FAILED                            ##~%")
+  (cw "## A routine has been added or removed to/from stdlib.##~%")
+  (cw "## Proofs need adjustments                            ##~%")
+  (cw "########################################################")) 
+  )

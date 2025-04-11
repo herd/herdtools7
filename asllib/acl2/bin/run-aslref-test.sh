@@ -50,7 +50,7 @@ export PATH="$acl2asldir"/bin:$PATH
 # echo aslref ${aslargs[@]} "$aslfile --print-lisp --no-exec";
 
 # echo aslref ${aslargs[@]} "$aslfile" --print-lisp --no-exec
-aslref_out=$( ( aslref ${aslargs[@]} "$aslfile" --print-lisp --no-exec > "$astfile" ) 2>&1 )
+aslref_out=$( ( aslref ${aslargs[@]} "$aslfile" --no-primitives --print-lisp --no-exec > "$astfile" ) 2>&1 )
 if [[ $? != 0 ]]; then
     # echo "aslref_out (fail before exec):"
     echo "$aslref_out";

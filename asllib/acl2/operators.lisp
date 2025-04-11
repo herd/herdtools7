@@ -40,6 +40,14 @@
                     (unsigned-byte-p n x.val)))))
 
 
+
+(define v_bitvector* ((n natp) (x integerp))
+  ;; Construct a bitvector without the unsigned-byte-p* guard,
+  ;; by truncating x to n bits if necessary.
+  :enabled t
+  (mbe :logic (v_bitvector n x)
+       :exec (v_bitvector n (loghead n x))))
+
 (define eval_binop ((op binop-p)
                     (v1 val-p)
                     (v2 val-p))
@@ -113,20 +121,20 @@
     ((:xor :v_bitvector :v_bitvector)
      :when (eql v1.len v2.len)    (ev_normal (v_bitvector v1.len (logxor v1.val v2.val))))
     ((:plus :v_bitvector :v_bitvector)
-     :when (eql v1.len v2.len)    (ev_normal (v_bitvector v1.len
-                                                          (loghead v1.len (+ v1.val v2.val)))))
+     :when (eql v1.len v2.len)    (ev_normal (v_bitvector* v1.len
+                                                           (+ v1.val v2.val))))
     ((:minus :v_bitvector :v_bitvector)
-     :when (eql v1.len v2.len)    (ev_normal (v_bitvector v1.len
-                                                          (loghead v1.len (- v1.val v2.val)))))
+     :when (eql v1.len v2.len)    (ev_normal (v_bitvector* v1.len
+                                                           (- v1.val v2.val))))
     ((:bv_concat :v_bitvector :v_bitvector)
                                   (ev_normal (v_bitvector (+ v1.len v2.len)
                                                           ;; FIXME check order?
                                                           (logapp v2.len v2.val v1.val))))
     ;; bits -> integer -> bits
-    ((:plus :v_bitvector :v_int)  (ev_normal (v_bitvector v1.len
-                                                          (loghead v1.len (+ v1.val v2.val)))))
-    ((:minus :v_bitvector :v_int) (ev_normal (v_bitvector v1.len
-                                                          (loghead v1.len (- v1.val v2.val)))))
+    ((:plus :v_bitvector :v_int)  (ev_normal (v_bitvector* v1.len
+                                                           (+ v1.val v2.val))))
+    ((:minus :v_bitvector :v_int) (ev_normal (v_bitvector* v1.len
+                                                           (- v1.val v2.val))))
     ;; string -> string -> bool
     ((:eq_op :v_string :v_string) (ev_normal (v_bool (equal v1.val v2.val))))
     ((:neq   :v_string :v_string) (ev_normal (v_bool (not (equal v1.val v2.val)))))
@@ -149,7 +157,7 @@
     ((:neg :v_int)       (ev_normal (v_int (- v.val))))
     ((:neg :v_real)      (ev_normal (v_real (- v.val))))
     ((:bnot :v_bool)     (ev_normal (v_bool (not v.val))))
-    ((:not :v_bitvector) (ev_normal (v_bitvector v.len (loghead v.len (lognot v.val)))))
+    ((:not :v_bitvector) (ev_normal (v_bitvector* v.len (lognot v.val))))
     (-                   (ev_error "bad unop" (list op v)))))
 
 
