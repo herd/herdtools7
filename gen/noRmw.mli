@@ -17,6 +17,6 @@
 (** No rmw instruction *)
 
 module Make :
-  functor(A:sig type arch_atom end) -> sig
-    include Rmw.S with type rmw_atom = A.arch_atom
+  functor(A:sig type arch_atom type rmw_value end) -> sig
+    include Rmw.S with type rmw_atom = A.arch_atom and type rmw_value = A.rmw_value
   end
