@@ -20,7 +20,12 @@
   end
   module ArchConfig = SemExtra.ConfigToArchConfig(Conf)
 
-  module MakeRun (CValue:Value.S with module Cst.Instr=CBase.Instr and type arch_op = CBase.arch_op) = struct
+  module
+    MakeRun
+      (CValue:Value.S with
+        module Cst.Instr=CBase.Instr
+        and type arch_extra_op = CBase.arch_extra_op
+        and type 'a arch_constr_op = 'a CBase.arch_constr_op) = struct
       module CS = CSem.Make(Conf)(CValue)
       module CM = CMem.Make(ModelConfig)(CS)
       module C = CArch_herd.Make(ArchConfig)(CValue)
@@ -41,7 +46,7 @@
       end
       module P = CGenParser_lib.Make (Conf) (C) (CLexParse)
       module X = RunTest.Make (CS) (P) (CM) (Conf)
-  end     
+  end
 
    let run =
      if Conf.variant Variant.S128 then
