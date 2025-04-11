@@ -502,7 +502,7 @@ type \texttt{pairT}.
   \isanonymous(\tenv, \vs) \typearrow \vbtwo\\
   \subtypesat(\tenv, \vt, \vs) \typearrow \vbthree\\
   \neg((\vbone \lor \vbtwo) \land \vbthree)\\
-  \vt \eqname \TBits(\widtht, \emptylist)\\
+  \vt = \TBits(\widtht, \emptylist)\\
   \tstruct(\tenv, \vs) \typearrow \TBits(\widths, \Ignore) \OrTypeError\\\\
   \bitwidthequal(\tenv, \widtht, \widths) \typearrow \vb
 }{
@@ -533,7 +533,7 @@ type \texttt{pairT}.
   \neg((\vbone \lor \vbtwo) \land \vbthree)\\
   \tstruct(\tenv, \vs) \typearrow \vsstruct\\
   \astlabel(\vt) = \TBits \land \astlabel(\vsstruct) = \TBits\\
-  \vt \eqname \TBits(\widtht, \bitfields)\\
+  \vt = \TBits(\widtht, \bitfields)\\
   \bitfields \neq \emptylist
 }{
   \typesat(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}

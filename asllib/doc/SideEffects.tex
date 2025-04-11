@@ -389,7 +389,11 @@ Therefore, the \timeframeterm{} of the expression \verb|g + gl| is \timeframeexe
 
 \ProseParagraph
 \AllApply
+\AllApply
 \begin{itemize}
+    \item define $\vreads$ as the subset of $\vses$ that contains only
+    \sideeffectdescriptorsterm\ that are either \ReadLocalTerm\ or \ReadGlobalTerm;
+    \item \OneApplies
     \item define $\vreads$ as the subset of $\vses$ that contains only
     \sideeffectdescriptorsterm\ that are either \ReadLocalTerm\ or \ReadGlobalTerm;
     \item \OneApplies
@@ -399,7 +403,20 @@ Therefore, the \timeframeterm{} of the expression \verb|g + gl| is \timeframeexe
             \item $\vreads$ is not equal to $\vses$;
             \item define $\vf$ as \timeframeexecution.
         \end{itemize}
+        \item \AllApplyCase{execution}
+        \begin{itemize}
+            \item $\vreads$ is not equal to $\vses$;
+            \item define $\vf$ as \timeframeexecution.
+        \end{itemize}
 
+        \item \AllApplyCase{reads}
+        \begin{itemize}
+            \item $\vreads$ is equal to $\vses$;
+            \item define $\vtimeframes$ as the \timeframesterm\ appearing in the \sideeffectdescriptorsterm\
+                in $\vreads$;
+            \item define $\vf$ as the greatest time frame in the union of $\vtimeframes$ and the singleton set for \timeframeconstant,
+                where $\timeframeleq$ is used to compare any two \timeframesterm.
+        \end{itemize}
         \item \AllApplyCase{reads}
         \begin{itemize}
             \item $\vreads$ is equal to $\vses$;
@@ -416,6 +433,8 @@ Therefore, the \timeframeterm{} of the expression \verb|g + gl| is \timeframeexe
 \inferrule[execution]{
     \vreads \eqdef \{ \vs \in \vses \;|\; \configdomain{\vs} \in \{\ReadLocal, \ReadGlobal\} \}\\
     \vses \neq \vreads
+    \vreads \eqdef \{ \vs \in \vses \;|\; \configdomain{\vs} \in \{\ReadLocal, \ReadGlobal\} \}\\
+    \vses \neq \vreads
 }{
     \maxtimeframe(\vses) \typearrow \overname{\timeframeexecution}{\vf}
 }
@@ -424,6 +443,7 @@ Therefore, the \timeframeterm{} of the expression \verb|g + gl| is \timeframeexe
 \begin{mathpar}
 \inferrule[reads]{
     \vreads \eqdef \{ \vs \in \vses \;|\; \configdomain{\vs} \in \{\ReadLocal, \ReadGlobal\} \}\\
+    \vses = \vreads\\\\
     \vses = \vreads\\\\
     \vtimeframes \eqdef \{ \timeframe(\vfp) \;|\; \vfp\in\vreads \} \\
     \vf \eqdef \timeframemax(\vtimeframes \cup \{\timeframeconstant\})

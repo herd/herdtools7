@@ -73,8 +73,10 @@ That is, the set of strings that match that regular expression.
 
 \section{Whitespace}
 \RequirementDef{Whitespace}
-Comments, newlines and space characters are treated as whitespace.
-%
+Comments and whitespace characters are colloquially referred to as whitespace
+and are discarded. Technically, line comments, multi-line comments are treated
+separately from whitespace characters.
+
 For example,
 the specification in \listingref{syntax-whitespace1}
 is equivalent to \listingref{syntax-whitespace2}
@@ -82,6 +84,14 @@ in the sense that they both parse to the same AST.
 Of course, \listingref{syntax-whitespace2} is preferred in terms of style.
 \ASLListing{A badly-formatted specification}{syntax-whitespace1}{\syntaxtests/GuideRule.Whitespace1.asl}
 \ASLListing{A well-formatted specification}{syntax-whitespace2}{\syntaxtests/GuideRule.Whitespace2.asl}
+
+Formally, whitespace other than comments is defined via the following regular expression:
+\hypertarget{def-rewhitespace}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\REwhitespace$ & $\triangleq$ & (\ascii{10} $|$ \ascii{13} $|$ \ascii{32})+\\
+\end{tabular}
+\end{center}
 
 \section{Comments}
 ASL supports comments in the style of C++:
@@ -95,12 +105,15 @@ as exemplified in \listingref{LexicalComments}.
 
 \ASLListing{Examples of comments}{LexicalComments}{\syntaxtests/Lexical.Comments.asl}
 
+Line comments are formally defined via the following regular expressions:
 \hypertarget{def-relinecomment}{}
 \begin{center}
 \begin{tabular}{rcl}
 $\RElinecomment$  &$\triangleq$& \texttt{"//"} (\REchar\ \texttt{-} \ascii{10})* \texttt{|} \texttt{"/*"} \REchar* \texttt{"*/"}\\
 \end{tabular}
 \end{center}
+
+Multi-line comments are defined via $\actionstartcomment$ and in \secref{scanningmultulinecomments}.
 
 \section{Integer Literals}
 Integers are written either in decimal using one or more of the characters \texttt{0-9} and underscore, or in hexadecimal
@@ -130,7 +143,7 @@ such as \texttt{0xefff\_fffe}, \texttt{1\_000\_000} or \texttt{3.141\_592\_654} 
 This is formalized by the following lexical regular expression:
 \begin{center}
 \begin{tabular}{rcl}
-$\REreallit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* '.' \REdigit\ (\Underscore\ | \REdigit)*}
+$\REreallit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)*} $\underbracket{\texttt{.}}$ \texttt{\REdigit\ (\Underscore\ | \REdigit)*}
 \end{tabular}
 \end{center}
 
@@ -225,7 +238,7 @@ Identifiers are case sensitive.
 \hypertarget{def-reidentifier}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\REletter$ &$\triangleq$& \texttt{'a-z' $|$ 'A-Z'}\\
+$\REletter$ &$\triangleq$& $\underbracket{\texttt{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ}}$\\
 $\REidentifier$ &$\triangleq$& \texttt{($\REletter$ $|$ $\underbracket{\texttt{ \_ } }$) ($\REletter$ $|$ $\underbracket{\texttt{ \_ } }$ $|$ $\REdigit$)*}\\
 \end{tabular}
 \end{center}
@@ -527,7 +540,8 @@ token function.
 \begin{tabular}{ll}
 \textbf{Lexical Regular Expressions} & \textbf{Lexeme Action}\\
 \hline
-(\ascii{10} $|$ \ascii{13} $|$ \ascii{32})+         & $\discard$ \\
+$\REwhitespace$                       & $\discard$ \\
+$\RElinecomment$                      & $\discard$ \\
 $\texttt{"/*"}$                       & $\actionstartcomment$ \\
 $\underbracket{\texttt{"}}$           & $\actionstartstring$ \\
 $\REintlit$                           & $\actiontoken(\decimaltolit)$ \\
@@ -716,7 +730,7 @@ $\REchar$                                             &  $\stringchar$\\
 \end{tabular}
 \end{center}
 
-\subsection{Scanning Multi-line Comments}
+\subsection{Scanning Multi-line Comments\label{sec:scanningmultulinecomments}}
 The lexeme action
 \hypertarget{def-discardcommentchar}{}
 \[

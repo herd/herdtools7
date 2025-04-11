@@ -28,6 +28,11 @@ ASL Typing Tests:
     provided (integer {1}, T2).
   [1]
   $ aslref --no-exec TypingRule.TypeClashes.asl
+  $ aslref --no-exec TypingRule.TypeClashes.bad.asl
+  File TypingRule.TypeClashes.bad.asl, line 3, characters 0 to 55:
+  ASL Typing error: cannot declare already declared element
+    "structured_procedure".
+  [1]
   $ aslref TypingRule.LowestCommonAncestor.asl
   $ aslref TypingRule.FindNamedLCA.asl
   $ aslref TypingRule.ApplyUnopType.asl
@@ -653,3 +658,6 @@ ASL Typing Tests / annotating types:
     produces the following side-effects: [ReadsGlobal "g"].
   [1]
   $ aslref --no-exec TypingRule.MaxTimeFrame.asl
+  $ aslref TypingRule.SliceEqual.asl
+  $ aslref TypingRule.SlicesEqual.asl
+  $ aslref TypingRule.BitwidthEqual.asl
