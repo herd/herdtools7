@@ -17,9 +17,9 @@
 (** The only RMW is exchange *)
 
 (* Implemented as load reserve store conditional *)
-module LxSx(A:sig type arch_atom end) :
-  Rmw.S with type rmw = unit and type rmw_atom = A.arch_atom
+module LxSx(A:sig type arch_atom type rmw_value end) :
+  Rmw.S with type rmw = unit and type rmw_atom = A.arch_atom and type rmw_value = A.rmw_value
 
 (* Implemented as exchange instruction *)
-module Exch(A:sig type arch_atom end) :
-  Rmw.S with type rmw = unit and type rmw_atom = A.arch_atom
+module Exch(A:sig type arch_atom type rmw_value end) :
+  Rmw.S with type rmw = unit and type rmw_atom = A.arch_atom and type rmw_value = A.rmw_value
