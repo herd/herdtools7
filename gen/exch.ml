@@ -19,11 +19,11 @@
 module
   Make
     (I:
-       sig
-         type atom
-         val pp : string
-         val is_one_instruction : bool
-       end) =
+      sig
+        type atom
+        val pp : string
+        val is_one_instruction : bool
+      end) =
   struct
     type rmw = unit
     type rmw_atom = I.atom
@@ -43,11 +43,11 @@ module
 
     let compute_rmw () _old co_cell  = co_cell
     let valid_rmw _ = true
-    let init_rmw _  = Code.value_of_int 0
+    let init_rmw _  = 0
     let to_rmw_operand _ _ counter = counter
   end
 
-module  LxSx(A:sig type arch_atom end) = struct
+module LxSx(A:sig type arch_atom end) = struct
   include Make
     (struct
       type atom = A.arch_atom
@@ -55,9 +55,9 @@ module  LxSx(A:sig type arch_atom end) = struct
       let is_one_instruction = false
     end)
 end
-module  Exch(A:sig type arch_atom end) = struct
+module Exch(A:sig type arch_atom end) = struct
   include Make
-  (struct
+    (struct
       type atom = A.arch_atom
       let pp = "Exch"
       let is_one_instruction = true

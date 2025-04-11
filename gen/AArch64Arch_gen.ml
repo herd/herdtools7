@@ -50,14 +50,6 @@ let tr_endian = Misc.identity
 
 module ScopeGen = ScopeGen.NoGen
 
-(* Mixed size *)
-module Mixed =
-  MachMixed.Make
-    (struct
-      let naturalsize = Some C.naturalsize
-      let fullmixed = C.fullmixed
-    end)
-
 (* AArch64 has more atoms that others *)
 let bellatom = false
 module SIMD = struct
@@ -209,6 +201,60 @@ type atom_acc =
 let  plain = Plain None
 
 type atom = atom_acc * MachMixed.t option
+
+module Value = struct
+
+  include Value.Make(struct
+    (* Do this on purpose since there is an outside `atom` type. *)
+    type _atom = atom
+    type atom = _atom
+    type pte = AArch64PteVal.t
+    let pp_pte = AArch64PteVal.pp_v
+    let default_pte = AArch64PteVal.default
+    let pte_compare = AArch64PteVal.compare
+
+    let do_setpteval _a f p loc =
+      let open AArch64PteVal in
+      let fs = match f with
+        | Set f|SetRel f -> f
+        | Read|ReadAcq|ReadAcqPc ->
+           Warn.user_error "Atom is not a pteval write" in
+      WPTESet.fold
+        (fun f p ->
+          let open WPTE in
+          match f with
+          | AF -> { p with af = 1-p.af; }
+          | DB -> { p with db = 1-p.db; }
+          | DBM -> { p with dbm = 1-p.dbm; }
+          | VALID -> { p with valid = 1-p.valid; }
+          | OA -> { p with oa=OutputAddress.PHY (loc ()); })
+      fs p
+
+    let set_pteval a p =
+      match a with
+      | Pte f,None -> do_setpteval a f p
+      | _ -> Warn.user_error "Atom is not a pteval write"
+
+    let can_fault pte_val =
+      let open AArch64PteVal in
+      pte_val.valid = 0
+
+    let refers_virtual p = OutputAddress.refers_virtual p.AArch64PteVal.oa
+  end)
+
+  let from_pte p = PteValue p
+  let to_pte = function
+    | PteValue p -> p
+    | _ -> Warn.user_error "Cannot convert to pte"
+end
+
+(* Mixed size *)
+module Mixed =
+  MachMixed.Make
+    (struct
+      let naturalsize = Some C.naturalsize
+      let fullmixed = C.fullmixed
+    end)(Value)
 
 let default_atom = Atomic PP,None
 let instr_atom = Some (Instr,None)
@@ -527,21 +573,21 @@ let is_ifetch a = match a with
    (* Use a non-default strategy rather than `Mixed.tr_value`.
       Here we calculate based per 2-byte, which
       provides the desired behaviour on atomic operations. *)
-     let v = Code.value_to_int v in
+     let v = Value.to_int v in
      let open MachSize in
      let v = match sz with
        | Byte|Short -> v
        | Word ->  v lsl 16 + v
        | Quad -> v lsl 48 + v lsl 32 + v lsl 16 + v
        | S128 -> assert false in
-      Code.value_of_int v
+      Value.from_int v
 
    module ValsMixed =
      MachMixed.Vals
        (struct
          let naturalsize () = C.naturalsize
          let endian = endian
-       end)
+       end)(Value)
 
 let overwrite_value v ao w = match ao with
 | None
@@ -562,47 +608,6 @@ let overwrite_value v ao w = match ao with
   | Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal|Neon _),Some (sz,o)) ->
      ValsMixed.extract_value v sz o
   | Some ((Pte _|Pair _|Instr),Some _) -> assert false
-
-(* Page table entries *)
-  module PteVal = struct
-
-    type pte_atom = atom
-
-    type t = AArch64PteVal.t
-
-    let pp = AArch64PteVal.pp_v
-
-    let default = AArch64PteVal.default
-
-    let compare = AArch64PteVal.compare
-
-    let do_setpteval a f p loc =
-      let open AArch64PteVal in
-      let fs = match f with
-        | Set f|SetRel f -> f
-        | Read|ReadAcq|ReadAcqPc ->
-           Warn.user_error "Atom %s is not a pteval write" (pp_atom a) in
-      WPTESet.fold
-        (fun f p ->
-          let open WPTE in
-          match f with
-          | AF -> { p with af = 1-p.af; }
-          | DB -> { p with db = 1-p.db; }
-          | DBM -> { p with dbm = 1-p.dbm; }
-          | VALID -> { p with valid = 1-p.valid; }
-          | OA -> { p with oa=OutputAddress.PHY (loc ()); })
-      fs p
-
-    let set_pteval a p =
-      match a with
-      | Pte f,None -> do_setpteval a f p
-      | _ -> Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
-
-    let can_fault pte_val =
-      let open AArch64PteVal in
-      pte_val.valid = 0
-
-  end
 
 (* Wide accesses *)
 
@@ -870,9 +875,7 @@ let show_rmw_reg = function
 | LdOp _|Cas|Swp|LrSc -> true
 
 let compute_rmw r old co =
-    let old = Code.value_to_int old in
-    let co = Code.value_to_int co in
-    let new_value = match r with
+    match r with
     | LdOp op | StOp op ->
       begin match op with
         | A_ADD -> old + co
@@ -888,8 +891,7 @@ let compute_rmw r old co =
         | A_SET -> old lor co
         | A_CLR -> old land (lnot co)
     end
-    | LrSc | Swp | Cas  -> co in
-    Code.value_of_int new_value
+    | LrSc | Swp | Cas  -> co
 
 (* Rule out `rmw_list` that contains the same type of atomic operation *)
 let valid_rmw rmw_list =
@@ -944,24 +946,21 @@ let valid_rmw rmw_list =
          applying `op1` followed by `op2.
 *)
 let init_rmw rmw =
-  let value = match rmw with
+  match rmw with
     | LdOp op|StOp op -> begin match op with
       (* Set the spacial initial values as described above. *)
       | A_ADD|A_CLR|A_EOR|A_SET -> 0x07_20
       | A_SMIN|A_UMIN -> 0x5_00_00
       | _ -> 0
     end
-    | _ -> 0 in
-  Code.value_of_int value
+    | _ -> 0
 
 let to_rmw_operand rmw init counter =
-  let init = Code.value_to_int init in
-  let counter = Code.value_to_int counter in
   let bit_mask = ((1 lsl (counter + 1)) - 1) + 0x40 in
   let shift_bit = 5 in
   let shift_add = 7 in
   let compare_offset = counter lsl 12 in
-  let value = match rmw with
+  match rmw with
     (* Atomic bitwise and min-max operations manipulate
        particular bits in the number. See above *)
     | LdOp op|StOp op ->
@@ -975,8 +974,7 @@ let to_rmw_operand rmw init counter =
       | A_SMIN|A_UMIN -> init - compare_offset
     end
     (* Fail back the default `init + counter` value *)
-    | _ -> init + counter in
-  Code.value_of_int value
+    | _ -> init + counter
 
 include
     ArchExtra_gen.Make
@@ -997,6 +995,8 @@ include
       let specials = vregs
       let specials2 = pregs
       let specials3 = zaslices
+      type arch_atom = atom
+      module Value = Value
     end)
 
 end

@@ -33,15 +33,16 @@ module type S = sig
   module SIMD : Atom.SIMD
 
   type atom
-  module PteVal : PteVal_gen.S with type pte_atom = atom
+  module Value : Value.S with type atom = atom
   type rmw
+  type value = Value.v
 
   val pp_atom : atom -> string
-  val tr_value : atom option -> Code.v -> Code.v
-  val overwrite_value : Code.v -> atom option -> Code.v -> Code.v
-  val extract_value : Code.v -> atom option -> Code.v
+  val tr_value : atom option -> value -> value
+  val overwrite_value : value -> atom option -> value -> value
+  val extract_value : value -> atom option -> value
   val set_pteval :
-    atom option -> PteVal.t -> (unit -> string) -> PteVal.t
+    atom option -> Value.pte -> (unit -> string) -> Value.pte
   val merge_atoms : atom -> atom -> atom option
   val is_ifetch : atom option -> bool
   val atom_to_bank : atom option -> SIMD.atom Code.bank
@@ -68,8 +69,8 @@ module type S = sig
   val is_node : tedge -> bool
   val is_insert_store : tedge -> bool
   val is_non_pseudo : tedge -> bool
-  val compute_rmw : rmw -> Code.v -> Code.v -> Code.v
-  val to_rmw_operand : rmw -> Code.v -> Code.v -> Code.v
+  val compute_rmw : rmw -> value -> value -> value
+  val to_rmw_operand : rmw -> value -> int -> value
   val valid_rmw : rmw list -> bool
 
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
@@ -78,7 +79,7 @@ module type S = sig
      with especially write events assign different values.
      Different `init_val` should be able to be composited together
      by bit-wise or operation. *)
-  val init_val : edge -> Code.v
+  val init_val : edge -> value
 
   val plain_edge : tedge -> edge
 
@@ -178,7 +179,8 @@ type fence = F.fence
 and type dp = F.dp
 and module SIMD = F.SIMD
 and type atom = F.atom
-and module PteVal = F.PteVal
+and module Value = F.Value
+and type value = F.Value.v
 and type rmw = F.rmw = struct
   let ()  = ignore (Cfg.naturalsize)
   let do_self = Cfg.variant Variant_gen.Self
@@ -194,15 +196,17 @@ and type rmw = F.rmw = struct
   type dp = F.dp
 
   module SIMD = F.SIMD
+  module Value = F.Value
 
   type atom = F.atom
   type rmw = F.rmw
+  type value = F.Value.v
 
-  let compute_rmw = F.compute_rmw
-  let to_rmw_operand = F.to_rmw_operand
+  let compute_rmw rmw old operand =
+    Value.from_int @@ F.compute_rmw rmw (Value.to_int old) (Value.to_int operand)
+  let to_rmw_operand rmw init counter =
+    Value.from_int @@ F.to_rmw_operand rmw (Value.to_int init) counter
   let valid_rmw = F.valid_rmw
-
-  module PteVal = F.PteVal
 
   let pp_atom = F.pp_atom
   let tr_value = F.tr_value
@@ -210,7 +214,7 @@ and type rmw = F.rmw = struct
   let extract_value = F.extract_value
   let set_pteval ao p = match ao with
   | None -> fun _ -> p
-  | Some a -> F.PteVal.set_pteval a p
+  | Some a -> F.Value.set_pteval a p
 
   let applies_atom ao d = match ao,d with
   | (None,_)|(_,(Irr|NoDir)) -> true
@@ -266,8 +270,8 @@ and type rmw = F.rmw = struct
   let init_val e = match e.edge with
     (* In the case of rmw, `e.a1` must be equal to `e.a2`.
      Function `tr_value` ensure correct value in mixed size access. *)
-    | Rmw rmw -> F.init_rmw rmw |> tr_value e.a1
-    | _ -> Code.value_of_int 0
+    | Rmw rmw -> F.init_rmw rmw |> Value.from_int |> tr_value e.a1
+    | _ -> Value.from_int 0
 
   open Printf
 
