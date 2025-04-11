@@ -29,5 +29,5 @@ module type S = sig
   module C : Cycle.S
          with type edge=E.edge
           and type atom = A.atom
-          and module PteVal = A.PteVal
+          and module Value = A.Value
 end

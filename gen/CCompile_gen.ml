@@ -227,7 +227,7 @@ module Make(O:Config) : Builder.S
         let decls = A.Decl (A.Plain A.deftype,r,None)
         and body =
           A.Seq
-            (A.SetReg (r,load_from No mo x),breakcond A.Ne p r (Code.value_of_int 0)) in
+            (A.SetReg (r,load_from No mo x),breakcond A.Ne p r (C.Value.from_int 0)) in
         r,A.Seq (decls,A.Loop body),st
 
       let compile_load_one st p mo x =
@@ -236,7 +236,7 @@ module Make(O:Config) : Builder.S
         and body =
           A.Seq
             (A.SetReg (r,load_from No mo x),
-             breakcond A.Eq p r (Code.value_of_int 1)) in
+             breakcond A.Eq p r (C.Value.from_int 1)) in
         r,A.Seq (decls,A.Loop body),st
 
 
@@ -245,14 +245,14 @@ module Make(O:Config) : Builder.S
         let idx,st = alloc_loop_idx p st in
         let decls =
           A.Seq
-            (A.Decl (A.Plain TypBase.Int,idx,Some (A.Const (Code.value_of_int 200))),
+            (A.Decl (A.Plain TypBase.Int,idx,Some (A.Const (C.Value.from_int 200))),
              A.Decl (A.Plain A.deftype,r,None))
         and body =
           A.seqs
             [A.SetReg (r,load_from No mo x) ;
              do_breakcond A.Ne p r e ;
              A.Decr idx ;
-             breakcond A.Eq p idx (Code.value_of_int 0);] in
+             breakcond A.Eq p idx (C.Value.from_int 0);] in
         r,A.Seq (decls,A.Loop body),st
 
       let compile_load_not_value st p mo x v =
@@ -309,7 +309,7 @@ module Make(O:Config) : Builder.S
       let insert_now d i =
         List.fold_right
           (fun (t,r) k ->
-            A.seqs [A.Decl (t,r,Some (A.Const (Code.value_of_int (-1))));k])
+            A.seqs [A.Decl (t,r,Some (A.Const (C.Value.from_int (-1))));k])
           d i
 
       let rec lift_rec top xs i =
@@ -379,7 +379,7 @@ module Make(O:Config) : Builder.S
         | v::vs ->
             let r,c,st =
               compile_load_assertvalue  No
-                (Code.value_of_int @@ IntSet.choose v) st p mo x  in
+                (C.Value.from_int @@ IntSet.choose v) st p mo x  in
             let cs,fs = straight_observer_std fenced st p  mo x vs in
             A.seq c (add_fence fenced cs),F.add_final_v p r v fs
 
@@ -387,7 +387,7 @@ module Make(O:Config) : Builder.S
         | [] -> assert false (* A.Nop,[] *)
         | [_] as vs -> straight_observer_std fenced st p mo x vs
         | v::vs ->
-            let v0 = value_of_int @@ IntSet.choose v in
+            let v0 = C.Value.from_int @@ IntSet.choose v in
             if O.cpp then
               let ce = A.Const v0,A.Eq,assertval No mo x v0 in
               let cs,fs = straight_observer_check fenced st p  mo x vs in
@@ -608,7 +608,7 @@ module Make(O:Config) : Builder.S
                      (fun (v,obs) ->
                        if Array.length v > 1 then
                          Warn.fatal "No wide access in C" ;
-                       (Code.value_to_int v.(0)),obs))
+                       (C.Value.to_int v.(0)),obs))
                   vss in
               loc,vss)
             cos in
@@ -618,11 +618,11 @@ module Make(O:Config) : Builder.S
 
       let do_add_load st p f mo x v =
         let r,c,st = compile_load_assertvalue No v st p mo x in
-        c,F.add_final_v p r (IntSet.singleton @@ Code.value_to_int v) f,st
+        c,F.add_final_v p r (IntSet.singleton @@ C.Value.to_int v) f,st
 
       let do_add_loop st p f mo x v w =
         let r,c,st = compile_load_not_value st p mo x v in
-        c,F.add_final_v p r (IntSet.singleton @@ Code.value_to_int w) f,st
+        c,F.add_final_v p r (IntSet.singleton @@ C.Value.to_int w) f,st
 
       let add_fence n is = match n.C.edge.E.edge with
       | E.Fenced (fe,_,_,_) -> A.Seq (A.Fence fe,is)
@@ -872,18 +872,18 @@ module Make(O:Config) : Builder.S
             sprintf "atomic_load_explicit(%s,%s)"
               (dump_exp loc) (dump_mem_order mo)
         | AtomicExch (MemOrder.SC,loc,v) ->
-            sprintf "atomic_exchange(%s,%s)" (dump_exp loc) (Code.pp_v v)
+            sprintf "atomic_exchange(%s,%s)" (dump_exp loc) (C.Value.pp_v v)
         | AtomicExch (mo,loc,v) ->
             sprintf "atomic_exchange_explicit(%s,%s,%s)"
-              (dump_exp loc) (Code.pp_v v) (dump_mem_order mo)
+              (dump_exp loc) (C.Value.pp_v v) (dump_mem_order mo)
         | AtomicFetchOp (MemOrder.SC,loc,v) ->
-            sprintf "atomic_fetch_add(%s,%s)" (dump_exp loc) (Code.pp_v v)
+            sprintf "atomic_fetch_add(%s,%s)" (dump_exp loc) (C.Value.pp_v v)
         | AtomicFetchOp (mo,loc,v) ->
             sprintf "atomic_fetch_add_explicit(%s,%s,%s)"
-              (dump_exp loc) (Code.pp_v v) (dump_mem_order mo)
+              (dump_exp loc) (C.Value.pp_v v) (dump_mem_order mo)
         | Deref (Load _ as e) -> sprintf "*%s" (dump_exp e)
         | Deref e -> sprintf "*(%s)" (dump_exp e)
-        | Const v -> sprintf "%s" (Code.pp_v v)
+        | Const v -> sprintf "%s" (C.Value.pp_v v)
         | AssertVal (e,_) -> dump_exp e
 
       let dump_left_val = function
@@ -1042,15 +1042,15 @@ module Make(O:Config) : Builder.S
               (dump_exp loc) (dump_mem_order mo)
         | AtomicExch (mo,loc,v) ->
             sprintf "%s.exchange(%s,%s)"
-              (dump_exp loc) (Code.pp_v v) (dump_mem_order mo)
+              (dump_exp loc) (C.Value.pp_v v) (dump_mem_order mo)
        | AtomicFetchOp (mo,loc,v) ->
             sprintf "%s.fetch_add(%s,%s)"
-              (dump_exp loc) (Code.pp_v v) (dump_mem_order mo)
+              (dump_exp loc) (C.Value.pp_v v) (dump_mem_order mo)
         | Deref (Load _ as e) -> sprintf "*%s" (dump_exp e)
         | Deref e -> sprintf "*(%s)" (dump_exp e)
-        | Const v -> sprintf "%s" (Code.pp_v v)
+        | Const v -> sprintf "%s" (C.Value.pp_v v)
         | AssertVal (AtomicLoad _|Load _ as e,v) ->
-            sprintf "%s.readsvalue(%s)" (dump_exp e) (Code.pp_v v)
+            sprintf "%s.readsvalue(%s)" (dump_exp e) (C.Value.pp_v v)
         | AssertVal _ ->
             Warn.fatal "Cannot compile to C++ (expr)"
 

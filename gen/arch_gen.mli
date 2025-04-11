@@ -20,5 +20,6 @@ module type S =
     val tr_endian : int -> int
     module ScopeGen:ScopeGen.S
     include Fence.S
-    include ArchExtra_gen.S with type arch_reg = reg
+    (* Value is `included` from `Fence.S` which includes `Atom.S` *)
+    include ArchExtra_gen.S with type arch_reg = reg and type arch_atom = atom and module Value := Value
   end
