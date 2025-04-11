@@ -261,7 +261,7 @@ let var_fence f = match varatom with
 (********)
 
 include ClassicDep
-include NoRmw.Make(struct type arch_atom = atom end)
+include NoRmw.Make(struct type arch_atom = atom type rmw_value = PteVal.v end)
 include NoEdge
 include
     ArchExtra_gen.Make
@@ -273,6 +273,8 @@ include
       let pp_reg = pp_reg
       let pp_i _ = assert false
       let free_registers = allowed_for_symb
+      type arch_extra_atom = atom
+      module PteVal = PteVal
       include NoSpecial
     end)
 end

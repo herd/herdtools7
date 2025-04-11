@@ -153,11 +153,11 @@ let dump_typ = function
 type exp =
   | Load of location
   | AtomicLoad of MemOrder.t * exp
-  | AtomicExch of MemOrder.t * exp * Code.v
-  | AtomicFetchOp of MemOrder.t * exp * Code.v
+  | AtomicExch of MemOrder.t * exp * PteVal.v
+  | AtomicFetchOp of MemOrder.t * exp * PteVal.v
   | Deref of exp
-  | Const of Code.v
-  | AssertVal of exp * Code.v
+  | Const of PteVal.v
+  | AssertVal of exp * PteVal.v
   | AddZero of exp * location
 
 let addrs_of_location = function
@@ -236,6 +236,7 @@ type rmw =
   | Add
 
 type rmw_atom = atom
+type rmw_value = PteVal.v
 
 let pp_rmw compat = function
   | Exch -> if compat then "Rmw" else "Exch"
@@ -270,11 +271,11 @@ let applies_atom_rmw _ ar aw = match ar,aw with
 let show_rmw_reg _ = true
 
 let compute_rmw rmw old co =
-  let old = Code.value_to_int old in
-  let co = Code.value_to_int co in
+  let old = PteVal.value_to_int old in
+  let co = PteVal.value_to_int co in
   let new_value = match rmw with
   | Exch -> co
   | Add -> old+co in
-  Code.value_of_int new_value
+  PteVal.value_of_int new_value
 
 include NoEdge
