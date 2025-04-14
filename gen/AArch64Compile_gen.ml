@@ -2078,7 +2078,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let rA,cs,st = sumi_addr st rA o in
           cs@[ins_mixed sz a rW rR rA],st in
       let cs2 = emit_ldr_addon opt rR in
-      rR,init,csi@csi2@pseudo (cs@cs2),st
+      let final_cs = add_label_to_instructions er (csi@csi2@pseudo (cs@cs2)) in
+      rR,init,final_cs,st
 
     let do_emit_ldop ins ins_mixed st p init er ew =
       let rA,init,st =
@@ -2244,7 +2245,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               assert (Misc.is_none m) ;
               Some (a,Some (MachSize.S128,0))
             | _ -> Some (a,m) end in
-          begin match d,atom with
+          let regs,inits,cs,st = begin match d,atom with
           | R,None ->
               let r,init,cs,st =
                 LDR.emit_load_idx_var vloc vdep st p init loc r2 in
@@ -2459,8 +2460,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (Neon _,Some _) -> assert false
           | J,_ -> emit_joker st init
           | _,Some (Plain _,None) -> assert false
-          end
-      | _,Code _ -> Warn.fatal "No dependency to code location"
+          end in
+          (* Add a label to instructions `cs`, when a fault check is required. *)
+          regs,inits,(add_label_to_instructions e cs),st
+        | _,Code _ -> Warn.fatal "No dependency to code location"
       (* END of emit_access_dep_addr *)
 
     let emit_addr_dep csel vdep st p init loc rd =
@@ -2522,7 +2525,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | _ -> Some (a,m) end in
       (* collapse the value `v` in event `e` to integer *)
       let value = Code.value_to_int e.C.v in
-      match e.C.dir,e.C.loc with
+      let regs,inits,cs,st = match e.C.dir,e.C.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some R,_ -> Warn.fatal "data dependency to load"
       | Some W,Data loc ->
@@ -2672,8 +2675,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           end
       (* END of `Some W` *)
       | Some J,_ -> emit_joker st init
-      | _,Code _ -> Warn.fatal "Not Yet (%s,dep_data)" (C.debug_evt e)
-      (* END of emit_access_dep_data *)
+      | _,Code _ -> Warn.fatal "Not Yet (%s,dep_data)" (C.debug_evt e) in
+    regs,inits,(add_label_to_instructions e cs),st
+    (* END of emit_access_dep_data *)
 
     let is_ctrlisync = function
       | D.CTRLISYNC -> true
