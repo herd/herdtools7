@@ -27,5 +27,6 @@ type answer =
         * StringSet.t    (* cycles *)
         * hash_env       (* name -> hash *)
         * int            (* number of threads *)
+        * bool           (* require Pointer Authentication Code *)
   | Interrupted of Archs.t * exn
   | Absent of Archs.t

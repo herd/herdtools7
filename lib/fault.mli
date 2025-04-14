@@ -49,6 +49,7 @@ module type S = sig
     * fault_type option * string option
 
   val pp_fault : fault -> string
+  val map_fault : (loc_global -> loc_global) -> fault -> fault
 
   module FaultSet : MySet.S with type elt = fault
 

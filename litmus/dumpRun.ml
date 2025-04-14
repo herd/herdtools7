@@ -97,7 +97,7 @@ end = struct
 (* Makefile utilities *)
   let do_self = Cfg.variant Variant_litmus.Self
 
-  let makefile_vars chan infile arch sources =
+  let makefile_vars chan infile arch pac sources =
     let module O = struct
       include Cfg
       include (val (get_arch arch) : ArchConf)
@@ -137,6 +137,10 @@ end = struct
            if Cfg.stdio then utils
            else
              "platform_io.o" :: "litmus_io.o" :: utils in
+         let utils =
+           if pac then
+             "auth.o"::utils
+           else utils in
          fprintf chan "UTILS=%s\n"
            (String.concat " " utils)
     end ;
@@ -185,9 +189,9 @@ let run_tests names out_chan =
   let exp = match Cfg.index with
   | None -> None
   | Some exp -> Some (open_out exp) in
-  let  arch,docs,sources,_,_,nts =
+  let  arch,docs,sources,_,_,nts,some_pac =
     Misc.fold_argv_or_stdin
-      (fun name (a0,docs,srcs,cycles,hash_env,nts) ->
+      (fun name (a0,docs,srcs,cycles,hash_env,nts,some_pac) ->
         let ans =
           try CT.from_file cycles hash_env name out_chan
           with
@@ -195,14 +199,14 @@ let run_tests names out_chan =
               if Cfg.nocatch then raise e ;
               Interrupted (a0,e) in
         match ans with
-        | Completed (a,doc,src,cycles,hash_env,nt) ->
+        | Completed (a,doc,src,cycles,hash_env,nt,pac) ->
             begin match exp with
             | None -> ()
             | Some exp -> fprintf exp "%s\n" name
             end ;
             a,(doc::docs),(src::srcs),cycles,hash_env,
-            IntSet.add nt nts
-        | Absent a -> a,docs,srcs,cycles,hash_env,nts
+            IntSet.add nt nts,(pac || some_pac)
+        | Absent a -> a,docs,srcs,cycles,hash_env,nts,some_pac
         | Interrupted (a,e) ->
             let msg =  match e with
             | Misc.Exit -> "None"
@@ -216,8 +220,8 @@ let run_tests names out_chan =
                 eprintf "%a %s\n%!" Pos.pp_pos0 name msg ;
                 msg in
             report_failure name msg out_chan ;
-            a,docs,srcs,cycles,hash_env,nts)
-      names (`X86,[],[],StringSet.empty,StringMap.empty,IntSet.empty) in
+            a,docs,srcs,cycles,hash_env,nts,some_pac)
+      names (`X86,[],[],StringSet.empty,StringMap.empty,IntSet.empty,false) in
   begin match exp with
   | None -> ()
   | Some exp -> close_out exp
@@ -231,13 +235,13 @@ let run_tests names out_chan =
       let sysarch  = Archs.get_sysarch arch Cfg.carch
     end in
     let module Obj = ObjUtil.Make(O)(Tar) in
-    Obj.dump () in
-  arch,docs,sources,utils,nts
+    Obj.dump some_pac in
+  arch,docs,sources,utils,nts,some_pac
 
 (* Run tests (command line mode) *)
 let dump_command names =
   let out_chan = stdout in
-  let arch,_,_,utils,_ = run_tests names out_chan in
+  let arch,_,_,utils,_,_ = run_tests names out_chan in
   let module O = struct
       include Cfg
     include (val (get_arch arch) : ArchConf)
@@ -322,7 +326,7 @@ let dump_shell names =
       end ;
       let sleep = Cfg.sleep in
       if sleep >= 0 then fprintf out_chan "SLEEP=%i\n" sleep ;
-      let arch,_,sources,utils,_ = run_tests names out_chan in
+      let arch,_,sources,utils,_,pac = run_tests names out_chan in
 
       let module O = struct
         include Cfg
@@ -334,10 +338,10 @@ let dump_shell names =
         output_line out_chan "sed '2q;d' comp.sh"
        end ;
       dump_shell_postfix out_chan ;
-      arch,sources,utils)
+      arch,sources,utils,pac)
     (Tar.outname (MyName.outname "run" ".sh"))
 
-let dump_shell_cont arch sources utils =
+let dump_shell_cont arch pac sources utils =
   let sources = List.map Filename.basename  sources in
 (* Shell script for sequential compilation *)
   let module O = struct
@@ -394,7 +398,7 @@ let dump_shell_cont arch sources utils =
   Misc.output_protect
     (fun chan ->
 (* Variables *)
-      makefile_vars chan false arch sources ;
+      makefile_vars chan false arch pac sources ;
       fprintf chan "EXE=$(SRC:.c=%s)\n"
         (match Cfg.mode with
         | Mode.Std|Mode.PreSi -> ".exe"
@@ -468,7 +472,7 @@ let dump_c xcode names =
       end ;
       O.o "" ;
       O.o "/* Declarations of tests entry points */" ;
-      let arch,docs,srcs,utils,nts =
+      let arch,docs,srcs,utils,nts,pac =
         run_tests names out_chan in
       let module C = struct
         include Cfg
@@ -562,11 +566,11 @@ let dump_c xcode names =
         O.oi "return 0;" ;
         O.o"}"
       end ;
-      arch,srcs,utils,nts)
+      arch,srcs,utils,nts,pac)
     (Tar.outname (MyName.outname "run" (if xcode then ".m" else ".c")))
 
 
-let dump_c_cont xcode arch sources utils nts =
+let dump_c_cont xcode arch pac sources utils nts =
   let nts = IntSet.filter Param.mk_dsa nts in
   let shared_topology =  not (xcode || IntSet.is_empty nts) in
   let sources = List.map Filename.basename  sources in
@@ -577,7 +581,7 @@ let dump_c_cont xcode arch sources utils nts =
   let infile = not xcode in
   Misc.output_protect
     (fun chan ->
-      makefile_vars chan infile arch sources ;
+      makefile_vars chan infile arch pac sources ;
 (* Various intermediate targets *)
       fprintf chan "T=$(SRC:.c=.t)\n" ;
       fprintf chan "H=$(SRC:.c=.h)\n" ;
@@ -773,20 +777,20 @@ let from_files =
       let arch =
         match Cfg.driver with
         | Driver.Shell ->
-            let arch,sources,utils = dump_shell names in
-            dump_shell_cont arch sources utils ;
+            let arch,sources,utils,pac = dump_shell names in
+            dump_shell_cont arch pac sources utils ;
             arch
         | Driver.C|Driver.XCode as d ->
             let xcode = match d with
             | Driver.XCode -> true
             | _ -> false in
-            let arch,sources,utils,nts = dump_c xcode names in
+            let arch,sources,utils,nts,pac = dump_c xcode names in
             begin match Cfg.crossrun with
             | Crossrun.Kvm e ->
                dump_c_shell_kvm e
             | _ ->  ()
             end ;
-            dump_c_cont xcode arch sources utils nts ;
+            dump_c_cont xcode arch pac sources utils nts ;
             arch in
       if Cfg.cross then dump_cross arch
 end

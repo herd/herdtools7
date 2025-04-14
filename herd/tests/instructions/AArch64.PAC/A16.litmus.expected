@@ -1,0 +1,10 @@
+Test A16 Required
+States 1
+[x]=43;  ~Fault(P0,MMU:Translation);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (not (fault(P0,MMU:Translation)) /\ [x]=43)
+Observation A16 Always 1 0
+Hash=17016a7da33e9b766baa2bed6b5ec3f0
+

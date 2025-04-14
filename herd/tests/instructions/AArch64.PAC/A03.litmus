@@ -1,0 +1,10 @@
+AArch64 A03
+Variant=pac,fpac,const-pac-field
+
+{ 0:x0=x; int64_t 0:x1=0 }
+
+P0            ;
+  pacdza x0   ;
+  swp x1, x1,[x0] ;
+forall
+  ( Fault(P0, MMU:Translation) )

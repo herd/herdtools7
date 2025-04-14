@@ -46,7 +46,9 @@ let symb_reg_name r =
 
 let symb_reg r = sprintf "%%%s" r
 
-type arch_op = ArchOp.no_arch_op
+type arch_extra_op = ArchOp.no_extra_op
+type 'a arch_constr_op = 'a ArchOp.no_constr_op
+type arch_op = arch_extra_op arch_constr_op
 type op = arch_op Op.op
 
 let pp_phantom_archop _ = assert false

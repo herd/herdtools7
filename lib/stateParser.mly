@@ -121,7 +121,7 @@ reg:
 | DOLLARNAME {  $1 }
 
 location_global:
-| NAME { Constant.mk_sym $1  }
+| NAME { Constant.mk_sym $1 }
 | TOK_PTE LPAR NAME RPAR { Constant.mk_sym_pte  $3 }
 | TOK_PTE LPAR TOK_PTE LPAR NAME RPAR RPAR { Constant.mk_sym_pte2 $5 }
 | TOK_PA LPAR NAME RPAR { Constant.mk_sym_pa $3 }

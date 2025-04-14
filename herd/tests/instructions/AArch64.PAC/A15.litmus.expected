@@ -1,0 +1,10 @@
+Test A15 Required
+States 1
+0:X1=42;  ~Fault(P0,MMU:Translation);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (not (fault(P0,MMU:Translation)) /\ 0:X1=42)
+Observation A15 Always 1 0
+Hash=1cfeebc48d4f6b42e548bb0c8b6d859d
+

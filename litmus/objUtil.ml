@@ -60,6 +60,17 @@ module type InsertConfig = sig
   val sysarch : Archs.System.t
 end
 
+let dir_of_sysarch = function
+  | `X86 -> "_x86"
+  | `X86_64 -> "_x86_64"
+  | `PPC -> "_ppc"
+  | `ARM -> "_arm"
+  | `BPF -> "_bpf"
+  | `MIPS -> "_mips"
+  | `AArch64 -> "_aarch64"
+  | `RISCV -> "_riscv"
+  | `Unknown -> "_none"
+
 module Insert (O:InsertConfig) :
     sig
       val insert : (string -> unit) -> string -> unit
@@ -69,16 +80,7 @@ module Insert (O:InsertConfig) :
     end =
   struct
 
-    let dir = match O.sysarch with
-      | `X86 -> "_x86"
-      | `X86_64 -> "_x86_64"
-      | `PPC -> "_ppc"
-      | `ARM -> "_arm"
-      | `BPF -> "_bpf"
-      | `MIPS -> "_mips"
-      | `AArch64 -> "_aarch64"
-      | `RISCV -> "_riscv"
-      | `Unknown -> "_none"
+    let dir = dir_of_sysarch O.sysarch
 
     let find_lib src =
       let n1 = Filename.concat dir src in
@@ -144,8 +146,8 @@ module Make(O:Config)(Tar:Tar.S) =
 
     let actual_name name ext = Tar.outname (name ^ ext)
 
-    let do_cpy ?prf fnames src tgt ext =
-      let _,in_chan = MyName.open_lib (src ^ ext) in
+    let do_cpy ?sub ?prf fnames src tgt ext =
+      let _,in_chan = MyName.open_lib ?sub (src ^ ext) in
       let fnames =
         begin try
           let fname = actual_name tgt ext in
@@ -156,10 +158,12 @@ module Make(O:Config)(Tar:Tar.S) =
       fnames
 
 (* Copy lib file *)
-    let cpy ?prf fnames name ext = do_cpy ?prf fnames ("_" ^ name) name ext
+    let cpy ?sub ?prf fnames name ext =
+      do_cpy ?sub ?prf fnames ("_" ^ name) name ext
 
 (* Copy lib file, changing its name *)
-    let cpy' ?prf fnames src dst ext = do_cpy ?prf fnames ("_" ^ src) dst ext
+    let cpy' ?sub ?prf fnames src dst ext =
+      do_cpy ?sub ?prf fnames ("_" ^ src) dst ext
 
 (* Copy from platform subdirectory *)
     let cpy_platform fnames name ext =
@@ -177,7 +181,7 @@ module Make(O:Config)(Tar:Tar.S) =
     | Mac as os ->
         Warn.fatal "Affinity not implemented for %s" (TargetOS.pp os)
 
-    let dump () =
+    let dump some_pac =
       let fnames = [] in
       let fnames = match O.driver with
       | Driver.Shell -> fnames
@@ -256,6 +260,13 @@ module Make(O:Config)(Tar:Tar.S) =
             let fnames = do_cpy fnames affi "affinity" ".c" in
             let fnames = cpy fnames "affinity" ".h" in
             fnames in
+      let fnames =
+        if some_pac then
+          let sub = dir_of_sysarch O.sysarch in
+          let fnames = cpy ~sub:sub fnames "auth" ".c" in
+          let fnames = cpy ~sub:sub fnames "auth" ".h" in
+          fnames
+        else fnames in
       fnames
 
   end

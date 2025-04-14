@@ -484,7 +484,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             | ADD | ADDS | SUB | SUBS ->
                 "dpreg/addsub_shift/"
               | AND | ANDS | BIC | BICS | EOR | EON | ORN | ORR ->
-                "dpreg/log_shift/"                
+                "dpreg/log_shift/"
             | _ -> assert false
           and fname =
             match op with
@@ -780,7 +780,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             | V.Var n -> n
             | _ -> assert false in
           let eq =
-            let op = AArch64Op.Extra (ASLOp.ToBV 64) in
+            let op = AArch64Op.Extra1 (ASLOp.ToBV 64) in
             M.VC.Assign (nv,M.VC.Unop (Op.ArchOp1 op,v))  in
           ASLS.A.V.Var nid,[eq]
       | V.Val cst ->
@@ -878,7 +878,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           match A.look_reg regq ii.A.env.A.regs with
           | Some v -> Some (aarch64_to_asl v)
           | None -> None
-        in    
+        in
         (match v with Some v -> ASLS.A.state_add st resaddr v | None -> st),eqs
       in
       let test = { test with Test_herd.init_state = init } in
@@ -918,16 +918,71 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         in
         nloc
 
-      let tr_op op acc v1 v2 = (M.VC.Binop (op, tr_v v1, tr_v v2), acc)
+      let tr_arch_op op acc v1 v2 =
+        (M.VC.Binop ((Op.ArchOp (AArch64Op.Extra op)), tr_v v1, tr_v v2), acc)
+
+      let tr_op =
+        let open Op in
+        function
+        | ArchOp op -> tr_arch_op op
+        | op ->
+            (* convert the type of `op` from `'a Op.op` to `'b Op.op` *)
+            let new_op =
+              match op with
+              | Add -> Add
+              | Sub -> Sub
+              | Mul -> Mul
+              | Div -> Div
+              | Rem -> Rem
+              | And -> And
+              | Or  -> Or
+              | Xor -> Xor
+              | Nor -> Nor
+              | AndNot2 -> AndNot2
+              | ASR -> ASR
+              | CapaAdd -> CapaAdd
+              | Alignd -> Alignd
+              | Alignu -> Alignu
+              | Build -> Build
+              | ClrPerm -> ClrPerm
+              | CpyType -> CpyType
+              | CSeal -> CSeal
+              | Cthi -> Cthi
+              | Seal -> Seal
+              | SetValue -> SetValue
+              | CapaSub -> CapaSub
+              | CapaSubs -> CapaSubs
+              | CapaSetTag -> CapaSetTag
+              | Unseal -> Unseal
+              | ShiftLeft -> ShiftLeft
+              | ShiftRight -> ShiftRight
+              | Lsr -> Lsr
+              | Lt -> Lt
+              | Gt -> Gt
+              | Eq -> Eq
+              | Ne -> Ne
+              | Le -> Le
+              | Ge -> Ge
+              | Max -> Max
+              | Min -> Min
+              | UMax -> UMax
+              | UMin -> UMin
+              | SetTag -> SetTag
+              | SquashMutable -> SquashMutable
+              | CheckPerms s -> CheckPerms s
+              | ToInteger -> ToInteger
+              | ArchOp _ -> assert false
+            in fun acc v1 v2 -> (M.VC.Binop (new_op, tr_v v1, tr_v v2), acc)
 
       let tr_arch_op1 op acc v =
-        (M.VC.Unop (Op.ArchOp1 (AArch64Op.Extra op), tr_v v), acc)
+        (M.VC.Unop (Op.ArchOp1 (AArch64Op.Extra1 op), tr_v v), acc)
 
       let tr_op1 =
         let open Op in
         function
         | ArchOp1 op -> tr_arch_op1 op
         | op ->
+            (* convert the type of `op` from `'a Op.op1` to `'b Op.op1` *)
             let new_op =
               match op with
               | Not -> Not

@@ -17,7 +17,9 @@
 (** Operations that are arch specific *)
 
 module type S = sig
-  type op
+  type extra_op
+  type 'a constr_op
+  type op = extra_op constr_op
   type extra_op1
   type 'a constr_op1
   type op1 = extra_op1 constr_op1
@@ -52,18 +54,22 @@ end
 
 type no_extra_op1
 type 'a no_constr_op1
-type no_arch_op
+type no_extra_op
+type 'a no_constr_op
 
 module No (Cst : Constant.S) :
   S
     with type scalar = Cst.Scalar.t
      and type pteval = Cst.PteVal.t
      and type instr = Cst.Instr.t
-     and type op = no_arch_op
+     and type extra_op = no_extra_op
+     and type 'a constr_op = 'a no_constr_op
      and type extra_op1 = no_extra_op1
      and type 'a constr_op1 = 'a no_constr_op1
 = struct
-  type op = no_arch_op
+  type extra_op = no_extra_op
+  type 'a constr_op = 'a no_constr_op
+  type op = extra_op constr_op
   type extra_op1 = no_extra_op1
   type 'a constr_op1 = 'a no_constr_op1
   type op1 = extra_op1 constr_op1
@@ -112,11 +118,14 @@ module OnlyArchOp1 (A : S1) :
      and type scalar = A.scalar
      and type pteval = A.pteval
      and type instr = A.instr
-     and type op = no_arch_op
+     and type extra_op = no_extra_op
+     and type 'a constr_op = 'a no_constr_op
 = struct
   include A
 
-  type op = no_arch_op
+  type extra_op = no_extra_op
+  type 'a constr_op = 'a no_constr_op
+  type op = extra_op constr_op
 
   let pp_op _ = assert false
   let do_op _ _ _ = None
