@@ -261,13 +261,16 @@ module Make (O:Config) (E:Edge.S) :
       match e.bank with
       | Pte -> PteVal.pp e.pte
       | (Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _|Instr) -> debug_val e.v in
-    sprintf "%s%s %s %s%s%s%s%s"
+    sprintf "%s%s %s %s%s%s%s%s %s"
       (debug_dir e.dir)
       (debug_atom e.atom)
       (Code.pp_loc e.loc)
       (match debug_vec e.cell with
        | "" -> "" | s -> "cell=[" ^ s ^"] ")
       pp_v (debug_tag e) (debug_morello e) (debug_vector e)
+      (match e.check_fault with
+      | Some (l,_) -> l
+      | None -> "")
 
   let debug_edge = E.pp_edge
 
