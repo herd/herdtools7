@@ -261,7 +261,7 @@ module Make (O:Config) (E:Edge.S) :
       match e.bank with
       | Pte -> PteVal.pp e.pte
       | (Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _|Instr) -> debug_val e.v in
-    sprintf "%s%s %s %s%s%s%s%s %s"
+    sprintf "%s%s %s %s%s%s%s%s %s %s"
       (debug_dir e.dir)
       (debug_atom e.atom)
       (Code.pp_loc e.loc)
@@ -271,6 +271,7 @@ module Make (O:Config) (E:Edge.S) :
       (match e.check_fault with
       | Some (l,_) -> l
       | None -> "")
+      (if e.rmw then "rmw" else "")
 
   let debug_edge = E.pp_edge
 
@@ -503,7 +504,6 @@ let diff_loc e = not (same_loc e)
 let same_proc e = E.get_ie e = Int
 let diff_proc e = E.get_ie e = Ext
 
-
 (* Coherence definition *)
 
 module CoSt = struct
@@ -580,6 +580,29 @@ module CoSt = struct
   let read_and_unset_check_fault st =
     st.check_fault, {st with check_fault = false }
 
+  (* Check if `pte_val` might fault *)
+  let label_fault pte_val = Some ((Label.next_label "L"), (PteVal.can_fault pte_val))
+
+  (* Helper function returns a fresh label and a boolean for if it should fault,
+     if a fault check is need. Otherwise return `None` *)
+  let fault_update st =
+    let check_fault, st = read_and_unset_check_fault st in
+    let pte_val = get_pte_value st in
+    let fault =
+      if check_fault then
+        if do_kvm then label_fault pte_val
+        (* While `memory tag` mode, any memory tag write to a variable
+           invalidates the tag, hence leads to fault. However, due to
+           potential weak memory behaviour, the final postcondition checks
+           if memory load to the variable can still observe the default,
+           and valid memory tag. Therefore we take a short cut here by
+           always inject a negtive check once a tag to the variable changes.*)
+        else if do_memtag then begin Some ((Label.next_label "L"), false) end
+        else None
+      else None in
+    fault, st
+
+
   (* TODO the `st` has never been updated ? *)
   let set_tcell st e = match e.bank with
     | Tag ->
@@ -616,9 +639,6 @@ let pte_val_init ns loc =
          ) ns in
       PteVal.init loc atom_list
     | _ -> pte_default
-
-(* Check if `pte_val` might fault *)
-let label_fault pte_val = Some ((Label.next_label "L"), (PteVal.can_fault pte_val))
 
 (****************************)
 (* Add events in edge cycle *)
@@ -945,20 +965,18 @@ let set_same_loc st n0 =
       | Some W ->
           begin
           let check_value = Some (CoSt.get_check_value st) in
+          (* No need to add fault check in read modify write
+             situation, as the label will be assigned in read *)
+          let fault_update_without_rmw st =
+            if n.evt.rmw then None,st else CoSt.fault_update st in
           match n.evt.loc with
           | Data _ ->
-            (* Helper function returns a fresh label and a boolean for if it should fault,
-               if a fault check is need. Otherwise return `None` *)
-            let fault_update st =
-              let check_fault, st = CoSt.read_and_unset_check_fault st in
-              let pte_val = CoSt.get_pte_value st in
-              (if do_kvm && check_fault then label_fault pte_val else None), st in
             let bank = n.evt.bank in
             begin match bank with
             | Instr -> Warn.fatal "instruction annotation to data bank not possible?"
             | Ord ->
               let st = set_write_val_ord st n in
-              let check_fault, st = fault_update st in
+              let check_fault, st = fault_update_without_rmw st in
               n.evt <- { n.evt with check_fault; check_value; };
               (next_x_ok, st)
             | Pair ->
@@ -969,10 +987,17 @@ let set_same_loc st n0 =
               assert (Array.length cell>=2) ;
               let st = CoSt.next_co st Ord in (* Pre-increment *)
               let st = set_write_val_ord st n in
-              let check_fault, st = fault_update st in
+              let check_fault, st = fault_update_without_rmw st in
               n.evt <- { n.evt with check_fault; check_value; };
               (next_x_ok, st)
-            | Tag|CapaTag|CapaSeal ->
+            | Tag ->
+              let st = CoSt.next_co st bank |> CoSt.set_check_fault in
+              let v = CoSt.get_co st bank in
+              n.evt <- { n.evt with v = v; check_value; } ;
+              let e,st = CoSt.set_tcell st n.evt in
+              n.evt <- e ;
+              (next_x_ok, st)
+            | CapaTag|CapaSeal ->
               let st = CoSt.next_co st bank in
               let v = CoSt.get_co st bank in
               n.evt <- { n.evt with v = v; check_value; } ;
@@ -1058,7 +1083,7 @@ let set_same_loc st n0 =
                  and `check_fault` depend on if there are write to
                  the variable and pte respectively. *)
               let check_value = exist_plain_value_write ns in
-              let check_fault = exist_pte_value_write ns in
+              let check_fault = exist_pte_value_write ns || exist_mem_tag_write ns in
               let init_st = CoSt.create i sz pte_val check_value check_fault in
               let next_x_ok,_st = do_set_write_val false init_st ns in
               (* Add pte initial values when kvm and the value is not default *)
@@ -1155,47 +1180,37 @@ let do_set_read_v =
         let check_value = Some (CoSt.get_check_value st) in
         begin match bank with
         | Ord | Instr->
-          set_read_individual_v n cell check_value
+          set_read_individual_v n cell check_value;
+          let check_fault, st = CoSt.fault_update st in
+          n.evt <- { n.evt with check_fault };
+          st
         | Pair ->
-          set_read_pair_v n cell check_value
+          set_read_pair_v n cell check_value;
+          let check_fault, st = CoSt.fault_update st in
+          n.evt <- { n.evt with check_fault };
+          st
         | VecReg a ->
           let cell = Array.map Code.value_to_int cell in
           let v = E.SIMD.read a cell
                    |> E.SIMD.reduce
                    |> Code.value_of_int in
-          n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; }
+          let check_fault, st = CoSt.fault_update st in
+          n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
+          st
         | Tag|CapaTag|CapaSeal ->
-          n.evt <- { n.evt with v = CoSt.get_co st bank; check_value; }
+          n.evt <- { n.evt with v = CoSt.get_co st bank; check_value; };
+          st
         | Pte ->
-          n.evt <- { n.evt with pte = CoSt.get_pte_value st; }
-        end ;
-        (* Update if this memory load might fault *)
-        let fault_update st =
-          let check_fault, st = CoSt.read_and_unset_check_fault st in
-          let pte_val = CoSt.get_pte_value st in
-          let fault =
-            if check_fault then
-              if do_kvm then label_fault pte_val
-              (* While `memory tag` mode, any memory tag write to a variable
-                 invalidates the tag, hence leads to fault. However, due to
-                 potential weak memory behaviour, the final postcondition checks
-                 if memory load to the variable can still observe the default,
-                 and valid memory tag. Therefore we take a short cut here by
-                 always inject a negtive check once a tag to the variable changes.*)
-              else if do_memtag then begin  Some ((Label.next_label "L"), false) end
-              else None
-            else None in
-          fault, st in
-        let fault, st = fault_update st in
-        n.evt <- { n.evt with check_fault = fault };
-        st
+          n.evt <- { n.evt with pte = CoSt.get_pte_value st; };
+          st
+        end
       (* Update `st`, `cell` and `pte_cell` for future read events *)
       | Some W ->
         let st =
           match bank with
           | Tag -> CoSt.set_co st bank (Code.value_to_int n.evt.v)
                    |> CoSt.set_check_fault
-          |CapaTag|CapaSeal ->
+          | CapaTag|CapaSeal ->
              CoSt.set_co st bank (Code.value_to_int n.evt.v)
           |Ord|Pair|VecReg _ ->
               (* Record the cell value in `st` in
