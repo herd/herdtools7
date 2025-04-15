@@ -366,6 +366,11 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDRSW (r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
       | I_LDRS (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
         -> [r1;r2;]
+      | I_OP3 (_,(ADDS|SUBS|ANDS),r,_,_)
+      | I_ADDSUBEXT (_,(Ext.(ADDS|SUBS)),r,_,_,_)
+        ->
+          let open PSTATE in
+          [r;PState N;PState Z;PState C;PState V;]
       | I_LDR (_,r,_,_)
       | I_LDRSW (r,_,_)
       | I_LDRBH (_,r,_,_)
