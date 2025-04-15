@@ -26,6 +26,24 @@ let base_type = CType.Base "int"
 (* Registers *)
 (*************)
 
+module PSTATE = struct
+  type t =
+    | N
+    | Z
+    | C
+    | V
+
+  let to_string = function
+    | N -> "N"
+    | Z -> "Z"
+    | C -> "C"
+    | V -> "V"
+
+  let pp p = "PSTATE." ^ (to_string p)
+
+  let all = [N; Z; C; V]
+end
+
 type gpr =
   | R0  | R1  | R2  | R3
   | R4  | R5  | R6  | R7
@@ -135,7 +153,7 @@ type reg =
   | ZAreg of (int * za_direction option * int)
   | Symbolic_reg of string
   | Internal of int
-  | NZCV
+  | PState of PSTATE.t
   | SM (* PSTATE.SM *)
   | ZA (* PSTATE.ZA *)
   | SP
@@ -200,7 +218,7 @@ let gprs =
   R28; R29; R30;
 ]
 
-let nzcv_regs = [NZCV;]
+let nzcv_regs = List.map (fun r -> PState r) PSTATE.all
 
 let vec_regs =
 [
@@ -374,14 +392,6 @@ let pvrs =
   P12,"P12"; P13,"P13"; P14,"P14"; P15,"P15";
 ]
 
-let zavrs =
-  [
-    ZA ,"ZA0";  ZA ,"ZA1";  ZA ,"ZA2";  ZA ,"ZA3";
-    ZA ,"ZA4";  ZA ,"ZA5";  ZA ,"ZA6";  ZA ,"ZA7";
-    ZA ,"ZA8";  ZA ,"ZA9";  ZA ,"ZA10"; ZA ,"ZA11";
-    ZA ,"ZA12"; ZA ,"ZA13"; ZA ,"ZA14"; ZA ,"ZA15";
-  ]
-
 let simd_regs =
   let rs = bvrs @ hvrs @ svrs @ dvrs @ qvrs in
   List.map (fun (r,s) -> s,SIMDreg r) rs
@@ -479,14 +489,14 @@ let pp_sysreg r = try List.assoc r sysregs with Not_found -> assert false
 let pp_creg r = match r with
 | Symbolic_reg r -> "C%" ^ r
 | Internal i -> Printf.sprintf "i%i" i
-| NZCV -> "NZCV"
+| PState p -> PSTATE.pp p
 | ResAddr -> "Res"
 | _ -> try List.assoc r cregs with Not_found -> assert false
 
 let pp_xreg r = match r with
 | Symbolic_reg r -> "X%" ^ r
 | Internal i -> Printf.sprintf "i%i" i
-| NZCV -> "NZCV"
+| PState p -> PSTATE.pp p
 | ResAddr -> "Res"
 | PC -> "PC"
 | SM -> "PSTATE.SM"
@@ -551,7 +561,7 @@ let pp_i n = match n with
 let pp_wreg r = match r with
 | Symbolic_reg r -> "W%" ^ r
 | Internal i -> Printf.sprintf "i%i" i
-| NZCV -> "NZCV"
+| PState p -> PSTATE.pp p
 | ResAddr -> "Res"
 | _ -> try List.assoc r wregs with Not_found -> assert false
 
@@ -2531,7 +2541,7 @@ let fold_regs (f_regs,f_sregs) =
   | Preg _ -> f_regs reg y_reg,y_sreg
   | PMreg _ -> f_regs reg y_reg,y_sreg
   | Symbolic_reg reg ->  y_reg,f_sregs reg y_sreg
-  | Internal _ | NZCV | ZR | SP | PC | SM | ZA | ZAreg _
+  | Internal _ | PState _ | ZR | SP | PC | SM | ZA | ZAreg _
   | ResAddr | Tag _ | SysReg _
     -> y_reg,y_sreg in
 
@@ -2674,7 +2684,7 @@ let map_regs f_reg f_symb =
   | PMreg _ -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
   | Internal _ | ZR | SP| PC | SM | ZA | ZAreg _
-  | NZCV | ResAddr | Tag _ | SysReg _
+  | PState _ | ResAddr | Tag _ | SysReg _
     -> reg in
 
   let map_kr kr = match kr with

@@ -1,12 +1,10 @@
 // Experimental implementation of PSTATE as two independant variables.
 
 var _PSTATE : ProcState;
-var _NZCV : ProcState;
-
-func isNZCV(n:integer) => boolean
-begin
-  return 0 <= n && n < 4 ;
-end;
+var _PSTATE_N: bits(1);
+var _PSTATE_Z: bits(1);
+var _PSTATE_C: bits(1);
+var _PSTATE_V: bits(1);
 
 accessor PSTATE() <=> ProcState
 begin
@@ -22,16 +20,28 @@ end;
 accessor PSTATE(n:integer) <=> bits(1)
 begin
   getter begin
-    if isNZCV(n) then
-      return _NZCV[n];
+    if n == 3 then
+      return _PSTATE_N;
+    elsif n == 2 then
+      return _PSTATE_Z;
+    elsif n == 1 then
+      return _PSTATE_C;
+    elsif n == 0 then
+      return _PSTATE_V;
     else
       return _PSTATE[n];
     end;
   end;
 
   setter = v begin
-    if isNZCV(n) then
-      _NZCV[n] = v;
+    if n == 3 then
+      _PSTATE_N = v;
+    elsif n == 2 then
+      _PSTATE_Z = v;
+    elsif n == 1 then
+      _PSTATE_C = v;
+    elsif n == 0 then
+      _PSTATE_V = v;
     else
       _PSTATE[n] = v;
     end;
@@ -41,56 +51,38 @@ end;
 accessor PSTATE(n:integer,m:integer) <=> bits(2)
 begin
   getter begin
-    if isNZCV(n) && isNZCV(m) then
-      return _NZCV[n,m];
-    else
-      return _PSTATE[n,m];
-    end;
+    return PSTATE(n) :: PSTATE(m);
   end;
 
   setter = v begin
-    if isNZCV(n) && isNZCV(m) then
-      _NZCV[n,m] = v;
-    else
-      _PSTATE[n,m] = v;
-    end;
+    PSTATE(n) = v[1];
+    PSTATE(m) = v[0];
   end;
 end;
 
 accessor PSTATE(n:integer,m:integer,o:integer) <=> bits(3)
 begin
   getter begin
-    if isNZCV(n) && isNZCV(m) && isNZCV(o) then
-      return _NZCV[n,m,o];
-    else
-      return _PSTATE[n,m,o];
-    end;
+    return PSTATE(n) :: PSTATE(m) :: PSTATE(o);
   end;
 
   setter = v begin
-    if isNZCV(n) && isNZCV(m) && isNZCV(o) then
-      _NZCV[n,m,o] = v;
-    else
-      _PSTATE[n,m,o] = v;
-    end;
+    PSTATE(n) = v[2];
+    PSTATE(m) = v[1];
+    PSTATE(o) = v[0];
   end;
 end;
 
 accessor PSTATE(n:integer,m:integer,o:integer,p:integer) <=> bits(4)
 begin
   getter begin
-    if isNZCV(n) && isNZCV(m) && isNZCV(o) && isNZCV(p) then
-      return _NZCV[n,m,o,p];
-    else
-      return _PSTATE[n,m,o,p];
-    end;
+    return PSTATE(n) :: PSTATE(m) :: PSTATE(o) :: PSTATE(p);
   end;
 
   setter = v begin
-    if isNZCV(n) && isNZCV(m) && isNZCV(o) && isNZCV(p) then
-      _NZCV[n,m,o,p] = v;
-    else
-      _PSTATE[n,m,o,p] = v;
-    end;
+    PSTATE(n) = v[3];
+    PSTATE(m) = v[2];
+    PSTATE(o) = v[1];
+    PSTATE(p) = v[0];
   end;
 end;
