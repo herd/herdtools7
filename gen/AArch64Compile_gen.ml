@@ -1725,7 +1725,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let get_tagged_loc e = add_tag (as_data e.C.loc) e.C.tag
 
-    let emit_access st p init e = 
+    let add_label_to_instructions e cs =
+      match e.C.check_fault with
+      | Some (label_name, _) ->
+        (* Always label the last instruction,
+           which should be the actual load or store. *)
+        let rec do_rec = function
+          | [] -> assert false (* the `cs` should not be empty *)
+          | [instr] -> [Label(label_name, instr)]
+          | instr::rem -> instr::do_rec rem in
+        do_rec cs
+      | None -> cs
+
+    let emit_access st p init e =
     (* collapse the value `v` in event `e` to integer *)
     let value = Code.value_to_int e.C.v in
     match e.C.dir,e.C.loc with
@@ -1735,7 +1747,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some (Instr, None) ->
             let r,init,cs,st = LDR.emit_fetch st p init lab in
             Some r,init,cs,st
-        (* Plain read from an instruction label is currently not supported, 
+        (* Plain read from an instruction label is currently not supported,
            but will be implemented in a future patch
         | R, None ->
             let r,init,cs,st = LDR.emit_load st p init lab in
@@ -1759,12 +1771,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             assert (Misc.is_none m) ;
             Some (a,Some (MachSize.S128,0))
           | _ -> Some (a,m) end in
-        begin match d,atom with
+        (* Compile the node.
+           - `regs`, registers
+           - `inits`, initial values
+           - `cs`, instructions
+           - `st`, states
+        *)
+        let regs,inits,cs,st = begin match d,atom with
         | R,None ->
             let r,init,cs,st = LDR.emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (Acq _,None) ->
-            let r,init,cs,st = LDAR.emit_load st p init loc  in
+            let r,init,cs,st = LDAR.emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (Acq a,Some (sz,o)) ->
             let module L =
@@ -1780,7 +1798,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let cs2 = emit_ldr_addon a r in
             Some r,init,cs@pseudo cs2,st
         | R,Some (AcqPc _,None) ->
-            let r,init,cs,st = LDAPR.emit_load st p init loc  in
+            let r,init,cs,st = LDAPR.emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (AcqPc a,Some (sz,o)) ->
             let module L =
@@ -1887,7 +1905,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             | _ -> assert false in
             let r,init,cs,st = emit A64.V64 st p init (Misc.add_pte loc) in
             Some r,init,cs,st
-        | W,Some (Pte (Set _),None) ->
+        | W,Some (Pte (Set _|SetOne _|SetZero _),None) ->
             let init,cs,st =
               emit_set_pteval false st p init e.C.pte (Misc.add_pte loc) in
             None,init,cs,st
@@ -1929,7 +1947,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
            let init,cs,st = emit_store st p init loc value in
            None,init,cs,st
         | W,Some (Neon _,Some _) -> assert false
-        end
+        end in
+        (* Add a label to instructions `cs`, when a fault check is required. *)
+        let cs = add_label_to_instructions e cs in
+        regs,inits,cs,st
     (* END of emit_access *)
 
     let same_sz sz1 sz2 = match sz1,sz2 with
@@ -2057,7 +2078,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let rA,cs,st = sumi_addr st rA o in
           cs@[ins_mixed sz a rW rR rA],st in
       let cs2 = emit_ldr_addon opt rR in
-      rR,init,csi@csi2@pseudo (cs@cs2),st
+      let final_cs = add_label_to_instructions er (csi@csi2@pseudo (cs@cs2)) in
+      rR,init,final_cs,st
 
     let do_emit_ldop ins ins_mixed st p init er ew =
       let rA,init,st =
@@ -2223,7 +2245,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               assert (Misc.is_none m) ;
               Some (a,Some (MachSize.S128,0))
             | _ -> Some (a,m) end in
-          begin match d,atom with
+          let regs,inits,cs,st = begin match d,atom with
           | R,None ->
               let r,init,cs,st =
                 LDR.emit_load_idx_var vloc vdep st p init loc r2 in
@@ -2438,8 +2460,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (Neon _,Some _) -> assert false
           | J,_ -> emit_joker st init
           | _,Some (Plain _,None) -> assert false
-          end
-      | _,Code _ -> Warn.fatal "No dependency to code location"
+          end in
+          (* Add a label to instructions `cs`, when a fault check is required. *)
+          regs,inits,(add_label_to_instructions e cs),st
+        | _,Code _ -> Warn.fatal "No dependency to code location"
       (* END of emit_access_dep_addr *)
 
     let emit_addr_dep csel vdep st p init loc rd =
@@ -2501,7 +2525,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | _ -> Some (a,m) end in
       (* collapse the value `v` in event `e` to integer *)
       let value = Code.value_to_int e.C.v in
-      match e.C.dir,e.C.loc with
+      let regs,inits,cs,st = match e.C.dir,e.C.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some R,_ -> Warn.fatal "data dependency to load"
       | Some W,Data loc ->
@@ -2606,7 +2630,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (Tag, None) ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
-          | Some (Pte (Set _),None) ->
+          | Some (Pte (Set _|SetOne _|SetZero _),None) ->
               let init,cs,st = emit_set_pteval_reg false st p init r2 (Misc.add_pte loc) in
               None,init,cs2@cs,st
           | Some (Pte (SetRel _),None) ->
@@ -2649,9 +2673,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              None,init,cs2@cs,st
           | Some (Pair _,Some _) -> assert false
           end
+      (* END of `Some W` *)
       | Some J,_ -> emit_joker st init
-      | _,Code _ -> Warn.fatal "Not Yet (%s,dep_data)" (C.debug_evt e)
-      (* END of emit_access_dep_data *)
+      | _,Code _ -> Warn.fatal "Not Yet (%s,dep_data)" (C.debug_evt e) in
+    regs,inits,(add_label_to_instructions e cs),st
+    (* END of emit_access_dep_data *)
 
     let is_ctrlisync = function
       | D.CTRLISYNC -> true

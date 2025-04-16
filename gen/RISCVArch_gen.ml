@@ -230,6 +230,7 @@ include
 
       let free_registers = allowed_for_symb
       include NoSpecial
+      module PteVal_gen = PteVal
     end)
 
  end
