@@ -58,14 +58,15 @@ module
         with Not_found ->
           M.read_loc is_data (mk_read reg_sz false []) (A.Location_reg (ii.A.proc,r)) ii
 
-      let read_reg_ord = read_reg false
-      and read_reg_data = read_reg true
-
+      let read_reg_ord = read_reg Port.No
+      and read_reg_data = read_reg Port.Data
+      and read_reg_addr = read_reg Port.Addr
+      
       let read_mem sz a s ii =
-        M.read_loc false (mk_read sz false s) (A.Location_global a) ii
+        M.read_loc Port.No (mk_read sz false s) (A.Location_global a) ii
 
       let read_mem_atom sz a s ii =
-        M.read_loc false (mk_read sz true s) (A.Location_global a) ii
+        M.read_loc Port.No (mk_read sz true s) (A.Location_global a) ii
 
 
 (*    let read_mem_atom cop a ii =
@@ -87,26 +88,26 @@ module
       let create_barrier b o ii =
         M.mk_singleton_es (Act.Barrier(b,o)) ii
 
-      let read_roa is_data ?(stack=[]) roa ii =
+      let read_roa port ?(stack=[]) roa ii =
         match roa with
-        | BellBase.Rega r -> read_reg is_data ~stack:stack r ii
+        | BellBase.Rega r -> read_reg port ~stack:stack r ii
         | BellBase.Abs a -> (M.unitT (V.nameToV a))
 
-      let read_roi is_data roi ii =
+      let read_roi port roi ii =
         match roi with
-        | BellBase.Regi r -> read_reg is_data r ii
+        | BellBase.Regi r -> read_reg port r ii
         | BellBase.Imm i -> (M.unitT (V.intToV i))
 
-      let read_iar is_data ?(stack=[]) roi ii =
+      let read_iar port ?(stack=[]) roi ii =
         match roi with
-        | BellBase.IAR_roa roa -> read_roa is_data ~stack:stack roa ii
+        | BellBase.IAR_roa roa -> read_roa port ~stack:stack roa ii
         | BellBase.IAR_imm i -> (M.unitT (V.intToV i))
 
       let solve_addr_op ao ii = match ao with
-      | BellBase.Addr_op_atom roa -> read_roa false roa ii
+      | BellBase.Addr_op_atom roa -> read_roa Port.Addr roa ii
       | BellBase.Addr_op_add(roa,roi) ->
-          (read_roa false roa ii >>|
-          read_roi false roi ii) >>=
+          (read_roa Port.Addr roa ii >>|
+          read_roi Port.Addr roi ii) >>=
           (fun (v1,v2) -> M.op Op.Add v1 v2)
 
       let tr_op ?(stack=[]) ii = function
@@ -118,9 +119,9 @@ module
             | BellBase.Eq -> Op.Eq
             | BellBase.Neq -> Op.Ne
             in
-            ((read_iar false ~stack:stack x ii) >>| (read_iar false ~stack:stack y ii)) >>=
+            ((read_iar Port.No ~stack:stack x ii) >>| (read_iar Port.No ~stack:stack y ii)) >>=
             (fun (v1,v2) -> M.op op v1 v2)
-        | BellBase.RAI(i) -> (read_iar false ~stack:stack i ii)
+        | BellBase.RAI(i) -> (read_iar Port.No ~stack:stack i ii)
 
       let tr_mov r op ii =
         (tr_op ii op) >>= (fun v -> write_reg r v ii)
@@ -143,7 +144,7 @@ module
               let s = match s with
               | ["assign"] when compat -> ["release"]
               | _ -> s in
-              (solve_addr_op addr_op ii >>| read_roi true roi ii)
+              (solve_addr_op addr_op ii >>| read_roi Port.Data roi ii)
               >>= fun (addr,v) -> write_mem nat_sz addr v s ii
               >>= B.next1T
 
@@ -175,7 +176,7 @@ module
                   M.exch r1 r2 w1 w2) >>= fun ((),()) -> B.nextT
               end
           | BellBase.Pbranch(Some r,lbl,_) ->
-              (read_reg false r ii) >>=
+              (read_reg Port.No r ii) >>=
               (fun v -> commit ii >>= fun () -> B.bccT v lbl)
 
           | BellBase.Pbranch(None ,lbl,_) ->  B.branchT lbl

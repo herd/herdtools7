@@ -79,15 +79,16 @@ struct
       Act.Access (Dir.R, loc, v, ato, (), sz, Act.access_of_location_std loc)
     ;;
 
-    let read_reg is_data r ii =
-      M.read_loc is_data (mk_read nat_sz BPF.N) (A.Location_reg (ii.A.proc, r)) ii
+    let read_reg port r ii =
+      M.read_loc port (mk_read nat_sz BPF.N) (A.Location_reg (ii.A.proc, r)) ii
     ;;
 
-    let read_reg_ord = read_reg false
-    let read_reg_data = read_reg true
+    let read_reg_ord = read_reg Port.No
+    let read_reg_data = read_reg Port.Data
+    let read_reg_addr= read_reg Port.Addr
 
     let do_read_mem sz ato a ii =
-      M.read_loc false (mk_read sz ato) (A.Location_global a) ii
+      M.read_loc Port.No (mk_read sz ato) (A.Location_global a) ii
     ;;
 
     let read_mem sz a ii = do_read_mem sz BPF.N a ii
@@ -130,7 +131,7 @@ struct
 
     let amo sz op an rd rs k f ii =
       let open BPF in
-      let ra = read_reg_ord rd ii
+      let ra = read_reg_addr rd ii
       and rv = read_reg_data rs ii
       and r0 = read_reg_data (IReg R0) ii
       and rmem_sc vloc = read_mem_sc sz vloc ii
@@ -146,7 +147,7 @@ struct
               ca ea
               >>= fun loc ->
               M.read_loc
-                false
+                Port.Data
                 (fun loc v -> Act.Amo (loc, v, vstore, an, (), sz, Access.VIR))
                 (A.Location_global loc)
                 ii)
@@ -183,49 +184,49 @@ struct
         (A.next_po_index ii.A.program_order_index)
         (match ii.A.inst with
          | BPF.OP (op, r1, r2) ->
-           read_reg_data r1 ii
-           >>| read_reg_data r2 ii
+           read_reg_ord r1 ii
+           >>| read_reg_ord r2 ii
            >>= (fun (v1, v2) -> M.op (tr_op op) v1 v2)
            >>= (fun v -> write_reg r1 v ii)
            >>= B.next1T
          | BPF.OPI (op, r1, k) ->
-           read_reg_data r1 ii
+           read_reg_ord r1 ii
            >>= fun v ->
            M.op (tr_op op) v (V.intToV k) >>= fun v -> write_reg r1 v ii >>= B.next1T
          | BPF.LOAD (w, _s, r1, r2, k) ->
            let sz = tr_sz w in
-           read_reg_ord r2 ii
+           read_reg_addr r2 ii
            >>= (fun a -> M.add a (imm16ToV k))
            >>= (fun ea -> read_mem sz ea ii)
            >>= (fun v -> write_reg r1 v ii)
            >>= B.next1T
          | BPF.LDAQ (w, r1, r2, k) ->
            let sz = tr_sz w in
-           read_reg_ord r2 ii
+           read_reg_addr r2 ii
            >>= (fun a -> M.add a (imm16ToV k))
            >>= (fun ea -> read_mem_acq sz ea ii)
            >>= (fun v -> write_reg r1 v ii)
            >>= B.next1T
          | BPF.STORE (sz, r1, k, r2) ->
-           read_reg_ord r1 ii
+           read_reg_addr r1 ii
            >>| read_reg_data r2 ii
            >>= (fun (a, d) ->
                  M.add a (imm16ToV k) >>= fun ea -> write_mem (tr_sz sz) ea d ii)
            >>= B.next1T
          | BPF.STRL (sz, r1, k, r2) ->
-           read_reg_ord r1 ii
+           read_reg_addr r1 ii
            >>| read_reg_data r2 ii
            >>= (fun (a, d) ->
                  M.add a (imm16ToV k) >>= fun ea -> write_mem_rel (tr_sz sz) ea d ii)
            >>= B.next1T
          | BPF.STOREI (sz, r1, k1, k2) ->
-           read_reg_ord r1 ii
+           read_reg_addr r1 ii
            >>= (fun a ->
                  M.add a (imm16ToV k1)
                  >>= fun ea -> write_mem (tr_sz sz) ea (V.intToV k2) ii)
            >>= B.next1T
          | BPF.MOV (rd, rs) ->
-           read_reg_data rs ii >>= fun v -> write_reg rd v ii >>= B.next1T
+           read_reg_ord rs ii >>= fun v -> write_reg rd v ii >>= B.next1T
          | BPF.MOVI (rd, k) -> write_reg rd (V.intToV k) ii >>= B.next1T
          | BPF.AMO (aop, w, rd, k, rs, annot, f) ->
            amo (tr_sz w) aop annot rd rs k f ii >>= B.next1T
@@ -236,7 +237,7 @@ struct
            >>= fun (v1, v2) ->
            M.op (tr_cond c) v1 v2 >>= fun v -> commit ii >>= fun () -> B.bccT v lbl
          | BPF.JCONDI (c, r1, k, lbl) ->
-           read_reg_data r1 ii
+           read_reg_ord r1 ii
            >>= fun v ->
            M.op (tr_cond c) v (V.intToV k)
            >>= fun v -> commit ii >>= fun () -> B.bccT v lbl)

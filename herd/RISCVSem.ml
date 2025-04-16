@@ -112,21 +112,22 @@ module
 
       let plain = RISCV.(P Rlx)
 
-      let read_reg is_data r ii = match r with
+      let read_reg port r ii = match r with
       | RISCV.Ireg RISCV.X0 -> M.unitT V.zero
       | _ ->
-          M.read_loc is_data (mk_read nat_sz plain)
+          M.read_loc port (mk_read nat_sz plain)
             (A.Location_reg (ii.A.proc,r)) ii
 
-      let read_reg_ord = read_reg false
-      let read_reg_data = read_reg true
+      let read_reg_ord = read_reg Port.No
+      let read_reg_data = read_reg Port.Data
+      let read_reg_addr = read_reg Port.Addr
 
       let read_mem_annot sz an a ii =
         if mixed then
-          Mixed.read_mixed false sz (fun sz a v -> mk_read sz an a v)
+          Mixed.read_mixed Port.No sz (fun sz a v -> mk_read sz an a v)
             a ii
         else
-          M.read_loc false (mk_read sz an) (A.Location_global a) ii
+          M.read_loc Port.No (mk_read sz an) (A.Location_global a) ii
 
       let read_mem sz mo = read_mem_annot sz (RISCV.P mo)
       let read_mem_atomic sz mo = read_mem_annot sz (RISCV.X mo)
@@ -215,13 +216,13 @@ module
       let amo sz op an rd rv ra ii =
         let open RISCV in
         if rmw_events then
-          let ra = read_reg_ord ra ii
+          let ra = read_reg_addr ra ii
           and rv = read_reg_data rv ii in
           match op with
           | AMOSWAP ->
               (ra >>| rv) >>=
               (fun (loc,vstore) ->
-                M.read_loc false
+                M.read_loc Port.No
                   (fun loc v -> Act.Amo (loc,v,vstore,X an,(),sz,Access.VIR))
                   (A.Location_global loc) ii) >>= fun r -> write_reg rd r ii
           | _ ->
@@ -233,15 +234,15 @@ module
                   ii)  >>=  fun v -> write_reg rd v ii
         else match specialX0,op,rd,rv with
         | true,AMOSWAP,Ireg X0,_ ->
-            (read_reg_data rv ii >>| read_reg_ord ra ii) >>=
+            (read_reg_data rv ii >>| read_reg_addr ra ii) >>=
             fun (d,a) -> write_mem sz (write_amo an) a d ii
         | true,(AMOOR|AMOADD),_,Ireg X0 ->
-            read_reg_ord ra ii >>=
+            read_reg_addr ra ii >>=
             fun a -> read_mem sz (read_amo an) a ii >>=
               fun v -> write_reg rd v ii
         | _ ->
             let amo an =
-              let ra = read_reg_ord ra ii
+              let ra = read_reg_addr ra ii
               and rv = read_reg_data rv ii
               and rmem = fun loc -> read_mem_atomic sz (read_amo an) loc ii
               and wmem = fun loc v -> write_mem_atomic sz (write_amo an) loc v ii in
@@ -265,7 +266,7 @@ module
                 fun v -> write_reg r1 v ii >>= B.next1T
           | RISCV.OpI (RISCV.ADDI,r1,r2,0) ->
             (* A MV*)
-            read_reg_data r2 ii
+            read_reg_ord r2 ii
             >>= fun v -> write_reg r1 v ii
             >>= B.next1T
           | RISCV.OpI (op,r1,r2,k) ->
@@ -317,7 +318,7 @@ module
 
           | RISCV.Store (sz,mo,r1,k,r2) ->
               let mk_store mo =
-                (read_reg_data r1 ii >>| read_reg_ord r2 ii) >>=
+                (read_reg_data r1 ii >>| read_reg_addr r2 ii) >>=
                 (fun (d,a) ->
                   (M.add a (V.intToV k)) >>=
                   (fun ea -> write_mem (tr_sz sz) mo ea d ii)) in
@@ -333,7 +334,7 @@ module
                 sd >>= B.next1T
               else  mk_store mo >>= B.next1T
           | RISCV.LoadReserve  ((RISCV.Double|RISCV.Word as sz),mo,r1,r2) ->
-              read_reg_ord r2 ii >>=
+              read_reg_addr r2 ii >>=
               (fun ea ->
                 write_reg RISCV.RESADDR ea ii
                 >>|
@@ -345,7 +346,7 @@ module
               M.riscv_store_conditional
                 (read_reg_ord RISCV.RESADDR ii)
                 (read_reg_data r2 ii)
-                (read_reg_ord r3 ii)
+                (read_reg_addr r3 ii)
                 (write_reg RISCV.RESADDR V.zero ii)
                 (fun v -> write_reg_success r1 v ii)
                 (fun ea resa v ->
@@ -356,7 +357,7 @@ module
           | RISCV.FenceIns b ->
               create_barrier b ii >>= B.next1T
           | RISCV.Ext (_,w,r1,r2) ->
-            read_reg_data r2 ii
+            read_reg_ord r2 ii
             >>= M.op1 (Op.Sxt (RISCV.tr_width w))
             >>= fun v -> write_reg r1 v ii
             >>= B.next1T

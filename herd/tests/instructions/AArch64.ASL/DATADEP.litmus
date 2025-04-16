@@ -1,0 +1,14 @@
+AArch64 DATADEP
+(* Test data;po not in lob *)
+{
+0:X0=x; 0:X3=y;
+1:X0=y; 1:X3=z; 1:X5=x;
+}
+ P0           | P1           ;
+ LDR W1,[X0]  | LDR W1,[X0]  ;
+ MOV W2,#1    | EOR W2,W1,W1 ;
+ STLR W2,[X3] | ADD W2,W2,#1 ;
+              | STR W2,[X3]  ;
+              | MOV W4,#1    ;
+              | STR W4,[X5]  ;
+exists (0:X1=1 /\ 1:X1=1)
