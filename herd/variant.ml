@@ -352,5 +352,4 @@ let set_sme_length r = function
 
 let check_tag = function
 | ASLExperimental -> [ASL;ASLExperimental;]
-| ASL_AArch64_UDF -> [ASL;ASL_AArch64_UDF;]
 | tag -> [tag]
