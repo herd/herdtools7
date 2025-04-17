@@ -219,12 +219,17 @@ module PteVal = struct
 
   type v = NoValue | Plain of int | PteValue of pte
   type env = (string * v) list
-  let value_to_int = function
+  let to_int = function
       | NoValue -> -1
       | Plain v -> v
-      | _ -> -1
+      |  _ -> Warn.user_error "Cannot convert to int"
   let no_value = NoValue
-  let value_of_int v = Plain v
+  let from_int v = Plain v
+  let _from_pte p = PteValue p
+  let to_pte = function
+    | PteValue p -> p
+    | _ -> Warn.user_error "Cannot convert to pte"
+
   let value_compare lhs rhs =
       match lhs, rhs with
       | NoValue, NoValue -> 0
@@ -275,6 +280,8 @@ module PteVal = struct
   let can_fault pte_val =
     let open AArch64PteVal in
     pte_val.valid = 0
+
+  let from_pte p = PteValue p
 
 end
 
@@ -919,8 +926,8 @@ let get_ie e = match e with
 let fold_edge f r = Code.fold_ie (fun ie r -> f (IFF ie) (f (FIF ie) r)) r
 
 let compute_rmw r old co =
-    let old = PteVal.value_to_int old in
-    let co = PteVal.value_to_int co in
+    let old = PteVal.to_int old in
+    let co = PteVal.to_int co in
     let new_value = match r with
     | LdOp op | StOp op ->
       begin match op with
@@ -938,7 +945,7 @@ let compute_rmw r old co =
         | A_CLR -> old land (lnot co)
     end
     | LrSc | Swp | Cas  -> co in
-    PteVal.value_of_int new_value
+    PteVal.from_int new_value
 
 include
     ArchExtra_gen.Make
