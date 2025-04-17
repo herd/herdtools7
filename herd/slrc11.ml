@@ -224,8 +224,8 @@ module Make (M:Cfg)
 
     let solve test es cs =
       match M.solve_regs test es cs with
-      | None -> (es, M.S.RFMap.empty, cs)
-      | Some (es, rfm, cs) -> (es, rfm, cs)
+      | [] -> (es, M.S.RFMap.empty, cs)
+      | (es, rfm, cs) :: _ -> (es, rfm, cs)
 
 
 
@@ -357,7 +357,7 @@ module Make (M:Cfg)
         let ncs = (List.append cs (make_cnstrnts
                                      {ex with rf = added ex.safe ex.rf})) in
         match M.S.M.VC.solve ncs with
-        | M.S.M.VC.NoSolns -> false
+        | [] -> false
         | _ -> true
 
 
@@ -830,7 +830,7 @@ module Make (M:Cfg)
     let mykont test model_kont es cs = (fun e res ->
         let ncs = (List.append cs (make_cnstrnts e)) in
         M.solve_mem test es e.rfm ncs
-          (fun es0 rfm0 cs0 res0 ->
+          (fun es0 rfm0 cs0 solver res0 ->
             match cs0 with
             | [] ->
                if S.A.reject_mixed then M.check_sizes test es0;
@@ -874,45 +874,46 @@ module Make (M:Cfg)
                else begin
                    res0
                  end
-            | _ -> M.when_unsolved test es0 rfm0 cs0 (fun c -> c) res0) res)
+            | _ -> M.when_unsolved test es0 rfm0 cs0 solver (fun c -> c) res0) res)
 
     let real e = fence e || E.is_mem e
 
     let check_rfms test rfms _kfail _kont model_kont res =
       let (_, cs0, es0) = rfms in
-      let (es, rfm, cs) = solve test es0 cs0 in
-      let rmws = M.make_atomic_load_store es in
-      let evts = E.EventSet.filter real es.E.events in
-      let inits = E.EventSet.filter E.is_mem_store_init evts in
-      let po = U.po_iico es in
-      let iico = U.iico es in
-      let procs = List.map
-                    (fun x ->
-                      let e = E.EventSet.filter
-                                (fun y -> match E.proc_of y with
-                                          | Some p when p = x -> true
-                                          | _ -> false)
-                                evts in
-                      x, e, E.EventRel.restrict_rel (fun x y -> E.EventSet.mem x e && E.EventSet.mem y e) po)
-                    es.E.procs in
-      let toadd = List.map (fun (x, y, _) -> x, y) procs in
-      let ex_init = {
-          toadd = toadd;
-          added = inits;
-          po = (E.EventRel.union rmws po);
-          iico = iico;
-          mo = E.EventRel.empty;
-          rf = E.EventRel.empty;
-          revisit = E.EventSet.empty;
-          safe = inits;
-          exvals = (fun _ -> false);
-          rmws = rmws;
-          rfm = rfm;
-          flags = Flag.Set.empty;
-          psc = E.EventRel.empty;
-          debug_rels = []
-        } in
-      (visit ex_init cs (mykont test model_kont es cs) res)
+      List.fold_right (fun (es,rfm,cs) res ->
+        let rmws = M.make_atomic_load_store es in
+        let evts = E.EventSet.filter real es.E.events in
+        let inits = E.EventSet.filter E.is_mem_store_init evts in
+        let po = U.po_iico es in
+        let iico = U.iico es in
+        let procs = List.map
+                      (fun x ->
+                        let e = E.EventSet.filter
+                                  (fun y -> match E.proc_of y with
+                                            | Some p when p = x -> true
+                                            | _ -> false)
+                                  evts in
+                        x, e, E.EventRel.restrict_rel (fun x y -> E.EventSet.mem x e && E.EventSet.mem y e) po)
+                      es.E.procs in
+        let toadd = List.map (fun (x, y, _) -> x, y) procs in
+        let ex_init = {
+            toadd = toadd;
+            added = inits;
+            po = (E.EventRel.union rmws po);
+            iico = iico;
+            mo = E.EventRel.empty;
+            rf = E.EventRel.empty;
+            revisit = E.EventSet.empty;
+            safe = inits;
+            exvals = (fun _ -> false);
+            rmws = rmws;
+            rfm = rfm;
+            flags = Flag.Set.empty;
+            psc = E.EventRel.empty;
+            debug_rels = []
+          } in
+        (visit ex_init cs (mykont test model_kont es cs) res)
+      ) (M.solve_regs test es0 cs0) res
 
     let check_event_structure test (rfms : (_ * S.M.VC.cnstrnts * S.event_structure) list) kfail kont model_kont  (res : 'a) =
       List.fold_left (fun re rf -> check_rfms test rf kfail kont model_kont re) res rfms

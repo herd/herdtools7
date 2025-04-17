@@ -41,7 +41,10 @@ module Make
     let pte2 = kvm && C.variant Variant.PTE2
     let do_cu = C.variant Variant.ConstrainedUnpredictable
     let self = C.variant Variant.Ifetch
-    let pac = C.variant Variant.Pac
+    let pauth1 = C.variant (Variant.PacVersion `PAuth1)
+    let pauth2 = C.variant (Variant.PacVersion `PAuth2)
+    let pac = pauth1 || pauth2
+    let key_enable key = not (C.variant (Variant.NoPacKey key))
     let const_pac_field = C.variant Variant.ConstPacField
     let fpac = C.variant Variant.FPac
 
@@ -75,6 +78,12 @@ module Make
       if not sme then
         Warn.user_error
           "SME instruction %s requires -variant sme"
+          (AArch64.dump_instruction inst)
+
+    let check_pac inst =
+      if not pac then
+        Warn.user_error
+          "Pauth instruction %s requires -variant pauth1 or pauth2"
           (AArch64.dump_instruction inst)
 
 (* Barrier pretty print *)
@@ -623,9 +632,11 @@ module Make
             let ma = (* NB output to initial ma *)
               match a_phy with
               | None ->
-                ma >>== fun a -> m >>== fun _ -> loc_extract a
+                  if pac
+                  then ma >>*== fun a -> m >>== fun _ -> loc_extract a
+                  else ma >>== fun a -> m >>== fun _ -> loc_extract a
               | Some _ ->
-                M.bind_ctrldata ma (fun a -> m >>== fun _ -> M.unitT a) in
+                  M.bind_ctrldata ma (fun a -> m >>== fun _ -> M.unitT a) in
             choice c ma)
 
       (* Tag checking Morello *)
@@ -858,7 +869,28 @@ module Make
         | X|N -> N
         | NoRet|S|NTA -> N
 
-      let check_ptw proc dir updatedb is_tag a_virt ma an ii mdirect mok mfault =
+(* Check if the virtual address is out of range, raise a MMU:Translation fault
+   overwise. An address may be out of range if it contains a non-canonical PAC
+   field, this functions also make the address syntactically canonical in case of
+   a hash collision to construct the corect read-from map, if the address is not
+   virutal, it just return `mok ma` *)
+      let check_va_range mok ma mfault ii =
+        let ft = Some (FaultType.AArch64.MMU FaultType.AArch64.Translation) in
+        let mok ma = mok (ma >>= M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical)) in
+        let ma_with_commit ma =
+          do_append_commit ma (Some "va range") ii
+        in
+        let mcheck ma =
+          M.delay_kont "range check" ma (fun a ma ->
+            M.op1 (Op.ArchOp1 AArch64Op.CheckCanonical) a >>= fun c ->
+            M.choiceT c (mok (ma_with_commit ma)) (mfault ma a ft))
+        in
+        M.delay_kont "check address is virtual" ma (fun a ma ->
+          M.op1 Op.IsVirtual a >>= fun virt ->
+          M.choiceT virt (mcheck ma) (mok ma)
+        )
+
+      let check_ptw_kont proc dir updatedb is_tag a_virt ma an ii mdirect mok mfault =
 
         let is_el0  = List.exists (Proc.equal proc) TopConf.procs_user in
 
@@ -951,19 +983,21 @@ module Make
         let mvirt = begin
           M.delay_kont "3"
             begin
-              ma >>= fun _ -> M.op1 Op.PTELoc a_virt >>= fun a_pte ->
-              let an,nexp =
-                if hd then (* Atomic accesses, tagged with updated bits *)
-                  an_xpte an,AArch64.NExp AArch64.AFDB
-                else if ha then
-                  an_xpte an,AArch64.NExp AArch64.AF
-                else
-                  (* Ordinary non-explicit access *)
-                  an_pte an,AArch64.nexp_annot in
-              mextract_whole_pte_val
-                an nexp a_pte (E.IdSome ii) >>== fun pte_v ->
-              (mextract_pte_vals pte_v) >>= fun ipte ->
-              M.unitT ((pte_v,ipte),a_pte)
+              let kont = (fun _ -> M.op1 Op.PTELoc a_virt >>= fun a_pte ->
+                  let an,nexp =
+                    if hd then (* Atomic accesses, tagged with updated bits *)
+                      an_xpte an,AArch64.NExp AArch64.AFDB
+                    else if ha then
+                      an_xpte an,AArch64.NExp AArch64.AF
+                    else
+                      (* Ordinary non-explicit access *)
+                      an_pte an,AArch64.nexp_annot in
+                  mextract_whole_pte_val
+                    an nexp a_pte (E.IdSome ii) >>== fun pte_v ->
+                  (mextract_pte_vals pte_v) >>= fun ipte ->
+                  M.unitT ((pte_v,ipte),a_pte)
+                ) in
+              if pac then M.bind_ctrldata ma kont else ma >>= kont
             end
           (fun (pair_pte,a_pte) ma -> (* now we have PTE content *)
             (* Monad will carry changing internal pte value *)
@@ -1013,6 +1047,12 @@ module Make
                For instance, user code cannot access the page table. *)
             (if is_el0 then mk_pte_fault a_virt ma dir an ii
              else mdirect)
+
+      let check_ptw proc dir updatedb is_tag a_virt ma an ii mdirect mok mfault =
+        let mop ma =
+          check_ptw_kont
+            proc dir updatedb is_tag a_virt ma an ii mdirect mok mfault in
+        if pac then check_va_range mop ma mfault ii else mop ma
 
 (* Read memory, return value read *)
       let do_read_mem_ret sz an anexp ac a ii =
@@ -1368,6 +1408,25 @@ module Make
                  mop ac ma >>= M.ignore >>= B.next1T
         )
 
+(* Check that the Pointer Authentication Code of a virtual address is canonical
+ * before a memory operation. Generate a Branching(pred) effect and an iico_ctrl
+ * +iico_data dependency between the event `ma` and `mop` or `mfault`, and an
+ * iico_data dependency between `mv` and `mop` in case of a success.
+ *)
+      let lift_pac_virt mop ma dir an ii =
+        let mok ma = mop ma >>= M.ignore >>= B.next1T in
+        (* Addresses of memory operations must be canonical for the construction
+         * of the rf, co and fr maps... *)
+        let lbl_v = get_instr_label ii in
+        let mfault ma a ft =
+          do_insert_commit_to_fault ma
+            (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
+            None ii
+          >>! B.fault [AArch64Base.elr_el1, lbl_v]
+        in
+        check_va_range mok ma mfault ii
+
+
       let lift_memtag_phy dir mop ma an ii mphy =
         let checked_op mpte_d a_virt =
           let mok mpte_t =
@@ -1419,34 +1478,6 @@ module Make
                (fun ma -> mm ma >>= M.ignore >>= B.next1T)
                (lift_fault_memtag
                   (mk_fault (Some a_virt) dir an ii ft None) mm dir ii))
-
-(* Check that the Pointer Authentication Code of a virtual address is canonical
- * before a memory operation. Generate a Branching(pred) effect and an iico_ctrl
- * +iico_data dependency between the event `ma` and `mop` or `mfault`, and an
- * iico_data dependency between `mv` and `mop` in case of a success.
- *)
-      let lift_pac_virt mop ma dir an ii =
-        let mok ma = mop Access.VIR ma >>= M.ignore >>= B.next1T in
-        let lbl_v = get_instr_label ii in
-        let ft = Some (FaultType.AArch64.MMU FaultType.AArch64.Translation) in
-        let mfault ma a =
-          do_insert_commit_to_fault ma
-            (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
-            None ii
-          >>! B.fault [AArch64Base.elr_el1, lbl_v]
-        in
-        let ma_with_commit ma =
-          do_append_commit ma (Some "pac") ii
-        in
-        let mcheck ma =
-          M.delay_kont "pac check" ma (fun a ma ->
-            M.op1 (Op.ArchOp1 AArch64Op.CheckCanonical) a >>= fun c ->
-            M.choiceT c (mok (ma_with_commit ma)) (mfault ma a))
-        in
-        M.delay_kont "pac check virtual" ma (fun a ma ->
-          M.op1 Op.IsVirtual a >>= fun virt ->
-          M.choiceT virt (mcheck ma) (mok ma)
-        )
 
       let lift_morello mop perms ma mv dir an ii =
         let mfault msg ma mv =
@@ -1509,10 +1540,11 @@ module Make
             let m = lift_kvm dir updatedb mop ma an ii mphy in
             (* M.short will add an iico_data only if memtag is enabled *)
             M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
-          else if pac then
-            lift_pac_virt mop ma dir an ii
           else if checked then
-            lift_memtag_virt mop ma dir an ii
+            let mop ma = lift_memtag_virt mop ma dir an ii in
+            if pac then lift_pac_virt mop ma dir an ii else mop ma
+          else if pac then
+            lift_pac_virt (mop Access.VIR) ma dir an ii
           else
             mop Access.VIR ma >>= M.ignore >>= B.next1T
 
@@ -3390,7 +3422,7 @@ module Make
 (*******************************)
 
       let do_pac key rd rn ii =
-        if pac then begin
+        if key_enable key then begin
           read_reg_ord rd ii >>|
           read_reg_ord rn ii >>= fun (addr, modifier) ->
           M.op
@@ -3404,21 +3436,27 @@ module Make
           B.nextSetT rd v
 
       let authenticate pointer modifier key ii mop mfault =
-        let mfail md mn = if fpac then
-            (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ -> mfault
-          else
-            md >>| mn >>= fun (xd,xn) ->
-            mop (M.op (Op.ArchOp (AArch64Op.AddPAC (false,key))) xd xn)
-        in
-
         let original_pointer md =
           md >>= M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical) in
 
         (* data_input_next allow to not have a control depedency between the
          * commit event and the register-read event in Xd *)
-        let mop md mn =
+        let mok md mn =
           (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ ->
           (M.data_input_next (original_pointer md) (fun ptr -> mop (M.unitT ptr)))
+        in
+
+        let error_code md =
+          md >>= M.op1 (Op.ArchOp1 (AArch64Op.AddErrorCode key)) in
+
+        let mfail md mn = if fpac then
+            (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ -> mfault
+          else if pauth1 then
+            (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ ->
+            (M.data_input_next (error_code md) (fun ptr -> mop (M.unitT ptr)))
+          else
+            md >>| mn >>= fun (xd,xn) ->
+            mop (M.op (Op.ArchOp (AArch64Op.AddPAC (false,key))) xd xn)
         in
 
         let auth_check xd xn =
@@ -3430,13 +3468,13 @@ module Make
           M.delay_kont "read modifier" modifier (fun xn mn ->
             auth_check xd xn >>= fun c ->
             M.choiceT c
-              (mop md mn)
+              (mok md mn)
               (mfail md mn)
           )
         )
 
       let do_aut key rd rn ii =
-        if pac then begin
+        if key_enable key then begin
           let (>>!) = M.(>>!) in
 
           let lbl_v = get_instr_label ii in
@@ -4480,12 +4518,15 @@ module Make
            let lbl_v = get_instr_label ii in
            m_fault >>| set_elr_el1 lbl_v ii
            >>! B.fault [AArch64Base.elr_el1, lbl_v]
-(* Pointer Anthentication Code `FEAT_Pauth2` *)
+(* Pointer Anthentication Code *)
         | I_PAC (key, rd, rn) ->
+            check_pac inst;
             do_pac key rd rn ii
         | I_AUT (key, rd, rn) ->
+            check_pac inst;
             do_aut key rd rn ii
         | I_XPACI r | I_XPACD r ->
+            check_pac inst;
             do_xpac r ii
 (*  Cannot handle *)
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)

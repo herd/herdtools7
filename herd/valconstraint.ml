@@ -38,6 +38,7 @@ module type S = sig
   type state
   type arch_op
   type arch_op1
+  type arch_pred
 
   type expr =
     | Atom of atom
@@ -46,10 +47,10 @@ module type S = sig
     | Binop of (arch_op Op.op) * atom * atom
     | Terop of Op.op3 * atom * atom * atom
 
-
   type rvalue = expr
 
   type cnstrnt =
+    | Predicate of bool * arch_pred
     | Assign of atom * rvalue
     | Failed of exn (* Delay exceptions *)
     | Warn of string
@@ -57,17 +58,25 @@ module type S = sig
   type cnstrnts = cnstrnt list
   val pp_cnstrnts : cnstrnt list -> string
 
+  type solver_state
+
   type solution
 
+  (* The answer contains for each solution
+   * - The variable assignation
+   * - The unsolved constraints + the predicates added to the solver state
+   * - the final solver state *)
   type answer =
-    | NoSolns
-    | Maybe of solution *  cnstrnts
+    (solution * cnstrnts * solver_state) list
 
   val pp_answer : answer -> string
 
 (* Extract delayed exception, if present, or warning, if present. *)
   val get_failed :  cnstrnts -> cnstrnt option
 
+  (* Solve doesn't take a solver state as argument, instead is rebuild the
+   * solver state using the predicates in the input constraints, but it return
+   * the solver state such that it can be propagated to `constraints.ml` *)
   val solve : cnstrnt list -> answer
 end
 
@@ -85,6 +94,8 @@ and type arch_op = A.V.arch_op
 and type arch_op1 = A.V.arch_op1
 and type solution = A.V.solution
 and type location = A.location
+and type solver_state = A.V.solver_state
+and type arch_pred = A.V.arch_pred
 and type state = A.state =
   struct
 
@@ -99,6 +110,7 @@ and type state = A.state =
     type state = A.state
     type arch_op = V.arch_op
     type arch_op1 = V.arch_op1
+    type arch_pred = V.arch_pred
 
     type expr =
       | Atom of atom
@@ -114,9 +126,28 @@ and type state = A.state =
     | Binop (o,a1,a2) -> Binop (o,fv a1, fv a2)
     | Terop (o,a1,a2,a3) -> Terop (o,fv a1, fv a2, fv a3)
 
+    let fold_var f = function
+      | V.Val _ -> Fun.id
+      | V.Var x -> f x
+
+    let fold_loc f loc =
+      match A.undetermined_vars_in_loc_opt loc with
+      | None -> Fun.id
+      | Some v -> fold_var f v
+
+    let fold_vars_expr f e t = match e with
+      | Atom v ->  fold_var f v t
+      | ReadInit (loc,_) -> fold_loc f loc t
+      | Unop (_,v) -> fold_var f v t
+      | Binop (_,v1,v2) ->
+         fold_var f v1 t |> fold_var f v2
+      | Terop (_,v1,v2,v3) ->
+         fold_var f v1 t |> fold_var f v2  |> fold_var f v3
+
     type rvalue = expr
 
     type cnstrnt =
+      | Predicate of bool * arch_pred
       | Assign of V.v * rvalue
       | Failed of exn
       | Warn of string
@@ -145,6 +176,7 @@ and type state = A.state =
     let pp_rvalue e = pp_expr e
 
     let pp_cnstrnt cnstr =  match cnstr  with
+      | Predicate _ -> ""
       | Assign (v,rval) ->
           (V.pp C.hexa v) ^ ":=" ^(pp_rvalue rval)
       | Failed e  -> sprintf "Failed %s" (Printexc.to_string e)
@@ -153,35 +185,6 @@ and type state = A.state =
     let pp_cnstrnts lst =
       String.concat "\n"
         (List.map pp_cnstrnt lst)
-
-    type solution = V.solution
-
-    type answer =
-      | NoSolns
-      | Maybe of solution * cnstrnts
-
-
-    let pp_answer =
-
-      let pp_cns cns = match cns with
-      | [] -> ""
-      | _::_ ->
-          "\nUnsolved equations:\n" ^
-          (pp_cnstrnts cns) in
-
-      fun soln -> match soln with
-      | NoSolns -> "No solutions"
-      | Maybe (sol,cns) ->
-          let sol_pped =
-            let bds =
-              V.Solution.fold
-                (fun v i k -> (v,i)::k)
-                sol [] in
-            String.concat ", "
-              (List.map
-                 (fun (v,i) -> V.pp_csym v ^ "<-" ^ V.pp C.hexa i) bds) in
-
-          sol_pped ^ pp_cns cns
 
 (**************************************)
 (* Initial phase: normalize variables *)
@@ -201,31 +204,13 @@ and type state = A.state =
 
     module Part = Partition.Make (OV)
 
-    let fold_var f = function
-      | V.Val _ -> Fun.id
-      | V.Var x -> f x
-
-    let fold_loc f loc =
-      match A.undetermined_vars_in_loc_opt loc with
-      | None -> Fun.id
-      | Some v -> fold_var f v
-
-    let fold_vars_expr f e t = match e with
-      | Atom v ->  fold_var f v t
-      | ReadInit (loc,_) -> fold_loc f loc t
-      | Unop (_,v) -> fold_var f v t
-      | Binop (_,v1,v2) ->
-         fold_var f v1 t |> fold_var f v2
-      | Terop (_,v1,v2,v3) ->
-         fold_var f v1 t |> fold_var f v2  |> fold_var f v3
-
     let add_vars_expr = fold_vars_expr Part.add
     and add_var = fold_var Part.add
 
     let add_vars_cn t cn = match cn with
     | Assign (v,e) ->
         add_var v t |> add_vars_expr e
-    | Failed _ | Warn _ -> t
+    | Failed _ | Warn _ | Predicate _ -> t
 
     let add_vars_cns cns = List.fold_left add_vars_cn (Part.create ()) cns
 
@@ -258,7 +243,7 @@ and type state = A.state =
         let v = subst_atom m v
         and e = subst_expr m e in
         Assign (v,e)::k
-    | Failed _ | Warn _ -> cn::k
+    | Failed _ | Warn _ | Predicate _ -> cn::k
 
     let subst_cns soln cns = List.fold_right (subst_cn soln) cns []
 
@@ -282,155 +267,6 @@ and type state = A.state =
       end ;
       m,cns
 
-(*****************)
-(* Solver proper *)
-(*****************)
-
-(*
-  Solver proceeds by iterating three simple steps,
-  could use a topological sorting, to be more efficient.
-  Not needed at the moment.
- *)
-
-
-(* Phase 1: detection of contradictions and erasure of trivial equations *)
-    exception Contradiction
-
-    let mk_atom_from_expr e =
-      try match e with
-      | Atom _ -> e
-      | ReadInit (loc,init) -> Atom (A.look_address_in_state init loc)
-      | Unop (op,v1) -> Atom (V.op1 op v1)
-      | Binop (op,v1,v2) -> Atom (V.op op v1 v2)
-      | Terop (op,v1,v2,v3) -> Atom (V.op3 op v1 v2 v3)
-      with (* [expr] still contains at least one undetermined sub-expression *)
-      | A.LocUndetermined
-      | V.Undetermined -> e
-
-
-    let check_true_false cn k = match cn with
-    | Assign (v,e) ->
-       begin
-         try
-           let e = mk_atom_from_expr e in
-           begin match e with
-           | Atom w ->
-              if V.is_var_determined v && V.is_var_determined w then
-                if V.compare v w = 0 then k
-                else raise Contradiction
-              else
-                Assign (v,e)::k
-           | ReadInit _| Unop _|Binop _|Terop _ ->
-              Assign (v,e)::k
-           end
-         (* Delay failure to preserve potential contradiction *)
-         with
-         | Contradiction|Misc.Timeout as e -> raise e
-         | e ->
-            if C.debug.Debug_herd.exc then raise e
-            else if C.keep_failed_as_undetermined then cn :: k
-            else
-              let () =
-                if debug_solver then begin
-                  eprintf "Solving %s\n" (pp_cnstrnt cn) ;
-                  eprintf "Delaying exception in solver: %s\n%!"
-                    (Printexc.to_string e)
-                end in
-              Failed e :: k
-       end
-    | Failed _ | Warn _ -> cn::k
-
-    let check_true_false_constraints cns =
-      List.fold_right check_true_false cns []
-
-(* Phase 3, substitution *)
-
-    let simplify_vars_in_var soln x =
-      try V.Val (V.Solution.find x soln)
-      with Not_found -> V.Var x
-
-    let simplify_vars_in_atom soln v =
-      V.map_csym (simplify_vars_in_var soln) v
-
-    let simplify_vars_in_expr soln = map_expr (simplify_vars_in_atom soln)
-
-    let simplify_vars_in_cnstrnt soln cn =
-      match cn with
-      | Assign (v,rval) ->
-          let v = simplify_vars_in_atom soln v in
-          let rval = simplify_vars_in_expr soln rval in
-          Assign (v,rval)
-      | Failed _ | Warn _ -> cn
-
-    let simplify_vars_in_cnstrnts soln cs =
-      List.map (simplify_vars_in_cnstrnt soln) cs
-
-
-(* Phase 2, "solving": just collect equations S := cst / cst := S *)
-    let singleton v i = V.Solution.add v i V.Solution.empty
-    and empty = V.Solution.empty
-
-    let solve_cnstrnt cnstr = match cnstr with
-    | Assign (V.Var v,Atom (V.Val i))
-    | Assign (V.Val i,Atom (V.Var v)) ->
-        singleton v i
-    | Assign (V.Val _,Atom (V.Val _)) ->
-    (* By previous application of check_true_false *)
-        assert false
-    | Assign (V.Var _,Atom (V.Var _))
-    (* can occur in spite of variable normalization (ternary if) *)
-    | Assign (_,(Unop _|Binop _|Terop _|ReadInit _)) -> empty
-    | Failed _ | Warn _ -> empty
-
-(* merge of solutions, with consistency check *)
-    let add_sol x cst sol =
-      try
-        let cst' = V.Solution.find x sol in
-        if V.Cst.eq cst cst' then sol
-        else raise Contradiction
-      with
-      | Not_found -> V.Solution.add x cst sol
-
-    let merge sol1 sol2 = V.Solution.fold add_sol sol1 sol2
-
-    let solve_cnstrnts =
-      List.fold_left
-        (fun solns cnstr -> merge (solve_cnstrnt cnstr) solns)
-        V.Solution.empty
-
-(************************)
-(* Raise exceptions now *)
-(************************)
-
-let get_failed cns =
-  List.fold_left
-    (fun r cn ->
-      match cn,r with
-      | Failed _,_ -> Some cn
-      | Warn _,None -> Some cn
-      | (Assign _,_)|(Warn _,Some _) -> r)
-    None cns
-
-(*******************************)
-(* Iterate basic solving steps *)
-(*******************************)
-
-    (* Just union since there are no variables in rhs of solutions *)
-    let compose_sols sol1 sol2 = V.Solution.fold V.Solution.add sol1 sol2
-
-    let rec solve_step cns solns_final =
-      (* Phase 1, check individual constraint validity *)
-      let cns = check_true_false_constraints cns in
-      (* Phase 2, orient constraints S := cst / cst := S *)
-      let solns = solve_cnstrnts cns in
-      if V.Solution.is_empty solns then begin
-        solns_final,cns
-      end else
-        (* Phase 3, and iteration *)
-        let cns =  simplify_vars_in_cnstrnts solns cns
-        and solns_final = compose_sols solns solns_final in
-        solve_step cns solns_final
-
     let add_vars_solns m solns0 =
       Part.Sol.fold
         (fun  x y solns ->
@@ -442,26 +278,10 @@ let get_failed cns =
         m
         (V.Solution.map (fun x -> V.Val x) solns0)
 
-    let solve_std lst =
-      if debug_solver then begin
-        prerr_endline "** Solve **" ;
-        eprintf "%s\n" (pp_cnstrnts lst) ; flush stderr
-      end ;
-      let m,lst = normalize_vars lst in
-      let sol =
-        try
-          let solns,lst = solve_step lst V.Solution.empty in
-          let solns = add_vars_solns m solns in
-          Maybe (solns,lst)
-        with Contradiction -> NoSolns in
-      if debug_solver then begin
-        eprintf "Solutions: %s\n" (pp_answer sol) ; flush stderr
-      end ;
-      sol
+(**************************************)
+(* Construct the topological order    *)
+(**************************************)
 
-(*********************************)
-(* Topological sort-based solver *)
-(*********************************)
 
     module OrderedEq = struct
       type t = cnstrnt
@@ -506,6 +326,13 @@ let get_failed cns =
           -> 1
 
       let compare c1 c2 = match c1,c2 with
+        | Predicate (b1,p1),Predicate (b2,p2) -> begin
+          match b1,b2 with
+          | false,true -> -1
+          | true,false -> 1
+          | _, _ ->
+              V.compare_predicate p1 p2
+        end
         | Assign (v1,e1),Assign (v2,e2) ->
            Misc.pair_compare
              atom_compare
@@ -515,9 +342,11 @@ let get_failed cns =
            Misc.polymorphic_compare exn1 exn2
         | Warn w1,Warn w2 ->
            String.compare w1 w2
+        | (Predicate _,(Assign _|Failed _| Warn _))
         | (Assign _,(Failed _|Warn _))
         | (Failed _,Warn _)
           -> -1
+        | ((Assign _|Failed _|Warn _), Predicate _)
         | ((Failed _|Warn _),Assign _)
           | (Warn _,Failed _)
           -> 1
@@ -542,7 +371,7 @@ let get_failed cns =
         (fun m c ->
           match c with
           | Assign (V.Var csym,_) -> env_add csym c m
-          | Assign (V.Val _,_)|Warn _|Failed _ -> m)
+          | Assign (V.Val _,_)|Warn _|Failed _|Predicate _ -> m)
        VarEnv.empty cs
 
     module EqRel = InnerRel.Make(OrderedEq)
@@ -576,102 +405,302 @@ let get_failed cns =
           (fun rel c ->
             match c with
             | Assign (_,e)  -> add_rels c e rel
-            | Warn _|Failed _ -> rel)
+            | Warn _|Failed _|Predicate _ -> rel)
           EqRel.empty cs in
       let cs = EqSet.of_list cs in
       cs,rel
 
-    (** [solv_one c sol eqs], where c is an equation, [sol] is a solution
-     *   (map from variables to constants) and [eqs] is a list of equations,
-     *   evaluates the equation [c] w.r.t. to solution [sol]
-     *   and returns [(sol,eqs)] updated, with:
-     *     - [sol] updated to add all the variable affections found;
-     *     - [eqs] updated to add the unsolved equations.
-     *)
-    let solve_one c sol eqs =
-      match c with
-      | Warn _|Failed _ -> sol,c::eqs
-      | Assign (v0,e) ->
-         begin
-           try
-             let v = simplify_vars_in_atom sol v0
-             and e = simplify_vars_in_expr sol e |> mk_atom_from_expr in
-             match v,e with
-             | V.Var x,Atom (V.Val atom) ->
-                add_sol x atom sol,eqs
-             | V.Val c1,Atom (V.Val c2) ->
-                if V.Cst.eq c1 c2 then sol,eqs
-                else raise Contradiction
-             (* Last case below can occur when called on a
-                strongly connected component. *)
-             | _,_ -> sol,Assign (v,e)::eqs
-           with
-           | Contradiction|Misc.Timeout as exn -> raise exn
-           | exn ->
-              if C.debug.Debug_herd.exc then raise exn ;
-              (sol,Failed exn::eqs)
-         end
+    type solution = V.solution
 
-    let topo_step cs (sol,eqs) =
-      match cs with
-      | [] -> assert false
-      | [c] -> solve_one c sol eqs
-      | scc ->
-         (* Attempt to partial solve *)
-         List.fold_left
-           (fun (sol,scc) c -> solve_one c sol scc)
-           (sol,eqs) scc
+    type solver_state = V.solver_state
 
-    (** [solve_top_step [cs] tries to solve the system [cs] by sorting [cs]
-      * topologically, returns [(sol,cs,sccs)], where
-      *   - [sol] is the "solution" resulting from the propagation of
-      *     solved equations x = cst;
-      *   - [cs] are fake equations such as delayed warnings;
-      *   - [sccs] are unsolved recusive equations at the end.
-      * Raises `Contradiction` in case solving equations results in
-      * some contradictory equation cst = cst`
-      *)
-    let solve_topo_step cs =
-      let ns,r = eq2g cs in
-      if debug_solver then begin
-        if false then begin
-          prerr_endline "** Solve topo **" ;
-          eprintf "%s\n%!" (pp_cnstrnts cs) ;
-          prerr_endline "** Graph **" ;
-          EqRel.pp stderr ""
-            (fun chan (c1,c2) ->
-              fprintf chan "(%s) <- (%s)\n"
-                (pp_cnstrnt c1) (pp_cnstrnt c2))
-            r
-        end ;
-        eprintf "** Equations **\n%!" ;
-        eprintf "%s\n" (pp_cnstrnts cs) ; flush stderr ;
-        eprintf "** Equations ordered**\n%!" ;
-        debug_topo stderr ns r
-      end ;
-      EqRel.scc_kont topo_step (V.Solution.empty,[]) ns r
+    type monad_state =
+      { solver: V.solver_state
+      ; solution: cst V.Solution.t
+      ; predicates: cnstrnts }
 
-    let solve_topo cs =
-      (* Replace equivalent variables by a class representative *)
-      let m,cs = normalize_vars cs in
-      let sol =
+    type answer =
+      (solution * cnstrnts * solver_state) list
+
+    type 'a solver_monad =
+      monad_state -> (monad_state * 'a) list
+
+    (* Return the current architecture specific solver state *)
+    let get_solver : V.solver_state solver_monad =
+      fun st -> [st,st.solver]
+
+    let get_predicates : cnstrnts solver_monad =
+      fun st -> [st,st.predicates]
+
+    (* Return the current assignation of variables *)
+    let get_solution : cst V.Solution.t solver_monad =
+      fun st -> [st,st.solution]
+
+    let set_solver : V.solver_state -> unit solver_monad =
+      fun solver st -> [{st with solver},()]
+
+    let set_solution : cst V.Solution.t -> unit solver_monad =
+      fun solution st -> [{st with solution},()]
+
+    let set_predicates : cnstrnts -> unit solver_monad =
+      fun predicates st -> [{st with predicates},()]
+
+    let (let*) (x: 'a solver_monad) (f: 'a -> 'b solver_monad) : 'b solver_monad =
+      fun st ->
+        List.concat
+          (List.map (fun (st, y) -> f y st) (x st))
+
+    let map (f: 'a -> 'b) (x: 'a solver_monad) : 'b solver_monad =
+      fun st ->
+        List.map (fun (st, y) -> (st, f y)) (x st)
+
+    let (let+) x f = map f x
+
+    let pure : 'a -> 'a solver_monad = fun x st -> [st,x]
+
+    let contradiction : 'a solver_monad = fun _ -> []
+
+    (* Split the execution in two parts *)
+    let alternative (f: 'a solver_monad) (g: 'a solver_monad) :
+      'a solver_monad = fun st ->
+        List.concat [f st; g st]
+
+    let add_predicate (b: bool) (p: V.arch_pred) : unit solver_monad =
+      let* solver = get_solver in
+      let* preds = get_predicates in
+      let* _ = set_predicates (Predicate (b,p) :: preds) in
+      match V.add_predicate b p solver with
+      | Some solver -> set_solver solver
+      | None -> contradiction
+
+    (* Assume that two constants are equals *)
+    let assume_equality x y : unit solver_monad =
+      match V.eq_satisfiable x y with
+      | Some pred -> add_predicate true pred
+      | None ->
+          if V.Cst.eq x y
+          then pure ()
+          else contradiction
+
+    let solve_predicate (p: V.arch_pred) (vtrue:'a) (vfalse:'a) : 'a solver_monad =
+      alternative
+        (let+ _ = add_predicate true p in vtrue)
+        (let+ _ = add_predicate false p in vfalse)
+
+    (* Add a new solution into the solver state, and resolve associated
+     * constraints if the variable is already assigned *)
+    let add_solution (x: V.csym) (cst: cst) : unit solver_monad =
+      let* solution = get_solution in
+      try begin
+        let cst' = V.Solution.find x solution in
+        assume_equality cst cst'
+      end with Not_found -> begin
+        set_solution (V.Solution.add x cst solution)
+      end
+
+    (* Process an assignation of a variable and a constant *)
+    let process_assignation (v: V.v) (cst: cst) : unit solver_monad =
+      match v with
+      | V.Var x ->
+          add_solution x cst
+      | V.Val cst' ->
+          assume_equality cst cst'
+
+    (* Substitute a value by it's assiciated constant if it correspond to a
+       solved variable *)
+    let subst_value : V.v -> V.v solver_monad = fun v ->
+      let+ solution = get_solution in
+      V.map_csym (fun x ->
+        try V.Val (V.Solution.find x solution)
+        with Not_found -> V.Var x) v
+
+    (* Substitute all the variables (csym) in an expression by their value in
+     * the current solution *)
+    let subst_expr : expr -> expr solver_monad = fun expr ->
+      let+ solution = get_solution in
+      map_expr (V.map_csym (fun x ->
+        try V.Val (V.Solution.find x solution)
+        with Not_found -> V.Var x
+      )) expr
+
+    (* Try to simplify an expression by substitution then evaluation *)
+    let simplify_cnstrnt : cnstrnt -> cnstrnt solver_monad = function
+      | Assign (v, expr) -> begin
+        let* v = subst_value v in
+        let* expr = subst_expr expr in
         try
-          (* Solve in one scan *)
-          let sol,cs = solve_topo_step cs in
-          (* Add solutions of the form x := y *)
-          let sol = add_vars_solns m sol in
-          Maybe (sol,cs)
+          pure (Assign (v, (Atom (match expr with
+          | Atom value ->
+              value
+          | ReadInit (loc, init) ->
+              A.look_address_in_state init loc
+          | Unop (op, v) ->
+              V.op1 op v
+          | Binop (op, v1, v2) ->
+              V.op op v1 v2
+          | Terop (op, v1, v2, v3) ->
+              V.op3 op v1 v2 v3))))
         with
-        | Contradiction -> NoSolns in
-      if debug_solver then begin
-          eprintf "Solutions: %s\n" (pp_answer sol) ; flush stderr
-        end ;
-      sol
+        | V.Constraint (pred,vtrue,vfalse) ->
+            let+ value = solve_predicate pred vtrue vfalse in
+            Assign (v, Atom value)
+        | V.Undetermined | A.LocUndetermined ->
+            pure (Assign (v, expr))
+        | Misc.Timeout as e -> raise e
+        | exn -> pure (Failed exn)
+      end
+      | cnstrnt -> pure cnstrnt
+
+
+(*******************************)
+(* Old solver iteration method *)
+(*******************************)
+
+    (* Return the set of new assignations from a given set of constraints, and
+       the set of unsolver constraints *)
+    let rec new_assignations : cnstrnts -> ((V.v * cst) list * cnstrnts) solver_monad = function
+      | cnstrnt :: rest -> begin
+        (* Look at the rest of the constraints *)
+        let* assignations,unsolved = new_assignations rest in
+        let* cnstrnt = simplify_cnstrnt cnstrnt in
+
+        match cnstrnt with
+        | Assign (v, Atom (V.Val cst))
+        | Assign (V.Val cst, Atom v) ->
+            pure ((v, cst) :: assignations, unsolved)
+        | Predicate (b,pred) ->
+            let+ _ = add_predicate b pred in
+            (assignations, unsolved)
+        | _ ->
+            pure (assignations, cnstrnt :: unsolved)
+      end
+      | [] ->
+          pure ([], [])
+
+    (* Process a list of assignations *)
+    let rec process_assignations : (V.v * cst) list -> unit solver_monad = function
+      | (v, cst) :: xs ->
+          let* _ = process_assignation v cst in
+          process_assignations xs
+      | [] -> pure ()
+
+    (* Try to eliminate all the constraints until a fixed-point is reached *)
+    let rec solve_iter : cnstrnts -> cnstrnts solver_monad = fun constraints ->
+      let* assignations,unsolved = new_assignations constraints in
+      let* _ = process_assignations assignations in
+
+      if List.is_empty assignations
+      then pure unsolved
+      else solve_iter unsolved
+
+    let solve_std (solver: solver_state) (constraints : cnstrnts) : answer =
+      let state = {solver; solution = V.Solution.empty; predicates= []} in
+      let m,constraints = normalize_vars constraints in
+      if debug_solver then
+        Printf.printf "*** Solve ***\n%s\n" (pp_cnstrnts constraints);
+      let solutions = solve_iter constraints state in
+      List.map (fun (state, constraints) ->
+        if debug_solver then
+          Printf.printf "found solver state: \n%s" (V.pp_solver_state state.solver);
+        let solution = add_vars_solns m state.solution in
+        (solution, constraints @ state.predicates, state.solver)
+      ) solutions
+
+(***********************************)
+(* Second phase: topological order *)
+(***********************************)
+
+    (* Sort the SCC (Strongly connected component) in topological order *)
+    let topo_order (constraints: cnstrnts) : cnstrnts list =
+      let ns,r = eq2g constraints in
+      List.rev (EqRel.scc_kont List.cons [] ns r)
+
+    (* Try to solve one constraint and return the list of unsolved constraints *)
+    let solve_one : cnstrnt -> cnstrnts solver_monad = fun cnstrnt ->
+      let* cnstrnt = simplify_cnstrnt cnstrnt in
+      match cnstrnt with
+      | Assign (v, Atom (V.Val cst))
+      | Assign (V.Val cst, Atom v) ->
+          let+ _ = process_assignation v cst in
+          []
+      | Predicate (b, pred) ->
+          let+ _ = add_predicate b pred in
+          [Predicate (b, pred)]
+      | _ -> pure [cnstrnt]
+
+    (* Attemp to solve a SCC *)
+    let rec solve_scc : cnstrnts -> cnstrnts solver_monad = function
+      | c :: cs ->
+          let* l1 = solve_one c in
+          let+ l2 = solve_scc cs in
+          l1 @ l2
+      | [] ->
+          pure []
+
+    (* Solve an ordered list of SCC *)
+    let rec solve_many : cnstrnts list -> cnstrnts solver_monad = function
+      | c :: cs ->
+          let* l1 = solve_scc c in
+          let+ l2 = solve_many cs in
+          l1 @ l2
+      | [] ->
+          pure []
+
+    let solve_topo (solver: solver_state) (constraints : cnstrnts) : answer =
+      let state = {solver; solution = V.Solution.empty; predicates= []} in
+      let m,constraints = normalize_vars constraints in
+      if debug_solver then
+        Printf.printf "*** Solve ***\n%s\n" (pp_cnstrnts constraints);
+      let constraints = topo_order constraints in
+      if debug_solver then
+        Printf.printf "*** Ordered ***\n%s\n" (pp_cnstrnts (List.concat
+        constraints));
+      let solutions = solve_many constraints state in
+      List.map (fun (state, constraints) ->
+        if debug_solver then
+          Printf.printf "found solver state: \n%s" (V.pp_solver_state state.solver);
+        let solution = add_vars_solns m state.solution in
+        (solution, constraints @ state.predicates, state.solver)
+      ) solutions
+
+    let get_failed cns =
+      List.fold_left
+        (fun r cn ->
+          match cn,r with
+          | Failed _,_ -> Some cn
+          | Warn _,None -> Some cn
+          | (Assign _,_)|(Predicate _,_)|(Warn _,Some _) -> r)
+        None cns
+
+    let pp_answer =
+      let pp_cns cns = match cns with
+      | [] -> ""
+      | _::_ ->
+          "\nUnsolved equations:\n" ^
+          (pp_cnstrnts cns) in
+
+      fun solns ->
+        if List.is_empty solns
+        then "No solutions"
+        else
+          List.fold_right (fun (sol,cns,_) s ->
+            let sol_pped =
+              let bds =
+                V.Solution.fold
+                  (fun v i k -> (v,i)::k)
+                  sol [] in
+              String.concat ", "
+                (List.map
+                   (fun (v,i) -> V.pp_csym v ^ "<-" ^ V.pp C.hexa i) bds) in
+            sol_pped ^ pp_cns cns ^
+              (if Misc.int_eq (String.length s) 0 then s else " and " ^ s)
+          ) solns ""
 
     let solve cs =
-      if C.old_solver then
-        solve_std cs
-      else
-        solve_topo cs
-
+      let state =
+        V.empty_solver in
+      let answer =
+        if C.old_solver then solve_std state cs else solve_topo state cs in
+      if debug_solver then Printf.printf "Answer: %s\n" (pp_answer answer);
+      answer
   end

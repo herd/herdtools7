@@ -1048,6 +1048,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let tr_cnstrnt acc = function
         | ASLVC.Warn s -> M.VC.Warn s :: acc
         | ASLVC.Failed e -> M.VC.Failed e :: acc
+        | ASLVC.Predicate _ -> assert false (* ASLOp.predicate is empty *)
         | ASLVC.Assign (la, ex) ->
             let expr, acc = tr_expr acc ex in
             M.VC.Assign (tr_v la, expr) :: acc
@@ -1345,9 +1346,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           let check_and_translate acc c =
             profile "check and translate" @@ fun () ->
             if check_cutoff test_asl c then
-              match solve_regs test_asl c with
-              | None -> acc
-              | Some c -> check_rfm_and_translate acc c
+              List.fold_left
+                check_rfm_and_translate acc (solve_regs test_asl c)
             else acc
           in
           let monads = List.fold_left check_and_translate [] rfms in

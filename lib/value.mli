@@ -68,7 +68,7 @@ module type S =
       val freeze : csym -> Cst.v
 
 (* Equality (for constraint solver) is possible *)
-      val equalityPossible : v -> v -> bool
+      (* val equalityPossible : v -> v -> bool *)
 
 (* Please use this for comparing constants... *)
       val compare : v -> v -> int
@@ -96,7 +96,6 @@ module type S =
          type v are not determined enough to yield a result *)
 
       exception Undetermined
-
 
 (* Bit-Twiddling Ops *)
       val bit_at: int -> v -> v
@@ -129,6 +128,53 @@ module type S =
       val map_const : (Cst.v -> Cst.v) -> v -> v
       val map_scalar : (Cst.Scalar.t -> Cst.Scalar.t) -> v -> v
       val map_csym : (csym -> v) -> v -> v
+
+(* Architecture specific predicate *)
+      type arch_pred
+      exception Constraint of arch_pred * v * v
+      val compare_predicate : arch_pred -> arch_pred -> int
+      val pp_predicate : arch_pred -> string
+
+(* Return if an equality of two syntactically different constants may be equals
+ * modulo a predicate. This may represent a hash or random generator collision *)
+      val eq_satisfiable : Cst.v -> Cst.v -> arch_pred option
+
+(* Functions to interact with a constraint solver, this constraint solver must
+ * support at least the computation of equalities/inequalities (modulo the
+ * theory represented by the solver), plus the resolution of a set of predicates
+ * given by the architecture. As example for AArch64, the solver must sopport
+ * the equalities/disequalities of Pointer Authentication Codes (hash
+ * collisions).
+ *
+ * The `add_predicate` function return the new solver state if the new
+ * constraint is satisfiable in the current environment. And `None` otherwise.
+ *
+ * In addition the compare function must only compare the part of the solver
+ * state we print in `pp_solver_state`, as example the PAC solver of `AArch64`
+ * only show it's equalities.
+ *)
+      type solver_state
+      val empty_solver : solver_state
+
+      val add_predicate : bool -> arch_pred -> solver_state -> solver_state option
+
+      (* Some constraint solvers may support normalisation, for example if the
+       * solver contain an Union-Find data structure, then it's possible to
+       * normalize the elements of an equivalence class using the representant
+       * of their class... *)
+      val normalize : Cst.v -> solver_state -> Cst.v
+
+      (* Pretty print the current solver state, must verify
+       * `pp_solver_state empty_solver = ""` otherwise the final result may be
+       * invalid if "-debug pred-solver" is not set *)
+      val pp_solver_state : solver_state -> string
+
+      (* The comparison is used to store the final state in a Map before pretty
+       * printing, but not before doing any resolution of predicates. So the
+       * `compare` function may be imprecise. As example if we don't show the
+       * inequalities at pretty-printing, then the comparison may return that
+       * two solver are equals even if they contains different inequalities. *)
+      val compare_solver_state : solver_state -> solver_state -> int
     end
 
 module type AArch64 =
@@ -137,6 +183,8 @@ module type AArch64 =
   and type Cst.Instr.t = AArch64Base.instruction
   and type 'a arch_constr_op1 = 'a AArch64Op.unop
   and type 'a arch_constr_op = 'a AArch64Op.binop
+  and type arch_pred = AArch64Op.predicate
+  and type solver_state = PAC.solver_state
 
 module type AArch64ASL =
   AArch64
