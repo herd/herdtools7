@@ -55,7 +55,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     open Code
 
     let pp_v v =
-      let v = C.C.PteVal.value_to_int v in
+      let v = C.C.PteVal.to_int v in
       if O.hexa then sprintf "0x%x" v
       else sprintf "%i" v
 
@@ -282,7 +282,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         Some r
       with Not_found -> None
 
-    let is_load_init e = e.C.C.dir = Some R && e.C.C.v = C.C.PteVal.value_of_int 0
+    let is_load_init e = e.C.C.dir = Some R && e.C.C.v = C.C.PteVal.from_int 0
 
     let check_edge = function
       | C.E.Ws Ext
@@ -316,5 +316,5 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       | C.E.Rf _-> 2
       | C.E.Fr _ -> 1
       | _ -> 0 )
-      |> C.C.PteVal.value_of_int
+      |> C.C.PteVal.from_int
   end
