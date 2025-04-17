@@ -55,6 +55,7 @@ module type S = sig
     | Warn of string
 
   type cnstrnts = cnstrnt list
+  val pp_eq : cnstrnt -> string
   val pp_cnstrnts : cnstrnt list -> string
 
   type solution
@@ -149,6 +150,8 @@ and type state = A.state =
           (V.pp C.hexa v) ^ ":=" ^(pp_rvalue rval)
       | Failed e  -> sprintf "Failed %s" (Printexc.to_string e)
       | Warn e  -> e
+
+    let pp_eq = pp_cnstrnt
 
     let pp_cnstrnts lst =
       String.concat "\n"
@@ -588,9 +591,9 @@ let get_failed cns =
      *     - [sol] updated to add all the variable affections found;
      *     - [eqs] updated to add the unsolved equations.
      *)
-    let solve_one c sol eqs =
+    let do_solve_one c sol =
       match c with
-      | Warn _|Failed _ -> sol,c::eqs
+      | Warn _|Failed _ -> sol,[c]
       | Assign (v0,e) ->
          begin
            try
@@ -598,29 +601,42 @@ let get_failed cns =
              and e = simplify_vars_in_expr sol e |> mk_atom_from_expr in
              match v,e with
              | V.Var x,Atom (V.Val atom) ->
-                add_sol x atom sol,eqs
+                add_sol x atom sol,[]
              | V.Val c1,Atom (V.Val c2) ->
-                if V.Cst.eq c1 c2 then sol,eqs
+                if V.Cst.eq c1 c2 then sol,[]
                 else raise Contradiction
              (* Last case below can occur when called on a
                 strongly connected component. *)
-             | _,_ -> sol,Assign (v,e)::eqs
+             | _,_ -> sol,[Assign (v,e)]
            with
            | Contradiction|Misc.Timeout as exn -> raise exn
            | exn ->
               if C.debug.Debug_herd.exc then raise exn ;
-              (sol,Failed exn::eqs)
+              (sol,[Failed exn])
          end
+
+    let solve_one c sol eqs = let sol,eq = do_solve_one c sol in sol,eq@eqs
+
+    let same_eqs eqs1 eqs2 =  Misc.list_compare OrderedEq.compare eqs1 eqs2 = 0
 
     let topo_step cs (sol,eqs) =
       match cs with
       | [] -> assert false
       | [c] -> solve_one c sol eqs
       | scc ->
-         (* Attempt to partial solve *)
-         List.fold_left
-           (fun (sol,scc) c -> solve_one c sol scc)
-           (sol,eqs) scc
+          (* Iterate solve, until fixpoint *)
+          let solve_step sol scc =
+            List.fold_right
+              (fun c (sol,scc) ->
+                let sol,eq = do_solve_one c sol in
+                (sol,(eq@scc)))
+              scc (sol,[])  in
+          let rec solve_rec sol scc0 =
+            let sol,scc = solve_step sol scc in
+            if same_eqs scc0 scc then sol,scc
+            else solve_rec sol scc in
+          let sol,scc = solve_rec sol scc in
+          sol,scc@eqs
 
     (** [solve_top_step [cs] tries to solve the system [cs] by sorting [cs]
       * topologically, returns [(sol,cs,sccs)], where
@@ -658,6 +674,22 @@ let get_failed cns =
         try
           (* Solve in one scan *)
           let sol,cs = solve_topo_step cs in
+          (* Additional substitution step on lhs only.
+             Namely, there can be several constraints whose lhs
+             are the same variable, one of which  has been solved *)
+          let cs =
+            List.fold_left
+              (fun cs c ->
+                match c with
+                | Warn _|Failed _ -> c::cs
+                | Assign(v,e) ->
+                    let v = simplify_vars_in_atom sol v in
+                    match v,e with
+                    | V.Val c1,Atom (V.Val c2) ->
+                        if V.Cst.eq c1 c2 then cs
+                        else raise Contradiction
+                    | _,_ -> Assign (v,e)::cs)
+              [] cs in
           (* Add solutions of the form x := y *)
           let sol = add_vars_solns m sol in
           Maybe (sol,cs)
