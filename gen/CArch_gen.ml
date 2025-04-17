@@ -271,11 +271,11 @@ let applies_atom_rmw _ ar aw = match ar,aw with
 let show_rmw_reg _ = true
 
 let compute_rmw rmw old co =
-  let old = PteVal.value_to_int old in
-  let co = PteVal.value_to_int co in
+  let old = PteVal.to_int old in
+  let co = PteVal.to_int co in
   let new_value = match rmw with
   | Exch -> co
   | Add -> old+co in
-  PteVal.value_of_int new_value
+  PteVal.from_int new_value
 
 include NoEdge
