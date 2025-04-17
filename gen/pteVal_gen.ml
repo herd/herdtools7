@@ -29,8 +29,10 @@ module type S = sig
   type env = (string * v) list
   val pp_v : ?hexa:bool -> v -> string
   val no_value : v
-  val value_to_int : v -> int
-  val value_of_int : int -> v
+  val to_int : v -> int
+  val from_int : int -> v
+  val to_pte : v -> pte
+  val from_pte : pte -> v
   val value_compare : v -> v -> int
 end
 
@@ -45,29 +47,35 @@ module No(A:sig type arch_atom end) = struct
   let refers_virtual _ = None
 
   type v = NoValue | Plain of int | PteValue of pte
-  let value_to_int = function
-      | NoValue -> -1
-      | Plain v -> v
-      (* TODO change *)
-      | PteValue _ -> -1
+
+  let to_int = function
+    | NoValue -> -1
+    | Plain v -> v
+    | _ -> Warn.user_error "Cannot convert to int"
   let no_value = NoValue
-  let value_of_int v = Plain v
+  let from_int v = Plain v
+  let from_pte p = PteValue p
+  let to_pte = function
+    | PteValue p -> p
+    | _ -> Warn.user_error "Cannot convert to pte"
+
   let value_compare lhs rhs =
-      match lhs, rhs with
-      | NoValue, NoValue -> 0
-      | NoValue, Plain _ -> -1
-      | NoValue, PteValue _ -> -1
-      | Plain _, NoValue -> 1
-      | Plain lhs, Plain rhs -> Misc.int_compare lhs rhs
-      | Plain _, PteValue _ -> -1
-      | PteValue _, NoValue -> 1
-      | PteValue _, Plain _ -> 1
-      | PteValue lhs, PteValue rhs -> pte_compare lhs rhs
+    match lhs, rhs with
+    | NoValue, NoValue -> 0
+    | NoValue, Plain _ -> -1
+    | NoValue, PteValue _ -> -1
+    | Plain _, NoValue -> 1
+    | Plain lhs, Plain rhs -> Misc.int_compare lhs rhs
+    | Plain _, PteValue _ -> -1
+    | PteValue _, NoValue -> 1
+    | PteValue _, Plain _ -> 1
+    | PteValue lhs, PteValue rhs -> pte_compare lhs rhs
 
   let pp_v ?(hexa=false) = function
     | NoValue -> "**"
     | Plain v -> Printf.sprintf (if hexa then "0x%x" else "%d") v
     | PteValue p -> pp_pte p
+
 
   type env = (string * v) list
 end
