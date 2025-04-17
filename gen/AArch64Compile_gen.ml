@@ -1270,14 +1270,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let emit_store st p init e =
         let loc = Code.as_data e.C.loc in
         let x = Code.add_tag loc e.C.tag
-        and v = Code.add_tag loc (PteVal.value_to_int e.C.v) in
+        and v = Code.add_tag loc (PteVal.to_int e.C.v) in
         let rA,init,st = U.next_init st p init v in
         emit_store_reg st p init x rA
 
       let emit_store_idx vaddr st p init e idx =
         let loc = Code.as_data e.C.loc in
         let x = Code.add_tag loc e.C.tag
-        and v = Code.add_tag loc (PteVal.value_to_int e.C.v) in
+        and v = Code.add_tag loc (PteVal.to_int e.C.v) in
         let rA,init,st = U.next_init st p init v in
         let rB,init,st = U.next_init st p init x in
         let rC,c,st = do_sum_addr vaddr st rB idx in
@@ -1657,7 +1657,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_stp_reg opt idx st p init rA e =
       match opt,idx with
       | _,Both ->
-      do_emit_stp_reg opt st p init (PteVal.value_to_int e.C.v) rA
+      do_emit_stp_reg opt st p init (PteVal.to_int e.C.v) rA
 
     let emit_stp opt idx st p init loc e =
       let rA,init,st =  U.next_init st p init loc in
@@ -1759,7 +1759,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_access st p init e =
     (* collapse the value `v` in event `e` to integer *)
-    let value = PteVal.value_to_int e.C.v in
+    let value = PteVal.to_int e.C.v in
     match e.C.dir,e.C.loc with
     | None,_ -> Warn.fatal "AArchCompile.emit_access"
     | Some d,Code lab ->
@@ -1921,11 +1921,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             Some r,init,cs,st
         | W,Some (Pte (Set _),None) ->
             let init,cs,st =
-              emit_set_pteval false st p init e.C.pte (Misc.add_pte loc) in
+              emit_set_pteval false st p init (PteVal.to_pte e.C.v) (Misc.add_pte loc) in
             None,init,cs,st
         | W,Some (Pte (SetRel _),None) ->
             let init,cs,st =
-              emit_set_pteval true st p init e.C.pte (Misc.add_pte loc) in
+              emit_set_pteval true st p init (PteVal.to_pte e.C.v) (Misc.add_pte loc) in
             None,init,cs,st
         | d,Some (Pte _,_ as a) ->
             Warn.fatal
@@ -1990,7 +1990,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let do_emit_exch1 emit_addr st p init er ew =
       let rA,init,caddr,st = emit_addr st p init er in
       let rR,st = next_reg st in
-      let rW,init,csi,st = U.emit_mov st p init (PteVal.value_to_int ew.C.v) in
+      let rW,init,csi,st = U.emit_mov st p init (PteVal.to_int ew.C.v) in
       let arw = check_arw_lxsx er ew in
       let init,cs,st = XSingle.emit_pair arw p st init rR rW rA ew in
       let cs = add_label_to_first_instructions er cs in
@@ -2001,7 +2001,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let do_emit_exch22 emit_addr st p init er ew =
       let rA,init,caddr,st = emit_addr st p init er in
       let rR1,rR2,st = next_reg2 st in
-      let rW1,init,csi,st = U.emit_mov st p init (PteVal.value_to_int ew.C.v) in
+      let rW1,init,csi,st = U.emit_mov st p init (PteVal.to_int ew.C.v) in
       let rW2,st = next_reg st in
       let arw = check_arw_lxsx er ew in
       let init,cs,st =
@@ -2014,7 +2014,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let do_emit_exch21 emit_addr st p init er ew =
       let rA,init,caddr,st = emit_addr st p init er in
       let rR1,rR2,st = next_reg2 st in
-      let rW,init,csi,st = U.emit_mov st p init (PteVal.value_to_int ew.C.v) in
+      let rW,init,csi,st = U.emit_mov st p init (PteVal.to_int ew.C.v) in
       let arw = check_arw_lxsx er ew in
       let module X = ExclusivePair(XLoadPair)(XStore) in
       let init,cs,st =
@@ -2027,7 +2027,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let do_emit_exch12 emit_addr st p init er ew =
       let rA,init,caddr,st = emit_addr st p init er in
       let rR,st = next_reg st in
-      let rW1,init,csi,st = U.emit_mov st p init (PteVal.value_to_int ew.C.v) in
+      let rW1,init,csi,st = U.emit_mov st p init (PteVal.to_int ew.C.v) in
       let rW2,st = next_reg st in
       let arw = check_arw_lxsx er ew in
       let module X = ExclusivePair(XLoad)(XStorePair) in
@@ -2084,7 +2084,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       assert (er.C.ctag = ew.C.ctag && er.C.cseal = ew.C.cseal) ;
       let sz,a,opt = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
       let rR,st = next_reg st in
-      let rW,init,csi,st = mk_emit_mov sz st p init (PteVal.value_to_int ew.C.v) in
+      let rW,init,csi,st = mk_emit_mov sz st p init (PteVal.to_int ew.C.v) in
       let sz = match opt with
       | None -> sz
       | Some Capability -> assert (Misc.is_none sz) ; Some (MachSize.S128, 0) in
@@ -2109,8 +2109,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_cas_rA st p init er ew rA =
       assert (er.C.ctag = ew.C.ctag && er.C.cseal = ew.C.cseal) ;
       let sz,a,opt = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
-      let rS,init,csS,st = mk_emit_mov_fresh sz st p init (PteVal.value_to_int er.C.v) in
-      let rT,init,csT,st = mk_emit_mov sz st p init (PteVal.value_to_int ew.C.v) in
+      let rS,init,csS,st = mk_emit_mov_fresh sz st p init (PteVal.to_int er.C.v) in
+      let rT,init,csT,st = mk_emit_mov sz st p init (PteVal.to_int ew.C.v) in
       let sz = match opt with
       | None -> sz
       | Some Capability -> assert (Misc.is_none sz) ; Some (MachSize.S128, 0) in
@@ -2140,7 +2140,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | _ ->
           Warn.fatal "Unexpected atoms in STOP instruction: %s,%s"
             (pp_atom_acc b)  (pp_atom_acc a) in
-      let rW,init,csi,st = mk_emit_mov sz st p init (PteVal.value_to_int ew.C.v) in
+      let rW,init,csi,st = mk_emit_mov sz st p init (PteVal.to_int ew.C.v) in
       let cs,st = match sz with
       | None -> [stop op a rW rA],st
       | Some (sz,o) ->
@@ -2249,7 +2249,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let r2,st = next_reg st in
       let cs0,st =  calc0_gen csel st vdep r2 rd in
       (* collapse the value `v` in event `e` to integer *)
-      let value = PteVal.value_to_int e.C.v in
+      let value = PteVal.to_int e.C.v in
       match e.C.dir,e.C.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some d,Data loc ->
@@ -2424,11 +2424,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (Pair _,_) -> assert false
           | (W,(Some (Pte (Set _),None))) ->
               let init,cs,st =
-                emit_set_pteval_idx false vdep r2 st p init e.C.pte (Misc.add_pte loc) in
+                emit_set_pteval_idx false vdep r2 st p init (PteVal.to_pte e.C.v) (Misc.add_pte loc) in
               None,init,pseudo cs0@cs,st
           | (W,(Some (Pte (SetRel _),None))) ->
               let init,cs,st =
-                emit_set_pteval_idx true vdep r2 st p init e.C.pte (Misc.add_pte loc) in
+                emit_set_pteval_idx true vdep r2 st p init (PteVal.to_pte e.C.v) (Misc.add_pte loc) in
               None,init,pseudo cs0@cs,st
           | (R,(Some (Pte (Read|ReadAcq|ReadAcqPc as rk),None)))
             ->
@@ -2542,7 +2542,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           Some (a,Some (MachSize.S128,0))
         | _ -> Some (a,m) end in
       (* collapse the value `v` in event `e` to integer *)
-      let value = PteVal.value_to_int e.C.v in
+      let value = PteVal.to_int e.C.v in
       let regs,inits,cs,st = match e.C.dir,e.C.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some R,_ -> Warn.fatal "data dependency to load"
@@ -2568,7 +2568,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 let addi = [addi r2 r2 e.C.ord] in
                 r2,cs2,init,st,addi
             | Some (Pte _,None) ->
-                let rA,init,st = U.emit_pteval st p init e.C.pte in
+                let rA,init,st = U.emit_pteval st p init (PteVal.to_pte e.C.v) in
                 let cs,st =
                   match vdep with
                   | A64.V128 ->
@@ -2847,7 +2847,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let do_check_load p st r e =
       let ok,st = A.ok_reg st in
       (fun k ->
-        Instruction (cmpi r (PteVal.value_to_int e.C.v))::
+        Instruction (cmpi r (PteVal.to_int e.C.v))::
         Instruction (bne (Label.last p))::
         Instruction (incr ok)::
         k),

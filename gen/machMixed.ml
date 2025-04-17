@@ -60,7 +60,7 @@ module Make(C:Config)(PteVal:PteVal_gen.S) = struct
     r
 
   let tr_value sz v =
-    let v = PteVal.value_to_int v in
+    let v = PteVal.to_int v in
     let rec do_rec sz v = match sz with
       | Byte -> v
       | Short -> v lsl 8 + v
@@ -69,7 +69,7 @@ module Make(C:Config)(PteVal:PteVal_gen.S) = struct
           let x = do_rec Word v in
           x lsl 32 + x
       | S128 -> assert false in
-  PteVal.value_of_int (do_rec sz v)
+  PteVal.from_int (do_rec sz v)
 
 
 end
@@ -94,8 +94,8 @@ module Vals(C:ValsConfig)(PteVal:PteVal_gen.S) = struct
         no
 
   let overwrite_value v sz o w  =
-    let v = PteVal.value_to_int v in
-    let w = PteVal.value_to_int w in
+    let v = PteVal.to_int v in
+    let w = PteVal.to_int w in
     let new_value = if sz = C.naturalsize () then w
     else
       let o = correct_offset sz o in
@@ -104,10 +104,10 @@ module Vals(C:ValsConfig)(PteVal:PteVal_gen.S) = struct
       let wshifted = w lsl nshift in
       let mask = lnot (((1 lsl sz_bits) - 1) lsl nshift) in
       (v land mask) lor wshifted in
-    PteVal.value_of_int new_value
+    PteVal.from_int new_value
 
   let extract_value v sz o =
-    let v = PteVal.value_to_int v in
+    let v = PteVal.to_int v in
     let sz_bits =  MachSize.nbits sz in
     let o = correct_offset sz o in
     let nshift =  o * 8 in
@@ -119,7 +119,7 @@ module Vals(C:ValsConfig)(PteVal:PteVal_gen.S) = struct
     let r = (v lsr nshift) land mask in
 (*      Printf.eprintf "EXTRACT (%s,%i)[0x%x]: 0x%x -> 0x%x\n"
         (MachSize.pp sz) o mask v r ; *)
-    PteVal.value_of_int r
+    PteVal.from_int r
 
 end
 

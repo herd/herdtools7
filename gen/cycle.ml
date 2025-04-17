@@ -34,7 +34,9 @@ module type S = sig
         (* TODO fold into value *)
         vecreg: PteVal.v list list ; (* Alternative for SIMD *)
         (* Pte value *)
+(*
         pte : PteVal.pte ;
+*)
         (* TODO instruction fetch related value, fold into value *)
         ins : int ;
         dir : dir option ;
@@ -169,7 +171,9 @@ module Make (O:Config) (E:Edge.S) :
         ctag : int; cseal : int; dep : int;
         v   : PteVal.v ;
         vecreg: PteVal.v list list ;
+(*
         pte : PteVal.pte ;
+*)
         ins : int ;
         dir : dir option ;
         proc : Code.proc ;
@@ -191,11 +195,10 @@ module Make (O:Config) (E:Edge.S) :
       v=PteVal.no_value ; ins=0;dir=None; proc=(-1); atom=None; rmw=false;
       cell=[||]; tcell=[||];
       bank=Code.Ord; idx=(-1);
-      pte=pte_default;
       check_fault=None;
       check_value=None; }
 
-  let make_wsi idx loc = { evt_null with dir=Some W ; loc=loc; idx=idx; v=PteVal.value_of_int 0;}
+  let make_wsi idx loc = { evt_null with dir=Some W ; loc=loc; idx=idx; v=PteVal.from_int 0;}
 
   module OrderedEvent = struct
     type t = event
@@ -235,7 +238,7 @@ module Make (O:Config) (E:Edge.S) :
   let debug_vector =
     if do_neon || do_sve || do_sme then
       let pp_one value = Code.add_vector O.hexa
-        (List.map PteVal.value_to_int value) in
+        (List.map PteVal.to_int value) in
       fun e ->
       sprintf " (vecreg={%s})"
         (String.concat "," (List.map pp_one e.vecreg))
@@ -247,17 +250,19 @@ module Make (O:Config) (E:Edge.S) :
     String.concat ", " (List.map debug_val (Array.to_list v))
 
   let debug_evt e =
-    let pp_v =
+(*
+    let pp_v = debug_val e.v in
       match e.bank with
       | Pte -> PteVal.pp_pte e.pte
       | (Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _|Instr) -> debug_val e.v in
+*)
     sprintf "%s%s %s %s%s%s%s%s"
       (debug_dir e.dir)
       (debug_atom e.atom)
       (Code.pp_loc e.loc)
       (match debug_vec e.cell with
        | "" -> "" | s -> "cell=[" ^ s ^"] ")
-      pp_v (debug_tag e) (debug_morello e) (debug_vector e)
+      (debug_val e.v) (debug_tag e) (debug_morello e) (debug_vector e)
 
   let debug_edge = E.pp_edge
 
@@ -515,13 +520,13 @@ module CoSt = struct
     let map  =
       M.add Tag init <<  M.add CapaTag init <<
       M.add CapaSeal init << M.add Ord init << M.add Instr init <! M.empty
-    and co_cell = Array.make (if sz <= 0 then 1 else sz) (PteVal.value_of_int init) in
+    and co_cell = Array.make (if sz <= 0 then 1 else sz) (PteVal.from_int init) in
     { map; co_cell; pte_value; check_fault; check_value }
 
   let find_no_fail key map =
     try M.find key map with Not_found -> assert false
 
-  let get_co st bank = PteVal.value_of_int (find_no_fail bank st.map)
+  let get_co st bank = PteVal.from_int (find_no_fail bank st.map)
 
   let set_co st bank v =
     let b = match bank with VecReg _ -> Ord | _ -> bank in
@@ -548,7 +553,7 @@ module CoSt = struct
          | Ord ->
             co_cell.(0) <- E.overwrite_value old e.atom cell2
          | Pair -> (* No Rmw for pairs *)
-            let width = PteVal.value_of_int ((PteVal.value_to_int e.v) - 1) in
+            let width = PteVal.from_int ((PteVal.to_int e.v) - 1) in
             co_cell.(0) <- E.overwrite_value old e.atom width;
             let old = st.co_cell.(0) in
             co_cell.(1) <- E.overwrite_value old e.atom e.v
@@ -604,9 +609,9 @@ module CoSt = struct
   let step_simd st n =
     let fst = find_no_fail Ord st.map in
     let lst = fst+E.SIMD.nregs n in
-    let new_co_cell = st.co_cell |> Array.map PteVal.value_to_int
+    let new_co_cell = st.co_cell |> Array.map PteVal.to_int
                       |> E.SIMD.step n fst
-                      |> Array.map PteVal.value_of_int in
+                      |> Array.map PteVal.from_int in
     { st with co_cell=new_co_cell; map=M.add Ord lst st.map; }
 end
 
@@ -903,17 +908,17 @@ let set_same_loc st n0 =
       (* TODO: potentially rework the if-elseif-else here as it is confused *)
       begin if Code.is_data n.evt.loc then
         begin if do_memtag then
-          let tag = PteVal.value_to_int (CoSt.get_co st Tag) in
+          let tag = PteVal.to_int (CoSt.get_co st Tag) in
           n.evt <- { n.evt with tag; }
         else if do_morello then
-          let ord = PteVal.value_to_int (CoSt.get_co st Ord) in
-          let ctag = PteVal.value_to_int (CoSt.get_co st CapaTag) in
-          let cseal = PteVal.value_to_int (CoSt.get_co st CapaSeal) in
+          let ord = PteVal.to_int (CoSt.get_co st Ord) in
+          let ctag = PteVal.to_int (CoSt.get_co st CapaTag) in
+          let cseal = PteVal.to_int (CoSt.get_co st CapaSeal) in
           n.evt <- { n.evt with ord; ctag; cseal; }
         end
       else (* TODO why update the instruction *)
         begin
-          let ins = PteVal.value_to_int (CoSt.get_co st Instr) in
+          let ins = PteVal.to_int (CoSt.get_co st Instr) in
           n.evt <- { n.evt with ins; }
         end
  (*
@@ -964,10 +969,10 @@ let set_same_loc st n0 =
             | VecReg a ->
               let st = CoSt.step_simd st a in
               let cell = CoSt.get_cell st
-                           |> Array.map PteVal.value_to_int in
+                           |> Array.map PteVal.to_int in
               let vecreg  = E.SIMD.read a cell
-                       |> List.map (List.map PteVal.value_of_int) in
-              let cell = Array.map PteVal.value_of_int cell in
+                       |> List.map (List.map PteVal.from_int) in
+              let cell = Array.map PteVal.from_int cell in
               let v =
                 match vecreg with
                   | (v::_)::_ -> v
@@ -1001,11 +1006,14 @@ let set_same_loc st n0 =
                     E.set_pteval n.evt.atom pte_val next_loc
                   end else pte_val in
               let st = CoSt.set_pte_value st pte_val in
-              n.evt <- { n.evt with pte = pte_val; check_value; } ;
+              (* TODO UPDATE *)
+              let v = PteVal.from_pte pte_val in
+              n.evt <- { n.evt with v; (* pte = pte_val;*) check_value; } ;
+              (* TODO END UPDATE *)
               ((!next_x_pred || next_x_ok), st)
             end (* END of match bank *)
           | Code _ ->
-            let ins = CoSt.get_co st Instr |> PteVal.value_to_int in
+            let ins = CoSt.get_co st Instr |> PteVal.to_int in
             n.evt <- { n.evt with ins; check_value; } ;
             let bank = n.evt.bank in
             match bank with
@@ -1013,7 +1021,7 @@ let set_same_loc st n0 =
             | Ord ->
               let st = CoSt.next_co st bank in
               let v = CoSt.get_co st bank in
-              n.evt <- { n.evt with ins = PteVal.value_to_int v;} ;
+              n.evt <- { n.evt with ins = PteVal.to_int v;} ;
               (next_x_ok, st)
             | _ -> (next_x_ok, st)
           end (* END of `Some W` *)
@@ -1041,9 +1049,9 @@ let set_same_loc st n0 =
               let check_fault = exist_pte_value_write ns in
               let init_st = CoSt.create i sz pte_val check_value check_fault in
               let next_x_ok,_st = do_set_write_val false init_st ns in
-              let env = if do_kvm then (Code.as_data loc,PteVal.value_of_int k)::env else env in
+              let env = if do_kvm then (Code.as_data loc,PteVal.from_int k)::env else env in
               if next_x_ok then
-                k+8,(next_x,PteVal.value_of_int (k+4))::env
+                k+8,(next_x,PteVal.from_int (k+4))::env
               else
                 k+4,env)
         nss (0,[]) in
@@ -1084,14 +1092,14 @@ let set_dep_v nss =
     (fun k ns ->
       List.fold_left
         (fun v n ->
-          n.evt <- { n.evt with dep=PteVal.value_to_int v; } ;
+          n.evt <- { n.evt with dep=PteVal.to_int v; } ;
           n.evt.v)
         k ns)
-    (PteVal.value_of_int 0) nss in
+    (PteVal.from_int 0) nss in
   (if List.length nss > 0 then
     if List.length (List.hd nss) > 0 then
       let n = (List.hd (List.hd nss)) in
-      n.evt <- { n.evt with dep=PteVal.value_to_int v; }) ;
+      n.evt <- { n.evt with dep=PteVal.to_int v; }) ;
   ()
 
 (* TODO: this is wrong for Store CR's: consider Rfi Store PosRR *)
@@ -1105,9 +1113,9 @@ let set_read_individual_v n cell check_value =
 
 let set_read_pair_v n cell check_value =
   let e = n.evt in
-  let v0 = E.extract_value cell.(0) e.atom |> PteVal.value_to_int
-  and v1 =  E.extract_value cell.(1) e.atom |> PteVal.value_to_int in
-  let v = v0 + v1 |> PteVal.value_of_int in
+  let v0 = E.extract_value cell.(0) e.atom |> PteVal.to_int
+  and v1 =  E.extract_value cell.(1) e.atom |> PteVal.to_int in
+  let v = v0 + v1 |> PteVal.from_int in
   let e = { e with v=v; check_value } in
   n.evt <- e
 
@@ -1141,10 +1149,10 @@ let do_set_read_v init =
           n.evt <- { n.evt with check_fault };
           st
         | VecReg a ->
-          let cell = Array.map PteVal.value_to_int cell in
+          let cell = Array.map PteVal.to_int cell in
           let v = E.SIMD.read a cell
                    |> E.SIMD.reduce
-                   |> PteVal.value_of_int in
+                   |> PteVal.from_int in
           let check_fault, st = CoSt.fault_update st in
           n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
           st
@@ -1152,7 +1160,9 @@ let do_set_read_v init =
           n.evt <- { n.evt with v = CoSt.get_co st bank; check_value; };
           st
         | Pte ->
-          n.evt <- { n.evt with pte = CoSt.get_pte_value st; };
+          let pte_val = CoSt.get_pte_value st in
+          let v = PteVal.from_pte pte_val in
+          n.evt <- { n.evt with v; };
           st
         end
       (* Update `st`, `cell` and `pte_cell` for future read events *)
@@ -1160,7 +1170,7 @@ let do_set_read_v init =
         let st =
           match bank with
           | Tag|CapaTag|CapaSeal ->
-             CoSt.set_co st bank (PteVal.value_to_int n.evt.v)
+             CoSt.set_co st bank (PteVal.to_int n.evt.v)
           |Ord|Pair|VecReg _ ->
               (* Record the cell value in `st` in
                memory access to a non-instruction value *)
@@ -1173,7 +1183,7 @@ let do_set_read_v init =
             (* Record the pte value in `st` in
               memory access to a non-instruction pte value *)
             if Code.is_data n.evt.loc then
-                CoSt.set_pte_value st n.evt.pte
+                CoSt.set_pte_value st @@ PteVal.to_pte n.evt.v
             else CoSt.set_co st bank n.evt.ins in
         st
       | None ->
@@ -1196,7 +1206,7 @@ let do_set_read_v init =
     | [] -> k
     | n::_  ->
         let init = List.assoc_opt (Code.as_data n.evt.loc) initvals
-                  |> Option.map PteVal.value_to_int
+                  |> Option.map PteVal.to_int
                   |> Option.value ~default:0 in
         let vf = do_set_read_v init ns in
         (n.evt.loc,vf)::k)
@@ -1243,7 +1253,7 @@ let finish n =
     eprintf "INITIAL VALUES: %s\n"
       (String.concat "; "
          (List.map
-            (fun (loc,k) -> sprintf "%s->%d" loc (PteVal.value_to_int k))
+            (fun (loc,k) -> sprintf "%s->%d" loc (PteVal.to_int k))
             initvals)) ;
     eprintf "WRITE VALUES\n" ;
     debug_cycle stderr n
@@ -1259,7 +1269,7 @@ let finish n =
       (String.concat ","
         (List.map
           (fun (loc,(v,_pte)) -> sprintf "%s -> 0x%x"
-            (Code.pp_loc loc) (PteVal.value_to_int v)) vs))
+            (Code.pp_loc loc) (PteVal.to_int v)) vs))
   end ;
   if O.variant Variant_gen.Self then check_fetch n;
   initvals
@@ -1571,7 +1581,7 @@ let rec group_rec x ns = function
           (fun (loc,ns) k -> match List.flatten ns with
           | []|[_]|_::_::_::_ -> k
           | [_;n;] ->
-              let p = n.evt.pte in
+              let p = PteVal.to_pte n.evt.v in
               (Misc.add_pte (Code.as_data loc),p)::k)
           r []
     | None ->  []

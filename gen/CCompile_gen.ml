@@ -227,7 +227,7 @@ module Make(O:Config) : Builder.S
         let decls = A.Decl (A.Plain A.deftype,r,None)
         and body =
           A.Seq
-            (A.SetReg (r,load_from No mo x),breakcond A.Ne p r (C.PteVal.value_of_int 0)) in
+            (A.SetReg (r,load_from No mo x),breakcond A.Ne p r (C.PteVal.from_int 0)) in
         r,A.Seq (decls,A.Loop body),st
 
       let compile_load_one st p mo x =
@@ -236,7 +236,7 @@ module Make(O:Config) : Builder.S
         and body =
           A.Seq
             (A.SetReg (r,load_from No mo x),
-             breakcond A.Eq p r (C.PteVal.value_of_int 1)) in
+             breakcond A.Eq p r (C.PteVal.from_int 1)) in
         r,A.Seq (decls,A.Loop body),st
 
 
@@ -245,14 +245,14 @@ module Make(O:Config) : Builder.S
         let idx,st = alloc_loop_idx p st in
         let decls =
           A.Seq
-            (A.Decl (A.Plain TypBase.Int,idx,Some (A.Const (C.PteVal.value_of_int 200))),
+            (A.Decl (A.Plain TypBase.Int,idx,Some (A.Const (C.PteVal.from_int 200))),
              A.Decl (A.Plain A.deftype,r,None))
         and body =
           A.seqs
             [A.SetReg (r,load_from No mo x) ;
              do_breakcond A.Ne p r e ;
              A.Decr idx ;
-             breakcond A.Eq p idx (C.PteVal.value_of_int 0);] in
+             breakcond A.Eq p idx (C.PteVal.from_int 0);] in
         r,A.Seq (decls,A.Loop body),st
 
       let compile_load_not_value st p mo x v =
@@ -309,7 +309,7 @@ module Make(O:Config) : Builder.S
       let insert_now d i =
         List.fold_right
           (fun (t,r) k ->
-            A.seqs [A.Decl (t,r,Some (A.Const (C.PteVal.value_of_int (-1))));k])
+            A.seqs [A.Decl (t,r,Some (A.Const (C.PteVal.from_int (-1))));k])
           d i
 
       let rec lift_rec top xs i =
@@ -379,7 +379,7 @@ module Make(O:Config) : Builder.S
         | v::vs ->
             let r,c,st =
               compile_load_assertvalue  No
-                (C.PteVal.value_of_int @@ IntSet.choose v) st p mo x  in
+                (C.PteVal.from_int @@ IntSet.choose v) st p mo x  in
             let cs,fs = straight_observer_std fenced st p  mo x vs in
             A.seq c (add_fence fenced cs),F.add_final_v p r v fs
 
@@ -387,7 +387,7 @@ module Make(O:Config) : Builder.S
         | [] -> assert false (* A.Nop,[] *)
         | [_] as vs -> straight_observer_std fenced st p mo x vs
         | v::vs ->
-            let v0 = C.PteVal.value_of_int @@ IntSet.choose v in
+            let v0 = C.PteVal.from_int @@ IntSet.choose v in
             if O.cpp then
               let ce = A.Const v0,A.Eq,assertval No mo x v0 in
               let cs,fs = straight_observer_check fenced st p  mo x vs in
@@ -608,7 +608,7 @@ module Make(O:Config) : Builder.S
                      (fun (v,obs) ->
                        if Array.length v > 1 then
                          Warn.fatal "No wide access in C" ;
-                       (C.PteVal.value_to_int v.(0)),obs))
+                       (C.PteVal.to_int v.(0)),obs))
                   vss in
               loc,vss)
             cos in
@@ -618,11 +618,11 @@ module Make(O:Config) : Builder.S
 
       let do_add_load st p f mo x v =
         let r,c,st = compile_load_assertvalue No v st p mo x in
-        c,F.add_final_v p r (IntSet.singleton @@ C.PteVal.value_to_int v) f,st
+        c,F.add_final_v p r (IntSet.singleton @@ C.PteVal.to_int v) f,st
 
       let do_add_loop st p f mo x v w =
         let r,c,st = compile_load_not_value st p mo x v in
-        c,F.add_final_v p r (IntSet.singleton @@ C.PteVal.value_to_int w) f,st
+        c,F.add_final_v p r (IntSet.singleton @@ C.PteVal.to_int w) f,st
 
       let add_fence n is = match n.C.edge.E.edge with
       | E.Fenced (fe,_,_,_) -> A.Seq (A.Fence fe,is)

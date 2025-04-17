@@ -146,7 +146,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         else true
 
     let intset2vset is =
-      IntSet.fold (fun v k -> VSet.add (I (C.C.PteVal.value_of_int v)) k) is VSet.empty
+      IntSet.fold (fun v k -> VSet.add (I (C.C.PteVal.from_int v)) k) is VSet.empty
 
     let add_final_v p r v finals = (C.A.of_reg p r,intset2vset v)::finals
 
@@ -156,7 +156,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       let loc = C.A.of_reg p r in
       (loc,VSet.singleton (S v))::finals
 
-    let cons_int loc i fs = (loc,VSet.singleton (I (C.C.PteVal.value_of_int i)))::fs
+    let cons_int loc i fs = (loc,VSet.singleton (I (C.C.PteVal.from_int i)))::fs
 
     let cons_vec loc t fs =
       let vec = Code.add_vector O.hexa (Array.to_list t) in
@@ -192,17 +192,17 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                  | [] -> assert false
                  | v0::_ -> v0 in
                 let vec = v0
-                 |> List.map C.C.PteVal.value_to_int
+                 |> List.map C.C.PteVal.to_int
                  |> Code.add_vector O.hexa in
                 Some (S vec)
             | Code.Tag ->
-                Some (S (Code.add_tag (Code.as_data evt.C.C.loc) (C.C.PteVal.value_to_int evt.C.C.v)))
+                Some (S (Code.add_tag (Code.as_data evt.C.C.loc) (C.C.PteVal.to_int evt.C.C.v)))
             | Code.Pte ->
-                Some (P evt.C.C.pte)
+                Some (P (C.C.PteVal.to_pte evt.C.C.v))
             end
         | Some Code.W ->
            assert (evt.C.C.bank = Code.Ord || evt.C.C.bank = Code.CapaSeal) ;
-           Some (I ( evt.C.C.v |> C.C.PteVal.value_to_int |> prev_value |> C.C.PteVal.value_of_int ) )
+           Some (I ( evt.C.C.v |> C.C.PteVal.to_int |> prev_value |> C.C.PteVal.from_int ) )
         | None -> None in
         if show_in_cond n then match v with
         | Some v ->
@@ -214,7 +214,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                 begin match evt.C.C.vecreg with
                 | _::vs ->
                    List.map (fun v -> S
-                   ( v |> List.map C.C.PteVal.value_to_int
+                   ( v |> List.map C.C.PteVal.to_int
                      |> Code.add_vector O.hexa ) ) vs
                 | _ -> assert false
                 end
@@ -276,14 +276,14 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     let dump_val = function
       | I i ->
-          let i = C.C.PteVal.value_to_int i in
+          let i = C.C.PteVal.to_int i in
           if O.hexa then sprintf "0x%x" i
           else sprintf "%i" i
       | S s -> s
       | P p -> C.A.PteVal.pp_pte p
 
     let dump_tag = function
-      | I i -> C.C.PteVal.value_to_int i
+      | I i -> C.C.PteVal.to_int i
       | _ -> Warn.fatal "Tags can only be of type integer"
 
     let dump_atom r v = match Misc.tr_atag (C.A.pp_location r) with
