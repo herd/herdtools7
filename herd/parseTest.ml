@@ -104,17 +104,11 @@ module Top (TopConf:RunTest.Config) = struct
         if (no_key_da || no_key_db || no_key_ia || no_key_ib) && not (pauth1 || pauth2) then
           Warn.user_error "\"no-key-*\" variants require \"pauth1\" or \"pauth2\" variants" ;
 
-        if pauth1 && Conf.variant Variant.VMSA then
-          Warn.warn_always "\"pauth1\" and \"vmsa\" variants are not supported together now" ;
+        if pauth1 && Conf.variant Variant.MemTag && not (Conf.variant Variant.VMSA) then
+          Warn.warn_always "\"pauth1\" and \"memtag\" without \"vmsa\" variants are not supported together now" ;
 
-        if pauth2 && Conf.variant Variant.VMSA then
-          Warn.warn_always "\"pauth2\" and \"vmsa\" variants are not supported together now" ;
-
-        if pauth1 && Conf.variant Variant.MemTag then
-          Warn.warn_always "\"pauth1\" and \"memtag\" variants are not supported together now" ;
-
-        if pauth2 && Conf.variant Variant.MemTag then
-          Warn.warn_always "\"pauth2\" and \"memtag\" variants are not supported together now"
+        if pauth2 && Conf.variant Variant.MemTag && not (Conf.variant Variant.VMSA) then
+          Warn.warn_always "\"pauth2\" and \"memtag\" without \"vmsa\" variants are not supported together now" ;
       in
 
       let cache_type = CacheType.get splitted.Splitter.info in

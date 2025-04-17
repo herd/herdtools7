@@ -625,7 +625,7 @@ module Make
           rtag +++ fun tag1 -> tag_extract a_virt +++ fun tag2 ->
           M.op Op.Eq tag1 tag2 in
         let m =
-          let (>>=) = match a_phy with None when not pac -> (+++) | _ -> (>>=) in
+          let (>>=) = match a_phy with None -> (+++) | Some _ -> (>>=) in
           m >>= fun cond -> commit +++ fun _ -> M.unitT cond in
         M.delay_kont "check_tags" m
           (fun c m ->
@@ -633,7 +633,7 @@ module Make
               match a_phy with
               | None ->
                   if pac
-                  then M.bind_ctrldata ma (fun a -> m >>== fun _ -> loc_extract a)
+                  then ma >>*== fun a -> m >>== fun _ -> loc_extract a
                   else ma >>== fun a -> m >>== fun _ -> loc_extract a
               | Some _ ->
                   M.bind_ctrldata ma (fun a -> m >>== fun _ -> M.unitT a) in
