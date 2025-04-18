@@ -131,7 +131,7 @@ let parse_local_id =
 let parse_reg s =
   match (A64B.parse_reg s, s) with
   | Some r, _ -> Some (ArchReg r)
-  | None, "NZCV" -> Some (ArchReg AArch64Base.NZCV)
+  (* | None, "NZCV" -> Some (ArchReg AArch64Base.NZCV) *)
   | None, _ -> parse_local_id s
 
 (** A list of supported AArch64 registers. *)
