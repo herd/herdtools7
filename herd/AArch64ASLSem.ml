@@ -869,6 +869,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         |> state_add (global_loc "PSTATE") pstate_val
         |> List.fold_right add_arch_reg_if_present ASLBase.gregs
         |> add_reg_if_present AArch64Base.ResAddr (global_loc "RESADDR")
+        |> add_reg_if_present AArch64Base.SP (global_loc "SP_EL0")
       in
       (st, eqs)
 
