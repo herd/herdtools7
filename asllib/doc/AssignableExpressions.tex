@@ -1650,25 +1650,30 @@ The multi-field assignments in \listingref{lesetfields} evaluate without yieldin
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\vle$ is an expression for assigning each of the fields in $\fields$ of the record expression $\vlerecord$
-        with the corresponding slices given in $\vslices$ from the bitvector value $\vv$
-        (the rule \TypingRuleRef{LESetFields} ensures that the length of $\fields$ and $\vslices$ is the same);
-  \item \Proseevalexpr{$\env$}{right-hand-side expression corresponding to $\vlerecord$}{$(\vrmrecord, \envone)$}\ProseOrAbnormal;
-  \item \Proseeqdef{$\vm$}{$(\vv,\vg)$};
-  \item applying $\assignbitvectorfields$ to $(\vv,\vg)$, $\vrmrecord$, $\fields$, and $\vslices$, yields \\
-        $(\vmtwo, \envone)$\ProseOrError;
-  \item view the \concurrentnativevalue\ $\vmtwo$ as the pair $(\vvtwo, \vgtwo)$;
-  \item \Proseevallexpr{$\envone$}{$\vlerecord$}{the \concurrentnativevalue\ consisting of $\vvtwo$ and the parallel composition of $\vg$ and $\vgtwo$}{$C$}.
+  \item $\vle$ is an expression for assigning each of the fields in $\fields$
+    of the record expression $\vlerecord$ with the corresponding slices given
+    in $\vslices$ from the bitvector value $\vv$ %
+    (the rule \TypingRuleRef{LESetFields} ensures that the length of $\fields$
+    and $\vslices$ is the same);
+  \item \Proseevalexpr{$\env$}{%
+    right-hand-side expression corresponding to $\vlerecord$}{%
+    $((\vrecord, \vgone), \envone)$}\ProseOrAbnormal;
+  \item applying $\assignbitvectorfields$ to $\vv$, $\vrecord$,
+    $\fields$, and $\vslices$, yields \\
+    $\vvtwo$\ProseOrError;
+  \item \Proseeqdef{\vmtwo}{%
+    the pair consisting of $\vvtwo$ and the parallel composition of $\vg$ and
+    $\vgone$}
+  \item \Proseevallexpr{$\envone$}{$\vlerecord$}{$\vmtwo$}{$C$}.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \torexpr(\vlerecord), \vrmrecordnew} \evalarrow (\vrmrecord, \envone) \OrAbnormal\\\\
-  \vm \eqdef (\vv,\vg)\\
-  \assignbitvectorfields(\vm, \vrmrecord, \fields, \vslices) \evalarrow (\vmtwo, \envone) \OrDynError\\\\
-  \vmtwo \eqname (\vvtwo, \vgtwo)\\
-  \evallexpr{\envone, \vlerecord, (\vvtwo, \vg \parallelcomp \vgtwo)} \evalarrow C
+  \evalexpr{\env, \torexpr(\vlerecord), \vrmrecordnew} \evalarrow ((\vrecord, \vgone), \envone) \OrAbnormal\\\\
+  \assignbitvectorfields(\vv, \vrecord, \fields, \vslices) \evalarrow \vvtwo \OrDynError\\\\
+  \vmtwo \eqdef (\vvtwo, \vg \parallelcomp \vgone) \\
+  \evallexpr{\envone, \vlerecord, \vmtwo} \evalarrow C
 }{
   \evallexpr{\env, \overname{\LESetFields(\vlerecord, \fields, \vslices)}{\vle}, (\vv,\vg)} \evalarrow C
 }
@@ -1679,15 +1684,14 @@ The multi-field assignments in \listingref{lesetfields} evaluate without yieldin
 The helper function
 \[
   \assignbitvectorfields(
-    \overname{(\tbitvector\times\XGraphs)}{\vm} \aslsep
-    \overname{(\trecord\times\XGraphs)}{\vmone} \aslsep
+    \overname{\tbitvector}{\vbitvector} \aslsep
+    \overname{\trecord}{\record} \aslsep
     \overname{\identifier^*}{\fields} \aslsep
-    \overname{(\N\times\N)^*}{\vslices}) \aslto
-    \overname{(\trecord\times\XGraphs)}{\vmtwo}
+    \overname{{(\N\times\N)}^*}{\vslices}) \aslto
+    \overname{\trecord}{\vres}
 \]
-updates the list of fields $\fields$ of \concurrentnativevalue\ $\vmone$ with the
-slices given by $\vslices$ of the \concurrentnativevalue\ $\vm$, yielding the
-\concurrentnativevalue\ $\vmtwo$.
+updates the list of fields $\fields$ of $\record$ with the slices given by
+$\vslices$ of $\vbitvector$, yielding the \nativevalue\ $\vres$.
 
 \ExampleDef{Assignment Bitvector-typed Fields}
 The statement \verb|y.[data, time, status] = Ones{8} :: Zeros{16} :: '1';|
@@ -1702,7 +1706,7 @@ $\nvbitvector('11111111 0000000000000000 1')$.
   \item \AllApplyCase{empty}
   \begin{itemize}
     \item $\fields$ and $\vslices$ are both empty lists;
-    \item \Proseeqdef{$\vmtwo$}{$\vmone$}.
+    \item \Proseeqdef{$\vres$}{$\record$}.
   \end{itemize}
 
   \item \AllApplyCase{non\_empty}
@@ -1710,42 +1714,35 @@ $\nvbitvector('11111111 0000000000000000 1')$.
     \item $\fields$ is a list with \head\ $\fieldname$ and \tail\ $\fieldsone$;
     \item $\vslices$ is a list with \head\ $(\vione, \vitwo)$ and \tail\ $\vslicesone$;
     \item \Proseeqdef{$\vslice$}{the singleton list comprised of the pair of native integer values for $\vione$ and $\vitwo$};
-    \item view $\vm$ as $(\vv, \vg)$;
-    \item view $\vmone$ as $(\rvrecord, \vgone)$;
-    \item applying $\readfrombitvector$ to $\vv$ and $\vslice$ yields $\vvrecordslices$\ProseOrError;
-    \item applying $\setfield$ to $\fieldname$, $\vvrecordslices$, and $\rvrecord$ yields \\ $\rvrecordone$;
-    \item \Proseeqdef{the \concurrentnativevalue\ $\vrmrecordone$}{the pair consisting of the \nativevalue\ $\rvrecordone$
-          and the \executiongraph, which is the parallel composition of $\vg$ and $\vgone$};
-    \item applying $\assignbitvectorfields$ to $\vm$, $\vrmrecordone$, $\fieldsone$, and $\vslicesone$, yields $\vmtwo$\ProseOrError.
+    \item applying $\readfrombitvector$ to $\vbitvector$ and $\vslice$ yields $\recordslices$\ProseOrError;
+    \item applying $\setfield$ to $\fieldname$, $\recordslices$, and $\record$ yields \\ $\recordone$;
+    \item applying $\assignbitvectorfields$ to $\vbitvector$, $\recordone$, $\fieldsone$, and $\vslicesone$, yields $\vres$\ProseOrError.
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
-  \assignbitvectorfields(\vm, \vmone, \overname{\emptylist}{\fields}, \overname{\emptylist}{\vslices}) \evalarrow
-  \overname{\vmone}{\vmtwo}
+  \assignbitvectorfields(\vbitvector, \record, \overname{\emptylist}{\fields}, \overname{\emptylist}{\vslices}) \evalarrow
+  \overname{\record}{\vres}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[non\_empty]{
   \vslice \eqdef [(\nvint(\vione), \nvint(\vitwo))]\\
-  \vm \eqname (\vv, \vg)\\
-  \vmone \eqname (\rvrecord, \vgone)\\
-  \readfrombitvector(\vv, \vslice) \evalarrow \vvrecordslices \OrDynError\\\\
-  \setfield(\fieldname, \vvrecordslices, \rvrecord) \evalarrow \rvrecordone\\
-  \vrmrecordone \eqdef (\rvrecordone, \vg \parallelcomp \vgone)\\
-  \assignbitvectorfields(\vm, \vrmrecordone, \fieldsone, \vslicesone) \evalarrow \vmtwo \OrDynError
+  \readfrombitvector(\vbitvector, \vslice) \evalarrow \recordslices \OrDynError\\\\
+  \setfield(\fieldname, \recordslices, \record) \evalarrow \recordone\\
+  \assignbitvectorfields(\vbitvector, \recordone, \fieldsone, \vslicesone) \evalarrow \vres \OrDynError
 }{
   {
     \begin{array}{r}
   \assignbitvectorfields(
-    \vm,
-    \vmone,
+    \vbitvector,
+    \record,
     \overname{[\fieldname]\concat\fieldsone}{\fields},
     \overname{[(\vione, \vitwo)]\concat\vslicesone}{\vslices}) \evalarrow \\
-    \vmtwo
+    \vres
     \end{array}
   }
 }
@@ -1769,16 +1766,14 @@ All of the collection field assignable expressions in
   \item view $\env$ as an environment where $\tenv$ is the static environment
     and $\denv$ is the dynamic environment;
   \item $\vbase$ is bound in the global dynamic environment ($G^\denv.\storage$);
-  \item $\vvone$ is the value of $\vbase$ in the global component of $\env$ ;
-  \item \Proseeqdef{$\vm$}{$(\vv, \vg)$};
-  \item \Proseeqdef{$\vrmrecord$}{$(\vvone, \{\})$};
-  \item applying $\assignbitvectorfields$ to $\vm$, $\vrmrecord$,
-    $\fields$, and $\vslices$, yields $((\vvtwo, \vgtwo), \envone)$\ProseOrError;
+  \item $\record$ is the value of $\vbase$ in the global component of $\env$ ;
+  \item applying $\assignbitvectorfields$ to $\vv$, $\record$,
+    $\fields$, and $\vslices$, yields $\recordone$\ProseOrError;
   \item \Proseeqdef{$\vgzero$}{the graph containing a Write Effect for each
     $\fieldname$ in $\fields$};
-  \item $\newenv$ is $\env$ where $\vbase$ is bound to $\vv$ in the $\storage$ map
+  \item $\newenv$ is $\env$ where $\vbase$ is bound to $\recordone$ in the $\storage$ map
     of the global dynamic environment $G^\denv$.
-  \item $\newg$ is the ordered composition with the $\asldata$ edge of $\vgtwo$
+  \item $\newg$ is the ordered composition with the $\asldata$ edge of $\vg$
     and $\vgzero$;
 \end{itemize}
 
@@ -1787,12 +1782,11 @@ All of the collection field assignable expressions in
 \inferrule{
   \env \eqname (\tenv, \denv)\\
   \vbase \in \dom(G^\denv)\\
-  \vrmrecord \eqdef (G^\denv[\vbase], \{\}) \\
-  \vm \eqdef (\vv,\vg) \\
-  \assignbitvectorfields(\vm, \vrmrecord, \fields, \vslices) \evalarrow ((\vvtwo, \vgtwo), \envone) \OrDynError\\\\
+  \record \eqdef G^\denv[\vbase]\\
+  \assignbitvectorfields(\vv, \record, \fields, \vslices) \evalarrow \recordone \OrDynError\\\\
   \vgzero \eqdef \{\fieldname \in \fieldnames: \WriteEffect(\vbase + \ttdotstr + \fieldname)\}\\
-  \newenv \eqdef (\tenv, (G^\denv[\vx \mapsto \vvtwo], L^\denv))\\
-  \newg \eqdef \ordered{\vgtwo}{\asldata}{\vgzero} \\
+  \newenv \eqdef (\tenv, (G^\denv[\vx \mapsto \recordone], L^\denv))\\
+  \newg \eqdef \ordered{\vg}{\asldata}{\vgzero} \\
 }{
   \evallexpr{\env, \overname{\LESetCollectionFields(\vbase, \fields, \vslices)}{\vle}, (\vv,\vg)} \evalarrow \Normal(\newg,\newenv)
 }
