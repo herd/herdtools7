@@ -369,6 +369,7 @@ module Make (C : Config) = struct
     let reg_of_scope_id x scope =
       match (x, scope) with
       | "RESADDR", Scope.Global false -> ArchReg AArch64Base.ResAddr
+      | "SP_EL0", Scope.Global false -> ArchReg AArch64Base.SP
       | "PSTATE.N", Scope.Global false -> ArchReg AArch64Base.(PState PSTATE.N)
       | "PSTATE.Z", Scope.Global false -> ArchReg AArch64Base.(PState PSTATE.Z)
       | "PSTATE.C", Scope.Global false -> ArchReg AArch64Base.(PState PSTATE.C)
@@ -560,8 +561,6 @@ module Make (C : Config) = struct
       write_loc MachSize.Quad (loc_arch_reg reg ii) v aneutral (use_ii_with_poi ii poi)
       >>! []
 
-    let read_sp = read_aarch64_reg AArch64Base.SP
-    let write_sp = write_aarch64_reg AArch64Base.SP
     let read_pc = read_aarch64_reg AArch64Base.PC
     let write_pc = write_aarch64_reg AArch64Base.PC
     let read_res_addr = read_aarch64_reg AArch64Base.ResAddr
@@ -774,8 +773,6 @@ module Make (C : Config) = struct
           write_register;
         p0r "read_pc" ~side_effecting ~returns:bv_64 read_pc;
         p1 "write_pc" ~side_effecting ("data", bv_64) write_pc;
-        p0r "SP_EL0" ~side_effecting ~returns:bv_64 read_sp;
-        p1 "SP_EL0" ~side_effecting ("data", bv_64) write_sp;
         p0r "read_res_addr" ~side_effecting ~returns:bv_64 read_res_addr;
         p1 "write_res_addr" ~side_effecting ("data", bv_64) write_res_addr;
         (* Memory *)
