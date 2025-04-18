@@ -841,7 +841,8 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         let*^ rm_record, env1 = expr_of_lexpr le_record |> eval_expr env in
         let onwrite _ m = m in
-        let m2 = assign_bitvector_fields onwrite m rm_record slices fields in
+        let* v = m and* record = rm_record in
+        let m2 = assign_bitvector_fields onwrite v record slices fields in
         eval_lexpr ver le_record env1 m2 |: SemanticsRule.LESetFields
     (* End *)
     (* Begin EvalLESetCollectionFields *)
@@ -861,24 +862,25 @@ module Make (B : Backend.S) (C : Config) = struct
           in
           return v
         in
+        let* v = m and* record = rv_record in
         let* rv_record2 =
-          assign_bitvector_fields onwrite m rv_record slices fieldnames
+          assign_bitvector_fields onwrite v record slices fieldnames
         in
         let new_env = IEnv.assign_global base rv_record2 env in
         return_normal new_env
   (* End *)
 
   (* Begin AssignBitvectorFields *)
-  and assign_bitvector_fields onwrite mbitvector mrecord slices fieldnames =
+  and assign_bitvector_fields onwrite bitvector record slices fieldnames =
     match (slices, fieldnames) with
     | (i1, i2) :: slices, field_name :: fieldnames ->
         let slice = [ (B.v_of_int i1, B.v_of_int i2) ] in
         let* v_record_slices =
-          mbitvector >>= B.read_from_bitvector slice |> onwrite field_name
-        and* rv_record = mrecord in
-        let m2 = B.set_field field_name v_record_slices rv_record in
-        assign_bitvector_fields onwrite mbitvector m2 slices fieldnames
-    | [], [] -> mrecord
+          B.read_from_bitvector slice bitvector |> onwrite field_name
+        in
+        let* record2 = B.set_field field_name v_record_slices record in
+        assign_bitvector_fields onwrite bitvector record2 slices fieldnames
+    | [], [] -> return record
     | [], _ :: _ | _ :: _, [] -> assert false
   (* End *)
 
