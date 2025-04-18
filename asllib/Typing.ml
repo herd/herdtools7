@@ -2477,9 +2477,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     assert (loc.version = V0);
     let here = add_pos_from ~loc in
     match t.desc with
-    | T_Bool | T_Int UnConstrained | T_Real | T_String | T_Enum _ ->
+    | T_Bool | T_Int UnConstrained | T_Real | T_String | T_Enum _ | T_Bits _ ->
         base_value_v1 ~loc env t
-    | T_Bits _ -> base_value_v1 ~loc env t
     | T_Int (Parameterized (_, id)) -> E_Var id |> here
     | T_Int (WellConstrained ([], _) | PendingConstrained) -> assert false
     | T_Int
