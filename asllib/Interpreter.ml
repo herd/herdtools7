@@ -217,31 +217,31 @@ module Make (B : Backend.S) (C : Config) = struct
   let eval_global_decl env0 eval_expr d env_m =
     let*| env = env_m in
     match d.desc with
-    | D_GlobalStorage { initial_value; name; _ } -> (
-        let scope = B.Scope.global ~init:true in
-        match IMap.find_opt name env0 with
-        | Some v -> IEnv.declare_global name v env |> return
-        | None ->
-            let init_expr =
-              match initial_value with
-              | Some e -> e
-              | None -> fatal_from d TypeInferenceNeeded
-            in
-            let* eval_res = eval_expr env init_expr in
-            let v, env2 =
+    | D_GlobalStorage { initial_value; name; _ } ->
+        let* v, env2 =
+          match IMap.find_opt name env0 with
+          | Some v -> return (v, IEnv.declare_global name v env)
+          | None -> (
+              let init_expr =
+                match initial_value with
+                | Some e -> e
+                | None -> fatal_from d TypeInferenceNeeded
+              in
+              let* eval_res = eval_expr env init_expr in
               match eval_res with
-              | Normal (v, env2) -> (v, env2)
+              | Normal (v, env2) -> return (v, env2)
               | Throwing (exc, _env2) ->
                   let ty =
                     match exc with
                     | Some (_, ty) -> ty
                     | None -> T_Named "implicit" |> add_pos_from d
                   in
-                  fatal_from d (UnexpectedInitialisationThrow (ty, name))
-            in
-            let* () = B.on_write_identifier name scope v in
-            let env3 = IEnv.declare_global name v env2 in
-            return env3)
+                  fatal_from d (UnexpectedInitialisationThrow (ty, name)))
+        in
+        let scope = B.Scope.global ~init:true in
+        let* () = B.on_write_identifier name scope v in
+        let env3 = IEnv.declare_global name v env2 in
+        return env3
     | _ -> return env
 
   (* Begin EvalBuildGlobalEnv *)
