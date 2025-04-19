@@ -217,31 +217,31 @@ module Make (B : Backend.S) (C : Config) = struct
   let eval_global_decl env0 eval_expr d env_m =
     let*| env = env_m in
     match d.desc with
-    | D_GlobalStorage { initial_value; name; _ } -> (
-        let scope = B.Scope.global ~init:true in
-        match IMap.find_opt name env0 with
-        | Some v -> IEnv.declare_global name v env |> return
-        | None ->
-            let init_expr =
-              match initial_value with
-              | Some e -> e
-              | None -> fatal_from d TypeInferenceNeeded
-            in
-            let* eval_res = eval_expr env init_expr in
-            let v, env2 =
+    | D_GlobalStorage { initial_value; name; _ } ->
+        let* v, env2 =
+          match IMap.find_opt name env0 with
+          | Some v -> return (v, IEnv.declare_global name v env)
+          | None -> (
+              let init_expr =
+                match initial_value with
+                | Some e -> e
+                | None -> fatal_from d TypeInferenceNeeded
+              in
+              let* eval_res = eval_expr env init_expr in
               match eval_res with
-              | Normal (v, env2) -> (v, env2)
+              | Normal (v, env2) -> return (v, env2)
               | Throwing (exc, _env2) ->
                   let ty =
                     match exc with
                     | Some (_, ty) -> ty
                     | None -> T_Named "implicit" |> add_pos_from d
                   in
-                  fatal_from d (UnexpectedInitialisationThrow (ty, name))
-            in
-            let* () = B.on_write_identifier name scope v in
-            let env3 = IEnv.declare_global name v env2 in
-            return env3)
+                  fatal_from d (UnexpectedInitialisationThrow (ty, name)))
+        in
+        let scope = B.Scope.global ~init:true in
+        let* () = B.on_write_identifier name scope v in
+        let env3 = IEnv.declare_global name v env2 in
+        return env3
     | _ -> return env
 
   (* Begin EvalBuildGlobalEnv *)
@@ -841,7 +841,8 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         let*^ rm_record, env1 = expr_of_lexpr le_record |> eval_expr env in
         let onwrite _ m = m in
-        let m2 = assign_bitvector_fields onwrite m rm_record slices fields in
+        let* v = m and* record = rm_record in
+        let m2 = assign_bitvector_fields onwrite v record slices fields in
         eval_lexpr ver le_record env1 m2 |: SemanticsRule.LESetFields
     (* End *)
     (* Begin EvalLESetCollectionFields *)
@@ -861,24 +862,25 @@ module Make (B : Backend.S) (C : Config) = struct
           in
           return v
         in
+        let* v = m and* record = rv_record in
         let* rv_record2 =
-          assign_bitvector_fields onwrite m rv_record slices fieldnames
+          assign_bitvector_fields onwrite v record slices fieldnames
         in
         let new_env = IEnv.assign_global base rv_record2 env in
         return_normal new_env
   (* End *)
 
   (* Begin AssignBitvectorFields *)
-  and assign_bitvector_fields onwrite mbitvector mrecord slices fieldnames =
+  and assign_bitvector_fields onwrite bitvector record slices fieldnames =
     match (slices, fieldnames) with
     | (i1, i2) :: slices, field_name :: fieldnames ->
         let slice = [ (B.v_of_int i1, B.v_of_int i2) ] in
         let* v_record_slices =
-          mbitvector >>= B.read_from_bitvector slice |> onwrite field_name
-        and* rv_record = mrecord in
-        let m2 = B.set_field field_name v_record_slices rv_record in
-        assign_bitvector_fields onwrite mbitvector m2 slices fieldnames
-    | [], [] -> mrecord
+          B.read_from_bitvector slice bitvector |> onwrite field_name
+        in
+        let* record2 = B.set_field field_name v_record_slices record in
+        assign_bitvector_fields onwrite bitvector record2 slices fieldnames
+    | [], [] -> return record
     | [], _ :: _ | _ :: _, [] -> assert false
   (* End *)
 

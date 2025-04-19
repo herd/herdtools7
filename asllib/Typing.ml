@@ -2458,18 +2458,22 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     match t.desc with
     | T_Bool | T_Int UnConstrained | T_Real | T_String | T_Enum _ ->
         base_value_v1 ~loc env t
-    | T_Bits (width, _) ->
-        let e =
-          E_Call
-            {
-              name = "Zeros";
-              params = [];
-              args = [ width ];
-              call_type = ST_Function;
-            }
-        in
-        let _, e', _ = annotate_expr env (here e) in
-        e'
+    | T_Bits (width, _) -> (
+        try
+          let i = StaticInterpreter.static_eval_to_int env width in
+          E_Literal (L_BitVector (Bitvector.zeros i)) |> here
+        with _ ->
+          let e =
+            E_Call
+              {
+                name = "Zeros";
+                params = [];
+                args = [ width ];
+                call_type = ST_Function;
+              }
+          in
+          let _, e', _ = annotate_expr env (here e) in
+          e')
     | T_Int (Parameterized (_, id)) -> E_Var id |> here
     | T_Int (WellConstrained ([], _) | PendingConstrained) -> assert false
     | T_Int

@@ -179,7 +179,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let litbv v i = lit (L_BitVector (Asllib.Bitvector.of_int_sized v i)) in
       let var x = E_Var x |> with_pos in
       let variant v = AArch64Base.variant_raw v |> liti in
-      let cond c = tr_cond c |> liti in
+      let cond c = tr_cond c |> litbv 4 in
       let stmt = Asllib.ASTUtils.stmt_from_list in
       let open AArch64Base in
       let reg = function
@@ -187,7 +187,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         | Ireg r -> ASLBase.arch_reg_to_int r |> liti
         | ZR -> liti 31
         | SP -> liti 31
-        | NZCV -> Warn.fatal "NZCV is not an addressable register"
+        | PState _ -> Warn.fatal "PState is not an addressable register"
         | r -> Warn.fatal "Unsupported register: %s." (pp_reg r)
       in
       match ii.A.inst with
@@ -772,7 +772,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         (fun _ -> Warn.fatal "Cannot translate PTE")
         (fun _ -> Warn.fatal "Cannot translate instruction")
 
-    let aarch64_to_asl_bv = function
+    let aarch64_to_asl_bv_cst sz = function
       | V.Var _ as v ->
           let nv = V.fresh_var () in
           let nid =
@@ -780,11 +780,10 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             | V.Var n -> n
             | _ -> assert false in
           let eq =
-            let op = AArch64Op.Extra1 (ASLOp.ToBV 64) in
+            let op = AArch64Op.Extra1 (ASLOp.ToBV sz) in
             M.VC.Assign (nv,M.VC.Unop (Op.ArchOp1 op,v))  in
-          ASLS.A.V.Var nid,[eq]
-      | V.Val cst ->
-          ASLS.A.V.Val (tr_cst ASLScalar.as_bv cst),[]
+          (ASLS.A.V.freeze nid, [eq])
+      | V.Val cst -> (tr_cst (ASLScalar.convert_to_bv sz) cst, [])
 
     let aarch64_to_asl = function
       | V.Var v -> ASLS.A.V.Var v
@@ -794,8 +793,85 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | ASLS.A.V.Var v -> V.Var v
       | ASLS.A.V.Val cst -> V.Val (tr_cst Misc.identity cst)
 
-    let is_experimental = TopConf.C.variant Variant.ASLExperimental
     let not_cutoff = not (TopConf.C.variant Variant.CutOff)
+
+    let pstate_default_fields =
+      let open Asllib.AST in
+      lazy
+        (let proc_state_decl =
+           C.libfind "asl-pseudocode/patches.asl"
+           |> ASLBase.build_ast_from_file ~ast_type:`Ast `ASLv1
+           |> List.find (fun d ->
+                  match d.desc with
+                  | D_TypeDecl ("ProcState", _ty, None) -> true
+                  | _ -> false)
+         in
+         let proc_state_fields =
+           match proc_state_decl.desc with
+           | D_TypeDecl ("ProcState", ty, None) -> (
+               match ty.desc with
+               | T_Collection fields -> fields
+               | _ -> assert false)
+           | _ -> assert false
+         in
+         List.map
+           (fun (name, ty) ->
+             match ty.desc with
+             | T_Bits (e_length, []) -> (
+                 match e_length.desc with
+                 | E_Literal (L_Int z) ->
+                     ( name,
+                       Constant.Concrete
+                         (ASLScalar.S_BitVector
+                            (Asllib.Bitvector.zeros (Z.to_int z))) )
+                 | _ -> assert false)
+             | _ -> assert false)
+           proc_state_fields
+         |> StringMap.of_list)
+
+    let build_pstate_val ii =
+      let fields_to_update =
+        [
+          ("N", AArch64Base.PSTATE.N);
+          ("Z", AArch64Base.PSTATE.Z);
+          ("C", AArch64Base.PSTATE.C);
+          ("V", AArch64Base.PSTATE.V);
+        ]
+      in
+      let pstate_updated_fields, eqs =
+        List.fold_left
+          (fun (fields, eqs) (field_name, reg) ->
+            match A.look_reg (AArch64Base.PState reg) ii.A.env.A.regs with
+            | Some v ->
+                let c, eqs0 = aarch64_to_asl_bv_cst 1 v in
+                (StringMap.add field_name c fields, eqs0 @ eqs)
+            | None -> (fields, eqs))
+          (Lazy.force pstate_default_fields, []) fields_to_update
+      in
+      (ASLS.A.V.Val (Constant.ConcreteRecord pstate_updated_fields), eqs)
+
+    let build_test_init ii =
+      let state_add loc v st =
+        ASLS.A.state_add st (ASLS.A.Location_reg (ii.A.proc, loc)) v
+      in
+      let add_reg_if_present reg loc st =
+        match A.look_reg reg ii.A.env.A.regs with
+        | Some v -> state_add loc (aarch64_to_asl v) st
+        | _ -> st
+      in
+      let add_arch_reg_if_present reg =
+        add_reg_if_present reg (ASLBase.ArchReg reg)
+      in
+      let global_loc name = ASLBase.(ASLLocalId (Scope.Global true, name)) in
+      let pstate_val, eqs = build_pstate_val ii in
+      let st =
+        ASLS.A.state_empty
+        |> state_add (global_loc "PSTATE") pstate_val
+        |> List.fold_right add_arch_reg_if_present ASLBase.gregs
+        |> add_reg_if_present AArch64Base.ResAddr (global_loc "RESADDR")
+        |> add_reg_if_present AArch64Base.SP (global_loc "SP_EL0")
+      in
+      (st, eqs)
 
     let fake_test ii fname decode =
       profile "build fake test" @@ fun () ->
@@ -830,7 +906,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             Format.eprintf "@[<v>Executing main:@ %a@]@." Asllib.PP.pp_t
               [ main ]
         in
-        [ ((ii.A.proc, None, MiscParser.Main), [ ASLBase.Instruction [ main ] ]) ]
+        [
+          ((ii.A.proc, None, MiscParser.Main), [ ASLBase.Instruction [ main ] ]);
+        ]
       in
       let t =
         {
@@ -847,47 +925,14 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         Name.{ name = "ASL (fake)"; file = ""; texname = ""; doc = "" }
       in
       let test = ASLTH.build name t in
-      let init,eqs_init =
-        let global_loc name =
-          ASLS.A.Location_reg
-            (ii.A.proc, ASLBase.(ASLLocalId (Scope.Global true, name)))
-        in
-        let st =
-          List.fold_left
-            (fun st reg ->
-              match A.look_reg reg ii.A.env.A.regs with
-              | Some v ->
-                  ASLS.A.state_add st
-                    (ASLS.A.Location_reg (ii.A.proc, ASLBase.ArchReg reg))
-                    (aarch64_to_asl v)
-              | _ -> st)
-            ASLS.A.state_empty ASLBase.gregs
-        in
-        let nzcv = AArch64Base.NZCV
-        and _nzcv =
-          global_loc (if is_experimental then "_NZCV" else "PSTATE") in
-        let st,eqs =
-          match A.look_reg nzcv ii.A.env.A.regs with
-          | Some v ->
-              let v,eqs = aarch64_to_asl_bv v in
-              ASLS.A.state_add st _nzcv v,eqs
-          | _ -> st,[]
-        in
-        let regq = AArch64Base.ResAddr and resaddr = global_loc "RESADDR" in
-        let v =
-          match A.look_reg regq ii.A.env.A.regs with
-          | Some v -> Some (aarch64_to_asl v)
-          | None -> None
-        in
-        (match v with Some v -> ASLS.A.state_add st resaddr v | None -> st),eqs
-      in
+      let init, eqs_init = build_test_init ii in
       let test = { test with Test_herd.init_state = init } in
       let () =
         if _dbg then
           Printf.eprintf "Building fake test with initial state:\n\t%s\n"
             (ASLS.A.dump_state test.Test_herd.init_state)
       in
-      test,eqs_init
+      (test, eqs_init)
 
     module Translator : sig
       val tr_execution :
@@ -1308,7 +1353,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | Some _ when AArch64.is_mixed -> check_strict test_aarch64 ii
       | Some (fname, args) -> (
           profile "build AArch64 semantics from ASL" @@ fun () ->
-          let test_asl,eqs_test = fake_test ii fname args in
+          let test_asl, eqs_test = fake_test ii fname args in
           let model = build_model_from_file "asl.cat" in
           let { MC.event_structures = rfms; _ }, test_asl =
             profile "run ASL Semantics" @@ fun () ->
