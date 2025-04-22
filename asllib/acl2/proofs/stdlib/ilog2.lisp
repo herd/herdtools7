@@ -107,7 +107,29 @@
 
 
 
-
+(define ilog2-safe-clock ((val rationalp))
+  :guard (< 0 val)
+  :returns (clock posp :rule-classes :type-prescription)
+  (+ 1 (max (max (acl2::rational-exponent val)
+                 (- (acl2::rational-exponent val)))
+            (if (<= 1 val)
+                (b* (((mv low high) (acl2::ilog2-search-up val 0 1)))
+                  (- high low))
+              (b* (((mv low high) (acl2::ilog2-search-down val -1 0)))
+                (- high low)))))
+  ///
+  (defthm ilog2-safe-clock-implies
+    (implies (<= (ilog2-safe-clock val) clk)
+             (and (< (acl2::Rational-exponent val) clk)
+                  (< (- (acl2::rational-exponent val)) clk)
+                  (implies (<= 1 val)
+                           (< (b* (((mv low high) (acl2::ilog2-search-up val 0 1)))
+                                (+ (- low) high))
+                              clk))
+                  (implies (< val 1)
+                           (< (b* (((mv low high) (acl2::ilog2-search-down val -1 0)))
+                                (+ (- low) high))
+                              clk))))))
 
 (local
  (def-asl-subprogram ilog2-correct-lemma
@@ -117,32 +139,7 @@
    :hyps (and (< 0 val.val)
               (<= (ilog2-safe-clock val.val) (expt 2 128)))
    :return-values ((v_int (acl2::ilog2 val.val)))
-   :enable (acl2::ilog2)
-  
-   :prepwork
-   ((define ilog2-safe-clock ((val rationalp))
-      :guard (< 0 val)
-      :returns (clock posp :rule-classes :type-prescription)
-      (+ 1 (max (max (acl2::rational-exponent val)
-                     (- (acl2::rational-exponent val)))
-                (if (<= 1 val)
-                    (b* (((mv low high) (acl2::ilog2-search-up val 0 1)))
-                      (- high low))
-                  (b* (((mv low high) (acl2::ilog2-search-down val -1 0)))
-                    (- high low)))))
-      ///
-      (defthm ilog2-safe-clock-implies
-        (implies (<= (ilog2-safe-clock val) clk)
-                 (and (< (acl2::Rational-exponent val) clk)
-                      (< (- (acl2::rational-exponent val)) clk)
-                      (implies (<= 1 val)
-                               (< (b* (((mv low high) (acl2::ilog2-search-up val 0 1)))
-                                    (+ (- low) high))
-                                  clk))
-                      (implies (< val 1)
-                               (< (b* (((mv low high) (acl2::ilog2-search-down val -1 0)))
-                                    (+ (- low) high))
-                                  clk)))))))))
+   :enable (acl2::ilog2)))
 
 
 

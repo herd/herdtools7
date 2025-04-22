@@ -80,8 +80,8 @@
        (< (ilog2-safe-clock val) (sqrtrounded-safe-clock val))
        :rule-classes :linear))
 
-   (local (in-theory (disable acl2::ilog2-is-ilog2-spec)))
-  
+   (local (in-theory (enable acl2::ilog2-spec-is-rational-exponent)))
+   
    (local (defthm integerp-of-plus-half
             (implies (and (integerp x)
                           (not (integerp (* 1/2 x))))

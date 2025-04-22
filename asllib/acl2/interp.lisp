@@ -138,15 +138,6 @@
 
 (defmacro let*^ (&rest args) (cons 'let** args))
 
-(acl2::def-b*-binder ev
-  :body
-  `(b* ((evresult ,(car acl2::forms)))
-     (eval_result-case evresult
-       :ev_normal (b* ,(and (not (eq (car acl2::args) '&))
-                            `((,(car acl2::args) evresult.res)))
-                    ,acl2::rest-expr)
-       :otherwise evresult)))
-
 
 (defmacro let*> (bindings &rest args)
   (b* (((when (atom bindings)) `(let* () . ,args))
@@ -386,8 +377,6 @@
   
 
 
-(defmacro nats-measure (&rest args)
-  `(acl2::nat-list-measure (list . ,args)))
 
 
 (define read_value_from ((vs val_read_from-list-p))

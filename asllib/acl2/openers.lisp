@@ -24,10 +24,11 @@
 
 
 (include-book "interp")
+(include-book "tools/easy-simplify" :dir :system)
 
 (acl2::def-ruleset openers nil)
 
-(defmacro defopener (name fn &key (hyp 't))
+(defmacro defopener (name fn &key (hyp 't) (hint 'nil))
   `(encapsulate nil
      (set-ignore-ok t)
      (make-event
@@ -35,16 +36,23 @@
            (formals (acl2::formals fn (w state)))
            (body (acl2::body fn nil (w state)))
            (hyp ',hyp)
+           ;; ((er simp-body)
+           ;;  (if ,simp
+           ;;      (b* (((er new-hyp-term)
+           ;;            (acl2::easy-simplify-term-fn hyp t ',hint 'iff t t 1000 1000 t state)))
+           ;;        (acl2::easy-simplify-term-fn
+           ;;         body new-hyp-term ',hint 'equal t t 1000 1000 t state))
+           ;;    (value body)))
            (name ',name)
-           ((acl2::fun (evnt name fn formals body hyp))
-            (b* ((call `(,fn . ,formals))
-                 (concl `(equal ,call ,body))
-                 (thmbody (if (eq hyp t)
-                              concl
-                            `(implies ,hyp ,concl))))
-              `(defthm ,name ,thmbody
-                 :hints (("goal" :expand (,call)))))))
-        (evnt name fn formals body hyp)))
+           (hint ',hint)
+           (call `(,fn . ,formals))
+           (concl `(equal ,call ,body))
+           (thmbody (if (eq hyp t)
+                        concl
+                      `(implies ,hyp ,concl))))
+        (value `(defthm ,name ,thmbody
+                  :hints (("goal" :expand (,call)
+                           . ,hint))))))
      (acl2::add-to-ruleset openers ,name)))
 
 

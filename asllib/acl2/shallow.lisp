@@ -78,36 +78,8 @@
    (value '(value-triple :evisc))))
 
 
-(define unsigned-byte-p* ((n integerp) x)
-  ;; True if either (unsigned-byte-p n x) or if n is
-  ;; ill-typed (negative or non-integer) and x is 0.
-  (unsigned-byte-p (nfix n) x)
-  ///
-  (defthm unsigned-byte-p*-implies-natp
-    (implies (unsigned-byte-p* n x)
-             (natp x))
-    :rule-classes :forward-chaining)
 
-  (fty::deffixequiv unsigned-byte-p* :args ((n natp)))
 
-  (defthm unsigned-byte-p*-of-0
-    (unsigned-byte-p* n 0)))
-
-(define loghead* ((n integerp) (x integerp))
-  :returns (new-x natp :rule-classes :type-prescription)
-  (loghead (nfix n) x)
-  ///
-  (defthm unsigned-byte-p*-of-loghead*
-    (unsigned-byte-p* n (loghead* n x))
-    :hints(("Goal" :in-theory (enable unsigned-byte-p*))))
-
-  (defthm loghead*-when-unsigned-byte-p*
-    (implies (unsigned-byte-p* n x)
-             (equal (loghead* n x) x))
-    :hints(("Goal" :in-theory (enable unsigned-byte-p*
-                                      nfix))))
-
-  (fty::deffixequiv loghead* :args ((n natp) (x integerp))))
 
 
 (defines val-to-native
@@ -534,68 +506,6 @@
 
 
 
-(defines name-resolve-ty
-  :verify-guards nil
-    
-  (define name-resolve-ty ((env static_env_global-p)
-                           (x ty-p)
-                           &key ((clk natp) 'clk))
-    :returns (res (and (eval_result-p res)
-                           (implies (eval_result-case res :ev_normal)
-                                    (ty-p (ev_normal->res res)))))
-    :measure (nats-measure clk 0 (ty-count x) 0)
-    (b* ((ty (ty->val x)))
-      (type_desc-case ty
-        :t_tuple (b* (((ev tys) (name-resolve-tylist env ty.types)))
-                   (ev_normal (ty (t_tuple tys))))
-        :t_array (b* (((ev base) (name-resolve-ty env ty.type)))
-                   (ev_normal (ty (t_array ty.index base))))
-        :t_record (b* (((ev fields)
-                        (name-resolve-typed_identifierlist env ty.fields)))
-                    (ev_normal (ty (t_record fields))))
-        :t_exception (b* (((ev fields)
-                           (name-resolve-typed_identifierlist env ty.fields)))
-                       (ev_normal (ty (t_exception fields))))
-        :t_collection (b* (((ev fields)
-                            (name-resolve-typed_identifierlist env ty.fields)))
-                        (ev_normal (ty (t_collection fields))))
-        :t_named  (b* ((decl_types (static_env_global->declared_types env))
-                       (look (hons-assoc-equal ty.name decl_types))
-                       ((unless look)
-                        (ev_error "Named type not found" x))
-                       ((when (zp clk))
-                        (ev_error "Clock ran out resolving named type" x))
-                       (type (ty-timeframe->ty (cdr look))))
-                    (name-resolve-ty env type :clk (1- clk)))
-        :otherwise (ev_normal (ty ty)))))
-  
-  (define name-resolve-tylist ((env static_env_global-p)
-                               (x tylist-p)
-                               &key ((clk natp) 'clk))
-    :returns (res (and (eval_result-p res)
-                           (implies (eval_result-case res :ev_normal)
-                                    (tylist-p (ev_normal->res res)))))
-    :measure (nats-measure clk 0 (tylist-count x) 0)
-    (if (atom x)
-        (ev_normal nil)
-      (b* (((ev first) (name-resolve-ty env (car x)))
-           ((ev rest) (name-resolve-tylist env (cdr x))))
-        (ev_normal (cons first rest)))))
-
-  (define name-resolve-typed_identifierlist ((env static_env_global-p)
-                                             (x typed_identifierlist-p)
-                                             &key ((clk natp) 'clk))
-    :returns (res (and (eval_result-p res)
-                           (implies (eval_result-case res :ev_normal)
-                                    (typed_identifierlist-p (ev_normal->res res)))))
-    :measure (nats-measure clk 0 (typed_identifierlist-count x) 0)
-    (b* (((when (atom x)) (ev_normal nil))
-         ((typed_identifier x1) (car x))
-         ((ev first) (name-resolve-ty env x1.type))
-         ((ev rest) (name-resolve-typed_identifierlist env (cdr x))))
-      (ev_normal (cons (typed_identifier x1.name first) rest))))
-  ///
-  (Verify-guards name-resolve-ty-fn))
 
 
 
@@ -856,85 +766,6 @@
 
 
 
-
-
-
-(define int_constraint-value-fix ((x integerp)
-                                  (c int_constraint-p))
-  :guard (int_constraint-resolved-p c)
-  :returns (new-x integerp :rule-classes :type-prescription)
-  (int_constraint-case c
-    :constraint_exact (int-literal-expr->val c.val)
-    :constraint_range
-    (if (<= (int-literal-expr->val c.from) (lifix x))
-        (if (<= (lifix x) (int-literal-expr->val c.to))
-            (lifix x)
-          (int-literal-expr->val c.to))
-      (int-literal-expr->val c.from)))
-  ///
-  (defthm int_constraint-value-fix-satisfying
-    (implies (int_constraint-satisfying-val c)
-             (int_constraint-satisfied (int_constraint-value-fix x c) c))
-    :hints(("Goal" :in-theory (enable int_constraint-satisfied
-                                      int_constraint-satisfying-val))))
-  
-  (defthm int_constraint-value-fix-when-satisfied
-    (implies (int_constraint-satisfied x c)
-             (equal (int_constraint-value-fix x c)
-                    (ifix x)))
-    :hints(("Goal" :in-theory (enable int_constraint-satisfied)))))
-
-(define int_constraintlist-value-fix ((x integerp)
-                                      (c int_constraintlist-p))
-  :guard (int_constraintlist-resolved-p c)
-  :verify-guards nil
-  :guard-hints (("goal" :in-theory (enable int_constraintlist-resolved-p)))
-  :returns (new-x integerp :rule-classes :type-prescription)
-  ;; a little complicated and inefficient
-  (if (atom c)
-      0
-    (if (int_constraint-satisfied x (car c))
-        (lifix x)
-      (let ((new-x (int_constraintlist-value-fix x (cdr c))))
-        (if (int_constraintlist-satisfied new-x (cdr c))
-            new-x
-          (int_constraint-value-fix x (car c))))))
-  ///
-  (verify-guards int_constraintlist-value-fix)
-  
-  (defthm int_constraintlist-value-fix-satisfying
-    (implies (int_constraintlist-satisfying-val c)
-             (int_constraintlist-satisfied (int_constraintlist-value-fix x c) c))
-    :hints(("Goal" :in-theory (enable int_constraintlist-satisfied
-                                      int_constraintlist-satisfying-val))))
-  
-  (defthm int_constraintlist-value-fix-when-satisfied
-    (implies (int_constraintlist-satisfied x c)
-             (equal (int_constraintlist-value-fix x c)
-                    (ifix x)))
-    :hints(("Goal" :in-theory (enable int_constraintlist-satisfied)))))
-
-
-(define constraint_kind-value-fix ((x integerp)
-                                   (c constraint_kind-p))
-  :guard (constraint_kind-resolved-p c)
-  :returns (new-x integerp :rule-classes :type-prescription)
-  (constraint_kind-case c
-    :wellconstrained (int_constraintlist-value-fix x c.constraints)
-    :otherwise (lifix x))
-  ///
-  
-  (defthm constraint_kind-value-fix-satisfying
-    (implies (constraint_kind-satisfying-val c)
-             (constraint_kind-satisfied (constraint_kind-value-fix x c) c))
-    :hints(("Goal" :in-theory (enable constraint_kind-satisfied
-                                      constraint_kind-satisfying-val))))
-  
-  (defthm constraint_kind-value-fix-when-satisfied
-    (implies (constraint_kind-satisfied x c)
-             (equal (constraint_kind-value-fix x c)
-                    (ifix x)))
-    :hints(("Goal" :in-theory (enable constraint_kind-satisfied)))))
 
 
 

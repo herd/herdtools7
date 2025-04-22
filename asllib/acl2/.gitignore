@@ -12,7 +12,4 @@ workxxx*
 *.acl2x
 *.fasl
 Makefile-tmp
-temp-emacs-file*
-*~
-.#*
-
+/bin/
