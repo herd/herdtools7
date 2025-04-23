@@ -2670,20 +2670,22 @@ module Make
         >>= fun v -> write_reg_sz_dest sz r v ii
 
       let reset_sm v ii =
+        let pstate_sm = AArch64.(PState PSTATE.SM) in
         let z = AArch64.zero_promoted in
         let zop = List.map (fun r -> write_reg_scalable r z ii) AArch64.zregs in
         let pop = List.map (fun r -> write_reg_predicate r z ii) AArch64.pregs in
         let zval = List.map (fun r -> r,z) AArch64.zregs in
         let pval = List.map (fun r -> r,z) AArch64.pregs in
-        let ops = zop@pop@[write_reg AArch64.SM v ii] in
-        let vals = zval@pval@[AArch64.SM,v] in
+        let ops = zop@pop@[write_reg pstate_sm v ii] in
+        let vals = zval@pval@[pstate_sm,v] in
         ops,vals
 
       let reset_za v ii =
+        let pstate_za = AArch64.(PState PSTATE.ZA) in
         let z = AArch64.zero_promoted in
         let r = AArch64.ZAreg(0,None,0) in
-        let ops = [write_reg_za r z ii; write_reg AArch64.ZA v ii] in
-        let vals = [r,z;AArch64.ZA,v] in
+        let ops = [write_reg_za r z ii; write_reg pstate_za v ii] in
+        let vals = [r,z;pstate_za,v] in
         ops,vals
 
       let mova_vt r ri k pg src ii =
@@ -3984,10 +3986,12 @@ module Make
            cnt_inc op r pat k ii >>= nextSet r
         | I_SMSTART (None) ->
            check_sme inst;
+           let pstate_sm = PState PSTATE.SM
+           and pstate_za = PState PSTATE.ZA in
            let ops1,vals1 = reset_sm V.one ii in
            let ops2,vals2 = reset_za V.one ii in
-           read_reg_ord AArch64.SM ii >>|
-           read_reg_ord AArch64.ZA ii >>= fun (sm,za) ->
+           read_reg_ord pstate_sm ii >>|
+           read_reg_ord pstate_za ii >>= fun (sm,za) ->
             M.op Op.Ne sm V.one >>|
             M.op Op.Ne za V.one >>= fun (diffsm,diffza) ->
               M.choiceT
@@ -3998,29 +4002,33 @@ module Make
               (M.choiceT diffza
                (List.fold_right (>>::) ops2 (M.unitT [()]) >>= M.ignore >>= fun () -> M.unitT (B.Next vals2))
               (B.nextT))
-        | I_SMSTART (Some(SM)) ->
+        | I_SMSTART (Some(PState PSTATE.SM)) ->
            check_sme inst;
+           let pstate_sm = PState PSTATE.SM in
            let ops,vals = reset_sm V.one ii in
-           read_reg_ord AArch64.SM ii >>= fun sm ->
+           read_reg_ord pstate_sm ii >>= fun sm ->
             M.op Op.Ne sm V.one >>= fun diff ->
               M.choiceT
               diff
               (List.fold_right (>>::) ops (M.unitT [()]) >>= M.ignore >>= fun () -> M.unitT (B.Next vals))
               (B.nextT)
-        | I_SMSTART (Some(ZA)) ->
+        | I_SMSTART (Some(PState PSTATE.ZA)) ->
            check_sme inst;
+           let pstate_za = PState PSTATE.ZA in
            let ops,vals = reset_za V.one ii in
-           read_reg_ord AArch64.ZA ii >>= fun sm ->
+           read_reg_ord pstate_za ii >>= fun sm ->
             M.op Op.Ne sm V.one >>= fun diff ->
               M.choiceT
               diff
               (List.fold_right (>>::) ops (M.unitT [()]) >>= M.ignore >>= fun () -> M.unitT (B.Next vals))
               (B.nextT)
         | I_SMSTOP (None) ->
+          let pstate_sm = PState PSTATE.SM
+          and pstate_za = PState PSTATE.ZA in
           let ops1,vals1 = reset_sm V.zero ii in
           let ops2,vals2 = reset_za V.zero ii in
-          read_reg_ord AArch64.SM ii >>|
-          read_reg_ord AArch64.ZA ii >>= fun (sm,za) ->
+          read_reg_ord pstate_sm ii >>|
+          read_reg_ord pstate_za ii >>= fun (sm,za) ->
            M.op Op.Ne sm V.zero >>|
            M.op Op.Ne za V.zero >>= fun (diffsm,diffza) ->
              M.choiceT
@@ -4031,19 +4039,21 @@ module Make
              (M.choiceT diffza
              (List.fold_right (>>::) ops2 (M.unitT [()]) >>= M.ignore >>= fun () -> M.unitT (B.Next vals2))
              (B.nextT))
-        | I_SMSTOP (Some(SM)) ->
+        | I_SMSTOP (Some(PState PSTATE.SM)) ->
            check_sme inst;
+           let pstate_sm = PState PSTATE.SM in
            let ops,vals = reset_sm V.zero ii in
-           read_reg_ord AArch64.SM ii >>= fun sm ->
+           read_reg_ord pstate_sm ii >>= fun sm ->
             M.op Op.Ne sm V.zero >>= fun diff ->
               M.choiceT
               diff
               (List.fold_right (>>::) ops (M.unitT [()]) >>= M.ignore >>= fun () -> M.unitT (B.Next vals))
               (B.nextT)
-        | I_SMSTOP (Some(ZA)) ->
+        | I_SMSTOP (Some(PState PSTATE.ZA)) ->
            check_sme inst;
+           let pstate_za = PState PSTATE.ZA in
            let ops,vals = reset_za V.zero ii in
-           read_reg_ord AArch64.ZA ii >>= fun sm ->
+           read_reg_ord pstate_za ii >>= fun sm ->
             M.op Op.Ne sm V.zero >>= fun diff ->
               M.choiceT
               diff

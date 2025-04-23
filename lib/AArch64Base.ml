@@ -32,12 +32,16 @@ module PSTATE = struct
     | Z
     | C
     | V
+    | SM
+    | ZA
 
   let to_string = function
     | N -> "N"
     | Z -> "Z"
     | C -> "C"
     | V -> "V"
+    | SM -> "SM"
+    | ZA -> "ZA"
 
   let pp p = "PSTATE." ^ (to_string p)
 
@@ -154,8 +158,6 @@ type reg =
   | Symbolic_reg of string
   | Internal of int
   | PState of PSTATE.t
-  | SM (* PSTATE.SM *)
-  | ZA (* PSTATE.ZA *)
   | SP
   | PC
   | ResAddr
@@ -499,8 +501,6 @@ let pp_xreg r = match r with
 | PState p -> PSTATE.pp p
 | ResAddr -> "Res"
 | PC -> "PC"
-| SM -> "PSTATE.SM"
-| ZA -> "PSTATE.ZA"
 | SysReg sreg -> pp_sysreg sreg
 | _ -> try List.assoc r regs with Not_found -> assert false
 
@@ -515,8 +515,7 @@ let pp_simd_scalar_reg rl r = match r with
 | _ -> assert false
 
 let pp_sm = function
-  | SM -> "SM"
-  | ZA -> "ZA"
+  | PState p -> PSTATE.to_string p
   | _ -> assert false
 
 let pp_sve_arrange_specifier s =
@@ -2541,7 +2540,7 @@ let fold_regs (f_regs,f_sregs) =
   | Preg _ -> f_regs reg y_reg,y_sreg
   | PMreg _ -> f_regs reg y_reg,y_sreg
   | Symbolic_reg reg ->  y_reg,f_sregs reg y_sreg
-  | Internal _ | PState _ | ZR | SP | PC | SM | ZA | ZAreg _
+  | Internal _ | PState _ | ZR | SP | PC | ZAreg _
   | ResAddr | Tag _ | SysReg _
     -> y_reg,y_sreg in
 
@@ -2683,7 +2682,7 @@ let map_regs f_reg f_symb =
   | Preg _ -> f_reg reg
   | PMreg _ -> f_reg reg
   | Symbolic_reg reg -> f_symb reg
-  | Internal _ | ZR | SP| PC | SM | ZA | ZAreg _
+  | Internal _ | ZR | SP| PC | ZAreg _
   | PState _ | ResAddr | Tag _ | SysReg _
     -> reg in
 

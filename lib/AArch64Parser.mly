@@ -406,8 +406,8 @@ zaq_slice:
 
 smopt:
 | { None }
-| TOK_SM { Some (SM) }
-| TOK_ZA { Some (ZA) }
+| TOK_SM { Some (PState PSTATE.SM) }
+| TOK_ZA { Some (PState PSTATE.ZA) }
 
 k:
 | NUM  { MetaConst.Int $1 }
