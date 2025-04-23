@@ -680,8 +680,9 @@ let max_set = IntSet.max_elt
     let rec do_rec p i = function
       | [] -> List.rev i,[],(C.EventMap.empty,[]),[],A.LocMap.empty
       | n::ns ->
+          let init_st = A.remove_reg_allocator A.st0 (A.used_register i) in
           let i,c,(m,f),st =
-            compile_proc Misc.identity false loc_writes A.st0 p No i n in
+            compile_proc Misc.identity false loc_writes init_st p No i n in
           let i,c,st = compile_stores st p i n c in
           let xenv = Comp.get_xstore_results c in
           let f =

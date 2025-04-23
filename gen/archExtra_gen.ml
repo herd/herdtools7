@@ -74,6 +74,9 @@ module type S = sig
 
   val st0 : st
 
+  val used_register : init -> arch_reg list
+  val remove_reg_allocator : st -> arch_reg list -> st
+
   val alloc_reg : st -> arch_reg * st
   val alloc_trashed_reg : string -> st -> arch_reg * st
   val alloc_loop_idx : string -> st -> arch_reg * st
@@ -257,6 +260,19 @@ and type special3 = I.special3
       env = LocMap.empty;
       friends = RegMap.empty;
       next_addr = 0; }
+
+  let used_register init =
+    List.filter_map ( function
+      | (Reg (_,r),Some (S _)) -> Some r
+      | _ -> None ) init
+
+  let remove_reg_allocator st remove =
+    let regs = st.regs
+      |> List.filter ( fun reg ->
+          (* Keep those `reg` NOT equals to any in `remove` *)
+          not ( List.exists ( fun r -> reg = r ) remove )
+        ) in
+    { st with regs }
 
   let alloc_reg st = match st.regs with
     | [] -> Warn.fatal "No more registers"

@@ -1057,7 +1057,7 @@ let set_same_loc st n0 =
           (* The previous search failed. This search will return the W node from
              which an Rf edge starts, provided that the previous edge is not a
              communication or a Rmw edge *)
-          let m = find_node (fun m -> to_com_rmw m) n in
+          let m = find_node (fun m -> is_com_rmw m) n in
           split_one_loc m
         with Not_found -> Warn.fatal "cannot set write values"
       | Exit -> Warn.fatal "cannot set write values" in
