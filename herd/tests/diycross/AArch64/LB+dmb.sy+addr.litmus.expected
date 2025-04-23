@@ -8,5 +8,5 @@ Witnesses
 Positive: 0 Negative: 3
 Condition exists (0:X1=1 /\ 1:X1=1)
 Observation LB+dmb.sy+addr Never 0 3
-Hash=4bb883a351011b44213ec9117d5b01cf
+Hash=3887723e353cec4f19328af364fbca20
 

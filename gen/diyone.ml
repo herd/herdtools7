@@ -243,6 +243,7 @@ let () =
     let prog = Config.prog
     let info = !Config.info
     let variant = !Config.variant
+    let same_loc = !Config.same_loc
   end in
   let module Build = Make(Co) in
   let module C = struct

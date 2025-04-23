@@ -38,18 +38,30 @@ module Make(Cfg:Config)(A:Arch_gen.S)
        open A
 
        let next_init st p init loc =
-         let rec find_rec = function
-           | (Reg (p0,r0),Some (A.S loc0))::_
-             when Misc.string_eq loc0 loc && Misc.int_eq p p0
-             -> r0,init,st
-           | _::rem -> find_rec rem
-           | [] ->
-               let r,st =
-                 if Extra.use_symbolic then
-                   A.symb_reg (Printf.sprintf "%s%i" loc p),st
-                 else A.alloc_reg st in
-               r,(Reg (p,r),Some (A.S loc))::init,st in
-         find_rec init
+         let exact_match = List.find_opt ( function
+           | (Reg (p0,_),Some (A.S loc0)) ->
+             Misc.string_eq loc0 loc && Misc.int_eq p p0
+           | _ -> false ) init in
+         (* Despite `st` is local for procedure, `p`, we assume `st.regs`,
+            i.e. the allocation pool, contains no `r0`.
+            This means, `r0` is reserved for location `loc0` for all procedures,
+            hence `A.alloc_reg st` will never return `r0`. Given this assumption,
+            it is safe to bind `r0` to `loc` (`loc` = `loc0`) here. *)
+         let same_loc_match = List.find_opt ( function
+           | (Reg (_,_),Some (A.S loc0)) -> Misc.string_eq loc0 loc
+           | _ -> false ) init in
+         match exact_match,same_loc_match with
+         | Some (Reg (_,r),Some _), _ -> r,init,st
+         | None, Some (Reg (_,r),Some _) ->
+           r,(Reg (p,r),Some (A.S loc))::init,st
+         | None, None ->
+           (* no previous register assignment, so add new *)
+           let r,st =
+             if Extra.use_symbolic then
+               A.symb_reg (Printf.sprintf "%s%i" loc p),st
+             else A.alloc_reg st in
+           r,(Reg (p,r),Some (A.S loc))::init,st
+         | _,_ -> Warn.user_error "Unexpected error in `next_init`."
 
        let find_init p init loc =
          let rec find_rec = function
@@ -61,15 +73,22 @@ module Make(Cfg:Config)(A:Arch_gen.S)
          find_rec init
 
        let next_const st p init k =
-
-         let rec find_rec = function
-           | (Reg (p0,r0),Some k0)::_ when A.initval_eq k k0 && p = p0 ->
-               r0,init,st
-           | _::rem -> find_rec rem
-           | [] ->
-               let r,st = A.alloc_reg st in
-               r,(Reg (p,r),Some k)::init,st in
-         find_rec init
+         let exact_match = List.find_opt ( function
+           | (Reg (p0,_),Some k0) ->
+               A.initval_eq k k0 && p = p0
+           | _ -> false ) init in
+         let same_value_match = List.find_opt ( function
+           | (Reg (_,_),Some k0) -> A.initval_eq k k0
+           | _ -> false ) init in
+         match exact_match,same_value_match with
+         | Some (Reg (_,r),Some _), _ -> r,init,st
+         | None, Some (Reg (_,r),Some _) ->
+           r,(Reg (p,r),Some k)::init,st
+         | None, None ->
+           (* no previous register assignment, so add new *)
+           let r,st = A.alloc_reg st in
+           r,(Reg (p,r),Some k)::init,st
+         | _,_ -> Warn.user_error "Unexpected error in `next_const."
 
        let allow_consts_in_code =
          not (Cfg.variant Variant_gen.ConstsInInit)
