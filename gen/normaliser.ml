@@ -42,7 +42,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
 (* Cycles of edges *)
     module CE = struct
       type t =
-          { edge : E.edge ; dir : dir option ;
+          { mutable edge : E.edge ; dir : dir option ;
             mutable next : t ; mutable prev : t;
             mutable matches : t ; }
 
@@ -162,6 +162,10 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       | E.Rf Ext|E.Fr Ext|E.Ws Ext|E.Hat -> true
       | _ -> false
 
+      let int_com e = match e.E.edge with
+      | E.Rf Int|E.Fr Int|E.Ws Int -> true
+      | _ -> false
+
 (* Find skipping Leave/Back *)
       let find_node_out p n =
         let rec do_rec m =
@@ -216,6 +220,13 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
           else do_rec c d m.next in
         do_rec (0,n) 0 n
 
+      let update_int_to_ext n = match n.edge.E.edge with
+        | E.Rf Int -> n.edge <- {n.edge with E.edge = E.Rf Ext}
+        | E.Fr Int -> n.edge <- {n.edge with E.edge = E.Fr Ext}
+        | E.Ws Int -> n.edge <- {n.edge with E.edge = E.Ws Ext}
+        | _ -> ()
+
+
 (*
  * Warning:
  * split_proc below has to be the same as in cycle.ml
@@ -235,6 +246,12 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
         else
           try
             let n = find_edge_out ext_com n in n.next
+          with NotFound ->
+          try
+            (* in the case of all internal edges,
+               we convert one to external to form a cycle *)
+          let n = find_edge_out int_com n in
+            update_int_to_ext n; n.next
           with NotFound ->
             (* "No external communication in cycle" *)
                raise (CannotNormalise "find_start")
