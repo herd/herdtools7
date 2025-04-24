@@ -48,8 +48,10 @@ module type S = sig
         bank : SIMD.atom Code.bank ;
         idx : int ;
         (* If need to check this operation can fault.
-           Label the instruction with `Label.t`. *)
-        check_fault : (Label.t * bool) option;
+           Label the instruction with `Label.t`.
+           NOTE: The `list` are specifically for `LxSx` with unrollatomic,
+           while for other cases, it will be singleton list. *)
+        check_fault : (Label.t * bool) list option;
         (* If the effect of this event should be check in the postcondition.
            E.g., if the value changes since last time,
            therefore, any read event should lead to a postcondition
@@ -180,7 +182,7 @@ module Make (O:Config) (E:Edge.S) :
         tcell : v array ; (* value of tag cell at node exit *)
         bank : SIMD.atom Code.bank ;
         idx : int ;
-        check_fault : (Label.t * bool) option;
+        check_fault : (Label.t * bool) list option;
         check_value : bool option }
 
   let pte_default = PteVal.default "*"
@@ -573,20 +575,21 @@ module CoSt = struct
 
   (* Check if `pte_val` might fault, the `num` is often 1
      apart from dealing with `LxSx` and `unrollatomic` *)
-  let label_pte_fault pte_val =
-    Some ( (Label.next_label "L"), (PteVal.can_fault pte_val) )
+  let label_pte_fault pte_val num =
+    Some ( List.init num
+      ( fun _index -> (Label.next_label "L"), (PteVal.can_fault pte_val) ) )
 
   (* Helper function returns a fresh label and a boolean for if it should fault,
      if a fault check is need. Otherwise return `None`.
      The `num`, for the number of fault labels,
      is often 1 apart from dealing with `LxSx` and `unrollatomic` *)
-  let fault_update st =
+  let fault_update st num =
     let check_fault, st = read_and_unset_check_fault st in
     let pte_val = get_pte_value st in
     let fault =
       if check_fault then
         if do_no_fault then None
-        else if do_kvm then label_pte_fault pte_val
+        else if do_kvm then label_pte_fault pte_val num
         else None
       else None in
     fault, st
@@ -933,10 +936,14 @@ let set_same_loc st n0 =
       | Some W ->
           begin
           let check_value = Some (CoSt.get_check_value st) in
-          (* No need to add fault check in read modify write situation,
+          (* No need to add fault check in one instruction
+             read modify write situation,
              as the label will be assigned in read *)
           let fault_update_without_rmw st =
-            if n.evt.rmw then None,st else CoSt.fault_update st in
+            (* Only `LxSx` edge reaches `true` branch *)
+            if n.evt.rmw && ( not ( E.is_one_rmw_instruction n.edge ) )
+            then CoSt.fault_update st (Option.value O.unrollatomic ~default:1)
+            else None,st in
           match n.evt.loc with
           | Data _ ->
             let bank = n.evt.bank in
@@ -1130,18 +1137,22 @@ let do_set_read_v init =
       begin match n.evt.dir with
       (* Assign the read value according to `cell` and `pte_cell` *)
       | Some R ->
+        let fault_label_number =
+            (* Only `LxSx` edge reaches `true` branch *)
+            if n.evt.rmw && ( not ( E.is_one_rmw_instruction n.edge ) )
+            then (Option.value O.unrollatomic ~default:1) else 1 in
         (* If the result of this read need to be checked,
            i.e. generating postcondition *)
         let check_value = Some (CoSt.get_check_value st) in
         begin match bank with
         | Ord | Instr->
           set_read_individual_v n cell check_value;
-          let check_fault, st = CoSt.fault_update st in
+          let check_fault, st = CoSt.fault_update st fault_label_number in
           n.evt <- { n.evt with check_fault };
           st
         | Pair ->
           set_read_pair_v n cell check_value;
-          let check_fault, st = CoSt.fault_update st in
+          let check_fault, st = CoSt.fault_update st fault_label_number in
           n.evt <- { n.evt with check_fault };
           st
         | VecReg a ->
@@ -1149,7 +1160,7 @@ let do_set_read_v init =
           let v = E.SIMD.read a cell
                    |> E.SIMD.reduce
                    |> Code.value_of_int in
-          let check_fault, st = CoSt.fault_update st in
+          let check_fault, st = CoSt.fault_update st fault_label_number in
           n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
           st
         | Tag|CapaTag|CapaSeal ->

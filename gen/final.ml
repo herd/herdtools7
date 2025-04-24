@@ -69,7 +69,9 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     include Fault.S with type loc_global := C.A.location and type fault_type := FaultType.No.t
 
-    type faults = FaultSet.t
+    type faults = fault list list
+
+    val canonical_faults: faults -> faults
 
     type final
 
@@ -249,11 +251,12 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     include Fault.Make(FaultArg)
 
-    (* Represent faults, i.e.,
-       a /\ b /\ c,
+    (* Represent faults in the style similar to
+       the Conjunctive Normal Form (CNF), i.e.,
+       a /\ ( b \/ c \/ d ) /\ ( e \/ f ),
        or the negation of faults, i.e.
-       ~(a \/ ~b \/ ~c *)
-    type faults = FaultSet.t
+       ~a /\ ~( b \/ c \/ d ) /\ ~( e \/ f ) *)
+    type faults = fault list list
 
     type cond_final =
       | Exists of fenv
@@ -263,6 +266,13 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     (* The two FaultSet.t carry
        positive and negetive checks respectively *)
     type final = cond_final * faults * faults
+
+    let canonical_faults l =
+      (* order individual list *)
+      List.map ( fun faults -> List.sort_uniq compare faults) l
+      (* eliminate duplication and order *)
+      |> List.sort_uniq ( fun lhs rhs ->
+        FaultSet.compare (FaultSet.of_list lhs) (FaultSet.of_list rhs) )
 
     module Run = Run_gen.Make(O)(C)
 
@@ -310,17 +320,24 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
            fs)
 
     let dump_flts pos_flts neg_flts =
-      let neg_string = if FaultSet.is_empty neg_flts then
-        ""
-      else begin
-        let pp = String.concat " \\/ " (FaultSet.map_list pp_fault neg_flts) in
-        if FaultSet.is_singleton neg_flts then sprintf "~%s" pp
-        else sprintf "~(%s)" pp
-      end in
-        let pos_string = String.concat " /\\ " (FaultSet.map_list pp_fault pos_flts) in
-        match neg_string,pos_string with
-        |"",_|_,"" -> pos_string ^ neg_string
-        |_,_ -> pos_string ^ " /\\ " ^ neg_string
+      let pp_bracket lst str = if List.length lst > 1 then "(" ^ str ^ ")" else str in
+      let pp_disjunctive fault_list =
+        List.map ( fun fault -> pp_fault fault ) fault_list
+        |> String.concat " \\/ "
+        |> pp_bracket fault_list in
+      let neg_string =
+        (* print ~( a \/ ( b \/ c \/ d ) \/ ( e \/ f ) ) *)
+        List.map pp_disjunctive neg_flts
+        |> String.concat " \\/ "
+        |> pp_bracket neg_flts
+        (* the final negation *)
+        |> (^) (if List.length neg_flts >= 1 then "~" else "") in
+      let pos_string =
+        (* print  a /\ ( b \/ c \/ d ) /\ ( e \/ f ) *)
+        List.map pp_disjunctive pos_flts |> String.concat " /\\ " in
+      match neg_string,pos_string with
+      |"",_|_,"" -> pos_string ^ neg_string
+      |_,_ -> pos_string ^ " /\\ " ^ neg_string
 
     let dump_locations chan locs =
       fprintf chan "locations [%s]\n" (String.concat " " locs)

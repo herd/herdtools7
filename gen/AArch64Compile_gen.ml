@@ -1725,19 +1725,24 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let add_label_to_last_instructions e cs =
       match e.C.check_fault with
-      | Some (label_name, _) ->
+      | Some [(label_name, _)] ->
         let rec do_rec = function
           | [] -> assert false (* the `cs` should not be empty *)
           | [instr] -> [Label(label_name, instr)]
           | instr::rem -> instr::do_rec rem in
         do_rec cs
+      (* the `check_fault` must be singleton list or None when calling
+         this help function *)
+      | Some _ -> assert false
       | None -> cs
 
     (* If there is a fault label in `e`, add the `index`-th label
        to the first instruction in `cs` *)
-    let add_label_to_first_instructions e cs =
+    let add_label_to_first_instructions e index cs =
       match e.C.check_fault with
-      | Some (label_name, _) ->
+      | Some label_list ->
+        (* Assume the index exist *)
+        let (label_name, _) = List.nth label_list index in
         (* find the first non-label instruction *)
         let rec do_rec cs = match cs with
           | [] -> assert false (* the `cs` should not be empty *)
@@ -1957,7 +1962,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           (* Add a label to instructions `cs`, when a fault check is required. *)
         let cs = match d with
           | W -> add_label_to_last_instructions e cs
-          | R -> add_label_to_first_instructions e cs
+          | R -> add_label_to_first_instructions e 0 cs
         in
         regs,inits,cs,st
     (* END of emit_access *)
@@ -1984,11 +1989,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         if index < unroll_number then
           (* Add the label to the read event,
              which should be the first non-labelled instruction *)
-          let new_cs = cs |> add_label_to_first_instructions er
+          let new_cs = cs |> add_label_to_first_instructions er index
           (* After the first read event being labelled,
              add the label to the write event which should now
              be the first non-labelled instruction *)
-            |> add_label_to_first_instructions ew in
+            |> add_label_to_first_instructions ew index in
           (* Assume the cs contains at least three elements.
              In the case of `unroll_number` > 1, this will shift to
              the next unroll segement. *)
@@ -2498,7 +2503,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           (* Add a label to instructions `cs`, when a fault check is required. *)
           begin match d with
             | W -> regs,inits,(add_label_to_last_instructions e cs),st
-            | R -> regs,inits,(add_label_to_first_instructions e cs),st
+            | R -> regs,inits,(add_label_to_first_instructions e 0 cs),st
           end
         | _,Code _ -> Warn.fatal "No dependency to code location"
       (* END of emit_access_dep_addr *)
