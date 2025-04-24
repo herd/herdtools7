@@ -661,3 +661,4 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.SliceEqual.asl
   $ aslref TypingRule.SlicesEqual.asl
   $ aslref TypingRule.BitwidthEqual.asl
+  $ aslref --no-exec TypingRule.BitFieldEqual.asl
