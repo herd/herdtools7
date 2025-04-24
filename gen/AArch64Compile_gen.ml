@@ -1725,16 +1725,23 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let get_tagged_loc e = add_tag (as_data e.C.loc) e.C.tag
 
-    let add_label_to_instructions e cs =
+    let add_label_to_last_instructions e cs =
       match e.C.check_fault with
       | Some (label_name, _) ->
-        (* Always label the last instruction,
-           which should be the actual load or store. *)
         let rec do_rec = function
           | [] -> assert false (* the `cs` should not be empty *)
           | [instr] -> [Label(label_name, instr)]
           | instr::rem -> instr::do_rec rem in
         do_rec cs
+      | None -> cs
+
+    let add_label_to_first_instructions e cs =
+      match e.C.check_fault with
+      | Some (label_name, _) ->
+        begin match cs with
+          | [] -> assert false (* the `cs` should not be empty *)
+          | instr::rem -> Label(label_name, instr)::rem
+        end
       | None -> cs
 
     let emit_access st p init e =
@@ -1949,7 +1956,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (Neon _,Some _) -> assert false
         end in
         (* Add a label to instructions `cs`, when a fault check is required. *)
-        let cs = add_label_to_instructions e cs in
+        let cs = add_label_to_last_instructions e cs in
         regs,inits,cs,st
     (* END of emit_access *)
 
@@ -1980,6 +1987,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rW,init,csi,st = U.emit_mov st p init (Code.value_to_int ew.C.v) in
       let arw = check_arw_lxsx er ew in
       let init,cs,st = XSingle.emit_pair arw p st init rR rW rA ew in
+      let cs = add_label_to_first_instructions er cs in
       rR,init,csi@caddr@cs,st
 
     let emit_exch1 = do_emit_exch1 emit_addr_simple
@@ -1992,6 +2000,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let arw = check_arw_lxsx er ew in
       let init,cs,st =
         XPair.emit_pair arw p st init (rR1,rR2) (rW1,rW2) rA ew in
+      let cs = add_label_to_first_instructions er cs in
       rR1,init,csi@caddr@cs,st
 
     let emit_exch22 = do_emit_exch22 emit_addr_simple
@@ -2004,6 +2013,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let module X = ExclusivePair(XLoadPair)(XStore) in
       let init,cs,st =
         X.emit_pair arw p st init (rR1,rR2) rW rA ew in
+      let cs = add_label_to_first_instructions er cs in
       rR1,init,csi@caddr@cs,st
 
     let emit_exch21 = do_emit_exch21 emit_addr_simple
@@ -2017,6 +2027,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let module X = ExclusivePair(XLoad)(XStorePair) in
       let init,cs,st =
         X.emit_pair arw p st init rR (rW1,rW2) rA ew in
+      let cs = add_label_to_first_instructions er cs in
       rR,init,csi@caddr@cs,st
 
     let emit_exch12 = do_emit_exch12 emit_addr_simple
@@ -2077,9 +2088,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Some (sz,o) ->
           let rA,cs,st = sumi_addr st rA o in
           cs@[ins_mixed sz a rW rR rA],st in
+      let cs = add_label_to_last_instructions er (pseudo cs) in
       let cs2 = emit_ldr_addon opt rR in
-      let final_cs = add_label_to_instructions er (csi@csi2@pseudo (cs@cs2)) in
-      rR,init,final_cs,st
+      rR,init,(csi@csi2@cs@pseudo cs2),st
 
     let do_emit_ldop ins ins_mixed st p init er ew =
       let rA,init,st =
@@ -2104,8 +2115,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Some (sz,o) ->
           let rA,cs,st = sumi_addr st rA o in
           cs@[cas_mixed sz a rS rT rA],st in
+      let cs = add_label_to_last_instructions er (pseudo cs) in
       let cs2 = emit_ldr_addon opt rS in
-      rS,init,csS@csS2@csT@csT2@pseudo (cs@cs2),st
+      rS,init,csS@csS2@csT@csT2@cs@pseudo cs2,st
 
     let emit_cas  st p init er ew =
       let rA,init,st =
@@ -2128,7 +2140,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Some (sz,o) ->
           let rA,cs,st = sumi_addr st rA o in
           cs@[stop_mixed op sz a rW rA],st in
-      None,init,csi@pseudo cs,st
+      let cs = add_label_to_last_instructions er (pseudo cs) in
+      None,init,csi@cs,st
 
     let emit_stop  op st p init er ew =
       let rA,init,st =
@@ -2462,7 +2475,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | _,Some (Plain _,None) -> assert false
           end in
           (* Add a label to instructions `cs`, when a fault check is required. *)
-          regs,inits,(add_label_to_instructions e cs),st
+          regs,inits,(add_label_to_last_instructions e cs),st
         | _,Code _ -> Warn.fatal "No dependency to code location"
       (* END of emit_access_dep_addr *)
 
@@ -2676,7 +2689,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       (* END of `Some W` *)
       | Some J,_ -> emit_joker st init
       | _,Code _ -> Warn.fatal "Not Yet (%s,dep_data)" (C.debug_evt e) in
-    regs,inits,(add_label_to_instructions e cs),st
+    regs,inits,(add_label_to_last_instructions e cs),st
     (* END of emit_access_dep_data *)
 
     let is_ctrlisync = function
