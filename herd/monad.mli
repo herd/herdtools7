@@ -299,16 +299,16 @@ module type S =
     (* Basic monads *)
     (****************)
 
-        (* read_loc is_data mk_action loc ii
+        (* read_loc is_addr mk_action loc ii
            for each value v that could be read,
            make an event structure comprising a single event with
            instruction id "ii", and action "mk_action v loc".
-           is_data charaterizes the data port of a store *)
+           is_addr charaterizes the address ports of a memory effect *)
 
     (* Read, the first, boolean, argument identifies a store data port *)
-    val do_read_loc : bool -> (A.location -> A.V.v -> E.action) ->
+    val do_read_loc : Port.t -> (A.location -> A.V.v -> E.action) ->
       A.location -> E.iiid -> A.V.v t
-    val read_loc : bool -> (A.location -> A.V.v -> E.action) ->
+    val read_loc : Port.t -> (A.location -> A.V.v -> E.action) ->
       A.location -> A.inst_instance_id -> A.V.v t
 
     val do_write_loc :
@@ -322,8 +322,11 @@ module type S =
         A.V.op_t -> A.V.v -> (A.V.v -> A.V.v -> E.action) ->
           A.inst_instance_id -> A.V.v t
 
-    (* [as_data_port m] flags all events in [m] as data. *)
-    val as_data_port : 'a t -> 'a t
+    (* [as_addr_port m] flags all events in [m] as being of a given port. *)
+    val as_port : Port.t -> 'a t -> 'a t
+
+    (* [as_addr_port m] flags all events in [m] as address. *)
+    val as_addr_port : 'a t -> 'a t
 
     (**********************)
     (* Morello extensions *)
@@ -337,7 +340,7 @@ module type S =
     module Mixed :
     functor (SZ : ByteSize.S) -> sig
 
-      val read_mixed : bool ->MachSize.sz ->
+      val read_mixed : Port.t ->MachSize.sz ->
         (MachSize.sz -> A.location -> A.V.v -> E.action) ->
           A.V.v ->  A.inst_instance_id -> A.V.v t
 

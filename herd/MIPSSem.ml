@@ -60,15 +60,16 @@ module
         Act.Access
           (Dir.R, loc, v, ato, (), sz, Act.access_of_location_std loc)
 
-      let read_reg is_data r ii = match r with
+      let read_reg port r ii = match r with
       | MIPS.IReg MIPS.R0 -> M.unitT V.zero
       | _ ->
-          M.read_loc is_data (mk_read nat_sz false) (A.Location_reg (ii.A.proc,r)) ii
+          M.read_loc port (mk_read nat_sz false) (A.Location_reg (ii.A.proc,r)) ii
 
-      let read_reg_ord = read_reg false
-      let read_reg_data = read_reg true
+      let read_reg_ord = read_reg Port.No
+      and read_reg_data = read_reg Port.Data
+      let read_reg_addr = read_reg Port.Addr
 
-      let do_read_mem sz ato a ii = M.read_loc false (mk_read sz ato) (A.Location_global a) ii
+      let do_read_mem sz ato a ii = M.read_loc Port.No (mk_read sz ato) (A.Location_global a) ii
       let read_mem sz a ii = do_read_mem sz false a ii
       let read_mem_atomic sz a ii = do_read_mem sz true a ii
 
@@ -163,7 +164,7 @@ module
           | MIPS.LI (r,k) ->
              write_reg r (immu16ToV k) ii >>= B.next1T
           | MIPS.MOVE (r1,r2) ->
-              read_reg_data r2 ii >>= fun v -> write_reg r1 v ii
+              read_reg_ord r2 ii >>= fun v -> write_reg r1 v ii
               >>= B.next1T
           | MIPS.OP (op,r1,r2,r3) ->
               (read_reg_ord r2 ii >>|  read_reg_ord r3 ii) >>=
@@ -203,23 +204,23 @@ module
                 fun v -> commit ii >>= fun () -> B.bccT v lbl
           | MIPS.LW (r1,k,r2) ->
               let sz = MachSize.Word in
-              read_reg_ord r2 ii >>=
+              read_reg_addr r2 ii >>=
               (fun a -> M.add a (imm16ToV k)) >>=
               (fun ea -> read_mem sz ea ii) >>=
               M.op1 (Op.Sxt sz) >>=
               (fun v -> write_reg r1 v ii)  >>= B.next1T
           | MIPS.LD (r1,k,r2) ->
-              read_reg_ord r2 ii >>=
+              read_reg_addr r2 ii >>=
               (fun a -> M.add a (imm16ToV k)) >>=
               (fun ea -> read_mem MachSize.Quad ea ii) >>=
               (fun v -> write_reg r1 v ii)  >>= B.next1T
           | MIPS.SW (r1,k,r2) ->
-              (read_reg_data r1 ii >>| read_reg_ord r2 ii) >>=
+              (read_reg_data r1 ii >>| read_reg_addr r2 ii) >>=
               (fun (d,a) ->
                 (M.add a (imm16ToV k)) >>=
                 (fun ea -> write_mem nat_sz ea d ii)) >>= B.next1T
           | MIPS.LL (r1,k,r2) ->
-              read_reg_ord r2 ii >>=
+              read_reg_addr r2 ii >>=
               (fun a ->
                 (M.add a (imm16ToV k) >>=
                  (fun ea ->
@@ -229,7 +230,7 @@ module
           | MIPS.SC (r1,k,r2) ->
               (read_reg_ord MIPS.RESADDR ii >>|
               read_reg_data r1 ii >>|
-              read_reg_ord r2 ii) >>=
+              read_reg_addr r2 ii) >>=
               (fun ((resa,v),a) ->
                 M.add a (imm16ToV k) >>=
                 (fun ea ->
@@ -252,7 +253,7 @@ module
                 (Printf.sprintf "0b%s" (String.concat "" bitmask)) in
               Printf.sprintf "0x%Lx" dec_mask
              end in
-            read_reg_data r2 ii
+            read_reg_ord r2 ii
             >>= M.op1 (Op.AndK hex_mask)
             >>= M.op1 (Op.LogicalRightShift lsb)
             >>= fun v -> write_reg r1 v ii

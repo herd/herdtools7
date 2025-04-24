@@ -26,7 +26,6 @@ ASL
 (* Renamings *)
 
 let NASLLocal = ~ASLLocal
-let ASLDATA = DATA
 
 let asl_iico_ctrl = iico_ctrl
 let asl_iico_data = iico_data
@@ -62,12 +61,12 @@ let restrict-finals s =
 let AArch64 = NASLLocal
 let AArch64Finals =  restrict-finals(AArch64&Wreg)
 
-(* DATA and NDATA *)
-let to_data = (asl_deps_restricted ; [DATA] ; asl_iico_data ; [W | Wreg]) & aarch64
+(* Compute AArch64 ADDR *)
+let to_addr = (asl_deps_restricted ; [ADDR] ; asl_iico_data ) & aarch64
 
-let AArch64_DATA = NASLLocal & domain (to_data)
-show [AArch64_DATA] as AArch64_DATA
-show [DATA] as debug_data
+let AArch64_ADDR = AArch64 & domain (to_addr)
+let to_memwrite = aarch64_iico_data;aarch64_iico_ctrl?;[W]
+let AArch64_DATA = ((AArch64\M) & domain (to_memwrite)) \ AArch64_ADDR
 
 (* TODO *)
 (* B = write to PC *)
@@ -96,7 +95,7 @@ let AArch64B = reaching & reachable
 
 let AArch64 = AArch64NoB | AArch64B
 
-show AArch64,AArch64Finals,AArch64_DATA
+show AArch64,AArch64Finals,AArch64_ADDR,AArch64_DATA
 show aarch64_iico_ctrl as  aarch64_iico_ctrl
 show aarch64_iico_data, aarch64_iico_order
 

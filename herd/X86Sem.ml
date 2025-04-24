@@ -54,25 +54,26 @@ module
         let ac = Act.access_of_location_std loc in
         Act.Access (Dir.R, loc, v, ato, (), sz, ac)
 
-      let read_loc sz is_d = M.read_loc is_d (mk_read sz false)
+      let read_loc port sz locked = M.read_loc port (mk_read sz locked)
 
       let mk_read_choose_atomic sz loc = mk_read sz (is_global loc) loc
 
-      let read_reg is_data r ii =
-        M.read_loc is_data (mk_read nat_sz false) (A.Location_reg (ii.A.proc,r)) ii
+      let read_reg port r ii =
+        M.read_loc port (mk_read nat_sz false) (A.Location_reg (ii.A.proc,r)) ii
 
       let read_mem sz a ii  =
-        M.read_loc false (mk_read sz false) (A.Location_global a) ii
+        M.read_loc Port.No (mk_read sz false) (A.Location_global a) ii
+
       let read_mem_atomic sz a ii =
-        M.read_loc false (mk_read sz true) (A.Location_global a) ii
+        M.read_loc Port.No (mk_read sz true) (A.Location_global a) ii
 
-      let read_loc_atomic sz is_d = M.read_loc is_d (mk_read_choose_atomic sz)
+      let read_loc_atomic sz port = M.read_loc port (mk_read_choose_atomic sz)
 
-      let read_loc_gen sz data locked loc ii = match loc with
+      let read_loc_gen port sz locked loc ii = match loc with
       |  A.Location_global _ ->
-          M.read_loc data (mk_read sz locked) loc ii
+          M.read_loc port (mk_read sz locked) loc ii
       | _ ->
-          M.read_loc data (mk_read nat_sz false) loc ii
+          M.read_loc port (mk_read nat_sz false) loc ii
 
 
       let write_loc_gen sz locked loc v ii = match loc with
@@ -80,10 +81,10 @@ module
           M.mk_singleton_es
             (Act.Access (Dir.W, loc, v, locked, (), sz, Access.VIR))
             ii
-      | _ ->
+      | A.Location_reg _ ->
           M.mk_singleton_es
             (Act.Access
-               (Dir.W, loc, v, locked, (), nat_sz, Access.VIR))
+               (Dir.W, loc, v, locked, (), nat_sz, Access.REG))
             ii
 
       let write_loc sz loc v ii =
@@ -121,19 +122,30 @@ module
       let create_barrier b ii =
         M.mk_singleton_es (Act.Barrier b) ii
 
+      let lval_port =
+        let open X86 in
+        function
+        | Effaddr_rm32 (Rm32_reg _|Rm32_abs _) -> Port.No
+        | Effaddr_rm32 (Rm32_deref _) -> Port.Addr
+
+      let check_data =
+        let open Port in
+        fun ea -> match lval_port ea with Addr -> Data | No -> No | Data -> assert false
+      
       let lval_ea ea ii = match ea with
       | X86.Effaddr_rm32 (X86.Rm32_reg r)->
           M.unitT (X86.Location_reg (ii.X86.proc,r))
       | X86.Effaddr_rm32 (X86.Rm32_deref r)     ->
-          read_reg false r ii >>=
+          read_reg Port.Addr r ii >>=
           fun vreg -> M.unitT (X86.Location_global vreg)
       | X86.Effaddr_rm32 (X86.Rm32_abs v)->
           M.unitT (X86.maybev_to_location v)
 
-      let rval_ea sz locked ea ii = lval_ea ea ii >>=  fun loc -> read_loc sz locked loc ii
+      let rval_ea port sz locked ea ii =
+        lval_ea ea ii >>=  fun loc -> read_loc port sz locked loc ii
 
-      let rval_op sz locked op ii = match op with
-      | X86.Operand_effaddr ea -> rval_ea sz locked ea ii
+      let rval_op port sz locked op ii = match op with
+      | X86.Operand_effaddr ea -> rval_ea port sz locked ea ii
       | X86.Operand_immediate s -> M.unitT (V.intToV s)
 
       let flip_flag v = M.op Op.Xor v V.one
@@ -151,16 +163,19 @@ module
       let xchg sz ea1 ea2 ii =
         (lval_ea ea1 ii >>| lval_ea ea2 ii) >>=
         (fun (l1,l2) ->
-          let r1 = read_loc_atomic sz true l1 ii
-          and r2 = read_loc_atomic sz true l2 ii
+          let r1 = read_loc_atomic sz (check_data ea2) l1 ii
+          and r2 = read_loc_atomic sz (check_data ea1) l2 ii
           and w1 = fun v -> write_loc_atomic sz l1 v ii
           and w2 = fun v -> write_loc_atomic sz l2 v ii in
           M.exch r1 r2 w1 w2) >>= B.next2T
 
       let do_op sz locked o ea op ii =
+        let port = check_data ea in
         (lval_ea ea ii >>=
          fun loc ->
-           M.addT loc (read_loc_gen sz true locked loc ii) >>| rval_op sz locked op ii)
+         M.addT loc
+           (read_loc_gen port sz locked loc ii)
+         >>| rval_op port sz locked op ii)
           >>=
         fun ((loc,v_ea),v_op) ->
           M.op o v_ea v_op >>=
@@ -175,7 +190,8 @@ module
           |  X86.I_XOR (ea,op) -> do_op nat_sz locked Op.Xor ea op ii
           |  X86.I_OR (ea,op) -> do_op nat_sz locked Op.Or ea op ii
           |  X86.I_ADD (ea,op) -> do_op nat_sz locked Op.Add ea op ii
-          |  X86.I_MOV (ea,op)|X86.I_MOVB (ea,op)|X86.I_MOVW (ea,op)|X86.I_MOVL (ea,op)|X86.I_MOVQ (ea,op)
+          |  X86.I_MOV (ea,op)|X86.I_MOVB (ea,op)
+          |  X86.I_MOVW (ea,op)|X86.I_MOVL (ea,op)|X86.I_MOVQ (ea,op)
           |  X86.I_MOVT (ea,op) as i ->
               let sz = match i with
               | X86.I_MOV _|X86.I_MOVL _ -> MachSize.Word
@@ -183,24 +199,28 @@ module
               | X86.I_MOVW _ ->  MachSize.Short
               | X86.I_MOVQ _ -> MachSize.Quad
               | _ -> assert false in
-              (lval_ea ea ii >>| rval_op sz locked op ii) >>=
+              let port = check_data ea in
+              (lval_ea ea ii >>| rval_op port sz locked op ii) >>=
               fun (loc,v_op) ->
                 write_loc_gen sz locked loc v_op ii >>= B.next1T
           |  X86.I_READ (op) ->
-              rval_op nat_sz locked op ii >>= fun _ -> M.unitT () >>= B.next1T
+              rval_op Port.No nat_sz locked op ii
+              >>= fun _ -> M.unitT () >>= B.next1T
           |  X86.I_DEC (ea) ->
+              let port = check_data ea in
               lval_ea ea ii >>=
-              fun loc -> read_loc_gen nat_sz true locked loc ii >>=
+              fun loc -> read_loc_gen port nat_sz locked loc ii >>=
                 fun v ->
                   M.op Op.Sub v V.one >>=
                   fun v ->
                     (write_loc_gen nat_sz locked loc v ii >>|
                     write_sf v V.zero ii >>|
                     write_zf v V.zero ii) >>= fun (((),()),()) -> B.nextT
-                                                     
+
           | X86.I_INC (ea) ->
+              let port = check_data ea in
               lval_ea ea ii >>=
-              fun loc -> read_loc_gen  nat_sz true locked loc ii >>=
+              fun loc -> read_loc_gen port nat_sz locked loc ii >>=
                 fun v ->
                   M.add v V.one >>=
                   fun v ->
@@ -208,50 +228,52 @@ module
                     write_sf v V.zero ii >>|
                     write_zf v V.zero ii) >>= fun (((),()),()) -> B.nextT
           |  X86.I_CMP (ea,op) ->
-              (rval_ea nat_sz locked ea ii >>| rval_op nat_sz locked op ii) >>=
+              (rval_ea Port.No nat_sz locked ea ii
+               >>| rval_op Port.No nat_sz locked op ii) >>=
               fun (v_ea,v_op) ->
                 write_all_flags v_ea v_op ii >>= B.next1T
           | X86.I_CMOVC (r,ea) ->
-              read_reg false X86.CF ii >>*=
+              read_reg Port.No X86.CF ii >>*=
               (fun vcf ->
                 M.choiceT vcf
-                  (rval_ea  nat_sz locked ea ii >>= fun vea -> write_reg r vea ii >>= B.next1T)
+                  (rval_ea Port.No nat_sz locked ea ii
+                   >>= fun vea -> write_reg r vea ii >>= B.next1T)
                   B.nextT)
           |  X86.I_JMP lbl -> B.branchT lbl
 
 (* Conditional branZch, I need to look at doc for
    interpretation of conditions *)
           |  X86.I_JCC (X86.C_LE,lbl) ->
-              read_reg false X86.SF ii >>=
+              read_reg Port.No X86.SF ii >>=
               (* control, data ? no event generated after this read anyway *)
               fun sf -> (* LE simply is the negation of GT, given by sign flag *)
                 flip_flag sf >>=
                 fun v -> B.bccT v lbl
           | X86.I_JCC (X86.C_LT,lbl) ->
-              (read_reg false X86.ZF ii >>|
-              (read_reg false X86.SF ii >>= flip_flag)) >>=
+              (read_reg Port.No X86.ZF ii >>|
+              (read_reg Port.No X86.SF ii >>= flip_flag)) >>=
               fun (v1,v2) ->
                 M.op Op.Or v1 v2 >>=
                 fun v -> B.bccT v lbl
           | X86.I_JCC (X86.C_GE,lbl) ->
-              (read_reg false X86.ZF ii >>| read_reg false X86.SF ii) >>=
+              (read_reg Port.No X86.ZF ii >>| read_reg Port.No X86.SF ii) >>=
               fun (v1,v2) ->
                 M.op Op.Or v1 v2 >>=
                 fun v -> B.bccT v lbl
           | X86.I_JCC (X86.C_GT,lbl) ->
-              read_reg false X86.SF ii >>=
+              read_reg Port.No X86.SF ii >>=
               fun v -> B.bccT v lbl
           | X86.I_JCC (X86.C_EQ,lbl) ->
-              read_reg false X86.ZF ii >>=
+              read_reg Port.No X86.ZF ii >>=
               fun v -> B.bccT v lbl
           | X86.I_JCC (X86.C_NE,lbl) ->
-              read_reg false X86.ZF ii >>= flip_flag >>=
+              read_reg Port.No X86.ZF ii >>= flip_flag >>=
               fun v -> B.bccT v lbl
           | X86.I_JCC (X86.C_S,lbl) ->
-              read_reg false X86.SF ii >>=
+              read_reg Port.No X86.SF ii >>=
               fun v -> B.bccT v lbl
           | X86.I_JCC (X86.C_NS,lbl) ->
-              read_reg false X86.SF ii >>= flip_flag >>=
+              read_reg Port.No X86.SF ii >>= flip_flag >>=
               fun v -> B.bccT v lbl
 
           | X86.I_LOCK inst -> begin
@@ -267,7 +289,7 @@ module
 
           end
           | X86.I_SETNB (ea) ->
-              (lval_ea ea ii >>| read_reg false X86.CF ii) >>=
+              (lval_ea ea ii >>| read_reg (check_data ea) X86.CF ii) >>=
               fun (loc,cf) ->
                 flip_flag cf >>=
                 fun v -> write_loc nat_sz loc v ii >>= B.next1T

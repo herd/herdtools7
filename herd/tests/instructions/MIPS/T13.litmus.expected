@@ -1,0 +1,12 @@
+Test T13 Allowed
+States 3
+1:$3=0; [y]=1;
+1:$3=1; [y]=1;
+1:$3=1; [y]=2;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists ([y]=2 /\ 1:$3=0)
+Observation T13 Never 0 3
+Hash=2a15f1afbe03593eed35889772b8909f
+

@@ -47,27 +47,14 @@ module
 
       let no_mo = AccessModes.NA
 
-      let read_loc is_data mo =
-        M.read_loc is_data (fun loc v -> Act.Access (Dir.R, loc, v, mo, nat_sz))
+      let read_loc port mo =
+        M.read_loc port (fun loc v -> Act.Access (Dir.R, loc, v, mo, nat_sz))
 
-      let  read_exchange is_data vstored mo =
-        M.read_loc is_data (fun loc v -> Act.RMW (loc,v,vstored,mo,nat_sz))
+      let read_reg port r ii =
+        read_loc port no_mo (A.Location_reg (ii.A.proc,r)) ii
 
-      let read_reg is_data r ii =
-        read_loc is_data no_mo (A.Location_reg (ii.A.proc,r)) ii
-
-      let read_mem is_data mo a =
-        read_loc is_data mo (A.Location_global a)
-
-      let read_mem_atomic is_data a loc =
-        M.read_loc is_data
-          (fun loc v -> Act.Access (Dir.R, loc, v,  a, nat_sz))
-          (A.Location_global loc)
-
-      let read_mem_atomic_known is_data a loc v =
-        M.read_loc is_data
-          (fun loc _v -> Act.Access (Dir.R, loc, v,  a, nat_sz))
-          (A.Location_global loc)
+      let read_mem port mo a =
+        read_loc port mo (A.Location_global a)
 
       let write_loc mo loc v ii =
         M.mk_singleton_es (Act.Access (Dir.W, loc, v, mo, nat_sz)) ii >>! v
@@ -84,32 +71,32 @@ module
             Act.RMW (A.Location_global l, v, vstored, am, nat_sz))
             ii
 
-      let rec build_semantics_expr is_data e ii : V.v M.t =
+      let rec build_semantics_expr port e ii : V.v M.t =
         match e with
-        | JavaBase.LoadReg reg -> read_reg is_data reg ii
+        | JavaBase.LoadReg reg -> read_reg port reg ii
 
-        | JavaBase.LoadMem (vh, am) -> (read_reg is_data vh ii) >>=
-                              (fun l -> read_mem is_data am l ii)
+        | JavaBase.LoadMem (vh, am) -> (read_reg Port.Addr vh ii) >>=
+                              (fun l -> read_mem port am l ii)
 
         | JavaBase.Const i -> M.unitT (V.maybevToV (ParsedConstant.intToV i))
 
         | JavaBase.Op (op, e1, e2) ->
-              (build_semantics_expr is_data e1 ii >>|
-              build_semantics_expr is_data e2 ii) >>= fun (v1, v2) ->
+              (build_semantics_expr Port.No e1 ii >>|
+              build_semantics_expr Port.No e2 ii) >>= fun (v1, v2) ->
               M.op op v1 v2
 
         | JavaBase.Rmw (vh, (op, am), e) ->
-              (read_reg is_data vh ii) >>|
-              (build_semantics_expr true e ii) >>=
+              (read_reg Port.Addr vh ii) >>|
+              (build_semantics_expr Port.Data e ii) >>=
               (fun (l , v) -> fetch_op op v am l ii)
 
         | JavaBase.CAS (vh, (read_am, write_am), expect, dest) ->
-              (read_reg is_data vh ii) >>= fun loc_vh ->
-              (build_semantics_expr true expect ii) >>= fun v_expect ->
-              (read_mem true read_am loc_vh ii) >>*= fun v_vh ->
+              (read_reg Port.Addr vh ii) >>= fun loc_vh ->
+              (build_semantics_expr Port.No expect ii) >>= fun v_expect ->
+              (read_mem Port.Addr read_am loc_vh ii) >>*= fun v_vh ->
               M.altT
                 ((M.neqT v_vh v_expect) >>! v_vh)
-                ((build_semantics_expr true dest ii) >>= fun v_dest ->
+                ((build_semantics_expr Port.Data dest ii) >>= fun v_dest ->
                     (M.mk_singleton_es
                     (Act.RMW (A.Location_global loc_vh,
                       v_expect, v_dest,
@@ -124,7 +111,7 @@ module
         let e = match e with
         | JavaBase.Op (_,_,_) -> e
         | _ -> JavaBase.Op (Ne,e,Java.Const 0) in
-        build_semantics_expr false e ii
+        build_semantics_expr Port.No e ii
 
       let rec build_semantics test ii : (A.program_order_index * B.t) M.t =
         let ii =
@@ -132,12 +119,12 @@ module
 
             match ii.A.inst with
             | JavaBase.StoreReg (reg, exp) -> (
-                        (build_semantics_expr true exp ii) >>=
+                        (build_semantics_expr Port.No exp ii) >>=
                         (fun v -> write_reg reg v ii) >>=
                         (fun _ -> M.unitT (ii.A.program_order_index, B.Next [])))
             | JavaBase.StoreMem (vh, am, e) -> (
-                    (read_reg false vh ii) >>|
-                    (build_semantics_expr true e ii) >>=
+                    (read_reg Port.Addr vh ii) >>|
+                    (build_semantics_expr Port.Data e ii) >>=
                     (fun (l, v) -> write_mem am l v ii) >>=
                     (fun _ -> M.unitT (ii.A.program_order_index, B.Next [])))
             | JavaBase.If (grd, thn, Some e) -> (

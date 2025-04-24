@@ -94,23 +94,24 @@ module
       let mk_read ato sz loc v =
         Act.Access (Dir.R, loc, v, ato,ARM.Exp, sz, Act.access_of_location_std loc)
 
-      let read_reg is_data r ii =
-        M.read_loc is_data
+      let read_reg port r ii =
+        M.read_loc port
           (mk_read ARM.N reg_sz)
           (A.Location_reg (ii.A.proc,r)) ii
 
-      let read_reg_ord = read_reg false
-      let read_reg_data = read_reg true
+      let read_reg_ord = read_reg Port.No
+      let read_reg_data = read_reg Port.Data
+      let read_reg_addr = read_reg Port.Addr
 
       let read_mem sz a ii  =
-        M.read_loc false (mk_read ARM.N sz) (A.Location_global a) ii
+        M.read_loc Port.No (mk_read ARM.N sz) (A.Location_global a) ii
       let read_mem_atomic sz a ii =
-        M.read_loc false (mk_read ARM.X sz) (A.Location_global a) ii
+        M.read_loc Port.No (mk_read ARM.X sz) (A.Location_global a) ii
 
       let do_read_mem_ret sz an anexp ac a ii =
         let mk_act loc v =  Act.Access (Dir.R,loc,v,an,anexp,sz,ac) in
         let loc = A.Location_global a in
-        M.read_loc false mk_act loc ii
+        M.read_loc Port.No mk_act loc ii
 
       let write_loc sz loc v ii =
         let ac = Act.access_of_location_std loc in
@@ -295,14 +296,14 @@ module
                 >>= B.next1T
           |  ARM.I_LDR (rt,rn,c) ->
               let ldr ii =
-                (read_reg_ord  rn ii)
+                (read_reg_addr  rn ii)
                   >>=
                 (fun vn ->
                   (read_mem nat_sz vn ii) >>=
                   (fun v -> write_reg  rt v ii)) in
               checkZ ldr c ii
           |  ARM.I_LDRD (rd1,rd2,ra, None) ->
-            read_reg_ord ra ii
+            read_reg_addr ra ii
             >>= fun a ->
               (read_mem nat_sz a ii) >>|
               (M.add a (V.intToV 4) >>= fun a2->read_mem nat_sz a2 ii)
@@ -310,7 +311,7 @@ module
               write_reg rd1 v1 ii >>| write_reg rd2 v2 ii
             >>= B.next2T
           |  ARM.I_LDRD (rd1,rd2,ra, Some k) ->
-            read_reg_ord ra ii
+            read_reg_addr ra ii
             >>= fun a ->
               (M.add a (V.intToV k) >>= fun a->
               ((read_mem nat_sz a ii) >>|
@@ -320,7 +321,7 @@ module
             >>= B.next2T
 
           |  ARM.I_LDM2 (ra,r1,r2,i) ->
-              (read_reg_ord ra ii)
+              (read_reg_addr ra ii)
                 >>=
               (fun va ->
                 (match i with
@@ -334,7 +335,7 @@ module
                   (write_reg r1 v1 ii >>| write_reg r2 v2 ii)
               >>= B.next2T
           |  ARM.I_LDM3 (ra,r1,r2,r3,i) ->
-              (read_reg_ord ra ii)
+              (read_reg_addr ra ii)
                 >>=
               (fun va ->
                 (match i with
@@ -355,7 +356,7 @@ module
               >>= B.next3T
           | ARM.I_LDRO (rd,rs,v,c) ->
               let ldr ii =
-                read_reg_ord rs ii
+                read_reg_addr rs ii
                   >>= (fun vn ->
                     M.add vn (V.intToV v)
                     >>= fun vn -> read_mem nat_sz vn ii
@@ -363,7 +364,7 @@ module
               checkZ ldr c ii
           |  ARM.I_LDREX (rt,rn) ->
               let ldr ii =
-                (read_reg_ord  rn ii)
+                (read_reg_addr  rn ii)
                   >>=
                 (fun vn ->
                   write_reg ARM.RESADDR vn ii >>|
@@ -371,14 +372,14 @@ module
                    fun v -> write_reg  rt v ii)) in
               ldr ii >>= B.next2T
           |  ARM.I_LDAEX (rt,rn) ->
-              (read_reg_ord rn ii)
+              (read_reg_addr rn ii)
                 >>=
               (fun vn ->
                 write_reg ARM.RESADDR vn ii >>|
                 (read_mem_acquire_ex nat_sz rt vn ii))
                 >>= fun (_,_) -> B.nextT
           |  ARM.I_LDA (rt,rn) ->
-              (read_reg_ord rn ii)
+              (read_reg_addr rn ii)
                   >>=
               fun vn ->
                 read_mem_acquire nat_sz rt vn ii
@@ -386,7 +387,7 @@ module
               fun _ -> B.nextT
           |  ARM.I_LDR3 (rt,rn,rm,c) ->
               let ldr3 ii =
-                ((read_reg_ord  rn ii) >>| (read_reg_ord  rm ii))
+                ((read_reg_addr rn ii) >>| (read_reg_addr rm ii))
                   >>=
                 (fun (vn,vm) ->
                   (M.add vn vm) >>=
@@ -396,7 +397,7 @@ module
               checkZ ldr3 c ii
           |  ARM.I_LDR3_S (rt,rn,rm,ARM.S_LSL k, c) ->
               let ldr3 ii =
-                ((read_reg_ord  rn ii) >>| (read_reg_ord  rm ii))
+                ((read_reg_addr rn ii) >>| (read_reg_addr rm ii))
                   >>=
                 (fun (vn,vm) ->
                   (M.op1 (Op.LeftShift k) vm)
@@ -407,7 +408,7 @@ module
               checkZ ldr3 c ii
           |  ARM.I_STR (rt,rn,c) ->
               let str ii =
-                ((read_reg_ord  rn ii) >>| (read_reg_data  rt ii))
+                ((read_reg_addr rn ii) >>| (read_reg_data  rt ii))
                   >>=
                 (fun (vn,vt) ->
                   let a = vn in
@@ -415,7 +416,7 @@ module
               checkZ str c ii
           |  ARM.I_STL (rt,rn,c) ->
               let str ii =
-                ((read_reg_ord  rn ii) >>| (read_reg_data  rt ii))
+                ((read_reg_addr rn ii) >>| (read_reg_data  rt ii))
                   >>=
                 (fun (vn,vt) ->
                   let a = vn in
@@ -423,8 +424,8 @@ module
               checkZ str c ii
           |  ARM.I_STR3 (rt,rn,rm,c) ->
               let str3 ii =
-                (((read_reg_ord  rm ii) >>|
-                ((read_reg_ord  rn ii) >>|
+                (((read_reg_addr rm ii) >>|
+                ((read_reg_addr rn ii) >>|
                 (read_reg_data  rt ii)))
                    >>=
                  (fun (vm,(vn,vt)) ->
@@ -434,8 +435,8 @@ module
               checkZ str3 c ii
           |  ARM.I_STR3_S (rt,rn,rm,ARM.S_LSL k, c) ->
               let str3 ii =
-                (((read_reg_ord  rm ii) >>|
-                ((read_reg_ord  rn ii) >>|
+                (((read_reg_addr rm ii) >>|
+                ((read_reg_addr rn ii) >>|
                 (read_reg_data  rt ii)))
                    >>=
                  (fun (vm,(vn,vt)) -> (M.op1 (Op.LeftShift k) vm)
@@ -445,7 +446,8 @@ module
               checkZ str3 c ii
           | ARM.I_STREX (r1,r2,r3,c) ->
               let strex ii =
-                (read_reg_ord ARM.RESADDR ii >>| read_reg_data r2 ii >>| read_reg_ord r3 ii) >>=
+                (read_reg_ord ARM.RESADDR ii >>| read_reg_data r2 ii
+                 >>| read_reg_addr r3 ii) >>=
                 fun ((resa,v),a) ->
                   (write_reg ARM.RESADDR V.zero ii >>|
                   M.altT
@@ -455,7 +457,8 @@ module
               checkZ strex c ii
           | ARM.I_STLEX (r1,r2,r3) ->
               let stlex ii =
-                (read_reg_ord ARM.RESADDR ii >>| read_reg_data r2 ii >>| read_reg_ord r3 ii) >>=
+                (read_reg_ord ARM.RESADDR ii >>| read_reg_data r2 ii
+                 >>| read_reg_addr r3 ii) >>=
                 fun ((resa,v),a) ->
                   (write_reg ARM.RESADDR V.zero ii >>|
                   M.altT
