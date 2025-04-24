@@ -779,13 +779,13 @@ let max_set = IntSet.max_elt
         (* Collect all the faults information to `flts` which contains two elements:
            - `pos_flts` includes all faults that eventually generate `Fault`
            - `neg_flts` includes all faults that eventually generate `~Fault`, (negation) *)
-        let flts =
+        let pos_flts,neg_flts =
           (* `get_locs` filter the interesting faults from a node list `ns`.
              The behaviour based on different fault-related flags. *)
           let get_faults ns =
           (* TODO: the `if-else` pattern on flags is not a good idea as it may short circuit *)
             if O.variant Variant_gen.NoFault then
-              F.FaultSet.empty,F.FaultSet.empty
+              [],[]
             else if do_memtag then
               let tagchange =
                 (* Get all tag writes. *)
@@ -802,9 +802,9 @@ let max_set = IntSet.max_elt
                    | Data x,Ord when StringSet.mem x tagchange ->
                      let proc = n.C.evt.C.proc in
                      let flt = ((proc, Label.Set.empty), Some (A.Loc x), None, None) in
-                     F.FaultSet.add flt flts
-                   | _ -> flts) F.FaultSet.empty ns in
-               F.FaultSet.empty,neg_flts
+                     [flt]::flts
+                   | _ -> flts) [] ns in
+              [],neg_flts
             else if do_morello then
               let neg_flts = List.fold_left
                (fun flts n ->
@@ -813,30 +813,44 @@ let max_set = IntSet.max_elt
                   match n.C.prev.C.edge.edge,evt.C.loc,evt.C.bank with
                   | Dp (dp,_,_),Data x,(CapaTag|CapaSeal) when A.is_addr dp ->
                     let flt = ((proc, Label.Set.empty), Some (A.Loc x), None, None) in
-                    F.FaultSet.add flt flts
-                  | _ -> flts)
-               F.FaultSet.empty ns in
-               F.FaultSet.empty,neg_flts
-           else if do_kvm then
-             List.fold_left
-               (fun (pos_flts,neg_flts) n ->
+                    [flt]::flts
+                  | _ -> flts) [] ns in
+              [],neg_flts
+            else if do_kvm then
+              let pos_flts,neg_flts,_ = List.fold_left
+                (fun (pos_flts,neg_flts,previous_multi_intr_rmw) n ->
                   let e = n.C.evt in
                   match e.C.check_fault,e.C.loc,e.C.bank with
                   | Some (lbl, do_fault),Data x,Ord ->
                     let proc = n.C.evt.C.proc in
                     let flt = ((proc, (Label.Set.singleton lbl)), Some (A.Loc x), None, None) in
+                    let add_to_first_element to_add l = match l with
+                        | [] -> assert false
+                        | hd::tail -> (to_add::hd)::tail in
                     (* Collect fault information based on `do_fault`,
                        add into either `pos_flts` for checking `Fault(...)`
-                       or `neg_flts` for checking `~Fault(...)`. *)
-                    if do_fault then F.FaultSet.add flt pos_flts,neg_flts
-                    else pos_flts,F.FaultSet.add flt neg_flts
-                  | _ -> (pos_flts,neg_flts)) (F.FaultSet.empty,F.FaultSet.empty) ns
-           else (* no fault-related flag *)
-             F.FaultSet.empty,F.FaultSet.empty
+                       or `neg_flts` for checking `~Fault(...)`.
+                       In the special case where `previous_multi_intr_rmw` is set,
+                       it means the current fault should be treated together as the
+                       previous one, hence via `add_to_first_element`. This gives
+                       `Fault(...) \/ Fault(...)` when print in the final check. *)
+                    let new_pos_flts,new_neg_flts =
+                      match do_fault,previous_multi_intr_rmw with
+                      | false,false -> pos_flts,[flt]::neg_flts
+                      | false,true -> pos_flts,add_to_first_element flt neg_flts
+                      | true,false -> [flt]::pos_flts,neg_flts
+                      | true,true -> add_to_first_element flt pos_flts,neg_flts in
+                    let next_rmw = n.C.evt.C.rmw && not (E.is_one_rmw_instruction n.C.edge) in
+                    new_pos_flts,new_neg_flts,next_rmw
+                  | _ -> (pos_flts,neg_flts,false)) ([],[],false) ns in
+              pos_flts,neg_flts
+            else (* no fault-related flag *)
+              [],[]
           in
           (* END of get_faults *)
           (* Extract faults from proc `i` and its node list `ns` *)
           get_faults (List.flatten splitted) in
+        let flts = (F.canonical_faults pos_flts,F.canonical_faults neg_flts) in
         (* Add the all the pair in `last_ptes` into the post-condition `final_env` *)
         let f =
           List.fold_left (fun f (x,p) -> F.cons_pteval (A.Loc x) p f) f last_ptes in
