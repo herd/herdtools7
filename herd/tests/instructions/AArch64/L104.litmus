@@ -1,0 +1,12 @@
+AArch64 L104
+{
+0:X2=0;
+uint64_t 0:X0;
+uint64_t 0:X1;
+}
+   P0        ;
+ CMP W2,WZR  ;
+ MSR NZCV,X0 ;
+ MRS X1,NZCV ;
+forall 0:X1=0
+
