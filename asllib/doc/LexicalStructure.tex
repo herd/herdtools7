@@ -34,7 +34,7 @@ In particular, it is an error to use a tab character in ASL specification text (
 \hline
 \textbf{RegExp} & \textbf{Matches}\\
 \hline
-$\underbracket{\texttt{a\_string}}$   & Any character in \texttt{a\_string}\\
+\anycharacter{\texttt{a\_string}}     & Any character in \texttt{a\_string}\\
 $\square$                             & The space character (decimal 32) \hypertarget{def-ascii}{}\\
 \ascii{$a$}                           & The ASCII with decimal $a$\\
 \ascii{$a$-$b$}                       & The ASCII range between decimals $a$ and $b$\\
@@ -73,8 +73,10 @@ That is, the set of strings that match that regular expression.
 
 \section{Whitespace}
 \RequirementDef{Whitespace}
-Comments, newlines and space characters are treated as whitespace.
-%
+Comments and whitespace characters are collectively referred to as whitespace lexemes
+and are discarded. Technically, line comments and multi-line comments are treated
+separately from whitespace characters.
+
 For example,
 the specification in \listingref{syntax-whitespace1}
 is equivalent to \listingref{syntax-whitespace2}
@@ -82,6 +84,14 @@ in the sense that they both parse to the same AST.
 Of course, \listingref{syntax-whitespace2} is preferred in terms of style.
 \ASLListing{A badly-formatted specification}{syntax-whitespace1}{\syntaxtests/GuideRule.Whitespace1.asl}
 \ASLListing{A well-formatted specification}{syntax-whitespace2}{\syntaxtests/GuideRule.Whitespace2.asl}
+
+Formally, whitespace lexemes other than comments are defined via the following regular expression:
+\hypertarget{def-rewhitespace}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\REwhitespace$ & $\triangleq$ & (\ascii{10} $|$ \ascii{13} $|$ \ascii{32})+\\
+\end{tabular}
+\end{center}
 
 \section{Comments}
 ASL supports comments in the style of C++:
@@ -95,12 +105,15 @@ as exemplified in \listingref{LexicalComments}.
 
 \ASLListing{Examples of comments}{LexicalComments}{\syntaxtests/Lexical.Comments.asl}
 
+Line comments are formally defined via the following regular expressions:
 \hypertarget{def-relinecomment}{}
 \begin{center}
 \begin{tabular}{rcl}
 $\RElinecomment$  &$\triangleq$& \texttt{"//"} (\REchar\ \texttt{-} \ascii{10})* \texttt{|} \texttt{"/*"} \REchar* \texttt{"*/"}\\
 \end{tabular}
 \end{center}
+
+Multi-line comments are defined via $\actionstartcomment$ and in \secref{scanningmultilinecomments}.
 
 \section{Integer Literals}
 Integers are written either in decimal using one or more of the characters \texttt{0-9} and underscore, or in hexadecimal
@@ -214,7 +227,7 @@ The escape sequences allowed in string literals appear in \taref{EscapeSequences
 \begin{center}
 \begin{tabular}{rcl}
 $\REstrchar$ &$\triangleq$& \ascii{32-126}\\
-$\REstringlit$ &$\triangleq$& \anycharacter{\texttt{"}} ( ($\REstrchar$ \texttt{-} $\underbracket{\texttt{"}\ \backslash\ }$) $|$ ($\underbracket{\backslash\ }$ $\underbracket{\texttt{" n t }\backslash\ }$)  )* \anycharacter{\texttt{"}}
+$\REstringlit$ &$\triangleq$& \anycharacter{\texttt{"}} ( ($\REstrchar$ \texttt{-} \anycharacter{\texttt{"}\ \backslash\ }) $|$ (\anycharacter{\backslash\ } \anycharacter{\texttt{" n t }\backslash\ })  )* \anycharacter{\texttt{"}}
 \end{tabular}
 \end{center}
 
@@ -421,7 +434,7 @@ The lexeme action
 \actiondiscard(s_1, s_2) \triangleq \aslscan(\spectoken, s_2)
 \]
 discards the string $s_1$ and continues scanning $s_2$ with $\spectoken$.
-This is used for whitespace.
+This is used for whitespace lexemes.
 
 \item
 \hypertarget{def-actiontoken}{}
@@ -527,9 +540,10 @@ token function.
 \begin{tabular}{ll}
 \textbf{Lexical Regular Expressions} & \textbf{Lexeme Action}\\
 \hline
-(\ascii{10} $|$ \ascii{13} $|$ \ascii{32})+         & $\discard$ \\
+$\REwhitespace$                       & $\discard$ \\
+$\RElinecomment$                      & $\discard$ \\
 $\texttt{"/*"}$                       & $\actionstartcomment$ \\
-$\underbracket{\texttt{"}}$           & $\actionstartstring$ \\
+\anycharacter{\texttt{"}}             & $\actionstartstring$ \\
 $\REintlit$                           & $\actiontoken(\decimaltolit)$ \\
 $\REhexlit$                           & $\actiontoken(\hextolit)$ \\
 $\REreallit$                          & $\actiontoken(\realtolit)$ \\
@@ -680,17 +694,17 @@ The lexical specification for string literals --- $\specstring$ --- is given by 
 \begin{tabular}{ll}
 \textbf{Lexical Regular Expression} & \textbf{Lexeme Action}\\
 \hline
-$\underbracket{\backslash\ }$ \anycharacter{{\color{white}\backslash}\texttt{n }}  &  $\stringescape$\\
-$\underbracket{\backslash\ }$ \anycharacter{{\color{white}\backslash}\texttt{t }}  &  $\stringescape$\\
-$\underbracket{\backslash\ }$ \anycharacter{{\color{white}\backslash}\texttt{" }}  &  $\stringescape$\\
-$\underbracket{\backslash\ }$ \anycharacter{\ \backslash\ }  & $\stringescape$ \\
+\anycharacter{\backslash\ } \anycharacter{{\color{white}\backslash}\texttt{n }}  &  $\stringescape$\\
+\anycharacter{\backslash\ } \anycharacter{{\color{white}\backslash}\texttt{t }}  &  $\stringescape$\\
+\anycharacter{\backslash\ } \anycharacter{{\color{white}\backslash}\texttt{" }}  &  $\stringescape$\\
+\anycharacter{\backslash\ } \anycharacter{\ \backslash\ }  & $\stringescape$ \\
 \anycharacter{{\color{white}\backslash}\texttt{" }}   &  $\stringfinish$\\
 $\REchar$                                             &  $\stringchar$\\
 \hline
 \end{tabular}
 \end{center}
 
-\subsection{Scanning Multi-line Comments}
+\subsection{Scanning Multi-line Comments\label{sec:scanningmultilinecomments}}
 The lexeme action
 \hypertarget{def-discardcommentchar}{}
 \[

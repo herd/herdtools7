@@ -575,7 +575,7 @@ and ill-typed declaration statements in comments.
   \tyopt \eqname \langle\vt\rangle \\
   \annotatetype{\tenv, \vt} \typearrow (\vtp, \vses) \OrTypeError\\\\
   \basevalue(\tenv, \vtp) \typearrow \veinit \OrTypeError\\\\
-  \annotatelocaldeclitem{\tenv, \vtp, \LDKVar, \None, \ldip} \typearrow \newtenv \OrTypeError \\
+  \annotatelocaldeclitem(\tenv, \vtp, \LDKVar, \None, \ldip) \typearrow \newtenv \OrTypeError \\
   \news \eqdef \SDecl(\LDKVar, \ldi, \langle\vtp\rangle, \langle\veinit\rangle)
 }{
   \annotatestmt(\tenv, \overname{\SDecl(\LDKVar, \ldi, \tyopt, \None)}{\vs}) \typearrow (\news, \newtenv, \vses)
@@ -669,7 +669,7 @@ See \ExampleRef{Typing Declaration Statements}.
   \begin{itemize}
     \item $\tyopt$ is $\None$;
     \item \Prosenoprecisionloss{\vte};
-    \item $\newtenv$ is the result of $\annotatelocaldeclitem{\tenv, \vte, \ldk, \langle\vep\rangle, \ldi}$\ProseOrTypeError;
+    \item $\newtenv$ is the result of $\annotatelocaldeclitem(\tenv, \vte, \ldk, \langle\vep\rangle, \ldi)$\ProseOrTypeError;
     \item $\tyoptp$ is $\tyopt$;
     \item \Proseeqdef{$\vses$}{the empty set}.
   \end{itemize}

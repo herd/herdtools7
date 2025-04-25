@@ -1473,6 +1473,12 @@ $B$ \Prosetypeclash{}.
 
 See \ExampleRef{Argument Clashing}
 
+\ExampleDef{Ill-typed Subprogram Declarations}
+In specification \listingref{TypeClash-bad}, the type \verb|SuperRec| \emph{\Prosetypeclashes} \verb|SubRec|
+in the static environment where both types have been annotated,
+which is why both declarations of \verb|structured_procedure| clash and thus they are ill-typed.
+\ASLListing{Ill-typed Subprogram Declarations}{TypeClash-bad}{\typingtests/TypingRule.TypeClashes.bad.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1615,7 +1621,7 @@ See \ExampleRef{Argument Clashing}
   \tstruct(\tenv, \vt) \typearrow \vtstruct \\
   \tstruct(\tenv, \vs) \typearrow \vsstruct \\
   \astlabel(\vtstruct) = \astlabel(\vsstruct)\\
-  \vb \eqdef \astlabel(\vtstruct) \in \{\TRecord, \TException, \TCollection\}\\
+  \astlabel(\vtstruct) \in \{\TRecord, \TException, \TCollection\}
 }{
   \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
 }
