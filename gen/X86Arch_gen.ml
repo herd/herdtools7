@@ -61,7 +61,7 @@ let atom_to_bank _ = Code.Ord
 include NoMixed
 include NoWide
 
-module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
+module Value = Value.NoPte(struct type arch_atom = atom end)
 
 (**********)
 (* Fences *)
@@ -113,7 +113,7 @@ let sequence_dp _ _ = assert false
 (* RWM *)
 (*******)
 
-include Exch.Exch(struct type arch_atom = atom type rmw_value = PteVal.v end)
+include Exch.Exch(struct type arch_atom = atom type rmw_value = Value.v end)
 include NoEdge
 
 include
@@ -127,6 +127,6 @@ include
       let pp_i _ = assert false
       let free_registers = allowed_for_symb
       type arch_extra_atom = atom
-      module PteVal = PteVal
+      module Value = Value
       include NoSpecial
     end)

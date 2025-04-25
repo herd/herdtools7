@@ -36,10 +36,10 @@ module type S = sig
   val value_compare : v -> v -> int
 end
 
-module No(A:sig type arch_atom end) = struct
+module NoPte(A:sig type arch_atom end) = struct
   type pte_atom = A.arch_atom
   type pte = string
-  let pp_pte a = a
+  let pp_pte _ = "[nopte]"
   let default_pte s = s
   let pte_compare _ _ = 0
   let set_pteval _ p _ = p
@@ -54,10 +54,8 @@ module No(A:sig type arch_atom end) = struct
     | _ -> Warn.user_error "Cannot convert to int"
   let no_value = NoValue
   let from_int v = Plain v
-  let from_pte p = PteValue p
-  let to_pte = function
-    | PteValue p -> p
-    | _ -> Warn.user_error "Cannot convert to pte"
+  let from_pte _ = Warn.user_error "Cannot convert from pte"
+  let to_pte _ = Warn.user_error "Cannot convert to pte"
 
   let value_compare lhs rhs =
     match lhs, rhs with

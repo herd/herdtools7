@@ -67,7 +67,7 @@ let atom_to_bank _ = Code.Ord
 include NoMixed
 include NoWide
 
-module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
+module Value = Value.NoPte(struct type arch_atom = atom end)
 
 (* Fences, to be completed *)
 
@@ -153,11 +153,11 @@ let dump_typ = function
 type exp =
   | Load of location
   | AtomicLoad of MemOrder.t * exp
-  | AtomicExch of MemOrder.t * exp * PteVal.v
-  | AtomicFetchOp of MemOrder.t * exp * PteVal.v
+  | AtomicExch of MemOrder.t * exp * Value.v
+  | AtomicFetchOp of MemOrder.t * exp * Value.v
   | Deref of exp
-  | Const of PteVal.v
-  | AssertVal of exp * PteVal.v
+  | Const of Value.v
+  | AssertVal of exp * Value.v
   | AddZero of exp * location
 
 let addrs_of_location = function
@@ -236,7 +236,7 @@ type rmw =
   | Add
 
 type rmw_atom = atom
-type rmw_value = PteVal.v
+type rmw_value = Value.v
 
 let pp_rmw compat = function
   | Exch -> if compat then "Rmw" else "Exch"
@@ -271,11 +271,11 @@ let applies_atom_rmw _ ar aw = match ar,aw with
 let show_rmw_reg _ = true
 
 let compute_rmw rmw old co =
-  let old = PteVal.to_int old in
-  let co = PteVal.to_int co in
+  let old = Value.to_int old in
+  let co = Value.to_int co in
   let new_value = match rmw with
   | Exch -> co
   | Add -> old+co in
-  PteVal.from_int new_value
+  Value.from_int new_value
 
 include NoEdge
