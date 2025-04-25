@@ -313,8 +313,6 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let emit_obs_not_eq = emit_load_not_eq
     let emit_obs_not_zero = emit_load_not_zero
 
-    let emit_joker st init = None,init,[],st
-
     let emit_access st _p init e = 
       (* collapse the value `v` in event `e` to integer *)
       let value = Code.value_to_int e.C.v in
@@ -366,7 +364,6 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
                   let init,cs,st = emit_store_mixed sz o st _p init loc value in
                   None,init,cs,st
                end
-            | J -> emit_joker st init
             end
          | Code _ -> Warn.fatal "No code location for X86_64"
          end

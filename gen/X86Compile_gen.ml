@@ -110,8 +110,6 @@ struct
   let emit_obs_not_eq  st =  emit_load_not st
   let emit_obs_not_value  st = emit_load_not st
 
-  let emit_joker st init = None,init,[],st
-
   let emit_access st _p init e = 
   (* collapse the value `v` in event `e` to integer *)
   let value = Code.value_to_int e.C.v in
@@ -134,7 +132,6 @@ struct
         st
       else
         None,init,pseudo [emit_store loc value],st
-  | Some J,_ -> emit_joker st init
   | _,Code _ -> Warn.fatal "No code location for X86"
 
   let emit_exch st _p init er ew =
