@@ -481,8 +481,6 @@ given by $s$.
 \item The function $\truetolit(s)$ returns $\Tboollit(\True)$ ($s$ is ensured to be \texttt{TRUE}).
 \hypertarget{def-tokenid}{}
 \item The function $\tokenid(s)$ returns $\Tlexeme(s)$.
-\hypertarget{def-lexicalerror}{}
-\item The function $\lexicalerror$ returns $\Terror$.
 \hypertarget{def-eoftoken}{}
 \item The lexeme action
 \[
@@ -573,42 +571,6 @@ $\REbitmasklit$                       & $\actiontoken(\masktolit)$ \\
 \texttt{"ARBITRARY"}, \texttt{"Unreachable"}, \texttt{"until"}         & $\actiontoken(\tokenid)$ \\
 \texttt{"var"}           & $\actiontoken(\tokenid)$ \\
 \texttt{"when"}, \texttt{"where"}, \texttt{"while"}, \texttt{"with"}          & $\actiontoken(\tokenid)$ \\
-\hline
-\end{tabular}
-\end{center}
-
-The following list represents keywords that are reserved for future use.
-\begin{center}
-\begin{tabular}{ll}
-\textbf{Lexical Regular Expressions} & \textbf{Lexeme Action}\\
-\hline
-\texttt{"SAMPLE"}, \texttt{"UNKNOWN"}, \texttt{"UNSTABLE"} & $\lexicalerror$ \\
-\texttt{"\_"}, \texttt{"any"} & $\lexicalerror$ \\
-\texttt{"assume"}, \texttt{"assumes"} & $\lexicalerror$ \\
-\texttt{"call"}, \texttt{"cast"} & $\lexicalerror$ \\
-\texttt{"class"}, \texttt{"dict"} & $\lexicalerror$ \\
-\texttt{"endcase"}, \texttt{"endcatch"}, \texttt{"endclass"} & $\lexicalerror$ \\
-\texttt{"endevent"}, \texttt{"endfor"}, \texttt{"endfunc"}, \texttt{"endgetter"} & $\lexicalerror$ \\
-\texttt{"endif"}, \texttt{"endmodule"}, \texttt{"endnamespace"}, \texttt{"endpackage"} & $\lexicalerror$ \\
-\texttt{"endproperty"}, \texttt{"endrule"}, \texttt{"endsetter"}, \texttt{"endtemplate"} & $\lexicalerror$ \\
-\texttt{"endtry"}, \texttt{"endwhile"} & $\lexicalerror$ \\
-\texttt{"event"}, \texttt{"export"} & $\lexicalerror$ \\
-\texttt{"extends"}, \texttt{"extern"}, \texttt{"feature"} & $\lexicalerror$ \\
-\texttt{"gives"} & $\lexicalerror$ \\
-\texttt{"iff"}, \texttt{"implies"}, \texttt{"import"} & $\lexicalerror$ \\
-\texttt{"intersect"}, \texttt{"intrinsic"} & $\lexicalerror$ \\
-\texttt{"invariant"}, \texttt{"list"} & $\lexicalerror$ \\
-\texttt{"map"}, \texttt{"module"}, \texttt{"namespace"}, \texttt{"newevent"} & $\lexicalerror$ \\
-\texttt{"newmap"}, \texttt{"original"} & $\lexicalerror$ \\
-\texttt{"package"}, \texttt{"parallel"} & $\lexicalerror$ \\
-\texttt{"port"}, \texttt{"private"} & $\lexicalerror$ \\
-\texttt{"profile"}, \texttt{"property"}, \texttt{"protected"}, \texttt{"public"} & $\lexicalerror$ \\
-\texttt{"requires"}, \texttt{"rethrow"}, \texttt{"rule"} & $\lexicalerror$ \\
-\texttt{"shared"}, \texttt{"signal"} & $\lexicalerror$ \\
-\texttt{"template"} & $\lexicalerror$ \\
-\texttt{"typeof"}, \texttt{"union"} & $\lexicalerror$ \\
-\texttt{"using"} & $\lexicalerror$ \\
-\texttt{"ztype"} & $\lexicalerror$ \\
 \hline
 \end{tabular}
 \end{center}
