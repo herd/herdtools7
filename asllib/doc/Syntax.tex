@@ -215,7 +215,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
                    & \wrappedline\ \Nfuncbody\\
 |\ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
 |\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbiarrow \parsesep \Nty &\\
-   & \wrappedline\ \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon &\\
+   & \wrappedline\ \Naccessorbody &\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon &\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon &\\
 |\ & \Nglobaldeclkeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} &\\
@@ -303,6 +303,11 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \hypertarget{def-nignoredoridentifier}{}
 \begin{flalign*}
 \Nignoredoridentifier \derives \ & \Tminus \;|\; \Tidentifier &
+\end{flalign*}
+
+\hypertarget{def-naccessorbody}{}
+\begin{flalign*}
+\Naccessorbody \derives \ & \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon&
 \end{flalign*}
 
 \hypertarget{def-naccessors}{}
