@@ -1714,8 +1714,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* Access *)
 (**********)
 
-    let emit_joker st init = None,init,[],st
-
     let add_tag =
       if do_memtag then
         fun loc tag -> Code.add_tag loc tag
@@ -1901,7 +1899,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               (A.pp_atom a) (Code.pp_dir d)
         | _,Some (Plain _,None) -> assert false
         | _,Some (Tag,_) -> assert false
-        | J,_ -> emit_joker st init
         | W,Some (CapaTag,None) ->
             let init,cs,st = STCT.emit_store st p init loc value in
             None,init,cs,st
@@ -2436,7 +2433,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              let init,cs,st = emit_store_idx vdep st p init loc r2 value in
               None,init,pseudo cs0@cs,st
           | W,Some (Neon _,Some _) -> assert false
-          | J,_ -> emit_joker st init
           | _,Some (Plain _,None) -> assert false
           end
       | _,Code _ -> Warn.fatal "No dependency to code location"
@@ -2649,7 +2645,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              None,init,cs2@cs,st
           | Some (Pair _,Some _) -> assert false
           end
-      | Some J,_ -> emit_joker st init
       | _,Code _ -> Warn.fatal "Not Yet (%s,dep_data)" (C.debug_evt e)
       (* END of emit_access_dep_data *)
 

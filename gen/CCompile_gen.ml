@@ -282,7 +282,7 @@ module Make(O:Config) : Builder.S
               compile_exch_assertvalue n.C.edge e.C.v st p mo mo_w loc v in
             Some r,i,st
         | (Some W|None),_ -> None,A.Nop,st
-        | (Some J,_)|(_,Code _) -> assert false
+        | (_,Code _) -> assert false
         else match e.C.dir,e.C.loc with
         | Some R,Data loc ->
             let loc = A.Loc loc in
@@ -296,7 +296,7 @@ module Make(O:Config) : Builder.S
             let i = compile_store pdp e in
             None,i,st
         | (None,Data _) -> None,A.Nop,st
-        | (Some J,_)|(_,Code _) -> assert false
+        | (_,Code _) -> assert false
 
 (* Lift definitions *)
       module RegSet =
@@ -721,7 +721,7 @@ module Make(O:Config) : Builder.S
                       (i,A.If (ce,add_fence n ins,load_checked_not))),
                   st
             | (Some W|None),_  -> None,add_fence n,st
-            | (Some J,_)|(_,Code _) -> assert false
+            | (_,Code _) -> assert false
             else begin match e.C.dir,e.C.loc with
             | None,_ -> Warn.fatal "TODO"
             | Some R,Data x ->
@@ -745,7 +745,7 @@ module Make(O:Config) : Builder.S
                 None,
                 (fun ins -> A.Seq (compile_store No e,add_fence n ins)),
                 st
-            | (Some J,_)|(_,Code _) -> assert false
+            | (_,Code _) -> assert false
             end in
           let is,fs,st = do_compile_proc_check loc_writes st p ns in
           let obs,fs,st = observe_local_check st p fs n in

@@ -363,8 +363,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 (**********)
 (* Access *)
 (**********)
-    let emit_joker st init = None,init,[],st
-
     let emit_access  st p init e = match e.dir,e.loc with
     | None,_ -> Warn.fatal "TODO"
     | Some d,Data loc ->
@@ -395,7 +393,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
         | Code.W,Some (Mixed (sz,o)) ->
             let init,cs,st = emit_store_mixed sz o st p init loc value in
             None,init,cs,st
-        | Code.J, _ -> emit_joker st init
         end
     | _,Code _ -> Warn.fatal "No code location for RISCV"
 
@@ -482,7 +479,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
               Some r,init,Instruction c::cs,st
           | _,Some (Mixed _) ->
               Warn.fatal "addr dep with mixed"
-          | Code.J, _ -> emit_joker st init
           end
       | _,Code _ -> Warn.fatal "No code location for RISCV"
 
@@ -519,7 +515,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
           | Some (Mixed _) ->
               Warn.fatal "data dep with mixed"
           end
-      | Some Code.J,_ -> emit_joker st init
       | _,Code _ -> Warn.fatal "No code location for RISCV"
 
     let insert_isb st p init isb cs1 cs2 =
