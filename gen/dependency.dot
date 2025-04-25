@@ -1,0 +1,149 @@
+digraph graphname {
+  type_atom [label = "[final] type atom"]
+  value [label = "Value.S"]
+  no_pte [label = "Value.NoPte"]
+  type_atom -> value
+  value -> no_pte
+
+  code [label = "Code"]
+  simd [label = "Atom.SIMD"]
+  simd -> code [label = "type bank" ]
+
+  no_simd [label = "NoSIMD"]
+  simd -> no_simd
+
+  mach_mixed [label = "MachMixed"]
+  atom [label = "Atom.S"]
+  type_atom -> atom
+  value -> atom
+  mach_mixed -> atom
+  code -> atom
+
+  mach_mixed_make [label = "MachMixed.Make"]
+  mach_mixed -> mach_mixed_make
+
+  no_mixed [label = "NoMixed"]
+  mach_mixed_make -> no_mixed
+
+  vals [label = "MachMixed.Vals"]
+  value -> vals
+
+  mach_atom [label = "MachAtom.Make"]
+  no_simd -> mach_atom
+  value -> mach_atom
+  mach_mixed -> mach_atom
+  vals -> mach_atom
+  mach_atom -> type_atom
+
+  rmw [label = "Rmw.S"]
+  value -> rmw [label = "type rmw_value"]
+  type_atom -> rmw [label = "type rmw_atom"]
+
+  no_rmw [label = "NoRmw.Make"]
+  rmw -> no_rmw
+
+  lxsx [label = "Exch.LxSx"]
+  rmw -> lxsx
+
+  exch [label = "Exch.Exch"]
+  rmw -> exch
+
+  fence [label = "Fence.S"]
+  atom -> fence
+  code -> fence
+  rmw -> fence
+
+  fence_edge [label = "Fence.Edge"]
+  no_edge [label = "NoEdge"]
+  fence_edge -> no_edge
+
+  typ_base [label = "TypBase"]
+  mach_mixed -> typ_base
+
+  edge_make [label = "Edge.S & Edge.Make"]
+  type_atom -> edge_make
+  value -> edge_make
+  simd -> edge_make
+  fence -> edge_make
+  rmw -> edge_make
+
+  cycle [label = "Cycle.S & Cycle.Make"]
+  edge_make -> cycle
+  simd -> cycle
+  value -> cycle
+  code -> cycle
+
+  special [label = "ArchExtra_gen.I [special reg]"]
+  arch_extra_gen [label = "ArchExtra_gen.S"]
+  value -> arch_extra_gen [label = "module Value_extra"]
+  type_atom -> arch_extra_gen [label = "type arch_extra_atom"]
+  typ_base -> arch_extra_gen
+
+  no_special [label = "NoSpeical"]
+  special -> no_special
+
+  arch_extra_gen_make [label = "ArchExtra_gen.Make"]
+  special -> arch_extra_gen_make
+  arch_extra_gen -> arch_extra_gen_make
+  value -> arch_extra_gen_make
+
+  scope_gen [label = "ScopeGen.S"]
+  scope_gen_make [label = "ScopeGen.Make"]
+  no_scope_gen [label = "ScopeGen.No"]
+  scope_gen -> scope_gen_make
+  scope_gen -> no_scope_gen
+
+  arch_gen [label = "Arch_gen.S"]
+  fence -> arch_gen
+  scope_gen -> arch_gen
+  arch_extra_gen -> arch_gen
+
+  arch_loc [label = "ArchLoc.S"]
+  value -> arch_loc
+  scope_gen -> arch_loc
+  code -> arch_loc
+
+  relax [label = "Relax.S & Relax.Make"]
+  fence -> relax
+  edge_make -> relax
+
+  arch_run [label = "ArchRun.S"]
+  arch_loc -> arch_run
+  edge_make -> arch_run
+  cycle -> arch_run
+  relax -> arch_run
+
+  builder [label = "Builder.S"]
+  arch_run -> builder
+
+  gen_util [label = "GenUtils.Make"]
+  arch_gen -> gen_util
+  code -> gen_util
+
+  compile_common [label = "CompileCommon.S & CompileCommon.Make"]
+  arch_run -> compile_common
+  edge_make -> compile_common
+  relax -> compile_common
+  cycle -> compile_common
+  arch_gen -> compile_common
+
+  xxx_compile_gen [label = "XXXCompile_gen.S"]
+  compile_common -> xxx_compile_gen
+
+  run_gen [label = "Run_gen.Make"]
+  arch_run -> Run_gen
+
+  final [label = "Final.Make"]
+  arch_run -> final
+  run_gen -> final
+
+  top_utils [label = "TopUtils.Make"]
+  arch_run -> top_utils
+
+  top_gen [label = "Top_gen.Make"]
+  builder -> top_gen
+  xxx_compile_gen -> top_gen
+  final -> top_gen
+  top_utils -> top_gen
+
+}
