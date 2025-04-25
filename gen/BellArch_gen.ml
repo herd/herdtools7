@@ -211,7 +211,7 @@ include NoWide
 
 (* End of atoms *)
 
-module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
+module Value = Value.NoPte(struct type arch_atom = atom end)
 
 (**********)
 (* Fences *)
@@ -262,7 +262,7 @@ let var_fence f = match varatom with
 (********)
 
 include ClassicDep
-include NoRmw.Make(struct type arch_atom = atom type rmw_value = PteVal.v end)
+include NoRmw.Make(struct type arch_atom = atom type rmw_value = Value.v end)
 include NoEdge
 include
     ArchExtra_gen.Make
@@ -275,7 +275,7 @@ include
       let pp_i _ = assert false
       let free_registers = allowed_for_symb
       type arch_extra_atom = atom
-      module PteVal = PteVal
+      module Value = Value
       include NoSpecial
     end)
 end
