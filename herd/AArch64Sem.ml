@@ -2584,8 +2584,8 @@ module Make
             let flags = n >>| z >>= fun (v1,v2) ->
               M.op Op.Or v1 v2 >>| c >>= fun (v1,v2) ->
                 M.op Op.Or v1 v2 in
-            flags >>= fun flags -> write_reg AArch64Base.NZCV flags ii
-          ) >>! new_val
+            flags >>= fun flags -> write_reg_dest AArch64Base.NZCV flags ii
+          ) >>= fun ((),nzcv_val) -> M.unitT [AArch64Base.NZCV,nzcv_val; p,new_val]
 
       let ptrue p pattern ii =
         let psize = predicate_psize p in
@@ -3887,16 +3887,16 @@ module Make
           >>= nextSet p
         | I_WHILELT(p,var,r1,r2) ->
           check_sve inst;
-          while_op (M.op Op.Lt) false p var r1 r2 ii >>= nextSet p
+          while_op (M.op Op.Lt) false p var r1 r2 ii >>= B.nextBdsT
         | I_WHILELO(p,var,r1,r2) ->
           check_sve inst;
-          while_op (M.op Op.Lt) true p var r1 r2 ii >>= nextSet p
+          while_op (M.op Op.Lt) true p var r1 r2 ii >>= B.nextBdsT
         | I_WHILELE(p,var,r1,r2) ->
           check_sve inst;
-          while_op (M.op Op.Le) false p var r1 r2 ii >>= nextSet p
+          while_op (M.op Op.Le) false p var r1 r2 ii >>= B.nextBdsT
         | I_WHILELS(p,var,r1,r2) ->
           check_sve inst;
-          while_op (M.op Op.Le) true p var r1 r2 ii >>= nextSet p
+          while_op (M.op Op.Le) true p var r1 r2 ii >>= B.nextBdsT
         |  I_ADD_SV (r1,r2,r3) ->
           check_sve inst;
           !(add_sv r1 r2 r3 ii)

@@ -200,6 +200,8 @@ let gprs =
   R28; R29; R30;
 ]
 
+let nzcv_regs = [NZCV;]
+
 let vec_regs =
 [
   V0 ; V1 ; V2 ; V3 ;

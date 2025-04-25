@@ -327,7 +327,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
           -> None
 
     let all_regs =
-      all_gprs@vregs (* Should be enough, only those are tracked *)
+      nzcv_regs@all_gprs@vregs (* Should be enough, only those are tracked *)
 
     let all_streaming_regs =
       zregs@pregs
@@ -366,6 +366,10 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDRSW (r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
       | I_LDRS (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
         -> [r1;r2;]
+      | I_WHILELT (r,_,_,_) | I_WHILELE (r,_,_,_)
+      | I_WHILELO (r,_,_,_) | I_WHILELS (r,_,_,_)
+        ->
+          r::nzcv_regs
       | I_LDR (_,r,_,_)
       | I_LDRSW (r,_,_)
       | I_LDRBH (_,r,_,_)
@@ -393,7 +397,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_ADDV (_,r,_)
       | I_DUP (r,_,_)
       | I_FMOV_TG (_,r,_,_)
-      | I_WHILELT (r,_,_,_) | I_WHILELE (r,_,_,_) | I_WHILELO (r,_,_,_) | I_WHILELS (r,_,_,_)
       | I_UADDV (_,r,_,_)
       | I_MOV_SV (r,_,_)
       | I_DUP_SV (r,_,_) | I_ADD_SV (r,_,_) | I_PTRUE (r,_)
@@ -403,6 +406,9 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LD1SPT (_,r,_,_,_,_,_) | I_MOVA_TV (r,_,_,_,_) | I_MOVA_VT (r,_,_,_,_)
       | I_ADDA (_,r,_,_,_)
         -> [r]
+      | I_MSR (SYS_NZCV,_)
+        ->
+          nzcv_regs
       | I_MSR (sr,_)
         -> [(SysReg sr)]
       | I_LDXP (_,_,r1,r2,_)
