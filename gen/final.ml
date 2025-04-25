@@ -40,12 +40,12 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     val add_final_v :
         Code.proc -> C.A.arch_reg -> IntSet.t -> fenv -> fenv
     val add_final_pte :
-        Code.proc -> C.A.arch_reg -> C.A.PteVal.pte -> fenv -> fenv
+        Code.proc -> C.A.arch_reg -> C.A.Value.pte -> fenv -> fenv
     val add_final_loc :
         Code.proc -> C.A.arch_reg -> string -> fenv -> fenv
     val cons_int :   C.A.location -> int -> fenv -> fenv
     val cons_vec : C.A.location -> int array -> fenv -> fenv
-    val cons_pteval :   C.A.location -> C.A.PteVal.pte -> fenv -> fenv
+    val cons_pteval :   C.A.location -> C.A.Value.pte -> fenv -> fenv
     val cons_int_set :  (C.A.location * IntSet.t) -> fenv -> fenv
     val add_int_sets : fenv -> (C.A.location * IntSet.t) list -> fenv
 
@@ -89,8 +89,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     let do_kvm = Variant_gen.is_kvm O.variant
 
     (* TODO change the type? *)
-    type v = I of C.C.PteVal.v | S of string | P of C.A.PteVal.pte
-    let pte_def = P (C.A.PteVal.default_pte "*")
+    type v = I of C.C.Value.v | S of string | P of C.A.Value.pte
+    let pte_def = P (C.A.Value.default_pte "*")
     let () = ignore pte_def
 
     let looks_like_array = function
@@ -106,7 +106,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           let compare v1 v2 = match v1,v2 with
           | I i1,I i2 -> compare i1 i2
           | S s1,S s2 -> String.compare s1 s2
-          | P p1,P p2 -> C.A.PteVal.pte_compare p1 p2
+          | P p1,P p2 -> C.A.Value.pte_compare p1 p2
           | ((P _|S _),I _)
           | (P _,S _)
             -> -1
@@ -146,7 +146,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         else true
 
     let intset2vset is =
-      IntSet.fold (fun v k -> VSet.add (I (C.C.PteVal.from_int v)) k) is VSet.empty
+      IntSet.fold (fun v k -> VSet.add (I (C.C.Value.from_int v)) k) is VSet.empty
 
     let add_final_v p r v finals = (C.A.of_reg p r,intset2vset v)::finals
 
@@ -156,7 +156,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       let loc = C.A.of_reg p r in
       (loc,VSet.singleton (S v))::finals
 
-    let cons_int loc i fs = (loc,VSet.singleton (I (C.C.PteVal.from_int i)))::fs
+    let cons_int loc i fs = (loc,VSet.singleton (I (C.C.Value.from_int i)))::fs
 
     let cons_vec loc t fs =
       let vec = Code.add_vector O.hexa (Array.to_list t) in
@@ -192,17 +192,17 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                  | [] -> assert false
                  | v0::_ -> v0 in
                 let vec = v0
-                 |> List.map C.C.PteVal.to_int
+                 |> List.map C.C.Value.to_int
                  |> Code.add_vector O.hexa in
                 Some (S vec)
             | Code.Tag ->
-                Some (S (Code.add_tag (Code.as_data evt.C.C.loc) (C.C.PteVal.to_int evt.C.C.v)))
+                Some (S (Code.add_tag (Code.as_data evt.C.C.loc) (C.C.Value.to_int evt.C.C.v)))
             | Code.Pte ->
-                Some (P (C.C.PteVal.to_pte evt.C.C.v))
+                Some (P (C.C.Value.to_pte evt.C.C.v))
             end
         | Some Code.W ->
            assert (evt.C.C.bank = Code.Ord || evt.C.C.bank = Code.CapaSeal) ;
-           Some (I ( evt.C.C.v |> C.C.PteVal.to_int |> prev_value |> C.C.PteVal.from_int ) )
+           Some (I ( evt.C.C.v |> C.C.Value.to_int |> prev_value |> C.C.Value.from_int ) )
         | None -> None in
         if show_in_cond n then match v with
         | Some v ->
@@ -214,7 +214,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                 begin match evt.C.C.vecreg with
                 | _::vs ->
                    List.map (fun v -> S
-                   ( v |> List.map C.C.PteVal.to_int
+                   ( v |> List.map C.C.Value.to_int
                      |> Code.add_vector O.hexa ) ) vs
                 | _ -> assert false
                 end
@@ -257,7 +257,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     type cond_final =
       | Exists of fenv
-      | Forall of (C.A.location * C.C.PteVal.v) list list
+      | Forall of (C.A.location * C.C.Value.v) list list
       | Locations of C.A.location list
 
     (* The two FaultSet.t carry
@@ -276,14 +276,14 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     let dump_val = function
       | I i ->
-          let i = C.C.PteVal.to_int i in
+          let i = C.C.Value.to_int i in
           if O.hexa then sprintf "0x%x" i
           else sprintf "%i" i
       | S s -> s
-      | P p -> C.A.PteVal.pp_pte p
+      | P p -> C.A.Value.pp_pte p
 
     let dump_tag = function
-      | I i -> C.C.PteVal.to_int i
+      | I i -> C.C.Value.to_int i
       | _ -> Warn.fatal "Tags can only be of type integer"
 
     let dump_atom r v = match Misc.tr_atag (C.A.pp_location r) with

@@ -83,7 +83,7 @@ let pp_dp = function
 (*******)
 (* RWM *)
 (*******)
-include Exch.LxSx(struct type arch_atom = atom type rmw_value = PteVal.v end)
+include Exch.LxSx(struct type arch_atom = atom type rmw_value = Value.v end)
 
 include NoEdge
 
@@ -100,7 +100,7 @@ include NoEdge
       let pp_i _ = assert false
       let free_registers = allowed_for_symb
       type arch_extra_atom = atom
-      module PteVal = PteVal
+      module Value = Value
       include NoSpecial
     end)
 

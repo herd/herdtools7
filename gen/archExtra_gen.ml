@@ -32,7 +32,7 @@ module type I = sig
   val specials2 : special2 list
   val specials3 : special3 list
   val pp_i : int -> string
-  module PteVal:PteVal_gen.S with type pte_atom = arch_extra_atom
+  module Value:Value.S with type pte_atom = arch_extra_atom
 end
 
 module type S = sig
@@ -40,7 +40,8 @@ module type S = sig
   type arch_extra_atom
   type arch_reg
 
-  module PteVal_extra : PteVal_gen.S with type pte_atom = arch_extra_atom
+  (* TODO can we do better without remaning? *)
+  module Value_extra : Value.S with type pte_atom = arch_extra_atom
 
 (* Locations *)
   type location =
@@ -59,7 +60,7 @@ module type S = sig
   module LocMap : MyMap.S with type key = location
 
 (* Initial states *)
-  type initval = S of string | P of PteVal_extra.pte
+  type initval = S of string | P of Value_extra.pte
   val pp_initval : initval -> string
   val initval_eq : initval -> initval -> bool
 
@@ -67,7 +68,7 @@ module type S = sig
   type init = (location * initval option) list
 
 (* complete init with necessary information *)
-  val complete_init : bool (* hexa *) -> PteVal_extra.env -> init -> init
+  val complete_init : bool (* hexa *) -> Value_extra.env -> init -> init
   val pp_env: init -> string
 
 
@@ -119,7 +120,7 @@ and type special = I.special
 and type special2 = I.special2
 and type special3 = I.special3
 and type arch_extra_atom = I.arch_extra_atom
-and module PteVal_extra = I.PteVal
+and module Value_extra = I.Value
 = struct
   type arch_reg = I.arch_reg
   type arch_extra_atom = I.arch_extra_atom
@@ -157,7 +158,7 @@ and module PteVal_extra = I.PteVal
       end
   | Loc loc1,Loc loc2 -> compare loc1 loc2
 
-  module PteVal_extra = I.PteVal
+  module Value_extra = I.Value
 
   module LocOrd = struct
     type t = location
@@ -170,14 +171,14 @@ and module PteVal_extra = I.PteVal
   let of_loc loc = Loc (Code.as_data loc)
   let of_reg p r = Reg (p,r)
 
-  type initval = S of string | P of PteVal_extra.pte
+  type initval = S of string | P of Value_extra.pte
   let pp_initval = function
     | S v ->  pp_symbol v
-    | P p -> PteVal_extra.pp_pte p
+    | P p -> Value_extra.pp_pte p
 
   let initval_eq v1 v2 = match v1,v2 with
   | S s1,S s2 -> Misc.string_eq s1 s2
-  | P p1,P p2 -> PteVal_extra.pte_compare p1 p2 = 0
+  | P p1,P p2 -> Value_extra.pte_compare p1 p2 = 0
   | (S _,P _)|(P _,S _) -> false
 
   type init = (location * initval option) list
@@ -208,7 +209,7 @@ and module PteVal_extra = I.PteVal
   let complete_init hexa iv i =
     let i =
       List.fold_left
-        (fun env (loc,v) -> (Loc loc,Some (S (PteVal_extra.pp_v ~hexa:hexa v)))::env) i iv in
+        (fun env (loc,v) -> (Loc loc,Some (S (Value_extra.pp_v ~hexa:hexa v)))::env) i iv in
     let already_here =
       List.fold_left
         (fun k (loc,v) ->
@@ -230,7 +231,7 @@ and module PteVal_extra = I.PteVal
           | Some (S s) -> add_some (refers_virtual s) k
           | Some (P p) ->
              add_some
-               (PteVal_extra.refers_virtual p) k
+               (Value_extra.refers_virtual p) k
           | None -> k in
           k)
         StringSet.empty i in
