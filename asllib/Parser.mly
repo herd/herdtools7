@@ -661,8 +661,11 @@ let decl :=
     )
   ); { [d] }
   | ~=override; ACCESSOR; name=IDENTIFIER; ~=params_opt; ~=func_args; BIARROW; ~=ty;
-    BEGIN; ~=accessors; end_semicolon;
-    { desugar_accessor_pair override name params_opt func_args ty accessors }
+    ~=accessor_body;
+    { desugar_accessor_pair override name params_opt func_args ty accessor_body }
+
+let accessor_body == BEGIN; ~=accessors; end_semicolon;
+  { accessors }
 
 (* Begin AST *)
 let spec := ~=terminated(list(decl), EOF); < List.concat >
