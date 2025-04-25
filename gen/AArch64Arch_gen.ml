@@ -202,10 +202,11 @@ let  plain = Plain None
 
 type atom = atom_acc * MachMixed.t option
 
-(* Page table entries *)
-module PteVal = struct
+module Value = struct
 
-  type pte_atom = atom
+  (* Do this on purpose since there is an outside `atom` type. *)
+  type _atom = atom
+  type atom = _atom
 
   type pte = AArch64PteVal.t
 
@@ -252,10 +253,6 @@ module PteVal = struct
     let fs = match f with
       | Set f|SetRel f -> f
       | Read|ReadAcq|ReadAcqPc ->
-      (* TODO break the circular dependency on pp_atom, module Mixed and here *)
-(*
-         Warn.user_error "Atom %s is not a pteval write" (pp_atom a) in
-*)
          Warn.user_error "Atom is not a pteval write" in
     WPTESet.fold
       (fun f p ->
@@ -271,10 +268,6 @@ module PteVal = struct
   let set_pteval a p =
     match a with
     | Pte f,None -> do_setpteval a f p
-    (* TODO break the circular dependency on pp_atom, module Mixed and here *)
-(*
-    | _ -> Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
-*)
     | _ -> Warn.user_error "Atom is not a pteval write"
 
   let can_fault pte_val =
@@ -291,7 +284,7 @@ module Mixed =
     (struct
       let naturalsize = Some C.naturalsize
       let fullmixed = C.fullmixed
-    end)(PteVal)
+    end)(Value)
 
 let default_atom = Atomic PP,None
 let instr_atom = Some (Instr,None)
@@ -615,7 +608,7 @@ let is_ifetch a = match a with
        (struct
          let naturalsize () = C.naturalsize
          let endian = endian
-       end)(PteVal)
+       end)(Value)
 
 let overwrite_value v ao w = match ao with
 | None
@@ -840,7 +833,7 @@ let sequence_dp (d1,c1) (d2,c2) = match c1 with
 type rmw =  LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas
 
 type rmw_atom = atom (* Enforced by Rmw.S signature *)
-type rmw_value = PteVal.v (* Enforced by Rmw.S signature *)
+type rmw_value = Value.v (* Enforced by Rmw.S signature *)
 
 let pp_aop op =  Misc.capitalize (Misc.lowercase (pp_aop op))
 
@@ -926,8 +919,8 @@ let get_ie e = match e with
 let fold_edge f r = Code.fold_ie (fun ie r -> f (IFF ie) (f (FIF ie) r)) r
 
 let compute_rmw r old co =
-    let old = PteVal.to_int old in
-    let co = PteVal.to_int co in
+    let old = Value.to_int old in
+    let co = Value.to_int co in
     let new_value = match r with
     | LdOp op | StOp op ->
       begin match op with
@@ -945,7 +938,7 @@ let compute_rmw r old co =
         | A_CLR -> old land (lnot co)
     end
     | LrSc | Swp | Cas  -> co in
-    PteVal.from_int new_value
+    Value.from_int new_value
 
 include
     ArchExtra_gen.Make
@@ -966,8 +959,8 @@ include
       let specials = vregs
       let specials2 = pregs
       let specials3 = zaslices
-      type arch_extra_atom = atom
-      module PteVal = PteVal
+      type arch_atom = atom
+      module Value = Value
     end)
 
 end

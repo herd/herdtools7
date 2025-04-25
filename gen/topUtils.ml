@@ -26,7 +26,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
   sig
 (* Coherence utilities *)
     type cos0 =  (string * (C.C.node * IntSet.t) list list) list
-    type cos = (string * (C.C.PteVal.v array * IntSet.t) list list) list
+    type cos = (string * (C.C.Value.v array * IntSet.t) list list) list
     val pp_coherence : cos0 -> unit
     val last_map : cos0 -> C.C.event StringMap.t
     val compute_cos : cos0 ->  cos
@@ -43,19 +43,19 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     val find_next_pte_write : C.C.node -> C.C.node option
     val check_here : C.C.node -> bool
     val do_poll : C.C.node -> bool
-    val fetch_val : C.C.node -> C.C.PteVal.v
+    val fetch_val : C.C.node -> C.C.Value.v
   end =
   functor (O:Config) -> functor (C:ArchRun.S) ->
   struct
 
     type cos0 =  (string * (C.C.node * IntSet.t) list list) list
-    type cos = (string * (C.C.PteVal.v array * IntSet.t) list list) list
+    type cos = (string * (C.C.Value.v array * IntSet.t) list list) list
 
     open Printf
     open Code
 
     let pp_v v =
-      let v = C.C.PteVal.to_int v in
+      let v = C.C.Value.to_int v in
       if O.hexa then sprintf "0x%x" v
       else sprintf "%i" v
 
@@ -282,7 +282,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         Some r
       with Not_found -> None
 
-    let is_load_init e = e.C.C.dir = Some R && e.C.C.v = C.C.PteVal.from_int 0
+    let is_load_init e = e.C.C.dir = Some R && e.C.C.v = C.C.Value.from_int 0
 
     let check_edge = function
       | C.E.Ws Ext
@@ -306,7 +306,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     let do_poll n =
       match O.poll,n.C.C.prev.C.C.edge.C.E.edge,n.C.C.evt.C.C.v with
       | true,
-        (C.E.Rf Ext|C.E.Leave CRf|C.E.Back CRf),C.C.PteVal.Plain 1 -> true
+        (C.E.Rf Ext|C.E.Leave CRf|C.E.Back CRf),C.C.Value.Plain 1 -> true
       | _,_,_ -> false
 
     (* TODO is this simple lift from 2,1,0 to Plain * correct *)
@@ -316,5 +316,5 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       | C.E.Rf _-> 2
       | C.E.Fr _ -> 1
       | _ -> 0 )
-      |> C.C.PteVal.from_int
+      |> C.C.Value.from_int
   end

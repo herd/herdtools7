@@ -32,7 +32,7 @@ module Make
 
    type atom = MO of mo | Atomic of mo * mo | Mixed of MachMixed.t
 
-   module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
+   module Value = Value.NoPte(struct type arch_atom = atom end)
 
 (* Mixed size *)
    module Mixed =
@@ -40,7 +40,7 @@ module Make
        (struct
          let naturalsize = Some C.naturalsize
          let fullmixed = C.moreedges
-       end)(PteVal)
+       end)(Value)
 
    include NoWide
 
@@ -144,7 +144,7 @@ module Make
        (struct
          let naturalsize () = C.naturalsize
          let endian = endian
-       end)(PteVal)
+       end)(Value)
 
    let overwrite_value v ao w = match ao with
    | None| Some (MO _|Atomic _) -> w (* total overwrite *)
@@ -211,7 +211,7 @@ let pp_dp = function
   | CTRL -> "Ctrl"
   | CTRLISYNC -> "CtrlFenceI"
 
-include Exch.Exch(struct type arch_atom = atom type rmw_value = PteVal.v end)
+include Exch.Exch(struct type arch_atom = atom type rmw_value = Value.v end)
 include NoEdge
 
 include
@@ -227,8 +227,8 @@ include
       let pp_i _ = assert false
 
       let free_registers = allowed_for_symb
-      type arch_extra_atom = atom
-      module PteVal = PteVal
+      type arch_atom = atom
+      module Value = Value
       include NoSpecial
     end)
 
