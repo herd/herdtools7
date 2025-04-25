@@ -205,7 +205,7 @@ module Make (O:Config) (E:Edge.S) :
     }
 
   let debug_dir d = match d with
-         Some W -> "W" | Some R -> "R" | Some J -> "J" | None -> "_"
+         Some W -> "W" | Some R -> "R" | None -> "_"
 
   let debug_atom a =
     match a with None -> "" | Some a -> E.pp_atom a
@@ -629,7 +629,6 @@ let is_rmw_edge e = match e.E.edge with
 let is_rmw d e = match d with
 | R -> is_rmw_edge e.edge
 | W -> is_rmw_edge e.prev.edge
-| J -> is_rmw_edge e.edge
 
 let is_com_rmw n0 = E.is_com n0.edge || is_rmw_edge n0.edge
 
@@ -703,7 +702,7 @@ let remove_store n0 =
       let p = find_non_pseudo_prev m.prev
       and n = find_non_pseudo m.next in
 (*      eprintf "[%a] in [%a]..[%a]\n" debug_node m debug_node p debug_node n ; *)
-      if not (E.is_ext p.edge || E.is_po_or_fenced_joker p.edge || E.is_ext n.edge || E.is_po_or_fenced_joker n.edge) then begin
+      if not (E.is_ext p.edge || E.is_ext n.edge) then begin
         Warn.fatal "Insert pseudo edge %s appears in-between  %s..%s (at least one neighbour must be an external edge)"
           (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
       end;
@@ -942,7 +941,7 @@ let set_same_loc st n0 =
                | _ -> do_set_write_val next_x_ok st pte_val ns
             end
             end
-        | Some (R|J) |None -> do_set_write_val next_x_ok st pte_val ns
+        | Some (R) |None -> do_set_write_val next_x_ok st pte_val ns
         end
 
   let set_all_write_val nss =
@@ -1077,7 +1076,7 @@ let do_set_read_v =
                | Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _|Instr -> pte_cell
                | Pte -> n.evt.pte)
               ns
-        | None | Some J ->
+        | None ->
             do_rec st cell pte_cell ns
         end in
   fun ns -> match ns with
@@ -1347,7 +1346,7 @@ let rec group_rec x ns = function
           if
             E.is_node m.edge.E.edge || not (pbank m.evt.bank)
           then k else (e.loc,m)::k
-      | None| Some R | Some J -> k in
+      | None| Some R -> k in
       if m.store == nil then k
       else begin
         let e = m.store.evt in

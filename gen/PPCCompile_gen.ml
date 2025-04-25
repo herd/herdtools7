@@ -307,8 +307,6 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
     let emit_one_stwcx st p init x v = emit_one_stwcx_idx st p init x PPC.r0 v
 
-    let emit_joker st init = None,init,[],st
-
     let emit_access st p init e = match e.dir with
     | None -> Warn.fatal "TODO"
     | Some d ->
@@ -342,7 +340,6 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
             | W,Some (PPC.Mixed (sz,o)) ->
                 let init,cs,st = emit_store_mixed sz o st p init loc value in
                 None,init,cs,st
-            | J,_ -> emit_joker st init
             end
         end
 
@@ -392,7 +389,6 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
               Warn.fatal "No store with reservation"
           | _,Some (PPC.Mixed _) ->
               Warn.fatal "addr dep with mixed"
-          | J,_ -> emit_joker st init
           end
 
     let emit_exch_dep_addr st  p init er ew rd =
@@ -432,7 +428,6 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
                 None,init,cs,st
             | Some PPC.Reserve -> Warn.fatal "No store with reservation" in
           ro,init,cs2@cs,st
-      | Some J,_ -> emit_joker st init
 
     let insert_isync cs1 cs2 = cs1@[PPC.Instruction PPC.Pisync]@cs2
 
@@ -476,7 +471,6 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
                 let r,init,cs,st = emit_sta st p init loc value in
                 Some r,init,cs,st in
           ro,init,(if isync then insert_isync c cs else c@cs),st
-      | Some J,_ -> emit_joker st init
       | _,Code _ -> Warn.fatal "No code location for PPC"
 
     let emit_exch_ctrl isync st p init er ew rd =

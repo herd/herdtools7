@@ -248,8 +248,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* Acccesses *)
 (*************)
 
-    let emit_joker st init = None,init,[],st
-
     let emit_access  st p init e =  
     (* collapse the value `v` in event `e` to integer *)
     let value = Code.value_to_int e.v in
@@ -274,7 +272,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let ro,init,cs,st = emit_sta st p init loc value in
             ro,init,cs,st
         | _,Some (Mixed _),Data _ -> assert false
-        | Code.J,_,Data _ -> emit_joker st init
         | _,_,Code _ -> Warn.fatal "No code location in ARM"
 
     let emit_exch st p init er ew =
@@ -315,7 +312,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let ro,init,cs,st = emit_sta_idx st p init loc r2 value in
           ro,init,Instruction c::cs,st
       | _,Some (Mixed _),Data _ -> assert false
-      | Code.J,_,Data _ -> emit_joker st init
       | _,_,Code _ -> Warn.fatal "No code location for arch ARM"
 
     let emit_exch_dep_addr st p init er ew rd =
@@ -349,7 +345,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (Mixed _),Data _ -> assert false
           | _,Code _ -> Warn.fatal "No code location for arch ARM"
           end
-     | Some Code.J -> assert false
 
     let insert_isb isb cs1 cs2 =
       if isb then cs1@[Instruction I_ISB]@cs2
