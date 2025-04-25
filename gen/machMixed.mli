@@ -27,14 +27,14 @@ val equal : t -> t -> bool
 val overlap : t -> t -> bool
 
 module Make :
-  functor (C:Config) -> functor(PteVal : PteVal_gen.S) ->
+  functor (C:Config) -> functor(Value : Value.S) ->
   sig
 
     val pp_mixed : t -> string
 
     val fold_mixed : (t -> 'a -> 'a) -> 'a -> 'a
 
-    val tr_value : MachSize.sz -> PteVal.v -> PteVal.v
+    val tr_value : MachSize.sz -> Value.v -> Value.v
   end
 
 module type ValsConfig = sig
@@ -43,12 +43,12 @@ module type ValsConfig = sig
 end
 
 module Vals :
-  functor(C:ValsConfig) -> functor(PteVal : PteVal_gen.S) ->
+  functor(C:ValsConfig) -> functor(Value : Value.S) ->
   sig
     val overwrite_value :
-      PteVal.v (* old *) -> MachSize.sz -> offset -> PteVal.v (* write *) -> PteVal.v
+      Value.v (* old *) -> MachSize.sz -> offset -> Value.v (* write *) -> Value.v
 
-    val extract_value : PteVal.v -> MachSize.sz -> offset -> PteVal.v
+    val extract_value : Value.v -> MachSize.sz -> offset -> Value.v
 
   end
 

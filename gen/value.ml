@@ -15,13 +15,12 @@
 (****************************************************************************)
 
 module type S = sig
-  (* `pte_atom` should NOT be used outside. *)
-  type pte_atom
+  type atom
   type pte
   val pp_pte : pte -> string
   val default_pte : string -> pte
   val pte_compare : pte -> pte -> int
-  val set_pteval : pte_atom -> pte -> (unit -> string) -> pte
+  val set_pteval : atom -> pte -> (unit -> string) -> pte
   val can_fault : pte -> bool
   val refers_virtual : pte -> string option
 
@@ -36,10 +35,10 @@ module type S = sig
   val value_compare : v -> v -> int
 end
 
-module No(A:sig type arch_atom end) = struct
-  type pte_atom = A.arch_atom
+module NoPte(A:sig type arch_atom end) = struct
+  type atom = A.arch_atom
   type pte = string
-  let pp_pte a = a
+  let pp_pte _ = "[nopte]"
   let default_pte s = s
   let pte_compare _ _ = 0
   let set_pteval _ p _ = p
@@ -54,10 +53,8 @@ module No(A:sig type arch_atom end) = struct
     | _ -> Warn.user_error "Cannot convert to int"
   let no_value = NoValue
   let from_int v = Plain v
-  let from_pte p = PteValue p
-  let to_pte = function
-    | PteValue p -> p
-    | _ -> Warn.user_error "Cannot convert to pte"
+  let from_pte _ = Warn.user_error "Cannot convert from pte"
+  let to_pte _ = Warn.user_error "Cannot convert to pte"
 
   let value_compare lhs rhs =
     match lhs, rhs with

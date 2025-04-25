@@ -25,9 +25,9 @@ module Make(C:Config) = struct
 
   type hidden_atom = Atomic | Reserve | Mixed of MachMixed.t
   type atom = hidden_atom
-  module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
+  module Value = Value.NoPte(struct type arch_atom = atom end)
 
-  module Mixed = MachMixed.Make(C)(PteVal)
+  module Mixed = MachMixed.Make(C)(Value)
 
   let bellatom = false
 
@@ -103,7 +103,7 @@ module Make(C:Config) = struct
       (struct
         let naturalsize () = Misc.as_some C.naturalsize
         let endian = C.endian
-      end)(PteVal)
+      end)(Value)
 
   let overwrite_value v ao w = match ao with
   | None| Some (Atomic|Reserve) -> w (* total overwrite *)
