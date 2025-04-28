@@ -151,7 +151,7 @@ ASL Typing Tests / annotating types:
   exception_base = {msg=}
   integer_array_base = [[0, 0, 0, 0]]
   enumeration_array_base = [[RED=0, GREEN=0, BLUE=0]]
-  $ aslref --no-exec TypingRule.BaseValue.bad_parameterized.asl
+  $ aslref --no-exec TypingRule.BaseValue.parameterized.asl
   $ aslref TypingRule.BaseValue.bad_negative_width.asl
   File TypingRule.BaseValue.bad_negative_width.asl, line 1, characters 0 to 24:
   ASL Typing error: base value of empty type bits((- 3)).

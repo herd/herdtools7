@@ -8,7 +8,6 @@ if an initializer is not supplied.
 The following types do not have a \basevalueterm{}:
 \begin{itemize}
     \item \parameterizedintegertypes{};
-    \item \bitvectortypesterm{} whose length depends on a \parameterizedintegertype{};
     \item a \wellconstrainedintegertype{} whose list of constraints
         represents the empty set;
     \item a \bitvectortypeterm{} whose length is negative.
@@ -36,12 +35,10 @@ enumeration_array_base = [[RED=0, GREEN=0, BLUE=0]]
 \end{Verbatim}
 % CONSOLE_END
 
-\ExampleDef{Types Without Base Value}
-\listingref{base-values-bad} shows an ill-typed specification
-due to the fact that \parameterizedintegertypes{} have no defined \basevalueterm{},
-which is also true for a \bitvectortypeterm{} whose width is parameterized.
-\ASLListing{No Base Value for Parameterized Integer Types}{base-values-bad}{\typingtests/TypingRule.BaseValue.bad_parameterized.asl}
+\listingref{base-values-parameterised} shows a specification that relies on the base value of a \bitvectortypeterm{} whose width is a \parameterizedintegertype{}.
+\ASLListing{Base Value for Parameterized Bitvector Width}{base-values-parameterised}{\typingtests/TypingRule.BaseValue.parameterized.asl}
 
+\ExampleDef{Types Without Base Value}
 \listingref{base-values-bad-negative-width} shows an ill-typed specification
 where the width of a bitvector is negative.
 \ASLListing{No Base Value for Bitvectors of Negative Width}{base-values-bad-negative-width}{\typingtests/TypingRule.BaseValue.bad_negative_width.asl}
@@ -74,14 +71,22 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
         \item $\veinit$ is the literal expression for $\False$.
     \end{itemize}
 
-    \item \AllApplyCase{t\_bits} \identr{ZVPT}
+    \item \AllApplyCase{t\_bits\_static} \identr{ZVPT}
     \begin{itemize}
         \item $\vt$ is the bitvector type with width expression $\ve$;
         \item applying $\reducetozopt$ to $\ve$ in $\tenv$ yields $\vzopt$;
-        \item checking that $\vzopt$ is not $\None$ yields $\True$\ProseTerminateAs{\NoBaseValue};
+        \item $\vzopt$ is not $\None$;
         \item view $\vzopt$ as the singleton integer $\length$;
         \item checking that $\length$ is greater or equal to $0$ yields $\True$\ProseTerminateAs{\NoBaseValue};
         \item $\veinit$ is the literal expression for a bitvector made of a sequence of $\length$ values of $0$.
+    \end{itemize}
+
+    \item \AllApplyCase{t\_bits\_non\_static}
+    \begin{itemize}
+        \item $\vt$ is the bitvector type with width expression $\ve$;
+        \item applying $\reducetozopt$ to $\ve$ in $\tenv$ yields $\vzopt$;
+        \item $\vzopt$ is $\None$;
+        \item $\veinit$ is the literal expression for a slice of the integer literal for $0$, with start position $0$ and length $\ve$.
     \end{itemize}
 
     \item \AllApplyCase{t\_enum} \identr{LCCN}
@@ -176,13 +181,23 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[t\_bits]{
+\inferrule[t\_bits\_static]{
     \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
-    \checktrans{\vzopt \neq \None}{\NoBaseValue} \checktransarrow \True\OrTypeError\\\\
+    \vzopt \neq \None\\\\
     \vzopt \eqname \langle\length\rangle\\
     \checktrans{\length \geq 0}{\NoBaseValue} \checktransarrow \True\OrTypeError
 }{
     \basevalue(\tenv, \overname{\TBits(\ve, \Ignore)}{\vt}) \typearrow \overname{\ELiteral(\lbitvector(i=1..\length: 0))}{\veinit}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[t\_bits\_non\_static]{
+    \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
+    \vzopt = \None \\\\
+    \veinit \eqdef \ESlice (\ELInt{0}, [\SliceLength(\ELInt{0}, \ve)])
+}{
+    \basevalue(\tenv, \overname{\TBits(\ve, \Ignore)}{\vt}) \typearrow \veinit
 }
 \end{mathpar}
 
