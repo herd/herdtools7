@@ -100,3 +100,11 @@
   dot2desc7)
  (libraries herdtools unix str)
  (modules_without_implementation arch_tools))
+
+(executables
+ (names uoiam)
+ (public_names uoiam7)
+ (preprocess (action (system pa_ocaml)))
+ (libraries earley.core earley.str)
+ (modules_without_implementation arch_tools))
+
