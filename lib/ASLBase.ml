@@ -223,6 +223,7 @@ let stmts_from_string s =
   let lexbuf = Lexing.from_string s in
   let module Parser = Parser.Make(struct
     let allow_no_end_semicolon = false
+    let allow_expression_elsif = false
   end) in
   let module Lexer = Lexer.Make(struct
     let allow_double_underscore = false
