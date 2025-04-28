@@ -198,7 +198,6 @@ We employ the following rules:
   \item \TypingRuleRef{SlicesEqual}
   \item \TypingRuleRef{SliceEqual}
   \item \TypingRuleRef{ArrayLengthEqual}
-  \item \TypingRuleRef{LiteralEqual}
 \end{itemize}
 
 \TypingRuleDef{Normalize}
@@ -993,7 +992,7 @@ The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
   \begin{itemize}
     \item $\veone$ is the literal expression with literal $\vvone$;
     \item $\vetwo$ is the literal expression with literal $\vvtwo$;
-    \item $\vb$ is $\True$ if and only if $\vvone$ is equivalent to $\vvtwo$ in $\tenv$.
+    \item $\vb$ is $\True$ if and only if $\vvone$ is equal to $\vvtwo$ in $\tenv$.
   \end{itemize}
 
   \item \AllApplyCase{e\_pattern}
@@ -1179,7 +1178,7 @@ The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
   \inferrule[e\_literal]{
   \veone = \ELiteral(\vvone)\\
   \vetwo = \ELiteral(\vvtwo)\\\\
-  \literalequal(\vvone, \vvtwo) \typearrow \vb
+  \vb \eqdef \vvone = \vvtwo
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
 }
@@ -1477,6 +1476,11 @@ The function
 conservatively tests whether the bitwidth expression $\vwone$ is equivalent to the bitwidth expression $\vwtwo$
 in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
+\ExampleDef{Equivalence of Bitwidth Expressions}
+\listingref{BitwidthEqual} shows examples of equivalent bitwidth expressions on both sides
+of the respective local declaration statements.
+\ASLListing{Equivalence of bitwidth expressions}{BitwidthEqual}{\typingtests/TypingRule.BitwidthEqual.asl}
+
 \ProseParagraph
 Testing whether the expressions $\vwone$ and $\vwtwo$ are equivalent in $\tenv$ yields $\vb$\ProseOrTypeError.
 
@@ -1731,6 +1735,10 @@ The function
 conservatively tests whether the list of slices $\slicesone$ is equivalent to the list of slices $\slicestwo$
 in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
+\ExampleDef{Equivalent Lists of Slices}
+\listingref{SlicesEqual} shows an example of two equivalent lists of slices.
+\ASLListing{Equivalent lists of slices}{SlicesEqual}{\typingtests/TypingRule.SlicesEqual.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1744,7 +1752,7 @@ in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
   \begin{itemize}
     \item checking whether the number of slices in $\slicesone$ is equal to the number of slice in $\slicestwo$ yields $\True$;
     \item determining whether the expression $\slicesone[i]$ is equivalent to $\slicestwo[i]$ in $\tenv$
-          for each index in the indices for $\slicesone$ ($i \in \listrange(\slicesone$) yields $\vb_i$\ProseOrTypeError;
+          for each index in the indices for $\slicesone$ ($i \in \listrange(\slicesone$)), yields $\vb_i$\ProseOrTypeError;
     \item $\vb$ is $\True$ if and only if all $\vb_i$ are $\True$ for each index in the indices for $\slicesone$.
   \end{itemize}
 \end{itemize}
@@ -1778,6 +1786,10 @@ in environment $\tenv$ and yields the result in $\vb$. \ProseOtherwiseTypeError
 
 This function assumes both $\sliceone$ and $\slicetwo$ are \typedast{} nodes,
 which means that they have the form $\SliceLength(\ \cdot\ ,\ \cdot\ )$.
+
+\ExampleDef{Equivalent Slices}
+The specification in \listingref{SliceEqual} shows examples of equivalent slices.
+\ASLListing{Equivalent slices}{SliceEqual}{\typingtests/TypingRule.SliceEqual.asl}
 
 \ProseParagraph
 \AllApply
@@ -1858,26 +1870,6 @@ in $\vb$. \ProseOtherwiseTypeError
   \vb \eqdef (\venumone = \venumtwo)
 }{
   \arraylengthequal(\ArrayLengthEnum(\venumone, \Ignore), \ArrayLengthEnum(\venumtwo, \Ignore)) \typearrow \vb
-}
-\end{mathpar}
-
-\TypingRuleDef{LiteralEqual}
-\hypertarget{def-literalequal}{}
-The function
-\[
-  \literalequal(\overname{\literal}{\vvone} \aslsep \overname{\literal}{\vvtwo}) \rightarrow \overname{\Bool}{\vb}
-\]
-tests whether literal $\vvone$ is $\vvtwo$ by equating them.
-
-\ProseParagraph
-$\vb$ is $\True$ if and only if $\vvone$ is equal to $\vvtwo$.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \vb \eqdef \vvone = \vvtwo
-}{
-  \literalequal(\vvone, \vvtwo) \typearrow \vb
 }
 \end{mathpar}
 
@@ -2163,6 +2155,19 @@ $\vstwo$                      & -1                         & 0               & 1
 \end{tabular}
 \end{center}
 
+\ExampleDef{Symbolically Summing Signed Expressions}
+The following are some examples of inputs and outputs for symbolic addition:
+\begin{center}
+\begin{tabular}{rrrrrr}
+\textbf{$\vsone$} & \textbf{$\veone$} & \textbf{$\vstwo$} & \textbf{$\vetwo$} & \textbf{$\ve$} & \textbf{$\vs$}\\
+\hline
+-1 & \verb|x| & -1 & \verb|y| & \verb|x+y| & -1\\
+-1 & \verb|x| & 0 & \verb|y| & \verb|x| & -1\\
+-1 & \verb|x| & 1 & \verb|y| & \verb|x-y| & -1\\
+1 & \verb|x| & -1 & \verb|y| & \verb|x-y| & 1\\
+\end{tabular}
+\end{center}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2323,6 +2328,19 @@ $
 produces an expression representing the multiplication of expressions $\veone$ and $\vetwo$,
 simplifying away the case where one of the operands is the literal one.
 
+\ExampleDef{Symbolic Multiplication}
+The following table shows examples of symbolically multiplying the expression $\veone$ by the expression $\vetwo$,
+yielding the result in $\ve$:
+\begin{center}
+\begin{tabular}{lll}
+\textbf{$\veone$} & \textbf{$\vetwo$} & \textbf{$\ve$}\\
+\hline
+\verb|x*0|  & \verb|1|    & \verb|x*0|\\
+\verb|1|    & \verb|x*0|  & \verb|x*0|\\
+\verb|x*0|  & \verb|x*0|  & \verb|(x*0)*(x*0)|
+\end{tabular}
+\end{center}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2366,6 +2384,17 @@ The function
 \]
 looks up the environment $\tenv$ for a type $\tty$ associated with an identifier
 $\vs$. The result is \typingerrorterm{} if $\vs$ is not associated with any type.
+
+\ExampleDef{The Type Bound to an Identifier}
+In \listingref{expressions-evar}, the type bound to the global storage element
+\verb|global_non_constant| after annotating the global storage element declarations
+is \verb|integer{19}|,
+%
+the type bound to the local storage element \verb|var_x| in the static environment
+after annotating the local declaration \verb|var var_x = LOCAL_CONSTANT;| is \verb|integer{7}|.
+%
+Invoking $\typeof$ for the static environment just before annotating the local
+declaration \verb|var x = t;| in \listingref{expressions-evar-undefined} yields a \typingerrorterm.
 
 \ProseParagraph
 \OneApplies

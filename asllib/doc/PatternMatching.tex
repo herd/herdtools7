@@ -604,7 +604,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 \listingref{typing-pmask} shows examples of well-typed mask patterns.
 \ASLListing{Well-typed mask patterns}{typing-pmask}{\typingtests/TypingRule.PMask.asl}
 
-\listingref{typing-pmask-bad} shows an example of an ill-typed mask pattern.
+\listingref{typing-pmask-bad} shows examples of ill-typed mask patterns.
 \ASLListing{An Ill-typed mask pattern}{typing-pmask-bad}{\typingtests/TypingRule.PMask.bad.asl}
 
 \ProseParagraph
@@ -641,17 +641,29 @@ whereas \texttt{match\_false} evaluates to \False, since
 \ASLListing{Matching against a bitmask}{semantics-pmask}{\semanticstests/SemanticsRule.PMask.asl}
 
 \ProseParagraph
-\AllApply
+\OneApplies
 \begin{itemize}
-  \item $\vp$ is a mask pattern, $\PatternMask(\vm)$,
-  of length $n$ (with spaces removed);
-  \item $\vv$ is a native bitvector of bits $\vu_{1..n}$;
-  \item $\vb$ is the native Boolean formed from the conjunction of Boolean values for each $i$,
-  where the bit $\vu_i$ is checked for matching the mask character $\vm_i$;
-  \item $\newg$ is the empty graph.
+  \item \AllApplyCase{empty}
+  \begin{itemize}
+    \item $\vp$ is an empty mask pattern, $\PatternMask(\emptylist)$ (with spaces removed);
+    \item $\vv$ is an empty native bitvector ($\nvbitvector(\emptylist)$);
+    \item \Proseeqdef{$\vb$}{$\True$};
+    \item $\newg$ is the empty graph.
+  \end{itemize}
+
+  \item \AllApplyCase{non\_empty}
+  \begin{itemize}
+    \item $\vp$ is a mask pattern, $\PatternMask(\vm)$,
+    of length $n$ (with spaces removed);
+    \item $\vv$ is a native bitvector of bits $\vu_{1..n}$;
+    \item $\vb$ is the native Boolean formed from the conjunction of Boolean values for each $i$,
+    where the bit $\vu_i$ is checked for matching the mask character $\vm_i$;
+    \item $\newg$ is the empty graph.
+  \end{itemize}
 \end{itemize}
+
 \FormallyParagraph
-\newcommand\maskmatch[0]{\text{mask\_match}}
+\hypertarget{def-maskmatch}{}
 The helper function $\maskmatch : \{0, 1, \vx\} \times \{0,1\} \rightarrow \Bool$,
 checks whether a bit value (second operand) matches a mask value (first operand),
 is defined by the following table:
@@ -668,7 +680,15 @@ is defined by the following table:
 \]
 
 \begin{mathpar}
-\inferrule{
+\inferrule[empty]{
+  \vv \eqname \nvbitvector(\emptylist)
+}{
+  \evalpattern{\env, \vv, \PatternMask(\emptylist)} \evalarrow \Normal(\True, \emptygraph)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
   \vm \eqname \vm_{1..n}\\
   \vv \eqname \nvbitvector(\vu_{1..n})\\
   \vb \eqdef \nvbool(\bigwedge_{i=1..n} \maskmatch(\vm_i, \vu_i))

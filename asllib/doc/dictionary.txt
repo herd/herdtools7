@@ -326,6 +326,7 @@ codes
 collection
 collections
 collectively
+colloquially
 combination
 combinations
 combine
@@ -1726,6 +1727,7 @@ signal
 signals
 signature
 signatures
+signed
 significant
 signifying
 signs
