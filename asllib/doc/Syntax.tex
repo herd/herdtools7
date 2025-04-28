@@ -488,7 +488,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     |\  & \Tidentifier &\\
                     |\  & \Nexprpattern \parsesep \Nbinop \parsesep \Nexpr &\\
                     |\  & \Nunop \parsesep \Nexpr & \precedence{\Tunops}\\
-                    |\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &\\
+                    |\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Telse \parsesep \Nexpr &\\
                     |\  & \Ncall &\\
                     |\  & \Nexprpattern \parsesep \Nslices &\\
                     |\  & \Nexprpattern \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket &\\
@@ -591,19 +591,13 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 \Nfieldassign \derives \ & \Tidentifier \parsesep \Teq \parsesep \Nexpr &
 \end{flalign*}
 
-\hypertarget{def-neelse}{}
-\begin{flalign*}
-\Neelse \derives\ & \Telse \parsesep \Nexpr &\\
-                     |\ & \Telseif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &
-\end{flalign*}
-
 \hypertarget{def-nexpr}{}
 \begin{flalign*}
 \Nexpr \derives\  & \Nvalue &\\
                     |\  & \Tidentifier &\\
                     |\  & \Nexpr \parsesep \Nbinop \parsesep \Nexpr &\\
                     |\  & \Nunop \parsesep \Nexpr & \precedence{\Tunops}\\
-                    |\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &\\
+                    |\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Telse \parsesep \Nexpr &\\
                     |\  & \Ncall &\\
                     |\  & \Nexpr \parsesep \Nslices &\\
                     |\  & \Nexpr \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket &\\

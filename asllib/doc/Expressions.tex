@@ -803,9 +803,7 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 \section{Conditional Expressions\label{sec:ConditionalExpressions}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nexpr \derives\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &\\
-\Neelse \derives\ & \Telse \parsesep \Nexpr &\\
-|\ & \Telseif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &
+\Nexpr \derives\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Telse \parsesep \Nexpr &\\
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -818,53 +816,19 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
   \inferrule{
     \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr} \OrBuildError\\\\
     \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr} \OrBuildError\\\\
-    \buildeelse(\veelse) \astarrow \astversion{\veelse} \OrBuildError\\\\
+    \buildexpr(\velseexpr) \astarrow \astversion{\velseexpr} \OrBuildError\\\\
   }{
     {
       \begin{array}{r}
   \buildexpr\left(\overname{\Nexpr\left(
     \begin{array}{l}
     \Tif, \namednode{\vcondexpr}{\Nexpr}, \Tthen, \\
-    \wrappedline\ \namednode{\vthenexpr}{\Nexpr}, \veelse: \Neelse
+    \wrappedline\ \namednode{\vthenexpr}{\Nexpr}, \Telse, \namednode{\velseexpr}{\Nexpr}
     \end{array}
     \right)}{\vparsednode}\right) \astarrow\\
-  \overname{\ECond(\astversion{\vcondexpr}, \astversion{\vthenexpr}, \astversion{\veelse})}{\vastnode}
+  \overname{\ECond(\astversion{\vcondexpr}, \astversion{\vthenexpr}, \astversion{\velseexpr})}{\vastnode}
       \end{array}
     }
-}
-\end{mathpar}
-
-\ASTRuleDef{EElse}
-\hypertarget{build-eelse}{}
-The function
-\[
-  \buildeelse(\overname{\parsenode{\Nfieldassign}}{\vparsednode}) \;\aslto\; \overname{\expr}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
-\begin{mathpar}
-\inferrule[else]{}{
-  \buildeelse(\Neelse(\Telse, \punnode{\Nexpr})) \astarrow
-  \overname{\astof{\vexpr}}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[else\_if]{
-  \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr} \OrBuildError\\\\
-  \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr} \OrBuildError
-}{
-  {
-    \begin{array}{r}
-  \buildeelse\left(\Neelse\left(
-    \begin{array}{l}
-    \Telseif, \namednode{\vcondexpr}{\Nexpr},  \\
-    \wrappedline\ \Tthen, \namednode{\vthenexpr}{\Nexpr}, \punnode{\Neelse}
-  \end{array}
-    \right)\right) \astarrow\\
-  \overname{\ECond(\astversion{\vcondexpr}, \astversion{\vthenexpr}, \astof{\veelse})}{\vastnode}
-\end{array}
-  }
 }
 \end{mathpar}
 
