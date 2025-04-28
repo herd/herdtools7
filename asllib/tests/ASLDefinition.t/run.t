@@ -87,3 +87,14 @@ Examples used in ASL High-level Definition:
   File GuideRule.TupleImmutability.asl, line 7, characters 6 to 11:
   ASL Typing error: cannot assign to the (immutable) tuple value x.
   [1]
+
+  $ aslref ParameterElision.asl
+  $ aslref ParameterElision.bad.asl
+  File ParameterElision.bad.asl, line 13, characters 25 to 35:
+  ASL Static Error: Arity error while calling 'X':
+    1 parameters expected and 0 provided
+  [1]
+  $ aslref ParameterOmission.bad.asl
+  File ParameterOmission.bad.asl, line 6, characters 18 to 19:
+  ASL Error: Cannot parse.
+  [1]
