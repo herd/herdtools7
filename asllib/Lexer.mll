@@ -33,34 +33,8 @@ module type CONFIG = sig
 end
 
 let reserved_keywords = [
-    "SAMPLE";
-    "UNSTABLE";
-    "_"; "any";
-    "assume"; "assumes";
-    "call"; "cast";
-    "class"; "dict";
-    "endcase"; "endcatch"; "endclass";
-    "endevent"; "endfor"; "endfunc"; "endgetter";
-    "endif"; "endmodule"; "endnamespace"; "endpackage";
-    "endproperty"; "endrule"; "endsetter"; "endtemplate";
-    "endtry"; "endwhile";
-    "event"; "export";
-    "extends"; "extern"; "feature";
-    "gives";
-    "iff"; "implies"; "import";
-    "intersect"; "intrinsic";
-    "invariant"; "list";
-    "map"; "module"; "namespace"; "newevent";
-    "newmap"; "original";
-    "package"; "parallel";
-    "port"; "private";
-    "profile"; "property"; "protected"; "public";
-    "requires"; "rethrow"; "rule";
-    "shared"; "signal";
-    "template";
-    "typeof"; "union";
-    "using";
-    "ztype";
+    "pure";
+    "readonly";
 ]
 
 let is_reserved_keyword: string -> bool =
@@ -73,7 +47,7 @@ let is_reserved_keyword: string -> bool =
 
    Note that this set only contains simple enumerative types, not compound types
 
-   This function's exhaustivity is guaranteed by the test in tests/Lexer. *)
+   This function's exhaustiveness is guaranteed by the test in tests/Lexer. *)
 let token_of_string =
  let s t = Some t in
  function
