@@ -84,21 +84,16 @@ end = struct
                 ])
           | "MASK_LIT" ->
               re (
-                Choice [
-                  Seq [
-                    Char '\'';
-                    ZeroOrMore (Choice [bit; Char 'x']);
-                    Char '\'';
-                  ];
-                  Seq [
-                    Char '\'';
-                    ZeroOrMore (Choice [
-                      bit;
-                      Seq [Char '('; OneOrMore bit; Char ')']
-                    ]);
-                    Char '\'';
-                  ];
-                ])
+                Seq [
+                  Char '\'';
+                  ZeroOrMore (Choice [
+                    bit;
+                    Char 'x';
+                    Seq [Char '('; OneOrMore bit; Char ')']
+                  ]);
+                  Char '\'';
+                ]
+              )
           | "IDENTIFIER" ->
               re (
                 Seq [
