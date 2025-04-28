@@ -36,16 +36,16 @@ In particular, it is an error to use a tab character in ASL specification text (
 \hline
 $\underbracket{\texttt{a\_string}}$   & Any character in \texttt{a\_string}\\
 $\square$                             & The space character (decimal 32) \hypertarget{def-ascii}{}\\
-\ascii{a}                             & The ASCII with decimal 'a'\\
-\ascii{a-b}                           & The ASCII range between decimals 'a' and 'b'\\
+\ascii{$a$}                           & The ASCII with decimal $a$\\
+\ascii{$a$-$b$}                       & The ASCII range between decimals $a$ and $b$\\
 (\texttt{$A$})                        & $A$\\
 $A$ $B$                               & $A$ followed by $B$\\
 \texttt{$A$ | $B$}                    & A or B\\
 \texttt{$A$ - $B$}                    & $A$ but not $B$\\
 $A*$                                  & Zero or more repetitions of A\\
 $A+$                                  & One or more repetitions of A\\
-\texttt{"a\_string"}  & The string \texttt{a\_string} verbatim\\
-\texttt{<}r\texttt{>}     & The lexical regular expression defined for \texttt{<}r\texttt{>}\\
+\verb|"a_string"|                     & The string \verb|a_string| verbatim\\
+\texttt{<}r\texttt{>}                 & The lexical regular expression defined for \texttt{<}r\texttt{>}\\
 \hline
 \end{tabular}
 \end{center}
@@ -130,7 +130,7 @@ such as \texttt{0xefff\_fffe}, \texttt{1\_000\_000} or \texttt{3.141\_592\_654} 
 This is formalized by the following lexical regular expression:
 \begin{center}
 \begin{tabular}{rcl}
-$\REreallit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* '.' \REdigit\ (\Underscore\ | \REdigit)*}
+$\REreallit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." \REdigit\ (\Underscore\ | \REdigit)*}
 \end{tabular}
 \end{center}
 
@@ -225,7 +225,7 @@ Identifiers are case sensitive.
 \hypertarget{def-reidentifier}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\REletter$ &$\triangleq$& \texttt{'a-z' $|$ 'A-Z'}\\
+$\REletter$ &$\triangleq$& \anycharacter{\texttt{abcdefghijklmnopqrstuvwxyz}} $|$ \anycharacter{\texttt{ABCDEFGHIJKLMNOPQRSTUVWXYZ}}\\
 $\REidentifier$ &$\triangleq$& \texttt{($\REletter$ $|$ $\underbracket{\texttt{ \_ } }$) ($\REletter$ $|$ $\underbracket{\texttt{ \_ } }$ $|$ $\REdigit$)*}\\
 \end{tabular}
 \end{center}
@@ -536,11 +536,11 @@ $\REreallit$                          & $\actiontoken(\realtolit)$ \\
 $\REstringlit$                        & $\actiontoken(\strtolit)$ \\
 $\REbitvectorlit$                     & $\actiontoken(\bitstolit)$ \\
 $\REbitmasklit$                       & $\actiontoken(\masktolit)$ \\
-\texttt{'!'}, \texttt{','}, \texttt{'<'}, \texttt{">>"}, \texttt{"\&\&"}, \texttt{"-->"}, \texttt{"<<"}                         & $\actiontoken(\tokenid)$  \\
-\texttt{']'}, \texttt{']]'}, \texttt{')'}, \texttt{".."}, \texttt{'='}, \texttt{'\{'}, \texttt{"!="}, \texttt{'-'}, \texttt{"<->"}                        & $\actiontoken(\tokenid)$  \\
-\texttt{'['}, \texttt{'[['}, \texttt{'('}, \texttt{'.'}, \texttt{"<="}, \texttt{'\textasciicircum'}, \texttt{'*'}, \texttt{'/'}                          & $\actiontoken(\tokenid)$  \\
-\texttt{"=="}, \texttt{"||"}, \texttt{'+'}, \texttt{':'}, \texttt{"=>"}, \texttt{"<=>"}                         & $\actiontoken(\tokenid)$  \\
-\texttt{'\}'}, \texttt{"++"}, \texttt{'>'}, \texttt{"+:"}, \texttt{"*:"}, \texttt{';'}, \texttt{">="}                         & $\actiontoken(\tokenid)$  \\
+\texttt{"!"}, \texttt{","}, \texttt{"<"}, \texttt{">>"}, \texttt{"\&\&"}, \texttt{"-->"}, \texttt{"<<"}                         & $\actiontoken(\tokenid)$  \\
+\texttt{"]"}, \texttt{"]]"}, \texttt{")"}, \texttt{".."}, \texttt{"="}, \texttt{"\{"}, \texttt{"!="}, \texttt{"-"}, \texttt{"<->"}                        & $\actiontoken(\tokenid)$  \\
+\texttt{"["}, \texttt{"[["}, \texttt{"("}, \texttt{"."}, \texttt{"<="}, \texttt{"\textasciicircum"}, \texttt{"*"}, \texttt{"/"}                          & $\actiontoken(\tokenid)$  \\
+\texttt{"=="}, \texttt{"||"}, \texttt{"+"}, \texttt{":"}, \texttt{"=>"}, \texttt{"<=>"}                         & $\actiontoken(\tokenid)$  \\
+\texttt{"\}"}, \texttt{"++"}, \texttt{">"}, \texttt{"+:"}, \texttt{"*:"}, \texttt{";"}, \texttt{">="}                         & $\actiontoken(\tokenid)$  \\
 \hline
 \end{tabular}
 \end{center}
