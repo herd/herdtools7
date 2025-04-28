@@ -368,6 +368,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
         -> [r1;r2;]
       | I_WHILELT (r,_,_,_) | I_WHILELE (r,_,_,_)
       | I_WHILELO (r,_,_,_) | I_WHILELS (r,_,_,_)
+      | I_OP3 (_,(ADDS|SUBS|ANDS),r,_,_)
+      | I_ADDSUBEXT (_,(Ext.(ADDS|SUBS)),r,_,_,_)
         ->
           r::nzcv_regs
       | I_LDR (_,r,_,_)
