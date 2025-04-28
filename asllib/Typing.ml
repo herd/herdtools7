@@ -2469,17 +2469,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Bool | T_Int UnConstrained | T_Real | T_String | T_Enum _ ->
         base_value_v1 ~loc env t
     | T_Bits (width, _) ->
-        let e =
-          E_Call
-            {
-              name = "Zeros";
-              params = [];
-              args = [ width ];
-              call_type = ST_Function;
-            }
-        in
-        let _, e', _ = annotate_expr env (here e) in
-        e'
+        let zero = E_Literal (L_Int Z.zero) |> here in
+        let slice = Slice_Length (zero, width) in
+        E_Slice (zero, [ slice ]) |> here
     | T_Int (Parameterized (_, id)) -> E_Var id |> here
     | T_Int (WellConstrained ([], _) | PendingConstrained) -> assert false
     | T_Int
