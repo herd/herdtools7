@@ -4219,16 +4219,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         subprograms in [impls]. Also check that there is exactly one override
         candidate for each subprogram in [impdefs]. *)
     let process_overrides ~impdefs ~impls =
-      let process_one impdefs impl =
+      let process_one (impdefs, discarded) impl =
         let matching, nonmatching =
           List.partition (signatures_match impl) impdefs
         in
         match List.length matching with
         | 0 -> fatal_from ~loc:impl NoOverrideCandidate
-        | 1 -> nonmatching
+        | 1 -> (nonmatching, matching @ discarded)
         | _ -> fatal_from ~loc:impl (TooManyOverrideCandidates matching)
       in
-      List.fold_left process_one impdefs impls
+      List.fold_left process_one (impdefs, []) impls
 
     let override_subprograms override_mode ast =
       let impdefs, impls, normals =
@@ -4246,27 +4246,36 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       in
       let normals = List.rev normals in
       let+ () = check_implementations_unique impls in
-      let overridden =
+      let overridden, discarded =
         match override_mode with
         | Permissive ->
-            let impdefs' = process_overrides ~impdefs ~impls in
-            impdefs' @ impls
+            let impdefs', discarded = process_overrides ~impdefs ~impls in
+            (impdefs' @ impls, discarded)
         | NoImplementations ->
             let+ () =
               check_true (list_is_empty impls) (fun () ->
                   warn_from ~loc:(List.hd impls) UnexpectedImplementation)
             in
-            impdefs
+            (impdefs, [])
         | AllImpdefsOverridden ->
-            let impdefs' = process_overrides ~impdefs ~impls in
+            let impdefs', discarded = process_overrides ~impdefs ~impls in
             let+ () =
               check_true (list_is_empty impdefs') (fun () ->
                   warn_from ~loc:(List.hd impdefs') MissingOverride)
             in
-            impls
+            (impls, discarded)
       in
-      List.map (fun f -> D_Func f.desc |> add_pos_from ~loc:f) overridden
-      @ normals
+      let renamed_discarded =
+        let rename_func (f : func) =
+          let new_name = fresh_var ("__impdef_" ^ f.name) in
+          { f with name = new_name }
+        in
+        List.map (fun f -> { f with desc = rename_func f.desc }) discarded
+      in
+      let make_funcs =
+        List.map (fun f -> D_Func f.desc |> add_pos_from ~loc:f)
+      in
+      make_funcs overridden @ make_funcs renamed_discarded @ normals
   end
 
   (* Begin TypeCheckAST *)
