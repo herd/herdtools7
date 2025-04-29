@@ -1,7 +1,17 @@
 \chapter{Subprogram Calls\label{chap:SubprogramCalls}}
 
+This chapter is concerned with subprogram calls, which appear both in expressions
+and in statements. Specifically:
+\begin{itemize}
+\item how subprogram calls are represented in syntax (\secref{SubprogramCallsSyntax});
+\item how subprogram calls are represented in abstract syntax (\secref{SubprogramCallsAbstractSyntax});
+\item how subprogram calls are typed (\secref{SubprogramCallsTyping}),
+      including a discussion on parameter elision (\secref{ParameterElision}); and
+\item what is the dynamic semantics of subprogram calls (\secref{SubprogramCallsSemantics}).
+\end{itemize}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Syntax}
+\section{Syntax\label{sec:SubprogramCallsSyntax}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
 \Nexpr \derives\  & \Tidentifier \parsesep \PlistZero{\Nexpr} &\\
@@ -9,7 +19,7 @@
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Abstract Syntax}
+\section{Abstract Syntax\label{sec:SubprogramCallsAbstractSyntax}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
 \expr \derives\ & \ECall(\call) &\\
@@ -17,7 +27,7 @@
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Typing}
+\section{Typing\label{sec:SubprogramCallsTyping}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 The rule for typing calls is \TypingRuleRef{AnnotateCall}.
 
@@ -1695,8 +1705,38 @@ is annotated as
 }
 \end{mathpar}
 
+\subsection{Parameter Elision\label{sec:ParameterElision}}
+
+ASL allows dropping a parameter from the parameter list of a subprogram call
+in two situations:
+\begin{itemize}
+  \item During AST building of declaration statements
+        (\secref{DeclarationStatementsElidedParameter}).
+        In this case, the first parameter expression may be elided when the left-hand side
+        expression is explicitly annotated as a bitvector type whose width is taken to be the parameter expression.
+        We refer to this as \emph{parameter elision}.
+        The call must contain \verb|{...}|, even if they are empty.
+  \item During type checking of standard library calls (\TypingRuleRef{InsertStdlibParam}).
+        In this case, a parameter expression can be inferred by matching the call expression
+        against one of two patterns (see the rule for details and examples).
+        If omitting a parameter yields an empty list, the \verb|{...}| must be entirely removed.
+        We refer to this as \emph{parameter omission}.
+\end{itemize}
+
+These two situations are exemplified in \listingref{ParameterElision}.
+\ASLListing{Parameter elision and parameter omission}{ParameterElision}{\definitiontests/ParameterElision.asl}
+
+The specification in \listingref{ParameterElision-bad} is ill-typed,
+since the parameter for the call expression \verb|X(data, n)| is inferred based on the left-hand-side
+expressions, and therefore an empty list of parameters must be given.
+\ASLListing{Erroneous parameter elision}{ParameterElision-bad}{\definitiontests/ParameterElision.bad.asl}
+
+The specification in \listingref{ParameterOmission-bad} is ill-typed,
+as an empty parameter list for a standard library function must be entirely omitted.
+\ASLListing{Erroneous parameter omission}{ParameterOmission-bad}{\definitiontests/ParameterOmission.bad.asl}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Semantics}
+\section{Semantics\label{sec:SubprogramCallsSemantics}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 The rule for evaluating subprogram calls is \SemanticsRuleRef{Call}.
 

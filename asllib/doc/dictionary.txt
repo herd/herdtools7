@@ -574,6 +574,7 @@ disclaimer
 disclosure
 discriminant
 discussed
+discussion
 disjoint
 disjunction
 disjunctively
@@ -624,6 +625,7 @@ elaborated
 element
 elements
 elided
+eliding
 elision
 else
 emit
@@ -1279,6 +1281,7 @@ offers
 offset
 often
 okay
+omission
 omit
 omitted
 omitting
