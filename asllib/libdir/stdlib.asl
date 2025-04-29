@@ -161,6 +161,17 @@ begin
     return AlignDownSize(x + (size - 1), size);
 end;
 
+// IsAlignedSize()
+// ===============
+// Return TRUE if integer x is aligned to a multiple of size (not necessarily a
+// power of 2). Otherwise, return FALSE.
+
+func IsAlignedSize(x: integer, size: integer) => boolean
+begin
+    assert size > 0;
+    return (x MOD size) == 0;
+end;
+
 // AlignDownP2()
 // =============
 // For non-negative integers x and p2, returns the greatest multiple of 2^p2
@@ -181,6 +192,17 @@ func AlignUpP2(x: integer, p2: integer) => integer
 begin
     assert p2 >= 0;
     return AlignUpSize(x, 2^p2);
+end;
+
+// IsAlignedP2()
+// =============
+// Return TRUE if integer x is aligned to a multiple of 2^p2.
+// Otherwise, return FALSE.
+
+func IsAlignedP2(x: integer, p2: integer) => boolean
+begin
+    assert p2 >= 0;
+    return IsAlignedSize(x, 2^p2);
 end;
 
 //------------------------------------------------------------------------------
@@ -542,6 +564,17 @@ begin
     return AlignUpSize(UInt(x), size)[:N];
 end;
 
+// IsAlignedSize()
+// ===============
+// Return TRUE if when viewed as an unsigned integer, bitvector x is aligned
+// to a multiple of size (not necessarily a power of 2).
+// Otherwise, return FALSE.
+
+func IsAlignedSize{N: integer{1..128}}(x: bits(N), size: integer {1..2^N}) => boolean
+begin
+    return IsAlignedSize(UInt(x), size);
+end;
+
 // AlignDownP2()
 // =============
 // A variant of AlignDownP2 where the bitvector x is viewed as an unsigned
@@ -561,6 +594,17 @@ end;
 func AlignUpP2{N}(x: bits(N), p2: integer {0..N}) => bits(N)
 begin
     return AlignDownP2{N}(x + (2^p2 - 1), p2);
+end;
+
+// IsAlignedP2()
+// =============
+// Return TRUE if when viewed as an unsigned integer, bitvector x is aligned
+// to a multiple of 2^p2. Otherwise, return FALSE.
+
+func IsAlignedP2{N}(x: bits(N), p2: integer {0..N}) => boolean
+begin
+    if N == 0 || p2 == 0 then return TRUE; end;
+    return IsZero(x[:p2]);
 end;
 
 // The shift functions LSL, LSR, ASR and ROR accept a non-negative shift amount.
