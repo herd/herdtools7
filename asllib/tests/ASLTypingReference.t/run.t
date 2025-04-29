@@ -877,3 +877,9 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.SliceEqual.asl
   $ aslref TypingRule.SlicesEqual.asl
   $ aslref TypingRule.BitwidthEqual.asl
+  $ aslref TypingRule.RenameSubprograms.asl
+  File TypingRule.RenameSubprograms.asl, line 3, characters 2 to 11:
+    return 1;
+    ^^^^^^^^^
+  ASL Typing error: a subtype of boolean was expected, provided integer {1}.
+  [1]
