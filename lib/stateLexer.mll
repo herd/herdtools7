@@ -77,6 +77,9 @@ rule token = parse
 (* PTW keywords *)
 | "PTE"|"TTD" { TOK_PTE }
 | "PA"  { TOK_PA }
+(* PAR_EL1 *)
+| "f" { TOK_F }
+| "parel1_t"|"PAREL1_T" { TOK_PAR }
 (* Typing *)
 | "_Atomic" { ATOMIC }
 | "ATOMIC_INIT" { ATOMICINIT }
