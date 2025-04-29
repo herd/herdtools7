@@ -55,6 +55,7 @@ module Generic
       let tag = Base "tag_t"
       let base_array sz = CType.Array ("int", sz)
       let pteval_t = CType.pteval_t
+      let parel1_t = CType.parel1_t
       let ins_t = CType.ins_t
 
       let typeof = function
@@ -64,6 +65,7 @@ module Generic
         | Constant.Label _ -> code_pointer
         | Constant.Tag _ -> tag
         | Constant.PteVal _ -> pteval_t
+        | Constant.AddrReg _ -> parel1_t
         | Constant.Instruction _ -> ins_t
         | Constant.Frozen _ | Constant.ConcreteRecord _ -> assert false
 
@@ -379,7 +381,7 @@ module A.FaultType = A.FaultType)
           | Constant.Label (_,lbl) ->
               Label.Set.add lbl k
           |Concrete _|ConcreteVector _|ConcreteRecord _
-          |Symbolic _|Tag _|PteVal _
+          |Symbolic _|Tag _|PteVal _|AddrReg _
           |Instruction _|Frozen _
            -> k)
         Label.Set.empty init

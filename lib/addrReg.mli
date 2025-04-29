@@ -2,7 +2,7 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Luc Maranget, INRIA Paris, France.                                       *)
 (*                                                                          *)
 (* Copyright 2021-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
@@ -14,27 +14,25 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Constants as they are parsed, scalars still are strings, as present in file *)
+module type S = sig
 
-type v = (string,ParsedPteVal.t,ParsedAddrReg.t,InstrLit.t) Constant.t
+    type t
 
-val zero : v
-val one : v
-val intToV : int -> v
+    val default : t
 
-(* Comparison is used by locations, which should contain symbols only,
-   They fails on scalars *)
-val compare : v -> v -> int
-val eq : v -> v -> bool
+    val pp : bool -> t -> string
+    val pp_v : t -> string
 
-val nameToV : string -> v
+    val tr : ParsedAddrReg.t -> t
+    val pp_norm : ParsedAddrReg.t -> string
 
-(* New and old style, id format differ *)
-val pp_v : v -> string
-val pp_v_old : v -> string
+    val eq : t -> t -> bool
+    val compare : t -> t -> int
 
-(* Hexa parameter ignored... *)
-val pp : bool (* hexa *) -> v -> string
+    val dump_pack : (string -> string) -> t -> string
+    val fields : string list
+    val default_fields : string list
+end
 
-(* Pass specific printer for pteval's *)
-val pp_norm : bool -> (ParsedPteVal.t -> string) -> (ParsedAddrReg.t -> string) -> v -> string
+module No : S
+module ASL : S
