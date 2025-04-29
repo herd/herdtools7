@@ -218,11 +218,11 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
    & \wrappedline\ \Naccessorbody &\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon &\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon &\\
-|\ & \Nglobaldeclkeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} &\\
+|\ & \Nglobaldeclkeyword \parsesep \Tidentifier \parsesep \option{\Tcolon \parsesep \Nty} &\\
    & \wrappedline\ \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tconfig \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
+|\ & \Tconfig \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Tidentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
 |\ & \Tpragma \parsesep \Tidentifier \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon&
 \end{flalign*}
 
@@ -457,7 +457,7 @@ it must declare a new variable.
 \hypertarget{def-ndeclitem}{}
 \begin{flalign*}
 \Ndeclitem \derives\
-   & \Nignoredoridentifier &\\
+   & \Tidentifier &\\
 |\ & \Plisttwo{\Nignoredoridentifier}  &
 \end{flalign*}
 
