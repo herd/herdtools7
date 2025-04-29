@@ -384,6 +384,11 @@ Required tests:
   ASL Error: Undefined identifier: 'bar'
   [1]
 
+  $ aslref no-expression-elsif.asl
+  File no-expression-elsif.asl, line 12, characters 25 to 50:
+  ASL Grammar error: Obsolete syntax: Expression-level 'elsif'.
+  [1]
+
 Base values
   $ aslref base_values.asl
   File base_values.asl, line 5, characters 2 to 28:

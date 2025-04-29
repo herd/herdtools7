@@ -1024,17 +1024,18 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
 \begin{mathpar}
   \inferrule[cond]{
     \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr}\\
-    \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr}
+    \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr}\\
+    \buildexpr(\velseexpr) \astarrow \astversion{\velseexpr}
   }{
     {
       \begin{array}{r}
   \buildexprpattern\left(\Nexprpattern\left(
     \begin{array}{l}
     \Tif, \namednode{\vcondexpr}{\Nexpr}, \Tthen, \\
-    \wrappedline\ \namednode{\vthenexpr}{\Nexpr}, \punnode{\Neelse}
+    \wrappedline\ \namednode{\vthenexpr}{\Nexpr}, \Telse, \namednode{\velseexpr}{\Nexpr}
     \end{array}
     \right)\right) \astarrow\\
-  \overname{\ECond(\astversion{\vcondexpr}, \astversion{\vthenexpr}, \astof{\veelse})}{\vastnode}
+  \overname{\ECond(\astversion{\vcondexpr}, \astversion{\vthenexpr}, \astversion{\velseexpr})}{\vastnode}
       \end{array}
     }
 }

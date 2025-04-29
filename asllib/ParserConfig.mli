@@ -24,4 +24,7 @@
 module type CONFIG = sig
   val allow_no_end_semicolon : bool
   (** Allow no semicolon after [end]. *)
+
+  val allow_expression_elsif : bool
+  (** Allow [elsif] at the expression level. *)
 end

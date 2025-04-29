@@ -250,7 +250,10 @@ let field_assign := separated_pair(IDENTIFIER, EQ, expr)
 
 let e_else :=
   | ELSE; expr
-  | annotated ( ELSIF; c=expr; THEN; e=expr; ~=e_else; <E_Cond> )
+  | annotated ( ELSIF [@internal true]; c=expr; THEN; e1=expr; e2=e_else; {
+      if Config.allow_expression_elsif then E_Cond (c, e1, e2)
+      else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Expression-level 'elsif'."
+    } )
 
 let expr :=
   annotated (
