@@ -30,7 +30,7 @@ begin       // Side effect for RHS expression   Pure?   Symbolically Evaluable?
             // PerformsAssertions               TRUE    FALSE
     - = x as integer{0};
 
-            // RecursiveCall                    FALSE   FALSE
+            // None                             TRUE   FALSE
     - = factorial(10);
 
              // Side effect for LHS expression  Pure?
