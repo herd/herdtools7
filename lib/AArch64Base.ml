@@ -122,6 +122,7 @@ type sysreg =
   DBGDTRRX_EL0 | DBGDTRTX_EL0 |
   ELR_EL1 | ESR_EL1 | SYS_NZCV |
   TFSR_ELx | VNCR_EL2
+  | PAR_EL1
 
 let sysregs = [
     CTR_EL0, "CTR_EL0";
@@ -135,6 +136,7 @@ let sysregs = [
     SYS_NZCV, "NZCV";
     TFSR_ELx, "TFSR_ELx";
     VNCR_EL2, "VNCR_EL2";
+    PAR_EL1, "PAR_EL1";
   ]
 
 let sysregs_map = [
@@ -256,6 +258,7 @@ let zaslices =
 let linkreg = Ireg R30
 let elr_el1 = SysReg ELR_EL1
 let tfsr = SysReg TFSR_ELx
+let par_el1 = SysReg PAR_EL1
 
 let cgprs =
 [

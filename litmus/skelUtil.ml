@@ -181,7 +181,9 @@ module Make
       val ptr_in_outs : env -> T.t -> bool
       val is_pte : A.location -> env -> bool
       val is_rloc_pte : A.rlocation -> env -> bool
+      val is_rloc_parel1 : A.rlocation -> env -> bool
       val pte_in_outs : env -> T.t -> bool
+      val parel1_in_outs : env -> T.t -> bool
       val ptr_pte_in_outs : env -> T.t -> bool
       val instr_in_outs : env -> T.t -> bool
       val label_in_outs : env -> T.t -> bool
@@ -421,6 +423,8 @@ end
         | CType.Base "pteval_t" ->
             ["("; "oa:%s";  ", af:%d"; ", db:%d";
              ", dbm:%d"; ", valid:%d"; ", el0:%d"; ")"]
+        | CType.Base "parel1_t" ->
+            ["("; "oa:%s";  ", f:%d"; ")"]
         | CType.Base t -> [pp_fmt_base t]
         | CType.Atomic t|CType.Volatile t|CType.Const t-> pp_fmt t
         | CType.Array (t,sz) ->
@@ -537,9 +541,17 @@ end
         let t = find_rloc_type loc env in
         CType.is_pte t
 
+      let is_rloc_parel1 loc env =
+        let t = find_rloc_type loc env in
+        CType.is_parel1 t
+
       let pte_in_outs env test =
         let locs = get_displayed_locs test in
         A.RLocSet.exists (fun loc -> is_rloc_pte loc env) locs
+
+      let parel1_in_outs env test =
+        let locs = get_displayed_locs test in
+        A.RLocSet.exists (fun loc -> is_rloc_parel1 loc env) locs
 
       let is_ptr_pte loc env =
         let t = find_rloc_type loc env in
