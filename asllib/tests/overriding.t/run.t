@@ -142,3 +142,9 @@ Bad implementations
 Interactions with other features
   $ aslref --overriding-permissive overriding-overloading.asl
   $ aslref --overriding-permissive overriding-accessors.asl
+  $ aslref --overriding-permissive --no-exec type-check-impdef.asl
+  File type-check-impdef.asl, line 3, characters 2 to 20:
+    return Zeros{N+1};
+    ^^^^^^^^^^^^^^^^^^
+  ASL Typing error: a subtype of bits(N) was expected, provided bits((N + 1)).
+  [1]
