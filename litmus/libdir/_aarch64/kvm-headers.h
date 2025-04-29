@@ -313,3 +313,29 @@ inline static void reset_hahd_bits(void) {
 }
 
 static inline void litmus_init(void) { reset_hahd_bits(); }
+
+// PAR_EL1
+static const uint64_t msk_f = 0x1UL;
+typedef uint64_t parel1_t;
+
+inline static int unpack_f(parel1_t p) { return p & 0x1; }
+
+static inline int litmus_same_oa_pte_par(parel1_t p,pteval_t q) {
+  return ((p ^ q) & FULL_MASK) == 0 ;
+}
+
+inline static parel1_t pack_synthetic_par_el1(uint64_t pa, int f) {
+  if (f & msk_f)  // Fault indicated
+    return (parel1_t)msk_f;
+
+  return ((parel1_t)pa << OA_PACKED) | (f & msk_f);
+}
+
+inline static parel1_t pack_par_el1(int pa, parel1_t p) {
+  if (p & msk_f)            // If F bit is set
+    return (parel1_t)msk_f; // Return just the F bit
+
+  return
+    ((parel1_t)pa << OA_PACKED) |
+    pack_flag(p, msk_f, 0);
+}

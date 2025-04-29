@@ -740,7 +740,7 @@ module Make(C:Config) (I:I) : S with module I = I
               (I.V.Val
                  (Concrete _|ConcreteVector _|ConcreteRecord _
                  |Label _|Instruction _|Frozen _
-                 |Tag _|PteVal _))
+                 |Tag _|PteVal _|AddrReg _))
             ->
               Warn.user_error
                 "Very strange location (look_address) %s\n"

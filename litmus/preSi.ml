@@ -740,6 +740,15 @@ module Make
                            and phy = OutUtils.fmt_phy_tag a in
                            sprintf "*%s,%s" pte phy)
                          locs))
+                 (* let parel1_inputs =
+                  List.filter (fun rloc ->
+                      match U.find_rloc_type rloc env with
+                      | Base "parel1_t" -> true
+                      | _ -> false) (A.RLocSet.elements rlocs)
+                  in
+                  if parel1_inputs <> [] then
+                    O.fi "parel1_t %s;"
+                    (String.concat "," (List.map (fun rloc -> sprintf "in_%s" (A.dump_rloc_tag rloc)) parel1_inputs)) *)
                end in
         let dump_vars_code nprocs =
           List.iter
@@ -853,21 +862,36 @@ module Make
             end
         end ;
 (* Now physical pages in output *)
-        if Cfg.is_kvm && U.pte_in_outs env test then begin
+          if Cfg.is_kvm &&
+            (U.pte_in_outs env test ||
+            U.parel1_in_outs env test)
+            then begin
           List.iteri
             (fun k (a,_) ->
               O.f "static const int %s = %i;" (SkelUtil.data_symb_id (Misc.add_physical a)) k)
             test.T.globals ;
           O.o "" ;
-          O.o "static int idx_physical(pteval_t v,vars_t *p) {" ;
-          List.iteri
-            (fun k (s,_) ->
-              let pref = if k=0 then "if" else "else if" in
-              O.fi "%s (litmus_same_oa(v,p->saved_pte_%s)) return %s;"
-                pref s (SkelUtil.data_symb_id (Misc.add_physical s)))
-            test.T.globals ;
-          O.oi "else return NVARS;" ;
-          O.o "}" ;
+          if U.pte_in_outs env test then begin
+            O.o "static int idx_physical(pteval_t v,vars_t *p) {" ;
+            List.iteri
+              (fun k (s,_) ->
+                let pref = if k=0 then "if" else "else if" in
+                O.fi "%s (litmus_same_oa(v,p->saved_pte_%s)) return %s;"
+                  pref s (SkelUtil.data_symb_id (Misc.add_physical s)))
+              test.T.globals ;
+            O.oi "else return NVARS;" ;
+            O.o "}" end;
+          if U.parel1_in_outs env test then begin
+            O.o "static int idx_physical_parel1(parel1_t v,vars_t *p) {" ;
+            O.oi "if (v & msk_f) return NVARS;" ;
+            List.iteri
+              (fun k (s,_) ->
+                let pref = if k=0 then "if" else "else if" in
+                O.fi "%s (litmus_same_oa_pte_par(v,p->saved_pte_%s)) return %s;"
+                  pref s (SkelUtil.data_symb_id (Misc.add_physical s)))
+              test.T.globals ;
+            O.oi "else return NVARS;" ;
+            O.o "}" end;
           O.o "" ;
           O.f "static const char *pretty_addr_physical[NVARS+1] = {%s,\"???\"};"
             (String.concat ","
@@ -885,17 +909,17 @@ module Make
             (fun rloc -> match U.find_rloc_type rloc env with
             | Pointer _ when U.is_rloc_label rloc env ->
                 None,
-                [sprintf "instr_symb_name[p->%s]" (dump_rloc_tag_coded rloc)]
+                ([sprintf "instr_symb_name[p->%s]" (dump_rloc_tag_coded rloc)], [])
             | Pointer _ ->
                 None,
-                [sprintf "pretty_addr[p->%s]" (dump_rloc_tag_coded rloc)]
+                ([sprintf "pretty_addr[p->%s]" (dump_rloc_tag_coded rloc)], [])
             | Array (_,sz) ->
                 let tag = A.dump_rloc_tag rloc in
                 let rec pp_rec k =
                   if k >= sz then []
                   else
                     sprintf "p->%s[%i]" tag k::pp_rec (k+1) in
-                None,pp_rec 0
+                None,(pp_rec 0, [])
             | Base "pteval_t" ->
                 let v = sprintf "p->%s" (A.dump_rloc_tag rloc) in
                 let fs =
@@ -903,16 +927,26 @@ module Make
                   List.map
                     (fun f -> sprintf "unpack_%s(%s)" f v)
                     A.V.PteVal.fields in
-                Some v,fs
+                    let ds =A.V.PteVal.default_fields in
+                Some v,(fs, ds)
+            | Base "parel1_t" ->
+              let v = sprintf "p->%s" (A.dump_rloc_tag rloc) in
+              let fs =
+                sprintf "pretty_addr_physical[unpack_oa(%s)]" v::
+                List.map
+                  (fun f -> sprintf "unpack_%s(%s)" f v)
+                  A.V.AddrReg.fields in
+              let ds = A.V.AddrReg.default_fields in
+              Some v,(fs, ds)
             | t ->
                 None,
-                [(if CType.is_ins_t t then sprintf "pretty_opcode(p->%s)"
+                ([(if CType.is_ins_t t then sprintf "pretty_opcode(p->%s)"
                  else sprintf "p->%s")
-                   (A.dump_rloc_tag rloc)])
+                   (A.dump_rloc_tag rloc)], []))
             rlocs in
         let fst = ref true in
         List.iter2
-          (fun (p1,p2) (as_whole,arg) ->
+          (fun (p1,p2) (as_whole,(arg, def_fields)) ->
             let prf = if !fst then "" else " " in
             fst := false ;
             match as_whole with
@@ -928,19 +962,18 @@ module Make
                   | o::oa::rem -> o^oa,rem
                   | _ -> assert false in
                 EPF.fii ~out:"chan" (sprintf "%s%s=%s" prf p1 oa_fmt) [oa] ;
-                let ds = A.V.PteVal.default_fields in
-                let rec do_rec ds fs fmts = match ds,fs,fmts with
+                let rec do_rec def_fields fs fmts = match def_fields,fs,fmts with
                   | [],[],[c] ->
                       let c = sprintf "\"%s\"" (String.escaped c) in
                       EPF.fii ~out:"chan" "%s;" [c]
-                  | d::ds,f::fs,fmt::fmts ->
+                  | d::def_fields,f::fs,fmt::fmts ->
                       O.fii "if (%s != %s) {" f d ;
                       EPF.fiii ~out:"chan" fmt [f] ;
                       O.oii "}" ;
-                      do_rec ds fs fmts
+                      do_rec def_fields fs fmts
                   |_ ->  (* All, defaults, arguments and formats agree *)
                      assert false in
-                do_rec ds rem rem_fmt ;
+                do_rec def_fields rem rem_fmt ;
                 O.oi "}"
             | None ->
                 let p2 = String.concat "" p2 in
@@ -1014,6 +1047,8 @@ module Make
               | Constant.Symbolic _ -> SkelUtil.data_symb_id (T.C.V.pp O.hexa v)
               | Constant.PteVal p ->
                  A.V.PteVal.dump_pack SkelUtil.data_symb_id p
+              | Constant.AddrReg a ->
+                A.V.AddrReg.dump_pack SkelUtil.data_symb_id a
               | _ ->
                   begin match loc with
                   | Some loc ->
@@ -1553,7 +1588,7 @@ module Make
           | Tag _|Symbolic _ ->
             Warn.user_error "Litmus cannot handle this initial value %s"
               (A.V.pp_v v)
-          | PteVal _|Frozen _ -> assert false
+          | PteVal _| AddrReg _| Frozen _ -> assert false
           | Instruction _ -> Warn.fatal "FIXME: dump_run_thread functionality for -variant self"
         in
         match at with
@@ -1762,6 +1797,10 @@ module Make
               else if U.is_rloc_pte rloc env then
                 let src = OutUtils.fmt_presi_ptr_index (A.dump_rloc_tag rloc) in
                 O.fii "%s = pack_pte(idx_physical(%s,_vars),%s);"
+                  (OutUtils.fmt_presi_index (A.dump_rloc_tag rloc)) src src
+              else if U.is_rloc_parel1 rloc env then
+                let src = OutUtils.fmt_presi_index (A.dump_rloc_tag rloc) in
+                O.fii "%s = pack_par_el1(idx_physical_parel1(%s,_vars),%s);"
                   (OutUtils.fmt_presi_index (A.dump_rloc_tag rloc)) src src)
             (U.get_displayed_locs test) ;
           (* condition *)

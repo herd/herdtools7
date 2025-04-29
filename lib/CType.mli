@@ -35,6 +35,7 @@ val int32x4_t : t
 val svbool_t : t
 val svint32_t : t
 val pteval_t : t
+val parel1_t : t
 val pte : t
 val ins_t : t
 
@@ -47,6 +48,7 @@ val get_fmt : bool (* hexa *) -> base -> fmt option
 
 val is_ptr : t -> bool
 val is_pte : t -> bool
+val is_parel1 : t -> bool
 val is_array : t -> bool
 val is_atomic : t -> bool
 val is_ins_t : t -> bool

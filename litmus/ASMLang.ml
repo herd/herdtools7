@@ -478,6 +478,8 @@ module RegMap = A.RegMap)
 
       let add_pteval k = sprintf "_pteval%d" k
 
+      let add_parel1val k = sprintf "_parel1%d" k
+
       let find_pteval_index p =
         let rec find_rec k = function
           | [] -> assert false
@@ -486,9 +488,17 @@ module RegMap = A.RegMap)
               else find_rec (k+1) rem in
         find_rec 0
 
+      let find_parel1_index p =
+        let rec find_rec k = function
+          | [] -> assert false
+          | q::rem ->
+              if A.V.AddrReg.eq p q then k
+              else find_rec (k+1) rem in
+        find_rec 0
+
       let compile_val_fun =
         let open Constant in
-        fun ptevalEnv v -> match v with
+        fun ptevalEnv parel1Env v -> match v with
         | Symbolic (Virtual {pac})
           when not (PAC.is_canonical pac) ->
             Warn.user_error "Litmus cannot initialize a virtual address with a non-canonical PAC field"
@@ -503,7 +513,10 @@ module RegMap = A.RegMap)
         | PteVal p ->
             let idx = find_pteval_index p ptevalEnv in
             add_pteval idx
-        | Tag _|Frozen _ | ConcreteRecord _ -> assert false
+        | AddrReg a ->
+          let idx = find_parel1_index a parel1Env in
+            add_parel1val idx
+        | Tag _|Frozen _ | ConcreteRecord _-> assert false
 
       let compile_init_val_fun = compile_val_fun
 
@@ -513,6 +526,13 @@ module RegMap = A.RegMap)
         List.fold_left
           (fun k (_,v) -> match v with
           | Constant.PteVal p -> p::k
+          | _ -> k)
+          [] t.Tmpl.init
+
+      let extract_parel1s t =
+        List.fold_left
+          (fun k (_,v) -> match v with
+          | Constant.AddrReg p -> p::k
           | _ -> k)
           [] t.Tmpl.init
 
@@ -527,6 +547,7 @@ module RegMap = A.RegMap)
              { args0 with Template.trashed=trashed; } in
         if debug then debug_globEnv globEnv ;
         let ptevalEnv = extract_ptevals t in
+        let parel1Env = extract_parel1s t in
         let instrs = Tmpl.get_instructions t in
         let instrs =
           List.map
@@ -572,6 +593,10 @@ module RegMap = A.RegMap)
           List.mapi
             (fun i _ -> sprintf "pteval_t %s" (add_pteval i))
             ptevalEnv in
+        let parel1s =
+          List.mapi
+            (fun i _ -> sprintf "parel1_t %s" (add_parel1val i))
+            parel1Env in
         let cpys =
           if O.memory = Memory.Indirect && O.cautious then
             List.map
@@ -594,11 +619,11 @@ module RegMap = A.RegMap)
               sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
         let params =
           String.concat ","
-            (params0@labels@instrs@addrs@ptes@phys@ptevals@cpys@outs) in
+            (params0@labels@instrs@addrs@ptes@phys@ptevals@parel1s@cpys@outs) in
         LangUtils.dump_code_def chan O.noinline O.mode proc params ;
         do_dump
           args0
-          (compile_init_val_fun ptevalEnv)
+          (compile_init_val_fun ptevalEnv parel1Env)
           compile_addr_fun
           (fun sym -> compile_cpy_fun proc (Constant.as_address sym))
           (fun p r  -> sprintf "*%s" (Tmpl.dump_out_reg p r))
@@ -685,6 +710,8 @@ module RegMap = A.RegMap)
               | Some s ->
                   PU.dump_pteval_flags (OutUtils.fmt_phy_kvm s) p)
             ptevals in
+        let parel1s = extract_parel1s t in
+        let parel1s = List.map (fun a -> A.V.AddrReg.dump_pack SkelUtil.data_symb_id a) parel1s in
         let addrs_cpy =
           if O.memory = Memory.Indirect && O.cautious then
             List.map (compile_cpy_addr_call proc) addrs_proc
@@ -692,7 +719,7 @@ module RegMap = A.RegMap)
         and outs = List.map (compile_out_reg_call env proc) t.Tmpl.final in
         let args =
           String.concat ","
-            (args0@labels@instrs@addrs@ptevals@addrs_cpy@outs) in
+            (args0@labels@instrs@addrs@ptevals@parel1s@addrs_cpy@outs) in
         LangUtils.dump_code_call chan indent f_id args
 
     end

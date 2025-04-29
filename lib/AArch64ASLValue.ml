@@ -29,7 +29,7 @@ end) : Value.AArch64ASL = struct
       | S_Int i -> S_Int (printable_z i)
       | S_Label _ as s -> s
   end
-  module AArch64Cst = SymbConstant.Make (ASLScalar) (AArch64PteVal) (AArch64I)
+  module AArch64Cst = SymbConstant.Make (ASLScalar) (AArch64PteVal) (AArch64AddrReg) (AArch64I)
   module AArch64Op = AArch64Op.Make(ASLScalar)(ASLOp)
   include SymbValue.Make (AArch64Cst) (AArch64Op)
 end

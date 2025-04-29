@@ -35,5 +35,5 @@ module ASLScalar = struct
   include ASLScalar
   let printable c = c
 end
-module ASLConstant = SymbConstant.Make (ASLScalar) (PteVal.ASL) (ASLBase.Instr)
+module ASLConstant = SymbConstant.Make (ASLScalar) (PteVal.ASL) (AddrReg.ASL) (ASLBase.Instr)
 module V = SymbValue.Make (ASLConstant) (ASLOp)
