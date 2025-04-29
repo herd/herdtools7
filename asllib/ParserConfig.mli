@@ -27,4 +27,7 @@ module type CONFIG = sig
 
   val allow_expression_elsif : bool
   (** Allow [elsif] at the expression level. *)
+
+  val allow_storage_discards : bool
+  (** Allow storage declarations to discard their right-hand sides. *)
 end

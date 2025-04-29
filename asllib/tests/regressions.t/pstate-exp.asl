@@ -105,9 +105,9 @@ end;
 
 func main () => integer
 begin
-  let - = PSTATE();
-  let - = PSTATE().N;
-  let - = PSTATE().[N, Z];
+  - = PSTATE();
+  - = PSTATE().N;
+  - = PSTATE().[N, Z];
   PSTATE() = ARBITRARY: ProcState;
   PSTATE().N = '1';
   PSTATE().[N, Z] = '00';

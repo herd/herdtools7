@@ -2,14 +2,14 @@ func foo{N}(bv : bits(N))
 begin
     // The next declaration is legal as a parameterized integer type
     // is a constrained integer type.
-    var - : bits(N) = Zeros{N};
+    var a : bits(N) = Zeros{N};
     let x : integer{0..N} = N as integer{0..N};
     // The next declaration is legal as the type of 'x' is a well-constrained
     // integer type, which is considered a constrained integer type.
-    var - : bits(x) = Zeros{x};
+    var b : bits(x) = Zeros{x};
     // The next declaration is legal as 5 has the type integer{5},
     // which is a constrained integer type.
-    var - : bits(5) = Zeros{5};
+    var c : bits(5) = Zeros{5};
 
     let y : integer = 7;
 

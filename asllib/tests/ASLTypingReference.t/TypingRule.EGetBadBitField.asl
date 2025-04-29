@@ -4,6 +4,6 @@ func main() => integer
 begin
     var p : Packet;
     // Illegal: field 'undeclared_bitfield' is not declared for Packet.
-    var - = p.undeclared_bitfield;
+    var x = p.undeclared_bitfield;
     return 0;
 end;

@@ -198,6 +198,9 @@ ASL Semantics Tests:
   [1]
   $ aslref SemanticsRule.LEDiscard.asl
   $ aslref SemanticsRule.LDDiscard.asl
+  File SemanticsRule.LDDiscard.asl, line 4, characters 6 to 7:
+  ASL Grammar error: Obsolete syntax: Discarded storage declaration.
+  [1]
 
   $ aslref EvalCatchers.asl
   21

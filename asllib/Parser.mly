@@ -459,12 +459,20 @@ let lexpr :=
    have to declare new variables. *)
 
 let discard_or_identifier :=
-  | MINUS;         { fresh_var "__ldi_discard" }
+  | MINUS;         { local_ignored () }
   | ~=IDENTIFIER;  <>
 
 let decl_item :=
-  | ~=discard_or_identifier          ; < LDI_Var >
-  | ~=plist2(discard_or_identifier)  ; < LDI_Tuple >
+  | MINUS [@internal true]           ; {
+      if Config.allow_storage_discards then LDI_Var (local_ignored ())
+      else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Discarded storage declaration."
+    }
+  | ~=IDENTIFIER                     ; < LDI_Var >
+  | vs=plist2(discard_or_identifier) ; {
+      if List.for_all is_local_ignored vs && not Config.allow_storage_discards then
+        Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Discarded storage declaration."
+      else LDI_Tuple vs
+    }
 
 (* ------------------------------------------------------------------------- *)
 (* Statement helpers *)
@@ -587,7 +595,10 @@ let maybe_empty_stmt_list := stmt_list | annotated({ S_Pass })
 let func_body == delimited(BEGIN, maybe_empty_stmt_list, end_semicolon)
 let recurse_limit := ioption(RECURSELIMIT; expr)
 let ignored_or_identifier :=
-  | MINUS; { global_ignored () }
+  | MINUS [@internal true]; {
+      if Config.allow_storage_discards then global_ignored ()
+      else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Discarded storage declaration."
+    }
   | IDENTIFIER
 let override ==
   ioption(

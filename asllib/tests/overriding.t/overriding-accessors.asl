@@ -26,7 +26,7 @@ end;
 
 func main() => integer
 begin
-  let - = Foo();
+  - = Foo();
   assert called_override;
   Foo() = 1;
   assert state == 42;

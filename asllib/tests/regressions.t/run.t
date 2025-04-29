@@ -53,9 +53,8 @@ Global ignored:
   > EOF
 
   $ aslref global_ignored.asl
-  File global_ignored.asl, line 1, characters 8 to 13:
-  ASL Typing error: Illegal application of operator / on types integer {3}
-    and integer {0}.
+  File global_ignored.asl, line 1, characters 4 to 5:
+  ASL Grammar error: Obsolete syntax: Discarded storage declaration.
   [1]
 
 Constrained-type satisfaction:
@@ -148,7 +147,7 @@ Runtime checks:
 
   $ cat >runtime-type-sat2.asl <<EOF
   > func test(size: integer {3, 4}) begin
-  >   let - = Zeros{4} as bits(size);
+  >   let x = Zeros{4} as bits(size);
   > end;
   > func main () => integer begin
   >   test(4);

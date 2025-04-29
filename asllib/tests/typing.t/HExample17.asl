@@ -8,5 +8,5 @@ begin
   if a != 64 then Unreachable(); end;
   let b = 32;
   let bv = Zeros{a};
-  let -: bits(a) = Reverse{}(bv, b);
+  let x: bits(a) = Reverse{}(bv, b);
 end;

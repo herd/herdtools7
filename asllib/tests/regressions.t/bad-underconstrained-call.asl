@@ -11,6 +11,6 @@ end;
 
 func main() => integer
 begin
-  let - = GetMiddleBit{8}('11110000');
+  - = GetMiddleBit{8}('11110000');
   return 0;
 end;
