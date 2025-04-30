@@ -1,6 +1,9 @@
 MP+dmb.stpt+tcib-po-isb-po Forbidden
+MP+dmb.stpt+tcib-po-isb-po--async Allowed
 MP+dmb.stpt+tcib-tagfault-po Forbidden
+MP+dmb.stpt+tcib-tagfault-po--async Allowed
 S+dmb.stpt+tcib-po Forbidden
+S+dmb.stpt+tcib-po--async Allowed
 MP+dmb.stPT+addr Allowed
 MP+dmb.stTT+addr Allowed
 S+dmb.stTT+addr Allowed
