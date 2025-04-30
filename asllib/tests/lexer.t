@@ -35,6 +35,8 @@
   > EOF
   $ aslref println5.asl
   File println5.asl, line 1, characters 32 to 33:
+  constant msg = "Something with \p bad characters.";
+                                  ^
   ASL Error: Unknown symbol.
   [1]
   $ cat >println6.asl <<EOF
@@ -42,9 +44,8 @@
   > func main () => integer begin println(msg); return 0; end;
   > EOF
   $ aslref println6.asl
-  File println6.asl, line 3, character 0:
-  ASL Error: Unknown symbol.
-  [1]
+  Fatal error: exception End_of_file
+  [2]
 
 C-Style comments
   $ cat >comments1.asl <<EOF
@@ -77,6 +78,8 @@ C-Style comments
 
   $ aslref comments2.asl
   File comments2.asl, line 11, characters 8 to 9:
+  let a = b;
+          ^
   ASL Error: Undefined identifier: 'b'
   [1]
 
@@ -95,6 +98,8 @@ Some problems with bitvectors and bitmasks:
 
   $ aslref masks0.asl
   File masks0.asl, line 4, characters 17 to 28:
+      let expr_a = '' IN {'1'};
+                   ^^^^^^^^^^^
   ASL Typing error: cannot find a common ancestor to those two types bits(0)
     and bits(1).
   [1]

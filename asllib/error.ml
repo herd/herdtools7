@@ -223,6 +223,80 @@ let warning_label = function
   | UnexpectedImplementation -> "UnexpectedImplementation"
   | MissingOverride -> "MissingOverride"
 
+open struct
+  (* Straight out of stdlib v5.2 *)
+  let with_open filename continuation =
+    let chan = open_in filename in
+    Fun.protect
+      ~finally:(fun () -> close_in_noerr chan)
+      (fun () -> continuation chan)
+
+  (** [trim_end str] is [str] without any spaces at the end. *)
+  let trim_end str =
+    let n0 = String.length str - 1 in
+    let n = ref n0 in
+    let is_space (* Out of stdlib *) = function
+      | ' ' | '\012' | '\n' | '\r' | '\t' -> true
+      | _ -> false
+    in
+    while !n > 0 && is_space (String.get str !n) do
+      decr n
+    done;
+    if Int.equal !n n0 then str else String.sub str 0 (!n + 1)
+
+  (** [fetch_lines ~start_bol ~end_bol filename] returns a string containing the
+    lines from the line indicated by [start_bol] to (and including) the line
+    indicated by [end_bol], without any spaces at the end. *)
+  let fetch_lines ~start_bol ~end_bol filename =
+    with_open filename @@ fun chan ->
+    seek_in chan start_bol;
+    let prev_lines =
+      if end_bol > start_bol then really_input_string chan (end_bol - start_bol)
+      else ""
+    in
+    let last_line = input_line chan in
+    let () =
+      if false then
+        Format.eprintf "Got prev_lines = %S and last_line = %S.@." prev_lines
+          last_line
+    in
+    prev_lines ^ last_line |> trim_end
+
+  (** [chevrons ~start_col ~end_col] is a line starting with [start_col] spaces
+    and completed with [^] until [end_col] is reached. *)
+  let chevrons ~start_col ~end_col : string =
+    if end_col < start_col then raise (Invalid_argument "chevrons");
+    String.make start_col ' ' ^ String.make (end_col - start_col) '^'
+
+  let display_error_context e : string option =
+    let open AST in
+    let open Lexing in
+    let filename = e.pos_start.pos_fname
+    and end_filename = e.pos_end.pos_fname
+    and start_lnum = e.pos_start.pos_lnum
+    and end_lnum = e.pos_end.pos_lnum
+    and start_cnum = e.pos_start.pos_cnum
+    and end_cnum = e.pos_end.pos_cnum
+    and start_bol = e.pos_start.pos_bol
+    and end_bol = e.pos_end.pos_bol in
+    if
+      e.pos_start <> dummy_pos && e.pos_end <> dummy_pos
+      && String.equal filename end_filename
+      && Sys.file_exists filename
+    then
+      let lines = fetch_lines ~start_bol ~end_bol filename in
+      let lines =
+        if Int.equal start_lnum end_lnum then
+          let start_col = start_cnum - start_bol
+          and end_col = end_cnum - end_bol in
+          let chevrons = chevrons ~start_col ~end_col in
+          Printf.sprintf "%s\n%s" lines chevrons
+        else lines
+      in
+      Some lines
+    else None
+end
+
 module PPrint = struct
   open Format
   open PP
@@ -561,8 +635,13 @@ module PPrint = struct
           "ASL Warning: Missing `implementation` for `impdef` function."
 
   let pp_pos_begin f pos =
-    if pos.pos_end != Lexing.dummy_pos && pos.pos_start != Lexing.dummy_pos then
-      fprintf f "@[<h>%a:@]@ " pp_pos pos
+    match display_error_context pos with
+    | None
+      when pos.pos_start <> Lexing.dummy_pos || pos.pos_end <> Lexing.dummy_pos
+      ->
+        fprintf f "@[<h>%a:@]@ " pp_pos pos
+    | None -> ()
+    | Some ctx -> fprintf f "@[<h>%a:@]@ %s@ " pp_pos pos ctx
 
   let pp_error f e = fprintf f "@[<v 0>%a%a@]" pp_pos_begin e pp_error_desc e
 
