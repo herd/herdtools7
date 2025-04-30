@@ -4,7 +4,7 @@ let g = 3;
 
 func main() => integer
 begin
-    var - : integer{FIVE.. SEVEN}; // { Other(FIVE), Other(SEVEN) }
-    var - : integer{g}; // { Other(g) }
+    var a : integer{FIVE.. SEVEN}; // { Other(FIVE), Other(SEVEN) }
+    var b : integer{g}; // { Other(g) }
     return 0;
 end;

@@ -25,9 +25,9 @@ begin
 
     // Bitvectors
     //          LHS type                        RHS type
-    let - :     bits(64) = Zeros{64}            as Word64;
+    let x :     bits(64) = Zeros{64}            as Word64;
     let sub_k:  integer{5, 64} = 64             as integer{5, 64};
-    let - :     bits(k) = Zeros{64}             as bits(sub_k);
+    let y :     bits(k) = Zeros{64}             as bits(sub_k);
     let bv2:    bits(64) {[0] flag} = Zeros{64} as bits(64);
 
     // integer-indexed arrays

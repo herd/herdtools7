@@ -7,7 +7,7 @@ end;
 
 func inherited_always_throws () => integer
 begin
-  let - = always_throws ();
+  let x = always_throws ();
 end;
 
 func main () => integer

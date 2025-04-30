@@ -1,4 +1,4 @@
-var - = 42;
-let - = 42;
-constant - = 42;
-config - : integer = 42;
+var a = 42;
+let b = 42;
+constant c = 42;
+config d : integer = 42;

@@ -4,8 +4,8 @@ type RecordWithoutFields of record;
 
 func main() => integer
 begin
-    var - = MyRecord {a = 3, b = TRUE};
-    var - = RecordWithEmptyFieldList {};
-    var - = RecordWithoutFields {};
+    - = MyRecord {a = 3, b = TRUE};
+    - = RecordWithEmptyFieldList {};
+    - = RecordWithoutFields {};
     return 0;
 end;

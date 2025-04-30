@@ -51,6 +51,9 @@ ASL Typing Tests:
   ASL Error: Undefined identifier: 'main'
   [1]
   $ aslref TypingRule.LDDiscard.asl
+  File TypingRule.LDDiscard.asl, line 4, characters 6 to 7:
+  ASL Grammar error: Obsolete syntax: Discarded storage declaration.
+  [1]
   $ aslref TypingRule.LDVar.asl
   $ aslref TypingRule.LDTyped.asl
   $ aslref TypingRule.LDTuple.asl

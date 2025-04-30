@@ -8,7 +8,7 @@ type D1 of real;
 
 func main() => integer
 begin
-    var - : A2 = if ARBITRARY: boolean then (1 as B2) else (2 as C2);
+    var x : A2 = if ARBITRARY: boolean then (1 as B2) else (2 as C2);
     // The following statement in comment is illegal.
     // In particular B2 and D1 have no named lowest common ancestor.
     // var - = if ARBITRARY: boolean then (1 as B2) else (2.0 as D1);

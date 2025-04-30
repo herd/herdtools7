@@ -532,6 +532,9 @@ let string_starts_with ~prefix s =
 let global_ignored_prefix = "__global_ignored"
 let global_ignored () = fresh_var global_ignored_prefix
 let is_global_ignored s = string_starts_with ~prefix:global_ignored_prefix s
+let local_ignored_prefix = "__ldi_discard"
+let local_ignored () = fresh_var local_ignored_prefix
+let is_local_ignored s = string_starts_with ~prefix:local_ignored_prefix s
 let slice_is_single = function Slice_Single _ -> true | _ -> false
 
 let slice_as_single = function

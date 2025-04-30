@@ -10,7 +10,7 @@ begin
   assert foo{2}('10') == '01';
 
   // This one should fail at runtime
-  let - = foo{3}('101');
+  - = foo{3}('101');
 
   return 0;
 end;

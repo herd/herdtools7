@@ -38,24 +38,24 @@ begin
   println();
 
   println("Tuples:");
-  let - = (p{1}, p{2});
+  - = (p{1}, p{2});
   println();
 
   println("Non-short-circuiting binary operations:");
-  let - = p{1} + p{2} + p{3};
+  - = p{1} + p{2} + p{3};
   println();
 
   println("Array-indexing:");
-  let - = arr(1)[[p{2}]];
+  - = arr(1)[[p{2}]];
   println();
 
   println("Slicing:");
   var bv : bits(64);
-  let - = bv[p{1}, p{2}:p{3}, p{4}+:p{5}, p{6}*:p{7}];
+  - = bv[p{1}, p{2}:p{3}, p{4}+:p{5}, p{6}*:p{7}];
   println();
 
   println("Record construction:");
-  let - = Record{ a = p{1}, b = p{2} };
+  - = Record{ a = p{1}, b = p{2} };
   println();
 
   println("Print statements:");
@@ -63,7 +63,7 @@ begin
 
   println("For-loop start/end expressions:");
   for i = p{1} to p{2} do
-    let - = p{i + 2};
+    - = p{i + 2};
   end;
   println();
 

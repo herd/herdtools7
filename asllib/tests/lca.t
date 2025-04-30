@@ -2,9 +2,9 @@
   > func main () => integer
   > begin
   >   let x = if ARBITRARY: boolean then 2 else 3;
-  >   let -: integer = x;
-  >   let -: integer {2, 3} = x;
-  >   let -: real = x;
+  >   let a: integer = x;
+  >   let b: integer {2, 3} = x;
+  >   let c: real = x;
   > end;
   > EOF
 
@@ -17,8 +17,8 @@
   > func main () => integer
   > begin
   >   let x = if ARBITRARY: boolean then 2 as integer else 3;
-  >   let -: integer = x;
-  >   let -: integer {2, 3} = x;
+  >   let a: integer = x;
+  >   let b: integer {2, 3} = x;
   > end;
   > EOF
 
@@ -31,8 +31,8 @@
   > func main {N} (bv: bits(N)) => integer
   > begin
   >   let x = if ARBITRARY: boolean then N else 3;
-  >   let -: integer = x;
-  >   let -: integer {N} = x;
+  >   let a: integer = x;
+  >   let b: integer {N} = x;
   > end;
   > EOF
 
@@ -46,7 +46,7 @@
   > func main {N} (bv: bits(N)) => integer
   > begin
   >   let x = if ARBITRARY: boolean then 3 as integer {0..N} else 3;
-  >   let -: real = x;
+  >   let a: real = x;
   > end;
   > EOF
 
@@ -75,7 +75,7 @@
   > func main () => integer
   > begin
   >   let x = if ARBITRARY: boolean then 3 as T3 else 2 as T2;
-  >   let -: real = x;
+  >   let a: real = x;
   > end;
   > EOF
 
@@ -89,7 +89,7 @@
   > type T2 of boolean;
   > func main () => integer
   > begin
-  >   let - = if ARBITRARY: boolean then 3 as T1 else 2 as T2;
+  >   let x = if ARBITRARY: boolean then 3 as T1 else 2 as T2;
   > end;
   > EOF
 
@@ -104,7 +104,7 @@
   > func main () => integer
   > begin
   >   let x = if ARBITRARY: boolean then '101' as T1 else '101' as bits(3);
-  >   let -: real = x;
+  >   let a: real = x;
   > end;
   > EOF
 
@@ -118,8 +118,8 @@
   > func main () => integer
   > begin
   >   let x = if ARBITRARY: boolean then '101' as T1 else '101' as bits (3) { [2] b1 };
-  >   let -: bits(3) { [2] b1 } = x;
-  >   let -: real = x;
+  >   let a: bits(3) { [2] b1 } = x;
+  >   let b: real = x;
   > end;
   > EOF
 
@@ -134,8 +134,8 @@
   > func main () => integer
   > begin
   >   let x = if ARBITRARY: boolean then 3 as T1 else 2 as T2;
-  >   let -: integer = x;
-  >   let -: real = x;
+  >   let a: integer = x;
+  >   let b: real = x;
   > end;
   > EOF
 
@@ -149,7 +149,7 @@
   > func main () => integer
   > begin
   >   let x = if ARBITRARY: boolean then 3 as T1 else 2 as integer;
-  >   let -: T1 = x;
+  >   let a: T1 = x;
   >   return 0;
   > end;
   > EOF
@@ -161,7 +161,7 @@
   > func main () => integer
   > begin
   >   let x = if ARBITRARY: boolean then (3 as integer, 2 as T1) else (3 as T1, 2 as integer);
-  >   let -: (T1, T1) = x;
+  >   let a: (T1, T1) = x;
   >   return 0;
   > end;
   > EOF
@@ -185,7 +185,7 @@
   >   var a: array[[4]] of integer;
   >   var b: array[[4]] of T1;
   >   let x = if ARBITRARY: boolean then a else b;
-  >   let -: real = x;
+  >   let c: real = x;
   > end;
   > EOF
 

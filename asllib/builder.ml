@@ -33,6 +33,7 @@ type parser_config = {
   allow_expression_elsif : bool;
   allow_double_underscore : bool;
   allow_unknown : bool;
+  allow_storage_discards : bool;
 }
 
 type version_selector = [ `ASLv0 | `ASLv1 | `Any ]
@@ -43,6 +44,7 @@ let default_parser_config =
     allow_expression_elsif = false;
     allow_double_underscore = false;
     allow_unknown = false;
+    allow_storage_discards = false;
   }
 
 let select_type ~opn ~ast = function
@@ -75,6 +77,7 @@ let from_lexbuf ast_type parser_config version (lexbuf : lexbuf) =
       let module Parser = Parser.Make (struct
         let allow_no_end_semicolon = parser_config.allow_no_end_semicolon
         let allow_expression_elsif = parser_config.allow_expression_elsif
+        let allow_storage_discards = parser_config.allow_storage_discards
       end) in
       let module Lexer = Lexer.Make (struct
         let allow_double_underscore = parser_config.allow_double_underscore
