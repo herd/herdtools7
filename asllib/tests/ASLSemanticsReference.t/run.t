@@ -10,6 +10,8 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.EGlobalVarError.asl
   $ aslref SemanticsRule.EUndefIdent.asl
   File SemanticsRule.EUndefIdent.asl, line 5, characters 9 to 10:
+    assert y;
+           ^
   ASL Error: Undefined identifier: 'y'
   [1]
 //  $ aslref SemanticsRule.EBinopPlusPrint.asl
@@ -21,6 +23,8 @@ ASL Semantics Tests:
   fail.
   File SemanticsRule.EBinopDIVBackendDefinedError.asl, line 4,
     characters 10 to 17:
+    let x = 3 DIV 0;
+            ^^^^^^^
   ASL Typing error: Illegal application of operator DIV on types integer {3}
     and integer {0}.
   [1]
@@ -35,6 +39,8 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.ECondFALSE.asl
   $ aslref SemanticsRule.ECondARBITRARY3or42.asl
   File SemanticsRule.ECondARBITRARY3or42.asl, line 10, characters 9 to 13:
+    assert x==3;
+           ^^^^
   ASL Execution error: Assertion failed: (x == 3).
   [1]
   $ aslref SemanticsRule.ESlice.asl
@@ -51,12 +57,16 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.EArbitraryInteger0.asl
   $ aslref SemanticsRule.EArbitraryInteger3.asl
   File SemanticsRule.EArbitraryInteger3.asl, line 5, characters 9 to 13:
+    assert x==3;
+           ^^^^
   ASL Execution error: Assertion failed: (x == 3).
   [1]
   $ aslref SemanticsRule.EArbitraryIntegerRange3-42-3.asl
   $ aslref SemanticsRule.EArbitraryIntegerRange3-42-42.asl
   File SemanticsRule.EArbitraryIntegerRange3-42-42.asl, line 5,
     characters 9 to 14:
+    assert x==42;
+           ^^^^^
   ASL Execution error: Assertion failed: (x == 42).
   [1]
   $ aslref SemanticsRule.EArbitraryArray.asl
@@ -81,10 +91,22 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.SWhile.limit_reached.asl
   File SemanticsRule.SWhile.limit_reached.asl, line 4, character 2 to line 7,
     character 7:
+    while i <= 3 looplimit 2 do
+      assert i <= 3;
+      i = i + 1;
+     end;
   ASL Dynamic error: loop limit reached.
   [1]
   $ aslref SemanticsRule.SRepeat.asl
   File SemanticsRule.SRepeat.asl, line 24, character 4 to line 31, character 17:
+      repeat
+          println("i = ", i);
+          assert i < 5;
+          if x[i] == '1' then
+              ones = ones + 1;
+          end;
+          i = i + 1;
+      until i == 5;
   ASL Warning: Loop does not have a limit.
   j = 0
   j = 1
@@ -141,10 +163,14 @@ ASL Semantics Tests:
   Otherwise
   $ aslref SemanticsRule.CatchNone.asl
   File SemanticsRule.CatchNone.asl, line 15, characters 8 to 24:
+    catch MyExceptionType1;
+          ^^^^^^^^^^^^^^^^
   ASL Error: Cannot parse.
   [1]
   $ aslref SemanticsRule.FUndefIdent.asl
   File SemanticsRule.FUndefIdent.asl, line 4, characters 5 to 12:
+       foo ();
+       ^^^^^^^
   ASL Error: Undefined identifier: 'foo'
   [1]
   $ aslref SemanticsRule.FCall.asl
@@ -161,6 +187,8 @@ ASL Semantics Tests:
   $ aslref -0 SemanticsRule.LEUndefIdentV0.asl
   $ aslref SemanticsRule.LEUndefIdentV1.asl
   File SemanticsRule.LEUndefIdentV1.asl, line 5, characters 2 to 3:
+    y = 3;
+    ^
   ASL Error: Undefined identifier: 'y'
   [1]
   $ aslref SemanticsRule.LESlice.asl
@@ -194,11 +222,15 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.SAssertOk.asl
   $ aslref SemanticsRule.SAssertNo.asl
   File SemanticsRule.SAssertNo.asl, line 4, characters 10 to 17:
+    assert (42 == 3);
+            ^^^^^^^
   ASL Execution error: Assertion failed: (42 == 3).
   [1]
   $ aslref SemanticsRule.LEDiscard.asl
   $ aslref SemanticsRule.LDDiscard.asl
   File SemanticsRule.LDDiscard.asl, line 4, characters 6 to 7:
+    var - : integer;
+        ^
   ASL Grammar error: Obsolete syntax: Discarded storage declaration.
   [1]
 
@@ -207,6 +239,8 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.ATCNotDynamicErrorIfFalse.asl
   $ aslref SemanticsRule.ATCVariousErrors.asl
   File SemanticsRule.ATCVariousErrors.asl, line 4, characters 2 to 30:
+    var b: integer{4, 5, 6} = 2;                     // A type error
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Typing error: a subtype of integer {4, 5, 6} was expected,
     provided integer {2}.
   [1]
@@ -217,6 +251,8 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.SCond2.asl
   $ aslref SemanticsRule.SCond3.asl
   File SemanticsRule.SCond3.asl, line 3, characters 9 to 14:
+    assert FALSE;
+           ^^^^^
   ASL Execution error: Assertion failed: FALSE.
   [1]
   $ aslref SemanticsRule.SCond4.asl
@@ -233,11 +269,17 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.CheckRecurseLimit.no_limit.asl
   File SemanticsRule.CheckRecurseLimit.no_limit.asl, line 1, character 0 to
     line 4, character 4:
+  func factorial(n: integer) => integer
+  begin
+      return if n == 0 then 1 else n * factorial(n - 1);
+  end;
   ASL Warning: the recursive function factorial has no recursive limit
   annotation.
   $ aslref SemanticsRule.CheckRecurseLimit.limit_reached.asl
   File SemanticsRule.CheckRecurseLimit.limit_reached.asl, line 3,
     characters 37 to 53:
+      return if n == 0 then 1 else n * factorial(n - 1);
+                                       ^^^^^^^^^^^^^^^^
   ASL Dynamic error: recursion limit reached.
   [1]
   $ aslref SemanticsRule.AssignArgs.asl

@@ -26,6 +26,8 @@ Two intersecting slices...
 
   $ aslref intersecting_slices2.asl
   File intersecting_slices2.asl, line 5, characters 3 to 9:
+    x[i, j] = '10';
+     ^^^^^^
   ASL Static error: overlapping slices i+:1, j+:1.
   [1]
 
@@ -80,5 +82,7 @@ Two intersecting bitfields
 
   $ aslref intersecting_slices4.asl
   File intersecting_slices4.asl, line 5, characters 2 to 12:
+    x.[f1, f2] = '10';
+    ^^^^^^^^^^
   ASL Static error: overlapping slices 0+:1, 0+:1.
   [1]
