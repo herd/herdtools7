@@ -31,6 +31,13 @@ The language supports such overriding mechanisms (and in particular, simplifies 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Syntax\label{sec:GlobalStorageDeclarationsSyntax}}
+
+\RequirementDef{DiscardingGlobalStorageDeclarations}
+Global storage declarations must bind a name.
+This is ensured by the ASL grammar.
+All the global storage declarations in \listingref{local-storage-discards} are illegal, as they discard their declared storage elements.
+\ASLListing{Illegal global storage declarations that discard storage elements}{global-storage-discards}{\syntaxtests/GuideRule.DiscardingGlobalStorageDeclarations.asl}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
 \Ndecl  \derives \ & \Nglobaldeclkeyword \parsesep \Tidentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep &\\

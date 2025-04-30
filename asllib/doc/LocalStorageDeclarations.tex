@@ -88,6 +88,11 @@ Declaring a local storage element is done via the following grammar rules:
   |\ & \LDITuple(\identifier^*) &
 \end{flalign*}
 
+\RequirementDef{DiscardingLocalStorageDeclarations}
+Local storage declarations must bind at least one name.
+All the local storage declarations in \listingref{local-storage-discards} are illegal, as they discard all declared storage elements.
+\ASLListing{Illegal local storage declarations that discard all storage elements}{local-storage-discards}{\syntaxtests/GuideRule.DiscardingLocalStorageDeclarations.asl}
+
 \ASTRuleDef{LocalDeclKeyword}
 \hypertarget{build-localdeclkeyword}{}
 The function
