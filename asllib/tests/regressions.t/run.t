@@ -403,6 +403,7 @@ Base values
   [1]
 
   $ aslref base_values_tuple.asl
+  $ aslref base_values_bvs.asl
 
 Getters/setters
   $ aslref nonempty-getter-called-without-slices.asl

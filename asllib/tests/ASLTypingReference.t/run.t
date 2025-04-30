@@ -151,11 +151,7 @@ ASL Typing Tests / annotating types:
   exception_base = {msg=}
   integer_array_base = [[0, 0, 0, 0]]
   enumeration_array_base = [[RED=0, GREEN=0, BLUE=0]]
-  $ aslref TypingRule.BaseValue.bad_parameterized.asl
-  File TypingRule.BaseValue.bad_parameterized.asl, line 4, characters 4 to 39:
-  ASL Typing error: base value of type bits(N) cannot be statically determined
-    since it consists of N.
-  [1]
+  $ aslref --no-exec TypingRule.BaseValue.parameterized.asl
   $ aslref TypingRule.BaseValue.bad_negative_width.asl
   File TypingRule.BaseValue.bad_negative_width.asl, line 1, characters 0 to 24:
   ASL Typing error: base value of empty type bits((- 3)).
