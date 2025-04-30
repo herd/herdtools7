@@ -1,0 +1,12 @@
+(rule (copy ../Version.ml Version.ml))
+
+(ocamllex subst)
+
+(executables
+ (names uoaim)
+ (public_names uoaim7)
+ (preprocess
+   (per_module
+     ((action (system "pa_ocaml %{input-file}")) Uoaim)))
+ (libraries herdtools earley.core earley.str))
+
