@@ -725,8 +725,14 @@ eq_enum: RED == RED = TRUE
 eq_enum: RED == GREEN = FALSE
 eq_enum: RED != RED = FALSE
 eq_enum: RED != GREEN = TRUE
+concat_string: 0 :: '1' :: 2.0 :: TRUE :: "foo" :: RED = 00x12TRUEfooRED
 \end{Verbatim}
 % CONSOLE_END
+
+\ExampleDef{String Concatenation}
+String concatenation operates over singular types, first converting them to strings using $\literaltostring$.
+\listingref{binary-operations-stringslabels} shows an example of string concatenation applied to literals of \integertypeterm{}, \bitvectortypeterm{}, \realtypeterm{}, \booleantypeterm{}, and \enumerationtypeterm{}.
+The literals are converted to strings, and these strings are concatenated.
 
 \hypertarget{def-binopsignatures}{}
 The following set defines the valid signatures of

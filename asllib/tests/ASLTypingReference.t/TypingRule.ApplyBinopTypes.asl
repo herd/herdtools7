@@ -33,5 +33,8 @@ begin
   var - : real = 5.5 ^ 7;
   var real_pow_int : real = 5.0 ^ (5 as integer{0..10});
 
+  // String concatenation first converts literals to their string representation.
+  var - : string = 0 :: '1' :: 2.0 :: TRUE :: "foo" :: RED;
+
   return 0;
 end;
