@@ -84,7 +84,7 @@ let pp_binop : binop -> string = function
   | `SHL -> "SHL"
   | `SHR -> "SHR"
   | `POW -> "POW"
-  | `BV_CONCAT -> "BV_CONCAT"
+  | `CONCAT -> "CONCAT"
 
 let pp_unop = function BNOT -> "BNOT" | NOT -> "NOT" | NEG -> "NEG"
 

@@ -345,7 +345,7 @@ module Make (C : Config) = struct
       | `PLUS -> M.op Op.Add
       | `SHL -> M.op Op.ShiftLeft
       | `SHR -> M.op Op.ShiftRight
-      | `BV_CONCAT -> concat
+      | `CONCAT -> concat
       | (`POW | `IMPL | `RDIV) as op ->
           Warn.fatal "ASL operation %s not yet implement in ASLSem."
             (Asllib.PP.binop_to_string op)

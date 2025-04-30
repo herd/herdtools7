@@ -632,7 +632,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | `BAND | `BOR | `IMPL -> true
     | `AND | `BEQ | `DIV | `DIVRM | `XOR | `EQ_OP | `GT | `GEQ | `LT | `LEQ
     | `MOD | `MINUS | `MUL | `NEQ | `OR | `PLUS | `POW | `RDIV | `SHL | `SHR
-    | `BV_CONCAT ->
+    | `CONCAT ->
         false
 
   (* Begin TypeOfArrayLength *)
@@ -658,8 +658,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | (`AND | `OR | `XOR | `PLUS | `MINUS), (T_Bits (w1, _), T_Bits (w2, _))
       when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
         T_Bits (w1, []) |> here
-    | `BV_CONCAT, (T_Bits (w1, _), T_Bits (w2, _)) ->
+    | `CONCAT, (T_Bits (w1, _), T_Bits (w2, _)) ->
         T_Bits (width_plus env w1 w2, []) |> here
+    | `CONCAT, _ ->
+        let+ () =
+          check_true (Types.is_singular env t1) @@ fun () ->
+          fatal_from ~loc (Error.ExpectedSingularType t1)
+        in
+        let+ () =
+          check_true (Types.is_singular env t2) @@ fun () ->
+          fatal_from ~loc (Error.ExpectedSingularType t2)
+        in
+        T_String |> here
     | (`PLUS | `MINUS), (T_Bits (w, _), T_Int _) -> T_Bits (w, []) |> here
     | (`LEQ | `GEQ | `GT | `LT), (T_Int _, T_Int _ | T_Real, T_Real)
     | ( (`EQ_OP | `NEQ),
