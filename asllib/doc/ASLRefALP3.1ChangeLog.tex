@@ -71,4 +71,89 @@ The following keywords are no longer reserved:
 \texttt{ztype}.
 
 The following words have been added as reserved keywords:
-\texttt{pure}, \texttt{readonly}.
+\texttt{pure}, \texttt{readonly}, \texttt{collection}.
+
+\subsection{ASL-758: support for string concatenation}
+The binary \texttt{::} operator is overloaded to handle both bit vector and string concatenation.
+For string concatenation, its operands are converted to strings (as in printing, $\literaltostring$) and the resulting strings are concatenated.
+
+\subsection{ASL-791: typechecking of \texttt{impdef} subprograms}
+Subprograms marked \texttt{impdef} that have been overridden by a corresponding \texttt{implementation} subprogram are now typechecked, and not simply discarded.
+See \secref{Overriding}.
+
+\subsection{ASL-792: discarding local/global storage elements}
+The ASL grammar now forbids discarding of global storage elements.
+Local storage element declarations must bind at least one name (see \RequirementRef{DiscardingLocalStorageDeclarations}).
+For example:
+\begin{lstlisting}
+var - = ...;           // ERROR
+let - = ...;           // ERROR
+constant - = ...;      // ERROR
+config - = ...;        // ERROR
+
+func foo()
+begin
+  var - = ...;         // ERROR
+  let - = ...;         // ERROR
+  constant - = ...;    // ERROR
+  let (-, -, -) = ...; // ERROR
+
+  - = ...;             // OK - not a storage declaration
+end;
+\end{lstlisting}
+
+\subsection{ASL-797: use of \texttt{elsif}}
+The keyword \texttt{elsif} is no longer valid in expressions.
+It can still be used for statements.
+
+\subsection{ASL-800: mask syntax}
+The two forms of ``don't care'' characters (\texttt{x} and parentheses) can now be mixed.
+For example:
+\begin{lstlisting}
+  '01000111 1 xxxx (0)(0)(0)'
+\end{lstlisting}
+
+\subsection{ASL-805: base values of bit vectors}
+Base values of bit vectors previously required statically known bit widths.
+This has been relaxed: the base value of a bit vector of type \texttt{bits(e)} can always be recovered as \texttt{0[:e]}.
+
+\subsection{ASL-808: standard library additions}
+\texttt{IsAlignedSize()} and \texttt{IsAlignedP2()} have been added to the standard library.
+Each function has both integer- and bit vector-flavoured versions.
+
+\subsection{ASL-819: updates to paired accessor syntax}
+Paired accessor syntax has been updated to reduce usage of the keyword \texttt{begin}, and to move the declaration of the additional argument of the setter to the top-level.
+The new syntax looks as follows:
+\begin{lstlisting}
+accessor Name{params}(args) <=> value_in: return_type
+begin
+  getter
+    ... // getter implementation
+  end;
+
+  setter
+    ... // setter implementation
+  end;
+end;
+\end{lstlisting}
+
+\subsection{ASL-821: syntax for empty records/exceptions/collections}
+Empty records/exceptions/collections are now declared and constructed with \texttt{RecordName\{-\}}, rather than \texttt{RecordName\{\}}.
+Note that for declarations, the braces can still be omitted entirely.
+This permits parameter elision to use any of the following equivalent syntaxes for a function with no arguments:
+\begin{lstlisting}
+  let x: bits(64) = Zeros{};     // NEW
+  let x: bits(64) = Zeros{}();
+  let x: bits(64) = Zeros{64};
+  let x: bits(64) = Zeros{64}();
+\end{lstlisting}
+
+\subsection{ASL-822: signatures for \texttt{UInt} and \texttt{SInt}}
+The signatures are now as follows:
+\begin{lstlisting}
+  func UInt{N} (x: bits(N)) => integer{0..2^N-1}
+  func SInt{N} (x: bits(N))
+    => integer{(if N == 0 then 0 else -(2^(N-1))) .. (if N == 0 then 0 else 2^(N-1)-1)}
+\end{lstlisting}
+
+The constraints are also removed from the signatures of \texttt{AlignDownSize} and \texttt{AlignUpSize}.
