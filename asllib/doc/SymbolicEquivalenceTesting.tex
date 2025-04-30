@@ -1784,31 +1784,72 @@ The function
 conservatively tests whether the slice $\sliceone$ is equivalent to the slice $\slicetwo$
 in environment $\tenv$ and yields the result in $\vb$. \ProseOtherwiseTypeError
 
-This function assumes both $\sliceone$ and $\slicetwo$ are \typedast{} nodes,
-which means that they have the form $\SliceLength(\ \cdot\ ,\ \cdot\ )$.
+This function operates both on \typedast{} nodes, where both slices are only
+of the form $\SliceLength(\ \cdot\ ,\ \cdot\ )$, as well as \untypedast{} nodes where all slice forms
+are possible. The latter is used during checking overriding subprograms (\secref{Overriding}).
 
 \ExampleDef{Equivalent Slices}
 The specification in \listingref{SliceEqual} shows examples of equivalent slices.
 \ASLListing{Equivalent slices}{SliceEqual}{\typingtests/TypingRule.SliceEqual.asl}
 
+In \listingref{overriding}, the slice for the bitfield \verb|lsb| in both the \texttt{impdef} version
+of \verb|Foo| and the overridden version of \verb|Foo| are equivalent.
+
 \ProseParagraph
-\AllApply
+\OneApplies
 \begin{itemize}
-  \item $\sliceone$ is a slice for a range of positions, given by the start expression $\veoneone$ and length expression $\veonetwo$, that is, $\SliceLength(\veoneone, \veonetwo)$;
-  \item $\slicetwo$ is a slice for a range of positions, given by the start expression $\vetwoone$ and length expression $\vetwotwo$, that is, $\SliceLength(\vetwoone, \vetwotwo)$;
-  \item testing $\veoneone$ and $\vetwoone$ for equivalence yields $\vbone$\ProseOrTypeError;
-  \item testing $\veonetwo$ and $\vetwotwo$ for equivalence yields $\vbtwo$\ProseOrTypeError;
-  \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
+  \item \AllApplyCase{single\_expr}
+  \begin{itemize}
+    \item $\sliceone$ is a slice for the single expression $\veone$, that is, $\SliceSingle(\veone)$;
+    \item $\slicetwo$ is a slice for the single expression $\vetwo$, that is, $\SliceSingle(\vetwo)$;
+    \item testing $\veone$ and $\vetwo$ for equivalence yields $\vb$\ProseOrTypeError;
+  \end{itemize}
+
+  \item \AllApplyCase{two\_exprs}
+  \begin{itemize}
+    \item $\sliceone$ is a slice consisting of the configuration domain $\vLone$ and two expressions $\veoneone$ and $\vetwoone$, that is, $\vLone(\veoneone, \vetwoone)$;
+    \item $\slicetwo$ is a slice consisting of the configuration domain $\vLtwo$ and two expressions $\veonetwo$ and $\vetwotwo$, that is, $\vLtwo(\veonetwo, \vetwotwo)$;
+    \item $\vLone$ is equal to $\vLtwo$;
+    \item testing $\veoneone$ and $\vetwoone$ for equivalence yields $\vbone$\ProseOrTypeError;
+    \item testing $\veonetwo$ and $\vetwotwo$ for equivalence yields $\vbtwo$\ProseOrTypeError;
+    \item \Proseeqdef{$\vb$}{$\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$}.
+  \end{itemize}
+
+  \item \AllApplyCase{different\_labels}
+  \begin{itemize}
+    \item $\sliceone$ is a slice consisting of the configuration domain $\vLone$;
+    \item $\slicetwo$ is a slice consisting of the configuration domain $\vLtwo$;
+    \item $\vLone$ is different to $\vLtwo$;
+    \item \Proseeqdef{$\vb$}{$\False$}.
+  \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule{
-  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
+\inferrule[single\_expr]{
+  \exprequal(\tenv, \veone, \vetwo) \typearrow \vb \OrTypeError
+}{
+  \slicesequal(\tenv, \overname{\SliceSingle(\veone)}{\sliceone}, \overname{\SliceSingle(\vetwo)}{\slicetwo}) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[two\_exprs]{
+  \vLone, \vLtwo \in \{\SliceLength, \SliceRange, \SliceStar\}\\
+  \vLone = \vLtwo\\
+  \exprequal(\tenv, \veoneone, \veonetwo) \typearrow \vbone \OrTypeError\\\\
   \exprequal(\tenv, \vetwoone, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
-  \slicesequal(\tenv, \overname{\SliceLength(\veoneone, \veonetwo)}{\sliceone}, \overname{\SliceLength(\vetwoone, \vetwotwo)}{\slicetwo}) \typearrow \vb
+  \slicesequal(\tenv, \overname{\vLone(\veoneone, \vetwoone)}{\sliceone}, \overname{\vLtwo(\veonetwo, \vetwotwo)}{\slicetwo}) \typearrow \vb
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[different\_labels]{
+  \configdomain{\sliceone} \neq \configdomain{\slicetwo}
+}{
+  \slicesequal(\tenv, \sliceone, \slicetwo) \typearrow \overname{\False}{\vb}
 }
 \end{mathpar}
 
