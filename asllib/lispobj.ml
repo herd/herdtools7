@@ -38,6 +38,16 @@ let quote = Symbol("COMMON-LISP", "QUOTE")
 let zero = Num(Q.zero, Q.zero)
 let one = Num(Q.one, Q.zero)
 
+let rec equal x y =
+  match (x, y) with
+  | (Num(rx, ix), Num(ry, iy)) -> (Q.(=) rx ry) && (Q.(=) ix iy)
+  | (String sx, String sy) -> String.equal sx sy
+  | (Symbol(px, nx), Symbol(py, ny)) -> (String.equal nx ny) && (String.equal px py)
+  | (Char cx, Char cy) -> Char.equal cx cy
+  | (Cons(carx,cdrx), Cons(cary,cdry)) -> (equal carx cary) && (equal cdrx cdry)
+  | (Comment(sx, ox), Comment(sy, oy)) -> (String.equal sx sy) && (equal ox oy)
+  | _ -> false
+
 module type PrinterConf = sig
   val defaultpkg : string
   val downcase : bool
@@ -69,18 +79,18 @@ module MakePrinter (Conf:PrinterConf) = struct
     | String s -> fprintf f "\"%s\"" (escape_backslashes_and_quotes s)
     | Symbol (pkg, name) ->
        (* BOZO neither packages nor escaping are handled correctly *)
-       if pkg = "KEYWORD" then
+       if (String.equal pkg "KEYWORD") then
          fprintf f ":%s" (symbol_part_str name)
-       else if (pkg = defaultpkg || pkg = "COMMON-LISP" ) then
+       else if (String.equal pkg defaultpkg) || (String.equal pkg "COMMON-LISP") then
          fprintf f "%s" (symbol_part_str name)
        else
          fprintf f "%s::%s" (symbol_part_str pkg) (symbol_part_str name)
     | Char c -> fprintf f "#\\%s" (Char.escaped(c))
     | Cons (car, cdr) ->
-       if (car = quote) then
+       if (equal car quote) then
          match cdr with
          | Cons (cadr, cddr) ->
-            if (cddr = nil) then
+            if (equal cddr nil) then
               fprintf f "'%a" pp_obj cadr
             else 
               pp_obj_as_list f x
@@ -96,7 +106,7 @@ module MakePrinter (Conf:PrinterConf) = struct
   and pp_list f x =
     match x with
     | Cons (car, cdr) ->
-       if cdr = nil then
+       if (equal cdr nil) then
          pp_obj f car
        else
          fprintf f "%a@ %a" pp_obj car pp_list cdr
@@ -113,36 +123,39 @@ let print_obj ?(pkg="ACL2") f x =
   P.pp_obj f x
 
 
-let foo = Symbol("ACL2","FOO")
-let bar = Symbol("ACL2","BAR") 
+(*
 
-let rec make_sexpr n =
-  if n <= 0 then
-    match Random.int(8) with
-    | 0 -> bar
-    | 1 -> t
-    | 2 -> zero
-    | 3 -> one
-    | 4 -> foo
-    | _ -> nil
-  else
-    match Random.int(6) with
-    | 0 ->
-       Comment("hello this is a single-line comment", make_sexpr (n - Random.int(n+4)))
-    | 1 ->
-       Comment("hello this is a multi\n-line comment", make_sexpr (n - Random.int(n+4)))
-    | _ ->
-       Cons(make_sexpr (n - Random.int(n+4)),
-            make_sexpr (n - Random.int(n+4)))
+  let foo = Symbol("ACL2","FOO")
+  let bar = Symbol("ACL2","BAR") 
+  
+  let rec make_sexpr n =
+    if n <= 0 then
+      match Random.int(8) with
+      | 0 -> bar
+      | 1 -> t
+      | 2 -> zero
+      | 3 -> one
+      | 4 -> foo
+      | _ -> nil
+    else
+      match Random.int(6) with
+      | 0 ->
+         Comment("hello this is a single-line comment", make_sexpr (n - Random.int(n+4)))
+      | 1 ->
+         Comment("hello this is a multi\n-line comment", make_sexpr (n - Random.int(n+4)))
+      | _ ->
+         Cons(make_sexpr (n - Random.int(n+4)),
+              make_sexpr (n - Random.int(n+4)))
 
-
-(* let obj =
+  let obj =
    let obj = make_sexpr 100 in
    print_obj Format.std_formatter obj; obj
    
    let obj =
    let obj = make_sexpr 20 in
-   let _ = print_obj Format.std_formatter obj in obj *)
+   let _ = print_obj Format.std_formatter obj in obj
+   
+ *)
 
 
 open AST
