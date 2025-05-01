@@ -335,6 +335,7 @@ combine
 combined
 combines
 come
+comes
 commas
 comment
 commented
@@ -831,6 +832,7 @@ formals
 formed
 forms
 formula
+formulae
 found
 four
 fraction
@@ -1257,6 +1259,7 @@ none
 nonempty
 nor
 normal
+normalize
 normalized
 normalizing
 normally

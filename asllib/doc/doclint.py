@@ -511,8 +511,7 @@ def check_rules(filename: str) -> int:
     file_to_num_expected_errors = {
         "RelationsOnTypes.tex" : 15,
         "SubprogramCalls.tex" : 1,
-        "SymbolicEquivalenceTesting.tex" : 19,
-        "SymbolicSubsumptionTesting.tex" : 23,
+        "SymbolicSubsumptionTesting.tex" : 19,
         "TypeSystemUtilities.tex" : 23,
         "SemanticsUtilities.tex" : 19,
     }
