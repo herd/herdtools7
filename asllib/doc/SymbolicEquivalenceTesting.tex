@@ -212,6 +212,11 @@ yielding an expression $\newe$.
 \hypertarget{def-normalizedterm}{}
 We refer to an expression in the image of $\normalize$ as a \emph{\normalizedexpressionterm}.
 
+\ExampleDef{Normalize}
+The specification in \listingref{Normalize} shows examples of expressions (on the right-hand-sides of assignments and declarations)
+and their corresponding normalized expressions.
+\ASLListing{Normalizing expressions}{Normalize}{\typingtests/TypingRule.Normalize.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -258,6 +263,11 @@ The function
 \]
 \symbolicallysimplifies\ an integer constraint $\vc$, yielding the integer constraint $\newc$
 
+\ExampleDef{Symbolically Simplifying Constraints}
+The specification in \listingref{ReduceConstraint} shows examples of constraints
+and their simplified counterparts.
+\ASLListing{Symbolically simplifying constraints}{ReduceConstraint}{\typingtests/TypingRule.ReduceConstraint.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -277,8 +287,6 @@ The function
   \end{itemize}
 \end{itemize}
 
-\CodeSubsection{\ReduceConstraintBegin}{\ReduceConstraintEnd}{../StaticOperations.ml}
-
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[exact]{
@@ -296,6 +304,7 @@ The function
   \reduceconstraint(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
 }
 \end{mathpar}
+\CodeSubsection{\ReduceConstraintBegin}{\ReduceConstraintEnd}{../StaticOperations.ml}
 
 \TypingRuleDef{ReduceConstraints}
 \hypertarget{def-reduceconstraints}{}
@@ -309,6 +318,8 @@ The function
 \]
 \symbolicallysimplifies\ a list of integer constraints $\cs$, yielding a list of integer constraints $\newcs$
 
+See \ExampleRef{Symbolically Simplifying Constraints}.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -316,8 +327,6 @@ The function
         $\listrange(\cs)$ yields $\vc_\vi$;
   \item define $\newcs$ as the list containing $\vc_\vi$ for every $\vi$ in $\listrange(\cs)$.
 \end{itemize}
-
-\CodeSubsection{\ReduceConstraintsBegin}{\ReduceConstraintsEnd}{../StaticOperations.ml}
 
 \FormallyParagraph
 \begin{mathpar}
@@ -328,6 +337,7 @@ The function
   \reduceconstraints(\tenv, \cs) \typearrow \newcs
 }
 \end{mathpar}
+\CodeSubsection{\ReduceConstraintsBegin}{\ReduceConstraintsEnd}{../StaticOperations.ml}
 
 \TypingRuleDef{ToIR}
 \hypertarget{def-toir}{}
@@ -339,6 +349,11 @@ The function
 transforms a subset of ASL expressions into symbolic expressions. If an ASL expression cannot be represented
 by a symbolic expression (because, for example, it contains operations that are not available in symbolic expressions),
 the special value $\CannotBeTransformed$ is returned.
+
+\ExampleDef{Transforming Expressions into Symbolic Expressions}
+The specification in \listingref{ToIR} shows examples of expressions (on the right-hand-sides of assignments and declarations)
+and their corresponding symbolic representations (in comments, as ASL expressions).
+\ASLListing{Transforming expressions into symbolic expressions}{ToIR}{\typingtests/TypingRule.ToIR.asl}
 
 \ProseParagraph
 Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expression corresponds to a polynomial.
@@ -357,13 +372,11 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
     \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 
-  \item \AllApplyCase{evar\_int\_constant}
+  \item \AllApplyCase{evar\_constant}
   \begin{itemize}
     \item $\ve$ is a variable expression with identifier $\vs$, that is, $\EVar(\vs)$;
     \item looking up the constant associated with $\vs$ in $\tenv$ via $\lookupconstant$ yields the literal expression for $\vv$, that is, $\ELiteral(\vv)$;
-    \item checking whether $\vv$ is an integer literal yields $\True$\ProseOrTypeError;
-    \item $\vv$ is an integer literal for $\vi$;
-    \item $\vp$ is the symbolic expression for $\vi$, that is, $\{ \emptyfunc\mapsto \vi \}$.
+    \item \Proseeqdef{$\vp$}{$\{ \emptyfunc\mapsto \vi \}$ if $\vv$ is an integer literal for $\vi$ and $\CannotBeTransformed$, otherwise}.
   \end{itemize}
 
   \item \AllApplyCase{evar\_immutable\_expr}
@@ -383,20 +396,31 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
           $\lookupimmutableexpr$ yields $\bot$;
     \item determining the type of $\vs$ yields $\vt$\ProseOrTypeError;
     \item the \underlyingtype\ of $\vt$ is $\ttyone$\ProseOrTypeError;
-    \item checking whether $\ttyone$ is an integer type yields $\True$\ProseOrTypeError;
+    \item $\ttyone$ is an integer type;
     \item $\ttyone$ is a well-constrained integer with the exact constraint $\ve$, that is, \\ $\TInt(\wellconstrained([\ConstraintExact(\ve)]))$;
     \item converting $\ve$ to a symbolic expression yields $\vp$\ProseTerminateAs{\CannotBeTransformed}.
   \end{itemize}
 
-  \item \AllApplyCase{int\_var}
+  \item \AllApplyCase{evar\_int}
   \begin{itemize}
     \item $\ve$ is a variable expression with identifier $\vs$, that is, $\EVar(\vs)$;
     \item looking up the constant associated with $\vs$ in $\tenv$ yields $\bot$;
     \item determining the type of $\vs$ yields $\vt$\ProseOrTypeError;
     \item the \underlyingtype\ of $\vt$ is $\ttyone$\ProseOrTypeError;
-    \item checking whether $\ttyone$ is an integer type yields $\True$\ProseOrTypeError;
+    \item $\ttyone$ is an integer type;
     \item $\ttyone$ is not a well-constrained integer with a single exact constraint;
     \item $\vp$ is the symbolic expression for the variable $\vs$, that is, $\{ \{\vs\mapsto 1\}\mapsto 1 \}$.
+  \end{itemize}
+
+  \item \AllApplyCase{evar\_non\_int}
+  \begin{itemize}
+    \item $\ve$ is a variable expression with identifier $\vs$, that is, $\EVar(\vs)$;
+    \item applying $\lookupimmutableexpr$ to $\tenv$ and $\vs$ yields $\bot$;
+    \item looking up the constant associated with $\vs$ in $\tenv$ yields $\bot$;
+    \item determining the type of $\vs$ yields $\vt$\ProseOrTypeError;
+    \item the \underlyingtype\ of $\vt$ is $\ttyone$\ProseOrTypeError;
+    \item $\ttyone$ is not an integer type;
+    \item the result is $\CannotBeTransformed$.
   \end{itemize}
 
   \item \AllApplyCase{ebinop\_plus}
@@ -565,18 +589,17 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[evar\_int\_constant]{
+\inferrule[evar\_constant]{
   \lookupconstant(\tenv, \vs) \typearrow \ELiteral(\vv)\\
-  \checktrans{\astlabel(\vv) = \lint}{ExpectedIntegerLiteral} \typearrow \True \OrTypeError\\\\
-  \vv \eqname \lint(\vi)
+  \vp \eqdef \choice{\vv = \lint(\vi)}{\{ \emptyfunc\mapsto \vi \}}{\CannotBeTransformed}
 }{
-  \toir(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \overname{\{ \emptyfunc\mapsto \vi \}}{\vp}
+  \toir(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \vp
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[evar\_immutable\_expr]{
-  \lookupconstant(\tenv, \vs) \typearrow \CannotBeTransformed\\
+  \lookupconstant(\tenv, \vs) \typearrow \bot\\
   \lookupimmutableexpr(\tenv, \vs) \typearrow \vep\\
   \toir(\vep) \typearrow \vp
 }{
@@ -586,11 +609,11 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
 \begin{mathpar}
 \inferrule[evar\_exact\_constraint]{
-  \lookupconstant(\tenv, \vs) \typearrow \CannotBeTransformed\\
+  \lookupconstant(\tenv, \vs) \typearrow \bot\\
   \lookupimmutableexpr(\tenv, \vs) \typearrow \bot\\
   \typeof(\vs) \typearrow \vt \OrTypeError\\\\
   \makeanonymous(\vt) \typearrow \ttyone \OrTypeError\\\\
-  \checktrans{\astlabel(\ttyone) = \TInt}{ExpectedIntegerType} \typearrow \True \OrTypeError\\\\
+  \astlabel(\ttyone) = \TInt\\
   \ttyone = \TInt(\wellconstrained([\ConstraintExact(\ve)]))\\
   \toir(\ve) \typearrow \vp \terminateas \CannotBeTransformed
 }{
@@ -599,15 +622,27 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[int\_var]{
-  \lookupconstant(\tenv, \vs) \typearrow \CannotBeTransformed\\
+\inferrule[evar\_int]{
+  \lookupconstant(\tenv, \vs) \typearrow \bot\\
   \lookupimmutableexpr(\tenv, \vs) \typearrow \bot\\
   \typeof(\vs) \typearrow \vt\\
   \makeanonymous(\vt) \typearrow \ttyone\\
-  \checktrans{\astlabel(\ttyone) = \TInt}{ExpectedIntegerType} \typearrow \True\\
+  \astlabel(\ttyone) = \TInt\\
   \ttyone \neq \TInt(\wellconstrained([\ConstraintExact(\Ignore)]))
 }{
   \toir(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \overname{\{ \{\vs\mapsto 1\}\mapsto 1 \}}{\vp}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[evar\_non\_int]{
+  \lookupconstant(\tenv, \vs) \typearrow \bot\\
+  \lookupimmutableexpr(\tenv, \vs) \typearrow \bot\\
+  \typeof(\vs) \typearrow \vt\\
+  \makeanonymous(\vt) \typearrow \ttyone\\
+  \astlabel(\ttyone) \neq \TInt
+}{
+  \toir(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \CannotBeTransformed
 }
 \end{mathpar}
 
@@ -784,6 +819,11 @@ The function
 conservatively checks whether the expression $\veone$ is equivalent to the expression $\vetwo$ in environment $\tenv$.
 The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
 
+\ExampleDef{Expression Equivalence}
+The specification in \listingref{ExprEqual} is well-typed as the expressions
+comprising the array lengths are equivalent, as details in comments.
+\ASLListing{Equivalent expressions}{ExprEqual}{\typingtests/TypingRule.ExprEqual.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -827,6 +867,8 @@ conservatively tests whether the expression $\veone$ is equivalent to the expres
 by attempting to transform both expressions to their symbolic expression form
 and, if successful, comparing the resulting normal forms for equality.
 The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
+
+See \ExampleRef{Expression Equivalence}.
 
 \ProseParagraph
 \OneApplies
@@ -885,6 +927,8 @@ The helper function
 specializes the equivalence test for expressions $\veone$ and $\vetwo$ in $\tenv$
 for the different types of expressions.
 The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
+
+See \ExampleRef{Expression Equivalence}.
 
 \ProseParagraph
 \OneApplies
@@ -1274,6 +1318,13 @@ The function
 conservatively tests whether the type $\vtone$ is equivalent to the type $\vttwo$ in environment $\tenv$
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
+\ExampleDef{Equivalent Types}
+The specification in \listingref{TypeEqual} is well-typed.
+Specifically, the types of the arguments for the \verb|impdef| declaration
+of \verb|Foo| match types of the corresponding arguments for the overridden declaration
+of \verb|Foo|.
+\ASLListing{Equivalent Types}{TypeEqual}{\typingtests/TypingRule.TypeEqual.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1502,6 +1553,18 @@ The function
 conservatively tests whether the list of bitfields $\bfone$ is equivalent to the list of bitfields $\bftwo$
 in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
+\ExampleDef{Equivalent Lists of Bitfields}
+
+The specification in \listingref{BitFieldsEqual} is well-typed.
+Specifically, the lists of bitfields for the \verb|bv| argument in both signatures
+of \verb|Foo| are equivalent.
+\ASLListing{Equivalent lists of bitfields}{BitFieldsEqual}{\typingtests/TypingRule.BitFieldsEqual.asl}
+
+The specification in \listingref{BitFieldsEqual} is ill-typed,
+the lists of bitfields for the \verb|bv| argument in both signatures
+of \verb|Foo| are not equivalent.
+\ASLListing{Non-equivalent lists of bitfields}{BitFieldsEqual-bad}{\typingtests/TypingRule.BitFieldsEqual.bad.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1546,6 +1609,19 @@ The function
 \]
 conservatively tests whether the bitfield $\bfone$ is equivalent to the bitfield $\bftwo$ in environment $\tenv$
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
+
+\ExampleDef{Bitfield Equivalence}
+In \listingref{BitFieldEqual}, the bitfields of the \bitvectortypesterm{} on the left-hand-side
+of assignments and the bitfields of the same name in the \bitvectortypesterm{} on the right-hand-side
+of the same assignment are equivalent.
+\ASLListing{Equivalent bitfields}{BitFieldEqual}{\typingtests/TypingRule.BitFieldEqual.asl}
+
+The specifications in \listingref{BitFieldEqual-bad1} and \listingref{BitFieldEqual-bad2}
+show cases where the \verb|data| bitfields of the \bitvectortypesterm{} on the two sides
+of an assignment are not equivalent. This is due to either having different slices
+or different nested bitfields.
+\ASLListing{Bitfields with differing slices}{BitFieldEqual-bad1}{\typingtests/TypingRule.BitFieldEqual.bad1.asl}
+\ASLListing{Bitfields with differing nested bitfields}{BitFieldEqual-bad2}{\typingtests/TypingRule.BitFieldEqual.bad2.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1640,6 +1716,19 @@ The function
 conservatively tests whether the constraint list $\csone$ is equivalent to the constraint list $\cstwo$ in environment $\tenv$
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
+\ExampleDef{Equivalent Lists of Constraints}
+The specification in \listingref{ConstraintsEqual}
+shows two lists of constraints --- the ones used to type \verb|x| and the ones used to type \verb|y|.
+The expression \verb|x as integer{w..2 * w + z, w + w + w}|
+compares the list \verb|3 * w, w..w + z + w| to the list \verb|w..2 * w + z, w + w + w|.
+Since the corresponding constraints are determined to be equivalent,
+the expression is well-typed.
+The expression \verb|x as integer{w + w + w, w..2 * w + z}| on the other hand
+has the constraints in a different order, which means that the two lists of constraints
+are not considered equivalent. This is still considered well-typed (see \TypingRuleRef{CheckATC}),
+and the typing assertion will be checked dynamically (see \SemanticsRuleRef{ATC}).
+\ASLListing{Equivalent lists of constraints}{ConstraintsEqual}{\typingtests/TypingRule.ConstraintsEqual.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1670,6 +1759,12 @@ The function
 \]
 conservatively tests whether the constraint $\vcone$ is equivalent to the constraint $\vctwo$ in environment $\tenv$
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
+
+\ExampleDef{Equivalent Constraints}
+The specification in \listingref{ConstraintEqual} is well-typed,
+since each constraint on a right-hand-side of an assignment is equivalent to the
+corresponding constraint on the left-hand-side of that assignment.
+\ASLListing{Equivalent constraints}{ConstraintEqual}{\typingtests/TypingRule.ConstraintEqual.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1865,6 +1960,14 @@ The function
 tests whether the array lengths $\vlone$ and $\vltwo$ are equivalent and yields the result
 in $\vb$. \ProseOtherwiseTypeError
 
+\ExampleDef{Array Length Expression Equivalence}
+See \ExampleRef{Expression Equivalence} for examples of equivalent array length expressions.
+
+The specification in \listingref{ArrayLengthEqual-bad} is ill-typed since the array length
+expressions are of different kinds (\integertypeterm{} and \enumerationtypeterm),
+even though they both contain three elements each.
+\ASLListing{Non-equivalent array length expressions}{ArrayLengthEqual-bad}{\typingtests/TypingRule.ArrayLengthEqual.bad.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1923,6 +2026,8 @@ The function
 \polynomialtoexpr(\overname{\polynomial}{\vp}) \typearrow \overname{\expr}{\ve}
 \]
 transforms a polynomial $\vp$ into the corresponding expression $\ve$.
+
+See \ExampleRef{Transforming Expressions into Symbolic Expressions}.
 
 \ProseParagraph
 \OneApplies
@@ -1984,6 +2089,12 @@ compares two monomial bindings given by $(\vmone, \vqone)$ and $(\vmtwo, \vqtwo)
 and yields in $\vs$ $-1$ to mean that the first monomial binding should be ordered before the second,
 $0$ to mean that any ordering of the monomial bindings is acceptable,
 and $1$ to mean that the second monomial binding should be ordered before the first.
+
+\ExampleDef{Comparing Monomial Bindings}
+Comparing $(\vx, -1)$ to $(\vx, -1)$ yields $0$.
+
+Comparing $(\vx, 1)$ to $(\vy, 1)$ yields $-1$ as $\vx$ comes before $\vy$ and $\vx$ is the
+first identifier for which the two monomials differ.
 
 \ProseParagraph
 \OneApplies
@@ -2051,6 +2162,12 @@ transforms a list consisting of pairs of unitary monomials and rational factors 
 into an expression $\ve$, which represents the absolute value of the sum of all the monomials,
 and a sign value $\vs$, which indicates the sign of the resulting sum.
 
+\ExampleDef{Transforming a List of Unitary Monomials}
+Transforming the list of unitary monomials whose formulae are given by
+$(\vx \times \vy^2, 2)$,
+$(\vx \times \vy^2, 3)$ and $(\vx \times \vy, -5)$
+yields the expression \verb|5 * x * y * y - 5 * x * y|.
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2096,6 +2213,28 @@ The function
 \]
 transforms an expression $\ve$ and rational $q$ into the expression $\newe$,
 which represents the absolute value of $\ve$ multiplied by $q$, and the sign of $q$ as $\vs$.
+
+\ExampleDef{Transforming Expressions and Rationals}
+The following are examples of inputs and outputs of $\monomialtoexpr$:
+\[
+\monomialtoexpr(\EVar(\vx), 0) \typearrow (\ELiteral(\lint(0)), 0)
+\]
+
+\[
+\monomialtoexpr(\EVar(\vx), 5) \typearrow (\AbbrevEBinop{*}{\ELInt{5}}{\AbbrevEVar{\vx}}, 1)
+\]
+
+\[
+\monomialtoexpr(\EVar(\vx), 9/12) \typearrow
+(\AbbrevEBinop{/}
+{ (\AbbrevEBinop{*}{\AbbrevEVar{\vx}}{3}) }
+{ \ELInt{4} }, 1)
+\]
+
+\[
+\monomialtoexpr(\EVar(\vx), -1) \typearrow (\EUnop(\NEG, \AbbrevEVar{\vx}), -1)
+\]
+
 
 \ProseParagraph
 \OneApplies
@@ -2271,6 +2410,12 @@ The function
 \]
 transforms a list of single-variable unitary monomials $\monoms$ into an expression $\ve$.
 Intuitively, $\monoms$ represented a multiplication of the single-variable unitary monomials.
+
+\ExampleDef{Transforming Unitary Monomials to Expressions}
+The specification in \listingref{UnitaryMonomialsToExpr}
+shows examples of unitary monomials (as right-hand-side of assignments)
+and the corresponding expressions, in comments.
+\ASLListing{Transforming unitary monomials to expressions}{UnitaryMonomialsToExpr}{\typingtests/TypingRule.UnitaryMonomialsToExpr.asl}
 
 \ProseParagraph
 \OneApplies
@@ -2496,6 +2641,8 @@ The helper function
 is similar to $\normalize$, except that it returns $\None$ when $\ve$ is not an
 expression that can be symbolically simplified.
 \ProseOtherwiseTypeError
+
+See \ExampleRef{Normalize}.
 
 \ProseParagraph
 \OneApplies

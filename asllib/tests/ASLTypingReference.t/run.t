@@ -884,3 +884,47 @@ ASL Typing Tests / annotating types:
   ASL Typing error: a subtype of boolean was expected, provided integer {1}.
   [1]
   $ aslref TypingRule.ApproxConstraint.asl
+  $ aslref TypingRule.BitFieldEqual.asl
+  $ aslref TypingRule.BitFieldEqual.bad1.asl
+  File TypingRule.BitFieldEqual.bad1.asl, line 4, characters 4 to 71:
+      var x : bits(64) { [1] data } = Zeros{64} as bits(64) { [2] data };
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Typing error: a subtype of bits (64) { [1+:1] data } was expected,
+    provided bits (64) { [2+:1] data }.
+  [1]
+  $ aslref TypingRule.BitFieldEqual.bad2.asl
+  File TypingRule.BitFieldEqual.bad2.asl, line 5, character 4 to line 6,
+    character 43:
+      var x : bits(64) { [16+:16] data { [0] lsb } } =  Zeros{64} as
+              bits(64) { [31:16] data {  } };
+  ASL Typing error: a subtype of bits (64) { [16+:16] data { [0+:1] lsb } }
+    was expected, provided bits (64) { [16+:16] data {  } }.
+  [1]
+  $ aslref --no-exec TypingRule.BitFieldsEqual.asl
+  $ aslref TypingRule.BitFieldsEqual.bad.asl
+  File TypingRule.BitFieldsEqual.bad.asl, line 6, characters 0 to 76:
+  implementation func Foo(bv : bits(64) { [1] msb, [0] lsb }) begin pass; end;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Typing error: no `impdef` for `implementation` function.
+  [1]
+  $ aslref --no-exec TypingRule.TypeEqual.asl
+  $ aslref TypingRule.ExprEqual.asl
+  $ aslref TypingRule.ArrayLengthEqual.bad.asl
+  File TypingRule.ArrayLengthEqual.bad.asl, line 9, characters 4 to 5:
+      x = y;
+      ^
+  ASL Typing error: a subtype of array [[3]] of integer was expected,
+    provided array [[Color]] of integer.
+  [1]
+  $ aslref TypingRule.ReduceConstraint.asl
+  File TypingRule.ReduceConstraint.asl, line 6, characters 4 to 65:
+      var x : integer{3 * w, 0..5 * z - z - 2 * z,  w + z} = w + z;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Typing error: a subtype of integer {0..(2 * z), (3 * w), (z + w)}
+    was expected, provided integer {0..2000}.
+  [1]
+  $ aslref TypingRule.ConstraintEqual.asl
+  $ aslref TypingRule.ConstraintsEqual.asl
+  $ aslref --no-exec TypingRule.ToIR.asl
+  $ aslref --no-exec TypingRule.Normalize.asl
+  $ aslref --no-exec TypingRule.UnitaryMonomialsToExpr.asl
