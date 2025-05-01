@@ -1,12 +1,12 @@
 type MyBV of bits(8) { [5] b1, [4] b2 };
 
-accessor F() <=> MyBV
+accessor F() <=> v: MyBV
 begin
-  getter begin
+  getter
     return Zeros{8} as MyBV;
   end;
 
-  setter = v begin
+  setter
     assert v[0] == '0';
   end;
 end;

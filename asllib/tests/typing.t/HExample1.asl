@@ -1,12 +1,12 @@
-accessor ReadMem{size}(address : integer, unknown : boolean) <=> bits(size*8)
+accessor ReadMem{size}(address : integer, unknown : boolean) <=> value_in: bits(size*8)
 begin
-    getter begin
+    getter
       var value : bits(size*8) = Zeros{}();
       value = Read{size}(address, unknown);
       return value;
     end;
 
-    setter = value_in begin
+    setter
       Unreachable();
     end;
 end;

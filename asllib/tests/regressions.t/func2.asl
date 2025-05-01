@@ -1,10 +1,10 @@
-accessor X(i:integer) <=> integer
+accessor X(i:integer) <=> v: integer
 begin
-  getter begin
+  getter
       return i;
   end;
 
-  setter = v begin
+  setter
       let internal_i = i;
       let internal_v = v;
   end;

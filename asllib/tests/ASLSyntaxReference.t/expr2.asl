@@ -1,21 +1,21 @@
-accessor g0_bits() <=> bits(4)
+accessor g0_bits() <=> value_in: bits(4)
 begin
-  getter begin
+  getter
     return '1000';
   end;
 
-  setter = value_in begin
+  setter
     Unreachable();
   end;
 end;
 
-accessor g1_bits(p: integer) <=> bits(4)
+accessor g1_bits(p: integer) <=> value_in: bits(4)
 begin
-  getter begin
+  getter
     return '1000'[p, 2:0];
   end;
 
-  setter = value_in begin
+  setter
     Unreachable();
   end;
 end;

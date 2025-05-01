@@ -63,15 +63,15 @@ end;
 var _R : array [[31]] of bits(64);
 
 
-accessor X{N}(regno: integer) <=> bits(N)
+accessor X{N}(regno: integer) <=> value: bits(N)
 begin
-  getter begin
+  getter
     assert N == 64;
     assert 0 <= regno && regno <= 31;
     return _R[[regno]][0+:N];
   end;
 
-  setter = value begin
+  setter
     assert N == 64;
     assert 0 <= regno && regno <= 31;
     _R[[regno]] = value as bits(64);

@@ -2,9 +2,9 @@
 var R : array [[32]] of bits(64);
 
 // Accessor, X
-accessor X(regno: integer{0..31}) <=> bits(64)
+accessor X(regno: integer{0..31}) <=> value: bits(64)
 begin
-  getter begin
+  getter
     if regno == 31 then
       return Zeros{64};
     else
@@ -12,7 +12,7 @@ begin
     end;
   end;
 
-  setter = value begin
+  setter
     if regno != 31 then
       R[[regno]] = value;
     end;

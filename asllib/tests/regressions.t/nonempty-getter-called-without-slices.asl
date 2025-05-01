@@ -1,10 +1,10 @@
-accessor f1() <=> integer
+accessor f1() <=> v: integer
 begin
-  getter begin
+  getter
     return 4;
   end;
 
-  setter = v begin
+  setter
     Unreachable();
   end;
 end;

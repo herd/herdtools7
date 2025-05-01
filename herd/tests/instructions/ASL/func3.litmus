@@ -3,25 +3,25 @@ ASL func3
 
 {}
 
-accessor f1() <=> integer
+accessor f1() <=> v: integer
 begin
-  getter begin
+  getter
     return 3;
   end;
 
-  setter = v begin
+  setter
     pass;
     // Hahaha, as if I was to do anything with the value
   end;
 end;
 
-accessor f2(x:integer) <=> integer
+accessor f2(x:integer) <=> v: integer
 begin
-  getter begin
+  getter
     return f1() + x;
   end;
 
-  setter = v begin
+  setter
     f1() = v + x;
   end;
 end;
@@ -29,24 +29,24 @@ end;
 var f3_storage: integer = -1;
 var f4_storage: integer = -1;
 
-accessor f3(x:integer) <=> integer
+accessor f3(x:integer) <=> v: integer
 begin
-  getter begin
+  getter
     return f3_storage;
   end;
 
-  setter = v begin
+  setter
     f3_storage = x;
   end;
 end;
 
-accessor f4(x:integer) <=> integer
+accessor f4(x:integer) <=> v: integer
 begin
-  getter begin
+  getter
     return f4_storage;
   end;
 
-  setter = v begin
+  setter
     f4_storage = v;
   end;
 end;
