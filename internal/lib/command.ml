@@ -93,14 +93,14 @@ let do_run must_succeed ?stdin:in_f ?stdout:out_f ?stderr:err_f bin args =
         bin (String.concat " " args) in
   let pid =
     Fun.protect
-      ~finally:(fun _ -> close_in_pipe () ; close_out_pipe () ; close_err_pipe ())
-      (fun _ ->
-        let pid = Unix.create_process bin (Array.of_list (bin :: args)) in_fd out_fd err_fd in
+      ~finally:(fun _ ->
         in_f () ;
+        close_in_pipe () ;
         out_f () ;
+        close_out_pipe () ;
         err_f () ;
-        pid
-      )
+        close_err_pipe ())
+      (fun _ -> Unix.create_process bin (Array.of_list (bin :: args)) in_fd out_fd err_fd)
   in
   let _, status = Unix.waitpid [] pid in
   match status with
