@@ -358,6 +358,9 @@ module Domain = struct
     (** The two possible types of approximations. *)
     type approx = Over | Under
 
+    let approx_to_string = function Over -> "over" | Under -> "under"
+    let _ = approx_to_string
+
     exception CannotOverApproximate
     (** Raised if over approximation is not possible. *)
 
@@ -376,12 +379,10 @@ module Domain = struct
       try Operations.unop_values loc Error.Static op (L_Int z) |> literal_to_z
       with ASLException { desc = UnsupportedUnop _ } -> None
 
-    let apply_binop loc op z1 z2 =
-      let open Error in
-      try
-        Operations.binop_values loc Static op (L_Int z1) (L_Int z2)
-        |> literal_to_z
-      with ASLException { desc = UnsupportedBinop _ } -> None
+    module SOp = StaticOperations.Make (struct
+      let fail () = assert false
+      let warn_from ~loc:_ _ = ()
+    end)
 
     (* Begin ApproxExpr *)
     let rec approx_expr approx env e =
@@ -395,10 +396,17 @@ module Domain = struct
       | E_Unop (op, e') ->
           IntSet.filter_map_individual (apply_unop e op)
             (approx_expr approx env e')
-      | E_Binop (op, e1, e2) ->
-          IntSet.cross_filter_map_individual (apply_binop e op)
-            (approx_expr approx env e1)
-            (approx_expr approx env e2)
+      | E_Binop ((#StaticOperations.int3_binop as op), e1, e2) -> (
+          let s1 = approx_expr approx env e1 |> int_set_to_int_constraints in
+          let s2 = approx_expr approx env e2 |> int_set_to_int_constraints in
+          let s, plf =
+            SOp.annotate_constraint_binop ~loc:ASTUtils.dummy_annotated env op
+              s1 s2
+          in
+          match (plf, approx) with
+          | Precision_Full, _ | Precision_Lost _, Under ->
+              approx_constraints approx env s
+          | Precision_Lost _, Over -> raise CannotOverApproximate)
       | E_Cond (_econd, e2, e3) -> (
           let s2 = approx_expr approx env e2
           and s3 = approx_expr approx env e3 in
