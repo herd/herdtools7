@@ -126,7 +126,7 @@
     ((:minus :v_bitvector :v_bitvector)
      :when (eql v1.len v2.len)    (ev_normal (v_bitvector* v1.len
                                                            (- v1.val v2.val))))
-    ((:bv_concat :v_bitvector :v_bitvector)
+    ((:concat :v_bitvector :v_bitvector)
                                   (ev_normal (v_bitvector (+ v1.len v2.len)
                                                           ;; FIXME check order?
                                                           (logapp v2.len v2.val v1.val))))

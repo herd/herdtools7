@@ -75,7 +75,7 @@
    :rdiv
    :shl 
    :shr 
-   :bv_concat))
+   :concat))
 
 (deftagsum literal
   (:l_int ((val integerp :rule-classes :type-prescription)))
