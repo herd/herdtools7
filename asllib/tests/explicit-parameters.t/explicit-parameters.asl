@@ -44,18 +44,18 @@ end;
 // We do not need to provide () at a call site if we have explicit parameters
 func elide_empty_argument_list()
 begin
-  let - = Foo{64}();
-  let - = Foo{64};
+  - = Foo{64}();
+  - = Foo{64};
   // This can combine with eliding parameters, but only as follows:
-  let - : bits(64) = Foo{}();
+  let x : bits(64) = Foo{}();
 end;
 
 
 // We can elide parameters on right-hand sides
 func elide_parameters()
 begin
-  let - : bits(4) = Foo{}();
-  let - : bits(4) = Bar{,3}('111');
+  let x : bits(4) = Foo{}();
+  let y : bits(4) = Bar{,3}('111');
 end;
 
 
@@ -80,8 +80,8 @@ end;
 
 func good()
 begin
-  let - = X{64}(0);
-  let - : bits(64) = X{}(1);
+  let x = X{64}(0);
+  let y : bits(64) = X{}(1);
 
   X{64}(2) = Zeros{64};
 end;
@@ -92,67 +92,67 @@ end;
 func omit_lone_parameter_single_arity()
 begin
   // Explicit versions:
-  let - = UInt{2}('11');
-  let - = SInt{2}('11');
-  let - = Len{2}('11');
-  let - = BitCount{2}('11');
-  let - = LowestSetBit{2}('11');
-  let - = HighestSetBit{2}('11');
-  let - = IsZero{2}('11');
-  let - = IsOnes{2}('11');
-  let - = CountLeadingZeroBits{2}('11');
-  let - = CountLeadingSignBits{2}('11');
+  - = UInt{2}('11');
+  - = SInt{2}('11');
+  - = Len{2}('11');
+  - = BitCount{2}('11');
+  - = LowestSetBit{2}('11');
+  - = HighestSetBit{2}('11');
+  - = IsZero{2}('11');
+  - = IsOnes{2}('11');
+  - = CountLeadingZeroBits{2}('11');
+  - = CountLeadingSignBits{2}('11');
 
   // Equivalent to:
-  let - = UInt('11');
-  let - = SInt('11');
-  let - = Len('11');
-  let - = BitCount('11');
-  let - = LowestSetBit('11');
-  let - = HighestSetBit('11');
-  let - = IsZero('11');
-  let - = IsOnes('11');
-  let - = CountLeadingZeroBits('11');
-  let - = CountLeadingSignBits('11');
+  - = UInt('11');
+  - = SInt('11');
+  - = Len('11');
+  - = BitCount('11');
+  - = LowestSetBit('11');
+  - = HighestSetBit('11');
+  - = IsZero('11');
+  - = IsOnes('11');
+  - = CountLeadingZeroBits('11');
+  - = CountLeadingSignBits('11');
 end;
 
 func omit_lone_parameter_two_arity()
 begin
   // Explicit versions:
-  let - = AlignDown{3}('111', 1);
-  let - = AlignUp{3}('111', 1);
-  let - = LSL{3}('111', 1);
-  let - = LSL_C{3}('111', 1);
-  let - = LSR{3}('111', 1);
-  let - = LSR_C{3}('111', 1);
-  let - = ASR{3}('111', 1);
-  let - = ASR_C{3}('111', 1);
-  let - = ROR{3}('111', 1);
-  let - = ROR_C{3}('111', 1);
+  - = AlignDown{3}('111', 1);
+  - = AlignUp{3}('111', 1);
+  - = LSL{3}('111', 1);
+  - = LSL_C{3}('111', 1);
+  - = LSR{3}('111', 1);
+  - = LSR_C{3}('111', 1);
+  - = ASR{3}('111', 1);
+  - = ASR_C{3}('111', 1);
+  - = ROR{3}('111', 1);
+  - = ROR_C{3}('111', 1);
 
   // Equivalent to:
-  let - = AlignDown('111', 1);
-  let - = AlignUp('111', 1);
-  let - = LSL('111', 1);
-  let - = LSL_C('111', 1);
-  let - = LSR('111', 1);
-  let - = LSR_C('111', 1);
-  let - = ASR('111', 1);
-  let - = ASR_C('111', 1);
-  let - = ROR('111', 1);
-  let - = ROR_C('111', 1);
+  - = AlignDown('111', 1);
+  - = AlignUp('111', 1);
+  - = LSL('111', 1);
+  - = LSL_C('111', 1);
+  - = LSR('111', 1);
+  - = LSR_C('111', 1);
+  - = ASR('111', 1);
+  - = ASR_C('111', 1);
+  - = ROR('111', 1);
+  - = ROR_C('111', 1);
 end;
 
 func omit_one_of_two_parameters()
 begin
-  let - : bits(64) = SignExtend{64}('1111');
-  let - : bits(64) = ZeroExtend{64}('1111');
-  let - : bits(64) = Extend{64}('1111', TRUE);
+  let x : bits(64) = SignExtend{64}('1111');
+  let y : bits(64) = ZeroExtend{64}('1111');
+  let z : bits(64) = Extend{64}('1111', TRUE);
 end;
 
 func elide_output_parameters()
 begin
-  let - : bits(64) = SignExtend{}('1111');
-  let - : bits(64) = ZeroExtend{}('1111');
-  let - : bits(64) = Extend{}('1111', TRUE);
+  let x : bits(64) = SignExtend{}('1111');
+  let y : bits(64) = ZeroExtend{}('1111');
+  let z : bits(64) = Extend{}('1111', TRUE);
 end;

@@ -3,7 +3,7 @@ begin
   let a = 1;
   let b = 2;
   let c = 4;
-  let - = a + b - c;
+  let x = a + b - c;
 
   return 0;
 end;

@@ -1,0 +1,10 @@
+Test L104 Required
+States 1
+0:X1=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=0)
+Observation L104 Always 1 0
+Hash=b0ffca39eb125a5af375bb60a2e6e7fd
+

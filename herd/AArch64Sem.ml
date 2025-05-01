@@ -41,6 +41,9 @@ module Make
     let pte2 = kvm && C.variant Variant.PTE2
     let do_cu = C.variant Variant.ConstrainedUnpredictable
     let self = C.variant Variant.Ifetch
+    let pac = C.variant Variant.Pac
+    let const_pac_field = C.variant Variant.ConstPacField
+    let fpac = C.variant Variant.FPac
 
     let check_mixed ins =
       if not mixed then
@@ -112,6 +115,7 @@ module Make
       let (>>||) = M.para_atomic
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
+      let ( ||| ) = M.( ||| )
 
       let sxt_op sz = M.op1 (Op.Sxt sz)
       and uxt_op sz = M.op1 (Op.Mask sz)
@@ -226,6 +230,33 @@ module Make
         | AArch64.ZR -> M.unitT V.zero
         | _ ->
             write_reg r v ii >>= fun () -> M.unitT v
+
+      let write_nzcv (n, z, c, v) ii =
+        let reg_n = AArch64.(PState PSTATE.N)
+        and reg_z = AArch64.(PState PSTATE.Z)
+        and reg_c = AArch64.(PState PSTATE.C)
+        and reg_v = AArch64.(PState PSTATE.V) in
+            write_reg reg_n n ii
+        ||| write_reg reg_z z ii
+        ||| write_reg reg_c c ii
+        ||| write_reg reg_v v ii
+        >>= fun () -> M.unitT [ (reg_n, n); (reg_z, z); (reg_c, c); (reg_v, v) ]
+
+      let write_nzcv_one_val v ii =
+        M.op1 (Op.ReadBit 3) v >>| M.op1 (Op.ReadBit 2) v
+        >>| M.op1 (Op.ReadBit 1) v >>| M.op1 (Op.ReadBit 0) v
+        >>= fun (((n, z), c), v) -> write_nzcv (n, z, c, v) ii
+
+      let write_nzcv_no_next vs ii = write_nzcv vs ii >>! ()
+
+      let read_nzcv ii =
+        let ( << ) m i = m >>= fun v -> M.op1 (Op.LeftShift i) v in
+        let ( || ) m1 m2 = m1 >>| m2 >>= fun (v1, v2) -> M.op Op.Or v1 v2 in
+        let n = read_reg true AArch64.(PState PSTATE.N) ii
+        and z = read_reg true AArch64.(PState PSTATE.Z) ii
+        and c = read_reg true AArch64.(PState PSTATE.C) ii
+        and v = read_reg true AArch64.(PState PSTATE.V) ii in
+        n << 3 || z << 2 || c << 1 || v
 
       let write_reg_morello r v ii =
         if not morello then
@@ -641,6 +672,7 @@ module Make
         M.op1 Op.CheckSealed a >>= fun x ->
         M.op Op.Ne x V.zero >>= fun cond ->
         M.choiceT cond (mfault ma mzero) (mok ma mv)
+
 
  (* Semantics has changed, no ctrl-dep on mv *)
       let check_morello_perms a ma mv perms mok mfault =
@@ -1096,6 +1128,7 @@ module Make
 (* Page tables and TLBs *)
       let do_inv op a ii = inv_loc op (A.Location_global a) ii
 
+
 (************************)
 (* Conditions and flags *)
 (************************)
@@ -1105,28 +1138,24 @@ module Make
 
       let forceIntBool b = M.op3 Op.If b V.one V.zero
 
-      let tr_cond =
+      let condition_holds ii =
         (* Utils for writing formulas:
            Here we do operations on functions that will generate the
            underlying monadic operations. We first define our fake variables,
            then a few logical operations on those.*)
         (* Variables *)
-        let n = M.op1 (Op.ReadBit 3) in
-        let z = M.op1 (Op.ReadBit 2) in
-        let c = M.op1 (Op.ReadBit 1) in
-        let v = M.op1 (Op.ReadBit 0) in
-        let true_ = fun _flags -> M.unitT V.one in
+        let n = read_reg true AArch64.(PState PSTATE.N) ii
+        and z = read_reg true AArch64.(PState PSTATE.Z) ii
+        and c = read_reg true AArch64.(PState PSTATE.C) ii
+        and v = read_reg true AArch64.(PState PSTATE.V) ii in
+        let true_ = M.unitT V.one in
         (* Operators *)
         (* Note: I use [!a] as a shortcut for [a == 0],
            and [a] as a shortcut for [a == 1]
            (the expended version is the one written in the ARM ARM). *)
-        let ( ! ) f flags = f flags >>= M.op Op.Eq V.zero in
-        let make_op op f1 f2 flags =
-          f1 flags >>| f2 flags >>= fun (v1, v2) -> M.op op v1 v2
-        in
-        let ( == ) =
-          fun f1 f2 flags ->
-            make_op Op.Eq f1 f2 flags >>= forceIntBool in
+        let ( ! ) m = m >>= M.op Op.Eq V.zero in
+        let make_op op m1 m2 = m1 >>| m2 >>= fun (v1, v2) -> M.op op v1 v2 in
+        let ( == ) m1 m2 = make_op Op.Eq m1 m2 >>= forceIntBool in
         let ( || ) = make_op Op.Or in
         let ( && ) = make_op Op.And in
         (* Note : I use [a <> b] as a shortcut for [!a == b]
@@ -1156,7 +1185,6 @@ module Make
         | AL -> true_
 
 (* Arithmetic flags handling *)
-
       let op_set_flags op ty =
         let open AArch64Base in
         (* Utils for writing formulas
@@ -1169,62 +1197,69 @@ module Make
              and mainly on ADDS/SUBS. It consists on an extra monad for every
              variable used.
         *)
-        (* Main variables *)
-        let res v0 _v1 _v2 = M.unitT v0 in
-        let x _v0 v1 _v2 = M.unitT v1 in
-        let y _v0 _v1 v2 = M.unitT v2 in
-        (* Operators on those variables *)
-        let make_op op f1 f2 v0 v1 v2 =
-          f1 v0 v1 v2 >>| f2 v0 v1 v2 >>= fun (a, b) -> M.op op a b
+        (* Operators *)
+        let make_op op v0 v1 = v0 >>| v1 >>= fun (a, b) -> M.op op a b
+        and make_op1 op v0 = v0 >>= M.op1 op in
+        let ( ! ) = make_op1 Op.Inv
+        and ( & ) = make_op Op.And
+        and ( || ) = make_op Op.Or
+        and ( + ) = make_op Op.Xor
+        and ( === ) m v = m >>= M.op Op.Eq v >>= forceIntBool
+        and to_integer = M.op Op.ToInteger
+        and read_sign_bit =
+          let sign_bit = MachSize.nbits (AArch64Base.tr_variant ty) - 1 in
+          make_op1 (Op.ReadBit sign_bit)
         in
-        let make_op1 fop f v0 v1 v2 = f v0 v1 v2 >>= fop
+        let make ~n ~z ~c ~v =
+          n >>| z >>| c >>| v >>= fun (((n, z), c), v) -> M.unitT (n, z, c, v)
         in
-        let ( ! ) = make_op1 (M.op1 Op.Inv) in
-        let ( & ) = make_op Op.And in
-        let ( || ) = make_op Op.Or in
-        let ( + ) = make_op Op.Xor in
-        let ( === ) f v = (* Force integer result of comparison *)
-          fun v0 v1 v2 ->
-            f v0 v1 v2 >>= M.op Op.Eq v >>= forceIntBool in
-        let ( << ) f i = make_op1 (M.op1 (Op.LeftShift i)) f in
-        let sign_bit = MachSize.nbits (AArch64Base.tr_variant ty) - 1 in
-        let read_sign_bit = make_op1 (M.op1 (Op.ReadBit sign_bit)) in
-        let ( ---> ) f i = ( read_sign_bit f ) << i in
         (* Computation of nz flags *)
-        let compute_nz =
-          let compute_z = ( res === V.zero ) << 2 in
-          let compute_n = read_sign_bit res << 3 in
-          compute_z || compute_n
-        in
+        let compute_z res = res === V.zero in
+        let compute_n res = read_sign_bit res in
         (* Operation specific computations
            For specific formulae, see Hacker's Delight, 2-13.*)
         match op with
-        |ADD|EOR|EON|ORR|ORN|SUB|AND|ASR|LSR|ROR|LSL|BIC -> None
-        |ANDS|BICS -> Some compute_nz
-        |ADDS ->
-            let x = make_op Op.ToInteger x res
-            and y = make_op Op.ToInteger y (fun _ _ _ -> mzero) in
-            let compute_c = ((x & y) || ((x || y) & !res)) ---> 1 in
-            let compute_v = ((res + x) & (res + y)) ---> 0 in
-            Some (compute_nz || compute_c || compute_v)
+        | ADD | EOR | EON | ORR | ORN | SUB | AND | ASR | LSR | ROR | LSL | BIC
+          ->
+            None
+        | ANDS | BICS ->
+            Some
+              (fun res _x _y ->
+                let res = M.unitT res in
+                make ~n:(compute_n res) ~z:(compute_z res) ~c:mzero ~v:mzero)
+        | ADDS ->
+            Some
+              (fun res x y ->
+                let res = M.unitT res
+                and x = to_integer x res
+                and y = to_integer y V.zero in
+                let n = compute_n res
+                and z = compute_z res
+                and c = ((x & y) || ((x || y) & !res)) |> read_sign_bit
+                and v = ((res + x) & (res + y)) |> read_sign_bit in
+                make ~n ~z ~c ~v)
         | SUBS ->
-          (*
-            This is the formula give by Hacker's Delight for the carry in an
-            unsigned subtraction:
-              (!x & y) || ((!x || y) & res)
-            But I use the formula given by Hacker's Delight for the carry in an
-            unsigned addition, with y replaced by !y, as the Arm ARM specifies
-            the subtraction as:
-              x - y := x + !y + 1
-            This gives the following formula, which seems to produce the same
-            results as hardware:
-          *)
-            let x = make_op Op.ToInteger x res
-            and y = make_op Op.ToInteger y (fun _ _ _ -> mzero) in
-            let compute_c = ((x & !y) || ((x || !y) & !res)) ---> 1 in
-            let compute_v = ((x + y) & (res + x)) ---> 0 in
-            Some (compute_nz || compute_c || compute_v)
-
+            Some
+              (fun res x y ->
+                (*
+                  This is the formula give by Hacker's Delight for the carry in
+                  an unsigned subtraction:
+                    (!x & y) || ((!x || y) & res)
+                  But I use the formula given by Hacker's Delight for the carry
+                  in an unsigned addition, with y replaced by !y, as the Arm
+                  ARM specifies the subtraction as:
+                    x - y := x + !y + 1
+                  This gives the following formula, which seems to produce the
+                  same results as hardware:
+                *)
+                let res = M.unitT res
+                and x = to_integer x res
+                and y = to_integer y V.zero in
+                let n = compute_n res
+                and z = compute_z res
+                and c = ((x & !y) || ((x || !y) & !res)) |> read_sign_bit
+                and v = ((x + y) & (res + x)) |> read_sign_bit in
+                make ~n ~z ~c ~v)
 
       let mop3 inst v op rd margs ii =
         let open AArch64Base in
@@ -1273,10 +1308,11 @@ module Make
              match op_set_flags op v with
               | None -> write_reg_no_flags get_res
               | Some get_flags ->
-                 let do_write_flags flags = write_reg_dest NZCV flags ii in
-                 let return_flags flags = M.unitT (Some flags) in
                  let compute_and_write_flags res v1 v2 =
-                   get_flags res v1 v2 >>= do_write_flags >>= return_flags in
+                   get_flags res v1 v2 >>= fun flags ->
+                   write_nzcv flags ii >>= fun li ->
+                   M.unitT (Some li)
+                 in
                  fun (v1, v2 as p) ->
                  with_correct_size get_res p >>= fun res ->
                  do_write_reg res >>| compute_and_write_flags res v1 v2
@@ -1284,7 +1320,7 @@ module Make
         >>= fun (v,wo) ->
         begin match wo with
         | None -> B.nextSetT rd v
-        | Some w -> M.unitT (B.Next [rd,v; NZCV,w])
+        | Some ws -> M.unitT (B.Next ((rd,v) :: ws))
         end
 
 (***************************)
@@ -1415,6 +1451,34 @@ module Make
                (lift_fault_memtag
                   (mk_fault (Some a_virt) dir an ii ft None) mm dir ii))
 
+(* Check that the Pointer Authentication Code of a virtual address is canonical
+ * before a memory operation. Generate a Branching(pred) effect and an iico_ctrl
+ * +iico_data dependency between the event `ma` and `mop` or `mfault`, and an
+ * iico_data dependency between `mv` and `mop` in case of a success.
+ *)
+      let lift_pac_virt mop ma dir an ii =
+        let mok ma = mop Access.VIR ma >>= M.ignore >>= B.next1T in
+        let lbl_v = get_instr_label ii in
+        let ft = Some (FaultType.AArch64.MMU FaultType.AArch64.Translation) in
+        let mfault ma a =
+          do_insert_commit_to_fault ma
+            (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
+            None ii
+          >>! B.fault [AArch64Base.elr_el1, lbl_v]
+        in
+        let ma_with_commit ma =
+          do_append_commit ma (Some "pac") ii
+        in
+        let mcheck ma =
+          M.delay_kont "pac check" ma (fun a ma ->
+            M.op1 (Op.ArchOp1 AArch64Op.CheckCanonical) a >>= fun c ->
+            M.choiceT c (mok (ma_with_commit ma)) (mfault ma a))
+        in
+        M.delay_kont "pac check virtual" ma (fun a ma ->
+          M.op1 Op.IsVirtual a >>= fun virt ->
+          M.choiceT virt (mcheck ma) (mok ma)
+        )
+
       let lift_morello mop perms ma mv dir an ii =
         let mfault msg ma mv =
           let ft = None in (* FIXME *)
@@ -1476,6 +1540,8 @@ module Make
             let m = lift_kvm dir updatedb mop ma an ii mphy in
             (* M.short will add an iico_data only if memtag is enabled *)
             M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
+          else if pac then
+            lift_pac_virt mop ma dir an ii
           else if checked then
             lift_memtag_virt mop ma dir an ii
           else
@@ -1489,7 +1555,7 @@ module Make
             let memtag_sync =
               memtag && (C.mte_precision = Synchronous ||
                          C.mte_precision = Asymmetric) in
-            if memtag_sync || Access.is_physical ac then
+            if memtag_sync || Access.is_physical ac || pac then
               M.bind_ctrldata ma (mop ac)
             else
               ma >>= mop ac)
@@ -1502,7 +1568,7 @@ module Make
           (fun ac ma mv ->
             let open Precision in
             let memtag_sync = memtag && C.mte_precision = Synchronous in
-            if memtag_sync || (is_branching && Access.is_physical ac) then begin
+            if pac || memtag_sync || (is_branching && Access.is_physical ac) then begin
               (* additional ctrl dep on address *)
               M.bind_ctrldata_data ma mv
                 (fun a v -> mop ac a v ii)
@@ -2530,27 +2596,17 @@ module Make
           write_reg_predicate p new_val ii >>|
           ( let last idx = get_predicate_last new_val psize idx in
             (* Fisrt active *)
-            let n = last 0 >>= fun v ->
-                M.op1 (Op.LeftShift 3) v in
-            (* Non active *)
-            let z =
+            let>= n = last 0 
+            and* z =
               let rec reduce idx op = match idx with
               | 0 ->  op >>| last idx >>= fun (v1,v2) -> M.op Op.Or v1 v2
               | _ -> reduce (idx-1) (op >>| last idx  >>= fun (v1,v2) -> M.op Op.Or v1 v2)
               in
-                reduce (nelem-1) mzero >>= fun v ->
-                M.op1 Op.Not v >>= fun v ->
-                  M.op1 (Op.LeftShift 2) v in
-            (* Not last active*)
-            let c = last (nelem-1) >>= fun v ->
-                M.op1 Op.Not v >>= fun v ->
-                  M.op1 (Op.LeftShift 1) v in
-            (* v always 0 *)
-            let flags = n >>| z >>= fun (v1,v2) ->
-              M.op Op.Or v1 v2 >>| c >>= fun (v1,v2) ->
-                M.op Op.Or v1 v2 in
-            flags >>= fun flags -> write_reg AArch64Base.NZCV flags ii
-          ) >>! new_val
+              reduce (nelem-1) mzero >>= M.op1 Op.Not
+            and* c = last (nelem-1) >>= M.op1 Op.Not
+            and* v = mzero in
+            write_nzcv (n, z, c, v) ii
+          ) >>= fun ((), nzcv_val) -> M.unitT ((p, new_val) :: nzcv_val)
 
       let ptrue p pattern ii =
         let psize = predicate_psize p in
@@ -3350,6 +3406,90 @@ module Make
         | Some l -> ii.A.addr2v l
         | None ->  V.intToV (ii.A.addr + 4)
 
+(*******************************)
+(* Pointer Authentication Code *)
+(*******************************)
+
+      let do_pac key rd rn ii =
+        if pac then begin
+          read_reg_ord rd ii >>|
+          read_reg_ord rn ii >>= fun (addr, modifier) ->
+          M.op
+            (Op.ArchOp (AArch64Op.AddPAC (not const_pac_field, key)))
+            addr modifier >>= fun v ->
+          write_reg_dest rd v ii >>= fun v ->
+          B.nextSetT rd v
+        end else
+          read_reg_ord rd ii >>= fun v ->
+          write_reg_dest rd v ii >>= fun v ->
+          B.nextSetT rd v
+
+      let authenticate pointer modifier key ii mop mfault =
+        let mfail md mn = if fpac then
+            (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ -> mfault
+          else
+            md >>| mn >>= fun (xd,xn) ->
+            mop (M.op (Op.ArchOp (AArch64Op.AddPAC (false,key))) xd xn)
+        in
+
+        let original_pointer md =
+          md >>= M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical) in
+
+        (* data_input_next allow to not have a control depedency between the
+         * commit event and the register-read event in Xd *)
+        let mop md mn =
+          (md >>| mn >>= fun _ -> commit_pred ii) >>*= fun _ ->
+          (M.data_input_next (original_pointer md) (fun ptr -> mop (M.unitT ptr)))
+        in
+
+        let auth_check xd xn =
+          M.op (Op.ArchOp (AArch64Op.AddPAC (false,key))) xd xn >>=
+          M.op1 (Op.ArchOp1 AArch64Op.CheckCanonical)
+        in
+
+        M.delay_kont "read pointer" pointer (fun xd md ->
+          M.delay_kont "read modifier" modifier (fun xn mn ->
+            auth_check xd xn >>= fun c ->
+            M.choiceT c
+              (mop md mn)
+              (mfail md mn)
+          )
+        )
+
+      let do_aut key rd rn ii =
+        if pac then begin
+          let (>>!) = M.(>>!) in
+
+          let lbl_v = get_instr_label ii in
+          let mfault =
+              set_elr_el1 lbl_v ii >>|
+              mk_fault None Dir.R Annot.N ii
+                (Some (FaultType.AArch64.PacCheck key))
+                None
+              >>! B.fault [AArch64Base.elr_el1, lbl_v]
+          in
+
+          let mop ma =
+            ma >>= fun v ->
+            write_reg_dest rd v ii >>= fun v ->
+            B.nextSetT rd v
+          in
+
+          authenticate
+            (read_reg_ord rd ii)
+            (read_reg_ord rn ii)
+            key ii mop mfault
+        end else
+          read_reg_ord rd ii >>= fun v ->
+          write_reg_dest rd v ii >>= fun v ->
+          B.nextSetT rd v
+
+      let do_xpac r ii =
+        read_reg_ord r ii >>= fun v ->
+        M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical) v >>= fun v ->
+        write_reg_dest r v ii >>= fun v ->
+        B.nextSetT r v
+
 (********************)
 (* Main entry point *)
 (********************)
@@ -3381,8 +3521,7 @@ module Make
            M.mk_singleton_es (Act.NoAction) ii
            >>= fun () -> M.unitT (B.Jump (tgt2tgt ii l,[]))
         | I_BC(c,l)->
-           read_reg_ord NZCV ii
-           >>= tr_cond c
+           condition_holds ii c
            >>= fun v -> commit_bcc ii
            >>= fun () -> M.unitT (B.CondJump (v,tgt2tgt  ii l))
         | I_BL l ->
@@ -3424,7 +3563,7 @@ module Make
           let (>>!) = M.(>>!) in
           let ft = Some FaultType.AArch64.SupervisorCall in
           let m_fault = mk_fault None Dir.R Annot.N ii ft None in
-          let lbl_ret = get_link_addr test ii in          
+          let lbl_ret = get_link_addr test ii in
           m_fault >>| set_elr_el1 lbl_ret ii
           >>! B.syscall [AArch64Base.elr_el1, lbl_ret]
 
@@ -3768,16 +3907,16 @@ module Make
           >>= nextSet p
         | I_WHILELT(p,var,r1,r2) ->
           check_sve inst;
-          while_op (M.op Op.Lt) false p var r1 r2 ii >>= nextSet p
+          while_op (M.op Op.Lt) false p var r1 r2 ii >>= B.nextBdsT
         | I_WHILELO(p,var,r1,r2) ->
           check_sve inst;
-          while_op (M.op Op.Lt) true p var r1 r2 ii >>= nextSet p
+          while_op (M.op Op.Lt) true p var r1 r2 ii >>= B.nextBdsT
         | I_WHILELE(p,var,r1,r2) ->
           check_sve inst;
-          while_op (M.op Op.Le) false p var r1 r2 ii >>= nextSet p
+          while_op (M.op Op.Le) false p var r1 r2 ii >>= B.nextBdsT
         | I_WHILELS(p,var,r1,r2) ->
           check_sve inst;
-          while_op (M.op Op.Le) true p var r1 r2 ii >>= nextSet p
+          while_op (M.op Op.Le) true p var r1 r2 ii >>= B.nextBdsT
         |  I_ADD_SV (r1,r2,r3) ->
           check_sve inst;
           !(add_sv r1 r2 r3 ii)
@@ -3969,17 +4108,17 @@ module Make
               read_reg_ord_sz MachSize.S128 rn ii >>|
               read_reg_ord_sz MachSize.S128 rm ii
             end >>= fun (v1,v2) ->
-            M.op Op.Eq v1 v2 >>= fun v -> M.op1 (Op.LeftShift 2) v >>= fun v ->
-            write_reg NZCV v ii)
+            M.op Op.Eq v1 v2 >>= fun v ->
+            write_reg (PState PSTATE.N) v ii)
         | I_CHKSLD(rn) ->
             check_morello inst ;
             !(read_reg_ord_sz MachSize.S128 rn ii >>= fun v ->
-            M.op1 Op.CheckSealed v >>= fun v -> write_reg NZCV v ii)
+            M.op1 Op.CheckSealed v >>= fun v -> write_reg (PState PSTATE.V) v ii)
         | I_CHKTGD(rn) ->
             check_morello inst ;
             !(read_reg_ord_sz MachSize.S128 rn ii >>= fun v ->
-              M.op1 Op.CapaGetTag v >>= fun v -> M.op1 (Op.LeftShift 1) v
-              >>= fun v -> write_reg NZCV v ii)
+              M.op1 Op.CapaGetTag v >>= fun v ->
+              write_reg (PState PSTATE.C) v ii)
         | I_CLRTAG(rd,rn) ->
             check_morello inst ;
             !(read_reg_ord_sz MachSize.S128 rn ii >>= fun (v) ->
@@ -4006,9 +4145,10 @@ module Make
               read_reg_ord_sz MachSize.S128 rm ii
             end >>= fun (v1,v2) ->
             M.op Op.CSeal v1 v2 >>= fun v ->
-            write_reg_sz MachSize.S128 rd v ii >>= fun _ ->
+            (
+            write_reg_sz MachSize.S128 rd v ii |||
             (* TODO: PSTATE overflow flag would need to be conditionally set *)
-            write_reg NZCV M.A.V.zero ii)
+            write_nzcv_no_next M.A.V.(zero, zero, zero, zero) ii))
         | I_GC(op,rd,rn) ->
             check_morello inst ;
             !(read_reg_ord_sz MachSize.S128 rn ii >>= begin fun c -> match op with
@@ -4249,11 +4389,10 @@ module Make
                 let mno = commit_pred_txt None ii >>*=
                   fun () -> read_reg_data sz r3 ii >>=
                   csel_op op >>= mask (fun v ->  write_reg r1 v ii) in
-                read_reg_ord NZCV ii >>= tr_cond c >>=
-                fun v -> M.choiceT v mok mno
+                condition_holds ii c >>= fun v -> M.choiceT v mok mno
             else
               begin
-                (read_reg_ord NZCV ii >>= tr_cond c) >>|  read_reg_data sz r2 ii >>| read_reg_data sz r3 ii
+                condition_holds ii c >>|  read_reg_data sz r2 ii >>| read_reg_data sz r3 ii
               end >>= fun ((v,v2),v3) ->
               M.condPredT v
                 (M.unitT ())
@@ -4318,8 +4457,8 @@ module Make
               read_reg_ord_sz sz xt ii
               >>= fun v -> M.op1 (Op.LogicalRightShift 28) v
               >>= M.op1 (Op.AndK "0b1111")
-              >>= fun v -> write_reg_dest NZCV v ii
-              >>= nextSet NZCV
+              >>= fun v -> write_nzcv_one_val v ii
+              >>= fun sets -> M.unitT (B.Next sets)
             | _ -> begin
               let off = AArch64.sysreg_nv2off sreg in
               match C.variant Variant.NV2, off with
@@ -4336,7 +4475,7 @@ module Make
           begin
             match sreg with
             | SYS_NZCV ->
-               read_reg_ord NZCV ii
+               read_nzcv ii
                >>= M.op1 (Op.LeftShift 28)
                >>= fun v -> write_reg_dest xt v ii
                >>= nextSet xt
@@ -4361,6 +4500,13 @@ module Make
            let lbl_v = get_instr_label ii in
            m_fault >>| set_elr_el1 lbl_v ii
            >>! B.fault [AArch64Base.elr_el1, lbl_v]
+(* Pointer Anthentication Code `FEAT_Pauth2` *)
+        | I_PAC (key, rd, rn) ->
+            do_pac key rd rn ii
+        | I_AUT (key, rd, rn) ->
+            do_aut key rd rn ii
+        | I_XPACI r | I_XPACD r ->
+            do_xpac r ii
 (*  Cannot handle *)
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | (I_STG _|I_STZG _|I_STZ2G _

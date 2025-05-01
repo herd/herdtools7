@@ -75,8 +75,9 @@ Declaring a local storage element is done via the following grammar rules:
 \begin{flalign*}
 \Nlocaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant&\\
 \Ndeclitem \derives\
-   & \Nignoredoridentifier &\\
-|\ & \Plisttwo{\Nignoredoridentifier} &
+   & \Tidentifier &\\
+|\ & \Plisttwo{\Nignoredoridentifier} &\\
+\Nignoredoridentifier \derives \ & \Tminus \;|\; \Tidentifier &
 \end{flalign*}
 
 \section{Abstract Syntax\label{sec:LocalStorageDeclarationsAbstractSyntax}}
@@ -86,6 +87,11 @@ Declaring a local storage element is done via the following grammar rules:
      & \LDIVar(\identifier) & \\
   |\ & \LDITuple(\identifier^*) &
 \end{flalign*}
+
+\RequirementDef{DiscardingLocalStorageDeclarations}
+Local storage declarations must bind at least one name.
+All the local storage declarations in \listingref{local-storage-discards} are illegal, as they discard all declared storage elements.
+\ASLListing{Illegal local storage declarations that discard all storage elements}{local-storage-discards}{\syntaxtests/GuideRule.DiscardingLocalStorageDeclarations.asl}
 
 \ASTRuleDef{LocalDeclKeyword}
 \hypertarget{build-localdeclkeyword}{}
@@ -118,13 +124,15 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[var]{}{
-  \builddeclitem(\Ndeclitem(\punnode{\Nignoredoridentifier})) \astarrow
-  \overname{\astof{\vignoredoridentifier}}{\vastnode}
+  \builddeclitem(\Ndeclitem(\Tidentifier(\name))) \astarrow
+  \overname{\name}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[tuple]{
+  \vb \eqdef \bigwedge_{i \in \listrange(\vids)} \vids_i = \Tminus \\
+  \checktrans{\lnot \vb}{\BuildBadDeclaration} \checktransarrow \True \OrBuildError \\
   \buildclist[\buildignoredoridentifier](\vids) \astarrow \astversion{\vids}
 }{
   {
@@ -133,6 +141,31 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   \overname{\LDITuple(\astversion{\vids})}{\vastnode}
     \end{array}
   }
+}
+\end{mathpar}
+
+\ASTRuleDef{IgnoredOrIdentifier}
+\hypertarget{build-ignoredoridentifier}{}
+The relation
+\[
+\buildfuncargs(\overname{\parsenode{\Nignoredoridentifier}}{\vparsednode}) \;\aslrel\;
+  \overname{\identifier}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule[discard]{
+  \id \in \identifier \text{ is fresh}
+}{
+  \buildignoredoridentifier(\overname{\Nignoredoridentifier(\Tminus)}{\vparsednode}) \astarrow
+  \overname{\id}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[id]{}{
+  \buildignoredoridentifier(\overname{\Nignoredoridentifier(\Tidentifier(\id))}{\vparsednode}) \astarrow
+  \overname{\id}{\vastnode}
 }
 \end{mathpar}
 

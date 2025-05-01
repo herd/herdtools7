@@ -2,14 +2,16 @@
   > func main () => integer
   > begin
   >   let x = if ARBITRARY: boolean then 2 else 3;
-  >   let -: integer = x;
-  >   let -: integer {2, 3} = x;
-  >   let -: real = x;
+  >   let a: integer = x;
+  >   let b: integer {2, 3} = x;
+  >   let c: real = x;
   > end;
   > EOF
 
   $ aslref lca1.asl
   File lca1.asl, line 6, characters 2 to 18:
+    let c: real = x;
+    ^^^^^^^^^^^^^^^^
   ASL Typing error: a subtype of real was expected, provided integer {2, 3}.
   [1]
 
@@ -17,13 +19,15 @@
   > func main () => integer
   > begin
   >   let x = if ARBITRARY: boolean then 2 as integer else 3;
-  >   let -: integer = x;
-  >   let -: integer {2, 3} = x;
+  >   let a: integer = x;
+  >   let b: integer {2, 3} = x;
   > end;
   > EOF
 
   $ aslref lca2.asl
   File lca2.asl, line 5, characters 2 to 28:
+    let b: integer {2, 3} = x;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Typing error: a subtype of integer {2, 3} was expected, provided integer.
   [1]
 
@@ -31,13 +35,15 @@
   > func main {N} (bv: bits(N)) => integer
   > begin
   >   let x = if ARBITRARY: boolean then N else 3;
-  >   let -: integer = x;
-  >   let -: integer {N} = x;
+  >   let a: integer = x;
+  >   let b: integer {N} = x;
   > end;
   > EOF
 
   $ aslref lca3.asl
   File lca3.asl, line 5, characters 2 to 25:
+    let b: integer {N} = x;
+    ^^^^^^^^^^^^^^^^^^^^^^^
   ASL Typing error: a subtype of integer {N} was expected,
     provided integer {3, N}.
   [1]
@@ -46,12 +52,14 @@
   > func main {N} (bv: bits(N)) => integer
   > begin
   >   let x = if ARBITRARY: boolean then 3 as integer {0..N} else 3;
-  >   let -: real = x;
+  >   let a: real = x;
   > end;
   > EOF
 
   $ aslref lca4.asl
   File lca4.asl, line 4, characters 2 to 18:
+    let a: real = x;
+    ^^^^^^^^^^^^^^^^
   ASL Typing error: a subtype of real was expected, provided integer {0..N, 3}.
   [1]
 
@@ -64,6 +72,8 @@
 
   $ aslref lca5.asl
   File lca5.asl, line 3, characters 10 to 48:
+    let x = if ARBITRARY: boolean then TRUE else 3;
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Typing error: cannot find a common ancestor to those two types boolean
     and integer {3}.
   [1]
@@ -75,12 +85,14 @@
   > func main () => integer
   > begin
   >   let x = if ARBITRARY: boolean then 3 as T3 else 2 as T2;
-  >   let -: real = x;
+  >   let a: real = x;
   > end;
   > EOF
 
   $ aslref lca6.asl
   File lca6.asl, line 7, characters 2 to 18:
+    let a: real = x;
+    ^^^^^^^^^^^^^^^^
   ASL Typing error: a subtype of real was expected, provided integer.
   [1]
 
@@ -89,12 +101,14 @@
   > type T2 of boolean;
   > func main () => integer
   > begin
-  >   let - = if ARBITRARY: boolean then 3 as T1 else 2 as T2;
+  >   let x = if ARBITRARY: boolean then 3 as T1 else 2 as T2;
   > end;
   > EOF
 
   $ aslref lca7.asl
   File lca7.asl, line 5, characters 50 to 57:
+    let x = if ARBITRARY: boolean then 3 as T1 else 2 as T2;
+                                                    ^^^^^^^
   ASL Typing error: cannot perform Asserted Type Conversion on integer {2} by
     T2.
   [1]
@@ -104,12 +118,14 @@
   > func main () => integer
   > begin
   >   let x = if ARBITRARY: boolean then '101' as T1 else '101' as bits(3);
-  >   let -: real = x;
+  >   let a: real = x;
   > end;
   > EOF
 
   $ aslref lca8.asl
   File lca8.asl, line 5, characters 2 to 18:
+    let a: real = x;
+    ^^^^^^^^^^^^^^^^
   ASL Typing error: a subtype of real was expected, provided bits(3).
   [1]
 
@@ -118,13 +134,15 @@
   > func main () => integer
   > begin
   >   let x = if ARBITRARY: boolean then '101' as T1 else '101' as bits (3) { [2] b1 };
-  >   let -: bits(3) { [2] b1 } = x;
-  >   let -: real = x;
+  >   let a: bits(3) { [2] b1 } = x;
+  >   let b: real = x;
   > end;
   > EOF
 
   $ aslref lca9.asl
   File lca9.asl, line 6, characters 2 to 18:
+    let b: real = x;
+    ^^^^^^^^^^^^^^^^
   ASL Typing error: a subtype of real was expected, provided T1.
   [1]
 
@@ -134,13 +152,15 @@
   > func main () => integer
   > begin
   >   let x = if ARBITRARY: boolean then 3 as T1 else 2 as T2;
-  >   let -: integer = x;
-  >   let -: real = x;
+  >   let a: integer = x;
+  >   let b: real = x;
   > end;
   > EOF
 
   $ aslref lca10.asl
   File lca10.asl, line 7, characters 2 to 18:
+    let b: real = x;
+    ^^^^^^^^^^^^^^^^
   ASL Typing error: a subtype of real was expected, provided integer.
   [1]
 
@@ -149,7 +169,7 @@
   > func main () => integer
   > begin
   >   let x = if ARBITRARY: boolean then 3 as T1 else 2 as integer;
-  >   let -: T1 = x;
+  >   let a: T1 = x;
   >   return 0;
   > end;
   > EOF
@@ -161,7 +181,7 @@
   > func main () => integer
   > begin
   >   let x = if ARBITRARY: boolean then (3 as integer, 2 as T1) else (3 as T1, 2 as integer);
-  >   let -: (T1, T1) = x;
+  >   let a: (T1, T1) = x;
   >   return 0;
   > end;
   > EOF
@@ -185,11 +205,13 @@
   >   var a: array[[4]] of integer;
   >   var b: array[[4]] of T1;
   >   let x = if ARBITRARY: boolean then a else b;
-  >   let -: real = x;
+  >   let c: real = x;
   > end;
   > EOF
 
   $ aslref lca14.asl
   File lca14.asl, line 7, characters 2 to 18:
+    let c: real = x;
+    ^^^^^^^^^^^^^^^^
   ASL Typing error: a subtype of real was expected, provided array [[4]] of T1.
   [1]

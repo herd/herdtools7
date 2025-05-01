@@ -5,7 +5,7 @@ func main() => integer
 begin
   var v: integer = 4;
   // E_Var: v is a variable expression.
-  var - = v;
+  - = v;
 
   var b0 = '1111 1000'[3:1, 0]; // E_Slice 1: a bitvector slice.
   var b1 = 0xF8[3:1, 0]; // E_Slice 2: an integer slice.

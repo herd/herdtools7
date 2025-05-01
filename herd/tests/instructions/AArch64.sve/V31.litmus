@@ -1,0 +1,11 @@
+AArch64 V31
+{
+uint64_t 0:X3;
+0:X0=0; 0:X1=1;
+}
+   P0               ;
+ CMP W0,W1          ;
+ WHILELT P0.S,W0,W1 ;
+ MRS X3,NZCV        ;
+
+forall 0:X3=0xa0000000

@@ -64,10 +64,10 @@ end;
 
 func main () => integer
 begin
-  let - = legal_fun_fixed_width_actual ();
-  let - = legal_fun_underconstrained_actual {4};
-  // let - = legal_fun_constrained_actual (Zeros{32});
-  // let - = legal_fun_constrained_actual (Zeros{64});
+  - = legal_fun_fixed_width_actual ();
+  - = legal_fun_underconstrained_actual {4};
+  // - = legal_fun_constrained_actual (Zeros{32});
+  // - = legal_fun_constrained_actual (Zeros{64});
   // illegal_fun_parameter_mismatch (32, 64);
 
   return 0;

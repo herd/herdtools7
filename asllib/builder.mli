@@ -31,8 +31,10 @@ type version_selector = [ `ASLv0 | `ASLv1 | `Any ]
 
 type parser_config = {
   allow_no_end_semicolon : bool;
+  allow_expression_elsif : bool;
   allow_double_underscore : bool;
   allow_unknown : bool;
+  allow_storage_discards : bool;
 }
 
 val default_parser_config : parser_config

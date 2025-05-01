@@ -7,6 +7,6 @@ begin
     var var_x = LOCAL_CONSTANT; // The annotated expression for LOCAL_CONSTANT is 7.
     var y = var_x; // The annotated expression for var_x is var_x.
     var local_non_constant = LOCAL_CONSTANT;
-    var - = local_non_constant + GLOBAL_CONSTANT + global_non_constant;
+    var z = local_non_constant + GLOBAL_CONSTANT + global_non_constant;
     return 0;
 end;

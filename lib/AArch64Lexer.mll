@@ -145,6 +145,37 @@ match name with
 | "movi" | "MOVI" -> MOVI
 | "mvn" | "MVN" -> MVN
 | "fmov" | "FMOV" -> FMOV
+(* Pointer Authentication Code *)
+| "PACIA" | "pacia" -> PACIA
+| "PACIA1716" | "pacia1716" -> PACIA1716
+| "PACIAZ" | "paciaz" -> PACIAZ
+| "PACIZA" | "paciza" -> PACIZA
+| "PACIASP" | "paciasp" -> PACIASP
+| "PACIB" | "pacib" -> PACIB
+| "PACIB1716" | "pacib1716" -> PACIB1716
+| "PACIBZ" | "pacibz" -> PACIBZ
+| "PACIZB" | "pacizb" -> PACIZB
+| "PACIBSP" | "pacibsp" -> PACIBSP
+| "PACDA" | "pacda" -> PACDA
+| "PACDZA" | "pacdza" -> PACDZA
+| "PACDB" | "pacdb" -> PACDB
+| "PACDZB" | "pacdzb" -> PACDZB
+| "AUTIA" | "autia" -> AUTIA
+| "AUTIA1716" | "autia1716" -> AUTIA1716
+| "AUTIAZ" | "autiaz" -> AUTIAZ
+| "AUTIZA" | "autiza" -> AUTIZA
+| "AUTIASP" | "autiasp" -> AUTIASP
+| "AUTIB" | "autib" -> AUTIB
+| "AUTIB1716" | "autib1716" -> AUTIB1716
+| "AUTIBZ" | "autibz" -> AUTIBZ
+| "AUTIZB" | "autizb" -> AUTIZB
+| "AUTIBSP" | "autibsp" -> AUTIBSP
+| "AUTDA" | "autda" -> AUTDA
+| "AUTDZA" | "autdza" -> AUTDZA
+| "AUTDB" | "autdb" -> AUTDB
+| "AUTDZB" | "autdzb" -> AUTDZB
+| "XPACI" | "xpaci" -> XPACI
+| "XPACD" | "xpacd" -> XPACD
 (* Scalabel Vector Extension *)
 | "whilelt" | "WHILELT" -> WHILELT
 | "whilele" | "WHILELE" -> WHILELE

@@ -1,6 +1,6 @@
 func omit_too_many_parameters()
 begin
-  let - : bits(64) = Extend('1111', TRUE);
+  let x : bits(64) = Extend('1111', TRUE);
 end;
 
 func main() => integer

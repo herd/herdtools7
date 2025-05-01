@@ -648,7 +648,8 @@ module Make(C:Config) (I:I) : S with module I = I
                     { Constant.name=s ;
                       tag=tag ;
                       cap=cap ;
-                      offset=i*nbytes} in
+                      offset=i*nbytes;
+                      pac=PAC.canonical} in
                   of_symbolic_data sym_data,(TestType.Ty array_prim,I.V.cstToV v))
                 vs in
               List.fold_left

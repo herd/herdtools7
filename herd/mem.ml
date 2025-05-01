@@ -2093,7 +2093,6 @@ Please use `-variant self` as an argument to herd7 to enable it."
                    when
                      (not oota)
                      && (not C.initwrites || not do_deps)
-                     && not asl
                      && Misc.is_none ofail
                 ->
 (*

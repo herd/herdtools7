@@ -1,3 +1,4 @@
+\usepackage[T1]{fontenc} % makes names with underscore searchable in the PDF.
 \usepackage{amsmath}  % Classic math package
 \usepackage{amssymb}  % Classic math package
 \usepackage{mathtools}  % Additional math package
@@ -475,6 +476,7 @@
 \newcommand\Ncall[0]{\hyperlink{def-ncall}{\nonterminal{call}}}
 \newcommand\Nelidedparamcall[0]{\hyperlink{def-nelidedparamcall}{\nonterminal{elided\_param\_call}}}
 \newcommand\Nfuncargs[0]{\hyperlink{def-nfuncargs}{\nonterminal{func\_args}}}
+\newcommand\Naccessorbody[0]{\hyperlink{def-naccessorbody}{\nonterminal{accessor\_body}}}
 \newcommand\Naccessors[0]{\hyperlink{def-naccessors}{\nonterminal{accessors}}}
 \newcommand\Noverride[0]{\hyperlink{def-noverride}{\nonterminal{override}}}
 \newcommand\Nreturntype[0]{\hyperlink{def-nreturntype}{\nonterminal{return\_type}}}
@@ -522,7 +524,6 @@
 \newcommand\Nvalue[0]{\hyperlink{def-nvalue}{\nonterminal{value}}}
 \newcommand\Nbinop[0]{\hyperlink{def-nbinop}{\nonterminal{binop}}}
 \newcommand\Nunop[0]{\hyperlink{def-nunop}{\nonterminal{unop}}}
-\newcommand\Neelse[0]{\hyperlink{def-neelse}{\nonterminal{e\_else}}}
 \newcommand\Nfieldassign[0]{\hyperlink{def-nfieldassign}{\nonterminal{field\_assign}}}
 \newcommand\Nlooplimit[0]{\hyperlink{def-nlooplimit}{\nonterminal{loop\_limit}}}
 \newcommand\Nrecurselimit[0]{\hyperlink{def-nrecurselimit}{\nonterminal{recurse\_limit}}}
@@ -562,7 +563,7 @@
 \newcommand\BAND[0]{\hyperlink{ast-band}{\texttt{BAND}}} % Boolean and
 \newcommand\BEQ[0]{\hyperlink{ast-beq}{\texttt{BEQ}}} % Boolean equivalence
 \newcommand\BOR[0]{\hyperlink{ast-bor}{\texttt{BOR}}} % Boolean or
-\newcommand\BVCONCAT[0]{\hyperlink{ast-bvconcat}{\texttt{BV\_CONCAT}}} % Concatenation for bitvectors
+\newcommand\CONCAT[0]{\hyperlink{ast-concat}{\texttt{CONCAT}}} % Concatenation for bitvectors and strings
 \newcommand\DIV[0]{\hyperlink{ast-div}{\texttt{DIV}}} % Integer division
 \newcommand\DIVRM[0]{\hyperlink{ast-divrm}{\texttt{DIVRM}}} % Inexact integer division, with rounding towards negative infinity.
 \newcommand\XOR[0]{\hyperlink{ast-xor}{\texttt{XOR}}} % Bitvector bitwise exclusive or
@@ -811,6 +812,7 @@
 \newcommand\setcalltype[0]{\hyperlink{def-setcalltype}{\textfunc{set\_call\_type}}}
 \newcommand\buildreturntype[0]{\hyperlink{build-returntype}{\textfunc{build\_return\_type}}}
 \newcommand\buildfuncbody[0]{\hyperlink{build-funcbody}{\textfunc{build\_func\_body}}}
+\newcommand\buildaccessorbody[0]{\hyperlink{build-accessorbody}{\textfunc{build\_accessor\_body}}}
 \newcommand\buildaccessors[0]{\hyperlink{build-accessors}{\textfunc{build\_accessors}}}
 \newcommand\buildoverride[0]{\hyperlink{build-override}{\textfunc{build\_override}}}
 \newcommand\buildtypedidentifier[0]{\hyperlink{build-typedidentifier}{\textfunc{build\_typed\_identifier}}}
@@ -845,7 +847,6 @@
 \newcommand\buildbitfields[0]{\hyperlink{build-bitfields}{\textfunc{build\_bitfields}}}
 \newcommand\buildbitfield[0]{\hyperlink{build-bitfield}{\textfunc{build\_bitfield}}}
 \newcommand\buildty[0]{\hyperlink{build-ty}{\textfunc{build\_ty}}}
-\newcommand\buildeelse[0]{\hyperlink{build-eelse}{\textfunc{build\_e\_else}}}
 \newcommand\buildvalue[0]{\hyperlink{build-value}{\textfunc{build\_value}}}
 \newcommand\buildunop[0]{\hyperlink{build-unop}{\textfunc{build\_unop}}}
 \newcommand\buildbinop[0]{\hyperlink{build-binop}{\textfunc{build\_binop}}}
@@ -875,6 +876,7 @@
 \newcommand\REletter[0]{\hyperlink{def-reletter}{\texttt{<}\textsf{letter}\texttt{>}}}
 \newcommand\REidentifier[0]{\hyperlink{def-reidentifier}{\texttt{<}\textsf{identifier}\texttt{>}}}
 \newcommand\RElinecomment[0]{\hyperlink{def-relinecomment}{\texttt{<}\textsf{line\_comment}\texttt{>}}}
+\newcommand\REwhitespace[0]{\hyperlink{def-rewhitespace}{\texttt{<}\textsf{whitespace}\texttt{>}}}
 
 \newcommand\parsearrow[0]{\xrightarrow{\hyperlink{def-aslparse}{\textsf{parse}}}}
 \newcommand\aslparse[0]{\hyperlink{def-aslparse}{\textfunc{asl\_parse}}}
@@ -1088,6 +1090,7 @@
 \newcommand\evalexprlist[1]{\hyperlink{def-evalexprlist}{\textfunc{eval\_expr\_list}}(#1)}
 \newcommand\evalexprlistm[0]{\hyperlink{def-evalexprlistm}{\textfunc{eval\_expr\_list\_m}}}
 \newcommand\evalpattern[1]{\hyperlink{def-evalpattern}{\textfunc{eval\_pattern}}(#1)}
+\newcommand\maskmatch[0]{\hyperlink{def-maskmatch}{\textfunc{mask\_match}}}
 \newcommand\evallocaldecl[1]{\hyperlink{def-evallocaldecl}{\textfunc{eval\_local\_decl}}(#1)}
 \newcommand\ldituplefolder[0]{\hyperlink{def-ldituplefolder}{\textfunc{ldi\_tuple\_folder}}}
 \newcommand\writefolder[0]{\hyperlink{def-writefolder}{\textfunc{write\_folder}}}
@@ -1878,7 +1881,6 @@
 \newcommand\constraintsequal[0]{\hyperlink{def-constraintsequal}{\textfunc{constraints\_equal}}}
 \newcommand\constraintequal[0]{\hyperlink{def-constraintequal}{\textfunc{constraint\_equal}}}
 \newcommand\arraylengthequal[0]{\hyperlink{def-arraylengthequal}{\textfunc{array\_length\_equal}}}
-\newcommand\literalequal[0]{\hyperlink{def-literalequal}{\textfunc{literal\_equal}}}
 \newcommand\annotatebitfield[0]{\hyperlink{def-annotatebitfield}{\textfunc{annotate\_bitfield}}}
 \newcommand\annotatebitfields[0]{\hyperlink{def-annotatebitfields}{\textfunc{annotate\_bitfields}}}
 \newcommand\Prosecheckcommonbitfieldsalign[3]{\hyperlink{def-checkcommonbitfieldsalign}{checking} that all pairs of bitfields in #2 that are in the same scope
@@ -2073,7 +2075,6 @@
 \newcommand\catchers[0]{\texttt{catchers}}
 \newcommand\catchersone[0]{\texttt{catchers1}}
 \newcommand\catchersp[0]{\texttt{catchers'}}
-\newcommand\cname[0]{\texttt{cname}}
 \newcommand\comp[0]{\texttt{comp}}
 \newcommand\compare[0]{\texttt{compare}}
 \newcommand\compdecls[0]{\texttt{comp\_decls}}
@@ -2523,7 +2524,6 @@
 \newcommand\veminusone[0]{\texttt{e\_minus\_1}}
 \newcommand\veupper[0]{\texttt{e\_upper}}
 \newcommand\veinit[0]{\texttt{e\_init}}
-\newcommand\veelse[0]{\texttt{e\_else}}
 \newcommand\vefive[0]{\texttt{e5}}
 \newcommand\vefour[0]{\texttt{e4}}
 \newcommand\vefourfive[0]{\texttt{e45}}
@@ -2531,6 +2531,7 @@
 \newcommand\velimitopt[0]{\texttt{e\_limit\_opt}}
 \newcommand\velimitoptp[0]{\texttt{e\_limit\_opt'}}
 \newcommand\velse[0]{\texttt{else}}
+\newcommand\velseexpr[0]{\texttt{else\_expr}}
 \newcommand\vend[0]{\texttt{v\_end}}
 \newcommand\vende[0]{\texttt{end\_e}}
 \newcommand\vendep[0]{\texttt{end\_e'}}
@@ -2626,7 +2627,6 @@
 \newcommand\vidasts[0]{\texttt{id\_asts}}
 \newcommand\vids[0]{\texttt{ids}}
 \newcommand\vidsone[0]{\texttt{ids1}}
-\newcommand\vignoredoridentifier[0]{\texttt{ignored\_or\_identifier}}
 \newcommand\vimpdefs[0]{\texttt{impdefs}}
 \newcommand\vimpdefsp[0]{\texttt{impdefs'}}
 \newcommand\vimpls[0]{\texttt{impls}}
@@ -2997,7 +2997,7 @@
 \newcommand\vread[0]{\texttt{read}}
 \newcommand\vmodify[0]{\texttt{modify}}
 \newcommand\vsetter[0]{\texttt{setter}}
-\newcommand\vgetter[0]{\texttt{sgtter}}
+\newcommand\vgetter[0]{\texttt{sgetter}}
 \newcommand\vcode[0]{\texttt{code}}
 \newcommand\vAbf[0]{\textbf{A}}
 \newcommand\vBbf[0]{\textbf{B}}
@@ -3029,3 +3029,5 @@
 \newcommand\allparameters[0]{\texttt{all\_parameters}}
 \newcommand\uniqueparameters[0]{\texttt{unique\_parameters}}
 \newcommand\isstatic[0]{\texttt{is\_static}}
+\newcommand\vLone[0]{\texttt{L1}}
+\newcommand\vLtwo[0]{\texttt{L2}}

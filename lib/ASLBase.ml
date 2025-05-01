@@ -131,7 +131,7 @@ let parse_local_id =
 let parse_reg s =
   match (A64B.parse_reg s, s) with
   | Some r, _ -> Some (ArchReg r)
-  | None, "NZCV" -> Some (ArchReg AArch64Base.NZCV)
+  (* | None, "NZCV" -> Some (ArchReg AArch64Base.NZCV) *)
   | None, _ -> parse_local_id s
 
 (** A list of supported AArch64 registers. *)
@@ -223,6 +223,8 @@ let stmts_from_string s =
   let lexbuf = Lexing.from_string s in
   let module Parser = Parser.Make(struct
     let allow_no_end_semicolon = false
+    let allow_expression_elsif = false
+    let allow_storage_discards = false
   end) in
   let module Lexer = Lexer.Make(struct
     let allow_double_underscore = false

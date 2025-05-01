@@ -12,9 +12,9 @@ type CollectionWithoutFields of collection;
 // var - = MyCollection {a = Zeros{8}, b = Zeros{16}};
 // var - : MyCollection = MyCollection {a = Zeros{8}, b = Zeros{16}};
 
-var - : MyCollection;
-var - : CollectionWithEmptyFieldList;
-var - :CollectionWithoutFields;
+var x : MyCollection;
+var y : CollectionWithEmptyFieldList;
+var z :CollectionWithoutFields;
 
 func main() => integer
 begin

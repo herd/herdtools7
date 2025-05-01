@@ -30,8 +30,10 @@ type args = {
   files : (file_type * string) list;
   opn : string option;
   allow_no_end_semicolon : bool;
+  allow_expression_elsif : bool;
   allow_double_underscore : bool;
   allow_unknown : bool;
+  allow_storage_discards : bool;
   print_ast : bool;
   print_lisp : bool;
   print_serialized : bool;
@@ -52,8 +54,10 @@ let parse_args () =
   let target_files = ref [] in
   let exec = ref true in
   let allow_no_end_semicolon = ref false in
+  let allow_expression_elsif = ref false in
   let allow_double_underscore = ref false in
   let allow_unknown = ref false in
+  let allow_storage_discards = ref false in
   let print_ast = ref false in
   let print_serialized = ref false in
   let print_typed = ref false in
@@ -77,6 +81,9 @@ let parse_args () =
       ( "--allow-no-end-semicolon",
         Arg.Set allow_no_end_semicolon,
         " Allow block statements to terminate with 'end' instead of 'end;'." );
+      ( "--allow-expression-elsif",
+        Arg.Set allow_expression_elsif,
+        " Allow 'elsif' at the expression level." );
       ( "--allow-double-underscore",
         Arg.Set allow_double_underscore,
         " Allow the usage of variables beginning with double underscores \
@@ -84,6 +91,9 @@ let parse_args () =
       ( "--allow-unknown",
         Arg.Set allow_unknown,
         " Allow the usage of 'UNKNOWN' instead of 'ARBITRARY'." );
+      ( "--allow-storage-discards",
+        Arg.Set allow_storage_discards,
+        " Allow storage declarations that discard their right-hand sides." );
       ( "--print",
         Arg.Set print_ast,
         " Print the parsed AST to stdout before executing it." );
@@ -174,8 +184,10 @@ let parse_args () =
       files = !target_files;
       opn = (match !opn with "" -> None | s -> Some s);
       allow_no_end_semicolon = !allow_no_end_semicolon;
+      allow_expression_elsif = !allow_expression_elsif;
       allow_double_underscore = !allow_double_underscore;
       allow_unknown = !allow_unknown;
+      allow_storage_discards = !allow_storage_discards;
       print_ast = !print_ast;
       print_serialized = !print_serialized;
       print_typed = !print_typed;
@@ -225,10 +237,18 @@ let () =
 
   let parser_config =
     let allow_no_end_semicolon = args.allow_no_end_semicolon in
+    let allow_expression_elsif = args.allow_expression_elsif in
     let allow_double_underscore = args.allow_double_underscore in
     let allow_unknown = args.allow_unknown in
+    let allow_storage_discards = args.allow_storage_discards in
     let open Builder in
-    { allow_no_end_semicolon; allow_double_underscore; allow_unknown }
+    {
+      allow_no_end_semicolon;
+      allow_expression_elsif;
+      allow_double_underscore;
+      allow_unknown;
+      allow_storage_discards;
+    }
   in
 
   let extra_main =

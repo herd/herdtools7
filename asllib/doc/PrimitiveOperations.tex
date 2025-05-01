@@ -47,7 +47,7 @@ on \nativevalues\ via $\unoprel$ and $\binoprel$.
         |\ & \overname{\MUL}{\texttt{"*"}} \;|\; \overname{\DIV}{\texttt{"DIV"}} \;|\; \overname{\DIVRM}{\texttt{"DIVRM"}}
         \;|\; \overname{\MOD}{\texttt{"MOD"}} \;|\; \overname{\SHL}{\texttt{"<<"}}  \;|\; \overname{\SHR}{\texttt{">>"}}
         & \\
-        |\ & \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}} \;|\; \overname{\BVCONCAT}{\texttt{"::"}}
+        |\ & \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}} \;|\; \overname{\CONCAT}{\texttt{"::"}}
         &
 \end{flalign*}
 
@@ -225,7 +225,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[]{}{
-  \buildbinop(\Nbinop(\Tcoloncolon)) \astarrow \overname{\BVCONCAT}{\vastnode}
+  \buildbinop(\Nbinop(\Tcoloncolon)) \astarrow \overname{\CONCAT}{\vastnode}
 }
 \end{mathpar}
 
@@ -725,8 +725,14 @@ eq_enum: RED == RED = TRUE
 eq_enum: RED == GREEN = FALSE
 eq_enum: RED != RED = FALSE
 eq_enum: RED != GREEN = TRUE
+concat_string: 0 :: '1' :: 2.0 :: TRUE :: "foo" :: RED = 00x12TRUEfooRED
 \end{Verbatim}
 % CONSOLE_END
+
+\ExampleDef{String Concatenation}
+String concatenation operates over singular types, first converting them to strings using $\literaltostring$.
+\listingref{binary-operations-stringslabels} shows an example of string concatenation applied to literals of \integertypeterm{}, \bitvectortypeterm{}, \realtypeterm{}, \booleantypeterm{}, and \enumerationtypeterm{}.
+The literals are converted to strings, and these strings are concatenated.
 
 \hypertarget{def-binopsignatures}{}
 The following set defines the valid signatures of
@@ -776,7 +782,8 @@ and argument types of its operand literals:
   (\XOR       &,& \lbitvector &,& \lbitvector)&,\\
   (\MINUS     &,& \lbitvector &,& \lbitvector)&,\\
   (\PLUS      &,& \lbitvector &,& \lbitvector)&,\\
-  (\BVCONCAT  &,& \lbitvector &,& \lbitvector)&,\\
+  (\CONCAT    &,& \lbitvector &,& \lbitvector)&,\\
+  (\CONCAT    &,& \Ignore &,& \Ignore)&,\\
   (\MINUS     &,& \lbitvector &,& \lint)&,\\
   (\PLUS      &,& \lbitvector &,& \lint)&\\
   (\EQOP      &,& \lstring &,& \lstring)&,\\
@@ -1106,7 +1113,7 @@ and argument types of its operand literals:
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a_{1..k}$;
     \item $\vvtwo$ is a bitvector literal for $b_{1..l}$;
-    \item $\op$ is $\BVCONCAT$;
+    \item $\op$ is $\CONCAT$;
     \item define $\vr$ as the bitvector literal for $a_{1..k}b_{1..l}$.
   \end{itemize}
 
@@ -1140,6 +1147,15 @@ and argument types of its operand literals:
   \begin{itemize}
     \item $\op$ is $\NEQ$, $\vlone$ is the literal string for $a$, and $\vltwo$ is the literal string for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
+  \end{itemize}
+
+  \item \AllApplyCase{concat\_strings}
+  \begin{itemize}
+    \item $\vvone$ and $\vvtwo$ are not both bitvector literals;
+    \item $\op$ is $\CONCAT$;
+    \item define $\vsone$ as $\literaltostring(\vvone)$;
+    \item define $\vstwo$ as $\literaltostring(\vvtwo)$;
+    \item define $\vr$ as the string literal for the concatenation of $\vsone$ and $\vstwo$.
   \end{itemize}
 
   \item \AllApplyCase{eq\_label}
@@ -1501,7 +1517,7 @@ of \texttt{width} bits.
 \inferrule[concat\_bits]{}{
   {
   \begin{array}{r}
-  \binopliterals(\overname{\BVCONCAT}{\op}, \overname{\lbitvector(a_{1..k})}{\vvone}, \overname{\lbitvector(b_{1..l})}{\vvtwo}) \typearrow \\
+  \binopliterals(\overname{\CONCAT}{\op}, \overname{\lbitvector(a_{1..k})}{\vvone}, \overname{\lbitvector(b_{1..l})}{\vvtwo}) \typearrow \\
   \overname{\lbitvector(a_{1..k})\lbitvector(b_{1..l})}{\vr}
   \end{array}
   }
@@ -1536,6 +1552,21 @@ of \texttt{width} bits.
 \begin{mathpar}
 \inferrule[ne\_string]{}{
   \binopliterals(\overname{\NEQ}{\op}, \overname{\lstring(a)}{\vvone}, \overname{\lstring(b)}{\vvtwo}) \typearrow \overname{\lbool(a \neq b)}{\vr}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[concat\_strings]{
+  \vvone \neq \lbitvector(\Ignore) \lor \vvtwo \neq \lbitvector(\Ignore) \\
+  \vsone \eqdef \literaltostring(\vvone) \\
+  \vstwo \eqdef \literaltostring(\vvtwo)
+}{
+  {
+  \begin{array}{r}
+  \binopliterals(\overname{\CONCAT}{\op}, \vvone, \vvtwo) \typearrow
+  \overname{\vsone \concat \vstwo}{\vr}
+  \end{array}
+  }
 }
 \end{mathpar}
 

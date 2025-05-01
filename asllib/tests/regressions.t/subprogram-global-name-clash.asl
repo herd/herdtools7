@@ -18,8 +18,8 @@ end;
 
 func main() => integer
 begin
-  let - = X;
-  let - = X(TRUE);
+  - = X;
+  - = X(TRUE);
   X() = X;
   X() = X + 1;
   assert X() == 1;

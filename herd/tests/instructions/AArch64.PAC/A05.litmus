@@ -1,0 +1,10 @@
+AArch64 A05
+Variant=pac,fpac
+
+{ 0:x0=x }
+
+P0                 ;
+  pacdza x0        ;
+  autdzb x0        ;
+forall
+  ( Fault(P0, PacCheck:DB) )

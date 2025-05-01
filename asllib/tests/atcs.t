@@ -8,6 +8,8 @@ Deferred to execution ATCs
 
   $ aslref atcs1.asl
   File atcs1.asl, line 2, characters 11 to 12:
+    let x = (3 as integer {42});
+             ^
   ASL Execution error: Mismatch type:
     value 3 does not belong to type integer {42}.
   [1]
@@ -22,6 +24,8 @@ Bad structure ATCs
 
   $ aslref atcs2.asl
   File atcs2.asl, line 2, characters 11 to 23:
+    let x = (3 as boolean);
+             ^^^^^^^^^^^^
   ASL Typing error: cannot perform Asserted Type Conversion on integer {3} by
     boolean.
   [1]
@@ -58,6 +62,8 @@ ATCs on other types
 
   $ aslref atcs5.asl
   File atcs5.asl, line 5, characters 10 to 20:
+    let y = x as myty2;
+            ^^^^^^^^^^
   ASL Typing error: cannot perform Asserted Type Conversion on myty by myty2.
   [1]
 
@@ -71,6 +77,8 @@ ATCs on other types
 
   $ aslref atcs6.asl
   File atcs6.asl, line 3, characters 11 to 25:
+    let x = ((42, Zeros{4}) as myty);
+             ^^^^^^^^^^^^^^
   ASL Execution error: Mismatch type:
     value [42, 0x0] does not belong to type (integer {0..10}, bits(4)).
   [1]
@@ -106,6 +114,8 @@ ATCs in types:
 
   $ aslref atcs9.asl
   File atcs9.asl, line 1, characters 14 to 29:
+  let bv : bits(1 as integer{2}) = Ones{1};
+                ^^^^^^^^^^^^^^^
   ASL Typing error: a pure expression was expected, found 1 as integer {2},
     which produces the following side-effects: [PerformsAssertions].
   [1]

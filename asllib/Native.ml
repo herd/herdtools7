@@ -42,22 +42,11 @@ type native_value =
 
 let nv_literal l = NV_Literal l
 
-let pp_literal f =
-  let open Format in
-  function
-  | L_Int i -> Z.pp_print f i
-  | L_Bool true -> pp_print_string f "TRUE"
-  | L_Bool false -> pp_print_string f "FALSE"
-  | L_Real r -> Q.pp_print f r
-  | L_BitVector bv -> pp_print_string f (Bitvector.to_string_hexa bv)
-  | L_String s -> pp_print_string f s
-  | L_Label l -> pp_print_string f l
-
 let rec pp_native_value f =
   let open Format in
   let pp_comma f () = fprintf f ",@ " in
   function
-  | NV_Literal lit -> pp_literal f lit
+  | NV_Literal lit -> pp_print_string f (Operations.literal_to_string lit)
   | NV_Vector li ->
       fprintf f "@[[%a]@]" (pp_print_list ~pp_sep:pp_comma pp_native_value) li
   | NV_Record map -> IMap.pp_print pp_native_value f map

@@ -34,7 +34,9 @@ module
 
   module Cst = Cst
 
-  type arch_op = ArchOp.op
+  type arch_extra_op = ArchOp.extra_op
+  type 'a arch_constr_op = 'a ArchOp.constr_op
+  type arch_op = arch_extra_op arch_constr_op
   type arch_extra_op1 = ArchOp.extra_op1
   type 'a arch_constr_op1 = 'a ArchOp.constr_op1
   type arch_op1 = arch_extra_op1 arch_constr_op1
@@ -302,8 +304,7 @@ module
     | (Val (Symbolic _),Val (Symbolic _))
     | (Val (Label _),Val (Label _))
     | (Val (PteVal _),Val (PteVal _))
-    | (Val (Instruction _),Val (Instruction _))
-      ->
+    | (Val (Instruction _),Val (Instruction _)) ->
         Val (Concrete (Cst.Scalar.of_int (compare  v1 v2)))
     (* 0 is sometime used as invalid PTE, no orpat because warning 57
        cannot be disabled in some versions ?  *)

@@ -90,7 +90,7 @@ let prec =
   function
   | `BOR | `BAND | `IMPL | `BEQ -> 1
   | `EQ_OP | `NEQ -> 2
-  | `PLUS | `MINUS | `OR | `XOR | `AND | `BV_CONCAT -> 3
+  | `PLUS | `MINUS | `OR | `XOR | `AND | `CONCAT -> 3
   | `MUL | `DIV | `DIVRM | `RDIV | `MOD | `SHL | `SHR -> 4
   | `POW -> 5
   | `GT | `GEQ | `LT | `LEQ -> 0 (* Non assoc *)
@@ -238,7 +238,7 @@ let binop ==
   | SHL         ; { `SHL    }
   | SHR         ; { `SHR    }
   | POW         ; { `POW    }
-  | COLON_COLON ; { `BV_CONCAT }
+  | COLON_COLON ; { `CONCAT }
 
 (* ------------------------------------------------------------------------
 
@@ -250,7 +250,10 @@ let field_assign := separated_pair(IDENTIFIER, EQ, expr)
 
 let e_else :=
   | ELSE; expr
-  | annotated ( ELSIF; c=expr; THEN; e=expr; ~=e_else; <E_Cond> )
+  | annotated ( ELSIF [@internal true]; c=expr; THEN; e1=expr; e2=e_else; {
+      if Config.allow_expression_elsif then E_Cond (c, e1, e2)
+      else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Expression-level 'elsif'."
+    } )
 
 let expr :=
   annotated (
@@ -456,12 +459,20 @@ let lexpr :=
    have to declare new variables. *)
 
 let discard_or_identifier :=
-  | MINUS;         { fresh_var "__ldi_discard" }
+  | MINUS;         { local_ignored () }
   | ~=IDENTIFIER;  <>
 
 let decl_item :=
-  | ~=discard_or_identifier          ; < LDI_Var >
-  | ~=plist2(discard_or_identifier)  ; < LDI_Tuple >
+  | MINUS [@internal true]           ; {
+      if Config.allow_storage_discards then LDI_Var (local_ignored ())
+      else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Discarded storage declaration."
+    }
+  | ~=IDENTIFIER                     ; < LDI_Var >
+  | vs=plist2(discard_or_identifier) ; {
+      if List.for_all is_local_ignored vs && not Config.allow_storage_discards then
+        Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Discarded storage declaration."
+      else LDI_Tuple vs
+    }
 
 (* ------------------------------------------------------------------------- *)
 (* Statement helpers *)
@@ -584,7 +595,10 @@ let maybe_empty_stmt_list := stmt_list | annotated({ S_Pass })
 let func_body == delimited(BEGIN, maybe_empty_stmt_list, end_semicolon)
 let recurse_limit := ioption(RECURSELIMIT; expr)
 let ignored_or_identifier :=
-  | MINUS; { global_ignored () }
+  | MINUS [@internal true]; {
+      if Config.allow_storage_discards then global_ignored ()
+      else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Discarded storage declaration."
+    }
   | IDENTIFIER
 let override ==
   ioption(
@@ -661,8 +675,11 @@ let decl :=
     )
   ); { [d] }
   | ~=override; ACCESSOR; name=IDENTIFIER; ~=params_opt; ~=func_args; BIARROW; ~=ty;
-    BEGIN; ~=accessors; end_semicolon;
-    { desugar_accessor_pair override name params_opt func_args ty accessors }
+    ~=accessor_body;
+    { desugar_accessor_pair override name params_opt func_args ty accessor_body }
+
+let accessor_body == BEGIN; ~=accessors; end_semicolon;
+  { accessors }
 
 (* Begin AST *)
 let spec := ~=terminated(list(decl), EOF); < List.concat >

@@ -68,7 +68,7 @@ module Make (C : Config.S) = struct
       (if C.Syntax.rdiv then Some `RDIV else None);
       (if C.Syntax.shl then Some `SHL else None);
       (if C.Syntax.shr then Some `SHR else None);
-      (if C.Syntax.bv_concat then Some `BV_CONCAT else None);
+      (if C.Syntax.bv_concat then Some `CONCAT else None);
     ]
     |> filter_none |> scaled_finite
 

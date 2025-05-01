@@ -25,7 +25,8 @@ Subprogram declarations:
 \Ndecl  \derives \ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody &\\
 |\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
 |\ & \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbiarrow \parsesep \Nty &\\
-   & \wrappedline\ \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon &\\
+   & \wrappedline\ \Naccessorbody &\\
+\Naccessorbody \derives \ & \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon&
 \end{flalign*}
 
 Type declarations:
@@ -36,10 +37,10 @@ Type declarations:
 
 Global storage declarations:
 \begin{flalign*}
-\Ndecl  \derives \ & \Nglobaldeclkeyword \parsesep \Nignoredoridentifier \parsesep &\\
+\Ndecl  \derives \ & \Nglobaldeclkeyword \parsesep \Tidentifier \parsesep &\\
     & \wrappedline\ \option{\Tcolon \parsesep \Nty} \parsesep \Teq \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tconfig \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&\\
+|\ & \Tconfig \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&\\
 \end{flalign*}
 
 Pragmas:

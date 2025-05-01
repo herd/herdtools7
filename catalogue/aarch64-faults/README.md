@@ -52,7 +52,7 @@ Currently, herdtools7 supports the following types of faults:
     - `MMU:Permission` fault, illustrated by STRdb0F.litmus.
     - `TagCheck` fault, illustrated by LDRredF.litmus test. Not applicable to litmus7.
     - `UndefinedInstruction`, illustrated by UDF.litmus and noUDF.litmus tests.
-    - `SupervisorCall`, illustrated by SVC.litmus test.
+    - `SupervisorCall`, illustrated by SVC*.litmus and MP+dmb.st+ctrl-svc.*.litmus tests.
 
 The litmus tests above follow the convention that the `fault()` predicate
 inquires about the instruction that caused the fault rather than the instruction

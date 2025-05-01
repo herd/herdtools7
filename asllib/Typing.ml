@@ -632,7 +632,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | `BAND | `BOR | `IMPL -> true
     | `AND | `BEQ | `DIV | `DIVRM | `XOR | `EQ_OP | `GT | `GEQ | `LT | `LEQ
     | `MOD | `MINUS | `MUL | `NEQ | `OR | `PLUS | `POW | `RDIV | `SHL | `SHR
-    | `BV_CONCAT ->
+    | `CONCAT ->
         false
 
   (* Begin TypeOfArrayLength *)
@@ -658,8 +658,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | (`AND | `OR | `XOR | `PLUS | `MINUS), (T_Bits (w1, _), T_Bits (w2, _))
       when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
         T_Bits (w1, []) |> here
-    | `BV_CONCAT, (T_Bits (w1, _), T_Bits (w2, _)) ->
+    | `CONCAT, (T_Bits (w1, _), T_Bits (w2, _)) ->
         T_Bits (width_plus env w1 w2, []) |> here
+    | `CONCAT, _ ->
+        let+ () =
+          check_true (Types.is_singular env t1) @@ fun () ->
+          fatal_from ~loc (Error.ExpectedSingularType t1)
+        in
+        let+ () =
+          check_true (Types.is_singular env t2) @@ fun () ->
+          fatal_from ~loc (Error.ExpectedSingularType t2)
+        in
+        T_String |> here
     | (`PLUS | `MINUS), (T_Bits (w, _), T_Int _) -> T_Bits (w, []) |> here
     | (`LEQ | `GEQ | `GT | `LT), (T_Int _, T_Int _ | T_Real, T_Real)
     | ( (`EQ_OP | `NEQ),
@@ -2391,6 +2401,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       This expression is side-effect free, and is a literal for singular types.
       If a base value cannot be statically determined (e.g. for parameterized
       integer types), a type error is thrown, at the ~location [loc].
+      Note however that a bit vector with width [N] can always be generated
+      using {[0[:N]]}.
   *)
   let rec base_value_v1 ~loc env t : expr =
     let here = add_pos_from ~loc in
@@ -2406,10 +2418,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     match t.desc with
     | T_Bool -> L_Bool false |> lit
-    | T_Bits (e, _) ->
-        let length = reduce_to_z e |> Z.to_int in
-        if length < 0 then fatal_from ~loc @@ Error.BaseValueEmptyType t
-        else L_BitVector (Bitvector.zeros length) |> lit
+    | T_Bits (e, _) -> (
+        match StaticModel.reduce_to_z_opt env e with
+        | Some l when Z.fits_int l ->
+            let length = Z.to_int l in
+            if length < 0 then fatal_from ~loc @@ Error.BaseValueEmptyType t
+            else L_BitVector (Bitvector.zeros length) |> lit
+        | _ ->
+            let zero = L_Int Z.zero |> lit in
+            let slice = Slice_Length (zero, e) in
+            E_Slice (zero, [ slice ]) |> here)
     | T_Enum [] -> assert false
     | T_Enum (name :: _) -> lookup_constants env name |> lit
     | T_Int UnConstrained -> L_Int Z.zero |> lit
@@ -2458,18 +2476,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     match t.desc with
     | T_Bool | T_Int UnConstrained | T_Real | T_String | T_Enum _ ->
         base_value_v1 ~loc env t
-    | T_Bits (width, _) ->
-        let e =
-          E_Call
-            {
-              name = "Zeros";
-              params = [];
-              args = [ width ];
-              call_type = ST_Function;
-            }
-        in
-        let _, e', _ = annotate_expr env (here e) in
-        e'
+    | T_Bits _ -> base_value_v1 ~loc env t
     | T_Int (Parameterized (_, id)) -> E_Var id |> here
     | T_Int (WellConstrained ([], _) | PendingConstrained) -> assert false
     | T_Int

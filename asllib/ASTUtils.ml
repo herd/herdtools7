@@ -362,7 +362,10 @@ and slice_equal eq slice1 slice2 =
   slice1 == slice2
   ||
   match (slice1, slice2) with
-  | Slice_Length (e11, e21), Slice_Length (e12, e22) ->
+  | Slice_Single e1, Slice_Single e2 -> expr_equal eq e1 e2
+  | Slice_Length (e11, e21), Slice_Length (e12, e22)
+  | Slice_Range (e11, e21), Slice_Range (e12, e22)
+  | Slice_Star (e11, e21), Slice_Star (e12, e22) ->
       expr_equal eq e11 e12 && expr_equal eq e21 e22
   | _ -> assert false
 
@@ -532,6 +535,9 @@ let string_starts_with ~prefix s =
 let global_ignored_prefix = "__global_ignored"
 let global_ignored () = fresh_var global_ignored_prefix
 let is_global_ignored s = string_starts_with ~prefix:global_ignored_prefix s
+let local_ignored_prefix = "__ldi_discard"
+let local_ignored () = fresh_var local_ignored_prefix
+let is_local_ignored s = string_starts_with ~prefix:local_ignored_prefix s
 let slice_is_single = function Slice_Single _ -> true | _ -> false
 
 let slice_as_single = function

@@ -13,7 +13,7 @@ begin
   var y: integer = 0;
 
   for i = 0 to write_X () do
-    let - = y * y + x ;
+    - = y * y + x ;
   end;
 
   return 0;

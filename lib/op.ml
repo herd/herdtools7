@@ -137,8 +137,6 @@ type 'aop op1 =
   | Demote  (* Demote to lower precision *)
   | ArchOp1 of 'aop
 
-
-
 let pp_op1 hexa pp_aop o = match o with
 | Not -> "!"
 | SetBit i -> sprintf "setbit%i" i

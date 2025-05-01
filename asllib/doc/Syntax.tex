@@ -215,14 +215,14 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
                    & \wrappedline\ \Nfuncbody\\
 |\ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
 |\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbiarrow \parsesep \Nty &\\
-   & \wrappedline\ \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon &\\
+   & \wrappedline\ \Naccessorbody &\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon &\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon &\\
-|\ & \Nglobaldeclkeyword \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} &\\
+|\ & \Nglobaldeclkeyword \parsesep \Tidentifier \parsesep \option{\Tcolon \parsesep \Nty} &\\
    & \wrappedline\ \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tconfig \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Nignoredoridentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
+|\ & \Tconfig \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Tidentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
 |\ & \Tpragma \parsesep \Tidentifier \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon&
 \end{flalign*}
 
@@ -303,6 +303,11 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \hypertarget{def-nignoredoridentifier}{}
 \begin{flalign*}
 \Nignoredoridentifier \derives \ & \Tminus \;|\; \Tidentifier &
+\end{flalign*}
+
+\hypertarget{def-naccessorbody}{}
+\begin{flalign*}
+\Naccessorbody \derives \ & \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon&
 \end{flalign*}
 
 \hypertarget{def-naccessors}{}
@@ -452,7 +457,7 @@ it must declare a new variable.
 \hypertarget{def-ndeclitem}{}
 \begin{flalign*}
 \Ndeclitem \derives\
-   & \Nignoredoridentifier &\\
+   & \Tidentifier &\\
 |\ & \Plisttwo{\Nignoredoridentifier}  &
 \end{flalign*}
 
@@ -483,7 +488,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     |\  & \Tidentifier &\\
                     |\  & \Nexprpattern \parsesep \Nbinop \parsesep \Nexpr &\\
                     |\  & \Nunop \parsesep \Nexpr & \precedence{\Tunops}\\
-                    |\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &\\
+                    |\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Telse \parsesep \Nexpr &\\
                     |\  & \Ncall &\\
                     |\  & \Nexprpattern \parsesep \Nslices &\\
                     |\  & \Nexprpattern \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket &\\
@@ -586,19 +591,13 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 \Nfieldassign \derives \ & \Tidentifier \parsesep \Teq \parsesep \Nexpr &
 \end{flalign*}
 
-\hypertarget{def-neelse}{}
-\begin{flalign*}
-\Neelse \derives\ & \Telse \parsesep \Nexpr &\\
-                     |\ & \Telseif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &
-\end{flalign*}
-
 \hypertarget{def-nexpr}{}
 \begin{flalign*}
 \Nexpr \derives\  & \Nvalue &\\
                     |\  & \Tidentifier &\\
                     |\  & \Nexpr \parsesep \Nbinop \parsesep \Nexpr &\\
                     |\  & \Nunop \parsesep \Nexpr & \precedence{\Tunops}\\
-                    |\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Neelse &\\
+                    |\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Telse \parsesep \Nexpr &\\
                     |\  & \Ncall &\\
                     |\  & \Nexpr \parsesep \Nslices &\\
                     |\  & \Nexpr \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket &\\

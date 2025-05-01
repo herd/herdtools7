@@ -72,7 +72,7 @@
       match es with
       | [] -> E_Literal (L_BitVector Bitvector.empty)
       | [ bv ] -> bv |> desc
-      | bv :: bvs -> List.fold_left (binop `BV_CONCAT) bv bvs |> desc
+      | bv :: bvs -> List.fold_left (binop `CONCAT) bv bvs |> desc
 
   end
 
@@ -358,7 +358,7 @@ let expr :=
   | binop_expr(expr, binop)
   | annotated (
       e1=expr; COLON; e2=expr;
-          { AST.E_Binop (`BV_CONCAT, e1, e2) }
+          { AST.E_Binop (`CONCAT, e1, e2) }
   )
 
 let binop_expr(e, b) ==

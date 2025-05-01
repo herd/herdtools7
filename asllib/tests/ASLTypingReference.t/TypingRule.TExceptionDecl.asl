@@ -9,7 +9,7 @@ end;
 
 func main() => integer
 begin
-    var - = ExceptionWithEmptyFieldList {};
-    var - = BAD_OPCODE {};
+    - = ExceptionWithEmptyFieldList {};
+    - = BAD_OPCODE {};
     return 0;
 end;

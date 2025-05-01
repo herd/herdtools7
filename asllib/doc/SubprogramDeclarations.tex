@@ -12,11 +12,12 @@ Subprogram declarations have no associated semantics.
 \section{Syntax\label{sec:SubprogramDeclarationsSyntax}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
-\Ndecl  \derives \ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \\
-& \wrappedline\ \parsesep \Nfuncbody &\\
+\Ndecl  \derives \ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \\
+& \wrappedline\ \Nrecurselimit \parsesep \Nfuncbody &\\
 |\ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
 |\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbiarrow \parsesep \Nty &\\
-   & \wrappedline\ \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon &\\
+   & \wrappedline\ \Naccessorbody &\\
+\Naccessorbody \derives \ & \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon&
 \end{flalign*}
 
 \begin{flalign*}
@@ -148,16 +149,27 @@ In particular, rather than directly building the abstract syntax for accessors, 
 
 \begin{mathpar}
 \inferrule[accessor]{
-  \buildaccessors(\vaccessors) \astarrow \vaccessorpair \\
-  \desugaraccessorpair(\voverride, \name, \astof{\vparamsopt}, \astof{\vfuncargs}, \astof{\tty}, \vaccessorpair) \astarrow \vastnode
+  \buildaccessorbody(\vbody) \astarrow \vaccessorpair \\
+  {
+  \desugaraccessorpair\left(
+    \begin{array}{l}
+    \voverride,\\
+    \name,\\
+    \astof{\vparamsopt},\\
+    \astof{\vfuncargs},\\
+    \astof{\tty},\\
+    \vaccessorpair
+    \end{array}
+    \right) \astarrow \vastnode
+  }
 }{
   {
   \begin{array}{r}
     \builddecl\left(\overname{\Ndecl\left(
       \begin{array}{l}
-        \punnode{\Noverride}, \Taccessor, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs},
-        \Tbiarrow, \punnode{\Nty}, \\
-        \wrappedline\ \Tbegin, \namednode{\vaccessors}{\Naccessors}, \Tend, \Tsemicolon
+        \punnode{\Noverride}, \Taccessor, \Tidentifier(\name), \punnode{\Nparamsopt},  \\
+        \wrappedline\ \punnode{\Nfuncargs},
+        \Tbiarrow, \punnode{\Nty}, \namednode{\vbody}{\Naccessorbody}
       \end{array}
     \right)}{\vparsednode}\right)
   \\ \astarrow \vastnode
@@ -173,11 +185,32 @@ For example, this could model a register file consisting of 32 registers, each o
 
 \ASLListing{An accessor declaration}{AccessorDeclaration}{\definitiontests/Accessor.asl}
 
+\ASTRuleDef{AccessorBody}
+\hypertarget{build-accessorbody}{}
+The relation
+\[
+  \buildaccessorbody : \overname{\parsenode{\Naccessorbody}}{\vparsednode} \;\aslrel\; \overname{\accessorpair}{\vaccessorpair}
+\]
+transforms a parse node $\vparsednode$ into an $\accessorpair$.
+
+\begin{mathpar}
+\inferrule{
+  \buildaccessors(\vaccessors) \astarrow \vaccessorpair
+}{
+    \builddecl\left(\overname{\Ndecl\left(
+      \begin{array}{l}
+        \Tbegin, \namednode{\vaccessors}{\Naccessors}, \Tend, \Tsemicolon
+      \end{array}
+    \right)}{\vparsednode}\right)
+  \astarrow \vastnode
+}
+\end{mathpar}
+
 \ASTRuleDef{RecurseLimit}
 \hypertarget{build-recurselimit}{}
 The function
 \[
-\buildrecurselimit(\overname{\parsenode{\Nrecurselimit}}{\vparsednode}) \aslto \overname{\langle\expr\rangle}{\vastnode}
+\buildrecurselimit(\overname{\parsenode{\Nrecurselimit}}{\vparsednode}) \aslto \overname{\accessorpair}{\vaccessorpair}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 

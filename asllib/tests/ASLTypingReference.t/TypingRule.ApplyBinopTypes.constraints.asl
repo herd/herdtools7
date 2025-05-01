@@ -38,6 +38,6 @@ begin
 
     // Notice how large sets of constraints (more than 2^17)
     // are approximated via ranges.
-    var - : integer{0..2^28} = (1 as integer{0..2^14}) * (2 as integer{0..2^14});
-    var - : integer{0..2^14} = (1 as integer{0..2^14}) DIV (2 as integer{0..2^14});
+    var x : integer{0..2^28} = (1 as integer{0..2^14}) * (2 as integer{0..2^14});
+    var y : integer{0..2^14} = (1 as integer{0..2^14}) DIV (2 as integer{0..2^14});
 end;
