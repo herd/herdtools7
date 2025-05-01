@@ -606,12 +606,12 @@ let override ==
     | IMPLEMENTATION; { Implementation })
 
 let accessors :=
-  | GETTER; getter=func_body;
-    SETTER; EQ; setter_arg=IDENTIFIER; setter=func_body;
-    { { getter; setter; setter_arg } }
-  | SETTER; EQ; setter_arg=IDENTIFIER; setter=func_body;
-    GETTER; getter=func_body;
-    { { getter; setter; setter_arg } }
+  | GETTER; getter=maybe_empty_stmt_list; end_semicolon;
+    SETTER; setter=maybe_empty_stmt_list; end_semicolon;
+    { { getter; setter } }
+  | SETTER; setter=maybe_empty_stmt_list; end_semicolon;
+    GETTER; getter=maybe_empty_stmt_list; end_semicolon;
+    { { getter; setter } }
 
 let decl :=
   | d=annotated (
@@ -674,9 +674,9 @@ let decl :=
       (* End *)
     )
   ); { [d] }
-  | ~=override; ACCESSOR; name=IDENTIFIER; ~=params_opt; ~=func_args; BIARROW; ~=ty;
+  | ~=override; ACCESSOR; name=IDENTIFIER; ~=params_opt; ~=func_args; BIARROW; setter_arg=IDENTIFIER; ~=as_ty;
     ~=accessor_body;
-    { desugar_accessor_pair override name params_opt func_args ty accessor_body }
+    { desugar_accessor_pair override name params_opt func_args setter_arg as_ty accessor_body }
 
 let accessor_body == BEGIN; ~=accessors; end_semicolon;
   { accessors }
