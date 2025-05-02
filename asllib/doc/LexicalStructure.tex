@@ -173,24 +173,24 @@ The spaces in a bitvector are not significant and are only used to improve reada
 For example, \texttt{'1111 1111 1111 1111'} is the same as \texttt{'1111111111111111'}.
 
 \section{Bitmasks}
-Constant bitmasks are written in one of two ways:
-\begin{itemize}
-  \item Using \texttt{1}, \texttt{0}, \texttt{x}, and spaces surrounded by single-quotes.
-    The \texttt{x} represents a don't care character.
-  \item Using \texttt{1}, \texttt{0}, and spaces surrounded by single-quotes, with don't care characters enclosed in parentheses.
-\end{itemize}
+Constant bitmasks are written using \texttt{1}, \texttt{0}, \texttt{x}, and \texttt{0}s/\texttt{1}s enclosed in parentheses.
+Any \texttt{x}s or characters enclosed in parentheses represent don't care characters.
 
 \hypertarget{def-rebitmasklit}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\REbitmasklit$ &$\triangleq$& \anycharacter{\texttt{'}} ($\REbit$ \texttt{|} \anycharacter{\texttt{x}})* \anycharacter{\texttt{'}}
-\texttt{ | } \anycharacter{\texttt{'}} \big( $\REbit$ \texttt{|} \anycharacter{\texttt{(}} $\REbit$+ \anycharacter{\texttt{)}} \big)* \anycharacter{\texttt{'}}
+$\REbitmasklit$ &$\triangleq$& \anycharacter{\texttt{'}} \big(
+  $\REbit$ \texttt{|}
+  \anycharacter{\texttt{x}} \texttt{|}
+  \anycharacter{\texttt{(}} $\REbit$+ \anycharacter{\texttt{)}}
+  \big)* \anycharacter{\texttt{'}}
 \end{tabular}
 \end{center}
 
 The spaces in a constant bitmask are not significant and are only used to improve readability.
 Similarly, the specific characters enclosed within parentheses are not significant, as each \texttt{0} or \texttt{1} is equivalent to an \texttt{x}.
 For example, the bitmask \verb|'0xx1'| is equivalent to \verb|'0(00)1'|, \verb|'0(01)1'|, \verb|'0(10)1'|, and \verb|'0(11)1'|.
+Similarly, \verb|'0xx(1)'| is equivalent to \verb|'0xxx'|.
 
 \section{String Literals}
 

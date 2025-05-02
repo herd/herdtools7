@@ -23,6 +23,8 @@ begin
     assert bv IN {'1(0)(1)1', '0(1)1(0)'} <-> bv IN {'1xx1', '0x1x'};
 
     assert bv == '0(1   0)1' <-> bv IN {'0xx1'};
+
+    assert bv == '1 xx (0)' <-> bv IN {'1xxx'};
   end;
 
   return 0;

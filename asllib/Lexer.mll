@@ -278,7 +278,6 @@ exception LexerError
 let new_line lexbuf = Lexing.new_line lexbuf; lexbuf
 let bitvector_lit lxm = BITVECTOR_LIT (Bitvector.of_string lxm)
 let mask_lit lxm = MASK_LIT (Bitvector.mask_of_string lxm)
-let mask_alt_lit lxm = MASK_LIT (Bitvector.mask_of_alt_string lxm)
 let reserved_err s = Error.fatal_unknown_pos @@ (Error.ReservedIdentifier s)
 
 let fatal lexbuf desc =
@@ -380,8 +379,7 @@ let alpha = ['a'-'z' 'A'-'Z']
 let string_lit = '"' [^ '"']* '"'
 let bit = ['0' '1' ' ']
 let bits = bit*
-let mask = (bit | 'x')*
-let mask_alt = (bit | '(' bit+ ')')*
+let mask = (bit | 'x' | '(' bit+ ')')*
 let identifier = (alpha | '_') (alpha|digit|'_')*
 
 (*
@@ -446,7 +444,6 @@ and token = parse
     | '"'                      { string_lit (Buffer.create 16) lexbuf }
     | '\'' (bits as lxm) '\''  { bitvector_lit lxm                }
     | '\'' (mask as lxm) '\''  { mask_lit lxm                     }  (* Warning: masks with no unknown 'x' characters will be lexed as bitvectors. *)
-    | '\'' (mask_alt as lxm) '\'' { mask_alt_lit lxm              }
     | '!'                      { BNOT                             }
     | ','                      { COMMA                            }
     | '<'                      { LT                               }

@@ -611,26 +611,6 @@ type mask = {
 
 let mask_length mask = mask.length
 
-let mask_of_string s =
-  let length_set, set =
-    String.map (function 'x' -> '0' | '0' -> '0' | '1' -> '1' | c -> c) s
-    |> of_string
-  and length_unset, unset =
-    String.map (function 'x' -> '0' | '0' -> '1' | '1' -> '0' | c -> c) s
-    |> of_string
-  and length_specified, specified =
-    String.map (function 'x' -> '0' | '0' -> '1' | '1' -> '1' | c -> c) s
-    |> of_string
-  in
-  let () =
-    if false then
-      Format.eprintf "Parsing %s gave %a and %a@." s _pp_data (length_set, set)
-        _pp_data (length_unset, unset)
-  in
-  if length_set != length_unset || length_set != length_specified then
-    raise (Invalid_argument "Mask")
-  else { length = length_set; set; unset; specified; initial_string = s }
-
 let preprocess_mask_string s =
   let buffer = Buffer.create (String.length s) in
   let process_parentheses s =
@@ -652,7 +632,26 @@ let preprocess_mask_string s =
   in
   process_parentheses s
 
-let mask_of_alt_string s = preprocess_mask_string s |> mask_of_string
+let mask_of_string s =
+  let s = preprocess_mask_string s in
+  let length_set, set =
+    String.map (function 'x' -> '0' | '0' -> '0' | '1' -> '1' | c -> c) s
+    |> of_string
+  and length_unset, unset =
+    String.map (function 'x' -> '0' | '0' -> '1' | '1' -> '0' | c -> c) s
+    |> of_string
+  and length_specified, specified =
+    String.map (function 'x' -> '0' | '0' -> '1' | '1' -> '1' | c -> c) s
+    |> of_string
+  in
+  let () =
+    if false then
+      Format.eprintf "Parsing %s gave %a and %a@." s _pp_data (length_set, set)
+        _pp_data (length_unset, unset)
+  in
+  if length_set != length_unset || length_set != length_specified then
+    raise (Invalid_argument "Mask")
+  else { length = length_set; set; unset; specified; initial_string = s }
 
 let mask_of_bitvector ((length, data) as bv) =
   let set = data
