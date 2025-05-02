@@ -202,11 +202,16 @@ let of_position x =
       ("POS_CNUM", of_int x.pos_cnum);
     ]
 
-let of_annotated of_a x = of_a x.desc
-(* aslsym_alist([("DESC", of_a x.desc);
-   ("POS_START", of_position x.pos_start);
-   ("POS_END", of_position x.pos_end);
-   ("VERSION", of_version x.version)]) *)
+let of_annotated of_a x =
+  if true then of_a x.desc
+  else
+    aslsym_alist
+      [
+        ("DESC", of_a x.desc);
+        ("POS_START", of_position x.pos_start);
+        ("POS_END", of_position x.pos_end);
+        ("VERSION", of_version x.version);
+      ]
 
 let of_identifier x = String x
 let of_uid x = of_int x
