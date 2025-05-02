@@ -344,17 +344,23 @@ module NativeBackend (C : Config) = struct
         (let two_pow_n_minus_one = minus_one (pow_2 (e_var "N")) in
          let returns = integer_range (eoi 0) two_pow_n_minus_one in
          p
-           ~parameters:[ ("N", Some (integer_range (eoi 1) (eoi 128))) ]
+           ~parameters:[ ("N", None) ]
            ~args:[ ("x", t_bits "N") ]
            ~returns "UInt" uint);
-        (let two_pow_n_minus_one = pow_2 (minus_one (e_var "N")) in
+        (let var_N = e_var "N" in
+         let two_pow_n_minus_one = pow_2 (minus_one var_N) in
          let minus_two_pow_n_minus_one = neg two_pow_n_minus_one
          and two_pow_n_minus_one_minus_one = minus_one two_pow_n_minus_one in
+         let if_0_then_0_else else_expr =
+           cond_expr (binop `EQ_OP var_N zero_expr) zero_expr else_expr
+         in
          let returns =
-           integer_range minus_two_pow_n_minus_one two_pow_n_minus_one_minus_one
+           integer_range
+             (if_0_then_0_else minus_two_pow_n_minus_one)
+             (if_0_then_0_else two_pow_n_minus_one_minus_one)
          in
          p
-           ~parameters:[ ("N", Some (integer_range (eoi 1) (eoi 128))) ]
+           ~parameters:[ ("N", None) ]
            ~args:[ ("x", t_bits "N") ]
            ~returns "SInt" sint);
         p ~args:[ ("x", integer) ] ~returns:string "DecStr" dec_str;

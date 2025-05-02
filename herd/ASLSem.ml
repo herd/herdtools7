@@ -763,8 +763,6 @@ module Make (C : Config) = struct
       let pow_2 = binop `POW (lit 2) in
       let t_named x = T_Named x |> with_pos in
       let side_effecting = true in
-      let uint_sint_parameter_type =
-        Asllib.ASTUtils.integer_range' (lit 1) (lit 128) |> with_pos in
       let uint_returns = int_ctnt (lit 0) (minus_one (pow_2 (var "N")))
       and sint_returns =
         let big_pow = pow_2 (minus_one (var "N")) in
@@ -801,11 +799,11 @@ module Make (C : Config) = struct
           write_memory_gen;
         (* Translations *)
         p1r "UInt"
-          ~parameters:[ ("N", Some uint_sint_parameter_type) ]
+          ~parameters:[ ("N", None) ]
           ("x", bv_var "N")
           ~returns:uint_returns uint;
         p1r "SInt"
-          ~parameters:[ ("N", Some uint_sint_parameter_type) ]
+          ~parameters:[ ("N", None) ]
           ("x", bv_var "N")
           ~returns:sint_returns sint;
         (* Misc *)

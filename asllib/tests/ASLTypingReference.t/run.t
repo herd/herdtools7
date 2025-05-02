@@ -724,10 +724,10 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.ParametersOfTy.asl
   $ aslref --no-exec TypingRule.ParametersOfExpr.asl
   $ aslref --no-exec TypingRule.ParametersOfExpr.bad.asl
-  File TypingRule.ParametersOfExpr.bad.asl, line 4, characters 19 to 40:
-      x: integer{A..(if TRUE then B else C)}, // Illegal expression in argument type
-                     ^^^^^^^^^^^^^^^^^^^^^
-  ASL Static Error: Unsupported expression if TRUE then B else C.
+  File TypingRule.ParametersOfExpr.bad.asl, line 4, characters 15 to 27:
+      z: integer{(D, E).item0}) => // Illegal expression in argument type
+                 ^^^^^^^^^^^^
+  ASL Static Error: Unsupported expression (D, E).item0.
   [1]
   $ aslref --no-exec TypingRule.FuncSigTypes.asl
   $ aslref --no-exec TypingRule.SubprogramTypesClash.asl
