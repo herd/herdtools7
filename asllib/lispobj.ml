@@ -120,14 +120,13 @@ let print_obj ?(pkg = "ACL2") f x =
   let module P = MakePrinter (C) in
   P.pp_obj f x
 
-(*
+let _test () =
+  let foo = Symbol ("ACL2", "FOO") in
+  let bar = Symbol ("ACL2", "BAR") in
 
-  let foo = Symbol("ACL2","FOO")
-  let bar = Symbol("ACL2","BAR") 
-  
   let rec make_sexpr n =
     if n <= 0 then
-      match Random.int(8) with
+      match Random.int 8 with
       | 0 -> bar
       | 1 -> t
       | 2 -> zero
@@ -135,24 +134,25 @@ let print_obj ?(pkg = "ACL2") f x =
       | 4 -> foo
       | _ -> nil
     else
-      match Random.int(6) with
+      match Random.int 6 with
       | 0 ->
-         Comment("hello this is a single-line comment", make_sexpr (n - Random.int(n+4)))
+          Comment
+            ( "hello this is a single-line comment",
+              make_sexpr (n - Random.int (n + 4)) )
       | 1 ->
-         Comment("hello this is a multi\n-line comment", make_sexpr (n - Random.int(n+4)))
+          Comment
+            ( "hello this is a multi\n-line comment",
+              make_sexpr (n - Random.int (n + 4)) )
       | _ ->
-         Cons(make_sexpr (n - Random.int(n+4)),
-              make_sexpr (n - Random.int(n+4)))
-
-  let obj =
-   let obj = make_sexpr 100 in
-   print_obj Format.std_formatter obj; obj
-   
-   let obj =
-   let obj = make_sexpr 20 in
-   let _ = print_obj Format.std_formatter obj in obj
-   
- *)
+          Cons
+            ( make_sexpr (n - Random.int (n + 4)),
+              make_sexpr (n - Random.int (n + 4)) )
+  in
+  let obj = make_sexpr 100 in
+  let _ = print_obj Format.std_formatter obj in
+  let obj = make_sexpr 20 in
+  let _ = print_obj Format.std_formatter obj in
+  obj
 
 open AST
 (* -------------------------------------------------------------------------
@@ -298,6 +298,10 @@ let of_bitvector_mask x =
       ("UNSET", of_bigint (Bitvector.to_z_unsigned (Bitvector.mask_unset x)));
     ]
 
+(* Note: This could be represented by the key alone, but since the
+   precision_loss_flag type is a sum-of-products rather than just an
+   enum (Precision_Lost contains a delayed_warning list) we're keeping
+   it in the sum-of-products Lisp format for uniformity. *)
 let of_precision_loss_flag x =
   tagged_list_of_list
     (match x with
