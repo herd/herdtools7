@@ -47,11 +47,23 @@ module type S = sig
 
 (* Bind keys to list of values *)
   val accumulate : key -> 'a -> 'a list t -> 'a list t
+
+  (* Compatibility with OCaml<5.1 *)
+  val of_list : (key * 'a) list -> 'a t
 end
 
 module Make(O:Set.OrderedType) : S with type key = O.t =
   struct
-    include Map.Make(O)
+    module M = Map.Make(O)
+
+    (* Compatibility with OCaml<5.1.
+       Because the one in 5.1 is significantly faster than this one, we let the
+       standard library version override this implementation. *)
+    let of_list (li: (O.t * 'a) list): 'a M.t =
+      List.fold_left (fun m (key, v) -> M.add key v m) M.empty li
+    [@@warning "-32"]
+
+    include M
 
     let pp_str_delim delim pp_bind m =
       let bds = fold (fun k v r -> (k,v)::r) m [] in
