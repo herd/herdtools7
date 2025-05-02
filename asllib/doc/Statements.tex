@@ -964,7 +964,8 @@ In \listingref{semantics-sdeclnone},
 
 \begin{flalign*}
 \Nelidedparamcall \derives \
-     & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace \parsesep \PlistZero{\Nexpr} &\\
+     & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace &\\
+  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace \parsesep \PlistZero{\Nexpr} &\\
   |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \ClistOne{\Nexpr} \parsesep \Trbrace &\\
   |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \ClistOne{\Nexpr} \parsesep \Trbrace \parsesep \PlistZero{\Nexpr}&
 \end{flalign*}
@@ -973,6 +974,16 @@ In \listingref{semantics-sdeclnone},
 \hypertarget{build-elided-param-call}{}
 The helper function $\buildelidedparamcall$ builds a $\call$ from a parsed \\
 $\Nelidedparamcall$.
+
+\begin{mathpar}
+\inferrule{
+  \buildcall(\Ncall(\Tidentifier(\id), \Tlpar, \Trpar))
+  \astarrow \vastnode
+}{
+  \buildelidedparamcall(\Nelidedparamcall (\Tidentifier(\id), \Tlbrace, \Trbrace))
+  \astarrow \vastnode
+}
+\end{mathpar}
 
 \begin{mathpar}
 \inferrule{
