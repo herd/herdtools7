@@ -853,6 +853,7 @@ gets
 getter
 getting
 github
+give
 given
 gives
 global
