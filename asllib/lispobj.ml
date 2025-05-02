@@ -67,8 +67,10 @@ module MakePrinter (Conf : PrinterConf) = struct
   (* In strings we need to escape both quotes and backslashes, so that the Lisp reader will get the right string.
      We need four backslashes to represent each one backslash in both the regex input and output. *)
   let escape_backslashes_and_quotes s =
-    Str.global_replace (Str.regexp "\"") "\\\""
-      (Str.global_replace (Str.regexp "\\\\") "\\\\\\\\" s)
+    let repl_char ch newstr str =
+      String.concat newstr (String.split_on_char ch str)
+    in
+    repl_char '"' "\\\"" (repl_char '\\' "\\\\" s)
 
   let rec pp_obj f x =
     match x with
