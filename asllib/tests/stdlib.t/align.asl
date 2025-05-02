@@ -25,6 +25,30 @@ begin
   assert AlignUpP2('001000', 5) == '100000';
   assert AlignUpP2('001000', 6) == '000000';
 
+  assert  IsAlignedP2('', 0);
+  assert  IsAlignedP2('110111', 0);
+  assert !IsAlignedP2('110111', 1);
+  assert !IsAlignedP2('110111', 2);
+  assert !IsAlignedP2('110111', 3);
+  assert !IsAlignedP2('110111', 4);
+  assert !IsAlignedP2('110111', 5);
+  assert !IsAlignedP2('110111', 6);
+  assert  IsAlignedP2('001000', 0);
+  assert  IsAlignedP2('001000', 1);
+  assert  IsAlignedP2('001000', 2);
+  assert  IsAlignedP2('001000', 3);
+  assert !IsAlignedP2('001000', 4);
+  assert !IsAlignedP2('001000', 5);
+  assert !IsAlignedP2('001000', 6);
+
+
+  assert  IsAlignedSize(42, 2);
+  assert !IsAlignedSize(43, 2);
+
+  assert  IsAlignedP2(56, 3);
+  assert !IsAlignedP2(57, 3);
+
+
   for N = 1 to 5 do
     let pN = 2 ^ N;
     for x = -pN to pN do
@@ -43,6 +67,9 @@ begin
 
         assert AlignUpSize(bv, p) == AlignUpP2(bv, y);
         assert AlignDownSize(bv, p) == AlignDownP2(bv, y);
+
+        assert IsAlignedP2(AlignUpP2(bv, y), y);
+        assert IsAlignedP2(AlignDownP2(bv, y), y);
       end;
     end;
   end;
