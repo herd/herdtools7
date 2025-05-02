@@ -41,7 +41,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let ppo _f k = k
 
-    open A64
+    include A64
 
 (* Nop instr code *)
     let nop = "NOP"

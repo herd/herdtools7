@@ -38,7 +38,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 
     module AV=RISCV
     open RISCV
-    open C
+    include C
     open Code
 
 (* Utilities *)

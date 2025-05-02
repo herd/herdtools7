@@ -61,7 +61,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
           let fullmixed = Cfg.variant Variant_gen.FullMixed
         end)
     include CompileCommon.Make(Cfg)(X86_64)
-    open X86_64
+    include X86_64
 
     let inst_to_reg_size = function
       | I8b -> R8bL

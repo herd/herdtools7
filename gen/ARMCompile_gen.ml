@@ -32,8 +32,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (******)
     let ppo _f k = k
 
-    open ARM
-    open C
+    include ARM
+    include C
 
 
 (* Utilities *)

@@ -27,7 +27,8 @@ struct
   let ppo _f k = k
 (******)
 
-  open X86
+  include X86
+  include C
 
   let next_reg x = alloc_reg x
 
