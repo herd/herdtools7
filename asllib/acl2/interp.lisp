@@ -29,7 +29,6 @@
 (include-book "centaur/bitops/part-select" :dir :system)
 (include-book "centaur/bitops/part-install" :dir :system)
 (include-book "oracle")
-(include-book "std/strings/case-conversion" :dir :system)
 
 ;; (local (include-book "std/strings/hexify" :dir :system))
 (include-book "std/alists/alist-defuns" :dir :system)
@@ -778,53 +777,6 @@
     (-                           (ev_error "Bad primitive" (list name params args))))
   )
 
-
-
-;; Could send to console or collect output -- might want to prove something
-;; about printed output.  Print is type-constrained to deal only with singular
-;; types, not compound, but we'll produce some string for records/arrays
-;; anyway.
-(define val-to-string ((v val-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  :prepwork ((local (defthm character-listp-of-explode-nonnegative-integer
-                      (implies (character-listp ans)
-                               (character-listp (explode-nonnegative-integer n print-base ans)))))
-             (local (defthm character-listp-of-explode-nonnegative-atom
-                      (character-listp (explode-atom n print-base))))
-             (local (defthm character-listp-of-repeat
-                      (implies (characterp x)
-                               (character-listp (acl2::repeat n x)))
-                      :hints(("Goal" :in-theory (enable acl2::repeat)))))
-             (local (in-theory (disable explode-atom))))
-  (val-case v
-    :v_int (coerce (explode-atom v.val 10) 'string)
-    :v_bool (if v.val "TRUE" "FALSE")
-    :v_real (b* ((num (numerator v.val))
-                 (numstr (coerce (explode-atom num 10) 'string))
-                 (den (denominator v.val))
-                 ((when (eql den 1)) numstr)
-                 (denstr (coerce (explode-atom den 10) 'string)))
-              (concatenate 'string numstr "/" denstr))
-    :v_string v.val
-    :v_bitvector (b* (((when (eql v.len 0))
-                       ;; special case to match aslref -- not sure if this is a bug though
-                       "0x")
-                      (digits (str::downcase-string (coerce (explode-atom v.val 16) 'string)))
-                      (length (ceiling v.len 4))
-                      (zeros (coerce (make-list (nfix (- length (length digits)))
-                                                :initial-element #\0)
-                                     'string)))
-                   (concatenate 'string "0x" zeros digits))
-    :v_label (identifier->val v.val)
-    :v_array "<array>"
-    :v_record "<record>"))
-
-(define vallist-to-string ((v vallist-p))
-  :returns (str stringp :rule-classes :type-prescription)
-  (if (atom v)
-      ""
-    (concatenate 'string (val-to-string (car v))
-                 (vallist-to-string (cdr v)))))
 
 
 

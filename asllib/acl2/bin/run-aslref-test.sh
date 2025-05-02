@@ -51,10 +51,11 @@ export PATH="$acl2asldir"/bin:$PATH
 
 # echo aslref ${aslargs[@]} "$aslfile" --print-lisp --no-exec
 aslref_out=$( ( aslref ${aslargs[@]} "$aslfile" --no-primitives --print-lisp --no-exec > "$astfile" ) 2>&1 )
-if [[ $? != 0 ]]; then
+status=$?
+if [[ $status != 0 ]]; then
     # echo "aslref_out (fail before exec):"
     echo "$aslref_out";
-    exit 1;
+    exit $status;
 fi
 
 echo "(asl::read-ast-file-into-globals \"$astfile\")
