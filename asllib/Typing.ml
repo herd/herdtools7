@@ -3428,6 +3428,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
              tuples - these are used to check binary operator precedence and are
              removed during typechecking) *)
           parameters_of_expr ~env e
+      | E_Cond (e, e1, e2) ->
+          parameters_of_expr ~env e @ parameters_of_expr ~env e1
+          @ parameters_of_expr ~env e2
       | E_Tuple _ | _ ->
           Error.fatal_from (to_pos e) (Error.UnsupportedExpr (Static, e))
     in

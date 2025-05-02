@@ -11,7 +11,7 @@
 // ======
 // Convert a bitvector to an unsigned integer, where bit 0 is LSB.
 
-func UInt{N: integer{1..128}} (x: bits(N)) => integer{0..2^N-1}
+func UInt{N} (x: bits(N)) => integer{0..2^N-1}
 begin
     var result: integer = 0;
     for i = 0 to N-1 do
@@ -26,13 +26,14 @@ end;
 // ======
 // Convert a 2s complement bitvector to a signed integer.
 
-func SInt{N: integer{1..128}} (x: bits(N)) => integer{-(2^(N-1)) .. 2^(N-1)-1}
+func SInt{N} (x: bits(N))
+  => integer{(if N == 0 then 0 else -(2^(N-1))) .. (if N == 0 then 0 else 2^(N-1)-1)}
 begin
     var result: integer = UInt(x);
     if N > 0 && x[N-1] == '1' then
         result = result - 2^N;
     end;
-    return result as {-(2^(N-1)) .. 2^(N-1)-1};
+    return result as {(if N == 0 then 0 else -(2^(N-1))) .. (if N == 0 then 0 else 2^(N-1)-1)};
 end;
 
 func Min(a: integer, b: integer) => integer
@@ -549,7 +550,7 @@ end;
 // A variant of AlignDownSize where the bitvector x is viewed as an unsigned
 // integer and the resulting integer is represented by its first N bits.
 
-func AlignDownSize{N: integer{1..128}}(x: bits(N), size: integer {1..2^N}) => bits(N)
+func AlignDownSize{N}(x: bits(N), size: integer {1..2^N}) => bits(N)
 begin
     return AlignDownSize(UInt(x), size)[:N];
 end;
@@ -559,7 +560,7 @@ end;
 // A variant of AlignUpSize where the bitvector x is viewed as an unsigned
 // integer and the resulting integer is represented by its first N bits.
 
-func AlignUpSize{N: integer{1..128}}(x: bits(N), size: integer {1..2^N}) => bits(N)
+func AlignUpSize{N}(x: bits(N), size: integer {1..2^N}) => bits(N)
 begin
     return AlignUpSize(UInt(x), size)[:N];
 end;
@@ -570,7 +571,7 @@ end;
 // to a multiple of size (not necessarily a power of 2).
 // Otherwise, return FALSE.
 
-func IsAlignedSize{N: integer{1..128}}(x: bits(N), size: integer {1..2^N}) => boolean
+func IsAlignedSize{N}(x: bits(N), size: integer {1..2^N}) => boolean
 begin
     return IsAlignedSize(UInt(x), size);
 end;

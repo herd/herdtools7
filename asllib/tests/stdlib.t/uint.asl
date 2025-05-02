@@ -1,6 +1,6 @@
 // Test UInt on all bitvectors of length N;
 // bv is a phantom argument, only there to enable the parameter N
-func test_uint {N: integer{1..127}} (bv: bits(N))
+func test_uint {N} (bv: bits(N))
 begin
   for i = 0 to 1 << N do
     assert UInt (i[N:0]) == i;
@@ -8,7 +8,7 @@ begin
 end;
 
 // Same as test_uint, but only test 2^m numbers on each side of the interval
-func test_big_uint {N: integer{1..127}} (bv: bits(N), m: integer {0..N})
+func test_big_uint {N} (bv: bits(N), m: integer {0..N})
 begin
   for i = 0 to 1 << m do
     assert UInt (i[N:0]) == i;
@@ -21,9 +21,10 @@ end;
 func main () => integer
 begin
   assert UInt('110') == 6;
+  assert UInt('') == 0;
   assert UInt('100000000') == 0x100;
 
-  for N = 1 to 10 do
+  for N = 0 to 10 do
     test_uint{N}(Zeros{N});
   end;
 
@@ -37,6 +38,11 @@ begin
   test_big_uint{64}(Zeros{64}, 5);
   test_big_uint{65}(Zeros{65}, 5);
   test_big_uint{127}(Zeros{127}, 5);
+  test_big_uint{128}(Zeros{128}, 5);
+  test_big_uint{129}(Zeros{129}, 5);
+  test_big_uint{255}(Zeros{255}, 5);
+  test_big_uint{256}(Zeros{256}, 5);
+  test_big_uint{257}(Zeros{257}, 5);
 
   return 0;
 end;

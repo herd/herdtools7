@@ -1,4 +1,4 @@
-func test_sint {N: integer{1..127}} (bv: bits(N))
+func test_sint {N} (bv: bits(N))
 begin
   for i = 0 to 1 << N - 1 do
     assert SInt ('0' :: i[N-1:0]) == i;
@@ -7,7 +7,7 @@ begin
 end;
 
 // Same as test_sint, but only test 2^m numbers on each side of the interval
-func test_big_sint {N: integer{1..127}} (bv: bits(N), m: integer {0..N})
+func test_big_sint {N} (bv: bits(N), m: integer {0..N})
 begin
   for i = 0 to 1 << m do
     assert SInt ('0' :: i[N-1:0]) == i;
@@ -32,8 +32,9 @@ begin
   assert SInt('000') == 0;
   assert SInt('0') == 0;
   assert SInt('1') == -1;
+  assert SInt('') == 0;
 
-  for N = 1 to 10 do
+  for N = 0 to 10 do
     test_sint{N}(Zeros{N});
   end;
 
@@ -47,6 +48,11 @@ begin
   test_big_sint{64}(Zeros{64}, 5);
   test_big_sint{65}(Zeros{65}, 5);
   test_big_sint{127}(Zeros{127}, 5);
+  test_big_sint{128}(Zeros{128}, 5);
+  test_big_sint{129}(Zeros{129}, 5);
+  test_big_sint{255}(Zeros{255}, 5);
+  test_big_sint{256}(Zeros{256}, 5);
+  test_big_sint{257}(Zeros{257}, 5);
 
   return 0;
 end;
