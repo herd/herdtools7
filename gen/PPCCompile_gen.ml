@@ -102,7 +102,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
 (*******)
 
-    open C
+    include C
 
     let next_reg x = PPC.alloc_reg x
 

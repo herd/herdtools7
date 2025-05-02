@@ -26,8 +26,8 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 (******)
     let ppo _f k = k
 
-    open MIPS
-    open C
+    include MIPS
+    include C
 
 
 (* Utilities *)

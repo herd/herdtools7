@@ -29,8 +29,8 @@ module Make(Cfg:Config)(BO:BellArch_gen.Config) : XXXCompile_gen.S =
 
     let ppo _f k = k
 
-    open Bell
-    open C
+    include Bell
+    include C
 
 (* Utilities *)
 
