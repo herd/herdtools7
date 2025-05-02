@@ -1,5 +1,5 @@
-AArch64 S+dmb.sttp+ctrl--sync
-Hash=74ccfbec9f9dd74dfc8e896a6d2fcc8f
+AArch64 S+dmb.sttp+ctrl--sync.mod
+Hash=546450a954debcf954de60e9b3e39dbf
 Variant=memtag,sync
 
 {
@@ -7,11 +7,10 @@ Variant=memtag,sync
  1:X3=x:red; 1:X1=y:green;
 }
  P0          | P1          ;
-             | L0:         ;
  STG X4,[X3] | LDR W0,[X1] ;
  DMB ST      | CBZ W0,L0   ;
  MOV W0,#1   | MOV W2,#1   ;
  STR W0,[X1] | L1:         ;
              | STR W2,[X3] ;
-
-exists (fault(P1:L1,x))
+             | L0:         ;
+exists Fault(P1:L1,x)

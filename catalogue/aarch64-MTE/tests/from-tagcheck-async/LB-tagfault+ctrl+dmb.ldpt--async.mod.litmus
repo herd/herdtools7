@@ -1,0 +1,16 @@
+AArch64 LB-tagfault+ctrl+dmb.ldpt--async.mod
+Hash=424cfd7d9dde3e7d3b973afd92bef51b
+Variant=memtag,async
+
+{
+ 0:X1=x:green; 0:X2=y:green;
+ 1:X1=x:green; 1:X2=y:green; 1:X3=x:red;
+}
+ P0          | P1          ;
+ LDR W3,[X1] | LDR W4,[X2] ;
+ CBNZ W3,L1  | DMB LD      ;
+ MOV W0,#1   | STG X3,[X1] ;
+ STR W0,[X2] |             ;
+ L1:         |             ;
+
+exists (0:TFSR_Elx=1 /\ 1:X4=1)

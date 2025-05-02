@@ -4,6 +4,5 @@ MP+dmb.sttp+acqrel--async.litmus
 MP+dmb.sttp+addr_asynctagfault.litmus
 MP+dmb.sttp+pickaddr--async.litmus
 S+dmb.st+addr_asynctagfault-po.litmus
-S+dmb.sttp+ctrl_asynctagfault.litmus
 S+dmb.sttp+data-noasyncfault.litmus
 S+dmb.sttp+data_asynctagfault.litmus
