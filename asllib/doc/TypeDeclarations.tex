@@ -16,7 +16,8 @@ Type declarations have no associated semantics.
 \Nsubtypeopt           \derives \ & \option{\Nsubtype} &\\
 \Nsubtype \derives \ & \Tsubtypes \parsesep \Tidentifier \parsesep \Twith \parsesep \Nfields &\\
             |\              & \Tsubtypes \parsesep \Tidentifier &\\
-\Nfields \derives \ & \Tlbrace \parsesep \TClistZero{\Ntypedidentifier} \parsesep \Trbrace &\\
+\Nfields \derives \ & \Tlbrace \parsesep \Tminus \parsesep \Trbrace &\\
+                    & \Tlbrace \parsesep \TClistOne{\Ntypedidentifier} \parsesep \Trbrace &\\
 \Nfieldsopt \derives \ & \Nfields \;|\; \emptysentence &\\
 \Ntypedidentifier \derives \ & \Tidentifier \parsesep \Nasty &\\
 \Nasty \derives \ & \Tcolon \parsesep \Nty &
@@ -116,10 +117,18 @@ The function
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
-\inferrule{
+\inferrule[empty]{
+}{
+  \buildfields(\Nfields(\Tlbrace, \Tminus, \Trbrace)) \astarrow
+  \overname{\emptylist}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
   \buildtclist[\buildtypedidentifier](\vfields) \astarrow \vfieldasts
 }{
-  \buildfields(\Nfields(\Tlbrace, \namednode{\vfields}{\TClistZero{\Ntypedidentifier}}, \Trbrace)) \astarrow
+  \buildfields(\Nfields(\Tlbrace, \namednode{\vfields}{\TClistOne{\Ntypedidentifier}}, \Trbrace)) \astarrow
   \overname{\vfieldasts}{\vastnode}
 }
 \end{mathpar}
