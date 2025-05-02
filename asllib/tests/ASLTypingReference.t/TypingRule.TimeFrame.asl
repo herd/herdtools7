@@ -39,7 +39,7 @@ begin       // Side effect for RHS expression   Time frame
 
              // Statement                       Time frame
              // ThrowException                  Execution
-    throw MyException{};
+    throw MyException{-};
     assert 1 == 1; // PerformsAssertions        Constant
 
     return 0;

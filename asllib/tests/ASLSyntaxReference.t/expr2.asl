@@ -39,7 +39,7 @@ begin
   // E_Pattern 1: the condition in side the if is a pattern.
   if (t2.item0 IN {'1110'}) then
     // E_Record 2: an exception construction.
-    throw except{};
+    throw except{-};
   end;
 
   return 0;

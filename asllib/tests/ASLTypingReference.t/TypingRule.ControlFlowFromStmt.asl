@@ -21,13 +21,13 @@ end;
 type invalid_state of exception;
 func throws_exception() => integer
 begin
-    throw invalid_state{};
+    throw invalid_state{-};
 end;
 
 func sequencing1() => integer
 begin
     // The control-flow state is determined by the first statement.
-    throw invalid_state{};
+    throw invalid_state{-};
     var x = 5;
 end;
 
@@ -46,7 +46,7 @@ begin
     if flag then
         return 5;
     else
-        throw invalid_state{};
+        throw invalid_state{-};
     end;
 end;
 

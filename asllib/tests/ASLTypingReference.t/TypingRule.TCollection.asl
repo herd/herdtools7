@@ -1,5 +1,5 @@
 type MyCollection of collection { a: bits(8), b: bits(16) };
-type CollectionWithEmptyFieldList of collection {};
+type CollectionWithEmptyFieldList of collection {-};
 type CollectionWithoutFields of collection;
 
 // The next type declaration in comment is illegal:

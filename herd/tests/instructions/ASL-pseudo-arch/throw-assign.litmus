@@ -15,7 +15,7 @@ type Coucou of exception;
 func f() => integer
 begin
   z = 2;
-  throw Coucou {};
+  throw Coucou {-};
 end;
 
 func main() => integer

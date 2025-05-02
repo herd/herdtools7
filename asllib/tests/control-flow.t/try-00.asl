@@ -1,4 +1,4 @@
-type E of exception {};
+type E of exception {-};
 
 func test0 () => integer
 begin

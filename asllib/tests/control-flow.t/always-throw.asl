@@ -1,8 +1,8 @@
-type E of exception {};
+type E of exception {-};
 
 func always_throws () => integer
 begin
-  throw E {};
+  throw E {-};
 end;
 
 func main () => integer

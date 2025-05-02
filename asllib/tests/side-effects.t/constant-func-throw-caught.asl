@@ -1,9 +1,9 @@
-type E of exception {};
+type E of exception {-};
 
 func foo (x: integer) => integer
 begin
   try
-    throw E {};
+    throw E {-};
   catch
     when E => return 19;
   end;

@@ -113,8 +113,8 @@ Examples used in ASL High-level Definition:
     1 parameters expected and 0 provided
   [1]
   $ aslref ParameterOmission.bad.asl
-  File ParameterOmission.bad.asl, line 6, characters 18 to 19:
+  File ParameterOmission.bad.asl, line 6, characters 17 to 18:
       result = LSL{}(result, 3);
-                    ^
+                   ^
   ASL Error: Cannot parse.
   [1]
