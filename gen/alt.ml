@@ -308,14 +308,14 @@ module Make(C:Builder.S)
     (* List.is_empty only supports for ocaml 5.1 afterwards *)
     let is_empty_list l = (l = [])
 
-    let pp_ess ess =
-      String.concat " "
-        (List.fold_right
-           (fun (_,es) ->
-             List.fold_right
-               (fun e k -> pp_edge e::k)
-               es)
-           ess [])
+    let pp_ess ?(simple_format=true) ess =
+      let list_sep,list_list_sep =
+        if simple_format then " ", " " else ", ", "+" in
+      ess |> List.map
+          ( fun (_,es) ->
+            es |> List.map (fun e -> pp_edge e)
+               |> String.concat list_list_sep )
+          |> String.concat list_sep
 
     let edges_ofs rs =
       List.map (fun r -> (r, edges_of r)) rs
@@ -389,12 +389,13 @@ module Make(C:Builder.S)
 
 
     let check_cycle rsuff rl =
-      let rsuff = List.map (fun (_,rr) -> rr) rsuff in
+      let _,rsuff = List.split rsuff in
       let rsuff = List.concat rsuff in
-      not (List.exists (fun rl ->  is_prefix rsuff rl) rl)
+      not (List.exists (fun rl -> is_prefix rsuff rl) rl)
 
 
-    let call_rec prefix f0 safes po_safe over n r suff f_rec k ?(reject=[])=
+    (* This function is used `zyva` *)
+    let call_rec_base prefix f0 safes po_safe over n r suff f_rec k ?(reject=[])=
       if
         can_precede safes po_safe r suff &&
         minprocs suff <= O.nprocs &&
@@ -411,10 +412,9 @@ module Make(C:Builder.S)
             can_prefix prefix (can_precede safes po_safe) suff
           then begin
             let tr =  prefix@suff in
-(*
+            if O.verbose > 2 then
             eprintf "TRY: '%s'\n"
               (C.E.pp_edges (List.flatten (List.map snd tr))) ;
-*)
             try f0 po_safe tr k
             with  Misc.Exit -> k
             | Misc.Fatal msg |Misc.UserError msg ->
@@ -427,6 +427,7 @@ module Make(C:Builder.S)
         if n <= 0 then k
         else f_rec n suff k
       else k
+    (* END of call_rec_base *)
 
     module SdDir2Set =
       MySet.Make
@@ -463,69 +464,87 @@ module Make(C:Builder.S)
       let safe = edges_ofs safe in
       let po_safe = extract_po safe in
 
+      (* ********************************** *)
       (* iterates over all relax edges `rs` *)
+      (* ********************************** *)
       let choose_relax rs k =
       List.fold_left (fun k relex_edge ->
         (* Build simple cycles for relaxation `relex_edge` *)
-        (* Partially apply function `call_rec` *)
-        let call_rec = call_rec prefix (f [fst relex_edge]) aset po_safe ~reject:reject in
-
-(* Add safe edge to suffix *)
+        (* Partially apply function `call_rec_base` *)
+        let call_rec_add_safe = call_rec_base prefix (f [fst relex_edge]) aset po_safe ~reject:reject in
+        (* Add safe edge to suffix *)
         let rec add_safe over ss n suf k =
-          List.fold_left ( fun k s -> call_rec over n s suf (add_relaxs over) k ) k ss
-(* Addome relax edges `relex_edge` to suffix, or nothing *)
+          List.fold_left ( fun k s -> call_rec_add_safe over n s suf (add_relaxs over) k ) k ss
+        (* Addome relax edges `relex_edge` to suffix, or nothing *)
         and add_relaxs over n suf k =
-          let k = call_rec true n relex_edge suf (add_relaxs true) k in
+          let k = call_rec_add_safe true n relex_edge suf (add_relaxs true) k in
           add_safe over safe n suf k in
 
+        (* Decide what is the accumulator `k` for the next iteration
+           based on if `prefix` is empty *)
         if is_empty_list prefix then
           (* Optimise: start with a relax edge `relex_edge` *)
-            call_rec true n relex_edge [] (add_relaxs true) k
+            call_rec_add_safe true n relex_edge [] (add_relaxs true) k
         else
             add_relaxs false n [] k
       ) k rs in
 
-(* Alternative: mix relaxation from relax list *)
+      (* ******************************************* *)
+      (* Alternative: mix relaxation from relax list *)
+      (* ******************************************* *)
       let all_relax k =
         let relax_set = RelaxSet.of_list (List.map fst relax) in
         let extract_relaxs suff =
           let suff_set = RelaxSet.of_list (List.map fst suff)  in
           RelaxSet.elements (RelaxSet.inter suff_set relax_set) in
 
-        let call_rec =
-          call_rec prefix
+        (* Partially apply function `call_rec_base` *)
+        let call_rec_all_relax =
+          call_rec_base prefix
             (fun po_safe suff k ->
               let rs = extract_relaxs suff in
               let nrs = List.length rs in
               if nrs > O.max_relax || nrs < O.min_relax then k
               else f rs po_safe suff k)
             aset po_safe ~reject:reject in
-(* Add a one edge to suffix *)
+
+        (* Add a one edge to suffix *)
         let rec add_one over rs ss n suf k =
+          (* Consume `rs` first *)
           let new_k = List.fold_left ( fun k r ->
-            call_rec true n r suf (add_one true relax safe) k
+            call_rec_all_relax true n r suf (add_one true relax safe) k
           ) k rs in
+          (* Then consume `ss` when `rs` is empty *)
           List.fold_left ( fun k s ->
-            call_rec over n s suf (add_one over relax safe) k
+            call_rec_all_relax over n s suf (add_one over relax safe) k
           ) new_k ss in
-(* Force first edge to be a relaxed one *)
+
+        (* Force first edge to be a relaxed one *)
         let add_first rs k =
           List.fold_left ( fun k r ->
-            call_rec true n r [] (add_one true relax safe) k
+            call_rec_all_relax true n r [] (add_one true relax safe) k
           ) k rs in
-        (* Function `all_relax` entry point depends on prefix *)
+
+        (* Function `all_relax` entry point depends on
+           if `prefix` is empty. *)
         if is_empty_list prefix then add_first relax k
         else add_one false relax safe n [] k in
 
-(* New relax that does not enforce the first edge to be a relax *)
+     (* New relax that does not enforce the first edge to be a relax *)
 
-(* As a safety check, generate cycles with no relaxation *)
+      (* ***************************************************** *)
+      (* As a safety check, generate cycles with no relaxation *)
+      (* ***************************************************** *)
       let rec no_relax ss n suf k =
+        (* Partially apply function `call_rec_base` *)
+        let call_rec_no_relax = call_rec_base prefix (f []) aset po_safe ~reject:reject in
         List.fold_left (fun k s ->
-          call_rec prefix (f []) aset po_safe true n s suf (no_relax safe) k ~reject:reject
+          call_rec_no_relax true n s suf (no_relax safe) k
         ) k ss in
 
+      (* *************************************************** *)
       (* Function `zyva` starts after all the `let`-bindings *)
+      (* *************************************************** *)
       fun k ->
         if is_empty_list relax then no_relax safe n [] k
         else if O.mix && O.max_relax < 1 then k (* Let us stay logical *)
