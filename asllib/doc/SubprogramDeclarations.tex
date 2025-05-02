@@ -1101,6 +1101,7 @@ in the types of signature arguments (starting with the return type) yield the fo
 \verb|-D|      & $[\texttt{D}]$\\
 \verb|E+F|      & $[\texttt{E}, \texttt{F}]$\\
 \verb|(G)|      & $[\texttt{G}]$\\
+\verb|if H == 0 then I else J|      & $[\texttt{H}, \texttt{I}, \texttt{J}]$\\
 \end{tabular}
 \end{center}
 Notice that, since \verb|A| is declared as a global storage element, it is not extracted as a parameter
@@ -1140,6 +1141,15 @@ for the expression \verb|A| appearing in the return type.
       \item checking that $\es$ is a singleton list yields $\True$\ProseTerminateAs{\BadSubprogramDeclaration};
       \item view $\es$ as the singleton list for the expression $\ve$;
       \item applying $\paramsofexpr$ to $\ve$ $\ids$\ProseOrTypeError.
+    \end{itemize}
+
+  \item \AllApplyCase{econd}
+    \begin{itemize}
+      \item $\ve$ is a conditional expression, that is, $\ECond(\ve, \veone, \vetwo)$;
+      \item applying $\paramsofexpr$ to $\ve$ in $\tenv$ yields $\idsp$\ProseOrTypeError;
+      \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\idsone$\ProseOrTypeError;
+      \item applying $\paramsofexpr$ to $\vetwo$ in $\tenv$ yields $\idstwo$\ProseOrTypeError;
+      \item define $\ids$ as the concatenation of $\idsp$, $\idsone$, and $\idstwo$.
     \end{itemize}
 
   \item \AllApplyCase{other}
@@ -1183,6 +1193,16 @@ for the expression \verb|A| appearing in the return type.
   \paramsofexpr(\tenv, \ve) \typearrow \ids \OrTypeError\
 }{
   \paramsofexpr(\tenv, \ETuple(\es)) \typearrow \ids
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[econd]{
+  \paramsofexpr(\tenv, \ve) \typearrow \idsp \OrTypeError\\\\
+  \paramsofexpr(\tenv, \veone) \typearrow \idsone \OrTypeError\\\\
+  \paramsofexpr(\tenv, \vetwo) \typearrow \idstwo \OrTypeError
+}{
+  \paramsofexpr(\tenv, \ECond(\ve, \veone, \vetwo)) \typearrow \overname{\idsp \concat \idsone \concat \idstwo}{\ids}
 }
 \end{mathpar}
 
