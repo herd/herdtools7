@@ -225,7 +225,7 @@ module Value = struct
       |  _ -> Warn.user_error "Cannot convert to int"
   let no_value = NoValue
   let from_int v = Plain v
-  let from_pte p = PteValue p
+  let _from_pte p = PteValue p
   let to_pte = function
     | PteValue p -> p
     | _ -> Warn.user_error "Cannot convert to pte"
