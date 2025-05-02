@@ -1,5 +1,5 @@
-AArch64 MP+dmb.st+dmb.ld_and_ctrl--async
-Hash=48285d76392b3fb63b9023ef4fb51076
+AArch64 MP+dmb.st+dmb.ld_and_ctrl--async.mod
+Hash=643ca08fe1608191f919b983cdb81929
 Variant=memtag,async
 
 {
@@ -8,11 +8,11 @@ Variant=memtag,async
  1:X1=x:red; 1:X2=y:green;
 }
  P0          | P1          ;
- STG X3,[X1] | L0:         ;
- DMB ST      | LDR X3,[X2] ;
-             | DMB LD      ;
+ STG X3,[X1] | LDR X3,[X2] ;
+ DMB ST      | DMB LD      ;
              | CMP X3,X1   ;
              | B.NE L0     ;
- STR X3,[X2] | LDR W0,[X1] ;
+             | LDR W0,[X1] ;
+ STR X3,[X2] | L0:         ;
 
 exists (1:TFSR_Elx=1)
