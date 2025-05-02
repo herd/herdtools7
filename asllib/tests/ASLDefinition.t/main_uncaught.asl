@@ -1,7 +1,7 @@
-type MyException of exception{};
+type MyException of exception{-};
 
 func main() => integer
 begin
-    throw MyException{};
+    throw MyException{-};
     return 0;
 end;

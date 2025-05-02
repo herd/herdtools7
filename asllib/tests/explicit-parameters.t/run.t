@@ -40,12 +40,7 @@ Explicit parameter tests:
   ASL Typing error: cannot declare already declared element "N".
   [1]
 
-  $ aslref bad-argument-omission.asl
-  File bad-argument-omission.asl, line 3, characters 21 to 24:
-    let x : bits(64) = Foo{}; // tries to construct empty record `Foo`
-                       ^^^
-  ASL Error: Undefined identifier: 'Foo'
-  [1]
+  $ aslref argument-omission.asl
 
   $ aslref bad-elided-parameter.asl
   File bad-elided-parameter.asl, line 8, characters 20 to 30:

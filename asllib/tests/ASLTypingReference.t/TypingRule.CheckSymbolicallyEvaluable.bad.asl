@@ -2,7 +2,7 @@ type MyException of exception;
 
 func symbolic_throwing{N}(x: integer{N}) => integer{N}
 begin
-    throw MyException{};
+    throw MyException{-};
     return x;
 end;
 

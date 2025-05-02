@@ -2,7 +2,7 @@ type MyException of exception;
 
 func throwing_func()
 begin
-    throw MyException{};
+    throw MyException{-};
 end;
 
 func non_throwing_func()
