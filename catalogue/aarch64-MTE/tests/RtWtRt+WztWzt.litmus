@@ -10,4 +10,4 @@ P0          | P1          ;
 LDG X1,[X0] | STZG X3,[X2];
 STZG X3,[X0]| STZG X3,[X2, #32];
 LDG X4, [X0]| ;
-exists(0:X1=red /\ 0:X4=red)
+exists(0:X1=:red /\ 0:X4=:red)

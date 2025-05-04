@@ -23,6 +23,8 @@ type t =
   | Telechat (* Telechat idiosyncrasies *)
   | SVE (* Do nothing *)
   | SME (* Do nothing *)
+  | MemTag           (* Memory Tagging, synonym of MTE *)
+  | MTEPrecision of Precision.t (* MTE tag mismatch handling *)
   | NoInit (* Do not initialise variables *)
   | Pac (* Pointer authentication instructions *)
   | FPac (* Fault on pointer authentication *)
