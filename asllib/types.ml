@@ -355,11 +355,8 @@ module Domain = struct
   (** The [StaticApprox] module creates constant approximation of integer
       constraints as sets of integers. *)
   module StaticApprox = struct
-    (** The two possible types of approximations. *)
+    (** The two possible types of approximation. *)
     type approx = Over | Under
-
-    let approx_to_string = function Over -> "over" | Under -> "under"
-    let _ = approx_to_string
 
     exception CannotOverApproximate
     (** Raised if over approximation is not possible. *)
