@@ -118,6 +118,7 @@ module Make (C : Config) = struct
     let use_field_getter_extension = is_experimental
     let use_conflicting_side_effects_extension = false
     let override_mode = Asllib.Typing.Permissive
+    let control_flow_analysis = true
   end)
 
   module ASLInterpreterConfig = struct
