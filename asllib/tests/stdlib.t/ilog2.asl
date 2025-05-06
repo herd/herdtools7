@@ -8,6 +8,7 @@ begin
   for i = -10 to 10 do
     let x = 3.0 ^ i;
     let lgx = ILog2(x);
+    assert lgx == ILog2(-x);
     assert (Abs(lgx + ILog2(1.0 / x)) < 2);
     if i >= 0 then
       assert FloorLog2(3 ^ (i as integer)) == lgx;

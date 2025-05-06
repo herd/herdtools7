@@ -294,11 +294,12 @@ begin
 end;
 
 // ILog2()
-// Return floor(log2(VALUE))
+// =======
+// Return floor(log2(abs(VALUE)))
 
 func ILog2(value : real) => integer
 begin
-    assert value > 0.0;
+    assert value != 0.0;
     var val : real = Abs(value);
     var low : integer;
     var high : integer;
