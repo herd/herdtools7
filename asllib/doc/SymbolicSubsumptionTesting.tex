@@ -1167,9 +1167,11 @@ based on the \approximationdirectionterm\ $\vapprox$.
     \item $\ve$ is a \binopexpression{$\op$}{$\veone$}{$\vetwo$};
     \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\veone$}{$\vsone$};
     \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vetwo$}{$\vstwo$};
-    \item \Proseeqdef{$\vs$}{the set obtained by applying $\binopliterals$ to $\op$ and
-      every pair of integers from the $\vsone$ and $\vstwo$, respectively,
-      and maintaining only the values for which $\binopliterals$ does not produce a \typingerrorterm{}}.
+    \item applying $\annotateconstraintbinop$ to $\tenv$, $\vsone$, and $\vstwo$ yields $(\vsp, \plf)$;
+    \item applying $\approxconstraints$ to $\tenv$, $\vapprox$, and $\vsp$ yields $\vsapprox$;
+    \item \Proseeqdef{$\vs$}{
+      $\vsapprox$ if $\plf$ is $\PrecisionFull$ or $\plf$ is $\PrecisionLost$ and $\vapprox$ is $\Under$,
+      and as the set of all integers otherwise}.
   \end{itemize}
 
   \item \AllApplyCase{cond}
@@ -1237,11 +1239,14 @@ types.
 \inferrule[binop]{
   \approxexpr(\tenv, \vapprox, \veone) \typearrow \vsone\\
   \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo\\
+  \annotateconstraintbinop(\tenv, \vsone, \vstwo) \typearrow (\vsp, \plf)\\
+  \approxconstraints(\tenv, \vapprox, \vsp) \typearrow \vsapprox\\
   {
-    \begin{array}{rl}
-  \vs \eqdef \{ \vz \not\in \TTypeError \;|\; & \vzone\in\vsone, \vztwo\in\vstwo, \\
-    & \binopliterals(\op, \lint(\vzone), \lint(\vztwo)) \typearrow \vz\}
-    \end{array}
+  \vs \eqdef
+  \begin{cases}
+    \vsapprox & \text{if }\plf = \PrecisionFull \lor (\plf = \PrecisionLost \land \vapprox = \Under)\\
+    \Z        & \text{if }\plf = \PrecisionLost \land \vapprox = \Over
+  \end{cases}
   }
 }{
   \approxexpr(\tenv, \vapprox, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \vs
