@@ -41,6 +41,7 @@ module type ANNOTATE_CONFIG = sig
   val use_field_getter_extension : bool
   val use_conflicting_side_effects_extension : bool
   val override_mode : override_mode
+  val control_flow_analysis : bool
 end
 
 module type S = sig

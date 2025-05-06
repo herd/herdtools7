@@ -136,6 +136,7 @@ module type ANNOTATE_CONFIG = sig
   val use_field_getter_extension : bool
   val use_conflicting_side_effects_extension : bool
   val override_mode : override_mode
+  val control_flow_analysis : bool
 end
 
 module type S = sig
@@ -3625,9 +3626,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   module ControlFlow : sig
     val check_stmt_returns_or_throws : identifier -> stmt_desc annotated -> prop
-    (** [check_stmt_interrupts name env body] checks that the function named
-        [name] with the statement body [body] returns a value or throws an
-        exception. *)
+    (** [check_stmt_interrupts name body] checks that the function named [name]
+        with the statement body [body] either: returns a value, throws an
+        exception, or calls [Unreachable()].
+        It executes only when [C.control_flow_analysis] is [true]. *)
   end = struct
     (** Possible Control-Flow actions of a statement. *)
     type t =
@@ -3688,13 +3690,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
     (* End *)
 
-    (** [check_stmt_interrupts name env body] checks that the function named
-        [name] with the statement body [body] returns a value or throws an
-        exception. *)
+    (** [check_stmt_interrupts name body] checks that the function named [name]
+        with the statement body [body] either: returns a value, throws an
+        exception, or calls [Unreachable()].
+        It executes only when [C.control_flow_analysis] is [true]. *)
     let check_stmt_returns_or_throws name s () =
-      match from_stmt s with
-      | AssertedNotInterrupt | Interrupt -> ()
-      | MayNotInterrupt -> fatal_from ~loc:s (Error.NonReturningFunction name)
+      if C.control_flow_analysis then
+        match from_stmt s with
+        | AssertedNotInterrupt | Interrupt -> ()
+        | MayNotInterrupt -> fatal_from ~loc:s (Error.NonReturningFunction name)
   end
 
   (* Begin Subprogram *)
@@ -4316,6 +4320,7 @@ module TypeCheckDefault = Annotate (struct
   let use_field_getter_extension = false
   let use_conflicting_side_effects_extension = false
   let override_mode = Permissive
+  let control_flow_analysis = true
 end)
 
 let type_and_run ?instrumentation ast =
