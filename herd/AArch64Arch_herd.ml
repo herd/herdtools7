@@ -501,7 +501,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
         -> MachSize.No
 
     let reg_defaults =
-      if C.variant Variant.SME then [ZA; SM;]
+      if C.variant Variant.SME then [PState PSTATE.ZA; PState PSTATE.SM;]
       else []
 
     include ArchExtra_herd.Make(C)
