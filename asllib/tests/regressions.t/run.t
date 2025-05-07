@@ -464,6 +464,7 @@ Required tests:
   $ aslref subprogram-global-name-clash.asl
   $ aslref subprogram-local-name-clash.asl
   $ aslref string_concat.asl
+  $ aslref approx-expr-binop.asl
 
   $ aslref --no-type-check throw-local-env.asl
   File throw-local-env.asl, line 10, characters 13 to 14:
@@ -521,11 +522,6 @@ Getters/setters
   [1]
   $ aslref setter_subfield.asl
   $ aslref setter_subslice.asl
-  File setter_subslice.asl, line 16, characters 5 to 6:
-    F()[2+:1] = '1';
-       ^
-  ASL Error: Cannot parse.
-  [1]
   $ aslref getter_subfield.asl
   $ aslref getter_sub_tuple.asl
   $ aslref getter_subslice.asl
@@ -593,9 +589,4 @@ Left-hand sides
   ASL Typing error: multiple writes to "bv.fld".
   [1]
   $ aslref lhs-tuple-same-var.asl
-  File lhs-tuple-same-var.asl, line 8, characters 2 to 20:
-    (bv[7], -, bv.fld) = ('1', TRUE, '11');
-    ^^^^^^^^^^^^^^^^^^
-  ASL Typing error: multiple writes to "bv".
-  [1]
-  $ aslref approx-expr-binop.asl
+  $ aslref lhs-expressivity.asl

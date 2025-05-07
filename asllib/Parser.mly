@@ -109,7 +109,6 @@ let e_call call = E_Call { call with call_type = ST_Function }
 let s_call call = S_Call { call with call_type = ST_Procedure }
 
 let le_var x = LE_Var x.desc |> add_pos_from x
-let lhs_access ~base ~index ~fields = { base; index; fields; slices=add_dummy_annotation ~version [] }
 
 %}
 
@@ -415,31 +414,28 @@ let implicit_t_int == annotated ( ~=constraint_kind ; <T_Int> )
   ------------------------------------------------------------------------- *)
 
 (* Left-hand-side expressions and helpers *)
-let basic_lexpr :=
-  | base=annotated(IDENTIFIER); fields=nested_fields;
-    { lhs_access ~base ~index:None ~fields }
-  | base=annotated(IDENTIFIER); LLBRACKET; idx=expr; RRBRACKET; fields=nested_fields;
-    { lhs_access ~base ~index:(Some idx) ~fields }
-
-let nested_fields :=
+let access :=
   | { [] }
-  | DOT; h=annotated(IDENTIFIER); t=nested_fields; { h :: t }
+  | DOT; h=annotated(IDENTIFIER); t=access; { FieldAccess h :: t }
+  | LLBRACKET; idx=expr; RRBRACKET; t=access; { ArrayAccess idx :: t }
 
-let sliced_basic_lexpr :=
-  | ~=basic_lexpr; <>
-  | basic=basic_lexpr; slices=annotated(slices); { {basic with slices} }
+let basic_lexpr :=
+  | base=annotated(IDENTIFIER); ~=access;
+    { ( base, {access; slices=add_dummy_annotation ~version []} ) }
+  | base=annotated(IDENTIFIER); ~=access; slices=annotated(slices);
+    { ( base, {access; slices} ) }
 
-let discard_or_sliced_basic_lexpr :=
+let discard_or_basic_lexpr :=
   | MINUS;                { None }
-  | ~=sliced_basic_lexpr; < Some >
+  | ~=basic_lexpr;        < Some >
 
 let discard_or_field :=
   | MINUS;                   { None }
   | ~=annotated(IDENTIFIER); < Some >
 
 let lexpr :=
-  | ~=sliced_basic_lexpr; < desugar_lhs_access >
-  | ~=annotated(plist2(discard_or_sliced_basic_lexpr)); < desugar_lhs_tuple >
+  | ~=basic_lexpr; < desugar_lhs_access >
+  | ~=annotated(plist2(discard_or_basic_lexpr)); < desugar_lhs_tuple >
   | annotated(
     | MINUS; { LE_Discard }
     | x=annotated(IDENTIFIER); DOT; flds=bracketed(clist2(IDENTIFIER));
@@ -505,6 +501,10 @@ let loop_limit := ioption(LOOPLIMIT; expr)
 
 let option_eq_expr := ioption(EQ; expr)
 
+let setter_access :=
+  | { [] }
+  | DOT; h=annotated(IDENTIFIER); t=setter_access; { FieldAccess h :: t }
+
 let stmt :=
   annotated (
     | terminated_by(end_semicolon,
@@ -526,12 +526,12 @@ let stmt :=
       | ASSERT; e=expr;                                      < S_Assert >
       | ~=local_decl_keyword_non_var; ~=decl_item; ~=ty_opt; EQ; ~=some(expr); < S_Decl   >
       | le=lexpr; EQ; e=expr;                                < S_Assign >
-      | call=annotated(call); EQ; rhs=expr;
-        { desugar_setter call [] rhs }
-      | call=annotated(call); DOT; fld=IDENTIFIER; EQ; rhs=expr;
-        { desugar_setter call [fld] rhs }
+      | call=annotated(call); ~=setter_access; EQ; rhs=expr;
+        { desugar_setter call { access=setter_access; slices=add_dummy_annotation ~version [] } rhs }
+      | call=annotated(call); ~=setter_access; slices=annotated(slices); EQ; rhs=expr;
+        { desugar_setter call { access=setter_access; slices } rhs }
       | call=annotated(call); DOT; flds=bracketed(clist2(IDENTIFIER)); EQ; rhs=expr;
-        { desugar_setter call flds rhs }
+        { desugar_setter_setfields call flds rhs }
       | ldk=local_decl_keyword_non_var; lhs=decl_item; ty=as_ty; EQ; call=annotated(elided_param_call);
         { desugar_elided_parameter ldk lhs ty call}
       | VAR; ldi=decl_item; ty=ty_opt; e=option_eq_expr;      { S_Decl (LDK_Var, ldi, ty, e) }
