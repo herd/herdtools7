@@ -23,40 +23,9 @@
 open AST
 open ASTUtils
 
-let desugar_setter call fields rhs =
-  let loc = to_pos call and { desc = { name; params; args } } = call in
-  let () = assert (loc.version = V1) in
-  let here desc = add_pos_from loc desc in
-  match fields with
-  | [] ->
-      (* Setter(rhs, ...); *)
-      S_Call { name; args = rhs :: args; params; call_type = ST_Setter }
-  | _ ->
-      let temp = fresh_var "__setter_v1_temporary" in
-      (* temp = Getter(...); *)
-      let read =
-        let getter_call =
-          E_Call { name; args; params; call_type = ST_Getter } |> here
-        in
-        S_Decl (LDK_Var, LDI_Var temp, None, Some getter_call) |> here
-      in
-      (* temp.field = rhs OR temp.[field1, field2, ...] = rhs; *)
-      let modify =
-        let temp_le = LE_Var temp |> here in
-        let lhs =
-          match fields with
-          | [ field ] -> LE_SetField (temp_le, field)
-          | _ -> LE_SetFields (temp_le, fields, [])
-        in
-        S_Assign (lhs |> here, rhs) |> here
-      in
-      (* Setter(rhs, ...); *)
-      let write =
-        let temp_e = E_Var temp |> here in
-        S_Call { name; args = temp_e :: args; params; call_type = ST_Setter }
-        |> here
-      in
-      S_Seq (s_then read modify, write)
+(* -------------------------------------------------------------------------
+    Elided parameters
+   ------------------------------------------------------------------------- *)
 
 let desugar_elided_parameter ldk lhs ty (call : call annotated) =
   let bits_e =
@@ -76,46 +45,38 @@ let desugar_elided_parameter ldk lhs ty (call : call annotated) =
    ------------------------------------------------------------------------- *)
 
 type lhs_field = identifier annotated
+type field_or_array_access = FieldAccess of lhs_field | ArrayAccess of expr
 
 type lhs_access = {
-  base : identifier annotated;
-  index : expr option;
-  fields : lhs_field list;  (** empty means no fields *)
-  slices : slice list annotated;  (** empty means no slices*)
+  access : field_or_array_access list;  (** empty means no accesses *)
+  slices : slice list annotated;  (** empty means no slices *)
 }
 
-let desugar_lhs_access { base; index; fields; slices } =
+let desugar_lhs_access (base, { access; slices }) =
   let var = LE_Var base.desc |> add_pos_from base in
-  let with_index =
-    match index with
-    | None -> var
-    | Some idx -> LE_SetArray (var, idx) |> add_pos_from idx
-  in
-  let with_fields =
+  let with_access =
     List.fold_left
-      (fun acc field -> LE_SetField (acc, field.desc) |> add_pos_from field)
-      with_index fields
+      (fun acc x ->
+        match x with
+        | FieldAccess field ->
+            LE_SetField (acc, field.desc) |> add_pos_from field
+        | ArrayAccess idx -> LE_SetArray (acc, idx) |> add_pos_from idx)
+      var access
   in
   let with_slices =
     match slices.desc with
-    | [] -> with_fields
-    | _ -> LE_Slice (with_fields, slices.desc) |> add_pos_from slices
+    | [] -> with_access
+    | _ -> LE_Slice (with_access, slices.desc) |> add_pos_from slices
   in
   with_slices
 
 let desugar_lhs_tuple laccess_opts =
-  let bases =
-    List.filter_map (Option.map (fun { base } -> base.desc)) laccess_opts.desc
+  let desugar_one = function
+    | None -> LE_Discard |> add_pos_from laccess_opts
+    | Some laccess -> desugar_lhs_access laccess
   in
-  match get_first_duplicate bases with
-  | Some dup -> Error.fatal_from (to_pos laccess_opts) (MultipleWrites dup)
-  | None ->
-      let desugar_one = function
-        | None -> LE_Discard |> add_pos_from laccess_opts
-        | Some laccess -> desugar_lhs_access laccess
-      in
-      LE_Destructuring (List.map desugar_one laccess_opts.desc)
-      |> add_pos_from laccess_opts
+  LE_Destructuring (List.map desugar_one laccess_opts.desc)
+  |> add_pos_from laccess_opts
 
 let desugar_lhs_fields_tuple base field_opts =
   let fields = List.filter_map (Option.map (fun fld -> fld.desc)) field_opts in
@@ -130,6 +91,64 @@ let desugar_lhs_fields_tuple base field_opts =
             LE_SetField (var, fld.desc) |> add_pos_from fld
       in
       LE_Destructuring (List.map desugar_one field_opts)
+
+(* -------------------------------------------------------------------------
+    Setters
+   ------------------------------------------------------------------------- *)
+
+let read_modify_write call id modify =
+  let loc = to_pos call and { desc = { name; params; args } } = call in
+  let () = assert (loc.version = V1) in
+  let here desc = add_pos_from loc desc in
+  (* temp = Getter(...); *)
+  let read =
+    let getter_call =
+      E_Call { name; args; params; call_type = ST_Getter } |> here
+    in
+    S_Decl (LDK_Var, LDI_Var id, None, Some getter_call) |> here
+  in
+  (* Setter(rhs, ...); *)
+  let write =
+    let temp_e = E_Var id |> here in
+    S_Call { name; args = temp_e :: args; params; call_type = ST_Setter }
+    |> here
+  in
+  S_Seq (s_then read modify, write)
+
+let desugar_setter call ({ access; slices } as lhs_access) rhs =
+  let loc = to_pos call in
+  let () = assert (loc.version = V1) in
+  match (access, slices.desc) with
+  | [], [] ->
+      (* Setter(rhs, ...); *)
+      let { desc = { name; params; args } } = call in
+      S_Call { name; args = rhs :: args; params; call_type = ST_Setter }
+  | _ ->
+      let temp = fresh_var "__setter_v1_temporary" in
+      (* temp.accesses = rhs; *)
+      let modify =
+        let here desc = add_pos_from loc desc in
+        let lhs = desugar_lhs_access (temp |> here, lhs_access) in
+        S_Assign (lhs, rhs) |> here
+      in
+      read_modify_write call temp modify
+
+let desugar_setter_setfields call fields rhs =
+  let loc = to_pos call in
+  let () = assert (loc.version = V1) in
+  let temp = fresh_var "__setter_v1_temporary" in
+  (* temp.[fld1, fld2, ...] = rhs; *)
+  let modify =
+    let here desc = add_pos_from loc desc in
+    let temp_le = LE_Var temp |> here in
+    let lhs = LE_SetFields (temp_le, fields, []) |> here in
+    S_Assign (lhs, rhs) |> here
+  in
+  read_modify_write call temp modify
+
+(* -------------------------------------------------------------------------
+    Case statements
+   ------------------------------------------------------------------------- *)
 
 let desugar_case_stmt e0 cases otherwise =
   (* Begin CaseToCond *)
@@ -157,6 +176,10 @@ let desugar_case_stmt e0 cases otherwise =
       let decl_x = S_Decl (LDK_Let, LDI_Var x, None, Some e0) in
       S_Seq (decl_x |> add_pos_from e0, cases_to_cond (var_ x) cases)
 (* End *)
+
+(* -------------------------------------------------------------------------
+    Accessors
+   ------------------------------------------------------------------------- *)
 
 type accessor_pair = { getter : stmt; setter : stmt }
 
