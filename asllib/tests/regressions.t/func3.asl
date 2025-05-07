@@ -1,44 +1,44 @@
-accessor f1() <=> integer
+accessor f1() <=> v: integer
 begin
-  getter begin
+  getter
     return 3;
   end;
 
-  setter = v begin
+  setter
     assert v == 3;
   end;
 end;
 
-accessor f1b() <=> integer
+accessor f1b() <=> v: integer
 begin
-  getter begin
+  getter
     return 4;
   end;
 
-  setter = v begin
+  setter
     assert v == 4;
   end;
 end;
 
-accessor f2(x:integer) <=> integer
+accessor f2(x:integer) <=> v: integer
 begin
-  getter begin
+  getter
     return f1b() + x;
   end;
 
-  setter = v begin
+  setter
     f1b() = 4 * (v - x);
   end;
 end;
 
 
-accessor f3(x:integer) <=> integer
+accessor f3(x:integer) <=> v: integer
 begin
-  getter begin
+  getter
     return 0;
   end;
 
-  setter = v begin
+  setter
     assert x == 12;
     assert v == 13;
   end;

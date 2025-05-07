@@ -5,14 +5,14 @@ type ExtendType of enumeration
   {ExtendType_SXTB, ExtendType_SXTH, ExtendType_SXTW, ExtendType_SXTX,
   ExtendType_UXTB, ExtendType_UXTH, ExtendType_UXTW, ExtendType_UXTX};
 
-accessor X{width : ElementSize}(n : Rnum_X) <=> bits(width)
+accessor X{width : ElementSize}(n : Rnum_X) <=> value_in: bits(width)
 begin
-  getter begin
+  getter
       assert width IN {8,16,32,64};
       return n[width-1:0];
   end;
 
-  setter = value_in begin
+  setter
     Unreachable();
   end;
 end;

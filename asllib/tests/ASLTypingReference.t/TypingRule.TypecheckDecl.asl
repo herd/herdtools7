@@ -16,13 +16,13 @@ var rec: MyRecord;
 var exc: MyException;
 var coll: MyCollection;
 
-accessor Rec() <=> bits (64)
+accessor Rec() <=> values: bits (64)
 begin
-    getter begin
+    getter
         return rec.high_bits :: rec.low_bits;
     end;
 
-    setter = values begin
+    setter
         rec.high_bits = values[63:32];
         rec.low_bits = values[31:0];
     end;

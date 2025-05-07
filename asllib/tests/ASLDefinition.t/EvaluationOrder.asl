@@ -14,13 +14,13 @@ begin
 end;
 
 // A helper accessor pair taking two arguments
-accessor Foo(a: integer, b: integer) <=> integer
+accessor Foo(a: integer, b: integer) <=> value_in: integer
 begin
-  getter begin
+  getter
     return 0;
   end;
 
-  setter = value_in begin
+  setter
     pass;
   end;
 end;

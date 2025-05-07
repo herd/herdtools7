@@ -158,9 +158,10 @@ let desugar_case_stmt e0 cases otherwise =
       S_Seq (decl_x |> add_pos_from e0, cases_to_cond (var_ x) cases)
 (* End *)
 
-type accessor_pair = { getter : stmt; setter : stmt; setter_arg : identifier }
+type accessor_pair = { getter : stmt; setter : stmt }
 
-let desugar_accessor_pair override name parameters args ty accessor_pair =
+let desugar_accessor_pair override name parameters args setter_arg ty
+    accessor_pair =
   let getter_func =
     {
       name;
@@ -178,7 +179,7 @@ let desugar_accessor_pair override name parameters args ty accessor_pair =
     {
       name;
       parameters;
-      args = (accessor_pair.setter_arg, ty) :: args;
+      args = (setter_arg, ty) :: args;
       return_type = None;
       body = SB_ASL accessor_pair.setter;
       subprogram_type = ST_Setter;
