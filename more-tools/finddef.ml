@@ -65,22 +65,30 @@ struct
         "reverse: [%s]\n%!"
         (StringSet.elements reverse |> String.concat "; ")
 
+  let ws_to_string ws = String.concat "" ws
+
+  let check_neg ws =
+    match ws with
+    | w1::"is"::"not"::"the"::"case"::"that"::ws
+      when Misc.lowercase w1="it"
+      ->
+      true,ws_to_string ws
+    | _ -> false,ws_to_string ws
+
   let relation tgt e1 e2 =
     let (name,body),d =
       List.fold_left
         (fun (_,d as best) (name,body) ->
-           let s = Subst.subst body [| e1; e2; |] in
-           let d0 = distance tgt s in
-           let best =
-             if d0 < d then (name,s),d0
-             else best in
-           let s = Subst.subst body [| e2; e1; |] in
-           let d0 = distance tgt s in
-           let best =
-             let (_,d) = best in
-             if d0 < d then (name^"^-1",s),d0
-             else best in
-           best)
+           let e1,e2 =
+             if StringSet.mem name reverse then e2,e1 else e1,e2 in
+           let s = Subst.subst body [| e1; e2; |]
+           and s_rev = Subst.subst body [| e2; e1; |] in
+           let d0 = distance tgt s
+           and d0_rev= distance tgt s_rev in
+           if d0 <= d0_rev then
+             if d0 < d then (name,s),d0 else best
+           else
+             if d0_rev < d then (name ^ "-1",s_rev),d0_rev else best)
         (("coucou",""),100) Dict.relations in
     if O.verbose && d > 1 then
       eprintf "Approx[%d]: '%s' as '%s'\n%!" d tgt body ;
@@ -110,10 +118,14 @@ struct
   let find ws =
     let es = List.filter is_event ws in
     let es = Array.of_list es in
-    let tgt = String.concat "" ws in
-    match Array.length es with
-    | 1 -> set tgt es.(0)
-    | 2 -> relation tgt es.(0) es.(1)
-    | _ ->
-        Warn.fatal "Bad arguments: '%s'" tgt
+    let is_neg,tgt = check_neg ws in
+    let name,es =
+      match Array.length es with
+      | 1 -> set tgt es.(0)
+      | 2 -> relation tgt es.(0) es.(1)
+      | _ ->
+        Warn.fatal "Bad arguments: '%s'" tgt in
+    if is_neg then "~" ^ name,es else name,es
+
+    
 end
