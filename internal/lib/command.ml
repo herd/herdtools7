@@ -128,7 +128,13 @@ module NonBlock = struct
     | [],_ -> i
     | [_],Some (i,gen) ->
         let rec do_rec () = match gen () with
-          | None -> close_out i ; None
+          | None ->
+              begin
+                try close_out i ; None
+                with Sys_blocked_io ->
+                  (* Close failed, try next time *)
+                  Some (i,gen)
+              end
           | Some line ->
               if output_line i line then do_rec ()
               else Some (i,gen) in
