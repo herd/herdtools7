@@ -1256,10 +1256,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   and annotate_type ?(decl = false) ~(loc : 'a annotated) env ty : ty * SES.t =
-    let () =
-      if false then
-        Format.eprintf "Annotating@ %a@ in env:@ %a@." PP.pp_ty ty pp_env env
-    in
+    let () = if false then Format.eprintf "Annotating@ type %a@." PP.pp_ty ty in
     let here t = add_pos_from ~loc:ty t in
     best_effort (ty, SES.empty) @@ fun _ ->
     match ty.desc with
@@ -2825,7 +2822,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   let annotate_local_decl_item ~loc (env : env) ty ldk ?e ldi =
     let () =
-      if false then Format.eprintf "Annotating %a.@." PP.pp_local_decl_item ldi
+      if false then
+        Format.eprintf "Annotating LDI %a with type %a.@." PP.pp_local_decl_item
+          ldi PP.pp_ty ty
     in
     match ldi with
     (* Begin LDVar *)
@@ -2873,7 +2872,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       if false then
         match s.desc with
         | S_Seq _ -> ()
-        | _ -> Format.eprintf "@[<3>Annotating@ @[%a@]@]@." PP.pp_stmt s
+        | _ -> Format.eprintf "@[<3>Annotating@ stmt@ @[%a@]@]@." PP.pp_stmt s
     in
     let here x = add_pos_from ~loc:s x and loc = to_pos s in
     match s.desc with
