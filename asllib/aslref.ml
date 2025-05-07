@@ -44,6 +44,7 @@ type args = {
   use_conflicting_side_effects_extension : bool;
   override_mode : override_mode;
   no_primitives : bool;
+  control_flow_analysis : bool;
 }
 
 let push thing ref = ref := thing :: !ref
@@ -71,6 +72,7 @@ let parse_args () =
   let set_override_mode m () = override_mode := m in
   let no_primitives = ref false in
   let use_side_effects_extension = ref false in
+  let control_flow_analysis = ref true in
 
   let speclist =
     [
@@ -157,6 +159,10 @@ let parse_args () =
       ( "--no-primitives",
         Arg.Set no_primitives,
         " Do not use internal definitions for standard library subprograms." );
+      ( "--no-control-flow-analysis",
+        Arg.Clear control_flow_analysis,
+        " Do not use control-flow analysis to check that subprograms \
+         return/throw/execute `Unreachable()`." );
     ]
     |> Arg.align ?limit:None
   in
@@ -193,6 +199,7 @@ let parse_args () =
       use_conflicting_side_effects_extension = !use_side_effects_extension;
       override_mode = !override_mode;
       no_primitives = !no_primitives;
+      control_flow_analysis = !control_flow_analysis;
     }
   in
 
@@ -304,6 +311,8 @@ let () =
 
       let use_conflicting_side_effects_extension =
         args.use_conflicting_side_effects_extension
+
+      let control_flow_analysis = args.control_flow_analysis
     end in
     let module T = Annotate (C) in
     or_exit @@ fun () -> T.type_check_ast ast
