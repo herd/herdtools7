@@ -13,7 +13,7 @@ begin
         if flag then
             return v;
         else
-            throw invalid_state{};
+            throw invalid_state{-};
         end;
     end;
 end;

@@ -1,8 +1,8 @@
-type E of exception {};
+type E of exception {-};
 
 func throws_E () => integer
 begin
-  throw E {};
+  throw E {-};
 end;
 
 func main () => integer

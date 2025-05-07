@@ -1,4 +1,4 @@
-type ExceptionType1 of exception{};
+type ExceptionType1 of exception{-};
 type ExceptionType2 of exception{ msg: string};
 type ExceptionType3 of exception{ msg: string};
 var g : integer = 0;

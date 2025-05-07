@@ -2,14 +2,14 @@ ASL try-non-deterministic
 
 { }
 
-type  Coucou of exception {};
+type  Coucou of exception {-};
 
 func g(a:integer) => integer
 begin
   try
     let b = SomeBoolean();
     if b then
-      throw Coucou {};
+      throw Coucou {-};
     end;
     return a+1;
   catch

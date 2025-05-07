@@ -1,9 +1,9 @@
-type E of exception {};
+type E of exception {-};
 
 func throwing (n: integer, b: boolean) => integer
 begin
   if b then
-    throw E {};
+    throw E {-};
   else
     return foo (n);
   end;

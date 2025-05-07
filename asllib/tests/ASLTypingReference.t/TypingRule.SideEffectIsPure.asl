@@ -39,7 +39,7 @@ begin       // Side effect for RHS expression   Pure?   Symbolically Evaluable?
 
              // Statement                       Pure?
              // ThrowException                  FALSE   FALSE
-    throw MyException{};
+    throw MyException{-};
     assert 1 == 1; // PerformsAssertions        TRUE    FALSE
 
     return 0;

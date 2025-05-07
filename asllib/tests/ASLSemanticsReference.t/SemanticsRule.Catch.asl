@@ -1,10 +1,10 @@
-type MyExceptionType of exception{};
+type MyExceptionType of exception{-};
 
 func main () => integer
 begin
 
-    try 
-      throw MyExceptionType {};
+    try
+      throw MyExceptionType {-};
       assert FALSE;
     catch
       when MyExceptionType =>

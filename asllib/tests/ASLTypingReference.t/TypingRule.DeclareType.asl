@@ -9,7 +9,7 @@ type TimeType of integer;
 
 let num_bits = 16;
 type Record of record { data: bits(num_bits) };
-type SubRecordEmptyExtraFields subtypes Record with { };
+type SubRecordEmptyExtraFields subtypes Record with {-};
 type SubRecordNoExtraFields subtypes Record;
 type SubRecord subtypes Record with { status: boolean };
 

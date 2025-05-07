@@ -1,4 +1,4 @@
-type MyExceptionType of exception{};
+type MyExceptionType of exception{-};
 
 func main () => integer
 begin

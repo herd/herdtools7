@@ -66,11 +66,11 @@
 
   $ aslref try-05.asl
   File try-05.asl, line 6, character 2 to line 11, character 6:
-    try throw E {};
+    try throw E {-};
     catch
       when E => return 1;
       when F => println("Caught F");
-      otherwise => throw E {};
+      otherwise => throw E {-};
     end;
   ASL Typing error: the function "test0" may not terminate by returning a value
     or raising an exception..
@@ -81,7 +81,7 @@
     try print("body");
     catch
       when E => return 1;
-      otherwise => throw E {};
+      otherwise => throw E {-};
     end;
   ASL Typing error: the function "test0" may not terminate by returning a value
     or raising an exception..

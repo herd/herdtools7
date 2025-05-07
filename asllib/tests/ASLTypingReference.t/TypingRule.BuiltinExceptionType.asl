@@ -4,7 +4,7 @@ type SyntaxException of exception { message:string };
 func main () => integer
 begin
   if ARBITRARY : boolean then
-    throw Not_found {};
+    throw Not_found {-};
   else
     throw SyntaxException { message="syntax" };
   end;

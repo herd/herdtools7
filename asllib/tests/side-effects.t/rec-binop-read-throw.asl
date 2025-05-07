@@ -1,10 +1,10 @@
-type E of exception {};
+type E of exception {-};
 var X: integer = 0;
 
 func throwing (n: integer, b: boolean) => integer
 begin
   if b then
-    throw E {};
+    throw E {-};
   else
     return foo (n);
   end;

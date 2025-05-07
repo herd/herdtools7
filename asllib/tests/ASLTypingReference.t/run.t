@@ -587,7 +587,7 @@ ASL Typing Tests / annotating types:
           if flag then
               return v;
           else
-              throw invalid_state{};
+              throw invalid_state{-};
           end;
       end;
   ASL Typing error: the function "incorrect_terminating_path" may not terminate
@@ -616,7 +616,7 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.DeclareType.asl
   $ aslref TypingRule.AnnotateExtraFields.bad.asl
   File TypingRule.AnnotateExtraFields.bad.asl, line 1, characters 15 to 39:
-  type SubRecord subtypes Record with { };
+  type SubRecord subtypes Record with {-};
                  ^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Error: Undefined identifier: 'Record'
   [1]
@@ -654,9 +654,9 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.UpdateGlobalStorage.config.asl
   $ aslref --no-exec TypingRule.UpdateGlobalStorage.config.bad.asl
   File TypingRule.UpdateGlobalStorage.config.bad.asl, line 3,
-    characters 0 to 38:
-  config d: MyException = MyException{};
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    characters 0 to 39:
+  config d: MyException = MyException{-};
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Typing error: expected singular type, found MyException.
   [1]
   $ aslref --no-exec TypingRule.DefDecl.asl
