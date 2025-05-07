@@ -2,27 +2,25 @@
 \section{Domain of Values for Types\label{sec:DomainOfValuesForTypes}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 This section formalizes the concept of the set of values for a given type.
-The formalism is given in the form of rules.
-%
-The section also defines the concept of checking whether the set of values
-for one type is included in the set of values for another type.
-
-\subsection{Dynamic Domain of a Type\label{sec:DynDomain}}
-\hypertarget{def-dyndomain}{}
+The formalism is given in the form of inference rules, although those are not meant
+to be implemented.
 
 We define the concept of a \emph{dynamic domain} of a type
 and the \emph{static domain} of a type.
 Intuitively, domains assign potentially infinite sets of \nativevalues\ to types.
 Dynamic domains are used by the semantics to evaluate expressions of the form \texttt{ARBITRARY: t}
-by choosing a single value from the dynamic domain of $\vt$.
-Static domains are used to define subtype satisfaction in \TypingRuleRef{SubtypeSatisfaction}.
+by choosing a single value from the dynamic domain of $\vt$ (\SemanticsRuleRef{EArbitrary}).
+Static domains are used to define subtype satisfaction (\TypingRuleRef{SubtypeSatisfaction})
+via a conservative subsumption test as defined in \chapref{SymbolicDomainSubsetTesting}.
 
-Formally, the partial function
+\subsection{Dynamic Domain of a Type\label{sec:DynDomain}}
+\hypertarget{def-dyndomain}{}
+The dynamic domain is defined via the partial function
 \[
   \dynamicdomain : \overname{\envs}{\env} \times \overname{\ty}{\vt}
   \partialto \overname{\pow{\vals}}{\vd}
 \]
-assigns the set of values that a type $\vt$ can hold in a given environment $\env$.
+which assigns the set of values that a type $\vt$ can hold in a given environment $\env$.
 %
 We say that $\dynamicdomain(\env, \vt)$ is the \emph{dynamic domain} of $\vt$
 in the environment $\env$.
@@ -443,82 +441,3 @@ is the infinite set of all native integer values.
 \identr{RLQP} \identr{LYDS} \identr{SVDJ} \identi{WLPJ} \identr{FWMM}
 \identi{WPWL} \identi{CDVY} \identi{KFCR} \identi{BBQR} \identr{ZWGH}
 \identr{DKGQ} \identr{DHZT} \identi{HSWR} \identd{YZBQ}
-
-\subsection{Domain Subset Testing\label{sec:domainsubsettesting}}
-Whether an assignment statement is well-typed depends on whether the dynamic domain of the
-right hand side type is contained in the dynamic domain of the left hand side type,
-for any given dynamic environment
-(see \TypingRuleRef{SubtypeSatisfaction} where this is checked).
-
-\begin{definition}[Domain Subset]
-For any given types $\vt$ and $\vs$ and static environment $\tenv$,
-we say that $\vt$ is a \emph{domain subset} of $\vs$ in $\tenv$,
-if the following condition holds:
-\hypertarget{def-domainsubset}{}
-\begin{equation}
-\begin{array}{l}
-\domainsubset(\tenv, \vt, \vs) \triangleq \\
-\qquad \forall \denv\in\dynamicenvs.\
-\dynamicdomain((\tenv, \denv), \vt) \subseteq \dynamicdomain((\tenv, \denv), \vs) \enspace.
-\end{array}
-\end{equation}
-\end{definition}
-
-For example, consider the assignment
-\begin{center}
-\texttt{var x : $\overname{\texttt{integer\{1,2,3\}}}{\vs}$ = ARBITRARY : $\overname{\texttt{integer\{1,2\}}}{\vt}$;}
-\end{center}
-
-It is well-typed, since (in any static environment), the domain of \verb|integer{1,2,3}|
-is \\
-$\{\nvint(1), \nvint(2), \nvint(3)\}$, which subsumes
-the domain of \verb|integer{1,2}|, which is \\ $\{\nvint(1), \nvint(2)\}$.
-
-Since dynamic domains are potentially infinite, this requires \emph{symbolic reasoning}.
-Furthermore, since any (\symbolicallyevaluable{}) expressions may appear inside integer and bitvector
-types, domain subset testing is undecidable.
-We therefore approximate domain subset testing \emph{conservatively} via the predicate $\symdomainsubset(\tenv, \vt, \vs)$.
-
-\hypertarget{def-sounddomainsubsettest}{}
-\begin{definition}[Sound Domain Subset Test]
-A predicate
-\[
-  \symdomainsubset(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs}) \aslto \Bool
-\]
-is \emph{sound} if the following condition holds:
-\begin{equation}
-  \begin{array}{l}
-  \forall \vt,\vs\in\ty.\ \tenv\in\staticenvs. \\
-  \;\;\;\; \symdomainsubset(\tenv, \vt, \vs) \typearrow \True \;\Longrightarrow\; \domainsubset(\tenv, \vt, \vs)  \enspace.
-  \end{array}
-\end{equation}
-\end{definition}
-
-That is, if a sound domain subset test returns a positive answer, it means that
-$\vt$ is definitely a domain subset of $\vs$ in the static environment $\tenv$.
-This is referred to as a \emph{true positive}.
-However, a negative answer means one of two things:
-\begin{description}
-  \item[True Negative:] indeed, $\vt$ is not a domain subset of $\vs$ in the static environment $\tenv$; or
-  \item[False Negative:] the symbolic reasoning is unable to decide.
-\end{description}
-
-In other words, $\symdomainsubset(\tenv, \vt, \vs)$ errs on the \emph{safe side} ---
-it never answers $\True$ when the real answer is $\False$, which would (undesirably)
-determine the following statement as well-typed:
-\begin{center}
-\texttt{var x : $\overname{\texttt{integer\{1,2\}}}{\vs}$ = ARBITRARY : $\overname{\texttt{integer}}{\vt}$;}
-\end{center}
-
-A sound but trivial domain subset test is one that always returns $\False$.
-However, that would make all assignments be considered as not well-typed.
-Indeed, it has the maximal set of false negatives.
-Reducing the set of false negatives requires stronger symbolic reasoning algorithms,
-which inevitably leads to higher computational complexity.
-%
-The symbolic domain subset test in \chapref{SymbolicDomainSubsetTesting}
-attempts to accept a large enough set of true positives, based on empirical trial and error,
-while maintaining the computational complexity of the symbolic reasoning relatively low.
-%
-In particular, it serves as the definitive domain subset test that must be utilized
-by any implementation of the ASL type system.

@@ -883,3 +883,4 @@ ASL Typing Tests / annotating types:
     ^^^^^^^^^
   ASL Typing error: a subtype of boolean was expected, provided integer {1}.
   [1]
+  $ aslref TypingRule.ApproxConstraint.asl
