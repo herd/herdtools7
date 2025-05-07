@@ -517,6 +517,7 @@ mte-test:
 		-libdir-path ./herd/libdir \
 		-kinds-path catalogue/aarch64-MTE/tests/kinds.txt \
 		-shelf-path catalogue/aarch64-MTE/shelf.py \
+		-conf-path catalogue/aarch64-MTE/cfgs/test-MTE.cfg \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-MTE tests: OK"
 
