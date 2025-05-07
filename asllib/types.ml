@@ -42,8 +42,9 @@ let bitwidth_equal = thing_equal bitwidth_equal
 let slices_equal = thing_equal slices_equal
 let bitfield_equal = thing_equal bitfield_equal
 let constraint_equal = thing_equal constraint_equal
-let constraints_equal = thing_equal constraints_equal
 let assoc_map map li = List.map (fun (x, y) -> (x, map y)) li
+let list_exists' l f = List.exists f l
+let list_for_all' l f = List.for_all f l
 
 (* --------------------------------------------------------------------------*)
 
@@ -172,185 +173,80 @@ let get_well_constrained_structure env ty =
 
 (* --------------------------------------------------------------------------*)
 
+(* A module for symbolically representing the domain of values for types. *)
 module Domain = struct
   module IntSet = Diet.Z
 
-  type syntax = AST.int_constraint list
+  (** A symbolic representation for a set of integers. *)
+  type symdom = Finite of IntSet.t | ConstrainedDom of AST.int_constraint
 
-  (** Represents the domain of an integer expression. *)
-  type t = Finite of IntSet.t | Top | FromSyntax of syntax
+  type t =
+    | Top
+    | Subdomains of symdom list
+        (** Represents the union of the symbolic domains in the list. *)
 
-  let add_interval_to_intset acc bot top =
-    if bot > top then acc
-    else
-      let interval = IntSet.Interval.make bot top in
-      IntSet.add interval acc
-
-  let pp f =
+  let pp_symdom f =
     let open Format in
     function
-    | Top -> pp_print_string f "ℤ"
     | Finite set -> fprintf f "@[{@,%a}@]" IntSet.pp set
-    | FromSyntax slices -> PP.pp_int_constraints f slices
+    | ConstrainedDom c -> PP.pp_int_constraint f c
+
+  let pp f sd =
+    let open Format in
+    match sd with
+    | Top -> pp_print_string f "ℤ"
+    | Subdomains doms ->
+        pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ") pp_symdom f doms
 
   exception StaticEvaluationTop
 
-  (* Begin NormalizeToInt *)
-  let eval (env : env) (e : expr) =
+  (* Begin SymdomEval *)
+  let symdom_eval (env : env) (e : expr) =
     match StaticModel.reduce_to_z_opt env e with
     | None -> raise StaticEvaluationTop
     | Some i -> i
   (* End *)
 
-  (* Begin ConstraintToIntSet *)
-  let add_constraint_to_intset env acc = function
-    | Constraint_Exact e ->
-        let v = eval env e in
-        add_interval_to_intset acc v v
-    | Constraint_Range (bot, top) ->
-        let bot = eval env bot and top = eval env top in
-        add_interval_to_intset acc bot top
-  (* End *)
+  (** Constructs the symbolic domain of an integer constraint. *)
+  let symdom_of_constraint env c =
+    try
+      let interval =
+        match c with
+        | Constraint_Exact e ->
+            let v = symdom_eval env e in
+            let interval = IntSet.Interval.make v v in
+            IntSet.add interval IntSet.empty
+        | Constraint_Range (bot, top) ->
+            let bot = symdom_eval env bot and top = symdom_eval env top in
+            if bot > top then IntSet.empty
+            else
+              let interval = IntSet.Interval.make bot top in
+              IntSet.add interval IntSet.empty
+      in
+      Finite interval
+    with StaticEvaluationTop -> ConstrainedDom c
 
-  (* Begin IntSetOfIntConstraints *)
-  let int_set_of_int_constraints env constraints =
-    match constraints with
-    | [] -> Error.fatal_from ASTUtils.dummy_annotated Error.EmptyConstraints
-    | _ -> (
-        try
-          Finite
-            (List.fold_left
-               (add_constraint_to_intset env)
-               IntSet.empty constraints)
-        with StaticEvaluationTop -> FromSyntax constraints)
-  (* End *)
+  (* Constructs the symbolic domain of a bitvector type's width expression *)
+  let symdom_of_width_expr e =
+    Subdomains [ ConstrainedDom (Constraint_Exact e) ]
 
-  (* Begin IntSetToIntConstraints *)
-  let int_set_to_int_constraints =
-    let interval_to_constraint interval =
-      let x = IntSet.Interval.x interval and y = IntSet.Interval.y interval in
-      let expr_of_z z = L_Int z |> literal in
-      Constraint_Range (expr_of_z x, expr_of_z y)
-    in
-    fun is ->
-      IntSet.fold
-        (fun interval acc -> interval_to_constraint interval :: acc)
-        is []
-  (* End *)
+  (* Begin SymdomOfType *)
 
-  (* Begin IntSetOp *)
-  let rec int_set_raise_interval_op fop op is1 is2 =
-    match (is1, is2) with
-    | Top, _ | _, Top -> Top
-    | Finite is1, Finite is2 -> (
-        try
-          Finite
-            (IntSet.fold
-               (fun i1 -> IntSet.fold (fun i2 -> IntSet.add (fop i1 i2)) is2)
-               is1 IntSet.empty)
-        with StaticEvaluationTop ->
-          let s1 = int_set_to_int_constraints is1
-          and s2 = int_set_to_int_constraints is2 in
-          int_set_raise_interval_op fop op (FromSyntax s1) (FromSyntax s2))
-    | Finite is1, FromSyntax _ ->
-        let s1 = int_set_to_int_constraints is1 in
-        int_set_raise_interval_op fop op (FromSyntax s1) is2
-    | FromSyntax _, Finite is2 ->
-        let s2 = int_set_to_int_constraints is2 in
-        int_set_raise_interval_op fop op is1 (FromSyntax s2)
-    | FromSyntax s1, FromSyntax s2 ->
-        FromSyntax (StaticOperations.constraint_binop op s1 s2)
-
-  (* End *)
-
-  let monotone_interval_op op i1 i2 =
-    let open IntSet.Interval in
-    let x = op (x i1) (x i2) and y = op (y i1) (y i2) in
-    if x < y then make x y else raise StaticEvaluationTop
-
-  let anti_monotone_interval_op op i1 i2 =
-    let open IntSet.Interval in
-    let x = op (x i1) (y i2) and y = op (y i1) (x i2) in
-    if x < y then make x y else raise StaticEvaluationTop
-
-  let of_literal = function
-    | L_Int n -> Finite (IntSet.singleton n)
-    | _ -> raise StaticEvaluationTop
-
-  (* [of_expr env e] returns the symbolic integer domain for the integer-typed expression [e]. *)
-  let rec of_expr env e =
-    match e.desc with
-    | E_Literal v -> of_literal v
-    | E_Var x -> (
-        try SEnv.lookup_constants env x |> of_literal
-        with Not_found -> (
-          try SEnv.type_of env x |> of_type env
-          with Not_found -> Error.fatal_from e (Error.UndefinedIdentifier x)))
-    | E_Unop (NEG, e1) ->
-        of_expr env (E_Binop (`MINUS, !$0, e1) |> add_pos_from e)
-    | E_Binop (((`PLUS | `MINUS | `MUL) as op), e1, e2) ->
-        let is1 = of_expr env e1
-        and is2 = of_expr env e2
-        and fop =
-          match op with
-          | `PLUS -> monotone_interval_op Z.add
-          | `MINUS -> anti_monotone_interval_op Z.sub
-          | `MUL -> monotone_interval_op Z.mul
-        in
-        int_set_raise_interval_op fop op is1 is2
-    | _ ->
-        let () =
-          if false then
-            Format.eprintf "@[<2>Cannot interpret as int set:@ @[%a@]@]@."
-              PP.pp_expr e
-        in
-        FromSyntax [ Constraint_Exact e ]
-
-  and of_width_expr env e =
-    let e_domain = of_expr env e in
-    let exact_domain = FromSyntax [ Constraint_Exact e ] in
-    match e_domain with
-    | Finite int_set ->
-        if Z.equal (IntSet.cardinal int_set) Z.one then e_domain
-        else exact_domain
-    | FromSyntax [ Constraint_Exact _ ] -> e_domain
-    | _ -> exact_domain
-
-  and of_type env ty =
+  (** [symdom_of_type env ty] constructs the symbolic domain of [ty] in [env]. *)
+  let symdom_of_type env ty : t =
     let ty = make_anonymous env ty in
     match ty.desc with
     | T_Int UnConstrained -> Top
     | T_Int (Parameterized (_uid, var)) ->
-        FromSyntax [ Constraint_Exact (var_ var) ]
+        Subdomains [ ConstrainedDom (Constraint_Exact (var_ var)) ]
     | T_Int (WellConstrained (constraints, _)) ->
-        int_set_of_int_constraints env constraints
-    | T_Int PendingConstrained -> assert false
-    | T_Bool | T_String | T_Real ->
-        failwith "Unimplemented: domain of primitive type"
-    | T_Bits _ | T_Enum _ | T_Array _ | T_Collection _ | T_Exception _
-    | T_Record _ | T_Tuple _ ->
-        failwith "Unimplemented: domain of a non singular type."
-    | T_Named _ -> assert false (* make anonymous *)
-
-  let mem v d =
-    match (v, d) with
-    | L_Bool _, _
-    | L_Real _, _
-    | L_String _, _
-    | L_BitVector _, _
-    | L_Label _, _ ->
-        false
-    | L_Int _, Top -> true
-    | L_Int i, Finite intset -> IntSet.mem i intset
-    | L_Int _, _ -> false
-
-  let equal d1 d2 =
-    match (d1, d2) with
-    | Top, Top -> true
-    | Finite is1, Finite is2 -> IntSet.equal is1 is2
-    | _ -> false
-
-  let compare _d1 _d2 = assert false
+        Subdomains (List.map (symdom_of_constraint env) constraints)
+    | T_Int PendingConstrained
+    | T_Bool | T_String | T_Real | T_Bits _ | T_Enum _ | T_Array _
+    | T_Collection _ | T_Exception _ | T_Record _ | T_Tuple _ | T_Named _ ->
+        assert false
+  (* T_Named is impossible here, because of the make_anonymous above. *)
+  (* End *)
 
   (** The [StaticApprox] module creates constant approximation of integer
       constraints as sets of integers. *)
@@ -381,6 +277,17 @@ module Domain = struct
       let warn_from ~loc:_ _ = ()
     end)
 
+    (** [intset_to_constraints s] converts each interval in [s] into a constraint for that interval. *)
+    let intset_to_constraints s =
+      let open IntSet.Interval in
+      List.map
+        (fun interval ->
+          let x = IntSet.Interval.x interval in
+          let y = IntSet.Interval.y interval in
+          if x = y then Constraint_Exact (expr_of_z x)
+          else Constraint_Range (expr_of_z x, expr_of_z y))
+        (IntSet.elements s)
+
     (* Begin ApproxExpr *)
     let rec approx_expr approx env e =
       match e.desc with
@@ -394,11 +301,11 @@ module Domain = struct
           IntSet.filter_map_individual (apply_unop e op)
             (approx_expr approx env e')
       | E_Binop ((#StaticOperations.int3_binop as op), e1, e2) -> (
-          let s1 = approx_expr approx env e1 |> int_set_to_int_constraints in
-          let s2 = approx_expr approx env e2 |> int_set_to_int_constraints in
+          let cs1 = approx_expr approx env e1 |> intset_to_constraints in
+          let cs2 = approx_expr approx env e2 |> intset_to_constraints in
           let s', plf =
             SOp.annotate_constraint_binop ~loc:ASTUtils.dummy_annotated env op
-              s1 s2
+              cs1 cs2
           in
           match (plf, approx) with
           | Precision_Full, _ | Precision_Lost _, Under ->
@@ -457,52 +364,76 @@ module Domain = struct
     (* End *)
   end
 
-  (* Begin SymDomIsSubset *)
-  let is_subset env is1 is2 =
-    let () =
-      if false then Format.eprintf "Is %a a subset of %a?@." pp is1 pp is2
-    in
+  (* Begin SymdomSubset *)
+
+  (* [symdom_subset env cd1 cd2] conservatively tests whether the set
+     of integers represented by [cd1] is a subset of the set of integers
+     represented by [cd2], in the context of [env]. *)
+  let symdom_subset env cd1 cd2 =
     let open StaticApprox in
-    (match (is1, is2) with
+    match (cd1, cd2) with
+    | Finite s1, Finite s2 -> IntSet.subset s1 s2
+    | ConstrainedDom c1, ConstrainedDom c2 -> (
+        constraint_equal env c1 c2
+        ||
+        try
+          let s1 = approx_constraint Over env c1
+          and s2 = approx_constraint Under env c2 in
+          IntSet.subset s1 s2
+        with CannotOverApproximate -> false)
+    | Finite s1, ConstrainedDom c2 ->
+        let s2 = approx_constraint Under env c2 in
+        IntSet.subset s1 s2
+    | ConstrainedDom c1, Finite s2 -> (
+        try
+          let s1 = approx_constraint Over env c1 in
+          IntSet.subset s1 s2
+        with CannotOverApproximate -> false)
+  (* End *)
+
+  (* Begin SymdomNormalize *)
+
+  (** [symdom_normalize symdoms] returns a symbolic domain with at most one
+     [Finite] component, which is the union of the [Finite] components in [symdoms]. *)
+  let symdom_normalize symdoms =
+    let finite_domains, others =
+      List.partition (function Finite _ -> true | _ -> false) symdoms
+    in
+    (* Avoid representing empty sets of integers. *)
+    if list_is_empty finite_domains then others
+    else
+      let union_of_finite_domains =
+        List.fold_left
+          (fun acc cd ->
+            match cd with Finite fd -> IntSet.union fd acc | _ -> assert false)
+          IntSet.empty finite_domains
+      in
+      Finite union_of_finite_domains :: others
+  (* End *)
+
+  (* Begin SymdomsSubsetUnions *)
+
+  (** [symdom_subset_unions env symdoms1 symdoms2] conservatively tests
+  whether the set of integers represented by the union of symbolic domains
+  in [symdoms1] is a subset of the set of integers represented by
+  the union of symbolic domains in [symdoms2], in the context of [env].
+  *)
+  let symdom_subset_unions env sd1 sd2 =
+    let () =
+      if false then
+        Format.eprintf "Is symdom %a a subset of symdom %a?@." pp sd1 pp sd2
+    in
+    match (sd1, sd2) with
     | _, Top -> true
     | Top, _ -> false
-    | Finite ints1, Finite ints2 -> IntSet.subset ints1 ints2
-    | FromSyntax cs1, FromSyntax cs2 -> (
-        constraints_equal env cs1 cs2
-        || Fun.flip List.for_all cs1 @@ fun c1 ->
-           Fun.flip List.exists cs2 @@ fun c2 ->
-           constraint_equal env c1 c2
-           ||
-           try
-             let s1 = approx_constraint Over env c1
-             and s2 = approx_constraint Under env c2 in
-             IntSet.subset s1 s2
-           with CannotOverApproximate -> false)
-    | Finite s1, FromSyntax cs2 ->
-        let s2 = approx_constraints Under env cs2 in
-        IntSet.subset s1 s2
-    | FromSyntax cs1, Finite s2 -> (
-        try
-          let s1 = approx_constraints Over env cs1 in
-          IntSet.subset s1 s2
-        with CannotOverApproximate -> false))
-    |: TypingRule.SymDomIsSubset
+    | Subdomains symdoms1, Subdomains symdoms2 ->
+        (let symdoms1_norm = symdom_normalize symdoms1 in
+         let symdoms2_norm = symdom_normalize symdoms2 in
+         list_for_all' symdoms1_norm @@ fun sd1 ->
+         list_exists' symdoms2_norm @@ fun sd2 -> symdom_subset env sd1 sd2)
+        |: TypingRule.SymdomsSubsetUnions
   (* End *)
 end
-
-(* --------------------------------------------------------------------------*)
-
-let is_bits_width_fixed env ty =
-  match ty.desc with
-  | T_Bits _ -> (
-      let open Domain in
-      match of_type env ty with
-      | Finite int_set -> IntSet.cardinal int_set = Z.one
-      | Top -> false
-      | _ -> failwith "Wrong domain for a bitwidth.")
-  | _ -> failwith "Wrong type for some bits."
-
-let _is_bits_width_constrained env ty = not (is_bits_width_fixed env ty)
 
 (* --------------------------------------------------------------------------*)
 
@@ -553,13 +484,9 @@ and subtype_satisfies env t s =
   (* If S has the structure of an integer type then T must have the structure
      of an integer type. *)
   | T_Int _, T_Int _ ->
-      let d_s = Domain.of_type env s and d_t = Domain.of_type env t in
-      let () =
-        if false then
-          Format.eprintf "domain_subtype_satisfies: %a included in %a?@."
-            Domain.pp d_t Domain.pp d_s
-      in
-      Domain.is_subset env d_t d_s
+      let d_s = Domain.symdom_of_type env s
+      and d_t = Domain.symdom_of_type env t in
+      Domain.symdom_subset_unions env d_t d_s
   (* If S has the structure of a real/string/bool then T must have the
      same structure. *)
   | ( ((T_Real | T_String | T_Bool) as s_anon),
@@ -580,14 +507,9 @@ and subtype_satisfies env t s =
   | T_Bits (w_s, bf_s), T_Bits (w_t, bf_t) ->
       let bitfields_subtype = bitfields_included env bf_s bf_t in
       let widths_subtype =
-        let t_width_domain = Domain.of_width_expr env w_t
-        and s_width_domain = Domain.of_width_expr env w_s in
-        let () =
-          if false then
-            Format.eprintf "Is %a included in %a?@." Domain.pp t_width_domain
-              Domain.pp s_width_domain
-        in
-        Domain.is_subset env t_width_domain s_width_domain
+        let t_width_domain = Domain.symdom_of_width_expr w_t in
+        let s_width_domain = Domain.symdom_of_width_expr w_s in
+        Domain.symdom_subset_unions env t_width_domain s_width_domain
       in
       bitfields_subtype && widths_subtype
   (* If S has the structure of an array type with elements of type E then
@@ -620,13 +542,9 @@ and subtype_satisfies env t s =
   | T_Collection fields_s, T_Collection fields_t
   | T_Exception fields_s, T_Exception fields_t
   | T_Record fields_s, T_Record fields_t ->
-      List.for_all
-        (fun (name_s, ty_s) ->
-          List.exists
-            (fun (name_t, ty_t) ->
-              String.equal name_s name_t && type_equal env ty_s ty_t)
-            fields_t)
-        fields_s
+      list_for_all' fields_s @@ fun (name_s, ty_s) ->
+      list_exists' fields_t @@ fun (name_t, ty_t) ->
+      String.equal name_s name_t && type_equal env ty_s ty_t
   | T_Named _, _ -> assert false
   | _, _ -> false)
   |: TypingRule.SubtypeSatisfaction

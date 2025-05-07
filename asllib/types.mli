@@ -84,33 +84,8 @@ val to_well_constrained : ty -> ty
     well-constrained integers) as they are. *)
 
 val get_well_constrained_structure : env -> ty -> ty
-(** [get_well_constrained_structure env ty] quivalent to
+(** [get_well_constrained_structure env ty] is equivalent to
     [get_structure env ty |> to_well_constrained]. *)
-
-(** {2 Domains} *)
-
-(** The domain of a type is the symbolic representation of the set of values which storage element of that type may hold. *)
-module Domain : sig
-  type t
-  (** Abstract value set. *)
-
-  val pp : Format.formatter -> t -> unit
-  (** A printer for the domain type. *)
-
-  val of_type : env -> ty -> t
-  (** Construct the domain of a type. *)
-
-  val mem : AST.literal -> t -> bool
-  (** [mem v d] is true if and only if [v] is in [d]. *)
-
-  val equal : t -> t -> bool
-  (** Wheather two domains are equal. *)
-
-  val compare : t -> t -> int option
-  (** The inclusion order on domains.
-
-      It is a partial order. *)
-end
 
 (** {2 Orders on types} *)
 
@@ -122,13 +97,13 @@ val subtypes_names : env -> identifier -> identifier -> bool
     declared subtype of the type named [s2].
 
     Equivalent to [subtypes env (T_Named s1 |> here) (T_Named s2 |> here)].
-    *)
+*)
 
 val subtype_satisfies : env -> ty -> ty -> bool
-(** Subtype-satisfation as per Definition TRVR. *)
+(** Subtype-satisfaction test. *)
 
 val type_satisfies : env -> ty -> ty -> bool
-(** Type-satisfation as per Rule FMXK. *)
+(** Type-satisfaction test. *)
 
 val type_clashes : env -> ty -> ty -> bool
 (** Type-clashing relation.
@@ -136,21 +111,13 @@ val type_clashes : env -> ty -> ty -> bool
     Notes:
       - T subtype-satisfies S implies T and S type-clash
       - This is an equivalence relation
-
-    per Definition VPZZ.
 *)
 
 val subprogram_clashes : env -> func -> func -> bool
-(** Subprogram clashing relation.
-
-    per Definition BTBR.
-*)
+(** Subprogram clashing relation. *)
 
 val lowest_common_ancestor : env -> ty -> ty -> ty option
-(** Lowest common ancestor.
-
-    As per Rule YZHM.
-*)
+(** Lowest common ancestor. *)
 
 val type_equal : env -> ty -> ty -> bool
-(** Equality in env for types. *)
+(** A conservative type equivalence test for types in env. *)

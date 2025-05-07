@@ -117,6 +117,7 @@ approach
 appropriate
 approximate
 approximates
+approximating
 approximation
 arbitrary
 architecture
@@ -458,6 +459,7 @@ convert
 converted
 converting
 converts
+conveying
 conveys
 copied
 copyright
@@ -484,6 +486,7 @@ currently
 custom
 customers
 data
+datatype
 dealing
 debugging
 dec
@@ -1037,6 +1040,7 @@ interpreter
 interpreters
 intersection
 interval
+intervals
 into
 introduce
 introduces
@@ -1176,6 +1180,7 @@ may
 mean
 meaning
 means
+meant
 mechanism
 mechanisms
 meets
@@ -1184,6 +1189,7 @@ members
 memory
 menhir
 mentioned
+merged
 meta
 might
 minimal
@@ -1331,6 +1337,7 @@ outputting
 outside
 over
 overall
+overapproximated
 overapproximates
 overapproximation
 overcome
@@ -1726,6 +1733,7 @@ shorthand
 shortly
 should
 show
+showing
 shown
 shows
 side
@@ -1901,6 +1909,7 @@ takes
 taking
 team
 technical
+technically
 technique
 term
 terminal
@@ -2022,6 +2031,7 @@ unconstrained
 undeclared
 undefined
 under
+underapproximated
 underapproximates
 underapproximation
 underlying
