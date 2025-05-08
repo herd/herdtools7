@@ -257,6 +257,9 @@ module Domain = struct
     exception CannotOverApproximate
     (** Raised if over approximation is not possible. *)
 
+    exception CannotUnderApproximate
+    (** Raised if under approximation is not possible. *)
+
     (** Return bottom for Under approximation, top for over approximation. *)
     let bottom_top approx =
       if approx = Over then raise CannotOverApproximate else IntSet.empty
@@ -272,10 +275,22 @@ module Domain = struct
       try Operations.unop_values loc Error.Static op (L_Int z) |> literal_to_z
       with ASLException { desc = UnsupportedUnop _ } -> None
 
-    module SOp = StaticOperations.Make (struct
-      let fail () = assert false
+    module OverSOp = StaticOperations.Make (struct
+      let fail () = raise CannotOverApproximate
       let warn_from ~loc:_ _ = ()
     end)
+
+    module UnderOp = StaticOperations.Make (struct
+      let fail () = raise CannotUnderApproximate
+      let warn_from ~loc:_ _ = ()
+    end)
+
+    let constraint_binop = function
+      | Over -> OverSOp.annotate_constraint_binop
+      | Under -> (
+          fun ~loc env op s1 s2 ->
+            try UnderOp.annotate_constraint_binop ~loc env op s1 s2
+            with CannotUnderApproximate -> ([], Precision_Lost []))
 
     (** [intset_to_constraints s] converts each interval in [s] into a constraint for that interval. *)
     let intset_to_constraints s =
@@ -301,9 +316,9 @@ module Domain = struct
           IntSet.filter_map_individual (apply_unop e op)
             (approx_expr approx env e')
       | E_Binop ((#StaticOperations.int3_binop as op), e1, e2) -> (
-          let cs1 = approx_expr approx env e1 |> intset_to_constraints in
-          let cs2 = approx_expr approx env e2 |> intset_to_constraints in
-          let s', plf = SOp.annotate_constraint_binop ~loc:e env op cs1 cs2 in
+          let s1 = approx_expr approx env e1 |> intset_to_constraints in
+          let s2 = approx_expr approx env e2 |> intset_to_constraints in
+          let s', plf = constraint_binop approx ~loc:e env op s1 s2 in
           match (plf, approx) with
           | Precision_Full, _ | Precision_Lost _, Under ->
               approx_constraints approx env s'
