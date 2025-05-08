@@ -79,6 +79,16 @@ let add_pos_from_st pos desc =
   if pos.desc == desc then pos else { pos with desc }
 
 let add_pos_from pos desc = { pos with desc }
+
+let add_pos_range_from pos_from pos_to desc =
+  let () = assert (pos_from.version = pos_to.version) in
+  {
+    desc;
+    pos_start = pos_from.pos_start;
+    pos_end = pos_to.pos_end;
+    version = pos_from.version;
+  }
+
 let map_desc f thing = f thing |> add_pos_from thing
 let map_desc_st' thing f = f thing.desc |> add_pos_from thing
 
