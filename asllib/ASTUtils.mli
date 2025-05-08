@@ -79,6 +79,10 @@ val add_pos_from_pos_of : (string * int * int * int) * 'a -> 'a annotated
 val add_pos_from : 'a annotated -> 'b -> 'b annotated
 (** [add_pos_from loc v] is [v] with the location data from [loc]. *)
 
+val add_pos_range_from : 'a annotated -> 'a annotated -> 'b -> 'b annotated
+(** [add_pos_range_from loc_from loc_to v] is [v] with the location data
+    given by the range of locations starting at [loc_from] and ending to [loc_to]. *)
+
 val add_pos_from_st : 'a annotated -> 'a -> 'a annotated
 (** [add_pos_from_st a' a] is [a] with the location from [a'].
 

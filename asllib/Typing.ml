@@ -450,7 +450,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             if n >= i2 then acc
             else
               let e =
-                E_Literal (L_Int (Z.of_int (i1 + n))) |> add_dummy_annotation
+                E_Literal (L_Int (Z.of_int (i1 + n)))
+                |> add_pos_range_from e1 e2
               in
               e :: do_rec (n + 1)
           in
@@ -1230,7 +1231,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let+ () = check_diet_in_width ~loc slices1 width diet in
         let width' = Diet.Int.cardinal diet |> expr_of_int in
         let+ () =
-          t_bits_bitwidth width' |> add_dummy_annotation
+          t_bits_bitwidth width' |> add_pos_from ~loc
           |> check_bits_equal_width ~loc env ty
         in
         let ses = SES.union ses_ty ses_slices in
@@ -1723,7 +1724,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let () =
       if false then
         Format.eprintf "@[Found candidate decl:@ @[%a@]@]@." PP.pp_t
-          [ D_Func callee |> add_dummy_annotation ]
+          [ D_Func callee |> add_pos_from ~loc ]
     in
     let+ () =
       check_true (callee.subprogram_type = call_type) @@ fun () ->
@@ -2000,7 +2001,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         and t_false, e_false', ses_false = annotate_expr env e_false in
         let t =
           best_effort t_true (fun _ ->
-              match Types.lowest_common_ancestor env t_true t_false with
+              match Types.lowest_common_ancestor ~loc:e env t_true t_false with
               | None ->
                   fatal_from ~loc (Error.UnreconcilableTypes (t_true, t_false))
               | Some t -> t)
@@ -3496,7 +3497,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let ty, ses_ty =
           match ty_opt with
           | None | Some { desc = T_Int UnConstrained; _ } ->
-              (Types.parameterized_ty x, SES.empty)
+              (Types.parameterized_ty ~loc x, SES.empty)
           | Some ty ->
               (* valid in environment which has no parameters declared *)
               annotate_type ~loc env ty
@@ -3569,7 +3570,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let ty, ses_ty =
           match List.assoc_opt x func_sig.args with
           | None | Some { desc = T_Int UnConstrained } ->
-              (Types.parameterized_ty x, SES.empty)
+              (Types.parameterized_ty ~loc x, SES.empty)
           | Some ty ->
               (* valid in environment which has no parameters declared *)
               annotate_type ~loc env ty
