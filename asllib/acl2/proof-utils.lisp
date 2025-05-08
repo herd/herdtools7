@@ -89,6 +89,56 @@
 (in-theory (enable force-execute-spmatch-force-exec))
 
 
+
+(define all-entries-match (subprogs (ref-subprogs alistp))
+  :returns (ok)
+  (if (atom ref-subprogs)
+      t
+    (and (equal (hons-assoc-equal (caar ref-subprogs) subprogs)
+                (car ref-subprogs))
+         (all-entries-match subprogs (cdr ref-subprogs))))
+  ///
+  (defret lookup-when-<fn>
+    (implies (and ok
+                  (equal ref-look (hons-assoc-equal id ref-subprogs))
+                  ref-look)
+             (equal (hons-assoc-equal id subprogs)
+                    ref-look))))
+
+(define all-subprograms-match ((env static_env_global-p)
+                               (ref-env static_env_global-p))
+  :returns (ok)
+  (all-entries-match (static_env_global->subprograms env)
+                     (static_env_global->subprograms ref-env))
+  ///
+  (defret lookup-when-<fn>
+    (implies (and (syntaxp (quotep name))
+                  ok
+                  (equal look (spmatch-force-exec
+                               (hons-assoc-equal name (static_env_global->subprograms ref-env))))
+                  (syntaxp (quotep look))
+                  look)
+             (equal (hons-assoc-equal name (static_env_global->subprograms env))
+                    look))
+    :hints(("Goal" :in-theory (enable spmatch-force-exec)))))
+
+(define all-subprograms-match ((env static_env_global-p)
+                               (ref-env static_env_global-p))
+  :returns (ok)
+  (all-entries-match (static_env_global->subprograms env)
+                     (static_env_global->subprograms ref-env))
+  ///
+  (defret lookup-when-<fn>
+    (implies (and (syntaxp (quotep name))
+                  ok
+                  (equal look (spmatch-force-exec
+                               (hons-assoc-equal name (static_env_global->subprograms ref-env))))
+                  (syntaxp (quotep look))
+                  look)
+             (equal (hons-assoc-equal name (static_env_global->subprograms env))
+                    look))
+    :hints(("Goal" :in-theory (enable spmatch-force-exec)))))
+
 (define subprograms-match ((names identifierlist-p)
                            (env static_env_global-p)
                            (env1 static_env_global-p))

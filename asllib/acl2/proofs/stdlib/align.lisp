@@ -340,3 +340,30 @@
 
 
 
+(def-asl-subprogram isalignedsize-1-correct
+  :function "IsAlignedSize-1"
+  :args (x size)
+  :hyps (< 0 size.val)
+  :return-values ((v_bool (eql (mod x.val size.val) 0))))
+
+(def-asl-subprogram isalignedsize-correct
+  :function "IsAlignedSize"
+  :params (n)
+  :args (x size)
+  :hyps (< 0 size.val)
+  :return-values ((v_bool (eql (mod x.val size.val) 0))))
+
+(def-asl-subprogram isalignedp2-1-correct
+  :function "IsAlignedP2-1"
+  :args (x p2)
+  :hyps (<= 0 p2.val)
+  :return-values ((v_bool (eql (mod x.val (expt 2 p2.val)) 0))))
+
+(def-asl-subprogram isalignedp2-correct
+  :function "IsAlignedP2"
+  :params (n)
+  :args (x p2)
+  :hyps (<= 0 p2.val)
+  :return-values ((v_bool (eql (mod x.val (expt 2 p2.val)) 0)))
+  :hints('(:in-theory (enable loghead))))
+
