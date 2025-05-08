@@ -1,11 +1,11 @@
-type MyExceptionType of exception{};
+type MyExceptionType of exception{-};
 var g : integer = 0;
 
 func update_and_throw()
 begin
     var x = 5;
     g = 1;
-    throw MyExceptionType{};
+    throw MyExceptionType{-};
 end;
 
 func main() => integer

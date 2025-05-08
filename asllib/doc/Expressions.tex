@@ -2981,7 +2981,7 @@ Notice that this rule introduces non-determinism.
 
 \subsection{Syntax}
 \begin{flalign*}
-\Nexpr \derives\  & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace &\\
+\Nexpr \derives\  & \Tidentifier \parsesep \Tlbrace \parsesep \Tminus \parsesep \Trbrace &\\
 	       |\ & \Tidentifier \parsesep \Tlbrace \parsesep \ClistOne{\Nfieldassign} \parsesep \Trbrace &\\
 \Nfieldassign \derives \ & \Tidentifier \parsesep \Teq \parsesep \Nexpr &
 \end{flalign*}
@@ -2998,7 +2998,7 @@ Notice that this rule introduces non-determinism.
       \begin{array}{r}
     \buildexpr(\overname{\Nexpr(
     \begin{array}{l}
-    \Tidentifier(\vt), \Tlbrace, \Trbrace
+    \Tidentifier(\vt), \Tlbrace, \Tminus, \Trbrace
     \end{array}
     )}{\vparsednode}) \\
     \astarrow\ \overname{\ERecord(\TNamed(\vt), \emptylist)}{\vastnode}

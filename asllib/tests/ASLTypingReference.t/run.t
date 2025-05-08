@@ -587,7 +587,7 @@ ASL Typing Tests / annotating types:
           if flag then
               return v;
           else
-              throw invalid_state{};
+              throw invalid_state{-};
           end;
       end;
   ASL Typing error: the function "incorrect_terminating_path" may not terminate
@@ -616,7 +616,7 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.DeclareType.asl
   $ aslref TypingRule.AnnotateExtraFields.bad.asl
   File TypingRule.AnnotateExtraFields.bad.asl, line 1, characters 15 to 39:
-  type SubRecord subtypes Record with { };
+  type SubRecord subtypes Record with {-};
                  ^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Error: Undefined identifier: 'Record'
   [1]
@@ -654,9 +654,9 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.UpdateGlobalStorage.config.asl
   $ aslref --no-exec TypingRule.UpdateGlobalStorage.config.bad.asl
   File TypingRule.UpdateGlobalStorage.config.bad.asl, line 3,
-    characters 0 to 38:
-  config d: MyException = MyException{};
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    characters 0 to 39:
+  config d: MyException = MyException{-};
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Typing error: expected singular type, found MyException.
   [1]
   $ aslref --no-exec TypingRule.DefDecl.asl
@@ -724,10 +724,10 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.ParametersOfTy.asl
   $ aslref --no-exec TypingRule.ParametersOfExpr.asl
   $ aslref --no-exec TypingRule.ParametersOfExpr.bad.asl
-  File TypingRule.ParametersOfExpr.bad.asl, line 4, characters 19 to 40:
-      x: integer{A..(if TRUE then B else C)}, // Illegal expression in argument type
-                     ^^^^^^^^^^^^^^^^^^^^^
-  ASL Static Error: Unsupported expression if TRUE then B else C.
+  File TypingRule.ParametersOfExpr.bad.asl, line 4, characters 15 to 27:
+      z: integer{(D, E).item0}) => // Illegal expression in argument type
+                 ^^^^^^^^^^^^
+  ASL Static Error: Unsupported expression (D, E).item0.
   [1]
   $ aslref --no-exec TypingRule.FuncSigTypes.asl
   $ aslref --no-exec TypingRule.SubprogramTypesClash.asl
@@ -877,3 +877,10 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.SliceEqual.asl
   $ aslref TypingRule.SlicesEqual.asl
   $ aslref TypingRule.BitwidthEqual.asl
+  $ aslref TypingRule.RenameSubprograms.asl
+  File TypingRule.RenameSubprograms.asl, line 3, characters 2 to 11:
+    return 1;
+    ^^^^^^^^^
+  ASL Typing error: a subtype of boolean was expected, provided integer {1}.
+  [1]
+  $ aslref TypingRule.ApproxConstraint.asl

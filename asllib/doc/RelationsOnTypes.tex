@@ -176,7 +176,9 @@ subtyping.
   \begin{itemize}
   \item the \underlyingtype\ of $\vt$, $\vttwo$, is an \integertypeterm{} (any kind);
   \item the \underlyingtype\ of $\vs$, $\vstwo$, is an \integertypeterm{} (any kind);
-  \item determining whether $\vs$ subsumes $\vt$ in $\tenv$ via symbolic reasoning results in $\vb$.
+  \item applying $\symdomoftype$ to $\tenv$ and $\vs$ yields the \symbolicdomain{} $\ds$;
+  \item applying $\symdomoftype$ to $\tenv$ and $\vt$ yields the \symbolicdomain{} $\dt$;
+  \item applying $\symdomsubsetunions$ to $\tenv$, $\ds$, and $\dt$ yields $\vb$.
   \end{itemize}
 
 \item \AllApplyCase{t\_enum}
@@ -284,7 +286,9 @@ subtyping.
   \makeanonymous(\tenv, \vt) \typearrow \vttwo\\
   \makeanonymous(\tenv, \vs) \typearrow \vstwo\\
   \astlabel(\vttwo) = \astlabel(\vstwo) = \TInt\\
-  \symdomainsubset(\tenv, \vs, \vt) \typearrow \vb
+  \symdomoftype(\tenv, \vs) \typearrow \ds \\
+  \symdomoftype(\tenv, \vt) \typearrow \dt \\
+  \symdomsubsetunions(\tenv, \ds, \dt) \typearrow \vb
 }{
   \subtypesat(\tenv, \vt, \vs) \typearrow \vb
 }
@@ -305,9 +309,9 @@ subtyping.
   \makeanonymous(\tenv, \vs) \typearrow \TBits(\ws, \bfss)\\
   \makeanonymous(\tenv, \vt) \typearrow \TBits(\wt, \bfst)\\
   \bitfieldsincluded(\tenv, \bfss, \bfst) \typearrow \True \OrTypeError \\
-  \symdomofwidth(\tenv, \ws) \typearrow \ds \\
-  \symdomofwidth(\tenv, \wt) \typearrow \dt \\
-  \symdomissubset(\tenv, \ds, \dt) \typearrow \vb
+  \symdomofwidthexpr(\tenv, \ws) \typearrow \ds \\
+  \symdomofwidthexpr(\tenv, \wt) \typearrow \dt \\
+  \symdomsubsetunions(\tenv, \ds, \dt) \typearrow \vb
 }{
   \subtypesat(\tenv, \vt, \vs) \typearrow \vb
 }

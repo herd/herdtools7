@@ -17,7 +17,7 @@ func f() => integer
 begin
   z = 2;
   if SomeBoolean() then
-    throw Coucou {};
+    throw Coucou {-};
   else
     return 1;
   end;
@@ -29,13 +29,13 @@ begin
   let b = SomeBoolean();
   try
     a = f();
-    if b then throw Coucou {}; end;
+    if b then throw Coucou {-}; end;
     t = 2;
-    if SomeBoolean() then throw Bonga {}; end;
+    if SomeBoolean() then throw Bonga {-}; end;
     return a;
   catch
-    when Coucou => if SomeBoolean() then a = 0; throw Coucou {}; end;
-    when Bonga => if SomeBoolean() then a=0; throw Coucou {}; end;
+    when Coucou => if SomeBoolean() then a = 0; throw Coucou {-}; end;
+    when Bonga => if SomeBoolean() then a=0; throw Coucou {-}; end;
   end;
   return a;
 end;

@@ -598,3 +598,4 @@ Left-hand sides
     ^^^^^^^^^^^^^^^^^^
   ASL Typing error: multiple writes to "bv".
   [1]
+  $ aslref approx-expr-binop.asl

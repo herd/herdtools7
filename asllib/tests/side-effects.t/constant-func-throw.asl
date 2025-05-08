@@ -1,8 +1,8 @@
-type E of exception {};
+type E of exception {-};
 
 func foo (x: integer) => integer
 begin
-  throw E {};
+  throw E {-};
 end;
 
 constant C = foo (4);

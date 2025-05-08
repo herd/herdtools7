@@ -6,20 +6,20 @@ var _PSTATE_Z: bits(1);
 var _PSTATE_C: bits(1);
 var _PSTATE_V: bits(1);
 
-accessor PSTATE() <=> ProcState
+accessor PSTATE() <=> v: ProcState
 begin
-  getter begin
+  getter
     return _PSTATE;
   end;
 
-  setter = v begin
+  setter
     _PSTATE = v;
   end;
 end;
 
-accessor PSTATE(n:integer) <=> bits(1)
+accessor PSTATE(n:integer) <=> v: bits(1)
 begin
-  getter begin
+  getter
     if n == 3 then
       return _PSTATE_N;
     elsif n == 2 then
@@ -33,7 +33,7 @@ begin
     end;
   end;
 
-  setter = v begin
+  setter
     if n == 3 then
       _PSTATE_N = v;
     elsif n == 2 then
@@ -48,38 +48,38 @@ begin
   end;
 end;
 
-accessor PSTATE(n:integer,m:integer) <=> bits(2)
+accessor PSTATE(n:integer,m:integer) <=> v: bits(2)
 begin
-  getter begin
+  getter
     return PSTATE(n) :: PSTATE(m);
   end;
 
-  setter = v begin
+  setter
     PSTATE(n) = v[1];
     PSTATE(m) = v[0];
   end;
 end;
 
-accessor PSTATE(n:integer,m:integer,o:integer) <=> bits(3)
+accessor PSTATE(n:integer,m:integer,o:integer) <=> v: bits(3)
 begin
-  getter begin
+  getter
     return PSTATE(n) :: PSTATE(m) :: PSTATE(o);
   end;
 
-  setter = v begin
+  setter
     PSTATE(n) = v[2];
     PSTATE(m) = v[1];
     PSTATE(o) = v[0];
   end;
 end;
 
-accessor PSTATE(n:integer,m:integer,o:integer,p:integer) <=> bits(4)
+accessor PSTATE(n:integer,m:integer,o:integer,p:integer) <=> v: bits(4)
 begin
-  getter begin
+  getter
     return PSTATE(n) :: PSTATE(m) :: PSTATE(o) :: PSTATE(p);
   end;
 
-  setter = v begin
+  setter
     PSTATE(n) = v[3];
     PSTATE(m) = v[2];
     PSTATE(o) = v[1];

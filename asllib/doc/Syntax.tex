@@ -214,7 +214,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \Ndecl  \derives \ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \parsesep &\\
                    & \wrappedline\ \Nfuncbody\\
 |\ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
-|\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbiarrow \parsesep \Nty &\\
+|\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbiarrow \parsesep \Tidentifier \parsesep \Nasty &\\
    & \wrappedline\ \Naccessorbody &\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon &\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon &\\
@@ -280,7 +280,8 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \hypertarget{def-nelidedparamcall}{}
 \begin{flalign*}
 \Nelidedparamcall \derives \
-     & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace \parsesep \PlistZero{\Nexpr} &\\
+     & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace &\\
+  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace \parsesep \PlistZero{\Nexpr} &\\
   |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \ClistOne{\Nexpr} \parsesep \Trbrace &\\
   |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \ClistOne{\Nexpr} \parsesep \Trbrace \parsesep \PlistZero{\Nexpr}&
 \end{flalign*}
@@ -313,10 +314,10 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \hypertarget{def-naccessors}{}
 \begin{flalign*}
    \Naccessors \derives \ &
-      \Tgetter \parsesep \Nfuncbody \parsesep
-      \Tsetter \parsesep \Teq \parsesep \Tidentifier \parsesep \Nfuncbody &\\
-   |\ & \Tsetter \parsesep \Teq \parsesep \Tidentifier \parsesep \Nfuncbody \parsesep
-        \Tgetter \parsesep \Nfuncbody &\\
+      \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
+      \Tsetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+   |\ & \Tsetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
+        \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
 \end{flalign*}
 
 \hypertarget{def-noverride}{}
@@ -500,7 +501,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     |\  & \Nexpr \parsesep \Teqop \parsesep \Tmasklit &\\
                     |\  & \Nexpr \parsesep \Tneq \parsesep \Tmasklit &\\
                     |\  & \Tarbitrary \parsesep \Tcolon \parsesep \Nty &\\
-                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace &\\
+                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Tminus \parsesep \Trbrace &\\
                     |\  & \Tidentifier \parsesep \Tlbrace \parsesep \ClistOne{\Nfieldassign} \parsesep \Trbrace &\\
                     |\  & \Tlpar \parsesep \Nexprpattern \parsesep \Trpar &
 \end{flalign*}
@@ -530,7 +531,8 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 
 \hypertarget{def-nfields}{}
 \begin{flalign*}
-\Nfields \derives \ & \Tlbrace \parsesep \TClistZero{\Ntypedidentifier} \parsesep \Trbrace &
+\Nfields \derives \ & \Tlbrace \parsesep \Tminus \parsesep \Trbrace &\\
+                    & \Tlbrace \parsesep \TClistOne{\Ntypedidentifier} \parsesep \Trbrace &
 \end{flalign*}
 
 \hypertarget{def-nfieldsopt}{}
@@ -609,7 +611,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     |\  & \Nexpr \parsesep \Teqop \parsesep \Tmasklit &\\
                     |\  & \Nexpr \parsesep \Tneq \parsesep \Tmasklit &\\
                     |\  & \Tarbitrary \parsesep \Tcolon \parsesep \Nty &\\
-                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace &\\
+                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Tminus \parsesep \Trbrace &\\
                     |\  & \Tidentifier \parsesep \Tlbrace \parsesep \ClistOne{\Nfieldassign} \parsesep \Trbrace &\\
                     |\  & \Tlpar \parsesep \Nexpr \parsesep \Trpar &\\
                     |\  & \Plisttwo{\Nexpr} &

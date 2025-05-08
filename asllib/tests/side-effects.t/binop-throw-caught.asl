@@ -1,8 +1,8 @@
-type E of exception {};
+type E of exception {-};
 
 func throws_E () => integer
 begin
-  throw E {};
+  throw E {-};
 end;
 
 func caught_E () => integer
@@ -21,6 +21,6 @@ begin
   catch
     when E => print ("E caught");
   end;
-  
+
   return 0;
 end;

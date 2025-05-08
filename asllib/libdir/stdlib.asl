@@ -11,7 +11,7 @@
 // ======
 // Convert a bitvector to an unsigned integer, where bit 0 is LSB.
 
-func UInt{N: integer{1..128}} (x: bits(N)) => integer{0..2^N-1}
+func UInt{N} (x: bits(N)) => integer{0..2^N-1}
 begin
     var result: integer = 0;
     for i = 0 to N-1 do
@@ -26,13 +26,14 @@ end;
 // ======
 // Convert a 2s complement bitvector to a signed integer.
 
-func SInt{N: integer{1..128}} (x: bits(N)) => integer{-(2^(N-1)) .. 2^(N-1)-1}
+func SInt{N} (x: bits(N))
+  => integer{(if N == 0 then 0 else -(2^(N-1))) .. (if N == 0 then 0 else 2^(N-1)-1)}
 begin
     var result: integer = UInt(x);
     if N > 0 && x[N-1] == '1' then
         result = result - 2^N;
     end;
-    return result as {-(2^(N-1)) .. 2^(N-1)-1};
+    return result as {(if N == 0 then 0 else -(2^(N-1))) .. (if N == 0 then 0 else 2^(N-1)-1)};
 end;
 
 func Min(a: integer, b: integer) => integer
@@ -161,6 +162,17 @@ begin
     return AlignDownSize(x + (size - 1), size);
 end;
 
+// IsAlignedSize()
+// ===============
+// Return TRUE if integer x is aligned to a multiple of size (not necessarily a
+// power of 2). Otherwise, return FALSE.
+
+func IsAlignedSize(x: integer, size: integer) => boolean
+begin
+    assert size > 0;
+    return (x MOD size) == 0;
+end;
+
 // AlignDownP2()
 // =============
 // For non-negative integers x and p2, returns the greatest multiple of 2^p2
@@ -181,6 +193,17 @@ func AlignUpP2(x: integer, p2: integer) => integer
 begin
     assert p2 >= 0;
     return AlignUpSize(x, 2^p2);
+end;
+
+// IsAlignedP2()
+// =============
+// Return TRUE if integer x is aligned to a multiple of 2^p2.
+// Otherwise, return FALSE.
+
+func IsAlignedP2(x: integer, p2: integer) => boolean
+begin
+    assert p2 >= 0;
+    return IsAlignedSize(x, 2^p2);
 end;
 
 //------------------------------------------------------------------------------
@@ -527,7 +550,7 @@ end;
 // A variant of AlignDownSize where the bitvector x is viewed as an unsigned
 // integer and the resulting integer is represented by its first N bits.
 
-func AlignDownSize{N: integer{1..128}}(x: bits(N), size: integer {1..2^N}) => bits(N)
+func AlignDownSize{N}(x: bits(N), size: integer {1..2^N}) => bits(N)
 begin
     return AlignDownSize(UInt(x), size)[:N];
 end;
@@ -537,9 +560,20 @@ end;
 // A variant of AlignUpSize where the bitvector x is viewed as an unsigned
 // integer and the resulting integer is represented by its first N bits.
 
-func AlignUpSize{N: integer{1..128}}(x: bits(N), size: integer {1..2^N}) => bits(N)
+func AlignUpSize{N}(x: bits(N), size: integer {1..2^N}) => bits(N)
 begin
     return AlignUpSize(UInt(x), size)[:N];
+end;
+
+// IsAlignedSize()
+// ===============
+// Return TRUE if when viewed as an unsigned integer, bitvector x is aligned
+// to a multiple of size (not necessarily a power of 2).
+// Otherwise, return FALSE.
+
+func IsAlignedSize{N}(x: bits(N), size: integer {1..2^N}) => boolean
+begin
+    return IsAlignedSize(UInt(x), size);
 end;
 
 // AlignDownP2()
@@ -561,6 +595,17 @@ end;
 func AlignUpP2{N}(x: bits(N), p2: integer {0..N}) => bits(N)
 begin
     return AlignDownP2{N}(x + (2^p2 - 1), p2);
+end;
+
+// IsAlignedP2()
+// =============
+// Return TRUE if when viewed as an unsigned integer, bitvector x is aligned
+// to a multiple of 2^p2. Otherwise, return FALSE.
+
+func IsAlignedP2{N}(x: bits(N), p2: integer {0..N}) => boolean
+begin
+    if N == 0 || p2 == 0 then return TRUE; end;
+    return IsZero(x[:p2]);
 end;
 
 // The shift functions LSL, LSR, ASR and ROR accept a non-negative shift amount.

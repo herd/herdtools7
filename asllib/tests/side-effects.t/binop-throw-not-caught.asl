@@ -1,9 +1,9 @@
-type E of exception {};
-type F of exception {};
+type E of exception {-};
+type F of exception {-};
 
 func throws_E () => integer
 begin
-  throw E {};
+  throw E {-};
 end;
 
 func caught_F () => integer

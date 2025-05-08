@@ -278,9 +278,7 @@ let expr :=
     | e=expr; NEQ; p=pattern_mask;                            { E_Pattern (e, Pattern_Not (p) |> add_pos_from p) }
     | ARBITRARY; COLON; ~=ty;                                 < E_Arbitrary        >
     | e=pared(expr);                                          { E_Tuple [ e ]        }
-
-    (* For E_Record we use an inlined clist0 to avoid a shift/reduce conflict with elided_param_call's empty case *)
-    | t=annotated(IDENTIFIER); LBRACE; RBRACE;
+    | t=annotated(IDENTIFIER); LBRACE; MINUS; RBRACE;
         { E_Record (add_pos_from t (T_Named t.desc), []) }
     | t=annotated(IDENTIFIER); fields=braced(clist1(field_assign));
         { E_Record (add_pos_from t (T_Named t.desc), fields) }
@@ -330,9 +328,7 @@ let expr_pattern :=
 
     | ARBITRARY; COLON; ~=ty;                                         < E_Arbitrary        >
     | e=pared(expr_pattern);                                          { E_Tuple [ e ]        }
-
-    (* For E_Record we use an inlined clist0 to avoid a shift/reduce conflict with elided_param_call *)
-    | t=annotated(IDENTIFIER); LBRACE; RBRACE;
+    | t=annotated(IDENTIFIER); LBRACE; MINUS; RBRACE;
         { E_Record (add_pos_from t (T_Named t.desc), []) }
     | t=annotated(IDENTIFIER); fields=braced(clist1(field_assign));
         { E_Record (add_pos_from t (T_Named t.desc), fields) }
@@ -359,7 +355,9 @@ let pattern_set :=
       BNOT; ~=braced(pattern_list); < Pattern_Not >
     )
 
-let fields := braced(tclist0(typed_identifier))
+let fields :=
+    braced(MINUS); { [] }
+  | braced(tclist1(typed_identifier))
 let fields_opt := { [] } | fields
 
 (* Slices *)
@@ -586,7 +584,7 @@ let call :=
   | name=IDENTIFIER; params=braced(clist1(expr)); args=opt_call_args;
     { { name; params; args; call_type = ST_Function } }
 let elided_param_call :=
-  | name=IDENTIFIER; LBRACE; RBRACE; args=plist0(expr);
+  | name=IDENTIFIER; LBRACE; RBRACE; args=opt_call_args;
     { { name; params=[]; args; call_type = ST_Function } }
   | name=IDENTIFIER; LBRACE; COMMA; params=clist1(expr); RBRACE; args=opt_call_args;
     { { name; params; args; call_type = ST_Function } }
@@ -606,12 +604,12 @@ let override ==
     | IMPLEMENTATION; { Implementation })
 
 let accessors :=
-  | GETTER; getter=func_body;
-    SETTER; EQ; setter_arg=IDENTIFIER; setter=func_body;
-    { { getter; setter; setter_arg } }
-  | SETTER; EQ; setter_arg=IDENTIFIER; setter=func_body;
-    GETTER; getter=func_body;
-    { { getter; setter; setter_arg } }
+  | GETTER; getter=maybe_empty_stmt_list; end_semicolon;
+    SETTER; setter=maybe_empty_stmt_list; end_semicolon;
+    { { getter; setter } }
+  | SETTER; setter=maybe_empty_stmt_list; end_semicolon;
+    GETTER; getter=maybe_empty_stmt_list; end_semicolon;
+    { { getter; setter } }
 
 let decl :=
   | d=annotated (
@@ -674,9 +672,9 @@ let decl :=
       (* End *)
     )
   ); { [d] }
-  | ~=override; ACCESSOR; name=IDENTIFIER; ~=params_opt; ~=func_args; BIARROW; ~=ty;
+  | ~=override; ACCESSOR; name=IDENTIFIER; ~=params_opt; ~=func_args; BIARROW; setter_arg=IDENTIFIER; ~=as_ty;
     ~=accessor_body;
-    { desugar_accessor_pair override name params_opt func_args ty accessor_body }
+    { desugar_accessor_pair override name params_opt func_args setter_arg as_ty accessor_body }
 
 let accessor_body == BEGIN; ~=accessors; end_semicolon;
   { accessors }

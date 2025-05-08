@@ -3,12 +3,12 @@ begin
     return x * y + y;
 end;
 
-type my_exception of exception {};
+type my_exception of exception {-};
 
 func impure_func(x: integer, y: integer) => integer
 begin
     if x == 0 then
-        throw my_exception{};
+        throw my_exception{-};
     end;
     return x * y + y;
 end;

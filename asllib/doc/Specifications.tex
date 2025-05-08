@@ -704,8 +704,7 @@ invalid as it has no corresponding \Proseimpdefsubprogram{}.
 \ASLListing{Invalid overriding}{overriding-bad}{\definitiontests/OverridingBad.asl}
 
 \noindent
-Note that overridden \Proseimpdefsubprograms{} are discarded and not typechecked.
-Therefore, implementations may wish to emit user-configurable warnings to check either:
+Implementations may wish to emit user-configurable warnings to check either:
 \begin{itemize}
   \item All \Proseimpdefsubprograms{} have been overridden by corresponding \Proseimplementationsubprograms{}.
   \item There are no \Proseimplementationsubprograms{}, so no \Proseimpdefsubprograms{} are overridden.
@@ -729,9 +728,10 @@ See \ExampleRef{Overriding Subprograms} for an example of valid overriding.
   \item define $\vimpls$ as the sublist of implementation subprogram declarations in $\decls$;
   \item define $\vnormal$ as the sublist of remaining functions in $\decls$;
   \item \Prosecheckimplementationsunique{$\vimpls$} yields $\True$\ProseOrTypeError;
-  \item \Proseprocessoverrides{$\vimpdefs$}{$\vimpls$} yields $\vimpdefsp$\ProseOrTypeError;
+  \item \Proseprocessoverrides{$\vimpdefs$}{$\vimpls$} yields $\vimpdefsp$ and $\vdiscarded$\ProseOrTypeError;
+  \item \Proserenamesubprograms{$\vdiscarded$}{$\vrenameddiscarded$};
   \item define $\voverridden$ as the concatenation of $\vimpdefsp$ and $\vimpls$;
-  \item $\declsp$ is concatenation of subprogram declarations in $\voverridden$ and $\vnormal$.
+  \item $\declsp$ is the concatenation of subprogram declarations in $\voverridden$, $\vrenameddiscarded$, and $\vnormal$.
 \end{itemize}
 
 \FormallyParagraph
@@ -741,9 +741,10 @@ See \ExampleRef{Overriding Subprograms} for an example of valid overriding.
   \vimpls \eqdef [\vd : \DFunc(\vd) \in \decls \land \vd.\funcoverride = \Implementation] \\
   \vnormal \eqdef [\vd : \DFunc(\vd) \in \decls \land \vd.\funcoverride \notin \{\Impdef, \Implementation\}] \\
   \checkimplementationsunique(\vimpls) \typearrow \True \OrTypeError \\\\
-  \processoverrides(\vimpdefs, \vimpls) \typearrow \vimpdefsp \OrTypeError \\
+  \processoverrides(\vimpdefs, \vimpls) \typearrow (\vimpdefsp, \vdiscarded) \OrTypeError \\\\
+  \renamesubprograms(\vdiscarded) \typearrow \vrenameddiscarded \\
   \voverridden \eqdef \vimpdefsp \concat \vimpls \\
-  \declsp \eqdef [\DFunc(\vd) : \vd \in \voverridden] \concat \vnormal
+  \declsp \eqdef [\DFunc(\vd) : \vd \in \voverridden] \concat [\DFunc(\vd) : \vd \in \vrenameddiscarded] \concat \vnormal
 }{
   \overridesubprograms(\decls) \typearrow \declsp
 }
@@ -844,10 +845,11 @@ See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
 \hypertarget{def-processoverrides}{}
 The function
 \[
-\processoverrides(\overname{\func^*}{\vimpdefs} \aslsep \overname{\func^*}{\vimpls}) \aslto \overname{\func^*}{\vimpdefsp}
+\processoverrides(\overname{\func^*}{\vimpdefs} \aslsep \overname{\func^*}{\vimpls}) \aslto
+(\overname{\func^*}{\vimpdefsp} \times \overname{\func^*}{\vdiscarded})
 \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-overrides the \Proseimpdefsubprograms{} $\vimpdefs$ with the \Proseimplementationsubprograms{} $\vimpls$, yielding the new \Proseimpdefsubprograms{} $\vimpdefs$.
+overrides the \Proseimpdefsubprograms{} $\vimpdefs$ with the \Proseimplementationsubprograms{} $\vimpls$, yielding the new \Proseimpdefsubprograms{} $\vimpdefs$ and the discarded subprograms $\vdiscarded$.
 \ProseOtherwiseTypeError{}
 See \ExampleRef{Overriding Subprograms} for an example of valid replacement of an \Proseimplementationsubprogram{}.
 
@@ -857,7 +859,8 @@ See \ExampleRef{Overriding Subprograms} for an example of valid replacement of a
   \item \AllApplyCase{empty}
     \begin{itemize}
       \item \Proseemptylist{$\vimpls$};
-      \item $\vimpdefsp$ is $\vimpdefs$.
+      \item $\vimpdefsp$ is $\vimpdefs$;
+      \item $\vdiscarded$ is the empty list.
     \end{itemize}
   \item \AllApplyCase{non\_empty}
     \begin{itemize}
@@ -866,14 +869,15 @@ See \ExampleRef{Overriding Subprograms} for an example of valid replacement of a
       \item define $\vmatching$ as the sublist of $\vimpdefs$ for which $\vb_i$ is $\True$;
       \item define $\vnonmatching$ as the sublist of $\vimpdefs$ for which $\vb_i$ is $\False$;
       \item \Prosechecktrans{the length of $\vmatching$ is 1}{\OverridingError};
-      \item \Proseprocessoverrides{$\vimpls$}{$\vnonmatching$} yields \vimpdefsp.
+      \item \Proseprocessoverrides{$\vimpls$}{$\vnonmatching$} yields $\vimpdefsp$ and $\vdiscardedp$;
+      \item define $\vdiscarded$ as the concatenation of $\vmatching$ and $\vdiscardedp$.
     \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
-  \processoverrides(\vimpdefs, \overname{\emptylist}{\vimpls}) \typearrow \overname{\vimpdefs}{\vimpdefsp}
+  \processoverrides(\vimpdefs, \overname{\emptylist}{\vimpls}) \typearrow (\overname{\vimpdefs}{\vimpdefsp}, \emptylist)
 }
 \end{mathpar}
 
@@ -883,9 +887,58 @@ See \ExampleRef{Overriding Subprograms} for an example of valid replacement of a
   \vmatching \eqdef [\vimpdefs[i] \;|\; i \in \listrange(\vimpdefs) \land \vb_i = \True] \\
   \vnonmatching \eqdef [\vimpdefs[i] \;|\; i \in \listrange(\vimpdefs) \land \vb_i = \False] \\
   \checktrans{\listlen{\vmatching} = 1}{\OverridingError} \checktransarrow \True \terminateas \OverridingError \\\\
-  \processoverrides(\vnonmatching, \vt) \typearrow \vimpdefsp
+  \processoverrides(\vnonmatching, \vt) \typearrow (\vimpdefsp, \vdiscardedp)
+  \vdiscarded \eqdef \vmatching \concat \vdiscardedp
 }{
-  \processoverrides(\vimpdefs, \overname{[\vh] \concat \vt}{\vimpls}) \typearrow \vimpdefsp
+  \processoverrides(\vimpdefs, \overname{[\vh] \concat \vt}{\vimpls}) \typearrow (\vimpdefsp, \vdiscarded)
+}
+\end{mathpar}
+
+\TypingRuleDef{RenameSubprograms}
+\hypertarget{def-renamesubprograms}{}
+The function
+\[
+\renamesubprograms(\overname{\func^*}{\vdiscarded}) \aslto \overname{\func^*}{\vrenameddiscarded}
+\]
+renames the subprograms $\vdiscarded$ to give them fresh names.
+
+\ExampleDef{Typechecking overridden subprograms}
+The specification in \listingref{RenameSubprograms} contains an ill-typed \Proseimpdefsubprogram{} that is overridden.
+This is given a fresh name by $\renamesubprograms$, so that it is still typechecked but never referred to in the resulting specification.
+In particular, though the ill-typed subprogram is overridden and will not be used in the annotated specification, it still results in a typing error.
+\ASLListing{Typechecking an overridden subprogram}{RenameSubprograms}{\typingtests/TypingRule.RenameSubprograms.asl}
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{empty}
+    \begin{itemize}
+      \item \Proseemptylist{$\vdiscarded$};
+      \item the result is the empty list.
+    \end{itemize}
+  \item \AllApplyCase{non\_empty}
+    \begin{itemize}
+      \item $\vdiscarded$ is a \Proselist{$\vh$}{$\vt$};
+      \item \Proserenamesubprograms{$\vt$}{$\vtp$};
+      \item define $\vhp$ as $\vh$ with the $\funcname$ field updated to a fresh name;
+      \item the result is the concatenation of $\vhp$ and $\vtp$.
+    \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[empty]{}{
+  \renamesubprograms(\overname{\emptylist}{\vdiscarded}) \typearrow \overname{\emptylist}{\vrenameddiscarded}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \renamesubprograms(\vt) \typearrow \vtp \\
+  \name \in \Identifiers \text{ is fresh} \\
+  \vhp \eqdef \vh[\funcname \mapsto \name] \\
+}{
+  \renamesubprograms(\overname{[\vh] \concat \vt}{\vdiscarded}) \typearrow \overname{[\vhp] \concat \vtp}{\vrenameddiscarded}
 }
 \end{mathpar}
 

@@ -1,9 +1,9 @@
-accessor X() <=> bits (4)
+accessor X() <=> value_in: bits (4)
 begin
-    getter begin
+    getter
         return '1000';
     end;
-    setter = value_in begin
+    setter
         Unreachable();
     end;
 end;

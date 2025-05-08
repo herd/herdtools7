@@ -1,87 +1,259 @@
 \chapter{Symbolic Domain Subset Testing\label{chap:SymbolicDomainSubsetTesting}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-This chapter is concerned with implementing a \hyperlink{def-sounddomainsubsettest}{sound domain subset test}
-for integer types, as defined in \secref{domainsubsettesting} and employed by
-\TypingRuleRef{SubtypeSatisfaction}.
 
+Whether an assignment statement is well-typed depends on whether the dynamic domain of the
+right hand side type is contained in the dynamic domain of the left hand side type,
+for any given dynamic environment.
+
+\begin{definition}[Domain Subset]
+For any given types $\vt$ and $\vs$ and static environment $\tenv$,
+we say that $\vt$ is a \emph{domain subset} of $\vs$ in $\tenv$,
+if the following condition holds:
+\hypertarget{def-domainsubset}{}
+\begin{equation}
+\begin{array}{l}
+\domainsubset(\tenv, \vt, \vs) \triangleq \\
+\qquad \forall \denv\in\dynamicenvs.\
+\dynamicdomain((\tenv, \denv), \vt) \subseteq \dynamicdomain((\tenv, \denv), \vs) \enspace.
+\end{array}
+\end{equation}
+\end{definition}
+
+For example, consider the assignment
+\begin{center}
+\texttt{var x : $\overname{\texttt{integer\{1,2,3\}}}{\vs}$ = ARBITRARY : $\overname{\texttt{integer\{1,2\}}}{\vt}$;}
+\end{center}
+
+It is well-typed, since the dynamic domain of \verb|integer{1,2,3}| is\\
+$\{\nvint(1), \nvint(2), \nvint(3)\}$ in every dynamic environment, which is a superset of
+the dynamic domain of \verb|integer{1,2}|, which is $\{\nvint(1), \nvint(2)\}$ in every dynamic environment.
+
+Since dynamic domains are potentially infinite, this requires \emph{symbolic reasoning}.
+Furthermore, since any (\symbolicallyevaluable{}) expressions may appear inside integer and bitvector
+types, domain subset testing is undecidable.
+We therefore approximate domain subset testing \emph{conservatively} via the predicate $\symdomsubsettest(\tenv, \vt, \vs)$.
+
+\hypertarget{def-symdomsubsettest}{}
+\begin{definition}[Sound Domain Subset Test]
+A predicate
+\[
+  \symdomsubsettest(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs}) \aslto \Bool
+\]
+is \emph{sound} if the following condition holds:
+\begin{equation}
+  \begin{array}{l}
+  \forall \vt,\vs\in\ty.\ \tenv\in\staticenvs. \\
+  \;\;\;\; \symdomsubsettest(\tenv, \vt, \vs) \typearrow \True \;\Longrightarrow\; \domainsubset(\tenv, \vt, \vs)  \enspace.
+  \end{array}
+\end{equation}
+\end{definition}
+
+That is, if a sound domain subset test returns a positive answer, it means that
+$\vt$ is definitely a domain subset of $\vs$ in the static environment $\tenv$.
+This is referred to as a \emph{true positive}.
+However, a negative answer means one of two things:
+\begin{description}
+  \item[True Negative:] indeed, $\vt$ is not a domain subset of $\vs$ in the static environment $\tenv$; or
+  \item[False Negative:] the symbolic reasoning is unable to decide.
+\end{description}
+
+In other words, $\symdomsubsettest(\tenv, \vt, \vs)$ errs on the \emph{safe side} ---
+it never answers $\True$ when the real answer is $\False$, which would (undesirably)
+determine the following statement as well-typed:
+\begin{center}
+\texttt{var x : $\overname{\texttt{integer\{1,2\}}}{\vs}$ = ARBITRARY : $\overname{\texttt{integer}}{\vt}$;}
+\end{center}
+
+A sound but trivial domain subset test is one that always returns $\False$.
+However, that would make all assignments be considered as not well-typed.
+Indeed, it has the maximal set of false negatives.
+Reducing the set of false negatives requires stronger symbolic reasoning algorithms,
+which inevitably leads to higher computational complexity.
+%
+The symbolic domain subset test in \chapref{SymbolicDomainSubsetTesting}
+attempts to accept a large enough set of true positives, based on empirical trial and error,
+while maintaining the computational complexity of the symbolic reasoning relatively low.
+%
+In particular, it serves as the definitive domain subset test that must be utilized
+by any implementation of the ASL type system.
+
+This chapter is concerned with implementing a \hyperlink{def-symdomsubsettest}{sound domain subset test}
+for \integertypesterm{} and \bitvectortypesterm, as defined above and as employed by \\
+\TypingRuleRef{SubtypeSatisfaction}.
+This is technically achieved by first transforming types (in the case of \integertypesterm{})
+and width expressions (in the case of \bitvectortypesterm{}) into symbolic representations
+that we refer to as \emph{symbolic domains} and then checking subsumption over the symbolic domains.
+
+\section{Symbolic Domains}
 \hypertarget{def-symbolicdomain}{}
-The symbolic reasoning operates by first transforming types into expressions in a \emph{symbolic domain} AST
-(defined next, reusing $\intconstraint$ from the untyped AST) over which it then operates:
+
+We define the \emph{symbolic domain} datatype, reusing $\intconstraint$ from the untyped AST,
+as follows:
 \hypertarget{def-symdom}{}
 \hypertarget{def-finite}{}
 \[
   \begin{array}{rcl}
-    \symdom &::=& \Finite(\powfin{\Z} \setminus \emptyset) \hypertarget{def-top}{}\\
-            &|  & \Top                      \hypertarget{def-fromsymtax}{}\\
-            &|  & \FromSyntax(\syntax)      \hypertarget{def-syntax}{}\\
-    \syntax &::=& \intconstraint^*
+  \symdom       &\derives & \Finite(\powfin{\Z} \setminus \emptyset) \hypertarget{def-constraineddom}{}\\
+                &|        & \ConstrainedDom(\intconstraint) \hypertarget{def-symdomortop}{} \hypertarget{def-top}{}\\
+  \symdomortop  &\derives & \Top \hypertarget{def-subdomains}{}\\
+                &|        & \Subdomains(\symdom^+)
   \end{array}
 \]
 
 \begin{itemize}
   \item We refer to an element of the form $\Finite(S)$ as a \emph{symbolic finite set integer domain},
-        which represents the set of integers $S$;
-  \item We refer to an element of the form $\FromSyntax(\vcs)$ as a \emph{symbolic constrained integer domain},
-        which represents the set of integers given by the list of constraints $\vcs$; and
+        which represents the non-empty set of integers $S$;
+  \item We refer to an element of the form $\ConstrainedDom(\vc)$ as a \emph{symbolic constrained integer domain},
+        which represents the set of integers given by the constraint $\vcs$; and
   \item We refer to an element of the form $\Top$ as a \emph{symbolic unconstrained integer domain},
         which represents the set of all integers.
 \end{itemize}
 
-The main rule is of this chapter is \TypingRuleRef{SymSubset}, which defines the function
-$\symdomainsubset$.
+\section{Symbolic Reasoning}
+
+The main rule is of this chapter is \TypingRuleRef{SymdomSubsetUnions}, which defines the function
+$\symdomsubsetunions$.
 
 Other helper rules are as follows:
 \begin{itemize}
-  \item \TypingRuleRef{SymDomOfType}
-  \item \TypingRuleRef{SymDomOfExpr}
-  \item \TypingRuleRef{SymDomOfWidth}
-  \item \TypingRuleRef{IntSetOp}
-  \item \TypingRuleRef{IntSetToIntConstraints}
-  \item \TypingRuleRef{SymDomOfLiteral}
-  \item \TypingRuleRef{SymIntSetOfConstraints}
-  \item \TypingRuleRef{ConstraintToIntSet}
-  \item \TypingRuleRef{NormalizeToInt}
-  \item \TypingRuleRef{SymDomIsSubset}
+  \item \TypingRuleRef{SymdomNormalize}
+  \item \TypingRuleRef{SymdomOfType}
+  \item \TypingRuleRef{SymdomOfWidthExpr}
+  \item \TypingRuleRef{SymdomOfConstraint}
+  \item \TypingRuleRef{SymdomEval}
+  \item \TypingRuleRef{SymdomSubset}
+  \item \TypingRuleRef{ApproxConstraints}
+  \item \TypingRuleRef{ApproxConstraint}
+  \item \TypingRuleRef{ApproxExprMin}
+  \item \TypingRuleRef{ApproxExprMax}
+  \item \TypingRuleRef{ApproxBottomTop}
+  \item \TypingRuleRef{IntsetToConstraints}
+  \item \TypingRuleRef{ApproxExpr}
+  \item \TypingRuleRef{ApproxType}
   \item \TypingRuleRef{ConstraintBinop}
+  \item \TypingRuleRef{ApplyBinopExtremities}
+  \item \TypingRuleRef{PossibleExtremitiesLeft}
+  \item \TypingRuleRef{PossibleExtremitiesRight}
+  \item \TypingRuleRef{ConstraintPow}
+  \item \TypingRuleRef{ConstraintMod}
 \end{itemize}
 
-\TypingRuleDef{SymSubset}
-\hypertarget{def-symdomainsubset}{}
-The predicate
+\TypingRuleDef{SymdomSubsetUnions}
+\hypertarget{def-symdomsubsetunions}{}
+The function
 \[
-  \symdomainsubset(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
-  \aslto \overname{\Bool}{\vb}
+\symdomsubsetunions(
+  \overname{\staticenvs}{\tenv},
+  \overname{\symdomortop}{\sdone},
+  \overname{\symdomortop}{\sdtwo}) \aslto \overname{\Bool}{\vb}
 \]
-soundly approximates $\domainsubset(\tenv, \vt, \vs)$ for integer types.
-\ProseOtherwiseTypeError
+conservatively tests whether the set of integers represented by $\sdone$
+is a subset of the set of integers represented by $\sdtwo$,
+in the context of the static environment $\tenv$,
+yielding the result in $\vb$.
 
-We assume that both $\vt$ and $\vs$ have been successfully annotated to integer types as per \chapref{Types}
-(otherwise a typing error prevents us from applying this function).
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{right\_top}
+  \begin{itemize}
+    \item $\sdtwo$ is $\Top$;
+    \item define $\vb$ as $\True$.
+  \end{itemize}
+
+  \item \AllApplyCase{left\_top\_right\_not\_top}
+  \begin{itemize}
+    \item $\sdone$ is $\Top$;
+    \item $\sdtwo$ is not $\Top$;
+    \item define $\vb$ as $\False$.
+  \end{itemize}
+
+  \item \AllApply
+  \begin{itemize}
+    \item $\symdomsone$ is a list of symbolic domains $\symdomsone$;
+    \item $\symdomstwo$ is a list of symbolic domains $\symdomstwo$;
+    \item applying $\symdomnormalize$ to $\symdomsone$ yields $\symdomsonenorm$;
+    \item applying $\symdomnormalize$ to $\symdomstwo$ yields $\symdomstwonorm$;
+    \item \Proseeqdef{$\vb$}{$\True$ if and only if for every symbolic domain $\vsone$
+          in $\symdomsonenorm$ there exists a symbolic domain $\vstwo$ in
+          $\symdomstwonorm$ such that \\
+          $\symdomsubset$ holds for $\vsone$ and $\vstwo$ in $\tenv$}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[right\_top]{}{
+  \symdomsubsetunions(\tenv, \sdone, \overname{\Top}{\sdtwo}) \typearrow
+  \overname{\True}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[left\_top\_right\_not\_top]{
+  \sdone \neq \Top
+}{
+  \symdomsubsetunions(\tenv, \overname{\Top}{\sdone}, \sdtwo) \typearrow
+  \overname{\False}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{
+  \symdomnormalize(\symdomsone) \typearrow \symdomsonenorm\\
+  \symdomnormalize(\symdomstwo) \typearrow \symdomstwonorm\\
+  {
+  \begin{array}{rcl}
+  \vb &\eqdef& \forall \vsone\in\symdomsonenorm.\ \exists \vstwo\in\symdomstwonorm.\\
+      &      & \symdomsubset(\tenv, \vsone, \vstwo)
+  \end{array}
+  }
+}{
+  \symdomsubsetunions(\tenv, \overname{\Subdomains(\symdomsone)}{\sdone}, \overname{\Subdomains(\symdomstwo)}{\sdtwo}) \typearrow \vb
+}
+\end{mathpar}
+
+\TypingRuleDef{SymdomNormalize}
+\hypertarget{def-symdomnormalize}{}
+The function
+\[
+\symdomnormalize(\overname{\symdom^+}{\symdoms}) \aslto \overname{\symdom^+}{\newsymdoms}
+\]
+transforms the list of symbolic domain $\symdoms$ into an equivalent list of symbolic domains $\newsymdoms$
+(in the sense that they both represent the same set of integers)
+where all symbolic finite set integer domains are merged into a single symbolic finite set integer domain
+whose set of integers is the union of the sets of integers in the merged symbolic finite set integer domains.
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item applying $\symdomoftype$ to $\vt$ in $\tenv$ yields $\dt$;
-  \item applying $\symdomoftype$ to $\vs$ in $\tenv$ yields $\ds$;
-  \item applying $\symdomissubset$ to $\dt$ and $\ds$ in $\tenv$ yields $\vb$.
+  \item \Proseeqdef{$\others$}{the sublist of $\symdoms$ consisting of symbolic domains other than
+        symbolic finite set integer domains};
+  \item \Proseeqdef{$\vfinitedomains$}{the sublist of $\symdoms$ consisting of symbolic finite set integer domains};
+  \item \Proseeqdef{$\vxs$}{the union of sets in each symbolic finite set integer domain of \\
+        $\vfinitedomains$};
+  \item \Proseeqdef{$\newsymdoms$}{
+        the list with \head{} $\Finite(\vxs)$ and \tail{} $\others$, if $\vxs$ is non-empty, and
+        $\others$, otherwise}.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \symdomoftype(\tenv, \vt) \typearrow \dt\\
-  \symdomoftype(\tenv, \vs) \typearrow \ds\\
-  \symdomissubset(\tenv, \dt, \ds) \typearrow \vb
+  \others = [\vs \in \symdoms \;|\; \configdomain{\vs} \neq \Finite]\\
+  \vfinitedomains = [\vs \in \symdoms \;|\; \configdomain{\vs} = \Finite]\\
+  \vxs \eqdef \bigcup_{\Finite(\vs) \in \vfinitedomains} \vs\\\\
+  \newsymdoms \eqdef \choice{\vxs \neq \emptyset}{[\Finite(\vxs)] \concat \others}{\others}
 }{
-  \symdomainsubset(\tenv, \vt, \vt) \typearrow \vb
+  \symdomnormalize(\symdoms) \typearrow \newsymdoms \newsymdoms
 }
 \end{mathpar}
 
-\TypingRuleDef{SymDomOfType}
+\TypingRuleDef{SymdomOfType}
 \hypertarget{def-symdomoftype}{}
 The function
 \[
-  \symdomoftype(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto \overname{\symdom}{\vd}
+  \symdomoftype(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto \overname{\symdomortop}{\vd}
 \]
 transforms a type $\vt$ in a static environment $\tenv$ into a symbolic domain $\vd$.
 It assumes its input type has an \underlyingtype{} which is an integer.
@@ -91,21 +263,23 @@ It assumes its input type has an \underlyingtype{} which is an integer.
   \item \AllApplyCase{int\_unconstrained}
   \begin{itemize}
     \item $\vt$ is the unconstrained integer type;
-    \item define $\vd$ as $\Top$, which intuitively represents the entire set of integers.
+    \item \Proseeqdef{$\vd$}{$\Top$, which intuitively represents the entire set of integers}.
   \end{itemize}
 
   \item \AllApplyCase{int\_parameterized}
   \begin{itemize}
     \item $\vt$ is the \parameterizedintegertype\ for the identifier $\id$;
-    \item define $\vd$ as the symbolic constrained integer domain with a single constraint for the variable expression for $\id$,
-          that is, \\ $\FromSyntax([\ConstraintExact(\EVar(\id))])$.
+    \item define $\vd$ as the singleton list consisting of the
+          symbolic constrained integer domain with a single constraint for the variable expression for $\id$,
+          that is, \\ $\ConstrainedDom(\ConstraintExact(\EVar(\id)))$.
   \end{itemize}
 
   \item \AllApplyCase{int\_well\_constrained}
   \begin{itemize}
     \item $\vt$ is the well-constrained integer type for the list of constraints $\vcs$;
-    \item applying $\intsetofintconstraints$ to $\vcs$ in $\tenv$ yields $\vis$;
-    \item \Proseeqdef{$\vd$}{$\vis$}.
+    \item applying $\symdomofconstraint$ to $\tenv$ and $\vc_\vi$, for every \Proselistrange{$\vi$}{$\vcs$},
+          yields $\vd_\vi$;
+    \item \Proseeqdef{$\vd$}{the list symbolic integer domains consisting of $\vd_\vi$, for every \Proselistrange{$\vi$}{$\vcs$}}.
   \end{itemize}
 
   \item \AllApplyCase{t\_named}
@@ -118,21 +292,23 @@ It assumes its input type has an \underlyingtype{} which is an integer.
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[int\_unconstrained]{}{ \symdomoftype(\tenv, \overname{\unconstrainedinteger}{\vt}) \typearrow \overname{\Top}{\vd} }
+\inferrule[int\_unconstrained]{}{ \symdomoftype(\tenv, \overname{\unconstrainedinteger}{\vt}) \typearrow
+ \overname{\Top}{\vd} }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[int\_parameterized]{}{
   \symdomoftype(\tenv, \overname{\TInt(\parameterized(\id))}{\vt}) \typearrow \\
-  \overname{\FromSyntax([\ConstraintExact(\EVar(\id))])}{\vd}
+  \overname{\Subdomains([\ConstrainedDom(\ConstraintExact(\EVar(\id)))])}{\vd}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[int\_well\_constrained]{
-  \intsetofintconstraints(\tenv, \vcs) \typearrow \vis
+  \vi\in\listrange(\vcs): \symdomofconstraint(\tenv, \vcs[\vi]) \typearrow \vd_\vi\\
+  \vc \eqdef \vi\in\listrange(\vcs) \vd_\vi
 }{
-  \symdomoftype(\tenv, \overname{\TInt(\wellconstrained(\vcs))}{\vt}) \typearrow \overname{\vis}{\vd}
+  \symdomoftype(\tenv, \overname{\TInt(\wellconstrained(\vcs))}{\vt}) \typearrow \overname{\Subdomains(\vis)}{\vd}
 }
 \end{mathpar}
 
@@ -146,499 +322,41 @@ It assumes its input type has an \underlyingtype{} which is an integer.
 }
 \end{mathpar}
 
-\TypingRuleDef{SymDomOfExpr}
-\hypertarget{def-symdomofexpr}{}
+\TypingRuleDef{SymdomOfWidthExpr}
+\hypertarget{def-symdomofwidthexpr}{}
 The function
 \[
-\symdomofexpr(
-  \overname{\staticenvs}{\tenv} \aslsep
+\symdomofwidthexpr(
   \overname{\expr}{\ve}
 ) \aslto
-\overname{\symdom}{\vd}
+\overname{\symdomortop}{\vd}
 \]
-assigns a symbolic domain $\vd$ to an \underline{integer typed} expression $\ve$ in the static environment $\tenv$.
+assigns a symbolic domain $\vd$ to an \underline{integer typed} expression $\ve$,
+where $\ve$ is assumed to be the expression conveying the width of a \bitvectortypeterm.
 
 \ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{e\_literal}
-  \begin{itemize}
-    \item $\ve$ is a literal expression for the literal $\vv$;
-    \item applying $\symdomofliteral$ to $\vv$ yields $\vd$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_var\_constant}
-  \begin{itemize}
-    \item $\ve$ is a variable expression for the identifier $\vx$;
-    \item applying $\lookupconstant$ to $\vx$ in $\tenv$ yields the literal $\vv$;
-    \item applying $\symdomofliteral$ to $\vv$ yields $\vd$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_var\_type}
-  \begin{itemize}
-    \item $\ve$ is a variable expression for the identifier $\vx$;
-    \item applying $\lookupconstant$ to $\vx$ in $\tenv$ yields $\bot$;
-    \item applying $\typeof$ to $\vx$ in $\tenv$ yields $\vtone$;
-    \item applying $\symdomoftype$ to $\vtone$ yields $\vd$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_unop\_minus}
-  \begin{itemize}
-    \item $\ve$ is a unary operation expression for the operation $\MINUS$ and subexpression $\veone$;
-    \item applying $\symdomofexpr$ to the binary operation expression with the operation $\MINUS$
-          and the literal expression for $0$ and $\veone$ in $\tenv$ yields $\vd$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_unop\_unknown}
-  \begin{itemize}
-    \item $\ve$ is a unary operation expression for an operation that is not $\MINUS$;
-    \item define $\vd$ as $\FromSyntax([\ConstraintExact(\ve)])$
-  \end{itemize}
-
-  \item \AllApplyCase{e\_binop\_supported}
-  \begin{itemize}
-    \item $\ve$ is a binary operation expression for an operation that is one of $\PLUS$, $\MINUS$, or $\MUL$
-          and subexpressions $\veone$ and $\vetwo$;
-    \item applying $\symdomofexpr$ to $\veone$ in $\tenv$ yields a symbolic domain $\visone$;
-    \item applying $\symdomofexpr$ to $\vetwo$ in $\tenv$ yields a symbolic domain $\vistwo$;
-    \item applying $\intsetop$ to $\op$ and $\visone$ and $\vistwo$ yields $\vis$;
-    \item define $\vd$ as $\vis$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_binop\_unsupported}
-  \begin{itemize}
-    \item $\ve$ is a binary operation expression for an operation that is not one of $\PLUS$, $\MINUS$, or $\MUL$;
-    \item define $\vd$ as $\FromSyntax([\ConstraintExact(\ve)])$
-  \end{itemize}
-
-  \item \AllApplyCase{unsupported}
-  \begin{itemize}
-    \item $\ve$ is not one of the following expression types a literal expression, a variable expression, a unary operation
-          expression, or a binary operation expression;
-    \item define $\vd$ as $\FromSyntax([\ConstraintExact(\ve)])$
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[e\_literal]{
-  \symdomofliteral(\vv) \typearrow \vd
-}{
-  \symdomofexpr(\tenv, \overname{\ELiteral(\vv)}{\ve}) \typearrow \vd
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_var\_constant]{
-  \lookupconstant(\tenv, \vx) \typearrow \vv\\
-  \symdomofliteral(\vv) \typearrow \vd
-}{
-  \symdomofexpr(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \vd
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_var\_type]{
-  \lookupconstant(\tenv, \vx) \typearrow \bot\\
-  \typeof(\tenv, \vx) \typearrow \vtone\\
-  \symdomoftype(\vtone) \typearrow \vd
-}{
-  \symdomofexpr(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \vd
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_unop\_minus]{
-  \symdomofexpr(\EBinop(\MINUS, \ELiteral(\lint(0)), \veone)) \typearrow \vd
-}{
-  \symdomofexpr(\tenv, \overname{\EUnop(\MINUS, \veone)}{\ve}) \typearrow \vd
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_unop\_unknown]{
-  \op \neq \MINUS
-}{
-  \symdomofexpr(\tenv, \overname{\EUnop(\op, \veone)}{\ve}) \typearrow \overname{\FromSyntax([\ConstraintExact(\ve)])}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_binop\_supported]{
-  \op \in \{\PLUS, \MINUS, \MUL\}\\
-  \symdomofexpr(\tenv, \veone) \typearrow \visone\\
-  \symdomofexpr(\tenv, \vetwo) \typearrow \vistwo\\
-  \intsetop(\op, \visone, \vistwo) \typearrow \vis
-}{
-  \symdomofexpr(\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \overname{\vis}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_binop\_unsupported]{
-  \op \not\in \{\PLUS, \MINUS, \MUL\}\\
-}{
-  \symdomofexpr(\tenv, \overname{\EBinop(\op, \Ignore, \Ignore)}{\ve}) \typearrow \overname{\FromSyntax([\ConstraintExact(\ve)])}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[unsupported]{
-  \astlabel(\ve) \not\in \{\ELiteral, \EVar, \EUnop, \EBinop\}
-}{
-  \symdomofexpr(\tenv, \ve) \typearrow \overname{\FromSyntax([\ConstraintExact(\ve)])}{\vd}
-}
-\end{mathpar}
-
-\TypingRuleDef{SymDomOfWidth}
-\hypertarget{def-symdomofwidth}{}
-The function
-\[
-\symdomofwidth(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\expr}{\ve}
-) \aslto
-\overname{\symdom}{\vd}
-\]
-assigns a symbolic domain $\vd$ to an \underline{integer typed} expression $\ve$ in the static environment $\tenv$.
-In contrast to $\symdomofexpr$, $\symdomofwidth$ should be applied to expressions that represent a bitvector width.
-
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{finite\_one\_width}
-  \begin{itemize}
-    \item applying $\symdomofexpr$ to $\ve$ in $\tenv$ yields $\vdone$;
-    \item $\vdone$ is a set of integers, that is, $\Finite(s)$;
-    \item the cardinality of $s$ is one;
-    \item $\vd$ is $\vdone$.
-  \end{itemize}
-
-  \item \AllApplyCase{finite\_multiple\_widths}
-  \begin{itemize}
-    \item applying $\symdomofexpr$ to $\ve$ in $\tenv$ yields $\vdone$;
-    \item $\vdone$ is a set of integers, that is, $\Finite(s)$;
-    \item the cardinality of $s$ is \emph{not} one;
-    \item define $\vd$ as $\FromSyntax([\ConstraintExact(\ve)])$.
-  \end{itemize}
-
-  \item \AllApplyCase{non\_finite}
-  \begin{itemize}
-    \item applying $\symdomofexpr$ to $\ve$ in $\tenv$ yields $\vdone$;
-    \item $\vdone$ is not a set of integers, that is, $\astlabel(\vdone)$ is not $\Finite$;
-    \item define $\vd$ as $\FromSyntax([\ConstraintExact(\ve)])$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[finite\_one\_width]{
-  \symdomofexpr(\tenv, \ve) \typearrow \vdone \\
-  \vdone = \Finite(s) \\
-  \cardinality{s} = 1
-}{
-  \symdomofwidth(\tenv, \ve) \typearrow \overname{\vdone}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[finite\_multiple\_widths]{
-  \symdomofexpr(\tenv, \ve) \typearrow \vdone \\
-  \vdone = \Finite(s) \\
-  \cardinality{s} \neq 1
-}{
-  \symdomofwidth(\tenv, \ve) \typearrow \overname{\FromSyntax([\ConstraintExact(\ve)])}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_finite]{
-  \symdomofexpr(\tenv, \ve) \typearrow \vdone \\
-  \astlabel(\vdone) \neq \Finite
-}{
-  \symdomofwidth(\tenv, \ve) \typearrow \overname{\FromSyntax([\ConstraintExact(\ve)])}{\vd}
-}
-\end{mathpar}
-
-\TypingRuleDef{IntSetOp}
-\hypertarget{def-intsetop}{}
-The function
-\[
-\intsetop(\overname{\binop}{\op} \aslsep \overname{\symdom}{\visone} \aslsep \overname{\symdom}{\vistwo})
-\aslto \overname{\symdom}{\vis}
-\]
-applies the binary operation $\op$ to the symbolic domains $\visone$ and $\vistwo$,
-yielding the symbolic domain $\vis$.
-
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{top}
-  \begin{itemize}
-    \item at least one of $\visone$ and $\vistwo$ is $\Top$;
-    \item define $\vis$ as $\Top$.
-  \end{itemize}
-
-  \item \AllApplyCase{finite\_finite}
-  \begin{itemize}
-    \item $\visone$ is the symbolic finite set integer domain for $\vsone$;
-    \item $\vistwo$ is the symbolic finite set integer domain for $\vstwo$;
-    \item define $\vis$ as the symbolic finite set domain for the set obtained
-          by applying $\op$ to each element of $\vsone$ and each element of $\vstwo$.
-  \end{itemize}
-
-  \item \AllApplyCase{finite\_syntax}
-  \begin{itemize}
-    \item $\visone$ is the symbolic finite set integer domain for $\vsone$;
-    \item $\vistwo$ is the symbolic constrained integer domain for $\vstwo$;
-    \item applying $\intsettointconstraints$ to $\vsone$ yields the list of constraints $\csone$;
-    \item applying $\intsetop$ to $\op$, the symbolic constrained integer domain for $\csone$,
-          and $\vistwo$ yields $\vis$.
-  \end{itemize}
-
-  \item \AllApplyCase{syntax\_finite}
-  \begin{itemize}
-    \item $\visone$ is the symbolic constrained integer domain for $\csone$;
-    \item $\vistwo$ is the symbolic finite set integer domain for $\vstwo$;
-    \item applying $\intsettointconstraints$ to $\vstwo$ yields the list of constraints $\cstwo$;
-    \item applying $\intsetop$ to $\op$, $\visone$, and the symbolic constrained integer domain
-          for $\cstwo$, yields $\vis$.
-  \end{itemize}
-
-  \item \AllApplyCase{syntax\_syntax\_well\_constrained}
-  \begin{itemize}
-    \item $\visone$ is the symbolic constrained integer domain for $\csone$;
-    \item $\vistwo$ is the symbolic constrained integer domain for $\cstwo$;
-    \item applying $\constraintbinop$ to $\op$, $\csone$, and $\cstwo$ yields
-          a list of constraints $\vcs$;
-    \item define $\vis$ as the symbolic constrained integer domain for $\vcs$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[top]{
-  \visone = \Top \lor \vistwo = \Top
-}{
-  \intsetop(\op, \visone, \vistwo) \typearrow \overname{\Top}{\vis}
-}
-\and
-\inferrule[finite\_finite]{
-  \vis \eqdef \Finite(\{ \op(a, b) \;|\; a \in \vsone, b \in \vstwo \})
-}{
-  \intsetop(\op, \overname{\Finite(\vsone)}{\visone}, \overname{\Finite(\vstwo)}{\vistwo}) \typearrow \vis
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[finite\_syntax]{
-  \intsettointconstraints(\vsone) \typearrow \vcsone\\
-  \intsetop(\op, \FromSyntax(\vcsone), \FromSyntax(\vcstwo)) \typearrow \vis
-}{
-  \intsetop(\op, \overname{\Finite(\vsone)}{\visone}, \overname{\FromSyntax(\vcstwo)}{\vistwo}) \typearrow \vis
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[syntax\_finite]{
-  \intsettointconstraints(\vstwo) \typearrow \vcstwo\\
-  \intsetop(\op, \FromSyntax(\vcsone), \FromSyntax(\vcstwo)) \typearrow \vis
-}{
-  \intsetop(\op, \overname{\FromSyntax(\vcsone)}{\visone}, \overname{\Finite(\vstwo)}{\vistwo}) \typearrow \vis
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[syntax\_syntax\_well\_constrained]{
-  \constraintbinop(\op, \vcsone, \vcstwo) \typearrow \wellconstrained(\vcs)
-}{
-  \intsetop(\op, \overname{\FromSyntax(\vcsone)}{\visone}, \overname{\FromSyntax(\vcstwo)}{\vistwo}) \typearrow \overname{\FromSyntax(\vcs)}{\vis}
-}
-\end{mathpar}
-
-\TypingRuleDef{IntSetToIntConstraints}
-\hypertarget{def-intsettointconstraints}{}
-The function
-\[
-\intsettointconstraints(\overname{\powfin{\Z}}{\vs})
-\aslto \overname{\intconstraint^*}{\cs}
-\]
-transforms a finite set of integers into the equivalent list of integer constraints.
-
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item $\vs$ is the empty set;
-    \item define $\cs$ as the empty list.
-  \end{itemize}
-
-  \item \AllApplyCase{singleton}
-  \begin{itemize}
-    \item $\vs$ is the singleton set for $a$;
-    \item define $\cs$ as the list containing the single range constraint for the interval starting from $a$
-          and ending at $a$, that is, $\ConstraintRange(\ELInt{a}, \ELInt{a})$.
-  \end{itemize}
-
-  \item \AllApplyCase{new\_interval}
-  \begin{itemize}
-    \item define $a$ as the minimal element of $\vs$;
-    \item define $\vsone$ as the set $\vs$ with $a$ removed from it;
-    \item applying $\intsettointconstraints$ to $\vsone$ yields the list of constraints $\csone$;
-    \item $\csone$ is a list where its \head\ is a range constraint for the interval starting from $b$ and ending at $c$
-          and \tail\ $\cstwo$;
-    \item $b$ is greater than $a+1$;
-    \item define $\cs$ as the list with first element a range constraint for the interval from $a$ to $a$,
-          second element a range constraint for the interval from $b$ to $c$, and remaining elements given by $\cstwo$.
-  \end{itemize}
-
-  \item \AllApplyCase{merge\_interval}
-  \begin{itemize}
-    \item define $a$ as the minimal element of $\vs$;
-    \item define $\vsone$ as the set $\vs$ with $a$ removed from it;
-    \item applying $\intsettointconstraints$ to $\vsone$ yields the list of constraints $\csone$;
-    \item $\csone$ is a list where its \head\ is a range constraint for the interval starting from $b$ and ending at $c$
-          and \tail\ $\cstwo$;
-    \item $b$ is equal to $a+1$;
-    \item define $\cs$ as the list with \head\  a range constraint for the interval from $a$ to $c$
-          and \tail\ $\cstwo$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[empty]{}{
-  \intsettointconstraints(\overname{\emptyset}{\vs}) \typearrow \overname{\emptylist}{\cs}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[singleton]{}{
-  \intsettointconstraints(\overname{\{a\}}{\vs}) \typearrow \overname{[\ConstraintRange(\ELInt{a}, \ELInt{a})]}{\cs}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[new\_interval]{
-  a = \min(\vs)\\
-  \vsone \eqdef \vs \setminus \{a\}\\
-  \intsettointconstraints(\vsone) \typearrow \csone\\
-  \csone = [\ConstraintRange(\ELInt{b}, \ELInt{c})] \concat \cstwo\\
-  b > a + 1\\\\
-  {
-    \begin{array}{rcl}
-  \cs  &\eqdef & [\ConstraintRange(\ELInt{a}, \ELInt{a})]\ \concat\\
-        &       & [\ConstraintRange(\ELInt{b}, \ELInt{c})]\ \concat \\
-        &       & \cstwo
-    \end{array}
-  }
-}{
-  \intsettointconstraints(\vs) \typearrow \cs
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[merge\_interval]{
-  a = \min(\vs)\\
-  \vsone \eqdef \vs \setminus \{a\}\\
-  \intsettointconstraints(\vsone) \typearrow \csone\\
-  \csone = [\ConstraintRange(\ELInt{b}, \ELInt{c})] \concat \cstwo\\
-  b = a + 1\\
-  \cs \eqdef [\ConstraintRange(\ELInt{a}, \ELInt{c})] \concat \cstwo
-}{
-  \intsettointconstraints(\vs) \typearrow \cs
-}
-\end{mathpar}
-
-\TypingRuleDef{SymDomOfLiteral}
-\hypertarget{def-symdomofliteral}{}
-The function
-\[
-\symdomofliteral(\overname{\literal}{\vv}) \typearrow \overname{\symdom}{\vd}
-\]
-returns the symbolic domain $\vd$ that corresponds to the literal $\vv$.
-
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vv$ is an integer literal for $n$;
-  \item define $\vd$ as the symbolic finite set integer domain for the singleton set for $n$, that is, $\Finite(\{n\})$.
-\end{itemize}
+\Proseeqdef{$\vd$}{the singleton list for the constrained symbolic integer domain
+for the exact constraint for the expression $\ve$}.
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \symdomofliteral(\overname{\lint(n)}{\vv}) \typearrow \overname{\Finite(\{n\})}{\vd}
+  \symdomofwidthexpr(\ve) \typearrow \overname{\Subdomains([\ \ConstrainedDom(\ConstraintExact(\ve))\ ])}{\vd}
 }
 \end{mathpar}
 
-\TypingRuleDef{SymIntSetOfConstraints}
-\hypertarget{def-intsetofintconstraintse}{}
+\TypingRuleDef{SymdomOfConstraint}
+\hypertarget{def-symdomofconstraint}{}
 The function
 \[
-  \intsetofintconstraints(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\constraints}{\vcs}
-  ) \aslto
-  \overname{\symdom}{\vis}
-\]
-returns the symbolic domain $\vis$ for the list of constraints $\vcs$
-in the static environment $\tenv$.
-
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{finite}
-  \begin{itemize}
-    \item applying $\constrainttointset$ to every constraint $\vcs[\vi]$ in $\tenv$, for $\vi$ in \\ $\listrange(\vcs)$,
-          yields a finite set of integers $C_\vi$, that is, $\Finite(C_\vi)$;
-    \item define $\vis$ as the union of $C_\vi$ for all $\vi$ in $\listrange(\vcs)$.
-  \end{itemize}
-
-  \item \AllApplyCase{symbolic}
-  \begin{itemize}
-    \item there exists a constraint $\vc$ in $\vcs$ such that applying $\constrainttointset$ to $\vc$
-          in $\tenv$ does not yield a finite set of integers;
-    \item define $\vis$ as the symbolic constrained integer domain for $\vcs$, that is, \\
-          $\FromSyntax(\vcs)$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[finite]{
-  \vi\in\listrange(\vcs): \constrainttointset(\tenv, \vcs[\vi]) \typearrow \Finite(C_\vi)\\
-  C \eqdef \bigcup_{\vi\in\listrange(\vcs)} C_\vi
-}{
-  \intsetofintconstraints(\tenv, \vcs) \typearrow \overname{\Finite(C)}{\vis}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[symbolic]{
-  {
-    \begin{array}{r}
-  \exists \vi\in\listrange(\vcs): \constrainttointset(\tenv, \vcs[\vi]) \typearrow \\
-     \visone \land \astlabel(\visone) \neq \Finite
-    \end{array}
-  }
-}{
-  \intsetofintconstraints(\tenv, \vcs) \typearrow \overname{\FromSyntax(\vcs)}{\vis}
-}
-\end{mathpar}
-
-\TypingRuleDef{ConstraintToIntSet}
-\hypertarget{def-constrainttointset}{}
-The function
-\[
-  \constrainttointset(
+  \symdomofconstraint(
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\intconstraint}{\vc}
   ) \aslto
-  \overname{\symdom}{\vis}
+  \overname{\symdom}{\vd}
 \]
-transforms an integer constraint $\vc$ into a symbolic domain $\vis$.
+transforms an integer constraint $\vc$ into a symbolic domain $\vd$
+in the context of the static environment $\tenv$.
 It produces $\Top$ when the expressions involved in the integer constraints cannot be simplified
 to integers.
 
@@ -648,41 +366,49 @@ to integers.
   \item \AllApplyCase{exact}
   \begin{itemize}
     \item $\vc$ is a single expression constraint for $\ve$, that is, $\ConstraintExact(\ve)$;
-    \item applying $\normalizetoint$ to $\ve$ in $\tenv$ yields the integer $n$\ProseTerminateAs{\Top};
-    \item define $\vis$ as the singleton set for $n$, that is, $\Finite(\{n\})$.
+    \item applying $\symdomeval$ to $\ve$ in $\tenv$ yields $\vv$;
+    \item define $\vd$ as constrained symbolic integer domain for $\vc$
+          ($\ConstrainedDom(\vc)$) if $\vv$ is $\Top$
+          and otherwise as the finite symbolic integer domain for the singleton set for $\vv$ ($\Finite(\{n\})$).
   \end{itemize}
 
   \item \AllApplyCase{range}
   \begin{itemize}
     \item $\vc$ is a range constraint for $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
-    \item applying $\normalizetoint$ to $\veone$ in $\tenv$ yields the integer $b$\ProseTerminateAs{\Top};
-    \item applying $\normalizetoint$ to $\vetwo$ in $\tenv$ yields the integer $t$\ProseTerminateAs{\Top};
-    \item define $\vis$ as the set integers that are both greater or equal to $b$ and less than or equal to $t$.
+    \item applying $\symdomeval$ to $\veone$ in $\tenv$ yields $\vvone$;
+    \item applying $\symdomeval$ to $\vetwo$ in $\tenv$ yields $\vvtwo$;
+    \item define $\vd$ as the constrained symbolic integer domain for $\vc$ if either $\vvone$ or $\vvtwo$
+          are $\Top$ ($\ConstrainedDom(\vc)$) and otherwise the finite symbolic integer domain for the
+          set integers that are both greater or equal to $\vvone$ and less than or equal to $\vvtwo$
+          ($\Finite(\{ n \;|\; \vvone \leq n \leq \vvtwo\})$).
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[exact]{
-  \normalizetoint(\tenv, \ve) \typearrow n \terminateas \Top
+  \symdomeval(\tenv, \ve) \typearrow \vv\\
+  \vd \eqdef \choice{\vv = \Top}{\ConstrainedDom(\vc)}{\Finite(\{\vv\})}
 }{
-  \constrainttointset(\tenv, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{\Finite(\{n\})}{\vis}
-}
-\and
-\inferrule[range]{
-  \normalizetoint(\tenv, \veone) \typearrow b \terminateas \Top\\\\
-  \normalizetoint(\tenv, \vetwo) \typearrow t \terminateas \Top\\\\
-  \vis \eqdef \Finite(\{ n \;|\; b \leq n \leq t\})
-}{
-  \constrainttointset(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vis
+  \symdomofconstraint(\tenv, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \vd
 }
 \end{mathpar}
 
-\TypingRuleDef{NormalizeToInt}
-\hypertarget{def-normalizetoint}{}
+\begin{mathpar}
+\inferrule[range]{
+  \symdomeval(\tenv, \veone) \typearrow \vvone\\
+  \symdomeval(\tenv, \vetwo) \typearrow \vvtwo\\
+  \vd \eqdef \choice{\vvone = \Top \lor \vvtwo = \Top}{\ConstrainedDom(\vc)}{\Finite(\{ n \;|\; \vvone \leq n \leq \vvtwo\})}
+}{
+  \symdomofconstraint(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vd
+}
+\end{mathpar}
+
+\TypingRuleDef{SymdomEval}
+\hypertarget{def-symdomeval}{}
 The function
 \[
-\normalizetoint(
+\symdomeval(
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\expr}{\ve}
 ) \aslto \overname{\Z}{n} \cup \{\Top\}
@@ -716,32 +442,31 @@ and therefore applying $\normalize$ to it does not yield a \typingerrorterm{}.
   \normalize(\tenv, \ve) \typearrow \veone\\
   \staticeval(\tenv, \veone) \typearrow \lint(n)
 }{
-  \normalizetoint(\tenv, \ve) \typearrow n
+  \symdomeval(\tenv, \ve) \typearrow n
 }
 \and
 \inferrule[top]{
   \normalize(\tenv, \ve) \typearrow \veone\\
   \staticeval(\tenv, \veone) \typearrow \top
 }{
-  \normalizetoint(\tenv, \ve) \typearrow \Top
+  \symdomeval(\tenv, \ve) \typearrow \Top
 }
 \end{mathpar}
 
-\TypingRuleDef{SymDomIsSubset}
-\hypertarget{def-symdomissubset}{}
+\TypingRuleDef{SymdomSubset}
+\hypertarget{def-symdomsubset}{}
 The function
 \[
-  \symdomissubset(
+  \symdomsubset(
     \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\symdom}{\vdone} \aslsep
-    \overname{\symdom}{\vdtwo}
+    \overname{\symdom}{\cdone} \aslsep
+    \overname{\symdom}{\cdtwo}
   ) \aslto
   \overname{\Bool}{\vb}
 \]
-conservatively tests whether the values represented by the \symbolicdomain\ $\visone$
-is a subset of the values represented by the \symbolicdomain\ $\vistwo$ in any environment
-consisting of the static environment $\tenv$
-(see \secref{domainsubsettesting} for a precise definition).
+conservatively tests whether the values represented by the \symbolicdomain\ $\cdone$
+is a subset of the values represented by the \symbolicdomain\ $\cdtwo$ in any environment
+consisting of the static environment $\tenv$, yielding the result in $\vb$.
 
 The test first \emph{overapproximates} $\visone$ by a set of integers $\vsone$.
 That is, $\vsone$ represents a superset of the set of numbers represented by $\visone$.
@@ -767,111 +492,91 @@ We refer such a symbol as an \approximationdirectionterm.
 \ProseParagraph
 \OneApplies
 \begin{itemize}
-  \item \AllApplyCase{right\_top}
-  \begin{itemize}
-    \item $\vistwo$ is $\Top$;
-    \item define $\vb$ as $\True$.
-  \end{itemize}
-
-  \item \AllApplyCase{left\_top\_right\_not\_top}
-  \begin{itemize}
-    \item $\visone$ is $\Top$;
-    \item $\vistwo$ is not $\Top$;
-    \item define $\vb$ as $\False$.
-  \end{itemize}
-
   \item \AllApplyCase{finite\_finite}
   \begin{itemize}
-    \item $\visone$ is a finite set of integers for $\vsone$, that is, $\Finite(\vsone)$;
-    \item $\vistwo$ is a finite set of integers for $\vstwo$, that is, $\Finite(\vstwo)$;
-    \item define $\vb$ as $\True$ if and only if $\vsone$ is a subset of $\vstwo$ or both sets are equal.
+    \item $\cdone$ is a finite set of integers for $\vsone$, that is, $\Finite(\vsone)$;
+    \item $\vstwo$ is a finite set of integers for $\vstwo$, that is, $\Finite(\vstwo)$;
+    \item define $\vb$ as $\True$ if and only if $\vsone$ is a subset of $\vstwo$.
   \end{itemize}
 
-  \item \AllApplyCase{syntax\_syntax}
+  \item \AllApplyCase{constrained\_constrained\_equal}
   \begin{itemize}
-    \item $\visone$ is a list of constraints $\csone$, that is, $\FromSyntax(\vsone)$;
-    \item $\vistwo$ is a list of constraints $\cstwo$, that is, $\FromSyntax(\vstwo)$;
-    \item \Proseapproxconstraint{$\tenv$}{$\csone[\vi]$}{$\Over$}{$\vsone_\vi$}, for every \Proselistrange{$\vi$}{$\csone$};
-    \item \Proseapproxconstraint{$\tenv$}{$\cstwo[\vj]$}{$\Under$}{$\vstwo_\vj$}, for every \Proselistrange{$\vj$}{$\cstwo$};
-    \item \Proseeqdef{$\vb$}{$\True$ if and only if
-          for every \Proselistrange{$\vi$}{$\csone$} there exists
-          an index $\vj$ in the list of indices for $\cstwo$ such that
-          either $\constraintequal$ determines that $\csone[\vi]$ is equivalent to $\cstwo[\vj]$
-          in $\tenv$ or $\vsone_\vi$ is a subset of $\vstwo_\vj$}.
+    \item $\cdone$ is a symbolic constrained integer domain for the constraint $\vcone$, that is, $\ConstrainedDom(\vcone)$;
+    \item $\cdtwo$ is a symbolic constrained integer domain for the constraint $\vctwo$, that is, $\ConstrainedDom(\vctwo)$;
+    \item applying $\constraintequal$ to $\tenv$, $\vcone$, and $\vctwo$ yields $\True$;
+    \item \Proseeqdef{$\vb$}{$\True$}.
   \end{itemize}
 
-  \item \AllApplyCase{finite\_syntax}
+  \item \AllApplyCase{constrained\_constrained\_non\_equal}
   \begin{itemize}
-    \item $\visone$ is a finite set of integers for $\vsone$, that is, $\Finite(\vsone)$;
-    \item $\vistwo$ is a list of constraints $\cstwo$, that is, $\FromSyntax(\vstwo)$;
-    \item \ProseapproxconstraintsUnder{$\tenv$}{$\cstwo$}{$\vstwo$};
+    \item $\cdone$ is a symbolic constrained integer domain for the constraint $\vcone$, that is, $\ConstrainedDom(\vcone)$;
+    \item $\cdtwo$ is a symbolic constrained integer domain for the constraint $\vctwo$, that is, $\ConstrainedDom(\vctwo)$;
+    \item applying $\constraintequal$ to $\tenv$, $\vcone$, and $\vctwo$ yields $\False$;
+    \item \Proseapproxconstraint{$\tenv$}{$\vcone$}{$\Over$}{$\vsone$};
+    \item \Proseapproxconstraint{$\tenv$}{$\vctwo$}{$\Under$}{$\vstwo$};
     \item \Proseeqdef{$\vb$}{$\True$ if and only if $\vsone$ is a subset of $\vstwo$}.
   \end{itemize}
 
-  \item \AllApplyCase{syntax\_finite}
+  \item \AllApplyCase{finite\_constrained}
   \begin{itemize}
-    \item $\visone$ is a list of constraints $\csone$, that is, $\FromSyntax(\vsone)$;
+    \item $\visone$ is a finite symbolic integer domain for the set of integers $\vsone$, that is, $\Finite(\vsone)$;
+    \item $\cdtwo$ is a symbolic constrained integer domain for the constraint $\vctwo$, that is, $\ConstrainedDom(\vctwo)$;
+    \item \ProseapproxconstraintsUnder{$\tenv$}{$\vctwo$}{$\vstwo$};
+    \item \Proseeqdef{$\vb$}{$\True$ if and only if $\vsone$ is a subset of $\vstwo$}.
+  \end{itemize}
+
+  \item \AllApplyCase{constrained\_finite}
+  \begin{itemize}
+    \item $\cdone$ is a symbolic constrained integer domain for the constraint $\vcone$, that is, $\ConstrainedDom(\vcone)$;
     \item $\vistwo$ is a finite set of integers for $\vstwo$, that is, $\Finite(\vstwo)$;
-    \item \ProseapproxconstraintsOver{$\tenv$}{$\csone$}{$\vsone$};
+    \item \ProseapproxconstraintsOver{$\tenv$}{$\vcone$}{$\vsone$};
     \item \Proseeqdef{$\vb$}{$\True$ if and only if $\vsone$ is a subset of $\vstwo$}.
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[right\_top]{}{
-  \symdomissubset(\tenv, \visone, \overname{\Top}{\vistwo}) \typearrow
-  \overname{\True}{\vb}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[left\_top\_right\_not\_top]{
-  \vistwo \neq \Top
-}{
-  \symdomissubset(\tenv, \overname{\Top}{\visone}, \vistwo) \typearrow
-  \overname{\False}{\vb}
-}
-\end{mathpar}
-
-\begin{mathpar}
 \inferrule[finite\_finite]{}{
-  \symdomissubset(\tenv, \overname{\Finite(\vsone)}{\visone}, \overname{\Finite(\vstwo)}{\vistwo}) \typearrow
+  \symdomsubset(\tenv, \overname{\Finite(\vsone)}{\cdone}, \overname{\Finite(\vstwo)}{\cdtwo}) \typearrow
   \overname{\vsone \subseteq \vstwo}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[constrained\_constrained\_equal]{
+  \constraintequal(\tenv, \vcone, \vctwo) \typearrow \True
+}{
+  \symdomsubset(\tenv, \overname{\ConstrainedDom(\vcone)}{\cdone}, \overname{\ConstrainedDom(\vctwo)}{\cdtwo}) \typearrow
+  \overname{\True}{\vb}
 }
 \end{mathpar}
 
 % Transliteration comment: instead of the symbol CannotOverApproximate, we use the set of all integers.
 \begin{mathpar}
-\inferrule[syntax\_syntax]{
-  \vi\in\listrange(\csone): \approxconstraint(\tenv, \Over, \csone[\vi]) \typearrow \vsone_\vi\\
-  \vj\in\listrange(\cstwo): \approxconstraint(\tenv, \Under, \cstwo[\vi]) \typearrow \vstwo_\vj\\
-  {
-  \begin{array}{rl}
-  \vb \eqdef  & \forall \vi\in\listrange(\csone).\ \exists \vj\in\listrange(\cstwo).\\
-              & \constraintequal(\tenv, \csone[\vi], \cstwo[\vi]) \lor \vsone_\vi \subseteq \vstwo_\vj
-  \end{array}
-  }
+\inferrule[constrained\_constrained\_non\_equal]{
+  \constraintequal(\tenv, \vcone, \vctwo) \typearrow \False\\\\
+  \approxconstraint(\tenv, \Over, \vcone) \typearrow \vsone\\
+  \approxconstraint(\tenv, \Under, \vctwo) \typearrow \vstwo
 }{
-  \symdomissubset(\tenv, \overname{\FromSyntax(\csone)}{\visone}, \overname{\FromSyntax(\cstwo)}{\vistwo}) \typearrow
-  \vb
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[finite\_syntax]{
-  \approxconstraints(\tenv, \Under, \cstwo) \typearrow \vstwo
-}{
-  \symdomissubset(\tenv, \overname{\Finite(\vsone)}{\visone}, \overname{\FromSyntax(\cstwo)}{\vistwo}) \typearrow
+  \symdomsubset(\tenv, \overname{\ConstrainedDom(\vcone)}{\cdone}, \overname{\ConstrainedDom(\vctwo)}{\cdtwo}) \typearrow
   \overname{\vsone \subseteq \vstwo}{\vb}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[syntax\_finite]{
-  \approxconstraints(\tenv, \Over, \csone) \typearrow \vsone
+\inferrule[finite\_constrained]{
+  \approxconstraints(\tenv, \Under, \vctwo) \typearrow \vstwo
 }{
-  \symdomissubset(\tenv, \overname{\FromSyntax(\csone)}{\visone}, \overname{\Finite(\vstwo)}{\vistwo}) \typearrow
+  \symdomsubset(\tenv, \overname{\Finite(\cdone)}{\vsone}, \overname{\ConstrainedDom(\vctwo)}{\cdtwo}) \typearrow
+  \overname{\vsone \subseteq \vstwo}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[constrained\_finite]{
+  \approxconstraints(\tenv, \Over, \vcone) \typearrow \vsone
+}{
+  \symdomsubset(\tenv, \overname{\ConstrainedDom(\vcone)}{\visone}, \overname{\Finite(\vstwo)}{\vistwo}) \typearrow
   \overname{\vsone \subseteq \vstwo}{\vb}
 }
 \end{mathpar}
@@ -897,7 +602,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
   \item \AllApplyCase{over}
   \begin{itemize}
     \item $\vapprox$ is $\Over$;
-    \item \Proseapproxconstraint{$\tenv$}{$\vc$}{$\Over$}{$\vs_\vc$}, for every constraint $\vc$ in $\cs$;
+    \item \Proseapproxconstraint{$\tenv$}{$\vc$}{$\Over$}{$\vs_\vc$}, for every constraint $\vc$ in $\cs$\ProseTerminateAs{\Z};
     \item \Proseeqdef{$\vs$}{the union of all sets $\vs_\vc$, for every constraint $\vc$ in $\cs$}.
   \end{itemize}
 
@@ -912,7 +617,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[over]{
-  \vc \in \cs: \approxconstraint(\tenv, \Over, \vc) \typearrow \vs_\vc
+  \vc \in \cs: \approxconstraint(\tenv, \Over, \vc) \typearrow \vs_\vc \terminateas \Z
 }{
   \approxconstraints(\tenv, \overname{\Over}{\vapprox}, \cs) \typearrow
   \overname{\bigcup_{\vc \in \cs} \vs_\vc}{\vs}
@@ -944,6 +649,11 @@ The approximation is over all environments that consist of the static environmen
 The approximation is either overapproximation or underapproximation,
 based on the \approximationdirectionterm\ $\vapprox$.
 
+\ExampleDef{Approximating Constraints}
+The specification in \listingref{ApproxConstraint} is well-typed,
+showing how constraints are overapproximated and underapproximated.
+\ASLListing{Approximating constraints}{ApproxConstraint}{\typingtests/TypingRule.ApproxConstraint.asl}
+
 In the following inference rules, we use $\leq$ to compare both integers to integers
 and integers to infinity symbols. Specifically, the following hold:
 $\forall z\in\Z.\ -\infty < z$ and $\forall z\in\Z.\ z < +\infty$.
@@ -954,14 +664,14 @@ $\forall z\in\Z.\ -\infty < z$ and $\forall z\in\Z.\ z < +\infty$.
   \item \AllApplyCase{exact}
   \begin{itemize}
     \item $\vc$ is an \Proseexactconstraint{\ve};
-    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\ve$}{$\vs$}.
+    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\ve$}{$\vs$}\ProseTerminateAs{\Z}.
   \end{itemize}
 
   \item \AllApplyCase{range\_over}
   \begin{itemize}
     \item $\vc$ is a \Proserangeconstraint{\veone}{\vetwo};
-    \item \Proseapproxexprmin{$\tenv$}{$\veone$}{$\vzone$};
-    \item \Proseapproxexprmax{$\tenv$}{$\vetwo$}{$\vztwo$};
+    \item \Proseapproxexprmin{$\tenv$}{$\veone$}{$\vzone$}\ProseTerminateAs{\Z};
+    \item \Proseapproxexprmax{$\tenv$}{$\vetwo$}{$\vztwo$}\ProseTerminateAs{\Z};
     \item \Proseeqdef{$\vsinterval$}{the set of integers greater or equal to $\vzone$ and
           less than or equal to $\vztwo$};
     \item applying $\approxbottomtop$ to $\vapprox$ yields $\vsbottomtop$;
@@ -983,7 +693,7 @@ $\forall z\in\Z.\ -\infty < z$ and $\forall z\in\Z.\ z < +\infty$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[exact]{
-  \approxexpr(\tenv, \vapprox, \ve) \typearrow
+  \approxexpr(\tenv, \vapprox, \ve) \typearrow \vs \terminateas \Z
 }{
   \approxconstraint(\tenv, \vapprox, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \vs
 }
@@ -994,8 +704,8 @@ $\forall z\in\Z.\ -\infty < z$ and $\forall z\in\Z.\ z < +\infty$.
 \begin{mathpar}
 \inferrule[range\_over]{
   \vapprox = \Over\\
-  \approxexprmin(\tenv, \veone) \typearrow \vzone\\
-  \approxexprmax(\tenv, \vetwo) \typearrow \vztwo\\
+  \approxexprmin(\tenv, \veone) \typearrow \vzone \terminateas \Z\\\\
+  \approxexprmax(\tenv, \vetwo) \typearrow \vztwo \terminateas \Z\\\\
   \vsinterval \eqdef \{ \vz \;|\; \vzone \leq \vz \leq \vztwo \}\\
   \approxbottomtop(\vapprox) \typearrow \vsbottomtop\\
   \vs \eqdef \choice{\vzone \leq \vztwo}{\vsinterval}{\vsbottomtop}
@@ -1109,6 +819,34 @@ if $\vapprox$ is $\Over$.}
 }
 \end{mathpar}
 
+\TypingRuleDef{IntsetToConstraints}
+\hypertarget{def-intsettoconstraints}{}
+The function
+\[
+\intsettoconstraints(\overname{\powfin{\Z}}{\vs}) \aslto \overname{\intconstraint^*}{\cs}
+\]
+converts a finite set of integers $\vs$ into an equivalent list of constraints.
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item \Proseeqdef{$\intervals$}{the set of maximal intervals in $\vs$};
+  \item \Proseeqdef{$\cs$}{the list of constraints where for each interval $a..b$ in $\intervals$,
+        there is an exact constraint for $a$ if $a$ is equal to $b$ and a range constraint \\
+        $\AbbrevConstraintRange{\ELInt{a}}{\ELInt{b}}$, otherwise}.
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{
+  \intervals \eqdef \{ a..b \;|\; a..b \in \vs \land \forall (c..d) \in \vs.\ a..b \not\subseteq c..d\}\\
+  \cs \eqdef [a..b \in \intervals: \choice{a=b}{
+    \AbbrevConstraintExact{\ELInt{a}}}{\AbbrevConstraintRange{\ELInt{a}}{\ELInt{b}}}]
+}{
+  \intsettoconstraints(\vs) \typearrow \cs
+}
+\end{mathpar}
+
 \TypingRuleDef{ApproxExpr}
 \hypertarget{def-approxexpr}{}
 The function
@@ -1157,7 +895,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
   \item \AllApplyCase{unop}
   \begin{itemize}
     \item $\ve$ is a \unopexpression{$\op$}{$\vep$};
-    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vep$}{$\vsp$};
+    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vep$}{$\vsp$}\ProseTerminateAs{\Z};
     \item \Proseeqdef{$\vs$}{the set obtained by applying $\unopliterals$ to $\op$ and
       the integer literal for every integer in $\vsp$}.
   \end{itemize}
@@ -1165,18 +903,20 @@ based on the \approximationdirectionterm\ $\vapprox$.
   \item \AllApplyCase{binop}
   \begin{itemize}
     \item $\ve$ is a \binopexpression{$\op$}{$\veone$}{$\vetwo$};
-    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\veone$}{$\vsone$};
-    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vetwo$}{$\vstwo$};
-    \item \Proseeqdef{$\vs$}{the set obtained by applying $\binopliterals$ to $\op$ and
-      every pair of integers from the $\vsone$ and $\vstwo$, respectively,
-      and maintaining only the values for which $\binopliterals$ does not produce a \typingerrorterm{}}.
+    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\veone$}{$\vsone$}\ProseTerminateAs{\Z};
+    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vetwo$}{$\vstwo$}\ProseTerminateAs{\Z};
+    \item applying $\annotateconstraintbinop$ to $\tenv$, $\vsone$, and $\vstwo$ yields $(\vsp, \plf)$;
+    \item applying $\approxconstraints$ to $\tenv$, $\vapprox$, and $\vsp$ yields $\vsapprox$;
+    \item \Proseeqdef{$\vs$}{
+      $\vsapprox$ if $\plf$ is $\PrecisionFull$ or $\plf$ is $\PrecisionLost$ and $\vapprox$ is $\Under$,
+      and as the set of all integers otherwise}.
   \end{itemize}
 
   \item \AllApplyCase{cond}
   \begin{itemize}
     \item $\ve$ is a \condexpression{any}{$\vetwo$}{$\vethree$};
-    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vetwo$}{$\vstwo$};
-    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vethree$}{$\vsthree$};
+    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vetwo$}{$\vstwo$}\ProseTerminateAs{\Z};
+    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vethree$}{$\vsthree$}\ProseTerminateAs{\Z};
     \item \Proseeqdef{$\vs$}{the union of $\vstwo$ and $\vsthree$ if $\vapprox$ is $\Over$
     and the intersection of $\vstwo$ and $\vsthree$ if $\vapprox$ is $\Under$}.
   \end{itemize}
@@ -1207,7 +947,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
 \end{mathpar}
 
 In the following inference rule, the application of $\typeof$ is guaranteed not
-to result in a \typingerrorterm{}, since $\symdomainsubset$ is only applied to annotated
+to result in a \typingerrorterm{}, since $\symdomsubset$ is only applied to annotated
 types.
 \begin{mathpar}
 \inferrule[var\_over]{
@@ -1226,7 +966,7 @@ types.
 
 \begin{mathpar}
 \inferrule[unop]{
-  \approxexpr(\tenv, \vapprox, \vep) \typearrow \vsp\\
+  \approxexpr(\tenv, \vapprox, \vep) \typearrow \vsp \terminateas \Z\\\\
   \vs \eqdef \{ \unopliterals(\op, \lint(\vz)) \;|\; \vz \in \vsp\}
 }{
   \approxexpr(\tenv, \vapprox, \overname{\EUnop(\op, \vep)}{\ve}) \typearrow \vs
@@ -1235,13 +975,17 @@ types.
 
 \begin{mathpar}
 \inferrule[binop]{
-  \approxexpr(\tenv, \vapprox, \veone) \typearrow \vsone\\
-  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo\\
+  \approxexpr(\tenv, \vapprox, \veone) \typearrow \vsone \terminateas \Z\\\\
+  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \Z\\\\
+  \annotateconstraintbinop(\tenv, \vsone, \vstwo) \typearrow (\vsp, \plf)\\
+  \approxconstraints(\tenv, \vapprox, \vsp) \typearrow \vsapprox\\
   {
-    \begin{array}{rl}
-  \vs \eqdef \{ \vz \not\in \TTypeError \;|\; & \vzone\in\vsone, \vztwo\in\vstwo, \\
-    & \binopliterals(\op, \lint(\vzone), \lint(\vztwo)) \typearrow \vz\}
-    \end{array}
+  \vs \eqdef
+  \begin{cases}
+    \vsapprox & \text{if }\plf = \PrecisionFull \lor (\plf = \PrecisionLost \land \vapprox = \Under)\\
+    % Transliteration comment: instead of the symbol CannotOverApproximate, we use the set of all integers.
+    \Z        & \text{if }\plf = \PrecisionLost \land \vapprox = \Over
+  \end{cases}
   }
 }{
   \approxexpr(\tenv, \vapprox, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \vs
@@ -1250,8 +994,8 @@ types.
 
 \begin{mathpar}
 \inferrule[cond]{
-  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo\\
-  \approxexpr(\tenv, \vapprox, \vethree) \typearrow \vsthree\\
+  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \Z\\\\
+  \approxexpr(\tenv, \vapprox, \vethree) \typearrow \vsthree \terminateas \Z\\\\
   \vs \eqdef \choice{\vapprox = \Over}{\vstwo \cup \vsthree}{\vstwo \cap \vsthree}
 }{
   \approxexpr(\tenv, \vapprox, \overname{\ECond(\Ignore, \vetwo, \vethree)}{\ve}) \typearrow \vs
@@ -1354,8 +1098,9 @@ yielding the integer constraints $\vics$.
   \item \AllApplyCase{extremities}
   \begin{itemize}
     \item $\op$ is either $\DIV$, $\DIVRM$, $\MUL$, $\PLUS$, $\MINUS$, $\SHR$, or $\SHL$;
-    \item applying $\applybinopextremities$ to every pair of constraints $\csone[\vi]$ and $\cstwo[\vj]$
-          where $\vi\in\listrange(\csone)$ and $\vj\in\listrange(\cstwo)$, yields $\vc_{\vi,\vj}$;
+    \item applying $\applybinopextremities$ to every pair of constraints \\
+          $\csone[\vi]$ and $\cstwo[\vj]$ where $\vi\in\listrange(\csone)$ and
+          $\vj\in\listrange(\cstwo)$, yields $\vc_{\vi,\vj}$;
     \item define $\newcs$ as the list of constraints $\vc_{\vi,\vj}$, for every
           $\vi\in\listrange(\csone)$ and $\vj\in\listrange(\cstwo)$.
   \end{itemize}

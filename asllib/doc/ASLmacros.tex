@@ -962,7 +962,6 @@
 \newcommand\lhsaccessslices[0]{\text{slices}}
 \newcommand\accessorpairgetter[0]{\text{getter}}
 \newcommand\accessorpairsetter[0]{\text{setter}}
-\newcommand\accessorpairsetterarg[0]{\text{setter\_arg}}
 
 \newcommand\itemprefix[0]{\texttt{item}}
 
@@ -1391,7 +1390,6 @@
 \newcommand\compareidentifier[0]{\hyperlink{def-compareidentifier}{\textfunc{compare\_identifier}}}
 
 \newcommand\domainsubset[0]{\hyperlink{def-domainsubset}{\textfunc{domain\_subset}}}
-\newcommand\symdomainsubset[0]{\hyperlink{def-symdomainsubset}{\textfunc{sym\_domain\_subset}}}
 
 \newcommand\toir[0]{\hyperlink{def-toir}{\textfunc{to\_ir}}}
 \newcommand\ProseOrTypeErrorOrCannotBeTransformed[0]{\ProseTerminateAs{\CannotBeTransformed,\TypeErrorConfig}}
@@ -1867,6 +1865,8 @@
 \newcommand\checkimplementationsunique[0]{\hyperlink{def-checkimplementationsunique}{\textfunc{check\_implementations\_unique}}}
 \newcommand\Prosesignaturesmatch[2]{\hyperlink{def-signaturesmatch}{checking} that the signatures of #1 and #2 match}
 \newcommand\signaturesmatch[0]{\hyperlink{def-signaturesmatch}{\textfunc{signatures\_match}}}
+\newcommand\Proserenamesubprograms[2]{\hyperlink{def-renamesubprograms}{renaming} subprograms in #1 yields #2}
+\newcommand\renamesubprograms[0]{\hyperlink{def-renamesubprograms}{\textfunc{rename\_subprograms}}}
 \newcommand\ProseSCC[3]{\hyperlink{def-scc}{partitioning} the set of declarations #1 with the set of edges #2 yields the list of strongly-connected components #3}
 \newcommand\SCC[0]{\hyperlink{def-scc}{\textfunc{SCC}}}
 \newcommand\topologicalorderingcomps[0]{\hyperlink{def-topologicalorderingcomps}{\textfunc{topological\_ordering\_comps}}}
@@ -1911,23 +1911,22 @@
 \newcommand\inttobits[0]{\hyperlink{def-inttobits}{\textfunc{int\_to\_bits}}}
 
 % Symbolic domain subsumption
-\newcommand\symdom[0]{\hyperlink{def-symdom}{\textsf{sym\_dom}}}
-\newcommand\syntax[0]{\hyperlink{def-syntax}{\textsf{syntax}}}
+\newcommand\symdom[0]{\hyperlink{def-symdom}{\textsf{symdom}}}
+\newcommand\symdomortop[0]{\hyperlink{def-symdomortop}{\textsf{symdom\_or\_top}}}
 
 \newcommand\Finite[0]{\hyperlink{def-finite}{\textsf{Finite}}}
 \newcommand\Top[0]{\hyperlink{def-top}{\textsf{Top}}}
-\newcommand\FromSyntax[0]{\hyperlink{def-fromsymtax}{\textsf{FromSyntax}}}
+\newcommand\ConstrainedDom[0]{\hyperlink{def-constraineddom}{\textsf{ConstrainedDom}}}
+\newcommand\Subdomains[0]{\hyperlink{def-subdomains}{\textsf{Subdomains}}}
 
 \newcommand\symdomoftype[0]{\hyperlink{def-symdomoftype}{\textfunc{symdom\_of\_type}}}
-\newcommand\symdomofexpr[0]{\hyperlink{def-symdomofexpr}{\textfunc{symdom\_of\_expr}}}
-\newcommand\symdomofwidth[0]{\hyperlink{def-symdomofwidth}{\textfunc{symdom\_of\_width}}}
-\newcommand\symdomofliteral[0]{\hyperlink{def-symdomofliteral}{\textfunc{symdom\_of\_literal}}}
-\newcommand\intsetofintconstraints[0]{\hyperlink{def-intsetofintconstraintse}{\textfunc{intset\_of\_intconstraints}}}
-\newcommand\symdomissubset[0]{\hyperlink{def-symdomissubset}{\textfunc{symdom\_is\_subset}}}
-\newcommand\constrainttointset[0]{\hyperlink{def-constrainttointset}{\textfunc{constraint\_to\_intset}}}
-\newcommand\normalizetoint[0]{\hyperlink{def-normalizetoint}{\textfunc{normalize\_to\_int}}}
-\newcommand\intsetop[0]{\hyperlink{def-intsetop}{\textfunc{intset\_op}}}
-\newcommand\intsettointconstraints[0]{\hyperlink{def-intsettointconstraints}{\textfunc{int\_set\_to\_int\_constraints}}}
+\newcommand\symdomofwidthexpr[0]{\hyperlink{def-symdomofwidthexpr}{\textfunc{symdom\_of\_width\_expr}}}
+\newcommand\symdomofconstraint[0]{\hyperlink{def-symdomofconstraint}{\textfunc{symdom\_of\_constraint}}}
+\newcommand\symdomsubsettest[0]{\hyperlink{def-symdomsubsettest}{\textfunc{symdom\_subset\_test}}}
+\newcommand\symdomsubset[0]{\hyperlink{def-symdomsubset}{\textfunc{symdom\_subset}}}
+\newcommand\symdomsubsetunions[0]{\hyperlink{def-symdomsubsetunions}{\textfunc{symdom\_subset\_unions}}}
+\newcommand\symdomnormalize[0]{\hyperlink{def-symdomnormalize}{\textfunc{symdom\_normalize}}}
+\newcommand\symdomeval[0]{\hyperlink{def-symdomeval}{\textfunc{symdom\_eval}}}
 \newcommand\Under[0]{\hyperlink{def-Under}{\textsf{Under}}}
 \newcommand\Over[0]{\hyperlink{def-Over}{\textsf{Over}}}
 \newcommand\approxconstraints[0]{\hyperlink{def-approxconstraints}{\textfunc{approx\_constraints}}}
@@ -1948,6 +1947,7 @@
 \newcommand\Proseapproxexpr[4]{\hyperlink{def-approxexpr}
   {approximating} the set integers represented by the expression #3 in the static environment #1
   with the symbol #2 yields the set of integers #4}
+\newcommand\intsettoconstraints[0]{\hyperlink{def-intsettoconstraints}{intset\_to\_constraints}}
 \newcommand\approxexprmin[0]{\hyperlink{def-approxexprmin}{\textfunc{approx\_expr\_min}}}
 \newcommand\Proseapproxexprmin[3]{\hyperlink{def-approxexprmin}
   {approximating} the minimal integer in the set of integers represented by the expression #2
@@ -2207,6 +2207,7 @@
 \newcommand\id[0]{\texttt{id}}
 \newcommand\idone[0]{\texttt{id1}}
 \newcommand\ids[0]{\texttt{ids}}
+\newcommand\idsp[0]{\texttt{ids'}}
 \newcommand\idsone[0]{\texttt{ids1}}
 \newcommand\idstwo[0]{\texttt{ids2}}
 \newcommand\idthree[0]{\texttt{id3}}
@@ -2517,8 +2518,9 @@
 \newcommand\vdiff[0]{\texttt{v\_diff}}
 \newcommand\vdir[0]{\texttt{dir}}
 \newcommand\vdirection[0]{\texttt{direction}}
+\newcommand\vdiscarded[0]{\texttt{discarded}}
+\newcommand\vdiscardedp[0]{\texttt{discarded'}}
 \newcommand\vdone[0]{\texttt{d1}}
-\newcommand\vdtwo[0]{\texttt{d2}}
 \newcommand\ve[0]{\texttt{e}}
 \newcommand\vediscriminant[0]{\texttt{e\_discriminant}}
 \newcommand\veminusone[0]{\texttt{e\_minus\_1}}
@@ -2607,6 +2609,7 @@
 \newcommand\vgfour[0]{\texttt{g4}}
 \newcommand\vgfive[0]{\texttt{g5}}
 \newcommand\vh[0]{\texttt{h}}
+\newcommand\vhp[0]{\texttt{h'}}
 \newcommand\vlhsaccess[0]{\texttt{lhs\_access}}
 \newcommand\vlhsaccesses[0]{\texttt{lhs\_accesses}}
 \newcommand\vlhsaccessopt[0]{\texttt{lhs\_access\_opt}}
@@ -2743,6 +2746,7 @@
 \newcommand\vqone[0]{\texttt{q1}}
 \newcommand\vqtwo[0]{\texttt{q2}}
 \newcommand\vr[0]{\texttt{r}}
+\newcommand\vrenameddiscarded[0]{\texttt{renamed\_discarded}}
 \newcommand\vrmrecord[0]{\texttt{rm\_record}}
 \newcommand\vrmrecordnew[0]{\texttt{rm\_record\_new}}
 \newcommand\vrmrecordone[0]{\texttt{rm\_record1}}
@@ -2760,6 +2764,7 @@
 \newcommand\vret[0]{\texttt{ret}}
 \newcommand\vreturntype[0]{\texttt{return\_type}}
 \newcommand\vs[0]{\texttt{s}}
+\newcommand\vsetterarg[0]{\texttt{setter\_arg}}
 \newcommand\vsetterargs[0]{\texttt{setter\_args}}
 \newcommand\vscopeone[0]{\texttt{scope1}}
 \newcommand\vscopetwo[0]{\texttt{scope2}}
@@ -2997,7 +3002,7 @@
 \newcommand\vread[0]{\texttt{read}}
 \newcommand\vmodify[0]{\texttt{modify}}
 \newcommand\vsetter[0]{\texttt{setter}}
-\newcommand\vgetter[0]{\texttt{sgetter}}
+\newcommand\vgetter[0]{\texttt{getter}}
 \newcommand\vcode[0]{\texttt{code}}
 \newcommand\vAbf[0]{\textbf{A}}
 \newcommand\vBbf[0]{\textbf{B}}
@@ -3031,3 +3036,17 @@
 \newcommand\isstatic[0]{\texttt{is\_static}}
 \newcommand\vLone[0]{\texttt{L1}}
 \newcommand\vLtwo[0]{\texttt{L2}}
+\newcommand\symdomsone[0]{\texttt{symdoms1}}
+\newcommand\symdomstwo[0]{\texttt{symdoms1}}
+\newcommand\symdomsonenorm[0]{\texttt{symdoms1\_norm}}
+\newcommand\symdomstwonorm[0]{\texttt{symdoms2\_norm}}
+\newcommand\symdoms[0]{\texttt{symdoms}}
+\newcommand\newsymdoms[0]{\texttt{new\_symdoms}}
+\newcommand\vfinitedomains[0]{\texttt{finite\_domains}}
+\newcommand\cdone[0]{\texttt{cd1}}
+\newcommand\cdtwo[0]{\texttt{cd2}}
+\newcommand\sdone[0]{\texttt{sd1}}
+\newcommand\sdtwo[0]{\texttt{sd2}}
+\newcommand\plf[0]{\texttt{plf}}
+\newcommand\vsapprox[0]{\texttt{s\_approx}}
+\newcommand\intervals[0]{\texttt{intervals}}

@@ -1,12 +1,12 @@
 type MyBV of bits(8) { [5] bitfield };
 
-accessor F() <=> MyBV
+accessor F() <=> v: MyBV
 begin
-  getter begin
+  getter
     return Ones{8} as MyBV;
   end;
 
-  setter = v begin
+  setter
     assert v.bitfield == '0';
   end;
 end;

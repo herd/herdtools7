@@ -93,7 +93,6 @@ val desugar_case_stmt :
 type accessor_pair = {
   getter : stmt;  (** getter body *)
   setter : stmt;  (** setter body *)
-  setter_arg : identifier;  (** name of setter input argument *)
 }
 (** A getter/setter pair *)
 
@@ -102,9 +101,11 @@ val desugar_accessor_pair :
   identifier ->
   (identifier * ty option) list ->
   typed_identifier list ->
+  identifier ->
   ty ->
   accessor_pair ->
   decl list
-(** [desugar_accessor_pair override name params args ty accessor_pair] desugars
-    the accessor pair into two function declarations, with shared [override],
-    [name], [params], [args], and input/return type [ty]. *)
+(** [desugar_accessor_pair override name params args setter_arg ty accessor_pair]
+    desugars the accessor pair into two function declarations, with shared
+    [override], [name], [params], [args], and input/return type [ty].
+    The name of the setter argument is given by [setter_arg]. *)

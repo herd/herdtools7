@@ -1,1 +1,1 @@
-type SubRecord subtypes Record with { };
+type SubRecord subtypes Record with {-};

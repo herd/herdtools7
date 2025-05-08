@@ -1,6 +1,6 @@
-accessor f() <=> integer
+accessor f() <=> v: integer
 begin
-  setter = v begin
+  setter
     pass;
   end;
 end;

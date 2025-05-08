@@ -1,25 +1,25 @@
 var state : integer = 0;
 var called_override = FALSE;
 
-impdef accessor Foo() <=> integer
+impdef accessor Foo() <=> v: integer
 begin
-  getter begin
+  getter
     return state;
   end;
 
-  setter = v begin
+  setter
     state = v;
   end;
 end;
 
-implementation accessor Foo() <=> integer
+implementation accessor Foo() <=> v: integer
 begin
-  getter begin
+  getter
     called_override = TRUE;
     return state;
   end;
 
-  setter = v begin
+  setter
     state = 42;
   end;
 end;

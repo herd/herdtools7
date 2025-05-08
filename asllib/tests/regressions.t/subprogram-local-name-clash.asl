@@ -1,10 +1,10 @@
-accessor X() <=> integer
+accessor X() <=> v: integer
 begin
-  getter begin
+  getter
     return 0;
   end;
 
-  setter = v begin
+  setter
     pass;
   end;
 end;

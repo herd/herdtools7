@@ -1,21 +1,21 @@
-accessor g0_bits() <=> bits(4)
+accessor g0_bits() <=> value_in: bits(4)
 begin
-  getter begin
+  getter
     return '1000';
   end;
 
-  setter = value_in begin
+  setter
     Unreachable();
   end;
 end;
 
-accessor g1_bits(p: integer) <=> bits(4)
+accessor g1_bits(p: integer) <=> value_in: bits(4)
 begin
-  getter begin
+  getter
     return '1000'[p, 2:0];
   end;
 
-  setter = value_in begin
+  setter
     Unreachable();
   end;
 end;
@@ -39,7 +39,7 @@ begin
   // E_Pattern 1: the condition in side the if is a pattern.
   if (t2.item0 IN {'1110'}) then
     // E_Record 2: an exception construction.
-    throw except{};
+    throw except{-};
   end;
 
   return 0;

@@ -12,7 +12,7 @@ type Bonga of exception;
 func g() => integer
 begin
   try
-    throw Bonga {};
+    throw Bonga {-};
   catch
     when Bonga =>
       let coucou = 11 ;

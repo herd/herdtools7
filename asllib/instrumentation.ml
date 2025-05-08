@@ -480,7 +480,8 @@ module TypingRule = struct
     | ShouldRememberImmutableExpression
     | AddImmutableExpression
     | SymIntSetSubset
-    | SymDomIsSubset
+    | SymdomsSubset
+    | SymdomsSubsetUnions
     | ApproxConstraint
     | ApproxConstraints
     | LEBitSlice
@@ -671,7 +672,8 @@ module TypingRule = struct
     | ShouldRememberImmutableExpression -> "ShouldRememberImmutableExpression"
     | AddImmutableExpression -> "AddImmutableExpression"
     | SymIntSetSubset -> "SymIntSetSubset"
-    | SymDomIsSubset -> "SymDomIsSubset"
+    | SymdomsSubset -> "SymdomsSubset"
+    | SymdomsSubsetUnions -> "SymdomsSubsetUnions"
     | ApproxConstraint -> "ApproxConstraint"
     | ApproxConstraints -> "ApproxConstraints"
     | LEBitSlice -> "LEBitSlice"
@@ -846,7 +848,8 @@ module TypingRule = struct
       ShouldRememberImmutableExpression;
       AddImmutableExpression;
       SymIntSetSubset;
-      SymDomIsSubset;
+      SymdomsSubset;
+      SymdomsSubsetUnions;
       ApproxConstraint;
       ApproxConstraints;
       LEBitSlice;

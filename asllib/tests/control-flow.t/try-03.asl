@@ -1,11 +1,11 @@
-type E of exception {};
+type E of exception {-};
 
 func test0 () => integer
 begin
   try return 0;
   catch
     when E => return 1;
-    otherwise => throw E {};
+    otherwise => throw E {-};
   end;
 end;
 
