@@ -5,6 +5,7 @@
 (executables
  (names uoaim)
  (public_names uoaim7)
+ (optional)
  (preprocess
    (per_module
      ((action (system "pa_ocaml %{input-file}")) Uoaim)))
