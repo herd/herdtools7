@@ -75,7 +75,7 @@ val get_structure : env -> ty -> ty
 (** The structure of a type is the primitive type that can hold the same
     values. *)
 
-val parameterized_ty : identifier -> ty
+val parameterized_ty : loc:'a annotated -> identifier -> ty
 (** Builds an parameterized integer type from a declared variable. *)
 
 val to_well_constrained : ty -> ty
@@ -116,7 +116,7 @@ val type_clashes : env -> ty -> ty -> bool
 val subprogram_clashes : env -> func -> func -> bool
 (** Subprogram clashing relation. *)
 
-val lowest_common_ancestor : env -> ty -> ty -> ty option
+val lowest_common_ancestor : loc:'a annotated -> env -> ty -> ty -> ty option
 (** Lowest common ancestor. *)
 
 val type_equal : env -> ty -> ty -> bool

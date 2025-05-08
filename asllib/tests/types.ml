@@ -134,12 +134,12 @@ let lca_examples () =
   let bits_4 = !!(T_Bits (!$4, [])) in
   let bits_2 = !!(T_Bits (!$2, [])) in
 
-  assert (lowest_common_ancestor empty_env bits_4 bits_2 = None);
+  assert (lowest_common_ancestor ~loc:bits_4 empty_env bits_4 bits_2 = None);
 
   let integer_4 = integer_exact !$4 in
   let integer_2 = integer_exact !$2 in
 
-  let lca = lowest_common_ancestor empty_env integer_4 integer_2 in
+  let lca = lowest_common_ancestor ~loc:bits_4 empty_env integer_4 integer_2 in
   assert (Option.is_some lca);
   ()
 
