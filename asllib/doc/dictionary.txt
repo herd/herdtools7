@@ -41,6 +41,7 @@ added
 adding
 addition
 additional
+additions
 address
 addressed
 adds
@@ -1202,6 +1203,7 @@ monomial
 monomials
 more
 most
+move
 multiple
 multiplication
 multiplied
@@ -1386,6 +1388,7 @@ performing
 performs
 permission
 permit
+permits
 permitted
 permutation
 persists
@@ -1529,6 +1532,7 @@ recommended
 record
 recorded
 records
+recovered
 recurse
 recursion
 recursive
@@ -1884,6 +1888,7 @@ symbols
 syntactic
 syntactically
 syntax
+syntaxes
 system
 systems
 tab
