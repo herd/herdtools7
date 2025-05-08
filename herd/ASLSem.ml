@@ -433,7 +433,7 @@ module Make (C : Config) = struct
     let set_field name v record =
       M.op (Op.ArchOp (ASLOp.SetField name)) record (freeze v)
 
-    let read_from_bitvector positions bvs =
+    let read_from_bitvector ~loc:_ positions bvs =
       let positions = Asllib.ASTUtils.slices_to_positions v_as_int positions in
       let arch_op1 = ASLOp.BVSlice positions in
       M.op1 (Op.ArchOp1 arch_op1) bvs

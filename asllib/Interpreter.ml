@@ -111,8 +111,8 @@ module Make (B : Backend.S) (C : Config) = struct
   (*****************************************************************************)
 
   let one = B.v_of_int 1
-  let true' = E_Literal (L_Bool true) |> add_dummy_annotation
-  let false' = E_Literal (L_Bool false) |> add_dummy_annotation
+  let true_at ~loc = E_Literal (L_Bool true) |> add_pos_from loc
+  let false_at ~loc = E_Literal (L_Bool false) |> add_pos_from loc
 
   (* Return *)
   (* ------ *)
@@ -487,19 +487,19 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalBinopAnd *)
     | E_Binop (`BAND, e1, e2) ->
         (* if e1 then e2 else false *)
-        E_Cond (e1, e2, false')
+        E_Cond (e1, e2, false_at ~loc:e)
         |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopAnd
     (* End *)
     (* Begin EvalBinopOr *)
     | E_Binop (`BOR, e1, e2) ->
         (* if e1 then true else e2 *)
-        E_Cond (e1, true', e2)
+        E_Cond (e1, true_at ~loc:e, e2)
         |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopOr
     (* End *)
     (* Begin EvalBinopImpl *)
     | E_Binop (`IMPL, e1, e2) ->
         (* if e1 then e2 else true *)
-        E_Cond (e1, e2, true')
+        E_Cond (e1, e2, true_at ~loc:e)
         |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopImpl
     (* End *)
     (* Begin EvalBinop *)
@@ -538,7 +538,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let*^ m_bv, env1 = eval_expr env e_bv in
         let*^ m_positions, new_env = eval_slices env1 slices in
         let* v_bv = m_bv and* positions = m_positions in
-        let* v = B.read_from_bitvector positions v_bv in
+        let* v = B.read_from_bitvector ~loc:e positions v_bv in
         return_normal (v, new_env) |: SemanticsRule.ESlice
     (* End *)
     (* Begin EvalECall *)
@@ -841,7 +841,9 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         let*^ rm_record, env1 = expr_of_lexpr le_record |> eval_expr env in
         let onwrite _ m = m in
-        let m2 = assign_bitvector_fields onwrite m rm_record slices fields in
+        let m2 =
+          assign_bitvector_fields ~loc:le onwrite m rm_record slices fields
+        in
         eval_lexpr ver le_record env1 m2 |: SemanticsRule.LESetFields
     (* End *)
     (* Begin EvalLESetCollectionFields *)
@@ -862,22 +864,23 @@ module Make (B : Backend.S) (C : Config) = struct
           return v
         in
         let* rv_record2 =
-          assign_bitvector_fields onwrite m rv_record slices fieldnames
+          assign_bitvector_fields ~loc:le onwrite m rv_record slices fieldnames
         in
         let new_env = IEnv.assign_global base rv_record2 env in
         return_normal new_env
   (* End *)
 
   (* Begin AssignBitvectorFields *)
-  and assign_bitvector_fields onwrite mbitvector mrecord slices fieldnames =
+  and assign_bitvector_fields ~loc onwrite mbitvector mrecord slices fieldnames
+      =
     match (slices, fieldnames) with
     | (i1, i2) :: slices, field_name :: fieldnames ->
         let slice = [ (B.v_of_int i1, B.v_of_int i2) ] in
         let* v_record_slices =
-          mbitvector >>= B.read_from_bitvector slice |> onwrite field_name
+          mbitvector >>= B.read_from_bitvector ~loc slice |> onwrite field_name
         and* rv_record = mrecord in
         let m2 = B.set_field field_name v_record_slices rv_record in
-        assign_bitvector_fields onwrite mbitvector m2 slices fieldnames
+        assign_bitvector_fields ~loc onwrite mbitvector m2 slices fieldnames
     | [], [] -> mrecord
     | [], _ :: _ | _ :: _, [] -> assert false
   (* End *)
