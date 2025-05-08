@@ -1390,7 +1390,6 @@
 \newcommand\compareidentifier[0]{\hyperlink{def-compareidentifier}{\textfunc{compare\_identifier}}}
 
 \newcommand\domainsubset[0]{\hyperlink{def-domainsubset}{\textfunc{domain\_subset}}}
-\newcommand\symdomainsubset[0]{\hyperlink{def-symdomainsubset}{\textfunc{sym\_domain\_subset}}}
 
 \newcommand\toir[0]{\hyperlink{def-toir}{\textfunc{to\_ir}}}
 \newcommand\ProseOrTypeErrorOrCannotBeTransformed[0]{\ProseTerminateAs{\CannotBeTransformed,\TypeErrorConfig}}
@@ -1912,23 +1911,22 @@
 \newcommand\inttobits[0]{\hyperlink{def-inttobits}{\textfunc{int\_to\_bits}}}
 
 % Symbolic domain subsumption
-\newcommand\symdom[0]{\hyperlink{def-symdom}{\textsf{sym\_dom}}}
-\newcommand\syntax[0]{\hyperlink{def-syntax}{\textsf{syntax}}}
+\newcommand\symdom[0]{\hyperlink{def-symdom}{\textsf{symdom}}}
+\newcommand\symdomortop[0]{\hyperlink{def-symdomortop}{\textsf{symdom\_or\_top}}}
 
 \newcommand\Finite[0]{\hyperlink{def-finite}{\textsf{Finite}}}
 \newcommand\Top[0]{\hyperlink{def-top}{\textsf{Top}}}
-\newcommand\FromSyntax[0]{\hyperlink{def-fromsymtax}{\textsf{FromSyntax}}}
+\newcommand\ConstrainedDom[0]{\hyperlink{def-constraineddom}{\textsf{ConstrainedDom}}}
+\newcommand\Subdomains[0]{\hyperlink{def-subdomains}{\textsf{Subdomains}}}
 
 \newcommand\symdomoftype[0]{\hyperlink{def-symdomoftype}{\textfunc{symdom\_of\_type}}}
-\newcommand\symdomofexpr[0]{\hyperlink{def-symdomofexpr}{\textfunc{symdom\_of\_expr}}}
-\newcommand\symdomofwidth[0]{\hyperlink{def-symdomofwidth}{\textfunc{symdom\_of\_width}}}
-\newcommand\symdomofliteral[0]{\hyperlink{def-symdomofliteral}{\textfunc{symdom\_of\_literal}}}
-\newcommand\intsetofintconstraints[0]{\hyperlink{def-intsetofintconstraintse}{\textfunc{intset\_of\_intconstraints}}}
-\newcommand\symdomissubset[0]{\hyperlink{def-symdomissubset}{\textfunc{symdom\_is\_subset}}}
-\newcommand\constrainttointset[0]{\hyperlink{def-constrainttointset}{\textfunc{constraint\_to\_intset}}}
-\newcommand\normalizetoint[0]{\hyperlink{def-normalizetoint}{\textfunc{normalize\_to\_int}}}
-\newcommand\intsetop[0]{\hyperlink{def-intsetop}{\textfunc{intset\_op}}}
-\newcommand\intsettointconstraints[0]{\hyperlink{def-intsettointconstraints}{\textfunc{int\_set\_to\_int\_constraints}}}
+\newcommand\symdomofwidthexpr[0]{\hyperlink{def-symdomofwidthexpr}{\textfunc{symdom\_of\_width\_expr}}}
+\newcommand\symdomofconstraint[0]{\hyperlink{def-symdomofconstraint}{\textfunc{symdom\_of\_constraint}}}
+\newcommand\symdomsubsettest[0]{\hyperlink{def-symdomsubsettest}{\textfunc{symdom\_subset\_test}}}
+\newcommand\symdomsubset[0]{\hyperlink{def-symdomsubset}{\textfunc{symdom\_subset}}}
+\newcommand\symdomsubsetunions[0]{\hyperlink{def-symdomsubsetunions}{\textfunc{symdom\_subset\_unions}}}
+\newcommand\symdomnormalize[0]{\hyperlink{def-symdomnormalize}{\textfunc{symdom\_normalize}}}
+\newcommand\symdomeval[0]{\hyperlink{def-symdomeval}{\textfunc{symdom\_eval}}}
 \newcommand\Under[0]{\hyperlink{def-Under}{\textsf{Under}}}
 \newcommand\Over[0]{\hyperlink{def-Over}{\textsf{Over}}}
 \newcommand\approxconstraints[0]{\hyperlink{def-approxconstraints}{\textfunc{approx\_constraints}}}
@@ -1949,6 +1947,7 @@
 \newcommand\Proseapproxexpr[4]{\hyperlink{def-approxexpr}
   {approximating} the set integers represented by the expression #3 in the static environment #1
   with the symbol #2 yields the set of integers #4}
+\newcommand\intsettoconstraints[0]{\hyperlink{def-intsettoconstraints}{intset\_to\_constraints}}
 \newcommand\approxexprmin[0]{\hyperlink{def-approxexprmin}{\textfunc{approx\_expr\_min}}}
 \newcommand\Proseapproxexprmin[3]{\hyperlink{def-approxexprmin}
   {approximating} the minimal integer in the set of integers represented by the expression #2
@@ -2522,7 +2521,6 @@
 \newcommand\vdiscarded[0]{\texttt{discarded}}
 \newcommand\vdiscardedp[0]{\texttt{discarded'}}
 \newcommand\vdone[0]{\texttt{d1}}
-\newcommand\vdtwo[0]{\texttt{d2}}
 \newcommand\ve[0]{\texttt{e}}
 \newcommand\vediscriminant[0]{\texttt{e\_discriminant}}
 \newcommand\veminusone[0]{\texttt{e\_minus\_1}}
@@ -3038,5 +3036,17 @@
 \newcommand\isstatic[0]{\texttt{is\_static}}
 \newcommand\vLone[0]{\texttt{L1}}
 \newcommand\vLtwo[0]{\texttt{L2}}
+\newcommand\symdomsone[0]{\texttt{symdoms1}}
+\newcommand\symdomstwo[0]{\texttt{symdoms1}}
+\newcommand\symdomsonenorm[0]{\texttt{symdoms1\_norm}}
+\newcommand\symdomstwonorm[0]{\texttt{symdoms2\_norm}}
+\newcommand\symdoms[0]{\texttt{symdoms}}
+\newcommand\newsymdoms[0]{\texttt{new\_symdoms}}
+\newcommand\vfinitedomains[0]{\texttt{finite\_domains}}
+\newcommand\cdone[0]{\texttt{cd1}}
+\newcommand\cdtwo[0]{\texttt{cd2}}
+\newcommand\sdone[0]{\texttt{sd1}}
+\newcommand\sdtwo[0]{\texttt{sd2}}
 \newcommand\plf[0]{\texttt{plf}}
 \newcommand\vsapprox[0]{\texttt{s\_approx}}
+\newcommand\intervals[0]{\texttt{intervals}}
