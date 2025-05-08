@@ -193,7 +193,7 @@ module NativeBackend (C : Config) = struct
       positions
     |> slices_to_positions Fun.id
 
-  let read_from_bitvector slices bv =
+  let read_from_bitvector ~loc slices bv =
     let positions = slices_to_positions slices in
     let max_pos = List.fold_left int_max 0 positions in
     let () =
@@ -206,7 +206,7 @@ module NativeBackend (C : Config) = struct
       | NV_Literal (L_BitVector bv) when Bitvector.length bv > max_pos -> bv
       | NV_Literal (L_Int i) -> Bitvector.of_z (max_pos + 1) i
       | _ ->
-          let ( ~! ) = add_dummy_annotation in
+          let ( ~! ) = add_pos_from loc in
           let t = integer_range zero_expr (expr_of_int max_pos) in
           mismatch_type bv [ T_Bits (~!(E_ATC (~!(E_Var "-"), t)), []) ]
     in
