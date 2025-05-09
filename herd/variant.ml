@@ -113,7 +113,9 @@ type t =
   (* Accept cyclic equation sets as being solvable *)
   | OOTA
 (* Pointer Authentication Code *)
-  | Pac
+  | PacVersion of [`PAuth1|`PAuth2]
+(* Disable a key for Pointer Authentication Code *)
+  | NoPacKey of PAC.key
 (* Fault generation with Pointer authentication code *)
   | FPac
 (* Allow to use pac(pac(...)) using the XOR of two pac fields *)
@@ -129,7 +131,8 @@ let tags =
     "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"; "strict";
     "warn"; "S128"; "ASLType+Warn";    "ASLType+Silence"; "ASLType+Check";
     "ASL+Experimental"; "ASL+AArch64+UDF"; "telechat"; "OldSolver"; "oota";
-    "pac"; "fpac"; "const-pac-field";]
+    "pauth1"; "pauth2"; "no-key-da"; "no-key-db"; "no-key-ia"; "no-key-ib";
+    "fpac"; "const-pac-field"]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -192,7 +195,12 @@ let parse s = match Misc.lowercase s with
 | "nv2" | "NV2" -> Some NV2
 | "oldsolver" -> Some OldSolver
 | "oota" -> Some OOTA
-| "pac" -> Some Pac
+| "pauth1" -> Some (PacVersion `PAuth1)
+| "pauth2" -> Some (PacVersion `PAuth2)
+| "no-key-da" -> Some (NoPacKey PAC.DA)
+| "no-key-db" -> Some (NoPacKey PAC.DB)
+| "no-key-ia" -> Some (NoPacKey PAC.IA)
+| "no-key-ib" -> Some (NoPacKey PAC.IB)
 | "const-pac-field" -> Some ConstPacField
 | "fpac" -> Some FPac
 | s ->
@@ -297,7 +305,12 @@ let pp = function
   | NV2 -> "NV2"
   | OldSolver -> "OldSolver"
   | OOTA -> "oota"
-  | Pac -> "pac"
+  | PacVersion `PAuth1 -> "pauth1"
+  | PacVersion `PAuth2 -> "pauth2"
+  | NoPacKey PAC.DA -> "no-key-da"
+  | NoPacKey PAC.DB -> "no-key-db"
+  | NoPacKey PAC.IA -> "no-key-ia"
+  | NoPacKey PAC.IB -> "no-key-ib"
   | ConstPacField -> "const-pac-field"
   | FPac -> "fpac"
 

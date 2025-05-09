@@ -1,0 +1,13 @@
+AArch64 A24
+Variant=pauth2
+{
+  0:x0=x; 0:x1=x; int64_t 0:x2=0;
+}
+P0;
+pacdza x0;
+autdza x1;
+cmp x0,x1;
+b.ne end;
+mov x2,#1;
+end:;
+forall (0:x2=1)

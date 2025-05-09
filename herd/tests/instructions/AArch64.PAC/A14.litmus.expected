@@ -1,10 +1,10 @@
 Test A14 Required
 States 1
- Fault(P0,x,MMU:Translation);
+0:X3=0;
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (fault(P0))
+Condition forall (0:X3=0)
 Observation A14 Always 1 0
-Hash=8c780e41c667f762524255b6e643b85e
+Hash=da2e7abd18ccea5185f4ac69fbffeb8c
 

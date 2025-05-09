@@ -1,10 +1,10 @@
 Test A04 Required
 States 1
- Fault(P0,x,MMU:Translation);
+0:X1=42;  ~Fault(P0);
 Ok
 Witnesses
-Positive: 3 Negative: 0
-Condition forall (fault(P0,MMU:Translation))
-Observation A04 Always 3 0
-Hash=5b3f0aae55a8e35f7f951827036312fc
+Positive: 1 Negative: 0
+Condition forall (0:X1=42 /\ not (fault(P0)))
+Observation A04 Always 1 0
+Hash=1cfeebc48d4f6b42e548bb0c8b6d859d
 

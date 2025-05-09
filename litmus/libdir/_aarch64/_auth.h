@@ -20,10 +20,13 @@
 
 
 // Initialize pointer authentication
-void init_pauth(void);
+void init_pauth(int enable_da, int enable_db, int enable_ia, int enable_ib);
+
+// Check if `FEAT_Pauth` is implemented but not `FEAT_Pauth2`
+int check_pauth1_variant(char* tname);
 
 // Check if `FEAT_Pauth2` is implemented
-int check_pac_variant(char* tname);
+int check_pauth2_variant(char* tname);
 
 // Check if `FEAT_FPAC` is implemented iff `present`:
 // FPAC change the way `aut*` instructions are executed in case of failure

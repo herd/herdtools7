@@ -1,0 +1,10 @@
+Test A26 Required
+States 4
+0:X1=42;  ~Fault(P0);
+Ok
+Witnesses
+Positive: 4 Negative: 0
+Condition forall (0:X1=42 /\ not (fault(P0)))
+Observation A26 Always 4 0
+Hash=20432139c7f9309793b85dab94d6679c
+

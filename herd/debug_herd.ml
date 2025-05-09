@@ -18,6 +18,7 @@
 
 type t = {
     solver : bool ;
+    pred_solver : bool ;
     lexer : bool ;
     top : bool ;
     mem : bool ;
@@ -38,6 +39,7 @@ type t = {
 let tags =
 [
   "solver";
+  "pred_solver";
   "lexer";
   "top";
   "mem";
@@ -58,6 +60,7 @@ let tags =
 let none =
   {
    solver = false ;
+   pred_solver = false ;
    lexer = false ;
    top = false ;
    mem = false ;
@@ -77,6 +80,7 @@ let none =
 
 let parse t tag = match tag with
   | "solver" -> Some { t with solver = true; }
+  | "pred-solver" -> Some { t with pred_solver = true; }
   | "lexer" -> Some { t with lexer = true; }
   | "top" -> Some { t with top = true; }
   | "mem" -> Some { t with mem = true; }
@@ -88,7 +92,7 @@ let parse t tag = match tag with
   | "mixed" -> Some { t with mixed = true ;}
   | "files"|"file" -> Some { t with files = true ;}
   | "timeout" -> Some { t with timeout = true ;}
-  | "pac" -> Some { t with pac = true }
+  | "pac" -> Some { t with pac = true; }
   | "exception"|"exc" -> Some { t with exc = true ;}
   | "profile_cat" -> Some { t with profile_cat = true }
   | "profile_asl" -> Some { t with profile_asl = true }

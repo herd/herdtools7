@@ -157,7 +157,7 @@ module Make(A:Arch_herd.S) =
       List.iter (fun (_,(_,v)) ->
         match v with
         | A.V.Val (Constant.Label (p,s)) -> begin
-          if not (Label.Map.mem s prog) then 
+          if not (Label.Map.mem s prog) then
             Warn.user_error
               "Label %s not found on P%d, yet it is used in the initialization list" s p end
         | _ -> ()) init ;

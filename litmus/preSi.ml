@@ -67,6 +67,14 @@ module Make
        : sig
       val dump : Name.t -> T.t -> unit
     end = struct
+  let key_disable key =
+    Cfg.variant (Variant_litmus.NoPacKey key)
+  let pauth1 =
+    Cfg.variant (Variant_litmus.PacVersion `PAuth1)
+  let pauth2 =
+    Cfg.variant (Variant_litmus.PacVersion `PAuth2)
+  let pac =
+    pauth1 || pauth2
 
 (* Non valid mode for presi *)
   let () =
@@ -74,12 +82,29 @@ module Make
       Warn.user_error "Switches `-variant NoInit` and `-mode (presi|kvm)` are not compatible"
 
   let () =
-    if Cfg.variant Variant_litmus.FPac && not (Cfg.variant Variant_litmus.Pac) then
-      Warn.user_error "\"fpac\" variant require \"pac\" variant"
+    if Cfg.variant Variant_litmus.FPac && not pauth2 then
+      Warn.user_error "\"fpac\" variant require \"pauth2\" variant"
 
   let () =
-    if Cfg.variant Variant_litmus.ConstPacField && not (Cfg.variant Variant_litmus.Pac) then
-      Warn.user_error "\"const-pac-field\" variant require \"pac\" variant"
+    if Cfg.variant Variant_litmus.ConstPacField && not pauth2 then
+      Warn.user_error "\"const-pac-field\" variant require \"pauth2\" variant"
+
+  let () =
+    if pauth1 && pauth2 then
+      let msg =
+        "\"pauth1\" and \"pauth2\" variants are incompatible, " ^
+        "\"pauth1\" is suppose to represent \"FEAT_PAuth\" without " ^
+        "\"FEAT_PAuth2\", but \"pauth2\" is suppose to represent " ^
+        "\"FEAT_PAuth\" and \"FEAT_PAuth2\""
+      in Warn.user_error "%s" msg
+
+  let () =
+    let no_key_da = key_disable PAC.DA in
+    let no_key_db = key_disable PAC.DB in
+    let no_key_ia = key_disable PAC.IA in
+    let no_key_ib = key_disable PAC.IB in
+    if (no_key_da || no_key_db || no_key_ia || no_key_ib) && not (pauth1 || pauth2) then
+      Warn.user_error "\"no-key-*\" variants require \"pauth1\" or \"pauth2\" variants"
 
   module Insert =
       ObjUtil.Insert
@@ -265,7 +290,7 @@ module Make
             end
           end
         end ;
-        if Cfg.variant Variant_litmus.Pac then begin
+        if pac then begin
           O.o "#include \"auth.h\""
         end;
         O.o "" ;
@@ -511,7 +536,7 @@ module Make
           let no_ok,no_no =
             List.partition
               (ProcsUser.is procs_user)
-              no in             
+              no in
           begin match ok@no_ok with
           | [] ->
              O.o "static void set_fault_vector(int role) { }"
@@ -853,7 +878,7 @@ module Make
               end in
             begin
               O.o "static int idx_addr(intmax_t *v_addr,vars_t *p) {" ;
-              if Cfg.variant Variant_litmus.Pac then
+              if pac then
                 O.oi "v_addr = (intmax_t*) strip_pauth_data((void*) v_addr);" ;
               begin match test.T.globals with
               | _::_ when Cfg.is_kvm ->
@@ -2052,8 +2077,12 @@ module Make
         O.o "" ;
         O.f "static void %szyva(void *_a) {" (if Cfg.is_kvm then "" else "*") ;
         if Cfg.is_kvm then begin
-            if Cfg.variant Variant_litmus.Pac then
-              O.oi "init_pauth();" ;
+            if pac then
+              let da = if key_disable PAC.DA then "0" else "1"
+              and db = if key_disable PAC.DB then "0" else "1"
+              and ia = if key_disable PAC.IA then "0" else "1"
+              and ib = if key_disable PAC.IB then "0" else "1" in
+              O.fi "init_pauth(%s,%s,%s,%s);" da db ia ib ;
             O.oi "int id = smp_processor_id();" ;
             O.oi "if (id >= AVAIL) return;" ;
             O.oi "zyva_t *a = (zyva_t*)_a + id;" ;
@@ -2213,8 +2242,10 @@ module Make
         O.o "static int feature_check(void) {" ;
         if do_self then
           O.oi "cache_line_size = getcachelinesize();" ;
-        if Cfg.variant Variant_litmus.Pac then begin
-          O.fi "if (!check_pac_variant(%S)) return 0;" doc.Name.name;
+        if pac then begin
+          if pauth1
+          then O.fi "if (!check_pauth1_variant(%S)) return 0;" doc.Name.name
+          else O.fi "if (!check_pauth2_variant(%S)) return 0;" doc.Name.name;
           let expect_fpac =
             if Cfg.variant Variant_litmus.FPac then "1" else "0" in
           O.fi "if (!check_fpac_variant(%S,%s)) return 0;" doc.Name.name expect_fpac

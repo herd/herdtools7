@@ -1,9 +1,16 @@
 AArch64 A16
-Variant=pac,fpac,const-pac-field
-
-{ 0:x0=x; int64_t x=42; int64_t 0:x1=43 }
-
-P0            ;
-  str x1,[x0] ;
-forall
-  ( ~Fault(P0, MMU:Translation) /\ [x]=43 )
+Variant=pauth1
+{
+  0:x0=x; int64_t 0:x1=53; 0:x2=x; int64_t 0:x3=42; int64_t 0:x4=0;
+  1:x0=x; int64_t 1:x1=53;
+  2:x0=x; int64_t 2:x1=42;
+}
+P0         | P1          | P2          ;
+autda x0,x1| pacda x0,x1 | pacdb x0,x1 ;
+autdb x2,x3| ldr x2,[x0] | ldr x2,[x0] ;
+cmp x0,x2  |             |             ;
+b.eq end   |             |             ;
+mov x4,#1  |             |             ;
+end:       |             |             ;
+forall (0:x4=1 \/ ~Fault(P1,MMU:Translation) \/ ~Fault(P2,MMU:Translation))
+(* Check that error-code(x,A) != error-code(x,B) *)
