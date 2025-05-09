@@ -39,6 +39,9 @@ module type S = sig
   val same_oa : t -> t -> bool
 
   (* boolean arguments are AArch64 specific *)
+  val readable : bool -> t -> bool
+
+  (* boolean arguments are AArch64 specific *)
   val writable : bool -> bool -> t -> bool
 
   (* Attributes *)
@@ -50,6 +53,8 @@ module type S = sig
   val dump_pack : (string -> string) -> t -> string
   val as_physical : t -> string option
   val as_flags : t -> string option
+  val attrs_as_kvm_symbols : t -> string list
+  val init_needs_cmo : t -> t list -> bool
 end
 
 module No : S
