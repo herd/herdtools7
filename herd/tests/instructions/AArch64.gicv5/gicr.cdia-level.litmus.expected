@@ -1,0 +1,11 @@
+Test gicr.cdia-level Required
+States 2
+0:X1=(valid:0); [INTID(A)]=(pending:1, affinity:P0, handling_mode:level);
+0:X1=(intid:A, valid:1); [INTID(A)]=(pending:1, active:1, affinity:P0, handling_mode:level);
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall (0:X1=(valid:0) \/ [INTID(A)]=(pending:1, active:1, affinity:P0, handling_mode:level))
+Observation gicr.cdia-level Always 2 0
+Hash=3c4a551138db1d20e73cfb076bfacd27
+

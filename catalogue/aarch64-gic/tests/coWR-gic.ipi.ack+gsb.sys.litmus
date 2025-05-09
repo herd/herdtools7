@@ -1,0 +1,15 @@
+AArch64 coWR-gic.ipi.ack+gsb.sys
+{
+ [INTID(A)]=(enabled:1, pending:1, affinity:P0);
+ 0:X0=gicval_t:(intid:A, pending:1); 0:X1=gicval_t:(intid:A);
+}
+ P0                        ;
+ GIC     CDPEND, X0        ;
+ GSB     SYS               ;
+ GICR    X2, CDIA          ;
+ GIC     CDRCFG, X1        ;
+ ISB                       ;
+ MRS     X3, ICC_ICSR_EL1  ;
+
+exists(0:X2=gicval_t:(valid:1) /\ 0:X3=intval_t:(pending:1, active:1))
+

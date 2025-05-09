@@ -2025,6 +2025,9 @@ module Make(V:Constant.S)(C:Config) =
           outputs = rD;
           reg_env = add_v V64 (rD@rN)
         }::k
+    | I_GIC _| I_GICR _ ->
+        Warn.fatal "No litmus output for instruction %s"
+          (dump_instruction ins)
 
     let no_tr lbl = lbl
     let branch_neq r i lab k = cmpk V32 r i::bcc no_tr NE lab::k

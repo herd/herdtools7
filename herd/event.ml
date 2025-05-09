@@ -89,6 +89,7 @@ val same_instance : event -> event -> bool
   val is_ifetch : event -> bool
 (* Page table access *)
   val is_pt : event -> bool
+  val is_gic : event -> bool
   val is_explicit : event -> bool
   val is_not_explicit : event -> bool
 (* Tag memory access *)
@@ -113,6 +114,7 @@ val same_instance : event -> event -> bool
   val is_reg_store_any : event -> bool
   val is_reg_load_any : event -> bool
   val is_reg_any : event -> bool
+  val is_sysreg : event -> bool
 
 (* Store/Load to memory or register *)
   val is_store : event -> bool
@@ -674,6 +676,13 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let is_pt e = match Act.location_of e.action with
       | Some (A.Location_global (V.Val c)) -> Constant.is_pt c
       | _ -> false
+
+    let is_gic e =
+      let open Constant in
+      match Act.location_of e.action with
+      | Some (A.Location_global (V.Val cst)) -> Constant.is_intid cst
+      | _ -> false
+
     let is_explicit e = Act.is_explicit e.action
     let is_not_explicit e = Act.is_not_explicit e.action
     let is_tag e = Act.is_tag e.action
@@ -703,6 +712,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let is_reg_any e = Act.is_reg_any e.action
     let is_reg_store_any e = Act.is_reg_store_any e.action
     let is_reg_load_any e = Act.is_reg_load_any e.action
+    let is_sysreg e = Act.is_sysreg e.action
 
 (* Compatible events ie accesses of the same category *)
     let compatible_accesses e1 e2 =

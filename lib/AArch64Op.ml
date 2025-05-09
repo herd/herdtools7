@@ -26,6 +26,21 @@ type 'op1 unop =
   | Tagged (* get Tag attribute from PTE entry *)
   | CheckCanonical (* Check is a virtual address is canonical *)
   | MakeCanonical (* Make a virtual address canonical *)
+  | GICGetIntid (* Get the INTID location from an IntidUpdateVal *)
+  | GICGetField of string (* Get the the update fields from an IntidUpdateVal *)
+  | GICSetIntid
+  | IntidSetAct of bool
+  | IntidGetAct
+  | IntidSetPend of bool
+  | IntidGetPend
+  | IntidSetEnabled of bool
+  | IntidGetEnabled
+  | IntidSetPri of int
+  | IntidGetPri
+  | IntidSetAff of int
+  | IntidGetAff
+  | IntidSetHM of int
+  | IntidIsEdge
   | Extra1 of 'op1
 
 type 'op binop =
@@ -42,6 +57,7 @@ module
     and type 'a constr_op = 'a binop
     and type scalar = S.t
     and type pteval = AArch64PteVal.t
+    and type intidval = AArch64IntidVal.t
     and type instr = AArch64Base.instruction
   = struct
 
@@ -72,19 +88,35 @@ module
       | Tagged -> "Tagged"
       | CheckCanonical -> "CheckCanonical"
       | MakeCanonical -> "MakeCanonical"
+      | GICGetIntid -> "GICGetIntid"
+      | GICGetField s -> "GICGetField:" ^ s
+      | GICSetIntid -> "GICSetIntid"
+      | IntidSetAct v -> "IntidSetAct:" ^ (string_of_bool v)
+      | IntidGetAct -> "IntidGetAct"
+      | IntidSetPend v -> "IntidSetPend:" ^ (string_of_bool v)
+      | IntidGetPend -> "IntidGetPend"
+      | IntidSetEnabled v -> "IntidSetEnabled:" ^ (string_of_bool v)
+      | IntidGetEnabled -> "IntidGetEnabled"
+      | IntidSetPri v -> "IntidSetPri:" ^ (string_of_int v)
+      | IntidGetPri -> "IntidGetPri"
+      | IntidSetAff v -> "IntidSetAff:" ^ (string_of_int v)
+      | IntidGetAff -> "IntidGetAff"
+      | IntidSetHM v -> "IntidSetHM:" ^ (string_of_int v)
+      | IntidIsEdge -> "IntidIsEdge"
       | Extra1 op1 -> Extra.pp_op1 hexa op1
 
     type scalar = S.t
     type pteval = AArch64PteVal.t
+    type intidval = AArch64IntidVal.t
     type instr = AArch64Base.instruction
-    type cst = (scalar,pteval,instr) Constant.t
+    type cst = (scalar,pteval,intidval,instr) Constant.t
 
     let pp_cst hexa v =
       let module InstrPP = AArch64Base.MakePP(struct
         let is_morello = true
       end) in
       Constant.pp (S.pp hexa) (AArch64PteVal.pp hexa)
-      (InstrPP.dump_instruction) v
+        (AArch64IntidVal.pp) (InstrPP.dump_instruction) v
 
     open AArch64PteVal
 
@@ -140,9 +172,93 @@ module
       | PteVal {oa;_} -> Some (Symbolic (oa2symbol oa))
       | _ -> None
 
+    let op_get_intid_update_val op = function
+      | Constant.IntidUpdateVal v -> Some (op v)
+      | _ -> None
+
+    let get_gicintid = op_get_intid_update_val
+        (fun v -> (Constant.mk_sym_intid (Option.get v.IntidUpdateVal.intid)))
+
+    let get_gicfield field =
+      let f v =
+        match v.IntidUpdateVal.field with
+          | Some (f, v) when String.equal f field ->
+            let open AArch64IntidVal in
+            let c =
+              if String.equal field HM.label then
+                S.of_int (HM.of_string v)
+              else
+                S.of_string v in
+            Constant.Concrete c
+          | _ ->
+            Warn.user_error
+              "No field named %s in %s" field (IntidUpdateVal.pp v) in
+      op_get_intid_update_val f
+
+    let gic_setintid v =
+      let open Constant in
+      let open IntidUpdateVal in
+      match v with
+      | Symbolic (System (INTID, s)) ->
+        Some (IntidUpdateVal({intid=Some s; field=Some ("valid", "1")}))
+      | _ -> None
+
+    let op_get_intid_field op v =
+      let open Constant in
+      match v with
+      | IntidVal i -> Some (Concrete (op i))
+      | _ -> None
+
+    let op_set_intid op v =
+      let open Constant in
+      match v with
+      | IntidVal i -> Some (IntidVal (op i))
+      | _ -> None
+
+    let intid_set_act v =
+      op_set_intid (fun i -> {i with AArch64IntidVal.active=v})
+
+    let intid_get_act () =
+      op_get_intid_field (fun i -> if i.AArch64IntidVal.active then S.one else S.zero)
+
+    let intid_set_pend v =
+      op_set_intid (fun i -> {i with AArch64IntidVal.pending=v})
+
+    let intid_get_pend () =
+      op_get_intid_field (fun i -> if i.AArch64IntidVal.pending then S.one else S.zero)
+
+    let intid_set_enabled v =
+      op_set_intid (fun i -> {i with AArch64IntidVal.enabled=v})
+
+    let intid_get_enabled () =
+      op_get_intid_field (fun i -> if i.AArch64IntidVal.enabled then S.one else S.zero)
+
+    let intid_set_pri v =
+      op_set_intid (fun i -> {i with AArch64IntidVal.priority=v})
+
+    let intid_get_pri () =
+      let open Constant in
+      op_get_intid_field (fun i -> S.of_int (i.AArch64IntidVal.priority))
+
+    let intid_set_aff v =
+      op_set_intid (fun i -> {i with AArch64IntidVal.target=v})
+
+    let intid_get_aff () =
+      let open Constant in
+      op_get_intid_field (fun i -> S.of_int i.AArch64IntidVal.target)
+
+    let intid_set_hm v =
+      op_set_intid (fun i -> {i with AArch64IntidVal.hm=v})
+
+    let intid_is_edge () =
+      let open Constant in
+      let open AArch64IntidVal.HM in
+      op_get_intid_field (fun i -> if (is_edge i.AArch64IntidVal.hm) then S.one else S.zero)
+
+
     let exit _ = raise Exit
-    let toExtra cst = Constant.map Misc.identity exit exit cst
-    and fromExtra cst = Constant.map Misc.identity exit exit cst
+    let toExtra cst = Constant.map Misc.identity exit exit exit cst
+    and fromExtra cst = Constant.map Misc.identity exit exit exit cst
 
     (* Add a PAC field to a virtual address, this function can only add a PAC
        field if the input pointer is canonical, otherwise it raise an error, it is
@@ -195,6 +311,21 @@ module
       | Tagged -> gettagged
       | CheckCanonical -> checkCanonical
       | MakeCanonical -> makeCanonical
+      | GICGetIntid -> get_gicintid
+      | GICSetIntid -> gic_setintid
+      | GICGetField f -> get_gicfield f
+      | IntidSetAct v -> intid_set_act v
+      | IntidGetAct -> intid_get_act ()
+      | IntidSetPend v -> intid_set_pend v
+      | IntidGetPend -> intid_get_pend ()
+      | IntidSetEnabled v -> intid_set_enabled v
+      | IntidGetEnabled -> intid_get_enabled ()
+      | IntidSetPri v -> intid_set_pri v
+      | IntidGetPri -> intid_get_pri ()
+      | IntidSetAff v -> intid_set_aff v
+      | IntidGetAff -> intid_get_aff ()
+      | IntidSetHM v -> intid_set_hm v
+      | IntidIsEdge -> intid_is_edge ()
       | Extra1 op1 ->
          fun cst ->
            try

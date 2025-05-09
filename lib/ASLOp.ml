@@ -59,8 +59,9 @@ type 'a constr_op1 =
 type op1 = extra_op1 constr_op1
 type scalar = ASLScalar.t
 type pteval = PteVal.ASL.t
+type intidval = IntidVal.ASL.t
 type instr = ASLBase.Instr.t
-type cst = (scalar, pteval, instr) Constant.t
+type cst = (scalar, pteval, intidval, instr) Constant.t
 
 let pp_op = function
   | Divrm -> "DIVRM"

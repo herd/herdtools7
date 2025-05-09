@@ -76,6 +76,7 @@ module type S = sig
   val is_reg_store_any : action -> bool
   val is_reg_load_any : action -> bool
   val is_reg_any : action -> bool
+  val is_sysreg : action -> bool
 
 (* Store/Load to memory or register *)
   val is_store : action -> bool

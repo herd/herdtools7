@@ -1,0 +1,8 @@
+AArch64 gic.cdhm
+{
+ [INTID(A)]=(handling_mode:edge);
+ 0:X0=gicval_t:(intid:A,handling_mode:level);
+}
+ P0           ;
+ GIC CDHM, X0 ;
+forall(INTID(A)=(handling_mode:level))
