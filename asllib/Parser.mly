@@ -67,16 +67,12 @@ open ASTUtils
 open Desugar
 
 let version = V1
-
-let t_bit =
-  T_Bits (E_Literal (L_Int Z.one) |> add_dummy_annotation ~version, [])
-
-let zero = E_Literal (L_Int Z.zero) |> add_dummy_annotation ~version
+let t_bit ~loc = T_Bits (E_Literal (L_Int Z.one) |> add_pos_from loc, [])
+let zero ~loc = E_Literal (L_Int Z.zero) |> add_pos_from loc
 
 let make_ldi_vars (xs, ty) =
   let make_one x =
-    S_Decl (LDK_Var, LDI_Var x, Some ty, None)
-    |> add_dummy_annotation ~version
+    S_Decl (LDK_Var, LDI_Var x.desc, Some ty, None) |> add_pos_from x
   in
   List.map make_one xs |> stmt_from_list |> desc
 
@@ -366,7 +362,7 @@ let slice :=
   | ~=expr;                       < Slice_Single  >
   | e1=expr; COLON; e2=expr;      < Slice_Range   >
   | e1=expr; PLUS_COLON; e2=expr; < Slice_Length  >
-  | COLON; e=expr;                { Slice_Length(zero, e) }
+  | loc=annotated(COLON); e=expr; { Slice_Length(zero ~loc, e) }
   | e1=expr; STAR_COLON; e2=expr; < Slice_Star    >
 
 (* Bitfields *)
@@ -384,7 +380,7 @@ let ty :=
     | REAL;                                             { T_Real       }
     | BOOLEAN;                                          { T_Bool       }
     | STRING;                                           { T_String     }
-    | BIT;                                              { t_bit        }
+    | loc=annotated(BIT);                               { t_bit ~loc   }
     | BITS; ~=pared(expr); ~=bitfields_opt;             < T_Bits       >
     | l=plist0(ty);                                     < T_Tuple      >
     | name=IDENTIFIER;                                  < T_Named      >
@@ -539,7 +535,7 @@ let stmt :=
       | ldk=local_decl_keyword_non_var; lhs=decl_item; ty=as_ty; EQ; call=annotated(elided_param_call);
         { desugar_elided_parameter ldk lhs ty call}
       | VAR; ldi=decl_item; ty=ty_opt; e=option_eq_expr;      { S_Decl (LDK_Var, ldi, ty, e) }
-      | VAR; ~=clist2(IDENTIFIER); ~=as_ty;                  < make_ldi_vars >
+      | VAR; ~=clist2(annotated(IDENTIFIER)); ~=as_ty;        < make_ldi_vars >
       | VAR; lhs=decl_item; ty=as_ty; EQ; call=annotated(elided_param_call);
         { desugar_elided_parameter LDK_Var lhs ty call}
       | PRINTLN; args=plist0(expr);                           { S_Print { args; newline = true; debug = false } }
