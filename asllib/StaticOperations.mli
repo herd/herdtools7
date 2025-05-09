@@ -13,7 +13,7 @@ val constraint_binop :
 *)
 
 module type CONFIG = sig
-  val fail : unit -> 'a
+  val fail : string -> 'a
   val warn_from : loc:'a annotated -> Error.warning_desc -> unit
 end
 
