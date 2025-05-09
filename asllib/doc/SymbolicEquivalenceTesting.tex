@@ -258,6 +258,11 @@ The function
 \]
 \symbolicallysimplifies\ an integer constraint $\vc$, yielding the integer constraint $\newc$
 
+\ExampleDef{Symbolically Simplifying Constraints}
+The specification in \listingref{ReduceConstraint} shows examples of constraints
+and their simplified counterparts.
+\ASLListing{Symbolically simplifying constraints}{ReduceConstraint}{\typingtests/TypingRule.ReduceConstraint.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -277,8 +282,6 @@ The function
   \end{itemize}
 \end{itemize}
 
-\CodeSubsection{\ReduceConstraintBegin}{\ReduceConstraintEnd}{../StaticOperations.ml}
-
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[exact]{
@@ -296,6 +299,7 @@ The function
   \reduceconstraint(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
 }
 \end{mathpar}
+\CodeSubsection{\ReduceConstraintBegin}{\ReduceConstraintEnd}{../StaticOperations.ml}
 
 \TypingRuleDef{ReduceConstraints}
 \hypertarget{def-reduceconstraints}{}
@@ -309,6 +313,8 @@ The function
 \]
 \symbolicallysimplifies\ a list of integer constraints $\cs$, yielding a list of integer constraints $\newcs$
 
+See \ExampleRef{Symbolically Simplifying Constraints}.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -316,8 +322,6 @@ The function
         $\listrange(\cs)$ yields $\vc_\vi$;
   \item define $\newcs$ as the list containing $\vc_\vi$ for every $\vi$ in $\listrange(\cs)$.
 \end{itemize}
-
-\CodeSubsection{\ReduceConstraintsBegin}{\ReduceConstraintsEnd}{../StaticOperations.ml}
 
 \FormallyParagraph
 \begin{mathpar}
@@ -328,6 +332,7 @@ The function
   \reduceconstraints(\tenv, \cs) \typearrow \newcs
 }
 \end{mathpar}
+\CodeSubsection{\ReduceConstraintsBegin}{\ReduceConstraintsEnd}{../StaticOperations.ml}
 
 \TypingRuleDef{ToIR}
 \hypertarget{def-toir}{}
@@ -784,6 +789,11 @@ The function
 conservatively checks whether the expression $\veone$ is equivalent to the expression $\vetwo$ in environment $\tenv$.
 The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
 
+\ExampleDef{Expression Equivalence}
+The specification in \listingref{ExprEqual} is well-typed as the expressions
+comprising the array lengths are equivalent, as details in comments.
+\ASLListing{Equivalent expressions}{ExprEqual}{\typingtests/TypingRule.ExprEqual.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -827,6 +837,8 @@ conservatively tests whether the expression $\veone$ is equivalent to the expres
 by attempting to transform both expressions to their symbolic expression form
 and, if successful, comparing the resulting normal forms for equality.
 The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
+
+See \ExampleRef{Expression Equivalence}.
 
 \ProseParagraph
 \OneApplies
@@ -885,6 +897,8 @@ The helper function
 specializes the equivalence test for expressions $\veone$ and $\vetwo$ in $\tenv$
 for the different types of expressions.
 The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
+
+See \ExampleRef{Expression Equivalence}.
 
 \ProseParagraph
 \OneApplies
@@ -1274,6 +1288,13 @@ The function
 conservatively tests whether the type $\vtone$ is equivalent to the type $\vttwo$ in environment $\tenv$
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
+\ExampleDef{Equivalent Types}
+The specification in \listingref{TypeEqual} is well-typed.
+Specifically, the types of the arguments for the \verb|impdef| declaration
+of \verb|Foo| match types of the corresponding arguments for the overridden declaration
+of \verb|Foo|.
+\ASLListing{Equivalent Types}{TypeEqual}{\typingtests/TypingRule.TypeEqual.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1502,6 +1523,18 @@ The function
 conservatively tests whether the list of bitfields $\bfone$ is equivalent to the list of bitfields $\bftwo$
 in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
+\ExampleDef{Equivalent Lists of Bitfields}
+
+The specification in \listingref{BitFieldsEqual} is well-typed.
+Specifically, the lists of bitfields for the \verb|bv| argument in both signatures
+of \verb|Foo| are equivalent.
+\ASLListing{Equivalent lists of bitfields}{BitFieldsEqual}{\typingtests/TypingRule.BitFieldsEqual.asl}
+
+The specification in \listingref{BitFieldsEqual} is ill-typed,
+the lists of bitfields for the \verb|bv| argument in both signatures
+of \verb|Foo| are not equivalent.
+\ASLListing{Non-equivalent lists of bitfields}{BitFieldsEqual-bad}{\typingtests/TypingRule.BitFieldsEqual.bad.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1546,6 +1579,19 @@ The function
 \]
 conservatively tests whether the bitfield $\bfone$ is equivalent to the bitfield $\bftwo$ in environment $\tenv$
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
+
+\ExampleDef{Bitfield Equivalence}
+In \listingref{BitFieldEqual}, the bitfields of the \bitvectortypesterm{} on the left-hand-side
+of assignments and the bitfields of the same name in the \bitvectortypesterm{} on the right-hand-side
+of the same assignment are equivalent.
+\ASLListing{Equivalent bitfields}{BitFieldEqual}{\typingtests/TypingRule.BitFieldEqual.asl}
+
+The specifications in \listingref{BitFieldEqual-bad1} and \listingref{BitFieldEqual-bad2}
+show cases where the \verb|data| bitfields of the \bitvectortypesterm{} on the two sides
+of an assignment are not equivalent. This is due to either having different slices
+or different nested bitfields.
+\ASLListing{Bitfields with differing slices}{BitFieldEqual-bad1}{\typingtests/TypingRule.BitFieldEqual.bad1.asl}
+\ASLListing{Bitfields with differing nested bitfields}{BitFieldEqual-bad2}{\typingtests/TypingRule.BitFieldEqual.bad2.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1640,6 +1686,19 @@ The function
 conservatively tests whether the constraint list $\csone$ is equivalent to the constraint list $\cstwo$ in environment $\tenv$
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
+\ExampleDef{Equivalent Lists of Constraints}
+The specification in \listingref{ConstraintsEqual}
+shows two lists of constraints --- the ones used to type \verb|x| and the ones used to type \verb|y|.
+The expression \verb|x as integer{w..2 * w + z, w + w + w}|
+compares the list \verb|3 * w, w..w + z + w| to the list \verb|w..2 * w + z, w + w + w|.
+Since the corresponding constraints are determined to be equivalent,
+the expression is well-typed.
+The expression \verb|x as integer{w + w + w, w..2 * w + z}| on the other hand
+has the constraints in a different order, which means that the two lists of constraints
+are not considered equivalent. This is still considered well-typed (see \TypingRuleRef{CheckATC}),
+and the typing assertion will be checked dynamically (see \SemanticsRuleRef{ATC}).
+\ASLListing{Equivalent lists of constraints}{ConstraintsEqual}{\typingtests/TypingRule.ConstraintsEqual.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1670,6 +1729,12 @@ The function
 \]
 conservatively tests whether the constraint $\vcone$ is equivalent to the constraint $\vctwo$ in environment $\tenv$
 and yields the result in $\vb$.  \ProseOtherwiseTypeError
+
+\ExampleDef{Equivalent Constraints}
+The specification in \listingref{ConstraintEqual} is well-typed,
+since each constraint on a right-hand-side of an assignment is equivalent to the
+corresponding constraint on the left-hand-side of that assignment.
+\ASLListing{Equivalent constraints}{ConstraintEqual}{\typingtests/TypingRule.ConstraintEqual.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1786,6 +1851,9 @@ in environment $\tenv$ and yields the result in $\vb$. \ProseOtherwiseTypeError
 This function operates both on \typedast{} nodes, where both slices are only
 of the form $\SliceLength(\ \cdot\ ,\ \cdot\ )$, as well as \untypedast{} nodes where all slice forms
 are possible. The latter is used during checking overriding subprograms (\secref{Overriding}).
+This function operates both on \typedast{} nodes, where both slices are only
+of the form $\SliceLength(\ \cdot\ ,\ \cdot\ )$, as well as \untypedast{} nodes where all slice forms
+are possible. The latter is used during checking overriding subprograms (\secref{Overriding}).
 
 \ExampleDef{Equivalent Slices}
 The specification in \listingref{SliceEqual} shows examples of equivalent slices.
@@ -1861,6 +1929,14 @@ The function
 \]
 tests whether the array lengths $\vlone$ and $\vltwo$ are equivalent and yields the result
 in $\vb$. \ProseOtherwiseTypeError
+
+\ExampleDef{Array Length Expression Equivalence}
+See \ExampleRef{Expression Equivalence} for examples of equivalent array length expressions.
+
+The specification in \listingref{ArrayLengthEqual-bad} is ill-typed since the array length
+expressions are of different kinds (\integertypeterm{} and \enumerationtypeterm),
+even though they both contain three elements each.
+\ASLListing{Non-equivalent array length expressions}{ArrayLengthEqual-bad}{\typingtests/TypingRule.ArrayLengthEqual.bad.asl}
 
 \ProseParagraph
 \OneApplies
