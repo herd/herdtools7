@@ -15,5 +15,5 @@
 (****************************************************************************)
 
 module Make(Instr:Instr.S) = struct
-  include SymbConstant.Make(Int64Scalar)(PteVal.No)(Instr)
+  include SymbConstant.Make(Int64Scalar)(PteVal.No)(AddrReg.No)(Instr)
 end
