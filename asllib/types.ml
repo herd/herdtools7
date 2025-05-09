@@ -276,12 +276,12 @@ module Domain = struct
       with ASLException { desc = UnsupportedUnop _ } -> None
 
     module OverSOp = StaticOperations.Make (struct
-      let fail () = raise CannotOverApproximate
+      let fail _ = raise CannotOverApproximate
       let warn_from ~loc:_ _ = ()
     end)
 
     module UnderOp = StaticOperations.Make (struct
-      let fail () = raise CannotUnderApproximate
+      let fail _ = raise CannotUnderApproximate
       let warn_from ~loc:_ _ = ()
     end)
 

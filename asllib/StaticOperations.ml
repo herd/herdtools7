@@ -177,7 +177,7 @@ let filter_reduce_constraint_div =
 (* End *)
 
 module type CONFIG = sig
-  val fail : unit -> 'a
+  val fail : string -> 'a
   val warn_from : loc:'a annotated -> Error.warning_desc -> unit
 end
 
@@ -236,14 +236,14 @@ module Make (C : CONFIG) = struct
     let constraints', modified = list_filter_map_modified filter constraints in
     match constraints' with
     | [] ->
-        let () =
-          Format.eprintf
+        let msg =
+          Format.asprintf
             "@[%a:@ All@ values@ in@ constraints@ %a@ would@ fail@ with@ op \
              %s,@ operation@ will@ always@ fail.@]@."
             PP.pp_pos loc pp_constraints constraints
             PP.(binop_to_string op)
         in
-        C.fail ()
+        C.fail msg
     | _ ->
         let () =
           if modified then
@@ -283,13 +283,13 @@ module Make (C : CONFIG) = struct
         let res = List.filter_map filter_reduce_constraint_div cs in
         match res with
         | [] ->
-            let () =
-              Format.eprintf
+            let msg =
+              Format.asprintf
                 "@[%a:@ Division@ will@ result@ in@ empty@ constraint@ set,@ \
                  so@ will@ always@ fail.@]@."
                 PP.pp_pos loc
             in
-            C.fail ()
+            C.fail msg
         | _ -> res)
     | _ -> cs
   (* End *)

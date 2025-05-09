@@ -341,7 +341,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   module Fn = FunctionRenaming (C)
 
   module SOp = StaticOperations.Make (struct
-    let fail = assumption_failed
+    let fail msg =
+      prerr_string msg;
+      flush stderr;
+      assumption_failed ()
+
     let warn_from = warn_from
   end)
 
