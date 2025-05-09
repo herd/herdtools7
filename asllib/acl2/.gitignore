@@ -1,0 +1,15 @@
+workxxx*
+*@expansion.lsp
+*.out
+*.date
+*.cert
+*.cert.temp
+*.time
+*.pcert0
+*.pcert1
+*.pcert0.temp
+*.port
+*.acl2x
+*.fasl
+Makefile-tmp
+/bin/
