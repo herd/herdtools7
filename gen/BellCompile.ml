@@ -70,8 +70,6 @@ module Make(Cfg:Config)(BO:BellArch_gen.Config) : XXXCompile_gen.S =
 (* Export *)
 (**********)
 
-let emit_joker st init = None,init,[],st
-
 (* Loads (some specific added) *)
     let emit_load_tagged st _p init x a =
       let rA,st = next_reg st in
@@ -181,7 +179,6 @@ zz        (fun r lab -> bcc Ne r rP lab)
         | W,Some a,Data loc ->
             let init,cs,st = emit_store_tagged st p init loc value a in
             None,init,cs,st
-        | J,_,_ -> emit_joker st init
         | _,_,Code _ -> Warn.fatal "No code location in Bell"
 
 (* Dubious... *)
@@ -238,7 +235,6 @@ let emit_rmw _ = assert false
       | W,Some a,Data loc ->
           let init,cs,st = emit_store_idx_tagged st p init loc value idx a in
           None,init,cA::cs,st
-      | J,_,Data _ -> emit_joker st init
       | _,_,Code _ -> Warn.fatal "No code location for Bell"
       end
 
@@ -256,7 +252,6 @@ let emit_rmw _ = assert false
             let init,cs,st = emit_store_reg_tagged st p init loc r2 a in
             None,init,cs2@cs,st
         end
-    | Some J,Data _ -> emit_joker st init
     | _,Code _ -> Warn.fatal "No code location for Bell"
 
     let emit_access_ctrl st p init e r1 v1 =

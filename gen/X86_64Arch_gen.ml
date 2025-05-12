@@ -52,9 +52,9 @@ module Make
       let applies_atom a d = match a,d with
       | ((Atomic,_),Code.W)
       | (((Plain|NonTemporal),_),(Code.W|Code.R)) -> true
-      | ((Atomic,_),Code.R)
-      | (_,Code.J)-> false
-    let is_ifetch _ = false
+      | ((Atomic,_),Code.R) -> false
+
+      let is_ifetch _ = false
 
       let compare_atom = compare
 

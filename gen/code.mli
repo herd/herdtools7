@@ -46,7 +46,7 @@ val pp_proc : proc -> string
 type env = (string * v) list
 
 (* Direction of event *)
-type dir = W | R | J
+type dir = W | R
 
 (* Edges compoments that do not depend on architecture *)
 
@@ -68,7 +68,6 @@ val pp_extr : extr -> string
 val pp_sd : sd -> string
 val seq_sd : sd -> sd -> sd
 val fold_ie : (ie -> 'a -> 'a) -> 'a -> 'a
-val do_fold_extr : bool -> (extr -> 'a -> 'a) -> 'a -> 'a
 val fold_extr : (extr -> 'a -> 'a) -> 'a -> 'a
 val fold_sd : (sd -> 'a -> 'a) -> 'a -> 'a
 val fold_sd_extr : (sd -> extr -> 'a -> 'a) -> 'a -> 'a

@@ -251,8 +251,6 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 (* Acccesses *)
 (*************)
 
-let emit_joker st init = None,init,[],st
-
     let emit_access  st p init e = match e.dir with
     | None -> Warn.fatal "MIPSCompile.emit_access"
     | Some d ->
@@ -276,7 +274,6 @@ let emit_joker st init = None,init,[],st
             let ro,init,cs,st = emit_sta st p init loc value in
             ro,init,cs,st
         | _,Some (Mixed _),Data _ -> assert false
-        | J, _,Data _ -> emit_joker st init
         | _,_,Code _ -> Warn.fatal "No code location for arch MIPS"
 
     let emit_exch st p init er ew =
@@ -316,7 +313,6 @@ let emit_joker st init = None,init,[],st
               let ro,init,cs,st = emit_sta_idx st p init loc r2 value in
               ro,init,Instruction c::cs,st
           | _,Some (Mixed _) -> assert false
-          | J,_ -> emit_joker st init
           end
       | _,Code _ -> Warn.fatal "No code location for MIPS"
 
@@ -352,7 +348,6 @@ let emit_joker st init = None,init,[],st
               Warn.fatal "No store with reservation"
           | Some (Mixed _) -> assert false
           end
-      | Some J,_ -> emit_joker st init
       | _,Code _ -> Warn.fatal "No code location for MIPS"
 
     let emit_access_ctrl st p init e r1 =

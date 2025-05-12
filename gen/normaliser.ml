@@ -299,20 +299,18 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
     end
 (* In/Out *)
     module Dir = struct
-      type t = R | W | F | J
+      type t = R | W | F
       let pp = function
         | R -> "R"
         | W -> "W"
         | F -> "F"
-        | J -> "J"
 
       let tr e =
         let d = Misc.as_some e.CE.dir in
         let r =
           match d with
           | Code.W -> W
-          | Code.R -> R
-          | Code.J -> J in
+          | Code.R -> R in
         if debug then
           eprintf "%s[%s] -> %s\n"
             (E.pp_edge e.CE.edge) (Code.pp_dir d)
