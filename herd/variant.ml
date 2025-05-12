@@ -95,8 +95,6 @@ type t =
   | ASLVersion of [ `ASLv0 | `ASLv1 ]
 (* ASL Typing control *)
   | ASLType of [`Warn|`Silence|`TypeCheck]
-(* Activate ASL experimental mode *)
-  | ASLExperimental
 (* UDF control in AArch64 mode *)
   | ASL_AArch64_UDF
 (* Signed Int128 types *)
@@ -128,7 +126,7 @@ let tags =
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
     "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"; "strict";
     "warn"; "S128"; "ASLType+Warn";    "ASLType+Silence"; "ASLType+Check";
-    "ASL+Experimental"; "ASL+AArch64+UDF"; "telechat"; "OldSolver"; "oota";
+    "ASL+AArch64+UDF"; "telechat"; "OldSolver"; "oota";
     "pac"; "fpac"; "const-pac-field";]
 
 let parse s = match Misc.lowercase s with
@@ -183,7 +181,6 @@ let parse s = match Misc.lowercase s with
 | "asltype+warn" -> Some (ASLType `Warn)
 | "asltype+silence"-> Some (ASLType `Silence)
 | "asltype+check"  -> Some (ASLType `TypeCheck)
-| "asl+experimental"|"asl+exp" -> Some ASLExperimental
 | "asl+aarch64+udf" -> Some ASL_AArch64_UDF
 | "s128" -> Some S128
 | "strict" -> Some Strict
@@ -291,7 +288,6 @@ let pp = function
   | ASLType `Warn -> "ASLType+Warn"
   | ASLType `Silence -> "ASLType+Silence"
   | ASLType `TypeCheck -> "ASLType+Check"
-  | ASLExperimental -> "ASL+Experimental"
   | ASL_AArch64_UDF -> "ASL+AArch64+UDF"
   | Telechat -> "telechat"
   | NV2 -> "NV2"
@@ -351,5 +347,4 @@ let set_sme_length r = function
   | _ -> None
 
 let check_tag = function
-| ASLExperimental -> [ASL;ASLExperimental;]
 | tag -> [tag]

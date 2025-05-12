@@ -399,7 +399,7 @@ cata-aarch64-test-asl: asl-pseudocode
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
 		-j $(J) \
-		-variant asl+exp \
+		-variant asl \
 		-variant strict \
 		-herd-timeout $(TIMEOUT) \
 		-herd-path $(HERD) \
@@ -416,7 +416,7 @@ cata-aarch64-cas-test-asl: asl-pseudocode
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
 		-j $(J) \
-		-variant asl+exp \
+		-variant asl \
 		-variant strict \
 		-herd-timeout $(TIMEOUT) \
 		-herd-path $(HERD) \
@@ -471,7 +471,7 @@ pick-test-asl:  asl-pseudocode
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
 		-j $(J) \
-		-variant asl+exp \
+		-variant asl \
 		-variant strict \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \

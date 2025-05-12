@@ -349,6 +349,10 @@ end;
 
 // =============================================================================
 
+var SP_EL0: bits(64);
+
+// =============================================================================
+
 // AArch64.IsExclusiveVA()
 // =======================
 // An optional IMPLEMENTATION DEFINED test for an exclusive access to a virtual
