@@ -585,7 +585,7 @@ module PPrint = struct
         fprintf f "@[%a@]" pp_print_text
           "ASL Typing error: no `impdef` for `implementation` function."
     | UnexpectedCollection ->
-        pp_print_text f "ASL typing error: unexpected collection."
+        pp_print_text f "ASL Typing error: unexpected collection."
     | TooManyOverrideCandidates impdefs ->
         fprintf f
           "ASL Typing error:@ multiple@ `impdef`@ candidates@ for@ \
