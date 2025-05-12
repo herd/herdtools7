@@ -44,7 +44,7 @@ module DeterministicBackend :
 module DeterministicInterpreter (C : Interpreter.Config) :
   Interpreter.S with module B = DeterministicBackend
 
-val interprete :
+val interpret :
   ?instrumentation:bool ->
   StaticEnv.global ->
   AST.t ->

@@ -327,7 +327,7 @@ let () =
     if args.exec then
       let instrumentation = if args.show_rules then true else false in
       or_exit @@ fun () ->
-      Native.interprete ~instrumentation static_env typed_ast
+      Native.interpret ~instrumentation static_env typed_ast
     else (0, [])
   in
 
