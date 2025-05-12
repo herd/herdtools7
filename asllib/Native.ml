@@ -481,7 +481,7 @@ let instrumentation_buffer = function
   | Some false | None ->
       (module Instrumentation.SemanticsNoBuffer : Instrumentation.SEMBUFFER)
 
-let interprete ?instrumentation static_env ast =
+let interpret ?instrumentation static_env ast =
   let module B = (val instrumentation_buffer instrumentation) in
   let module CI : Interpreter.Config = struct
     let unroll = 0

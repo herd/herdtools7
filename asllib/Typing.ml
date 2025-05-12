@@ -4332,4 +4332,4 @@ let type_and_run ?instrumentation ast =
     |> Builder.with_primitives Native.DeterministicBackend.primitives
     |> TypeCheckDefault.type_check_ast
   in
-  Native.interprete ?instrumentation static_env ast
+  Native.interpret ?instrumentation static_env ast

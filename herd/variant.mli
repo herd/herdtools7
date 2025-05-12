@@ -88,7 +88,7 @@ type t =
 (* One hundred tests *)
   | T of int
 (* ASL Processing *)
-  (* In AArch64 arch, use ASL to interprete AArch64 instructions when possible. *)
+  (* In AArch64 arch, use ASL to interpret AArch64 instructions when possible. *)
   | ASL
   (* While interpreting ASL litmus test, include AArch64 shared pseudocode. *)
   | ASL_AArch64
