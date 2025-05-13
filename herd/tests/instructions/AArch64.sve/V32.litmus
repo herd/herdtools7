@@ -1,0 +1,16 @@
+AArch64 V32
+{
+int x=1;
+0:X0=x;
+uint64_t 0:X3;
+uint64_t 0:X4;
+}
+  P0           ;
+ MSR NZCV,XZR  ;
+ LDR W1,[X0]   ;
+ CTERMEQ W1,W2 ;
+ MRS X3,NZCV   ;
+ CTERMNE W1,W2 ;
+ MRS X4,NZCV   ;
+
+forall 0:X3=0x10000000 /\ 0:X4=0x80000000

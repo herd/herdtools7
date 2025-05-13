@@ -1,0 +1,11 @@
+Test V32 Required
+States 1
+0:X3=268435456; 0:X4=2147483648;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Vector-Extensions-is-work-in-progress
+Condition forall (0:X3=268435456 /\ 0:X4=2147483648)
+Observation V32 Always 1 0
+Hash=5243803bc7f067763d465df67b76fa7a
+

@@ -116,7 +116,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
     | I_MOV_SV _
     | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
-    | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
+    | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _ | I_CTERM _
     | I_DUP_SV _ | I_ADD_SV _ | I_PTRUE _
     | I_NEG_SV _ | I_OP3_SV _ | I_MOVPRFX _
     | I_SMSTART _ | I_SMSTOP _ | I_LD1SPT _ | I_ST1SPT _
@@ -321,7 +321,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_MOV_SV _ | I_DUP_SV _ | I_ADD_SV _ | I_PTRUE _
       | I_NEG_SV _ | I_MOVPRFX _ | I_OP3_SV _
       | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
-      | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
+      | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _ | I_CTERM _
       | I_SMSTART _ | I_SMSTOP _ | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
       | I_PAC _ | I_AUT _ | I_XPACI _ | I_XPACD _
           -> None
@@ -359,7 +359,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_NOP|I_TBZ _|I_TBNZ _
       | I_BL _ | I_BLR _ | I_RET _ | I_ERET | I_SVC _ | I_UDF _
       | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
-      | I_ST1SPT _
+      | I_ST1SPT _ | I_CTERM _
         -> [] (* For -variant self only ? *)
       | I_LDR (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
       | I_LDRBH (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
@@ -493,7 +493,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_NEG_SV _ | I_MOVPRFX _ | I_OP3_SV _
       | I_MOV_SV _ | I_DUP_SV _
       | I_INDEX_SI _ | I_INDEX_IS _ | I_INDEX_SS _ | I_INDEX_II _
-      | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
+      | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _ | I_CTERM _
       | I_SMSTART _ | I_SMSTOP _
       | I_LD1SPT _ | I_ST1SPT _
       | I_MOVA_TV _| I_MOVA_VT _ | I_ADDA _
