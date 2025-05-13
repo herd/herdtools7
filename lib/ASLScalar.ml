@@ -212,15 +212,22 @@ let abs = function
 
 let shift_left = function
   | S_Int i -> fun k -> S_Int (Z.shift_left i k)
-  | s1 -> Warn.fatal "ASLScalar invalid op: %s shift_left" (pp false s1)
+  | s1 ->
+      Warn.fatal "ASLScalar invalid op: %s (shift_left %d)" (pp false s1)
 
-let shift_right_logical s1 _k =
-  Warn.fatal "ASLScalar invalid op: %s shift_right_logical" (pp false s1)
+let shift_right_logical = function
+  | S_Int i  when Z.sign i >= 0 -> fun k -> S_Int (Z.shift_right i k)
+  | s1 ->
+      Warn.fatal
+        "ASLScalar invalid op: %s (shift_right_logical %d)"
+        (pp false s1)
 
 let shift_right_arithmetic = function
   | S_Int i -> fun k -> S_Int (Z.shift_right i k)
   | s1 ->
-      Warn.fatal "ASLScalar invalid op: %s shift_right_arithmetic" (pp false s1)
+      Warn.fatal
+        "ASLScalar invalid op: %s shift_right_arithmetic %d"
+        (pp false s1)
 
 let addk = function
 | S_Int i -> fun k -> S_Int (Z.add i (Z.of_int k))
