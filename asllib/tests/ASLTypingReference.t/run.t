@@ -940,3 +940,16 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.Normalize.asl
   $ aslref --no-exec TypingRule.UnitaryMonomialsToExpr.asl
   $ aslref --no-exec TypingRule.PropagateRecursiveCallsSess.asl
+  $ aslref --no-exec TypingRule.ConstraintPow.asl
+  $ aslref --no-exec TypingRule.ConstraintMod.asl
+  $ aslref --no-exec TypingRule.PossibleExtremitiesLeft.asl
+  $ aslref --no-exec TypingRule.PossibleExtremitiesRight.asl
+  $ aslref --no-exec TypingRule.ApplyBinopExtremities.asl
+  $ aslref --no-exec TypingRule.ApproxBottomTop.asl
+  File TypingRule.ApproxBottomTop.asl, line 5, characters 4 to 30:
+      var x : integer{a..b} = a;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Typing error: a subtype of integer {a..b} was expected,
+    provided integer {1..10}.
+  [1]
+  $ aslref TypingRule.SymdomOfWidthExpr.asl

@@ -334,6 +334,14 @@ The function
 assigns a symbolic domain $\vd$ to an \underline{integer typed} expression $\ve$,
 where $\ve$ is assumed to be the expression conveying the width of a \bitvectortypeterm.
 
+\ExampleDef{The Symbolic Domain of a Bitwidth Expression}
+The symbolic domain of the bitwidth expression \verb|2 * x|
+is:
+\[
+\Subdomains([\AbbrevConstraintExact{\AbbrevEBinop{*}{\ELInt{2}}{\AbbrevEVar{\vx}}}]) \enspace.
+\]
+\ASLListing{The symbolic domain of a bitwidth expression}{SymdomOfWidthExpr}{\typingtests/TypingRule.SymdomOfWidthExpr.asl}
+
 \ProseParagraph
 \Proseeqdef{$\vd$}{the singleton list for the constrained symbolic integer domain
 for the exact constraint for the expression $\ve$}.
@@ -808,6 +816,11 @@ The function
 returns in $\vs$ either the empty set or the set of all integers,
 depending on the \approximationdirectionterm\ $\vapprox$.
 
+\ExampleDef{Approximation Extremes}
+In \listingref{ApproxBottomTop}, approximating the constraint \verb|a..b|
+with $\Over$ yields $\Top$.
+\ASLListing{Approximation extremes}{ApproxBottomTop}{\typingtests/TypingRule.ApproxBottomTop.asl}
+
 \ProseParagraph
 \ProseEqdef{$\vs$}{the empty set if $\vapprox$ is $\Under$ and the set of all integers
 if $\vapprox$ is $\Over$.}
@@ -1090,7 +1103,14 @@ The function
 \aslto \overname{\constraintkind}{\newcs}
 \]
 symbolically applies the binary operation $\op$ to the lists of integer constraints $\csone$ and $\cstwo$,
-yielding the integer constraints $\vics$.
+yielding the integer constraints $\newcs$.
+
+For examples of the generated constraints
+for the modulus operation see \ExampleRef{Generating Modulus Constraints},
+for examples of the generated constraints for exponentiation,
+see \ExampleRef{Generating Exponentiation Constraints},
+and for examples of the generated constraints for all other operations
+see \ExampleRef{Generating Constraints for Binary Operations}.
 
 \ProseParagraph
 \OneApplies
@@ -1176,6 +1196,16 @@ The function
 yields a list of constraints $\newcs$ for the constraints $\vcone$ and $\vctwo$, which are needed to include
 range constraints for cases where the binary operation $\op$ yields a dynamic error.
 
+\ExampleDef{Generating Constraints for Binary Operations}
+See \ExampleRef{Generating Range-to-Exact Constraints} and
+\ExampleRef{Generating Exact-to-Range Constraints} for examples of generating constraints
+when one of the constraints is an \exactconstraintterm{} and the other is a \rangeconstraintterm.
+
+The specification in \listingref{ApplyBinopExtremities} shows examples of the constraints
+generated (as type annotations on the left-hand-side of local storage declarations)
+for cases where a binary operation involves two \rangeconstraintsterm.
+\ASLListing{Generating constraints for binary operations}{ApplyBinopExtremities}{\typingtests/TypingRule.ApplyBinopExtremities.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1208,7 +1238,7 @@ range constraints for cases where the binary operation $\op$ yields a dynamic er
   \begin{itemize}
     \item $\vcone$ is a range constraint for the expressions $\va$ and $\vb$;
     \item $\vctwo$ is a range constraint for the expressions $\vc$ and $\vd$;
-    \item applying $\possibleextremitiesright$ to $\op$, $\va$, and $\vb$ yields $\extpairsab$;
+    \item applying $\possibleextremitiesleft$ to $\op$, $\va$, and $\vb$ yields $\extpairsab$;
     \item applying $\possibleextremitiesright$ to $\op$, $\vc$, and $\vd$ yields $\extpairscd$;
     \item define $\newcs$ as the list containing a constraint $\AbbrevConstraintRange{\AbbrevEBinop{\op}{\vap}{\vcp}}{\AbbrevEBinop{\op}{\vbp}{\vdp}}$
           for each pair of expressions
@@ -1275,6 +1305,14 @@ yields a list of pairs of expressions $\extpairs$ given the binary operation $\o
 and pair of expressions $\va$ and $\vb$, which are needed to form constraints
 for cases where applying $\op$ to $\va$ and $\vb$ would lead to a dynamic error.
 
+\ExampleDef{Generating Range-to-Exact Constraints}
+The specification in \listingref{PossibleExtremitiesLeft}
+shows the constraints inferred for various binary operations
+(in the type annotations of the corresponding left-hand-side declarations)
+where the type of \verb|x| contains a \rangeconstraintterm{} and the type of \verb|c|
+contains an \exactconstraintterm.
+\ASLListing{Generating range-to-exact constraints}{PossibleExtremitiesLeft}{\typingtests/TypingRule.PossibleExtremitiesLeft.asl}
+
 \ProseParagraph
 \begin{itemize}
   \item \AllApplyCase{mul}
@@ -1317,6 +1355,14 @@ The function
 yields a list of pairs of expressions $\extpairs$ given the binary operation $\op$
 and pair of expressions $\vc$ and $\vd$, which are needed to form constraints
 for cases where applying $\op$ to $\vc$ and $\vd$ would lead to a dynamic error.
+
+\ExampleDef{Generating Exact-to-Range Constraints}
+The specification in \listingref{PossibleExtremitiesRight}
+shows the constraints inferred for various binary operations
+(in the type annotations of the corresponding left-hand-side declarations)
+where the type of \verb|a| contains an \exactconstraintterm{} and the type of \verb|y|
+contains a \rangeconstraintterm{}.
+\ASLListing{Generating exact-to-range constraints}{PossibleExtremitiesRight}{\typingtests/TypingRule.PossibleExtremitiesRight.asl}
 
 \ProseParagraph
 \begin{itemize}
@@ -1395,6 +1441,12 @@ The function
 yields a range constraint $\newc$ from $0$ to the expression in $\vc$ that is maximal.
 This is needed to apply the modulus operation to a pair of constraints.
 
+\ExampleDef{Generating Modulus Constraints}
+The specification in \listingref{ConstraintMod}
+shows the constraints inferred for the exponentiation expression \verb|x MOD y|
+(in the type annotation for \verb|z|).
+\ASLListing{Generating modulus constraints}{ConstraintMod}{\typingtests/TypingRule.ConstraintMod.asl}
+
 \ExampleDef{Ill-typed Modulus Constraint Assignment}
 In \listingref{typing-constraintmod}, the assignment to \texttt{z} is illegal, since the type
 inferred for \texttt{z} is\\
@@ -1437,6 +1489,12 @@ The function
 \]
 yields a list of range constraints $\newcs$ that are needed to calculate the result of
 applying a $\POW$ operation to the constraints $\vcone$ and $\vctwo$.
+
+\ExampleDef{Generating Exponentiation Constraints}
+The specification in \listingref{ConstraintPow}
+shows the constraints inferred for the exponentiation expression \verb|x^y|
+(in the type annotation for \verb|z|).
+\ASLListing{Generating exponentiation constraints}{ConstraintPow}{\typingtests/TypingRule.ConstraintPow.asl}
 
 \ProseParagraph
 \OneApplies

@@ -768,6 +768,7 @@ extract
 extracted
 extracting
 extracts
+extremes
 facilitate
 fact
 factor
@@ -987,6 +988,7 @@ inequality
 inevitably
 inference
 inferred
+inferring
 infers
 infinite
 infinity
@@ -1127,6 +1129,7 @@ limitation
 limited
 limits
 line
+lint
 linux
 list
 listed

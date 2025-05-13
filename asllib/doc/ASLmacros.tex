@@ -178,7 +178,7 @@
 \setlist[itemize,19]{label=\textendash}
 \setlist[itemize,20]{label=\textendash}
 
-\newcommand\tododefine[1]{\hyperlink{tododefine}{\color{red}{\texttt{#1}}}}
+\newcommand\tododefine[1]{\hyperlink{tododefine}{\color{red}{\texttt{#1}}}} % DO NOT LINT
 \newcommand\lrmcomment[1]{}
 \newcommand\textfunc[1]{\textit{#1}}
 \newcommand\ProseParagraph[0]{\subsubsection{Prose}}
@@ -190,8 +190,8 @@
 \newcommand\OneApplies[0]{One of the following applies:}
 \newcommand\Proseeqdef[2]{define #1 as #2}
 \newcommand\ProseEqdef[2]{Define #1 as #2}
-\newcommand\ExampleDef[1]{\subsubsection{Example: #1\label{Example:#1}}}
-\newcommand\ExampleRef[1]{Example~\ref{Example:#1}}
+\newcommand\ExampleDef[1]{\subsubsection{Example: #1}\hypertarget{Example:#1}{}} % DO NOT LINT
+\newcommand\ExampleRef[1]{\hyperlink{#1}{Example: #1}} % DO NOT LINT
 
 \ifcode
 % First argument is \<rule>Begin, second is \<rule>End, third is the file name.
@@ -1674,6 +1674,7 @@
 \newcommand\exactconstraintterm[0]{\hyperlink{def-exactconstraintterm}{exact constraint}}
 \newcommand\Proseexactconstraint[1]{\hyperlink{def-exactconstraintterm}{exact constraint} for the expression #1}
 \newcommand\rangeconstraintterm[0]{\hyperlink{def-rangeconstraintterm}{range constraint}}
+\newcommand\rangeconstraintsterm[0]{\hyperlink{def-rangeconstraintterm}{range constraints}}
 \newcommand\Proserangeconstraint[2]{\hyperlink{def-rangeconstraintterm}{range constraint} for the lower end expression #1 and upper end expression #2}
 
 %% Expression macros
