@@ -249,10 +249,19 @@ an expression evaluates without modifying values of storage elements.
 The specification in \listingref{SideEffectIsPure} shows examples of expressions
 and statements, and their corresponding \sideeffectdescriptorsterm{} and whether
 those are \pure{} or not and whether they are \symbolicallyevaluable{} or not (in comments).
+
+Notice that the call to \verb|factorial(10)| is \pure, even though it is recursive.
+The side-effect analysis adds $\RecursiveCall$ in \TypingRuleRef{DeclareOneFunc},
+while annotating a strongly-connected component of (mutually-recursive) subprograms,
+until finally removing it in \TypingRuleRef{TypecheckDecl}.
+In this example, \verb|factorial| is annotated before \verb|main|, which contains the
+call to \verb|factorial(10)|, which is why the analysis is able to determine that the
+call expression is \pure{} and the \sideeffectdescriptorsetsterm{} is empty.
+
 \ASLListing{Side effect descriptors and whether they are pure and symbolically evaluable}{SideEffectIsPure}{\typingtests/TypingRule.SideEffectIsPure.asl}
 
 \ProseParagraph
-Define $\vb$ as $\True$ if and only if $\vt$ is either a \ReadLocalTerm, a \ReadGlobalTerm,
+Define $\vb$ as $\True$ if and only if $\vs$ is either a \ReadLocalTerm, a \ReadGlobalTerm,
 a \NonDeterministicTerm, or a \PerformsAssertionsTerm.
 
 \FormallyParagraph
@@ -260,7 +269,7 @@ a \NonDeterministicTerm, or a \PerformsAssertionsTerm.
 \inferrule{
     \vb \eqdef \configdomain{\vs} \in \{\ReadLocal, \ReadGlobal, \NonDeterministic, \PerformsAssertions\}
 }{
-    \sideeffectispure(\vt) \typearrow \vb
+    \sideeffectispure(\vs) \typearrow \vb
 }
 \end{mathpar}
 
