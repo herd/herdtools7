@@ -49,6 +49,11 @@
  *)
 include "aarch64deps.cat"
 
+(*
+ * Include gicv5.cat with the ordering rules for GICv5.
+ *)
+include "gicv5.cat"
+
 (* Tag-Check-before *)
 (* Note: in asynchronous fault handling mode, instruction semantics for
          checked memory accesses does not feature the iico_ctrl edge to Exp & M
@@ -73,17 +78,14 @@ let DSB-ob =
  | (if "ETS2" || "ETS3" then [Exp & W]; po; [dsb.st]; po; [Imp & TTD & M] else 0)
 
 (* IFB-ordered-before *)
-let EXC-ENTRY-IFB = if not "ExS" || "EIS" then EXC-ENTRY else EXC-ENTRY \ SVC
-let EXC-RET-IFB = if not "ExS" || "EOS" then EXC-RET else {}
-let IFB = ISB | EXC-ENTRY-IFB | EXC-RET-IFB
-
 let IFB-ob =
- [Exp & R]; ctrl; [IFB]; po
- | [Exp & R]; pick-ctrl-dep; [IFB]; po
- | [Exp & R]; addr; [Exp & M]; po; [IFB]; po
- | [Exp & R]; pick-addr-dep; [Exp & M]; po; [IFB]; po
- | [Exp & R]; pick-addr-dep; (tc-ib | tr-ib); [IFB]; po
+ [Exp & R | INTID & R]; ctrl; [IFB]; po
+ | [Exp & R | INTID & R]; pick-ctrl-dep; [IFB]; po
+ | [Exp & R | INTID & R]; addr; [Exp & M]; po; [IFB]; po
+ | [Exp & R | INTID & R]; pick-addr-dep; [Exp & M]; po; [IFB]; po
+ | [Exp & R | INTID & R]; pick-addr-dep; (tc-ib | tr-ib); [IFB]; po
  | DSB-ob; [IFB]; po
+ | GSB-ob; [IFB]; po
  | [Imp & TTD & R]; tr-ib; [IFB]; po
  | [Imp & Tag & R]; tc-ib; [IFB]; po
  | [Imp & TTD & R]; tr-ib; [Exp & M]; po; [IFB]; po
@@ -160,6 +162,7 @@ let rec lob =
  | f-ob
  | po-scl-ob
  | DSB-ob
+ | GSB-ob
  | IFB-ob
  | lwfs
  | lwfs; sca-class

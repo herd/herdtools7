@@ -1,0 +1,15 @@
+AArch64 MP-fIPI+dsb.st+ctrlisb
+{
+ [INTID(A)]=(enabled:1, pending:0, affinity:P1);
+ 0:X1=x; 0:X2=gicval_t:(intid:A, pending:1);
+ 1:X1=x; 1:X4=gicval_t:(valid:1, intid:A);
+}
+ P0              | P1               ;
+ MOV W0, #1      | GICR X0, CDIA    ;
+ STR W0, [X1]    | CMP X0,X4        ;
+ DSB ST          | B.EQ L0          ;
+ GIC CDPEND, X2  |L0:               ;
+                 | ISB              ;
+                 | LDR  W2, [X1,X3] ;
+
+exists(1:X0=gicval_t:(valid:1, intid:A) /\ 1:X2=0)

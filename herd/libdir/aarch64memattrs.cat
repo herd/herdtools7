@@ -132,7 +132,7 @@ let PTEOuter-write-back = PTEOuter-write-back
 let ISH-WB = PTEInner-shareable & PTEInner-write-back & PTEOuter-write-back
 
 (* Default Memory Type *)
-let PTETaggedNormal = PTETaggedNormal | (if "memtag" then ISH-WB else 0)
+let PTETaggedNormal = PTETaggedNormal | (if "memtag" then ISH-WB else {})
 let PTENormal = PTENormal
               | PTENon-shareable | PTEInner-shareable | PTEOuter-shareable
               | PTEInner-write-back | PTEInner-write-through | PTEInner-non-cacheable

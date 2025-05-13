@@ -1,0 +1,11 @@
+Test gicr.cdnmia Allowed
+States 2
+0:X1=(valid:0);
+0:X1=(intid:A, valid:1);
+No
+Witnesses
+Positive: 0 Negative: 2
+Condition exists (0:X1=(intid:B, valid:1) \/ 0:X1=(intid:C, valid:1) \/ 0:X1=(intid:D, valid:1))
+Observation gicr.cdnmia Never 0 2
+Hash=dfb0f6d4ecae40d095116798ef558f02
+

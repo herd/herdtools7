@@ -1,0 +1,79 @@
+coWW-gic.litmus
+coWR-gic.litmus
+coWRW-gic.litmus
+ack-deactivate.litmus
+coWR-gic.dis.ack+gsb.sys.litmus
+coWR-gic.dis.ack.litmus
+#coWex+gic.cddis-gsb.sys-isb-clr.i.litmus
+#coWex+gic.cddis-gsb.sys-clr.i.litmus
+#coWR+gic.cden-gsb.sys-isb-isr.litmus
+#coWR+gic.cden-gsb.sys-isb-isr+wait.litmus
+coWR-gic.ipi.ack+gsb.sys.litmus
+coWR-gic.ipi.ack.litmus
+coWW-gic+R.litmus
+coRR-gic+cdpri+cfg-isb-cfg-isb.litmus
+#coRR-gic+cdpri+cfg-cfg.litmus      # Disabled because of SysReg
+#coRR-gic+cdpri+cfg-cfg-isb.litmus  # Disabled because of SysReg
+#coRR-gic+cdpri+cfg-isb-cfg.litmus  # Disabled because of SysReg
+IRIW-loc+gic.cdpri.litmus
+IRIW-2loc+gic.cdpri.litmus
+MP+gsb.sys+dsb.ld.litmus
+#MP-pri+gsb.sys+ack.litmus
+#MP-LSPI+imp+gsb.ack.litmus Missing
+#MP-LSPI+imp+addrpt.litmus Missing
+#MP-fSPI+dsb.st+gsb.ack.litmus
+MP-fIPI+dsb.st+gsb.ack.litmus
+MP-fIPI+dsb.st+addr.litmus
+MP-fIPI+dsb.st+ctrlisb.litmus
+MP-fDI+W-dsb-W+R-gsb-R.litmus
+MP-fDI+W-dsb-W+R-addrpt-R.litmus
+MP-fDI+W-dsb-W+R-ctrlisb-R.litmus
+MP-fDI+RR.litmus
+MP-fDI+W-dsb-W+RR.litmus
+MP-fDI+WW+R-gsb-R.litmus
+edge-merging.ipi.litmus
+edge-merging.ipi.MP.litmus
+#edge-merging.LPI+gsb.ack.litmus
+coRR.ack.litmus
+coRR.ack+dis+Rack.litmus
+atomic-gic.ack.litmus
+atomic.ack.dis.gic+W+R.litmus
+atomic.ack.gic-ib+W-R-si-R.litmus
+#coWWW-gic.dis-en+ack+ack.litmus
+co.ack-gic+WP+ack+ack.litmus
+#co.ack.1ofN-gic.litmus
+coWW.ack-gic+WP+ack.litmus
+#coRex-gic+dis+RisbR.litmus
+#coRex-gic+dis+RR.litmus
+#coRR+gic.cddis+gic.cdrcfg-isb-clr.i.litmus
+#coRR+gic.cddis+gic.cdrcfg-clr.i-isb.litmus
+#coWmrs.ack+isb.litmus
+#coWmrs.ack.litmus
+#coWmrs.ack+gsb.litmus
+#comsrR.ack+isb.litmus
+#edge-merging.ppi.litmus
+#vmW-gic+R.litmus
+#Wvm-gic+R.litmus
+#MP-fLPI+imp+gsb.ack.litmus Not in spec
+#MP-fLPI+imp+addrpt.litmus
+coWR-gic.dis.ack+gsb.sys.litmus
+# Not included
+#MP-fDI+ack-DI+gic.dis-R-gsb.sys-mR.litmus
+#MP-fDI+ack-DSB-DI+gic.dis-R-gsb.sys-mR.litmus
+gic.pri+gic.en.litmus
+coWW-gic+di-pend1.litmus
+coWW-gic+dis-ia.litmus
+coWW-gic+di-pri+rcfg.litmus
+coWW-gic+di-ia+rcfg.litmus
+coWR-gic+en-rcfg.litmus
+coWR-gic+di-rcfg.litmus
+coWR-gic+ia-rcfg.litmus
+coRW-gic+rcfg-pri.litmus
+coRW-gic+rcfg-ia.litmus
+coRW-gic+rcfg-di.litmus
+MP-fIPI-dTag+dsb.st+gsb.ack.litmus
+coWR-gic+ia-gsb.ack-di.litmus
+coWR-gic+dis-gsb.sys-ia.litmus
+coWWR-gic+pri-di-nmia.litmus
+coWWR-gic+pri-pend1-nmia.litmus
+

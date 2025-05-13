@@ -1,0 +1,7 @@
+AArch64 gicr.cdia-level
+{
+ [INTID(A)]=(pending:1,enabled:1,affinity:P0,active:0,priority:1,handling_mode:level);
+}
+ P0            ;
+ GICR X1, CDIA ;
+forall((0:X1=gicval_t:(valid:0) \/ [INTID(A)]=(pending:1,enabled:1,affinity:P0,active:1,priority:1,handling_mode:level)))

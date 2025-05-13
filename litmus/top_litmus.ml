@@ -535,7 +535,7 @@ end = struct
                     (struct let is_morello = false end) in
                 let module V =                  SymbConstant.Make
                     (Int64Scalar)(AArch64PteVal)
-                    (AArch64Instr) in
+                    (AArch64IntidVal)(AArch64Instr) in
                 let module Arch' = AArch64Arch_litmus.Make(OC)(V) in
                 let module LexParse = struct
                   type instruction = Arch'.parsedPseudo
