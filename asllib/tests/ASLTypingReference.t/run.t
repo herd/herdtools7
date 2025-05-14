@@ -567,7 +567,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.CheckIsNotCollection.asl, line 8, characters 2 to 25:
     var test: MyCollection; // Illegal: local storage elements cannot have collection types.
     ^^^^^^^^^^^^^^^^^^^^^^^
-  ASL typing error: unexpected collection.
+  ASL Typing error: unexpected collection.
   [1]
   $ aslref TypingRule.LESetCollectionFields.asl
   $ aslref TypingRule.TypecheckDecl.asl
@@ -763,7 +763,7 @@ ASL Typing Tests / annotating types:
   begin
       return ARBITRARY: MyCollection;
   end;
-  ASL typing error: unexpected collection.
+  ASL Typing error: unexpected collection.
   [1]
   $ aslref --no-exec TypingRule.AnnotateOneParam.asl
   $ aslref TypingRule.AnnotateOneParam.bad1.asl
@@ -789,7 +789,7 @@ ASL Typing Tests / annotating types:
     character 16:
   func arguments(b: MyCollection)
   begin pass; end;
-  ASL typing error: unexpected collection.
+  ASL Typing error: unexpected collection.
   [1]
   $ aslref TypingRule.AnnotateRetTy.asl
   $ aslref TypingRule.AnnotateRetTy.bad.asl
