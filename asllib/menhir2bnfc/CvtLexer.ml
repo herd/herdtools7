@@ -24,7 +24,12 @@ module Convert (GRAMMAR : MenhirSdk.Cmly_api.GRAMMAR) : sig
   val comments : comment list
   val tokens : token list
   val reserved : decl list
+  val reserved_entry_point : (string * decl list)
 end = struct
+
+  let reserved_id_name = "RESERVED_IDENTIFIER"
+  let reserved_keyword_name ="ReservedKeyword"
+  let reserved_ep_name = "Reserved"
 
   let comments = [ Comment [ "//" ]; Comment [ "/*"; "*/" ] ]
 
@@ -116,7 +121,7 @@ end = struct
         tok :: acc
     in
     let reserved_id =
-      let name = "RESERVED_IDENTIFIER" in
+      let name = reserved_id_name in
       let regex : Regex.t =
         Seq [
           Str "__";
@@ -130,10 +135,20 @@ end = struct
 
   let reserved =
     let mk_decl kw =
-      let name = "ReservedKeyword" in
+      let name = reserved_keyword_name in
       let ast_name = name ^ "_" ^ slug_str kw in
       let terms = [ Literal kw ] in
       Decl { ast_name; name; terms }
     in
     List.map mk_decl Asllib.Lexer.reserved_keywords
+
+  let reserved_entry_point =
+    let name = reserved_ep_name in
+    (
+      name,
+      [
+          Decl { ast_name = name ^ "_Token" ; name; terms = [Reference reserved_id_name ] };
+          Decl { ast_name = name ^ "_Keywords" ; name; terms = [Reference reserved_keyword_name ] }
+      ]
+    )
 end
