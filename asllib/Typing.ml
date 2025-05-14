@@ -4007,9 +4007,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               && Option.is_none f.recurse_limit
             then warn_from ~loc Error.(NoRecursionLimit [ f.name ])
           in
-          let ses_f = SES.remove_calls_recursives ses_f in
+          let ses_f_no_recursives = SES.remove_calls_recursives ses_f in
           let new_d = D_Func new_f |> here
-          and new_env = StaticEnv.add_subprogram new_f.name new_f ses_f env1 in
+          and new_env =
+            StaticEnv.add_subprogram new_f.name new_f ses_f_no_recursives env1
+          in
           (new_d, new_env.global) |: TypingRule.TypecheckDecl
       | D_Func ({ body = SB_Primitive _; _ } as f) ->
           let (new_env, new_f), _ = annotate_and_declare_func ~loc f genv in

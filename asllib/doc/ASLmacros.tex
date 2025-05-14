@@ -1846,7 +1846,9 @@
 \newcommand\precisionjoin[0]{\hyperlink{def-precisionjoin}{\textfunc{precision\_join}}}
 \newcommand\Prosenoprecisionloss[1]{determining whether #1 has been computed with no precision loss using $\checknoprecisionloss$ yields $\True$\ProseOrTypeError}
 \newcommand\annotatesubprogram[0]{\hyperlink{def-annotatesubprogram}{\textfunc{annotate\_subprogram}}}
-\newcommand\Proseannotatesubprogram[3]{\hyperlink{def-annotatesubprogram}{annotating} the subprogram definition #1 in the static environment #2 yields the subprogram definition #3}
+\newcommand\Proseannotatesubprogram[5]{\hyperlink{def-annotatesubprogram}{annotating} the subprogram definition #2
+  in the static environment #1 with \sideeffectdescriptorsetsterm{} #3 yields the subprogram definition #4
+  and \sideeffectdescriptorsetsterm{} #5}
 \newcommand\checkstmtreturnsorthrows[0]{\hyperlink{def-checkstmtreturnsorthrows}{\textfunc{check\_stmt\_returns\_or\_throws}}}
 
 \newcommand\controlflowfromstmt[0]{\hyperlink{def-controlflowfromstmt}{\textfunc{control\_flow\_from\_stmt}}}
@@ -2279,6 +2281,7 @@
 \newcommand\neweopt[0]{\texttt{new\_e\_opt}}
 \newcommand\newenv[0]{\texttt{new\_env}}
 \newcommand\newenvandfs[0]{\texttt{new\_env\_and\_fs}}
+\newcommand\newf[0]{\texttt{new\_f}}
 \newcommand\newfield[0]{\texttt{new\_field}}
 \newcommand\newfields[0]{\texttt{new\_fields}}
 \newcommand\newfuncdef[0]{\texttt{new\_func\_def}}
@@ -2776,6 +2779,7 @@
 \newcommand\vsesinitialvalue[0]{\texttt{ses\_initial\_value}}
 \newcommand\vsesbase[0]{\texttt{ses\_base}}
 \newcommand\vsesf[0]{\texttt{ses\_f}}
+\newcommand\vsesfnorecursives[0]{\texttt{ses\_f\_no\_recursives}}
 \newcommand\vsesfone[0]{\texttt{ses\_f1}}
 \newcommand\vsescatchers[0]{\texttt{ses\_catchers}}
 \newcommand\vseswithparams[0]{\texttt{ses\_with\_params}}
