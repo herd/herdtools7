@@ -8,5 +8,5 @@ Witnesses
 Positive: 0 Negative: 3
 Condition exists (0:X3=0 /\ 1:X3=0)
 Observation SB+dmb.sys Never 0 3
-Hash=c6a533fb255005c1a89998321e552a86
+Hash=05c540a1451ea5bed9297401d315e3d7
 
