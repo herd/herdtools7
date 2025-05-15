@@ -18,3 +18,4 @@
 
 val relations : (string * string) list
 val sets : (string * string) list
+val names : (string * string) list
