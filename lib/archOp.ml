@@ -29,8 +29,9 @@ module type S = sig
 
   type scalar
   type pteval
+  type addrreg
   type instr
-  type cst = (scalar, pteval, instr) Constant.t
+  type cst = (scalar, pteval, addrreg, instr) Constant.t
 
   (* Specific operations *)
   val do_op : op -> cst -> cst -> cst option
@@ -61,6 +62,7 @@ module No (Cst : Constant.S) :
   S
     with type scalar = Cst.Scalar.t
      and type pteval = Cst.PteVal.t
+     and type addrreg = Cst.AddrReg.t
      and type instr = Cst.Instr.t
      and type extra_op = no_extra_op
      and type 'a constr_op = 'a no_constr_op
@@ -79,8 +81,9 @@ module No (Cst : Constant.S) :
 
   type scalar = Cst.Scalar.t
   type pteval = Cst.PteVal.t
+  type addrreg = Cst.AddrReg.t
   type instr = Cst.Instr.t
-  type cst = (scalar, pteval, instr) Constant.t
+  type cst = (scalar, pteval, addrreg, instr) Constant.t
 
   let do_op _ _ _ = None
   let do_op1 _ _ = None
@@ -100,8 +103,9 @@ module type S1 = sig
 
   type scalar
   type pteval
+  type addrreg
   type instr
-  type cst = (scalar, pteval, instr) Constant.t
+  type cst = (scalar, pteval, addrreg, instr) Constant.t
 
   val do_op1 : op1 -> cst -> cst option
   val shift_address_right : string -> scalar -> cst option
@@ -117,6 +121,7 @@ module OnlyArchOp1 (A : S1) :
      and type 'a constr_op1 = 'a A.constr_op1
      and type scalar = A.scalar
      and type pteval = A.pteval
+     and type addrreg = A.addrreg
      and type instr = A.instr
      and type extra_op = no_extra_op
      and type 'a constr_op = 'a no_constr_op
