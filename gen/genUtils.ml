@@ -38,18 +38,31 @@ module Make(Cfg:Config)(A:Arch_gen.S)
        open A
 
        let next_init st p init loc =
-         let rec find_rec = function
-           | (Reg (p0,r0),Some (A.S loc0))::_
-             when Misc.string_eq loc0 loc && Misc.int_eq p p0
-             -> r0,init,st
-           | _::rem -> find_rec rem
-           | [] ->
-               let r,st =
-                 if Extra.use_symbolic then
-                   A.symb_reg (Printf.sprintf "%s%i" loc p),st
-                 else A.alloc_reg st in
-               r,(Reg (p,r),Some (A.S loc))::init,st in
-         find_rec init
+         let exact_match = List.find_opt ( function
+           | (Reg (p0,_),Some (A.S loc0))
+             when Misc.string_eq loc0 loc && Misc.int_eq p p0 -> true
+           | _ -> false ) init in
+         (* Despite `st` is local for procedure, `p`, we assume `st.regs`,
+            i.e. the allocation pool, contains no `r0`.
+            This means, `r0` is reserved for location `loc0` for all procedures,
+            hence `A.alloc_reg st` will never return `r0`. Given this assumption,
+            it is safe to bind `r0` to `loc` (`loc` = `loc0`) here. *)
+         let same_reg_match = List.find_opt ( function
+           | (Reg (_,_),Some (A.S loc0))
+             when Misc.string_eq loc0 loc -> true
+           | _ -> false ) init in
+         match exact_match,same_reg_match with
+         | Some (Reg (_,r),Some (A.S _)), _ -> r,init,st
+         | None, Some (Reg (_,r),Some (A.S _)) ->
+           r,(Reg (p,r),Some (A.S loc))::init,st
+         | None, None ->
+           (* no previous register assignment, so add new *)
+           let r,st =
+             if Extra.use_symbolic then
+               A.symb_reg (Printf.sprintf "%s%i" loc p),st
+             else A.alloc_reg st in
+           r,(Reg (p,r),Some (A.S loc))::init,st
+         | _,_ -> Warn.user_error "Unexpected error in `next_init`."
 
        let find_init p init loc =
          let rec find_rec = function
