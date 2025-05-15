@@ -24,11 +24,25 @@ grep -e \\[1\\] $DEFS | grep -v emph | grep newcommand |\
 \\par
 EOF
     done  > $TMP/U.tex
+grep -e  '\{.*name\}' $DEFS | grep -v emph | grep newcommand |\
+    sed -e 's/\\.*command{\([^}]*\)}.*/\1/g' |\
+    while read command
+    do
+        key=$(echo $command | sed -e 's/\(.*\)name/\1/g')
+        cat <<EOF
+"$key",
+"\\$command";
+\\par
+EOF
+        done > $TMP/V.tex
 echo let relations = [
 pandoc $DEFS $TMP/T.tex --wrap=none --to markdown | sed -e 's/ //g' -e 's/\\"/"/g' | grep -v '^$'
 echo ]
 echo
 echo let sets = [
 pandoc $DEFS $TMP/U.tex --wrap=none --to markdown | sed -e "s/ //g" -e 's/\\"/"/g' | grep -v '^$'
+echo ]
+echo let names = [
+pandoc $DEFS $TMP/V.tex --wrap=none --to markdown | sed -e "s/ //g" -e 's/\\"/"/g' | grep -v '^$'
 echo ]
 /bin/rm -rf $TMP

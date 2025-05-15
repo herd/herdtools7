@@ -19,4 +19,5 @@ module
     (_:sig val verbose : bool end) :
 sig
   val find : string  list -> string * string array
+  val find_def : string list -> string * string array
 end
