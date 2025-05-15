@@ -6,8 +6,8 @@ Variant=memtag,sync
 0:X2=y:red; 1:X2=1;
 }
 P0          | P1          | P1.F           ;
-MOV W0,#1   |L0:          | ADR X9,L1      ;
-STR W0,[X1] | LDR W2,[X3] | MSR ELR_EL1,X9 ;
-DMB ST      |L1:          | ERET           ;
-STG X2,[X3] | LDR W0,[X1] |                ;
-exists ~Fault(P1:L0,y) /\ 1:X0=0
+MOV W0,#1   |L0:          | MOV W4,#1      ;
+STR W0,[X1] | LDR W2,[X3] | ADR X9,L1      ;
+DMB ST      |L1:          | MSR ELR_EL1,X9 ;
+STG X2,[X3] | LDR W0,[X1] | ERET           ;
+exists 1:X4=0 /\ 1:X0=0
