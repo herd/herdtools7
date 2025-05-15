@@ -387,8 +387,8 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 |\ & \Tassert \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \option{\Nasty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Ncall \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Ncall \parsesep \Tdot \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Ncall \parsesep \Nsetteraccess \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Ncall \parsesep \Nsetteraccess \parsesep \Nslices \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Ncall \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{{\Tidentifier}} \parsesep \Trbracket \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Nasty} \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
@@ -419,8 +419,8 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \begin{flalign*}
 \Nlexpr \derives\
    & \Tminus &\\
-|\ & \Nslicedbasiclexpr &\\
-|\ & \Tlpar \parsesep \Clisttwo{\Ndiscardorslicedbasiclexpr} \parsesep \Trpar &\\
+|\ & \Nbasiclexpr &\\
+|\ & \Tlpar \parsesep \Clisttwo{\Ndiscardorbasiclexpr} \parsesep \Trpar &\\
 |\ & \Tidentifier \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{\Tidentifier} \parsesep \Trbracket &\\
 |\ & \Tidentifier \parsesep \Tdot \parsesep \Tlpar \parsesep \Clisttwo{\Ndiscardoridentifier} \parsesep \Trpar &
 \end{flalign*}
@@ -428,28 +428,33 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \hypertarget{def-nbasiclexpr}{}
 \begin{flalign*}
 \Nbasiclexpr \derives\
-   & \Tidentifier \parsesep \Nnestedfields &\\
-|\ & \Tidentifier \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket \parsesep \Nnestedfields &
+   & \Tidentifier \parsesep \Naccess &\\
+|\ & \Tidentifier \parsesep \Naccess \parsesep \Nslices &
 \end{flalign*}
 
-\hypertarget{def-nnestedfields}{}
+\hypertarget{def-naccess}{}
 \begin{flalign*}
-\Nnestedfields \derives\ & \emptysentence \;|\; \Tdot \parsesep \Tidentifier \parsesep \Nnestedfields &
+\Naccess \derives\
+   & \emptysentence  &\\
+|\ & \Tdot \parsesep \Tidentifier \parsesep \Naccess &\\
+|\ & \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket \parsesep \Naccess &
 \end{flalign*}
 
-\hypertarget{def-nslicedbasiclexpr}{}
+\hypertarget{def-ndiscardorbasiclexpr}{}
 \begin{flalign*}
-\Nslicedbasiclexpr \derives\ & \Nbasiclexpr \;|\; \Nbasiclexpr \parsesep \Nslices &
-\end{flalign*}
-
-\hypertarget{def-ndiscardorslicedbasiclexpr}{}
-\begin{flalign*}
-\Ndiscardorslicedbasiclexpr \derives\ & \Tminus \;|\; \Nslicedbasiclexpr &
+\Ndiscardorbasiclexpr \derives\ & \Tminus \;|\; \Nbasiclexpr &
 \end{flalign*}
 
 \hypertarget{def-ndiscardoridentifier}{}
 \begin{flalign*}
 \Ndiscardoridentifier \derives \ & \Tminus \;|\; \Tidentifier &
+\end{flalign*}
+
+\hypertarget{def-nsetteraccess}{}
+\begin{flalign*}
+\Nsetteraccess \derives \
+   & \emptysentence &\\
+|\ & \Tdot \parsesep \Tidentifier \parsesep \Nsetteraccess &
 \end{flalign*}
 
 A $\Ndeclitem$ is another kind of left-hand-side expression,

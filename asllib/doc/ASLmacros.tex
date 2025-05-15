@@ -490,11 +490,11 @@
 \newcommand\Nignoredoridentifier[0]{\hyperlink{def-nignoredoridentifier}{\nonterminal{ignored\_or\_identifier}}}
 \newcommand\Nty[0]{\hyperlink{def-nty}{\nonterminal{ty}}}
 \newcommand\Nexpr[0]{\hyperlink{def-nexpr}{\nonterminal{expr}}}
+\newcommand\Naccess[0]{\hyperlink{def-naccess}{\nonterminal{access}}}
 \newcommand\Nbasiclexpr[0]{\hyperlink{def-nbasiclexpr}{\nonterminal{basic\_lexpr}}}
-\newcommand\Nnestedfields[0]{\hyperlink{def-nnestedfields}{\nonterminal{nested\_fields}}}
-\newcommand\Nslicedbasiclexpr[0]{\hyperlink{def-nslicedbasiclexpr}{\nonterminal{sliced\_basic\_lexpr}}}
-\newcommand\Ndiscardorslicedbasiclexpr[0]{\hyperlink{def-ndiscardorslicedbasiclexpr}{\nonterminal{discard\_or\_sliced\_basic\_lexpr}}}
+\newcommand\Ndiscardorbasiclexpr[0]{\hyperlink{def-ndiscardorbasiclexpr}{\nonterminal{discard\_or\_basic\_lexpr}}}
 \newcommand\Ndiscardoridentifier[0]{\hyperlink{def-ndiscardoridentifier}{\nonterminal{discard\_or\_identifier}}}
+\newcommand\Nsetteraccess[0]{\hyperlink{def-nsetteraccess}{\nonterminal{setter\_access}}}
 \newcommand\Nlexpr[0]{\hyperlink{def-nlexpr}{\nonterminal{lexpr}}}
 \newcommand\Nfields[0]{\hyperlink{def-nfields}{\nonterminal{fields}}}
 \newcommand\Nfieldsopt[0]{\hyperlink{def-nfieldsopt}{\nonterminal{fields\_opt}}}
@@ -615,6 +615,9 @@
 \newcommand\spec[0]{\hyperlink{ast-spec}{\textsf{spec}}}
 \newcommand\typedidentifier[0]{\hyperlink{ast-typedidentifier}{\textsf{typed\_identifier}}}
 \newcommand\lhsaccess[0]{\hyperlink{ast-lhsaccess}{\textsf{lhs\_access}}}
+\newcommand\fieldorarrayaccess[0]{\hyperlink{ast-fieldorarrayaccess}{\textsf{field\_or\_array\_access}}}
+\newcommand\FieldAccess[0]{\hyperlink{ast-fieldaccess}{\textsf{FieldAccess}}}
+\newcommand\ArrayAccess[0]{\hyperlink{ast-arrayaccess}{\textsf{ArrayAccess}}}
 \newcommand\localdeclkeyword[0]{\hyperlink{ast-localdeclkeyword}{\textsf{local\_decl\_keyword}}}
 \newcommand\globaldeclkeyword[0]{\hyperlink{ast-globaldeclkeyword}{\textsf{global\_decl\_keyword}}}
 \newcommand\localdeclitem[0]{\hyperlink{ast-localdeclitem}{\textsf{local\_decl\_item}}}
@@ -788,6 +791,8 @@
 \newcommand\builddeclitem[0]{\hyperlink{build-declitem}{\textfunc{build\_decl\_item}}}
 \newcommand\makesetter[0]{\hyperlink{def-makesetter}{\textfunc{make\_setter}}}
 \newcommand\desugarsetter[0]{\hyperlink{def-desugarsetter}{\textfunc{desugar\_setter}}}
+\newcommand\desugarsettersetfields[0]{\hyperlink{def-desugarsettersetfields}{\textfunc{desugar\_setter\_setfields}}}
+\newcommand\readmodifywrite[0]{\hyperlink{def-readmodifywrite}{\textfunc{read\_modify\_write}}}
 \newcommand\desugaraccessorpair[0]{\hyperlink{def-desugaraccessorpair}{\textfunc{desugar\_accessor\_pair}}}
 \newcommand\buildlooplimit[0]{\hyperlink{build-looplimit}{\textfunc{build\_looplimit}}}
 \newcommand\buildrecurselimit[0]{\hyperlink{build-recurselimit}{\textfunc{build\_recurselimit}}}
@@ -796,9 +801,8 @@
 \newcommand\buildexpr[0]{\hyperlink{build-expr}{\textfunc{build\_expr}}}
 \newcommand\buildlexpr[0]{\hyperlink{build-lexpr}{\textfunc{build\_lexpr}}}
 \newcommand\buildbasiclexpr[0]{\hyperlink{build-basiclexpr}{\textfunc{build\_basic\_lexpr}}}
-\newcommand\buildnestedfields[0]{\hyperlink{build-nestedfields}{\textfunc{build\_nested\_fields}}}
-\newcommand\buildslicedbasiclexpr[0]{\hyperlink{build-slicedbasiclexpr}{\textfunc{build\_sliced\_basic\_lexpr}}}
-\newcommand\builddiscardorslicedbasiclexpr[0]{\hyperlink{build-discardorslicedbasiclexpr}{\textfunc{build\_discard\_or\_sliced\_basic\_lexpr}}}
+\newcommand\builddiscardorbasiclexpr[0]{\hyperlink{build-discardorbasiclexpr}{\textfunc{build\_discard\_or\_basic\_lexpr}}}
+\newcommand\buildaccess[0]{\hyperlink{build-access}{\textfunc{build\_access}}}
 \newcommand\builddiscardoridentifier[0]{\hyperlink{build-discardoridentifier}{\textfunc{build\_discard\_or\_identifier}}}
 \newcommand\desugarlhsaccess[0]{\hyperlink{def-desugarlhsaccess}{\textfunc{desugar\_lhs\_access}}}
 \newcommand\desugarlhsaccessopt[0]{\hyperlink{def-desugarlhsaccessopt}{\textfunc{desugar\_lhs\_access\_opt}}}
@@ -956,9 +960,7 @@
 \newcommand\callparams[0]{\text{params}}
 \newcommand\callargs[0]{\text{args}}
 \newcommand\callcalltype[0]{\text{call\_type}}
-\newcommand\lhsaccessbase[0]{\text{base}}
-\newcommand\lhsaccessindex[0]{\text{index}}
-\newcommand\lhsaccessfields[0]{\text{fields}}
+\newcommand\lhsaccessaccess[0]{\text{access}}
 \newcommand\lhsaccessslices[0]{\text{slices}}
 \newcommand\accessorpairgetter[0]{\text{getter}}
 \newcommand\accessorpairsetter[0]{\text{setter}}
@@ -2423,11 +2425,13 @@
 \newcommand\va[0]{\texttt{a}}
 \newcommand\vapprox[0]{\texttt{approx}}
 \newcommand\vap[0]{\texttt{a'}}
+\newcommand\vaccess[0]{\texttt{access}}
 \newcommand\vaccessors[0]{\texttt{accessors}}
 \newcommand\vaccessorpair[0]{\texttt{accessor\_pair}}
 \newcommand\vabsname[0]{\texttt{absolute\_name}}
 \newcommand\vabsslice[0]{\texttt{absolute\_slice}}
 \newcommand\vabsslices[0]{\texttt{absolute\_slices}}
+\newcommand\vsetteraccess[0]{\texttt{setter\_access}}
 \newcommand\vslicesasindices[0]{\texttt{slices\_as\_indices}}
 \newcommand\vabsoluteparent[0]{\texttt{absolute\_parent}}
 \newcommand\vabsbitfields[0]{\texttt{abs\_bitfields}}
@@ -2613,7 +2617,6 @@
 \newcommand\vh[0]{\texttt{h}}
 \newcommand\vhp[0]{\texttt{h'}}
 \newcommand\vlhsaccess[0]{\texttt{lhs\_access}}
-\newcommand\vlhsaccesses[0]{\texttt{lhs\_accesses}}
 \newcommand\vlhsaccessopt[0]{\texttt{lhs\_access\_opt}}
 \newcommand\vlhsaccessopts[0]{\texttt{lhs\_access\_opts}}
 \newcommand\vlocal[0]{\texttt{local}}
@@ -2713,7 +2716,6 @@
 \newcommand\vnamet[0]{\texttt{name\_t}}
 \newcommand\vneg[0]{\texttt{neg}}
 \newcommand\vnested[0]{\texttt{nested}}
-\newcommand\vnestedfields[0]{\texttt{nested\_fields}}
 \newcommand\vnextlimitopt[0]{\texttt{next\_limit\_opt}}
 \newcommand\vnew[0]{\texttt{new}}
 \newcommand\vnonmatching[0]{\texttt{nonmatching}}
@@ -2820,9 +2822,7 @@
 \newcommand\newses[0]{\texttt{new\_ses}}
 \newcommand\vslice[0]{\texttt{slice}}
 \newcommand\vnewslice[0]{\texttt{new\_slice}}
-\newcommand\vsliced[0]{\texttt{sliced}}
 \newcommand\vsliceasts[0]{\texttt{slice\_asts}}
-\newcommand\vslicedbasiclexpr[0]{\texttt{sliced\_basic\_lexpr}}
 \newcommand\vsliceone[0]{\texttt{slice1}}
 \newcommand\vslicetwo[0]{\texttt{slice2}}
 \newcommand\vslices[0]{\texttt{slices}}
