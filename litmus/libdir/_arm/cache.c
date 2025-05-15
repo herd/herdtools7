@@ -14,7 +14,11 @@
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
 /* No cache flush for ARM */
-inline static void cache_flush(void *p) { }
+inline static void cache_flush(void *p) {
+}
+
+inline static void cache_clean(void *p) {
+}
 
 inline static void cache_touch(void *p) {
   asm __volatile__ ("pld [%[p]]" :: [p] "r" (p) : "memory");
