@@ -21,6 +21,7 @@
 #include <asm/delay.h>
 #include <asm/mmu.h>
 #include <asm/pgtable-hwdef.h>
+#include "utils.h"
 
 #define LITMUS_PAGE_SIZE PAGE_SIZE
 
@@ -125,14 +126,16 @@ static inline pteval_t litmus_set_pte_flags(pteval_t old,pteval_t flags) {
 /* set 'global' PTE attributes */
 
 typedef enum
-  { attr_Normal, attr_Inner_2D_write_2D_through,
-    attr_Inner_2D_write_2D_back, attr_Inner_2D_non_2D_cacheable,
-    attr_Outer_2D_write_2D_through,
-    attr_Outer_2D_write_2D_back, attr_Outer_2D_non_2D_cacheable,
-    attr_Device,
-    attr_NGnRnE,attr_NGnRE,
-    attr_NGRE,attr_GRE,
-    attr_Non_2D_shareable,attr_Inner_2D_shareable,attr_Outer_2D_shareable,
+  { attr_Normal_iWB_oWB,
+    attr_TaggedNormal,		  
+    attr_Normal_iWT_oWT,
+    attr_Normal_iNC_oNC,
+    attr_NSH,
+    attr_ISH,
+    attr_OSH,
+    attr_Device_GRE,
+    attr_Device_nGnRE,
+    attr_Device_nGnRnE
   } pte_attr_key;
 
 /* Act on SH[1:0] ie bits [9:8] */
@@ -147,24 +150,21 @@ static inline pteval_t litmus_set_memattr(pteval_t old,pteval_t memattr) {
 
 static inline void litmus_set_pte_attribute(pteval_t *p,pte_attr_key k) {
   switch (k) {
-  case attr_Non_2D_shareable:
+  case attr_NSH:
     *p = litmus_set_sh(*p,0) ;
     break;
-  case attr_Inner_2D_shareable:
+  case attr_ISH:
     *p = litmus_set_sh(*p,3) ;
     break;
-  case attr_Outer_2D_shareable:
+  case attr_OSH:
     *p = litmus_set_sh(*p,2) ;
     break;
   /* For cacheability, set inner-cacheability only,
      is always non-cacheabke */
-  case attr_Normal:
-  case attr_Inner_2D_write_2D_back:
-  case attr_Outer_2D_write_2D_back:
+  case attr_Normal_iWB_oWB:
     *p = litmus_set_memattr(*p, MT_NORMAL);
     break;
-  case attr_Inner_2D_write_2D_through:
-  case attr_Outer_2D_write_2D_through:
+  case attr_Normal_iWT_oWT:
 #ifdef MT_NORMAL_WT
     *p = litmus_set_memattr(*p, MT_NORMAL_WT);
 #else
@@ -172,27 +172,26 @@ static inline void litmus_set_pte_attribute(pteval_t *p,pte_attr_key k) {
     *p = litmus_set_memattr(*p, MT_NORMAL_NC);
 #endif
     break;
-  case attr_Inner_2D_non_2D_cacheable:
-  case attr_Outer_2D_non_2D_cacheable:
+  case attr_Normal_iNC_oNC:
     *p = litmus_set_memattr(*p, MT_NORMAL_NC);
     break;
-  case attr_Device:
-  case attr_NGnRE:
+  case attr_Device_nGnRE:
     *p = litmus_set_memattr(*p, MT_DEVICE_nGnRE);
     break;
-  case attr_NGnRnE:
+  case attr_Device_nGnRnE:
     *p = litmus_set_memattr(*p, MT_DEVICE_nGnRnE);
     break;
-  case attr_NGRE:
-#ifdef MT_DEVICE_nGRE
-    *p = litmus_set_memattr(*p, MT_DEVICE_nGRE);
-#else
-#pragma message "Device nGRE attribute not supported, using nGnRE instead\n"
-    *p = litmus_set_memattr(*p, MT_DEVICE_nGnRE);
-#endif
-    break;
-  case attr_GRE:
+  case attr_Device_GRE:
     *p = litmus_set_memattr(*p, MT_DEVICE_GRE);
+    break;
+  case attr_TaggedNormal:
+#ifdef __ARM_FEATURE_MEMORY_TAGGING
+#ifdef MT_NORMAL_TAGGED
+    *p = litmus_set_memattr(*p, MT_NORMAL_TAGGED);
+#else
+    fatal("Normal Tagged attribute not supported");
+#endif
+#endif
     break;
   }
 }
@@ -324,4 +323,85 @@ inline static void reset_hahd_bits(void) {
   }
 }
 
-static inline void litmus_init(void) { reset_hahd_bits(); }
+inline static uint64_t get_mair_el1(void)
+{
+  uint64_t r;
+  asm volatile("mrs %x0, mair_el1" : "=r"(r));
+  return r;
+}
+
+inline static void set_mair_el1(uint64_t a)
+{
+  asm volatile(
+      "msr mair_el1,%x0\n"
+      "\tisb\n"
+      : : "r"(a));
+}
+
+inline static uint64_t get_sctlr_el1(void)
+{
+  uint64_t r;
+  asm volatile("mrs %x0, sctlr_el1" : "=r"(r));
+  return r;
+}
+
+inline static void set_sctlr_el1(uint64_t a)
+{
+  asm volatile(
+      "msr sctlr_el1,%x0\n"
+      "\tisb\n"
+      : : "r"(a));
+}
+
+inline static uint64_t get_mte(void)
+{
+  uint64_t r;
+  asm volatile("mrs %x0, id_aa64pfr1_el1" : "=r"(r));
+  return (r >> 8) & 0b1111;
+}
+
+
+inline static void set_tbi_bits(uint64_t v) {
+  set_tcr_el1_bit(37,v);
+}
+
+typedef enum
+{ tag_check_Off = 0b0000,
+  tag_check_Sync = 0b0101,
+  tag_check_Async = 0b1010,
+  tag_check_Asymm = 0b1111,
+} tag_check_key;
+
+inline static void mte_init(tag_check_key tag_check)
+{
+  uint64_t mte = get_mte();
+
+  switch (tag_check) {
+  case tag_check_Sync:
+    if (mte < 0b0010)
+      fatal("Synchronous Tag Check Fault not supported");
+    break;
+  case tag_check_Async:
+    if (mte < 0b0011)
+      fatal("Asynchronous Tag Check Fault not supported");
+    break;
+  case tag_check_Asymm:
+    if (mte < 0b0011)
+      fatal("Asymmetric Tag Check Fault not supported");
+    break;
+  case tag_check_Off:
+    break;
+  }
+
+  if (mte >= 0b0010) {
+    uint64_t sctlr;
+    set_tbi_bits(0b11);   // TBI0 and TBI1
+    sctlr = get_sctlr_el1();
+    sctlr &= ~((3UL << 42) | (0xfUL << 40));
+    sctlr |= (3UL << 42); // ATA
+    sctlr |= ((uint64_t)tag_check << 40); // TCF
+    set_sctlr_el1(sctlr);
+  }
+}
+
+static inline void litmus_init(void) { reset_hahd_bits(); mte_init(tag_check_Off);}

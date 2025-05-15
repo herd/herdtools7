@@ -96,6 +96,7 @@ end = struct
 
 (* Makefile utilities *)
   let do_self = Cfg.variant Variant_litmus.Self
+  let do_memtag = Cfg.variant Variant_litmus.MemTag
 
   let makefile_vars chan infile arch pac sources =
     let module O = struct
@@ -270,11 +271,12 @@ let dump_shell_kvm_dorun out_chan e =
   fprintf out_chan "  EXE=$1\n" ;
   fprintf out_chan "  shift\n" ;
   fprintf out_chan "  OPTS=\"$@\"\n" ;
-  fprintf out_chan "  ${KVM_RUN} ${TDIR}/${EXE} -smp %i -append \"${OPTS}\"\n"
+  fprintf out_chan "  ${KVM_RUN} ${TDIR}/${EXE} -smp %i -append \"${OPTS}\" %s\n"
     (match Cfg.avail with
      | Some e -> e
      | None ->
-        Warn.user_error "Available threads must be set in kvm mode") ;
+        Warn.user_error "Available threads must be set in kvm mode")
+    (if do_memtag then "-machine mte=on" else "") ;
   fprintf out_chan "}\n"
 
 let dump_c_shell_kvm e =

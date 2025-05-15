@@ -37,6 +37,7 @@ val svint32_t : t
 val pteval_t : t
 val pte : t
 val ins_t : t
+val tag_t : t
 
 val dump : t -> string
 val debug : t -> string
@@ -46,6 +47,8 @@ type fmt = Direct of string | Macro of string
 val get_fmt : bool (* hexa *) -> base -> fmt option
 
 val is_ptr : t -> bool
+val is_tag : t -> bool
+val is_tag_ptr: t -> bool
 val is_pte : t -> bool
 val is_array : t -> bool
 val is_atomic : t -> bool
@@ -65,6 +68,9 @@ val type_for_align : int -> t
 
 (* Type of array elements, fails if argument is not an array type *)
 val element_type : t -> t
+
+(* Type of pointer (w/o attributes), fails if argument is not an pointer type *)
+val pointer_type : t -> t
 
 (* Is type integer signed? *)
 val signed : t -> bool
