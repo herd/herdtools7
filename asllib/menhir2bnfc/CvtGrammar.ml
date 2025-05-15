@@ -178,10 +178,17 @@ end = struct
         Some set
       else None
     in
-    let has_last_map, rest_map =
+    let partition_has_last  =
       NonterminalMap.partition
         (fun _ prod_map -> get_last_set prod_map |> Option.is_some)
-        ambiguous_production_sets
+    in
+    (* Filter out any terminating productions from the ambiguous precedence set *)
+    let _, rest_map =
+      partition_has_last ambiguous_production_sets
+    in
+    (* Collect all productions which have a single possible "final" token list *)
+    let has_last_map, _ =
+      partition_has_last production_to_terminals
     in
     let nterm_to_set : TerminalSet.t NonterminalMap.t =
       NonterminalMap.map

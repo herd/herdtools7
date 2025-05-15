@@ -106,17 +106,18 @@ let translate_to_str args =
       let filename = args.cmly_file
     end) in
     let module GrammarData = CvtGrammar.Convert (GRAMMAR) in
-    let reserved, comments, tokens =
+    let reserved, comments, tokens, reserved_ep_name, reserved_ep_decls =
       if args.with_lexer then
         let module L = CvtLexer.Convert (GRAMMAR) in
-        (L.reserved, L.comments, L.tokens)
-      else ([], [], [])
+        let (reserved_ep_name, reserved_ep_decls) = L.reserved_entry_point in
+        (L.reserved, L.comments, L.tokens, [reserved_ep_name], reserved_ep_decls)
+      else ([], [], [], [], [])
     in
     let initial =
       embed_literals
         {
-          entrypoints = GrammarData.entrypoints;
-          decls = GrammarData.decls @ reserved;
+          entrypoints = GrammarData.entrypoints @ reserved_ep_name;
+          decls = GrammarData.decls @ reserved @ reserved_ep_decls;
           comments;
           tokens;
         }

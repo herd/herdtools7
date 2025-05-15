@@ -16,7 +16,7 @@
 
 (menhir
  (modules ParGrammar)
- (flags --unused-tokens))
+ (flags --unused-tokens --strict))
 
 (library
  (name bnfc_parser)
