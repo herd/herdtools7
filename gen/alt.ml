@@ -305,14 +305,14 @@ module Make(C:Builder.S)
         | _ -> true
         end
 
-    let pp_ess ess =
-      String.concat " "
-        (List.fold_right
-           (fun (_,es) ->
-             List.fold_right
-               (fun e k -> pp_edge e::k)
-               es)
-           ess [])
+    let pp_ess ?(simple_format=true) ess =
+      let list_sep,list_list_sep =
+        if simple_format then " ", " " else ", ", "+" in
+      ess |> List.map
+          ( fun (_,es) ->
+            es |> List.map (fun e -> pp_edge e)
+               |> String.concat list_list_sep )
+          |> String.concat list_sep
 
     let edges_ofs rs =
       List.map (fun r -> (r, edges_of r)) rs
@@ -390,9 +390,11 @@ module Make(C:Builder.S)
 
 
     let check_cycle rsuff rl =
-      let rsuff = List.map (fun (_,rr) -> rr) rsuff in
+      eprintf "rsuff: %s\n" (pp_ess ~simple_format:false rsuff);
+      let _,rsuff = List.split rsuff in
       let rsuff = List.concat rsuff in
-      not (List.exists (fun rl ->  is_prefix rsuff rl) rl)
+      let rst = not (List.exists (fun rl ->  is_prefix rsuff rl) rl) in
+      rst
 
 
     let call_rec prefix f0 safes po_safe over n r suff f_rec k ?(reject=[])=
