@@ -1,6 +1,7 @@
 LB-notagfault+po+dmb.ldpt--async.litmus
 LB-tagfault+addr+dmb.ldpt--async.litmus
 LB-tagfault+ctrl+dmb.ldpt--async.litmus
+LB-tagfault+ctrl+dmb.ldpt--async.mod.litmus
 LB-tagfault+data+dmb.ldpt--async.litmus
 LB-tagfault+dmb.ish+dmb.ldpt--async.litmus
 LB-tagfault+dmb.ld+dmb.ldpt--async.litmus
@@ -9,5 +10,5 @@ LB-tagfault+po+dmb.ldpt--async.litmus
 LB-tagfault+rel+dmb.ldpt--async.litmus
 MP+dmb.stpt+tcib-po-isb-po--async.litmus
 MP+dmb.stpt+tcib-tagfault-po--async.litmus
-S+dmb.stpt+tcib-po--async.litmus
 S-tagfault+dmb.st+dmb.ldpt--async.litmus
+S+dmb.stpt+tcib-po--async.litmus
