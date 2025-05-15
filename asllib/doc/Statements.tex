@@ -300,9 +300,12 @@ $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \
-   & \Ncall \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Ncall \parsesep \Tdot \parsesep \Tidentifier \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+   & \Ncall \parsesep \Nsetteraccess \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+|\ & \Ncall \parsesep \Nsetteraccess \parsesep \Nslices \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Ncall \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{{\Tidentifier}} \parsesep \Trbracket \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
+\Nsetteraccess \derives \
+   & \emptysentence &\\
+|\ & \Tdot \parsesep \Tidentifier \parsesep \Nsetteraccess &
 \end{flalign*}
 
 \ASTRuleDef{MakeSetter}
@@ -335,80 +338,136 @@ The helper function
 \[
 \desugarsetter(
   \overname{\call}{\vcall} \aslsep
-  \overname{\identifier^*}{\fields} \aslsep
+  \overname{\lhsaccess}{\vlhsaccess} \aslsep
   \overname{\expr}{\rhs}) \aslto \overname{\stmt}{\news}
 \]
-builds a statement $\news$ from an assignment of expression $\rhs$ to a setter invocation $\vcall$$\name$ with field accesses $\fields$.
+builds a statement $\news$ from an assignment of expression $\rhs$ to a setter invocation $\vcall.\callname$ with accesses given by $\vlhsaccess$.
 
 \begin{mathpar}
 \inferrule[empty]{
-  \fields \eqname \emptylist \\
+  \vlhsaccess.\lhsaccessaccess = \emptylist \\
+  \vlhsaccess.\lhsaccessslices = \emptylist \\\\
   \makesetter(\vcall, \rhs) \aslto \vcallp
 }{
-  \desugarsetter(\vcall, \fields, \rhs)
+  \desugarsetter(\vcall, \vlhsaccess, \rhs)
   \astarrow
   \SCall(\vcallp)
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[singleton]{
-  \fields \eqname [\field] \\
+\inferrule[non\_empty]{
+  \vlhsaccess.\lhsaccessaccess \neq \emptylist \lor
+  \vlhsaccess.\lhsaccessslices \neq \emptylist \\\\
   \vx \in \Identifiers \text{ is fresh} \\\\
-  \setcalltype(\vcall, \STGetter) \aslto \vgetter \\\\
-  \vread \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \langle\vgetter\rangle) \\\\
-  \vmodify \eqdef \SAssign(\LESetField(\LEVar(\vx), \field), \rhs) \\\\
-  \makesetter(\vcall, \EVar(\vx)) \aslto \vsetter
+  \desugarlhsaccess(\vx, \vlhsaccess) \astarrow \lhs \\
+  \vmodify \eqdef \SAssign(\lhs, \rhs) \\
+  \readmodifywrite(\vcall, \vx, \vmodify) \astarrow \vcallp
 }{
-  \desugarsetter(\vcall, \fields, \rhs)
+  \desugarsetter(\vcall, \vlhsaccess, \rhs)
   \astarrow
-  \SSeq (\SSeq(\vread, \vmodify), \SCall(\vsetter))
+  \vcallp
 }
 \end{mathpar}
 
+\ASTRuleDef{DesugarSetterSetfields}
+\hypertarget{def-desugarsettersetfields}{}
+The helper function
+\[
+\desugarsettersetfields(
+  \overname{\call}{\vcall} \aslsep
+  \overname{\identifier^*}{\vfields} \aslsep
+  \overname{\expr}{\rhs}) \aslto \overname{\stmt}{\news}
+\]
+builds a statement $\news$ from an assignment of $\rhs$ to a setter invocation $\vcall.\callname$ with concatenated field accesses given by $\vfields$.
+
 \begin{mathpar}
-\inferrule[multiple]{
-  \listlen{\fields} > 1 \\
+\inferrule{
   \vx \in \Identifiers \text{ is fresh} \\\\
+  \lhs \eqdef \LESetFields(\LEVar(\vx), \vfields) \\
+  \vmodify \eqdef \SAssign(\lhs, \rhs) \\
+  \readmodifywrite(\vcall, \vx, \vmodify) \astarrow \vcallp
+}{
+  \desugarsettersetfields(\vcall, \fields, \rhs)
+  \astarrow
+  \vcallp
+}
+\end{mathpar}
+
+\ASTRuleDef{ReadModifyWrite}
+\hypertarget{def-readmodifywrite}{}
+The helper function
+\[
+\readmodifywrite(
+  \overname{\call}{\vcall} \aslsep
+  \overname{\identifier}{\vx} \aslsep
+  \overname{\stmt}{\vmodify}) \aslto \overname{\stmt}{\news}
+\]
+builds a sequence of statements to read from the getter invocation $\vcall.\callname$, modify the resulting value using $\vmodify$, and write it to a setter invocation $\vcall.\callname$.
+
+\begin{mathpar}
+\inferrule{
   \setcalltype(\vcall, \STGetter) \aslto \vgetter \\\\
-  \vread \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \langle\vgetter\rangle) \\\\
-  \vmodify \eqdef \SAssign(\LESetFields(\LEVar(\vx), \fields), \rhs) \\\\
+  \vread \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \langle\ECall(\vgetter)\rangle) \\\\
   \makesetter(\vcall, \EVar(\vx)) \aslto \vsetter
 }{
-  \desugarsetter(\vcall, \fields, \rhs)
+  \readmodifywrite(\vcall, \vx, \vmodify)
   \astarrow
-  \SSeq (\SSeq(\vread, \vmodify), \SCall(\vsetter))
+  \overname{\SSeq (\SSeq(\vread, \vmodify), \SCall(\vsetter))}{\news}
 }
 \end{mathpar}
 
 \ASTRuleDef{SetterAssign}
 \begin{mathpar}
-\inferrule{
-  \desugarsetter(\astof{\vcall}, \emptylist, \astof{\vexpr}) \astarrow \vastnode
+\inferrule[no\_slices]{
+  \buildaccess(\vsetteraccess) \astarrow \vaccess \\\\
+  {
+  \vlhsaccess \eqdef
+    \left\{
+      \begin{array}{rcl}
+        \lhsaccessaccess &:& \vaccess,\\
+        \lhsaccessslices &:& \emptylist
+      \end{array}
+    \right\}
+  } \\
+  \desugarsetter(\astof{\vcall}, \vlhsaccess, \astof{\vexpr}) \astarrow \vastnode
 }{
-  \buildstmt(\overname{\Nstmt(\punnode{\call}, \Teq, \punnode{\Nexpr}, \Tsemicolon
+  \buildstmt(\overname{\Nstmt(\punnode{\Ncall}, \namednode{\vsetteraccess}{\Nsetteraccess}, \Teq, \punnode{\Nexpr}, \Tsemicolon
   )}{\vparsednode})
   \astarrow \vastnode
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule{
-  \desugarsetter(\astof{\vcall}, [\vfield], \astof{\vexpr}) \astarrow \vastnode
+\inferrule[slices]{
+  \buildaccess(\vsetteraccess) \astarrow \vaccess \\\\
+  {
+  \vlhsaccess \eqdef
+    \left\{
+      \begin{array}{rcl}
+        \lhsaccessaccess &:& \vaccess,\\
+        \lhsaccessslices &:& \astof{\vslices}
+      \end{array}
+    \right\}
+  } \\
+  \desugarsetter(\astof{\vcall}, \vlhsaccess, \astof{\vexpr}) \astarrow \vastnode
 }{
-  \buildstmt(\overname{\Nstmt(\punnode{\call}, \Tdot,
-    \Tidentifier(\vfield), \Teq, \punnode{\Nexpr}, \Tsemicolon
-  )}{\vparsednode})
-  \astarrow \vastnode
+  {
+    \begin{array}{r}
+      \buildstmt(\overname{\Nstmt(\punnode{\Ncall}, \namednode{\vsetteraccess}{\Nsetteraccess}, \punnode{\Nslices}, \Teq, \punnode{\Nexpr}, \Tsemicolon
+      )}{\vparsednode})
+      \astarrow \\ \vastnode
+    \end{array}
+  }
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule{
+\inferrule[setfields]{
   \buildclist[\buildidentity](\vfields) \astarrow \vfieldasts \\
-  \desugarsetter(\astof{\vcall}, \vfieldasts, \astof{\vexpr}) \astarrow \vastnode
+  \desugarsettersetfields(\astof{\vcall}, \vfieldasts, \astof{\vexpr}) \astarrow \vastnode
 }{
-  \buildstmt(\overname{\Nstmt(\punnode{\call}, \Tdot,
+  \buildstmt(\overname{\Nstmt(\punnode{\Ncall}, \Tdot,
     \Tlbracket, \namednode{\vfields}{\Clisttwo{\Tidentifier}}, \Trbracket, \Teq, \punnode{\Nexpr}, \Tsemicolon
   )}{\vparsednode})
   \astarrow \vastnode
