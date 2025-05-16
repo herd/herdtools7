@@ -655,7 +655,6 @@ module Make
               | Some _ ->
                 M.bind_ctrldata ma (fun a -> m >>== fun _ -> M.unitT a) in
             choice c ma)
-
       (* Tag checking Morello *)
       let do_append_commit ma txt ii =
         ma >>== fun a -> commit_pred_txt txt ii >>= fun () -> M.unitT a
@@ -1549,11 +1548,15 @@ module Make
 
       let do_ldr rA sz an mop ma ii =
 (* Generic load *)
-        lift_memop rA Dir.R false memtag
+        let checked = memtag && not C.mte_store_only in
+        let ma = if memtag && C.mte_store_only then
+          ma >>= fun a -> loc_extract a
+        else ma in
+        lift_memop rA Dir.R false checked
           (fun ac ma _mv -> (* value fake here *)
             let open Precision in
             let memtag_sync =
-              memtag && (C.mte_precision = Synchronous ||
+              checked && (C.mte_precision = Synchronous ||
                          C.mte_precision = Asymmetric) in
             if memtag_sync || Access.is_physical ac || pac then
               M.bind_ctrldata ma (mop ac)
@@ -2093,13 +2096,31 @@ module Make
             lift_memop rn Dir.W true memtag mop_fail_with_wb (to_perms "rw" sz)
               (read_reg_ord rn ii) (read_reg_data sz rt ii) an ii
           )(
-            (* CAS does not generate an Explicit Write Effect          *)
-            (* It is IMPLEMENTATION SPECIFIC if there is an update to  *)
-            (*                                the dirty bit of the TTD *)
-            (* Note: the combination of dir=Dir.R and updatedb=true    *)
-            (*                    triggers an alternative in check_ptw *)
-            lift_memop rn Dir.R true memtag mop_fail_no_wb (to_perms "rw" sz)
-              (read_reg_ord rn ii) (read_reg_data sz rt ii) an ii
+              (* CAS does not generate an Explicit Write Effect          *)
+              (* It is IMPLEMENTATION SPECIFIC if there is an update to  *)
+              (*                                the dirty bit of the TTD *)
+              (* Note: the combination of dir=Dir.R and updatedb=true    *)
+              (*                    triggers an alternative in check_ptw *)
+              let ma = read_reg_ord rn ii
+              and action updatedb checked ma =
+                lift_memop rn Dir.R updatedb checked mop_fail_no_wb (to_perms "rw" sz)
+                  ma (read_reg_data sz rt ii) an ii in
+               if memtag && C.mte_store_only then
+                M.altT (
+                  (* If FEAT_MTE_STORE_ONLY is implemented it is              *)
+                  (* CONSTRAINED UNPREDICTABLE whether the Tag Check          *)
+                  (* operation is performed.                                  *)
+                  (* Note: Cover case where Tag Check operation is not        *)
+                  (*       performed                                          *)
+                  let ma = ma >>= fun a -> loc_extract a in
+                  action false false ma
+                )(
+                  (* Tag Check operation is performed, plus an update to the *)
+                  (* dirty bit of the TTD *)
+                  action true memtag ma
+                )
+               else
+                action true memtag ma
           )
         )
 
@@ -2181,10 +2202,28 @@ module Make
             (*                                the dirty bit of the TTD *)
             (* Note: the combination of dir=Dir.R and updatedb=true    *)
             (*                    triggers an alternative in check_ptw *)
-            lift_memop rn Dir.R true memtag mop_fail_no_wb
-              (to_perms "rw" sz) (read_reg_ord rn ii)
-              (read_reg_data sz rt1 ii >>> fun _ -> read_reg_data sz rt2 ii)
-              an ii
+            let ma = read_reg_ord rn ii
+            and action updatedb checked ma =
+              lift_memop rn Dir.R updatedb checked mop_fail_no_wb
+                (to_perms "rw" sz) ma
+                (read_reg_data sz rt1 ii >>> fun _ -> read_reg_data sz rt2 ii)
+                an ii in
+                if memtag && C.mte_store_only then
+                M.altT (
+                  (* If FEAT_MTE_STORE_ONLY is implemented it is              *)
+                  (* CONSTRAINED UNPREDICTABLE whether the Tag Check          *)
+                  (* operation is performed.                                  *)
+                  (* Note: Cover case where Tag Check operation is not        *)
+                  (*       performed                                          *)
+                  let ma = ma >>= fun a -> loc_extract a in
+                  action false false ma
+                )(
+                  (* Tag Check operation is performed, plus an update to the *)
+                  (* dirty bit of the TTD *)
+                  action true memtag ma
+                )
+               else
+                action true memtag ma
           )
         )
 
