@@ -95,8 +95,10 @@
   :elementp-of-nil nil)
 
 
+(fty::deflist val-imaplist :elt-type val-imap :true-listp t :elementp-of-nil t)
+
 (defprod local-env
-  ((storage val-imap)
+  ((storage val-imaplist)
    (scope unit)
    (unroll integer-list)
    (declared identifierlist))
@@ -104,7 +106,7 @@
 
 (define empty-local-env ()
   :returns (empty local-env-p)
-  (make-local-env))
+  (make-local-env :storage '(nil)))
 
 
 (defprod env
@@ -134,9 +136,11 @@
 (deftagsum eval_result
   (:ev_normal (res))
   (:ev_throwing ((throwdata maybe-throwdata)
-                 (env env)))
+                 (env env)
+                 (backtrace)))
   (:ev_error    ((desc stringp)
-                 (data))))
+                 (data)
+                 (backtrace))))
 
 
 (defmacro def-eval_result (pred res-pred)

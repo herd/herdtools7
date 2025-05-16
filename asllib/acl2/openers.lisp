@@ -86,7 +86,7 @@
 (defopener open-ty-satisfied ty-satisfied
   :hyp (syntaxp (or (quotep ty)
                     (case-match ty
-                      (('ty (ctor . &))
+                      (('ty (ctor . &) &)
                        (member-eq ctor
                                   '(t_int t_bits t_real t_string t_bool t_enum
                                           t_tuple t_array t_record t_exception

@@ -48,12 +48,12 @@
                    (< (- (+ 1 (acl2::rational-exponent val.val)) high.val) limit))
   :hints ((and stable-under-simplificationp
                '(:expand ((ACL2::ILOG2-SEARCH-UP
-                           (V_REAL->VAL (CDR (HONS-ASSOC-EQUAL "__stdlib_local_val"
+                           (V_REAL->VAL (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_val"
                                                                (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))
-                           (V_INT->VAL (CDR (HONS-ASSOC-EQUAL "__stdlib_local_low"
+                           (V_INT->VAL (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_low"
                                                               (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))
                            (V_INT->VAL
-                            (CDR (HONS-ASSOC-EQUAL "__stdlib_local_high"
+                            (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_high"
                                                    (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))))))))
 
 
@@ -73,12 +73,12 @@
                    (< (- (+ 1 (- (acl2::rational-exponent val.val))) (- low.val)) limit))
   :hints ((and stable-under-simplificationp
                '(:expand ((ACL2::ILOG2-SEARCH-DOWN
-                           (V_REAL->VAL (CDR (HONS-ASSOC-EQUAL "__stdlib_local_val"
+                           (V_REAL->VAL (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_val"
                                                                (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))
-                           (V_INT->VAL (CDR (HONS-ASSOC-EQUAL "__stdlib_local_low"
+                           (V_INT->VAL (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_low"
                                                               (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))
                            (V_INT->VAL
-                            (CDR (HONS-ASSOC-EQUAL "__stdlib_local_high"
+                            (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_high"
                                                    (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))))))))
 
 
@@ -90,19 +90,19 @@
                ((v_int high) "__stdlib_local_high" (v_int high-spec))
                ((v_int low)  "__stdlib_local_low"  (v_int low-spec)))
   :bindings (((mv low-spec high-spec) (acl2::ilog2-binary-search val.val low.val high.val)))
-  :invariants (and (not (hons-assoc-equal "__stdlib_local_mid" env.local.storage))
+  :invariants (and (not (val-imaplist-assoc "__stdlib_local_mid" env.local.storage))
                    (< 0 val.val)
                    (< (- high.val low.val) (nfix clk))
                    (integerp limit)
                    (< (- high.val low.val) limit))
   :hints ((and stable-under-simplificationp
                '(:expand ((acl2::ilog2-binary-search
-                           (V_REAL->VAL (CDR (HONS-ASSOC-EQUAL "__stdlib_local_val"
+                           (V_REAL->VAL (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_val"
                                                                (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))
-                           (V_INT->VAL (CDR (HONS-ASSOC-EQUAL "__stdlib_local_low"
+                           (V_INT->VAL (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_low"
                                                               (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))
                            (V_INT->VAL
-                            (CDR (HONS-ASSOC-EQUAL "__stdlib_local_high"
+                            (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_high"
                                                    (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))))))))
 
 

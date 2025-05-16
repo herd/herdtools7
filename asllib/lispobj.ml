@@ -198,22 +198,17 @@ let of_position x =
   let open Lexing in
   aslsym_alist
     [
-      ("POS_FNAME", String x.pos_fname);
-      ("POS_LNUM", of_int x.pos_lnum);
-      ("POS_BOL", of_int x.pos_bol);
-      ("POS_CNUM", of_int x.pos_cnum);
+      ("FNAME", String x.pos_fname);
+      ("LNUM", of_int x.pos_lnum);
+      ("BOL", of_int x.pos_bol);
+      ("CNUM", of_int x.pos_cnum);
     ]
 
 let of_annotated of_a x =
-  if true then of_a x.desc
+  if false then of_a x.desc
   else
     aslsym_alist
-      [
-        ("DESC", of_a x.desc);
-        ("POS_START", of_position x.pos_start);
-        ("POS_END", of_position x.pos_end);
-        ("VERSION", of_version x.version);
-      ]
+      [ ("DESC", of_a x.desc); ("POS_START", of_position x.pos_start) ]
 
 let of_identifier x = String x
 let of_uid x = of_int x

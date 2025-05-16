@@ -74,7 +74,7 @@
                                       (global-env->static (env->global env))
                                       (stdlib-static-env))
                    (<= 1 x_pos.val)
-                   (not (hons-assoc-equal "__stdlib_local_next" env.local.storage))
+                   (not (val-imaplist-assoc "__stdlib_local_next" env.local.storage))
                    (equal acc.val (* (expt 2 (+ 1 start))
                                      (floor x_pos.val (expt 2 (+ 1 start)))))
                    (equal end 0)
@@ -90,7 +90,7 @@
    (local (defthm acc-equal-to-same
             (b* ((storage (local-env->storage
                            (env->local env)))
-                 (acc-look (hons-assoc-equal "__stdlib_local_acc" storage))
+                 (acc-look (val-imaplist-assoc "__stdlib_local_acc" storage))
                  (acc (cdr acc-look))
                  ((v_int acc)))
               (equal (equal acc.val (* 2 (expt 2 x) y))
@@ -100,7 +100,7 @@
    (local (defthm acc-when-same
             (b* ((storage (local-env->storage
                            (env->local env)))
-                 (acc-look (hons-assoc-equal "__stdlib_local_acc" storage))
+                 (acc-look (val-imaplist-assoc "__stdlib_local_acc" storage))
                  (acc (cdr acc-look))
                  ((v_int acc)))
               (implies (same  acc.val (* 2 (expt 2 x) y))

@@ -46,7 +46,7 @@
   (define lexpr-count* ((x lexpr-p))
     :measure (lexpr-count x)
     :returns (count posp :rule-classes :type-prescription)
-    (+ 2 (lexpr_desc-count* (lexpr->val x))))
+    (+ 3 (lexpr_desc-count* (lexpr->desc x))))
 
   (define lexprlist-count* ((x lexprlist-p))
     :measure (lexprlist-count x)
@@ -107,8 +107,8 @@
     :hints (("goal" :expand ((lexpr_desc-count* x))))
     :rule-classes :linear)
 
-  (defthm lexpr-count*-lexpr->val
-    (< (lexpr_desc-count* (lexpr->val x))
+  (defthm lexpr-count*-lexpr->desc
+    (< (lexpr_desc-count* (lexpr->desc x))
        (lexpr-count* x))
     :hints (("goal" :expand ((lexpr-count* x))))
     :rule-classes :linear)
@@ -130,7 +130,8 @@
     :returns (res expr-p)
     :measure (lexpr-count x)
     :verify-guards nil
-    (b* ((x (lexpr->val x)))
+    (b* ((pos (lexpr->pos_start x))
+         (x (lexpr->desc x)))
       (expr
        (lexpr_desc-case x
          :le_var (e_var x.name)
@@ -141,7 +142,8 @@
          :le_setfields (e_getfields (expr_of_lexpr x.base) x.fields)
          :le_setcollectionfields (e_getcollectionfields x.base x.fields)
          :le_discard (e_var "-") ;; ??? i think this is supposed to be prevented by type safety
-         :le_destructuring (e_tuple (exprlist_of_lexprlist x.elts))))))
+         :le_destructuring (e_tuple (exprlist_of_lexprlist x.elts)))
+       pos)))
   (define exprlist_of_lexprlist ((x lexprlist-p))
     :returns (res exprlist-p)
     :measure (lexprlist-count x)
@@ -158,8 +160,8 @@
           (lexpr-count* x))
       :hints ('(:expand ((expr_of_lexpr x)
                          (lexpr-count* x)
-                         (lexpr_desc-count* (lexpr->val x))
-                         (:free (x) (expr-count (expr x)))
+                         (lexpr_desc-count* (lexpr->desc x))
+                         (:free (x pos) (expr-count (expr x pos)))
                          (:free (x) (expr_desc-count (e_var x)))
                          (:free (x y) (expr_desc-count (e_slice x y)))
                          (:free (x y) (expr_desc-count (e_getarray x y)))
@@ -256,7 +258,7 @@
   (define stmt-count* ((x stmt-p))
     :measure (stmt-count x)
     :returns (count posp :rule-classes :type-prescription)
-    (+ 1 (stmt_desc-count* (stmt->val x))))
+    (+ 3 (stmt_desc-count* (stmt->desc x))))
 
   (define maybe-stmt-count* ((x maybe-stmt-p))
     :measure (maybe-stmt-count x)
@@ -403,7 +405,7 @@
     :rule-classes :linear)
 
   (defthm stmt-count*-linear
-    (< (stmt_desc-count* (stmt->val x)) (stmt-count* x))
+    (< (stmt_desc-count* (stmt->desc x)) (stmt-count* x))
     :rule-classes :linear)
 
   (defthm maybe-stmt-count*-linear
