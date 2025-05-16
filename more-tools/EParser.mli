@@ -14,14 +14,4 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make:
-  functor
-    (_:
-     sig
-       val verbose : int
-       val includes : string list
-       val libdir : string
-     end) ->
-  sig
-    val zyva : in_channel -> PreCat.d list
-  end
+module Make:  functor (_:ParserConfig.Config) -> ParserConfig.S

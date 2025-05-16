@@ -14,47 +14,31 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make (O:ParserConfig.Config) = struct
+module Make(O:ParserConfig.Config) = struct
 
-open Earley_core
+  open Printf
 
-let () = ignore (O.includes) ; ignore (O.libdir)
+  module P = Parser.Make(O)
 
-
-module FD = FindDef.Make(struct let verbose = O.verbose > 1 end)
-
-let reduce_arg = PreCat.reduce FD.find
-and reduce_def = PreCat.reduce FD.find_def
-
-open PreCat
-
-let parser define =
-  | ws:words ":" args:args0 -> ( Def (get_tag ws,reduce_def ws,ws,args) )
-
-and parser args0 =
-  | xs:arg0+  -> ( xs )
-
-and parser arg0 =
-  | "o" ws:words "." -> ( Arg (reduce_arg ws,ws) )
-  | "o" ws:words ":" xs:args1 -> (Connect (get_tag ws,ws,xs))
-
-and parser args1 =
-  | xs:arg1+ -> ( xs )
-
-and parser arg1 =
-  | dash ws:words "." -> ( Arg (reduce_arg ws,ws) )
-
-and parser dash =
-  | "-" | "--"
-
-and parser words = ws:word+ -> ( ws )
-
-and parser word =
-  | w:RE("[-/a-zA-Z]*[a-zA-Z][-/a-zA-Z]*") -> ( w )
-  | e:"E" n:RE("[1-9]") -> ( e ^ n )
-
-and parser main = define+ EOF
-
-let zyva _ chan = Earley.parse_channel main Blanks.default chan
-
+  let zyva oname chan =
+    let open Lexing in
+    let lexbuf = Lexing.from_channel chan in
+    begin
+      match oname with
+      | Some fname ->
+          lexbuf.lex_curr_p <-
+            {lexbuf.lex_curr_p with pos_fname = fname}
+      | None -> ()
+    end ;
+    try
+      P.defs Lexer.token lexbuf
+    with
+    | Parsing.Parse_error ->
+        let lxm = lexeme lexbuf
+        and start_loc = lexeme_start_p lexbuf
+        and end_loc = lexeme_end_p lexbuf in
+        Warn.user_error "%s: unexpected '%s'" (Pos.str_pos2 (start_loc, end_loc)) lxm 
+    | LexMisc.Error (msg,pos) ->
+        Warn.user_error
+          "%s: Lex error %s\n%!" (Pos.str_pos pos) msg
 end

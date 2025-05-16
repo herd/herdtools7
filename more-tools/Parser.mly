@@ -14,47 +14,33 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make (O:ParserConfig.Config) = struct
+%parameter<O:ParserConfig.Config>
 
-open Earley_core
-
-let () = ignore (O.includes) ; ignore (O.libdir)
-
+%{
+open PreCat
 
 module FD = FindDef.Make(struct let verbose = O.verbose > 1 end)
 
 let reduce_arg = PreCat.reduce FD.find
 and reduce_def = PreCat.reduce FD.find_def
 
-open PreCat
+%}
 
-let parser define =
-  | ws:words ":" args:args0 -> ( Def (get_tag ws,reduce_def ws,ws,args) )
+%type <PreCat.d list> defs
+%start defs
 
-and parser args0 =
-  | xs:arg0+  -> ( xs )
+%%
 
-and parser arg0 =
-  | "o" ws:words "." -> ( Arg (reduce_arg ws,ws) )
-  | "o" ws:words ":" xs:args1 -> (Connect (get_tag ws,ws,xs))
+let define :=
+|ws=words; COLON; args=arg0+; { Def (get_tag ws, reduce_def ws,ws,args) }
 
-and parser args1 =
-  | xs:arg1+ -> ( xs )
+let arg0 :=
+| ROUND; ws=words; DOT; { Arg (reduce_arg ws,ws) }
+| ROUND; ws=words; COLON; args=arg1+; { Connect (get_tag ws,ws,args) } 
 
-and parser arg1 =
-  | dash ws:words "." -> ( Arg (reduce_arg ws,ws) )
+let arg1 :=
+| DASH; ws=words; DOT; { Arg (reduce_arg ws,ws) }
 
-and parser dash =
-  | "-" | "--"
+let words == ws=WORD+; { ws }
 
-and parser words = ws:word+ -> ( ws )
-
-and parser word =
-  | w:RE("[-/a-zA-Z]*[a-zA-Z][-/a-zA-Z]*") -> ( w )
-  | e:"E" n:RE("[1-9]") -> ( e ^ n )
-
-and parser main = define+ EOF
-
-let zyva _ chan = Earley.parse_channel main Blanks.default chan
-
-end
+let defs := ds=define+; EOF;  { ds }
