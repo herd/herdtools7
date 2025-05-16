@@ -1,11 +1,21 @@
 (rule (copy ../Version.ml Version.ml))
 
-(ocamllex subst extractdefs)
+(ocamllex subst extractdefs Lexer)
+
+(menhir
+  (modules Tokens)
+  (flags --only-tokens))
+
+(menhir
+  (modules Tokens Parser)
+  (merge_into Parser)
+  (flags --fixed-exception --external-tokens Tokens))
 
 (executables
  (names uoaim extractdefs)
  (public_names uoaim7 extractdefs7)
  (optional)
+ (modules_without_implementation ParserConfig)
  (preprocess
    (per_module
      ((action (system "pa_ocaml %{input-file}")) EParser)))

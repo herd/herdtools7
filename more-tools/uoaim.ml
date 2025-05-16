@@ -26,6 +26,7 @@ let prog =
 let verbose = ref 0
 let libdir = ref (Filename.concat Version.libdir "herd")
 let includes = ref []
+let earley = ref false
 let arg = ref None
 
 let options =
@@ -44,6 +45,7 @@ let options =
    "<default> do not show diagnostics");
     ("-I", Arg.String (fun s -> includes := !includes @ [s]),
    "<dir> add <dir> to search path");
+   ("-earley", Arg.Set earley, "select earley parser");
 ]
 
 let () =
@@ -52,18 +54,33 @@ let () =
     (fun s -> arg := Some s)
     (sprintf "Usage: %s [option] [file]" prog)
 
-module Zyva =
-  EParser.Make
-    (struct
-      let verbose = !verbose
-      let libdir = !libdir
-      let includes = !includes
-    end)
+module Config = struct
+  let verbose = !verbose
+  let libdir = !libdir
+  let includes = !includes
+end
+
+let zyva =
+  if !earley then
+    let module Zyva = EParser.Make(Config) in
+    Zyva.zyva
+  else
+    let module Zyva = StdParser.Make(Config) in
+    Zyva.zyva
+
+let zyva name chan =
+  try zyva name chan
+  with
+  | Misc.UserError msg ->
+      prerr_endline msg ;
+      exit 2
+  | Misc.Exit -> exit 2
+
 
 let arg = !arg
 let () =
   let ds =
     match arg with
-    | None -> Zyva.zyva stdin
-    | Some name -> Misc.input_protect Zyva.zyva name in
+    | None -> zyva arg stdin
+    | Some name -> Misc.input_protect (zyva arg) name in
   if !verbose > 0 then Printf.printf "%a\n%!" PreCat.pp_defs ds
