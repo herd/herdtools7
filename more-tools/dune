@@ -1,13 +1,13 @@
 (rule (copy ../Version.ml Version.ml))
 
-(ocamllex subst)
+(ocamllex subst extractdefs)
 
 (executables
- (names uoaim)
- (public_names uoaim7)
+ (names uoaim extractdefs)
+ (public_names uoaim7 extractdefs7)
  (optional)
  (preprocess
    (per_module
-     ((action (system "pa_ocaml %{input-file}")) Uoaim)))
+     ((action (system "pa_ocaml %{input-file}")) EParser)))
  (libraries herdtools earley.core earley.str))
 
