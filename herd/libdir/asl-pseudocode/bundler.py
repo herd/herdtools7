@@ -254,7 +254,7 @@ def make_function(name: str, body: str) -> Iterable[str]:
             f"func {name} (instruction: bits(32))",
             "begin",
             textwrap.indent(body, "  "),
-            "end",
+            "end;",
             "",
         )
     )
