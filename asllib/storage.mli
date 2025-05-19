@@ -196,3 +196,6 @@ val pp_print :
 
 val map : ('a -> 'b) -> 'a t -> 'b t
 (** [map f t] binds [s] to [f x] for all [s] bound to [x] in [t]. *)
+
+val to_seq : 'a t -> (string * 'a) Seq.t
+(** [to_seq t] returns a sequence iterating over the bindings in [t]. *)
