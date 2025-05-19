@@ -11,6 +11,7 @@ Variant=memtag,sync
  DMB ST      | STR W0,[X1] ;
  MOV W0,#1   | DSB ST      ;
  STR W0,[X1] | MOV W2,#1   ;
+             | L1:         ;
              | STR W2,[X3] ;
 
-exists ([y]=2 /\ fault(P1,L1))
+exists ([y]=2 /\ fault(P1:L1))
