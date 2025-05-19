@@ -1,15 +1,14 @@
-AArch64 MP+dmb.stpt+tcib-tagfault-po
-Hash=cf08e0c48fd7ac136fefcf6e31e0267f
-Variant=memtag,sync
+AArch64 MP+dmb.stpt+tcib-tagfault-po--async
+Variant=memtag,async
 
 {
  0:X1=x; 0:X3=y:green; 0:X2=y:red;
  1:X1=x; 1:X3=y:green;
 }
- P0          | P1          | P1.F        ;
- MOV W0,#1   | LDR W2,[X3] | LDR W0,[X1] ;
- STR W0,[X1] |             |             ;
- DMB ST      |             |             ;
- STG X2,[X3] |             |             ;
+ P0          | P1          ;
+ MOV W0,#1   | LDR W2,[X3] ;
+ STR W0,[X1] | LDR W0,[X1] ;
+ DMB ST      |             ;
+ STG X2,[X3] |             ;
 
-exists (fault(P1,y) /\ 1:X0=0)
+exists (1:TFSR_ELx=1 /\ 1:X0=0)

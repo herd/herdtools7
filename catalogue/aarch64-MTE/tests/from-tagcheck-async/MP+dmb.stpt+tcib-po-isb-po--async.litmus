@@ -1,6 +1,5 @@
-AArch64 MP+dmb.stpt+tcib-po-isb-po
-Hash=9a8d67c864e202c5b04f08b02e42c8de
-Variant=memtag,sync
+AArch64 MP+dmb.stpt+tcib-po-isb-po--async
+Variant=memtag,async
 
 {
  0:X1=x; 0:X3=y:green; 0:X2=y:red;
@@ -12,4 +11,4 @@ Variant=memtag,sync
  DMB ST      | ISB         ;
  STG X2,[X3] | LDR W0,[X1] ;
 
-exists (not (fault(P1,y)) /\ 1:X0=0)
+exists (1:TFSR_ELx=0 /\ 1:X0=0)
