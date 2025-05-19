@@ -326,6 +326,10 @@ The function
 \]
 transforms an $\lhsaccess$ on an identifier $\name$ into an AST node $\vlexpr$.
 
+\ExampleDef{Desugaring a left-hand side access}
+\listingref{DesugarLHSAccess} shows an example of desugaring an $\lhsaccess$.
+\ASLListing{Desugaring a left-hand side access}{DesugarLHSAccess}{\syntaxtests/ASTRule.DesugarLHSAccess.asl}
+
 \begin{mathpar}
 \inferrule{
   \vlexprs_0 \eqdef \LEVar(\name) \\
@@ -361,6 +365,10 @@ The function
   \desugarlhstuple(\overname{\langle\lhsaccess\rangle^*}{\vlhsaccessopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
 \]
 transforms a list of \optional{} $\lhsaccess$ elements into an AST node $\vlexpr$. \\
+
+\ExampleDef{Desugaring a left-hand side tuple}
+\listingref{DesugarLHSTuple} shows an example of desugaring a left-hand side tuple.
+\ASLListing{Desugaring a left-hand side tuple}{DesugarLHSTuple}{\syntaxtests/ASTRule.DesugarLHSTuple.asl}
 
 \begin{mathpar}
 \inferrule{
@@ -401,6 +409,10 @@ The function
   \desugarlhsfieldstuple(\overname{\identifier}{\id} \aslsep \overname{\langle\identifier\rangle^*}{\fieldopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
 \]
 transforms an assignment to a tuple of fields $\fields$ of variable $\id$ into an AST node $\vlexpr$. \\
+
+\ExampleDef{Desugaring a left-hand side fields tuple}
+\listingref{DesugarLHSFieldsTuple} shows an example of desugaring a left-hand side fields tuple.
+\ASLListing{Desugaring a left-hand side fields tuple}{DesugarLHSFieldsTuple}{\syntaxtests/ASTRule.DesugarLHSFieldsTuple.asl}
 
 \begin{mathpar}
 \inferrule{

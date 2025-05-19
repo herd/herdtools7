@@ -32,3 +32,6 @@ Examples used to test syntax and AST building rules:
       ^
   ASL Grammar error: Obsolete syntax: Discarded storage declaration.
   [1]
+  $ aslref ASTRule.DesugarLHSAccess.asl
+  $ aslref ASTRule.DesugarLHSTuple.asl
+  $ aslref ASTRule.DesugarLHSFieldsTuple.asl
