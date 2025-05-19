@@ -22,19 +22,9 @@
 
 open AST
 
-val desugar_setter : call annotated -> identifier list -> expr -> stmt_desc
-(**
-  Desugar a setter call, in particular:
-  {[
-  Setter(args) = rhs;               -->     Setter(rhs, args);
-  Setter(args).fld = rhs;           -->     var temp = Getter(args);
-                                            temp.fld = rhs;
-                                            Setter(temp, args);
-  Setter(args).[fld1,fld2] = rhs;   -->     var temp = Getter(args);
-                                            temp.[fld1,fld2] = rhs;
-                                            Setter(temp, args);
-  ]}
-*)
+(* -------------------------------------------------------------------------
+    Elided parameters
+   ------------------------------------------------------------------------- *)
 
 val desugar_elided_parameter :
   local_decl_keyword -> local_decl_item -> ty -> call annotated -> stmt_desc
@@ -55,32 +45,63 @@ val desugar_elided_parameter :
 
 type lhs_field = identifier annotated
 
+type field_or_array_access =
+  | FieldAccess of lhs_field
+  | ArrayAccess of expr  (** An access of a single field or array index. *)
+
 type lhs_access = {
-  base : identifier annotated;
-  index : expr option;
-  fields : lhs_field list;  (** empty means no fields *)
+  access : field_or_array_access list;  (** empty means no accesses *)
   slices : slice list annotated;  (** empty means no slices *)
 }
-(** An access has a [base] variable, optionally followed by an
-    array [index], nested field accesses [fields], and [slices]:
-    [base[[index]].field1.field2[slices]]
+(** An access is an optional series of nested field or array accesses,
+    optionally followed by slices.
 *)
 
-val desugar_lhs_access : lhs_access -> lexpr
-(** Desugar an [lhs_access] to an [lexpr]. *)
+val desugar_lhs_access : identifier annotated * lhs_access -> lexpr
+(** Desugar an [lhs_access] on a base [identifier] to an [lexpr]. *)
 
-val desugar_lhs_tuple : lhs_access option list annotated -> lexpr
-(** Desugar a list of [lhs_access] options to an [LE_Destructuring].
-    The [None] entries turn in to [LE_Discard], and the [Some] entries are
-    desugared using [desugar_lhs_access].
-    Also check that none of the entries share a base variable, i.e. none of them
-    attempt to write the the same variable. *)
+val desugar_lhs_tuple :
+  (identifier annotated * lhs_access) option list annotated -> lexpr
+(** Desugar a list of optional pairs to an [LE_Destructuring].
+    The [None] entries turn in to [LE_Discard].
+    The [Some] entried contain a pair of base [identifier] and [lhs_access], and
+    are desugared using [desguar_lhs_access]. *)
 
 val desugar_lhs_fields_tuple :
   identifier annotated -> lhs_field option list -> lexpr_desc
 (** [desugar_lhs_fields_tuple x flds] desugars a left-hand side of the form
     [x.(fld1, ..., fldk)] to [(x.fld1, ..., x.fldk)], ensuring that the [flds]
     are unique. *)
+
+(* -------------------------------------------------------------------------
+    Setters
+   ------------------------------------------------------------------------- *)
+
+val desugar_setter : call annotated -> lhs_access -> expr -> stmt_desc
+(**
+  Desugar a setter call, in particular:
+  {[
+  Setter(args) = rhs;                  -->  Setter(rhs, args);
+  Setter(args).accesses[slices] = rhs; -->  var temp = Getter(args);
+                                            temp.accesses[slices] = rhs;
+                                            Setter(temp, args);
+  ]}
+*)
+
+val desugar_setter_setfields :
+  call annotated -> identifier list -> expr -> stmt_desc
+(**
+  Desugar a setter call that sets concatenated fields, in particular:
+  {[
+  Setter(args).[fld1,fld2] = rhs;   -->     var temp = Getter(args);
+                                            temp.[fld1,fld2] = rhs;
+                                            Setter(temp, args);
+  ]}
+*)
+
+(* -------------------------------------------------------------------------
+    Case statements
+   ------------------------------------------------------------------------- *)
 
 val desugar_case_stmt :
   expr_desc annotated -> case_alt_desc annotated list -> stmt -> stmt_desc
@@ -89,6 +110,10 @@ val desugar_case_stmt :
     statement [otherwise].
     The result is a conditional statement, possibly preceded by an assignment
     of the condition [e0] to a fresh variable). *)
+
+(* -------------------------------------------------------------------------
+    Accessor pairs
+   ------------------------------------------------------------------------- *)
 
 type accessor_pair = {
   getter : stmt;  (** getter body *)
