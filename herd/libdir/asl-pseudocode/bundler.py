@@ -136,7 +136,7 @@ def asl_for_instruction_fields(regdiagram, instr_id) -> [str]:
         hibit = box.get("hibit")
         width = box.get("width")
 
-        pos = hibit if width is None else f"{hibit} : ({hibit} - {width} + 1)"
+        pos = hibit if width is None else f"{hibit} : (({hibit} - {width}) + 1)"
 
         name = name.strip()
         if name.isidentifier():
@@ -254,7 +254,7 @@ def make_function(name: str, body: str) -> Iterable[str]:
             f"func {name} (instruction: bits(32))",
             "begin",
             textwrap.indent(body, "  "),
-            "end",
+            "end;",
             "",
         )
     )
