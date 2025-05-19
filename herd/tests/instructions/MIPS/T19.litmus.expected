@@ -1,0 +1,13 @@
+Test T19 Allowed
+States 4
+[x]=1; [y]=1;
+[x]=1; [y]=2;
+[x]=2; [y]=1;
+[x]=2; [y]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([x]=2 /\ [y]=2)
+Observation T19 Sometimes 1 3
+Hash=8bd932993c7f9f2ed393eafec93b2c88
+

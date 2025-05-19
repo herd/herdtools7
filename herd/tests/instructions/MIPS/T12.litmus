@@ -1,0 +1,17 @@
+MIPS T12
+"SyncdWR Fre PodWR Fre"
+Cycle=Fre PodWR Fre SyncdWR
+Generator=diycross7 (version 7.57+1)
+Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+Com=Fr Fr
+Orig=SyncdWR Fre PodWR Fre
+{
+%x0=x; %y0=y;
+%y1=y; %x1=x;
+}
+ P0           | P1           ;
+ ori $2,$0,1  | ori $2,$0,1  ;
+ sw $2,0(%x0) | sw $2,0(%y1) ;
+ sync         | lw $3,0(%x1) ;
+ lw $3,0(%y0) |              ;
+exists (0:$3=0 /\ 1:$3=0)

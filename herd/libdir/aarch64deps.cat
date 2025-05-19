@@ -62,7 +62,7 @@ let rec dtrm =
   | dtrm; dtrm
 
 (** Data, Address and Control dependencies *)
-let ADDR = Rreg \ DATA
+
 let basic-dep =
    [Exp & R | Rreg]; dtrm?
 let data = [Exp & R]; (basic-dep; [DATA]; iico_data+; [Exp & W]) & ~same-instance

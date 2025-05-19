@@ -1081,16 +1081,25 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     | Some loc ->
        A.pp_location loc in
 
-    let pp_event ?lbl isinit color chan e =
+    let pp_port =
+      let open Port in
+      function
+        | Some Data -> " (data)"
+        | Some Addr -> " (addr)"
+        | None|Some No -> "" in
+
+  let pp_event ?lbl isinit color chan e =
       let act = pp_action e in
       let act =
-        if PC.verbose > 0 then begin
-          if E.EventSet.mem e es.E.data_ports then
-            act ^ " (data)"
-          else if E.EventSet.mem e es.E.success_ports then
-            act ^ " (success)"
-          else act
-        end else act in
+        Printf.sprintf
+          "%s%s%s"
+          act
+          (if PC.verbose > 0 then
+            pp_port @@ E.EventMap.find_opt e es.E.ports
+          else "")
+          (if E.EventSet.mem e es.E.success_ports then
+            " (success)"
+          else "") in
       let is_ghost = E.EventSet.mem e es.E.speculated in
       if not PC.squished then begin
         begin match lbl with
@@ -1099,7 +1108,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
               (pp_node_eiid e) (pp_node_eiid_label e)
               (escape_label dm act)
               (if is_ghost then " (ghost)" else "")
-              (if E.EventSet.mem e es.E.data_ports then " (data)" else "")
+              (pp_port @@ E.EventMap.find_opt e es.E.ports)
               pp_node_ii e.E.iiid
               (pp_instruction dm m) e.E.iiid
 

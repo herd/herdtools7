@@ -1,0 +1,18 @@
+MIPS T02
+"SyncdWW Rfe SyncdRW Coe"
+Cycle=Rfe SyncdRW Coe SyncdWW
+Generator=diycross7 (version 7.57+1)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Co
+Orig=SyncdWW Rfe SyncdRW Coe
+{
+%x0=x; %y0=y;
+%y1=y; %x1=x;
+}
+ P0           | P1           ;
+ ori $2,$0,2  | lw $2,0(%y1) ;
+ sw $2,0(%x0) | sync         ;
+ sync         | ori $3,$0,1  ;
+ ori $3,$0,1  | sw $3,0(%x1) ;
+ sw $3,0(%y0) |              ;
+exists ([x]=2 /\ 1:$2=1)

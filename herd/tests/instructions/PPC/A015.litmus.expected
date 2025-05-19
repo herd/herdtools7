@@ -1,0 +1,13 @@
+Test A015 Allowed
+States 4
+0:r1=0; 1:r1=0;
+0:r1=0; 1:r1=1;
+0:r1=1; 1:r1=0;
+0:r1=1; 1:r1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:r1=1 /\ 1:r1=1)
+Observation A015 Sometimes 1 3
+Hash=a11b9e63fdb17039492a67e9678c73b6
+

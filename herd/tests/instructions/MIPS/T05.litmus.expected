@@ -1,0 +1,12 @@
+Test T05 Allowed
+States 3
+0:$2=0; 1:$2=0;
+0:$2=0; 1:$2=1;
+0:$2=1; 1:$2=0;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:$2=1 /\ 1:$2=1)
+Observation T05 Never 0 3
+Hash=cb15df2c223c51a250bdef98b23ea730
+

@@ -1124,13 +1124,17 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
 
       let tr_cnstrnts cs = List.fold_left tr_cnstrnt [] cs
 
-      let event_to_monad ii is_bcc is_data event =
+      let event_to_monad ii is_bcc get_port event =
         let { ASLE.action; ASLE.iiid; _ } = event in
         let () =
           if _dbg then
             Printf.eprintf "%s:%s%s" (ASLE.pp_eiid event)
               (ASLE.Act.pp_action action)
-              (if is_data event then "(data)" else "")
+              (let open Port in
+               match get_port event with
+               | Addr -> "(addr)"
+               | Data -> "(data)"
+               | No -> "")
         in
         match (iiid, tr_action is_bcc event ii action) with
         | ASLE.IdInit, _ | _, None ->
@@ -1142,7 +1146,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             in
             let m =
               M.mk_singleton_es action' ii
-              |> (if is_data event then M.as_data_port else Fun.id)
+              |> M.as_port (get_port event)
               |> M.force_once
             in
             Some (event, m)
@@ -1181,17 +1185,22 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               conc.ASLS.str.ASLE.events)
         in
         let events = get_cat_show ESet.to_seq "AArch64" in
-        let is_data =
-          let data_set =
+        let get_port =
+          let addr_set =
+            get_cat_show Misc.identity "AArch64_ADDR"
+          and data_set =
             get_cat_show Misc.identity "AArch64_DATA" in
-          fun e -> ESet.mem e data_set in
+        fun e ->
+          if ASLE.EventSet.mem e addr_set then Port.Addr
+          else if ASLE.EventSet.mem e data_set then Port.Data
+          else Port.No in
         let is_bcc =
           let bcc = get_cat_show Misc.identity "AArch64_BCC" in
           fun e -> ASLE.EventSet.mem e bcc in
         let () = if _dbg then Printf.eprintf "\t- events: " in
         let event_list = List.of_seq events in
         let event_to_monad_map =
-          Seq.filter_map (event_to_monad ii is_bcc is_data) events
+          Seq.filter_map (event_to_monad ii is_bcc get_port) events
           |> EMap.of_seq
         in
         let events_m =

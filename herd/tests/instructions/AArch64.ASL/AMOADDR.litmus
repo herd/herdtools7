@@ -1,0 +1,19 @@
+AArch64 AMOADDR
+"PodRWPL RfeLP DpAddrdR Amo.LdAdd PodWW Rfe"
+Generator=diyone7 (version 7.57+1)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf
+Orig=PodRWPL RfeLP DpAddrdR Amo.LdAdd PodWW Rfe
+{
+0:X0=x; 0:X3=y;
+1:X0=y; 1:X3=z; 1:X8=x;
+}
+ P0           | P1                ;
+ LDR W1,[X0]  | LDR W1,[X0]       ;
+ MOV W2,#1    | EOR W2,W1,W1      ;
+ STLR W2,[X3] | ADD X4,X3,W2,SXTW ;
+              | MOV W6,#1         ;
+              | LDADD W6,W5,[X4]  ;
+              | MOV W7,#1         ;
+              | STR W7,[X8]       ;
+exists (0:X1=1 /\ 1:X1=1 /\ 1:X5=0)

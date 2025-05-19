@@ -221,8 +221,8 @@ val same_instance : event -> event -> bool
       intra_causality_order : EventRel.t ; (* Just order *)
       (* If style control inside structure *)
       control : EventRel.t ;
-      (* Events that lead to the data port of a W *)
-      data_ports : EventSet.t ;
+      (* Events that lead to the address port of memory effects *)
+      ports : Port.t EventMap.t ;
       (* some special output port,i.e. store conditional success as reg write *)
       success_ports : EventSet.t ;
       (* Input to structure, by default minimal iico, or iico_data *)
@@ -778,6 +778,29 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
     module EventMap = MyMap.Make(OrderedEvent)
 
+    let emap_union m1 m2 =  EventMap.union (fun v1 _v2 ->  v1) m1 m2
+    let emap_union3 m1 m2 m3 =  emap_union m1 @@ emap_union m2 m3
+    let emap_union4 m1 m2 m3 m4 =
+      emap_union
+        (emap_union m1 m2)
+        (emap_union m3 m4)
+    let emap_union5 m1 m2 m3 m4 m5 =
+      emap_union
+        (emap_union m1 m2)
+        (emap_union3 m3 m4 m5)
+
+    let emap_unions =
+      let rec unions = function
+        | [] -> EventMap.empty
+        | [m] ->  m
+        | ms -> unions @@ union2 [] ms
+
+      and union2 k = function
+        | [] -> k
+        | [m] -> m::k
+        | m1::m2::ms -> union2 (emap_union m1 m2::k) ms in
+      unions
+
 (*************)
 (* Relations *)
 (*************)
@@ -813,7 +836,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         intra_causality_control : EventRel.t ;(* really a (partial order) relation *)
       intra_causality_order : EventRel.t ; (* Just order *)
         control : EventRel.t ;
-        data_ports : EventSet.t ; success_ports : EventSet.t ;
+        ports : Port.t EventMap.t ;
+        success_ports : EventSet.t ;
         input : EventSet.t option ;
         data_input : EventSet.t option ;
         output : EventSet.t option ;
@@ -831,7 +855,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
     let map_event_structure f es =
       let map_rel = EventRel.map_nodes f
-      and map_set = EventSet.map f in
+      and map_set = EventSet.map f
+      and map_map m =
+        EventMap.fold (fun e p k -> EventMap.add (f e) p k)
+          m EventMap.empty in
       { procs = es.procs ;
         events = map_set es.events ;
         speculated = map_set es.speculated ;
@@ -841,7 +868,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         intra_causality_control = map_rel es.intra_causality_control ;
         intra_causality_order = map_rel es.intra_causality_order ;
         control = map_rel es.control ;
-        data_ports = map_set es.data_ports ;
+        ports = map_map es.ports ;
         success_ports = map_set es.success_ports ;
         input = Misc.app_opt map_set es.input ;
         data_input = Misc.app_opt map_set es.data_input ;
@@ -871,7 +898,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         intra_causality_control = EventRel.empty ;
         intra_causality_order = EventRel.empty ;
         control = EventRel.empty ;
-        data_ports = EventSet.empty ; success_ports = EventSet.empty ;
+        ports = EventMap.empty ;
+        success_ports = EventSet.empty ;
         input = None; data_input = None;
         output = None ; ctrl_output = None ;
         sca = EventSetSet.empty ;
@@ -886,7 +914,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       EventRel.is_empty es.intra_causality_control &&
       EventRel.is_empty es.intra_causality_order &&
       EventRel.is_empty es.control &&
-      EventSet.is_empty es.data_ports &&
+      EventMap.is_empty es.ports &&
       EventSet.is_empty es.success_ports &&
       Misc.is_none es.input &&
       Misc.is_none es.output &&
@@ -1173,7 +1201,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         intra_causality_order = EventRel.union
           es1.intra_causality_order  es2.intra_causality_order ;
         control = EventRel.union es1.control es2.control;
-        data_ports = EventSet.union es1.data_ports es2.data_ports;
+        ports = emap_union es1.ports es2.ports;
         success_ports = EventSet.union es1.success_ports es2.success_ports;
         input = es1.input ;  data_input = es1.data_input ;
         output = es2.output; ctrl_output = es2.ctrl_output ;
@@ -1232,8 +1260,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
               es2.intra_causality_order
               es3.intra_causality_order;
             control = EventRel.union3 es1.control es2.control es3.control;
-            data_ports =
-            EventSet.union3 es1.data_ports es2.data_ports es3.data_ports;
+            ports = emap_union3 es1.ports es2.ports es3.ports;
             success_ports =
             EventSet.union3
               es1.success_ports es2.success_ports es3.success_ports;
@@ -1287,8 +1314,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
             es2.intra_causality_order ;
         control =
           EventRel.union es1.control es2.control ;
-        data_ports =
-          EventSet.union es1.data_ports es2.data_ports ;
+        ports =
+          emap_union es1.ports es2.ports ;
         success_ports =
           EventSet.union es1.success_ports es2.success_ports ;
        input = None ; data_input = None ;
@@ -1652,8 +1679,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
            es3.intra_causality_order;
        control =
          EventRel.union3 es1.control es2.control es3.control;
-       data_ports =
-         EventSet.union3 es1.data_ports es2.data_ports es3.data_ports;
+       ports =
+         emap_union3 es1.ports es2.ports es3.ports;
        success_ports =
          EventSet.union3
            es1.success_ports es2.success_ports es3.success_ports;
@@ -1774,8 +1801,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
              ws1.intra_causality_order ws2.intra_causality_order;
         control =
         EventRel.union4 rs1.control rs2.control ws1.control ws2.control;
-        data_ports =
-        EventSet.union4 rs1.data_ports rs2.data_ports ws1.data_ports ws2.data_ports;
+        ports =
+        emap_union4 rs1.ports rs2.ports ws1.ports ws2.ports;
         success_ports =
           EventSet.union4 rs1.success_ports rs2.success_ports ws1.success_ports ws2.success_ports;
         input =  None ; data_input = None ;
@@ -1850,10 +1877,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           (if is_amo then EventRel.empty else mem2mem);
         control =
         EventRel.union5 rloc.control rmem.control rreg.control wmem.control wreg.control;
-        data_ports =
-        EventSet.union5
-          rloc.data_ports
-          rmem.data_ports rreg.data_ports wmem.data_ports wreg.data_ports;
+        ports =
+        emap_union5 rloc.ports
+          rmem.ports rreg.ports wmem.ports wreg.ports;
         success_ports =
         EventSet.union5
           rloc.success_ports
@@ -1921,9 +1947,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         control =
         EventRel.union4
           re.control rloc.control rmem.control wmem.control;
-        data_ports =
-        EventSet.union4
-          re.data_ports rloc.data_ports rmem.data_ports wmem.data_ports;
+        ports = emap_union4 re.ports rloc.ports rmem.ports wmem.ports;
         success_ports =
         EventSet.union4
           re.success_ports rloc.success_ports rmem.success_ports wmem.success_ports;
@@ -1970,9 +1994,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         control =
         EventRel.union4
           re.control rloc.control rmem.control wmem.control;
-        data_ports =
-        EventSet.union4
-          re.data_ports rloc.data_ports rmem.data_ports wmem.data_ports;
+        ports =  emap_union4 re.ports rloc.ports rmem.ports wmem.ports;
         success_ports =
         EventSet.union4
           re.success_ports rloc.success_ports rmem.success_ports wmem.success_ports;
@@ -2033,9 +2055,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         control=
         EventRel.union5 rloc.control rold.control rnew.control
           rmem.control wmem.control;
-        data_ports=
-        EventSet.union5 rloc.data_ports rold.data_ports rnew.data_ports
-          rmem.data_ports wmem.data_ports;
+        ports=
+        emap_union5 rloc.ports rold.ports rnew.ports
+          rmem.ports wmem.ports;
         input = None; data_input = None;
         output=Some (get_output rmem); ctrl_output = None ;
         success_ports=
@@ -2084,8 +2106,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
             rmem.intra_causality_order;
         control=
         EventRel.union3 rloc.control rold.control rmem.control;
-        data_ports=
-        EventSet.union3 rloc.data_ports rold.data_ports rmem.data_ports;
+        ports=
+        emap_union3 rloc.ports rold.ports rmem.ports;
         success_ports=
           EventSet.union3
             rloc.success_ports rold.success_ports rmem.success_ports;
@@ -2141,10 +2163,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         control =
         EventRel.union5
           loc.control a.control u.control rmem.control wmem.control;
-        data_ports =
-        EventSet.union5
-          loc.data_ports a.data_ports u.data_ports
-          rmem.data_ports wmem.data_ports;
+        ports =
+        emap_union5
+          loc.ports a.ports u.ports
+          rmem.ports wmem.ports;
         success_ports =
         EventSet.union5
           loc.success_ports a.success_ports u.success_ports
@@ -2193,8 +2215,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           rmem.intra_causality_order;
         control =
         EventRel.union3 loc.control u.control rmem.control;
-        data_ports =
-        EventSet.union3 loc.data_ports u.data_ports rmem.data_ports;
+        ports =
+        emap_union3 loc.ports u.ports rmem.ports;
         success_ports =
         EventSet.union3 loc.success_ports u.success_ports rmem.success_ports;
         input=None; data_input=None;
@@ -2300,10 +2322,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         EventRel.union
           (EventRel.union3 resa.control data.control addr.control)
           (EventRel.union3 wres.control wresult.control wmem.control);
-        data_ports =
-        EventSet.union
-          (EventSet.union3 resa.data_ports data.data_ports addr.data_ports)
-          (EventSet.union3 wres.data_ports wresult.data_ports wmem.data_ports);
+        ports =
+        emap_union
+          (emap_union3 resa.ports data.ports addr.ports)
+          (emap_union3 wres.ports wresult.ports wmem.ports);
         success_ports =
         EventSet.union
           (EventSet.union3 resa.success_ports data.success_ports addr.success_ports)
@@ -2414,10 +2436,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         (EventRel.unions
            [rn.control; rs.control; rt.control;
             wrs.control; rm.control; br.control; wm.control]);
-        data_ports =
-        (EventSet.unions
-           [rn.data_ports; rs.data_ports; rt.data_ports;
-            wrs.data_ports; rm.data_ports; br.data_ports; wm.data_ports]);
+        ports =
+        (emap_unions
+           [rn.ports; rs.ports; rt.ports;
+            wrs.ports; rm.ports; br.ports; wm.ports]);
         success_ports =
         (EventSet.unions
            [rn.success_ports; rs.success_ports; rt.success_ports;
@@ -2481,9 +2503,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         control =
         (EventRel.union4
            rn.control rt.control rm.control wm.control);
-        data_ports =
-        (EventSet.union4
-           rn.data_ports rt.data_ports rm.data_ports wm.data_ports);
+        ports =
+        (emap_union4
+           rn.ports rt.ports rm.ports wm.ports);
         success_ports =
         (EventSet.union4
            rn.success_ports rt.success_ports rm.success_ports wm.success_ports);
@@ -2532,9 +2554,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         intra_causality_order = EventRel.empty;
         control =
         EventRel.union4 rD.control rEA.control wEA.control wM.control ;
-        data_ports =
-        EventSet.union4
-          rD.data_ports rEA.data_ports wEA.data_ports wM.data_ports ;
+        ports =
+        emap_union4
+          rD.ports rEA.ports wEA.ports wM.ports ;
         success_ports =
         EventSet.union4
           rD.success_ports rEA.success_ports
