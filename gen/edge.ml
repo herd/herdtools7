@@ -146,7 +146,6 @@ module type S = sig
   val is_ext : edge -> bool
   val is_com : edge -> bool
   val is_fetch : edge -> bool
-  val is_po_or_fenced_joker : edge -> bool
 
 (* Set/Map *)
   module Set : MySet.S with type elt = edge
@@ -326,7 +325,6 @@ and type rmw = F.rmw = struct
     | Store -> "Store"
     | Node W -> "Write"
     | Node R -> "Read"
-    | Node J -> assert false
 
   let pp_tedge = do_pp_tedge false
 
@@ -747,10 +745,6 @@ let fold_tedges f r =
   let compat_atoms a1 a2 = match F.merge_atoms a1 a2 with
   | None -> false
   | Some _ -> true
-
-  let is_po_or_fenced_joker e = match e.edge with
-  | Po(_,Dir J,_) | Po(_,_,Dir J) | Fenced(_,_,Dir J,_) | Fenced(_,_,_,Dir J) -> true
-  | _ -> false
 
   let can_precede_atoms x y = match x.a2,y.a1 with
   | None,_

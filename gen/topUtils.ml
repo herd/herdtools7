@@ -161,7 +161,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                    (fun loc ->
                      sprintf "%i:%s=%s" p
                        (Code.pp_loc loc)
-                       (match o.pdir with W -> "W" | R -> "T" | J -> "I"))
+                       (match o.pdir with W -> "W" | R -> "T"))
                    o.ploc k) in
 
       fun fst ios -> String.concat "," (do_rec fst ios)
@@ -181,7 +181,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           | Same ->
               begin match  n.C.C.evt.C.C.dir with
               | Some W -> true
-              | None|Some R|Some J -> do_rec n.C.C.prev
+              | None|Some R -> do_rec n.C.C.prev
               end
           | Diff -> false in
       do_rec m.C.C.prev
@@ -192,7 +192,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 (*        eprintf "After %s\n" (C.E.pp_edge e) ; *)
         begin match  n.C.C.evt.C.C.dir with
         | Some W -> true
-        | None|Some R|Some J ->
+        | None|Some R ->
             let nxt = n.C.C.next in
             if nxt == m then false else
             begin match C.E.loc_sd e with
@@ -245,7 +245,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           let e =  n.C.C.evt in
           match e.C.C.dir,e.C.C.loc with
           | Some W,Data loc -> StringSet.add loc k
-          | ((Some R|None|Some J),_)|(Some W,Code _) -> k in
+          | ((Some R|None),_)|(Some W,Code _) -> k in
          k in
       do_rec n0
 
