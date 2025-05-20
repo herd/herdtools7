@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make(O:ParserConfig.Config) = struct
+module Make(O:FindDef.Config) = struct
 
   open Printf
 

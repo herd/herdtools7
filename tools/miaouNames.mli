@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2025-present Institut National de Recherche en Informatique et *)
+(* Copyright 2023-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,33 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-%parameter<O:FindDef.Config>
+(** Name handling for miaou and back *)
 
-%{
-open PreCat
-
-module FD = FindDef.Make(O)
-
-let reduce_arg = PreCat.reduce FD.find
-and reduce_def = PreCat.reduce FD.find_def
-
-%}
-
-%type <PreCat.d list> defs
-%start defs
-
-%%
-
-let define :=
-|ws=words; COLON; args=arg0+; { Def (get_tag ws, reduce_def ws,ws,args) }
-
-let arg0 :=
-| ROUND; ws=words; DOT; { Arg (reduce_arg ws,ws) }
-| ROUND; ws=words; COLON; args=arg1+; { Connect (get_tag ws,ws,args) } 
-
-let arg1 :=
-| DASH; ws=words; DOT; { Arg (reduce_arg ws,ws) }
-
-let words == ws=WORD+; { ws }
-
-let defs := ds=define+; EOF;  { ds }
+(* Translate name to a valid LaTeX command name *)
+val to_csname : string -> string

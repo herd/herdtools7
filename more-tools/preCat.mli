@@ -16,7 +16,7 @@
 
 (** Before actual Cat code *)
 
-type tag = And | Or
+type tag = And | Or | Seq
 
 val get_tag : string list -> tag
 

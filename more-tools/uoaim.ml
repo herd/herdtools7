@@ -27,6 +27,7 @@ let verbose = ref 0
 let libdir = ref (Filename.concat Version.libdir "herd")
 let includes = ref []
 let earley = ref false
+let cat = ref "aarch64.cat"
 let arg = ref None
 
 let options =
@@ -46,7 +47,9 @@ let options =
     ("-I", Arg.String (fun s -> includes := !includes @ [s]),
    "<dir> add <dir> to search path");
    ("-earley", Arg.Set earley, "select earley parser");
-]
+    ("-cat", Arg.String (fun s -> cat := s),
+     sprintf "<name.cat> set base model, default %s" !cat)
+  ]
 
 let () =
   Arg.parse
@@ -58,6 +61,7 @@ module Config = struct
   let verbose = !verbose
   let libdir = !libdir
   let includes = !includes
+  let cat = !cat
 end
 
 let zyva =

@@ -1,4 +1,6 @@
 (rule (copy ../Version.ml Version.ml))
+(rule (copy ../tools/miaouNames.ml miaouNames.ml))
+(rule (copy ../tools/miaouNames.mli miaouNames.mli))
 
 (ocamllex subst extractdefs Lexer)
 
