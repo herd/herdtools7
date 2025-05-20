@@ -29,6 +29,7 @@
 (include-book "centaur/bitops/rational-exponent" :dir :System)
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+(local (include-book "centaur/misc/multiply-out" :dir :system))
 
 (defsection ilog2-spec
 
@@ -36,31 +37,37 @@
   ;; one exists (which as we'll show is the case whenever x is positive).
   (defchoose ilog2-spec (n) (x)
     (and (integerp n)
-         (<= (expt 2 n) x)
-         (< x (expt 2 (+ 1 n)))))
+         (<= (expt 2 n) (abs x))
+         (< (abs x) (expt 2 (+ 1 n)))))
 
   ;; A witness for ilog2-spec for positive rationals is rational-exponent
   ;; (defined in the book included above). This means that ilog2-spec always
   ;; returns n that satisfies the conditions (when x is positive).
   (defthm ilog2-spec-satisfied
     (implies (and (rationalp x)
-                  (< 0 x))
+                  (not (equal 0 x)))
              (let ((n (ilog2-spec x)))
                (and (integerp n)
-                    (<= (expt 2 n) x)
-                    (< x (expt 2 (+ 1 n))))))
+                    (implies (<= 0 x)
+                             (<= (expt 2 n) x))
+                    (implies (<= x 0)
+                             (<= (expt 2 n) (- x)))
+                    (< x (expt 2 (+ 1 n)))
+                    (< (- x) (expt 2 (+ 1 n))))))
     :hints (("goal" :use ((:instance ilog2-spec (n (rational-exponent x)))
-                          rational-exponent-correct-positive)
+                          rational-exponent-correct-positive
+                          rational-exponent-correct-negative)
              :expand ((expt 2 (+ 1 (rational-exponent x))))
              :in-theory (disable rational-exponent-correct-positive
+                                 rational-exponent-correct-negative
                                  exponents-add))))
 
   (defthm ilog2-spec-unique
     (implies (and (rationalp x)
-                  (< 0 x)
+                  (not (equal 0 x))
                   (integerp n)
-                  (<= (expt 2 n) x)
-                  (< x (expt 2 (+ 1 n))))
+                  (<= (expt 2 n) (abs x))
+                  (< (abs x) (expt 2 (+ 1 n))))
              (equal (ilog2-spec x) n))
     :hints (("goal" :use (ilog2-spec
                           (:instance expt-is-weakly-increasing-for-base>1
@@ -75,11 +82,13 @@
 
   (defthmd ilog2-spec-is-rational-exponent
     (implies (and (rationalp x)
-                  (< 0 x))
+                  (not (equal 0 x)))
              (equal (ilog2-spec x)
                     (rational-exponent x)))
     :hints (("goal" :use ((:instance rational-exponent-unique
                            (n (ilog2-spec x)))
+                          (:instance rational-exponent-unique
+                           (n (ilog2-spec x)) (x (- x)))
                           (:instance ilog2-spec-satisfied))
              :in-theory (e/d (exponents-add-unrestricted)
                              (exponents-add expt
@@ -281,7 +290,7 @@
   
   (defthm ilog2-is-ilog2-spec
     (implies (and (rationalp value)
-                  (< 0 value))
+                  (not (equal 0 value)))
              (equal (ilog2 value)
                     (ilog2-spec value)))
     :hints (("goal" :use ((:instance ilog2-spec-unique
