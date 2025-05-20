@@ -14,4 +14,4 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make:  functor (_:ParserConfig.Config) -> ParserConfig.S
+module Make: functor (_:FindDef.Config) -> ParserConfig.S

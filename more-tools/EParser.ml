@@ -14,14 +14,14 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make (O:ParserConfig.Config) = struct
+module Make (O:FindDef.Config) = struct
 
 open Earley_core
 
 let () = ignore (O.includes) ; ignore (O.libdir)
 
 
-module FD = FindDef.Make(struct let verbose = O.verbose > 1 end)
+module FD = FindDef.Make(O)
 
 let reduce_arg = PreCat.reduce FD.find
 and reduce_def = PreCat.reduce FD.find_def

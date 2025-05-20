@@ -16,12 +16,68 @@
 
 open Printf
 
-module Make (O:sig val verbose : bool end) =
+module type Config = sig
+  include ParserConfig.Config
+  val cat : string
+end
+
+module Make (O:Config) =
 struct
+
+  (* All top level names defined by module *)
+
+  module RN =
+    ReadNames.Make
+      (struct
+        let includes = O.includes
+        let libdir = O.libdir
+        let debug = O.verbose > 1
+      end)
+
+  let all_names = RN.read  O.cat
+
+  let () =
+    if O.verbose > 1 then
+      eprintf
+        "Names: {%s}\n%!" (StringSet.pp_str "," Misc.identity all_names)
+
   (* Compute distance *)
 
-  let minimum a b c =
-    min a (min b c)
+  (* Pre-defined names not defined bu model *)
+
+
+  let from_csname =
+    let add_name name map =
+      let csname = MiaouNames.to_csname name in
+      StringMap.add csname name map in
+
+    let predef_map =
+      List.fold_right add_name
+        [
+          "iico-ctrl";
+          "iico-addr";
+          "iico-data";
+          "iico-order";
+          "ext"; "int";
+          "BCC"; "po";
+        ]
+        StringMap.empty in
+    
+    let map =
+      StringSet.fold
+        (fun name map ->
+           let csname = MiaouNames.to_csname name in
+           StringMap.add csname name map)
+        all_names predef_map in
+
+    fun csname ->
+      try StringMap.find csname map
+      with Not_found ->
+        if O.verbose > 0 then Warn.warn_always "name %s not recognized" csname ;
+        csname
+
+  (* Distance *)
+  let minimum a b c = min a (min b c)
 
   let distance s t =
     let m = String.length s
@@ -48,19 +104,51 @@ struct
     done;
     d.(m).(n)
 
-  (* Set of strings *)
-  module StringSet = Set.Make(String)
-
+  let longuest =
+    let rec do_rec best = function
+      | [] -> best
+      | name::rem ->
+          let best =
+            if String.length name > String.length best then name
+            else best in
+          do_rec best rem in
+    function
+    | [] -> assert false
+    | name::rem -> do_rec name rem
+           
+  let dict_relations =
+    let add_name map (name,def) =
+      let old =
+        try StringMap.find def map
+        with Not_found -> [] in
+      StringMap.add def (name::old) map in
+    let map = List.fold_left add_name StringMap.empty Dict.relations in
+    StringMap.fold
+      (fun def names dict ->
+         match names with
+         | [name] -> (name,def)::dict
+         | _ ->
+             let name =
+               match
+                 List.filter
+                   (fun name -> StringSet.mem name all_names)
+                   names
+               with
+               | [] -> longuest names
+               | [name] -> name
+               | names -> longuest names in
+             (name,def)::dict)
+      map []
 
   let reverse =
     List.fold_left
       (fun k (name,body) ->
          if Subst.is_reverse body then StringSet.add name k else k)
       StringSet.empty
-      Dict.relations
+      dict_relations
 
   let () =
-    if O.verbose then
+    if O.verbose > 1 then
       eprintf
         "reverse: [%s]\n%!"
         (StringSet.elements reverse |> String.concat "; ")
@@ -119,8 +207,8 @@ struct
              if d0 < d then (name,s),d0 else best
            else
              if d0_rev < d then (name ^ "-1",s_rev),d0_rev else best)
-        (("coucou",""),100) Dict.relations in
-    if O.verbose && d > 1 then
+        (("coucou",""),100) dict_relations in
+    if O.verbose > 0 && d > 1 then
       eprintf "Approx[%d]: '%s' as '%s'\n%!" d tgt body ;
     let args =
       if StringSet.mem name reverse then [| e2; e1; |]
@@ -139,7 +227,7 @@ struct
              else best in
            best)
         (("coucou",""),100) Dict.sets in
-    if O.verbose && d > 1 then
+    if O.verbose > 0 && d > 1 then
       eprintf "Approx[%d]: '%s' as '%s'\n%!" d tgt body ;
     name,arg
 
@@ -151,7 +239,7 @@ struct
            if d0 < d then p,d0
            else best)
         (("coucou",""),100) Dict.names in
-    if O.verbose && d > 1 then
+    if O.verbose > 0 && d > 1 then
       eprintf "Approx[%d]: '%s' as '%s'\n%!" d tgt body ;
     name
     
@@ -184,7 +272,9 @@ struct
       | w::ws -> w::find_rec ws in
     find_rec ws0
 
-  let find ws = do_find false ws
-  and find_def ws = do_find true @@ remove_def_suffix ws
+  let from_csname (name,es) = from_csname name,es  
+
+  let find ws = do_find false ws |> from_csname
+  and find_def ws = do_find true @@ remove_def_suffix ws |> from_csname
     
 end

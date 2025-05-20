@@ -18,7 +18,7 @@
 
 open Printf
 
-type tag = And | Or
+type tag = And | Or | Seq
 
 let rec get_tag = function
   | [] ->  Warn.fatal "No tag"
@@ -51,6 +51,7 @@ type d = Def of tag * reduced * string list * t list
 let pp_tag = function
   | Or -> "Or"
   | And -> "And"
+  | Seq -> "Seq"
 
 let pp_reduced chan = function
   | Rel (name,(e1,e2)) ->

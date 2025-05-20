@@ -68,43 +68,13 @@ module Make
 
     open AST
 
-    let toalpha s =
-      let buff = Buffer.create 10 in
-      for k=0 to String.length s-1 do
-        match s.[k] with
-        | 'a'..'z'|'A'..'Z' as c ->
-           Buffer.add_char buff c
-        | _ -> ()
-      done ;
-      Buffer.contents buff
-
-    let vocabulary =
-      StringMap.empty
-      |> StringMap.add "dmb.full" "DMBFULL"
-      |> StringMap.add "dmb.st" "DMBST"
-      |> StringMap.add "dmb.ld" "DMBLD"
-      |> StringMap.add "dsb.full" "DSBFULL"
-      |> StringMap.add "dsb.st" "DSBST"
-      |> StringMap.add "dsb.ld" "DSBLD"
-      |> StringMap.add "iico_order" "iicoorder"
-      |> StringMap.add "iico_data" "iicodata"
-      |> StringMap.add "iico_ctrl" "iicoctrl"
-      |> StringMap.add "iico_control" "iicoctrl"
-      |> StringMap.add "hw-reqs" "hwreqs"
-      |> StringMap.add "sca-class" "sca"
-      |> StringMap.add "Instr-read-ordered-before" "Instrreadob"
-      |> StringMap.add "L" "REL"
-      |> StringMap.add "id" "sameEffect"
+    let tr_id = MiaouNames.to_csname
 
     let defs =
       match O.texfile with
       | None -> None
       | Some fname ->
          Some (LexMiaou.csnames (libfind fname))
-
-    let tr_id s =
-      try StringMap.find s vocabulary
-      with Not_found -> toalpha s
 
     let get_id_type  =
       match defs with

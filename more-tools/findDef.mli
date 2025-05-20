@@ -13,10 +13,12 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+module type Config = sig
+  include ParserConfig.Config
+  val cat : string
+end
 
-module
-  Make
-    (_:sig val verbose : bool end) :
+module Make (_ : Config) :
 sig
   val find : string  list -> string * string array
   val find_def : string list -> string * string array
