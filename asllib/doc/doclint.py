@@ -517,7 +517,6 @@ def check_rules(filename: str) -> int:
         "RelationsOnTypes.tex" : 15,
         "SubprogramCalls.tex" : 1,
         "SymbolicSubsumptionTesting.tex" : 15,
-        "TypeSystemUtilities.tex" : 23,
         "SemanticsUtilities.tex" : 19,
     }
     total_expected = 0

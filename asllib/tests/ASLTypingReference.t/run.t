@@ -152,6 +152,12 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.Subtype.asl
   $ aslref --no-exec TypingRule.GetVariableEnum.asl
   $ aslref TypingRule.TRecordDecl.asl
+  $ aslref TypingRule.TRecordDecl.bad.asl
+  File TypingRule.TRecordDecl.bad.asl, line 1, characters 0 to 58:
+  type MyRecord of record {v: integer, b: boolean, v: real};
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Typing error: cannot declare already declared element "v".
+  [1]
   $ aslref TypingRule.TExceptionDecl.asl
   $ aslref TypingRule.TCollection.asl
   $ aslref TypingRule.TNonDecl.asl
@@ -942,3 +948,36 @@ ASL Typing Tests / annotating types:
     provided integer {1..10}.
   [1]
   $ aslref TypingRule.SymdomOfWidthExpr.asl
+  $ aslref TypingRule.AddImmutableExpr.asl
+  $ aslref TypingRule.ShouldRememberImmutableExpression.bad.asl
+  File TypingRule.ShouldRememberImmutableExpression.bad.asl, line 9,
+    characters 4 to 33:
+      let t: integer{x..x + 1} = 2;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Typing error: a subtype of integer {x..(x + 1)} was expected,
+    provided integer {2}.
+  [1]
+  $ aslref --no-exec TypingRule.AddGlobalImmutableExpr.asl
+  $ aslref --no-exec TypingRule.AddLocalConstant.asl
+  $ aslref --no-exec TypingRule.AddGlobalConstant.asl
+  $ aslref --no-exec TypingRule.LookupConstant.asl
+  $ aslref --no-exec TypingRule.AddLocal.asl
+  $ aslref --no-exec TypingRule.CheckVarNotInGEnv.asl
+  $ aslref --no-exec TypingRule.CheckVarNotInGEnv.bad.asl
+  File TypingRule.CheckVarNotInGEnv.bad.asl, line 1, characters 0 to 17:
+  var RED: integer;
+  ^^^^^^^^^^^^^^^^^
+  ASL Typing error: cannot declare already declared element "RED".
+  [1]
+  $ aslref --no-exec TypingRule.CheckVarNotInEnv.bad1.asl
+  File TypingRule.CheckVarNotInEnv.bad1.asl, line 1, characters 0 to 53:
+  func foo{A}(bv: bits(A), A: integer) begin pass; end;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Typing error: cannot declare already declared element "A".
+  [1]
+  $ aslref --no-exec TypingRule.CheckVarNotInEnv.bad2.asl
+  File TypingRule.CheckVarNotInEnv.bad2.asl, line 3, characters 14 to 15:
+      var x, y, y: integer;
+                ^
+  ASL Typing error: cannot declare already declared element "y".
+  [1]
