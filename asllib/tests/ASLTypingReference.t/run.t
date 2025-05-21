@@ -928,3 +928,4 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.ToIR.asl
   $ aslref --no-exec TypingRule.Normalize.asl
   $ aslref --no-exec TypingRule.UnitaryMonomialsToExpr.asl
+  $ aslref --no-exec TypingRule.PropagateRecursiveCallsSess.asl

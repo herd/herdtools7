@@ -554,111 +554,135 @@ The helper relation
 \aslrel
 \overname{(\func\times\TSideEffectSet)^*}{\vsessnew}
 \]
-accepts a list of $\func$ AST nodes and their associated \sideeffectdescriptorsetsterm\ and
-ensures that the \sideeffectdescriptorsterm\ of a given $\func$
-consists of the \sideeffectdescriptorsterm\ of all the $\func$ AST nodes of the
+accepts a list that associates $\func$ AST nodes to \sideeffectdescriptorsetsterm\ and
+generates a list that associates each $\func$ AST nodes to the union of all
+\sideeffectdescriptorsterm\ associated with the
 recursive functions it may transitively call.
 
+We assume each $\func$ AST node occurs in exactly one pair of $\vsess$.
+
 \ExampleDef{Propagating Recursive Call Side Effects}
-Given the specification in \listingref{TypeCheckAST},
-the following sets of \sideeffectdescriptorsterm{} are inferred for each subprogram
-separately:
+Consider the specification in \listingref{PropagateRecursiveCallsSess}.
+\ASLListing{Propagating recursive call side effects}{PropagateRecursiveCallsSess}{\typingtests/TypingRule.PropagateRecursiveCallsSess.asl}
+
+\TypingRuleRef{TypeCheckMutuallyRec} applies $\propagaterecursivecallssess$
+to the following subprograms and their associated \sideeffectdescriptorsterm{} are inferred for each subprogram
+separately ($\funcidtoses$ in the rules below):
 \begin{center}
-\begin{tabular}{c}
-$\left(\vmain,  \left\{\begin{array}{l}
-                \ReadGlobal(\vg, \timeframeexecution, \False),\\
-                \ReadLocal(\vx, \timeframeexecution, \False),\\
-                \WriteLocal(\vx, \timeframeexecution, \True),\\
-                \RecursiveCall(\rotatezero)
+\[
+\left[
+\begin{array}{ll}
+\countgone, &  \left\{\begin{array}{l}
+                \ReadGlobal(\vgone, \timeframeexecution, \False),\\
+                \WriteGlobal(\vgone),\\
+                \RecursiveCall(\countgtwo)
+                \end{array}\right\}\\
+&,\\
+\countgtwo, & \left\{\begin{array}{l}
+                \ReadGlobal(\vgtwo, \timeframeexecution, \False),\\
+                \WriteGlobal(\vgtwo),\\
+                \ReadGlobal(\vgthree, \timeframeexecution, \False),\\
+                \RecursiveCall(\vgone)\\
                 \end{array}\right\}
-                \right)$\\
-$\left(\rotatecolor  ,\left\{ \begin{array}{l} \ReadLocal(\vc, \timeframeexecution, \True) \end{array}\right\}\right)$\\
-$\left(\rotatezero   ,\left\{\begin{array}{l}
-                \ReadLocal(\vc, \timeframeexecution, \True),\\
-                \ReadLocal(\rotate, \timeframeexecution, \True),\\
-                \RecursiveCall(\rotateone)
-                \end{array}\right\}\right)$\\
-$\left(\rotateone    ,\left\{\begin{array}{l}
-                \ReadLocal(\vc, \timeframeexecution, \True),\\
-                \ReadLocal(\rotate, \timeframeexecution, \True),\\
-                \RecursiveCall(\rotatezero)
-                \end{array}\right\}\right)$\\
-\end{tabular}
+\end{array}
+\right]
+\]
 \end{center}
 
-$\propagaterecursivecallssess$ first infers the following edges between the following subprograms:
+$\propagaterecursivecallssess$ then infers the following relation between the subprograms
+based on their associated \sideeffectdescriptorsetsterm{} ($\callgraph$ in the rules below):
 \begin{center}
 \begin{tabular}{lcl}
-$(\vmain$       &,& $\rotatecolor)$\\
-$(\vmain$       &,& $\rotatezero)$\\
-$(\vmain$       &,& $\rotateone)$\\
-$(\rotateone$   &,& $\rotateone)$\\
-$(\rotateone$   &,& $\rotatezero)$\\
-$(\rotateone$   &,& $\rotatecolor)$\\
-$(\rotatezero$  &,& $\rotateone)$\\
-$(\rotatezero$  &,& $\rotatezero)$\\
-$(\rotatezero$  &,& $\rotatecolor)$\\
+$(\countgone$   &,& $\countgtwo)$\\
+$(\countgtwo$   &,& $\countgone)$
 \end{tabular}
 \end{center}
 
-Then, the \sideeffectdescriptorterm{} are accumulated, resulting in the following:
+$\propagaterecursivecallssess$ then computes the transitive closure of the relation above
+($\transitivecallgraph$ in the rules below):
 \begin{center}
-\begin{tabular}{c}
-$\left(\vmain,  \left\{\begin{array}{l}
-                \ReadGlobal(\vg, \timeframeexecution, \False),\\
-                \ReadLocal(\vx, \timeframeexecution, \False),\\
-                \WriteLocal(\vx, \timeframeexecution, \True),\\
-                \RecursiveCall(\rotatezero),\\
-                \RecursiveCall(\rotateone),\\
-                \ReadLocal(\vc, \timeframeexecution, \True),\\
-                \ReadLocal(\rotate, \timeframeexecution, \True),\\
-                \end{array}\right\}
-                \right)$\\
-$\left(\rotatecolor,\left\{ \begin{array}{l}
-                \ReadLocal(\vc, \timeframeexecution, \True)
-              \end{array}\right\}\right)$\\
-$\left(\rotatezero   ,\left\{\begin{array}{l}
-                \ReadLocal(\vc, \timeframeexecution, \True),\\
-                \ReadLocal(\rotate, \timeframeexecution, \True),\\
-                \RecursiveCall(\rotateone),
-                \RecursiveCall(\rotatezero)
-                \end{array}\right\}\right)$\\
-$\left(\rotateone    ,\left\{\begin{array}{l}
-                \ReadLocal(\vc, \timeframeexecution, \True),\\
-                \ReadLocal(\rotate, \timeframeexecution, \True),\\
-                \RecursiveCall(\rotatezero),
-                \RecursiveCall(\rotateone)
-                \end{array}\right\}\right)$\\
+\begin{tabular}{lcl}
+$(\countgone$   &,& $\countgone)$\\
+$(\countgone$   &,& $\countgtwo)$\\
+$(\countgtwo$   &,& $\countgone)$\\
+$(\countgtwo$   &,& $\countgtwo)$
 \end{tabular}
+\end{center}
+
+Then, the \sideeffectdescriptorterm{} are accumulated, excluding \RecursiveCallTerms,
+which yields the final result:
+\begin{center}
+\[
+\left[
+\begin{array}{ll}
+\countgone, &  \left\{\begin{array}{l}
+                \ReadGlobal(\vgone, \timeframeexecution, \False),\\
+                \WriteGlobal(\vgone),\\
+                \ReadGlobal(\vgtwo, \timeframeexecution, \False),\\
+                \WriteGlobal(\vgtwo),\\
+                \ReadGlobal(\vgthree, \timeframeexecution, \False),\\
+                \WriteGlobal(\vgthree),\\
+                \end{array}\right\}\\
+&,\\
+\countgtwo, & \left\{\begin{array}{l}
+                \ReadGlobal(\vgone, \timeframeexecution, \False),\\
+                \WriteGlobal(\vgone),\\
+                \ReadGlobal(\vgtwo, \timeframeexecution, \False),\\
+                \WriteGlobal(\vgtwo),\\
+                \ReadGlobal(\vgthree, \timeframeexecution, \False),\\
+                \WriteGlobal(\vgthree),\\
+                \end{array}\right\}
+\end{array}
+\right]
+\]
 \end{center}
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item define the set $V$ as the set that includes an AST node $\vf$ if and only if $(\vf, \Ignore)$ exists in $\vsess$.
-        Intuitively, this is the set of all function definitions in associated with \sideeffectdescriptorsterm\ in $\vsess$;
-  \item define the relation $E : \func \times \func$ as follows:
-        a pair $(\vfone, \vftwo)$ is included in $E$ if the pair $(\vfone, \vses_\vfone)$ exists in $\vsess$
-        and the \RecursiveCallTerm\ for $\vftwo.\funcname$ exists in $\vses_\vfone$.
-        Intuitively, there exists an edge $(\vfone, \vftwo)$ if the \sideeffectdescriptorsterm\ of $\vfone$ indicate that it
-        may call the recursive function $\vftwo$;
-  \item recall that $\graphtransitive{E}$ is the transitive closure of $E$, which intuitively means that
-        $(\vfone, \vftwo)$ is included in $\graphtransitive{E}$ if there exists a path of edges in $E$ connecting $\vfone$
-        to $\vftwo$;
-  \item define the function $\propagatedeffects : \func \aslto \TSideEffectSet$, which binds a function definition $\vfone$
-        to the set including any \sideeffectdescriptorsterm\ $\vs$ such that $(\vfone, \vftwo) \in \graphtransitive{E}$ and
-        $\vs$ is associated with $\vftwo$ in $\vsess$;
-  \item define $\vsesnew$ as any listing of the set of pairs $(\vf, \propagatedeffects(\vf))$ such $\vf$ is a member of $V$.
+  \item \Proseeqdef{$\funcidtoses$}{the function that maps a subprogram name of $\vf$ to its associated \sideeffectdescriptorsetsterm{}
+        $\vs$, for each pair $(\vf, \vs)$ in $\vsess$};
+  \item \Proseeqdef{$\callgraph$}{the relation between subprogram names $\vfone$ and $\vftwo$ such that
+        the \sideeffectdescriptorsetsterm{} associated with $\vfone$ includes the \RecursiveCallTerm{} for $\vftwo$};
+  \item \Proseeqdef{$\transitivecallgraph$}{the transitive closure of $\callgraph$};
+  \item \Proseeqdef{$\funcidtosesminusrec$}{the function where for each mapping of subprogram name $\id$
+        to \sideeffectdescriptorsetsterm{} $\vs$ in $\funcidtoses$, there exists a mapping of $\id$
+        to $\vs$ with all \RecursiveCallTerms{} removed};
+  \item \Proseeqdef{$\callees$}{the function where for each pair $(\vf, \vses)$ in $\vsess$ there exists a mapping
+        of $\vf$ to the set of subprogram names such that for each such subprogram name $\vsucc$,
+        $(\vf.\funcname, \vsucc)$ is a member of $\transitivecallgraph$};
+  \item \Proseeqdef{$\vsessnew$}{the list constructed from each pair $(\vf, \vs)$ in $\vsess$
+        by associating $\vf$ to the union of \sideeffectdescriptorsetsterm{} given by the \sideeffectdescriptorsetsterm{}
+        of $\funcidtosesminusrec(\vc)$ for each successor of $\vf$ in $\callees$, with all \RecursiveCallTerms{} removed}.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  V \eqdef \{ (\vf, \Ignore) \in \vsess\}\\
-  E \eqdef \{ (\vfone, \vftwo) \;|\; \exists (\vfone, \vses_\vfone) \in \vsess \text{ and } \RecursiveCall(\vftwo.\funcname) \in \vses_\vfone\}\\
-  \vfone\in V: \propagatedeffects(\vfone) \eqdef \bigcup \{ \vses_\vftwo \;|\; (\vfone, \vftwo) \in \graphtransitive{E} \text{ and } (\vftwo, \vses_\vftwo \in \vsess)\}\\
+  \funcidtoses \eqdef \{ \vf.\funcname \mapsto \vs \;|\; (\vf, \vs) \in \vsess \}\\
+  \callgraph \eqdef \{ (\vfone, \vftwo) \;|\; (\vfone, \vses) \in \funcidtoses \land \RecursiveCall(\vftwo) \in \vses\}\\
+  \transitivecallgraph \eqdef \graphtransitive{\callgraph}\\
+  {
+  \begin{array}{l}
+  \funcidtosesminusrec \eqdef \\ \{ \id \mapsto \vs \setminus \RecursiveCall(\Identifiers) \;|\; (\id, \vs) \in \funcgraph(\funcidtoses)\}
+  \end{array}
+  }\\
+  {
+  \begin{array}{l}
+  \callees \eqdef \\
+  \{ \vf \mapsto \{\vsucc \;|\; (\vf.\funcname, \vsucc) \in \transitivecallgraph\} \;|\; (\vf, \vses) \in \vsess \}
+  \end{array}
+  }\\
+  {
+  \begin{array}{l}
+  \vsessnew \eqdef \\
+  \left[ (\vf, \vs) \in \vsess :
+  \left(\vf, \bigcup_{\vc \in \callees(\vf)} \funcidtosesminusrec(\vc) \setminus \RecursiveCall(\Identifiers)\right)
+  \right]
+  \end{array}
+  }
 }{
-  \propagaterecursivecallssess(\vsess) \typearrow \overname{[\vf\in V: (\vf, \propagatedeffects(\vf))]}{\vsessnew}
+  \propagaterecursivecallssess(\vsess) \typearrow \vsessnew
 }
 \end{mathpar}
 
@@ -2312,9 +2336,6 @@ and the identifiers used by it, appearing in comments to its right.
 
 \section{Ordering Global Declarations via Def-Use Dependencies\label{sec:Dependencies}}
 
-\hypertarget{def-graphtransitive}{}
-We denote the reflexive-transitive closure of a relation $E$ as $\graphtransitive{E}$.
-
 \begin{definition}[Strongly Connected Components]
 \hypertarget{def-scc}{}
 Given a graph $G=(V, E)$, a \\ subset of its nodes $C \subseteq V$ is called
@@ -2324,7 +2345,7 @@ every pair of nodes $u,v \in C$ reachable from one another.
 The \emph{strongly connected components} of a graph $(V, E)$ uniquely partitions its set of
 nodes $V$ into a set of strongly connected components:
 \[
-\SCC(V, E) \triangleq \{ C \subseteq V \;|\; \forall u,v\in C.\ (u,v), (v,u) \in \graphtransitive{E} \} \enspace.
+\SCC(V, E) \triangleq \{ C \subseteq V \;|\; \forall u,v\in C.\ (u,v), (v,u) \in \graphtransitivereflexive{E} \} \enspace.
 \]
 \end{definition}
 
@@ -2337,7 +2358,7 @@ $C_{1..k}$ --- is a \emph{topological ordering of components},
 denoted \\
 $C_{1..k} \in \topologicalorderingcomps(\comps, E)$, if the following condition holds:
 \[
-  \forall 1 \leq i \leq j \leq k.\ \exists c_i\in C_i.\ c_j\in C_j.\ (c_i,c_j) \in \graphtransitive{E} \;\;\Longrightarrow\;\;
+  \forall 1 \leq i \leq j \leq k.\ \exists c_i\in C_i.\ c_j\in C_j.\ (c_i,c_j) \in \graphtransitivereflexive{E} \;\;\Longrightarrow\;\;
   i \leq j \enspace .
 \]
 \end{definition}
