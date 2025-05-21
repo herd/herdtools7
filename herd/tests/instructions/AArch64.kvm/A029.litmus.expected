@@ -1,0 +1,10 @@
+Test A029 Required
+States 1
+ Fault(P0,x,MMU:Permission);
+Ok
+Witnesses
+Positive: 4 Negative: 0
+Condition forall (fault(P0,x,MMU:Permission))
+Observation A029 Always 4 0
+Hash=c2113ed6c233dfea9150b8fb9c74d6c9
+
