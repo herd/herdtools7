@@ -147,9 +147,14 @@ module Make
 
     let next_indent indent = indent ^ "  "
 
-    let next_event = function
-      | 1 -> 3
-      | n -> n+1
+    module Next : sig
+      val reset : unit -> unit
+      val next : unit -> int
+    end = struct
+      let c = ref 1
+      let reset () = c := 1
+      let next () = let r = !c in incr c ; r
+    end
 
     let pp_evt k = sprintf "E\\textsubscript{%d}" k
 
@@ -427,7 +432,7 @@ module Make
            match es with
            | [] -> e1,e2,e2
            | _::_ ->
-              e1,next_event e1,e2 in
+              e1,Next.next (),e2 in
          Item
            (sprintf
             "\\%s{%s}{either  %s} or \\%s{an Effect which}{%s}"
@@ -437,7 +442,7 @@ module Make
       | [e;Op1 (_,ToId,f);] ->
          [tr_rel e1 e2 e; tr_evts e2 f;]
       | e::es ->
-         let e3 = next_event e1 in
+         let e3 = Next.next () in
          tr_rel e1 e3 e::tr_seq e3 e2 es
 
     and notItem = function
@@ -649,6 +654,7 @@ module Make
       | Some _ as r -> r
 
     let tr_def loc id d =
+      Next.reset () ;
       let ty = get_id_e_type id d in
       if O.verbose > 0 then begin
         match ty with
@@ -661,14 +667,21 @@ module Make
               | SET -> "an event set"
               | RLN -> "a relation")
         end ;
-        let tr =
+        let es,tr =
         match ty with
-        | Some RLN -> tr_rel 1 2
-        | Some SET -> tr_evts 1
+        | Some RLN ->
+            let e1 = Next.next () in
+            let e2 = Next.next () in
+            [| e1; e2; |],tr_rel e1 e2
+        | Some SET ->
+            let e = Next.next () in
+            [| e |],tr_evts e
         | None ->
            eprintf "%a: Cannot find type of %s\n"
              TxtLoc.pp loc id ;
-           tr_rel 1 2 in
+           let e1 = Next.next () in
+           let e2 = Next.next () in
+           [| e1; e2; |],tr_rel e1 e2 in
       let pref =
         match ty with
         | Some RLN|None ->
@@ -678,13 +691,13 @@ module Make
              "%s if"
              (makeuppercase
               @@ sprintf "\\%s{an Effect %s}{an Effect %s}"
-                   def_txt (pp_evt 1) (pp_evt 2))
+                   def_txt (pp_evt es.(0)) (pp_evt es.(1)))
         | Some SET ->
            sprintf
              "%s if"
              (makeuppercase
               @@ sprintf "\\%s{an Effect %s}"
-                   (pp_id loc id) (pp_evt 1)) in
+                   (pp_id loc id) (pp_evt es.(0))) in
       let d =
         if O.flatten then
          ASTUtils.flatten d |> tr |> flatten_out 
