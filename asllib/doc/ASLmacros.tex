@@ -190,8 +190,8 @@
 \newcommand\OneApplies[0]{One of the following applies:}
 \newcommand\Proseeqdef[2]{define #1 as #2}
 \newcommand\ProseEqdef[2]{Define #1 as #2}
-\newcommand\ExampleDef[1]{\subsubsection{Example: #1}\hypertarget{Example:#1}{}} % DO NOT LINT
-\newcommand\ExampleRef[1]{\hyperlink{#1}{Example: #1}} % DO NOT LINT
+\newcommand\ExampleDef[1]{\hypertarget{example-#1}{}\subsubsection{Example: #1}} % DO NOT LINT
+\newcommand\ExampleRef[1]{\hyperlink{example-#1}{Example: #1}} % DO NOT LINT
 
 \ifcode
 % First argument is \<rule>Begin, second is \<rule>End, third is the file name.
@@ -1290,7 +1290,6 @@
 \newcommand\isglobalundefined[0]{\hyperlink{def-isglobalundefined}{\textfunc{is\_global\_undefined}}}
 \newcommand\islocalundefined[0]{\hyperlink{def-islocalundefined}{\textfunc{is\_local\_undefined}}}
 \newcommand\isundefined[0]{\hyperlink{def-isundefined}{\textfunc{is\_undefined}}}
-\newcommand\issubprogram[0]{\hyperlink{def-issubprogram}{\textfunc{is\_subprogram}}}
 \newcommand\lookupimmutableexpr[0]{\hyperlink{def-lookupimmutableexpr}{\textfunc{lookup\_immutable\_expr}}}
 \newcommand\addglobalimmutableexpr[0]{\hyperlink{def-addglobalimmutableexpr}{\textfunc{add\_global\_immutable\_expr}}}
 \newcommand\addlocalimmutableexpr[0]{\hyperlink{def-addlocalimmutableexpr}{\textfunc{add\_local\_immutable\_expr}}}
@@ -1850,7 +1849,8 @@
 \newcommand\checkvarnotingenv[1]{\hyperlink{def-checkvarnotingenv}{\textfunc{check\_var\_not\_in\_genv}}(#1)}
 \newcommand\checknoprecisionloss[1]{\hyperlink{def-checknoprecisionloss}{\textfunc{check\_no\_precision\_loss}}(#1)}
 \newcommand\precisionjoin[0]{\hyperlink{def-precisionjoin}{\textfunc{precision\_join}}}
-\newcommand\Prosenoprecisionloss[1]{determining whether #1 has been computed with no precision loss using $\checknoprecisionloss$ yields $\True$\ProseOrTypeError}
+\newcommand\Prosenoprecisionloss[1]{determining whether #1 has been computed with no precision loss via\\
+    $\checknoprecisionloss$ yields $\True$\ProseOrTypeError}
 \newcommand\annotatesubprogram[0]{\hyperlink{def-annotatesubprogram}{\textfunc{annotate\_subprogram}}}
 \newcommand\Proseannotatesubprogram[5]{\hyperlink{def-annotatesubprogram}{annotating} the subprogram definition #2
   in the static environment #1 with \sideeffectdescriptorsetsterm{} #3 yields the subprogram definition #4
@@ -3069,3 +3069,9 @@
 \newcommand\vsucc[0]{\texttt{succ}}
 \newcommand\countgone[0]{\texttt{count\_g1}}
 \newcommand\countgtwo[0]{\texttt{count\_g2}}
+\newcommand\increment[0]{\texttt{increment}}
+\newcommand\incrementone[0]{\texttt{increment-1}}
+\newcommand\BitsArray[0]{\texttt{BitsArray}}
+\newcommand\undeclaredidentifier[0]{\texttt{undeclared\_identifier}}
+\newcommand\fldone[0]{\texttt{fld1}}
+\newcommand\fldtwo[0]{\texttt{fld2}}

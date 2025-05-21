@@ -986,6 +986,7 @@ induced
 induction
 inequality
 inevitably
+infer
 inference
 inferred
 inferring
@@ -1146,6 +1147,7 @@ long
 longer
 longest
 look
+looked
 looking
 looks
 loop
@@ -1326,6 +1328,7 @@ optimized
 option
 optional
 optionally
+optionals
 options
 or
 order
@@ -1598,6 +1601,7 @@ remain
 remainder
 remaining
 remains
+remembering
 remove
 removed
 removes
@@ -1606,6 +1610,7 @@ rename
 renames
 renaming
 repeat
+repeated
 repeating
 replace
 replaced

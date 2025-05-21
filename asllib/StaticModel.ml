@@ -418,7 +418,7 @@ let rec to_ir env (e : expr) =
   match e.desc with
   | E_Literal (L_Int i) -> IR.of_int i
   | E_Var s -> (
-      try StaticEnv.lookup_constants env s |> of_lit
+      try StaticEnv.lookup_constant env s |> of_lit
       with Not_found -> (
         try StaticEnv.lookup_immutable_expr env s |> to_ir env
         with Not_found | NotSupported -> (
