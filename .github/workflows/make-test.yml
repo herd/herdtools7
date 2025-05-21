@@ -24,10 +24,14 @@ jobs:
           - ubuntu-latest
         cfg:
           - ocaml-version: "4.08.1"
+            with-min-versions: true
             with-fmt: false
             job-name: "OCaml v4.08"
+            dune-cache: "enabled"
           - ocaml-version: "5.2"
+            with-min-versions: false
             with-fmt: true
+            dune-cache: "enabled-except-user-rules"
             job-name: "OCaml v5.2, with formatting check"
 
     name: Make test on ${{ matrix.cfg.job-name }}
@@ -35,7 +39,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     env:
-      DUNE_CACHE: 'enabled-except-user-rules'
+      DUNE_CACHE: ${{ matrix.cfg.dune-cache }}
 
     steps:
       - name: Checkout tree
@@ -46,6 +50,12 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.cfg.ocaml-version }}
           dune-cache: true
+
+      - run: |
+          opam pin add dune 3.0.2
+          opam pin add menhir 20220210
+          opam pin add zarith 1.13
+        if: ${{ matrix.cfg.with-min-versions }}
 
       - run: opam install . --deps-only --with-test
 
