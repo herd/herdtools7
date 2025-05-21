@@ -4007,9 +4007,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               && Option.is_none f.recurse_limit
             then warn_from ~loc Error.(NoRecursionLimit [ f.name ])
           in
-          let ses_f = SES.remove_calls_recursives ses_f in
+          let ses_f_no_recursives = SES.remove_calls_recursives ses_f in
           let new_d = D_Func new_f |> here
-          and new_env = StaticEnv.add_subprogram new_f.name new_f ses_f env1 in
+          and new_env =
+            StaticEnv.add_subprogram new_f.name new_f ses_f_no_recursives env1
+          in
           (new_d, new_env.global) |: TypingRule.TypecheckDecl
       | D_Func ({ body = SB_Primitive _; _ } as f) ->
           let (new_env, new_f), _ = annotate_and_declare_func ~loc f genv in
@@ -4050,16 +4052,20 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let pp f ((func_sig : func), ses) =
           fprintf f "@[<h 2>%s:@ %a@]" func_sig.name SES.pp_print ses
         in
-        eprintf "@[<v 2>Propagating side-effects from:@ @[<v 2>[%a]@]@]@."
+        eprintf
+          "propagate_recursive_calls_sess BEGIN: @[<v 2>Propagating \
+           side-effects from:@ @[<v 2>[%a]@]@]@."
           (pp_print_list ~pp_sep pp) sess
     in
-    let map0 =
+    let func_id_to_ses =
       List.map (fun ((f : func), ses) -> (f.name, ses)) sess |> IMap.of_list
     in
-    let call_graph = IMap.map (fun ses -> SES.get_calls_recursives ses) map0 in
+    let call_graph =
+      IMap.map (fun ses -> SES.get_calls_recursives ses) func_id_to_ses
+    in
     let transitive_call_graph = transitive_closure call_graph in
-    let map0_without_recursive_calls =
-      IMap.map (fun ses -> SES.remove_calls_recursives ses) map0
+    let func_id_to_ses_minus_rec =
+      IMap.map (fun ses -> SES.remove_calls_recursives ses) func_id_to_ses
     in
     let res =
       List.map
@@ -4068,7 +4074,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             IMap.find func.name transitive_call_graph |> ISet.elements
           in
           let sess =
-            List.map (fun x -> IMap.find x map0_without_recursive_calls) callees
+            List.filter_map
+              (fun x -> IMap.find_opt x func_id_to_ses_minus_rec)
+              callees
           in
           (func, SES.unions (SES.remove_calls_recursives ses :: sess)))
         sess
@@ -4080,7 +4088,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let pp f ((func_sig : func), ses) =
           fprintf f "@[<h 2>%s:@ %a@]" func_sig.name SES.pp_print ses
         in
-        eprintf "@[<v 2>Propagating side-effects from:@ @[<v 2>[%a]@]@]@."
+        eprintf
+          "propagate_recursive_calls_sess END: @[<v 2>Propagating side-effects \
+           from:@ @[<v 2>[%a]@]@]@."
           (pp_print_list ~pp_sep pp) res
     in
     res

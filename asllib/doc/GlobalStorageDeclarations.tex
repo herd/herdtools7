@@ -26,7 +26,7 @@ The language supports such overriding mechanisms (and in particular, simplifies 
   \item The \texttt{config} keyword syntactically identifies configurable storage elements.
   \item Types of \texttt{config} storage elements must be \emph{both} explicitly declared \emph{and} singular (\TypingRuleRef{SingularType}).
   \item The \timeframeterm{} of \texttt{config} storage elements is $\timeframeexecution$, so their values are not relied upon by typechecking.
-  \item Values of \texttt{config} storage elements must have \timeframeterm{} less than of equal to $\timeframeconstant$, so they can depend only on constant values (and not other \texttt{config} storage elements for example).
+  \item Values of \texttt{config} storage elements must have \timeframeterm{} less than or equal to $\timeframeconstant$, so they can depend only on constant values (and not other \texttt{config} storage elements for example).
 \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -226,7 +226,7 @@ are ill-typed since
 \texttt{config} storage elements have the $\timeframeconstant$ \timeframeterm,
 which requires that all expressions used in its type annotation and initializing expression
 also have the $\timeframeconstant$ \timeframeterm,
-whereas \verb|b| has the $\timeframeexecution$ \timeframeterm.
+whereas \verb|x| has the $\timeframeexecution$ \timeframeterm.
 \ASLListing{Ill-typed configuration storage declaration}{DeclareGlobalStorage-bad1}{\typingtests/TypingRule.DeclareGlobalStorage.bad1.asl}
 \ASLListing{Ill-typed configuration storage declaration}{DeclareGlobalStorage-bad2}{\typingtests/TypingRule.DeclareGlobalStorage.bad2.asl}
 

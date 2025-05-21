@@ -313,7 +313,8 @@
 \newcommand\funcgraph[0]{\hyperlink{def-funcgraph}{\texttt{func\_graph}}}
 \DeclareMathOperator{\dom}{\hyperlink{def-dom}{dom}}
 \newcommand\sign[0]{\hyperlink{def-sign}{\texttt{sign}}}
-\newcommand\graphtransitive[1]{#1^{\hyperlink{def-graphtransitive}{*}}}
+\newcommand\graphtransitive[1]{#1^{\hyperlink{def-graphtransitive}{+}}}
+\newcommand\graphtransitivereflexive[1]{#1^{\hyperlink{def-graphtransitivereflexive}{*}}}
 
 \newcommand\configdomain[1]{\hyperlink{def-configdomain}{\texttt{config\_dom}}({#1})}
 
@@ -1362,8 +1363,6 @@
 \newcommand\PerformsAssertions[0]{\hyperlink{def-performsassertions}{\textsf{PerformsAssertions}}}
 \newcommand\NonDeterministic[0]{\hyperlink{def-nondeterministic}{\textsf{NonDeterministic}}}
 
-\newcommand\propagatedeffects[0]{\textfunc{propagated\_effects}}
-
 % sets of side effect descriptors
 \newcommand\timeframe[0]{\hyperlink{def-sideeffecttimeframe}{\textfunc{time\_frame}}}
 \newcommand\sideeffectispure[0]{\hyperlink{def-sideeffectispure}{\textfunc{side\_effect\_is\_pure}}}
@@ -1768,7 +1767,8 @@
 \newcommand\ReadGlobalTerm[0]{\hyperlink{def-readglobalterm}{global read side effect descriptor}}
 \newcommand\WriteGlobalTerm[0]{\hyperlink{def-writeglobalterm}{global write side effect descriptor}}
 \newcommand\ThrowExceptionTerm[0]{\hyperlink{def-throwexceptionterm}{exception side effect descriptor}}
-\newcommand\RecursiveCallTerm[0]{\hyperlink{def-recursivecallterm}{recursive call side effect  descriptor}}
+\newcommand\RecursiveCallTerm[0]{\hyperlink{def-recursivecallterm}{recursive call side effect descriptor}}
+\newcommand\RecursiveCallTerms[0]{\hyperlink{def-recursivecallterm}{recursive call side effect descriptors}}
 \newcommand\PerformsAssertionsTerm[0]{\hyperlink{def-performsassertionsterm}{assertion side effect descriptor}}
 \newcommand\NonDeterministicTerm[0]{\hyperlink{def-nondeterministicterm}{non-determinism side effect descriptor}}
 
@@ -1846,7 +1846,9 @@
 \newcommand\precisionjoin[0]{\hyperlink{def-precisionjoin}{\textfunc{precision\_join}}}
 \newcommand\Prosenoprecisionloss[1]{determining whether #1 has been computed with no precision loss using $\checknoprecisionloss$ yields $\True$\ProseOrTypeError}
 \newcommand\annotatesubprogram[0]{\hyperlink{def-annotatesubprogram}{\textfunc{annotate\_subprogram}}}
-\newcommand\Proseannotatesubprogram[3]{\hyperlink{def-annotatesubprogram}{annotating} the subprogram definition #1 in the static environment #2 yields the subprogram definition #3}
+\newcommand\Proseannotatesubprogram[5]{\hyperlink{def-annotatesubprogram}{annotating} the subprogram definition #2
+  in the static environment #1 with \sideeffectdescriptorsetsterm{} #3 yields the subprogram definition #4
+  and \sideeffectdescriptorsetsterm{} #5}
 \newcommand\checkstmtreturnsorthrows[0]{\hyperlink{def-checkstmtreturnsorthrows}{\textfunc{check\_stmt\_returns\_or\_throws}}}
 
 \newcommand\controlflowfromstmt[0]{\hyperlink{def-controlflowfromstmt}{\textfunc{control\_flow\_from\_stmt}}}
@@ -2279,6 +2281,7 @@
 \newcommand\neweopt[0]{\texttt{new\_e\_opt}}
 \newcommand\newenv[0]{\texttt{new\_env}}
 \newcommand\newenvandfs[0]{\texttt{new\_env\_and\_fs}}
+\newcommand\newf[0]{\texttt{new\_f}}
 \newcommand\newfield[0]{\texttt{new\_field}}
 \newcommand\newfields[0]{\texttt{new\_fields}}
 \newcommand\newfuncdef[0]{\texttt{new\_func\_def}}
@@ -2776,6 +2779,7 @@
 \newcommand\vsesinitialvalue[0]{\texttt{ses\_initial\_value}}
 \newcommand\vsesbase[0]{\texttt{ses\_base}}
 \newcommand\vsesf[0]{\texttt{ses\_f}}
+\newcommand\vsesfnorecursives[0]{\texttt{ses\_f\_no\_recursives}}
 \newcommand\vsesfone[0]{\texttt{ses\_f1}}
 \newcommand\vsescatchers[0]{\texttt{ses\_catchers}}
 \newcommand\vseswithparams[0]{\texttt{ses\_with\_params}}
@@ -3026,7 +3030,6 @@
 \newcommand\addten[0]{\texttt{add\_10}}
 \newcommand\addtenone[0]{\texttt{add\_10-1}}
 \newcommand\factorial[0]{\texttt{factorial}}
-\newcommand\rotate[0]{\texttt{rotate}}
 \newcommand\declaredparam[0]{\texttt{declared\_param}}
 \newcommand\caninsertstdlibparam[0]{\texttt{can\_insert\_stdlib\_param}}
 \newcommand\inferredparameters[0]{\texttt{inferred\_parameters}}
@@ -3050,3 +3053,11 @@
 \newcommand\plf[0]{\texttt{plf}}
 \newcommand\vsapprox[0]{\texttt{s\_approx}}
 \newcommand\intervals[0]{\texttt{intervals}}
+\newcommand\funcidtoses[0]{\texttt{func\_id\_to\_ses}}
+\newcommand\funcidtosesminusrec[0]{\texttt{func\_id\_to\_ses\_minus\_rec}}
+\newcommand\callgraph[0]{\texttt{call\_graph}}
+\newcommand\transitivecallgraph[0]{\texttt{transitive\_call\_graph}}
+\newcommand\callees[0]{\texttt{callees}}
+\newcommand\vsucc[0]{\texttt{succ}}
+\newcommand\countgone[0]{\texttt{count\_g1}}
+\newcommand\countgtwo[0]{\texttt{count\_g2}}

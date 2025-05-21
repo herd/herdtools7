@@ -119,10 +119,12 @@ All global declarations in \listingref{TypecheckDecl} are well-typed.
     \item $\vd$ is a subprogram AST node with a subprogram definition $\vf$, that is, $\DFunc(\vf)$;
     \item annotating and declaring the subprogram for $\vf$ in $\genv$ as per \\
           \TypingRuleRef{AnnotateAndDeclareFunc}
-          yields the environment $\tenvone$ and a subprogram definition $\vfone$\ProseOrTypeError;
-    \item \Proseannotatesubprogram{$\vfone$}{$\tenv$}{$\vftwo$\ProseOrTypeError};
-    \item applying $\addsubprogram$ to bind $\vftwo.\funcname$ to $\vftwo$ in $\tenvone$ yields $\newtenv$;
-    \item define $\newd$ as the subprogram AST node with $\vftwo$, that is, $\DFunc(\vftwo)$;
+          yields the environment $\tenvone$, a subprogram definition $\vfone$,
+          and a \sideeffectdescriptorsetsterm{} $\vsesfuncsig$\ProseOrTypeError;
+    \item \Proseannotatesubprogram{$\tenv$}{$\vfone$}{\vsesfuncsig}{$\newf$}{$\vsesf$}\ProseOrTypeError;
+    \item \Proseeqdef{$\vsesfnorecursives$}{$\vsesf$ with every \RecursiveCallTerm{} removed};
+    \item applying $\addsubprogram$ to $\tenvone$, $\newf.\funcname$, $\newf$, and $\vsesfnorecursives$ yields $\newtenv$;
+    \item define $\newd$ as the subprogram AST node with $\newf$, that is, $\DFunc(\newf)$;
     \item define $\newgenv$ as the global component of $\newtenv$.
   \end{itemize}
 
@@ -149,12 +151,13 @@ All global declarations in \listingref{TypecheckDecl} are well-typed.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[func]{
-  \annotateanddeclarefunc(\genv, \vf) \typearrow (\tenvone, \vfone) \OrTypeError\\\\
-  \annotatesubprogram(\tenvone, \vfone) \typearrow \vftwo \OrTypeError\\\\
-  \addsubprogram(\tenvone, \vftwo.\funcname, \vftwo) \typearrow \newtenv
+  \annotateanddeclarefunc(\genv, \vf) \typearrow (\tenvone, \vfone, \vsesfuncsig) \OrTypeError\\\\
+  \annotatesubprogram(\tenvone, \vfone, \vsesfuncsig) \typearrow (\newf,\vsesf) \OrTypeError\\\\
+  \vsesfnorecursives \eqdef \vsesf \setminus \{ \vs \;|\; \configdomain{\vs} = \RecursiveCall \}\\
+  \addsubprogram(\tenvone, \newf.\funcname, \newf, \vsesfnorecursives) \typearrow \newtenv
 }{
   \typecheckdecl(\genv, \overname{\DFunc(\vf)}{\vd})
-  \typearrow (\overname{\DFunc(\vftwo)}{\newd}, \overname{G^\newtenv}{\newgenv})
+  \typearrow (\overname{\DFunc(\newf)}{\newd}, \overname{G^\newtenv}{\newgenv})
 }
 \end{mathpar}
 

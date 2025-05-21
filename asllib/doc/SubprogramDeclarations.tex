@@ -1580,7 +1580,7 @@ See \ExampleRef{Updating the Static Environment for a Subprogram}.
     \initses \eqdef \vsesfuncsig \cup\ \{ \RecursiveCall(\namep) \}\\
     \addsubprogram(\tenvone, \namep, \funcsigone, \initses) \typearrow \newtenv \OrTypeError
 }{
-  \declareonefunc(\tenv, \funcsig) \typearrow (\newtenv, \newfuncsig)
+  \declareonefunc(\tenv, \funcsig, \vsesfuncsig) \typearrow (\newtenv, \newfuncsig)
 }
 \end{mathpar}
 \CodeSubsection{\DeclareOneFuncBegin}{\DeclareOneFuncEnd}{../Typing.ml}

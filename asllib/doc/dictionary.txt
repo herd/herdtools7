@@ -375,6 +375,7 @@ computation
 computational
 compute
 computed
+computes
 concatenated
 concatenates
 concatenating
@@ -1288,6 +1289,7 @@ occur
 occurrence
 occurrences
 occurring
+occurs
 of
 offers
 offset
@@ -1868,6 +1870,7 @@ success
 successful
 successfully
 successive
+successor
 succinctly
 such
 sufficient

@@ -1797,7 +1797,7 @@ while calling \verb|throwing_func| terminates by throwing an exception.
       \item evaluating the subprogram named $\name$ with parameters $\vvparams$ and arguments $\vvargs$ in
       $\denvtwo'$ is $\Normal(\vms, (\vglobal, \Ignore))$ (that is, we ignore the local environment
       of the callee)\ProseOrError;
-      \item applying the helper relation $\readvaluefrom$ to $\vms$ yields $\vmstwo$;
+      \item applying the helper relation $\readvaluefrom$ to each element of the list $\vms$ yields the list $\vmstwo$;
       \item applying $\decrstacksize$ to $\vglobal$ and $\name$ yields $\genvtwo$;
       \item define $\newenv$ as the environment where the static environment is $\tenv$ and the dynamic environment consists
             of the dynamic global environment $\genvtwo$ and the dynamic local environment is taken from $\denvtwo$
@@ -1831,7 +1831,7 @@ while calling \verb|throwing_func| terminates by throwing an exception.
   \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
   \commonprefixline\\\\
   \evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \Normal(\vms, (\vglobal, \Ignore)) \OrDynError\\\\
-  \readvaluefrom(\vms) \evalarrow \vmstwo\\
+  \vmstwo \eqdef [\vm \in \vms: \readvaluefrom(\vms)]\\
   \decrstacksize(\vglobal, \name) \evalarrow \genvtwo\\
   \newenv \eqdef (\tenv, (\genvtwo, L^{\denvtwo}))
 }{
