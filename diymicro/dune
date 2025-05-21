@@ -1,0 +1,12 @@
+(rule
+ (copy ../Version.ml Version.ml))
+
+(executables
+ (names diymicro)
+ (public_names diymicro7)
+ (libraries herdtools unix))
+
+(ocamllex lexer)
+(menhir
+ (modules parser)
+ (flags --explain --inspection --table --dump))

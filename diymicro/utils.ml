@@ -1,0 +1,15 @@
+(** Returns the last element of a list *)
+let rec list_last =
+  function
+  | _::x::q -> list_last (x::q)
+  | [x] -> x
+  | _ -> failwith "Can't get last element of empty list"
+
+
+(** Rotates list by one step: `l@[x]` becomes `x::l` *)
+let list_rot1 l =
+  let rec rotate1 acc = function
+      [] ->  []
+    | [e] -> e::List.rev acc
+    | e::l -> rotate1 (e::acc) l
+  in rotate1 [] l
