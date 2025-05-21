@@ -960,26 +960,12 @@ module Make
                 set_afdb m in
             let add_setbits_af ipte m =
               add_setbits (is_zero ipte.af_v) "af:0" set_af m in
-            let setbits =
-              match dir with
-              | Dir.W ->
-                 if hd && updatedb then
-                   add_setbits_db ipte m
-                 else if ha then
-                   add_setbits_af ipte m
-                 else m
-              | Dir.R ->
-                  if hd && updatedb then
-                    (* The case of a failed CAS with no write, but with a db update *)
-                    M.altT (
-                      add_setbits_db ipte m
-                    )( (* no need to check ha, because hd implies ha *)
-                      add_setbits_af ipte m
-                    )
-                  else if ha then
-                    add_setbits_af ipte m
-                 else m in
-            setbits in
+            (* Write or failed CAS with no write, but with a db update *)
+            if hd && updatedb then
+              add_setbits_db ipte m
+            else if ha then
+              add_setbits_af ipte m
+            else m in
           mok m a in
 
 
@@ -2097,6 +2083,25 @@ Arguments:
           (rmw_to_read rmw)
           ii
 
+      let do_cas_fail_no_wb sz an rn ma mv mop ii =
+        (* CAS does not generate an Explicit Write Effect          *)
+        (* It is IMPLEMENTATION SPECIFIC if there is an update to  *)
+        (*                                the dirty bit of the TTD *)
+        let proc = ii.AArch64.proc in
+        let tthm = dirty.DirtyBit.tthm proc
+        and hd = dirty.DirtyBit.hd proc in
+        let may_update_db = tthm && hd in
+        let action updatedb =
+          (* Dir.W would force check for dbm bit:                  *)
+          (* - if set then either update or not db bit per R_TXGHB *)
+          (* - if unset raise Permission fault                     *)
+          lift_memop rn Dir.W updatedb memtag mop (to_perms "rw" sz) ma mv an ii
+        in
+        if may_update_db then
+          M.altT (action true) (action false)
+        else
+          action false
+
       let cas sz rmw rs rt rn ii =
         let an = rmw_to_read rmw in
         let read_rs = read_reg_data_sz sz rs ii
@@ -2149,12 +2154,9 @@ Arguments:
               (read_reg_addr rn ii) (read_reg_data_sz sz rt ii) an ii
           )(
             (* CAS does not generate an Explicit Write Effect          *)
-            (* It is IMPLEMENTATION SPECIFIC if there is an update to  *)
-            (*                                the dirty bit of the TTD *)
-            (* Note: the combination of dir=Dir.R and updatedb=true    *)
-            (*                    triggers an alternative in check_ptw *)
-            lift_memop rn Dir.R true memtag mop_fail_no_wb (to_perms "rw" sz)
-              (read_reg_addr rn ii) (read_reg_data_sz sz rt ii) an ii
+            let ma = read_reg_addr rn ii
+            and mv = read_reg_data_sz sz rt ii in
+            do_cas_fail_no_wb sz an rn ma mv mop_fail_no_wb ii
           )
         )
 
@@ -2232,14 +2234,9 @@ Arguments:
               an ii
           )(
             (* CASP does not generate Explicit Write Effects           *)
-            (* It is IMPLEMENTATION SPECIFIC if there is an update to  *)
-            (*                                the dirty bit of the TTD *)
-            (* Note: the combination of dir=Dir.R and updatedb=true    *)
-            (*                    triggers an alternative in check_ptw *)
-            lift_memop rn Dir.R true memtag mop_fail_no_wb
-              (to_perms "rw" sz) (read_reg_addr rn ii)
-              (read_reg_data_sz sz rt1 ii >>> fun _ -> read_reg_data_sz sz rt2 ii)
-              an ii
+            let ma = read_reg_addr rn ii
+            and mv = read_reg_data_sz sz rt1 ii >>> fun _ -> read_reg_data_sz sz rt2 ii in
+            do_cas_fail_no_wb sz an rn ma mv mop_fail_no_wb ii
           )
         )
 
