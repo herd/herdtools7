@@ -4074,7 +4074,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             IMap.find func.name transitive_call_graph |> ISet.elements
           in
           let sess =
-            List.map (fun x -> IMap.find x func_id_to_ses_minus_rec) callees
+            List.filter_map
+              (fun x -> IMap.find_opt x func_id_to_ses_minus_rec)
+              callees
           in
           (func, SES.unions (SES.remove_calls_recursives ses :: sess)))
         sess

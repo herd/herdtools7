@@ -841,7 +841,7 @@ let rec transitive_closure m0 =
         let zs =
           ISet.fold
             (fun y k -> try IMap.find y m :: k with Not_found -> k)
-            ys []
+            ys [ ys ]
         in
         IMap.add x (ISet.unions zs) m)
       m0 m0
