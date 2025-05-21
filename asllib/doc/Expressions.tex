@@ -2721,7 +2721,7 @@ that expressions appearing in types are all side-effect-free.
 \inferrule[Constraint\_Range\_Sat]{
   \evalexprsef{\env, \veone} \evalarrow (\nvint(a), \vgone) \OrDynError\\\\
   \evalexprsef{\env, \vetwo} \evalarrow (\nvint(b), \vgtwo) \OrDynError\\\\
-  \vb \eqdef \choice{a \leq n \wedge n \leq b}{\True}{\False}\\
+  \vb \eqdef \choice{a \leq n \land n \leq b}{\True}{\False}\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
   \isconstaintsat(\env, \overname{\constraintrange(\veone, \vetwo)}{\vc}, n) \evalarrow (\vb, \vg)

@@ -1249,7 +1249,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
       \XOR     & \TBits  & \TBits\\
       \PLUS    & \TBits  & \TBits\\
       \MINUS   & \TBits  & \TBits\\
-      \CONCAT  & \Ignore & \Ignore\\
+      \CONCAT  & \TBits & \TBits\\
       %
       \PLUS    & \TBits  & \TInt\\
       \MINUS   & \TBits  & \TInt\\
@@ -1676,9 +1676,10 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
       \item \Proseeqdef{$\vexpectedconstraintlength$}{the number of constraints in \\
             $\cstwoe$ if $\op$ is $\MOD$
             and the multiplication of numbers of constraints in $\csonee$ and $\cstwoe$, respectively};
-      \item \Proseeqdef{$(\csonearg, \cstwoarg, \vp)$}{$(\csonee, \cstwoe, \PrecisionFull)$ if \\
+      \item \Proseeqdef{$(\csonearg, \cstwoarg, \vp)$}{$(\csonee, \cstwoe, \vpzero)$ if \\
             $\vexpectedconstraintlength$ is
-            less than $\maxconstraintsize$ and $(\csone, \cstwof, \PrecisionLost)$, otherwise};
+            less than $\maxconstraintsize$ and \\
+            $(\csone, \cstwof, \PrecisionLost)$, otherwise};
     \end{itemize}
 
     \item \AllApplyCase{non\_exploding}
@@ -1704,10 +1705,13 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
   \vpzero \eqdef \precisionjoin(\vpone, \vptwo)\\
   \vexpectedconstraintlength \eqdef \choice{\op = \MOD}{\listlen{\cstwoe}}{\listlen{\csonee} \times \listlen{\cstwoe}}\\
   {
-  (\csonearg, \cstwoarg, \vp) \eqdef \begin{cases}
-    (\csonee, \cstwoe, \PrecisionFull) & \text{if }\vexpectedconstraintlength < \maxconstraintsize\\
-    (\csone, \cstwof, \PrecisionLost ) & \text{else}
-  \end{cases}
+  (\csonearg, \cstwoarg, \vp) \eqdef
+  \begin{array}{ll}
+    \textbf{if }&\vexpectedconstraintlength < \maxconstraintsize\text{ then}\\
+    & (\csonee, \cstwoe, \vpzero)\\
+    \textbf{else}&\\
+    & (\csone, \cstwof, \PrecisionLost )
+  \end{array}
   }\\\\
   \commonsuffixline\\\\
   \constraintbinop(\op, \csonearg, \cstwoarg) \typearrow \csvanilla\\

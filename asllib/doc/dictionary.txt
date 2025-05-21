@@ -13,6 +13,7 @@ abstract
 abstracting
 abstraction
 abstracts
+abuse
 accept
 acceptable
 acceptance
@@ -1189,6 +1190,7 @@ mechanisms
 meets
 member
 members
+membership
 memory
 menhir
 mentioned
@@ -1775,6 +1777,7 @@ size
 slice
 slices
 slicing
+slightly
 small
 smaller
 smt
