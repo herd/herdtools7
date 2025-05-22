@@ -35,6 +35,12 @@ H Examples
   ASL Typing error: a subtype of integer {1..a2} was expected,
     provided integer {8, 16, 32, 64}.
   [1]
+  $ aslref --no-exec HExample19.asl
+  File HExample19.asl, line 4, characters 4 to 14:
+    bv[(2)*:(4)] = Zeros{4};
+      ^^^^^^^^^^
+  ASL Typing error: a subtype of bits((4)) was expected, provided bits(4).
+  [1]
 
 T Tests
   $ aslref --no-exec TPositive1.asl
