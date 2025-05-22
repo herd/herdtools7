@@ -20,6 +20,6 @@ end
 
 module Make (_ : Config) :
 sig
-  val find : string  list -> string * string array
-  val find_def : string list -> string * string array
+  val find : string  list -> PreCat.name * string array
+  val find_def : string list -> PreCat.name * string array
 end

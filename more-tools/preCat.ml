@@ -30,22 +30,48 @@ let rec get_tag = function
         | _ -> get_tag ws
       end
 
+type arg = ANone | ASet of string | ARel of string * string
+
+type name =
+  | Plus of name
+  | Inverse of string
+  | Name of string
+  | Neg of name
+
+let rec get_name = function
+  |Plus n|Neg n -> get_name n
+  |Inverse n|Name n -> n
+
+let rec pp_name = function
+  | Plus (Name n) -> sprintf "%s+" n
+  | Plus n -> sprintf "(%s)+" (pp_name n)
+  | Inverse n -> sprintf "%s^-1" n
+  | Name n -> n
+  | Neg (Name n) -> sprintf "~%s" n
+  | Neg n -> sprintf "~(%s)" (pp_name n)
+
+let rec map_name f = function
+  | Name n -> Name (f n)
+  | Plus n -> Plus (map_name f n)
+  | Inverse n -> Inverse (f n)
+  | Neg n -> Neg (map_name f n)
+
 type reduced =
-  | Rel of string * (string * string)
+  | Rel of name * (string * string)
   | Set of string * string
 
 let reduce find ws =
   let name,args = find ws in
   match args with
-  | [| e |] -> Set (name,e)
+  | [| e |] -> Set (get_name name,e)
   | [| e1; e2; |] -> Rel (name,(e1,e2))
   | _ -> assert false
 
 type t =
-  | Connect of tag * string list * t list
+  | Connect of tag * arg * t list * string list
   | Arg of reduced * string list
 
-type d = Def of tag * reduced * string list * t list
+type d = Def of tag * reduced * t list  * string list
 
 
 let pp_tag = function
@@ -53,24 +79,30 @@ let pp_tag = function
   | And -> "And"
   | Seq -> "Seq"
 
+let pp_args = function
+  | ANone -> ""
+  | ASet e -> sprintf "(%s)" e
+  | ARel (e1,e2) -> sprintf "(%s,%s)" e1 e2
+
 let pp_reduced chan = function
   | Rel (name,(e1,e2)) ->
-      fprintf chan "%s(%s,%s)" name e1 e2
+      fprintf chan "%s(%s,%s)" (pp_name name) e1 e2
   | Set (name,e) ->
       fprintf chan "%s(%s)" name e
 
 let rec do_pp_tree i chan  = function
-  | Connect (tag,_,args) ->
-      fprintf chan "%s<%s>\n" i (pp_tag tag) ;
-      do_pp_trees ("  "^i) chan args ;
+  | Connect (tag,args,ts,_) ->
+      fprintf chan "%s<%s%s>\n" i (pp_tag tag) (pp_args args);
+      do_pp_trees ("  "^i) chan ts ;
       if i = "" then fprintf chan "\n%!"
   | Arg (pp,_) -> fprintf chan "%s%a\n" i pp_reduced pp
 
 and do_pp_trees i chan = List.iter (do_pp_tree i chan)
 
+let pp_trees chan = do_pp_trees "  "chan
 
 let pp_def chan = function
-  | Def (tag,pp,_,args) ->
+  | Def (tag,pp,args,_) ->
       fprintf chan "<%s>%a\n" (pp_tag tag) pp_reduced pp ;
       do_pp_trees "  " chan args
 
