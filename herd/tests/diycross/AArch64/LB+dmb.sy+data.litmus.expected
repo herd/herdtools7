@@ -8,5 +8,5 @@ Witnesses
 Positive: 0 Negative: 3
 Condition exists (0:X1=1 /\ 1:X1=1)
 Observation LB+dmb.sy+data Never 0 3
-Hash=f99a78ed66f290e9ac8e924fec4b9427
+Hash=f2bbbe68de4cc7d44c439175ba2f30d9
 
