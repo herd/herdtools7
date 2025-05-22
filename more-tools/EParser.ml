@@ -29,14 +29,14 @@ and reduce_def = PreCat.reduce FD.find_def
 open PreCat
 
 let parser define =
-  | ws:words ":" args:args0 -> ( Def (get_tag ws,reduce_def ws,ws,args) )
+  | ws:words ":" args:args0 -> ( Def (get_tag ws,reduce_def ws,args,ws) )
 
 and parser args0 =
   | xs:arg0+  -> ( xs )
 
 and parser arg0 =
   | "o" ws:words "." -> ( Arg (reduce_arg ws,ws) )
-  | "o" ws:words ":" xs:args1 -> (Connect (get_tag ws,ws,xs))
+  | "o" ws:words ":" xs:args1 -> (Connect (get_tag ws,ANone,xs,ws))
 
 and parser args1 =
   | xs:arg1+ -> ( xs )

@@ -31,14 +31,9 @@ rule subst buff args = parse
 | eof { Buffer.contents buff }
 
 and reverse = parse
-| "{1}" { cont lexbuf }
+| '{' (['0''1'] as id) '}' { id::reverse lexbuf }
 | _     { reverse lexbuf }
-| eof   { false }
-
-and cont = parse
-| "{0}" { true }
-| _     { cont lexbuf }
-| eof   { false }
+| eof   { [] }
 
 and event = parse
 | 'E' ['0'-'9']+ eof { true }
@@ -47,7 +42,18 @@ and event = parse
 {
   let is_event s = event (Lexing.from_string s)
 
-  let is_reverse body = reverse (Lexing.from_string body)
+  let rec uniq rs = function
+  | [] -> []
+  | c::cs ->
+      if List.exists (Char.equal c) rs then uniq rs cs
+      else c::uniq (c::rs) cs
+
+  let is_reverse body =
+    let ids =  Lexing.from_string body |> reverse in
+    match uniq [] ids with
+    | ['1'; '0'; ] -> true
+    | ['0'; '1'; ] -> false
+    | _ -> assert false
 
   let subst body args =
     subst (Buffer.create 16) args (Lexing.from_string body)

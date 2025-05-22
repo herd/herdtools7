@@ -32,11 +32,11 @@ and reduce_def = PreCat.reduce FD.find_def
 %%
 
 let define :=
-|ws=words; COLON; args=arg0+; { Def (get_tag ws, reduce_def ws,ws,args) }
+|ws=words; COLON; args=arg0+; { Def (get_tag ws, reduce_def ws,args,ws) }
 
 let arg0 :=
 | ROUND; ws=words; DOT; { Arg (reduce_arg ws,ws) }
-| ROUND; ws=words; COLON; args=arg1+; { Connect (get_tag ws,ws,args) } 
+| ROUND; ws=words; COLON; args=arg1+; { Connect (get_tag ws,ANone,args,ws) } 
 
 let arg1 :=
 | DASH; ws=words; DOT; { Arg (reduce_arg ws,ws) }

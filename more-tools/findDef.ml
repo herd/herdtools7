@@ -204,15 +204,18 @@ struct
            let d0 = distance tgt s
            and d0_rev= distance tgt s_rev in
            if d0 <= d0_rev then
-             if d0 < d then (name,s),d0 else best
+             if d0 < d then (PreCat.Name name,s),d0 else best
            else
-             if d0_rev < d then (name ^ "-1",s_rev),d0_rev else best)
-        (("coucou",""),100) dict_relations in
+             if d0_rev < d then (PreCat.Inverse name,s_rev),d0_rev else best)
+        ((PreCat.Name "coucou",""),100) dict_relations in
     if O.verbose > 0 && d > 1 then
       eprintf "Approx[%d]: '%s' as '%s'\n%!" d tgt body ;
     let args =
-      if StringSet.mem name reverse then [| e2; e1; |]
-      else [| e1; e2; |] in
+      let open PreCat in
+      match name with
+      | Name _ -> [| e1; e2; |]
+      | Inverse _ -> [| e2; e1; |]
+      | _ -> assert false in
     name,args
 
   let set is_def tgt e =
@@ -229,7 +232,7 @@ struct
         (("coucou",""),100) Dict.sets in
     if O.verbose > 0 && d > 1 then
       eprintf "Approx[%d]: '%s' as '%s'\n%!" d tgt body ;
-    name,arg
+    PreCat.Name name,arg
 
   let justname tgt =
     let (name,body),d =
@@ -242,9 +245,21 @@ struct
     if O.verbose > 0 && d > 1 then
       eprintf "Approx[%d]: '%s' as '%s'\n%!" d tgt body ;
     name
-    
+
+  (* Only keep first occurences of events *)
+  let remove_dup_events =
+    let rec do_rec rs = function
+      | [] -> List.rev rs (* Reverse to keep order *)
+      | e::es ->
+          let rs =
+            if List.exists (String.equal e) rs then rs
+            else e::rs in
+          do_rec rs es in
+    do_rec []
+
   let do_find is_def ws =
     let es = List.filter Subst.is_event ws in
+    let es = remove_dup_events es in
     let es = Array.of_list es in
     let is_neg,ws = check_neg ws in
     let is_plus,ws = check_plus ws in
@@ -252,15 +267,18 @@ struct
       if is_plus then
         let ws = remove_plus_suffix ws in
         let tgt = ws_to_string ws in
-        justname tgt ^ "+",es
+        PreCat.(Plus (Name (justname tgt))),es
       else
         let tgt =  ws_to_string ws in
         match Array.length es with
         | 1 -> set is_def tgt es.(0)
-        | 2 -> relation is_def tgt es.(0) es.(1)
+        | 2 ->
+            if false then
+              eprintf "e0=%s, e1=%s, tgt=%s\n%!" es.(0) es.(1) tgt ;
+            relation is_def tgt es.(0) es.(1)
         | _ ->
             Warn.fatal "Bad arguments: '%s'" tgt in
-    if is_neg then "~" ^ name,es else name,es
+    if is_neg then PreCat.Neg name,es else name,es
 
   let remove_def_suffix ws0 =
     let rec find_rec = function
@@ -272,7 +290,7 @@ struct
       | w::ws -> w::find_rec ws in
     find_rec ws0
 
-  let from_csname (name,es) = from_csname name,es  
+  let from_csname (name,es) = PreCat.map_name from_csname name,es  
 
   let find ws = do_find false ws |> from_csname
   and find_def ws = do_find true @@ remove_def_suffix ws |> from_csname

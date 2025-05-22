@@ -80,11 +80,17 @@ let zyva name chan =
       exit 2
   | Misc.Exit -> exit 2
 
+module PB = ParseBin.Make(Config)
 
 let arg = !arg
+
 let () =
   let ds =
     match arg with
     | None -> zyva arg stdin
     | Some name -> Misc.input_protect (zyva arg) name in
-  if !verbose > 0 then Printf.printf "%a\n%!" PreCat.pp_defs ds
+  List.iter
+    (fun d ->
+       let d = PB.zyva d in
+       PreCat.pp_def stdout d)
+    ds
