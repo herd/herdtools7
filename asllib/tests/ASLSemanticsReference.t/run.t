@@ -192,6 +192,11 @@ ASL Semantics Tests:
   ASL Error: Undefined identifier: 'y'
   [1]
   $ aslref SemanticsRule.LESlice.asl
+  File SemanticsRule.LESlice.asl, line 7, characters 3 to 13:
+    x[(1)*:(2)] = Ones{2};
+     ^^^^^^^^^^
+  ASL Type error: a subtype of bits((2)) was expected, provided bits(2).
+  [1]
   $ aslref SemanticsRule.LESetField.asl
   $ aslref SemanticsRule.LEDestructuring.asl
   $ aslref SemanticsRule.SliceSingle.asl
