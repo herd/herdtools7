@@ -98,7 +98,6 @@ val add_global_storage :
 
 val add_type : identifier -> ty -> SideEffect.TimeFrame.t -> env -> env
 val add_global_constant : identifier -> literal -> global -> global
-val add_local_constant : identifier -> literal -> env -> env
 
 val add_local_immutable_expr : identifier -> expr -> env -> env
 (** [add_local_immutable_expr x e env] binds [x] to [e] in [env].

@@ -2865,12 +2865,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         new_env |: TypingRule.LDTuple
   (* End *)
 
-  (* Begin DeclareLocalConstant *)
-  let declare_local_constant env v = function
-    | LDI_Var x -> add_local_constant x v env
-    | LDI_Tuple _ -> (* Not yet implemented *) env
-  (* End *)
-
   let rec annotate_stmt env s : stmt * env * SES.t =
     let () =
       if false then
@@ -3096,12 +3090,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let new_env =
               match ldk with
               | LDK_Let | LDK_Var -> env1
-              | LDK_Constant -> (
+              | LDK_Constant ->
                   let+ () = check_leq_constant_time ~loc:s typed_e in
-                  try
-                    let v = StaticInterpreter.static_eval env1 e in
-                    declare_local_constant env1 v ldi
-                  with Error.(ASLException _) -> env1)
+                  env1
             in
             (S_Decl (ldk, ldi, ty_opt', Some e') |> here, new_env, ses)
             |: TypingRule.SDecl

@@ -601,11 +601,9 @@ and ill-typed declaration statements in comments.
   \commonprefixline\\\\
   \ldk = \LDKConstant\\
   \checktrans{\sesisbefore(\vsese, \timeframeconstant)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
-  \staticeval(\tenvone, \ve) \typearrow \vv \OrTypeError\\\\
-  \declarelocalconstant(\tenvone, \vv, \ldi) \typearrow \newtenv\\
   \news \eqdef \SDecl(\LDKConstant, \ldi, \tyoptp, \langle\vep\rangle)
 }{
-  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \tyopt, \langle\ve\rangle)}{\vs}) \typearrow (\news, \newtenv, \vses)
+  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \tyopt, \langle\ve\rangle)}{\vs}) \typearrow (\news, \overname{\tenvone}{\newtenv}, \vses)
 }
 \end{mathpar}
 
@@ -641,53 +639,6 @@ and ill-typed declaration statements in comments.
 }
 \end{mathpar}
 \CodeSubsection{\SDeclegin}{\SDeclEnd}{../Typing.ml}
-
-\TypingRuleDef{DeclareLocalConstant}
-\hypertarget{def-declarelocalconstant}{}
-The helper function
-\[
-\declarelocalconstant(\overname{\staticenvs}{\tenv} \aslsep \overname{\literal}{\vv} \aslsep \overname{\localdeclitem}{\ldi})
-\typearrow \overname{\staticenvs}{\newtenv}
-\]
-adds the literal $\vv$ with the local declaration item $\ldi$ as a constant to the local component of the static environment $\tenv$,
-yielding the modified static environment $\newtenv$.
-
-\ExampleDef{Typing Local Constant Declarations}
-In \listingref{typing-sdecl},
-the declaration statement
-\verb|constant c1 : integer{1..1000} = 42;|
-updates the static environment by binding \verb|c1| to $\lint(42)$.
-
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{var}
-  \begin{itemize}
-    \item $\ldi$ corresponds to a variable declaration for $\vx$, that is, $\LDIVar(\vx)$;
-    \item applying $\addlocalconstant$ to $\vx$ and $\vv$ in $\tenv$ yields $\newtenv$.
-  \end{itemize}
-
-  \item \AllApplyCase{tuple}
-  \begin{itemize}
-    \item $\ldi$ corresponds to a tuple declaration, that is, $\LDIVar(\Ignore)$;
-    \item this case is not yet implemented.
-  \end{itemize}
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[var]{
-  \addlocalconstant(\tenv, \vx, \vv) \typearrow \newtenv
-}{
-  \declarelocalconstant(\tenv, \vv, \overname{\LDIVar(\vx)}{\ldi}) \typearrow \newtenv
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[tuple]{}{
-  \declarelocalconstant(\tenv, \vv, \overname{\LDITuple(\Ignore)}{\ldi}) \typearrow \tododefine{not implemented yet}
-}
-\end{mathpar}
-\CodeSubsection{\DeclareLocalConstantBegin}{\DeclareLocalConstantEnd}{../Typing.ml}
 
 \TypingRuleDef{AnnotateLocalDeclTypeAnnot}
 \hypertarget{def-annotatelocaldecltypeannot}{}

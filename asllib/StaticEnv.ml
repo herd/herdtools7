@@ -224,18 +224,6 @@ let add_type x ty time_frame env =
       };
   }
 
-(* Begin AddLocalConstant *)
-let add_local_constant name v env =
-  {
-    env with
-    local =
-      {
-        env.local with
-        constant_values = Storage.add name v env.local.constant_values;
-      };
-  }
-(* End *)
-
 (* Begin AddGlobalConstant *)
 let add_global_constant name v (genv : global) =
   { genv with constant_values = Storage.add name v genv.constant_values }

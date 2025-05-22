@@ -642,29 +642,6 @@ Define $\newgenv$ as $\genv$ with the $\constantvalues$ map updated to bind $\na
 \end{mathpar}
 \CodeSubsection{\AddGlobalConstantBegin}{\AddGlobalConstantEnd}{../StaticEnv.ml}
 
-\TypingRuleDef{AddLocalConstant}
-\hypertarget{def-addlocalconstant}{}
-The function
-\[
-\addlocalconstant(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\identifier}{\name} \aslsep
-  \overname{\literal}{\vv}) \typearrow
-  \overname{\staticenvs}{\newtenv}
-\]
-binds the identifier $\name$ to the literal $\vv$ in the local static environment component of the static environment $\tenv$,
-yielding the updated static environment $\newtenv$.
-
-\ProseParagraph
-Define $\newtenv$ as $\tenv$ with the global component updated such that its $\constantvalues$ map is updated to bind $\name$ to $\vv$.
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}{
-  \addlocalconstant(\tenv, \name, \vv) \typearrow \overname{(G^\tenv.\constantvalues[\name\mapsto\vv], L^\tenv)}{\newtenv}
-}
-\end{mathpar}
-\CodeSubsection{\AddLocalConstantBegin}{\AddLocalConstantEnd}{../StaticEnv.ml}
-
 \TypingRuleDef{LookupImmutableExpr}
 \hypertarget{def-lookupimmutableexpr}{}
 The function
