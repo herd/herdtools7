@@ -54,17 +54,17 @@ We note that whether typechecking a specification succeeds or fails with a type
 error, does not depend on the order in which the declarations appear in the specification.
 That is, if typechecking a specification with one ordering of its declarations leads to
 a \typingerrorterm{}, then typechecking that specification with any other ordering of its
-declarations also leads to a \typingerrorterm{}, but the type errors may not be the same
+declarations also leads to a \typingerrorterm{}, but the \typingerrorsterm{} may not be the same
 (since there may be two erroneous declarations and the \typingerrorterm{} returned
 depends on which declaration is processed first).
 
 When typechecking declarations, it is important to process them in a certain order,
-to avoid false type errors resulting from typechecking a declaration that uses an identifier
+to avoid false \typingerrorsterm{} resulting from typechecking a declaration that uses an identifier
 before a declaration that defines it.
 This order relies on the notion of \defusedependencyterm, which we formally define in
 \secref{Dependencies}.
 \secref{TopologicalOrdering} formally defines how to use the inferred \defusedependenciesterm\ to
-order the declarations such that false type errors are avoided.
+order the declarations such that false \typingerrorsterm{} are avoided.
 \identi{LWQQ}
 
 \TypingRuleDef{TypeCheckAST}
@@ -929,7 +929,8 @@ renames the subprograms $\vdiscarded$ to give them fresh names.
 \ExampleDef{Typechecking overridden subprograms}
 The specification in \listingref{RenameSubprograms} contains an ill-typed \Proseimpdefsubprogram{} that is overridden.
 This is given a fresh name by $\renamesubprograms$, so that it is still typechecked but never referred to in the resulting specification.
-In particular, though the ill-typed subprogram is overridden and will not be used in the annotated specification, it still results in a typing error.
+In particular, though the ill-typed subprogram is overridden and will not be used in the annotated specification, it still results in a
+\typingerrorterm.
 \ASLListing{Typechecking an overridden subprogram}{RenameSubprograms}{\typingtests/TypingRule.RenameSubprograms.asl}
 
 \ProseParagraph

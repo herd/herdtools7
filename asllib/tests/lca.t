@@ -12,7 +12,7 @@
   File lca1.asl, line 6, characters 2 to 18:
     let c: real = x;
     ^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of real was expected, provided integer {2, 3}.
+  ASL Type error: a subtype of real was expected, provided integer {2, 3}.
   [1]
 
   $ cat >lca2.asl <<EOF
@@ -28,7 +28,7 @@
   File lca2.asl, line 5, characters 2 to 28:
     let b: integer {2, 3} = x;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of integer {2, 3} was expected, provided integer.
+  ASL Type error: a subtype of integer {2, 3} was expected, provided integer.
   [1]
 
   $ cat >lca3.asl <<EOF
@@ -44,7 +44,7 @@
   File lca3.asl, line 5, characters 2 to 25:
     let b: integer {N} = x;
     ^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of integer {N} was expected,
+  ASL Type error: a subtype of integer {N} was expected,
     provided integer {3, N}.
   [1]
 
@@ -60,7 +60,7 @@
   File lca4.asl, line 4, characters 2 to 18:
     let a: real = x;
     ^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of real was expected, provided integer {0..N, 3}.
+  ASL Type error: a subtype of real was expected, provided integer {0..N, 3}.
   [1]
 
   $ cat >lca5.asl <<EOF
@@ -74,8 +74,8 @@
   File lca5.asl, line 3, characters 10 to 48:
     let x = if ARBITRARY: boolean then TRUE else 3;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: cannot find a common ancestor to those two types boolean
-    and integer {3}.
+  ASL Type error: cannot find a common ancestor to those two types boolean and
+    integer {3}.
   [1]
 
   $ cat >lca6.asl <<EOF
@@ -93,7 +93,7 @@
   File lca6.asl, line 7, characters 2 to 18:
     let a: real = x;
     ^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of real was expected, provided integer.
+  ASL Type error: a subtype of real was expected, provided integer.
   [1]
 
   $ cat >lca7.asl <<EOF
@@ -109,8 +109,7 @@
   File lca7.asl, line 5, characters 50 to 57:
     let x = if ARBITRARY: boolean then 3 as T1 else 2 as T2;
                                                     ^^^^^^^
-  ASL Typing error: cannot perform Asserted Type Conversion on integer {2} by
-    T2.
+  ASL Type error: cannot perform Asserted Type Conversion on integer {2} by T2.
   [1]
 
   $ cat >lca8.asl <<EOF
@@ -126,7 +125,7 @@
   File lca8.asl, line 5, characters 2 to 18:
     let a: real = x;
     ^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of real was expected, provided bits(3).
+  ASL Type error: a subtype of real was expected, provided bits(3).
   [1]
 
   $ cat >lca9.asl <<EOF
@@ -143,7 +142,7 @@
   File lca9.asl, line 6, characters 2 to 18:
     let b: real = x;
     ^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of real was expected, provided T1.
+  ASL Type error: a subtype of real was expected, provided T1.
   [1]
 
   $ cat >lca10.asl <<EOF
@@ -161,7 +160,7 @@
   File lca10.asl, line 7, characters 2 to 18:
     let b: real = x;
     ^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of real was expected, provided integer.
+  ASL Type error: a subtype of real was expected, provided integer.
   [1]
 
   $ cat >lca11.asl <<EOF
@@ -213,5 +212,5 @@
   File lca14.asl, line 7, characters 2 to 18:
     let c: real = x;
     ^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of real was expected, provided array [[4]] of T1.
+  ASL Type error: a subtype of real was expected, provided array [[4]] of T1.
   [1]

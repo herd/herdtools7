@@ -479,7 +479,7 @@ for example: \texttt{(a + b) - c}.
 \ExampleDef{Typing of Binary Expressions}
 In \listingref{typing-binoperror},
 the expression \texttt{3 DIV 0} results in a \typingerrorterm{}.
-\ASLListing{Evaluating a binary expression resulting in a typing error}{typing-binoperror}
+\ASLListing{Evaluating a binary expression resulting in a type error}{typing-binoperror}
 {\semanticstests/SemanticsRule.EBinopDIVBackendDefinedError.asl}
 
 \ProseParagraph
@@ -2488,8 +2488,11 @@ evaluated:
 \ASLListing{A asserting type conversion that is never evaluated}{semantics-atcnotevaluated}
 {\semanticstests/SemanticsRule.ATCNotDynamicErrorIfFalse.asl}
 
-\ExampleDef{Asserting Type Conversions with Typing Errors and Dynamic Errors}
-\listingref{semantics-variousatcs} shows various type errors and dynamic errors:
+\ExampleDef{Asserting Type Conversions with Type Errors and Dynamic Errors}
+\listingref{semantics-variousatcs} shows various \typingerrorsterm{} and \dynamicerrorsterm{}.
+Note that the \dynamicerrorterm{} appearing in the statement
+\verb|var e: integer{4, 5, 6} = 2 as integer{4, 5, 6};|, which is nested in the \verb|if FALSE then|
+will never occur, but it is still classified as a \dynamicerrorterm{}.
 \ASLListing{Various type errors and dynamic errors}{semantics-variousatcs}{\semanticstests/SemanticsRule.ATCVariousErrors.asl}
 
 \ProseParagraph

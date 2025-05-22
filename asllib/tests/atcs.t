@@ -26,7 +26,7 @@ Bad structure ATCs
   File atcs2.asl, line 2, characters 11 to 23:
     let x = (3 as boolean);
              ^^^^^^^^^^^^
-  ASL Typing error: cannot perform Asserted Type Conversion on integer {3} by
+  ASL Type error: cannot perform Asserted Type Conversion on integer {3} by
     boolean.
   [1]
 
@@ -64,7 +64,7 @@ ATCs on other types
   File atcs5.asl, line 5, characters 10 to 20:
     let y = x as myty2;
             ^^^^^^^^^^
-  ASL Typing error: cannot perform Asserted Type Conversion on myty by myty2.
+  ASL Type error: cannot perform Asserted Type Conversion on myty by myty2.
   [1]
 
   $ cat > atcs6.asl <<EOF
@@ -116,6 +116,6 @@ ATCs in types:
   File atcs9.asl, line 1, characters 14 to 29:
   let bv : bits(1 as integer{2}) = Ones{1};
                 ^^^^^^^^^^^^^^^
-  ASL Typing error: a pure expression was expected, found 1 as integer {2},
-    which produces the following side-effects: [PerformsAssertions].
+  ASL Type error: a pure expression was expected, found 1 as integer {2}, which
+    produces the following side-effects: [PerformsAssertions].
   [1]
