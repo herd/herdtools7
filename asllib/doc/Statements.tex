@@ -537,9 +537,14 @@ As given by applying the relevant rules to the desugared AST.
 \subsection{Typing}
 \TypingRuleDef{SDecl}
 \ExampleDef{Typing Declaration Statements}
-\listingref{typing-sdecl} shows well-typed declaration statements
-and ill-typed declaration statements in comments.
+\listingref{typing-sdecl} shows well-typed declaration statements.
 \ASLListing{Typing declaration statements}{typing-sdecl}{\typingtests/TypingRule.SDecl.asl}
+
+The specifications in \listingref{typing-sdecl-bad1} and \listingref{typing-sdecl-bad2}
+are ill-typed, since constant storage elements and immutable local storage elements
+require an initializing expression.
+\ASLListing{An uninitialized constant declaration}{typing-sdecl-bad1}{\typingtests/TypingRule.SDecl.bad1.asl}
+\ASLListing{An uninitialized immutable local storage declaration}{typing-sdecl-bad2}{\typingtests/TypingRule.SDecl.bad2.asl}
 
 \ProseParagraph
 \OneApplies
@@ -2603,6 +2608,7 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$.
           \begin{array}{rcl}
             \Forindexname &:& \vindexname\\
             \Forstarte &:& \astversion{\vstarte}\\
+            \Fordir &:& \astof{\vdirection}\\
             \Forende &:& \astversion{\vende}\\
             \Forbody &:& \astof{\vstmtlist}\\
             \Forlimit &:& \astof{\vlooplimit}\\
@@ -3747,7 +3753,7 @@ empty \executiongraph{}.
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \vms \eqname [\vm] \concat \vmsone\\
+  \vms = [\vm] \concat \vmsone\\
   \vm \eqdef (\vv, \vg)\\
   \wid \in \Identifiers\text{ is fresh}\\
   \writeidentifier(\wid, \vv) \evalarrow \vgone\\

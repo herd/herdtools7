@@ -396,6 +396,18 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.asl
   $ aslref TypingRule.SDecl.asl
+  $ aslref TypingRule.SDecl.bad1.asl
+  File TypingRule.SDecl.bad1.asl, line 4, characters 15 to 16:
+      constant c3;
+                 ^
+  ASL Error: Cannot parse.
+  [1]
+  $ aslref TypingRule.SDecl.bad2.asl
+  File TypingRule.SDecl.bad2.asl, line 4, characters 18 to 19:
+      let y: integer;
+                    ^
+  ASL Error: Cannot parse.
+  [1]
   $ aslref TypingRule.SAssert.bad.asl
   File TypingRule.SAssert.bad.asl, line 11, characters 10 to 23:
       assert(increment()); // Illegal, since increment is not pure.
