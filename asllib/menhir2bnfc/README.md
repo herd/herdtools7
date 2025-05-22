@@ -53,7 +53,7 @@ FAIL - aslref false | bnfc true: asllib/tests/regressions.t/lhs-tuple-fields-sam
 Aslref produces the following error:
 
 >  File lhs-tuple-fields-same-field.asl, line 8, characters 2 to 4:
->  ASL Typing error: multiple writes to "bv.fld".
+>  ASL Type error: multiple writes to "bv.fld".
 
 The following statement parses correctly, but is rejected by a check while removing the syntactic sugar in the aslref parser:
 `bv.(fld, -, fld) = ('11', TRUE, '11');`. This is parser valid, but fails in post-processing.
@@ -65,7 +65,7 @@ FAIL - aslref false | bnfc true: asllib/tests/regressions.t/lhs-tuple-same-var.a
 Aslref produces the following error:
 
 >  File lhs-tuple-same-var.asl, line 8, characters 2 to 20:
->  ASL Typing error: multiple writes to "bv".
+>  ASL Type error: multiple writes to "bv".
 
 The following statement parses correctly, but is rejected by a check while removing the syntactic sugar in the aslref parser:
 `(bv[7], -, bv.fld) = ('1', TRUE, '11');`. This is parser valid, but fails in post-processing.

@@ -27,7 +27,7 @@ Implementation without impdef
   begin
     return Zeros{N};
   end;
-  ASL Typing error: no `impdef` for `implementation` function.
+  ASL Type error: no `impdef` for `implementation` function.
   [1]
   $ aslref --no-exec --overriding-all-impdefs-overridden implementation-only.asl
   File implementation-only.asl, line 1, character 0 to line 4, character 4:
@@ -35,7 +35,7 @@ Implementation without impdef
   begin
     return Zeros{N};
   end;
-  ASL Typing error: no `impdef` for `implementation` function.
+  ASL Type error: no `impdef` for `implementation` function.
   [1]
   $ aslref --no-exec --overriding-no-implementations implementation-only.asl
   File implementation-only.asl, line 1, character 0 to line 4, character 4:
@@ -52,7 +52,7 @@ Clashing implementations
   begin
     return Zeros{N};
   end;
-  ASL Typing error: multiple overlapping `implementation` functions for Foo:
+  ASL Type error: multiple overlapping `implementation` functions for Foo:
     File clashing-implementations.asl, line 1, character 0 to line 4,
       character 4
     File clashing-implementations.asl, line 6, character 0 to line 9,
@@ -64,7 +64,7 @@ Clashing implementations
   begin
     return Zeros{N};
   end;
-  ASL Typing error: multiple overlapping `implementation` functions for Foo:
+  ASL Type error: multiple overlapping `implementation` functions for Foo:
     File clashing-implementations.asl, line 1, character 0 to line 4,
       character 4
     File clashing-implementations.asl, line 6, character 0 to line 9,
@@ -76,7 +76,7 @@ Clashing implementations
   begin
     return Zeros{N};
   end;
-  ASL Typing error: multiple overlapping `implementation` functions for Foo:
+  ASL Type error: multiple overlapping `implementation` functions for Foo:
     File clashing-implementations.asl, line 1, character 0 to line 4,
       character 4
     File clashing-implementations.asl, line 6, character 0 to line 9,
@@ -90,7 +90,7 @@ Clashing impdefs
   begin
     return Zeros{N};
   end;
-  ASL Typing error: multiple `impdef` candidates for `implementation`:
+  ASL Type error: multiple `impdef` candidates for `implementation`:
     File clashing-impdefs.asl, line 1, character 0 to line 4, character 4
     File clashing-impdefs.asl, line 6, character 0 to line 9, character 4
   [1]
@@ -101,7 +101,7 @@ Clashing impdefs
   begin
     return Zeros{N};
   end;
-  ASL Typing error: cannot declare already declared element "Foo".
+  ASL Type error: cannot declare already declared element "Foo".
   [1]
 
 Bad implementations
@@ -111,7 +111,7 @@ Bad implementations
   begin
     return Ones{N};
   end;
-  ASL Typing error: no `impdef` for `implementation` function.
+  ASL Type error: no `impdef` for `implementation` function.
   [1]
   $ aslref --no-exec --overriding-permissive bad-implementation-param.asl
   File bad-implementation-param.asl, line 6, character 0 to line 9, character 4:
@@ -119,7 +119,7 @@ Bad implementations
   begin
     return Ones{N};
   end;
-  ASL Typing error: no `impdef` for `implementation` function.
+  ASL Type error: no `impdef` for `implementation` function.
   [1]
   $ aslref --no-exec --overriding-permissive bad-implementation-arg.asl
   File bad-implementation-arg.asl, line 6, character 0 to line 9, character 4:
@@ -127,7 +127,7 @@ Bad implementations
   begin
     return Ones{N};
   end;
-  ASL Typing error: no `impdef` for `implementation` function.
+  ASL Type error: no `impdef` for `implementation` function.
   [1]
   $ aslref --no-exec --overriding-permissive bad-implementation-return.asl
   File bad-implementation-return.asl, line 6, character 0 to line 9,
@@ -136,7 +136,7 @@ Bad implementations
   begin
     return Ones{N};
   end;
-  ASL Typing error: no `impdef` for `implementation` function.
+  ASL Type error: no `impdef` for `implementation` function.
   [1]
 
 Interactions with other features
@@ -146,5 +146,5 @@ Interactions with other features
   File type-check-impdef.asl, line 3, characters 2 to 20:
     return Zeros{N+1};
     ^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of bits(N) was expected, provided bits((N + 1)).
+  ASL Type error: a subtype of bits(N) was expected, provided bits((N + 1)).
   [1]

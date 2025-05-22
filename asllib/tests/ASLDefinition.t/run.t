@@ -48,7 +48,7 @@ Examples used in ASL High-level Definition:
   File TypingErrorReporting.asl, line 3, characters 11 to 22:
       return 5 + "hello";
              ^^^^^^^^^^^
-  ASL Typing error: Illegal application of operator + on types integer {5}
+  ASL Type error: Illegal application of operator + on types integer {5}
     and string.
   [1]
 
@@ -64,7 +64,7 @@ Examples used in ASL High-level Definition:
   begin
     return Zeros{N};
   end;
-  ASL Typing error: multiple overlapping `implementation` functions for Foo:
+  ASL Type error: multiple overlapping `implementation` functions for Foo:
     File OverridingBad.asl, line 1, character 0 to line 4, character 4
     File OverridingBad.asl, line 11, character 0 to line 14, character 4
   [1]
@@ -101,7 +101,7 @@ Examples used in ASL High-level Definition:
   File GuideRule.TupleImmutability.asl, line 7, characters 6 to 11:
       x.item1 = '1'; // Illegal: tuples are immutable.
         ^^^^^
-  ASL Typing error: cannot assign to the (immutable) tuple value x.
+  ASL Type error: cannot assign to the (immutable) tuple value x.
   [1]
 
   $ aslref ParameterElision.asl

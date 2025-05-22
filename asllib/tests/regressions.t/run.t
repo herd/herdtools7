@@ -9,15 +9,14 @@ Type-checking errors:
   File subtype-satisfaction-arrray-illegal.asl, line 4, characters 0 to 38:
   type o of array[[10]] of n subtypes m;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of m was expected, provided array [[10]] of n.
+  ASL Type error: a subtype of m was expected, provided array [[10]] of n.
   [1]
 
   $ aslref anonymous-types-example.asl
   File anonymous-types-example.asl, line 21, characters 2 to 6:
     pair = (1, dataT2);
     ^^^^
-  ASL Typing error: a subtype of pairT was expected,
-    provided (integer {1}, T2).
+  ASL Type error: a subtype of pairT was expected, provided (integer {1}, T2).
   [1]
 
   $ aslref duplicate_function_args.asl
@@ -26,7 +25,7 @@ Type-checking errors:
   begin
     pass;
   end;
-  ASL Typing error: cannot declare already declared element "i".
+  ASL Type error: cannot declare already declared element "i".
   [1]
 
   $ aslref duplicate_record_fields.asl
@@ -36,14 +35,14 @@ Type-checking errors:
     j: boolean,
     i: integer
   };
-  ASL Typing error: cannot declare already declared element "i".
+  ASL Type error: cannot declare already declared element "i".
   [1]
 
   $ aslref duplicate_enumeration_items.asl
   File duplicate_enumeration_items.asl, line 1, characters 0 to 34:
   type t of enumeration { i, j, i };
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: cannot declare already declared element "i".
+  ASL Type error: cannot declare already declared element "i".
   [1]
 
   $ aslref constant-zeros.asl
@@ -62,7 +61,7 @@ Bad types:
   File bad-inclusion-in-symbolic-type.asl, line 2, characters 0 to 26:
   var ah: integer{2..A} = 1;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of integer {2..A} was expected,
+  ASL Type error: a subtype of integer {2..A} was expected,
     provided integer {1}.
   [1]
 
@@ -94,7 +93,7 @@ Constrained-type satisfaction:
   File type-sat1.asl, line 5, characters 2 to 3:
     x = y; // illegal as domain of x is not a subset of domain of y
     ^
-  ASL Typing error: a subtype of integer {8, 16} was expected,
+  ASL Type error: a subtype of integer {8, 16} was expected,
     provided integer {8, 16, 32}.
   [1]
 
@@ -111,23 +110,21 @@ Constrained-type satisfaction:
   File type-sat2.asl, line 5, characters 2 to 3:
     x = y; // illegal
     ^
-  ASL Typing error: a subtype of integer {8, 16} was expected,
-    provided integer.
+  ASL Type error: a subtype of integer {8, 16} was expected, provided integer.
   [1]
 
   $ aslref type_satisfaction_illegal_f3.asl
   File type_satisfaction_illegal_f3.asl, line 9, characters 4 to 17:
       invoke_me(x); // illegal as domains doesn't match
       ^^^^^^^^^^^^^
-  ASL Typing error: a subtype of integer {8, 16} was expected,
-    provided integer.
+  ASL Type error: a subtype of integer {8, 16} was expected, provided integer.
   [1]
 
   $ aslref type_satisfaction_illegal_f4.asl
   File type_satisfaction_illegal_f4.asl, line 9, characters 4 to 17:
       invoke_me(x);
       ^^^^^^^^^^^^^
-  ASL Typing error: a subtype of integer {8, 16} was expected,
+  ASL Type error: a subtype of integer {8, 16} was expected,
     provided integer {8..64}.
   [1]
 
@@ -144,7 +141,7 @@ Constrained-type satisfaction:
   File type-sat3.asl, line 4, characters 2 to 29:
     var x: integer { 2, 4} = N;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of integer {2, 4} was expected,
+  ASL Type error: a subtype of integer {2, 4} was expected,
     provided integer {N}.
   [1]
 
@@ -161,7 +158,7 @@ Constrained-type satisfaction:
   File type-sat4.asl, line 4, characters 2 to 29:
     var x: integer { 2, 4} = N;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of integer {2, 4} was expected,
+  ASL Type error: a subtype of integer {2, 4} was expected,
     provided integer {N}.
   [1]
 
@@ -208,21 +205,20 @@ Parameterized integers:
   File bad-underconstrained-call.asl, line 9, characters 9 to 26:
     return GetBitAt{M}(x, M);
            ^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of integer {0..(M - 1)} was expected,
+  ASL Type error: a subtype of integer {0..(M - 1)} was expected,
     provided integer {M}.
   [1]
   $ aslref bad-underconstrained-call-02.asl
   File bad-underconstrained-call-02.asl, line 8, characters 2 to 15:
     foo{M}(x, 3);
     ^^^^^^^^^^^^^
-  ASL Typing error: a subtype of integer {M} was expected,
-    provided integer {3}.
+  ASL Type error: a subtype of integer {M} was expected, provided integer {3}.
   [1]
   $ aslref bad-underconstrained-call-03.asl
   File bad-underconstrained-call-03.asl, line 8, characters 2 to 19:
     foo{M}(x, M + 1);
     ^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of integer {M} was expected,
+  ASL Type error: a subtype of integer {M} was expected,
     provided integer {(M + 1)}.
   [1]
   $ aslref bad-underconstrained-ctc.asl
@@ -236,14 +232,14 @@ Parameterized integers:
   File bad-underconstrained-return.asl, line 3, characters 2 to 15:
     return N + 1;
     ^^^^^^^^^^^^^
-  ASL Typing error: a subtype of integer {0..N} was expected,
+  ASL Type error: a subtype of integer {0..N} was expected,
     provided integer {(N + 1)}.
   [1]
   $ aslref bad-underconstrained-return-02.asl
   File bad-underconstrained-return-02.asl, line 3, characters 2 to 11:
     return 5;
     ^^^^^^^^^
-  ASL Typing error: a subtype of integer {0..N} was expected,
+  ASL Type error: a subtype of integer {0..N} was expected,
     provided integer {5}.
   [1]
 
@@ -273,7 +269,7 @@ Parameterized integers:
   File assign-to-global-immutable.asl, line 5, characters 2 to 21:
     my_immutable_global = 4;
     ^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: cannot assign to immutable storage "my_immutable_global".
+  ASL Type error: cannot assign to immutable storage "my_immutable_global".
   [1]
 
   $ aslref equality.asl
@@ -281,7 +277,7 @@ Parameterized integers:
   File bad-equality.asl, line 3, characters 10 to 25:
     println((1, 2) == (1,2));
             ^^^^^^^^^^^^^^^
-  ASL Typing error: Illegal application of operator == on types
+  ASL Type error: Illegal application of operator == on types
     (integer {1}, integer {2}) and (integer {1}, integer {2}).
   [1]
 
@@ -311,7 +307,7 @@ Parameterized integers:
   File duplicate_expr_record.asl, line 5, characters 12 to 27:
       var x = A{h = 5, h = 9};
               ^^^^^^^^^^^^^^^
-  ASL Typing error: cannot declare already declared element "h".
+  ASL Type error: cannot declare already declared element "h".
   [1]
 
   $ aslref same-precedence.asl
@@ -332,7 +328,7 @@ Parameterized integers:
   File rdiv_checks.asl, line 3, characters 12 to 25:
       var x = 5.3 / "hello";
               ^^^^^^^^^^^^^
-  ASL Typing error: Illegal application of operator / on types real and string.
+  ASL Type error: Illegal application of operator / on types real and string.
   [1]
 
   $ aslref record-getfields.asl
@@ -341,7 +337,7 @@ Parameterized integers:
   File integer-accessed-bitvector.asl, line 4, characters 2 to 3:
     x[0] = '1';
     ^
-  ASL Typing error: a subtype of bits(-) was expected, provided integer.
+  ASL Type error: a subtype of bits(-) was expected, provided integer.
   [1]
 
   $ aslref slice-width-shorthand.asl
@@ -360,45 +356,45 @@ Parameters bugs:
   File bug1.asl, line 5, characters 21 to 29:
     let foo: bits(x) = Zeros{y};
                        ^^^^^^^^
-  ASL Typing error: constrained integer expected, provided integer.
+  ASL Type error: constrained integer expected, provided integer.
   [1]
   $ aslref bug2.asl
   File bug2.asl, line 5, characters 10 to 17:
     let t = y[x: 0];
             ^^^^^^^
-  ASL Typing error: constrained integer expected, provided integer.
+  ASL Type error: constrained integer expected, provided integer.
   [1]
   $ aslref bug3.asl
   File bug3.asl, line 4, characters 10 to 18:
     let t = Zeros{x};
             ^^^^^^^^
-  ASL Typing error: constrained integer expected, provided integer.
+  ASL Type error: constrained integer expected, provided integer.
   [1]
   $ aslref bug4.asl
   File bug4.asl, line 5, characters 11 to 31:
     let pb = Zeros{a} OR Zeros{b};
              ^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: Illegal application of operator OR on types bits(3)
+  ASL Type error: Illegal application of operator OR on types bits(3)
     and bits(4).
   [1]
   $ aslref arg-as-param-call.asl
   File arg-as-param-call.asl, line 8, characters 4 to 21:
       test{10}('1111');
       ^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of bits(10) was expected, provided bits(4).
+  ASL Type error: a subtype of bits(10) was expected, provided bits(4).
   [1]
   $ aslref typed-param-call.asl
   File typed-param-call.asl, line 8, characters 4 to 18:
       test{2}('11');
       ^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of integer {5..10} was expected,
+  ASL Type error: a subtype of integer {5..10} was expected,
     provided integer {2}.
   [1]
   $ aslref typed-arg-as-param-call.asl
   File typed-arg-as-param-call.asl, line 8, characters 4 to 18:
       test{2}('11');
       ^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of integer {5..10} was expected,
+  ASL Type error: a subtype of integer {5..10} was expected,
     provided integer {2}.
   [1]
   $ aslref --no-exec defining_param.asl
@@ -492,7 +488,7 @@ Base values
   File base_values.asl, line 5, characters 2 to 28:
     var x: integer {N..M, 42};
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: base value of type integer {42, N..M} cannot be statically
+  ASL Type error: base value of type integer {42, N..M} cannot be statically
     determined since it consists of N.
   [1]
 
@@ -500,7 +496,7 @@ Base values
   File base_values_empty.asl, line 3, characters 2 to 24:
     var x: integer {N..M};
     ^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: base value of type integer {N..M} cannot be statically
+  ASL Type error: base value of type integer {N..M} cannot be statically
     determined since it consists of N.
   [1]
 
@@ -531,7 +527,7 @@ Getters/setters
   File bad-pattern.asl, line 4, characters 7 to 12:
     when '101' => println ("Cannot happen");
          ^^^^^
-  ASL Typing error: Erroneous pattern '101' for expression of type integer {3}.
+  ASL Type error: Erroneous pattern '101' for expression of type integer {3}.
   [1]
   $ aslref pattern-masks-no-braces.asl
   File pattern-masks-no-braces.asl, line 4, characters 19 to 24:
@@ -547,8 +543,8 @@ ASLRef Field getter extension
   File atc-in-types.asl, line 1, characters 14 to 29:
   let bv : bits(1 as integer{2}) = Ones{1};
                 ^^^^^^^^^^^^^^^
-  ASL Typing error: a pure expression was expected, found 1 as integer {2},
-    which produces the following side-effects: [PerformsAssertions].
+  ASL Type error: a pure expression was expected, found 1 as integer {2}, which
+    produces the following side-effects: [PerformsAssertions].
   [1]
   $ aslref single-slice.asl
 
@@ -558,7 +554,7 @@ Inherit integer constraints on left-hand sides
   File inherit-integer-constraints-bad-basic.asl, line 4, characters 2 to 11:
     return x;
     ^^^^^^^^^
-  ASL Typing error: a subtype of integer {43} was expected,
+  ASL Type error: a subtype of integer {43} was expected,
     provided integer {42}.
   [1]
 
@@ -566,7 +562,7 @@ Inherit integer constraints on left-hand sides
   File inherit-integer-constraints-bad-tuple.asl, line 4, characters 2 to 28:
     return (y.item0, y.item2);
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of (integer {42}, integer {0}) was expected,
+  ASL Type error: a subtype of (integer {42}, integer {0}) was expected,
     provided (integer {42}, integer {43}).
   [1]
 
@@ -577,7 +573,7 @@ Inherit integer constraints on left-hand sides
       a : integer{-},
       c : integer
   };
-  ASL Typing error: a pending constrained integer is illegal here.
+  ASL Type error: a pending constrained integer is illegal here.
   [1]
 
 Left-hand sides
@@ -586,7 +582,7 @@ Left-hand sides
   File lhs-tuple-fields-same-field.asl, line 8, characters 2 to 4:
     bv.(fld, -, fld) = ('11', TRUE, '11');
     ^^
-  ASL Typing error: multiple writes to "bv.fld".
+  ASL Type error: multiple writes to "bv.fld".
   [1]
   $ aslref lhs-tuple-same-var.asl
   $ aslref lhs-expressivity.asl

@@ -74,7 +74,7 @@ The following words have been added as reserved keywords:
 \texttt{pure}, \texttt{readonly}, \texttt{collection}.
 
 \subsection{ASL-758: support for string concatenation}
-The binary \texttt{::} operator is overloaded to handle both bit vector and string concatenation.
+The binary \texttt{::} operator is overloaded to handle both bitvector and string concatenation.
 For string concatenation, its operands are converted to strings (as in printing, $\literaltostring$) and the resulting strings are concatenated.
 
 \subsection{ASL-791: typechecking of \texttt{impdef} subprograms}
@@ -113,13 +113,13 @@ For example:
   '01000111 1 xxxx (0)(0)(0)'
 \end{lstlisting}
 
-\subsection{ASL-805: base values of bit vectors}
-Base values of bit vectors previously required statically known bit widths.
-This has been relaxed: the base value of a bit vector of type \texttt{bits(e)} can always be recovered as \texttt{0[:e]}.
+\subsection{ASL-805: base values of bitvectors}
+Base values of bitvectors previously required statically known bit widths.
+This has been relaxed: the base value of a bitvector of type \texttt{bits(e)} can always be recovered as \texttt{0[:e]}.
 
 \subsection{ASL-808: standard library additions}
 \texttt{IsAlignedSize()} and \texttt{IsAlignedP2()} have been added to the standard library.
-Each function has both integer- and bit vector-flavoured versions.
+Each function has both integer- and bitvector-flavoured versions.
 
 \subsection{ASL-819: updates to paired accessor syntax}
 Paired accessor syntax has been updated to reduce usage of the keyword \texttt{begin}, and to move the declaration of the additional argument of the setter to the top-level.
