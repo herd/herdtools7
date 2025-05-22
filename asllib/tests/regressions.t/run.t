@@ -590,3 +590,5 @@ Left-hand sides
   [1]
   $ aslref lhs-tuple-same-var.asl
   $ aslref lhs-expressivity.asl
+  $ aslref constants_test.asl
+  z=32
