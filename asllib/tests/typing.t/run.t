@@ -35,6 +35,7 @@ H Examples
   ASL Typing error: a subtype of integer {1..a2} was expected,
     provided integer {8, 16, 32, 64}.
   [1]
+  $ aslref --no-exec HExample19.asl
 
 T Tests
   $ aslref --no-exec TPositive1.asl

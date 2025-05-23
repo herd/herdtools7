@@ -1042,12 +1042,12 @@ The specification is ill-typed, even though both slices assign \verb|0| to the b
   \item obtaining the \underlyingtype\ of $\vtleone$ in $\tenv$ yields $\tleoneanon$\ProseOrTypeError;
   \item checking that $\tleoneanon$ is a bitvector type yields $\True$\ProseTerminateAs{\UnexpectedType};
   \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $(\vletwo, \vsesone)$\ProseOrTypeError;
-  \item obtaining the width of the slices $\slices$ in $\tenv$ and simplifying them yields $\vwidth$;
+  \item annotating $\slices$ in $\tenv$ yields $(\slicestwo, \vsestwo)$\ProseOrTypeError;
+  \item obtaining the width of the slices $\slicestwo$ in $\tenv$ and simplifying them yields $\vwidth$;
   \item $\vt$ is the bitvector type of width $\width$ and empty list of bitfields;
   \item checking whether $\vte$ \typesatisfies\ $\vt$ yields $\True$\ProseOrTypeError;
-  \item annotating $\slices$ in $\tenv$ yields $(\slicestwo, \vsestwo)$\ProseOrTypeError;
   \item checking that the slices $\slicestwo$ are all disjoint yields $\True$\ProseOrTypeError;
-  \item checking that $\slices$ is not empty yields $\True$\ProseTerminateAs{\BadSlices};
+  \item checking that $\slicestwo$ is not empty yields $\True$\ProseTerminateAs{\BadSlices};
   \item $\newle$ is the slicing of $\vletwo$ by $\slicestwo$, that is, $\LESlice(\vletwo, \slicestwo)$;
   \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$.
 \end{itemize}
@@ -1058,13 +1058,13 @@ The specification is ill-typed, even though both slices assign \verb|0| to the b
   \makeanonymous(\tenv, \vtleone) \typearrow \tleoneanon \OrTypeError\\\\
   \checktrans{\astlabel(\tleoneanon) = \TBits}{\UnexpectedType} \typearrow \True \OrTypeError\\\\
   \annotatelexpr{\tenv, \vleone, \vtleone} \typearrow (\vletwo, \vsesone) \OrTypeError\\
-  \sliceswidth(\tenv, \slices) \typearrow \widthp\\
+  \annotateslices(\tenv, \slices) \typearrow (\slicestwo, \vsestwo) \OrTypeError\\\\
+  \sliceswidth(\tenv, \slicestwo) \typearrow \widthp\\
   \normalize(\tenv, \widthp) \typearrow \vwidth\\
   \vt \eqdef \TBits(\vwidth, \emptylist)\\
   \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
-  \annotateslices(\tenv, \slices) \typearrow (\slicestwo, \vsestwo) \OrTypeError\\\\
   \checkdisjointslices(\tenv, \slicestwo) \typearrow \True \OrTypeError\\\\
-  \checktrans{\slices \neq \emptylist}{\BadSlices} \typearrow \True \OrTypeError\\\\
+  \checktrans{\slicestwo \neq \emptylist}{\BadSlices} \typearrow \True \OrTypeError\\\\
   \newle \eqdef \LESlice(\vletwo, \slicestwo)\\
   \vses \eqdef \vsesone \cup \vsestwo \\
 }{
