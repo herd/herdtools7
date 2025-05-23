@@ -25,7 +25,7 @@ ASL Semantics Tests:
     characters 10 to 17:
     let x = 3 DIV 0;
             ^^^^^^^
-  ASL Typing error: Illegal application of operator DIV on types integer {3}
+  ASL Type error: Illegal application of operator DIV on types integer {3}
     and integer {0}.
   [1]
   $ aslref --no-type-check SemanticsRule.EBinopDIVBackendDefinedError.asl
@@ -241,7 +241,7 @@ ASL Semantics Tests:
   File SemanticsRule.ATCVariousErrors.asl, line 4, characters 2 to 30:
     var b: integer{4, 5, 6} = 2;                     // A type error
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of integer {4, 5, 6} was expected,
+  ASL Type error: a subtype of integer {4, 5, 6} was expected,
     provided integer {2}.
   [1]
   $ aslref SemanticsRule.CatchNoThrow.asl

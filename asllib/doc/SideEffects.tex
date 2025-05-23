@@ -150,7 +150,7 @@ which are configurations used to describe side effects, as explained below:
     \hypertarget{def-recursivecallterm}{}
     \item[$\RecursiveCall$] a \RecursiveCallTerm\ describes an evaluation of a construct that leads to calling the recursive function $\vf$;
     \hypertarget{def-performsassertionsterm}{}
-    \item[$\PerformsAssertions$] a \PerformsAssertionsTerm\ describes an evaluation of a construct that leads to evaluating an \texttt{assert} statement;
+    \item[$\PerformsAssertions$] an \PerformsAssertionsTerm\ describes an evaluation of a construct that leads to evaluating an \texttt{assert} statement;
     \hypertarget{def-nondeterministicterm}{}
     \item[$\NonDeterministic$] a \NonDeterministicTerm\ describes an evaluation of a construct that leads to evaluating a non-deterministic
         expression (either \ARBITRARY\ or a library function call known to be non-deterministic).
@@ -187,7 +187,7 @@ and \timeframesterm.
 
     \item \AllApplyCase{performs\_assertions}
     \begin{itemize}
-        \item $\vs$ is a \PerformsAssertionsTerm{};
+        \item $\vs$ is an \PerformsAssertionsTerm{};
         \item \Proseeqdef{$\vt$}{$\timeframeconstant$}.
     \end{itemize}
 
@@ -262,7 +262,7 @@ call expression is \pure{} and the \sideeffectdescriptorsetsterm{} is empty.
 
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if $\vs$ is either a \ReadLocalTerm, a \ReadGlobalTerm,
-a \NonDeterministicTerm, or a \PerformsAssertionsTerm.
+a \NonDeterministicTerm, or an \PerformsAssertionsTerm.
 
 \FormallyParagraph
 \begin{mathpar}

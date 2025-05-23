@@ -8,7 +8,7 @@
           [0] sub
       }
   };
-  ASL Typing error:
+  ASL Type error:
     bitfields `sub` and `sub.sub` are in the same scope but define different slices of the containing bitvector type: [1:0] and [0], respectively.
   [1]
 
@@ -21,7 +21,7 @@
           }
       }
   };
-  ASL Typing error:
+  ASL Type error:
     bitfields `sub` and `sub.sub.sub` are in the same scope but define different slices of the containing bitvector type: [1:0] and [1], respectively.
   [1]
 
@@ -36,7 +36,7 @@
   
       [1,0] lowest
   };
-  ASL Typing error:
+  ASL Type error:
     bitfields `sub.sub.lowest` and `lowest` are in the same scope but define different slices of the containing bitvector type: [0, 1] and [1:0], respectively.
   [1]
 
@@ -44,8 +44,8 @@
   File non-constant-width.asl, line 4, characters 10 to 47:
     let x = Zeros{64} as (bits(sub_k) {[0] flag});
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: expected constant-time expression, got sub_k, which
-    produces the following side-effects: [ReadsLocal "sub_k"].
+  ASL Type error: expected constant-time expression, got sub_k, which produces
+    the following side-effects: [ReadsLocal "sub_k"].
   [1]
   $ aslref non-constant-global-width.asl
   File non-constant-global-width.asl, line 3, character 0 to line 5,
@@ -53,14 +53,14 @@
   type my_type of bits(sub_k) {
     [0] flag
   };
-  ASL Typing error: expected constant-time expression, got sub_k, which
-    produces the following side-effects: [ReadsGlobal "sub_k"].
+  ASL Type error: expected constant-time expression, got sub_k, which produces
+    the following side-effects: [ReadsGlobal "sub_k"].
   [1]
   $ aslref config-global-width.asl
   File config-global-width.asl, line 3, character 0 to line 5, character 2:
   type my_type of bits(sub_k) {
     [0] flag
   };
-  ASL Typing error: expected constant-time expression, got sub_k, which
-    produces the following side-effects: [ReadsGlobal "sub_k"].
+  ASL Type error: expected constant-time expression, got sub_k, which produces
+    the following side-effects: [ReadsGlobal "sub_k"].
   [1]

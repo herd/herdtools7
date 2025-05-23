@@ -50,7 +50,7 @@ Static environments, denoted as $\staticenvs$, are defined as follows (referring
   \exprequiv            &\mapsto& \identifier \partialto \expr,\\
   \subtypes             &\mapsto& \identifier \partialto \identifier,\\
   \subprograms          &\mapsto& \identifier \partialto \func \times \TSideEffectSet,\\
-  \overloadedsubprograms  &\mapsto& \identifier \rightarrow \pow{\Strings}
+  \overloadedsubprograms  &\mapsto& \identifier \partialto \pow{\Strings}
 \end{array}
 \right]\\
 \hypertarget{def-localstaticenvs}{}\\
@@ -152,7 +152,7 @@ The output configurations of type system assertions have two flavors:
 
   \hypertarget{def-typeerror}{}
   \item[Type Errors.] Configurations in $\TypeError(\Strings)$
-  represent type errors, for example, using an integer type as a condition expression, as in \verb|if 5 then 1 else 2|.
+  represent \typingerrorsterm{}, for example, using an integer type as a condition expression, as in \verb|if 5 then 1 else 2|.
   The ASL type system is designed such that when these \emph{\typingerrorterm{} configurations} appear,
   the typing of the entire specification terminates by outputting them.
 \end{description}

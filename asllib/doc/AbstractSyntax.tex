@@ -153,7 +153,7 @@ The following rules correspond to unary operations and binary operations that ca
         & \hypertarget{ast-mul}{} \hypertarget{ast-div}{} \hypertarget{ast-divrm}{} \hypertarget{ast-mod}{} \hypertarget{ast-shl}{} \hypertarget{ast-shr}{}
 \\
         |\ & \overtext{\MUL}{\texttt{"*"}} \;|\; \overtext{\DIV}{\texttt{"DIV"}} \;|\; \overtext{\DIVRM}{\texttt{"DIVRM"}}
-        \;|\; \overtext{\MOD}{\texttt{"MOD"}} \;|\; \overtext{\SHL}{\texttt{"<<"}}  \;|\; \overtext{\SHR}{\texttt{">>"}}
+        \;|\; \overtext{\MOD}{\texttt{"MOD"}} \;|\; \overtext{\SHL}{\shiftleftlexeme}  \;|\; \overtext{\SHR}{\shiftrightlexeme}
         & \hypertarget{ast-rdiv}{} \hypertarget{ast-pow}{} \hypertarget{ast-concat}{}
 \\
         |\ & \overtext{\RDIV}{\texttt{"/"}} \;|\; \overtext{\POW}{\texttt{"\^{}"}} \;|\; \overtext{\CONCAT}{\texttt{"::"}}
@@ -897,8 +897,7 @@ to terminals.
 \end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Correspondence Between Left-hand-side Expressions and Right-hand-side Expressions
-\label{sec:LeftToRight}}
+\section{Transforming Assignable Expressions to Expressions\label{sec:LeftToRight}}
 \hypertarget{def-rexpr}{}
 The recursive function $\torexpr : \lexpr \rightarrow \expr$ transforms
 left-hand-side expressions to corresponding right-hand-side expressions,

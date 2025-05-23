@@ -10,20 +10,20 @@ ASL Typing Tests:
   File TypingRule.SubtypeSatisfaction3.asl, line 9, characters 4 to 45:
       var dogLegs : AnimalLegs = myCircleSides; // illegal: unrelated types
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of AnimalLegs was expected, provided ShapeSides.
+  ASL Type error: a subtype of AnimalLegs was expected, provided ShapeSides.
   [1]
   $ aslref TypingRule.SubtypeSatisfaction.bad1.asl
   File TypingRule.SubtypeSatisfaction.bad1.asl, line 8, characters 0 to 31:
   var x : integer{Int12} = Int12;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of integer {2} was expected,
+  ASL Type error: a subtype of integer {2} was expected,
     provided integer {1..2}.
   [1]
   $ aslref TypingRule.SubtypeSatisfaction.bad2.asl
   File TypingRule.SubtypeSatisfaction.bad2.asl, line 7, characters 4 to 13:
       return N;
       ^^^^^^^^^
-  ASL Typing error: a subtype of integer {N} was expected,
+  ASL Type error: a subtype of integer {N} was expected,
     provided integer {2, 4}.
   [1]
   $ aslref TypingRule.TypeSatisfaction1.asl
@@ -32,15 +32,14 @@ ASL Typing Tests:
   File TypingRule.TypeSatisfaction3.asl, line 14, characters 2 to 6:
     pair = (1, dataT2);
     ^^^^
-  ASL Typing error: a subtype of pairT was expected,
-    provided (integer {1}, T2).
+  ASL Type error: a subtype of pairT was expected, provided (integer {1}, T2).
   [1]
   $ aslref --no-exec TypingRule.TypeClashes.asl
   $ aslref --no-exec TypingRule.TypeClashes.bad.asl
   File TypingRule.TypeClashes.bad.asl, line 3, characters 0 to 55:
   func structured_procedure(r: SuperRec) begin pass; end;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: cannot declare already declared element
+  ASL Type error: cannot declare already declared element
     "structured_procedure".
   [1]
   $ aslref TypingRule.LowestCommonAncestor.asl
@@ -85,7 +84,7 @@ ASL Typing Tests:
       },
       [1:0] common
   };
-  ASL Typing error:
+  ASL Type error:
     bitfields `sub.common` and `common` are in the same scope but define different slices of the containing bitvector type: [0, 1] and [1:0], respectively.
   [1]
 
@@ -102,7 +101,7 @@ ASL Typing Tests / annotating types:
     characters 4 to 27:
       var g : integer{-} = a;
       ^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: constrained integer expected, provided integer.
+  ASL Type error: constrained integer expected, provided integer.
   [1]
 
   $ aslref --no-exec TypingRule.TInt.config_pending_constrained.bad.asl
@@ -110,7 +109,7 @@ ASL Typing Tests / annotating types:
     characters 0 to 27:
   config x : integer{-} =  1;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a pending constrained integer is illegal here.
+  ASL Type error: a pending constrained integer is illegal here.
   [1]
 
   $ aslref TypingRule.TInt.rhs_pending_constrained.bad.asl
@@ -118,7 +117,7 @@ ASL Typing Tests / annotating types:
     characters 28 to 43:
       var x : integer{1..2} = 3 as integer{-};
                               ^^^^^^^^^^^^^^^
-  ASL Typing error: a pending constrained integer is illegal here.
+  ASL Type error: a pending constrained integer is illegal here.
   [1]
 
   $ aslref TypingRule.AnnotateConstraint.asl
@@ -126,7 +125,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.AnnotateConstraint.bad.asl, line 4, characters 17 to 18:
     let t: integer{x..x+1} = 2; // illegal as 'x' is not constrained.
                    ^
-  ASL Typing error: a pure expression was expected, found x, which produces the
+  ASL Type error: a pure expression was expected, found x, which produces the
     following side-effects: [ReadsLocal "x"].
   [1]
 
@@ -137,7 +136,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.TArray.bad.asl, line 9, characters 31 to 57:
       var illegal_array: array [[non_symbolically_evaluable]] of integer;
                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a pure expression was expected,
+  ASL Type error: a pure expression was expected,
     found non_symbolically_evaluable, which produces the following
     side-effects: [ReadsLocal "non_symbolically_evaluable"].
   [1]
@@ -147,7 +146,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.TEnumDecl.bad.asl, line 2, characters 0 to 49:
   type Color of enumeration { GREEN, ORANGE, RED }; // Illegal: GREEN already declared.
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: cannot declare already declared element "RED".
+  ASL Type error: cannot declare already declared element "RED".
   [1]
   $ aslref --no-exec TypingRule.Subtype.asl
   $ aslref --no-exec TypingRule.GetVariableEnum.asl
@@ -166,8 +165,8 @@ ASL Typing Tests / annotating types:
   File TypingRule.AnnotateFuncSig.bad.asl, line 4, characters 60 to 63:
   func signature_example(bv: bits(8)) => bits(16) recurselimit(W)
                                                               ^^^
-  ASL Typing error: a pure expression was expected, found (W), which produces
-    the following side-effects: [ReadsGlobal "W"].
+  ASL Type error: a pure expression was expected, found (W), which produces the
+    following side-effects: [ReadsGlobal "W"].
   [1]
   $ aslref TypingRule.BuiltinAggregateTypes.asl
   $ aslref --no-exec TypingRule.BuiltinExceptionType.asl
@@ -178,7 +177,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.ConstraintMod.bad.asl, line 9, characters 4 to 5:
       z = 3; // Illegal: the type inferred for z is integer{0..2}
       ^
-  ASL Typing error: a subtype of integer {0..2} was expected,
+  ASL Type error: a subtype of integer {0..2} was expected,
     provided integer {3}.
   [1]
   $ aslref --no-exec TypingRule.CheckConstrainedInteger.asl
@@ -198,13 +197,13 @@ ASL Typing Tests / annotating types:
   File TypingRule.BaseValue.bad_negative_width.asl, line 1, characters 0 to 24:
   var bits_base: bits(-3);
   ^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: base value of empty type bits((- 3)).
+  ASL Type error: base value of empty type bits((- 3)).
   [1]
   $ aslref TypingRule.BaseValue.bad_empty.asl
   File TypingRule.BaseValue.bad_empty.asl, line 1, characters 0 to 22:
   var x : integer{5..0};
   ^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: base value of empty type integer {5..0}.
+  ASL Type error: base value of empty type integer {5..0}.
   [1]
 
   $ aslref TypingRule.UnopLiterals.asl
@@ -345,7 +344,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.CheckATC.asl, line 8, characters 12 to 32:
       var a = 3.0 as integer{1, 2};
               ^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: cannot perform Asserted Type Conversion on real by
+  ASL Type error: cannot perform Asserted Type Conversion on real by
     integer {1, 2}.
   [1]
   $ aslref --no-exec TypingRule.IsGlobalUndefined.asl
@@ -357,7 +356,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.StaticEval.bad.asl, line 3, characters 5 to 20:
       [WORD_SIZE DIV 3 - 1:WORD_SIZE DIV 2] upper,
        ^^^^^^^^^^^^^^^
-  ASL Typing error: Illegal application of operator DIV on types integer {64}
+  ASL Type error: Illegal application of operator DIV on types integer {64}
     and integer {3}.
   [1]
   $ aslref TypingRule.Catcher.asl
@@ -376,15 +375,15 @@ ASL Typing Tests / annotating types:
   File TypingRule.LESetBadField.asl, line 6, characters 4 to 5:
       x.RED = 42;
       ^
-  ASL Typing error: array [[Color]] of integer does not subtype any of:
-    bits(-), record {  }, exception {  }, collection {  }.
+  ASL Type error: array [[Color]] of integer does not subtype any of: bits(-),
+    record {  }, exception {  }, collection {  }.
   [1]
   $ aslref TypingRule.LESetBadField.asl
   File TypingRule.LESetBadField.asl, line 6, characters 4 to 5:
       x.RED = 42;
       ^
-  ASL Typing error: array [[Color]] of integer does not subtype any of:
-    bits(-), record {  }, exception {  }, collection {  }.
+  ASL Type error: array [[Color]] of integer does not subtype any of: bits(-),
+    record {  }, exception {  }, collection {  }.
   [1]
   $ aslref TypingRule.LESetStructuredField.asl
   $ aslref TypingRule.LESetField.asl
@@ -397,11 +396,23 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.asl
   $ aslref TypingRule.SDecl.asl
+  $ aslref TypingRule.SDecl.bad1.asl
+  File TypingRule.SDecl.bad1.asl, line 4, characters 15 to 16:
+      constant c3;
+                 ^
+  ASL Error: Cannot parse.
+  [1]
+  $ aslref TypingRule.SDecl.bad2.asl
+  File TypingRule.SDecl.bad2.asl, line 4, characters 18 to 19:
+      let y: integer;
+                    ^
+  ASL Error: Cannot parse.
+  [1]
   $ aslref TypingRule.SAssert.bad.asl
   File TypingRule.SAssert.bad.asl, line 11, characters 10 to 23:
       assert(increment()); // Illegal, since increment is not pure.
             ^^^^^^^^^^^^^
-  ASL Typing error: a pure expression was expected, found (increment()), which
+  ASL Type error: a pure expression was expected, found (increment()), which
     produces the following side-effects: [WritesGlobal "g", ReadsGlobal "g"].
   [1]
   $ aslref TypingRule.SWhile.asl
@@ -420,21 +431,21 @@ ASL Typing Tests / annotating types:
   File TypingRule.SWhile.bad_limit.asl, line 8, characters 26 to 33:
       while i < N looplimit i_limit do
                             ^^^^^^^
-  ASL Typing error: a pure expression was expected, found i_limit, which
-    produces the following side-effects: [ReadsLocal "i_limit"].
+  ASL Type error: a pure expression was expected, found i_limit, which produces
+    the following side-effects: [ReadsLocal "i_limit"].
   [1]
   $ aslref TypingRule.SFor.bad1.asl
   File TypingRule.SFor.bad1.asl, line 5, character 4 to line 7, character 8:
       for i = 0 to 4 do
           pass;
       end;
-  ASL Typing error: cannot declare already declared element "i".
+  ASL Type error: cannot declare already declared element "i".
   [1]
   $ aslref TypingRule.SFor.bad2.asl
   File TypingRule.SFor.bad2.asl, line 5, characters 8 to 9:
           i = i + 1;
           ^
-  ASL Typing error: cannot assign to immutable storage "i".
+  ASL Type error: cannot assign to immutable storage "i".
   [1]
   $ aslref TypingRule.SFor.bad3.asl
   File TypingRule.SFor.bad3.asl, line 7, characters 4 to 5:
@@ -446,14 +457,14 @@ ASL Typing Tests / annotating types:
   File TypingRule.SFor.bad4.asl, line 11, characters 17 to 30:
       for j = 0 to upper_bound() do
                    ^^^^^^^^^^^^^
-  ASL Typing error: a pure expression was expected, found upper_bound(), which
+  ASL Type error: a pure expression was expected, found upper_bound(), which
     produces the following side-effects: [WritesGlobal "g"].
   [1]
   $ aslref TypingRule.SReturn.bad.asl
   File TypingRule.SReturn.bad.asl, line 3, characters 4 to 13:
       return 0;
       ^^^^^^^^^
-  ASL Typing error: cannot return something from a procedure.
+  ASL Type error: cannot return something from a procedure.
   [1]
   $ aslref --no-exec TypingRule.SPragma.asl
   File TypingRule.SPragma.asl, line 3, characters 4 to 39:
@@ -493,7 +504,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.CheckNoPrecisionLoss.asl, line 3, characters 0 to 14:
   var b = a * a;
   ^^^^^^^^^^^^^^
-  ASL Typing error: type used to define storage item is the result of precision
+  ASL Type error: type used to define storage item is the result of precision
     loss.
   [1]
   $ aslref TypingRule.PrecisionJoin.asl
@@ -506,7 +517,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.PrecisionJoin.asl, line 3, characters 0 to 20:
   var b = (a * a) + 2;
   ^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: type used to define storage item is the result of precision
+  ASL Type error: type used to define storage item is the result of precision
     loss.
   [1]
 
@@ -515,15 +526,15 @@ ASL Typing Tests / annotating types:
   File TypingRule.PSingle.bad.asl, line 4, characters 11 to 30:
       assert '101' IN { '1100' };
              ^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: cannot find a common ancestor to those two types bits(3)
-    and bits(4).
+  ASL Type error: cannot find a common ancestor to those two types bits(3) and
+    bits(4).
   [1]
   $ aslref TypingRule.PRange.asl
   $ aslref TypingRule.PRange.bad.asl
   File TypingRule.PRange.bad.asl, line 4, characters 11 to 32:
       assert 42.4 IN { -1.8..143 };
              ^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: Erroneous pattern (- (9.0 / 5.0)) .. 143 for expression of
+  ASL Type error: Erroneous pattern (- (9.0 / 5.0)) .. 143 for expression of
     type real.
   [1]
   $ aslref TypingRule.PLeq.asl
@@ -531,7 +542,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.PLeq.bad.asl, line 4, characters 12 to 28:
        assert 3 IN { <= 42.0 };
               ^^^^^^^^^^^^^^^^
-  ASL Typing error: Erroneous pattern <= (42.0 / 1.0) for expression of type
+  ASL Type error: Erroneous pattern <= (42.0 / 1.0) for expression of type
     integer {3}.
   [1]
   $ aslref TypingRule.PGeq.asl
@@ -539,35 +550,35 @@ ASL Typing Tests / annotating types:
   File TypingRule.PGeq.bad.asl, line 4, characters 11 to 27:
       assert 42 IN { >= 3.0 };
              ^^^^^^^^^^^^^^^^
-  ASL Typing error: Erroneous pattern >= (3.0 / 1.0) for expression of type
+  ASL Type error: Erroneous pattern >= (3.0 / 1.0) for expression of type
     integer {42}.
   [1]
   $ aslref TypingRule.PTuple.bad.asl
   File TypingRule.PTuple.bad.asl, line 8, characters 11 to 45:
       assert (3, '101010') IN { ('xx1010', 5) };
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of bits(-) was expected, provided integer {3}.
+  ASL Type error: a subtype of bits(-) was expected, provided integer {3}.
   [1]
   $ aslref TypingRule.PMask.asl
   $ aslref TypingRule.PMask.bad.asl
   File TypingRule.PMask.bad.asl, line 5, characters 11 to 34:
       assert '101010' IN {'xx10101'};
              ^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of bits(7) was expected, provided bits(6).
+  ASL Type error: a subtype of bits(7) was expected, provided bits(6).
   [1]
   $ aslref TypingRule.PAny.asl
   $ aslref TypingRule.PAny.bad.asl
   File TypingRule.PAny.bad.asl, line 5, characters 11 to 29:
       assert TRUE IN {FALSE, 5};
              ^^^^^^^^^^^^^^^^^^
-  ASL Typing error: Erroneous pattern 5 for expression of type boolean.
+  ASL Type error: Erroneous pattern 5 for expression of type boolean.
   [1]
 
   $ aslref TypingRule.CheckIsNotCollection.asl
   File TypingRule.CheckIsNotCollection.asl, line 8, characters 2 to 25:
     var test: MyCollection; // Illegal: local storage elements cannot have collection types.
     ^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: unexpected collection.
+  ASL Type error: unexpected collection.
   [1]
   $ aslref TypingRule.LESetCollectionFields.asl
   $ aslref TypingRule.TypecheckDecl.asl
@@ -590,7 +601,7 @@ ASL Typing Tests / annotating types:
               throw invalid_state{-};
           end;
       end;
-  ASL Typing error: the function "incorrect_terminating_path" may not terminate
+  ASL Type error: the function "incorrect_terminating_path" may not terminate
     by returning a value or raising an exception..
   [1]
   $ aslref TypingRule.ControlFlowFromStmt.asl
@@ -610,8 +621,8 @@ ASL Typing Tests / annotating types:
       while (TRUE) do
           pass;
       end;
-  ASL Typing error: the function "loop_forever" may not terminate by returning
-    a value or raising an exception..
+  ASL Type error: the function "loop_forever" may not terminate by returning a
+    value or raising an exception..
   [1]
   $ aslref --no-exec TypingRule.DeclareType.asl
   $ aslref TypingRule.AnnotateExtraFields.bad.asl
@@ -633,14 +644,14 @@ ASL Typing Tests / annotating types:
   File TypingRule.DeclareGlobalStorage.bad1.asl, line 3, characters 0 to 29:
   config c : integer{1..5} = x;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: expected constant-time expression, got x as integer {1..5},
+  ASL Type error: expected constant-time expression, got x as integer {1..5},
     which produces the following side-effects: [ReadsGlobal "x"].
   [1]
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.bad2.asl
   File TypingRule.DeclareGlobalStorage.bad2.asl, line 3, characters 0 to 29:
   config c : integer{1..x} = 2;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: expected constant-time expression, got 2 as integer {1..5},
+  ASL Type error: expected constant-time expression, got 2 as integer {1..5},
     which produces the following side-effects: [ReadsGlobal "x"].
   [1]
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.bad3.asl
@@ -657,7 +668,7 @@ ASL Typing Tests / annotating types:
     characters 0 to 39:
   config d: MyException = MyException{-};
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: expected singular type, found MyException.
+  ASL Type error: expected singular type, found MyException.
   [1]
   $ aslref --no-exec TypingRule.DefDecl.asl
   $ aslref --no-exec TypingRule.UseDecl.asl
@@ -684,7 +695,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.CheckGlobalPragma.bad.asl, line 2, characters 22 to 28:
   pragma bad_pragma 1, (2==3.0), x;
                         ^^^^^^
-  ASL Typing error: Illegal application of operator == on types integer {2}
+  ASL Type error: Illegal application of operator == on types integer {2}
     and real.
   [1]
   $ aslref --no-exec TypingRule.AddSubprogramDecls.asl
@@ -697,7 +708,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.TypeCheckMutuallyRec.bad.asl, line 1, characters 0 to 15:
   var g = foo(5);
   ^^^^^^^^^^^^^^^
-  ASL Typing error: multiple recursive declarations: "foo", "g".
+  ASL Type error: multiple recursive declarations: "foo", "g".
   [1]
   $ aslref --no-exec TypingRule.DeclareSubprograms.asl
   $ aslref --no-exec TypingRule.SubprogramForName.asl
@@ -715,7 +726,7 @@ ASL Typing Tests / annotating types:
     characters 8 to 19:
       - = add_10(5.0);
           ^^^^^^^^^^^
-  ASL Typing error: No subprogram declaration matches the invocation:
+  ASL Type error: No subprogram declaration matches the invocation:
     add_10(real).
   [1]
   $ aslref TypingRule.ExpressionList.asl
@@ -735,13 +746,13 @@ ASL Typing Tests / annotating types:
   File TypingRule.SubprogramTypesClash.bad1.asl, line 4, characters 8 to 22:
           return '1000';
           ^^^^^^^^^^^^^^
-  ASL Typing error: cannot declare already declared element "X".
+  ASL Type error: cannot declare already declared element "X".
   [1]
   $ aslref TypingRule.SubprogramTypesClash.bad2.asl
   File TypingRule.SubprogramTypesClash.bad2.asl, line 1, characters 0 to 40:
   func X() => integer begin return 0; end;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: cannot declare already declared element "X".
+  ASL Type error: cannot declare already declared element "X".
   [1]
   $ aslref TypingRule.CheckParamDecls.bad.asl
   File TypingRule.CheckParamDecls.bad.asl, line 3, character 0 to line 9,
@@ -753,7 +764,7 @@ ASL Typing Tests / annotating types:
   begin
       return Ones{D};
   end;
-  ASL Typing error: incorrect parameter declaration for "parameter_lists",
+  ASL Type error: incorrect parameter declaration for "parameter_lists",
     expected {D, A, B, C} but {A, B, C, D} provided
   [1]
   $ aslref TypingRule.AnnotateReturnType.bad.asl
@@ -763,14 +774,14 @@ ASL Typing Tests / annotating types:
   begin
       return ARBITRARY: MyCollection;
   end;
-  ASL Typing error: unexpected collection.
+  ASL Type error: unexpected collection.
   [1]
   $ aslref --no-exec TypingRule.AnnotateOneParam.asl
   $ aslref TypingRule.AnnotateOneParam.bad1.asl
   File TypingRule.AnnotateOneParam.bad1.asl, line 4, characters 0 to 50:
   func parameterized{A}(x: bits(A)) begin pass; end;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: cannot declare already declared element "A".
+  ASL Type error: cannot declare already declared element "A".
   [1]
   $ aslref --no-exec TypingRule.AnnotateOneArg.asl
   $ aslref TypingRule.AnnotateOneArg.bad1.asl
@@ -782,14 +793,14 @@ ASL Typing Tests / annotating types:
       - = i;
       - = r;
   end;
-  ASL Typing error: cannot declare already declared element "b".
+  ASL Type error: cannot declare already declared element "b".
   [1]
   $ aslref TypingRule.AnnotateOneArg.bad2.asl
   File TypingRule.AnnotateOneArg.bad2.asl, line 4, character 0 to line 5,
     character 16:
   func arguments(b: MyCollection)
   begin pass; end;
-  ASL Typing error: unexpected collection.
+  ASL Type error: unexpected collection.
   [1]
   $ aslref TypingRule.AnnotateRetTy.asl
   $ aslref TypingRule.AnnotateRetTy.bad.asl
@@ -811,7 +822,7 @@ ASL Typing Tests / annotating types:
     characters 8 to 31:
       - = xor_extend{64, 32}(bv1);
           ^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: No subprogram declaration matches the invocation:
+  ASL Type error: No subprogram declaration matches the invocation:
     xor_extend(bits(64)).
   [1]
   $ aslref TypingRule.AnnotateCallActualsTyped.bad3.asl
@@ -819,7 +830,7 @@ ASL Typing Tests / annotating types:
     characters 8 to 24:
       - = plus{64}(bv1, w);
           ^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of integer {0..64} was expected,
+  ASL Type error: a subtype of integer {0..64} was expected,
     provided integer {0..128}.
   [1]
   $ aslref TypingRule.SubstExpr.asl
@@ -842,7 +853,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.SESIsPure.bad1.asl, line 17, characters 11 to 37:
       assert y > write_side_effecting();
              ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a pure expression was expected,
+  ASL Type error: a pure expression was expected,
     found (y > write_side_effecting()), which produces the following
     side-effects: [WritesGlobal "g", ReadsLocal "y", ReadsGlobal "g"].
   [1]
@@ -850,8 +861,8 @@ ASL Typing Tests / annotating types:
   File TypingRule.SESIsPure.bad2.asl, line 16, characters 17 to 39:
       for i = x to write_side_effecting() do
                    ^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a pure expression was expected,
-    found write_side_effecting(), which produces the following side-effects:
+  ASL Type error: a pure expression was expected, found write_side_effecting(),
+    which produces the following side-effects:
     [WritesGlobal "g", ReadsGlobal "g"].
   [1]
   $ aslref TypingRule.SESIsDeterministic.asl
@@ -859,7 +870,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.SESIsDeterministic.bad.asl, line 10, characters 17 to 45:
       for i = x to ARBITRARY : integer{1..1000} do
                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a pure expression was expected,
+  ASL Type error: a pure expression was expected,
     found ARBITRARY : integer {1..1000}, which produces the following
     side-effects: [NonDeterministic].
   [1]
@@ -870,7 +881,7 @@ ASL Typing Tests / annotating types:
   type Data of bits(g * 2) {
       [0] LSB
   };
-  ASL Typing error: expected constant-time expression, got (g * 2), which
+  ASL Type error: expected constant-time expression, got (g * 2), which
     produces the following side-effects: [ReadsGlobal "g"].
   [1]
   $ aslref --no-exec TypingRule.MaxTimeFrame.asl
@@ -881,7 +892,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.RenameSubprograms.asl, line 3, characters 2 to 11:
     return 1;
     ^^^^^^^^^
-  ASL Typing error: a subtype of boolean was expected, provided integer {1}.
+  ASL Type error: a subtype of boolean was expected, provided integer {1}.
   [1]
   $ aslref TypingRule.ApproxConstraint.asl
   $ aslref TypingRule.BitFieldEqual.asl
@@ -889,7 +900,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.BitFieldEqual.bad1.asl, line 4, characters 4 to 71:
       var x : bits(64) { [1] data } = Zeros{64} as bits(64) { [2] data };
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of bits (64) { [1+:1] data } was expected,
+  ASL Type error: a subtype of bits (64) { [1+:1] data } was expected,
     provided bits (64) { [2+:1] data }.
   [1]
   $ aslref TypingRule.BitFieldEqual.bad2.asl
@@ -897,7 +908,7 @@ ASL Typing Tests / annotating types:
     character 43:
       var x : bits(64) { [16+:16] data { [0] lsb } } =  Zeros{64} as
               bits(64) { [31:16] data {  } };
-  ASL Typing error: a subtype of bits (64) { [16+:16] data { [0+:1] lsb } }
+  ASL Type error: a subtype of bits (64) { [16+:16] data { [0+:1] lsb } }
     was expected, provided bits (64) { [16+:16] data {  } }.
   [1]
   $ aslref --no-exec TypingRule.BitFieldsEqual.asl
@@ -905,7 +916,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.BitFieldsEqual.bad.asl, line 6, characters 0 to 76:
   implementation func Foo(bv : bits(64) { [1] msb, [0] lsb }) begin pass; end;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: no `impdef` for `implementation` function.
+  ASL Type error: no `impdef` for `implementation` function.
   [1]
   $ aslref --no-exec TypingRule.TypeEqual.asl
   $ aslref TypingRule.ExprEqual.asl
@@ -913,14 +924,14 @@ ASL Typing Tests / annotating types:
   File TypingRule.ArrayLengthEqual.bad.asl, line 9, characters 4 to 5:
       x = y;
       ^
-  ASL Typing error: a subtype of array [[3]] of integer was expected,
+  ASL Type error: a subtype of array [[3]] of integer was expected,
     provided array [[Color]] of integer.
   [1]
   $ aslref TypingRule.ReduceConstraint.asl
   File TypingRule.ReduceConstraint.asl, line 6, characters 4 to 65:
       var x : integer{3 * w, 0..5 * z - z - 2 * z,  w + z} = w + z;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: a subtype of integer {0..(2 * z), (3 * w), (z + w)}
+  ASL Type error: a subtype of integer {0..(2 * z), (3 * w), (z + w)}
     was expected, provided integer {0..2000}.
   [1]
   $ aslref TypingRule.ConstraintEqual.asl

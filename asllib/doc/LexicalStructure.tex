@@ -161,7 +161,7 @@ $\REbit$ &$\triangleq$& \anycharacter{\texttt{01}\square}
 \end{tabular}
 \end{center}
 
-Now, we define a regular expression for bit vector literals:
+Now, we define a regular expression for bitvector literals:
 \hypertarget{def-rebitvectorlit}{}
 \begin{center}
 \begin{tabular}{rcl}
@@ -550,7 +550,7 @@ $\REreallit$                          & $\actiontoken(\realtolit)$ \\
 $\REstringlit$                        & $\actiontoken(\strtolit)$ \\
 $\REbitvectorlit$                     & $\actiontoken(\bitstolit)$ \\
 $\REbitmasklit$                       & $\actiontoken(\masktolit)$ \\
-\texttt{"!"}, \texttt{","}, \texttt{"<"}, \texttt{">>"}, \texttt{"\&\&"}, \texttt{"-->"}, \texttt{"<<"}                         & $\actiontoken(\tokenid)$  \\
+\texttt{"!"}, \texttt{","}, \texttt{"<"}, \shiftrightlexeme, \texttt{"\&\&"}, \texttt{"-->"}, \shiftleftlexeme{}                         & $\actiontoken(\tokenid)$  \\
 \texttt{"]"}, \texttt{"]]"}, \texttt{")"}, \texttt{".."}, \texttt{"="}, \texttt{"\{"}, \texttt{"!="}, \texttt{"-"}, \texttt{"<->"}                        & $\actiontoken(\tokenid)$  \\
 \texttt{"["}, \texttt{"[["}, \texttt{"("}, \texttt{"."}, \texttt{"<="}, \texttt{"\textasciicircum"}, \texttt{"*"}, \texttt{"/"}                          & $\actiontoken(\tokenid)$  \\
 \texttt{"=="}, \texttt{"||"}, \texttt{"+"}, \texttt{":"}, \texttt{"=>"}, \texttt{"<=>"}                         & $\actiontoken(\tokenid)$  \\

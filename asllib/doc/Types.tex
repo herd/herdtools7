@@ -1384,6 +1384,7 @@ In \listingref{typing-trecord}, all the uses of record types are well-typed.
 \CodeSubsection{\TStructuredDeclBegin}{\TStructuredDeclEnd}{../Typing.ml}
 
 \section{Exception Types\label{sec:ExceptionTypes}}
+\hypertarget{exceptiontypeterm}{}
 An exception is a \structuredtype{} consisting of a list of field identifiers
 which denote individual storage elements.
 
@@ -1533,7 +1534,7 @@ In \listingref{typing-tnamed}, all the uses of \texttt{MyType} are well-typed.
 \CodeSubsection{\TNamedBegin}{\TNamedEnd}{../Typing.ml}
 
 \section{Declared Types\label{sec:DeclaredTypes}}
-A declared type can be an \enumerationtypeterm{}, a record type, an exception type, or an \anonymoustype.
+A declared type can be an \enumerationtypeterm{}, a \recordtypeterm, an \exceptiontypeterm, or an \anonymoustype.
 \subsection{Syntax}
 \begin{flalign*}
 \Ntydecl \derives\ & \Nty &
