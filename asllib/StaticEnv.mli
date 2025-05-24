@@ -76,12 +76,12 @@ val empty_local_return_type : ty option -> local
 val empty : env
 val with_empty_local : global -> env
 
-val lookup_constants : env -> identifier -> literal
+val lookup_constant : env -> identifier -> literal
 (** [lookup x env] is the value of x as defined in environment.
 
       @raise Not_found if it is not defined inside. *)
 
-val lookup_constants_opt : env -> identifier -> literal option
+val lookup_constant_opt : env -> identifier -> literal option
 
 val type_of : env -> identifier -> ty
 (** [type_of env "x"] is the type of ["x"] in the environment [env]. *)

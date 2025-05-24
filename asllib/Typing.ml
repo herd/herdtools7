@@ -2432,7 +2432,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let slice = Slice_Length (zero, e) in
             E_Slice (zero, [ slice ]) |> here)
     | T_Enum [] -> assert false
-    | T_Enum (name :: _) -> lookup_constants env name |> lit
+    | T_Enum (name :: _) -> lookup_constant env name |> lit
     | T_Int UnConstrained -> L_Int Z.zero |> lit
     | T_Int (Parameterized (_, id)) -> E_Var id |> here |> fatal_non_static
     | T_Int PendingConstrained -> assert false
