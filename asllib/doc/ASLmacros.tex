@@ -275,6 +275,7 @@
 \newcommand\emptylist[0]{\hyperlink{def-emptylist}{[\ ]}}
 \newcommand\Proseemptylist[1]{#1 is the empty list}
 \newcommand\choice[3]{\hyperlink{def-choice}{\textsf{choice}}(#1,#2,#3)}
+%\newcommand\choice[3]{\hyperlink{def-choice}{\textbf{if }}#1\textbf{ then }#2\textbf{ else }#3}
 \newcommand\equallength[0]{\hyperlink{def-equallength}{\textfunc{equal\_length}}}
 \newcommand\listrange[0]{\hyperlink{def-listrange}{\textfunc{indices}}}
 \newcommand\Proselistrange[2]{\hyperlink{def-listrange}{index} #1 in the list of indices for #2}
@@ -1134,21 +1135,19 @@
 \newcommand\Proseticklooplimit[2]{\hyperlink{def-ticklooplimit}{decrementing} the optional loop limit value #1 yields the updated optional limit value #2}
 \newcommand\ticklooplimit[0]{\hyperlink{def-ticklooplimit}{\textfunc{tick\_loop\_limit}}}
 
-\newcommand\getstacksize[0]{\hyperlink{def-getstacksize}{\textfunc{get\_statck\_size}}}
-\newcommand\setstacksize[0]{\hyperlink{def-setstacksize}{\textfunc{set\_statck\_size}}}
-\newcommand\incrstacksize[0]{\hyperlink{def-incrstacksize}{\textfunc{incr\_statck\_size}}}
-\newcommand\decrstacksize[0]{\hyperlink{def-decrstacksize}{\textfunc{decr\_statck\_size}}}
+\newcommand\getstacksize[0]{\hyperlink{def-getstacksize}{\textfunc{get\_stack\_size}}}
+\newcommand\setstacksize[0]{\hyperlink{def-setstacksize}{\textfunc{set\_stack\_size}}}
+\newcommand\incrstacksize[0]{\hyperlink{def-incrstacksize}{\textfunc{incr\_stack\_size}}}
+\newcommand\decrstacksize[0]{\hyperlink{def-decrstacksize}{\textfunc{decr\_stack\_size}}}
 \newcommand\declarelocalidentifier[0]{\hyperlink{def-declarelocalidentifier}{\textfunc{declare\_local\_identifier}}}
 \newcommand\declarelocalidentifierm[0]{\hyperlink{def-declarelocalidentifierm}{\textfunc{declare\_local\_identifier\_m}}}
 \newcommand\declarelocalidentifiermm[0]{\hyperlink{def-declarelocalidentifermm}{\textfunc{declare\_local\_identifier\_mm}}}
 \newcommand\removelocal[0]{\hyperlink{def-removelocal}{\textfunc{remove\_local}}}
 \newcommand\readidentifier[0]{\hyperlink{def-readidentifier}{\textfunc{read\_identifier}}}
 \newcommand\writeidentifier[0]{\hyperlink{def-writeidentifier}{\textfunc{write\_identifier}}}
-\newcommand\createbitvector[0]{\hyperlink{def-createbitvector}{\textfunc{create\_bitvector}}}
 \newcommand\concatbitvectors[0]{\hyperlink{def-concatbitvector}{\textfunc{concat\_bitvectors}}}
 \newcommand\readfrombitvector[0]{\hyperlink{def-readfrombitvector}{\textfunc{read\_from\_bitvector}}}
 \newcommand\writetobitvector[0]{\hyperlink{def-writetobitvector}{\textfunc{write\_to\_bitvector}}}
-\newcommand\asbitvector[0]{\hyperlink{def-asbitvector}{\textfunc{as\_bitvector}}}
 \newcommand\slicestopositions[0]{\hyperlink{def-slicestopositions}{\textfunc{slices\_to\_positions}}}
 \newcommand\getindex[0]{\hyperlink{def-getindex}{\textfunc{get\_index}}}
 \newcommand\setindex[0]{\hyperlink{def-setindex}{\textfunc{set\_index}}}
@@ -1159,7 +1158,6 @@
 \newcommand\constraintabsmin[0]{\hyperlink{def-constraintabsmin}{\textfunc{constraint\_abs\_min}}}
 \newcommand\listminabs[0]{\hyperlink{def-listminabs}{\textfunc{list\_min\_abs}}}
 \newcommand\isvaloftype[0]{\hyperlink{def-isvaloftype}{\textfunc{is\_val\_of\_type}}}
-\newcommand\positioninrange[0]{\hyperlink{def-positioninrange}{\textfunc{position\_in\_range}}}
 \newcommand\isconstaintsat[0]{\hyperlink{def-isconstraintsat}{\textfunc{is\_constraint\_sat}}}
 \newcommand\readvaluefrom[0]{\hyperlink{def-readvaluefrom}{\textfunc{read\_value\_from}}}
 \newcommand\outputtoconsole[0]{\hyperlink{def-outputtoconsole}{\textfunc{output\_to\_console}}}
@@ -2136,7 +2134,6 @@
 \newcommand\efalse[0]{\texttt{e\_false}}
 \newcommand\efalsep[0]{\texttt{e\_false'}}
 \newcommand\efields[0]{\texttt{e\_fields}}
-\newcommand\eid[0]{\texttt{e\_id}}
 \newcommand\eindex[0]{\texttt{e\_index}}
 \newcommand\eindexp[0]{\texttt{e\_index'}}
 \newcommand\elength[0]{\texttt{length}}
@@ -2942,6 +2939,7 @@
 \newcommand\vvp[0]{\texttt{v'}}
 \newcommand\vvparams[0]{\texttt{vparams}}
 \newcommand\vvs[0]{\texttt{vs}}
+\newcommand\newv[0]{\texttt{new\_v}}
 \newcommand\newvs[0]{\texttt{new\_vs}}
 \newcommand\vvsp[0]{\texttt{vs'}}
 \newcommand\vvsone[0]{\texttt{vs1}}
@@ -3075,3 +3073,4 @@
 \newcommand\undeclaredidentifier[0]{\texttt{undeclared\_identifier}}
 \newcommand\fldone[0]{\texttt{fld1}}
 \newcommand\fldtwo[0]{\texttt{fld2}}
+\newcommand\newbits[0]{\texttt{newbits}}

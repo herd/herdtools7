@@ -2035,10 +2035,12 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 \hypertarget{def-readvaluefrom}{}
 The helper relation
 \[
-  \readvaluefrom(\vals \aslsep \Identifiers) \;\aslrel\; (\vals \times \XGraphs)
+  \readvaluefrom(\valuereadfrom(\vals \aslsep \Identifiers)) \;\aslrel\; (\vals \times \XGraphs)
 \]
 generates an execution graph for reading the given value to a variable given
 by the identifier, and pairs it with the given value.
+
+% NO_EXAMPLE
 
 \ProseParagraph
 \AllApply

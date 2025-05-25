@@ -505,6 +505,8 @@ declaring
 deconstruct
 deconstructing
 deconstructs
+decremented
+decrementing
 decrements
 dedicated
 deduced
@@ -965,6 +967,8 @@ incomplete
 incorrect
 incorrectly
 increasing
+incremented
+incrementing
 increments
 indeed
 independence
@@ -1817,6 +1821,7 @@ specify
 specifying
 split
 splitting
+stack
 stand
 standard
 stands
@@ -2043,6 +2048,7 @@ typographical
 unable
 unambiguous
 unary
+unbound
 unbounded
 uncaught
 unchanging
