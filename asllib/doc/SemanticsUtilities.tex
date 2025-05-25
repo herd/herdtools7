@@ -12,7 +12,6 @@ This chapter defines the following helper relations for operating on \nativevalu
   \item \SemanticsRuleRef{RemoveLocal};
   \item \SemanticsRuleRef{ReadIdentifier};
   \item \SemanticsRuleRef{WriteIdentifier};
-  \item \SemanticsRuleRef{CreateBitvector};
   \item \SemanticsRuleRef{ConcatBitvectors};
   \item \SemanticsRuleRef{ReadFromBitvector};
   \item \SemanticsRuleRef{WriteToBitvector};
@@ -32,6 +31,11 @@ The function
 \getstacksize(\overname{\denv}{\dynamicenvs} \aslsep \overname{\name}{\identifier}) \aslto \overname{\vs}{\N}
 \]
 retrieves the value associated with $\name$ in $\denv.\stacksize$ or $0$ if no value is associated with it.
+
+\ExampleDef{Retrieving the Stack Size}
+In \listingref{CheckRecurseLimit}, the stack size upon the call to \verb|factorial| from \verb|main|
+with the environment $\env_0 \eqdef (\tenv_0, \denv_0)$ is $0$.
+That is, $\getstacksize(\denv_0, \factorial) \evalarrow 0$.
 
 \ProseParagraph
 define $\vs$ is $0$ if no value is associated with $\name$ in $\denv.\stacksize$ and the value bound to
@@ -55,6 +59,14 @@ The function
 \]
 updates the value bound to $\name$ in $\genv.\storage$ to $\vv$, yielding the new global dynamic environment $\newgenv$.
 
+\ExampleDef{Setting the Stack Size}
+In \listingref{CheckRecurseLimit}, the stack size upon the call to \verb|factorial| from \verb|main|
+with the environment $\env_0 \eqdef (\tenv_0, \denv_0)$ is $0$, and it is then set to $1$.
+That is, \\
+$\setstacksize(\denv_0, \factorial, 1) \evalarrow \denv_1$
+and\\
+$\getstacksize(\denv_1, \factorial) \evalarrow 1$.
+
 \ProseParagraph
 define $\newdenv$ as $\genv$ updated to bind $\name$ to $\vv$ in $\genv.\stacksize$.
 
@@ -74,6 +86,14 @@ The function
 \]
 increments the value associated with $\name$ in $\genv.\stacksize$, yielding the updated global dynamic environment $\newgenv$.
 
+\ExampleDef{Incrementing the Stack Size}
+In \listingref{CheckRecurseLimit}, the stack size upon the call to \verb|factorial| from \verb|main|
+with the environment $\env_0 \eqdef (\tenv_0, \denv_0)$ is $0$, and it is incremented to $1$.
+That is, \\
+$\incrstacksize(\denv_0, \factorial) \evalarrow \denv_1$
+and\\
+$\getstacksize(\denv_1, \factorial) \evalarrow 1$.
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -84,7 +104,7 @@ increments the value associated with $\name$ in $\genv.\stacksize$, yielding the
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \getstacksize((\genv, \emptyfunc)v, \name) \evalarrow \vprev\\
+  \getstacksize((\genv, \emptyfunc), \name) \evalarrow \vprev\\
   \setstacksize(\genv, \name, \vprev + 1) \evalarrow \newgenv
 }{
   \incrstacksize(\genv, \name) \evalarrow \newgenv
@@ -100,6 +120,14 @@ The function
 \]
 decrements the value associated with $\name$ in $\genv.\stacksize$, yielding the updated global dynamic environment $\newgenv$.
 It is assumed that $\getstacksize((\genv, \emptyfunc), \name)$ yields a positive value.
+
+\ExampleDef{Decrementing the Stack Size}
+In \listingref{CheckRecurseLimit}, the stack size upon returning from \verb|main| to \verb|factorial|
+with the environment $\env_1 \eqdef (\tenv_1, \denv_1)$ is $1$, and it is decremented to $0$.
+That is, \\
+$\decrstacksize(\denv_1, \factorial) \evalarrow \denv_0$
+and\\
+$\getstacksize(\denv_0, \factorial) \evalarrow 0$.
 
 \ProseParagraph
 \AllApply
@@ -128,6 +156,20 @@ The relation
 removes the binding of the identifier $\name$ from the local storage of the environment $\env$,
 yielding the environment $\newenv$.
 
+\ExampleDef{Removing Local Storage Elements from Dynamic Environments}
+In \listingref{RemoveLocal}, the local storage element \verb|i| is removed after the (only) \forstatementterm,
+and the local storage element \verb|exn| is removed after the (only) \trystatementterm.
+
+\ASLListing{Removing local storage elements from dynamic environments}{RemoveLocal}{\semanticstests/SemanticsRule.RemoveLocal.asl}
+The output to the console is the following:
+% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.RemoveLocal.asl
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
+i=0
+i=11/2
+exn=TRUE
+\end{Verbatim}
+% CONSOLE_END
+
 \AllApply
 \begin{itemize}
   \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
@@ -155,16 +197,28 @@ The relation
 \[
   \readidentifier(\overname{\Identifiers}{\name}\aslsep\overname{\vals}{\vv}) \;\aslrel\; \XGraphs
 \]
-reads a value $\vv$ into a storage element given by an identifier $\name$.
+creates an \executiongraph{} that represents the reading of the value $\vv$ into a storage element
+given by the identifier $\name$.
 The result is an execution graph containing a single Read Effect,
 which denotes reading from $\name$.
+%
+The value $\vv$ is ignored, as execution graphs do not contain values.
+
+\ExampleDef{The Effect of Reading from an Identifier}
+In \listingref{ReadIdentifier}, the first iteration of the (only) \forstatementterm{}
+generates (see \SemanticsRuleRef{EvalFor}) the following transition at the first iteration:
+\[
+\readidentifier(\vi, \nvint(0)) \evalarrow \ReadEffect(\vi) \enspace.
+\]
+
+\ASLListing{A simple for loop}{ReadIdentifier}{\semanticstests/SemanticsRule.ReadIdentifier.asl}
 
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule{}
-  {
-    \readidentifier(\name, \vv) \evalarrow \ReadEffect(\name)
-  }
+\inferrule{}
+{
+  \readidentifier(\name, \vv) \evalarrow \ReadEffect(\name)
+}
 \end{mathpar}
 
 \SemanticsRuleDef{WriteIdentifier}
@@ -174,33 +228,27 @@ The relation
 \[
   \writeidentifier(\overname{\Identifiers}{\name}\aslsep\overname{\vals}{\vv}) \;\aslrel\; \XGraphs
 \]
-writes the value $\vv$ into a storage element given by an identifier $\name$.
+creates an \executiongraph{} that represents the writing of the value $\vv$ into
+the storage element given by an identifier $\name$.
 The result is an execution graph containing a single Write Effect,
 which denotes writing into $\name$.
+%
+The value $\vv$ is ignored, as execution graphs do not contain values.
 
-\FormallyParagraph
-\begin{mathpar}
-  \inferrule{}
-  {
-    \writeidentifier(\name, \vv) \evalarrow \WriteEffect(\name)
-  }
-\end{mathpar}
-
-\SemanticsRuleDef{CreateBitvector}
-\ProseParagraph
-\hypertarget{def-createbitvector}{}
-The relation
+\ExampleDef{The Effect of Writing to an Identifier}
+In \listingref{ReadIdentifier}, the first iteration of the (only) \forstatementterm{}
+generates (see \SemanticsRuleRef{EvalFor}) the following transition at the first iteration,
+as the value of the index variable $\vi$ is incremented from $\nvint(0)$ to $\nvint(1)$:
 \[
-  \createbitvector(\overname{\vals^*}{\vvs}) \;\aslrel\; \tbitvector
+\writeidentifier(\vi, \nvint(1)) \evalarrow \WriteEffect(\vi) \enspace.
 \]
-creates a native vector value bitvector from a sequence of values $\vvs$.
 
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule{}
-  {
-    \createbitvector(\vvs) \evalarrow \nvbitvector{\vvs}
-  }
+\inferrule{}
+{
+  \writeidentifier(\name, \vv) \evalarrow \WriteEffect(\name)
+}
 \end{mathpar}
 
 \SemanticsRuleDef{ConcatBitvectors}
@@ -211,6 +259,11 @@ The relation
 \]
 transforms a (possibly empty) list of bitvector \nativevalues\ $\vvs$ into a single bitvector
 $\newvs$.
+
+\ExampleDef{Concatenating Bitvectors}
+The specification in \listingref{ConcatBitvectors} shows examples of concatenating
+the \bitvectortypeterm{} fields of a \collectiontypeterm{} and of a \recordtypeterm.
+\ASLListing{Concatenating bitvectors}{ConcatBitvectors}{\semanticstests/SemanticsRule.ConcatBitvectors.asl}
 
 \ProseParagraph
 \OneApplies
@@ -257,98 +310,62 @@ Define $\newvs$ as the concatenation of bitvectors listed in $\vvs$.
 \hypertarget{def-slicestopositions}{}
 The relation
 \[
-  \slicestopositions(\overname{\N}{\vn} \aslsep \overname{(\overname{\tint}{\vs_i}\times\overname{\tint}{\vl_i})^+}{\slices}) \;\aslrel\;
-  (\overname{\N^*}{\positions} \cup\ \TDynError)
+  \slicestopositions(\overname{(\overname{\tint}{\vs_i}\times\overname{\tint}{\vl_i})^+}{\slices}) \;\aslrel\;
+  (\overname{\N^*}{\positions} \cup\ \overname{\TDynError}{\BadIndex})
 \]
-returns the list of positions (indices) specified by the slices $\slices$
-and the bitvector width $\vn$, if all slices are within the range $0$ to $\vn-1$.
+returns the list of positions (indices) specified by the slices $\slices$,
+if all slices are consist of only non-negative integers.
 \ProseOtherwiseDynamicError
 
-\hypertarget{def-positioninrange}{}
-The helper predicate $\positioninrange(\vs, \vl, n)$ checks whether the indices starting at index $\vs$ and
-up to $\vs + \vl$, inclusive, would refer to actual indices of a bitvector of length $n$:
-\[
-  \positioninrange(\vs, \vl, \vn) \triangleq (\vs \geq 0) \land (\vl \geq 0) \land (\vs + \vl < \vn) \enspace.
-\]
+\ExampleDef{Converting Slices to Lists of Indices}
+In \listingref{SlicesToPositions}, the slices \verb|1+:3, 7:5|
+are converted into the list of position $3, 2, 1, 7, 6, 5$.
+\ASLListing{Converting slices to lists of indices}{SlicesToPositions}{\semanticstests/SemanticsRule.SlicesToPositions.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $slices$ is the list of pairs $(\vs_i, \vl_i)$, for $i=1..k$;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{InRange}
-    \begin{itemize}
-      \item the predicate $\positioninrange$ holds for $\vn$ and every $\vs_i$, $\vl_i$,
-            for every $i=1..k$;
-      \item \Proseeqdef{$\positions$}{the concatenation of lists starting from $\vs_i$ up to and
-            including $\vs_i+vl_i$, for every $i=1..k$}.
-    \end{itemize}
+The specification in \listingref{SlicesToPositions-bad} terminates with a \dynamicerrorterm,
+since the slice \verb|from+:6| evaluates to $(\nvint(-1), \nvint(6))$ and the starting position $-1$
+is illegal for a slice.
+\ASLListing{An illegal slice}{SlicesToPositions-bad}{\semanticstests/SemanticsRule.SlicesToPositions.bad.asl}
 
-    \item \AllApplyCase{OutOfRange}
-    \begin{itemize}
-      \item there exists $j\in 1..k$ such that
-            $\positioninrange$ does not hold for $\vn$ and $\vs_j$, $\vl_j$;
-      \item the result is a dynamic error ($\BadIndex$).
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[InRange]{
-  \slices \eqname [i=1..k: (\nvint(\vs_i), \nvint(\vl_i))]\\
-  i=1..k: \positioninrange(\vs_i, \vl_i, \vn)\\
-  \positions \eqdef [\vs_1,\ldots,\vs_1+\vl_1] \concat \ldots \concat [\vs_k,\ldots,\vs_k+\vl_k]\\
-}{
-  \slicestopositions(\vn, \slices) \evalarrow \positions
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[OutOfRange]{
-  \slices \eqname [i=1..k: (\nvint(\vs_i), \nvint(\vl_i))]\\
-  j \in 1..k: \neg\positioninrange(\vs_j, \vl_j, \vn)
-}{
-  \slicestopositions(\vn, \slices) \evalarrow \DynamicErrorVal{\BadIndex}
-}
-\end{mathpar}
-
-\SemanticsRuleDef{AsBitvector}
-\hypertarget{def-asbitvector}{}
-The function
-\[
-\asbitvector : (\overname{\tbitvector\cup\tint}{\vv}) \rightarrow \overname{\{0,1\}^*}{\vbits}
-\]
-transforms a \nativevalue{} $\vv$, which either represents an integer or a bitvectors into
-a sequence of binary values $\vbits$.
+% Transliteration note: there are two slices_to_positions functions:
+% the one in Native.ml, which calls the one in ASTUtils.ml.
+% This rule transliterates the version in Native.ml, inlining the version
+% in ASTUtils.ml.
 
 \ProseParagraph
 \OneApplies
 \begin{itemize}
-  \item \AllApplyCase{bits}
+  \item \AllApplyCase{empty}
   \begin{itemize}
-    \item $\vv$ is a native bitvector for the sequence of bits $\vbits$.
+    \item $\slices$ is empty;
+    \item \Proseeqdef{$\positions$}{the empty list}.
   \end{itemize}
 
-  \item \AllApplyCase{int}
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
-    \item $\vv$ is a native integer for the integer $n$;
-    \item \Proseeqdef{$\vbits$}{the two's complement representation of $n$}.
+    \item $\slices$ is the \Proselist{the range starting at $\vs$ of length $\vl$}{$\slicestwo$};
+    \item checking that both $\vs$ and $\vl$ are non-negative yields $\True$\ProseTerminateAs{\BadIndex};
+    \item \Proseeqdef{$\positionsone$}{the range of indices starting at $\vs + \vl - 1$ and going down to $\vs$};
+    \item applying $\slicestopositions$ to $\slicestwo$ yields $\positionstwo$\ProseOrError;
+    \item \Proseeqdef{$\positions$}{the concatenation of $\slicesone$ and $\slicestwo$}.
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[bits]{}
-{
-  \asbitvector(\overname{\nvbitvector(\bv)}{\vv}) \evalarrow \overname{\bv}{\vbits}
+\inferrule[empty]{}{
+  \slicestopositions(\overname{\emptylist}{\slices}) \evalarrow \overname{\emptylist}{\positions}
 }
-\and
-\inferrule[int]{
-  \vbits \eqdef \text{ two's complement representation of }n
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty]{
+  \checktrans{\vs \geq 0 \land \vl \geq 0}{\BadIndex} \checktransarrow \DynErrorConfig\\
+  \positionsone \eqdef (\vs + \vl - 1)..\vs\\
+  \slicestopositions(\slicestwo) \evalarrow \positionstwo \OrDynError
 }{
-  \asbitvector(\overname{\nvint(n)}{\vv}) \evalarrow \bv
+  \slicestopositions(\overname{[(\nvint(\vs), \nvint(\vl))] \concat \slicestwo}{\slices}) \evalarrow
+  \overname{\positionsone \concat \positionstwo}{\positions}
 }
 \end{mathpar}
 
@@ -356,8 +373,8 @@ a sequence of binary values $\vbits$.
 \hypertarget{def-readfrombitvector}{}
 The relation
 \[
-  \readfrombitvector(\overname{\tbitvector}{\bv} \aslsep \overname{(\tint\times\tint)^*}{\slices}) \;\aslrel\;
-  \overname{\tbitvector}{\vv} \cup \overname{\TDynError}{\DynErrorConfig}
+  \readfrombitvector(\overname{\Nvalue}{\vv} \aslsep \overname{(\tint\times\tint)^*}{\slices}) \;\aslrel\;
+  \overname{\tbitvector}{\vnew} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 reads from a bitvector $\bv$, or an integer seen as a bitvector, the indices specified by the list of slices $\slices$,
 thereby concatenating their values.
@@ -369,41 +386,82 @@ from all of the given slices.
 Also notice that bitvector bits are numbered from 1 and onwards, which is why we add 1 to the indices specified
 by the slices when accessing a bit.
 
+\ExampleDef{Reading From a Bitvector}
+The specification in \listingref{ReadFromBitvector} shows examples of reading slices from a bitvector
+and reading slices from an integer (first converted to a bitvector), followed by the output to the console.
+
+\ASLListing{Reading from a bitvector}{ReadFromBitvector}{\semanticstests/SemanticsRule.ReadFromBitvector.asl}
+% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.ReadFromBitvector.asl
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
+empty_bv_slice = 0x, empty_i_slice = 0x
+slice_bv = 0x9c5, slice_i = 0x9c5
+\end{Verbatim}
+% CONSOLE_END
+
+\ExampleDef{Conversion of Integers to Bitvectors}
+The specification in \listingref{AsBitvector} shows an example of converting a negative
+integer into a bitvector, followed by the output to the console.
+
+\ASLListing{Converting a signed integer into a bitvector}{AsBitvector}{\semanticstests/SemanticsRule.AsBitvector.asl}
+% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.AsBitvector.asl
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
+bv = 0xfdf0, bv_i = 0xfdf0
+\end{Verbatim}
+% CONSOLE_END
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
-  \item \AllApplyCase{empty}
+  \item \AllApplyCase{bitvector}
   \begin{itemize}
-    \item $\slices$ is the empty list;
-    \item \Proseeqdef{$\vv$}{the native bitvector for the empty list of bits}.
+    \item $\vv$ is a native bitvector for the list of bits $\bv$;
+    \item applying $\slicestopositions$ to $\slices$ yields the list $\positions$\ProseOrError;
+    \item \Proseeqdef{$\maxpos$}{the maximal index in $\positions$};
+    \item let $\bits$ be the sequence of bits $\bv[n] ... \bv[1]$;
+    \item checking that $\maxpos$ is less than $n$ yields $\True$\ProseTerminateAs{\BadIndex};
+    \item \Proseeqdef{$\newbits$}{the list of bits $\bits[j]$ for every \Proselistrange{$j$}{$\bits$}};
+    \item \Proseeqdef{$\vv$}{the native bitvector for the list of bits $\newbits$}.
   \end{itemize}
 
-  \item \AllApplyCase{non\_empty}
+  \item \AllApplyCase{integer}
   \begin{itemize}
-    \item $\slices$ is not the empty list;
-    \item applying $\asbitvector$ to $\bv$ yields the list of bits $\vb_n \ldots \vb_1$;
-    \item applying $\slicestopositions$ to $n$ and $\slices$ yields the list of positions $j_{1..m}$
-    \item \Proseeqdef{$\vv$}{the native bitvector for the list of bits from $\vb_n \ldots \vb_1$
-          indicated by the positions $j_{1..m}$, that is, $\vb_{j_m + 1}\ldots\vb_{j_1 + 1}$}.
+    \item $\vv$ is a native integer for the integer $\vi$;
+    \item applying $\slicestopositions$ to $\slices$ yields the list $\positions$\ProseOrError;
+    \item \Proseeqdef{$\maxpos$}{the maximal index in $\positions$};
+    \item \Proseeqdef{$\bits$}{$\vi$  given as two's complement little endian form of $\maxpos + 1$ bits};
+    \item checking that $\maxpos$ is less than $n$ yields $\True$\ProseTerminateAs{\BadIndex};
+    \item \Proseeqdef{$\newbits$}{the list of bits $\bits[j]$ for every \Proselistrange{$j$}{$\bits$}};
+    \item \Proseeqdef{$\vv$}{the native bitvector for the list of bits $\newbits$}.
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[empty]{}
-{
-  \readfrombitvector(\bv, \overname{\emptylist}{\slices}) \evalarrow \overname{\nvbitvector(\emptylist)}{\vv}
+\inferrule[bitvector]{
+  \slicestopositions(\slices) \evalarrow \positions \OrDynError\\\\
+  \maxpos \eqdef \max(\ \{ \vj\in\listrange(\positions) : \positions[\vj] \}\ )\\\\
+  \commonprefixline\\\\
+  \bits \eqname \bv[n] ... \bv[1]\\
+  \checktrans{\maxpos < n}{\BadIndex} \checktransarrow \OrDynError\\\\
+  \commonsuffixline\\\\
+  % The following premise is essentially Bitvector.extract_slice
+  \newbits \eqdef [\ \vj \in \listrange(\positions): \bits[\vj]\ ]
+}{
+  \readfrombitvector(\overname{\nvbitvector(\bv)}{\vv}, \slices) \evalarrow \overname{\nvbitvector(\newbits)}{\newv}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[non\_empty]{
-  \slices \neq \emptylist;
-  \asbitvector(\bv) \eqdef \vb_n \ldots \vb_1\\
-  \slicestopositions(n, \slices) \evalarrow [j_{1..m}] \OrDynError\\\\
-  \vv \eqdef \nvbitvector(\vb_{j_m + 1}\ldots\vb_{j_1 + 1})
+\inferrule[integer]{
+  \slicestopositions(\slices) \evalarrow \positions \OrDynError\\\\
+  \maxpos \eqdef \max(\ \{ \vj\in\listrange(\positions) : \positions[\vj] \}\ )\\\\
+  \commonprefixline\\\\
+  \bits \eqdef \vi\text{ given as two's complement little endian form of }(\maxpos + 1)\text{ bits}\\
+  \commonsuffixline\\\\
+  % The following premise is essentially Bitvector.extract_slice
+  \newbits \eqdef [\ \vj \in \listrange(\positions): \bits[\vj]\ ]
 }{
-  \readfrombitvector(\bv, \slices) \evalarrow \vv
+  \readfrombitvector(\overname{\nvint(\vi)}{\vv}, \slices) \evalarrow \overname{\nvbitvector(\newbits)}{\newv}
 }
 \end{mathpar}
 
@@ -423,9 +481,9 @@ See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobi
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item applying $\asbitvector$ to $\src$ yields the list of bits $\vs_m \ldots \vs_0$;
-  \item applying $\asbitvector$ to $\dst$ yields the list of bits $\vd_n \ldots \vd_0$;
-  \item applying $\slicestopositions$ to $n$ and $\slices$ yields the list of indices $\positions$;
+  \item $\src$ is a native bitvector consisting of bits $\vs_m \ldots \vs_0$;
+  \item $\dst$ is a native bitvector consisting of bits $\vd_n \ldots \vd_0$;
+  \item applying $\slicestopositions$ to $\slices$ yields the list of indices $\positions$;
   \item view $\positions$ as the list $I_m \ldots I_0$;
   \item define the function $\bitfunc$ as mapping an index $i$ in $0$ to $n$ to
         $\vs_j$, if there exists an index $I_j$ in $\positions$ such that $I_j$ is equal to $i$,
@@ -438,9 +496,9 @@ See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobi
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \vs_m \ldots \vs_0 \eqdef \asbitvector(\src)\\
-  \vd_n \ldots \vd_0 \eqdef \asbitvector(\dst)\\
-  \slicestopositions(n, \slices) \evalarrow \positions \OrDynError\\\\
+  \src \eqname \nvbitvector(\vs_m \ldots \vs_0)\\
+  \dst \eqname \nvbitvector(\vd_n \ldots \vd_0)\\
+  \slicestopositions(\slices) \evalarrow \positions \OrDynError\\\\
   \positions \eqname I_m \ldots I_0 \\
   {\bitfunc = \lambda i \in 0..n.\left\{ \begin{array}{ll}
     \vs_j & \exists j\in 1..m.\ i = I_j\\
@@ -456,8 +514,8 @@ See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobi
 In reference to \listingref{semantics-leslice}, we have the following application of the current rule:
 \begin{mathpar} % SUPPRESS_TEXTTT_LINTER
 \inferrule{
-  \asbitvector(\nvbitvector(000000)) = \overname{0}{\vs_5}\overname{0}{\vs_4}\overname{0}{\vs_3}\overname{0}{\vs_2}\overname{0}{\vs_1}\overname{0}{\vs_0}\\
-  \asbitvector(\nvbitvector(11111111)) = \overname{1}{\vd_7}\overname{1}{\vd_6}\overname{1}{\vd_5}\overname{1}{\vd_4}\overname{1}{\vd_3}\overname{1}{\vd_2}\overname{1}{\vd_1}\overname{1}{\vd_0}\\
+  \src = \overname{0}{\vs_5}\overname{0}{\vs_4}\overname{0}{\vs_3}\overname{0}{\vs_2}\overname{0}{\vs_1}\overname{0}{\vs_0}\\
+  \dst = \overname{1}{\vd_7}\overname{1}{\vd_6}\overname{1}{\vd_5}\overname{1}{\vd_4}\overname{1}{\vd_3}\overname{1}{\vd_2}\overname{1}{\vd_1}\overname{1}{\vd_0}\\
   \slicestopositions(8, [\overname{(0, 4)}{\texttt{3:0}}, \overname{(6, 2)}{\texttt{7:6}}]) \evalarrow
   [3, 2, 1, 0, 7, 6]\\
   \positions \eqdef [\overname{3}{I_5}, \overname{2}{I_4}, \overname{1}{I_3}, \overname{0}{I_2}, \overname{7}{I_1}, \overname{6}{I_0}]\\
@@ -471,8 +529,8 @@ In reference to \listingref{semantics-leslice}, we have the following applicatio
   \begin{array}{r}
     \writetobitvector(
       [\overname{(0, 4)}{\texttt{3:0}}, \overname{(6, 2)}{\texttt{7:6}}],
-      \nvbitvector(000000),
-      \nvbitvector(11111111)) \evalarrow\\
+      \overname{\nvbitvector(000000)}{\src},
+      \overname{\nvbitvector(11111111)}{\dst}) \evalarrow\\
     \nvbitvector(
       \overname{0}{\vs_1}
       \overname{0}{\vs_0}
@@ -496,16 +554,29 @@ The relation
 \]
 reads the value $\vv_i$ from the vector of values $\vvec$ at the index $\vi$.
 
+\ExampleDef{Reading a Vector at an Index}
+The specification in \listingref{GetIndex} shows examples of accessing indices of native vectors:
+\begin{itemize}
+  \item evaluating \verb|assert arr[[3]] == 3| involves \\
+        $\getindex(3, \nvvector{\nvint(0), \nvint(3), \nvint(0)}) \evalarrow \nvint(3)$;
+  \item evaluating \verb|assert (5, 7).item0 == 5| involves \\
+        $\getindex(0, \nvvector{\nvint(5), \nvint(7)}) \evalarrow \nvint(5)$;
+  \item evaluating \verb|(5, 7) as (integer, integer)| involves \\
+        $\getindex(0, \nvvector{\nvint(5), \nvint(7)}) \evalarrow \nvint(5)$ and\\
+        $\getindex(1, \nvvector{\nvint(5), \nvint(7)}) \evalarrow \nvint(7)$ to check the asserting type conversion.
+\end{itemize}
+\ASLListing{Reading a vector at an index}{GetIndex}{\semanticstests/SemanticsRule.GetIndex.asl}
+
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule{
-    \vvec \eqname \vv_{0..k}\\
-    \vi \leq k\\
-  }
-  {
-    \getindex(\vi, \vvec) \evalarrow \vv_{\vi}
-  }
+\inferrule{
+  \vvec \eqname \vv_{0..k}\\
+  \vi \leq k\\
+}{
+  \getindex(\vi, \vvec) \evalarrow \vv_{\vi}
+}
 \end{mathpar}
+
 Notice that there is no rule to handle the case where the index is out of range ---
 this is guaranteed by the typechecker not to happen. Specifically,
 \begin{itemize}
@@ -526,18 +597,27 @@ The relation
 \]
 overwrites the value at the given index $\vi$ in a vector of values $\vvec$ with the new value $\vv$.
 
+\ExampleDef{Writing a Vector at an Index}
+In \listingref{GetIndex}, evaluating the statement \verb|arr[[1]] = 3;|
+involves
+\[
+\begin{array}{r}
+\setindex(1, \nvint(3), \nvvector{\nvint(0), \nvint(0), \nvint(0)}) \evalarrow\\
+\nvvector{\nvint(0), \nvint(3), \nvint(0)} \enspace.
+\end{array}
+\]
+
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule{
-    \vvec \eqname \vu_{0..k}\\
-    \vi \leq k\\
-    \vres \eqname \vw_{0..k}\\
-    \vv \eqdef \vw_{\vi} \\
-    j \in \{0..k\} \setminus \{\vi\}.\ \vw_{j} = \vu_j\\
-  }
-  {
-    \setindex(\vi, \vv, \vvec) \evalarrow \vres
-  }
+\inferrule{
+  \vvec \eqname \vu_{0..k}\\
+  \vi \leq k\\
+  \vres \eqname \vw_{0..k}\\
+  \vv \eqdef \vw_{\vi} \\
+  j \in \{0..k\} \setminus \{\vi\}.\ \vw_{j} = \vu_j\\
+}{
+  \setindex(\vi, \vv, \vvec) \evalarrow \vres
+}
 \end{mathpar}
 Similar to $\getindex$, there is no need to handle the out-of-range index case.
 
@@ -550,14 +630,23 @@ The relation
 \]
 retrieves the value corresponding to the field name $\name$ from the record value $\record$.
 
+\ExampleDef{Reading a Record Field}
+In \listingref{GetField}, there are the following examples of reading a record field:
+\begin{itemize}
+  \item evaluating the expression \verb|color_to_int[[RED]]| involves\\
+        $\getfield(\RED, \nvrecord{\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(1), \BLUE\mapsto \nvint(2)}) \evalarrow \nvint(0)$;
+  \item evaluating the expression \verb|r.RED| involves\\
+        $\getfield(\RED, \nvrecord{\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(1), \BLUE\mapsto \nvint(2)}) \evalarrow \nvint(0)$.
+\end{itemize}
+\ASLListing{Reading a record field}{GetField}{\semanticstests/SemanticsRule.GetField.asl}
+
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule{
-    \record \eqname \nvrecord{\fieldmap}
-  }
-  {
-    \getfield(\name, \record) \evalarrow \fieldmap(\name)
-  }
+\inferrule{
+  \record \eqname \nvrecord{\fieldmap}
+}{
+  \getfield(\name, \record) \evalarrow \fieldmap(\name)
+}
 \end{mathpar}
 The typechecker ensures, via \TypingRuleRef{EGetRecordField}, that the field $\name$ exists in $\record$.
 
@@ -570,15 +659,45 @@ The function
 \]
 overwrites the value corresponding to the field name $\name$ in the record value $\record$ with the value $\vv$.
 
+\ExampleDef{Writing to a Record Field}
+In \listingref{GetField}, there are the following examples of writing to a record field:
+\begin{itemize}
+  \item evaluating the statement \verb|color_to_int[[GREEN]] = 1;| involves\\
+        $
+        \begin{array}{r}
+        \setfield\left(
+          \begin{array}{l}
+          \GREEN, \\
+          \nvint(1),\\
+          \nvrecord{\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(0), \BLUE\mapsto \nvint(0)}
+          \end{array}
+          \right) \evalarrow\\
+        \nvrecord{\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(1), \BLUE\mapsto \nvint(0)} \enspace;
+        \end{array}
+        $
+  \item evaluating the statement \verb|r.BLUE = -1;| involves\\
+        $
+        \begin{array}{r}
+        \setfield\left(
+          \begin{array}{l}
+          \BLUE, \\
+          \nvint(-1),\\
+          \nvrecord{\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(1), \BLUE\mapsto \nvint(2)}
+          \end{array}
+          \right) \evalarrow\\
+        \nvrecord{\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(1), \BLUE\mapsto \nvint(-1)} \enspace.
+        \end{array}
+        $
+\end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule{
-    \record \eqname \nvrecord{\fieldmap}\\
-    \fieldmapp \eqdef \fieldmap[\name\mapsto\vv]
-  }
-  {
-    \setfield(\name, \vv, \record) \evalarrow \nvrecord{\fieldmapp}
-  }
+\inferrule{
+  \record \eqname \nvrecord{\fieldmap}\\
+  \fieldmapp \eqdef \fieldmap[\name\mapsto\vv]
+}{
+  \setfield(\name, \vv, \record) \evalarrow \nvrecord{\fieldmapp}
+}
 \end{mathpar}
 The typechecker ensures that the field $\name$ exists in $\record$.
 
@@ -593,6 +712,11 @@ The relation
 associates $\vv$ to $\name$ as a local storage element in the environment $\env$ and
 returns the updated environment $\newenv$ with the execution graph consisting of a Write Effect to $\name$.
 
+\ExampleDef{Evaluating Local Declarations}
+In \listingref{semantics-levar}, evaluating \verb|var x: integer = 3;|
+binds \verb|x| to $\nvint(3)$ in the environment where \verb|x| is unbound
+as well as producing the \executiongraph{} $\WriteEffect(\vx)$.
+
 \FormallyParagraph
 \begin{mathpar}
   \inferrule{
@@ -604,7 +728,6 @@ returns the updated environment $\newenv$ with the execution graph consisting of
 \end{mathpar}
 
 \SemanticsRuleDef{DeclareLocalIdentifierM}
-\ProseParagraph
 \hypertarget{def-declarelocalidentifierm}{}
 The relation
 \[
@@ -617,6 +740,9 @@ declares the local identifier $\vx$ in the environment $\env$, in the context
 of the value-graph pair $(\vv, \vg)$, yielding a pair consisting
 of the environment $\newenv$ and \executiongraph{} $\newg$.
 
+See \ExampleRef{Evaluating Local Declarations}.
+
+\ProseParagraph
 \AllApply
 \begin{itemize}
   \item \newenv\ is the environment $\env$ modified to declare the variable $\vx$ as a local storage element;
@@ -638,7 +764,6 @@ of the environment $\newenv$ and \executiongraph{} $\newg$.
 \end{mathpar}
 
 \SemanticsRuleDef{DeclareLocalIdentifierMM}
-\ProseParagraph
 \hypertarget{def-declarelocalidentifermm}{}
 The relation
 \[
@@ -652,6 +777,9 @@ in the context of the value-graph pair $(\vv, \vg)$,
 yielding a pair consisting of an environment $\newenv$
 and an \executiongraph{} $\vgtwo$.
 
+See \ExampleRef{Evaluating Local Declarations}.
+
+\ProseParagraph
 \AllApply
 \begin{itemize}
   \item \newenv\ is the environment $\env$ modified to declare the variable $\vx$ as a local storage element;
