@@ -2033,7 +2033,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         *)
         let+ () =
           check_true (Types.is_named ty) (fun () ->
-              failwith "Type error: should be a named type")
+              fatal_from ~loc (Error.ExpectedNamedType ty))
         in
         best_effort (ty, e, SES.empty) @@ fun _ ->
         let field_types =

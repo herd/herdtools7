@@ -91,6 +91,7 @@ type error_desc =
       field2_absslices : string;
     }
   | ExpectedSingularType of ty
+  | ExpectedNamedType of ty
   | ConfigTimeBroken of expr * SideEffect.SES.t
   | ConstantTimeBroken of expr * SideEffect.SES.t
   | MultipleWrites of identifier
@@ -201,6 +202,7 @@ let error_label = function
   | UnexpectedPendingConstrained -> "UnexpectedPendingConstrained"
   | BitfieldsDontAlign _ -> "BitfieldsDontAlign"
   | ExpectedSingularType _ -> "ExpectedSingularType"
+  | ExpectedNamedType _ -> "ExpectedNamedType"
   | ConflictingSideEffects _ -> "ConflictingSideEffects"
   | ConfigTimeBroken _ -> "ConfigTimeBroken"
   | ConstantTimeBroken _ -> "ConstantTimeBroken"
@@ -546,6 +548,9 @@ module PPrint = struct
     | ExpectedSingularType t ->
         fprintf f "ASL Type error:@ %a@ %a." pp_print_text
           "expected singular type, found" pp_ty t
+    | ExpectedNamedType t ->
+        fprintf f "ASL Type error:@ %a@ %a." pp_print_text
+          "expected a named type, found" pp_ty t
     | UnexpectedPendingConstrained ->
         pp_print_text f
           "ASL Type error: a pending constrained integer is illegal here."
