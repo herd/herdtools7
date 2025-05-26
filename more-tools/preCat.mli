@@ -52,6 +52,7 @@ type t =
   | Arg of reduced * string list
 
 val pp_trees : out_channel -> t list -> unit
+val pp_tree : out_channel -> t -> unit
 
 type d = Def of tag * reduced * t list  * string list
 

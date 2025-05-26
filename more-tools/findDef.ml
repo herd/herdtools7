@@ -62,7 +62,7 @@ struct
           "BCC"; "po";
         ]
         StringMap.empty in
-    
+
     let map =
       StringSet.fold
         (fun name map ->
@@ -115,7 +115,7 @@ struct
     function
     | [] -> assert false
     | name::rem -> do_rec name rem
-           
+
   let dict_relations =
     let add_name map (name,def) =
       let old =
@@ -174,7 +174,7 @@ struct
     | None    -> false,ws
 
   let prefix_plus = [["there"]; ["is";"exists"]; ["a"]; ["chain"]; ["of"]; ]
-                    
+
   let check_plus ws =
     match check_prefix prefix_plus ws with
     | Some ws -> true,ws
@@ -191,6 +191,8 @@ struct
     if is_def then sprintf "anEffect%s"
     else Misc.identity
 
+  let is_reverse n = StringSet.mem n reverse
+
   let relation is_def tgt e1 e2 =
     let a1 = set_arg is_def e1
     and a2 = set_arg is_def e2 in
@@ -198,7 +200,7 @@ struct
       List.fold_left
         (fun (_,d as best) (name,body) ->
            let a1,a2 =
-             if StringSet.mem name reverse then a2,a1 else a1,a2 in
+             if is_reverse name then a2,a1 else a1,a2 in
            let s = Subst.subst body [| a1; a2; |]
            and s_rev = Subst.subst body [| a2; a1; |] in
            let d0 = distance tgt s
@@ -208,13 +210,13 @@ struct
            else
              if d0_rev < d then (PreCat.Inverse name,s_rev),d0_rev else best)
         ((PreCat.Name "coucou",""),100) dict_relations in
-    if O.verbose > 0 && d > 1 then
+    if true || O.verbose > 0 && d > 1 then
       eprintf "Approx[%d]: '%s' as '%s'\n%!" d tgt body ;
     let args =
       let open PreCat in
       match name with
-      | Name _ -> [| e1; e2; |]
-      | Inverse _ -> [| e2; e1; |]
+      | Name n -> if is_reverse n then [| e2; e1; |] else [| e1; e2; |]
+      | Inverse n -> if is_reverse n then [| e1; e2; |] else [| e2; e1; |]
       | _ -> assert false in
     name,args
 
@@ -285,14 +287,14 @@ struct
       | []  ->
           Warn.fatal
             "Not a definition: {%s}"
-            (String.concat "," ws0)              
+            (String.concat "," ws0)
       | "if"::("all"|"one")::"of"::_ -> []
       | w::ws -> w::find_rec ws in
     find_rec ws0
 
-  let from_csname (name,es) = PreCat.map_name from_csname name,es  
+  let from_csname (name,es) = PreCat.map_name from_csname name,es
 
   let find ws = do_find false ws |> from_csname
   and find_def ws = do_find true @@ remove_def_suffix ws |> from_csname
-    
+
 end
