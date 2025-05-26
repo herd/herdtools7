@@ -101,6 +101,8 @@ and do_pp_trees i chan = List.iter (do_pp_tree i chan)
 
 let pp_trees chan = do_pp_trees "  "chan
 
+let pp_tree chan t= pp_trees chan [t]
+
 let pp_def chan = function
   | Def (tag,pp,args,_) ->
       fprintf chan "<%s>%a\n" (pp_tag tag) pp_reduced pp ;
