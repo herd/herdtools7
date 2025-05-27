@@ -15,12 +15,14 @@
 %token SAME DIFFERENT
 %token ADDR DATA CTR
 
+%token EOF
+
 %start main
 %type <Edge.edge> main
 
 %%
 main:
-    edge { $1 }
+    edge EOF { $1 }
 ;
 edge:
     | RF ie { Edge.Rf $2 }

@@ -43,7 +43,7 @@ let pp_direction = function
 
 let pp_int_ext = function
   Internal -> "i" | External -> "e"
-  
+
 let pp_sd = function
   Same -> "s" | Different -> "d"
 

@@ -1,3 +1,13 @@
+(** Print something if verbose *)
+let verbose_print string =
+  if !Config.verbose then output_string stderr string
+
+
+(** Removes element from the option monad, raises Not_found if appropriate *)
+let unsome = function
+  None -> raise Not_found
+  | Some v -> v
+
 (** Returns the last element of a list *)
 let rec list_last =
   function

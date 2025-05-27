@@ -3,16 +3,31 @@ open Edge
 type loc = Loc of int
 type proc = Proc of int
 
+(* memory event *)
+type event = {
+  mutable direction: direction option;
+  mutable location: loc option;
+  mutable proc: proc option;
+  mutable value: int option;
+}
 
-exception FailedEmit of Edge.edge
+(* Circular double linked list of edges/events *)
+type cycle = {
+  edge: edge;
+  mutable next: cycle;
+  mutable prev: cycle;
+  source_event: event;
+}
 
 
-let new_loc =
+(* new_loc: assign a new location
+loc_count: get the current number of locations *)
+let new_loc, loc_count =
   let counter = ref 0 in
   let inner_new_loc () =
     let loc = Loc !counter in
     let () = incr counter in loc
-  in inner_new_loc
+  in inner_new_loc, (fun () -> !counter)
 
 let pp_location (Loc i) =
   if i < 3 then String.make 1 ((Char.code 'x')+i |> Char.chr)
@@ -20,65 +35,89 @@ let pp_location (Loc i) =
 
 let pp_proc (Proc i) = "P"^string_of_int i
 
+let pp_event evt =
+  "("^
+  (match evt.proc with Some p -> pp_proc p | None -> "*")^") "^
+  (match evt.direction with Some d -> pp_direction d | None -> "*")^
+  (match evt.location with Some l -> pp_location l | None -> "*")^" "^
+  (match evt.value with Some v -> string_of_int v | None -> "*")
+
+let pp_cycle cycle_start =
+  let rec pp_aux node =
+    pp_event node.source_event^" -"^pp_edge node.edge^"->\n"^
+    if node.next == cycle_start then "" else pp_aux node.next
+  in pp_aux cycle_start
+
+let create_cycle edges =
+  let empty_evt () = {direction=None; location=None; value=None; proc=None} in
+  let rec create_aux first_node previous = function
+    | [] -> first_node.prev <- previous; first_node
+    | edge::eq -> let rec l = {
+                    edge=edge;
+                    source_event=empty_evt ();
+                    prev=previous; next=l; (* l.next will soon be replaced *)
+                  } in l.next <- create_aux first_node l eq; l
+  in match edges with
+  [] -> failwith "No edges"
+  | e::q -> let rec l = {edge=e; source_event=empty_evt (); next=l; prev=l} in
+            l.next <- create_aux l l q; l (* l.prev is replaced in the recursive call *)
 
 
+(** Find the first node of the cycle satisfying a condition *)
+let find_first cycle_start condition =
+  let rec find_first_aux node =
+    if condition node then
+      node
+    else if node.next != cycle_start then
+      find_first_aux node.next
+    else
+      raise Not_found
+  in find_first_aux cycle_start
 
-(** Assign a direction to each node *)
- let assign_directions edges =
-  let unify_dir (d1, d2) =
-    (* TODO: we want to know which edges are used to pp a good error *)
-    if d1 <> d2 then failwith ("Can't unify edges direction "^Edge.pp_direction d1^" "^Edge.pp_direction d2)
-    else d1
+
+(** Assign its direction to each event of the cycle *)
+ let assign_directions cycle_start =
+  let rec assign_aux node =
+    let edge_dir1, _ = edge_direction node.edge in
+    let _, edge_dir2 = edge_direction node.prev.edge in
+    if edge_dir1 <> edge_dir2 then failwith (
+      "Unable to unify edge direction "^pp_edge node.prev.edge^
+      "-> ("^pp_direction edge_dir2^" <> "^pp_direction edge_dir1^") -"
+      ^pp_edge node.edge
+    );
+    node.source_event.direction <- Some edge_dir1;
+    if node.next != cycle_start then assign_aux node.next
+  in assign_aux cycle_start
+
+
+(** Assign a location to each event of the cycle *)
+let assign_locations cycle_start =
+  (* Find the first node after a different location *)
+  let first_location = new_loc () in
+  let first_node =
+    try (find_first cycle_start (fun n -> edge_location n.edge = Different)).next
+    with Not_found -> failwith "No location change in cycle"
   in
-  let rec unify_rec prev = function
-    | e::q -> let cur, next = edge_direction e in
-              unify_dir (cur, prev)::unify_rec next q
-    | [] -> []
 
-  in let loop_direction = unify_dir ((List.hd edges |> edge_direction |> fst), (Utils.list_last edges |> edge_direction |> snd))
-  in unify_rec loop_direction edges
+  let rec assign_aux node source_location =
+    node.source_event.location <- Some source_location;
+    if node.next != first_node then
+      let loc = if edge_location node.edge = Different then new_loc () else source_location
+      in assign_aux node.next loc
+    else begin
+      (* end of the cycle. We check that current edge location is Different, (as selected by find_first)
+        we check that source and target loc indeed differ *)
 
+      assert (edge_location node.edge = Different);
 
-(** Create a value for each node depending on some attribute of the edge *)
-let emit_node_values is_different_value new_value edges =
-  let first_val = new_value () in
-
-  (* Input:
-    - previous value
-    - remaining edges
-
-    Output:
-    - values list
-    - Option val: to propagate `first_val` from the back until we meet a "diff" edge *)
-  let rec unify prev = function
-    [e] -> begin match is_different_value e with
-                | false -> [first_val], Some first_val
-                | true ->  if first_val=prev then raise (FailedEmit e)
-                    else [first_val], None
-              end
-    | e::q -> begin match is_different_value e with
-                | false -> begin match unify prev q with
-                  | l, None -> prev::l, None
-                  | l, Some next -> next::l, Some next
-                end
-                | true -> let cur = new_value ()
-                  in begin match unify cur q with
-                    | l, None -> cur::l, None
-                    | l, Some next -> if next=prev then raise (FailedEmit e)
-                        else next::l, None
-                  end
-              end
-    | [] -> [], None
-  in unify first_val edges |> fst |> Utils.list_rot1
+      if (node.source_event.location = node.next.source_event.location) then
+        failwith ("Cannot get a changing location across "^pp_edge node.edge)
+    end
+  in assign_aux first_node first_location
 
 
-(** Assign a location to each node *)
-let emit_locations edges =
-  try emit_node_values (fun e -> edge_location e = Different) new_loc edges
-  with FailedEmit e -> failwith ("Cannot get a changing location across "^Edge.pp_edge e)
-
-(** Assign a proc. to each node *)
-let emit_procs edges =
+(** Assign a proc. to each event of the cycle *)
+let assign_procs cycle_start =
   let proc_count = ref 0 in
   let new_proc () =
     let p = Proc !proc_count
@@ -87,5 +126,66 @@ let emit_procs edges =
   in let is_external = function
     | Rf ie | Fr ie | Ws ie -> ie=External
     | _ -> false
-  in try emit_node_values is_external new_proc edges
-  with FailedEmit e -> failwith ("Cannot get a changing proc across "^Edge.pp_edge e)
+  in
+
+  let first_proc = new_proc () in
+  let first_node =
+    try (find_first cycle_start (fun n -> is_external n.edge)).next
+    with Not_found -> failwith "No location change in cycle"
+  in
+
+  let rec assign_aux node source_proc =
+    node.source_event.proc <- Some source_proc;
+    if node.next != first_node then
+      let proc = if is_external node.edge then new_proc () else source_proc
+      in assign_aux node.next proc
+    else begin
+      (* end of the cycle. We check that current edge is external, (as selected by find_first)
+        we check that source and target proc indeed differ *)
+
+      (* this is independent of program input and should always be verified *)
+      assert (is_external node.edge);
+
+      if (node.source_event.proc = node.next.source_event.proc) then
+        failwith ("Cannot get a changing proc across "^pp_edge node.edge)
+    end
+  in assign_aux first_node first_proc
+
+
+(** Assign a value to each event, incrementing at each write *)
+let assign_values cycle_start =
+  let first_node =
+    try find_first cycle_start (fun e -> e.source_event.location <> e.prev.source_event.location)
+    with Not_found -> failwith "No location change in cycle"
+  in
+  let rec assign_values_aux node value = (* Uses of a location always follow directly each other *)
+    let next_value = match node.source_event.direction with
+    | None -> failwith ("Direction not assigned on the source of edge "^pp_edge node.edge)
+    | Some (Wr|Wm) -> node.source_event.value <- Some (value+1); value+1
+    | Some (Rr|Rm) -> node.source_event.value <- Some value; value
+    in if node.next != first_node then begin
+      assign_values_aux node.next (
+        if edge_location node.edge = Different then 0 else next_value
+      )
+    end
+
+  in assign_values_aux first_node 0
+
+
+let make edges =
+  let cycle = create_cycle edges in
+  "EDGES\n"^(pp_cycle cycle)^"\n"|> Utils.verbose_print;
+
+  assign_directions cycle;
+  "DIRECTIONS\n"^(pp_cycle cycle)^"\n"|> Utils.verbose_print;
+
+  assign_locations cycle;
+  "LOCATIONS\n"^(pp_cycle cycle)^"\n"|> Utils.verbose_print;
+
+  assign_procs cycle;
+  "PROCS\n"^(pp_cycle cycle)^"\n"|> Utils.verbose_print;
+
+  assign_values cycle;
+  "READ/WRITE VALUES\n"^(pp_cycle cycle)^"\n"|> Utils.verbose_print;
+
+  cycle
