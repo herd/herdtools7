@@ -7,7 +7,7 @@ Explicit parameter tests:
   begin
     return Zeros{A * B + C};
   end;
-  ASL Typing error: incorrect parameter declaration for "Bad", expected
+  ASL Type error: incorrect parameter declaration for "Bad", expected
     {A, B, C, D, E} but {D, E, A, B, C} provided
   [1]
 
@@ -17,7 +17,7 @@ Explicit parameter tests:
   begin
     return 0;
   end;
-  ASL Typing error: incorrect parameter declaration for "BadUnused", expected
+  ASL Type error: incorrect parameter declaration for "BadUnused", expected 
     {} but {N} provided
   [1]
 
@@ -27,8 +27,8 @@ Explicit parameter tests:
   begin
     return Zeros{N};
   end;
-  ASL Typing error: incorrect parameter declaration for "BadUndeclared",
-    expected {N} but {} provided
+  ASL Type error: incorrect parameter declaration for "BadUndeclared", expected
+    {N} but {} provided
   [1]
 
   $ aslref duplicate-parameter.asl
@@ -37,7 +37,7 @@ Explicit parameter tests:
   begin
     return Zeros{N};
   end;
-  ASL Typing error: cannot declare already declared element "N".
+  ASL Type error: cannot declare already declared element "N".
   [1]
 
   $ aslref argument-omission.asl
@@ -64,5 +64,5 @@ Explicit parameter tests:
   begin
     return N + 1;
   end;
-  ASL Typing error: cannot declare already declared element "N".
+  ASL Type error: cannot declare already declared element "N".
   [1]

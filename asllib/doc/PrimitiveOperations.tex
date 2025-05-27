@@ -45,7 +45,7 @@ on \nativevalues\ via $\unoprel$ and $\binoprel$.
         \;|\; \overname{\XOR}{\texttt{"XOR"}} \;|\; \overname{\AND}{\texttt{"AND"}}
         & \\
         |\ & \overname{\MUL}{\texttt{"*"}} \;|\; \overname{\DIV}{\texttt{"DIV"}} \;|\; \overname{\DIVRM}{\texttt{"DIVRM"}}
-        \;|\; \overname{\MOD}{\texttt{"MOD"}} \;|\; \overname{\SHL}{\texttt{"<<"}}  \;|\; \overname{\SHR}{\texttt{">>"}}
+        \;|\; \overname{\MOD}{\texttt{"MOD"}} \;|\; \overname{\SHL}{\shiftleftlexeme}  \;|\; \overname{\SHR}{\shiftrightlexeme}
         & \\
         |\ & \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}} \;|\; \overname{\CONCAT}{\texttt{"::"}}
         &
@@ -1294,7 +1294,7 @@ and argument types of its operand literals:
 \subsubsection{Boolean Operators Over Boolean Values \label{sec:BooleanOverBoolean}}
 \begin{mathpar}
 \inferrule[and\_bool]{}{
-  \binopliterals(\overname{\BAND}{\op}, \overname{\lbool(a)}{\vvone}, \overname{\lbool(b)}{\vvtwo}) \typearrow \overname{\lbool(a \wedge b)}{\vr}
+  \binopliterals(\overname{\BAND}{\op}, \overname{\lbool(a)}{\vvone}, \overname{\lbool(b)}{\vvtwo}) \typearrow \overname{\lbool(a \land b)}{\vr}
 }
 \end{mathpar}
 

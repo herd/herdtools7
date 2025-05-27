@@ -23,7 +23,7 @@
   File printer2.asl, line 2, characters 16 to 24:
     print ("Wow", 2 + 3.14, "some other string");
                   ^^^^^^^^
-  ASL Typing error: Illegal application of operator + on types integer {2}
+  ASL Type error: Illegal application of operator + on types integer {2}
     and real.
   [1]
 
@@ -69,6 +69,6 @@
   File print4.asl, line 2, characters 11 to 17:
     println ((1, 2));
              ^^^^^^
-  ASL Typing error: expected singular type, found (integer {1}, integer {2}).
+  ASL Type error: expected singular type, found (integer {1}, integer {2}).
   [1]
 

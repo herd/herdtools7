@@ -16,21 +16,23 @@ cause an exception to be raised.
 \secref{ExampleInterpreter} shows how an interpreter detects \builderrorsterm{}
 and \typingerrorsterm{}.
 %
-\listingref{typing-error-reporting} shows a specification containing a typing error,
+\listingref{typing-error-reporting} shows a specification containing a \typingerrorterm,
 followed by an example of a report from \aslref{} in a \linuxbashshell.
 
-\ASLListing{A specification resulting in a typing error}{typing-error-reporting}{\definitiontests/TypingErrorReporting.asl}
+\ASLListing{A specification resulting in a type error}{typing-error-reporting}{\definitiontests/TypingErrorReporting.asl}
 % CONSOLE_BEGIN CONSOLE_STDERR aslref \definitiontests/TypingErrorReporting.asl
 \begin{Verbatim}[fontsize=\footnotesize, frame=single]
 File ../tests/ASLDefinition.t/TypingErrorReporting.asl, line 3,
   characters 11 to 22:
-ASL Typing error: Illegal application of operator + on types integer {5}
+    return 5 + "hello";
+           ^^^^^^^^^^^
+ASL Type error: Illegal application of operator + on types integer {5}
   and string.
 \end{Verbatim}
 % CONSOLE_END
 
 \RequirementDef{DynamicErrorBehavior} The behaviour of an implementation when a \dynamicerrorterm{}
-occurs is implementation defined, including, but not limited to,
+occurs is implementation-defined, including, but not limited to,
 (incorrect) behavior not following the dynamic semantics, termination of execution or raising an exception.
 %
 Implementations should detect and report \dynamicerrorsterm{} on a ``best effort'' basis
@@ -70,6 +72,8 @@ The report from \aslref{} in a \linuxbashshell{} is shown next:
 \begin{Verbatim}[fontsize=\footnotesize, frame=single]
 File ../tests/ASLDefinition.t/AssertionStatement.asl, line 5,
   characters 11 to 22:
+    assert a + b < 256;
+           ^^^^^^^^^^^
 ASL Execution error: Assertion failed: ((a + b) < 256).
 \end{Verbatim}
 % CONSOLE_END
@@ -87,6 +91,8 @@ The report from \aslref{} in a \linuxbashshell{} is shown next:
 diagnostic assertion failed: example message
 File ../tests/ASLDefinition.t/UnreachableStatement.asl, line 5,
   characters 8 to 22:
+        Unreachable();
+        ^^^^^^^^^^^^^^
 ASL Dynamic error: Unreachable reached.
 \end{Verbatim}
 % CONSOLE_END
@@ -111,7 +117,7 @@ ASL includes the following error kinds:
       \Builderrorsterm{} are always detected and reported.
       Their error codes, listed in \secref{BuildErrors}, are prefixed with \BuildErrorPrefix.
 
-    \item[Typing Errors] \hypertarget{def-typingerrorterm}{}
+    \item[Type Errors] \hypertarget{def-typingerrorterm}{}
       Detected and reported during typechecking.
       \Typingerrorsterm{} are always detected and reported, even if the part of the specification that causes them is never executed.
       Their error codes, listed in \secref{TypingErrors}, are prefixed with \TypeErrorPrefix.
@@ -201,7 +207,7 @@ The following table summarises all error codes.
     For example, the standard library defines a non-subprogram (\ASTRuleRef{SetBuiltin}).
 \end{description}
 
-\section{Typing Errors\label{sec:TypingErrors}}
+\section{Type Errors\label{sec:TypingErrors}}
 \begin{description}
 
 \hypertarget{def-undefinedidentifier}{}
@@ -302,11 +308,11 @@ The following table summarises all error codes.
     \item Bit slices that are \symbolicallyevaluable{} overlap on the left-hand side of an assignment (\TypingRuleRef{DisjointSlicesToPositions}).
       Note that if the overlapping slices are not \symbolicallyevaluable{}, then this is a \dynamicerrorterm{} ($\OverlappingSliceAssignment$).
     \item A slice expression has an empty list of slices (\TypingRuleRef{ESlice}).
-    \item Bitfield slices overlap in a bit vector type declaration \\
+    \item Bitfield slices overlap in a bitvector type declaration \\
       (\TypingRuleRef{DisjointSlicesToPositions}).
-    \item A bitfield slice in a bit vector type declaration is defined with its upper index less than its lower index (\TypingRuleRef{BitfieldSliceToPositions}).
-    \item A bitfield slice is (partially) out-of-bounds for its enclosing bit vector type declaration (\TypingRuleRef{CheckPositionsInWidth}).
-    \item Bitfield slices in a bit vector type declaration share name and scope, but define different slices (\TypingRuleRef{CheckCommonBitfieldsAlign}).
+    \item A bitfield slice in a bitvector type declaration is defined with its upper index less than its lower index (\TypingRuleRef{BitfieldSliceToPositions}).
+    \item A bitfield slice is (partially) out-of-bounds for its enclosing bitvector type declaration (\TypingRuleRef{CheckPositionsInWidth}).
+    \item Bitfield slices in a bitvector type declaration share name and scope, but define different slices (\TypingRuleRef{CheckCommonBitfieldsAlign}).
   \end{itemize}
 
 \hypertarget{def-badfield}{}

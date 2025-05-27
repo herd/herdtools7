@@ -1134,7 +1134,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
   \item \AllApplyCase{string\_concat}
   \begin{itemize}
     \item $\op$ is $\CONCAT$;
-    \item $\vtone$ and $\vttwo$ are not both bit vector types;
+    \item $\vtone$ and $\vttwo$ are not both bitvector types;
     \item checking that $\vtone$ is a \Prosesingulartype{} yields $\True$\ProseOrTypeError;
     \item checking that $\vttwo$ is a \Prosesingulartype{} yields $\True$\ProseOrTypeError;
     \item $\vt$ is the string type.
@@ -1233,7 +1233,8 @@ range constraints. More precisely, they are a superset of the values for \verb|(
   \begin{itemize}
     \item obtaining the \underlyingtype\ of $\vtone$ in $\tenv$ yields $\vtoneanon$\ProseOrTypeError;
     \item obtaining the \underlyingtype\ of $\vttwo$ in $\tenv$ yields $\vttwoanon$\ProseOrTypeError;
-    \item the operator and the AST labels of $\vtoneanon$ and $\vttwoanon$ do not match any of the rows in the following table:
+    \item the operator and the AST labels of $\vtoneanon$ and $\vttwoanon$ do not match any of the rows in the following table,
+    where $\vlone$ and $\vltwo$ are the AST labels of any \Prosesingulartypes{}:
     \[
     \begin{array}{lll}
       \hline
@@ -1249,7 +1250,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
       \XOR     & \TBits  & \TBits\\
       \PLUS    & \TBits  & \TBits\\
       \MINUS   & \TBits  & \TBits\\
-      \CONCAT  & \Ignore & \Ignore\\
+      \CONCAT  & \vlone  & \vltwo\\
       %
       \PLUS    & \TBits  & \TInt\\
       \MINUS   & \TBits  & \TInt\\
@@ -1462,8 +1463,9 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 \inferrule[error]{
   \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
   \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
-  (\op, \astlabel(\vtoneanon), \astlabel(\vttwoanon)) \not\in
   {
+  \begin{array}{l}
+  (\op, \astlabel(\vtoneanon), \astlabel(\vttwoanon)) \not\in\\
     \left\{
     \begin{array}{lclcl}
       (\AND     &,& \TBool  &,& \TBool)\\
@@ -1519,7 +1521,9 @@ range constraints. More precisely, they are a superset of the values for \verb|(
       (\POW   &,& \TReal &,& \TInt)\\
       (\RDIV  &,& \TReal &,& \TReal)
     \end{array}
-    \right\}
+    \right\}\\
+    \cup \{ (\CONCAT, \astlabel(\vtone), \astlabel(\vttwo)) \;|\; \issingular(\vtone) \land \issingular(\vttwo)\}\\
+  \end{array}
   }
 }{
   \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \TypeErrorVal{\BadOperands}
@@ -1676,9 +1680,10 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
       \item \Proseeqdef{$\vexpectedconstraintlength$}{the number of constraints in \\
             $\cstwoe$ if $\op$ is $\MOD$
             and the multiplication of numbers of constraints in $\csonee$ and $\cstwoe$, respectively};
-      \item \Proseeqdef{$(\csonearg, \cstwoarg, \vp)$}{$(\csonee, \cstwoe, \PrecisionFull)$ if \\
+      \item \Proseeqdef{$(\csonearg, \cstwoarg, \vp)$}{$(\csonee, \cstwoe, \vpzero)$ if \\
             $\vexpectedconstraintlength$ is
-            less than $\maxconstraintsize$ and $(\csone, \cstwof, \PrecisionLost)$, otherwise};
+            less than $\maxconstraintsize$ and \\
+            $(\csone, \cstwof, \PrecisionLost)$, otherwise};
     \end{itemize}
 
     \item \AllApplyCase{non\_exploding}
@@ -1704,10 +1709,13 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
   \vpzero \eqdef \precisionjoin(\vpone, \vptwo)\\
   \vexpectedconstraintlength \eqdef \choice{\op = \MOD}{\listlen{\cstwoe}}{\listlen{\csonee} \times \listlen{\cstwoe}}\\
   {
-  (\csonearg, \cstwoarg, \vp) \eqdef \begin{cases}
-    (\csonee, \cstwoe, \PrecisionFull) & \text{if }\vexpectedconstraintlength < \maxconstraintsize\\
-    (\csone, \cstwof, \PrecisionLost ) & \text{else}
-  \end{cases}
+  (\csonearg, \cstwoarg, \vp) \eqdef
+  \begin{array}{ll}
+    \textbf{if }&\vexpectedconstraintlength < \maxconstraintsize\text{ then}\\
+    & (\csonee, \cstwoe, \vpzero)\\
+    \textbf{else}&\\
+    & (\csone, \cstwof, \PrecisionLost )
+  \end{array}
   }\\\\
   \commonsuffixline\\\\
   \constraintbinop(\op, \csonearg, \cstwoarg) \typearrow \csvanilla\\

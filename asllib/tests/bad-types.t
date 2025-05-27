@@ -27,7 +27,7 @@ Bad fields
     [10: 3] a,
     [2+:1] a,
   };
-  ASL Typing error: cannot declare already declared element "a".
+  ASL Type error: cannot declare already declared element "a".
   [1]
 
 Overlapping slices
@@ -136,5 +136,5 @@ Base value of empty type
   File bad-types8.asl, line 3, characters 2 to 24:
     var b: integer {1..0};
     ^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing error: base value of empty type integer {1..0}.
+  ASL Type error: base value of empty type integer {1..0}.
   [1]

@@ -273,7 +273,7 @@ An execution graph is \emph{well-formed} if all nodes have unique instance count
 and the output nodes are contained in the set of nodes:
 \[
   \begin{array}{rcl}
-  \forall n, n' \in N^\xgraph &.& n=(u,l,\id) \wedge n=(u',l',\id') \;\Rightarrow\; u \neq u' \\
+  \forall n, n' \in N^\xgraph &.& n=(u,l,\id) \land n=(u',l',\id') \;\Rightarrow\; u \neq u' \\
   \forall e \in E^\xgraph &.& e=(n, n', l) \;\Rightarrow\; n, n' \in N^\xgraph \\
   & & O^\xgraph \subseteq N^\xgraph \enspace.
   \end{array}
