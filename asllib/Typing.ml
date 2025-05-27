@@ -2581,25 +2581,26 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         match t_le1_anon.desc with
         | T_Bits _ ->
             let le2, ses1 = annotate_lexpr env le1 t_le1 in
+            let slices_annotated, ses_slices =
+              best_effort (slices, SES.empty) @@ fun _ ->
+              annotate_slices env slices ~loc
+            in
             let+ () =
              fun () ->
               let width =
-                slices_width env slices |> StaticModel.try_normalize env
+                slices_width env slices_annotated
+                |> StaticModel.try_normalize env
               in
               let t = T_Bits (width, []) |> here in
               check_type_satisfies ~loc env t_e t ()
             in
-            let slices2, ses2 =
-              best_effort (slices, SES.empty) @@ fun _ ->
-              annotate_slices env slices ~loc
-            in
-            let+ () = check_disjoint_slices ~loc env slices2 in
+            let+ () = check_disjoint_slices ~loc env slices_annotated in
             let+ () =
-              check_true (not (list_is_empty slices)) @@ fun () ->
+              check_true (not (list_is_empty slices_annotated)) @@ fun () ->
               fatal_from ~loc Error.EmptySlice
             in
-            let ses = ses_non_conflicting_union ~loc ses1 ses2 in
-            (LE_Slice (le2, slices2) |> here, ses |: TypingRule.LESlice)
+            let ses = ses_non_conflicting_union ~loc ses1 ses_slices in
+            (LE_Slice (le2, slices_annotated) |> here, ses |: TypingRule.LESlice)
         | T_Array (size, t) when le.version = V0 -> (
             match slices with
             | [ Slice_Single e_index ] ->
