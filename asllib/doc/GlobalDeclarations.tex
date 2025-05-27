@@ -207,7 +207,8 @@ and an example of a well-typed function --- \verb|flip_bits|.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item annotating $\vf.\funcbody$ in $\tenv$ as per \TypingRuleRef{Block} yields $(\newbody, \vsesbody)$\ProseOrTypeError;
+  \item annotating $\vf.\funcbody$ in $\tenv$ as per \TypingRuleRef{Block} yields \\
+        $(\newbody, \vsesbody)$\ProseOrTypeError;
   \item \OneApplies
   \begin{itemize}
     \item \AllApplyCase{procedure}
@@ -236,7 +237,7 @@ and an example of a well-typed function --- \verb|flip_bits|.
   \vfp \eqdef \substrecordfield(\vf, \funcbody, \newbody)\\
   \vses \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} \in \{\ReadLocal, \WriteLocal\} \})
 }{
-  \annotatesubprogram(\tenv, \vf, \vsesfuncsig) \typearrow \vfp
+  \annotatesubprogram(\tenv, \vf, \vsesfuncsig) \typearrow (\vfp, \vses)
 }
 \end{mathpar}
 
@@ -250,7 +251,7 @@ and an example of a well-typed function --- \verb|flip_bits|.
   \vfp \eqdef \substrecordfield(\vf, \funcbody, \newbody)\\
   \vses \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} \in \{\ReadLocal, \WriteLocal\} \})
 }{
-  \annotatesubprogram(\tenv, \vf, \vsesfuncsig) \typearrow \vfp
+  \annotatesubprogram(\tenv, \vf, \vsesfuncsig) \typearrow (\vfp, \vses)
 }
 \end{mathpar}
 \identi{GHGK} \identr{HWTV} \identr{SCHV} \identr{VDPC}

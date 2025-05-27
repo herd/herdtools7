@@ -197,12 +197,12 @@ transforms a parse node $\vparsednode$ into an $\accessorpair$.
 \inferrule{
   \buildaccessors(\vaccessors) \astarrow \vaccessorpair
 }{
-    \builddecl\left(\overname{\Ndecl\left(
+    \buildaccessorbody\left(\overname{\Ndecl\left(
       \begin{array}{l}
         \Tbegin, \namednode{\vaccessors}{\Naccessors}, \Tend, \Tsemicolon
       \end{array}
     \right)}{\vparsednode}\right)
-  \astarrow \vastnode
+  \astarrow \vaccessorpair
 }
 \end{mathpar}
 

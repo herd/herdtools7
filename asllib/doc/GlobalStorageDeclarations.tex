@@ -131,20 +131,26 @@ All the global storage declarations in \listingref{local-storage-discards} are i
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[global\_uninit\_var]{
-}{
+\inferrule[global\_uninit\_var]{}{
   {
     \begin{array}{r}
       \builddecl(\overname{\Ndecl(\Tvar, \Tidentifier(\name), \Nasty, \Tsemicolon)}{\vparsednode}) \astarrow
     \end{array}
   } \\
-  \overname{\left[\DGlobalStorage(\{\GDkeyword: \GDKVar, \GDname: \name, \GDty: \langle\astof{\Nasty}\rangle, \GDinitialvalue: \None\})\right]}{\vastnode}
+  \overname{\left[\DGlobalStorage\left(
+    \left\{
+    \begin{array}{rcl}
+      \GDkeyword&:& \GDKVar,\\
+      \GDname&:& \name,\\
+      \GDty&:& \langle\astof{\Nasty}\rangle,\\
+      \GDinitialvalue&:& \None
+    \end{array}
+    \right\}\right)\right]}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[global\_storage\_config]{
-}{
+\inferrule[global\_storage\_config]{}{
   {
     \begin{array}{r}
       \builddecl(\overname{\Ndecl(\Tconfig, \Tidentifier(\name), \Tcolon, \punnode{\Nty}, \Teq, \punnode{\Nexpr}, \Tsemicolon)}{\vparsednode}) \astarrow
@@ -198,7 +204,7 @@ The function
 \[
   \declareglobalstorage(\overname{\globalstaticenvs}{\tenv} \aslsep \overname{\globaldecl}{\gsd})
   \aslto
-  \overname{\globalstaticenvs}{\newgenv} \aslsep \overname{\globaldecl}{\newgsd}
+  (\overname{\globalstaticenvs}{\newgenv} \aslsep \overname{\globaldecl}{\newgsd})
   \cup
   \overname{\TTypeError}{\TypeErrorConfig}
 \]

@@ -1976,10 +1976,10 @@
 %% Build Error Codes
 \newcommand\BuildErrorPrefix[0]{\texttt{BE}}
 \newcommand\BuildErrorCode[1]{\texttt{\BuildErrorPrefix\_#1}}
-\newcommand\LexicalError[0]{\hyperlink{def-lexicalerrorresult}{\BuildErrorCode{LE}}}
-\newcommand\LexicalErrorConfig[0]{\texttt{\#}\LexicalError}
+\newcommand\LexicalError[0]{\hyperlink{def-lexicalerrorresult}{\texttt{\#}\BuildErrorCode{LE}}}
+\newcommand\LexicalErrorConfig[0]{\LexicalError}
 \newcommand\ParseError[0]{\hyperlink{def-parseerror}{\BuildErrorCode{PE}}}
-\newcommand\ParseErrorConfig[0]{\hyperlink{def-parseerror}{\#\BuildErrorCode{PE}}}
+\newcommand\ParseErrorConfig[0]{\hyperlink{def-parseerror}{\texttt{\#}\BuildErrorCode{PE}}}
 \newcommand\ReservedIdentifier[0]{\hyperlink{def-reservedidentifier}{\BuildErrorCode{RI}}}
 \newcommand\BinopPrecedence[0]{\hyperlink{def-binopprecedence}{\BuildErrorCode{BOP}}}
 \newcommand\BuildBadDeclaration[0]{\hyperlink{def-buildbaddeclaration}{\BuildErrorCode{BD}}}
