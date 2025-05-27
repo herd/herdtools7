@@ -443,14 +443,13 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfies{} $\TInt(\p
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[empty]{
-}{
+\inferrule[empty]{}{
   \checkparamstypesat(\tenv, \overname{\emptylist}{\funcsigparams}, \Ignore) \typearrow \True
 }
 \and
 \inferrule[parameterized]{
-  \funcsigparams \eqname [(\vx, \tydeclopt)] \concat \funcsigparamsone\\
-  \params \eqname [(\tyactual, \eactual, \vsesactual)] \concat \paramsone\\
+  \funcsigparams = [(\vx, \tydeclopt)] \concat \funcsigparamsone\\
+  \params = [(\tyactual, \eactual, \vsesactual)] \concat \paramsone\\
   \checksymbolicallyevaluable(\vsesactual) \typearrow \True\OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \tyactual) \typearrow \True\OrTypeError\\\\
   \commonprefixline\\\\
@@ -461,8 +460,8 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfies{} $\TInt(\p
 }
 \and
 \inferrule[other]{
-  \funcsigparams \eqname [(\vx, \tydeclopt)] \concat \funcsigparamsone\\
-  \params \eqname [(\tyactual, \eactual, \vsesactual)] \concat \paramsone\\
+  \funcsigparams = [(\vx, \tydeclopt)] \concat \funcsigparamsone\\
+  \params = [(\tyactual, \eactual, \vsesactual)] \concat \paramsone\\
   \checksymbolicallyevaluable(\vsesactual) \typearrow \True\OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \tyactual) \typearrow \True\OrTypeError\\\\
   \commonprefixline\\\\
@@ -1117,8 +1116,8 @@ that $\funcsigargs$ and $\argtypes$ have the same length.
 }
 \and
 \inferrule[non\_empty]{
-  \funcsigargs \eqname [(\Ignore, \tydecl)] \concat \funcsigargsone\\
-  \argtypes \eqname [\tyactual] \concat \argtypesone\\
+  \funcsigargs = [(\Ignore, \tydecl)] \concat \funcsigargsone\\
+  \argtypes = [\tyactual] \concat \argtypesone\\
   \renametyeqs(\tenv, \eqs, \tydecl) \typearrow \tydeclp\OrTypeError\\\\
   \checktypesat(\tenv, \tyactual, \tydeclp) \typearrow \True\OrTypeError\\\\
   \checkargstypesat(\tenv, \funcsigargsone, \argtypesone, \eqs) \typearrow \True\OrTypeError

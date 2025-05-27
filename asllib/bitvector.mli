@@ -47,28 +47,28 @@ val zeros : int -> t
 (** [zeros n] is a bitvector of length [n] without any bit set. *)
 
 val of_string : string -> t
-(** [of_string s] interpretes [s] as a right-indexed representation of a
+(** [of_string s] interprets [s] as a right-indexed representation of a
     bitvector. Characters others than '0' or '1' are ignored. The length of
     [of_string s] is equal to the number of such characters in [s]. *)
 
 val of_int : int -> t
 (** [of_int i] is the bitvector of length [Sys.int_size] (e.g. 63) that
-    corresponds to [i] in little-endian, i.e. index 0 (for slicing operations
-    corresponds to [i mod 2]. *)
+    corresponds to [i] in two's complement little-endian, i.e. index 0
+    (for slicing operations corresponds to [i mod 2]. *)
 
 val of_int_sized : int -> int -> t
 (** [of_int n i] is the bitvector of length [n] that corresponds to [i] in
-    little-endian, i.e. index 0 (for slicing operations corresponds to
-    [i mod 2]. *)
+    two's complement little-endian, i.e. index 0 (for slicing operations
+    corresponds to [i mod 2]. *)
 
 val of_int64 : int64 -> t
 (** [of_int i] is the bitvector of length 64 that corresponds to [i] in
-    little-endian, i.e. index 0 (for slicing operations corresponds to
+    two's complement little-endian, i.e. index 0 (for slicing operations corresponds to
     [i mod 2]. *)
 
 val of_z : int -> Z.t -> t
 (** [of_int sz i] is the bitvector of length [sz] that corresponds to [i] in
-    little-endian. *)
+    two's complement little-endian. *)
 
 (* --------------------------------------------------------------------------*)
 (** {2 Exports} *)

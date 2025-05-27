@@ -482,7 +482,7 @@ of the subprogram declarations.
 }
 \and
 \inferrule[non\_empty]{
-  \tenv \eqdef (\genv, \lenv)\\
+  \tenv \eqname (\genv, \lenv)\\
   \declareonefunc(\tenv, \vf) \typearrow (\tenvone, \vfone) \OrTypeError\\\\
   \declaresubprograms(G^\tenvone, \envandfsone) \typearrow (\newgenv, \envandfstwo) \OrTypeError\\\\
   \newenvandfs \eqdef [(\lenv, \vfone, \vsesf)] \concat \envandfstwo

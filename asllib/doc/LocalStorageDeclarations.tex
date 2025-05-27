@@ -404,8 +404,8 @@ See \ExampleRef{Evaluation of Tuple Declarations}.
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \vids \eqname [\id] \concat \vids'\\
-  \liv \eqname [\vm] \concat \liv'\\
+  \vids = [\id] \concat \vids'\\
+  \liv = [\vm] \concat \liv'\\
   \vm \eqname (\vv, \vgone)\\\\
   \declarelocalidentifier(\env, \id, \vv) \evalarrow (\envone, \vgtwo)\\
   \ldituplefolder(\envone, \vids', \liv') \evalarrow \Normal(\vgthree, \newenv)\\

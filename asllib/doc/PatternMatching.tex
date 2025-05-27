@@ -680,17 +680,15 @@ is defined by the following table:
 \]
 
 \begin{mathpar}
-\inferrule[empty]{
-  \vv \eqname \nvbitvector(\emptylist)
-}{
-  \evalpattern{\env, \vv, \PatternMask(\emptylist)} \evalarrow \Normal(\True, \emptygraph)
+\inferrule[empty]{}{
+  \evalpattern{\env, \overname{\nvbitvector(\emptylist)}{\vv}, \PatternMask(\emptylist)} \evalarrow \Normal(\True, \emptygraph)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \vm \eqname \vm_{1..n}\\
-  \vv \eqname \nvbitvector(\vu_{1..n})\\
+  \vm = \vm_{1..n}\\
+  \vv = \nvbitvector(\vu_{1..n})\\
   \vb \eqdef \nvbool(\bigwedge_{i=1..n} \maskmatch(\vm_i, \vu_i))
 }{
   \evalpattern{\env, \vv, \PatternMask(\vm)} \evalarrow \Normal(\vb, \emptygraph)

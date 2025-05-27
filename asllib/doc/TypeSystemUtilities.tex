@@ -538,27 +538,6 @@ Define $\vb$ as $\True$ if and only if $\vx$ is not bound in the $\localstoraget
 \end{mathpar}
 \CodeSubsection{\IsLocalUndefinedBegin}{\IsLocalUndefinedEnd}{../StaticEnv.ml}
 
-\TypingRuleDef{IsSubprogram}
-\hypertarget{def-issubprogram}{}
-The function
-\[
-\issubprogram(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{vx}) \aslto \overname{\Bool}{\vb}
-\]
-checks whether the identifier $\vx$ has been declared as a subprogram in the static environment $\tenv$,
-yielding an answer in $\vb$.
-
-\ProseParagraph
-Define $\vb$ as $\True$ if and only if $\vx$ is bound in the $\subprograms$ map in the global static
-environment of $\tenv$.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}{
-  \issubprogram(\tenv, \vx) \typearrow \overname{G^\tenv.\subprograms[\vx] \neq \bot}{\vb}
-}
-\end{mathpar}
-\CodeSubsection{\IsSubprogramBegin}{\IsSubprogramEnd}{../StaticEnv.ml}
-
 \TypingRuleDef{LookupConstant}
 \hypertarget{def-lookupconstant}{}
 The function

@@ -741,7 +741,7 @@ Therefore, $\tenvwithparams$ effectively reflects the added declarations \\
 }
 \and
 \inferrule[non\_empty]{
-  \params \eqname [(\vx,\tyopt)] \concat \paramsp\\\\
+  \params = [(\vx,\tyopt)] \concat \paramsp\\\\
   \annotateoneparam(\tenv, \newtenv, (\vx, \tyopt)) \typearrow (\newtenvp, \tty) \OrTypeError \\\\
   \accp \eqdef \acc \concat [(\vx, \tty)] \\\\
   \annotateparams(\tenv, \paramsp, (\newtenvp, \accp)) \typearrow (\tenvwithparams, \paramsone) \OrTypeError
@@ -1347,7 +1347,7 @@ In \listingref{typing-parameterofconstraint}, the annotated arguments are
 }
 \and
 \inferrule[non\_empty]{
-  \vargs \eqname [(\vx,\tty)] \concat \vargsp\\\\
+  \vargs = [(\vx,\tty)] \concat \vargsp\\\\
   \annotateonearg(\tenv, \newtenv, (\vx, \tty)) \typearrow (\newtenvp, \ttyp, \vsesty) \OrTypeError \\\\
   \accp \eqdef \acc \concat [(\vx, \ttyp)] \\\\
   \annotateargs(\tenv, \vargsp, (\newtenvp, \accp), \vsesin) \typearrow (\tenvwithargs, \newargs, \newses) \OrTypeError\\\\
