@@ -1061,6 +1061,7 @@ intuition
 intuitive
 intuitively
 invalid
+invariant
 inverse
 invocation
 invoke
@@ -1165,6 +1166,7 @@ macros
 made
 main
 mainly
+maintain
 maintained
 maintaining
 maintains
@@ -1292,6 +1294,7 @@ numeral
 numerator
 numerous
 object
+observable
 observe
 obtain
 obtained

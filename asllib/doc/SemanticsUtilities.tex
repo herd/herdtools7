@@ -156,6 +156,14 @@ The relation
 removes the binding of the identifier $\name$ from the local storage of the environment $\env$,
 yielding the environment $\newenv$.
 
+This relation is used to maintain the invariant that the dynamic environment
+maintains bindings only for identifiers that are in scope. That is, only identifiers
+that would be in the local static environment.
+%
+This invariant is not necessary for correctness.
+Removing identifiers from the dynamic environment does not have any
+observable effect.
+
 \ExampleDef{Removing Local Storage Elements from Dynamic Environments}
 In \listingref{RemoveLocal}, the local storage element \verb|i| is removed after the (only) \forstatementterm,
 and the local storage element \verb|exn| is removed after the (only) \trystatementterm.
