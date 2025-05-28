@@ -17,7 +17,7 @@
 
 %token EOF
 %token DOT COLON
-%token DASH ROUND
+%token DASH ROUND PLUS
 %token <string> WORD
 
 %%

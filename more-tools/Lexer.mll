@@ -28,6 +28,7 @@ rule token = parse
 | '.' { DOT }
 | ':' { COLON }
 | "-"|"--" { DASH }
+| "++" { PLUS }
 | alpha (alpha|digit|'-'|'/')* as lxm { WORD lxm }
 | eof { EOF }
 | "" { LexMisc.error "uoiam lexer" lexbuf }

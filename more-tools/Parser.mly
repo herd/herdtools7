@@ -40,6 +40,11 @@ let arg0 :=
 
 let arg1 :=
 | DASH; ws=words; DOT; { Arg (reduce_arg ws,ws) }
+| DASH; ws=words; COLON; args=arg2+; { Connect (get_tag ws,ANone,args,ws) }
+
+
+let arg2 :=
+| PLUS; ws=words; DOT; { Arg (reduce_arg ws,ws) }
 
 let words == ws=WORD+; { ws }
 
