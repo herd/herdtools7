@@ -207,6 +207,32 @@ module
   and mk_seq = mk_bin Seq
   and mk_or = mk_bin Or
 
+  let similar p1 p2 =
+    let open Symbol in
+    match p1,p2 with
+    | Seq _,Seq _
+    | And _,And _
+    | Or _,Or _
+      -> true
+    | Seq _,(And _|Or _)
+    | And _,(Seq _|Or _)
+    | Or _,(Seq _|And _)
+      -> false
+    | (P _|S _),(Seq _|And _|Or _|P _|S _)
+    | (Seq _|And _|Or _),(P _|S _)
+      -> assert false
+
+  let rec add_parse p v = function
+    | [] -> [p,v]
+    | (q,_ as qt)::qts ->
+        if similar p q then
+          let dp = get_degree p
+          and dq = get_degree q in
+          if dp < dq then add_parse p v qts
+          else if dq < dp then qt::qts
+          else  qt::qts
+        else qt::add_parse p v qts
+
   let check f1 f2 _sz k ps qs =
     List.fold_left
       (fun k (p,t) ->
@@ -221,7 +247,7 @@ module
                       let r = Symbol.And (a,d) in
                       pp_bin f1 f2 p "&" q r ;
                       let v = mk_and a (inverse i1 t) (inverse i2 u) in
-                      (r,v)::k
+                      add_parse r v k
                   | None ->
                       pp_no_bin f1 f2 p "&" q ;
                       k
@@ -232,7 +258,7 @@ module
                     let r = Symbol.Seq (a,d) in
                     pp_bin f1 f2 p ";" q r ;
                     let v = mk_seq a (inverse i1 t) (inverse i2 u) in
-                    (r,v)::k
+                    add_parse r v k
                 | None ->
                     pp_no_bin f1 f2 p ";" q ;
                     k
@@ -284,10 +310,10 @@ module
         match ps with
         | [] -> assert false
         | [p] -> p
-        | _ ->
+        | _::p::_ ->
             List.map (fun (p,_) -> Symbol.pp p) ps |> String.concat "," |>
             eprintf "Ambiguous: {%s}\n%!" ;
-            error "Ambiguous"
+            p
 
   let or_arg f1 f2 p (e1,e2) =
     if check_arg f1 e1 && check_arg f2 e2
@@ -302,7 +328,7 @@ module
       | (p,t)::ps ->
           let f,_,ts = p_rec ps in
           begin
-            match or_arg f1 f2 p (get_arg p)with
+            match or_arg f1 f2 p (get_arg p) with
             | None -> error "NoParse"
             | Some (a,d) ->
                 let inv = d > 0 in
@@ -313,7 +339,7 @@ module
       Symbol.Or ((e1,e2),d),
       Connect (Or,ARel (e1,e2),ts,[])
 
-    let f_next f1 f2 p =
+    let f_next f1 f2 (p,_) =
       match f1,f2 with
       | None,_ -> None
       | Some f1,None ->
@@ -321,45 +347,80 @@ module
           if String.equal f1 a then Some b else None
       | Some _,Some _ -> f1
 
-  let rec parse_list f1 f2 =
-    let rec p_rec f = function
-      | [] -> []
-      | [t] -> parse f f2 t
-      | t::ts ->
-          begin
-            match parse f None t with
-            | [] -> p_rec f ts
-            | [p,_ as c] ->
-                let f = f_next f f2 p in
-                c::p_rec f ts
-            | _::_::_ -> error "Ambiguous"
-          end in
-    p_rec f1
-
+    let rec parse_list op f1 f2 =
+      let rec p_rec f = function
+        | [] -> [],[]
+        | [t] ->
+            begin
+              let pt = parse f f2 t in
+              match pt with
+              | Symbol.S p,t -> [p,t],[]
+              | _ -> [],[pt]
+            end
+        | t::ts ->
+            begin
+              let pt = parse f None t in
+              match parse f None t with
+              | Symbol.S p,t ->
+                  let ps,qs = p_rec f ts in
+                  (p,t)::ps,qs
+              | _ ->
+                  let f = f_next f f2 pt in
+                  let ps,qs = p_rec f ts in
+                  match ps with
+                  | [] -> [],pt::qs
+                  | _::_ ->
+                      let q,t = parse_set_bin op ps in
+                      [],pt::(Symbol.S q,t)::qs
+            end in
+      fun ts ->
+        let ps,qs = p_rec f1 ts in
+        match ps with
+        | [] -> qs
+        | _::_ ->
+            let q,t = parse_set_bin op ps in
+            (Symbol.S q,t)::qs
 
   and parse f1 f2 t =
     let p =
       match t with
-      | Arg (Rel (_,a),_) -> [Symbol.P a,t]
-      | Arg (Set _,_) -> []
+      | Arg (Rel (_,a),_) -> Symbol.P a,t
+      | Arg (Set (_,a),_) -> Symbol.(S (SP a)),t
       | Connect (op,_,ts,ws) -> parse_bin f1 f2 op ts ws in
     begin
-      match p with
-      | [p,_] when O.verbose > 1 ->
-          eprintf "Parse\n%a" PreCat.pp_trees [t] ;
-          eprintf "As %s\n" (Symbol.pp p)
-      | _ -> ()
+      let p,t = p in
+      if O.verbose > 1 then begin
+        eprintf "Parse\n%a" PreCat.pp_tree t ;
+        eprintf "As %s\n" (Symbol.pp p)
+      end
     end ;
     p
 
   and parse_bin f1 f2 op ts ws =
     try
-      let ps = parse_list f1 f2 ts in
-      match op,ps with
-      | _,[] ->  []
-      | Or,_::_ -> [parse_or f1 f2 ps]
-      | (And|Seq),_::_ -> [parse_and f1 f2 ws ps]
+      let ps = parse_list op f1 f2 ts in
+      match op with
+      | Or -> parse_or f1 f2 ps
+      | (And|Seq) -> parse_and f1 f2 ws ps
     with Error tag -> error tag
+
+  and parse_set_bin op = function
+      | [] -> assert false
+      | [pt] -> pt
+      | (p,_)::_ as pts ->
+          let _,ts = List.split pts
+          and a = Symbol.get_set_arg p in
+          let op =
+            match op with
+            | Seq -> And
+            | Or|And -> op in
+          let p =
+            match op with
+            | And|Seq -> Symbol.SAnd a
+            | Or -> Symbol.SOr a in
+          let t = Connect (op,ASet a,ts,[]) in
+          p,t
+
 
   let f1 = Some "E1" and f2 = Some "E2"
 
@@ -370,7 +431,7 @@ module
           if O.verbose > 0 then
             eprintf "Input\n%a\n%!" pp_tree (Connect (op,ARel ("E1","E2"),ts,ws)) ;
           match parse_bin f1 f2 op ts ws with
-          | [p,Connect (op,ARel (a1,a2),ts,ws)] ->
+          | (p,Connect (op,ARel (a1,a2),ts,ws)) ->
               eprintf "%s -> %s\n" (pp_tag op) (Symbol.pp p) ;
               Def (op,Rel (name,(a1,a2)),ts,ws)
           | _ -> assert false
