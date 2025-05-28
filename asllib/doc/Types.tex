@@ -1329,6 +1329,10 @@ The syntax \verb|record| (with no field list) is syntactic sugar for \verb|recor
 In \listingref{typing-trecord}, all the uses of record types are well-typed.
 \ASLListing{Well-typed structured types}{typing-trecord}{\typingtests/TypingRule.TRecordDecl.asl}
 
+In \listingref{typing-trecord-bad}, the \recordtypeterm{} \verb|MyRecord|
+is ill-typed, since the field \verb|v| repeats.
+\ASLListing{A record type with repeated fields}{typing-trecord-bad}{\typingtests/TypingRule.TRecordDecl.bad.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Ntydecl \derives\ & \Trecord \parsesep \Nfieldsopt &

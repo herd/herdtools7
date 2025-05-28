@@ -25,6 +25,7 @@ cli_parser.add_argument(
 )
 
 INTERNAL_DICTIONARY_FILENAME = "dictionary.txt"
+DO_NOT_LINT_STR = "DO NOT LINT"
 
 
 def read_file_lines(filename: str) -> List[str]:
@@ -45,6 +46,8 @@ def extract_labels_from_line(line: str, left_delim: str, labels: set[str]):
     right_delim = "}"
     label_pos: int = 0
     while True:
+        if DO_NOT_LINT_STR in line:
+            return
         label_pos: int = line.find(left_delim, label_pos)
         if label_pos == -1:
             return
@@ -153,12 +156,14 @@ def check_tododefines(latex_files: list[str]):
     Checks that there are no more than the expected number of \tododefine
     instances.
     """
-    MAX_TODODEFINE_INSTANCES = 7
+    MAX_TODODEFINE_INSTANCES = 6
     num_todo_define = 0
     for latex_source in latex_files:
-        file_str = read_file_str(latex_source)
-        num_todo_define += file_str.count("\\tododefine")
-    num_todo_define -= 1  # Ignore the definition of the \tododefine macro itself.
+        lines = read_file_lines(latex_source)
+        for line in lines:
+            if DO_NOT_LINT_STR in line:
+                continue
+            num_todo_define += line.count("\\tododefine")
     if num_todo_define > MAX_TODODEFINE_INSTANCES:
         # Disallow adding new \tododefines
         print(
@@ -511,8 +516,7 @@ def check_rules(filename: str) -> int:
     file_to_num_expected_errors = {
         "RelationsOnTypes.tex" : 15,
         "SubprogramCalls.tex" : 1,
-        "SymbolicSubsumptionTesting.tex" : 19,
-        "TypeSystemUtilities.tex" : 23,
+        "SymbolicSubsumptionTesting.tex" : 15,
         "SemanticsUtilities.tex" : 19,
     }
     total_expected = 0
