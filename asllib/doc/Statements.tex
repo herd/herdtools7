@@ -3696,7 +3696,7 @@ are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
 \subsubsection{Semantics}
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \vEs \eqname [\ve] \concat \vesone\\
+  \vEs = [\ve] \concat \vesone\\
   \evalexpr{\env, \ve} \evalarrow \Normal(\vmone, \envone) \OrAbnormal\\
   \evalexprlistm(\envone, \vesone) \evalarrow \Normal(\vmsone, \newenv) \OrAbnormal
 }{

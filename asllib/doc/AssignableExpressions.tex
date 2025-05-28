@@ -768,8 +768,8 @@ See \ExampleRef{Multi-assignments}.
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \vlelist \eqname [\vle] \concat \vlelistone\\
-  \vmlist \eqname [\vm] \concat \vmlistone\\
+  \vlelist = [\vle] \concat \vlelistone\\
+  \vmlist = [\vm] \concat \vmlistone\\
   \evallexpr{\env, \vle, \vm} \evalarrow \Normal(\envone, \vgone) \OrAbnormal\\\\
   \evalmultiassignment(\envone, \vlelistone, \vmlistone) \evalarrow \Normal(\newenv, \vgtwo) \OrAbnormal\\\\
   \newg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}

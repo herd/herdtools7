@@ -628,7 +628,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
 \inferrule[under]{
   \vc \in \cs: \approxconstraint(\tenv, \vapprox, \vc) \typearrow \vs_\vc
 }{
-  \approxconstraints(\tenv, \vapprox, \cs) \typearrow
+  \approxconstraints(\tenv, \overname{\Under}{\vapprox}, \cs) \typearrow
   \overname{\bigcap_{\vc \in \cs} \vs_\vc}{\vs}
 }
 \end{mathpar}

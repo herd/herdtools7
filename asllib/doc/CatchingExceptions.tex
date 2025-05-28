@@ -430,12 +430,12 @@ resulting in a \dynamicerrorterm{}.
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[empty]{}{\findcatcher(\tenv, \vvty, \emptylist) \evalarrow \None}
+\inferrule[empty]{}{\findcatcher(\tenv, \vvty, \overname{\emptylist}{\catchers}) \evalarrow \None}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[match]{
-  \catchers \eqname [\vc] \concat \catchersone\\
+  \catchers = [\vc] \concat \catchersone\\
   \vc \eqname (\nameopt, \ety, \vs) \\
   \subtypes(\tenv, \vvty, \ety)
 }{
@@ -445,7 +445,7 @@ resulting in a \dynamicerrorterm{}.
 
 \begin{mathpar}
 \inferrule[no\_match]{
-  \catchers \eqname [\vc] \concat \catchersone\\
+  \catchers = [\vc] \concat \catchersone\\
   \vc \eqname (\nameopt, \ety, \vs) \\
   \neg\subtypes(\tenv, \vvty, \ety)\\
   d \eqdef \findcatcher(\tenv, \vvty, \catchersone)
