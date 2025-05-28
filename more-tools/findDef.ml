@@ -210,7 +210,7 @@ struct
            else
              if d0_rev < d then (PreCat.Inverse name,s_rev),d0_rev else best)
         ((PreCat.Name "coucou",""),100) dict_relations in
-    if true || O.verbose > 0 && d > 1 then
+    if O.verbose > 0 && d > 1 then
       eprintf "Approx[%d]: '%s' as '%s'\n%!" d tgt body ;
     let args =
       let open PreCat in
