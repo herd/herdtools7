@@ -86,7 +86,7 @@ module
 
   let error tag = raise (Error tag)
 
-(* Second boolean flags inversion *)
+  (* Second boolean flags inversion *)
   let same_arg2 (e1,e2) (e3,e4) =
     String.equal e1 e3 && String.equal e2 e4
     || String.equal e1 e4 && String.equal e2 e3
@@ -94,6 +94,15 @@ module
   let check_arg f a = match f with
     | None -> true
     | Some f -> String.equal f a
+
+  let depth_one f1 f2 p =
+    let open Symbol in
+    match p with
+    | S _ -> 0 (* assert false ? *)
+    | P (e1,e2) ->
+        if check_arg f1 e1 && check_arg f2 e2 then 0
+        else 1
+    | Or (_,d)|And (_,d)|Seq (_,d) -> d
 
   let get_dg = get_degree
   let sum_dgs p1 p2 = get_dg p1 + get_dg p2
@@ -183,6 +192,7 @@ module
     | Inverse n -> Name n
     | Plus n -> Plus (inverse_name n)
     | Neg n -> Neg (inverse_name n)
+    | Names _ -> assert false  (* Make sense for sets only, never inversed *)
 
   let inverse i =
     if i then
@@ -195,7 +205,7 @@ module
 
   let mk_bin op =
     let as_list = function
-      | Connect (op2,_,ts,_) when op=op2 -> ts
+      | Connect (op2,ARel _,ts,_) when op=op2 -> ts
       | t -> [t] in
     fun (e1,e2) t u ->
       let ts = as_list t
@@ -203,9 +213,13 @@ module
       and a = ARel (e1,e2) in
       Connect (op,a,ts@us,[])
 
+  let rec mk_bins op a ts = match ts with
+    | [] -> assert false
+    | [t] -> t
+    | t::ts -> mk_bin op a t (mk_bins op a ts)
+
   let mk_and = mk_bin And
   and mk_seq = mk_bin Seq
-  and mk_or = mk_bin Or
 
   let check f1 f2 _sz k ps qs =
     List.fold_left
@@ -239,14 +253,6 @@ module
               end else k)
            k qs)
       k ps
-
-  let reconstruct p ts ws =
-    let op,(a1,a2) =
-      match p with
-      | Symbol.Seq (a,_) -> Seq,a
-      | Symbol.And (a,_) -> And,a
-      | _ -> assert false in
-    Connect (op,ARel (a1,a2),ts,ws)
 
   let get_mins =
     let rec do_rec dmin rs = function
@@ -309,9 +315,14 @@ module
                 d+f,a,(inverse inv t)::ts
           end in
     fun ps ->
-      let d,(e1,e2),ts = p_rec ps in
-      Symbol.Or ((e1,e2),d),
-      Connect (Or,ARel (e1,e2),ts,[])
+      match ps with
+      | [] -> assert false
+      | [pt] -> pt
+      | _ ->
+          let d,(e1,e2),ts = p_rec ps in
+          let t = Connect (Or,ARel (e1,e2),ts,[]) in
+          Symbol.Or ((e1,e2),d),t
+
 
     let f_next f1 f2 p =
       match f1,f2 with
@@ -319,47 +330,212 @@ module
       | Some f1,None ->
           let a,b = get_arg p in
           if String.equal f1 a then Some b else None
-      | Some _,Some _ -> f1
+      | Some g1,Some g2 ->
+          let a,b = get_arg p in
+          if String.equal a g1 then begin
+            if String.equal g2 b then f1
+            else Some b
+          end else None
 
-  let rec parse_list f1 f2 =
-    let rec p_rec f = function
-      | [] -> []
-      | [t] -> parse f f2 t
+    let pp_set set =
+      prerr_endline "** Set **" ;
+      StringMap.iter
+        (fun e (p,t) ->
+           eprintf "%s -> %s\n%a%!"
+             e (Symbol.pp_set p) PreCat.pp_tree t)
+        set
+
+    let add_set s c m =
+      StringMap.update
+        s
+        (function
+          | None -> Some [c]
+          | Some cs -> Some (c::cs))
+        m
+
+    let get_rel_arg = function
+      | Connect (_,ARel (e1,e2),_,_) -> (e1,e2)
+      | Arg (Rel (_,a),_) -> a
+      | _ -> assert false
+
+    let check_no_sets sets =
+      if not (StringMap.is_empty sets) then error "NoParse"
+
+    let find_remove e sets =
+      try
+        let _,s = StringMap.find e sets in
+        Some s,StringMap.remove e sets
+      with Not_found -> None,sets
+
+    let rec insert_sets sets op e1 e2 ts _ws = match op with
+      | Seq ->
+          let sets,ts = insert_seq_args sets ts in
+          sets,mk_bins Seq (e1,e2) ts
+      | And ->
+          let s1,sets = find_remove e1 sets in
+          let s2,sets = find_remove e2 sets in
+          let sets,ts = insert_and_args sets ts in
+          let t =
+            match s1,s2 with
+            | None,None -> mk_bins And (e1,e2) ts
+            | _,_ ->
+                let ts =
+                  let t = mk_bins And (e1,e2) ts in
+                  match s2 with
+                  | None -> [t]
+                  | Some u -> [t;u] in
+                let ts =
+                  match s1 with
+                  | None -> ts
+                  | Some u -> u::ts in
+                mk_bins Seq (e1,e2) ts in
+          sets,t
+    | Or ->
+        (* No recursion, sets are already inserted *)
+        sets,mk_bins Or (e1,e2) ts
+
+    and insert_one sets = function
+      | Connect (op,ARel (e1,e2),ts,ws) ->
+          insert_sets sets op e1 e2 ts ws
+      | t -> sets,t
+
+    and insert_and_args sets = function
+      | [] -> sets,[]
       | t::ts ->
+          let sets,t = insert_one sets t in
+          let sets,ts = insert_and_args sets ts in
+          sets,t::ts
+
+    and insert_seq_args sets = function
+      | [] -> sets,[]
+      | t::ts ->
+          let e1,e2 = get_rel_arg t in
+          let s1,sets = find_remove e1 sets in
+          let sets,t = insert_one sets t in
+          let sets,ts =
+            match ts with
+            | [] ->
+                let s2,sets = find_remove e2 sets in
+                sets,
+                begin
+                  match s2 with
+                  | None -> []
+                  | Some u -> [u]
+                end
+            | _::_ -> insert_seq_args sets ts in
+          let ts = t::ts in
+          sets,
           begin
-            match parse f None t with
-            | [] -> p_rec f ts
-            | [p,_ as c] ->
-                let f = f_next f f2 p in
-                c::p_rec f ts
-            | _::_::_ -> error "Ambiguous"
-          end in
-    p_rec f1
+            match s1 with
+            | None -> ts
+            | Some u -> u::ts
+          end
+
+    let rec parse_list f1 f2 =
+
+      let rec p_rec sets f = function
+      | [] -> [],sets
+      | [t] ->
+          let pt = parse f f2 t in
+          check_rec sets f pt []
+      | t::ts ->
+          let pt =  parse f None t in
+          check_rec sets f pt ts
+
+      and check_rec sets f (p,t as pt) ts =
+        match p with
+        | Symbol.S p ->
+            let a = Symbol.get_set_arg p in
+            let sets = add_set a (p,t) sets in
+            p_rec sets f  ts
+        | _ ->
+            if O.verbose > 1 then
+              eprintf "Parsed %s, f=%s, f2=%s -> "
+                (Symbol.pp p) (pp_os f) (pp_os f2) ;
+            let f = f_next f f2 p in
+            if O.verbose > 1 then
+              eprintf "%s\n%!"  (pp_os f) ;
+            let pts,sets = p_rec sets f ts in
+            pt::pts,sets in
+      fun ts -> p_rec StringMap.empty f1 ts
 
 
   and parse f1 f2 t =
-    let p =
+    let pt =
       match t with
-      | Arg (Rel (_,a),_) -> [Symbol.P a,t]
-      | Arg (Set _,_) -> []
+      | Arg (Rel (_,a),_) -> Symbol.P a,t
+      | Arg (Set (_,a),_) -> Symbol.(S (SP a)),t
       | Connect (op,_,ts,ws) -> parse_bin f1 f2 op ts ws in
     begin
-      match p with
-      | [p,_] when O.verbose > 1 ->
-          eprintf "Parse\n%a" PreCat.pp_trees [t] ;
-          eprintf "As %s\n" (Symbol.pp p)
-      | _ -> ()
+      if O.verbose > 1 then
+        let p,_ = pt in
+        eprintf "Parse\n%a" PreCat.pp_trees [t] ;
+        eprintf "As %s\n" (Symbol.pp p)
     end ;
-    p
+    pt
 
   and parse_bin f1 f2 op ts ws =
-    try
-      let ps = parse_list f1 f2 ts in
-      match op,ps with
-      | _,[] ->  []
-      | Or,_::_ -> [parse_or f1 f2 ps]
-      | (And|Seq),_::_ -> [parse_and f1 f2 ws ps]
-    with Error tag -> error tag
+    let ps,sets = parse_list f1 f2 ts in
+    let sets =
+      StringMap.fold
+        (fun a pts -> StringMap.add a (parse_set_bin op a pts))
+        sets StringMap.empty in
+    match ps with
+    | [] ->
+        let apts =
+          StringMap.fold (fun c pt k -> (c,pt)::k) sets [] in
+        begin
+          match apts with
+          | [_,(p,t)] -> Symbol.S p,t
+          | _ -> error "NoParse"
+        end
+    | _ ->
+        let p,t as c =
+          match op with
+          | Or -> parse_or f1 f2 ps
+          | (And|Seq) -> parse_and f1 f2 ws ps in
+        let sets,u =
+          match t with
+          | Connect ((And|Seq as op),ARel (e1,e2),ts,ws) ->
+              insert_sets sets op e1 e2 ts ws
+          | _ ->
+              let e1,e2 = get_arg p in
+              insert_sets sets op e1 e2 [t] ws in
+        check_no_sets sets ;
+        let d = get_degree p in
+        match u with
+        | Connect (op,ARel (e1,e2),_,_) ->
+            if O.verbose > 2 then begin
+              prerr_endline "Insert:" ;
+              pp_tree stderr t ;
+              prerr_endline "==>>" ;
+              pp_tree stderr u ;
+              prerr_endline ""
+            end ;
+            begin
+              let a = (e1,e2) in
+              match op with
+              | And -> Symbol.And (a,d)
+              | Seq -> Symbol.Seq (a,d)
+              | Or -> Symbol.Or (a,d)
+            end,u
+          | _ -> c
+
+  and parse_set_bin op a = function
+      | [] -> assert false
+      | [pt] -> pt
+      | _::_::_ as pts ->
+          let _,ts = List.split pts in
+          let op =
+            match op with
+            | Seq -> And
+            | Or|And -> op in
+          let p =
+            match op with
+            | And|Seq -> Symbol.SAnd a
+            | Or -> Symbol.SOr a in
+          let t = Connect (op,ASet a,ts,[]) in
+          p,t
 
   let f1 = Some "E1" and f2 = Some "E2"
 
@@ -370,7 +546,7 @@ module
           if O.verbose > 0 then
             eprintf "Input\n%a\n%!" pp_tree (Connect (op,ARel ("E1","E2"),ts,ws)) ;
           match parse_bin f1 f2 op ts ws with
-          | [p,Connect (op,ARel (a1,a2),ts,ws)] ->
+          | (p,Connect (op,ARel (a1,a2),ts,ws)) ->
               eprintf "%s -> %s\n" (pp_tag op) (Symbol.pp p) ;
               Def (op,Rel (name,(a1,a2)),ts,ws)
           | _ -> assert false

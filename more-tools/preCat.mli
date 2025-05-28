@@ -29,6 +29,7 @@ type name =
   | Inverse of string
   | Name of string
   | Neg of name
+  | Names of string list (* For sets only *)
 
 (* Get name inside *)
 val get_name : name -> string
@@ -42,7 +43,7 @@ val map_name : (string -> string) -> name -> name
 (* Expression structure *)
 type reduced =
   | Rel of name * (string * string)
-  | Set of string * string
+  | Set of name * string
 
 val reduce :
  (string list -> name * string array) -> string list -> reduced

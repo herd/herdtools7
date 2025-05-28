@@ -24,7 +24,26 @@ end
 module Make (O:Config) =
 struct
 
-  (* All top level names defined by module *)
+  (* Split set names... *)
+
+  module SplitName =
+    SplitName.Make
+      (struct
+        let debug = O.verbose > 1
+      end)
+
+  (****************************************)
+  (* Translate LaTeX names into cat names *)
+  (****************************************)
+
+  (*
+   * Standard cases are found by reversing the
+   * Cat -> LaTeX translation performed by miou.
+   * For this to work we use the set of Cat names
+   * defined by the model + some predefined names
+   *)
+
+    (* Names defined by the model *)
 
   module RN =
     ReadNames.Make
@@ -34,49 +53,65 @@ struct
         let debug = O.verbose > 1
       end)
 
-  let all_names = RN.read  O.cat
+    let all_names = RN.read O.cat
 
-  let () =
-    if O.verbose > 1 then
-      eprintf
-        "Names: {%s}\n%!" (StringSet.pp_str "," Misc.identity all_names)
+    let () =
+      if O.verbose > 1 then
+        eprintf
+          "Names: {%s}\n%!" (StringSet.pp_str "," Misc.identity all_names)
 
-  (* Compute distance *)
+    (* Translation function *)
+    let from_csname =
 
-  (* Pre-defined names not defined bu model *)
-
-
-  let from_csname =
-    let add_name name map =
-      let csname = MiaouNames.to_csname name in
-      StringMap.add csname name map in
-
-    let predef_map =
-      List.fold_right add_name
+      (* Some very special cases *)
+      let init_defs =
         [
-          "iico-ctrl";
-          "iico-addr";
-          "iico-data";
-          "iico-order";
-          "ext"; "int";
-          "BCC"; "po";
-        ]
-        StringMap.empty in
+          "si","sameinstance";
+          "id","sameEffect";
+        ] in
 
-    let map =
-      StringSet.fold
-        (fun name map ->
-           let csname = MiaouNames.to_csname name in
-           StringMap.add csname name map)
-        all_names predef_map in
+      let map =
+        List.fold_left
+          (fun m (cat,csname) -> StringMap.add csname cat m)
+          StringMap.empty init_defs in
 
-    fun csname ->
-      try StringMap.find csname map
-      with Not_found ->
-        if O.verbose > 0 then Warn.warn_always "name %s not recognized" csname ;
-        csname
+      (* Predefined names *)
 
-  (* Distance *)
+      let add_name map name =
+        let csname = MiaouNames.to_csname name in
+        StringMap.add csname name map in
+
+
+      let map =
+        List.fold_left add_name
+          map
+          [
+            "iico-ctrl";
+            "iico-addr";
+            "iico-data";
+            "iico-order";
+            "ext"; "int";
+            "Exp"; "Imp";
+            "R"; "W"; "M";
+            "Rreg"; "Wreg";
+            "B";"BCC"; "po";
+            "DATA"; "ADDR";
+          ] in
+
+      (* From command name to Cat names *)
+
+      let map =
+        StringSet.fold (fun name map -> add_name map name)
+          all_names map in
+
+      fun csname ->
+        try StringMap.find csname map
+        with Not_found ->
+          Warn.warn_always "Name %s not recognized" csname ;
+          csname
+
+  (* Edit distance *)
+
   let minimum a b c = min a (min b c)
 
   let distance s t =
@@ -210,7 +245,7 @@ struct
            else
              if d0_rev < d then (PreCat.Inverse name,s_rev),d0_rev else best)
         ((PreCat.Name "coucou",""),100) dict_relations in
-    if O.verbose > 0 && d > 1 then
+    if d > 1 then
       eprintf "Approx[%d]: '%s' as '%s'\n%!" d tgt body ;
     let args =
       let open PreCat in
@@ -218,7 +253,9 @@ struct
       | Name n -> if is_reverse n then [| e2; e1; |] else [| e1; e2; |]
       | Inverse n -> if is_reverse n then [| e1; e2; |] else [| e2; e1; |]
       | _ -> assert false in
-    name,args
+    match PreCat.get_name name with
+    | ("DATA"|"ADDR") as n -> PreCat.Names [n],[| args.(0) |]
+    | _ ->  name,args
 
   let set is_def tgt e =
     let arg = [| set_arg is_def e |] in
@@ -232,9 +269,9 @@ struct
              else best in
            best)
         (("coucou",""),100) Dict.sets in
-    if O.verbose > 0 && d > 1 then
+    if d > 1 then
       eprintf "Approx[%d]: '%s' as '%s'\n%!" d tgt body ;
-    PreCat.Name name,arg
+    PreCat.Names (SplitName.check name),arg
 
   let justname tgt =
     let (name,body),d =
@@ -273,7 +310,8 @@ struct
       else
         let tgt =  ws_to_string ws in
         match Array.length es with
-        | 1 -> set is_def tgt es.(0)
+        | 1 ->
+            set is_def tgt es.(0)
         | 2 ->
             if false then
               eprintf "e0=%s, e1=%s, tgt=%s\n%!" es.(0) es.(1) tgt ;

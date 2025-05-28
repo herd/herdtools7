@@ -37,10 +37,12 @@ type name =
   | Inverse of string
   | Name of string
   | Neg of name
+  | Names of string list
 
 let rec get_name = function
   |Plus n|Neg n -> get_name n
   |Inverse n|Name n -> n
+  |Names ns -> String.concat "" ns
 
 let rec pp_name = function
   | Plus (Name n) -> sprintf "%s+" n
@@ -49,21 +51,23 @@ let rec pp_name = function
   | Name n -> n
   | Neg (Name n) -> sprintf "~%s" n
   | Neg n -> sprintf "~(%s)" (pp_name n)
+  | Names ns -> String.concat " & " ns
 
 let rec map_name f = function
   | Name n -> Name (f n)
   | Plus n -> Plus (map_name f n)
   | Inverse n -> Inverse (f n)
   | Neg n -> Neg (map_name f n)
+  | Names ns -> Names (List.map f ns)
 
 type reduced =
   | Rel of name * (string * string)
-  | Set of string * string
+  | Set of name * string
 
 let reduce find ws =
   let name,args = find ws in
   match args with
-  | [| e |] -> Set (get_name name,e)
+  | [| e |] -> Set (name,e)
   | [| e1; e2; |] -> Rel (name,(e1,e2))
   | _ -> assert false
 
@@ -88,7 +92,7 @@ let pp_reduced chan = function
   | Rel (name,(e1,e2)) ->
       fprintf chan "%s(%s,%s)" (pp_name name) e1 e2
   | Set (name,e) ->
-      fprintf chan "%s(%s)" name e
+      fprintf chan "%s(%s)" (pp_name name) e
 
 let rec do_pp_tree i chan  = function
   | Connect (tag,args,ts,_) ->
