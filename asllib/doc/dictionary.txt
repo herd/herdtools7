@@ -673,6 +673,7 @@ entire
 entirely
 entries
 entry
+enumerate
 enumerated
 enumeration
 environment
@@ -812,12 +813,14 @@ fix
 fixed
 fixes
 flag
+flags
 flavors
 floating
 flow
 flows
 focused
 fold
+folding
 follow
 followed
 following
@@ -970,6 +973,7 @@ increasing
 incremented
 incrementing
 increments
+incur
 indeed
 independence
 independent

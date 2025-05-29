@@ -624,9 +624,9 @@ indicator, which indicates whether precision has been lost during the typing of
 binary operations over well-constrained integer types (see
 \TypingRuleRef{IntervalTooLarge}).
 \begin{flalign*}
-  \hypertarget{ast-precisionlossindicator}{}%
-  \precisionlossindicator \derives\ & \PrecisionFull & \hypertarget{precision-full}{} \\
-                                 |\ & \PrecisionLost & \hypertarget{precision-lost}{} \\
+  \hypertarget{ast-precisionlossindicator}{} \hypertarget{precision-full}{}%
+  \precisionlossindicator \derives\ & \PrecisionFull & \hypertarget{precision-lost}{}\\
+                                 |\ & \PrecisionLost & \\
           \constraintkind \derives\ & \wellconstrained(\intconstraint^{+}, \precisionlossindicator) & \\
 \end{flalign*}
 

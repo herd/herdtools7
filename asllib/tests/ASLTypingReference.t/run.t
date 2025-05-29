@@ -992,3 +992,44 @@ ASL Typing Tests / annotating types:
                 ^
   ASL Type error: cannot declare already declared element "y".
   [1]
+  $ aslref TypingRule.CheckBitsEqualWidth.asl
+  $ aslref --no-exec TypingRule.GetWellConstrainedStructure.asl
+  $ aslref --no-exec TypingRule.MemBfs.asl
+  $ aslref --no-exec TypingRule.MemBfs.bad.asl
+  File TypingRule.MemBfs.bad.asl, line 9, characters 4 to 44:
+      var x : bits(8) {[0] flag, [1] lsb} = y;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: a subtype of bits (8) { [0+:1] flag, [1+:1] lsb }
+    was expected, provided FlaggedPacket.
+  [1]
+  $ aslref --no-exec TypingRule.IntervalTooLarge.asl
+  $ aslref --no-exec TypingRule.IntervalTooLarge.bad.asl
+  File TypingRule.IntervalTooLarge.bad.asl, line 9, characters 25 to 30:
+      var z: integer {-} = b * 2;
+                           ^^^^^
+  Interval too large: [ 0 .. 16385 ]. Keeping it as an interval.
+  File TypingRule.IntervalTooLarge.bad.asl, line 9, characters 4 to 31:
+      var z: integer {-} = b * 2;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: type used to define storage item is the result of precision
+    loss.
+  [1]
+  $ aslref --no-exec TypingRule.ExplodeIntervals.bad.asl
+  File TypingRule.ExplodeIntervals.bad.asl, line 10, characters 25 to 30:
+      var z: integer {-} = b * 2;
+                           ^^^^^
+  Interval too large: [ 0 .. 16385 ]. Keeping it as an interval.
+  File TypingRule.ExplodeIntervals.bad.asl, line 10, characters 4 to 31:
+      var z: integer {-} = b * 2;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: type used to define storage item is the result of precision
+    loss.
+  [1]
+  $ aslref --no-exec TypingRule.GetLiteralDivOpt.asl
+  File TypingRule.GetLiteralDivOpt.asl, line 6, characters 4 to 5:
+      z = 2;
+      ^
+  ASL Type error: a subtype of integer {3..5} was expected,
+    provided integer {2}.
+  [1]
+  $ aslref TypingRule.ReduceToZOpt.asl
