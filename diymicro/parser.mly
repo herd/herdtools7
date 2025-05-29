@@ -18,7 +18,7 @@
 %token EOF
 
 %start main
-%type <Edge.edge> main
+%type <Edge.t> main
 
 %%
 main:

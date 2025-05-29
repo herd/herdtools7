@@ -15,7 +15,7 @@ type sd = Same | Different
 
 type dp = Addr | Data | Ctr
 
-type edge =
+type t =
   Rf of int_ext | Fr of int_ext | Ws of int_ext
 | Po of sd*direction*direction
 | Dp of dp*sd*direction*direction

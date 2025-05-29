@@ -1,4 +1,3 @@
-
 let () =
   let edges_ref = ref [] in
   let parse_edge s =
@@ -13,4 +12,6 @@ let () =
   Arg.parse options_list parse_edge usage;
 
   let edges = List.rev !edges_ref in
-  let _ = Cycle.make edges in ()
+  let cycle = Cycle.make_cycle edges in
+  let test, ins = Compile.make_test cycle in
+  Compile.dump_test (test, ins) stdout
