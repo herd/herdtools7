@@ -394,25 +394,17 @@ module Make
            match ASTUtils.as_vars es with
            | None -> raise Exit
            | Some ids ->
-              let itms =
-                List.map
-                  (fun (loc,id) -> tr_rel_id e1 e2  loc id)
-                  ids
-              and lst =
-                let names =
-                  List.map (fun (_,id) -> id_name id) ids
-                  |> String.concat pp_op in
-                pp_rel_id e1 e2 (pp_transitive names) in
-              itms,lst in
+               let names =
+                 List.map (fun (_,id) -> id_name id) ids
+                 |> String.concat pp_op in
+               pp_rel_id e1 e2 (pp_transitive names) in
          begin
            try
              match op with
              | Union ->
-                let itms,lst = tr_es "{} or " in
-                mk_list Union (itms@[lst])
+                tr_es "{} or "
              | Inter ->
-                let itms,lst = tr_es "{} and " in
-                mk_list Union [mk_list Inter itms;lst;]
+                tr_es "{} and "
              | _ -> tr_fail loc
            with Exit -> tr_fail loc
          end
