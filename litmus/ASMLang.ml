@@ -534,7 +534,13 @@ module RegMap = A.RegMap)
         | Symbolic (Virtual {name=Symbol.Label (p,lbl); _}) -> OutUtils.fmt_lbl_var p lbl
         | Symbolic (Virtual a)
           when not (PAC.is_canonical a.pac) ->
-            Warn.user_error "Litmus cannot initialize a virtual address with a non-canonical PAC field"
+            (*Warn.user_error "Litmus cannot initialize a virtual address with a
+            non-canonical PAC field"*)
+            let s = Constant.pp_symbol_old (Virtual {a with pac=PAC.canonical}) in
+            let value = sprintf "%s%s"
+              (match O.memory with Memory.Direct -> "" | Memory.Indirect -> "*")
+              s in
+            PAC.pp_litmus a.pac value
         | Symbolic sym ->
             compile_symbol_fun globEnv sym
         | Concrete _ | ConcreteVector _ | Instruction _
