@@ -141,20 +141,21 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
         []
 
     let cmo_sets =
-      DC.fold_op
+      let dc_sets = DC.fold_op
         (fun op1 k ->
           let tag = DC.pp_dot op1 in
           let p = function
             | CMO.DC op2 -> DC.equal op1 op2
             | _ -> false in
-          (tag,p)::k)
-        (IC.fold_op
+          (tag,p)::k) ["DC", function | CMO.DC _ -> true | _ -> false]
+      in
+      IC.fold_op
         (fun op1 k ->
           let tag = IC.pp_dot op1 in
           let p = function
             | CMO.IC op2 -> IC.equal op1 op2
             | _ -> false in
-          (tag,p)::k) [])
+          (tag,p)::k) dc_sets
 
 
     let annot_sets = AArch64Annot.sets

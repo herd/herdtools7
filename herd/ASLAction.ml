@@ -109,6 +109,8 @@ module Make (C: Config) (A : S) = struct
   let is_isync _ = false
   let pp_isync = "ISYNC"
 
+  let is_cmo _ = assert false
+
   (**************************************)
   (* Access to sub_components of events *)
   (**************************************)
