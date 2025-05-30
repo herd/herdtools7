@@ -1058,7 +1058,7 @@ module Make
               let dump_value loc v = match v with
               | Constant.Symbolic (Constant.Virtual {Constant.pac})
                 when not (PAC.is_canonical pac) ->
-                  Warn.user_error "PAC not supported in post-conditions in litmus"
+                  Warn.user_error "pac not supported in post-conditions in litmus"
               | Constant.Symbolic _ -> SkelUtil.data_symb_id (T.C.V.pp O.hexa v)
               | Constant.PteVal p ->
                  A.V.PteVal.dump_pack SkelUtil.data_symb_id p
@@ -1599,8 +1599,14 @@ module Make
                   Warn.fatal "Vector used as scalar"
               | ConcreteRecord _ ->
                   Warn.fatal "Record used as scalar"
-              | Symbolic (Virtual {name=s; tag=None; offset=0; pac; _}) ->
-                  sprintf "(%s)%s" (CType.dump at) (PAC.pp_litmus pac ("_vars->" ^ s))
+              | Symbolic (Virtual {name=s; tag=None; offset=0; pac; _})
+                  when not (PAC.is_canonical pac) ->
+                  if pauth1 || pauth2 then
+                    sprintf "(%s)%s" (CType.dump at) (PAC.pp_litmus pac ("_vars->" ^ s))
+                  else
+                    Warn.user_error "\"pauth1\" or \"pauth2\" must be set to support to use pac(...) notation"
+              | Symbolic (Virtual {name=s; tag=None; offset=0; _}) ->
+                  sprintf "(%s)_vars->%s" (CType.dump at) s
               | Label (p,lbl) ->
                   sprintf "_vars->labels.%s" (OutUtils.fmt_lbl_var p lbl)
               | Tag _|Symbolic _ ->
