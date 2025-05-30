@@ -15,7 +15,10 @@
 (****************************************************************************)
 
 module
-  Make (O:sig val debug : bool end) =
+  Make
+    (O:sig
+       val extra : string list val debug : bool
+     end) =
 struct
 
   open Printf
@@ -47,7 +50,8 @@ struct
     do_rec 0
 
   let build dict =
-    List.fold_left (fun k (s,_) ->  insert s k) empty dict
+    let k = List.fold_left (fun k s -> insert s k) empty O.extra in
+    List.fold_left (fun k (s,_) ->  insert s k) k dict
 
   let trie =
     List.filter

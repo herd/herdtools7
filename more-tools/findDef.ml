@@ -26,9 +26,18 @@ struct
 
   (* Split set names... *)
 
+  (*
+   * Possible part of splitted names, no macro for them.
+   * This correspond to pre-defined identifiers hat
+   * are never used alone.
+   *)
+
+  let added_split_part = ["TTD";"Instr";]
+
   module SplitName =
     SplitName.Make
       (struct
+        let extra = added_split_part
         let debug = O.verbose > 1
       end)
 
@@ -85,17 +94,29 @@ struct
       let map =
         List.fold_left add_name
           map
+          @@ added_split_part @
+          (* Those are names not defined the Cat mode
+           * that have a descriptive LaTeX comment.
+           * Typically, predefined names that occur in
+           * definition rhs.
+           * This is especially important for names with
+           * non-ascii characters
+           *)
           [
             "iico-ctrl";
             "iico-addr";
             "iico-data";
             "iico-order";
+            "rf"; "fr"; "co";
             "ext"; "int";
             "Exp"; "Imp";
             "R"; "W"; "M";
             "Rreg"; "Wreg";
             "B";"BCC"; "po";
             "DATA"; "ADDR";
+            "DC.CVAU"; "TLBI";
+            "IC.IVAU"; "IC.IALLU"; "IC.ALLUIS";
+            "IC-after"; "DC-after"; "TLBI-after";
           ] in
 
       (* From command name to Cat names *)
@@ -222,6 +243,28 @@ struct
       | w::ws -> w::find_from ws in
     find_from
 
+  let split_ws op =
+    let rec split_rec = function
+      | [] -> [],[]
+      | w::ws ->
+          let ws,wss = split_rec ws in
+          if String.equal w op then
+            [],ws::wss
+          else w::ws,wss in
+    fun ws ->
+      let ws,wss = split_rec ws in
+      ws::wss
+
+  let split_op ws =
+    match split_ws "or" ws with
+    | _::_::_ as wss -> Some (PreCat.Or,wss)
+    | []|[_] ->
+        begin
+          match split_ws "and" ws with
+          | _::_::_ as wss -> Some (PreCat.And,wss)
+          | []|[_] -> None
+        end
+
   let set_arg is_def =
     if is_def then sprintf "anEffect%s"
     else Misc.identity
@@ -254,7 +297,7 @@ struct
       | Inverse n -> if is_reverse n then [| e1; e2; |] else [| e2; e1; |]
       | _ -> assert false in
     match PreCat.get_name name with
-    | ("DATA"|"ADDR") as n -> PreCat.Names [n],[| args.(0) |]
+    | ("DATA"|"ADDR") as n -> PreCat.(Names (And,[n]),[| args.(0) |])
     | _ ->  name,args
 
   let set is_def tgt e =
@@ -271,7 +314,7 @@ struct
         (("coucou",""),100) Dict.sets in
     if d > 1 then
       eprintf "Approx[%d]: '%s' as '%s'\n%!" d tgt body ;
-    PreCat.Names (SplitName.check name),arg
+    PreCat.(Names (And,SplitName.check name)),arg
 
   let justname tgt =
     let (name,body),d =
@@ -305,8 +348,14 @@ struct
     let name,es =
       if is_plus then
         let ws = remove_plus_suffix ws in
-        let tgt = ws_to_string ws in
-        PreCat.(Plus (Name (justname tgt))),es
+        match split_op ws with
+        | None ->
+            let tgt = ws_to_string ws in
+            PreCat.(Plus (Name (justname tgt))),es
+        | Some (op,wss) ->
+            let names =
+              List.map (fun ws -> ws_to_string ws |> justname) wss in
+            PreCat.(Plus (Names (op,names))),es
       else
         let tgt =  ws_to_string ws in
         match Array.length es with

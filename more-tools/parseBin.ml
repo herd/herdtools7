@@ -544,10 +544,10 @@ module
     | Def (op,Rel (name,_),ts,ws) ->
         begin
           if O.verbose > 0 then
-            eprintf "Input\n%a\n%!" pp_tree (Connect (op,ARel ("E1","E2"),ts,ws)) ;
+            eprintf "Input\n%a\n%!"
+              pp_tree (Connect (op,ARel ("E1","E2"),ts,ws)) ;
           match parse_bin f1 f2 op ts ws with
-          | (p,Connect (op,ARel (a1,a2),ts,ws)) ->
-              eprintf "%s -> %s\n" (pp_tag op) (Symbol.pp p) ;
+          | (_,Connect (op,ARel (a1,a2),ts,ws)) ->
               Def (op,Rel (name,(a1,a2)),ts,ws)
           | _ -> assert false
         end

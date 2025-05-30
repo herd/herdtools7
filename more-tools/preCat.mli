@@ -29,7 +29,7 @@ type name =
   | Inverse of string
   | Name of string
   | Neg of name
-  | Names of string list (* For sets only *)
+  | Names of tag * string list
 
 (* Get name inside *)
 val get_name : name -> string

@@ -37,12 +37,17 @@ type name =
   | Inverse of string
   | Name of string
   | Neg of name
-  | Names of string list
+  | Names of tag * string list
 
 let rec get_name = function
   |Plus n|Neg n -> get_name n
   |Inverse n|Name n -> n
-  |Names ns -> String.concat "" ns
+  |Names (_,ns) -> String.concat "" ns
+
+let pp_tag_as_op = function
+| And -> "&"
+| Or -> "|"
+| Seq -> "; "
 
 let rec pp_name = function
   | Plus (Name n) -> sprintf "%s+" n
@@ -51,14 +56,14 @@ let rec pp_name = function
   | Name n -> n
   | Neg (Name n) -> sprintf "~%s" n
   | Neg n -> sprintf "~(%s)" (pp_name n)
-  | Names ns -> String.concat " & " ns
+  | Names (op,ns) -> String.concat (pp_tag_as_op op)  ns
 
 let rec map_name f = function
   | Name n -> Name (f n)
   | Plus n -> Plus (map_name f n)
   | Inverse n -> Inverse (f n)
   | Neg n -> Neg (map_name f n)
-  | Names ns -> Names (List.map f ns)
+  | Names (op,ns) -> Names (op,List.map f ns)
 
 type reduced =
   | Rel of name * (string * string)
