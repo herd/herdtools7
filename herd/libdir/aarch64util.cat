@@ -70,6 +70,10 @@ let I-MMU = if "vmsa" && "ifetch" then MMU \ D-MMU else emptyset
 let Translation = if "vmsa" then Translation else emptyset
 let AccessFlag = if "vmsa" then AccessFlag else emptyset
 
+(* DC-by-addr includes DC by VA and DC by PA except for DC Z*VA instructions *)
+let GC.GVA = try DG.GVA with emptyset
+let DC.GZVA = try DC.GZVA with emptyset
+let DC-by-addr = DC \ (DC.ZVA | DC.GVA | DC.GZVA)
 
 (*
  * Include default definitions for sets that might be undefined without

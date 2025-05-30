@@ -351,6 +351,8 @@ end = struct
   let is_isync _ = raise Misc.NoIsync
   let pp_isync = "???"
 
+  let is_cmo _ = assert false
+
 (* Equations *)
 
   let undetermined_vars_in_action a =

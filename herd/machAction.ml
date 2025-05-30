@@ -700,6 +700,10 @@ end = struct
 
   let pp_isync = A.pp_isync
 
+  let is_cmo = function
+    | CMO _ -> true
+    | _ -> false
+
 (* Equations *)
   let undetermined_vars_in_action a =
     match a with
