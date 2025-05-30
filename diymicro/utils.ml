@@ -8,7 +8,6 @@ let unsome = function
   None -> raise Not_found
   | Some v -> v
 
-(** Returns the last element of a list *)
 let rec list_last =
   function
   | _::x::q -> list_last (x::q)

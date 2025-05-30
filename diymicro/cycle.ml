@@ -152,7 +152,6 @@ let assign_procs cycle_start =
       (* end of the cycle. We check that current edge is external, (as selected by find_first)
         we check that source and target proc indeed differ *)
 
-      (* this is independent of program input and should always be verified *)
       assert (is_external node.edge);
 
       if (node.source_event.proc = node.next.source_event.proc) then
