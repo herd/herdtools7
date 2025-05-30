@@ -478,7 +478,7 @@ module
     let ps,sets = parse_list f1 f2 ts in
     let sets =
       StringMap.fold
-        (fun a pts -> StringMap.add a (parse_set_bin op a pts))
+        (fun a pts -> StringMap.add a (parse_set_bin op a (List.rev pts)))
         sets StringMap.empty in
     match ps with
     | [] ->

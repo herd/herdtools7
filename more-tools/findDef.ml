@@ -32,7 +32,7 @@ struct
    * are never used alone.
    *)
 
-  let added_split_part = ["TTD";"Instr";]
+  let added_split_part = ["TTD";"Instr";"FAULT";]
 
   module SplitName =
     SplitName.Make
@@ -271,6 +271,9 @@ struct
 
   let is_reverse n = StringSet.mem n reverse
 
+  let no_name_name = "'???'"
+  let no_name = PreCat.Name no_name_name
+
   let relation is_def tgt e1 e2 =
     let a1 = set_arg is_def e1
     and a2 = set_arg is_def e2 in
@@ -288,8 +291,11 @@ struct
            else
              if d0_rev < d then (PreCat.Inverse name,s_rev),d0_rev else best)
         ((PreCat.Name "coucou",""),100) dict_relations in
-    if d > 1 then
-      eprintf "Approx[%d]: '%s' as '%s'\n%!" d tgt body ;
+    let name =
+      if d > 2 then begin
+        eprintf "Best approx[%d]: '%s' as '%s'\n%!" d tgt body ;
+        no_name
+      end else name in
     let args =
       let open PreCat in
       match name with
@@ -312,8 +318,12 @@ struct
              else best in
            best)
         (("coucou",""),100) Dict.sets in
-    if d > 1 then
-      eprintf "Approx[%d]: '%s' as '%s'\n%!" d tgt body ;
+    let name =
+    if d > 2 then begin
+      eprintf "Best approx[%d]: '%s' as '%s'\n%!" d tgt body ;
+      no_name_name
+    end else
+      name in
     PreCat.(Names (And,SplitName.check name)),arg
 
   let justname tgt =
@@ -324,9 +334,10 @@ struct
            if d0 < d then p,d0
            else best)
         (("coucou",""),100) Dict.names in
-    if O.verbose > 0 && d > 1 then
-      eprintf "Approx[%d]: '%s' as '%s'\n%!" d tgt body ;
-    name
+    if d > 2 then begin
+      eprintf "Best approx[%d]: '%s' as '%s'\n%!" d tgt body ;
+      no_name_name
+    end else name
 
   (* Only keep first occurences of events *)
   let remove_dup_events =

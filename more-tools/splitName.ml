@@ -63,19 +63,20 @@ struct
   let rec prefixes (Node t) =
     CharMap.fold
       (fun c (b,u) k ->
-         if b then
-           let sfs = suffixes u in
-           match sfs with
-           | [] -> k
-           | _ -> ([c],sfs)::k
-         else
+         let k =
            let pfs = prefixes u in
            match pfs with
            | [] -> k
            | _ ->
                List.fold_right
                  (fun (cs,sfs) k -> (c::cs,sfs)::k)
-                 pfs k)
+                 pfs k in
+         if b then
+           let sfs = suffixes u in
+           match sfs with
+           | [] -> k
+           | _ -> ([c],sfs)::k
+         else k)
       t []
 
   and suffixes (Node t) =
@@ -92,6 +93,20 @@ struct
     Buffer.contents buff
 
   let pfs = prefixes trie
+
+  let () =
+    if O.debug then begin
+      match pfs with
+      | [] -> ()
+      | _::_ ->
+          prerr_endline "Some prefixes are found" ;
+          List.iter
+            (fun (pf,sfs) ->
+               Printf.eprintf "%s -> {%s}\n"
+                 (pp_chars pf)
+                 (String.concat "," @@ List.map pp_chars sfs))
+            pfs
+    end
 
   let add_c c = function
     | [] -> []
@@ -147,7 +162,16 @@ struct
 
   let map =
     List.fold_left
-      (fun m (key,ss) -> StringMap.add key ss m)
+      (fun m (key,ss) ->
+           StringMap.update key
+             (function
+               | None -> Some ss
+               | Some old ->
+                   let ss =
+                     if List.length ss > List.length old then ss
+                     else old in
+                   Some ss)
+             m)
       StringMap.empty
       pfs
 

@@ -57,6 +57,8 @@ val pp_tree : out_channel -> t -> unit
 
 type d = Def of tag * reduced * t list  * string list
 
+val all_names : d -> StringSet.t
+
 val pp_def : out_channel -> d -> unit
 
 val pp_defs : out_channel -> d list -> unit

@@ -44,17 +44,22 @@ let rec get_name = function
   |Inverse n|Name n -> n
   |Names (_,ns) -> String.concat "" ns
 
+let rec all_names_name = function
+| Plus n|Neg n -> all_names_name n
+| Inverse n|Name n -> StringSet.singleton n
+| Names (_,ns) -> StringSet.of_list ns
+
 let pp_tag_as_op = function
 | And -> "&"
 | Or -> "|"
 | Seq -> "; "
 
 let rec pp_name = function
-  | Plus (Name n) -> sprintf "%s+" n
+  | Plus (Name n|Names (_,[n])) -> sprintf "%s+" n
   | Plus n -> sprintf "(%s)+" (pp_name n)
   | Inverse n -> sprintf "%s^-1" n
   | Name n -> n
-  | Neg (Name n) -> sprintf "~%s" n
+  | Neg (Name n|Names (_,[n])) -> sprintf "~%s" n
   | Neg n -> sprintf "~(%s)" (pp_name n)
   | Names (op,ns) -> String.concat (pp_tag_as_op op)  ns
 
@@ -69,6 +74,9 @@ type reduced =
   | Rel of name * (string * string)
   | Set of name * string
 
+let all_names_reduced = function
+| Rel (n,_)|Set (n,_) -> all_names_name n
+
 let reduce find ws =
   let name,args = find ws in
   match args with
@@ -80,8 +88,16 @@ type t =
   | Connect of tag * arg * t list * string list
   | Arg of reduced * string list
 
+let rec all_names_clause = function
+| Connect (_,_,ts,_) -> all_names_clauses ts
+| Arg (r,_) -> all_names_reduced r
+
+and all_names_clauses ts =
+  List.map all_names_clause ts |> StringSet.unions
+
 type d = Def of tag * reduced * t list  * string list
 
+let all_names (Def (_,_,ts,_)) = all_names_clauses ts
 
 let pp_tag = function
   | Or -> "Or"
