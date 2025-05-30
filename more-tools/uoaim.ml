@@ -85,12 +85,18 @@ module PB = ParseBin.Make(Config)
 let arg = !arg
 
 let () =
-  let ds =
-    match arg with
-    | None -> zyva arg stdin
-    | Some name -> Misc.input_protect (zyva arg) name in
-  List.iter
-    (fun d ->
-       let d = PB.zyva d in
-       PreCat.pp_def stdout d)
-    ds
+  try
+    let ds =
+      match arg with
+      | None -> zyva arg stdin
+      | Some name -> Misc.input_protect (zyva arg) name in
+    List.iter
+      (fun d ->
+         let d = PB.zyva d in
+         if !verbose > 0 then PreCat.pp_def stderr d ;
+         PpCat.pp_def Format.std_formatter d)
+      ds
+  with
+  | Misc.Fatal msg ->
+      eprintf "Fatal error: %s\n" msg ;
+      exit 1
