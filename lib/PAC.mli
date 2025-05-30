@@ -22,6 +22,12 @@ type t
  *)
 val pp : t -> string -> int -> string
 
+(* Pretty print in a format usable by litmus using pauth_sign_* functions
+ * All the offset must be zeros, support up to one PAC field (no XOR of PAC
+ * fields here), and no error code
+ *)
+val pp_litmus : t -> string -> string
+
 (* Ordering relation over PAC fields *)
 val compare : t -> t -> int
 

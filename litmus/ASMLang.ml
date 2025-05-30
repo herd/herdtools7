@@ -489,9 +489,16 @@ module RegMap = A.RegMap)
       let compile_val_fun =
         let open Constant in
         fun ptevalEnv v -> match v with
-        | Symbolic (Virtual {pac})
+        | Symbolic (Virtual ({pac} as sym))
           when not (PAC.is_canonical pac) ->
-            Warn.user_error "Litmus cannot initialize a virtual address with a non-canonical PAC field"
+            (*Warn.user_error "Litmus cannot initialize a virtual address with a
+            non-canonical PAC field"*)
+            let s = Constant.pp_symbol_old (Virtual {sym with pac=PAC.canonical}) in
+            let value = sprintf "%s%s"
+              (match O.memory with Memory.Direct -> "" | Memory.Indirect -> "*")
+              s in
+            PAC.pp_litmus pac value
+
         | Symbolic sym ->
             let s = Constant.pp_symbol_old sym in
             sprintf "%s%s"

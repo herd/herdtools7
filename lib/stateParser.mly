@@ -65,6 +65,11 @@ let mk_lab (p, l) = Label (p, l)
 %}
 
 %token EOF
+%token TOK_PAC
+%token TOK_PACDA
+%token TOK_PACDB
+%token TOK_PACIA
+%token TOK_PACIB
 %token <int> PROC
 %token <string> SYMB_REG
 %token <string> NAME
@@ -121,7 +126,6 @@ reg:
 | DOLLARNAME {  $1 }
 
 location_global:
-| NAME { Constant.mk_sym $1 }
 | TOK_PTE LPAR NAME RPAR { Constant.mk_sym_pte  $3 }
 | TOK_PTE LPAR TOK_PTE LPAR NAME RPAR RPAR { Constant.mk_sym_pte2 $5 }
 | TOK_PA LPAR NAME RPAR { Constant.mk_sym_pa $3 }
@@ -131,6 +135,37 @@ location_global:
 (* TODO: have MTE and Morello tags be usable at the same time? *)
 | NUM COLON NAME COLON NUM {mk_sym_morello $1 $3 $5}
 | NAME COLON NUM { mk_sym_morello "0" $1 $3 }
+| name_pac_plus { $1 }
+
+pac_key:
+| TOK_PACDA { PAC.DA }
+| TOK_PACDB { PAC.DB }
+| TOK_PACIA { PAC.IA }
+| TOK_PACIB { PAC.IB }
+
+name_pac_plus:
+| NAME { Constant.mk_sym $1 }
+| TOK_PAC LPAR NAME COMMA NAME COMMA NUM RPAR
+  {
+    (* Pointer Authentication Code parsing: restricted to integer modifiers *)
+    let key = PAC.parse_key $5 in
+    let modifier = Printf.sprintf "0x%x" (int_of_string $7) in
+    match Constant.mk_sym $3 with
+    | Symbolic (Virtual v) ->
+      Symbolic (Virtual {
+        v with pac = PAC.add v.name key modifier 0 v.pac
+      })
+    | _ -> Warn.user_error "pac field only exists for virtual address"
+  }
+| pac_key LPAR NAME COMMA NUM RPAR
+  {
+    (* Pointer Authentication Code parsing: restricted to integer modifiers *)
+    let modifier = Printf.sprintf "0x%x" (int_of_string $5) in
+    match Constant.mk_sym $3 with
+    | Symbolic (Virtual v) ->
+      Symbolic (Virtual {v with pac = PAC.add v.name $1 modifier 0 v.pac})
+    | _ -> Warn.user_error "pac field only exists for virtual address"
+  }
 
 name_or_num:
 | NAME { $1 }

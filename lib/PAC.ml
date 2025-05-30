@@ -162,6 +162,17 @@ let pp pac s offset =
   in
   do_rec offset (PacSet.elements pac)
 
+let pp_litmus pac s =
+  let do_rec = function
+    | [] -> s
+    | Ok ok :: [] ->
+        assert (ok.offset == 0);
+        Printf.sprintf "pauth_sign_%s((void*)(%s), %s)"
+          (pp_lower_key ok.key) s ok.modifier
+    | _ ->
+        assert false
+  in do_rec (PacSet.elements pac)
+
 (* A simplex like solver for linear constraints over PAC fields (linear
    because of the XOR), it use a bi-partition of the variables in two set:
    the basic variables and the non-basic varaibles (a variable is a PAC

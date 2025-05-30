@@ -38,6 +38,11 @@ rule token = parse
 | "(*"      { LU.skip_comment lexbuf ; token lexbuf }
 | num as num
    {NUM num }
+| "pac" { TOK_PAC }
+| "pacda" { TOK_PACDA }
+| "pacdb" { TOK_PACDB }
+| "pacia" { TOK_PACIA }
+| "pacib" { TOK_PACIB }
 | 'P' (decimal as x)
     { PROC (int_of_string x) }
 | '%' (name as name) { SYMB_REG name }
