@@ -193,22 +193,22 @@ module NativeBackend (C : Config) = struct
       positions
     |> slices_to_positions Fun.id
 
-  let read_from_bitvector ~loc slices bv =
+  let read_from_bitvector ~loc slices v =
     let positions = slices_to_positions slices in
     let max_pos = List.fold_left int_max 0 positions in
     let () =
       List.iter
-        (fun x -> if x < 0 then mismatch_type bv [ default_t_bits ])
+        (fun x -> if x < 0 then mismatch_type v [ default_t_bits ])
         positions
     in
     let bv =
-      match bv with
+      match v with
       | NV_Literal (L_BitVector bv) when Bitvector.length bv > max_pos -> bv
       | NV_Literal (L_Int i) -> Bitvector.of_z (max_pos + 1) i
       | _ ->
           let ( ~! ) = add_pos_from loc in
           let t = integer_range zero_expr (expr_of_int max_pos) in
-          mismatch_type bv [ T_Bits (~!(E_ATC (~!(E_Var "-"), t)), []) ]
+          mismatch_type v [ T_Bits (~!(E_ATC (~!(E_Var "-"), t)), []) ]
     in
     let res = Bitvector.extract_slice bv positions in
     bitvector_to_value res

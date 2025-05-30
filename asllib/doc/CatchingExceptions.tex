@@ -213,7 +213,7 @@ That is, no dynamic error occurs.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
+  \item $\sm$ is $\Throwing((\langle \vv, \vvty \rangle, \sg), \envthrow)$;
   \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
   \item $\envthrow$ consists of the static environment $\tenv$ and dynamic environment \\ $\denvthrow$;
   \item finding the first catcher with the static environment $\tenv$, the exception type $\vvty$,
@@ -229,7 +229,7 @@ That is, no dynamic error occurs.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \sm \eqname \Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)\\
+  \sm \eqname \Throwing((\langle \vv, \vvty \rangle, \sg), \envthrow)\\
   \env \eqname (\tenv, (G^\denv, L^\denv))\\
   \envthrow \eqname (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
   \findcatcher(\tenv, \vvty, \catchers) \eqname \langle (\None, \Ignore, \vs) \rangle\\
@@ -250,13 +250,13 @@ The specification in \listingref{semantics-catchnamed}, prints \texttt{My except
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
+  \item $\sm$ is $\Throwing((\langle \vv, \vvty \rangle, \sg), \envthrow)$;
   \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
   \item $\envthrow$ consists of the static environment $\tenv$ and dynamic environment \\ $\denvthrow$;
   \item finding the first catcher with the static environment $\tenv$, the exception type $\vvty$,
   and the list of catchers $\catchers$ gives a catcher that declares the name $\name$ and gives a statement $\vs$;
-  \item $\vgone$ is the execution graph resulting from reading $\vv$ into the identifier $\eid$;
-  \item declaring a local identifier $\name$ with $(\veone, \vgone)$ in $\envthrow$ gives $(\envtwo, \vgtwo)$;
+  \item applying $\readvaluefrom$ to $\vv$ yields $(\vv, \vgone)$;
+  \item declaring a local identifier $\name$ with $(\vv, \vgone)$ in $\envthrow$ gives $(\envtwo, \vgtwo)$;
   \item evaluating $\vs$ in $\envtwo$ as a block (\SemanticsRuleRef{Block}) is not an error
   configuration $C$\ProseOrError;
   \item $\envthree$ is the environment of the configuration $C$;
@@ -272,12 +272,12 @@ The specification in \listingref{semantics-catchnamed}, prints \texttt{My except
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \sm \eqname \Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)\\
+  \sm \eqname \Throwing((\langle \vv, \vvty \rangle, \sg), \envthrow)\\
   \env \eqname (\tenv, (G^\denv, L^\denv))\\
   \envthrow \eqname (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
   \findcatcher(\tenv, \vvty, \catchers) \eqname \langle (\langle\name\rangle, \Ignore, \vs) \rangle\\
-  \vgone \eqdef \readidentifier(\eid, \vv)\\
-  \declarelocalidentifierm(\envthrow, \name, (\veone, \vgone)) \evalarrow (\envtwo, \vgtwo)\\
+  \readvaluefrom(\vv) \evalarrow (\vv, \vgone)\\
+  \declarelocalidentifierm(\envthrow, \name, (\vv, \vgone)) \evalarrow (\envtwo, \vgtwo)\\
   \evalblock{\envtwo, \vs} \evalarrow C \OrDynError\\\\
   \envthree \eqdef \environof{C}\\
   \removelocal(\envthree, \name) \evalarrow \envfour\\
@@ -298,7 +298,7 @@ The specification in \listingref{semantics-catchotherwise} prints \texttt{Otherw
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
+  \item $\sm$ is $\Throwing((\langle \vv, \vvty \rangle, \sg), \envthrow)$;
   \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
   \item $\envthrow$ consists of the static environment $\tenv$ and dynamic environment \\ $\denvthrow$;
   \item finding the first catcher with the static environment $\tenv$, the exception type $\vvty$,
@@ -316,7 +316,7 @@ The specification in \listingref{semantics-catchotherwise} prints \texttt{Otherw
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \sm \eqname \Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)\\
+  \sm \eqname \Throwing((\langle \vv, \vvty \rangle, \sg), \envthrow)\\
   \env \eqname (\tenv, (G^\denv, L^\denv))\\
   \envthrow \eqname (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
   \findcatcher(\tenv, \vvty, \catchers) = \None\\
@@ -339,7 +339,7 @@ that matches the exception type (\texttt{MyExceptionType1}).
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\sm$ is $\Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)$;
+  \item $\sm$ is $\Throwing((\langle \vv, \vvty \rangle, \sg), \envthrow)$;
   \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
   \item $\envthrow$ consists of the static environment $\tenv$ and dynamic environment \\ $\denvthrow$;
   \item finding the first catcher with the static environment $\tenv$, the exception type $\vvty$,
@@ -350,7 +350,7 @@ that matches the exception type (\texttt{MyExceptionType1}).
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \sm \eqname \Throwing((\langle \valuereadfrom(\vv, \eid), \vvty \rangle, \sg), \envthrow)\\
+  \sm \eqname \Throwing((\langle \vv, \vvty \rangle, \sg), \envthrow)\\
   \env \eqname (\tenv, \denv)\\
   \findcatcher(\tenv, \vvty, \catchers) = \None
 }{
@@ -476,9 +476,9 @@ changes \emph{implicit throwing configurations} into \emph{explicit throwing con
 That is, configurations of the form $\Throwing((\None, \vg), \envthrowone)$.
 
 $\rethrowimplicit$ leaves non-throwing configurations, and \emph{explicit throwing configurations},
-which have the form $\Throwing(\langle(\valuereadfrom(\vv', \eid), \vvty')\rangle, \vg)$, as is.
+which have the form $\Throwing(\langle(\vv, \vvty')\rangle, \vg)$, as is.
 Implicit throwing configurations are changed by substituting the optional $\valuereadfrom$ configuration-exception type
-pair with $\vv$ and $\vvty$, respectively.
+pair with $\vv'$ and $\vvty'$, respectively.
 
 \ExampleDef{Re-throwing an Exception}
 \listingref{rethrow-implicit} shows a specification where the exception thrown
@@ -522,7 +522,7 @@ Exception value A
 \inferrule[implicit\_throwing]{}
 {
   \rethrowimplicit(\vv, \vvty, \Throwing((\None, \vg), \envthrowone)) \evalarrow \\
-  \Throwing((\langle(\valuereadfrom(\vv, \eid), \vvty)\rangle, \vg), \envthrowone)
+  \Throwing((\langle(\vv, \vvty)\rangle, \vg), \envthrowone)
 }
 \end{mathpar}
 
