@@ -477,6 +477,15 @@ let diff_loc e = not (same_loc e)
 
 let same_proc e = E.get_ie e = Int
 let diff_proc e = E.get_ie e = Ext
+let int_com e = match e.E.edge with
+  | E.Rf Int|E.Fr Int|E.Ws Int -> true
+  | _ -> false
+
+let update_int_to_ext e = match e.edge.E.edge with
+  | E.Rf Int -> e.edge <- {e.edge with E.edge = E.Rf Ext}
+  | E.Fr Int -> e.edge <- {e.edge with E.edge = E.Fr Ext}
+  | E.Ws Int -> e.edge <- {e.edge with E.edge = E.Ws Ext}
+  | _ -> ()
 
 
 (* Coherence definition *)
@@ -630,8 +639,6 @@ let is_rmw d e = match d with
 | R -> is_rmw_edge e.edge
 | W -> is_rmw_edge e.prev.edge
 | J -> is_rmw_edge e.edge
-
-let is_com_rmw n0 = E.is_com n0.edge || is_rmw_edge n0.edge
 
 let remove_store n0 =
   let n0 =
@@ -980,17 +987,17 @@ let set_same_loc st n0 =
       with
       | Not_found ->
         (*check if node is preceded by a non com/rmw node and is itself a com/rmw node*)
-        let to_com_rmw n0 = not (is_com_rmw n0.prev) && is_com_rmw n0 in
+        let to_com n0 = not (E.is_com n0.prev.edge) && E.is_com n0.edge in
         fold (fun n0 _ -> if E.is_id n0.edge.E.edge then assert false) n ();
         try
           (* check for R ensures that we start on Fr or Rmw if possible*)
-          let m = find_node (fun m -> to_com_rmw m && m.evt.dir = Some R) n in
+          let m = find_node (fun m -> to_com m && m.evt.dir = Some R) n in
           split_one_loc m
         with Not_found -> try
           (* The previous search failed. This search will return the W node from
              which an Rf edge starts, provided that the previous edge is not a
              communication or a Rmw edge *)
-          let m = find_node (fun m -> to_com_rmw m) n in
+          let m = find_node (fun m -> to_com m) n in
           split_one_loc m
         with Not_found -> Warn.fatal "cannot set write values"
       | Exit -> Warn.fatal "cannot set write values" in
@@ -1165,6 +1172,24 @@ let extract_edges n =
     k in
   do_rec n
 
+let find_start_proc n =
+  let p = find_non_pseudo_prev n.prev in
+  if
+    diff_proc p.edge
+  then p.next
+  else
+    let n = try
+      find_edge diff_proc n
+    with Not_found ->
+      (* in the case of all internal edges,
+         we convert one to external to form a cycle *)
+      let n = find_edge int_com n in
+      update_int_to_ext n;
+      n in
+    try find_edge same_proc n
+    with Not_found -> n
+
+
 let resolve_edges = function
   | [] -> Warn.fatal "No edges at all!"
   | es ->
@@ -1172,6 +1197,9 @@ let resolve_edges = function
       merge_annotations c ;
       let c = remove_store c in
       set_dir c ;
+      (* call `find_start_proc` to adjust the cycle,
+      in the case there is no external exge. *)
+      let _ = find_start_proc c in
       extract_edges c,c
 
 let make es =
@@ -1182,16 +1210,6 @@ let make es =
 (*************************)
 (* Gather events by proc *)
 (*************************)
-
-let find_start_proc n =
-  let p = find_non_pseudo_prev n.prev in
-  if
-    diff_proc p.edge
-  then p.next
-  else
-    let n = find_edge (fun n -> diff_proc n) n in
-    try find_edge same_proc n
-    with Not_found -> n
 
 
 let cons_not_nil k1 k2 = match k1 with

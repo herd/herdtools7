@@ -11,5 +11,5 @@ Witnesses
 Positive: 1 Negative: 5
 Condition exists ([y]=3 /\ 0:X1=0 /\ 1:X1=1 /\ not (fault(P0,x)))
 Observation LB+dmb.sy+amo.ldaddal-polt Sometimes 1 5
-Hash=d03abdfed2cd95ba87dc0d3549be20e0
+Hash=ce248181f4c1c1e531d807d32e3f394c
 
