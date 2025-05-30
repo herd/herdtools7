@@ -41,4 +41,16 @@ void* strip_pauth_instruction(void* ptr);
 // Remove the PAC field in a data pointer
 void* strip_pauth_data(void* ptr);
 
+// Sign a pointer with the key DA
+void* pauth_sign_da(void* ptr, uint64_t modifier);
+
+// Sign a pointer with the key DB
+void* pauth_sign_db(void* ptr, uint64_t modifier);
+
+// Sign a pointer with the key IA
+void* pauth_sign_ia(void* ptr, uint64_t modifier);
+
+// Sign a pointer with the key IB
+void* pauth_sign_ib(void* ptr, uint64_t modifier);
+
 #endif
