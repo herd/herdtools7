@@ -182,3 +182,23 @@ void* strip_pauth_data(void* ptr) {
   asm volatile("xpacd %[ptr]": [ptr] "+r" (ptr));
   return ptr;
 }
+
+void* pauth_sign_da(void* ptr, uint64_t modifier) {
+  asm volatile("pacda %[ptr], %[mod]" : [ptr] "+r" (ptr) : [mod] "r" (modifier));
+  return ptr;
+}
+
+void* pauth_sign_db(void* ptr, uint64_t modifier) {
+  asm volatile("pacdb %[ptr], %[mod]" : [ptr] "+r" (ptr) : [mod] "r" (modifier));
+  return ptr;
+}
+
+void* pauth_sign_ia(void* ptr, uint64_t modifier) {
+  asm volatile("pacia %[ptr], %[mod]" : [ptr] "+r" (ptr) : [mod] "r" (modifier));
+  return ptr;
+}
+
+void* pauth_sign_ib(void* ptr, uint64_t modifier) {
+  asm volatile("pacib %[ptr], %[mod]" : [ptr] "+r" (ptr) : [mod] "r" (modifier));
+  return ptr;
+}
