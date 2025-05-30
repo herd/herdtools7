@@ -1026,10 +1026,4 @@ ASL Typing Tests / annotating types:
     loss.
   [1]
   $ aslref --no-exec TypingRule.GetLiteralDivOpt.asl
-  File TypingRule.GetLiteralDivOpt.asl, line 6, characters 4 to 5:
-      z = 2;
-      ^
-  ASL Type error: a subtype of integer {3..5} was expected,
-    provided integer {2}.
-  [1]
   $ aslref TypingRule.ReduceToZOpt.asl
