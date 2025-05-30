@@ -1670,8 +1670,12 @@ module Make
             Warn.fatal "Vector used as scalar"
           | ConcreteRecord _ ->
             Warn.fatal "Record used as scalar"
-          | Symbolic (Virtual a) when not (PAC.is_canonical a.pac) ->
-            Warn.user_error "Litmus cannot initialize a virtual address with a non-canonical PAC field"
+          | Symbolic (Virtual {name=s; tag=None; offset=0; pac; _})
+              when not (PAC.is_canonical pac) ->
+              if pauth1 || pauth2 then
+                sprintf "(%s)%s" (CType.dump at) (PAC.pp_litmus pac ("_vars->" ^ (Symbol.pp s)))
+              else
+                Warn.user_error "\"pauth1\" or \"pauth2\" must be set to support to use pac(...) notation"
           | Symbolic (Virtual {name=Constant.Symbol.Label(p,lbl);_}) ->
             sprintf "_vars->labels.%s" (OutUtils.fmt_lbl_var p lbl)
           | Symbolic (Virtual {name=s; tag=None; offset=0; _}) ->
