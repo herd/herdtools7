@@ -114,6 +114,78 @@ module Make
          try StringMap.find (tr_id name) defs
          with Not_found -> None
 
+(*****************************************)
+(* Normalisation of set-lifting `[evts]` *)
+(*****************************************)
+
+(*
+ * Replace the expression `[evts]` with the equivalent
+ * expression  `[evts] & id`.
+ * Namely, [tr e1 e2] must output a relation
+ * description that refers explicitly to the two events e1 and e2.
+ *  However, the description of `[evts]` refers to [e1] only.
+ * Indeed this is possible, in the case of an argument of a sequence,
+ * see [tr_seq] below.
+ * To control the arguments [e1] and [e2] for sequence arguments,
+ * we also  transform the (unlikely) sequence
+ * `...;[evts1];[evts2];...` into ...;[evts1&evts2];...`.
+ * That [tr_seq] can identify all cases where the arguments
+ * [e1] and [e2] are the same.
+ *)
+
+let expand_toid loc e = Op (loc,Inter,[e;Var (TxtLoc.none,"id");])
+
+let rec norm_rel e = match e with
+| Konst _|Var _|Op (_,(Cartesian|Add|Tuple),_) -> e
+| Op1 (loc,ToId,_) -> expand_toid loc e
+| Op1 (loc,(Plus|Star|Opt|Comp|Inv as op),e)
+  -> Op1 (loc,op,norm_rel e)
+| Op (loc,(Seq as op),es) ->
+    Op (loc,op,norm_seqs es)
+| Op (loc,(Diff|Union|Inter as op),es) ->
+    Op (loc,op,List.map norm_rel es)
+| If (loc,c,e1,e2) ->
+    If (loc,c,norm_rel e1,norm_rel e2)
+| App (loc,e1,e2) ->
+    App (loc,norm_rel e1,norm_rel e2)
+| Tag _|Bind _|BindRec _|Fun _|ExplicitSet _
+| Match _|MatchSet _|Try _
+    -> e
+
+and norm_seqs =
+  let rec do_rec = function
+    | [] -> [],[]
+    | Op1 (_,ToId,_) as e::es
+      ->
+        let fs,es = do_rec es in
+        e::fs,es
+    | e::es ->
+        let e = norm_rel e in
+        let fs,es = do_rec es in
+        [],e::cons_seqs fs es in
+  function
+    | [] -> []
+    | Op1 (_,ToId,_) as e::es ->
+      let fs,es = do_rec es in
+      cons_seqs (e::fs) es
+    | e::es ->
+        let e = norm_rel e
+        and fs,es = do_rec es in
+        e::cons_seqs fs es
+
+and cons_seqs (fs:exp list) (es:exp list) =
+  match fs with
+  | [] -> es
+  | [f] -> f::es
+  | fs ->
+      let fs =
+        List.map (function (Op1 (_,ToId,f)) -> f | _ -> assert false) fs in
+      Op1 (TxtLoc.none,ToId,Op (TxtLoc.none,Inter,fs))::es
+
+(***********************)
+(* To natural language *)
+(***********************)
+
     let nodefs = ref StringSet.empty
 
     let get_nodefs () =
@@ -197,7 +269,7 @@ module Make
     let rec get_type = function
       | Konst (_,(Empty ty|Universe ty)) -> Some ty
       | Op (_,(Seq|Cartesian),_)
-      | Op1 (_,(ToId|Star|Plus),_)
+      | Op1 (_,(ToId|Star|Plus|Inv),_)
         -> Some RLN
       | If (_,_,e1,e2) ->
          get_type2 e1 e2
@@ -542,6 +614,8 @@ module Make
         (fun loc id -> tr_evts_id e1 loc id)
         a b
 
+    let tr_rel e1 e2 e = tr_rel e1 e2 @@ norm_rel e
+
     (*********************************)
     (* Flatten associative operators *)
     (*********************************)
@@ -575,6 +649,37 @@ module Make
            | t ->
               t::flatten_op op es
          end
+
+    let rec rm_dups = function
+      | List ((Inter|Union|Seq as op),intro_txt,sep_txt,ts)
+        ->
+         List (op,intro_txt,sep_txt,rm_dups_args ts)
+      | List (op,txt,s,ts) ->
+         List (op,txt,s,List.map rm_dups ts)
+      | DiffPair (e1,e2) ->
+         DiffPair (rm_dups e1,rm_dups e2)
+      | IfCond (txt,e1,e2) ->
+         IfCond (txt,rm_dups e1,rm_dups e2)
+      | Item _ as t -> t
+
+    and rm_dups_args ts =
+      let ts = List.map rm_dups ts in
+      rm_items ts
+
+    and rm_items =
+
+      let rec do_rec = function
+        | [] -> StringSet.empty,[]
+        | Item s as e::es ->
+            let seen,es = do_rec es in
+            if StringSet.mem s seen then
+            seen,es
+          else
+            StringSet.add s seen,e::es
+      | e::es ->
+          let seen,es = do_rec es in
+          seen,e::es in
+      fun es -> let _,es = do_rec es in es
 
     (*********************************)
     (* Pretty print nested structure *)
@@ -707,7 +812,7 @@ module Make
                    (pp_id loc id) (pp_evt es.(0))) in
       let d =
         if O.flatten then
-         ASTUtils.flatten d |> tr |> flatten_out 
+         ASTUtils.flatten d |> tr |> flatten_out |> rm_dups
         else tr d in
       pp_def pref "." d ;
       if O.testmode || StringSet.cardinal O.names > 1 then printf "\\par\n"
