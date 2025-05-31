@@ -35,6 +35,7 @@ module type CommonConfig = sig
   val variant : Variant.t -> bool
   val fault_handling : Fault.Handling.t
   val mte_precision : Precision.t
+  val mte_store_only : bool
 end
 
 module type Config = sig
