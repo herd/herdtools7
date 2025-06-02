@@ -1248,7 +1248,7 @@ yields $\True$.
 In \listingref{semantics-checknonoverlappingslices-bad},
 the slices \verb|N-1:N-2| and \verb|0| overlap, and $\checknonoverlappingslices$
 yields a \dynamicerrorterm, even though the assignment \verb|y[N-1:N-2, 0] = '111';|
-writes \verb|0| to the common position $0$.
+writes \verb|1| to the common position $0$.
 \ASLListing{Overlapping slices}{semantics-checknonoverlappingslices-bad}{\semanticstests/SemanticsRule.CheckNonOverlappingSlices.bad.asl}
 
 \ProseParagraph

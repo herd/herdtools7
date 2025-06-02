@@ -2012,8 +2012,8 @@ The function
 \]
 returns an integer inside an optional if $\ve$ can be symbolically simplified into an integer in $\tenv$
 and $\None$ otherwise.
-The expression $\ve$ is assumed to appear in a constraint for a type that has been successfully annotated,
-which means that applying $\normalize$ to it should not yield a \typingerrorterm{}.
+The expression $\ve$ is assumed not to yield a \typingerrorterm{}
+when applying $\normalize$ to it.
 
 \ExampleDef{Reducing Expressions to Optional Integers}
 The specification in \listingref{ReduceToZOpt} shows two examples of expressions
