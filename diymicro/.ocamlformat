@@ -1,0 +1,6 @@
+space-around-lists = false
+space-around-records = false
+space-around-variants = false
+parens-tuple = multi-line-only
+
+disable = false

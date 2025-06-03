@@ -33,5 +33,5 @@ rule token = parse
   | "->"    { ARROW }
 
   | filename as s { ID (s) } (* TODO: what do I need to change to use id directly ? *)
-  | _ as c { failwith (Printf.sprintf "unexpected character: %C" c) }
+  | _ as c { Warn.fatal "unexpected character: %C" c }
   | eof    { EOF }
