@@ -1,17 +1,11 @@
 (** Transforms a cycle into a test, ie generates instructions, init and final conditions, and dumps them to a litmus test *)
 module A = struct (* TODO Don't exactly know how to do modularity *)
-  include MakeAArch64Base.Make(struct let is_morello = false end)
+  include AArch64_compile
 end
 
 module C = struct
   include Cycle
 end
-
-(** current state inside a single proc *)
-type state = {
-  free_registers: A.reg list; (* available registers *)
-  proc: C.proc; (* TODO juste pour enlever les warnings *)
-}
 
 (** metadata needed along instructions for a litmus test *)
 type t = {
@@ -20,11 +14,6 @@ type t = {
   initial_values: (C.loc, int) Hashtbl.t; (* initial values of loc, 0 if not present *)
   mutable final_conditions: (C.proc * A.reg * int) list
 }
-
-
-let next_reg (st: state) = match st.free_registers with
-  | r::rs -> r,{ st with free_registers=rs; }
-  | [] -> failwith "No more free registers"
 
 
 (** Returns a list of lists of nodes (cycles), splitted by proc *)
@@ -42,11 +31,11 @@ let split_by_proc (cycle: C.t) =
 
 
 
-let compile_event (st: state) (event: C.event) =
+let compile_event (st: A.state) (event: C.event) =
   let _ = event in
   st,[]
 
-let compile_edge (st: state) (node: C.t) = 
+let compile_edge (st: A.state) (node: C.t) = 
   let _ = node in
   st,[]
 
@@ -62,10 +51,15 @@ let make_test (cycle: C.t) =
   } in
   let compile_proc proc nodes =
     let rec init_st = function
-      | C.Loc (-1) -> { free_registers = A.allowed_for_symb; proc = proc; }
+      | C.Loc (-1) ->
+        A.{
+          free_registers = A.allowed_for_symb;
+          proc = proc;
+          next_addr = 0
+        }
       | C.Loc loc_i ->
         let st = init_st (C.Loc (loc_i-1)) in
-        let r,st = next_reg st in
+        let r,st = A.next_reg st in
         Hashtbl.add test.env (C.Loc loc_i, proc) r;
         st
     in let rec compile_proc_aux st = function
