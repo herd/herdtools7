@@ -7,6 +7,10 @@ module C = struct
   include Cycle
 end
 
+module E = struct
+  include Edge
+end
+
 (** metadata needed along instructions for a litmus test *)
 type t = {
   cycle: C.t; (* edges, read and write values etc *)
@@ -14,6 +18,15 @@ type t = {
   initial_values: (C.loc, int) Hashtbl.t; (* initial values of loc, 0 if not present *)
   mutable final_conditions: (C.proc * A.reg * int) list
 }
+
+let pp_env env =
+  Hashtbl.fold (fun (loc, proc) r s ->
+    s^"\n"^C.pp_location loc^", "^C.pp_proc proc^" -> "^A.pp_reg r)
+  env ""
+
+let get_register env loc proc =
+  try Hashtbl.find env (loc, proc)
+  with Not_found -> Warn.fatal "Unable to find register for %s %s" (C.pp_location loc) (C.pp_proc proc)
 
 
 (** Returns a list of lists of nodes (cycles), splitted by proc *)
@@ -23,21 +36,55 @@ let split_by_proc (cycle: C.t) =
     c.C.source_event.C.proc = Some (C.Proc 0)
   ) in
   let rec split_by_proc node =
-    let next = if node.C.next != first_node then split_by_proc node.C.next else []
+    let next =
+      if node.C.next != first_node then
+        split_by_proc node.C.next
+      else []
     in match next with
-    | e::q -> (node::e)::q
+    | e::q ->
+      if node.C.next.C.source_event.C.proc <> node.C.source_event.C.proc
+        then [node]::(e::q)
+      else
+        (node::e)::q
     | [] -> [[node]]
-  in split_by_proc cycle
+  in split_by_proc first_node
 
 
 
-let compile_event (st: A.state) (event: C.event) =
-  let _ = event in
-  st,[]
+let compile_event (st: A.state) test (src: A.reg) (event: C.event) =
+  let _ = src in
+  let event_reg = get_register test.env (Utils.unsome event.C.location) (Utils.unsome event.C.proc) in
+  match event.C.direction with
+  | None -> Warn.fatal "Direction not loaded"
+  | Some Edge.Rm ->
+    let dst,st = A.next_reg st in
+    A.pseudo [A.do_ldr A.vloc dst event_reg],dst,st
+  | Some Edge.Wm ->
+    let val_reg,st = A.next_reg st in
+    [A.mov val_reg (Utils.unsome event.C.value)]@ A.pseudo [A.str val_reg event_reg],event_reg,st
+  | Some Edge.Rr ->
+    let dst,st = A.next_reg st in
+    [A.mov_reg dst event_reg],dst,st
+  | Some Edge.Wr ->
+    [A.mov event_reg (Utils.unsome event.C.value)],event_reg,st
 
-let compile_edge (st: A.state) (node: C.t) = 
-  let _ = node in
-  st,[]
+let compile_edge (st: A.state) test (src: A.reg) (node: C.t) = 
+  match node.C.edge with
+  | E.Fr _ ->
+    test.final_conditions <- (
+      Utils.unsome node.C.source_event.C.proc,
+      src,
+      Utils.unsome node.C.source_event.C.value
+    )::test.final_conditions;
+    [],src,st
+  | E.Rf _ -> test.final_conditions <- (
+      Utils.unsome node.C.next.C.source_event.C.proc,
+      src,(* TODO this should be next.source_event's dst but we don't have access to it.. ? -> need to rework some design *)
+      Utils.unsome node.C.next.C.source_event.C.value
+    )::test.final_conditions;
+    [],src,st
+  | _ -> [],src,st
+
 
 (** Generate test from a cycle *)
 let make_test (cycle: C.t) =
@@ -54,7 +101,6 @@ let make_test (cycle: C.t) =
       | C.Loc (-1) ->
         A.{
           free_registers = A.allowed_for_symb;
-          proc = proc;
           next_addr = 0
         }
       | C.Loc loc_i ->
@@ -62,15 +108,16 @@ let make_test (cycle: C.t) =
         let r,st = A.next_reg st in
         Hashtbl.add test.env (C.Loc loc_i, proc) r;
         st
-    in let rec compile_proc_aux st = function
-      | [] -> st,[]
+    in let rec compile_proc_aux st (src: A.reg) = function
+      | [] -> [],st
       | n::nq ->
-        let st,evt_code = compile_event st n.C.source_event in
-        let st,edge_code = compile_edge st n in
-        let st,next_code = compile_proc_aux st nq in
-        st,evt_code@edge_code@next_code
-    in let st = init_st (C.Loc loc_count)
-    in let _,ins = compile_proc_aux st nodes in ins
+        let evt_code,evt_dst,st = compile_event st test src n.C.source_event in
+        let edge_code,edge_dst,st = compile_edge st test evt_dst n in
+        let next_code,st = compile_proc_aux st edge_dst nq in
+        evt_code@edge_code@next_code,st
+
+    in let st = init_st (C.Loc (loc_count-1)) in
+    let ins,_ = compile_proc_aux st A.ZR nodes in ins
 
   in let rec compile_by_proc nodes_by_proc proc = match nodes_by_proc, proc with
     | [], _ -> []

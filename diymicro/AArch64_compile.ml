@@ -4,7 +4,6 @@ include MakeAArch64Base.Make(struct let is_morello = false end)
 type state = {
   free_registers: reg list; (* available registers *)
   next_addr: int;
-  proc: Cycle.proc; (* TODO juste pour enlever les warnings *)
 }
 
 let next_reg (st: state) = match st.free_registers with
@@ -100,6 +99,7 @@ end
 
 let nop = "NOP"
 
+let pseudo l = List.map (fun i -> Instruction i) l
 
 let vloc = let open TypBase in
   match TypBase.default with
@@ -125,7 +125,7 @@ and v2sz =
 
 let szloc = v2sz vloc
 
-let do_movi vdep r i = I_MOV (vdep,r,K i)
+let do_movi vdep r (i: int) = I_MOV (vdep,r,K i)
 let mov = do_movi vloc
 
 let mov_mixed sz r i =
