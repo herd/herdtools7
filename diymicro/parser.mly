@@ -29,7 +29,7 @@ edge:
     | FR ie { Edge.Fr $2 }
     | WS ie { Edge.Ws $2 }
     | PO sd dir dir    { Edge.Po ($2, $3, $4) }
-    | DP dp sd dir dir { Edge.Dp ($2, $3, $4, $5) }
+    | DP dp sd dir { Edge.Dp ($2, $3, $4) }
     | IICO LBRACKET ID COLON ID ARROW ID RBRACKET
                     { Edge.Iico ($3, ($5, $7)) }
 ;
