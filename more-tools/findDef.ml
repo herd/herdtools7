@@ -52,6 +52,10 @@ struct
    * defined by the model + some predefined names
    *)
 
+  let no_name_name = "'???'"
+  let no_name = PreCat.Name no_name_name
+
+
     (* Names defined by the model *)
 
   module RN =
@@ -75,7 +79,6 @@ struct
       (* Some very special cases *)
       let init_defs =
         [
-          "si","sameinstance";
           "id","sameEffect";
         ] in
 
@@ -103,12 +106,14 @@ struct
            * non-ascii characters
            *)
           [
-            "iico-ctrl";
-            "iico-addr";
-            "iico-data";
-            "iico-order";
-            "rf"; "fr"; "co";
-            "ext"; "int";
+            "iico_ctrl";
+            "iico_addr";
+            "iico_data";
+            "iico_order";
+            "same-instance";
+            "same-low-order-bits";
+            "rf"; "fr"; "co"; "rf-reg";
+            "ext"; "int"; "rmw";
             "Exp"; "Imp";
             "R"; "W"; "M";
             "Rreg"; "Wreg";
@@ -128,7 +133,8 @@ struct
       fun csname ->
         try StringMap.find csname map
         with Not_found ->
-          Warn.warn_always "Name %s not recognized" csname ;
+          if not (String.equal csname no_name_name) then
+            Warn.warn_always "Name %s not recognized" csname ;
           csname
 
   (* Edit distance *)
@@ -270,9 +276,6 @@ struct
     else Misc.identity
 
   let is_reverse n = StringSet.mem n reverse
-
-  let no_name_name = "'???'"
-  let no_name = PreCat.Name no_name_name
 
   let relation is_def tgt e1 e2 =
     let a1 = set_arg is_def e1
