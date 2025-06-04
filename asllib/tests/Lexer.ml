@@ -1,4 +1,4 @@
-open Helpers
+open Testhelpers.Helpers
 
 let token_utils () =
   let cmly_file = Sys.getenv "ASL_PARSER_CMLY" in
