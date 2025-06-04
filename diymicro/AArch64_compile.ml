@@ -156,6 +156,7 @@ let cmp r1 r2 = op3r vloc SUBS ZR r1 r2
 let b lbl = I_B (BranchTarget.Lbl lbl)
 let bne lbl = I_BC (NE, BranchTarget.Lbl lbl)
 let eor sz r1 r2 r3 = op3r sz EOR r1 r2 r3
+let do_eor = eor vloc
 let andi sz r1 r2 k = op3i sz AND r1 r2 k
 let incr r = op3i V32 ADD r r 1
 let lsri64 r1 r2 k = op3i V64 LSR r1 r2 k
@@ -332,42 +333,3 @@ and do_ldxp opt r1 r2 rA = I_LDXP (vloc, opt, r1, r2, rA)
 
 let do_stp opt r1 r2 rA = I_STP (opt, vloc, r1, r2, rA, (0, Idx))
 and do_stxp opt r r1 r2 rA = I_STXP (vloc, opt, r, r1, r2, rA)
-
-(*********)
-(* loads *)
-(*********)
-
-module type L = sig
-  type sz
-
-  val sz0 : sz
-  val load : sz -> state -> reg -> reg -> instruction list * state
-
-  val load_idx :
-    sz -> sz -> state -> reg -> reg -> reg -> instruction list * state
-
-  val next_reg : state -> Cycle.proc -> sz -> reg * state
-end
-
-let type_of_sz sz =
-  let open TypBase in
-  Std (Unsigned, MachSize.at_least_word sz)
-
-(*
-let next_reg_sz st p sz =
-  let r,st = next_reg st in
-  let loc = A.Reg (p,r) in
-  let st = A.add_type loc (type_of_sz sz) st in
-  r,st
-
-let next_reg_var st p var = next_reg_sz st p (v2sz var)
-
-let emit_load_mixed sz o st p init x =
-  let rA,st = next_reg_sz st p sz in
-  let rB,init,st = U.next_init st p init x in
-  rA,init,lift_code [ldr_mixed rA rB sz o],st
-
-let _emit_load_int_idx o st  _p init rA =
-  let r1,st = next_reg st in
-  r1,init,lift_code [ldr_mixed r1 rA szloc o],st
-*)

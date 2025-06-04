@@ -57,37 +57,72 @@ let split_by_proc (cycle : C.t) =
   in
   split_by_proc first_node
 
-let compile_node (st : A.state) test (src : A.reg) (node : C.t) =
-  let event = node.C.source_event in
+let compile_event st test (src : E.node_dep) event =
   let event_reg =
     get_register test.env
       (Utils.unsome event.C.location)
       (Utils.unsome event.C.proc)
   in
-  let res =
-    match node.C.source_event.C.direction with
-    | None -> Warn.fatal "Direction not loaded"
-    | Some Edge.Rm ->
+  let ins, dst, st =
+    (* TODO: handle the different Dep possible when relevant *)
+    match event.C.direction, src with
+    | None, _ -> Warn.fatal "Direction not loaded"
+    | Some Edge.Rm, _ ->
         let dst, st = A.next_reg st in
         A.pseudo [A.do_ldr A.vloc dst event_reg], dst, st
-    | Some Edge.Wm ->
+    | Some Edge.Wm, E.DepNone ->
         let val_reg, st = A.next_reg st in
         ( [A.mov val_reg (Utils.unsome event.C.value)]
           @ A.pseudo [A.str val_reg event_reg],
           event_reg,
           st )
-    | Some Edge.Rr ->
+    | Some Edge.Wm, E.DepData r ->
+        let reg_value, st = A.next_reg st in
+        ( A.pseudo
+            [
+              A.do_eor reg_value r r;
+              A.addi reg_value reg_value (Utils.unsome event.C.value);
+              A.str reg_value event_reg;
+            ],
+          event_reg,
+          st )
+    | Some Edge.Wm, E.DepAddr r ->
+        let reg_zero, st = A.next_reg st in
+        let reg_value, st = A.next_reg st in
+        ( A.pseudo [A.do_eor reg_zero r r]
+          @ [A.mov reg_value (Utils.unsome event.C.value)]
+          @ A.pseudo [A.str reg_value event_reg],
+          (*TODO: reg_zero,SXTW *)
+          event_reg,
+          st )
+    | Some Edge.Rr, _ ->
         let dst, st = A.next_reg st in
         [A.mov_reg dst event_reg], dst, st
-    | Some Edge.Wr ->
+    | Some Edge.Wr, _ ->
         [A.mov event_reg (Utils.unsome event.C.value)], event_reg, st
+    | Some d, _ ->
+        Warn.fatal "Dependency incompatible with direction %s"
+          (E.pp_direction d)
   in
   if event.C.is_significant then
     add_condition test
       (Utils.unsome event.C.proc)
-      src (*TODO this should be read_src*)
+      dst (* This a read's destination *)
       (Utils.unsome event.C.value);
-  res
+  ins, E.DepReg dst, st
+
+(** compile a node (:= event -edge-> ), src is the previous register to which
+    dependency should be added, ZR if no dependency *)
+let compile_edge (st : A.state) test (src : E.node_dep) (node : C.t) =
+  let _ = test in
+  match node.C.edge, src with
+  | (E.Rf _ | E.Fr _ | E.Ws _ | E.Po _), _ -> [], E.DepNone, st
+  | E.Dp (E.Addr, _, _), E.DepReg r -> [], E.DepAddr r, st
+  | E.Dp (E.Data, _, _), E.DepReg r -> [], E.DepData r, st
+  (*TODO : | E.Dp (E.Ctrl, _, _), E.DepReg _ -> *)
+  | _ ->
+      Warn.fatal "Edge -%s->: compilation not implemented"
+        (E.pp_edge node.C.edge)
 
 (** Generate test from a cycle *)
 let make_test (cycle : C.t) =
@@ -110,15 +145,16 @@ let make_test (cycle : C.t) =
           Hashtbl.add test.env (C.Loc loc_i, proc) r;
           st
     in
-    let rec compile_proc_aux st (src : A.reg) = function
+    let rec compile_proc_aux st (src : E.node_dep) = function
       | [] -> [], st
       | n :: nq ->
-          let code, dst, st = compile_node st test src n in
+          let evt_code, dst, st = compile_event st test src n.C.source_event in
+          let edge_code, dst, st = compile_edge st test dst n in
           let next_code, st = compile_proc_aux st dst nq in
-          code @ next_code, st
+          evt_code @ edge_code @ next_code, st
     in
     let st = init_st (C.Loc (loc_count - 1)) in
-    let ins, _ = compile_proc_aux st A.ZR nodes in
+    let ins, _ = compile_proc_aux st E.DepNone nodes in
     ins
   in
   let rec compile_by_proc nodes_by_proc proc =

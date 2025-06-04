@@ -16,6 +16,12 @@ type int_ext = Internal | External
 type sd = Same | Different
 type dp = Addr | Data | Ctrl
 
+type node_dep =
+  | DepAddr of AArch64_compile.reg
+  | DepData of AArch64_compile.reg
+  | DepReg of AArch64_compile.reg
+  | DepNone
+
 type t =
   | Rf of int_ext
   | Fr of int_ext
