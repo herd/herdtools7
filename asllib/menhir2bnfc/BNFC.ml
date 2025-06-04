@@ -39,19 +39,18 @@ module Regex = struct
       | _ -> string_of_regex r
     in
     function
-      | Seq r_list -> List.map string_of_regex r_list |> String.concat " "
-      | Char chr -> "'" ^ Char.escaped chr ^ "'"
-      | Str str -> "{\"" ^ String.escaped str ^ "\"}"
-      | OneOf str -> "[\"" ^ String.escaped str ^ "\"]"
-      | Except (r1, r2) ->
-          "(" ^ wrap r1 ^ " - " ^ wrap r2 ^ ")"
-      | Choice r_list ->
-          "(" ^ (List.map string_of_regex r_list |> String.concat "|") ^ ")"
-      | OneOrMore r -> wrap r ^ "+"
-      | ZeroOrMore r -> wrap r ^ "*"
-      | MatchAll -> "char"
-      | MatchDigit -> "digit"
-      | MatchLetter -> "letter"
+    | Seq r_list -> List.map string_of_regex r_list |> String.concat " "
+    | Char chr -> "'" ^ Char.escaped chr ^ "'"
+    | Str str -> "{\"" ^ String.escaped str ^ "\"}"
+    | OneOf str -> "[\"" ^ String.escaped str ^ "\"]"
+    | Except (r1, r2) -> "(" ^ wrap r1 ^ " - " ^ wrap r2 ^ ")"
+    | Choice r_list ->
+        "(" ^ (List.map string_of_regex r_list |> String.concat "|") ^ ")"
+    | OneOrMore r -> wrap r ^ "+"
+    | ZeroOrMore r -> wrap r ^ "*"
+    | MatchAll -> "char"
+    | MatchDigit -> "digit"
+    | MatchLetter -> "letter"
 end
 
 (** BNFC row types *)
@@ -102,7 +101,7 @@ let string_of_comment (Comment comment) =
   let quote s = Printf.sprintf "\"%s\"" s in
   Printf.sprintf "comment %s;" (String.concat " " @@ List.map quote comment)
 
-let string_of_token (Token {name; regex}) =
+let string_of_token (Token { name; regex }) =
   Printf.sprintf "token %s %s;" name (Regex.string_of_regex regex)
 
 let string_of_decl_list (decl_list : decl list) : string list =
@@ -233,8 +232,7 @@ let embed_literals bnfc =
   let literals, tokens =
     List.partition
       (function
-        | Token { name; regex = (Str _ | Char _) } ->
-            StringSet.mem name used_ids
+        | Token { name; regex = Str _ | Char _ } -> StringSet.mem name used_ids
         | _ -> false)
       bnfc.tokens
   in
