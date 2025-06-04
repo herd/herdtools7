@@ -31,11 +31,32 @@ end = struct
   let eof_token = "EOF"
 
   (* Create useful mapping structures *)
-  module ProductionMap = Map.Make (Production)
-  module NonterminalMap = Map.Make (Nonterminal)
+  module P = struct
+    let compare t1 t2 =
+      Int.compare (Production.to_int t1) (Production.to_int t2)
+
+    include Production
+  end
+
+  module N = struct
+    let compare t1 t2 =
+      Int.compare (Nonterminal.to_int t1) (Nonterminal.to_int t2)
+
+    include Nonterminal
+  end
+
+  module T = struct
+    let compare t1 t2 =
+      Int.compare (Terminal.to_int t1) (Terminal.to_int t2)
+
+    include Terminal
+  end
+
+  module ProductionMap = Map.Make (P)
+  module NonterminalMap = Map.Make (N)
 
   (* Create a terminal set structure *)
-  module TerminalSet = Set.Make (Terminal)
+  module TerminalSet = Set.Make (T)
 
   (* Utility functions for easy name extraction *)
   let n_name nterm = Nonterminal.mangled_name nterm |> snake_case_to_camel_case

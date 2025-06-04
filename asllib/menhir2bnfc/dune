@@ -3,6 +3,8 @@
  (modules :standard \ menhir2bnfc)
  (flags -w -9)
  (optional)
+ (enabled_if
+  (>= %{ocaml_version} 4.14))
  (libraries herdtools7.asllib menhirSdk))
 
 (executable
