@@ -13,7 +13,7 @@
 %token R W
 %token INT EXT
 %token SAME DIFFERENT
-%token ADDR DATA CTR
+%token ADDR DATA CTRL
 
 %token EOF
 
@@ -48,5 +48,5 @@ dir:
 dp:
     | ADDR { Edge.Addr }
     | DATA { Edge.Data }
-    | CTR  { Edge.Ctr  }
+    | CTRL  { Edge.Ctrl  }
 ;

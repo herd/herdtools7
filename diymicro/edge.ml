@@ -14,7 +14,7 @@ type int_ext = Internal | External
 
 (* Change location ? *)
 type sd = Same | Different
-type dp = Addr | Data | Ctr
+type dp = Addr | Data | Ctrl
 
 type t =
   | Rf of int_ext
@@ -43,7 +43,7 @@ let edge_location = function
 let pp_direction = function Rr -> "Rr" | Wr -> "Wr" | Rm -> "R" | Wm -> "W"
 let pp_int_ext = function Internal -> "i" | External -> "e"
 let pp_sd = function Same -> "s" | Different -> "d"
-let pp_dp = function Addr -> "Addr" | Data -> "Data" | Ctr -> "Ctr"
+let pp_dp = function Addr -> "Addr" | Data -> "Data" | Ctrl -> "Ctrl"
 
 let pp_edge = function
   | Rf ie -> "Rf" ^ pp_int_ext ie

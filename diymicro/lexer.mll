@@ -25,7 +25,7 @@ rule token = parse
   | 'd' { DIFFERENT }
   | "Addr" { ADDR }
   | "Data" { DATA }
-  | "Ctr"  { CTR }
+  | "Ctrl"  { CTRL }
 
   | '['     { LBRACKET }
   | ']'     { RBRACKET }
