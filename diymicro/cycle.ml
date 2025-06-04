@@ -45,7 +45,8 @@ type t = {
 
 let pp_location (Loc i) =
   if i < 3 then String.make 1 (Char.code 'x' + i |> Char.chr)
-  else "loc_" ^ string_of_int (i - 3)
+  else if i < 26 then String.make 1 (Char.code 'a' + i - 3 |> Char.chr)
+  else "loc_" ^ string_of_int (i - 26)
 
 let pp_proc (Proc i) = "P" ^ string_of_int i
 
@@ -110,6 +111,14 @@ let find_first cycle_start condition =
   in
   find_first_aux cycle_start
 
+let find_last cycle_start condition =
+  let rec find_last_aux node =
+    if condition node then node
+    else if node.prev != cycle_start then find_last_aux node.prev
+    else raise Not_found
+  in
+  find_last_aux cycle_start
+
 (** Assign its direction to each event of the cycle *)
 let assign_directions cycle_start =
   let rec assign_aux node =
@@ -132,7 +141,7 @@ let assign_locations cycle_start =
   let first_location = new_loc () in
   let first_node =
     try
-      (find_first cycle_start (fun n ->
+      (find_last cycle_start.prev (fun n ->
            Edge.edge_location n.edge = Edge.Different))
         .next
     with Not_found -> Warn.fatal "No location change in cycle"

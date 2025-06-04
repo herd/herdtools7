@@ -136,13 +136,9 @@ let dump_init (test : t) (channel : out_channel) =
   let dump_initial_values () =
     for loc_i = 0 to C.loc_count () - 1 do
       let loc = C.Loc loc_i in
-      let init_val =
-        match Hashtbl.find_opt test.initial_values loc with
-        | None -> 0
-        | Some v -> v
-      in
-      if init_val <> 0 then
-        Printf.fprintf channel "  %s = %d;\n" (C.pp_location loc) init_val
+      match Hashtbl.find_opt test.initial_values loc with
+      | None -> ()
+      | Some v -> Printf.fprintf channel " %s = %d;\n" (C.pp_location loc) v
     done
   in
 
