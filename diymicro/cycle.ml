@@ -28,6 +28,8 @@ type event = {
   mutable location : loc option;
   mutable proc : proc option;
   mutable value : int option;
+  mutable is_significant : bool;
+      (* significant reads will be added to final conditions *)
 }
 (** memory event *)
 
@@ -67,7 +69,13 @@ let pp_cycle cycle_start =
 
 let create_cycle edges =
   let empty_evt () =
-    {direction = None; location = None; value = None; proc = None}
+    {
+      direction = None;
+      location = None;
+      value = None;
+      proc = None;
+      is_significant = false;
+    }
   in
   let rec create_aux first_node previous = function
     | [] ->
@@ -158,7 +166,7 @@ let assign_procs cycle_start =
 
   let first_proc = new_proc () in
   let first_node =
-    try (find_first cycle_start (fun n -> is_external n.edge)).next
+    try (find_first cycle_start.prev (fun n -> is_external n.edge)).next
     with Not_found -> Warn.fatal "No location change in cycle"
   in
 
@@ -206,6 +214,16 @@ let assign_values cycle_start =
   in
   assign_values_aux first_node 0
 
+(** Mark significant read (ie R -Fr-> or -Rf-> R) as such *)
+let set_significant_reads first_node =
+  let rec set_significant_reads node =
+    if node.next != first_node then set_significant_reads node.next;
+    match node.prev.edge, node.edge with
+    | Edge.Rf _, _ | _, Edge.Fr _ -> node.source_event.is_significant <- true
+    | _ -> ()
+  in
+  set_significant_reads first_node
+
 let make_cycle edges =
   let cycle = create_cycle edges in
   "EDGES\n" ^ pp_cycle cycle ^ "\n" |> Utils.verbose_print;
@@ -221,5 +239,7 @@ let make_cycle edges =
 
   assign_values cycle;
   "READ/WRITE VALUES\n" ^ pp_cycle cycle ^ "\n" |> Utils.verbose_print;
+
+  set_significant_reads cycle;
 
   cycle

@@ -2,11 +2,11 @@ include MakeAArch64Base.Make (struct
   let is_morello = false
 end)
 
-(** current state inside a single proc *)
 type state = {
   free_registers : reg list; (* available registers *)
   next_addr : int;
 }
+(** current state inside a single proc *)
 
 let next_reg (st : state) =
   match st.free_registers with

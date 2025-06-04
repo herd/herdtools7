@@ -34,6 +34,9 @@ let get_register env loc proc =
     Warn.fatal "Unable to find register for %s %s" (C.pp_location loc)
       (C.pp_proc proc)
 
+let add_condition test proc reg value =
+  test.final_conditions <- (proc, reg, value) :: test.final_conditions
+
 (** Returns a list of lists of nodes (cycles), splitted by proc *)
 let split_by_proc (cycle : C.t) =
   let first_node =
@@ -54,48 +57,37 @@ let split_by_proc (cycle : C.t) =
   in
   split_by_proc first_node
 
-let compile_event (st : A.state) test (src : A.reg) (event : C.event) =
-  let _ = src in
+let compile_node (st : A.state) test (src : A.reg) (node : C.t) =
+  let event = node.C.source_event in
   let event_reg =
     get_register test.env
       (Utils.unsome event.C.location)
       (Utils.unsome event.C.proc)
   in
-  match event.C.direction with
-  | None -> Warn.fatal "Direction not loaded"
-  | Some Edge.Rm ->
-      let dst, st = A.next_reg st in
-      A.pseudo [A.do_ldr A.vloc dst event_reg], dst, st
-  | Some Edge.Wm ->
-      let val_reg, st = A.next_reg st in
-      ( [A.mov val_reg (Utils.unsome event.C.value)]
-        @ A.pseudo [A.str val_reg event_reg],
-        event_reg,
-        st )
-  | Some Edge.Rr ->
-      let dst, st = A.next_reg st in
-      [A.mov_reg dst event_reg], dst, st
-  | Some Edge.Wr ->
-      [A.mov event_reg (Utils.unsome event.C.value)], event_reg, st
-
-let compile_edge (st : A.state) test (src : A.reg) (node : C.t) =
-  match node.C.edge with
-  | E.Fr _ ->
-      test.final_conditions <-
-        ( Utils.unsome node.C.source_event.C.proc,
-          src,
-          Utils.unsome node.C.source_event.C.value )
-        :: test.final_conditions;
-      [], src, st
-  | E.Rf _ ->
-      test.final_conditions <-
-        ( Utils.unsome node.C.next.C.source_event.C.proc,
-          src,
-          (* TODO this should be next.source_event's dst but we don't have access to it.. ? -> need to rework some design *)
-          Utils.unsome node.C.next.C.source_event.C.value )
-        :: test.final_conditions;
-      [], src, st
-  | _ -> [], src, st
+  let res =
+    match node.C.source_event.C.direction with
+    | None -> Warn.fatal "Direction not loaded"
+    | Some Edge.Rm ->
+        let dst, st = A.next_reg st in
+        A.pseudo [A.do_ldr A.vloc dst event_reg], dst, st
+    | Some Edge.Wm ->
+        let val_reg, st = A.next_reg st in
+        ( [A.mov val_reg (Utils.unsome event.C.value)]
+          @ A.pseudo [A.str val_reg event_reg],
+          event_reg,
+          st )
+    | Some Edge.Rr ->
+        let dst, st = A.next_reg st in
+        [A.mov_reg dst event_reg], dst, st
+    | Some Edge.Wr ->
+        [A.mov event_reg (Utils.unsome event.C.value)], event_reg, st
+  in
+  if event.C.is_significant then
+    add_condition test
+      (Utils.unsome event.C.proc)
+      src (*TODO this should be read_src*)
+      (Utils.unsome event.C.value);
+  res
 
 (** Generate test from a cycle *)
 let make_test (cycle : C.t) =
@@ -121,12 +113,9 @@ let make_test (cycle : C.t) =
     let rec compile_proc_aux st (src : A.reg) = function
       | [] -> [], st
       | n :: nq ->
-          let evt_code, evt_dst, st =
-            compile_event st test src n.C.source_event
-          in
-          let edge_code, edge_dst, st = compile_edge st test evt_dst n in
-          let next_code, st = compile_proc_aux st edge_dst nq in
-          evt_code @ edge_code @ next_code, st
+          let code, dst, st = compile_node st test src n in
+          let next_code, st = compile_proc_aux st dst nq in
+          code @ next_code, st
     in
     let st = init_st (C.Loc (loc_count - 1)) in
     let ins, _ = compile_proc_aux st A.ZR nodes in
@@ -152,7 +141,8 @@ let dump_init (test : t) (channel : out_channel) =
         | None -> 0
         | Some v -> v
       in
-      Printf.fprintf channel "  %s = %d;\n" (C.pp_location loc) init_val
+      if init_val <> 0 then
+        Printf.fprintf channel "  %s = %d;\n" (C.pp_location loc) init_val
     done
   in
 
