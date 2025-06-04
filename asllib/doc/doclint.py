@@ -514,7 +514,6 @@ def check_rules(filename: str) -> int:
     """
     # Treat existing issues as warnings and new issues as errors.
     file_to_num_expected_errors = {
-        "RelationsOnTypes.tex" : 6,
         "SymbolicSubsumptionTesting.tex" : 12,
     }
     total_expected = 0

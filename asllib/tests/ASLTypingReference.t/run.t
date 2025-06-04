@@ -1025,5 +1025,18 @@ ASL Typing Tests / annotating types:
   ASL Type error: type used to define storage item is the result of precision
     loss.
   [1]
-  $ aslref --no-exec TypingRule.GetLiteralDivOpt.asl
+  $ aslref --no-exec TypingRule.FilterReduceConstraintDiv.asl
   $ aslref TypingRule.ReduceToZOpt.asl
+  $ aslref --no-exec TypingRule.RefineConstraintBySign.asl
+  File TypingRule.RefineConstraintBySign.asl, line 14, characters 24 to 31:
+      var z: integer{-} = A DIV y;
+                          ^^^^^^^
+  Warning: Removing some values that would fail with op DIV from constraint set
+  {-4..-3, -1..2, -1..B, 0, 1, 3..4, A..B, B, B..-1} gave
+  {1..2, 1..B, 1, 3..4, A..B, B, B..-1}. Continuing with this constraint set.
+  File TypingRule.RefineConstraintBySign.asl, line 28, characters 8 to 15:
+      } = A DIV y;
+          ^^^^^^^
+  Warning: Removing some values that would fail with op DIV from constraint set
+  {-4..-3, -1..2, -1..B, 0, 1, 3..4, A..B, B, B..-1} gave
+  {1..2, 1..B, 1, 3..4, A..B, B, B..-1}. Continuing with this constraint set.

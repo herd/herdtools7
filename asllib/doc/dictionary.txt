@@ -1581,6 +1581,7 @@ referred
 referring
 refers
 refine
+refined
 refinement
 refines
 refining
@@ -1690,6 +1691,7 @@ root
 rotating
 roughly
 rounded
+rounds
 row
 rows
 rule

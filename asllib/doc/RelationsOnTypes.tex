@@ -1835,6 +1835,14 @@ In this context, conservatively means that the new constraint may represent a su
 reasoning may yield.
 If the set of those values is empty the result is $\None$.
 
+\ExampleDef{Refining Constraints with a Sign Predicate}
+The specification in \listingref{RefineConstraintBySign}
+shows examples of how the constraints for \verb|y|
+are refined for the \DIV{} operator via the sign predicate
+that tests whether an integer is positive: $\lambda x.\ x > 0$.
+
+\ASLListing{Refining Constraints with a Sign Predicate}{RefineConstraintBySign}{\typingtests/TypingRule.RefineConstraintBySign.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2068,6 +2076,13 @@ The function
 refines a list of constraints $\cs$ by applying the refinement function $\vf$ to each constraint and retaining the constraints
 that do not refine to $\None$. The resulting list of constraints is given in $\newcs$.
 
+\ExampleDef{Filtering Optional Constraints}
+The specification in \listingref{RefineConstraintBySign}
+shows how certain constraints are filtered out.
+For example, $\AbbrevConstraintExact{\AbbrevEBinop{\DIV}{\AbbrevEVar{\vA}}{\ELInt{0}}}$.
+Similarly, since both expressions in the constraint \verb|-4..-3| fail the sign predicate
+used by $\refineconstraintbysign$, the resulting $\None$ is also filtered out.
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2131,6 +2146,8 @@ removing constraints that represents a division operation that will definitely f
 when $\op$ is the division operation.
 \ProseOtherwiseTypeError
 
+See \ExampleRef{Filtering and Reducing Division-based Constraints}.
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2182,6 +2199,24 @@ returns $\None$ if $\vc$ is an exact constraint for a binary expression for divi
 where the denominator does not divide the numerator, and an optional containing $\vc$ otherwise.
 The result is returned in $\vcopt$.
 This is used to conservatively test whether $\vc$ would always fail dynamically.
+
+\ExampleDef{Filtering and Reducing Division-based Constraints}
+The specification in \listingref{FilterReduceConstraintDiv}
+shows how different constraints formed by dividing the constraints of \verb|x| by \verb|2|
+in order to annotate \verb|z|.
+The resulting constraints are listed in the type annotation for \verb|z_typed|.
+Specifically, notice the following:
+\begin{itemize}
+  \item the constraint for \verb|3| divided by \verb|2| is filtered away,
+        since the result is not an integer,
+  \item the constraint for \verb|7..10| divided by \verb|2|
+        effectively rounds up $7/2$ into \verb|3|,
+  \item the constraint for \verb|14..17| divided by \verb|2| effectively rounds down
+        $17/2$ into \verb|16|, and
+  \item the constraint for \verb|16..15| divided by \verb|2| is filtered away,
+        since it is not a legal \rangeconstraintterm.
+\end{itemize}
+\ASLListing{Filtering and Reducing Division-based Constraints}{FilterReduceConstraintDiv}{\typingtests/TypingRule.FilterReduceConstraintDiv.asl}
 
 \ProseParagraph
 \OneApplies
@@ -2266,7 +2301,7 @@ This is used to conservatively test whether $\vc$ would always fail dynamically.
      \None & \text{if }\vzoneopt = \langle\vzfive\rangle \land \vztwoopt = \langle\vzsix\rangle \land \vzfive>\vzsix\\
      \langle\AbbrevConstraintRange{\ELInt{\vzfive}}{\vetwo}\rangle & \text{if }\vzoneopt = \langle\vzfive\rangle \land \vztwoopt = \None\\
      \langle\AbbrevConstraintRange{\veone}{\ELInt{\vzsix}}\rangle & \text{if }\vzoneopt = \None \land \vztwoopt = \langle\vzsix\rangle\\
-     \langle\ConstraintRange(\veone, \vetwo)\rangle & \text{if }\vzoneopt = \None \land \vztwoopt = \None\\
+     \langle\AbbrevConstraintRange{\veone}{\vetwo}\rangle & \text{if }\vzoneopt = \None \land \vztwoopt = \None\\
     \end{cases}
   }
 }{
@@ -2284,6 +2319,18 @@ matches the expression $\ve$ to a binary operation expression over the division 
 If $\ve$ matches this pattern, the result $\rangeopt$ is an optional containing the pair of integers appearing in the operand
 expressions. Otherwise, the result is $\None$.
 
+\ExampleDef{Obtaining Division Expressions Optionally Resulting in Literals}
+In \listingref{FilterReduceConstraintDiv},
+the following are examples of $\getliteraldivopt$ applications that are used
+for generating the constraints for \verb|z|:
+\[
+\begin{array}{rcl}
+\getliteraldivopt(\AbbrevEBinop{\DIV}{\ELInt{14}}{\ELInt{2}}) &\typearrow& \Some{(14, 2)}\\
+\getliteraldivopt(\AbbrevEBinop{\DIV}{\ELInt{7}}{\ELInt{2}}) &\typearrow& \Some{(7, 2)}\\
+\getliteraldivopt(\AbbrevEBinop{\DIV}{\AbbrevEVar{\vA}}{\ELInt{2}}) &\typearrow& \None\\
+\end{array}
+\]
+
 \ProseParagraph
 The value $\rangeopt$ is $\langle(\vzone, \vztwo)\rangle$ if $\ve$ is a binary operation expression over the division operation
 and two literal integer expressions for the integers $\vzone$ and $\vztwo$ and $\None$ otherwise.
@@ -2291,7 +2338,7 @@ and two literal integer expressions for the integers $\vzone$ and $\vztwo$ and $
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \rangeopt \eqdef \choice{\ve = \EBinop(\DIV, \ELInt{\vzone}, \ELInt{\vztwo})}{\langle(\vzone, \vztwo)\rangle}{\None}
+  \rangeopt \eqdef \choice{\ve = \AbbrevEBinop{\DIV}{\ELInt{\vzone}}{\ELInt{\vztwo}}}{\langle(\vzone, \vztwo)\rangle}{\None}
 }{
   \getliteraldivopt(\ve) \typearrow \rangeopt
 }
