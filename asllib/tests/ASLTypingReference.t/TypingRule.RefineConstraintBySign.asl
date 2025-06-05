@@ -11,7 +11,7 @@ begin
         B.. -1,
         A..B
     } = 0;
-    var z: integer{-} = A DIV y;
+    var z: integer{} = A DIV y;
     // The following type represents the type constraints generated for `A DIV y`
     // with each constraints followed by a comment denoting the corresponding
     // constraint of `y`.

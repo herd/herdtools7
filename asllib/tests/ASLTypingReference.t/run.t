@@ -98,25 +98,25 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.InheritIntegerConstraints.asl
   $ aslref TypingRule.InheritIntegerConstraints.unconstrained.bad.asl
   File TypingRule.InheritIntegerConstraints.unconstrained.bad.asl, line 5,
-    characters 4 to 27:
-      var g : integer{-} = a;
-      ^^^^^^^^^^^^^^^^^^^^^^^
+    characters 4 to 26:
+      var g : integer{} = a;
+      ^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: constrained integer expected, provided integer.
   [1]
 
   $ aslref --no-exec TypingRule.TInt.config_pending_constrained.bad.asl
   File TypingRule.TInt.config_pending_constrained.bad.asl, line 1,
-    characters 0 to 27:
-  config x : integer{-} =  1;
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    characters 0 to 26:
+  config x : integer{} =  1;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: a pending constrained integer is illegal here.
   [1]
 
   $ aslref TypingRule.TInt.rhs_pending_constrained.bad.asl
   File TypingRule.TInt.rhs_pending_constrained.bad.asl, line 5,
-    characters 28 to 43:
-      var x : integer{1..2} = 3 as integer{-};
-                              ^^^^^^^^^^^^^^^
+    characters 28 to 42:
+      var x : integer{1..2} = 3 as integer{};
+                              ^^^^^^^^^^^^^^
   ASL Type error: a pending constrained integer is illegal here.
   [1]
 
@@ -1004,33 +1004,33 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref --no-exec TypingRule.IntervalTooLarge.asl
   $ aslref --no-exec TypingRule.IntervalTooLarge.bad.asl
-  File TypingRule.IntervalTooLarge.bad.asl, line 9, characters 25 to 30:
-      var z: integer {-} = b * 2;
-                           ^^^^^
+  File TypingRule.IntervalTooLarge.bad.asl, line 9, characters 23 to 28:
+      var z: integer{} = b * 2;
+                         ^^^^^
   Interval too large: [ 0 .. 16385 ]. Keeping it as an interval.
-  File TypingRule.IntervalTooLarge.bad.asl, line 9, characters 4 to 31:
-      var z: integer {-} = b * 2;
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File TypingRule.IntervalTooLarge.bad.asl, line 9, characters 4 to 29:
+      var z: integer{} = b * 2;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: type used to define storage item is the result of precision
     loss.
   [1]
   $ aslref --no-exec TypingRule.ExplodeIntervals.bad.asl
-  File TypingRule.ExplodeIntervals.bad.asl, line 10, characters 25 to 30:
-      var z: integer {-} = b * 2;
-                           ^^^^^
+  File TypingRule.ExplodeIntervals.bad.asl, line 10, characters 23 to 28:
+      var z: integer{} = b * 2;
+                         ^^^^^
   Interval too large: [ 0 .. 16385 ]. Keeping it as an interval.
-  File TypingRule.ExplodeIntervals.bad.asl, line 10, characters 4 to 31:
-      var z: integer {-} = b * 2;
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File TypingRule.ExplodeIntervals.bad.asl, line 10, characters 4 to 29:
+      var z: integer{} = b * 2;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: type used to define storage item is the result of precision
     loss.
   [1]
   $ aslref --no-exec TypingRule.FilterReduceConstraintDiv.asl
   $ aslref TypingRule.ReduceToZOpt.asl
   $ aslref --no-exec TypingRule.RefineConstraintBySign.asl
-  File TypingRule.RefineConstraintBySign.asl, line 14, characters 24 to 31:
-      var z: integer{-} = A DIV y;
-                          ^^^^^^^
+  File TypingRule.RefineConstraintBySign.asl, line 14, characters 23 to 30:
+      var z: integer{} = A DIV y;
+                         ^^^^^^^
   Warning: Removing some values that would fail with op DIV from constraint set
   {-4..-3, -1..2, -1..B, 0, 1, 3..4, A..B, B, B..-1} gave
   {1..2, 1..B, 1, 3..4, A..B, B, B..-1}. Continuing with this constraint set.

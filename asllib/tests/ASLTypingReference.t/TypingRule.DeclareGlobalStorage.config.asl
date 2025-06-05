@@ -6,4 +6,4 @@ config c_unconstrained_int : integer = 5;
 // The next declaration in comment is illegal,
 // since pending constraints are not allowed
 // for configuration storage elements.
-// config c_inherited_constrained : integer{-} = 5;
+// config c_inherited_constrained : integer{} = 5;

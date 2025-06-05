@@ -1,5 +1,5 @@
 type badtype of record {
-    a : integer{-},
+    a : integer{},
     c : integer
 };
 

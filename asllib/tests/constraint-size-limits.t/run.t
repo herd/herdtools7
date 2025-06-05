@@ -298,26 +298,26 @@ Other operations
 
 With pending constraints
   $ aslref pending.asl
-  File pending.asl, line 6, characters 24 to 29:
-    var z : integer {-} = a * b;
-                          ^^^^^
+  File pending.asl, line 6, characters 22 to 27:
+    var z : integer{} = a * b;
+                        ^^^^^
   Interval too large: [ 1 .. 1048576 ]. Keeping it as an interval.
-  File pending.asl, line 6, characters 2 to 30:
-    var z : integer {-} = a * b;
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File pending.asl, line 6, characters 2 to 28:
+    var z : integer{} = a * b;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: type used to define storage item is the result of precision
     loss.
   [1]
   $ aslref global-pending.asl
-  File global-pending.asl, line 7, characters 21 to 26:
-  var z: integer {-} = a * b;
-                       ^^^^^
+  File global-pending.asl, line 7, characters 19 to 24:
+  var z: integer{} = a * b;
+                     ^^^^^
   Exploding sets for the binary operation * could result in a constraint set
   bigger than 2^17 with constraints 0..1024 and 1..1024. Continuing with the
   non-expanded constraints.
-  File global-pending.asl, line 7, characters 0 to 27:
-  var z: integer {-} = a * b;
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File global-pending.asl, line 7, characters 0 to 25:
+  var z: integer{} = a * b;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: type used to define storage item is the result of precision
     loss.
   [1]

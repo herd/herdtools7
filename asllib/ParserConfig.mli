@@ -30,4 +30,7 @@ module type CONFIG = sig
 
   val allow_storage_discards : bool
   (** Allow storage declarations to discard their right-hand sides. *)
+
+  val allow_hyphenated_pending_constraint : bool
+  (** Allow pending constrained integer types to be denoted by a hyphen. *)
 end
