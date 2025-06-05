@@ -57,6 +57,16 @@ let split_by_proc (cycle : C.t) =
   in
   split_by_proc first_node
 
+let add_ctrl_dep st (r : A.reg) ins =
+  let lbl = Label.next_label "DCTRL" in
+  let reg_zero, st = A.next_reg st in
+  let hins, tins = match ins with [] -> A.Nop, [] | e :: q -> e, q in
+  let ins =
+    A.pseudo [A.do_eor reg_zero r r; A.cbnz reg_zero lbl]
+    @ [A.Label (lbl, hins)]
+  in
+  ins @ tins, st
+
 let compile_event st test (src : E.node_dep) event =
   let event_reg =
     get_register test.env
@@ -64,54 +74,69 @@ let compile_event st test (src : E.node_dep) event =
       (Utils.unsome event.C.proc)
   in
   let ins, dst, st =
-    (* TODO: handle the different Dep possible when relevant *)
     match event.C.direction, src with
     | None, _ -> Warn.fatal "Direction not loaded"
-    | Some Edge.Rm, _ ->
+    | Some Edge.Rm, E.DepNone ->
         let dst, st = A.next_reg st in
         A.pseudo [A.do_ldr A.vloc dst event_reg], dst, st
+    | Some Edge.Rm, E.DepAddr r ->
+        let reg_zero, st = A.next_reg st in
+        let dst, st = A.next_reg st in
+        let ins =
+          (*TODO: use the correct variants*)
+          A.pseudo [A.do_eor reg_zero r r]
+          @ A.pseudo [A.do_ldr_idx A.vloc A.vloc dst event_reg reg_zero]
+        in
+        ins, dst, st
+    | Some Edge.Rm, E.DepCtrl r ->
+        let dst, st = A.next_reg st in
+        let ins, st =
+          add_ctrl_dep st r (A.pseudo [A.do_ldr A.vloc dst event_reg])
+        in
+        ins, dst, st
     | Some Edge.Wm, E.DepNone ->
-        let val_reg, st = A.next_reg st in
-        ( [A.mov val_reg (Utils.unsome event.C.value)]
-          @ A.pseudo [A.str val_reg event_reg],
-          event_reg,
-          st )
+        let reg_value, st = A.next_reg st in
+        let ins =
+          [A.mov reg_value (Utils.unsome event.C.value)]
+          @ A.pseudo [A.str reg_value event_reg]
+        in
+        ins, event_reg, st
     | Some Edge.Wm, E.DepData r ->
         let reg_value, st = A.next_reg st in
-        ( A.pseudo
+        let ins =
+          A.pseudo
             [
               A.do_eor reg_value r r;
               A.addi reg_value reg_value (Utils.unsome event.C.value);
               A.str reg_value event_reg;
-            ],
-          event_reg,
-          st )
+            ]
+        in
+        ins, event_reg, st
     | Some Edge.Wm, E.DepAddr r ->
         let reg_zero, st = A.next_reg st in
         let reg_value, st = A.next_reg st in
-        ( A.pseudo [A.do_eor reg_zero r r]
+        let ins =
+          A.pseudo [A.do_eor reg_zero r r]
           @ [A.mov reg_value (Utils.unsome event.C.value)]
-          @ A.pseudo [A.str reg_value event_reg],
-          (*TODO: reg_zero,SXTW : regarder SExt *)
-          event_reg,
-          st )
+          @ A.pseudo [A.str_idx reg_value event_reg reg_zero]
+        in
+        ins, event_reg, st
     | Some Edge.Wm, E.DepCtrl r ->
-        let reg_zero, st = A.next_reg st in
         let reg_value, st = A.next_reg st in
-        let lbl = Label.next_label "DCTRL" in
-        ( A.pseudo [A.do_eor reg_zero r r; A.cbnz reg_zero lbl]
-          @ [A.Label (lbl, A.mov reg_value (Utils.unsome event.C.value))]
-          @ A.pseudo [A.str reg_value event_reg],
-          event_reg,
-          st )
-    | Some Edge.Rr, _ ->
+        let ins, st =
+          add_ctrl_dep st r
+            ([A.mov event_reg (Utils.unsome event.C.value)]
+            @ A.pseudo [A.str reg_value event_reg])
+        in
+        ins, event_reg, st
+    | Some Edge.Rr, E.DepNone ->
         let dst, st = A.next_reg st in
         [A.mov_reg dst event_reg], dst, st
-    | Some Edge.Wr, _ ->
+    | Some Edge.Wr, E.DepNone ->
         [A.mov event_reg (Utils.unsome event.C.value)], event_reg, st
     | Some d, _ ->
-        Warn.fatal "Dependency incompatible with direction %s"
-          (E.pp_direction d)
+        Warn.fatal "Dependency %s incompatible with direction %s"
+          (E.pp_node_dep src) (E.pp_direction d)
   in
   if event.C.is_significant then
     add_condition test

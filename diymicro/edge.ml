@@ -52,6 +52,13 @@ let pp_int_ext = function Internal -> "i" | External -> "e"
 let pp_sd = function Same -> "s" | Different -> "d"
 let pp_dp = function Addr -> "Addr" | Data -> "Data" | Ctrl -> "Ctrl"
 
+let pp_node_dep = function
+  | DepAddr r -> "Addr " ^ AArch64_compile.pp_reg r
+  | DepData r -> "Data " ^ AArch64_compile.pp_reg r
+  | DepCtrl r -> "Ctrl " ^ AArch64_compile.pp_reg r
+  | DepReg r -> "Reg " ^ AArch64_compile.pp_reg r
+  | DepNone -> "None"
+
 let pp_edge = function
   | Rf ie -> "Rf" ^ pp_int_ext ie
   | Fr ie -> "Fr" ^ pp_int_ext ie
