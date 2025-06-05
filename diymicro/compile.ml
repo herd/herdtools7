@@ -92,7 +92,16 @@ let compile_event st test (src : E.node_dep) event =
         ( A.pseudo [A.do_eor reg_zero r r]
           @ [A.mov reg_value (Utils.unsome event.C.value)]
           @ A.pseudo [A.str reg_value event_reg],
-          (*TODO: reg_zero,SXTW *)
+          (*TODO: reg_zero,SXTW : regarder SExt *)
+          event_reg,
+          st )
+    | Some Edge.Wm, E.DepCtrl r ->
+        let reg_zero, st = A.next_reg st in
+        let reg_value, st = A.next_reg st in
+        let lbl = Label.next_label "DCTRL" in
+        ( A.pseudo [A.do_eor reg_zero r r; A.cbnz reg_zero lbl]
+          @ [A.Label (lbl, A.mov reg_value (Utils.unsome event.C.value))]
+          @ A.pseudo [A.str reg_value event_reg],
           event_reg,
           st )
     | Some Edge.Rr, _ ->
@@ -119,7 +128,7 @@ let compile_edge (st : A.state) test (src : E.node_dep) (node : C.t) =
   | (E.Rf _ | E.Fr _ | E.Ws _ | E.Po _), _ -> [], E.DepNone, st
   | E.Dp (E.Addr, _, _), E.DepReg r -> [], E.DepAddr r, st
   | E.Dp (E.Data, _, _), E.DepReg r -> [], E.DepData r, st
-  (*TODO : | E.Dp (E.Ctrl, _, _), E.DepReg _ -> *)
+  | E.Dp (E.Ctrl, _, _), E.DepReg r -> [], E.DepCtrl r, st
   | _ ->
       Warn.fatal "Edge -%s->: compilation not implemented"
         (E.pp_edge node.C.edge)

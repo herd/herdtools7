@@ -19,6 +19,7 @@ type dp = Addr | Data | Ctrl
 type node_dep =
   | DepAddr of AArch64_compile.reg
   | DepData of AArch64_compile.reg
+  | DepCtrl of AArch64_compile.reg
   | DepReg of AArch64_compile.reg
   | DepNone
 
