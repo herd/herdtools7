@@ -9,6 +9,6 @@ func main () => integer
 begin
   var x = '00';
   x = set_bits{2}(x);
-  assert x == '00';
+  assert x == '11';
   return 0;
 end;

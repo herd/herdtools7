@@ -378,7 +378,7 @@ module Make (C : CONFIG) = struct
                 in
                 let prec = register_precision_loss prev_prec warn in
                 (c :: prev_constraints, prec)
-              else (make_interval [] ~loc za zb, prev_prec)
+              else (make_interval prev_constraints ~loc za zb, prev_prec)
           | _ -> (c :: prev_constraints, prev_prec))
     in
     fun ~loc env cs ->

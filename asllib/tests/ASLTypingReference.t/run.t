@@ -992,3 +992,51 @@ ASL Typing Tests / annotating types:
                 ^
   ASL Type error: cannot declare already declared element "y".
   [1]
+  $ aslref TypingRule.CheckBitsEqualWidth.asl
+  $ aslref --no-exec TypingRule.GetWellConstrainedStructure.asl
+  $ aslref --no-exec TypingRule.MemBfs.asl
+  $ aslref --no-exec TypingRule.MemBfs.bad.asl
+  File TypingRule.MemBfs.bad.asl, line 9, characters 4 to 44:
+      var x : bits(8) {[0] flag, [1] lsb} = y;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: a subtype of bits (8) { [0+:1] flag, [1+:1] lsb }
+    was expected, provided FlaggedPacket.
+  [1]
+  $ aslref --no-exec TypingRule.IntervalTooLarge.asl
+  $ aslref --no-exec TypingRule.IntervalTooLarge.bad.asl
+  File TypingRule.IntervalTooLarge.bad.asl, line 9, characters 25 to 30:
+      var z: integer {-} = b * 2;
+                           ^^^^^
+  Interval too large: [ 0 .. 16385 ]. Keeping it as an interval.
+  File TypingRule.IntervalTooLarge.bad.asl, line 9, characters 4 to 31:
+      var z: integer {-} = b * 2;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: type used to define storage item is the result of precision
+    loss.
+  [1]
+  $ aslref --no-exec TypingRule.ExplodeIntervals.bad.asl
+  File TypingRule.ExplodeIntervals.bad.asl, line 10, characters 25 to 30:
+      var z: integer {-} = b * 2;
+                           ^^^^^
+  Interval too large: [ 0 .. 16385 ]. Keeping it as an interval.
+  File TypingRule.ExplodeIntervals.bad.asl, line 10, characters 4 to 31:
+      var z: integer {-} = b * 2;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: type used to define storage item is the result of precision
+    loss.
+  [1]
+  $ aslref --no-exec TypingRule.FilterReduceConstraintDiv.asl
+  $ aslref TypingRule.ReduceToZOpt.asl
+  $ aslref --no-exec TypingRule.RefineConstraintBySign.asl
+  File TypingRule.RefineConstraintBySign.asl, line 14, characters 24 to 31:
+      var z: integer{-} = A DIV y;
+                          ^^^^^^^
+  Warning: Removing some values that would fail with op DIV from constraint set
+  {-4..-3, -1..2, -1..B, 0, 1, 3..4, A..B, B, B..-1} gave
+  {1..2, 1..B, 1, 3..4, A..B, B, B..-1}. Continuing with this constraint set.
+  File TypingRule.RefineConstraintBySign.asl, line 28, characters 8 to 15:
+      } = A DIV y;
+          ^^^^^^^
+  Warning: Removing some values that would fail with op DIV from constraint set
+  {-4..-3, -1..2, -1..B, 0, 1, 3..4, A..B, B, B..-1} gave
+  {1..2, 1..B, 1, 3..4, A..B, B, B..-1}. Continuing with this constraint set.

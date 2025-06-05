@@ -50,7 +50,7 @@ module type S = sig
 
   val v_of_literal : AST.literal -> value
   (** [v_of_parsed_v] constructs a value from a parsed value.
-      Note that the prefered method to create records or any complex values
+      Note that the preferred method to create records or any complex values
       is [create_vector], and should be used for constructing complex values. *)
 
   val v_of_int : int -> value

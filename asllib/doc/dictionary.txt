@@ -505,6 +505,8 @@ declaring
 deconstruct
 deconstructing
 deconstructs
+decremented
+decrementing
 decrements
 dedicated
 deduced
@@ -671,6 +673,7 @@ entire
 entirely
 entries
 entry
+enumerate
 enumerated
 enumeration
 environment
@@ -810,12 +813,14 @@ fix
 fixed
 fixes
 flag
+flags
 flavors
 floating
 flow
 flows
 focused
 fold
+folding
 follow
 followed
 following
@@ -965,7 +970,10 @@ incomplete
 incorrect
 incorrectly
 increasing
+incremented
+incrementing
 increments
+incur
 indeed
 independence
 independent
@@ -1057,6 +1065,7 @@ intuition
 intuitive
 intuitively
 invalid
+invariant
 inverse
 invocation
 invoke
@@ -1161,6 +1170,7 @@ macros
 made
 main
 mainly
+maintain
 maintained
 maintaining
 maintains
@@ -1288,6 +1298,7 @@ numeral
 numerator
 numerous
 object
+observable
 observe
 obtain
 obtained
@@ -1570,6 +1581,7 @@ referred
 referring
 refers
 refine
+refined
 refinement
 refines
 refining
@@ -1679,6 +1691,7 @@ root
 rotating
 roughly
 rounded
+rounds
 row
 rows
 rule
@@ -1817,6 +1830,7 @@ specify
 specifying
 split
 splitting
+stack
 stand
 standard
 stands
@@ -2043,6 +2057,7 @@ typographical
 unable
 unambiguous
 unary
+unbound
 unbounded
 uncaught
 unchanging

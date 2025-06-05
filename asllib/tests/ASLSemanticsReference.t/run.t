@@ -284,3 +284,20 @@ ASL Semantics Tests:
   [1]
   $ aslref SemanticsRule.AssignArgs.asl
   $ aslref SemanticsRule.Call.asl
+  $ aslref SemanticsRule.ReadFromBitvector.asl
+  empty_bv_slice = 0x, empty_i_slice = 0x
+  slice_bv = 0x9c5, slice_i = 0x9c5
+  $ aslref SemanticsRule.AsBitvector.asl
+  bv = 0xfdf0, bv_i = 0xfdf0
+  $ aslref SemanticsRule.ConcatBitvectors.asl
+  $ aslref SemanticsRule.RemoveLocal.asl
+  i=0
+  i=11/2
+  exn=TRUE
+  $ aslref SemanticsRule.ReadIdentifier.asl
+  $ aslref SemanticsRule.SlicesToPositions.asl
+  $ aslref SemanticsRule.SlicesToPositions.bad.asl
+  ASL Dynamic error: Cannot extract from bitvector of length 0 slice -1+:6.
+  [1]
+  $ aslref SemanticsRule.GetIndex.asl
+  $ aslref SemanticsRule.GetField.asl
