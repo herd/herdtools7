@@ -16,6 +16,7 @@
 module type Config = sig
   include ParserConfig.Config
   val cat : string
+  val name : string option
 end
 
 module Make (_ : Config) :

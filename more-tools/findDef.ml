@@ -19,6 +19,7 @@ open Printf
 module type Config = sig
   include ParserConfig.Config
   val cat : string
+  val name : string option
 end
 
 module Make (O:Config) =
@@ -52,7 +53,7 @@ struct
    * defined by the model + some predefined names
    *)
 
-  let no_name_name = "'???'"
+  let no_name_name = Misc.proj_opt "'???'" O.name
   let no_name = PreCat.Name no_name_name
 
 
@@ -296,7 +297,8 @@ struct
         ((PreCat.Name "coucou",""),100) dict_relations in
     let name =
       if d > 2 then begin
-        eprintf "Best approx[%d]: '%s' as '%s'\n%!" d tgt body ;
+        eprintf "Best approx[%d], %s: '%s' as '%s'\n%!"
+          d (PreCat.get_name name) tgt body ;
         no_name
       end else name in
     let args =
@@ -323,7 +325,8 @@ struct
         (("coucou",""),100) Dict.sets in
     let name =
     if d > 2 then begin
-      eprintf "Best approx[%d]: '%s' as '%s'\n%!" d tgt body ;
+      eprintf "Best approx[%d], %s : '%s' as '%s'\n%!"
+        d name tgt body ;
       no_name_name
     end else
       name in
@@ -338,7 +341,7 @@ struct
            else best)
         (("coucou",""),100) Dict.names in
     if d > 2 then begin
-      eprintf "Best approx[%d]: '%s' as '%s'\n%!" d tgt body ;
+      eprintf "Best approx[%d], %s: '%s' as '%s'\n%!" d name tgt body ;
       no_name_name
     end else name
 

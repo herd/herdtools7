@@ -28,6 +28,7 @@ let libdir = ref (Filename.concat Version.libdir "herd")
 let includes = ref []
 let earley = ref false
 let cat = ref "aarch64.cat"
+let name = ref None
 let arg = ref None
 
 let options =
@@ -48,7 +49,9 @@ let options =
    "<dir> add <dir> to search path");
    ("-earley", Arg.Set earley, "select earley parser");
     ("-cat", Arg.String (fun s -> cat := s),
-     sprintf "<name.cat> set base model, default %s" !cat)
+     sprintf "<name.cat> set base model, default %s" !cat);
+    ("-name",Arg.String (fun s -> name := Some s),
+     sprintf "<name> default name of defined relation");
   ]
 
 let () =
@@ -62,6 +65,7 @@ module Config = struct
   let libdir = !libdir
   let includes = !includes
   let cat = !cat
+  let name = !name
 end
 
 let zyva =
