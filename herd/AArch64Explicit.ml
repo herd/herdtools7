@@ -14,15 +14,21 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make (C : sig
-  val is_morello : bool
-end) : Value.AArch64 = struct
-  module AArch64Instr = AArch64Instr.Make (C)
-  module AArch64Cst =
-    SymbConstant.Make (NeonScalar) (AArch64PteVal) (AArch64Instr)
-  module NoCst =
-    SymbConstant.Make (NeonScalar) (PteVal.No)(AArch64Instr)
-  module NoArchOp = ArchOp.No(NoCst)
-  module AArch64Op = AArch64Op.Make(NeonScalar)(NoArchOp)
-  include SymbValue.Make (AArch64Cst) (AArch64Op)
-end
+type nexp =  AF|DB|AFDB|IFetch|Other
+type explicit = Exp | NExp of nexp
+
+let pp = function
+  | Exp -> "Exp"
+  | NExp Other-> "NExp"
+  | NExp IFetch-> "IFetch"
+  | NExp AF-> "NExpAF"
+  | NExp DB-> "NExpDB"
+  | NExp AFDB-> "NExpAFDB"
+
+let is_explicit_annot = function
+  | Exp -> true
+  | NExp _ -> false
+
+and is_not_explicit_annot = function
+  | NExp _ -> true
+  | Exp -> false

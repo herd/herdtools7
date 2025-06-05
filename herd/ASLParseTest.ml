@@ -33,6 +33,11 @@
 
 module Make (Conf : RunTest.Config) (ModelConfig : MemCat.Config) = struct
   module ArchConfig = SemExtra.ConfigToArchConfig (Conf)
+  module Conf = struct
+    module C = Conf
+    let libfind = Conf.libfind
+    let dirty = None
+  end
   module ASLS = ASLSem.Make (Conf)
   module ASLA = ASLS.A
 
@@ -49,14 +54,14 @@ module Make (Conf : RunTest.Config) (ModelConfig : MemCat.Config) = struct
 
     let parser =
       let version =
-        if Conf.variant (Variant.ASLVersion `ASLv0) then `ASLv0 else `ASLv1
+        if Conf.C.variant (Variant.ASLVersion `ASLv0) then `ASLv0 else `ASLv1
       in
       ASLBase.asl_generic_parser version
   end
 
   module ASLM = MemCat.Make (ModelConfig) (ASLS)
-  module P = GenParser.Make (Conf) (ASLA) (ASLLexParse)
-  module X = RunTest.Make (ASLS) (P) (ASLM) (Conf)
+  module P = GenParser.Make (Conf.C) (ASLA) (ASLLexParse)
+  module X = RunTest.Make (ASLS) (P) (ASLM) (Conf.C)
 
   let run = X.run
 end
