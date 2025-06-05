@@ -2111,6 +2111,11 @@ Please use `-variant self` as an argument to herd7 to enable it."
                      (not oota)
                      && (not C.initwrites || not do_deps)
                      && Misc.is_none ofail
+                     (*  Useful, because some variable result of
+                      *  "Unknown" ASL expression excution
+                      *  can persist in equations...
+                      *)
+                     && (not asl)
                 ->
 (*
  Jade:
