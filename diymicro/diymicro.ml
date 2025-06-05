@@ -1,5 +1,7 @@
 let () =
   let edges_ref = ref [] in
+  (* load iico edges *)
+  Iico.init ();
   let parse_edge s =
     try
       edges_ref :=

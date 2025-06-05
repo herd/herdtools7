@@ -170,6 +170,7 @@ let assign_locations cycle_start =
 let assign_procs cycle_start =
   let is_external = function
     | Edge.Rf ie | Edge.Fr ie | Edge.Ws ie -> ie = Edge.External
+    | Edge.Iico i -> i.Edge.ie = Edge.External
     | _ -> false
   in
 
@@ -228,7 +229,11 @@ let set_significant_reads first_node =
   let rec set_significant_reads node =
     if node.next != first_node then set_significant_reads node.next;
     match node.prev.edge, node.edge with
-    | Edge.Rf _, _ | _, Edge.Fr _ -> node.source_event.is_significant <- true
+    | Edge.Rf _, _
+    | _, Edge.Fr _
+    | Edge.Iico Edge.{significant_dest = true}, _
+    | _, Edge.Iico Edge.{significant_source = true} ->
+        node.source_event.is_significant <- true
     | _ -> ()
   in
   set_significant_reads first_node

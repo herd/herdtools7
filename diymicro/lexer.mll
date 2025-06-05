@@ -5,8 +5,7 @@
 
 let alpha = (['A'-'Z' 'a'-'z'])
 let number = ['0'-'9']
-let id = (alpha | number | '_')+
-let filename = id '.' id
+let id = (alpha | number | '_' | '-' | '.' | ':' | '>')+
 
 rule token = parse
   | [' ' '\t'] { token lexbuf }
@@ -15,6 +14,7 @@ rule token = parse
   | "Ws" { WS }
   | "Po" { PO }
   | "Dp" { DP }
+  | "basic_dep" { BASIC_DEP }
   | "iico" { IICO }
 
   | 'R' { R }
@@ -27,11 +27,6 @@ rule token = parse
   | "Data" { DATA }
   | "Ctrl"  { CTRL }
 
-  | '['     { LBRACKET }
-  | ']'     { RBRACKET }
-  | ':'     { COLON }
-  | "->"    { ARROW }
-
-  | filename as s { ID (s) } (* TODO: what do I need to change to use id directly ? *)
+  | '[' (id as s) ']' { ID (s) }
   | _ as c { Warn.fatal "unexpected character: %C" c }
   | eof    { EOF }

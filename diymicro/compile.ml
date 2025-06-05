@@ -148,12 +148,23 @@ let compile_event st test (src : E.node_dep) event =
 (** compile a node (:= event -edge-> ), src is the previous register to which
     dependency should be added, ZR if no dependency *)
 let compile_edge (st : A.state) test (src : E.node_dep) (node : C.t) =
-  let _ = test in
+  let proc = Utils.unsome node.C.source_event.C.proc in
+  let rec add_conditions = function
+    | (r, v) :: q ->
+        add_condition test proc r v;
+        add_conditions q
+    | [] -> ()
+  in
   match node.C.edge, src with
   | (E.Rf _ | E.Fr _ | E.Ws _ | E.Po _), _ -> [], E.DepNone, st
   | E.Dp (E.Addr, _, _), E.DepReg r -> [], E.DepAddr r, st
   | E.Dp (E.Data, _, _), E.DepReg r -> [], E.DepData r, st
   | E.Dp (E.Ctrl, _, _), E.DepReg r -> [], E.DepCtrl r, st
+  | E.BasicDep _, _ -> [], E.DepNone, st (* TODO *)
+  | E.Iico i, _ ->
+      let cond, ins, dst, st = i.E.compile_edge st src in
+      add_conditions cond;
+      ins, dst, st
   | _ ->
       Warn.fatal "Edge -%s->: compilation not implemented"
         (E.pp_edge node.C.edge)

@@ -1,7 +1,5 @@
 (** Type definitions *)
 
-type operation = string (* should be a graph parsed from a file *)
-
 (* Intrinsic event and edge *)
 type ievent = string
 type iedge = ievent * ievent
@@ -23,13 +21,30 @@ type node_dep =
   | DepReg of AArch64_compile.reg
   | DepNone
 
+type iico = {
+  repr : string;
+  compile_edge :
+    AArch64_compile.state ->
+    node_dep ->
+    (AArch64_compile.reg * int) list
+    * int AArch64Base.kinstruction AArch64_compile.kpseudo list
+    * node_dep
+    * AArch64_compile.state;
+  direction : direction * direction;
+  ie : int_ext;
+  sd : sd;
+  significant_source : bool;
+  significant_dest : bool;
+}
+
 type t =
   | Rf of int_ext
   | Fr of int_ext
   | Ws of int_ext
   | Po of sd * direction * direction
   | Dp of dp * sd * direction
-  | Iico of operation * iedge
+  | BasicDep of direction * direction
+  | Iico of iico
 
 (** edge attributes *)
 let edge_direction = function
@@ -38,12 +53,21 @@ let edge_direction = function
   | Ws _ -> Wm, Wm
   | Po (_, dir1, dir2) -> dir1, dir2
   | Dp (_, _, dir) -> Rm, dir
-  | Iico _ -> failwith "iico edges not implemented"
+  | BasicDep (dir1, dir2) -> dir1, dir2
+  | Iico i -> i.direction
 
 let edge_location = function
-  | Rf _ | Fr _ | Ws _ -> Same
+  | Rf _ | Fr _ | Ws _ | BasicDep _ -> Same
   | Po (sd, _, _) | Dp (_, sd, _) -> sd
-  | Iico _ -> failwith "iico edges not implemented"
+  | Iico i -> i.sd
+
+let iico_ht = Hashtbl.create 10
+
+let get_iico s =
+  try Hashtbl.find iico_ht s
+  with Not_found -> Warn.fatal "Unknown edge iico[%s]" s
+
+let add_iico iico = Hashtbl.add iico_ht iico.repr iico
 
 (** Pretty printers *)
 
@@ -66,7 +90,8 @@ let pp_edge = function
   | Po (sd, dir1, dir2) ->
       "Po" ^ pp_sd sd ^ pp_direction dir1 ^ pp_direction dir2
   | Dp (dp, sd, dir) -> "Dp" ^ pp_dp dp ^ pp_sd sd ^ pp_direction dir
-  | Iico (op, (ievt1, ievt2)) -> "iico[" ^ op ^ ":" ^ ievt1 ^ "->" ^ ievt2 ^ "]"
+  | BasicDep (dir1, dir2) -> "basic_dep" ^ pp_direction dir1 ^ pp_direction dir2
+  | Iico i -> "iico[" ^ i.repr ^ "]"
 
 let rec pp_edges = function
   | [e] -> pp_edge e

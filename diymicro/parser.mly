@@ -1,13 +1,11 @@
 %token <string> ID
-%token LBRACKET RBRACKET
-%token ARROW
-%token COLON
 
 %token RF
 %token FR
 %token WS
 %token PO
 %token DP
+%token BASIC_DEP
 %token IICO
 
 %token R W
@@ -30,8 +28,9 @@ edge:
     | WS ie { Edge.Ws $2 }
     | PO sd dir dir    { Edge.Po ($2, $3, $4) }
     | DP dp sd dir { Edge.Dp ($2, $3, $4) }
-    | IICO LBRACKET ID COLON ID ARROW ID RBRACKET
-                    { Edge.Iico ($3, ($5, $7)) }
+    | BASIC_DEP dir dir { Edge.BasicDep ($2, $3) }
+    | IICO ID
+                    { Edge.Iico (Edge.get_iico ($2)) }
 ;
 ie:
     | INT { Edge.Internal }
