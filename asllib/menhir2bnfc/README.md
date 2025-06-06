@@ -25,7 +25,7 @@ If all you're looking for an aslref bnfc file - that's it.
 
 The rest of the steps are how to build the bnfc file from scratch.
 
-> Note: The following command succeds with errors related to type inference.
+> Note: The following command succeeds with errors related to type inference.
 > Since we don't care about the backend this is not relevant.
 ```
 menhir --cmly --base Parser asllib/Parser.mly asllib/Tokens.mly
@@ -153,13 +153,13 @@ See `menhir2bnfc --help` for more details.
           the highest precedence
     8. Correct any binary expr productions which are in the wrong level
         * Cases such as `Expr Op <terminal>` appear to mismatch the set of tokens which follow `Expr Op Expr` for the same `Op`.
-          Such cases are grouped with ther corresponding `Op` to avoid conflicts
+          Such cases are grouped with their corresponding `Op` to avoid conflicts
 
  3. Generate bnfc-style lines from the grammar productions
     1. For the precedence order productions - update their terms such that
 	    * Unary ops recurse to their own precedence level
 	    * (assumption) Binary ops are left associative.
-    2. All remaining productions are trivially mapped onto bnfc equivallents
+    2. All remaining productions are trivially mapped onto bnfc equivalents
 
 ### Limitations
 

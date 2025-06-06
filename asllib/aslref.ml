@@ -35,6 +35,7 @@ type args = {
   allow_unknown : bool;
   allow_storage_discards : bool;
   allow_hyphenated_pending_constraint : bool;
+  allow_local_constants : bool;
   print_ast : bool;
   print_lisp : bool;
   print_serialized : bool;
@@ -61,6 +62,7 @@ let parse_args () =
   let allow_unknown = ref false in
   let allow_storage_discards = ref false in
   let allow_hyphenated_pending_constraint = ref false in
+  let allow_local_constants = ref false in
   let print_ast = ref false in
   let print_serialized = ref false in
   let print_typed = ref false in
@@ -101,6 +103,9 @@ let parse_args () =
       ( "--allow-hyphenated-pending-constraint",
         Arg.Set allow_hyphenated_pending_constraint,
         " Allow pending constraints to be denoted by a hyphen." );
+      ( "--allow-local-constants",
+        Arg.Set allow_local_constants,
+        " Allow declarations of local constant storage." );
       ( "--print",
         Arg.Set print_ast,
         " Print the parsed AST to stdout before executing it." );
@@ -200,6 +205,7 @@ let parse_args () =
       allow_unknown = !allow_unknown;
       allow_storage_discards = !allow_storage_discards;
       allow_hyphenated_pending_constraint = !allow_hyphenated_pending_constraint;
+      allow_local_constants = !allow_local_constants;
       print_ast = !print_ast;
       print_serialized = !print_serialized;
       print_typed = !print_typed;
@@ -257,6 +263,7 @@ let () =
     let allow_hyphenated_pending_constraint =
       args.allow_hyphenated_pending_constraint
     in
+    let allow_local_constants = args.allow_local_constants in
     let open Builder in
     {
       allow_no_end_semicolon;
@@ -265,6 +272,7 @@ let () =
       allow_unknown;
       allow_storage_discards;
       allow_hyphenated_pending_constraint;
+      allow_local_constants;
     }
   in
 

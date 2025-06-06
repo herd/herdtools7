@@ -14,9 +14,7 @@ func main() => integer
 begin       // Side effect for RHS expression   Time frame
     var x : integer;
     - = x; // ReadLocal(x, Execution, FALSE)    Execution
-    constant cl = 10;
     let ll : integer = 20;
-    - = cl; // ReadLocal(cl, Constant, TRUE)    Constant
     - = ll; // ReadLocal(ll, Execution, TRUE)   Constant
     - = cg; // ReadGlobal(cg, Constant, TRUE)   Constant
     - = lg; // ReadGlobal(lg, Execution, TRUE)  Execution
@@ -41,6 +39,5 @@ begin       // Side effect for RHS expression   Time frame
              // ThrowException                  Execution
     throw MyException{-};
     assert 1 == 1; // PerformsAssertions        Constant
-
     return 0;
 end;

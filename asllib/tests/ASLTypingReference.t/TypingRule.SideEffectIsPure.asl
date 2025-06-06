@@ -14,9 +14,7 @@ func main() => integer
 begin       // Side effect for RHS expression   Pure?   Symbolically Evaluable?
     var x : integer;
     - = x; // ReadLocal(x, Execution, FALSE)    TRUE    FALSE
-    constant cl = 10;
     let ll : integer = 20;
-    - = cl; // ReadLocal(cl, Constant, TRUE)    TRUE    TRUE
     - = ll; // ReadLocal(ll, Execution, TRUE)   TRUE    TRUE
     - = cg; // ReadGlobal(cg, Constant, TRUE)   TRUE    TRUE
     - = lg; // ReadGlobal(lg, Execution, TRUE)  TRUE    TRUE

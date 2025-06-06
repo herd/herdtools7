@@ -593,3 +593,10 @@ Left-hand sides
                     ^^^
   ASL Grammar error: Obsolete syntax: Hyphenated pending constraint.
   [1]
+  $ aslref local_constants.asl
+  File local_constants.asl, line 8, characters 4 to 12:
+      constant x = 32;
+      ^^^^^^^^
+  ASL Grammar error: Obsolete syntax: Local constant declaration.
+  [1]
+  $ aslref --allow-local-constants local_constants.asl

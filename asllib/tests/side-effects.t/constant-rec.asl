@@ -1,15 +1,15 @@
-func foo (n: integer) => integer
+func foo (n: integer) => integer recurselimit 5
 begin
   if n <= 0 then
     return 1;
   else
-    return bar (n);
+    return bar (n - 1);
   end;
 end;
 
 func bar (n: integer) => integer
 begin
-  constant r = foo (1);
+  let r = foo (1);
   return n * r * foo (n);
 end;
 
@@ -18,7 +18,7 @@ constant D: integer = bar (5);
 
 func main () => integer
 begin
-  assert C == 24;
+  assert C == 6;
   assert D == 120;
 
   return 0;

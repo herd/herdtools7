@@ -52,7 +52,7 @@ C-Style comments
   > func /* this is a /* test */ main () => integer
   > begin /*
   > let's try a multi-line comment /*
-  > which finishes here */ constant msg = "/* a comment inside a string? */"; /* another comment
+  > which finishes here */ let msg = "/* a comment inside a string? */"; /* another comment
   > that finishes somewhere **/ println (msg); // but not here! */
   > return 0; /* oh a new one */
   > // /* when in a commented line, it doesn't count!

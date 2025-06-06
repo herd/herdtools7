@@ -33,4 +33,7 @@ module type CONFIG = sig
 
   val allow_hyphenated_pending_constraint : bool
   (** Allow pending constrained integer types to be denoted by a hyphen. *)
+
+  val allow_local_constants : bool
+  (** Allow declarations of local constant storage. *)
 end

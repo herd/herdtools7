@@ -473,7 +473,11 @@ let decl_item :=
 
 let local_decl_keyword_non_var :=
   | LET       ; { LDK_Let       }
-  | CONSTANT  ; { LDK_Constant  }
+  | CONSTANT[@internal true]; {
+    if not Config.allow_local_constants then
+        Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Local constant declaration."
+    else LDK_Constant
+  }
   (* Var is inlined inside stmt as it has differing production choices
   | VAR       ; { LDK_Var       }
   *)

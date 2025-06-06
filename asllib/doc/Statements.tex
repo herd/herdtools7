@@ -540,16 +540,18 @@ As given by applying the relevant rules to the desugared AST.
 \listingref{typing-sdecl} shows well-typed declaration statements.
 \ASLListing{Typing declaration statements}{typing-sdecl}{\typingtests/TypingRule.SDecl.asl}
 
-The specifications in \listingref{typing-sdecl-bad1} and \listingref{typing-sdecl-bad2}
-are ill-typed, since constant storage elements and immutable local storage elements
-require an initializing expression.
-\ASLListing{An uninitialized constant declaration}{typing-sdecl-bad1}{\typingtests/TypingRule.SDecl.bad1.asl}
+The specifications in \listingref{typing-sdecl-bad1} ill-typed,
+since local constant storage elements are not allowed.
+\ASLListing{A (illegal) local constant declaration}{typing-sdecl-bad1}{\typingtests/TypingRule.SDecl.bad1.asl}
+
+The specification in \listingref{typing-sdecl-bad2} is ill-typed,
+since immutable local storage elements require an initializing expression.
 \ASLListing{An uninitialized immutable local storage declaration}{typing-sdecl-bad2}{\typingtests/TypingRule.SDecl.bad2.asl}
 
 \ProseParagraph
 \OneApplies
 \begin{itemize}
-  \item \AllApply
+  \item \AllApplyCase{some}
   \begin{itemize}
     \item $\vs$ is a declaration with an initializing expression $\ve$,
           that is, \\
@@ -557,31 +559,14 @@ require an initializing expression.
     \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\vte,\vep, \vsese)$\ProseOrTypeError;
     \item applying $\annotatelocaldecltypeannot$ to the environment $\tenv$, type annotation $\tyopt$, type $\vte$, local declaration keyword $\ldk$, expression $\vep$, and local declaration item $\ldi$ yields $(\tenvone, \tyoptp, \vsesldi)$\ProseOrTypeError;
     \item \Proseeqdef{$\vses$}{the union of $\vsese$ and $\vsesldi$};
-    \item \OneApplies
-    \begin{itemize}
-      \item \AllApplyCase{constant}
-      \begin{itemize}
-        \item $\ldk$ indicates a local constant declaration, that is, $\LDKConstant$;
-        \item checking that all \timeframesterm\ in $\vsese$ are before \timeframeconstant\ yields \\
-              $\True$\ProseOrTypeError;
-        \item symbolically simplifying $\ve$ in $\tenvone$ yields the literal $\vv$\ProseOrTypeError;
-        \item declaring a local constant with literal $\vv$ and local declaration item $\ldi$ in $\tenvone$ yields $\newtenv$;
-        \item $\news$ is a declaration with $\ldk$, $\ldi$, type annotation $\tyoptp$, and an expression $\vep$.
-      \end{itemize}
-
-      \item \AllApplyCase{non\_constant}
-      \begin{itemize}
-        \item $\ldk$ indicates that this is not a local constant declaration, that is, $\ldk\neq\LDKConstant$;
-        \item $\news$ is a declaration with $\ldk$, $\ldi$, type annotation $\tyoptp$, and an expression $\vep$;
-        \item $\newtenv$ is $\tenvone$.
-      \end{itemize}
-    \end{itemize}
+    \item $\news$ is a declaration with $\ldk$, $\ldi$, type annotation $\tyoptp$, and an expression $\vep$;
+    \item $\newtenv$ is $\tenvone$.
   \end{itemize}
 
   \item \AllApplyCase{none}
   \begin{itemize}
   \item $\vs$ is a local declaration statement with a variable keyword and no initializing expression,
-        that is, $\SDecl(\LDKVar, \ldi, \tyopt, \None)$ (local declarations of \texttt{let} variables and constants require
+        that is, $\SDecl(\LDKVar, \ldi, \tyopt, \None)$ (local declarations of \texttt{let} variables require
         an initializing expression, otherwise they are rejected by an ASL parser);
   \item $\tyopt$ is $\langle\vt\rangle$\ProseOrTypeError;
   \item annotating $\vt$ in $\tenv$ yields $(\vtp, \vses)$\ProseOrTypeError;
@@ -594,7 +579,7 @@ require an initializing expression.
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[constant]{
+\inferrule[some]{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
   {
   \begin{array}{r}
@@ -602,30 +587,7 @@ require an initializing expression.
   (\tenvone, \tyoptp, \vsesldi) \OrTypeError
   \end{array}
   }\\
-  \vses \eqdef \vsese \cup \vsesldi\\\\
-  \commonprefixline\\\\
-  \ldk = \LDKConstant\\
-  \checktrans{\sesisbefore(\vsese, \timeframeconstant)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
-  \staticeval(\tenvone, \ve) \typearrow \vv \OrTypeError\\\\
-  \declarelocalconstant(\tenvone, \vv, \ldi) \typearrow \newtenv\\
-  \news \eqdef \SDecl(\LDKConstant, \ldi, \tyoptp, \langle\vep\rangle)
-}{
-  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \tyopt, \langle\ve\rangle)}{\vs}) \typearrow (\news, \newtenv, \vses)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_constant]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
-  {
-  \begin{array}{r}
-  \annotatelocaldecltypeannot(\tenv, \tyopt, \vte, \ldk, \vep, \ldi) \typearrow \\
-  (\tenvone, \tyoptp, \vsesldi) \OrTypeError
-  \end{array}
-  }\\
-  \vses \eqdef \vsese \cup \vsesldi\\\\
-  \commonprefixline\\\\
-  \ldk \neq \LDKConstant\\
+  \vses \eqdef \vsese \cup \vsesldi\\
   \news \eqdef \SDecl(\ldk, \ldi, \tyoptp, \langle\vep\rangle)
 }{
   \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \tyopt, \langle\ve\rangle)}{\vs}) \typearrow (\news, \overname{\tenvone}{\newtenv}, \vses)
@@ -646,53 +608,6 @@ require an initializing expression.
 }
 \end{mathpar}
 \CodeSubsection{\SDeclegin}{\SDeclEnd}{../Typing.ml}
-
-\TypingRuleDef{DeclareLocalConstant}
-\hypertarget{def-declarelocalconstant}{}
-The helper function
-\[
-\declarelocalconstant(\overname{\staticenvs}{\tenv} \aslsep \overname{\literal}{\vv} \aslsep \overname{\localdeclitem}{\ldi})
-\typearrow \overname{\staticenvs}{\newtenv}
-\]
-adds the literal $\vv$ with the local declaration item $\ldi$ as a constant to the local component of the static environment $\tenv$,
-yielding the modified static environment $\newtenv$.
-
-\ExampleDef{Typing Local Constant Declarations}
-In \listingref{typing-sdecl},
-the declaration statement
-\verb|constant c1 : integer{1..1000} = 42;|
-updates the static environment by binding \verb|c1| to $\lint(42)$.
-
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{var}
-  \begin{itemize}
-    \item $\ldi$ corresponds to a variable declaration for $\vx$, that is, $\LDIVar(\vx)$;
-    \item applying $\addlocalconstant$ to $\vx$ and $\vv$ in $\tenv$ yields $\newtenv$.
-  \end{itemize}
-
-  \item \AllApplyCase{tuple}
-  \begin{itemize}
-    \item $\ldi$ corresponds to a tuple declaration, that is, $\LDIVar(\Ignore)$;
-    \item this case is not yet implemented.
-  \end{itemize}
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[var]{
-  \addlocalconstant(\tenv, \vx, \vv) \typearrow \newtenv
-}{
-  \declarelocalconstant(\tenv, \vv, \overname{\LDIVar(\vx)}{\ldi}) \typearrow \newtenv
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[tuple]{}{
-  \declarelocalconstant(\tenv, \vv, \overname{\LDITuple(\Ignore)}{\ldi}) \typearrow \tododefine{not implemented yet}
-}
-\end{mathpar}
-\CodeSubsection{\DeclareLocalConstantBegin}{\DeclareLocalConstantEnd}{../Typing.ml}
 
 \TypingRuleDef{AnnotateLocalDeclTypeAnnot}
 \hypertarget{def-annotatelocaldecltypeannot}{}

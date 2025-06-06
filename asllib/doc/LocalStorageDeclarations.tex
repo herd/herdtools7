@@ -82,7 +82,7 @@ Declaring a local storage element is done via the following grammar rules:
 
 \section{Abstract Syntax\label{sec:LocalStorageDeclarationsAbstractSyntax}}
 \begin{flalign*}
-\localdeclkeyword \derives\ & \LDKVar \;|\; \LDKConstant \;|\; \LDKLet &\\
+\localdeclkeyword \derives\ & \LDKVar \;|\; \LDKLet &\\
 \localdeclitem \derives\
      & \LDIVar(\identifier) & \\
   |\ & \LDITuple(\identifier^*) &
@@ -102,15 +102,11 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
+% Transliteration note: simplify this when `--allow-local-constants' is removed.
+
 \begin{mathpar}
 \inferrule[let]{}{
   \buildlocaldeclkeyword(\overname{\Nlocaldeclkeyword(\Tlet)}{\vparsednode}) \astarrow \overname{\LDKLet}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[constant]{}{
-  \buildlocaldeclkeyword(\overname{\Nlocaldeclkeyword(\Tconstant)}{\vparsednode}) \astarrow \overname{\LDKConstant}{\vastnode}
 }
 \end{mathpar}
 
