@@ -26,8 +26,7 @@ type iico = {
   compile_edge :
     AArch64_compile.state ->
     node_dep ->
-    (AArch64_compile.reg * int) list
-    * int AArch64Base.kinstruction AArch64_compile.kpseudo list
+    int AArch64Base.kinstruction AArch64_compile.kpseudo list
     * node_dep
     * AArch64_compile.state;
   direction : direction * direction;
@@ -42,8 +41,8 @@ type t =
   | Fr of int_ext
   | Ws of int_ext
   | Po of sd * direction * direction
-  | Dp of dp * sd * direction
-  | BasicDep of direction * direction
+  | Dp of dp * sd * direction * direction
+  | BasicDep of direction * direction (* Carries a dependency on *)
   | Iico of iico
 
 (** edge attributes *)
@@ -52,13 +51,13 @@ let edge_direction = function
   | Fr _ -> Rm, Wm
   | Ws _ -> Wm, Wm
   | Po (_, dir1, dir2) -> dir1, dir2
-  | Dp (_, _, dir) -> Rm, dir
+  | Dp (_, _, dir1, dir2) -> dir1, dir2
   | BasicDep (dir1, dir2) -> dir1, dir2
   | Iico i -> i.direction
 
 let edge_location = function
   | Rf _ | Fr _ | Ws _ | BasicDep _ -> Same
-  | Po (sd, _, _) | Dp (_, sd, _) -> sd
+  | Po (sd, _, _) | Dp (_, sd, _, _) -> sd
   | Iico i -> i.sd
 
 let iico_ht = Hashtbl.create 10
@@ -89,7 +88,9 @@ let pp_edge = function
   | Ws ie -> "Fr" ^ pp_int_ext ie
   | Po (sd, dir1, dir2) ->
       "Po" ^ pp_sd sd ^ pp_direction dir1 ^ pp_direction dir2
-  | Dp (dp, sd, dir) -> "Dp" ^ pp_dp dp ^ pp_sd sd ^ pp_direction dir
+  | Dp (dp, sd, Rm, dir) -> "Dp" ^ pp_dp dp ^ pp_sd sd ^ pp_direction dir
+  | Dp (dp, sd, dir1, dir2) ->
+      "Dp" ^ pp_dp dp ^ pp_sd sd ^ pp_direction dir1 ^ pp_direction dir2
   | BasicDep (dir1, dir2) -> "basic_dep" ^ pp_direction dir1 ^ pp_direction dir2
   | Iico i -> "iico[" ^ i.repr ^ "]"
 

@@ -5,7 +5,7 @@
 
 let alpha = (['A'-'Z' 'a'-'z'])
 let number = ['0'-'9']
-let id = (alpha | number | '_' | '-' | '.' | ':' | '>')+
+let id = (alpha | number | '_' | '-' | '.' | ':' | '>' | ' ')+
 
 rule token = parse
   | [' ' '\t'] { token lexbuf }
@@ -17,8 +17,10 @@ rule token = parse
   | "basic_dep" { BASIC_DEP }
   | "iico" { IICO }
 
-  | 'R' { R }
-  | 'W' { W }
+  | 'R' { RM }
+  | 'W' { WM }
+  | "Rr" { RR }
+  | "Wr" { WR }
   | 'i' { INT }
   | 'e' { EXT }
   | 's' { SAME }

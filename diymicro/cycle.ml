@@ -1,16 +1,9 @@
-type loc = Loc of int
 type proc = Proc of int
 
-(* new_loc: get a new location
-loc_count: get the current number of locations *)
-let new_loc, loc_count =
-  let counter = ref 0 in
-  let inner_new_loc () =
-    let loc = Loc !counter in
-    let () = incr counter in
-    loc
-  in
-  inner_new_loc, fun () -> !counter
+module A = struct
+  (* TODO : move loc & state to a new file, we don't want to include all A *)
+  include AArch64_compile
+end
 
 (* new_proc: get a new proc
 proc_count: get the current number of procs *)
@@ -25,7 +18,7 @@ let new_proc, proc_count =
 
 type event = {
   mutable direction : Edge.direction option;
-  mutable location : loc option;
+  mutable location : A.loc option;
   mutable proc : proc option;
   mutable value : int option;
   mutable is_significant : bool;
@@ -42,12 +35,6 @@ type t = {
 (** cycle: Circular double linked list of edges/events *)
 
 (** Pretty printers **)
-
-let pp_location (Loc i) =
-  if i < 3 then String.make 1 (Char.code 'x' + i |> Char.chr)
-  else if i < 26 then String.make 1 (Char.code 'a' + i - 3 |> Char.chr)
-  else "loc_" ^ string_of_int (i - 26)
-
 let pp_proc (Proc i) = "P" ^ string_of_int i
 
 let pp_event evt =
@@ -55,7 +42,7 @@ let pp_event evt =
   ^ (match evt.proc with Some p -> pp_proc p | None -> "*")
   ^ ") "
   ^ (match evt.direction with Some d -> Edge.pp_direction d | None -> "*")
-  ^ (match evt.location with Some l -> pp_location l | None -> "*")
+  ^ (match evt.location with Some l -> A.pp_location l | None -> "*")
   ^ " "
   ^ match evt.value with Some v -> string_of_int v | None -> "*"
 
@@ -138,7 +125,7 @@ let assign_directions cycle_start =
 (** Assign a location to each event of the cycle *)
 let assign_locations cycle_start =
   (* Find the first node after a different location *)
-  let first_location = new_loc () in
+  let first_location = A.next_loc () in
   let first_node =
     try
       (find_last cycle_start.prev (fun n ->
@@ -151,7 +138,7 @@ let assign_locations cycle_start =
     node.source_event.location <- Some source_location;
     if node.next != first_node then
       let loc =
-        if Edge.edge_location node.edge = Edge.Different then new_loc ()
+        if Edge.edge_location node.edge = Edge.Different then A.next_loc ()
         else source_location
       in
       assign_aux node.next loc

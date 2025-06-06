@@ -2,16 +2,82 @@ include MakeAArch64Base.Make (struct
   let is_morello = false
 end)
 
-type state = {
-  free_registers : reg list; (* available registers *)
-  next_addr : int;
-}
-(** current state inside a single proc *)
+module St = struct
+  type loc = Loc of int
 
-let next_reg (st : state) =
-  match st.free_registers with
-  | r :: rs -> r, {st with free_registers = rs}
-  | [] -> Warn.fatal "No more free registers"
+  let pp_location (Loc i) =
+    if i < 3 then String.make 1 (Char.code 'x' + i |> Char.chr)
+    else if i < 26 then String.make 1 (Char.code 'a' + i - 3 |> Char.chr)
+    else "loc_" ^ string_of_int (i - 26)
+
+  let rec pp_env = function
+    | [] -> ""
+    | (loc, r) :: qe -> pp_location loc ^ " -> " ^ pp_reg r ^ "\n" ^ pp_env qe
+
+  let rec pp_initial_values = function
+    | [] -> ""
+    | (loc, v) :: q ->
+        Printf.sprintf " %s = %d;\n%s" (pp_location loc) v (pp_initial_values q)
+
+  (* new_loc: get a new location
+  loc_count: get the current number of locations *)
+  let next_loc, loc_count =
+    let counter = ref 0 in
+    let inner_next_loc () =
+      let loc = Loc !counter in
+      let () = incr counter in
+      loc
+    in
+    inner_next_loc, fun () -> !counter
+
+  type state = {
+    free_registers : reg list; (* available registers *)
+    env : (loc * reg) list; (* Assign a register to each location *)
+    initial_values : (loc * int) list;
+    final_conditions : (reg * int) list;
+  }
+  (** current state inside a single proc *)
+
+  let next_reg (st : state) =
+    match st.free_registers with
+    | r :: rs -> r, {st with free_registers = rs}
+    | [] -> Warn.fatal "No more free registers"
+
+  let assigned_next_loc (st : state) =
+    let reg, st = next_reg st in
+    let loc = next_loc () in
+    loc, reg, {st with env = (loc, reg) :: st.env}
+
+  let add_condition st reg int =
+    {st with final_conditions = (reg, int) :: st.final_conditions}
+
+  let set_initial st loc int =
+    let rec set_initial_value = function
+      | (l, _) :: _ when l = loc ->
+          Warn.fatal "%s already has an initial value" (pp_location loc)
+      | e :: q -> e :: set_initial_value q
+      | [] -> [loc, int]
+    in
+    {st with initial_values = set_initial_value st.initial_values}
+
+  let set_register st loc reg =
+    (* We allow a location to be assigned to multiple registers *)
+    let rec set_register_value = function
+      | e :: q -> e :: set_register_value q
+      | [] -> [loc, reg]
+    in
+    {st with env = set_register_value st.env}
+
+  let get_register st loc =
+    let rec get_register = function
+      | (l, reg) :: _ when l = loc -> reg
+      | _ :: q -> get_register q
+      | [] -> Warn.fatal "No register assigned for %s" (pp_location loc)
+    in
+    get_register st.env
+end
+
+include St
 
 module TypBase = struct
   open MachSize

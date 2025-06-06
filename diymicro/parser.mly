@@ -8,7 +8,8 @@
 %token BASIC_DEP
 %token IICO
 
-%token R W
+%token RM WM
+%token RR WR
 %token INT EXT
 %token SAME DIFFERENT
 %token ADDR DATA CTRL
@@ -27,7 +28,8 @@ edge:
     | FR ie { Edge.Fr $2 }
     | WS ie { Edge.Ws $2 }
     | PO sd dir dir    { Edge.Po ($2, $3, $4) }
-    | DP dp sd dir { Edge.Dp ($2, $3, $4) }
+    | DP dp sd dir { Edge.Dp ($2, $3, Edge.Rm, $4) }
+    | DP dp sd dir dir { Edge.Dp ($2, $3, $4, $5) }
     | BASIC_DEP dir dir { Edge.BasicDep ($2, $3) }
     | IICO ID
                     { Edge.Iico (Edge.get_iico ($2)) }
@@ -41,8 +43,10 @@ sd:
     | DIFFERENT { Edge.Different }
 ;
 dir:
-    | R { Edge.Rm }
-    | W { Edge.Wm }
+    | RM { Edge.Rm }
+    | WM { Edge.Wm }
+    | RR { Edge.Rr }
+    | WR { Edge.Wr }
 ;
 dp:
     | ADDR { Edge.Addr }

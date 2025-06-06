@@ -13,30 +13,6 @@ module E = struct
   include Edge
 end
 
-(** metadata needed along instructions for a litmus test *)
-
-type t = {
-  cycle : C.t; (* edges, read and write values etc *)
-  env : (C.loc * C.proc, A.reg) Hashtbl.t; (* loc, proc to register *)
-  initial_values : (C.loc, int) Hashtbl.t;
-  mutable final_conditions : (C.proc * A.reg * int) list;
-}
-
-let pp_env env =
-  Hashtbl.fold
-    (fun (loc, proc) r s ->
-      s ^ "\n" ^ C.pp_location loc ^ ", " ^ C.pp_proc proc ^ " -> " ^ A.pp_reg r)
-    env ""
-
-let get_register env loc proc =
-  try Hashtbl.find env (loc, proc)
-  with Not_found ->
-    Warn.fatal "Unable to find register for %s %s" (C.pp_location loc)
-      (C.pp_proc proc)
-
-let add_condition test proc reg value =
-  test.final_conditions <- (proc, reg, value) :: test.final_conditions
-
 (** Returns a list of lists of nodes (cycles), splitted by proc *)
 let split_by_proc (cycle : C.t) =
   let first_node =
@@ -67,19 +43,15 @@ let add_ctrl_dep st (r : A.reg) ins =
   in
   ins @ tins, st
 
-let compile_event st test (src : E.node_dep) event =
-  let event_reg =
-    get_register test.env
-      (Utils.unsome event.C.location)
-      (Utils.unsome event.C.proc)
-  in
+let compile_event st (src : E.node_dep) event =
+  let event_reg = A.get_register st (Utils.unsome event.C.location) in
   let ins, dst, st =
     match event.C.direction, src with
     | None, _ -> Warn.fatal "Direction not loaded"
-    | Some Edge.Rm, E.DepNone ->
+    | Some E.Rm, E.DepNone ->
         let dst, st = A.next_reg st in
         A.pseudo [A.do_ldr A.vloc dst event_reg], dst, st
-    | Some Edge.Rm, E.DepAddr r ->
+    | Some E.Rm, E.DepAddr r ->
         let reg_zero, st = A.next_reg st in
         let dst, st = A.next_reg st in
         let ins =
@@ -88,20 +60,20 @@ let compile_event st test (src : E.node_dep) event =
           @ A.pseudo [A.do_ldr_idx A.vloc A.vloc dst event_reg reg_zero]
         in
         ins, dst, st
-    | Some Edge.Rm, E.DepCtrl r ->
+    | Some E.Rm, E.DepCtrl r ->
         let dst, st = A.next_reg st in
         let ins, st =
           add_ctrl_dep st r (A.pseudo [A.do_ldr A.vloc dst event_reg])
         in
         ins, dst, st
-    | Some Edge.Wm, E.DepNone ->
+    | Some E.Wm, E.DepNone ->
         let reg_value, st = A.next_reg st in
         let ins =
           [A.mov reg_value (Utils.unsome event.C.value)]
           @ A.pseudo [A.str reg_value event_reg]
         in
         ins, event_reg, st
-    | Some Edge.Wm, E.DepData r ->
+    | Some E.Wm, E.DepData r ->
         let reg_value, st = A.next_reg st in
         let ins =
           A.pseudo
@@ -112,7 +84,7 @@ let compile_event st test (src : E.node_dep) event =
             ]
         in
         ins, event_reg, st
-    | Some Edge.Wm, E.DepAddr r ->
+    | Some E.Wm, E.DepAddr r ->
         let reg_zero, st = A.next_reg st in
         let reg_value, st = A.next_reg st in
         let ins =
@@ -121,7 +93,7 @@ let compile_event st test (src : E.node_dep) event =
           @ A.pseudo [A.str_idx reg_value event_reg reg_zero]
         in
         ins, event_reg, st
-    | Some Edge.Wm, E.DepCtrl r ->
+    | Some E.Wm, E.DepCtrl r ->
         let reg_value, st = A.next_reg st in
         let ins, st =
           add_ctrl_dep st r
@@ -129,120 +101,91 @@ let compile_event st test (src : E.node_dep) event =
             @ A.pseudo [A.str reg_value event_reg])
         in
         ins, event_reg, st
-    | Some Edge.Rr, E.DepNone ->
+    | Some E.Rr, E.DepNone ->
         let dst, st = A.next_reg st in
         [A.mov_reg dst event_reg], dst, st
-    | Some Edge.Wr, E.DepNone ->
+    | Some E.Wr, E.DepNone ->
         [A.mov event_reg (Utils.unsome event.C.value)], event_reg, st
+    | Some (E.Wr | E.Rr), E.DepReg r -> [], r, st (* just carry on *)
     | Some d, _ ->
         Warn.fatal "Dependency %s incompatible with direction %s"
           (E.pp_node_dep src) (E.pp_direction d)
   in
-  if event.C.is_significant then
-    add_condition test
-      (Utils.unsome event.C.proc)
-      dst (* This a read's destination *)
-      (Utils.unsome event.C.value);
+  let st =
+    if event.C.is_significant then
+      A.add_condition st dst (Utils.unsome event.C.value)
+    else st
+  in
   ins, E.DepReg dst, st
 
 (** compile a node (:= event -edge-> ), src is the previous register to which
     dependency should be added, ZR if no dependency *)
-let compile_edge (st : A.state) test (src : E.node_dep) (node : C.t) =
-  let proc = Utils.unsome node.C.source_event.C.proc in
-  let rec add_conditions = function
-    | (r, v) :: q ->
-        add_condition test proc r v;
-        add_conditions q
-    | [] -> ()
-  in
+let compile_edge (st : A.state) (src : E.node_dep) (node : C.t) =
   match node.C.edge, src with
   | (E.Rf _ | E.Fr _ | E.Ws _ | E.Po _), _ -> [], E.DepNone, st
-  | E.Dp (E.Addr, _, _), E.DepReg r -> [], E.DepAddr r, st
-  | E.Dp (E.Data, _, _), E.DepReg r -> [], E.DepData r, st
-  | E.Dp (E.Ctrl, _, _), E.DepReg r -> [], E.DepCtrl r, st
-  | E.BasicDep _, _ -> [], E.DepNone, st (* TODO *)
-  | E.Iico i, _ ->
-      let cond, ins, dst, st = i.E.compile_edge st src in
-      add_conditions cond;
-      ins, dst, st
+  | E.Dp (E.Addr, _, _, _), E.DepReg r -> [], E.DepAddr r, st
+  | E.Dp (E.Data, _, _, _), E.DepReg r -> [], E.DepData r, st
+  | E.Dp (E.Ctrl, _, _, _), E.DepReg r -> [], E.DepCtrl r, st
+  | E.BasicDep _, dep -> [], dep, st
+  | E.Iico i, _ -> i.E.compile_edge st src
   | _ ->
       Warn.fatal "Edge -%s->: compilation not implemented"
         (E.pp_edge node.C.edge)
 
 (** Generate test from a cycle *)
 let make_test (cycle : C.t) =
-  let loc_count = C.loc_count () in
-  let proc_count = C.proc_count () in
-  let test =
-    {
-      cycle;
-      env = Hashtbl.create (proc_count * loc_count);
-      initial_values = Hashtbl.create loc_count;
-      final_conditions = [];
-    }
-  in
-  let compile_proc proc nodes =
+  let loc_count = A.loc_count () in
+
+  let compile_proc nodes =
     let rec init_st = function
-      | C.Loc -1 -> A.{free_registers = A.allowed_for_symb; next_addr = 0}
-      | C.Loc loc_i ->
-          let st = init_st (C.Loc (loc_i - 1)) in
+      | A.Loc -1 ->
+          A.
+            {
+              free_registers = A.allowed_for_symb;
+              env = [];
+              initial_values = [];
+              final_conditions = [];
+            }
+      | A.Loc loc_i ->
+          let st = init_st (A.Loc (loc_i - 1)) in
           let r, st = A.next_reg st in
-          Hashtbl.add test.env (C.Loc loc_i, proc) r;
+          let st = A.set_register st (A.Loc loc_i) r in
           st
     in
     let rec compile_proc_aux st (src : E.node_dep) = function
       | [] -> [], st
       | n :: nq ->
-          let evt_code, dst, st = compile_event st test src n.C.source_event in
-          let edge_code, dst, st = compile_edge st test dst n in
+          let evt_code, dst, st = compile_event st src n.C.source_event in
+          let edge_code, dst, st = compile_edge st dst n in
           let next_code, st = compile_proc_aux st dst nq in
           evt_code @ edge_code @ next_code, st
     in
-    let st = init_st (C.Loc (loc_count - 1)) in
-    let ins, _ = compile_proc_aux st E.DepNone nodes in
-    ins
+    let st = init_st (A.Loc (loc_count - 1)) in
+    compile_proc_aux st E.DepNone nodes
   in
   let rec compile_by_proc nodes_by_proc proc =
     match nodes_by_proc, proc with
     | [], _ -> []
     | nodes :: nq, C.Proc proc_i ->
-        let ins = compile_proc proc nodes in
+        let ins = compile_proc nodes in
         ins :: compile_by_proc nq (C.Proc (proc_i + 1))
   in
-  test, compile_by_proc (split_by_proc cycle) (C.Proc 0)
+  compile_by_proc (split_by_proc cycle) (C.Proc 0)
 
 (* Dumping test *)
 
-let dump_init (test : t) (channel : out_channel) =
-  let dump_initial_values () =
-    for loc_i = 0 to C.loc_count () - 1 do
-      let loc = C.Loc loc_i in
-      match Hashtbl.find_opt test.initial_values loc with
-      | None -> ()
-      | Some v -> Printf.fprintf channel " %s = %d;\n" (C.pp_location loc) v
-    done
+let dump_init (stl : A.state list) (channel : out_channel) =
+  let pp_initial_values () =
+    A.pp_initial_values
+      (List.map (fun st -> st.A.initial_values) stl |> List.flatten)
   in
 
-  let dump_env () =
-    for loc_i = 0 to C.loc_count () - 1 do
-      let loc = C.Loc loc_i in
-      "  " |> output_string channel;
-      for proc_i = 0 to C.proc_count () - 1 do
-        let proc = C.Proc proc_i in
-        match Hashtbl.find_opt test.env (loc, proc) with
-        | Some reg ->
-            Printf.fprintf channel "%d: %s = %s;\t" proc_i (A.pp_reg reg)
-              (C.pp_location loc)
-        | None -> ()
-      done;
-      "\n" |> output_string channel
-    done
+  let pp_envs () =
+    let l = [""] in
+    List.fold_right (fun s i -> i ^ s) l ""
   in
-  "{\n" |> output_string channel;
-  dump_initial_values ();
-  "\n" |> output_string channel;
-  dump_env ();
-  "}\n\n" |> output_string channel
+  "{\n" ^ pp_initial_values () ^ "\n" ^ pp_envs () ^ "}\n\n"
+  |> output_string channel
 
 (* Code pretty-print *)
 
@@ -269,19 +212,29 @@ let dump_code code channel =
   let pp = fmt_cols code in
   Misc.pp_prog channel pp
 
-let dump_final test channel =
-  let pp_clause (C.Proc proc, reg, value) =
+let dump_final (stl : A.state list) channel =
+  let pp_clause proc (reg, value) =
     Printf.sprintf "%d:%s=%d" proc (A.pp_reg reg) value
   in
-  let rec pp_clauses = function
+  let rec pp_proc_clauses proc = function
     | [] -> ""
-    | [e] -> pp_clause e
-    | e :: q -> pp_clause e ^ " /\\ " ^ pp_clauses q
+    | [e] -> pp_clause proc e
+    | e :: q -> pp_clause proc e ^ " /\\ " ^ pp_proc_clauses proc q
   in
-  "exists (" ^ pp_clauses test.final_conditions ^ ")\n" |> output_string channel
+  let pp_clauses =
+    let rec pp_clauses proc = function
+      | [] -> ""
+      | e :: q -> pp_proc_clauses proc e ^ pp_clauses (proc + 1) q
+    in
+    pp_clauses 0
+  in
+  "exists ("
+  ^ (List.map (fun st -> st.A.final_conditions) stl |> pp_clauses)
+  ^ ")\n"
+  |> output_string channel
 
-let dump_test (test, instructions) (channel : out_channel) =
+let dump_test stl instructions (channel : out_channel) =
   Printf.fprintf channel "%s %s\n" (Archs.pp A.arch) "test.litmus";
-  dump_init test channel;
+  dump_init stl channel;
   dump_code instructions channel;
-  dump_final test channel
+  dump_final stl channel

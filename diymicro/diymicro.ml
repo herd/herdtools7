@@ -19,5 +19,7 @@ let () =
 
   let edges = List.rev !edges_ref in
   let cycle = Cycle.make_cycle edges in
-  let test, ins = Compile.make_test cycle in
-  Compile.dump_test (test, ins) stdout
+  let prog = Compile.make_test cycle in
+  let instructions = List.map (fun (a, _) -> a) prog in
+  let stl = List.map (fun (_, b) -> b) prog in
+  Compile.dump_test stl instructions stdout
