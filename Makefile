@@ -41,6 +41,7 @@ $(BENTO): Version.ml | check-deps
 	dune build -j $(J) --profile $(DUNE_PROFILE) $@
 
 install:
+	dune build -j $(J) --profile $(DUNE_PROFILE) _build/default/asllib/menhir2bnfc/menhir2bnfc.install
 	sh ./dune-install.sh $(PREFIX)
 
 uninstall:

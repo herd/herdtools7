@@ -9,6 +9,7 @@
  (targets AbsGrammar.ml LexGrammar.mll ParGrammar.mly)
  (deps
   (:gr grammar.cf))
+ (enabled_if %{bin-available:bnfc})
  (action
   (run %{bin:bnfc} --ocaml-menhir %{gr})))
 
