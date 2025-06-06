@@ -58,27 +58,8 @@ let ok = Data ok_str
 let myok p n = Data (Printf.sprintf "ok%i%i" p n)
 let myok_proc p = Data (Printf.sprintf "ok%i" p)
 
-type v = NoValue | Plain of int
-let value_to_int = function
-    | NoValue -> -1
-    | Plain v -> v
-let no_value = NoValue
-let value_of_int v = Plain v
-let value_compare lhs rhs =
-    match lhs, rhs with
-    | NoValue, NoValue -> 0
-    | NoValue, Plain _ -> -1
-    | Plain _, NoValue -> 1
-    | Plain lhs, Plain rhs -> Misc.int_compare lhs rhs
-
-let pp_v ?(hexa=false) = function
-  | NoValue -> "**"
-  | Plain v -> Printf.sprintf (if hexa then "0x%x" else "%d") v
-
 type proc = Proc.t
 let pp_proc p = Proc.pp p
-
-type env = (string * v) list
 
 (* Direction of event *)
 type dir = W | R
@@ -201,6 +182,6 @@ let add_capability s t = Printf.sprintf "0xffffc0000:%s:%i" s (if t = 0 then 1 e
 
 let add_vector hexa v =
   let open Printf in
-  let pp value = pp_v ~hexa:hexa (value_of_int value) in
+  let pp value = sprintf (if hexa then "0x%x" else "%d") value in
   sprintf "{%s}"
     (String.concat "," (List.map pp v))
