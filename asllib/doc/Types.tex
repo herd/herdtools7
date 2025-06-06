@@ -167,7 +167,7 @@ is a parameterized integer type, \underline{not} an unconstrained integer type.
 \Nty \derives\ & \Tinteger \parsesep \Nconstraintkindopt &\\
 \Nconstraintkindopt \derives \ & \Nconstraintkind \;|\; \emptysentence &\\
 \Nconstraintkind \derives \ & \Tlbrace \parsesep \ClistOne{\Nintconstraint} \parsesep \Trbrace &\\
-|\ & \Tlbrace \parsesep \Tminus \parsesep \Trbrace &\\
+|\ & \Tlbrace \parsesep \Trbrace &\\
 \Nintconstraint \derives \ & \Nexpr &\\
 |\ & \Nexpr \parsesep \Tslicing \parsesep \Nexpr &
 \end{flalign*}
@@ -244,7 +244,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[pending\_constrained]{}{
-  \buildconstraintkind(\Nconstraintkind(\Tlbrace, \Tminus, \Trbrace)) \astarrow
+  \buildconstraintkind(\Nconstraintkind(\Tlbrace, \Trbrace)) \astarrow
   \overname{\pendingconstrained}{\vastnode}
 }
 \end{mathpar}

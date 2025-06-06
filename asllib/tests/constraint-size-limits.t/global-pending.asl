@@ -4,7 +4,7 @@ constant B = 1 << 10;
 let a = ARBITRARY: integer {0..A};
 let b = ARBITRARY: integer {1..B};
 
-var z: integer {-} = a * b;
+var z: integer{} = a * b;
 
 func main () => integer
 begin

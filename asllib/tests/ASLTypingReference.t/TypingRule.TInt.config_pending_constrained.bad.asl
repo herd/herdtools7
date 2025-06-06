@@ -1,1 +1,1 @@
-config x : integer{-} =  1;
+config x : integer{} =  1;
