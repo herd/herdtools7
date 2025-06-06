@@ -1,7 +1,8 @@
 (rule
  (target grammar.cf)
  (deps
-  (:par %{workspace_root}/asllib/Parser.cmly))
+  (:par
+   %{env:ASLLIB_PARSER_CMLY=../../../../../_build/default/asllib/Parser.cmly}))
  (action
   (run %{bin:menhir2bnfc} --with-lexer %{par} grammar.cf)))
 
@@ -22,5 +23,4 @@
  (name bnfc_parser)
  (modules :standard)
  (flags -w -33)
- (optional)
- (libraries menhir2bnfc_lib))
+ (libraries herdtools7.asllib))
