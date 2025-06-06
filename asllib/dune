@@ -6,6 +6,9 @@
   (flags
    (:standard -warn-error +A -w +a-3-4-9-29-33-41-45-60-67-70))))
 
+(dirs
+ (:standard \ menhir2bnfc))
+
 (rule
  (copy ../Version.ml Version.ml))
 

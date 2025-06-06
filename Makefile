@@ -37,6 +37,9 @@ Version.ml:
 just-build: Version.ml
 	dune build -j $(J) --profile $(DUNE_PROFILE)
 
+build-release: Version.ml
+	dune build -j $(J) -p herdtools7 @install
+
 build: check-deps | just-build
 
 install:
@@ -386,9 +389,24 @@ diymicro-test-aarch64-asl: asl-pseudocode
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diymicro7 (ASL) tests: OK"
 
-test-bnfc:
+.PHONY: opam-install
+opam-install:
 	@ echo
-	dune build @bnfc_test
+	@ echo "Installing herdtools as an opam package"
+	opam install .
+	@ echo "Installed."
+
+ASLLIB_PARSER_CMLY := _build/default/asllib/Parser.cmly
+
+.PHONY: test-bnfc
+test-bnfc: opam-install
+	@ echo
+	dune build --profile $(DUNE_PROFILE) $(ASLLIB_PARSER_CMLY)
+	$(MAKE) \
+		-C asllib/menhir2bnfc \
+		HERDTOOLS_SOURCE=$(CURDIR) \
+		ASLLIB_PARSER_CMLY=$(abspath $(ASLLIB_PARSER_CMLY)) \
+		test
 	@ echo "BNFC tests: OK"
 
 test:: test.pac

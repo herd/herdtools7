@@ -1,3 +1,4 @@
 (cram
  (enabled_if %{lib-available:menhir2bnfc_lib})
+ (package menhir2bnfc)
  (deps %{bin:menhir2bnfc} %{bin:menhir}))
