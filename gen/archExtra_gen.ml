@@ -62,6 +62,7 @@ module type S = sig
 
 (* complete init with necessary information *)
   val complete_init : bool (* hexa *) -> Code.env -> init -> init
+  val pp_env: init -> string
 
 
 (***********************)
@@ -181,7 +182,7 @@ and type special3 = I.special3
     | None -> "-"
     | Some v -> pp_initval v
 
-  let _pp_env env =
+  let pp_env env =
     String.concat ", "
        (List.map (fun (loc,v) -> pp_location loc ^ "->" ^ ppo v) env)
 
