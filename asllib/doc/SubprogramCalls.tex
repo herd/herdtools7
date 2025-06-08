@@ -1,5 +1,20 @@
 \chapter{Subprogram Calls\label{chap:SubprogramCalls}}
 
+Subprograms can be called via an expression or as a statement.
+
+\section{Recursion}
+Subprograms can call each other recursively.
+For example, in \listingref{MutualRecursion},
+the longest possible call path is \verb|foo->bar->foo->bar->foo->bar-foo->bar|.
+The final call to \verb|bar| is a \dynamicerrorterm.
+\ASLListing{Mutual recursion}{MutualRecursion}{\definitiontests/MutualRecursion.bad.asl}
+
+\section{Invoking Getters and Setters}
+
+\listingref{AccessorDeclaration} shows an example of declaring an accessor \verb|X|
+and of invoking its getter and its setter.
+
+\section{Chapter Outline}
 This chapter is concerned with subprogram calls, which appear both in expressions
 and in statements. Specifically:
 \begin{itemize}

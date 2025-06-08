@@ -1554,6 +1554,10 @@ yields a dynamic error.
 \Ncasealt \derives \ & \Twhen \parsesep \Npatternlist \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &\\
 \end{flalign*}
 
+\listingref{CaseStatement-bad} shows an example of an erroneous case statement
+where a \casealternativeterm{} is missing a statement.
+\ASLListing{Invalid case statement syntax}{CaseStatement-bad}{\syntaxtests/CaseStatement.bad.asl}
+
 \subsection{Abstract Syntax}
 Case statements are considered syntactic sugar and are \emph{desugared}.
 That is, they are transformed into an untyped AST node that does not have
@@ -1783,6 +1787,9 @@ they do not require type system rules.
 \subsection{Semantics}
 Since case statements are transformed into other statements,
 they do not appear in the typed AST and thus are not associated with a semantics.
+
+In \listingref{CaseStatement.where} the expression \verb|a| will be evaluated twice.
+\ASLListing{Evaluating case alternative sub-expressions}{CaseStatement.where}{\definitiontests/CaseStatement.where.asl}
 
 \hypertarget{def-assertionstatementterm}{}
 \section{Assertion Statements\label{sec:AssertionStatements}}
@@ -2784,6 +2791,10 @@ i = 0
 \end{Verbatim}
 % CONSOLE_END
 
+The specification in \listingref{SFor-nop} shows a \forstatementterm{}
+whose body does not evaluate since its lower bound is greater than its upper bound.
+\ASLListing{A for loop with no iterations}{SFor-nop}{\semanticstests/SemanticsRule.SFor.nop.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -3276,8 +3287,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \subsection{Typing}
 
-\ExampleDef{Typing Try Statements}
 \TypingRuleDef{STry}
+\ExampleDef{Typing Try Statements}
 In
 \listingref{semantics-catchnamed},
 \listingref{semantics-catchotherwise},
@@ -4020,7 +4031,6 @@ The \pragmastatementterm{} in \listingref{typing-spragma} is well-typed.
 \CodeSubsection{\SPragmaBegin}{\SPragmaEnd}{../Typing.ml}
 
 \subsection{Semantics\label{sec:PragmaSemantics}}
-\ProseParagraph
 Pragmas are structures present in the \untypedast{} that are designed to be used
 by third-party tools.
 
