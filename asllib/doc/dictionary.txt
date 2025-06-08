@@ -1320,6 +1320,7 @@ of
 offers
 offset
 often
+og
 okay
 omission
 omit
