@@ -92,6 +92,18 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.TReal.asl
   $ aslref TypingRule.TBool.asl
   $ aslref TypingRule.TNamed.asl
+  $ aslref TypingRule.TNamed.bad1.asl
+  File TypingRule.TNamed.bad1.asl, line 11, characters 4 to 13:
+      foo(x.f); // Illegal: x.f is of type TypeB which does not type-satisfy TypeA.
+      ^^^^^^^^^
+  ASL Type error: a subtype of TypeA was expected, provided TypeB.
+  [1]
+  $ aslref TypingRule.TNamed.bad2.asl
+  File TypingRule.TNamed.bad2.asl, line 12, characters 4 to 13:
+      foo(y.f); // illegal: y.f is of type TypeB which does not type-satisfy TypeA.
+      ^^^^^^^^^
+  ASL Type error: a subtype of TypeA was expected, provided TypeB.
+  [1]
   $ aslref TypingRule.TIntUnconstrained.asl
   $ aslref TypingRule.TIntWellConstrained.asl
   $ aslref TypingRule.TIntParameterized.asl
@@ -142,9 +154,29 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref TypingRule.AnnotateSymbolicallyEvaluableExpr.asl
   $ aslref --no-exec TypingRule.TEnumDecl.asl
+  $ aslref --no-exec TypingRule.TEnumDecl.subtypes.asl
   $ aslref --no-exec TypingRule.TEnumDecl.bad.asl
-  File TypingRule.TEnumDecl.bad.asl, line 2, characters 0 to 49:
-  type Color of enumeration { GREEN, ORANGE, RED }; // Illegal: GREEN already declared.
+  File TypingRule.TEnumDecl.bad.asl, line 1, characters 0 to 19:
+  constant GREEN = 1;
+  ^^^^^^^^^^^^^^^^^^^
+  ASL Type error: cannot declare already declared element "GREEN".
+  [1]
+  $ aslref --no-exec TypingRule.TEnumDecl.bad2.asl
+  File TypingRule.TEnumDecl.bad2.asl, line 4, characters 0 to 67:
+  type SubEnumIllegal1 of enumeration {LOW, HIGH} subtypes SuperEnum;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: cannot declare already declared element "LOW".
+  [1]
+  $ aslref --no-exec TypingRule.TEnumDecl.bad3.asl
+  File TypingRule.TEnumDecl.bad3.asl, line 5, characters 0 to 69:
+  type SubEnumIllegal2 of enumeration {TOP, BOTTOM} subtypes SuperEnum;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: a subtype of SuperEnum was expected,
+    provided enumeration {TOP, BOTTOM}.
+  [1]
+  $ aslref --no-exec TypingRule.TEnumDecl.bad4.asl
+  File TypingRule.TEnumDecl.bad4.asl, line 1, characters 0 to 49:
+  type Color of enumeration { GREEN, ORANGE, RED };
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: cannot declare already declared element "RED".
   [1]
@@ -716,6 +748,12 @@ ASL Typing Tests / annotating types:
   ^^^^^^^^^^^^^^^
   ASL Type error: multiple recursive declarations: "foo", "g".
   [1]
+  $ aslref --no-exec TypingRule.TypeCheckMutuallyRec.bad2.asl
+  File TypingRule.TypeCheckMutuallyRec.bad2.asl, line 2, characters 0 to 19:
+  type other of base;
+  ^^^^^^^^^^^^^^^^^^^
+  ASL Type error: multiple recursive declarations: "other", "base".
+  [1]
   $ aslref --no-exec TypingRule.DeclareSubprograms.asl
   $ aslref --no-exec TypingRule.SubprogramForName.asl
   $ aslref --no-exec TypingRule.InsertStdlibParam.asl
@@ -1039,3 +1077,25 @@ ASL Typing Tests / annotating types:
   Warning: Removing some values that would fail with op DIV from constraint set
   {-4..-3, -1..2, -1..B, 0, 1, 3..4, A..B, B, B..-1} gave
   {1..2, 1..B, 1, 3..4, A..B, B, B..-1}. Continuing with this constraint set.
+  $ aslref TypingRule.EBinop.bad.asl
+  File TypingRule.EBinop.bad.asl, line 3, characters 10 to 19:
+    let x = 3 DIV 0.0;
+            ^^^^^^^^^
+  ASL Type error: Illegal application of operator DIV on types integer {3}
+    and real.
+  [1]
+  $ aslref TypingRule.ESlice.bad1.asl
+  File TypingRule.ESlice.bad1.asl, line 16, characters 4 to 7:
+      dst = src[w:1];
+      ^^^
+  ASL Type error: a subtype of bits((k - 1)) was expected,
+    provided bits(offset).
+  [1]
+  $ aslref TypingRule.ESlice.bad2.asl
+  File TypingRule.ESlice.bad2.asl, line 9, characters 4 to 7:
+      dst = src[w:1];
+      ^^^
+  ASL Type error: a subtype of bits((k - 1)) was expected,
+    provided bits(offset).
+  [1]
+  $ aslref --no-exec TypingRule.Structure.asl

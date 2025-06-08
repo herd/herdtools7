@@ -671,6 +671,15 @@ In \listingref{BitvectorWidthBounds}, any number can be used instead of \verb|2^
 The width of a \bitvectortypeterm{} can be either \staticallyevaluable{}
 or \emph{constrained}. That is, a \symbolicallyevaluable{} \constrainedinteger{}.
 
+\ExampleDef{Symbolic and Constrained Bitwidth}
+\listingref{symbolic_bitwidth} shows an example of a bitvector whose width
+is symbolic --- \verb|2 * N| and a bitvector whose width is determined
+by a constrained type \verb|integer{4, 8}|.
+\ASLListing{Constrained bitwidth and symbolic bitwidth}{symbolic_bitwidth}{\definitiontests/symbolic_bitwidth.asl}
+
+\listingref{constrained_bitwidth} shows more examples of constrained bitwidths.
+\ASLListing{Constrained bitwidths}{constrained_bitwidth}{\definitiontests/constrained_bitwidth.asl}
+
 \ExampleDef{Rotating a Bitvector}
 \listingref{bits-rotate} shows a specification where the width of the bitvector type
 \texttt{bv} is a literal (\verb|bits(5)|), and bitvector types where the width is
@@ -844,6 +853,10 @@ as long as $0 \leq k < n$.
 of the tuple stored in \verb|x|.
 \ASLListing{Accessing tuple elements}{TupleElementAccess}{\definitiontests/GuideRule.TupleElementAccess.asl}
 
+\listingref{TupleElementAccess-bad} shows an example of an illegal access to a non-existing
+element index.
+\ASLListing{Invalid access to a tuple element}{TupleElementAccess-bad}{\definitiontests/GuideRule.TupleElementAccess.bad.asl}
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nty \derives\ & \PlistZero{\Nty} &
@@ -908,7 +921,10 @@ Unlike many languages, there is no ordering defined for enumeration literals
 and therefore enumeration types do not support ordering comparisons such as \verb|<=|.
 
 \ExampleDef{Well-typed Enumeration Types}
-\listingref{typing-tenum} shows an example of a well-typed enumeration type declaration.
+\listingref{typing-tenum} and \listingref{typing-tenum-subtypes} show examples of well-typed
+enumeration type declarations.
+
+\ASLListing{Well-typed enumeration type}{typing-tenum-subtypes}{\typingtests/TypingRule.TEnumDecl.subtypes.asl}
 \ASLListing{Well-typed enumeration type}{typing-tenum}{\typingtests/TypingRule.TEnumDecl.asl}
 
 \identr{DWSP} \identr{QMWT} \identi{MZXL}%
@@ -926,7 +942,7 @@ Enumeration types are only allowed in declarations.
 
 \listingref{AnonymousEnumerations} shows an illegal specification
 where an enumeration is used outside of a type definition.
-\ASLListing{An illegal enumeration use}{AnonymousEnumerations}{\definitiontests/GuideRule.AnonymousEnumerations.bad.asl}
+\ASLListing{Anonymous enumerations are illegal}{AnonymousEnumerations}{\definitiontests/GuideRule.AnonymousEnumerations.bad.asl}
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -958,8 +974,15 @@ See \ExampleRef{Well-typed Enumeration Types} for examples of well-typed \enumer
 declarations.
 
 \ExampleDef{Ill-typed Enumeration Type Declarations}
-\listingref{typing-tenum-bad} shows examples of ill-typed enumeration type declarations.
+\listingref{typing-tenum-bad},
+\listingref{typing-tenum-bad2},
+\listingref{typing-tenum-bad3}, and
+\listingref{typing-tenum-bad4},
+show examples of ill-typed enumeration type declarations.
 \ASLListing{Ill-typed enumeration types}{typing-tenum-bad}{\typingtests/TypingRule.TEnumDecl.bad.asl}
+\ASLListing{Ill-typed enumeration types}{typing-tenum-bad2}{\typingtests/TypingRule.TEnumDecl.bad2.asl}
+\ASLListing{Ill-typed enumeration types}{typing-tenum-bad3}{\typingtests/TypingRule.TEnumDecl.bad3.asl}
+\ASLListing{Ill-typed enumeration types}{typing-tenum-bad4}{\typingtests/TypingRule.TEnumDecl.bad4.asl}
 
 \ProseParagraph
 \AllApply
@@ -1491,6 +1514,16 @@ collection types in comments.
 \end{mathpar}
 
 \section{Named Types\label{sec:NamedTypes}}
+Named type declarations allow declaring new types names with a given type.
+
+The specification in \listingref{named-types2}, declares two unique types with the same
+\structure. Note that the two types are not related in
+any way and are not interchangeable. See also \TypingRuleRef{TypeSatisfaction}.
+\ASLListing{Well-typed named types}{named-types2}{\definitiontests/NamedTypes2.asl}
+
+In \listingref{named-types}, \verb|TypeC.f| and \verb|TypeD.f| have the same type: \verb|TypeB| (and not integer).
+\ASLListing{Two unique well-typed types}{named-types}{\definitiontests/NamedTypes.asl}
+
 \hypertarget{namedtypeterm}{}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1516,6 +1549,11 @@ collection types in comments.
 In \listingref{typing-tnamed}, all the uses of \texttt{MyType} are well-typed.
 \ASLListing{Well-typed named types}{typing-tnamed}{\typingtests/TypingRule.TNamed.asl}
 
+The specifications in \listingref{typing-tnamed-bad1} and \listingref{typing-tnamed-bad2}
+show examples of ill-typed named types.
+\ASLListing{Ill-typed named types}{typing-tnamed-bad1}{\typingtests/TypingRule.TNamed.bad1.asl}
+\ASLListing{Ill-typed named types}{typing-tnamed-bad2}{\typingtests/TypingRule.TNamed.bad2.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1525,6 +1563,7 @@ In \listingref{typing-tnamed}, all the uses of \texttt{MyType} are well-typed.
   \item define $\vses$ as the singleton set for the \ReadGlobalTerm\ for $\vx$, $\vtimeframe$, and $\True$ for immutability;
   \item $\newty$ is $\tty$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{

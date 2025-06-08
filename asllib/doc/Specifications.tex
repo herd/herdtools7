@@ -295,7 +295,7 @@ and modified global static environment $\newgenv$.
 
 \ExampleDef{Checking Mutually-recursive Declarations}
 In \ExampleRef{Typechecking a List of Global Declarations},
-the strongly-connected component \\
+the strongly-connected component
 $\{ \Subprogram(\rotatezero), \Subprogram(\rotateone) \}$
 contains only subprogram declarations.
 
@@ -310,6 +310,10 @@ Since mutual recursion is allowed only between subprograms,
 this specification is ill-typed.
 
 \ASLListing{Illegal recursion among global declarations}{TypeCheckMutuallyRec-bad}{\typingtests/TypingRule.TypeCheckMutuallyRec.bad.asl}
+
+The specification in \listingref{TypeCheckMutuallyRec-bad2} is ill-typed,
+since it contains recursive type declarations.
+\ASLListing{Illegal recursive type declarations}{TypeCheckMutuallyRec-bad2}{\typingtests/TypingRule.TypeCheckMutuallyRec.bad2.asl}
 
 \ProseParagraph
 \AllApply

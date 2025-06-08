@@ -1,12 +1,34 @@
 \chapter{Subprogram Declarations\label{chap:SubprogramDeclarations}}
 
+The \Tfunc{} keyword declares a subprogram. If a return type is included it is a \emph{function declaration},
+otherwise it is a \emph{procedure declaration}. \identr{RXHX}
+
+In \listingref{SubprogramDeclarations}, \verb|Add| is a function whereas \verb|IncrementCounter| is a procedure.
+\ASLListing{Subprogram declarations}{SubprogramDeclarations}{\definitiontests/SubprogramDeclarations.asl}
+
+\listingref{ParametricFunction} shows an example of a parametric function \verb|f| and its invocations.
+\ASLListing{Invoking a parametric function}{ParametricFunction}{\definitiontests/ParametricFunction.asl}
+
+\listingref{ParametricFunction2} shows an example of a parametric function \verb|append| and its invocations.
+\ASLListing{Invoking a parametric function}{ParametricFunction2}{\definitiontests/ParametricFunction2.asl}
+
+\section{Accessors}
+Special kinds of subprograms are \emph{getters} and \emph{setters}, which are paired to form an \emph{accessor}
+declaration. Intuitively, an accessor is used to abstract reading and writing to a global storage datatype.
+
+\listingref{AccessorDeclaration} shows an accessor declaration.
+The accessor \texttt{X} is used to read and write underlying storage element \texttt{R}.
+For example, this could model a register file consisting of 32 registers, each of 64-bits, the last of which is always zero.
+
+\ASLListing{An accessor declaration}{AccessorDeclaration}{\definitiontests/Accessor.asl}
+
 Subprogram declarations are grammatically derived from $\Ndecl$ via the subset of productions shown in
 \secref{SubprogramDeclarationsSyntax} and represented as ASTs via the production of $\decl$
 shown in \secref{SubprogramDeclarationsAbstractSyntax}.
 %
 Subprogram declarations are typed via $\annotateanddeclarefunc$, which is defined in \TypingRuleRef{AnnotateAndDeclareFunc}.
 %
-Subprogram declarations have no associated semantics.
+The semantics of subprograms is given in \chapref{SubprogramCalls}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Syntax\label{sec:SubprogramDeclarationsSyntax}}
@@ -177,13 +199,6 @@ In particular, rather than directly building the abstract syntax for accessors, 
   }
 }
 \end{mathpar}
-
-\subsection{Example}
-\listingref{AccessorDeclaration} shows an accessor declaration.
-The accessor \texttt{X} is used to read and write underlying storage element \texttt{R}.
-For example, this could model a register file consisting of 32 registers, each of 64-bits, the last of which is always zero.
-
-\ASLListing{An accessor declaration}{AccessorDeclaration}{\definitiontests/Accessor.asl}
 
 \ASTRuleDef{AccessorBody}
 \hypertarget{build-accessorbody}{}
@@ -876,8 +891,27 @@ The function
 returns the parameter names declared in $\funcsig$ into $\allparameters$, while checking their validity in the static environment $\tenv$.
 \ProseOtherwiseTypeError
 
-\ExampleDef{Extracting Parameters from Subprogram Signatures}
+\ExampleDef{The Parameters of a Function}
+In \listingref{typing-parameterofconstraint}, the set of identifiers that may correspond
+to parameters of the function \texttt{signature\_example} is $\{\texttt{A}, \texttt{B}\}$,
+since they appear in the type \texttt{bits(A)}
+of the argument \texttt{bv} and the type \texttt{bits(A+B)} of the argument \texttt{bv3}.
 
+Finding parameters for each type in the signature of the function \texttt{signature\_example}
+yields the following results:
+\begin{center}
+\begin{tabular}{lll}
+\textbf{Expression} & \textbf{Result} & \textbf{Reason}\\
+\hline
+\texttt{bits(A)} & $\{\texttt{A}\}$ & \texttt{A} is a variable expression \\
+& & and \texttt{A} is not defined in the environment.\\
+\texttt{bits(W)} & $\emptyset$ & \texttt{W} is defined in the environment.\\
+\texttt{bits(A+B)} & $\{\texttt{A}, \texttt{B}\}$ & \texttt{A} and \texttt{B} are variables \\
+& & and neither is defined in the environment.\\
+\end{tabular}
+\end{center}
+
+\ExampleDef{Extracting Parameters from Subprogram Signatures}
 The list of parameters extracted from the signature of \verb|parameters_of_expressions|
 in \listingref{ParametersOfExpr} is
 \verb|B, C, D, E, F, G|.
@@ -1270,26 +1304,6 @@ See also \ExampleRef{Extracting the Parameters from Expressions}.
   \paramsofconstraint(\tenv, \ConstraintRange(\veone, \vetwo)) \typearrow \overname{\idsone \concat \idstwo}{\ids}
 }
 \end{mathpar}
-
-\subsection{Example}
-In \listingref{typing-parameterofconstraint}, the set of identifiers that may correspond
-to parameters of the function \texttt{signature\_example} is $\{\texttt{A}, \texttt{B}\}$,
-since they appear in the type \texttt{bits(A)}
-of the argument \texttt{bv} and the type \texttt{bits(A+B)} of the argument \texttt{bv3}.
-
-Finding parameters for each type in the signature of the function \texttt{signature\_example}
-yields the following results:
-\begin{center}
-\begin{tabular}{lll}
-\textbf{Expression} & \textbf{Result} & \textbf{Reason}\\
-\hline
-\texttt{bits(A)} & $\{\texttt{A}\}$ & \texttt{A} is a variable expression \\
-& & and \texttt{A} is not defined in the environment.\\
-\texttt{bits(W)} & $\emptyset$ & \texttt{W} is defined in the environment.\\
-\texttt{bits(A+B)} & $\{\texttt{A}, \texttt{B}\}$ & \texttt{A} and \texttt{B} are variables \\
-& & and neither is defined in the environment.\\
-\end{tabular}
-\end{center}
 
 \TypingRuleDef{AnnotateArgs}
 \hypertarget{def-annotateargs}{}

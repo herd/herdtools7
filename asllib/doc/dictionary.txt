@@ -290,6 +290,7 @@ caused
 causes
 cell
 certain
+chance
 changed
 changes
 changing
@@ -314,6 +315,7 @@ clash
 clashes
 clashing
 classed
+classes
 classified
 classifies
 classify
@@ -489,6 +491,7 @@ current
 currently
 custom
 customers
+cyclic
 data
 datatype
 dealing
@@ -576,6 +579,7 @@ differing
 digits
 directive
 directly
+disambiguate
 discard
 discarded
 discarding
@@ -676,6 +680,7 @@ entry
 enumerate
 enumerated
 enumeration
+enumerations
 environment
 environments
 equal
@@ -866,6 +871,7 @@ generating
 generic
 gets
 getter
+getters
 getting
 github
 give
@@ -1491,6 +1497,7 @@ priorities
 priority
 procedure
 procedures
+proceeds
 process
 processed
 processes
@@ -1559,6 +1566,7 @@ reason
 reasoning
 recall
 recognise
+recognize
 recognized
 recommend
 recommended
@@ -2094,6 +2102,7 @@ unordered
 unpredictable
 unprintable
 unreachable
+unrecognized
 unreleased
 unspecified
 until
@@ -2153,12 +2162,14 @@ view
 viewed
 viewing
 views
+violate
 violation
 virtual
 vision
 visual
 walk
 want
+warn
 warning
 warnings
 warns

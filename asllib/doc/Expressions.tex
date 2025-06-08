@@ -324,37 +324,38 @@ and
 both in the Chapter ``Typing of Global Declarations''.
 
 \section{Binary Expressions\label{sec:BinaryExpressions}}
-\subsection{Syntax}
-\begin{flalign*}
-\Nexpr \derives\  & \Nexpr \parsesep \Nbinop \parsesep \Nexpr &\
-\end{flalign*}
+Binary expressions apply a binary operator to two sub-expressions.
 
-\subsection{Abstract Syntax}
-\begin{flalign*}
-\expr \derives\ & \EBinop(\binop, \expr, \expr) &
-\end{flalign*}
+\RequirementDef{OperatorPrecedence}
+Operator precedence is used to disambiguate binary expressions.
 
-\ASTRuleDef{EBinop}
-The following rule constructs a binary expression AST
-and checks that a requirement on \emph{associative operators} holds (see \ASTRuleRef{CheckNotSamePrec}).
+Given two binary operators $\opone$ and $\optwo$, an expression of the form
+$x\ \opone\ y\ \optwo\ z$, is interpreted as
+$(x\ \opone\ y) \optwo\ z$
+if $\opone$ has higher precedence than $\optwo$ and as $x\ \opone\ (y\ \optwo\ z)$ if $\opone$ has lower precedence than $\optwo$.
+If $\opone$ is associative and $\opone$ = $\optwo$ then the expression may be interpreted as either
+$(x\ \opone\ y)\ \optwo\ z$ or as $x \opone\ (y\ \optwo\ z)$ since there is no difference.
+Otherwise it is a static operator precedence error (\BinopPrecedence).
+See \ASTRuleRef{EBinop} for the formal details.
 
-\begin{mathpar}
-  \inferrule{
-    \buildexpr(\veone) \astarrow \astversion{\veone} \OrBuildError\\\\
-    \buildexpr(\vetwo) \astarrow \astversion{\vetwo} \OrBuildError\\\\
-    \checknotsameprec(\astof{\vbinop}, \astversion{\veone}) \astarrow \True \OrBuildError\\\\
-    \checknotsameprec(\astof{\vbinop}, \astversion{\vetwo}) \astarrow \True \OrBuildError
-  }{
-    {
-      \begin{array}{r}
-  \buildexpr(\overname{\Nexpr(\namednode{\veone}{\Nexpr}, \punnode{\Nbinop}, \namednode{\vetwo}{\Nexpr})}{\vparsednode}) \astarrow\\
-  \overname{\EBinop(\astversion{\veone}, \astof{\vbinop}, \astversion{\vetwo})}{\vastnode}
-      \end{array}
-    }
-}
-\end{mathpar}
+The operator classes and precedence order is defined by the following table:
+\begin{center}
+\begin{tabular}{lll}
+\hline
+\textbf{Precedence} & \textbf{Class} & \textbf{Operators}\\
+\hline
+7 (Highest) & \textbf{Membership} & \Tin\\
+6 & \textbf{Unary}                & \Tminus, \Tnot, \Tbnot\\
+5 & \textbf{Power}                & \Tpow\\
+4 & \textbf{Mul-Div-Shift}        & \Tmul, \Trdiv, \Trdiv, \Tdivrm, \Tmod, \Tshl, \Tshr\\
+3 & \textbf{Add-Sub-Logic}        & \Tplus, \Tminus, \Tand, \Tor, \Txor\\
+2 & \textbf{Equality-Inequality} & \Teq, \Tneq\\
+1 & \textbf{Boolean}              & \Tband, \Tbor, \Timpl, \Tbeq\\
+0 & \textbf{Relational}           & \Tgt, \Tgeq, \Tlt, \Tleq\\
+\hline
+\end{tabular}
+\end{center}
 
-\ASTRuleDef{CheckNotSamePrec}
 The set of \emph{associative binary operators} consists of the following:
 $\BOR$,
 $\BAND$,
@@ -376,6 +377,57 @@ $\SHL$,
 $\SHR$,
 $\POW$.
 
+The specification in \listingref{BinaryExpressions} shows examples of binary expressions
+and the effect of operator precedence.
+\ASLListing{Binary expressions and operator precedence}{BinaryExpressions}{\definitiontests/Guide.OperatorPrecedence.asl}
+
+\subsection{Syntax}
+\begin{flalign*}
+\Nexpr \derives\  & \Nexpr \parsesep \Nbinop \parsesep \Nexpr &\
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+\begin{flalign*}
+\expr \derives\ & \EBinop(\binop, \expr, \expr) &
+\end{flalign*}
+
+\ASTRuleDef{EBinop}
+The following rule constructs a binary expression AST
+and ensures that\\
+\RequirementRef{OperatorPrecedence} holds.
+
+The specification in \listingref{BinaryExpressions}
+shows examples where \RequirementRef{OperatorPrecedence} holds.
+%
+The specifications in
+\listingref{EBinop-bad1},
+\listingref{EBinop-bad2},
+\listingref{EBinop-bad3}, and
+\listingref{EBinop-bad4}
+show examples that violate \RequirementRef{OperatorPrecedence},
+which results in a \builderrorterm.
+\ASLListing{Violation of operator precedence}{EBinop-bad1}{\syntaxtests/ASTRule.EBinop.bad1.asl}
+\ASLListing{Violation of operator precedence}{EBinop-bad2}{\syntaxtests/ASTRule.EBinop.bad2.asl}
+\ASLListing{Violation of operator precedence}{EBinop-bad3}{\syntaxtests/ASTRule.EBinop.bad3.asl}
+\ASLListing{Violation of operator precedence}{EBinop-bad4}{\syntaxtests/ASTRule.EBinop.bad4.asl}
+
+\begin{mathpar}
+  \inferrule{
+    \buildexpr(\veone) \astarrow \astversion{\veone} \OrBuildError\\\\
+    \buildexpr(\vetwo) \astarrow \astversion{\vetwo} \OrBuildError\\\\
+    \checknotsameprec(\astof{\vbinop}, \astversion{\veone}) \astarrow \True \OrBuildError\\\\
+    \checknotsameprec(\astof{\vbinop}, \astversion{\vetwo}) \astarrow \True \OrBuildError
+  }{
+    {
+      \begin{array}{r}
+  \buildexpr(\overname{\Nexpr(\namednode{\veone}{\Nexpr}, \punnode{\Nbinop}, \namednode{\vetwo}{\Nexpr})}{\vparsednode}) \astarrow\\
+  \overname{\EBinop(\astversion{\veone}, \astof{\vbinop}, \astversion{\vetwo})}{\vastnode}
+      \end{array}
+    }
+}
+\end{mathpar}
+
+\ASTRuleDef{CheckNotSamePrec}
 \hypertarget{build-binopprec}{}
 We define the helper function
 \[
@@ -387,12 +439,12 @@ which assigns a precedence level to each binary operator $\op$, as defined below
   {
   \binopprec(\op) \astarrow
   \begin{cases}
-    0 & \text{if }\op \in \{\GT, \GEQ, \LT, \LEQ\}\\
-    1 & \text{if }\op \in \{\BOR, \BAND, \IMPL, \BEQ \}\\
-    2 & \text{if }\op \in \{\EQOP, \NEQ\}\\
-    3 & \text{if }\op \in \{\PLUS, \MINUS, \OR, \XOR, \AND\}\\
-    4 & \text{if }\op \in \{\MUL, \DIV, \DIVRM, \RDIV, \MOD, \SHL, \SHR\}\\
     5 & \text{if }\op = \POW\\
+    4 & \text{if }\op \in \{\MUL, \DIV, \DIVRM, \RDIV, \MOD, \SHL, \SHR\}\\
+    3 & \text{if }\op \in \{\PLUS, \MINUS, \OR, \XOR, \AND\}\\
+    2 & \text{if }\op \in \{\EQOP, \NEQ\}\\
+    1 & \text{if }\op \in \{\BOR, \BAND, \IMPL, \BEQ \}\\
+    0 & \text{if }\op \in \{\GT, \GEQ, \LT, \LEQ\}\\
   \end{cases}
   }
 }
@@ -449,11 +501,11 @@ for example: \texttt{(a + b) - c}.
 
 \subsection{Typing}
 \TypingRuleDef{EBinop}
-\ExampleDef{Typing of Binary Expressions}
-In \listingref{typing-binoperror},
-the expression \texttt{3 DIV 0} results in a \typingerrorterm{}.
-\ASLListing{Evaluating a binary expression resulting in a type error}{typing-binoperror}
-{\semanticstests/SemanticsRule.EBinopDIVBackendDefinedError.asl}
+\ExampleDef{An ill-typed Binary Expression}
+The specification in \listingref{typing-binoperror} is ill-typed, since,
+according to the signature of $\divint$, \Tdiv{} can only be applied to \integertypesterm{}
+whereas \verb|0.0| is a \realtypeterm.
+\ASLListing{An ill-typed binary expression}{typing-binoperror}{\typingtests/TypingRule.EBinop.bad.asl}
 
 \ProseParagraph
 \AllApply
@@ -463,43 +515,16 @@ the expression \texttt{3 DIV 0} results in a \typingerrorterm{}.
   \item \Proseannotateexpr{$\tenv$}{$\vetwo$}{\\ $(\vttwo, \vetwop, \vsestwo)$\ProseOrTypeError};
   \item \Proseapplybinoptypes{$\tenv$}{\op}{\vtone}{\vttwo}{$\vt$\ProseOrTypeError};
   \item define $\newe$ as the binary expression $\op$ over $\veonep$ and $\vetwop$;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{ordered}
-    \begin{itemize}
-      \item $\op$ is one of $\BAND$, $\BOR$, or $\IMPL$;
-      \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$.
-    \end{itemize}
-
-    \item \AllApplyCase{unordered}
-    \begin{itemize}
-      \item $\op$ is not one of $\BAND$, $\BOR$, or $\IMPL$;
-      \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$.
-    \end{itemize}
-  \end{itemize}
+  \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[ordered]{
+\inferrule{
   \annotateexpr{\tenv, \veone} \typearrow (\vtone, \veonep, \vsesone) \OrTypeError\\\\
   \annotateexpr{\tenv, \vetwo} \typearrow (\vttwo, \vetwop, \vsestwo) \OrTypeError\\\\
   \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \vt \OrTypeError\\\\
-  \op \in \{\BAND, \BOR, \IMPL\}\\\\
-  \commonprefixline\\\\
   \vses \eqdef \vsesone \cup \vsestwo
-}{
-  \annotateexpr{\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}} \typearrow (\vt, \overname{\EBinop(\op, \veone', \vetwo')}{\newe}, \vses)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[unordered]{
-  \annotateexpr{\tenv, \veone} \typearrow (\vtone, \veonep, \vsesone) \OrTypeError\\\\
-  \annotateexpr{\tenv, \vetwo} \typearrow (\vttwo, \vetwop, \vsestwo) \OrTypeError\\\\
-  \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \vt \OrTypeError\\\\
-  \op \not\in \{\BAND, \BOR, \IMPL\}\\\\
-  \commonprefixline\\\\
-  \vses \eqdef \vsesone \cup \vsestwo \\
 }{
   \annotateexpr{\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}} \typearrow (\vt, \overname{\EBinop(\op, \veone', \vetwo')}{\newe}, \vses)
 }
@@ -1088,7 +1113,8 @@ This section details the high-level form of the syntax and abstract syntax of sl
 and defines the semantics of bitvector slices.
 The details of the various types of bitvector slices are deferred to \chapref{BitvectorSlicing}.
 
-\ASLListing{Slicing Expressions}{semantics-eslice}{\semanticstests/SemanticsRule.ESlice.asl}
+The well-typed specification in \listingref{Bitvector_slices2} shows examples of bitvector slices.
+\ASLListing{Slicing Expressions}{Bitvector_slices2}{\definitiontests/Bitvector_slices2.asl}
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -1123,6 +1149,11 @@ The same type is inferred for the slicing expressions
 \verb|240[6:3, 7]| and \verb|496[6:3, 7]|
 (\verb|240| is equivalent to \verb|'1 111 0 000'|
 and \verb|496| is equivalent to \verb|'11 111 0 000'|).
+
+The specifications in \listingref{ESlice-bad1}
+and \listingref{ESlice-bad2} show examples of ill-typed bitvector slicing expressions.
+\ASLListing{Ill-typed slicing expressions}{ESlice-bad1}{\typingtests/TypingRule.ESlice.bad1.asl}
+\ASLListing{Ill-typed slicing expressions}{ESlice-bad2}{\typingtests/TypingRule.ESlice.bad2.asl}
 
 \ProseParagraph
 \AllApply
@@ -1196,6 +1227,8 @@ is an \integertypeterm{} nor a \bitvectortypeterm.
 evaluates to the bitvector value \texttt{'1110 1'},
 same as the slicing expressions
 \verb|240[6:3, 7]| and \verb|496[6:3, 7]|.
+
+\ASLListing{Slicing Expressions}{semantics-eslice}{\semanticstests/SemanticsRule.ESlice.asl}
 
 Note that in the following definition,
 the function $\readfrombitvector$ takes care of converting integers to bitvectors.
@@ -3148,7 +3181,7 @@ $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
 \section{Tuple Expressions\label{sec:TupleExpressions}}
 \hypertarget{def-tupleexpressionterm}{}
 
-\ASLListing{Tuple expression}{semantics-etuple}{\semanticstests/SemanticsRule.ETuple.asl}
+\ASLListing{Tuple expressions}{TupleExpressions}{\definitiontests/TupleExpressions.asl}
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -3220,6 +3253,8 @@ $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
 \ExampleDef{Evaluation of Tuple Expressions}
 In \listingref{semantics-etuple},
 the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
+
+\ASLListing{Evaluation of tuple expressions}{semantics-etuple}{\semanticstests/SemanticsRule.ETuple.asl}
 
 \ProseParagraph
 \AllApply

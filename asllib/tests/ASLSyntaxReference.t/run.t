@@ -35,3 +35,33 @@ Examples used to test syntax and AST building rules:
   $ aslref ASTRule.DesugarLHSAccess.asl
   $ aslref ASTRule.DesugarLHSTuple.asl
   $ aslref ASTRule.DesugarLHSFieldsTuple.asl
+  $ aslref ASTRule.EBinop.bad1.asl
+  File ASTRule.EBinop.bad1.asl, line 6, characters 20 to 25:
+          let p_a_s = a + b - c;
+                      ^^^^^
+  ASL Error: Cannot parse.
+  [1]
+  $ aslref ASTRule.EBinop.bad2.asl
+  File ASTRule.EBinop.bad2.asl, line 6, characters 20 to 25:
+          let p_s_a = a - b + c;
+                      ^^^^^
+  ASL Error: Cannot parse.
+  [1]
+  $ aslref ASTRule.EBinop.bad3.asl
+  File ASTRule.EBinop.bad3.asl, line 6, characters 23 to 30:
+          let p_and_or = d AND e OR f;
+                         ^^^^^^^
+  ASL Error: Cannot parse.
+  [1]
+  $ aslref ASTRule.EBinop.bad4.asl
+  File ASTRule.EBinop.bad4.asl, line 6, characters 22 to 28:
+          let p_eq_eq = a == b != g;
+                        ^^^^^^
+  ASL Error: Cannot parse.
+  [1]
+  $ aslref CaseStatement.bad.asl
+  File CaseStatement.bad.asl, line 7, characters 8 to 12:
+          when '11' => X[30] = 0;
+          ^^^^
+  ASL Error: Cannot parse.
+  [1]

@@ -16,25 +16,6 @@ ASL Semantics Tests:
   [1]
 //  $ aslref SemanticsRule.EBinopPlusPrint.asl
   $ aslref SemanticsRule.EBinopPlusAssert.asl
-  $ aslref SemanticsRule.EBinopDIVBackendDefinedError.asl
-  File SemanticsRule.EBinopDIVBackendDefinedError.asl, line 4,
-    characters 10 to 17:
-  All values in constraints {0} would fail with op DIV, operation will always
-  fail.
-  File SemanticsRule.EBinopDIVBackendDefinedError.asl, line 4,
-    characters 10 to 17:
-    let x = 3 DIV 0;
-            ^^^^^^^
-  ASL Type error: Illegal application of operator DIV on types integer {3}
-    and integer {0}.
-  [1]
-  $ aslref --no-type-check SemanticsRule.EBinopDIVBackendDefinedError.asl
-  File SemanticsRule.EBinopDIVBackendDefinedError.asl, line 4,
-    characters 10 to 17:
-  All values in constraints {0} would fail with op DIV, operation will always
-  fail.
-  ASL Dynamic error: Illegal application of operator DIV for values 3 and 0.
-  [1]
   $ aslref SemanticsRule.EUnopAssert.asl
   $ aslref SemanticsRule.ECondFALSE.asl
   $ aslref SemanticsRule.ECondARBITRARY3or42.asl
@@ -133,6 +114,7 @@ ASL Semantics Tests:
   i = 1
   i = 0
   #ones in x = 5
+  $ aslref SemanticsRule.SFor.nop.asl
   $ aslref SemanticsRule.SThrowNone.asl
   $ aslref SemanticsRule.SThrowSomeTyped.asl
   $ aslref SemanticsRule.SThrowSTry.asl
@@ -301,3 +283,10 @@ ASL Semantics Tests:
   [1]
   $ aslref SemanticsRule.GetIndex.asl
   $ aslref SemanticsRule.GetField.asl
+  $ aslref SemanticsRule.EvalGlobals.bad1.asl
+  File SemanticsRule.EvalGlobals.bad1.asl, line 10, characters 0 to 12:
+  var x = f();
+  ^^^^^^^^^^^^
+  ASL Execution error: unexpected exception MyException thrown during the
+    evaluation of the initialisation of the global storage element "x".
+  [1]

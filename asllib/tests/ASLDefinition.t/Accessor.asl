@@ -19,3 +19,9 @@ begin
   end;
 end;
 
+func main() => integer
+begin
+  var x = X(16);
+  X(15) = x;
+  return 0;
+end;
