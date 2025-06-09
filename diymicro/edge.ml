@@ -71,6 +71,13 @@ let get_iico s =
 
 let add_iico iico = Hashtbl.add iico_ht iico.repr iico
 
+let dependency_reg = function
+  | DepAddr r -> r
+  | DepData r -> r
+  | DepCtrl r -> r
+  | DepReg r -> r
+  | DepNone -> Warn.fatal "Unable to get register of dependency DepNone"
+
 (** Pretty printers *)
 
 let pp_direction = function Rr -> "Rr" | Wr -> "Wr" | Rm -> "R" | Wm -> "W"

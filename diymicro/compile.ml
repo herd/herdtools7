@@ -68,11 +68,11 @@ let compile_event st (src : E.node_dep) event =
     | E.AnnotNone -> A.Instruction (A.str_idx src_reg dst_loc dst_reg)
     | _ -> Warn.fatal "Invalid annot %s for ldr_idx" (E.pp_annot annot)
   in
-  let ins, dst, st =
+  let ins, dst_dep, st =
     match event.C.direction, event.C.annot, src with
     | E.Rm, _, E.DepNone ->
         let dst, st = A.next_reg st in
-        [annot_ldr event.C.annot dst event_reg], dst, st
+        [annot_ldr event.C.annot dst event_reg], E.DepReg dst, st
     | E.Rm, _, E.DepAddr r ->
         let reg_zero, st = A.next_reg st in
         let dst, st = A.next_reg st in
@@ -81,13 +81,13 @@ let compile_event st (src : E.node_dep) event =
           A.pseudo [A.do_eor reg_zero r r]
           @ [annot_ldr_idx event.C.annot dst event_reg reg_zero]
         in
-        ins, dst, st
+        ins, E.DepReg dst, st
     | E.Rm, _, E.DepCtrl r ->
         let dst, st = A.next_reg st in
         let ins, st =
           add_ctrl_dep st r [annot_ldr event.C.annot dst event_reg]
         in
-        ins, dst, st
+        ins, E.DepReg dst, st
     | E.Wm, _, E.DepNone ->
         let reg_value, st = A.next_reg st in
         let ins =
@@ -96,7 +96,7 @@ let compile_event st (src : E.node_dep) event =
             annot_str event.C.annot reg_value event_reg;
           ]
         in
-        ins, event_reg, st
+        ins, E.DepReg event_reg, st
     | E.Wm, _, E.DepData r ->
         let reg_value, st = A.next_reg st in
         let ins =
@@ -107,7 +107,7 @@ let compile_event st (src : E.node_dep) event =
             ]
           @ [annot_str event.C.annot reg_value event_reg]
         in
-        ins, event_reg, st
+        ins, E.DepReg event_reg, st
     | E.Wm, _, E.DepAddr r ->
         let reg_zero, st = A.next_reg st in
         let reg_value, st = A.next_reg st in
@@ -116,7 +116,7 @@ let compile_event st (src : E.node_dep) event =
           @ [A.mov reg_value (Utils.unsome event.C.value)]
           @ [annot_str_idx event.C.annot reg_value event_reg reg_zero]
         in
-        ins, event_reg, st
+        ins, E.DepReg event_reg, st
     | E.Wm, _, E.DepCtrl r ->
         let reg_value, st = A.next_reg st in
         let ins, st =
@@ -126,15 +126,15 @@ let compile_event st (src : E.node_dep) event =
               annot_str event.C.annot reg_value event_reg;
             ]
         in
-        ins, event_reg, st
+        ins, E.DepReg event_reg, st
     | E.Rr, E.AnnotNone, E.DepNone ->
         let dst, st = A.next_reg st in
-        [A.mov_reg dst event_reg], dst, st
+        [A.mov_reg dst event_reg], E.DepReg dst, st
     | E.Wr, E.AnnotNone, E.DepNone ->
         if event.C.annot <> E.AnnotNone then
           Warn.fatal "Invalid annot %s for Wr" (E.pp_annot event.C.annot);
-        [A.mov event_reg (Utils.unsome event.C.value)], event_reg, st
-    | (E.Wr | E.Rr), E.AnnotNone, E.DepReg r -> [], r, st (* just carry on *)
+        [A.mov event_reg (Utils.unsome event.C.value)], E.DepReg event_reg, st
+    | (E.Wr | E.Rr), E.AnnotNone, dep -> [], dep, st (* just carry on *)
     | dir, E.AnnotNone, _ ->
         Warn.fatal "Direction %s incompatible with dependency %s"
           (E.pp_direction dir) (E.pp_node_dep src)
@@ -144,11 +144,12 @@ let compile_event st (src : E.node_dep) event =
           (E.pp_direction dir) (E.pp_node_dep src) (E.pp_annot annot)
   in
   let st =
+    let dst = E.dependency_reg dst_dep in
     if event.C.is_significant then
       A.add_condition st dst (Utils.unsome event.C.value)
     else st
   in
-  ins, E.DepReg dst, st
+  ins, dst_dep, st
 
 (** compile a node (:= event -edge-> ), src is the previous register to which
     dependency should be added, ZR if no dependency *)
