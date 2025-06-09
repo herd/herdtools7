@@ -28,6 +28,10 @@ rule token = parse
   | "Addr" { ADDR }
   | "Data" { DATA }
   | "Ctrl"  { CTRL }
+  
+  | ':' { COLON }
+  | 'A' { A }
+  | 'L' { L }
 
   | '[' (id as s) ']' { ID (s) }
   | _ as c { Warn.fatal "unexpected character: %C" c }

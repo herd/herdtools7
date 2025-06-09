@@ -16,6 +16,7 @@ let new_proc, proc_count =
   inner_new_proc, fun () -> !counter
 
 type event = {
+  annot : Edge.annot;
   mutable direction : Edge.direction option;
   mutable location : A.loc option;
   mutable proc : proc option;
@@ -51,7 +52,10 @@ let pp_event evt =
 
 let pp_cycle cycle_start =
   let rec pp_aux node =
-    pp_event node.source_event ^ " -" ^ Edge.pp_edge node.edge ^ "->\n"
+    pp_event node.source_event ^ " -" ^ Edge.pp_edge node.edge
+    ^ (let annot = node.next.source_event.annot in
+       if annot <> Edge.AnnotNone then ":" ^ Edge.pp_annot annot else "")
+    ^ "->\n"
     ^ if node.next == cycle_start then "" else pp_aux node.next
   in
   pp_aux cycle_start
@@ -59,8 +63,9 @@ let pp_cycle cycle_start =
 (** Creating and assigning the various cycle values **)
 
 let create_cycle edges =
-  let empty_evt () =
+  let new_evt annot =
     {
+      annot;
       direction = None;
       location = None;
       value = None;
@@ -68,29 +73,37 @@ let create_cycle edges =
       is_significant = false;
     }
   in
-  let rec create_aux first_node previous = function
+  let rec create_aux first_node previous prev_annot = function
     | [] ->
         first_node.prev <- previous;
         first_node
-    | edge :: eq ->
-        let rec l =
+    | (edge, annot) :: eq ->
+        let rec this_node =
           {
             edge;
-            source_event = empty_evt ();
+            source_event = new_evt prev_annot;
             prev = previous;
-            next = l;
+            next = this_node;
             (* l.next will soon be replaced *)
           }
         in
-        l.next <- create_aux first_node l eq;
-        l
+        this_node.next <- create_aux first_node this_node annot eq;
+        this_node
   in
   match edges with
   | [] -> Warn.fatal "No edges"
-  | e :: q ->
-      let rec l = {edge = e; source_event = empty_evt (); next = l; prev = l} in
-      l.next <- create_aux l l q;
-      l (* l.prev is replaced in the recursive call *)
+  | (e, annot) :: q ->
+      let _, last_annot = Utils.list_last q in
+      let rec first_node =
+        {
+          edge = e;
+          source_event = new_evt last_annot;
+          next = first_node;
+          prev = first_node;
+        }
+      in
+      first_node.next <- create_aux first_node first_node annot q;
+      first_node (* first_node.prev is replaced in the recursive call *)
 
 (** Find the first node of the cycle satisfying a condition *)
 let find_first cycle_start condition =

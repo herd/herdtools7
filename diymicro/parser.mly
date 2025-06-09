@@ -14,14 +14,22 @@
 %token SAME DIFFERENT
 %token ADDR DATA CTRL
 
+%token COLON
+%token A L
+
 %token EOF
 
 %start main
-%type <Edge.t> main
+%type <Edge.t * Edge.annot> main
 
 %%
 main:
-    edge EOF { $1 }
+    | edge EOF { ($1, Edge.AnnotNone) }
+    | edge COLON annot EOF { ($1, $3) }
+;
+annot:
+    | A { Edge.A }
+    | L { Edge.L }
 ;
 edge:
     | RF ie { Edge.Rf $2 }

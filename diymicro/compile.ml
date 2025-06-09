@@ -45,71 +45,103 @@ let add_ctrl_dep st (r : A.reg) ins =
 
 let compile_event st (src : E.node_dep) event =
   let event_reg = A.get_register st (Utils.unsome event.C.location) in
+  let annot_ldr annot dst_reg loc =
+    match annot with
+    | E.AnnotNone -> A.Instruction (A.do_ldr A.vloc dst_reg loc)
+    | E.A -> A.Instruction (A.do_ldar A.vloc dst_reg loc)
+    | _ -> Warn.fatal "Invalid annot %s for ldr" (E.pp_annot annot)
+  in
+  let annot_ldr_idx annot dst_reg src_loc src_reg =
+    match annot with
+    | E.AnnotNone ->
+        A.Instruction (A.do_ldr_idx A.vloc A.vloc dst_reg src_loc src_reg)
+    | _ -> Warn.fatal "Invalid annot %s for ldr_idx" (E.pp_annot annot)
+  in
+  let annot_str annot src_reg loc =
+    match annot with
+    | E.AnnotNone -> A.Instruction (A.do_str A.vloc src_reg loc)
+    | E.L -> A.Instruction (A.do_stlr A.vloc src_reg loc)
+    | _ -> Warn.fatal "Invalid annot %s for str" (E.pp_annot annot)
+  in
+  let annot_str_idx annot src_reg dst_loc dst_reg =
+    match annot with
+    | E.AnnotNone -> A.Instruction (A.str_idx src_reg dst_loc dst_reg)
+    | _ -> Warn.fatal "Invalid annot %s for ldr_idx" (E.pp_annot annot)
+  in
   let ins, dst, st =
-    match event.C.direction, src with
-    | None, _ -> Warn.fatal "Direction not loaded"
-    | Some E.Rm, E.DepNone ->
+    match Utils.unsome event.C.direction, event.C.annot, src with
+    | E.Rm, _, E.DepNone ->
         let dst, st = A.next_reg st in
-        A.pseudo [A.do_ldr A.vloc dst event_reg], dst, st
-    | Some E.Rm, E.DepAddr r ->
+        [annot_ldr event.C.annot dst event_reg], dst, st
+    | E.Rm, _, E.DepAddr r ->
         let reg_zero, st = A.next_reg st in
         let dst, st = A.next_reg st in
         let ins =
           (*TODO: use the correct variants*)
           A.pseudo [A.do_eor reg_zero r r]
-          @ A.pseudo [A.do_ldr_idx A.vloc A.vloc dst event_reg reg_zero]
+          @ [annot_ldr_idx event.C.annot dst event_reg reg_zero]
         in
         ins, dst, st
-    | Some E.Rm, E.DepCtrl r ->
+    | E.Rm, _, E.DepCtrl r ->
         let dst, st = A.next_reg st in
         let ins, st =
-          add_ctrl_dep st r (A.pseudo [A.do_ldr A.vloc dst event_reg])
+          add_ctrl_dep st r [annot_ldr event.C.annot dst event_reg]
         in
         ins, dst, st
-    | Some E.Wm, E.DepNone ->
+    | E.Wm, _, E.DepNone ->
         let reg_value, st = A.next_reg st in
         let ins =
-          [A.mov reg_value (Utils.unsome event.C.value)]
-          @ A.pseudo [A.str reg_value event_reg]
+          [
+            A.mov reg_value (Utils.unsome event.C.value);
+            annot_str event.C.annot reg_value event_reg;
+          ]
         in
         ins, event_reg, st
-    | Some E.Wm, E.DepData r ->
+    | E.Wm, _, E.DepData r ->
         let reg_value, st = A.next_reg st in
         let ins =
           A.pseudo
             [
               A.do_eor reg_value r r;
               A.addi reg_value reg_value (Utils.unsome event.C.value);
-              A.str reg_value event_reg;
             ]
+          @ [annot_str event.C.annot reg_value event_reg]
         in
         ins, event_reg, st
-    | Some E.Wm, E.DepAddr r ->
+    | E.Wm, _, E.DepAddr r ->
         let reg_zero, st = A.next_reg st in
         let reg_value, st = A.next_reg st in
         let ins =
           A.pseudo [A.do_eor reg_zero r r]
           @ [A.mov reg_value (Utils.unsome event.C.value)]
-          @ A.pseudo [A.str_idx reg_value event_reg reg_zero]
+          @ [annot_str_idx event.C.annot reg_value event_reg reg_zero]
         in
         ins, event_reg, st
-    | Some E.Wm, E.DepCtrl r ->
+    | E.Wm, _, E.DepCtrl r ->
         let reg_value, st = A.next_reg st in
         let ins, st =
           add_ctrl_dep st r
-            ([A.mov event_reg (Utils.unsome event.C.value)]
-            @ A.pseudo [A.str reg_value event_reg])
+            [
+              A.mov event_reg (Utils.unsome event.C.value);
+              annot_str event.C.annot reg_value event_reg;
+            ]
         in
         ins, event_reg, st
-    | Some E.Rr, E.DepNone ->
+    | E.Rr, E.AnnotNone, E.DepNone ->
         let dst, st = A.next_reg st in
         [A.mov_reg dst event_reg], dst, st
-    | Some E.Wr, E.DepNone ->
+    | E.Wr, E.AnnotNone, E.DepNone ->
+        if event.C.annot <> E.AnnotNone then
+          Warn.fatal "Invalid annot %s for Wr" (E.pp_annot event.C.annot);
         [A.mov event_reg (Utils.unsome event.C.value)], event_reg, st
-    | Some (E.Wr | E.Rr), E.DepReg r -> [], r, st (* just carry on *)
-    | Some d, _ ->
-        Warn.fatal "Dependency %s incompatible with direction %s"
-          (E.pp_node_dep src) (E.pp_direction d)
+    | (E.Wr | E.Rr), E.AnnotNone, E.DepReg r -> [], r, st (* just carry on *)
+    | dir, E.AnnotNone, _ ->
+        Warn.fatal "Direction %s incompatible with dependency %s"
+          (E.pp_direction dir) (E.pp_node_dep src)
+    | dir, annot, _ ->
+        Warn.fatal
+          "Direction %s incompatible with dependency %s or annotation %s"
+          (E.pp_direction dir) (E.pp_node_dep src) (E.pp_annot annot)
   in
   let st =
     if event.C.is_significant then
