@@ -51,7 +51,6 @@ module Top
 
     module RegAlloc = struct
 
-      type t = A.RegSet.t A.ProcMap.t
       let all_regs = A.RegSet.of_list  A.allowed_for_symb
       module Collect = CollectRegs.Make(A)
 
