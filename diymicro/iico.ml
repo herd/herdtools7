@@ -9,28 +9,48 @@ module A = struct
 end
 
 let casRsRs ok st dep =
-  let dst_value = if ok then 0 else 1 in
   let src =
     match dep with
     | DepReg r -> r
     | _ -> Warn.fatal "Event has not forwarded any register"
   in
-  let pre_ins, cmp, st =
-    if ok then
-      let cmp, st = A.next_reg st in
-      [A.mov cmp dst_value], cmp, st
-    else [], A.ZR, st
-  in
-  let dst, st = A.next_reg st in
-  let _, reg_loc, st = A.assigned_next_loc st in
-  let value_check, st = A.next_reg st in
+  let rs, st = A.next_reg st in
+  let rt, st = A.next_reg st in
+  let loc, rn, st = A.assigned_next_loc st in
+  let rcheck, st = A.next_reg st in
+
+  let st = A.set_initial st loc (if ok then 0 else 1) in
+  let st = A.add_condition st rcheck (if ok then 2 else 1) in
+
   let ins =
-    pre_ins
-    @ A.pseudo [A.do_eor dst src src; A.cas A.RMW_P dst cmp reg_loc]
-    @ [A.mov_reg value_check dst]
+    A.pseudo [A.do_eor rs src src]
+    @ [A.mov rt 2]
+    @ A.pseudo [A.cas A.RMW_P rs rt rn; A.do_ldr A.vloc rcheck rn]
   in
-  let st = A.add_condition st value_check dst_value in
-  ins, DepReg dst, st
+
+  ins, DepReg rs, st
+
+let casRsRt ok st dep =
+  let src =
+    match dep with
+    | DepReg r -> r
+    | _ -> Warn.fatal "Event has not forwarded any register"
+  in
+  let rs, st = A.next_reg st in
+  let rt, st = A.next_reg st in
+  let loc, rn, st = A.assigned_next_loc st in
+  let rcheck, st = A.next_reg st in
+
+  let st = A.set_initial st loc (if ok then 0 else 1) in
+  let st = A.add_condition st rcheck (if ok then 2 else 1) in
+
+  let ins =
+    A.pseudo [A.do_eor rs src src]
+    @ [A.mov rt 2]
+    @ A.pseudo [A.cas A.RMW_P rs rt rn; A.do_ldr A.vloc rcheck rn]
+  in
+
+  ins, DepReg rt, st
 
 let init () =
   add_iico (* Example edge *)
@@ -59,6 +79,28 @@ let init () =
     {
       repr = "cas:ok Rs->Rs";
       compile_edge = casRsRs true;
+      direction = Rr, Wr;
+      ie = Internal;
+      sd = Same;
+      significant_source = false;
+      significant_dest = false;
+    };
+
+  add_iico
+    {
+      repr = "cas:no Rs->Rt";
+      compile_edge = casRsRt false;
+      direction = Rr, Wr;
+      ie = Internal;
+      sd = Same;
+      significant_source = false;
+      significant_dest = false;
+    };
+
+  add_iico
+    {
+      repr = "cas:ok Rs->Rt";
+      compile_edge = casRsRt true;
       direction = Rr, Wr;
       ie = Internal;
       sd = Same;
