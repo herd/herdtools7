@@ -29,7 +29,6 @@ type runopts =
     {mode:OutMode.t;
      do_show:string;
      show_litmus_summary:bool;
-     do_sum:bool;
      outputfile:string option;
      restrict_by_first_column:bool;
      forcekind: string option;
@@ -61,7 +60,6 @@ let default_runopts =
   {mode = OutMode.Txt;
    do_show = "";
    show_litmus_summary = false;
-   do_sum = false;
    outputfile = None;
    restrict_by_first_column = false;
    forcekind = None ;
@@ -277,12 +275,9 @@ module type Config = sig
   val names : StringSet.t option
   val ok : string -> bool
   val check_hash : bool
-  val macro : bool
   val dump_eq : string option
   val dump_pos : string option
   val dump_neg : string option
-  val cond_pos : string option
-  val cond_neg : string option
   val opt_cond : bool
   val hexa : bool
   val int32 : bool
@@ -488,24 +483,6 @@ let dump_file s name = Misc.output_protect (dump_chan s) name
 (* Get all test names *)
 (**********************)
 
-  let rec union compare xs ys = match xs,ys with
-  | ([],zs)|(zs,[]) -> zs
-  | x::xs,y::ys ->
-      let c = compare x y in
-      if c < 0 then x::union compare xs (y::ys)
-      else if c > 0 then y::union compare (x::xs) ys
-      else y::union compare xs ys
-
-  let rec union2 compare = function
-    | []|[_] as xss -> xss
-    | xs::ys::rem -> union compare xs ys::union2 compare rem
-
-  let rec unions compare xss = match xss with
-  | [] -> []
-  | [xs] -> xs
-  | _ -> unions compare (union2 compare xss)
-
-
   let from_tests ts =
     let r = ref StringSet.empty in
     Array.iter
@@ -662,15 +639,6 @@ let dump_file s name = Misc.output_protect (dump_chan s) name
 (****************)
 (* Revalidation *)
 (****************)
-
-  let kind_of c = match c with
-  | None -> NoKind
-  | Some c ->  match c with
-    | ConstrGen.NotExistsState _ -> Forbid
-    | ConstrGen.ExistsState _ -> Allow
-    | ConstrGen.ForallStates _ -> Require
-
-
 
   let add_comment quiet_model eqallowed _name is_litmus unsure k v v_pp =
     if is_litmus then

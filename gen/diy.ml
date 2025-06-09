@@ -43,7 +43,6 @@ let parse_fence s k =  match s with
         fs k
 
 let parse_relaxs = List.map parse_relax
-let parse_edges = List.map parse_edge
 let parse_fences fs = List.fold_right parse_fence fs []
 
 
@@ -133,11 +132,6 @@ let parse_fences fs = List.fold_right parse_fence fs []
       [er (Ws Int); er (Ws Ext); er (Fr Int);
        er (Fr Ext); er (Po (Same,Irr,Irr))] in
     M.gen ~relax:lr ~safe:ls n
-
-
-  let parse_edges_opt = function
-    | None -> None
-    | Some xs -> Some (parse_edges xs)
 
   let orl_opt = function
     | None -> []

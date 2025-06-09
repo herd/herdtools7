@@ -38,13 +38,6 @@ module Make(Co:Config) (A:Arch_gen.S) = struct
     | Not_found | Invalid_argument _ ->
         Warn.fatal "bad line: %s" s
 
-
-  let add name (key,ps) k =
-    let xs =
-      try StringMap.find  key k
-      with Not_found -> [] in
-    StringMap.add key ((name,ps)::xs) k
-
   let scan chan =
     let rec do_rec () =
       let line = input_line chan in

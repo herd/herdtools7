@@ -37,7 +37,6 @@ module type Config = sig
   val norm : bool
   val cpp : bool
   val docheck : bool
-  val prog : string
 end
 
 module Make(O:Config) (M:Builder.S) =
@@ -240,7 +239,6 @@ let () =
     let cpp = cpp
     let scope = !Config.scope
     let docheck = !Config.docheck
-    let prog = Config.prog
     let info = !Config.info
     let variant = !Config.variant
     let same_loc = !Config.same_loc
