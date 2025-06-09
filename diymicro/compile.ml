@@ -255,7 +255,7 @@ let dump_code code channel =
 
 let dump_final (stl : A.state list) channel =
   let pp_clause proc reg value =
-    Printf.sprintf "%d:%s=%d" proc (A.pp_reg reg) value
+    Printf.sprintf "%d: %s=%d" proc (A.pp_reg reg) value
   in
   let rec pp_clauses = function
     | [] -> ""
