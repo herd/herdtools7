@@ -17,7 +17,7 @@ let new_proc, proc_count =
 
 type event = {
   annot : Edge.annot;
-  mutable direction : Edge.direction option;
+  direction : Edge.direction;
   mutable location : A.loc option;
   mutable proc : proc option;
   mutable value : int option;
@@ -41,10 +41,10 @@ let pp_event evt =
   "("
   ^ (match evt.proc with Some p -> pp_proc p | None -> "*")
   ^ ") "
-  ^ (match evt.direction with Some d -> Edge.pp_direction d | None -> "*")
+  ^ Edge.pp_direction evt.direction
   ^
   match evt.direction with
-  | Some (Edge.Rr | Edge.Wr) -> "  "
+  | Edge.Rr | Edge.Wr -> "  "
   | _ -> (
       (match evt.location with Some l -> A.pp_location l | None -> "*")
       ^ " "
@@ -63,10 +63,10 @@ let pp_cycle cycle_start =
 (** Creating and assigning the various cycle values **)
 
 let create_cycle edges =
-  let new_evt annot =
+  let new_evt direction annot =
     {
       annot;
-      direction = None;
+      direction;
       location = None;
       value = None;
       proc = None;
@@ -78,10 +78,11 @@ let create_cycle edges =
         first_node.prev <- previous;
         first_node
     | (edge, annot) :: eq ->
+        let src_dir, _ = Edge.edge_direction edge in
         let rec this_node =
           {
             edge;
-            source_event = new_evt prev_annot;
+            source_event = new_evt src_dir prev_annot;
             prev = previous;
             next = this_node;
             (* l.next will soon be replaced *)
@@ -92,12 +93,13 @@ let create_cycle edges =
   in
   match edges with
   | [] -> Warn.fatal "No edges"
-  | (e, annot) :: q ->
+  | (edge, annot) :: q ->
       let _, last_annot = Utils.list_last q in
+      let src_dir, _ = Edge.edge_direction edge in
       let rec first_node =
         {
-          edge = e;
-          source_event = new_evt last_annot;
+          edge;
+          source_event = new_evt src_dir last_annot;
           next = first_node;
           prev = first_node;
         }
@@ -122,18 +124,17 @@ let find_last cycle_start condition =
   in
   find_last_aux cycle_start
 
-(** Assign its direction to each event of the cycle *)
-let assign_directions cycle_start =
+(** Ensure directions compatibility between edges *)
+let check_directions cycle_start =
   let rec assign_aux node =
     let edge_dir1, _ = Edge.edge_direction node.edge in
     let _, edge_dir2 = Edge.edge_direction node.prev.edge in
     if edge_dir1 <> edge_dir2 then
-      Warn.fatal "Unable to unify edge direction %s -> (%s <> %s) -%s"
+      Warn.fatal "Incompatible directions %s -> (%s <> %s) -%s"
         (Edge.pp_edge node.prev.edge)
         (Edge.pp_direction edge_dir2)
         (Edge.pp_direction edge_dir1)
         (Edge.pp_edge node.edge);
-    node.source_event.direction <- Some edge_dir1;
     if node.next != cycle_start then assign_aux node.next
   in
   assign_aux cycle_start
@@ -211,16 +212,13 @@ let assign_values cycle_start =
     (* Uses of a location always follow directly each other *)
     let next_value =
       match node.source_event.direction with
-      | None ->
-          Warn.fatal "Direction not assigned on the source of edge %s"
-            (Edge.pp_edge node.edge)
-      | Some Edge.Wm ->
+      | Edge.Wm ->
           node.source_event.value <- Some (value + 1);
           value + 1
-      | Some Edge.Rm ->
+      | Edge.Rm ->
           node.source_event.value <- Some value;
           value
-      | Some _ -> value (* Rr and Wr don't get an assigned value *)
+      | _ -> value (* Rr and Wr don't get an assigned value *)
     in
     if node.next != first_node then
       assign_values_aux node.next
@@ -246,8 +244,7 @@ let make_cycle edges =
   let cycle = create_cycle edges in
   "EDGES\n" ^ pp_cycle cycle ^ "\n" |> Utils.verbose_print;
 
-  assign_directions cycle;
-  "DIRECTIONS\n" ^ pp_cycle cycle ^ "\n" |> Utils.verbose_print;
+  check_directions cycle;
 
   assign_locations cycle;
   "LOCATIONS\n" ^ pp_cycle cycle ^ "\n" |> Utils.verbose_print;

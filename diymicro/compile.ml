@@ -69,7 +69,7 @@ let compile_event st (src : E.node_dep) event =
     | _ -> Warn.fatal "Invalid annot %s for ldr_idx" (E.pp_annot annot)
   in
   let ins, dst, st =
-    match Utils.unsome event.C.direction, event.C.annot, src with
+    match event.C.direction, event.C.annot, src with
     | E.Rm, _, E.DepNone ->
         let dst, st = A.next_reg st in
         [annot_ldr event.C.annot dst event_reg], dst, st
