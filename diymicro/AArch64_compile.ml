@@ -47,10 +47,10 @@ module St = struct
   let assigned_next_loc (st : state) =
     let reg, st = next_reg st in
     let loc = next_loc () in
-    loc, reg, {st with env = (loc, reg) :: st.env}
+    loc, reg, {st with env = st.env @ [loc, reg]}
 
   let add_condition st reg int =
-    {st with final_conditions = (reg, int) :: st.final_conditions}
+    {st with final_conditions = st.final_conditions @ [reg, int]}
 
   let set_initial st loc int =
     let rec set_initial_value = function

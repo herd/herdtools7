@@ -1,7 +1,6 @@
 type proc = Proc of int
 
 module A = struct
-  (* TODO : move loc & state to a new file, we don't want to include all A *)
   include AArch64_compile
 end
 
@@ -42,9 +41,13 @@ let pp_event evt =
   ^ (match evt.proc with Some p -> pp_proc p | None -> "*")
   ^ ") "
   ^ (match evt.direction with Some d -> Edge.pp_direction d | None -> "*")
-  ^ (match evt.location with Some l -> A.pp_location l | None -> "*")
-  ^ " "
-  ^ match evt.value with Some v -> string_of_int v | None -> "*"
+  ^
+  match evt.direction with
+  | Some (Edge.Rr | Edge.Wr) -> "  "
+  | _ -> (
+      (match evt.location with Some l -> A.pp_location l | None -> "*")
+      ^ " "
+      ^ match evt.value with Some v -> string_of_int v | None -> "*")
 
 let pp_cycle cycle_start =
   let rec pp_aux node =
@@ -198,12 +201,13 @@ let assign_values cycle_start =
       | None ->
           Warn.fatal "Direction not assigned on the source of edge %s"
             (Edge.pp_edge node.edge)
-      | Some (Edge.Wr | Edge.Wm) ->
+      | Some Edge.Wm ->
           node.source_event.value <- Some (value + 1);
           value + 1
-      | Some (Edge.Rr | Edge.Rm) ->
+      | Some Edge.Rm ->
           node.source_event.value <- Some value;
           value
+      | Some _ -> value (* Rr and Wr don't get an assigned value *)
     in
     if node.next != first_node then
       assign_values_aux node.next
