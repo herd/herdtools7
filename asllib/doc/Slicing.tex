@@ -50,7 +50,11 @@ annotates a list of slices $\vslices$ in the static environment $\tenv$, yieldin
 slices in the \typedast) and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
-See \ExampleRef{Well-typed Bitvector Slices}.
+See \ExampleRef{Well-typed Bitvector Slices} for example of well-typed bitvector slices.
+
+\ExampleDef{An Ill-typed Bitvector Slice}
+In \listingref{ImpureBitvectorSlice}, the bit vector slice on \verb|x| is ill-typed, since the expression \verb|side_effecting()| is not \pure{}.
+\ASLListing{An ill-typed bitvector slice}{ImpureBitvectorSlice}{\typingtests/TypingRule.AnnotateSlices.bad-impure.asl}
 
 \ProseParagraph
 \AllApply
@@ -263,6 +267,8 @@ are all well-typed.
           $(\toffset, \eoffsetp, \vsesoffset)$\ProseOrTypeError;
     \item annotating the \symbolicallyevaluable\ \constrainedinteger\ expression $\elength$ in $\tenv$ yields
     $(\elengthp, \vseslength)$\ProseOrTypeError;
+    \item checking that $\vsesoffset$ is pure via $\sesispure$ yields $\True$\ProseOrTypeError;
+    \item checking that $\vseslength$ is pure via $\sesispure$ yields $\True$\ProseOrTypeError;
     \item determining whether $\toffset$ has the \structureofinteger\ yields $\True$\ProseOrTypeError;
     \item $\vsp$ is the slice at offset $\eoffsetp$ and length $\elength'$, that is,\\
      $\SliceLength(\eoffsetp, \elength')$;
@@ -301,6 +307,8 @@ are all well-typed.
 \inferrule[length]{
   \annotateexpr{\tenv, \eoffset} \typearrow (\toffset, \eoffsetp, \vsesoffset) \OrTypeError\\\\
   \annotatesymbolicconstrainedinteger(\tenv, \elength) \typearrow (\elengthp, \vseslength) \OrTypeError\\\\
+  \checktrans{\sesispure(\vsesoffset)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
+  \checktrans{\sesispure(\vseslength)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
   \checkunderlyinginteger(\tenv, \toffset) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsesoffset \cup \vseslength
 }{

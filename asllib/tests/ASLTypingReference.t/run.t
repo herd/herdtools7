@@ -884,7 +884,9 @@ ASL Typing Tests / annotating types:
     characters 5 to 28:
       [symbolic_throwing{4}(4)] data
        ^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Static Error: Unsupported expression symbolic_throwing{4}(4).
+  ASL Type error: a pure expression was expected,
+    found symbolic_throwing{4}(4), which produces the following side-effects:
+    [ThrowsException "MyException"].
   [1]
   $ aslref TypingRule.EvalSliceExpr.asl
   $ aslref --no-exec TypingRule.TimeFrameLDK.asl
@@ -1099,3 +1101,11 @@ ASL Typing Tests / annotating types:
     provided bits(offset).
   [1]
   $ aslref --no-exec TypingRule.Structure.asl
+  $ aslref TypingRule.AnnotateSlices.bad-impure.asl
+  File TypingRule.AnnotateSlices.bad-impure.asl, line 12, characters 12 to 28:
+    let y = x[side_effecting()];
+              ^^^^^^^^^^^^^^^^
+  ASL Type error: a pure expression was expected, found side_effecting(), which
+    produces the following side-effects:
+    [WritesGlobal "global_var", ReadsGlobal "global_var"].
+  [1]
