@@ -24,7 +24,8 @@ module Attrs : sig
   val pp : t -> string
   val as_list : t -> string list
   val of_list : string list -> t
-  val mem : string -> t -> bool
+  val is_tagged : t -> bool
+  val as_kvm_symbols : t -> string list
 end
 
 type t = {
@@ -44,6 +45,7 @@ val eq : t -> t -> bool
 val is_af : t -> bool
 
 val same_oa : t -> t -> bool
+val readable : bool -> t -> bool
 val writable : bool -> bool -> t -> bool
 val get_attrs : t -> string list
 
@@ -72,3 +74,5 @@ val norm : string StringMap.t -> string StringMap.t
 val dump_pack : (string -> string) -> t -> string
 val as_physical : t -> string option
 val as_flags : t -> string option
+val attrs_as_kvm_symbols : t -> string list
+val init_needs_cmo : t -> t list -> bool
