@@ -213,23 +213,21 @@ let dump_code code channel =
   Misc.pp_prog channel pp
 
 let dump_final (stl : A.state list) channel =
-  let pp_clause proc (reg, value) =
+  let pp_clause proc reg value =
     Printf.sprintf "%d:%s=%d" proc (A.pp_reg reg) value
   in
-  let rec pp_proc_clauses proc = function
+  let rec pp_clauses = function
     | [] -> ""
-    | [e] -> pp_clause proc e
-    | e :: q -> pp_clause proc e ^ " /\\ " ^ pp_proc_clauses proc q
+    | [(proc, reg, v)] -> pp_clause proc reg v
+    | (proc, reg, v) :: q -> pp_clause proc reg v ^ " /\\ " ^ pp_clauses q
   in
-  let pp_clauses =
-    let rec pp_clauses proc = function
-      | [] -> ""
-      | e :: q -> pp_proc_clauses proc e ^ pp_clauses (proc + 1) q
-    in
-    pp_clauses 0
+  let rec add_proc proc = function
+    | [] -> []
+    | (reg, v) :: q -> (proc, reg, v) :: add_proc proc q
   in
   "exists ("
-  ^ (List.map (fun st -> st.A.final_conditions) stl |> pp_clauses)
+  ^ (List.mapi (fun proc st -> add_proc proc st.A.final_conditions) stl
+    |> List.flatten |> pp_clauses)
   ^ ")\n"
   |> output_string channel
 
