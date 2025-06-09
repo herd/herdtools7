@@ -176,16 +176,25 @@ let make_test (cycle : C.t) =
 
 let dump_init (stl : A.state list) (channel : out_channel) =
   let pp_initial_values () =
-    A.pp_initial_values
-      (List.map (fun st -> st.A.initial_values) stl |> List.flatten)
+    let initial_values =
+      List.map (fun st -> st.A.initial_values) stl |> List.flatten
+    in
+    A.pp_initial_values initial_values
+    ^ match initial_values with [] -> "" | _ -> "\n"
   in
 
   let pp_envs () =
-    let l = [""] in
-    List.fold_right (fun s i -> i ^ s) l ""
+    let rec pp_proc_env proc = function
+      | [] -> ""
+      | (loc, reg) :: q ->
+          Printf.sprintf "%d: %s = %s;\t" proc (A.pp_reg reg)
+            (A.pp_location loc)
+          ^ pp_proc_env proc q
+    in
+    List.mapi (fun proc st -> "  " ^ pp_proc_env proc st.A.env ^ "\n") stl
+    |> String.concat ""
   in
-  "{\n" ^ pp_initial_values () ^ "\n" ^ pp_envs () ^ "}\n\n"
-  |> output_string channel
+  "{\n" ^ pp_initial_values () ^ pp_envs () ^ "}\n\n" |> output_string channel
 
 (* Code pretty-print *)
 

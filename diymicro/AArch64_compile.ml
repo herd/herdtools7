@@ -5,6 +5,14 @@ end)
 module St = struct
   type loc = Loc of int
 
+  type state = {
+    free_registers : reg list; (* available registers *)
+    env : (loc * reg) list; (* Assign a register to each location *)
+    initial_values : (loc * int) list;
+    final_conditions : (reg * int) list;
+  }
+  (** current state inside a single proc *)
+
   let pp_location (Loc i) =
     if i < 3 then String.make 1 (Char.code 'x' + i |> Char.chr)
     else if i < 26 then String.make 1 (Char.code 'a' + i - 3 |> Char.chr)
@@ -17,7 +25,8 @@ module St = struct
   let rec pp_initial_values = function
     | [] -> ""
     | (loc, v) :: q ->
-        Printf.sprintf " %s = %d;\n%s" (pp_location loc) v (pp_initial_values q)
+        Printf.sprintf "  %s = %d;\n%s" (pp_location loc) v
+          (pp_initial_values q)
 
   (* new_loc: get a new location
   loc_count: get the current number of locations *)
@@ -29,14 +38,6 @@ module St = struct
       loc
     in
     inner_next_loc, fun () -> !counter
-
-  type state = {
-    free_registers : reg list; (* available registers *)
-    env : (loc * reg) list; (* Assign a register to each location *)
-    initial_values : (loc * int) list;
-    final_conditions : (reg * int) list;
-  }
-  (** current state inside a single proc *)
 
   let next_reg (st : state) =
     match st.free_registers with
