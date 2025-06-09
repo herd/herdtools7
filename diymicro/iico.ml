@@ -20,7 +20,9 @@ let cas src dst ok =
   let loc, rn, st = A.assigned_next_loc st in
   let rcheck, st = A.next_reg st in
 
-  let st = A.set_initial st loc (if ok then 0 else 1) in
+  (* For srcM, that allows to check that STR is before CAS *)
+  let m_initial = if ok = (src <> `M) then 0 else 1 in
+  let st = A.set_initial st loc m_initial in
   let st = A.add_condition st rcheck (if ok then 2 else 1) in
 
   let pre_ins, st =
@@ -35,15 +37,27 @@ let cas src dst ok =
           @ [A.mov rt 2]
         in
         ins, st
+    | `M ->
+        let m_value = if ok then 0 else 1 in
+        let reg_str, st = A.next_reg st in
+        let ins =
+          A.pseudo
+            [
+              A.do_eor reg_str src_reg src_reg;
+              A.addi reg_str reg_str m_value;
+              A.str reg_str rn;
+            ]
+          @ [A.mov rt 2]
+        in
+        ins, st
   in
 
   let ins = A.pseudo [A.cas A.RMW_P rs rt rn; A.do_ldr A.vloc rcheck rn] in
 
   let post_ins, st, dst_dep =
-    match dst with (* dst Rn and Rt are not really interesting, but we still implement them *)
+    match dst with
     | `Rs -> [], st, DepReg rs
-    | `Rt -> [], st, DepReg rt
-    | `Rn ->
+    | `M ->
         let rn_reg, st = A.next_reg st in
         A.pseudo [A.do_ldr A.vloc rn_reg rn], st, DepReg rn_reg
   in
@@ -54,9 +68,9 @@ let casRepr ok src dst =
   "cas:"
   ^ (if ok then "ok" else "no")
   ^ " "
-  ^ (match src with `Rs -> "Rs" | `Rn -> "Rn" | `Rt -> "Rt")
+  ^ (match src with `Rs -> "Rs" | `Rn -> "Rn" | `Rt -> "Rt" | `M -> "M")
   ^ "->"
-  ^ match dst with `Rs -> "Rs" | `Rn -> "Rn" | `Rt -> "Rt"
+  ^ match dst with `Rs -> "Rs" | `M -> "M"
 
 let cartesian3 l1 l2 l3 =
   List.concat_map
@@ -87,4 +101,4 @@ let init () =
           significant_source = false;
           significant_dest = false;
         })
-    (cartesian3 [true; false] [`Rn; `Rs; `Rt] [`Rn; `Rs; `Rt])
+    (cartesian3 [true; false] [`Rn; `Rs; `Rt; `M] [`Rs; `M])
