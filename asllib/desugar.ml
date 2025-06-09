@@ -27,7 +27,7 @@ open ASTUtils
     Elided parameters
    ------------------------------------------------------------------------- *)
 
-let desugar_elided_parameter ldk lhs ty (call : call annotated) =
+let desugar_elided_parameter ty (call : call annotated) =
   let bits_e =
     match ty.desc with
     | T_Bits (bits_e, []) -> bits_e
@@ -38,7 +38,7 @@ let desugar_elided_parameter ldk lhs ty (call : call annotated) =
   in
   let params = bits_e :: call.desc.params in
   let rhs = E_Call { call.desc with params } |> add_pos_from call in
-  S_Decl (ldk, lhs, Some ty, Some rhs)
+  Some rhs
 
 (* -------------------------------------------------------------------------
     Left-hand sides

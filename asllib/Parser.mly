@@ -541,11 +541,11 @@ let stmt :=
       | call=annotated(call); DOT; flds=bracketed(clist2(IDENTIFIER)); EQ; rhs=expr;
         { desugar_setter_setfields call flds rhs }
       | ldk=local_decl_keyword_non_var; lhs=decl_item; ty=as_ty; EQ; call=annotated(elided_param_call);
-        { desugar_elided_parameter ldk lhs ty call}
+        { S_Decl (ldk, lhs, Some ty, desugar_elided_parameter ty call) }
       | VAR; ldi=decl_item; ty=ty_opt; e=option_eq_expr;      { S_Decl (LDK_Var, ldi, ty, e) }
       | VAR; ~=clist2(annotated(IDENTIFIER)); ~=as_ty;        < make_ldi_vars >
       | VAR; lhs=decl_item; ty=as_ty; EQ; call=annotated(elided_param_call);
-        { desugar_elided_parameter LDK_Var lhs ty call}
+        { S_Decl (LDK_Var, lhs, Some ty, desugar_elided_parameter ty call) }
       | PRINTLN; args=plist0(expr);                           { S_Print { args; newline = true; debug = false } }
       | PRINT; args=plist0(expr);                             { S_Print { args; newline = false; debug = false } }
       | DEBUG; args=plist0(expr);            { S_Print { args; newline = true; debug = true } }
@@ -658,14 +658,23 @@ let decl :=
       (* End *)
       (* Begin global_storage *)
       | keyword=global_let_or_constant; name=ignored_or_identifier;
-        ty=option(as_ty); EQ; initial_value=some(expr);
+        ty=ioption(as_ty); EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword; name; ty; initial_value } }
       | CONFIG; name=ignored_or_identifier;
         ty=as_ty; EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword=GDK_Config; name; ty=Some ty; initial_value } }
       | VAR; name=ignored_or_identifier;
-        ty=option(as_ty); EQ; initial_value=some(expr);
+        ty=ioption(as_ty); EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword=GDK_Var; name; ty; initial_value } }
+      | keyword=global_let_or_constant; name=ignored_or_identifier;
+        ty=as_ty; EQ; call=annotated(elided_param_call);
+        { D_GlobalStorage { keyword; name; ty=Some ty; initial_value=desugar_elided_parameter ty call } }
+      | CONFIG; name=ignored_or_identifier;
+        ty=as_ty; EQ; call=annotated(elided_param_call);
+        { D_GlobalStorage { keyword=GDK_Config; name; ty=Some ty; initial_value=desugar_elided_parameter ty call } }
+      | VAR; name=ignored_or_identifier;
+        ty=as_ty; EQ; call=annotated(elided_param_call);
+        { D_GlobalStorage { keyword=GDK_Var; name; ty=Some ty; initial_value=desugar_elided_parameter ty call } }
       (* End *)
       (* Begin global_uninit_var *)
       | VAR; name=ignored_or_identifier; ty=some(as_ty);
