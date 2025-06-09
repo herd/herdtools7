@@ -20,7 +20,6 @@
 open Printf
 
 module type Config = sig
-  val verbose : int
 end
 
 module Make(Config:Config) =
@@ -87,7 +86,6 @@ let () =
 module X =
  Make
    (struct
-     let verbose = !verbose
    end)
 
 let () = X.from_args !args

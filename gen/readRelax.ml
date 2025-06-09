@@ -140,8 +140,6 @@ module Top = struct
         output_char chan '\n')
       m
 
-  let pp_sumary chan os = pp_map chan  (collect_relax os)
-
   let suggest rmap nrset =
     let r =
       RelaxMap.fold

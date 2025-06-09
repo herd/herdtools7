@@ -61,7 +61,6 @@ let includes = !includes
 let map = !map
 let call = !call
 let verbose = !verbose
-let outdir = !outdir
 let loops = !loops
 
 let libfind =

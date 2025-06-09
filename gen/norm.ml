@@ -57,7 +57,6 @@ let opts =
 
 module type Config = sig
   val lowercase : bool
-  val sufname : string option
   val variant : Variant_gen.t -> bool
   val naturalsize : MachSize.sz
 end
@@ -90,7 +89,6 @@ let () =
   let args = List.rev !args in
   let module Co = struct
     let lowercase = !lowercase
-    let sufname = None
     let variant = !variant
     let naturalsize = TypBase.get_size !typ
   end in

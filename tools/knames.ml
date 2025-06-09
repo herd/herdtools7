@@ -17,7 +17,6 @@
 (* Extract names + kinds from test(s) (ie produce kind file) *)
 
 open Printf
-let verbose = true
 
 let from_file fname = Names.from_fname fname
 

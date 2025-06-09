@@ -19,7 +19,6 @@
 open Printf
 
 module type Opt = sig
-  val verbose : int
   val get_hash : string -> string
   val check_name : string -> bool
 end
@@ -128,7 +127,6 @@ let from_args =
   let module X =
     Make
       (struct
-        let verbose = !verbose
         let check_name = Check.ok
         let get_hash name = TblRename.find_value hashes name
       end) in
