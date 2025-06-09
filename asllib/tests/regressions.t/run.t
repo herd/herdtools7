@@ -570,7 +570,7 @@ Inherit integer constraints on left-hand sides
   File inherit-integer-constraints-bad-type.asl, line 1, character 0 to line 4,
     character 2:
   type badtype of record {
-      a : integer{-},
+      a : integer{},
       c : integer
   };
   ASL Type error: a pending constrained integer is illegal here.
@@ -586,3 +586,10 @@ Left-hand sides
   [1]
   $ aslref lhs-tuple-same-var.asl
   $ aslref lhs-expressivity.asl
+  $ aslref --allow-hyphenated-pending-constraint hyphenated-pending-constraint.asl
+  $ aslref hyphenated-pending-constraint.asl
+  File hyphenated-pending-constraint.asl, line 3, characters 18 to 21:
+      let x: integer{-} = 5;
+                    ^^^
+  ASL Grammar error: Obsolete syntax: Hyphenated pending constraint.
+  [1]

@@ -292,7 +292,11 @@ let expr :=
 let constraint_kind_opt := constraint_kind | { UnConstrained }
 let constraint_kind :=
   | cs=braced(clist1(int_constraint)); { WellConstrained (cs, Precision_Full) }
-  | braced(MINUS); { PendingConstrained }
+  | braced(MINUS); {
+    if Config.allow_hyphenated_pending_constraint then PendingConstrained
+      else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Hyphenated pending constraint."
+  }
+  | LBRACE; RBRACE; { PendingConstrained }
 
 let int_constraint :=
   | ~=expr;                     < Constraint_Exact >
