@@ -37,10 +37,15 @@ type t = {
   attrs : Attrs.t;
   }
 
+(* Identity translations *)
+val fromExtra : t -> t
+val toExtra : t -> t
+
+(* Basic *)
 val compare : t -> t -> int
 val eq : t -> t -> bool
 
-(* Accessors, setters *)
+(* Accessors, Setters *)
 val is_af : t -> bool
 
 val same_oa : t -> t -> bool
