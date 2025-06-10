@@ -70,12 +70,12 @@ from the perspective of the semantics of local storage elements, they are all tr
 Declaring a local storage element is done via the following grammar rules:
 \begin{flalign*}
 \Nstmt \derives \ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \option{\Nasty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Nasty} \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Nasty \parsesep \Tsemicolon &\\
 \end{flalign*}
 
 \begin{flalign*}
-\Nlocaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant&\\
+\Nlocaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant \;|\; \Tvar &\\
 \Ndeclitem \derives\
    & \Tidentifier &\\
 |\ & \Plisttwo{\Nignoredoridentifier} &\\
@@ -109,6 +109,12 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \begin{mathpar}
 \inferrule[let]{}{
   \buildlocaldeclkeyword(\overname{\Nlocaldeclkeyword(\Tlet)}{\vparsednode}) \astarrow \overname{\LDKLet}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[var]{}{
+  \buildlocaldeclkeyword(\overname{\Nlocaldeclkeyword(\Tvar)}{\vparsednode}) \astarrow \overname{\LDKVar}{\vastnode}
 }
 \end{mathpar}
 

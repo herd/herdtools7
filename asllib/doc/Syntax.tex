@@ -221,12 +221,10 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 |\ & \Nglobaldeclkeyword \parsesep \Tidentifier \parsesep \option{\Tcolon \parsesep \Nty} &\\
    & \wrappedline\ \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tconfig \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Tidentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
 |\ & \Nglobaldeclkeyword \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &\\
    & \wrappedline\ \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 |\ & \Tconfig \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 |\ & \Tpragma \parsesep \Tidentifier \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon&
 \end{flalign*}
 
@@ -330,15 +328,14 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \end{flalign*}
 
 \vspace*{-\baselineskip}
-\paragraph{Parsing note:} $\Tvar$ is not derived by $\Nlocaldeclkeyword$ to avoid an LR(1) conflict.
 \hypertarget{def-nlocaldeclkeyword}{}
 \begin{flalign*}
-\Nlocaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant&
+\Nlocaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant \;|\; \Tvar &
 \end{flalign*}
 
 \hypertarget{def-nglobaldeclkeyword}{}
 \begin{flalign*}
-\Nglobaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant&
+\Nglobaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant \;|\; \Tvar &
 \end{flalign*}
 
 \hypertarget{def-ndirection}{}
@@ -395,9 +392,8 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 |\ & \Ncall \parsesep \Nsetteraccess \parsesep \Nslices \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Ncall \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{{\Tidentifier}} \parsesep \Trbracket \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Nasty} \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Nasty \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 |\ & \Tprint \parsesep \PlistZero{\Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Tprintln \parsesep \PlistZero{\Nexpr} \parsesep \Tsemicolon &\\
 |\ & \Tunreachable \parsesep \Tlpar \parsesep \Trpar \parsesep \Tsemicolon &\\

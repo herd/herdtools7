@@ -51,18 +51,15 @@ All the global storage declarations in \listingref{local-storage-discards} are i
 \Ndecl  \derives \ & \Nglobaldeclkeyword \parsesep \Tidentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep &\\
         & \wrappedline\ \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
   |\ & \Tconfig \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-	|\ & \Tvar \parsesep \Tidentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
-        & \wrappedline\ \Nexpr \parsesep \Tsemicolon &\\
   |\ & \Tvar \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&\\
   |\ & \Nglobaldeclkeyword \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &\\
     & \wrappedline\ \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
   |\ & \Tconfig \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
-  |\ & \Tvar \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
   |\ & \Tpragma \parsesep \Tidentifier \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon&
 \end{flalign*}
 
 \begin{flalign*}
-\Nglobaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant&
+\Nglobaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant \;|\; \Tvar &
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -85,7 +82,7 @@ All the global storage declarations in \listingref{local-storage-discards} are i
 
 \ASTRuleDef{GlobalStorageDecl}
 \begin{mathpar}
-\inferrule[global\_storage\_let\_or\_constant]{
+\inferrule[global\_storage]{
   \buildglobaldeclkeyword(\keyword) \astarrow \astof{\keyword}\\
   \buildoption[\buildasty](\tty) \astarrow \ttyp\\
   \buildexpr(\vinitialvalue) \typearrow \astof{\vinitialvalue}
@@ -104,34 +101,6 @@ All the global storage declarations in \listingref{local-storage-discards} are i
   \DGlobalStorage\left(\left\{
     \begin{array}{rcl}
     \GDkeyword &:& \astof{\vkeyword},\\
-    \GDname &:& \astof{\name},\\
-    \GDty &:& \ttyp,\\
-    \GDinitialvalue &:& \astof{\vinitialvalue}
-  \end{array}
-  \right\}\right)
-  \right]}{\vastnode}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[global\_storage\_var]{
-  \buildoption[\buildasty](\tty) \astarrow \ttyp\\
-  \buildexpr(\vinitialvalue) \typearrow \astof{\vinitialvalue}
-}{
-  {
-      \builddecl\left(\overname{\Ndecl\left(
-      \begin{array}{r}
-      \Tvar, \Tidentifier(\name),  \\
-  \wrappedline\ \namednode{\tty}{\option{\Nasty}}, \Teq, \namednode{\vinitialvalue}{\Nexpr}, \Tsemicolon
-      \end{array}
-  \right)}{\vparsednode}\right)
-  } \astarrow \\
-  {
-    \overname{\left[
-  \DGlobalStorage\left(\left\{
-    \begin{array}{rcl}
-    \GDkeyword &:& \GDKVar,\\
     \GDname &:& \astof{\name},\\
     \GDty &:& \ttyp,\\
     \GDinitialvalue &:& \astof{\vinitialvalue}
@@ -173,7 +142,7 @@ All the global storage declarations in \listingref{local-storage-discards} are i
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[global\_storage\_let\_or\_constant\_elided\_parameter]{
+\inferrule[global\_storage\_elided\_parameter]{
   \buildglobaldeclkeyword(\keyword) \astarrow \astof{\keyword}\\
   \buildelidedparamcall (\vcall) \astarrow \astversion{\vcall} \\
   \desugarelidedparameter(\astof{\tty}, \astversion{\vcall}) \astarrow \vexpr
@@ -191,33 +160,6 @@ All the global storage declarations in \listingref{local-storage-discards} are i
   \DGlobalStorage\left(\left\{
     \begin{array}{rcl}
     \GDkeyword &:& \astof{\vkeyword},\\
-    \GDname &:& \astof{\name},\\
-    \GDty &:& \astof{\tty},\\
-    \GDinitialvalue &:& \vexpr
-  \end{array}
-  \right\}\right)
-  \right]}{\vastnode}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[global\_storage\_var\_elided\_parameter]{
-  \buildelidedparamcall (\vcall) \astarrow \astversion{\vcall} \\
-  \desugarelidedparameter(\astof{\tty}, \astversion{\vcall}) \astarrow \vexpr
-}{
-  {
-      \builddecl\left(\overname{\Ndecl\left(
-      \begin{array}{r}
-      \Tvar, \Tidentifier(\name), \Tcolon, \punnode{\Nty}, \Teq, \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon
-      \end{array}
-  \right)}{\vparsednode}\right)
-  } \astarrow \\
-  {
-    \overname{\left[
-  \DGlobalStorage\left(\left\{
-    \begin{array}{rcl}
-    \GDkeyword &:& \GDKVar,\\
     \GDname &:& \astof{\name},\\
     \GDty &:& \astof{\tty},\\
     \GDinitialvalue &:& \vexpr
@@ -265,6 +207,17 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \begin{array}{r}
   \buildglobaldeclkeyword(\overname{\Nglobaldeclkeyword(\Tconstant)}{\vparsednode}) \astarrow \\
   \overname{\GDKConstant}{\vastnode}
+\end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[var]{}{
+  {
+\begin{array}{r}
+  \buildglobaldeclkeyword(\overname{\Nglobaldeclkeyword(\Tvar)}{\vparsednode}) \astarrow \\
+  \overname{\GDKVar}{\vastnode}
 \end{array}
   }
 }

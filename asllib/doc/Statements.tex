@@ -482,7 +482,7 @@ As given by applying the relevant rules to the desugared AST.
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \option{\Nasty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Ndeclitem \parsesep \option{\Nasty} \parsesep \option{\Teq \parsesep \Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Nasty \parsesep \Tsemicolon &\\
 \end{flalign*}
 
@@ -507,15 +507,12 @@ As given by applying the relevant rules to the desugared AST.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[var]{
-  \buildoption[\buildasty](\vt) \astarrow \astversion{\vt} \\
-  \buildoption[\buildexpr](\ve) \astarrow \astversion{\ve}
-}{
+\inferrule[uninit\_var]{}{
   {
   \begin{array}{r}
-    \buildstmt(\overname{\Nstmt(\Tvar, \Ndeclitem, \namednode{\vt}{\option{\Nasty}}, \namednode{\ve}{\option{\Teq, \Nexpr}}, \Tsemicolon)}{\vparsednode})
+    \buildstmt(\overname{\Nstmt(\Tvar, \Ndeclitem, \punnode{\Nasty}, \Tsemicolon)}{\vparsednode})
     \astarrow \\
-    \overname{\SDecl(\LDKVar, \astof{\vdeclitem}, \astversion{\vt}, \astversion{\ve})}{\vastnode}
+    \overname{\SDecl(\LDKVar, \astof{\vdeclitem}, \astof{\vasty}, \None)}{\vastnode}
   \end{array}
   }
 }
@@ -938,7 +935,6 @@ In \listingref{semantics-sdeclnone},
 \Nstmt \derives \
    & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \\
    & \wrappedline\ \Nelidedparamcall \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 \end{flalign*}
 
 \begin{flalign*}
@@ -1057,20 +1053,6 @@ if they can be copied from the type annotation in declaration statements.
         \end{array}
       \right)
     \right) \astarrow \\ \overname{\SDecl(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \Some{\vasty}, \vexpr)}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule{
-  \buildelidedparamcall (\vcall) \astarrow \astversion{\vcall} \\
-  \desugarelidedparameter(\astof{\vasty}, \astversion{\vcall}) \astarrow \vexpr
-}{
-  {
-    \begin{array}{r}
-    \buildstmt(\Nstmt(\Tvar, \punnode{\Ndeclitem}, \punnode{\Nasty}, \Teq, \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon)) \astarrow\\
-    \overname{\SDecl(\LDKVar, \astof{\vdeclitem}, \Some{\vasty}, \vexpr)}{\vastnode}
     \end{array}
   }
 }
