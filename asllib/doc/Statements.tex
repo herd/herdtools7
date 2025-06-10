@@ -1013,18 +1013,14 @@ $\Nelidedparamcall$.
 \hypertarget{def-desugarelidedparameter}{}
 The helper function
 \[
-\begin{array}{r}
 \desugarelidedparameter(
-  \overname{\localdeclkeyword}{\ldk} \aslsep
-  \overname{\localdeclitem}{\ldi} \aslsep
   \overname{\ty}{\vt} \aslsep
   \overname{\call}{\vcall})
-\aslto \\
-\overname{\stmt}{\news}
+\aslto
+\overname{\Some{\expr}}{\vexpr}
 \cup\ \overname{\TBuildError}{\ParseErrorConfig}
-\end{array}
 \]
-builds a declaration statement $\news$ from an assignment of the call $\vcall$ to the left-hand side $\ldi$ with keyword $\ldk$ and type annotation $\vt$, where the call has an elided parameter.
+builds an expression $\vexpr$ from an assignment of the call $\vcall$ to the left-hand side with type annotation $\vt$, where the call has an elided parameter.
 Otherwise, the result is a parse error.
 
 \ExampleDef{Desugaring Parameter Elision Based on Declared Type Annotation}
@@ -1040,7 +1036,7 @@ if they can be copied from the type annotation in declaration statements.
 }{
   \desugarelidedparameter(\ldk, \ldi, \vt, \vcall)
   \astarrow
-  \SDecl(\ldk, \ldi, \langle\vt\rangle, \ECall(\vcallp))
+  \Some{\ECall(\vcallp)}
 }
 \end{mathpar}
 
@@ -1048,14 +1044,10 @@ if they can be copied from the type annotation in declaration statements.
 \begin{mathpar}
 \inferrule{
   \buildelidedparamcall (\vcall) \astarrow \astversion{\vcall} \\
-  {
-    \begin{array}{r}
-      \desugarelidedparameter(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \astof{\vasty}, \astversion{\vcall}) \astarrow \\
-      \vastnode
-    \end{array}
-  }
+  \desugarelidedparameter(\astof{\vasty}, \astversion{\vcall}) \astarrow \vexpr
 }{
   {
+    \begin{array}{r}
     \buildstmt\left(
       \Nstmt\left(
         \begin{array}{l}
@@ -1064,7 +1056,8 @@ if they can be copied from the type annotation in declaration statements.
           \wrappedline\ \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon
         \end{array}
       \right)
-    \right) \astarrow \vastnode
+    \right) \astarrow \\ \overname{\SDecl(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \Some{\vasty}, \vexpr)}{\vastnode}
+    \end{array}
   }
 }
 \end{mathpar}
@@ -1072,12 +1065,12 @@ if they can be copied from the type annotation in declaration statements.
 \begin{mathpar}
 \inferrule{
   \buildelidedparamcall (\vcall) \astarrow \astversion{\vcall} \\
-  \desugarelidedparameter(\LDKVar, \astof{\vdeclitem}, \astof{\vasty}, \astversion{\vcall}) \astarrow \vastnode
+  \desugarelidedparameter(\astof{\vasty}, \astversion{\vcall}) \astarrow \vexpr
 }{
   {
     \begin{array}{r}
     \buildstmt(\Nstmt(\Tvar, \punnode{\Ndeclitem}, \punnode{\Nasty}, \Teq, \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon)) \astarrow\\
-     \vastnode
+    \overname{\SDecl(\LDKVar, \astof{\vdeclitem}, \Some{\vasty}, \vexpr)}{\vastnode}
     \end{array}
   }
 }
