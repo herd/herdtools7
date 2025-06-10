@@ -64,12 +64,11 @@ let edge_location = function
   | Iico i -> i.sd
 
 let iico_ht = Hashtbl.create 10
-
-let get_iico s =
-  try Hashtbl.find iico_ht s
-  with Not_found -> Warn.fatal "Unknown edge iico[%s]" s
-
+let get_iico s = Hashtbl.find iico_ht s
 let add_iico iico = Hashtbl.add iico_ht iico.repr iico
+
+let list_iico_edges () =
+  Hashtbl.iter (fun k _ -> Printf.printf "iico[%s]\n" k) iico_ht
 
 let dependency_reg = function
   | DepAddr r -> r
