@@ -36,5 +36,5 @@ rule token = parse
   | 'X' { X }
 
   | '[' (id as s) ']' { ID (s) }
-  | _ as c { Warn.fatal "unexpected character: %C" c }
+  | _ { raise Error }
   | eof    { EOF }
