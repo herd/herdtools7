@@ -25,6 +25,7 @@
 (include-book "ty-utils")
 (include-book "utils/oracle")
 (include-book "std/stobjs/clone" :dir :system)
+(include-book "std/lists/index-of" :dir :system)
 (local (include-book "std/stobjs/absstobjs" :dir :system))
 (local (include-book "std/lists/repeat" :dir :system))
 (local (include-book "centaur/misc/arith-equivs" :dir :System))
@@ -115,7 +116,7 @@
     :verify-guards nil
     :measure (acl2::two-nats-measure (ty-count x) 0)
     :returns (mv (val maybe-val-p) new-orac)
-    (b* ((x (ty->val x)))
+    (b* ((x (ty->desc x)))
       (type_desc-case x
         :t_int (b* (((mv val orac) (constraint_kind-oracle-val x.constraint orac)))
                  (mv (and val (v_int val)) orac))
@@ -286,3 +287,473 @@
       :fn typed_identifierlist-oracle-val))
 
   (fty::deffixequiv-mutual ty-oracle-val))
+
+
+(define int_constraint-val-to-oracle ((x int_constraint-p)
+                                      (val integerp))
+  :guard (and (int_constraint-resolved-p x)
+              (int_constraint-satisfied val x))
+  :guard-hints (("goal" :in-theory (enable int_constraint-satisfied)))
+  :returns (orac-offset natp :rule-classes :type-prescription)
+  (int_constraint-case x
+    :constraint_exact 0
+    :constraint_range (b* ((from (int-literal-expr->val x.from)))
+                        (lnfix (- (lifix val) from))))
+  ///
+  (defret <fn>-correct
+    (implies (int_constraint-satisfied val x)
+             (equal (int_constraint-oracle-val orac-offset x)
+                    (ifix val)))
+    :hints(("Goal" :in-theory (enable int_constraint-oracle-val
+                                      int_constraint-satisfied))))
+
+  (defret <fn>-bound
+    (implies (int_constraint-satisfied val x)
+             (< orac-offset (int_constraint-width x)))
+    :hints(("Goal" :in-theory (enable int_constraint-width
+                                      int_constraint-satisfied)))
+    :rule-classes :linear))
+
+(define int_constraintlist-val-to-oracle ((x int_constraintlist-p)
+                                          (val integerp))
+  :guard (and (int_constraintlist-resolved-p x)
+              (int_constraintlist-satisfied val x))
+  :verify-guards nil
+  :returns (orac-offset natp :rule-classes :type-prescription)
+  (if (mbt (consp x))
+      (if (int_constraint-satisfied val (car x))
+          (int_constraint-val-to-oracle (car x) val)
+        (+ (int_constraint-width (car x))
+           (int_constraintlist-val-to-oracle (cdr X) val)))
+    0)
+  ///
+  (verify-guards int_constraintlist-val-to-oracle
+    :hints (("goal" :in-theory (enable int_constraintlist-satisfied))))
+  
+  (defret <fn>-correct-aux
+    (implies (int_constraintlist-satisfied val x)
+             (equal (int_constraintlist-oracle-val-aux orac-offset x)
+                    (ifix val)))
+    :hints(("Goal" :in-theory (enable int_constraintlist-oracle-val-aux
+                                      int_constraintlist-satisfied))))
+
+  (defret <fn>-bound
+    (implies (int_constraintlist-satisfied val x)
+             (< orac-offset (int_constraintlist-width x)))
+    :hints(("Goal" :in-theory (enable int_constraintlist-width
+                                      int_constraintlist-satisfied)))
+    :rule-classes :linear))
+
+
+
+
+(define constraint_kind-val-to-oracle ((x constraint_kind-p)
+                                       (val integerp))
+  :guard (and (constraint_kind-resolved-p x)
+              (constraint_kind-satisfied val x))
+  :guard-hints (("goal" :in-theory (enable constraint_kind-satisfied)))
+  :returns (orac-val integerp :rule-classes :type-prescription)
+  (constraint_kind-case x
+    :unconstrained (lifix val)
+    :otherwise (int_constraintlist-val-to-oracle (wellconstrained->constraints x) val))
+  ///
+  (defret <fn>-correct
+    (implies (and (constraint_kind-satisfied val x)
+                  (equal (acl2::oracle-mode orac) 3)
+                  (equal (car (acl2::oracle-st orac)) orac-val))
+             (equal (constraint_kind-oracle-val x orac)
+                    (mv (ifix val)
+                        (acl2::update-oracle-st (cdr (acl2::oracle-st orac)) orac))))
+    :hints(("Goal" :in-theory (enable constraint_kind-oracle-val
+                                      constraint_kind-satisfied
+                                      int_constraintlist-oracle-val
+                                      acl2::orac-read
+                                      acl2::orac-read-int
+                                      acl2::orac-st-read
+                                      acl2::orac-st-read-int)))))
+  
+
+
+(defines typed-val-to-oracle
+  (define typed-val-to-oracle ((x ty-p) (val val-p))
+    :guard (and (ty-resolved-p x)
+                (ty-satisfied val x))
+    :verify-guards nil
+    :measure (acl2::two-nats-measure (ty-count x) 0)
+    :returns (orac-st true-listp :rule-classes :type-prescription)
+    (b* ((x (ty->desc x)))
+      (type_desc-case x
+        :t_int (list (constraint_kind-val-to-oracle x.constraint (v_int->val val)))
+        :t_bits (list (v_bitvector->val val))
+        :t_real (list (v_real->val val))
+        :t_string (list (v_string->val val))
+        :t_bool (list (bool->bit (v_bool->val val)))
+        :t_enum (list (acl2::index-of (v_label->val val) x.elts))
+        :t_tuple (typed-vallist-to-oracle x.types (v_array->arr val))
+        :t_array (array_index-case x.index
+                   :arraylength_expr
+                   (typed-val-array-to-oracle x.type (v_array->arr val))
+                   :arraylength_enum
+                   (typed-val-array-to-oracle x.type (acl2::alist-vals (v_record->rec val))))
+        :t_record (typed-val-record-to-oracle x.fields (v_record->rec val))
+        :t_exception (typed-val-record-to-oracle x.fields (v_record->rec val))
+        :t_collection (typed-val-record-to-oracle x.fields (v_record->rec val))
+        :otherwise nil)))
+
+  (define typed-vallist-to-oracle ((x tylist-p) (vals vallist-p))
+    :guard (and (tylist-resolved-p x)
+                (equal (len x) (len vals))
+                (tuple-type-satisfied vals x))
+    :measure (acl2::two-nats-measure (tylist-count x) 0)
+    :returns (orac-st true-listp :rule-classes :type-prescription)
+    (if (atom x)
+        nil
+      (append (typed-val-to-oracle (car x) (car vals))
+              (typed-vallist-to-oracle (cdr x) (cdr vals)))))
+
+  (define typed-val-array-to-oracle ((x ty-p) (vals vallist-p))
+    :guard (and (ty-resolved-p x)
+                (array-type-satisfied vals x))
+    :measure (acl2::two-nats-measure (ty-count x) (len vals))
+    :returns (orac-st true-listp :rule-classes :type-prescription)
+    (if (atom vals)
+        nil
+      (append (typed-val-to-oracle x (car vals))
+              (typed-val-array-to-oracle x (cdr vals)))))
+
+  (define typed-val-record-to-oracle ((x typed_identifierlist-p) (vals val-imap-p))
+    :guard (and (typed_identifierlist-resolved-p x)
+                (record-type-satisfied vals x))
+    :measure (acl2::two-nats-measure (typed_identifierlist-count x) 0)
+    :returns (orac-st true-listp :rule-classes :type-prescription)
+    (if (atom x)
+        nil
+      (append (typed-val-to-oracle (typed_identifier->type (car x)) (cdar (val-imap-fix vals)))
+              (typed-val-record-to-oracle (cdr x) (cdr (val-imap-fix vals))))))
+  ///
+  (local (defun ind (x y)
+           (if (atom x)
+               y
+             (ind (cdr x) (cdr y)))))
+  (local (defthm tuple-type-satisfied-implies-len-equal
+           (implies (tuple-type-satisfied x y)
+                    (equal (len x) (len y)))
+           :hints(("Goal" :in-theory (enable tuple-type-satisfied
+                                             len)
+                   :expand ((tuple-type-satisfied x y))
+                   :induct (ind x y)))
+           :rule-classes :forward-chaining))
+
+  (local (defthm vallist-p-of-alist-vals
+           (implies (val-imap-p x)
+                    (vallist-p (acl2::alist-vals x)))
+           :hints(("Goal" :in-theory (enable acl2::alist-vals)))))
+  
+  (verify-guards typed-val-to-oracle
+    :hints (("goal" :expand ((ty-satisfied val x)
+                             (array-type-satisfied vals x)
+                             (record-type-satisfied vals x)
+                             (tuple-type-satisfied vals x)))))
+
+  (local (defthm prefixp-nil
+           (acl2::prefixp nil x)
+           :hints(("Goal" :in-theory (enable acl2::prefixp)))))
+
+  (local (defthm val-imap-fix-when-not-consp
+           (implies (not (consp x))
+                    (not (val-imap-fix x)))
+           :hints(("Goal" :in-theory (enable val-imap-fix)))))
+
+  (defun-nx nthcdr-orac (n orac)
+    (if (zp n)
+        orac
+      (acl2::update-oracle-st (nthcdr n (acl2::oracle-st orac)) orac)))
+
+  (local (defthm-ty-satisfied-flag
+           (defthm record-type-satisfied-when-not-consp
+             (implies (and (val-imap-fix x)
+                           (not (consp fields)))
+                      (not (record-type-satisfied x fields)))
+             :hints ('(:expand ((record-type-satisfied x fields)
+                                (val-imap-fix x))))
+             :flag record-type-satisfied)
+           :skip-others t))
+
+  (local (defthm-ty-satisfied-flag
+           (defthm record-type-satisfied-in-terms-of-fix
+             (equal (record-type-satisfied x fields)
+                    (let ((x (val-imap-fix x)))
+                      (if (atom x)
+                          (atom fields)
+                        (and (consp fields)
+                             (b* (((cons key val) (car x))
+                                  ((typed_identifier f1) (car fields)))
+                               (and (equal key f1.name)
+                                    (ty-satisfied val f1.type)
+                                    (record-type-satisfied (cdr x) (cdr fields))))))))
+             :hints ('(:expand ((record-type-satisfied x fields)
+                                (:free (fields) (record-type-satisfied nil fields))
+                                (val-imap-fix x))))
+             :rule-classes ((:definition :controller-alist ((record-type-satisfied t t))))
+             :flag record-type-satisfied)
+           :skip-others t))
+
+  (local (defthm prefixp-of-append
+           (equal (acl2::prefixp (append x y) z)
+                  (and (acl2::prefixp x z)
+                       (acl2::prefixp y (nthcdr (len x) z))))
+           :hints(("Goal" :in-theory (enable acl2::prefixp)))))
+
+  (local (defthm len-of-append
+           (equal (len (append x y)) (+ (len x) (len y)))))
+
+  (local (defun-sk typed-val-to-oracle-corr-cond (val x)
+           (forall orac
+                   (b* ((orac-st (typed-val-to-oracle x val)))
+                     (implies (and (ty-satisfied val x)
+                                   (equal (acl2::oracle-mode orac) 3)
+                                   (acl2::prefixp orac-st (acl2::oracle-st orac)))
+                              (equal (ty-oracle-val x orac)
+                                     (mv (val-fix val)
+                                         (nthcdr-orac (len orac-st) orac))))))
+           :rewrite :direct))
+
+  (local (defun-sk typed-vallist-to-oracle-corr-cond (vals x)
+           (forall orac
+                   (b* ((orac-st (typed-vallist-to-oracle x vals)))
+                     (implies (and (tuple-type-satisfied vals x)
+                                   (equal (acl2::oracle-mode orac) 3)
+                                   (acl2::prefixp orac-st (acl2::oracle-st orac)))
+                              (equal (tylist-oracle-val x orac)
+                                     (mv t
+                                         (vallist-fix vals)
+                                         (nthcdr-orac (len orac-st) orac))))))
+           :rewrite :direct))
+
+  (local (defun-sk typed-val-array-to-oracle-corr-cond (vals x)
+           (forall (orac len)
+                   (b* ((orac-st (typed-val-array-to-oracle x vals)))
+                     (implies (and (array-type-satisfied vals x)
+                                   (equal (acl2::oracle-mode orac) 3)
+                                   (acl2::prefixp orac-st (acl2::oracle-st orac))
+                                   (equal len (len vals)))
+                              (equal (ty-oracle-vals len x orac)
+                                     (mv t
+                                         (vallist-fix vals)
+                                         (nthcdr-orac (len orac-st) orac))))))
+           :rewrite :direct))
+
+  (local (defun-sk typed-val-record-to-oracle-corr-cond (vals x)
+           (forall orac
+                   (b* ((orac-st (typed-val-record-to-oracle x vals)))
+                     (implies (and (record-type-satisfied vals x)
+                                   (equal (acl2::oracle-mode orac) 3)
+                                   (acl2::prefixp orac-st (acl2::oracle-st orac)))
+                              (equal (typed_identifierlist-oracle-val x orac)
+                                     (mv t
+                                         (val-imap-fix vals)
+                                         (nthcdr-orac (len orac-st) orac))))))
+           :rewrite :direct))
+
+  (local (in-theory (disable typed-val-to-oracle-corr-cond
+                             typed-vallist-to-oracle-corr-cond
+                             typed-val-array-to-oracle-corr-cond
+                             typed-val-record-to-oracle-corr-cond)))
+
+  (local (defthm consp-val-imap-fix
+           (implies (consp (val-imap-fix x))
+                    (cdar (val-imap-fix x)))
+           :hints(("Goal"
+                   :expand ((val-imap-fix x))
+                   :induct (len x)))
+           :rule-classes :forward-chaining))
+
+  (local
+   (defthm-ty-oracle-val-flag
+     (defthm booleanp-of-typed_identifierlist-oracle-val
+       (booleanp (mv-nth 0 (typed_identifierlist-oracle-val x orac)))
+       :hints ('(:expand ((:with typed_identifierlist-oracle-val
+                           (typed_identifierlist-oracle-val x orac)))))
+       :rule-classes :type-prescription
+       :flag typed_identifierlist-oracle-val)
+     :skip-others t))
+
+  (local (defthmd equal-of-cons
+           (equal (equal (cons x y) z)
+                  (and (consp z)
+                       (equal x (car z))
+                       (equal y (cdr z))))))
+
+  (local (in-theory (disable nth update-nth)))
+
+  (local (defthm update-nth-of-update-nth
+           (equal (update-nth n v1 (update-nth n v2 x))
+                  (update-nth n v1 x))
+           :hints(("Goal" :in-theory (enable update-nth)))))
+  (local (defthm nthcdr-of-nthcdr
+           (equal (nthcdr n (nthcdr m x))
+                  (nthcdr (+ (nfix n) (nfix m)) x))
+           :hints(("Goal" :in-theory (enable nthcdr)))))
+
+  (local (defthm consp-alist-keys-when-val-imap-p
+           (implies (val-imap-p x)
+                    (iff (consp (acl2::alist-keys x))
+                         x))
+           :hints(("Goal" :in-theory (enable val-imap-p
+                                             acl2::alist-keys)))))
+
+  (local (defthm len-alist-vals
+           (equal (len (acl2::alist-vals x))
+                  (len (acl2::alist-keys x)))
+           :hints(("Goal" :in-theory (enable acl2::alist-keys
+                                             acl2::alist-vals)))))
+
+  (local (defthm pairlis-keys-vals-when-val-imap-p
+           (implies (val-imap-p x)
+                    (equal (pairlis$ (acl2::alist-keys x)
+                                     (acl2::alist-vals x))
+                           x))
+           :hints(("Goal" :in-theory (enable val-imap-p
+                                             acl2::alist-keys
+                                             acl2::alist-vals)))))
+
+  (local (defthm val-fix-equal-v_array
+           (equal (equal (val-fix val) '(:v_array nil))
+                  (and (equal (val-kind val) :v_array)
+                       (not (consp (v_array->arr val)))))
+           :hints(("Goal" :in-theory (enable val-fix-when-v_array)))))
+
+  (local (defthm len-equal-0
+           (equal (equal (len x) 0)
+                  (not (consp x)))))
+
+  (local (defthm prefixp-of-cons
+           (equal (acl2::prefixp (cons x y) z)
+                  (and (consp z)
+                       (equal (car z) x)
+                       (acl2::prefixp y (cdr z))))
+           :hints(("Goal" :in-theory (enable acl2::prefixp)))))
+
+  (local (defthm car-less-when-equal-index-of
+           (implies (and (equal (car x) (acl2::index-of k l))
+                         (integerp (car x)))
+                    (< (car x) (len l)))
+           :rule-classes :forward-chaining))
+
+  (local (defthm len-when-consp
+           (implies (consp x)
+                    (posp (len x)))
+           :rule-classes :type-prescription))
+  
+  (local (defthm ash-1-posp
+           (implies (natp x)
+                    (posp (ash 1 x)))
+           :hints(("Goal" :in-theory (enable bitops::ash-is-expt-*-x)))
+           :rule-classes :type-prescription))
+
+  (local (defthm v_bitvector->val-less-than-ash
+           (< (v_bitvector->val x) (ash 1 (v_bitvector->len x)))
+           :hints (("goal" :use v_bitvector-requirements
+                    :in-theory (e/d (unsigned-byte-p
+                                     bitops::ash-is-expt-*-x)
+                                    (v_bitvector-requirements))))))
+           
+  
+  (local
+   (std::defret-mutual <fn>-correct-lemma
+     (defret <fn>-correct-lemma
+       (typed-val-to-oracle-corr-cond val x)
+       :hints ((and stable-under-simplificationp
+                    `(:expand (,(car (last clause))
+                               <call>
+                               (:free (orac) (ty-oracle-val x orac))
+                               (ty-satisfied val x))
+                :in-theory (enable acl2::orac-read-bits
+                                   acl2::orac-read-rational
+                                   acl2::orac-read-string
+                                   acl2::orac-read
+                                   acl2::orac-st-read
+                                   acl2::orac-st-read-rational
+                                   acl2::orac-st-read-string)
+                      :do-not-induct t))
+               (And stable-under-simplificationp
+                    '(:in-theory (enable val-fix-when-v_record))))
+       :fn typed-val-to-oracle)
+     (defret <fn>-correct-lemma
+       (typed-vallist-to-oracle-corr-cond vals x)
+       :hints ((and stable-under-simplificationp
+                    `(:expand (,(car (last clause))
+                               <call>
+                               (:free (orac) (tylist-oracle-val x orac))
+                               (tuple-type-satisfied vals x))
+                      :do-not-induct t)))
+       :fn typed-vallist-to-oracle)
+     (defret <fn>-correct-lemma
+       (typed-val-array-to-oracle-corr-cond vals x)
+       :hints ((and stable-under-simplificationp
+                    `(:expand (,(car (last clause))
+                               <call>
+                               (:free (orac) (ty-oracle-vals (len vals) x orac))
+                               (:free (orac) (ty-oracle-vals (+ 1 (len (cdr vals))) x orac))
+                               (:free (orac) (ty-oracle-vals 0 x orac))
+                               (array-type-satisfied vals x))
+                      :do-not-induct t)))
+       :fn typed-val-array-to-oracle)
+     (defret <fn>-correct-lemma
+       (typed-val-record-to-oracle-corr-cond vals x)
+       :hints ((and stable-under-simplificationp
+                    `(:expand (,(car (last clause))
+                               <call>
+                               (:free (orac) (typed_identifierlist-oracle-val x orac))
+                               (:with record-type-satisfied-in-terms-of-fix
+                                (record-type-satisfied vals x)))
+                      :do-not-induct t)))
+       :fn typed-val-record-to-oracle)))
+  
+  (std::defret-mutual <fn>-correct
+    :no-induction-hint t
+    (defret <fn>-correct
+      (implies (and (ty-satisfied val x)
+                    (equal (acl2::oracle-mode orac) 3)
+                    (acl2::prefixp orac-st (acl2::oracle-st orac)))
+               (equal (ty-oracle-val x orac)
+                      (mv (val-fix val)
+                          (nthcdr-orac (len orac-st) orac))))
+      :hints ('(:use <fn>-correct-lemma
+                :in-theory (disable <fn>-correct-lemma)))
+      :fn typed-val-to-oracle)
+    (defret <fn>-correct
+      (implies (and (tuple-type-satisfied vals x)
+                    (equal (acl2::oracle-mode orac) 3)
+                    (acl2::prefixp orac-st (acl2::oracle-st orac)))
+               (equal (tylist-oracle-val x orac)
+                      (mv t
+                          (vallist-fix vals)
+                          (nthcdr-orac (len orac-st) orac))))
+      :hints ('(:use <fn>-correct-lemma
+                :in-theory (disable <fn>-correct-lemma)))
+      :fn typed-vallist-to-oracle)
+    (defret <fn>-correct
+      (implies (and (array-type-satisfied vals x)
+                    (equal (acl2::oracle-mode orac) 3)
+                    (acl2::prefixp orac-st (acl2::oracle-st orac)))
+               (equal (ty-oracle-vals (len vals) x orac)
+                      (mv t
+                          (vallist-fix vals)
+                          (nthcdr-orac (len orac-st) orac))))
+      :hints ('(:use <fn>-correct-lemma
+                :in-theory (disable <fn>-correct-lemma)))
+      :fn typed-val-array-to-oracle)
+    (defret <fn>-correct
+      (implies (and (record-type-satisfied vals x)
+                    (equal (acl2::oracle-mode orac) 3)
+                    (acl2::prefixp orac-st (acl2::oracle-st orac)))
+               (equal (typed_identifierlist-oracle-val x orac)
+                      (mv t
+                          (val-imap-fix vals)
+                          (nthcdr-orac (len orac-st) orac))))
+      :hints ('(:use <fn>-correct-lemma
+                :in-theory (disable <fn>-correct-lemma)))
+      :fn typed-val-record-to-oracle)))
+        
+    

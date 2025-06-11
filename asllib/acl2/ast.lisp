@@ -33,6 +33,13 @@
 (local (table fty::deftagsum-defaults :short-names t))
 
 
+(defxdoc asl-ast
+  :parents (asl)
+  :short "Format of the ASL AST")
+
+(local (xdoc::set-default-parents asl-ast))
+
+
 (defmacro def-type-alias (new-type existing-type)
   `(defprod ,new-type
      ((val ,existing-type))
@@ -100,6 +107,13 @@
    (unset natp))
   :layout :alist)
 
+(defprod posn
+  ((fname stringp :rule-classes :type-prescription)
+   (lnum natp :rule-classes :type-prescription)
+   (bol natp :rule-classes :type-prescription)
+   (cnum integerp :rule-classes :type-prescription))
+  :layout :alist)
+
 (deftypes expr
   (deftagsum expr_desc
     (:e_literal ((val literal)))
@@ -145,9 +159,8 @@
     :measure (acl2::two-nats-measure (acl2-count x) 10))
 
   (defprod expr ((desc expr_desc)
-                 ;; (ty maybe-ty)
-                 )
-    :layout :fulltree ;; :alist
+                 (pos_start posn))
+    :layout :alist
     :measure (acl2::two-nats-measure (acl2-count x) 20))
 
   (deflist exprlist :elt-type expr :true-listp t
@@ -166,7 +179,9 @@
     (:pattern_tuple ((patterns patternlist)))
     :measure (acl2::two-nats-measure (acl2-count x) 10))
 
-  (defprod pattern ((val pattern_desc)) :layout :fulltree
+  (defprod pattern ((desc pattern_desc)
+                    (pos_start posn))
+    :layout :alist
     :measure (acl2::two-nats-measure (acl2-count x) 20))
 
   (deflist patternlist :elt-type pattern :true-listp t
@@ -211,7 +226,9 @@
     (:t_named ((name identifier)))
     :measure (acl2::two-nats-measure (acl2-count x) 10))
 
-  (defprod ty ((val type_desc)) :layout :fulltree
+  (defprod ty ((desc type_desc)
+               (pos_start posn))
+    :layout :alist
     :measure (acl2::two-nats-measure (acl2-count x) 20))
 
   (deflist tylist :elt-type ty :true-listp t
@@ -320,7 +337,9 @@
     :measure (acl2::two-nats-measure (acl2-count x) 10))
 
 
-  (defprod lexpr ((val lexpr_desc)) :layout :fulltree
+  (defprod lexpr ((desc lexpr_desc)
+                  (pos_start posn))
+    :layout :alist
     :measure (acl2::two-nats-measure (acl2-count x) 11))
   
   (deflist lexprlist :elt-type lexpr :true-listp t
@@ -388,7 +407,9 @@
     :base-case-override :s_pass
     :measure (acl2::two-nats-measure (acl2-count x) 10))
 
-  (defprod stmt ((val stmt_desc)) :layout :fulltree
+  (defprod stmt ((desc stmt_desc)
+                 (pos_start posn))
+    :layout :alist
     :measure (acl2::two-nats-measure (acl2-count x) 11))
 
   (defoption maybe-stmt stmt
@@ -457,7 +478,9 @@
   (:d_pragma ((name identifier)
               (exprs exprlist))))
 
-(defprod decl ((val decl_desc)) :layout :fulltree)
+(defprod decl ((desc decl_desc)
+               (pos_start posn))
+  :layout :alist)
 
 (deflist ast :elt-type decl :true-listp t)
 
@@ -500,11 +523,15 @@
 (fty::defmap expr-imap :key-type identifier :val-type expr :true-listp t)
 
 (defprod static_env_global
-  ((declared_types ty-timeframe-imap)
-   (constant_values literal-storage)
-   (storage_types ty-global_decl_keyword-imap)
+  :short "Static environment for ASL"
+  :long "<p>This contains basically everything important about the ASL program that
+doesn't change over the course of evaluation: function and type definitions,
+global variable types, constant values, etc.</p>"
+  ((declared_types ty-timeframe-imap "Maps type names to their definitions")
+   (constant_values literal-storage "Maps constant names to their (literal) values")
+   (storage_types ty-global_decl_keyword-imap "Maps global variable names to their types and declaration keywords")
    (subtypes identifier-imap)
-   (subprograms func-ses-imap)
+   (subprograms func-ses-imap "Maps function names to their definitions")
    (overloaded_subprograms identifierlist-imap)
    (expr_equiv expr-imap))
   :layout :alist)

@@ -56,7 +56,7 @@
   :hints ((and stable-under-simplificationp
                '(:expand ((:free (x) (acl2::floor-pow-2-loop
                                       x
-                                      (v_int->val (cdr (hons-assoc-equal "__stdlib_local_p2"
+                                      (v_int->val (cdr (val-imaplist-assoc "__stdlib_local_p2"
                                                                          (local-env->storage
                                                                           (env->local env)))))))))))
   :prepwork

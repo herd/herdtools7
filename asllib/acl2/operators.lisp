@@ -195,7 +195,7 @@
     ((:eq_op :v_label :v_label)   (ev_normal (v_bool (equal v1.val v2.val))))
     ((:neq   :v_label :v_label)   (ev_normal (v_bool (not (equal v1.val v2.val)))))
     ;;  Failure
-    (-                            (ev_error "Unsupported binop" (list op v1 v2)))))
+    (-                            (ev_error "Unsupported binop" (list op v1 v2) nil))))
 
 
 (fty::def-enumcase unop-case unop-p)
@@ -211,6 +211,6 @@
     ((:neg :v_real)      (ev_normal (v_real (- v.val))))
     ((:bnot :v_bool)     (ev_normal (v_bool (not v.val))))
     ((:not :v_bitvector) (ev_normal (v_bitvector* v.len (lognot v.val))))
-    (-                   (ev_error "bad unop" (list op v)))))
+    (-                   (ev_error "bad unop" (list op v) nil))))
 
 

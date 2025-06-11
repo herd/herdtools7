@@ -75,8 +75,8 @@
   :params (n)
   :args (x shift)
   :hyps (< 0 shift.val)
-  :return-values ((v_bitvector n.val (ash x.val shift.val))
-                  (v_bitvector 1 (logbit n.val (ash x.val shift.val))))
+  :return-values ((v_array (list (v_bitvector n.val (ash x.val shift.val))
+                                 (v_bitvector 1 (logbit n.val (ash x.val shift.val))))))
   :enable (bitops::loghead-of-ash))
 
 (local (defthm bitvector-logtail-0
@@ -117,8 +117,8 @@
   :params (n)
   :args (x shift)
   :hyps (< 0 shift.val)
-  :return-values ((v_bitvector n.val (ash x.val (- shift.val)))
-                  (v_bitvector 1 (logbit (1- shift.val) x.val)))
+  :return-values ((v_array (list (v_bitvector n.val (ash x.val (- shift.val)))
+                                 (v_bitvector 1 (logbit (1- shift.val) x.val)))))
   :enable (bitops::loghead-of-ash))
 
 
@@ -140,8 +140,8 @@
   :args (x shift)
   :hyps (and (< 0 n.val)
              (< 0 shift.val))
-  :return-values ((v_bitvector n.val (logtail shift.val (logext n.val x.val)))
-                  (v_bitvector 1 (logbit (1- shift.val) (logext n.val x.val))))
+  :return-values ((v_array (list (v_bitvector n.val (logtail shift.val (logext n.val x.val)))
+                                 (v_bitvector 1 (logbit (1- shift.val) (logext n.val x.val))))))
   :enable (bitops::loghead-of-ash))
 
 
@@ -189,8 +189,8 @@
   :args (x shift)
   :hyps (and (< 0 n.val)
              (< 0 shift.val))
-  :return-values ((v_bitvector n.val (bitops::rotate-right x.val n.val shift.val))
-                  (v_bitvector 1 (logbit (mod (1- shift.val) n.val) x.val)))
+  :return-values ((v_array (list (v_bitvector n.val (bitops::rotate-right x.val n.val shift.val))
+                                 (v_bitvector 1 (logbit (mod (1- shift.val) n.val) x.val)))))
   :enable (bitops::loghead-of-ash))
 
 
@@ -220,8 +220,8 @@
   :args (x shift)
   :hyps (and (< 0 n.val)
              (< 0 shift.val))
-  :return-values ((v_bitvector n.val (bitops::rotate-left x.val n.val shift.val))
-                  (v_bitvector 1 (logbit 0 (bitops::rotate-left x.val n.val shift.val))))
+  :return-values ((v_array (list (v_bitvector n.val (bitops::rotate-left x.val n.val shift.val))
+                                 (v_bitvector 1 (logbit 0 (bitops::rotate-left x.val n.val shift.val))))))
   :enable (bitops::loghead-of-ash
            bitops::loghead** bitops::logbitp**))
 

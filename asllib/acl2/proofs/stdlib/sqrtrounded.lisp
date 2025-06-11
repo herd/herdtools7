@@ -49,13 +49,13 @@
                '(:expand ((:free (start)
                            (ACL2::SQRTROUNDED-LOOP
                             (V_REAL->VAL
-                             (CDR (HONS-ASSOC-EQUAL "__stdlib_local_mant"
+                             (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_mant"
                                                     (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))
                             (V_REAL->VAL
-                             (CDR (HONS-ASSOC-EQUAL "__stdlib_local_root"
+                             (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_root"
                                                     (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))
                             (V_REAL->VAL
-                             (CDR (HONS-ASSOC-EQUAL "__stdlib_local_prec"
+                             (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_prec"
                                                     (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))
                             start
                             (+ 1 END))))))))

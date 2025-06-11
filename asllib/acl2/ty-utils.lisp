@@ -102,7 +102,7 @@
 (defines ty-resolved-p
   (define ty-resolved-p ((x ty-p))
     :measure (ty-count x)
-    (b* ((x (ty->val x)))
+    (b* ((x (ty->desc x)))
       (type_desc-case x
         :t_int (constraint_kind-resolved-p x.constraint)
         :t_bits (int-literal-expr-p x.expr)
@@ -117,7 +117,7 @@
     ///
     (defthm ty_resolved-p-implies
       (implies (ty-resolved-p x)
-               (b* ((x (ty->val x)))
+               (b* ((x (ty->desc x)))
                  (and (implies (type_desc-case x :t_int)
                                (constraint_kind-resolved-p (t_int->constraint x)))
                       (implies (type_desc-case x :t_bits)
@@ -210,7 +210,7 @@
                           (ty ty-p))
     :guard (ty-resolved-p ty)
     :measure (acl2::two-nats-measure (ty-count ty) 0)
-    (b* ((ty (ty->val ty)))
+    (b* ((ty (ty->desc ty)))
       (fty::multicase ((type_desc-case ty)
                        (val-case x))
         ((:t_int :v_int) (constraint_kind-satisfied x.val ty.constraint))
@@ -338,7 +338,7 @@
     :verify-guards nil
     :measure (ty-count x)
     :returns (val maybe-val-p)
-    (b* ((x (ty->val x)))
+    (b* ((x (ty->desc x)))
       (type_desc-case x
         :t_int (b* ((val (constraint_kind-satisfying-val x.constraint)))
                  (and val (v_int val)))
@@ -490,7 +490,7 @@
     :verify-guards nil
     :measure (ty-count x)
     :returns (ok)
-    (b* ((x (ty->val x)))
+    (b* ((x (ty->desc x)))
       (type_desc-case x
         :t_int (b* ((val (constraint_kind-satisfying-val x.constraint)))
                  (and val t))
@@ -764,7 +764,7 @@
                     :hints ('(:expand ((ty-satisfiable ty)
                                        (:free (x) (ty-satisfied x ty))
                                        (:free (ty) (array-type-satisfied nil ty))))))
-    (b* ((ty (ty->val ty)))
+    (b* ((ty (ty->desc ty)))
       (type_desc-case ty
         (:t_int (v_int (constraint_kind-value-fix (v_int->val x) ty.constraint)))
         (:t_bits (v_bitvector (int-literal-expr->val ty.expr)
@@ -828,20 +828,18 @@
     :guard (and (typed_identifierlist-resolved-p fields)
                 (record-type-satisfied x fields))
     :measure (acl2::two-nats-measure (typed_identifierlist-count fields) (len x))
-    :returns (new-x (implies (typed_identifierlist-satisfiable fields)
-                             (record-type-satisfied new-x fields))
+    :returns (new-x (and (val-imap-p new-x)
+                         (implies (typed_identifierlist-satisfiable fields)
+                                  (record-type-satisfied new-x fields)))
                     :hints ('(:expand ((typed_identifierlist-satisfiable fields)
                                        (:free (x y) (record-type-satisfied (cons x y) fields))
                                        (record-type-satisfied nil fields)))))
     (b* (((when (atom fields)) nil)
-         ((when (and (consp x)
-                     (or (atom (car x))
-                         (not (identifier-p (caar x))))))
-          (record-type-fix-val (cdr x) fields))
          ((typed_identifier f1) (car fields))
-         (val (ty-fix-val (and (consp x) (cdar x)) f1.type)))
+         (val (ty-fix-val (cdr (hons-assoc-equal f1.name (val-imap-fix x))) f1.type))
+         (new-x (remove1-assoc-equal f1.name (val-imap-fix x))))
       (cons (cons f1.name val)
-            (record-type-fix-val (and (consp x) (cdr x)) (cdr fields)))))
+            (record-type-fix-val new-x (cdr fields)))))
   ///
 
   (local (defthm val-imap-fix-when-atom
@@ -869,6 +867,82 @@
                    :induct (len x)
                    :expand ((record-type-satisfied x fields)
                             (val-imap-fix x))))))
+
+  (local (defthm record-type-satisfied-when-x-atom
+           (implies (atom (Val-imap-fix x))
+                    (iff (record-type-satisfied x fields)
+                         (atom fields)))
+           :hints(("Goal"
+                   :induct (len x)
+                   :expand ((record-type-satisfied x fields)
+                            (val-imap-fix x))))))
+
+
+  ;; (local (defthm nthcdr-of-len
+  ;;          (atom (nthcdr (len x) x))
+  ;;          :rule-classes :type-prescription))
+
+  (local (defun record-type-satisfied-ind (x fields)
+           (if (atom x)
+               fields
+             (if (and (consp (car x))
+                      (identifier-p (caar x)))
+                 (record-type-satisfied-ind (cdr x) (cdr fields))
+               (record-type-satisfied-ind (cdr x) fields)))))
+
+  (local (defthm lookup-when-record-type-satisfied
+           (implies (and (record-type-satisfied x fields)
+                         (consp fields))
+                    (and (hons-assoc-equal (typed_identifier->name (car fields)) x)
+                         (val-equiv (cdr (hons-assoc-equal (typed_identifier->name (car fields)) x))
+                                    (cdar (val-imap-fix x)))))
+           :hints(("Goal" :in-theory (enable record-type-satisfied)
+                   :expand ((val-imap-fix x))
+                   :induct (record-type-satisfied-ind x fields)))))
+           
+  
+  (local (defthm record-type-satisfied-implies-ty-satisfied
+           (implies (and (record-type-satisfied x fields)
+                         (consp fields))
+                    (ty-satisfied (cdar (val-imap-fix x))
+                                  (typed_identifier->type (car fields))))
+           :hints(("Goal" :in-theory (enable record-type-satisfied
+                                             val-imap-fix)
+                   :induct (record-type-satisfied-ind x fields)))))
+
+  (local (defthm record-type-satisfied-implies-remove1-assoc-equal
+           (implies (and (record-type-satisfied x fields)
+                         (consp fields))
+                    (equal (remove1-assoc-equal (typed_identifier->name (car fields))
+                                                (val-imap-fix x))
+                           (cdr (val-imap-fix x))))
+           :hints(("Goal" :in-theory (enable record-type-satisfied
+                                             val-imap-fix)
+                   :induct (record-type-satisfied-ind x fields)))))
+
+  (local (defthm record-type-satisfied-implies-cdr
+           (implies (and (record-type-satisfied x fields)
+                         (consp fields))
+                    (record-type-satisfied (cdr (val-imap-fix x)) (cdr fields)))
+           :hints(("Goal" :in-theory (enable record-type-satisfied
+                                             val-imap-fix)
+                   :induct (record-type-satisfied-ind x fields)))))
+
+  (local (defthm record-type-satisfied-implies-consp
+           (implies (and (record-type-satisfied x fields)
+                         (consp fields))
+                    (and (consp (val-imap-fix x))
+                         (equal (caar (val-imap-fix x))
+                                (typed_identifier->name (car fields)))))
+           :hints(("Goal" :in-theory (enable record-type-satisfied
+                                             val-imap-fix)
+                   :induct (record-type-satisfied-ind x fields)))))
+
+  (local (defthm equal-of-cons
+           (equal (equal (cons a b) c)
+                  (and (consp c)
+                       (Equal (car c) a)
+                       (equal (cdr c) b)))))
   
   (std::defret-mutual ty-fix-val-when-satisfied
     (defret <fn>-when-satisfied
@@ -892,12 +966,13 @@
                          <call>
                          (:free (x ty) (array-type-fix-val 0 x ty)))))
       :fn array-type-fix-val)
-    (defret <fn>-when-satisfied
-      (implies (and (record-type-satisfied x fields))
+    (defret <fn>-when-satisfied-aux
+      (implies (record-type-satisfied x fields)
                (equal new-x (val-imap-fix x)))
-      :hints ('(:expand ((record-type-satisfied x fields)
-                         (val-imap-fix x)
-                         <call>)))
+      :hints ('(:expand (;; (record-type-satisfied x fields)
+                         ;; (val-imap-fix x)
+                         <call>)
+                :do-not-induct t))
       :fn record-type-fix-val))
   
   (verify-guards ty-fix-val
@@ -930,30 +1005,31 @@
                            (implies (eval_result-case res :ev_normal)
                                     (ty-p (ev_normal->res res)))))
     :measure (nats-measure clk 0 (ty-count x) 0)
-    (b* ((ty (ty->val x)))
+    (b* ((pos (ty->pos_start x))
+         (ty (ty->desc x)))
       (type_desc-case ty
         :t_tuple (b* (((ev tys) (name-resolve-tylist env ty.types)))
-                   (ev_normal (ty (t_tuple tys))))
+                   (ev_normal (ty (t_tuple tys) pos)))
         :t_array (b* (((ev base) (name-resolve-ty env ty.type)))
-                   (ev_normal (ty (t_array ty.index base))))
+                   (ev_normal (ty (t_array ty.index base) pos)))
         :t_record (b* (((ev fields)
                         (name-resolve-typed_identifierlist env ty.fields)))
-                    (ev_normal (ty (t_record fields))))
+                    (ev_normal (ty (t_record fields) pos)))
         :t_exception (b* (((ev fields)
                            (name-resolve-typed_identifierlist env ty.fields)))
-                       (ev_normal (ty (t_exception fields))))
+                       (ev_normal (ty (t_exception fields) pos)))
         :t_collection (b* (((ev fields)
                             (name-resolve-typed_identifierlist env ty.fields)))
-                        (ev_normal (ty (t_collection fields))))
+                        (ev_normal (ty (t_collection fields) pos)))
         :t_named  (b* ((decl_types (static_env_global->declared_types env))
                        (look (hons-assoc-equal ty.name decl_types))
                        ((unless look)
-                        (ev_error "Named type not found" x))
+                        (ev_error "Named type not found" x (list pos)))
                        ((when (zp clk))
-                        (ev_error "Clock ran out resolving named type" x))
+                        (ev_error "Clock ran out resolving named type" x (list pos)))
                        (type (ty-timeframe->ty (cdr look))))
                     (name-resolve-ty env type :clk (1- clk)))
-        :otherwise (ev_normal (ty ty)))))
+        :otherwise (ev_normal (ty ty pos)))))
   
   (define name-resolve-tylist ((env static_env_global-p)
                                (x tylist-p)
@@ -982,3 +1058,40 @@
       (ev_normal (cons (typed_identifier x1.name first) rest))))
   ///
   (Verify-guards name-resolve-ty-fn))
+
+
+
+(defines ty-remove-bitfields
+  :verify-guards nil
+    
+  (define ty-remove-bitfields ((x ty-p))
+    :returns (res ty-p)
+    :measure (ty-count x)
+    (b* ((pos (ty->pos_start x))
+         (ty (ty->desc x)))
+      (type_desc-case ty
+        :t_bits (ty (change-t_bits ty :fields nil) pos)
+        :t_tuple (ty (t_tuple (tylist-remove-bitfields ty.types)) pos)
+        :t_array (ty (t_array ty.index (ty-remove-bitfields ty.type)) pos)
+        :t_record (ty (t_record (typed_identifierlist-remove-bitfields ty.fields)) pos)
+        :t_exception (ty (t_exception (typed_identifierlist-remove-bitfields ty.fields)) pos)
+        :t_collection (ty (t_collection (typed_identifierlist-remove-bitfields ty.fields)) pos)
+        :otherwise (ty-fix x))))
+  
+  (define tylist-remove-bitfields ((x tylist-p))
+    :returns (res tylist-p)
+    :measure (tylist-count x)
+    (if (atom x)
+        nil
+      (cons (ty-remove-bitfields (car x))
+            (tylist-remove-bitfields (cdr x)))))
+
+  (define typed_identifierlist-remove-bitfields ((x typed_identifierlist-p))
+    :returns (res typed_identifierlist-p)
+    :measure (typed_identifierlist-count x)
+    (b* (((when (atom x)) nil)
+         ((typed_identifier x1) (car x)))
+      (cons (typed_identifier x1.name (ty-remove-bitfields x1.type))
+            (typed_identifierlist-remove-bitfields (cdr x)))))
+  ///
+  (Verify-guards ty-remove-bitfields))

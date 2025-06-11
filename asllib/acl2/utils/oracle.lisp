@@ -162,7 +162,7 @@
     :rule-classes :type-prescription))
 
 (defstobj orac
-  (oracle-mode :type (integer 0 2) :initially 0)
+  (oracle-mode :type (integer 0 3) :initially 0)
   (oracle-st :type t :initially nil)
   (oracle-xosh :type xoshiro)
   (oracle-xosh-int-low :type integer :initially #x-80000000)
@@ -170,6 +170,23 @@
   (oracle-xosh-string-len :type (integer 0 *) :initially 10)
   (oracle-xosh-char-spec :type (satisfies char-spec-p) :initially (96 (32 . 128))))
 
+
+(define orac-st-read ((limit posp) st)
+  :returns (mv (val natp :rule-classes :type-prescription)
+               (new-st))
+  (b* (((mv val new-st)
+        (mbe :logic (mv (car st) (cdr st))
+             :exec (if (consp st)
+                       (mv (car st) (cdr st))
+                     (mv nil nil))))
+       (val (nfix val))
+       (val (if (< val (lposfix limit)) val 0)))
+    (mv val new-st))
+  ///
+  (defret orac-st-read-bound
+    (implies (posp limit)
+             (< val limit))
+    :rule-classes :linear))
 
 
 (define orac-read ((limit posp) orac)
@@ -182,10 +199,15 @@
                     (xoshiro-gen-range limit xoshiro)
                     (mv val orac)))
       (1 (mv 0 orac))
-      (t (b* ((st (oracle-st orac))
+      (2 (b* ((st (oracle-st orac))
               ((mv val new-st) (oracle-read limit st))
               (orac (update-oracle-st new-st orac)))
+           (mv val orac)))
+      (t (b* ((st (oracle-st orac))
+              ((mv val st) (orac-st-read limit st))
+              (orac (update-oracle-st st orac)))
            (mv val orac)))))
+           
   ///
   (defret orac-read-bound
     (implies (posp limit)
@@ -201,8 +223,12 @@
                   (xoshiro-next xoshiro)
                   (mv val orac)))
     (1 (mv 0 orac))
-    (t (b* ((st (oracle-st orac))
+    (2 (b* ((st (oracle-st orac))
             ((mv val new-st) (oracle-read (ash 1 32) st))
+            (orac (update-oracle-st new-st orac)))
+         (mv val orac)))
+    (t (b* ((st (oracle-st orac))
+            ((mv val new-st) (orac-st-read (ash 1 32) st))
             (orac (update-oracle-st new-st orac)))
          (mv val orac))))
   ///
@@ -221,8 +247,12 @@
                   (xoshiro-gen-bits (lnfix nbits) xoshiro)
                   (mv val orac)))
     (1 (mv 0 orac))
-    (t (b* ((st (oracle-st orac))
+    (2 (b* ((st (oracle-st orac))
             ((mv val new-st) (oracle-read (ash 1 (lnfix nbits)) st))
+            (orac (update-oracle-st new-st orac)))
+         (mv val orac)))
+    (t (b* ((st (oracle-st orac))
+            ((mv val new-st) (orac-st-read (ash 1 (lnfix nbits)) st))
             (orac (update-oracle-st new-st orac)))
          (mv val orac))))
   ///
@@ -240,6 +270,16 @@
 
 
 
+(define orac-st-read-int (st)
+  :returns (mv (val integerp :rule-classes :type-prescription)
+               (new-st))
+  (b* (((mv val new-st)
+        (mbe :logic (mv (car st) (cdr st))
+             :exec (if (consp st)
+                       (mv (car st) (cdr st))
+                     (mv nil nil))))
+       (val (ifix val)))
+    (mv val new-st)))
 
 (define orac-read-int (orac)
   :returns (mv (val integerp :rule-classes :type-prescription)
@@ -254,10 +294,25 @@
                   (xoshiro-gen-range width xoshiro)
                   (mv (+ val low) orac))))
     (1 (mv 0 orac))
-    (t (b* ((st (oracle-st orac))
+    (2 (b* ((st (oracle-st orac))
             ((mv val new-st) (oracle-read-int st))
             (orac (update-oracle-st new-st orac)))
+         (mv val orac)))
+    (t (b* ((st (oracle-st orac))
+            ((mv val new-st) (orac-st-read-int st))
+            (orac (update-oracle-st new-st orac)))
          (mv val orac)))))
+
+(define orac-st-read-rational (st)
+  :returns (mv (val rationalp  :rule-classes :type-prescription)
+               (new-st))
+  (b* (((mv val new-st)
+        (mbe :logic (mv (car st) (cdr st))
+             :exec (if (consp st)
+                       (mv (car st) (cdr st))
+                     (mv nil nil))))
+       (val (rfix val)))
+    (mv val new-st)))
 
 (define orac-read-rational (orac)
   :returns (mv (val rationalp :rule-classes :type-prescription)
@@ -275,8 +330,12 @@
                     (mv (/ num (+ 1 den)) xoshiro))
                   (mv val orac))))
     (1 (mv 0 orac))
-    (t (b* ((st (oracle-st orac))
+    (2 (b* ((st (oracle-st orac))
             ((mv val new-st) (oracle-read-rational st))
+            (orac (update-oracle-st new-st orac)))
+         (mv val orac)))
+    (t (b* ((st (oracle-st orac))
+            ((mv val new-st) (orac-st-read-rational st))
             (orac (update-oracle-st new-st orac)))
          (mv val orac)))))
 
@@ -316,7 +375,17 @@
   (b* (((mv chars xoshiro) (xoshiro-gen-string-aux len cs xoshiro)))
     (mv (coerce chars 'string) xoshiro)))
     
-               
+
+(define orac-st-read-string (st)
+  :returns (mv (val stringp  :rule-classes :type-prescription)
+               (new-st))
+  (b* (((mv val new-st)
+        (mbe :logic (mv (car st) (cdr st))
+             :exec (if (consp st)
+                       (mv (car st) (cdr st))
+                     (mv nil nil))))
+       (val (acl2::str-fix val)))
+    (mv val new-st)))
 
 (define orac-read-string (orac)
   :returns (mv (val stringp :rule-classes :type-prescription)
@@ -330,8 +399,12 @@
                   (xoshiro-gen-string len cs xoshiro)
                   (mv val orac))))
     (1 (mv "" orac))
-    (t (b* ((st (oracle-st orac))
+    (2 (b* ((st (oracle-st orac))
             ((mv val new-st) (oracle-read-string st))
+            (orac (update-oracle-st new-st orac)))
+         (mv val orac)))
+    (t (b* ((st (oracle-st orac))
+            ((mv val new-st) (orac-st-read-string st))
             (orac (update-oracle-st new-st orac)))
          (mv val orac)))))
 

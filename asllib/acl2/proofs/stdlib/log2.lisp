@@ -76,60 +76,20 @@
   :hints ((and stable-under-simplificationp
                '(:use ((:instance acl2::rational-exponent-unique
                         (x (V_INT->VAL
-                            (CDR (HONS-ASSOC-EQUAL "__stdlib_local_a"
+                            (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_a"
                                                    (LOCAL-ENV->STORAGE (ENV->LOCAL ENV))))))
                         (n (V_INT->VAL
-                            (CDR (HONS-ASSOC-EQUAL "__stdlib_local_result"
+                            (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_result"
                                                    (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))))
                        (:instance rational-exponent-when-expt-less
                         (i (+ 1 (V_INT->VAL
-                                 (CDR (HONS-ASSOC-EQUAL "__stdlib_local_result"
+                                 (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_result"
                                                         (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))))
                         (x (V_INT->VAL
-                            (CDR (HONS-ASSOC-EQUAL "__stdlib_local_a"
+                            (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_a"
                                                    (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))))))))
   :prepwork
-  (;; (local (Defthmd rational-exponent-unique-of-nonneg
-   ;;          (implies (and (<= (expt 2 r) a)
-   ;;                        (< a (* 2 (expt 2 r)))
-   ;;                        (integerp a)
-   ;;                        (integerp r))
-   ;;                   (equal (acl2::rational-exponent a) r))
-   ;;          :hints (("goal" :use ((:instance acl2::rational-sign-significand-exponent-unique
-   ;;                                 (sign 1) (significand (/ a (expt 2 r))) (exponent r)))))))
-                         
-
-   (local (defthm put-assoc-equal-identity-free
-            (implies (and (equal v (cdr (hons-assoc-equal k x)))
-                          (hons-assoc-equal k x)
-                          (alistp x))
-                     (equal (put-assoc-equal k v x) x))))
-
-   ;; (local (defthmd powers-of-2-not-between-lemma1
-   ;;          (implies (and (< (ifix ye) (ifix xe))
-   ;;                        (<= (ifix ye) 0))
-   ;;                   (<= (* 2 (expt 2 ye)) (expt 2 xe)))
-   ;;          :hints (("goal" :induct (expt 2 ye)))
-   ;;          :otf-flg t))
-   ;; (local (defthmd powers-of-2-not-between-lemma
-   ;;          (implies (< (ifix ye) (ifix xe))
-   ;;                   (<= (* 2 (expt 2 ye)) (expt 2 xe)))
-   ;;          :hints (("goal" :cases ((<= 0 (ifix ye)))
-   ;;                   :in-theory (enable powers-of-2-not-between-lemma1)))
-   ;;          :otf-flg t))  
-
-   ;; (local (defthm powers-of-2-not-between
-   ;;          (implies (< (expt 2 xe) (* 2 (expt 2 ye)))
-   ;;                   (<= (expt 2 xe) (expt 2 ye)))
-   ;;          :hints (("goal" :use ((:instance acl2::expt-is-increasing-for-base>1
-   ;;                                 (r 2) (i (ifix xe)) (j (ifix ye)))
-   ;;                                (:instance acl2::expt-is-increasing-for-base>1
-   ;;                                 (r 2) (i (ifix ye)) (j (ifix xe)))
-   ;;                                powers-of-2-not-between-lemma)
-   ;;                   :in-theory (acl2::e/d* (acl2::arith-equiv-forwarding)
-   ;;                                          (acl2::expt-is-increasing-for-base>1))))
-   ;;          :rule-classes nil))
-
+  (
 
    (local (defthm v_int->val-rewrite-to-exponent
             (implies (equal (v_int->val x) (expt 2 y))
@@ -195,25 +155,25 @@
   :hints ((and stable-under-simplificationp
                '(:use ((:instance rational-exponent-hack
                         (r (V_INT->VAL
-                            (CDR (HONS-ASSOC-EQUAL "__stdlib_local_result"
+                            (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_result"
                                                    (LOCAL-ENV->STORAGE (ENV->LOCAL ENV))))))
                         (a (V_INT->VAL
-                            (CDR (HONS-ASSOC-EQUAL "__stdlib_local_a"
+                            (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_a"
                                                    (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))))
                        (:instance powers-of-2-not-between
                         (xe (V_INT->VAL
-                             (CDR (HONS-ASSOC-EQUAL "__stdlib_local_result"
+                             (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_result"
                                                     (LOCAL-ENV->STORAGE (ENV->LOCAL ENV))))))
                         (ye (acl2::rational-exponent
                              (V_INT->VAL
-                              (CDR (HONS-ASSOC-EQUAL "__stdlib_local_a"
+                              (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_a"
                                                      (LOCAL-ENV->STORAGE (ENV->LOCAL ENV))))))))
                        (:instance rational-exponent-when-expt-less
                         (i (V_INT->VAL
-                            (CDR (HONS-ASSOC-EQUAL "__stdlib_local_result"
+                            (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_result"
                                                    (LOCAL-ENV->STORAGE (ENV->LOCAL ENV))))))
                         (x (V_INT->VAL
-                            (CDR (HONS-ASSOC-EQUAL "__stdlib_local_a"
+                            (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_a"
                                                    (LOCAL-ENV->STORAGE (ENV->LOCAL ENV))))))))
                  :in-theory (enable equal-when-v_int))))
   :prepwork
@@ -243,13 +203,6 @@
                            :expand ((expt 2 r)))))
             :otf-flg t
             :rule-classes nil))
-                         
-
-   (local (defthm put-assoc-equal-identity-free
-            (implies (and (equal v (cdr (hons-assoc-equal k x)))
-                          (hons-assoc-equal k x)
-                          (alistp x))
-                     (equal (put-assoc-equal k v x) x))))
 
    (local (defthmd powers-of-2-not-between-lemma1
             (implies (and (< (ifix ye) (ifix xe))

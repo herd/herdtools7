@@ -43,12 +43,12 @@
                      (x decl-p)
                      &key (orac 'orac))
   :returns (mv (res env_eval_result-p) new-orac)
-  (b* ((x (decl->val x)))
+  (b* ((x (decl->desc x)))
     (decl_desc-case x
       :d_globalstorage
       (b* (((global_decl d) x.decl)
            ((unless d.initial_value)
-            (evo_error "TypeInferenceNeeded" x))
+            (evo_error "TypeInferenceNeeded" x nil))
            ((mv (evo (expr_result iv)) orac) (eval_expr env d.initial_value :clk *eval_global-initial-clock*)))
         (evo_normal (declare_global  iv.env d.name iv.val)))
       :otherwise (evo_normal (env-fix env)))))
@@ -81,6 +81,6 @@
         (eval_subprogram env1 "main" nil nil :clk *main-initial-clock*))
        ((when (eql (len res.vals) 1))
         (evo_normal (car res.vals))))
-    (evo_error "malformed return values from main" res.vals)))
+    (evo_error "malformed return values from main" res.vals nil)))
 
     
