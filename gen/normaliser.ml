@@ -162,6 +162,10 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       | E.Rf Ext|E.Fr Ext|E.Ws Ext|E.Hat -> true
       | _ -> false
 
+      let int_com e = match e.E.edge with
+      | E.Rf Int|E.Fr Int|E.Ws Int -> true
+      | _ -> false
+
 (* Find skipping Leave/Back *)
       let find_node_out p n =
         let rec do_rec m =
@@ -216,6 +220,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
           else do_rec c d m.next in
         do_rec (0,n) 0 n
 
+
 (*
  * Warning:
  * split_proc below has to be the same as in cycle.ml
@@ -225,6 +230,11 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       let find_non_pseudo_prev n = find_node_rev (fun n -> E.is_non_pseudo n.edge.E.edge) n
 
       let find_start_proc n =
+        let ext_count =
+          map ( fun n -> if ext_com n.edge then 1 else 0 ) n
+          |> List.fold_left (+) 0 in
+        (* Reject cycle with precisely one external edge *)
+        if ext_count = 1 then raise(CannotNormalise "only one external edge");
         if debug then eprintf "Start proc [%s]\n%!" (_pp n) ;
         let n = find_out n in
         if debug then eprintf "Found out [%s]\n%!" (_pp n) ;
@@ -233,20 +243,35 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
           ext_com p.edge
         then p.next
         else
-          try
-            let n = find_edge_out ext_com n in n.next
-          with NotFound ->
-            (* "No external communication in cycle" *)
-               raise (CannotNormalise "find_start")
+          let n =
+            try
+              find_edge_out ext_com n
+            with NotFound -> try
+              (* in the case of all internal edges,
+                 we start from an external to build the cycle. *)
+              find_edge_out int_com n
+            with NotFound ->
+              (* No communication in cycle. *)
+              raise (CannotNormalise "find_start") in
+            n.next
 
       let split_procs n =
         try
           let n = find_start_proc n in   (* n is the entry of a proc *)
-          assert (ext_com n.prev.edge) ;
+          assert (ext_com n.prev.edge || int_com n.prev.edge) ;
+
           let rec do_rec m =
             if debug then eprintf "REC: '%s'\n" (_pp m) ;
             let e = m in
-            let o = find_edge_out ext_com m in
+            let o =
+              try find_edge_out ext_com m
+              (* if there is no external communication,
+                 it means the cycle contain all internal
+                 communication, due to previous call to
+                 `find_start_proc`. In this case, there is
+                 no need to split procedure, hence assign
+                 `m.prev`. *)
+              with NotFound -> m.prev in
             if o.next == n then [(e,o)]
             else (e,o)::do_rec o.next in
           let ns = do_rec n in

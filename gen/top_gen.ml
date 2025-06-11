@@ -38,6 +38,7 @@ module type Config = sig
   val variant : Variant_gen.t -> bool
   val cycleonly: bool
   val metadata : bool
+  val same_loc : bool
 end
 
 module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
@@ -453,10 +454,13 @@ let max_set = IntSet.max_elt
               end
           | Unicond -> assert false
           | Cycle -> begin
+              (* If it is one location mode, `-oneloc`,
+                 we are more interested in checking the oldest value *)
               match vs with
               | [] -> i,[],[]
               | [[(v,_)]] -> i,[],add_look_loc x v []
-              | [[_;(v,_)]] ->
+              | [[(v1,_);(v2,_)]] ->
+                  let v = if O.same_loc then v1 else v2 in
                   begin match O.do_observers with
                   | Local -> i,[],add_look_loc x v []
                   | Avoid|Accept|Three|Four|Infinity
@@ -467,7 +471,8 @@ let max_set = IntSet.max_elt
                   end
               | _ ->
                   let vs_flat = List.flatten vs in
-                  let v,_ = Misc.last vs_flat in
+                  let v,_ = if O.same_loc then List.hd vs_flat
+                            else Misc.last vs_flat in
                   begin match O.do_observers with
                   | Local -> i,[],add_look_loc x v []
                   | Three ->
@@ -681,8 +686,9 @@ let max_set = IntSet.max_elt
     let rec do_rec p i = function
       | [] -> List.rev i,[],(C.EventMap.empty,[]),[],A.LocMap.empty
       | n::ns ->
+          let init_st = A.remove_reg_allocator A.st0 (A.used_register i) in
           let i,c,(m,f),st =
-            compile_proc Misc.identity false loc_writes A.st0 p No i n in
+            compile_proc Misc.identity false loc_writes init_st p No i n in
           let i,c,st = compile_stores st p i n c in
           let xenv = Comp.get_xstore_results c in
           let f =
