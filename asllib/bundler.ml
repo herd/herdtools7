@@ -30,8 +30,6 @@ type identifier_state =
   | Parsed of AST.t
   | BlackListed
 
-type bundler_state = identifier_state IMap.t
-
 let to_look_dirs = ref []
 let instr_dir = ref ""
 let outdir = ref @@ Sys.getcwd ()

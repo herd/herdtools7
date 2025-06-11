@@ -20,7 +20,6 @@
 open Printf
 
 module type Config = sig
-  val verbose : int
   val check_name : string -> bool
 end
 
@@ -29,10 +28,6 @@ module Make(Config:Config) =
     module D = Splitter.Default
     module LU = LexUtils.Make(D)
     module S = Splitter.Make(D)
-
-    let echo sec in_chan out_chan =
-      let lexbuf = LU.from_section sec in_chan in
-      Echo.echo lexbuf out_chan
 
     let from_chan chan fname in_chan =
       try
@@ -104,7 +99,6 @@ module Check =
 module X =
  Make
    (struct
-     let verbose = !verbose
      let check_name = Check.ok
    end)
 
