@@ -46,7 +46,7 @@ type t =
   | Iico of iico
 
 (** memory event annotation *)
-type annot = AnnotNone | A | L
+type annot = AnnotNone | A | L | X
 
 (** edge attributes *)
 let edge_direction = function
@@ -83,7 +83,7 @@ let pp_direction = function Rr -> "Rr" | Wr -> "Wr" | Rm -> "R" | Wm -> "W"
 let pp_int_ext = function Internal -> "i" | External -> "e"
 let pp_sd = function Same -> "s" | Different -> "d"
 let pp_dp = function Addr -> "Addr" | Data -> "Data" | Ctrl -> "Ctrl"
-let pp_annot = function AnnotNone -> "" | A -> "A" | L -> "L"
+let pp_annot = function AnnotNone -> "" | A -> "A" | L -> "L" | X -> "X"
 
 let pp_node_dep = function
   | DepAddr r -> "Addr " ^ AArch64_compile.pp_reg r

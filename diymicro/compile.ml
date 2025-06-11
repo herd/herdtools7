@@ -49,6 +49,7 @@ let compile_event st (src : E.node_dep) event =
     match annot with
     | E.AnnotNone -> A.Instruction (A.do_ldr A.vloc dst_reg loc)
     | E.A -> A.Instruction (A.do_ldar A.vloc dst_reg loc)
+    | E.X -> A.Instruction (A.ldxr dst_reg loc)
     | _ -> Warn.fatal "Invalid annot %s for ldr" (E.pp_annot annot)
   in
   let annot_ldr_idx annot dst_reg src_loc src_reg =
@@ -97,7 +98,7 @@ let compile_event st (src : E.node_dep) event =
           ]
         in
         ins, E.DepReg event_reg, st
-    | E.Wm, _, E.DepData r ->
+    | E.Wm, _, (E.DepData r | E.DepReg r) ->
         let reg_value, st = A.next_reg st in
         let ins =
           A.pseudo

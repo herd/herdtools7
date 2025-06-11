@@ -32,6 +32,7 @@ rule token = parse
   | ':' { COLON }
   | 'A' { A }
   | 'L' { L }
+  | 'X' { X }
 
   | '[' (id as s) ']' { ID (s) }
   | _ as c { Warn.fatal "unexpected character: %C" c }

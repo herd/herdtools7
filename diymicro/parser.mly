@@ -15,7 +15,7 @@
 %token ADDR DATA CTRL
 
 %token COLON
-%token A L
+%token A L X
 
 %token EOF
 
@@ -30,6 +30,7 @@ main:
 annot:
     | A { Edge.A }
     | L { Edge.L }
+    | X { Edge.X }
 ;
 edge:
     | RF ie { Edge.Rf $2 }
