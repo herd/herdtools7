@@ -118,12 +118,10 @@ is transformed into the dynamic environment $\env$, defined as follows:
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item define the global dynamic environment $\vglobal$ as the map that bind
+  \item define the global dynamic environment $\vglobal$ as the map that binds
         each $\id$ in the domain of $G^\tenv.\constantvalues$ to $\nvliteral{\vl}$
         if $G^\tenv.\constantvalues(\id) = \vl$;
-  \item define the local dynamic environment $\vlocal$ as the map that bind
-        each $\id$ in the domain of $L^\tenv.\constantvalues$ to $\nvliteral{\vl}$
-        if $L^\tenv.\constantvalues(\id) = \vl$;
+  \item define the local dynamic environment $\vlocal$ as the empty map;
   \item define the environment $\env$ to have the static component $\tenv$ and the dynamic
         environment $(\vglobal, \vlocal)$;
 \end{itemize}
@@ -131,7 +129,7 @@ is transformed into the dynamic environment $\env$, defined as follows:
 \begin{mathpar}
 \inferrule{
   \vglobal \eqdef [\id \mapsto \nvliteral{\vl} \;|\; G^\tenv.\constantvalues(\id) = \vl]\\
-  \vlocal \eqdef [\id \mapsto \nvliteral{\vl} \;|\; L^\tenv.\constantvalues(\id) = \vl]
+  \vlocal \eqdef \emptyfunc
 }{
   \staticenvtoenv(\tenv) \typearrow \overname{(\tenv, (\vglobal, \vlocal))}{\env}
 }

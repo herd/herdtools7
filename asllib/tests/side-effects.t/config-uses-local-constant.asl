@@ -1,6 +1,6 @@
 func foo () => integer
 begin
-  constant x: integer = 0;
+  let x: integer = 0;
 
   return x;
 end;

@@ -12,10 +12,11 @@ config c : integer{0..WORD_SIZE * 8} = WORD_SIZE * 4;
 
 let gl : integer{0..10} = g_execution_time;
 
+// The time frame of an expression initializing
+// a local storage constant must be Constant.
+constant ADDRESS_SPACE_SIZE = 2 ^ WORD_SIZE;
+
 func main() => integer
 begin
-    // The time frame of an expression initializing
-    // a local storage constant must be Constant.
-    constant ADDRESS_SPACE_SIZE = 2 ^ WORD_SIZE;
     return 0;
 end;

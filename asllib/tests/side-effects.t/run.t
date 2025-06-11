@@ -496,11 +496,10 @@
   [1]
   $ aslref rec-constant.asl
   $ aslref constant-rec.asl
-  File constant-rec.asl, line 12, characters 2 to 23:
-    constant r = foo (1);
-    ^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got foo(1), which produces
-    the following side-effects: [CallsRecursive "foo"].
+  File constant-rec.asl, line 12, characters 10 to 17:
+    let r = foo (1);
+            ^^^^^^^
+  ASL Dynamic error: recursion limit reached.
   [1]
   $ aslref rec-local-type.asl
   File rec-local-type.asl, line 12, characters 16 to 23:

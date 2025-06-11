@@ -1,6 +1,6 @@
 func main() => integer
 begin
-    // Illegal: constant storage elements require initialization.
-    constant c3;
+    // Illegal: only global constant storage elements are allowed.
+    constant c3 = 5;
     return 0;
 end;

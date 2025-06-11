@@ -48,20 +48,12 @@ and their corresponding \timeframesterm{} (in comments).
 \ASLListing{The time frame of local storage declarations}{TimeFrameLDK}{\typingtests/TypingRule.TimeFrameLDK.asl}
 
 \ProseParagraph
-\ProseEqdef{$\vt$}{$\timeframeconstant$ if $\ldk$ is $\LDKConstant$, and
-    $\timeframeexecution$ otherwise}.
+\ProseEqdef{$\vt$}{$\timeframeexecution$}.
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-    {
-        \timeframeofldk(\ldk) \typearrow
-    \begin{cases}
-        \timeframeconstant & \text{if }\ldk = \LDKConstant\\
-        \timeframeexecution & \text{if }\ldk = \LDKLet\\
-        \timeframeexecution & \text{if }\ldk = \LDKVar\\
-    \end{cases}
-    }
+\timeframeofldk(\ldk) \typearrow \timeframeexecution
 }
 \end{mathpar}
 
@@ -318,19 +310,17 @@ and whether their corresponding local declaration keywords are considered immuta
 \textbf{Local Declaration} & \textbf{Immutable?}\\
 \hline
 \verb|var x : integer;|         & $\False$\\
-\verb|constant cl = 10;|        & $\True$\\
 \verb|let ll : integer = 20;|   & $\True$\\
 \end{tabular}
 \end{center}
 
 \ProseParagraph
-Define $\vb$ as $\True$ if and only if $\ldk$ corresponds to either the keyword \texttt{constant} or
-the keyword \texttt{let}.
+Define $\vb$ as $\True$ if and only if $\ldk$ is the keyword \texttt{let}.
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \ldkisimmutable(\ldk) \typearrow \overname{\ldk \in \{\LDKConstant, \LDKLet\}}{\vb}
+  \ldkisimmutable(\ldk) \typearrow \overname{\ldk = \LDKLet}{\vb}
 }
 \end{mathpar}
 

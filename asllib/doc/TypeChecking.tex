@@ -45,7 +45,6 @@ Static environments, denoted as $\staticenvs$, are defined as follows (referring
 \globalstaticenvs &\triangleq& \left[
 \begin{array}{lcl}
   \declaredtypes        &\mapsto& \identifier \partialto \ty \times \TTimeFrame\\
-  \constantvalues       &\mapsto& \identifier \partialto \literal,\\
   \globalstoragetypes   &\mapsto& \identifier \partialto \ty \times \globaldeclkeyword,\\
   \exprequiv            &\mapsto& \identifier \partialto \expr,\\
   \subtypes             &\mapsto& \identifier \partialto \identifier,\\
@@ -56,7 +55,6 @@ Static environments, denoted as $\staticenvs$, are defined as follows (referring
 \hypertarget{def-localstaticenvs}{}\\
 \localstaticenvs &\triangleq& \left[
 \begin{array}{lcl}
-  \constantvalues       &\mapsto& \identifier \partialto \literal,\\
   \localstoragetypes    &\mapsto& \identifier \partialto \ty \times \globaldeclkeyword,\\
   \exprequiv            &\mapsto& \identifier \partialto \expr,\\
   \returntype           &\mapsto& \langle \ty \rangle
@@ -81,7 +79,7 @@ The intuitive meaning of each component is as follows:
   (the \hyperlink{def-maxtimeframe}{maximal time frame} of any \sideeffectdescriptorterm\ inferred for
   the type definition);
   \hypertarget{def-constantvalues}{}
-  \item $\constantvalues$ assigns literals to their declaring (constant) names;
+  \item $\constantvalues$ assigns literals to their declaring (global constant) identifiers;
   \hypertarget{def-globalstoragetypes}{}
   \item $\globalstoragetypes$ associates names of global storage elements to their inferred type
   and how they were declared --- as constants, configuration variables, \texttt{let} variables,
@@ -125,7 +123,6 @@ The \emph{empty static environment}, \\ denoted as $\emptytenv$, is defined as f
 \overname{
  \left[
 \begin{array}{lcl}
-  \constantvalues       &\mapsto& \emptyfunc,\\
   \localstoragetypes    &\mapsto& \emptyfunc,\\
   \exprequiv            &\mapsto& \emptyfunc,\\
   \returntype           &\mapsto& \None

@@ -1,8 +1,11 @@
+                                // normalized rhs expression
+constant TWO = 1 + 1;           // 2
+
 func main() => integer
 begin
                                 // normalized rhs expression
-    constant ONE = 1;           // 1
-    var o = ONE;                // 1
+    let FOUR = TWO * 2;         // 4
+    var o = FOUR + FOUR;        // 2 * FOUR
     - = 5.0;                    // 5.0
 
     let x = 3;                  // 3

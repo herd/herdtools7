@@ -36,6 +36,7 @@ type parser_config = {
   allow_unknown : bool;
   allow_storage_discards : bool;
   allow_hyphenated_pending_constraint : bool;
+  allow_local_constants : bool;
 }
 
 val default_parser_config : parser_config

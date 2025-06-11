@@ -403,10 +403,10 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.asl
   $ aslref TypingRule.SDecl.asl
   $ aslref TypingRule.SDecl.bad1.asl
-  File TypingRule.SDecl.bad1.asl, line 4, characters 15 to 16:
-      constant c3;
-                 ^
-  ASL Error: Cannot parse.
+  File TypingRule.SDecl.bad1.asl, line 4, characters 4 to 12:
+      constant c3 = 5;
+      ^^^^^^^^
+  ASL Grammar error: Obsolete syntax: Local constant declaration.
   [1]
   $ aslref TypingRule.SDecl.bad2.asl
   File TypingRule.SDecl.bad2.asl, line 4, characters 18 to 19:
@@ -969,9 +969,8 @@ ASL Typing Tests / annotating types:
     provided integer {2}.
   [1]
   $ aslref --no-exec TypingRule.AddGlobalImmutableExpr.asl
-  $ aslref --no-exec TypingRule.AddLocalConstant.asl
   $ aslref --no-exec TypingRule.AddGlobalConstant.asl
-  $ aslref --no-exec TypingRule.LookupConstant.asl
+  $ aslref TypingRule.LookupConstant.asl
   $ aslref --no-exec TypingRule.AddLocal.asl
   $ aslref --no-exec TypingRule.CheckVarNotInGEnv.asl
   $ aslref --no-exec TypingRule.CheckVarNotInGEnv.bad.asl

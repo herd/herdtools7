@@ -621,57 +621,19 @@ $\vs$. The result is $\bot$ if $\vs$ is not associated with any constant.
 
 \ExampleDef{Looking Up Constants}
 The specification in \listingref{LookupConstant}
-shows examples where global constants, local constants, and enumeration labels,
+shows examples where global constants and enumeration labels,
 which are also bound to identifiers as constants, are looked up
 in annotating statements.
 \ASLListing{Looking up constants}{LookupConstant}{\typingtests/TypingRule.LookupConstant.asl}
 
 \ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{local}
-  \begin{itemize}
-    \item $\vs$ is associated with a constant $\vv$ in the local environment of $\tenv$;
-  \end{itemize}
-
-  \item \AllApplyCase{global}
-  \begin{itemize}
-    \item $\vs$ is not associated with a constant in the local environment of $\tenv$;
-    \item $\vs$ is associated with a constant $\vv$ in the global environment of $\tenv$;
-  \end{itemize}
-
-  \item \AllApplyCase{not\_found}
-  \begin{itemize}
-    \item $\vs$ is not associated with a constant in the local environment of $\tenv$;
-    \item $\vs$ is not associated with a constant in the global environment of $\tenv$;
-    \item the result is $\bot$.
-  \end{itemize}
-\end{itemize}
+\ProseEqdef{$\vv$}{the value to which $\vs$ is bound in the $\constantvalues$ map
+of the global static environment and $\bot$ if it is unbound.}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[local]{
-  L^\tenv.\constantvalues(\vs) = \vv
-}{
-  \lookupconstant(\tenv, \vs) \typearrow \vv
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[global]{
-  L^\tenv.\constantvalues(\vs) = \bot\\
-  G^\tenv.\constantvalues(\vs) = \vv
-}{
-  \lookupconstant(\tenv, \vs) \typearrow \vv
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[not\_found]{
-  L^\tenv.\constantvalues(\vs) = \bot\\
-  G^\tenv.\constantvalues(\vs) = \bot
-}{
-  \lookupconstant(\tenv, \vs) \typearrow \bot
+\inferrule{}{
+  \lookupconstant(\tenv, \vs) \typearrow \overname{G^\tenv.\constantvalues(\vs)}{\vv}
 }
 \end{mathpar}
 \CodeSubsection{\LookupConstantBegin}{\LookupConstantEnd}{../StaticEnv.ml}
@@ -705,38 +667,6 @@ Define $\newgenv$ as $\genv$ with the $\constantvalues$ map updated to bind $\na
 }
 \end{mathpar}
 \CodeSubsection{\AddGlobalConstantBegin}{\AddGlobalConstantEnd}{../StaticEnv.ml}
-
-\TypingRuleDef{AddLocalConstant}
-\hypertarget{def-addlocalconstant}{}
-The function
-\[
-\addlocalconstant(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\identifier}{\name} \aslsep
-  \overname{\literal}{\vv}) \typearrow
-  \overname{\staticenvs}{\newtenv}
-\]
-binds the identifier $\name$ to the literal $\vv$ in the local static environment component of the static environment $\tenv$,
-yielding the updated static environment $\newtenv$.
-
-\ExampleDef{Binding Local Storage Elements to Constants}
-The specification in \listingref{AddLocalConstant} is well-typed.
-Specifically, the type system
-binds \verb|z| to \verb|32| upon annotating \verb|constant z: integer {0..100} = foo(x);|,
-which enables it to infer that the statement
-\verb|let bv: bits(32) = Zeros{z};| is well-typed.
-
-\ASLListing{Binding constants to local storage elements}{AddLocalConstant}{\typingtests/TypingRule.AddLocalConstant.asl}
-
-\ProseParagraph
-Define $\newtenv$ as $\tenv$ with the global component updated such that its $\constantvalues$ map is updated to bind $\name$ to $\vv$.
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}{
-  \addlocalconstant(\tenv, \name, \vv) \typearrow \overname{(G^\tenv.\constantvalues[\name\mapsto\vv], L^\tenv)}{\newtenv}
-}
-\end{mathpar}
-\CodeSubsection{\AddLocalConstantBegin}{\AddLocalConstantEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{LookupImmutableExpr}
 \hypertarget{def-lookupimmutableexpr}{}
@@ -942,7 +872,7 @@ specification.
   \item \AllApplyCase{ok}
   \begin{itemize}
     \item $\vep$ contains the expression $\ve$ and \sideeffectsetterm\ $\vsese$;
-    \item $\ldk$ is either $\LDKConstant$ or $\LDKLet$;
+    \item $\ldk$ is $\LDKLet$;
     \item applying $\shouldrememberimmutableexpression$ to $\vsese$ yields $\True$;
     \item applying $\normalize$ to $\ve$ in $\tenv$ yields $\vep$\ProseOrTypeError;
     \item applying $\addlocalimmutableexpr$ to $\vx$ and $\ve$ yields $\newtenv$.
@@ -953,7 +883,7 @@ specification.
     \item \OneApplies
     \begin{itemize}
       \item $\vep$ is $\None$;
-      \item $\ldk$ is neither $\LDKConstant$ nor $\LDKLet$;
+      \item $\ldk$ is not $\LDKLet$;
       \item $\vep$ contains the expression $\ve$ and \sideeffectsetterm\ $\vsese$ and
             applying $\shouldrememberimmutableexpression$ to $\vsese$ yields $\True$;
     \end{itemize}
@@ -964,12 +894,11 @@ specification.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[ok]{
-  \ldk \in \{\LDKConstant, \LDKLet\}\\
   \shouldrememberimmutableexpression(\vsese) \typearrow \True\\
   \normalize(\tenv, \ve) \typearrow \vep \OrTypeError\\\\
   \addlocalimmutableexpr(\vx, \vep) \typearrow \newtenv
 }{
-  \addimmutableexpression(\tenv, \ldk, \overname{\langle\ve, \vsese\rangle}{\veopt}, \vx) \typearrow \newtenv
+  \addimmutableexpression(\tenv, \overname{\LDKLet}{\ldk}, \overname{\langle\ve, \vsese\rangle}{\veopt}, \vx) \typearrow \newtenv
 }
 \end{mathpar}
 
@@ -977,7 +906,7 @@ specification.
 \inferrule[fail]{
   {
     \begin{array}{ll}
-      \ldk \not\in \{\LDKConstant, \LDKLet\} & \lor\\
+      \ldk \neq \LDKLet & \lor\\
       \veopt = \None & \lor\\
       \veopt = \langle\ve, \vsese\rangle \land \shouldrememberimmutableexpression(\vsese) \typearrow \False
     \end{array}

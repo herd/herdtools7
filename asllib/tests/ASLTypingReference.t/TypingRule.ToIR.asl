@@ -1,8 +1,8 @@
 func main() => integer
 begin
                                 // to_ir of rhs expression
-    constant ONE = 1;           // 1
-    var o = ONE;                // 1
+    let ONE = 1;                // 1
+    var o = ONE;                // ONE
     - = 5.0;                    // Top
 
     let x = 3;                  // 3

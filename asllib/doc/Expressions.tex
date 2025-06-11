@@ -172,11 +172,6 @@ All of the variable expressions in \listingref{expressions-evar}
 are well-typed.
 \ASLListing{Variable expressions}{expressions-evar}{\typingtests/TypingRule.EVar.asl}
 
-The type system annotates the expression \verb|LOCAL_CONSTANT| as the literal for \verb|7|,
-since it is declared as a \verb|constant|, whereas the expression \verb|var_x|
-on the right-hand-side of the assignment \verb|var y = var_x;| is annotated as \verb|var_x|,
-since \verb|var_x| is not declared as a \verb|constant|.
-
 The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
 \ASLListing{An undefined variable}{expressions-evar-undefined}{\typingtests/TypingRule.EVar.undefined.asl}
 
@@ -186,23 +181,11 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
   \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
   \item \OneApplies
   \begin{itemize}
-    \item \AllApplyCase{local\_constant}
-    \begin{itemize}
-    \item $\vx$ is bound to the type $\vt$ and local declaration keyword $\LDKConstant$
-          via the $\localstoragetypes$ map of the local environment component of $\tenv$;
-    \item $\vx$ is bound to the literal $\vv$ via the $\constantvalues$ map of the local environment of $\tenv$;
-    \item define $\newe$ as the literal expression for $\vv$, that is $\eliteral{\vv}$;
-    \item define $\vses$ as the empty set.
-    \end{itemize}
-
-    \item \AllApplyCase{local\_non\_constant}
+    \item \AllApplyCase{local}
     \begin{itemize}
     \item $\vx$ is bound to the type $\vt$ and local declaration keyword $k$
           via the \\
           $\localstoragetypes$ map of the local environment component of $\tenv$;
-    \item either $k$ is different from $\LDKConstant$ or
-          $\vx$ is not bound in the \\
-          $\constantvalues$ map of the local environment of $\tenv$;
     \item define $\newe$ as $\ve$;
     \item define $\vses$ as the singleton set for the \ReadLocalTerm\ for $\vx$ the \timeframeterm\ of
           $k$ ($\timeframeofldk$) and the immutability status of $k$ ($\ldkisimmutable$).
@@ -238,18 +221,8 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[local\_constant]{
-  L^\tenv.\localstoragetypes(\vx) = (\vt, \LDKConstant)\\
-  L^\tenv.\constantvalues(\vx) = \vv
-}{
-  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\eliteral{\vv}}{\newe}, \overname{\emptyset}{\vses})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[local\_non\_constant]{
+\inferrule[local]{
   L^\tenv.\localstoragetypes(\vx) =  (\vt, k) \\
-  L^\tenv.\constantvalues(\vx) = \bot \lor k \neq \LDKConstant\\
   \vses \eqdef \{\ \ReadLocal(\vx, \timeframeofldk(k), \ldkisimmutable(k))\  \}
 }{
   \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\EVar(\vx)}{\newe}, \vses)

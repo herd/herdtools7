@@ -226,6 +226,7 @@ let stmts_from_string s =
     let allow_expression_elsif = false
     let allow_storage_discards = false
     let allow_hyphenated_pending_constraint = false
+    let allow_local_constants = false
   end) in
   let module Lexer = Lexer.Make(struct
     let allow_double_underscore = false

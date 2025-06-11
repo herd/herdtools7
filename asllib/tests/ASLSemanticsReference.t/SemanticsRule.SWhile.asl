@@ -6,7 +6,7 @@ end;
 
 func test_condition(i: integer) => boolean
 begin
-  constant limit = 3;
+  let limit = 3;
   println("testing ", i, " <= ", limit);
   return i <= limit;
 end;
