@@ -334,6 +334,7 @@ module NativeBackend (C : Config) = struct
             return_type;
             subprogram_type;
             recurse_limit;
+            qualifier = Some Pure;
             override = None;
             builtin = true;
           },

@@ -32,6 +32,7 @@ let build_consts () =
         parameters = [];
         return_type = Some integer;
         subprogram_type = ST_Function;
+        qualifier = None;
         override = None;
         builtin = false;
       }

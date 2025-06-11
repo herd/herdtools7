@@ -456,6 +456,7 @@ and bitfield_equal eq bf1 bf2 =
   | BitField_Type _, BitField_Simple _ ->
       false
 
+let qualifier_equal (q1 : func_qualifier option) q2 = Option.equal ( = ) q1 q2
 let var_ x = E_Var x |> add_dummy_annotation
 let binop op = map2_desc (fun e1 e2 -> E_Binop (op, e1, e2))
 let unop op = map_desc (fun e -> E_Unop (op, e))

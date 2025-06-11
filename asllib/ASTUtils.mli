@@ -299,6 +299,7 @@ val array_length_equal :
 
 val bitfield_equal : (expr -> expr -> bool) -> bitfield -> bitfield -> bool
 val bitwidth_equal : (expr -> expr -> bool) -> expr -> expr -> bool
+val qualifier_equal : func_qualifier option -> func_qualifier option -> bool
 
 (** {1 Transformers} *)
 

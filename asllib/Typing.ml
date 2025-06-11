@@ -242,8 +242,11 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
     in
     List.fold_left2 folder []
 
+  let func_version f =
+    match f.body with SB_Primitive _ -> V1 | SB_ASL s -> s.version
+
   (* Begin AddNewFunc *)
-  let add_new_func ~loc env name formals subpgm_type =
+  let add_new_func ~loc env name qualifier formals subpgm_type =
     match IMap.find_opt name env.global.overloaded_subprograms with
     | None ->
         let new_env = set_renamings name (ISet.singleton name) env in
@@ -258,9 +261,15 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
                  let other_func_sig, _ses =
                    IMap.find name' env.global.subprograms
                  in
+                 let qualifiers_differ =
+                   loc.version == V1
+                   && func_version other_func_sig == V1
+                   && not (qualifier_equal qualifier other_func_sig.qualifier)
+                 in
                  subprogram_types_clash subpgm_type
                    other_func_sig.subprogram_type
-                 && has_arg_clash env formal_types other_func_sig.args)
+                 && (qualifiers_differ
+                    || has_arg_clash env formal_types other_func_sig.args))
                other_names
         in
         let+ () =
@@ -3773,7 +3782,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let declare_one_func ~loc (func_sig : AST.func) ses_func_sig env =
     let env1, name' =
       best_effort (env, func_sig.name) @@ fun _ ->
-      Fn.add_new_func ~loc env func_sig.name func_sig.args
+      Fn.add_new_func ~loc env func_sig.name func_sig.qualifier func_sig.args
         func_sig.subprogram_type
     in
     let () =
@@ -4188,6 +4197,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   end = struct
     let signatures_match { desc = func1 } { desc = func2 } =
       let ty_equal = type_equal (fun _ _ -> false) in
+      let qualifiers_match = qualifier_equal func1.qualifier func2.qualifier in
       let args_match =
         list_equal
           (fun (id1, t1) (id2, t2) -> String.equal id1 id2 && ty_equal t1 t2)
@@ -4203,7 +4213,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         Option.equal ty_equal func1.return_type func2.return_type
       in
       String.equal func1.name func2.name
-      && args_match && parameters_match && returns_match
+      && qualifiers_match && args_match && parameters_match && returns_match
 
     let check_implementations_unique impls () =
       let rec scan l =

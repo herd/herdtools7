@@ -115,6 +115,7 @@ val desugar_case_stmt :
    ------------------------------------------------------------------------- *)
 
 type accessor_pair = {
+  is_readonly : bool;  (** getter is readonly *)
   getter : stmt;  (** getter body *)
   setter : stmt;  (** setter body *)
 }

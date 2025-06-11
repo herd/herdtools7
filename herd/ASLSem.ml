@@ -607,6 +607,7 @@ module Make (C : Config) = struct
       let subprogram_type =
         match returns with None -> ST_Procedure | _ -> ST_Function
       and body = SB_Primitive side_effecting
+      and qualifier = if side_effecting then None else Some Pure
       and recurse_limit = None
       and return_type = returns in
       ( {
@@ -618,6 +619,7 @@ module Make (C : Config) = struct
           subprogram_type;
           recurse_limit;
           builtin = true;
+          qualifier;
           override = None;
         }
         [@warning "-40-42"],
