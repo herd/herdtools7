@@ -12,7 +12,7 @@ type int_ext = Internal | External
 
 (* Change location ? *)
 type sd = Same | Different
-type dp = Addr | Data | Ctrl
+type dp = Addr | Data | Ctrl | Reg
 
 type node_dep =
   | DepAddr of AArch64_compile.reg
@@ -82,7 +82,7 @@ let dependency_reg = function
 let pp_direction = function Rr -> "Rr" | Wr -> "Wr" | Rm -> "R" | Wm -> "W"
 let pp_int_ext = function Internal -> "i" | External -> "e"
 let pp_sd = function Same -> "s" | Different -> "d"
-let pp_dp = function Addr -> "Addr" | Data -> "Data" | Ctrl -> "Ctrl"
+let pp_dp = function Addr -> "Addr" | Data -> "Data" | Ctrl -> "Ctrl" | Reg -> "Reg"
 let pp_annot = function AnnotNone -> "" | A -> "A" | L -> "L" | X -> "X"
 
 let pp_node_dep = function

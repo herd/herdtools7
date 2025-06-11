@@ -160,6 +160,7 @@ let compile_edge (st : A.state) (src : E.node_dep) (node : C.t) =
   | E.Dp (E.Addr, _, _, _), E.DepReg r -> [], E.DepAddr r, st
   | E.Dp (E.Data, _, _, _), E.DepReg r -> [], E.DepData r, st
   | E.Dp (E.Ctrl, _, _, _), E.DepReg r -> [], E.DepCtrl r, st
+  | E.Dp (E.Reg, _, _, _), E.DepReg r -> [], E.DepReg r, st
   | E.BasicDep _, dep -> [], dep, st
   | E.Iico i, _ -> i.E.compile_edge st src
   | _ ->

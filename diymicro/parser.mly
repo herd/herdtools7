@@ -12,7 +12,7 @@
 %token RR WR
 %token INT EXT
 %token SAME DIFFERENT
-%token ADDR DATA CTRL
+%token ADDR DATA CTRL REG
 
 %token COLON
 %token A L X
@@ -60,5 +60,6 @@ dir:
 dp:
     | ADDR { Edge.Addr }
     | DATA { Edge.Data }
-    | CTRL  { Edge.Ctrl  }
+    | CTRL { Edge.Ctrl }
+    | REG  { Edge.Reg }
 ;
