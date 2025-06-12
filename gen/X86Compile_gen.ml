@@ -27,7 +27,8 @@ struct
   let ppo _f k = k
 (******)
 
-  open X86
+  include X86
+  include C
 
   let next_reg x = alloc_reg x
 
@@ -112,7 +113,7 @@ struct
 
   let emit_access st _p init e = 
   (* collapse the value `v` in event `e` to integer *)
-  let value = Code.value_to_int e.C.v in
+  let value = Value.to_int e.C.v in
   match e.C.dir,e.C.loc with
   | None,_ -> Warn.fatal "TODO"
   | Some R,Data loc ->
@@ -137,7 +138,7 @@ struct
   let emit_exch st _p init er ew =
     let rA,st = next_reg st in
     rA,init,
-    pseudo  (emit_sta (Code.as_data er.C.loc) rA (Code.value_to_int ew.C.v)),
+    pseudo  (emit_sta (Code.as_data er.C.loc) rA (Value.to_int ew.C.v)),
     st
 
   let emit_rmw () st p init er ew  =
@@ -166,7 +167,7 @@ struct
   let do_check_load p st r e =
     let ok,st = A.ok_reg st in
     (fun k ->
-      Instruction (emit_cmp_int_ins r (Code.value_to_int e.C.v))::
+      Instruction (emit_cmp_int_ins r (Value.to_int e.C.v))::
       Instruction (emit_jne_ins (Label.last p))::
       Instruction (emit_inc ok)::
       k),

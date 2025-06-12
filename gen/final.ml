@@ -22,6 +22,22 @@ module type Config = sig
   val variant : Variant_gen.t -> bool
 end
 
+module FaultSetElm = struct
+  type t = string option * bool option * string
+
+  let compare (lhs_label, lhs_bool, lhs_var) (rhs_label, rhs_bool, rhs_var) =
+    let label =
+        Option.compare String.compare lhs_label rhs_label in
+    let boolean =
+        Option.compare Bool.compare lhs_bool rhs_bool in
+    match label, boolean with
+    | 0, 0 -> String.compare lhs_var rhs_var
+    | 0, boolean -> boolean
+    | label, _ -> label
+end
+
+module FaultSet = MySet.Make(FaultSetElm)
+
 module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
   sig
 
@@ -40,12 +56,12 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     val add_final_v :
         Code.proc -> C.A.arch_reg -> IntSet.t -> fenv -> fenv
     val add_final_pte :
-        Code.proc -> C.A.arch_reg -> C.A.PteVal.t -> fenv -> fenv
+        Code.proc -> C.A.arch_reg -> C.A.Value.pte -> fenv -> fenv
     val add_final_loc :
         Code.proc -> C.A.arch_reg -> string -> fenv -> fenv
     val cons_int :   C.A.location -> int -> fenv -> fenv
     val cons_vec : C.A.location -> int array -> fenv -> fenv
-    val cons_pteval :   C.A.location -> C.A.PteVal.t -> fenv -> fenv
+    val cons_pteval :   C.A.location -> C.A.Value.pte -> fenv -> fenv
     val cons_int_set :  (C.A.location * IntSet.t) -> fenv -> fenv
     val add_int_sets : fenv -> (C.A.location * IntSet.t) list -> fenv
 
@@ -67,14 +83,18 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       Code.proc -> C.A.arch_reg option -> C.C.node ->
       eventmap * fenv -> eventmap * fenv
 
-    type faults = (Proc.t * StringSet.t) list
+    (* - Proc.t: procedure nunmber
+       - FaultSet.t, i.e. set of optional label
+       and a boolean for if the memory event will fault *)
+    type faults = (Proc.t * FaultSet.t) list
     type final
 
     val check : fenv -> faults -> final
     val observe : fenv -> faults -> final
     val run : C.C.event list list -> C.A.location C.C.EventMap.t -> faults -> final
 
-    val dump_final : out_channel ->  final -> unit
+    val dump_final : out_channel -> final -> unit
+    val dump_state : fenv -> string
 
 (* Complement init environemt *)
     val extract_ptes : fenv -> C.A.location list
@@ -85,8 +105,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     let do_kvm = Variant_gen.is_kvm O.variant
 
     (* TODO change the type? *)
-    type v = I of Code.v | S of string | P of C.A.PteVal.t
-    let pte_def = P (C.A.PteVal.default "*")
+    type v = I of C.C.Value.v | S of string | P of C.A.Value.pte
+    let pte_def = P (C.A.Value.default_pte "*")
     let () = ignore pte_def
 
     let looks_like_array = function
@@ -102,7 +122,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           let compare v1 v2 = match v1,v2 with
           | I i1,I i2 -> compare i1 i2
           | S s1,S s2 -> String.compare s1 s2
-          | P p1,P p2 -> C.A.PteVal.compare p1 p2
+          | P p1,P p2 -> C.A.Value.pte_compare p1 p2
           | ((P _|S _),I _)
           | (P _,S _)
             -> -1
@@ -114,7 +134,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     type fenv = (C.A.location * vset) list
     type eventmap = C.A.location C.C.EventMap.t
 
-    let show_in_cond =
+    let show_in_cond n =
       if O.optcond then
         let valid_edge m =
           let e = m.C.C.edge in
@@ -130,14 +150,19 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
               end
           |Insert _|Store|Node _ -> false
           | Id -> assert false in
-        (fun n ->
-          let p = C.C.find_non_pseudo_prev n.C.C.prev in
-          valid_edge p || valid_edge n)
-      else
-        (fun _ -> true)
+        let is_pte_event m =
+            let open C.E in
+            match m.C.C.evt.C.C.bank with
+            | Code.Pte -> true
+            | _ -> false in
+        let check_value m = Option.value m.C.C.evt.C.C.check_value ~default:false in
+        let p = C.C.find_non_pseudo_prev n.C.C.prev in
+          (* TODO: why need to check the previous node `p` ? *)
+          not (is_pte_event n) && (check_value n) && (valid_edge p || valid_edge n)
+        else true
 
     let intset2vset is =
-      IntSet.fold (fun v k -> VSet.add (I (Code.value_of_int v)) k) is VSet.empty
+      IntSet.fold (fun v k -> VSet.add (I (C.C.Value.from_int v)) k) is VSet.empty
 
     let add_final_v p r v finals = (C.A.of_reg p r,intset2vset v)::finals
 
@@ -147,7 +172,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       let loc = C.A.of_reg p r in
       (loc,VSet.singleton (S v))::finals
 
-    let cons_int loc i fs = (loc,VSet.singleton (I (Code.value_of_int i)))::fs
+    let cons_int loc i fs = (loc,VSet.singleton (I (C.C.Value.from_int i)))::fs
 
     let cons_vec loc t fs =
       let vec = Code.add_vector O.hexa (Array.to_list t) in
@@ -183,17 +208,17 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                  | [] -> assert false
                  | v0::_ -> v0 in
                 let vec = v0
-                 |> List.map Code.value_to_int 
+                 |> List.map C.C.Value.to_int
                  |> Code.add_vector O.hexa in
                 Some (S vec)
             | Code.Tag ->
-                Some (S (Code.add_tag (Code.as_data evt.C.C.loc) (Code.value_to_int evt.C.C.v)))
+                Some (S (Code.add_tag (Code.as_data evt.C.C.loc) (C.C.Value.to_int evt.C.C.v)))
             | Code.Pte ->
-                Some (P evt.C.C.pte)
+                Some (P (C.C.Value.to_pte evt.C.C.v))
             end
         | Some Code.W ->
            assert (evt.C.C.bank = Code.Ord || evt.C.C.bank = Code.CapaSeal) ;
-           Some (I ( evt.C.C.v |> Code.value_to_int |> prev_value |> Code.value_of_int ) )
+           Some (I ( evt.C.C.v |> C.C.Value.to_int |> prev_value |> C.C.Value.from_int ) )
         | None -> None in
         if show_in_cond n then match v with
         | Some v ->
@@ -204,8 +229,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
              | Code.VecReg _ ->
                 begin match evt.C.C.vecreg with
                 | _::vs ->
-                   List.map (fun v -> S 
-                   ( v |> List.map Code.value_to_int
+                   List.map (fun v -> S
+                   ( v |> List.map C.C.Value.to_int
                      |> Code.add_vector O.hexa ) ) vs
                 | _ -> assert false
                 end
@@ -213,6 +238,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
            let m = C.C.EventMap.add n.C.C.evt (C.A.of_reg p r) m
            and fs =
              try
+                (* TODO what is this ?? *)
                add_to_fs r v
                  (List.fold_right2 add_to_fs (get_friends r) vs fs)
              with Invalid_argument _ ->
@@ -224,11 +250,11 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         else finals
     | None -> finals
 
-    type faults = (Proc.t * StringSet.t) list
+    type faults = (Proc.t * FaultSet.t) list
 
     type cond_final =
       | Exists of fenv
-      | Forall of (C.A.location * Code.v) list list
+      | Forall of (C.A.location * C.C.Value.v) list list
       | Locations of C.A.location list
 
     type final = cond_final * faults
@@ -242,16 +268,17 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 (* Dumping *)
     open Printf
 
+
     let dump_val = function
       | I i ->
-          let i = Code.value_to_int i in
+          let i = C.C.Value.to_int i in
           if O.hexa then sprintf "0x%x" i
           else sprintf "%i" i
       | S s -> s
-      | P p -> C.A.PteVal.pp p
+      | P p -> C.A.Value.pp_pte p
 
     let dump_tag = function
-      | I i -> Code.value_to_int i
+      | I i -> C.C.Value.to_int i
       | _ -> Warn.fatal "Tags can only be of type integer"
 
     let dump_atom r v = match Misc.tr_atag (C.A.pp_location r) with
@@ -277,48 +304,55 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                  sprintf "(%s)" pp)
            fs)
 
-    let dump_one_flt p x =  sprintf "fault (%s,%s)" (Proc.pp p) x
+    let dump_one_flt proc (opt_label, opt_bool, var) =
+      match opt_label, opt_bool with
+        | Some label, Some boolean
+            -> sprintf "%sfault (%s:%s,%s)"
+                (if boolean then "" else "~")
+                (Proc.pp proc) label var
+        | None, None -> sprintf "fault (%s,%s)" (Proc.pp proc) var
+        | _ -> Warn.fatal "fault condition is incorrect."
 
-    let dump_flt sep (p,xs) = StringSet.pp_str sep (dump_one_flt p) xs
+    let dump_flt sep (p,xs) = FaultSet.pp_str sep (dump_one_flt p) xs
 
-    let dump_flts =
-      if do_kvm then fun _ ->   ""
-      else fun flts ->
-        let pp = List.map (dump_flt " \\/ ") flts in
-        let pp = String.concat " \\/ " pp in
-        match flts with
-        | [] -> ""
-        | [_,xs] when StringSet.is_singleton xs -> "~" ^ pp
-        | _ -> sprintf "~(%s)" pp
+    let dump_flts flts =
+      if do_kvm then
+        List.map (dump_flt " /\\ ") flts
+        |> String.concat " /\\ "
+      else
+       (* The following are for memtag etc *)
+       let pp = List.map (dump_flt " \\/ ") flts in
+       let pp = String.concat " \\/ " pp in
+       match flts with
+       | [] -> ""
+       | [_,xs] when FaultSet.is_singleton xs -> "~" ^ pp
+       | _ -> sprintf "~(%s)" pp
 
-    let dump_locations chan = function
-      | [] -> ()
-      | locs -> fprintf chan "locations [%s]\n" (String.concat " " locs)
+    let faults_to_string flts =
+        flts |> List.map
+        (fun (p,xs) ->
+          FaultSet.map_list
+            (fun (_,_,loc) -> sprintf "fault (P%d,%s);" p loc)
+        xs)
+        |> List.flatten
+
+    let dump_locations chan locs =
+      fprintf chan "locations [%s]\n" (String.concat " " locs)
 
     let dump_final chan (f,flts) =
-      let loc_flts =
-        if do_kvm then
-          List.fold_right
-            (fun (p,xs) ->
-              StringSet.fold
-                (fun x k -> sprintf "%s;" (dump_one_flt p x)::k)
-                xs)
-            flts []
-        else [] in
+      let loc_flts = if do_kvm then faults_to_string flts else [] in
       match f with
       | Exists fs ->
-          dump_locations chan loc_flts ;
           let ppfs = dump_state fs
           and ppflts = dump_flts flts in
           let cc = match ppfs,ppflts with
           | "","" -> ""
-          | "",_ -> ppflts
-          | _,"" -> sprintf "(%s)" ppfs
+          | "",_ -> "(" ^ ppflts ^ ")"
+          | _,"" -> "(" ^ ppfs ^ ")"
           | _,_ -> sprintf "(%s) /\\ %s" ppfs ppflts in
           if cc <> "" then
             fprintf chan "%sexists %s\n" (if !Config.neg then "~" else "") cc
       | Forall ffs ->
-          dump_locations chan loc_flts ;
           fprintf chan "forall\n" ;
           fprintf chan "%s%s\n" (Run.dump_cond ffs)
             (match dump_flts flts with
