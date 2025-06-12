@@ -15,10 +15,10 @@ type sd = Same | Different
 type dp = Addr | Data | Ctrl | Reg
 
 type node_dep =
-  | DepAddr of AArch64_compile.reg
-  | DepData of AArch64_compile.reg
-  | DepCtrl of AArch64_compile.reg
-  | DepReg of AArch64_compile.reg
+  | DepAddr of AArch64_compile.reg * int option
+  | DepData of AArch64_compile.reg * int option
+  | DepCtrl of AArch64_compile.reg * int option
+  | DepReg of AArch64_compile.reg * int option
   | DepNone
 
 type iico = {
@@ -71,10 +71,10 @@ let list_iico_edges () =
   Hashtbl.iter (fun k _ -> Printf.printf "iico[%s]\n" k) iico_ht
 
 let dependency_reg = function
-  | DepAddr r -> r
-  | DepData r -> r
-  | DepCtrl r -> r
-  | DepReg r -> r
+  | DepAddr (r, _) -> r
+  | DepData (r, _) -> r
+  | DepCtrl (r, _) -> r
+  | DepReg (r, _) -> r
   | DepNone -> Warn.fatal "Unable to get register of dependency DepNone"
 
 (** Pretty printers *)
@@ -82,14 +82,22 @@ let dependency_reg = function
 let pp_direction = function Rr -> "Rr" | Wr -> "Wr" | Rm -> "R" | Wm -> "W"
 let pp_int_ext = function Internal -> "i" | External -> "e"
 let pp_sd = function Same -> "s" | Different -> "d"
-let pp_dp = function Addr -> "Addr" | Data -> "Data" | Ctrl -> "Ctrl" | Reg -> "Reg"
+
+let pp_dp = function
+  | Addr -> "Addr"
+  | Data -> "Data"
+  | Ctrl -> "Ctrl"
+  | Reg -> "Reg"
+
 let pp_annot = function AnnotNone -> "" | A -> "A" | L -> "L" | X -> "X"
 
-let pp_node_dep = function
-  | DepAddr r -> "Addr " ^ AArch64_compile.pp_reg r
-  | DepData r -> "Data " ^ AArch64_compile.pp_reg r
-  | DepCtrl r -> "Ctrl " ^ AArch64_compile.pp_reg r
-  | DepReg r -> "Reg " ^ AArch64_compile.pp_reg r
+let pp_node_dep =
+  let pp_int_option = function None -> "" | Some v -> "=" ^ string_of_int v in
+  function
+  | DepAddr (r, v) -> "Addr " ^ AArch64_compile.pp_reg r ^ pp_int_option v
+  | DepData (r, v) -> "Data " ^ AArch64_compile.pp_reg r ^ pp_int_option v
+  | DepCtrl (r, v) -> "Ctrl " ^ AArch64_compile.pp_reg r ^ pp_int_option v
+  | DepReg (r, v) -> "Reg " ^ AArch64_compile.pp_reg r ^ pp_int_option v
   | DepNone -> "None"
 
 let pp_edge = function

@@ -11,28 +11,29 @@ end
 module Cas = struct
   let compileRnM ok =
    fun st dep ->
-    let src_reg =
+    let src_reg, v_opt =
       match dep with
-      | DepReg r -> r
+      | DepReg (r, v) -> r, v
       | _ -> Warn.fatal "Event has not forwarded any register"
     in
     let rs, st = A.next_reg st in
     let rt, st = A.next_reg st in
     let loc, rn, st = A.assigned_next_loc st in
 
-    let r_eor, st = A.next_reg st in
+    let ins_zero, reg_zero, st = A.calc_value st 0 src_reg v_opt in
     let m_addr, st = A.next_reg st in
     let rcheck, st = A.next_reg st in
     let dst_reg, st = A.next_reg st in
 
     (* For srcM, that allows to check that STR is before CAS *)
     let m_initial = if ok then 0 else 1 in
+    let final_expected_val = if ok then 2 else 1 in
     let st = A.set_initial st loc m_initial in
-    let st = A.add_condition st rcheck (if ok then 2 else 1) in
+    let st = A.add_condition st rcheck final_expected_val in
 
     let ins =
-      A.pseudo
-        [A.do_eor r_eor src_reg src_reg; A.do_add64 A.vloc m_addr rn r_eor]
+      ins_zero
+      @ A.pseudo [A.do_add64 A.vloc m_addr rn reg_zero]
       @ [A.mov rt 2]
       @ A.pseudo
           [
@@ -41,13 +42,13 @@ module Cas = struct
             A.do_ldr A.vloc dst_reg rn;
           ]
     in
-    ins, DepReg dst_reg, st
+    ins, DepReg (dst_reg, Some final_expected_val), st
 
   let compile src dst ok =
     let cas_base st dep =
-      let src_reg =
+      let src_reg, _ =
         match dep with
-        | DepReg r -> r
+        | DepReg (r, v) -> r, v
         | _ -> Warn.fatal "Event has not forwarded any register"
       in
       let rs, st = A.next_reg st in
@@ -57,8 +58,9 @@ module Cas = struct
 
       (* For srcM, that allows to check that STR is before CAS *)
       let m_initial = if ok = (src <> `M) then 0 else 1 in
+      let final_expected_val = if ok then 2 else 1 in
       let st = A.set_initial st loc m_initial in
-      let st = A.add_condition st rcheck (if ok then 2 else 1) in
+      let st = A.add_condition st rcheck final_expected_val in
 
       let pre_ins, st =
         match src with
@@ -91,10 +93,12 @@ module Cas = struct
 
       let post_ins, st, dst_dep =
         match dst with
-        | `Rs -> [], st, DepReg rs
+        | `Rs -> [], st, DepReg (rs, None)
         | `M ->
             let rn_reg, st = A.next_reg st in
-            A.pseudo [A.do_ldr A.vloc rn_reg rn], st, DepReg rn_reg
+            ( A.pseudo [A.do_ldr A.vloc rn_reg rn],
+              st,
+              DepReg (rn_reg, Some final_expected_val) )
       in
       pre_ins @ ins @ post_ins, dst_dep, st
     in
@@ -112,41 +116,44 @@ end
 module Csel = struct
   let compile src ok =
    fun st dep ->
-    let src_reg =
+    let src_reg, v_opt =
       match dep with
-      | DepReg r -> r
+      | DepReg (r, v) -> r, v
       | _ -> Warn.fatal "Event has not forwarded any register"
     in
 
-    let comp, st = A.next_reg st in
-    let rn, st = A.next_reg st in
-    let rm, st = A.next_reg st in
+    let cmp_ins, cmp, st =
+      if src = `cmp then A.calc_value st 1 src_reg v_opt
+      else
+        let cmp, st = A.next_reg st in
+        [A.mov cmp 1], cmp, st
+    in
+    let rn_ins, rn, st =
+      if src = `Rn then A.calc_value st 1 src_reg v_opt
+      else
+        let rn, st = A.next_reg st in
+        [A.mov rn 1], rn, st
+    in
+    let rm_ins, rm, st =
+      if src = `Rm then A.calc_value st 2 src_reg v_opt
+      else
+        let rm, st = A.next_reg st in
+        [A.mov rm 2], rm, st
+    in
     let rd, st = A.next_reg st in
     let rcheck, st = A.next_reg st in
 
     let compared_value = if ok then 1 else 0 in
-    let st = A.add_condition st rcheck (if ok then 1 else 2) in
-
-    let pre_ins, st =
-      match src with
-      | `cmp -> A.pseudo [A.do_eor comp src_reg src_reg], st
-      | `Rn -> A.pseudo [A.do_eor rn src_reg src_reg], st
-      | `Rm -> A.pseudo [A.do_eor rm src_reg src_reg], st
-    in
+    let final_expected_val = if ok then 1 else 2 in
+    let st = A.add_condition st rcheck final_expected_val in
 
     let ins =
-      A.pseudo
-        [
-          A.addi comp comp 1;
-          A.addi rn rn 1;
-          A.addi rm rm 2;
-          A.cmpi comp compared_value;
-          A.do_csel A.vloc rd rn rm;
-        ]
+      cmp_ins @ rn_ins @ rm_ins
+      @ A.pseudo [A.cmpi cmp compared_value; A.do_csel A.vloc rd rn rm]
       @ [A.mov_reg rcheck rd]
     in
 
-    pre_ins @ ins, DepReg rd, st
+    ins, DepReg (rd, Some final_expected_val), st
 
   let repr src ok =
     "csel:"

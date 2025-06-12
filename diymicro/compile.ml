@@ -33,14 +33,13 @@ let split_by_proc (cycle : C.t) =
   in
   split_by_proc first_node
 
-let add_ctrl_dep st (r : A.reg) ins =
+(** Add a control dep from reg r. Optionally v_opt specifies the known value of
+    r *)
+let add_ctrl_dep st (r : A.reg) v_opt ins =
   let lbl = Label.next_label "DCTRL" in
-  let reg_zero, st = A.next_reg st in
+  let ins_zero, reg_zero, st = A.calc_value st 0 r v_opt in
   let hins, tins = match ins with [] -> A.Nop, [] | e :: q -> e, q in
-  let ins =
-    A.pseudo [A.do_eor reg_zero r r; A.cbnz reg_zero lbl]
-    @ [A.Label (lbl, hins)]
-  in
+  let ins = ins_zero @ A.pseudo [A.cbnz reg_zero lbl] @ [A.Label (lbl, hins)] in
   ins @ tins, st
 
 let compile_event st (src : E.node_dep) event =
@@ -73,22 +72,21 @@ let compile_event st (src : E.node_dep) event =
     match event.C.direction, event.C.annot, src with
     | E.Rm, _, E.DepNone ->
         let dst, st = A.next_reg st in
-        [annot_ldr event.C.annot dst event_reg], E.DepReg dst, st
-    | E.Rm, _, E.DepAddr r ->
-        let reg_zero, st = A.next_reg st in
+        let ins = [annot_ldr event.C.annot dst event_reg] in
+        ins, E.DepReg (dst, event.C.value), st
+    | E.Rm, _, E.DepAddr (r, v_opt) ->
+        let calc_zero_ins, reg_zero, st = A.calc_value st 0 r v_opt in
         let dst, st = A.next_reg st in
         let ins =
-          (*TODO: use the correct variants*)
-          A.pseudo [A.do_eor reg_zero r r]
-          @ [annot_ldr_idx event.C.annot dst event_reg reg_zero]
+          calc_zero_ins @ [annot_ldr_idx event.C.annot dst event_reg reg_zero]
         in
-        ins, E.DepReg dst, st
-    | E.Rm, _, E.DepCtrl r ->
+        ins, E.DepReg (dst, event.C.value), st
+    | E.Rm, _, E.DepCtrl (r, v_opt) ->
         let dst, st = A.next_reg st in
         let ins, st =
-          add_ctrl_dep st r [annot_ldr event.C.annot dst event_reg]
+          add_ctrl_dep st r v_opt [annot_ldr event.C.annot dst event_reg]
         in
-        ins, E.DepReg dst, st
+        ins, E.DepReg (dst, event.C.value), st
     | E.Wm, _, E.DepNone ->
         let reg_value, st = A.next_reg st in
         let ins =
@@ -97,44 +95,42 @@ let compile_event st (src : E.node_dep) event =
             annot_str event.C.annot reg_value event_reg;
           ]
         in
-        ins, E.DepReg event_reg, st
-    | E.Wm, _, (E.DepData r | E.DepReg r) ->
-        let reg_value, st = A.next_reg st in
-        let ins =
-          A.pseudo
-            [
-              A.do_eor reg_value r r;
-              A.addi reg_value reg_value (Utils.unsome event.C.value);
-            ]
-          @ [annot_str event.C.annot reg_value event_reg]
+        ins, E.DepReg (event_reg, None), st
+    | E.Wm, _, (E.DepData (r, v_opt) | E.DepReg (r, v_opt)) ->
+        let ins_val, reg_value, st =
+          A.calc_value st (Utils.unsome event.C.value) r v_opt
         in
-        ins, E.DepReg event_reg, st
-    | E.Wm, _, E.DepAddr r ->
-        let reg_zero, st = A.next_reg st in
+        let ins = ins_val @ [annot_str event.C.annot reg_value event_reg] in
+        ins, E.DepReg (event_reg, None), st
+    | E.Wm, _, E.DepAddr (r, v_opt) ->
+        let ins_zero, reg_zero, st = A.calc_value st 0 r v_opt in
         let reg_value, st = A.next_reg st in
         let ins =
-          A.pseudo [A.do_eor reg_zero r r]
+          ins_zero
           @ [A.mov reg_value (Utils.unsome event.C.value)]
           @ [annot_str_idx event.C.annot reg_value event_reg reg_zero]
         in
-        ins, E.DepReg event_reg, st
-    | E.Wm, _, E.DepCtrl r ->
+        ins, E.DepReg (event_reg, None), st
+    | E.Wm, _, E.DepCtrl (r, v_opt) ->
         let reg_value, st = A.next_reg st in
         let ins, st =
-          add_ctrl_dep st r
+          add_ctrl_dep st r v_opt
             [
               A.mov event_reg (Utils.unsome event.C.value);
               annot_str event.C.annot reg_value event_reg;
             ]
         in
-        ins, E.DepReg event_reg, st
+        ins, E.DepReg (event_reg, None), st
     | E.Rr, E.AnnotNone, E.DepNone ->
+        (* TODO: not sure of that *)
         let dst, st = A.next_reg st in
-        [A.mov_reg dst event_reg], E.DepReg dst, st
+        [A.mov_reg dst event_reg], E.DepReg (dst, None), st
     | E.Wr, E.AnnotNone, E.DepNone ->
+        (* TODO: not sure of that *)
         if event.C.annot <> E.AnnotNone then
           Warn.fatal "Invalid annot %s for Wr" (E.pp_annot event.C.annot);
-        [A.mov event_reg (Utils.unsome event.C.value)], E.DepReg event_reg, st
+        let ins = [A.mov event_reg (Utils.unsome event.C.value)] in
+        ins, E.DepReg (event_reg, event.C.value), st
     | (E.Wr | E.Rr), E.AnnotNone, dep -> [], dep, st (* just carry on *)
     | dir, E.AnnotNone, _ ->
         Warn.fatal "Direction %s incompatible with dependency %s"
@@ -157,10 +153,10 @@ let compile_event st (src : E.node_dep) event =
 let compile_edge (st : A.state) (src : E.node_dep) (node : C.t) =
   match node.C.edge, src with
   | (E.Rf _ | E.Fr _ | E.Ws _ | E.Po _), _ -> [], E.DepNone, st
-  | E.Dp (E.Addr, _, _, _), E.DepReg r -> [], E.DepAddr r, st
-  | E.Dp (E.Data, _, _, _), E.DepReg r -> [], E.DepData r, st
-  | E.Dp (E.Ctrl, _, _, _), E.DepReg r -> [], E.DepCtrl r, st
-  | E.Dp (E.Reg, _, _, _), E.DepReg r -> [], E.DepReg r, st
+  | E.Dp (E.Addr, _, _, _), E.DepReg (r, v_opt) -> [], E.DepAddr (r, v_opt), st
+  | E.Dp (E.Data, _, _, _), E.DepReg (r, v_opt) -> [], E.DepData (r, v_opt), st
+  | E.Dp (E.Ctrl, _, _, _), E.DepReg (r, v_opt) -> [], E.DepCtrl (r, v_opt), st
+  | E.Dp (E.Reg, _, _, _), E.DepReg (r, v_opt) -> [], E.DepReg (r, v_opt), st
   | E.BasicDep _, dep -> [], dep, st
   | E.Iico i, _ -> i.E.compile_edge st src
   | _ ->
