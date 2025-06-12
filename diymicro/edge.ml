@@ -59,6 +59,7 @@ let edge_direction = function
   | Iico i -> i.direction
 
 let edge_location = function
+  | BasicDep ((Rr | Wr), (Rm | Wm)) -> Different
   | Rf _ | Fr _ | Ws _ | BasicDep _ -> Same
   | Po (sd, _, _) | Dp (_, sd, _, _) -> sd
   | Iico i -> i.sd

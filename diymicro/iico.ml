@@ -210,17 +210,6 @@ let cartesian3 l1 l2 l3 =
     l1
 
 let init () =
-  add_iico (* Example edge *)
-    {
-      repr = "pod:rr";
-      compile_edge = (fun st _ -> [], DepNone, st);
-      direction = Rm, Rm;
-      ie = Internal;
-      sd = Different;
-      significant_source = false;
-      significant_dest = false;
-    };
-
   List.iter
     (fun (ok, src, dst) ->
       add_iico
@@ -243,7 +232,7 @@ let init () =
           compile_edge = Csel.compile src ok;
           direction = Rr, Wr;
           ie = Internal;
-          sd = Different;
+          sd = Same;
           significant_source = false;
           significant_dest = false;
         })
@@ -257,7 +246,7 @@ let init () =
           compile_edge = Swp.compile src dst;
           direction = Rr, Wr;
           ie = Internal;
-          sd = Different;
+          sd = Same;
           significant_source = false;
           significant_dest = false;
         })

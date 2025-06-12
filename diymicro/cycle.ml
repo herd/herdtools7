@@ -44,9 +44,10 @@ let pp_event evt =
   ^ Edge.pp_direction evt.direction
   ^
   match evt.direction with
-  | Edge.Rr | Edge.Wr -> "  "
+  | Edge.Rr | Edge.Wr -> "   "
   | _ -> (
-      (match evt.location with Some l -> A.pp_location l | None -> "*")
+      ":"
+      ^ (match evt.location with Some l -> A.pp_location l | None -> "*")
       ^ " "
       ^ match evt.value with Some v -> string_of_int v | None -> "*")
 
