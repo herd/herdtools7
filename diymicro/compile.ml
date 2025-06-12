@@ -70,24 +70,26 @@ let compile_event st (src : E.node_dep) event =
   in
   let ins, dst_dep, st =
     match event.C.direction, event.C.annot, src with
-    | E.Rm, _, E.DepNone ->
+    | (E.Rm true | E.Wm true), _, _ ->
+        [], src, st (* An edge has claimed to compile this event *)
+    | E.Rm false, _, E.DepNone ->
         let dst, st = A.next_reg st in
         let ins = [annot_ldr event.C.annot dst event_reg] in
         ins, E.DepReg (dst, event.C.value), st
-    | E.Rm, _, E.DepAddr (r, v_opt) ->
+    | E.Rm false, _, E.DepAddr (r, v_opt) ->
         let calc_zero_ins, reg_zero, st = A.calc_value st 0 r v_opt in
         let dst, st = A.next_reg st in
         let ins =
           calc_zero_ins @ [annot_ldr_idx event.C.annot dst event_reg reg_zero]
         in
         ins, E.DepReg (dst, event.C.value), st
-    | E.Rm, _, E.DepCtrl (r, v_opt) ->
+    | E.Rm false, _, E.DepCtrl (r, v_opt) ->
         let dst, st = A.next_reg st in
         let ins, st =
           add_ctrl_dep st r v_opt [annot_ldr event.C.annot dst event_reg]
         in
         ins, E.DepReg (dst, event.C.value), st
-    | E.Wm, _, E.DepNone ->
+    | E.Wm false, _, E.DepNone ->
         let reg_value, st = A.next_reg st in
         let ins =
           [
@@ -96,13 +98,13 @@ let compile_event st (src : E.node_dep) event =
           ]
         in
         ins, E.DepReg (event_reg, None), st
-    | E.Wm, _, (E.DepData (r, v_opt) | E.DepReg (r, v_opt)) ->
+    | E.Wm false, _, (E.DepData (r, v_opt) | E.DepReg (r, v_opt)) ->
         let ins_val, reg_value, st =
           A.calc_value st (Utils.unsome event.C.value) r v_opt
         in
         let ins = ins_val @ [annot_str event.C.annot reg_value event_reg] in
         ins, E.DepReg (event_reg, None), st
-    | E.Wm, _, E.DepAddr (r, v_opt) ->
+    | E.Wm false, _, E.DepAddr (r, v_opt) ->
         let ins_zero, reg_zero, st = A.calc_value st 0 r v_opt in
         let reg_value, st = A.next_reg st in
         let ins =
@@ -111,7 +113,7 @@ let compile_event st (src : E.node_dep) event =
           @ [annot_str_idx event.C.annot reg_value event_reg reg_zero]
         in
         ins, E.DepReg (event_reg, None), st
-    | E.Wm, _, E.DepCtrl (r, v_opt) ->
+    | E.Wm false, _, E.DepCtrl (r, v_opt) ->
         let reg_value, st = A.next_reg st in
         let ins, st =
           add_ctrl_dep st r v_opt
@@ -158,7 +160,21 @@ let compile_edge (st : A.state) (src : E.node_dep) (node : C.t) =
   | E.Dp (E.Ctrl, _, _, _), E.DepReg (r, v_opt) -> [], E.DepCtrl (r, v_opt), st
   | E.Dp (E.Reg, _, _, _), E.DepReg (r, v_opt) -> [], E.DepReg (r, v_opt), st
   | E.BasicDep _, dep -> [], dep, st
-  | E.Iico i, _ -> i.E.compile_edge st src
+  | E.Iico i, _ ->
+      let src_event = node.C.source_event in
+      let dst_event = node.C.next.C.source_event in
+      let src_event_data =
+        match src_event.C.direction with
+        | E.Rm true | E.Wm true -> Some (C.get_event_data src_event)
+        | _ -> None
+      in
+      let dst_event_data =
+        match dst_event.C.direction with
+        | E.Rm true | E.Wm true ->
+            Some (C.get_event_data dst_event)
+        | _ -> None
+      in
+      i.E.compile_edge st src src_event_data dst_event_data
   | _ ->
       Warn.fatal "Edge -%s->: compilation not implemented"
         (E.pp_edge node.C.edge)

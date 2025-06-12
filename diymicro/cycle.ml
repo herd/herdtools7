@@ -17,7 +17,7 @@ let new_proc, proc_count =
 
 type event = {
   annot : Edge.annot;
-  direction : Edge.direction;
+  mutable direction : Edge.direction;
   mutable location : A.loc option;
   mutable proc : proc option;
   mutable value : int option;
@@ -60,6 +60,9 @@ let pp_cycle cycle_start =
     ^ if node.next == cycle_start then "" else pp_aux node.next
   in
   pp_aux cycle_start
+
+let get_event_data evt =
+  Utils.unsome evt.location, Utils.unsome evt.value, evt.annot
 
 (** Creating and assigning the various cycle values **)
 
@@ -125,17 +128,32 @@ let find_last cycle_start condition =
   in
   find_last_aux cycle_start
 
-(** Ensure directions compatibility between edges *)
+(** Ensure directions compatibility between edges, mark events claimed to be
+    made by edges *)
 let check_directions cycle_start =
   let rec assign_aux node =
     let edge_dir1, _ = Edge.edge_direction node.edge in
     let _, edge_dir2 = Edge.edge_direction node.prev.edge in
-    if edge_dir1 <> edge_dir2 then
-      Warn.fatal "Incompatible directions %s -> (%s <> %s) -%s"
-        (Edge.pp_edge node.prev.edge)
-        (Edge.pp_direction edge_dir2)
-        (Edge.pp_direction edge_dir1)
-        (Edge.pp_edge node.edge);
+    (match edge_dir1, edge_dir2 with
+    | Edge.Rm true, Edge.Rm true | Edge.Wm true, Edge.Wm true ->
+        Warn.fatal
+          "Incompatible edges -%s-> (%s) -%s->, both are requesting to compile \
+           the event"
+          (Edge.pp_edge node.prev.edge)
+          (Edge.pp_direction edge_dir1)
+          (Edge.pp_edge node.edge)
+    | Edge.Rm true, Edge.Rm false | Edge.Rm false, Edge.Rm true ->
+        node.source_event.direction <- Edge.Rm true
+    | Edge.Wm true, Edge.Wm false | Edge.Wm false, Edge.Wm true ->
+        node.source_event.direction <- Edge.Rm true
+    | Edge.Rm _, Edge.Rm _ | Edge.Wm _, Edge.Wm _ -> ()
+    | _, _ when edge_dir1 = edge_dir2 -> ()
+    | _, _ ->
+        Warn.fatal "Incompatible directions %s -> (%s <> %s) -%s"
+          (Edge.pp_edge node.prev.edge)
+          (Edge.pp_direction edge_dir2)
+          (Edge.pp_direction edge_dir1)
+          (Edge.pp_edge node.edge));
     if node.next != cycle_start then assign_aux node.next
   in
   assign_aux cycle_start
@@ -213,10 +231,10 @@ let assign_values cycle_start =
     (* Uses of a location always follow directly each other *)
     let next_value =
       match node.source_event.direction with
-      | Edge.Wm ->
+      | Edge.Wm _ ->
           node.source_event.value <- Some (value + 1);
           value + 1
-      | Edge.Rm ->
+      | Edge.Rm _ ->
           node.source_event.value <- Some value;
           value
       | _ -> value (* Rr and Wr don't get an assigned value *)

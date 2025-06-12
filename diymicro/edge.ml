@@ -4,8 +4,9 @@
 type ievent = string
 type iedge = ievent * ievent
 
-(* Direction: Register read, Register write, Memory read, Memory Write *)
-type direction = Rr | Wr | Rm | Wm
+(** Register read, Register write, Memory read (true if an edge does the event),
+    Memory Write (true if an edge does the event) *)
+type direction = Rr | Wr | Rm of bool | Wm of bool
 
 (* Change process ? *)
 type int_ext = Internal | External
@@ -13,6 +14,9 @@ type int_ext = Internal | External
 (* Change location ? *)
 type sd = Same | Different
 type dp = Addr | Data | Ctrl | Reg
+
+(** memory event annotation *)
+type annot = AnnotNone | A | L | X
 
 type node_dep =
   | DepAddr of AArch64_compile.reg * int option
@@ -26,6 +30,8 @@ type iico = {
   compile_edge :
     AArch64_compile.state ->
     node_dep ->
+    (AArch64_compile.loc * int * annot) option ->
+    (AArch64_compile.loc * int * annot) option ->
     int AArch64Base.kinstruction AArch64_compile.kpseudo list
     * node_dep
     * AArch64_compile.state;
@@ -45,21 +51,18 @@ type t =
   | BasicDep of direction * direction (* Carries a dependency on *)
   | Iico of iico
 
-(** memory event annotation *)
-type annot = AnnotNone | A | L | X
-
 (** edge attributes *)
 let edge_direction = function
-  | Rf _ -> Wm, Rm
-  | Fr _ -> Rm, Wm
-  | Ws _ -> Wm, Wm
+  | Rf _ -> Wm false, Rm false
+  | Fr _ -> Rm false, Wm false
+  | Ws _ -> Wm false, Wm false
   | Po (_, dir1, dir2) -> dir1, dir2
   | Dp (_, _, dir1, dir2) -> dir1, dir2
   | BasicDep (dir1, dir2) -> dir1, dir2
   | Iico i -> i.direction
 
 let edge_location = function
-  | BasicDep ((Rr | Wr), (Rm | Wm)) -> Different
+  | BasicDep ((Rr | Wr), (Rm _ | Wm _)) -> Different
   | Rf _ | Fr _ | Ws _ | BasicDep _ -> Same
   | Po (sd, _, _) | Dp (_, sd, _, _) -> sd
   | Iico i -> i.sd
@@ -80,7 +83,12 @@ let dependency_reg = function
 
 (** Pretty printers *)
 
-let pp_direction = function Rr -> "Rr" | Wr -> "Wr" | Rm -> "R" | Wm -> "W"
+let pp_direction = function
+  | Rr -> "Rr"
+  | Wr -> "Wr"
+  | Rm _ -> "R"
+  | Wm _ -> "W"
+
 let pp_int_ext = function Internal -> "i" | External -> "e"
 let pp_sd = function Same -> "s" | Different -> "d"
 
@@ -107,7 +115,7 @@ let pp_edge = function
   | Ws ie -> "Fr" ^ pp_int_ext ie
   | Po (sd, dir1, dir2) ->
       "Po" ^ pp_sd sd ^ pp_direction dir1 ^ pp_direction dir2
-  | Dp (dp, sd, Rm, dir) -> "Dp" ^ pp_dp dp ^ pp_sd sd ^ pp_direction dir
+  | Dp (dp, sd, Rm _, dir) -> "Dp" ^ pp_dp dp ^ pp_sd sd ^ pp_direction dir
   | Dp (dp, sd, dir1, dir2) ->
       "Dp" ^ pp_dp dp ^ pp_sd sd ^ pp_direction dir1 ^ pp_direction dir2
   | BasicDep (dir1, dir2) -> "basic_dep" ^ pp_direction dir1 ^ pp_direction dir2

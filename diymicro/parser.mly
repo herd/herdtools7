@@ -36,12 +36,11 @@ edge:
     | RF ie { Edge.Rf $2 }
     | FR ie { Edge.Fr $2 }
     | WS ie { Edge.Ws $2 }
-    | PO sd dir dir    { Edge.Po ($2, $3, $4) }
-    | DP dp sd dir { Edge.Dp ($2, $3, Edge.Rm, $4) }
-    | DP dp sd dir dir { Edge.Dp ($2, $3, $4, $5) }
+    | PO sd dir dir     { Edge.Po ($2, $3, $4) }
+    | DP dp sd dir      { Edge.Dp ($2, $3, Edge.Rm false, $4) }
+    | DP dp sd dir dir  { Edge.Dp ($2, $3, $4, $5) }
     | BASIC_DEP dir dir { Edge.BasicDep ($2, $3) }
-    | IICO ID
-                    { Edge.Iico (Edge.get_iico ($2)) }
+    | IICO ID           { Edge.Iico (Edge.get_iico ($2)) }
 ;
 ie:
     | INT { Edge.Internal }
@@ -52,8 +51,8 @@ sd:
     | DIFFERENT { Edge.Different }
 ;
 dir:
-    | RM { Edge.Rm }
-    | WM { Edge.Wm }
+    | RM { Edge.Rm false }
+    | WM { Edge.Wm false }
     | RR { Edge.Rr }
     | WR { Edge.Wr }
 ;

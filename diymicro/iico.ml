@@ -10,7 +10,7 @@ end
 
 module Cas = struct
   let compileRnM ok =
-   fun st dep ->
+   fun st dep _ _ ->
     let src_reg, v_opt =
       match dep with
       | DepReg (r, v) -> r, v
@@ -45,7 +45,7 @@ module Cas = struct
     ins, DepReg (dst_reg, Some final_expected_val), st
 
   let compile src dst ok =
-    let cas_base st dep =
+    let cas_base st dep _ _ =
       let src_reg, _ =
         match dep with
         | DepReg (r, v) -> r, v
@@ -115,7 +115,7 @@ end
 
 module Csel = struct
   let compile src ok =
-   fun st dep ->
+   fun st dep _ _ ->
     let src_reg, v_opt =
       match dep with
       | DepReg (r, v) -> r, v
@@ -164,7 +164,7 @@ end
 
 module Swp = struct
   let compile src dst =
-   fun st dep ->
+   fun st dep _ _ ->
     let src_reg, v_opt =
       match dep with
       | DepReg (r, v) -> r, v
