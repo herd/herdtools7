@@ -198,6 +198,31 @@ module Swp = struct
     in
     ins, dep, st
 
+  let mem st dep src_evt dst_evt =
+    (match dep with
+    | DepNone -> ()
+    | _ -> Warn.fatal "Dependency provided to Swp.mem");
+
+    let rd, st = A.next_reg st in
+    let rm, st = A.next_reg st in
+
+    let rn_loc, read_value =
+      match src_evt with
+      | Some (loc, v, AnnotNone) -> loc, v
+      | _ -> Warn.fatal "Source event not provided or invalid"
+    in
+    let write_value =
+      match dst_evt with
+      | Some (loc, v, AnnotNone) when loc = rn_loc -> v
+      | _ ->
+          Warn.fatal
+            "Destination event not provided, invalid or incompatible with \
+             source event"
+    in
+    let rn = A.get_register st rn_loc in
+    let ins = A.mov rm write_value :: A.pseudo [A.swp A.RMW_P rd rm rn] in
+    ins, DepReg (rd, Some read_value), st
+
   let pp_swp_reg = function `Rd -> "Rd" | `Rm -> "Rm" | `Rn -> "Rn"
   let repr src dst = "swp " ^ pp_swp_reg src ^ "->" ^ pp_swp_reg dst
 end
@@ -250,4 +275,15 @@ let init () =
           significant_source = false;
           significant_dest = false;
         })
-    (cartesian2 [`Rd; `Rm; `Rn] [`Rd; `Rm; `Rn])
+    (cartesian2 [`Rd; `Rm; `Rn] [`Rd; `Rm; `Rn]);
+
+  add_iico
+    {
+      repr = "swp:mem";
+      compile_edge = Swp.mem;
+      direction = Rm true, Wm true;
+      ie = Internal;
+      sd = Same;
+      significant_source = false;
+      significant_dest = true;
+    }

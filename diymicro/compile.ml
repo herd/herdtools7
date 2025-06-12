@@ -68,87 +68,90 @@ let compile_event st (src : E.node_dep) event =
     | E.AnnotNone -> A.Instruction (A.str_idx src_reg dst_loc dst_reg)
     | _ -> Warn.fatal "Invalid annot %s for ldr_idx" (E.pp_annot annot)
   in
-  let ins, dst_dep, st =
-    match event.C.direction, event.C.annot, src with
-    | (E.Rm true | E.Wm true), _, _ ->
-        [], src, st (* An edge has claimed to compile this event *)
-    | E.Rm false, _, E.DepNone ->
-        let dst, st = A.next_reg st in
-        let ins = [annot_ldr event.C.annot dst event_reg] in
-        ins, E.DepReg (dst, event.C.value), st
-    | E.Rm false, _, E.DepAddr (r, v_opt) ->
-        let calc_zero_ins, reg_zero, st = A.calc_value st 0 r v_opt in
-        let dst, st = A.next_reg st in
-        let ins =
-          calc_zero_ins @ [annot_ldr_idx event.C.annot dst event_reg reg_zero]
-        in
-        ins, E.DepReg (dst, event.C.value), st
-    | E.Rm false, _, E.DepCtrl (r, v_opt) ->
-        let dst, st = A.next_reg st in
-        let ins, st =
-          add_ctrl_dep st r v_opt [annot_ldr event.C.annot dst event_reg]
-        in
-        ins, E.DepReg (dst, event.C.value), st
-    | E.Wm false, _, E.DepNone ->
-        let reg_value, st = A.next_reg st in
-        let ins =
-          [
-            A.mov reg_value (Utils.unsome event.C.value);
-            annot_str event.C.annot reg_value event_reg;
-          ]
-        in
-        ins, E.DepReg (event_reg, None), st
-    | E.Wm false, _, (E.DepData (r, v_opt) | E.DepReg (r, v_opt)) ->
-        let ins_val, reg_value, st =
-          A.calc_value st (Utils.unsome event.C.value) r v_opt
-        in
-        let ins = ins_val @ [annot_str event.C.annot reg_value event_reg] in
-        ins, E.DepReg (event_reg, None), st
-    | E.Wm false, _, E.DepAddr (r, v_opt) ->
-        let ins_zero, reg_zero, st = A.calc_value st 0 r v_opt in
-        let reg_value, st = A.next_reg st in
-        let ins =
-          ins_zero
-          @ [A.mov reg_value (Utils.unsome event.C.value)]
-          @ [annot_str_idx event.C.annot reg_value event_reg reg_zero]
-        in
-        ins, E.DepReg (event_reg, None), st
-    | E.Wm false, _, E.DepCtrl (r, v_opt) ->
-        let reg_value, st = A.next_reg st in
-        let ins, st =
-          add_ctrl_dep st r v_opt
-            [
-              A.mov event_reg (Utils.unsome event.C.value);
-              annot_str event.C.annot reg_value event_reg;
-            ]
-        in
-        ins, E.DepReg (event_reg, None), st
-    | E.Rr, E.AnnotNone, E.DepNone ->
-        (* TODO: not sure of that *)
-        let dst, st = A.next_reg st in
-        [A.mov_reg dst event_reg], E.DepReg (dst, None), st
-    | E.Wr, E.AnnotNone, E.DepNone ->
-        (* TODO: not sure of that *)
-        if event.C.annot <> E.AnnotNone then
-          Warn.fatal "Invalid annot %s for Wr" (E.pp_annot event.C.annot);
-        let ins = [A.mov event_reg (Utils.unsome event.C.value)] in
-        ins, E.DepReg (event_reg, event.C.value), st
-    | (E.Wr | E.Rr), E.AnnotNone, dep -> [], dep, st (* just carry on *)
-    | dir, E.AnnotNone, _ ->
-        Warn.fatal "Direction %s incompatible with dependency %s"
-          (E.pp_direction dir) (E.pp_node_dep src)
-    | dir, annot, _ ->
-        Warn.fatal
-          "Direction %s incompatible with dependency %s or annotation %s"
-          (E.pp_direction dir) (E.pp_node_dep src) (E.pp_annot annot)
-  in
-  let st =
-    let dst = E.dependency_reg dst_dep in
-    if event.C.is_significant then
-      A.add_condition st dst (Utils.unsome event.C.value)
-    else st
-  in
-  ins, dst_dep, st
+  match event.C.direction with
+  | E.Rm true | E.Wm true -> [], src, st
+  | _ ->
+      let ins, dst_dep, st =
+        match event.C.direction, event.C.annot, src with
+        | E.Rm false, _, E.DepNone ->
+            let dst, st = A.next_reg st in
+            let ins = [annot_ldr event.C.annot dst event_reg] in
+            ins, E.DepReg (dst, event.C.value), st
+        | E.Rm false, _, E.DepAddr (r, v_opt) ->
+            let calc_zero_ins, reg_zero, st = A.calc_value st 0 r v_opt in
+            let dst, st = A.next_reg st in
+            let ins =
+              calc_zero_ins
+              @ [annot_ldr_idx event.C.annot dst event_reg reg_zero]
+            in
+            ins, E.DepReg (dst, event.C.value), st
+        | E.Rm false, _, E.DepCtrl (r, v_opt) ->
+            let dst, st = A.next_reg st in
+            let ins, st =
+              add_ctrl_dep st r v_opt [annot_ldr event.C.annot dst event_reg]
+            in
+            ins, E.DepReg (dst, event.C.value), st
+        | E.Wm false, _, E.DepNone ->
+            let reg_value, st = A.next_reg st in
+            let ins =
+              [
+                A.mov reg_value (Utils.unsome event.C.value);
+                annot_str event.C.annot reg_value event_reg;
+              ]
+            in
+            ins, E.DepReg (event_reg, None), st
+        | E.Wm false, _, (E.DepData (r, v_opt) | E.DepReg (r, v_opt)) ->
+            let ins_val, reg_value, st =
+              A.calc_value st (Utils.unsome event.C.value) r v_opt
+            in
+            let ins = ins_val @ [annot_str event.C.annot reg_value event_reg] in
+            ins, E.DepReg (event_reg, None), st
+        | E.Wm false, _, E.DepAddr (r, v_opt) ->
+            let ins_zero, reg_zero, st = A.calc_value st 0 r v_opt in
+            let reg_value, st = A.next_reg st in
+            let ins =
+              ins_zero
+              @ [A.mov reg_value (Utils.unsome event.C.value)]
+              @ [annot_str_idx event.C.annot reg_value event_reg reg_zero]
+            in
+            ins, E.DepReg (event_reg, None), st
+        | E.Wm false, _, E.DepCtrl (r, v_opt) ->
+            let reg_value, st = A.next_reg st in
+            let ins, st =
+              add_ctrl_dep st r v_opt
+                [
+                  A.mov event_reg (Utils.unsome event.C.value);
+                  annot_str event.C.annot reg_value event_reg;
+                ]
+            in
+            ins, E.DepReg (event_reg, None), st
+        | E.Rr, E.AnnotNone, E.DepNone ->
+            (* TODO: not sure of that *)
+            let dst, st = A.next_reg st in
+            [A.mov_reg dst event_reg], E.DepReg (dst, None), st
+        | E.Wr, E.AnnotNone, E.DepNone ->
+            (* TODO: not sure of that *)
+            if event.C.annot <> E.AnnotNone then
+              Warn.fatal "Invalid annot %s for Wr" (E.pp_annot event.C.annot);
+            let ins = [A.mov event_reg (Utils.unsome event.C.value)] in
+            ins, E.DepReg (event_reg, event.C.value), st
+        | (E.Wr | E.Rr), E.AnnotNone, dep -> [], dep, st (* just carry on *)
+        | dir, E.AnnotNone, _ ->
+            Warn.fatal "Direction %s incompatible with dependency %s"
+              (E.pp_direction dir) (E.pp_node_dep src)
+        | dir, annot, _ ->
+            Warn.fatal
+              "Direction %s incompatible with dependency %s or annotation %s"
+              (E.pp_direction dir) (E.pp_node_dep src) (E.pp_annot annot)
+      in
+      let st =
+        (* if the event is marked as "significant", we add a final condition. If the edge compiles the event, this is done after the edge's compilation *)
+        if event.C.is_significant then
+          let dst = E.dependency_reg dst_dep in
+          A.add_condition st dst (Utils.unsome event.C.value)
+        else st
+      in
+      ins, dst_dep, st
 
 (** compile a node (:= event -edge-> ), src is the previous register to which
     dependency should be added, ZR if no dependency *)
@@ -170,11 +173,20 @@ let compile_edge (st : A.state) (src : E.node_dep) (node : C.t) =
       in
       let dst_event_data =
         match dst_event.C.direction with
-        | E.Rm true | E.Wm true ->
-            Some (C.get_event_data dst_event)
+        | E.Rm true | E.Wm true -> Some (C.get_event_data dst_event)
         | _ -> None
       in
-      i.E.compile_edge st src src_event_data dst_event_data
+      let ins, dst_dep, st =
+        i.E.compile_edge st src src_event_data dst_event_data
+      in
+      let st =
+        if dst_event.C.is_significant && dst_event_data <> None then
+          A.add_condition st (E.dependency_reg dst_dep)
+            (Utils.unsome dst_event.C.value)
+        else st
+      in
+
+      ins, dst_dep, st
   | _ ->
       Warn.fatal "Edge -%s->: compilation not implemented"
         (E.pp_edge node.C.edge)
