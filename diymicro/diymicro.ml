@@ -14,7 +14,8 @@ let () =
   let options_list =
     [
       "-v", Arg.Set Config.verbose, "Display verbose messages";
-      "--list-iico", Arg.Set list_iico, "list iico[] edges";
+      "-list-iico", Arg.Set list_iico, "list iico[] edges";
+      "-debug", Arg.Unit (fun () -> Printexc.record_backtrace true), "Print backtrace on crash";
     ]
   in
   let usage = "diymicro [options] <edge 1> <edge 2> <...>" in
