@@ -162,6 +162,46 @@ module Csel = struct
     ^ match src with `cmp -> "cmp" | `Rn -> "Rn" | `Rm -> "Rm"
 end
 
+module Swp = struct
+  let compile src dst =
+   fun st dep ->
+    let src_reg, v_opt =
+      match dep with
+      | DepReg (r, v) -> r, v
+      | _ -> Warn.fatal "Event has not forwarded any register"
+    in
+
+    let ins_zero, reg_zero, st = A.calc_value st 0 src_reg v_opt in
+
+    let rd, st = A.next_reg st in
+    let rm, st = A.next_reg st in
+    let _, rn, st = A.assigned_next_loc st in
+
+    let dep_ins, st =
+      match src with
+      | `Rd -> A.pseudo [A.add A.vloc rd rd reg_zero], st
+      | `Rm -> A.pseudo [A.add A.vloc rm rm reg_zero], st
+      | `Rn -> A.pseudo [A.add A.vloc rn rn reg_zero], st
+    in
+
+    let post_ins, dep, st =
+      match dst with
+      | `Rd -> [], DepReg (rd, None), st
+      | `Rm -> [], DepReg (rm, None), st
+      | `Rn ->
+          let rn_reg, st = A.next_reg st in
+          A.pseudo [A.do_ldr A.vloc rn_reg rn], DepReg (rn_reg, None), st
+    in
+
+    let ins =
+      ins_zero @ dep_ins @ A.pseudo [A.swp A.RMW_P rd rm rn] @ post_ins
+    in
+    ins, dep, st
+
+  let pp_swp_reg = function `Rd -> "Rd" | `Rm -> "Rm" | `Rn -> "Rn"
+  let repr src dst = "swp " ^ pp_swp_reg src ^ "->" ^ pp_swp_reg dst
+end
+
 let cartesian2 l1 l2 = List.concat_map (fun x -> List.map (fun y -> x, y) l2) l1
 
 let cartesian3 l1 l2 l3 =
@@ -203,8 +243,22 @@ let init () =
           compile_edge = Csel.compile src ok;
           direction = Rr, Wr;
           ie = Internal;
-          sd = Same;
+          sd = Different;
           significant_source = false;
           significant_dest = false;
         })
-    (cartesian2 [true; false] [`cmp; `Rn; `Rm])
+    (cartesian2 [true; false] [`cmp; `Rn; `Rm]);
+
+  List.iter
+    (fun (src, dst) ->
+      add_iico
+        {
+          repr = Swp.repr src dst;
+          compile_edge = Swp.compile src dst;
+          direction = Rr, Wr;
+          ie = Internal;
+          sd = Different;
+          significant_source = false;
+          significant_dest = false;
+        })
+    (cartesian2 [`Rd; `Rm; `Rn] [`Rd; `Rm; `Rn])
