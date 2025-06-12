@@ -25,13 +25,16 @@ type node_dep =
   | DepReg of AArch64_compile.reg * int option
   | DepNone
 
+type event_data = AArch64_compile.loc * int * annot
+(** essential event data, passed to iico edges wanting to compile an event *)
+
 type iico = {
   repr : string;
   compile_edge :
     AArch64_compile.state ->
     node_dep ->
-    (AArch64_compile.loc * int * annot) option ->
-    (AArch64_compile.loc * int * annot) option ->
+    event_data option ->
+    event_data option ->
     int AArch64Base.kinstruction AArch64_compile.kpseudo list
     * node_dep
     * AArch64_compile.state;
