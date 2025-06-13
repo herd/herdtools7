@@ -1,0 +1,10 @@
+Test B015 Required
+States 1
+x={9,2,3,4,5,6,7,9};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x={9,2,3,4,5,6,7,9})
+Observation B015 Always 1 0
+Hash=26908cc0852f5ccc489fb16e79d2304d
+

@@ -1,0 +1,11 @@
+AArch64 B016
+Variant=mixed,mte,sync
+{
+ int x[8];
+ [tag(x)]=:green;
+ 0:X1=x;
+ 0:X2=x:red;
+}
+ P0              ;
+ ST2G X2,[X1]    ;
+forall [tag(x)]=:red /\ [tag(x+16)]=:red
