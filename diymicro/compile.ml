@@ -153,7 +153,6 @@ let compile_edge (st : A.state) (src : E.node_dep) (node : C.t) =
   | E.Dp (E.Addr, _, _, _), E.DepReg (r, v_opt) -> [], E.DepAddr (r, v_opt), st
   | E.Dp (E.Data, _, _, _), E.DepReg (r, v_opt) -> [], E.DepData (r, v_opt), st
   | E.Dp (E.Ctrl, _, _, _), E.DepReg (r, v_opt) -> [], E.DepCtrl (r, v_opt), st
-  | E.Dp (E.Reg, _, _, _), E.DepReg (r, v_opt) -> [], E.DepReg (r, v_opt), st
   | E.BasicDep _, dep -> [], dep, st
   | E.Iico i, _ ->
       let src_event = node.C.source_event in

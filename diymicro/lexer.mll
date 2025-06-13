@@ -27,7 +27,6 @@ rule token = parse
   | "Addr" { ADDR }
   | "Data" { DATA }
   | "Ctrl" { CTRL }
-  | "Reg"  { REG }
   
   | ':' { COLON }
   | 'A' { A }

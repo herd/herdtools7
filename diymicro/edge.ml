@@ -13,7 +13,7 @@ type int_ext = Internal | External
 
 (* Change location ? *)
 type sd = Same | Different
-type dp = Addr | Data | Ctrl | Reg
+type dp = Addr | Data | Ctrl
 
 (** memory event annotation *)
 type annot = AnnotNone | A | L | X
@@ -94,7 +94,6 @@ let pp_dp = function
   | Addr -> "Addr"
   | Data -> "Data"
   | Ctrl -> "Ctrl"
-  | Reg -> "Reg"
 
 let pp_annot = function AnnotNone -> "" | A -> "A" | L -> "L" | X -> "X"
 
