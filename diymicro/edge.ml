@@ -75,7 +75,8 @@ let get_iico s = Hashtbl.find iico_ht s
 let add_iico iico = Hashtbl.add iico_ht iico.repr iico
 
 let list_iico_edges () =
-  Hashtbl.iter (fun k _ -> Printf.printf "iico[%s]\n" k) iico_ht
+  Hashtbl.fold (fun k _ acc -> Printf.sprintf "iico[%s]\n" k :: acc) iico_ht []
+  |> List.sort String.compare |> String.concat "" |> print_string
 
 let dependency_reg = function
   | DepAddr (r, _) -> r
