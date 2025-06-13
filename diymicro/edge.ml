@@ -89,12 +89,7 @@ let dependency_reg = function
 let pp_direction = function RegEvent -> "r" | Rm _ -> "R" | Wm _ -> "W"
 let pp_int_ext = function Internal -> "i" | External -> "e"
 let pp_sd = function Same -> "s" | Different -> "d"
-
-let pp_dp = function
-  | Addr -> "Addr"
-  | Data -> "Data"
-  | Ctrl -> "Ctrl"
-
+let pp_dp = function Addr -> "Addr" | Data -> "Data" | Ctrl -> "Ctrl"
 let pp_annot = function AnnotNone -> "" | A -> "A" | L -> "L" | X -> "X"
 
 let pp_node_dep =
