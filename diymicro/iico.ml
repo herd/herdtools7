@@ -241,7 +241,7 @@ let init () =
         {
           repr = Cas.repr src dst ok;
           compile_edge = Cas.compile src dst ok;
-          direction = Rr, Wr;
+          direction = RegEvent, RegEvent;
           ie = Internal;
           sd = Same;
           significant_source = false;
@@ -255,7 +255,7 @@ let init () =
         {
           repr = Csel.repr src ok;
           compile_edge = Csel.compile src ok;
-          direction = Rr, Wr;
+          direction = RegEvent, RegEvent;
           ie = Internal;
           sd = Same;
           significant_source = false;
@@ -269,7 +269,7 @@ let init () =
         {
           repr = Swp.repr src dst;
           compile_edge = Swp.compile src dst;
-          direction = Rr, Wr;
+          direction = RegEvent, RegEvent;
           ie = Internal;
           sd = Same;
           significant_source = false;

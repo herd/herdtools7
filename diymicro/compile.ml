@@ -125,17 +125,9 @@ let compile_event st (src : E.node_dep) event =
                 ]
             in
             ins, E.DepReg (event_reg, None), st
-        | E.Rr, E.AnnotNone, E.DepNone ->
-            (* TODO: not sure of that *)
-            let dst, st = A.next_reg st in
-            [A.mov_reg dst event_reg], E.DepReg (dst, None), st
-        | E.Wr, E.AnnotNone, E.DepNone ->
-            (* TODO: not sure of that *)
-            if event.C.annot <> E.AnnotNone then
-              Warn.fatal "Invalid annot %s for Wr" (E.pp_annot event.C.annot);
-            let ins = [A.mov event_reg (Utils.unsome event.C.value)] in
-            ins, E.DepReg (event_reg, event.C.value), st
-        | (E.Wr | E.Rr), E.AnnotNone, dep -> [], dep, st (* just carry on *)
+        | E.RegEvent, _, E.DepNone ->
+            Warn.fatal "No dependency passed to a register event"
+        | E.RegEvent, E.AnnotNone, dep -> [], dep, st (* just carry on *)
         | dir, E.AnnotNone, _ ->
             Warn.fatal "Direction %s incompatible with dependency %s"
               (E.pp_direction dir) (E.pp_node_dep src)

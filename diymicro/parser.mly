@@ -8,8 +8,7 @@
 %token BASIC_DEP
 %token IICO
 
-%token RM WM
-%token RR WR
+%token RM WM R
 %token INT EXT
 %token SAME DIFFERENT
 %token ADDR DATA CTRL REG
@@ -53,8 +52,7 @@ sd:
 dir:
     | RM { Edge.Rm false }
     | WM { Edge.Wm false }
-    | RR { Edge.Rr }
-    | WR { Edge.Wr }
+    | R { Edge.RegEvent }
 ;
 dp:
     | ADDR { Edge.Addr }

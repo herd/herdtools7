@@ -4,9 +4,9 @@
 type ievent = string
 type iedge = ievent * ievent
 
-(** Register read, Register write, Memory read (true if an edge does the event),
-    Memory Write (true if an edge does the event) *)
-type direction = Rr | Wr | Rm of bool | Wm of bool
+(** Register event, Memory read (true if an edge does the event), Memory Write
+    (true if an edge does the event) *)
+type direction = RegEvent | Rm of bool | Wm of bool
 
 (* Change process ? *)
 type int_ext = Internal | External
@@ -65,7 +65,7 @@ let edge_direction = function
   | Iico i -> i.direction
 
 let edge_location = function
-  | BasicDep ((Rr | Wr), (Rm _ | Wm _)) -> Different
+  | BasicDep (RegEvent, (Rm _ | Wm _)) -> Different
   | Rf _ | Fr _ | Ws _ | BasicDep _ -> Same
   | Po (sd, _, _) | Dp (_, sd, _, _) -> sd
   | Iico i -> i.sd
@@ -86,12 +86,7 @@ let dependency_reg = function
 
 (** Pretty printers *)
 
-let pp_direction = function
-  | Rr -> "Rr"
-  | Wr -> "Wr"
-  | Rm _ -> "R"
-  | Wm _ -> "W"
-
+let pp_direction = function RegEvent -> "r" | Rm _ -> "R" | Wm _ -> "W"
 let pp_int_ext = function Internal -> "i" | External -> "e"
 let pp_sd = function Same -> "s" | Different -> "d"
 
