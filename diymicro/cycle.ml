@@ -63,7 +63,10 @@ let pp_cycle cycle_start =
   pp_aux cycle_start
 
 let get_event_data evt : Edge.event_data =
-  Utils.unsome evt.location, Utils.unsome evt.value, evt.annot
+  ( Utils.unsome evt.location,
+    Utils.unsome evt.value,
+    evt.annot,
+    evt.is_significant )
 
 (** Creating and assigning the various cycle values **)
 
@@ -150,7 +153,7 @@ let check_directions cycle_start =
     | Edge.Rm true, Edge.Rm false | Edge.Rm false, Edge.Rm true ->
         node.source_event.direction <- Edge.Rm true
     | Edge.Wm true, Edge.Wm false | Edge.Wm false, Edge.Wm true ->
-        node.source_event.direction <- Edge.Rm true
+        node.source_event.direction <- Edge.Wm true
     | Edge.Rm _, Edge.Rm _ | Edge.Wm _, Edge.Wm _ -> ()
     | _, _ when edge_dir1 = edge_dir2 -> ()
     | _, _ ->
@@ -189,7 +192,7 @@ let assign_locations cycle_start =
       assert (Edge.edge_location node.edge = Edge.Different);
 
       if node.source_event.location = node.next.source_event.location then
-        Warn.fatal "Cannot get a changing location across "
+        Warn.fatal "Cannot get a changing location across %s"
           (Edge.pp_edge node.edge))
   in
   assign_aux first_node first_location

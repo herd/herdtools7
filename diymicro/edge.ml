@@ -1,18 +1,16 @@
 (** Type definitions *)
 
-(* Intrinsic event and edge *)
-type ievent = string
-type iedge = ievent * ievent
-
 (** Register event, Memory read (true if an edge does the event), Memory Write
     (true if an edge does the event) *)
 type direction = RegEvent | Rm of bool | Wm of bool
 
-(* Change process ? *)
+(** Change process ? *)
 type int_ext = Internal | External
 
-(* Change location ? *)
+(** Change location ? *)
 type sd = Same | Different
+
+(** Dp.. dependencies *)
 type dp = Addr | Data | Ctrl
 
 (** memory event annotation *)
@@ -25,8 +23,12 @@ type node_dep =
   | DepReg of AArch64_compile.reg * int option
   | DepNone
 
-type event_data = AArch64_compile.loc * int * annot
-(** essential event data, passed to iico edges wanting to compile an event *)
+type event_data = AArch64_compile.loc * int * annot * bool
+(** essential event data, passed to iico edges wanting to compile an event
+    - location of the event
+    - value
+    - annotation
+    - is_significant *)
 
 type iico = {
   repr : string;
