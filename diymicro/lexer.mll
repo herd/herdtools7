@@ -5,7 +5,7 @@
 
 let alpha = (['A'-'Z' 'a'-'z'])
 let number = ['0'-'9']
-let id = (alpha | number | '_' | '-' | '.' | ':' | '>' | ' ')+
+let id = [^']']+
 
 rule token = parse
   | [' ' '\t'] { token lexbuf }
