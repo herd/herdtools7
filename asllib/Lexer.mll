@@ -30,6 +30,7 @@ module type CONFIG = sig
     (** Allow variables starting with a double underscore (__) *)
     val allow_double_underscore : bool
     val allow_unknown : bool
+    val allow_single_arrows : bool
 end
 
 let reserved_keywords = [
@@ -60,7 +61,6 @@ let token_of_string =
  | "BAND"               -> s BAND
  | "BEGIN"              -> s BEGIN
  | "BEQ"                -> s BEQ
- | "BIARROW"            -> s BIARROW
  | "BIT"                -> s BIT
  | "BITS"               -> s BITS
  | "BNOT"               -> s BNOT
@@ -163,7 +163,7 @@ let token_to_symbol = function
   | LT                 -> "<"
   | SHR                -> ">>"
   | BAND               -> "&&"
-  | IMPL               -> "-->"
+  | IMPL               -> "==>"
   | SHL                -> "<<"
   | RBRACKET           -> "]"
   | RRBRACKET          -> "]]"
@@ -173,7 +173,7 @@ let token_to_symbol = function
   | LBRACE             -> "{"
   | NEQ                -> "!="
   | MINUS              -> "-"
-  | BEQ                -> "<->"
+  | BEQ                -> "<=>"
   | LBRACKET           -> "["
   | LLBRACKET          -> "[["
   | LPAR               -> "("
@@ -187,7 +187,6 @@ let token_to_symbol = function
   | PLUS               -> "+"
   | COLON              -> ":"
   | ARROW              -> "=>"
-  | BIARROW            -> "<=>"
   | RBRACE             -> "}"
   | COLON_COLON        -> "::"
   | GT                 -> ">"
@@ -371,16 +370,25 @@ let tr_name s = match s with
 }
 
 let digit = ['0'-'9']
-let int_lit = digit ('_' | digit)*
+let digit_ = digit | '_'
+let int_lit = digit digit_*
 let hex_alpha = ['a'-'f' 'A'-'F']
-let hex_lit = '0' 'x' (digit | hex_alpha) ('_' | digit | hex_alpha)*
+let hex_digit = digit | hex_alpha
+let hex_digit_ = hex_digit | '_'
+let hex_lit = '0' 'x' hex_digit hex_digit_*
 let real_lit = int_lit '.' int_lit
 let alpha = ['a'-'z' 'A'-'Z']
+let alpha_ = alpha | '_'
 let string_lit = '"' [^ '"']* '"'
 let bit = ['0' '1' ' ']
 let bits = bit*
 let mask = (bit | 'x' | '(' bit+ ')')*
-let identifier = (alpha | '_') (alpha|digit|'_')*
+let identifier = alpha_ (alpha_|digit)*
+
+let forbidden_hex_first = '0' 'x' [^'a'-'f' 'A'-'F' '0'-'9']
+let forbidden_hex_remaining = '0' 'x' hex_digit hex_digit_* ['g'-'z' 'G'-'Z']
+let forbidden_real_first = int_lit '.' [^'0'-'9' '.']
+let forbidden_real_remaining = int_lit '.' digit digit_* alpha
 
 (*
    Lexing of string literals
@@ -449,7 +457,8 @@ and token = parse
     | '<'                      { LT                               }
     | ">>"                     { SHR                              }
     | "&&"                     { BAND                             }
-    | "-->"                    { IMPL                             }
+    | "-->"                    { if Config.allow_single_arrows then IMPL else fatal lexbuf (ObsoleteSyntax "implication with -->") }
+    | "==>"                    { IMPL                             }
     | "<<"                     { SHL                              }
     | ']'                      { RBRACKET                         }
     | "]]"                     { RRBRACKET                        }
@@ -459,7 +468,8 @@ and token = parse
     | '{'                      { LBRACE                           }
     | "!="                     { NEQ                              }
     | '-'                      { MINUS                            }
-    | "<->"                    { BEQ                              }
+    | "<->"                    { if Config.allow_single_arrows then BEQ else fatal lexbuf (ObsoleteSyntax "equivalence with <->") }
+    | "<=>"                    { BEQ                              }
     | '['                      { LBRACKET                         }
     | "[["                     { LLBRACKET                        }
     | '('                      { LPAR                             }
@@ -473,7 +483,6 @@ and token = parse
     | '+'                      { PLUS                             }
     | ':'                      { COLON                            }
     | "=>"                     { ARROW                            }
-    | "<=>"                    { BIARROW                          }
     | '}'                      { RBRACE                           }
     | "++"                     { fatal lexbuf (ObsoleteSyntax "string concatenation with ++") }
     | "::"                     { COLON_COLON                      }
@@ -485,6 +494,10 @@ and token = parse
     | "@looplimit"             { fatal lexbuf (ObsoleteSyntax "Loop limits with @looplimit") }
     | identifier as lxm        { tr_name lxm                      }
     | eof                      { EOF                              }
+    | forbidden_real_first     { raise LexerError                 }
+    | forbidden_real_remaining { raise LexerError                 }
+    | forbidden_hex_first      { raise LexerError                 }
+    | forbidden_hex_remaining  { raise LexerError                 }
     | ""                       { raise LexerError                 }
 {
 end

@@ -36,7 +36,6 @@
 %token BAND
 %token BEGIN
 %token BEQ
-%token BIARROW
 %token BIT
 %token BITS
 %token BNOT
