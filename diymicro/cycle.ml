@@ -40,7 +40,8 @@ let pp_proc (Proc i) = "P" ^ string_of_int i
 let pp_event evt =
   "("
   ^ (match evt.proc with Some p -> pp_proc p | None -> "*")
-  ^ ") "
+  ^ ")"
+  ^ (if evt.is_significant then " +" else "  ")
   ^ Edge.pp_direction evt.direction
   ^
   match evt.direction with
@@ -279,5 +280,6 @@ let make_cycle edges =
   "READ/WRITE VALUES\n" ^ pp_cycle cycle ^ "\n" |> Utils.verbose_print;
 
   set_significant_reads cycle;
+  "SIGNIFICANT READS\n" ^ pp_cycle cycle ^ "\n" |> Utils.verbose_print;
 
   cycle
