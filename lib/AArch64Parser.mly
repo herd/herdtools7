@@ -158,7 +158,7 @@ let check_op3 op e =
 %token MRS MSR TST RBIT ABS
 %token REV16 REV32 REV REV64
 %token EXTR
-%token STG STZG STZ2G LDG
+%token STG ST2G STZG STZ2G LDG
 %token ALIGND ALIGNU BUILD CHKEQ CHKSLD CHKTGD CLRTAG CPY CPYTYPE CPYVALUE CSEAL
 %token LDCT SEAL STCT UNSEAL
 %type <MiscParser.proc list * (AArch64Base.parsedPseudo) list list * MiscParser.extra_data> main
@@ -1060,7 +1060,7 @@ instr:
 | OP ARCH_ZDREG COMMA ARCH_ZDREG COMMA ARCH_ZDREG
   { I_OP3_SV ($1,$2,$4,$6) }
 | TOK_INDEX zreg COMMA wxreg COMMA k
-  { let v,r = $4 in 
+  { let v,r = $4 in
     I_INDEX_SI ($2,v,r,$6) }
 | TOK_INDEX zreg COMMA k COMMA wxreg
   { let v,r = $6 in
@@ -1299,6 +1299,11 @@ instr:
     {
       let r,idx = $4 in
       I_STG ($2,r,idx)
+    }
+| ST2G xreg COMMA mem_idx
+    {
+      let r,idx = $4 in
+      I_ST2G ($2,r,idx)
     }
 | STZG xreg COMMA mem_idx
     {
