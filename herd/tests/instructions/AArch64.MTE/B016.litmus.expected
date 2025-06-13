@@ -1,0 +1,10 @@
+Test B016 Required
+States 1
+[tag(x)]=:red; [tag(x+16)]=:red;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([tag(x)]=:red /\ [tag(x+16)]=:red)
+Observation B016 Always 1 0
+Hash=01f1ddd08e52ebd893d30f2e1a82a235
+

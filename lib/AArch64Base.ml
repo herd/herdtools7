@@ -1757,6 +1757,7 @@ type 'k kinstruction =
   | I_MSR of sysreg * reg
 (* Memory Tagging *)
   | I_STG of reg * reg * 'k idx
+  | I_ST2G of reg * reg * 'k idx
   | I_STZG of reg * reg * 'k idx
   | I_STZ2G of reg * reg * 'k idx
   | I_LDG of reg * reg * 'k
@@ -2518,6 +2519,8 @@ let do_pp_instruction m =
 (* Memory Tagging *)
   | I_STG (rt,rn,idx) ->
       pp_mem_idx  "STG" V64 rt rn idx
+  | I_ST2G (rt,rn,idx) ->
+      pp_mem_idx  "ST2G" V64 rt rn idx
   | I_STZG (rt,rn,idx) ->
       pp_mem_idx "STZG" V64 rt rn idx
   | I_STZ2G (rt,rn,idx) ->
@@ -2643,7 +2646,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDUR_SIMD (_,r1,r2,_) | I_LDAPUR_SIMD (_,r1,r2,_)
   | I_STUR_SIMD (_,r1,r2,_) | I_STLUR_SIMD (_,r1,r2,_)
   | I_LDG (r1,r2,_) | I_STZG (r1,r2,_)
-  | I_STZ2G (r1,r2,_) | I_STG (r1,r2,_)
+  | I_STZ2G (r1,r2,_) | I_STG (r1,r2,_) | I_ST2G (r1,r2,_)
   | I_ALIGND (r1,r2,_) | I_ALIGNU (r1,r2,_)
   | I_ADDVL (r1,r2,_) | I_CTERM (_,_,r1,r2)
     -> fold_reg r1 (fold_reg r2 c)
@@ -3087,6 +3090,8 @@ let map_regs f_reg f_symb =
 (* Memory Tagging *)
   | I_STG (r1,r2,k) ->
       I_STG (map_reg r1,map_reg r2,k)
+  | I_ST2G (r1,r2,k) ->
+      I_ST2G (map_reg r1,map_reg r2,k)
   | I_STZG (r1,r2,k) ->
       I_STZG (map_reg r1,map_reg r2,k)
   | I_STZ2G (r1,r2,k) ->
@@ -3176,7 +3181,7 @@ let get_next =
   | I_TLBI _
   | I_AT _
   | I_MRS _ | I_MSR _
-  | I_STG _|I_STZG _|I_STZ2G _|I_LDG _
+  | I_STG _|I_ST2G _|I_STZG _|I_STZ2G _|I_LDG _
   | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
   | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|I_SEAL _|I_STCT _
   | I_UNSEAL _
@@ -3378,11 +3383,12 @@ let is_valid i =
   | I_CNT_INC_SVE (_,_,_,k)
     -> is_4bits_unsigned (k-1)
   | I_STG (_,_,(k,Idx))
+  | I_ST2G (_,_,(k,Idx))
   | I_STZG (_,_,(k,Idx))
   | I_STZ2G (_,_,(k,Idx))
   | I_LDG (_,_,k)
     -> is_granule_offset k
-  | I_STG _ | I_STZG _ | I_STZ2G _
+  | I_STG _ |I_ST2G _|I_STZG _|I_STZ2G _
     -> false
   | I_LDAP1 ([Vreg(_,(0,64))],_,_,_)
   | I_STL1 ([Vreg(_,(0,64))],_,_,_)
@@ -3606,6 +3612,7 @@ module PseudoI = struct
         | I_STP (t,v,r1,r2,r3,idx) -> I_STP (t,v,r1,r2,r3,idx_tr idx)
         | I_STR (v,r1,r2,idx) -> I_STR (v,r1,r2,ext_tr idx)
         | I_STG (r1,r2,k) -> I_STG (r1,r2,idx_tr k)
+        | I_ST2G (r1,r2,k) -> I_ST2G (r1,r2,idx_tr k)
         | I_STZG (r1,r2,k) -> I_STZG (r1,r2,idx_tr k)
         | I_STZ2G (r1,r2,k) -> I_STZ2G (r1,r2,idx_tr k)
         | I_LDG (r1,r2,k) -> I_LDG (r1,r2,k_tr k)
@@ -3724,7 +3731,7 @@ module PseudoI = struct
         | I_SWP _ | I_SWPBH _
         | I_LDOP _ | I_LDOPBH _
         | I_STOP _ | I_STOPBH _
-        | I_STZG _
+        | I_STZG _|I_ST2G _
         | I_LDP_SIMD _ | I_STP_SIMD _
         | I_LD2 _ | I_LD2R _
         | I_ST2 _

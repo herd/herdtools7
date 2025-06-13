@@ -199,6 +199,7 @@ include Arch.MakeArch(struct
        match_idx idx idx' subs >>>
        add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg (sr_name r3,r3')]
     | I_STG (r1,r2,idx),I_STG (r1',r2',idx')
+    | I_ST2G (r1,r2,idx),I_ST2G (r1',r2',idx')
     | I_STZG (r1,r2,idx),I_STZG (r1',r2',idx')
       ->
        match_idx idx idx' subs >>>
@@ -567,6 +568,11 @@ include Arch.MakeArch(struct
         conv_reg r2 >> fun r2 ->
         conv_idx idx >! fun idx ->
         I_STG (r1,r2,idx)
+    | I_ST2G (r1,r2,idx) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        conv_idx idx >! fun idx ->
+        I_ST2G (r1,r2,idx)
     | I_STZG (r1,r2,idx) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->
