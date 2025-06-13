@@ -319,7 +319,7 @@ Parameterized integers:
 
   $ aslref same-precedence2.asl
   File same-precedence2.asl, line 6, characters 10 to 17:
-    let d = a --> b <-> c;
+    let d = a ==> b <=> c;
             ^^^^^^^
   ASL Error: Cannot parse.
   [1]

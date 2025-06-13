@@ -6,7 +6,7 @@
 /* line 1 of example 2, a single comment 4 lines long.
 line 2 of the comment
 // line 3 of the comment, the "//" at start of this line are just regular characters
-// line 4 of the comment, this 4 line comment ends with these two characters -->*/
+// line 4 of the comment, this 4 line comment ends with these two characters ==>*/
 
 /* L1 Comment example 3, shows you cannot nest or mix comment styles.
 /* L2 Note the declaration of the storage FOO on L6, is outside of the comment.

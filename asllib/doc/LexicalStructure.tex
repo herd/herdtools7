@@ -124,11 +124,15 @@ This is formalized by the following lexical regular expression:
 \hypertarget{def-redigit}{}
 \hypertarget{def-reintlit}{}
 \hypertarget{def-rehexlit}{}
+\hypertarget{def-forbiddenhexfirst}{}
+\hypertarget{def-forbiddenhexremaining}{}
 \begin{center}
 \begin{tabular}{rcl}
 $\REdigit$  &$\triangleq$& \anycharacter{\texttt{0123456789}}\\
 $\REintlit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)*}\\
-$\REhexlit$ &$\triangleq$& \texttt{"0x"} (\REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}}) (\Underscore\ \texttt{|} \REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}})*
+$\REhexlit$ &$\triangleq$& \texttt{"0x"} (\REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}}) (\Underscore\ \texttt{|} \REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}})* \\
+$\REforbiddenhexfirst$ &$\triangleq$& \texttt{"0x"} (\REchar\ \texttt{-} \anycharacter{0123456789abcdefABCDEF}) \\
+$\REforbiddenhexremaining$ &$\triangleq$& \texttt{"0x"} (\REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}}) (\Underscore\ \texttt{|} \REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}})* (\REletter{} \texttt{-} \anycharacter{\texttt{abcdefABCDEF}}) \\
 \end{tabular}
 \end{center}
 
@@ -140,10 +144,14 @@ Underscores in numbers are not significant, and their only purpose is to separat
 such as \texttt{0xefff\_fffe}, \texttt{1\_000\_000} or \texttt{3.141\_592\_654} easier to read,
 
 \hypertarget{def-reallit}{}
+\hypertarget{def-forbiddenrealfirst}{}
+\hypertarget{def-forbiddenrealremaining}{}
 This is formalized by the following lexical regular expression:
 \begin{center}
 \begin{tabular}{rcl}
-$\REreallit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." \REdigit\ (\Underscore\ | \REdigit)*}
+$\REreallit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." \REdigit\ (\Underscore\ | \REdigit)*} \\
+$\REforbiddenrealfirst$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." (\REchar\ \texttt{-} \anycharacter{0123456789.})} \\
+$\REforbiddenrealremaining$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." \REdigit\ (\Underscore\ | \REdigit)* \REletter{}} \\
 \end{tabular}
 \end{center}
 
@@ -550,8 +558,8 @@ $\REreallit$                          & $\actiontoken(\realtolit)$ \\
 $\REstringlit$                        & $\actiontoken(\strtolit)$ \\
 $\REbitvectorlit$                     & $\actiontoken(\bitstolit)$ \\
 $\REbitmasklit$                       & $\actiontoken(\masktolit)$ \\
-\texttt{"!"}, \texttt{","}, \texttt{"<"}, \shiftrightlexeme, \texttt{"\&\&"}, \texttt{"-->"}, \shiftleftlexeme{}                         & $\actiontoken(\tokenid)$  \\
-\texttt{"]"}, \texttt{"]]"}, \texttt{")"}, \texttt{".."}, \texttt{"="}, \texttt{"\{"}, \texttt{"!="}, \texttt{"-"}, \texttt{"<->"}                        & $\actiontoken(\tokenid)$  \\
+\texttt{"!"}, \texttt{","}, \texttt{"<"}, \shiftrightlexeme, \texttt{"\&\&"}, \texttt{"==>"}, \shiftleftlexeme{}                         & $\actiontoken(\tokenid)$  \\
+\texttt{"]"}, \texttt{"]]"}, \texttt{")"}, \texttt{".."}, \texttt{"="}, \texttt{"\{"}, \texttt{"!="}, \texttt{"-"}, \texttt{"<=>"}                        & $\actiontoken(\tokenid)$  \\
 \texttt{"["}, \texttt{"[["}, \texttt{"("}, \texttt{"."}, \texttt{"<="}, \texttt{"\textasciicircum"}, \texttt{"*"}, \texttt{"/"}                          & $\actiontoken(\tokenid)$  \\
 \texttt{"=="}, \texttt{"||"}, \texttt{"+"}, \texttt{":"}, \texttt{"=>"}, \texttt{"<=>"}                         & $\actiontoken(\tokenid)$  \\
 \texttt{"\}"}, \texttt{"++"}, \texttt{">"}, \texttt{"+:"}, \texttt{"*:"}, \texttt{";"}, \texttt{">="}                         & $\actiontoken(\tokenid)$  \\
@@ -599,6 +607,19 @@ The following list represents keywords that are reserved for future use.
 \texttt{"pure"}, \texttt{"readonly"} & $\lexicalerror$ \\
 \hline
 \end{tabular}
+\end{center}
+
+The following list represents forbidden lexemes in ASL:
+\begin{center}
+  \begin{tabular}{ll}
+    \textbf{Lexical Regular Expression} & \textbf{Lexeme Action}\\
+    \hline
+    $\REforbiddenhexfirst$ & $\lexicalerror$ \\
+    $\REforbiddenhexremaining$ & $\lexicalerror$ \\
+    $\REforbiddenrealfirst$ & $\lexicalerror$ \\
+    $\REforbiddenrealremaining$ & $\lexicalerror$ \\
+    \hline
+  \end{tabular}
 \end{center}
 
 \begin{center}

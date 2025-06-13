@@ -21,7 +21,7 @@ begin
     println("Should print.");
   end;
 
-  if foo (2) --> foo (3) then
+  if foo (2) ==> foo (3) then
     println ("Should print.");
   end;
 

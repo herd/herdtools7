@@ -36,6 +36,7 @@ type args = {
   allow_storage_discards : bool;
   allow_hyphenated_pending_constraint : bool;
   allow_local_constants : bool;
+  allow_single_arrows : bool;
   print_ast : bool;
   print_lisp : bool;
   print_serialized : bool;
@@ -79,6 +80,7 @@ let parse_args () =
   let no_primitives = ref false in
   let use_side_effects_extension = ref false in
   let control_flow_analysis = ref true in
+  let allow_single_arrows = ref false in
 
   let speclist =
     [
@@ -106,6 +108,9 @@ let parse_args () =
       ( "--allow-local-constants",
         Arg.Set allow_local_constants,
         " Allow declarations of local constant storage." );
+      ( "--allow-single-arrows",
+        Arg.Set allow_single_arrows,
+        " Allow single arrows to denote boolean implication or equivalence." );
       ( "--print",
         Arg.Set print_ast,
         " Print the parsed AST to stdout before executing it." );
@@ -206,6 +211,7 @@ let parse_args () =
       allow_storage_discards = !allow_storage_discards;
       allow_hyphenated_pending_constraint = !allow_hyphenated_pending_constraint;
       allow_local_constants = !allow_local_constants;
+      allow_single_arrows = !allow_single_arrows;
       print_ast = !print_ast;
       print_serialized = !print_serialized;
       print_typed = !print_typed;
@@ -264,6 +270,7 @@ let () =
       args.allow_hyphenated_pending_constraint
     in
     let allow_local_constants = args.allow_local_constants in
+    let allow_single_arrows = args.allow_single_arrows in
     let open Builder in
     {
       allow_no_end_semicolon;
@@ -273,6 +280,7 @@ let () =
       allow_storage_discards;
       allow_hyphenated_pending_constraint;
       allow_local_constants;
+      allow_single_arrows;
     }
   in
 

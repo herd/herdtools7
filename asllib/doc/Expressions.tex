@@ -541,7 +541,7 @@ only if it evaluates to $\True$ is $\vetwo$ evaluated.
 
 \identi{QRXP}
 Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
-\texttt{-->} provide a short-circuit evaluation mechanism:
+\texttt{==>} provide a short-circuit evaluation mechanism:
 
 % This is related to the note under \identr{LRHD}
 \begin{itemize}
@@ -589,7 +589,7 @@ it evaluates to $\False$, is $\vetwo$ evaluated.
 
 \identi{QRXP}
 Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
-\texttt{-->} provide a short-circuit evaluation mechanism:
+\texttt{==>} provide a short-circuit evaluation mechanism:
 
 % This is related to the note under \identr{LRHD}
 \begin{itemize}
@@ -608,7 +608,7 @@ an if-statement is used to achieve the same effect.
 \SemanticsRuleDef{BinopImpl}
 \ExampleDef{Evaluation of Implication Expressions}
 In \listingref{semantics-binopimpl},
-the expression \texttt{(0 == 1) --> (1 == 0)} evaluates to the value \True, according to the definition of implication.
+the expression \texttt{(0 == 1) ==> (1 == 0)} evaluates to the value \True, according to the definition of implication.
 \ASLListing{Evaluating an implication expression}{semantics-binopimpl}{\semanticstests/SemanticsRule.EBinopImplExFalso.asl}
 
 \ProseParagraph
@@ -635,7 +635,7 @@ it evaluates to \True, is $\vetwo$ evaluated.
 
 \identi{QRXP}
 Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
-\texttt{-->} provide a short-circuit evaluation mechanism:
+\texttt{==>} provide a short-circuit evaluation mechanism:
 
 \lrmcomment{This is related to the note under \identr{LRHD}:}
 \begin{itemize}
@@ -693,7 +693,7 @@ the expression \texttt{3 + 2} evaluates to the value \texttt{5}.
 \end{mathpar}
 \CodeSubsection{\EvalBinopBegin}{\EvalBinopEnd}{../Interpreter.ml}
 
-The rule above applies to many binary operators, including $\EQOP$ (which is used for \texttt{<->}
+The rule above applies to many binary operators, including $\EQOP$ (which is used for \texttt{<=>}
 as well as \texttt{==}).
 
 \subsubsection{Comments}
