@@ -28,9 +28,15 @@ let () =
   if !list_iico then Edge.list_iico_edges ()
   else if !edges_ref = [] then Arg.usage options_list usage
   else
-    let edges = List.rev !edges_ref in
-    let cycle = Cycle.make_cycle edges in
+    let annot_edges = List.rev !edges_ref in
+    let cycle = Cycle.make_cycle annot_edges in
     let prog = Compile.make_test cycle in
+
     let instructions = List.map (fun (a, _) -> a) prog in
     let stl = List.map (fun (_, b) -> b) prog in
-    Compile.dump_test stl instructions stdout
+    let prog = if Array.length Sys.argv > 0 then Sys.argv.(0) else "XXX" in
+    let baseprog =
+      Printf.sprintf "%s (version %s)" (Filename.basename prog) Version.version
+    in
+
+    Compile.dump_test stl instructions baseprog annot_edges stdout

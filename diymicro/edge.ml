@@ -67,7 +67,8 @@ let edge_direction = function
   | Iico i -> i.direction
 
 let edge_location = function
-  | BasicDep (RegEvent, (Rm _ | Wm _)) -> Different
+  | BasicDep (RegEvent, (Rm _ | Wm _)) | BasicDep ((Rm _ | Wm _), RegEvent) ->
+      Different
   | Rf _ | Fr _ | Ws _ | BasicDep _ -> Same
   | Po (sd, _, _) | Dp (_, sd, _, _) -> sd
   | Iico i -> i.sd
@@ -120,3 +121,8 @@ let rec pp_edges = function
   | [e] -> pp_edge e
   | e :: q -> pp_edge e ^ " -> " ^ pp_edges q
   | _ -> ""
+
+let pp_annotated_edge (edge, annot) =
+  match annot with
+  | AnnotNone -> pp_edge edge
+  | _ -> pp_edge edge ^ ":" ^ pp_annot annot
