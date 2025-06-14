@@ -77,11 +77,11 @@ let compile_event st (src : E.node_dep) event =
             let dst, st = A.next_reg st in
             let ins = [annot_ldr event.C.annot dst event_reg] in
             ins, E.DepReg (dst, event.C.value), st
-        | E.Rm false, _, E.DepAddr (r, v_opt) ->
-            let calc_zero_ins, reg_zero, st = A.calc_value st 0 r v_opt in
+        | E.Rm false, _, E.DepAddr (r, _) ->
+            let reg_zero, st = A.next_reg st in
             let dst, st = A.next_reg st in
             let ins =
-              calc_zero_ins
+              A.pseudo [A.do_eor reg_zero r r] (* if r=0, we still need do_eor to avoid a mixed-size error *)
               @ [annot_ldr_idx event.C.annot dst event_reg reg_zero]
             in
             ins, E.DepReg (dst, event.C.value), st
@@ -106,11 +106,11 @@ let compile_event st (src : E.node_dep) event =
             in
             let ins = ins_val @ [annot_str event.C.annot reg_value event_reg] in
             ins, E.DepReg (event_reg, None), st
-        | E.Wm false, _, E.DepAddr (r, v_opt) ->
-            let ins_zero, reg_zero, st = A.calc_value st 0 r v_opt in
+        | E.Wm false, _, E.DepAddr (r, _) ->
+            let reg_zero, st = A.next_reg st in
             let reg_value, st = A.next_reg st in
             let ins =
-              ins_zero
+              A.pseudo [A.do_eor reg_zero r r] (* if r=0, we still need do_eor to avoid a mixed-size error *)
               @ [A.mov reg_value (Utils.unsome event.C.value)]
               @ [annot_str_idx event.C.annot reg_value event_reg reg_zero]
             in

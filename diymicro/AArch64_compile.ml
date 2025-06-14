@@ -412,7 +412,7 @@ module St = struct
           Instructions.do_eor new_reg reg reg
           ::
           (if objective_value <> 0 then
-             [Instructions.addi new_reg reg objective_value]
+             [Instructions.addi new_reg new_reg objective_value]
            else [])
         in
         Instructions.pseudo ins, new_reg, st
