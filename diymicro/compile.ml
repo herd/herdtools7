@@ -81,7 +81,8 @@ let compile_event st (src : E.node_dep) event =
             let reg_zero, st = A.next_reg st in
             let dst, st = A.next_reg st in
             let ins =
-              A.pseudo [A.do_eor reg_zero r r] (* if r=0, we still need do_eor to avoid a mixed-size error *)
+              A.pseudo [A.do_eor reg_zero r r]
+              (* if r=0, we still need do_eor to avoid a mixed-size error *)
               @ [annot_ldr_idx event.C.annot dst event_reg reg_zero]
             in
             ins, E.DepReg (dst, event.C.value), st
@@ -110,7 +111,8 @@ let compile_event st (src : E.node_dep) event =
             let reg_zero, st = A.next_reg st in
             let reg_value, st = A.next_reg st in
             let ins =
-              A.pseudo [A.do_eor reg_zero r r] (* if r=0, we still need do_eor to avoid a mixed-size error *)
+              A.pseudo [A.do_eor reg_zero r r]
+              (* if r=0, we still need do_eor to avoid a mixed-size error *)
               @ [A.mov reg_value (Utils.unsome event.C.value)]
               @ [annot_str_idx event.C.annot reg_value event_reg reg_zero]
             in
@@ -290,8 +292,11 @@ let dump_final (stl : A.state list) channel =
   ^ ")\n"
   |> output_string channel
 
-let dump_test stl instructions (channel : out_channel) =
+let dump_test stl instructions baseprog annot_edges (channel : out_channel) =
   Printf.fprintf channel "%s %s\n" (Archs.pp A.arch) "test.litmus";
+  Printf.fprintf channel "Generator=%s\n" baseprog;
+  Printf.fprintf channel "Orig=%s\n"
+    (List.map Edge.pp_annotated_edge annot_edges |> String.concat " ");
   dump_init stl channel;
   dump_code instructions channel;
   dump_final stl channel

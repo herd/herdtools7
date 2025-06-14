@@ -8,7 +8,7 @@ module A = struct
   include AArch64_compile
 end
 
-module Cas = struct
+module CasNoMem = struct
   let compileRnM ok =
    fun st dep _ _ ->
     let src_reg, v_opt =
@@ -103,6 +103,108 @@ module Cas = struct
       pre_ins @ ins @ post_ins, dst_dep, st
     in
     match src, dst with `Rn, `M -> compileRnM ok | _ -> cas_base
+
+  let repr src dst ok =
+    "cas-no-mem:"
+    ^ (if ok then "ok" else "no")
+    ^ " "
+    ^ (match src with `Rs -> "Rs" | `Rn -> "Rn" | `Rt -> "Rt" | `M -> "M")
+    ^ "->"
+    ^ match dst with `Rs -> "Rs" | `M -> "M"
+end
+
+module Cas = struct
+  let compile src dst ok =
+    let cas_base st dep src_evt dst_evt =
+      let rcheck, st = A.next_reg st in
+
+      let _, rn, read_value, write_value, st =
+        match src_evt, dst_evt with
+        | None, None ->
+            let loc, rn, st = A.assigned_next_loc st in
+            let read_v = if ok then 1 else 0 in
+            let write_v = if ok then 2 else 0 in
+            let st = A.set_initial st loc read_v in
+            loc, rn, read_v, write_v, st
+        | Some (loc, read_v, AnnotNone, _), None ->
+            let write_v = if ok then read_v + 1 else read_v in
+            let rn = A.get_register st loc in
+            loc, rn, read_v, write_v, st
+        | None, Some (loc, write_v, AnnotNone, _) ->
+            let m_initial = write_v - 1 in
+            if not ok then Warn.fatal "cas:no .->M not possible";
+            let rn = A.get_register st loc in
+            loc, rn, m_initial, write_v, st
+        | Some (loc, read_v, AnnotNone, _), Some (loc2, write_v, AnnotNone, _)
+          when loc = loc2 ->
+            if not ok then Warn.fatal "cas:no M->M not possible";
+            let rn = A.get_register st loc in
+            loc, rn, read_v, write_v, st
+        | _, _ -> Warn.fatal "cas received inconsistent event data"
+      in
+      (* We set up:
+      - Rt=write_value
+      - Rs=read_value if ok else read_value+1
+      - and we already have [Rn]=read_value *)
+
+      let st = A.add_condition st rcheck write_value in
+      let rs_value = if ok then read_value else read_value + 1 in
+
+      let pre_ins, rs, rt, rn, st =
+        match src with
+        | `M ->
+            let rs, st = A.next_reg st in
+            let rt, st = A.next_reg st in
+            let st = A.add_condition st rs read_value in
+            (* if the src event is memory, the read is significant in all cases *)
+            [A.mov rt write_value; A.mov rs rs_value], rs, rt, rn, st
+        | _ -> (
+            let src_reg, v_opt =
+              match dep with
+              | DepReg (r, v) -> r, v
+              | _ -> Warn.fatal "Event has not forwarded any register"
+            in
+            match src with
+            | `Rs ->
+                let ins_zero, r_eor, st = A.calc_value st 0 src_reg v_opt in
+                let rs, st = A.next_reg st in
+                let rt, st = A.next_reg st in
+                let ins =
+                  ins_zero
+                  @ A.pseudo [A.addi rs r_eor rs_value]
+                  @ [A.mov rt write_value]
+                in
+                ins, rs, rt, rn, st
+            | `Rt ->
+                let rs, st = A.next_reg st in
+                let ins_rt, rt, st =
+                  A.calc_value st write_value src_reg v_opt
+                in
+                ins_rt @ [A.mov rs rs_value], rs, rt, rn, st
+            | `Rn ->
+                let reg_zero, st = A.next_reg st in
+                let rn2, st = A.next_reg st in
+                let rs, st = A.next_reg st in
+                let rt, st = A.next_reg st in
+                let ins =
+                  A.pseudo
+                    [
+                      A.do_eor reg_zero src_reg src_reg;
+                      A.do_add64 A.vloc rn2 rn reg_zero;
+                    ]
+                  @ [A.mov rs rs_value; A.mov rt write_value]
+                in
+                ins, rs, rt, rn2, st
+            | _ -> assert false)
+      in
+      let ins = A.pseudo [A.cas A.RMW_P rs rt rn; A.do_ldr A.vloc rcheck rn] in
+
+      let dst_dep =
+        match dst with `Rs -> DepReg (rs, Some read_value) | `M -> DepNone
+      in
+      pre_ins @ ins, dst_dep, st
+    in
+    cas_base
 
   let repr src dst ok =
     "cas:"
@@ -243,12 +345,28 @@ let init () =
     (fun (ok, src, dst) ->
       add_iico
         {
-          repr = Cas.repr src dst ok;
-          compile_edge = Cas.compile src dst ok;
+          repr = CasNoMem.repr src dst ok;
+          compile_edge = CasNoMem.compile src dst ok;
           direction = RegEvent, RegEvent;
           ie = Internal;
           sd = Same;
           significant_source = false;
+          significant_dest = false;
+        })
+    (cartesian3 [true; false] [`Rn; `Rs; `Rt; `M] [`Rs; `M]);
+
+  List.iter
+    (fun (ok, src, dst) ->
+      add_iico
+        {
+          repr = Cas.repr src dst ok;
+          compile_edge = Cas.compile src dst ok;
+          direction =
+            ( (if src = `M then Rm true else RegEvent),
+              if dst = `M then Wm true else RegEvent );
+          ie = Internal;
+          sd = Same;
+          significant_source = src = `M;
           significant_dest = false;
         })
     (cartesian3 [true; false] [`Rn; `Rs; `Rt; `M] [`Rs; `M]);
