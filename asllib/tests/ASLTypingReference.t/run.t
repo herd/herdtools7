@@ -219,6 +219,12 @@ ASL Typing Tests / annotating types:
   ASL Type error: a pure expression was expected, found (W), which produces the
     following side-effects: [ReadsGlobal "W"].
   [1]
+  $ aslref --no-exec TypingRule.ExtractParameters-bad1.asl
+  File TypingRule.ExtractParameters-bad1.asl, line 3, characters 15 to 36:
+      arg0: bits(N as integer{8,16,32}),
+                 ^^^^^^^^^^^^^^^^^^^^^
+  ASL Static Error: Unsupported expression N as integer {8, 16, 32}.
+  [1]
   $ aslref TypingRule.BuiltinAggregateTypes.asl
   $ aslref --no-exec TypingRule.BuiltinExceptionType.asl
   $ aslref TypingRule.BuiltinSingularTypes.asl
@@ -811,6 +817,7 @@ ASL Typing Tests / annotating types:
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: cannot declare already declared element "X".
   [1]
+  $ aslref --no-exec TypingRule.CheckParamDecls.asl
   $ aslref TypingRule.CheckParamDecls.bad.asl
   File TypingRule.CheckParamDecls.bad.asl, line 3, character 0 to line 9,
     character 4:
@@ -866,6 +873,35 @@ ASL Typing Tests / annotating types:
       ^^^^^^^^^^^^^
   ASL Error: Mismatched use of return value from call to 'flip'.
   [1]
+  $ aslref --no-exec TypingRule.AnnotateCall.asl
+  $ aslref --no-exec TypingRule.AnnotateCall2.asl
+  $ aslref TypingRule.AnnotateCall.bad.asl
+  File TypingRule.AnnotateCall.bad.asl, line 6, characters 4 to 21:
+      f{wid}(bus, bus); // Illegal
+      ^^^^^^^^^^^^^^^^^
+  ASL Type error: a subtype of integer {2, 4} was expected,
+    provided integer {2, 4, 8}.
+  [1]
+  $ aslref TypingRule.AnnotateCall.bad2.asl
+  File TypingRule.AnnotateCall.bad2.asl, line 13, characters 8 to 33:
+      - = parameterized_func{arg}();
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: constrained integer expected, provided integer.
+  [1]
+  $ aslref TypingRule.AnnotateCall.bad3.asl
+  File TypingRule.AnnotateCall.bad3.asl, line 9, characters 11 to 32:
+      return constrained_func{N}();
+             ^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: a subtype of integer {1, 2, 3} was expected,
+    provided integer {2, 3, 4}.
+  [1]
+  $ aslref TypingRule.AnnotateCall.bad4.asl
+  File TypingRule.AnnotateCall.bad4.asl, line 9, characters 11 to 32:
+      return constrained_func{N}(); // requires an asserting type conversion
+             ^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: a subtype of integer {1, 2, 3} was expected,
+    provided integer {N}.
+  [1]
   $ aslref TypingRule.AnnotateCallActualsTyped.bad1.asl
   File TypingRule.AnnotateCallActualsTyped.bad1.asl, line 11,
     characters 8 to 32:
@@ -889,6 +925,13 @@ ASL Typing Tests / annotating types:
           ^^^^^^^^^^^^^^^^
   ASL Type error: a subtype of integer {0..64} was expected,
     provided integer {0..128}.
+  [1]
+  $ aslref TypingRule.AnnotateCallActualsTyped.bad4.asl
+  File TypingRule.AnnotateCallActualsTyped.bad4.asl, line 25,
+    characters 14 to 27:
+      var arg = ones{myWid}();
+                ^^^^^^^^^^^^^
+  ASL Type error: constrained integer expected, provided integer.
   [1]
   $ aslref TypingRule.SubstExpr.asl
   $ aslref --no-exec TypingRule.CheckSymbolicallyEvaluable.asl
@@ -1121,4 +1164,28 @@ ASL Typing Tests / annotating types:
   ASL Type error: a pure expression was expected, found side_effecting(), which
     produces the following side-effects:
     [WritesGlobal "global_var", ReadsGlobal "global_var"].
+  [1]
+  $ aslref --no-exec TypingRule.AddNewFunc.bad1.asl
+  File TypingRule.AddNewFunc.bad1.asl, line 8, character 0 to line 11,
+    character 4:
+  func f(x: shape)
+  begin
+      pass;
+  end;
+  ASL Type error: cannot declare already declared element "f".
+  [1]
+  $ aslref --no-exec TypingRule.AddNewFunc.bad2.asl
+  File TypingRule.AddNewFunc.bad2.asl, line 22, characters 4 to 20:
+      g(myShape, 0.1); // illegal
+      ^^^^^^^^^^^^^^^^
+  ASL Type error: a subtype of square was expected, provided shape.
+  [1]
+  $ aslref --no-exec TypingRule.AddNewFunc.bad3.asl
+  File TypingRule.AddNewFunc.bad3.asl, line 8, character 0 to line 11,
+    character 4:
+  func h(x: shape, y: square)
+  begin
+      pass;
+  end;
+  ASL Type error: cannot declare already declared element "h".
   [1]

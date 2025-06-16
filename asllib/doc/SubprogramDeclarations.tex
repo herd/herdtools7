@@ -854,17 +854,23 @@ The function
 checks the validity of the parameters declared in $\funcsig$.
 
 \ExampleDef{Checking Parameter Declarations}
+The specification in \listingref{CheckParamDecls} is well-typed.
+Specifically, the parameter \verb|N|, which must be used in the function signature is used by the
+return type.
+\ASLListing{A parameter used by the return type}{CheckParamDecls}{\typingtests/TypingRule.CheckParamDecls.asl}
+
 In \listingref{ParametersOfExpr}, the list of extracted parameters \verb|B, C, D, E, F, G|
 is equal to the list of declared parameters.
 
-The specification in \listingref{CheckParamDecls-bad} is ill-typed, since the list of extracted
-\verb|D, A, B, C| while the list of declared parameters is \verb|A, B, C, D|.
+The specification in \listingref{CheckParamDecls-bad} is ill-typed, since the list of extracted parameters is
+\verb|D, A, B, C|, while the list of declared parameters is \verb|A, B, C, D|.
 \ASLListing{Incorrectly declaring subprogram parameters}{CheckParamDecls-bad}{\typingtests/TypingRule.CheckParamDecls.bad.asl}
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item applying $\extractparameters$ to $\tenv$ and $\funcsig$ yields $\inferredparameters$\ProseOrTypeError;
+  \item applying $\extractparameters$ to $\tenv$ and $\funcsig$ yields\\
+        $\inferredparameters$\ProseOrTypeError;
   \item \Proseeqdef{$\declaredparameters$}{the list of parameter names in the order they are listed in $\funcsig.\funcparameters$};
   \item checking that $\inferredparameters$ is equal to $\declaredparameters$ yields \\
         $\True$\ProseOrTypeError.
@@ -915,6 +921,13 @@ yields the following results:
 The list of parameters extracted from the signature of \verb|parameters_of_expressions|
 in \listingref{ParametersOfExpr} is
 \verb|B, C, D, E, F, G|.
+
+\ExampleDef{Unsupported Expressions in Subprogram Signatures}
+The specification in \listingref{ExtractParameters-bad1} is ill-typed, since the
+expressions \\
+\verb|N as integer{8,16,32}| and \verb|(N + 1) as integer{9,17}|
+are unsupported inside \bitvectortypesterm{} of arguments.
+\ASLListing{An ill-typed subprogram signature}{ExtractParameters-bad1}{\typingtests/TypingRule.ExtractParameters-bad1.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1751,6 +1764,15 @@ and is then updated by binding $\addten$ to $\{\addten\}$ in $\overloadedsubprog
 Then, processing $R$, results in
 binding $\addten$ to
 $\{\addten, \addtenone\}$ where \addtenone{} will be used for $R$.
+
+\ExampleDef{Illegal Subprogram Declarations due to Clashes}
+The specifications in \listingref{AddNewFunc-bad1},
+\listingref{AddNewFunc-bad2}, and
+\listingref{AddNewFunc-bad3}
+are ill-typed due to subprogram declaration clashes.
+\ASLListing{Subprogram clashes}{AddNewFunc-bad1}{\typingtests/TypingRule.AddNewFunc.bad1.asl}
+\ASLListing{Subprogram clashes}{AddNewFunc-bad2}{\typingtests/TypingRule.AddNewFunc.bad2.asl}
+\ASLListing{Subprogram clashes}{AddNewFunc-bad3}{\typingtests/TypingRule.AddNewFunc.bad3.asl}
 
 \ProseParagraph
 \OneApplies

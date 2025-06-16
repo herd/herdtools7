@@ -1320,7 +1320,6 @@ of
 offers
 offset
 often
-og
 okay
 omission
 omit
@@ -2106,6 +2105,7 @@ unreachable
 unrecognized
 unreleased
 unspecified
+unsupported
 until
 untyped
 unusual

@@ -5,16 +5,11 @@ begin
   // legal since widths and domains match
   var eightBits: bits(8) = Zeros{8};
 
-  // legal: someBits has undetermined width so we require RHS to be a
-  // bitvector whose domain is a subset of {32,64} which it is by the
-  // declaration of someWid
-  // var someBits: bits({32,64}) = Zeros{someWid};
-
   // underconstrainedBits is a mutable parameterized width bitvector
   // it can be assigned to
   var underconstrainedBits = Zeros {N};
 
-  // underconstrainedBits has determined width `N`, so RHS must have same width
+  // underconstrainedBits has width `N`, so RHS must have same width
   underconstrainedBits = argN;      // legal since widths match
                                     // and domains are identical
 
@@ -36,4 +31,3 @@ begin
 end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
-
