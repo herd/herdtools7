@@ -283,7 +283,7 @@ module Swp = struct
       match src with
       | `Rd -> A.pseudo [A.add A.vloc rd rd reg_zero], st
       | `Rm -> A.pseudo [A.add A.vloc rm rm reg_zero], st
-      | `Rn -> A.pseudo [A.add A.vloc rn rn reg_zero], st
+      | `Rn -> A.pseudo [A.do_add64 A.vloc rn rn reg_zero], st
     in
 
     let post_ins, dep, st =
