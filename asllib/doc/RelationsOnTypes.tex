@@ -423,6 +423,10 @@ non-primitive type \texttt{(integer, T2)} which does not subtype-satisfy named
 type \texttt{pairT}.
 \ASLListing{Type satisfaction example}{typing-typesat3}{\typingtests/TypingRule.TypeSatisfaction3.asl}
 
+The specification in \listingref{typing-typesat-bad1} is ill-typed,
+since \verb|integer{0..N}| does not \typesatisfy{} \verb|integer{0..M}|.
+\ASLListing{Failing type satisfaction example}{typing-typesat-bad1}{\typingtests/TypingRule.TypeSatisfaction.bad1.asl}
+
 \ProseParagraph
 \OneApplies
  \begin{itemize}
