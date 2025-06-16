@@ -8,6 +8,7 @@ on:
       - 'asllib/Parser.mly'
       - 'asllib/Lexer.mll'
       - 'asllib/Tokens.mly'
+      - 'asllib/**.asl'
   # push:
   workflow_dispatch:
   schedule:

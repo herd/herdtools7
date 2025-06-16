@@ -1,3 +1,6 @@
+FAIL - aslref false | bnfc true: asllib/tests/ASLSyntaxReference.t/ASTRule.EBinop.bad1.asl
+FAIL - aslref false | bnfc true: asllib/tests/ASLSyntaxReference.t/ASTRule.EBinop.bad2.asl
+FAIL - aslref false | bnfc true: asllib/tests/ASLSyntaxReference.t/ASTRule.EBinop.bad3.asl
 FAIL - aslref false | bnfc true: asllib/tests/regressions.t/hyphenated-pending-constraint.asl
 FAIL - aslref false | bnfc true: asllib/tests/regressions.t/lhs-tuple-fields-same-field.asl
 FAIL - aslref false | bnfc true: asllib/tests/regressions.t/same-precedence.asl
