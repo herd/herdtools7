@@ -319,7 +319,7 @@ Parameterized integers:
 
   $ aslref same-precedence2.asl
   File same-precedence2.asl, line 6, characters 10 to 17:
-    let d = a --> b <-> c;
+    let d = a ==> b <=> c;
             ^^^^^^^
   ASL Error: Cannot parse.
   [1]
@@ -600,3 +600,18 @@ Left-hand sides
   ASL Grammar error: Obsolete syntax: Local constant declaration.
   [1]
   $ aslref --allow-local-constants local_constants.asl
+
+Outdated syntax
+  $ aslref --allow-single-arrows outdated-implication.asl
+  File outdated-implication.asl, line 6, characters 25 to 26:
+    let z: boolean = x --> z;
+                           ^
+  ASL Error: Undefined identifier: 'z'
+  [1]
+  $ aslref outdated-implication.asl
+  File outdated-implication.asl, line 6, characters 21 to 24:
+    let z: boolean = x --> z;
+                       ^^^
+  ASL Grammar error: Obsolete syntax: implication with -->
+  [1]
+

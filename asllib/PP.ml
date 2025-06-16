@@ -92,7 +92,7 @@ let pp_pos_str_no_char { pos_start; pos_end } =
 let binop_to_string : binop -> string = function
   | `AND -> "AND"
   | `BAND -> "&&"
-  | `BEQ -> "<->"
+  | `BEQ -> "<=>"
   | `BOR -> "||"
   | `DIV -> "DIV"
   | `DIVRM -> "DIVRM"
@@ -100,7 +100,7 @@ let binop_to_string : binop -> string = function
   | `EQ_OP -> "=="
   | `GT -> ">"
   | `GEQ -> ">="
-  | `IMPL -> "-->"
+  | `IMPL -> "==>"
   | `LT -> "<"
   | `LEQ -> "<="
   | `MOD -> "MOD"

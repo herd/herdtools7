@@ -3,7 +3,7 @@ type MyType of (integer, boolean); // Tuple types can be aliased.
 func foo(x: (integer, boolean)) => (integer, boolean)
 begin
   let (z, y): (integer, boolean) = x;
-  return (z + 1, FALSE --> y);
+  return (z + 1, FALSE ==> y);
 end;
 
 func main() => integer
