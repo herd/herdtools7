@@ -5,7 +5,7 @@
 
 let alpha = (['A'-'Z' 'a'-'z'])
 let number = ['0'-'9']
-let id = [^']']+
+let id = [^']' '>' ' ']+
 
 rule token = parse
   | [' ' '\t'] { token lexbuf }
@@ -33,6 +33,6 @@ rule token = parse
   | 'L' { L }
   | 'X' { X }
 
-  | '[' (id as s) ']' { ID (s) }
+  | '[' (id as s) ' ' (id as src) "->" (id as dst) ']' { IICO_ARGS (s, src, dst) }
   | _ { raise Error }
   | eof    { EOF }

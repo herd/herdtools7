@@ -44,7 +44,7 @@ module CasNoMem = struct
     in
     ins, DepReg (dst_reg, Some final_expected_val), st
 
-  let compile src dst ok =
+  let compile ok src dst =
     let cas_base st dep _ _ =
       let src_reg, _ =
         match dep with
@@ -57,23 +57,23 @@ module CasNoMem = struct
       let rcheck, st = A.next_reg st in
 
       (* For srcM, that allows to check that STR is before CAS *)
-      let m_initial = if ok = (src <> `M) then 0 else 1 in
+      let m_initial = if ok = (src <> "M") then 0 else 1 in
       let final_expected_val = if ok then 2 else 1 in
       let st = A.set_initial st loc m_initial in
       let st = A.add_condition st rcheck final_expected_val in
 
       let pre_ins, st =
         match src with
-        | `Rs -> A.pseudo [A.do_eor rs src_reg src_reg], st
-        | `Rt -> A.pseudo [A.do_eor rt src_reg src_reg], st
-        | `Rn ->
+        | "Rs" -> A.pseudo [A.do_eor rs src_reg src_reg], st
+        | "Rt" -> A.pseudo [A.do_eor rt src_reg src_reg], st
+        | "Rn" ->
             let r_eor, st = A.next_reg st in
             let ins =
               A.pseudo
                 [A.do_eor r_eor src_reg src_reg; A.do_add64 A.vloc rn rn r_eor]
             in
             ins, st
-        | `M ->
+        | "M" ->
             let m_value = if ok then 0 else 1 in
             let reg_str, st = A.next_reg st in
             let ins =
@@ -85,6 +85,7 @@ module CasNoMem = struct
                 ]
             in
             ins, st
+        | _ -> assert false
       in
       let ins =
         A.pseudo
@@ -93,28 +94,23 @@ module CasNoMem = struct
 
       let post_ins, st, dst_dep =
         match dst with
-        | `Rs -> [], st, DepReg (rs, None)
-        | `M ->
+        | "Rs" -> [], st, DepReg (rs, None)
+        | "M" ->
             let rn_reg, st = A.next_reg st in
             ( A.pseudo [A.do_ldr A.vloc rn_reg rn],
               st,
               DepReg (rn_reg, Some final_expected_val) )
+        | _ -> assert false
       in
       pre_ins @ ins @ post_ins, dst_dep, st
     in
-    match src, dst with `Rn, `M -> compileRnM ok | _ -> cas_base
+    match src, dst with "Rn", "M" -> compileRnM ok | _ -> cas_base
 
-  let repr src dst ok =
-    "cas-no-mem:"
-    ^ (if ok then "ok" else "no")
-    ^ " "
-    ^ (match src with `Rs -> "Rs" | `Rn -> "Rn" | `Rt -> "Rt" | `M -> "M")
-    ^ "->"
-    ^ match dst with `Rs -> "Rs" | `M -> "M"
+  let repr ok = "cas-no-mem:" ^ if ok then "ok" else "no"
 end
 
 module Cas = struct
-  let compile src dst ok =
+  let compile ok src dst =
     let cas_base st dep src_evt dst_evt =
       let rcheck, st = A.next_reg st in
 
@@ -152,7 +148,7 @@ module Cas = struct
 
       let pre_ins, rs, rt, rn, st =
         match src with
-        | `M ->
+        | "M" ->
             let rs, st = A.next_reg st in
             let rt, st = A.next_reg st in
             let st = A.add_condition st rs read_value in
@@ -165,7 +161,7 @@ module Cas = struct
               | _ -> Warn.fatal "Event has not forwarded any register"
             in
             match src with
-            | `Rs ->
+            | "Rs" ->
                 let ins_zero, r_eor, st = A.calc_value st 0 src_reg v_opt in
                 let rs, st = A.next_reg st in
                 let rt, st = A.next_reg st in
@@ -175,13 +171,13 @@ module Cas = struct
                   @ [A.mov rt write_value]
                 in
                 ins, rs, rt, rn, st
-            | `Rt ->
+            | "Rt" ->
                 let rs, st = A.next_reg st in
                 let ins_rt, rt, st =
                   A.calc_value st write_value src_reg v_opt
                 in
                 ins_rt @ [A.mov rs rs_value], rs, rt, rn, st
-            | `Rn ->
+            | "Rn" ->
                 let reg_zero, st = A.next_reg st in
                 let rn2, st = A.next_reg st in
                 let rs, st = A.next_reg st in
@@ -200,19 +196,16 @@ module Cas = struct
       let ins = A.pseudo [A.cas A.RMW_P rs rt rn; A.do_ldr A.vloc rcheck rn] in
 
       let dst_dep =
-        match dst with `Rs -> DepReg (rs, Some read_value) | `M -> DepNone
+        match dst with
+        | "Rs" -> DepReg (rs, Some read_value)
+        | "M" -> DepNone
+        | _ -> assert false
       in
       pre_ins @ ins, dst_dep, st
     in
     cas_base
 
-  let repr src dst ok =
-    "cas:"
-    ^ (if ok then "ok" else "no")
-    ^ " "
-    ^ (match src with `Rs -> "Rs" | `Rn -> "Rn" | `Rt -> "Rt" | `M -> "M")
-    ^ "->"
-    ^ match dst with `Rs -> "Rs" | `M -> "M"
+  let repr ok = "cas:" ^ if ok then "ok" else "no"
 end
 
 module Csel = struct
@@ -342,35 +335,50 @@ let cartesian3 l1 l2 l3 =
 
 let init () =
   List.iter
-    (fun (ok, src, dst) ->
+    (fun ok ->
       add_iico
         {
-          repr = CasNoMem.repr src dst ok;
-          compile_edge = CasNoMem.compile src dst ok;
-          direction = RegEvent, RegEvent;
-          ie = Internal;
-          sd = Same;
-          significant_source = false;
-          significant_dest = false;
+          instruction_name = CasNoMem.repr ok;
+          to_edge =
+            (fun src dst ->
+              {
+                repr = "";
+                compile_edge = CasNoMem.compile ok src dst;
+                direction = RegEvent, RegEvent;
+                ie = Internal;
+                sd = Same;
+                significant_source = false;
+                significant_dest = false;
+              });
+          inputs = ["Rn"; "Rs"; "Rt"; "M"];
+          outputs = ["Rs"; "M"];
         })
-    (cartesian3 [true; false] [`Rn; `Rs; `Rt; `M] [`Rs; `M]);
+    [true; false];
 
   List.iter
-    (fun (ok, src, dst) ->
+    (fun ok ->
       add_iico
         {
-          repr = Cas.repr src dst ok;
-          compile_edge = Cas.compile src dst ok;
-          direction =
-            ( (if src = `M then Rm true else RegEvent),
-              if dst = `M then Wm true else RegEvent );
-          ie = Internal;
-          sd = Same;
-          significant_source = src = `M;
-          significant_dest = false;
+          instruction_name = Cas.repr ok;
+          to_edge =
+            (fun src dst ->
+              {
+                repr = "";
+                compile_edge = Cas.compile ok src dst;
+                direction =
+                  ( (if src = "M" then Rm true else RegEvent),
+                    if dst = "M" then Wm true else RegEvent );
+                ie = Internal;
+                sd = Same;
+                significant_source = src = "M";
+                significant_dest = false;
+              });
+          inputs = ["Rn"; "Rs"; "Rt"; "M"];
+          outputs = ["Rs"; "M"];
         })
-    (cartesian3 [true; false] [`Rn; `Rs; `Rt; `M] [`Rs; `M]);
+    [true; false];
 
+  (* TODO: add this back
   List.iter
     (fun (ok, src) ->
       add_iico
@@ -408,4 +416,4 @@ let init () =
       sd = Same;
       significant_source = false;
       significant_dest = true;
-    }
+    } *)

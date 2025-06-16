@@ -1,4 +1,4 @@
-%token <string> ID
+%token <string * string * string> IICO_ARGS
 
 %token RF
 %token FR
@@ -39,7 +39,7 @@ edge:
     | DP dp sd dir      { Edge.Dp ($2, $3, Edge.Rm false, $4) }
     | DP dp sd dir dir  { Edge.Dp ($2, $3, $4, $5) }
     | BASIC_DEP dir dir { Edge.BasicDep ($2, $3) }
-    | IICO ID           { Edge.Iico (Edge.get_iico ($2)) }
+    | IICO IICO_ARGS   { Edge.Iico (Edge.get_iico $2) }
 ;
 ie:
     | INT { Edge.Internal }

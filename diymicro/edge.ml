@@ -30,8 +30,9 @@ type event_data = AArch64_compile.loc * int * annot * bool
     - annotation
     - is_significant *)
 
-type iico = {
-  repr : string;
+type iico_edge = {
+  mutable repr : string;
+      (* TODO Just put "" here, get_iico will put the right string here, need to find a better way *)
   compile_edge :
     AArch64_compile.state ->
     node_dep ->
@@ -47,6 +48,13 @@ type iico = {
   significant_dest : bool;
 }
 
+type iico = {
+  instruction_name : string;
+  to_edge : string -> string -> iico_edge;
+  inputs : string list;
+  outputs : string list;
+}
+
 type t =
   | Rf of int_ext
   | Fr of int_ext
@@ -54,7 +62,7 @@ type t =
   | Po of sd * direction * direction
   | Dp of dp * sd * direction * direction
   | BasicDep of direction * direction (* Carries a dependency on *)
-  | Iico of iico
+  | Iico of iico_edge
 
 (** edge attributes *)
 let edge_direction = function
@@ -74,8 +82,17 @@ let edge_location = function
   | Iico i -> i.sd
 
 let iico_ht = Hashtbl.create 10
-let get_iico s = Hashtbl.find iico_ht s
-let add_iico iico = Hashtbl.add iico_ht iico.repr iico
+
+let get_iico (s, src, dst) =
+  let iico = Hashtbl.find iico_ht s in
+  match List.mem src iico.inputs, List.mem dst iico.outputs with
+  | true, true ->
+      let edge = iico.to_edge src dst in
+      edge.repr <- iico.instruction_name ^ " " ^ src ^ "->" ^ dst;
+      edge
+  | _, _ -> raise Not_found
+
+let add_iico iico = Hashtbl.add iico_ht iico.instruction_name iico
 
 let list_iico_edges () =
   Hashtbl.fold (fun k _ acc -> Printf.sprintf "iico[%s]\n" k :: acc) iico_ht []
