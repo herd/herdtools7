@@ -232,13 +232,13 @@ ASL Typing Tests / annotating types:
   ne_bool: FALSE != FALSE = FALSE
   ne_bool: TRUE != TRUE = FALSE
   ne_bool: FALSE != TRUE = TRUE
-  implies_bool: FALSE --> FALSE = TRUE
-  implies_bool: FALSE --> TRUE = TRUE
-  implies_bool: TRUE --> TRUE = TRUE
-  implies_bool: TRUE --> FALSE = FALSE
-  equiv_bool: FALSE <-> FALSE = TRUE
-  equiv_bool: TRUE <-> TRUE = TRUE
-  equiv_bool: FALSE <-> TRUE = FALSE
+  implies_bool: FALSE ==> FALSE = TRUE
+  implies_bool: FALSE ==> TRUE = TRUE
+  implies_bool: TRUE ==> TRUE = TRUE
+  implies_bool: TRUE ==> FALSE = FALSE
+  equiv_bool: FALSE <=> FALSE = TRUE
+  equiv_bool: TRUE <=> TRUE = TRUE
+  equiv_bool: FALSE <=> TRUE = FALSE
 
   $ aslref TypingRule.BinopLiterals.integer-arithmetic.asl
   add_int: 10 + 20 = 30

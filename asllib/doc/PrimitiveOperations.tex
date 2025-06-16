@@ -35,8 +35,8 @@ on \nativevalues\ via $\unoprel$ and $\binoprel$.
 \section{Abstract Syntax\label{sec:PrimitiveOperationsAbstractSyntax}}
 \begin{flalign*}
 \unop \derives\ & \overname{\BNOT}{\texttt{"!"}} \;|\; \overname{\NEG}{\texttt{"-"}} \;|\; \overname{\NOT}{\texttt{"NOT"}} & \\
-\binop  \derives\ & \overname{\BAND}{\texttt{"\&\&"}} \;|\; \overname{\BOR}{\texttt{"||"}} \;|\; \overname{\IMPL}{\texttt{"-->"}}
-              \;|\; \overname{\BEQ}{\texttt{"<->"}}
+\binop  \derives\ & \overname{\BAND}{\texttt{"\&\&"}} \;|\; \overname{\BOR}{\texttt{"||"}} \;|\; \overname{\IMPL}{\texttt{"==>"}}
+              \;|\; \overname{\BEQ}{\texttt{"<=>"}}
         & \\
         |\ & \overname{\EQOP}{\texttt{"=="}} \;|\; \overname{\NEQ}{\texttt{"!="}} \;|\; \overname{\GT}{\texttt{"<"}}
         \;|\; \overname{\GEQ}{\texttt{">="}} \;|\; \overname{\LT}{\texttt{"<"}} \;|\; \overname{\LEQ}{\texttt{"<="}}
@@ -588,13 +588,13 @@ eq_bool: FALSE == TRUE = FALSE
 ne_bool: FALSE != FALSE = FALSE
 ne_bool: TRUE != TRUE = FALSE
 ne_bool: FALSE != TRUE = TRUE
-implies_bool: FALSE --> FALSE = TRUE
-implies_bool: FALSE --> TRUE = TRUE
-implies_bool: TRUE --> TRUE = TRUE
-implies_bool: TRUE --> FALSE = FALSE
-equiv_bool: FALSE <-> FALSE = TRUE
-equiv_bool: TRUE <-> TRUE = TRUE
-equiv_bool: FALSE <-> TRUE = FALSE
+implies_bool: FALSE ==> FALSE = TRUE
+implies_bool: FALSE ==> TRUE = TRUE
+implies_bool: TRUE ==> TRUE = TRUE
+implies_bool: TRUE ==> FALSE = FALSE
+equiv_bool: FALSE <=> FALSE = TRUE
+equiv_bool: TRUE <=> TRUE = TRUE
+equiv_bool: FALSE <=> TRUE = FALSE
 \end{Verbatim}
 % CONSOLE_END
 

@@ -676,7 +676,7 @@ let decl :=
       (* End *)
     )
   ); { [d] }
-  | ~=override; ACCESSOR; name=IDENTIFIER; ~=params_opt; ~=func_args; BIARROW; setter_arg=IDENTIFIER; ~=as_ty;
+  | ~=override; ACCESSOR; name=IDENTIFIER; ~=params_opt; ~=func_args; BEQ; setter_arg=IDENTIFIER; ~=as_ty;
     ~=accessor_body;
     { desugar_accessor_pair override name params_opt func_args setter_arg as_ty accessor_body }
 

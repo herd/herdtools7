@@ -30,6 +30,7 @@ module type CONFIG = sig
     (** Allow variables starting with a double underscore (__) *)
     val allow_double_underscore : bool
     val allow_unknown : bool
+    val allow_single_arrows : bool
 end
 
 let reserved_keywords = [
@@ -60,7 +61,6 @@ let token_of_string =
  | "BAND"               -> s BAND
  | "BEGIN"              -> s BEGIN
  | "BEQ"                -> s BEQ
- | "BIARROW"            -> s BIARROW
  | "BIT"                -> s BIT
  | "BITS"               -> s BITS
  | "BNOT"               -> s BNOT
@@ -163,7 +163,7 @@ let token_to_symbol = function
   | LT                 -> "<"
   | SHR                -> ">>"
   | BAND               -> "&&"
-  | IMPL               -> "-->"
+  | IMPL               -> "==>"
   | SHL                -> "<<"
   | RBRACKET           -> "]"
   | RRBRACKET          -> "]]"
@@ -173,7 +173,7 @@ let token_to_symbol = function
   | LBRACE             -> "{"
   | NEQ                -> "!="
   | MINUS              -> "-"
-  | BEQ                -> "<->"
+  | BEQ                -> "<=>"
   | LBRACKET           -> "["
   | LLBRACKET          -> "[["
   | LPAR               -> "("
@@ -187,7 +187,6 @@ let token_to_symbol = function
   | PLUS               -> "+"
   | COLON              -> ":"
   | ARROW              -> "=>"
-  | BIARROW            -> "<=>"
   | RBRACE             -> "}"
   | COLON_COLON        -> "::"
   | GT                 -> ">"
@@ -449,7 +448,8 @@ and token = parse
     | '<'                      { LT                               }
     | ">>"                     { SHR                              }
     | "&&"                     { BAND                             }
-    | "-->"                    { IMPL                             }
+    | "-->"                    { if Config.allow_single_arrows then IMPL else fatal lexbuf (ObsoleteSyntax "implication with -->") }
+    | "==>"                    { IMPL                             }
     | "<<"                     { SHL                              }
     | ']'                      { RBRACKET                         }
     | "]]"                     { RRBRACKET                        }
@@ -459,7 +459,8 @@ and token = parse
     | '{'                      { LBRACE                           }
     | "!="                     { NEQ                              }
     | '-'                      { MINUS                            }
-    | "<->"                    { BEQ                              }
+    | "<->"                    { if Config.allow_single_arrows then BEQ else fatal lexbuf (ObsoleteSyntax "equivalence with <->") }
+    | "<=>"                    { BEQ                              }
     | '['                      { LBRACKET                         }
     | "[["                     { LLBRACKET                        }
     | '('                      { LPAR                             }
@@ -473,7 +474,6 @@ and token = parse
     | '+'                      { PLUS                             }
     | ':'                      { COLON                            }
     | "=>"                     { ARROW                            }
-    | "<=>"                    { BIARROW                          }
     | '}'                      { RBRACE                           }
     | "++"                     { fatal lexbuf (ObsoleteSyntax "string concatenation with ++") }
     | "::"                     { COLON_COLON                      }

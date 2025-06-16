@@ -15,7 +15,7 @@ Subprogram declarations have no associated semantics.
 \Ndecl  \derives \ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \\
 & \wrappedline\ \Nrecurselimit \parsesep \Nfuncbody &\\
 |\ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
-|\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbiarrow \parsesep \Tidentifier \parsesep \Nasty &\\
+|\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbeq \parsesep \Tidentifier \parsesep \Nasty &\\
    & \wrappedline\ \Naccessorbody &\\
 \Naccessorbody \derives \ & \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon&
 \end{flalign*}
@@ -169,7 +169,7 @@ In particular, rather than directly building the abstract syntax for accessors, 
       \begin{array}{l}
         \punnode{\Noverride}, \Taccessor, \Tidentifier(\name), \punnode{\Nparamsopt},  \\
         \wrappedline\ \punnode{\Nfuncargs},
-        \Tbiarrow, \Tidentifier(\vsetterarg), \punnode{\Nasty}, \namednode{\vbody}{\Naccessorbody}
+        \Tbeq, \Tidentifier(\vsetterarg), \punnode{\Nasty}, \namednode{\vbody}{\Naccessorbody}
       \end{array}
     \right)}{\vparsednode}\right)
   \\ \astarrow \vastnode
