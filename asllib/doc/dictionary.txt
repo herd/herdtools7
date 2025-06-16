@@ -1296,6 +1296,7 @@ numbered
 numbers
 numeral
 numerator
+numeric
 numerous
 object
 observable
@@ -2031,6 +2032,7 @@ tree
 trees
 trial
 tries
+trigger
 triple
 triples
 trivial

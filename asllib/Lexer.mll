@@ -370,16 +370,25 @@ let tr_name s = match s with
 }
 
 let digit = ['0'-'9']
-let int_lit = digit ('_' | digit)*
+let digit_ = digit | '_'
+let int_lit = digit digit_*
 let hex_alpha = ['a'-'f' 'A'-'F']
-let hex_lit = '0' 'x' (digit | hex_alpha) ('_' | digit | hex_alpha)*
+let hex_digit = digit | hex_alpha
+let hex_digit_ = hex_digit | '_'
+let hex_lit = '0' 'x' hex_digit hex_digit_*
 let real_lit = int_lit '.' int_lit
 let alpha = ['a'-'z' 'A'-'Z']
+let alpha_ = alpha | '_'
 let string_lit = '"' [^ '"']* '"'
 let bit = ['0' '1' ' ']
 let bits = bit*
 let mask = (bit | 'x' | '(' bit+ ')')*
-let identifier = (alpha | '_') (alpha|digit|'_')*
+let identifier = alpha_ (alpha_|digit)*
+
+let forbidden_hex_first = '0' 'x' [^'a'-'f' 'A'-'F' '0'-'9']
+let forbidden_hex_remaining = '0' 'x' hex_digit hex_digit_* ['g'-'z' 'G'-'Z']
+let forbidden_real_first = int_lit '.' [^'0'-'9' '.']
+let forbidden_real_remaining = int_lit '.' digit digit_* alpha
 
 (*
    Lexing of string literals
@@ -485,6 +494,10 @@ and token = parse
     | "@looplimit"             { fatal lexbuf (ObsoleteSyntax "Loop limits with @looplimit") }
     | identifier as lxm        { tr_name lxm                      }
     | eof                      { EOF                              }
+    | forbidden_real_first     { raise LexerError                 }
+    | forbidden_real_remaining { raise LexerError                 }
+    | forbidden_hex_first      { raise LexerError                 }
+    | forbidden_hex_remaining  { raise LexerError                 }
     | ""                       { raise LexerError                 }
 {
 end

@@ -125,3 +125,80 @@ Check that variables starting with `__` are reserved:
   0x1
   1
   2
+
+Forbidden patterns
+  $ cat >forbiddenhex01.asl <<EOF
+  > let x = 0xh12;
+  > EOF
+  $ aslref forbiddenhex01.asl
+  File forbiddenhex01.asl, line 1, characters 8 to 11:
+  let x = 0xh12;
+          ^^^
+  ASL Error: Unknown symbol.
+  [1]
+
+  $ cat >forbiddenhex02.asl <<EOF
+  > let x = 0x_12;
+  $ aslref forbiddenhex02.asl
+  File forbiddenhex02.asl, line 1, characters 8 to 11:
+  let x = 0x_12;
+          ^^^
+  ASL Error: Unknown symbol.
+  [1]
+
+  $ cat >forbiddenhex03.asl <<EOF
+  > let x = 0x12h12;
+  $ aslref forbiddenhex03.asl
+  File forbiddenhex03.asl, line 1, characters 8 to 13:
+  let x = 0x12h12;
+          ^^^^^
+  ASL Error: Unknown symbol.
+  [1]
+
+  $ cat >forbiddenhex04.asl <<EOF
+  > let x_foo = 213;
+  > let x = 0x_foo;
+  $ aslref forbiddenhex04.asl
+  File forbiddenhex04.asl, line 2, characters 8 to 11:
+  let x = 0x_foo;
+          ^^^
+  ASL Error: Unknown symbol.
+  [1]
+
+  $ cat >forbiddenreal01.asl <<EOF
+  > let x = 1.h12;
+  > EOF
+  $ aslref forbiddenreal01.asl
+  File forbiddenreal01.asl, line 1, characters 8 to 11:
+  let x = 1.h12;
+          ^^^
+  ASL Error: Unknown symbol.
+  [1]
+
+  $ cat >forbiddenreal02.asl <<EOF
+  > let x = 1._12;
+  $ aslref forbiddenreal02.asl
+  File forbiddenreal02.asl, line 1, characters 8 to 11:
+  let x = 1._12;
+          ^^^
+  ASL Error: Unknown symbol.
+  [1]
+
+  $ cat >forbiddenreal03.asl <<EOF
+  > let x = 1.12h12;
+  $ aslref forbiddenreal03.asl
+  File forbiddenreal03.asl, line 1, characters 8 to 13:
+  let x = 1.12h12;
+          ^^^^^
+  ASL Error: Unknown symbol.
+  [1]
+
+  $ cat >forbiddenreal04.asl <<EOF
+  > let x_foo = 213;
+  > let x = 1._foo;
+  $ aslref forbiddenreal04.asl
+  File forbiddenreal04.asl, line 2, characters 8 to 11:
+  let x = 1._foo;
+          ^^^
+  ASL Error: Unknown symbol.
+  [1]
