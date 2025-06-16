@@ -784,10 +784,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin CheckIsNotCollection *)
-  let check_is_not_collection ~loc env t () =
+  let rec check_is_not_collection ~loc env t () =
     let t_struct = Types.make_anonymous env t in
     match t_struct.desc with
     | T_Collection _ -> fatal_from ~loc Error.UnexpectedCollection
+    | T_Tuple tys ->
+        List.iter (fun ty -> check_is_not_collection ~loc env ty ()) tys
     | _ -> ()
   (* End *)
 

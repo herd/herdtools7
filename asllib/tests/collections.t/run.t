@@ -40,3 +40,9 @@
   ASL Type error: unexpected collection.
   [1]
 
+  $ aslref on-local-tuple.asl
+  File on-local-tuple.asl, line 10, characters 2 to 33:
+    var col2 = (my_collection, 32);
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: unexpected collection.
+  [1]
