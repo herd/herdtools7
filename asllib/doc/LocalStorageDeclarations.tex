@@ -240,6 +240,12 @@ In \listingref{checkisnotcollection}, the statement
       \item $\vtstruct$ is a \collectiontypeterm{};
       \item the result is a \typingerrorterm{}.
     \end{itemize}
+  \item \AllApplyCase{Tuple}
+    \begin{itemize}
+      \item \Prosemakeanonymous{\tenv}{\vt}{\vtstruct};
+      \item $\vtstruct$ is a \tupletypeterm{} with type list $\tys$;
+      \item for every $\tty$ in $\tys$, \Prosecheckisnotcollection{\tty}{\tenv}.
+    \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
@@ -255,7 +261,17 @@ In \listingref{checkisnotcollection}, the statement
 \begin{mathpar}
   \inferrule[Not-Collection]{
     \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-    \astlabel(\vtstruct) \neq \TCollection \\
+    \astlabel(\vtstruct) \notin \left\{ \TCollection, \TTuple \right\} \\
+  }{%
+    \checkisnotcollection(\tenv, \vt) \typearrow \True
+  }
+\end{mathpar}
+\begin{mathpar}
+  \inferrule[Tuple]{
+    \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+    \astlabel(\vtstruct) = \TTuple (\tys) \\
+    \tty \in \tys: \checkisnotcollection(\tenv, \tty) \typearrow \True
+    \OrTypeError
   }{%
     \checkisnotcollection(\tenv, \vt) \typearrow \True
   }
