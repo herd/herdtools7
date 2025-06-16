@@ -20,8 +20,43 @@
 ;; herdtools7 github repository.                                              ;;
 ;;****************************************************************************;;
 
-(in-package "ACL2")
-(include-book "../portcullis")
-(include-book "std/omaps/portcullis" :dir :system)
-(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
-(in-package "ACL2")
+(in-package "ASL")
+
+;; This *non-locally* includes many theorems needed for admitting and
+;; guard-verifying an interpreter. Should be included locally only.
+
+(include-book "ast")
+(include-book "std/lists/repeat" :dir :system)
+(include-book "centaur/vl/util/default-hints" :dir :system)
+
+(defthm len-equal-0
+  (equal (equal 0 (len x))
+         (not (consp x)))
+  :hints(("Goal" :in-theory (enable len))))
+
+(defthm len-of-cons
+  (Equal (len (cons x y))
+         (+ 1 (len y))))
+
+
+(defthm rationalp-when-integerp-rw
+  (implies (integerp x)
+           (rationalp x)))
+
+(defthm assoc-equal-is-hons-assoc-equal
+  (implies k
+           (equal (assoc-equal k x)
+                  (hons-assoc-equal k x)))
+  :hints(("Goal" :in-theory (enable assoc-equal hons-assoc-equal))))
+
+(defthm alistp-when-func-ses-imap-p-rw
+  (implies (func-ses-imap-p x)
+           (alistp x))
+  :hints(("Goal" :in-theory (enable func-ses-imap-p))))
+
+(defthm identifier-p-compound-recognizer
+  (implies (identifier-p x)
+           (stringp x))
+  :hints(("Goal" :in-theory (enable identifier-p)))
+  :rule-classes :compound-recognizer)
+

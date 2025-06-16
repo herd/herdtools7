@@ -61,7 +61,7 @@
                             (+ 1 END))))))))
 
 
-(def-asl-subprogram sqrtrounded-correct
+(def-asl-subprogram-stdlib sqrtrounded-correct
   :function "SqrtRounded"
   :args (val fracbits)
   :safe-clock (sqrtrounded-safe-clock val.val)

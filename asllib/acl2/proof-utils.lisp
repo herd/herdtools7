@@ -4,7 +4,7 @@
 ;;
 ;; SPDX-FileCopyrightText: Copyright 2025 Arm Limited and/or its affiliates <open-source-office@arm.com>
 ;; SPDX-License-Identifier: BSD-3-Clause
-;; 
+;;
 ;;****************************************************************************;;
 ;; Disclaimer:                                                                ;;
 ;; This material covers both ASLv0 (viz, the existing ASL pseudocode language ;;
@@ -78,7 +78,7 @@
     (for-induct env2 index_name limit step dir end body)))
 (in-theory (enable (:i for-induct)))
 
-    
+
 
 (define spmatch-force-exec (x) x
   ///
@@ -122,22 +122,6 @@
                     look))
     :hints(("Goal" :in-theory (enable spmatch-force-exec)))))
 
-(define all-subprograms-match ((env static_env_global-p)
-                               (ref-env static_env_global-p))
-  :returns (ok)
-  (all-entries-match (static_env_global->subprograms env)
-                     (static_env_global->subprograms ref-env))
-  ///
-  (defret lookup-when-<fn>
-    (implies (and (syntaxp (quotep name))
-                  ok
-                  (equal look (spmatch-force-exec
-                               (hons-assoc-equal name (static_env_global->subprograms ref-env))))
-                  (syntaxp (quotep look))
-                  look)
-             (equal (hons-assoc-equal name (static_env_global->subprograms env))
-                    look))
-    :hints(("Goal" :in-theory (enable spmatch-force-exec)))))
 
 (define subprograms-match ((names identifierlist-p)
                            (env static_env_global-p)
@@ -176,14 +160,31 @@
                   (subprograms-match names1 env env1)
                   (syntaxp (quotep names1))
                   (subsetp-equal names names1))
-             (subprograms-match names env env1))))
+             (subprograms-match names env env1)))
+
+  (defthm subprograms-match-when-other-assumption
+    (implies (and (subprograms-match names1 env env2)
+                  (syntaxp (not (equal env1 env2)))
+                  (subprograms-match names env1 env2)
+                  (subprograms-match names env env2))
+             (subprograms-match names env env1)))
+
+  (defthm subprograms-match-force-exec
+    (implies (and (syntaxp (quotep names))
+                  (equal env1v (spmatch-force-exec env1))
+                  (syntaxp (quotep env1v))
+                  (equal env2v (spmatch-force-exec env2))
+                  (syntaxp (quotep env2v)))
+             (equal (subprograms-match names env1 env2)
+                    (spmatch-force-exec (subprograms-match names env1v env2v))))
+    :hints(("Goal" :in-theory (enable spmatch-force-exec)))))
 
 
 
 
 
-                    
-                       
+
+
 (program)
 
 (defun loop-local-var-bindings (local-vars)
@@ -259,7 +260,7 @@
        (<looptype>->body *<name>*))
 
      <prepwork>
-     
+
      (local (in-theory (acl2::e/d* (<defloop-enables>
                                     <user-enables>)
                                    (<defloop-disables>
@@ -274,8 +275,9 @@
                        <invariants>
                        ;; (no-duplicatesp-equal (acl2::alist-keys (car env.local.storage)))
                        )
-                  (b* (((mv (ev_normal res) &) <loop-form>))
-                    <concl>)))
+                  (b* (((mv (ev_normal res) new-orac) <loop-form>))
+                    (and (equal new-orac orac)
+                         <concl>))))
        :hints (;; copied from just-induct-and-expand
                (if (equal (car id) '(0))
                    (let* ((expand-hints (acl2::just-expand-cp-parse-hints
@@ -317,12 +319,12 @@
          ;; early, we need to know the return condition and return values.
          (return-cond 'nil)
          return-values
-         
+
          enable
          disable
          hints
          prepwork
-         
+
          (invariants 't)
          bindings
          (static-env '(stdlib-static-env)))
@@ -361,7 +363,7 @@
         (er soft 'defloop "Index var must be specified for for loops"))
        ((when (and index-var (not (eq looptype :s_for))))
         (er soft 'defloop "Index var specified for non-for loop"))
-       
+
        (local-vars (if (eq looptype :s_for)
                        (cons `((v_int ,index-var)
                                ,(s_for->index_name form)
@@ -371,7 +373,7 @@
                                    `(+ -1 ,end-var))))
                              local-vars)
                      local-vars))
-                               
+
        (local-var-bindings (loop-local-var-bindings local-vars))
        (local-var-hyps (loop-local-var-hyps local-vars))
        (local-var-hyps (if (eq looptype :s_for)
@@ -382,7 +384,7 @@
                                           `(<= ,start-var (+ 1 ,end-var))
                                         `(<= (+ -1 ,end-var) ,start-var))))
                          local-var-hyps))
-        
+
        (local-var-final-env (loop-local-vars-final-env local-vars))
 
        (continuing-concl
@@ -412,8 +414,8 @@
                             returning-concl
                           `(implies ,return-cond
                                     ,returning-concl))))))
-                       
-              
+
+
        ((acl2::tmplsubst template)
         (acl2::make-tmplsubst
          :atoms `((<name> . ,name)
@@ -439,7 +441,7 @@
 
        (body-const (acl2::template-subst-top '*<name>-body* template))
        (test-const (acl2::template-subst-top '*<name>-test* template))
-       
+
        ((mv loop-form expand induction)
         (case looptype
           (:s_for
@@ -467,8 +469,8 @@
                                     (<induction> . ,induction)
                                     (<loop-form-expand> . ,expand)
                                     . ,template.atoms)))
-                      
-                      
+
+
        (event
         (acl2::template-subst-top *defloop-template* template)))
     (value event)))
@@ -484,35 +486,35 @@
    :looptype :s_for                 ;; or :s_while, :s_repeat
    :nth 0                           ;; which occurence of this type of loop in the function -- default 0
    :index-var i                     ;; ACL2 variable corresponding to the index of a for loop
- 
+
    :static-env (stdlib-static-env)  ;; Expression for static environment in which the function
                                     ;; and its dependencies are defined -- default (stdlib-static-env)
- 
+
    :local-vars ((n \"asl_var_n\")   ;; ACL2 variable n corresponds to ASL variable \"asl_var_n\", read only
-                (res \"result\"     ;; ACL2 variable res corresponds to ASL variable \"res\", which is updated
+                (res \"result\"     ;; ACL2 variable res corresponds to ASL variable \"result\", which is updated
                  (v_int spec)))     ;; such that its final value is (v_int (my-spec n.val))
- 
+
    :bindings ((spec (my-spec n.val))) ;; B* bindings using the local-vars and accessors for their
                                       ;; respective value types. May be used in the final value arguments
                                       ;; (as above for res).
- 
+
    :invariants (and (<= 0 n.val)    ;; Hypotheses/inductive invariants about the loop
-                    (equal end 10)  
+                    (equal end 10)
                     (equal res.val (v_int (my-partial-spec i.val n.val))))
- 
+
    :start-var my-start    ;; Name for start and end variables -- default start, end
    :end-var   end
- 
+
    :return-cond (>= n.val 10)      ;; Condition under which the loop causes a return at some point
                                    ;; instead of finishing
    :return-values (list (v_int (- n.val i.val))) ;; Values that are returned when early returning
- 
+
    :enable (foo bar)               ;; rules to enable
    :disable (baz)                  ;; rules to disable
    :hints ((and stable-under-simplificationp
             '(:expand ((:free (n) (my-partial-spec start n))))))
                                    ;; computed hints to add to the default induction hint
- 
+
    :prepwork ((local (defthm lemma ...))) ;; events to do before the proof
    )
  })
@@ -549,7 +551,7 @@ as follows, more or less following the above made-up example:</p>
 
                    ;; user-specified invariant assumptions:
                    (and (<= 0 n.val)
-                        (equal end 10)  
+                        (equal end 10)
                         (equal res.val (v_int (my-partial-spec i.val n.val))))
 
                    ;; additional invariant about well formedness of local storage alist:
@@ -575,8 +577,9 @@ as follows, more or less following the above made-up example:</p>
                                      ;; and the loop index one past the end:
                                      (equal res.res.env
                                             (change-env
-                                             env :local
-                                             :local
+                                             env :local ...))))))))))
+ })
+
 ")
 
 (defmacro defloop (name &rest args)
@@ -685,7 +688,7 @@ as follows, more or less following the above made-up example:</p>
   ///
   (verify-guards ty-remove-parameters)
   (fty::deffixequiv-mutual ty-remove-parameters))
-                          
+
 
 (program)
 
@@ -706,7 +709,7 @@ as follows, more or less following the above made-up example:</p>
 
 (define subprogram-arg-hyp ((var symbolp)
                             (type ty-p)
-                            hyps 
+                            hyps
                             (local-storage-term)
                             state)
   (b* ((env-term `(change-env
@@ -729,7 +732,7 @@ as follows, more or less following the above made-up example:</p>
   :guard (equal (len params) (len fn-params))
   (b* (((when (atom params)) (value (cons hyps local-storage-term)))
        ((maybe-typed_identifier p1) (car fn-params))
-       (new-local-storage-term `(put-assoc-equal ,p1.name ,(car params) ,local-storage-term))
+       (new-local-storage-term `(omap::update ,p1.name (val-fix ,(car params)) ,local-storage-term))
        ((unless p1.type)
         (subprogram-param-hyps (cdr params) (cdr fn-params) hyps new-local-storage-term state))
        ((er first) (subprogram-arg-hyp (car params) p1.type hyps local-storage-term state))
@@ -750,7 +753,7 @@ as follows, more or less following the above made-up example:</p>
   :guard (equal (len args) (len fn-args))
   (b* (((when (atom args)) (value (cons hyps local-storage-term)))
        ((maybe-typed_identifier p1) (car fn-args))
-       (new-local-storage-term `(put-assoc-equal ,p1.name ,(car args) ,local-storage-term))
+       (new-local-storage-term `(omap::update ,p1.name (val-fix ,(car args)) ,local-storage-term))
        ((er first) (subprogram-arg-hyp (car args) p1.type hyps local-storage-term state))
        ((when (eq first nil))
         (er soft 'def-asl-subprogram "Unsatisfiable parameter type: ~x0" p1)))
@@ -759,8 +762,8 @@ as follows, more or less following the above made-up example:</p>
                              hyps
                            (cons first hyps))
                          new-local-storage-term state)))
-    
-    
+
+
 
 
 
@@ -780,22 +783,24 @@ as follows, more or less following the above made-up example:</p>
                                           <static-env>)
                        <hyps>
                        <measure-reqs>)
-                  (let* ((res (mv-nth 0 (eval_subprogram
-                                         env <fn>
-                                         <params>
-                                         <args>)))
-                         (spec (ev_normal (func_result <retvals> (env->global env)))))
-                    <concl>)))
+                  (b* (((mv res new-orac) (eval_subprogram
+                                           env <fn>
+                                           <params>
+                                           <args>))
+                       (spec (ev_normal (func_result <retvals> (env->global env)))))
+                    (and (equal new-orac orac)
+                         <concl>))))
        :hints ((:@ (not :no-expand-hint)
                 ("goal" :expand ((:free (params args)
                                  (eval_subprogram env <fn> params args :clk clk)))))
                <hints>))
 
-     (table asl-subprogram-table
-            <fn> (list '<subprograms>
-                       '<direct-subprograms>
-                       '<clk-expr>
-                       '<name>))))
+     (:@ :table-update
+      (table <table-name>
+             <fn> (list '<subprograms>
+                        '<direct-subprograms>
+                        '<clk-expr>
+                        '<name>)))))
 
 (define collect-direct-subprograms (body acc)
   (if (atom body)
@@ -820,7 +825,7 @@ as follows, more or less following the above made-up example:</p>
                 (union-equal (car look) acc)
               acc)))
     (collect-transitive-subprograms (cdr lst) table acc)))
-    
+
 
 
 (define maximize-const-clocks (subprogram-lst table const-acc)
@@ -835,7 +840,7 @@ as follows, more or less following the above made-up example:</p>
                            (if (integerp look-clk)
                                (max look-clk const-acc)
                              const-acc))))
-    
+
 
 
 (define cleanup-hyps (hyplist)
@@ -884,8 +889,8 @@ as follows, more or less following the above made-up example:</p>
           tree
         (cons (sublis-subtrees subst (car tree))
               (sublis-subtrees subst (cdr tree)))))))
-    
-         
+
+
 
 
 (define def-asl-subprogram-fn (name args state)
@@ -897,10 +902,10 @@ as follows, more or less following the above made-up example:</p>
          params
          args
          safe-clock
-         
+
          return-values
          (hyps 't)
-         
+
          enable
          disable
          hints
@@ -916,11 +921,11 @@ as follows, more or less following the above made-up example:</p>
          error-res
          throwing-cond
          throwing-res
-         
+
          bindings
          (static-env '(stdlib-static-env)))
         args)
-       
+
        ((when bad-args)
         (er soft 'def-asl-subprogram "Bad arguments: ~x0" bad-args))
        ((unless (stringp function))
@@ -937,6 +942,7 @@ as follows, more or less following the above made-up example:</p>
         (er soft 'def-asl-subprogram "Bad function ~x0: not found in static env" function))
        ((func-ses fn-struct))
        ((func f) fn-struct.fn)
+       (primitivep (subprogram_body-case f.body :sb_primitive))
 
        ((unless (symbol-listp params))
         (er soft 'def-asl-subprogram "Params should be a symbol-list"))
@@ -953,22 +959,28 @@ as follows, more or less following the above made-up example:</p>
 
        ((er hyps) (simplify-for-def-asl-subprogram `(b* (,@param-bindings ,@arg-bindings) ,hyps) t state))
        (hyp-list (reverse (cleanup-hyps (list hyps))))
-       ((er (cons hyp-list storage-term)) (subprogram-param-hyps params f.parameters hyp-list 'env.local.storage state))
+       ((er (cons hyp-list storage-term)) (subprogram-param-hyps params f.parameters hyp-list '(val-imap-fix env.local.storage) state))
        ((er (cons hyp-list &)) (subprogram-arg-hyps args f.args hyp-list storage-term state))
        (hyps (sublis-subtrees binding-subst (cleanup-hyps (reverse hyp-list))))
 
        (direct-subprograms (collect-direct-subprograms f.body nil))
-       (table  (table-alist 'asl-subprogram-table (w state)))
+       (table-name (if (equal static-env '(stdlib-static-env))
+                       'asl-subprogram-table
+                     'asl-prim-subprogram-table))
+       (table  (table-alist table-name (w state)))
        (subprograms (cons function (collect-transitive-subprograms direct-subprograms table nil)))
 
        (clk-val
-        (or safe-clock
-            (+ 1 (maximize-const-clocks direct-subprograms table -1))))
+        (if primitivep
+            0
+          (or safe-clock
+              (+ 1 (maximize-const-clocks direct-subprograms table -1)))))
 
        (measure-reqs (if (eql clk-val 0)
                          t
                        `(<= ,clk-val (ifix clk))))
 
+       (table-update t)
        (concl (if normal-cond
                   (if nonnormal-res
                       `(equal res (if ,normal-cond
@@ -1016,7 +1028,8 @@ as follows, more or less following the above made-up example:</p>
                            (<params> . (list . ,params))
                            (<args>   . (list . ,args))
                            (<retvals> . (list . ,return-values))
-                           (<concl> . ,concl))
+                           (<concl> . ,concl)
+                           (<table-name> . ,table-name))
                   :splices `((<subprogram-enables> . (asl-code-proof-enables))
                              (<subprogram-disables> . (asl-code-proof-disables))
                              (<user-enables> . ,enable)
@@ -1026,7 +1039,8 @@ as follows, more or less following the above made-up example:</p>
                              (<user-bindings> . ,bindings)
                              (<hyps> . ,hyps)
                              (<hints> . ,hints))
-                  :features (and no-expand-hint '(:no-expand-hint)))))
+                  :features (append (and no-expand-hint '(:no-expand-hint))
+                                    (and table-update '(:table-update))))))
 
     (value (acl2::template-subst-top *def-asl-subprogram-template* template))))
 
@@ -1037,14 +1051,79 @@ as follows, more or less following the above made-up example:</p>
        (make-event (def-asl-subprogram-fn ',name ',args state)))))
 
 
-                             
-                             
-                             
+(defun assoc-keyword-permissive (k args)
+  (if (atom args)
+      nil
+    (cond ((eq k (car args)) args)
+          ((keywordp (car args)) (assoc-keyword-permissive k (cddr args)))
+          (t (assoc-keyword-permissive k (cdr args))))))
 
-       
-       
-       
-        
+(defun remove-keys-permissive (keys args)
+  (if (atom args)
+      nil
+    (cond ((member-eq (car args) keys) (cddr args))
+          ((keywordp (car args)) (list* (car args) (cadr args)
+                                        (remove-keys-permissive keys (cddr args))))
+          (t (cons (car args) (remove-keys-permissive keys (cddr args)))))))
+
+(define def-asl-subprogram-stdlib-fn (name args state)
+  ;; Wraps def-asl-subprogram. Checks whether we need to do a separate proof
+  ;; for the stdlib version with and without primitives.
+  (b* (((acl2::er (cons & static-env-val))
+        (acl2::simple-translate-and-eval '(stdlib-static-env) nil nil
+                                         (msg "static env ~x0" '(stdlib-static-env))
+                                         'def-asl-subprogram (w state) state t))
+       ((acl2::er (cons & prim-static-env-val))
+        (acl2::simple-translate-and-eval '(stdlib-prim-static-env) nil nil
+                                         (msg "static env ~x0" '(stdlib-prim-static-env))
+                                         'def-asl-subprogram (w state) state t))
+       (function (cadr (assoc-keyword-permissive :function args)))
+       ;; (fn-struct-prim (cdr (hons-assoc-equal function
+       ;;                                        (static_env_global->subprograms prim-static-env-val))))
+       ;; ((func-ses fn-struct-prim))
+       ;; ((func pf) fn-struct-prim.fn)
+       ;; ((unless (subprogram_body-case pf.body :sb_asl))
+       ;;  ;; The function is a primitive in the primitive static-env, so only do
+       ;;  ;; a proof for the non-primitive version.
+       ;;  (def-asl-subprogram-fn name args state))
+       (fn-struct (cdr (hons-assoc-equal function
+                                         (static_env_global->subprograms static-env-val))))
+       ((func-ses fn-struct))
+       ((func f) fn-struct.fn)
+       (direct-subprograms (collect-direct-subprograms f.body nil))
+       (table  (table-alist 'asl-subprogram-table (w state)))
+       (subprograms (cons function (collect-transitive-subprograms direct-subprograms table nil)))
+       (same-in-both-static-envs (subprograms-match subprograms prim-static-env-val static-env-val))
+       (name-prim (intern-in-package-of-symbol (concatenate 'string (symbol-name name) "-PRIM") name))
+       ((er thms1) (def-asl-subprogram-fn name args state))
+       ;; If same-in-both-static-envs, then we can use the theorem about the
+       ;; non-primitive version to prove the primitive one.
+       (prim-args (list* :static-env '(stdlib-prim-static-env) args))
+       (prim-args (if same-in-both-static-envs
+                      (list* :no-expand-hint t
+                             :hints `(("goal" 
+                                       :in-theory (enable ,name)))
+                             (remove-keys-permissive
+                              '(:hints :no-expand-hint :enable :disable) prim-args))
+                    prim-args))
+       ((er thms2) (def-asl-subprogram-fn name-prim prim-args state)))
+    (value `(progn (encapsulate nil ,thms1) (encapsulate nil ,thms2)))))
+
+(defmacro def-asl-subprogram-stdlib (name &rest args)
+  (let* ((prepwork (cadr (assoc-keyword :prepwork args))))
+    `(defsection ,name
+       ,@prepwork
+       (make-event (def-asl-subprogram-stdlib-fn ',name ',args state)))))
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1080,6 +1159,8 @@ as follows, more or less following the above made-up example:</p>
     write_to_bitvector
     write_to_bitvector-aux
     vbv-to-int
-    v_to_int))
+    v_to_int
+    eval_primitive
+    omap::assoc-of-from-lists))
 
 (acl2::def-ruleset asl-code-proof-disables nil)

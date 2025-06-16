@@ -23,26 +23,48 @@
 (in-package "ASL")
 
 (include-book "interp")
+(local (std::add-default-post-define-hook :fix))
+
+(defxdoc asl
+  :parents (acl2::top)
+  :short "ASL interpreter and proofs in ACL2 (umbrella topic)")
+
+(defxdoc asl-interpreter-functions
+  :parents (asl)
+  :short "ASL interpreter implementation functions (umbrella topic)")
+
+(defxdoc asl-interpreter-main-functions
+  :parents (asl)
+  :short "Main ASL interpreter functions (umbrella topic)")
+
+
+
+(local (xdoc::set-default-parents asl-interpreter-functions))
 
 (defconst *eval_global-initial-clock* 1000000)
 
 (defconst *main-initial-clock* 1000000)
 
 
+
 (define declare_global ((env env-p)
                         (name identifier-p)
                         (val val-p))
+  :short "Declare a new global variable and assign it the given value, adding it to the
+env's global storage alist"
   :returns (new-env env-p)
   (b* (((env env))
        ((global-env g) env.global)
-       (new-storage (cons (cons (identifier-fix name) (val-fix val))
-                          g.storage)))
+       (new-storage (omap::update (identifier-fix name) (val-fix val)
+                                  g.storage)))
     (change-env env :global (change-global-env g :storage new-storage))))
 
 (define eval_global ((env env-p)
                      (x decl-p)
                      &key (orac 'orac))
   :returns (mv (res env_eval_result-p) new-orac)
+  :short "If the given declaration is a global storage declaration, evaluate the
+declaration, adding the new global variable with its computed initial value."
   (b* ((x (decl->desc x)))
     (decl_desc-case x
       :d_globalstorage
@@ -55,7 +77,9 @@
 
 (define eval_globals ((env env-p)
                       (x ast-p)
-                     &key (orac 'orac))
+                      &key (orac 'orac))
+  :short "Evaluate all the global storage declarations in the given AST, initializing
+global variables and producing a new environment."
   :measure (len x)
   :returns (mv (res env_eval_result-p) new-orac)
   (b* (((when (atom x)) (evo_normal (env-fix env)))
@@ -73,6 +97,9 @@
                                 (equal (len (cdr x)) (1- n))))))))
 
 (define run ((tenv static_env_global-p) (ast ast-p) &key (orac 'orac))
+  :short "Run a toplevel ASL program, first initializing all declared global variables
+and then evaluating the \"main\" subprogram."
+  :parents (asl-interpreter-functions asl-interpreter-main-functions)
   :returns (mv (val val_result-p) new-orac)
   (b* ((env0 (make-env :local (empty-local-env)
                        :global (make-global-env :static tenv)))
