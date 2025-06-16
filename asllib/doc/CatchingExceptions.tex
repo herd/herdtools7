@@ -1,5 +1,13 @@
 \chapter{Catching Exceptions\label{chap:CatchingExceptions}}
 
+\listingref{CatchingExceptions} shows examples of catching exceptions.
+\ASLListing{Catching exceptions}{CatchingExceptions}{\definitiontests/CatchingExceptions.asl}
+
+\listingref{CatchingExceptions2} shows more examples of throwing and catching exceptions.
+The exception \verb|BAD_OPCODE| thrown in \verb|decode_instruction| is caught in the calling
+subprogram \verb|top| where the catcher proceeds to call \verb|handle_exception|.
+\ASLListing{Catching exceptions}{CatchingExceptions2}{\definitiontests/CatchingExceptions2.asl}
+
 Exception catchers are grammatically derived from $\Ncatcher$ and represented
 in the \untypedast{} by $\catcher$.
 

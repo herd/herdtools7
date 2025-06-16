@@ -10,6 +10,14 @@ The semantics of a list of global storage declarations is defined in \SemanticsR
 where the list is ordered via \SemanticsRuleRef{BuildGlobalEnv}.
 The semantics of a single global storage declarations is defined in \SemanticsRuleRef{DeclareGlobal}.
 
+\RequirementDef{GlobalStorageCycles} \identr{TTMQ}
+The declarations, and any associated initialization expressions, for global storage elements must not include cycles.
+
+The specifications in \listingref{GlobalStorageCycles-bad1} and \listingref{GlobalStorageCycles-bad2}
+are illegal, since they contain cycles.
+\ASLListing{Cyclic global storage declarations}{GlobalStorageCycles-bad1}{\definitiontests/GuideRule.GlobalStorageCycles.bad1.asl}
+\ASLListing{Cyclic global storage declarations}{GlobalStorageCycles-bad2}{\definitiontests/GuideRule.GlobalStorageCycles.bad2.asl}
+
 \section{Configurable Global Storage Declarations\label{sec:ConfigurableGlobalStorageDeclarations}}
 Global storage declarations with keyword \texttt{config} aim to assist implementation-specific support for ``configuration'' of an ASL specification.
 In particular, implementations may provide mechanisms to override \texttt{config} values, such as:
@@ -715,17 +723,31 @@ The relation
 \hypertarget{def-evalglobals}{}
 \[
   \evalglobals(\overname{\decl^*}{\vdecls}, (\overname{\overname{\envs}{\env} \times \overname{\XGraphs}{\vgone}}{\envm}))
-  \;\aslrel\; \overname{(\envs \times \XGraphs)}{C} \cup \overname{\TDynError}{\DynErrorConfig}
+  \;\aslrel\; \overname{(\envs \times \XGraphs)}{C} \cup
+  \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 updates the input environment and execution graph by initializing the global storage declarations.
+Otherwise, the evaluation terminates abnormally.
 
 \ExampleDef{Evaluating a List of Global Declarations}
 Evaluating the global storage declarations in \listingref{EvalGlobals}
 results in updating the $\storage$ map of global dynamic environment by binding
-\verb|PI| is bound to $\nvreal(157/50)$,
-\verb|x| is bound to $\nvint(5)$, and \verb|c| is bound to $\nvint(42)$.
+\verb|PI| to $\nvreal(157/50)$,
+\verb|PC| to \\
+$\nvbitvector(\overbrace{0 \ldots 0}^{32})$,
+\verb|MaxIrq| to $\nvint(480)$, and
+\verb|Regs| to
+\[
+\nvvector{ [\overbrace{\nvbitvector(\overbrace{0 \ldots 0}^{32}) \ldots \nvbitvector(\overbrace{0 \ldots 0}^{32})}^{16}] } \enspace.
+\]
 
 \ASLListing{Evaluating a list of global declarations}{EvalGlobals}{\semanticstests/SemanticsRule.EvalGlobals.asl}
+
+\ExampleDef{A Storage Declaration Resulting in a Thrown Exception}
+The specification in \listingref{EvalGlobals-bad1} evaluates the
+global storage declaration for \verb|x|, which results in a thrown exception,
+before having the chance to evaluate \verb|main|.
+\ASLListing{Evaluating a global storage declaration resulting in a thrown exception}{EvalGlobals-bad1}{\semanticstests/SemanticsRule.EvalGlobals.bad1.asl}
 
 \ProseParagraph
 \OneApplies

@@ -17,6 +17,17 @@ their semantics is given in \secref{GlobalStorageDeclarationsSemantics}.
 Global pragmas are statically checked by the typechecker, but do not produce \typedast{} nodes,
 and thus are not associated with a dynamic semantics.
 
+For example, the specification in \listingref{GlobalPragma} contains two global pragmas,
+which are ignored by the dynamic semantics.
+\ASLListing{Global pragmas}{GlobalPragma}{\definitiontests/GlobalPragma.asl}
+
+It is recommended that tools which process ASL should warn users of unrecognized tool specific pragmas.
+\identi{SLNQ}
+
+For example, a tool processing the specification in \listingref{GlobalPragma2} may recognize \verb|my_tool_pragma1|
+but not \verb|other_tool_op| and warn about it.
+\ASLListing{Warning of pragmas not recognized by tools}{GlobalPragma2}{\definitiontests/GlobalPragma2.asl}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Syntax}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

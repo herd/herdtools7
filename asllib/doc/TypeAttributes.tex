@@ -467,28 +467,8 @@ which ensures that \TypingRuleRef{Structure} terminates\footnote{In mathematical
 this ensures that \TypingRuleRef{Structure} is a proper \emph{structural induction.}}.
 
 \ExampleDef{The Structure of a Type}
-In this example:
-\texttt{type T1 of integer;}, \texttt{T1}, is the named type \texttt{T1}
-whose structure is \texttt{integer}.
-
-In this example:
-\texttt{type T2 of (integer, T1);}, \texttt{T2},
-is the named type \texttt{T2} whose structure is (integer, integer). In this
-example, \texttt{(integer, T1)} is non-primitive since it uses \texttt{T1}, which is builtin aggregate.
-
-In this example:
-\texttt{var x: T1;}
-the type of $\vx$ is the named (hence non-primitive) type \texttt{T1}, whose structure
-is \texttt{integer}.
-
-In this example:
-\texttt{var y: integer;}
-the type of \texttt{y} is the anonymous primitive type \texttt{integer}.
-
-In this example:
-\texttt{var z: (integer, T1);}
-the type of \texttt{z} is the anonymous non-primitive type
-\texttt{(integer, T1)} whose structure is \texttt{(integer, integer)}.
+\listingref{Structure} shows examples of types and their structures.
+\ASLListing{Types and their structure}{Structure}{\typingtests/TypingRule.Structure.asl}
 
 \ProseParagraph
 \OneApplies
