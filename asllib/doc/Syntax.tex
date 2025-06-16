@@ -218,13 +218,12 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
    & \wrappedline\ \Naccessorbody &\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon &\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon &\\
-|\ & \Nglobaldeclkeyword \parsesep \Tidentifier \parsesep \option{\Tcolon \parsesep \Nty} &\\
+|\ & \Nglobaldeclkeywordnonconfig \parsesep \Tidentifier \parsesep \option{\Tcolon \parsesep \Nty} &\\
    & \wrappedline\ \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tconfig \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
 |\ & \Nglobaldeclkeyword \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &\\
    & \wrappedline\ \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
-|\ & \Tconfig \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 |\ & \Tpragma \parsesep \Tidentifier \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon&
 \end{flalign*}
 
@@ -333,9 +332,14 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \Nlocaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant \;|\; \Tvar &
 \end{flalign*}
 
+\hypertarget{def-nglobaldeclkeywordnonconfig}{}
+\begin{flalign*}
+\Nglobaldeclkeywordnonconfig \derives \ & \Tlet \;|\; \Tconstant \;|\; \Tvar &
+\end{flalign*}
+
 \hypertarget{def-nglobaldeclkeyword}{}
 \begin{flalign*}
-\Nglobaldeclkeyword \derives \ & \Tlet \;|\; \Tconstant \;|\; \Tvar &
+\Nglobaldeclkeyword \derives \ & \Nglobaldeclkeywordnonconfig \;|\; \Tconfig &
 \end{flalign*}
 
 \hypertarget{def-ndirection}{}

@@ -485,6 +485,10 @@ let global_keyword_non_config ==
   | CONSTANT  ; { GDK_Constant }
   | VAR       ; { GDK_Var }
 
+let global_keyword ==
+  | global_keyword_non_config
+  | CONFIG; { GDK_Config }
+
 let pass == { S_Pass }
 let assign(x, y) == ~=x ; EQ ; ~=y ; < S_Assign >
 let direction := | TO; { AST.Up } | DOWNTO; { AST.Down }
@@ -658,12 +662,9 @@ let decl :=
       | CONFIG; name=ignored_or_identifier;
         ty=as_ty; EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword=GDK_Config; name; ty=Some ty; initial_value } }
-      | keyword=global_keyword_non_config; name=ignored_or_identifier;
+      | keyword=global_keyword; name=ignored_or_identifier;
         ty=as_ty; EQ; call=annotated(elided_param_call);
         { D_GlobalStorage { keyword; name; ty=Some ty; initial_value=desugar_elided_parameter ty call } }
-      | CONFIG; name=ignored_or_identifier;
-        ty=as_ty; EQ; call=annotated(elided_param_call);
-        { D_GlobalStorage { keyword=GDK_Config; name; ty=Some ty; initial_value=desugar_elided_parameter ty call } }
       (* End *)
       (* Begin global_uninit_var *)
       | VAR; name=ignored_or_identifier; ty=some(as_ty);
