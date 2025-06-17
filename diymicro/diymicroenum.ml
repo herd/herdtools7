@@ -48,7 +48,7 @@ let make_all_tests edge edge_name =
              edges
       in
       let out_channel = open_out (test_name ^ ".litmus") in
-      "Writing to " ^ test_name ^ ".litmus\n" |> Utils.verbose_print;
+      "Writing to " ^ test_name ^ ".litmus\n" |> Utils.verbose_print 0;
       Compile.to_channel cycle ?name:(Some test_name) out_channel;
       close_out out_channel)
     tests
@@ -66,7 +66,7 @@ let () =
 
   let options_list =
     [
-      "-v", Arg.Set Config.verbose, "Display verbose messages";
+      "-v", Arg.Unit (fun () -> incr Config.verbose), "Increase verbosity (use multiple times)";
       "-list-iico", Arg.Set list_iico, "list iico[] edges";
       ( "-debug",
         Arg.Unit (fun () -> Printexc.record_backtrace true),

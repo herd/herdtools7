@@ -1,5 +1,6 @@
-(** Print something if verbose *)
-let verbose_print string = if !Config.verbose then output_string stderr string
+(** Print something if verbose level is high enough (0:Verbose, 1:Debug) *)
+let verbose_print level string =
+  if level <= !Config.verbose then output_string stderr string
 
 (** Removes element from the option monad, raises Not_found if appropriate *)
 let unsome = function None -> raise Not_found | Some v -> v

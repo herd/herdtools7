@@ -269,20 +269,20 @@ let set_significant_reads first_node =
 
 let make_cycle edges =
   let cycle = create_cycle edges in
-  "EDGES\n" ^ pp_cycle cycle ^ "\n" |> Utils.verbose_print;
+  "EDGES\n" ^ pp_cycle cycle ^ "\n" |> Utils.verbose_print 1;
 
   check_directions cycle;
 
   assign_locations cycle;
-  "LOCATIONS\n" ^ pp_cycle cycle ^ "\n" |> Utils.verbose_print;
+  "LOCATIONS\n" ^ pp_cycle cycle ^ "\n" |> Utils.verbose_print 1;
 
   assign_procs cycle;
-  "PROCS\n" ^ pp_cycle cycle ^ "\n" |> Utils.verbose_print;
+  "PROCS\n" ^ pp_cycle cycle ^ "\n" |> Utils.verbose_print 1;
 
   assign_values cycle;
-  "READ/WRITE VALUES\n" ^ pp_cycle cycle ^ "\n" |> Utils.verbose_print;
+  "READ/WRITE VALUES\n" ^ pp_cycle cycle ^ "\n" |> Utils.verbose_print 1;
 
   set_significant_reads cycle;
-  "SIGNIFICANT READS\n" ^ pp_cycle cycle ^ "\n" |> Utils.verbose_print;
+  "SIGNIFICANT READS\n" ^ pp_cycle cycle ^ "\n" |> Utils.verbose_print 1;
 
   cycle

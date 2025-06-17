@@ -1,1 +1,1 @@
-let verbose = ref false
+let verbose = ref (-1)
