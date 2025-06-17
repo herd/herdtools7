@@ -209,7 +209,7 @@ module Cas = struct
 end
 
 module Csel = struct
-  let compile src ok =
+  let compile ok src =
    fun st dep _ _ ->
     let src_reg, v_opt =
       match dep with
@@ -218,19 +218,19 @@ module Csel = struct
     in
 
     let cmp_ins, cmp, st =
-      if src = `cmp then A.calc_value st 1 src_reg v_opt
+      if src = "cmp" then A.calc_value st 1 src_reg v_opt
       else
         let cmp, st = A.next_reg st in
         [A.mov cmp 1], cmp, st
     in
     let rn_ins, rn, st =
-      if src = `Rn then A.calc_value st 1 src_reg v_opt
+      if src = "Rn" then A.calc_value st 1 src_reg v_opt
       else
         let rn, st = A.next_reg st in
         [A.mov rn 1], rn, st
     in
     let rm_ins, rm, st =
-      if src = `Rm then A.calc_value st 2 src_reg v_opt
+      if src = "Rm" then A.calc_value st 2 src_reg v_opt
       else
         let rm, st = A.next_reg st in
         [A.mov rm 2], rm, st
@@ -250,11 +250,7 @@ module Csel = struct
 
     ins, DepReg (rd, Some final_expected_val), st
 
-  let repr src ok =
-    "csel:"
-    ^ (if ok then "ok" else "no")
-    ^ " "
-    ^ match src with `cmp -> "cmp" | `Rn -> "Rn" | `Rm -> "Rm"
+  let repr ok = "csel:" ^ if ok then "ok" else "no"
 end
 
 module Swp = struct
@@ -274,18 +270,20 @@ module Swp = struct
 
     let dep_ins, st =
       match src with
-      | `Rd -> A.pseudo [A.add A.vloc rd rd reg_zero], st
-      | `Rm -> A.pseudo [A.add A.vloc rm rm reg_zero], st
-      | `Rn -> A.pseudo [A.do_add64 A.vloc rn rn reg_zero], st
+      | "Rd" -> A.pseudo [A.add A.vloc rd rd reg_zero], st
+      | "Rm" -> A.pseudo [A.add A.vloc rm rm reg_zero], st
+      | "Rn" -> A.pseudo [A.do_add64 A.vloc rn rn reg_zero], st
+      | _ -> assert false
     in
 
     let post_ins, dep, st =
       match dst with
-      | `Rd -> [], DepReg (rd, None), st
-      | `Rm -> [], DepReg (rm, None), st
-      | `Rn ->
+      | "Rd" -> [], DepReg (rd, None), st
+      | "Rm" -> [], DepReg (rm, None), st
+      | "Rn" ->
           let rn_reg, st = A.next_reg st in
           A.pseudo [A.do_ldr A.vloc rn_reg rn], DepReg (rn_reg, None), st
+      | _ -> assert false
     in
 
     let ins =
@@ -321,17 +319,7 @@ module Swp = struct
     let ins = A.mov rm write_value :: A.pseudo [A.swp A.RMW_P rd rm rn] in
 
     ins, DepReg (rd, Some read_value), st
-
-  let pp_swp_reg = function `Rd -> "Rd" | `Rm -> "Rm" | `Rn -> "Rn"
-  let repr src dst = "swp " ^ pp_swp_reg src ^ "->" ^ pp_swp_reg dst
 end
-
-let cartesian2 l1 l2 = List.concat_map (fun x -> List.map (fun y -> x, y) l2) l1
-
-let cartesian3 l1 l2 l3 =
-  List.concat_map
-    (fun x -> List.concat_map (fun y -> List.map (fun z -> x, y, z) l3) l2)
-    l1
 
 let init () =
   List.iter
@@ -378,42 +366,60 @@ let init () =
         })
     [true; false];
 
-  (* TODO: add this back
   List.iter
-    (fun (ok, src) ->
+    (fun ok ->
       add_iico
         {
-          repr = Csel.repr src ok;
-          compile_edge = Csel.compile src ok;
-          direction = RegEvent, RegEvent;
-          ie = Internal;
-          sd = Same;
-          significant_source = false;
-          significant_dest = false;
+          instruction_name = Csel.repr ok;
+          to_edge =
+            (fun src _ ->
+              {
+                repr = "";
+                compile_edge = Csel.compile ok src;
+                direction = RegEvent, RegEvent;
+                ie = Internal;
+                sd = Same;
+                significant_source = false;
+                significant_dest = false;
+              });
+          inputs = ["cmp"; "Rn"; "Rm"];
+          outputs = ["Rd"];
         })
-    (cartesian2 [true; false] [`cmp; `Rn; `Rm]);
-
-  List.iter
-    (fun (src, dst) ->
-      add_iico
-        {
-          repr = Swp.repr src dst;
-          compile_edge = Swp.compile src dst;
-          direction = RegEvent, RegEvent;
-          ie = Internal;
-          sd = Same;
-          significant_source = false;
-          significant_dest = false;
-        })
-    (cartesian2 [`Rd; `Rm; `Rn] [`Rd; `Rm; `Rn]);
+    [true; false];
 
   add_iico
     {
-      repr = "swp:mem";
-      compile_edge = Swp.mem;
-      direction = Rm true, Wm true;
-      ie = Internal;
-      sd = Same;
-      significant_source = false;
-      significant_dest = true;
-    } *)
+      instruction_name = "swp";
+      to_edge =
+        (fun src dst ->
+          {
+            repr = "";
+            compile_edge = Swp.compile src dst;
+            direction = RegEvent, RegEvent;
+            ie = Internal;
+            sd = Same;
+            significant_source = false;
+            significant_dest = false;
+          });
+      inputs = ["Rd"; "Rm"; "Rn"];
+      outputs = ["Rd"; "Rm"; "Rn"];
+    };
+
+  add_iico
+    {
+      instruction_name = "swp:mem";
+      to_edge =
+        (fun _ _ ->
+          {
+            repr = "";
+            compile_edge = Swp.mem;
+            direction = Rm true, Wm true;
+            ie = Internal;
+            sd = Same;
+            significant_source = false;
+            significant_dest = true;
+          });
+      (* TODO : we could prefer to be able to specify nothing, here and in the cli *)
+      inputs = ["M"];
+      outputs = ["M"];
+    }

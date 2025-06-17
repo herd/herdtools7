@@ -95,7 +95,13 @@ let get_iico (s, src, dst) =
 let add_iico iico = Hashtbl.add iico_ht iico.instruction_name iico
 
 let list_iico_edges () =
-  Hashtbl.fold (fun k _ acc -> Printf.sprintf "iico[%s]\n" k :: acc) iico_ht []
+  Hashtbl.fold
+    (fun k i acc ->
+      Printf.sprintf "iico[%s {%s}->{%s}]\n" k
+        (String.concat "," i.inputs)
+        (String.concat "," i.outputs)
+      :: acc)
+    iico_ht []
   |> List.sort String.compare |> String.concat "" |> print_string
 
 let dependency_reg = function
