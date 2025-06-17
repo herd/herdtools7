@@ -23,7 +23,7 @@ let make_all_tests edge edge_name output_dir =
           ( "LB+rel+" ^ edge_name,
             ["PosWR"; "DpAddrdW"; "Rfe"; "PodRW:L"; "Rfe"; "basic_depRr"] );
           ( "MP+rel+" ^ edge_name,
-            ["PodWR"; "DpAddrdR"; "Fre"; "PodWW:L"; "Rfe"; "basic_depRr"] );
+            ["PosWR"; "DpAddrdR"; "Fre"; "PodWW:L"; "Rfe"; "basic_depRr"] );
         ]
     | E.Rm _, E.Wm _ ->
         [
