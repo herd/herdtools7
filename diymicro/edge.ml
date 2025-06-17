@@ -82,17 +82,18 @@ let edge_location = function
   | Iico i -> i.sd
 
 let iico_ht = Hashtbl.create 10
+let add_iico iico = Hashtbl.add iico_ht iico.instruction_name iico
+let get_iico s = Hashtbl.find iico_ht s
 
-let get_iico (s, src, dst) =
-  let iico = Hashtbl.find iico_ht s in
+let iico_to_edge iico src dst =
   match List.mem src iico.inputs, List.mem dst iico.outputs with
   | true, true ->
       let edge = iico.to_edge src dst in
       edge.repr <- iico.instruction_name ^ " " ^ src ^ "->" ^ dst;
-      edge
+      Iico edge
   | _, _ -> raise Not_found
 
-let add_iico iico = Hashtbl.add iico_ht iico.instruction_name iico
+let get_iico_edge s src dst = iico_to_edge (get_iico s) src dst
 
 let list_iico_edges () =
   Hashtbl.fold

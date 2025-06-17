@@ -1,3 +1,13 @@
+%{
+    let get_iico_edge (s, src, dst) = Edge.get_iico_edge s src dst
+
+    let get_multi_iico (s, src, dst) =
+        let iico = Edge.get_iico s in
+        ( iico,
+        (if src = "*" then iico.Edge.inputs else [src]),
+        if dst = "*" then iico.Edge.outputs else [dst] )
+%}
+
 %token <string * string * string> IICO_ARGS
 
 %token RF
@@ -21,6 +31,9 @@
 %start main
 %type <Edge.t * Edge.annot> main
 
+%start parse_iico
+%type <Edge.iico * string list * string list> parse_iico
+
 %%
 main:
     | edge EOF { ($1, Edge.AnnotNone) }
@@ -39,7 +52,7 @@ edge:
     | DP dp sd dir      { Edge.Dp ($2, $3, Edge.Rm false, $4) }
     | DP dp sd dir dir  { Edge.Dp ($2, $3, $4, $5) }
     | BASIC_DEP dir dir { Edge.BasicDep ($2, $3) }
-    | IICO IICO_ARGS   { Edge.Iico (Edge.get_iico $2) }
+    | IICO IICO_ARGS    { get_iico_edge $2 }
 ;
 ie:
     | INT { Edge.Internal }
@@ -59,3 +72,6 @@ dp:
     | DATA { Edge.Data }
     | CTRL { Edge.Ctrl }
 ;
+
+parse_iico:
+    | IICO IICO_ARGS { get_multi_iico $2 }

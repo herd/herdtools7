@@ -6,14 +6,14 @@ end
 
 (* new_proc: get a new proc
 proc_count: get the current number of procs *)
-let new_proc, proc_count =
+let new_proc, proc_count, reset_proc_count =
   let counter = ref 0 in
   let inner_new_proc () =
     let p = Proc !counter in
     let () = incr counter in
     p
   in
-  inner_new_proc, fun () -> !counter
+  inner_new_proc, (fun () -> !counter), fun () -> counter := 0
 
 type event = {
   annot : Edge.annot;

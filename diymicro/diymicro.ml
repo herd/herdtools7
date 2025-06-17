@@ -29,14 +29,4 @@ let () =
   else if !edges_ref = [] then Arg.usage options_list usage
   else
     let annot_edges = List.rev !edges_ref in
-    let cycle = Cycle.make_cycle annot_edges in
-    let prog = Compile.make_test cycle in
-
-    let instructions = List.map (fun (a, _) -> a) prog in
-    let stl = List.map (fun (_, b) -> b) prog in
-    let prog = if Array.length Sys.argv > 0 then Sys.argv.(0) else "XXX" in
-    let baseprog =
-      Printf.sprintf "%s (version %s)" (Filename.basename prog) Version.version
-    in
-
-    Compile.dump_test stl instructions baseprog annot_edges stdout
+    Compile.to_channel annot_edges stdout

@@ -17,3 +17,12 @@ let list_rot1 l =
     | e :: l -> rotate1 (e :: acc) l
   in
   rotate1 [] l
+
+(** Cartesian product of 2 lists *)
+let cartesian2 l1 l2 = List.concat_map (fun x -> List.map (fun y -> x, y) l2) l1
+
+(** Cartesian product of 3 lists*)
+let cartesian3 l1 l2 l3 =
+  List.concat_map
+    (fun x -> List.concat_map (fun y -> List.map (fun z -> x, y, z) l3) l2)
+    l1

@@ -13,6 +13,9 @@ module E = struct
   include Edge
 end
 
+type prog = int A.kinstruction A.kpseudo list * A.state
+(** Instructions and meta (eg initials & finals) relevant to a single proc *)
+
 (** Returns a list of lists of nodes (cycles), splitted by proc *)
 let split_by_proc (cycle : C.t) =
   let first_node =
@@ -184,8 +187,8 @@ let compile_edge (st : A.state) (src : E.node_dep) (node : C.t) =
       Warn.fatal "Edge -%s->: compilation not implemented"
         (E.pp_edge node.C.edge)
 
-(** Generate test from a cycle *)
-let make_test (cycle : C.t) =
+(** Compile a cycle to relevant progs *)
+let prog_of_cycle (cycle : C.t) : prog list =
   let loc_count = A.loc_count () in
 
   let compile_proc nodes =
@@ -292,11 +295,26 @@ let dump_final (stl : A.state list) channel =
   ^ ")\n"
   |> output_string channel
 
-let dump_test stl instructions baseprog annot_edges (channel : out_channel) =
-  Printf.fprintf channel "%s %s\n" (Archs.pp A.arch) "test.litmus";
+let dump_test stl instructions baseprog annot_edges ?(name = "test")
+    (channel : out_channel) =
+  Printf.fprintf channel "%s %s\n" (Archs.pp A.arch) name;
   Printf.fprintf channel "Generator=%s\n" baseprog;
   Printf.fprintf channel "Orig=%s\n"
     (List.map Edge.pp_annotated_edge annot_edges |> String.concat " ");
   dump_init stl channel;
   dump_code instructions channel;
   dump_final stl channel
+
+let to_channel annot_edges ?(name = "test") channel =
+  C.reset_proc_count ();
+  A.reset_loc_count ();
+  let cycle = Cycle.make_cycle annot_edges in
+  let prog = prog_of_cycle cycle in
+
+  let instructions = List.map (fun (a, _) -> a) prog in
+  let stl = List.map (fun (_, b) -> b) prog in
+  let prog = if Array.length Sys.argv > 0 then Sys.argv.(0) else "XXX" in
+  let baseprog =
+    Printf.sprintf "%s (version %s)" (Filename.basename prog) Version.version
+  in
+  dump_test stl instructions baseprog annot_edges ?name:(Some name) channel

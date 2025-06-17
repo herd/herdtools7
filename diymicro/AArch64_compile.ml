@@ -353,14 +353,14 @@ module St = struct
 
   (* new_loc: get a new location
   loc_count: get the current number of locations *)
-  let next_loc, loc_count =
+  let next_loc, loc_count, reset_loc_count =
     let counter = ref 0 in
     let inner_next_loc () =
       let loc = Loc !counter in
       let _ = incr counter in
       loc
     in
-    inner_next_loc, fun () -> !counter
+    inner_next_loc, (fun () -> !counter), fun () -> counter := 0
 
   let next_reg (st : state) =
     match st.free_registers with

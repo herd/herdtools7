@@ -362,7 +362,7 @@ let init () =
                 significant_dest = false;
               });
           inputs = ["Rn"; "Rs"; "Rt"; "M"];
-          outputs = ["Rs"; "M"];
+          outputs = (["Rs"] @ if ok then ["M"] else []);
         })
     [true; false];
 

@@ -34,5 +34,6 @@ rule token = parse
   | 'X' { X }
 
   | '[' (id as s) ' ' (id as src) "->" (id as dst) ']' { IICO_ARGS (s, src, dst) }
+  | '[' (id as s) ']'                                  { IICO_ARGS (s, "*", "*")   }
   | _ { raise Error }
   | eof    { EOF }
