@@ -2,7 +2,7 @@ module E = struct
   include Edge
 end
 
-let make_all_tests edge edge_name =
+let make_all_tests edge edge_name output_dir =
   let tests =
     (* TODO It would be cleaner and less bug-prone to write the edges in OCaml directly, but much more cumbersome *)
     match E.edge_direction edge with
@@ -47,15 +47,21 @@ let make_all_tests edge edge_name =
              (fun s -> Lexing.from_string s |> Parser.main Lexer.token)
              edges
       in
-      let out_channel = open_out (test_name ^ ".litmus") in
+      let out_channel =
+        open_out (Filename.concat output_dir (test_name ^ ".litmus"))
+      in
       "Writing to " ^ test_name ^ ".litmus\n" |> Utils.verbose_print 0;
       Compile.to_channel cycle ?name:(Some test_name) out_channel;
       close_out out_channel)
-    tests
+    tests;
+
+  List.map (fun (a, _) -> a) tests
 
 let () =
+  let output_dir = ref "." in
   let list_iico = ref false in
   let edge_ref = ref None in
+
   (* load iico edges *)
   Iico.init ();
   let parse_edge s =
@@ -66,23 +72,38 @@ let () =
 
   let options_list =
     [
-      "-v", Arg.Unit (fun () -> incr Config.verbose), "Increase verbosity (use multiple times)";
+      ( "-output",
+        Arg.Set_string output_dir,
+        "Output directory (default '" ^ !output_dir ^ "')" );
+      ( "-v",
+        Arg.Unit (fun () -> incr Config.verbose),
+        "Increase verbosity (use multiple times)" );
       "-list-iico", Arg.Set list_iico, "list iico[] edges";
       ( "-debug",
         Arg.Unit (fun () -> Printexc.record_backtrace true),
         "Print backtrace on crash" );
     ]
   in
-  let usage = "diymicroenum [options] <iico[edge]>" in
+  let usage =
+    "diymicroenum [options] <iico[edge src->dst] (use 'edge' as shorthand for \
+     'edge *->*')>"
+  in
   (* message d'accueil, option -help *)
 
   Arg.parse options_list parse_edge usage;
 
+  if not (Sys.file_exists !output_dir) then Sys.mkdir !output_dir 0o775;
   if !list_iico then Edge.list_iico_edges ()
   else
     match !edge_ref with
     | None -> Arg.usage options_list usage
     | Some (iico, inputs, outputs) ->
+        let channel_all = open_out (Filename.concat !output_dir "@all") in
+        "# " ^ Config.prog_name ^ " "
+        ^ (Sys.argv |> Array.to_list |> List.tl |> String.concat " ")
+        ^ "\n"
+        |> output_string channel_all;
+
         List.iter
           (fun (src, dst) ->
             let test_name =
@@ -91,5 +112,14 @@ let () =
               ^ String.capitalize_ascii src
               ^ String.capitalize_ascii dst
             in
-            make_all_tests (Edge.iico_to_edge iico src dst) test_name)
-          (Utils.cartesian2 inputs outputs)
+            let test_names =
+              make_all_tests
+                (Edge.iico_to_edge iico src dst)
+                test_name !output_dir
+            in
+            List.iter
+              (fun name -> name ^ ".litmus\n" |> output_string channel_all)
+              test_names)
+          (Utils.cartesian2 inputs outputs);
+
+        close_out channel_all

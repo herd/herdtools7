@@ -13,7 +13,9 @@ let () =
 
   let options_list =
     [
-      "-v", Arg.Unit (fun () -> incr Config.verbose), "Increase verbosity (use multiple times)";
+      ( "-v",
+        Arg.Unit (fun () -> incr Config.verbose),
+        "Increase verbosity (use multiple times)" );
       "-list-iico", Arg.Set list_iico, "list iico[] edges";
       ( "-debug",
         Arg.Unit (fun () -> Printexc.record_backtrace true),

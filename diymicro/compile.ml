@@ -313,8 +313,7 @@ let to_channel annot_edges ?(name = "test") channel =
 
   let instructions = List.map (fun (a, _) -> a) prog in
   let stl = List.map (fun (_, b) -> b) prog in
-  let prog = if Array.length Sys.argv > 0 then Sys.argv.(0) else "XXX" in
   let baseprog =
-    Printf.sprintf "%s (version %s)" (Filename.basename prog) Version.version
+    Printf.sprintf "%s (version %s)" Config.prog_name Version.version
   in
   dump_test stl instructions baseprog annot_edges ?name:(Some name) channel
