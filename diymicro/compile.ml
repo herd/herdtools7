@@ -125,7 +125,7 @@ let compile_event st (src : E.node_dep) event =
             let ins, st =
               add_ctrl_dep st r v_opt
                 [
-                  A.mov event_reg (Utils.unsome event.C.value);
+                  A.mov reg_value (Utils.unsome event.C.value);
                   annot_str event.C.annot reg_value event_reg;
                 ]
             in
