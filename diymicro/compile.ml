@@ -52,24 +52,24 @@ let compile_event st (src : E.node_dep) event =
     | E.AnnotNone -> A.Instruction (A.do_ldr A.vloc dst_reg loc)
     | E.A -> A.Instruction (A.do_ldar A.vloc dst_reg loc)
     | E.X -> A.Instruction (A.ldxr dst_reg loc)
-    | _ -> Warn.fatal "Invalid annot %s for ldr" (E.pp_annot annot)
+    | _ -> Warn.user_error "Invalid annot %s for ldr" (E.pp_annot annot)
   in
   let annot_ldr_idx annot dst_reg src_loc src_reg =
     match annot with
     | E.AnnotNone ->
         A.Instruction (A.do_ldr_idx A.vloc A.vloc dst_reg src_loc src_reg)
-    | _ -> Warn.fatal "Invalid annot %s for ldr_idx" (E.pp_annot annot)
+    | _ -> Warn.user_error "Invalid annot %s for ldr_idx" (E.pp_annot annot)
   in
   let annot_str annot src_reg loc =
     match annot with
     | E.AnnotNone -> A.Instruction (A.do_str A.vloc src_reg loc)
     | E.L -> A.Instruction (A.do_stlr A.vloc src_reg loc)
-    | _ -> Warn.fatal "Invalid annot %s for str" (E.pp_annot annot)
+    | _ -> Warn.user_error "Invalid annot %s for str" (E.pp_annot annot)
   in
   let annot_str_idx annot src_reg dst_loc dst_reg =
     match annot with
     | E.AnnotNone -> A.Instruction (A.str_idx src_reg dst_loc dst_reg)
-    | _ -> Warn.fatal "Invalid annot %s for ldr_idx" (E.pp_annot annot)
+    | _ -> Warn.user_error "Invalid annot %s for ldr_idx" (E.pp_annot annot)
   in
   match event.C.direction with
   | E.Rm true | E.Wm true -> [], src, st
@@ -103,13 +103,13 @@ let compile_event st (src : E.node_dep) event =
                 annot_str event.C.annot reg_value event_reg;
               ]
             in
-            ins, E.DepReg (event_reg, None), st
+            ins, E.DepNone, st
         | E.Wm false, _, (E.DepData (r, v_opt) | E.DepReg (r, v_opt)) ->
             let ins_val, reg_value, st =
               A.calc_value st (Utils.unsome event.C.value) r v_opt
             in
             let ins = ins_val @ [annot_str event.C.annot reg_value event_reg] in
-            ins, E.DepReg (event_reg, None), st
+            ins, E.DepNone, st
         | E.Wm false, _, E.DepAddr (r, _) ->
             let reg_zero, st = A.next_reg st in
             let reg_value, st = A.next_reg st in
@@ -119,7 +119,7 @@ let compile_event st (src : E.node_dep) event =
               @ [A.mov reg_value (Utils.unsome event.C.value)]
               @ [annot_str_idx event.C.annot reg_value event_reg reg_zero]
             in
-            ins, E.DepReg (event_reg, None), st
+            ins, E.DepNone, st
         | E.Wm false, _, E.DepCtrl (r, v_opt) ->
             let reg_value, st = A.next_reg st in
             let ins, st =
@@ -129,12 +129,12 @@ let compile_event st (src : E.node_dep) event =
                   annot_str event.C.annot reg_value event_reg;
                 ]
             in
-            ins, E.DepReg (event_reg, None), st
+            ins, E.DepNone, st
         | E.RegEvent, _, E.DepNone ->
             Warn.fatal "No dependency passed to a register event"
         | E.RegEvent, E.AnnotNone, dep -> [], dep, st (* just carry on *)
         | dir, E.AnnotNone, _ ->
-            Warn.fatal "Direction %s incompatible with dependency %s"
+            Warn.user_error "Direction %s incompatible with dependency %s"
               (E.pp_direction dir) (E.pp_node_dep src)
         | dir, annot, _ ->
             Warn.fatal
@@ -259,7 +259,9 @@ let rec dump_pseudo = function
   | A.Label (lbl, ins) :: rem ->
       Printf.sprintf "%s:" lbl :: dump_pseudo (ins :: rem)
   | A.Nop :: rem -> dump_pseudo rem
-  | A.Symbolic _ :: _ -> assert false (* no symbolic in diy *)
+  | A.Symbolic _ :: _ ->
+      Warn.fatal "Got a symbolic instruction, which does not exist in diymicro"
+      (* no symbolic in diy *)
   | A.Macro (m, args) :: rem ->
       Printf.sprintf "%s(%s)" m (String.concat "," (List.map A.pp_reg args))
       :: dump_pseudo rem

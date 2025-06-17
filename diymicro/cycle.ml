@@ -100,7 +100,7 @@ let create_cycle edges =
         this_node
   in
   match edges with
-  | [] -> Warn.fatal "No edges"
+  | [] -> Warn.user_error "No edges"
   | (edge, annot) :: q ->
       let _, last_annot = Utils.list_last q in
       let src_dir, _ = Edge.edge_direction edge in
@@ -139,12 +139,16 @@ let check_directions cycle_start =
     (match node.edge with
     | Edge.BasicDep (Edge.RegEvent, Edge.RegEvent) ->
         Warn.warn_always "Edge %s is useless" (Edge.pp_edge node.edge)
+    | Edge.BasicDep (Edge.Wm _, Edge.RegEvent) ->
+        Warn.user_error
+          "Edge %s is invalid, can't get a register dependency from a Wm event"
+          (Edge.pp_edge node.edge)
     | _ -> ());
     let edge_dir1, _ = Edge.edge_direction node.edge in
     let _, edge_dir2 = Edge.edge_direction node.prev.edge in
     (match edge_dir1, edge_dir2 with
     | Edge.Rm true, Edge.Rm true | Edge.Wm true, Edge.Wm true ->
-        Warn.fatal
+        Warn.user_error
           "Incompatible edges -%s-> (%s) -%s->, both are requesting to compile \
            the event"
           (Edge.pp_edge node.prev.edge)
@@ -157,7 +161,7 @@ let check_directions cycle_start =
     | Edge.Rm _, Edge.Rm _ | Edge.Wm _, Edge.Wm _ -> ()
     | _, _ when edge_dir1 = edge_dir2 -> ()
     | _, _ ->
-        Warn.fatal "Incompatible directions %s -> (%s <> %s) -%s"
+        Warn.user_error "Incompatible directions %s -> (%s <> %s) -%s"
           (Edge.pp_edge node.prev.edge)
           (Edge.pp_direction edge_dir2)
           (Edge.pp_direction edge_dir1)
@@ -175,7 +179,7 @@ let assign_locations cycle_start =
       (find_last cycle_start.prev (fun n ->
            Edge.edge_location n.edge = Edge.Different))
         .next
-    with Not_found -> Warn.fatal "No location change in cycle"
+    with Not_found -> Warn.user_error "No location change in cycle"
   in
 
   let rec assign_aux node source_location =
@@ -192,7 +196,7 @@ let assign_locations cycle_start =
       assert (Edge.edge_location node.edge = Edge.Different);
 
       if node.source_event.location = node.next.source_event.location then
-        Warn.fatal "Cannot get a changing location across %s"
+        Warn.user_error "Cannot get a changing location across %s"
           (Edge.pp_edge node.edge))
   in
   assign_aux first_node first_location
@@ -208,7 +212,7 @@ let assign_procs cycle_start =
   let first_proc = new_proc () in
   let first_node =
     try (find_first cycle_start.prev (fun n -> is_external n.edge)).next
-    with Not_found -> Warn.fatal "No location change in cycle"
+    with Not_found -> Warn.user_error "No proc change in cycle"
   in
 
   let rec assign_aux node source_proc =
@@ -222,7 +226,7 @@ let assign_procs cycle_start =
       assert (is_external node.edge);
 
       if node.source_event.proc = node.next.source_event.proc then
-        Warn.fatal "Cannot get a changing proc across %s"
+        Warn.user_error "Cannot get a changing proc across %s"
           (Edge.pp_edge node.edge))
   in
   assign_aux first_node first_proc
@@ -233,7 +237,7 @@ let assign_values cycle_start =
     try
       find_first cycle_start (fun e ->
           e.source_event.location <> e.prev.source_event.location)
-    with Not_found -> Warn.fatal "No location change in cycle"
+    with Not_found -> Warn.user_error "No location change in cycle"
   in
   let rec assign_values_aux node value =
     (* Uses of a location always follow directly each other *)

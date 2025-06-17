@@ -85,7 +85,7 @@ module CasNoMem = struct
                 ]
             in
             ins, st
-        | _ -> assert false
+        | _ -> Warn.fatal "Unknown source %s" src
       in
       let ins =
         A.pseudo
@@ -100,7 +100,7 @@ module CasNoMem = struct
             ( A.pseudo [A.do_ldr A.vloc rn_reg rn],
               st,
               DepReg (rn_reg, Some final_expected_val) )
-        | _ -> assert false
+        | _ -> Warn.fatal "Unknown destination %s" dst
       in
       pre_ins @ ins @ post_ins, dst_dep, st
     in
@@ -191,7 +191,7 @@ module Cas = struct
                   @ [A.mov rs rs_value; A.mov rt write_value]
                 in
                 ins, rs, rt, rn2, st
-            | _ -> assert false)
+            | _ -> Warn.fatal "Unknown source %s" src)
       in
       let ins = A.pseudo [A.cas A.RMW_P rs rt rn; A.do_ldr A.vloc rcheck rn] in
 
@@ -199,7 +199,7 @@ module Cas = struct
         match dst with
         | "Rs" -> DepReg (rs, Some read_value)
         | "M" -> DepNone
-        | _ -> assert false
+        | _ -> Warn.fatal "Unknown destination %s" dst
       in
       pre_ins @ ins, dst_dep, st
     in
@@ -273,7 +273,7 @@ module Swp = struct
       | "Rd" -> A.pseudo [A.add A.vloc rd rd reg_zero], st
       | "Rm" -> A.pseudo [A.add A.vloc rm rm reg_zero], st
       | "Rn" -> A.pseudo [A.do_add64 A.vloc rn rn reg_zero], st
-      | _ -> assert false
+      | _ -> Warn.fatal "Unknown source %s" src
     in
 
     let post_ins, dep, st =
@@ -283,7 +283,7 @@ module Swp = struct
       | "Rn" ->
           let rn_reg, st = A.next_reg st in
           A.pseudo [A.do_ldr A.vloc rn_reg rn], DepReg (rn_reg, None), st
-      | _ -> assert false
+      | _ -> Warn.fatal "Unknown destination %s" dst
     in
 
     let ins =
@@ -294,7 +294,7 @@ module Swp = struct
   let mem st dep src_evt dst_evt =
     (match dep with
     | DepNone -> ()
-    | _ -> Warn.fatal "Dependency provided to Swp.mem");
+    | _ -> Warn.user_error "Dependency provided to Swp.mem");
 
     let rd, st = A.next_reg st in
     let rm, st = A.next_reg st in
@@ -419,7 +419,6 @@ let init () =
             significant_source = false;
             significant_dest = true;
           });
-      (* TODO : we could prefer to be able to specify nothing, here and in the cli *)
       inputs = ["M"];
       outputs = ["M"];
     }

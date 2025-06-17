@@ -365,7 +365,7 @@ module St = struct
   let next_reg (st : state) =
     match st.free_registers with
     | r :: rs -> r, {st with free_registers = rs}
-    | [] -> Warn.fatal "No more free registers"
+    | [] -> Warn.user_error "No more free registers"
 
   let assigned_next_loc (st : state) =
     let reg, st = next_reg st in
