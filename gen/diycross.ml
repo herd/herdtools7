@@ -19,7 +19,6 @@ open Printf
 
 (* Configuration *)
 let use_eieio = ref true
-let norm = ref false
 
 let () = Config.addnum := false
 let () = Config.numeric := false
@@ -39,17 +38,12 @@ let opts =
 module type Config = sig
   include DumpAll.Config
   val varatom : string list
-  val unrollatomic : int option
 end
 
 module Make (Config:Config) (M:Builder.S) =
   struct
     module D = DumpAll.Make (Config) (M)
     open M.E
-
-    let norm = match Config.family with
-    | None -> true
-    | Some _ -> false
 
     let gen ess kont r =
       Misc.fold_cross ess
@@ -60,57 +54,7 @@ module Make (Config:Config) (M:Builder.S) =
 
     open Code
 
-    let er e = M.R.ERS [plain_edge e]
-
-    let all_fences sd d1 d2 =
-      M.A.fold_all_fences
-        (fun f k -> er (M.E.Fenced (f,sd,Dir d1,Dir d2))::k)
-
-    let some_fences sd d1 d2 =
-      M.A.fold_some_fences
-        (fun f k -> er (M.E.Fenced (f,sd,Dir d1,Dir d2))::k)
-
-(* Limited variations *)
-    let app_def_dp o f r = match o with
-    | None -> r
-    | Some dp -> f dp r
-
-    let someR sd d =
-      er (Po (sd,Dir R,Dir d))::
-      app_def_dp
-        (match d with R -> M.A.ddr_default | W -> M.A.ddw_default)
-        (fun dp k -> er (Dp (dp,sd,Dir d))::k)
-        (some_fences sd R d [])
-
-    let someW sd d =
-      er (Po (sd,Dir W,Dir d))::
-      (some_fences sd W d [])
-
-
 (* ALL *)
-    let allR sd d =
-      er (Po (sd,Dir R,Dir d))::
-	      (match d with R -> M.A.fold_dpr | W -> M.A.fold_dpw)
-        (fun dp k -> er (Dp (dp,sd,Dir d))::k)
-        (all_fences sd R d [])
-
-    let allW sd d =
-      er (Po (sd,Dir W,Dir d))::
-      (all_fences sd W d [])
-
-    let parse_relaxs s = match s with
-    | "allRR" -> allR Diff R
-    | "allRW" -> allR Diff W
-    | "allWR" -> allW Diff R
-    | "allWW" -> allW Diff W
-    | "someRR" -> someR Diff R
-    | "someRW" -> someR Diff W
-    | "someWR" -> someW Diff R
-    | "someWW" -> someW Diff W
-    | _ ->
-        let es = LexUtil.split s in
-        List.map M.R.parse_relax es
-
     let parse_edges s =
 (*      let rs = parse_relaxs s in *)
       let rs = M.R.expand_relax_macros (LexUtil.split s) in

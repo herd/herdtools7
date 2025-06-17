@@ -21,7 +21,6 @@
 open Printf
 
 module type Config = sig
-  val verbose : int
   val locs : MiscParser.LocSet.t TblRename.t
 end
 
@@ -39,10 +38,6 @@ struct
   let is_true = function
     | And [] -> true
     | _ -> false
-
-  let ors ps =
-    if List.exists is_true ps then And []
-    else Or ps
 
   let ands ps =
     let ps = List.filter (fun p -> not (is_true p)) ps in
@@ -141,7 +136,6 @@ module LR = LexRename.Make(Verbose)
 module X =
  Make
    (struct
-     let verbose = !verbose
      let locs = LR.read_from_files !locs LogConstr.parse_locs
    end)
 

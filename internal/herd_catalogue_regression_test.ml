@@ -63,17 +63,6 @@ let one_of_shelf shelf =
     | x::_ -> Some x in
   { cat; bell; cfg; }
 
-let kinds_path_of_permutation kinds_dir p =
-  let escape_filename n =
-    String.map (fun c -> if c = '/' then '_' else c) n
-  in
-  let filename_of_permutation p =
-    match p.bell with
-    | None -> Printf.sprintf "kinds-cat=%s.txt" p.cat
-    | Some bell -> Printf.sprintf "kinds-bell=%s&cat=%s.txt" bell p.cat
-  in
-  Filename.concat kinds_dir (escape_filename (filename_of_permutation p))
-
 let (>>=) o1 o2 = match o1 with
 | "" -> o2
 | _ -> Some o1

@@ -51,8 +51,6 @@ type args = {
   control_flow_analysis : bool;
 }
 
-let push thing ref = ref := thing :: !ref
-
 let parse_args () =
   let show_rules = ref false in
   let target_files = ref [] in

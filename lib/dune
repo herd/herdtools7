@@ -1,7 +1,28 @@
-(ocamllex AArch64Lexer ARMLexer BPFLexer BellLexer CLexer lexHint
-  lexOutMapping lexRename lexSplit lexUtils MIPSLexer modelLexer PPCLexer
-  RISCVLexer scopeLexer splitter stateLexer X86Lexer X86_64Lexer echo
-  dirtyBit cacheType lexScan JavaLexer)
+(ocamllex
+ AArch64Lexer
+ ARMLexer
+ BPFLexer
+ BellLexer
+ CLexer
+ lexHint
+ lexOutMapping
+ lexRename
+ lexSplit
+ lexUtils
+ MIPSLexer
+ modelLexer
+ PPCLexer
+ RISCVLexer
+ scopeLexer
+ splitter
+ stateLexer
+ X86Lexer
+ X86_64Lexer
+ echo
+ dirtyBit
+ cacheType
+ lexScan
+ JavaLexer)
 
 (menhir
  (modules PPCParser)
@@ -67,5 +88,15 @@
  (name herdtools)
  (wrapped false)
  (libraries str asllib zarith)
- (modules_without_implementation sign outTests AST CAst Scalar archBase
-   archDump PPMode name value wideScalar))
+ (modules_without_implementation
+  sign
+  outTests
+  AST
+  CAst
+  Scalar
+  archBase
+  archDump
+  PPMode
+  name
+  value
+  wideScalar))
