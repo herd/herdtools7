@@ -51,29 +51,29 @@ include "aarch64memattrs.cat"
 let ca = fr | co
 
 let PTE-MT-update =
-  [PTENormal]; ca; [PTEDevice]
-  | [PTEDevice]; ca; [PTENormal]
+  [Normal]; ca; [Device]
+  | [Device]; ca; [Normal]
 
 let PTE-SH-update =
-  [PTENon-shareable]; ca; [PTEInner-shareable | PTEOuter-shareable]
-  | [PTEInner-shareable]; ca; [PTEOuter-shareable | PTENon-shareable]
-  | [PTEOuter-shareable]; ca; [PTENon-shareable | PTEInner-shareable]
+  [NSH]; ca; [ISH | OSH]
+  | [ISH]; ca; [OSH | NSH]
+  | [OSH]; ca; [NSH | ISH]
 
 let PTE-ICH-update =
-  [PTEInner-non-cacheable]; ca; [PTEInner-write-through | PTEInner-write-back]
-  | [PTEInner-write-through]; ca; [PTEInner-write-back | PTEInner-non-cacheable]
-  | [PTEInner-write-back]; ca; [PTEInner-non-cacheable | PTEInner-write-through]
+  [iNC]; ca; [iWT | iWB]
+  | [iWT]; ca; [iWB | iNC]
+  | [iWB]; ca; [iNC | iWT]
 
 let PTE-OCH-update =
-  [PTEOuter-non-cacheable]; ca; [PTEOuter-write-through | PTEOuter-write-back]
-  | [PTEOuter-write-through]; ca; [PTEOuter-write-back | PTEOuter-non-cacheable]
-  | [PTEOuter-write-back]; ca; [PTEOuter-non-cacheable | PTEOuter-write-through]
+  [oNC]; ca; [oWT | oWB]
+  | [oWT]; ca; [oWB | oNC]
+  | [oWB]; ca; [oNC | oWT]
 
 let PTE-DT-update =
-  [PTEDevice-GRE]; ca; [PTEDevice-nGRE | PTEDevice-nGnRE | PTEDevice-nGnRnE]
-  | [PTEDevice-nGRE]; ca; [PTEDevice-GRE | PTEDevice-nGnRE | PTEDevice-nGnRnE]
-  | [PTEDevice-nGnRE]; ca; [PTEDevice-GRE | PTEDevice-nGRE | PTEDevice-nGnRnE]
-  | [PTEDevice-nGnRnE]; ca; [PTEDevice-GRE | PTEDevice-nGRE | PTEDevice-nGnRE]
+  [Device-GRE]; ca; [Device-nGRE | Device-nGnRE | Device-nGnRnE]
+  | [Device-nGRE]; ca; [Device-GRE | Device-nGnRE | Device-nGnRnE]
+  | [Device-nGnRE]; ca; [Device-GRE | Device-nGRE | Device-nGnRnE]
+  | [Device-nGnRnE]; ca; [Device-GRE | Device-nGRE | Device-nGnRE]
 
 let PTE-OA-update = ([PTE]; ca; [PTE & oa-changes(PTE, ca^-1)])
 let PTE-OA-update-writable = PTE-OA-update &
