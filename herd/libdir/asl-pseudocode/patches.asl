@@ -149,7 +149,7 @@ end;
 // From https://developer.arm.com/documentation/ddi0602/2023-12/Shared-Pseudocode/shared-functions-system?lang=en#ProcState
 // Rewritten from ASLv0 record to ASLv1 collection
 
-type ProcState of collection {
+var PSTATE: collection {
     N: bits (1),        // Negative condition flag
     Z: bits (1),        // Zero condition flag
     C: bits (1),        // Carry condition flag

@@ -61,6 +61,17 @@ transforms a \namedtype\ parse node $\vparsednode$ into an AST node $\vastnode$.
 
 We define $\buildtydecl$ per the corresponding type in the following sections.
 
+\hypertarget{build-tyorcollection}{}
+The function
+\[
+  \buildtyorcollection(\overname{\parsenode{\Ntyorcollection}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
+  \cup \overname{\TBuildError}{\BuildErrorConfig}
+\]
+transforms a type annotation parse node $\vparsednode$ into a type AST node $\vastnode$.
+\ProseOtherwiseBuildError
+
+We define $\buildtyorcollection$ per the corresponding type in the following sections.
+
 \hypertarget{build-as-ty}{}
 The function
 \[
@@ -1418,7 +1429,7 @@ See \listingref{checkisnotcollection} for an ill-typed specification.
 
 \subsection{Syntax}
 \begin{flalign*}
-  \Ntydecl \derives\ & \Tcollection \parsesep \Nfieldsopt &
+  \Ntyorcollection \derives\ & \Nty \;|\; \Tcollection \parsesep \Nfieldsopt & \\
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -1429,8 +1440,13 @@ See \listingref{checkisnotcollection} for an ill-typed specification.
 \ASTRuleDef{TyDecl.TCollection}
 \begin{mathpar}
 \inferrule{}{
-  \buildtydecl(\Ntydecl(\Tcollection, \punnode{\Nfieldsopt})) \astarrow
+  \buildtyorcollection(\Ntyorcollection(\Tcollection, \punnode{\Nfieldsopt})) \astarrow
   \overname{\TCollection(\astof{\vfieldsopt})}{\vastnode}
+}
+\and
+\inferrule{}{
+  \buildtyorcollection(\Ntyorcollection(\Nty)) \astarrow
+  \overname{\astof{\Nty}}{\vastnode}
 }
 \end{mathpar}
 
@@ -1446,7 +1462,7 @@ collection types in comments.
 \AllApply
 \begin{itemize}
   \item $\tty$ is a \collectiontypeterm{} with the list of fields of $\fields$;
-  \item $\decl$ is $\True$, indicating that $\tty$ should be considered in the context of a declaration;
+  \item $\decl$ is $\False$, indicating that $\tty$ should not be considered in the context of a declaration;
   \item $\fields$ is a list of pairs where the first element is an identifier and the second is a type --- $(\vx_i, \vt_i)$, for $i=1..k$;
   \item checking that the list of field identifiers $\vx_{1..k}$ does not contain duplicates
   yields $\True$\ProseOrTypeError;
@@ -1470,7 +1486,7 @@ collection types in comments.
   i=1..k: \checkstructurelabel(\tenv, \vtp_i, \TBits) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
-  \annotatetype{\True, \tenv, \overname{\TCollection(\fields)}{\tty}} \typearrow (\overname{\TCollection(\fieldsp)}{\newty}, \vses)
+  \annotatetype{\False, \tenv, \overname{\TCollection(\fields)}{\tty}} \typearrow (\overname{\TCollection(\fieldsp)}{\newty}, \vses)
 }
 \end{mathpar}
 

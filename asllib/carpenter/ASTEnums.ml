@@ -226,15 +226,9 @@ module Make (C : Config.S) = struct
     and t_tuple =
       let make_t_tuple li = T_Tuple li in
       list2 tys |> map make_t_tuple
-    and t_record =
-      let make_t_record li = T_Record li in
-      names ** tys |> list |> map make_t_record
     and t_bits =
       let make_t_bits e = T_Bits (e, []) in
       exprs |> map make_t_bits |> pay
-    and t_enum =
-      let make_t_enum ss = T_Enum ss in
-      nonempty_list names |> map make_t_enum
     and t_named =
       let make_t_named s = T_Named s in
       names |> map make_t_named
@@ -246,8 +240,22 @@ module Make (C : Config.S) = struct
       (if C.Syntax.t_real then Some t_real else None);
       (if C.Syntax.t_bits then Some t_bits else None);
       (if C.Syntax.t_tuple then Some t_tuple else None);
-      (if C.Syntax.t_record then Some t_record else None);
       (if C.Syntax.t_named then Some t_named else None);
+    ]
+    |> filter_none |> oneof |> map annot
+
+  let ty_decl =
+    tys
+    ++
+    let t_record =
+      let make_t_record li = T_Record li in
+      names ** tys |> list |> map make_t_record
+    and t_enum =
+      let make_t_enum ss = T_Enum ss in
+      nonempty_list names |> map make_t_enum
+    in
+    [
+      (if C.Syntax.t_record then Some t_record else None);
       (if C.Syntax.t_enum then Some t_enum else None);
     ]
     |> filter_none |> oneof |> map annot
@@ -435,7 +443,7 @@ module Make (C : Config.S) = struct
       gdks ** vars ** no_double_none tys exprs |> map make_global_decl
     and d_type_decl =
       let make_type_decl (name, ty) = D_TypeDecl (name, ty, None) in
-      names ** tys |> map make_type_decl
+      names ** ty_decl |> map make_type_decl
     in
     d_func ++ d_global_storage ++ d_type_decl |> map annot
 

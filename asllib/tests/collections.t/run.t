@@ -1,28 +1,24 @@
   $ aslref on-arbitrary.asl
-  File on-arbitrary.asl, line 8, characters 12 to 35:
-    let col = ARBITRARY: MyCollection;
-              ^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: unexpected collection.
+  File on-arbitrary.asl, line 3, characters 23 to 33:
+    var col = ARBITRARY: collection {
+                         ^^^^^^^^^^
+  ASL Error: Cannot parse.
   [1]
   $ aslref on-local-func-arg.asl
-  File on-local-func-arg.asl, line 6, character 0 to line 11, character 4:
-  func foo (col: MyCollection) => integer
-  begin
-    let bv = col.field1;
-  
-    return 0;
-  end;
-  ASL Type error: unexpected collection.
+  File on-local-func-arg.asl, line 6, characters 15 to 25:
+  func foo (col: collection {
+                 ^^^^^^^^^^
+  ASL Error: Cannot parse.
   [1]
   $ aslref on-local-var.asl
-  File on-local-var.asl, line 8, characters 2 to 24:
-    var col: MyCollection;
-    ^^^^^^^^^^^^^^^^^^^^^^
+  File on-local-var.asl, line 8, characters 2 to 25:
+    var col = MyCollection;
+    ^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: unexpected collection.
   [1]
   $ aslref with-non-bitvector-arg.asl
   File with-non-bitvector-arg.asl, line 1, character 0 to line 4, character 2:
-  type MyCollection of collection {
+  var MyCollection : collection {
     field1: bits(1),
     field2: integer,
   };
@@ -32,17 +28,29 @@
                                      }.
   [1]
   $ aslref on-function-return-type.asl
-  File on-function-return-type.asl, line 8, character 0 to line 11, character 4:
-  func foo () => MyCollection
-  begin
-    return col;
-  end;
-  ASL Type error: unexpected collection.
+  File on-function-return-type.asl, line 6, characters 15 to 25:
+  func foo () => collection {
+                 ^^^^^^^^^^
+  ASL Error: Cannot parse.
   [1]
 
   $ aslref on-local-tuple.asl
-  File on-local-tuple.asl, line 10, characters 2 to 33:
+  File on-local-tuple.asl, line 8, characters 2 to 33:
     var col2 = (my_collection, 32);
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: unexpected collection.
+  [1]
+
+  $ aslref on-global-var.asl
+  File on-global-var.asl, line 6, characters 0 to 33:
+  var MyCollection2 = MyCollection;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: unexpected collection.
+  [1]
+
+  $ aslref on-type-declaration.asl
+  File on-type-declaration.asl, line 1, characters 21 to 31:
+  type MyCollection of collection {
+                       ^^^^^^^^^^
+  ASL Error: Cannot parse.
   [1]

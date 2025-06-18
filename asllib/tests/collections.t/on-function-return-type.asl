@@ -1,12 +1,13 @@
-type MyCollection of collection {
+var MyCollection : collection {
   field1: bits(1),
   field2: bits(2),
 };
 
-var col: MyCollection;
-
-func foo () => MyCollection
+func foo () => collection {
+    field1: bits(1),
+    field2: bits(2),
+  }
 begin
-  return col;
+  return MyCollection;
 end;
 

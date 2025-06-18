@@ -51,7 +51,7 @@ All the global storage declarations in \listingref{local-storage-discards} are i
 \Ndecl  \derives \ & \Nglobaldeclkeywordnonconfig \parsesep \Tidentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep &\\
         & \wrappedline\ \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
   |\ & \Tconfig \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-  |\ & \Tvar \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&\\
+  |\ & \Tvar \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Ntyorcollection \parsesep \Tsemicolon&\\
   |\ & \Nglobaldeclkeyword \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &\\
     & \wrappedline\ \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
   |\ & \Tpragma \parsesep \Tidentifier \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon&
@@ -460,6 +460,7 @@ See \ExampleRef{Declaring Global Storage}.
     \item $\initialvalue$ is the singleton set for the expression $\ve$;
     \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vsese)$\ProseOrTypeError;
     \item \Prosenoprecisionloss{$\vte$};
+    \item \Prosecheckisnotcollection{$\vte$}{$\tenv$};
     \item checking that all \timeframesterm\ in $\vsese$ are less than or equal to \\
           $\vtargettimeframe$ via $\sesisbefore$ yields $\True$\ProseOrTypeError;
     \item define $\typede$ as $(\vte, \vep, \vsese)$;

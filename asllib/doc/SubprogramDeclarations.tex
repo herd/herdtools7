@@ -1421,7 +1421,6 @@ as \collectiontypesterm.
 \AllApply
 \begin{itemize}
   \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vses)$\ProseOrTypeError;
-  \item \Prosecheckisnotcollection{$\tenv$}{$\tty$};
   \item checking that $\vx$ is not defined in $\newtenv$ yields $\True$\ProseOrTypeError;
   \item adding the local storage element given by the identifier $\vx$, type $\ttyp$, and local declaration keyword
         $\LDKLet$ in $\newtenv$ yields $\newtenvp$.
@@ -1431,7 +1430,6 @@ as \collectiontypesterm.
 \begin{mathpar}
 \inferrule{
   \annotatetype{\tenv, \tty} \typearrow (\ttyp, \vses) \OrTypeError \\\\
-  \checkisnotcollection(\tenv, \tty) \typearrow \True \OrTypeError\\\\
   \checkvarnotinenv{\newtenv, \vx} \typearrow \True \OrTypeError\\\\
   \addlocal(\newtenv, \vx, \ttyp, \LDKLet) \typearrow \newtenvp
 }{
@@ -1489,7 +1487,6 @@ as return types.
   \begin{itemize}
     \item $\vreturntype$ is $\langle\tty\rangle$;
     \item annotating $\tty$ in $\tenvwithparams$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
-    \item \Prosecheckisnotcollection{$\tenv$}{$\ttyp$};
     \item $\newreturntype$ is $\langle\ttyp\rangle$;
     \item $\newtenv$ is $\tenvwithargs$ with its local environment updated by binding its \\ $\funcreturntype$ field
           to $\newreturntype$;
@@ -1511,7 +1508,6 @@ as return types.
 \and
 \inferrule[has\_return\_type]{
   \annotatetype{\tenvwithparams, \tty} \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
-  \checkisnotcollection(\tenv, \ttyp) \typearrow \True \OrTypeError\\\\
   \newreturntype \eqdef \langle\ttyp\rangle\\
   \newtenv \eqdef (G^\tenvwithargs, L^\tenvwithargs[\funcreturntype\mapsto\newreturntype])\\
   \vses \eqdef \vsesin \cup\ \vsesty

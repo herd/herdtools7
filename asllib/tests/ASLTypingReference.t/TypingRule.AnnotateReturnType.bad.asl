@@ -1,7 +1,6 @@
-type MyCollection of collection;
 
 // Illegal: collection types are not allowed as return types.
-func returns_value() => MyCollection
+func returns_value() => collection { foo: bits(32)};
 begin
-    return ARBITRARY: MyCollection;
+    return ARBITRARY: collection { foo: bits(32)};
 end;
