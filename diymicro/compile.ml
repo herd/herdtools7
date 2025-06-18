@@ -302,7 +302,7 @@ let dump_test stl instructions baseprog annot_edges ?(name = "test")
   Printf.fprintf channel "%s %s\n" (Archs.pp A.arch) name;
   Printf.fprintf channel "Generator=%s\n" baseprog;
   Printf.fprintf channel "Orig=%s\n"
-    (List.map Edge.pp_annotated_edge annot_edges |> String.concat " ");
+    (List.map Edge.pp_quoted_annotated_edge annot_edges |> String.concat " ");
   dump_init stl channel;
   dump_code instructions channel;
   dump_final stl channel
