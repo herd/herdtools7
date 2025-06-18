@@ -53,7 +53,7 @@ All the global storage declarations in \listingref{local-storage-discards} are i
   |\ & \Tconfig \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 	|\ & \Tvar \parsesep \Tidentifier \parsesep \option{\Tcolon \parsesep \Nty} \parsesep \Teq \parsesep &\\
         & \wrappedline\ \Nexpr \parsesep \Tsemicolon &\\
-        |\ & \Tvar \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon&\\
+        |\ & \Tvar \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Ntyorcollection \parsesep \Tsemicolon&\\
         |\ & \Tpragma \parsesep \Tidentifier \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon&
 \end{flalign*}
 
@@ -392,6 +392,7 @@ See \ExampleRef{Declaring Global Storage}.
     \item $\tyoptp$ is the singleton set for the type $\vt$;
     \item $\initialvalue$ is $\None$;
     \item annotating the type $\vt$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
+    \item \Prosecheckisnotcollection{$\vt$}{$\tenv$};
     \item checking that all \timeframesterm\ in $\vsest$ are less than or equal to \\
           $\vtargettimeframe$ via $\sesisbefore$ yields $\True$\ProseOrTypeError;
     \item obtaining the \basevalueterm\ of $\vtp$ in $\tenv$ yields $\vep$\ProseOrTypeError;

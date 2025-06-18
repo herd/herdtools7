@@ -1,9 +1,7 @@
-type MYCOLLECTION of collection {
+var MyCollection : collection {
   field1: bits(3),
   field2: bits(4),
 };
-
-var MyCollection: MYCOLLECTION;
 
 type MYRECORD of record {
   field1: bits(3),

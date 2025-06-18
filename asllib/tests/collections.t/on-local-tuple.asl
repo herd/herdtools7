@@ -1,9 +1,7 @@
-type MyCollection of collection {
+var my_collection: collection {
   field1: bits(1),
   field2: bits(2),
 };
-
-var my_collection: MyCollection;
 
 func main () => integer
 begin
