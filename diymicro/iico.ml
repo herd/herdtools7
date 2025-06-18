@@ -11,7 +11,7 @@ end
 module CasNoMem = struct
   let compileRnM ok =
    fun st dep _ _ ->
-    let src_reg, v_opt =
+    let src_reg, _ =
       match dep with
       | DepReg (r, v) -> r, v
       | _ -> Warn.fatal "Event has not forwarded any register"
@@ -20,7 +20,7 @@ module CasNoMem = struct
     let rt, st = A.next_reg st in
     let loc, rn, st = A.assigned_next_loc st in
 
-    let ins_zero, reg_zero, st = A.calc_value st 0 src_reg v_opt in
+    let ins_zero, reg_zero, st = A.calc_value st 0 src_reg None in
     let m_addr, st = A.next_reg st in
     let rcheck, st = A.next_reg st in
     let dst_reg, st = A.next_reg st in
@@ -145,6 +145,7 @@ module Cas = struct
 
       let st = A.add_condition st rcheck write_value in
       let rs_value = if ok then read_value else read_value + 1 in
+      let rt_value = if ok then write_value else read_value + 1 in
 
       let pre_ins, rs, rt, rn, st =
         match src with
@@ -153,7 +154,7 @@ module Cas = struct
             let rt, st = A.next_reg st in
             let st = A.add_condition st rs read_value in
             (* if the src event is memory, the read is significant in all cases *)
-            [A.mov rt write_value; A.mov rs rs_value], rs, rt, rn, st
+            [A.mov rt rt_value; A.mov rs rs_value], rs, rt, rn, st
         | _ -> (
             let src_reg, v_opt =
               match dep with
@@ -168,13 +169,13 @@ module Cas = struct
                 let ins =
                   ins_zero
                   @ A.pseudo [A.addi rs r_eor rs_value]
-                  @ [A.mov rt write_value]
+                  @ [A.mov rt rt_value]
                 in
                 ins, rs, rt, rn, st
             | "Rt" ->
                 let rs, st = A.next_reg st in
                 let ins_rt, rt, st =
-                  A.calc_value st write_value src_reg v_opt
+                  A.calc_value st rt_value src_reg v_opt
                 in
                 ins_rt @ [A.mov rs rs_value], rs, rt, rn, st
             | "Rn" ->
@@ -188,7 +189,7 @@ module Cas = struct
                       A.do_eor reg_zero src_reg src_reg;
                       A.do_add64 A.vloc rn2 rn reg_zero;
                     ]
-                  @ [A.mov rs rs_value; A.mov rt write_value]
+                  @ [A.mov rs rs_value; A.mov rt rt_value]
                 in
                 ins, rs, rt, rn2, st
             | _ -> Warn.fatal "Unknown source %s" src)
@@ -262,7 +263,6 @@ module Swp = struct
       | _ -> Warn.fatal "Event has not forwarded any register"
     in
 
-    let ins_zero, reg_zero, st = A.calc_value st 0 src_reg v_opt in
 
     let rd, st = A.next_reg st in
     let rm, st = A.next_reg st in
@@ -270,9 +270,16 @@ module Swp = struct
 
     let dep_ins, st =
       match src with
-      | "Rd" -> A.pseudo [A.add A.vloc rd rd reg_zero], st
-      | "Rm" -> A.pseudo [A.add A.vloc rm rm reg_zero], st
-      | "Rn" -> A.pseudo [A.do_add64 A.vloc rn rn reg_zero], st
+      | "Rd" ->
+        let ins_zero, reg_zero, st = A.calc_value st 0 src_reg v_opt in
+        ins_zero @ A.pseudo [A.add A.vloc rd rd reg_zero], st
+        | "Rm" ->
+          let ins_zero, reg_zero, st = A.calc_value st 0 src_reg v_opt in
+          ins_zero @ A.pseudo [A.add A.vloc rm rm reg_zero], st
+      | "Rn" ->
+        (*! When using do_add64 to a register holding an addr, you need to use a fresh reg_zero. Thus, v_opt is None *)
+        let ins_zero, reg_zero, st = A.calc_value st 0 src_reg None in
+        ins_zero @ A.pseudo [A.do_add64 A.vloc rn rn reg_zero], st
       | _ -> Warn.fatal "Unknown source %s" src
     in
 
@@ -287,7 +294,7 @@ module Swp = struct
     in
 
     let ins =
-      ins_zero @ dep_ins @ A.pseudo [A.swp A.RMW_P rd rm rn] @ post_ins
+      dep_ins @ A.pseudo [A.swp A.RMW_P rd rm rn] @ post_ins
     in
     ins, dep, st
 
