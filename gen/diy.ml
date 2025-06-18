@@ -276,6 +276,7 @@ let () =
     let docheck = !Config.docheck
     let typ = !Config.typ
     let hexa = !Config.hexa
+    let same_loc = !Config.same_loc
  end in
   let module C = struct
     let verbose = !Config.verbose

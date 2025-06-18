@@ -477,6 +477,10 @@ let diff_loc e = not (same_loc e)
 
 let same_proc e = E.get_ie e = Int
 let diff_proc e = E.get_ie e = Ext
+let int_com e = match e.E.edge with
+  | E.Rf Int|E.Fr Int|E.Ws Int -> true
+  | _ -> false
+
 
 
 (* Coherence definition *)
@@ -629,8 +633,6 @@ let is_rmw_edge e = match e.E.edge with
 let is_rmw d e = match d with
 | R -> is_rmw_edge e.edge
 | W -> is_rmw_edge e.prev.edge
-
-let is_com_rmw n0 = E.is_com n0.edge || is_rmw_edge n0.edge
 
 let remove_store n0 =
   let n0 =
@@ -978,18 +980,18 @@ let set_same_loc st n0 =
         split_by_loc m
       with
       | Not_found ->
-        (*check if node is preceded by a non com/rmw node and is itself a com/rmw node*)
-        let to_com_rmw n0 = not (is_com_rmw n0.prev) && is_com_rmw n0 in
+        (*check if node is preceded by a non com node and is itself a com node*)
+        let to_com n0 = not (E.is_com n0.prev.edge) && E.is_com n0.edge in
         fold (fun n0 _ -> if E.is_id n0.edge.E.edge then assert false) n ();
         try
-          (* check for R ensures that we start on Fr or Rmw if possible*)
-          let m = find_node (fun m -> to_com_rmw m && m.evt.dir = Some R) n in
+          (* check for R ensures that we start on Fr if possible*)
+          let m = find_node (fun m -> to_com m && m.evt.dir = Some R) n in
           split_one_loc m
         with Not_found -> try
           (* The previous search failed. This search will return the W node from
              which an Rf edge starts, provided that the previous edge is not a
              communication or a Rmw edge *)
-          let m = find_node (fun m -> to_com_rmw m) n in
+          let m = find_node (fun m -> to_com m) n in
           split_one_loc m
         with Not_found -> Warn.fatal "cannot set write values"
       | Exit -> Warn.fatal "cannot set write values" in
@@ -1105,8 +1107,18 @@ let finish n =
 (* Set locations *)
   let sd,n =
     let no =
-      try Some (find_edge_prev diff_loc (find_edge_prev diff_proc n))
-      with Not_found -> None in
+      try begin
+        (* Find the first external communication edge,
+           hence satisfying `diff_proc`. If no such edge,
+           find the first internal communication edge as the
+           start point, `start_n` to process the cycle.
+           This allows cycle containing only internal
+           communications edges but different locations *)
+        let start_n =
+          try find_edge_prev diff_proc n
+          with Not_found -> find_edge_prev int_com n in
+        Some (find_edge_prev diff_loc start_n)
+      end with Not_found -> None in
     match no with
     | Some n ->
         Diff,
@@ -1164,6 +1176,32 @@ let extract_edges n =
     k in
   do_rec n
 
+let find_start_proc n =
+  let ext_count =
+    fold ( fun n acc -> if diff_proc n.edge then acc + 1 else acc ) n 0 in
+  (* Reject cycle with precisely one external edge *)
+  if ext_count = 1 then Warn.fatal "only one external edge";
+  let p = find_non_pseudo_prev n.prev in
+  if
+    diff_proc p.edge
+  then p.next
+  else
+    try begin
+      let ext_n = find_edge diff_proc n in
+      try find_edge same_proc ext_n
+      with Not_found -> ext_n
+    end with Not_found ->
+      (* in the case of no external internal edges,
+         find the first internal edge *)
+      let int_n = find_edge int_com n in
+      (* Shift to the next node, as the returning start_proc.
+         This maintain the same behaviour when there is an
+         external edge as the process above, especially,
+         . `find_edge same_proc ext_n`, which find the first
+         internal edge after the external edge.*)
+      int_n.next
+
+
 let resolve_edges = function
   | [] -> Warn.fatal "No edges at all!"
   | es ->
@@ -1181,16 +1219,6 @@ let make es =
 (*************************)
 (* Gather events by proc *)
 (*************************)
-
-let find_start_proc n =
-  let p = find_non_pseudo_prev n.prev in
-  if
-    diff_proc p.edge
-  then p.next
-  else
-    let n = find_edge (fun n -> diff_proc n) n in
-    try find_edge same_proc n
-    with Not_found -> n
 
 
 let cons_not_nil k1 k2 = match k1 with
@@ -1265,9 +1293,6 @@ let merge_changes n nss =
     let rec do_rec m =
       let k1,k2 =
         if m.next == n then begin
-          if same_proc m.edge then
-            Warn.fatal "%s at proc end" (debug_edge m.edge)
-          else
             [],[]
         end else do_rec m.next in
       if same_proc m.edge then
