@@ -502,6 +502,7 @@ module Make
                  "Wreg", E.is_reg_store_any;
                  "ADDR",MU.is_addr_port conc.S.str;
                  "DATA",MU.is_data_port conc.S.str;
+                 "SysReg", E.is_sysreg;
                 ])) in
       let m =
         if kvm then begin

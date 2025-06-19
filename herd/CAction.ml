@@ -245,6 +245,10 @@ end = struct
   | Access (R,A.Location_reg _,_,_,_,_) -> true
   | _ -> false
 
+  let is_sysreg = function
+    | Access (_,A.Location_reg _,_,_,_,_) -> false
+    | _ -> false
+
   let compatible_accesses a1 a2 =
     (is_mem a1 && is_mem a2) || (is_reg_any a1 && is_reg_any a2)
 

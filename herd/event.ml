@@ -114,6 +114,7 @@ val same_instance : event -> event -> bool
   val is_reg_store_any : event -> bool
   val is_reg_load_any : event -> bool
   val is_reg_any : event -> bool
+  val is_sysreg : event -> bool
 
 (* Store/Load to memory or register *)
   val is_store : event -> bool
@@ -711,6 +712,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let is_reg_any e = Act.is_reg_any e.action
     let is_reg_store_any e = Act.is_reg_store_any e.action
     let is_reg_load_any e = Act.is_reg_load_any e.action
+    let is_sysreg e = Act.is_sysreg e.action
 
 (* Compatible events ie accesses of the same category *)
     let compatible_accesses e1 e2 =

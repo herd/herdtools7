@@ -609,6 +609,8 @@ let type_reg r =
   | Vreg  (_,(n_elt,sz)) -> Array (TestType.tr_nbits sz,n_elt)
   | _ -> Base "int"
 
+let is_sysreg = function SysReg _ -> true | _ -> false
+
 (************)
 (* Barriers *)
 (************)

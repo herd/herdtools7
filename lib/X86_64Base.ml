@@ -222,6 +222,7 @@ let reg_size_to_uint = function
 let type_reg = function
   | Ireg (_, t) -> CType.Base (reg_size_to_uint t)
   | _ -> CType.Base "int"
+let is_sysreg _ = false
 
 let change_size_reg r sz = match r with
   | Ireg (b, _) -> Ireg (b, sz)
