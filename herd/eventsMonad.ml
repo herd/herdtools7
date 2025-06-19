@@ -1134,7 +1134,7 @@ Monad type:
     let add_ports port st =
       let open Port in
       match port with
-      | Addr|Data ->
+      | Addr|Data|AddrData ->
           { st with E.ports = set_port port st.E.events; }
       | No -> st
 

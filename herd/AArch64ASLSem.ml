@@ -1135,6 +1135,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                match get_port event with
                | Addr -> "(addr)"
                | Data -> "(data)"
+               | AddrData -> "(addr&data)"
                | No -> "")
         in
         match (iiid, tr_action is_bcc event ii action) with

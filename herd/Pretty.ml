@@ -1086,6 +1086,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       function
         | Some Data -> " (data)"
         | Some Addr -> " (addr)"
+        | Some AddrData -> " (addr&data)"
         | None|Some No -> "" in
 
   let pp_event ?lbl isinit color chan e =
