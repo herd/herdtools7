@@ -13,7 +13,7 @@ begin
     assert y > x;
 
     // The following statement is illegal, since
-    // the expression `write_side_effecting()` is not pure.
+    // the expression `write_side_effecting()` is not readonly.
     assert y > write_side_effecting();
     return 0;
 end;

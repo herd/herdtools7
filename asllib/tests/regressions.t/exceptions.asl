@@ -112,7 +112,8 @@ end;
 
 func main () => integer
 begin
-  assert try_opcode() == 0;
+  let x = try_opcode();
+  assert x == 0;
   try_rethrow ();
   try_imbricated ();
   try_with_local_variable ();

@@ -1,4 +1,4 @@
-func foo {N} (bv: bits(N)) => bits(N)
+readonly func foo {N} (bv: bits(N)) => bits(N)
 begin
   let y = Ones {N DIV 2};
   return Zeros{N DIV 2} :: y;

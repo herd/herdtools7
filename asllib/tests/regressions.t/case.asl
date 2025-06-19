@@ -1,4 +1,4 @@
-func inv(i: integer) => integer
+readonly func inv(i: integer) => integer
 begin
   case i of
     when 0 => return 1;

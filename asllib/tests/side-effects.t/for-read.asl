@@ -1,6 +1,6 @@
 var X: integer = 0;
 
-func read_X () => integer
+readonly func read_X () => integer
 begin
   let x = X;
   return x;

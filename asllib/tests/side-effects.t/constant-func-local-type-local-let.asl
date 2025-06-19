@@ -1,4 +1,4 @@
-func foo(x: integer) => integer
+pure func foo(x: integer) => integer
 begin
   let K : integer {8, 16, 32} = 8;
 

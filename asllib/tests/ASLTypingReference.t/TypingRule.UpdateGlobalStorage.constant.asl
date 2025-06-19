@@ -1,4 +1,4 @@
-func factorial(x : integer) => integer
+pure func factorial(x : integer) => integer
 begin
     assert x >= 0;
     var res : integer = 1;

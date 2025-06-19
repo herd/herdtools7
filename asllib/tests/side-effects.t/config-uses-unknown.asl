@@ -1,4 +1,4 @@
-func foo () => integer
+pure func foo () => integer
 begin
   return ARBITRARY: integer {0..10};
 end;

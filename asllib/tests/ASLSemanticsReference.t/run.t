@@ -251,7 +251,7 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.CheckRecurseLimit.no_limit.asl
   File SemanticsRule.CheckRecurseLimit.no_limit.asl, line 1, character 0 to
     line 4, character 4:
-  func factorial(n: integer) => integer
+  readonly func factorial(n: integer) => integer
   begin
       return if n == 0 then 1 else n * factorial(n - 1);
   end;

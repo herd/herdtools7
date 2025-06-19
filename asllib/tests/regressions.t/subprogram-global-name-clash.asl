@@ -2,7 +2,7 @@ var X : integer = 0;
 
 accessor X() <=> v: integer
 begin
-  getter
+  readonly getter
     return X;
   end;
 
@@ -11,15 +11,17 @@ begin
   end;
 end;
 
-func X(b: boolean) => integer
+var Y : integer = 0;
+
+readonly func Y(b: boolean) => integer
 begin
-  return X;
+  return Y;
 end;
 
 func main() => integer
 begin
   - = X;
-  - = X(TRUE);
+  - = Y(TRUE);
   X() = X;
   X() = X + 1;
   assert X() == 1;

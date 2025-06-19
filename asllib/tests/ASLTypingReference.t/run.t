@@ -467,7 +467,7 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref TypingRule.SAssert.bad.asl
   File TypingRule.SAssert.bad.asl, line 11, characters 10 to 23:
-      assert(increment()); // Illegal, since increment is not pure.
+      assert(increment()); // Illegal, since increment is not readonly.
             ^^^^^^^^^^^^^
   ASL Type error: a pure expression was expected, found (increment()), which
     produces the following side-effects: [WritesGlobal "g", ReadsGlobal "g"].

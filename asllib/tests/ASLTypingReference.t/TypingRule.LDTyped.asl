@@ -1,6 +1,6 @@
 type MyT of integer;
 
-func foo (t: MyT) => integer
+readonly func foo (t: MyT) => integer
 begin
   return t as integer;
 end;

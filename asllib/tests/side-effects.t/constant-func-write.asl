@@ -1,6 +1,6 @@
 var X: integer = 0;
 
-func foo (x: integer) => integer
+pure func foo (x: integer) => integer
 begin
   X = 3;
   return x * x + 3;

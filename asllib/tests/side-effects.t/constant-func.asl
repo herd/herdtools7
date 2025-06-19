@@ -1,4 +1,4 @@
-func foo (x: integer) => integer
+pure func foo (x: integer) => integer
 begin
   return x * x + 3;
 end;

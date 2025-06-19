@@ -2,7 +2,7 @@ type a of array [[4]] of integer;
 
 var global_a: a;
 
-func get_2(local_a: a) => integer
+readonly func get_2(local_a: a) => integer
 begin
   return local_a[[2]];
 end;

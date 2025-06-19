@@ -1,4 +1,4 @@
-func foo (x: integer) => integer
+pure func foo (x: integer) => integer
 begin
   let y = ARBITRARY: integer {0..3};
   return x * x + 3 + y;

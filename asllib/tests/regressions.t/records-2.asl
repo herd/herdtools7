@@ -12,7 +12,7 @@ type aa_record_ty of record {
     foo: integer
 } subtypes a_record_ty;
 
-func equal_a_record_ty (x: a_record_ty, y: a_record_ty) => boolean
+readonly func equal_a_record_ty (x: a_record_ty, y: a_record_ty) => boolean
 begin
   return
     x.flag == y.flag &&
