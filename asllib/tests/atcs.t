@@ -112,10 +112,4 @@ ATCs in types:
   > let bv : bits(1 as integer{2}) = Ones{1};
   > EOF
 
-  $ aslref atcs9.asl
-  File atcs9.asl, line 1, characters 14 to 29:
-  let bv : bits(1 as integer{2}) = Ones{1};
-                ^^^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found 1 as integer {2}, which
-    produces the following side-effects: [PerformsAssertions].
-  [1]
+  $ aslref --no-exec atcs9.asl

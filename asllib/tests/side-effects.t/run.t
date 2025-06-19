@@ -171,12 +171,6 @@
     produces the following side-effects: [ThrowsException "E"].
   [1]
   $ aslref for-unknown.asl
-  File for-unknown.asl, line 8, characters 15 to 25:
-    for i = 0 to unknown () do
-                 ^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found unknown(), which
-    produces the following side-effects: [NonDeterministic].
-  [1]
 
   $ aslref config-uses-var.asl
   File config-uses-var.asl, line 2, characters 0 to 26:

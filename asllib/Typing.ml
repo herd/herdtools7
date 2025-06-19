@@ -597,12 +597,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (Error.ImpureExpression (expr_for_error, ses))
   (* End *)
 
-  let check_is_deterministic expr_for_error ses () =
-    if SES.is_deterministic ses then ()
-    else
-      fatal_from ~loc:expr_for_error
-        (Error.ImpureExpression (expr_for_error, ses))
-
   let check_is_pure expr_for_error ses () =
     if SES.is_pure ses then ()
     else
@@ -3008,9 +3002,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           annotate_limit_expr ~warn:false ~loc env limit
         in
         let+ () = check_is_pure start_e ses_start in
-        let+ () = check_is_deterministic start_e ses_start in
         let+ () = check_is_pure end_e ses_end in
-        let+ () = check_is_deterministic end_e ses_end in
         let ses_cond = SES.union3 ses_start ses_end ses_limit in
         let start_struct = Types.make_anonymous env start_t
         and end_struct = Types.make_anonymous env end_t in

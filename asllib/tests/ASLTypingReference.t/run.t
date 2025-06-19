@@ -965,13 +965,6 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref TypingRule.SESIsDeterministic.asl
   $ aslref TypingRule.SESIsDeterministic.bad.asl
-  File TypingRule.SESIsDeterministic.bad.asl, line 10, characters 17 to 45:
-      for i = x to ARBITRARY : integer{1..1000} do
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected,
-    found ARBITRARY : integer {1..1000}, which produces the following
-    side-effects: [NonDeterministic].
-  [1]
   $ aslref TypingRule.SESIsBefore.asl
   $ aslref TypingRule.SESIsBefore.bad.asl
   File TypingRule.SESIsBefore.bad.asl, line 4, character 0 to line 6,
