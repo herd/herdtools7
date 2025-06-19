@@ -41,26 +41,20 @@
   [1]
 
   $ aslref non-constant-width.asl
-  File non-constant-width.asl, line 4, characters 10 to 47:
+  File non-constant-width.asl, line 4, characters 29 to 34:
     let x = Zeros{64} as (bits(sub_k) {[0] flag});
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got sub_k, which produces
-    the following side-effects: [ReadsLocal "sub_k"].
+                               ^^^^^
+  ASL Type error: expected a pure expression/subprogram.
   [1]
   $ aslref non-constant-global-width.asl
-  File non-constant-global-width.asl, line 3, character 0 to line 5,
-    character 2:
+  File non-constant-global-width.asl, line 3, characters 21 to 26:
   type my_type of bits(sub_k) {
-    [0] flag
-  };
-  ASL Type error: expected constant-time expression, got sub_k, which produces
-    the following side-effects: [ReadsGlobal "sub_k"].
+                       ^^^^^
+  ASL Type error: expected a pure expression/subprogram.
   [1]
   $ aslref config-global-width.asl
-  File config-global-width.asl, line 3, character 0 to line 5, character 2:
+  File config-global-width.asl, line 3, characters 21 to 26:
   type my_type of bits(sub_k) {
-    [0] flag
-  };
-  ASL Type error: expected constant-time expression, got sub_k, which produces
-    the following side-effects: [ReadsGlobal "sub_k"].
+                       ^^^^^
+  ASL Type error: expected a pure expression/subprogram.
   [1]

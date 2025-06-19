@@ -79,7 +79,7 @@ let parse_args () =
   let override_mode = ref Permissive in
   let set_override_mode m () = override_mode := m in
   let no_primitives = ref false in
-  let use_fine_grained_side_effects = ref true in
+  let use_fine_grained_side_effects = ref false in
   let use_conflincting_side_effects_extension = ref false in
   let control_flow_analysis = ref true in
   let allow_single_arrows = ref false in

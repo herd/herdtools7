@@ -2,8 +2,8 @@ var X: integer = 0;
 
 pure func foo (x: integer) => integer
 begin
-  X = 3;
-  return x * x + 3;
+  let y = X;
+  return x * x + y;
 end;
 
 constant C = foo (4);
