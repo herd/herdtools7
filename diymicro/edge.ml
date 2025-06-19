@@ -151,6 +151,7 @@ let pp_annotated_edge (edge, annot) =
   | AnnotNone -> pp_edge edge
   | _ -> pp_edge edge ^ ":" ^ pp_annot annot
 
-let pp_quoted_annotated_edge ae = match ae with
-  | (Iico _, _) -> "'"^pp_annotated_edge ae^"'"
+let pp_quoted_annotated_edge ae =
+  match ae with
+  | Iico _, _ -> "'" ^ pp_annotated_edge ae ^ "'"
   | _ -> pp_annotated_edge ae

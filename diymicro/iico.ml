@@ -174,9 +174,7 @@ module Cas = struct
                 ins, rs, rt, rn, st
             | "Rt" ->
                 let rs, st = A.next_reg st in
-                let ins_rt, rt, st =
-                  A.calc_value st rt_value src_reg v_opt
-                in
+                let ins_rt, rt, st = A.calc_value st rt_value src_reg v_opt in
                 ins_rt @ [A.mov rs rs_value], rs, rt, rn, st
             | "Rn" ->
                 let reg_zero, st = A.next_reg st in
@@ -256,76 +254,94 @@ end
 
 module Swp = struct
   let compile src dst =
-   fun st dep _ _ ->
-    let src_reg, v_opt =
-      match dep with
-      | DepReg (r, v) -> r, v
-      | _ -> Warn.fatal "Event has not forwarded any register"
+   fun st dep src_evt dst_evt ->
+    let rn, _, read_value, write_value, st =
+      match src_evt, dst_evt with
+      | None, None ->
+          let _, rn, st = A.assigned_next_loc st in
+          rn, false, Some 0, 1, st
+      | Some (loc, read_v, AnnotNone, is_significant), None ->
+          let rn = A.get_register st loc in
+          rn, is_significant, Some read_v, read_v, st
+      | None, Some (loc, write_v, AnnotNone, _) ->
+          let rn = A.get_register st loc in
+          rn, false, None, write_v, st
+      | Some (loc, read_v, AnnotNone, _), Some (loc2, write_v, AnnotNone, _)
+        when loc = loc2 ->
+          let rn = A.get_register st loc in
+          rn, false, Some read_v, write_v, st
+      | _, _ -> Warn.fatal "swp received inconsistent event data"
     in
 
-
-    let rd, st = A.next_reg st in
-    let rm, st = A.next_reg st in
-    let _, rn, st = A.assigned_next_loc st in
-
-    let dep_ins, st =
+    (* We set up:
+      Rd=no specific value (0)
+      Rm=write_value
+      [Rn]=read_value needs no action
+    *)
+    let pre_ins, rd, rm, st =
       match src with
-      | "Rd" ->
-        let ins_zero, reg_zero, st = A.calc_value st 0 src_reg v_opt in
-        ins_zero @ A.pseudo [A.add A.vloc rd rd reg_zero], st
-        | "Rm" ->
-          let ins_zero, reg_zero, st = A.calc_value st 0 src_reg v_opt in
-          ins_zero @ A.pseudo [A.add A.vloc rm rm reg_zero], st
-      | "Rn" ->
-        (*! When using do_add64 to a register holding an addr, you need to use a fresh reg_zero. Thus, v_opt is None *)
-        let ins_zero, reg_zero, st = A.calc_value st 0 src_reg None in
-        ins_zero @ A.pseudo [A.do_add64 A.vloc rn rn reg_zero], st
-      | _ -> Warn.fatal "Unknown source %s" src
+      | "M" ->
+          (match dep with
+          | DepNone -> ()
+          | _ -> Warn.user_error "Dependency provided to swp M->.");
+          let rd, st = A.next_reg st in
+          let rm, st = A.next_reg st in
+          [A.mov rm write_value], rd, rm, st
+      | _ -> (
+          let src_reg, v_opt =
+            match dep with
+            | DepReg (r, v) -> r, v
+            | _ -> Warn.fatal "Event has not forwarded any register"
+          in
+          match src with
+          | "Rd" ->
+              let rd, st = A.next_reg st in
+              let rm, st = A.next_reg st in
+              let ins_zero, reg_zero, st = A.calc_value st 0 src_reg v_opt in
+              let ins =
+                ins_zero
+                @ A.pseudo [A.add A.vloc rd rd reg_zero]
+                @ [A.mov rm write_value]
+              in
+              ins, rd, rm, st
+          | "Rm" ->
+              let rd, st = A.next_reg st in
+              let ins_rm, rm, st = A.calc_value st write_value src_reg v_opt in
+              ins_rm, rd, rm, st
+          | "Rn" ->
+              let rd, st = A.next_reg st in
+              let rm, st = A.next_reg st in
+              (*! When using do_add64 to a register holding an addr, you need to use a fresh reg_zero. Thus, v_opt is None *)
+              let ins_zero, reg_zero, st = A.calc_value st 0 src_reg None in
+              let ins =
+                ins_zero
+                @ A.pseudo [A.do_add64 A.vloc rn rn reg_zero]
+                @ [A.mov rm write_value]
+              in
+              ins, rd, rm, st
+          | _ -> Warn.fatal "Unknown source %s" src)
+    in
+
+    let st =
+      match read_value with None -> st | Some v -> A.add_condition st rd v
     in
 
     let post_ins, dep, st =
       match dst with
-      | "Rd" -> [], DepReg (rd, None), st
+      | "Rd" -> [], DepReg (rd, read_value), st
       | "Rm" -> [], DepReg (rm, None), st
       | "Rn" ->
           let rn_reg, st = A.next_reg st in
           A.pseudo [A.do_ldr A.vloc rn_reg rn], DepReg (rn_reg, None), st
+      | "M" ->
+          ( [],
+            DepReg (rd, read_value),
+            st (* is used afterwards if event is significant *) )
       | _ -> Warn.fatal "Unknown destination %s" dst
     in
 
-    let ins =
-      dep_ins @ A.pseudo [A.swp A.RMW_P rd rm rn] @ post_ins
-    in
+    let ins = pre_ins @ A.pseudo [A.swp A.RMW_P rd rm rn] @ post_ins in
     ins, dep, st
-
-  let mem st dep src_evt dst_evt =
-    (match dep with
-    | DepNone -> ()
-    | _ -> Warn.user_error "Dependency provided to Swp.mem");
-
-    let rd, st = A.next_reg st in
-    let rm, st = A.next_reg st in
-
-    let rn_loc, read_value, is_read_significant =
-      match src_evt with
-      | Some (loc, v, AnnotNone, is_significant) -> loc, v, is_significant
-      | _ -> Warn.fatal "Source event not provided or invalid"
-    in
-    let st =
-      if is_read_significant then A.add_condition st rd read_value else st
-    in
-    let write_value =
-      match dst_evt with
-      | Some (loc, v, AnnotNone, _) when loc = rn_loc -> v
-      | _ ->
-          Warn.fatal
-            "Destination event not provided, invalid or incompatible with \
-             source event"
-    in
-    let rn = A.get_register st rn_loc in
-    let ins = A.mov rm write_value :: A.pseudo [A.swp A.RMW_P rd rm rn] in
-
-    ins, DepReg (rd, Some read_value), st
 end
 
 let init () =
@@ -402,30 +418,14 @@ let init () =
           {
             repr = "";
             compile_edge = Swp.compile src dst;
-            direction = RegEvent, RegEvent;
+            direction =
+              ( (if src = "M" then Rm true else RegEvent),
+                if dst = "M" then Wm true else RegEvent );
             ie = Internal;
             sd = Same;
             significant_source = false;
-            significant_dest = false;
+            significant_dest = dst = "M";
           });
-      inputs = ["Rd"; "Rm"; "Rn"];
-      outputs = ["Rd"; "Rm"; "Rn"];
-    };
-
-  add_iico
-    {
-      instruction_name = "swp:mem";
-      to_edge =
-        (fun _ _ ->
-          {
-            repr = "";
-            compile_edge = Swp.mem;
-            direction = Rm true, Wm true;
-            ie = Internal;
-            sd = Same;
-            significant_source = false;
-            significant_dest = true;
-          });
-      inputs = ["M"];
-      outputs = ["M"];
+      inputs = ["Rd"; "Rm"; "Rn"; "M"];
+      outputs = ["Rd"; "Rm"; "Rn"; "M"];
     }
