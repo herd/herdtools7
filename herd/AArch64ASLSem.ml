@@ -828,12 +828,12 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
            |> ASLBase.build_ast_from_file ~ast_type:`Ast `ASLv1
            |> List.find (fun d ->
                   match d.desc with
-                  | D_TypeDecl ("ProcState", _ty, None) -> true
+                  | D_GlobalStorage { keyword = GDK_Var; name = "PSTATE"; ty = Some _ ; _ } -> true
                   | _ -> false)
          in
          let proc_state_fields =
            match proc_state_decl.desc with
-           | D_TypeDecl ("ProcState", ty, None) -> (
+           | D_GlobalStorage { keyword = GDK_Var; name = "PSTATE"; ty = Some ty; _ } -> (
                match ty.desc with
                | T_Collection fields -> fields
                | _ -> assert false)
