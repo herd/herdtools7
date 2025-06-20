@@ -114,6 +114,7 @@ module Make (C : Config) = struct
     let output_format = Asllib.Error.HumanReadable
     let print_typed = false
     let use_field_getter_extension = false
+    let fine_grained_side_effects = true
     let use_conflicting_side_effects_extension = false
     let override_mode = Asllib.Typing.Permissive
     let control_flow_analysis = true

@@ -45,6 +45,7 @@ type args = {
   strictness : strictness;
   output_format : Error.output_format;
   use_field_getter_extension : bool;
+  use_fine_grained_side_effects : bool;
   use_conflicting_side_effects_extension : bool;
   override_mode : override_mode;
   no_primitives : bool;
@@ -78,7 +79,8 @@ let parse_args () =
   let override_mode = ref Permissive in
   let set_override_mode m () = override_mode := m in
   let no_primitives = ref false in
-  let use_side_effects_extension = ref false in
+  let use_fine_grained_side_effects = ref true in
+  let use_conflincting_side_effects_extension = ref false in
   let control_flow_analysis = ref true in
   let allow_single_arrows = ref false in
 
@@ -148,10 +150,14 @@ let parse_args () =
       ( "--use-field-getter-extension",
         Arg.Set use_field_getter_extension,
         " Instruct the type-checker to use the field getter extension." );
-      ( "--use-conflicting-side-effects-extension",
-        Arg.Set use_side_effects_extension,
-        " Instruct the type-checker to use the conflicting side-effects \
+      ( "--use-fine-grained-side-effects-extension",
+        Arg.Set use_fine_grained_side_effects,
+        " Instruct the type-checker to use the fine-grained side-effects \
          extension." );
+      ( "--use-conflicting-side-effects-extension",
+        Arg.Set use_conflincting_side_effects_extension,
+        " Instruct the type-checker to use the conflicting side-effects \
+         extension. Also implies the fine-grained side-effects extension." );
       ( "--show-rules",
         Arg.Set show_rules,
         " Instrument the interpreter and log to std rules used." );
@@ -220,7 +226,9 @@ let parse_args () =
       show_rules = !show_rules;
       output_format = !output_format;
       use_field_getter_extension = !use_field_getter_extension;
-      use_conflicting_side_effects_extension = !use_side_effects_extension;
+      use_fine_grained_side_effects = !use_fine_grained_side_effects;
+      use_conflicting_side_effects_extension =
+        !use_conflincting_side_effects_extension;
       override_mode = !override_mode;
       no_primitives = !no_primitives;
       control_flow_analysis = !control_flow_analysis;
@@ -340,6 +348,10 @@ let () =
       let print_typed = args.print_typed || args.print_lisp
       let use_field_getter_extension = args.use_field_getter_extension
       let override_mode = args.override_mode
+
+      let fine_grained_side_effects =
+        args.use_fine_grained_side_effects
+        || args.use_conflicting_side_effects_extension
 
       let use_conflicting_side_effects_extension =
         args.use_conflicting_side_effects_extension
