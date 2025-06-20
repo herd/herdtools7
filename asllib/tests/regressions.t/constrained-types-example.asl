@@ -15,7 +15,7 @@ begin
   // So it does not know that M==L after this statement
 
   // myM = myL; // ILLEGAL
-  // myM and myL are constrained width bitvectors of determined widths
+  // myM and myL are constrained width bitvectors of widths
   // M and L respectively.
   // The type-checker does not know (M==L), so subtype-satisfaction
   // disallows this use of myL.
@@ -29,7 +29,7 @@ begin
   // with the width of myL and the width of myL is an integer {8,16}
   // which complies with the declaration of parameter 'N'
   // The rules for subtype-satisfaction are satisfied since
-  // the formal 'x' and the actual 'myL' are of the same determined width.
+  // the formal 'x' and the actual 'myL' are of the same width.
 end;
 
 func main() => integer
@@ -42,4 +42,3 @@ begin
 end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
-

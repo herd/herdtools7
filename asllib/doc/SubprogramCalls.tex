@@ -85,7 +85,30 @@ annotates the call $\vcall$ to a subprogram with call type $\calltype$, resultin
 \end{itemize}
 \ProseOtherwiseTypeError
 
-See \ExampleRef{Annotating Calls with Typed Parameters and Typed Arguments}.
+\ExampleDef{Parameterized Subprogram Calls}
+The specifications in \listingref{AnnotateCall} and \listingref{AnnotateCall2} are well-typed.
+\ASLListing{Well-typed parameterized subprogram calls}{AnnotateCall}{\typingtests/TypingRule.AnnotateCall.asl}
+\ASLListing{Well-typed parameterized subprogram calls}{AnnotateCall2}{\typingtests/TypingRule.AnnotateCall2.asl}
+
+\ExampleDef{A Call with an Illegal Parameter Type}
+The specification in \listingref{AnnotateCall-bad} is illegal since
+the type of \verb|wid| --- \verb|integer{2,4,8}| --- does not \subtypesatisfy{}
+the type of the parameter \verb|N| --- \verb|integer{2,4}|.
+\ASLListing{An illegal parameter type}{AnnotateCall-bad}{\typingtests/TypingRule.AnnotateCall.bad.asl}
+
+The specification in \listingref{AnnotateCall-bad2} is illegal since
+expressions passed as parameters need to be \constrainedintegers.
+\ASLListing{An illegal parameter type}{AnnotateCall-bad2}{\typingtests/TypingRule.AnnotateCall.bad2.asl}
+
+The specification in \listingref{AnnotateCall-bad3} is illegal since
+expressions passed as parameters need to be \constrainedintegers.
+\ASLListing{An illegal parameter type}{AnnotateCall-bad3}{\typingtests/TypingRule.AnnotateCall.bad3.asl}
+
+The specification in \listingref{AnnotateCall-bad4} is illegal since
+the type of \verb|N| --- \verb|integer{N} --- does not \typesatisfy{} \verb|integer{1,2,3}|.
+\ASLListing{An illegal parameter type}{AnnotateCall-bad4}{\typingtests/TypingRule.AnnotateCall.bad4.asl}
+
+For more examples, see \ExampleRef{Annotating Calls with Typed Parameters and Typed Arguments}.
 
 \ProseParagraph
 \AllApply
@@ -162,6 +185,10 @@ the type of the formal argument \verb|z| (\verb|integer{0..N}|), with \verb|N| s
 That is, \\
 \verb|integer{0..64}|.
 \ASLListing{An ill-typed call expression}{AnnotateCallActualsTyped-bad3}{\typingtests/TypingRule.AnnotateCallActualsTyped.bad3.asl}
+
+In \listingref{AnnotateCallActualsTyped-bad4}, the call expression \verb|ones{myWid}()|
+is ill-typed, since \verb|myWid| has the \unconstrainedintegertype.
+\ASLListing{An ill-typed call expression}{AnnotateCallActualsTyped-bad4}{\typingtests/TypingRule.AnnotateCallActualsTyped.bad4.asl}
 
 \ProseParagraph
 \AllApply

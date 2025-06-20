@@ -2,7 +2,7 @@ func bus {wid: integer} (arg0: bits(wid), arg1: bits(wid*2)) => bits(wid)
 begin
     // When type-checking the declaration of func bus
 // arg0 and arg1 are parameterized width bitvectors
-// of determined width `wid`
+// of width `wid`
 // Since wid is not a formal, it takes its value in an invocation from
 // the width of one of the the corresponding actuals
 return arg0;
@@ -31,36 +31,10 @@ begin
   // bus's wid parameter takes its value from the width of x
   // which is `N` which is a parameterized integer
   // Therefore the type of arg0 with the invocation width `N` is
-  // the under-constrained width bitvector of determined width `N`
+  // the bitvector whose width is the parameterized integer `N`
   // which is type satisfied by x
   return bus{N}(x, y);
 end;
-
-// func legal_fun_constrained_actual (arg: bits({32,64})) => bits(32)
-// begin
-  // This invocation is OK because the actual has undetermined width
-  // so the formal is treated as having undetermined width
-  // and the domain of bits({32,64}) is a subset of the domain of the
-  // undetermined width bitvector
-  // return bus(arg, [arg,arg])[31:0];
-  // return Zeros{32};
-// end;
-
-// func illegal_fun_parameter_mismatch (N: integer{32,64}, M: integer{64,128})
-// begin
-  // var argN = Zeros {N};
-  // var argM = Zeros {M};
-
-  // Illegal invocation:
-  // Either bus's wid takes its value from argN
-  // in which case argM does not type satisfy arg1
-  // OR bus's wid takes its value from argM
-  // in which case argN does not type satisfy arg0
-  // let illegal = bus(argN, argM);
-
-  // A checked type conversion might be useful...
-  // let legal = bus(argN, argM as bits(N*2));
-// end;
 
 func main () => integer
 begin
@@ -74,4 +48,3 @@ begin
 end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
-
