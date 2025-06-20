@@ -26,8 +26,7 @@ open AST
     Elided parameters
    ------------------------------------------------------------------------- *)
 
-val desugar_elided_parameter :
-  local_decl_keyword -> local_decl_item -> ty -> call annotated -> stmt_desc
+val desugar_elided_parameter : ty -> call annotated -> expr option
 (**
   Desugar an elided parameter, in particular:
   {[

@@ -19,10 +19,16 @@ begin
     - = Zeros{64}; // can avoid empty argument list ()
     let b : bits(64) = Zeros{}();
     let c : bits(64) = Zeros{64};
-    // let - : bits(64) = Zeros{}; // illegal: parsing conflict with empty record
+    let d : bits(64) = Zeros{};
 
     - = UInt('1111'); // equivalent to UInt{4}('1111');
-    let d : bits(64) = ZeroExtend{64}('11'); // equivalent to ZeroExtend{64,2}
-    let e : bits(64) = ZeroExtend{}('11'); // can also elide the output parameter N
+    let e : bits(64) = ZeroExtend{64}('11'); // equivalent to ZeroExtend{64,2}
+    let f : bits(64) = ZeroExtend{}('11'); // can also elide the output parameter N
     return 0;
 end;
+
+// We can similarly elide parameters for global declarations.
+constant g: bits(64) = Zeros{};
+var h: bits(64) = Bar{}(g);
+let i: bits(64) = Baz{,32}(g, 0);
+config j: bits(64) = ZeroExtend{}('11');

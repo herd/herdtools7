@@ -471,20 +471,23 @@ let decl_item :=
 (* ------------------------------------------------------------------------- *)
 (* Statement helpers *)
 
-let local_decl_keyword_non_var :=
+let local_decl_keyword ==
   | LET       ; { LDK_Let       }
   | CONSTANT[@internal true]; {
     if not Config.allow_local_constants then
         Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Local constant declaration."
     else LDK_Constant
   }
-  (* Var is inlined inside stmt as it has differing production choices
   | VAR       ; { LDK_Var       }
-  *)
 
-let global_let_or_constant :=
+let global_keyword_non_config ==
   | LET       ; { GDK_Let      }
   | CONSTANT  ; { GDK_Constant }
+  | VAR       ; { GDK_Var }
+
+let global_keyword ==
+  | global_keyword_non_config
+  | CONFIG; { GDK_Config }
 
 let pass == { S_Pass }
 let assign(x, y) == ~=x ; EQ ; ~=y ; < S_Assign >
@@ -506,8 +509,6 @@ let otherwise == OTHERWISE; ARROW; stmt_list
 let otherwise_opt := ioption(otherwise)
 let catcher := WHEN; ~=ioption(terminated(IDENTIFIER, COLON)); ~=ty; ARROW; ~=stmt_list; <>
 let loop_limit := ioption(LOOPLIMIT; expr)
-
-let option_eq_expr := ioption(EQ; expr)
 
 let setter_access :=
   | { [] }
@@ -532,7 +533,7 @@ let stmt :=
       | RETURN; ~=option(expr);                             < S_Return >
       | ~=call;                                              < s_call >
       | ASSERT; e=expr;                                      < S_Assert >
-      | ~=local_decl_keyword_non_var; ~=decl_item; ~=ty_opt; EQ; ~=some(expr); < S_Decl   >
+      | ~=local_decl_keyword; ~=decl_item; ~=ty_opt; EQ; ~=some(expr); < S_Decl   >
       | le=lexpr; EQ; e=expr;                                < S_Assign >
       | call=annotated(call); ~=setter_access; EQ; rhs=expr;
         { desugar_setter call { access=setter_access; slices=add_dummy_annotation ~version [] } rhs }
@@ -540,12 +541,10 @@ let stmt :=
         { desugar_setter call { access=setter_access; slices } rhs }
       | call=annotated(call); DOT; flds=bracketed(clist2(IDENTIFIER)); EQ; rhs=expr;
         { desugar_setter_setfields call flds rhs }
-      | ldk=local_decl_keyword_non_var; lhs=decl_item; ty=as_ty; EQ; call=annotated(elided_param_call);
-        { desugar_elided_parameter ldk lhs ty call}
-      | VAR; ldi=decl_item; ty=ty_opt; e=option_eq_expr;      { S_Decl (LDK_Var, ldi, ty, e) }
+      | ldk=local_decl_keyword; lhs=decl_item; ty=as_ty; EQ; call=annotated(elided_param_call);
+        { S_Decl (ldk, lhs, Some ty, desugar_elided_parameter ty call) }
+      | VAR; ldi=decl_item; ty=some(as_ty);                   { S_Decl (LDK_Var, ldi, ty, None) }
       | VAR; ~=clist2(annotated(IDENTIFIER)); ~=as_ty;        < make_ldi_vars >
-      | VAR; lhs=decl_item; ty=as_ty; EQ; call=annotated(elided_param_call);
-        { desugar_elided_parameter LDK_Var lhs ty call}
       | PRINTLN; args=plist0(expr);                           { S_Print { args; newline = true; debug = false } }
       | PRINT; args=plist0(expr);                             { S_Print { args; newline = false; debug = false } }
       | DEBUG; args=plist0(expr);            { S_Print { args; newline = true; debug = true } }
@@ -657,15 +656,15 @@ let decl :=
       | TYPE; x=IDENTIFIER; s=annotated(subtype);         < make_ty_decl_subtype >
       (* End *)
       (* Begin global_storage *)
-      | keyword=global_let_or_constant; name=ignored_or_identifier;
-        ty=option(as_ty); EQ; initial_value=some(expr);
+      | keyword=global_keyword_non_config; name=ignored_or_identifier;
+        ty=ioption(as_ty); EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword; name; ty; initial_value } }
       | CONFIG; name=ignored_or_identifier;
         ty=as_ty; EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword=GDK_Config; name; ty=Some ty; initial_value } }
-      | VAR; name=ignored_or_identifier;
-        ty=option(as_ty); EQ; initial_value=some(expr);
-        { D_GlobalStorage { keyword=GDK_Var; name; ty; initial_value } }
+      | keyword=global_keyword; name=ignored_or_identifier;
+        ty=as_ty; EQ; call=annotated(elided_param_call);
+        { D_GlobalStorage { keyword; name; ty=Some ty; initial_value=desugar_elided_parameter ty call } }
       (* End *)
       (* Begin global_uninit_var *)
       | VAR; name=ignored_or_identifier; ty=some(as_ty);
