@@ -1460,6 +1460,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           and length', ses_length =
             annotate_symbolic_constrained_integer ~loc env length
           in
+          let+ () = check_is_pure offset ses_offset in
+          let+ () = check_is_pure length ses_length in
           let+ () = check_underlying_integer ~loc:offset env t_offset in
           let ses = SES.union ses_length ses_offset in
           (Slice_Length (offset', length'), ses |: TypingRule.Slice)
