@@ -699,4 +699,7 @@ include Arch.MakeArch(struct
     | I_SMSTART _ | I_SMSTOP _ | I_LD1SPT _ | I_ST1SPT _
     | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
     -> Warn.fatal "SME instructions are not implemented yet"
+    | I_GIC _ | I_GICR _
+      -> Warn.fatal "GIC instructions are not implemented yet"
+
 end)

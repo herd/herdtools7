@@ -1,0 +1,11 @@
+AArch64 coWWR-gic+pri-pend1-nmia
+{
+ [INTID(A)]=(enabled:1,affinity:P0,pending:0,active:0,priority:0);
+ 0:X1=gicval_t:(intid:A, pending:1);
+ 0:X2=gicval_t:(intid:A, priority:5);
+}
+ P0                   ;
+ GIC CDPRI, X2        ;
+ GIC CDPEND, X1       ;
+ GICR X1, CDNMIA      ;
+exists(0:X1=gicval_t:(valid:1))

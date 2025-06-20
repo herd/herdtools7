@@ -1,0 +1,8 @@
+AArch64 gic.cden
+{
+ [INTID(A)]=(enabled:0);
+ 0:X0=gicval_t:(intid:A);
+}
+ P0           ;
+ GIC CDEN, X0 ;
+exists(INTID(A)=(enabled:0))

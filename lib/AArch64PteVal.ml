@@ -158,25 +158,14 @@ let pp_norm p =
   let n = tr p in
   pp_v n
 
-let lex_compare c1 c2 x y  = match c1 x y with
-| 0 -> c2 x y
-| r -> r
-
 let compare =
-  let cmp = (fun p1 p2 -> Misc.int_compare p1.el0 p2.el0) in
-  let cmp =
-    lex_compare (fun p1 p2 -> Misc.int_compare p1.valid p2.valid) cmp in
-  let cmp =
-    lex_compare (fun p1 p2 -> Misc.int_compare p1.dbm p2.dbm) cmp in
-  let cmp =
-    lex_compare (fun p1 p2 -> Misc.int_compare p1.db p2.db) cmp in
-  let cmp =
-    lex_compare (fun p1 p2 -> Misc.int_compare p1.af p2.af) cmp in
-  let cmp =
-    lex_compare (fun p1 p2 -> OutputAddress.compare p1.oa p2.oa) cmp in
-  let cmp =
-    lex_compare (fun p1 p2 -> Attrs.compare p1.attrs p2.attrs) cmp in
-  cmp
+  (fun p1 p2 -> Misc.int_compare p1.el0 p2.el0)
+    |> Misc.lex_compare (fun p1 p2 -> Misc.int_compare p1.valid p2.valid)
+    |> Misc.lex_compare (fun p1 p2 -> Misc.int_compare p1.dbm p2.dbm)
+    |> Misc.lex_compare (fun p1 p2 -> Misc.int_compare p1.db p2.db)
+    |> Misc.lex_compare (fun p1 p2 -> Misc.int_compare p1.af p2.af)
+    |> Misc.lex_compare (fun p1 p2 -> OutputAddress.compare p1.oa p2.oa)
+    |> Misc.lex_compare (fun p1 p2 -> Attrs.compare p1.attrs p2.attrs)
 
 let eq p1 p2 = OutputAddress.eq p1.oa p2.oa && eq_props p1 p2
 

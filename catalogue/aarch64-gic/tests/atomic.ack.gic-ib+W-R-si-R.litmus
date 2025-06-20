@@ -1,0 +1,14 @@
+AArch64 atomic.ack.gic-ib+W-R-si-R
+{
+ [INTID(A)]=(enabled:1,affinity:P0,pending:1,active:0);
+ 1:X1=gicval_t:(intid:A);
+}
+ P0                 | P1                     ;
+ GICR X2, CDIA      | GIC CDDIS, X1          ;
+                    | GIC CDRCFG, X1         ;
+                    | ISB                    ;
+                    | MRS X2, ICC_ICSR_EL1   ;
+
+exists(0:X2=gicval_t:(valid:1,intid:A) /\
+       1:X2=intval_t:(active:0,enabled:0,pending:1))
+

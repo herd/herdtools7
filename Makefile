@@ -587,6 +587,19 @@ ets2-test:
 		$(REGRESSION_TEST_MODE)
 		@ echo "herd7 catalogue aarch64-ETS2 tests: OK"
 
+cata-test:: cata-gic-test
+cata-gic-test:
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-herd-timeout $(TIMEOUT) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-gic/tests/kinds.txt \
+		-shelf-path catalogue/aarch64-gic/shelf.py \
+		$(REGRESSION_TEST_MODE)
+		@ echo "herd7 catalogue aarch64-gic tests: OK"
+
 test.vmsa+mte:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
@@ -596,6 +609,16 @@ test.vmsa+mte:
 		-conf ./herd/tests/instructions/AArch64.vmsa+mte/vmsa+mte.cfg \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 VMSA+MTE instructions tests: OK"
+
+
+test.gicv5:
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.gicv5 \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 GICv5 instructions tests: OK"
 
 test:: diy-test
 test-local:: diy-test

@@ -469,16 +469,16 @@ module Make(C:Config) (I:I) : S with module I = I
           |(System (PTE,s1),System (PTE,s2))
            -> Misc.string_eq s1 s2
 (* One id allowed, the other on forbidden, does not match *)
-          | (Virtual _,(System ((PTE|TLB|PTE2),_)|Physical _|TagAddr _))
-          | ((TagAddr _|Physical _|System ((PTE|TLB|PTE2),_)),Virtual _)
-          | (System (PTE,_),System ((TLB|PTE2),_))
-          | (System ((TLB|PTE2),_),System (PTE,_))
+          | (Virtual _,(System ((PTE|TLB|PTE2|INTID),_)|Physical _|TagAddr _))
+          | ((TagAddr _|Physical _|System ((PTE|TLB|PTE2|INTID),_)),Virtual _)
+          | (System (PTE,_),System ((TLB|PTE2|INTID),_))
+          | (System ((TLB|PTE2|INTID),_),System (PTE,_))
           | ((Physical _|TagAddr _),System (PTE,_))
           | (System (PTE,_),(TagAddr _|Physical _))
             -> false
 (* Both forbidden, failure *)
-          | (TagAddr _|Physical _|System ((TLB|PTE2),_)),
-            (TagAddr _|Physical _|System ((TLB|PTE2),_))
+          | (TagAddr _|Physical _|System ((TLB|PTE2|INTID),_)),
+            (TagAddr _|Physical _|System ((TLB|PTE2|INTID),_))
             ->
               Warn.fatal
                 "Illegal id (%s or %s) in fault"
@@ -719,6 +719,8 @@ module Make(C:Config) (I:I) : S with module I = I
             -> assert false
           | Location_global (I.V.Val (Symbolic (System (PTE,s)))) ->
               I.V.Val (PteVal (I.V.Cst.PteVal.default s))
+          | Location_global (I.V.Val (Symbolic (System (INTID,_)))) ->
+              I.V.Val (IntidVal (I.V.Cst.IntidVal.default))
           | Location_global (I.V.Val (Symbolic (TagAddr _))) ->
               I.V.Val default_tag
           | Location_global
@@ -732,7 +734,7 @@ module Make(C:Config) (I:I) : S with module I = I
               (I.V.Val
                  (Concrete _|ConcreteVector _|ConcreteRecord _
                  |Label _|Instruction _|Frozen _
-                 |Tag _|PteVal _))
+                 |Tag _|PteVal _|IntidVal _|IntidUpdateVal _))
             ->
               Warn.user_error
                 "Very strange location (look_address) %s\n"

@@ -118,6 +118,7 @@ let check_op3 op e =
 %token TOK_OSH TOK_OSHST TOK_OSHLD
 %token TOK_ISH TOK_ISHST TOK_ISHLD
 %token TOK_NSH TOK_NSHST TOK_NSHLD
+%token TOK_GSB TOK_SYS TOK_ACK
 %token CAS CASA CASL CASAL CASB CASAB CASLB CASALB CASH CASAH CASLH CASALH
 %token CASP CASPA CASPL CASPAL
 %token SWP SWPA SWPL SWPAL SWPB SWPAB SWPLB SWPALB SWPH SWPAH SWPLH SWPALH
@@ -161,6 +162,10 @@ let check_op3 op e =
 %token ALIGND ALIGNU BUILD CHKEQ CHKSLD CHKTGD CLRTAG CPY CPYTYPE CPYVALUE CSEAL
 %token LDCT SEAL STCT UNSEAL
 %type <MiscParser.proc list * (AArch64Base.parsedPseudo) list list * MiscParser.extra_data> main
+
+%token GIC GICR
+%token <AArch64Base.GIC.op> GIC_OP
+%token <AArch64Base.GICR.op> GICR_OP
 
 %start  main
 %type <AArch64Base.parsedPseudo list> instr_option_seq
@@ -1541,6 +1546,8 @@ instr:
   { let d,t = $2 in I_FENCE (DSB (d,t)) }
 | TOK_ISB
   { I_FENCE ISB }
+| TOK_GSB b=gicbarrier
+  { I_FENCE (GSB b) }
 /* Cache Maintenance */
 | IC IC_OP
   { I_IC ($2,ZR) }
@@ -1599,6 +1606,11 @@ instr:
 | UDF NUM
   { I_UDF (MetaConst.Int $2) }
 
+| GIC GIC_OP COMMA xreg
+  { I_GIC ($2,$4)}
+| GICR xreg COMMA GICR_OP
+  { I_GICR ($2,$4)}
+
 fenceopt:
 | TOK_SY
   { SY,FULL }
@@ -1624,3 +1636,7 @@ fenceopt:
   { NSH,ST }
 | TOK_NSHLD
   { NSH,LD}
+
+gicbarrier:
+| TOK_SYS { SYS }
+| TOK_ACK { ACK }

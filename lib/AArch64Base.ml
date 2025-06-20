@@ -121,7 +121,8 @@ type sysreg =
   MDCCSR_EL0 | DBGDTR_EL0 |
   DBGDTRRX_EL0 | DBGDTRTX_EL0 |
   ELR_EL1 | ESR_EL1 | SYS_NZCV |
-  TFSR_ELx | VNCR_EL2
+  TFSR_ELx | VNCR_EL2 |
+  ICC_ICSR_EL1 | ICC_HPPIR_EL1
 
 let sysregs = [
     CTR_EL0, "CTR_EL0";
@@ -132,6 +133,8 @@ let sysregs = [
     DBGDTRTX_EL0, "DBGDTRTX_EL0";
     ELR_EL1, "ELR_EL1";
     ESR_EL1, "ESR_EL1";
+    ICC_ICSR_EL1, "ICC_ICSR_EL1";
+    ICC_HPPIR_EL1, "ICC_HPPIR_EL1";
     SYS_NZCV, "NZCV";
     TFSR_ELx, "TFSR_ELx";
     VNCR_EL2, "VNCR_EL2";
@@ -606,6 +609,8 @@ let type_reg r =
   | Vreg  (_,(n_elt,sz)) -> Array (TestType.tr_nbits sz,n_elt)
   | _ -> Base "int"
 
+let is_sysreg = function SysReg _ -> true | _ -> false
+
 (************)
 (* Barriers *)
 (************)
@@ -639,11 +644,17 @@ let pp_type = function
   | ST -> "ST"
   | FULL -> ""
 
+type gicBarrier = SYS | ACK
+
+let pp_gic_barrier = function
+  | SYS -> "SYS"
+  | ACK -> "ACK"
 
 type barrier =
   | DMB of mBReqDomain*mBReqTypes
   | DSB of mBReqDomain*mBReqTypes
   | ISB
+  | GSB of gicBarrier
 
 type syncType =
   | DC_CVAU
@@ -668,9 +679,14 @@ let do_fold_dmb_dsb kvm more f k =
     (fun d t k -> f (DMB (d,t)) (f (DSB (d,t)) k))
     k
 
+let do_fold_gsb f k =
+  f (GSB ACK) k |>
+  f (GSB SYS)
+
 let fold_barrier kvm more f k =
   let k = do_fold_dmb_dsb kvm more f k in
   let k = f ISB k in
+  let k = do_fold_gsb f k in
   k
 
 let pp_option d t = match d,t with
@@ -682,6 +698,7 @@ let do_pp_barrier tag b = match b with
   | DMB (d,t) -> "DMB" ^ tag ^ pp_option d t
   | DSB (d,t) -> "DSB" ^ tag ^ pp_option d t
   | ISB -> "ISB"
+  | GSB b -> "GSB" ^ tag ^ (pp_gic_barrier b)
 
 let pp_barrier b = do_pp_barrier " " b
 let pp_barrier_dot b = do_pp_barrier "." b
@@ -1327,6 +1344,51 @@ let pp_barrel_shift sep s pp_k = match s with
 
 let pp_imm n = "#" ^ string_of_int n
 
+module GIC = struct
+  type domain = CD
+  let pp_domain = function
+    | CD -> "CD"
+
+  type cmd =
+    | PRI | AFF | DI | DIS | EN | HM | PEND | RCFG | EOI
+  let pp_cmd = function
+    | PRI -> "PRI"
+    | AFF -> "AFF"
+    | DI -> "DI"
+    | DIS -> "DIS"
+    | EN -> "EN"
+    | HM -> "HM"
+    | PEND -> "PEND"
+    | RCFG -> "RCFG"
+    | EOI -> "EOI"
+  type op = {domain:domain; cmd:cmd}
+  let pp op = (pp_domain op.domain) ^ (pp_cmd op.cmd)
+
+  let cmd_to_field = function
+    | PRI -> "priority"
+    | AFF -> "affinity"
+    | DI -> "active"
+    | DIS -> "enabled"
+    | EN -> "enabled"
+    | HM -> "handling_mode"
+    | PEND -> "pending"
+    | RCFG | EOI -> assert false
+end
+
+module GICR = struct
+  type domain = CD
+  let pp_domain = function
+    | CD -> "CD"
+
+  type cmd =
+    | IA | NMIA
+  let pp_cmd = function
+    | IA -> "IA"
+    | NMIA -> "NMIA"
+  type op = {domain:domain; cmd:cmd}
+  let pp op = (pp_domain op.domain) ^ (pp_cmd op.cmd)
+end
+
 type 'k kinstruction =
   | I_NOP
 (* Branches *)
@@ -1788,6 +1850,9 @@ type 'k kinstruction =
   (* | I_XPACLRI (* strip a PAC from LR *) *)
   | I_XPACI of reg (* strip an instruction address PAC *)
   | I_XPACD of reg (* strip a data address PAC *)
+(*  GICv5 instructions *)
+  | I_GIC of GIC.op * reg
+  | I_GICR of reg * GICR.op
 
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
@@ -2502,6 +2567,10 @@ let do_pp_instruction m =
       sprintf "XPACI %s" (pp_reg r)
   | I_XPACD r ->
       sprintf "XPACD %s" (pp_reg r)
+  | I_GIC (op,xt) ->
+      sprintf "GIC %s,%s" (GIC.pp op) (pp_xreg xt)
+  | I_GICR (xt,op) ->
+    sprintf "GICR %s,%s" (pp_xreg xt) (GICR.pp op)
 
 let m_int = { compat = false ; pp_k = string_of_int ;
               zerop = (function 0 -> true | _ -> false);
@@ -2590,6 +2659,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_CNT_INC_SVE (_,r,_,_)
   | I_PTRUE (r,_)
   | I_SMSTART (Some(r)) | I_SMSTOP (Some(r))
+  | I_GIC (_,r) | I_GICR (r,_)
     -> fold_reg r c
   | I_MOV (_,r1,kr)
     -> fold_reg r1 (fold_kr kr c)
@@ -3066,6 +3136,11 @@ let map_regs f_reg f_symb =
       I_XPACI (map_reg r)
   | I_XPACD r ->
       I_XPACD (map_reg r)
+  (* GICv5 instructions *)
+  | I_GIC (op,r) ->
+      I_GIC (op,map_reg r)
+  | I_GICR (r,op) ->
+      I_GICR (map_reg r,op)
 
 (* No addresses burried in ARM code *)
 let fold_addrs _f c _ins = c
@@ -3173,6 +3248,7 @@ let get_next =
   | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
   | I_PAC _ | I_AUT _
   | I_XPACI _ | I_XPACD _
+  | I_GIC _ | I_GICR _
     -> [Label.Next;]
 
 (* Check instruction validity, beyond parsing *)
@@ -3558,6 +3634,7 @@ module PseudoI = struct
         | I_PAC _ | I_AUT _
         | I_XPACI _ | I_XPACD _
         | I_CTERM _
+        | I_GIC _ | I_GICR _
             as keep -> keep
         | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,ext_tr idx)
         | I_LDRSW (r1,r2,idx) -> I_LDRSW (r1,r2,ext_tr idx)
@@ -3679,6 +3756,7 @@ module PseudoI = struct
         | I_TLBI (_,_)
         | I_XPACI _
         | I_XPACD _
+        | I_GIC _ | I_GICR _
           -> 1
         | I_LDP _|I_LDPSW _|I_STP _|I_LDXP _|I_STXP _
         | I_CAS _ | I_CASBH _

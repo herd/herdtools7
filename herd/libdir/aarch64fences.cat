@@ -60,3 +60,7 @@ let dmb.st = DMB.ISHST | DMB.OSHST | DMB.ST | dsb.st
 flag ~empty (dmb.full | dmb.ld | dmb.st) \
             (DMB.SY | DMB.LD | DMB.ST | DSB.SY | DSB.LD | DSB.ST)
             as Assuming-common-inner-shareable-domain
+
+let EXC-ENTRY-IFB = if not "ExS" || "EIS" then EXC-ENTRY else EXC-ENTRY \ SVC
+let EXC-RET-IFB = if not "ExS" || "EOS" then EXC-RET else {}
+let IFB = ISB | EXC-ENTRY-IFB | EXC-RET-IFB

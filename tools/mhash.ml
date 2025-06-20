@@ -51,7 +51,7 @@ module Top
           map : string -> string; }
     end
 
-    module Make(A:ArchBase.S)(Pte:PteVal.S) = struct
+    module Make(A:ArchBase.S)(Pte:PteVal.S)(Intid:IntidVal.S) = struct
 
       let zyva name parsed =
 	let tname = name.Name.name in

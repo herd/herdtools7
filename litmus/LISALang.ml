@@ -95,7 +95,7 @@ module Make(V:Constant.S) = struct
     | PteVal _ -> Warn.user_error "No pteval in LISA"
     | Instruction _ -> Warn.user_error "No instruction value in LISA"
     | ConcreteRecord _ -> Warn.user_error "No record values in LISA"
-    | Frozen _ -> assert false
+    | Frozen _ | IntidVal _ | IntidUpdateVal _ -> assert false
 
   and compile_addr_fun x = sprintf "*%s" x
 

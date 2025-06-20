@@ -1,0 +1,12 @@
+AArch64 coWR-gic+di-rcfg
+{
+ [INTID(A)]=(active:1);
+ 0:X1=gicval_t:(intid:A);
+}
+ P0                   ;
+ GIC CDDI, X1         ;
+ GIC CDRCFG, X1       ;
+ ISB                  ;
+ MRS X2, ICC_ICSR_EL1 ;
+exists(0:X2=intval_t:(active:1))
+

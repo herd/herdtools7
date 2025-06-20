@@ -729,6 +729,7 @@ let fold_some_fences f k =
 
 let orders f d1 d2 = match f,d1,d2 with
 | Barrier ISB,_,_ -> false
+| Barrier (GSB _),_,_ -> false
 | Barrier (DSB (_,FULL)|DMB (_,FULL)),_,_ -> true
 | Barrier (DSB (_,ST)|DMB (_,ST)),W,W -> true
 | Barrier (DSB (_,ST)|DMB (_,ST)),_,_ -> false

@@ -374,7 +374,8 @@ module Make
                (fun v -> sprintf "%s," (dump_a_v v))
                vs in
            sprintf "{%s}" (String.concat "" pps)
-        | Symbolic _|Tag _|PteVal _|Frozen _|ConcreteRecord _ -> assert false
+        | Symbolic _ | Tag _ | PteVal _ | IntidVal _ | IntidUpdateVal _
+        | Frozen _ | ConcreteRecord _ -> assert false
         | Label (p,lab) ->
           if do_self then
             sprintf "&_a->code%i[_i*_a->code%i_sz+_a->prelude%i+%s]" p p p (OutUtils.fmt_lbl_offset p lab)

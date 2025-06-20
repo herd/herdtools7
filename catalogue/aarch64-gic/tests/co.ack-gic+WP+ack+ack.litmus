@@ -1,0 +1,12 @@
+AArch64 co.ack-gic+WP+ack+ack
+{
+ [INTID(A)]=(enabled:1,affinity:P1,pending:1,active:0);
+ 0:X0=gicval_t:(intid:A, pending:1);
+ 0:X1=gicval_t:(intid:A, affinity:P2);
+}
+ P0               | P1               | P2              ;
+ GIC CDAFF, X1    | GICR  X2, CDIA   | GICR X2, CDIA   ;
+ GIC CDPEND, X0   |                  |                 ;
+
+exists(1:X2=gicval_t:(valid:1,intid:A) /\ 2:X2=gicval_t:(valid:1,intid:A))
+

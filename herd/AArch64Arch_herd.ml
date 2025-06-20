@@ -122,6 +122,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_SMSTART _ | I_SMSTOP _ | I_LD1SPT _ | I_ST1SPT _
     | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
     | I_PAC _ | I_AUT _ | I_XPACI _ | I_XPACD _
+    | I_GIC _ | I_GICR _
       -> true
 
     let is_cmodx_restricted_value =
@@ -130,17 +131,16 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | V.Val Instruction i -> is_cmodx_restricted_instruction i
       | V.Val
            (Symbolic _|Concrete _|ConcreteVector _|ConcreteRecord _|
-            Label _|Tag _|PteVal _|Frozen _)
+            Label _|Tag _|PteVal _|IntidVal _|IntidUpdateVal _|Frozen _)
       | V.Var _ -> false
 
     let ifetch_value_sets = [("Restricted-CMODX",is_cmodx_restricted_value)]
 
     let barrier_sets =
-      do_fold_dmb_dsb false true
+      fold_barrier false true
         (fun b k ->
           let tag = pp_barrier_dot b in
-          (tag,is_barrier b)::k)
-        ["ISB",is_barrier ISB]
+          (tag,is_barrier b)::k) []
 
     let cmo_sets =
       DC.fold_op
@@ -325,6 +325,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_SMSTART _ | I_SMSTOP _ | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
       | I_PAC _ | I_AUT _ | I_XPACI _ | I_XPACD _
           -> None
+      | I_GIC _ | I_GICR _ -> Some MachSize.Quad
 
     let all_regs =
       nzcv_regs@all_gprs@vregs (* Should be enough, only those are tracked *)
@@ -447,6 +448,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_PAC (_, r, _) | I_AUT (_, r, _) | I_XPACI r | I_XPACD r
         ->
           [r]
+      | I_GIC _ -> []
+      | I_GICR (r,_) -> [r]
 
     let get_lx_sz = function
       | I_LDAR (var,(XX|AX),_,_)|I_LDXP (var,_,_,_,_) -> MachSize.Ld (tr_variant var)
@@ -498,6 +501,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LD1SPT _ | I_ST1SPT _
       | I_MOVA_TV _| I_MOVA_VT _ | I_ADDA _
       | I_PAC _ | I_AUT _ | I_XPACI _ | I_XPACD _
+      | I_GIC _ | I_GICR _
         -> MachSize.No
 
     let reg_defaults =

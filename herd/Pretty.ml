@@ -1086,6 +1086,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       function
         | Some Data -> " (data)"
         | Some Addr -> " (addr)"
+        | Some AddrData -> " (addr&data)"
         | None|Some No -> "" in
 
   let pp_event ?lbl isinit color chan e =
@@ -1518,7 +1519,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   let select_event = match PC.showevents with
   | AllEvents -> (fun _ -> true)
   | MemEvents ->  E.is_mem
-  | NonRegEvents -> (fun e -> not (E.is_reg_any e))
+  | NonRegEvents -> (fun e -> (E.is_sysreg e) || not (E.is_reg_any e))
   | MemFenceEvents -> let open Misc in E.is_mem ||| E.is_barrier
   let select_event = let open Misc in select_event &&& select_non_init
 

@@ -1,0 +1,74 @@
+(*
+ * The Armv8 Application Level Memory Model.
+ *
+ * This is a machine-readable, executable and formal artefact, which aims to be
+ * the latest stable version of the Armv8 memory model.
+ * If you have comments on the content of this file, please send an email to
+ * memory-model@arm.com
+ * For a textual version of the model, see section B2.3 of the Armv8 ARM:
+ * https://developer.arm.com/documentation/ddi0487/
+ *
+ * Authors:
+ * Nikos Nikoleris <nikos.nikoleris@arm.com>
+ *
+ * Copyright (C) 2024-present, Arm Ltd.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in
+ *       the documentation and/or other materials provided with the
+ *       distribution.
+ *     * Neither the name of ARM nor the names of its contributors may be
+ *       used to endorse or promote products derived from this software
+ *       without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *)
+
+(* Protection against running tests of other architecture *)
+let DI = try DI with emptyset
+let RCFG = try RCFG with emptyset
+let GICR = try GICR with emptyset
+let GSB.ACK = try GSB.ACK with emptyset
+let GSB.SYS = try GSB.SYS with emptyset
+
+(** GSB-ordered-before **)
+let GSB-ob =
+  [Imp & INTID & GICR]; po; [GSB.ACK]; po; [~(Imp & Instr & R)]
+  | [INTID]; po; [GSB.SYS]; po; [~(Imp & Instr & R)]
+
+(** GIC-hazard-ordered-before **)
+let GIC-haz-ob =
+  [Exp & INTID & R & RCFG]; po & loc; [INTID & R]; ca; [Exp & INTID & W]
+
+(** GIC-observed-by **)
+let GIC-obs =
+   [INTID & W]; rf; [INTID & R]
+   | [Exp & INTID]; ca & ext; [Exp & INTID & W]
+
+
+(*** Internal visibility requirements ***)
+irreflexive [INTID & R & RCFG]; po & loc; [INTID & W]; rf; [INTID & R & RCFG] as coRW-INTID
+
+irreflexive [Imp & INTID & W & GICR]; po & loc; [INTID & R]; ca; [Imp & INTID & W & GICR] as coWR-INTID-GICR
+irreflexive [Imp & INTID & W & DI]; po & loc; [INTID & R & (RCFG | GICR)]; ca; [Imp & INTID & W & DI] as coWR-INTID-DI
+irreflexive [Exp & INTID & W]; po & loc; [Exp & INTID & R]; ca; [Exp & INTID & W] as coWR-INTID-GIC
+
+(*** Atomic: for the GIC and GICR instructions implemented with rmw semantics forbid intervening writes. ***)
+empty ([INTID & R]; rmw; [INTID & W]) & (ca; [INTID & W]; ca) as atomic-INTID
