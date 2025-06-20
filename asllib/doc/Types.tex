@@ -1068,10 +1068,12 @@ See \ExampleRef{Well-typed Array Types} for examples of well-typed
 array types.
 
 \ExampleDef{Ill-typed Array Types}
-In \listingref{typing-tarray-bad}, the array type for \verb|illegal_array|
+In \listingref{typing-tarray-bad}, the array type for \verb|illegal_array1|
 is ill-typed, since the expression \verb|non_symbolically_evaluable|
 is not \symbolicallyevaluable{}.
 \ASLListing{Ill-typed array types}{typing-tarray-bad}{\typingtests/TypingRule.TArray.bad.asl}
+Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_array2| is ill-typed, since the expression \verb|non_constrained| is not a \constrainedinteger{}.
+\ASLListing{Ill-typed array types}{typing-tarray-bad2}{\typingtests/TypingRule.TArray.bad.asl}
 
 \ProseParagraph
 \AllApply
@@ -1095,7 +1097,7 @@ is not \symbolicallyevaluable{}.
       \item the array index is $\ve$ and determining whether $\ve$ corresponds to an enumeration in $\tenv$
       via $\getvariableenum$ yields $\None$ (meaning it does not
       correspond to an enumeration)\ProseOrTypeError;
-      \item annotating the \symbolicallyevaluable{} integer expression $\ve$ yields\\
+      \item annotating the \symbolicallyevaluable{} \constrainedinteger{} expression $\ve$ yields\\
       $(\vep, \vsesindex)$\ProseOrTypeError;
       \item $\newty$ the array type indexed by integer bounded by
       the expression $\vep$ and of elements of type $\vtp$, that is,
@@ -1122,7 +1124,7 @@ is not \symbolicallyevaluable{}.
   \annotatetype{\False, \tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \commonprefixline\\\\
   \getvariableenum(\tenv, \ve) \typearrow \None\\
-  \annotatesymbolicinteger(\tenv, \ve) \typearrow (\vep, \vsesindex) \OrTypeError\\\\
+  \annotatesymbolicconstrainedinteger(\tenv, \ve) \typearrow (\vep, \vsesindex) \OrTypeError\\\\
   \vses \eqdef \vsest \cup \vsesindex
 }{
   \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\AbbrevTArrayLengthExpr{\ve}{\vt}}{\tty}} \typearrow
@@ -1260,47 +1262,6 @@ expressions and classifies them as either \symbolicallyevaluable{} or not.
 }
 \end{mathpar}
 \CodeSubsection{\AnnotateSymbolicallyEvaluableExprBegin}{\AnnotateSymbolicallyEvaluableExprEnd}{../Typing.ml}
-
-\TypingRuleDef{AnnotateSymbolicInteger}
-\hypertarget{def-annotatesymbolicinteger}{}
-The function
-\[
-  \annotatesymbolicinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-  (\overname{\expr}{\vepp} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
-\]
-annotates a \symbolicallyevaluable\ integer expression $\ve$ in the static environment $\tenv$
-and returns the annotated expression $\vepp$ as a \normalizedexpressionterm{} and \sideeffectsetterm\ $\vses$.
-\ProseOtherwiseTypeError
-
-\ExampleDef{Annotating Symbolically Evaluable Integer Expressions}
-The expression \verb|(pure_func(5, 6) + 9) + I| in \listingref{typing-annotatesymbolicallyevaluableexpr}
-is both \symbolicallyevaluable{} and its \underlyingtype{} is an \integertypeterm{},
-and annotating and normalizing it yields the same expression.
-%
-Annotating the expression \verb|(3*I + 9) - 2*I|, which is also \symbolicallyevaluable{} and has an
-\underlyingtype{} is an \integertypeterm{}, yields the expression \verb|I + 9| after normalization.
-%
-Annotating the expression \verb|i - 3|, which is also \symbolicallyevaluable{} and has an
-\underlyingtype{} is an \integertypeterm{}, yields the expression \verb|6| after normalization.
-
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item \Proseannotatesymbolicallyevaluableexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$\ProseOrTypeError};
-  \item determining whether the \underlyingtype{} of $\vt$ is an \integertypeterm{} yields $\True$\ProseOrTypeError;
-  \item applying $\normalize$ to $\vep$ in $\tenv$ yields $\vepp$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
-  \checkunderlyinginteger(\tenv, \vt) \typearrow \True \OrTypeError\\\\
-  \normalize(\tenv, \vep) \typearrow \vepp
-}{
-  \annotatesymbolicinteger(\tenv, \ve) \typearrow (\vepp, \vses)
-}
-\end{mathpar}
-\CodeSubsection{\AnnotateSymbolicIntegerBegin}{\AnnotateSymbolicIntegerEnd}{../Typing.ml}
 
 \hypertarget{def-checkunderlyinginteger}{}
 \TypingRuleDef{CheckUnderlyingInteger}

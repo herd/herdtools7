@@ -1343,7 +1343,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               match get_variable_enum' env e with
               | Some (s, labels) -> (ArrayLength_Enum (s, labels), SES.empty)
               | None ->
-                  let e', ses = annotate_symbolic_integer ~loc env e in
+                  let e', ses =
+                    annotate_symbolic_constrained_integer ~loc env e
+                  in
                   (ArrayLength_Expr e', ses))
           | ArrayLength_Enum (_, _) ->
               assert (* Enumerated indices only exist in the typed AST. *)
@@ -1410,13 +1412,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let t, e', ses = annotate_expr env e in
     let+ () = check_symbolically_evaluable e ses in
     (t, e', ses)
-  (* End *)
-
-  (* Begin AnnotateSymbolicInteger *)
-  and annotate_symbolic_integer ~(loc : 'a annotated) env e =
-    let t, e', ses = annotate_symbolically_evaluable_expr env e in
-    let+ () = check_underlying_integer ~loc env t in
-    (StaticModel.try_normalize env e', ses)
   (* End *)
 
   (* Begin SymbolicConstrainedInteger *)

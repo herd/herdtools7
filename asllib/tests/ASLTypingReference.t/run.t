@@ -145,12 +145,18 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.TTuple.asl
   $ aslref TypingRule.TArray.asl
   $ aslref TypingRule.TArray.bad.asl
-  File TypingRule.TArray.bad.asl, line 9, characters 31 to 57:
-      var illegal_array: array [[non_symbolically_evaluable]] of integer;
-                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File TypingRule.TArray.bad.asl, line 9, characters 32 to 58:
+      var illegal_array1: array [[non_symbolically_evaluable]] of integer;
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: a pure expression was expected,
     found non_symbolically_evaluable, which produces the following
     side-effects: [ReadsLocal "non_symbolically_evaluable"].
+  [1]
+  $ aslref TypingRule.TArray.bad2.asl
+  File TypingRule.TArray.bad2.asl, line 5, characters 4 to 61:
+      var illegal_array2: array [[non_constrained]] of integer;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: constrained integer expected, provided integer.
   [1]
   $ aslref TypingRule.AnnotateSymbolicallyEvaluableExpr.asl
   $ aslref --no-exec TypingRule.TEnumDecl.asl

@@ -1,4 +1,4 @@
-func f(x: integer) => integer
+func f{x}() => integer{x*8}
 begin
     return x * 8;
 end;
@@ -13,8 +13,8 @@ begin
     // Legal as `z+z` is equivalent to `2*z`.
     x1 = y1;
 
-    var x2 : array[[f(z+z)]] of integer;
-    var y2 : array[[f(2*z)]] of integer;
+    var x2 : array[[f{z+z}]] of integer;
+    var y2 : array[[f{2*z}]] of integer;
     // Legal as `f(z+z)` is equivalent to `f(2*z)`.
     x2 = y2;
 
