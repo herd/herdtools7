@@ -253,6 +253,8 @@ module Csel = struct
 end
 
 module Swp = struct
+  let repr = "swp"
+
   let compile src dst =
    fun st dep src_evt dst_evt ->
     let rn, _, read_value, write_value, st =
@@ -344,6 +346,101 @@ module Swp = struct
     ins, dep, st
 end
 
+module LdAdd = struct
+  let do_ldadd r1 r2 r3 =
+    A.Instruction (A.ldop A.A_ADD A.RMW_P r1 r2 r3)
+
+  let repr use_zr = "ldadd" ^ if use_zr then ":zr" else ""
+
+  let compile use_zr src dst =
+   fun st dep src_evt dst_evt ->
+    let rn, is_read_significant, read_value, write_value, st =
+      match src_evt, dst_evt with
+      | None, None ->
+          let _, rn, st = A.assigned_next_loc st in
+          rn, false, 0, 1, st
+      | Some (loc, read_v, AnnotNone, is_significant), None ->
+          let rn = A.get_register st loc in
+          rn, is_significant, read_v, read_v, st
+      | None, Some (loc, write_v, AnnotNone, _) ->
+          let rn = A.get_register st loc in
+          ( rn,
+            false,
+            write_v - 1,
+            write_v,
+            st
+            (* we assume the previous value is always 1, which is the case in diymicro *)
+          )
+      | Some (loc, read_v, AnnotNone, _), Some (loc2, write_v, AnnotNone, _)
+        when loc = loc2 ->
+          let rn = A.get_register st loc in
+          rn, false, read_v, write_v, st
+      | _, _ -> Warn.fatal "swp received inconsistent event data"
+    in
+
+    (* We set up:
+      Rs=(write_value - read_value)
+      Rt=no specific value
+      [Rn]=read_value needs no action
+    *)
+    let rs_value = write_value - read_value in
+    let rt, st = if use_zr then A.ZR, st else A.next_reg st in
+
+    let pre_ins, rs, st =
+      match src with
+      | "M" ->
+          (match dep with
+          | DepNone -> ()
+          | _ -> Warn.user_error "Dependency provided to ldadd M->.");
+          let rs, st = A.next_reg st in
+          [A.mov rs rs_value], rs, st
+      | _ -> (
+          let src_reg, v_opt =
+            match dep with
+            | DepReg (r, v) -> r, v
+            | _ -> Warn.fatal "Event has not forwarded any register"
+          in
+          match src with
+          | "Rs" -> A.calc_value st rs_value src_reg v_opt
+          | "Rt" ->
+              let rs, st = A.next_reg st in
+              [A.mov rs rs_value; A.mov_reg rt src_reg], rs, st
+          | "Rn" ->
+              let rs, st = A.next_reg st in
+              (*! When using do_add64 to a register holding an addr, you need to use a fresh reg_zero. Thus, v_opt is None *)
+              let ins_zero, reg_zero, st = A.calc_value st 0 src_reg None in
+              let ins =
+                ins_zero
+                @ A.pseudo [A.do_add64 A.vloc rn rn reg_zero]
+                @ [A.mov rs write_value]
+              in
+              ins, rs, st
+          | _ -> Warn.fatal "Unknown source %s" src)
+    in
+
+    let st =
+      if is_read_significant && not use_zr then A.add_condition st rt read_value
+      else st
+    in
+
+    let post_ins, dep, st =
+      match dst with
+      | "Rs" -> [], DepReg (rs, Some rs_value), st
+      | "Rt" -> [], DepReg (rt, Some (if use_zr then 0 else read_value)), st
+      | "Rn" ->
+          let rn_reg, st = A.next_reg st in
+          A.pseudo [A.do_ldr A.vloc rn_reg rn], DepReg (rn_reg, None), st
+      | "M" ->
+          ( [],
+            DepReg (rt, Some (if use_zr then 0 else read_value)),
+            st (* is used afterwards if event is significant *) )
+      | _ -> Warn.fatal "Unknown destination %s" dst
+    in
+
+    let ins = pre_ins @ [do_ldadd rs rt rn] @ post_ins in
+    ins, dep, st
+end
+
 let init () =
   List.iter
     (fun ok ->
@@ -412,7 +509,7 @@ let init () =
 
   add_iico
     {
-      instruction_name = "swp";
+      instruction_name = Swp.repr;
       to_edge =
         (fun src dst ->
           {
@@ -428,4 +525,27 @@ let init () =
           });
       inputs = ["Rd"; "Rm"; "Rn"; "M"];
       outputs = ["Rd"; "Rm"; "Rn"; "M"];
-    }
+    };
+
+  List.iter
+    (fun use_zr ->
+      add_iico
+        {
+          instruction_name = LdAdd.repr use_zr;
+          to_edge =
+            (fun src dst ->
+              {
+                repr = "";
+                compile_edge = LdAdd.compile use_zr src dst;
+                direction =
+                  ( (if src = "M" then Rm true else RegEvent),
+                    if dst = "M" then Wm true else RegEvent );
+                ie = Internal;
+                sd = Same;
+                significant_source = false;
+                significant_dest = dst = "M";
+              });
+          inputs = ["Rs"; "Rt"; "Rn"; "M"];
+          outputs = ["Rs"; "Rt"; "Rn"; "M"];
+        })
+    [true; false]
