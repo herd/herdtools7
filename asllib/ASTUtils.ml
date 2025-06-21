@@ -550,6 +550,9 @@ let local_ignored () = fresh_var local_ignored_prefix
 let is_local_ignored s = string_starts_with ~prefix:local_ignored_prefix s
 let slice_is_single = function Slice_Single _ -> true | _ -> false
 
+(** a hack until [noreturn] is added as a token. *)
+let is_noreturn (f : func) = string_starts_with ~prefix:"noreturn_" f.name
+
 let slice_as_single = function
   | Slice_Single e -> e
   | _ -> raise @@ Invalid_argument "slice_as_single"

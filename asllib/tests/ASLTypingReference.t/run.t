@@ -643,6 +643,7 @@ ASL Typing Tests / annotating types:
   0xffffffffffffffff
   $ aslref TypingRule.Subprogram.asl
   0x04
+  $ aslref --no-exec TypingRule.CheckControlFlow.noreturn.asl
   $ aslref --no-exec TypingRule.CheckStmtReturnsOrThrows.asl
   $ aslref TypingRule.CheckStmtReturnsOrThrows.bad.asl
   File TypingRule.CheckStmtReturnsOrThrows.bad.asl, line 6, character 4 to
