@@ -85,6 +85,7 @@
 %token MOD
 %token MUL
 %token NEQ
+%token NORETURN
 %token NOT
 %token OF
 %token OR

@@ -946,6 +946,7 @@ ignored
 ignores
 ignoring
 illegal
+illegally
 illustrated
 image
 immediately
@@ -1307,6 +1308,7 @@ numeral
 numerator
 numeric
 numerous
+obeys
 object
 observable
 observe
@@ -1541,6 +1543,7 @@ purities
 purity
 purpose
 purposes
+qualified
 qualifier
 qualifiers
 quality

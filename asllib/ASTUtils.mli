@@ -232,6 +232,9 @@ val is_global_ignored : identifier -> bool
 val is_local_ignored : identifier -> bool
 (** [is_local_ignored s] is true iff [s] has been created with [local_ignored ()]. *)
 
+val is_noreturn : func -> bool
+(** [is_noreturn f] is true iff [f] was declared with the [noreturn] qualifier. *)
+
 (** {1 Fields, masks and slices handling} *)
 
 val mask_from_set_bits_positions : int -> int list -> string

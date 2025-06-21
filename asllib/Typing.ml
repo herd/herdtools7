@@ -3490,7 +3490,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   let check_subprogram_purity ~loc qualifier ses =
     match qualifier with
-    | None -> ok
+    | None | Some Noreturn -> ok
     | Some Pure ->
         check_true (SES.is_pure ses) (fun () ->
             fatal_from ~loc (Error.MismatchedPurity "pure"))
@@ -3641,82 +3641,169 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | V0 -> annotate_func_sig_v0 ~loc genv func_sig
     | V1 -> annotate_func_sig_v1 ~loc genv func_sig
 
-  module ControlFlow : sig
-    val check_stmt_returns_or_throws : identifier -> stmt_desc annotated -> prop
-    (** [check_stmt_interrupts name body] checks that the function named [name]
-        with the statement body [body] either: returns a value, throws an
-        exception, or calls [Unreachable()].
-        It executes only when [C.control_flow_analysis] is [true]. *)
+  (** A module for checking that a subprogram body satisfies
+      control flow requirements.
+  *)
+  module ControlFlowAnalysis : sig
+    val check_control_flow : env -> func -> stmt -> unit
   end = struct
-    (** Possible Control-Flow actions of a statement. *)
-    type t =
-      | Interrupt  (** Throwing an exception or returning a value. *)
-      | AssertedNotInterrupt
-          (** Assert that this control-flow path is unused. *)
-      | MayNotInterrupt
-          (** Among all control-flow path in a statement, there is one that
-              will not throw an exception nor return a value. *)
-
-    (* Begin ControlFlowSeq *)
-
-    (** Sequencial combination of two control flows. *)
-    let seq t1 t2 =
-      if t1 = MayNotInterrupt then t2 else t1 |: TypingRule.ControlFlowSeq
-    (* End *)
-
-    (* Begin ControlFlowJoin *)
-
-    (** [join t1 t2] corresponds to the parallel combination of [t1] and [t2].
-    More precisely, it is the maximal element in the ordering
-    AssertedNotInterrupt < Interrupt < MayNotInterrupt
+    module AbsConfig = struct
+      (** Abstract values representing the possible configurations
+        resulting from evaluating statements.
     *)
-    let join t1 t2 =
-      match (t1, t2) with
-      | MayNotInterrupt, _ | _, MayNotInterrupt ->
-          MayNotInterrupt |: TypingRule.ControlFlowJoin
-      | AssertedNotInterrupt, t | t, AssertedNotInterrupt ->
-          t (* Assertion that the condition always holds *)
-      | Interrupt, Interrupt -> Interrupt
-    (* End *)
+      type t =
+        | Abs_Abnormal
+          (* evaluation of a statement yielded an a thrown exception or a dynamic error
+             (possibly due to calling Unreachable). *)
+        | Abs_Returning
+          (* evaluation of a return statement completed normally. *)
+        | Abs_Continuing
+      (* evaluation of a non-return statement completed normally. *)
 
-    (* Begin ControlFlowFromStmt *)
+      let compare = Stdlib.compare
 
-    (** [get_from_stmt env s] builds the control-flow analysis on [s] in [env].
+      let pp = function
+        | Abs_Abnormal -> "Abs_Abnormal"
+        | Abs_Returning -> "Abs_Returning"
+        | Abs_Continuing -> "Abs_Continuing"
+    end
+
+    (** The abstract domain for this analysis is the powerset lattice
+      * (that is, all subsets) of abstract configurations with union
+      * as the join operator.
+      *)
+    module AbsConfigSet = struct
+      include Set.Make (AbsConfig)
+
+      let top = of_list [ Abs_Abnormal; Abs_Returning; Abs_Continuing ]
+      let abnormal = of_list [ Abs_Abnormal ]
+      let continuing = of_list [ Abs_Continuing ]
+      let abnormal_or_returning = of_list [ Abs_Abnormal; Abs_Returning ]
+      let abnormal_or_continuing = of_list [ Abs_Abnormal; Abs_Continuing ]
+
+      (** [union_list l] returns the union of all the sets in [l]. *)
+      let union_list l = List.fold_left union empty l
+
+      let map_and_union f s = List.map f (elements s) |> union_list
+
+      let pp _fmt configs =
+        let pp_config _fmt c = Format.eprintf "%s" (AbsConfig.pp c) in
+        let pp_config_list fmt l =
+          Format.pp_print_list
+            ~pp_sep:(fun fmt () -> Format.fprintf fmt "; ")
+            pp_config fmt l
+        in
+        Format.eprintf "{%a}" pp_config_list (elements configs)
+    end
+
+    (** A useful shorthand. *)
+    let abs_of_list = AbsConfigSet.of_list
+
+    (* Begin ApproxStmt *)
+
+    (** [approx_stmt tenv s] returns the approximation of [s] with respect to
+        the set of abstract configurations. That is, a superset of the abstract
+        configurations that evaluating [s] with any environment consisting of
+        [tenv] would yield.
+        The approximation assumes that evaluating any expression
+        results in either a value, a thrown exception, or a dynamic error.
+        The approximation of each statement is independent of the input environment,
+        which means it is also the fixpoint result, which in turn justifies the
+        soundness of approximating the loop statement and the, potentially recursive
+        subprogram calls.
     *)
-    let rec from_stmt s =
-      match s.desc with
-      | S_Pass | S_Decl _ | S_Assign _ | S_Assert _ | S_Call _ | S_Print _
-      | S_Pragma _ ->
-          MayNotInterrupt |: TypingRule.ControlFlowFromStmt
-      | S_Unreachable -> AssertedNotInterrupt
-      | S_Return _ | S_Throw _ -> Interrupt
-      | S_Seq (s1, s2) -> seq (from_stmt s1) (from_stmt s2)
-      | S_Cond (_, s1, s2) -> join (from_stmt s1) (from_stmt s2)
-      | S_Repeat (body, _, _) -> from_stmt body
-      | S_While _ | S_For _ -> MayNotInterrupt
-      | S_Try (body, catchers, otherwise) ->
-          let res0 = from_stmt body in
-          let res1 =
-            match otherwise with
-            | None -> res0
-            | Some s -> join (from_stmt s) res0
-          in
-          List.fold_left
-            (fun res (_, _, s) -> join res (from_stmt s))
-            res1 catchers
-
+    let rec approx_stmt tenv s : AbsConfigSet.t =
+      let open AbsConfigSet in
+      let abs_of_expr = abnormal in
+      let configs =
+        match s.desc with
+        | S_Pass -> continuing
+        | S_Decl _ | S_Assign _ | S_Assert _ | S_Print _ ->
+            abnormal_or_continuing
+        | S_Unreachable -> abnormal
+        | S_Call call -> (
+            let opt_subprogram_entry =
+              IMap.find_opt call.name tenv.global.subprograms
+            in
+            match opt_subprogram_entry with
+            | Some (f, _) ->
+                if ASTUtils.is_noreturn f then abnormal
+                else abnormal_or_continuing
+            | None ->
+                assert (s.version = V0);
+                (* V0 subprograms in the shared pseudo-code. *)
+                top)
+        | S_Return _ -> abnormal_or_returning
+        | S_Throw _ -> abnormal
+        | S_Seq (s1, s2) ->
+            let configs1 = approx_stmt tenv s1 in
+            let configs2 = approx_stmt tenv s2 in
+            map_and_union
+              (fun c1 ->
+                match c1 with
+                | Abs_Continuing -> configs2
+                | _ -> abs_of_list [ c1 ])
+              configs1
+        | S_Cond (_, s1, s2) ->
+            let configs1 = approx_stmt tenv s1 in
+            let configs2 = approx_stmt tenv s2 in
+            union abs_of_expr (union configs1 configs2)
+        | S_Repeat (body, _, _) | S_For { body } | S_While (_, _, body) ->
+            let body_configs = approx_stmt tenv body in
+            union abs_of_expr body_configs
+        | S_Try (body, catchers, otherwise) ->
+            let body_abs_configs = approx_stmt tenv body in
+            let try_abs_configs =
+              match otherwise with
+              | None -> body_abs_configs
+              | Some s_otherwise ->
+                  union (approx_stmt tenv s_otherwise) body_abs_configs
+            in
+            List.fold_left
+              (fun res (_, _, c) -> union res (approx_stmt tenv c))
+              try_abs_configs catchers
+        | S_Pragma _ -> assert false
+      in
+      let () =
+        if false then
+          Format.eprintf "approx_stmt %a = %a@." PP.pp_stmt s pp configs
+      in
+      configs
     (* End *)
 
-    (** [check_stmt_interrupts name body] checks that the function named [name]
-        with the statement body [body] either: returns a value, throws an
-        exception, or calls [Unreachable()].
-        It executes only when [C.control_flow_analysis] is [true]. *)
-    let check_stmt_returns_or_throws name s () =
-      if C.control_flow_analysis then
-        match from_stmt s with
-        | AssertedNotInterrupt | Interrupt -> ()
-        | MayNotInterrupt -> fatal_from ~loc:s (Error.NonReturningFunction name)
+    (* Begin CheckControlFlow *)
+
+    (** Checks that:
+        1. when [f] has the [noreturn] - that every control flow path through
+          [body] terminates by either throwing an exception or a dynamic error;
+        2. when [f] is a function that does not have the [noreturn] - every control
+          flow path through [body] either throws an exception, returns a value,
+          or results in a dynamic error.
+        3. when [f] is a procedure - no check needed.
+    *)
+    let check_control_flow tenv (f : func) body =
+      let open AbsConfigSet in
+      let abs_configs = approx_stmt tenv body in
+      (* AllowedAbsConfigs( *)
+      let allowed_abs_configs, error_kind =
+        if ASTUtils.is_noreturn f then
+          (abnormal_or_continuing, Error.NoreturnViolation f.name)
+        else
+          match f.return_type with
+          | None -> (top, Error.NonReturningFunction f.name)
+          | Some _ -> (abnormal_or_returning, Error.NonReturningFunction f.name)
+      in
+      (* AllowedAbsConfigs) *)
+      if not (subset abs_configs allowed_abs_configs) then
+        let () =
+          if false then
+            Format.eprintf
+              "check_control_flow %s : allowed_abs_configs=%a, abs_configs=%a"
+              f.name pp allowed_abs_configs pp abs_configs
+        in
+        fatal_from ~loc:body error_kind
   end
+  (* End *)
 
   (* Begin Subprogram *)
   let annotate_subprogram (env : env) (f : AST.func) ses_func_sig :
@@ -3741,10 +3828,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         Format.eprintf "@[<v 2>For program %s, I got side-effects:@ %a@]@."
           f.name SES.pp_print ses
     in
-    let+ () =
-      match f.return_type with
-      | None -> ok
-      | Some _ -> ControlFlow.check_stmt_returns_or_throws f.name new_body
+    let () =
+      if C.control_flow_analysis then
+        ControlFlowAnalysis.check_control_flow env f new_body
     in
     ({ f with body = SB_ASL new_body }, ses) |: TypingRule.Subprogram
   (* End *)

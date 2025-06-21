@@ -613,7 +613,8 @@ let ignored_or_identifier :=
 let qualifier ==
   ioption(
     | PURE;     { Pure }
-    | READONLY; { Readonly })
+    | READONLY; { Readonly }
+    | NORETURN; { Noreturn })
 
 let is_readonly :=
   |           { false }

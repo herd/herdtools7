@@ -428,6 +428,9 @@ type func_qualifier =
   | Readonly
       (** A `readonly` subprogram can read mutable state but not modify it. It
           can be called in assertions. *)
+  | Noreturn
+      (** A `noreturn` subprogram always terminates by a thrown exception
+          or calling `Unreachable`. *)
 
 type override_info =
   | Impdef  (** A function which can be overridden *)

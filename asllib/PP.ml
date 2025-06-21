@@ -373,6 +373,7 @@ let pp_gdk f gdk =
 let func_qualifier_to_string = function
   | Pure -> "pure"
   | Readonly -> "readonly"
+  | Noreturn -> "noreturn"
 
 let pp_decl f =
   let pp_global_storage f = function

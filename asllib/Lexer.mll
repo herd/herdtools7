@@ -108,6 +108,7 @@ let token_of_string =
  | "MOD"                -> s MOD
  | "MUL"                -> s MUL
  | "NEQ"                -> s NEQ
+ | "NORETURN"           -> s NORETURN
  | "NOT"                -> s NOT
  | "OF"                 -> s OF
  | "OR"                 -> s OR
@@ -229,6 +230,7 @@ let token_to_symbol = function
   | LET                -> "let"
   | LOOPLIMIT          -> "looplimit"
   | MOD                -> "MOD"
+  | NORETURN           -> "noreturn"
   | NOT                -> "NOT"
   | OF                 -> "of"
   | OR                 -> "OR"
@@ -330,6 +332,7 @@ let tr_name s = match s with
 | "looplimit"     -> LOOPLIMIT
 | "MOD"           -> MOD
 | "NOT"           -> NOT
+| "noreturn"      -> NORETURN
 | "of"            -> OF
 | "OR"            -> OR
 | "otherwise"     -> OTHERWISE
