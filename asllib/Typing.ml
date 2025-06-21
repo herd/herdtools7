@@ -3625,81 +3625,133 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | V0 -> annotate_func_sig_v0 ~loc genv func_sig
     | V1 -> annotate_func_sig_v1 ~loc genv func_sig
 
-  module ControlFlow : sig
-    val check_stmt_returns_or_throws : identifier -> stmt_desc annotated -> prop
-    (** [check_stmt_interrupts name body] checks that the function named [name]
-        with the statement body [body] either: returns a value, throws an
-        exception, or calls [Unreachable()].
-        It executes only when [C.control_flow_analysis] is [true]. *)
+  (** A module for checking that a subprogram body satisfies
+      control flow requirements.
+  *)
+  module ControlFlowAnalysis : sig
+    val check_control_flow : env -> func -> stmt -> unit
   end = struct
-    (** Possible Control-Flow actions of a statement. *)
-    type t =
-      | Interrupt  (** Throwing an exception or returning a value. *)
-      | AssertedNotInterrupt
-          (** Assert that this control-flow path is unused. *)
-      | MayNotInterrupt
-          (** Among all control-flow path in a statement, there is one that
-              will not throw an exception nor return a value. *)
-
-    (* Begin ControlFlowSeq *)
-
-    (** Sequencial combination of two control flows. *)
-    let seq t1 t2 =
-      if t1 = MayNotInterrupt then t2 else t1 |: TypingRule.ControlFlowSeq
-    (* End *)
-
-    (* Begin ControlFlowJoin *)
-
-    (** [join t1 t2] corresponds to the parallel combination of [t1] and [t2].
-    More precisely, it is the maximal element in the ordering
-    AssertedNotInterrupt < Interrupt < MayNotInterrupt
+    (** Abstract values representing the possible configurations
+        resulting from evaluating statements.
     *)
-    let join t1 t2 =
-      match (t1, t2) with
-      | MayNotInterrupt, _ | _, MayNotInterrupt ->
-          MayNotInterrupt |: TypingRule.ControlFlowJoin
-      | AssertedNotInterrupt, t | t, AssertedNotInterrupt ->
-          t (* Assertion that the condition always holds *)
-      | Interrupt, Interrupt -> Interrupt
-    (* End *)
+    type abs_config =
+      | Abs_Throwing
+        (* evaluation of a statement yielded an a thrown exception. *)
+      | Abs_Returning (* evaluation of a return statement completed normally. *)
+      | Abs_Continuing
+        (* evaluation of a non-return statement completed normally. *)
+      | Abs_DynError
+    (* evaluation of a statement (possible [Unreachable]) resulted in a dynamic error *)
 
-    (* Begin ControlFlowFromStmt *)
+    let abs_config_equal a b = a == b
 
-    (** [get_from_stmt env s] builds the control-flow analysis on [s] in [env].
+    (** Removes repeating configurations in [configs]. *)
+    let normalize configs =
+      (* define an arbitrary total order over abstract configurations. *)
+      let assign_pos = function
+        | Abs_Throwing -> 1
+        | Abs_Returning -> 2
+        | Abs_Continuing -> 3
+        | Abs_DynError -> 4
+      in
+      List.sort_uniq (fun a b -> assign_pos b - assign_pos a) configs
+
+    (** Returns the list of configurations appearing in either
+        [configs1] or [configs2] with no repeating configurations.
     *)
-    let rec from_stmt s =
-      match s.desc with
-      | S_Pass | S_Decl _ | S_Assign _ | S_Assert _ | S_Call _ | S_Print _
-      | S_Pragma _ ->
-          MayNotInterrupt |: TypingRule.ControlFlowFromStmt
-      | S_Unreachable -> AssertedNotInterrupt
-      | S_Return _ | S_Throw _ -> Interrupt
-      | S_Seq (s1, s2) -> seq (from_stmt s1) (from_stmt s2)
-      | S_Cond (_, s1, s2) -> join (from_stmt s1) (from_stmt s2)
-      | S_Repeat (body, _, _) -> from_stmt body
-      | S_While _ | S_For _ -> MayNotInterrupt
-      | S_Try (body, catchers, otherwise) ->
-          let res0 = from_stmt body in
-          let res1 =
-            match otherwise with
-            | None -> res0
-            | Some s -> join (from_stmt s) res0
-          in
-          List.fold_left
-            (fun res (_, _, s) -> join res (from_stmt s))
-            res1 catchers
+    let union configs1 configs2 = normalize (configs1 @ configs2)
 
-    (* End *)
+    let pp_abs_config = function
+      | Abs_Throwing -> "Abs_Throwing"
+      | Abs_Returning -> "Abs_Returning"
+      | Abs_Continuing -> "Abs_Continuing"
+      | Abs_DynError -> "Abs_DynError"
 
-    (** [check_stmt_interrupts name body] checks that the function named [name]
-        with the statement body [body] either: returns a value, throws an
-        exception, or calls [Unreachable()].
-        It executes only when [C.control_flow_analysis] is [true]. *)
-    let check_stmt_returns_or_throws name s () =
-      if C.control_flow_analysis then
-        match from_stmt s with
-        | AssertedNotInterrupt | Interrupt -> ()
-        | MayNotInterrupt -> fatal_from ~loc:s (Error.NonReturningFunction name)
+    let pp_abs_configs fmt (configs : abs_config list) =
+      let pp_config _fmt c = Format.eprintf "%s" (pp_abs_config c) in
+      Format.pp_print_list
+        ~pp_sep:(fun fmt () -> Format.fprintf fmt "; ")
+        pp_config fmt configs
+
+    (** [approx_stmt senv s] returns a superset of the abstract configurations
+        that evaluating [s] with any environment consisting of [senv] would yield.
+        The analysis conservatively assumes that evaluating any expression
+        results in either a value or a thrown exception.
+    *)
+    let rec approx_stmt senv s =
+      let configs =
+        match s.desc with
+        | S_Pass | S_Decl _ | S_Assign _ | S_Assert _ | S_Print _ | S_Pragma _
+          ->
+            [ Abs_Continuing; Abs_Throwing; Abs_DynError ]
+        | S_Unreachable -> [ Abs_DynError ]
+        | S_Call call ->
+            let f, _ = IMap.find call.name senv.global.subprograms in
+            if ASTUtils.is_noreturn f then [ Abs_Throwing; Abs_DynError ]
+            else [ Abs_Continuing; Abs_Throwing; Abs_DynError ]
+        | S_Return _ -> [ Abs_Returning; Abs_Throwing; Abs_DynError ]
+        | S_Throw _ -> [ Abs_Throwing; Abs_DynError ]
+        | S_Seq (s1, s2) ->
+            let configs1 = approx_stmt senv s1 in
+            let configs2 = approx_stmt senv s2 in
+            List.map
+              (fun c1 ->
+                match c1 with Abs_Continuing -> configs2 | _ -> [ c1 ])
+              configs1
+            |> List.flatten
+        | S_Cond (_, s1, s2) ->
+            let configs1 = approx_stmt senv s1 in
+            let configs2 = approx_stmt senv s2 in
+            union configs1 configs2
+        | S_Repeat (body, _, _) | S_For { body } | S_While (_, _, body) ->
+            let configs_body = approx_stmt senv body in
+            union configs_body [ Abs_Throwing; Abs_DynError ]
+        | S_Try (body, catchers, otherwise) ->
+            let body_abs_configs = approx_stmt senv body in
+            let try_abs_configs =
+              match otherwise with
+              | None -> body_abs_configs
+              | Some s -> union (approx_stmt senv s) body_abs_configs
+            in
+            List.fold_left
+              (fun res (_, _, s) -> union res (approx_stmt senv s))
+              try_abs_configs catchers
+      in
+      let () =
+        if false then
+          Format.eprintf "approx_stmt %a = [%a]@." PP.pp_stmt s pp_abs_configs
+            configs
+      in
+      configs
+
+    (** Checks that:
+        1. when [f] has the [noreturn] - that every control flow path through
+          [body] terminates by either throwing an exception or a dynamic error;
+        2. when [f] is a function that does not have the [noreturn] - every control
+          flow path through [body] either throws an exception, returns a value,
+          or results in a dynamic error.
+        3. when [f] is a procedure - no check needed.
+    *)
+    let check_control_flow senv (f : func) body =
+      let abs_configs = approx_stmt senv body in
+      let () =
+        if false then
+          Format.eprintf "check_control_flow %s = %a@." f.name pp_abs_configs
+            abs_configs
+      in
+      let allowed_abs_configs =
+        if ASTUtils.is_noreturn f then [ Abs_Throwing; Abs_DynError ]
+        else
+          match f.return_type with
+          | None ->
+              [ Abs_Continuing; Abs_Returning; Abs_Throwing; Abs_DynError ]
+          | Some _ -> [ Abs_Returning; Abs_Throwing; Abs_DynError ]
+      in
+      let list_subset elem_eq l1 l2 =
+        List.for_all (fun e1 -> List.exists (fun e2 -> elem_eq e1 e2) l2) l1
+      in
+      if not (list_subset abs_config_equal abs_configs allowed_abs_configs) then
+        fatal_from ~loc:body (Error.NonReturningFunction f.name)
   end
 
   (* Begin Subprogram *)
@@ -3720,10 +3772,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         Format.eprintf "@[<v 2>For program %s, I got side-effects:@ %a@]@."
           f.name SES.pp_print ses
     in
-    let+ () =
-      match f.return_type with
-      | None -> ok
-      | Some _ -> ControlFlow.check_stmt_returns_or_throws f.name new_body
+    let () =
+      if C.control_flow_analysis then
+        ControlFlowAnalysis.check_control_flow env f new_body
     in
     ({ f with body = SB_ASL new_body }, ses) |: TypingRule.Subprogram
   (* End *)
