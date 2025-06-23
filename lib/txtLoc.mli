@@ -29,5 +29,6 @@ val pp : out_channel -> t -> unit
 
 module Extract() :
 sig
+ val cache : string -> string -> unit
  val extract : t -> string
 end
