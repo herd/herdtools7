@@ -347,9 +347,7 @@ module Swp = struct
 end
 
 module LdAdd = struct
-  let do_ldadd r1 r2 r3 =
-    A.Instruction (A.ldop A.A_ADD A.RMW_P r1 r2 r3)
-
+  let do_ldadd r1 r2 r3 = A.Instruction (A.ldop A.A_ADD A.RMW_P r1 r2 r3)
   let repr use_zr = "ldadd" ^ if use_zr then ":zr" else ""
 
   let compile use_zr src dst =
@@ -426,7 +424,12 @@ module LdAdd = struct
     let post_ins, dep, st =
       match dst with
       | "Rs" -> [], DepReg (rs, Some rs_value), st
-      | "Rt" -> [], DepReg (rt, Some (if use_zr then 0 else read_value)), st
+      | "Rt" ->
+          if use_zr then
+            let zero_reg, st = A.next_reg st in
+            let fence_ins = A.Instruction (A.I_FENCE (A.DMB (A.SY, A.LD))) in
+            [fence_ins], DepReg (zero_reg, Some 0), st
+          else [], DepReg (rt, Some read_value), st
       | "Rn" ->
           let rn_reg, st = A.next_reg st in
           A.pseudo [A.do_ldr A.vloc rn_reg rn], DepReg (rn_reg, None), st
