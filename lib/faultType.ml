@@ -29,6 +29,7 @@ module type AArch64Sig = sig
     | Translation
     | AccessFlag
     | Permission
+    | Exclusive
 
   type t =
     | MMU of mmu_t
@@ -45,11 +46,13 @@ module AArch64 = struct
     | Translation
     | AccessFlag
     | Permission
+    | Exclusive
 
   let pp_mmu_t = function
     | Translation -> "Translation"
     | AccessFlag -> "AccessFlag"
     | Permission -> "Permission"
+    | Exclusive -> "Exclusive"
 
   type t =
     | MMU of mmu_t
