@@ -682,7 +682,14 @@ module Make (Conf : Config) = struct
         | Some "Fault_AccessFlag" -> MMU AccessFlag
         | Some "Fault_Translation" -> MMU Translation
         | Some "Fault_Permission" -> MMU Permission
-        | _ -> assert false
+(* NB: this fault should not occur, meaning that the current execution
+   will be discarderd later. *)
+        | Some "Fault_Exclusive" -> MMU Exclusive
+        | _ ->
+          Warn.warn_always
+            "data_abort, fault expected, found %s\n"
+            (V.pp_v statuscode) ;
+          assert false
       and loc = A.Location_global loc in
       M.mk_singleton_es (Act.Fault (ii,loc,d,ft)) ii >>! []
 
