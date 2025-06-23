@@ -273,7 +273,7 @@ a \NonDeterministicTerm, or an \PerformsAssertionsTerm.
 defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{\symbolicallyevaluable},
 yielding the result in $\vb$.
 Intuitively, a \emph{symbolically evaluable} \sideeffectdescriptorterm\ helps establish that
-an expression evaluates without failing assertions, without modifying any storage element,
+an expression evaluates without modifying any storage element,
 and always yielding the same result, that is, deterministically.
 
 See \ExampleRef{Pure and Symbolically Evaluable Side Effect Descriptors}.
@@ -281,12 +281,13 @@ See \ExampleRef{Pure and Symbolically Evaluable Side Effect Descriptors}.
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if $\vs$ is either
 a \ReadLocalTerm\ associated with an immutable storage element, or
-a \ReadGlobalTerm\ associated with an immutable storage element.
+a \ReadGlobalTerm\ associated with an immutable storage element, or
+a \PerformsAssertions.
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-    \vb \eqdef \vs = \ReadLocal(\Ignore, \Ignore, \True) \lor \vs = \ReadGlobal(\Ignore, \Ignore, \True)
+    \vb \eqdef \vs = \ReadLocal(\Ignore, \Ignore, \True) \lor \vs = \ReadGlobal(\Ignore, \Ignore, \True) \lor \vs = \PerformsAssertions
 }{
     \sideeffectissymbolicallyevaluable(\vs) \typearrow \vb
 }
@@ -535,36 +536,6 @@ where pure expressions are expected (as explained in the comments).
     \bigwedge_{\vs\in\vses} \sideeffectispure(\vs)
 }{
     \sesispure(\vses) \typearrow \True
-}
-\end{mathpar}
-
-\TypingRuleDef{SESIsDeterministic}
-\hypertarget{def-sesisdeterministic}{}
-The function
-\[
-  \sesisdeterministic(\overname{\TSideEffectSet}{\vses}) \aslto \overname{\Bool}{\bv}
-\]
-tests whether the \NonDeterministic\ \sideeffectdescriptorterm\ is not included in $\vses$,
-yielding the result in $\vb$.
-
-\ExampleDef{Deterministic and Non-deterministic Expressions}
-The expressions \verb|x| and \verb|y| that are used as the start and end expressions
-for the \forstatementterm{} in \listingref{SESIsDeterministic} are deterministic,
-which is why that statement is well-typed.
-\ASLListing{Deterministic expressions}{SESIsDeterministic}{\typingtests/TypingRule.SESIsDeterministic.asl}
-
-In contrast, the expression \verb|ARBITRARY : integer{1..1000}| used as the end expression
-for the \forstatementterm{} in \listingref{SESIsDeterministic-bad} is non-deterministic,
-which is why that statement is ill-typed.
-\ASLListing{A non-deterministic expressions}{SESIsDeterministic-bad}{\typingtests/TypingRule.SESIsDeterministic.bad.asl}
-
-\ProseParagraph
-Define $\vb$ as $\True$ if and only if \NonDeterministic\ is not included in $\vses$.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}{
-  \sesisdeterministic(\vses) \typearrow \overname{\NonDeterministic \not\in \vses}{\vb}
 }
 \end{mathpar}
 

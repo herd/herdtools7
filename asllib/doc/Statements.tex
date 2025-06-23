@@ -2576,9 +2576,7 @@ show examples of ill-typed \texttt{for} loops.
   \item annotating the optional loop limit expression $\vlimit$ via $\annotatelimitexpr$ in $\tenv$
         yields $(\vlimitp, \vseslimit)$\ProseOrTypeError;
   \item checking that $\vsesstart$ is pure via $\sesispure$ yields $\True$\ProseOrTypeError;
-  \item checking that $\vsesstart$ is deterministic via $\sesisdeterministic$ yields $\True$\ProseOrTypeError;
   \item checking that $\vsesend$ is pure via $\sesispure$ yields $\True$\ProseOrTypeError;
-  \item checking that $\vsesend$ is deterministic via $\sesisdeterministic$ yields $\True$\ProseOrTypeError;
   \item \Proseeqdef{$\vsescond$}{the union of $\vsesstart$, $\vsesend$, and $\vseslimit$};
   \item obtaining the \underlyingtype\ of $\vstartt$ in $\tenv$ yields $\vstartstruct$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vendt$ in $\tenv$ yields $\vendstruct$\ProseOrTypeError;
@@ -2606,9 +2604,7 @@ show examples of ill-typed \texttt{for} loops.
   \annotateexpr{\tenv, \vende} \typearrow (\vendt, \vendep, \vsesend) \OrTypeError\\\\
   \annotatelimitexpr(\tenv, \vlimit) \typearrow (\vlimitp, \vseslimit) \OrTypeError\\\\
   \checktrans{\sesispure(\vsesstart)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
-  \checktrans{\sesisdeterministic(\vsesstart)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
   \checktrans{\sesispure(\vsesend)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
-  \checktrans{\sesisdeterministic(\vsesend)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
   \vsescond \eqdef \vsesstart \cup \vsesend \cup \vseslimit\\
   \makeanonymous(\tenv, \vstartt) \typearrow \vstartstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vendt) \typearrow \vendstruct \OrTypeError\\\\

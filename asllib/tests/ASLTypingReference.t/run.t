@@ -948,8 +948,6 @@ ASL Typing Tests / annotating types:
                    ^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: expected a readonly expression/subprogram.
   [1]
-  $ aslref TypingRule.SESIsDeterministic.asl
-  $ aslref TypingRule.SESIsDeterministic.bad.asl
   $ aslref TypingRule.SESIsBefore.asl
   $ aslref TypingRule.SESIsBefore.bad.asl
   File TypingRule.SESIsBefore.bad.asl, line 4, characters 18 to 23:
