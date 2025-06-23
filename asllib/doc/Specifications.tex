@@ -700,6 +700,7 @@ An overriding \Proseimplementationsubprogram{} subprogram \\
 must match the overridden \Proseimpdefsubprogram{} subprogram in all of the following:
 \begin{itemize}
   \item name of subprogram;
+  \item qualifier;
   \item number, names, types, and order of arguments;
   \item number, names, types, and order of parameters;
   \item return type.
@@ -835,6 +836,7 @@ See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
 \AllApply
 \begin{itemize}
   \item checking that the names of $\vfuncone$ and $\vfunctwo$ are equal yields $\True$ \ProseTerminateAs{\False};
+  \item checking that the qualifiers of $\vfuncone$ and $\vfunctwo$ are equal yields $\True$ \ProseTerminateAs{\False};
   \item checking that the declared arguments of $\vfuncone$ and $\vfunctwo$ are equal in both name and type yields $\True$ \ProseTerminateAs{\False};
   \item checking that the declared parameters of $\vfuncone$ and $\vfunctwo$ are equal in both name and type yields $\True$ \ProseTerminateAs{\False};
   \item checking that the return types of $\vfuncone$ and $\vfunctwo$ are equal yields $\True$ \ProseTerminateAs{\False}.
@@ -844,6 +846,7 @@ See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
 \begin{mathpar}
   \inferrule{
     \booltrans{\vfuncone.\funcname = \vfunctwo.\funcname} \booltransarrow \True \terminateas \False \\
+    \booltrans{\vfuncone.\funcqualifier = \vfunctwo.\funcqualifier} \booltransarrow \True \terminateas \False \\
     \equallength(\vfuncone.\funcargs, \vfunctwo.\funcargs) \typearrow \True \terminateas \False \\
     {
     \begin{array}{r}

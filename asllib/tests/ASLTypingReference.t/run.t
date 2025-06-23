@@ -808,6 +808,15 @@ ASL Typing Tests / annotating types:
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: cannot declare already declared element "X".
   [1]
+  $ aslref TypingRule.SubprogramClash.bad1.asl
+  File TypingRule.SubprogramClash.bad1.asl, line 1, character 0 to line 4,
+    character 4:
+  pure func X(a: integer) => integer
+  begin
+    return 0;
+  end;
+  ASL Type error: cannot declare already declared element "X".
+  [1]
   $ aslref --no-exec TypingRule.CheckParamDecls.asl
   $ aslref TypingRule.CheckParamDecls.bad.asl
   File TypingRule.CheckParamDecls.bad.asl, line 3, character 0 to line 9,

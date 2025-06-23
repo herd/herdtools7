@@ -1537,6 +1537,8 @@ pure
 purity
 purpose
 purposes
+qualifier
+qualifiers
 quality
 query
 quite

@@ -425,11 +425,13 @@
 \newcommand\Tpragma[0]{\verbatimterminal{PRAGMA}{pragma}}
 \newcommand\Tprint[0]{\verbatimterminal{PRINT}{print}}
 \newcommand\Tprintln[0]{\verbatimterminal{PRINTLN}{println}}
+\newcommand\Tpure[0]{\verbatimterminal{PURE}{pure}}
 \newcommand\Tunreachable[0]{\verbatimterminal{UNREACHABLE}{Unreachable}}
 \newcommand\Trbrace[0]{\verbatimterminal{RBRACE}{\}}}
 \newcommand\Trbracket[0]{\verbatimterminal{RBRACKET}{]}}
 \newcommand\Trrbracket[0]{\verbatimterminal{RRBRACKET}{]]}}
 \newcommand\Trdiv[0]{\verbatimterminal{RDIV}{/}}
+\newcommand\Treadonly[0]{\verbatimterminal{READONLY}{readonly}}
 \newcommand\Treal[0]{\verbatimterminal{REAL}{real}}
 \newcommand\Trecord[0]{\verbatimterminal{RECORD}{record}}
 \newcommand\Trepeat[0]{\verbatimterminal{REPEAT}{repeat}}
@@ -479,6 +481,8 @@
 \newcommand\Nfuncargs[0]{\hyperlink{def-nfuncargs}{\nonterminal{func\_args}}}
 \newcommand\Naccessorbody[0]{\hyperlink{def-naccessorbody}{\nonterminal{accessor\_body}}}
 \newcommand\Naccessors[0]{\hyperlink{def-naccessors}{\nonterminal{accessors}}}
+\newcommand\Nqualifier[0]{\hyperlink{def-nqualifier}{\nonterminal{qualifier}}}
+\newcommand\Nisreadonly[0]{\hyperlink{def-nisreadonly}{\nonterminal{is\_readonly}}}
 \newcommand\Noverride[0]{\hyperlink{def-noverride}{\nonterminal{override}}}
 \newcommand\Nreturntype[0]{\hyperlink{def-nreturntype}{\nonterminal{return\_type}}}
 \newcommand\Nfuncbody[0]{\hyperlink{def-nfuncbody}{\nonterminal{func\_body}}}
@@ -631,6 +635,7 @@
 \newcommand\casealt[0]{\hyperlink{ast-casealt}{\textsf{case\_alt}}}
 \newcommand\catcher[0]{\hyperlink{ast-catcher}{\textsf{catcher}}}
 \newcommand\subprogramtype[0]{\hyperlink{ast-subprogramtype}{\textsf{sub\_program\_type}}}
+\newcommand\qualifier[0]{\hyperlink{ast-qualifier}{\textsf{func\_qualifier}}}
 \newcommand\overrideinfo[0]{\hyperlink{ast-overrideinfo}{\textsf{override\_info}}}
 \newcommand\func[0]{\hyperlink{ast-func}{\textsf{func}}}
 \newcommand\accessorpair[0]{\hyperlink{ast-accessorpair}{\textsf{accessor\_pair}}}
@@ -753,6 +758,9 @@
 \newcommand\GDKLet[0]{\hyperlink{ast-gdklet}{\textsf{GDK\_Let}}}
 \newcommand\GDKVar[0]{\hyperlink{ast-gdkvar}{\textsf{GDK\_Var}}}
 
+\newcommand\Pure[0]{\hyperlink{ast-pure}{\textsf{Pure}}}
+\newcommand\Readonly[0]{\hyperlink{ast-readonly}{\textsf{Readonly}}}
+
 \newcommand\Impdef[0]{\hyperlink{ast-impdef}{\textsf{Impdef}}}
 \newcommand\Proseimpdefsubprogram[0]{implementation-defined subprogram}
 \newcommand\Proseimpdefsubprograms[0]{implementation-defined subprograms}
@@ -820,6 +828,8 @@
 \newcommand\buildfuncbody[0]{\hyperlink{build-funcbody}{\textfunc{build\_func\_body}}}
 \newcommand\buildaccessorbody[0]{\hyperlink{build-accessorbody}{\textfunc{build\_accessor\_body}}}
 \newcommand\buildaccessors[0]{\hyperlink{build-accessors}{\textfunc{build\_accessors}}}
+\newcommand\buildisreadonly[0]{\hyperlink{build-isreadonly}{\textfunc{build\_is\_readonly}}}
+\newcommand\buildqualifier[0]{\hyperlink{build-qualifier}{\textfunc{build\_func\_qualifier}}}
 \newcommand\buildoverride[0]{\hyperlink{build-override}{\textfunc{build\_override}}}
 \newcommand\buildtypedidentifier[0]{\hyperlink{build-typedidentifier}{\textfunc{build\_typed\_identifier}}}
 \newcommand\buildopttypedidentifier[0]{\hyperlink{build-opttypedidentifier}{\textfunc{build\_opt\_typed\_identifier}}}
@@ -949,6 +959,7 @@
 \newcommand\funcsubprogramtype[0]{\text{subprogram\_type}}
 \newcommand\funcrecurselimit[0]{\text{recurse\_limit}}
 \newcommand\funcbuiltin[0]{\text{builtin}}
+\newcommand\funcqualifier[0]{\text{qualifier}}
 \newcommand\funcoverride[0]{\text{override}}
 \newcommand\GDkeyword[0]{\text{keyword}}
 \newcommand\GDname[0]{\text{name}}
@@ -972,6 +983,7 @@
 \newcommand\callcalltype[0]{\text{call\_type}}
 \newcommand\lhsaccessaccess[0]{\text{access}}
 \newcommand\lhsaccessslices[0]{\text{slices}}
+\newcommand\accessorpairisreadonly[0]{\text{is\_readonly}}
 \newcommand\accessorpairgetter[0]{\text{getter}}
 \newcommand\accessorpairsetter[0]{\text{setter}}
 
@@ -2656,6 +2668,7 @@
 \newcommand\vione[0]{\texttt{i1}}
 \newcommand\vis[0]{\texttt{vis}}
 \newcommand\visone[0]{\texttt{is1}}
+\newcommand\visreadonly[0]{\texttt{is\_readonly}}
 \newcommand\vistwo[0]{\texttt{is2}}
 \newcommand\vitwo[0]{\texttt{i2}}
 \newcommand\vj[0]{\texttt{j}}
@@ -2760,6 +2773,7 @@
 \newcommand\vq[0]{\texttt{q}}
 \newcommand\vqone[0]{\texttt{q1}}
 \newcommand\vqtwo[0]{\texttt{q2}}
+\newcommand\vqualifier[0]{\texttt{qualifier}}
 \newcommand\vr[0]{\texttt{r}}
 \newcommand\vrenameddiscarded[0]{\texttt{renamed\_discarded}}
 \newcommand\vrmrecordnew[0]{\texttt{rm\_record\_new}}
