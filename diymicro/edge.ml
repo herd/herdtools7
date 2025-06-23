@@ -61,7 +61,7 @@ type t =
   | Ws of int_ext
   | Po of sd * direction * direction
   | Dp of dp * sd * direction * direction
-  | BasicDep of direction * direction (* Carries a dependency on *)
+  | RfReg
   | Iico of iico_edge
 
 (** edge attributes *)
@@ -71,13 +71,12 @@ let edge_direction = function
   | Ws _ -> Wm false, Wm false
   | Po (_, dir1, dir2) -> dir1, dir2
   | Dp (_, _, dir1, dir2) -> dir1, dir2
-  | BasicDep (dir1, dir2) -> dir1, dir2
+  | RfReg -> Rm false, RegEvent
   | Iico i -> i.direction
 
 let edge_location = function
-  | BasicDep (RegEvent, (Rm _ | Wm _)) | BasicDep ((Rm _ | Wm _), RegEvent) ->
-      Different
-  | Rf _ | Fr _ | Ws _ | BasicDep _ -> Same
+  | RfReg -> Different
+  | Rf _ | Fr _ | Ws _ -> Same
   | Po (sd, _, _) | Dp (_, sd, _, _) -> sd
   | Iico i -> i.sd
 
@@ -138,7 +137,7 @@ let pp_edge = function
   | Dp (dp, sd, Rm _, dir) -> "Dp" ^ pp_dp dp ^ pp_sd sd ^ pp_direction dir
   | Dp (dp, sd, dir1, dir2) ->
       "Dp" ^ pp_dp dp ^ pp_sd sd ^ pp_direction dir1 ^ pp_direction dir2
-  | BasicDep (dir1, dir2) -> "basic_dep" ^ pp_direction dir1 ^ pp_direction dir2
+  | RfReg -> "Rf-reg"
   | Iico i -> "iico[" ^ i.repr ^ "]"
 
 let rec pp_edges = function

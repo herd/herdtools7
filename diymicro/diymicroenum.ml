@@ -9,9 +9,9 @@ let make_all_tests edge edge_name output_dir =
     | E.RegEvent, E.RegEvent ->
         [
           ( "LB+rel+" ^ edge_name,
-            ["DpAddrdrW"; "Rfe"; "PodRW:L"; "Rfe"; "basic_depRr"] );
+            ["DpAddrdrW"; "Rfe"; "PodRW:L"; "Rfe"; "Rf-reg"] );
           ( "MP+rel+" ^ edge_name,
-            ["DpAddrdrR"; "Fre"; "PodWW:L"; "Rfe"; "basic_depRr"] );
+            ["DpAddrdrR"; "Fre"; "PodWW:L"; "Rfe"; "Rf-reg"] );
         ]
     | E.Rm _, E.RegEvent ->
         [
@@ -21,9 +21,9 @@ let make_all_tests edge edge_name output_dir =
     | E.RegEvent, E.Wm _ ->
         [
           ( "LB+rel+" ^ edge_name,
-            ["PosWR"; "DpAddrdW"; "Rfe"; "PodRW:L"; "Rfe"; "basic_depRr"] );
+            ["PosWR"; "DpAddrdW"; "Rfe"; "PodRW:L"; "Rfe"; "Rf-reg"] );
           ( "MP+rel+" ^ edge_name,
-            ["PosWR"; "DpAddrdR"; "Fre"; "PodWW:L"; "Rfe"; "basic_depRr"] );
+            ["PosWR"; "DpAddrdR"; "Fre"; "PodWW:L"; "Rfe"; "Rf-reg"] );
         ]
     | E.Rm _, E.Wm _ ->
         [

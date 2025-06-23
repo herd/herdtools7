@@ -15,7 +15,7 @@
 %token WS
 %token PO
 %token DP
-%token BASIC_DEP
+%token RF_REG
 %token IICO
 
 %token RM WM R
@@ -51,7 +51,7 @@ edge:
     | PO sd dir dir     { Edge.Po ($2, $3, $4) }
     | DP dp sd dir      { Edge.Dp ($2, $3, Edge.Rm false, $4) }
     | DP dp sd dir dir  { Edge.Dp ($2, $3, $4, $5) }
-    | BASIC_DEP dir dir { Edge.BasicDep ($2, $3) }
+    | RF_REG            { Edge.RfReg }
     | IICO IICO_ARGS    { get_iico_edge $2 }
 ;
 ie:

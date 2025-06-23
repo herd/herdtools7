@@ -14,7 +14,7 @@ rule token = parse
   | "Ws" { WS }
   | "Po" { PO }
   | "Dp" { DP }
-  | "basic_dep" { BASIC_DEP }
+  | "Rf-reg" { RF_REG }
   | "iico" { IICO }
 
   | 'R' { RM }

@@ -136,14 +136,6 @@ let find_last cycle_start condition =
     made by edges *)
 let check_directions cycle_start =
   let rec assign_aux node =
-    (match node.edge with
-    | Edge.BasicDep (Edge.RegEvent, Edge.RegEvent) ->
-        Warn.warn_always "Edge %s is useless" (Edge.pp_edge node.edge)
-    | Edge.BasicDep (Edge.Wm _, Edge.RegEvent) ->
-        Warn.user_error
-          "Edge %s is invalid, can't get a register dependency from a Wm event"
-          (Edge.pp_edge node.edge)
-    | _ -> ());
     let edge_dir1, _ = Edge.edge_direction node.edge in
     let _, edge_dir2 = Edge.edge_direction node.prev.edge in
     (match edge_dir1, edge_dir2 with
