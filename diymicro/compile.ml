@@ -177,8 +177,10 @@ let compile_edge (st : A.state) (src : E.node_dep) (node : C.t) =
       in
       let st =
         if dst_event.C.is_significant && dst_event_data <> None then
-          A.add_condition st (E.dependency_reg dst_dep)
-            (Utils.unsome dst_event.C.value)
+          let dep_reg = E.dependency_reg dst_dep in
+          if dep_reg <> A.ZR then
+            A.add_condition st dep_reg (Utils.unsome dst_event.C.value)
+          else st
         else st
       in
 

@@ -103,8 +103,8 @@ let () =
     ]
   in
   let usage =
-    "diymicroenum [options] <iico[edge src->dst] (use 'edge' as shorthand for \
-     'edge *->*')> <iico[edge2]> ..."
+    "diymicroenum [options] <iico[instr src->dst] (use 'instr' as shorthand \
+     for 'instr *->*')> <iico[instr2]> ..."
   in
   (* message d'accueil, option -help *)
 
