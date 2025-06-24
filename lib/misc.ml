@@ -711,6 +711,7 @@ let do_tr prf =
       None
 
 let add_pte = sprintf "pte_%s"
+let add_parel1 = sprintf "parel1_t %s"
 let tr_pte = do_tr "pte_"
 let is_pte = is_prefix "pte_"
 let pp_pte = sprintf "PTE(%s)"

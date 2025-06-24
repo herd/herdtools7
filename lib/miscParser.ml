@@ -292,6 +292,15 @@ let add_oa_if_none loc p =
     Constant.PteVal p
   with Exit -> PteVal p
 
+  let add_oa_if_none_addrreg loc p =
+  let open Constant in
+    match loc with
+        | Location_global (Symbolic (Physical (s,_))) ->
+          let pa = OutputAddress.PHY s in
+          let p = ParsedAddrReg.add_oa_if_none_addrreg pa p in
+          AddrReg p
+        | _ -> AddrReg p
+
 let mk_instr_val v =
   let open InstrLit in
   let i =
