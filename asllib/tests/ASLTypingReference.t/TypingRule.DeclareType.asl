@@ -18,7 +18,7 @@ type Exception of exception { data: bits(num_exception_bits) };
 type SubException subtypes Exception with { status: boolean };
 
 config num_exception_collection : integer{16, 32} = 32;
-type Collection of collection { data: bits(num_exception_collection) };
+var Collection : collection { data: bits(num_exception_collection) };
 
 // The following type declaration in comment is illegal:
 // collection types cannot be subtyped.

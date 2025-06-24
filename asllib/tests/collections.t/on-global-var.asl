@@ -3,10 +3,12 @@ var MyCollection : collection {
   field2: bits(2),
 };
 
+var MyCollection2 = MyCollection;
+
 func main () => integer
 begin
-  var col = MyCollection;
-  let bv = col.field1;
+  print(MyCollection2.field1);
 
   return 0;
 end;
+

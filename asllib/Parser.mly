@@ -395,13 +395,21 @@ let ty_decl := ty |
     | ENUMERATION; l=braced(tclist1(IDENTIFIER));       < T_Enum       >
     | RECORD; l=fields_opt;                             < T_Record     >
     | EXCEPTION; l=fields_opt;                          < T_Exception  >
-    | COLLECTION; l=fields_opt;                         < T_Collection >
   )
 
 (* Constructs on ty *)
 (* Begin AsTy *)
 let as_ty := COLON; ty
 (* End *)
+
+(* Begin TyOrCollection *)
+let ty_or_collection :=
+  | ty
+  | annotated (
+    | COLLECTION; l=fields_opt;                         < T_Collection >
+  )
+(* End *)
+
 
 (* Begin TypedIdentifier *)
 let typed_identifier := pair(IDENTIFIER, as_ty)
@@ -667,7 +675,7 @@ let decl :=
         { D_GlobalStorage { keyword; name; ty=Some ty; initial_value=desugar_elided_parameter ty call } }
       (* End *)
       (* Begin global_uninit_var *)
-      | VAR; name=ignored_or_identifier; ty=some(as_ty);
+      | VAR; name=ignored_or_identifier; COLON; ty=some(ty_or_collection);
         { D_GlobalStorage { keyword=GDK_Var; name; ty; initial_value=None}}
       (* End *)
       (* Begin global_pragma *)

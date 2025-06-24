@@ -784,10 +784,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin CheckIsNotCollection *)
-  let check_is_not_collection ~loc env t () =
+  let rec check_is_not_collection ~loc env t () =
     let t_struct = Types.make_anonymous env t in
     match t_struct.desc with
     | T_Collection _ -> fatal_from ~loc Error.UnexpectedCollection
+    | T_Tuple tys ->
+        List.iter (fun ty -> check_is_not_collection ~loc env ty ()) tys
     | _ -> ()
   (* End *)
 
@@ -1354,8 +1356,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let ses = SES.union ses_t ses_index in
         (T_Array (index', t') |> here, ses) |: TypingRule.TArray
     (* Begin TStructuredDecl *)
-    | (T_Record fields | T_Exception fields | T_Collection fields) when decl
-      -> (
+    | T_Record fields | T_Exception fields | T_Collection fields -> (
         let+ () =
           match get_first_duplicate (List.map fst fields) with
           | None -> ok
@@ -1372,10 +1373,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let ses = SES.unions sess in
         match ty.desc with
         | T_Record _ ->
+            assert decl;
             (T_Record fields' |> here, ses) |: TypingRule.TStructuredDecl
         | T_Exception _ ->
+            assert decl;
             (T_Exception fields' |> here, ses) |: TypingRule.TStructuredDecl
         | T_Collection _ ->
+            assert (not decl);
             let+ () =
               check_true
                 (List.for_all (fun (_, t) -> has_structure_bits env t) fields)
@@ -1384,7 +1388,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             (T_Collection fields' |> here, ses) |: TypingRule.TStructuredDecl
         | _ -> assert false
         (* Begin TEnumDecl *))
-    | T_Enum li when decl ->
+    | T_Enum li ->
+        assert decl;
         let+ () =
           match get_first_duplicate li with
           | None -> ok
@@ -1396,15 +1401,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           List.iter (fun s -> check_var_not_in_genv ~loc env.global s ()) li
         in
         (ty, SES.empty) |: TypingRule.TEnumDecl
-        (* Begin TNonDecl *)
-    | T_Enum _ | T_Record _ | T_Exception _ | T_Collection _ ->
-        if decl then assert false
-        else
-          fatal_from ~loc
-            (Error.NotYetImplemented
-               " Cannot use non anonymous form of enumerations, record, or \
-                exception here.")
-          |: TypingRule.TNonDecl
   (* End *)
 
   (* Begin AnnotateSymbolicallyEvaluableExpr *)
@@ -2072,7 +2068,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | E_Arbitrary ty ->
         let ty1, ses_ty = annotate_type ~loc env ty in
         let ty2 = Types.get_structure env ty1 in
-        let+ () = check_is_not_collection ~loc env ty2 in
         let ses = SES.add_non_determinism ses_ty in
         (ty1, E_Arbitrary ty2 |> here, ses) |: TypingRule.EArbitrary
     (* End *)
@@ -3522,7 +3517,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (* valid in environment with only parameters declared *)
         let ty, ses_ty = annotate_type ~loc env_with_params ty in
         let+ () = check_var_not_in_env ~loc new_env x in
-        let+ () = check_is_not_collection ~loc env_with_params ty in
         let new_env = add_local x ty LDK_Let new_env
         and ses = SES.union new_ses ses_ty in
         ((new_env, ses), (x, ty))
@@ -3538,7 +3532,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | Some ty ->
           (* valid in environment with parameters declared *)
           let new_ty, ses_ty = annotate_type ~loc env_with_params ty in
-          let+ () = check_is_not_collection ~loc env new_ty in
           let return_type = Some new_ty in
           let local_env = { env_with_args.local with return_type } in
           let new_ses = SES.union ses_ty ses_with_args in
@@ -3921,7 +3914,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           in
           let t', ses_t = annotate_type ~loc env t in
           let+ () = check_type_satisfies ~loc env t_e t' in
-          let+ () = check_is_not_collection ~loc env t' in
           let+ () =
             let fake_e_for_error = E_ATC (e, t') |> here in
             check_is_time_frame ~loc target_time_frame

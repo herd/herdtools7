@@ -221,7 +221,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 |\ & \Nglobaldeclkeywordnonconfig \parsesep \Tidentifier \parsesep \option{\Tcolon \parsesep \Nty} &\\
    & \wrappedline\ \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tconfig \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tvar \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Ntyorcollection \parsesep \Tsemicolon &\\
 |\ & \Nglobaldeclkeyword \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &\\
    & \wrappedline\ \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 |\ & \Tpragma \parsesep \Tidentifier \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon&
@@ -593,13 +593,17 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 \Ntydecl \derives\ & \Nty &\\
             |\ & \Tenumeration \parsesep \Tlbrace \parsesep \TClistOne{\Tidentifier} \parsesep \Trbrace &\\
             |\ & \Trecord \parsesep \Nfieldsopt &\\
-            |\ & \Tcollection \parsesep \Nfieldsopt &\\
             |\ & \Texception \parsesep \Nfieldsopt &
 \end{flalign*}
 
 \hypertarget{def-nfieldassign}{}
 \begin{flalign*}
 \Nfieldassign \derives \ & \Tidentifier \parsesep \Teq \parsesep \Nexpr &
+\end{flalign*}
+
+\hypertarget{def-ntyorcollection}{}
+\begin{flalign*}
+  \Ntyorcollection \derives \ & \Nty \;|\; \Tcollection \parsesep \Nfieldsopt &\\
 \end{flalign*}
 
 \hypertarget{def-nexpr}{}

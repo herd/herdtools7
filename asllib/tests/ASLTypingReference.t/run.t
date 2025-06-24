@@ -632,10 +632,10 @@ ASL Typing Tests / annotating types:
   [1]
 
   $ aslref TypingRule.CheckIsNotCollection.asl
-  File TypingRule.CheckIsNotCollection.asl, line 8, characters 2 to 25:
-    var test: MyCollection; // Illegal: local storage elements cannot have collection types.
-    ^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: unexpected collection.
+  File TypingRule.CheckIsNotCollection.asl, line 3, characters 12 to 22:
+    var test: collection {
+              ^^^^^^^^^^
+  ASL Error: Cannot parse.
   [1]
   $ aslref TypingRule.LESetCollectionFields.asl
   $ aslref TypingRule.TypecheckDecl.asl
@@ -832,13 +832,10 @@ ASL Typing Tests / annotating types:
     expected {D, A, B, C} but {A, B, C, D} provided
   [1]
   $ aslref TypingRule.AnnotateReturnType.bad.asl
-  File TypingRule.AnnotateReturnType.bad.asl, line 4, character 0 to line 7,
-    character 4:
-  func returns_value() => MyCollection
-  begin
-      return ARBITRARY: MyCollection;
-  end;
-  ASL Type error: unexpected collection.
+  File TypingRule.AnnotateReturnType.bad.asl, line 3, characters 24 to 34:
+  func returns_value() => collection { foo: bits(32)};
+                          ^^^^^^^^^^
+  ASL Error: Cannot parse.
   [1]
   $ aslref --no-exec TypingRule.AnnotateOneParam.asl
   $ aslref TypingRule.AnnotateOneParam.bad1.asl
@@ -860,11 +857,10 @@ ASL Typing Tests / annotating types:
   ASL Type error: cannot declare already declared element "b".
   [1]
   $ aslref TypingRule.AnnotateOneArg.bad2.asl
-  File TypingRule.AnnotateOneArg.bad2.asl, line 4, character 0 to line 5,
-    character 16:
-  func arguments(b: MyCollection)
-  begin pass; end;
-  ASL Type error: unexpected collection.
+  File TypingRule.AnnotateOneArg.bad2.asl, line 2, characters 18 to 28:
+  func arguments(b: collection {a: bits(7)})
+                    ^^^^^^^^^^
+  ASL Error: Cannot parse.
   [1]
   $ aslref TypingRule.AnnotateRetTy.asl
   $ aslref TypingRule.AnnotateRetTy.bad.asl

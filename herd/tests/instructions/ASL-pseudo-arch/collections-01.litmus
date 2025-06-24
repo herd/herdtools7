@@ -7,13 +7,12 @@ ASL collections-01
   0: X2= y;
 }
 
-type MyCollection of collection {
+constant one : bits(64) = 1[63:0];
+
+var global_collection: collection {
   field1: bits(8),
   field2: bits(8),
 };
-
-constant one : bits(64) = 1[63:0];
-var global_collection: MyCollection;
 
 func T0(x:bits(64), y: bits(64))
 begin

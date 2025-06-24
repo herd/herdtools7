@@ -7,14 +7,14 @@ type MyException of exception {
     msg: string,
 };
 
-type MyCollection of collection {
-    high_bits: bits(32),
-    low_bits: bits(32),
-};
 
 var rec: MyRecord;
 var exc: MyException;
-var coll: MyCollection;
+
+var coll: collection {
+    high_bits: bits(32),
+    low_bits: bits(32),
+};
 
 accessor Rec() <=> values: bits (64)
 begin
