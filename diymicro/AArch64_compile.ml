@@ -403,7 +403,12 @@ module St = struct
   (** Snippets of compilation *)
 
   (** Compute a certain value to a register, if the register already has that
-      value, *no new register is allocated* *)
+      value, *no new register is allocated*
+
+      Therefore: don't use calc_value - or provide None as previous value if:
+      - you will write to that register later: the source register could be
+        already used in the final conditions or could be XZR
+      - you will use it with do_add64 in a non-mixed setting *)
   let calc_value st objective_value reg = function
     | Some v when v = objective_value -> [], reg, st
     | _ ->

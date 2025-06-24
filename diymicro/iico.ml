@@ -313,7 +313,6 @@ module Swp = struct
           | "Rn" ->
               let rd, st = A.next_reg st in
               let rm, st = A.next_reg st in
-              (*! When using do_add64 to a register holding an addr, you need to use a fresh reg_zero. Thus, v_opt is None *)
               let ins_zero, reg_zero, st = A.calc_value st 0 src_reg None in
               let ins =
                 ins_zero
@@ -405,7 +404,6 @@ module LdAdd = struct
               [A.mov rs rs_value; A.mov_reg rt src_reg], rs, st
           | "Rn" ->
               let rs, st = A.next_reg st in
-              (*! When using do_add64 to a register holding an addr, you need to use a fresh reg_zero. Thus, v_opt is None *)
               let ins_zero, reg_zero, st = A.calc_value st 0 src_reg None in
               let ins =
                 ins_zero

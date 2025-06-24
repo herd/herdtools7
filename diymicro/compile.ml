@@ -1,7 +1,6 @@
 (** Transforms a cycle into a test, ie generates instructions, init and final
     conditions, and dumps them to a litmus test *)
 module A = struct
-  (* TODO Don't exactly know how to do modularity *)
   include AArch64_compile
 end
 
