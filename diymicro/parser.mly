@@ -50,7 +50,7 @@ edge:
     | WS ie { Edge.Ws $2 }
     | PO sd dir dir     { Edge.Po ($2, $3, $4) }
     | DP dp sd dir      { Edge.Dp ($2, $3, Edge.Rm false, $4) }
-    | DP dp sd dir dir  { Edge.Dp ($2, $3, $4, $5) }
+    | DP dp sd read_dir dir  { Edge.Dp ($2, $3, $4, $5) }
     | RF_REG            { Edge.RfReg }
     | IICO IICO_ARGS    { get_iico_edge $2 }
 ;
@@ -62,10 +62,14 @@ sd:
     | SAME { Edge.Same }
     | DIFFERENT { Edge.Different }
 ;
+read_dir:
+    | RM { Edge.Rm false }
+    | R  { Edge.RegEvent }
+;
 dir:
     | RM { Edge.Rm false }
     | WM { Edge.Wm false }
-    | R { Edge.RegEvent }
+    | R  { Edge.RegEvent }
 ;
 dp:
     | ADDR { Edge.Addr }
