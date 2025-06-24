@@ -100,6 +100,7 @@ let of_string s =
     | "FALSE" -> S_Bool false
     | _ -> S_BitVector (BV.of_string s))
 
+let of_bool b = S_Bool b
 let of_int i = S_Int (Z.of_int i)
 
 let to_int = function

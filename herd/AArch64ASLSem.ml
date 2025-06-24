@@ -890,6 +890,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       in
       (ASLS.A.V.Val (Constant.ConcreteRecord pstate_updated_fields), eqs)
 
+    let is_vmsa = TopConf.C.variant Variant.VMSA
+
     let build_test_init ii =
       let state_add loc v st =
         ASLS.A.state_add st (ASLS.A.Location_reg (ii.A.proc, loc)) v
@@ -910,10 +912,17 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         |> List.fold_right add_arch_reg_if_present ASLBase.gregs
         |> add_reg_if_present AArch64Base.ResAddr (global_loc "RESADDR")
         |> add_reg_if_present AArch64Base.SP (global_loc "SP_EL0")
+        |>
+        (fun st ->
+           if is_vmsa then
+             let is_el0 =  List.exists (Proc.equal ii.A.proc) TopConf.procs_user in
+             state_add
+               (global_loc "IS_EL0")
+               (ASLS.A.V.scalarToV ((ASLScalar.of_bool is_el0)))
+               st
+           else st)
       in
       (st, eqs)
-
-    let is_vmsa = TopConf.C.variant Variant.VMSA
 
     let fake_test ii fname decode =
       profile "build fake test" @@ fun () ->
