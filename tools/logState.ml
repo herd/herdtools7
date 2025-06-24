@@ -483,6 +483,16 @@ module LC =
  * Comparaison is string-based, except for integers, which are parsed.
  * That way, radix is abstracted away.
  *)
+      module SL = StateLexer.Make(struct let debug = false end)
+
+      let is_pteval v =
+        let lb = Lexing.from_string v in
+        try
+          ignore (StateParser.pteval SL.token lb);
+          true
+        with
+        |LexMisc.Error _|Parsing.Parse_error ->
+            false
 
       let rec value_eq vcond v =
         let open Constant in
@@ -491,10 +501,16 @@ module LC =
             begin try
               let i = Int64.of_string v in
               ToolsConstant.eq vcond (Constant.Concrete i)
-            with Failure _ ->
-              Warn.fatal
-                "Comparing constant %s against integer"
-                v
+              with Failure _ ->
+                (* Some data (e.g. page tambe entries)
+                   can be compared  with zero *)
+                if is_pteval v && ToolsConstant.is_zero vcond then false
+                else
+                  Warn.fatal
+                    "Comparing constant %s against integer %s"
+                    v
+                    (ToolsConstant.pp_v vcond)
+
             end
         | ConcreteVector vconds ->
             let vs = LexSplit.split_array v in
@@ -521,8 +537,8 @@ module LC =
       let state_eqloc st loc1 loc2 =
         let open HashedState in
         let {S.e=bds; _;} = HashedState.as_t st in
-        let v1 = bds_assoc bds (MiscParser.dump_location  loc1)
-        and v2 = bds_assoc bds (MiscParser.dump_location  loc2) in
+        let v1 = bds_assoc bds (MiscParser.dump_location loc1)
+        and v2 = bds_assoc bds (MiscParser.dump_location loc2) in
         Misc.string_eq v1 v2
 
       let state_fault st f =
@@ -550,7 +566,6 @@ module LC =
         find fs
 
     end)
-
 
 let revalidate c sts = match c with
 | None -> DontKnow

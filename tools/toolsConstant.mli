@@ -22,3 +22,5 @@ val pp_v : v -> string
 
 val compare : v -> v -> int
 val eq : v -> v -> bool
+
+val is_zero : v -> bool
