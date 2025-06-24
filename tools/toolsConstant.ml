@@ -30,3 +30,5 @@ let compare =
   Constant.compare Int64.compare ParsedPteVal.compare InstrLit.compare
 let eq =
   Constant.eq Int64.equal ParsedPteVal.eq InstrLit.eq
+
+let is_zero = eq (Constant.Concrete Int64Scalar.zero)
