@@ -138,10 +138,13 @@ begin
 end;
 
 
+
 // AArch64.S1DirectBasePermissions()
 // =================================
 // Computes the stage 1 direct base permissions
 // A choice of reasonable permissions
+
+var IS_EL0:boolean;
 
 func
   AArch64_S1DirectBasePermissions
@@ -150,8 +153,10 @@ func
 => S1AccessControls
 begin
   var s1perms : S1AccessControls;
-  s1perms.r   = '1';
-  s1perms.w   =  if walkstate.permissions.ap[2] == '1' then '0' else '1';
+  var w = if walkstate.permissions.ap[2] == '1' then '0' else '1';
+  var w_el0 = if  walkstate.permissions.ap[2:1] == '01' then '1' else '0';
+  s1perms.r   = if IS_EL0 then walkstate.permissions.ap[1] else '1';
+  s1perms.w   = if IS_EL0 then w_el0 else w;
   s1perms.x   = '0';
   s1perms.gcs = '0';
   s1perms.wxn = '0';
