@@ -16,8 +16,8 @@ install: [make "install" "PREFIX=%{prefix}%"]
 # @todo Add "build-test" field
 depends: [
   "ocaml" {>= "4.08.0"}
-  "dune"  {>= "3.0" }
-  "menhir" {>= "20200123"}
+  "dune"  {>= "3.10.0" }
+  "menhir" {>= "20220210"}
   "zarith" {>= "1.13"}
   "conf-which"
 ]

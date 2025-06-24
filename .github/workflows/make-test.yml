@@ -52,7 +52,7 @@ jobs:
           dune-cache: true
 
       - run: |
-          opam pin add dune 3.0.2
+          opam pin add dune 3.10.0
           opam pin add menhir 20220210
           opam pin add zarith 1.13
         if: ${{ matrix.cfg.with-min-versions }}
