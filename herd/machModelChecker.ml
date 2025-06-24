@@ -504,23 +504,31 @@ module Make
                 ])) in
       let m =
         if kvm && not asl then begin
+            let get_pte_val_attrs e =
+              Option.bind
+                (match E.read_of e with
+                 | Some _ as v -> v
+                 | _ -> E.written_of e)
+                (function
+                  | S.A.V.Val (Constant.PteVal v) ->
+                      Some (S.A.V.Cst.PteVal.get_attrs v)
+                  | _ -> None) in
             let attrs_of_evt e =
-              let pteval_v =
-                match E.read_of e with
-                | Some _ as v -> v
-                | _ -> E.written_of e in
-              let open Constant in
-              match pteval_v with
-              | Some (S.A.V.Val (PteVal v)) ->
-                 S.A.V.Cst.PteVal.get_attrs v
-              | _ -> assert false in
-            let pte_accesses =
-              E.EventSet.filter
-                (fun e -> E.Act.is_pte_access e.E.action)
-                (Lazy.force mem_evts) in
+              match get_pte_val_attrs e with
+              | Some attr -> attr
+              | None ->
+                  Warn.fatal
+                    "attrs_of_evt, pte expected, on event %s"
+                    (E.debug_event_str e) in
+              let pte_accesses =
+                E.EventSet.filter
+                  (fun e ->
+                     E.Act.is_pte_access e.E.action
+                     && Misc.is_some (get_pte_val_attrs e))
+                  (Lazy.force mem_evts) in
             let attr_evts =
               E.EventSet.filter
-                (fun e -> (attrs_of_evt e) <> []) pte_accesses in
+                (fun e -> attrs_of_evt e <> []) pte_accesses in
             let evts_map =
               E.EventSet.fold
                 (fun e evts_map ->
