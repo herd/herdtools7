@@ -64,10 +64,12 @@ module AArch64 = struct
   let sets = [
       "MMU", [MMU Translation;
               MMU AccessFlag;
-              MMU Permission];
+              MMU Permission;
+              MMU Exclusive;];
       "Translation", [MMU Translation];
       "AccessFlag", [MMU AccessFlag];
       "Permission", [MMU Permission];
+      "Exclusive", [MMU Exclusive];
       "TagCheck", [TagCheck];
       "PacCheck", [PacCheck PAC.DA;
                    PacCheck PAC.DB;
@@ -88,6 +90,7 @@ module AArch64 = struct
     | "MMU:Translation" -> MMU Translation
     | "MMU:AccessFlag" -> MMU AccessFlag
     | "MMU:Permission" -> MMU Permission
+    | "MMU:Exclusive" -> MMU Exclusive
     | "TagCheck" -> TagCheck
     | "PacCheck:DA" -> PacCheck PAC.DA
     | "PacCheck:DB" -> PacCheck PAC.DB
