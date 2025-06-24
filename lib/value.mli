@@ -80,6 +80,7 @@ module type S =
       val nameToV  : string -> v
       val instructionToV : Cst.Instr.t -> v
       val cstToV : Cst.v -> v
+      val scalarToV : Cst.Scalar.t -> v
       val maybevToV : MiscParser.maybev -> v
 
 (* Convenience for intToV (0|1) *)
