@@ -1,96 +1,45 @@
 \chapter{Side Effects\label{chap:SideEffects}}
 
 This chapter defines a static \emph{side effect analysis}.
-The analysis aims to answer which expressions are \emph{pure} or \symbolicallyevaluable{}.
-For purity, the analysis is \emph{sound}: it proves that a \underline{sufficient condition} for purity holds.
+The analysis aims to answer which expressions are \pure{}, \readonly{}, or \symbolicallyevaluable{}.
+For pure and read-only, the analysis is \emph{sound}: it proves that a \underline{sufficient condition} holds.
 
-Intuitively, a pure expression is one whose evaluation does not affect the evaluation of any further expressions.
-In other words, a pure expression can be evaluated multiple times (or not at all) with no effect on the overall specification.
+Intuitively, a pure expression is one whose evaluation does not depend on dynamic values.
+In other words, a pure expression can be evaluated during typechecking.
+A read-only expression is one whose evaluation does not affect the evaluation of any further expressions.
+In other words, a read-only expression can be evaluated multiple times (or not at all) with no effect on the overall specification.
 A \symbolicallyevaluable{} expression is compatible with symbolic reduction and equivalence testing (\chapref{SymbolicEquivalenceTesting}).
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Time Frames\label{sec:TimeFrames}}
+\section{Purity\label{sec:Purity}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\hypertarget{def-timeframe}{}
-We divide side effects by \emph{\timeframesterm}, which indicate the phase where a side effect occurs:
+
+We now define configurations used to determine whether expressions are \pure{} and \readonly{} by the side effect analysis, as explained below.
+These are known as \purities{}.
+\hypertarget{def-tpurity}{}
+\hypertarget{def-sepure}{}
+\hypertarget{def-sereadonly}{}
+\hypertarget{def-seimpure}{}
+\[
+\TPurity \triangleq \{ \SEPure,\; \SEReadonly,\; \SEImpure \}
+\]
 \begin{description}
-    \item[Constant] Contains effects that take place during static evaluation (see \chapref{StaticEvaluation}). That is, during typechecking.
-    \item[Execution] Contains effects that take place during semantic evaluation.
+    \item[$\SEPure$] describes evaluation of a \pure{} construct, one that can be evaluated at type-checking.
+    \item[$\SEReadonly$] describes evaluation of a \readonly{} construct, one that can read mutable global storage elements but not modify them.
+    \item[$\SEImpure$] describes evaluation of a construct that is neither \pure{} nor \readonly{}.
 \end{description}
 
-Formally, \timeframesterm\ are totally ordered via $\timeframeless$ as follows:
-\hypertarget{def-timeframetype}{}
-\hypertarget{def-timeframeless}{}
-\hypertarget{def-timeframeconstant}{}
-\hypertarget{def-timeframeexecution}{}
+Formally, \purities{} are totally ordered via $\purityless$ as follows:
+\hypertarget{def-purityless}{}
 \[
-\TTimeFrame \triangleq \{ \timeframeconstant \timeframeless \timeframeexecution \}
+\SEImpure \purityless \SEReadonly \purityless \SEPure \enspace.
 \]
-Additionally, we define the less-than-or-equal ordering as follows:
-\hypertarget{def-timeframeleq}{}
+Additionally, we define the greater-than-or-equal ordering as follows:
+\hypertarget{def-puritygeq}{}
 \[
-f \timeframeleq f' \triangleq f \timeframeless f' \lor f = f' \enspace.
+f \puritygeq f' \triangleq \lnot(f \purityless f') \enspace.
 \]
-
-We now define some helper functions for constructing time frames.
-
-\TypingRuleDef{TimeFrameLDK}
-\hypertarget{def-timeframeofldk}{}
-The function
-\[
-    \timeframeofldk(\overname{\localdeclkeyword}{\ldk}) \aslto \overname{\TTimeFrame}{\vt}
-\]
-constructs a \timeframeterm{} $\vt$ from a local declaration keyword $\ldk$.
-
-\ExampleDef{The Time Frame of Local Storage Declarations}
-The specification in \listingref{TimeFrameLDK} shows examples of local storage declarations
-and their corresponding \timeframesterm{} (in comments).
-\ASLListing{The time frame of local storage declarations}{TimeFrameLDK}{\typingtests/TypingRule.TimeFrameLDK.asl}
-
-\ProseParagraph
-\ProseEqdef{$\vt$}{$\timeframeexecution$}.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}{
-\timeframeofldk(\ldk) \typearrow \timeframeexecution
-}
-\end{mathpar}
-
-\TypingRuleDef{TimeFrameGDK}
-\hypertarget{def-timeframeofgdk}{}
-The function
-\[
-    \timeframeofgdk(\overname{\globaldeclkeyword}{\gdk}) \aslto \overname{\TTimeFrame}{\vt}
-\]
-constructs a \timeframeterm\ $\vt$ from a global declaration keyword $\gdk$.
-
-\ExampleDef{The Time Frame of Global Storage Declarations}
-The specification in \listingref{TimeFrameGDK} shows examples of global storage declarations
-and their corresponding \timeframesterm{} (in comments).
-\ASLListing{The time frame of global storage declarations}{TimeFrameGDK}{\typingtests/TypingRule.TimeFrameGDK.asl}
-
-\ProseParagraph
-\ProseEqdef{$\vt$}{$\timeframeconstant$ if $\gdk$ is $\GDKConstant$,
-    $\timeframeexecution$ if $\gdk$ is $\GDKConfig$,
-    $\timeframeexecution$ if $\gdk$ is $\GDKLet$, and
-    $\timeframeexecution$ if $\gdk$ is $\GDKVar$.
-}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}{
-    {
-        \timeframeofgdk(\gdk) \typearrow
-    \begin{cases}
-        \timeframeconstant  & \text{if }\gdk = \GDKConstant\\
-        \timeframeexecution & \text{if }\gdk = \GDKConfig\\
-        \timeframeexecution & \text{if }\gdk = \GDKLet\\
-        \timeframeexecution & \text{if }\gdk = \GDKVar\\
-    \end{cases}
-    }
-}
-\end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Side Effect Descriptors\label{sec:SideEffectDescriptors}}
@@ -100,168 +49,106 @@ and their corresponding \timeframesterm{} (in comments).
 We now define \sideeffectdescriptorsterm,
 which are configurations used to describe side effects, as explained below:
 \hypertarget{def-tsideeffect}{}
-\hypertarget{def-readlocal}{}
+\hypertarget{def-localeffect}{}
 \[
 \TSideEffect \triangleq \left\lbrace
 \begin{array}{ll}
-    \ReadLocal(\overname{\identifier}{\vx}, \overname{\TTimeFrame}{\vt}, \overname{\Bool}{\vimmutable})     & \cup
-    \hypertarget{def-writelocal}{}\\
-    \WriteLocal(\overname{\identifier}{\vx})                                            & \cup
-    \hypertarget{def-readglobal}{}\\
-    \ReadGlobal(\overname{\identifier}{\vx}, \overname{\TTimeFrame}{\vt}, \overname{\Bool}{\vimmutable})    & \cup
-    \hypertarget{def-writeglobal}{}\\
-    \WriteGlobal(\overname{\identifier}{\vx})                                           & \cup
-    \hypertarget{def-throwexception}{}\\
-    \ThrowException(\overname{\identifier}{\vx})                                        & \cup
-    \hypertarget{def-recursivecall}{}\\
-    \RecursiveCall(\overname{\identifier}{\vf})                                         & \cup
-    \hypertarget{def-performsassertions}{}\\
-    \PerformsAssertions                                                 & \cup
-    \hypertarget{def-nondeterministic}{}\\
-    \NonDeterministic                                                   &
+    \LocalEffect(\overname{\TPurity}{\vp}) & \cup
+    \hypertarget{def-globaleffect}{} \\
+    \GlobalEffect(\overname{\TPurity}{\vp}) & \cup
+    \hypertarget{def-immutability}{} \\
+    \Immutability(\overname{\Bool}{\vimmutable}) &
 \end{array} \right.
 \]
-\hypertarget{def-readlocalterm}{}
+\hypertarget{def-localeffectterm}{}
 \begin{description}
-    \item[$\ReadLocal$] a \ReadLocalTerm\ describes an evaluation of a construct that leads to reading the value of the local storage element
-        $\vx$ at the \timeframeterm\ $\vt$ where $\vimmutable$ is $\True$ if and only if $\vx$
-        was declared as an immutable local storage element (that is, \texttt{constant} or \texttt{let});
-    \hypertarget{def-writelocalterm}{}
-    \item[$\WriteLocal$] a \WriteLocalTerm\ describes an evaluation of a construct that leads to modifying the value of the local storage element
-        $\vx$;
-    \hypertarget{def-readglobalterm}{}
-    \item[$\ReadGlobal$] a \ReadGlobalTerm\ describes an evaluation of a construct that leads to reading the value of the global storage element
-        $\vx$ at the \timeframeterm\ $\vt$ where $\vimmutable$ is $\True$ if and only if $\vx$
-        was declared as an immutable local storage element (that is, \texttt{constant}, \texttt{config}, or \texttt{let});
-    \hypertarget{def-writeglobalterm}{}
-    \item[$\WriteGlobal$] a \WriteGlobalTerm\ describes an evaluation of a construct that leads to modifying the value of the global storage element
-        $\vx$;
-    \hypertarget{def-throwexceptionterm}{}
-    \item[$\ThrowException$] an \ThrowExceptionTerm\ describes an evaluation of a construct that leads to raising an exception whose type
-        is named $\vx$;
-    \hypertarget{def-recursivecallterm}{}
-    \item[$\RecursiveCall$] a \RecursiveCallTerm\ describes an evaluation of a construct that leads to calling the recursive function $\vf$;
-    \hypertarget{def-performsassertionsterm}{}
-    \item[$\PerformsAssertions$] an \PerformsAssertionsTerm\ describes an evaluation of a construct that leads to evaluating an \texttt{assert} statement;
-    \hypertarget{def-nondeterministicterm}{}
-    \item[$\NonDeterministic$] a \NonDeterministicTerm\ describes an evaluation of a construct that leads to evaluating a non-deterministic
-        expression (either \ARBITRARY\ or a library function call known to be non-deterministic).
+    \item[$\LocalEffect$] a \LocalEffectTerm\ describes an evaluation of a construct whose minimum \purity{} for local reads/writes is $\vp$.
+    \hypertarget{def-globaleffectterm}{}
+    \item[$\GlobalEffect$] a \GlobalEffectTerm\ describes an evaluation of a construct whose minimum \purity{} for global reads/writes is $\vp$.
+    \hypertarget{def-immutabilityterm}{}
+    \item[$\Immutability$] an \ImmutabilityTerm\ describes an evaluation of a construct that accesses storage elements whose immutability is given by $\vb$ (that is, if $\vb$ is $\True$ then accesses are only to \texttt{constant}, \texttt{config}, or \texttt{let} elements).
 \end{description}
 
-We now define a few helper functions over \timeframesterm.
-
-\TypingRuleDef{TimeFrame}
-\hypertarget{def-sideeffecttimeframe}{}
-The function
-\[
-    \timeframe(\overname{\TSideEffect}{\vs}) \aslto \overname{\TTimeFrame}{\vt}
-\]
-retrieves the \timeframeterm\ $\vt$ from a \sideeffectdescriptorterm\ $\vs$.
-
-\ExampleDef{The Time Frame of Side Effect Descriptors}
-The specification in \listingref{TimeFrame} shows examples
-of expressions and statements and, in comments, their corresponding \sideeffectdescriptorsetsterm{}
-and \timeframesterm.
-\ASLListing{The time frame of side effect descriptors}{TimeFrame}{\typingtests/TypingRule.TimeFrame.asl}
-
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-    \item \AllApplyCase{read\_local}
-    \begin{itemize}
-        \item $\vs$ is a \ReadLocalTerm{} for the \timeframeterm{} $\vt$.
-    \end{itemize}
-
-    \item \AllApplyCase{read\_global}
-    \begin{itemize}
-        \item $\vs$ is a \ReadGlobalTerm{} for the \timeframeterm{} $\vt$.
-    \end{itemize}
-
-    \item \AllApplyCase{performs\_assertions}
-    \begin{itemize}
-        \item $\vs$ is an \PerformsAssertionsTerm{};
-        \item \Proseeqdef{$\vt$}{$\timeframeconstant$}.
-    \end{itemize}
-
-    \item \AllApplyCase{other}
-    \begin{itemize}
-        \item $\vs$ is either a \WriteLocalTerm{}, a \WriteGlobalTerm{},
-                a \NonDeterministicTerm{}, a \RecursiveCallTerm{}, or a
-                \ThrowExceptionTerm{};
-        \item \Proseeqdef{$\vt$}{$\timeframeexecution$}.
-    \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[read\_local]{}{
-    \timeframe(\overname{\ReadLocal(\Ignore, \vt, \Ignore)}{\vs}) \typearrow \vt
-}
-\and
-\inferrule[read\_global]{}{
-    \timeframe(\overname{\ReadGlobal(\Ignore, \vt, \Ignore)}{\vs}) \typearrow \vt
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[performs\_assertions]{}{
-    \timeframe(\overname{\PerformsAssertions}{\vs}) \typearrow \overname{\timeframeconstant}{\vt}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[other]{
-    {
-    \configdomain{\vs} \in \left\{
-        \begin{array}{c}
-            \WriteLocal, \\
-            \WriteGlobal, \\
-            \NonDeterministic, \\
-            \RecursiveCall, \\
-            \ThrowException
-        \end{array}
-    \right\}
-    }
-}{
-    \timeframe(\vs) \typearrow \overname{\timeframeexecution}{\vt}
-}
-\end{mathpar}
+We now define a few helper functions over \sideeffectdescriptorsterm.
 
 \TypingRuleDef{SideEffectIsPure}
 \hypertarget{def-sideeffectispure}{}
 \[
     \sideeffectispure(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
 \]
-defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{\pure},
+defines whether a \sideeffectdescriptorterm\ $\vs$ is considered \emph{\pure},
 yielding the result in $\vb$.
 Intuitively, a \emph{\pure} \sideeffectdescriptorterm\ helps to establish that
-an expression evaluates without modifying values of storage elements.
+an expression can be evaluated during type-checking.
 
-\ExampleDef{Pure and Symbolically Evaluable Side Effect Descriptors}
+\ExampleDef{Pure, Read-only, and Symbolically Evaluable Side Effect Descriptors}
+The table below shows all possible \sideeffectdescriptorsterm{} and whether they are \pure{}, \readonly{}, and \symbolicallyevaluable{}.
+\newcommand\Effect[0]{\textsf{Effect}}
+Here, \Effect{} stands for either \LocalEffect{} or \GlobalEffect{}.
+
+\begin{center}
+\begin{tabular}{llll}
+\textbf{\sideeffectdescriptorterm{}} & \textbf{\pure{}?} & \textbf{\readonly{}?} & \textbf{\symbolicallyevaluable{}?}\\
+\hline
+$\Effect(\SEPure)$      & \True{}  & \True{}  & \True{}  \\
+$\Effect(\SEReadonly)$  & \False{} & \True{}  & \True{}  \\
+$\Effect(\SEImpure)$    & \False{} & \False{} & \False{} \\
+$\Immutability(\True)$  & \True{}  & \True{}  & \True{}  \\
+$\Immutability(\False)$ & \False{} & \True{}  & \False{} \\
+\end{tabular}
+\end{center}
+
 The specification in \listingref{SideEffectIsPure} shows examples of expressions
-and statements, and their corresponding \sideeffectdescriptorsterm{} and whether
-those are \pure{} or not and whether they are \symbolicallyevaluable{} or not (in comments).
+and statements, and their corresponding \sideeffectdescriptorsterm{}.
+Notice that the call to \verb|factorial(10)| is \readonly, even though it is recursive.
 
-Notice that the call to \verb|factorial(10)| is \pure, even though it is recursive.
-The side-effect analysis adds $\RecursiveCall$ in \TypingRuleRef{DeclareOneFunc},
-while annotating a strongly-connected component of (mutually-recursive) subprograms,
-until finally removing it in \TypingRuleRef{TypecheckDecl}.
-In this example, \verb|factorial| is annotated before \verb|main|, which contains the
-call to \verb|factorial(10)|, which is why the analysis is able to determine that the
-call expression is \pure{} and the \sideeffectdescriptorsetsterm{} is empty.
-
-\ASLListing{Side effect descriptors and whether they are pure and symbolically evaluable}{SideEffectIsPure}{\typingtests/TypingRule.SideEffectIsPure.asl}
+\ASLListing{Side effect descriptors and whether they are pure and read-only and symbolically evaluable}{SideEffectIsPure}{\typingtests/TypingRule.SideEffectIsPure.asl}
 
 \ProseParagraph
-Define $\vb$ as $\True$ if and only if $\vs$ is either a \ReadLocalTerm, a \ReadGlobalTerm,
-a \NonDeterministicTerm, or an \PerformsAssertionsTerm.
+Define $\vb$ as $\True$ if and only if $\vs$ is either
+    a \LocalEffectTerm{} with \purity{} $\SEPure$,
+    a \GlobalEffectTerm{} with \purity{} $\SEPure$,
+    or an \ImmutabilityTerm{} with immutability $\True$.
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-    \vb \eqdef \configdomain{\vs} \in \{\ReadLocal, \ReadGlobal, \NonDeterministic, \PerformsAssertions\}
+    \vb \eqdef \vs \in \{\LocalEffect(\SEPure), \GlobalEffect(\SEPure), \Immutability(\True)\}
 }{
     \sideeffectispure(\vs) \typearrow \vb
+}
+\end{mathpar}
+
+\TypingRuleDef{SideEffectIsReadonly}
+\hypertarget{def-sideeffectisreadonly}{}
+\[
+    \sideeffectisreadonly(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
+\]
+defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{\readonly},
+yielding the result in $\vb$.
+Intuitively, a \emph{\readonly} \sideeffectdescriptorterm\ helps to establish that
+an expression evaluates without modifying values of storage elements.
+
+See \ExampleRef{Pure, Read-only, and Symbolically Evaluable Side Effect Descriptors}.
+
+\ProseParagraph
+Define $\vb$ as $\True$ if and only if $\vs$ is either
+    a \LocalEffectTerm{} with \purity{} greater than or equal to $\SEReadonly$,
+    a \GlobalEffectTerm{} with \purity{} greater than or equal to $\SEReadonly$,
+    or an \ImmutabilityTerm.
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{
+    {
+        \vb \eqdef \begin{cases}
+            \vp \puritygeq \SEReadonly & \vs = \LocalEffect(\vp) \\
+            \vp \puritygeq \SEReadonly & \vs = \GlobalEffect(\vp) \\
+            \True                      & \vs = \Immutability(\Ignore)
+        \end{cases}
+    }
+}{
+    \sideeffectisreadonly(\vs) \typearrow \vb
 }
 \end{mathpar}
 
@@ -276,87 +163,26 @@ Intuitively, a \emph{symbolically evaluable} \sideeffectdescriptorterm\ helps es
 an expression evaluates without modifying any storage element,
 and always yielding the same result, that is, deterministically.
 
-See \ExampleRef{Pure and Symbolically Evaluable Side Effect Descriptors}.
+See \ExampleRef{Pure, Read-only, and Symbolically Evaluable Side Effect Descriptors}.
 
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if $\vs$ is either
-a \ReadLocalTerm\ associated with an immutable storage element, or
-a \ReadGlobalTerm\ associated with an immutable storage element, or
-a \PerformsAssertions.
+    a \LocalEffectTerm{} with \purity{} greater than or equal to $\SEReadonly$,
+    a \GlobalEffectTerm{} with \purity{} greater than or equal to $\SEReadonly$,
+    or an \ImmutabilityTerm{} with immutability equal to $\True$.
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-    \vb \eqdef \vs = \ReadLocal(\Ignore, \Ignore, \True) \lor \vs = \ReadGlobal(\Ignore, \Ignore, \True) \lor \vs = \PerformsAssertions
+    {
+        \vb \eqdef \begin{cases}
+            \vp \puritygeq \SEReadonly & \vs = \LocalEffect(\vp) \\
+            \vp \puritygeq \SEReadonly & \vs = \GlobalEffect(\vp) \\
+            \vbone                     & \vs = \Immutability(\vbone)
+        \end{cases}
+    }
 }{
     \sideeffectissymbolicallyevaluable(\vs) \typearrow \vb
-}
-\end{mathpar}
-
-\TypingRuleDef{LDKIsImmutable}
-\hypertarget{def-ldkisimmutable}{}
-The function
-\[
-\ldkisimmutable(\overname{\localdeclkeyword}{\ldk}) \typearrow \overname{\True}{\vb}
-\]
-tests whether the local declaration keyword $\ldk$ relates to an immutable storage element,
-yielding the result in $\vb$.
-
-\ExampleDef{Immutability of Local Declarations}
-The following table shows local declarations appearing in \listingref{TimeFrame}
-and whether their corresponding local declaration keywords are considered immutable or not.
-
-\begin{center}
-\begin{tabular}{lll}
-\textbf{Local Declaration} & \textbf{Immutable?}\\
-\hline
-\verb|var x : integer;|         & $\False$\\
-\verb|let ll : integer = 20;|   & $\True$\\
-\end{tabular}
-\end{center}
-
-\ProseParagraph
-Define $\vb$ as $\True$ if and only if $\ldk$ is the keyword \texttt{let}.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}{
-  \ldkisimmutable(\ldk) \typearrow \overname{\ldk = \LDKLet}{\vb}
-}
-\end{mathpar}
-
-\TypingRuleDef{GDKIsImmutable}
-\hypertarget{def-gdkisimmutable}{}
-The function
-\[
-\gdkisimmutable(\overname{\globaldeclkeyword}{\gdk}) \typearrow \overname{\True}{\vb}
-\]
-tests whether the global declaration keyword $\gdk$ relates to an immutable storage element,
-yielding the result in $\vb$.
-
-\ExampleDef{Immutability of Global Declarations}
-The following table shows global declarations appearing in \listingref{TimeFrame}
-and whether their corresponding global declaration keywords are considered immutable or not.
-
-\begin{center}
-\begin{tabular}{lll}
-\textbf{Global Declaration}                 & \textbf{Immutable?}\\
-\hline
-\verb|constant cg = 20;|                    & $\True$\\
-\verb|let lg = 30;|                         & $\True$\\
-\verb|config cfg : integer{0..100} = 40;|   & $\True$\\
-\verb|var vg : integer = 50;|               & $\False$\\
-\end{tabular}
-\end{center}
-
-\ProseParagraph
-Define $\vb$ as $\True$ if and only if $\gdk$ corresponds to either the keyword \texttt{constant},
-the keyword \texttt{config}, or the keyword \texttt{let}.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}{
-  \gdkisimmutable(\gdk) \typearrow \overname{\gdk \in \{\GDKConstant, \GDKConfig, \GDKLet\}}{\vb}
 }
 \end{mathpar}
 
@@ -364,71 +190,70 @@ the keyword \texttt{config}, or the keyword \texttt{let}.
 \section{Side Effect Sets\label{sec:SideEffectSets}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\TypingRuleDef{MaxTimeFrame}
-\hypertarget{def-maxtimeframe}{}
+% Transliteration note:
+% As with the previous transliteration of the fine-grained analysis, ASLRef's
+% implementation does not track *sets* of side-effects.  Rather, it considers
+% only the least pure `LocalEffect`/`GlobalEffect` descriptor, and the most
+% mutable `Immutability` descriptor. These are efficiently represented as a
+% record with three fields.
+
+\TypingRuleDef{SideEffectsLDK}
+\hypertarget{def-sesldk}{}
 The function
 \[
-    \maxtimeframe(\overname{\TSideEffectSet}{\vses}) \aslto \overname{\TTimeFrame}{\vf}
+  \sesldk(\overname{\localdeclkeyword}{\ldk}) \aslto \overname{\pow{\TSideEffect}}{\vs}
 \]
-defines the maximal \timeframeterm\ for a \sideeffectsetterm\ $\vses$, which is returned
-in $\vf$.
-(If $\vses$ is empty, the result is \timeframeconstant.)
+constructs a \sideeffectsetterm{} $\vs$ corresponding to a read of a storage element declared with a local declaration keyword $\ldk$.
 
-\hypertarget{def-timeframemax}{}
-We define the maximum of a set of time frames $\timeframemax : \pow{\TTimeFrame} \rightarrow \TTimeFrame$
-as follows:
-\[
-    \timeframemax(T) \triangleq t \text{ such that } t\in T \land \forall t'\in T.\ t' \timeframeleq t \enspace.
-\]
-
-\ExampleDef{Maximal Time Frame}
-In \listingref{MaxTimeFrame}, the \timeframeterm{} of the expression \verb|g| is \timeframeconstant,
-whereas the \timeframeterm{} of the expression \verb|gl| is \timeframeexecution.
-Therefore, the \timeframeterm{} of the expression \verb|g + gl| is \timeframeexecution.
-\ASLListing{Maximal time frame}{MaxTimeFrame}{\typingtests/TypingRule.MaxTimeFrame.asl}
+\ExampleDef{The Side Effects of Local Storage Declarations}
+The specification in \listingref{SideEffectsLDK} shows examples of local storage declarations
+and their corresponding \sideeffectdescriptorsetsterm{} (in comments).
+\ASLListing{The side effects of local storage declarations}{SideEffectsLDK}{\typingtests/TypingRule.SideEffectsLDK.asl}
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
-    \item define $\vreads$ as the subset of $\vses$ that contains only
-    \sideeffectdescriptorsterm\ that are either \ReadLocalTerm\ or \ReadGlobalTerm;
-    \item \OneApplies
-    \begin{itemize}
-        \item \AllApplyCase{execution}
-        \begin{itemize}
-            \item $\vreads$ is not equal to $\vses$;
-            \item define $\vf$ as \timeframeexecution.
-        \end{itemize}
-
-        \item \AllApplyCase{reads}
-        \begin{itemize}
-            \item $\vreads$ is equal to $\vses$;
-            \item define $\vtimeframes$ as the \timeframesterm\ appearing in the \sideeffectdescriptorsterm\
-                in $\vreads$;
-            \item define $\vf$ as the greatest time frame in the union of $\vtimeframes$ and the singleton set for \timeframeconstant,
-                where $\timeframeleq$ is used to compare any two \timeframesterm.
-        \end{itemize}
-    \end{itemize}
+  \item \Proseeqdef{$\vb$} as $\True$ if and only if $\ldk$ is $\LDKLet$;
+  \item the result is a set containing a \LocalEffectTerm{} with \purity{} $\SEReadonly$, and an \ImmutabilityTerm{} with immutability $\vb$.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[execution]{
-    \vreads \eqdef \{ \vs \in \vses \;|\; \configdomain{\vs} \in \{\ReadLocal, \ReadGlobal\} \}\\
-    \vses \neq \vreads
+\inferrule{
+  \vb \eqdef (\ldk = \LDKLet)
 }{
-    \maxtimeframe(\vses) \typearrow \overname{\timeframeexecution}{\vf}
+  \sesldk(\ldk) \typearrow \{ \LocalEffect(\SEReadonly), \Immutability(\vb) \}
 }
 \end{mathpar}
 
+\TypingRuleDef{SideEffectsGDK}
+\hypertarget{def-sesgdk}{}
+The function
+\[
+  \sesgdk(\overname{\globaldeclkeyword}{\gdk}) \aslto \overname{\pow{\TSideEffect}}{\vs}
+\]
+constructs a \sideeffectsetterm{} $\vs$ corresponding to a read of a storage element declared with a global declaration keyword $\gdk$.
+
+\ExampleDef{The Side Effects of Global Storage Declarations}
+The specification in \listingref{SideEffectsGDK} shows examples of global storage declarations
+and their corresponding \sideeffectdescriptorsetsterm{} (in comments).
+\ASLListing{The side effects of global storage declarations}{SideEffectsGDK}{\typingtests/TypingRule.SideEffectsGDK.asl}
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item \Proseeqdef{$\vpurity$}{$\SEPure$ if $\gdk$ is $\GDKConstant$, and $\SEReadonly$ otherwise};
+  \item \Proseeqdef{$\vb$} as $\False$ if and only if $\gdk$ is $\GDKVar$;
+  \item the result is a set containing a \GlobalEffectTerm{} with \purity{} $\vpurity$ and \ImmutabilityTerm{} with immutability $\vb$.
+\end{itemize}
+
+\FormallyParagraph
 \begin{mathpar}
-\inferrule[reads]{
-    \vreads \eqdef \{ \vs \in \vses \;|\; \configdomain{\vs} \in \{\ReadLocal, \ReadGlobal\} \}\\
-    \vses = \vreads\\\\
-    \vtimeframes \eqdef \{ \timeframe(\vfp) \;|\; \vfp\in\vreads \} \\
-    \vf \eqdef \timeframemax(\vtimeframes \cup \{\timeframeconstant\})
+\inferrule{
+  \vpurity \eqdef \choice{\gdk = \GDKConstant}{\SEPure}{\SEReadonly} \\
+  \vb \eqdef (\gdk \neq \GDKVar)
 }{
-    \maxtimeframe(\vses) \typearrow \vf
+  \sesgdk(\gdk) \typearrow \{ \GlobalEffect(\vpurity), \Immutability(\vb) \}
 }
 \end{mathpar}
 
@@ -492,12 +317,52 @@ This is checked in the following constructs:
 \begin{mathpar}
 \inferrule{
   \issymbolicallyevaluable(\vses) \typearrow \vb\\
-  \checktrans{\vb}{NotSymbolicallyEvaluable} \checktransarrow \True \OrTypeError
+  \checktrans{\vb}{\SideEffectViolation} \checktransarrow \True \OrTypeError
 }{
   \checksymbolicallyevaluable(\vses) \typearrow \True
 }
 \end{mathpar}
 \CodeSubsection{\CheckSymbolicallyEvaluableBegin}{\CheckSymbolicallyEvaluableEnd}{../Typing.ml}
+
+\TypingRuleDef{SESIsReadonly}
+\hypertarget{def-sesisreadonly}{}
+The function
+\[
+    \sesisreadonly(\overname{\TSideEffectSet}{\vses}) \aslto \overname{\Bool}{\vb}
+\]
+tests whether all side effects in the set $\vses$ are \readonly{}, yielding the result in $\vb$.
+
+\ProseParagraph
+Define $\vb$ as $\True$ if and only if $\sideeffectisreadonly$ holds for
+every \sideeffectdescriptorterm\ $\vs$ in $\vses$.
+
+\ExampleDef{Checking whether expressions are read-only}
+The specification in \listingref{SESIsReadonly} checks whether the following expressions are \readonly{}:
+\begin{itemize}
+    \item \verb|y > x| inside the \assertionstatementterm;
+    \item \verb|ARBITRARY : integer{1..1000} > g| inside the \assertionstatementterm,
+          since \\
+          \verb|ARBITRARY| expressions are \readonly{};
+    \item \verb|x| and \verb|y| in the \forstatementterm.
+\end{itemize}
+\ASLListing{Read-only expressions}{SESIsReadonly}{\typingtests/TypingRule.SESIsReadonly.asl}
+
+The specifications in
+\listingref{SESIsReadonly-bad1} and
+\listingref{SESIsReadonly-bad2},
+are ill-typed due to expressions that are not \readonly{}
+where read-only expressions are expected (as explained in the comments).
+\ASLListing{Non-read-only expression in assertion}{SESIsReadonly-bad1}{\typingtests/TypingRule.SESIsReadonly.bad1.asl}
+\ASLListing{Non-read-only expression in for loop bounds}{SESIsReadonly-bad2}{\typingtests/TypingRule.SESIsReadonly.bad2.asl}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{
+    \bigwedge_{\vs\in\vses} \sideeffectisreadonly(\vs)
+}{
+    \sesisreadonly(\vses) \typearrow \True
+}
+\end{mathpar}
 
 \TypingRuleDef{SESIsPure}
 \hypertarget{def-sesispure}{}
@@ -505,30 +370,20 @@ The function
 \[
     \sesispure(\overname{\TSideEffectSet}{\vses}) \aslto \overname{\Bool}{\vb}
 \]
-tests whether all side effects in the set $\vses$ are pure, yielding the result in $\vb$.
+tests whether all side effects in the set $\vses$ are \pure{}, yielding the result in $\vb$.
 
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if $\sideeffectispure$ holds for
 every \sideeffectdescriptorterm\ $\vs$ in $\vses$.
 
-\ExampleDef{Pure Expressions}
-In \listingref{SESIsPure}, the following expressions are checked for \purity:
-\begin{itemize}
-    \item \verb|y > x| inside the \assertionstatementterm;
-    \item \verb|ARBITRARY : integer{1..1000} > g| inside the \assertionstatementterm,
-          since \\
-          \verb|ARBITRARY| expressions are \pure;
-    \item \verb|x| and \verb|y| in the \forstatementterm.
-\end{itemize}
+\ExampleDef{Checking Whether Expressions are Pure}
+The specification in \listingref{SESIsPure} is well-typed.
+Specifically, all expressions match their expected purities (see comments).
 \ASLListing{Pure expressions}{SESIsPure}{\typingtests/TypingRule.SESIsPure.asl}
 
-The specifications in
-\listingref{SESIsPure-bad1} and
-\listingref{SESIsPure-bad2},
-are ill-typed due to expressions that are not \pure{}
-where pure expressions are expected (as explained in the comments).
-\ASLListing{Impure expression in assertion}{SESIsPure-bad1}{\typingtests/TypingRule.SESIsPure.bad1.asl}
-\ASLListing{Impure expression in for loop bounds}{SESIsPure-bad2}{\typingtests/TypingRule.SESIsPure.bad2.asl}
+The specification in \listingref{SESIsPure-bad} is ill-typed, since expressions
+appearing in bitvector widths for bitvector types with bitfields must be pure.
+\ASLListing{Purity violation}{SESIsPure-bad}{\typingtests/TypingRule.SESIsPure.bad.asl}
 
 \FormallyParagraph
 \begin{mathpar}
@@ -539,34 +394,62 @@ where pure expressions are expected (as explained in the comments).
 }
 \end{mathpar}
 
-\TypingRuleDef{SESIsBefore}
-\hypertarget{def-sesisbefore}{}
+\TypingRuleDef{SESForSubprogram}
+\hypertarget{def-sesforsubprogram}{}
 The function
 \[
-  \sesisbefore(\overname{\TSideEffectSet}{\vses} \aslsep \overname{\TTimeFrame}{\vt}) \aslto \overname{\Bool}{\vb}
+  \sesforsubprogram(\overname{\Some{\qualifier}}{\vqualifier}) \aslto \overname{\pow{\TSideEffect}}{\vs}
 \]
-tests whether the \timeframesterm\ of \sideeffectdescriptorsterm\ in $\vses$ are all less than or equal to the \timeframeterm\
-$\vt$, yielding the result in $\vb$.
-% Transliteration note: this abstracts leq_constant_time
+produces a \sideeffectsetterm{} given a subprogram qualifier $\vqualifier$.
 
-\ExampleDef{Time Frame Upper Bounds}
-The specification in \listingref{SESIsBefore} is well-typed.
-Specifically, all expressions match their expected time frames (see comments).
-\ASLListing{Time frame upper bounds}{SESIsBefore}{\typingtests/TypingRule.SESIsBefore.asl}
-
-The specification in \listingref{SESIsBefore-bad} is ill-typed, since expressions
-appearing in constraints must be constant time expressions.
-\ASLListing{Time frame violation}{SESIsBefore-bad}{\typingtests/TypingRule.SESIsBefore.bad.asl}
-
-See also \ExampleRef{Declaring Global Storage}.
+\ExampleDef{Side effects for subprograms}
+The specification in \listingref{SESForSubprogram} shows example subprogram declarations and the \sideeffectdescriptorsterm{} derived from their subprogram qualifiers (see comments).
+Note that each subprogram shares the same body, the side effects are given by the qualifier keyword.
+\ASLListing{Side effects for subprograms}{SESForSubprogram}{\typingtests/TypingRule.SESForSubprogram.asl}
 
 \ProseParagraph
-Define $\vb$ as $\True$ if and only if the maximal \timeframeterm\ of all \sideeffectdescriptorsterm\ in $\vses$
-is less than or equal to $\vt$ with respect to $\timeframeleq$.
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{none}
+  \begin{itemize}
+    \item $\vqualifier$ is $\None$;
+    \item the result is a set containing a \GlobalEffectTerm{} with \purity{} \\ $\SEImpure$, and an \ImmutabilityTerm{} with immutability $\False$.
+  \end{itemize}
+
+  \item \AllApplyCase{some\_readonly}
+  \begin{itemize}
+    \item $\vqualifier$ is $\Some{\Readonly}$;
+    \item the result is a set containing a \GlobalEffectTerm{} with \purity{} \\ $\SEReadonly$, and an \ImmutabilityTerm{} with immutability $\False$.
+  \end{itemize}
+
+  \item \AllApplyCase{some\_pure}
+  \begin{itemize}
+    \item $\vqualifier$ is $\Some{\Pure}$;
+    \item the result is a set containing a \GlobalEffectTerm{} with \purity{} $\SEPure$, and an \ImmutabilityTerm{} with immutability $\True$.
+  \end{itemize}
+\end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule{}{
-    \sesisbefore(\vses, \vt) \typearrow \overname{\maxtimeframe(\vses) \timeframeleq \vt}{\vb}
+\inferrule[none]{
+  \vs \eqdef \{ \GlobalEffect(\SEImpure), \Immutability(\False) \}
+}{
+  \sesforsubprogram(\overname{\None}{\vqualifier}) \typearrow \vs
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[some\_readonly]{
+  \vs \eqdef \{ \GlobalEffect(\SEReadonly), \Immutability(\False) \}
+}{
+  \sesforsubprogram(\overname{\Some{\Readonly}}{\vqualifier}) \typearrow \vs
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[some\_pure]{
+  \vs \eqdef \{ \GlobalEffect(\SEPure), \Immutability(\True) \}
+}{
+  \sesforsubprogram(\overname{\Some{\Pure}}{\vqualifier}) \typearrow \vs
 }
 \end{mathpar}

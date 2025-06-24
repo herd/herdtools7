@@ -190,8 +190,8 @@ in the global static environment $\genv$, resulting in the modified global stati
 \listingref{DeclareType} shows examples of well-typed type declarations
 and ill-typed type declarations in comments.
 
-The only \sideeffectdescriptorsterm{} for \verb|Record| is
-$\ReadGlobal(\texttt{num\_bits}, \timeframeconstant, \True)$.
+The \sideeffectdescriptorsterm{} for \verb|Record| are
+$\GlobalEffect(\SEPure)$ and $\Immutability(\True)$.
 \ASLListing{Type declarations}{DeclareType}{\typingtests/TypingRule.DeclareType.asl}
 
 \ProseParagraph
@@ -203,8 +203,9 @@ $\ReadGlobal(\texttt{num\_bits}, \timeframeconstant, \True)$.
   \item annotating the \optional\ extra fields $\vs$ for $\tty$ in $\tenv$ yields via \\ $\annotateextrafields$
         yields the modified environment $\tenvone$ and type $\vtone$\ProseOrTypeError;
   \item annotating $\vtone$ in $\tenvone$ yields $(\vttwo, \vsest)$\ProseOrTypeError;
-  \item applying $\maxtimeframe$ to $\vsest$ yields $\vtimeframe$;
-  \item applying $\addtype$ to $\name$, $\vttwo$, and $\vtimeframe$ in $\tenv$ yields $\tenvtwo$;
+  \item applying $\sesispure$ to $\vsest$ yields $\vb$;
+  \item \Proseeqdef{$\vpurity$} as $\SEPure$ if $\vb$ is $\True$, otherwise $\SEReadonly$;
+  \item applying $\addtype$ to $\name$, $\vttwo$, and $\vpurity$ in $\tenv$ yields $\tenvtwo$;
   \item $\tenvtwo$ is $\tenvone$ with its $\declaredtypes$ component updated by binding $\name$ to $\vttwo$;
   \item \OneApplies
   \begin{itemize}
@@ -229,8 +230,9 @@ $\ReadGlobal(\texttt{num\_bits}, \timeframeconstant, \True)$.
   \withemptylocal(\genv) \typearrow \tenv\\\\
   \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\tenvone, \vtone)\\
   \annotatetype{\True, \tenvone, \vtone} \typearrow (\vttwo, \vsest) \OrTypeError\\\\
-  \maxtimeframe(\vsest) \typearrow \vtimeframe\\
-  \addtype(\tenvone, \name, \vttwo, \vtimeframe) \typearrow \tenvtwo\\\\
+  \sesispure(\vsest) \typearrow \vb\\
+  \vpurity \eqdef \choice{\vb}{\SEPure}{\SEReadonly}\\
+  \addtype(\tenvone, \name, \vttwo, \vpurity) \typearrow \tenvtwo\\\\
   \commonprefixline\\\\
   \vttwo = \TEnum(\ids)\\
   \declareenumlabels(\tenvtwo, \vttwo) \typearrow \newtenv \OrTypeError
@@ -245,8 +247,9 @@ $\ReadGlobal(\texttt{num\_bits}, \timeframeconstant, \True)$.
   \withemptylocal(\genv) \typearrow \tenv\\\\
   \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\tenvone, \vtone)\\
   \annotatetype{\True, \tenvone, \vtone} \typearrow (\vttwo, \vsest) \OrTypeError\\\\
-  \maxtimeframe(\vsest) \typearrow \vtimeframe\\
-  \addtype(\tenvone, \name, \vttwo, \vtimeframe) \typearrow \tenvtwo\\\\
+  \sesispure(\vsest) \typearrow \vb\\
+  \vpurity \eqdef \choice{\vb}{\SEPure}{\SEReadonly}\\
+  \addtype(\tenvone, \name, \vttwo, \vpurity) \typearrow \tenvtwo\\\\
   \commonprefixline\\\\
   \astlabel(\vttwo) \neq \TEnum
 }{

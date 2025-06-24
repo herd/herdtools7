@@ -618,6 +618,7 @@ We also define the following helper rules:
   \item \TypingRuleRef{AnnotateArgs}
   \item \TypingRuleRef{AnnotateOneArg}
   \item \TypingRuleRef{AnnotateReturnType}
+  \item \TypingRuleRef{CheckSubprogramPurity}
   \item \TypingRuleRef{DeclareOneFunc}
   \item \TypingRuleRef{SubprogramClash}
   \item \TypingRuleRef{AddNewFunc}
@@ -710,7 +711,9 @@ is not a constrained expression.
         $(\tenvwithargs, \vseswithargs, \vargs)$\ProseOrTypeError;
   \item annotating the return type of $\funcsig$ in $\tenvwithparams$ using \\ $\annotatereturntype$ and $\vseswithargs$, yields\\
         $(\newtenv, \vreturntype, \vseswithreturn)$\ProseOrTypeError;
-  \item \Proseeqdef{$\vses$}{$\vseswithreturn$ with all instances of \ReadLocal\ and \WriteLocalTerm\ removed};
+  \item \Proseeqdef{$\vsesp$}{$\vseswithreturn$ with every \LocalEffectTerm\ removed};
+  \item checking that the \sideeffectsetterm{} $\vsesp$ adheres to the subprogram's \purity{} qualifier $\funcsig.\funcqualifier$ yields $\True$\ProseOrTypeError;
+  \item the \sideeffectsetterm{} corresponding to $\funcsig.\funcqualifier$ (via $\sesforsubprogram$) is $\vses$;
   \item $\newfuncsig$ is $\funcsig$ with the annotated parameters $\vparams$, annotated arguments $\vargs$, annotated return type $\vreturntype$,
         and $\vrecurselimit$ as its recursion limit.
 \end{itemize}
@@ -739,7 +742,9 @@ is not a constrained expression.
     (\newtenv, \vreturntype, \vseswithreturn) \OrTypeError
     \end{array}
   }\\\\
-  \vses \eqdef \vseswithreturn \setminus \{ \vs \;|\; \configdomain{\vs} \in \{\ReadLocal, \WriteLocal\} \}\\
+  \vsesp \eqdef \vseswithreturn \setminus \{ \vs \;|\; \configdomain{\vs} = \LocalEffect \}\\
+  \checksubprogrampurity(\funcsig.\funcqualifier, \vsesp) \typearrow \True \OrTypeError \\
+  \sesforsubprogram(\funcsig.\funcqualifier) \typearrow \vses
   {
     \newfuncsig \eqdef
     \left\{
@@ -1581,6 +1586,74 @@ as return types.
 }
 \end{mathpar}
 
+\TypingRuleDef{CheckSubprogramPurity}
+\hypertarget{def-checksubprogrampurity}{}
+The function
+\[
+\checksubprogrampurity(
+  \overname{\Some{\qualifier}}{\vqualifier} \aslsep
+  \overname{\TSideEffectSet}{\vses}
+)
+\aslto \overname{\Bool}{\vb} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks that the \sideeffectsetterm{} $\vses$ is consistent with the subprogram qualifier $\vqualifier$.
+\ProseOtherwiseTypeError
+
+\ExampleDef{Checking subprogram purity}
+In \listingref{SESForSubprogram}, the bodies of each subprogram are checked as follows:
+\begin{itemize}
+  \item the side effects of the body of \verb|foo| are all \pure{};
+  \item the side effects of the body of \verb|bar| are all \readonly{}; and
+  \item the side effects of the body of \verb|baz| are not checked.
+\end{itemize}
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{none}
+  \begin{itemize}
+    \item $\vqualifier$ is $\None$;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item \AllApplyCase{some\_readonly}
+  \begin{itemize}
+    \item $\vqualifier$ is $\Some{\Readonly}$;
+    \item checking that all \sideeffectdescriptorsterm{} in $\vses$ are \readonly{} yields $\True$\ProseOrTypeError;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item \AllApplyCase{some\_pure}
+  \begin{itemize}
+    \item $\vqualifier$ is $\Some{\Pure}$;
+    \item checking that all \sideeffectdescriptorsterm{} in $\vses$ are \pure{} yields $\True$\ProseOrTypeError;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[none]{}{
+  \checksubprogrampurity(\overname{\None}{\vqualifier}) \typearrow \overname{\True}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[some\_readonly]{
+  \sesisreadonly(\vses) \typearrow \True \OrTypeError
+}{
+  \checksubprogrampurity(\overname{\Some{\Readonly}}{\vqualifier}) \typearrow \overname{\True}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[some\_pure]{
+  \sesispure(\vses) \typearrow \True \OrTypeError
+}{
+  \checksubprogrampurity(\overname{\Some{\Pure}}{\vqualifier}) \typearrow \overname{\True}{\vb}
+}
+\end{mathpar}
+
 \TypingRuleDef{DeclareOneFunc}
 \hypertarget{def-declareonefunc}{}
 The function
@@ -1623,10 +1696,8 @@ See \ExampleRef{Updating the Static Environment for a Subprogram}.
   \item checking that $\namep$ is not already declared in the global environment of $\tenvone$
         yields $\True$\ProseOrTypeError;
   \item $\funcsigone$ is $\funcsig$ with $\name$ substituted by $\namep$;
-  \item \Proseeqdef{$\initses$}{the union of $\vsesfuncsig$ and the singleton set for
-        a \RecursiveCallTerm\ for $\namep$};
   \item adding a subprogram with name $\namep$, definition $\funcsigone$,
-        and \sideeffectsetterm\ $\initses$ to $\tenvone$ yields $\newtenv$\ProseOrTypeError.
+        and \sideeffectsetterm\ $\vsesfuncsig$ to $\tenvone$ yields $\newtenv$\ProseOrTypeError.
 \end{itemize}
 
 \FormallyParagraph
@@ -1651,8 +1722,7 @@ See \ExampleRef{Updating the Static Environment for a Subprogram}.
   (\tenvone, \namep) \OrTypeError\\\\
   \checktrans{G^\tenvone.\subprograms(\namep) = \bot}{\IdentifierAlreadyDeclared} \checktransarrow \True \terminateas \IdentifierAlreadyDeclared \\\\
   \newfuncsig \eqdef \funcsig[\funcname \mapsto \namep] \\\\
-  \initses \eqdef \vsesfuncsig \cup\ \{ \RecursiveCall(\namep) \}\\
-  \addsubprogram(\tenvone, \namep, \funcsigone, \initses) \typearrow \newtenv \OrTypeError
+  \addsubprogram(\tenvone, \namep, \funcsigone, \vsesfuncsig) \typearrow \newtenv \OrTypeError
 }{
   \declareonefunc(\tenv, \funcsig, \vsesfuncsig) \typearrow (\newtenv, \newfuncsig)
 }

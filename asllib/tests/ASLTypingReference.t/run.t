@@ -142,7 +142,7 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.AnnotateConstraint.asl
   $ aslref TypingRule.AnnotateConstraint.bad.asl
   File TypingRule.AnnotateConstraint.bad.asl, line 4, characters 17 to 18:
-    let t: integer{x..x+1} = 2; // illegal as 'x' is not constrained.
+    let t: integer{x..x+1} = 2; // illegal as 'x' is not symbolically evaluable.
                    ^
   ASL Type error: expected a symbolically evaluable expression/subprogram.
   [1]
@@ -939,32 +939,31 @@ ASL Typing Tests / annotating types:
   ASL Type error: expected a readonly expression/subprogram.
   [1]
   $ aslref TypingRule.EvalSliceExpr.asl
-  $ aslref --no-exec TypingRule.TimeFrameLDK.asl
-  $ aslref --no-exec TypingRule.TimeFrameGDK.asl
-  $ aslref --no-exec TypingRule.TimeFrame.asl
+  $ aslref --no-exec TypingRule.SideEffectsLDK.asl
+  $ aslref --no-exec TypingRule.SideEffectsGDK.asl
   $ aslref --no-exec TypingRule.SideEffectIsPure.asl
   $ aslref TypingRule.CheckSymbolicallyEvaluable.asl
-  $ aslref TypingRule.SESIsPure.asl
-  $ aslref TypingRule.SESIsPure.bad1.asl
-  File TypingRule.SESIsPure.bad1.asl, line 17, characters 11 to 37:
+  $ aslref TypingRule.SESIsReadonly.asl
+  $ aslref TypingRule.SESIsReadonly.bad1.asl
+  File TypingRule.SESIsReadonly.bad1.asl, line 17, characters 11 to 37:
       assert y > write_side_effecting();
              ^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: expected a readonly expression/subprogram.
   [1]
-  $ aslref TypingRule.SESIsPure.bad2.asl
-  File TypingRule.SESIsPure.bad2.asl, line 16, characters 17 to 39:
+  $ aslref TypingRule.SESIsReadonly.bad2.asl
+  File TypingRule.SESIsReadonly.bad2.asl, line 16, characters 17 to 39:
       for i = x to write_side_effecting() do
                    ^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: expected a readonly expression/subprogram.
   [1]
-  $ aslref TypingRule.SESIsBefore.asl
-  $ aslref TypingRule.SESIsBefore.bad.asl
-  File TypingRule.SESIsBefore.bad.asl, line 4, characters 18 to 23:
+  $ aslref TypingRule.SESIsPure.asl
+  $ aslref TypingRule.SESIsPure.bad.asl
+  File TypingRule.SESIsPure.bad.asl, line 4, characters 18 to 23:
   type Data of bits(g * 2) {
                     ^^^^^
   ASL Type error: expected a pure expression/subprogram.
   [1]
-  $ aslref --no-exec TypingRule.MaxTimeFrame.asl
+  $ aslref --no-exec TypingRule.SESForSubprogram.asl
   $ aslref TypingRule.SliceEqual.asl
   $ aslref TypingRule.SlicesEqual.asl
   $ aslref TypingRule.BitwidthEqual.asl
@@ -1019,7 +1018,6 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.ToIR.asl
   $ aslref --no-exec TypingRule.Normalize.asl
   $ aslref --no-exec TypingRule.UnitaryMonomialsToExpr.asl
-  $ aslref --no-exec TypingRule.PropagateRecursiveCallsSess.asl
   $ aslref --no-exec TypingRule.ConstraintPow.asl
   $ aslref --no-exec TypingRule.ConstraintMod.asl
   $ aslref --no-exec TypingRule.PossibleExtremitiesLeft.asl

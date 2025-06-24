@@ -1809,7 +1809,7 @@ The specifications in \listingref{semantics-sasertok} and \listingref{semantics-
 are well-typed.
 
 The assertion statements in \listingref{assert-ill-typed} are ill-typed,
-since the expression needs to be both of a \booleantypeterm{} and pure.
+since the expression needs to be both of a \booleantypeterm{} and \readonly{}.
 \ASLListing{Ill-typed assertion statements}{assert-ill-typed}{\typingtests/TypingRule.SAssert.bad.asl}
 
 \ProseParagraph
@@ -1817,20 +1817,20 @@ since the expression needs to be both of a \booleantypeterm{} and pure.
 \begin{itemize}
   \item $\vs$ is an assert statement with expression $\ve$, that is, $\SAssert(\ve)$;
   \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\tep,\vep, \vsese)$\ProseOrTypeError;
-  \item checking that $\vsese$ is pure via $\sesispure$ yields $\True$\ProseOrTypeError;
+  \item checking that $\vsese$ is \readonly{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
   \item checking that $\vtep$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item $\news$ is an assert statement with expression $\vep$, that is, $\SAssert(\vep)$;
   \item $\newtenv$ is $\tenv$;
-  \item \Proseeqdef{$\vses$}{the union of $\vsese$ and the singleton set for \PerformsAssertionsTerm}.
+  \item \Proseeqdef{$\vses$}{$\vsese$}.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \ve} \typearrow (\vtep, \vep, \vsese) \OrTypeError\\\\
-  \checktrans{\sesispure(\vsese) \typearrow \True}{\SideEffectViolation}\\\\
+  \checktrans{\sesisreadonly(\vsese) \typearrow \True}{\SideEffectViolation}\\\\
   \checktypesat(\tenv, \vtep, \TBool) \typearrow \True \OrTypeError\\\\
-  \vses \eqdef \vsese \cup \{\PerformsAssertions\}
-}{
+  \vses \eqdef \vsese
+  }{
   \annotatestmt(\tenv, \overname{\SAssert(\ve)}{\vs}) \typearrow (\overname{\SAssert(\vep)}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
@@ -2575,8 +2575,8 @@ show examples of ill-typed \texttt{for} loops.
   \item annotating the right-hand-side expression $\vende$ in $\tenv$ yields \\ $(\vendt, \vendep, \vsesend)$\ProseOrTypeError;
   \item annotating the optional loop limit expression $\vlimit$ via $\annotatelimitexpr$ in $\tenv$
         yields $(\vlimitp, \vseslimit)$\ProseOrTypeError;
-  \item checking that $\vsesstart$ is pure via $\sesispure$ yields $\True$\ProseOrTypeError;
-  \item checking that $\vsesend$ is pure via $\sesispure$ yields $\True$\ProseOrTypeError;
+  \item checking that $\vsesstart$ is \readonly{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
+  \item checking that $\vsesend$ is \readonly{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
   \item \Proseeqdef{$\vsescond$}{the union of $\vsesstart$, $\vsesend$, and $\vseslimit$};
   \item obtaining the \underlyingtype\ of $\vstartt$ in $\tenv$ yields $\vstartstruct$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vendt$ in $\tenv$ yields $\vendstruct$\ProseOrTypeError;
@@ -2603,8 +2603,8 @@ show examples of ill-typed \texttt{for} loops.
   \annotateexpr{\tenv, \vstarte} \typearrow (\vstartt, \vstartep, \vsesstart) \OrTypeError\\\\
   \annotateexpr{\tenv, \vende} \typearrow (\vendt, \vendep, \vsesend) \OrTypeError\\\\
   \annotatelimitexpr(\tenv, \vlimit) \typearrow (\vlimitp, \vseslimit) \OrTypeError\\\\
-  \checktrans{\sesispure(\vsesstart)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
-  \checktrans{\sesispure(\vsesend)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
+  \checktrans{\sesisreadonly(\vsesstart)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
+  \checktrans{\sesisreadonly(\vsesend)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
   \vsescond \eqdef \vsesstart \cup \vsesend \cup \vseslimit\\
   \makeanonymous(\tenv, \vstartt) \typearrow \vstartstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vendt) \typearrow \vendstruct \OrTypeError\\\\
@@ -3081,7 +3081,6 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 \listingref{semantics-sthrownone} and \listingref{semantics-sthrowsometyped}
 show examples of well-typed \throwstatementsterm.
 
-\newcommand\NoNameException[0]{\texttt{\_}}
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -3090,7 +3089,7 @@ show examples of well-typed \throwstatementsterm.
     \item $\vs$ is a throw statement with no expression, that is, $\SThrow(\None)$;
     \item $\news$ is $\vs$;
     \item $\newtenv$ is $\tenv$;
-    \item \Proseeqdef{$\vses$}{the singleton set for $\ThrowException(\NoNameException)$}
+    \item \Proseeqdef{$\vses$}{the set containing a \LocalEffectTerm{} and a \GlobalEffectTerm{}, both with \purity{} $\SEImpure$.}
   \end{itemize}
 
   \item \AllApplyCase{some}
@@ -3102,8 +3101,7 @@ show examples of well-typed \throwstatementsterm.
     \item $\news$ is a throw statement with expression $\vep$ and type $\vte$, that is, \\
           $\SThrow(\langle (\vep, \vte) \rangle)$;
     \item $\newtenv$ is $\tenv$;
-    \item \Proseeqdef{$\vses$}{the union of $\vsesone$ and the singleton set for \\
-          $\ThrowException(\exnname)$}.
+    \item \Proseeqdef{$\vses$}{the union of $\vsesone$ and the set containing a \LocalEffectTerm{} and a \GlobalEffectTerm{}, both with \purity{} $\SEImpure$.}
   \end{itemize}
 \end{itemize}
 
@@ -3111,7 +3109,7 @@ show examples of well-typed \throwstatementsterm.
 \begin{mathpar}
 \inferrule[none]{}{
   \annotatestmt(\tenv, \overname{\SThrow(\None)}{\vs}) \typearrow
-  (\overname{\SThrow(\None)}{\news}, \overname{\tenv}{\newtenv}, \overname{\{\ThrowException(\NoNameException)\}}{\vses})
+  (\overname{\SThrow(\None)}{\news}, \overname{\tenv}{\newtenv}, \overname{\{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\}}{\vses})
 }
 \end{mathpar}
 \lrmcomment{Note that \identr{BRCJ} is done in~\cite[SemanticsRule.TopLevel]{ASLSemanticsReference}.}
@@ -3121,7 +3119,7 @@ show examples of well-typed \throwstatementsterm.
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsesone) \OrTypeError\\\\
   \checkstructurelabel(\tenv, \vte, \TException) \typearrow \True \OrTypeError\\\\
   \vte \eqname \TNamed(\exnname)\\
-  \vses \eqdef \vsesone \cup \{\ThrowException(\exnname)\}
+  \vses \eqdef \vsesone \cup \{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\}
 }{
   \annotatestmt(\tenv, \overname{\SThrow(\langle\ve\rangle)}{\vs}) \typearrow
   (\overname{\SThrow(\langle (\vep, \vte) \rangle)}{\news}, \overname{\tenv}{\newtenv}, \vses)
@@ -3297,7 +3295,7 @@ the \trystatementsterm{} are all well-typed.
             $\otherwisep$, that is \\
             $\STry(\vspp, \catchersp, \langle\otherwisep\rangle)$;
       \item \Proseeqdef{$\vsesotherwise$}{$\vsesblock$};
-      \item \Proseeqdef{$\vsesthree$}{$\vsestwo$, excluding any \ThrowExceptionTerm}.
+      \item \Proseeqdef{$\vsesthree$}{$\vsestwo$}.
     \end{itemize}
 
     \item \Proseeqdef{$\vses$}{the union of $\vsesthree$, $\vsescatchers$, and $\vsesotherwise$}.
@@ -3331,7 +3329,7 @@ the \trystatementsterm{} are all well-typed.
   \annotateblock{\tenv, \otherwise} \typearrow (\otherwisep, \vsesblock) \OrTypeError\\\\
   \news \eqdef \STry(\vspp, \catchersp, \otherwise')\\
   \vsesotherwise \eqdef \vsesblock\\
-  \vsesthree \eqdef \vsestwo \setminus \{ \vs \in \TSideEffectSet \;|\; \configdomain{\vs} = \ThrowException\} \\\\
+  \vsesthree \eqdef \vsestwo \\\\
   \commonsuffixline\\\\
   \vses \eqdef \vsescatchers \cup \vsesotherwise
 }{

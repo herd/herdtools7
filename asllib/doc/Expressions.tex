@@ -187,8 +187,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
           via the \\
           $\localstoragetypes$ map of the local environment component of $\tenv$;
     \item define $\newe$ as $\ve$;
-    \item define $\vses$ as the singleton set for the \ReadLocalTerm\ for $\vx$ the \timeframeterm\ of
-          $k$ ($\timeframeofldk$) and the immutability status of $k$ ($\ldkisimmutable$).
+    \item define $\vses$ as the \sideeffectsetterm\ produced from $k$ by $\sesldk$.
     \end{itemize}
 
     \item \AllApplyCase{global\_constant}
@@ -206,8 +205,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
       \item $\vx$ is bound to $(\tty, k)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
       \item either $\vx$ is not bound in the $\constantvalues$ map of the global component of $\tenv$ or $k$ is not $\GDKConstant$;
       \item define $newe$ as $\ve$;
-      \item define $\vses$ as the singleton set for the \ReadGlobalTerm\ for $\vx$ the \timeframeterm\ of
-            $k$ ($\timeframeofgdk$) and the immutability status of $k$ ($\gdkisimmutable$).
+      \item define $\vses$ as the \sideeffectsetterm\ produced from $k$ by $\sesgdk$.
     \end{itemize}
 
     \item \AllApplyCase{error\_undefined}
@@ -223,7 +221,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
 \begin{mathpar}
 \inferrule[local]{
   L^\tenv.\localstoragetypes(\vx) =  (\vt, k) \\
-  \vses \eqdef \{\ \ReadLocal(\vx, \timeframeofldk(k), \ldkisimmutable(k))\  \}
+  \sesldk(k) \typearrow \vses
 }{
   \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\EVar(\vx)}{\newe}, \vses)
 }
@@ -244,7 +242,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
   L^\tenv.\localstoragetypes(\vx) = \bot \\
   G^\tenv.\globalstoragetypes(\vx) = (\tty, k)\\
   G^\tenv.\constantvalues(\vx) = \bot \lor k \neq \GDKConstant\\
-  \vses \eqdef \{\ \ReadGlobal(\vx, \timeframeofgdk(k), \gdkisimmutable(k))\  \}
+  \sesgdk(k) \typearrow \vses
 }{
   \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\tty, \overname{\EVar(\vx)}{\newe}, \vses)
 }
@@ -2342,7 +2340,7 @@ and the corresponding annotated expressions in comments.
   \item obtaining the \structure\ of $\tty'$ in $\tenv$ yields $\vtystruct$\ProseOrTypeError;
   \item applying $\checkatc$ to $\vtstruct$ and $\vtystruct$ in $\tenv$ to check whether the type assertion
         will always fail yields $\True$\ProseOrTypeError;
-  \item define $\vsesp$ as the union of $\vsesty$, $\vsese$, and the singleton set for \PerformsAssertions;
+  \item define $\vsesp$ as the union of $\vsesty$ and $\vsese$;
   \item checking whether $\vtstruct$ \subtypesatisfies\ $\vtystruct$ in $\tenv$ yields \\
         $\vallwayssucceeds$\ProseOrTypeError\
         (if $\vallwayssucceeds$ holds then the type assertion will always succeed dynamically, and therefore can be omitted);
@@ -2358,7 +2356,7 @@ and the corresponding annotated expressions in comments.
   \annotatetype{\tenv, \tty} \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
   \tstruct(\tenv, \ttyp) \typearrow \vtystruct \OrTypeError\\\\
   \checkatc(\tenv, \vtstruct, \vtystruct) \typearrow \True \OrTypeError\\\\
-  \vsesp \eqdef \vsesty \cup \vsese \cup \{\PerformsAssertions\}\\
+  \vsesp \eqdef \vsesty \cup \vsese \\
   \subtypesat(\tenv, \vtstruct, \vtystruct) \typearrow \vallwayssucceeds \OrTypeError\\\\
   (\newe, \vses) \eqdef \choice{\vallwayssucceeds}{(\vepp, \vsese)}{(\EATC(\vepp, \ttyp), \vsesp)}
 }{
@@ -2900,14 +2898,14 @@ Note that there are two important consequences of producing an arbitrary value w
   \item obtaining the \structure\ of $\ttyone$ in $\tenv$ yields $\ttytwo$\ProseOrTypeError;
   \item $\vt$ is $\ttyone$;
   \item define $\newe$ as an expression \ARBITRARY\ of type $\ttytwo$, that is, $\EArbitrary(\ttytwo)$;
-  \item define $\vses$ as the union of $\vsesty$ and the singleton set for the \NonDeterministicTerm.
+  \item define $\vses$ as the union of $\vsesty$ and the set containing an \ImmutabilityTerm{} with immutability $\False$, and a \LocalEffectTerm{} and a \GlobalEffectTerm{}, both with \purity{} $\SEReadonly$.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotatetype{\tenv, \tty} \typearrow (\ttyone, \vsesty) \OrTypeError\\\\
   \tstruct(\tenv, \ttyone) \typearrow \ttytwo \OrTypeError\\\\
-  \vses \eqdef \vsesty \cup \{ \NonDeterministic \}
+  \vses \eqdef \vsesty \cup \{ \LocalEffect(\SEReadonly), \GlobalEffect(\SEReadonly), \Immutability(\False) \}
 }{
   \annotateexpr{\tenv, \EArbitrary(\tty)} \typearrow (\ttyone, \EArbitrary(\ttytwo), \vses)
 }
@@ -3395,7 +3393,7 @@ which evaluates to
 \subsection{Typing}
 An expression $\ve$ is considered to be side-effect-free in the static environment $\tenv$
 if $\annotateexpr{\tenv, \ve} \typearrow (\Ignore, \Ignore, \vses)$
-and $\vses$ only contains \sideeffectdescriptorsterm\ for reading storage (\ReadLocal\ and \ReadGlobal).
+and $\vses$ is \readonly{}.
 
 \subsection{Semantics}
 \SemanticsRuleDef{ESideEffectFreeExpr}

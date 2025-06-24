@@ -33,8 +33,8 @@ The language supports such overriding mechanisms (and in particular, simplifies 
 \begin{itemize}
   \item The \texttt{config} keyword syntactically identifies configurable storage elements.
   \item Types of \texttt{config} storage elements must be \emph{both} explicitly declared \emph{and} singular (\TypingRuleRef{SingularType}).
-  \item The \timeframeterm{} of \texttt{config} storage elements is $\timeframeexecution$, so their values are not relied upon by typechecking.
-  \item Values of \texttt{config} storage elements must have \timeframeterm{} less than or equal to $\timeframeconstant$, so they can depend only on constant values (and not other \texttt{config} storage elements for example).
+  \item The \purity{} of \texttt{config} storage elements is $\SEReadonly$, so their values are not relied upon by typechecking.
+  \item Values of \texttt{config} storage elements must have \purity{} of $\SEPure$, so they can depend only on constant values (and not other \texttt{config} storage elements for example).
 \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -291,10 +291,10 @@ The specification in \listingref{DeclareGlobalStorage-bad3} is illegal since
 
 The specifications in \listingref{DeclareGlobalStorage-bad1} and \listingref{DeclareGlobalStorage-bad2}
 are ill-typed since
-\texttt{config} storage elements have the $\timeframeconstant$ \timeframeterm,
+\texttt{config} storage elements have the \purity{} $\SEPure$,
 which requires that all expressions used in its type annotation and initializing expression
-also have the $\timeframeconstant$ \timeframeterm,
-whereas \verb|x| has the $\timeframeexecution$ \timeframeterm.
+also have \purity{} $\SEPure$,
+whereas \verb|x| has the \purity{} $\SEReadonly$.
 \ASLListing{Ill-typed configuration storage declaration}{DeclareGlobalStorage-bad1}{\typingtests/TypingRule.DeclareGlobalStorage.bad1.asl}
 \ASLListing{Ill-typed configuration storage declaration}{DeclareGlobalStorage-bad2}{\typingtests/TypingRule.DeclareGlobalStorage.bad2.asl}
 
@@ -308,8 +308,8 @@ of an ill-typed global storage declaration due to precision loss.
         \optional\ type $\tyopt$, and name $\name$;
   \item checking that $\name$ is not already declared in $\genv$ yields $\True$\ProseOrTypeError;
   \item applying $\withemptylocal$ to $\genv$ yields $\tenv$;
-  \item define $\vtargettimeframe$ as $\timeframeconstant$ if $\keyword$ is $\GDKConstant$ or $\GDKConfig$, and $\timeframeexecution$ otherwise;
-  \item applying $\annotatetyoptinitialvalue$ to $\keyword$, $\vtargettimeframe$, $\tyoptp$, \\
+  \item define $\vmustbepure$ as $\True$ if $\keyword$ is $\GDKConstant$ or $\GDKConfig$, and $\False$ otherwise;
+  \item applying $\annotatetyoptinitialvalue$ to $\keyword$, $\vmustbepure$, $\tyoptp$, \\
         and $\initialvalue$ in $\tenv$ yields\\
         $(\typedinitialvalue, \tyoptp, \declaredt)$\ProseOrTypeError;
   \item adding a global storage element with name $\name$, global declaration keyword \\ $\keyword$ and type $\declaredt$
@@ -336,13 +336,13 @@ of an ill-typed global storage declaration due to precision loss.
 \withemptylocal(\genv) \typearrow \tenv\\
 {
   \begin{array}{l}
-    \vtargettimeframe \eqdef \hfill \\
-    \choice{\keyword \in \{\GDKConstant, \GDKConfig\}}{\timeframeconstant}{\timeframeexecution}
+    \vmustbepure \eqdef \hfill \\
+    \choice{\keyword \in \{\GDKConstant, \GDKConfig\}}{\True}{\False}
   \end{array}
 }\\
 {
   \begin{array}{r}
-    \annotatetyoptinitialvalue(\tenv, \keyword, \vtargettimeframe, \tyopt, \initialvalue) \\ \typearrow
+    \annotatetyoptinitialvalue(\tenv, \keyword, \vmustbepure, \tyopt, \initialvalue) \\ \typearrow
     (\typedinitialvalue, \tyoptp, \declaredt) \OrTypeError
   \end{array}
 }\\
@@ -386,7 +386,7 @@ The helper function
 \annotatetyoptinitialvalue(
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\globaldeclkeyword}{\gdk} \aslsep
-  \overname{\TTimeFrame}{\vtargettimeframe} \aslsep
+  \overname{\Bool}{\vmustbepure} \aslsep
   \overname{\langle\ty\rangle}{\tyoptp} \aslsep
   \overname{\langle\expr\rangle}{\initialvalue}
   ) \\ \aslto
@@ -416,8 +416,7 @@ See \ExampleRef{Declaring Global Storage}.
     \item annotating the type $\vt$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
     \item define $\typede$ as $(\vte, \vep, \vsese)$;
     \item checking that $\vte$ \typesatisfies\ $\vtp$ in $\tenv$ yields $\True$\ProseOrTypeError;
-    \item checking that all \timeframesterm\ in $\vsest$ and $\vsese$ are less than or equal to \\
-          $\vtargettimeframe$ via $\sesisbefore$ yields $\True$\ProseOrTypeError;
+    \item checking that if $\vmustbepure$ is $\True$ then $\vsest$ and $\vsese$ are \pure{} yields $\True$\ProseOrTypeError;
     \item define $\typedinitialvalue$ as $\typede$;
     \item define $\tyoptp$ as the singleton set for $\vtp$;
     \item define $\declaredt$ as $\vtp$;
@@ -434,8 +433,7 @@ See \ExampleRef{Declaring Global Storage}.
     \item annotating the type $\vtpp$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
     \item define $\typede$ as $(\vte, \vep, \vsese)$;
     \item checking that $\vte$ \typesatisfies\ $\vtp$ in $\tenv$ yields $\True$\ProseOrTypeError;
-    \item checking that all \timeframesterm\ in $\vsest$ and $\vsese$ are less than or equal to \\
-          $\vtargettimeframe$ via $\sesisbefore$ yields $\True$\ProseOrTypeError;
+    \item checking that if $\vmustbepure$ is $\True$ then $\vsest$ and $\vsese$ are \pure{} yields $\True$\ProseOrTypeError;
     \item define $\typedinitialvalue$ as $\typede$;
     \item define $\tyoptp$ as the singleton set for $\vtp$;
     \item define $\declaredt$ as $\vtp$;
@@ -446,8 +444,7 @@ See \ExampleRef{Declaring Global Storage}.
     \item $\tyoptp$ is the singleton set for the type $\vt$;
     \item $\initialvalue$ is $\None$;
     \item annotating the type $\vt$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
-    \item checking that all \timeframesterm\ in $\vsest$ are less than or equal to \\
-          $\vtargettimeframe$ via $\sesisbefore$ yields $\True$\ProseOrTypeError;
+    \item checking that if $\vmustbepure$ is $\True$ then $\vsest$ is \pure{} yields $\True$\ProseOrTypeError;
     \item obtaining the \basevalueterm\ of $\vtp$ in $\tenv$ yields $\vep$\ProseOrTypeError;
     \item define $\typedinitialvalue$ as $(\vtp, \vep, \emptyset)$;
     \item define $\tyoptp$ as the singleton set for $\vtp$;
@@ -460,9 +457,7 @@ See \ExampleRef{Declaring Global Storage}.
     \item $\initialvalue$ is the singleton set for the expression $\ve$;
     \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vsese)$\ProseOrTypeError;
     \item \Prosenoprecisionloss{$\vte$};
-    \item \Prosecheckisnotcollection{$\vte$}{$\tenv$};
-    \item checking that all \timeframesterm\ in $\vsese$ are less than or equal to \\
-          $\vtargettimeframe$ via $\sesisbefore$ yields $\True$\ProseOrTypeError;
+    \item checking that if $\vmustbepure$ is $\True$ then $\vsese$ is \pure{} yields $\True$\ProseOrTypeError;
     \item define $\typede$ as $(\vte, \vep, \vsese)$;
     \item define $\typedinitialvalue$ as $\typede$;
     \item define $\tyoptp$ as $\None$;
@@ -478,11 +473,11 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
   \annotatetype{\tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \typede \eqdef (\vte, \vep, \vsese)\\
   \checktypesat(\tenv, \vte, \vtp) \typearrow \True \OrTypeError\\\\
-  \checktrans{\sesisbefore(\vsest \cup \vsese, \vtargettimeframe)}{\SideEffectViolation} \typearrow \True \OrTypeError
+  \checktrans{\lnot\vmustbepure \lor \sesispure(\vsest \cup \vsese)}{\SideEffectViolation} \typearrow \True \OrTypeError
 }{
   {
     \begin{array}{r}
-  \annotatetyoptinitialvalue(\tenv, \overname{\GDKConfig}{\gdk}, \vtargettimeframe, \overname{\langle\vt\rangle}{\tyoptp}, \overname{\langle\ve\rangle}{\initialvalue})
+  \annotatetyoptinitialvalue(\tenv, \overname{\GDKConfig}{\gdk}, \vmustbepure, \overname{\langle\vt\rangle}{\tyoptp}, \overname{\langle\ve\rangle}{\initialvalue})
   \\ \typearrow
   (\overname{\typede}{\typedinitialvalue}, \overname{\langle\vtp\rangle}{\tyoptp}, \overname{\vtp}{\declaredt})
     \end{array}
@@ -499,11 +494,11 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
   \annotatetype{\tenv, \vtpp} \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \typede \eqdef (\vte, \vep, \vsese)\\
   \checktypesat(\tenv, \vte, \vtp) \typearrow \True \OrTypeError\\\\
-  \checktrans{\sesisbefore(\vsest \cup \vsese, \vtargettimeframe)}{\SideEffectViolation} \typearrow \True \OrTypeError
+  \checktrans{\lnot\vmustbepure \lor \sesispure(\vsest \cup \vsese)}{\SideEffectViolation} \typearrow \True \OrTypeError
 }{
   {
     \begin{array}{r}
-  \annotatetyoptinitialvalue(\tenv, \gdk, \vtargettimeframe, \overname{\langle\vt\rangle}{\tyoptp}, \overname{\langle\ve\rangle}{\initialvalue})
+  \annotatetyoptinitialvalue(\tenv, \gdk, \vmustbepure, \overname{\langle\vt\rangle}{\tyoptp}, \overname{\langle\ve\rangle}{\initialvalue})
   \typearrow \\
   (\overname{\typede}{\typedinitialvalue}, \overname{\langle\vtp\rangle}{\tyoptp}, \overname{\vtp}{\declaredt})
     \end{array}
@@ -514,13 +509,13 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
 \begin{mathpar}
 \inferrule[some\_none]{
   \annotatetype{\tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
-  \checktrans{\sesisbefore(\vsest, \vtargettimeframe)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
+  \checktrans{\lnot\vmustbepure \lor \sesispure(\vsest)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
   \basevalue(\tenv, \vtp) \typearrow \vep \OrTypeError\\\\
   \typedinitialvalue \eqdef (\vtp, \vep, \emptyset)
 }{
   {
   \begin{array}{r}
-    \annotatetyoptinitialvalue(\tenv, \gdk, \vtargettimeframe, \overname{\langle\vt\rangle}{\tyoptp}, \overname{\None}{\initialvalue})
+    \annotatetyoptinitialvalue(\tenv, \gdk, \vmustbepure, \overname{\langle\vt\rangle}{\tyoptp}, \overname{\None}{\initialvalue})
     \typearrow \\
     (\typedinitialvalue, \overname{\langle\vtp\rangle}{\tyoptp}, \overname{\vtp}{\declaredt})
   \end{array}
@@ -533,11 +528,11 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
   \checknoprecisionloss{\vte} \typearrow \True \OrTypeError\\\\
   \typede \eqdef (\vte, \vep, \vsese) \\
-  \checktrans{\sesisbefore(\vsese, \vtargettimeframe)}{\SideEffectViolation} \typearrow \True \OrTypeError
+  \checktrans{\lnot\vmustbepure \lor \sesispure(\vsese)}{\SideEffectViolation} \typearrow \True \OrTypeError
 }{
   {
     \begin{array}{r}
-  \annotatetyoptinitialvalue(\tenv, \gdk, \vtargettimeframe, \overname{\None}{\tyoptp}, \overname{\langle\ve\rangle}{\initialvalue})
+  \annotatetyoptinitialvalue(\tenv, \gdk, \vmustbepure, \overname{\None}{\tyoptp}, \overname{\langle\ve\rangle}{\initialvalue})
   \typearrow \\
   (\overname{\typede}{\typedinitialvalue}, \overname{\None}{\tyoptp}, \overname{\vte}{\declaredt})
     \end{array}
