@@ -115,6 +115,7 @@ module
   and nameToV s = Val (Cst.nameToV s)
   and instructionToV i = Val (Constant.Instruction i)
   and cstToV cst = Val cst
+  and scalarToV sc = Val (Constant.Concrete sc)
 
   let maybevToV c = Val (Cst.tr c)
 
