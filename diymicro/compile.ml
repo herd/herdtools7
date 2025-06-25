@@ -71,7 +71,8 @@ let compile_event st (src : E.node_dep) event =
     | _ -> Warn.user_error "Invalid annot %s for ldr_idx" (E.pp_annot annot)
   in
   match event.C.direction with
-  | E.Rm true | E.Wm true -> [], src, st
+  | E.Rm true | E.Wm true ->
+      [], src, st (* Compilation is managed by the previous or next edge *)
   | _ ->
       let ins, dst_dep, st =
         match event.C.direction, event.C.annot, src with
@@ -84,7 +85,6 @@ let compile_event st (src : E.node_dep) event =
             let dst, st = A.next_reg st in
             let ins =
               A.pseudo [A.do_eor reg_zero r r]
-              (* if r=0, we still need do_eor to avoid a mixed-size error *)
               @ [annot_ldr_idx event.C.annot dst event_reg reg_zero]
             in
             ins, E.DepReg (dst, event.C.value), st
@@ -114,7 +114,6 @@ let compile_event st (src : E.node_dep) event =
             let reg_value, st = A.next_reg st in
             let ins =
               A.pseudo [A.do_eor reg_zero r r]
-              (* if r=0, we still need do_eor to avoid a mixed-size error *)
               @ [A.mov reg_value (Utils.unsome event.C.value)]
               @ [annot_str_idx event.C.annot reg_value event_reg reg_zero]
             in
@@ -149,8 +148,7 @@ let compile_event st (src : E.node_dep) event =
       in
       ins, dst_dep, st
 
-(** compile a node (:= event -edge-> ), src is the previous register to which
-    dependency should be added, ZR if no dependency *)
+(** compile an edge, src is a dependency from the preceding event *)
 let compile_edge (st : A.state) (src : E.node_dep) (node : C.t) =
   match node.C.edge, src with
   | (E.Rf _ | E.Fr _ | E.Ws _ | E.Po _), _ -> [], E.DepNone, st
@@ -208,25 +206,19 @@ let prog_of_cycle (cycle : C.t) : prog list =
           let st = A.set_register st (A.Loc loc_i) r in
           st
     in
-    let rec compile_proc_aux st (src : E.node_dep) = function
-      | [] -> [], st
-      | n :: nq ->
-          let evt_code, dst, st = compile_event st src n.C.source_event in
-          let edge_code, dst, st = compile_edge st dst n in
-          let next_code, st = compile_proc_aux st dst nq in
-          evt_code @ edge_code @ next_code, st
-    in
     let st = init_st (A.Loc (loc_count - 1)) in
-    compile_proc_aux st E.DepNone nodes
+
+    let ins, _, st =
+      List.fold_left
+        (fun (ins, dep, st) node ->
+          let evt_code, dep, st = compile_event st dep node.C.source_event in
+          let edge_code, dep, st = compile_edge st dep node in
+          ins @ evt_code @ edge_code, dep, st)
+        ([], E.DepNone, st) nodes
+    in
+    ins, st
   in
-  let rec compile_by_proc nodes_by_proc proc =
-    match nodes_by_proc, proc with
-    | [], _ -> []
-    | nodes :: nq, C.Proc proc_i ->
-        let ins = compile_proc nodes in
-        ins :: compile_by_proc nq (C.Proc (proc_i + 1))
-  in
-  compile_by_proc (split_by_proc cycle) (C.Proc 0)
+  List.map compile_proc (split_by_proc cycle)
 
 (* Dumping test *)
 

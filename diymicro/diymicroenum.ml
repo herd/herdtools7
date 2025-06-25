@@ -2,35 +2,35 @@ module E = struct
   include Edge
 end
 
-let make_all_tests edge edge_name output_dir =
+let make_all_tests edge base_filename output_dir =
   let tests =
-    (* TODO It would be cleaner and less bug-prone to write the edges in OCaml directly, but much more cumbersome *)
+    (* TODO Should we write the edges in OCaml directly ? *)
     match E.edge_direction edge with
     | E.RegEvent, E.RegEvent ->
         [
-          ( "LB+rel+" ^ edge_name,
+          ( "LB+rel+" ^ base_filename,
             ["DpAddrdrW"; "Rfe"; "PodRW:L"; "Rfe"; "Rf-reg"] );
-          ( "MP+rel+" ^ edge_name,
+          ( "MP+rel+" ^ base_filename,
             ["DpAddrdrR"; "Fre"; "PodWW:L"; "Rfe"; "Rf-reg"] );
         ]
     | E.Rm _, E.RegEvent ->
         [
-          "LB+rel+" ^ edge_name, ["DpAddrdrW"; "Rfe"; "PodRW:L"; "Rfe"];
-          "MP+rel+" ^ edge_name, ["DpAddrdrR"; "Fre"; "PodWW:L"; "Rfe"];
+          "LB+rel+" ^ base_filename, ["DpAddrdrW"; "Rfe"; "PodRW:L"; "Rfe"];
+          "MP+rel+" ^ base_filename, ["DpAddrdrR"; "Fre"; "PodWW:L"; "Rfe"];
         ]
     | E.RegEvent, E.Wm _ ->
         [
-          ( "LB+rel+" ^ edge_name,
+          ( "LB+rel+" ^ base_filename,
             ["PosWR"; "DpAddrdW"; "Rfe"; "PodRW:L"; "Rfe"; "Rf-reg"] );
-          ( "MP+rel+" ^ edge_name,
+          ( "MP+rel+" ^ base_filename,
             ["PosWR"; "DpAddrdR"; "Fre"; "PodWW:L"; "Rfe"; "Rf-reg"] );
         ]
     | E.Rm _, E.Wm _ ->
         [
-          ( "LB+rel+" ^ edge_name,
+          ( "LB+rel+" ^ base_filename,
             ["PosWR"; "DpAddrdW"; "Rfe"; "PodRW:L"; "Rfe"; "DpDatadW"; "PosWR"]
           );
-          ( "MP+rel+" ^ edge_name,
+          ( "MP+rel+" ^ base_filename,
             ["PosWR"; "DpAddrdR"; "Fre"; "PodWW:L"; "Rfe"; "DpDatadW"; "PosWR"]
           );
         ]
@@ -57,7 +57,8 @@ let make_all_tests edge edge_name output_dir =
     tests
 
 let compile_edge_enum iico inputs outputs output_dir =
-  let test_name src dst =
+  let base_filename src dst =
+    (* INSTR-SrcDst *)
     String.uppercase_ascii iico.Edge.instruction_name
     ^ "-"
     ^ String.capitalize_ascii src
@@ -68,7 +69,7 @@ let compile_edge_enum iico inputs outputs output_dir =
     (fun (src, dst) ->
       make_all_tests
         (Edge.iico_to_edge iico src dst)
-        (test_name src dst) output_dir)
+        (base_filename src dst) output_dir)
     (Utils.cartesian2 inputs outputs)
   |> List.flatten
   |> List.map (fun name -> name ^ ".litmus")
@@ -96,7 +97,7 @@ let () =
       ( "-v",
         Arg.Unit (fun () -> incr Config.verbose),
         "Increase verbosity (use multiple times)" );
-      "-list-iico", Arg.Set list_iico, "list iico[] edges";
+      "-list-iico", Arg.Set list_iico, "List iico[] edges";
       ( "-debug",
         Arg.Unit (fun () -> Printexc.record_backtrace true),
         "Print backtrace on crash" );
@@ -110,11 +111,12 @@ let () =
 
   Arg.parse options_list parse_edge usage;
 
-  if not (Sys.file_exists !output_dir) then Sys.mkdir !output_dir 0o775;
   if !list_iico then Edge.list_iico_edges ()
   else if !edges_ref = [] then Arg.usage options_list usage
-  else
+  else (
+    if not (Sys.file_exists !output_dir) then Sys.mkdir !output_dir 0o775;
     let channel_all = open_out (Filename.concat !output_dir "@all") in
+
     "# " ^ Config.prog_name ^ " "
     ^ (Sys.argv |> Array.to_list |> List.tl |> String.concat " ")
     ^ "\n"
@@ -127,4 +129,4 @@ let () =
     |> List.flatten |> String.concat "\n" |> output_string channel_all;
 
     output_string channel_all "\n";
-    close_out channel_all
+    close_out channel_all)

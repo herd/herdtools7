@@ -12,15 +12,6 @@ let rec list_last = function
   | [x] -> x
   | _ -> Warn.fatal "Can't get last element of empty list"
 
-(** Rotates list by one step: `l@[x]` becomes `x::l` *)
-let list_rot1 l =
-  let rec rotate1 acc = function
-    | [] -> []
-    | [e] -> e :: List.rev acc
-    | e :: l -> rotate1 (e :: acc) l
-  in
-  rotate1 [] l
-
 (** Cartesian product of 2 lists *)
 let cartesian2 l1 l2 = List.concat_map (fun x -> List.map (fun y -> x, y) l2) l1
 

@@ -165,7 +165,6 @@ let check_directions cycle_start =
 (** Assign a location to each event of the cycle *)
 let assign_locations cycle_start =
   (* Find the first node after a different location *)
-  let first_location = A.next_loc () in
   let first_node =
     try
       (find_last cycle_start.prev (fun n ->
@@ -191,7 +190,7 @@ let assign_locations cycle_start =
         Warn.user_error "Cannot get a changing location across %s"
           (Edge.pp_edge node.edge))
   in
-  assign_aux first_node first_location
+  assign_aux first_node (A.next_loc ())
 
 (** Assign a proc. to each event of the cycle *)
 let assign_procs cycle_start =
@@ -201,8 +200,8 @@ let assign_procs cycle_start =
     | _ -> false
   in
 
-  let first_proc = new_proc () in
   let first_node =
+    (* Find the destination of an external edge *)
     try (find_first cycle_start.prev (fun n -> is_external n.edge)).next
     with Not_found -> Warn.user_error "No proc change in cycle"
   in
@@ -221,9 +220,9 @@ let assign_procs cycle_start =
         Warn.user_error "Cannot get a changing proc across %s"
           (Edge.pp_edge node.edge))
   in
-  assign_aux first_node first_proc
+  assign_aux first_node (new_proc ())
 
-(** Assign a value to each event, incrementing at each write *)
+(** Assign a value to each memory event, incrementing by 1 at each write *)
 let assign_values cycle_start =
   let first_node =
     try
@@ -241,7 +240,7 @@ let assign_values cycle_start =
       | Edge.Rm _ ->
           node.source_event.value <- Some value;
           value
-      | _ -> value (* Rr and Wr don't get an assigned value *)
+      | Edge.RegEvent -> value (* RegEvents don't get an assigned value *)
     in
     if node.next != first_node then
       assign_values_aux node.next
@@ -249,7 +248,7 @@ let assign_values cycle_start =
   in
   assign_values_aux first_node 0
 
-(** Mark significant read (ie R -Fr-> or -Rf-> R) as such *)
+(** Mark significant reads (ie R -Fr-> or -Rf-> R) as such *)
 let set_significant_reads first_node =
   let rec set_significant_reads node =
     if node.next != first_node then set_significant_reads node.next;

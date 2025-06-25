@@ -386,19 +386,12 @@ module St = struct
 
   let set_register st loc reg =
     (* We allow a location to be assigned to multiple registers *)
-    let rec set_register_value = function
-      | e :: q -> e :: set_register_value q
-      | [] -> [loc, reg]
-    in
-    {st with env = set_register_value st.env}
+    {st with env = st.env @ [loc, reg]}
 
   let get_register st loc =
-    let rec get_register = function
-      | (l, reg) :: _ when l = loc -> reg
-      | _ :: q -> get_register q
-      | [] -> Warn.fatal "No register assigned for %s" (pp_location loc)
-    in
-    get_register st.env
+    try List.assoc loc st.env
+    with Not_found ->
+      Warn.fatal "No register assigned for %s" (pp_location loc)
 
   (** Snippets of compilation *)
 

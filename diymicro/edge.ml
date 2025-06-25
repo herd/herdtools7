@@ -1,7 +1,10 @@
+module A = struct
+  include AArch64_compile
+end
+
 (** Type definitions *)
 
-(** Register event, Memory read (true if an edge does the event), Memory Write
-    (true if an edge does the event) *)
+(** Register event, Memory read/write (true if an edge does the event) *)
 type direction = RegEvent | Rm of bool | Wm of bool
 
 (** Change process ? *)
@@ -16,14 +19,16 @@ type dp = Addr | Data | Ctrl
 (** memory event annotation *)
 type annot = AnnotNone | A | L | X
 
+(** dependencies from a compilation function to the next one,
+    register+optionally its known (as in final-condition verified) value *)
 type node_dep =
-  | DepAddr of AArch64_compile.reg * int option
-  | DepData of AArch64_compile.reg * int option
-  | DepCtrl of AArch64_compile.reg * int option
-  | DepReg of AArch64_compile.reg * int option
+  | DepAddr of A.reg * int option
+  | DepData of A.reg * int option
+  | DepCtrl of A.reg * int option
+  | DepReg of A.reg * int option
   | DepNone
 
-type event_data = AArch64_compile.loc * int * annot * bool
+type event_data = A.loc * int * annot * bool
 (** essential event data, passed to iico edges wanting to compile an event
     - location of the event
     - value
@@ -32,15 +37,13 @@ type event_data = AArch64_compile.loc * int * annot * bool
 
 type iico_edge = {
   mutable repr : string;
-      (* TODO Just put "" here, get_iico will put the right string here, need to find a better way *)
+      (* Expected to be "" in an add_iico call, replaced later by get_iico *)
   compile_edge :
-    AArch64_compile.state ->
+    A.state ->
     node_dep ->
     event_data option ->
     event_data option ->
-    int AArch64Base.kinstruction AArch64_compile.kpseudo list
-    * node_dep
-    * AArch64_compile.state;
+    int A.kinstruction A.kpseudo list * node_dep * A.state;
   direction : direction * direction;
   ie : int_ext;
   sd : sd;
@@ -82,16 +85,18 @@ let edge_location = function
 
 let iico_ht = Hashtbl.create 10
 let add_iico iico = Hashtbl.add iico_ht iico.instruction_name iico
+
+(** look-up an iico by instruction name *)
 let get_iico s = Hashtbl.find iico_ht s
 
 let iico_to_edge iico src dst =
-  match List.mem src iico.inputs, List.mem dst iico.outputs with
-  | true, true ->
-      let edge = iico.to_edge src dst in
-      edge.repr <- iico.instruction_name ^ " " ^ src ^ "->" ^ dst;
-      Iico edge
-  | _, _ -> raise Not_found
+  let _ = List.find (( = ) src) iico.inputs in
+  let _ = List.find (( = ) dst) iico.outputs in
+  let edge = iico.to_edge src dst in
+  edge.repr <- iico.instruction_name ^ " " ^ src ^ "->" ^ dst;
+  Iico edge
 
+(** look-up an iico_edge by instruction name, src and dst*)
 let get_iico_edge s src dst = iico_to_edge (get_iico s) src dst
 
 let list_iico_edges () =
@@ -122,10 +127,10 @@ let pp_annot = function AnnotNone -> "" | A -> "A" | L -> "L" | X -> "X"
 let pp_node_dep =
   let pp_int_option = function None -> "" | Some v -> "=" ^ string_of_int v in
   function
-  | DepAddr (r, v) -> "Addr " ^ AArch64_compile.pp_reg r ^ pp_int_option v
-  | DepData (r, v) -> "Data " ^ AArch64_compile.pp_reg r ^ pp_int_option v
-  | DepCtrl (r, v) -> "Ctrl " ^ AArch64_compile.pp_reg r ^ pp_int_option v
-  | DepReg (r, v) -> "Reg " ^ AArch64_compile.pp_reg r ^ pp_int_option v
+  | DepAddr (r, v) -> "Addr " ^ A.pp_reg r ^ pp_int_option v
+  | DepData (r, v) -> "Data " ^ A.pp_reg r ^ pp_int_option v
+  | DepCtrl (r, v) -> "Ctrl " ^ A.pp_reg r ^ pp_int_option v
+  | DepReg (r, v) -> "Reg " ^ A.pp_reg r ^ pp_int_option v
   | DepNone -> "None"
 
 let pp_edge = function
@@ -140,10 +145,7 @@ let pp_edge = function
   | RfReg -> "Rf-reg"
   | Iico i -> "iico[" ^ i.repr ^ "]"
 
-let rec pp_edges = function
-  | [e] -> pp_edge e
-  | e :: q -> pp_edge e ^ " -> " ^ pp_edges q
-  | _ -> ""
+let pp_edges edges = List.map pp_edge edges |> String.concat " -> "
 
 let pp_annotated_edge (edge, annot) =
   match annot with
