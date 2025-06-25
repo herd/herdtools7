@@ -215,7 +215,7 @@ type SilentExit of exception;
 func AArch64_DataAbort(fault:FaultRecord)
 begin
 //  __DEBUG__(fault.vaddress);
-  DataAbortPrimitive(fault.vaddress,fault.write,fault.statuscode);
+  DataAbortPrimitive(fault.vaddress,fault.write,fault.statuscode,fault.accessdesc);
   throw SilentExit {-};
 end;
 
