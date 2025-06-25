@@ -51,7 +51,10 @@ module Make (C: Config) (A : S) = struct
     | Access of
         dirn * A.location * A.V.v * MachSize.sz
         * ( AArch64Annot.t * AArch64Explicit.explicit * Access.t)
-    | Fault of A.inst_instance_id * A.location * Dir.dirn * A.I.FaultType.t
+    | Fault of
+        A.inst_instance_id * A.location * Dir.dirn * AArch64Annot.t
+        * A.I.FaultType.t
+
     | Barrier of A.barrier
     | Branching of string option
     | CutOff of string
@@ -73,10 +76,15 @@ module Make (C: Config) (A : S) = struct
            match e with
            | Exp -> ""
            | _ -> AArch64Explicit.pp e)
-    | Fault (_,loc,d,t) ->
-        Printf.sprintf "Fault(%s,%s,%s)"
+    | Fault (_,loc,d,a,t) ->
+        Printf.sprintf "Fault(%s,%s%s,%s)"
           (Dir.pp_dirn d)
-          (A.pp_location loc) (A.I.FaultType.pp t)
+          (A.pp_location loc)
+          (let open AArch64Annot in
+           match a with
+           | N -> ""
+           | _ ->  "," ^ AArch64Annot.pp a)
+          (A.I.FaultType.pp t)
     | Barrier b -> A.pp_barrier_short b
     | Branching txt ->
        Printf.sprintf "Branching(%s)"
@@ -171,7 +179,7 @@ module Make (C: Config) (A : S) = struct
       -> false
 
   let to_fault = function
-    | Fault (i,loc,_d,t) ->
+    | Fault (i,loc,_d,_,t) ->
         let loc = A.global loc in
         Some ((i.A.proc,i.A.labels),loc,Some t,None)
     | Access _| Branching _|Barrier _|CutOff _|NoAction
@@ -306,7 +314,7 @@ module Make (C: Config) (A : S) = struct
   let undetermined_vars_in_action = function
     | Access (_, l, v, _, _) ->
         V.ValueSet.union (A.undetermined_vars_in_loc l) (V.undetermined_vars v)
-    | Fault (_,loc,_,_) -> A.undetermined_vars_in_loc loc
+    | Fault (_,loc,_,_,_) -> A.undetermined_vars_in_loc loc
     | Barrier _ | Branching _| CutOff _ | NoAction -> V.ValueSet.empty
 
   let simplify_vars_in_action soln a =
@@ -315,8 +323,8 @@ module Make (C: Config) (A : S) = struct
         Access
           (d, A.simplify_vars_in_loc soln l,
            V.simplify_var soln v, sz, a)
-    | Fault (i,loc,d,t) ->
-        Fault (i,A.simplify_vars_in_loc soln loc,d,t)
+    | Fault (i,loc,d,a,t) ->
+        Fault (i,A.simplify_vars_in_loc soln loc,d,a,t)
     | Barrier _ | Branching _ | CutOff _ | NoAction -> a
 end
 
