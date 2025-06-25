@@ -22,8 +22,8 @@ let () =
         "Print backtrace on crash" );
     ]
   in
-  let usage = "diymicro [options] <edge 1> <edge 2> <...>" in
   (* message d'accueil, option -help *)
+  let usage = "diymicro [options] <edge 1> <edge 2> <...>" in
 
   Arg.parse options_list parse_edge usage;
 

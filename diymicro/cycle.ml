@@ -5,7 +5,7 @@ module A = struct
 end
 
 (* new_proc: get a new proc
-proc_count: get the current number of procs *)
+   proc_count: get the current number of procs *)
 let new_proc, proc_count, reset_proc_count =
   let counter = ref 0 in
   let inner_new_proc () =
@@ -183,7 +183,7 @@ let assign_locations cycle_start =
       assign_aux node.next loc
     else (
       (* end of the cycle. We check that current edge location is Different, (as selected by find_first)
-        we check that source and target loc indeed differ *)
+         we check that source and target loc indeed differ *)
       assert (Edge.edge_location node.edge = Edge.Different);
 
       if node.source_event.location = node.next.source_event.location then
@@ -213,7 +213,7 @@ let assign_procs cycle_start =
       assign_aux node.next proc
     else (
       (* end of the cycle. We check that current edge is external, (as selected by find_first)
-        we check that source and target proc indeed differ *)
+         we check that source and target proc indeed differ *)
       assert (is_external node.edge);
 
       if node.source_event.proc = node.next.source_event.proc then

@@ -9,8 +9,7 @@ module A = struct
 end
 
 module CasNoMem = struct
-  let compileRnM ok =
-   fun st dep _ _ ->
+  let compileRnM ok st dep _ _ =
     let src_reg, _ =
       match dep with
       | DepReg (r, v) -> r, v
@@ -138,11 +137,11 @@ module Cas = struct
             loc, rn, read_v, write_v, st
         | _, _ -> Warn.fatal "cas received inconsistent event data"
       in
-      (* We set up:
-      - Rt=write_value
-      - Rs=read_value if ok else read_value+1
-      - and we already have [Rn]=read_value *)
 
+      (* We set up:
+         - Rt=write_value
+         - Rs=read_value if ok else read_value+1
+         - and we already have [Rn]=read_value *)
       let st = A.add_condition st rcheck write_value in
       let rs_value = if ok then read_value else read_value + 1 in
       let rt_value = if ok then write_value else read_value + 1 in
@@ -208,8 +207,7 @@ module Cas = struct
 end
 
 module Csel = struct
-  let compile ok src =
-   fun st dep _ _ ->
+  let compile ok src st dep _ _ =
     let src_reg, v_opt =
       match dep with
       | DepReg (r, v) -> r, v
@@ -255,8 +253,7 @@ end
 module Swp = struct
   let repr = "swp"
 
-  let compile src dst =
-   fun st dep src_evt dst_evt ->
+  let compile src dst st dep src_evt dst_evt =
     let rn, _, read_value, write_value, st =
       match src_evt, dst_evt with
       | None, None ->
@@ -276,9 +273,9 @@ module Swp = struct
     in
 
     (* We set up:
-      Rd=no specific value (0)
-      Rm=write_value
-      [Rn]=read_value needs no action
+       Rd=no specific value (0)
+       Rm=write_value
+       [Rn]=read_value needs no action
     *)
     let pre_ins, rd, rm, st =
       match src with
@@ -349,8 +346,7 @@ module LdAdd = struct
   let do_ldadd r1 r2 r3 = A.Instruction (A.ldop A.A_ADD A.RMW_P r1 r2 r3)
   let repr use_zr = "ldadd" ^ if use_zr then ":zr" else ""
 
-  let compile use_zr src dst =
-   fun st dep src_evt dst_evt ->
+  let compile use_zr src dst st dep src_evt dst_evt =
     let rn, is_read_significant, read_value, write_value, st =
       match src_evt, dst_evt with
       | None, None ->
@@ -376,9 +372,9 @@ module LdAdd = struct
     in
 
     (* We set up:
-      Rs=(write_value - read_value)
-      Rt=no specific value
-      [Rn]=read_value needs no action
+       Rs=(write_value - read_value)
+       Rt=no specific value
+       [Rn]=read_value needs no action
     *)
     let rs_value = write_value - read_value in
     let rt, st = if use_zr then A.ZR, st else A.next_reg st in

@@ -103,11 +103,11 @@ let () =
         "Print backtrace on crash" );
     ]
   in
+  (* message d'accueil, option -help *)
   let usage =
     "diymicroenum [options] <iico[instr src->dst] (use 'instr' as shorthand \
      for 'instr *->*')> <iico[instr2]> ..."
   in
-  (* message d'accueil, option -help *)
 
   Arg.parse options_list parse_edge usage;
 
