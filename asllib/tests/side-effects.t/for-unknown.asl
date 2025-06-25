@@ -1,4 +1,4 @@
-func unknown () => integer {0..10}
+readonly func unknown () => integer {0..10}
 begin
   return ARBITRARY: integer {0..10};
 end;

@@ -96,9 +96,11 @@
 %token PRAGMA
 %token PRINT
 %token PRINTLN
+%token PURE
 %token RBRACE
 %token RBRACKET
 %token RDIV
+%token READONLY
 %token REAL
 %token RECORD
 %token RECURSELIMIT

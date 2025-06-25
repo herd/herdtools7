@@ -1,15 +1,15 @@
 
-func f(i : integer) => integer
+readonly func f(i : integer) => integer
 begin
   return i + 2;
 end;
 
-func f(b : boolean) => boolean
+readonly func f(b : boolean) => boolean
 begin
   return if b then FALSE else TRUE;
 end;
 
-func f(x : bits(3)) => boolean
+readonly func f(x : bits(3)) => boolean
 begin
   return x[0] == '0';
 end;

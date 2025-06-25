@@ -161,13 +161,29 @@ let is_pure = function
 (* Begin IsSymbolicallyEvaluable *)
 let is_symbolically_evaluable = function
   | ReadsLocal { immutable } | ReadsGlobal { immutable } -> immutable
+  | PerformsAssertions -> true
   | WritesLocal _ | WritesGlobal _ | NonDeterministic | CallsRecursive _
-  | ThrowsException _ | PerformsAssertions ->
+  | ThrowsException _ ->
       false
 (* End *)
 
 (* SES = Side Effect Set *)
 module SES = struct
+  type purity = SE_Pure | SE_Readonly | SE_Impure
+
+  let purity_satisfies desired input =
+    match (desired, input) with
+    | SE_Pure, SE_Pure -> true
+    | SE_Readonly, (SE_Pure | SE_Readonly) -> true
+    | SE_Impure, _ -> true
+    | _, _ -> false
+
+  let purity_combine p1 p2 =
+    match (p1, p2) with
+    | SE_Impure, _ | _, SE_Impure -> SE_Impure
+    | SE_Readonly, _ | _, SE_Readonly -> SE_Readonly
+    | SE_Pure, SE_Pure -> SE_Pure
+
   (* This module uses an abstraction over a set of side-effects. *)
   type t = {
     (* Decomposition into subsets *)
@@ -182,6 +198,10 @@ module SES = struct
     (* Invariants kept *)
     max_local_read_time_frame : TimeFrame.t * identifier;
     max_global_read_time_frame : TimeFrame.t * identifier;
+    (* Coarse-grained side-effects: tracking of `pure` and `readonly` *)
+    local_purity : purity;
+    global_purity : purity;
+    is_immutable : bool;
   }
 
   let empty =
@@ -196,6 +216,9 @@ module SES = struct
       non_determinism = false;
       max_local_read_time_frame = (TimeFrame.Constant, "1");
       max_global_read_time_frame = (TimeFrame.Constant, "1");
+      local_purity = SE_Pure;
+      global_purity = SE_Pure;
+      is_immutable = true;
     }
 
   let witnessed_time_frame_max ((t1, _w1) as tw1) ((t2, _w2) as tw2) =
@@ -215,19 +238,28 @@ module SES = struct
     else TimeFrame.Execution
 
   let is_pure ses =
+    purity_satisfies SE_Pure ses.local_purity
+    && purity_satisfies SE_Pure ses.global_purity
+
+  let is_readonly ses =
+    purity_satisfies SE_Readonly ses.local_purity
+    && purity_satisfies SE_Readonly ses.global_purity
+
+  let fine_grained_is_pure ses =
     ISet.is_empty ses.local_writes
     && ISet.is_empty ses.global_writes
     && ISet.is_empty ses.thrown_exceptions
     && ISet.is_empty ses.calls_recursives
 
-  let all_reads_are_immutable ses =
-    ISet.is_empty ses.local_reads && ISet.is_empty ses.global_reads
+  let fine_grained_is_symbolically_evaluable ses =
+    let all_reads_are_immutable ses =
+      ISet.is_empty ses.local_reads && ISet.is_empty ses.global_reads
+    in
+    fine_grained_is_pure ses && (not ses.non_determinism)
+    && all_reads_are_immutable ses
 
   (* Begin SESIsSymbolicallyEvaluable *)
-  let is_symbolically_evaluable ses =
-    is_pure ses && (not ses.non_determinism)
-    && (not ses.assertions_performed)
-    && all_reads_are_immutable ses
+  let is_symbolically_evaluable ses = is_readonly ses && ses.is_immutable
   (* End *)
 
   (* Begin SESIsDeterministic *)
@@ -240,10 +272,28 @@ module SES = struct
     and max_local_read_time_frame =
       witnessed_time_frame_max (time_frame, s) ses.max_local_read_time_frame
     in
-    { ses with local_reads; max_local_read_time_frame }
+    let is_immutable = immutable && ses.is_immutable in
+    let local_purity =
+      let new_purity =
+        match time_frame with Constant -> SE_Pure | _ -> SE_Readonly
+      in
+      purity_combine ses.local_purity new_purity
+    in
+    {
+      ses with
+      local_reads;
+      max_local_read_time_frame;
+      is_immutable;
+      local_purity;
+    }
 
   let add_local_write s ses =
-    { ses with local_writes = ISet.add s ses.local_writes }
+    {
+      ses with
+      local_writes = ISet.add s ses.local_writes;
+      is_immutable = false;
+      local_purity = SE_Impure;
+    }
 
   let add_global_read s time_frame immutable ses =
     let global_reads =
@@ -251,19 +301,51 @@ module SES = struct
     and max_global_read_time_frame =
       witnessed_time_frame_max (time_frame, s) ses.max_global_read_time_frame
     in
-    { ses with global_reads; max_global_read_time_frame }
+    let is_immutable = immutable && ses.is_immutable in
+    let global_purity =
+      let new_purity =
+        match time_frame with Constant -> SE_Pure | _ -> SE_Readonly
+      in
+      purity_combine ses.global_purity new_purity
+    in
+    {
+      ses with
+      global_reads;
+      max_global_read_time_frame;
+      is_immutable;
+      global_purity;
+    }
 
   let add_global_write s ses =
-    { ses with global_writes = ISet.add s ses.global_writes }
+    {
+      ses with
+      global_writes = ISet.add s ses.global_writes;
+      is_immutable = false;
+      local_purity = SE_Impure;
+      global_purity = SE_Impure;
+    }
 
   let add_thrown_exception s ses =
-    { ses with thrown_exceptions = ISet.add s ses.thrown_exceptions }
+    {
+      ses with
+      thrown_exceptions = ISet.add s ses.thrown_exceptions;
+      local_purity = SE_Impure;
+      global_purity = SE_Impure;
+    }
 
   let add_calls_recursive s ses =
     { ses with calls_recursives = ISet.add s ses.calls_recursives }
 
   let add_assertion ses = { ses with assertions_performed = true }
-  let add_non_determinism ses = { ses with non_determinism = true }
+
+  let add_non_determinism ses =
+    {
+      ses with
+      non_determinism = true;
+      local_purity = purity_combine ses.local_purity SE_Readonly;
+      global_purity = purity_combine ses.global_purity SE_Readonly;
+      is_immutable = false;
+    }
 
   let add_side_effect se ses =
     match se with
@@ -304,6 +386,9 @@ module SES = struct
        && TimeFrame.equal
             (fst ses1.max_global_read_time_frame)
             (fst ses2.max_global_read_time_frame)
+       && ses1.local_purity = ses2.local_purity
+       && ses1.global_purity = ses2.global_purity
+       && ses1.is_immutable = ses2.is_immutable
 
   let union ses1 ses2 =
     if ses1 == empty then ses2
@@ -327,10 +412,14 @@ module SES = struct
         max_global_read_time_frame =
           witnessed_time_frame_max ses1.max_global_read_time_frame
             ses2.max_global_read_time_frame;
+        local_purity = purity_combine ses1.local_purity ses2.local_purity;
+        global_purity = purity_combine ses1.global_purity ses2.global_purity;
+        is_immutable = ses1.is_immutable && ses2.is_immutable;
       }
 
   (* Properties *)
-  let is_side_effect_free ses = is_pure ses && not ses.assertions_performed
+  let is_side_effect_free ses =
+    fine_grained_is_pure ses && not ses.assertions_performed
 
   let is_side_effect_free_without_global_reads ses =
     is_side_effect_free ses && ISet.is_empty ses.global_reads
@@ -456,7 +545,15 @@ module SES = struct
       local_reads = ISet.empty;
       local_writes = ISet.empty;
       max_local_read_time_frame = (TimeFrame.Constant, "1");
+      local_purity = SE_Pure;
     }
+
+  let set_purity_for_subprogram qualifier ses =
+    match qualifier with
+    | None -> { ses with global_purity = SE_Impure; is_immutable = false }
+    | Some AST.Readonly ->
+        { ses with global_purity = SE_Readonly; is_immutable = false }
+    | Some AST.Pure -> { ses with global_purity = SE_Pure; is_immutable = true }
 
   let remove_thrown_exceptions ses = { ses with thrown_exceptions = ISet.empty }
   let remove_calls_recursives ses = { ses with calls_recursives = ISet.empty }

@@ -54,6 +54,8 @@ type error_desc =
   | BadTypesForBinop of binop * ty * ty
   | CircularDeclarations of string
   | ImpureExpression of expr * SideEffect.SES.t
+      (** used for fine-grained analysis *)
+  | MismatchedPurity of string  (** Used for coarse-grained analysis *)
   | UnreconcilableTypes of ty * ty
   | AssignToImmutable of string
   | AssignToTupleElement of lexpr
@@ -173,6 +175,7 @@ let error_label = function
   | BadTypesForBinop _ -> "BadTypesForBinop"
   | CircularDeclarations _ -> "CircularDeclarations"
   | ImpureExpression _ -> "ImpureExpression"
+  | MismatchedPurity _ -> "MismatchedPurity"
   | UnreconcilableTypes _ -> "UnreconcilableTypes"
   | AssignToImmutable _ -> "AssignToImmutable"
   | AssignToTupleElement _ -> "AssignToTupleElement"
@@ -431,6 +434,8 @@ module PPrint = struct
           "ASL Type error:@ a pure expression was expected,@ found %a,@ which@ \
            produces@ the@ following@ side-effects:@ %a."
           pp_expr e SideEffect.SES.pp_print ses
+    | MismatchedPurity s ->
+        fprintf f "ASL Type error:@ expected@ a@ %s@ expression/subprogram." s
     | UnreconcilableTypes (t1, t2) ->
         fprintf f
           "ASL Type error:@ cannot@ find@ a@ common@ ancestor@ to@ those@ two@ \

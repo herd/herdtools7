@@ -1,6 +1,6 @@
 config X: integer = 0;
 
-func foo () => integer
+pure func foo () => integer
 begin
   return X;
 end;

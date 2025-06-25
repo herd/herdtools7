@@ -320,7 +320,7 @@ The expressions appearing in integer constraints must be both
 \symbolicallyevaluable{} and \constrainedinteger{} types.
 %
 In \listingref{annotate-constraint-unconstrained}, the constraint
-\verb|x..x+1| is ill-typed, since the type of \texttt{x} is not constrained.
+\verb|x..x+1| is ill-typed, since \texttt{x} is not \symbolicallyevaluable{}.
 \ASLListing{Ill-typed constraint}{annotate-constraint-unconstrained}{\typingtests/TypingRule.AnnotateConstraint.bad.asl}
 
 \TypingRuleDef{TInt}
@@ -358,8 +358,7 @@ correspond to \CaseName{pending\_constrained}.
     \item \AllApplyCase{parameterized}
     \begin{itemize}
       \item $\tty$ is a \parameterizedintegertype\ for $\name$;
-      \item define $\vses$ as the singleton set for the singleton \sideeffectdescriptorterm,
-            \ReadLocalTerm\ for $\name$, \timeframeconstant, and $\True$ for immutability.
+      \item define $\vses$ as the \sideeffectsetterm{} containing a $\Pure$ \LocalEffectTerm{} and an \ImmutabilityTerm{} with immutability $\True$.
       \item $\newty$ is the unconstrained integer type.
     \end{itemize}
 
@@ -402,7 +401,7 @@ correspond to \CaseName{pending\_constrained}.
 \begin{mathpar}
 \inferrule[parameterized]{
   \tty \eqname \TInt(\parameterized(\name))\\
-  \vses \eqdef \{\ \ReadLocal(\name, \timeframeconstant, \True)\ \}
+  \vses \eqdef \{ \LocalEffect(\Pure), \Immutability(\True) \}
 }{
   \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \tty} \typearrow (\overname{\tty}{\newty}, \vses)
 }
@@ -761,8 +760,7 @@ In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
     \item \AllApplyCase{with\_bitfields}
     \begin{itemize}
       \item $\bitfields$ is not empty;
-      \item checking whether all \timeframesterm{} in $\seswidth$ are less than or equal to $\timeframeconstant$
-            yields $\True$\ProseTerminateAs{\SideEffectViolation};
+      \item checking that $\seswidth$ is \pure{} via $\sesispure$ yields $\True$\ProseTerminateAs{\SideEffectViolation};
       \item annotating the bitfields $\bitfields$ yields \\
             $(\bitfieldsp, \vsesbitfields)$\ProseOrTypeError;
       \item \Prosestaticeval{$\tenv$}{$\ewidthp$}{$\lint(\vwidth)$};
@@ -792,7 +790,7 @@ In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
   \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\\\\
   \commonprefixline\\\\
   \bitfields \neq \emptylist\\\\
-  \checktrans{\sesisbefore(\seswidth, \timeframeconstant)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
+  \checktrans{\sesispure(\seswidth)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
   {
   \begin{array}{r}
     \annotatebitfields(\tenv, \ewidthp, \bitfields) \typearrow \\
@@ -1536,8 +1534,8 @@ show examples of ill-typed named types.
 \begin{itemize}
   \item $\tty$ is the named type $\vx$, that is $\TNamed(\vx)$;
   \item checking whether $\vx$ is bound to any declared type in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item $\vx$ is bound to a type with associated \timeframeterm\ $\vtimeframe$;
-  \item define $\vses$ as the singleton set for the \ReadGlobalTerm\ for $\vx$, $\vtimeframe$, and $\True$ for immutability;
+  \item $\vx$ is bound to a type with associated \purity{} $\vpurity$;
+  \item define $\vses$ as the set of the \GlobalEffectTerm\ with purity $\vpurity$ and the \ImmutabilityTerm\ with immutability $\True$;
   \item $\newty$ is $\tty$.
 \end{itemize}
 
@@ -1545,8 +1543,8 @@ show examples of ill-typed named types.
 \begin{mathpar}
 \inferrule{
   \checktrans{G^\tenv.\declaredtypes(\vx) \neq \bot}{\UndefinedIdentifier} \typearrow \True \OrTypeError\\\\
-  G^\tenv.\declaredtypes(\vx) = (\Ignore, \vtimeframe)\\
-  \vses \eqdef \{\ \ReadGlobal(\vx, \vtimeframe, \True)\ \}
+  G^\tenv.\declaredtypes(\vx) = (\Ignore, \vpurity)\\
+  \vses \eqdef \{\ \GlobalEffectTerm(\vpurity), \Immutability(\True) \}
 }{
   \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TNamed(\vx)}{\tty}} \typearrow (\overname{\TNamed(\vx)}{\newty}, \vses)
 }

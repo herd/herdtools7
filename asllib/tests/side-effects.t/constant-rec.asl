@@ -1,4 +1,4 @@
-func foo (n: integer) => integer recurselimit 5
+pure func foo (n: integer) => integer recurselimit 5
 begin
   if n <= 0 then
     return 1;
@@ -7,7 +7,7 @@ begin
   end;
 end;
 
-func bar (n: integer) => integer
+pure func bar (n: integer) => integer
 begin
   let r = foo (1);
   return n * r * foo (n);

@@ -609,23 +609,33 @@ let ignored_or_identifier :=
       else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Discarded storage declaration."
     }
   | IDENTIFIER
+
+let qualifier ==
+  ioption(
+    | PURE;     { Pure }
+    | READONLY; { Readonly })
+
+let is_readonly :=
+  |           { false }
+  | READONLY; { true }
+
 let override ==
   ioption(
     | IMPDEF; { Impdef }
     | IMPLEMENTATION; { Implementation })
 
 let accessors :=
-  | GETTER; getter=maybe_empty_stmt_list; end_semicolon;
+  | ~=is_readonly; GETTER; getter=maybe_empty_stmt_list; end_semicolon;
     SETTER; setter=maybe_empty_stmt_list; end_semicolon;
-    { { getter; setter } }
+    { { is_readonly; getter; setter } }
   | SETTER; setter=maybe_empty_stmt_list; end_semicolon;
-    GETTER; getter=maybe_empty_stmt_list; end_semicolon;
-    { { getter; setter } }
+    ~=is_readonly; GETTER; getter=maybe_empty_stmt_list; end_semicolon;
+    { { is_readonly; getter; setter } }
 
 let decl :=
   | d=annotated (
     (* Begin func_decl *)
-    | ~=override; FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type; ~=recurse_limit; body=func_body;
+    | ~=qualifier; ~=override; FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type; ~=recurse_limit; body=func_body;
         {
           D_Func {
             name;
@@ -635,13 +645,14 @@ let decl :=
             return_type = Some return_type;
             subprogram_type = ST_Function;
             recurse_limit;
+            qualifier;
             override;
             builtin = false;
           }
         }
     (* End *)
     (* Begin procedure_decl *)
-    | ~=override; FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; body=func_body;
+    | ~=qualifier; ~=override; FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; body=func_body;
         {
           D_Func {
             name;
@@ -651,6 +662,7 @@ let decl :=
             return_type = None;
             subprogram_type = ST_Procedure;
             recurse_limit = None;
+            qualifier;
             override;
             builtin = false;
           }
@@ -706,6 +718,7 @@ let opn [@internal true] := body=stmt; EOF;
             return_type = None;
             subprogram_type = ST_Procedure;
             recurse_limit = None;
+            qualifier = None;
             override = None;
             builtin = false;
           }

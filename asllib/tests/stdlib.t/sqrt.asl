@@ -1,10 +1,10 @@
-func ModReal (x: real, y: real) => real
+readonly func ModReal (x: real, y: real) => real
 begin
   assert y > 0.0;
   return x - Real(RoundDown(x / y)) * y;
 end;
 
-func SqrtRoundedCorrect(value : real, fracbits : integer, sqrt : real) => boolean
+readonly func SqrtRoundedCorrect(value : real, fracbits : integer, sqrt : real) => boolean
 begin
   if value == 0.0 then return  sqrt == 0.0; end;
   if  sqrt == 0.0 then return value == 0.0; end;

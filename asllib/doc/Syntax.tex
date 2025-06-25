@@ -211,9 +211,9 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-ndecl}{}
 \begin{flalign*}
-\Ndecl  \derives \ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \parsesep &\\
-                   & \wrappedline\ \Nfuncbody\\
-|\ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
+\Ndecl  \derives \ & \Nqualifier \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep &\\
+    &\wrappedline \Nrecurselimit \parsesep \Nfuncbody\\
+|\ & \Nqualifier \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
 |\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbeq \parsesep \Tidentifier \parsesep \Nasty &\\
    & \wrappedline\ \Naccessorbody &\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon &\\
@@ -315,10 +315,20 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \hypertarget{def-naccessors}{}
 \begin{flalign*}
    \Naccessors \derives \ &
-      \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
+      \Nisreadonly \parsesep \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
       \Tsetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
    |\ & \Tsetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
-        \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+        \Nisreadonly \parsesep \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+\end{flalign*}
+
+\hypertarget{def-nqualifier}{}
+\begin{flalign*}
+\Nqualifier \derivesinline\ & \emptysentence \;|\; \Tpure \;|\;\Treadonly &
+\end{flalign*}
+
+\hypertarget{def-nisreadonly}{}
+\begin{flalign*}
+\Nisreadonly \derivesinline\ & \emptysentence \;|\; \Treadonly &
 \end{flalign*}
 
 \hypertarget{def-noverride}{}

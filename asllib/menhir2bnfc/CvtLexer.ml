@@ -134,13 +134,16 @@ end = struct
     reserved_id :: GRAMMAR.Terminal.fold mk_token []
 
   let reserved =
-    let mk_decl kw =
-      let name = reserved_keyword_name in
-      let ast_name = name ^ "_" ^ slug_str kw in
-      let terms = [ Literal kw ] in
-      Decl { ast_name; name; terms }
-    in
-    List.map mk_decl Asllib.Lexer.reserved_keywords
+    let name = reserved_keyword_name in
+    match Asllib.Lexer.reserved_keywords with
+    | [] -> [ Decl { ast_name = name ^ "_" ^ "Empty"; name; terms = [] } ]
+    | reserved ->
+        let mk_decl kw =
+          let terms = [ Literal kw ] in
+          let ast_name = name ^ "_" ^ slug_str kw in
+          Decl { ast_name; name; terms }
+        in
+        List.map mk_decl reserved
 
   let reserved_entry_point =
     let name = reserved_ep_name in

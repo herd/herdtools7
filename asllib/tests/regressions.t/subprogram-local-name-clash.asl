@@ -1,6 +1,6 @@
 accessor X() <=> v: integer
 begin
-  getter
+  readonly getter
     return 0;
   end;
 

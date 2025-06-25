@@ -142,10 +142,9 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.AnnotateConstraint.asl
   $ aslref TypingRule.AnnotateConstraint.bad.asl
   File TypingRule.AnnotateConstraint.bad.asl, line 4, characters 17 to 18:
-    let t: integer{x..x+1} = 2; // illegal as 'x' is not constrained.
+    let t: integer{x..x+1} = 2; // illegal as 'x' is not symbolically evaluable.
                    ^
-  ASL Type error: a pure expression was expected, found x, which produces the
-    following side-effects: [ReadsLocal "x"].
+  ASL Type error: expected a symbolically evaluable expression/subprogram.
   [1]
 
   $ aslref TypingRule.TBits.asl
@@ -155,9 +154,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.TArray.bad.asl, line 9, characters 32 to 58:
       var illegal_array1: array [[non_symbolically_evaluable]] of integer;
                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected,
-    found non_symbolically_evaluable, which produces the following
-    side-effects: [ReadsLocal "non_symbolically_evaluable"].
+  ASL Type error: expected a symbolically evaluable expression/subprogram.
   [1]
   $ aslref TypingRule.TArray.bad2.asl
   File TypingRule.TArray.bad2.asl, line 5, characters 4 to 61:
@@ -216,8 +213,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.AnnotateFuncSig.bad.asl, line 4, characters 60 to 63:
   func signature_example(bv: bits(8)) => bits(16) recurselimit(W)
                                                               ^^^
-  ASL Type error: a pure expression was expected, found (W), which produces the
-    following side-effects: [ReadsGlobal "W"].
+  ASL Type error: expected a symbolically evaluable expression/subprogram.
   [1]
   $ aslref --no-exec TypingRule.ExtractParameters-bad1.asl
   File TypingRule.ExtractParameters-bad1.asl, line 3, characters 15 to 36:
@@ -467,10 +463,9 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref TypingRule.SAssert.bad.asl
   File TypingRule.SAssert.bad.asl, line 11, characters 10 to 23:
-      assert(increment()); // Illegal, since increment is not pure.
+      assert(increment()); // Illegal, since increment is not readonly.
             ^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found (increment()), which
-    produces the following side-effects: [WritesGlobal "g", ReadsGlobal "g"].
+  ASL Type error: expected a readonly expression/subprogram.
   [1]
   $ aslref TypingRule.SWhile.asl
   File TypingRule.SWhile.asl, line 23, character 4 to line 29, character 8:
@@ -488,8 +483,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.SWhile.bad_limit.asl, line 8, characters 26 to 33:
       while i < N looplimit i_limit do
                             ^^^^^^^
-  ASL Type error: a pure expression was expected, found i_limit, which produces
-    the following side-effects: [ReadsLocal "i_limit"].
+  ASL Type error: expected a symbolically evaluable expression/subprogram.
   [1]
   $ aslref TypingRule.SFor.bad1.asl
   File TypingRule.SFor.bad1.asl, line 5, character 4 to line 7, character 8:
@@ -514,8 +508,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.SFor.bad4.asl, line 11, characters 17 to 30:
       for j = 0 to upper_bound() do
                    ^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found upper_bound(), which
-    produces the following side-effects: [WritesGlobal "g"].
+  ASL Type error: expected a readonly expression/subprogram.
   [1]
   $ aslref TypingRule.SReturn.bad.asl
   File TypingRule.SReturn.bad.asl, line 3, characters 4 to 13:
@@ -701,15 +694,13 @@ ASL Typing Tests / annotating types:
   File TypingRule.DeclareGlobalStorage.bad1.asl, line 3, characters 0 to 29:
   config c : integer{1..5} = x;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got x as integer {1..5},
-    which produces the following side-effects: [ReadsGlobal "x"].
+  ASL Type error: expected a pure expression/subprogram.
   [1]
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.bad2.asl
   File TypingRule.DeclareGlobalStorage.bad2.asl, line 3, characters 0 to 29:
   config c : integer{1..x} = 2;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got 2 as integer {1..5},
-    which produces the following side-effects: [ReadsGlobal "x"].
+  ASL Type error: expected a pure expression/subprogram.
   [1]
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.bad3.asl
   File TypingRule.DeclareGlobalStorage.bad3.asl, line 2, characters 37 to 38:
@@ -815,6 +806,15 @@ ASL Typing Tests / annotating types:
   File TypingRule.SubprogramTypesClash.bad2.asl, line 1, characters 0 to 40:
   func X() => integer begin return 0; end;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: cannot declare already declared element "X".
+  [1]
+  $ aslref TypingRule.SubprogramClash.bad1.asl
+  File TypingRule.SubprogramClash.bad1.asl, line 1, character 0 to line 4,
+    character 4:
+  pure func X(a: integer) => integer
+  begin
+    return 0;
+  end;
   ASL Type error: cannot declare already declared element "X".
   [1]
   $ aslref --no-exec TypingRule.CheckParamDecls.asl
@@ -936,53 +936,34 @@ ASL Typing Tests / annotating types:
     characters 5 to 28:
       [symbolic_throwing{4}(4)] data
        ^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected,
-    found symbolic_throwing{4}(4), which produces the following side-effects:
-    [ThrowsException "MyException"].
+  ASL Type error: expected a readonly expression/subprogram.
   [1]
   $ aslref TypingRule.EvalSliceExpr.asl
-  $ aslref --no-exec TypingRule.TimeFrameLDK.asl
-  $ aslref --no-exec TypingRule.TimeFrameGDK.asl
-  $ aslref --no-exec TypingRule.TimeFrame.asl
+  $ aslref --no-exec TypingRule.SideEffectsLDK.asl
+  $ aslref --no-exec TypingRule.SideEffectsGDK.asl
   $ aslref --no-exec TypingRule.SideEffectIsPure.asl
   $ aslref TypingRule.CheckSymbolicallyEvaluable.asl
-  $ aslref TypingRule.SESIsPure.asl
-  $ aslref TypingRule.SESIsPure.bad1.asl
-  File TypingRule.SESIsPure.bad1.asl, line 17, characters 11 to 37:
+  $ aslref TypingRule.SESIsReadonly.asl
+  $ aslref TypingRule.SESIsReadonly.bad1.asl
+  File TypingRule.SESIsReadonly.bad1.asl, line 17, characters 11 to 37:
       assert y > write_side_effecting();
              ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected,
-    found (y > write_side_effecting()), which produces the following
-    side-effects: [WritesGlobal "g", ReadsLocal "y", ReadsGlobal "g"].
+  ASL Type error: expected a readonly expression/subprogram.
   [1]
-  $ aslref TypingRule.SESIsPure.bad2.asl
-  File TypingRule.SESIsPure.bad2.asl, line 16, characters 17 to 39:
+  $ aslref TypingRule.SESIsReadonly.bad2.asl
+  File TypingRule.SESIsReadonly.bad2.asl, line 16, characters 17 to 39:
       for i = x to write_side_effecting() do
                    ^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found write_side_effecting(),
-    which produces the following side-effects:
-    [WritesGlobal "g", ReadsGlobal "g"].
+  ASL Type error: expected a readonly expression/subprogram.
   [1]
-  $ aslref TypingRule.SESIsDeterministic.asl
-  $ aslref TypingRule.SESIsDeterministic.bad.asl
-  File TypingRule.SESIsDeterministic.bad.asl, line 10, characters 17 to 45:
-      for i = x to ARBITRARY : integer{1..1000} do
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected,
-    found ARBITRARY : integer {1..1000}, which produces the following
-    side-effects: [NonDeterministic].
-  [1]
-  $ aslref TypingRule.SESIsBefore.asl
-  $ aslref TypingRule.SESIsBefore.bad.asl
-  File TypingRule.SESIsBefore.bad.asl, line 4, character 0 to line 6,
-    character 2:
+  $ aslref TypingRule.SESIsPure.asl
+  $ aslref TypingRule.SESIsPure.bad.asl
+  File TypingRule.SESIsPure.bad.asl, line 4, characters 18 to 23:
   type Data of bits(g * 2) {
-      [0] LSB
-  };
-  ASL Type error: expected constant-time expression, got (g * 2), which
-    produces the following side-effects: [ReadsGlobal "g"].
+                    ^^^^^
+  ASL Type error: expected a pure expression/subprogram.
   [1]
-  $ aslref --no-exec TypingRule.MaxTimeFrame.asl
+  $ aslref --no-exec TypingRule.SESForSubprogram.asl
   $ aslref TypingRule.SliceEqual.asl
   $ aslref TypingRule.SlicesEqual.asl
   $ aslref TypingRule.BitwidthEqual.asl
@@ -1037,7 +1018,6 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.ToIR.asl
   $ aslref --no-exec TypingRule.Normalize.asl
   $ aslref --no-exec TypingRule.UnitaryMonomialsToExpr.asl
-  $ aslref --no-exec TypingRule.PropagateRecursiveCallsSess.asl
   $ aslref --no-exec TypingRule.ConstraintPow.asl
   $ aslref --no-exec TypingRule.ConstraintMod.asl
   $ aslref --no-exec TypingRule.PossibleExtremitiesLeft.asl
@@ -1157,9 +1137,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.AnnotateSlices.bad-impure.asl, line 12, characters 12 to 28:
     let y = x[side_effecting()];
               ^^^^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found side_effecting(), which
-    produces the following side-effects:
-    [WritesGlobal "global_var", ReadsGlobal "global_var"].
+  ASL Type error: expected a readonly expression/subprogram.
   [1]
   $ aslref --no-exec TypingRule.AddNewFunc.bad1.asl
   File TypingRule.AddNewFunc.bad1.asl, line 8, character 0 to line 11,

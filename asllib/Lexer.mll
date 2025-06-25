@@ -33,10 +33,7 @@ module type CONFIG = sig
     val allow_single_arrows : bool
 end
 
-let reserved_keywords = [
-    "pure";
-    "readonly";
-]
+let reserved_keywords = []
 
 let is_reserved_keyword: string -> bool =
   let tbl: (string, unit) Hashtbl.t = Hashtbl.create (List.length reserved_keywords) in
@@ -122,9 +119,11 @@ let token_of_string =
  | "PRAGMA"             -> s PRAGMA
  | "PRINTLN"            -> s PRINTLN
  | "PRINT"              -> s PRINT
+ | "PURE"               -> s PURE
  | "RBRACE"             -> s RBRACE
  | "RBRACKET"           -> s RBRACKET
  | "RDIV"               -> s RDIV
+ | "READONLY"           -> s READONLY
  | "REAL"               -> s REAL
  | "RECORD"             -> s RECORD
  | "RECURSELIMIT"       -> s RECURSELIMIT
@@ -238,6 +237,8 @@ let token_to_symbol = function
   | PRAGMA             -> "pragma"
   | PRINTLN            -> "println"
   | PRINT              -> "print"
+  | PURE               -> "pure"
+  | READONLY           -> "readonly"
   | REAL               -> "real"
   | RECORD             -> "record"
   | RECURSELIMIT       -> "recurselimit"
@@ -336,6 +337,8 @@ let tr_name s = match s with
 | "pragma"        -> PRAGMA
 | "println"       -> PRINTLN
 | "print"         -> PRINT
+| "pure"          -> PURE
+| "readonly"      -> READONLY
 | "real"          -> REAL
 | "record"        -> RECORD
 | "recurselimit"  -> RECURSELIMIT

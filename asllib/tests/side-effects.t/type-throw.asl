@@ -1,6 +1,6 @@
 type E of exception {-};
 
-func throwing () => integer
+pure func throwing () => integer
 begin
   throw E {-};
 end;

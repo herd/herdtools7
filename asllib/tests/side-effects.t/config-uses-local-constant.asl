@@ -1,4 +1,4 @@
-func foo () => integer
+pure func foo () => integer
 begin
   let x: integer = 0;
 

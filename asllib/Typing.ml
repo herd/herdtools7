@@ -40,6 +40,9 @@ let conflict ~loc expected provided =
 let plus = binop `PLUS
 let t_bits_bitwidth e = T_Bits (e, [])
 
+let func_version f =
+  match f.body with SB_Primitive _ -> V1 | SB_ASL s -> s.version
+
 let rec list_mapi2 f i l1 l2 =
   match (l1, l2) with
   | [], [] -> []
@@ -134,6 +137,7 @@ module type ANNOTATE_CONFIG = sig
   val output_format : Error.output_format
   val print_typed : bool
   val use_field_getter_extension : bool
+  val fine_grained_side_effects : bool
   val use_conflicting_side_effects_extension : bool
   val override_mode : override_mode
   val control_flow_analysis : bool
@@ -243,7 +247,7 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
     List.fold_left2 folder []
 
   (* Begin AddNewFunc *)
-  let add_new_func ~loc env name formals subpgm_type =
+  let add_new_func ~loc env name qualifier formals subpgm_type =
     match IMap.find_opt name env.global.overloaded_subprograms with
     | None ->
         let new_env = set_renamings name (ISet.singleton name) env in
@@ -258,9 +262,15 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
                  let other_func_sig, _ses =
                    IMap.find name' env.global.subprograms
                  in
+                 let qualifiers_differ =
+                   loc.version == V1
+                   && func_version other_func_sig == V1
+                   && not (qualifier_equal qualifier other_func_sig.qualifier)
+                 in
                  subprogram_types_clash subpgm_type
                    other_func_sig.subprogram_type
-                 && has_arg_clash env formal_types other_func_sig.args)
+                 && (qualifiers_differ
+                    || has_arg_clash env formal_types other_func_sig.args))
                other_names
         in
         let+ () =
@@ -590,37 +600,34 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* Begin CheckSymbolicallyEvaluable *)
   let check_symbolically_evaluable expr_for_error ses () =
-    if SES.is_symbolically_evaluable ses then
-      () |: TypingRule.CheckSymbolicallyEvaluable
+    if C.fine_grained_side_effects then
+      if SES.fine_grained_is_symbolically_evaluable ses then ()
+      else
+        fatal_from ~loc:expr_for_error
+          (Error.ImpureExpression (expr_for_error, ses))
+    else if SES.is_symbolically_evaluable ses then ()
     else
       fatal_from ~loc:expr_for_error
-        (Error.ImpureExpression (expr_for_error, ses))
+        (Error.MismatchedPurity "symbolically evaluable")
+      |: TypingRule.CheckSymbolicallyEvaluable
   (* End *)
 
-  let check_is_deterministic expr_for_error ses () =
-    if SES.is_deterministic ses then ()
-    else
-      fatal_from ~loc:expr_for_error
-        (Error.ImpureExpression (expr_for_error, ses))
+  let check_is_readonly expr_for_error ses () =
+    if C.fine_grained_side_effects then
+      if SES.fine_grained_is_pure ses then ()
+      else
+        fatal_from ~loc:expr_for_error
+          (Error.ImpureExpression (expr_for_error, SES.remove_pure ses))
+    else if SES.is_readonly ses then ()
+    else fatal_from ~loc:expr_for_error (Error.MismatchedPurity "readonly")
 
-  let check_is_pure expr_for_error ses () =
-    if SES.is_pure ses then ()
-    else
-      fatal_from ~loc:expr_for_error
-        (Error.ImpureExpression (expr_for_error, SES.remove_pure ses))
-
-  let leq_constant_time ses =
-    TimeFrame.is_before (SES.max_time_frame ses) TimeFrame.Constant
-
-  let check_leq_constant_time ~loc (_, e, ses_e) () =
-    if leq_constant_time ses_e then ()
-    else fatal_from ~loc Error.(ConstantTimeBroken (e, ses_e))
-
-  let check_is_time_frame =
-    let open TimeFrame in
-    function
-    | TimeFrame.Constant -> check_leq_constant_time
-    | TimeFrame.Execution -> fun ~loc:_ _ -> ok
+  let check_is_pure ~loc (_, e, ses_e) () =
+    if C.fine_grained_side_effects then
+      if TimeFrame.is_before (SES.max_time_frame ses_e) TimeFrame.Constant then
+        ()
+      else fatal_from ~loc Error.(ConstantTimeBroken (e, ses_e))
+    else if SES.is_pure ses_e then ()
+    else fatal_from ~loc:e (Error.MismatchedPurity "pure")
 
   let check_bits_equal_width' env t1 t2 () =
     let n = get_bitvector_width' env t1 and m = get_bitvector_width' env t2 in
@@ -1313,7 +1320,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let bitfields', ses_bitfields =
           if bitfields = [] then (bitfields, SES.empty)
           else
-            let+ () = check_leq_constant_time ~loc typed_e_width in
+            let+ () = check_is_pure ~loc typed_e_width in
             let annotated_bitfields, ses_bitfields =
               annotate_bitfields ~loc env e_width' bitfields
             in
@@ -1451,8 +1458,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           and length', ses_length =
             annotate_symbolic_constrained_integer ~loc env length
           in
-          let+ () = check_is_pure offset ses_offset in
-          let+ () = check_is_pure length ses_length in
+          let+ () = check_is_readonly offset ses_offset in
+          let+ () = check_is_readonly length ses_length in
           let+ () = check_underlying_integer ~loc:offset env t_offset in
           let ses = SES.union ses_length ses_offset in
           (Slice_Length (offset', length'), ses |: TypingRule.Slice)
@@ -2766,9 +2773,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* Begin ShouldRememberImmutableExpression *)
   let should_remember_immutable_expression ses =
-    let ses_non_assert = SES.remove_assertions ses in
-    SES.is_symbolically_evaluable ses_non_assert
-    |: TypingRule.ShouldRememberImmutableExpression
+    if C.fine_grained_side_effects then
+      let ses_non_assert = SES.remove_assertions ses in
+      SES.fine_grained_is_symbolically_evaluable ses_non_assert
+    else
+      SES.is_symbolically_evaluable ses
+      |: TypingRule.ShouldRememberImmutableExpression
   (* End *)
 
   (* Begin AddImmutableExpression *)
@@ -2977,7 +2987,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin SAssert *)
     | S_Assert e ->
         let t_e', e', ses_e = annotate_expr env e in
-        let+ () = check_is_pure e ses_e in
+        let+ () = check_is_readonly e ses_e in
         let+ () = check_type_satisfies ~loc env t_e' boolean in
         let ses = SES.add_assertion ses_e in
         (S_Assert e' |> here, env, ses) |: TypingRule.SAssert
@@ -3007,10 +3017,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         and limit', ses_limit =
           annotate_limit_expr ~warn:false ~loc env limit
         in
-        let+ () = check_is_pure start_e ses_start in
-        let+ () = check_is_deterministic start_e ses_start in
-        let+ () = check_is_pure end_e ses_end in
-        let+ () = check_is_deterministic end_e ses_end in
+        let+ () = check_is_readonly start_e ses_start in
+        let+ () = check_is_readonly end_e ses_end in
         let ses_cond = SES.union3 ses_start ses_end ses_limit in
         let start_struct = Types.make_anonymous env start_t
         and end_struct = Types.make_anonymous env end_t in
@@ -3090,7 +3098,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               match ldk with
               | LDK_Let | LDK_Var -> env1
               | LDK_Constant -> (
-                  let+ () = check_leq_constant_time ~loc:s typed_e in
+                  let+ () = check_is_pure ~loc:s typed_e in
                   try
                     let v = StaticInterpreter.static_eval env1 e in
                     declare_local_constant env1 v ldi
@@ -3480,6 +3488,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     |: TypingRule.CheckParamDecls
   (* End *)
 
+  let check_subprogram_purity ~loc qualifier ses =
+    match qualifier with
+    | None -> ok
+    | Some Pure ->
+        check_true (SES.is_pure ses) (fun () ->
+            fatal_from ~loc (Error.MismatchedPurity "pure"))
+    | Some Readonly ->
+        check_true (SES.is_readonly ses) (fun () ->
+            fatal_from ~loc (Error.MismatchedPurity "readonly"))
+
   let annotate_func_sig_v1 ~loc genv func_sig =
     let env = with_empty_local genv in
     (* Check recursion limit *)
@@ -3538,6 +3556,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           ({ env_with_args with local = local_env }, return_type, new_ses)
     in
     let ses = SES.remove_locals ses_with_return in
+    let+ () =
+      if C.fine_grained_side_effects then ok
+      else check_subprogram_purity ~loc func_sig.qualifier ses
+    in
+    let ses = SES.set_purity_for_subprogram func_sig.qualifier ses in
     ( env_with_return,
       { func_sig with parameters; args; return_type; recurse_limit },
       ses )
@@ -3708,6 +3731,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let new_body, ses_body = try_annotate_block env body in
     let ses = SES.union ses_func_sig @@ SES.remove_locals ses_body in
+    let+ () =
+      if func_version f == V0 || C.fine_grained_side_effects then ok
+      else check_subprogram_purity ~loc:new_body f.qualifier ses
+    in
+    let ses = SES.set_purity_for_subprogram f.qualifier ses in
     let () =
       if false then
         Format.eprintf "@[<v 2>For program %s, I got side-effects:@ %a@]@."
@@ -3781,7 +3809,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let declare_one_func ~loc (func_sig : AST.func) ses_func_sig env =
     let env1, name' =
       best_effort (env, func_sig.name) @@ fun _ ->
-      Fn.add_new_func ~loc env func_sig.name func_sig.args
+      Fn.add_new_func ~loc env func_sig.name func_sig.qualifier func_sig.args
         func_sig.subprogram_type
     in
     let () =
@@ -3868,7 +3896,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       (* AnnotateExtraFields) *)
     in
     let t2, ses_t = annotate_type ~decl:true ~loc env1 t1 in
-    let time_frame = SES.max_time_frame ses_t in
+    let time_frame =
+      if SES.is_pure ses_t then TimeFrame.Constant else TimeFrame.Execution
+    in
     let env2 = add_type name t2 time_frame env1 in
     let new_tenv =
       match t2.desc with
@@ -3895,10 +3925,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let { keyword; initial_value; ty = ty_opt; name } = gsd in
     let+ () = check_var_not_in_genv ~loc genv name in
     let env = with_empty_local genv in
-    let target_time_frame =
+    let check_purity =
       match keyword with
-      | GDK_Constant | GDK_Config -> TimeFrame.Constant
-      | GDK_Let | GDK_Var -> TimeFrame.Execution
+      | GDK_Constant | GDK_Config -> check_is_pure
+      | GDK_Let | GDK_Var -> fun ~loc:_ _ -> ok
     in
     let typed_initial_value, ty_opt', declared_t =
       (* AnnotateTyOptInitialValue( *)
@@ -3916,16 +3946,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let+ () = check_type_satisfies ~loc env t_e t' in
           let+ () =
             let fake_e_for_error = E_ATC (e, t') |> here in
-            check_is_time_frame ~loc target_time_frame
-              (t', fake_e_for_error, SES.union ses_e ses_t)
+            check_purity ~loc (t', fake_e_for_error, SES.union ses_e ses_t)
           in
           (typed_e, Some t', t')
       | Some t, None ->
           let t', ses_t = annotate_type ~loc env t in
           let+ () =
             let fake_e_for_error = E_ATC (E_Var "-" |> here, t') |> here in
-            check_is_time_frame ~loc target_time_frame
-              (t', fake_e_for_error, ses_t)
+            check_purity ~loc (t', fake_e_for_error, ses_t)
           in
           let e' = base_value ~loc env t' in
           ((t', e', SES.empty), Some t', t')
@@ -3933,7 +3961,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let ((t_e, _e', _ses_e) as typed_e) = annotate_expr env e in
           let+ () = check_no_precision_loss ~loc t_e in
           let+ () = check_is_not_collection ~loc env t_e in
-          let+ () = check_is_time_frame ~loc target_time_frame typed_e in
+          let+ () = check_purity ~loc typed_e in
           (typed_e, None, t_e)
       | None, None -> fatal_from ~loc UnrespectedParserInvariant
       (* AnnotateTyOptInitialValue) *)
@@ -4178,7 +4206,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let () = check_recursive_limit_annotations ds sess in
     let env3 =
-      let sess_prop = propagate_recursive_calls_sess sess in
+      let sess_prop =
+        if C.fine_grained_side_effects then propagate_recursive_calls_sess sess
+        else sess
+      in
       (* AddSubprogramDecls( *)
       List.fold_left
         (fun env2 ((new_f : func), ses_f) ->
@@ -4196,6 +4227,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   end = struct
     let signatures_match { desc = func1 } { desc = func2 } =
       let ty_equal = type_equal (fun _ _ -> false) in
+      let qualifiers_match = qualifier_equal func1.qualifier func2.qualifier in
       let args_match =
         list_equal
           (fun (id1, t1) (id2, t2) -> String.equal id1 id2 && ty_equal t1 t2)
@@ -4211,7 +4243,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         Option.equal ty_equal func1.return_type func2.return_type
       in
       String.equal func1.name func2.name
-      && args_match && parameters_match && returns_match
+      && qualifiers_match && args_match && parameters_match && returns_match
 
     let check_implementations_unique impls () =
       let rec scan l =
@@ -4321,6 +4353,7 @@ module TypeCheckDefault = Annotate (struct
   let output_format = Error.HumanReadable
   let print_typed = false
   let use_field_getter_extension = false
+  let fine_grained_side_effects = false
   let use_conflicting_side_effects_extension = false
   let override_mode = Permissive
   let control_flow_analysis = true

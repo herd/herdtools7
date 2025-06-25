@@ -587,7 +587,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
     \item checking that $k$ corresponds to a mutable variable, that is, $\LDKVar$, yields $\True$\ProseTerminateAs{\AssignmentToImmutable};
     \item determining whether $\tty$ \typesatisfies\ $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
     \item $\newle$ is $\vle$;
-    \item \Proseeqdef{$\vses$}{the \WriteLocalTerm\ for $\vx$}.
+    \item \Proseeqdef{$\vses$}{the set containing a \LocalEffectTerm{} with \purity{} $\SEImpure$, and a \ImmutabilityTerm{} with immutability $\False$}.
   \end{itemize}
 
   \item \AllApplyCase{global}
@@ -596,7 +596,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
     \item checking that $k$ corresponds to a mutable variable, that is, $\GDKVar$, yields $\True$\ProseTerminateAs{\AssignmentToImmutable};
     \item determining whether $\tty$ \typesatisfies\ $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
     \item $\newle$ is $\vle$;
-    \item \Proseeqdef{$\vses$}{the \WriteGlobalTerm\ for $\vx$}.
+    \item \Proseeqdef{$\vses$}{the set containing a \GlobalEffectTerm{} with \purity{} $\SEImpure$, and a \ImmutabilityTerm{} with immutability $\False$}.
   \end{itemize}
 
   \item \AllApplyCase{error\_undefined}
@@ -614,7 +614,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
   \checktypesat(\tenv, \vte, \tty) \typearrow \True \OrTypeError
 }{
   \annotatelexpr{\tenv, \overname{\LEVar(\vx)}{\vle}, \vte} \typearrow
-  (\overname{\vle}{\newle}, \{\WriteLocal(\vx)\})
+  (\overname{\vle}{\newle}, \{\LocalEffect(\SEImpure), \Immutability(\False)\})
 }
 \end{mathpar}
 
@@ -625,7 +625,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
   \checktypesat(\tenv, \vte, \tty) \typearrow \True \OrTypeError
 }{
   \annotatelexpr{\tenv, \overname{\LEVar(\vx)}{\vle}, \vte} \typearrow
-  (\overname{\vle}{\newle}, \{\WriteGlobal(\vx)\})
+  (\overname{\vle}{\newle}, \{\GlobalEffect(\SEImpure), \Immutability(\False)\})
 }
 \end{mathpar}
 

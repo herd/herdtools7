@@ -114,6 +114,7 @@ module Make (C : Config) = struct
     let output_format = Asllib.Error.HumanReadable
     let print_typed = false
     let use_field_getter_extension = false
+    let fine_grained_side_effects = false
     let use_conflicting_side_effects_extension = false
     let override_mode = Asllib.Typing.Permissive
     let control_flow_analysis = true
@@ -607,6 +608,7 @@ module Make (C : Config) = struct
       let subprogram_type =
         match returns with None -> ST_Procedure | _ -> ST_Function
       and body = SB_Primitive side_effecting
+      and qualifier = if side_effecting then None else Some Pure
       and recurse_limit = None
       and return_type = returns in
       ( {
@@ -618,6 +620,7 @@ module Make (C : Config) = struct
           subprogram_type;
           recurse_limit;
           builtin = true;
+          qualifier;
           override = None;
         }
         [@warning "-40-42"],

@@ -1,5 +1,5 @@
 // A helper function which prints its argument
-func p{n: integer}() => integer{n}
+pure func p{n: integer}() => integer{n}
 begin
   print(n);
   return n;

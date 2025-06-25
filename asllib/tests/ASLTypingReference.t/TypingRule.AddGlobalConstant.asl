@@ -1,7 +1,7 @@
 constant FOUR = 4;
 // The static environment binds FOUR to 4.
 
-func foo(v: integer {0..100}) => integer {0..100}
+pure func foo(v: integer {0..100}) => integer {0..100}
 begin
     return v;
 end;

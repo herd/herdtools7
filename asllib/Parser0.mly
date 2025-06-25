@@ -65,6 +65,7 @@
         subprogram_type;
         recurse_limit;
         override = None;
+        qualifier = None;
         builtin = false;
       }
 
@@ -248,6 +249,7 @@ let opn := list(EOL); body=list(stmts); EOF;
           subprogram_type = ST_Procedure;
           recurse_limit = None;
           override = None;
+          qualifier = None;
           builtin = false;
         } |> ASTUtils.add_pos_from body
       ]
@@ -475,6 +477,7 @@ let getter_decl ==
           subprogram_type;
           recurse_limit;
           override = None;
+          qualifier = None;
           builtin = false;
         }
       }
@@ -496,6 +499,7 @@ let getter_decl ==
           subprogram_type;
           recurse_limit;
           override = None;
+          qualifier = None;
           builtin = false;
         }
       }
@@ -516,6 +520,7 @@ let getter_decl ==
           subprogram_type;
           recurse_limit;
           override = None;
+          qualifier = None;
           builtin = false;
         }
       }
@@ -545,6 +550,7 @@ let setter_decl ==
           subprogram_type;
           recurse_limit;
           override = None;
+          qualifier = None;
           builtin = false;
         }
       }
@@ -566,6 +572,7 @@ let setter_decl ==
           subprogram_type;
           recurse_limit;
           override = None;
+          qualifier = None;
           builtin = false;
         }
       }
@@ -593,6 +600,7 @@ let procedure_decl ==
             subprogram_type;
             recurse_limit;
             override = None;
+            qualifier = None;
             builtin = false;
           }
         }

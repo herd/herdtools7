@@ -1,4 +1,4 @@
-func limit_loop() => integer{4}
+pure func limit_loop() => integer{4}
 begin
   println("evaluated limit = ", 4);
   return 4;

@@ -1,4 +1,4 @@
-func f(d: bits(2), a: integer) => integer
+readonly func f(d: bits(2), a: integer) => integer
 begin
     // in the following 'd' is evaluated once,
     // if d == '01' and a == 5 then the sub-expression 'a' will be evaluated twice

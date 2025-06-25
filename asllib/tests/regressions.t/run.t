@@ -539,13 +539,7 @@ Getters/setters
 ASLRef Field getter extension
   $ aslref --use-field-getter-extension setter_bitfields.asl
   $ aslref --use-field-getter-extension pstate-exp.asl
-  $ aslref atc-in-types.asl
-  File atc-in-types.asl, line 1, characters 14 to 29:
-  let bv : bits(1 as integer{2}) = Ones{1};
-                ^^^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found 1 as integer {2}, which
-    produces the following side-effects: [PerformsAssertions].
-  [1]
+  $ aslref --no-exec atc-in-types.asl
   $ aslref single-slice.asl
 
 Inherit integer constraints on left-hand sides

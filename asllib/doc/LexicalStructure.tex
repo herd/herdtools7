@@ -589,8 +589,9 @@ $\REbitmasklit$                       & $\actiontoken(\masktolit)$ \\
 \texttt{"MOD"}           & $\actiontoken(\tokenid)$ \\
 \texttt{"NOT"}           & $\actiontoken(\tokenid)$ \\
 \texttt{"of"},      \texttt{"OR"},      \texttt{"otherwise"}                  & $\actiontoken(\tokenid)$ \\
-\texttt{"pass"},    \texttt{"pragma"},  \texttt{"print"}                      & $\actiontoken(\tokenid)$ \\
-\texttt{"real"},    \texttt{"record"},  \texttt{"recurselimit"}, \texttt{"repeat"}, \texttt{"return"}  & $\actiontoken(\tokenid)$ \\
+\texttt{"pass"},    \texttt{"pragma"},  \texttt{"print"}, \texttt{"pure"}                      & $\actiontoken(\tokenid)$ \\
+\texttt{"readonly"}, \texttt{"real"},    \texttt{"record"}  & $\actiontoken(\tokenid)$ \\
+\texttt{"recurselimit"}, \texttt{"repeat"}, \texttt{"return"}  & $\actiontoken(\tokenid)$ \\
 \texttt{"setter"},  \texttt{"string"},  \texttt{"subtypes"}                   & $\actiontoken(\tokenid)$ \\
 \texttt{"then"},    \texttt{"throw"},   \texttt{"to"}, \texttt{"try"}         & $\actiontoken(\tokenid)$ \\
 \texttt{"TRUE"}          & $\actiontoken(\truetolit)$ \\
@@ -598,16 +599,6 @@ $\REbitmasklit$                       & $\actiontoken(\masktolit)$ \\
 \texttt{"ARBITRARY"}, \texttt{"Unreachable"}, \texttt{"until"}         & $\actiontoken(\tokenid)$ \\
 \texttt{"var"}           & $\actiontoken(\tokenid)$ \\
 \texttt{"when"}, \texttt{"where"}, \texttt{"while"}, \texttt{"with"}          & $\actiontoken(\tokenid)$ \\
-\hline
-\end{tabular}
-\end{center}
-
-The following list represents keywords that are reserved for future use.
-\begin{center}
-\begin{tabular}{ll}
-\textbf{Lexical Regular Expressions} & \textbf{Lexeme Action}\\
-\hline
-\texttt{"pure"}, \texttt{"readonly"} & $\lexicalerror$ \\
 \hline
 \end{tabular}
 \end{center}

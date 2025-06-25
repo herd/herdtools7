@@ -1,4 +1,4 @@
-func unknown () => integer {0, 1}
+pure func unknown () => integer {0, 1}
 begin
   return ARBITRARY: integer {0, 1};
 end;

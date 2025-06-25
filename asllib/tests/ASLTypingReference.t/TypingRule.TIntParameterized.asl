@@ -1,9 +1,9 @@
-func foo {N} (x: bits(N)) => integer
+readonly func foo {N} (x: bits(N)) => integer
 begin
   return N;
 end;
 
-func bar{M: integer}() => bits(M)
+readonly func bar{M: integer}() => bits(M)
 begin
   return Zeros{M};
 end;

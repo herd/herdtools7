@@ -110,15 +110,13 @@ Use of global vars in constraints
   File TNegative4.asl, line 5, characters 25 to 41:
       let testA : integer {VAR_ALLOWED_NUMS} = 8; // illegal var's aren't allowed in constraints
                            ^^^^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found VAR_ALLOWED_NUMS, which
-    produces the following side-effects: [ReadsGlobal "VAR_ALLOWED_NUMS"].
+  ASL Type error: expected a symbolically evaluable expression/subprogram.
   [1]
   $ aslref --no-exec TNegative4-bis.asl
   File TNegative4-bis.asl, line 5, characters 25 to 41:
       let testA : integer {VAR_ALLOWED_NUMS} = 8; // illegal var's aren't allowed in constraints
                            ^^^^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found VAR_ALLOWED_NUMS, which
-    produces the following side-effects: [ReadsGlobal "VAR_ALLOWED_NUMS"].
+  ASL Type error: expected a symbolically evaluable expression/subprogram.
   [1]
 
 Asserted type conversions
@@ -229,8 +227,7 @@ Symbolic execution of bit vector widths expressions
   File TNegative10.asl, line 8, characters 32 to 38:
       let testA : bits(N) = Zeros{widthN};
                                   ^^^^^^
-  ASL Type error: a pure expression was expected, found widthN, which produces
-    the following side-effects: [ReadsLocal "widthN"].
+  ASL Type error: expected a symbolically evaluable expression/subprogram.
   [1]
   $ aslref --no-exec TNegative10-0.asl
   File TNegative10-0.asl, line 16, characters 4 to 53:

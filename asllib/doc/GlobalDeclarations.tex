@@ -33,9 +33,10 @@ but not \verb|other_tool_op| and warn about it.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Subprogram declarations:
 \begin{flalign*}
-\Ndecl  \derives \ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody &\\
-|\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
-|\ & \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbeq \parsesep \Tidentifier \parsesep \Nasty &\\
+\Ndecl  \derives \ & \Nqualifier \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep &\\
+    &\wrappedline \Nrecurselimit \parsesep \Nfuncbody\\
+|\ & \Nqualifier \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
+|\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbeq \parsesep \Tidentifier \parsesep \Nasty &\\
    & \wrappedline\ \Naccessorbody &\\
 \Naccessorbody \derives \ & \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon&
 \end{flalign*}
@@ -135,8 +136,7 @@ All global declarations in \listingref{TypecheckDecl} are well-typed.
           yields the environment $\tenvone$, a subprogram definition $\vfone$,
           and a \sideeffectdescriptorsetsterm{} $\vsesfuncsig$\ProseOrTypeError;
     \item \Proseannotatesubprogram{$\tenv$}{$\vfone$}{\vsesfuncsig}{$\newf$}{$\vsesf$}\ProseOrTypeError;
-    \item \Proseeqdef{$\vsesfnorecursives$}{$\vsesf$ with every \RecursiveCallTerm{} removed};
-    \item applying $\addsubprogram$ to $\tenvone$, $\newf.\funcname$, $\newf$, and $\vsesfnorecursives$ yields $\newtenv$;
+    \item applying $\addsubprogram$ to $\tenvone$, $\newf.\funcname$, $\newf$, and $\vsesf$ yields $\newtenv$;
     \item define $\newd$ as the subprogram AST node with $\newf$, that is, $\DFunc(\newf)$;
     \item define $\newgenv$ as the global component of $\newtenv$.
   \end{itemize}
@@ -166,8 +166,7 @@ All global declarations in \listingref{TypecheckDecl} are well-typed.
 \inferrule[func]{
   \annotateanddeclarefunc(\genv, \vf) \typearrow (\tenvone, \vfone, \vsesfuncsig) \OrTypeError\\\\
   \annotatesubprogram(\tenvone, \vfone, \vsesfuncsig) \typearrow (\newf,\vsesf) \OrTypeError\\\\
-  \vsesfnorecursives \eqdef \vsesf \setminus \{ \vs \;|\; \configdomain{\vs} = \RecursiveCall \}\\
-  \addsubprogram(\tenvone, \newf.\funcname, \newf, \vsesfnorecursives) \typearrow \newtenv
+  \addsubprogram(\tenvone, \newf.\funcname, \newf, \vsesf) \typearrow \newtenv
 }{
   \typecheckdecl(\genv, \overname{\DFunc(\vf)}{\vd})
   \typearrow (\overname{\DFunc(\newf)}{\newd}, \overname{G^\newtenv}{\newgenv})
@@ -236,8 +235,9 @@ and an example of a well-typed function --- \verb|flip_bits|.
     \end{itemize}
   \end{itemize}
   \item $\vfp$ is $\vf$ with the subprogram body substituted with $\newbody$;
-  \item \Proseeqdef{$\vses$}{the union of $\vsesfuncsig$ and $\vsesbody$ with every instance of a
-        \ReadLocalTerm\ or a \WriteLocalTerm\ removed}.
+  \item \Proseeqdef{$\vsesp$}{the union of $\vsesfuncsig$ and $\vsesbody$ with every \LocalEffectTerm{} removed};
+  \item checking that the \sideeffectsetterm{} $\vsesp$ adheres to the subprogram's \purity{} qualifier $\vf.\funcqualifier$ yields $\True$\ProseOrTypeError;
+  \item the \sideeffectsetterm{} corresponding to $\vf.\funcqualifier$ (via $\sesforsubprogram$) is $\vses$.
 \end{itemize}
 
 \FormallyParagraph
@@ -248,7 +248,9 @@ and an example of a well-typed function --- \verb|flip_bits|.
   \vf.\funcreturntype = \None\\\\
   \commonsuffixline\\\\
   \vfp \eqdef \substrecordfield(\vf, \funcbody, \newbody)\\
-  \vses \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} \in \{\ReadLocal, \WriteLocal\} \})
+  \vsesp \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} = \LocalEffect \}) \\
+  \checksubprogrampurity(\vf.\funcqualifier, \vsesp) \typearrow \True \OrTypeError \\
+  \sesforsubprogram(\vf.\funcqualifier) \typearrow \vses
 }{
   \annotatesubprogram(\tenv, \vf, \vsesfuncsig) \typearrow (\vfp, \vses)
 }
@@ -262,7 +264,9 @@ and an example of a well-typed function --- \verb|flip_bits|.
   \checkstmtreturnsorthrows(\newbody) \typearrow \True \OrTypeError\\\\
   \commonsuffixline\\\\
   \vfp \eqdef \substrecordfield(\vf, \funcbody, \newbody)\\
-  \vses \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} \in \{\ReadLocal, \WriteLocal\} \})
+  \vsesp \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} = \LocalEffect \}) \\
+  \checksubprogrampurity(\vf.\funcqualifier, \vsesp) \typearrow \True \OrTypeError \\
+  \sesforsubprogram(\vf.\funcqualifier) \typearrow \vses
 }{
   \annotatesubprogram(\tenv, \vf, \vsesfuncsig) \typearrow (\vfp, \vses)
 }

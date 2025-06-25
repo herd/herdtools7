@@ -34,9 +34,9 @@ The semantics of subprograms is given in \chapref{SubprogramCalls}.
 \section{Syntax\label{sec:SubprogramDeclarationsSyntax}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
-\Ndecl  \derives \ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \\
-& \wrappedline\ \Nrecurselimit \parsesep \Nfuncbody &\\
-|\ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
+\Ndecl  \derives \ & \Nqualifier \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep &\\
+    &\wrappedline \Nrecurselimit \parsesep \Nfuncbody\\
+|\ & \Nqualifier \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
 |\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbeq \parsesep \Tidentifier \parsesep \Nasty &\\
    & \wrappedline\ \Naccessorbody &\\
 \Naccessorbody \derives \ & \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon&
@@ -52,11 +52,13 @@ The semantics of subprograms is given in \chapref{SubprogramCalls}.
 \Nreturntype        \derives \ & \Tarrow \parsesep \Nty &\\
 \Nfuncbody          \derives \ & \Tbegin \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
 \Nmaybeemptystmtlist \derives \ & \emptysentence \;|\; \Nstmtlist &\\
-\Naccessors \derives \ &
-  \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
-  \Tsetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
-|\ & \Tsetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
-    \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+  \Naccessors \derives \ &
+    \Nisreadonly \parsesep \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
+    \Tsetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+  |\ & \Tsetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
+      \Nisreadonly \parsesep \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+\Nqualifier \derivesinline\ & \emptysentence \;|\; \Tpure \;|\;\Treadonly &\\
+\Nisreadonly \derivesinline\ & \emptysentence \;|\; \Treadonly &\\
 \Noverride \derivesinline\ & \emptysentence \;|\; \Timpdef \;|\;\Timplementation &
 \end{flalign*}
 
@@ -80,6 +82,7 @@ The semantics of subprograms is given in \chapref{SubprogramCalls}.
  \funcsubprogramtype &:& \subprogramtype,\\
  \funcrecurselimit    &:& \expr?\\
  \funcbuiltin &:& \Bool\\
+ \funcqualifier &:& \Some{\qualifier}\\
  \funcoverride &:& \Some{\overrideinfo}\\
 \end{array}
 \right\}
@@ -87,6 +90,7 @@ The semantics of subprograms is given in \chapref{SubprogramCalls}.
 \typedidentifier \derives\ & (\identifier, \ty) &\\
 \subprogramtype \derives\ & \STProcedure \;|\; \STFunction &\\
                 |\  & \STGetter \;|\; \STSetter &\\
+\qualifier \derives\ & \Pure \;|\; \Readonly &\\
 \overrideinfo \derives\ & \Impdef \;|\; \Implementation &
 \end{flalign*}
 
@@ -106,6 +110,7 @@ In particular, rather than directly building the abstract syntax for accessors, 
 {
 \left\{
   \begin{array}{rcl}
+    \accessorpairisreadonly &:& \Bool, \\
     \accessorpairgetter &:& \stmt, \\
     \accessorpairsetter &:& \stmt
 \end{array}
@@ -118,8 +123,8 @@ In particular, rather than directly building the abstract syntax for accessors, 
   \builddecl\left(
     \overname{\Ndecl\left(
       \begin{array}{l}
-    \punnode{\Noverride}, \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \punnode{\Nreturntype}, \\
-    \wrappedline\ \punnode{\Nrecurselimit}, \punnode{\Nfuncbody}
+    \punnode{\Nqualifier}, \punnode{\Noverride}, \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \\
+    \wrappedline\ \punnode{\Nreturntype}, \punnode{\Nrecurselimit}, \punnode{\Nfuncbody}
       \end{array}
   \right)}{\vparsednode}\right)
 \astarrow \\
@@ -135,6 +140,7 @@ In particular, rather than directly building the abstract syntax for accessors, 
             \funcsubprogramtype &:& \STFunction,\\
             \funcrecurselimit   &:& \langle\astof{\vrecurselimit}\rangle\\
             \funcbuiltin &:& \False\\
+            \funcqualifier &:& \astof{\vqualifier}\\
             \funcoverride &:& \astof{\voverride}
     \end{array}
   \right\}\right)\right]}{\vastnode}
@@ -145,7 +151,7 @@ In particular, rather than directly building the abstract syntax for accessors, 
 \begin{mathpar}
 \inferrule[procedure\_decl]{}{
   \builddecl(
-    \overname{\Ndecl(\punnode{\Noverride}, \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \punnode{\Nfuncbody})}{\vparsednode}
+    \overname{\Ndecl(\punnode{\Nqualifier}, \punnode{\Noverride}, \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \punnode{\Nfuncbody})}{\vparsednode}
     )
   \astarrow \\
   {
@@ -160,6 +166,7 @@ In particular, rather than directly building the abstract syntax for accessors, 
             \funcsubprogramtype &:& \STProcedure,\\
             \funcrecurselimit   &:& \None\\
             \funcbuiltin &:& \False\\
+            \funcqualifier &:& \astof{\vqualifier}\\
             \funcoverride &:& \astof{\voverride}
     \end{array}
   \right\}\right)\right]
@@ -398,6 +405,7 @@ transforms a parse node $\vparsednode$ into an $\accessorpair$.
   \vaccessorpair \eqdef
   \left\{
   \begin{array}{rcl}
+    \accessorpairisreadonly &:& \astof{\visreadonly},\\
     \accessorpairgetter    &:& \astversion{\vgetter},\\
     \accessorpairsetter    &:& \astversion{\vsetter}
   \end{array}
@@ -407,7 +415,7 @@ transforms a parse node $\vparsednode$ into an $\accessorpair$.
   {
   \begin{array}{r}
     \buildaccessors(
-      \Tgetter, \namednode{\vgetter}{\Nmaybeemptystmtlist}, \Tend, \Tsemicolon, \\
+      \punnode{\Nisreadonly}, \Tgetter, \namednode{\vgetter}{\Nmaybeemptystmtlist}, \Tend, \Tsemicolon, \\
       \Tsetter, \namednode{\vsetter}{\Nmaybeemptystmtlist}, \Tend, \Tsemicolon
     ) \\
     \astarrow \vaccessorpair
@@ -424,6 +432,7 @@ transforms a parse node $\vparsednode$ into an $\accessorpair$.
   \vaccessorpair \eqdef
   \left\{
   \begin{array}{rcl}
+    \accessorpairisreadonly &:& \astof{\visreadonly},\\
     \accessorpairgetter    &:& \astversion{\vgetter},\\
     \accessorpairsetter    &:& \astversion{\vsetter}
   \end{array}
@@ -434,7 +443,7 @@ transforms a parse node $\vparsednode$ into an $\accessorpair$.
   \begin{array}{r}
     \buildaccessors(
       \Tsetter, \namednode{\vsetter}{\Nmaybeemptystmtlist}, \Tend, \Tsemicolon, \\
-      \Tgetter, \namednode{\vgetter}{\Nmaybeemptystmtlist}, \Tend, \Tsemicolon
+      \punnode{\Nisreadonly}, \Tgetter, \namednode{\vgetter}{\Nmaybeemptystmtlist}, \Tend, \Tsemicolon
     ) \\
     \astarrow \vaccessorpair
   \end{array}
@@ -462,6 +471,7 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule{
+  \vqualifier \eqdef \choice{\vaccessorpair.\accessorpairisreadonly}{\Some{\Readonly}}{\None} \\\\
   {
   \vgetter \eqdef
       \DFunc\left\{
@@ -474,6 +484,7 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
         \funcsubprogramtype &:& \STGetter,\\
         \funcrecurselimit   &:& \None\\
         \funcbuiltin &:& \False\\
+        \funcqualifier &:& \vqualifier\\
         \funcoverride &:& \voverride
       \end{array}
       \right\}
@@ -491,6 +502,7 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
         \funcsubprogramtype &:& \STSetter,\\
         \funcrecurselimit   &:& \None\\
         \funcbuiltin &:& \False\\
+        \funcqualifier &:& \None\\
         \funcoverride &:& \voverride
       \end{array}
       \right\}
@@ -510,6 +522,54 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
     \right)
     \astarrow [\vgetter, \vsetter]
   }
+}
+\end{mathpar}
+
+\ASTRuleDef{Qualifier}
+\hypertarget{build-qualifier}{}
+The function
+\[
+\buildqualifier(\overname{\parsenode{\Nqualifier}}{\vparsednode}) \aslto
+  \overname{\Some{\qualifier}}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{}{
+  \buildqualifier(\overname{\Nqualifier(\emptysentence)}{\vparsednode}) \astarrow \None
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{}{
+  \buildqualifier(\overname{\Nqualifier(\Tpure)}{\vparsednode}) \astarrow \Some{\Pure}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{}{
+  \buildqualifier(\overname{\Nqualifier(\Treadonly)}{\vparsednode}) \astarrow \Some{\Readonly}
+}
+\end{mathpar}
+
+\ASTRuleDef{IsReadonly}
+\hypertarget{build-isreadonly}{}
+The function
+\[
+\buildisreadonly(\overname{\parsenode{\Nisreadonly}}{\vparsednode}) \aslto
+  \overname{\Bool}{\vastnode}
+\]
+transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+
+\begin{mathpar}
+\inferrule{}{
+  \buildisreadonly(\overname{\Nisreadonly(\emptysentence)}{\vparsednode}) \astarrow \False
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{}{
+  \buildqualifier(\overname{\Nisreadonly(\Treadonly)}{\vparsednode}) \astarrow \True
 }
 \end{mathpar}
 
@@ -558,6 +618,7 @@ We also define the following helper rules:
   \item \TypingRuleRef{AnnotateArgs}
   \item \TypingRuleRef{AnnotateOneArg}
   \item \TypingRuleRef{AnnotateReturnType}
+  \item \TypingRuleRef{CheckSubprogramPurity}
   \item \TypingRuleRef{DeclareOneFunc}
   \item \TypingRuleRef{SubprogramClash}
   \item \TypingRuleRef{AddNewFunc}
@@ -650,7 +711,9 @@ is not a constrained expression.
         $(\tenvwithargs, \vseswithargs, \vargs)$\ProseOrTypeError;
   \item annotating the return type of $\funcsig$ in $\tenvwithparams$ using \\ $\annotatereturntype$ and $\vseswithargs$, yields\\
         $(\newtenv, \vreturntype, \vseswithreturn)$\ProseOrTypeError;
-  \item \Proseeqdef{$\vses$}{$\vseswithreturn$ with all instances of \ReadLocal\ and \WriteLocalTerm\ removed};
+  \item \Proseeqdef{$\vsesp$}{$\vseswithreturn$ with every \LocalEffectTerm\ removed};
+  \item checking that the \sideeffectsetterm{} $\vsesp$ adheres to the subprogram's \purity{} qualifier $\funcsig.\funcqualifier$ yields $\True$\ProseOrTypeError;
+  \item the \sideeffectsetterm{} corresponding to $\funcsig.\funcqualifier$ (via $\sesforsubprogram$) is $\vses$;
   \item $\newfuncsig$ is $\funcsig$ with the annotated parameters $\vparams$, annotated arguments $\vargs$, annotated return type $\vreturntype$,
         and $\vrecurselimit$ as its recursion limit.
 \end{itemize}
@@ -679,7 +742,9 @@ is not a constrained expression.
     (\newtenv, \vreturntype, \vseswithreturn) \OrTypeError
     \end{array}
   }\\\\
-  \vses \eqdef \vseswithreturn \setminus \{ \vs \;|\; \configdomain{\vs} \in \{\ReadLocal, \WriteLocal\} \}\\
+  \vsesp \eqdef \vseswithreturn \setminus \{ \vs \;|\; \configdomain{\vs} = \LocalEffect \}\\
+  \checksubprogrampurity(\funcsig.\funcqualifier, \vsesp) \typearrow \True \OrTypeError \\
+  \sesforsubprogram(\funcsig.\funcqualifier) \typearrow \vses
   {
     \newfuncsig \eqdef
     \left\{
@@ -1521,6 +1586,74 @@ as return types.
 }
 \end{mathpar}
 
+\TypingRuleDef{CheckSubprogramPurity}
+\hypertarget{def-checksubprogrampurity}{}
+The function
+\[
+\checksubprogrampurity(
+  \overname{\Some{\qualifier}}{\vqualifier} \aslsep
+  \overname{\TSideEffectSet}{\vses}
+)
+\aslto \overname{\Bool}{\vb} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\]
+checks that the \sideeffectsetterm{} $\vses$ is consistent with the subprogram qualifier $\vqualifier$.
+\ProseOtherwiseTypeError
+
+\ExampleDef{Checking subprogram purity}
+In \listingref{SESForSubprogram}, the bodies of each subprogram are checked as follows:
+\begin{itemize}
+  \item the side effects of the body of \verb|foo| are all \pure{};
+  \item the side effects of the body of \verb|bar| are all \readonly{}; and
+  \item the side effects of the body of \verb|baz| are not checked.
+\end{itemize}
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{none}
+  \begin{itemize}
+    \item $\vqualifier$ is $\None$;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item \AllApplyCase{some\_readonly}
+  \begin{itemize}
+    \item $\vqualifier$ is $\Some{\Readonly}$;
+    \item checking that all \sideeffectdescriptorsterm{} in $\vses$ are \readonly{} yields $\True$\ProseOrTypeError;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item \AllApplyCase{some\_pure}
+  \begin{itemize}
+    \item $\vqualifier$ is $\Some{\Pure}$;
+    \item checking that all \sideeffectdescriptorsterm{} in $\vses$ are \pure{} yields $\True$\ProseOrTypeError;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[none]{}{
+  \checksubprogrampurity(\overname{\None}{\vqualifier}) \typearrow \overname{\True}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[some\_readonly]{
+  \sesisreadonly(\vses) \typearrow \True \OrTypeError
+}{
+  \checksubprogrampurity(\overname{\Some{\Readonly}}{\vqualifier}) \typearrow \overname{\True}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[some\_pure]{
+  \sesispure(\vses) \typearrow \True \OrTypeError
+}{
+  \checksubprogrampurity(\overname{\Some{\Pure}}{\vqualifier}) \typearrow \overname{\True}{\vb}
+}
+\end{mathpar}
+
 \TypingRuleDef{DeclareOneFunc}
 \hypertarget{def-declareonefunc}{}
 The function
@@ -1554,18 +1687,17 @@ See \ExampleRef{Updating the Static Environment for a Subprogram}.
                       & \funcreturntype      &:& \vt,\\
                       & \funcsubprogramtype  &:& \subprogramtype, \\
                       & \funcbuiltin         &:& \vb \\
+                      & \funcqualifier       &:& \vqualifier \\
                   \}  & ; &&
         \end{array}
   \]
-  \item adding a new subprogram with $\name$, $\vargs$, and $\subprogramtype$ to $\tenv$ yields the new
+  \item adding a new subprogram with $\name$, $\vqualifier$, $\vargs$, and $\subprogramtype$ to $\tenv$ yields the new
         environment $\tenvone$ and new name $\namep$\ProseOrTypeError;
   \item checking that $\namep$ is not already declared in the global environment of $\tenvone$
         yields $\True$\ProseOrTypeError;
-  \item $\funcsigone$ is $\funcsig$ with $\name$ substituted by $\nameone$;
-  \item \Proseeqdef{$\initses$}{the union of $\vsesfuncsig$ and the singleton set for
-        a \RecursiveCallTerm\ for $\namep$};
+  \item $\funcsigone$ is $\funcsig$ with $\name$ substituted by $\namep$;
   \item adding a subprogram with name $\namep$, definition $\funcsigone$,
-        and \sideeffectsetterm\ $\initses$ to $\tenvone$ yields $\newtenv$\ProseOrTypeError.
+        and \sideeffectsetterm\ $\vsesfuncsig$ to $\tenvone$ yields $\newtenv$\ProseOrTypeError.
 \end{itemize}
 
 \FormallyParagraph
@@ -1581,27 +1713,16 @@ See \ExampleRef{Updating the Static Environment for a Subprogram}.
                     & \funcreturntype      &:& \vt,\\
                     & \funcsubprogramtype  &:& \subprogramtype, \\
                     & \funcbuiltin         &:& \vb \\
+                    & \funcqualifier       &:& \vqualifier \\
+                    & \funcoverride        &:& \voverride \\
                 \} &&&
       \end{array}
     }\\
-  \addnewfunc(\tenv, \name, \vargs, \subprogramtype) \typearrow
+  \addnewfunc(\tenv, \vqualifier, \name, \vargs, \subprogramtype) \typearrow
   (\tenvone, \namep) \OrTypeError\\\\
   \checktrans{G^\tenvone.\subprograms(\namep) = \bot}{\IdentifierAlreadyDeclared} \checktransarrow \True \terminateas \IdentifierAlreadyDeclared \\\\
-  {
-  \begin{array}{rrcl}
-    \newfuncsig \eqdef \{
-                    & \funcname            &:& \namep,\\
-                    & \funcparameters      &:& \vp,\\
-                    & \funcargs            &:& \vargs,\\
-                    & \funcbody            &:& \bd,\\
-                    & \funcreturntype      &:& \vt,\\
-                    & \funcsubprogramtype  &:& \subprogramtype, \\
-                    & \funcbuiltin         &:& \vb \\
-                \} &&&
-      \end{array}
-    }\\
-    \initses \eqdef \vsesfuncsig \cup\ \{ \RecursiveCall(\namep) \}\\
-    \addsubprogram(\tenvone, \namep, \funcsigone, \initses) \typearrow \newtenv \OrTypeError
+  \newfuncsig \eqdef \funcsig[\funcname \mapsto \namep] \\\\
+  \addsubprogram(\tenvone, \namep, \funcsigone, \vsesfuncsig) \typearrow \newtenv \OrTypeError
 }{
   \declareonefunc(\tenv, \funcsig, \vsesfuncsig) \typearrow (\newtenv, \newfuncsig)
 }
@@ -1613,19 +1734,22 @@ See \ExampleRef{Updating the Static Environment for a Subprogram}.
 \hypertarget{def-subprogramclash}{}
 The function
 \[
-\subprogramclash
-  (
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\Strings}{\name} \aslsep
-    \overname{\subprogramtype}{\subpgmtype} \aslsep
-    \overname{\ty^*}{\formaltypes}
-  )
-  \aslto
-  \overname{\Bool}{\vb} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+  \begin{array}{rl}
+  \subprogramclash
+    (
+      \overname{\staticenvs}{\tenv} \aslsep
+      \overname{\Strings}{\name} \aslsep
+      \overname{\subprogramtype}{\subpgmtype} \aslsep
+      \overname{\qualifier}{\vqualifier} \aslsep
+      \overname{\ty^*}{\formaltypes}
+    )
+  & \aslto \\
+    \overname{\Bool}{\vb} \cup\ \overname{\TTypeError}{\TypeErrorConfig} &
+  \end{array}
 \]
 checks whether the unique subprogram associated with $\name$
 clashes with another subprogram
-that has subprogram type $\subpgmtype$ and list of formal types $\formaltypes$,
+that has subprogram type $\subpgmtype$, qualifier $\vqualifier$, and list of formal types $\formaltypes$,
 yielding a Boolean value in $\vb$.
 \ProseOtherwiseTypeError
 
@@ -1642,6 +1766,9 @@ since their subprogram types clash and their signatures clash (see \TypingRuleRe
 In \listingref{SubprogramTypesClash-bad2}, the function \verb|X| and the procedure \verb|X| clash
 since their subprogram types clash and their signatures clash.
 
+In \listingref{SubprogramClash-bad1}, the function \verb|X| and the procedure \verb|X| clash since subprogram types clash and their qualifiers differ.
+\ASLListing{Clashing subprogram qualifiers}{SubprogramClash-bad1}{\typingtests/TypingRule.SubprogramClash.bad1.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1650,11 +1777,11 @@ since their subprogram types clash and their signatures clash.
         of the static global environment of $\tenv$ (ignoring the associated \sideeffectdescriptorsterm);
   \item applying $\subprogramtypesclash$ to the subprogram type of $\otherfuncsig$ \\
         ($\otherfuncsig.\subprogramtype$) and $\subpgmtype$ yields \\
-        $\True$\ProseTerminateAs{\False}
-        (that is, if both subprogram types are $\STGetter$ or both are $\STSetter$ then the
-        subprogram types are considered to be non-clashing and the entire rule short-circuits to $\False$);
+        $\vbone$;
+  \item determining whether the qualifier of $\otherfuncsig$ is not equal to $\vqualifier$ yields $\vbtwo$;
   \item determining whether there is an argument clash between $\formaltypes$ and \\
-        the formal arguments of $\otherfuncsig$ ($\otherfuncsig.\funcargs$) in $\tenv$ yields $\vb$\ProseOrTypeError.
+        the formal arguments of $\otherfuncsig$ ($\otherfuncsig.\funcargs$) in $\tenv$ yields $\vbthree$\ProseOrTypeError.
+  \item \Proseeqdef{$\vb$}{$\vbone \land (\vbtwo \lor \vbthree)$}.
 \end{itemize}
 
 \FormallyParagraph
@@ -1662,9 +1789,10 @@ since their subprogram types clash and their signatures clash.
 \inferrule{
   G^\tenv.\subprograms(\name) = (\otherfuncsig, \Ignore)\\
   \subprogramtypesclash(\otherfuncsig.\subprogramtype, \subpgmtype) \typearrow \vbone\\
-  \hasargclash(\formaltypes, \otherfuncsig.\funcargs) \typearrow \vbtwo
+  \vbtwo \eqdef \otherfuncsig.\funcqualifier \neq \vqualifier \\
+  \hasargclash(\formaltypes, \otherfuncsig.\funcargs) \typearrow \vbthree
 }{
-  \subprogramclash(\tenv, \name, \subpgmtype, \formaltypes) \typearrow \overname{\vbone \land \vbtwo}{\vb}
+  \subprogramclash(\tenv, \name, \subpgmtype, \vqualifier, \formaltypes) \typearrow \overname{\vbone \land (\vbtwo \lor \vbthree)}{\vb}
 }
 \end{mathpar}
 \identd{BTBR} \identi{FSFQ} \identi{PFGQ}
@@ -1725,6 +1853,7 @@ The function
   \addnewfunc(
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\identifier}{\name} \aslsep
+    \overname{\Some{\qualifier}}{\vqualifier} \aslsep
     \overname{\typedidentifier^*}{\formals} \aslsep
     \overname{\subprogramtype}{\subpgmtype})
   & \aslto\\
@@ -1732,7 +1861,7 @@ The function
   \cup\ \overname{\TTypeError}{\TypeErrorConfig} &
   \end{array}
 \]
-ensures that the subprogram given by the identifier $\name$, list of formals $\formals$,
+ensures that the subprogram given by the identifier $\name$, qualifier $\vqualifier$, list of formals $\formals$,
 and subprogram type $\subpgmtype$ has a unique name among all the potential subprograms
 that overload $\name$.
 The result is the unique subprogram identifier $\newname$, which is used to distinguish it in the set
@@ -1803,7 +1932,7 @@ are ill-typed due to subprogram declaration clashes.
   G^\tenv.\overloadedsubprograms(\name) = \bot\\
   \newtenv \eqdef (G^\tenv.\overloadedsubprograms[\name\mapsto\{\name\}],  L^\tenv)
 }{
-  \addnewfunc(\tenv, \name, \formals, \subpgmtype) \typearrow
+  \addnewfunc(\tenv, \name, \vqualifier, \formals, \subpgmtype) \typearrow
   (\newtenv, \overname{\name}{\newname})
 }
 \end{mathpar}
@@ -1816,14 +1945,14 @@ are ill-typed due to subprogram declaration clashes.
   \formaltypes \eqdef [(\id,\vt) \in \formals : \vt]\\
   {
     \left(\begin{array}{l}
-  \namep \in \othernames: \\ \subprogramclash(\tenv, \namep, \subpgmtype, \formaltypes) \typearrow
+  \namep \in \othernames: \\ \subprogramclash(\tenv, \namep, \subpgmtype, \vqualifier, \formaltypes) \typearrow
   \vb_{\namep} \OrTypeError
     \end{array}\right)
   }\\\\
   \namep \in \othernames: \checktrans{\neg\vb_{\namep}}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError\\\\
   \newtenv \eqdef (G^\tenv.\overloadedsubprograms[\name\mapsto \othernames \cup\ \{\newname\}],  L^\tenv)
 }{
-  \addnewfunc(\tenv, \name, \formals, \subpgmtype) \typearrow
+  \addnewfunc(\tenv, \name, \vqualifier, \formals, \subpgmtype) \typearrow
   (\newtenv, \newname)
 }
 \end{mathpar}

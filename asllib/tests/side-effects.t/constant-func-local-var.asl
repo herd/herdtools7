@@ -1,4 +1,4 @@
-func foo (x: integer) => integer
+pure func foo (x: integer) => integer
 begin
   var result: integer = 3;
   result = result + x * x;

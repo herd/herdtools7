@@ -46,6 +46,7 @@ additions
 address
 addressed
 adds
+adheres
 admits
 advance
 advised
@@ -338,6 +339,7 @@ combinations
 combine
 combined
 combines
+combining
 come
 comes
 commas
@@ -388,6 +390,7 @@ concept
 concepts
 conceptually
 concerned
+concerning
 conclude
 concludes
 concluding
@@ -1534,9 +1537,12 @@ prs
 pull
 punctuation
 pure
+purities
 purity
 purpose
 purposes
+qualifier
+qualifiers
 quality
 query
 quite
@@ -1765,6 +1771,7 @@ several
 shall
 share
 shared
+shares
 shift
 shortens
 shortest
