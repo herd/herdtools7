@@ -57,7 +57,7 @@ The semantics of subprograms is given in \chapref{SubprogramCalls}.
     \Tsetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
   |\ & \Tsetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
       \Nisreadonly \parsesep \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
-\Nqualifier \derivesinline\ & \emptysentence \;|\; \Tpure \;|\;\Treadonly &\\
+\Nqualifier \derivesinline\ & \emptysentence \;|\; \Tpure \;|\;\Treadonly \;|\;\Tnoreturn &\\
 \Nisreadonly \derivesinline\ & \emptysentence \;|\; \Treadonly &\\
 \Noverride \derivesinline\ & \emptysentence \;|\; \Timpdef \;|\;\Timplementation &
 \end{flalign*}
@@ -90,7 +90,7 @@ The semantics of subprograms is given in \chapref{SubprogramCalls}.
 \typedidentifier \derives\ & (\identifier, \ty) &\\
 \subprogramtype \derives\ & \STProcedure \;|\; \STFunction &\\
                 |\  & \STGetter \;|\; \STSetter &\\
-\qualifier \derives\ & \Pure \;|\; \Readonly &\\
+\qualifier \derives\ & \Pure \;|\; \Readonly \;|\; & \Noreturn &\\
 \overrideinfo \derives\ & \Impdef \;|\; \Implementation &
 \end{flalign*}
 
@@ -535,20 +535,26 @@ The function
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
-\inferrule{}{
+\inferrule[none]{}{
   \buildqualifier(\overname{\Nqualifier(\emptysentence)}{\vparsednode}) \astarrow \None
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule{}{
+\inferrule[pure]{}{
   \buildqualifier(\overname{\Nqualifier(\Tpure)}{\vparsednode}) \astarrow \Some{\Pure}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule{}{
+\inferrule[readonly]{}{
   \buildqualifier(\overname{\Nqualifier(\Treadonly)}{\vparsednode}) \astarrow \Some{\Readonly}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[noreturn]{}{
+  \buildqualifier(\overname{\Nqualifier(\Tnoreturn)}{\vparsednode}) \astarrow \Some{\Noreturn}
 }
 \end{mathpar}
 
@@ -562,13 +568,13 @@ The function
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
-\inferrule{}{
+\inferrule[none]{}{
   \buildisreadonly(\overname{\Nisreadonly(\emptysentence)}{\vparsednode}) \astarrow \False
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule{}{
+\inferrule[readonly]{}{
   \buildqualifier(\overname{\Nisreadonly(\Treadonly)}{\vparsednode}) \astarrow \True
 }
 \end{mathpar}
@@ -583,19 +589,19 @@ The function
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
-\inferrule{}{
+\inferrule[none]{}{
   \buildoverride(\overname{\Noverride(\emptysentence)}{\vparsednode}) \astarrow \None
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule{}{
+\inferrule[impdef]{}{
   \buildoverride(\overname{\Noverride(\Timpdef)}{\vparsednode}) \astarrow \Some{\Impdef}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule{}{
+\inferrule[implementation]{}{
   \buildoverride(\overname{\Noverride(\Timplementation)}{\vparsednode}) \astarrow \Some{\Implementation}
 }
 \end{mathpar}
@@ -744,7 +750,7 @@ is not a constrained expression.
   }\\\\
   \vsesp \eqdef \vseswithreturn \setminus \{ \vs \;|\; \configdomain{\vs} = \LocalEffect \}\\
   \checksubprogrampurity(\funcsig.\funcqualifier, \vsesp) \typearrow \True \OrTypeError \\
-  \sesforsubprogram(\funcsig.\funcqualifier) \typearrow \vses
+  \sesforsubprogram(\funcsig.\funcqualifier) \typearrow \vses\\
   {
     \newfuncsig \eqdef
     \left\{
@@ -1603,16 +1609,17 @@ checks that the \sideeffectsetterm{} $\vses$ is consistent with the subprogram q
 In \listingref{SESForSubprogram}, the bodies of each subprogram are checked as follows:
 \begin{itemize}
   \item the side effects of the body of \verb|foo| are all \pure{};
-  \item the side effects of the body of \verb|bar| are all \readonly{}; and
+  \item the side effects of the body of \verb|bar| are all \readonly{};
+  \item the side effects of the body of \verb|goo| are not checked; and
   \item the side effects of the body of \verb|baz| are not checked.
 \end{itemize}
 
 \ProseParagraph
 \OneApplies
 \begin{itemize}
-  \item \AllApplyCase{none}
+  \item \AllApplyCase{none\_or\_noreturn}
   \begin{itemize}
-    \item $\vqualifier$ is $\None$;
+    \item $\vqualifier$ is either $\None$ or $\Some{\Noreturn}$;
     \item $\vb$ is $\True$.
   \end{itemize}
 
@@ -1633,8 +1640,10 @@ In \listingref{SESForSubprogram}, the bodies of each subprogram are checked as f
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[none]{}{
-  \checksubprogrampurity(\overname{\None}{\vqualifier}) \typearrow \overname{\True}{\vb}
+\inferrule[none\_or\_noreturn]{
+  \vqualifier = \None \lor \vqualifier = \Some{\Noreturn}
+}{
+  \checksubprogrampurity(\vqualifier) \typearrow \overname{\True}{\vb}
 }
 \end{mathpar}
 

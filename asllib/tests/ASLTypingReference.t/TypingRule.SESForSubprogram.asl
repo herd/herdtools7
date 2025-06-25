@@ -8,6 +8,11 @@ begin
   pass;
 end;
 
+noreturn func goo() // GlobalEffect(SE_Impure), Immutability(FALSE)
+begin
+  pass;
+end;
+
 func baz() // GlobalEffect(SE_Impure), Immutability(FALSE)
 begin
   pass;

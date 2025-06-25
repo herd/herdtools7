@@ -79,6 +79,7 @@ type error_desc =
   | SettingIntersectingSlices of bitfield list
   | SetterWithoutCorrespondingGetter of func
   | NonReturningFunction of identifier
+  | NoreturnViolation of identifier
   | ConflictingSideEffects of SideEffect.t * SideEffect.t
   | UnexpectedATC
   | UnreachableReached
@@ -197,6 +198,7 @@ let error_label = function
   | SettingIntersectingSlices _ -> "SettingIntersectingSlices"
   | SetterWithoutCorrespondingGetter _ -> "SetterWithoutCorrespondingGetter"
   | NonReturningFunction _ -> "NonReturningFunction"
+  | NoreturnViolation _ -> "NoreturnViolation"
   | UnexpectedATC -> "UnexpectedATC"
   | UnreachableReached -> "UnreachableReached"
   | LoopLimitReached -> "LoopLimitReached"
@@ -524,6 +526,9 @@ module PPrint = struct
     | NonReturningFunction name ->
         fprintf f "ASL Type error:@ the@ function %S@ %a." name pp_print_text
           "may not terminate by returning a value or raising an exception."
+    | NoreturnViolation name ->
+        fprintf f "ASL Type error:@ the@ function %S@ %a." name pp_print_text
+          "is qualified with noreturn but contains a return statement"
     | RecursionLimitReached ->
         pp_print_text f "ASL Dynamic error: recursion limit reached."
     | LoopLimitReached ->

@@ -548,12 +548,15 @@ module SES = struct
       local_purity = SE_Pure;
     }
 
+  (** Begin SESForSubprogram *)
   let set_purity_for_subprogram qualifier ses =
     match qualifier with
-    | None -> { ses with global_purity = SE_Impure; is_immutable = false }
+    | None | Some AST.Noreturn ->
+        { ses with global_purity = SE_Impure; is_immutable = false }
     | Some AST.Readonly ->
         { ses with global_purity = SE_Readonly; is_immutable = false }
     | Some AST.Pure -> { ses with global_purity = SE_Pure; is_immutable = true }
+  (* End *)
 
   let remove_thrown_exceptions ses = { ses with thrown_exceptions = ISet.empty }
   let remove_calls_recursives ses = { ses with calls_recursives = ISet.empty }

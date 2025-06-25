@@ -26,22 +26,22 @@ end;
 
 func sequencing1() => integer
 begin
-    // The control-flow state is determined by the first statement.
+    // The abstract configuration is determined by the first statement.
     throw invalid_state{-};
     var x = 5;
 end;
 
 func sequencing2() => integer
 begin
-    // The control-flow state is determined by the second statement.
+    // The abstract configuration is determined by the second statement.
     pass;
     return 5;
 end;
 
 func conditional(flag: boolean) => integer
 begin
-    // The control-flow state is determined by "joining"
-    // the control-flow states of each of the statements
+    // The abstract configuration is determined by "joining"
+    // the abstract configurations of each of the statements
     // comprising the conditional. statement.
     if flag then
         return 5;

@@ -414,6 +414,7 @@
 \newcommand\Tmod[0]{\verbatimterminal{MOD}{MOD}}
 \newcommand\Tmul[0]{\verbatimterminal{MUL}{*}}
 \newcommand\Tneq[0]{\verbatimterminal{NEQ}{!=}}
+\newcommand\Tnoreturn[0]{\verbatimterminal{NORETURN}{noreturn}}
 \newcommand\Tnot[0]{\verbatimterminal{NOT}{NOT}}
 \newcommand\Tof[0]{\verbatimterminal{OF}{of}}
 \newcommand\Tor[0]{\verbatimterminal{OR}{OR}}
@@ -760,6 +761,7 @@
 
 \newcommand\Pure[0]{\hyperlink{ast-pure}{\textsf{Pure}}}
 \newcommand\Readonly[0]{\hyperlink{ast-readonly}{\textsf{Readonly}}}
+\newcommand\Noreturn[0]{\hyperlink{ast-noreturn}{\textsf{Noreturn}}}
 
 \newcommand\Impdef[0]{\hyperlink{ast-impdef}{\textsf{Impdef}}}
 \newcommand\Proseimpdefsubprogram[0]{implementation-defined subprogram}
@@ -1666,8 +1668,6 @@
 \newcommand\localdeclaration[0]{\hyperlink{def-localdeclaration}{local declaration}}
 
 \newcommand\basevalueterm[0]{\hyperlink{def-basevalueterm}{base value}}
-\newcommand\controlflowsymbolterm[0]{\hyperlink{def-controlflowsymbolterm}{control flow state}}
-\newcommand\controlflowsymbolsterm[0]{\hyperlink{def-controlflowsymbolterm}{control flow states}}
 
 \newcommand\defusename[0]{\hyperlink{ast-defusename}{\textsf{def\_use\_name}}}
 \newcommand\Subprogram[0]{\hyperlink{ast-subprogram}{\textsf{Subprogram}}}
@@ -1735,13 +1735,16 @@
 %% Statement macros
 \newcommand\passstatementterm[0]{\hyperlink{def-passstatementterm}{pass statement}}
 \newcommand\passstatementsterm[0]{\hyperlink{def-passstatementterm}{pass statements}}
+\newcommand\assignmentstatementterm[0]{\hyperlink{def-assignmentstatementterm}{assignment statement}}
 \newcommand\assignmentstatement[2]{\hyperlink{def-assignmentstatementterm}
   {assignment statement} for the assignable expression #1 and right-hand-side expression #2}
+\newcommand\declarationstatementterm[0]{\hyperlink{def-declarationstatementterm}{declaration statement}}
 \newcommand\declarationstatement[4]{\hyperlink{def-declarationstatementterm}
   {declaration statement} for the local declaration keyword #1, local declaration item #2, optional type annotation #3, and optional initializing expression #4}
 \newcommand\sequencingstatementterm[0]{\hyperlink{def-sequencestatementterm}{sequencing statement}}
+\newcommand\sequencingstatement[2]{\hyperlink{def-sequencestatementterm}{sequencing statement for #1 followed by #2}}
+\newcommand\callstatementterm[0]{\hyperlink{def-callstatementterm}{call statement}}
 \newcommand\callstatement[4]{\hyperlink{def-callstatementterm}{call statement} for the subprogram #1 with list of arguments #2, list of parameters #3, and subprogram type #4}
-\newcommand\conditionalstatementterm[0]{\hyperlink{def-conditionalstatementterm}{conditional statement}}
 \newcommand\conditionalstatement[3]{\hyperlink{def-conditionalstatementterm}
   {conditional statement} with condition expression #1, \texttt{then} statement #2, and \texttt{else} statement #3 }
 \newcommand\casestatementterm[0]{\hyperlink{def-casestatementterm}{case statement}}
@@ -1750,7 +1753,6 @@
 \newcommand\whilestatementterm[0]{\hyperlink{def-whilestatementterm}{while statement}}
 \newcommand\whilestatement[3]{\hyperlink{def-whilestatementterm}
   {while statement} for the condition #1, optional limit expression #2, and body statement #2}
-\newcommand\repeatstatementterm[0]{\hyperlink{def-repeatstatementterm}{repeat statement}}
 \newcommand\repeatstatementsterm[0]{\hyperlink{def-repeatstatementterm}{repeat statements}}
 \newcommand\repeatstatement[3]{\hyperlink{def-repeatstatementterm}
   {repeat statement} for the body statement #1, condition expression #2, and optional limit expression #3}
@@ -1858,16 +1860,16 @@
 \newcommand\Proseannotatesubprogram[5]{\hyperlink{def-annotatesubprogram}{annotating} the subprogram definition #2
   in the static environment #1 with \sideeffectdescriptorsetsterm{} #3 yields the subprogram definition #4
   and \sideeffectdescriptorsetsterm{} #5}
-\newcommand\checkstmtreturnsorthrows[0]{\hyperlink{def-checkstmtreturnsorthrows}{\textfunc{check\_stmt\_returns\_or\_throws}}}
 
-\newcommand\controlflowfromstmt[0]{\hyperlink{def-controlflowfromstmt}{\textfunc{control\_flow\_from\_stmt}}}
-\newcommand\controlflowseq[0]{\hyperlink{def-controlflowseq}{\textfunc{control\_flow\_seq}}}
-\newcommand\controlflowjoin[0]{\hyperlink{def-controlflowjoin}{\textfunc{control\_flow\_join}}}
-\newcommand\assertednotinterrupt[0]{\hyperlink{def-assertednotinterrupt}{\textsf{AssertedNotInterrupt}}}
-\newcommand\interrupt[0]{\hyperlink{def-interrupt}{\textsf{Interrupt}}}
-\newcommand\maynotinterrupt[0]{\hyperlink{def-maynotinterrupt}{\textsf{MayNotInterrupt}}}
-\newcommand\controlflowstate[0]{\hyperlink{def-controlflowstate}{\textsf{ControlFlow}}}
-\newcommand\controlflowleq[0]{\hyperlink{def-controlflowleq}{<_{\textsf{CF}}}}
+\newcommand\checkcontrolflow[0]{\hyperlink{def-checkcontrolflow}{\textfunc{check\_control\_flow}}}
+\newcommand\Proseabstractconfiguration{\hyperlink{def-abstractconfigurations}{abstract configuration}}
+\newcommand\Proseabstractconfigurations{\hyperlink{def-abstractconfigurations}{abstract configurations}}
+\newcommand\AbsConfig{\hyperlink{def-abstractconfigurations}{\textsf{AbsConfig}}}
+\newcommand\AbsAbnormal[0]{\hyperlink{def-absabnormal}{\textsf{Abs\_Abnormal}}}
+\newcommand\AbsReturning[0]{\hyperlink{def-absreturning}{\textsf{Abs\_Returning}}}
+\newcommand\AbsContinuing[0]{\hyperlink{def-abscontinuing}{\textsf{Abs\_Continuing}}}
+\newcommand\approxstmt[0]{\hyperlink{def-approxstmt}{\textfunc{approx\_stmt}}}
+\newcommand\allowedabsconfigs[0]{\hyperlink{def-allowedabsconfigs}{\textfunc{allowed\_abs\_configs}}}
 
 \newcommand\Prosetypecheckast[4]{\hyperlink{def-typecheckast}{typechecking} #1 in #2 yields the typed AST #3 and static environment #4}
 \newcommand\typecheckast[0]{\hyperlink{def-typecheckast}{\textfunc{type\_check\_ast}}}
@@ -2451,10 +2453,6 @@
 \newcommand\vdeclx[0]{\texttt{decl\_x}}
 \newcommand\vadecls[0]{\texttt{adecls}}
 \newcommand\vbitvector[0]{\texttt{bitvector}}
-\newcommand\vcf[0]{\texttt{cf}}
-\newcommand\vctrlflow[0]{\texttt{ctrl\_flow}}
-\newcommand\vctrlflowone[0]{\texttt{ctrl\_flow1}}
-\newcommand\vctrlflowtwo[0]{\texttt{ctrl\_flow2}}
 \newcommand\vcases[0]{\texttt{cases}}
 \newcommand\vcasealtlist[0]{\texttt{case\_alt\_list}}
 \newcommand\vcasealtlistast[0]{\texttt{case\_alt\_list\_ast}}
@@ -2737,7 +2735,6 @@
 \newcommand\vnormal[0]{\texttt{normal}}
 \newcommand\vnewargs[0]{\texttt{new\_args}}
 \newcommand\vnewline[0]{\texttt{newline}}
-\newcommand\vo[0]{\texttt{o}}
 \newcommand\voptlimit[0]{\texttt{opt\_limit}}
 \newcommand\votherwiseopt[0]{\texttt{otherwise\_opt}}
 \newcommand\vouterenv[0]{\texttt{outer\_env}}
@@ -2774,8 +2771,6 @@
 \newcommand\vrecurselimit[0]{\texttt{recurse\_limit}}
 \newcommand\vreone[0]{\texttt{re1}}
 \newcommand\vres[0]{\texttt{res}}
-\newcommand\vreszero[0]{\texttt{res0}}
-\newcommand\vresone[0]{\texttt{res1}}
 \newcommand\vret[0]{\texttt{ret}}
 \newcommand\vreturntype[0]{\texttt{return\_type}}
 \newcommand\vs[0]{\texttt{s}}
@@ -3070,3 +3065,10 @@
 \newcommand\vN[0]{\texttt{N}}
 \newcommand\vA[0]{\texttt{A}}
 \newcommand\newprec[0]{\texttt{new\_prec}}
+\newcommand\absconfigs[0]{\texttt{abs\_configs}}
+\newcommand\configsone[0]{\texttt{configs1}}
+\newcommand\configstwo[0]{\texttt{configs2}}
+\newcommand\bodyconfigs[0]{\texttt{body\_configs}}
+\newcommand\otherwiseconfigs[0]{\texttt{otherwise\_configs}}
+\newcommand\otherwises[0]{\texttt{otherwise\_s}}
+\newcommand\catchconfigs[0]{\texttt{catch\_configs}}

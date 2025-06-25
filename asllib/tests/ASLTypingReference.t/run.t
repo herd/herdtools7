@@ -636,10 +636,18 @@ ASL Typing Tests / annotating types:
   0xffffffffffffffff
   $ aslref TypingRule.Subprogram.asl
   0x04
-  $ aslref --no-exec TypingRule.CheckStmtReturnsOrThrows.asl
-  $ aslref TypingRule.CheckStmtReturnsOrThrows.bad.asl
-  File TypingRule.CheckStmtReturnsOrThrows.bad.asl, line 6, character 4 to
-    line 16, character 8:
+  $ aslref --no-exec TypingRule.CheckControlFlow.noreturn.asl
+  $ aslref --no-exec TypingRule.CheckControlFlow.bad.asl
+  File TypingRule.CheckControlFlow.bad.asl, line 3, characters 4 to 13:
+      return 0; // Illegal as the containing function is qualified with noreturn
+      ^^^^^^^^^
+  ASL Type error: the function "returning" is qualified with noreturn but
+    contains a return statement.
+  [1]
+  $ aslref --no-exec TypingRule.CheckControlFlow.asl
+  $ aslref TypingRule.CheckControlFlow.bad2.asl
+  File TypingRule.CheckControlFlow.bad2.asl, line 6, character 4 to line 16,
+    character 8:
       if v != Zeros{N} then
           if flag then
               return Ones{N} XOR v;
@@ -654,19 +662,19 @@ ASL Typing Tests / annotating types:
   ASL Type error: the function "incorrect_terminating_path" may not terminate
     by returning a value or raising an exception..
   [1]
-  $ aslref TypingRule.ControlFlowFromStmt.asl
-  File TypingRule.ControlFlowFromStmt.asl, line 8, characters 4 to 30:
+  $ aslref TypingRule.ApproxStmt.asl
+  File TypingRule.ApproxStmt.asl, line 8, characters 4 to 30:
       pragma require_positive x;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Warning: pragma require_positive will be ignored.
-  $ aslref TypingRule.ControlFlowFromStmt.bad1.asl
-  File TypingRule.ControlFlowFromStmt.bad1.asl, line 8, character 4 to line 10,
+  $ aslref TypingRule.ApproxStmt.bad1.asl
+  File TypingRule.ApproxStmt.bad1.asl, line 8, character 4 to line 10,
     character 8:
       while (TRUE) do
           pass;
       end;
   ASL Warning: Loop does not have a limit.
-  File TypingRule.ControlFlowFromStmt.bad1.asl, line 8, character 4 to line 10,
+  File TypingRule.ApproxStmt.bad1.asl, line 8, character 4 to line 10,
     character 8:
       while (TRUE) do
           pass;

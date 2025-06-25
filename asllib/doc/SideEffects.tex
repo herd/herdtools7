@@ -410,10 +410,11 @@ Note that each subprogram shares the same body, the side effects are given by th
 \ProseParagraph
 \OneApplies
 \begin{itemize}
-  \item \AllApplyCase{none}
+  \item \AllApplyCase{none\_or\_noreturn}
   \begin{itemize}
-    \item $\vqualifier$ is $\None$;
-    \item the result is a set containing a \GlobalEffectTerm{} with \purity{} \\ $\SEImpure$, and an \ImmutabilityTerm{} with immutability $\False$.
+    \item $\vqualifier$ is either $\None$ or $\Some{\Noreturn}$;
+    \item the result is a set containing a \GlobalEffectTerm{} with \purity{} \\ $\SEImpure$, and an \ImmutabilityTerm{}
+          with immutability \\ $\False$.
   \end{itemize}
 
   \item \AllApplyCase{some\_readonly}
@@ -431,10 +432,11 @@ Note that each subprogram shares the same body, the side effects are given by th
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[none]{
+\inferrule[none\_or\_noreturn]{
+  \vqualifier = \None \lor \vqualifier = \Some{\Noreturn}\\
   \vs \eqdef \{ \GlobalEffect(\SEImpure), \Immutability(\False) \}
 }{
-  \sesforsubprogram(\overname{\None}{\vqualifier}) \typearrow \vs
+  \sesforsubprogram(\vqualifier) \typearrow \vs
 }
 \end{mathpar}
 
