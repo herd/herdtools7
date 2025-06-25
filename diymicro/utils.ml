@@ -13,10 +13,10 @@ let rec list_last = function
   | _ -> Warn.fatal "Can't get last element of empty list"
 
 (** Cartesian product of 2 lists *)
-let cartesian2 l1 l2 = List.concat_map (fun x -> List.map (fun y -> x, y) l2) l1
+let cartesian2 l1 l2 =
+  List.map (fun x -> List.map (fun y -> x, y) l2) l1 |> List.concat
 
 (** Cartesian product of 3 lists*)
 let cartesian3 l1 l2 l3 =
-  List.concat_map
-    (fun x -> List.concat_map (fun y -> List.map (fun z -> x, y, z) l3) l2)
-    l1
+  List.map (fun x -> List.map (fun y -> List.map (fun z -> x, y, z) l3) l2) l1
+  |> List.concat |> List.concat
