@@ -834,6 +834,8 @@ let match_reg_events es =
       PP.show_es_rfm test es rfm ;
       ()
 
+    let debug_solver = C.debug.Debug_herd.solver > 0
+
     let do_solve_regs test es csn =
       let rfm = match_reg_events es in
       let csn =
@@ -855,11 +857,11 @@ let match_reg_events es =
                 PP.show_es_rfm test es rfm ;
                 assert false)
           rfm csn in
-      if  C.debug.Debug_herd.solver then
+      if  debug_solver then
         prerr_endline "++ Solve  registers" ;
       match VC.solve csn with
       | VC.NoSolns ->
-         if C.debug.Debug_herd.solver then
+         if debug_solver then
            pp_nosol "register" test es rfm ;
          None
       | VC.Maybe (sol,csn) ->
@@ -871,7 +873,7 @@ let match_reg_events es =
     let solve_regs test es csn =
       match do_solve_regs test es csn with
       | Some (es,rfm,cns) as r ->
-          if C.debug.Debug_herd.solver && C.verbose > 0 then begin
+          if debug_solver && C.verbose > 0 then begin
             let module PP = Pretty.Make(S) in
             prerr_endline "Reg solved, direct" ;
             Printf.eprintf "++++ Remaing equations:\n%s\n++++++\n%!"
@@ -1112,11 +1114,11 @@ let match_reg_events es =
                 loads stores cns in
             if dbg then eprintf "\n%!" ;
             (* And solve *)
-            if C.debug.Debug_herd.solver then
+            if debug_solver then
               prerr_endline "++ Solve memory" ;
             match VC.solve cns with
             | VC.NoSolns ->
-               if C.debug.Debug_herd.solver then begin
+               if debug_solver then begin
                  let rfm = add_some_mem loads stores rfm in
                  pp_nosol "memory" test es rfm
                end ;
@@ -1130,7 +1132,7 @@ let match_reg_events es =
                 kont es rfm cs res
           with
           | Contradiction ->  (* May  be raised by add_mem_eqs *)
-             if C.debug.Debug_herd.solver then
+             if debug_solver then
                begin
                  let rfm = add_some_mem loads stores rfm in
                  pp_nosol "memory" test es rfm
@@ -1152,7 +1154,7 @@ let match_reg_events es =
          In other words, it is not possible to make
          such event structures concrete.
          This occurs with cyclic rfmaps *)
-      if C.debug.Debug_herd.solver then begin
+      if debug_solver then begin
           let module PP = Pretty.Make(S) in
           prerr_endline "Unsolvable system" ;
           PP.show_es_rfm test es rfm ;
@@ -1361,7 +1363,7 @@ let match_reg_events es =
         List.map
           (fun (x,rs,wss) -> rs,MatchRf.find_rfs_sca x rs wss)
           ms in
-      if C.debug.Debug_herd.solver || C.debug.Debug_herd.mem then begin
+      if debug_solver || C.debug.Debug_herd.mem then begin
         eprintf "+++++++++++++++++++++++\n" ;
         List.iter
           (fun (rs,wss) -> eprintf "[%a] ->\n" debug_events rs ;
@@ -1711,7 +1713,7 @@ let match_reg_events es =
              loc_stores []
         | OptAce.False|OptAce.Iico ->
            U.LocEnv.fold (fun _loc ws k -> ws::k) loc_stores [] in
-      if C.debug.Debug_herd.solver && Misc.consp possible_finals then begin
+      if debug_solver && Misc.consp possible_finals then begin
         eprintf "+++++++++ possible finals ++++++++++++++\n" ;
         List.iter
           (fun ws ->  eprintf "[%a]\n" debug_events ws)
@@ -1780,7 +1782,7 @@ let match_reg_events es =
             MatchFinal.find_rfs_sca (A.pp_location loc) rs wss::k)
           loc_wss [] in
 
-      if C.debug.Debug_herd.solver && Misc.consp wsss then begin
+      if debug_solver && Misc.consp wsss then begin
         eprintf "+++++++++ possible finals ++++++++++++++\n" ;
         List.iter
           (fun wss ->
@@ -1889,7 +1891,7 @@ let match_reg_events es =
                 rfm ws in
             let fsc = compute_final_state test rfm es.E.events in
             if check_filter test fsc && worth_going test fsc then begin
-              if C.debug.Debug_herd.solver then begin
+              if debug_solver then begin
                 let module PP = Pretty.Make(S) in
                 let fsc,_ = fsc in eprintf "Final rfmap, final state=%s\n%!" (S.A.dump_state fsc);
                 PP.show_es_rfm test es rfm ;
@@ -1916,7 +1918,7 @@ let match_reg_events es =
                  } in
                 kont conc ofail res
               else begin
-                if C.debug.Debug_herd.solver then begin
+                if debug_solver then begin
                   let conc =
                     {
                      S.str = es ;
@@ -2098,7 +2100,7 @@ Please use `-variant self` as an argument to herd7 to enable it."
       match do_solve_regs test es cs with
       | None -> res
       | Some (es,rfm,cs) ->
-          if C.debug.Debug_herd.solver && C.verbose > 0 then begin
+          if debug_solver && C.verbose > 0 then begin
             let module PP = Pretty.Make(S) in
             prerr_endline "Reg solved" ;
             PP.show_es_rfm test es rfm ;
@@ -2131,7 +2133,7 @@ Please use `-variant self` as an argument to herd7 to enable it."
                      && not (mixed || memtag || morello)
                   then
                     check_sizes test es ;
-                  if C.debug.Debug_herd.solver && C.verbose > 0 then begin
+                  if debug_solver && C.verbose > 0 then begin
                     let module PP = Pretty.Make(S) in
                     prerr_endline "Mem solved" ;
                     PP.show_es_rfm test es rfm
