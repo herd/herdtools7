@@ -46,6 +46,7 @@ type t =
 (* Tags *)
   | MemTag
   | MTEPrecision of Precision.t (* MTE tag mismatch handling *)
+  | MTEStoreOnly
   | FaultHandling of Fault.Handling.t (* Fault handling *)
   | CutOff
   | Morello
@@ -148,6 +149,7 @@ let parse s = match Misc.lowercase s with
 | "lkmmv1" -> Some (LKMMVersion `lkmmv1)
 | "lkmmv2" -> Some (LKMMVersion `lkmmv2)
 | "tagmem"|"memtag"|"mte" -> Some MemTag
+| "store-only" -> Some MTEStoreOnly
 | "cutoff" -> Some CutOff
 | "morello" -> Some Morello
 | "neon" -> Some Neon
@@ -249,6 +251,7 @@ let pp = function
   | LKMMVersion `lkmmv2 -> "lkmmv2"
   | MemTag -> "memtag"
   | MTEPrecision p -> Precision.pp p
+  | MTEStoreOnly -> "store-only"
   | FaultHandling p -> Fault.Handling.pp p
   | CutOff -> "CutOff"
   | Morello -> "Morello"
@@ -325,6 +328,10 @@ let set_fault_handling r = function
 
 let set_mte_precision r = function
   | MTEPrecision p -> r := p; true
+  | _ -> false
+
+let set_mte_store_only r = function
+  | MTEStoreOnly -> r := true; true
   | _ -> false
 
 let check_vector_length memo n =
