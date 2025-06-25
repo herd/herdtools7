@@ -36,7 +36,7 @@ module Task(A:TArg) = struct
     (fun () -> !exit_status)
 
   type task =
-      { idx : int ; com : string ; chan : in_channel ;
+      { idx : int ; chan : in_channel ;
         oname : string ; buff : Buffer.t; }
 (* Fork utility *)
   let dir =
@@ -85,7 +85,7 @@ module Task(A:TArg) = struct
       | Buff -> set_nonblock (descr_of_in_channel chan)
       end ;
       let buff = match A.mode with  Buff -> Buffer.create 128 | File -> nobuff in
-      Some { com; idx; buff; chan; oname;}
+      Some { idx; buff; chan; oname;}
     with Exit -> None
 
   let table = Hashtbl.create 17

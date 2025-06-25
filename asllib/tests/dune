@@ -5,14 +5,19 @@
  (libraries asllib qcheck)
  (modules toposort ConstraintBinops))
 
+(library
+ (name testhelpers)
+ (libraries asllib zarith)
+ (modules helpers))
+
 (tests
  (names static bitvector types)
  (modes native)
  (deps
   (:standard ../libdir/stdlib.asl))
- (libraries asllib zarith)
+ (libraries asllib zarith testhelpers)
  (modules
-  (:standard \ toposort ConstraintBinops Lexer))
+  (:standard \ toposort helpers ConstraintBinops Lexer))
  (flags
   (:standard -w -40-42))
  (action
@@ -24,8 +29,8 @@
 (test
  (name Lexer)
  (modes native)
- (libraries asllib menhirSdk)
- (modules helpers Lexer)
+ (libraries asllib menhirSdk testhelpers)
+ (modules Lexer)
  (action
   (setenv
    ASL_PARSER_CMLY
