@@ -89,7 +89,7 @@ and type location = A.location
 and type state = A.state =
   struct
 
-    let debug_solver = C.debug.Debug_herd.solver
+    let debug = C.debug.Debug_herd.solver
 
     open Printf
     module V = A.V
@@ -280,7 +280,7 @@ and type state = A.state =
       let t = add_vars_cns cns in
       let m = uf_cns t cns in
       let cns = subst_cns m cns in
-      if false && debug_solver then begin
+      if false && debug > 0 then begin
        eprintf "* Normalizes to *\n%s\n%!" (pp_cnstrnts cns)
       end ;
       m,cns
@@ -334,7 +334,7 @@ and type state = A.state =
             else if C.keep_failed_as_undetermined then cn :: k
             else
               let () =
-                if debug_solver then begin
+                if debug > 0 then begin
                   eprintf "Solving %s\n" (pp_cnstrnt cn) ;
                   eprintf "Delaying exception in solver: %s\n%!"
                     (Printexc.to_string e)
@@ -446,7 +446,7 @@ let get_failed cns =
         (V.Solution.map (fun x -> V.Val x) solns0)
 
     let solve_std lst =
-      if debug_solver then begin
+      if debug > 0 then begin
         prerr_endline "** Solve **" ;
         eprintf "%s\n" (pp_cnstrnts lst) ; flush stderr
       end ;
@@ -457,7 +457,7 @@ let get_failed cns =
           let solns = add_vars_solns m solns in
           Maybe (solns,lst)
         with Contradiction -> NoSolns in
-      if debug_solver then begin
+      if debug > 0 then begin
         eprintf "Solutions: %s\n" (pp_answer sol) ; flush stderr
       end ;
       sol
@@ -596,9 +596,15 @@ let get_failed cns =
       | Warn _|Failed _ -> sol,[c]
       | Assign (v0,e) ->
          begin
+           let () =
+             if debug > 1 then
+               Printf.eprintf "Solve %s -> %!" (pp_eq c) in
            try
              let v = simplify_vars_in_atom sol v0
              and e = simplify_vars_in_expr sol e |> mk_atom_from_expr in
+             let () =
+               if debug > 1 then
+                 Printf.eprintf "%s\n%!" (pp_eq (Assign (v,e))) in
              match v,e with
              | V.Var x,Atom (V.Val atom) ->
                 add_sol x atom sol,[]
@@ -649,7 +655,7 @@ let get_failed cns =
       *)
     let solve_topo_step cs =
       let ns,r = eq2g cs in
-      if debug_solver then begin
+      if debug > 0 then begin
         if false then begin
           prerr_endline "** Solve topo **" ;
           eprintf "%s\n%!" (pp_cnstrnts cs) ;
@@ -697,7 +703,7 @@ let get_failed cns =
           Maybe (sol,cs)
         with
         | Contradiction -> NoSolns in
-      if debug_solver then begin
+      if debug > 0 then begin
           eprintf "Solutions: %s\n" (pp_answer sol) ; flush stderr
         end ;
       sol

@@ -17,7 +17,7 @@
 (* Debug tags *)
 
 type t = {
-    solver : bool ;
+    solver : int ;
     lexer : bool ;
     top : bool ;
     mem : bool ;
@@ -38,7 +38,7 @@ type t = {
 
 let tags =
 [
-  "solver";
+  "solver";"solver+";
   "lexer";
   "top";
   "mem";
@@ -59,7 +59,7 @@ let tags =
 
 let none =
   {
-   solver = false ;
+   solver = 0 ;
    lexer = false ;
    top = false ;
    mem = false ;
@@ -79,7 +79,8 @@ let none =
  }
 
 let parse t tag = match tag with
-  | "solver" -> Some { t with solver = true; }
+  | "solver" -> Some { t with solver = t.solver+1; }
+  | "solver+" -> Some { t with solver = t.solver+2; }
   | "lexer" -> Some { t with lexer = true; }
   | "top" -> Some { t with top = true; }
   | "mem" -> Some { t with mem = true; }
