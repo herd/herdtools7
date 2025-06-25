@@ -665,10 +665,11 @@ module Make (Conf : Config) = struct
     and get_oa _ pte = pte >>= M.op1 (Op.ArchOp1 ASLOp.OA)
     and get_offset _ ma = ma >>= M.op1 Op.Offset
 
-    let data_abort_fault (ii,_) addr write statuscode =
+    let data_abort_fault (ii,_) addr write statuscode accessdesc =
       let* loc = addr
       and* write = write
-      and* statuscode = statuscode  in
+      and* statuscode = statuscode
+      and* accessdesc = accessdesc in
       let d =
         match Option.bind (V.as_scalar write) ASLScalar.as_bool with
         | Some true -> Dir.W
@@ -691,7 +692,14 @@ module Make (Conf : Config) = struct
             (V.pp_v statuscode) ;
           assert false
       and loc = A.Location_global loc in
-      M.mk_singleton_es (Act.Fault (ii,loc,d,ft)) ii >>! []
+      let a =
+        let is_read =
+          let open Dir in
+          match d with
+          | R -> true
+          | W -> false in
+        accdesc_to_annot is_read accessdesc in
+      M.mk_singleton_es (Act.Fault (ii,loc,d,a,ft)) ii >>! []
 
     let get_ha_or_hd get (ii,_) () =
       let dirty =
@@ -798,6 +806,15 @@ module Make (Conf : Config) = struct
         | _ -> Warn.fatal "Arity error for function %s." name
       in
       build_primitive ~args:[ arg1; arg2; arg3; ] ?parameters
+        ~side_effecting name f
+
+    (** Build a primitive with arity 4 and no return value. *)
+    let p4 name arg1 arg2 arg3 arg4 ?(side_effecting = false) ?parameters f =
+      let f ii_env _ = function
+        | [ v1; v2; v3; v4; ] -> f ii_env v1 v2 v3 v4
+        | _ -> Warn.fatal "Arity error for function %s." name
+      in
+      build_primitive ~args:[ arg1; arg2; arg3; arg4; ] ?parameters
         ~side_effecting name f
 
     (** Build various primitives with 1 parameter. *)
@@ -911,8 +928,9 @@ module Make (Conf : Config) = struct
           ("addr", bv_64) ~returns:(bv_lit (64-ia_msb)) get_oa;
         p1r ~side_effecting "OffsetPrimitive"
           ("addr", bv_64) ~returns:(bv_lit ia_msb) get_offset;
-        p3 ~side_effecting "DataAbortPrimitive"
+        p4 ~side_effecting "DataAbortPrimitive"
           ("addr",bv_64) ("write",boolean) ("statuscode",integer)
+          ("accdesc",t_named "AccessDescriptor")
           data_abort_fault;
         p0r "GetHaPrimitive" ~returns:(bv_lit 1) get_ha;
         p0r "GetHdPrimitive" ~returns:(bv_lit 1) get_hd;

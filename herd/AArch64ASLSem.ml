@@ -1131,11 +1131,11 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             | None -> None
             | Some loc ->
                Some (Act.Access (dir, loc, tr_v v, a, exp, sz, acc)))
-        | ASLS.Act.Fault (_,loc,d,t) ->
+        | ASLS.Act.Fault (_,loc,d,a,t) ->
             Option.bind
               (tr_loc ii loc)
               (fun loc ->
-                 (Act.Fault (ii,Some loc,d,AArch64Annot.N,false,Some t,None))
+                 (Act.Fault (ii,Some loc,d,a,false,Some t,None))
                  |> Misc.some)
         | ASLS.Act.Barrier b -> Some (Act.Barrier b)
         | ASLS.Act.Branching txt ->
