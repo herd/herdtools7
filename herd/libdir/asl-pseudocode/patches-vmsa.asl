@@ -346,6 +346,7 @@ begin
     let fault = NoFault(accdesc, vaddress);
     return fault;
 end;
+
 // AArch64.BlocknTFaults()
 // =======================
 // Identify whether the nT bit in a block descriptor is effectively set
