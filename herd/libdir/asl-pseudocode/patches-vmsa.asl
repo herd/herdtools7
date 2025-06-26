@@ -348,3 +348,13 @@ begin
     let fault = NoFault(accdesc, vaddress);
     return fault;
 end;
+
+// IsWBShareable()
+// ===============
+// Determines whether the given memory attributes are iWBoWB Shareable
+// Currently, always sharable.
+
+// func IsWBShareable(memattrs:MemoryAttributes) => boolean
+// begin
+//  return TRUE;
+// end;
