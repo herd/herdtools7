@@ -114,7 +114,7 @@ let () =
   if !list_iico then Edge.list_iico_edges ()
   else if !edges_ref = [] then Arg.usage options_list usage
   else (
-    if not (Sys.file_exists !output_dir) then Sys.mkdir !output_dir 0o775;
+    if not (Sys.file_exists !output_dir) then Unix.mkdir !output_dir 0o775;
     let channel_all = open_out (Filename.concat !output_dir "@all") in
 
     "# " ^ Config.prog_name ^ " "
