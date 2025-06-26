@@ -323,7 +323,8 @@ type SCTLRType of bits(64) {
   [63] TIDCP,
 };
 
-var SCTLR_EL1 : SCTLRType;
+// Cache enabled, the rest probably is inaccurate.
+var SCTLR_EL1 : SCTLRType = '0000000000000000000000000000000000000000000000000000000000000100';
 
 // Infered from manual
 
