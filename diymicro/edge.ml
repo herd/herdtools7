@@ -84,6 +84,11 @@ let edge_location = function
   | Po (sd, _, _) | Dp (_, sd, _, _) | Dmb (_, sd, _, _) -> sd
   | Iico i -> i.sd
 
+let edge_int_ext = function
+  | Rf ie | Fr ie | Ws ie -> ie
+  | Iico i -> i.ie
+  | _ -> Internal
+
 let iico_ht = Hashtbl.create 10
 let add_iico iico = Hashtbl.add iico_ht iico.instruction_name iico
 

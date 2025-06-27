@@ -194,27 +194,27 @@ let assign_locations cycle_start =
 
 (** Assign a proc. to each event of the cycle *)
 let assign_procs cycle_start =
-  let is_external = function
-    | Edge.Rf ie | Edge.Fr ie | Edge.Ws ie -> ie = Edge.External
-    | Edge.Iico i -> i.Edge.ie = Edge.External
-    | _ -> false
-  in
-
   let first_node =
     (* Find the destination of an external edge *)
-    try (find_first cycle_start.prev (fun n -> is_external n.edge)).next
+    try
+      (find_first cycle_start.prev (fun n ->
+           Edge.edge_int_ext n.edge = Edge.External))
+        .next
     with Not_found -> Warn.user_error "No proc change in cycle"
   in
 
   let rec assign_aux node source_proc =
     node.source_event.proc <- Some source_proc;
     if node.next != first_node then
-      let proc = if is_external node.edge then new_proc () else source_proc in
+      let proc =
+        if Edge.edge_int_ext node.edge = Edge.External then new_proc ()
+        else source_proc
+      in
       assign_aux node.next proc
     else (
       (* end of the cycle. We check that current edge is external, (as selected by find_first)
          we check that source and target proc indeed differ *)
-      assert (is_external node.edge);
+      assert (Edge.edge_int_ext node.edge = Edge.External);
 
       if node.source_event.proc = node.next.source_event.proc then
         Warn.user_error "Cannot get a changing proc across %s"
