@@ -50,11 +50,18 @@ ASL Typing Tests:
     "structured_procedure".
   [1]
   $ aslref TypingRule.LowestCommonAncestor.asl
+  $ aslref --no-exec TypingRule.LowestCommonAncestor2.asl
   $ aslref TypingRule.FindNamedLCA.asl
   $ aslref TypingRule.ApplyUnopType.asl
-//  $ aslref TypingRule.EConcatUnresolvableToInteger.asl
+  $ aslref TypingRule.EConcatUnresolvableToInteger.asl
+  File TypingRule.EConcatUnresolvableToInteger.asl, line 12, character 4 to
+    line 14, character 8:
+      while ret < LIMIT1 do
+          ret = ret + ret * 2;
+      end;
+  ASL Warning: Loop does not have a limit.
   $ aslref TypingRule.ApplyBinopTypes.asl
-  $ aslref TypingRule.ApplyBinopTypes.constraints.asl
+  $ aslref --no-exec TypingRule.ApplyBinopTypes.constraints.asl
   File TypingRule.ApplyBinopTypes.constraints.asl, line 22, characters 51 to 78:
       var a_div : integer{A, (A DIV 2), (A DIV 3)} = a DIV (1 as integer{-5..3});
                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -70,8 +77,12 @@ ASL Typing Tests:
                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   Warning: Removing some values that would fail with op DIV from constraint set
   {0..16384} gave {1..16384}. Continuing with this constraint set.
-  ASL Error: Undefined identifier: 'main'
-  [1]
+  $ aslref --no-exec TypingRule.ApplyBinopTypes.constraints2.asl
+  File TypingRule.ApplyBinopTypes.constraints2.asl, line 6, characters 12 to 19:
+      let z = x DIV y;
+              ^^^^^^^
+  Warning: Removing some values that would fail with op DIV from constraint set
+  {-1..1} gave {1..1}. Continuing with this constraint set.
   $ aslref TypingRule.LDDiscard.asl
   File TypingRule.LDDiscard.asl, line 4, characters 6 to 7:
     let - = 42;
@@ -393,6 +404,16 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref TypingRule.EGetFields.asl
   $ aslref --no-exec TypingRule.ATC.asl
+  $ aslref --no-exec TypingRule.ATC2.asl
+  $ aslref --no-exec TypingRule.ATC3.asl
+  $ aslref --no-exec TypingRule.ATC4.asl
+  $ aslref --no-exec TypingRule.ATC.bad.asl
+  File TypingRule.ATC.bad.asl, line 4, characters 21 to 33:
+      let B: integer = A as integer; // Illegal: bit cannot be an integer.
+                       ^^^^^^^^^^^^
+  ASL Type error: cannot perform Asserted Type Conversion on bits(1) by
+    integer.
+  [1]
   $ aslref --no-exec TypingRule.CheckATC.asl
   File TypingRule.CheckATC.asl, line 8, characters 12 to 32:
       var a = 3.0 as integer{1, 2};
@@ -448,6 +469,7 @@ ASL Typing Tests / annotating types:
   ASL Static error: overlapping slices 0+:4, 3+:1.
   [1]
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.asl
+  $ aslref --no-exec TypingRule.SCond.asl
   $ aslref TypingRule.SDecl.asl
   $ aslref TypingRule.SDecl.bad1.asl
   File TypingRule.SDecl.bad1.asl, line 4, characters 4 to 12:
@@ -1072,6 +1094,20 @@ ASL Typing Tests / annotating types:
   ASL Type error: cannot declare already declared element "y".
   [1]
   $ aslref TypingRule.CheckBitsEqualWidth.asl
+  $ aslref TypingRule.CheckBitsEqualWidth.bad.asl
+  File TypingRule.CheckBitsEqualWidth.bad.asl, line 9, characters 15 to 21:
+          return x == y; // Illegal: M and N are not necessarily equal.
+                 ^^^^^^
+  ASL Type error: Illegal application of operator == on types bits(M)
+    and bits(N).
+  [1]
+  $ aslref TypingRule.CheckBitsEqualWidth.bad2.asl
+  File TypingRule.CheckBitsEqualWidth.bad2.asl, line 10, characters 11 to 23:
+      cond = bit1 == bit2; // Illegal
+             ^^^^^^^^^^^^
+  ASL Type error: Illegal application of operator == on types bits(int1)
+    and bits(int2).
+  [1]
   $ aslref --no-exec TypingRule.GetWellConstrainedStructure.asl
   $ aslref --no-exec TypingRule.MemBfs.asl
   $ aslref --no-exec TypingRule.MemBfs.bad.asl
@@ -1119,6 +1155,8 @@ ASL Typing Tests / annotating types:
   Warning: Removing some values that would fail with op DIV from constraint set
   {-4..-3, -1..2, -1..B, 0, 1, 3..4, A..B, B, B..-1} gave
   {1..2, 1..B, 1, 3..4, A..B, B, B..-1}. Continuing with this constraint set.
+  $ aslref --no-exec TypingRule.EBinop.asl
+  $ aslref --no-exec TypingRule.EBinop2.asl
   $ aslref TypingRule.EBinop.bad.asl
   File TypingRule.EBinop.bad.asl, line 3, characters 10 to 19:
     let x = 3 DIV 0.0;
@@ -1126,6 +1164,7 @@ ASL Typing Tests / annotating types:
   ASL Type error: Illegal application of operator DIV on types integer {3}
     and real.
   [1]
+  $ aslref --no-exec TypingRule.ECond.asl
   $ aslref TypingRule.ESlice.bad1.asl
   File TypingRule.ESlice.bad1.asl, line 16, characters 4 to 7:
       dst = src[w:1];

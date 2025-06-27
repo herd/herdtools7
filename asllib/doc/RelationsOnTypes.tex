@@ -616,11 +616,16 @@ The function
 returns the \Proselca{} of types $\vt$ and $\vs$ in $\tenv$ --- $\tty$.
 The result is a \typingerrorterm{} if a \Proselca{} does not exist or a \typingerrorterm{} is detected.
 
-\ExampleDef{Lowest Common Ancestor}
+\ExampleDef{Lowest Common Ancestor Examples}
 \listingref{example-lca} shows examples of conditional expressions and the resulting
 \emph{\Proselca}.
 \pagebreak
-\ASLListing{Lowest Common Ancestor}{example-lca}{\typingtests/TypingRule.LowestCommonAncestor.asl}
+\ASLListing{Lowest common ancestor}{example-lca}{\typingtests/TypingRule.LowestCommonAncestor.asl}
+
+\ExampleDef{Lowest Common Ancestor of Two Bitvectors}
+\listingref{example-lca2} shows an example of a lowest common ancestor of two \bitvectortypesterm{}
+of different widths.
+\ASLListing{Lowest common ancestor of two bitvectors}{example-lca2}{\typingtests/TypingRule.LowestCommonAncestor2.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1070,6 +1075,19 @@ determines the result type $\vt$ of applying the binary operator $\op$
 to operands of type $\vtone$ and $\vttwo$ in the static environment $\tenv$.
 \ProseOtherwiseTypeError
 
+\ExampleDef{Filtering Constraints for Binary Operations}
+Since binary operations may dynamically fail, the typechecker may remove values
+that will definitely lead to \dynamicerrorsterm.
+For example, in \listingref{apply-binop-constraints2},
+the constraint \verb|integer{-1..1}| serves for the denominator in \verb|x DIV y|,
+and since \verb|-1| and \verb|0| will always lead to a \dynamicerrorterm,
+the typechecker removes them for the purpose of typing \verb|x DIV y|,
+which leaves only \verb|1| and the final type for \verb|z| is therefore
+\verb|integer{2, 4}|.
+
+\ASLListing{Removing values from constraints}{apply-binop-constraints2}
+{\typingtests/TypingRule.ApplyBinopTypes.constraints2.asl}
+
 \ExampleDef{Applying Binary Operations to Types}
 \listingref{apply-binop-type} shows examples of typing binary operations.
 \ASLListing{Applying binary operations to types}{apply-binop-type}
@@ -1079,9 +1097,10 @@ to operands of type $\vtone$ and $\vttwo$ in the static environment $\tenv$.
 \listingref{apply-binop-constraints} shows examples of typing binary operations
 applied to \constrainedinteger{} types.
 
-Importantly, note that the AST for constraints is not closed under binary operations.
+Importantly, note that there is no AST for applying binary operations on
+constraints.
 For example, given a range constraint \verb|A..B| and an exact constraint |2|,
-there is no AST to express \verb|(A..B) * 2|. Therefore, they constraints for typing
+there is no AST to express \verb|(A..B) * 2|. Therefore, the constraints for typing
 \verb|ab_times_2| approximate the set of values for \verb|(A..B) * 2| via four
 range constraints. More precisely, they are a superset of the values for \verb|(A..B) * 2|.
 
@@ -3032,6 +3051,13 @@ the width defined by the corresponding slice \verb|[6:3]|.
 In addition, annotating the expression \verb|x AND y| requires checking that
 the widths of \verb|x| and \verb|y| are equal.
 \ASLListing{Ensuring that two bitvectors Have equal width}{CheckBitsEqualWidth}{\typingtests/TypingRule.CheckBitsEqualWidth.asl}
+
+The specification in \listingref{CheckBitsEqualWidth-bad}
+is ill-typed, since \verb|M| and \verb|N| are not necessarily equal, even though they have the same type.
+\ASLListing{Two bitvectors of possibly different widths}{CheckBitsEqualWidth-bad}{\typingtests/TypingRule.CheckBitsEqualWidth.bad.asl}
+
+The specification in \listingref{CheckBitsEqualWidth-bad2} is ill-typed for a similar reason.
+\ASLListing{Two bitvectors of possibly different widths}{CheckBitsEqualWidth-bad2}{\typingtests/TypingRule.CheckBitsEqualWidth.bad2.asl}
 
 \ProseParagraph
 \AllApply

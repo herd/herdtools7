@@ -220,11 +220,11 @@ ASL Semantics Tests:
   21
   $ aslref SemanticsRule.ATCNotDynamicErrorIfFalse.asl
   $ aslref SemanticsRule.ATCVariousErrors.asl
-  File SemanticsRule.ATCVariousErrors.asl, line 4, characters 2 to 30:
-    var b: integer{4, 5, 6} = 2;                     // A type error
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: a subtype of integer {4, 5, 6} was expected,
-    provided integer {2}.
+  File SemanticsRule.ATCVariousErrors.asl, line 8, characters 28 to 29:
+    var c: integer{4, 5, 6} = 2 as integer{4, 5, 6}; // A dynamic error
+                              ^
+  ASL Execution error: Mismatch type:
+    value 2 does not belong to type integer {4, 5, 6}.
   [1]
   $ aslref SemanticsRule.CatchNoThrow.asl
   No exception raised

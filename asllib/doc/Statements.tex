@@ -1372,6 +1372,13 @@ The specifications in \listingref{semantics-scond},
 \listingref{semantics-scond3}, and
 \listingref{semantics-scond4} are all well-typed.
 
+\ExampleDef{Typing Conditional Statements with Two Bitvector Types}
+The specification in \listingref{SCond} is well-typed
+and shows examples of how \bitvectortypesterm{} either \typesatisfy{}
+the return type or do not \typesatisfy{} the return type and require
+an \atcexpressionterm{}.
+\ASLListing{Typing conditional statements with two bitvector types}{SCond}{\typingtests/TypingRule.SCond.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
