@@ -518,7 +518,7 @@ let init () =
             ie = Internal;
             sd = Same;
             significant_source = false;
-            significant_dest = dst = "M";
+            significant_dest = false;
           });
       inputs = ["Rd"; "Rm"; "Rn"; "M"];
       outputs = ["Rd"; "Rm"; "Rn"; "M"];
