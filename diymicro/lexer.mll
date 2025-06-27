@@ -12,8 +12,9 @@ rule token = parse
   | "Ws" { WS }
   | "Po" { PO }
   | "Dp" { DP }
+  | "DMB"    { DMB }
   | "Rf-reg" { RF_REG }
-  | "iico" { IICO }
+  | "iico"   { IICO }
 
   | 'R' { RM }
   | 'W' { WM }
@@ -25,7 +26,11 @@ rule token = parse
   | "Addr" { ADDR }
   | "Data" { DATA }
   | "Ctrl" { CTRL }
+
+  | "LD"   { LD }
+  | "ST"   { ST }
   
+  | '.' { DOT }
   | ':' { COLON }
   | 'A' { A }
   | 'L' { L }

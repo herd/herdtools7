@@ -15,6 +15,7 @@
 %token WS
 %token PO
 %token DP
+%token DMB LD ST
 %token RF_REG
 %token IICO
 
@@ -23,6 +24,7 @@
 %token SAME DIFFERENT
 %token ADDR DATA CTRL
 
+%token DOT
 %token COLON
 %token A L X
 
@@ -49,8 +51,13 @@ edge:
     | FR ie { Edge.Fr $2 }
     | WS ie { Edge.Ws $2 }
     | PO sd dir dir     { Edge.Po ($2, $3, $4) }
+
     | DP dp sd dir      { Edge.Dp ($2, $3, Edge.Rm false, $4) }
     | DP dp sd read_dir dir  { Edge.Dp ($2, $3, $4, $5) }
+
+    | DMB DOT barrier_type sd dir dir { Edge.Dmb ($3, $4, $5, $6) }
+    | DMB sd dir dir { Edge.Dmb (Edge.A.FULL, $2, $3, $4) }
+
     | RF_REG            { Edge.RfReg }
     | IICO IICO_ARGS    { get_iico_edge $2 }
 ;
@@ -75,6 +82,10 @@ dp:
     | ADDR { Edge.Addr }
     | DATA { Edge.Data }
     | CTRL { Edge.Ctrl }
+;
+barrier_type:
+    | LD   { Edge.A.LD }
+    | ST   { Edge.A.ST }
 ;
 
 parse_iico:

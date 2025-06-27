@@ -64,6 +64,7 @@ type t =
   | Ws of int_ext
   | Po of sd * direction * direction
   | Dp of dp * sd * direction * direction
+  | Dmb of A.mBReqTypes * sd * direction * direction
   | RfReg
   | Iico of iico_edge
 
@@ -72,15 +73,15 @@ let edge_direction = function
   | Rf _ -> Wm false, Rm false
   | Fr _ -> Rm false, Wm false
   | Ws _ -> Wm false, Wm false
-  | Po (_, dir1, dir2) -> dir1, dir2
-  | Dp (_, _, dir1, dir2) -> dir1, dir2
+  | Po (_, dir1, dir2) | Dp (_, _, dir1, dir2) | Dmb (_, _, dir1, dir2) ->
+      dir1, dir2
   | RfReg -> Rm false, RegEvent
   | Iico i -> i.direction
 
 let edge_location = function
   | RfReg -> Different
   | Rf _ | Fr _ | Ws _ -> Same
-  | Po (sd, _, _) | Dp (_, sd, _, _) -> sd
+  | Po (sd, _, _) | Dp (_, sd, _, _) | Dmb (_, sd, _, _) -> sd
   | Iico i -> i.sd
 
 let iico_ht = Hashtbl.create 10
@@ -142,6 +143,10 @@ let pp_edge = function
   | Dp (dp, sd, Rm _, dir) -> "Dp" ^ pp_dp dp ^ pp_sd sd ^ pp_direction dir
   | Dp (dp, sd, dir1, dir2) ->
       "Dp" ^ pp_dp dp ^ pp_sd sd ^ pp_direction dir1 ^ pp_direction dir2
+  | Dmb (b_type, sd, dir1, dir2) ->
+      "DMB"
+      ^ (if b_type <> A.FULL then "." else "")
+      ^ A.pp_type b_type ^ pp_sd sd ^ pp_direction dir1 ^ pp_direction dir2
   | RfReg -> "Rf-reg"
   | Iico i -> "iico[" ^ i.repr ^ "]"
 

@@ -155,6 +155,11 @@ let compile_edge (st : A.state) (src : E.node_dep) (node : C.t) =
   | E.Dp (E.Addr, _, _, _), E.DepReg (r, v_opt) -> [], E.DepAddr (r, v_opt), st
   | E.Dp (E.Data, _, _, _), E.DepReg (r, v_opt) -> [], E.DepData (r, v_opt), st
   | E.Dp (E.Ctrl, _, _, _), E.DepReg (r, v_opt) -> [], E.DepCtrl (r, v_opt), st
+  | E.Dmb (b_type, _, _, E.RegEvent), dep ->
+      (* TODO Not sure about whether to forward dependency. It is at least needed for dst=RegEvent *)
+      [A.Instruction (A.I_FENCE (A.DMB (A.SY, b_type)))], dep, st
+  | E.Dmb (b_type, _, _, _), _ ->
+      [A.Instruction (A.I_FENCE (A.DMB (A.SY, b_type)))], E.DepNone, st
   | E.RfReg, dep -> [], dep, st
   | E.Iico i, _ ->
       let src_event = node.C.source_event in
