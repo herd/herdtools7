@@ -188,7 +188,7 @@ A named type is a type that is declared by using the \texttt{type ... of ...} sy
 
 \TypingRuleDef{AnonymousType}
 \hypertarget{def-isanonymous}{}
-\identd{VMZX}%
+\identd{VMZX} \identi{SBCK}%
 The predicate
 \[
   \isanonymous(\overname{\ty}{\tty}) \;\aslto\; \Bool
@@ -196,7 +196,9 @@ The predicate
 tests whether the type $\tty$ is an \anonymoustype.
 
 \ExampleDef{Anonymous Types}
-The \tupletypeterm{} \texttt{(integer, integer)} is an \anonymoustype.
+The well-typed specification in \listingref{AnonymousType} illustrates the use
+of anonymous types as permitted by \TypingRuleRef{TypeSatisfaction}.
+\ASLListing{Well-typed anonymous types}{AnonymousType}{\typingtests/TypingRule.AnonymousType.asl}
 
 \ProseParagraph
 \Anonymoustypes\ are types that are not declared using the \texttt{type ... of ...} syntax:

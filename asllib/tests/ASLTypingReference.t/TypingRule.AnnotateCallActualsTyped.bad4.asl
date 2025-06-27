@@ -7,13 +7,11 @@ begin
     // as a parameterized integer then the following would fail since it is
     // illegal to declare `bits(expr)` if expr is an unconstrained integer.
     var ans: bits(N) = Zeros{N};
-    // for any invocation, the returned bitvector's width has the same
-    // constraint as the actual argument which provides the parameter value.
+    // for any invocation, the returned bitvector's width is the actual
+    // expression passed to the parameter.
     // For example:
-    // If N is 1 in the invocation,
-    // then the returned value is bits(1: integer{1}).
-    // If N is an `integer {4,8}` in the invocation
-    // then the returned value is bits({4,8})
+    // If N is 1 in the invocation, then the returned value is bits(1).
+    // If N is `x` in the invocation then the returned value is bits(x).
     return (NOT ans);
 end;
 

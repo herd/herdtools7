@@ -330,6 +330,7 @@ closing
 closure
 code
 codes
+coincidentally
 collection
 collections
 collectively
@@ -705,6 +706,7 @@ essentially
 establish
 establishing
 estoppel
+evaluability
 evaluable
 evaluate
 evaluated
@@ -896,6 +898,7 @@ ground
 grounded
 grounding
 group
+grouping
 groups
 guarantee
 guaranteed
@@ -948,6 +951,7 @@ ignoring
 illegal
 illegally
 illustrated
+illustrates
 image
 immediately
 immutability
@@ -1204,6 +1208,7 @@ matches
 matching
 material
 mathematical
+matters
 maximal
 maximum
 may
@@ -1213,6 +1218,7 @@ means
 meant
 mechanism
 mechanisms
+meet
 meets
 member
 members
@@ -1261,6 +1267,7 @@ naming
 native
 natural
 nearest
+necessarily
 necessary
 necessitates
 need
@@ -1720,6 +1727,7 @@ runtime
 runtimes
 s
 safe
+safely
 said
 same
 satisfaction
@@ -2113,7 +2121,9 @@ unpredictable
 unprintable
 unreachable
 unrecognized
+unrelated
 unreleased
+unsigned
 unspecified
 unsupported
 until
