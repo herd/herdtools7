@@ -11,14 +11,14 @@ type ProcState of bits(8) {
 var _PSTATE : ProcState;
 var _NZCV : ProcState;
 
-func isNZCV(n:integer) => boolean
+readonly func isNZCV(n:integer) => boolean
 begin
   return 0 <= n && n < 4 ;
 end;
 
 accessor PSTATE() <=> v: ProcState
 begin
-  getter
+  readonly getter
    return _PSTATE;
   end;
 
@@ -29,7 +29,7 @@ end;
 
 accessor PSTATE(n:integer) <=> v: bits(1)
 begin
-  getter
+  readonly getter
     if isNZCV(n) then
       return _NZCV[n];
     else
@@ -48,7 +48,7 @@ end;
 
 accessor PSTATE(n:integer,m:integer) <=> v: bits(2)
 begin
-  getter
+  readonly getter
     if isNZCV(n) && isNZCV(m) then
       return _NZCV[n,m];
     else
@@ -67,7 +67,7 @@ end;
 
 accessor PSTATE(n:integer,m:integer,o:integer) <=> v: bits(3)
 begin
-  getter
+  readonly getter
     if isNZCV(n) && isNZCV(m) && isNZCV(o) then
       return _NZCV[n,m,o];
     else
@@ -86,7 +86,7 @@ end;
 
 accessor PSTATE(n:integer,m:integer,o:integer,p:integer) <=> v: bits(4)
 begin
-  getter
+  readonly getter
     if isNZCV(n) && isNZCV(m) && isNZCV(o) && isNZCV(p) then
       return _NZCV[n,m,o,p];
     else

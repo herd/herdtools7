@@ -16,7 +16,7 @@ end;
 // A helper accessor pair taking two arguments
 accessor Foo(a: integer, b: integer) <=> value_in: integer
 begin
-  getter
+  readonly getter
     return 0;
   end;
 

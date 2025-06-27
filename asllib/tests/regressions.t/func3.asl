@@ -11,7 +11,7 @@ end;
 
 accessor f1b() <=> v: integer
 begin
-  getter
+  readonly getter
     return 4;
   end;
 
@@ -22,7 +22,7 @@ end;
 
 accessor f2(x:integer) <=> v: integer
 begin
-  getter
+  readonly getter
     return f1b() + x;
   end;
 
@@ -34,7 +34,7 @@ end;
 
 accessor f3(x:integer) <=> v: integer
 begin
-  getter
+  readonly getter
     return 0;
   end;
 
@@ -65,4 +65,3 @@ begin
 end;
 
 // RUN: archex.sh --eval=':set asl=1.0' --eval=':set +syntax:aslv1_colon_colon' --eval=':load %s' --eval='assert main() == 0;' | FileCheck %s
-
