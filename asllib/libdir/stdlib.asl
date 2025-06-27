@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //
-//                             ASL standard lib
+//                             ASL Standard Library
 //
 //-----------------------------------------------------------------------------
 
@@ -10,7 +10,6 @@
 // UInt()
 // ======
 // Convert a bitvector to an unsigned integer, where bit 0 is LSB.
-
 pure func UInt{N} (x: bits(N)) => integer{0..2^N-1}
 begin
     var result: integer = 0;
@@ -25,7 +24,6 @@ end;
 // SInt()
 // ======
 // Convert a 2s complement bitvector to a signed integer.
-
 pure func SInt{N} (x: bits(N))
   => integer{(if N == 0 then 0 else -(2^(N-1))) .. (if N == 0 then 0 else 2^(N-1)-1)}
 begin
@@ -54,7 +52,6 @@ end;
 // FloorLog2()
 // ======
 // Calculate the logarithm base 2 of the input integer, rounded down.
-
 pure func FloorLog2(a: integer) => integer
 begin
     assert a > 0;
@@ -73,7 +70,6 @@ end;
 // CeilLog2()
 // ==========
 // Calculate the logarithm base 2 of the input integer, rounded up.
-
 pure func CeilLog2(a: integer) => integer
 begin
     assert a > 0;
@@ -105,7 +101,6 @@ end;
 // ===========
 // For a strictly positive integer x, returns the largest power of 2 that is
 // less than or equal to x
-
 pure func FloorPow2(x : integer) => integer
 begin
     assert x > 0;
@@ -121,7 +116,6 @@ end;
 // ==========
 // For a positive integer x, returns the smallest power of 2 that is greater or
 // equal to x.
-
 pure func CeilPow2(x : integer) => integer
 begin
     assert x >= 0;
@@ -133,7 +127,6 @@ end;
 // ========
 // Return TRUE if integer X is positive and a power of 2. Otherwise,
 // return FALSE.
-
 pure func IsPow2(x : integer) => boolean
 begin
     if x <= 0 then return FALSE; end;
@@ -144,7 +137,6 @@ end;
 // ===============
 // For a non-negative integer x and positive integer size, returns the greatest
 // multiple of size that is less than or equal to x.
-
 pure func AlignDownSize(x: integer, size: integer) => integer
 begin
     assert size > 0;
@@ -155,7 +147,6 @@ end;
 // =============
 // For a non-negative integer x and positive integer size, returns the smallest
 // multiple of size that is greater than or equal to x.
-
 pure func AlignUpSize(x: integer, size: integer) => integer
 begin
     assert size > 0;
@@ -166,7 +157,6 @@ end;
 // ===============
 // Return TRUE if integer x is aligned to a multiple of size (not necessarily a
 // power of 2). Otherwise, return FALSE.
-
 pure func IsAlignedSize(x: integer, size: integer) => boolean
 begin
     assert size > 0;
@@ -177,7 +167,6 @@ end;
 // =============
 // For non-negative integers x and p2, returns the greatest multiple of 2^p2
 // that is less than or equal to x.
-
 pure func AlignDownP2(x: integer, p2: integer) => integer
 begin
     assert p2 >= 0;
@@ -188,7 +177,6 @@ end;
 // ===========
 // For non-negative integers x and p2, returns the smallest multiple of 2^p2
 // that is greater than or equal to x.
-
 pure func AlignUpP2(x: integer, p2: integer) => integer
 begin
     assert p2 >= 0;
@@ -199,7 +187,6 @@ end;
 // =============
 // Return TRUE if integer x is aligned to a multiple of 2^p2.
 // Otherwise, return FALSE.
-
 pure func IsAlignedP2(x: integer, p2: integer) => boolean
 begin
     assert p2 >= 0;
@@ -212,7 +199,6 @@ end;
 // Real()
 // ======
 // Convert an integer to a rational value.
-
 pure func Real(x: integer) => real
 begin
     return x * 1.0;
@@ -222,7 +208,6 @@ end;
 // ===========
 // Round a rational value down to the nearest integer
 // (round towards negative infinity).
-
 pure func RoundDown(x: real) => integer
 begin
     let round = RoundTowardsZero(x);
@@ -238,7 +223,6 @@ end;
 // =========
 // Round a rational value up to the nearest integer
 // (round towards positive infinity).
-
 pure func RoundUp(x: real) => integer
 begin
     let round = RoundTowardsZero(x);
@@ -253,7 +237,6 @@ end;
 // RoundTowardsZero()
 // ==================
 // Round a rational value towards zero.
-
 pure func RoundTowardsZero(x: real) => integer
 begin
     let x_pos = Abs(x);
@@ -296,7 +279,6 @@ end;
 // ILog2()
 // =======
 // Return floor(log2(abs(VALUE)))
-
 pure func ILog2(value : real) => integer
 begin
     assert value != 0.0;
@@ -343,7 +325,6 @@ end;
 // also ensures an Inexact flag is correctly signaled, as RO explicitly marks
 // all inexact intermediates by setting the LSB to 1, which cannot be
 // represented exactly when rounding to lower precision.
-
 pure func SqrtRounded(value : real, fracbits : integer) => real
 begin
     assert value >= 0.0 && fracbits > 0;
@@ -408,7 +389,7 @@ begin
   end;
 end;
 
-pure func Len{N}(x: bits(N)) => integer {N}
+pure func Len{N}(x: bits(N)) => integer{N}
 begin
   return N;
 end;
@@ -421,15 +402,13 @@ begin
       result = result + 1;
     end;
   end;
-  return result as integer {0..N};
+  return result as integer{0..N};
 end;
 
 // LowestSetBit
 // ============
 // Returns the position of the lowest 1 bit in a bitvector, and the length of
-// the bitvector if it constains only 0 bits.
-
-
+// the bitvector if it contains only 0 bits.
 pure func LowestSetBit{N}(x: bits(N)) => integer{0..N}
 begin
   for i = 0 to N-1 do
@@ -437,14 +416,13 @@ begin
       return i as integer{0..N};
     end;
   end;
-  return N as integer {0..N};
+  return N as integer{0..N};
 end;
 
 // LowestSetBitNZ
 // ==============
 // Returns the position of the lowest 1 bit in a bitvector.
 // An assertion checks that the bitvector contains at least one 1 bit.
-
 pure func LowestSetBitNZ{N}(x: bits(N)) => integer{0..N-1}
 begin
     assert !IsZero(x);
@@ -455,12 +433,11 @@ end;
 // =============
 // Returns the position of the highest 1 bit in a bitvector, and -1 if all
 // bits are 0.
-
 pure func HighestSetBit{N}(x: bits(N)) => integer{-1..N-1}
 begin
   for i = N-1 downto 0 do
     if x[i] == '1' then
-      return i as integer {-1..N-1};
+      return i as integer{-1..N-1};
     end;
   end;
   return -1 as {-1..N-1};
@@ -470,7 +447,6 @@ end;
 // ===============
 // Returns the position of the highest 1 bit in a bitvector.
 // An assertion checks that there is at least one 1 bit in the bitvector.
-
 pure func HighestSetBitNZ{N}(x: bits(N)) => integer{0..N-1}
 begin
     assert !IsZero(x);
@@ -497,24 +473,24 @@ begin
   return x == Ones{N};
 end;
 
-pure func SignExtend {N,M} (x: bits(M)) => bits(N)
+pure func SignExtend{N,M}(x: bits(M)) => bits(N)
 begin
   assert N >= M;
   return Replicate{N-M}(x[M-1]) :: x;
 end;
 
-pure func ZeroExtend {N,M} (x: bits(M)) => bits(N)
+pure func ZeroExtend{N,M}(x: bits(M)) => bits(N)
 begin
   assert N >= M;
   return Zeros{N - M} :: x;
 end;
 
-pure func Extend {N,M} (x: bits(M), unsigned: boolean) => bits(N)
+pure func Extend{N,M}(x: bits(M), unsigned: boolean) => bits(N)
 begin
   return if unsigned then ZeroExtend{N}(x) else SignExtend{N}(x);
 end;
 
-pure func CountLeadingZeroBits{N}(x: bits(N)) => integer {0..N}
+pure func CountLeadingZeroBits{N}(x: bits(N)) => integer{0..N}
 begin
   return N - 1 - HighestSetBit(x);
 end;
@@ -550,8 +526,7 @@ end;
 // ===============
 // A variant of AlignDownSize where the bitvector x is viewed as an unsigned
 // integer and the resulting integer is represented by its first N bits.
-
-pure func AlignDownSize{N}(x: bits(N), size: integer {1..2^N}) => bits(N)
+pure func AlignDownSize{N}(x: bits(N), size: integer{1..2^N}) => bits(N)
 begin
     return AlignDownSize(UInt(x), size)[:N];
 end;
@@ -561,7 +536,7 @@ end;
 // A variant of AlignUpSize where the bitvector x is viewed as an unsigned
 // integer and the resulting integer is represented by its first N bits.
 
-pure func AlignUpSize{N}(x: bits(N), size: integer {1..2^N}) => bits(N)
+pure func AlignUpSize{N}(x: bits(N), size: integer{1..2^N}) => bits(N)
 begin
     return AlignUpSize(UInt(x), size)[:N];
 end;
@@ -571,8 +546,7 @@ end;
 // Return TRUE if when viewed as an unsigned integer, bitvector x is aligned
 // to a multiple of size (not necessarily a power of 2).
 // Otherwise, return FALSE.
-
-pure func IsAlignedSize{N}(x: bits(N), size: integer {1..2^N}) => boolean
+pure func IsAlignedSize{N}(x: bits(N), size: integer{1..2^N}) => boolean
 begin
     return IsAlignedSize(UInt(x), size);
 end;
@@ -581,8 +555,7 @@ end;
 // =============
 // A variant of AlignDownP2 where the bitvector x is viewed as an unsigned
 // integer and the resulting integer is represented by its first N bits.
-
-pure func AlignDownP2{N}(x: bits(N), p2: integer {0..N}) => bits(N)
+pure func AlignDownP2{N}(x: bits(N), p2: integer{0..N}) => bits(N)
 begin
     if N == 0 then return x; end;
     return x[N-1:p2] :: Zeros{p2};
@@ -592,8 +565,7 @@ end;
 // ===========
 // A variant of AlignUpP2 where the bitvector x is viewed as an unsigned
 // integer and the resulting integer is represented by its first N bits.
-
-pure func AlignUpP2{N}(x: bits(N), p2: integer {0..N}) => bits(N)
+pure func AlignUpP2{N}(x: bits(N), p2: integer{0..N}) => bits(N)
 begin
     return AlignDownP2{N}(x + (2^p2 - 1), p2);
 end;
@@ -602,8 +574,7 @@ end;
 // =============
 // Return TRUE if when viewed as an unsigned integer, bitvector x is aligned
 // to a multiple of 2^p2. Otherwise, return FALSE.
-
-pure func IsAlignedP2{N}(x: bits(N), p2: integer {0..N}) => boolean
+pure func IsAlignedP2{N}(x: bits(N), p2: integer{0..N}) => boolean
 begin
     if N == 0 || p2 == 0 then return TRUE; end;
     return IsZero(x[:p2]);
@@ -677,7 +648,6 @@ end;
 // =====
 // Rotate right by [shift] bits. The bits are deleted on the right and
 // reinserted on the left, so the operation is effectively modulo N.
-
 pure func ROR{N}(x: bits(N), shift: integer) => bits(N)
 begin
   assert shift >= 0;
@@ -686,13 +656,11 @@ begin
   return x[0+:cshift] :: x[N-1:cshift];
 end;
 
-
 // ROR_C()
 // =======
 // Rotate right with carry out.
 // As with [ROR], the operation is effectively modulo N.
 // The carry bit is equal to the MSB of the result.
-
 pure func ROR_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
 begin
   assert shift > 0;
@@ -705,7 +673,6 @@ end;
 // =====
 // Rotate left by [shift] bits.
 // This corresponds to a right rotation by [-shift] bits.
-
 pure func ROL{N}(x: bits(N), shift: integer) => bits(N)
 begin
   assert shift >= 0;
@@ -717,7 +684,6 @@ end;
 // =======
 // Rotate left with carry out.
 // The carry bit is equal to the LSB of the result.
-
 pure func ROL_C{N}(x: bits(N), shift: integer) => (bits(N), bit)
 begin
   assert shift > 0;

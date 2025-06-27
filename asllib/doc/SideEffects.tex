@@ -166,10 +166,13 @@ and always yielding the same result, that is, deterministically.
 See \ExampleRef{Pure, Read-only, and Symbolically Evaluable Side Effect Descriptors}.
 
 \ProseParagraph
-Define $\vb$ as $\True$ if and only if $\vs$ is either
-    a \LocalEffectTerm{} with \purity{} greater than or equal to $\SEReadonly$,
-    a \GlobalEffectTerm{} with \purity{} greater than or equal to $\SEReadonly$,
-    or an \ImmutabilityTerm{} with immutability equal to $\True$.
+\Proseeqdef{$\vb$}{$\True$ if and only if one of the following conditions holds:
+  \begin{itemize}
+    \item $\vs$ is a \LocalEffectTerm{} with \purity{} greater than or equal to $\SEReadonly$,
+    \item $\vs$ is a \GlobalEffectTerm{} with \purity{} greater than or equal to $\SEReadonly$,
+    \item $\vs$ is an \ImmutabilityTerm{} with immutability equal to $\True$.
+  \end{itemize}
+}
 
 \FormallyParagraph
 \begin{mathpar}
@@ -314,7 +317,7 @@ This is checked in the following constructs:
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item applying $\issymbolicallyevaluable$ to $\ve$ in $\tenv$ yields $\vb$;
+  \item applying $\issymbolicallyevaluable$ to $\vses$ yields $\vb$;
   \item the result is $\True$ if $\vb$ is $\True$, otherwise it is a \typingerrorterm{} indicating that the expression
   is not \symbolicallyevaluable.
 \end{itemize}

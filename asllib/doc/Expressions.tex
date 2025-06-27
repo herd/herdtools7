@@ -543,7 +543,7 @@ is equal to the width of the \bitvectortypeterm{} of the return type.
 
 \subsection{Semantics}
 \SemanticsRuleDef{BinopAnd}
-\ExampleDef{Evaluation of Binary And Expressions}
+\ExampleDef{Evaluation of Boolean And Expressions}
 In \listingref{andsemantics},
 the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}. Notice that the function \texttt{fail} is never called.
 \ASLListing{Semantics of conjunction}{andsemantics}{\semanticstests/SemanticsRule.EBinopAndFalse.asl}
@@ -593,7 +593,7 @@ for readers of ASL specifications and as a consequence it is recommended that
 an if-statement is used to achieve the same effect.
 
 \SemanticsRuleDef{BinopOr}
-\ExampleDef{Evaluation of Binary Or Expressions}
+\ExampleDef{Evaluation of Boolean Or Expressions}
 In \listingref{semantics-binopor}, the expression \texttt{(0 == 1) || (1 == 1)} evaluates to the value \True.
 \ASLListing{Evaluating a disjunction expression}{semantics-binopor}{\semanticstests/SemanticsRule.EBinopOrTrue.asl}
 
