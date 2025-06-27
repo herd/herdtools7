@@ -19,6 +19,8 @@ type t = bool * Uint128.t
 
 let zero = false, Uint128.zero
 let unique_zero = true
+let is_zero (b,x) = not b && Uint128.equal Uint128.zero x
+
 let one = false, Uint128.one
 (* "NUM COLON NUM" as "Value:Tag" *)
 let of_string x =

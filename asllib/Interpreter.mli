@@ -55,6 +55,9 @@ module type Config = sig
 
   val error_handling_time : Error.error_handling_time
   (** When are error filed. *)
+
+  val log_nondet_choice : bool
+  (** Log to stderr non-deterministic choices. *)
 end
 
 module Make (B : Backend.S) (C : Config) : S with module B = B
