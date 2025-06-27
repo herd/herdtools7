@@ -40,8 +40,8 @@ $\square$                             & The space character (decimal 32) \hypert
 \ascii{$a$-$b$}                       & The ASCII range between decimals $a$ and $b$\\
 (\texttt{$A$})                        & $A$\\
 $A$ $B$                               & $A$ followed by $B$\\
-\texttt{$A$ | $B$}                    & A or B\\
-\texttt{$A$ - $B$}                    & $A$ but not $B$\\
+\texttt{$A$ | $B$}                    & A or B \hypertarget{def-regexminus}{}\\
+\texttt{$A\ \regexminus{}\, B$}       & $A$ but not $B$\\
 $A*$                                  & Zero or more repetitions of A\\
 $A+$                                  & One or more repetitions of A\\
 \verb|"a_string"|                     & The string \verb|a_string| verbatim\\
@@ -109,7 +109,7 @@ Line comments are formally defined via the following regular expressions:
 \hypertarget{def-relinecomment}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\RElinecomment$  &$\triangleq$& \texttt{"//"} (\REchar\ \texttt{-} \ascii{10})* \texttt{|} \texttt{"/*"} \REchar* \texttt{"*/"}\\
+$\RElinecomment$  &$\triangleq$& \texttt{"//"} (\REchar\ \regexminus{} \ascii{10})* \texttt{|} \texttt{"/*"} \REchar* \texttt{"*/"}\\
 \end{tabular}
 \end{center}
 
@@ -126,13 +126,18 @@ This is formalized by the following lexical regular expression:
 \hypertarget{def-rehexlit}{}
 \hypertarget{def-forbiddenhexfirst}{}
 \hypertarget{def-forbiddenhexremaining}{}
+\hypertarget{def-rehexletter}{}
 \begin{center}
 \begin{tabular}{rcl}
 $\REdigit$  &$\triangleq$& \anycharacter{\texttt{0123456789}}\\
+$\REhexletter$ &$\triangleq$& \anycharacter{\texttt{abcdefABCDEF}}\\
 $\REintlit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)*}\\
-$\REhexlit$ &$\triangleq$& \texttt{"0x"} (\REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}}) (\Underscore\ \texttt{|} \REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}})* \\
-$\REforbiddenhexfirst$ &$\triangleq$& \texttt{"0x"} (\REchar\ \texttt{-} \anycharacter{0123456789abcdefABCDEF}) \\
-$\REforbiddenhexremaining$ &$\triangleq$& \texttt{"0x"} (\REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}}) (\Underscore\ \texttt{|} \REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}})* (\REletter{} \texttt{-} \anycharacter{\texttt{abcdefABCDEF}}) \\
+$\REhexlit$ &$\triangleq$& \texttt{"0x"} (\REdigit\ \texttt{|} \REhexletter) \\
+            &            & $\wrappedline$ (\Underscore\ \texttt{|} \REdigit\ \texttt{|} \REhexletter)* \\
+$\REforbiddenhexfirst$ &$\triangleq$& \texttt{"0x"} ((\REchar\ \regexminus{} \REdigit) \regexminus{} \REhexletter) \\
+$\REforbiddenhexremaining$ &$\triangleq$& \texttt{"0x"} (\REdigit\ \texttt{|} \REhexletter)  \\
+                           &            & $\wrappedline$ (\Underscore\ \texttt{|} \REdigit\ \texttt{|} \REhexletter)*  \\
+                           &            & $\wrappedline$ (\REletter{} \regexminus{} \REhexletter) \\
 \end{tabular}
 \end{center}
 
@@ -153,7 +158,7 @@ This is formalized by the following lexical regular expression:
 \begin{center}
 \begin{tabular}{rcl}
 $\REreallit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." \REdigit\ (\Underscore\ | \REdigit)*} \\
-$\REforbiddenrealfirst$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." (\REchar\ \texttt{-} \anycharacter{0123456789.})} \\
+$\REforbiddenrealfirst$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." (\REchar\ \regexminus{} \anycharacter{0123456789.})} \\
 $\REforbiddenrealremaining$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." \REdigit\ (\Underscore\ | \REdigit)* \REletter{}} \\
 \end{tabular}
 \end{center}
@@ -238,7 +243,7 @@ The escape sequences allowed in string literals appear in \taref{EscapeSequences
 \begin{center}
 \begin{tabular}{rcl}
 $\REstrchar$ &$\triangleq$& \ascii{32-126}\\
-$\REstringlit$ &$\triangleq$& \anycharacter{\texttt{"}} ( ($\REstrchar$ \texttt{-} \anycharacter{\texttt{"}\ \backslash\ }) $|$ (\anycharacter{\backslash\ } \anycharacter{\texttt{" n t }\backslash\ })  )* \anycharacter{\texttt{"}}
+$\REstringlit$ &$\triangleq$& \anycharacter{\texttt{"}} ( ($\REstrchar$ \regexminus{} \anycharacter{\texttt{"}\ \backslash\ }) $|$ (\anycharacter{\backslash\ } \anycharacter{\texttt{" n t }\backslash\ })  )* \anycharacter{\texttt{"}}
 \end{tabular}
 \end{center}
 

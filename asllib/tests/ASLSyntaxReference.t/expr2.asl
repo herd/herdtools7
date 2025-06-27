@@ -1,6 +1,6 @@
 accessor g0_bits() <=> value_in: bits(4)
 begin
-  getter
+  readonly getter
     return '1000';
   end;
 
@@ -11,7 +11,7 @@ end;
 
 accessor g1_bits(p: integer) <=> value_in: bits(4)
 begin
-  getter
+  readonly getter
     return '1000'[p, 2:0];
   end;
 

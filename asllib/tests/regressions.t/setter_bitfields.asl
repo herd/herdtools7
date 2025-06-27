@@ -2,7 +2,7 @@ type MyBV of bits(8) { [5] bitfield };
 
 accessor F() <=> v: MyBV
 begin
-  getter
+  readonly getter
     return Ones{8} as MyBV;
   end;
 
@@ -19,4 +19,3 @@ begin
 
   return 0;
 end;
-
