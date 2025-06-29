@@ -8,7 +8,7 @@ config LIMIT2: integer{1, 2, 3, 4, 5, 6, 7, 8, 9, 10} = 7;
 
 func bar() => integer{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 begin
-    var ret: integer = 0;
+    var ret: integer = 1;
     while ret < LIMIT1 do
         ret = ret + ret * 2;
     end;
@@ -19,8 +19,8 @@ func main() => integer
 begin
     let N = bar();
     let M = LIMIT2;
-    let x = Zeros(N);
-    let y = Zeros(M);
-    let z = foo([x, y]);
+    let x = Zeros{N};
+    let y = Zeros{M};
+    let z = foo{M+N}(x :: y);
     return 0;
 end;
