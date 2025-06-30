@@ -52,6 +52,7 @@ All the global storage declarations in \listingref{local-storage-discards} are i
         & \wrappedline\ \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
   |\ & \Tconfig \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
   |\ & \Tvar \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Ntyorcollection \parsesep \Tsemicolon&\\
+  |\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Nasty \parsesep \Tsemicolon &\\
   |\ & \Nglobaldeclkeyword \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &\\
     & \wrappedline\ \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
   |\ & \Tpragma \parsesep \Tidentifier \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon&
@@ -126,6 +127,27 @@ All the global storage declarations in \listingref{local-storage-discards} are i
       \GDinitialvalue&:& \None
     \end{array}
     \right\}\right)\right]}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[global\_uninit\_multiple\_vars]{
+  \buildclist[\buildidentity](\vids) \astarrow \vidasts \\
+  {
+  i \in \listrange(\vidasts): \vdecl_i \eqdef
+    \DGlobalStorage\left(
+      \left\{
+      \begin{array}{rcl}
+        \GDkeyword&:& \GDKVar,\\
+        \GDname&:& \vidasts[i],\\
+        \GDty&:& \langle\astof{\vasty}\rangle,\\
+        \GDinitialvalue&:& \None
+      \end{array}
+      \right\}\right)
+  } \\
+  \vastnode \eqdef [i \in \listrange(\vidasts): \vdecl_i]
+}{
+  \builddecl(\overname{\Ndecl(\Tvar, \namednode{\vids}{\Clisttwo{\Tidentifier}}, \punnode{\Nasty}, \Tsemicolon)}{\vparsednode}) \astarrow \vastnode
 }
 \end{mathpar}
 
@@ -275,6 +297,9 @@ yielding a modified global static environment $\newgenv$ and annotated global st
 \ProseOtherwiseTypeError
 
 \ExampleDef{Declaring Global Storage}
+\listingref{DeclareGlobalStorage} shows examples of well-typed global storage declarations.
+\ASLListing{Global storage elements}{DeclareGlobalStorage}{\typingtests/TypingRule.DeclareGlobalStorage.asl}
+
 \listingref{DeclareGlobalStorage-config} shows examples of well-typed global storage declarations
 and ill-typed global storage declarations in comments,
 focused on \verb|config| storage elements.
