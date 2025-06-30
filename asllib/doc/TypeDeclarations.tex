@@ -18,7 +18,6 @@ Type declarations have no associated semantics.
             |\              & \Tsubtypes \parsesep \Tidentifier &\\
 \Nfields \derives \ & \Tlbrace \parsesep \Tminus \parsesep \Trbrace &\\
                     & \Tlbrace \parsesep \TClistOne{\Ntypedidentifier} \parsesep \Trbrace &\\
-\Nfieldsopt \derives \ & \Nfields \;|\; \emptysentence &\\
 \Ntypedidentifier \derives \ & \Tidentifier \parsesep \Nasty &\\
 \Nasty \derives \ & \Tcolon \parsesep \Nty &
 \end{flalign*}
@@ -130,28 +129,6 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }{
   \buildfields(\Nfields(\Tlbrace, \namednode{\vfields}{\TClistOne{\Ntypedidentifier}}, \Trbrace)) \astarrow
   \overname{\vfieldasts}{\vastnode}
-}
-\end{mathpar}
-
-\ASTRuleDef{FieldsOpt}
-\hypertarget{build-fieldsopt}{}
-The function
-\[
-  \buildfieldsopt(\overname{\parsenode{\Nfieldsopt}}{\vparsednode}) \;\aslto\; \overname{\Field^*}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
-\begin{mathpar}
-\inferrule[fields]{}{
-  \buildfieldsopt(\Nfieldsopt(\punnode{\Nfields})) \astarrow
-  \overname{\astof{\vfields}}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[empty]{}{
-  \buildfieldsopt(\Nfieldsopt(\emptysentence)) \astarrow
-  \overname{\emptylist}{\vastnode}
 }
 \end{mathpar}
 

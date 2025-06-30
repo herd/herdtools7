@@ -1328,7 +1328,7 @@ is ill-typed, since the field \verb|v| repeats.
 
 \subsection{Syntax}
 \begin{flalign*}
-\Ntydecl \derives\ & \Trecord \parsesep \Nfieldsopt &
+\Ntydecl \derives\ & \Trecord \parsesep \Nfields &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -1339,8 +1339,8 @@ is ill-typed, since the field \verb|v| repeats.
 \ASTRuleDef{TyDecl.TRecord}
 \begin{mathpar}
 \inferrule{}{
-  \buildtydecl(\Ntydecl(\Trecord, \punnode{\Nfieldsopt})) \astarrow
-  \overname{\TRecord(\astof{\vfieldsopt})}{\vastnode}
+  \buildtydecl(\Ntydecl(\Trecord, \punnode{\Nfields})) \astarrow
+  \overname{\TRecord(\astof{\vfields})}{\vastnode}
 }
 \end{mathpar}
 
@@ -1394,7 +1394,7 @@ In \listingref{typing-texception}, all the uses of exception types are well-type
 
 \subsection{Syntax}
 \begin{flalign*}
-\Ntydecl \derives\ & \Texception \parsesep \Nfieldsopt &
+\Ntydecl \derives\ & \Texception \parsesep \Nfields &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -1405,8 +1405,8 @@ In \listingref{typing-texception}, all the uses of exception types are well-type
 \ASTRuleDef{TyDecl.TException}
 \begin{mathpar}
 \inferrule{}{
-  \buildtydecl(\Ntydecl(\Texception, \punnode{\Nfieldsopt})) \astarrow
-  \overname{\TException(\astof{\vfieldsopt})}{\vastnode}
+  \buildtydecl(\Ntydecl(\Texception, \punnode{\Nfields})) \astarrow
+  \overname{\TException(\astof{\vfields})}{\vastnode}
 }
 \end{mathpar}
 
@@ -1427,7 +1427,7 @@ See \listingref{checkisnotcollection} for an ill-typed specification.
 
 \subsection{Syntax}
 \begin{flalign*}
-  \Ntyorcollection \derives\ & \Nty \;|\; \Tcollection \parsesep \Nfieldsopt & \\
+  \Ntyorcollection \derives\ & \Nty \;|\; \Tcollection \parsesep \Nfields & \\
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -1438,8 +1438,8 @@ See \listingref{checkisnotcollection} for an ill-typed specification.
 \ASTRuleDef{TyDecl.TCollection}
 \begin{mathpar}
 \inferrule{}{
-  \buildtyorcollection(\Ntyorcollection(\Tcollection, \punnode{\Nfieldsopt})) \astarrow
-  \overname{\TCollection(\astof{\vfieldsopt})}{\vastnode}
+  \buildtyorcollection(\Ntyorcollection(\Tcollection, \punnode{\Nfields})) \astarrow
+  \overname{\TCollection(\astof{\vfields})}{\vastnode}
 }
 \and
 \inferrule{}{
