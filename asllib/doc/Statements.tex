@@ -1554,7 +1554,7 @@ compound condition statement.
 \listingref{ast-case2} shows an example of how a \texttt{case} statement can be transformed into
 a statement that does not contain any \text{case} statement.
 By storing the \casediscriminantterm\ in a variable and by adding
-a call to \texttt{Unreachable()}, the transformation ensures that a dynamic error occurs when no
+an \unreachablestatementterm{}, the transformation ensures that a dynamic error occurs when no
 \casealternativeterm\ is selected.
 \ASLListing{Transforming a case statement with a non-variable as the case discriminant
 and no otherwise case}{ast-case2}{\syntaxtests/ASTRule.Desugar_SCase2.asl}
@@ -3671,8 +3671,8 @@ empty \executiongraph{}.
 \section{Print Statements\label{sec:PrintStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derives \ & \Tprint \parsesep \PlistZero{\Nexpr} \parsesep \Tsemicolon & \\
-\Nstmt \derives \ & \Tprintln \parsesep \PlistZero{\Nexpr} \parsesep \Tsemicolon & \\
+\Nstmt \derives \ & \Tprint \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon & \\
+\Nstmt \derives \ & \Tprintln \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon & \\
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -3683,10 +3683,10 @@ empty \executiongraph{}.
 \ASTRuleDef{SPrint}
 \begin{mathpar}
 \inferrule{%
-  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
+  \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
   \vnewline \eqdef \False \\
 }{%
-  \buildstmt(\overname{\Nstmt(\Tprint, \namednode{\vargs}{\PlistZero{\Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \buildstmt(\overname{\Nstmt(\Tprint, \namednode{\vargs}{\ClistZero{\Nexpr}}, \Tsemicolon)}{\vparsednode})
   \astarrow
   \overname{\SPrint(\astversion{\vargs}, \vnewline)}{\vastnode}
 }
@@ -3694,11 +3694,11 @@ empty \executiongraph{}.
 
 \begin{mathpar}
 \inferrule{%
-  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
+  \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
   \vnewline \eqdef \True \\
   \vdebug \eqdef \False \\
 }{%
-  \buildstmt(\overname{\Nstmt(\Tprintln, \namednode{\vargs}{\PlistZero{\Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \buildstmt(\overname{\Nstmt(\Tprintln, \namednode{\vargs}{\ClistZero{\Nexpr}}, \Tsemicolon)}{\vparsednode})
   \astarrow
   \overname{\SPrint(\astversion{\vargs}, \vnewline)}{\vastnode}
 }
@@ -3901,11 +3901,11 @@ with no other effect.
 \hypertarget{def-unreachablestatementterm}{}
 \listingref{UnreachableStatement} shows an example of using an \unreachablestatementterm{}
 to implement a custom form of assertion checking.
-\ASLListing{An example use of an \texttt{Unreachable} statement}{UnreachableStatement}{\definitiontests/UnreachableStatement.asl}
+\ASLListing{An example use of an \texttt{unreachable} statement}{UnreachableStatement}{\definitiontests/UnreachableStatement.asl}
 
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derives \ & \Tunreachable \parsesep \Tlpar \parsesep \Trpar \parsesep \Tsemicolon &
+\Nstmt \derives \ & \Tunreachable \parsesep \Tsemicolon &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -3916,7 +3916,7 @@ to implement a custom form of assertion checking.
 \ASTRuleDef{SUnreachable}
 \begin{mathpar}
 \inferrule{}{
-  \buildstmt(\overname{\Nstmt(\Tunreachable, \Tlpar, \Trpar, \Tsemicolon)}{\vparsednode})
+  \buildstmt(\overname{\Nstmt(\Tunreachable, \Tsemicolon)}{\vparsednode})
   \astarrow
   \overname{\SUnreachable}{\vastnode}
 }

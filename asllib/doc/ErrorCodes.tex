@@ -90,10 +90,10 @@ The report from \aslref{} in a \linuxbashshell{} is shown next:
 \begin{Verbatim}[fontsize=\footnotesize, frame=single]
 diagnostic assertion failed: example message
 File ../tests/ASLDefinition.t/UnreachableStatement.asl, line 5,
-  characters 8 to 22:
-        Unreachable();
-        ^^^^^^^^^^^^^^
-ASL Dynamic error: Unreachable reached.
+  characters 8 to 20:
+        unreachable;
+        ^^^^^^^^^^^^
+ASL Dynamic error: unreachable reached.
 \end{Verbatim}
 % CONSOLE_END
 
@@ -335,7 +335,7 @@ The following table summarises all error codes.
     \item Clashes with another subprogram (\TypingRuleRef{AddNewFunc})
     \item A procedure or setter returns a value (\TypingRuleRef{SReturn}).
     \item A function contains a control-flow path that does not terminate with either:
-          return of a value, throwing of an exception, or \texttt{Unreachable()} \\
+          return of a value, throwing of an exception, or an \unreachablestatementterm{} \\
       (\TypingRuleRef{CheckControlFlow}).
   \end{itemize}
 
