@@ -76,6 +76,13 @@ let make_ldi_vars (xs, ty) =
   in
   List.map make_one xs |> stmt_from_list |> desc
 
+let make_global_vars (names, ty) =
+  let make_one name =
+    D_GlobalStorage { keyword=GDK_Var; name=name.desc; ty=Some ty; initial_value=None; } |>
+    add_pos_from name
+  in
+  List.map make_one names
+
 let make_ty_decl_subtype (x, s) =
   let name, _fields = s.desc in
   let ty = ASTUtils.add_pos_from s (T_Named name) in
@@ -704,6 +711,7 @@ let decl :=
       (* End *)
     )
   ); { [d] }
+  | VAR; ~=clist2(annotated(IDENTIFIER)); ~=as_ty; SEMI_COLON; < make_global_vars >
   | ~=override; ACCESSOR; name=IDENTIFIER; ~=params_opt; ~=func_args; BEQ; setter_arg=IDENTIFIER; ~=as_ty;
     ~=accessor_body;
     { desugar_accessor_pair override name params_opt func_args setter_arg as_ty accessor_body }
