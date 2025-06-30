@@ -10,6 +10,6 @@ end;
 func main() => integer
 begin
     var bv = '10100';
-    println("bv=", bv, ", rotated twice=", rotate_right{5}(bv, 2));
+    println "bv=", bv, ", rotated twice=", rotate_right{5}(bv, 2);
     return 0;
 end;

@@ -7,7 +7,7 @@ begin
         if flag then
             return Ones{N} XOR v;
         else
-            Unreachable();
+            unreachable;
         end;
     else
         if flag then

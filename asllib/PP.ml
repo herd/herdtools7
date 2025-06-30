@@ -345,12 +345,12 @@ let rec pp_stmt f s =
         (pp_print_list ~pp_sep:pp_print_space pp_catcher)
         catchers
   | S_Print { args; newline = false; debug = false } ->
-      fprintf f "@[<2>print(%a);@]" (pp_comma_list pp_expr) args
+      fprintf f "@[<2>print %a;@]" (pp_comma_list pp_expr) args
   | S_Print { args; newline = true; debug = false } ->
-      fprintf f "@[<2>println(%a);@]" (pp_comma_list pp_expr) args
+      fprintf f "@[<2>println %a;@]" (pp_comma_list pp_expr) args
   | S_Print { args; debug = true } ->
       fprintf f "@[<2>DEBUG@ %a;@]" (pp_comma_list pp_expr) args
-  | S_Unreachable -> fprintf f "Unreachable();"
+  | S_Unreachable -> fprintf f "unreachable;"
   | S_Pragma (name, args) ->
       fprintf f "@[<2>pragma@ %a %a;@]" pp_print_string name
         (pp_comma_list pp_expr) args

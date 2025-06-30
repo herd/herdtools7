@@ -14,7 +14,7 @@ begin
     if discriminant_var IN {<= 42} then
       x = 0;
     else
-      Unreachable();
+      unreachable;
     end;
   end;
 

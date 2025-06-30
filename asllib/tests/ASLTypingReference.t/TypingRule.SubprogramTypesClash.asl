@@ -4,6 +4,6 @@ begin
         return '1000';
     end;
     setter
-        Unreachable();
+        unreachable;
     end;
 end;

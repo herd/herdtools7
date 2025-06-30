@@ -13,6 +13,6 @@ constant y = factorial(7);
 func main() => integer
 begin
     var x = y;
-    println(y);
+    println y;
     return 0;
 end;

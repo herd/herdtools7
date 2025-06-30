@@ -30,7 +30,7 @@ end;
 func return_val(x: integer) => integer
 begin
     return x + g; // { Other(g), Other(x) }
-    Unreachable(); // { }
+    unreachable;  // { }
 end;
 
 func throw_stmt()
@@ -59,8 +59,8 @@ begin
     catch
         when MyException => // { Other(MyException), Other(g2) }
             y = g2;
-            println("caught MyExeption");
+            println "caught MyExeption";
     end;
-    println(y); // { Other(y) }
+    println y; // { Other(y) }
     return 0;
 end;

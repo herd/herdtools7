@@ -13,7 +13,7 @@ begin
   end;
 
   setter
-    Unreachable();
+    unreachable;
   end;
 end;
 

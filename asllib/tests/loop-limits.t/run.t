@@ -14,7 +14,7 @@ While loops:
   File while-incorrect.asl, line 4, character 2 to line 7, character 6:
     while (i < 10) looplimit 5 do
       i = i + 1;
-      println(i);
+      println i;
     end;
   ASL Dynamic error: loop limit reached.
   [1]
@@ -49,7 +49,7 @@ Repeat loops:
   File repeat-incorrect.asl, line 4, character 2 to line 7, character 30:
     repeat
       i = i + 1;
-      println(i);
+      println i;
     until (i >= 10) looplimit 5;
   ASL Dynamic error: loop limit reached.
   [1]

@@ -1,11 +1,11 @@
 func main() => integer
 begin
   if TRUE then
-    print("A");
+    print "A";
   elsif FALSE then // OK
-    print("B");
+    print "B";
   else
-    print("C");
+    print "C";
   end;
 
   let x = if TRUE then 1 else if FALSE then 2 else 3; // OK

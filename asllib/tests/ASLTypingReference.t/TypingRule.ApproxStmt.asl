@@ -4,13 +4,8 @@ begin
     var x : integer = 5;
     x = 7;
     assert x == 7;
-    println(x);
+    println x;
     pragma require_positive x;
-end;
-
-func unreachable() => integer
-begin
-    Unreachable();
 end;
 
 func returns_value() => integer
@@ -53,7 +48,7 @@ end;
 func while_loop(flag: boolean) => integer
 begin
     // The loop is conservatively treated as not terminating
-    // by returning a value, throwing an exception or executing Unreachable().
+    // by returning a value, throwing an exception or executing unreachable.
     while (flag) looplimit 2^128 do
         pass;
     end;
@@ -63,7 +58,7 @@ end;
 func for_loop(upper_limit: integer) => integer
 begin
     // The loop is conservatively treated as not terminating
-    // by returning a value, throwing an exception or executing Unreachable().
+    // by returning a value, throwing an exception or executing unreachable.
     for i = 0 to upper_limit do
         pass;
     end;
@@ -73,7 +68,7 @@ end;
 func repeat_loop(upper_limit: integer) => integer
 begin
     // The loop is conservatively treated as not terminating
-    // by returning a value, throwing an exception or executing Unreachable().
+    // by returning a value, throwing an exception or executing unreachable.
     repeat
         pass;
     until TRUE looplimit 2^128;

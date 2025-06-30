@@ -12,7 +12,7 @@ type Color of enumeration { RED, GREEN, BLUE };
 func main() => integer
 begin
     var x = g;
-    println(rotate0(x.c, 10));
+    println rotate0(x.c, 10);
     return 0;
 end;
 

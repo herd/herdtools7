@@ -8,12 +8,12 @@ begin
        assert FALSE;
      catch
        when e: MyExceptionType =>
-         println(e.msg);
+         println e.msg;
          throw; // Implicitly re-throwing exception value A
      end;
   catch
     when e: MyExceptionType =>
-        println(e.msg);
+        println e.msg;
         assert TRUE;
   end;
   return 0;

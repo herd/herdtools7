@@ -14,6 +14,6 @@ end;
 func main() => integer
 begin
     my_procedure(flip_bits{8}('11001010'));
-    println(state);
+    println state;
     return 0;
 end;
