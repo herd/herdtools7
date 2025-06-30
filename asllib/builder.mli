@@ -38,6 +38,7 @@ type parser_config = {
   allow_hyphenated_pending_constraint : bool;
   allow_local_constants : bool;
   allow_single_arrows : bool;
+  allow_empty_structured_type_declarations : bool;
 }
 
 val default_parser_config : parser_config

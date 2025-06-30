@@ -18,7 +18,7 @@ begin
     return 42;
 end;
 
-type invalid_state of exception;
+type invalid_state of exception{-};
 func throws_exception() => integer
 begin
     throw invalid_state{-};

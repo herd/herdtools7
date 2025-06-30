@@ -50,6 +50,7 @@ type args = {
   override_mode : override_mode;
   no_primitives : bool;
   control_flow_analysis : bool;
+  allow_empty_structured_type_declarations : bool;
 }
 
 let push thing ref = ref := thing :: !ref
@@ -83,6 +84,7 @@ let parse_args () =
   let use_conflincting_side_effects_extension = ref false in
   let control_flow_analysis = ref true in
   let allow_single_arrows = ref false in
+  let allow_empty_structured_type_declarations = ref false in
 
   let speclist =
     [
@@ -189,6 +191,10 @@ let parse_args () =
         Arg.Clear control_flow_analysis,
         " Do not use control-flow analysis to check that subprograms \
          return/throw/execute `Unreachable()`." );
+      ( "--allow-empty-structured-type-declarations",
+        Arg.Set allow_empty_structured_type_declarations,
+        " Allow declarations of structured types with implicitly empty fields."
+      );
     ]
     |> Arg.align ?limit:None
   in
@@ -232,6 +238,8 @@ let parse_args () =
       override_mode = !override_mode;
       no_primitives = !no_primitives;
       control_flow_analysis = !control_flow_analysis;
+      allow_empty_structured_type_declarations =
+        !allow_empty_structured_type_declarations;
     }
   in
 
@@ -279,6 +287,9 @@ let () =
     in
     let allow_local_constants = args.allow_local_constants in
     let allow_single_arrows = args.allow_single_arrows in
+    let allow_empty_structured_type_declarations =
+      args.allow_empty_structured_type_declarations
+    in
     let open Builder in
     {
       allow_no_end_semicolon;
@@ -289,6 +300,7 @@ let () =
       allow_hyphenated_pending_constraint;
       allow_local_constants;
       allow_single_arrows;
+      allow_empty_structured_type_declarations;
     }
   in
 

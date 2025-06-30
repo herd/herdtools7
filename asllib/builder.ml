@@ -37,6 +37,7 @@ type parser_config = {
   allow_hyphenated_pending_constraint : bool;
   allow_local_constants : bool;
   allow_single_arrows : bool;
+  allow_empty_structured_type_declarations : bool;
 }
 
 type version_selector = [ `ASLv0 | `ASLv1 | `Any ]
@@ -51,6 +52,7 @@ let default_parser_config =
     allow_hyphenated_pending_constraint = false;
     allow_local_constants = false;
     allow_single_arrows = false;
+    allow_empty_structured_type_declarations = false;
   }
 
 let select_type ~opn ~ast = function
@@ -89,6 +91,9 @@ let from_lexbuf ast_type parser_config version (lexbuf : lexbuf) =
           parser_config.allow_hyphenated_pending_constraint
 
         let allow_local_constants = parser_config.allow_local_constants
+
+        let allow_empty_structured_type_declarations =
+          parser_config.allow_empty_structured_type_declarations
       end) in
       let module Lexer = Lexer.Make (struct
         let allow_double_underscore = parser_config.allow_double_underscore

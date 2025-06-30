@@ -1,4 +1,4 @@
-type MyException of exception;
+type MyException of exception{-};
 
 func foo{N}(bv: bits(N))
 begin

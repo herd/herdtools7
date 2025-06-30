@@ -7,7 +7,7 @@ begin
     end;
 end;
 
-type myexception of exception;
+type myexception of exception{-};
 
 noreturn func doesnotreturn()
 begin

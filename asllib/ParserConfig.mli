@@ -36,4 +36,7 @@ module type CONFIG = sig
 
   val allow_local_constants : bool
   (** Allow declarations of local constant storage. *)
+
+  val allow_empty_structured_type_declarations : bool
+  (** Allow declarations of structured types with implicitly empty fields. *)
 end

@@ -21,7 +21,7 @@ begin
 end;
 
 type point of record{x: bits(4), y: bits(4)};
-type except of exception;
+type except of exception{-};
 
 func main() => integer
 begin

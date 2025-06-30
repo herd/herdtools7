@@ -10,7 +10,7 @@ ASL throw-assign
 
 var z = 0;
 
-type Coucou of exception;
+type Coucou of exception{-};
 
 func f() => integer
 begin

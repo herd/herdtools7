@@ -3,7 +3,7 @@ let lg = 30;
 config cfg : integer{0..100} = 40;
 var vg : integer = 50;
 
-type MyException of exception;
+type MyException of exception{-};
 
 readonly func factorial(n: integer) => integer recurselimit 100
 begin

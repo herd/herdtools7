@@ -21,10 +21,10 @@ func array_procedure(int_arr2 : array[[2]] of integer) begin pass; end;
 func array_procedure(boolean_arr : array[[2]] of boolean) begin pass; end;
 func array_procedure(real_arr : array[[2]] of real) begin pass; end;
 
-type Rec1 of record;
-type Rec2 of record;
-type Exc1 of exception;
-type Exc2 of exception;
+type Rec1 of record{-};
+type Rec2 of record{-};
+type Exc1 of exception{-};
+type Exc2 of exception{-};
 func structured_procedure(r: Rec1) begin pass; end;
 func structured_procedure(r: Rec2) begin pass; end;
 func structured_procedure(e: Exc1) begin pass; end;
