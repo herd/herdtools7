@@ -254,7 +254,8 @@ module Make (Conf : Config) = struct
       and is_acquiresc = access_bool_field accdesc "acqsc" map
       and is_acquirepc = access_bool_field accdesc "acqpc" map
       and is_atomic = access_bool_field accdesc "atomicop" map
-      and is_exclusive = access_bool_field accdesc "exclusive" map in
+      and is_exclusive = access_bool_field accdesc "exclusive" map
+      and is_read = is_read || access_bool_field accdesc "read" map in
       let is_ax x n = if is_atomic || is_exclusive then x else n in
       let an =
         if (not is_read) && is_release then is_ax XL L
