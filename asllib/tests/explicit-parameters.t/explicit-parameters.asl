@@ -70,7 +70,7 @@ var _R : array [[31]] of bits(64);
 
 accessor X{N}(regno: integer) <=> value: bits(N)
 begin
-  getter
+  readonly getter
     assert N == 64;
     assert 0 <= regno && regno <= 31;
     return _R[[regno]][0+:N];

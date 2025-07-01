@@ -122,6 +122,7 @@
   basicstyle=\ttfamily\scriptsize,
   showspaces=false,
   showstringspaces=false,
+  breaklines=true,
   backgroundcolor=\color{yellow!10}
 }
 
@@ -878,11 +879,13 @@
 
 \newcommand\anycharacter[1]{$\underbracket{#1}$}
 \newcommand\Underscore[0]{\anycharacter{\texttt{ \_ }}}
+\newcommand\regexminus[1]{\hyperlink{def-regexminus}{\texttt{-}}}
 
 \newcommand\REasciichar[0]{\hyperlink{def-reasciichar}{\texttt{<}\textsf{ascii\_char}\texttt{>}}}
 \newcommand\REchar[0]{\hyperlink{def-rechar}{\texttt{<}\textsf{char}\texttt{>}}}
 \newcommand\REdigit[0]{\hyperlink{def-redigit}{\texttt{<}\textsf{digit}\texttt{>}}}
 \newcommand\REintlit[0]{\hyperlink{def-reintlit}{\texttt{<}\textsf{int\_lit}\texttt{>}}}
+\newcommand\REhexletter[0]{\hyperlink{def-rehexletter}{\texttt{<}\textsf{hex\_letter}\texttt{>}}}
 \newcommand\REhexlit[0]{\hyperlink{def-rehexlit}{\texttt{<}\textsf{hex\_lit}\texttt{>}}}
 \newcommand\REreallit[0]{\hyperlink{def-reallit}{\texttt{<}\textsf{real\_lit}\texttt{>}}}
 \newcommand\REforbiddenhexremaining[0]{\hyperlink{def-forbiddenhexremaining}{\texttt{<}\textsf{forbidden\_hex\_remaining}\texttt{>}}}
