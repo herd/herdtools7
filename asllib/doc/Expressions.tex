@@ -505,6 +505,18 @@ according to the signature of $\divint$, \Tdiv{} can only be applied to \integer
 whereas \verb|0.0| is a \realtypeterm.
 \ASLListing{An ill-typed binary expression}{typing-binoperror}{\typingtests/TypingRule.EBinop.bad.asl}
 
+\ExampleDef{Comparing Well-constrained Integers}
+The specification in \listingref{EBinop} is well-typed.
+Specifically, it is legal to compare \wellconstrainedintegertypes{}
+with different lists of constraints and a \wellconstrainedintegertype{} to an \unconstrainedintegertype{}.
+\ASLListing{Comparing well-constrained integers}{EBinop}{\typingtests/TypingRule.EBinop.asl}
+
+\ExampleDef{Typing Bitvector Concatenation}
+The specification in \listingref{EBinop-2} is well-typed, since
+the sum of widths of the two concatenated \bitvectortypesterm{}
+is equal to the width of the \bitvectortypeterm{} of the return type.
+\ASLListing{Concatenating bitvectors}{EBinop-2}{\typingtests/TypingRule.EBinop2.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -830,7 +842,12 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 
 \subsection{Typing}
 \TypingRuleDef{ECond}
-\ExampleRef{Lowest Common Ancestor} shows examples of typing conditional expressions.
+\ExampleDef{Typing Conditional Expressions}
+The specification in \listingref{ECond} is well-typed and shows
+an example of typing a conditional expression.
+\ASLListing{Typing conditional expressions}{ECond}{\typingtests/TypingRule.ECond.asl}
+
+\ExampleRef{Lowest Common Ancestor} shows more examples of typing conditional expressions.
 
 \ProseParagraph
 \AllApply
@@ -2330,6 +2347,29 @@ is a dynamic error.
 \listingref{typing-atc} shows examples of ATC expressions
 and the corresponding annotated expressions in comments.
 
+\ExampleDef{Asserting Type Conversion of Well-constrained Integers}
+The specification in \listingref{typing-atc2} is well-typed,
+showing how to convert one \\
+\wellconstrainedintegertype{} into another
+\wellconstrainedintegertype{}.
+\ASLListing{ATC of well-constrained integers}{typing-atc2}{\typingtests/TypingRule.ATC2.asl}
+
+\ExampleDef{Safely Applying Asserting Type Conversion to Bitvectors}
+The specification in \listingref{typing-atc3} is well-typed,
+showing how a \bitvectortypeterm{} may be safely converted
+into another \bitvectortypeterm.
+\ASLListing{Safely applying ATC to bitvector types}{typing-atc3}{\typingtests/TypingRule.ATC3.asl}
+
+Similarly, the specification in \listingref{typing-atc4} is well-typed,
+showing that even literals may require an asserting type conversion to ensure they meet
+type-satisfaction requirements.
+\ASLListing{Safely applying ATC to a bitvector literal}{typing-atc4}{\typingtests/TypingRule.ATC4.asl}
+
+\ExampleDef{Ill-typed Asserting Type Conversion}
+The specification in \listingref{typing-atc-bad} is ill-typed,
+as it is applied to unrelated kinds of types.
+\ASLListing{Ill-typed ATC of a bitvector type}{typing-atc-bad}{\typingtests/TypingRule.ATC.bad.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -2348,6 +2388,7 @@ and the corresponding annotated expressions in comments.
   \item $\vses$ is $\vsese$ if $\vallwayssucceeds$ is $\True$ and $\vses$ otherwise;
   \item $\vt$ is $\ttyp$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
@@ -2427,6 +2468,7 @@ are compatible for a typing assertion in the static environment $\tenv$, yieldin
     \item the result is a \typingerrorterm{} indicating that the type assertion will always fail ($\TypeAssertionFailure$).
   \end{itemize}
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[equal]{
@@ -2492,12 +2534,13 @@ evaluated:
 \ASLListing{A asserting type conversion that is never evaluated}{semantics-atcnotevaluated}
 {\semanticstests/SemanticsRule.ATCNotDynamicErrorIfFalse.asl}
 
-\ExampleDef{Asserting Type Conversions with Type Errors and Dynamic Errors}
-\listingref{semantics-variousatcs} shows various \typingerrorsterm{} and \dynamicerrorsterm{}.
+\ExampleDef{Asserting Type Conversions with Dynamic Errors}
+\listingref{semantics-variousatcs} shows various \dynamicerrorsterm{}.
 Note that the \dynamicerrorterm{} appearing in the statement
-\verb|var e: integer{4, 5, 6} = 2 as integer{4, 5, 6};|, which is nested in the \verb|if FALSE then|
+\verb|var e: integer{4, 5, 6} = 2 as integer{4, 5, 6};|, \\
+which is nested in the \verb|if FALSE then|
 will never occur, but it is still classified as a \dynamicerrorterm{}.
-\ASLListing{Various type errors and dynamic errors}{semantics-variousatcs}{\semanticstests/SemanticsRule.ATCVariousErrors.asl}
+\ASLListing{Various dynamic errors}{semantics-variousatcs}{\semanticstests/SemanticsRule.ATCVariousErrors.asl}
 
 \ProseParagraph
 \AllApply
@@ -3049,7 +3092,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \subsection{Typing}
 \TypingRuleDef{ERecord}
 \listingref{semantics-erecord} shows an example of a well-typed record construction expression
-and an example (in comment) where the same field is initialized twice, which is incalid..
+and an example (in comment) where the same field is initialized twice, which is invalid.
 
 \ProseParagraph
 \AllApply

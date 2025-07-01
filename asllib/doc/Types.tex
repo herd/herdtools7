@@ -114,8 +114,10 @@ The \emph{\integertypesterm{}} represent mathematical integer value.
 
 There are four kinds of integer types, and we
 use the term \integertypeterm{} to refer to them collectively:
-\emph{unconstrained}, \emph{well-constrained},
-\emph{pending constrained}, and \emph{parameterized}.
+\emph{\unconstrainedintegertypes},
+\emph{\wellconstrainedintegertypes},
+\emph{\pendingconstrainedintegertypes},
+and \emph{\parameterizedintegertypes}.
 
 \subsection{Unconstrained Integer Types}
 \hypertarget{def-unconstrainedintegertype}{}
@@ -138,8 +140,19 @@ or a \emph{\rangeconstraintterm}, consisting of a pair of expressions like \text
 
 \ExampleDef{Well-constrained Integer Types}
 \hypertarget{def-wellconstrainedintegertype}{}
-\listingref{typing-wellconstrained} shows examples of well-constrained integer types.
-\ASLListing{Well-typed well-constrained integer types}{typing-wellconstrained}{\typingtests/TypingRule.TIntWellConstrained.asl}
+The well-typed specification in \listingref{constrainedintegers1} shows examples of \wellconstrainedintegertypes.
+\ASLListing{Well-typed well-constrained integer types}{constrainedintegers1}{\definitiontests/ConstrainedIntegers1.asl}
+
+The well-typed specification in \listingref{constrainedintegers2} shows examples of \wellconstrainedintegertypes{}
+and \unconstrainedintegertypes{} for \verb|config|s.
+\ASLListing{Well-constrained integer types and \texttt{config}s}{constrainedintegers2}{\definitiontests/ConstrainedIntegers2.asl}
+
+The specifications in \listingref{constrainedintegers-bad}
+and \listingref{constrainedintegers-bad2}
+show examples of ill-typed
+assignment between two \wellconstrainedintegertypes{}.
+\ASLListing{Ill-typed well-constrained integer types}{constrainedintegers-bad}{\definitiontests/ConstrainedIntegers.bad.asl}
+\ASLListing{Ill-typed well-constrained integer types}{constrainedintegers-bad2}{\definitiontests/ConstrainedIntegers.bad2.asl}
 
 \subsection{Pending-constrained Integer Types}
 \hypertarget{def-pendingconstrainedintegertype}{}
@@ -647,6 +660,13 @@ where \texttt{N} may specify a fixed width or a constrained width.
 %
 The \texttt{bit} type is syntactic sugar for \texttt{bits(1)} (see \ASTRuleRef{Ty.TBits}.\texttt{BIT}).
 
+\identr{RXYN}%
+Bitvectors can be converted to unsigned integers and signed integer
+via the standard library functions
+\verb|UInt| and \verb|SInt|, respectively.
+Converting integers into bitvectors can be done via slicing
+(see \ExampleRef{Evaluation of Slicing Expressions}).
+
 \identi{KGMC}%
 The syntax for \bitvectortypesterm{} has an optional $\Nbitfields$,
 which allows specifying \emph{\bitfieldsterm} ---
@@ -744,6 +764,10 @@ bv=0x14, rotated twice=0x05
 \ExampleDef{Well-typed Bitvector Types}
 In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
 \ASLListing{Well-typed Bitvector types}{typing-tbits}{\typingtests/TypingRule.TBits.asl}
+
+The specification in \listingref{typing-tbits-bad} is ill-typed, since widths need
+to be \constrainedintegers.
+\ASLListing{An ill-typed Bitvector type}{typing-tbits-bad}{\typingtests/TypingRule.TBits.bad.asl}
 
 \ExampleRef{A bitvector type with bitfields} shows a well-typed \bitvectortypeterm{} with bitfields.
 
@@ -1490,6 +1514,9 @@ collection types in comments.
 
 \section{Named Types\label{sec:NamedTypes}}
 Named type declarations allow declaring new types names with a given type.
+The intent is that, by default, any named type should not be assignable to or from any other named type, even
+if they coincidentally have the same \structure. Where assignment between named types is desired it is usually
+achieved by grouping related types via a common supertype.
 
 The specification in \listingref{named-types2}, declares two unique types with the same
 \structure. Note that the two types are not related in
@@ -1498,6 +1525,18 @@ any way and are not interchangeable. See also \TypingRuleRef{TypeSatisfaction}.
 
 In \listingref{named-types}, \verb|TypeC.f| and \verb|TypeD.f| have the same type: \verb|TypeB| (and not integer).
 \ASLListing{Two unique well-typed types}{named-types}{\definitiontests/NamedTypes.asl}
+
+In \listingref{named-types3}, the assignments \verb|addr = physical;|
+and \verb|physical = addr;| would be illegal.
+\ASLListing{Two unique well-typed types}{named-types3}{\definitiontests/NamedTypes3.asl}
+
+The well-typed specification in \listingref{named-types4}
+demonstrates how a constant can be given a named type.
+\ASLListing{Naming types for constants}{named-types4}{\definitiontests/NamedTypes4.asl}
+
+The specification in \listingref{named-types-bad} is ill-typed
+due to an assignment between two different named types (\verb|Char| and \verb|Byte|).
+\ASLListing{Named types and illegal assignments}{named-types-bad}{\definitiontests/NamedTypes.bad.asl}
 
 \hypertarget{namedtypeterm}{}
 \subsection{Syntax}

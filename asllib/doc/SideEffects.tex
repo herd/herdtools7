@@ -269,6 +269,12 @@ yielding the result in $\vb$.
 
 See \ExampleRef{Checking Whether Expressions are Symbolically Evaluable}.
 
+\ExampleDef{Why Symbolically Evaluability Matters}
+The specification in \listingref{SESIsSymbolicallyEvaluable} is well-typed.
+Specifically, it shows how the fact that an expression is \symbolicallyevaluable{}
+is used to reason about the equivalence of bitwidth expressions.
+\ASLListing{Why Symbolically Evaluability Matters}{SESIsSymbolicallyEvaluable}{\typingtests/TypingRule.SESIsSymbolicallyEvaluable.asl}
+
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if every \sideeffectdescriptorterm\ $\vs$ in $\vses$
 is \symbolicallyevaluable.
