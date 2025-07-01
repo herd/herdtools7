@@ -23,6 +23,12 @@ cli_parser.add_argument(
     metavar="<path-to-dictionary-file>",
     type=pathlib.Path,
 )
+cli_parser.add_argument(
+    "--aslref",
+    help="Specifies path to the aslref executable",
+    metavar="<path-to-aslref>",
+    type=str,
+)
 
 INTERNAL_DICTIONARY_FILENAME = "dictionary.txt"
 DO_NOT_LINT_STR = "DO NOT LINT"
@@ -681,8 +687,9 @@ def check_per_file(latex_files: list[str], checks):
 
 def main():
     args = cli_parser.parse_args()
+    aslref_path = args.aslref if args.aslref else "aslref"
     if args.macros:
-        apply_all_macros()
+        apply_all_macros(aslref_path)
     print("Linting files...")
     all_latex_sources = get_latex_sources(False)
     content_latex_sources = get_latex_sources(True)

@@ -3,9 +3,10 @@
 import os, fnmatch, subprocess, shlex
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from pathlib import Path
 import re
 
-ASLREF_EXE = "aslref"
+ASLREF_EXE: str = "aslref"
 
 debug = True
 
@@ -215,12 +216,13 @@ class ConsoleMacro(BlockMacro):
         begin_line: str = block_lines[0]
         error_expected = cls.CONSOLE_STDERR in begin_line
         include_cmd = cls.CONSOLE_CMD in begin_line
+        command = begin_line.replace("aslref", ASLREF_EXE)
+
         command = (
             begin_line.replace("%", "")
             .replace(cls.CONSOLE_BEGIN, "")
             .replace(cls.CONSOLE_STDERR, "")
             .replace(cls.CONSOLE_CMD, "")
-            .replace("aslref", ASLREF_EXE)
             .replace("\\definitiontests", "../tests/ASLDefinition.t")
             .replace("\\syntaxtests", "../tests/ASLSyntaxReference.t")
             .replace("\\typingtests", "../tests/ASLTypingReference.t")
@@ -228,10 +230,16 @@ class ConsoleMacro(BlockMacro):
             .replace("\n", "")
             .strip()
         )
+        # `command`` is potentially included in the LaTeX output (if `CONSOLE_CMD``
+        # appears in the macro).
+        # Since we don't want to include any user-specific paths `command` is used
+        # for inclusion whereas the command with the actual path to aslref is
+        # used in `executable_command`.
+        executable_command = command.replace("aslref", ASLREF_EXE)
         if debug:
-            print(f"Executing {command}")
+            print(f"Executing {executable_command}")
         transformed_lines = execute_and_capture_output(
-            command, error_expected
+            executable_command, error_expected
         ).splitlines()
         end_line = block_lines[-1]
         transformed_lines = (
@@ -275,7 +283,13 @@ def transform_by_line(filenames: list[str], from_pattern: str, to_pattern: str):
         print(f"Performed {num_changes} line transformations")
 
 
-def apply_all_macros():
+def apply_all_macros(aslref_path: str):
+    global ASLREF_EXE
+    ASLREF_EXE = aslref_path
+    if not os.path.isfile(ASLREF_EXE):
+        raise Exception(f"Unable to find aslref in path {ASLREF_EXE}")
+    else:
+        print(f"Using aslref path {ASLREF_EXE}")
     print("Extended macros: applying all macros... ")
     pruned_latex_sources = get_latex_sources(True)
     ConsoleMacro.apply_to_files(pruned_latex_sources)

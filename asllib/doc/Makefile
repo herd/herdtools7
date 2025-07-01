@@ -1,4 +1,5 @@
 BENTO=../../_build/default/tools/bento.exe
+ASLREF=../../_build/install/default/bin/aslref
 LATEX=pdflatex
 BIBTEX=bibtex
 
@@ -30,7 +31,7 @@ ASLReference.pdf: control\
 	$(LATEX) ASLReference.tex
 	$(BIBTEX) ASLReference
 	$(LATEX) ASLReference.tex
-	python3 doclint.py -m
+	python3 doclint.py -m --aslref $(ASLREF)
 
 ASLASTLines.tex: ../AST.mli
 	$(BENTO) $< > $@
