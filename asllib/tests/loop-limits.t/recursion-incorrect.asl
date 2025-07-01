@@ -8,8 +8,8 @@ end;
 
 func main () => integer
 begin
-  println("Number of calls: ", recurse (0));
-  println("Number of calls: ", recurse (0));
+  println "Number of calls: ", recurse (0);
+  println "Number of calls: ", recurse (0);
 
   return 0;
 end;

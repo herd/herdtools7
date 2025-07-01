@@ -39,4 +39,7 @@ module type CONFIG = sig
 
   val allow_empty_structured_type_declarations : bool
   (** Allow declarations of structured types with implicitly empty fields. *)
+
+  val allow_function_like_statements : bool
+  (** Allow function-like unreachable and printing statements. *)
 end

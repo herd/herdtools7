@@ -38,6 +38,7 @@ type parser_config = {
   allow_local_constants : bool;
   allow_single_arrows : bool;
   allow_empty_structured_type_declarations : bool;
+  allow_function_like_statements : bool;
 }
 
 type version_selector = [ `ASLv0 | `ASLv1 | `Any ]
@@ -53,6 +54,7 @@ let default_parser_config =
     allow_local_constants = false;
     allow_single_arrows = false;
     allow_empty_structured_type_declarations = false;
+    allow_function_like_statements = false;
   }
 
 let select_type ~opn ~ast = function
@@ -87,6 +89,9 @@ let from_lexbuf ast_type parser_config version (lexbuf : lexbuf) =
         let allow_expression_elsif = parser_config.allow_expression_elsif
         let allow_storage_discards = parser_config.allow_storage_discards
 
+        let allow_function_like_statements =
+          parser_config.allow_function_like_statements
+
         let allow_hyphenated_pending_constraint =
           parser_config.allow_hyphenated_pending_constraint
 
@@ -99,6 +104,9 @@ let from_lexbuf ast_type parser_config version (lexbuf : lexbuf) =
         let allow_double_underscore = parser_config.allow_double_underscore
         let allow_unknown = parser_config.allow_unknown
         let allow_single_arrows = parser_config.allow_single_arrows
+
+        let allow_function_like_statements =
+          parser_config.allow_function_like_statements
       end) in
       let parse = select_type ~opn:Parser.opn ~ast:Parser.spec ast_type in
       try parse Lexer.token lexbuf with

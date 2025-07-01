@@ -31,6 +31,7 @@ module type CONFIG = sig
     val allow_double_underscore : bool
     val allow_unknown : bool
     val allow_single_arrows : bool
+    val allow_function_like_statements : bool
 end
 
 let reserved_keywords = []
@@ -255,7 +256,7 @@ let token_to_symbol = function
   | TRY                -> "try"
   | TYPE               -> "type"
   | ARBITRARY          -> "ARBITRARY"
-  | UNREACHABLE        -> "Unreachable"
+  | UNREACHABLE        -> "unreachable"
   | UNTIL              -> "until"
   | VAR                -> "var"
   | WHEN               -> "when"
@@ -360,7 +361,10 @@ let tr_name s = match s with
     if Config.allow_unknown then ARBITRARY
     else fatal_unknown_pos (Error.ObsoleteSyntax s)
 | "ARBITRARY"     -> ARBITRARY
-| "Unreachable"   -> UNREACHABLE
+| "Unreachable"   ->
+    if Config.allow_function_like_statements then UNREACHABLE
+    else fatal_unknown_pos (Error.ObsoleteSyntax s)
+| "unreachable"   -> UNREACHABLE
 | "until"         -> UNTIL
 | "var"           -> VAR
 | "when"          -> WHEN

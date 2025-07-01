@@ -17,9 +17,9 @@ begin
        update_and_throw();
      catch
         when ExceptionType1 =>
-            println("ExceptionType1", " : x=", x, ", g= ", g);
+            println "ExceptionType1", " : x=", x, ", g= ", g;
         when named_e: ExceptionType2 =>
-            println(named_e.msg, " : x=", x, ", g= ", g);
+            println named_e.msg, " : x=", x, ", g= ", g;
      end;
   return 0;
 end;

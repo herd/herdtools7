@@ -27,16 +27,16 @@ Examples used in ASL High-level Definition:
   File CaseStatement.no_otherwise.asl, line 17, characters 9 to 30:
       case test_and_increment(x) of
            ^^^^^^^^^^^^^^^^^^^^^
-  ASL Dynamic error: Unreachable reached.
+  ASL Dynamic error: unreachable reached.
   [1]
   $ aslref CaseStatement.where.asl
 
   $ aslref UnreachableStatement.asl
   diagnostic assertion failed: example message
-  File UnreachableStatement.asl, line 5, characters 8 to 22:
-          Unreachable();
-          ^^^^^^^^^^^^^^
-  ASL Dynamic error: Unreachable reached.
+  File UnreachableStatement.asl, line 5, characters 8 to 20:
+          unreachable;
+          ^^^^^^^^^^^^
+  ASL Dynamic error: unreachable reached.
   [1]
 
   $ aslref AssertionStatement.asl

@@ -5,7 +5,7 @@ begin
   end;
 
   setter
-    Unreachable();
+    unreachable;
   end;
 end;
 
@@ -16,7 +16,7 @@ begin
   end;
 
   setter
-    Unreachable();
+    unreachable;
   end;
 end;
 

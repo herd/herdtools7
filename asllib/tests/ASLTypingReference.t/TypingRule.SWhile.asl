@@ -16,7 +16,7 @@ end;
 func main () => integer
 begin
     var x = Ones{20};
-    println(scan{20}(x));
+    println scan{20}(x);
 
     var i: integer = 0;
     var ones: integer = 0;
@@ -27,6 +27,6 @@ begin
         end;
         i = i + 1;
     end;
-    println(ones);
+    println ones;
     return 0;
 end;

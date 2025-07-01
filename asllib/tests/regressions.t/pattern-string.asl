@@ -2,7 +2,7 @@ func myfunction( s : string)
 begin
    case s of
        when "hello" =>
-           println("helloworld");
+           println "helloworld";
         otherwise =>
            return;
     end;

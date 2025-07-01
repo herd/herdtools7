@@ -1,8 +1,8 @@
   $ cat >printer1.asl <<EOF
   > func main () => integer begin
-  >   print ("Wow", 2, 3.14, "some other string");
-  >   print ("no type-checking");
-  >   print (32);
+  >   print "Wow", 2, 3.14, "some other string";
+  >   print "no type-checking";
+  >   print 32;
   >   return 0;
   > end;
   > EOF
@@ -60,15 +60,15 @@
 
   $ cat >print4.asl <<EOF
   > func main () => integer begin
-  >   println ((1, 2));
+  >   println (1, 2);
   >   return 0;
   > end;
   > EOF
 
   $ aslref print4.asl
-  File print4.asl, line 2, characters 11 to 17:
-    println ((1, 2));
-             ^^^^^^
+  File print4.asl, line 2, characters 10 to 16:
+    println (1, 2);
+            ^^^^^^
   ASL Type error: expected singular type, found (integer {1}, integer {2}).
   [1]
 

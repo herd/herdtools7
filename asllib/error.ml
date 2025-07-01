@@ -522,7 +522,7 @@ module PPrint = struct
            %a."
           pp_pattern p pp_ty t
     | UnreachableReached ->
-        pp_print_text f "ASL Dynamic error: Unreachable reached."
+        pp_print_text f "ASL Dynamic error: unreachable reached."
     | NonReturningFunction name ->
         fprintf f "ASL Type error:@ the@ function %S@ %a." name pp_print_text
           "may not terminate by returning a value or raising an exception."

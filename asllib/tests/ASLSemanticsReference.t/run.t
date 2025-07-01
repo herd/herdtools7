@@ -81,7 +81,7 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.SRepeat.asl
   File SemanticsRule.SRepeat.asl, line 24, character 4 to line 31, character 17:
       repeat
-          println("i = ", i);
+          println "i = ", i;
           assert i < 5;
           if x[i] == '1' then
               ones = ones + 1;

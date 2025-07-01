@@ -259,10 +259,10 @@ Parameterized integers:
   0x00
 
   $ aslref unreachable.asl
-  File unreachable.asl, line 3, characters 2 to 17:
-    Unreachable ();
-    ^^^^^^^^^^^^^^^
-  ASL Dynamic error: Unreachable reached.
+  File unreachable.asl, line 3, characters 2 to 14:
+    unreachable;
+    ^^^^^^^^^^^^
+  ASL Dynamic error: unreachable reached.
   [1]
 
   $ aslref assign-to-global-immutable.asl
@@ -275,7 +275,7 @@ Parameterized integers:
   $ aslref equality.asl
   $ aslref bad-equality.asl
   File bad-equality.asl, line 3, characters 10 to 25:
-    println((1, 2) == (1,2));
+    println (1, 2) == (1,2);
             ^^^^^^^^^^^^^^^
   ASL Type error: Illegal application of operator == on types
     (integer {1}, integer {2}) and (integer {1}, integer {2}).
@@ -299,7 +299,7 @@ Parameterized integers:
   $ aslref cases_where.asl
   $ aslref duplicated-otherwise.asl
   File duplicated-otherwise.asl, line 7, characters 8 to 12:
-          when 0.0 => println("2.0");
+          when 0.0 => println "2.0";
           ^^^^
   ASL Error: Cannot parse.
   [1]

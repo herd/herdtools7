@@ -555,10 +555,13 @@ let stmt :=
         { S_Decl (ldk, lhs, Some ty, desugar_elided_parameter ty call) }
       | VAR; ldi=decl_item; ty=some(as_ty);                   { S_Decl (LDK_Var, ldi, ty, None) }
       | VAR; ~=clist2(annotated(IDENTIFIER)); ~=as_ty;        < Desugar.make_local_vars >
-      | PRINTLN; args=plist0(expr);                           { S_Print { args; newline = true; debug = false } }
-      | PRINT; args=plist0(expr);                             { S_Print { args; newline = false; debug = false } }
+      | PRINTLN; args=clist0(expr);                           { S_Print { args; newline = true; debug = false } }
+      | PRINT; args=clist0(expr);                             { S_Print { args; newline = false; debug = false } }
       | DEBUG; args=plist0(expr);            { S_Print { args; newline = true; debug = true } }
-      | UNREACHABLE; LPAR; RPAR;                             { S_Unreachable }
+      | UNREACHABLE;                                          { S_Unreachable }
+      | UNREACHABLE; LPAR; RPAR [@internal true];
+          { if Config.allow_function_like_statements then S_Unreachable
+            else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Function-like unreachable statement." }
       | REPEAT; ~=stmt_list; UNTIL; ~=expr; ~=loop_limit;    < S_Repeat >
       | THROW; e=expr;                                       { S_Throw (Some (e, None)) }
       | THROW;                                               { S_Throw None             }

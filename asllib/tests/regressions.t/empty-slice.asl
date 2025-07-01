@@ -1,7 +1,7 @@
 func foo(x: integer {0..10}, y: integer {0..10})
 begin
   let z = Zeros{64};
-  println(z[x:y]);
+  println z[x:y];
 end;
 
 func main() => integer

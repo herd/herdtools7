@@ -4,11 +4,11 @@ begin
     // the typechecker conservatively determines that there
     // may be terminating paths that do not terminate
     // by either returning a value, throwing an exception, or
-    // executing Unreachable().
+    // executing unreachable.
     while (TRUE) do
         pass;
     end;
     // The following commented statement is needed to appease
     // the typechecker.
-    // Unreachable();
+    // unreachable;
 end;

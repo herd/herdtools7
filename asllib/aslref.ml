@@ -51,6 +51,7 @@ type args = {
   no_primitives : bool;
   control_flow_analysis : bool;
   allow_empty_structured_type_declarations : bool;
+  allow_function_like_statements : bool;
 }
 
 let push thing ref = ref := thing :: !ref
@@ -85,6 +86,7 @@ let parse_args () =
   let control_flow_analysis = ref true in
   let allow_single_arrows = ref false in
   let allow_empty_structured_type_declarations = ref false in
+  let allow_function_like_statements = ref false in
 
   let speclist =
     [
@@ -195,6 +197,9 @@ let parse_args () =
         Arg.Set allow_empty_structured_type_declarations,
         " Allow declarations of structured types with implicitly empty fields."
       );
+      ( "--allow-function-like-statements",
+        Arg.Set allow_function_like_statements,
+        " Allow function-like unreachable statements and `print`/`println`." );
     ]
     |> Arg.align ?limit:None
   in
@@ -240,6 +245,7 @@ let parse_args () =
       control_flow_analysis = !control_flow_analysis;
       allow_empty_structured_type_declarations =
         !allow_empty_structured_type_declarations;
+      allow_function_like_statements = !allow_function_like_statements;
     }
   in
 
@@ -290,6 +296,7 @@ let () =
     let allow_empty_structured_type_declarations =
       args.allow_empty_structured_type_declarations
     in
+    let allow_function_like_statements = args.allow_function_like_statements in
     let open Builder in
     {
       allow_no_end_semicolon;
@@ -301,6 +308,7 @@ let () =
       allow_local_constants;
       allow_single_arrows;
       allow_empty_structured_type_declarations;
+      allow_function_like_statements;
     }
   in
 
