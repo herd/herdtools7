@@ -24,6 +24,29 @@ open AST
 open ASTUtils
 
 (* -------------------------------------------------------------------------
+    Multiple variable declarations
+   ------------------------------------------------------------------------- *)
+
+let make_local_vars (xs, ty) =
+  let make_one x =
+    S_Decl (LDK_Var, LDI_Var x.desc, Some ty, None) |> add_pos_from x
+  in
+  List.map make_one xs |> stmt_from_list |> desc
+
+let make_global_vars (names, ty) =
+  let make_one name =
+    D_GlobalStorage
+      {
+        keyword = GDK_Var;
+        name = name.desc;
+        ty = Some ty;
+        initial_value = None;
+      }
+    |> add_pos_from name
+  in
+  List.map make_one names
+
+(* -------------------------------------------------------------------------
     Elided parameters
    ------------------------------------------------------------------------- *)
 
