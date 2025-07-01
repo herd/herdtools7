@@ -1132,10 +1132,12 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             | Some loc ->
                Some (Act.Access (dir, loc, tr_v v, a, exp, sz, acc)))
         | ASLS.Act.Fault (_,loc,d,a,t) ->
+          let is_sync_exc_entry = true in
+          (* Assume handler is entered. See also AArch64Sem.ml *)
             Option.bind
               (tr_loc ii loc)
               (fun loc ->
-                 (Act.Fault (ii,Some loc,d,a,false,Some t,None))
+                 (Act.Fault (ii,Some loc,d,a,is_sync_exc_entry,Some t,None))
                  |> Misc.some)
         | ASLS.Act.Barrier b -> Some (Act.Barrier b)
         | ASLS.Act.Branching txt ->
