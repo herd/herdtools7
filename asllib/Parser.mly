@@ -70,12 +70,6 @@ let version = V1
 let t_bit ~loc = T_Bits (E_Literal (L_Int Z.one) |> add_pos_from loc, [])
 let zero ~loc = E_Literal (L_Int Z.zero) |> add_pos_from loc
 
-let make_ldi_vars (xs, ty) =
-  let make_one x =
-    S_Decl (LDK_Var, LDI_Var x.desc, Some ty, None) |> add_pos_from x
-  in
-  List.map make_one xs |> stmt_from_list |> desc
-
 let make_ty_decl_subtype (x, s) =
   let name, _fields = s.desc in
   let ty = ASTUtils.add_pos_from s (T_Named name) in
@@ -560,7 +554,7 @@ let stmt :=
       | ldk=local_decl_keyword; lhs=decl_item; ty=as_ty; EQ; call=annotated(elided_param_call);
         { S_Decl (ldk, lhs, Some ty, desugar_elided_parameter ty call) }
       | VAR; ldi=decl_item; ty=some(as_ty);                   { S_Decl (LDK_Var, ldi, ty, None) }
-      | VAR; ~=clist2(annotated(IDENTIFIER)); ~=as_ty;        < make_ldi_vars >
+      | VAR; ~=clist2(annotated(IDENTIFIER)); ~=as_ty;        < Desugar.make_local_vars >
       | PRINTLN; args=plist0(expr);                           { S_Print { args; newline = true; debug = false } }
       | PRINT; args=plist0(expr);                             { S_Print { args; newline = false; debug = false } }
       | DEBUG; args=plist0(expr);            { S_Print { args; newline = true; debug = true } }
@@ -704,6 +698,7 @@ let decl :=
       (* End *)
     )
   ); { [d] }
+  | VAR; ~=clist2(annotated(IDENTIFIER)); ~=as_ty; SEMI_COLON; < Desugar.make_global_vars >
   | ~=override; ACCESSOR; name=IDENTIFIER; ~=params_opt; ~=func_args; BEQ; setter_arg=IDENTIFIER; ~=as_ty;
     ~=accessor_body;
     { desugar_accessor_pair override name params_opt func_args setter_arg as_ty accessor_body }
