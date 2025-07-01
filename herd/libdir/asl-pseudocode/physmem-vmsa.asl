@@ -19,6 +19,7 @@ begin
     eventaccess = PHY_PTE;
   end;
 // Now, we can write, physically.
+//  __DEBUG__(accdesc,eventaccess);
   write_memory_gen{N*8}(desc.paddress.address, value,accdesc,eventaccess);
   return PhysMemRetStatus {
     statuscode = Fault_None,
