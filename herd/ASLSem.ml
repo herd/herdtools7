@@ -254,7 +254,9 @@ module Make (Conf : Config) = struct
       try StringMap.find f map |> v_as_bool
       with Not_found -> Warn.fatal "Record %s has no %s field" (V.pp_v v) f
 
-    let accdesc_to_annot is_read accdesc =
+    type caller = Write|Read|Fault
+
+    let accdesc_to_annot  caller accdesc =
       let open AArch64Annot in
       let map = v_as_record accdesc in
       let is_release = access_bool_field accdesc "relsc" map
@@ -262,6 +264,13 @@ module Make (Conf : Config) = struct
       and is_acquirepc = access_bool_field accdesc "acqpc" map
       and is_atomic = access_bool_field accdesc "atomicop" map
       and is_exclusive = access_bool_field accdesc "exclusive" map in
+      let is_read =
+        match caller with
+        | Write -> false
+        | Read -> true
+        | Fault ->
+            (* Read has priority, as for native VMSA *)
+            access_bool_field accdesc "read" map in
       let is_ax x n = if is_atomic || is_exclusive then x else n in
       let an =
         if (not is_read) && is_release then is_ax XL L
@@ -620,7 +629,7 @@ module Make (Conf : Config) = struct
 
     let read_memory_gen ii datasize_m addr_m accdesc_m access_m =
       let* accdesc = accdesc_m and* access = access_m in
-      do_read_memory ii addr_m datasize_m (accdesc_to_annot true accdesc)
+      do_read_memory ii addr_m datasize_m (accdesc_to_annot Read accdesc)
         aexp (access_to_access access)
 
     let do_write_memory (ii, poi) addr_m datasize_m value_m an aexp acc =
@@ -659,7 +668,7 @@ module Make (Conf : Config) = struct
     let write_memory_gen ii datasize_m addr_m value_m accdesc_m access_m =
       let* accdesc = accdesc_m and* access = access_m in
       do_write_memory ii addr_m datasize_m value_m
-        (accdesc_to_annot false accdesc)  aexp (access_to_access access)
+        (accdesc_to_annot Write accdesc)  aexp (access_to_access access)
 
     let uint _ bv_m = bv_m >>= to_int_unsigned
     let sint _ bv_m = bv_m >>= to_int_signed
@@ -673,6 +682,10 @@ module Make (Conf : Config) = struct
     and get_offset _ ma = ma >>= M.op1 Op.Offset
 
     let data_abort_fault (ii,_) addr write statuscode accessdesc =
+      (*
+       * Notice: write specifies that writing yields a fault.
+       * The executed instruction may be a store or a RMO.
+       *)
       let* loc = addr
       and* write = write
       and* statuscode = statuscode
@@ -699,13 +712,7 @@ module Make (Conf : Config) = struct
             (V.pp_v statuscode) ;
           assert false
       and loc = A.Location_global loc in
-      let a =
-        let is_read =
-          let open Dir in
-          match d with
-          | R -> true
-          | W -> false in
-        accdesc_to_annot is_read accessdesc in
+      let a = accdesc_to_annot Fault accessdesc in
       M.mk_singleton_es (Act.Fault (ii,loc,d,a,ft)) ii >>! []
 
     let get_ha_or_hd get (ii,_) () =
