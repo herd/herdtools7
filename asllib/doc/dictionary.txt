@@ -36,6 +36,7 @@ act
 action
 actively
 actual
+actually
 adapt
 add
 added
@@ -181,6 +182,7 @@ avoid
 avoidance
 avoiding
 avoids
+aware
 away
 axiom
 axiomatically
@@ -247,6 +249,7 @@ branches
 brands
 break
 brevity
+brings
 bug
 build
 builder
@@ -323,6 +326,7 @@ classify
 classifying
 clause
 clauses
+clearly
 closed
 closer
 closest
@@ -580,6 +584,7 @@ different
 differentiating
 differently
 differing
+digit
 digits
 directive
 directly
@@ -1085,6 +1090,7 @@ invocation
 invoke
 invokes
 invoking
+involve
 involved
 involves
 involving
@@ -1232,6 +1238,7 @@ might
 minimal
 minimum
 minus
+mirroring
 mismatch
 missing
 model
@@ -1412,6 +1419,7 @@ parentheses
 parenthesis
 parenthesized
 parenthesizing
+parlance
 parse
 parsed
 parser
@@ -1525,6 +1533,7 @@ productions
 program
 programming
 prohibited
+promoted
 propagate
 propagated
 propagates
@@ -1608,6 +1617,7 @@ refers
 refine
 refined
 refinement
+refinements
 refines
 refining
 reflected
@@ -1671,6 +1681,7 @@ required
 requirement
 requirements
 requires
+resemble
 reserved
 resolve
 resolved
@@ -1816,6 +1827,7 @@ simplify
 simplifying
 simply
 simultaneous
+simultaneously
 since
 single
 singleton
@@ -1823,6 +1835,7 @@ singular
 site
 situations
 size
+sizes
 slice
 slices
 slicing
@@ -2198,6 +2211,7 @@ was
 way
 ways
 we
+weakened
 welcome
 well
 were
