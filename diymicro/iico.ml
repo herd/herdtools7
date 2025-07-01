@@ -273,19 +273,20 @@ module Swp = struct
     in
 
     (* We set up:
-       Rd=no specific value (0)
-       Rm=write_value
+      SWP(Rs, Rt, Rn)
+        Rs=write_value (to be stored in [Rn])
+        Rt=no specific value (0) (will get the value of [Rn])
        [Rn]=read_value needs no action
     *)
-    let pre_ins, rd, rm, st =
+    let pre_ins, rs, rt, st =
       match src with
       | "M" ->
           (match dep with
           | DepNone -> ()
           | _ -> Warn.user_error "Dependency provided to swp M->.");
-          let rd, st = A.next_reg st in
-          let rm, st = A.next_reg st in
-          [A.mov rm write_value], rd, rm, st
+          let rs, st = A.next_reg st in
+          let rt, st = A.next_reg st in
+          [A.mov rs write_value], rs, rt, st
       | _ -> (
           let src_reg, v_opt =
             match dep with
@@ -293,52 +294,52 @@ module Swp = struct
             | _ -> Warn.fatal "Event has not forwarded any register"
           in
           match src with
-          | "Rd" ->
-              let rd, st = A.next_reg st in
-              let rm, st = A.next_reg st in
+          | "Rt" ->
+              let rs, st = A.next_reg st in
+              let rt, st = A.next_reg st in
               let ins_zero, reg_zero, st = A.calc_value st 0 src_reg v_opt in
               let ins =
                 ins_zero
-                @ A.pseudo [A.add A.vloc rd rd reg_zero]
-                @ [A.mov rm write_value]
+                @ A.pseudo [A.add A.vloc rt rt reg_zero]
+                @ [A.mov rs write_value]
               in
-              ins, rd, rm, st
-          | "Rm" ->
-              let rd, st = A.next_reg st in
-              let ins_rm, rm, st = A.calc_value st write_value src_reg v_opt in
-              ins_rm, rd, rm, st
+              ins, rs, rt, st
+          | "Rs" ->
+              let rt, st = A.next_reg st in
+              let ins_rs, rs, st = A.calc_value st write_value src_reg v_opt in
+              ins_rs, rs, rt, st
           | "Rn" ->
-              let rd, st = A.next_reg st in
-              let rm, st = A.next_reg st in
+              let rs, st = A.next_reg st in
+              let rt, st = A.next_reg st in
               let ins_zero, reg_zero, st = A.calc_value st 0 src_reg None in
               let ins =
                 ins_zero
                 @ A.pseudo [A.do_add64 A.vloc rn rn reg_zero]
-                @ [A.mov rm write_value]
+                @ [A.mov rs write_value]
               in
-              ins, rd, rm, st
+              ins, rs, rt, st
           | _ -> Warn.fatal "Unknown source %s" src)
     in
 
     let st =
-      match read_value with None -> st | Some v -> A.add_condition st rd v
+      match read_value with None -> st | Some v -> A.add_condition st rt v
     in
 
     let post_ins, dep, st =
       match dst with
-      | "Rd" -> [], DepReg (rd, read_value), st
-      | "Rm" -> [], DepReg (rm, None), st
+      | "Rt" -> [], DepReg (rt, read_value), st
+      | "Rs" -> [], DepReg (rs, None), st
       | "Rn" ->
           let rn_reg, st = A.next_reg st in
           A.pseudo [A.do_ldr A.vloc rn_reg rn], DepReg (rn_reg, None), st
       | "M" ->
           ( [],
-            DepReg (rd, read_value),
+            DepReg (rt, read_value),
             st (* is used afterwards if event is significant *) )
       | _ -> Warn.fatal "Unknown destination %s" dst
     in
 
-    let ins = pre_ins @ A.pseudo [A.swp A.RMW_P rd rm rn] @ post_ins in
+    let ins = pre_ins @ A.pseudo [A.swp A.RMW_P rs rt rn] @ post_ins in
     ins, dep, st
 end
 
@@ -520,8 +521,8 @@ let init () =
             significant_source = false;
             significant_dest = false;
           });
-      inputs = ["Rd"; "Rm"; "Rn"; "M"];
-      outputs = ["Rd"; "Rm"; "Rn"; "M"];
+      inputs = ["Rs"; "Rt"; "Rn"; "M"];
+      outputs = ["Rs"; "Rt"; "Rn"; "M"];
     };
 
   List.iter
