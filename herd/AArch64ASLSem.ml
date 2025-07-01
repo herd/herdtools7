@@ -681,6 +681,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "tagchecked" ^= litb (rn <> SP);
                   "offset" ^= liti 0;
                   "datasize" ^= variant v;
+                  "acquire" ^= litb false;
                 ] )
       | I_LDAR (v, AA, rt, rn) ->
           Some
@@ -692,6 +693,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "tagchecked" ^= litb (rn <> SP);
                   "regsize" ^= variant v;
                   "elsize" ^= variant v;
+                  "acquire" ^= litb (rt <> ZR);
                 ] )
       | I_LDAR (v, ((XX | AX) as a), rt, rn) ->
           let acqrel,fname =
@@ -725,6 +727,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "regsize" ^= variant v;
                   "elsize" ^= variant v;
                   "datasize" ^= variant v;
+                  "acquirepc" ^= litb (rt <> ZR);
                 ] )
       | I_STXR (v, t, rs, rt, rn) ->
           let acqrel,fname =
