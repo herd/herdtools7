@@ -15,8 +15,8 @@ begin
     return 0;
 end;
 
-type Excp of exception;
-type Excp2 of exception;
+type Excp of exception{-};
+type Excp2 of exception{-};
 
 func could_throw_exception()
 begin

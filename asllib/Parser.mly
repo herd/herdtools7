@@ -357,7 +357,6 @@ let pattern_set :=
 let fields :=
     braced(MINUS); { [] }
   | braced(tclist1(typed_identifier))
-let fields_opt := { [] } | fields
 
 (* Slices *)
 let slices := bracketed(clist1(slice))
@@ -393,8 +392,14 @@ let ty :=
 let ty_decl := ty |
   annotated (
     | ENUMERATION; l=braced(tclist1(IDENTIFIER));       < T_Enum       >
-    | RECORD; l=fields_opt;                             < T_Record     >
-    | EXCEPTION; l=fields_opt;                          < T_Exception  >
+    | RECORD [@internal true];
+      { if Config.allow_empty_structured_type_declarations then T_Record []
+        else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Empty record type declaration." }
+    | EXCEPTION [@internal true];
+      { if Config.allow_empty_structured_type_declarations then T_Exception []
+        else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Empty exception type declaration." }
+    | RECORD; l=fields;                                 < T_Record     >
+    | EXCEPTION; l=fields;                              < T_Exception  >
   )
 
 (* Constructs on ty *)
@@ -406,7 +411,10 @@ let as_ty := COLON; ty
 let ty_or_collection :=
   | ty
   | annotated (
-    | COLLECTION; l=fields_opt;                         < T_Collection >
+    | COLLECTION [@internal true];
+      { if Config.allow_empty_structured_type_declarations then T_Collection []
+        else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Empty collection type declaration." }
+    | COLLECTION; l=fields;                         < T_Collection >
   )
 (* End *)
 

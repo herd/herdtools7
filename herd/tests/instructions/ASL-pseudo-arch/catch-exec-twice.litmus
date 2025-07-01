@@ -7,7 +7,7 @@ ASL catch-exec-twice
 
 {}
 
-type Bonga of exception;
+type Bonga of exception{-};
 
 func g() => integer
 begin

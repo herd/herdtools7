@@ -1,5 +1,5 @@
 
-type invalid_state of exception;
+type invalid_state of exception{-};
 
 func incorrect_terminating_path{N}(v: bits(N), flag: boolean) => bits(N)
 begin

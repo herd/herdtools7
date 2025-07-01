@@ -10,8 +10,8 @@ var z = 0;
 var t = 2;
 var aa=1;
 
-type Coucou of exception;
-type Bonga of exception;
+type Coucou of exception{-};
+type Bonga of exception{-};
 
 func f() => integer
 begin

@@ -554,11 +554,6 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     & \Tlbrace \parsesep \TClistOne{\Ntypedidentifier} \parsesep \Trbrace &
 \end{flalign*}
 
-\hypertarget{def-nfieldsopt}{}
-\begin{flalign*}
-\Nfieldsopt \derives \ & \Nfields \;|\; \emptysentence &
-\end{flalign*}
-
 \hypertarget{def-nslices}{}
 \begin{flalign*}
 \Nslices \derives \ & \Tlbracket \parsesep \ClistOne{\Nslice} \parsesep \Trbracket &
@@ -602,8 +597,8 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 \begin{flalign*}
 \Ntydecl \derives\ & \Nty &\\
             |\ & \Tenumeration \parsesep \Tlbrace \parsesep \TClistOne{\Tidentifier} \parsesep \Trbrace &\\
-            |\ & \Trecord \parsesep \Nfieldsopt &\\
-            |\ & \Texception \parsesep \Nfieldsopt &
+            |\ & \Trecord \parsesep \Nfields &\\
+            |\ & \Texception \parsesep \Nfields &
 \end{flalign*}
 
 \hypertarget{def-nfieldassign}{}
@@ -613,7 +608,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 
 \hypertarget{def-ntyorcollection}{}
 \begin{flalign*}
-  \Ntyorcollection \derives \ & \Nty \;|\; \Tcollection \parsesep \Nfieldsopt &\\
+  \Ntyorcollection \derives \ & \Nty \;|\; \Tcollection \parsesep \Nfields &\\
 \end{flalign*}
 
 \hypertarget{def-nexpr}{}

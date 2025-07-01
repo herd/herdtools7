@@ -1,6 +1,5 @@
 var MyCollection: collection { a: bits(8), b: bits(16) };
-var CollectionWithEmptyFieldList: collection {-};
-var CollectionWithoutFields: collection;
+var CollectionWithoutFields: collection{-};
 
 // The next declaration in comment is illegal:
 // only bitvector types are allowed as collection fields.

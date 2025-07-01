@@ -1,4 +1,4 @@
-type Not_found of exception;
+type Not_found of exception{-};
 type SyntaxException of exception { message:string };
 
 func main () => integer
