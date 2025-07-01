@@ -273,10 +273,10 @@ module Swp = struct
     in
 
     (* We set up:
-      SWP(Rs, Rt, Rn)
-        Rs=write_value (to be stored in [Rn])
-        Rt=no specific value (0) (will get the value of [Rn])
-       [Rn]=read_value needs no action
+       SWP(Rs, Rt, Rn)
+         Rs=write_value (to be stored in [Rn])
+         Rt=no specific value (0) (will get the value of [Rn])
+        [Rn]=read_value needs no action
     *)
     let pre_ins, rs, rt, st =
       match src with
