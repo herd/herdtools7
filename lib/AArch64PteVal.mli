@@ -70,5 +70,6 @@ val fields : string list
 val default_fields : string list
 val norm : string StringMap.t -> string StringMap.t
 val dump_pack : (string -> string) -> t -> string
+val as_virtual : t -> string option
 val as_physical : t -> string option
 val as_flags : t -> string option

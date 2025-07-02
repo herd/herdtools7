@@ -31,10 +31,13 @@ module type I = sig
   val specials2 : special2 list
   val specials3 : special3 list
   val pp_i : int -> string
+  module PteVal_gen: PteVal_gen.S
+
 end
 
 module type S = sig
   type arch_reg
+  type pte_value
 
 (* Locations *)
   type location =
@@ -53,7 +56,7 @@ module type S = sig
   module LocMap : MyMap.S with type key = location
 
 (* Initial states *)
-  type initval = S of string | P of AArch64PteVal.t
+  type initval = S of string | P of pte_value
   val pp_initval : initval -> string
   val initval_eq : initval -> initval -> bool
 
@@ -62,6 +65,7 @@ module type S = sig
 
 (* complete init with necessary information *)
   val complete_init : bool (* hexa *) -> Code.env -> init -> init
+  val pp_env: init -> string
 
 
 (***********************)
@@ -108,11 +112,13 @@ end
 
 module Make(I:I) : S
 with type arch_reg = I.arch_reg
+and type pte_value = I.PteVal_gen.t
 and type special = I.special
 and type special2 = I.special2
 and type special3 = I.special3
 = struct
   type arch_reg = I.arch_reg
+  type pte_value = I.PteVal_gen.t
 
   type location =
     | Reg of int * arch_reg
@@ -158,14 +164,16 @@ and type special3 = I.special3
   let of_loc loc = Loc (Code.as_data loc)
   let of_reg p r = Reg (p,r)
 
-  type initval = S of string | P of AArch64PteVal.t
+  (* - S of a plain value, a pte_* address or a phy_* address
+     - P of a PteVal *)
+  type initval = S of string | P of I.PteVal_gen.t
   let pp_initval = function
     | S v ->  pp_symbol v
-    | P p -> AArch64PteVal.pp_v p
+    | P p -> I.PteVal_gen.pp p
 
   let initval_eq v1 v2 = match v1,v2 with
   | S s1,S s2 -> Misc.string_eq s1 s2
-  | P p1,P p2 -> AArch64PteVal.compare p1 p2 = 0
+  | P p1,P p2 -> I.PteVal_gen.compare p1 p2 = 0
   | (S _,P _)|(P _,S _) -> false
 
   type init = (location * initval option) list
@@ -189,7 +197,7 @@ and type special3 = I.special3
     | None -> "-"
     | Some v -> pp_initval v
 
-  let _pp_env env =
+  let pp_env env =
     String.concat ", "
        (List.map (fun (loc,v) -> pp_location loc ^ "->" ^ ppo v) env)
 
@@ -216,9 +224,8 @@ and type special3 = I.special3
           | Reg _ -> k in
           let k = match v with
           | Some (S s) -> add_some (refers_virtual s) k
-          | Some (P p) ->
-             add_some
-               (OutputAddress.refers_virtual p.AArch64PteVal.oa) k
+          (* Add the associated physical address in a pteval `p` into `k` *)
+          | Some (P p) -> add_some (I.PteVal_gen.as_virtual p) k
           | None -> k in
           k)
         StringSet.empty i in
