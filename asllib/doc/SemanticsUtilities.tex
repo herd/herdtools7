@@ -554,13 +554,14 @@ In reference to \listingref{semantics-leslice}, we have the following applicatio
 \end{mathpar}
 
 \SemanticsRuleDef{GetIndex}
-\ProseParagraph
 The relation
 \hypertarget{def-getindex}{}
 \[
-  \getindex(\overname{\N}{\vi} \aslsep \overname{\tvector}{\vvec}) \;\aslrel\; \overname{\tvector}{\vv_{\vi}}
+  \getindex(\overname{\N}{\vi} \aslsep \overname{\tvector}{\vvec}) \;\aslrel\;
+  (\overname{\tvector}{\vr} \cup \overname{\TDynError}{\DynamicErrorVal{\BadIndex}})
 \]
-reads the value $\vv_i$ from the vector of values $\vvec$ at the index $\vi$.
+reads the value $\vr$ from the vector of values $\vvec$ at the index $\vi$.
+\ProseOtherwiseDynamicError
 
 \ExampleDef{Reading a Vector at an Index}
 The specification in \listingref{GetIndex} shows examples of accessing indices of native vectors:
@@ -575,39 +576,52 @@ The specification in \listingref{GetIndex} shows examples of accessing indices o
 \end{itemize}
 \ASLListing{Reading a vector at an index}{GetIndex}{\semanticstests/SemanticsRule.GetIndex.asl}
 
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{ok}
+  \begin{itemize}
+    \item $\vi$ is less than the number of elements in $\vvec$;
+    \item \Proseeqdef{$\vr$}{the element of $\vvec$ at index $\vi$}.
+  \end{itemize}
+
+  \item \AllApplyCase{error}
+  \begin{itemize}
+    \item $\vi$ is greater or equal to the number of elements in $\vvec$;
+    \item the result is the \dynamicerrorterm{} for an out of bounds index (\BadIndex).
+  \end{itemize}
+\end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
-\inferrule{
-  \vvec \eqname \vv_{0..k}\\
-  \vi \leq k\\
+\inferrule[ok]{
+  \vi < \listlen{\vvec}\\
 }{
-  \getindex(\vi, \vvec) \evalarrow \vv_{\vi}
+  \getindex(\vi, \vvec) \evalarrow \overname{\vv[\vi]}{\vr}
 }
 \end{mathpar}
 
-Notice that there is no rule to handle the case where the index is out of range ---
-this is guaranteed by the typechecker not to happen. Specifically,
-\begin{itemize}
-  \item \TypingRuleRef{EGetArray} ensures that an index is within the bounds of the array
-  being accessed via a check that the type of the index satisfies the type of the array size.
-  \item Typing rules \TypingRuleRef{LEDestructuring}, \TypingRuleRef{PTuple},
-  and \\ \TypingRuleRef{LDTuple} use the same index sequences for the tuples
-  involved and the corresponding lists of expressions.
-\end{itemize}
-If the rules listed above do not hold the typechecker fails.
+\begin{mathpar}
+\inferrule[error]{
+  \vi \geq \listlen{\vvec}\\
+}{
+  \getindex(\vi, \vvec) \evalarrow \DynamicErrorVal{\BadIndex}
+}
+\end{mathpar}
 
 \SemanticsRuleDef{SetIndex}
-\ProseParagraph
 The relation
 \hypertarget{def-setindex}{}
 \[
-  \setindex(\overname{\N}{\vi} \aslsep \overname{\vals}{\vv} \aslsep \overname{\tvector}{\vvec}) \;\aslrel\; \overname{\tvector}{\vres}
+  \setindex(\overname{\N}{\vi} \aslsep \overname{\vals}{\vv} \aslsep \overname{\tvector}{\vvec}) \;\aslrel\;
+  (\overname{\tvector}{\vres} \cup \overname{\TDynError}{\DynamicErrorVal{\BadIndex}})
 \]
 overwrites the value at the given index $\vi$ in a vector of values $\vvec$ with the new value $\vv$.
+\ProseOtherwiseDynamicError
 
 \ExampleDef{Writing a Vector at an Index}
 In \listingref{GetIndex}, evaluating the statement \verb|arr[[1]] = 3;|
-involves
+involves the following premise:
 \[
 \begin{array}{r}
 \setindex(1, \nvint(3), \nvvector{\nvint(0), \nvint(0), \nvint(0)}) \evalarrow\\
@@ -615,19 +629,44 @@ involves
 \end{array}
 \]
 
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{ok}
+  \begin{itemize}
+    \item $\vi$ is less than the number of elements in $\vvec$;
+    \item $\vvec$ is the sequence $\vu_{0..k}$;
+    \item $\vres$ is the sequence of values identical to $\vvec$,
+          except that at index $\vi$ the value is $\vv$.
+  \end{itemize}
+
+  \item \AllApplyCase{error}
+  \begin{itemize}
+    \item $\vi$ is greater or equal to the number of elements in $\vvec$;
+    \item the result is the \dynamicerrorterm{} for an out of bounds index (\BadIndex).
+  \end{itemize}
+\end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
-\inferrule{
+\inferrule[ok]{
+  \vi \leq \listlen{\vvec}\\
   \vvec \eqname \vu_{0..k}\\
-  \vi \leq k\\
-  \vres \eqname \vw_{0..k}\\
-  \vv \eqdef \vw_{\vi} \\
+  \vres = \vw_{0..k}\\
+  \vv = \vw_{\vi} \\
   j \in \{0..k\} \setminus \{\vi\}.\ \vw_{j} = \vu_j\\
 }{
   \setindex(\vi, \vv, \vvec) \evalarrow \vres
 }
 \end{mathpar}
-Similar to $\getindex$, there is no need to handle the out-of-range index case.
+
+\begin{mathpar}
+\inferrule[error]{
+  \vi > \listlen{\vvec}
+}{
+  \setindex(\vi, \vv, \vvec) \evalarrow \DynamicErrorVal{\BadIndex}
+}
+\end{mathpar}
 
 \SemanticsRuleDef{GetField}
 \ProseParagraph
