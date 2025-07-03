@@ -18,6 +18,7 @@ begin
   else
     eventaccess = PHY_PTE;
   end;
+  CheckExclusiveDuplicatedTranslate(desc.paddress, ProcessorID(), N);
 // Now, we can write, physically.
 //  __DEBUG__(accdesc,eventaccess);
   write_memory_gen{N*8}(desc.paddress.address, value,accdesc,eventaccess);

@@ -216,3 +216,82 @@ type S1PIRType of bits(64) {
  [59:56] Perm14,
  [63:60] Perm15,
 };
+
+func AArch64_IsExclusiveVA
+(address : bits(64), processorid : integer, size : integer) => boolean
+begin
+  return TRUE;
+end;
+
+// IsExclusiveGlobal()
+// ===================
+// Return TRUE if the global Exclusives monitor for processorid includes all of
+// the physical address region of size bytes starting at paddress.
+
+var RESADDR : bits(56) = Zeros{56};
+var _RegisteredAddress: bits(56);
+var _CheckRegisteredAddress: boolean = FALSE;
+var _SuccessPA : bool = FALSE;
+
+func IsExclusiveGlobal (paddress : FullAddress, processorid : integer, size : integer) => boolean
+begin
+  let _SuccessPA = SomeBoolean();
+  // __debug__(_SuccessPA);
+
+  if _SuccessPA then
+    let cond_exclusive_global = paddress.address == RESADDR;
+    // __debug__(cond_exclusive_global);
+    CheckProp(cond_exclusive_global);
+    _RegisteredAddress = paddress.address;
+    _CheckRegisteredAddress = TRUE;
+  end;
+
+  return _SuccessPA;
+end;
+
+func ExclusiveMonitorsStatus() => bit
+begin
+  _CheckRegisteredAddress = FALSE;
+  // __debug__(_SuccessPA);
+  return if _SuccessPA then '0' else '1';
+end;
+
+func ClearExclusiveLocal(processorid : integer)
+begin
+  _CheckRegisteredAddress = FALSE;
+  _RegisteredAddress = Zeros{56};
+end;
+
+
+// MarkExclusiveGlobal()
+// =====================
+// Record the physical address region of size bytes starting at paddress in
+// the global Exclusives monitor for processorid.
+
+func MarkExclusiveGlobal
+  (paddress : FullAddress,
+  processorid : integer,
+  size : integer)
+begin
+  RESADDR = paddress.address;
+  // __debug__(paddress.address);
+end;
+
+func CheckExclusiveDuplicatedTranslate(paddress : FullAddress, processorid: integer, size: integer)
+begin
+  // __debug__(_CheckRegisteredAddress);
+  if _CheckRegisteredAddress then
+    let cond_check_exclusive_duplicated_translate = paddress.address == _RegisteredAddress;
+    // __debug__(cond_check_exclusive_duplicated_translate);
+    CheckProp(cond_check_exclusive_duplicated_translate);
+    _CheckRegisteredAddress = FALSE;
+  end;
+end;
+
+
+func AArch64_MarkExclusiveVA
+(address : bits(64), processorid : integer, size : integer)
+begin
+  return;
+end;
+

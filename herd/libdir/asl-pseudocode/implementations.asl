@@ -397,7 +397,7 @@ var SP_EL0: bits(64);
 //
 // It is always safe to return TRUE which will check the physical address only.
 
-var SuccessVA : boolean ;
+var SuccessVA : boolean = FALSE ;
 
 func AArch64_IsExclusiveVA
 (address : bits(64), processorid : integer, size : integer) => boolean
@@ -460,7 +460,8 @@ end;
 
 func ClearExclusiveLocal(processorid : integer)
 begin
-  return;
+  _CheckRegisteredPaddress = FALSE;
+  _registered_paddress = Zeros{56};
 end;
 
 // =============================================================================
@@ -630,3 +631,8 @@ type EventAccess of enumeration {
      TAG,
      PHY_PTE,
 };
+
+func CheckExclusiveDuplicatedTranslate(paddress : FullAddress, processorid: integer, size: integer)
+begin
+  return;
+end;
