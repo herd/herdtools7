@@ -507,13 +507,15 @@ $s$, which is given via a floating point representation.
 \item The function $\strtolit(s)$ returns $\Tstringlit(s')$ where $s'$ is the string value represented by $s$.
 \hypertarget{def-bitstolit}{}
 \item The function $\bitstolit(s)$ returns $\Tbitvectorlit(b)$ where $b$ is the sequence of bits
-given by $s$.
+      given by $s$.
 \hypertarget{def-masktolit}{}
 \item The function $\masktolit(s)$ returns $\Tmasklit(m)$ where $m$ is the bitmask given by $s$.
 \hypertarget{def-falsetolit}{}
-\item The function $\falsetolit(s)$ returns $\Tboollit(\False)$ ($s$ is ensured to be \texttt{FALSE}).
+\item The function $\falsetolit(s)$ returns $\Tboollit(\False)$ ($s$ is guaranteed to be \\
+      \texttt{FALSE}).
 \hypertarget{def-truetolit}{}
-\item The function $\truetolit(s)$ returns $\Tboollit(\True)$ ($s$ is ensured to be \texttt{TRUE}).
+\item The function $\truetolit(s)$ returns $\Tboollit(\True)$ ($s$ is guaranteed to be \\
+      \texttt{TRUE}).
 \hypertarget{def-tokenid}{}
 \item The function $\tokenid(s)$ returns $\Tlexeme(s)$.
 \hypertarget{def-lexicalerror}{}

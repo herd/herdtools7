@@ -1441,7 +1441,7 @@ which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
   \item $\marray$ consists of the native vector $\varray$ and execution graph $\vgone$;
   \item $\mindex$ consists of the native integer $\vindex$ and execution graph $\vgtwo$;
   \item $\vindex$ is the native integer for $\vi$;
-  \item evaluating the value at index $\vi$ of $\varray$ is $\vv$;
+  \item evaluating the value at index $\vi$ of $\varray$ yields $\vv$\ProseOrError;
   \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
 \end{itemize}
 
@@ -1453,7 +1453,7 @@ which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
   \marray \eqname (\varray, \vgone)\\
   \mindex \eqname (\vindex, \vgtwo)\\
   \vindex \eqname \nvint(\vi)\\
-  \getindex(\vi, \varray) \evalarrow \vv\\
+  \getindex(\vi, \varray) \evalarrow \vv \OrDynError\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo\\
 }{
   \evalexpr{\env, \EGetArray(\earray, \eindex)} \evalarrow \Normal((\vv, \vg), \newenv)
