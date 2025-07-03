@@ -319,6 +319,7 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
     | _ :: _ ->
         (* If more than one candidate exists, the candidate signature should clash,
            which is detected when typechecking the corresponding declarations. *)
+        Printf.eprintf "Ambiguous function: %s\n%!" name;
         assert false
   (* End *)
 

@@ -1003,7 +1003,7 @@ module Make (Conf : Config) = struct
         let impls =  impls @ physmem in
         if is_vmsa then
           let impls_vmsa =  build `ASLv1 "implementations-vmsa.asl" in
-          impls @ impls_vmsa
+          patch ~patches:impls_vmsa ~src:impls
         else impls
       and shared = build `ASLv0 "shared_pseudocode.asl" in
       let shared =
