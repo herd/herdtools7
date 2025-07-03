@@ -409,7 +409,7 @@ and type_equal eq t1 t2 =
   | T_String, T_String
   | T_Int UnConstrained, T_Int UnConstrained ->
       true
-  | T_Int (Parameterized (i1, _)), T_Int (Parameterized (i2, _)) -> i1 == i2
+  | T_Int (Parameterized x1), T_Int (Parameterized x2) -> String.equal x1 x2
   | T_Int (WellConstrained (c1, _)), T_Int (WellConstrained (c2, _)) ->
       constraints_equal eq c1 c2
   | T_Bits (w1, bf1), T_Bits (w2, bf2) ->

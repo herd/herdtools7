@@ -153,19 +153,11 @@ let rec is_non_primitive ty =
 let is_primitive ty = (not (is_non_primitive ty)) |: TypingRule.PrimitiveType
 (* End *)
 
-let parameterized_constraints =
-  let next_uid = ref 0 in
-  fun var ->
-    let uid = !next_uid in
-    incr next_uid;
-    Parameterized (uid, var)
-
-let parameterized_ty ~loc var =
-  T_Int (parameterized_constraints var) |> add_pos_from loc
+let parameterized_ty ~loc var = T_Int (Parameterized var) |> add_pos_from loc
 
 let to_well_constrained ty =
   match ty.desc with
-  | T_Int (Parameterized (_uid, var)) -> var_ var |> integer_exact
+  | T_Int (Parameterized var) -> var_ var |> integer_exact
   | _ -> ty
 
 let get_well_constrained_structure env ty =
@@ -237,7 +229,7 @@ module Domain = struct
     let ty = make_anonymous env ty in
     match ty.desc with
     | T_Int UnConstrained -> Top
-    | T_Int (Parameterized (_uid, var)) ->
+    | T_Int (Parameterized var) ->
         Subdomains [ ConstrainedDom (Constraint_Exact (var_ var)) ]
     | T_Int (WellConstrained (constraints, _)) ->
         Subdomains (List.map (symdom_of_constraint env) constraints)
