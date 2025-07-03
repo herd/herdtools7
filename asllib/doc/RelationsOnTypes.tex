@@ -1650,22 +1650,31 @@ named lowest common ancestor.
 \hypertarget{def-annotateconstraintbinop}{}
 The function
 \[
-\begin{array}{r}
-\annotateconstraintbinop(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\binop}{\op} \aslsep
-  \overname{\intconstraint^*}{\csone} \aslsep
+\annotateconstraintbinop\left(
+  \begin{array}{c}
+  \overname{\{\Over,\Under\}}{\vapprox} \aslsep\\
+  \overname{\staticenvs}{\tenv} \aslsep\\
+  \overname{\binop}{\op} \aslsep\\
+  \overname{\intconstraint^*}{\csone} \aslsep\\
   \overname{\intconstraint^*}{\cstwo}
-) \aslto \\
+  \end{array}
+\right) \aslto
+\begin{array}{r}
 \left(
-  \overname{\intconstraint^*}{\annotatedcs} \aslsep
+  \begin{array}{c}
+  \overname{\intconstraint^*}{\annotatedcs} \aslsep\\
   \overname{\precisionlossindicator}{\vp}
+  \end{array}
 \right)
-\cup \overname{\TTypeError}{\TypeErrorConfig}
+\\ \cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
 annotates the application of the binary operation $\op$ to the lists of integer constraints
 $\csone$ and $\cstwo$, yielding a list of constraints --- $\annotatedcs$.
+%
+If the list is empty, the result is either $\CannotUnderapproximate$ or $\CannotOverapproximate$,
+based on $\vapprox$ (this function is invoked in the context of approximating lists of constraints).
+%
 \ProseOtherwiseTypeError\
 
 The operator $\op$ is assumed to be only one of the operators in the following set:
@@ -1675,7 +1684,7 @@ as range constraints or have to be converted to a list of exact constraints.
 
 \ExampleDef{Annotating Constraints for Binary Operations}
 Applying $\PLUS$ to
-$\{ \AbbrevConstraintRange{\ELInt{2}}{\ELInt{4}}\}$ and
+$\{\AbbrevConstraintRange{\ELInt{2}}{\ELInt{4}}\}$ and
 $\{\AbbrevConstraintExact{\ELInt{2}}\}$ results in\\
 $\{\AbbrevConstraintRange{\ELInt{4}}{\ELInt{6}}\}$,
 since $\binopisexploding(\PLUS) \typearrow \False$
@@ -1691,7 +1700,8 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item applying $\binopfilterrhs$ to $\op$ $\cstwo$ in $\tenv$, to filter out constraints that will definitely fail dynamically, yields $\cstwof$;
+  \item applying $\binopfilterrhs$ to $\vapprox$, $\op$ $\cstwo$ in $\tenv$, to filter out constraints that will definitely fail dynamically,
+        yields $\cstwof$\ProseTerminateAs{\CannotUnderapproximate, \CannotOverapproximate};
   \item \OneApplies
   \begin{itemize}
     \item \AllApplyCase{exploding}
@@ -1717,14 +1727,15 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
     \end{itemize}
   \end{itemize}
   \item applying $\constraintbinop$ to $\op$, $\csonearg$, and $\cstwoarg$ yields $\csvanilla$;
-  \item applying $\refineconstraintfordiv$ to $\op$ and $\csvanilla$ yields $\refinedcs$\ProseOrTypeError;
+  \item applying $\refineconstraintfordiv$ to $\vapprox$, $\op$ and $\csvanilla$ yields\\
+        $\refinedcs$\ProseTerminateAs{\CannotUnderapproximate, \CannotOverapproximate};
   \item applying $\reduceconstraints$ to $\refinedcs$ in $\tenv$ yields $\annotatedcs$.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[exploding]{
-  \binopfilterrhs(\tenv, \op, \cstwo) \typearrow \cstwof\\\\
+  \binopfilterrhs(\vapprox, \tenv, \op, \cstwo) \typearrow \cstwof \terminateas \CannotUnderapproximate, \CannotOverapproximate\\\\
   \commonprefixline\\\\
   \binopisexploding(\op) \typearrow \True\\
   \explodeintervals(\tenv, \csone) \typearrow (\csonee, \vpone)\\
@@ -1742,26 +1753,26 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
   }\\\\
   \commonsuffixline\\\\
   \constraintbinop(\op, \csonearg, \cstwoarg) \typearrow \csvanilla\\
-  \refineconstraintfordiv(\op, \csvanilla) \typearrow \refinedcs \OrTypeError\\\\
+  \refineconstraintfordiv(\vapprox, \op, \csvanilla) \typearrow \refinedcs \terminateas \CannotUnderapproximate,\CannotOverapproximate\\\\
   \reduceconstraints(\tenv, \refinedcs) \typearrow \annotatedcs
 }{
-  \annotateconstraintbinop(\tenv, \op, \csone, \cstwo) \typearrow \annotatedcs
+  \annotateconstraintbinop(\vapprox, \tenv, \op, \csone, \cstwo) \typearrow \annotatedcs
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[non\_exploding]{
-  \binopfilterrhs(\tenv, \op, \cstwo) \typearrow \cstwof\\\\
+  \binopfilterrhs(\vapprox, \tenv, \op, \cstwo) \typearrow \cstwof \terminateas \CannotUnderapproximate, \CannotOverapproximate\\\\
   \commonprefixline\\\\
   \binopisexploding(\op) \typearrow \False\\
   \vp \eqdef \PrecisionFull \\
   (\csonearg, \cstwoarg) \eqdef (\csone, \cstwof)\\\\
   \commonsuffixline\\\\
   \constraintbinop(\op, \csonearg, \cstwoarg) \typearrow \csvanilla\\
-  \refineconstraintfordiv(\op, \csvanilla) \typearrow \refinedcs \OrTypeError\\\\
+  \refineconstraintfordiv(\vapprox, \op, \csvanilla) \typearrow \refinedcs \terminateas \CannotUnderapproximate, \CannotOverapproximate\\\\
   \reduceconstraints(\tenv, \refinedcs) \typearrow \annotatedcs
 }{
-  \annotateconstraintbinop(\tenv, \op, \csone, \cstwo) \typearrow \annotatedcs
+  \annotateconstraintbinop(\vapprox, \tenv, \op, \csone, \cstwo) \typearrow \annotatedcs
 }
 \end{mathpar}
 \CodeSubsection{\AnnotateConstraintBinopBegin}{\AnnotateConstraintBinopEnd}{../StaticOperations.ml}
@@ -1770,13 +1781,24 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
 \hypertarget{def-binopfilterrhs}{}
 The function
 \[
-\binopfilterrhs(\overname{\staticenvs}{\tenv} \aslsep \overname{\binop}{\op} \aslsep \overname{\intconstraint^*}{\cs})
-\aslto \overname{\intconstraint^*}{\newcs}
+\begin{array}{r}
+\binopfilterrhs(
+    \overname{\{\Over,\Under\}}{\vapprox} \aslsep
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\binop}{\op} \aslsep
+    \overname{\intconstraint^*}{\cs})
+\aslto \\
+\overname{\intconstraint^+}{\newcs}
+\cup \{\CannotUnderapproximate, \CannotOverapproximate\}
+\end{array}
 \]
 filters the list of constraints $\cs$ by removing values that will definitely result in a dynamic
 error if found on the right-hand-side of a binary operation expression with the operator $\op$
 in any environment consisting of the static environment $\tenv$.
 The result is the filtered list of constraints $\newcs$.
+%
+If the list is empty, the result is either $\CannotUnderapproximate$ or $\CannotOverapproximate$,
+based on $\vapprox$ (this function is invoked in the context of approximating lists of constraints).
 
 \ExampleDef{Filtering Right-hand-side Constraints}
 An example of filtering constraints appears in \listingref{apply-binop-constraints},
@@ -1792,7 +1814,8 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
     \item $\op$ is one of $\SHL$, $\SHR$, and $\POW$;
     \item define $\vf$ as the specialization of $\refineconstraintbysign$ for the predicate
           $\lambda x.\ x \geq 0$, which is $\True$ if and only if the tested number is greater or equal to $0$;
-    \item refining the list of constraints $\cs$ with $\vf$ via $\refineconstraints$ yields $\newcs$;
+    \item refining the list of constraints $\cs$ with $\vf$ and $\vapprox$ via $\refineconstraints$ yields \\
+          $\newcs$\ProseTerminateAs{\CannotUnderapproximate, \CannotOverapproximate};
     \item checking whether $\newcs$ is empty yields $\True$\ProseTerminateAs{\BadOperands}.
   \end{itemize}
 
@@ -1801,7 +1824,8 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
     \item $\op$ is one of $\MOD$, $\DIV$, and $\DIVRM$;
     \item define $\vf$ as the specialization of $\refineconstraintbysign$ for the predicate
           $\lambda x.\ x > 0$, which is $\True$ if and only if the tested number is greater than $0$;
-    \item refining the list of constraints $\cs$ with $\vf$ via $\refineconstraints$ yields $\newcs$;
+    \item refining the list of constraints $\cs$ with $\vf$ and $\vapprox$ via $\refineconstraints$ yields \\
+          $\newcs$\ProseTerminateAs{\CannotUnderapproximate, \CannotOverapproximate};
     \item checking whether $\newcs$ is empty yields $\True$\ProseTerminateAs{\BadOperands}.
   \end{itemize}
 
@@ -1816,11 +1840,11 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
 \begin{mathpar}
 \inferrule[greater\_or\_equal]{
   \op \in \{\SHL, \SHR, \POW\}\\\\
-  \vf \eqdef \refineconstraintbysign(\tenv, \lambda x.\ x \geq 0)\\
-  \refineconstraints(\cs, \vf) \typearrow \newcs\\
+  \refineconstraintbysign(\tenv, \lambda x.\ x \geq 0) \typearrow \vf\\
+  \refineconstraints(\vapprox, \cs, \vf) \typearrow \newcs \terminateas \CannotUnderapproximate, \CannotOverapproximate\\\\
   \checktrans{\newcs \neq \emptylist}{\BadOperands} \typearrow \True\OrTypeError
 }{
-  \binopfilterrhs(\tenv, \op, \cs) \typearrow \newcs
+  \binopfilterrhs(\vapprox, \tenv, \op, \cs) \typearrow \newcs
 }
 \end{mathpar}
 
@@ -1828,10 +1852,10 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
 \inferrule[greater\_than]{
   \op \in \{\MOD, \DIV, \DIVRM\}\\\\
   \vf \eqdef \refineconstraintbysign(\tenv, \lambda x.\ x > 0)\\
-  \refineconstraints(\cs, \vf) \typearrow \newcs\\
+  \refineconstraints(\vapprox, \cs, \vf) \typearrow \newcs \terminateas \CannotUnderapproximate, \CannotOverapproximate\\\\
   \checktrans{\newcs \neq \emptylist}{\BadOperands} \typearrow \True\OrTypeError
 }{
-  \binopfilterrhs(\tenv, \op, \cs) \typearrow \newcs
+  \binopfilterrhs(\vapprox, \tenv, \op, \cs) \typearrow \newcs
 }
 \end{mathpar}
 
@@ -1839,7 +1863,7 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
 \inferrule[no\_filtering]{
   \op \in \{\MINUS, \MUL, \PLUS\}
 }{
-  \binopfilterrhs(\op, \cs) \typearrow \overname{\cs}{\newcs}
+  \binopfilterrhs(\vapprox, \op, \cs) \typearrow \overname{\cs}{\newcs}
 }
 \end{mathpar}
 
@@ -2090,14 +2114,25 @@ and one that cannot be reduced into an integer constant, which yields $\None$.
 \hypertarget{def-refineconstraints}{}
 The function
 \[
-\begin{array}{r}
-\refineconstraints(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint\rightarrow\langle\intconstraint\rangle}{\vf} \aslsep \overname{\intconstraint^*}{\cs})
-\aslto \\
-\overname{\intconstraint^*}{\newcs}
+\refineconstraints\left(
+  \begin{array}{c}
+  \overname{\{\Over,\Under\}}{\vapprox} \aslsep\\
+  \overname{\staticenvs}{\tenv} \aslsep\\
+  \overname{\intconstraint\rightarrow\langle\intconstraint\rangle}{\vf} \aslsep\\
+  \overname{\intconstraint^*}{\cs}
+  \end{array}
+  \right)
+\aslto
+\begin{array}{ll}
+\overname{\intconstraint^*}{\newcs} & \cup\\
+\{\CannotUnderapproximate, \CannotOverapproximate\}
 \end{array}
 \]
 refines a list of constraints $\cs$ by applying the refinement function $\vf$ to each constraint and retaining the constraints
 that do not refine to $\None$. The resulting list of constraints is given in $\newcs$.
+%
+If the list is empty, the result is either $\CannotUnderapproximate$ or $\CannotOverapproximate$,
+based on $\vapprox$ (this function is invoked in the context of approximating lists of constraints).
 
 \ExampleDef{Filtering Optional Constraints}
 The specification in \listingref{RefineConstraintBySign}
@@ -2115,19 +2150,32 @@ used by $\refineconstraintbysign$, the resulting $\None$ is also filtered out.
     \item $\newcs$ is the empty list.
   \end{itemize}
 
-  \item \AllApplyCase{non\_empty\_none}
+  \item \AllApply
   \begin{itemize}
     \item $\cs$ is the list with $\vc$ as its \head\ and $\csone$ as its \tail;
     \item applying $\vf$ to $\vc$ yields $\None$;
-    \item applying $\refineconstraints$ to $\vf$ and $\csone$ yields $\csonep$;
-    \item $\newcs$ is $\csonep$.
+    \item applying $\refineconstraints$ to $\vapprox$, $\vf$ and $\csone$ yields $\csonep$;
+    \item \OneApplies
+    \begin{itemize}
+      \item \AllApplyCase{non\_empty\_none\_precise}
+      \begin{itemize}
+        \item $\csonep$ is not the empty list;
+        \item $\newcs$ is $\csonep$.
+      \end{itemize}
+
+      \item \AllApplyCase{non\_empty\_none\_approx}
+      \begin{itemize}
+        \item $\csonep$ is not the empty list;
+        \item the result is $\CannotOverapproximate$ if $\vapprox$ is $\Over$ and $\CannotUnderapproximate$, otherwise.
+      \end{itemize}
+    \end{itemize}
   \end{itemize}
 
   \item \AllApplyCase{non\_empty\_some}
   \begin{itemize}
     \item $\cs$ is the list with $\vc$ as its \head\ and $\csone$ as its \tail;
     \item applying $\vf$ to $\vc$ yields $\langle\vcp\rangle$;
-    \item applying $\refineconstraints$ to $\vf$ and $\csone$ yields $\csonep$;
+    \item applying $\refineconstraints$ to $\vapprox$, $\vf$ and $\csone$ yields $\csonep$;
     \item $\newcs$ is the list with $\vcp$ as its \head\ and $\csonep$ as its \tail.
   \end{itemize}
 \end{itemize}
@@ -2135,25 +2183,36 @@ used by $\refineconstraintbysign$, the resulting $\None$ is also filtered out.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
-  \refineconstraints(\tenv, \vf, \overname{\emptylist}{\cs}) \typearrow \overname{\emptylist}{\newcs}
+  \refineconstraints(\vapprox, \tenv, \vf, \overname{\emptylist}{\cs}) \typearrow \overname{\emptylist}{\newcs}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[non\_empty\_none]{
+\inferrule[non\_empty\_none\_precise]{
   \vf(\vc) \typearrow \None\\
-  \refineconstraints(\vf, \csone) \typearrow \csonep\\
+  \refineconstraints(\vapprox, \vf, \csone) \typearrow \csonep\\
+  \csonep \neq \emptylist
 }{
-  \refineconstraints(\vf, \overname{[\vc]\concat \csone}{\cs}) \typearrow \overname{\csonep}{\newcs}
+  \refineconstraints(\vapprox, \vf, \overname{[\vc]\concat \csone}{\cs}) \typearrow \overname{\csonep}{\newcs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_empty\_none\_approx]{
+  \vf(\vc) \typearrow \None\\
+  \refineconstraints(\vapprox, \vf, \csone) \typearrow \csonep\\
+  \csonep = \emptylist
+}{
+  \refineconstraints(\vapprox, \vf, \overname{[\vc]\concat \csone}{\cs}) \typearrow \choice{\vapprox=\Over}{\CannotOverapproximate}{\CannotUnderapproximate}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[non\_empty\_some]{
   \vf(\vc) \typearrow \langle\vcp\rangle\\
-  \refineconstraints(\vf, \csone) \typearrow \csonep\\
+  \refineconstraints(\vapprox, \vf, \csone) \typearrow \csonep\\
 }{
-  \refineconstraints(\vf, \overname{[\vc]\concat \csone}{\cs}) \typearrow \overname{[\vcp] \concat \csonep}{\newcs}
+  \refineconstraints(\vapprox, \vf, \overname{[\vc]\concat \csone}{\cs}) \typearrow \overname{[\vcp] \concat \csonep}{\newcs}
 }
 \end{mathpar}
 
@@ -2161,27 +2220,50 @@ used by $\refineconstraintbysign$, the resulting $\None$ is also filtered out.
 \hypertarget{def-refineconstraintfordiv}{}
 The function
 \[
-\refineconstraintfordiv(\overname{\binop}{\op} \aslsep \overname{\intconstraint^*}{\cs}) \aslto \overname{\intconstraint^*}{\vres}
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\refineconstraintfordiv\left(
+  \begin{array}{c}
+  \overname{\{\Over,\Under\}}{\vapprox} \aslsep\\
+  \overname{\binop}{\op} \aslsep\\
+  \overname{\intconstraint^*}{\cs}
+  \end{array}
+  \right) \aslto
+  \begin{array}{ll}
+  \overname{\intconstraint^*}{\vres} & \cup\\
+  \{\CannotUnderapproximate, \CannotOverapproximate\} &
+  \end{array}
 \]
 filters the list of constraints $\cs$ for $\op$,
 removing constraints that represents a division operation that will definitely fail
 when $\op$ is the division operation.
-\ProseOtherwiseTypeError
+%
+If the list is empty, the result is either $\CannotUnderapproximate$ or $\CannotOverapproximate$,
+based on $\vapprox$ (this function is invoked in the context of approximating lists of constraints).
 
 See \ExampleRef{Filtering and Reducing Division-based Constraints}.
 
 \ProseParagraph
 \OneApplies
 \begin{itemize}
-  \item \AllApplyCase{div}
+  \item \AllApply
   \begin{itemize}
     \item $\op$ is $\DIV$;
     \item applying $\filterreduceconstraintdiv$ to each constraint $\cs[\vi]$, for each $\vi$ in $\listrange(\cs)$,
           yields the optional constraint $\vcopt_\vi$\ProseOrTypeError;
     \item define $\vres$ as the list made of constraints $\vcp_\vi$, for each $\vi$ in $\listrange(\cs)$
           such that $\vcopt_\vi = \langle\vcp_\vi\rangle$;
-    \item checking that $\vres$ is not the empty list yields $\True$\ProseTerminateAs{\BadOperands}.
+    \item \OneApplies
+    \begin{itemize}
+      \item \AllApplyCase{div\_non\_empty}
+      \begin{itemize}
+        \item $\vres$ is not the empty list;
+      \end{itemize}
+
+      \item \AllApplyCase{div\_empty}
+      \begin{itemize}
+        \item $\vres$ is the empty list;
+        \item the result is $\CannotOverapproximate$ if $\vapprox$ is $\Over$ and $\CannotUnderapproximate$, otherwise.
+      \end{itemize}
+    \end{itemize}
   \end{itemize}
 
   \item \AllApplyCase{non\_div}
@@ -2193,13 +2275,24 @@ See \ExampleRef{Filtering and Reducing Division-based Constraints}.
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[div]{
+\inferrule[div\_non\_empty]{
   \op = \DIV\\
   \vi\in\listrange(\cs): \filterreduceconstraintdiv(\cs[\vi]) \typearrow \vcopt_\vi \OrTypeError\\\\
   \vres \eqdef [\vi\in\listrange(\cs): \choice{\vcopt_\vi = \langle\vcp_\vi\rangle}{\vcp}{\epsilon}]\\
-  \checktrans{\vres \neq \emptylist}{\BadOperands} \checktransarrow \True \OrTypeError
+  \vres \neq \emptylist
 }{
-  \refineconstraintfordiv(\op, \cs) \typearrow \vres
+  \refineconstraintfordiv(\vapprox, \op, \cs) \typearrow \vres
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[div\_empty]{
+  \op = \DIV\\
+  \vi\in\listrange(\cs): \filterreduceconstraintdiv(\cs[\vi]) \typearrow \vcopt_\vi \OrTypeError\\\\
+  \vres \eqdef [\vi\in\listrange(\cs): \choice{\vcopt_\vi = \langle\vcp_\vi\rangle}{\vcp}{\epsilon}]\\
+  \vres = \emptylist\\
+}{
+  \refineconstraintfordiv(\vapprox, \op, \cs) \typearrow \choice{\vapprox=\Over}{\CannotOverapproximate}{\CannotUnderapproximate}
 }
 \end{mathpar}
 
@@ -2207,7 +2300,7 @@ See \ExampleRef{Filtering and Reducing Division-based Constraints}.
 \inferrule[non\_div]{
   \op \neq \DIV
 }{
-  \refineconstraintfordiv(\op, \cs) \typearrow \overname{\cs}{\vres}
+  \refineconstraintfordiv(\vapprox, \op, \cs) \typearrow \overname{\cs}{\vres}
 }
 \end{mathpar}
 \CodeSubsection{\RefineConstraintForDIVBegin}{\RefineConstraintForDIVEnd}{../types.ml}
@@ -2216,7 +2309,9 @@ See \ExampleRef{Filtering and Reducing Division-based Constraints}.
 \hypertarget{def-filterreduceconstraintdiv}{}
 The function
 \[
-\filterreduceconstraintdiv(\overname{\intconstraint}{\vc}) \aslto \overname{\langle\intconstraint\rangle}{\vcopt}
+\filterreduceconstraintdiv(
+  \overname{\intconstraint}{\vc}) \aslto
+  \overname{\langle\intconstraint\rangle}{\vcopt}
 \]
 returns $\None$ if $\vc$ is an exact constraint for a binary expression for dividing two integer literals
 where the denominator does not divide the numerator, and an optional containing $\vc$ otherwise.

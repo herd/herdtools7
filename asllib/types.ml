@@ -252,7 +252,7 @@ module Domain = struct
     exception CannotUnderApproximate
     (** Raised if under approximation is not possible. *)
 
-    (** Return bottom for Under approximation, top for over approximation. *)
+    (** Return bottom for Under approximation, or raise CannotOverApproximate for over approximation. *)
     let bottom_top approx =
       if approx = Over then raise CannotOverApproximate else IntSet.empty
 
@@ -272,17 +272,19 @@ module Domain = struct
       let warn_from ~loc:_ _ = ()
     end)
 
-    module UnderOp = StaticOperations.Make (struct
+    module UnderSOp = StaticOperations.Make (struct
       let fail _ = raise CannotUnderApproximate
       let warn_from ~loc:_ _ = ()
     end)
 
+    (* Begin ApproxConstraintBinop *)
     let approx_constraint_binop = function
       | Over -> OverSOp.annotate_constraint_binop
       | Under -> (
           fun ~loc env op s1 s2 ->
-            try UnderOp.annotate_constraint_binop ~loc env op s1 s2
+            try UnderSOp.annotate_constraint_binop ~loc env op s1 s2
             with CannotUnderApproximate -> ([], Precision_Lost []))
+    (* End *)
 
     (** [intset_to_constraints s] converts each interval in [s] into a constraint for that interval. *)
     let intset_to_constraints s =

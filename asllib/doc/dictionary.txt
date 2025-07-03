@@ -986,6 +986,7 @@ include
 included
 includes
 including
+inclusive
 incomplete
 incorrect
 incorrectly
@@ -1089,6 +1090,7 @@ invariant
 inverse
 invocation
 invoke
+invoked
 invokes
 invoking
 involve

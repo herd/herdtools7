@@ -275,6 +275,13 @@
 \newcommand\emptylist[0]{\hyperlink{def-emptylist}{[\ ]}}
 \newcommand\Proseemptylist[1]{#1 is the empty list}
 \newcommand\choice[3]{\hyperlink{def-choice}{\textsf{choice}}(#1,#2,#3)}
+\newcommand\ifthenelse[3]{
+  \left\{\begin{array}{ll}
+  \hyperlink{def-choice}{\textbf{if}} & #1\\
+  \hyperlink{def-choice}{\textbf{then}} & #2\\
+  \hyperlink{def-choice}{\textbf{else}} & #3\\
+  \end{array}\right.
+}
 \newcommand\equallength[0]{\hyperlink{def-equallength}{\textfunc{equal\_length}}}
 \newcommand\listrange[0]{\hyperlink{def-listrange}{\textfunc{indices}}}
 \newcommand\Proselistrange[2]{\hyperlink{def-listrange}{index} #1 in the list of indices for #2}
@@ -1950,6 +1957,8 @@
 \newcommand\symdomeval[0]{\hyperlink{def-symdomeval}{\textfunc{symdom\_eval}}}
 \newcommand\Under[0]{\hyperlink{def-Under}{\textsf{Under}}}
 \newcommand\Over[0]{\hyperlink{def-Over}{\textsf{Over}}}
+\newcommand\CannotOverapproximate[0]{\hyperlink{def-cannotoverapproximate}{\overline{\textsf{Approx}}}}
+\newcommand\CannotUnderapproximate[0]{\hyperlink{def-cannotunderapproximate}{\underline{\textsf{Approx}}}}
 \newcommand\approxconstraints[0]{\hyperlink{def-approxconstraints}{\textfunc{approx\_constraints}}}
 \newcommand\Proseapproxconstraints[4]{\hyperlink{def-approxconstraints}
   {Overapproximating} the list of constraints #3 in the static environment #1 with the \approximationdirectionterm\ #2
@@ -1964,10 +1973,12 @@
 \newcommand\Proseapproxconstraint[4]{\hyperlink{def-approxconstraint}
   {approximating} the constraint #2 for all environments consisting of the static environment
   #1 with the \approximationdirectionterm\ #3 yields the set #4}
+\newcommand\makeinterval[0]{\hyperlink{def-makeinterval}{\textfunc{make\_interval}}}
 \newcommand\approxexpr[0]{\hyperlink{def-approxexpr}{\textfunc{approx\_expr}}}
 \newcommand\Proseapproxexpr[4]{\hyperlink{def-approxexpr}
   {approximating} the set integers represented by the expression #3 in the static environment #1
-  with the symbol #2 yields the set of integers #4}
+  with the symbol #2 yields #4}
+\newcommand\approxconstraintbinop[0]{\hyperlink{def-approxconstraintbinop}{\textfunc{approx\_constraint\_binop}}}
 \newcommand\intsettoconstraints[0]{\hyperlink{def-intsettoconstraints}{intset\_to\_constraints}}
 \newcommand\approxexprmin[0]{\hyperlink{def-approxexprmin}{\textfunc{approx\_expr\_min}}}
 \newcommand\Proseapproxexprmin[3]{\hyperlink{def-approxexprmin}
@@ -1982,8 +1993,6 @@
   {approximating} the type #3 in any environment consisting of the static environment #1
   with the \approximationdirectionterm\ #2 yields the set #4}
 \newcommand\approxbottomtop[0]{\hyperlink{def-approxbottomtop}{\textfunc{approx\_bottom\_top}}}
-\newcommand\mininfty[0]{\hyperlink{def-mininfty}{\min_{-\infty}}}
-\newcommand\maxinfty[0]{\hyperlink{def-maxinfty}{\max_{+\infty}}}
 
 %% Build Error Codes
 \newcommand\BuildErrorPrefix[0]{\texttt{BE}}
