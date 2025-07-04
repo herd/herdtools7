@@ -227,8 +227,3 @@ let set_line w = replace_config (fun o ->  { o with line = w; })
 let get_line opt = opt.line
 
 let set_carch x = carch := x
-
-(* More *)
-
-let pldw = ref true
-let cacheflush = ref true

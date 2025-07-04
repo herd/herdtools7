@@ -4,7 +4,7 @@
 /* Jade Alglave, University College London, UK.                             */
 /* Luc Maranget, INRIA Paris-Rocquencourt, France.                          */
 /*                                                                          */
-/* Copyright 2015-present Institut National de Recherche en Informatique et */
+/* Copyright 2025-present Institut National de Recherche en Informatique et */
 /* en Automatique and the authors. All rights reserved.                     */
 /*                                                                          */
 /* This software is governed by the CeCILL-B license under French law and   */
@@ -13,17 +13,23 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+
+#ifndef _CACHE_H_
+#define _CACHE_H_ 1
+
 inline static void cache_flush(void *p) {
-  asm __volatile__ ("clflush 0(%[p])" :: [p] "r" (p) : "memory");
 }
 
 
+inline static void cache_clean(void *p) {
+}
+
 inline static void cache_touch(void *p) {
-  asm __volatile__ ("prefetcht0 0(%[p])" :: [p] "r" (p) : "memory");
 }
 
 
 inline static void cache_touch_store(void *p) {
-/* Did not find how to announce intention to store for x86 */
-  asm __volatile__ ("prefetcht0 0(%[p])" :: [p] "r" (p) : "memory");
 }
+
+
+#endif /* _CACHE_ */
