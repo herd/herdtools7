@@ -204,10 +204,6 @@ rule main = parse
    P.lexfun "crossrun" crossrun arg ; main lexbuf }
 | "adbdir" arg
    { set_string adbdir arg ; main lexbuf }
-| "pldw" arg
-   { set_bool pldw arg ; main lexbuf }
-| "cacheflush" arg
-   { set_bool cacheflush arg ; main lexbuf }
 (* Change input *)
 | "names" arg
    { names := !names @ [arg] ; main lexbuf }
