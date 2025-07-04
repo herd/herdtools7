@@ -206,6 +206,8 @@ module Make(O:Config)(Tar:Tar.S) =
       let fnames =
         let fnames = cpy fnames "litmus_rand" ".c" in
         let fnames = cpy fnames "litmus_rand" ".h" in
+        let sub = dir_of_sysarch O.sysarch in
+        let fnames = cpy ~sub:sub fnames "cache" ".h" in
         fnames in
       let fnames =
         if O.stdio then fnames
