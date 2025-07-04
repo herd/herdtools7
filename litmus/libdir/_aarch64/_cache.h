@@ -13,14 +13,21 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+
+#ifndef _CACHE_H_
+#define _CACHE_H_ 1
+
+/* Cache flush for aarch64 ?? */
 inline static void cache_flush(void *p) {
-asm __volatile__ ("dcbf 0,%[p]" :: [p] "r" (p) : "memory");
+  asm __volatile__ ("dc civac,%[p]" :: [p] "r" (p) : "memory");
 }
 
 inline static void cache_touch(void *p) {
-asm __volatile__ ("dcbt 0,%[p]" :: [p] "r" (p) : "memory");
+  asm __volatile__ ("prfm pldl1keep,[%[p]]" :: [p] "r" (p) : "memory");
 }
 
 inline static void cache_touch_store(void *p) {
-asm __volatile__ ("dcbtst 0,%[p]" :: [p] "r" (p) : "memory");
+  asm __volatile__ ("prfm pstl1keep,[%[p]]" :: [p] "r" (p) : "memory");
 }
+
+#endif /* _CACHE_H */
