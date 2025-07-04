@@ -67,6 +67,7 @@ let sub = Int128.sub
 let add = Int128.add
 let equal = Int128.equal
 let compare = Int128.compare
+let is_zero =  Int128.equal Int128.zero
 let to_int64 = Int128.to_int64
 let of_int64 = Int128.of_int64
 let to_int = Int128.to_int
