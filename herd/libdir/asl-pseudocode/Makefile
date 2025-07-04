@@ -11,7 +11,7 @@ BUNDLER_CMD := $(PYTHON) $(BUNDLER) $(BUNDLER_ARGS)
 BASE_URL := https://developer.arm.com/-/cdn-downloads/permalink/
 
 ISA_A64_DIR := Exploration-Tools-A64-ISA/ISA_A64
-ISA_A64_NAME := ISA_A64_xml_A_profile-2024-12
+ISA_A64_NAME := ISA_A64_xml_A_profile-2025-06
 
 TARGETS := $(ISA_A64_NAME)
 TARGETS_TAR_GZ := $(addsuffix .tar.gz,$(TARGETS))

@@ -802,7 +802,7 @@ Monad type:
 
 (* Assert a value *)
     let assertT (v: A.V.v) : 'a t -> 'a t =
-      let f (r, cs, es) = (r, VC.Assign (v, VC.Atom V.one) :: cs, es) in
+      let f (r, cs, es) = (r, VC.Assign (v, VC.Atom V.v_true) :: cs, es) in
       map_elt f
 
 (* Choosing dependant upon flag, notice that, once determined v is either one or zero *)

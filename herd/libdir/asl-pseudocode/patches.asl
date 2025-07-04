@@ -119,7 +119,7 @@ end;
 func AArch64_TranslateAddress(address:bits(64), accdesc:AccessDescriptor, aligned:boolean, size:integer) => AddressDescriptor
 begin
   var full_addr : FullAddress;
-  return CreateAddressDescriptor(address, full_addr, NormalWBISHMemAttr());
+  return CreateAddressDescriptor(address, full_addr, NormalWBISHMemAttr(), accdesc);
 end;
 
 // =============================================================================
@@ -285,3 +285,18 @@ begin
   return;
 end;
 
+// Here because it is defined 2 times in the release
+
+// SecurityState
+// =============
+// The Security state of an execution context
+
+type SecurityState of enumeration {
+    SS_NonSecure,
+    SS_Root,
+    SS_Realm,
+    SS_Secure
+};
+
+constant VMID_NONE : bits(16) = Zeros{16};
+constant ASID_NONE : bits(16) = Zeros{16};
