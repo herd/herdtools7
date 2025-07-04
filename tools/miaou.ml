@@ -214,8 +214,6 @@ and cons_seqs (fs:exp list) (es:exp list) =
 
     let pp_transitive = sprintf "transitive{%s}"
 
-    let transitive id = id_name id |> pp_transitive
-
     (* Advance indentation and event numbers *)
 
     let next_indent indent = indent ^ "  "
@@ -252,8 +250,6 @@ and cons_seqs (fs:exp list) (es:exp list) =
     (***********)
 
     module Cache = TxtLoc.Extract()
-
-    let pp_expr e = ASTUtils.exp2loc  e |> Cache.extract
 
     let fail loc msg =
       if O.verbose >= 0 then
@@ -684,11 +680,6 @@ and cons_seqs (fs:exp list) (es:exp list) =
     (*********************************)
     (* Pretty print nested structure *)
     (*********************************)
-
-    let pp_diff pp pref s t1 t2 =
-      pp pref s
-        (List
-           (Diff,"The following",(","," and not"),[t1;t2;]))
 
     let rec pp_def pref s = function
       | Item txt ->

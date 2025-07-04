@@ -16,9 +16,6 @@
 
 (** Tests for the Test module. *)
 
-let pp_int_list = Test.pp_int_list
-let pp_string_list = Test.pp_string_list
-
 let tests = [
   "Test.pp_int_list", (fun () ->
     let tests = [

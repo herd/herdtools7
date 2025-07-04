@@ -1,35 +1,11 @@
 (executable
- (public_name parser_cmp)
  (name parser_cmp)
  (modules parser_cmp)
  (optional)
  (libraries bnfc_parser herdtools7.asllib))
 
-(rule
- (target parser_cmp.out)
- (deps
-  (source_tree %{workspace_root}/asllib/tests))
- (action
-  (chdir
-   %{workspace_root}
-   (run %{bin:parser_cmp} -q -o %{target} asllib/tests))))
-
-(rule
- (alias bnfc_test)
- (enabled_if %{lib-available:bnfc_parser})
- (action
-  (diff parser_cmp.expected parser_cmp.out)))
-
-(executable
+(test
  (name cmp_binops)
- (public_name cmp_binops)
  (modules cmp_binops)
- (optional)
+ (package menhir2bnfc)
  (libraries bnfc_parser herdtools7.asllib feat))
-
-(rule
- (alias bnfc_test)
- (enabled_if
-  (and %{lib-available:bnfc_parser} %{lib-available:feat}))
- (action
-  (run %{bin:cmp_binops})))

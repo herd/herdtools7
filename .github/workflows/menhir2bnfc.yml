@@ -41,17 +41,14 @@ jobs:
           ocaml-compiler: 5.2
           dune-cache: true
 
-      - name: Install herdtools's dependencies
-        run: opam install . --deps-only --with-test
-
-      - name: Install carpenter dependencies
-        run: opam install feat qcheck re logs cmdliner
-
       - name: Update apt database
         run: sudo apt-get update --quiet --yes
 
       - name: Install BNFC
         run: sudo apt-get install --quiet --yes bnfc
+
+      - name: Install herdtools and carpenter dependencies
+        run: opam install dune zarith menhir feat qcheck re logs cmdliner
 
       - run: opam exec -- make build DUNE_PROFILE=dev
 
@@ -59,3 +56,4 @@ jobs:
 
       - run: opam exec -- make test-bnfc DUNE_PROFILE=dev
 
+      - run: opam install .

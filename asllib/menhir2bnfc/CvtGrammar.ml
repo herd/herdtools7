@@ -31,11 +31,31 @@ end = struct
   let eof_token = "EOF"
 
   (* Create useful mapping structures *)
-  module ProductionMap = Map.Make (Production)
-  module NonterminalMap = Map.Make (Nonterminal)
+  module ComparableProduction = struct
+    let compare t1 t2 =
+      Int.compare (Production.to_int t1) (Production.to_int t2)
+
+    include Production
+  end
+
+  module ComparableNonterminal = struct
+    let compare t1 t2 =
+      Int.compare (Nonterminal.to_int t1) (Nonterminal.to_int t2)
+
+    include Nonterminal
+  end
+
+  module ComparableTerminal = struct
+    let compare t1 t2 = Int.compare (Terminal.to_int t1) (Terminal.to_int t2)
+
+    include Terminal
+  end
+
+  module ProductionMap = Map.Make (ComparableProduction)
+  module NonterminalMap = Map.Make (ComparableNonterminal)
 
   (* Create a terminal set structure *)
-  module TerminalSet = Set.Make (Terminal)
+  module TerminalSet = Set.Make (ComparableTerminal)
 
   (* Utility functions for easy name extraction *)
   let n_name nterm = Nonterminal.mangled_name nterm |> snake_case_to_camel_case
@@ -67,14 +87,16 @@ end = struct
     let is_external_prod = is_external @@ Production.attributes prod in
     let parent_nterm_is_external = is_external_nterm @@ Production.lhs prod in
     let is_external_sym (sym, _, attrs) =
-      let check_sym = match sym with | T t -> is_external_term t | N n -> is_external_nterm n in
+      let check_sym =
+        match sym with T t -> is_external_term t | N n -> is_external_nterm n
+      in
       check_sym && is_external attrs
     in
     let rhs_all_external =
-      Array.for_all is_external_sym
-      @@ Production.rhs prod
+      Array.for_all is_external_sym @@ Production.rhs prod
     in
-    is_regular && is_external_prod && parent_nterm_is_external && rhs_all_external
+    is_regular && is_external_prod && parent_nterm_is_external
+    && rhs_all_external
 
   (* 1. Collect entry points *)
   let entrypoints : string list =
@@ -125,8 +147,8 @@ end = struct
         | None -> false
         | Some (_, set) ->
             ProductionMap.exists
-                (fun _ set2 -> not @@ TerminalSet.equal set set2)
-                prod_map)
+              (fun _ set2 -> not @@ TerminalSet.equal set set2)
+              prod_map)
       production_to_terminals
 
   (* 2.3. (TODO) It may be necessary to verify that the nonterminals are actually related (are part of the same component on the parse graph *)
@@ -178,18 +200,14 @@ end = struct
         Some set
       else None
     in
-    let partition_has_last  =
-      NonterminalMap.partition
-        (fun _ prod_map -> get_last_set prod_map |> Option.is_some)
+    let partition_has_last =
+      NonterminalMap.partition (fun _ prod_map ->
+          get_last_set prod_map |> Option.is_some)
     in
     (* Filter out any terminating productions from the ambiguous precedence set *)
-    let _, rest_map =
-      partition_has_last ambiguous_production_sets
-    in
+    let _, rest_map = partition_has_last ambiguous_production_sets in
     (* Collect all productions which have a single possible "final" token list *)
-    let has_last_map, _ =
-      partition_has_last production_to_terminals
-    in
+    let has_last_map, _ = partition_has_last production_to_terminals in
     let nterm_to_set : TerminalSet.t NonterminalMap.t =
       NonterminalMap.map
         (fun prod_map -> get_last_set prod_map |> Option.get)
@@ -274,9 +292,9 @@ end = struct
         let is_right = Lr1.fold (assoc_test Right) true in
         if is_nassoc then Nonassoc else if is_right then Right else Left
     in
-    List.fold_left (fun acc p ->
-        ProductionMap.add p (get_assoc p) acc)
-    ProductionMap.empty target_productions
+    List.fold_left
+      (fun acc p -> ProductionMap.add p (get_assoc p) acc)
+      ProductionMap.empty target_productions
 
   (* 2.6. Generate a precedence list by sorting the productions by the
           length of terminals following them - shortest meaning lowest precedence *)
@@ -483,7 +501,9 @@ end = struct
       if Array.length rhs = 0 then [ none_rule_suffix ]
       else
         Array.map
-          (function N n, _, _ -> n_name n | T t, _, _ -> t_name t |> snake_case_to_camel_case)
+          (function
+            | N n, _, _ -> n_name n
+            | T t, _, _ -> t_name t |> snake_case_to_camel_case)
           rhs
         |> Array.to_list
     in
@@ -589,7 +609,6 @@ end = struct
     in
     (* Build a single precedence level *)
     let mk_decls (acc, indexes) level =
-
       (* Update a nontemrinal reference:
           * Leave it as the nonterminal name if the current index is 0
           * Append the current index if succ is false
@@ -606,7 +625,7 @@ end = struct
         List.map Production.lhs level |> List.sort_uniq Nonterminal.compare
       in
       (* For each nonterminal used at the current level generate a fallthrough state
-         to the next index if a next index exists. e.g. `_. Expr2 := Expr3`  *)
+         to the next index if a next index exists. e.g. `_. Expr2 := Expr3` *)
       let fallback_states =
         List.filter_map
           (fun n ->
@@ -668,9 +687,8 @@ end = struct
             let r_term = Reference (mk_name ~succ:r_succ rhs) in
             let terms = [ l_term; op_term; r_term ] in
             Decl { ast_name; name; terms }
-
-          (* If it's a unary op rename the nonterminal reference to recurse at
-             the current level `Expr<N> := op Expr<N>` *)
+            (* If it's a unary op rename the nonterminal reference to recurse at
+               the current level `Expr<N> := op Expr<N>` *)
           else if is_unary used_nterms prod then
             let mk_lit (sym, _, _) =
               match sym with
@@ -681,9 +699,8 @@ end = struct
               Array.map mk_lit (Production.rhs prod) |> Array.to_list
             in
             Decl { ast_name; name; terms }
-
-          (* If a production starts with a self refenrece rename the recursion to be at the current level
-             `Expr<N> := Expr<N> ...` *)
+            (* If a production starts with a self refenrece rename the recursion to be at the current level
+               `Expr<N> := Expr<N> ...` *)
           else if fst_is_rec then
             let rhs = Production.rhs prod |> Array.to_list in
             let fst_term =
@@ -694,8 +711,7 @@ end = struct
             let rem_terms = List.map mk_simple_lit (List.tl rhs) in
             let terms = fst_term :: rem_terms in
             Decl { ast_name; name; terms }
-
-          (* In all other cases - no renaming to be done, build simple decl *)
+            (* In all other cases - no renaming to be done, build simple decl *)
           else
             let terms =
               Array.map mk_simple_lit (Production.rhs prod) |> Array.to_list
