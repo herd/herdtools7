@@ -30,6 +30,7 @@ module type Config = sig
   val typ : TypBase.t
   val cpp : bool
   val docheck : bool
+  val unrollatomic : int option
 end
 
 module Make(O:Config) : Builder.S
@@ -826,7 +827,7 @@ module Make(O:Config) : Builder.S
                   F.run evts m
               | Cycle -> F.check f
               | Observe -> F.observe f in
-            (add_args env c,f []),
+            (add_args env c,f (F.FaultSet.empty,F.FaultSet.empty)),
             (U.compile_prefetch_ios (List.length obsc) ios,
              U.compile_coms splitted),
             env
