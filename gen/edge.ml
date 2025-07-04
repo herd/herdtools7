@@ -72,6 +72,8 @@ module type S = sig
 
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
 
+  val is_one_rmw_instruction : edge -> bool
+
   val plain_edge : tedge -> edge
 
   val fold_atomo : (atom option -> 'a -> 'a) -> 'a -> 'a
@@ -458,6 +460,10 @@ let fold_tedges f r =
   let ok_rmw rmw a1 a2 =
     not (F.is_one_instruction rmw) || same_access_atoms a1 a2
 
+  let is_one_rmw_instruction e = match e.edge with
+    | Rmw rmw -> F.is_one_instruction rmw
+    | _ -> false
+
   let ok_non_rmw e a1 a2 =
     do_is_diff e || do_disjoint ||
     (overlap_atoms a1 a2 &&
@@ -581,7 +587,7 @@ let fold_tedges f r =
   let iter_edges = Misc.fold_to_iter fold_edges
 
 
-  let t = Hashtbl.create 101
+  let t = Hashtbl.create 40000
 
   let add_lxm lxm e =
     if dbg > 1 then eprintf "LXM: %s\n" lxm ;
