@@ -237,7 +237,7 @@ and pp_int_constraints f = function
         (pp_list pp_int_constraint)
         cs pp_precision_loss precision_loss
   | PendingConstrained -> addb f "PendingConstrained"
-  | Parameterized (i, x) -> bprintf f "Parameterized (%d, %S)" i x
+  | Parameterized x -> bprintf f "Parameterized %S" x
 
 and pp_precision_loss f = function
   | Precision_Full -> addb f "PrecisionFull"

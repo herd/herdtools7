@@ -96,7 +96,7 @@ let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
     | T_Int (WellConstrained (constraints, precision)) ->
         let constraints = subst_constraints env eqs constraints in
         well_constrained ~loc ~precision constraints
-    | T_Int (Parameterized (_uid, name)) ->
+    | T_Int (Parameterized name) ->
         let e = E_Var name |> here |> subst_expr_normalize env eqs in
         integer_exact ~loc e
     | T_Tuple tys -> T_Tuple (List.map (rename env eqs) tys) |> here
@@ -1306,7 +1306,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             in
             let ses = SES.unions sess in
             (well_constrained ~loc:ty ~precision new_constraints, ses)
-        | Parameterized (_, name) ->
+        | Parameterized name ->
             (ty, SES.reads_local name TimeFrame.Constant true)
         | UnConstrained -> (ty, SES.empty))
         |: TypingRule.TInt
@@ -1675,7 +1675,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | None ->
               (* declared parameters have already been elaborated *)
               assert false
-          | Some { desc = T_Int (Parameterized (_, name')) }
+          | Some { desc = T_Int (Parameterized name') }
             when String.equal name name' ->
               ()
           | Some ty_declared ->
@@ -1841,7 +1841,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       List.iter
         (function
           | _, None -> ()
-          | s, Some { desc = T_Int (Parameterized (_, s')); _ }
+          | s, Some { desc = T_Int (Parameterized s'); _ }
             when String.equal s' s ->
               ()
           | callee_param_name, Some callee_param_t ->
@@ -2433,7 +2433,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Enum [] -> assert false
     | T_Enum (name :: _) -> lookup_constant env name |> lit
     | T_Int UnConstrained -> L_Int Z.zero |> lit
-    | T_Int (Parameterized (_, id)) -> E_Var id |> here |> fatal_non_static
+    | T_Int (Parameterized id) -> E_Var id |> here |> fatal_non_static
     | T_Int PendingConstrained -> assert false
     | T_Int (WellConstrained (cs, _)) ->
         let constraint_abs_min = function
@@ -2478,7 +2478,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     match t.desc with
     | T_Bool | T_Int UnConstrained | T_Real | T_String | T_Enum _ | T_Bits _ ->
         base_value_v1 ~loc env t
-    | T_Int (Parameterized (_, id)) -> E_Var id |> here
+    | T_Int (Parameterized id) -> E_Var id |> here
     | T_Int (WellConstrained ([], _) | PendingConstrained) -> assert false
     | T_Int
         (WellConstrained

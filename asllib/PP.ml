@@ -196,7 +196,7 @@ and pp_ty f t =
   | T_Int (WellConstrained (cs, _)) ->
       fprintf f "@[integer {%a}@]" pp_int_constraints cs
   | T_Int PendingConstrained -> pp_print_string f "integer{-}"
-  | T_Int (Parameterized (_uid, var)) -> fprintf f "@[integer {%s}@]" var
+  | T_Int (Parameterized var) -> fprintf f "@[integer {%s}@]" var
   | T_Real -> pp_print_string f "real"
   | T_String -> pp_print_string f "string"
   | T_Bool -> pp_print_string f "boolean"

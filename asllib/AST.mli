@@ -273,7 +273,7 @@ and constraint_kind =
           constraint in the list. *)
   | PendingConstrained
       (** An integer type whose constraint will be inferred during type-checking. *)
-  | Parameterized of uid * identifier
+  | Parameterized of identifier
       (** A parameterized integer, the default type for parameters of
           function at compile time, with a unique identifier and the variable
           bearing its name. *)
