@@ -2,11 +2,6 @@
 let verbose_print level string =
   if level <= !Config.verbose then output_string stderr string
 
-(** Removes element from the option monad, raises Not_found if appropriate *)
-let unsome = function
-  | None -> Warn.fatal "Attempting to unsome a None value"
-  | Some v -> v
-
 let rec list_last = function
   | _ :: x :: q -> list_last (x :: q)
   | [x] -> x

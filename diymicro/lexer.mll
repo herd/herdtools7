@@ -18,7 +18,7 @@ rule token = parse
 
   | 'R' { RM }
   | 'W' { WM }
-  | "r" { R  }
+  | 'r' { R  }
   | 'i' { INT }
   | 'e' { EXT }
   | 's' { SAME }

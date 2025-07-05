@@ -63,10 +63,7 @@ let pp_cycle cycle_start =
   pp_aux cycle_start
 
 let get_event_data evt : Edge.event_data =
-  ( Utils.unsome evt.location,
-    Utils.unsome evt.value,
-    evt.annot,
-    evt.is_significant )
+  Option.get evt.location, Option.get evt.value, evt.annot, evt.is_significant
 
 (** Creating and assigning the various cycle values **)
 

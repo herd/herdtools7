@@ -45,7 +45,7 @@ let add_ctrl_dep st (r : A.reg) v_opt ins =
   ins @ tins, st
 
 let compile_event st (src : E.node_dep) event =
-  let event_reg = A.get_register st (Utils.unsome event.C.location) in
+  let event_reg = A.get_register st (Option.get event.C.location) in
   let annot_ldr annot dst_reg loc =
     match annot with
     | E.AnnotNone -> A.Instruction (A.do_ldr A.vloc dst_reg loc)
@@ -98,14 +98,14 @@ let compile_event st (src : E.node_dep) event =
             let reg_value, st = A.next_reg st in
             let ins =
               [
-                A.mov reg_value (Utils.unsome event.C.value);
+                A.mov reg_value (Option.get event.C.value);
                 annot_str event.C.annot reg_value event_reg;
               ]
             in
             ins, E.DepNone, st
         | E.Wm false, _, (E.DepData (r, v_opt) | E.DepReg (r, v_opt)) ->
             let ins_val, reg_value, st =
-              A.calc_value st (Utils.unsome event.C.value) r v_opt
+              A.calc_value st (Option.get event.C.value) r v_opt
             in
             let ins = ins_val @ [annot_str event.C.annot reg_value event_reg] in
             ins, E.DepNone, st
@@ -114,7 +114,7 @@ let compile_event st (src : E.node_dep) event =
             let reg_value, st = A.next_reg st in
             let ins =
               A.pseudo [A.do_eor reg_zero r r]
-              @ [A.mov reg_value (Utils.unsome event.C.value)]
+              @ [A.mov reg_value (Option.get event.C.value)]
               @ [annot_str_idx event.C.annot reg_value event_reg reg_zero]
             in
             ins, E.DepNone, st
@@ -123,7 +123,7 @@ let compile_event st (src : E.node_dep) event =
             let ins, st =
               add_ctrl_dep st r v_opt
                 [
-                  A.mov reg_value (Utils.unsome event.C.value);
+                  A.mov reg_value (Option.get event.C.value);
                   annot_str event.C.annot reg_value event_reg;
                 ]
             in
@@ -143,7 +143,7 @@ let compile_event st (src : E.node_dep) event =
         (* if the event is marked as "significant", we add a final condition. If the edge compiles the event, this is done after the edge's compilation *)
         if event.C.is_significant then
           let dst = E.dependency_reg dst_dep in
-          A.add_condition st dst (Utils.unsome event.C.value)
+          A.add_condition st dst (Option.get event.C.value)
         else st
       in
       ins, dst_dep, st
@@ -181,7 +181,7 @@ let compile_edge (st : A.state) (src : E.node_dep) (node : C.t) =
         if dst_event.C.is_significant && dst_event_data <> None then
           let dep_reg = E.dependency_reg dst_dep in
           if dep_reg <> A.ZR then
-            A.add_condition st dep_reg (Utils.unsome dst_event.C.value)
+            A.add_condition st dep_reg (Option.get dst_event.C.value)
           else st
         else st
       in
@@ -311,8 +311,7 @@ let to_channel annot_edges ?(name = "test") channel =
   let cycle = Cycle.make_cycle annot_edges in
   let prog = prog_of_cycle cycle in
 
-  let instructions = List.map (fun (a, _) -> a) prog in
-  let stl = List.map (fun (_, b) -> b) prog in
+  let instructions, stl = List.split prog in
   let baseprog =
     Printf.sprintf "%s (version %s)" Config.prog_name Version.version
   in
