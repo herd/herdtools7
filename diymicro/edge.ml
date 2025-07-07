@@ -45,17 +45,19 @@ type iico_edge = {
     event_data option ->
     int A.kinstruction A.kpseudo list * node_dep * A.state;
   direction : direction * direction;
-  ie : int_ext;
+  ie : int_ext; (* does the edge start on a new proc? *)
   sd : sd;
+      (* does the edge src and dst memory events use a different location *)
   significant_source : bool;
   significant_dest : bool;
+      (* is the source or destination memory event significant? ie it needs to be checked in finals *)
 }
 
 type iico = {
   instruction_name : string;
   to_edge : string -> string -> iico_edge;
   inputs : string list;
-  outputs : string list;
+  outputs : string list; (* Can't use polymorphic variants for parsing *)
 }
 
 type t =

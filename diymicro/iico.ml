@@ -147,49 +147,44 @@ module Cas = struct
       let rt_value = if ok then write_value else read_value + 1 in
 
       let pre_ins, rs, rt, rn, st =
-        match src with
-        | "M" ->
+        match src, dep with
+        | "M", DepNone ->
             let rs, st = A.next_reg st in
             let rt, st = A.next_reg st in
             let st = A.add_condition st rs read_value in
             (* if the src event is memory, the read is significant in all cases *)
             [A.mov rt rt_value; A.mov rs rs_value], rs, rt, rn, st
-        | _ -> (
-            let src_reg, v_opt =
-              match dep with
-              | DepReg (r, v) -> r, v
-              | _ -> Warn.fatal "Event has not forwarded any register"
+        | "Rs", DepReg (src_reg, v_opt) ->
+            let ins_zero, r_eor, st = A.calc_value st 0 src_reg v_opt in
+            let rs, st = A.next_reg st in
+            let rt, st = A.next_reg st in
+            let ins =
+              ins_zero
+              @ A.pseudo [A.addi rs r_eor rs_value]
+              @ [A.mov rt rt_value]
             in
-            match src with
-            | "Rs" ->
-                let ins_zero, r_eor, st = A.calc_value st 0 src_reg v_opt in
-                let rs, st = A.next_reg st in
-                let rt, st = A.next_reg st in
-                let ins =
-                  ins_zero
-                  @ A.pseudo [A.addi rs r_eor rs_value]
-                  @ [A.mov rt rt_value]
-                in
-                ins, rs, rt, rn, st
-            | "Rt" ->
-                let rs, st = A.next_reg st in
-                let ins_rt, rt, st = A.calc_value st rt_value src_reg v_opt in
-                ins_rt @ [A.mov rs rs_value], rs, rt, rn, st
-            | "Rn" ->
-                let reg_zero, st = A.next_reg st in
-                let rn2, st = A.next_reg st in
-                let rs, st = A.next_reg st in
-                let rt, st = A.next_reg st in
-                let ins =
-                  A.pseudo
-                    [
-                      A.do_eor reg_zero src_reg src_reg;
-                      A.do_add64 A.vloc rn2 rn reg_zero;
-                    ]
-                  @ [A.mov rs rs_value; A.mov rt rt_value]
-                in
-                ins, rs, rt, rn2, st
-            | _ -> Warn.fatal "Unknown source %s" src)
+            ins, rs, rt, rn, st
+        | "Rt", DepReg (src_reg, v_opt) ->
+            let rs, st = A.next_reg st in
+            let ins_rt, rt, st = A.calc_value st rt_value src_reg v_opt in
+            ins_rt @ [A.mov rs rs_value], rs, rt, rn, st
+        | "Rn", DepReg (src_reg, _) ->
+            let reg_zero, st = A.next_reg st in
+            let rn2, st = A.next_reg st in
+            let rs, st = A.next_reg st in
+            let rt, st = A.next_reg st in
+            let ins =
+              A.pseudo
+                [
+                  A.do_eor reg_zero src_reg src_reg;
+                  A.do_add64 A.vloc rn2 rn reg_zero;
+                ]
+              @ [A.mov rs rs_value; A.mov rt rt_value]
+            in
+            ins, rs, rt, rn2, st
+        | _ ->
+            Warn.user_error
+              "Dependency missing or invalid, or src invalid for cas"
       in
       let ins = A.pseudo [A.cas A.RMW_P rs rt rn; A.do_ldr A.vloc rcheck rn] in
 
@@ -254,21 +249,21 @@ module Swp = struct
   let repr = "swp"
 
   let compile src dst st dep src_evt dst_evt =
-    let rn, _, read_value, write_value, st =
+    let rn, read_value, write_value, st =
       match src_evt, dst_evt with
       | None, None ->
           let _, rn, st = A.assigned_next_loc st in
-          rn, false, Some 0, 1, st
-      | Some (loc, read_v, AnnotNone, is_significant), None ->
+          rn, Some 0, 1, st
+      | Some (loc, read_v, AnnotNone, _), None ->
           let rn = A.get_register st loc in
-          rn, is_significant, Some read_v, read_v, st
+          rn, Some read_v, read_v, st
       | None, Some (loc, write_v, AnnotNone, _) ->
           let rn = A.get_register st loc in
-          rn, false, None, write_v, st
+          rn, None, write_v, st
       | Some (loc, read_v, AnnotNone, _), Some (loc2, write_v, AnnotNone, _)
         when loc = loc2 ->
           let rn = A.get_register st loc in
-          rn, false, Some read_v, write_v, st
+          rn, Some read_v, write_v, st
       | _, _ -> Warn.fatal "swp received inconsistent event data"
     in
 
@@ -279,46 +274,38 @@ module Swp = struct
         [Rn]=read_value needs no action
     *)
     let pre_ins, rs, rt, st =
-      match src with
-      | "M" ->
-          (match dep with
-          | DepNone -> ()
-          | _ -> Warn.user_error "Dependency provided to swp M->.");
+      match src, dep with
+      | "M", DepNone ->
           let rs, st = A.next_reg st in
           let rt, st = A.next_reg st in
           [A.mov rs write_value], rs, rt, st
-      | _ -> (
-          let src_reg, v_opt =
-            match dep with
-            | DepReg (r, v) -> r, v
-            | _ -> Warn.fatal "Event has not forwarded any register"
+      | "Rt", DepReg (src_reg, v_opt) ->
+          let rs, st = A.next_reg st in
+          let rt, st = A.next_reg st in
+          let ins_zero, reg_zero, st = A.calc_value st 0 src_reg v_opt in
+          let ins =
+            ins_zero
+            @ A.pseudo [A.add A.vloc rt rt reg_zero]
+            @ [A.mov rs write_value]
           in
-          match src with
-          | "Rt" ->
-              let rs, st = A.next_reg st in
-              let rt, st = A.next_reg st in
-              let ins_zero, reg_zero, st = A.calc_value st 0 src_reg v_opt in
-              let ins =
-                ins_zero
-                @ A.pseudo [A.add A.vloc rt rt reg_zero]
-                @ [A.mov rs write_value]
-              in
-              ins, rs, rt, st
-          | "Rs" ->
-              let rt, st = A.next_reg st in
-              let ins_rs, rs, st = A.calc_value st write_value src_reg v_opt in
-              ins_rs, rs, rt, st
-          | "Rn" ->
-              let rs, st = A.next_reg st in
-              let rt, st = A.next_reg st in
-              let ins_zero, reg_zero, st = A.calc_value st 0 src_reg None in
-              let ins =
-                ins_zero
-                @ A.pseudo [A.do_add64 A.vloc rn rn reg_zero]
-                @ [A.mov rs write_value]
-              in
-              ins, rs, rt, st
-          | _ -> Warn.fatal "Unknown source %s" src)
+          ins, rs, rt, st
+      | "Rs", DepReg (src_reg, v_opt) ->
+          let rt, st = A.next_reg st in
+          let ins_rs, rs, st = A.calc_value st write_value src_reg v_opt in
+          ins_rs, rs, rt, st
+      | "Rn", DepReg (src_reg, _) ->
+          let rs, st = A.next_reg st in
+          let rt, st = A.next_reg st in
+          let ins_zero, reg_zero, st = A.calc_value st 0 src_reg None in
+          let ins =
+            ins_zero
+            @ A.pseudo [A.do_add64 A.vloc rn rn reg_zero]
+            @ [A.mov rs write_value]
+          in
+          ins, rs, rt, st
+      | _ ->
+          Warn.user_error
+            "Dependency missing or invalid, or src invalid for swp"
     in
 
     let st =
