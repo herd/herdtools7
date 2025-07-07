@@ -42,9 +42,9 @@
   $ aslref try-00.asl
 
   $ aslref try-01.asl
-  File try-01.asl, line 5, character 2 to line 6, character 41:
+  File try-01.asl, line 5, character 2 to line 6, character 40:
     try return 0;
-    catch when E => print("caught E"); end;
+    catch when E => print "caught E"; end;
   ASL Type error: the function "test0" may not terminate by returning a value
     or raising an exception..
   [1]
@@ -58,7 +58,7 @@
     try return 0;
     catch
       when E => return 1;
-      otherwise => println("Otherwise");
+      otherwise => println "Otherwise";
     end;
   ASL Type error: the function "test0" may not terminate by returning a value
     or raising an exception..
@@ -69,7 +69,7 @@
     try throw E {-};
     catch
       when E => return 1;
-      when F => println("Caught F");
+      when F => println "Caught F";
       otherwise => throw E {-};
     end;
   ASL Type error: the function "test0" may not terminate by returning a value
@@ -78,7 +78,7 @@
 
   $ aslref try-06.asl
   File try-06.asl, line 5, character 2 to line 9, character 6:
-    try print("body");
+    try print "body";
     catch
       when E => return 1;
       otherwise => throw E {-};

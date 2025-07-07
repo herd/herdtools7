@@ -1,4 +1,4 @@
-func foo () => integer {8, 16}
+pure func foo () => integer {8, 16}
 begin return 8; end;
 
 config   CONFIG_ALLOWED_NUMS : integer {8,16} = foo();

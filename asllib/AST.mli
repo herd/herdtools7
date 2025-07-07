@@ -273,7 +273,7 @@ and constraint_kind =
           constraint in the list. *)
   | PendingConstrained
       (** An integer type whose constraint will be inferred during type-checking. *)
-  | Parameterized of uid * identifier
+  | Parameterized of identifier
       (** A parameterized integer, the default type for parameters of
           function at compile time, with a unique identifier and the variable
           bearing its name. *)
@@ -421,6 +421,17 @@ type subprogram_body =
   | SB_ASL of stmt  (** A normal body of a subprogram *)
   | SB_Primitive of bool  (** Whether or not this primitive is side-effecting *)
 
+type func_qualifier =
+  | Pure
+      (** A `pure` subprogram does not read or modify mutable state. It can be
+          called in types. *)
+  | Readonly
+      (** A `readonly` subprogram can read mutable state but not modify it. It
+          can be called in assertions. *)
+  | Noreturn
+      (** A `noreturn` subprogram always terminates by a thrown exception
+          or calling `Unreachable`. *)
+
 type override_info =
   | Impdef  (** A function which can be overridden *)
   | Implementation
@@ -434,6 +445,7 @@ type func = {
   return_type : ty option;
   subprogram_type : subprogram_type;
   recurse_limit : expr option;
+  qualifier : func_qualifier option;
   override : override_info option;
   builtin : bool;
       (** Builtin functions are treated specially when checking parameters at

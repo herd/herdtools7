@@ -85,6 +85,7 @@
 %token MOD
 %token MUL
 %token NEQ
+%token NORETURN
 %token NOT
 %token OF
 %token OR
@@ -96,9 +97,11 @@
 %token PRAGMA
 %token PRINT
 %token PRINTLN
+%token PURE
 %token RBRACE
 %token RBRACKET
 %token RDIV
+%token READONLY
 %token REAL
 %token RECORD
 %token RECURSELIMIT

@@ -1372,6 +1372,13 @@ The specifications in \listingref{semantics-scond},
 \listingref{semantics-scond3}, and
 \listingref{semantics-scond4} are all well-typed.
 
+\ExampleDef{Typing Conditional Statements with Two Bitvector Types}
+The specification in \listingref{SCond} is well-typed
+and shows examples of how \bitvectortypesterm{} either \typesatisfy{}
+the return type or do not \typesatisfy{} the return type and require
+an \atcexpressionterm{}.
+\ASLListing{Typing conditional statements with two bitvector types}{SCond}{\typingtests/TypingRule.SCond.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1547,7 +1554,7 @@ compound condition statement.
 \listingref{ast-case2} shows an example of how a \texttt{case} statement can be transformed into
 a statement that does not contain any \text{case} statement.
 By storing the \casediscriminantterm\ in a variable and by adding
-a call to \texttt{Unreachable()}, the transformation ensures that a dynamic error occurs when no
+an \unreachablestatementterm{}, the transformation ensures that a dynamic error occurs when no
 \casealternativeterm\ is selected.
 \ASLListing{Transforming a case statement with a non-variable as the case discriminant
 and no otherwise case}{ast-case2}{\syntaxtests/ASTRule.Desugar_SCase2.asl}
@@ -1809,7 +1816,7 @@ The specifications in \listingref{semantics-sasertok} and \listingref{semantics-
 are well-typed.
 
 The assertion statements in \listingref{assert-ill-typed} are ill-typed,
-since the expression needs to be both of a \booleantypeterm{} and pure.
+since the expression needs to be both of a \booleantypeterm{} and \readonly{}.
 \ASLListing{Ill-typed assertion statements}{assert-ill-typed}{\typingtests/TypingRule.SAssert.bad.asl}
 
 \ProseParagraph
@@ -1817,20 +1824,20 @@ since the expression needs to be both of a \booleantypeterm{} and pure.
 \begin{itemize}
   \item $\vs$ is an assert statement with expression $\ve$, that is, $\SAssert(\ve)$;
   \item annotating the right-hand-side expression $\ve$ in $\tenv$ yields $(\tep,\vep, \vsese)$\ProseOrTypeError;
-  \item checking that $\vsese$ is pure via $\sesispure$ yields $\True$\ProseOrTypeError;
+  \item checking that $\vsese$ is \readonly{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
   \item checking that $\vtep$ \typesatisfies\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item $\news$ is an assert statement with expression $\vep$, that is, $\SAssert(\vep)$;
   \item $\newtenv$ is $\tenv$;
-  \item \Proseeqdef{$\vses$}{the union of $\vsese$ and the singleton set for \PerformsAssertionsTerm}.
+  \item \Proseeqdef{$\vses$}{$\vsese$}.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotateexpr{\tenv, \ve} \typearrow (\vtep, \vep, \vsese) \OrTypeError\\\\
-  \checktrans{\sesispure(\vsese) \typearrow \True}{\SideEffectViolation}\\\\
+  \checktrans{\sesisreadonly(\vsese) \typearrow \True}{\SideEffectViolation}\\\\
   \checktypesat(\tenv, \vtep, \TBool) \typearrow \True \OrTypeError\\\\
-  \vses \eqdef \vsese \cup \{\PerformsAssertions\}
-}{
+  \vses \eqdef \vsese
+  }{
   \annotatestmt(\tenv, \overname{\SAssert(\ve)}{\vs}) \typearrow (\overname{\SAssert(\vep)}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
@@ -2575,10 +2582,8 @@ show examples of ill-typed \texttt{for} loops.
   \item annotating the right-hand-side expression $\vende$ in $\tenv$ yields \\ $(\vendt, \vendep, \vsesend)$\ProseOrTypeError;
   \item annotating the optional loop limit expression $\vlimit$ via $\annotatelimitexpr$ in $\tenv$
         yields $(\vlimitp, \vseslimit)$\ProseOrTypeError;
-  \item checking that $\vsesstart$ is pure via $\sesispure$ yields $\True$\ProseOrTypeError;
-  \item checking that $\vsesstart$ is deterministic via $\sesisdeterministic$ yields $\True$\ProseOrTypeError;
-  \item checking that $\vsesend$ is pure via $\sesispure$ yields $\True$\ProseOrTypeError;
-  \item checking that $\vsesend$ is deterministic via $\sesisdeterministic$ yields $\True$\ProseOrTypeError;
+  \item checking that $\vsesstart$ is \readonly{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
+  \item checking that $\vsesend$ is \readonly{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
   \item \Proseeqdef{$\vsescond$}{the union of $\vsesstart$, $\vsesend$, and $\vseslimit$};
   \item obtaining the \underlyingtype\ of $\vstartt$ in $\tenv$ yields $\vstartstruct$\ProseOrTypeError;
   \item obtaining the \underlyingtype\ of $\vendt$ in $\tenv$ yields $\vendstruct$\ProseOrTypeError;
@@ -2605,10 +2610,8 @@ show examples of ill-typed \texttt{for} loops.
   \annotateexpr{\tenv, \vstarte} \typearrow (\vstartt, \vstartep, \vsesstart) \OrTypeError\\\\
   \annotateexpr{\tenv, \vende} \typearrow (\vendt, \vendep, \vsesend) \OrTypeError\\\\
   \annotatelimitexpr(\tenv, \vlimit) \typearrow (\vlimitp, \vseslimit) \OrTypeError\\\\
-  \checktrans{\sesispure(\vsesstart)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
-  \checktrans{\sesisdeterministic(\vsesstart)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
-  \checktrans{\sesispure(\vsesend)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
-  \checktrans{\sesisdeterministic(\vsesend)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
+  \checktrans{\sesisreadonly(\vsesstart)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
+  \checktrans{\sesisreadonly(\vsesend)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
   \vsescond \eqdef \vsesstart \cup \vsesend \cup \vseslimit\\
   \makeanonymous(\tenv, \vstartt) \typearrow \vstartstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vendt) \typearrow \vendstruct \OrTypeError\\\\
@@ -3085,7 +3088,6 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 \listingref{semantics-sthrownone} and \listingref{semantics-sthrowsometyped}
 show examples of well-typed \throwstatementsterm.
 
-\newcommand\NoNameException[0]{\texttt{\_}}
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -3094,7 +3096,7 @@ show examples of well-typed \throwstatementsterm.
     \item $\vs$ is a throw statement with no expression, that is, $\SThrow(\None)$;
     \item $\news$ is $\vs$;
     \item $\newtenv$ is $\tenv$;
-    \item \Proseeqdef{$\vses$}{the singleton set for $\ThrowException(\NoNameException)$}
+    \item \Proseeqdef{$\vses$}{the set containing a \LocalEffectTerm{} and a \GlobalEffectTerm{}, both with \purity{} $\SEImpure$.}
   \end{itemize}
 
   \item \AllApplyCase{some}
@@ -3106,8 +3108,7 @@ show examples of well-typed \throwstatementsterm.
     \item $\news$ is a throw statement with expression $\vep$ and type $\vte$, that is, \\
           $\SThrow(\langle (\vep, \vte) \rangle)$;
     \item $\newtenv$ is $\tenv$;
-    \item \Proseeqdef{$\vses$}{the union of $\vsesone$ and the singleton set for \\
-          $\ThrowException(\exnname)$}.
+    \item \Proseeqdef{$\vses$}{the union of $\vsesone$ and the set containing a \LocalEffectTerm{} and a \GlobalEffectTerm{}, both with \purity{} $\SEImpure$.}
   \end{itemize}
 \end{itemize}
 
@@ -3115,7 +3116,7 @@ show examples of well-typed \throwstatementsterm.
 \begin{mathpar}
 \inferrule[none]{}{
   \annotatestmt(\tenv, \overname{\SThrow(\None)}{\vs}) \typearrow
-  (\overname{\SThrow(\None)}{\news}, \overname{\tenv}{\newtenv}, \overname{\{\ThrowException(\NoNameException)\}}{\vses})
+  (\overname{\SThrow(\None)}{\news}, \overname{\tenv}{\newtenv}, \overname{\{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\}}{\vses})
 }
 \end{mathpar}
 \lrmcomment{Note that \identr{BRCJ} is done in~\cite[SemanticsRule.TopLevel]{ASLSemanticsReference}.}
@@ -3125,7 +3126,7 @@ show examples of well-typed \throwstatementsterm.
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsesone) \OrTypeError\\\\
   \checkstructurelabel(\tenv, \vte, \TException) \typearrow \True \OrTypeError\\\\
   \vte \eqname \TNamed(\exnname)\\
-  \vses \eqdef \vsesone \cup \{\ThrowException(\exnname)\}
+  \vses \eqdef \vsesone \cup \{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\}
 }{
   \annotatestmt(\tenv, \overname{\SThrow(\langle\ve\rangle)}{\vs}) \typearrow
   (\overname{\SThrow(\langle (\vep, \vte) \rangle)}{\news}, \overname{\tenv}{\newtenv}, \vses)
@@ -3301,7 +3302,7 @@ the \trystatementsterm{} are all well-typed.
             $\otherwisep$, that is \\
             $\STry(\vspp, \catchersp, \langle\otherwisep\rangle)$;
       \item \Proseeqdef{$\vsesotherwise$}{$\vsesblock$};
-      \item \Proseeqdef{$\vsesthree$}{$\vsestwo$, excluding any \ThrowExceptionTerm}.
+      \item \Proseeqdef{$\vsesthree$}{$\vsestwo$}.
     \end{itemize}
 
     \item \Proseeqdef{$\vses$}{the union of $\vsesthree$, $\vsescatchers$, and $\vsesotherwise$}.
@@ -3335,7 +3336,7 @@ the \trystatementsterm{} are all well-typed.
   \annotateblock{\tenv, \otherwise} \typearrow (\otherwisep, \vsesblock) \OrTypeError\\\\
   \news \eqdef \STry(\vspp, \catchersp, \otherwise')\\
   \vsesotherwise \eqdef \vsesblock\\
-  \vsesthree \eqdef \vsestwo \setminus \{ \vs \in \TSideEffectSet \;|\; \configdomain{\vs} = \ThrowException\} \\\\
+  \vsesthree \eqdef \vsestwo \\\\
   \commonsuffixline\\\\
   \vses \eqdef \vsescatchers \cup \vsesotherwise
 }{
@@ -3670,8 +3671,8 @@ empty \executiongraph{}.
 \section{Print Statements\label{sec:PrintStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derives \ & \Tprint \parsesep \PlistZero{\Nexpr} \parsesep \Tsemicolon & \\
-\Nstmt \derives \ & \Tprintln \parsesep \PlistZero{\Nexpr} \parsesep \Tsemicolon & \\
+\Nstmt \derives \ & \Tprint \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon & \\
+\Nstmt \derives \ & \Tprintln \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon & \\
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -3682,10 +3683,10 @@ empty \executiongraph{}.
 \ASTRuleDef{SPrint}
 \begin{mathpar}
 \inferrule{%
-  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
+  \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
   \vnewline \eqdef \False \\
 }{%
-  \buildstmt(\overname{\Nstmt(\Tprint, \namednode{\vargs}{\PlistZero{\Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \buildstmt(\overname{\Nstmt(\Tprint, \namednode{\vargs}{\ClistZero{\Nexpr}}, \Tsemicolon)}{\vparsednode})
   \astarrow
   \overname{\SPrint(\astversion{\vargs}, \vnewline)}{\vastnode}
 }
@@ -3693,11 +3694,11 @@ empty \executiongraph{}.
 
 \begin{mathpar}
 \inferrule{%
-  \buildplist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
+  \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
   \vnewline \eqdef \True \\
   \vdebug \eqdef \False \\
 }{%
-  \buildstmt(\overname{\Nstmt(\Tprintln, \namednode{\vargs}{\PlistZero{\Nexpr}}, \Tsemicolon)}{\vparsednode})
+  \buildstmt(\overname{\Nstmt(\Tprintln, \namednode{\vargs}{\ClistZero{\Nexpr}}, \Tsemicolon)}{\vparsednode})
   \astarrow
   \overname{\SPrint(\astversion{\vargs}, \vnewline)}{\vastnode}
 }
@@ -3900,11 +3901,11 @@ with no other effect.
 \hypertarget{def-unreachablestatementterm}{}
 \listingref{UnreachableStatement} shows an example of using an \unreachablestatementterm{}
 to implement a custom form of assertion checking.
-\ASLListing{An example use of an \texttt{Unreachable} statement}{UnreachableStatement}{\definitiontests/UnreachableStatement.asl}
+\ASLListing{An example use of an \texttt{unreachable} statement}{UnreachableStatement}{\definitiontests/UnreachableStatement.asl}
 
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derives \ & \Tunreachable \parsesep \Tlpar \parsesep \Trpar \parsesep \Tsemicolon &
+\Nstmt \derives \ & \Tunreachable \parsesep \Tsemicolon &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -3915,7 +3916,7 @@ to implement a custom form of assertion checking.
 \ASTRuleDef{SUnreachable}
 \begin{mathpar}
 \inferrule{}{
-  \buildstmt(\overname{\Nstmt(\Tunreachable, \Tlpar, \Trpar, \Tsemicolon)}{\vparsednode})
+  \buildstmt(\overname{\Nstmt(\Tunreachable, \Tsemicolon)}{\vparsednode})
   \astarrow
   \overname{\SUnreachable}{\vastnode}
 }

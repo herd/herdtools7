@@ -409,7 +409,7 @@ and type_equal eq t1 t2 =
   | T_String, T_String
   | T_Int UnConstrained, T_Int UnConstrained ->
       true
-  | T_Int (Parameterized (i1, _)), T_Int (Parameterized (i2, _)) -> i1 == i2
+  | T_Int (Parameterized x1), T_Int (Parameterized x2) -> String.equal x1 x2
   | T_Int (WellConstrained (c1, _)), T_Int (WellConstrained (c2, _)) ->
       constraints_equal eq c1 c2
   | T_Bits (w1, bf1), T_Bits (w2, bf2) ->
@@ -456,6 +456,7 @@ and bitfield_equal eq bf1 bf2 =
   | BitField_Type _, BitField_Simple _ ->
       false
 
+let qualifier_equal (q1 : func_qualifier option) q2 = Option.equal ( = ) q1 q2
 let var_ x = E_Var x |> add_dummy_annotation
 let binop op = map2_desc (fun e1 e2 -> E_Binop (op, e1, e2))
 let unop op = map_desc (fun e -> E_Unop (op, e))
@@ -549,6 +550,9 @@ let local_ignored_prefix = "__ldi_discard"
 let local_ignored () = fresh_var local_ignored_prefix
 let is_local_ignored s = string_starts_with ~prefix:local_ignored_prefix s
 let slice_is_single = function Slice_Single _ -> true | _ -> false
+
+let is_noreturn (f : func) =
+  match f.qualifier with Some Noreturn -> true | _ -> false
 
 let slice_as_single = function
   | Slice_Single e -> e

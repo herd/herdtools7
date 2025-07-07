@@ -5,7 +5,7 @@ end;
 
 func HExemple18 (a: bits(2))
 begin
-  if a IN {'0x'} then Unreachable(); end;
+  if a IN {'0x'} then unreachable; end;
   let a2 = 8 << UInt(a);
   let bv = Zeros{a2};
   let b = 16;

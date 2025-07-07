@@ -1,6 +1,6 @@
 let K : integer {8, 16, 32} = 8;
 
-func foo(x: integer {0..K}) => integer
+pure func foo(x: integer {0..K}) => integer
 begin
   return x;
 end;

@@ -1,4 +1,4 @@
-func factorial(x : integer) => integer
+pure func factorial(x : integer) => integer
 begin
     assert x >= 0;
     var res : integer = 1;
@@ -13,6 +13,6 @@ constant y = factorial(7);
 func main() => integer
 begin
     var x = y;
-    println(y);
+    println y;
     return 0;
 end;

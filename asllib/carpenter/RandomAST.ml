@@ -364,6 +364,7 @@ module Untyped (C : Config.S) = struct
           subprogram_type;
           recurse_limit;
           override = None;
+          qualifier = None;
           builtin = false;
         }
       |> annot
@@ -982,6 +983,7 @@ module Typed (C : Config.S) = struct
           subprogram_type;
           recurse_limit;
           override = None;
+          qualifier = None;
           builtin = false;
         }
       in
@@ -1022,6 +1024,7 @@ module Typed (C : Config.S) = struct
           subprogram_type;
           recurse_limit;
           override = None;
+          qualifier = None;
           builtin = false;
         }
       in

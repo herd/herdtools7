@@ -1,4 +1,4 @@
-func static_func{N}(x: integer{N}) => integer{N}
+pure func static_func{N}(x: integer{N}) => integer{N}
 begin
     return x;
 end;

@@ -1,14 +1,14 @@
-func f() => integer
+readonly func f() => integer
 begin
   return 0;
 end;
 
-func f(x:integer) => integer
+readonly func f(x:integer) => integer
 begin
   return x;
 end;
 
-func f(x:integer, y:integer) => integer
+readonly func f(x:integer, y:integer) => integer
 begin
   return x + y;
 end;

@@ -45,6 +45,7 @@ module Make (Conf : RunTest.Config) (ModelConfig : MemCat.Config) = struct
           let allow_double_underscore = false
           let allow_unknown = false
           let allow_single_arrows = false
+          let allow_function_like_statements = false
         end) in
         Lexer.token
 

@@ -100,6 +100,9 @@ val binop_to_string : binop -> string
 val unop_to_string : unop -> string
 (** Writes a unop as an ASL operator. *)
 
+val func_qualifier_to_string : func_qualifier -> string
+(** Writes a subprogram purity as an ASL keyword. *)
+
 val ty_to_string : ty -> string
 (** Converts a type into a string. *)
 

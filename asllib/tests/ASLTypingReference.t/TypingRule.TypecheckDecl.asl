@@ -18,7 +18,7 @@ var coll: collection {
 
 accessor Rec() <=> values: bits (64)
 begin
-    getter
+  readonly getter
         return rec.high_bits :: rec.low_bits;
     end;
 
@@ -30,8 +30,8 @@ end;
 
 func main() => integer
 begin
-    println(Rec());
+    println Rec();
     Rec() = Ones{64};
-    println(Rec());
+    println Rec();
     return 0;
 end;

@@ -1,4 +1,4 @@
-type BAD_OPCODE of exception;
+type BAD_OPCODE of exception{-};
 type UNDEFINED_OPCODE of exception {reason: string, opcode: bits(16)};
 type ExceptionWithEmptyFieldList of exception {-};
 

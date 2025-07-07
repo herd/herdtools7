@@ -44,7 +44,7 @@ Static environments, denoted as $\staticenvs$, are defined as follows (referring
 \\
 \globalstaticenvs &\triangleq& \left[
 \begin{array}{lcl}
-  \declaredtypes        &\mapsto& \identifier \partialto \ty \times \TTimeFrame\\
+  \declaredtypes        &\mapsto& \identifier \partialto \ty \times \TPurity\\
   \globalstoragetypes   &\mapsto& \identifier \partialto \ty \times \globaldeclkeyword,\\
   \exprequiv            &\mapsto& \identifier \partialto \expr,\\
   \subtypes             &\mapsto& \identifier \partialto \identifier,\\
@@ -75,9 +75,7 @@ This separation allows us to typecheck subprograms by using an empty local envir
 The intuitive meaning of each component is as follows:
 \begin{itemize}
   \hypertarget{def-declaredtypes}{}
-  \item $\declaredtypes$ assigns types to their declared names and \timeframeterm\
-  (the \hyperlink{def-maxtimeframe}{maximal time frame} of any \sideeffectdescriptorterm\ inferred for
-  the type definition);
+  \item $\declaredtypes$ assigns types to their declared names and \purity{};
   \hypertarget{def-constantvalues}{}
   \item $\constantvalues$ assigns literals to their declaring (global constant) identifiers;
   \hypertarget{def-globalstoragetypes}{}

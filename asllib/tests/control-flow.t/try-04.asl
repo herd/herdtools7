@@ -5,7 +5,7 @@ begin
   try return 0;
   catch
     when E => return 1;
-    otherwise => println("Otherwise");
+    otherwise => println "Otherwise";
   end;
 end;
 

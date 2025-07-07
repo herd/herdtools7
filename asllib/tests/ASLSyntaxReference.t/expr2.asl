@@ -1,27 +1,27 @@
 accessor g0_bits() <=> value_in: bits(4)
 begin
-  getter
+  readonly getter
     return '1000';
   end;
 
   setter
-    Unreachable();
+    unreachable;
   end;
 end;
 
 accessor g1_bits(p: integer) <=> value_in: bits(4)
 begin
-  getter
+  readonly getter
     return '1000'[p, 2:0];
   end;
 
   setter
-    Unreachable();
+    unreachable;
   end;
 end;
 
 type point of record{x: bits(4), y: bits(4)};
-type except of exception;
+type except of exception{-};
 
 func main() => integer
 begin

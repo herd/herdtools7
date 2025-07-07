@@ -17,7 +17,7 @@ var x: bits(4) { [1:0] fld };
 
 accessor X() <=> v: bits(4) { [1:0] fld }
 begin
-  getter
+  readonly getter
     return x;
   end;
 

@@ -1,4 +1,4 @@
-func double (x: integer) => integer
+pure func double (x: integer) => integer
 begin
   return x * 2;
 end;

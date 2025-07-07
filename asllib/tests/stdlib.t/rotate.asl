@@ -1,10 +1,10 @@
 func print_bv{N}(bv: bits(N))
 begin
-  print("'");
+  print "'";
   for i = N-1 downto 0 do
-    print(if bv[i] == '0' then "0" else "1");
+    print if bv[i] == '0' then "0" else "1";
   end;
-  print("'");
+  print "'";
 end;
 
 func main () => integer
@@ -18,43 +18,43 @@ begin
   assert (res_r == '' && carry_r == '0');
 
   let V : bits(3) = '100';
-  print("V = ");
+  print "V = ";
   print_bv{3}(V);
-  println("\n");
+  println "\n";
 
   for i = 0 to 3 do
-    print("ROR(V,", i, ") = ");
+    print "ROR(V,", i, ") = ";
     print_bv{3}(ROR(V,i));
-    println();
+    println ;
   end;
-  println();
+  println ;
 
   for i = 1 to 4 do
-    print("ROR_C(V,", i, ") = (");
+    print "ROR_C(V,", i, ") = (";
     let (res,carry) = ROR_C(V,i);
     print_bv{3}(res);
-    print(", ");
+    print ", ";
     print_bv{1}(carry);
-    println(")");
+    println ")";
   end;
-  println();
+  println ;
 
   for i = 0 to 3 do
-    print("ROL(V,", i, ") = ");
+    print "ROL(V,", i, ") = ";
     print_bv{3}(ROL(V,i));
-    println();
+    println ;
   end;
-  println();
+  println ;
 
   for i = 1 to 4 do
-    print("ROL_C(V,", i, ") = (");
+    print "ROL_C(V,", i, ") = (";
     let (res,carry) = ROL_C(V,i);
     print_bv{3}(res);
-    print(", ");
+    print ", ";
     print_bv{1}(carry);
-    println(")");
+    println ")";
   end;
-  println();
+  println ;
 
   return 0;
 end;

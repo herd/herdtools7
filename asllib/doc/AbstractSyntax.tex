@@ -493,6 +493,11 @@ the local declaration item is
                 |\  & \STGetter \;|\; \STSetter &
 \end{flalign*}
 
+\hypertarget{ast-qualifier}{} \hypertarget{ast-pure}{} \hypertarget{ast-readonly}{} \hypertarget{ast-noreturn}{}
+\begin{flalign*}
+\qualifier \derives\ & \Pure \;|\; \Readonly \;|\; \Noreturn &
+\end{flalign*}
+
 \hypertarget{ast-overrideinfo}{} \hypertarget{ast-impdef}{}
 \begin{flalign*}
 \overrideinfo \derives\ & \Impdef \hypertarget{ast-implementation}{} \;|\; \Implementation &
@@ -512,6 +517,7 @@ the local declaration item is
  \funcsubprogramtype &:& \subprogramtype\\
  \funcrecurselimit    &:& \expr?\\
  \funcbuiltin &:& \Bool\\
+ \funcqualifier &:& \Some{\qualifier}\\
  \funcoverride &:& \Some{\overrideinfo}\\
 \end{array}
 \right\}

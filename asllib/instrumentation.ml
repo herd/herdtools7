@@ -500,7 +500,6 @@ module TypingRule = struct
     | CheckVarNotInEnv
     | CheckVarNotInGEnv
     | CheckDisjointSlices
-    | ControlFlowFromStmt
     | AnnotateConstraintBinop
     | ConstraintBinop
     | ConstraintMod
@@ -508,8 +507,6 @@ module TypingRule = struct
     | ApplyBinopExtremities
     | PossibleExtremitiesLeft
     | PossibleExtremitiesRight
-    | ControlFlowSeq
-    | ControlFlowJoin
     | CheckCommonBitfieldsAlign
     | AnnotateFieldInit
     | AnnotateGetArray
@@ -692,7 +689,6 @@ module TypingRule = struct
     | CheckVarNotInEnv -> "CheckVarNotInEnv"
     | CheckVarNotInGEnv -> "CheckVarNotInGEnv"
     | CheckDisjointSlices -> "CheckDisjointSlices"
-    | ControlFlowFromStmt -> "ControlFlowFromStmt"
     | AnnotateConstraintBinop -> "AnnotateConstraintBinop"
     | ConstraintBinop -> "ConstraintBinop"
     | ConstraintMod -> "ConstraintMod"
@@ -700,8 +696,6 @@ module TypingRule = struct
     | ApplyBinopExtremities -> "ApplyBinopExtremities"
     | PossibleExtremitiesLeft -> "PossibleExtremitiesLeft"
     | PossibleExtremitiesRight -> "PossibleExtremitiesRight"
-    | ControlFlowSeq -> "ControlFlowSeq"
-    | ControlFlowJoin -> "ControlFlowJoin"
     | CheckCommonBitfieldsAlign -> "CheckCommonBitfieldsAlign"
     | AnnotateFieldInit -> "AnnotateFieldInit"
     | AnnotateGetArray -> "AnnotateGetArray"
@@ -869,15 +863,12 @@ module TypingRule = struct
       CheckVarNotInGEnv;
       CheckDisjointSlices;
       BitfieldSliceToPositions;
-      ControlFlowFromStmt;
       AnnotateConstraintBinop;
       ConstraintBinop;
       ConstraintPow;
       ApplyBinopExtremities;
       PossibleExtremitiesLeft;
       PossibleExtremitiesRight;
-      ControlFlowSeq;
-      ControlFlowJoin;
       CheckCommonBitfieldsAlign;
       AnnotateFieldInit;
       AnnotateGetArray;

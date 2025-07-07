@@ -36,6 +36,7 @@ act
 action
 actively
 actual
+actually
 adapt
 add
 added
@@ -46,6 +47,7 @@ additions
 address
 addressed
 adds
+adheres
 admits
 advance
 advised
@@ -180,6 +182,7 @@ avoid
 avoidance
 avoiding
 avoids
+aware
 away
 axiom
 axiomatically
@@ -207,6 +210,7 @@ behaviour
 being
 belongs
 below
+beta
 better
 between
 biased
@@ -246,6 +250,7 @@ branches
 brands
 break
 brevity
+brings
 bug
 build
 builder
@@ -322,6 +327,7 @@ classify
 classifying
 clause
 clauses
+clearly
 closed
 closer
 closest
@@ -329,6 +335,7 @@ closing
 closure
 code
 codes
+coincidentally
 collection
 collections
 collectively
@@ -338,6 +345,7 @@ combinations
 combine
 combined
 combines
+combining
 come
 comes
 commas
@@ -388,6 +396,7 @@ concept
 concepts
 conceptually
 concerned
+concerning
 conclude
 concludes
 concluding
@@ -576,6 +585,7 @@ different
 differentiating
 differently
 differing
+digit
 digits
 directive
 directly
@@ -702,6 +712,7 @@ essentially
 establish
 establishing
 estoppel
+evaluability
 evaluable
 evaluate
 evaluated
@@ -893,6 +904,7 @@ ground
 grounded
 grounding
 group
+grouping
 groups
 guarantee
 guaranteed
@@ -943,7 +955,9 @@ ignored
 ignores
 ignoring
 illegal
+illegally
 illustrated
+illustrates
 image
 immediately
 immutability
@@ -1077,6 +1091,7 @@ invocation
 invoke
 invokes
 invoking
+involve
 involved
 involves
 involving
@@ -1200,6 +1215,7 @@ matches
 matching
 material
 mathematical
+matters
 maximal
 maximum
 may
@@ -1209,6 +1225,7 @@ means
 meant
 mechanism
 mechanisms
+meet
 meets
 member
 members
@@ -1222,6 +1239,7 @@ might
 minimal
 minimum
 minus
+mirroring
 mismatch
 missing
 model
@@ -1257,6 +1275,7 @@ naming
 native
 natural
 nearest
+necessarily
 necessary
 necessitates
 need
@@ -1304,6 +1323,7 @@ numeral
 numerator
 numeric
 numerous
+obeys
 object
 observable
 observe
@@ -1400,6 +1420,7 @@ parentheses
 parenthesis
 parenthesized
 parenthesizing
+parlance
 parse
 parsed
 parser
@@ -1513,6 +1534,7 @@ productions
 program
 programming
 prohibited
+promoted
 propagate
 propagated
 propagates
@@ -1534,9 +1556,13 @@ prs
 pull
 punctuation
 pure
+purities
 purity
 purpose
 purposes
+qualified
+qualifier
+qualifiers
 quality
 query
 quite
@@ -1592,6 +1618,7 @@ refers
 refine
 refined
 refinement
+refinements
 refines
 refining
 reflected
@@ -1655,6 +1682,7 @@ required
 requirement
 requirements
 requires
+resemble
 reserved
 resolve
 resolved
@@ -1711,6 +1739,7 @@ runtime
 runtimes
 s
 safe
+safely
 said
 same
 satisfaction
@@ -1765,6 +1794,7 @@ several
 shall
 share
 shared
+shares
 shift
 shortens
 shortest
@@ -1798,6 +1828,7 @@ simplify
 simplifying
 simply
 simultaneous
+simultaneously
 since
 single
 singleton
@@ -1805,6 +1836,7 @@ singular
 site
 situations
 size
+sizes
 slice
 slices
 slicing
@@ -2103,7 +2135,9 @@ unpredictable
 unprintable
 unreachable
 unrecognized
+unrelated
 unreleased
+unsigned
 unspecified
 unsupported
 until
@@ -2178,6 +2212,7 @@ was
 way
 ways
 we
+weakened
 welcome
 well
 were

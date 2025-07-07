@@ -114,8 +114,10 @@ The \emph{\integertypesterm{}} represent mathematical integer value.
 
 There are four kinds of integer types, and we
 use the term \integertypeterm{} to refer to them collectively:
-\emph{unconstrained}, \emph{well-constrained},
-\emph{pending constrained}, and \emph{parameterized}.
+\emph{\unconstrainedintegertypes},
+\emph{\wellconstrainedintegertypes},
+\emph{\pendingconstrainedintegertypes},
+and \emph{\parameterizedintegertypes}.
 
 \subsection{Unconstrained Integer Types}
 \hypertarget{def-unconstrainedintegertype}{}
@@ -138,8 +140,19 @@ or a \emph{\rangeconstraintterm}, consisting of a pair of expressions like \text
 
 \ExampleDef{Well-constrained Integer Types}
 \hypertarget{def-wellconstrainedintegertype}{}
-\listingref{typing-wellconstrained} shows examples of well-constrained integer types.
-\ASLListing{Well-typed well-constrained integer types}{typing-wellconstrained}{\typingtests/TypingRule.TIntWellConstrained.asl}
+The well-typed specification in \listingref{constrainedintegers1} shows examples of \wellconstrainedintegertypes.
+\ASLListing{Well-typed well-constrained integer types}{constrainedintegers1}{\definitiontests/ConstrainedIntegers1.asl}
+
+The well-typed specification in \listingref{constrainedintegers2} shows examples of \wellconstrainedintegertypes{}
+and \unconstrainedintegertypes{} for \verb|config|s.
+\ASLListing{Well-constrained integer types and \texttt{config}s}{constrainedintegers2}{\definitiontests/ConstrainedIntegers2.asl}
+
+The specifications in \listingref{constrainedintegers-bad}
+and \listingref{constrainedintegers-bad2}
+show examples of ill-typed
+assignment between two \wellconstrainedintegertypes{}.
+\ASLListing{Ill-typed well-constrained integer types}{constrainedintegers-bad}{\definitiontests/ConstrainedIntegers.bad.asl}
+\ASLListing{Ill-typed well-constrained integer types}{constrainedintegers-bad2}{\definitiontests/ConstrainedIntegers.bad2.asl}
 
 \subsection{Pending-constrained Integer Types}
 \hypertarget{def-pendingconstrainedintegertype}{}
@@ -320,7 +333,7 @@ The expressions appearing in integer constraints must be both
 \symbolicallyevaluable{} and \constrainedinteger{} types.
 %
 In \listingref{annotate-constraint-unconstrained}, the constraint
-\verb|x..x+1| is ill-typed, since the type of \texttt{x} is not constrained.
+\verb|x..x+1| is ill-typed, since \texttt{x} is not \symbolicallyevaluable{}.
 \ASLListing{Ill-typed constraint}{annotate-constraint-unconstrained}{\typingtests/TypingRule.AnnotateConstraint.bad.asl}
 
 \TypingRuleDef{TInt}
@@ -358,8 +371,7 @@ correspond to \CaseName{pending\_constrained}.
     \item \AllApplyCase{parameterized}
     \begin{itemize}
       \item $\tty$ is a \parameterizedintegertype\ for $\name$;
-      \item define $\vses$ as the singleton set for the singleton \sideeffectdescriptorterm,
-            \ReadLocalTerm\ for $\name$, \timeframeconstant, and $\True$ for immutability.
+      \item define $\vses$ as the \sideeffectsetterm{} containing a $\Pure$ \LocalEffectTerm{} and an \ImmutabilityTerm{} with immutability $\True$.
       \item $\newty$ is the unconstrained integer type.
     \end{itemize}
 
@@ -402,7 +414,7 @@ correspond to \CaseName{pending\_constrained}.
 \begin{mathpar}
 \inferrule[parameterized]{
   \tty \eqname \TInt(\parameterized(\name))\\
-  \vses \eqdef \{\ \ReadLocal(\name, \timeframeconstant, \True)\ \}
+  \vses \eqdef \{ \LocalEffect(\Pure), \Immutability(\True) \}
 }{
   \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \tty} \typearrow (\overname{\tty}{\newty}, \vses)
 }
@@ -648,6 +660,13 @@ where \texttt{N} may specify a fixed width or a constrained width.
 %
 The \texttt{bit} type is syntactic sugar for \texttt{bits(1)} (see \ASTRuleRef{Ty.TBits}.\texttt{BIT}).
 
+\identr{RXYN}%
+Bitvectors can be converted to unsigned integers and signed integer
+via the standard library functions
+\verb|UInt| and \verb|SInt|, respectively.
+Converting integers into bitvectors can be done via slicing
+(see \ExampleRef{Evaluation of Slicing Expressions}).
+
 \identi{KGMC}%
 The syntax for \bitvectortypesterm{} has an optional $\Nbitfields$,
 which allows specifying \emph{\bitfieldsterm} ---
@@ -655,6 +674,12 @@ which allows specifying \emph{\bitfieldsterm} ---
 fields that can be read or written.
 \chapref{Bitfields} defines \bitfieldsterm{}
 and \chapref{BitvectorSlicing} defines \bitslicesterm{}.
+
+\RequirementDef{BitvectorsMSB}
+In a bitvector literal, the most significant bit (\ProseMSB) is the leftmost value
+and the least significant bit (\ProseLSB) is the rightmost value.
+% INLINED_EXAMPLE
+For example, in \verb|'10'| the \ProseMSB{} is \verb|1| and the \ProseLSB{} is \verb|0|.
 
 \RequirementDef{BitvectorWidthImmutable}
 The width of a bitvector cannot be modified.
@@ -746,6 +771,10 @@ bv=0x14, rotated twice=0x05
 In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
 \ASLListing{Well-typed Bitvector types}{typing-tbits}{\typingtests/TypingRule.TBits.asl}
 
+The specification in \listingref{typing-tbits-bad} is ill-typed, since widths need
+to be \constrainedintegers.
+\ASLListing{An ill-typed Bitvector type}{typing-tbits-bad}{\typingtests/TypingRule.TBits.bad.asl}
+
 \ExampleRef{A bitvector type with bitfields} shows a well-typed \bitvectortypeterm{} with bitfields.
 
 \ProseParagraph
@@ -761,8 +790,7 @@ In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
     \item \AllApplyCase{with\_bitfields}
     \begin{itemize}
       \item $\bitfields$ is not empty;
-      \item checking whether all \timeframesterm{} in $\seswidth$ are less than or equal to $\timeframeconstant$
-            yields $\True$\ProseTerminateAs{\SideEffectViolation};
+      \item checking that $\seswidth$ is \pure{} via $\sesispure$ yields $\True$\ProseTerminateAs{\SideEffectViolation};
       \item annotating the bitfields $\bitfields$ yields \\
             $(\bitfieldsp, \vsesbitfields)$\ProseOrTypeError;
       \item \Prosestaticeval{$\tenv$}{$\ewidthp$}{$\lint(\vwidth)$};
@@ -792,7 +820,7 @@ In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
   \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\\\\
   \commonprefixline\\\\
   \bitfields \neq \emptylist\\\\
-  \checktrans{\sesisbefore(\seswidth, \timeframeconstant)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
+  \checktrans{\sesispure(\seswidth)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
   {
   \begin{array}{r}
     \annotatebitfields(\tenv, \ewidthp, \bitfields) \typearrow \\
@@ -1084,7 +1112,7 @@ is ill-typed, since the expression \verb|non_symbolically_evaluable|
 is not \symbolicallyevaluable{}.
 \ASLListing{Ill-typed array types}{typing-tarray-bad}{\typingtests/TypingRule.TArray.bad.asl}
 Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_array2| is ill-typed, since the expression \verb|non_constrained| is not a \constrainedinteger{}.
-\ASLListing{Ill-typed array types}{typing-tarray-bad2}{\typingtests/TypingRule.TArray.bad.asl}
+\ASLListing{Ill-typed array types}{typing-tarray-bad2}{\typingtests/TypingRule.TArray.bad2.asl}
 
 \ProseParagraph
 \AllApply
@@ -1330,7 +1358,7 @@ is ill-typed, since the field \verb|v| repeats.
 
 \subsection{Syntax}
 \begin{flalign*}
-\Ntydecl \derives\ & \Trecord \parsesep \Nfieldsopt &
+\Ntydecl \derives\ & \Trecord \parsesep \Nfields &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -1341,8 +1369,8 @@ is ill-typed, since the field \verb|v| repeats.
 \ASTRuleDef{TyDecl.TRecord}
 \begin{mathpar}
 \inferrule{}{
-  \buildtydecl(\Ntydecl(\Trecord, \punnode{\Nfieldsopt})) \astarrow
-  \overname{\TRecord(\astof{\vfieldsopt})}{\vastnode}
+  \buildtydecl(\Ntydecl(\Trecord, \punnode{\Nfields})) \astarrow
+  \overname{\TRecord(\astof{\vfields})}{\vastnode}
 }
 \end{mathpar}
 
@@ -1396,7 +1424,7 @@ In \listingref{typing-texception}, all the uses of exception types are well-type
 
 \subsection{Syntax}
 \begin{flalign*}
-\Ntydecl \derives\ & \Texception \parsesep \Nfieldsopt &
+\Ntydecl \derives\ & \Texception \parsesep \Nfields &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -1407,8 +1435,8 @@ In \listingref{typing-texception}, all the uses of exception types are well-type
 \ASTRuleDef{TyDecl.TException}
 \begin{mathpar}
 \inferrule{}{
-  \buildtydecl(\Ntydecl(\Texception, \punnode{\Nfieldsopt})) \astarrow
-  \overname{\TException(\astof{\vfieldsopt})}{\vastnode}
+  \buildtydecl(\Ntydecl(\Texception, \punnode{\Nfields})) \astarrow
+  \overname{\TException(\astof{\vfields})}{\vastnode}
 }
 \end{mathpar}
 
@@ -1429,7 +1457,7 @@ See \listingref{checkisnotcollection} for an ill-typed specification.
 
 \subsection{Syntax}
 \begin{flalign*}
-  \Ntyorcollection \derives\ & \Nty \;|\; \Tcollection \parsesep \Nfieldsopt & \\
+  \Ntyorcollection \derives\ & \Nty \;|\; \Tcollection \parsesep \Nfields & \\
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -1440,8 +1468,8 @@ See \listingref{checkisnotcollection} for an ill-typed specification.
 \ASTRuleDef{TyDecl.TCollection}
 \begin{mathpar}
 \inferrule{}{
-  \buildtyorcollection(\Ntyorcollection(\Tcollection, \punnode{\Nfieldsopt})) \astarrow
-  \overname{\TCollection(\astof{\vfieldsopt})}{\vastnode}
+  \buildtyorcollection(\Ntyorcollection(\Tcollection, \punnode{\Nfields})) \astarrow
+  \overname{\TCollection(\astof{\vfields})}{\vastnode}
 }
 \and
 \inferrule{}{
@@ -1492,6 +1520,9 @@ collection types in comments.
 
 \section{Named Types\label{sec:NamedTypes}}
 Named type declarations allow declaring new types names with a given type.
+The intent is that, by default, any named type should not be assignable to or from any other named type, even
+if they coincidentally have the same \structure. Where assignment between named types is desired it is usually
+achieved by grouping related types via a common supertype.
 
 The specification in \listingref{named-types2}, declares two unique types with the same
 \structure. Note that the two types are not related in
@@ -1500,6 +1531,18 @@ any way and are not interchangeable. See also \TypingRuleRef{TypeSatisfaction}.
 
 In \listingref{named-types}, \verb|TypeC.f| and \verb|TypeD.f| have the same type: \verb|TypeB| (and not integer).
 \ASLListing{Two unique well-typed types}{named-types}{\definitiontests/NamedTypes.asl}
+
+In \listingref{named-types3}, the assignments \verb|addr = physical;|
+and \verb|physical = addr;| would be illegal.
+\ASLListing{Two unique well-typed types}{named-types3}{\definitiontests/NamedTypes3.asl}
+
+The well-typed specification in \listingref{named-types4}
+demonstrates how a constant can be given a named type.
+\ASLListing{Naming types for constants}{named-types4}{\definitiontests/NamedTypes4.asl}
+
+The specification in \listingref{named-types-bad} is ill-typed
+due to an assignment between two different named types (\verb|Char| and \verb|Byte|).
+\ASLListing{Named types and illegal assignments}{named-types-bad}{\definitiontests/NamedTypes.bad.asl}
 
 \hypertarget{namedtypeterm}{}
 \subsection{Syntax}
@@ -1536,8 +1579,8 @@ show examples of ill-typed named types.
 \begin{itemize}
   \item $\tty$ is the named type $\vx$, that is $\TNamed(\vx)$;
   \item checking whether $\vx$ is bound to any declared type in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item $\vx$ is bound to a type with associated \timeframeterm\ $\vtimeframe$;
-  \item define $\vses$ as the singleton set for the \ReadGlobalTerm\ for $\vx$, $\vtimeframe$, and $\True$ for immutability;
+  \item $\vx$ is bound to a type with associated \purity{} $\vpurity$;
+  \item define $\vses$ as the set of the \GlobalEffectTerm\ with purity $\vpurity$ and the \ImmutabilityTerm\ with immutability $\True$;
   \item $\newty$ is $\tty$.
 \end{itemize}
 
@@ -1545,8 +1588,8 @@ show examples of ill-typed named types.
 \begin{mathpar}
 \inferrule{
   \checktrans{G^\tenv.\declaredtypes(\vx) \neq \bot}{\UndefinedIdentifier} \typearrow \True \OrTypeError\\\\
-  G^\tenv.\declaredtypes(\vx) = (\Ignore, \vtimeframe)\\
-  \vses \eqdef \{\ \ReadGlobal(\vx, \vtimeframe, \True)\ \}
+  G^\tenv.\declaredtypes(\vx) = (\Ignore, \vpurity)\\
+  \vses \eqdef \{\ \GlobalEffectTerm(\vpurity), \Immutability(\True) \}
 }{
   \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TNamed(\vx)}{\tty}} \typearrow (\overname{\TNamed(\vx)}{\newty}, \vses)
 }

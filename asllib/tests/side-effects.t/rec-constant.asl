@@ -1,4 +1,4 @@
-func foo (n: integer) => integer
+pure func foo (n: integer) => integer
 begin
   if n <= 0 then
     return 1;
@@ -7,7 +7,7 @@ begin
   end;
 end;
 
-func bar (n: integer) => integer recurselimit 1000
+pure func bar (n: integer) => integer recurselimit 1000
 begin
   return n * foo (n - 1);
 end;

@@ -40,6 +40,9 @@ let conflict ~loc expected provided =
 let plus = binop `PLUS
 let t_bits_bitwidth e = T_Bits (e, [])
 
+let func_version f =
+  match f.body with SB_Primitive _ -> V1 | SB_ASL s -> s.version
+
 let rec list_mapi2 f i l1 l2 =
   match (l1, l2) with
   | [], [] -> []
@@ -93,7 +96,7 @@ let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
     | T_Int (WellConstrained (constraints, precision)) ->
         let constraints = subst_constraints env eqs constraints in
         well_constrained ~loc ~precision constraints
-    | T_Int (Parameterized (_uid, name)) ->
+    | T_Int (Parameterized name) ->
         let e = E_Var name |> here |> subst_expr_normalize env eqs in
         integer_exact ~loc e
     | T_Tuple tys -> T_Tuple (List.map (rename env eqs) tys) |> here
@@ -134,6 +137,7 @@ module type ANNOTATE_CONFIG = sig
   val output_format : Error.output_format
   val print_typed : bool
   val use_field_getter_extension : bool
+  val fine_grained_side_effects : bool
   val use_conflicting_side_effects_extension : bool
   val override_mode : override_mode
   val control_flow_analysis : bool
@@ -243,7 +247,7 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
     List.fold_left2 folder []
 
   (* Begin AddNewFunc *)
-  let add_new_func ~loc env name formals subpgm_type =
+  let add_new_func ~loc env name qualifier formals subpgm_type =
     match IMap.find_opt name env.global.overloaded_subprograms with
     | None ->
         let new_env = set_renamings name (ISet.singleton name) env in
@@ -258,9 +262,15 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
                  let other_func_sig, _ses =
                    IMap.find name' env.global.subprograms
                  in
+                 let qualifiers_differ =
+                   loc.version == V1
+                   && func_version other_func_sig == V1
+                   && not (qualifier_equal qualifier other_func_sig.qualifier)
+                 in
                  subprogram_types_clash subpgm_type
                    other_func_sig.subprogram_type
-                 && has_arg_clash env formal_types other_func_sig.args)
+                 && (qualifiers_differ
+                    || has_arg_clash env formal_types other_func_sig.args))
                other_names
         in
         let+ () =
@@ -590,37 +600,34 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* Begin CheckSymbolicallyEvaluable *)
   let check_symbolically_evaluable expr_for_error ses () =
-    if SES.is_symbolically_evaluable ses then
-      () |: TypingRule.CheckSymbolicallyEvaluable
+    if C.fine_grained_side_effects then
+      if SES.fine_grained_is_symbolically_evaluable ses then ()
+      else
+        fatal_from ~loc:expr_for_error
+          (Error.ImpureExpression (expr_for_error, ses))
+    else if SES.is_symbolically_evaluable ses then ()
     else
       fatal_from ~loc:expr_for_error
-        (Error.ImpureExpression (expr_for_error, ses))
+        (Error.MismatchedPurity "symbolically evaluable")
+      |: TypingRule.CheckSymbolicallyEvaluable
   (* End *)
 
-  let check_is_deterministic expr_for_error ses () =
-    if SES.is_deterministic ses then ()
-    else
-      fatal_from ~loc:expr_for_error
-        (Error.ImpureExpression (expr_for_error, ses))
+  let check_is_readonly expr_for_error ses () =
+    if C.fine_grained_side_effects then
+      if SES.fine_grained_is_pure ses then ()
+      else
+        fatal_from ~loc:expr_for_error
+          (Error.ImpureExpression (expr_for_error, SES.remove_pure ses))
+    else if SES.is_readonly ses then ()
+    else fatal_from ~loc:expr_for_error (Error.MismatchedPurity "readonly")
 
-  let check_is_pure expr_for_error ses () =
-    if SES.is_pure ses then ()
-    else
-      fatal_from ~loc:expr_for_error
-        (Error.ImpureExpression (expr_for_error, SES.remove_pure ses))
-
-  let leq_constant_time ses =
-    TimeFrame.is_before (SES.max_time_frame ses) TimeFrame.Constant
-
-  let check_leq_constant_time ~loc (_, e, ses_e) () =
-    if leq_constant_time ses_e then ()
-    else fatal_from ~loc Error.(ConstantTimeBroken (e, ses_e))
-
-  let check_is_time_frame =
-    let open TimeFrame in
-    function
-    | TimeFrame.Constant -> check_leq_constant_time
-    | TimeFrame.Execution -> fun ~loc:_ _ -> ok
+  let check_is_pure ~loc (_, e, ses_e) () =
+    if C.fine_grained_side_effects then
+      if TimeFrame.is_before (SES.max_time_frame ses_e) TimeFrame.Constant then
+        ()
+      else fatal_from ~loc Error.(ConstantTimeBroken (e, ses_e))
+    else if SES.is_pure ses_e then ()
+    else fatal_from ~loc:e (Error.MismatchedPurity "pure")
 
   let check_bits_equal_width' env t1 t2 () =
     let n = get_bitvector_width' env t1 and m = get_bitvector_width' env t2 in
@@ -1299,7 +1306,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             in
             let ses = SES.unions sess in
             (well_constrained ~loc:ty ~precision new_constraints, ses)
-        | Parameterized (_, name) ->
+        | Parameterized name ->
             (ty, SES.reads_local name TimeFrame.Constant true)
         | UnConstrained -> (ty, SES.empty))
         |: TypingRule.TInt
@@ -1313,7 +1320,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let bitfields', ses_bitfields =
           if bitfields = [] then (bitfields, SES.empty)
           else
-            let+ () = check_leq_constant_time ~loc typed_e_width in
+            let+ () = check_is_pure ~loc typed_e_width in
             let annotated_bitfields, ses_bitfields =
               annotate_bitfields ~loc env e_width' bitfields
             in
@@ -1451,8 +1458,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           and length', ses_length =
             annotate_symbolic_constrained_integer ~loc env length
           in
-          let+ () = check_is_pure offset ses_offset in
-          let+ () = check_is_pure length ses_length in
+          let+ () = check_is_readonly offset ses_offset in
+          let+ () = check_is_readonly length ses_length in
           let+ () = check_underlying_integer ~loc:offset env t_offset in
           let ses = SES.union ses_length ses_offset in
           (Slice_Length (offset', length'), ses |: TypingRule.Slice)
@@ -1668,7 +1675,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | None ->
               (* declared parameters have already been elaborated *)
               assert false
-          | Some { desc = T_Int (Parameterized (_, name')) }
+          | Some { desc = T_Int (Parameterized name') }
             when String.equal name name' ->
               ()
           | Some ty_declared ->
@@ -1834,7 +1841,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       List.iter
         (function
           | _, None -> ()
-          | s, Some { desc = T_Int (Parameterized (_, s')); _ }
+          | s, Some { desc = T_Int (Parameterized s'); _ }
             when String.equal s' s ->
               ()
           | callee_param_name, Some callee_param_t ->
@@ -2426,7 +2433,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Enum [] -> assert false
     | T_Enum (name :: _) -> lookup_constant env name |> lit
     | T_Int UnConstrained -> L_Int Z.zero |> lit
-    | T_Int (Parameterized (_, id)) -> E_Var id |> here |> fatal_non_static
+    | T_Int (Parameterized id) -> E_Var id |> here |> fatal_non_static
     | T_Int PendingConstrained -> assert false
     | T_Int (WellConstrained (cs, _)) ->
         let constraint_abs_min = function
@@ -2471,7 +2478,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     match t.desc with
     | T_Bool | T_Int UnConstrained | T_Real | T_String | T_Enum _ | T_Bits _ ->
         base_value_v1 ~loc env t
-    | T_Int (Parameterized (_, id)) -> E_Var id |> here
+    | T_Int (Parameterized id) -> E_Var id |> here
     | T_Int (WellConstrained ([], _) | PendingConstrained) -> assert false
     | T_Int
         (WellConstrained
@@ -2766,9 +2773,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* Begin ShouldRememberImmutableExpression *)
   let should_remember_immutable_expression ses =
-    let ses_non_assert = SES.remove_assertions ses in
-    SES.is_symbolically_evaluable ses_non_assert
-    |: TypingRule.ShouldRememberImmutableExpression
+    if C.fine_grained_side_effects then
+      let ses_non_assert = SES.remove_assertions ses in
+      SES.fine_grained_is_symbolically_evaluable ses_non_assert
+    else
+      SES.is_symbolically_evaluable ses
+      |: TypingRule.ShouldRememberImmutableExpression
   (* End *)
 
   (* Begin AddImmutableExpression *)
@@ -2977,7 +2987,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin SAssert *)
     | S_Assert e ->
         let t_e', e', ses_e = annotate_expr env e in
-        let+ () = check_is_pure e ses_e in
+        let+ () = check_is_readonly e ses_e in
         let+ () = check_type_satisfies ~loc env t_e' boolean in
         let ses = SES.add_assertion ses_e in
         (S_Assert e' |> here, env, ses) |: TypingRule.SAssert
@@ -3007,10 +3017,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         and limit', ses_limit =
           annotate_limit_expr ~warn:false ~loc env limit
         in
-        let+ () = check_is_pure start_e ses_start in
-        let+ () = check_is_deterministic start_e ses_start in
-        let+ () = check_is_pure end_e ses_end in
-        let+ () = check_is_deterministic end_e ses_end in
+        let+ () = check_is_readonly start_e ses_start in
+        let+ () = check_is_readonly end_e ses_end in
         let ses_cond = SES.union3 ses_start ses_end ses_limit in
         let start_struct = Types.make_anonymous env start_t
         and end_struct = Types.make_anonymous env end_t in
@@ -3090,7 +3098,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               match ldk with
               | LDK_Let | LDK_Var -> env1
               | LDK_Constant -> (
-                  let+ () = check_leq_constant_time ~loc:s typed_e in
+                  let+ () = check_is_pure ~loc:s typed_e in
                   try
                     let v = StaticInterpreter.static_eval env1 e in
                     declare_local_constant env1 v ldi
@@ -3480,6 +3488,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     |: TypingRule.CheckParamDecls
   (* End *)
 
+  let check_subprogram_purity ~loc qualifier ses =
+    match qualifier with
+    | None | Some Noreturn -> ok
+    | Some Pure ->
+        check_true (SES.is_pure ses) (fun () ->
+            fatal_from ~loc (Error.MismatchedPurity "pure"))
+    | Some Readonly ->
+        check_true (SES.is_readonly ses) (fun () ->
+            fatal_from ~loc (Error.MismatchedPurity "readonly"))
+
   let annotate_func_sig_v1 ~loc genv func_sig =
     let env = with_empty_local genv in
     (* Check recursion limit *)
@@ -3538,6 +3556,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           ({ env_with_args with local = local_env }, return_type, new_ses)
     in
     let ses = SES.remove_locals ses_with_return in
+    let+ () =
+      if C.fine_grained_side_effects then ok
+      else check_subprogram_purity ~loc func_sig.qualifier ses
+    in
+    let ses = SES.set_purity_for_subprogram func_sig.qualifier ses in
     ( env_with_return,
       { func_sig with parameters; args; return_type; recurse_limit },
       ses )
@@ -3618,82 +3641,169 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | V0 -> annotate_func_sig_v0 ~loc genv func_sig
     | V1 -> annotate_func_sig_v1 ~loc genv func_sig
 
-  module ControlFlow : sig
-    val check_stmt_returns_or_throws : identifier -> stmt_desc annotated -> prop
-    (** [check_stmt_interrupts name body] checks that the function named [name]
-        with the statement body [body] either: returns a value, throws an
-        exception, or calls [Unreachable()].
-        It executes only when [C.control_flow_analysis] is [true]. *)
+  (** A module for checking that a subprogram body satisfies
+      control flow requirements.
+  *)
+  module ControlFlowAnalysis : sig
+    val check_control_flow : env -> func -> stmt -> unit
   end = struct
-    (** Possible Control-Flow actions of a statement. *)
-    type t =
-      | Interrupt  (** Throwing an exception or returning a value. *)
-      | AssertedNotInterrupt
-          (** Assert that this control-flow path is unused. *)
-      | MayNotInterrupt
-          (** Among all control-flow path in a statement, there is one that
-              will not throw an exception nor return a value. *)
-
-    (* Begin ControlFlowSeq *)
-
-    (** Sequencial combination of two control flows. *)
-    let seq t1 t2 =
-      if t1 = MayNotInterrupt then t2 else t1 |: TypingRule.ControlFlowSeq
-    (* End *)
-
-    (* Begin ControlFlowJoin *)
-
-    (** [join t1 t2] corresponds to the parallel combination of [t1] and [t2].
-    More precisely, it is the maximal element in the ordering
-    AssertedNotInterrupt < Interrupt < MayNotInterrupt
+    module AbsConfig = struct
+      (** Abstract values representing the possible configurations
+        resulting from evaluating statements.
     *)
-    let join t1 t2 =
-      match (t1, t2) with
-      | MayNotInterrupt, _ | _, MayNotInterrupt ->
-          MayNotInterrupt |: TypingRule.ControlFlowJoin
-      | AssertedNotInterrupt, t | t, AssertedNotInterrupt ->
-          t (* Assertion that the condition always holds *)
-      | Interrupt, Interrupt -> Interrupt
-    (* End *)
+      type t =
+        | Abs_Abnormal
+          (* evaluation of a statement yielded an a thrown exception or a dynamic error
+             (possibly due to calling Unreachable). *)
+        | Abs_Returning
+          (* evaluation of a return statement completed normally. *)
+        | Abs_Continuing
+      (* evaluation of a non-return statement completed normally. *)
 
-    (* Begin ControlFlowFromStmt *)
+      let compare = Stdlib.compare
 
-    (** [get_from_stmt env s] builds the control-flow analysis on [s] in [env].
+      let pp = function
+        | Abs_Abnormal -> "Abs_Abnormal"
+        | Abs_Returning -> "Abs_Returning"
+        | Abs_Continuing -> "Abs_Continuing"
+    end
+
+    (** The abstract domain for this analysis is the powerset lattice
+      * (that is, all subsets) of abstract configurations with union
+      * as the join operator.
+      *)
+    module AbsConfigSet = struct
+      include Set.Make (AbsConfig)
+
+      let top = of_list [ Abs_Abnormal; Abs_Returning; Abs_Continuing ]
+      let abnormal = of_list [ Abs_Abnormal ]
+      let continuing = of_list [ Abs_Continuing ]
+      let abnormal_or_returning = of_list [ Abs_Abnormal; Abs_Returning ]
+      let abnormal_or_continuing = of_list [ Abs_Abnormal; Abs_Continuing ]
+
+      (** [union_list l] returns the union of all the sets in [l]. *)
+      let union_list l = List.fold_left union empty l
+
+      let map_and_union f s = List.map f (elements s) |> union_list
+
+      let pp _fmt configs =
+        let pp_config _fmt c = Format.eprintf "%s" (AbsConfig.pp c) in
+        let pp_config_list fmt l =
+          Format.pp_print_list
+            ~pp_sep:(fun fmt () -> Format.fprintf fmt "; ")
+            pp_config fmt l
+        in
+        Format.eprintf "{%a}" pp_config_list (elements configs)
+    end
+
+    (** A useful shorthand. *)
+    let abs_of_list = AbsConfigSet.of_list
+
+    (* Begin ApproxStmt *)
+
+    (** [approx_stmt tenv s] returns the approximation of [s] with respect to
+        the set of abstract configurations. That is, a superset of the abstract
+        configurations that evaluating [s] with any environment consisting of
+        [tenv] would yield.
+        The approximation assumes that evaluating any expression
+        results in either a value, a thrown exception, or a dynamic error.
+        The approximation of each statement is independent of the input environment,
+        which means it is also the fixpoint result, which in turn justifies the
+        soundness of approximating the loop statement and the, potentially recursive
+        subprogram calls.
     *)
-    let rec from_stmt s =
-      match s.desc with
-      | S_Pass | S_Decl _ | S_Assign _ | S_Assert _ | S_Call _ | S_Print _
-      | S_Pragma _ ->
-          MayNotInterrupt |: TypingRule.ControlFlowFromStmt
-      | S_Unreachable -> AssertedNotInterrupt
-      | S_Return _ | S_Throw _ -> Interrupt
-      | S_Seq (s1, s2) -> seq (from_stmt s1) (from_stmt s2)
-      | S_Cond (_, s1, s2) -> join (from_stmt s1) (from_stmt s2)
-      | S_Repeat (body, _, _) -> from_stmt body
-      | S_While _ | S_For _ -> MayNotInterrupt
-      | S_Try (body, catchers, otherwise) ->
-          let res0 = from_stmt body in
-          let res1 =
-            match otherwise with
-            | None -> res0
-            | Some s -> join (from_stmt s) res0
-          in
-          List.fold_left
-            (fun res (_, _, s) -> join res (from_stmt s))
-            res1 catchers
-
+    let rec approx_stmt tenv s : AbsConfigSet.t =
+      let open AbsConfigSet in
+      let abs_of_expr = abnormal in
+      let configs =
+        match s.desc with
+        | S_Pass -> continuing
+        | S_Decl _ | S_Assign _ | S_Assert _ | S_Print _ ->
+            abnormal_or_continuing
+        | S_Unreachable -> abnormal
+        | S_Call call -> (
+            let opt_subprogram_entry =
+              IMap.find_opt call.name tenv.global.subprograms
+            in
+            match opt_subprogram_entry with
+            | Some (f, _) ->
+                if ASTUtils.is_noreturn f then abnormal
+                else abnormal_or_continuing
+            | None ->
+                assert (s.version = V0);
+                (* V0 subprograms in the shared pseudo-code. *)
+                top)
+        | S_Return _ -> abnormal_or_returning
+        | S_Throw _ -> abnormal
+        | S_Seq (s1, s2) ->
+            let configs1 = approx_stmt tenv s1 in
+            let configs2 = approx_stmt tenv s2 in
+            map_and_union
+              (fun c1 ->
+                match c1 with
+                | Abs_Continuing -> configs2
+                | _ -> abs_of_list [ c1 ])
+              configs1
+        | S_Cond (_, s1, s2) ->
+            let configs1 = approx_stmt tenv s1 in
+            let configs2 = approx_stmt tenv s2 in
+            union abs_of_expr (union configs1 configs2)
+        | S_Repeat (body, _, _) | S_For { body } | S_While (_, _, body) ->
+            let body_configs = approx_stmt tenv body in
+            union abs_of_expr body_configs
+        | S_Try (body, catchers, otherwise) ->
+            let body_abs_configs = approx_stmt tenv body in
+            let try_abs_configs =
+              match otherwise with
+              | None -> body_abs_configs
+              | Some s_otherwise ->
+                  union (approx_stmt tenv s_otherwise) body_abs_configs
+            in
+            List.fold_left
+              (fun res (_, _, c) -> union res (approx_stmt tenv c))
+              try_abs_configs catchers
+        | S_Pragma _ -> assert false
+      in
+      let () =
+        if false then
+          Format.eprintf "approx_stmt %a = %a@." PP.pp_stmt s pp configs
+      in
+      configs
     (* End *)
 
-    (** [check_stmt_interrupts name body] checks that the function named [name]
-        with the statement body [body] either: returns a value, throws an
-        exception, or calls [Unreachable()].
-        It executes only when [C.control_flow_analysis] is [true]. *)
-    let check_stmt_returns_or_throws name s () =
-      if C.control_flow_analysis then
-        match from_stmt s with
-        | AssertedNotInterrupt | Interrupt -> ()
-        | MayNotInterrupt -> fatal_from ~loc:s (Error.NonReturningFunction name)
+    (* Begin CheckControlFlow *)
+
+    (** Checks that:
+        1. when [f] has the [noreturn] - that every control flow path through
+          [body] terminates by either throwing an exception or a dynamic error;
+        2. when [f] is a function that does not have the [noreturn] - every control
+          flow path through [body] either throws an exception, returns a value,
+          or results in a dynamic error.
+        3. when [f] is a procedure - no check needed.
+    *)
+    let check_control_flow tenv (f : func) body =
+      let open AbsConfigSet in
+      let abs_configs = approx_stmt tenv body in
+      (* AllowedAbsConfigs( *)
+      let allowed_abs_configs, error_kind =
+        if ASTUtils.is_noreturn f then
+          (abnormal_or_continuing, Error.NoreturnViolation f.name)
+        else
+          match f.return_type with
+          | None -> (top, Error.NonReturningFunction f.name)
+          | Some _ -> (abnormal_or_returning, Error.NonReturningFunction f.name)
+      in
+      (* AllowedAbsConfigs) *)
+      if not (subset abs_configs allowed_abs_configs) then
+        let () =
+          if false then
+            Format.eprintf
+              "check_control_flow %s : allowed_abs_configs=%a, abs_configs=%a"
+              f.name pp allowed_abs_configs pp abs_configs
+        in
+        fatal_from ~loc:body error_kind
   end
+  (* End *)
 
   (* Begin Subprogram *)
   let annotate_subprogram (env : env) (f : AST.func) ses_func_sig :
@@ -3708,15 +3818,19 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let new_body, ses_body = try_annotate_block env body in
     let ses = SES.union ses_func_sig @@ SES.remove_locals ses_body in
+    let+ () =
+      if func_version f == V0 || C.fine_grained_side_effects then ok
+      else check_subprogram_purity ~loc:new_body f.qualifier ses
+    in
+    let ses = SES.set_purity_for_subprogram f.qualifier ses in
     let () =
       if false then
         Format.eprintf "@[<v 2>For program %s, I got side-effects:@ %a@]@."
           f.name SES.pp_print ses
     in
-    let+ () =
-      match f.return_type with
-      | None -> ok
-      | Some _ -> ControlFlow.check_stmt_returns_or_throws f.name new_body
+    let () =
+      if C.control_flow_analysis then
+        ControlFlowAnalysis.check_control_flow env f new_body
     in
     ({ f with body = SB_ASL new_body }, ses) |: TypingRule.Subprogram
   (* End *)
@@ -3781,7 +3895,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let declare_one_func ~loc (func_sig : AST.func) ses_func_sig env =
     let env1, name' =
       best_effort (env, func_sig.name) @@ fun _ ->
-      Fn.add_new_func ~loc env func_sig.name func_sig.args
+      Fn.add_new_func ~loc env func_sig.name func_sig.qualifier func_sig.args
         func_sig.subprogram_type
     in
     let () =
@@ -3868,7 +3982,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       (* AnnotateExtraFields) *)
     in
     let t2, ses_t = annotate_type ~decl:true ~loc env1 t1 in
-    let time_frame = SES.max_time_frame ses_t in
+    let time_frame =
+      if SES.is_pure ses_t then TimeFrame.Constant else TimeFrame.Execution
+    in
     let env2 = add_type name t2 time_frame env1 in
     let new_tenv =
       match t2.desc with
@@ -3895,10 +4011,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let { keyword; initial_value; ty = ty_opt; name } = gsd in
     let+ () = check_var_not_in_genv ~loc genv name in
     let env = with_empty_local genv in
-    let target_time_frame =
+    let check_purity =
       match keyword with
-      | GDK_Constant | GDK_Config -> TimeFrame.Constant
-      | GDK_Let | GDK_Var -> TimeFrame.Execution
+      | GDK_Constant | GDK_Config -> check_is_pure
+      | GDK_Let | GDK_Var -> fun ~loc:_ _ -> ok
     in
     let typed_initial_value, ty_opt', declared_t =
       (* AnnotateTyOptInitialValue( *)
@@ -3916,16 +4032,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let+ () = check_type_satisfies ~loc env t_e t' in
           let+ () =
             let fake_e_for_error = E_ATC (e, t') |> here in
-            check_is_time_frame ~loc target_time_frame
-              (t', fake_e_for_error, SES.union ses_e ses_t)
+            check_purity ~loc (t', fake_e_for_error, SES.union ses_e ses_t)
           in
           (typed_e, Some t', t')
       | Some t, None ->
           let t', ses_t = annotate_type ~loc env t in
           let+ () =
             let fake_e_for_error = E_ATC (E_Var "-" |> here, t') |> here in
-            check_is_time_frame ~loc target_time_frame
-              (t', fake_e_for_error, ses_t)
+            check_purity ~loc (t', fake_e_for_error, ses_t)
           in
           let e' = base_value ~loc env t' in
           ((t', e', SES.empty), Some t', t')
@@ -3933,7 +4047,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let ((t_e, _e', _ses_e) as typed_e) = annotate_expr env e in
           let+ () = check_no_precision_loss ~loc t_e in
           let+ () = check_is_not_collection ~loc env t_e in
-          let+ () = check_is_time_frame ~loc target_time_frame typed_e in
+          let+ () = check_purity ~loc typed_e in
           (typed_e, None, t_e)
       | None, None -> fatal_from ~loc UnrespectedParserInvariant
       (* AnnotateTyOptInitialValue) *)
@@ -4178,7 +4292,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let () = check_recursive_limit_annotations ds sess in
     let env3 =
-      let sess_prop = propagate_recursive_calls_sess sess in
+      let sess_prop =
+        if C.fine_grained_side_effects then propagate_recursive_calls_sess sess
+        else sess
+      in
       (* AddSubprogramDecls( *)
       List.fold_left
         (fun env2 ((new_f : func), ses_f) ->
@@ -4196,6 +4313,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   end = struct
     let signatures_match { desc = func1 } { desc = func2 } =
       let ty_equal = type_equal (fun _ _ -> false) in
+      let qualifiers_match = qualifier_equal func1.qualifier func2.qualifier in
       let args_match =
         list_equal
           (fun (id1, t1) (id2, t2) -> String.equal id1 id2 && ty_equal t1 t2)
@@ -4211,7 +4329,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         Option.equal ty_equal func1.return_type func2.return_type
       in
       String.equal func1.name func2.name
-      && args_match && parameters_match && returns_match
+      && qualifiers_match && args_match && parameters_match && returns_match
 
     let check_implementations_unique impls () =
       let rec scan l =
@@ -4321,6 +4439,7 @@ module TypeCheckDefault = Annotate (struct
   let output_format = Error.HumanReadable
   let print_typed = false
   let use_field_getter_extension = false
+  let fine_grained_side_effects = false
   let use_conflicting_side_effects_extension = false
   let override_mode = Permissive
   let control_flow_analysis = true

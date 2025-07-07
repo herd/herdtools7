@@ -331,10 +331,9 @@ since it contains recursive type declarations.
         $(\genvtwo, \lenvtwo)$ yields $(\vnew_\vf, \vsesp_\vf)$\ProseOrTypeError;
   \item define $\newdecls$ as the list of $\DFunc(\vnew_\vf)$ for all $(\Ignore, \vf, \Ignore)$ in $\envandfstwo$;
   \item define $\vsess$ as the list of $(\vnew_\vf, \vsesp_\vf)$ for all $(\Ignore, \vf, \Ignore)$ in $\envandfstwo$;
-  \item applying $\propagaterecursivecallssess$ on $\vsess$ yields $\vsessprop$;
   \item define $\tenvtwo$ as the environment with $\genvtwo$ as its static global environment
         and an empty static local environment;
-  \item applying $\addsubprogramdecls$ to $\tenvtwo$ and $\vsessprop$ yields $\tenvthree$;
+  \item applying $\addsubprogramdecls$ to $\tenvtwo$ and $\vsess$ yields $\tenvthree$;
   \item define $\newtenv$ as the global static environment of $\tenvthree$.
 \end{itemize}
 
@@ -353,9 +352,8 @@ since it contains recursive type declarations.
   }\\\\
   \newdecls \eqdef [(\Ignore, \vf, \Ignore)\in\envandfstwo: \DFunc(\vnew_\vf)]\\
   \vsess \eqdef [(\Ignore, \vf, \Ignore)\in\envandfstwo: (\vnew_\vf, \vsesp_\vf)]\\
-  \propagaterecursivecallssess(\vsess) \typearrow \vsessprop\\
   \tenvtwo \eqdef (\genvtwo, \emptyfunc)\\
-  \addsubprogramdecls(\tenvtwo, \vsessprop) \typearrow \tenvthree
+  \addsubprogramdecls(\tenvtwo, \vsess) \typearrow \tenvthree
 }{
   \typecheckmutuallyrec(\genv, \decls) \typearrow (\newdecls, \overname{G^\tenvthree}{\newgenv})
 }
@@ -550,146 +548,6 @@ and the subprogram with the \realtypeterm{} argument is named \verb|increment-1|
 }
 \end{mathpar}
 
-\TypingRuleDef{PropagateRecursiveCallsSess}
-\hypertarget{def-propagaterecursivecallssess}{}
-The helper relation
-\[
-\propagaterecursivecallssess(\overname{(\func\times\TSideEffectSet)^*}{\vsess})
-\aslrel
-\overname{(\func\times\TSideEffectSet)^*}{\vsessnew}
-\]
-accepts a list that associates $\func$ AST nodes to \sideeffectdescriptorsetsterm\ and
-generates a list that associates each $\func$ AST nodes to the union of all
-\sideeffectdescriptorsterm\ associated with the
-recursive functions it may transitively call.
-
-We assume each $\func$ AST node occurs in exactly one pair of $\vsess$.
-
-\ExampleDef{Propagating Recursive Call Side Effects}
-Consider the specification in \listingref{PropagateRecursiveCallsSess}.
-\ASLListing{Propagating recursive call side effects}{PropagateRecursiveCallsSess}{\typingtests/TypingRule.PropagateRecursiveCallsSess.asl}
-
-\TypingRuleRef{TypeCheckMutuallyRec} applies $\propagaterecursivecallssess$
-to the following subprograms and their associated \sideeffectdescriptorsterm{} are inferred for each subprogram
-separately ($\funcidtoses$ in the rules below):
-\begin{center}
-\[
-\left[
-\begin{array}{ll}
-\countgone, &  \left\{\begin{array}{l}
-                \ReadGlobal(\vgone, \timeframeexecution, \False),\\
-                \WriteGlobal(\vgone),\\
-                \RecursiveCall(\countgtwo)
-                \end{array}\right\}\\
-&,\\
-\countgtwo, & \left\{\begin{array}{l}
-                \ReadGlobal(\vgtwo, \timeframeexecution, \False),\\
-                \WriteGlobal(\vgtwo),\\
-                \ReadGlobal(\vgthree, \timeframeexecution, \False),\\
-                \RecursiveCall(\vgone)\\
-                \end{array}\right\}
-\end{array}
-\right]
-\]
-\end{center}
-
-$\propagaterecursivecallssess$ then infers the following relation between the subprograms
-based on their associated \sideeffectdescriptorsetsterm{} ($\callgraph$ in the rules below):
-\begin{center}
-\begin{tabular}{lcl}
-$(\countgone$   &,& $\countgtwo)$\\
-$(\countgtwo$   &,& $\countgone)$
-\end{tabular}
-\end{center}
-
-$\propagaterecursivecallssess$ then computes the transitive closure of the relation above
-($\transitivecallgraph$ in the rules below):
-\begin{center}
-\begin{tabular}{lcl}
-$(\countgone$   &,& $\countgone)$\\
-$(\countgone$   &,& $\countgtwo)$\\
-$(\countgtwo$   &,& $\countgone)$\\
-$(\countgtwo$   &,& $\countgtwo)$
-\end{tabular}
-\end{center}
-
-Then, the \sideeffectdescriptorterm{} are accumulated, excluding \RecursiveCallTerms,
-which yields the final result:
-\begin{center}
-\[
-\left[
-\begin{array}{ll}
-\countgone, &  \left\{\begin{array}{l}
-                \ReadGlobal(\vgone, \timeframeexecution, \False),\\
-                \WriteGlobal(\vgone),\\
-                \ReadGlobal(\vgtwo, \timeframeexecution, \False),\\
-                \WriteGlobal(\vgtwo),\\
-                \ReadGlobal(\vgthree, \timeframeexecution, \False),\\
-                \WriteGlobal(\vgthree),\\
-                \end{array}\right\}\\
-&,\\
-\countgtwo, & \left\{\begin{array}{l}
-                \ReadGlobal(\vgone, \timeframeexecution, \False),\\
-                \WriteGlobal(\vgone),\\
-                \ReadGlobal(\vgtwo, \timeframeexecution, \False),\\
-                \WriteGlobal(\vgtwo),\\
-                \ReadGlobal(\vgthree, \timeframeexecution, \False),\\
-                \WriteGlobal(\vgthree),\\
-                \end{array}\right\}
-\end{array}
-\right]
-\]
-\end{center}
-
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item \Proseeqdef{$\funcidtoses$}{the function that maps a subprogram name of $\vf$ to its associated \sideeffectdescriptorsetsterm{}
-        $\vs$, for each pair $(\vf, \vs)$ in $\vsess$};
-  \item \Proseeqdef{$\callgraph$}{the relation between subprogram names $\vfone$ and $\vftwo$ such that
-        the \sideeffectdescriptorsetsterm{} associated with $\vfone$ includes the \RecursiveCallTerm{} for $\vftwo$};
-  \item \Proseeqdef{$\transitivecallgraph$}{the transitive closure of $\callgraph$};
-  \item \Proseeqdef{$\funcidtosesminusrec$}{the function where for each mapping of subprogram name $\id$
-        to \sideeffectdescriptorsetsterm{} $\vs$ in $\funcidtoses$, there exists a mapping of $\id$
-        to $\vs$ with all \RecursiveCallTerms{} removed};
-  \item \Proseeqdef{$\callees$}{the function where for each pair $(\vf, \vses)$ in $\vsess$ there exists a mapping
-        of $\vf$ to the set of subprogram names such that for each such subprogram name $\vsucc$,
-        $(\vf.\funcname, \vsucc)$ is a member of $\transitivecallgraph$};
-  \item \Proseeqdef{$\vsessnew$}{the list constructed from each pair $(\vf, \vs)$ in $\vsess$
-        by associating $\vf$ to the union of \sideeffectdescriptorsetsterm{} given by the \sideeffectdescriptorsetsterm{}
-        of $\funcidtosesminusrec(\vc)$ for each successor of $\vf$ in $\callees$, with all \RecursiveCallTerms{} removed}.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \funcidtoses \eqdef \{ \vf.\funcname \mapsto \vs \;|\; (\vf, \vs) \in \vsess \}\\
-  \callgraph \eqdef \{ (\vfone, \vftwo) \;|\; (\vfone, \vses) \in \funcidtoses \land \RecursiveCall(\vftwo) \in \vses\}\\
-  \transitivecallgraph \eqdef \graphtransitive{\callgraph}\\
-  {
-  \begin{array}{l}
-  \funcidtosesminusrec \eqdef \\ \{ \id \mapsto \vs \setminus \RecursiveCall(\Identifiers) \;|\; (\id, \vs) \in \funcgraph(\funcidtoses)\}
-  \end{array}
-  }\\
-  {
-  \begin{array}{l}
-  \callees \eqdef \\
-  \{ \vf \mapsto \{\vsucc \;|\; (\vf.\funcname, \vsucc) \in \transitivecallgraph\} \;|\; (\vf, \vses) \in \vsess \}
-  \end{array}
-  }\\
-  {
-  \begin{array}{l}
-  \vsessnew \eqdef \\
-  \left[ (\vf, \vs) \in \vsess :
-  \left(\vf, \bigcup_{\vc \in \callees(\vf)} \funcidtosesminusrec(\vc) \setminus \RecursiveCall(\Identifiers)\right)
-  \right]
-  \end{array}
-  }
-}{
-  \propagaterecursivecallssess(\vsess) \typearrow \vsessnew
-}
-\end{mathpar}
-
 \section{Overriding Subprograms\label{sec:Overriding}}
 This section defines how to override subprograms in a specification.
 In particular, a subprogram marked by \texttt{impdef} can be overridden by a subprogram marked by \\
@@ -700,6 +558,7 @@ An overriding \Proseimplementationsubprogram{} subprogram \\
 must match the overridden \Proseimpdefsubprogram{} subprogram in all of the following:
 \begin{itemize}
   \item name of subprogram;
+  \item qualifier;
   \item number, names, types, and order of arguments;
   \item number, names, types, and order of parameters;
   \item return type.
@@ -835,6 +694,7 @@ See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
 \AllApply
 \begin{itemize}
   \item checking that the names of $\vfuncone$ and $\vfunctwo$ are equal yields $\True$ \ProseTerminateAs{\False};
+  \item checking that the qualifiers of $\vfuncone$ and $\vfunctwo$ are equal yields $\True$ \ProseTerminateAs{\False};
   \item checking that the declared arguments of $\vfuncone$ and $\vfunctwo$ are equal in both name and type yields $\True$ \ProseTerminateAs{\False};
   \item checking that the declared parameters of $\vfuncone$ and $\vfunctwo$ are equal in both name and type yields $\True$ \ProseTerminateAs{\False};
   \item checking that the return types of $\vfuncone$ and $\vfunctwo$ are equal yields $\True$ \ProseTerminateAs{\False}.
@@ -844,6 +704,7 @@ See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
 \begin{mathpar}
   \inferrule{
     \booltrans{\vfuncone.\funcname = \vfunctwo.\funcname} \booltransarrow \True \terminateas \False \\
+    \booltrans{\vfuncone.\funcqualifier = \vfunctwo.\funcqualifier} \booltransarrow \True \terminateas \False \\
     \equallength(\vfuncone.\funcargs, \vfunctwo.\funcargs) \typearrow \True \terminateas \False \\
     {
     \begin{array}{r}
@@ -2210,7 +2071,7 @@ and the identifiers used by them, appearing in comments to their right.
 
   \item \AllApplyCase{s\_unreachable}
   \begin{itemize}
-    \item $\vs$ is an \texttt{Unreachable()};
+    \item $\vs$ is an \unreachablestatementterm{};
     \item define $\ids$ as the empty set.
   \end{itemize}
 \end{itemize}

@@ -24,19 +24,19 @@ begin
   };
 end;
 
-func access_subfieldA(obj:MyRecord) => boolean
+readonly func access_subfieldA(obj:MyRecord) => boolean
 begin
   return obj.fieldB.subfieldA;
 end;
 
-func incr_subfieldB(obj:MyRecord) => MyRecord
+readonly func incr_subfieldB(obj:MyRecord) => MyRecord
 begin
   var obj2 = obj;
   obj2.fieldB.subfieldB = obj2.fieldB.subfieldB + 1;
   return obj2;
 end;
 
-func set_fieldC(obj:MyRecord, val:integer) => MyRecord
+readonly func set_fieldC(obj:MyRecord, val:integer) => MyRecord
 begin
   var obj2 = obj;
   obj2.fieldC = val;

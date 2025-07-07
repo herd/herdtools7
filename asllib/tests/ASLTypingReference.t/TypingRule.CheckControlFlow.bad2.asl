@@ -1,13 +1,11 @@
 
-type invalid_state of exception;
+type invalid_state of exception{-};
 
-func all_terminating_paths_correct{N}(v: bits(N), flag: boolean) => bits(N)
+func incorrect_terminating_path{N}(v: bits(N), flag: boolean) => bits(N)
 begin
     if v != Zeros{N} then
         if flag then
             return Ones{N} XOR v;
-        else
-            Unreachable();
         end;
     else
         if flag then

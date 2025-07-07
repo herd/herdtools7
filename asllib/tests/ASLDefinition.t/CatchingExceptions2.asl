@@ -1,4 +1,4 @@
-type BAD_OPCODE of exception;
+type BAD_OPCODE of exception{-};
 
 func decode_instruction(op: bits(32))
 begin
@@ -17,7 +17,7 @@ begin
     end;
 end;
 
-type IsExceptionTaken of exception;
+type IsExceptionTaken of exception{-};
 
 func handle_exception()
 begin

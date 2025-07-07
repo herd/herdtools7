@@ -1,4 +1,4 @@
-func f () => integer
+pure func f () => integer
 begin
   var x : integer = 0;
   for i = 0 to 5 do

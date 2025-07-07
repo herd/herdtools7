@@ -31,12 +31,10 @@ module type CONFIG = sig
     val allow_double_underscore : bool
     val allow_unknown : bool
     val allow_single_arrows : bool
+    val allow_function_like_statements : bool
 end
 
-let reserved_keywords = [
-    "pure";
-    "readonly";
-]
+let reserved_keywords = []
 
 let is_reserved_keyword: string -> bool =
   let tbl: (string, unit) Hashtbl.t = Hashtbl.create (List.length reserved_keywords) in
@@ -111,6 +109,7 @@ let token_of_string =
  | "MOD"                -> s MOD
  | "MUL"                -> s MUL
  | "NEQ"                -> s NEQ
+ | "NORETURN"           -> s NORETURN
  | "NOT"                -> s NOT
  | "OF"                 -> s OF
  | "OR"                 -> s OR
@@ -122,9 +121,11 @@ let token_of_string =
  | "PRAGMA"             -> s PRAGMA
  | "PRINTLN"            -> s PRINTLN
  | "PRINT"              -> s PRINT
+ | "PURE"               -> s PURE
  | "RBRACE"             -> s RBRACE
  | "RBRACKET"           -> s RBRACKET
  | "RDIV"               -> s RDIV
+ | "READONLY"           -> s READONLY
  | "REAL"               -> s REAL
  | "RECORD"             -> s RECORD
  | "RECURSELIMIT"       -> s RECURSELIMIT
@@ -230,6 +231,7 @@ let token_to_symbol = function
   | LET                -> "let"
   | LOOPLIMIT          -> "looplimit"
   | MOD                -> "MOD"
+  | NORETURN           -> "noreturn"
   | NOT                -> "NOT"
   | OF                 -> "of"
   | OR                 -> "OR"
@@ -238,6 +240,8 @@ let token_to_symbol = function
   | PRAGMA             -> "pragma"
   | PRINTLN            -> "println"
   | PRINT              -> "print"
+  | PURE               -> "pure"
+  | READONLY           -> "readonly"
   | REAL               -> "real"
   | RECORD             -> "record"
   | RECURSELIMIT       -> "recurselimit"
@@ -252,7 +256,7 @@ let token_to_symbol = function
   | TRY                -> "try"
   | TYPE               -> "type"
   | ARBITRARY          -> "ARBITRARY"
-  | UNREACHABLE        -> "Unreachable"
+  | UNREACHABLE        -> "unreachable"
   | UNTIL              -> "until"
   | VAR                -> "var"
   | WHEN               -> "when"
@@ -329,6 +333,7 @@ let tr_name s = match s with
 | "looplimit"     -> LOOPLIMIT
 | "MOD"           -> MOD
 | "NOT"           -> NOT
+| "noreturn"      -> NORETURN
 | "of"            -> OF
 | "OR"            -> OR
 | "otherwise"     -> OTHERWISE
@@ -336,6 +341,8 @@ let tr_name s = match s with
 | "pragma"        -> PRAGMA
 | "println"       -> PRINTLN
 | "print"         -> PRINT
+| "pure"          -> PURE
+| "readonly"      -> READONLY
 | "real"          -> REAL
 | "record"        -> RECORD
 | "recurselimit"  -> RECURSELIMIT
@@ -354,7 +361,10 @@ let tr_name s = match s with
     if Config.allow_unknown then ARBITRARY
     else fatal_unknown_pos (Error.ObsoleteSyntax s)
 | "ARBITRARY"     -> ARBITRARY
-| "Unreachable"   -> UNREACHABLE
+| "Unreachable"   ->
+    if Config.allow_function_like_statements then UNREACHABLE
+    else fatal_unknown_pos (Error.ObsoleteSyntax s)
+| "unreachable"   -> UNREACHABLE
 | "until"         -> UNTIL
 | "var"           -> VAR
 | "when"          -> WHEN

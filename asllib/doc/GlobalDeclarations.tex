@@ -33,9 +33,10 @@ but not \verb|other_tool_op| and warn about it.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Subprogram declarations:
 \begin{flalign*}
-\Ndecl  \derives \ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nfuncbody &\\
-|\ & \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
-|\ & \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbeq \parsesep \Tidentifier \parsesep \Nasty &\\
+\Ndecl  \derives \ & \Nqualifier \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep &\\
+    &\wrappedline \Nrecurselimit \parsesep \Nfuncbody\\
+|\ & \Nqualifier \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
+|\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbeq \parsesep \Tidentifier \parsesep \Nasty &\\
    & \wrappedline\ \Naccessorbody &\\
 \Naccessorbody \derives \ & \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon&
 \end{flalign*}
@@ -135,8 +136,7 @@ All global declarations in \listingref{TypecheckDecl} are well-typed.
           yields the environment $\tenvone$, a subprogram definition $\vfone$,
           and a \sideeffectdescriptorsetsterm{} $\vsesfuncsig$\ProseOrTypeError;
     \item \Proseannotatesubprogram{$\tenv$}{$\vfone$}{\vsesfuncsig}{$\newf$}{$\vsesf$}\ProseOrTypeError;
-    \item \Proseeqdef{$\vsesfnorecursives$}{$\vsesf$ with every \RecursiveCallTerm{} removed};
-    \item applying $\addsubprogram$ to $\tenvone$, $\newf.\funcname$, $\newf$, and $\vsesfnorecursives$ yields $\newtenv$;
+    \item applying $\addsubprogram$ to $\tenvone$, $\newf.\funcname$, $\newf$, and $\vsesf$ yields $\newtenv$;
     \item define $\newd$ as the subprogram AST node with $\newf$, that is, $\DFunc(\newf)$;
     \item define $\newgenv$ as the global component of $\newtenv$.
   \end{itemize}
@@ -166,8 +166,7 @@ All global declarations in \listingref{TypecheckDecl} are well-typed.
 \inferrule[func]{
   \annotateanddeclarefunc(\genv, \vf) \typearrow (\tenvone, \vfone, \vsesfuncsig) \OrTypeError\\\\
   \annotatesubprogram(\tenvone, \vfone, \vsesfuncsig) \typearrow (\newf,\vsesf) \OrTypeError\\\\
-  \vsesfnorecursives \eqdef \vsesf \setminus \{ \vs \;|\; \configdomain{\vs} = \RecursiveCall \}\\
-  \addsubprogram(\tenvone, \newf.\funcname, \newf, \vsesfnorecursives) \typearrow \newtenv
+  \addsubprogram(\tenvone, \newf.\funcname, \newf, \vsesf) \typearrow \newtenv
 }{
   \typecheckdecl(\genv, \overname{\DFunc(\vf)}{\vd})
   \typearrow (\overname{\DFunc(\newf)}{\newd}, \overname{G^\newtenv}{\newgenv})
@@ -222,373 +221,379 @@ and an example of a well-typed function --- \verb|flip_bits|.
 \begin{itemize}
   \item annotating $\vf.\funcbody$ in $\tenv$ as per \TypingRuleRef{Block} yields \\
         $(\newbody, \vsesbody)$\ProseOrTypeError;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{procedure}
-    \begin{itemize}
-      \item $\vf.\funcreturntype$ is $\None$;
-    \end{itemize}
-
-    \item \AllApplyCase{function}
-    \begin{itemize}
-      \item $\vf.\funcreturntype$ is not $\None$;
-      \item applying $\checkstmtreturnsorthrows$ to $\newbody$ yields $\True$\ProseOrTypeError;
-    \end{itemize}
-  \end{itemize}
+  \item applying $\checkcontrolflow$ to $\tenv$, $\vf$, and $\newbody$ yields $\True$\ProseOrTypeError;
   \item $\vfp$ is $\vf$ with the subprogram body substituted with $\newbody$;
-  \item \Proseeqdef{$\vses$}{the union of $\vsesfuncsig$ and $\vsesbody$ with every instance of a
-        \ReadLocalTerm\ or a \WriteLocalTerm\ removed}.
+  \item \Proseeqdef{$\vsesp$}{the union of $\vsesfuncsig$ and $\vsesbody$ with every \LocalEffectTerm{} removed};
+  \item checking that the \sideeffectsetterm{} $\vsesp$ adheres to the subprogram's \purity{} qualifier $\vf.\funcqualifier$ yields $\True$\ProseOrTypeError;
+  \item the \sideeffectsetterm{} corresponding to $\vf.\funcqualifier$ (via \\
+        $\sesforsubprogram$) is $\vses$.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[procedure]{
+\inferrule{
   \annotateblock{\tenv, \vf.\funcbody} \typearrow (\newbody, \vsesbody) \OrTypeError\\\\
-  \commonprefixline\\\\
-  \vf.\funcreturntype = \None\\\\
-  \commonsuffixline\\\\
+  \checkcontrolflow(\tenv, \vf, \newbody) \typearrow \True \OrTypeError\\\\
   \vfp \eqdef \substrecordfield(\vf, \funcbody, \newbody)\\
-  \vses \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} \in \{\ReadLocal, \WriteLocal\} \})
+  \vsesp \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} = \LocalEffect \}) \\
+  \checksubprogrampurity(\vf.\funcqualifier, \vsesp) \typearrow \True \OrTypeError \\
+  \sesforsubprogram(\vf.\funcqualifier) \typearrow \vses
 }{
   \annotatesubprogram(\tenv, \vf, \vsesfuncsig) \typearrow (\vfp, \vses)
 }
 \end{mathpar}
 
-\begin{mathpar}
-\inferrule[function]{
-  \annotateblock{\tenv, \vf.\funcbody} \typearrow (\newbody, \vsesbody) \OrTypeError\\\\
-  \commonprefixline\\\\
-  \vf.\funcreturntype \neq \None\\
-  \checkstmtreturnsorthrows(\newbody) \typearrow \True \OrTypeError\\\\
-  \commonsuffixline\\\\
-  \vfp \eqdef \substrecordfield(\vf, \funcbody, \newbody)\\
-  \vses \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} \in \{\ReadLocal, \WriteLocal\} \})
-}{
-  \annotatesubprogram(\tenv, \vf, \vsesfuncsig) \typearrow (\vfp, \vses)
-}
-\end{mathpar}
 \identi{GHGK} \identr{HWTV} \identr{SCHV} \identr{VDPC}
 \identr{TJKQ} \identi{LFJZ} \identi{BZVB} \identi{RQQB}
 \CodeSubsection{\SubprogramBegin}{\SubprogramEnd}{../Typing.ml}
 
-\TypingRuleDef{CheckStmtReturnsOrThrows}
-\hypertarget{def-checkstmtreturnsorthrows}{}
-The helper function
+\TypingRuleDef{CheckControlFlow}
+\hypertarget{def-checkcontrolflow}{}
+The function
 \[
-  \checkstmtreturnsorthrows(\overname{\stmt}{\vs})
+  \checkcontrolflow(
+    \overname{\staticenvs}{\tenv} \aslsep
+    \overname{\func}{\vf} \aslsep
+    \overname{\stmt}{\vbody})
   \typearrow \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-checks whether all control-flow paths defined by the statement $\vs$ terminate by either
-a statement returning a value, a \texttt{throw} statement, or the \texttt{Unreachable()} statement.
+checks whether the annotated body statement $\vs$ of the function definition $\vf$
+obeys the control-flow requirements in the static environment $\tenv$.
 
 \ExampleDef{Ensuring All Terminating Paths Terminate Correctly}
-In \listingref{CheckStmtReturnsOrThrows}, every evaluation of the function body for\\
+In \listingref{CheckControlFlow}, every evaluation of the function body for\\
 \verb|all_terminating_paths_correct| terminates by either returning
 a value, throwing an exception, or evaluating an \unreachablestatementterm.
-\ASLListing{All terminating paths terminate correctly}{CheckStmtReturnsOrThrows}{\typingtests/TypingRule.CheckStmtReturnsOrThrows.asl}
+\ASLListing{All terminating paths terminate correctly}{CheckControlFlow}{\typingtests/TypingRule.CheckControlFlow.asl}
 
-In \listingref{CheckStmtReturnsOrThrows-bad}, the path through the function body
+In \listingref{CheckControlFlow-bad2}, the path through the function body
 for \verb|incorrect_terminating_path|
 where \verb|v != Zeros{N}| evaluates to
 $\True$ and \verb|flag| evaluates to $\False$ terminates without
 returning a value, throwing an exception, or evaluating an \unreachablestatementterm,
 which is a \typingerrorterm.
-\ASLListing{An incorrectly terminating path}{CheckStmtReturnsOrThrows-bad}{\typingtests/TypingRule.CheckStmtReturnsOrThrows.bad.asl}
+\ASLListing{An incorrectly terminating path}{CheckControlFlow-bad2}{\typingtests/TypingRule.CheckControlFlow.bad2.asl}
+
+\ExampleDef{Illegally returning from a \texttt{noreturn} Subprogram}
+The specification in \listingref{CheckControlFlow-bad}
+is ill-typed as \verb|returning| is declared with the \verb|noreturn|
+qualifier, yet it contains the \returnstatementsterm{} \verb|return 0;|.
+\ASLListing{Illegally returning from a \texttt{noreturn} subprogram}{CheckControlFlow-bad}{\typingtests/TypingRule.CheckControlFlow.bad.asl}
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item applying $\controlflowfromstmt$ to $\vs$ yields a \controlflowsymbolterm\ $\vctrlflow$;
-  \item checking that $\vctrlflow$ is different from $\maynotinterrupt$ yields $\True$\ProseTerminateAs{\BadSubprogramDeclaration};
+  \item applying $\approxstmt$ to $\tenv$ and $\vbody$ yields $\absconfigs$;
+  \item checking that $\absconfigs$ is a subset of the set of \Proseabstractconfigurations{}
+        allowed for $\vf$, as determined by $\allowedabsconfigs$ yields $\True$\ProseTerminateAs{\BadSubprogramDeclaration}.
   \item the result is $\True$.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \controlflowfromstmt(\vs) \typearrow \vctrlflow\\
-  \checktrans{\vctrlflow \neq \maynotinterrupt}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError
+  \approxstmt(\tenv, \vbody) \typearrow \absconfigs\\
+  \checktrans{\absconfigs \subseteq \allowedabsconfigs(\vf)}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError
 }{
-  \checkstmtreturnsorthrows(\vs) \typearrow \True
+  \checkcontrolflow(\tenv, \vf, \vbody) \typearrow \True
 }
 \end{mathpar}
 
-\TypingRuleDef{ControlFlowFromStmt}
-\hypertarget{def-controlflowsymbolterm}{}
-\hypertarget{def-controlflowstate}{}
-We define \controlflowsymbolsterm\ as follows:
+\TypingRuleDef{AllowedAbsConfigs}
+\hypertarget{def-allowedabsconfigs}{}
+The function
 \[
-  \controlflowstate \eqdef \{\assertednotinterrupt, \interrupt, \maynotinterrupt\}
+  \allowedabsconfigs(\overname{\func}{\vf})
+  \typearrow \overname{\pow{\{\AbsContinuing, \AbsReturning, \AbsAbnormal\}}}{\absconfigs}
 \]
-\hypertarget{def-controlflowleq}{}
-\controlflowsymbolsterm\ are totally ordered via the relation $\controlflowleq$, defined as follows:
-\[
-  \assertednotinterrupt\ \controlflowleq \interrupt \controlflowleq \maynotinterrupt \enspace.
-\]
+determines the set of \Proseabstractconfigurations{} allowed for the function definition $\vf$,
+yielding the result in $\absconfigs$.
 
-\ExampleDef{Determining the Control-flow State of Statements}
-In \listingref{ControlFlowFromStmt}, the function bodies of all functions
-terminate by either returning a value, throwing an exception, or executing
-the \unreachablestatementterm.
-\ASLListing{Determining the control-flow state of statements}{ControlFlowFromStmt}{\typingtests/TypingRule.ControlFlowFromStmt.asl}
+\ExampleDef{The Allowed Abstract Configurations for a Subprogram}
+The set of \Proseabstractconfigurations{} allowed for the subprogram \verb|all_terminating_paths_correct|
+in \listingref{CheckControlFlow} is $\{\AbsAbnormal, \AbsReturning\}$, since it is
+a function.
 
-In \listingref{ControlFlowFromStmt-bad1}, the function body of \verb|loop_forever|
-is ill-typed, since the conservative analysis of \TypingRuleRef{ControlFlowFromStmt}
-cannot determine that the \whilestatementterm{} never terminates.
-To make the function body well-typed, another statement following the loop
-can be added, for example, an \unreachablestatementterm.
-\ASLListing{An ill-typed function body}{ControlFlowFromStmt-bad1}{\typingtests/TypingRule.ControlFlowFromStmt.bad1.asl}
-
-\hypertarget{def-controlflowfromstmt}{}
-The helper function
-\[
-  \controlflowfromstmt(\overname{\stmt}{\vs})
-  \typearrow \overname{\controlflowstate}{\vctrlflow}
-\]
-statically analyzes the statement $\vs$
-and determines the \controlflowsymbolterm\ $\vctrlflow$ to be one of the following:
-\hypertarget{def-assertednotinterrupt}{}
-\begin{description}
-  \item[$\assertednotinterrupt$] evaluating $\vs$ in any environment will evaluate \texttt{Unreachable()};
-  \hypertarget{def-interrupt}{}
-  \item[$\interrupt$] evaluating $\vs$ in any environment will \underline{always} end by either evaluating
-      a return statement with an expression,
-      or evaluating a \texttt{throw} statement;
-  \hypertarget{def-maynotinterrupt}{}
-  \item[$\maynotinterrupt$] evaluating $\vs$ in any environment might not end by evaluating
-      a \texttt{return} statement with an expression or a \texttt{throw} statement.
-\end{description}
+The set of \Proseabstractconfigurations{} allowed for the subprogram \verb|returning|
+is in \listingref{CheckControlFlow-bad} is $\{\AbsAbnormal\}$, since it is qualified
+by \verb|noreturn|.
 
 \ProseParagraph
 \OneApplies
 \begin{itemize}
-  \item \AllApplyCase{falls\_through}
+  \item \AllApplyCase{noreturn}
   \begin{itemize}
-    \item the AST label of $\vs$ is $\SPass$, $\SDecl$, $\SAssign$, $\SAssert$, $\SCall$, $\SPrint$ or $\SPragma$;
-    \item $\vctrlflow$ is $\maynotinterrupt$;
+    \item $\vf$ is qualified by \verb|noreturn|;
+    \item \Proseeqdef{$\absconfigs$}{the set consisting of $\AbsContinuing$ and \\
+          $\AbsAbnormal$}.
   \end{itemize}
 
-  \item \AllApplyCase{unreachable}
+  \item \AllApplyCase{returning\_proc}
   \begin{itemize}
-    \item $\vs$ is $\SUnreachable$;
-    \item $\vctrlflow$ is $\assertednotinterrupt$;
+    \item $\vf$ is not qualified by \verb|noreturn|;
+    \item $\vf$ is a procedure;
+    \item \Proseeqdef{$\absconfigs$}{the set consisting of $\AbsContinuing$, $\AbsReturning$, $\AbsAbnormal$}.
   \end{itemize}
 
-  \item \AllApplyCase{return\_throw}
+  \item \AllApplyCase{func}
   \begin{itemize}
-    \item the AST label of $\vs$ is either $\SReturn$ or $\SThrow$;
-    \item $\vctrlflow$ is $\interrupt$;
-  \end{itemize}
-
-  \item \AllApplyCase{s\_seq}
-  \begin{itemize}
-    \item $\vs$ is the \sequencingstatementterm\ for $\vsone$ and $\vstwo$;
-    \item applying $\controlflowfromstmt$ to $\vsone$ yields $\vctrlflowone$;
-    \item applying $\controlflowfromstmt$ to $\vstwo$ yields $\vctrlflowtwo$;
-    \item applying $\controlflowseq$ to $\vctrlflowone$ and $\vctrlflowtwo$ yields $\vctrlflow$.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_cond}
-  \begin{itemize}
-    \item $\vs$ is the \conditionalstatementterm\ for an expression and statements $\vsone$ and $\vstwo$;
-    \item applying $\controlflowfromstmt$ to $\vsone$ yields $\vctrlflowone$;
-    \item applying $\controlflowfromstmt$ to $\vstwo$ yields $\vctrlflowtwo$;
-    \item applying $\controlflowjoin$ to $\vctrlflowone$ and $\vctrlflowtwo$ yields $\vctrlflow$.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_while\_for}
-  \begin{itemize}
-    \item $\vs$ is either a \whilestatementterm\ or a \forstatementterm;
-    \item define $\vctrlflow$ as $\maynotinterrupt$.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_repeat}
-  \begin{itemize}
-    \item $\vs$ is the \repeatstatementterm\ with the body statement $\vbody$;
-    \item applying $\controlflowfromstmt$ to $\vbody$ yields $\vctrlflow$.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_try}
-  \begin{itemize}
-    \item $\vs$ is the \trystatement{$\vbody$}{\\ $\catchers$}{$\votherwiseopt$};
-    \item applying $\controlflowfromstmt$ to $\vbody$ yields $\vreszero$;
-    \item \Proseeqdef{$\vresone$}{
-          the application of $\controlflowjoin$ to $\controlflowfromstmt(\vo)$
-          and $\vreszero$, if $\votherwiseopt = \langle\vo\rangle$,
-          and $\vreszero$, otherwise};
-    \item for each catcher in $\catchers$ associated with a statement $\vs$,
-          applying \\
-          $\controlflowfromstmt$ to $\vs$ yields $\vcf_\vs$;
-    \item \Proseeqdef{$\vctrlflow$}{the application of $\controlflowjoin$ to $\vresone$,
-          and $\vcf_\vs$, for each catcher in $\catchers$ associated with a statement $\vs$}.
+    \item $\vf$ is as function;
+    \item \Proseeqdef{$\absconfigs$}{the set consisting of $\AbsReturning$, $\AbsAbnormal$}.
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[falls\_through]{
-  \astlabel(\vs) \in \{\SPass, \SDecl, \SAssign, \SAssert, \SCall, \SPrint, \SPragma\}
+\inferrule[noreturn]{
+  \vf.\funcqualifier = \Some{\Noreturn}
 }{
-  \controlflowfromstmt(\vs) \typearrow \overname{\maynotinterrupt}{\vctrlflow}
+  \allowedabsconfigs(\vf) \typearrow \overname{\{\AbsAbnormal\}}{\absconfigs}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[unreachable]{}{
-  \controlflowfromstmt(\overname{\SUnreachable}{\vs}) \typearrow \overname{\assertednotinterrupt}{\vctrlflow}
+\inferrule[returning\_proc]{
+  \vf.\funcqualifier \neq \Some{\Noreturn} \land \vf.\funcreturntype = \None
+}{
+  \allowedabsconfigs(\vf) \typearrow \overname{\{\AbsContinuing, \AbsReturning, \AbsAbnormal\}}{\absconfigs}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[return\_throw]{
-  \astlabel(\vs) \in \{\SReturn, \SThrow\}
+\inferrule[func]{
+  \vf.\funcreturntype \neq \None
 }{
-  \controlflowfromstmt(\vs) \typearrow \overname{\interrupt}{\vctrlflow}
+  \allowedabsconfigs(\vf) \typearrow \overname{\{\AbsReturning, \AbsAbnormal\}}{\absconfigs}
+}
+\end{mathpar}
+
+\TypingRuleDef{ApproxStmt}
+\hypertarget{def-approxstmt}{}
+The function
+\[
+  \approxstmt(\overname{\staticenvs}{\tenv} \aslsep \overname{\stmt}{\vs})
+  \typearrow\overname{\{\AbsContinuing, \AbsReturning, \AbsAbnormal\}}{\absconfigs}
+\]
+returns in $\absconfigs$ a superset of the set of \Proseabstractconfigurations{} (defined next),
+that an evaluation of $\vs$ in any environment consisting of the static environment $\tenv$ yields.
+
+\hypertarget{def-abstractconfigurations}{}
+\hypertarget{def-absabnormal}{}
+\hypertarget{def-absreturning}{}
+\hypertarget{def-abscontinuing}{}
+The set of \Proseabstractconfigurations{} consists of symbols that represent
+subsets of the set of dynamic configurations that may be returned by
+$\evalstmt{(\tenv, \cdot), \vs}$:
+\begin{itemize}
+  \item $\AbsContinuing$ represents $\TContinuing$;
+  \item $\AbsReturning$ represents $\TReturning$; and
+  \item $\AbsAbnormal$ represents $\TThrowing \cup \TDynError$.
+\end{itemize}
+
+\ExampleDef{Determining the Abstract Configurations of Statements}
+In \listingref{ApproxStmt}, the function bodies of all functions
+terminate by either returning a value, throwing an exception, or executing
+the \unreachablestatementterm.
+\ASLListing{Determining the abstract configurations of statements}{ApproxStmt}{\typingtests/TypingRule.ApproxStmt.asl}
+
+In \listingref{ApproxStmt-bad1}, the function body of \verb|loop_forever|
+is ill-typed, since the conservative analysis of \TypingRuleRef{ApproxStmt}
+cannot determine that the \whilestatementterm{} never terminates.
+To make the function body well-typed, another statement following the loop
+can be added, for example, an \unreachablestatementterm.
+\ASLListing{An ill-typed function body}{ApproxStmt-bad1}{\typingtests/TypingRule.ApproxStmt.bad1.asl}
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{s\_pass}
+  \begin{itemize}
+    \item $\vs$ is a \passstatementterm;
+    \item \Proseeqdef{$\absconfigs$}{the singleton set for $\AbsContinuing$}.
+  \end{itemize}
+
+  \item \AllApplyCase{simple}
+  \begin{itemize}
+    \item $\vs$ is either a \declarationstatementterm, an \assignmentstatementterm,
+          an \assertionstatementterm, or a \printstatementsterm;
+    \item \Proseeqdef{$\absconfigs$}{the set consisting of $\AbsContinuing$ and \\
+          $\AbsAbnormal$}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_unreachable}
+  \begin{itemize}
+    \item $\vs$ is the \unreachablestatementterm;
+    \item \Proseeqdef{$\absconfigs$}{the singleton set for $\AbsAbnormal$}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_call}
+  \begin{itemize}
+    \item $\vs$ is a \callstatementterm{} consisting of the call record $\call$, that is, $\SCall(\call)$;
+    \item \Proseeqdef{$\vf$}{the $\func$ AST node bound to $\call.\callname$ in the global static environment
+          map $\subprograms$};
+    \item \Proseeqdef{$\absconfigs$}{the singleton set for $\AbsAbnormal$, if $\vf$ has the\\
+          \texttt{noreturn} qualifier, and the set consisting of $\AbsContinuing$ and \\
+          $\AbsAbnormal$ otherwise}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_return}
+  \begin{itemize}
+    \item $\vs$ is a \returnstatementsterm;
+    \item \Proseeqdef{$\absconfigs$}{the set consisting of $\AbsReturning$ and $\AbsAbnormal$}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_throw}
+  \begin{itemize}
+    \item $\vs$ is a \throwstatementsterm;
+    \item  \Proseeqdef{$\absconfigs$}{the singleton set for $\AbsAbnormal$}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_seq}
+  \begin{itemize}
+    \item $\vs$ is the \sequencingstatement{$\vsone$}{$\vstwo$};
+    \item applying $\approxstmt$ to $\tenv$ and $\vsone$ yields $\configsone$;
+    \item applying $\approxstmt$ to $\tenv$ and $\vstwo$ yields $\configstwo$;
+    \item for each \Proseabstractconfiguration{} $\vc$ in $\configsone$ \Proseeqdef{$\vs_\vc$}{
+      $\configstwo$ if $\vc$ is $\AbsContinuing$ and the singleton set for $\vc$ otherwise};
+    \item \Proseeqdef{$\absconfigs$}{the union of the sets $\vs_\vc$ for each \Proseabstractconfiguration{} $\vc$ in $\configsone$}.
+  \end{itemize}
+
+  \item \AllApplyCase{loop}
+  \begin{itemize}
+    \item $\vs$ matches one of the following statements: a \repeatstatementsterm{} with body statement $\vbody$,
+          a \forstatementterm{} with body statement $\vbody$, or a \whilestatementterm{} with body statement $\vbody$;
+    \item applying $\approxstmt$ to $\tenv$ and $\vbody$ yields $\bodyconfigs$;
+    \item \Proseeqdef{$\absconfigs$}{the union of $\bodyconfigs$ and $\AbsAbnormal$}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_cond}
+  \begin{itemize}
+    \item $\vs$ is a \conditionalstatement{$\Ignore$}{$\vsone$}{$\vstwo$};
+    \item applying $\approxstmt$ to $\tenv$ and $\vsone$ yields $\configsone$;
+    \item applying $\approxstmt$ to $\tenv$ and $\vstwo$ yields $\configstwo$;
+    \item \Proseeqdef{$\absconfigs$}{the union of $\configsone$, $\configstwo$, and $\AbsAbnormal$}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_try}
+  \begin{itemize}
+    \item $\vs$ is the \trystatement{$\vbody$}{\\
+          $\catchers$}{$\otherwise$};
+    \item applying $\approxstmt$ to $\tenv$ and $\vbody$ yields $\bodyconfigs$;
+    \item \Proseeqdef{$\otherwiseconfigs$}{the application of $\approxstmt$ to $\tenv$ and $\votherwise$,
+          if $\votherwise$ is the optional containing $\otherwises$ and the empty set otherwise};
+    \item for every statement $\vc$ appearing in a catcher in the list $\catchers$, applying $\approxstmt$ to $\tenv$ and $\vc$
+          yields $\catchconfigs_\vc$;
+    \item \Proseeqdef{$\absconfigs$}{the union of $\bodyconfigs$, $\otherwiseconfigs$,
+          and  $\catchconfigs_\vc$, for every statement $\vc$ appearing in a catcher in the list $\catchers$}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[s\_pass]{}{
+  \approxstmt(\tenv, \overname{\SPass}{\vs}) \typearrow \overname{\{\AbsContinuing\}}{\absconfigs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[simple]{
+  \configdomain{\vs} \in \{\SDecl, \SAssign, \SAssert, \SPrint\}
+}{
+  \approxstmt(\tenv, \vs) \typearrow \overname{\{\AbsContinuing, \AbsAbnormal\}}{\absconfigs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_unreachable]{}{
+  \approxstmt(\tenv, \overname{\SUnreachable}{\vs}) \typearrow \overname{\{\AbsAbnormal \}}{\absconfigs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_call]{
+  G^\tenv.\subprograms(\call.\callname) = (\vf, \Ignore)\\
+  {
+  \absconfigs \eqdef
+  \begin{cases}
+    \{\AbsAbnormal\} & \text{if }\vf.\funcqualifier = \Some{\Noreturn}\\
+    \{\AbsContinuing, \AbsAbnormal\} & \text{else}
+  \end{cases}
+  }
+}{
+  \approxstmt(\tenv, \overname{\SCall(\call)}{\vs}) \typearrow \absconfigs
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_return]{}{
+  \approxstmt(\tenv, \overname{\SReturn(\Ignore)}{\vs}) \typearrow \overname{\{\AbsReturning, \AbsAbnormal \}}{\absconfigs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_throw]{}{
+  \approxstmt(\tenv, \overname{\SThrow(\Ignore)}{\vs}) \typearrow \overname{\{\AbsAbnormal \}}{\absconfigs}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[s\_seq]{
-  \controlflowfromstmt(\vsone) \typearrow \vctrlflowone\\
-  \controlflowfromstmt(\vstwo) \typearrow \vctrlflowtwo\\
-  \controlflowseq(\vctrlflowone, \vctrlflowtwo) \typearrow \vctrlflow
+  \approxstmt(\tenv, \vsone) \typearrow \configsone\\
+  \approxstmt(\tenv, \vstwo) \typearrow \configstwo\\
+  \vc\in\configsone: \vs_\vc \eqdef \choice{\vc = \AbsContinuing}{\configstwo}{\{\vc\}}\\
+  \absconfigs \eqdef \bigcup_{\vc\in\configsone} \vs_\vc
 }{
-  \controlflowfromstmt(\overname{\SSeq(\vsone, \vstwo)}{\vs}) \typearrow \vctrlflow
+  \approxstmt(\tenv, \overname{\SSeq(\vsone, \vstwo)}{\vs}) \typearrow \absconfigs
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[loop]{
+  {
+  \left(
+  \begin{array}{rcll}
+    \vs &=& \SRepeat(\vbody, \Ignore, \Ignore) &\lor\\
+    \vs &=& \SFor \{ \Forbody : \vbody, \ldots \} &\lor\\
+    \vs &=& \SWhile(\Ignore, \Ignore, \vbody) &
+  \end{array}
+  \right)
+  }\\
+  \approxstmt(\tenv, \vbody) \typearrow \bodyconfigs\\
+}{
+  \approxstmt(\tenv, \overname{\SCond(\Ignore, \vsone, \vstwo)}{\vs}) \typearrow \overname{\bodyconfigs \cup \{\AbsAbnormal\}}{\absconfigs}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[s\_cond]{
-  \controlflowfromstmt(\vsone) \typearrow \vctrlflowone\\
-  \controlflowfromstmt(\vstwo) \typearrow \vctrlflowtwo\\
-  \controlflowjoin(\{\vctrlflowone, \vctrlflowtwo\}) \typearrow \vctrlflow
+  \approxstmt(\tenv, \vsone) \typearrow \configsone\\
+  \approxstmt(\tenv, \vstwo) \typearrow \configstwo
 }{
-  \controlflowfromstmt(\overname{\SCond(\Ignore, \vsone, \vstwo)}{\vs}) \typearrow \vctrlflow
+  \approxstmt(\tenv, \overname{\STry(\vbody, \vsone, \vstwo)}{\vs}) \typearrow \overname{\{\AbsAbnormal\} \cup \vsone \cup \vstwo}{\absconfigs}
 }
 \end{mathpar}
 
-The reasoning for the next case is as follows:
-\begin{itemize}
-  \item Conservatively, that is, without attempting to reason about the condition expressions,
-    a $\SWhile$ loop, and a $\SFor$ are like a conditional statement that either executes
-    $\SPass$ (when the loop condition does not hold) or executes the body and then loops back.
-  \item The control flow state for $\SPass$ is $\maynotinterrupt$.
-  \item The overall control flow state is then $\controlflowjoin(\{\maynotinterrupt, \Ignore\})$,
-    which is always $\maynotinterrupt$, since $\maynotinterrupt$ is the maximal element,
-    with respect to $\controlflowleq$.
-\end{itemize}
-
-\begin{mathpar}
-\inferrule[s\_while\_for]{
-  \astlabel(\vs) \in \{\SWhile, \SFor\}
-}{
-  \controlflowfromstmt(\vs) \typearrow \overname{\maynotinterrupt}{\vctrlflow}
-}
-\end{mathpar}
-
-The reasoning for the next case is as follows:
-\begin{itemize}
-  \item A statement $\SRepeat(\vbody, \vcond, \Ignore)$ is equivalent (ignoring limits) to \\
-$\SSeq(\vbody, \SWhile(\vcond, \Ignore, \vbody))$;
-  \item Let us denote $\controlflowfromstmt(\vbody) \typearrow \vctrlflow$.
-  Observe that by case \textsc{s\_while\_for} above, we have that \\
-  $\controlflowfromstmt(\SWhile(\vcond, \Ignore, \vbody)) \typearrow \maynotinterrupt$
-  holds;
-  \item Applying the rule for the \textsc{s\_seq} case above, requires applying $\controlflowseq$
-  to $\vctrlflow$ and $\maynotinterrupt$, which always yields $\vctrlflow$
-  (to see this, consider the case $\vctrlflow=\maynotinterrupt$
-  and the case \\ $\vctrlflow\neq\maynotinterrupt$).
-\end{itemize}
-
-\begin{mathpar}
-\inferrule[s\_repeat]{
-  \controlflowfromstmt(\vbody) \typearrow \vctrlflow
-}{
-  \controlflowfromstmt(\overname{\SRepeat(\vbody, \Ignore, \Ignore)}{\vs}) \typearrow \vctrlflow
-}
-\end{mathpar}
-
-The rule for \textsc{s\_try} conservatively approximates the results from all control flows
-passing through the statement by returning the maximal $\controlflowsymbolterm$,
-with respect to $\controlflowleq$,
-computed for each control flow path.
 \begin{mathpar}
 \inferrule[s\_try]{
-  \controlflowfromstmt(\vbody) \typearrow \vreszero\\
+  \approxstmt(\vbody, \vsone) \typearrow \bodyconfigs\\
   {
-  \vresone \eqdef
-  \begin{cases}
-    \controlflowjoin(\{\controlflowfromstmt(\vo), \vreszero\}) & \text{if }\votherwiseopt = \langle\vo\rangle\\
-    \vreszero & \text{otherwise}
-  \end{cases}
+    \otherwiseconfigs \eqdef \left\{
+    \begin{array}{ll}
+    \textbf{if}   & \votherwise=\Some{\otherwises}\textbf{ then}\\
+                  & \approxstmt(\tenv, \otherwises)\\
+    \textbf{else} & \emptyset
+    \end{array}\right.
   }\\
-  (\Ignore,\Ignore,\vs)\in\catchers: \controlflowfromstmt(\vs) \typearrow \vcf_\vs\\
-  \vctrlflow \eqdef \controlflowjoin(\{(\Ignore,\Ignore,\vs)\in\catchers: \vcf_\vs\} \cup \{\vresone\})
+  (\Ignore,\Ignore,\vc)\in\catchers: \approxstmt(\tenv, \vc) \typearrow \catchconfigs_\vc\\
+  {
+  \absconfigs \eqdef \left\{
+  \begin{array}{ll}
+  \bodyconfigs & \cup\\
+  \otherwiseconfigs & \cup\\
+  \bigcup_{(\Ignore,\Ignore,\vc)\in\catchers} \catchconfigs_\vc &
+  \end{array}\right.
+  }
 }{
-  \controlflowfromstmt(\overname{\STry(\vbody, \catchers, \votherwiseopt)}{\vs}) \typearrow \vctrlflow
-}
-\end{mathpar}
-
-\TypingRuleDef{ControlFlowSeq}
-\hypertarget{def-controlflowseq}{}
-The helper function
-\[
-\controlflowseq(\overname{\controlflowstate}{\vtone} \aslsep \overname{\controlflowstate}{\vttwo})
-\aslto \overname{\controlflowstate}{\vctrlflow}
-\]
-combines two \controlflowsymbolterm{s} considering them as part of a control flow path where the analysis of the
-path prefix yields $\vtone$ and the analysis of the path suffix yields $\vttwo$,
-into a single \controlflowsymbolterm\ $\vctrlflow$.
-
-\ExampleDef{Determining the Control-flow State of a Sequence of Statements}
-In \listingref{ControlFlowFromStmt},
-the function body of \verb|sequencing1| is determined to have
-the control-flow state $\interrupt$ by the statement
-\verb|throw invalid_state{}|, effectively ignoring the succeeding statement
-\verb|var x = 5;|
-
-On the other hand, in the function body of \verb|sequencing2|,
-analysis of the \passstatementterm{} yields the control-flow state
-$\maynotinterrupt$, but analysis of the statement \\ \verb|return 5;|
-yields control-flow state $\interrupt$, which is why the analysis
-of the sequence of these two statements yields $\interrupt$.
-
-\ProseParagraph
-Define $\vctrlflow$ as $\vttwo$ if $\vtone$ is $\maynotinterrupt$ and $\vtone$, otherwise.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \vctrlflow \eqdef \choice{\vtone = \maynotinterrupt}{\vttwo}{\vtone}
-}{
-  \controlflowseq(\vtone, \vttwo) \typearrow \vctrlflow
-}
-\end{mathpar}
-
-\TypingRuleDef{ControlFlowJoin}
-\hypertarget{def-controlflowjoin}{}
-The helper function
-\[
-\controlflowjoin(\overname{\pow{\controlflowstate}}{\vs})
-\aslto \overname{\controlflowstate}{\vctrlflow}
-\]
-returns the maximal element in the set of \controlflowsymbolsterm\ $\vs$,
-with respect to $\controlflowleq$ in $\vctrlflow$.
-
-\ExampleDef{Determining the Control-flow State of a Conditional Statement}
-In \listingref{ControlFlowFromStmt},
-the function body for \verb|conditional| is well-typed, since the
-control-flow state analysis
-for both statements \verb|return 5;| and \verb|throw invalid_state{};|
-yields the control-flow state $\interrupt$.
-
-\ProseParagraph
-\Proseeqdef{$\vctrlflow$}{the maximal element in the set of \controlflowsymbolsterm\ $\vs$,
-with respect to $\controlflowleq$}.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}{
-  \controlflowjoin(\vs) \typearrow \overname{\max_{\controlflowleq}(\vs)}{\vctrlflow}
+  \approxstmt(\tenv, \overname{\STry(\vbody, \catchers, \votherwise)}{\vs}) \typearrow \absconfigs
 }
 \end{mathpar}

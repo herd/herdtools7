@@ -1,4 +1,4 @@
-func foo(x: integer {0..100}) => integer {0..100}
+pure func foo(x: integer {0..100}) => integer {0..100}
 begin
     return x;
 end;

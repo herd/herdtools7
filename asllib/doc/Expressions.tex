@@ -187,8 +187,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
           via the \\
           $\localstoragetypes$ map of the local environment component of $\tenv$;
     \item define $\newe$ as $\ve$;
-    \item define $\vses$ as the singleton set for the \ReadLocalTerm\ for $\vx$ the \timeframeterm\ of
-          $k$ ($\timeframeofldk$) and the immutability status of $k$ ($\ldkisimmutable$).
+    \item define $\vses$ as the \sideeffectsetterm\ produced from $k$ by $\sesldk$.
     \end{itemize}
 
     \item \AllApplyCase{global\_constant}
@@ -206,8 +205,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
       \item $\vx$ is bound to $(\tty, k)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
       \item either $\vx$ is not bound in the $\constantvalues$ map of the global component of $\tenv$ or $k$ is not $\GDKConstant$;
       \item define $newe$ as $\ve$;
-      \item define $\vses$ as the singleton set for the \ReadGlobalTerm\ for $\vx$ the \timeframeterm\ of
-            $k$ ($\timeframeofgdk$) and the immutability status of $k$ ($\gdkisimmutable$).
+      \item define $\vses$ as the \sideeffectsetterm\ produced from $k$ by $\sesgdk$.
     \end{itemize}
 
     \item \AllApplyCase{error\_undefined}
@@ -223,7 +221,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
 \begin{mathpar}
 \inferrule[local]{
   L^\tenv.\localstoragetypes(\vx) =  (\vt, k) \\
-  \vses \eqdef \{\ \ReadLocal(\vx, \timeframeofldk(k), \ldkisimmutable(k))\  \}
+  \sesldk(k) \typearrow \vses
 }{
   \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\EVar(\vx)}{\newe}, \vses)
 }
@@ -244,7 +242,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
   L^\tenv.\localstoragetypes(\vx) = \bot \\
   G^\tenv.\globalstoragetypes(\vx) = (\tty, k)\\
   G^\tenv.\constantvalues(\vx) = \bot \lor k \neq \GDKConstant\\
-  \vses \eqdef \{\ \ReadGlobal(\vx, \timeframeofgdk(k), \gdkisimmutable(k))\  \}
+  \sesgdk(k) \typearrow \vses
 }{
   \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\tty, \overname{\EVar(\vx)}{\newe}, \vses)
 }
@@ -507,6 +505,18 @@ according to the signature of $\divint$, \Tdiv{} can only be applied to \integer
 whereas \verb|0.0| is a \realtypeterm.
 \ASLListing{An ill-typed binary expression}{typing-binoperror}{\typingtests/TypingRule.EBinop.bad.asl}
 
+\ExampleDef{Comparing Well-constrained Integers}
+The specification in \listingref{EBinop} is well-typed.
+Specifically, it is legal to compare \wellconstrainedintegertypes{}
+with different lists of constraints and a \wellconstrainedintegertype{} to an \unconstrainedintegertype{}.
+\ASLListing{Comparing well-constrained integers}{EBinop}{\typingtests/TypingRule.EBinop.asl}
+
+\ExampleDef{Typing Bitvector Concatenation}
+The specification in \listingref{EBinop-2} is well-typed, since
+the sum of widths of the two concatenated \bitvectortypesterm{}
+is equal to the width of the \bitvectortypeterm{} of the return type.
+\ASLListing{Concatenating bitvectors}{EBinop-2}{\typingtests/TypingRule.EBinop2.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -533,7 +543,7 @@ whereas \verb|0.0| is a \realtypeterm.
 
 \subsection{Semantics}
 \SemanticsRuleDef{BinopAnd}
-\ExampleDef{Evaluation of Binary And Expressions}
+\ExampleDef{Evaluation of Boolean And Expressions}
 In \listingref{andsemantics},
 the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}. Notice that the function \texttt{fail} is never called.
 \ASLListing{Semantics of conjunction}{andsemantics}{\semanticstests/SemanticsRule.EBinopAndFalse.asl}
@@ -583,7 +593,7 @@ for readers of ASL specifications and as a consequence it is recommended that
 an if-statement is used to achieve the same effect.
 
 \SemanticsRuleDef{BinopOr}
-\ExampleDef{Evaluation of Binary Or Expressions}
+\ExampleDef{Evaluation of Boolean Or Expressions}
 In \listingref{semantics-binopor}, the expression \texttt{(0 == 1) || (1 == 1)} evaluates to the value \True.
 \ASLListing{Evaluating a disjunction expression}{semantics-binopor}{\semanticstests/SemanticsRule.EBinopOrTrue.asl}
 
@@ -832,7 +842,12 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 
 \subsection{Typing}
 \TypingRuleDef{ECond}
-\ExampleRef{Lowest Common Ancestor} shows examples of typing conditional expressions.
+\ExampleDef{Typing Conditional Expressions}
+The specification in \listingref{ECond} is well-typed and shows
+an example of typing a conditional expression.
+\ASLListing{Typing conditional expressions}{ECond}{\typingtests/TypingRule.ECond.asl}
+
+\ExampleRef{Lowest Common Ancestor} shows more examples of typing conditional expressions.
 
 \ProseParagraph
 \AllApply
@@ -1426,7 +1441,7 @@ which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
   \item $\marray$ consists of the native vector $\varray$ and execution graph $\vgone$;
   \item $\mindex$ consists of the native integer $\vindex$ and execution graph $\vgtwo$;
   \item $\vindex$ is the native integer for $\vi$;
-  \item evaluating the value at index $\vi$ of $\varray$ is $\vv$;
+  \item evaluating the value at index $\vi$ of $\varray$ yields $\vv$\ProseOrError;
   \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
 \end{itemize}
 
@@ -1438,7 +1453,7 @@ which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
   \marray \eqname (\varray, \vgone)\\
   \mindex \eqname (\vindex, \vgtwo)\\
   \vindex \eqname \nvint(\vi)\\
-  \getindex(\vi, \varray) \evalarrow \vv\\
+  \getindex(\vi, \varray) \evalarrow \vv \OrDynError\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo\\
 }{
   \evalexpr{\env, \EGetArray(\earray, \eindex)} \evalarrow \Normal((\vv, \vg), \newenv)
@@ -2332,6 +2347,29 @@ is a dynamic error.
 \listingref{typing-atc} shows examples of ATC expressions
 and the corresponding annotated expressions in comments.
 
+\ExampleDef{Asserting Type Conversion of Well-constrained Integers}
+The specification in \listingref{typing-atc2} is well-typed,
+showing how to convert one \\
+\wellconstrainedintegertype{} into another
+\wellconstrainedintegertype{}.
+\ASLListing{ATC of well-constrained integers}{typing-atc2}{\typingtests/TypingRule.ATC2.asl}
+
+\ExampleDef{Safely Applying Asserting Type Conversion to Bitvectors}
+The specification in \listingref{typing-atc3} is well-typed,
+showing how a \bitvectortypeterm{} may be safely converted
+into another \bitvectortypeterm.
+\ASLListing{Safely applying ATC to bitvector types}{typing-atc3}{\typingtests/TypingRule.ATC3.asl}
+
+Similarly, the specification in \listingref{typing-atc4} is well-typed,
+showing that even literals may require an asserting type conversion to ensure they meet
+type-satisfaction requirements.
+\ASLListing{Safely applying ATC to a bitvector literal}{typing-atc4}{\typingtests/TypingRule.ATC4.asl}
+
+\ExampleDef{Ill-typed Asserting Type Conversion}
+The specification in \listingref{typing-atc-bad} is ill-typed,
+as it is applied to unrelated kinds of types.
+\ASLListing{Ill-typed ATC of a bitvector type}{typing-atc-bad}{\typingtests/TypingRule.ATC.bad.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -2342,7 +2380,7 @@ and the corresponding annotated expressions in comments.
   \item obtaining the \structure\ of $\tty'$ in $\tenv$ yields $\vtystruct$\ProseOrTypeError;
   \item applying $\checkatc$ to $\vtstruct$ and $\vtystruct$ in $\tenv$ to check whether the type assertion
         will always fail yields $\True$\ProseOrTypeError;
-  \item define $\vsesp$ as the union of $\vsesty$, $\vsese$, and the singleton set for \PerformsAssertions;
+  \item define $\vsesp$ as the union of $\vsesty$ and $\vsese$;
   \item checking whether $\vtstruct$ \subtypesatisfies\ $\vtystruct$ in $\tenv$ yields \\
         $\vallwayssucceeds$\ProseOrTypeError\
         (if $\vallwayssucceeds$ holds then the type assertion will always succeed dynamically, and therefore can be omitted);
@@ -2350,6 +2388,7 @@ and the corresponding annotated expressions in comments.
   \item $\vses$ is $\vsese$ if $\vallwayssucceeds$ is $\True$ and $\vses$ otherwise;
   \item $\vt$ is $\ttyp$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
@@ -2358,7 +2397,7 @@ and the corresponding annotated expressions in comments.
   \annotatetype{\tenv, \tty} \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
   \tstruct(\tenv, \ttyp) \typearrow \vtystruct \OrTypeError\\\\
   \checkatc(\tenv, \vtstruct, \vtystruct) \typearrow \True \OrTypeError\\\\
-  \vsesp \eqdef \vsesty \cup \vsese \cup \{\PerformsAssertions\}\\
+  \vsesp \eqdef \vsesty \cup \vsese \\
   \subtypesat(\tenv, \vtstruct, \vtystruct) \typearrow \vallwayssucceeds \OrTypeError\\\\
   (\newe, \vses) \eqdef \choice{\vallwayssucceeds}{(\vepp, \vsese)}{(\EATC(\vepp, \ttyp), \vsesp)}
 }{
@@ -2429,6 +2468,7 @@ are compatible for a typing assertion in the static environment $\tenv$, yieldin
     \item the result is a \typingerrorterm{} indicating that the type assertion will always fail ($\TypeAssertionFailure$).
   \end{itemize}
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[equal]{
@@ -2494,12 +2534,13 @@ evaluated:
 \ASLListing{A asserting type conversion that is never evaluated}{semantics-atcnotevaluated}
 {\semanticstests/SemanticsRule.ATCNotDynamicErrorIfFalse.asl}
 
-\ExampleDef{Asserting Type Conversions with Type Errors and Dynamic Errors}
-\listingref{semantics-variousatcs} shows various \typingerrorsterm{} and \dynamicerrorsterm{}.
+\ExampleDef{Asserting Type Conversions with Dynamic Errors}
+\listingref{semantics-variousatcs} shows various \dynamicerrorsterm{}.
 Note that the \dynamicerrorterm{} appearing in the statement
-\verb|var e: integer{4, 5, 6} = 2 as integer{4, 5, 6};|, which is nested in the \verb|if FALSE then|
+\verb|var e: integer{4, 5, 6} = 2 as integer{4, 5, 6};|, \\
+which is nested in the \verb|if FALSE then|
 will never occur, but it is still classified as a \dynamicerrorterm{}.
-\ASLListing{Various type errors and dynamic errors}{semantics-variousatcs}{\semanticstests/SemanticsRule.ATCVariousErrors.asl}
+\ASLListing{Various dynamic errors}{semantics-variousatcs}{\semanticstests/SemanticsRule.ATCVariousErrors.asl}
 
 \ProseParagraph
 \AllApply
@@ -2900,14 +2941,14 @@ Note that there are two important consequences of producing an arbitrary value w
   \item obtaining the \structure\ of $\ttyone$ in $\tenv$ yields $\ttytwo$\ProseOrTypeError;
   \item $\vt$ is $\ttyone$;
   \item define $\newe$ as an expression \ARBITRARY\ of type $\ttytwo$, that is, $\EArbitrary(\ttytwo)$;
-  \item define $\vses$ as the union of $\vsesty$ and the singleton set for the \NonDeterministicTerm.
+  \item define $\vses$ as the union of $\vsesty$ and the set containing an \ImmutabilityTerm{} with immutability $\False$, and a \LocalEffectTerm{} and a \GlobalEffectTerm{}, both with \purity{} $\SEReadonly$.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \annotatetype{\tenv, \tty} \typearrow (\ttyone, \vsesty) \OrTypeError\\\\
   \tstruct(\tenv, \ttyone) \typearrow \ttytwo \OrTypeError\\\\
-  \vses \eqdef \vsesty \cup \{ \NonDeterministic \}
+  \vses \eqdef \vsesty \cup \{ \LocalEffect(\SEReadonly), \GlobalEffect(\SEReadonly), \Immutability(\False) \}
 }{
   \annotateexpr{\tenv, \EArbitrary(\tty)} \typearrow (\ttyone, \EArbitrary(\ttytwo), \vses)
 }
@@ -3051,7 +3092,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \subsection{Typing}
 \TypingRuleDef{ERecord}
 \listingref{semantics-erecord} shows an example of a well-typed record construction expression
-and an example (in comment) where the same field is initialized twice, which is incalid..
+and an example (in comment) where the same field is initialized twice, which is invalid.
 
 \ProseParagraph
 \AllApply
@@ -3395,7 +3436,7 @@ which evaluates to
 \subsection{Typing}
 An expression $\ve$ is considered to be side-effect-free in the static environment $\tenv$
 if $\annotateexpr{\tenv, \ve} \typearrow (\Ignore, \Ignore, \vses)$
-and $\vses$ only contains \sideeffectdescriptorsterm\ for reading storage (\ReadLocal\ and \ReadGlobal).
+and $\vses$ is \readonly{}.
 
 \subsection{Semantics}
 \SemanticsRuleDef{ESideEffectFreeExpr}

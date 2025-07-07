@@ -400,7 +400,7 @@ end;
 // the physical address region of size bytes starting at paddress.
 
 func IsExclusiveLocal
-(paddress : FullAddres, processorid : integer, size : integer) => boolean
+(paddress : FullAddress, processorid : integer, size : integer) => boolean
 begin
   return TRUE;
 end;
@@ -413,7 +413,7 @@ end;
 // the physical address region of size bytes starting at paddress.
 
 func IsExclusiveGlobal
-(paddress : FullAddres, processorid : integer, size : integer) => boolean
+(paddress : FullAddress, processorid : integer, size : integer) => boolean
 begin
   return TRUE;
 end;
@@ -545,7 +545,7 @@ begin
   end;
 
   setter
-    Unreachable();
+    unreachable;
   end;
 end;
 

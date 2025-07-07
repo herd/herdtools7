@@ -1,5 +1,5 @@
 func main () => integer
 begin
-  Unreachable ();
+  unreachable;
   return 0;
 end;

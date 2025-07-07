@@ -7,7 +7,7 @@ var my_collection: MyCollection;
 
 func main () => integer
 begin
-  print(my_collection.field2);
+  print my_collection.field2;
 
   return 0;
 end;

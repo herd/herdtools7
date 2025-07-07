@@ -40,8 +40,8 @@ $\square$                             & The space character (decimal 32) \hypert
 \ascii{$a$-$b$}                       & The ASCII range between decimals $a$ and $b$\\
 (\texttt{$A$})                        & $A$\\
 $A$ $B$                               & $A$ followed by $B$\\
-\texttt{$A$ | $B$}                    & A or B\\
-\texttt{$A$ - $B$}                    & $A$ but not $B$\\
+\texttt{$A$ | $B$}                    & A or B \hypertarget{def-regexminus}{}\\
+\texttt{$A\ \regexminus{}\, B$}       & $A$ but not $B$\\
 $A*$                                  & Zero or more repetitions of A\\
 $A+$                                  & One or more repetitions of A\\
 \verb|"a_string"|                     & The string \verb|a_string| verbatim\\
@@ -109,7 +109,7 @@ Line comments are formally defined via the following regular expressions:
 \hypertarget{def-relinecomment}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\RElinecomment$  &$\triangleq$& \texttt{"//"} (\REchar\ \texttt{-} \ascii{10})* \texttt{|} \texttt{"/*"} \REchar* \texttt{"*/"}\\
+$\RElinecomment$  &$\triangleq$& \texttt{"//"} (\REchar\ \regexminus{} \ascii{10})* \texttt{|} \texttt{"/*"} \REchar* \texttt{"*/"}\\
 \end{tabular}
 \end{center}
 
@@ -126,13 +126,18 @@ This is formalized by the following lexical regular expression:
 \hypertarget{def-rehexlit}{}
 \hypertarget{def-forbiddenhexfirst}{}
 \hypertarget{def-forbiddenhexremaining}{}
+\hypertarget{def-rehexletter}{}
 \begin{center}
 \begin{tabular}{rcl}
 $\REdigit$  &$\triangleq$& \anycharacter{\texttt{0123456789}}\\
+$\REhexletter$ &$\triangleq$& \anycharacter{\texttt{abcdefABCDEF}}\\
 $\REintlit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)*}\\
-$\REhexlit$ &$\triangleq$& \texttt{"0x"} (\REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}}) (\Underscore\ \texttt{|} \REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}})* \\
-$\REforbiddenhexfirst$ &$\triangleq$& \texttt{"0x"} (\REchar\ \texttt{-} \anycharacter{0123456789abcdefABCDEF}) \\
-$\REforbiddenhexremaining$ &$\triangleq$& \texttt{"0x"} (\REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}}) (\Underscore\ \texttt{|} \REdigit\ \texttt{|} \anycharacter{\texttt{abcdefABCDEF}})* (\REletter{} \texttt{-} \anycharacter{\texttt{abcdefABCDEF}}) \\
+$\REhexlit$ &$\triangleq$& \texttt{"0x"} (\REdigit\ \texttt{|} \REhexletter) \\
+            &            & $\wrappedline$ (\Underscore\ \texttt{|} \REdigit\ \texttt{|} \REhexletter)* \\
+$\REforbiddenhexfirst$ &$\triangleq$& \texttt{"0x"} ((\REchar\ \regexminus{} \REdigit) \regexminus{} \REhexletter) \\
+$\REforbiddenhexremaining$ &$\triangleq$& \texttt{"0x"} (\REdigit\ \texttt{|} \REhexletter)  \\
+                           &            & $\wrappedline$ (\Underscore\ \texttt{|} \REdigit\ \texttt{|} \REhexletter)*  \\
+                           &            & $\wrappedline$ (\REletter{} \regexminus{} \REhexletter) \\
 \end{tabular}
 \end{center}
 
@@ -153,7 +158,7 @@ This is formalized by the following lexical regular expression:
 \begin{center}
 \begin{tabular}{rcl}
 $\REreallit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." \REdigit\ (\Underscore\ | \REdigit)*} \\
-$\REforbiddenrealfirst$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." (\REchar\ \texttt{-} \anycharacter{0123456789.})} \\
+$\REforbiddenrealfirst$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." (\REchar\ \regexminus{} \anycharacter{0123456789.})} \\
 $\REforbiddenrealremaining$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." \REdigit\ (\Underscore\ | \REdigit)* \REletter{}} \\
 \end{tabular}
 \end{center}
@@ -203,6 +208,12 @@ Similarly, the specific characters enclosed within parentheses are not significa
 For example, the bitmask \verb|'0xx1'| is equivalent to \verb|'0(00)1'|, \verb|'0(01)1'|, \verb|'0(10)1'|, and \verb|'0(11)1'|.
 Similarly, \verb|'0xx(1)'| is equivalent to \verb|'0xxx'|.
 
+\RequirementDef{BitmasksMSB}
+The most significant bit (\ProseMSB) of a bitmask is its leftmost value and
+the least significant bit (\ProseLSB) is its rightmost value.
+% INLINED_EXAMPLE
+For example, in \verb|'10'| the \ProseMSB{} is \verb|1| and the \ProseLSB{} is \verb|0|.
+
 \section{String Literals}
 
 String literals consist of printable characters surrounded by double quotes.
@@ -238,7 +249,7 @@ The escape sequences allowed in string literals appear in \taref{EscapeSequences
 \begin{center}
 \begin{tabular}{rcl}
 $\REstrchar$ &$\triangleq$& \ascii{32-126}\\
-$\REstringlit$ &$\triangleq$& \anycharacter{\texttt{"}} ( ($\REstrchar$ \texttt{-} \anycharacter{\texttt{"}\ \backslash\ }) $|$ (\anycharacter{\backslash\ } \anycharacter{\texttt{" n t }\backslash\ })  )* \anycharacter{\texttt{"}}
+$\REstringlit$ &$\triangleq$& \anycharacter{\texttt{"}} ( ($\REstrchar$ \regexminus{} \anycharacter{\texttt{"}\ \backslash\ }) $|$ (\anycharacter{\backslash\ } \anycharacter{\texttt{" n t }\backslash\ })  )* \anycharacter{\texttt{"}}
 \end{tabular}
 \end{center}
 
@@ -496,13 +507,15 @@ $s$, which is given via a floating point representation.
 \item The function $\strtolit(s)$ returns $\Tstringlit(s')$ where $s'$ is the string value represented by $s$.
 \hypertarget{def-bitstolit}{}
 \item The function $\bitstolit(s)$ returns $\Tbitvectorlit(b)$ where $b$ is the sequence of bits
-given by $s$.
+      given by $s$.
 \hypertarget{def-masktolit}{}
 \item The function $\masktolit(s)$ returns $\Tmasklit(m)$ where $m$ is the bitmask given by $s$.
 \hypertarget{def-falsetolit}{}
-\item The function $\falsetolit(s)$ returns $\Tboollit(\False)$ ($s$ is ensured to be \texttt{FALSE}).
+\item The function $\falsetolit(s)$ returns $\Tboollit(\False)$ ($s$ is guaranteed to be \\
+      \texttt{FALSE}).
 \hypertarget{def-truetolit}{}
-\item The function $\truetolit(s)$ returns $\Tboollit(\True)$ ($s$ is ensured to be \texttt{TRUE}).
+\item The function $\truetolit(s)$ returns $\Tboollit(\True)$ ($s$ is guaranteed to be \\
+      \texttt{TRUE}).
 \hypertarget{def-tokenid}{}
 \item The function $\tokenid(s)$ returns $\Tlexeme(s)$.
 \hypertarget{def-lexicalerror}{}
@@ -587,27 +600,18 @@ $\REbitmasklit$                       & $\actiontoken(\masktolit)$ \\
 \texttt{"if"}, \texttt{"impdef"}, \texttt{"implementation"}, \texttt{"IN"}, \texttt{"integer"}       & $\actiontoken(\tokenid)$ \\
 \texttt{"let"}, \texttt{"looplimit"}           & $\actiontoken(\tokenid)$ \\
 \texttt{"MOD"}           & $\actiontoken(\tokenid)$ \\
-\texttt{"NOT"}           & $\actiontoken(\tokenid)$ \\
+\texttt{"noreturn"}, \texttt{"NOT"}           & $\actiontoken(\tokenid)$ \\
 \texttt{"of"},      \texttt{"OR"},      \texttt{"otherwise"}                  & $\actiontoken(\tokenid)$ \\
-\texttt{"pass"},    \texttt{"pragma"},  \texttt{"print"}                      & $\actiontoken(\tokenid)$ \\
-\texttt{"real"},    \texttt{"record"},  \texttt{"recurselimit"}, \texttt{"repeat"}, \texttt{"return"}  & $\actiontoken(\tokenid)$ \\
+\texttt{"pass"},    \texttt{"pragma"},  \texttt{"print"}, \texttt{"pure"}                      & $\actiontoken(\tokenid)$ \\
+\texttt{"readonly"}, \texttt{"real"},    \texttt{"record"}  & $\actiontoken(\tokenid)$ \\
+\texttt{"recurselimit"}, \texttt{"repeat"}, \texttt{"return"}  & $\actiontoken(\tokenid)$ \\
 \texttt{"setter"},  \texttt{"string"},  \texttt{"subtypes"}                   & $\actiontoken(\tokenid)$ \\
 \texttt{"then"},    \texttt{"throw"},   \texttt{"to"}, \texttt{"try"}         & $\actiontoken(\tokenid)$ \\
 \texttt{"TRUE"}          & $\actiontoken(\truetolit)$ \\
 \texttt{"type"}          & $\actiontoken(\tokenid)$ \\
-\texttt{"ARBITRARY"}, \texttt{"Unreachable"}, \texttt{"until"}         & $\actiontoken(\tokenid)$ \\
+\texttt{"ARBITRARY"}, \texttt{"unreachable"}, \texttt{"until"}         & $\actiontoken(\tokenid)$ \\
 \texttt{"var"}           & $\actiontoken(\tokenid)$ \\
 \texttt{"when"}, \texttt{"where"}, \texttt{"while"}, \texttt{"with"}          & $\actiontoken(\tokenid)$ \\
-\hline
-\end{tabular}
-\end{center}
-
-The following list represents keywords that are reserved for future use.
-\begin{center}
-\begin{tabular}{ll}
-\textbf{Lexical Regular Expressions} & \textbf{Lexeme Action}\\
-\hline
-\texttt{"pure"}, \texttt{"readonly"} & $\lexicalerror$ \\
 \hline
 \end{tabular}
 \end{center}

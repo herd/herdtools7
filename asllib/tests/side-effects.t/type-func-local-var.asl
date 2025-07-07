@@ -1,4 +1,4 @@
-func foo (x: integer {1..10}) => integer {0..10_000}
+pure func foo (x: integer {1..10}) => integer {0..10_000}
 begin
   var result: integer {0..10_000} = 79;
   result = result DIVRM x;

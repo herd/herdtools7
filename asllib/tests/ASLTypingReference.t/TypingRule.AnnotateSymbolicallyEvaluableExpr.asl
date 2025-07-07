@@ -1,4 +1,4 @@
-func pure_func{x: integer, y: integer}() => integer{x * y + y}
+pure func pure_func{x: integer, y: integer}() => integer{x * y + y}
 begin
     return x * y + y;
 end;

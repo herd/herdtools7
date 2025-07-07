@@ -334,6 +334,7 @@ module NativeBackend (C : Config) = struct
             return_type;
             subprogram_type;
             recurse_limit;
+            qualifier = Some Pure;
             override = None;
             builtin = true;
           },
@@ -448,7 +449,7 @@ module DeterministicBackend = struct
     | T_Int UnConstrained -> NV_Literal (L_Int Z.zero)
     | T_Int (WellConstrained (constraints, _)) ->
         deterministic_unknown_of_constraints ~eval_expr_sef ty constraints
-    | T_Int (Parameterized (_, x)) -> eval_expr_sef (E_Var x |> add_pos_from ty)
+    | T_Int (Parameterized x) -> eval_expr_sef (E_Var x |> add_pos_from ty)
     | T_Bits (e, _) -> (
         match eval_expr_sef e with
         | NV_Literal (L_Int n) ->

@@ -45,10 +45,13 @@ type args = {
   strictness : strictness;
   output_format : Error.output_format;
   use_field_getter_extension : bool;
+  use_fine_grained_side_effects : bool;
   use_conflicting_side_effects_extension : bool;
   override_mode : override_mode;
   no_primitives : bool;
   control_flow_analysis : bool;
+  allow_empty_structured_type_declarations : bool;
+  allow_function_like_statements : bool;
 }
 
 let push thing ref = ref := thing :: !ref
@@ -78,9 +81,12 @@ let parse_args () =
   let override_mode = ref Permissive in
   let set_override_mode m () = override_mode := m in
   let no_primitives = ref false in
-  let use_side_effects_extension = ref false in
+  let use_fine_grained_side_effects = ref false in
+  let use_conflincting_side_effects_extension = ref false in
   let control_flow_analysis = ref true in
   let allow_single_arrows = ref false in
+  let allow_empty_structured_type_declarations = ref false in
+  let allow_function_like_statements = ref false in
 
   let speclist =
     [
@@ -148,10 +154,14 @@ let parse_args () =
       ( "--use-field-getter-extension",
         Arg.Set use_field_getter_extension,
         " Instruct the type-checker to use the field getter extension." );
-      ( "--use-conflicting-side-effects-extension",
-        Arg.Set use_side_effects_extension,
-        " Instruct the type-checker to use the conflicting side-effects \
+      ( "--use-fine-grained-side-effects-extension",
+        Arg.Set use_fine_grained_side_effects,
+        " Instruct the type-checker to use the fine-grained side-effects \
          extension." );
+      ( "--use-conflicting-side-effects-extension",
+        Arg.Set use_conflincting_side_effects_extension,
+        " Instruct the type-checker to use the conflicting side-effects \
+         extension. Also implies the fine-grained side-effects extension." );
       ( "--show-rules",
         Arg.Set show_rules,
         " Instrument the interpreter and log to std rules used." );
@@ -183,6 +193,13 @@ let parse_args () =
         Arg.Clear control_flow_analysis,
         " Do not use control-flow analysis to check that subprograms \
          return/throw/execute `Unreachable()`." );
+      ( "--allow-empty-structured-type-declarations",
+        Arg.Set allow_empty_structured_type_declarations,
+        " Allow declarations of structured types with implicitly empty fields."
+      );
+      ( "--allow-function-like-statements",
+        Arg.Set allow_function_like_statements,
+        " Allow function-like unreachable statements and `print`/`println`." );
     ]
     |> Arg.align ?limit:None
   in
@@ -220,10 +237,15 @@ let parse_args () =
       show_rules = !show_rules;
       output_format = !output_format;
       use_field_getter_extension = !use_field_getter_extension;
-      use_conflicting_side_effects_extension = !use_side_effects_extension;
+      use_fine_grained_side_effects = !use_fine_grained_side_effects;
+      use_conflicting_side_effects_extension =
+        !use_conflincting_side_effects_extension;
       override_mode = !override_mode;
       no_primitives = !no_primitives;
       control_flow_analysis = !control_flow_analysis;
+      allow_empty_structured_type_declarations =
+        !allow_empty_structured_type_declarations;
+      allow_function_like_statements = !allow_function_like_statements;
     }
   in
 
@@ -271,6 +293,10 @@ let () =
     in
     let allow_local_constants = args.allow_local_constants in
     let allow_single_arrows = args.allow_single_arrows in
+    let allow_empty_structured_type_declarations =
+      args.allow_empty_structured_type_declarations
+    in
+    let allow_function_like_statements = args.allow_function_like_statements in
     let open Builder in
     {
       allow_no_end_semicolon;
@@ -281,6 +307,8 @@ let () =
       allow_hyphenated_pending_constraint;
       allow_local_constants;
       allow_single_arrows;
+      allow_empty_structured_type_declarations;
+      allow_function_like_statements;
     }
   in
 
@@ -340,6 +368,10 @@ let () =
       let print_typed = args.print_typed || args.print_lisp
       let use_field_getter_extension = args.use_field_getter_extension
       let override_mode = args.override_mode
+
+      let fine_grained_side_effects =
+        args.use_fine_grained_side_effects
+        || args.use_conflicting_side_effects_extension
 
       let use_conflicting_side_effects_extension =
         args.use_conflicting_side_effects_extension

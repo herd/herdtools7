@@ -70,12 +70,6 @@ let version = V1
 let t_bit ~loc = T_Bits (E_Literal (L_Int Z.one) |> add_pos_from loc, [])
 let zero ~loc = E_Literal (L_Int Z.zero) |> add_pos_from loc
 
-let make_ldi_vars (xs, ty) =
-  let make_one x =
-    S_Decl (LDK_Var, LDI_Var x.desc, Some ty, None) |> add_pos_from x
-  in
-  List.map make_one xs |> stmt_from_list |> desc
-
 let make_ty_decl_subtype (x, s) =
   let name, _fields = s.desc in
   let ty = ASTUtils.add_pos_from s (T_Named name) in
@@ -357,7 +351,6 @@ let pattern_set :=
 let fields :=
     braced(MINUS); { [] }
   | braced(tclist1(typed_identifier))
-let fields_opt := { [] } | fields
 
 (* Slices *)
 let slices := bracketed(clist1(slice))
@@ -393,8 +386,14 @@ let ty :=
 let ty_decl := ty |
   annotated (
     | ENUMERATION; l=braced(tclist1(IDENTIFIER));       < T_Enum       >
-    | RECORD; l=fields_opt;                             < T_Record     >
-    | EXCEPTION; l=fields_opt;                          < T_Exception  >
+    | RECORD [@internal true];
+      { if Config.allow_empty_structured_type_declarations then T_Record []
+        else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Empty record type declaration." }
+    | EXCEPTION [@internal true];
+      { if Config.allow_empty_structured_type_declarations then T_Exception []
+        else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Empty exception type declaration." }
+    | RECORD; l=fields;                                 < T_Record     >
+    | EXCEPTION; l=fields;                              < T_Exception  >
   )
 
 (* Constructs on ty *)
@@ -406,7 +405,10 @@ let as_ty := COLON; ty
 let ty_or_collection :=
   | ty
   | annotated (
-    | COLLECTION; l=fields_opt;                         < T_Collection >
+    | COLLECTION [@internal true];
+      { if Config.allow_empty_structured_type_declarations then T_Collection []
+        else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Empty collection type declaration." }
+    | COLLECTION; l=fields;                         < T_Collection >
   )
 (* End *)
 
@@ -552,11 +554,14 @@ let stmt :=
       | ldk=local_decl_keyword; lhs=decl_item; ty=as_ty; EQ; call=annotated(elided_param_call);
         { S_Decl (ldk, lhs, Some ty, desugar_elided_parameter ty call) }
       | VAR; ldi=decl_item; ty=some(as_ty);                   { S_Decl (LDK_Var, ldi, ty, None) }
-      | VAR; ~=clist2(annotated(IDENTIFIER)); ~=as_ty;        < make_ldi_vars >
-      | PRINTLN; args=plist0(expr);                           { S_Print { args; newline = true; debug = false } }
-      | PRINT; args=plist0(expr);                             { S_Print { args; newline = false; debug = false } }
+      | VAR; ~=clist2(annotated(IDENTIFIER)); ~=as_ty;        < Desugar.make_local_vars >
+      | PRINTLN; args=clist0(expr);                           { S_Print { args; newline = true; debug = false } }
+      | PRINT; args=clist0(expr);                             { S_Print { args; newline = false; debug = false } }
       | DEBUG; args=plist0(expr);            { S_Print { args; newline = true; debug = true } }
-      | UNREACHABLE; LPAR; RPAR;                             { S_Unreachable }
+      | UNREACHABLE;                                          { S_Unreachable }
+      | UNREACHABLE; LPAR; RPAR [@internal true];
+          { if Config.allow_function_like_statements then S_Unreachable
+            else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Function-like unreachable statement." }
       | REPEAT; ~=stmt_list; UNTIL; ~=expr; ~=loop_limit;    < S_Repeat >
       | THROW; e=expr;                                       { S_Throw (Some (e, None)) }
       | THROW;                                               { S_Throw None             }
@@ -609,23 +614,34 @@ let ignored_or_identifier :=
       else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Discarded storage declaration."
     }
   | IDENTIFIER
+
+let qualifier ==
+  ioption(
+    | PURE;     { Pure }
+    | READONLY; { Readonly }
+    | NORETURN; { Noreturn })
+
+let is_readonly :=
+  |           { false }
+  | READONLY; { true }
+
 let override ==
   ioption(
     | IMPDEF; { Impdef }
     | IMPLEMENTATION; { Implementation })
 
 let accessors :=
-  | GETTER; getter=maybe_empty_stmt_list; end_semicolon;
+  | ~=is_readonly; GETTER; getter=maybe_empty_stmt_list; end_semicolon;
     SETTER; setter=maybe_empty_stmt_list; end_semicolon;
-    { { getter; setter } }
+    { { is_readonly; getter; setter } }
   | SETTER; setter=maybe_empty_stmt_list; end_semicolon;
-    GETTER; getter=maybe_empty_stmt_list; end_semicolon;
-    { { getter; setter } }
+    ~=is_readonly; GETTER; getter=maybe_empty_stmt_list; end_semicolon;
+    { { is_readonly; getter; setter } }
 
 let decl :=
   | d=annotated (
     (* Begin func_decl *)
-    | ~=override; FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type; ~=recurse_limit; body=func_body;
+    | ~=qualifier; ~=override; FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type; ~=recurse_limit; body=func_body;
         {
           D_Func {
             name;
@@ -635,13 +651,14 @@ let decl :=
             return_type = Some return_type;
             subprogram_type = ST_Function;
             recurse_limit;
+            qualifier;
             override;
             builtin = false;
           }
         }
     (* End *)
     (* Begin procedure_decl *)
-    | ~=override; FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; body=func_body;
+    | ~=qualifier; ~=override; FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; body=func_body;
         {
           D_Func {
             name;
@@ -651,6 +668,7 @@ let decl :=
             return_type = None;
             subprogram_type = ST_Procedure;
             recurse_limit = None;
+            qualifier;
             override;
             builtin = false;
           }
@@ -683,6 +701,7 @@ let decl :=
       (* End *)
     )
   ); { [d] }
+  | VAR; ~=clist2(annotated(IDENTIFIER)); ~=as_ty; SEMI_COLON; < Desugar.make_global_vars >
   | ~=override; ACCESSOR; name=IDENTIFIER; ~=params_opt; ~=func_args; BEQ; setter_arg=IDENTIFIER; ~=as_ty;
     ~=accessor_body;
     { desugar_accessor_pair override name params_opt func_args setter_arg as_ty accessor_body }
@@ -706,6 +725,7 @@ let opn [@internal true] := body=stmt; EOF;
             return_type = None;
             subprogram_type = ST_Procedure;
             recurse_limit = None;
+            qualifier = None;
             override = None;
             builtin = false;
           }

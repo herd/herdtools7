@@ -16,12 +16,12 @@ let Y3: integer = incr_X ();
 
 func main () => integer
 begin
-  println ("X = ", X);
-  println ("Y0 = ", Y0);
-  println ("Y1 = ", Y1);
-  println ("Y2 = ", Y2);
-  println ("Y3 = ", Y3);
-  println ("Y4 = ", Y4);
+  println "X = ", X;
+  println "Y0 = ", Y0;
+  println "Y1 = ", Y1;
+  println "Y2 = ", Y2;
+  println "Y3 = ", Y3;
+  println "Y4 = ", Y4;
 
   return 0;
 end;

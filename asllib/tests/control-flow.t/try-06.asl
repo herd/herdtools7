@@ -2,7 +2,7 @@ type E of exception {-};
 
 func test0 () => integer
 begin
-  try print("body");
+  try print "body";
   catch
     when E => return 1;
     otherwise => throw E {-};

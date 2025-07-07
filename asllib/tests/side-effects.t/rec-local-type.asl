@@ -1,4 +1,4 @@
-func foo (n: integer) => integer
+pure func foo (n: integer) => integer
 begin
   if n <= 0 then
     return 1;
@@ -7,7 +7,7 @@ begin
   end;
 end;
 
-func bar (n: integer) => integer
+pure func bar (n: integer) => integer
 begin
   let r = Zeros{foo (0)};
   return Len (r) * n * foo (n - 1);

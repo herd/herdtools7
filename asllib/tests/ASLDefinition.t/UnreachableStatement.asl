@@ -1,8 +1,8 @@
 func diagnostic_assertion(condition: boolean, should_check: boolean, message: string)
 begin
     if should_check && !condition then
-        println("diagnostic assertion failed: ", message);
-        Unreachable();
+        println "diagnostic assertion failed: ", message;
+        unreachable;
     end;
 end;
 

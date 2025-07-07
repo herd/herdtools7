@@ -196,7 +196,7 @@ and pp_ty f t =
   | T_Int (WellConstrained (cs, _)) ->
       fprintf f "@[integer {%a}@]" pp_int_constraints cs
   | T_Int PendingConstrained -> pp_print_string f "integer{-}"
-  | T_Int (Parameterized (_uid, var)) -> fprintf f "@[integer {%s}@]" var
+  | T_Int (Parameterized var) -> fprintf f "@[integer {%s}@]" var
   | T_Real -> pp_print_string f "real"
   | T_String -> pp_print_string f "string"
   | T_Bool -> pp_print_string f "boolean"
@@ -345,12 +345,12 @@ let rec pp_stmt f s =
         (pp_print_list ~pp_sep:pp_print_space pp_catcher)
         catchers
   | S_Print { args; newline = false; debug = false } ->
-      fprintf f "@[<2>print(%a);@]" (pp_comma_list pp_expr) args
+      fprintf f "@[<2>print %a;@]" (pp_comma_list pp_expr) args
   | S_Print { args; newline = true; debug = false } ->
-      fprintf f "@[<2>println(%a);@]" (pp_comma_list pp_expr) args
+      fprintf f "@[<2>println %a;@]" (pp_comma_list pp_expr) args
   | S_Print { args; debug = true } ->
       fprintf f "@[<2>DEBUG@ %a;@]" (pp_comma_list pp_expr) args
-  | S_Unreachable -> fprintf f "Unreachable();"
+  | S_Unreachable -> fprintf f "unreachable;"
   | S_Pragma (name, args) ->
       fprintf f "@[<2>pragma@ %a %a;@]" pp_print_string name
         (pp_comma_list pp_expr) args
@@ -370,6 +370,11 @@ let pp_gdk f gdk =
   | GDK_Let -> "let"
   | GDK_Constant -> "constant"
 
+let func_qualifier_to_string = function
+  | Pure -> "pure"
+  | Readonly -> "readonly"
+  | Noreturn -> "noreturn"
+
 let pp_decl f =
   let pp_global_storage f = function
     | { name; keyword; ty = None; initial_value = Some e } ->
@@ -388,6 +393,7 @@ let pp_decl f =
         parameters;
         subprogram_type;
         body = _;
+        qualifier;
         override;
       } =
     let pp_args = pp_comma_list pp_typed_identifier in
@@ -404,6 +410,11 @@ let pp_decl f =
           in
           fprintf f "@ {%a}" (pp_comma_list pp_one) parameters
     in
+    let qualifier_keyword =
+      match qualifier with
+      | None -> ""
+      | Some attr -> func_qualifier_to_string attr ^ " "
+    in
     let override_keyword =
       match override with
       | None -> ""
@@ -412,14 +423,16 @@ let pp_decl f =
     in
     match subprogram_type with
     | ST_Function | ST_Procedure ->
-        fprintf f "@[<hv 4>%sfunc @[%s%a@] (@,%a)%a@]" override_keyword name
-          pp_parameters parameters pp_args args pp_return_type_opt return_type
-    | ST_Getter ->
-        fprintf f "@[<hv 4>%sgetter %s%a [@,%a]%a@]" override_keyword name
-          pp_parameters parameters pp_args args pp_return_type_opt return_type
-    | ST_EmptyGetter ->
-        fprintf f "@[<hv 4>%sgetter %s%a@]" override_keyword name
+        fprintf f "@[<hv 4>%s%sfunc @[%s%a@] (@,%a)%a@]" qualifier_keyword
+          override_keyword name pp_parameters parameters pp_args args
           pp_return_type_opt return_type
+    | ST_Getter ->
+        fprintf f "@[<hv 4>%s%sgetter %s%a [@,%a]%a@]" qualifier_keyword
+          override_keyword name pp_parameters parameters pp_args args
+          pp_return_type_opt return_type
+    | ST_EmptyGetter ->
+        fprintf f "@[<hv 4>%s%sgetter %s%a@]" qualifier_keyword override_keyword
+          name pp_return_type_opt return_type
     | ST_Setter ->
         let new_v, args =
           match args with [] -> assert false | h :: t -> (h, t)

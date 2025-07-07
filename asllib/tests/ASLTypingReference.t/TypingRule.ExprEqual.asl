@@ -1,4 +1,4 @@
-func f{x}() => integer{x*8}
+pure func f{x}() => integer{x*8}
 begin
     return x * 8;
 end;

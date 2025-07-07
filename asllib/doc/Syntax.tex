@@ -211,9 +211,9 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-ndecl}{}
 \begin{flalign*}
-\Ndecl  \derives \ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep \Nrecurselimit \parsesep &\\
-                   & \wrappedline\ \Nfuncbody\\
-|\ & \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
+\Ndecl  \derives \ & \Nqualifier \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep &\\
+    &\wrappedline \Nrecurselimit \parsesep \Nfuncbody\\
+|\ & \Nqualifier \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
 |\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbeq \parsesep \Tidentifier \parsesep \Nasty &\\
    & \wrappedline\ \Naccessorbody &\\
 |\ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon &\\
@@ -222,6 +222,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
    & \wrappedline\ \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tconfig \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Ntyorcollection \parsesep \Tsemicolon &\\
+|\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Nasty \parsesep \Tsemicolon &\\
 |\ & \Nglobaldeclkeyword \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &\\
    & \wrappedline\ \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 |\ & \Tpragma \parsesep \Tidentifier \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon&
@@ -315,10 +316,20 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \hypertarget{def-naccessors}{}
 \begin{flalign*}
    \Naccessors \derives \ &
-      \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
+      \Nisreadonly \parsesep \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
       \Tsetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
    |\ & \Tsetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
-        \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+        \Nisreadonly \parsesep \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+\end{flalign*}
+
+\hypertarget{def-nqualifier}{}
+\begin{flalign*}
+\Nqualifier \derivesinline\ & \emptysentence \;|\; \Tpure \;|\;\Treadonly \;|\; \Tnoreturn &
+\end{flalign*}
+
+\hypertarget{def-nisreadonly}{}
+\begin{flalign*}
+\Nisreadonly \derivesinline\ & \emptysentence \;|\; \Treadonly &
 \end{flalign*}
 
 \hypertarget{def-noverride}{}
@@ -398,9 +409,9 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 |\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Nasty \parsesep \Tsemicolon &\\
-|\ & \Tprint \parsesep \PlistZero{\Nexpr} \parsesep \Tsemicolon &\\
-|\ & \Tprintln \parsesep \PlistZero{\Nexpr} \parsesep \Tsemicolon &\\
-|\ & \Tunreachable \parsesep \Tlpar \parsesep \Trpar \parsesep \Tsemicolon &\\
+|\ & \Tprint \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Tprintln \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon &\\
+|\ & \Tunreachable \parsesep \Tsemicolon &\\
 |\ & \Trepeat \parsesep \Nstmtlist \parsesep \Tuntil \parsesep \Nexpr \parsesep \Nlooplimit \parsesep \Tsemicolon &\\
 |\ & \Tthrow \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tthrow \parsesep \Tsemicolon &\\
@@ -544,11 +555,6 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     & \Tlbrace \parsesep \TClistOne{\Ntypedidentifier} \parsesep \Trbrace &
 \end{flalign*}
 
-\hypertarget{def-nfieldsopt}{}
-\begin{flalign*}
-\Nfieldsopt \derives \ & \Nfields \;|\; \emptysentence &
-\end{flalign*}
-
 \hypertarget{def-nslices}{}
 \begin{flalign*}
 \Nslices \derives \ & \Tlbracket \parsesep \ClistOne{\Nslice} \parsesep \Trbracket &
@@ -592,8 +598,8 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 \begin{flalign*}
 \Ntydecl \derives\ & \Nty &\\
             |\ & \Tenumeration \parsesep \Tlbrace \parsesep \TClistOne{\Tidentifier} \parsesep \Trbrace &\\
-            |\ & \Trecord \parsesep \Nfieldsopt &\\
-            |\ & \Texception \parsesep \Nfieldsopt &
+            |\ & \Trecord \parsesep \Nfields &\\
+            |\ & \Texception \parsesep \Nfields &
 \end{flalign*}
 
 \hypertarget{def-nfieldassign}{}
@@ -603,7 +609,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 
 \hypertarget{def-ntyorcollection}{}
 \begin{flalign*}
-  \Ntyorcollection \derives \ & \Nty \;|\; \Tcollection \parsesep \Nfieldsopt &\\
+  \Ntyorcollection \derives \ & \Nty \;|\; \Tcollection \parsesep \Nfields &\\
 \end{flalign*}
 
 \hypertarget{def-nexpr}{}

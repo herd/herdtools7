@@ -23,6 +23,12 @@ cli_parser.add_argument(
     metavar="<path-to-dictionary-file>",
     type=pathlib.Path,
 )
+cli_parser.add_argument(
+    "--aslref",
+    help="Specifies path to the aslref executable",
+    metavar="<path-to-aslref>",
+    type=str,
+)
 
 INTERNAL_DICTIONARY_FILENAME = "dictionary.txt"
 DO_NOT_LINT_STR = "DO NOT LINT"
@@ -514,7 +520,7 @@ def check_rules(filename: str) -> int:
     """
     # Treat existing issues as warnings and new issues as errors.
     file_to_num_expected_errors = {
-        "SymbolicSubsumptionTesting.tex" : 12,
+        "SymbolicSubsumptionTesting.tex" : 12
     }
     total_expected = 0
     for num_expected in file_to_num_expected_errors.values():
@@ -681,8 +687,9 @@ def check_per_file(latex_files: list[str], checks):
 
 def main():
     args = cli_parser.parse_args()
+    aslref_path = args.aslref if args.aslref else "aslref"
     if args.macros:
-        apply_all_macros()
+        apply_all_macros(aslref_path)
     print("Linting files...")
     all_latex_sources = get_latex_sources(False)
     content_latex_sources = get_latex_sources(True)

@@ -64,13 +64,13 @@ The function
     \overname{\TSideEffectSet}{\vsesin} \aslsep
     \overname{\catcher}{\vc}
   } \aslto \\
-  (\overname{\TSideEffectSet}{\vsesfiltered} \times (\overname{\catcher}{\newcatcher}, \overname{\TSideEffectSet}{\vses}))
+  (\overname{\TSideEffectSet}{\vsesin} \times (\overname{\catcher}{\newcatcher}, \overname{\TSideEffectSet}{\vses}))
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
 annotates a catcher $\vc$ in the static environment $\tenv$
 and \sideeffectsetterm\ $\vsesin$.
-The result is the \sideeffectsetterm\ $\vsesfiltered$, the annotated catcher $\newcatcher$ and the
+The result is the \sideeffectsetterm\ $\vsesin$, the annotated catcher $\newcatcher$ and the
 \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
@@ -101,11 +101,9 @@ and a catch clause for the named exception value for the exception type \verb|Ex
     \item the identifier $\name$ is not bound in $\tenv$;
     \item binding $\name$ in the local environment of $\tenv$ with the type $\ttyp$ as an immutable variable
           (that is, with the local declaration keyword $\LDKLet$), yields the static environment $\tenvp$;
-    \item annotating the block $\vstmt$ in $\tenvp$ yields $\newstmt$;
+    \item annotating the block $\vstmt$ in $\tenvp$ yields $(\newstmt, \vsesblock)$;
     \item \Proseeqdef{$\newcatcher$}{$(\overname{\langle\name\rangle}{\nameopt}, \ttyp, \newstmt)$};
   \end{itemize}
-  \item \Proseeqdef{$\vsesfiltered$}{$\vsesin$ where every \ThrowExceptionTerm\ with an exception $\name$ such that
-        $\subtypesrel(\tenv, \TNamed(\name), \ttyp)$ holds removed};
   \item \Proseeqdef{$\vses$}{the union of $\vsesblock$ and $\vsesty$}.
 \end{itemize}
 
@@ -118,15 +116,9 @@ and a catch clause for the named exception value for the exception type \verb|Ex
   \annotateblock{\tenv, \vstmt} \typearrow (\newstmt, \vsesblock) \OrTypeError\\\\
   \newcatcher \eqdef (\overname{\None}{\nameopt}, \ttyp, \newstmt)\\\\
   \commonsuffixline\\\\
-  {
-    \begin{array}{rl}
-  \vsesfiltered \eqdef  & \vsesin \setminus \\
-                        & \{ \ThrowException(\name) \;|\; \subtypesrel(\tenv, \TNamed(\name), \ttyp) \}
-    \end{array}
-  }\\
   \vses \eqdef \vsesblock \cup \vsesty\\
 }{
-  \annotatecatcher{\tenv, \vsesin, \vc} \typearrow (\vsesfiltered, \newcatcher, \vses)
+  \annotatecatcher{\tenv, \vsesin, \vc} \typearrow (\vsesin, \newcatcher, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\CatcherNoneBegin}{\CatcherNoneEnd}{../Typing.ml}
@@ -142,15 +134,9 @@ and a catch clause for the named exception value for the exception type \verb|Ex
   \annotateblock{\tenvp, \vstmt} \typearrow (\newstmt, \vsesblock) \OrTypeError\\\\
   \newcatcher \eqdef (\overname{\langle\name\rangle}{\nameopt}, \ttyp, \newstmt)\\\\
   \commonsuffixline\\\\
-  {
-    \begin{array}{rl}
-  \vsesfiltered \eqdef  & \vsesin \setminus \\
-                        & \{ \ThrowException(\name) \;|\; \subtypesrel(\tenv, \TNamed(\name), \ttyp) \}
-    \end{array}
-  }\\
   \vses \eqdef \vsesblock \cup \vsesty\\
 }{
-  \annotatecatcher{\tenv, \vsesin, \vc} \typearrow (\vsesfiltered, \newcatcher, \vses)
+  \annotatecatcher{\tenv, \vsesin, \vc} \typearrow (\vsesin, \newcatcher, \vses)
 }
 \end{mathpar}
 

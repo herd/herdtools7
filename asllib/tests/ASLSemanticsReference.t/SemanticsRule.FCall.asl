@@ -1,4 +1,4 @@
-func foo (x : integer) => integer
+readonly func foo (x : integer) => integer
 begin
 
   return x + 1;

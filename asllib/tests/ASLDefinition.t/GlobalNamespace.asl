@@ -1,6 +1,6 @@
 var X : integer = 0;
 
-func X() => integer
+readonly func X() => integer
 begin
   return X;
 end;

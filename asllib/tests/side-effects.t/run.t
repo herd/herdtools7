@@ -76,49 +76,58 @@
 
   $ aslref constant-func.asl
   $ aslref constant-func-read.asl
-  File constant-func-read.asl, line 9, characters 0 to 21:
-  constant C = foo (4);
-  ^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got foo(4), which produces
-    the following side-effects: [WritesGlobal "X"].
+  File constant-func-read.asl, line 5, character 2 to line 6, character 19:
+    let y = X;
+    return x * x + y;
+  ASL Type error: expected a pure expression/subprogram.
   [1]
   $ aslref constant-func-write.asl
-  File constant-func-write.asl, line 9, characters 0 to 21:
-  constant C = foo (4);
-  ^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got foo(4), which produces
-    the following side-effects: [WritesGlobal "X"].
+  File constant-func-write.asl, line 5, character 2 to line 6, character 19:
+    X = 3;
+    return x * x + 3;
+  ASL Type error: expected a pure expression/subprogram.
   [1]
   $ aslref constant-func-unknown.asl
-  File constant-func-unknown.asl, line 7, characters 0 to 21:
-  constant C = foo (4);
-  ^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got foo(4), which produces
-    the following side-effects: [NonDeterministic].
+  File constant-func-unknown.asl, line 3, character 2 to line 4, character 23:
+    let y = ARBITRARY: integer {0..3};
+    return x * x + 3 + y;
+  ASL Type error: expected a pure expression/subprogram.
   [1]
   $ aslref constant-func-throw.asl
-  File constant-func-throw.asl, line 8, characters 0 to 21:
-  constant C = foo (4);
-  ^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got foo(4), which produces
-    the following side-effects: [ThrowsException "E"].
+  File constant-func-throw.asl, line 5, characters 2 to 14:
+    throw E {-};
+    ^^^^^^^^^^^^
+  ASL Type error: expected a pure expression/subprogram.
   [1]
   $ aslref constant-func-throw-caught.asl
+  File constant-func-throw-caught.asl, line 5, character 2 to line 9,
+    character 6:
+    try
+      throw E {-};
+    catch
+      when E => return 19;
+    end;
+  ASL Type error: expected a pure expression/subprogram.
+  [1]
   $ aslref constant-func-local-var.asl
   $ aslref constant-func-local-type-global-let.asl
-  File constant-func-local-type-global-let.asl, line 12, characters 0 to 21:
-  constant C = foo (8);
-  ^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got foo(8), which produces
-    the following side-effects: [ReadsGlobal "K", PerformsAssertions].
+  File constant-func-local-type-global-let.asl, line 5, character 2 to line 9,
+    character 15:
+    let k = x as integer {K};
+  
+    assert k == x;
+  
+    return 2 * k;
+  ASL Type error: expected a pure expression/subprogram.
   [1]
   $ aslref constant-func-local-type-local-let.asl
   $ aslref constant-func-sig-let.asl
-  File constant-func-sig-let.asl, line 8, characters 0 to 20:
-  constant C = foo(3);
-  ^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got foo(3), which produces
-    the following side-effects: [ReadsGlobal "K"].
+  File constant-func-sig-let.asl, line 3, character 0 to line 6, character 4:
+  pure func foo(x: integer {0..K}) => integer
+  begin
+    return x;
+  end;
+  ASL Type error: expected a pure expression/subprogram.
   [1]
 
   $ aslref for-var-no-edit.asl
@@ -143,86 +152,71 @@
 
   $ aslref for-read.asl
   $ aslref for-write.asl
-  File for-write.asl, line 15, characters 15 to 25:
-    for i = 0 to write_X () do
-                 ^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found write_X(), which
-    produces the following side-effects: [WritesGlobal "X", ReadsGlobal "X"].
+  File for-write.asl, line 5, character 2 to line 7, character 11:
+    let x = X;
+    X = x + 1;
+    return x;
+  ASL Type error: expected a readonly expression/subprogram.
   [1]
   $ aslref for-write-throw.asl
-  File for-write-throw.asl, line 13, characters 15 to 26:
-    for i = 0 to throwing () do
-                 ^^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found throwing(), which
-    produces the following side-effects: [ThrowsException "E"].
+  File for-write-throw.asl, line 5, characters 2 to 14:
+    throw E {-};
+    ^^^^^^^^^^^^
+  ASL Type error: expected a readonly expression/subprogram.
   [1]
   $ aslref for-throw-throw.asl
-  File for-throw-throw.asl, line 13, characters 15 to 26:
-    for i = 0 to throwing () do
-                 ^^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found throwing(), which
-    produces the following side-effects: [ThrowsException "E"].
+  File for-throw-throw.asl, line 5, characters 2 to 14:
+    throw E {-};
+    ^^^^^^^^^^^^
+  ASL Type error: expected a readonly expression/subprogram.
   [1]
   $ aslref for-throw.asl
-  File for-throw.asl, line 13, characters 15 to 26:
-    for i = 0 to throwing () do
-                 ^^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found throwing(), which
-    produces the following side-effects: [ThrowsException "E"].
+  File for-throw.asl, line 5, characters 2 to 14:
+    throw E {-};
+    ^^^^^^^^^^^^
+  ASL Type error: expected a readonly expression/subprogram.
   [1]
   $ aslref for-unknown.asl
-  File for-unknown.asl, line 8, characters 15 to 25:
-    for i = 0 to unknown () do
-                 ^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found unknown(), which
-    produces the following side-effects: [NonDeterministic].
-  [1]
 
   $ aslref config-uses-var.asl
   File config-uses-var.asl, line 2, characters 0 to 26:
   config Y: integer = X + 3;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got (X + 3) as integer,
-    which produces the following side-effects: [ReadsGlobal "X"].
+  ASL Type error: expected a pure expression/subprogram.
   [1]
   $ aslref config-uses-config.asl
   File config-uses-config.asl, line 2, characters 0 to 22:
   config Y: integer = X;
   ^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got X as integer, which
-    produces the following side-effects: [ReadsGlobal "X"].
+  ASL Type error: expected a pure expression/subprogram.
   [1]
   $ aslref config-uses-let.asl
   File config-uses-let.asl, line 2, characters 0 to 22:
   config Y: integer = X;
   ^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got X as integer, which
-    produces the following side-effects: [ReadsGlobal "X"].
+  ASL Type error: expected a pure expression/subprogram.
   [1]
   $ aslref config-uses-constant.asl
   $ aslref config-uses-local-var.asl
   $ aslref config-uses-local-let.asl
   $ aslref config-uses-local-constant.asl
   $ aslref config-uses-var-through-func.asl
-  File config-uses-var-through-func.asl, line 8, characters 0 to 27:
-  config Y: integer = foo ();
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got foo() as integer,
-    which produces the following side-effects: [ReadsGlobal "X"].
+  File config-uses-var-through-func.asl, line 5, characters 2 to 11:
+    return X;
+    ^^^^^^^^^
+  ASL Type error: expected a pure expression/subprogram.
   [1]
   $ aslref config-uses-config-through-func.asl
-  File config-uses-config-through-func.asl, line 8, characters 0 to 27:
-  config Y: integer = foo ();
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got foo() as integer,
-    which produces the following side-effects: [ReadsGlobal "X"].
+  File config-uses-config-through-func.asl, line 5, characters 2 to 11:
+    return X;
+    ^^^^^^^^^
+  ASL Type error: expected a pure expression/subprogram.
   [1]
   $ aslref config-uses-let-through-func.asl
-  File config-uses-let-through-func.asl, line 8, characters 0 to 27:
-  config Y: integer = foo ();
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got foo() as integer,
-    which produces the following side-effects: [ReadsGlobal "X"].
+  File config-uses-let-through-func.asl, line 5, characters 2 to 11:
+    return X;
+    ^^^^^^^^^
+  ASL Type error: expected a pure expression/subprogram.
   [1]
   $ aslref config-uses-constant-through-func.asl
   $ aslref config-uses-atc.asl
@@ -233,27 +227,25 @@
     value 0 does not belong to type integer {10}.
   [1]
   $ aslref config-uses-unknown.asl
-  File config-uses-unknown.asl, line 6, characters 0 to 27:
-  config Y: integer = foo ();
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got foo() as integer,
-    which produces the following side-effects: [NonDeterministic].
+  File config-uses-unknown.asl, line 3, characters 2 to 36:
+    return ARBITRARY: integer {0..10};
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: expected a pure expression/subprogram.
   [1]
 
   $ aslref assert-read.asl
   $ aslref assert-write.asl
-  File assert-write.asl, line 12, characters 9 to 24:
-    assert write_X () == 0;
-           ^^^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found (write_X() == 0), which
-    produces the following side-effects: [WritesGlobal "X", ReadsGlobal "X"].
+  File assert-write.asl, line 5, character 2 to line 7, character 11:
+    let x = X;
+    X = x + 1;
+    return x;
+  ASL Type error: expected a readonly expression/subprogram.
   [1]
   $ aslref assert-throw.asl
-  File assert-throw.asl, line 10, characters 9 to 25:
-    assert throwing () == 0;
-           ^^^^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found (throwing() == 0),
-    which produces the following side-effects: [ThrowsException "E"].
+  File assert-throw.asl, line 5, characters 2 to 14:
+    throw E {-};
+    ^^^^^^^^^^^^
+  ASL Type error: expected a readonly expression/subprogram.
   [1]
   $ aslref assert-atc.asl
   File assert-atc.asl, line 3, characters 9 to 10:
@@ -270,30 +262,27 @@
   File type-read-local.asl, line 5, characters 18 to 19:
     let y: integer {x} = x;
                     ^
-  ASL Type error: a pure expression was expected, found x, which produces the
-    following side-effects: [ReadsLocal "x"].
+  ASL Type error: expected a symbolically evaluable expression/subprogram.
   [1]
   $ aslref type-read-local-let.asl
   $ aslref type-read.asl
   File type-read.asl, line 3, characters 19 to 20:
   type T of integer {X};
                      ^
-  ASL Type error: a pure expression was expected, found X, which produces the
-    following side-effects: [ReadsGlobal "X"].
+  ASL Type error: expected a symbolically evaluable expression/subprogram.
   [1]
   $ aslref type-write.asl
-  File type-write.asl, line 10, characters 19 to 29:
-  type T of integer {write_X ()};
-                     ^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found write_X(), which
-    produces the following side-effects: [ReadsGlobal "X", WritesGlobal "X"].
+  File type-write.asl, line 5, character 2 to line 7, character 11:
+    let x = X;
+    X = x + 1;
+    return x;
+  ASL Type error: expected a pure expression/subprogram.
   [1]
   $ aslref type-unknown.asl
-  File type-unknown.asl, line 8, characters 23 to 33:
-    let x = 0 as integer{unknown ()};
-                         ^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found unknown(), which
-    produces the following side-effects: [NonDeterministic].
+  File type-unknown.asl, line 3, characters 2 to 35:
+    return ARBITRARY: integer {0, 1};
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: expected a pure expression/subprogram.
   [1]
   $ aslref type-func-atc.asl
   File type-func-atc.asl, line 3, characters 9 to 10:
@@ -307,15 +296,13 @@
   File type-local-var.asl, line 5, characters 15 to 16:
     var y: bits (x);
                  ^
-  ASL Type error: a pure expression was expected, found x, which produces the
-    following side-effects: [ReadsLocal "x"].
+  ASL Type error: expected a symbolically evaluable expression/subprogram.
   [1]
   $ aslref type-throw.asl
-  File type-throw.asl, line 8, characters 19 to 30:
-  type T of integer {throwing ()};
-                     ^^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found throwing(), which
-    produces the following side-effects: [ThrowsException "E"].
+  File type-throw.asl, line 5, characters 2 to 14:
+    throw E {-};
+    ^^^^^^^^^^^^
+  ASL Type error: expected a pure expression/subprogram.
   [1]
 
   $ aslref assert-atc.asl
@@ -327,18 +314,17 @@
   [1]
   $ aslref assert-read.asl
   $ aslref assert-throw.asl
-  File assert-throw.asl, line 10, characters 9 to 25:
-    assert throwing () == 0;
-           ^^^^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found (throwing() == 0),
-    which produces the following side-effects: [ThrowsException "E"].
+  File assert-throw.asl, line 5, characters 2 to 14:
+    throw E {-};
+    ^^^^^^^^^^^^
+  ASL Type error: expected a readonly expression/subprogram.
   [1]
   $ aslref assert-write.asl
-  File assert-write.asl, line 12, characters 9 to 24:
-    assert write_X () == 0;
-           ^^^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected, found (write_X() == 0), which
-    produces the following side-effects: [WritesGlobal "X", ReadsGlobal "X"].
+  File assert-write.asl, line 5, character 2 to line 7, character 11:
+    let x = X;
+    X = x + 1;
+    return x;
+  ASL Type error: expected a readonly expression/subprogram.
   [1]
   $ aslref assert-unknown.asl
 
@@ -346,9 +332,7 @@
   File rec-assert-throw.asl, line 15, characters 9 to 37:
     assert throwing (n - 1, FALSE) == 3;
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: a pure expression was expected,
-    found (throwing((n - 1), FALSE) == 3), which produces the following
-    side-effects: [CallsRecursive "throwing", ReadsLocal "n"].
+  ASL Type error: expected a readonly expression/subprogram.
   [1]
   $ aslref rec-binop-atc-throw.asl
   File rec-binop-atc-throw.asl, line 3, character 0 to line 10, character 4:
@@ -502,11 +486,10 @@
   ASL Dynamic error: recursion limit reached.
   [1]
   $ aslref rec-local-type.asl
-  File rec-local-type.asl, line 12, characters 16 to 23:
+  File rec-local-type.asl, line 12, characters 10 to 24:
     let r = Zeros{foo (0)};
-                  ^^^^^^^
-  ASL Type error: a pure expression was expected, found foo(0), which produces
-    the following side-effects: [CallsRecursive "foo"].
+            ^^^^^^^^^^^^^^
+  ASL Type error: constrained integer expected, provided integer.
   [1]
   $ aslref rec-binop-rec.asl
   File rec-binop-rec.asl, line 6, character 0 to line 11, character 4:
@@ -549,6 +532,5 @@
   File config-type-uses-let.asl, line 2, characters 0 to 36:
   config Y : integer {0 .. 2 * X} = 0;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: expected constant-time expression, got 0 as integer {0..2},
-    which produces the following side-effects: [ReadsGlobal "X"].
+  ASL Type error: expected a pure expression/subprogram.
   [1]

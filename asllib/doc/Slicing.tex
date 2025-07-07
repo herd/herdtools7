@@ -267,8 +267,8 @@ are all well-typed.
           $(\toffset, \eoffsetp, \vsesoffset)$\ProseOrTypeError;
     \item annotating the \symbolicallyevaluable\ \constrainedinteger\ expression $\elength$ in $\tenv$ yields
     $(\elengthp, \vseslength)$\ProseOrTypeError;
-    \item checking that $\vsesoffset$ is pure via $\sesispure$ yields $\True$\ProseOrTypeError;
-    \item checking that $\vseslength$ is pure via $\sesispure$ yields $\True$\ProseOrTypeError;
+    \item checking that $\vsesoffset$ is \readonly{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
+    \item checking that $\vseslength$ is \readonly{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
     \item determining whether $\toffset$ has the \structureofinteger\ yields $\True$\ProseOrTypeError;
     \item $\vsp$ is the slice at offset $\eoffsetp$ and length $\elength'$, that is,\\
      $\SliceLength(\eoffsetp, \elength')$;
@@ -307,8 +307,8 @@ are all well-typed.
 \inferrule[length]{
   \annotateexpr{\tenv, \eoffset} \typearrow (\toffset, \eoffsetp, \vsesoffset) \OrTypeError\\\\
   \annotatesymbolicconstrainedinteger(\tenv, \elength) \typearrow (\elengthp, \vseslength) \OrTypeError\\\\
-  \checktrans{\sesispure(\vsesoffset)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
-  \checktrans{\sesispure(\vseslength)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
+  \checktrans{\sesisreadonly(\vsesoffset)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
+  \checktrans{\sesisreadonly(\vseslength)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
   \checkunderlyinginteger(\tenv, \toffset) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsesoffset \cup \vseslength
 }{

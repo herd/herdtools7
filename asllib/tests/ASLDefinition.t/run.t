@@ -27,16 +27,16 @@ Examples used in ASL High-level Definition:
   File CaseStatement.no_otherwise.asl, line 17, characters 9 to 30:
       case test_and_increment(x) of
            ^^^^^^^^^^^^^^^^^^^^^
-  ASL Dynamic error: Unreachable reached.
+  ASL Dynamic error: unreachable reached.
   [1]
   $ aslref CaseStatement.where.asl
 
   $ aslref UnreachableStatement.asl
   diagnostic assertion failed: example message
-  File UnreachableStatement.asl, line 5, characters 8 to 22:
-          Unreachable();
-          ^^^^^^^^^^^^^^
-  ASL Dynamic error: Unreachable reached.
+  File UnreachableStatement.asl, line 5, characters 8 to 20:
+          unreachable;
+          ^^^^^^^^^^^^
+  ASL Dynamic error: unreachable reached.
   [1]
 
   $ aslref AssertionStatement.asl
@@ -128,6 +128,14 @@ Examples used in ASL High-level Definition:
   [1]
   $ aslref --no-exec NamedTypes.asl
   $ aslref --no-exec NamedTypes2.asl
+  $ aslref --no-exec NamedTypes3.asl
+  $ aslref --no-exec NamedTypes4.asl
+  $ aslref --no-exec NamedTypes.bad.asl
+  File NamedTypes.bad.asl, line 8, characters 4 to 5:
+      b = K; // Illegal: a Char cannot be directly assigned to a Byte
+      ^
+  ASL Type error: a subtype of Byte was expected, provided Char.
+  [1]
   $ aslref --no-exec GuideRule.GlobalStorageCycles.bad1.asl
   File GuideRule.GlobalStorageCycles.bad1.asl, line 4, characters 0 to 10:
   var b = a;
@@ -174,3 +182,19 @@ Examples used in ASL High-level Definition:
   $ aslref --no-exec ParametricFunction2.asl
   $ aslref --no-exec symbolic_bitwidth.asl
   $ aslref --no-exec constrained_bitwidth.asl
+  $ aslref --no-exec ConstrainedIntegers1.asl
+  $ aslref --no-exec ConstrainedIntegers2.asl
+  $ aslref --no-exec ConstrainedIntegers.bad.asl
+  File ConstrainedIntegers.bad.asl, line 7, characters 4 to 5:
+      B = A; // illegal: {2,4,8} is not a subset of {2,4}.
+      ^
+  ASL Type error: a subtype of integer {2, 4} was expected,
+    provided integer {2, 4, 8}.
+  [1]
+  $ aslref --no-exec ConstrainedIntegers.bad2.asl
+  File ConstrainedIntegers.bad2.asl, line 8, characters 4 to 10:
+      myIntA = myIntB; // Illegal even though at this point
+      ^^^^^^
+  ASL Type error: a subtype of integer {1..10} was expected,
+    provided integer {0..20}.
+  [1]

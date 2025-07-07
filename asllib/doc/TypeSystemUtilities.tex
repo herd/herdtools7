@@ -818,13 +818,13 @@ test for \verb|t| fails.
 
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if
-applying $\issymbolicallyevaluable$ to $\vses$ with \PerformsAssertionsTerm\ removed from it,
+applying $\issymbolicallyevaluable$ to $\vses$
 yields $\True$.
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \issymbolicallyevaluable(\vses \setminus \{\PerformsAssertions\}) \typearrow \vb
+  \issymbolicallyevaluable(\vses) \typearrow \vb
 }{
   \shouldrememberimmutableexpression(\vses) \typearrow \vb
 }
@@ -950,6 +950,7 @@ the subprogram definition node
 \funcsubprogramtype &:& \STFunction\\
 \funcrecurselimit    &:& \None\\
 \funcbuiltin &:& \False\\
+\funcqualifier &:& \None\\
 \funcoverride &:& \None\\
 \end{array}
 \right\}
@@ -971,6 +972,7 @@ the subprogram definition node
 \funcsubprogramtype &:& \STFunction\\
 \funcrecurselimit    &:& \None\\
 \funcbuiltin &:& \False\\
+\funcqualifier &:& \None\\
 \funcoverride &:& \None\\
 \end{array}
 \right\}
@@ -999,11 +1001,11 @@ The function
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\identifier}{\name} \aslsep
     \overname{\ty}{\tty} \aslsep
-    \overname{\TTimeFrame}{\vf})
+    \overname{\TPurity}{\vf})
    \aslto
   \overname{\staticenvs}{\newtenv}
 \]
-binds the type $\tty$ and \timeframeterm\ $\vf$ to the identifier $\name$ in the static environment $\tenv$,
+binds the type $\tty$ and \purity{} $\vf$ to the identifier $\name$ in the static environment $\tenv$,
 yielding the modified static environment $\newtenv$.
 
 \ExampleDef{Adding Types to Environments}
@@ -1011,14 +1013,14 @@ In \listingref{DeclareType}, the declaration of the enumeration type \verb|Color
 is achieved via \TypingRuleRef{DeclareType}, where
 $\addtype$ is applied to
 the empty environment, \verb|Color| as the type name,
-$\TEnum(\texttt{RED, GREEN, BLUE})$ as the type, and $\timeframeconstant$ as the \timeframeterm,
-binding \verb|Color| to the pair $(\TEnum(\texttt{RED, GREEN, BLUE}), \timeframeconstant)$.
+$\TEnum(\texttt{RED, GREEN, BLUE})$ as the type, and $\SEPure$ as the \purity{},
+binding \verb|Color| to the pair $(\TEnum(\texttt{RED, GREEN, BLUE}), \SEPure)$.
 
 For the declaration of the type \verb|Record|,
 $\addtype$ is applied to the environment where \verb|num_bits| has been added to the environment,
 \verb|Record| as the type name,\\
 $\TRecord([(\texttt{data},\TBits(\texttt{num\_bits}, \emptylist))])$ as the type,
-and $\timeframeexecution$ as the \timeframeterm{} (since \verb|num_bits| is not a constant).
+and $\SEReadonly$ as the \purity{} (since \verb|num_bits| is not a constant).
 
 \ProseParagraph
 Define $\newtenv$ as $\tenv$ where the $\declaredtypes$ map of the global component is updated

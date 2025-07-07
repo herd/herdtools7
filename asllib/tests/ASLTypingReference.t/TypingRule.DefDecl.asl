@@ -1,4 +1,4 @@
-type MyRecord of record; // { Other(MyRecord) }
+type MyRecord of record{-}; // { Other(MyRecord) }
 
 var g : MyRecord; // { Other(g) }
 

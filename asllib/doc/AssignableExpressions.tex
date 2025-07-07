@@ -587,7 +587,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
     \item checking that $k$ corresponds to a mutable variable, that is, $\LDKVar$, yields $\True$\ProseTerminateAs{\AssignmentToImmutable};
     \item determining whether $\tty$ \typesatisfies\ $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
     \item $\newle$ is $\vle$;
-    \item \Proseeqdef{$\vses$}{the \WriteLocalTerm\ for $\vx$}.
+    \item \Proseeqdef{$\vses$}{the set containing a \LocalEffectTerm{} with \purity{} $\SEImpure$, and a \ImmutabilityTerm{} with immutability $\False$}.
   \end{itemize}
 
   \item \AllApplyCase{global}
@@ -596,7 +596,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
     \item checking that $k$ corresponds to a mutable variable, that is, $\GDKVar$, yields $\True$\ProseTerminateAs{\AssignmentToImmutable};
     \item determining whether $\tty$ \typesatisfies\ $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
     \item $\newle$ is $\vle$;
-    \item \Proseeqdef{$\vses$}{the \WriteGlobalTerm\ for $\vx$}.
+    \item \Proseeqdef{$\vses$}{the set containing a \GlobalEffectTerm{} with \purity{} $\SEImpure$, and a \ImmutabilityTerm{} with immutability $\False$}.
   \end{itemize}
 
   \item \AllApplyCase{error\_undefined}
@@ -614,7 +614,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
   \checktypesat(\tenv, \vte, \tty) \typearrow \True \OrTypeError
 }{
   \annotatelexpr{\tenv, \overname{\LEVar(\vx)}{\vle}, \vte} \typearrow
-  (\overname{\vle}{\newle}, \{\WriteLocal(\vx)\})
+  (\overname{\vle}{\newle}, \{\LocalEffect(\SEImpure), \Immutability(\False)\})
 }
 \end{mathpar}
 
@@ -625,7 +625,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
   \checktypesat(\tenv, \vte, \tty) \typearrow \True \OrTypeError
 }{
   \annotatelexpr{\tenv, \overname{\LEVar(\vx)}{\vle}, \vte} \typearrow
-  (\overname{\vle}{\newle}, \{\WriteGlobal(\vx)\})
+  (\overname{\vle}{\newle}, \{\GlobalEffect(\SEImpure), \Immutability(\False)\})
 }
 \end{mathpar}
 
@@ -994,13 +994,14 @@ of \\
   \item $\mindex$ consists of the native integer $\vindex$ and the execution graph $\vgone$;
   \item $\vindex$ is the native integer for $\vi$;
   \item $\rmarray$ consists of the native vector $\rvarray$ and the execution graph $\vgtwo$;
-  \item setting the value $\vv$ at index $\vi$ of $\rvarray$ is the native vector $\vvone$;
+  \item setting the value $\vv$ at index $\vi$ of $\rvarray$ yields the native vector $\vvone$\ProseOrError;
   \item $\vmone$ is the pair consisting of $\vvone$ and the parallel composition of $\vgone$ and $\vgtwo$;
   \item the steps so far computed the updated array, but have not assigned it to the variable
   bound to the array given by $\rearray$, which is achieved next.
   Evaluating the left-hand-side expression $\rearray$ in an environment $\envtwo$ with $\vmone$
   is the output configuration $C$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
@@ -1009,7 +1010,7 @@ of \\
   \mindex \eqname (\vindex, \vgone)\\
   \vindex \eqname \nvint(\vi)\\
   \rmarray \eqname (\rvarray, \vgtwo)\\
-  \setindex(\vi, \vv, \rvarray) \evalarrow \vvone\\
+  \setindex(\vi, \vv, \rvarray) \evalarrow \vvone \OrDynError\\\\
   \vmone \eqdef (\vvone, \vgone \parallelcomp \vgtwo)\\
   \evallexpr{\envtwo, \rearray, \vmone} \evalarrow C
 }{

@@ -11,7 +11,7 @@ begin
       otherwise =>
         assert FALSE;
     end;
-    println("No exception raised");
+    println "No exception raised";
 
   return 0;
 end;

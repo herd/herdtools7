@@ -24,6 +24,29 @@ open AST
 open ASTUtils
 
 (* -------------------------------------------------------------------------
+    Multiple variable declarations
+   ------------------------------------------------------------------------- *)
+
+let make_local_vars (xs, ty) =
+  let make_one x =
+    S_Decl (LDK_Var, LDI_Var x.desc, Some ty, None) |> add_pos_from x
+  in
+  List.map make_one xs |> stmt_from_list |> desc
+
+let make_global_vars (names, ty) =
+  let make_one name =
+    D_GlobalStorage
+      {
+        keyword = GDK_Var;
+        name = name.desc;
+        ty = Some ty;
+        initial_value = None;
+      }
+    |> add_pos_from name
+  in
+  List.map make_one names
+
+(* -------------------------------------------------------------------------
     Elided parameters
    ------------------------------------------------------------------------- *)
 
@@ -181,12 +204,14 @@ let desugar_case_stmt e0 cases otherwise =
     Accessors
    ------------------------------------------------------------------------- *)
 
-type accessor_pair = { getter : stmt; setter : stmt }
+type accessor_pair = { is_readonly : bool; getter : stmt; setter : stmt }
 
 let desugar_accessor_pair override name parameters args setter_arg ty
     accessor_pair =
+  let qualifier = if accessor_pair.is_readonly then Some Readonly else None in
   let getter_func =
     {
+      qualifier;
       name;
       parameters;
       args;
@@ -200,6 +225,7 @@ let desugar_accessor_pair override name parameters args setter_arg ty
   in
   let setter_func =
     {
+      qualifier = None;
       name;
       parameters;
       args = (setter_arg, ty) :: args;

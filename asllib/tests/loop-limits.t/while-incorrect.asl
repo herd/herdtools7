@@ -3,7 +3,7 @@ begin
   var i: integer = 0;
   while (i < 10) looplimit 5 do
     i = i + 1;
-    println(i);
+    println i;
   end;
 
   return 0;

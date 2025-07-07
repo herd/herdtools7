@@ -5,7 +5,7 @@ begin
     field2: bits(3),
   };; // Illegal: local storage elements cannot have collection types.
 
-  println(test);
+  println test;
 
   return 0;
 end;

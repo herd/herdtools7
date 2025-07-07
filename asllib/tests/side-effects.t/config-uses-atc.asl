@@ -1,4 +1,4 @@
-func foo () => integer
+pure func foo () => integer
 begin
   return 0 as integer {10};
 end;

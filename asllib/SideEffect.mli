@@ -58,7 +58,10 @@ module SES : sig
   (* Properties *)
   val max_time_frame : t -> TimeFrame.t
   val is_pure : t -> bool
+  val is_readonly : t -> bool
   val is_symbolically_evaluable : t -> bool
+  val fine_grained_is_pure : t -> bool
+  val fine_grained_is_symbolically_evaluable : t -> bool
   val equal : t -> t -> bool
   val is_deterministic : t -> bool
 
@@ -74,6 +77,7 @@ module SES : sig
   val add_non_determinism : t -> t
   val remove_pure : t -> t
   val remove_locals : t -> t
+  val set_purity_for_subprogram : AST.func_qualifier option -> t -> t
   val remove_thrown_exceptions : t -> t
   val remove_calls_recursives : t -> t
   val remove_assertions : t -> t

@@ -54,6 +54,8 @@ type error_desc =
   | BadTypesForBinop of binop * ty * ty
   | CircularDeclarations of string
   | ImpureExpression of expr * SideEffect.SES.t
+      (** used for fine-grained analysis *)
+  | MismatchedPurity of string  (** Used for coarse-grained analysis *)
   | UnreconcilableTypes of ty * ty
   | AssignToImmutable of string
   | AssignToTupleElement of lexpr
@@ -77,6 +79,7 @@ type error_desc =
   | SettingIntersectingSlices of bitfield list
   | SetterWithoutCorrespondingGetter of func
   | NonReturningFunction of identifier
+  | NoreturnViolation of identifier
   | ConflictingSideEffects of SideEffect.t * SideEffect.t
   | UnexpectedATC
   | UnreachableReached
@@ -173,6 +176,7 @@ let error_label = function
   | BadTypesForBinop _ -> "BadTypesForBinop"
   | CircularDeclarations _ -> "CircularDeclarations"
   | ImpureExpression _ -> "ImpureExpression"
+  | MismatchedPurity _ -> "MismatchedPurity"
   | UnreconcilableTypes _ -> "UnreconcilableTypes"
   | AssignToImmutable _ -> "AssignToImmutable"
   | AssignToTupleElement _ -> "AssignToTupleElement"
@@ -194,6 +198,7 @@ let error_label = function
   | SettingIntersectingSlices _ -> "SettingIntersectingSlices"
   | SetterWithoutCorrespondingGetter _ -> "SetterWithoutCorrespondingGetter"
   | NonReturningFunction _ -> "NonReturningFunction"
+  | NoreturnViolation _ -> "NoreturnViolation"
   | UnexpectedATC -> "UnexpectedATC"
   | UnreachableReached -> "UnreachableReached"
   | LoopLimitReached -> "LoopLimitReached"
@@ -431,6 +436,8 @@ module PPrint = struct
           "ASL Type error:@ a pure expression was expected,@ found %a,@ which@ \
            produces@ the@ following@ side-effects:@ %a."
           pp_expr e SideEffect.SES.pp_print ses
+    | MismatchedPurity s ->
+        fprintf f "ASL Type error:@ expected@ a@ %s@ expression/subprogram." s
     | UnreconcilableTypes (t1, t2) ->
         fprintf f
           "ASL Type error:@ cannot@ find@ a@ common@ ancestor@ to@ those@ two@ \
@@ -515,10 +522,13 @@ module PPrint = struct
            %a."
           pp_pattern p pp_ty t
     | UnreachableReached ->
-        pp_print_text f "ASL Dynamic error: Unreachable reached."
+        pp_print_text f "ASL Dynamic error: unreachable reached."
     | NonReturningFunction name ->
         fprintf f "ASL Type error:@ the@ function %S@ %a." name pp_print_text
           "may not terminate by returning a value or raising an exception."
+    | NoreturnViolation name ->
+        fprintf f "ASL Type error:@ the@ function %S@ %a." name pp_print_text
+          "is qualified with noreturn but contains a return statement"
     | RecursionLimitReached ->
         pp_print_text f "ASL Dynamic error: recursion limit reached."
     | LoopLimitReached ->

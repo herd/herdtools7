@@ -1,4 +1,4 @@
-func plus_mul{N, M}(x: integer{N}, y: integer{M}) => integer{N + N * M}
+pure func plus_mul{N, M}(x: integer{N}, y: integer{M}) => integer{N + N * M}
 begin
     return x + x * y;
 end;

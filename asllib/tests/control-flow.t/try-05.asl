@@ -6,7 +6,7 @@ begin
   try throw E {-};
   catch
     when E => return 1;
-    when F => println("Caught F");
+    when F => println "Caught F";
     otherwise => throw E {-};
   end;
 end;

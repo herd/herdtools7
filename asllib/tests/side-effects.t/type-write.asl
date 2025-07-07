@@ -1,6 +1,6 @@
 var X: integer = 0;
 
-func write_X () => integer
+pure func write_X () => integer
 begin
   let x = X;
   X = x + 1;
