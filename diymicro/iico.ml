@@ -8,106 +8,6 @@ module A = struct
   include AArch64_compile
 end
 
-module CasNoMem = struct
-  let compileRnM ok st dep _ _ =
-    let src_reg, _ =
-      match dep with
-      | DepReg (r, v) -> r, v
-      | _ -> Warn.fatal "Event has not forwarded any register"
-    in
-    let rs, st = A.next_reg st in
-    let rt, st = A.next_reg st in
-    let loc, rn, st = A.assigned_next_loc st in
-
-    let ins_zero, reg_zero, st = A.calc_value st 0 src_reg None in
-    let m_addr, st = A.next_reg st in
-    let rcheck, st = A.next_reg st in
-    let dst_reg, st = A.next_reg st in
-
-    (* For srcM, that allows to check that STR is before CAS *)
-    let m_initial = if ok then 0 else 1 in
-    let final_expected_val = if ok then 2 else 1 in
-    let st = A.set_initial st loc m_initial in
-    let st = A.add_condition st rcheck final_expected_val in
-
-    let ins =
-      ins_zero
-      @ A.pseudo [A.do_add64 A.vloc m_addr rn reg_zero]
-      @ [A.mov rt 2]
-      @ A.pseudo
-          [
-            A.cas A.RMW_P rs rt m_addr;
-            A.do_ldr A.vloc rcheck rn;
-            A.do_ldr A.vloc dst_reg rn;
-          ]
-    in
-    ins, DepReg (dst_reg, Some final_expected_val), st
-
-  let compile ok src dst =
-    let cas_base st dep _ _ =
-      let src_reg, _ =
-        match dep with
-        | DepReg (r, v) -> r, v
-        | _ -> Warn.fatal "Event has not forwarded any register"
-      in
-      let rs, st = A.next_reg st in
-      let rt, st = A.next_reg st in
-      let loc, rn, st = A.assigned_next_loc st in
-      let rcheck, st = A.next_reg st in
-
-      (* For srcM, that allows to check that STR is before CAS *)
-      let m_initial = if ok = (src <> "M") then 0 else 1 in
-      let final_expected_val = if ok then 2 else 1 in
-      let st = A.set_initial st loc m_initial in
-      let st = A.add_condition st rcheck final_expected_val in
-
-      let pre_ins, st =
-        match src with
-        | "Rs" -> A.pseudo [A.do_eor rs src_reg src_reg], st
-        | "Rt" -> A.pseudo [A.do_eor rt src_reg src_reg], st
-        | "Rn" ->
-            let r_eor, st = A.next_reg st in
-            let ins =
-              A.pseudo
-                [A.do_eor r_eor src_reg src_reg; A.do_add64 A.vloc rn rn r_eor]
-            in
-            ins, st
-        | "M" ->
-            let m_value = if ok then 0 else 1 in
-            let reg_str, st = A.next_reg st in
-            let ins =
-              A.pseudo
-                [
-                  A.do_eor reg_str src_reg src_reg;
-                  A.addi reg_str reg_str m_value;
-                  A.str reg_str rn;
-                ]
-            in
-            ins, st
-        | _ -> Warn.fatal "Unknown source %s" src
-      in
-      let ins =
-        A.pseudo
-          [A.addi rt rt 2; A.cas A.RMW_P rs rt rn; A.do_ldr A.vloc rcheck rn]
-      in
-
-      let post_ins, st, dst_dep =
-        match dst with
-        | "Rs" -> [], st, DepReg (rs, None)
-        | "M" ->
-            let rn_reg, st = A.next_reg st in
-            ( A.pseudo [A.do_ldr A.vloc rn_reg rn],
-              st,
-              DepReg (rn_reg, Some final_expected_val) )
-        | _ -> Warn.fatal "Unknown destination %s" dst
-      in
-      pre_ins @ ins @ post_ins, dst_dep, st
-    in
-    match src, dst with "Rn", "M" -> compileRnM ok | _ -> cas_base
-
-  let repr ok = "cas-no-mem:" ^ if ok then "ok" else "no"
-end
-
 module Cas = struct
   let compile ok src dst =
     let cas_base st dep src_evt dst_evt =
@@ -427,27 +327,6 @@ module LdAdd = struct
 end
 
 let init () =
-  List.iter
-    (fun ok ->
-      add_iico
-        {
-          instruction_name = CasNoMem.repr ok;
-          to_edge =
-            (fun src dst ->
-              {
-                repr = "";
-                compile_edge = CasNoMem.compile ok src dst;
-                direction = RegEvent, RegEvent;
-                ie = Internal;
-                sd = Same;
-                significant_source = false;
-                significant_dest = false;
-              });
-          inputs = ["Rn"; "Rs"; "Rt"; "M"];
-          outputs = ["Rs"; "M"];
-        })
-    [true; false];
-
   List.iter
     (fun ok ->
       add_iico
