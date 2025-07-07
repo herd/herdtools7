@@ -1,0 +1,12 @@
+Test MP+rel+LDADD-MRn Allowed
+States 3
+0:X2=0; 0:X6=0;
+0:X2=0; 0:X6=1;
+0:X2=1; 0:X6=1;
+No
+Witnesses
+Positive: 0 Negative: 4
+Condition exists (0:X2=1 /\ 0:X6=0)
+Observation MP+rel+LDADD-MRn Never 0 4
+Hash=a4b5a5943c768525e5b2c0a7ca0c9f5f
+

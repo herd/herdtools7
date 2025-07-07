@@ -1,0 +1,13 @@
+Test MP+rel+LDADD-RtM Allowed
+States 4
+1:X3=0; 1:X4=0; 1:X8=0;
+1:X3=0; 1:X4=0; 1:X8=1;
+1:X3=1; 1:X4=0; 1:X8=0;
+1:X3=1; 1:X4=0; 1:X8=1;
+No
+Witnesses
+Positive: 0 Negative: 4
+Condition exists (1:X3=1 /\ 1:X4=1 /\ 1:X8=0)
+Observation MP+rel+LDADD-RtM Never 0 4
+Hash=bf0fb514c33c5c3b0cd74f9e137b6c5b
+

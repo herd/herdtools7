@@ -1,0 +1,13 @@
+Test LB+rel+SWP-MRs Allowed
+States 4
+0:X3=0; 1:X2=0;
+0:X3=0; 1:X2=1;
+0:X3=1; 1:X2=0;
+0:X3=1; 1:X2=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:X3=1 /\ 1:X2=1)
+Observation LB+rel+SWP-MRs Sometimes 1 3
+Hash=efbd56c1dad3cef2facc38bf711e1120
+

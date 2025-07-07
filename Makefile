@@ -18,6 +18,7 @@ REGRESSION_TEST_MODE = test
 DUNE_PROFILE = release
 
 DIYCROSS                      = _build/install/default/bin/diycross7
+DIYMICROENUM                  = _build/install/default/bin/diymicroenum7
 HERD                          = _build/install/default/bin/herd7
 LITMUS                        = _build/install/default/bin/litmus7
 LITMUS_LIB_DIR                = $(PWD)/litmus/libdir
@@ -25,6 +26,9 @@ HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
 HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression_test.exe
 HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regression_test.exe
 BENTO                         = _build/default/tools/bento.exe
+
+DIYMICRO_EDGES = $(shell $(DIYMICROENUM) -list-iico | sed -n 's/^iico\[\([^ ]*\).*/iico[\1]/p')
+DIYMICRO_EDGES_ARG := $(foreach arg,$(DIYMICRO_EDGES),-diycross-arg $(arg))
 
 all: build
 
@@ -357,6 +361,19 @@ diy-test-aarch64:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diycross7 tests: OK"
 
+diymicro-test:: diymicro-test-aarch64
+diymicro-test-aarch64:
+	@ echo
+	$(HERD_DIYCROSS_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-diycross-path $(DIYMICROENUM) \
+		-libdir-path ./herd/libdir \
+		-expected-dir ./herd/tests/diymicro/AArch64 \
+		$(DIYMICRO_EDGES_ARG) \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 diymicro7 tests: OK"
+
+
 test-bnfc:
 	@ echo
 	dune build @bnfc_test
@@ -597,8 +614,8 @@ test.vmsa+mte:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 VMSA+MTE instructions tests: OK"
 
-test:: diy-test
-test-local:: diy-test
+test:: diy-test diymicro-test
+test-local:: diy-test diymicro-test
 
 LDS:="Amo.Cas,Amo.LdAdd,Amo.LdClr,Amo.LdEor,Amo.LdSet"
 LDSPLUS:="LxSx",$(LDS)

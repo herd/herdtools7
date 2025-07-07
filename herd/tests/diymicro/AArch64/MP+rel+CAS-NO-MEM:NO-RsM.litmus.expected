@@ -1,0 +1,13 @@
+Test MP+rel+CAS-NO-MEM Allowed
+States 4
+1:X3=0; 1:X7=1; 1:X10=0;
+1:X3=0; 1:X7=1; 1:X10=1;
+1:X3=1; 1:X7=1; 1:X10=0;
+1:X3=1; 1:X7=1; 1:X10=1;
+Ok
+Witnesses
+Positive: 2 Negative: 6
+Condition exists (1:X3=1 /\ 1:X7=1 /\ 1:X10=0)
+Observation MP+rel+CAS-NO-MEM Sometimes 2 6
+Hash=181c721bed3b1160f09300ab9c098d71
+

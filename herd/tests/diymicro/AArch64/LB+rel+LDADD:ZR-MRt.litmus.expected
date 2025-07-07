@@ -1,0 +1,11 @@
+Test LB+rel+LDADD Allowed
+States 2
+1:X2=0;
+1:X2=1;
+Ok
+Witnesses
+Positive: 2 Negative: 2
+Condition exists (1:X2=1)
+Observation LB+rel+LDADD Sometimes 2 2
+Hash=1c29f414757a3c7606f7e7a1be6f8dbc
+

@@ -1,0 +1,13 @@
+Test MP+rel+SWP-RtM Allowed
+States 4
+1:X3=0; 1:X9=0;
+1:X3=0; 1:X9=1;
+1:X3=1; 1:X9=0;
+1:X3=1; 1:X9=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (1:X3=1 /\ 1:X9=0)
+Observation MP+rel+SWP-RtM Sometimes 1 3
+Hash=d3e44ac34ec928b0d79f0ded8abf67fd
+

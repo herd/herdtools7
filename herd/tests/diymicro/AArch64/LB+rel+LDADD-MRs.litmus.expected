@@ -1,0 +1,13 @@
+Test LB+rel+LDADD-MRs Allowed
+States 4
+0:X2=0; 1:X2=0;
+0:X2=0; 1:X2=1;
+0:X2=1; 1:X2=0;
+0:X2=1; 1:X2=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:X2=1 /\ 1:X2=1)
+Observation LB+rel+LDADD-MRs Sometimes 1 3
+Hash=029263df016f819d7efc3b68b2720184
+

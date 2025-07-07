@@ -1,0 +1,11 @@
+Test MP+rel+LDADD Allowed
+States 2
+0:X4=0;
+0:X4=1;
+Ok
+Witnesses
+Positive: 2 Negative: 2
+Condition exists (0:X4=0)
+Observation MP+rel+LDADD Sometimes 2 2
+Hash=6209147b7e8b1ece54c65f0227e1427a
+

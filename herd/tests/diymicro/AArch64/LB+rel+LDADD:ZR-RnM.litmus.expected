@@ -1,0 +1,12 @@
+Test LB+rel+LDADD Allowed
+States 3
+0:X3=0; 1:X3=0;
+0:X3=0; 1:X3=1;
+0:X3=1; 1:X3=0;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:X3=1 /\ 1:X3=1)
+Observation LB+rel+LDADD Never 0 3
+Hash=2845940e9ae164492d57f12905578d8c
+

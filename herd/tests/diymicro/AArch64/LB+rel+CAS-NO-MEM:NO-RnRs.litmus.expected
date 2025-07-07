@@ -1,0 +1,12 @@
+Test LB+rel+CAS-NO-MEM Allowed
+States 3
+0:X3=0; 1:X3=0; 1:X7=1;
+0:X3=0; 1:X3=1; 1:X7=1;
+0:X3=1; 1:X3=0; 1:X7=1;
+No
+Witnesses
+Positive: 0 Negative: 6
+Condition exists (0:X3=1 /\ 1:X3=1 /\ 1:X7=1)
+Observation LB+rel+CAS-NO-MEM Never 0 6
+Hash=38b510f3b385ae054763d28bb6c95d1e
+

@@ -1,0 +1,12 @@
+Test MP+rel+CSEL Allowed
+States 3
+1:X3=0; 1:X8=2; 1:X10=0;
+1:X3=0; 1:X8=2; 1:X10=1;
+1:X3=1; 1:X8=2; 1:X10=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (1:X3=1 /\ 1:X8=2 /\ 1:X10=0)
+Observation MP+rel+CSEL Never 0 3
+Hash=c72b2f9fc2ad66b63804e874a1bdb886
+
