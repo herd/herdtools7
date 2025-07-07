@@ -1,0 +1,11 @@
+Test STXR2 Forbidden
+States 2
+0:X4=1; [x]=1; [y]=2;
+0:X4=1; [x]=4; [y]=2;
+Ok
+Witnesses
+Positive: 3 Negative: 0
+Condition ~exists (0:X4=1 /\ [y]=4)
+Observation STXR2 Never 0 3
+Hash=c3ef2270f89b09293fb8d025e1f95345
+
