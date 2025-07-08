@@ -27,9 +27,6 @@ HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression
 HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regression_test.exe
 BENTO                         = _build/default/tools/bento.exe
 
-DIYMICRO_EDGES = $(shell $(DIYMICROENUM) -list-iico | sed -n 's/^iico\[\([^ ]*\).*/iico[\1]/p')
-DIYMICRO_EDGES_ARG := $(foreach arg,$(DIYMICRO_EDGES),-diycross-arg $(arg))
-
 all: build
 
 .PHONY: Version.ml
@@ -363,6 +360,8 @@ diy-test-aarch64:
 
 diymicro-test:: diymicro-test-aarch64
 diymicro-test-aarch64:
+	$(eval DIYMICRO_EDGES = $(shell $(DIYMICROENUM) -list-iico | sed -n 's/^iico\[\([^ ]*\).*/iico[\1]/p'))
+	$(eval DIYMICRO_EDGES_ARG := $(foreach arg,$(DIYMICRO_EDGES),-diycross-arg $(arg)))
 	@ echo
 	$(HERD_DIYCROSS_REGRESSION_TEST) \
 		-herd-path $(HERD) \
