@@ -370,9 +370,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDRBH (_,r,_,_)
       | I_LDRS (_,r,_,_)
       | I_LDUR (_,r,_,_)
-      | I_LDAR (_,_,r,_) |I_LDARBH (_,_,r,_)
+      | I_LDAR (_,(AA|AQ),r,_) |I_LDARBH (_,(AA|AQ),r,_)
       | I_SWP (_,_,_,r,_) | I_SWPBH (_,_,_,r,_)
-      | I_STXR (_,_,r,_,_) | I_STXP (_,_,r,_,_, _) | I_STXRBH (_,_,r,_,_)
       | I_CAS (_,_,r,_,_) | I_CASBH (_,_,r,_,_)
       | I_LDOP (_,_,_,_,r,_) | I_LDOPBH (_,_,_,_,r,_)
       | I_MOV (_,r,_) | I_MOVZ (_,r,_,_) | I_MOVN (_,r,_,_) | I_MOVK (_,r,_,_)
@@ -401,13 +400,17 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LD1SPT (_,r,_,_,_,_,_) | I_MOVA_TV (r,_,_,_,_) | I_MOVA_VT (r,_,_,_,_)
       | I_ADDA (_,r,_,_,_)
         -> [r]
+      | I_LDAR (_,(XX|AX),r,_) |I_LDARBH (_,(XX|AX),r,_)
+        -> [r;ResAddr;]
+      | I_STXR (_,_,r,_,_) | I_STXP (_,_,r,_,_, _) | I_STXRBH (_,_,r,_,_)
+        -> [r;ResAddr;]
       | I_MSR (SYS_NZCV,_)
         ->
           nzcv_regs
       | I_MSR (sr,_)
         -> [(SysReg sr)]
       | I_LDXP (_,_,r1,r2,_)
-        -> [r1;r2;]
+        -> [r1;r2;ResAddr;]
       | I_LD1SP (_,rs,_,_,_)
       | I_LD2SP (_,rs,_,_,_)
       | I_LD3SP (_,rs,_,_,_)
