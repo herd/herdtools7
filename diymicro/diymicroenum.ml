@@ -1,31 +1,28 @@
-module E = struct
-  include Edge
-end
-
 let make_all_tests edge base_filename output_dir =
   let tests =
     (* TODO Should we write the edges in OCaml directly ? *)
-    match E.edge_direction edge with
-    | E.RegEvent, E.RegEvent ->
+    let open Edge in
+    match edge_direction edge with
+    | RegEvent, RegEvent ->
         [
           ( "LB+rel+" ^ base_filename,
             ["DpAddrdrW"; "Rfe"; "PodRW:L"; "Rfe"; "Rf-reg"] );
           ( "MP+rel+" ^ base_filename,
             ["DpAddrdrR"; "Fre"; "PodWW:L"; "Rfe"; "Rf-reg"] );
         ]
-    | E.Rm _, E.RegEvent ->
+    | Rm _, RegEvent ->
         [
           "LB+rel+" ^ base_filename, ["DpAddrdrW"; "Rfe"; "PodRW:L"; "Rfe"];
           "MP+rel+" ^ base_filename, ["DpAddrdrR"; "Fre"; "PodWW:L"; "Rfe"];
         ]
-    | E.RegEvent, E.Wm _ ->
+    | RegEvent, Wm _ ->
         [
           ( "LB+rel+" ^ base_filename,
             ["PosWR"; "DpAddrdW"; "Rfe"; "PodRW:L"; "Rfe"; "Rf-reg"] );
           ( "MP+rel+" ^ base_filename,
             ["PosWR"; "DpAddrdR"; "Fre"; "PodWW:L"; "Rfe"; "Rf-reg"] );
         ]
-    | E.Rm _, E.Wm _ ->
+    | Rm _, Wm _ ->
         [
           ( "LB+rel+" ^ base_filename,
             ["PosWR"; "DpAddrdW"; "Rfe"; "PodRW:L"; "Rfe"; "DpDatadW"; "PosWR"]
@@ -36,13 +33,13 @@ let make_all_tests edge base_filename output_dir =
         ]
     | dir1, dir2 ->
         Warn.fatal "make_all_tests: LB/MP not implemented for %s -> %s"
-          (Edge.pp_direction dir1) (Edge.pp_direction dir2)
+          (pp_direction dir1) (pp_direction dir2)
   in
 
   List.map
     (fun (test_name, edges) ->
       let cycle =
-        (edge, E.AnnotNone)
+        (edge, Edge.AnnotNone)
         :: List.map
              (fun s -> Lexing.from_string s |> Parser.main Lexer.token)
              edges

@@ -56,7 +56,7 @@ edge:
     | DP dp sd read_dir dir  { Edge.Dp ($2, $3, $4, $5) }
 
     | DMB DOT barrier_type sd dir dir { Edge.Dmb ($3, $4, $5, $6) }
-    | DMB sd dir dir { Edge.Dmb (Edge.A.FULL, $2, $3, $4) }
+    | DMB sd dir dir { Edge.Dmb (AArch64_compile.FULL, $2, $3, $4) }
 
     | RF_REG            { Edge.RfReg }
     | IICO IICO_ARGS    { get_iico_edge $2 }
@@ -84,8 +84,8 @@ dp:
     | CTRL { Edge.Ctrl }
 ;
 barrier_type:
-    | LD   { Edge.A.LD }
-    | ST   { Edge.A.ST }
+    | LD   { AArch64_compile.LD }
+    | ST   { AArch64_compile.ST }
 ;
 
 parse_iico:

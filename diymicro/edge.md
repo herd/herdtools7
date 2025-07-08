@@ -58,12 +58,12 @@ For reference, `b3bf423` introduces Dmb to diymicro and should show the relevant
       - Example dependency:  
         If the preceding event is a memory read like `LDR W1,[X0]`, the dependency will be `DepReg (A.Zreg 1) (Some expected_read_value)`.
       - This function returns instructions, a node dependency (as above), and the new compilation state.
-      - Functions to get a new register, location, set final conditions, etc., are available in the [`AArch64_Compile.St`](AArch64_compile.ml#St) module.
+      - Functions to get a new register, location, set final conditions, etc., are available in the [`State`](state.ml) module.
 
 With these elements, an iico edge can finally be added in [iico.ml](iico.ml) with:
 ```ocaml
-  add_iico
-    {
+  Edge.add_iico
+    Edge.{
       instruction_name = _;
       to_edge =
         (fun src dst ->

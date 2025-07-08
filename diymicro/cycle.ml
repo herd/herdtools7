@@ -1,9 +1,5 @@
 type proc = Proc of int
 
-module A = struct
-  include AArch64_compile
-end
-
 (* new_proc: get a new proc
    proc_count: get the current number of procs *)
 let new_proc, proc_count, reset_proc_count =
@@ -18,7 +14,7 @@ let new_proc, proc_count, reset_proc_count =
 type event = {
   annot : Edge.annot;
   mutable direction : Edge.direction;
-  mutable location : A.loc option;
+  mutable location : State.loc option;
   mutable proc : proc option;
   mutable value : int option;
   mutable is_significant : bool;
@@ -48,7 +44,7 @@ let pp_event evt =
   | Edge.RegEvent -> "    "
   | _ -> (
       ":"
-      ^ (match evt.location with Some l -> A.pp_location l | None -> "*")
+      ^ (match evt.location with Some l -> State.pp_location l | None -> "*")
       ^ " "
       ^ match evt.value with Some v -> string_of_int v | None -> "*")
 
@@ -174,7 +170,7 @@ let assign_locations cycle_start =
     node.source_event.location <- Some source_location;
     if node.next != first_node then
       let loc =
-        if Edge.edge_location node.edge = Edge.Different then A.next_loc ()
+        if Edge.edge_location node.edge = Edge.Different then State.next_loc ()
         else source_location
       in
       assign_aux node.next loc
@@ -187,7 +183,7 @@ let assign_locations cycle_start =
         Warn.user_error "Cannot get a changing location across %s"
           (Edge.pp_edge node.edge))
   in
-  assign_aux first_node (A.next_loc ())
+  assign_aux first_node (State.next_loc ())
 
 (** Assign a proc. to each event of the cycle *)
 let assign_procs cycle_start =

@@ -1,7 +1,3 @@
-module A = struct
-  include AArch64_compile
-end
-
 (** Type definitions *)
 
 (** Register event, Memory read/write (true if an edge does the event) *)
@@ -22,13 +18,13 @@ type annot = AnnotNone | A | L | X
 (** dependencies from a compilation function to the next one,
     register+optionally its known (as in final-condition verified) value *)
 type node_dep =
-  | DepAddr of A.reg * int option
-  | DepData of A.reg * int option
-  | DepCtrl of A.reg * int option
-  | DepReg of A.reg * int option
+  | DepAddr of AArch64_compile.reg * int option
+  | DepData of AArch64_compile.reg * int option
+  | DepCtrl of AArch64_compile.reg * int option
+  | DepReg of AArch64_compile.reg * int option
   | DepNone
 
-type event_data = A.loc * int * annot * bool
+type event_data = State.loc * int * annot * bool
 (** essential event data, passed to iico edges wanting to compile an event
     - location of the event
     - value
@@ -39,11 +35,13 @@ type iico_edge = {
   mutable repr : string;
       (* Expected to be "" in an add_iico call, replaced later by get_iico *)
   compile_edge :
-    A.state ->
+    State.t ->
     node_dep ->
     event_data option ->
     event_data option ->
-    int A.kinstruction A.kpseudo list * node_dep * A.state;
+    int AArch64_compile.kinstruction AArch64_compile.kpseudo list
+    * node_dep
+    * State.t;
   direction : direction * direction;
   ie : int_ext; (* does the edge start on a new proc? *)
   sd : sd;
@@ -66,7 +64,7 @@ type t =
   | Ws of int_ext
   | Po of sd * direction * direction
   | Dp of dp * sd * direction * direction
-  | Dmb of A.mBReqTypes * sd * direction * direction
+  | Dmb of AArch64_compile.mBReqTypes * sd * direction * direction
   | RfReg
   | Iico of iico_edge
 
@@ -98,8 +96,8 @@ let add_iico iico = Hashtbl.add iico_ht iico.instruction_name iico
 let get_iico s = Hashtbl.find iico_ht s
 
 let iico_to_edge iico src dst =
-  let _ = List.find (( = ) src) iico.inputs in
-  let _ = List.find (( = ) dst) iico.outputs in
+  let () = assert (List.exists (String.equal src) iico.inputs) in
+  let () = assert (List.exists (String.equal dst) iico.outputs) in
   let edge = iico.to_edge src dst in
   edge.repr <- iico.instruction_name ^ " " ^ src ^ "->" ^ dst;
   Iico edge
@@ -135,10 +133,10 @@ let pp_annot = function AnnotNone -> "" | A -> "A" | L -> "L" | X -> "X"
 let pp_node_dep =
   let pp_int_option = function None -> "" | Some v -> "=" ^ string_of_int v in
   function
-  | DepAddr (r, v) -> "Addr " ^ A.pp_reg r ^ pp_int_option v
-  | DepData (r, v) -> "Data " ^ A.pp_reg r ^ pp_int_option v
-  | DepCtrl (r, v) -> "Ctrl " ^ A.pp_reg r ^ pp_int_option v
-  | DepReg (r, v) -> "Reg " ^ A.pp_reg r ^ pp_int_option v
+  | DepAddr (r, v) -> "Addr " ^ AArch64_compile.pp_reg r ^ pp_int_option v
+  | DepData (r, v) -> "Data " ^ AArch64_compile.pp_reg r ^ pp_int_option v
+  | DepCtrl (r, v) -> "Ctrl " ^ AArch64_compile.pp_reg r ^ pp_int_option v
+  | DepReg (r, v) -> "Reg " ^ AArch64_compile.pp_reg r ^ pp_int_option v
   | DepNone -> "None"
 
 let pp_edge = function
@@ -152,8 +150,9 @@ let pp_edge = function
       "Dp" ^ pp_dp dp ^ pp_sd sd ^ pp_direction dir1 ^ pp_direction dir2
   | Dmb (b_type, sd, dir1, dir2) ->
       "DMB"
-      ^ (if b_type <> A.FULL then "." else "")
-      ^ A.pp_type b_type ^ pp_sd sd ^ pp_direction dir1 ^ pp_direction dir2
+      ^ (if b_type <> AArch64_compile.FULL then "." else "")
+      ^ AArch64_compile.pp_type b_type
+      ^ pp_sd sd ^ pp_direction dir1 ^ pp_direction dir2
   | RfReg -> "Rf-reg"
   | Iico i -> "iico[" ^ i.repr ^ "]"
 
