@@ -245,13 +245,19 @@ module Make (O:Config) (E:Edge.S) :
     String.concat ", " @@ List.map debug_val @@ Array.to_list v
 
   let debug_evt e =
-    sprintf "%s%s %s %s%s%s%s%s"
+    sprintf "#[%d] %s%s %s %s %s%s%s%s%s %s %s"
+      e.idx
       (debug_dir e.dir)
       (debug_atom e.atom)
       (Code.pp_loc e.loc)
+      ( if e.rmw then "rmw" else "" )
       (match debug_vec e.cell with
        | "" -> "" | s -> "cell=[" ^ s ^"] ")
       (debug_val e.v) (debug_tag e) (debug_morello e) (debug_vector e)
+      ( match e.check_fault with
+      | Some (_,b) -> sprintf "fault:%b" b | None -> "fault:none" )
+      ( match e.check_value with
+      | Some b -> sprintf "value:%b" b | None -> "value:none" )
 
   let debug_edge = E.pp_edge
 
@@ -1490,7 +1496,7 @@ let merge_changes n nss =
     if
       not O.allow_back &&
       List.exists proc_back nss
-    then Warn.fatal "Forbidden po vs. com" ;
+    then Warn.fatal "Forbidden po vs. com";
     if O.verbose > 1 then begin
       eprintf "SPLITTED:\n" ; debug_procs nss
     end ;
