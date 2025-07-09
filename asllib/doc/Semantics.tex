@@ -93,7 +93,7 @@ Semantic configurations wrap together elements such as environments and AST node
 and associate them with a \emph{configuration domain}. Input semantic configuration domains
 determine the semantic relation they pertain to, while output semantic configuration
 domains distinguish between conceptually different kinds of outputs, for example
-ones where an exception was raised, ones when a dynamic error occurred, etc.
+ones where an exception was raised, ones when a \dynamicerrorterm{} occurred, etc.
 
 The rest of this section defines the components comprising semantic configurations:
 \begin{itemize}
@@ -369,7 +369,7 @@ ASL dynamic semantics mainly utilize the following types of output semantic conf
   an identifier to which the Read Effect is attributed, and an associated type.
   The type $\valuereadfrom(\vals,\Identifiers)$ is a semantic configuration nested inside an exception semantic configuration.
   The ASL dynamic semantics propagate these \emph{exceptional semantic configurations} to the nearest catch clause that matches
-  them, and otherwise they are caught at the top-level and reported as errors (see dynamic errors below).
+  them, and otherwise they are caught at the top-level and reported as errors (see \dynamicerrorsterm{} below).
 
   \hypertarget{def-returning}{}
   \item[Returned Values.] Semantic configurations in $\Returning((\vals^* \times \XGraphs), \envs)$
@@ -384,7 +384,7 @@ ASL dynamic semantics mainly utilize the following types of output semantic conf
 
   \hypertarget{def-error}{}
   \item[Dynamic Errors.] Semantic configurations in $\Error(\Strings)$
-  represent dynamic errors (for example, division by zero).
+  represent \dynamicerrorsterm{} (for example, division by zero).
   The ASL dynamic semantics are set up such that when these \emph{error semantic configurations} appear,
   the evaluation of the entire specification terminates by outputting them.
 

@@ -26,7 +26,7 @@ These have the following behaviour:
   \item A \readonly{} subprogram does not modify global storage elements or throw exceptions, but can read global storage elements and use non-determinism ($\ARBITRARY$).
     It can only call read-only or pure subprograms.
   \item A \pure{} subprogram does not read or modify global storage elements, throw exceptions, or use non-determinism. It can only call pure subprograms. It can therefore be considered read-only too.
-  \item Both pure and read-only subprograms may use assertions (including asserting type conversions), or cause dynamic errors (e.g.\ divide by zero, calling the \unreachablestatementterm{}, etc.).
+  \item Both pure and read-only subprograms may use assertions (including asserting type conversions), or cause \dynamicerrorsterm{} (e.g.\ divide by zero, calling the \unreachablestatementterm{}, etc.).
 \end{itemize}
 
 \noindent
