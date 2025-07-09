@@ -1,0 +1,17 @@
+AArch64 MLPT001
+Variant=vmsa
+{
+[PTE(x)] = (db:0, contig:0);
+[PTE(y)]= (db:1, contig:0);
+0:X2=x; 0:X3=y;
+0:X4=PTE(x); 0:X5=PTE(y);
+0:X1=(oa:PA(x),db:0);
+}
+P0           ;
+LDR X7, [X3] ;
+STR X1, [X4] ;
+STR X1, [X5] ;
+LDR X8, [X2] ;
+L0:
+    LDR X9, [X3] ;
+exists([x]=1)
