@@ -107,16 +107,27 @@ module Make(C:Builder.S)
       r
 
     let choice_default e1 e2 =
-      let r = match e1.edge,e2.edge with
 (*
-  Now accept some internal with internal composition
+  Now accept some internal with internal composition following some principles:
+    - `Po(_)`, `Dp(_)` and `Fenced(_)` should be treated the same.
+    - Symmetric
  *)
-      | (Ws Int|Rf Int|Fr Int|Insert _),(Dp (_,_,_)|Po (Diff,_,_))
-      | (Dp (_,_,_)|Po (Diff,_,_)),(Ws Int|Rf Int|Fr Int|Insert _)
-      | Dp (_,Diff,_),Po (Diff,_,_)
-      | Po (Diff,_,_),Dp (_,Diff,_)
-      | Rf Int,Po (Same,_,_)
-      | Po (Same,_,_),Rf Int
+      let r = match e1.edge,e2.edge with
+      (* E.g. Rfi Pod** *)
+      | (Ws Int|Rf Int|Fr Int|Insert _),(Po (Diff,_,_)|Dp (_,Diff,_)|Fenced (_,Diff,_,_))
+      (* E.g. Pod** Rfi *)
+      | (Po (Diff,_,_)|Dp (_,Diff,_)|Fenced (_,Diff,_,_)),(Ws Int|Rf Int|Fr Int|Insert _)
+      (* E.g. Pod** Pod** *)
+      | (Po (Diff,_,_)|Dp (_,Diff,_)|Fenced (_,Diff,_,_)),(Po (Diff,_,_)|Dp (_,Diff,_)|Fenced (_,Diff,_,_))
+      (* E.g. ISB Rfi *)
+      | Insert _,(Ws Int|Rf Int|Fr Int)
+      (* E.g. Rfi ISB *)
+      | (Ws Int|Rf Int|Fr Int),Insert _
+      (* E.g. Rfi Pos** *)
+      | Rf Int,(Po (Same,_,_)|Dp (_,Same,_)|Fenced (_,Same,_,_))
+      (* E.g. Pos** Rfi *)
+      | ((Po (Same,_,_)|Dp (_,Same,_)|Fenced (_,Same,_,_))),Rf Int
+      (* E.g. Amo.Cas *)
       | (Rmw _,_)|(_,Rmw _) -> true
       | _,_ ->
           (* Reject other internal followed by internal sequences *)
