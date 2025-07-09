@@ -1442,7 +1442,7 @@ indexed by \texttt{2} in \texttt{my\_array} is \texttt{42}.
 
 \ExampleDef{Evaluation of an Illegal Array Read}
 In \listingref{semantics-egetarrayerror},
-evaluating the array access expression \verb|my_array[[3]]| results in a dynamic error,
+evaluating the array access expression \verb|my_array[[3]]| results in a \ErrorConfigurationTerm{},
 since we are trying to access index \texttt{3} of an array
 which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
 \ASLListing{Evaluating an illegal array access}{semantics-egetarrayerror}{\semanticstests/SemanticsRule.EGetArrayTooSmall.asl}
@@ -2316,7 +2316,7 @@ the asserting type conversion is provided.
 Note that ATCs are execution-time checks. An execution-time check is a
 condition that is evaluated during the evaluation of an execution-time
 initializer expression or subprogram. If the condition evaluates to $\False$ it
-is a dynamic error.
+is a \ErrorConfigurationTerm{}.
 
 \ASLListing{ATC expressions}{typing-atc}{\typingtests/TypingRule.ATC.asl}
 
@@ -2544,7 +2544,7 @@ In \listingref{semantics-atcvalue}, both type assertions ---
 \ExampleDef{An Unevaluated Asserting Type Conversion}
 \identr{YCPX}
 In \listingref{semantics-atcnotevaluated}, the asserting type conversion on \texttt{y}
-does not yield a dynamic error, since the invocation of \texttt{f1} returns $\False$ when
+does not yield a \ErrorConfigurationTerm{}, since the invocation of \texttt{f1} returns $\False$ when
 evaluated:
 \ASLListing{A asserting type conversion that is never evaluated}{semantics-atcnotevaluated}
 {\semanticstests/SemanticsRule.ATCNotDynamicErrorIfFalse.asl}
@@ -2573,7 +2573,7 @@ will never occur, but it is still classified as a \dynamicerrorterm{}.
       \item \AllApplyCase{error}
             \begin{itemize}
             \item $\vb$ is the native Boolean for \False;
-            \item the result is a dynamic error indicating that the type assertion failed
+            \item the result is a \ErrorConfigurationTerm{} indicating that the type assertion failed
                   (\DynamicTypeAssertionFailure).
             \end{itemize}
       \end{itemize}
@@ -3018,7 +3018,7 @@ and how to obtain an arbitrary enumeration-indexed array, \texttt{enum\_array}.
     \item \AllApplyCase{error}
     \begin{itemize}
       \item the domain of $\vt$ in $\env$ is empty;
-      \item the result is a dynamic error (\ArbitraryEmptyType) indicating that the type $\vt$ has an empty
+      \item the result is a \ErrorConfigurationTerm{} (\ArbitraryEmptyType) indicating that the type $\vt$ has an empty
             domain in $\env$ and therefore no value can be returned.
     \end{itemize}
   \end{itemize}

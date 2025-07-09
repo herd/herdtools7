@@ -1608,7 +1608,7 @@ translates into the application of negation to the \nativevalue\ for $1$.
 \ExampleDef{Invalid Unary Operation}
 The following grounded rule shows how the application of negation
 to the literal Boolean for $\True$
-translates the resulting \typingerrorterm{} into the corresponding dynamic error.
+translates the resulting \typingerrorterm{} into the corresponding \dynamicerrorterm{}.
 \begin{mathpar}
 \inferrule{
   \unopliterals(\NEG, \lbool(\True)) \typearrow \TypeErrorVal{\BadOperands}
@@ -1631,13 +1631,13 @@ translates the resulting \typingerrorterm{} into the corresponding dynamic error
   \begin{itemize}
     \item $\vv$ is a literal native value, that is, $\nvliteral{l}$;
     \item statically evaluating $\op$ on $l$ yields a \typingerrorterm{};
-    \item the result is a dynamic error.
+    \item the result is a \dynamicerrorterm{}.
   \end{itemize}
 
   \item \AllApplyCase{non\_literal}
   \begin{itemize}
     \item $\vv$ is not a literal native value;
-    \item the result is a dynamic error indicating the mismatch.
+    \item the result is a \dynamicerrorterm{} indicating the mismatch.
   \end{itemize}
 \end{itemize}
 
@@ -1693,7 +1693,7 @@ and the \nativevalue\ for $3$.
 \ExampleDef{Invalid Binary Operation}
 The following grounded rule shows how the invalid application of addition
 to the literal integer for $2$ and the literal real for $1/2$
-translates the resulting \typingerrorterm{} into the corresponding dynamic error.
+translates the resulting \typingerrorterm{} into the corresponding \dynamicerrorterm{}.
 \begin{mathpar}
 \inferrule{
   \binopliterals(\PLUS, \lint(2), \lreal(1/2)) \typearrow \TypeErrorVal{\BadOperands}
@@ -1718,13 +1718,13 @@ translates the resulting \typingerrorterm{} into the corresponding dynamic error
     \item $\vvone$ is a literal native value, that is, $\nvliteral{l_1}$;
     \item $\vvtwo$ is a literal native value, that is, $\nvliteral{l_2}$;
     \item statically evaluating $\op$ on the literals $l_1$ and $l_2$ yields a \typingerrorterm{};
-    \item the result is a dynamic error ($\DynamicBadOperands$).
+    \item the result is a \dynamicerrorterm{} ($\DynamicBadOperands$).
   \end{itemize}
 
   \item \AllApplyCase{non\_literal}
   \begin{itemize}
     \item either $\vvone$ or $\vvtwo$ is not a literal native value;
-    \item the result is a dynamic error indicating the mismatch ($\DynamicBadOperands$).
+    \item the result is a \dynamicerrorterm{} indicating the mismatch ($\DynamicBadOperands$).
   \end{itemize}
 \end{itemize}
 
