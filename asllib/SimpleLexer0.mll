@@ -107,6 +107,7 @@ let tr_name = function
   | "type" -> TYPE
   | "typeof" -> TYPEOF
   | "until" -> UNTIL
+  | "Unreachable" -> UNREACHABLE
   | "when" -> WHEN
   | "while" -> WHILE
   | name -> IDENTIFIER name
@@ -160,6 +161,7 @@ let string_of_token = function
   | UNDEFINED -> "UNDEFINED"
   | UNKNOWN -> "UNKNOWN"
   | UNPREDICTABLE -> "UNPREDICTABLE"
+  | UNREACHABLE -> "Unreachable"
   | UNTIL -> "until"
   | UU_ARRAY -> "__array"
   | UU_BUILTIN -> "__builtin"

@@ -177,6 +177,7 @@
 %token UNDEFINED
 %token UNKNOWN
 %token UNPREDICTABLE
+%token UNREACHABLE
 %token UNTIL
 %token UU_ARRAY
 %token UU_BUILTIN
@@ -652,6 +653,7 @@ let simple_stmt ==
     | RETURN; ~=ioption(expr);                    < AST.S_Return >
     | ASSERT; ~=expr;                             < AST.S_Assert >
     | DEBUG; e=expr;                              { AST.S_Print { args = [ e ]; newline = true; debug = true } }
+    | UNREACHABLE; LPAREN; RPAREN;                { AST.S_Unreachable }
 
     | unimplemented_stmts (
       | UNPREDICTABLE; ioption(pared(<>)); <>
