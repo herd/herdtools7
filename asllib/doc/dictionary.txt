@@ -1252,6 +1252,7 @@ memory
 menhir
 mentioned
 merged
+merges
 meta
 might
 minimal
@@ -1409,6 +1410,7 @@ over
 overall
 overapproximated
 overapproximates
+overapproximating
 overapproximation
 overcome
 overlap
@@ -1946,6 +1948,7 @@ substituting
 substring
 substrings
 subsume
+subsumed
 subsumes
 subsumption
 subtracting
@@ -2133,6 +2136,7 @@ undefined
 under
 underapproximated
 underapproximates
+underapproximating
 underapproximation
 underlying
 underscore

@@ -493,18 +493,6 @@ def check_rules(filename: str) -> int:
     Checks the AST/Typing/Semantics/Guide/Convention rules in 'filename'
     and returns the total number of errors.
     """
-    # Treat existing issues as warnings and new issues as errors.
-    file_to_num_expected_errors = {
-        "SymbolicSubsumptionTesting.tex" : 14
-    }
-    total_expected = 0
-    for num_expected in file_to_num_expected_errors.values():
-        total_expected += num_expected
-    if False and total_expected > 0:
-        print(f"#expected errors is {total_expected}")
-
-    max_error_for_filename = file_to_num_expected_errors.get(filename, 0)
-
     checks = [
         check_rule_prose_formally_structure,
         check_rule_case_consistency,
@@ -528,13 +516,7 @@ def check_rules(filename: str) -> int:
             else:
                 print(f"WARNING! {rule_block.filename} {rule_block.str()}: {error_messages_str}")
 
-    if num_errors > max_error_for_filename:
-        return num_errors
-    else:
-        if num_errors < max_error_for_filename:
-            print(f"WARNING! {rule_block.filename}: update number of expected errors to {num_errors}")
-        return 0
-
+    return num_errors
 
 def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
     r"""

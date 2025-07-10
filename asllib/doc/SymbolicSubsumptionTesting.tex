@@ -152,6 +152,38 @@ is a subset of the set of integers represented by $\sdtwo$,
 in the context of the static environment $\tenv$,
 yielding the result in $\vb$.
 
+\ExampleDef{Conservatively Testing Subsumption Between Two Lists of Symbolic Domains}
+In \listingref{SymdomOfConstraint}, typechecking the assignment \verb|x=y;|
+is performed by testing whether each member of
+\[
+\Subdomains\left(\left[
+  \begin{array}{l}
+    \Finite(\{2,3,4\}),\\
+    \ConstrainedDom(\ConstraintRange(\ELInt{5}, \AbbrevEVar{\vN})),\\
+    \ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\PLUS}{\AbbrevEVar{\vN}}{\AbbrevEVar{\vN}}))\\
+  \end{array}
+\right]\right)
+\]
+is subsumed (that is, represents a subset as defined by $\symdomsubset$) by a member of
+\[
+\Subdomains\left(\left[
+  \begin{array}{l}
+    \Finite(\{1,2,3,4,5,6, 9\}),\\
+    \ConstrainedDom(\ConstraintRange(\ELInt{5}, \AbbrevEVar{\vN})),\\
+    \ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\MUL}{\AbbrevEVar{\vN}}{\ELInt{2}}))\\
+  \end{array}
+\right]\right) \enspace.
+\]
+In this example, this is true as the following hold:
+\begin{itemize}
+  \item $\Finite(\{2,3,4\})$ is subsumed by $\Finite(\{1,2,3,4,5,6, 9\})$,
+  \item $\ConstrainedDom(\ConstraintRange(\ELInt{5}, \AbbrevEVar{\vN}))$ (as a constraint for \verb|x|)
+        is subsumed by the same element (as a constraint for \verb|y|), and
+  \item $\ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\PLUS}{\AbbrevEVar{\vN}}{\AbbrevEVar{\vN}}))$
+        is subsumed by \\
+        $\ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\MUL}{\AbbrevEVar{\vN}}{\ELInt{2}}))$.
+\end{itemize}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -224,6 +256,20 @@ transforms the list of symbolic domain $\symdoms$ into an equivalent list of sym
 where all symbolic finite set integer domains are merged into a single symbolic finite set integer domain
 whose set of integers is the union of the sets of integers in the merged symbolic finite set integer domains.
 
+\ExampleDef{Normalizing Symbolic Domains}
+In \listingref{SymdomOfConstraint}, normalizing the \symbolicdomain{} for the type\\
+\verb|integer{1..6, 5..N, 9, N*2}| (see \ExampleRef{The Symbolic Domain of a Type})
+merges $\Finite(\{1,2,3,4,5,6\})$ and $\Finite(\{9\})$, yielding the \symbolicdomain{}
+\[
+\Subdomains\left(\left[
+  \begin{array}{l}
+    \Finite(\{1,2,3,4,5,6, 9\}),\\
+    \ConstrainedDom(\ConstraintRange(\ELInt{5}, \AbbrevEVar{\vN})),\\
+    \ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\MUL}{\AbbrevEVar{\vN}}{\ELInt{2}}))\\
+  \end{array}
+\right]\right) \enspace.
+\]
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -257,6 +303,22 @@ The function
 \]
 transforms a type $\vt$ in a static environment $\tenv$ into a symbolic domain $\vd$.
 It assumes its input type has an \underlyingtype{} which is an integer.
+
+\ExampleDef{The Symbolic Domain of a Type}
+In \listingref{SymdomOfConstraint}, the \symbolicdomain{} for the type
+\verb|integer{1..6, 5..N, 9, N*2}|
+is
+\[
+\Subdomains\left(\left[
+  \begin{array}{l}
+    \Finite(\{1,2,3,4,5,6\}),\\
+    \ConstrainedDom(\ConstraintRange(\ELInt{5}, \AbbrevEVar{\vN})),\\
+    \Finite(\{9\}),\\
+    \ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\MUL}{\AbbrevEVar{\vN}}{\ELInt{2}}))\\
+  \end{array}
+\right]\right) \enspace.
+\]
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -368,6 +430,23 @@ in the context of the static environment $\tenv$.
 It produces $\Top$ when the expressions involved in the integer constraints cannot be simplified
 to integers.
 
+\ExampleDef{The Symbolic Domain of a Constraint}
+In \listingref{SymdomOfConstraint}, considering the type annotation for \verb|x|:
+\begin{itemize}
+  \item the \symbolicdomain{} for the constraint \verb|1..6| is $\Finite(\{1,2,3,4,5,6\})$
+  \item the \symbolicdomain{} for the constraint \verb|9| is $\Finite(\{9\})$,
+  \item the \symbolicdomain{} for the constraint \verb|N*2| is \\
+        $\ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\MUL}{\AbbrevEVar{\vN}}{\ELInt{2}}))$,
+        since the premise \\
+        $\symdomeval(\tenv, \AbbrevEBinop{\MUL}{\AbbrevEVar{\vN}}{\ELInt{2}})$ yields $\Top$,
+  \item the \symbolicdomain{} for the constraint \verb|5..N| is \\
+        $\ConstrainedDom(\ConstraintRange(\ELInt{5}, \AbbrevEVar{\vN}))$,
+        since the premise \\
+        $\symdomeval(\tenv, \AbbrevEVar{\vN})$ yields $\Top$.
+\end{itemize}
+
+\ASLListing{The symbolic domain of a constraint}{SymdomOfConstraint}{\typingtests/TypingRule.SymdomOfConstraint.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -426,6 +505,16 @@ the result of the simplification is not an integer.
 
 We assume that $\ve$ has been annotated as it is part of the constraint for an integer type,
 and therefore applying $\normalize$ to it does not yield a \typingerrorterm{}.
+
+\ExampleDef{Evaluating Expressions to Construct Symbolic Domains}
+In \listingref{SymdomOfConstraint}, considering the constraints in the type annotation for
+\verb|x|,
+we have that both
+$\symdomeval(\tenv, \AbbrevEBinop{\MUL}{\AbbrevEVar{\vN}}{\ELInt{2}})$
+and $\symdomeval(\tenv, \AbbrevEVar{\vN})$ yield $\Top$,
+since \verb|N| is a parameter.
+On the other hand, $\symdomeval(\tenv, \ELInt{1})$ and $\symdomeval(\tenv, \ELInt{6})$,
+yield $1$ and $6$, respectively.
 
 \ProseParagraph
 \OneApplies
@@ -489,6 +578,15 @@ which if true implies that the set of numbers represented by $\visone$ is a subs
 set of numbers represented by $\vstwo$ (in any environment).
 A negative answer on the other hand means that the
 test is unable to conclude subsumption.
+
+\ExampleDef{Conservatively Testing Whether One Symbolic Domain is a Subset of Another}
+In \listingref{SymdomOfWidthExpr}, typechecking the assignment \verb|x=y;|
+involves test whether the \symbolicdomain{} for \verb|2..4| is a subset of the
+\symbolicdomain{} for \verb|1..6|, which $\True$.
+Similarly for testing whether the \symbolicdomain{} for \verb|N+N|
+is a subset of the \symbolicdomain{} for \verb|N*2| also yields $\True$.
+In contrast, testing whether the \symbolicdomain{} for \verb|5..N|
+is a subset of the \symbolicdomain{} for \verb|N*2| yields $\False$.
 
 \hypertarget{def-Under}{}
 \hypertarget{def-Over}{}
@@ -657,6 +755,11 @@ The approximation is over all environments consisting of the static environment 
 The approximation is either overapproximation or underapproximation,
 based on the \approximationdirectionterm\ $\vapprox$.
 
+\ExampleDef{Approximating Constraint Lists}
+The specification in \listingref{ApproxConstraints} is well-typed,
+showing how constraint lists are overapproximated.
+\ASLListing{Approximating constraints Lists}{ApproxConstraints}{\typingtests/TypingRule.ApproxConstraints.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -717,10 +820,6 @@ If $\vc$ cannot be overapproximated, the result is $\CannotOverapproximate$.
 The specification in \listingref{ApproxConstraint} is well-typed,
 showing how constraints are overapproximated and underapproximated.
 \ASLListing{Approximating constraints}{ApproxConstraint}{\typingtests/TypingRule.ApproxConstraint.asl}
-
-In the following inference rules, we use $\leq$ to compare both integers to integers
-and integers to infinity symbols. Specifically, the following hold:
-$\forall z\in\Z.\ -\infty < z$ and $\forall z\in\Z.\ z < +\infty$.
 
 \ProseParagraph
 \OneApplies
@@ -844,7 +943,18 @@ The function
   \overname{\vztwo}{\Z}) \aslto \overname{\powfin{\Z} \cup \{ \emptyset, \CannotOverapproximate \}}{\vs}
 \]
 returns the interval between the integers $\vzone$ and $\vztwo$,
-or an approximation based on $\vapprox$ (either $\CannotOverapproximate$ or the empty set).
+or an approximation based on $\vapprox$.
+
+\ExampleDef{Approximating Intervals}
+The following are examples of over- and under-approximating intervals:
+\[
+\begin{array}{rcl}
+\makeinterval(\Over, 1, 3) &\typearrow& \{1, 2, 3\}\\
+\makeinterval(\Under, 1, 3) &\typearrow& \{1, 2, 3\}\\
+\makeinterval(\Over, 4, 3) &\typearrow& \CannotOverapproximate\\
+\makeinterval(\Under, 4, 3) &\typearrow& \CannotUnderapproximate\\
+\end{array}
+\]
 
 \ProseParagraph
 \OneApplies
@@ -890,6 +1000,14 @@ approximates the minimal integer represented by the expression $\ve$
 in any environment consisting of the static environment
 $\tenv$. The result, yielded in $\vz$ is either an integer or $\CannotOverapproximate$.
 
+\ExampleDef{Approximating the Minimal Value of an Expression}
+In \listingref{ApproxExprMin}, approximating the minimal value of
+\verb|A DIV 2| for typing the declaration of \verb|y|
+yields $\CannotOverapproximate$, since \verb|A| is a parameter with no constraints.
+Approximating the minimal value of \verb|a| for the declaration of \verb|b|
+yields $12$.
+\ASLListing{Approximating the minimal value of an expression}{ApproxExprMin}{\typingtests/TypingRule.ApproxExprMin.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -916,6 +1034,14 @@ The function
 approximates the maximal integer represented by the expression $\ve$
 in any environment consisting of the static environment
 $\tenv$. The result, yielded in $\vz$ is either an integer or $\CannotOverapproximate$.
+
+\ExampleDef{Approximating the Maximal Value of an Expression}
+In \listingref{ApproxExprMax}, approximating the maximal value of
+\verb|2*N| for typing the declaration of \verb|b|
+yields $\CannotOverapproximate$, since \verb|N| is a parameter with no constraints.
+Approximating the maximal value of \verb|2*a| for the declaration of \verb|b|
+yields $10$.
+\ASLListing{Approximating the maximal value of an expression}{ApproxExprMax}{\typingtests/TypingRule.ApproxExprMax.asl}
 
 \ProseParagraph
 \AllApply
@@ -968,6 +1094,11 @@ The function
 \]
 converts a finite set of integers $\vs$ into an equivalent list of constraints.
 
+\ExampleDef{Transforming Integer Sets to Constraint Lists}
+The specification in \listingref{IntsetToConstraints} is well-typed,
+showing how an instance of integer sets transformed to constraint lists.
+\ASLListing{Transforming Integer Sets to Constraint Lists}{IntsetToConstraints}{\typingtests/TypingRule.IntsetToConstraints.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1002,6 +1133,13 @@ conservatively approximates the expression $\ve$ by a set of integers $\vs$
 in the static environment $\tenv$.
 The approximation is either overapproximation or underapproximation,
 based on the \approximationdirectionterm\ $\vapprox$.
+
+\ExampleDef{Approximating Expressions}
+The specification in \listingref{ApproxExpr} is well-typed,
+showing how expressions are overapproximated and underapproximated
+for the \subtypesatisfies{} check between \verb|bits(M)| and \verb|bits(N)|,
+needed to annotate the expression \verb|x as bits(N)|.
+\ASLListing{Approximating expressions}{ApproxExpr}{\typingtests/TypingRule.ApproxExpr.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1046,7 +1184,8 @@ based on the \approximationdirectionterm\ $\vapprox$.
     \item $\ve$ is a \binopexpression{$\op$}{$\veone$}{$\vetwo$};
     \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\veone$}{$\vsone$}\ProseTerminateAs{\CannotOverapproximate};
     \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vetwo$}{$\vstwo$}\ProseTerminateAs{\CannotOverapproximate};
-    \item applying $\annotateconstraintbinop$ to $\vapprox$, $\tenv$, $\vsone$, and $\vstwo$ yields $(\vsp, \plf)$;
+    \item applying $\annotateconstraintbinop$ to $\vapprox$, $\tenv$, $\vsone$, and $\vstwo$ yields \\
+          $(\vsp, \plf)$;
     \item either $\plf$ is $\PrecisionFull$ or $\plf$ is $\PrecisionLost$ and $\vapprox$ is $\Under$;
     \item applying $\approxconstraints$ to $\tenv$, $\vapprox$, and $\vsp$ yields \\
           $\vsapprox$\ProseTerminateAs{\CannotOverapproximate};
@@ -1192,6 +1331,27 @@ and $\vstwo$ with the \approximationdirectionterm{} $\vapprox$ in the context of
 environment $\tenv$, resulting in the list of constraints $\vs$ and \precisionlossindicator{}
 $\plf$.
 
+\ExampleDef{Approximating Binary Expressions Over Constraint Lists}
+The specification in \listingref{ApproxConstraintBinop} is well-typed.
+Typechecking the specification involves checking that the type of
+the expression \verb|(x :: x)| \subtypesatisfies{} \verb|bits(2 * N)|.
+This in turn requires:
+\begin{itemize}
+\item overapproximating \verb|2*N| by applying $\approxconstraintbinop$
+      to $\Over$, $\MUL$, and the constraint lists $[2]$, and $[4,8]$,
+      which yields $([8, 16], \PrecisionFull)$.
+
+\item underapproximating \verb|N|, which yields the empty set,
+      and then applying \\
+      $\approxconstraintbinop$
+      to $\Under$, $\MUL$, and the constraint lists $[2]$, and $\emptylist$,
+      which yields $(\emptylist, \PrecisionFull)$.
+\end{itemize}
+Since this static subtype satisfaction test fails, the test is deferred to
+the dynamic semantics.
+
+\ASLListing{Approximating binary expressions over constraint lists}{ApproxConstraintBinop}{\typingtests/TypingRule.ApproxConstraintBinop.asl}
+
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1264,6 +1424,12 @@ conservatively approximates the type $\vt$ by a set of integers $\vs$
 in the static environment $\tenv$.
 The approximation is either overapproximation or underapproximation,
 based on the \approximationdirectionterm\ $\vapprox$.
+
+\ExampleDef{Approximating Types}
+The specification in \listingref{ApproxExpr} is well-typed.
+In order to test whether \verb|bits(M)| --- the type of \verb|x| --- \subtypesatisfies{}
+\verb|bits(N)|, the typechecker overapproximates \verb|M|.
+This involves overapproximating the type of \verb|M|, which is \verb|integer{4,8}|.
 
 \ProseParagraph
 \OneApplies
