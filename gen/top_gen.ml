@@ -490,8 +490,7 @@ let max_set = IntSet.max_elt
             (* the common case with one write event *)
 
             | [[(v,_)]] -> i,[],add_look_loc x v []
-            | [[(v1,_);(v2,_)]] ->
-              let v = if O.same_loc then v1 else v2 in
+            | [[(_,_);(v,_)]] ->
               begin match O.do_observers with
               | Local -> i,[],add_look_loc x v []
               | Avoid|Accept|Three|Four|Infinity
@@ -502,8 +501,7 @@ let max_set = IntSet.max_elt
               end
             | _ ->
               let vs_flat = List.flatten vs in
-              let v,_ = if O.same_loc then List.hd vs_flat
-                        else Misc.last vs_flat in
+              let v,_ = Misc.last vs_flat in
               begin match O.do_observers with
                 | Local -> i,[],add_look_loc x v []
                 | Three ->
@@ -688,7 +686,7 @@ let max_set = IntSet.max_elt
     let env_pair =
       if StringMap.is_empty env_wide then StringSet.empty
       else C.get_pair n in
-    let splitted =  C.split_procs n in
+    let splitted = C.split_procs n in
     (* Split before, as  proc numbers added by side effet.. *)
     let cos0 = C.coherence n in
     let lsts = U.last_map cos0 in
