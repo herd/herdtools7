@@ -30,6 +30,9 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
 
   include ArchExtra_herd.Make(C)
       (struct
+
+        let arch = arch
+
         module V = V
         let endian = endian
 

@@ -73,5 +73,7 @@ val  lisa : t
 val  x86_64 : t
 val  asl : t
 
+val has_mixed_mode : t -> bool
+
 val get_sysarch : [< t ] ->  System.t -> System.t
 val check_carch : [< System.t ] -> System.arch

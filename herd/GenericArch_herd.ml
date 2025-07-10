@@ -40,6 +40,9 @@ module Make (B : ArchBaseHerd) (C : Arch_herd.Config) (V : Value.S) = struct
     ArchExtra_herd.Make
       (C)
       (struct
+
+        let arch = B.arch
+
         module V = V
         module FaultType = FaultType.No
 

@@ -83,6 +83,9 @@ struct
     ArchExtra_herd.Make
       (C)
       (struct
+
+        let arch = arch
+
         module V = V
 
         let endian = endian

@@ -506,6 +506,9 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     include ArchExtra_herd.Make(C)
         (struct
+
+          let arch = arch
+
           module V = V
           let endian = endian
 
