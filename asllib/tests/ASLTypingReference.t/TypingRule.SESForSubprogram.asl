@@ -10,7 +10,7 @@ end;
 
 noreturn func goo() // GlobalEffect(SE_Impure), Immutability(FALSE)
 begin
-  pass;
+  unreachable;
 end;
 
 func baz() // GlobalEffect(SE_Impure), Immutability(FALSE)

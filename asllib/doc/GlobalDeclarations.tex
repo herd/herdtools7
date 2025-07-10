@@ -280,6 +280,11 @@ is ill-typed as \verb|returning| is declared with the \verb|noreturn|
 qualifier, yet it contains the \returnstatementsterm{} \verb|return 0;|.
 \ASLListing{Illegally returning from a \texttt{noreturn} subprogram}{CheckControlFlow-bad}{\typingtests/TypingRule.CheckControlFlow.bad.asl}
 
+Similarly, the specification in \listingref{CheckControlFlow-bad3}
+is ill-typed as \verb|returning| is declared with the \verb|noreturn|
+qualifier, yet it returns via a \passstatementterm.
+\ASLListing{Illegally returning from a \texttt{noreturn} subprogram}{CheckControlFlow-bad3}{\typingtests/TypingRule.CheckControlFlow.bad3.asl}
+
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -310,7 +315,8 @@ determines the set of \Proseabstractconfigurations{} allowed for the function de
 yielding the result in $\absconfigs$.
 
 \ExampleDef{The Allowed Abstract Configurations for a Subprogram}
-The set of \Proseabstractconfigurations{} allowed for the subprogram \verb|all_terminating_paths_correct|
+The set of \Proseabstractconfigurations{} allowed for the subprogram \\
+\verb|all_terminating_paths_correct|
 in \listingref{CheckControlFlow} is $\{\AbsAbnormal, \AbsReturning\}$, since it is
 a function.
 
@@ -324,22 +330,30 @@ by \verb|noreturn|.
   \item \AllApplyCase{noreturn}
   \begin{itemize}
     \item $\vf$ is qualified by \verb|noreturn|;
-    \item \Proseeqdef{$\absconfigs$}{the set consisting of $\AbsContinuing$ and \\
-          $\AbsAbnormal$}.
+    \item \Proseeqdef{$\absconfigs$}{the set consisting of $\AbsAbnormal$}.
   \end{itemize}
 
-  \item \AllApplyCase{returning\_proc}
+  \item \AllApply
   \begin{itemize}
     \item $\vf$ is not qualified by \verb|noreturn|;
-    \item $\vf$ is a procedure;
-    \item \Proseeqdef{$\absconfigs$}{the set consisting of $\AbsContinuing$, $\AbsReturning$, $\AbsAbnormal$}.
+    \OneApplies
+    \begin{itemize}
+      \item \AllApplyCase{returning\_proc}
+      \begin{itemize}
+        \item $\vf$ is a procedure;
+        \item \Proseeqdef{$\absconfigs$}{the set consisting of $\AbsContinuing$, \\
+              $\AbsReturning$, and $\AbsAbnormal$}.
+      \end{itemize}
+
+      \item \AllApplyCase{func}
+      \begin{itemize}
+        \item $\vf$ is as function;
+        \item \Proseeqdef{$\absconfigs$}{the set consisting of $\AbsReturning$, \\
+              $\AbsAbnormal$}.
+      \end{itemize}
+    \end{itemize}
   \end{itemize}
 
-  \item \AllApplyCase{func}
-  \begin{itemize}
-    \item $\vf$ is as function;
-    \item \Proseeqdef{$\absconfigs$}{the set consisting of $\AbsReturning$, $\AbsAbnormal$}.
-  \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
@@ -361,7 +375,7 @@ by \verb|noreturn|.
 
 \begin{mathpar}
 \inferrule[func]{
-  \vf.\funcreturntype \neq \None
+  \vf.\funcqualifier \neq \Some{\Noreturn} \land \vf.\funcreturntype \neq \None
 }{
   \allowedabsconfigs(\vf) \typearrow \overname{\{\AbsReturning, \AbsAbnormal\}}{\absconfigs}
 }
