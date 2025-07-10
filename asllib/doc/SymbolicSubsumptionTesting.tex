@@ -492,10 +492,16 @@ test is unable to conclude subsumption.
 
 \hypertarget{def-Under}{}
 \hypertarget{def-Over}{}
+\hypertarget{def-cannotoverapproximate}{}
+\hypertarget{def-cannotunderapproximate}{}
 \hypertarget{def-approximationdirectionterm}{}
-In the following, we use the symbol $\Over$ to stand for \emph{overapproximation}
+In the following rules, we use the symbol $\Over$ to stand for \emph{overapproximation}
 and the symbol $\Under$ to stand for \emph{underapproximation}.
 We refer such a symbol as an \approximationdirectionterm.
+We also use the symbol $\CannotOverapproximate$ to mean that a construct
+(like an expression or a constraint) cannot be precisely overapproximated,
+and $\CannotUnderapproximate$ to mean that a construct cannot be precisely
+underapproximated.
 
 \ProseParagraph
 \OneApplies
@@ -515,14 +521,26 @@ We refer such a symbol as an \approximationdirectionterm.
     \item \Proseeqdef{$\vb$}{$\True$}.
   \end{itemize}
 
-  \item \AllApplyCase{constrained\_constrained\_non\_equal}
+  \item \AllApplyCase{constrained\_constrained\_non\_equal\_sets}
   \begin{itemize}
     \item $\cdone$ is a symbolic constrained integer domain for the constraint $\vcone$, that is, $\ConstrainedDom(\vcone)$;
     \item $\cdtwo$ is a symbolic constrained integer domain for the constraint $\vctwo$, that is, $\ConstrainedDom(\vctwo)$;
     \item applying $\constraintequal$ to $\tenv$, $\vcone$, and $\vctwo$ yields $\False$;
     \item \Proseapproxconstraint{$\tenv$}{$\vcone$}{$\Over$}{$\vsone$};
     \item \Proseapproxconstraint{$\tenv$}{$\vctwo$}{$\Under$}{$\vstwo$};
+    \item both $\vsone$ and $\vstwo$ are finite sets of integers;
     \item \Proseeqdef{$\vb$}{$\True$ if and only if $\vsone$ is a subset of $\vstwo$}.
+  \end{itemize}
+
+  \item \AllApplyCase{constrained\_constrained\_non\_equal\_top}
+  \begin{itemize}
+    \item $\cdone$ is a symbolic constrained integer domain for the constraint $\vcone$, that is, $\ConstrainedDom(\vcone)$;
+    \item $\cdtwo$ is a symbolic constrained integer domain for the constraint $\vctwo$, that is, $\ConstrainedDom(\vctwo)$;
+    \item applying $\constraintequal$ to $\tenv$, $\vcone$, and $\vctwo$ yields $\False$;
+    \item \Proseapproxconstraint{$\tenv$}{$\vcone$}{$\Over$}{$\vsone$};
+    \item \Proseapproxconstraint{$\tenv$}{$\vctwo$}{$\Under$}{$\vstwo$};
+    \item at least one of $\vsone$ and $\vstwo$ is $\CannotOverapproximate$;
+    \item \Proseeqdef{$\vb$}{$\False$}.
   \end{itemize}
 
   \item \AllApplyCase{finite\_constrained}
@@ -533,12 +551,22 @@ We refer such a symbol as an \approximationdirectionterm.
     \item \Proseeqdef{$\vb$}{$\True$ if and only if $\vsone$ is a subset of $\vstwo$}.
   \end{itemize}
 
-  \item \AllApplyCase{constrained\_finite}
+  \item \AllApplyCase{constrained\_finite\_set}
   \begin{itemize}
     \item $\cdone$ is a symbolic constrained integer domain for the constraint $\vcone$, that is, $\ConstrainedDom(\vcone)$;
     \item $\vistwo$ is a finite set of integers for $\vstwo$, that is, $\Finite(\vstwo)$;
     \item \ProseapproxconstraintsOver{$\tenv$}{$\vcone$}{$\vsone$};
+    \item $\vsone$ is not $\CannotOverapproximate$;
     \item \Proseeqdef{$\vb$}{$\True$ if and only if $\vsone$ is a subset of $\vstwo$}.
+  \end{itemize}
+
+  \item \AllApplyCase{constrained\_finite\_top}
+  \begin{itemize}
+    \item $\cdone$ is a symbolic constrained integer domain for the constraint $\vcone$, that is, $\ConstrainedDom(\vcone)$;
+    \item $\vistwo$ is a finite set of integers for $\vstwo$, that is, $\Finite(\vstwo)$;
+    \item \ProseapproxconstraintsOver{$\tenv$}{$\vcone$}{$\vsone$};
+    \item $\vsone$ is $\CannotOverapproximate$;
+    \item \Proseeqdef{$\vb$}{$\False$}.
   \end{itemize}
 \end{itemize}
 
@@ -559,15 +587,27 @@ We refer such a symbol as an \approximationdirectionterm.
 }
 \end{mathpar}
 
-% Transliteration comment: instead of the symbol CannotOverApproximate, we use the set of all integers.
 \begin{mathpar}
-\inferrule[constrained\_constrained\_non\_equal]{
+\inferrule[constrained\_constrained\_non\_equal\_sets]{
   \constraintequal(\tenv, \vcone, \vctwo) \typearrow \False\\\\
   \approxconstraint(\tenv, \Over, \vcone) \typearrow \vsone\\
-  \approxconstraint(\tenv, \Under, \vctwo) \typearrow \vstwo
+  \approxconstraint(\tenv, \Under, \vctwo) \typearrow \vstwo\\
+  \vsone \neq \CannotOverapproximate \land \vstwo \neq \CannotOverapproximate\\
 }{
   \symdomsubset(\tenv, \overname{\ConstrainedDom(\vcone)}{\cdone}, \overname{\ConstrainedDom(\vctwo)}{\cdtwo}) \typearrow
   \overname{\vsone \subseteq \vstwo}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[constrained\_constrained\_non\_equal\_top]{
+  \constraintequal(\tenv, \vcone, \vctwo) \typearrow \False\\\\
+  \approxconstraint(\tenv, \Over, \vcone) \typearrow \vsone\\
+  \approxconstraint(\tenv, \Under, \vctwo) \typearrow \vstwo\\
+  \vsone = \CannotOverapproximate \lor \vstwo = \CannotOverapproximate\\
+}{
+  \symdomsubset(\tenv, \overname{\ConstrainedDom(\vcone)}{\cdone}, \overname{\ConstrainedDom(\vctwo)}{\cdtwo}) \typearrow
+  \overname{\False}{\vb}
 }
 \end{mathpar}
 
@@ -581,11 +621,22 @@ We refer such a symbol as an \approximationdirectionterm.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[constrained\_finite]{
-  \approxconstraints(\tenv, \Over, \vcone) \typearrow \vsone
+\inferrule[constrained\_finite\_set]{
+  \approxconstraints(\tenv, \Over, \vcone) \typearrow \vsone\\
+  \vsone \neq \CannotOverapproximate
 }{
   \symdomsubset(\tenv, \overname{\ConstrainedDom(\vcone)}{\visone}, \overname{\Finite(\vstwo)}{\vistwo}) \typearrow
   \overname{\vsone \subseteq \vstwo}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[constrained\_finite\_top]{
+  \approxconstraints(\tenv, \Over, \vcone) \typearrow \vsone\\
+  \vsone = \CannotOverapproximate
+}{
+  \symdomsubset(\tenv, \overname{\ConstrainedDom(\vcone)}{\visone}, \overname{\Finite(\vstwo)}{\vistwo}) \typearrow
+  \overname{\False}{\vb}
 }
 \end{mathpar}
 
@@ -593,11 +644,13 @@ We refer such a symbol as an \approximationdirectionterm.
 \hypertarget{def-approxconstraints}{}
 The function
 \[
+\begin{array}{r}
 \approxconstraints(
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\{\Over, \Under\}}{\vapprox} \aslsep
-  \overname{\intconstraint^+}{\cs}) \aslto
-  \overname{\pow{\Z}}{\vs}
+  \overname{\intconstraint^+}{\cs}) \aslto\\
+  \overname{\powfin{\Z}}{\vs} \cup \{\CannotOverapproximate\}
+\end{array}
 \]
 conservatively approximates the non-empty list of constraints $\cs$ by a set of integers $\vs$.
 The approximation is over all environments consisting of the static environment $\tenv$.
@@ -610,14 +663,14 @@ based on the \approximationdirectionterm\ $\vapprox$.
   \item \AllApplyCase{over}
   \begin{itemize}
     \item $\vapprox$ is $\Over$;
-    \item \Proseapproxconstraint{$\tenv$}{$\vc$}{$\Over$}{$\vs_\vc$}, for every constraint $\vc$ in $\cs$\ProseTerminateAs{\Z};
+    \item \Proseapproxconstraint{$\tenv$}{$\vc$}{$\Over$}{$\vs_\vc$}, for every constraint $\vc$ in $\cs$\ProseTerminateAs{\CannotOverapproximate};
     \item \Proseeqdef{$\vs$}{the union of all sets $\vs_\vc$, for every constraint $\vc$ in $\cs$}.
   \end{itemize}
 
   \item \AllApplyCase{under}
   \begin{itemize}
     \item $\vapprox$ is $\Under$;
-    \item \Proseapproxconstraint{$\tenv$}{$\vc$}{$\Under$}{$\vs_\vc$}, for every constraint $\vc$ in $\cs$;
+    \item \Proseapproxconstraint{$\tenv$}{$\vc$}{$\Under$}{$\vs_\vc$}, for every constraint $\vc$ in $\cs$\ProseTerminateAs{\CannotOverapproximate};
     \item \Proseeqdef{$\vs$}{the intersection of all sets $\vs_\vc$, for every constraint $\vc$ in $\cs$}.
   \end{itemize}
 \end{itemize}
@@ -625,7 +678,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[over]{
-  \vc \in \cs: \approxconstraint(\tenv, \Over, \vc) \typearrow \vs_\vc \terminateas \Z
+  \vc \in \cs: \approxconstraint(\tenv, \Over, \vc) \typearrow \vs_\vc \terminateas \CannotOverapproximate
 }{
   \approxconstraints(\tenv, \overname{\Over}{\vapprox}, \cs) \typearrow
   \overname{\bigcup_{\vc \in \cs} \vs_\vc}{\vs}
@@ -634,7 +687,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
 
 \begin{mathpar}
 \inferrule[under]{
-  \vc \in \cs: \approxconstraint(\tenv, \vapprox, \vc) \typearrow \vs_\vc
+  \vc \in \cs: \approxconstraint(\tenv, \vapprox, \vc) \typearrow \vs_\vc \terminateas \CannotOverapproximate
 }{
   \approxconstraints(\tenv, \overname{\Under}{\vapprox}, \cs) \typearrow
   \overname{\bigcap_{\vc \in \cs} \vs_\vc}{\vs}
@@ -646,16 +699,19 @@ based on the \approximationdirectionterm\ $\vapprox$.
 \hypertarget{def-approxconstraint}{}
 The function
 \[
+\begin{array}{r}
 \approxconstraint(
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\{\Over, \Under\}}{\vapprox} \aslsep
-  \overname{\intconstraint}{\vc}) \aslto
-  \overname{\pow{\Z}}{\vs}
+  \overname{\intconstraint}{\vc}) \aslto\\
+  \overname{\pow{\Z}}{\vs} \cup \{\CannotOverapproximate\}
+\end{array}
 \]
 conservatively approximates the constraint $\vc$ by a set of integers $\vs$.
 The approximation is over all environments that consist of the static environment $\tenv$.
 The approximation is either overapproximation or underapproximation,
 based on the \approximationdirectionterm\ $\vapprox$.
+If $\vc$ cannot be overapproximated, the result is $\CannotOverapproximate$.
 
 \ExampleDef{Approximating Constraints}
 The specification in \listingref{ApproxConstraint} is well-typed,
@@ -672,102 +728,181 @@ $\forall z\in\Z.\ -\infty < z$ and $\forall z\in\Z.\ z < +\infty$.
   \item \AllApplyCase{exact}
   \begin{itemize}
     \item $\vc$ is an \Proseexactconstraint{\ve};
-    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\ve$}{$\vs$}\ProseTerminateAs{\Z}.
+    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\ve$}{$\vs$}\ProseTerminateAs{\CannotOverapproximate}.
   \end{itemize}
 
-  \item \AllApplyCase{range\_over}
+  \item \AllApplyCase{range\_over1}
   \begin{itemize}
     \item $\vc$ is a \Proserangeconstraint{\veone}{\vetwo};
-    \item \Proseapproxexprmin{$\tenv$}{$\veone$}{$\vzone$}\ProseTerminateAs{\Z};
-    \item \Proseapproxexprmax{$\tenv$}{$\vetwo$}{$\vztwo$}\ProseTerminateAs{\Z};
-    \item \Proseeqdef{$\vsinterval$}{the set of integers greater or equal to $\vzone$ and
-          less than or equal to $\vztwo$};
-    \item applying $\approxbottomtop$ to $\vapprox$ yields $\vsbottomtop$;
-    \item \Proseeqdef{$\vs$}{$\vsinterval$ if $\vzone$ is less than or equal to $\vztwo$ and $\vsbottomtop$, otherwise}.
+    \item \Proseapproxexprmin{$\tenv$}{$\veone$}{$\vzone$};
+    \item \Proseapproxexprmax{$\tenv$}{$\vetwo$}{$\vztwo$};
+    \item both $\vzone$ and $\vztwo$ are different to $\CannotOverapproximate$;
+    \item applying $\makeinterval$ to $\Over$, $\vzone$, and $\vztwo$ yields $\vsinterval$;
+    \item \Proseeqdef{$\vs$}{$\vsinterval$ if $\vsinterval$ is different to $\CannotOverapproximate$ and
+          the result of applying $\approxbottomtop$ to $\Over$, otherwise}.
   \end{itemize}
 
-  \item \AllApplyCase{range\_under}
+    \item \AllApplyCase{range\_over2}
+  \begin{itemize}
+    \item $\vc$ is a \Proserangeconstraint{\veone}{\vetwo};
+    \item \Proseapproxexprmin{$\tenv$}{$\veone$}{$\vzone$};
+    \item \Proseapproxexprmax{$\tenv$}{$\vetwo$}{$\vztwo$};
+    \item either $\vzone$ or $\vztwo$ are $\CannotOverapproximate$;
+    \item \Proseeqdef{$\vs$}{the result of applying $\approxbottomtop$ to $\Over$}.
+  \end{itemize}
+
+  \item \AllApplyCase{range\_under1}
   \begin{itemize}
     \item $\vc$ is a \Proserangeconstraint{\veone}{\vetwo};
     \item \Proseapproxexprmax{$\tenv$}{$\veone$}{$\vzone$};
     \item \Proseapproxexprmin{$\tenv$}{$\vetwo$}{$\vztwo$};
-    \item \Proseeqdef{$\vsinterval$}{the set of integers greater or equal to $\vzone$ and
-          less than or equal to $\vztwo$};
-    \item applying $\approxbottomtop$ to $\vapprox$ yields $\vsbottomtop$;
-    \item \Proseeqdef{$\vs$}{$\vsinterval$ if $\vzone$ is less than or equal to $\vztwo$ and $\vsbottomtop$, otherwise}.
+    \item both $\vzone$ and $\vztwo$ are different to $\CannotOverapproximate$;
+    \item applying $\makeinterval$ to $\Under$, $\vzone$, and $\vztwo$ yields $\vsinterval$;
+    \item \Proseeqdef{$\vs$}{$\vsinterval$ if $\vsinterval$ is different to $\CannotOverapproximate$ and
+          the result of applying $\approxbottomtop$ to $\Under$, otherwise}.
+  \end{itemize}
+
+    \item \AllApplyCase{range\_under2}
+  \begin{itemize}
+    \item $\vc$ is a \Proserangeconstraint{\veone}{\vetwo};
+    \item \Proseapproxexprmax{$\tenv$}{$\veone$}{$\vzone$};
+    \item \Proseapproxexprmin{$\tenv$}{$\vetwo$}{$\vztwo$};
+    \item either $\vzone$ or $\vztwo$ are $\CannotOverapproximate$;
+    \item \Proseeqdef{$\vs$}{the result of applying $\approxbottomtop$ to $\Under$}.
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[exact]{
-  \approxexpr(\tenv, \vapprox, \ve) \typearrow \vs \terminateas \Z
+  \approxexpr(\tenv, \vapprox, \ve) \typearrow \vs \terminateas \CannotOverapproximate
 }{
   \approxconstraint(\tenv, \vapprox, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \vs
 }
 \end{mathpar}
 
-% Transliteration note: splitting the case of ranges based on 'approx' to avoid excessive
+% Transliteration note: I'm splitting the case of ranges based on 'approx' to avoid excessive
 % use of conditionals in rules (i.e., choice functions).
+
 \begin{mathpar}
-\inferrule[range\_over]{
-  \vapprox = \Over\\
-  \approxexprmin(\tenv, \veone) \typearrow \vzone \terminateas \Z\\\\
-  \approxexprmax(\tenv, \vetwo) \typearrow \vztwo \terminateas \Z\\\\
-  \vsinterval \eqdef \{ \vz \;|\; \vzone \leq \vz \leq \vztwo \}\\
-  \approxbottomtop(\vapprox) \typearrow \vsbottomtop\\
-  \vs \eqdef \choice{\vzone \leq \vztwo}{\vsinterval}{\vsbottomtop}
+\inferrule[range\_over1]{
+  \approxexprmin(\tenv, \veone) \typearrow \vzone\\
+  \approxexprmax(\tenv, \vetwo) \typearrow \vztwo\\
+  \vzone \neq \CannotOverapproximate \land \vztwo \neq \CannotOverapproximate\\
+  \makeinterval(\Over, \vzone, \vztwo) \typearrow \vsinterval \\
+  {
+  \vs \eqdef \ifthenelse{\vsinterval \neq \CannotOverapproximate}{\vsinterval}{\approxbottomtop(\Over)}
+  }
 }{
-  \approxconstraint(\tenv, \vapprox, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vs
+  \approxconstraint(\tenv, \overname{\Over}{\vapprox}, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vs
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[range\_under]{
-  \vapprox = \Under\\
+\inferrule[range\_over2]{
+  \approxexprmin(\tenv, \veone) \typearrow \vzone\\
+  \approxexprmax(\tenv, \vetwo) \typearrow \vztwo\\
+  \vzone = \CannotOverapproximate \lor \vztwo = \CannotOverapproximate\\
+  \approxbottomtop(\Over) \typearrow \vsbottomtop\
+}{
+  \approxconstraint(\tenv, \overname{\Over}{\vapprox}, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\vsbottomtop}{\vs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range\_under1]{
   \approxexprmax(\tenv, \veone) \typearrow \vzone\\
   \approxexprmin(\tenv, \vetwo) \typearrow \vztwo\\
-  \vsinterval \eqdef \{ \vz \;|\; \vzone \leq \vz \leq \vztwo \}\\
-  \approxbottomtop(\vapprox) \typearrow \vsbottomtop\\
-  \vs \eqdef \choice{\vzone \leq \vztwo}{\vsinterval}{\vsbottomtop}
+  \vzone \neq \CannotOverapproximate \land \vztwo \neq \CannotOverapproximate\\
+  \makeinterval(\Over, \vzone, \vztwo) \typearrow \vsinterval \\
+  {
+  \vs \eqdef \ifthenelse{\vsinterval \neq \CannotOverapproximate}{\vsinterval}{\approxbottomtop(\Under)}
+  }
 }{
-  \approxconstraint(\tenv, \vapprox, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vs
+  \approxconstraint(\tenv, \overname{\Under}{\vapprox}, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vs
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range\_under2]{
+  \approxexprmax(\tenv, \veone) \typearrow \vzone\\
+  \approxexprmin(\tenv, \vetwo) \typearrow \vztwo\\
+  \vzone = \CannotOverapproximate \lor \vztwo = \CannotOverapproximate\\
+  \approxbottomtop(\Under) \typearrow \vsbottomtop\
+}{
+  \approxconstraint(\tenv, \overname{\Under}{\vapprox}, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\vsbottomtop}{\vs}
+}
+\end{mathpar}
+
+\TypingRuleDef{MakeInterval}
+\hypertarget{def-makeinterval}{}
+The function
+\[
+\makeinterval(
+  \overname{\{\Over, \Under\}}{\vapprox} \aslsep
+  \overname{\vzone}{\Z} \aslsep
+  \overname{\vztwo}{\Z}) \aslto \overname{\powfin{\Z} \cup \{ \emptyset, \CannotOverapproximate \}}{\vs}
+\]
+returns the interval between the integers $\vzone$ and $\vztwo$,
+or an approximation based on $\vapprox$ (either $\CannotOverapproximate$ or the empty set).
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{interval}
+  \begin{itemize}
+    \item $\vzone$ is less than or equal to $\vztwo$;
+    \item \Proseeqdef{$\vs$}{the integers between $\vzone$ and $\vztwo$, inclusive}.
+  \end{itemize}
+
+  \item \AllApplyCase{approx}
+  \begin{itemize}
+    \item $\vzone$ is greater than $\vztwo$;
+    \item \Proseeqdef{$\vs$}{the result of applying $\approxbottomtop$ to $\vapprox$}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[interval]{
+  \vzone \leq \vztwo
+}{
+  \makeinterval(\vapprox, \vzone, \vztwo) \typearrow  \overname{\{ \vz \;|\; \vzone \leq \vz \leq \vztwo \}}{\vs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[approx]{
+  \vzone > \vztwo
+}{
+  \makeinterval(\vapprox, \vzone, \vztwo) \typearrow  \overname{\approxbottomtop(\vapprox)}{\vs}
 }
 \end{mathpar}
 
 \TypingRuleDef{ApproxExprMin}
 \hypertarget{def-approxexprmin}{}
-% Transliteration note: instead of exceptions, I'm using infinity symbols.
 The function
 \[
 \approxexprmin(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-  \overname{\Z \cup \{-\infty\}}{\vz}
+  \overname{\Z}{\vz} \cup \{\CannotOverapproximate\}
 \]
 approximates the minimal integer represented by the expression $\ve$
 in any environment consisting of the static environment
-$\tenv$. The result, yielded in $\vz$ is either an integer or $-\infty$.
+$\tenv$. The result, yielded in $\vz$ is either an integer or $\CannotOverapproximate$.
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item \Proseapproxexpr{$\tenv$}{$\Over$}{$\ve$}{$\vs$};
-  \item \Proseeqdef{$\vz$}{the minimal integer in $\vz$ or $-\infty$ if there is no such integer}.
+  \item \Proseapproxexpr{$\tenv$}{$\Over$}{$\ve$}{$\vs$}\ProseTerminateAs{\CannotOverapproximate};
+  \item \Proseeqdef{$\vz$}{the minimal integer in $\vs$}.
 \end{itemize}
 
 \FormallyParagraph
-\hypertarget{def-mininfty}{}
-In the following rule, the helper function
-\[
-\mininfty : \pow{\Z} \aslto \Z \cup \{-\infty\}
-\]
-returns the minimal integer
-for a given set of integers, if there is one, and $-\infty$, otherwise.
-
 \begin{mathpar}
 \inferrule{
-  \approxexpr(\tenv, \Over, \ve) \typearrow \vs
+  \approxexpr(\tenv, \Over, \ve) \typearrow \vs \terminateas{\CannotOverapproximate}
 }{
-  \approxexprmin(\tenv, \ve) \typearrow \overname{\mininfty(\vs)}{\vz}
+  \approxexprmin(\tenv, \ve) \typearrow \overname{\min(\vs)}{\vz}
 }
 \end{mathpar}
 
@@ -776,33 +911,25 @@ for a given set of integers, if there is one, and $-\infty$, otherwise.
 The function
 \[
 \approxexprmax(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-  \overname{\Z \cup \{+\infty\}}{\vz}
+  \overname{\Z}{\vz} \cup \{\CannotOverapproximate\}
 \]
 approximates the maximal integer represented by the expression $\ve$
 in any environment consisting of the static environment
-$\tenv$. The result, yielded in $\vz$ is either an integer or $+\infty$.
-
-\hypertarget{def-maxinfty}{}
-In the following rule, the helper function
-\[
-\maxinfty : \pow{\Z} \aslto \Z \cup \{+\infty\}
-\]
-returns the maximal integer
-for a given set of integers, if there is one, and $+\infty$, otherwise.
+$\tenv$. The result, yielded in $\vz$ is either an integer or $\CannotOverapproximate$.
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item \Proseapproxexpr{$\tenv$}{$\Over$}{$\ve$}{$\vs$};
-  \item \Proseeqdef{$\vz$}{the maximal integer in $\vz$ or $+\infty$ if there is no such integer}.
+  \item \Proseapproxexpr{$\tenv$}{$\Over$}{$\ve$}{$\vs$}\ProseTerminateAs{\CannotOverapproximate};
+  \item \Proseeqdef{$\vz$}{the maximal integer in $\vs$}.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \approxexpr(\tenv, \Over, \ve) \typearrow \vs
+  \approxexpr(\tenv, \Over, \ve) \typearrow \vs \terminateas{\CannotOverapproximate}
 }{
-  \approxexprmax(\tenv, \ve) \typearrow \overname{\maxinfty(\vs)}{\vz}
+  \approxexprmax(\tenv, \ve) \typearrow \overname{\max(\vs)}{\vz}
 }
 \end{mathpar}
 
@@ -811,24 +938,25 @@ for a given set of integers, if there is one, and $+\infty$, otherwise.
 The function
 \[
 \approxbottomtop(\overname{\{\Under, \Over\}}{\vapprox}) \aslto
-  \overname{\pow{\Z}}{\vs}
+  \overname{\pow{\Z}}{\vs} \cup \{\CannotOverapproximate\}
 \]
 returns in $\vs$ either the empty set or the set of all integers,
 depending on the \approximationdirectionterm\ $\vapprox$.
 
 \ExampleDef{Approximation Extremes}
 In \listingref{ApproxBottomTop}, approximating the constraint \verb|a..b|
-with $\Over$ yields $\Top$.
+with $\Over$ yields \\
+$\CannotOverapproximate$.
 \ASLListing{Approximation extremes}{ApproxBottomTop}{\typingtests/TypingRule.ApproxBottomTop.asl}
 
 \ProseParagraph
-\ProseEqdef{$\vs$}{the empty set if $\vapprox$ is $\Under$ and the set of all integers
-if $\vapprox$ is $\Over$.}
+\ProseEqdef{$\vs$}{the empty set if $\vapprox$ is $\Under$ and
+$\CannotOverapproximate$ if $\vapprox$ is $\Over$.}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \approxbottomtop(\vapprox) \typearrow \overname{\choice{\vapprox = \Under}{\emptyset}{\Z}}{\vs}
+  \approxbottomtop(\vapprox) \typearrow \overname{\choice{\vapprox = \Under}{\emptyset}{\CannotOverapproximate}}{\vs}
 }
 \end{mathpar}
 
@@ -868,7 +996,7 @@ The function
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\{\Over, \Under\}}{\vapprox} \aslsep
   \overname{\expr}{\ve}) \aslto
-  \overname{\pow{\Z}}{\vs}
+  \overname{\pow{\Z}}{\vs} \cup \{\CannotOverapproximate\}
 \]
 conservatively approximates the expression $\ve$ by a set of integers $\vs$
 in the static environment $\tenv$.
@@ -887,14 +1015,14 @@ based on the \approximationdirectionterm\ $\vapprox$.
   \item \AllApplyCase{literal\_non\_int}
   \begin{itemize}
     \item $\ve$ is a literal expression for a non-integer value;
-    \item applying $\approxbottomtop$ to $\vapprox$ yields $\vs$.
+    \item applying $\approxbottomtop$ to $\vapprox$ yields $\vs$\ProseTerminateAs{\CannotOverapproximate}.
   \end{itemize}
 
   \item \AllApplyCase{var\_over}
   \begin{itemize}
     \item $\ve$ is a \variableexpression{$\vx$};
     \item $\vapprox$ is $\Over$;
-    \item \Prosetypeof{$\tenv$}{$\vx$}{$\vt$};
+    \item \Prosetypeof{$\tenv$}{$\vx$}{\\ $\vt$}\ProseTerminateAs{\CannotOverapproximate};
     \item \Proseapproxtype{$\tenv$}{$\Over$}{$\vt$}{$\vs$}.
   \end{itemize}
 
@@ -908,28 +1036,38 @@ based on the \approximationdirectionterm\ $\vapprox$.
   \item \AllApplyCase{unop}
   \begin{itemize}
     \item $\ve$ is a \unopexpression{$\op$}{$\vep$};
-    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vep$}{$\vsp$}\ProseTerminateAs{\Z};
+    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vep$}{$\vsp$}\ProseTerminateAs{\CannotOverapproximate};
     \item \Proseeqdef{$\vs$}{the set obtained by applying $\unopliterals$ to $\op$ and
       the integer literal for every integer in $\vsp$}.
   \end{itemize}
 
-  \item \AllApplyCase{binop}
+  \item \AllApplyCase{binop\_precise}
   \begin{itemize}
     \item $\ve$ is a \binopexpression{$\op$}{$\veone$}{$\vetwo$};
-    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\veone$}{$\vsone$}\ProseTerminateAs{\Z};
-    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vetwo$}{$\vstwo$}\ProseTerminateAs{\Z};
-    \item applying $\annotateconstraintbinop$ to $\tenv$, $\vsone$, and $\vstwo$ yields $(\vsp, \plf)$;
-    \item applying $\approxconstraints$ to $\tenv$, $\vapprox$, and $\vsp$ yields $\vsapprox$;
-    \item \Proseeqdef{$\vs$}{
-      $\vsapprox$ if $\plf$ is $\PrecisionFull$ or $\plf$ is $\PrecisionLost$ and $\vapprox$ is $\Under$,
-      and as the set of all integers otherwise}.
+    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\veone$}{$\vsone$}\ProseTerminateAs{\CannotOverapproximate};
+    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vetwo$}{$\vstwo$}\ProseTerminateAs{\CannotOverapproximate};
+    \item applying $\annotateconstraintbinop$ to $\vapprox$, $\tenv$, $\vsone$, and $\vstwo$ yields $(\vsp, \plf)$;
+    \item either $\plf$ is $\PrecisionFull$ or $\plf$ is $\PrecisionLost$ and $\vapprox$ is $\Under$;
+    \item applying $\approxconstraints$ to $\tenv$, $\vapprox$, and $\vsp$ yields \\
+          $\vsapprox$\ProseTerminateAs{\CannotOverapproximate};
+    \item \Proseeqdef{$\vs$}{$\vsapprox$}.
+  \end{itemize}
+
+  \item \AllApplyCase{binop\_approx}
+  \begin{itemize}
+    \item $\ve$ is a \binopexpression{$\op$}{$\veone$}{$\vetwo$};
+    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\veone$}{$\vsone$}\ProseTerminateAs{\CannotOverapproximate};
+    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vetwo$}{$\vstwo$}\ProseTerminateAs{\CannotOverapproximate};
+    \item applying $\annotateconstraintbinop$ to $\vapprox$, $\tenv$, $\vsone$, and $\vstwo$ yields $(\vsp, \plf)$;
+    \item $\plf$ is $\PrecisionLost$ and $\vapprox$ is $\Over$;
+    \item \Proseeqdef{$\vs$}{$\CannotOverapproximate$}.
   \end{itemize}
 
   \item \AllApplyCase{cond}
   \begin{itemize}
     \item $\ve$ is a \condexpression{any}{$\vetwo$}{$\vethree$};
-    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vetwo$}{$\vstwo$}\ProseTerminateAs{\Z};
-    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vethree$}{$\vsthree$}\ProseTerminateAs{\Z};
+    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vetwo$}{$\vstwo$}\ProseTerminateAs{\CannotOverapproximate};
+    \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vethree$}{$\vsthree$}\ProseTerminateAs{\CannotOverapproximate};
     \item \Proseeqdef{$\vs$}{the union of $\vstwo$ and $\vsthree$ if $\vapprox$ is $\Over$
     and the intersection of $\vstwo$ and $\vsthree$ if $\vapprox$ is $\Under$}.
   \end{itemize}
@@ -953,7 +1091,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
 \begin{mathpar}
 \inferrule[literal\_non\_int]{
   \astlabel(\vl) \neq \lint\\
-  \approxbottomtop(\vapprox) \typearrow \vs
+  \approxbottomtop(\vapprox) \typearrow \vs \terminateas \CannotOverapproximate
 }{
   \approxexpr(\tenv, \vapprox, \overname{\ELiteral(\vl)}{\ve}) \typearrow \vs
 }
@@ -965,7 +1103,7 @@ types.
 \begin{mathpar}
 \inferrule[var\_over]{
   \typeof(\tenv, \vx) \typearrow \vt\\
-  \approxtype(\tenv, \Over, \vt) \typearrow \vs
+  \approxtype(\tenv, \Over, \vt) \typearrow \vs \terminateas \CannotOverapproximate
 }{
   \approxexpr(\tenv, \overname{\Over}{\vapprox}, \overname{\EVar(\vx)}{\ve}) \typearrow \vs
 }
@@ -979,7 +1117,7 @@ types.
 
 \begin{mathpar}
 \inferrule[unop]{
-  \approxexpr(\tenv, \vapprox, \vep) \typearrow \vsp \terminateas \Z\\\\
+  \approxexpr(\tenv, \vapprox, \vep) \typearrow \vsp \terminateas \CannotOverapproximate\\\\
   \vs \eqdef \{ \unopliterals(\op, \lint(\vz)) \;|\; \vz \in \vsp\}
 }{
   \approxexpr(\tenv, \vapprox, \overname{\EUnop(\op, \vep)}{\ve}) \typearrow \vs
@@ -987,28 +1125,32 @@ types.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[binop]{
-  \approxexpr(\tenv, \vapprox, \veone) \typearrow \vsone \terminateas \Z\\\\
-  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \Z\\\\
-  \annotateconstraintbinop(\tenv, \vsone, \vstwo) \typearrow (\vsp, \plf)\\
-  \approxconstraints(\tenv, \vapprox, \vsp) \typearrow \vsapprox\\
-  {
-  \vs \eqdef
-  \begin{cases}
-    \vsapprox & \text{if }\plf = \PrecisionFull \lor (\plf = \PrecisionLost \land \vapprox = \Under)\\
-    % Transliteration comment: instead of the symbol CannotOverApproximate, we use the set of all integers.
-    \Z        & \text{if }\plf = \PrecisionLost \land \vapprox = \Over
-  \end{cases}
-  }
+\inferrule[binop\_precise]{
+  \approxexpr(\tenv, \vapprox, \veone) \typearrow \vsone \terminateas \CannotOverapproximate\\\\
+  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \CannotOverapproximate\\\\
+  \approxconstraintbinop(\tenv, \vapprox, \op, \vsone, \vstwo) \typearrow (\vsp, \plf)\\
+  \plf = \PrecisionFull \lor (\plf = \PrecisionLost \land \vapprox = \Under)\\
+  \approxconstraints(\tenv, \vapprox, \vsp) \typearrow \vsapprox \terminateas \CannotOverapproximate
 }{
-  \approxexpr(\tenv, \vapprox, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \vs
+  \approxexpr(\tenv, \vapprox, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \overname{\vsapprox}{\vs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[binop\_approx]{
+  \approxexpr(\tenv, \vapprox, \veone) \typearrow \vsone \terminateas \CannotOverapproximate\\\\
+  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \CannotOverapproximate\\\\
+  \approxconstraintbinop(\tenv, \vapprox, \op, \vsone, \vstwo) \typearrow (\vsp, \plf)\\
+  \plf = \PrecisionLost \land \vapprox = \Over
+}{
+  \approxexpr(\tenv, \vapprox, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \CannotOverapproximate
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[cond]{
-  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \Z\\\\
-  \approxexpr(\tenv, \vapprox, \vethree) \typearrow \vsthree \terminateas \Z\\\\
+  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \CannotOverapproximate\\\\
+  \approxexpr(\tenv, \vapprox, \vethree) \typearrow \vsthree \terminateas \CannotOverapproximate\\\\
   \vs \eqdef \choice{\vapprox = \Over}{\vstwo \cup \vsthree}{\vstwo \cap \vsthree}
 }{
   \approxexpr(\tenv, \vapprox, \overname{\ECond(\Ignore, \vetwo, \vethree)}{\ve}) \typearrow \vs
@@ -1017,10 +1159,94 @@ types.
 
 \begin{mathpar}
 \inferrule[other]{
-  \astlabel(\ve) \not\in \{\ELiteral, \EVar, \EUnop, \EBinop, \ECond\}\\
-  \approxbottomtop(\vapprox) \typearrow \vs
+  \astlabel(\ve) \not\in \{\ELiteral, \EVar, \EUnop, \EBinop, \ECond\}
 }{
-  \approxexpr(\tenv, \vapprox, \ve) \typearrow \vs
+  \approxexpr(\tenv, \vapprox, \ve) \typearrow \overname{\approxbottomtop(\vapprox)}{\vs}
+}
+\end{mathpar}
+
+\TypingRuleDef{ApproxConstraintBinop}
+\hypertarget{def-approxconstraintbinop}{}
+The function
+\[
+\begin{array}{r}
+\approxconstraintbinop\left(
+  \begin{array}{c}
+  \overname{\staticenvs}{\tenv} \aslsep\\
+  \overname{\{\Over, \Under\}}{\vapprox} \aslsep\\
+  \overname{\binop}{\op} \aslsep\\
+  \overname{\intconstraint^+}{\vsone} \aslsep\\
+  \overname{\intconstraint^+}{\vstwo}
+  \end{array}
+\right)
+\aslto \left(
+  \begin{array}{c}
+  \overname{\intconstraint^+}{\vs} \aslsep\\
+  \overname{\precisionlossindicator}{\plf}
+  \end{array}
+  \right)
+\end{array}
+\]
+approximates the application of the binary operator $\op$ to lists of constraints $\vsone$
+and $\vstwo$ with the \approximationdirectionterm{} $\vapprox$ in the context of the static
+environment $\tenv$, resulting in the list of constraints $\vs$ and \precisionlossindicator{}
+$\plf$.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{over}
+  \begin{itemize}
+    \item $\vapprox$ is $\Over$;
+    \item applying $\annotateconstraintbinop$ to $\Over$, $\tenv$, $\op$, $\vsone$, and $\vstwo$
+          yields \\
+          $(\vs, \plf)$\ProseTerminateAs{\CannotOverapproximate}.
+  \end{itemize}
+
+  \item \AllApplyCase{under\_precise}
+  \begin{itemize}
+    \item $\vapprox$ is $\Under$;
+    \item applying $\annotateconstraintbinop$ to $\Under$, $\tenv$, $\op$, $\vsone$, and $\vstwo$
+          yields $(\vs, \plf)$\ProseTerminateAs{\CannotOverapproximate}.
+  \end{itemize}
+
+  \item \AllApplyCase{under\_approx}
+  \begin{itemize}
+    \item $\vapprox$ is $\Under$;
+    \item applying $\annotateconstraintbinop$ to $\Under$, $\tenv$, $\op$, $\vsone$, and $\vstwo$
+          yields $\CannotUnderapproximate$;
+    \item \Proseeqdef{$\vs$}{the empty list} and \Proseeqdef{$\plf$}{$\PrecisionLost$}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[over]{
+  {
+  \begin{array}{r}
+  \annotateconstraintbinop(\Over, \tenv, \op, \vsone, \vstwo) \typearrow \\
+  (\vs, \plf) \terminateas \CannotOverapproximate
+  \end{array}
+  }
+}{
+  \approxconstraintbinop(\tenv, \overname{\Over}{\vapprox}, \op, \vsone, \vstwo) \typearrow (\vs, \plf)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[under\_precise]{
+    \annotateconstraintbinop(\Under, \tenv, \op, \vsone, \vstwo) \typearrow (\vs, \plf)
+}{
+  \approxconstraintbinop(\tenv, \overname{\Under}{\vapprox}, \op, \vsone, \vstwo) \typearrow (\vs, \plf)
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[under\_approx]{
+    \annotateconstraintbinop(\Under, \tenv, \op, \vsone, \vstwo) \typearrow \CannotUnderapproximate
+}{
+  \approxconstraintbinop(\tenv, \overname{\Under}{\vapprox}, \op, \vsone, \vstwo) \typearrow
+  (\overname{\emptylist}{\vs}, \overname{\PrecisionLost}{\plf})
 }
 \end{mathpar}
 
@@ -1032,7 +1258,7 @@ The function
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\{\Over, \Under\}}{\vapprox} \aslsep
   \overname{\ty}{\vt}) \aslto
-\overname{\pow{\Z}}{\vs}
+\overname{\pow{\Z}}{\vs} \cup \{\CannotOverapproximate\}
 \]
 conservatively approximates the type $\vt$ by a set of integers $\vs$
 in the static environment $\tenv$.
@@ -1046,13 +1272,13 @@ based on the \approximationdirectionterm\ $\vapprox$.
   \begin{itemize}
     \item $\vt$ is a \namedtype;
     \item \Prosemakeanonymous{$\tenv$}{$\vt$}{$\vtp$};
-    \item \Proseapproxtype{$\tenv$}{$\vapprox$}{$\vtp$}{$\vs$}.
+    \item \Proseapproxtype{$\tenv$}{$\vapprox$}{$\vtp$}{\\ $\vs$}\ProseTerminateAs{\CannotOverapproximate}.
   \end{itemize}
 
   \item \AllApplyCase{int\_wellconstrained}
   \begin{itemize}
     \item $\vt$ is a \wellconstrainedintegertype\ with the list of integer constraints $\cs$;
-    \item \Proseapproxconstraints{$\tenv$}{$\vapprox$}{$\cs$}{$\vs$}.
+    \item \Proseapproxconstraints{$\tenv$}{$\vapprox$}{$\cs$}{\\ $\vs$}\ProseTerminateAs{\CannotOverapproximate}.
   \end{itemize}
 
   \item \AllApplyCase{other}
@@ -1067,7 +1293,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
 \inferrule[named]{
   \isnamed(\vt)\\
   \makeanonymous(\tenv, \vt) \typearrow \vtp\\
-  \approxtype(\tenv, \vapprox, \vtp) \typearrow \vs
+  \approxtype(\tenv, \vapprox, \vtp) \typearrow \vs \terminateas \CannotOverapproximate
 }{
   \approxtype(\tenv, \vapprox, \vt) \typearrow \vs
 }
@@ -1076,7 +1302,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
 \begin{mathpar}
 \inferrule[int\_wellconstrained]{
   \vt = \TInt(\wellconstrained(\cs))\\
-  \approxconstraints(\tenv, \vapprox, \cs) \typearrow \vs
+  \approxconstraints(\tenv, \vapprox, \cs) \typearrow \vs \terminateas \CannotOverapproximate
 }{
   \approxtype(\tenv, \vapprox, \vt) \typearrow \vs
 }
