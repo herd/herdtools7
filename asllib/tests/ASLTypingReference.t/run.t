@@ -688,6 +688,8 @@ ASL Typing Tests / annotating types:
   ASL Type error: the function "returning" is qualified with noreturn but may
     return on some control flow path.
   [1]
+  $ aslref --no-exec TypingRule.ApproxExprMin.asl
+  $ aslref --no-exec TypingRule.ApproxExprMax.asl
   $ aslref TypingRule.ApproxStmt.asl
   File TypingRule.ApproxStmt.asl, line 8, characters 4 to 30:
       pragma require_positive x;
@@ -1009,6 +1011,11 @@ ASL Typing Tests / annotating types:
   ASL Type error: a subtype of boolean was expected, provided integer {1}.
   [1]
   $ aslref TypingRule.ApproxConstraint.asl
+  $ aslref TypingRule.ApproxConstraints.asl
+  $ aslref --no-exec TypingRule.ApproxExpr.asl
+  $ aslref --no-exec TypingRule.ApproxConstraintBinop.asl
+  $ aslref --no-exec TypingRule.SymdomOfConstraint.asl
+  $ aslref TypingRule.IntSetToConstraints.asl
   $ aslref TypingRule.BitFieldEqual.asl
   $ aslref TypingRule.BitFieldEqual.bad1.asl
   File TypingRule.BitFieldEqual.bad1.asl, line 4, characters 4 to 71:
