@@ -23,7 +23,6 @@ open Printf
 module type Out = sig
   type t = out_channel
   val open_file : string -> t
-  val close : t -> unit
 end
 
 module OutTar(O:Tar.Option) = struct
@@ -31,11 +30,9 @@ module OutTar(O:Tar.Option) = struct
 
   type t = out_channel
   let open_file name = open_out (T.outname name)
-  let close chan = close_out chan
 end
 
 module type Config = sig
-  val verbose : int
   val hexa : bool
 end
 
@@ -133,7 +130,6 @@ let from_file =
   let module X =
     Make
       (struct
-        let verbose = !verbose
         let hexa = !hexa
       end) in
   let module T =

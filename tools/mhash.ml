@@ -71,8 +71,6 @@ module Top
 
     module Z = ToolParse.Top(T)(Make)
 
-    type name = {fname:string; tname:string;}
-
     let do_test name (kh,km as k) =
       try
         let {T.tname = tname;

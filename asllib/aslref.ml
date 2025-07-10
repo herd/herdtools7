@@ -54,8 +54,6 @@ type args = {
   allow_function_like_statements : bool;
 }
 
-let push thing ref = ref := thing :: !ref
-
 let parse_args () =
   let show_rules = ref false in
   let target_files = ref [] in

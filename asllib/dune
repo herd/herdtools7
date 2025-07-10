@@ -1,3 +1,6 @@
+(dirs
+ (:standard \ menhir2bnfc))
+
 (rule
  (copy ../Version.ml Version.ml))
 

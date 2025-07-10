@@ -127,7 +127,6 @@ module Top
 
 let verbose = ref false
 let arg = ref []
-let base = ref ""
 let tnames = ref false
 let ncheck = ref false
 let found = ref None
@@ -155,8 +154,6 @@ let () =
     usage
 
 let tests = List.rev !arg
-
-let parse_int s = try Some (int_of_string s) with _ -> None
 
 module L = LexRename.Make(struct let verbose = if !verbose then 1 else 0 end)
 
