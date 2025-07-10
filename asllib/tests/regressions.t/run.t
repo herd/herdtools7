@@ -411,6 +411,7 @@ Required tests:
                            ^^^^
   ASL Error: Cannot parse.
   [1]
+  $ aslref -0 unreachable-v0.asl
   $ aslref assign1.asl
   $ aslref big-ints.asl
   $ aslref bitfields.asl
