@@ -665,13 +665,6 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.Subprogram.asl
   0x04
   $ aslref --no-exec TypingRule.CheckControlFlow.noreturn.asl
-  $ aslref --no-exec TypingRule.CheckControlFlow.bad.asl
-  File TypingRule.CheckControlFlow.bad.asl, line 3, characters 4 to 13:
-      return 0; // Illegal as the containing function is qualified with noreturn
-      ^^^^^^^^^
-  ASL Type error: the function "returning" is qualified with noreturn but may
-    return on some control flow path.
-  [1]
   $ aslref --no-exec TypingRule.CheckControlFlow.asl
   $ aslref TypingRule.CheckControlFlow.bad2.asl
   File TypingRule.CheckControlFlow.bad2.asl, line 6, character 4 to line 16,

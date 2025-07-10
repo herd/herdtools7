@@ -33,9 +33,9 @@ but not \verb|other_tool_op| and warn about it.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Subprogram declarations:
 \begin{flalign*}
-\Ndecl  \derives \ & \Nqualifier \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep &\\
+\Ndecl  \derives \ & \Npuritykeyword \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nreturntype \parsesep &\\
     &\wrappedline \Nrecurselimit \parsesep \Nfuncbody\\
-|\ & \Nqualifier \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
+|\ & \Npuritykeyword \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Nfuncbody &\\
 |\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbeq \parsesep \Tidentifier \parsesep \Nasty &\\
    & \wrappedline\ \Naccessorbody &\\
 \Naccessorbody \derives \ & \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon&
@@ -275,12 +275,7 @@ which is a \typingerrorterm.
 \ASLListing{An incorrectly terminating path}{CheckControlFlow-bad2}{\typingtests/TypingRule.CheckControlFlow.bad2.asl}
 
 \ExampleDef{Illegally returning from a \texttt{noreturn} Subprogram}
-The specification in \listingref{CheckControlFlow-bad}
-is ill-typed as \verb|returning| is declared with the \verb|noreturn|
-qualifier, yet it contains the \returnstatementsterm{} \verb|return 0;|.
-\ASLListing{Illegally returning from a \texttt{noreturn} subprogram}{CheckControlFlow-bad}{\typingtests/TypingRule.CheckControlFlow.bad.asl}
-
-Similarly, the specification in \listingref{CheckControlFlow-bad3}
+The specification in \listingref{CheckControlFlow-bad3}
 is ill-typed as \verb|returning| is declared with the \verb|noreturn|
 qualifier, yet it returns via a \passstatementterm.
 \ASLListing{Illegally returning from a \texttt{noreturn} subprogram}{CheckControlFlow-bad3}{\typingtests/TypingRule.CheckControlFlow.bad3.asl}
@@ -321,7 +316,7 @@ in \listingref{CheckControlFlow} is $\{\AbsAbnormal, \AbsReturning\}$, since it 
 a function.
 
 The set of \Proseabstractconfigurations{} allowed for the subprogram \verb|returning|
-is in \listingref{CheckControlFlow-bad} is $\{\AbsAbnormal\}$, since it is qualified
+in \listingref{CheckControlFlow-bad3} is $\{\AbsAbnormal\}$, since it is qualified
 by \verb|noreturn|.
 
 \ProseParagraph

@@ -621,6 +621,11 @@ let qualifier ==
     | READONLY; { Readonly }
     | NORETURN; { Noreturn })
 
+let purity_keyword ==
+  ioption(
+    | PURE;     { Pure }
+    | READONLY; { Readonly })
+
 let is_readonly :=
   |           { false }
   | READONLY; { true }
@@ -641,7 +646,7 @@ let accessors :=
 let decl :=
   | d=annotated (
     (* Begin func_decl *)
-    | ~=qualifier; ~=override; FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type; ~=recurse_limit; body=func_body;
+    | ~=purity_keyword; ~=override; FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=return_type; ~=recurse_limit; body=func_body;
         {
           D_Func {
             name;
@@ -651,7 +656,7 @@ let decl :=
             return_type = Some return_type;
             subprogram_type = ST_Function;
             recurse_limit;
-            qualifier;
+            qualifier = purity_keyword;
             override;
             builtin = false;
           }
