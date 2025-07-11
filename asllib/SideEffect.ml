@@ -184,6 +184,11 @@ module SES = struct
     | SE_Readonly, _ | _, SE_Readonly -> SE_Readonly
     | SE_Pure, SE_Pure -> SE_Pure
 
+  let purity_to_string = function
+    | SE_Impure -> "impure"
+    | SE_Readonly -> "readonly"
+    | SE_Pure -> "pure"
+
   (* This module uses an abstraction over a set of side-effects. *)
   type t = {
     (* Decomposition into subsets *)
@@ -242,6 +247,12 @@ module SES = struct
     && purity_satisfies SE_Pure ses.global_purity
 
   let is_readonly ses =
+    let () =
+      if false then
+        Format.eprintf "Got local purity %s and global purity %s.@."
+          (purity_to_string ses.local_purity)
+          (purity_to_string ses.global_purity)
+    in
     purity_satisfies SE_Readonly ses.local_purity
     && purity_satisfies SE_Readonly ses.global_purity
 

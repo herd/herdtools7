@@ -534,3 +534,17 @@
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: expected a pure expression/subprogram.
   [1]
+
+  $ aslref -0 func-decl-0.asl use-func-decl.asl --no-exec
+  $ aslref -0 func-decl-0.asl bad-use-func-decl-01.asl --no-exec
+  File bad-use-func-decl-01.asl, line 3, characters 2 to 14:
+    return h(x);
+    ^^^^^^^^^^^^
+  ASL Type error: expected a readonly expression/subprogram.
+  [1]
+  $ aslref -0 func-decl-0.asl bad-use-func-decl-02.asl --no-exec
+  File bad-use-func-decl-02.asl, line 3, characters 2 to 14:
+    return g(x);
+    ^^^^^^^^^^^^
+  ASL Type error: expected a pure expression/subprogram.
+  [1]

@@ -185,8 +185,12 @@ let mem_constants env x =
 let add_subprogram name func_def ses env =
   let () =
     if false then
-      Format.eprintf "@[Adding func %s with side effects:@ @[%a]@]@." name
-        SideEffect.SES.pp_print ses
+      Format.eprintf
+        "@[Adding func %s with side effects:@ @[%a]@ and@ qualifier@ %s@]@."
+        name SideEffect.SES.pp_print ses
+        (match func_def.qualifier with
+        | Some q -> PP.func_qualifier_to_string q
+        | None -> "none")
   in
   {
     env with
