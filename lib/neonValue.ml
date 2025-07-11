@@ -19,9 +19,9 @@ module Make (C : sig
 end) : Value.AArch64 = struct
   module AArch64Instr = AArch64Instr.Make (C)
   module AArch64Cst =
-    SymbConstant.Make (NeonScalar) (AArch64PteVal) (AArch64Instr)
+    SymbConstant.Make (NeonScalar) (AArch64PteVal) (AArch64AddrReg) (AArch64Instr)
   module NoCst =
-    SymbConstant.Make (NeonScalar) (PteVal.No)(AArch64Instr)
+    SymbConstant.Make (NeonScalar) (PteVal.No) (AddrReg.No) (AArch64Instr)
   module NoArchOp = ArchOp.No(NoCst)
   module AArch64Op = AArch64Op.Make (NeonScalar)(NoArchOp)
   include SymbValue.Make (AArch64Cst) (AArch64Op)

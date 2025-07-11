@@ -833,8 +833,8 @@ module Make
 
           * Without HW-management (on old CPUs, or where TCR_ELx.{HA,HD} == {0,0}):
 
-          A load/store to x where pte_x has the access flag clear will raise a
-          permission fault
+          A load/store to x where pte_x has the access flag clear will raise an
+          Access flag fault
 
           A store to x where pte_x has the dirty bit clear will raise
           a permission fault
@@ -1382,11 +1382,21 @@ module Make
         else m
 
       let lift_kvm dir updatedb mop ma an ii mphy =
-        let lbl_v = get_instr_label ii in
         let mfault ma a ft =
-          insert_commit_to_fault ma
-            (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
-            None ii >>! B.fault [AArch64Base.elr_el1, lbl_v] in
+          let lbl_v = get_instr_label ii in
+          match ii.A.inst with
+          | AArch64Base.I_AT (_, _) ->
+            (* most address translation faults are asynchronously reported in PAR_EL1 *)
+            (* synchronous exceptions when SEABT, stage 2 fault on stage 1 walk, GPC fault or GPF *)
+            ma >>= M.op1 (Op.ArchOp1 (AArch64Op.SetF)) >>=
+            fun v ->
+              let set_par_el1 = write_reg AArch64Base.par_el1 v ii in
+              set_par_el1 >>! B.Next []
+          | _ ->
+            insert_commit_to_fault ma
+              (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
+              None ii >>! B.fault [AArch64Base.elr_el1, lbl_v]
+        in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb false a ma an ii
             ((let m = mop Access.PTE ma in
@@ -1551,6 +1561,19 @@ module Make
             lift_memtag_virt mop ma dir an ii
           else
             mop Access.VIR ma >>= M.ignore >>= B.next1T
+
+      (* Address translation instruction *)
+      let do_at op rd ii =
+        let open AArch64Base in
+        let dir =
+          match op.AArch64Base.AT.rw with
+          | AArch64Base.AT.W -> Dir.W
+          | AArch64Base.AT.R -> Dir.R in
+        let sreg = SysReg (AArch64Base.PAR_EL1) in
+        lift_memop rd dir false memtag
+          (fun _ ma _ -> ma >>= (fun a ->
+            M.op1 (Op.ArchOp1 (AArch64Op.SetOA)) a >>= fun v -> write_reg_dest sreg v ii))
+          (to_perms "r" MachSize.Word) (read_reg_ord rd ii) mzero Annot.N ii
 
       let do_ldr rA sz an mop ma ii =
 (* Generic load *)
@@ -4465,6 +4488,8 @@ module Make
             ldop op (bh_to_sz v) (w_to_rmw w) rs ZR rn ii
         | I_LDOPBH (op,v,rmw,rs,rt,rn) ->
             ldop op (bh_to_sz v) rmw rs rt rn ii
+(* Address translation operation *)
+        | I_AT (op, rd) -> do_at op rd ii
 (* Page tables and TLBs *)
         | I_TLBI (op, rd) ->
             !(read_reg_addr rd ii >>= fun a -> do_inv op a ii)

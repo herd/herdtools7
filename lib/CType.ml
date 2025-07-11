@@ -35,6 +35,7 @@ let int32x4_t = Base "int32x4_t"
 let svbool_t = Base "svbool_t"
 let svint32_t = Base "svint32_t"
 let pteval_t = Base "pteval_t"
+let parel1_t = Base "parel1_t"
 let pte = Pointer pteval_t
 let ins_t = Base "ins_t"
 
@@ -109,6 +110,11 @@ let rec is_ptr =  function
 let rec is_pte t = match t with
 | Base "pteval_t" -> true
 | Atomic t|Volatile t -> is_pte t
+| _ -> false
+
+let rec is_parel1 t = match t with
+| Base "parel1_t" -> true
+| Atomic t|Volatile t -> is_parel1 t
 | _ -> false
 
 let rec is_array = function
