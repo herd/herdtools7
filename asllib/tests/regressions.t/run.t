@@ -609,4 +609,18 @@ Outdated syntax
                        ^^^
   ASL Grammar error: Obsolete syntax: implication with -->
   [1]
-
+  $ aslref noreturn.asl
+  File noreturn.asl, line 31, character 0 to line 34, character 4:
+  noreturn func rec_noreturning()
+  begin
+      rec_noreturning();
+  end;
+  ASL Warning: the recursive function rec_noreturning has no recursive limit
+  annotation.
+  [1]
+  $ aslref noreturn_function.asl
+  File noreturn_function.asl, line 2, characters 26 to 28:
+  noreturn func returning() => integer
+                            ^^
+  ASL Error: Cannot parse.
+  [1]

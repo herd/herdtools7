@@ -524,11 +524,14 @@ module PPrint = struct
     | UnreachableReached ->
         pp_print_text f "ASL Dynamic error: unreachable reached."
     | NonReturningFunction name ->
-        fprintf f "ASL Type error:@ the@ function %S@ %a." name pp_print_text
-          "may not terminate by returning a value or raising an exception."
+        fprintf f
+          "ASL Type error:@ not all control flow paths of the function %S@ %a."
+          name pp_print_text
+          "are guaranteed to either return, raise an exception, or invoke \
+           unreachable"
     | NoreturnViolation name ->
         fprintf f "ASL Type error:@ the@ function %S@ %a." name pp_print_text
-          "is qualified with noreturn but contains a return statement"
+          "is qualified with noreturn but may return on some control flow path"
     | RecursionLimitReached ->
         pp_print_text f "ASL Dynamic error: recursion limit reached."
     | LoopLimitReached ->

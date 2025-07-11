@@ -3786,21 +3786,20 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       let abs_configs = approx_stmt tenv body in
       (* AllowedAbsConfigs( *)
       let allowed_abs_configs, error_kind =
-        if ASTUtils.is_noreturn f then
-          (abnormal_or_continuing, Error.NoreturnViolation f.name)
+        if ASTUtils.is_noreturn f then (abnormal, Error.NoreturnViolation f.name)
         else
           match f.return_type with
           | None -> (top, Error.NonReturningFunction f.name)
           | Some _ -> (abnormal_or_returning, Error.NonReturningFunction f.name)
       in
       (* AllowedAbsConfigs) *)
+      let () =
+        if false then
+          Format.eprintf
+            "check_control_flow %s : allowed_abs_configs=%a, abs_configs=%a@."
+            f.name pp allowed_abs_configs pp abs_configs
+      in
       if not (subset abs_configs allowed_abs_configs) then
-        let () =
-          if false then
-            Format.eprintf
-              "check_control_flow %s : allowed_abs_configs=%a, abs_configs=%a"
-              f.name pp allowed_abs_configs pp abs_configs
-        in
         fatal_from ~loc:body error_kind
   end
   (* End *)
