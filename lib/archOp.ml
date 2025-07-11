@@ -50,7 +50,16 @@ module type S = sig
 
   (* Masking some structured constant *)
   val mask : cst -> MachSize.sz -> cst option
+
 end
+
+module type WithTr = sig
+  include S
+
+  val fromExtra : pteval -> AArch64PteVal.t
+  val toExtra : AArch64PteVal.t -> pteval
+end
+
 
 type no_extra_op1
 type 'a no_constr_op1
@@ -58,7 +67,7 @@ type no_extra_op
 type 'a no_constr_op
 
 module No (Cst : Constant.S) :
-  S
+  WithTr
     with type scalar = Cst.Scalar.t
      and type pteval = Cst.PteVal.t
      and type instr = Cst.Instr.t
@@ -89,6 +98,8 @@ module No (Cst : Constant.S) :
   let andnot2 _ _ = None
   let andop _ _ = None
   let mask _ _ = None
+  let fromExtra _ = raise Exit
+  and toExtra _ = raise Exit
 end
 
 module type S1 = sig
@@ -129,4 +140,5 @@ module OnlyArchOp1 (A : S1) :
 
   let pp_op _ = assert false
   let do_op _ _ _ = None
+
 end

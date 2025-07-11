@@ -80,6 +80,7 @@ module type S =
       val nameToV  : string -> v
       val instructionToV : Cst.Instr.t -> v
       val cstToV : Cst.v -> v
+      val scalarToV : Cst.Scalar.t -> v
       val maybevToV : MiscParser.maybev -> v
 
 (* Convenience for intToV (0|1) *)
@@ -129,6 +130,9 @@ module type S =
       val map_const : (Cst.v -> Cst.v) -> v -> v
       val map_scalar : (Cst.Scalar.t -> Cst.Scalar.t) -> v -> v
       val map_csym : (csym -> v) -> v -> v
+
+(* Classify location values, will fail on non-address values *)
+      val access_of_value : v -> Access.t
     end
 
 module type AArch64 =
