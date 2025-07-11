@@ -446,6 +446,7 @@ match name with
 | "udf"|"UDF" -> UDF
 (* Memory Tagging *)
 | "stg"|"STG" -> STG
+| "st2g"|"ST2G" -> ST2G
 | "stzg"|"STZG" -> STZG
 | "stz2g"|"STZ2G" -> STZ2G
 | "ldg"|"LDG" -> LDG
