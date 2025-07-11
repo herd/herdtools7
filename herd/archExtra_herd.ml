@@ -18,6 +18,9 @@
 
 (** Input signature, a reduced [Arch.ARCH] *)
 module type I = sig
+
+  val arch : Archs.t
+
   module V : Value.S
   val endian : Endian.t
 
@@ -262,6 +265,11 @@ module Make(C:Config) (I:I) : S with module I = I
     = struct
 
       let is_mixed = C.variant Variant.Mixed || C.variant Variant.Morello
+
+      let () =
+        if is_mixed && not (Archs.has_mixed_mode I.arch) then
+          Warn.user_error "Mixed mode not implemented for architecture %s"
+            (Archs.pp I.arch)
 
       module I = I
       type v = I.V.v

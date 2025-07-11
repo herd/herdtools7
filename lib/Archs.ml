@@ -124,6 +124,10 @@ let asl = `ASL
 
 let compare = compare
 
+let has_mixed_mode = function
+  | `AArch64|`X86_64 -> true
+  | _ -> false
+
 let get_sysarch a ca = match a with
   | #System.arch as a -> a
   |`CPP|`LISA | `JAVA | `ASL -> `Unknown
