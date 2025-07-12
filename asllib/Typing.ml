@@ -3804,6 +3804,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   end
   (* End *)
 
+  let infer_v0_purity_qualifier ses =
+    if SES.is_pure ses then Some Pure
+    else if SES.is_readonly ses then Some Readonly
+    else None
+
   (* Begin Subprogram *)
   let annotate_subprogram (env : env) (f : AST.func) ses_func_sig :
       AST.func * SES.t =
@@ -3817,21 +3822,27 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let new_body, ses_body = try_annotate_block env body in
     let ses = SES.union ses_func_sig @@ SES.remove_locals ses_body in
-    let+ () =
-      if func_version f == V0 || C.fine_grained_side_effects then ok
-      else check_subprogram_purity ~loc:new_body f.qualifier ses
-    in
-    let ses = SES.set_purity_for_subprogram f.qualifier ses in
     let () =
       if false then
         Format.eprintf "@[<v 2>For program %s, I got side-effects:@ %a@]@."
           f.name SES.pp_print ses
     in
+    let qualifier =
+      if C.fine_grained_side_effects then f.qualifier
+      else if func_version f == V0 then infer_v0_purity_qualifier ses
+      else
+        let+ () = check_subprogram_purity ~loc:new_body f.qualifier ses in
+        (* Note for documentation: setting [qualifier] to
+           [f.qualifier] means that the function's qualifier is
+           unchanged. *)
+        f.qualifier
+    in
+    let ses = SES.set_purity_for_subprogram qualifier ses in
     let () =
       if C.control_flow_analysis then
         ControlFlowAnalysis.check_control_flow env f new_body
     in
-    ({ f with body = SB_ASL new_body }, ses) |: TypingRule.Subprogram
+    ({ f with qualifier; body = SB_ASL new_body }, ses) |: TypingRule.Subprogram
   (* End *)
 
   let try_annotate_subprogram env f ses_func_sig =
