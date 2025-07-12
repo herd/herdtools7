@@ -1,0 +1,12 @@
+Test LB+rel+LDADD-RnM Allowed
+States 3
+0:X3=0; 1:X3=0; 1:X4=0;
+0:X3=0; 1:X3=1; 1:X4=0;
+0:X3=1; 1:X3=0; 1:X4=0;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:X3=1 /\ 1:X3=1 /\ 1:X4=1)
+Observation LB+rel+LDADD-RnM Never 0 3
+Hash=bdffaca6a93dc1678f2c38de27666418
+

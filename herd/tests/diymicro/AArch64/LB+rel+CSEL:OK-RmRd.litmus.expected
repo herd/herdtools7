@@ -1,0 +1,13 @@
+Test LB+rel+CSEL Allowed
+States 4
+0:X3=0; 1:X3=0; 1:X8=1;
+0:X3=0; 1:X3=1; 1:X8=1;
+0:X3=1; 1:X3=0; 1:X8=1;
+0:X3=1; 1:X3=1; 1:X8=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:X3=1 /\ 1:X3=1 /\ 1:X8=1)
+Observation LB+rel+CSEL Sometimes 1 3
+Hash=61aacd74eedd197b48c61c9788840200
+

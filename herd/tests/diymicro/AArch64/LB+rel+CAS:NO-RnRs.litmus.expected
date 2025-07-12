@@ -1,0 +1,12 @@
+Test LB+rel+CAS Allowed
+States 3
+0:X3=0; 1:X3=0; 1:X4=0;
+0:X3=0; 1:X3=1; 1:X4=0;
+0:X3=1; 1:X3=0; 1:X4=0;
+No
+Witnesses
+Positive: 0 Negative: 6
+Condition exists (0:X3=1 /\ 1:X3=1 /\ 1:X4=0)
+Observation LB+rel+CAS Never 0 6
+Hash=5b11ecb6268beb879fd5ebe5660ed705
+

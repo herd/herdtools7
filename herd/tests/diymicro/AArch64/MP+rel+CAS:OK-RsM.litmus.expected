@@ -1,0 +1,13 @@
+Test MP+rel+CAS Allowed
+States 4
+1:X3=0; 1:X4=1; 1:X10=0;
+1:X3=0; 1:X4=1; 1:X10=1;
+1:X3=1; 1:X4=1; 1:X10=0;
+1:X3=1; 1:X4=1; 1:X10=1;
+Ok
+Witnesses
+Positive: 2 Negative: 6
+Condition exists (1:X3=1 /\ 1:X4=1 /\ 1:X10=0)
+Observation MP+rel+CAS Sometimes 2 6
+Hash=c4cd1007ef03f4f187d5c698dcc77612
+

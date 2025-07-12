@@ -1,0 +1,13 @@
+Test MP+rel+SWP-MRn Allowed
+States 4
+0:X3=0; 0:X6=0;
+0:X3=0; 0:X6=1;
+0:X3=1; 0:X6=0;
+0:X3=1; 0:X6=1;
+Ok
+Witnesses
+Positive: 1 Negative: 4
+Condition exists (0:X3=1 /\ 0:X6=0)
+Observation MP+rel+SWP-MRn Sometimes 1 4
+Hash=c88b466322478bca65fabf24f4207f88
+
