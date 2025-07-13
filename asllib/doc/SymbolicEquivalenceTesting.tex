@@ -156,6 +156,11 @@ adds a list of polynomials:
 }
 \end{mathpar}
 
+For example, if $\alpha(\vpone) = 3\cdot{}x^2\cdot{}y$,
+$\alpha(\vptwo) = 4\cdot{}x^2\cdot{}y$, and
+$\alpha(\vptwo) = x\cdot{}y^2$,
+then $\alpha(\addpolynomials([\vpone, \vptwo, \vpthree])) = 7\cdot{}x^2\cdot{}y + x\cdot{}y^2$.
+
 The function
 \hypertarget{def-mulpolynomials}{}
 \[
@@ -178,6 +183,49 @@ multiplies two polynomials.
   \mulpolynomials(\overname{\vfone}{\vpone}, \overname{\vftwo}{\vptwo}) \typearrow \vp
 }
 \end{mathpar}
+
+The function
+\hypertarget{def-polynomialdividebyterm}{}
+\[
+  \polynomialdividebyterm :
+  \overname{\polynomial}{\vpone} \times
+  \overname{\unitarymonomial}{\vm} \times
+  \overname{\Q}{\vf}
+  \rightarrow \overname{\polynomial}{\vp} \cup \CannotBeTransformed
+\]
+returns the result of dividing the polynomial $\vpone$ by the number $\vf$ and unitary monomial $\vm$,
+yielding the polynomial $\vp$. Otherwise, the result is $\CannotBeTransformed$.
+
+\begin{mathpar}
+\inferrule[divides]{
+  \vptwo \eqdef [\vm \mapsto \vf]\\
+  \vpone = \mulpolynomials(\vp, \vptwo)
+}{
+  \polynomialdividebyterm(\vpone, \vm, \vf) \typearrow \vp
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[does\_not\_divide]{
+  \vptwo \eqdef [\vm \mapsto \vf]\\
+  \forall \vp\in\polynomial.\ \vpone \neq \mulpolynomials(\vp, \vptwo)
+}{
+  \polynomialdividebyterm(\vpone, \vm, \vf) \typearrow \CannotBeTransformed
+}
+\end{mathpar}
+
+For example,
+if $\alpha(\vpone) = 6\cdot{}x^2\cdot{}y + 2\cdot{}x\cdot{}z$
+and $\alpha(\vm) = x$ and $\vf=2$ then
+\[
+\alpha(\polynomialdividebyterm(\vpone, \vm, \vf)) =  3\cdot{}x\cdot{}y + z \enspace.
+\]
+%
+In contrast, if $\alpha(\vpone) = x$
+and $\alpha(\vm) = x^2$ and $\vf=1$ then
+\[
+\alpha(\polynomialdividebyterm(\vpone, \vm, \vf)) =  \CannotBeTransformed \enspace.
+\]
 
 \section{Typing Rules\label{sec:SymbolicReductionAndEquivalenceTestingRules}}
 We employ the following rules:
@@ -715,6 +763,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
   \toir(\tenv, \overname{\EBinop(\DIV, \veone, \vetwo)}{\ve}) \typearrow \vp
 }
 \end{mathpar}
+
 \begin{mathpar}
 \inferrule[ebinop\_div\_non\_monomial\_denominator]{
   \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\\\\
