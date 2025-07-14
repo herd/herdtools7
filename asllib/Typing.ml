@@ -2869,9 +2869,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin DeclareLocalConstant *)
-  let declare_local_constant env v = function
+  let declare_local_constant ~loc env v = function
     | LDI_Var x -> add_local_constant x v env
-    | LDI_Tuple _ -> (* Not yet implemented *) env
+    | LDI_Tuple _ -> fatal_from ~loc UnrespectedParserInvariant
   (* End *)
 
   let rec annotate_stmt env s : stmt * env * SES.t =
@@ -3101,7 +3101,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   let+ () = check_is_pure ~loc:s typed_e in
                   try
                     let v = StaticInterpreter.static_eval env1 e in
-                    declare_local_constant env1 v ldi
+                    declare_local_constant ~loc:s env1 v ldi
                   with Error.(ASLException _) -> env1)
             in
             (S_Decl (ldk, ldi, ty_opt', Some e') |> here, new_env, ses)
