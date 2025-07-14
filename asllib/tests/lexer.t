@@ -139,6 +139,7 @@ Forbidden patterns
 
   $ cat >forbiddenhex02.asl <<EOF
   > let x = 0x_12;
+  > EOF
   $ aslref forbiddenhex02.asl
   File forbiddenhex02.asl, line 1, characters 8 to 11:
   let x = 0x_12;
@@ -148,6 +149,7 @@ Forbidden patterns
 
   $ cat >forbiddenhex03.asl <<EOF
   > let x = 0x12h12;
+  > EOF
   $ aslref forbiddenhex03.asl
   File forbiddenhex03.asl, line 1, characters 8 to 13:
   let x = 0x12h12;
@@ -158,6 +160,7 @@ Forbidden patterns
   $ cat >forbiddenhex04.asl <<EOF
   > let x_foo = 213;
   > let x = 0x_foo;
+  > EOF
   $ aslref forbiddenhex04.asl
   File forbiddenhex04.asl, line 2, characters 8 to 11:
   let x = 0x_foo;
@@ -177,6 +180,7 @@ Forbidden patterns
 
   $ cat >forbiddenreal02.asl <<EOF
   > let x = 1._12;
+  > EOF
   $ aslref forbiddenreal02.asl
   File forbiddenreal02.asl, line 1, characters 8 to 11:
   let x = 1._12;
@@ -186,6 +190,7 @@ Forbidden patterns
 
   $ cat >forbiddenreal03.asl <<EOF
   > let x = 1.12h12;
+  > EOF
   $ aslref forbiddenreal03.asl
   File forbiddenreal03.asl, line 1, characters 8 to 13:
   let x = 1.12h12;
@@ -196,6 +201,7 @@ Forbidden patterns
   $ cat >forbiddenreal04.asl <<EOF
   > let x_foo = 213;
   > let x = 1._foo;
+  > EOF
   $ aslref forbiddenreal04.asl
   File forbiddenreal04.asl, line 2, characters 8 to 11:
   let x = 1._foo;
