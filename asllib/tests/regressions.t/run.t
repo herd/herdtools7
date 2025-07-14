@@ -617,7 +617,6 @@ Outdated syntax
   end;
   ASL Warning: the recursive function rec_noreturning has no recursive limit
   annotation.
-  [1]
   $ aslref noreturn_function.asl
   File noreturn_function.asl, line 2, characters 26 to 28:
   noreturn func returning() => integer

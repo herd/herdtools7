@@ -35,5 +35,5 @@ end;
 
 func main() => integer
 begin
-    return 1;
+    return 0;
 end;
