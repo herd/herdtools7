@@ -1,0 +1,12 @@
+Test MP+rel+SWP-RnRt Allowed
+States 3
+1:X3=0; 1:X6=0; 1:X9=0;
+1:X3=0; 1:X6=0; 1:X9=1;
+1:X3=1; 1:X6=0; 1:X9=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (1:X3=1 /\ 1:X6=0 /\ 1:X9=0)
+Observation MP+rel+SWP-RnRt Never 0 3
+Hash=c314f9719ff230cdec648b49da5a9a02
+

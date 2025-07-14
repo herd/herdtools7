@@ -1,0 +1,13 @@
+Test LB+rel+SWP-RtRn Allowed
+States 4
+0:X3=0; 1:X3=0; 1:X6=0;
+0:X3=0; 1:X3=1; 1:X6=0;
+0:X3=1; 1:X3=0; 1:X6=0;
+0:X3=1; 1:X3=1; 1:X6=0;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:X3=1 /\ 1:X3=1 /\ 1:X6=0)
+Observation LB+rel+SWP-RtRn Sometimes 1 3
+Hash=9c897e4bc81ae91ae6b0356aafcf1b54
+

@@ -1,0 +1,13 @@
+Test LB+rel+LDADD-RtRt Allowed
+States 4
+0:X3=0; 1:X3=0;
+0:X3=0; 1:X3=1;
+0:X3=1; 1:X3=0;
+0:X3=1; 1:X3=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:X3=1 /\ 1:X3=1)
+Observation LB+rel+LDADD-RtRt Sometimes 1 3
+Hash=1a170af3cad996ec859217bb7457d86a
+

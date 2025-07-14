@@ -1,0 +1,12 @@
+Test LB+rel+LDADD-RsM Allowed
+States 3
+0:X3=0; 1:X3=0; 1:X4=0;
+0:X3=0; 1:X3=1; 1:X4=0;
+0:X3=1; 1:X3=0; 1:X4=0;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:X3=1 /\ 1:X3=1 /\ 1:X4=1)
+Observation LB+rel+LDADD-RsM Never 0 3
+Hash=e2420e9f09fc69d3b70dd8b715cabcb6
+

@@ -1,0 +1,12 @@
+Test MP+rel+LDADD-RnRn Allowed
+States 3
+1:X3=0; 1:X10=0;
+1:X3=0; 1:X10=1;
+1:X3=1; 1:X10=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (1:X3=1 /\ 1:X10=0)
+Observation MP+rel+LDADD-RnRn Never 0 3
+Hash=bd9a6909198fdff96322fba423cbe457
+

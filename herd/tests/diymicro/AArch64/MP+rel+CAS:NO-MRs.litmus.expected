@@ -1,0 +1,14 @@
+Test MP+rel+CAS Allowed
+States 5
+0:X2=0; 0:X3=0; 0:X6=0;
+0:X2=0; 0:X3=0; 0:X6=1;
+0:X2=1; 0:X3=0; 0:X6=0;
+0:X2=1; 0:X3=0; 0:X6=1;
+0:X2=1; 0:X3=1; 0:X6=1;
+No
+Witnesses
+Positive: 0 Negative: 10
+Condition exists (0:X2=1 /\ 0:X3=1 /\ 0:X6=0)
+Observation MP+rel+CAS Never 0 10
+Hash=5dec87bab280a6d8954f0d1e4424f00c
+
