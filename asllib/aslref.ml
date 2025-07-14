@@ -167,14 +167,16 @@ let parse_args () =
         " Instrument the interpreter and log to std rules used." );
       ( "--patch",
         Arg.String (push_file PatchV1),
-        "Pass patches to the built AST." );
+        "patch_file Pass patches to the built AST." );
       ( "--patch0",
         Arg.String (push_file PatchV0),
-        "Pass patches to the built AST." );
-      ("-0", Arg.String (push_file NormalV0), "Use ASLv0 parser for this file.");
+        "patch_file Pass patches to the built AST." );
+      ( "-0",
+        Arg.String (push_file NormalV0),
+        "filename Use ASLv0 parser for this file." );
       ( "-1",
         Arg.String (push_file NormalV1),
-        "Use ASLv1 parser for this file. (default)" );
+        "filename Use ASLv1 parser for this file. (default)" );
       ("--version", Arg.Set show_version, " Print version and exit.");
       ( "--overriding-permissive",
         Arg.Unit (set_override_mode Permissive),
