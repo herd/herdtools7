@@ -1,4 +1,4 @@
-Test LB+rel+CSEL Allowed
+Test LB+rel+CSEL:OK-RnRd Allowed
 States 3
 0:X3=0; 1:X3=0; 1:X7=0;
 0:X3=0; 1:X3=1; 1:X7=1;
@@ -7,6 +7,6 @@ No
 Witnesses
 Positive: 0 Negative: 3
 Condition exists (0:X3=1 /\ 1:X3=1 /\ 1:X7=1)
-Observation LB+rel+CSEL Never 0 3
+Observation LB+rel+CSEL:OK-RnRd Never 0 3
 Hash=57b5c5c1d0a1205508edf39aae580fcb
 

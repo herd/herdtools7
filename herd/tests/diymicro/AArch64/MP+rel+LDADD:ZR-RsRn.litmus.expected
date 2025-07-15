@@ -1,4 +1,4 @@
-Test MP+rel+LDADD Allowed
+Test MP+rel+LDADD:ZR-RsRn Allowed
 States 3
 1:X3=0; 1:X7=0;
 1:X3=0; 1:X7=1;
@@ -7,6 +7,6 @@ No
 Witnesses
 Positive: 0 Negative: 3
 Condition exists (1:X3=1 /\ 1:X7=0)
-Observation MP+rel+LDADD Never 0 3
+Observation MP+rel+LDADD:ZR-RsRn Never 0 3
 Hash=bd2a9d2fb7d62a2d4684966fc74705b2
 

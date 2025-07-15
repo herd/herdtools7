@@ -58,7 +58,7 @@ let blank = [' ' '\t' '\r']
 let bool = "true" | "false"
 let name  = alpha (alpha|digit|'_' | '/' | '.' | '-')*
  (* yes some test names are such *)
-let testname  = (alpha|digit|'_' | '/' | '.' | '-' | '+'|'['|']')+
+let testname  = (alpha|digit|'_' | '/' | '.' | '-' | '+'|'['|']'|':')+
 let num = digit+
 
 

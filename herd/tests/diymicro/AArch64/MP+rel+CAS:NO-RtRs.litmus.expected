@@ -1,4 +1,4 @@
-Test MP+rel+CAS Allowed
+Test MP+rel+CAS:NO-RtRs Allowed
 States 4
 1:X3=0; 1:X4=0; 1:X8=0;
 1:X3=0; 1:X4=0; 1:X8=1;
@@ -8,6 +8,6 @@ Ok
 Witnesses
 Positive: 2 Negative: 6
 Condition exists (1:X3=1 /\ 1:X4=0 /\ 1:X8=0)
-Observation MP+rel+CAS Sometimes 2 6
+Observation MP+rel+CAS:NO-RtRs Sometimes 2 6
 Hash=34ba2448659f29fb191dabade6d371e8
 

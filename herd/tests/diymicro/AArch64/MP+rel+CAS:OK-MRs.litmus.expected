@@ -1,4 +1,4 @@
-Test MP+rel+CAS Allowed
+Test MP+rel+CAS:OK-MRs Allowed
 States 6
 0:X2=0; 0:X3=0; 0:X6=0;
 0:X2=0; 0:X3=0; 0:X6=1;
@@ -10,6 +10,6 @@ Ok
 Witnesses
 Positive: 1 Negative: 10
 Condition exists (0:X2=2 /\ 0:X3=1 /\ 0:X6=0)
-Observation MP+rel+CAS Sometimes 1 10
+Observation MP+rel+CAS:OK-MRs Sometimes 1 10
 Hash=e7d6bc5a121f0e76544e29a2228c9614
 
