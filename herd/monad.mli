@@ -253,6 +253,11 @@ module type S =
         [para_bind_output_right]. Unlike the later, a [partial_po] arrow is put
         between the two structures. *)
 
+    val asl_para : 'a t -> 'b t -> ('a * 'b) t
+    (** [asl_para s1 s2] returns the parralel composition of the event
+        structures of [s1] and [s2], like [>>|]. Unlike [>>|] the resulting
+        event structure sequences [partial_po] between [s1] and [s2]. *)
+
     val seq_mem : 'a t -> 'b t -> ('a * 'b) t
     (** [seq_mem s1 s2] returns a composition of the event structures
         of [s1] and [s2] where in addition to the existing relations,
