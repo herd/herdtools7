@@ -324,6 +324,10 @@ val same_instance : event -> event -> bool
   val para_atomic :
     event_structure -> event_structure -> event_structure option
 
+  (* Partial po sequencing *)
+  val para_seq_po :
+    event_structure -> event_structure -> event_structure option
+
 (* Input in second argument *)
   val para_input_right :
     event_structure -> event_structure -> event_structure option
@@ -1366,6 +1370,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       o
 
     and force_data_input = do_force get_data_input minimals_data
+
+    let para_seq_po es1 es2 =
+      Some { (do_para_comp es1 es2) with partial_po = seq_partial_po es1 es2 }
 
 (* Parallel composition, input on second monad argument *)
 

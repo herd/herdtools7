@@ -772,6 +772,9 @@ Monad type:
 
     let para_input_right s1 s2 = combi Misc.pair E.para_input_right s1 s2
 
+    let asl_para : 'a t -> 'b t -> ('a * 'b) t
+      = fun s1 s2 -> combi Misc.pair E.para_seq_po s1 s2
+
     let (>>::) : 'a t -> 'a list t -> 'a list  t
         = fun s1 s2 -> combi (Misc.cons) (fun es1 es2 -> es1 =|= es2) s1 s2
 
