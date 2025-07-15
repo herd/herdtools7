@@ -37,6 +37,7 @@ let svint32_t = Base "svint32_t"
 let pteval_t = Base "pteval_t"
 let parel1_t = Base "parel1_t"
 let pte = Pointer pteval_t
+let pmdval_t = Base "pmdval_t"
 let ins_t = Base "ins_t"
 
 let rec  dump = function

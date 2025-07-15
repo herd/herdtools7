@@ -1,0 +1,10 @@
+AArch64 TABT006
+Variant = vmsa
+{
+uint64_t x;
+0: X0 = x;
+[TTD(x, S1, LV2)] = (oa: PA(x), af:0, dt:Block);
+}
+P0;
+LDR X7, [X0];
+exists Fault(P0, x, MMU:AccessFlag)
