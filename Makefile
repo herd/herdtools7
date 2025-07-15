@@ -362,7 +362,7 @@ diymicro-test:: diymicro-test-aarch64
 diymicro-test-aarch64:
 	$(eval DIYMICRO_EDGES = $(shell $(DIYMICROENUM) -list-iico | sed -n 's/^iico\[\([^ ]*\).*/iico[\1]/p'))
 	$(eval DIYMICRO_EDGES_ARG := $(foreach arg,$(DIYMICRO_EDGES),-diycross-arg $(arg)))
-	@ echo $(DIYMICRO_EDGES_ARG)
+	@ echo
 	$(HERD_DIYCROSS_REGRESSION_TEST) \
 		-herd-path $(HERD) \
 		-diycross-path $(DIYMICROENUM) \
@@ -386,7 +386,7 @@ diymicro-test-aarch64-asl: asl-pseudocode
 		-j $(J) \
 		$(DIYMICRO_EDGES_ARG) \
 		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 diymicro7 tests: OK"
+	@ echo "herd7 AArch64 diymicro7 (ASL) tests: OK"
 
 test-bnfc:
 	@ echo
