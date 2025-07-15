@@ -20,7 +20,11 @@ module type S = sig
 
   (* Default pte for virtual addresses and pte themselves  *)
   val default : string -> t
+  val default_pmd : string -> t
   val of_pte : string -> t
+  val is_page  : t -> bool
+  val is_block : t -> bool
+  val is_table : t -> bool
   val is_default : t -> bool
   (*  Attributes have the default values *)
   val is_default_attrs : t -> bool
@@ -50,6 +54,7 @@ module type S = sig
   val default_fields : string list
   val dump_pack : (string -> string) -> t -> string
   val as_physical : t -> string option
+  val as_pte : t -> string option
   val as_flags : t -> string option
   val attrs_as_kvm_symbols : t -> string list
 end
@@ -58,7 +63,11 @@ module No = struct
     type t = unit
 
     let default _ = ()
+    let default_pmd _ = ()
     let of_pte _ = ()
+    let is_page _ = true
+    let is_block _ = false
+    let is_table _ = false
     let is_default _ = true
     let is_default_attrs _ = true
     let pp _ _ = "()"
@@ -80,6 +89,7 @@ module No = struct
     let default_fields = []
     let dump_pack _ _ = "()"
     let as_physical _ = None
+    let as_pte _ = None
     let as_flags _ = None
     let attrs_as_kvm_symbols _ = assert false
 end

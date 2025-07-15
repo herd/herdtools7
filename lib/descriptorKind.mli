@@ -2,7 +2,7 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Luc Maranget, INRIA Paris, France.                                       *)
 (*                                                                          *)
 (* Copyright 2021-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
@@ -14,13 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** All sorts of accesses, redundant with symbol hidden in location,
-   when symbol is known, which may not be the case *)
+type t = Page | Block | Table
 
-type t = REG | VIR | PHY | PTE | TLB | TAG | PHY_PTE | TTD
-
-val pp : t -> string
-
-val is_physical : t -> bool
-
-val compatible : t -> t -> bool
+val of_string : string -> t
+val dtype2string : t-> string

@@ -564,6 +564,7 @@ module Make
         | Alloc.Static|Alloc.Before -> not Cfg.is_kvm
 
       let dbg = false
+      let is_mlpt = true
 
       let get_all_vars test =
         let all = List.map fst test.T.globals in
@@ -585,17 +586,27 @@ module Make
             let open Constant in
             List.fold_right
               (fun bd k -> match bd with
-              | A.Location_global (G.Pte pte),v ->
+              | A.Location_global (G.Pte pte),v
+              | A.Location_global (G.Ttd {stage = _; level = _; s=pte}), v->
                   begin match v with
                   | Symbolic (Physical (phy,0)) -> (pte,P phy)::k
                   | Concrete z when A.V.Scalar.compare z A.V.Scalar.zero = 0 -> (pte,Z)::k
                   | PteVal pteval ->
+                    if A.V.PteVal.is_page pteval || A.V.PteVal.is_block pteval then
                       begin match A.V.PteVal.as_physical pteval with
                       | None ->
-                          Warn.user_error "litmus cannot handle pte initialisation with '%s'"
+                          Warn.user_error "litmus cannot handle leaf descriptor initialisation with '%s'"
                             (A.V.pp_v v)
                       | Some s -> (pte,V ((if pte=s then None else Some s),pteval))::k
                       end
+                    else if A.V.PteVal.is_table pteval then
+                      begin match A.V.PteVal.as_pte pteval with
+                          | None ->
+                              Warn.user_error "litmus cannot handle table descriptor initialisation with '%s'"
+                                (A.V.pp_v v)
+                          | Some s -> (pte,V ((if pte=s then None else Some s),pteval))::k
+                      end
+                    else k
                   | _ ->
                       Warn.user_error "litmus cannot handle pte initialisation with '%s'"
                         (A.V.pp_v v)
@@ -606,7 +617,9 @@ module Make
 
       let get_addrs test =
         List.map
-          (fun (_,(out,_)) -> fst (A.Out.get_addrs out))
+          (fun (_,(out,_)) ->
+            let (a, _, _) = A.Out.get_addrs out in
+            a)
           test.T.code
 
       let dump_topology doc test =
@@ -731,6 +744,7 @@ module Make
              O.fi "intmax_t %s;"
                (String.concat ","
                   (List.map (fun (a,_) -> sprintf "*%s" a) locs)) ;
+            (*initialise ptevals*)
              if Cfg.is_kvm then begin
                  O.fi "pteval_t %s;"
                    (String.concat ","
@@ -739,6 +753,17 @@ module Make
                            let pte = OutUtils.fmt_pte_tag a
                            and phy = OutUtils.fmt_phy_tag a in
                            sprintf "*%s,%s" pte phy)
+                         locs))
+              end;
+              (*initialise pmdvals*)
+              if is_mlpt then begin
+                 O.fi "pmdval_t %s;"
+                   (String.concat ","
+                      (List.map
+                         (fun (a,_) ->
+                           let pmd = OutUtils.fmt_pmd_tag a
+                           and pmd_phy = OutUtils.fmt_phy_pmd_tag a in
+                           sprintf "*%s,%s" pmd pmd_phy)
                          locs))
                end in
         let dump_vars_code nprocs =
@@ -1379,19 +1404,32 @@ module Make
           if Misc.consp test.T.globals then begin
               O.oi "const size_t _sz = LINE/sizeof(intmax_t);";
               O.oi "pteval_t *_p;" ;
+              if is_mlpt then begin
+                O.oi "pmdval_t *_q;";
+                O.o "" ;
+                O.oi "_mem = block_align_up(_mem);";
+          end;
               O.o ""
             end ;
           List.iter
             (fun (a,_) ->
               O.fi "_vars->%s = _mem;" a ;
+              if is_mlpt then begin
+                O.fi "_vars->%s = _q = litmus_tr_pmd((void *)_mem);" (OutUtils.fmt_pmd_tag a) ;
+                O.fi "_vars->%s = *_q;" (OutUtils.fmt_phy_pmd_tag a) ;
+              end;
               O.fi "_vars->%s = _p = litmus_tr_pte((void *)_mem);" (OutUtils.fmt_pte_tag a) ;
               O.fi "_vars->%s = *_p;" (OutUtils.fmt_phy_tag a) ;
               if has_user then begin
                 O.oi "_p = litmus_tr_pte((void *)_p);";
                 O.oi "unset_el0(_p);"
               end ;
-              O.oi "_mem += _sz ;")
+              O.oi "_mem += _sz ;";
+              O.o "" ;)
             test.T.globals ;
+            if is_mlpt then begin
+              O.oi "_mem = block_end(_mem);";
+            end;
           if has_user then O.oi "flush_tlb_all();"
           end ;
           if do_self then begin
@@ -1546,7 +1584,7 @@ module Make
 
       let memattrs_change a pte_init =
         match Misc.Simple.assoc_opt a pte_init with
-        | Some (V (_,pteval)) ->
+        | Some (V (_, pteval)) ->
             not (A.V.PteVal.is_default_attrs pteval)
         | _ -> false
 
@@ -1626,7 +1664,7 @@ module Make
         if do_self then
           O.fii "code_init(%s, %s, _vars->%s);" (LangUtils.code_fun_cpy proc)
             (OutUtils.fmt_code proc) (OutUtils.fmt_code_size proc) ;
-        (* Initialize them *)
+        (* Initialize variables *)
         List.iter (init_mem_loc Indent.indent2 Cfg.is_kvm env test) inits ;
 (*        eprintf "%i: INIT {%s}\n" proc (String.concat "," inits) ; *)
         (* And cache-instruct them *)
@@ -1638,6 +1676,7 @@ module Make
              O.fii "else if (_p->%s == cflush) cache_flush((void *)%s);"
                (pctag (proc,addr)) addr)
           addrs ;
+        (* Declare ptes *)
         begin match pte_init with
         | [] -> ()
         | bds ->
@@ -1648,25 +1687,43 @@ module Make
                   begin match Misc.Simple.assoc x bds with
                   | P phy ->
                       O.fii
-                        "(void)litmus_set_pte_safe(%s,_vars->pte_%s,_vars->saved_pte_%s);"
+                        "(void)litmus_set_descriptor_safe(%s,_vars->pte_%s,_vars->saved_pte_%s);"
                         x x phy ;
                       O.fii "litmus_flush_tlb((void *)%s);" x
                   | Z ->
                       O.fii "(void)litmus_set_pte(%s,_vars->pte_%s,litmus_set_pte_invalid(*_vars->pte_%s));" x x x ;
                       O.fii "litmus_flush_tlb((void *)%s);" x
-                  | V (o,pteval) ->
+                  | V (o, pteval) ->
                       let is_default = A.V.PteVal.is_default pteval in
                       if not (o = None && is_default) then begin
                         let arg = match o with
-                          | None -> sprintf "_vars->saved_pte_%s" x
-                          | Some s -> sprintf "_vars->saved_pte_%s" s in
-                        O.fii "pteval_t pte_%s = %s;" x (PU.dump_pteval_flags arg pteval) ;
-                        List.iter
-                          (fun attr ->
-                             O.fii "litmus_set_pte_attribute(&pte_%s, %s);"
-                               x attr)
-                          (A.V.PteVal.attrs_as_kvm_symbols pteval) ;
-                        O.fii "(void)litmus_set_pte_safe(%s,_vars->pte_%s,pte_%s);" x x x ;
+                        | None ->
+                          sprintf "_vars->saved_%s_%s"
+                          (if A.V.PteVal.is_page pteval then "pte" else "pmd") x
+                        | Some s ->
+                          sprintf "_vars->saved_%s_%s"
+                          (if A.V.PteVal.is_page pteval then "pte" else "pmd") s
+                      in
+                        if A.V.PteVal.is_page pteval then begin
+                          O.fii "pteval_t pte_%s_val = %s;" x (PU.dump_pteval_flags arg pteval);
+                          List.iter
+                            (fun attr ->
+                              O.fii "litmus_set_pte_attribute(&pte_%s_val, %s);" x attr)
+                              (A.V.PteVal.attrs_as_kvm_symbols pteval) ;
+                          O.fii "(void)litmus_set_descriptor_safe(%s,_vars->pte_%s,pte_%s_val);" x x x ;
+                          O.fii "litmus_flush_tlb((void *)%s);" x
+                        end
+                        else if A.V.PteVal.is_block pteval || A.V.PteVal.is_table pteval then begin
+                          let arg =
+                            if A.V.PteVal.is_block pteval then PU.mk_block x
+                            else arg in
+                            O.fii "pmdval_t pmd_%s_val = %s;" x (PU.dump_pmdval_flags arg pteval);
+                          List.iter
+                            (fun attr ->
+                              O.fii "litmus_set_pmd_attribute(&pmd_%s_val, %s);" x attr)
+                              (A.V.PteVal.attrs_as_kvm_symbols pteval) ;
+                          O.fii "(void)litmus_set_descriptor_safe(%s,_vars->pmd_%s,pmd_%s_val);" x x x ;
+                        end;
                         O.fii "litmus_flush_tlb((void *)%s);" x
                       end
                   end
@@ -1698,14 +1755,22 @@ module Make
         end ;
 (* Synchronise *)
         O.oii "barrier_wait(_b);" ;
-(* Save/Restore pte *)
+(* Save/Restore descriptors *)
         let ptes =
           if Cfg.is_kvm then U.get_displayed_ptes test
+          else StringSet.empty in
+        let pmds =
+          if is_mlpt then U.get_displayed_pmds test
           else StringSet.empty in
         if Cfg.is_kvm then begin
             let i_ptes,i_non_ptes=
               List.partition
                 (fun a -> StringSet.mem a ptes)
+                inits in
+        if is_mlpt then
+            let i_pmds,i_non_pmds=
+              List.partition
+                (fun a -> StringSet.mem a pmds)
                 inits in
           List.iter
             (fun a ->
@@ -1720,7 +1785,7 @@ module Make
               let pte = OutUtils.fmt_pte_kvm a
               and phy = OutUtils.fmt_phy_kvm a in
               let rhs =
-                sprintf "litmus_set_pte_safe(%s,%s,%s)" a pte phy in
+                sprintf "litmus_set_descriptor_safe(%s,%s,%s)" a pte phy in
               let lhs =
                 if StringSet.mem a ptes then
                   sprintf  "_log_ptr->%s = " (OutUtils.fmt_pte_tag a)
@@ -1728,6 +1793,21 @@ module Make
                   "(void)" in
               O.fii "%s%s;" lhs rhs)
             (i_ptes@i_non_ptes) ;
+            List.iter
+            (fun a ->
+              if memattrs_change a pte_init then
+                O.fii "cache_flush((void *)%s);" a ;
+              let pmd = OutUtils.fmt_pmd_kvm a
+              and phy = OutUtils.fmt_phy_pmd_kvm a in
+              let rhs =
+                sprintf "litmus_set_descriptor_safe(%s,%s,%s)" a pmd phy in
+              let lhs =
+                if StringSet.mem a pmds then
+                  sprintf  "_log_ptr->%s = " (OutUtils.fmt_pmd_tag a)
+                else
+                  "(void)" in
+              O.fii "%s%s;" lhs rhs)
+            (i_pmds@i_non_pmds) ;
           List.iter
             (fun a -> O.fii "litmus_flush_tlb((void *)%s);" a)
             inits

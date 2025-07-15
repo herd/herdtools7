@@ -1,0 +1,15 @@
+AArch64 TABT003
+Variant=vmsa
+{
+uint64_t x; uint64_t y;
+0:X2=x; 0:X3=y;
+0:X4 = TTD(y,S1,LV2);
+0:X1 = (oa:PA(y), dt:Block);
+}
+P0           ;
+LDR X7, [X2] ;
+STR X1, [X4] ;
+LDR X8, [X3] ;
+L0:
+ LDR X9, [X2];
+exists Fault(P0:L0,y,MMU:TLBConflictAbort)
