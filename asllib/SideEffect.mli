@@ -75,6 +75,8 @@ module SES : sig
   val add_side_effect : side_effect -> t -> t
   val add_assertion : t -> t
   val add_non_determinism : t -> t
+  val add_may_dynamically_fail : t -> t
+  val may_dynamically_fail : t -> bool
   val remove_pure : t -> t
   val remove_locals : t -> t
   val set_purity_for_subprogram : AST.func_qualifier option -> t -> t

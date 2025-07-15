@@ -144,6 +144,7 @@ type warning_desc =
   | PragmaUse of identifier
   | UnexpectedImplementation
   | MissingOverride
+  | TypeMayDynamicallyFail of ty
 
 type warning = warning_desc annotated
 
@@ -229,6 +230,7 @@ let warning_label = function
   | PragmaUse _ -> "PragmaUse"
   | UnexpectedImplementation -> "UnexpectedImplementation"
   | MissingOverride -> "MissingOverride"
+  | TypeMayDynamicallyFail _ -> "TypeMayDynamicallyFail"
 
 open struct
   (* Straight out of stdlib v5.2 *)
@@ -650,6 +652,9 @@ module PPrint = struct
     | MissingOverride ->
         fprintf f "@[%a@]" pp_print_text
           "ASL Warning: Missing `implementation` for `impdef` function."
+    | TypeMayDynamicallyFail t ->
+        fprintf f "Type %a contains expressions that may dynamically fail" pp_ty
+          t
 
   let pp_pos_begin f pos =
     match display_error_context pos with

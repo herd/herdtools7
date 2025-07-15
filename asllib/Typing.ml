@@ -1272,142 +1272,150 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   and annotate_type ?(decl = false) ~(loc : 'a annotated) env ty : ty * SES.t =
     let () = if false then Format.eprintf "Annotating@ type %a@." PP.pp_ty ty in
     let here t = add_pos_from ~loc:ty t in
-    best_effort (ty, SES.empty) @@ fun _ ->
-    match ty.desc with
-    (* Begin TString *)
-    | T_String -> (ty, SES.empty) |: TypingRule.TString
-    (* Begin TReal *)
-    | T_Real -> (ty, SES.empty) |: TypingRule.TReal
-    (* Begin TBool *)
-    | T_Bool -> (ty, SES.empty) |: TypingRule.TBool
-    (* Begin TNamed *)
-    | T_Named x ->
-        let ses =
-          (* As expression on which types depend are statically evaluable,
-             using a named type is as reading a global immutable storage
-             element. *)
-          let time_frame =
-            match IMap.find_opt x env.global.declared_types with
-            | Some (_, t) -> t
-            | None -> undefined_identifier ~loc x
-          and immutable = true in
-          SES.reads_global x time_frame immutable
-        in
-        (ty, ses) |: TypingRule.TNamed
-    (* Begin TInt *)
-    | T_Int constraints ->
-        (match constraints with
-        | PendingConstrained ->
-            fatal_from ~loc Error.UnexpectedPendingConstrained
-        | WellConstrained ([], _) -> fatal_from ~loc Error.EmptyConstraints
-        | WellConstrained (constraints, precision) ->
-            let new_constraints, sess =
-              list_map_split (annotate_constraint ~loc env) constraints
-            in
-            let ses = SES.unions sess in
-            (well_constrained ~loc:ty ~precision new_constraints, ses)
-        | Parameterized name ->
-            (ty, SES.reads_local name TimeFrame.Constant true)
-        | UnConstrained -> (ty, SES.empty))
-        |: TypingRule.TInt
-    (* Begin TBits *)
-    | T_Bits (e_width, bitfields) ->
-        let ((t_width, e_width', ses_width) as typed_e_width) =
-          annotate_expr env e_width
-        in
-        let+ () = check_symbolically_evaluable e_width ses_width in
-        let+ () = check_constrained_integer ~loc:e_width env t_width in
-        let bitfields', ses_bitfields =
-          if bitfields = [] then (bitfields, SES.empty)
-          else
-            let+ () = check_is_pure ~loc typed_e_width in
-            let annotated_bitfields, ses_bitfields =
-              annotate_bitfields ~loc env e_width' bitfields
-            in
-            let () =
-              let width =
-                match StaticInterpreter.static_eval env e_width' with
-                | L_Int i -> Z.to_int i
-                | _ -> assert false
+    let ty_annotated, ses =
+      best_effort (ty, SES.empty) @@ fun _ ->
+      match ty.desc with
+      (* Begin TString *)
+      | T_String -> (ty, SES.empty) |: TypingRule.TString
+      (* Begin TReal *)
+      | T_Real -> (ty, SES.empty) |: TypingRule.TReal
+      (* Begin TBool *)
+      | T_Bool -> (ty, SES.empty) |: TypingRule.TBool
+      (* Begin TNamed *)
+      | T_Named x ->
+          let ses =
+            (* As expression on which types depend are statically evaluable,
+               using a named type is as reading a global immutable storage
+               element. *)
+            let time_frame =
+              match IMap.find_opt x env.global.declared_types with
+              | Some (_, t) -> t
+              | None -> undefined_identifier ~loc x
+            and immutable = true in
+            SES.reads_global x time_frame immutable
+          in
+          (ty, ses) |: TypingRule.TNamed
+      (* Begin TInt *)
+      | T_Int constraints ->
+          (match constraints with
+          | PendingConstrained ->
+              fatal_from ~loc Error.UnexpectedPendingConstrained
+          | WellConstrained ([], _) -> fatal_from ~loc Error.EmptyConstraints
+          | WellConstrained (constraints, precision) ->
+              let new_constraints, sess =
+                list_map_split (annotate_constraint ~loc env) constraints
               in
-              CheckCommonBitfieldsAlign.check ~loc:ty env annotated_bitfields
-                width
-              |: TypingRule.CheckCommonBitfieldsAlign
-            in
-            (annotated_bitfields, ses_bitfields)
-        in
-        let ses = SES.union ses_width ses_bitfields in
-        (T_Bits (e_width', bitfields') |> here, ses) |: TypingRule.TBits
-    (* Begin TTuple *)
-    | T_Tuple tys ->
-        let tys', sess = list_map_split (annotate_type ~loc env) tys in
-        let ses = SES.unions sess in
-        (T_Tuple tys' |> here, ses) |: TypingRule.TTuple
-    (* Begin TArray *)
-    | T_Array (index, t) ->
-        let t', ses_t = annotate_type ~loc env t
-        and index', ses_index =
-          match index with
-          | ArrayLength_Expr e -> (
-              match get_variable_enum' env e with
-              | Some (s, labels) -> (ArrayLength_Enum (s, labels), SES.empty)
-              | None ->
-                  let e', ses =
-                    annotate_symbolic_constrained_integer ~loc env e
-                  in
-                  (ArrayLength_Expr e', ses))
-          | ArrayLength_Enum (_, _) ->
-              assert (* Enumerated indices only exist in the typed AST. *)
-                     false
-        in
-        let ses = SES.union ses_t ses_index in
-        (T_Array (index', t') |> here, ses) |: TypingRule.TArray
-    (* Begin TStructuredDecl *)
-    | T_Record fields | T_Exception fields | T_Collection fields -> (
-        let+ () =
-          match get_first_duplicate (List.map fst fields) with
-          | None -> ok
-          | Some x ->
-              fun () -> fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
-        in
-        let fields', sess =
-          list_map_split
-            (fun (x, ty) ->
-              let ty', ses = annotate_type ~loc env ty in
-              ((x, ty'), ses))
-            fields
-        in
-        let ses = SES.unions sess in
-        match ty.desc with
-        | T_Record _ ->
-            assert decl;
-            (T_Record fields' |> here, ses) |: TypingRule.TStructuredDecl
-        | T_Exception _ ->
-            assert decl;
-            (T_Exception fields' |> here, ses) |: TypingRule.TStructuredDecl
-        | T_Collection _ ->
-            assert (not decl);
-            let+ () =
-              check_true
-                (List.for_all (fun (_, t) -> has_structure_bits env t) fields)
-              @@ fun () -> fatal_from ~loc Error.(UnsupportedTy (Static, ty))
-            in
-            (T_Collection fields' |> here, ses) |: TypingRule.TStructuredDecl
-        | _ -> assert false
-        (* Begin TEnumDecl *))
-    | T_Enum li ->
-        assert decl;
-        let+ () =
-          match get_first_duplicate li with
-          | None -> ok
-          | Some x ->
-              fun () -> fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
-        in
-        let+ () =
-         fun () ->
-          List.iter (fun s -> check_var_not_in_genv ~loc env.global s ()) li
-        in
-        (ty, SES.empty) |: TypingRule.TEnumDecl
+              let ses = SES.unions sess in
+              (well_constrained ~loc:ty ~precision new_constraints, ses)
+          | Parameterized name ->
+              (ty, SES.reads_local name TimeFrame.Constant true)
+          | UnConstrained -> (ty, SES.empty))
+          |: TypingRule.TInt
+      (* Begin TBits *)
+      | T_Bits (e_width, bitfields) ->
+          let ((t_width, e_width', ses_width) as typed_e_width) =
+            annotate_expr env e_width
+          in
+          let+ () = check_symbolically_evaluable e_width ses_width in
+          let+ () = check_constrained_integer ~loc:e_width env t_width in
+          let bitfields', ses_bitfields =
+            if bitfields = [] then (bitfields, SES.empty)
+            else
+              let+ () = check_is_pure ~loc typed_e_width in
+              let annotated_bitfields, ses_bitfields =
+                annotate_bitfields ~loc env e_width' bitfields
+              in
+              let () =
+                let width =
+                  match StaticInterpreter.static_eval env e_width' with
+                  | L_Int i -> Z.to_int i
+                  | _ -> assert false
+                in
+                CheckCommonBitfieldsAlign.check ~loc:ty env annotated_bitfields
+                  width
+                |: TypingRule.CheckCommonBitfieldsAlign
+              in
+              (annotated_bitfields, ses_bitfields)
+          in
+          let ses = SES.union ses_width ses_bitfields in
+          (T_Bits (e_width', bitfields') |> here, ses) |: TypingRule.TBits
+      (* Begin TTuple *)
+      | T_Tuple tys ->
+          let tys', sess = list_map_split (annotate_type ~loc env) tys in
+          let ses = SES.unions sess in
+          (T_Tuple tys' |> here, ses) |: TypingRule.TTuple
+      (* Begin TArray *)
+      | T_Array (index, t) ->
+          let t', ses_t = annotate_type ~loc env t
+          and index', ses_index =
+            match index with
+            | ArrayLength_Expr e -> (
+                match get_variable_enum' env e with
+                | Some (s, labels) -> (ArrayLength_Enum (s, labels), SES.empty)
+                | None ->
+                    let e', ses =
+                      annotate_symbolic_constrained_integer ~loc env e
+                    in
+                    (ArrayLength_Expr e', ses))
+            | ArrayLength_Enum (_, _) ->
+                assert
+                  (* Enumerated indices only exist in the typed AST. *)
+                  false
+          in
+          let ses = SES.union ses_t ses_index in
+          (T_Array (index', t') |> here, ses) |: TypingRule.TArray
+      (* Begin TStructuredDecl *)
+      | T_Record fields | T_Exception fields | T_Collection fields -> (
+          let+ () =
+            match get_first_duplicate (List.map fst fields) with
+            | None -> ok
+            | Some x ->
+                fun () -> fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
+          in
+          let fields', sess =
+            list_map_split
+              (fun (x, ty) ->
+                let ty', ses = annotate_type ~loc env ty in
+                ((x, ty'), ses))
+              fields
+          in
+          let ses = SES.unions sess in
+          match ty.desc with
+          | T_Record _ ->
+              assert decl;
+              (T_Record fields' |> here, ses) |: TypingRule.TStructuredDecl
+          | T_Exception _ ->
+              assert decl;
+              (T_Exception fields' |> here, ses) |: TypingRule.TStructuredDecl
+          | T_Collection _ ->
+              assert (not decl);
+              let+ () =
+                check_true
+                  (List.for_all (fun (_, t) -> has_structure_bits env t) fields)
+                @@ fun () -> fatal_from ~loc Error.(UnsupportedTy (Static, ty))
+              in
+              (T_Collection fields' |> here, ses) |: TypingRule.TStructuredDecl
+          | _ -> assert false
+          (* Begin TEnumDecl *))
+      | T_Enum li ->
+          assert decl;
+          let+ () =
+            match get_first_duplicate li with
+            | None -> ok
+            | Some x ->
+                fun () -> fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
+          in
+          let+ () =
+           fun () ->
+            List.iter (fun s -> check_var_not_in_genv ~loc env.global s ()) li
+          in
+          (ty, SES.empty) |: TypingRule.TEnumDecl
+    in
+    let () =
+      if SES.may_dynamically_fail ses then
+        warn_from ~loc (Error.TypeMayDynamicallyFail ty)
+    in
+    (ty_annotated, ses)
   (* End *)
 
   (* Begin AnnotateSymbolicallyEvaluableExpr *)
@@ -1899,6 +1907,62 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       ret_ty_opt,
       ses3 )
 
+  and definitely_geq_expr env e lower_bound =
+    match e.desc with
+    | E_Literal (L_Int z) -> Z.geq z (Z.of_int lower_bound)
+    | E_Var id ->
+        let checked_expr =
+          match StaticEnv.lookup_immutable_expr_opt env id with
+          | Some e' -> definitely_geq_expr env e' lower_bound
+          | None -> false
+        in
+        let id_type = StaticEnv.type_of env id in
+        let geq_type =
+          match id_type.desc with
+          | T_Int int_kind -> definitely_geq_int_kind env int_kind lower_bound
+          | _ -> false
+        in
+        geq_type || checked_expr
+    | _ -> false
+
+  and definitely_geq_int_kind env int_kind lower_bound =
+    match int_kind with
+    | UnConstrained | Parameterized _ | PendingConstrained -> false
+    | WellConstrained (cs, _) ->
+        List.for_all (fun c -> definite_geq_constraint env c lower_bound) cs
+
+  and definite_geq_constraint env c lower_bound =
+    match c with
+    | Constraint_Exact c_lower_bound | Constraint_Range (c_lower_bound, _) ->
+        definitely_geq_expr env c_lower_bound lower_bound
+
+  and definitely_positive env e = definitely_geq_expr env e 1
+  and definitely_non_negative env e = definitely_geq_expr env e 0
+
+  and safely_divides t1 t2 =
+    match (t1.desc, t2.desc) with
+    | T_Int (WellConstrained (cs1, _)), T_Int (WellConstrained (cs2, _)) ->
+        List.for_all
+          (fun c1 ->
+            List.for_all
+              (fun c2 ->
+                match (c1, c2) with
+                | ( Constraint_Exact { desc = E_Literal (L_Int z1) },
+                    Constraint_Exact { desc = E_Literal (L_Int z2) } ) ->
+                    Z.gt z2 (Z.of_int 0) && Z.divisible z1 z2
+                | _ -> false)
+              cs2)
+          cs1
+    | _ -> false
+
+  and checked_as_immutable env e =
+    IMap.exists
+      (fun _ e' -> StaticModel.equal_in_env env e e')
+      env.local.expr_equiv
+    || IMap.exists
+         (fun _ e' -> StaticModel.equal_in_env env e e')
+         env.global.expr_equiv
+
   and annotate_expr env (e : expr) : ty * expr * SES.t =
     let () = if false then Format.eprintf "@[Annotating %a@]@." PP.pp_expr e in
     let here x = add_pos_from ~loc:e x and loc = to_pos e in
@@ -1917,7 +1981,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           check_atc env t_struct ty_struct ~fail:(fun () ->
               fatal_from ~loc (BadATC (t, ty)))
         in
-        let ses = SES.union ses_ty @@ SES.add_assertion ses_e in
+        let ses =
+          SES.add_may_dynamically_fail @@ SES.union ses_ty
+          @@ SES.add_assertion ses_e
+        in
         (if Types.subtype_satisfies env t_struct ty_struct then (ty', e'', ses_e)
          else (ty', E_ATC (e'', ty_struct) |> here, ses))
         |: TypingRule.ATC
@@ -1983,6 +2050,30 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           if binop_is_ordered op then SES.union ses1 ses2
           else ses_non_conflicting_union ~loc ses1 ses2
         in
+        let naive = false in
+        let binop_may_fail env op _e1 e2 =
+          if naive then
+            match op with
+            | `DIV | `DIVRM | `MOD | `RDIV | `SHL | `SHR | `POW -> true
+            | _ -> false
+          else
+            match op with
+            | `DIV ->
+                let e_is_const =
+                  Option.is_some (StaticModel.reduce_to_z_opt env e)
+                in
+                (not (checked_as_immutable env e))
+                && (not e_is_const)
+                && not (safely_divides t1 t2)
+            | `POW -> not (definitely_non_negative env e2)
+            | `DIVRM -> not (definitely_positive env e2)
+            | `MOD | `RDIV | `SHL | `SHR -> true
+            | _ -> false
+        in
+        let ses =
+          if binop_may_fail env op e1 e2 then SES.add_may_dynamically_fail ses
+          else ses
+        in
         (t, E_Binop (op, e1', e2') |> here, ses) |: TypingRule.Binop
     (* End *)
     (* Begin Unop *)
@@ -1994,6 +2085,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin ECall *)
     | E_Call call ->
         let call, ret_ty_opt, ses = annotate_call ~loc:(to_pos e) env call in
+        let opt_func = IMap.find_opt call.name env.global.subprograms in
+        let call_may_fail =
+          match opt_func with Some (f, _) -> not f.builtin | _ -> false
+        in
+        let ses =
+          if call_may_fail then SES.add_may_dynamically_fail ses else ses
+        in
         let t = match ret_ty_opt with Some ty -> ty | None -> assert false in
         (t, E_Call call |> here, ses) |: TypingRule.ECall
     (* End *)
@@ -2114,7 +2212,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                       annotate_slices env slices ~loc)
                 in
                 let w = slices_width env slices' in
-                let ses = SES.union ses1 ses2 in
+                let ses = SES.add_may_dynamically_fail @@ SES.union ses1 ses2 in
                 (T_Bits (w, []) |> here, E_Slice (e'', slices') |> here, ses)
                 |: TypingRule.ESlice
             (* End *)
@@ -2355,7 +2453,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let t_index', e_index', ses_index = annotate_expr env e_index in
     let wanted_t_index = type_of_array_length ~loc size in
     let+ () = check_type_satisfies ~loc env t_index' wanted_t_index in
-    let ses = ses_non_conflicting_union ~loc ses_index ses_base in
+    let ses =
+      SES.add_may_dynamically_fail
+      @@ ses_non_conflicting_union ~loc ses_index ses_base
+    in
     let new_e =
       match size with
       | ArrayLength_Enum _ -> E_GetEnumArray (e_base, e_index')
@@ -3069,6 +3170,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (* SDecl.Some( *)
         | _, Some e ->
             let ((t_e, e', ses_e) as typed_e) = annotate_expr env e in
+            let env =
+              StaticEnv.add_local_immutable_expr
+                (fresh_var "dummy_safe_rhs")
+                e env
+            in
             let () =
               if false then
                 Format.eprintf "Found rhs side-effects: %a@." SES.pp_print ses_e

@@ -61,6 +61,8 @@ type local = {
       (** Maps immutable storage to their oldest equivalent expression. *)
   return_type : ty option;
       (** Local return type, [None] for procedures, global constants, or setters. *)
+  non_negative : ISet.t;
+      (** local storage elements that are known to be non-negative integers. *)
 }
 (** Store all the local environment information at compile-time. *)
 

@@ -207,6 +207,7 @@ module SES = struct
     local_purity : purity;
     global_purity : purity;
     is_immutable : bool;
+    may_fail_dynamically : bool;
   }
 
   let empty =
@@ -224,6 +225,7 @@ module SES = struct
       local_purity = SE_Pure;
       global_purity = SE_Pure;
       is_immutable = true;
+      may_fail_dynamically = false;
     }
 
   let witnessed_time_frame_max ((t1, _w1) as tw1) ((t2, _w2) as tw2) =
@@ -358,6 +360,9 @@ module SES = struct
       is_immutable = false;
     }
 
+  let add_may_dynamically_fail ses = { ses with may_fail_dynamically = true }
+  let may_dynamically_fail ses = ses.may_fail_dynamically
+
   let add_side_effect se ses =
     match se with
     | ReadsLocal { name; time_frame; immutable } ->
@@ -426,6 +431,8 @@ module SES = struct
         local_purity = purity_combine ses1.local_purity ses2.local_purity;
         global_purity = purity_combine ses1.global_purity ses2.global_purity;
         is_immutable = ses1.is_immutable && ses2.is_immutable;
+        may_fail_dynamically =
+          ses1.may_fail_dynamically || ses2.may_fail_dynamically;
       }
 
   (* Properties *)

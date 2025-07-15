@@ -43,6 +43,7 @@ type local = {
   storage_types : (ty * local_decl_keyword) IMap.t;
   expr_equiv : expr IMap.t;
   return_type : ty option;
+  non_negative : ISet.t;
 }
 
 type env = { global : global; local : local }
@@ -67,16 +68,18 @@ module PPEnv = struct
       (PP.pp_print_seq ~pp_sep pp_print_string)
       (ISet.to_seq s)
 
-  let pp_local f { constant_values; storage_types; return_type; expr_equiv } =
+  let pp_local f
+      { constant_values; storage_types; return_type; expr_equiv; non_negative }
+      =
     fprintf f
       "@[<v 2>Local with:@ - @[constants:@ %a@]@ - @[storage:@ %a@]@ - \
-       @[return type:@ %a@]@ - @[expr equiv:@ %a@]@]"
+       @[return type:@ %a@]@ - @[expr equiv:@ %a@] - @[non-negative:@ %a@]@]"
       (Storage.pp_print PP.pp_literal)
       constant_values
       (pp_map (fun f (t, _) -> PP.pp_ty f t))
       storage_types
       (pp_print_option ~none:(fun f () -> fprintf f "none") PP.pp_ty)
-      return_type (pp_map PP.pp_expr) expr_equiv
+      return_type (pp_map PP.pp_expr) expr_equiv pp_iset non_negative
 
   let pp_subprogram f func_sig =
     fprintf f "@[<hov 2>%a@ -> %a@]"
@@ -134,6 +137,7 @@ let empty_local =
     storage_types = IMap.empty;
     return_type = None;
     expr_equiv = IMap.empty;
+    non_negative = ISet.empty;
   }
 
 let empty_local_return_type return_type = { empty_local with return_type }
