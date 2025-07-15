@@ -1,4 +1,4 @@
-Test LB+rel+LDADD Allowed
+Test LB+rel+LDADD:ZR-RnRs Allowed
 States 3
 0:X3=0; 1:X3=0;
 0:X3=0; 1:X3=1;
@@ -7,6 +7,6 @@ No
 Witnesses
 Positive: 0 Negative: 3
 Condition exists (0:X3=1 /\ 1:X3=1)
-Observation LB+rel+LDADD Never 0 3
+Observation LB+rel+LDADD:ZR-RnRs Never 0 3
 Hash=0192daa53c16c1b58f85c23102293b50
 

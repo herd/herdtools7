@@ -1,4 +1,4 @@
-Test LB+rel+CAS Allowed
+Test LB+rel+CAS:OK-MRs Allowed
 States 5
 0:X2=0; 0:X3=0; 1:X2=0;
 0:X2=0; 0:X3=0; 1:X2=1;
@@ -9,6 +9,6 @@ No
 Witnesses
 Positive: 0 Negative: 10
 Condition exists (0:X2=2 /\ 0:X3=1 /\ 1:X2=1)
-Observation LB+rel+CAS Never 0 10
+Observation LB+rel+CAS:OK-MRs Never 0 10
 Hash=66dbb69802e5392564503f39a6b4b4ba
 

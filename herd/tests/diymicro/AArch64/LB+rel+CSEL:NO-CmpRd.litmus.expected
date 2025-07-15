@@ -1,4 +1,4 @@
-Test LB+rel+CSEL Allowed
+Test LB+rel+CSEL:NO-CmpRd Allowed
 States 3
 0:X3=0; 1:X3=0; 1:X7=1;
 0:X3=0; 1:X3=1; 1:X7=2;
@@ -7,6 +7,6 @@ No
 Witnesses
 Positive: 0 Negative: 3
 Condition exists (0:X3=1 /\ 1:X3=1 /\ 1:X7=2)
-Observation LB+rel+CSEL Never 0 3
+Observation LB+rel+CSEL:NO-CmpRd Never 0 3
 Hash=9c403264eccda1f87bb05d8d3a7593ce
 

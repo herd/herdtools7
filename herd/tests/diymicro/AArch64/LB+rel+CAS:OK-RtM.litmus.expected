@@ -1,4 +1,4 @@
-Test LB+rel+CAS Allowed
+Test LB+rel+CAS:OK-RtM Allowed
 States 3
 0:X3=0; 1:X3=0; 1:X4=0;
 0:X3=0; 1:X3=1; 1:X4=1;
@@ -7,6 +7,6 @@ No
 Witnesses
 Positive: 0 Negative: 6
 Condition exists (0:X3=1 /\ 1:X3=1 /\ 1:X4=1)
-Observation LB+rel+CAS Never 0 6
+Observation LB+rel+CAS:OK-RtM Never 0 6
 Hash=e522e980130bd05a7b5af2f7cf1a1456
 
