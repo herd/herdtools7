@@ -362,7 +362,7 @@ diymicro-test:: diymicro-test-aarch64
 diymicro-test-aarch64:
 	$(eval DIYMICRO_EDGES = $(shell $(DIYMICROENUM) -list-iico | sed -n 's/^iico\[\([^ ]*\).*/iico[\1]/p'))
 	$(eval DIYMICRO_EDGES_ARG := $(foreach arg,$(DIYMICRO_EDGES),-diycross-arg $(arg)))
-	@ echo
+	@ echo $(DIYMICRO_EDGES_ARG)
 	$(HERD_DIYCROSS_REGRESSION_TEST) \
 		-herd-path $(HERD) \
 		-diycross-path $(DIYMICROENUM) \
@@ -372,6 +372,21 @@ diymicro-test-aarch64:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diymicro7 tests: OK"
 
+test-all:: diymicro-test-aarch64-asl
+diymicro-test-aarch64-asl: asl-pseudocode
+	$(eval DIYMICRO_EDGES = $(shell $(DIYMICROENUM) -list-iico | sed -n 's/^iico\[\([^ ]*\).*/iico[\1]/p'))
+	$(eval DIYMICRO_EDGES_ARG := $(foreach arg,$(DIYMICRO_EDGES),-diycross-arg $(arg)))
+	@ echo
+	$(HERD_DIYCROSS_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-diycross-path $(DIYMICROENUM) \
+		-libdir-path ./herd/libdir \
+		-expected-dir ./herd/tests/diymicro/AArch64 \
+		-conf ./herd/tests/diymicro/AArch64/asl.cfg \
+		-j $(J) \
+		$(DIYMICRO_EDGES_ARG) \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 diymicro7 tests: OK"
 
 test-bnfc:
 	@ echo
