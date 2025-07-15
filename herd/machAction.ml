@@ -99,7 +99,7 @@ end = struct
     | A.Location_reg _ -> REG
     | A.Location_global (V.Val (Symbolic (Virtual _))|V.Var _)
       -> Access.VIR
-    | A.Location_global (V.Val (Symbolic ((System ((PTE|PTE2),_))))) as loc
+    | A.Location_global (V.Val (Symbolic ((System ((PTE|PTE2|TTD _),_))))) as loc
         ->
           if kvm then Access.PTE
           else Warn.fatal "PTE %s while -variant kvm is not active"
@@ -570,7 +570,9 @@ end = struct
              let open Constant in
              begin
                match A.symbol loc with
-               | Some (System (PTE,_)) -> true
+               | Some (System (PTE,_))
+               | Some (System (TTD {stage = S1; level = LV3},_))
+                   -> true
                | _ -> false
              end
           | None -> false in

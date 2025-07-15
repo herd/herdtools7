@@ -2,9 +2,9 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Luc Maranget, INRIA Paris, France.                                       *)
 (*                                                                          *)
-(* Copyright 2020-present Institut National de Recherche en Informatique et *)
+(* Copyright 2021-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,31 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Global locations for litmus *)
-type stage =
-  | Stage1
-  | Stage2
+type t = Page | Block | Table
 
-type level =
-  | Lv2
-  | Lv3
-
-type t =
-  | Addr of string | Pte of string | Phy of string
-  | Ttd of { stage: stage; level: level ; s: string}
-
-val pp_old : t -> string
-val pp : t -> string
-val compare : t -> t -> int
-val as_addr : t -> string (* assert false if not an addr *)
-val tr_symbol : Constant.symbol -> t
-val get_base_symbol : Constant.symbol -> t
-
-module Set : MySet.S with type elt = t
-module Map : MyMap.S with type key = t
-
-type displayed = string ConstrGen.rloc
-
-val dump_displayed : displayed -> string
-
-module DisplayedSet : MySet.S with type elt = displayed
+val of_string : string -> t
+val dtype2string : t-> string

@@ -36,6 +36,7 @@ type t = {
   dbm : int;
   el0 : int;
   attrs : Attrs.t;
+  dt: DescriptorType.t;
   }
 
 (* Identity translations *)
@@ -56,7 +57,12 @@ val get_attrs : t -> string list
 (* Default value *)
 val prot_default : t (* Fields only *)
 val default : string -> t (* Physical address + default fields *)
+val default_pmd : string -> t (* Physical address + default fields *)
 val of_pte : string -> t (* Default value for pte page table entry *)
+
+val is_page  : t -> bool
+val is_block : t -> bool
+val is_table : t -> bool
 
 (* Flags have default values *)
 val is_default : t -> bool
@@ -80,6 +86,7 @@ val default_fields : string list
 val norm : string StringMap.t -> string StringMap.t
 val dump_pack : (string -> string) -> t -> string
 val as_physical : t -> string option
+val as_pte : t -> string option
 val as_flags : t -> string option
 val attrs_as_kvm_symbols : t -> string list
 

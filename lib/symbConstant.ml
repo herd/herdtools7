@@ -85,7 +85,7 @@ module Make
     | Symbolic (Virtual _) -> Access.VIR
     | Symbolic (Physical _) -> Access.PHY
     | Symbolic (TagAddr _) -> Access.TAG
-    | Symbolic (System ((PTE|PTE2),_)) -> Access.PTE
+    | Symbolic (System ((PTE|PTE2|TTD _),_)) -> Access.PTE
     | Symbolic (System (TLB,_)) -> Access.TLB
     | Label _ -> Access.VIR
     | Tag _
