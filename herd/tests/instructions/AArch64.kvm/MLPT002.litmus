@@ -16,4 +16,4 @@ STR X6, [X5] ;
 LDR X8, [X2] ;
 L0:
     LDR X9, [X3] ;
-exists(PTE(x)=(oa:PA(x),contig:1) /\ PTE(y)=(oa:PA(y),contig:1))
+exists Fault(P0:L0,y,MMU:TLBConflictAbort)
