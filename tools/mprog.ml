@@ -42,7 +42,7 @@ module Top
     end
 
     (* Transpose dump *)
-    module Transpose(A:ArchBase.S)(Pte:PteVal.S) = struct
+    module Transpose(A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S) = struct
 
       module D =
         TransposeDumper.Make
@@ -179,7 +179,7 @@ module Top
     (*************)
 
     (* No alloc *)
-    module Text(A:ArchBase.S)(Pte:PteVal.S) = struct
+    module Text(A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S) = struct
       module D = DumperMiscParser.Make(O)(A)
 
       let zyva = match O.outputdir with
@@ -196,8 +196,8 @@ module Top
     end
 
     (* Some alloc *)
-    module TextAlloc(A:ArchBase.S)(Pte:PteVal.S) = struct
-      module Arch = ArchExtra_tools.Make(O)(A)(Pte)
+    module TextAlloc(A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S) = struct
+      module Arch = ArchExtra_tools.Make(O)(A)(Pte)(AddrReg)
       module Alloc = SymbReg.Make(Arch)
       module D = Dumper.Make(Arch)
 
@@ -217,8 +217,8 @@ module Top
 
     end
 
-    module Latex(A:ArchBase.S)(Pte:PteVal.S) = struct
-      module Arch = ArchExtra_tools.Make(O)(A)(Pte)
+    module Latex(A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S) = struct
+      module Arch = ArchExtra_tools.Make(O)(A)(Pte)(AddrReg)
       module M = PrettyProg.Make(O)(Arch)
       module Alloc = SymbReg.Make(Arch)
 

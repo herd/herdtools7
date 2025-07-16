@@ -221,50 +221,54 @@ end
 module SymbolSet = MySet.Make(SC)
 module SymbolMap = MyMap.Make(SC)
 
-type ('scalar, 'pte, 'instr) t =
+type ('scalar, 'pte, 'addrreg, 'instr) t =
   | Concrete of 'scalar
-  | ConcreteVector of ('scalar, 'pte, 'instr) t list
-  | ConcreteRecord of ('scalar, 'pte, 'instr) t StringMap.t
+  | ConcreteVector of ('scalar, 'pte, 'addrreg, 'instr) t list
+  | ConcreteRecord of ('scalar, 'pte, 'addrreg, 'instr) t StringMap.t
   | Symbolic of symbol
   | Label of Proc.t * string
   | Tag of string
   | PteVal of 'pte
+  | AddrReg of 'addrreg
   | Instruction of 'instr
   | Frozen of int
 
 let as_scalar = function
   | Concrete c -> Some c
   | ConcreteVector _|ConcreteRecord _|Symbolic _|Label _
-  | Tag _|PteVal _|Instruction _|Frozen _
+  | Tag _|PteVal _ |AddrReg _|Instruction _|Frozen _
       -> None
 
-let rec compare scalar_compare pteval_compare instr_compare c1 c2 =
+let rec compare scalar_compare pteval_compare addrreg_compare instr_compare c1 c2 =
   match c1,c2 with
   | Concrete i1, Concrete i2 -> scalar_compare i1 i2
   | ConcreteVector v1, ConcreteVector v2 ->
      Misc.list_compare
-       (compare scalar_compare pteval_compare instr_compare) v1 v2
+       (compare scalar_compare pteval_compare addrreg_compare instr_compare) v1 v2
   | ConcreteRecord li1, ConcreteRecord li2 ->
      StringMap.compare
-       (compare scalar_compare pteval_compare instr_compare) li1 li2
+       (compare scalar_compare pteval_compare addrreg_compare instr_compare) li1 li2
   | Symbolic sym1,Symbolic sym2 -> compare_symbol sym1 sym2
   | Label (p1,s1),Label (p2,s2) ->
       Misc.pair_compare Proc.compare String.compare (p1,s1) (p2,s2)
   | Tag t1,Tag t2 -> String.compare t1 t2
   | PteVal p1,PteVal p2 -> pteval_compare p1 p2
+  | AddrReg p1, AddrReg p2 -> addrreg_compare p1 p2
   | Instruction i1,Instruction i2 -> instr_compare i1 i2
   | Frozen i1,Frozen i2 -> Int.compare i1 i2
-  | (Concrete _,(ConcreteRecord _|ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _|Instruction _|Frozen _))
-  | (ConcreteVector _,(ConcreteRecord _|Symbolic _|Label _|Tag _|PteVal _|Instruction _|Frozen _))
-  | (ConcreteRecord _,(Symbolic _|Label _|Tag _|PteVal _|Instruction _|Frozen _))
-  | (Symbolic _,(Label _|Tag _|PteVal _|Instruction _|Frozen _))
-  | (Label _,(Tag _|PteVal _|Instruction _|Frozen _))
-  | (Tag _,(PteVal _|Instruction _|Frozen _))
-  | (PteVal _,(Instruction _|Frozen _))
+  | (Concrete _,(ConcreteRecord _|ConcreteVector _|Symbolic _|Label _|Tag _|PteVal _|AddrReg _|Instruction _|Frozen _))
+  | (ConcreteVector _,(ConcreteRecord _|Symbolic _|Label _|Tag _|PteVal _|AddrReg _|Instruction _|Frozen _))
+  | (ConcreteRecord _,(Symbolic _|Label _|Tag _|PteVal _|AddrReg _|Instruction _|Frozen _))
+  | (Symbolic _,(Label _|Tag _|PteVal _|AddrReg _|Instruction _|Frozen _))
+  | (Label _,(Tag _|PteVal _|AddrReg _|Instruction _|Frozen _))
+  | (Tag _,(PteVal _|AddrReg _|Instruction _|Frozen _))
+  | (PteVal _,(AddrReg _|Instruction _|Frozen _))
+  | (AddrReg _, (Instruction _|Frozen _))
   | (Instruction _,Frozen _)
     -> -1
-  | (Frozen _,(Instruction _|PteVal _|Tag _|Label _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
-  | (Instruction _,(PteVal _|Tag _|Label _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
+  | (Frozen _,(Instruction _|PteVal _|AddrReg _|Tag _|Label _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
+  | (Instruction _,(PteVal _|AddrReg _|Tag _|Label _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
+  | (AddrReg _,(PteVal _|Tag _|Label _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
   | (PteVal _,(Tag _|Label _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
   | (Tag _,(Label _|Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
   | (Label _,(Symbolic _|ConcreteRecord _|ConcreteVector _|Concrete _))
@@ -273,28 +277,30 @@ let rec compare scalar_compare pteval_compare instr_compare c1 c2 =
   | (ConcreteVector _,Concrete _)
     -> 1
 
-let rec eq scalar_eq pteval_eq instr_eq c1 c2 = match c1,c2 with
+let rec eq scalar_eq pteval_eq addrreg_eq instr_eq c1 c2 = match c1,c2 with
   | Concrete i1, Concrete i2 -> scalar_eq i1 i2
   | ConcreteVector v1, ConcreteVector v2 ->
-     Misc.list_eq (eq scalar_eq pteval_eq instr_eq) v1 v2
+     Misc.list_eq (eq scalar_eq pteval_eq addrreg_eq instr_eq) v1 v2
   | ConcreteRecord li1, ConcreteRecord li2 ->
-    StringMap.equal (eq scalar_eq pteval_eq instr_eq) li1 li2
+    StringMap.equal (eq scalar_eq pteval_eq addrreg_eq instr_eq) li1 li2
   | Symbolic s1, Symbolic s2 -> symbol_eq s1 s2
   | Label (p1,s1),Label (p2,s2) ->
       Misc.string_eq  s1 s2 && Misc.int_eq p1 p2
   | Tag t1,Tag t2 -> Misc.string_eq t1 t2
   | PteVal p1,PteVal p2 -> pteval_eq p1 p2
+  | AddrReg p1,AddrReg p2 -> addrreg_eq p1 p2
   | Instruction i1,Instruction i2 -> instr_eq i1 i2
   | Frozen i1,Frozen i2 -> Misc.int_eq i1 i2
-  | (Frozen _,(Instruction _|Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Label _|Tag _|PteVal _))
-  | (Instruction _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Label _|Tag _|PteVal _|Frozen _))
-  | (PteVal _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Label _|Tag _|Instruction _|Frozen _))
-  | (ConcreteRecord _,(ConcreteVector _|Symbolic _|Label _|Tag _|Concrete _|PteVal _|Instruction _|Frozen _))
-  | (ConcreteVector _,(ConcreteRecord _|Symbolic _|Label _|Tag _|Concrete _|PteVal _|Instruction _|Frozen _))
-  | (Concrete _,(Symbolic _|Label _|Tag _|ConcreteRecord _|ConcreteVector _|PteVal _|Instruction _|Frozen _))
-  | (Symbolic _,(Concrete _|Label _|Tag _|ConcreteRecord _|ConcreteVector _|PteVal _|Instruction _|Frozen _))
-  | (Label _,(Concrete _|Symbolic _|Tag _|ConcreteRecord _|ConcreteVector _|PteVal _|Instruction _|Frozen _))
-  | (Tag _,(Concrete _|Symbolic _|Label _|ConcreteRecord _|ConcreteVector _|PteVal _|Instruction _|Frozen _))
+  | (Frozen _,(Instruction _|Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Label _|Tag _|PteVal _|AddrReg _))
+  | (Instruction _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Label _|Tag _|PteVal _|AddrReg _|Frozen _))
+  | (AddrReg _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Label _|Tag _|PteVal _|Instruction _|Frozen _))
+  | (PteVal _,(Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _|Label _|Tag _|AddrReg _|Instruction _|Frozen _))
+  | (ConcreteRecord _,(ConcreteVector _|Symbolic _|Label _|Tag _|Concrete _|PteVal _|AddrReg _|Instruction _|Frozen _))
+  | (ConcreteVector _,(ConcreteRecord _|Symbolic _|Label _|Tag _|Concrete _|PteVal _|AddrReg _|Instruction _|Frozen _))
+  | (Concrete _,(Symbolic _|Label _|Tag _|ConcreteRecord _|ConcreteVector _|PteVal _|AddrReg _|Instruction _|Frozen _))
+  | (Symbolic _,(Concrete _|Label _|Tag _|ConcreteRecord _|ConcreteVector _|PteVal _|AddrReg _|Instruction _|Frozen _))
+  | (Label _,(Concrete _|Symbolic _|Tag _|ConcreteRecord _|ConcreteVector _|PteVal _|AddrReg _|Instruction _|Frozen _))
+  | (Tag _,(Concrete _|Symbolic _|Label _|ConcreteRecord _|ConcreteVector _|PteVal _|AddrReg _|Instruction _|Frozen _))
     -> false
 
 (* Return if two constants are syntactically different and can be semantically
@@ -305,12 +311,12 @@ let collision s1 s2 = match s1,s2 with
   | _, _ ->
       None
 
-let rec mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_instr = function
+  let rec mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_instr = function
   | Concrete i -> pp_scalar i
   | ConcreteVector vs ->
       let s =
         String.concat ","
-          (List.map (mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_instr) vs)
+          (List.map (mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_instr) vs)
       in
       sprintf "{%s}" s
   | ConcreteRecord vs ->
@@ -319,7 +325,7 @@ let rec mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_instr = function
       StringMap.iter
         (fun name c ->
           Printf.bprintf b "%s:%s," name
-            (mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_instr c))
+            (mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_instr c))
         vs;
       Buffer.add_char b '}';
       Buffer.contents b
@@ -327,15 +333,16 @@ let rec mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_instr = function
   | Label (p, lbl) -> pp_label p lbl
   | Tag s -> sprintf ":%s" s
   | PteVal p -> pp_pteval p
+  | AddrReg sr -> pp_addrreg sr
   | Instruction i -> pp_instr i
   | Frozen i -> sprintf "S%i" i (* Same as for symbolic values? *)
 
-let pp pp_scalar pp_pteval pp_instr =
+let pp pp_scalar pp_pteval pp_addrreg pp_instr =
   let pp_label = sprintf "label:\"P%i:%s\"" in
-  mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_instr
-and pp_old pp_scalar pp_pteval pp_instr =
+  mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_instr
+and pp_old pp_scalar pp_pteval pp_addrreg pp_instr =
   let pp_label = sprintf "%i:%s" in
-  mk_pp pp_symbol_old pp_scalar pp_label pp_pteval pp_instr
+  mk_pp pp_symbol_old pp_scalar pp_label pp_pteval pp_addrreg pp_instr
 
 let _debug = function
   | Concrete _ -> "Concrete _"
@@ -346,6 +353,7 @@ let _debug = function
   | Label (p, s) -> sprintf "Label (%s,%s)" (Proc.pp p) s
   | Tag s -> sprintf "Tag %s" s
   | PteVal _ -> "PteVal"
+  | AddrReg _ -> "AddrReg"
   | Instruction i -> sprintf "Instruction %s" (InstrLit.pp i)
   | Frozen i -> sprintf "Frozen %i" i
 
@@ -353,26 +361,27 @@ let rec map_scalar f = function
   | Concrete s -> Concrete (f s)
   | ConcreteVector cs -> ConcreteVector (List.map (map_scalar f) cs)
   | ConcreteRecord cs -> ConcreteRecord (StringMap.map (map_scalar f) cs)
-  | (Symbolic _ | Label _ | Tag _ | PteVal _ | Instruction _ | Frozen _) as c ->
+  | (Symbolic _ | Label _ | Tag _ | PteVal _ | AddrReg _ | Instruction _ | Frozen _) as c ->
       c
 
 let rec map_label f = function
   | Label (p, lbl) -> Label (p, f lbl)
   | ConcreteVector cs -> ConcreteVector (List.map (map_label f) cs)
   | ConcreteRecord cs -> ConcreteRecord (StringMap.map (map_label f) cs)
-  | (Symbolic _ | Concrete _ | Tag _ | PteVal _ | Instruction _ | Frozen _) as m
+  | (Symbolic _ | Concrete _ | Tag _ | PteVal _ | AddrReg _ | Instruction _ | Frozen _) as m
     ->
       m
 
-let rec map f_scalar f_pteval f_instr = function
+let rec map f_scalar f_pteval f_addrreg f_instr = function
   | (Symbolic _ | Label _ | Tag _ | Frozen _) as m -> m
   | PteVal p -> PteVal (f_pteval p)
+  | AddrReg sr -> AddrReg (f_addrreg sr)
   | Instruction i -> Instruction (f_instr i)
   | Concrete s -> Concrete (f_scalar s)
   | ConcreteVector cs ->
-      ConcreteVector (List.map (map f_scalar f_pteval f_instr) cs)
+      ConcreteVector (List.map (map f_scalar f_pteval f_addrreg f_instr) cs)
   | ConcreteRecord cs ->
-      ConcreteRecord (StringMap.map (map f_scalar f_pteval f_instr) cs)
+      ConcreteRecord (StringMap.map (map f_scalar f_pteval f_addrreg f_instr) cs)
 
 let do_mk_virtual s = Virtual { default_symbolic_data with name=s; }
 
@@ -433,19 +442,19 @@ let mk_replicate sz v = ConcreteVector (Misc.replicate sz v)
 let is_symbol = function
   | Symbolic _ -> true
   | Concrete _ | ConcreteVector _ | ConcreteRecord _ | Label _ | Tag _
-  | PteVal _ | Instruction _ | Frozen _ ->
+  | PteVal _ | AddrReg _ | Instruction _ | Frozen _ ->
       false
 
 let is_label = function
   | Label _ -> true
   | Concrete _ | ConcreteVector _ | ConcreteRecord _ | Symbolic _ | Tag _
-  | PteVal _ | Instruction _ | Frozen _ ->
+  | PteVal _ | AddrReg _ | Instruction _ | Frozen _ ->
       false
 
 let as_label = function
   | Label (p, lbl) -> Some (p, lbl)
   | Concrete _ | ConcreteVector _ | ConcreteRecord _ | Symbolic _ | Tag _
-  | PteVal _ | Instruction _ | Frozen _ ->
+  | PteVal _ | AddrReg _ | Instruction _ | Frozen _ ->
       None
 
 let is_non_mixed_symbol = function
@@ -460,7 +469,7 @@ let default_tag = Tag "green"
 let check_sym v =
   match v with
   | (Symbolic _ | Label _ | Tag _) as sym -> sym
-  | Concrete _ | ConcreteVector _ | ConcreteRecord _ | PteVal _ | Instruction _
+  | Concrete _ | ConcreteVector _ | ConcreteRecord _ | PteVal _ | AddrReg _ | Instruction _
   | Frozen _ ->
       assert false
 
@@ -503,11 +512,12 @@ module type S =  sig
 
   module Scalar : Scalar.S
   module PteVal : PteVal.S
+  module AddrReg : AddrReg.S
   module Instr : Instr.S
 
-  type v = (Scalar.t,PteVal.t,Instr.t) t
+  type v = (Scalar.t,PteVal.t,AddrReg.t,Instr.t) t
 
-  val tr : (string,ParsedPteVal.t,InstrLit.t) t -> v
+  val tr : (string,ParsedPteVal.t,ParsedAddrReg.t,InstrLit.t) t -> v
   val intToV  : int -> v
   val stringToV  : string -> v
   val nameToV  : string -> v
