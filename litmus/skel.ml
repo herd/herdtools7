@@ -57,8 +57,6 @@ module type Config = sig
   val syncconst : int
   val morearch : MoreArch.t
   val xy : bool
-  val pldw : bool
-  val cacheflush : bool
   val c11 : bool
   val ascall : bool
   val variant : Variant_litmus.t -> bool
@@ -438,6 +436,7 @@ module Make
         if do_affinity then begin
           O.o "#include \"affinity.h\""
         end ;
+        O.o "#include \"cache.h\"" ;
         O.o "" ;
         begin match Cfg.sysarch with
         | `AArch64 ->
@@ -648,29 +647,8 @@ module Make
         | NoBarrier -> ()
         end
 
-      let dump_cache_def () =
-        O.o "/*************************/" ;
-        O.o "/* cache flush and touch */" ;
-        O.o "/*************************/" ;
-        begin match Cfg.sysarch with
-        | `ARM when Cfg.pldw ->
-            O.o "#define HAS_PLDW 1" ;
-            O.o ""
-        | _ -> ()
-        end ;
-        begin match Cfg.cacheflush with
-        | true ->  O.o "#define CACHE_FLUSH 1" ;
-        | false -> ()
-        end ;
-        O.o "#define CACHE_TOUCH_STORE 1" ;
-        Insert.insert O.o "cache.c"
-
-      let do_dump_cache_def = match Cfg.preload with
-      |  NoPL|RandomPL -> false
-      |  CustomPL|StaticPL|StaticNPL _ -> true
-
       let preload_def = match Cfg.preload with
-      | NoPL|RandomPL -> fun _test -> ()
+      | NoPL|RandomPL|StaticPL|StaticNPL _ -> fun _test -> ()
       | CustomPL ->
           fun test ->
             O.o "" ;
@@ -678,10 +656,7 @@ module Make
               (sprintf "static char *global_names[] = {%s};"
                  (String.concat ","
                     (List.map (sprintf "\"%s\"") (get_global_names test)))) ;
-            O.o "" ;
-            dump_cache_def ()
-      |StaticPL|StaticNPL _ ->
-          fun _test -> dump_cache_def ()
+            O.o ""
 
       let dump_mbar_def () =
         O.o "" ;
@@ -2500,13 +2475,6 @@ module Make
           (if Cfg.exit_cond then "int" else "void") ;
 (* Prelude *)
         if do_vp then O.oi "if (cmd->prelude) prelude(out);" ;
-(* Void cache operation to avoid warnings *)
-        if do_dump_cache_def then begin
-          O.o "/* Void cache operation to avoid warnings */" ;
-          O.oi "cache_flush(cmd);" ;
-          O.oi "cache_touch(cmd);" ;
-          O.oi "cache_touch_store(cmd);" ;
-        end ;
 (* Starting time *)
         O.oi "tsc_t start = timeofday();" ;
 (* Initialise instruction code variables *)

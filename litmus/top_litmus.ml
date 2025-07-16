@@ -62,8 +62,6 @@ module type CommonConfig = sig
   val nocatch : bool
   val stdio : bool
   val xy : bool
-  val pldw : bool
-  val cacheflush : bool
   val morearch : MoreArch.t
   val carch : Archs.System.t
   val syncconst : int
