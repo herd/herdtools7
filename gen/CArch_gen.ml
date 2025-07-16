@@ -274,3 +274,6 @@ let compute_rmw rmw old co =
   match rmw with
   | Exch -> co
   | Add -> old+co
+
+let init_rmw _ = 0
+let to_rmw_operand _ _ counter = counter

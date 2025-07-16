@@ -42,6 +42,8 @@ module
     let show_rmw_reg () = false
 
     let compute_rmw () _old co_cell  = co_cell
+    let init_rmw _  = 0
+    let to_rmw_operand _ _ counter = counter
   end
 
 module LxSx(A:sig type arch_atom end) = struct
