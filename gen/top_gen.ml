@@ -861,7 +861,7 @@ let max_set = IntSet.max_elt
               F.run evts m
           | Cycle -> F.check f
           | Observe -> F.observe f in
-        let i = if do_kvm then A.complete_init O.hexa initvals i else i in
+        let i = A.complete_init O.hexa initvals i in
         (i,c,fc flts,env),
         (U.compile_prefetch_ios (List.length obsc) ios,
          U.compile_coms splitted)

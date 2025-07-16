@@ -73,8 +73,15 @@ module type S = sig
   val is_non_pseudo : tedge -> bool
   val is_dp_addr : tedge -> bool
   val compute_rmw : rmw -> value -> value -> value
+  val to_rmw_operand : rmw -> value -> value -> value
 
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
+
+  (* Initial value that allows edge
+     with especially write events assign different values.
+     Different `init_val` should be able to be composited together
+     by bit-wise or operation. *)
+  val init_val : edge -> Value.v
 
   val plain_edge : tedge -> edge
 
@@ -196,7 +203,11 @@ and type rmw = F.rmw = struct
   type value = F.Value.v
 
   let compute_rmw rmw old operand =
-    Value.from_int @@ F.compute_rmw rmw (Value.to_int old) (Value.to_int operand)
+    F.compute_rmw rmw (Value.to_int old) (Value.to_int operand)
+    |> Value.from_int
+  let to_rmw_operand rmw init counter =
+    F.to_rmw_operand rmw (Value.to_int init) (Value.to_int counter)
+    |> Value.from_int
 
   let pp_atom = F.pp_atom
   let tr_value = F.tr_value
@@ -234,7 +245,6 @@ and type rmw = F.rmw = struct
     | Hat
     | Rmw of rmw
 
-
   let is_id = function
     | Id -> true
     | Store|Insert _|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
@@ -261,6 +271,12 @@ and type rmw = F.rmw = struct
     |_ -> false
 
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
+
+  let init_val e =
+    let init = match e.edge with
+      | Rmw rmw -> F.init_rmw rmw
+      | _ -> 0 in
+    Value.from_int init
 
   open Printf
 

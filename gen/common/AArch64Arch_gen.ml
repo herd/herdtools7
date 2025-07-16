@@ -568,7 +568,18 @@ let is_ifetch a = match a with
 
    let tr_value ao v = match ao with
    | None| Some (_,None) -> v
-   | Some (_,Some (sz,_)) -> Mixed.tr_value sz v
+   | Some (_,Some (sz,_)) ->
+   (* Use a non-default strategy rather than `Mixed.tr_value`.
+      Here we calculate based per 2-byte, which
+      provides the desired behaviour on atomic operations. *)
+     let v = Value.to_int v in
+     let open MachSize in
+     let v = match sz with
+       | Byte|Short -> v
+       | Word ->  v lsl 16 + v
+       | Quad -> v lsl 48 + v lsl 32 + v lsl 16 + v
+       | S128 -> assert false in
+      Value.from_int v
 
    module ValsMixed =
      MachMixed.Vals
@@ -786,18 +797,18 @@ let is_one_instruction = function
   | LrSc -> false
   | LdOp _ | StOp _ | Swp | Cas | AllAmo -> true
 
-let fold_aop f r =
-  let r = f A_ADD r in
-  let r = f A_EOR r in
-  let r = f A_SET r in
-  let r = f A_CLR r in
-  r
+let fold_aop f r = List.fold_left (Fun.flip f) r
+  [ A_ADD; A_EOR; A_SET; A_CLR ]
+
+let fold_aop_min_max f r = List.fold_left (Fun.flip f) r
+  [ A_ADD; A_EOR; A_SET; A_CLR; A_SMAX; A_SMIN; A_UMAX; A_UMIN ]
 
 let fold_rmw wildcard f r =
   let r = f LrSc r in
   let r = f Swp r in
   let r = f Cas r in
-  let r = fold_aop (fun op r -> f (LdOp op) r) r in
+  (* Only LD can be combined by Max and Min *)
+  let r = fold_aop_min_max (fun op r -> f (LdOp op) r) r in
   let r = fold_aop (fun op r -> f (StOp op) r) r in
   let r = if wildcard then f AllAmo r else r in
   r
@@ -863,6 +874,73 @@ let compute_rmw r old co =
     end
     | LrSc | Swp | Cas  -> co
     | AllAmo -> assert false
+
+(* NOTE Assuming all variants of STR manipulates on
+   bit 4 --- bit 0 (both included), the bit-wise
+   add and max-min manipulates the rest.
+    In summary the initial value given by `init_rmw`
+    and bit assignment, hard-coded in `to_rmw_operand`, is:
+    |<-MINMAX->|  |<--CLR,SET,EOR-->|
+    ------------------------------------------------
+    | 0  1  0  1, 0  1  1  1, 0  0  1  0, 0  0  0  0
+    ------------------------------------------------
+                  |<---ADD--->|       |<---STR---->|
+   The initial bits are assigned only when associated
+   operations appear in the cycle.
+   --- Bitwise and add operations ---
+   CLR, SET and EOR manipulates bit 11 --- bit 5,
+   while ADD on bit 11 --- bit 7.
+   Given a `counter`, `to_rmw_operand` return operand.
+   For CLR SET and EOR, it will be a bit mask,
+   counter = 1 -> 0b1000011
+   counter = 2 -> 0b1000111
+   counter = 3 -> 0b1001111
+   counter = 4 -> 0b1011111
+   counter = 5 -> 0b1111111
+   counter = 6 -> fail
+   --- Min-max operations ---
+   SMAX, UMAX, SMIN, UMIN manipulates bit 15 --- bit 12,
+   For SMAX and UMAX, the operand effectively is `init + counter`
+   while for SMIN and UMIN `init - counter`.
+   This means a new value is always installed.
+   --- Motivation ---
+   This strategy ensures up to counter 5:
+     (1) They all have correct behaviour when mixing with STR.
+     (2) A unique and fresh resulting value after any operation.
+     (3) Eliminate commutitivition on DINSTINCT rmw operations;
+         that is, if `op1` and `op2` are not same type of rmw,
+         applying `op2` followed by `op1` gives a different value from
+         applying `op1` followed by `op2.
+*)
+let init_rmw = function
+    | LdOp op|StOp op -> begin match op with
+      (* Set the spacial initial values as described above. *)
+      | A_ADD|A_CLR|A_EOR|A_SET -> 0x07_20
+      | A_SMIN|A_UMIN -> 0x50_00
+      | _ -> 0
+    end
+    | _ -> 0
+
+let to_rmw_operand rmw init counter =
+  let bit_mask = ((1 lsl (counter + 1)) - 1) + 0x40 in
+  let shift_bit = 5 in
+  let shift_add = 7 in
+  let compare_offset = counter lsl 12 in
+  match rmw with
+    (* Atomic bitwise and min-max operations manipulate
+       particular bits in the number. See above *)
+    | LdOp op|StOp op ->
+    begin
+      if counter >= 6 then
+        Warn.user_error "Counter for rmw operand exceeds.";
+      match op with
+      | A_ADD -> counter lsl shift_add
+      | A_CLR|A_EOR|A_SET -> bit_mask lsl shift_bit
+      | A_SMAX|A_UMAX -> init + compare_offset
+      | A_SMIN|A_UMIN -> init - compare_offset
+    end
+    (* Fail back the default `init + counter` value *)
+    | _ -> init + counter
 
 include
     ArchExtra_gen.Make

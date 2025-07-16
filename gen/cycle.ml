@@ -487,17 +487,26 @@ module CoSt = struct
     MyMap.Make
       (struct type t = E.SIMD.atom Code.bank let compare = compare end)
 
+  (* - `map` tracks write counters for all banks, which are used to decide
+       the written values.
+     - `init_value_mask` is the initial value, which works together with `map`
+       to decide the written values.
+     - `co_cell`, `pte_value` are the current plain value, (could be pair or simd),
+       and pte value respectively.
+     - `check_fault` and `check_value` tracks if the next memory access
+       should be associated with fault or value check respectively. *)
   type t = { map : int M.t;
+             init_value : int;
              co_cell : Value.v array;
              pte_value : Value.pte;
              check_fault : bool;
              check_value : bool; }
 
   let create init_value sz pte_value check_value check_fault =
-    let map = List.fold_left ( fun acc bank -> M.add bank init_value acc ) M.empty
+    let map = List.fold_left ( fun acc bank -> M.add bank 0 acc ) M.empty
                   [Tag; CapaTag; CapaSeal; Ord; ]
     and co_cell = Array.make (if sz <= 0 then 1 else sz) (Value.from_int init_value) in
-    { map; co_cell; pte_value; check_fault; check_value }
+    { map; init_value; co_cell; pte_value; check_fault; check_value }
 
   let find_no_fail key map =
     try M.find key map with Not_found -> assert false
@@ -576,14 +585,43 @@ module CoSt = struct
        {e with tcell=[| e.v; |];},st
     | _ -> e,st
 
-  let next_co st bank =
-   match bank with
-   | VecReg n ->
-      let v = find_no_fail Ord st.map in
-      { st with map=M.add Ord (v+E.SIMD.nregs n) st.map; }
-   | _ ->
-      let v = find_no_fail bank st.map in
-      { st with map=M.add bank (v+1) st.map; }
+  let next_co st edge bank =
+    match edge.E.edge,bank with
+    (* If it is a rmw operation, especially bit-wise operation,
+       the next value need to decide based on bit conditions. *)
+    | E.Rmw rmw, Ord ->
+      let counter = (find_no_fail bank st.map) + 1 in
+      let v =
+        (* The new strategy for those feature will not work
+           due to a practical choice on counter limit,
+           we fall back the the default simple counter mode. *)
+        if do_neon || do_sve || do_sme then
+          Value.from_int (st.init_value + counter)
+        else
+          let init = E.extract_value
+            (Value.from_int st.init_value) edge.E.a1 in
+          Value.from_int counter |> E.to_rmw_operand rmw init in
+      (* NOTE st.map is NOT updated upon `rmw` with calculation
+         because `Ord` only tracks the value used for
+         various `STR` or rmw instruction *)
+      v,{ st with map=M.add Ord counter st.map; }
+    (* Only support rmw on ordinary, `Ord`, memory access *)
+    | E.Rmw _, _ -> assert false
+    (* The following is for none RMW operation *)
+    | _, VecReg n ->
+      let counter = (find_no_fail Ord st.map) + E.SIMD.nregs n in
+      let v = st.init_value + counter in
+      Value.from_int v,{ st with map=M.add Ord counter st.map; }
+    (* For memory tag or morello tags, it writes the counter
+       WITHOUT combine the initial value, since the latter is only
+       for the plain memory value *)
+    | _, (Tag|CapaSeal|CapaTag) ->
+      let counter = (find_no_fail bank st.map) + 1 in
+      Value.from_int counter,{ st with map=M.add bank counter st.map; }
+    | _, _ ->
+      let counter = (find_no_fail bank st.map) + 1 in
+      let v = st.init_value + counter in
+      Value.from_int v,{ st with map=M.add bank counter st.map; }
 
   let step_simd st n =
     let fst = find_no_fail Ord st.map in
@@ -871,8 +909,7 @@ let set_same_loc st n0 =
   let tr_value e v = E.tr_value e.atom v
 
   let set_write_val_ord st n =
-    let st = CoSt.next_co st Ord in
-    let v = CoSt.get_co st Ord in
+    let v,st = CoSt.next_co st n.prev.edge Ord in
     n.evt <- { n.evt with v = tr_value n.evt v; } ;
     (* Writing Ord resets morello tag *)
     let st = CoSt.set_co st CapaTag evt_null.ctag in
@@ -933,14 +970,14 @@ let set_same_loc st n0 =
                  However increment of current value is by 2 *)
               let cell = CoSt.get_cell st in
               assert (Array.length cell>=2) ;
-              let st = CoSt.next_co st Ord in (* Pre-increment *)
+              let _,st = CoSt.next_co st n.prev.edge Ord in (* Pre-increment *)
               let st = set_write_val_ord st n in
               let check_fault, st = fault_update_without_rmw st in
               n.evt <- { n.evt with check_fault; check_value; };
               (next_x_ok, st)
             | Tag ->
-              let st = CoSt.next_co st bank |> CoSt.set_check_fault in
-              let v = CoSt.get_co st bank in
+              let st = CoSt.set_check_fault st in
+              let v,st = CoSt.next_co st n.prev.edge bank in
               n.evt <- { n.evt with v = v; check_value; } ;
               let e,st = CoSt.set_tcell st n.evt in
               n.evt <- e ;
@@ -952,8 +989,7 @@ let set_same_loc st n0 =
                 if E.is_dp_addr n.prev.edge.E.edge then
                   Some (Label.next_label "L", false)
                 else None in
-              let st = CoSt.next_co st bank in
-              let v = CoSt.get_co st bank in
+              let v,st = CoSt.next_co st n.prev.edge bank in
               n.evt <- { n.evt with v = v; check_value; check_fault} ;
               let e,st = CoSt.set_tcell st n.evt in
               n.evt <- e ;
@@ -1024,7 +1060,21 @@ let set_same_loc st n0 =
                  process the nodes in list `ns` for the location `loc` *)
               let loc = n.evt.loc in
               let sz = get_wide_list ns in
-              let init_val = if do_kvm then k else 0 in
+              (* `init_val` takes care of situation of bit-wise atomic operations,
+                 via traversing the `ns` calling `E.init_val` and
+                 compositing via bit-wise or `lor` *)
+              let init_val =
+                List.map (fun n ->
+                  (* In the case of do_neon || do_sve || do_sme,
+                     we surpress special initial value for rmw *)
+                  if do_neon || do_sve || do_sme then Value.from_int 0
+                  else E.init_val n.edge
+                ) ns
+                |> List.fold_left (fun acc next -> acc lor (Value.to_int next)) 0
+              (* The `init_val` assign different value for kvm with pte,
+                 where different values are needed to distinct access
+                 different locations especially in alias situation. *)
+                |> (+) (if do_kvm then k else 0) in
               let pte_val = pte_val_init loc in
               (* Since it is a cycle, the initial value of `check_value`
                  and `check_fault` depend on if there are write to

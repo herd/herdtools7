@@ -30,4 +30,12 @@ module type S = sig
   val show_rmw_reg : rmw -> bool
   val compute_rmw : rmw  -> int (* old *) -> int (* operand *) -> int
   val expand_rmw : rmw -> rmw list
+  (* NOTE To ensure unwanted value collision,
+    the inital value of a `rmw` operation, if it appears in a cycle,
+    returned by `init_rmw`, MUST work together with
+    to_rmw_operand`, which returns the next value/operand for the `rmw`
+    The `counter` indicate how many writes to a location,
+    including directly write or any `rmw` operation. *)
+  val init_rmw : rmw -> int
+  val to_rmw_operand : rmw -> int (*init*) -> int (*counter*) -> int
 end
