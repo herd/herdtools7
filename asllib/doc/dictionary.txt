@@ -575,6 +575,7 @@ determined
 determines
 determining
 deterministic
+dev
 development
 diagnostic
 dictates
