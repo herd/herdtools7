@@ -80,16 +80,21 @@ In \listingref{ImpureBitvectorSlice}, the bit vector slice on \verb|x| is ill-ty
 The relation
 \hypertarget{def-evalslices}{}
 \[
-  \begin{array}{rl}
-  \evalslices(\overname{\envs}{\env} \aslsep \overname{\slice^*}{\slices}) \;\aslrel &
-    \Normal((\overname{(\vals \times \vals)^*}{\ranges} \times \overname{\XGraphs}{\newg}), \overname{\envs}{\newenv})\ \cup \\
-    & \overname{\Throwing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
+  \evalslices(\overname{\envs}{\env} \aslsep \overname{\slice^*}{\slices}) \;\aslrel\;
+  \left(
+  \begin{array}{ll}
+  \ResultSlices((\overname{(\vals \times \vals)^*}{\ranges} \times \overname{\XGraphs}{\newg}), \overname{\envs}{\newenv}) & \cup\\
+  \overname{\TThrowing}{\ThrowingConfig}    & \cup\\
+  \overname{\TDynError}{\DynErrorConfig}    & \cup\\
+  \overname{\TDiverging}{\DivergingConfig}  & \\
   \end{array}
+  \right)
 \]
 evaluates a list of slices $\slices$ in an environment $\env$, resulting in either \\
-$\Normal((\ranges, \newg), \newenv)$ or an abnormal configuration.
-\ProseParagraph
+$\ResultSlices((\ranges, \newg), \newenv)$.
+\ProseOtherwiseAbnormal
 
+\ProseParagraph
 $\evalslices(\env, \vslices)$ is the list of pairs \texttt{(start\_n, length\_n)} that
 correspond to the start (included) and the length of each slice in
 $\slices$.
@@ -114,9 +119,9 @@ yields the list of ranges $[(2,1), (5,2), (0,3)]$.
   \begin{itemize}
     \item the list of slices has $\vslice$ as the head and $\slicesone$ as the tail;
     \item evaluating the slice $\vslice$ in $\env$ results in \\
-    $\Normal((\range, \vgone), \envone)$\ProseOrAbnormal;
+          $\ResultSlices((\range, \vgone), \envone)$\ProseOrAbnormal;
     \item evaluating the tail list $\slicesone$ in $\envone$ results in \\
-    $\Normal((\rangesone, \vgtwo), \newenv)$\ProseOrAbnormal;
+          $\ResultSlices((\rangesone, \vgtwo), \newenv)$\ProseOrAbnormal;
     \item $\ranges$ is the concatenation of $\range$ to $\rangesone$;
     \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
   \end{itemize}
@@ -126,18 +131,18 @@ yields the list of ranges $[(2,1), (5,2), (0,3)]$.
 \begin{mathpar}
 \inferrule[empty]{}
 {
-  \evalslices(\env, \emptylist) \evalarrow \Normal((\emptylist, \emptygraph), \env)
+  \evalslices(\env, \emptylist) \evalarrow \ResultSlices((\emptylist, \emptygraph), \env)
 }
 \end{mathpar}
 \begin{mathpar}
 \inferrule[nonempty]{
   \slices \eqname [\vslice] \concat \slicesone\\
-  \evalslice(\env, \vslice) \evalarrow \Normal((\range, \vgone), \envone) \OrAbnormal\\
-  \evalslices(\envone, \slicesone) \evalarrow \Normal((\rangesone, \vgtwo), \newenv) \OrAbnormal\\
+  \evalslice(\env, \vslice) \evalarrow \ResultSlices((\range, \vgone), \envone) \OrAbnormal\\\\
+  \evalslices(\envone, \slicesone) \evalarrow \ResultSlices((\rangesone, \vgtwo), \newenv) \OrAbnormal\\\\
   \ranges \eqdef [\range] \concat \rangesone\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
-  \evalslices(\env, \slices) \evalarrow \Normal((\ranges, \newg), \newenv)
+  \evalslices(\env, \slices) \evalarrow \ResultSlices((\ranges, \newg), \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalSlicesBegin}{\EvalSlicesEnd}{../Interpreter.ml}
@@ -496,15 +501,20 @@ the parameter \verb|N|.
 The relation
 \hypertarget{def-evalslice}{}
 \[
-  \begin{array}{rl}
-  \evalslice(\overname{\envs}{\env} \aslsep \overname{\slice}{\vs}) \;\aslrel &
-    \Normal(((\overname{\tint}{\vstart} \times \overname{\tint}{\vlength}) \times \overname{\XGraphs}{\newg}), \overname{\envs}{\newenv})\ \cup \\
-    & \overname{\Throwing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
+  \evalslice(\overname{\envs}{\env} \aslsep \overname{\slice}{\vs}) \;\aslrel\;
+  \left(
+  \begin{array}{ll}
+  \ResultSlices(((\overname{\tint}{\vstart} \times \overname{\tint}{\vlength}) \times \overname{\XGraphs}{\newg}), \overname{\envs}{\newenv}) & \cup\\
+  \overname{\TThrowing}{\ThrowingConfig}    & \cup\\
+  \overname{\TDynError}{\DynErrorConfig}    & \cup\\
+  \overname{\TDiverging}{\DivergingConfig}  & \\
   \end{array}
+  \right)
 \]
 evaluates an individual slice $\vs$ in an environment $\env$ is,
 resulting either in \\
-$\Normal(((\vstart, \vlength), \vg), \newenv)$, a throwing configuration, or a dynamic error configuration.
+$\ResultSlices(((\vstart, \vlength), \vg), \newenv)$.
+\ProseOtherwiseAbnormal
 
 \ExampleDef{Evaluating Slices}
 In \listingref{semantics-slicesingle},
@@ -532,7 +542,7 @@ In \listingref{semantics-scaledfromzero},
   \item \AllApplyCase{single}
   \begin{itemize}
     \item $\vs$ is a \singleslice\ with the expression $\ve$, $\SliceSingle(\ve)$;
-    \item evaluating $\ve$ in $\env$ results in $\Normal((\vstart, \newg), \newenv)$\ProseOrAbnormal;
+    \item evaluating $\ve$ in $\env$ results in $\ResultExpr((\vstart, \newg), \newenv)$\ProseOrAbnormal;
     \item $\vlength$ is the integer value 1.
   \end{itemize}
 
@@ -540,11 +550,11 @@ In \listingref{semantics-scaledfromzero},
   \begin{itemize}
     \item $\vs$ is the \rangeslice\ between the
       expressions $\estart$ and $\etop$, that is, \\ $\SliceRange(\etop, \estart)$;
-    \item evaluating $\etop$ in $\env$ is $\Normal(\mtop, \envone)$\ProseOrAbnormal;
+    \item evaluating $\etop$ in $\env$ is $\ResultExpr(\mtop, \envone)$\ProseOrAbnormal;
     \item $\mtop$ is a pair consisting of the native integer $\vvsubtop$ and execution graph $\vgone$;
-    \item evaluating $\estart$ in $\envone$ is $\Normal(\mstart, \newenv)$\ProseOrAbnormal;
+    \item evaluating $\estart$ in $\envone$ is $\ResultExpr(\mstart, \newenv)$\ProseOrAbnormal;
     \item $\mstart$ is a pair consisting of the native integer $\vstart$ and execution graph $\vgtwo$;
-    \item $\vlength$ is the integer value \texttt{(v\_top - v\_start) + 1};
+    \item $\vlength$ is the integer value $(\vvsubtop - \vstart) + 1$;
     \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
   \end{itemize}
 
@@ -552,8 +562,8 @@ In \listingref{semantics-scaledfromzero},
   \begin{itemize}
     \item $\vs$ is the \lengthslice, which starts at expression~$\estart$ with length~$\elength$,
     that is, $\SliceLength(\estart, \elength)$;
-    \item evaluating $\estart$ in $\env$ is \Normal(\mstart, \envone)\ProseOrAbnormal;
-    \item evaluating $\elength$ in $\envone$ is \Normal(\mlength, \newenv)\ProseOrAbnormal;
+    \item evaluating $\estart$ in $\env$ is $\ResultExpr(\mstart, \envone)$\ProseOrAbnormal;
+    \item evaluating $\elength$ in $\envone$ is $\ResultExpr(\mlength, \newenv)$\ProseOrAbnormal;
     \item $\mstart$ is a pair consisting of the native integer $\vstart$ and execution graph $\vgone$;
     \item $\mlength$ is a pair consisting of the native integer $\vlength$ and execution graph $\vgtwo$;
     \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
@@ -564,9 +574,9 @@ In \listingref{semantics-scaledfromzero},
     \item $\vs$ is the \scaledslice\ with factor given by the
       expression $\efactor$ and length given by the
       expression $\elength$, that is, $\SliceStar(\efactor, \elength)$;
-    \item evaluating $\efactor$ in $\env$ is $\Normal(\mfactor, \envone)$\ProseOrAbnormal;
+    \item evaluating $\efactor$ in $\env$ is $\ResultExpr(\mfactor, \envone)$\ProseOrAbnormal;
     \item $\mfactor$ is a pair consisting of the native integer $\vfactor$ and execution graph $\vgone$;
-    \item evaluating $\elength$ in $\env$ is $\Normal(\mlength, \newenv)$\ProseOrAbnormal;
+    \item evaluating $\elength$ in $\env$ is $\ResultExpr(\mlength, \newenv)$\ProseOrAbnormal;
     \item $\mlength$ is a pair consisting of the native integer $\vlength$ and execution graph $\vgtwo$;
     \item $\vstart$ is the native integer $\vfactor \times \vlength$;
     \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
@@ -576,48 +586,48 @@ In \listingref{semantics-scaledfromzero},
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[single]{
-  \evalexpr{\env, \ve} \evalarrow \Normal((\vstart, \newg), \newenv) \OrAbnormal\\
+  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vstart, \newg), \newenv) \OrAbnormal\\
   \vlength \eqdef \nvint(1)
 }{
-  \evalslice(\env, \SliceSingle(\ve)) \evalarrow \Normal(((\vstart, \vlength), \newg), \newenv)
+  \evalslice(\env, \SliceSingle(\ve)) \evalarrow \ResultSlices(((\vstart, \vlength), \newg), \newenv)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[range]{
-  \evalexpr{\env, \etop} \evalarrow \Normal(\mtop, \envone) \OrAbnormal\\\\
+  \evalexpr{\env, \etop} \evalarrow \ResultExpr(\mtop, \envone) \OrAbnormal\\\\
   \mtop \eqname (\vvsubtop, \vgone)\\
-  \evalexpr{\envone, \estart} \evalarrow \Normal(\mstart, \newenv) \OrAbnormal\\\\
+  \evalexpr{\envone, \estart} \evalarrow \ResultExpr(\mstart, \newenv) \OrAbnormal\\\\
   \mstart \eqname (\vstart, \vgtwo)\\
   \binoprel(\MINUS, \vvsubtop, \vstart) \evalarrow \vdiff\\
   \binoprel(\PLUS, \nvint(1), \vdiff) \evalarrow \vlength\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
-  \evalslice(\env, \SliceRange(\etop, \estart)) \evalarrow \\ \Normal(((\vstart, \vlength), \newg), \newenv)
+  \evalslice(\env, \SliceRange(\etop, \estart)) \evalarrow \\ \ResultSlices(((\vstart, \vlength), \newg), \newenv)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[length]{
-  \evalexpr{\env, \estart} \evalarrow \Normal(\mstart, \envone) \OrAbnormal\\
-  \evalexpr{\envone, \elength} \evalarrow \Normal(\mlength, \newenv) \OrAbnormal\\
+  \evalexpr{\env, \estart} \evalarrow \ResultExpr(\mstart, \envone) \OrAbnormal\\
+  \evalexpr{\envone, \elength} \evalarrow \ResultExpr(\mlength, \newenv) \OrAbnormal\\
   \mstart \eqname (\vstart, \vgone)\\
   \mlength \eqname (\vlength, \vgtwo)\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
-  \evalslice(\env, \SliceLength(\estart, \elength)) \evalarrow \\ \Normal(((\vstart, \vlength), \newg), \newenv)
+  \evalslice(\env, \SliceLength(\estart, \elength)) \evalarrow \\ \ResultSlices(((\vstart, \vlength), \newg), \newenv)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[scaled]{
-  \evalexpr{\env, \efactor} \evalarrow \Normal(\mfactor, \envone) \OrAbnormal\\
+  \evalexpr{\env, \efactor} \evalarrow \ResultExpr(\mfactor, \envone) \OrAbnormal\\
   \mfactor \eqname (\vfactor, \vgone)\\
-  \evalexpr{\envone, \elength} \evalarrow \Normal(\mlength, \newenv) \OrAbnormal\\
+  \evalexpr{\envone, \elength} \evalarrow \ResultExpr(\mlength, \newenv) \OrAbnormal\\
   \mlength \eqname (\vlength, \vgtwo)\\
   \binoprel(\MUL, \vfactor, \vlength) \evalarrow \vstart \\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
-  \evalslice(\env, \SliceStar(\efactor, \elength)) \evalarrow \\ \Normal(((\vstart, \vlength), \newg), \newenv)
+  \evalslice(\env, \SliceStar(\efactor, \elength)) \evalarrow \\ \ResultSlices(((\vstart, \vlength), \newg), \newenv)
 }
 \end{mathpar}

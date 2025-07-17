@@ -798,11 +798,18 @@ The relation
 \hypertarget{def-evalglobals}{}
 \[
   \evalglobals(\overname{\decl^*}{\vdecls}, (\overname{\overname{\envs}{\env} \times \overname{\XGraphs}{\vgone}}{\envm}))
-  \;\aslrel\; \overname{(\envs \times \XGraphs)}{C} \cup
-  \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
+  \;\aslrel\;
+  \left(
+  \begin{array}{cl}
+  \overname{(\envs \times \XGraphs)}{C} & \cup\\
+  \overname{\TThrowing}{\ThrowingConfig} & \cup\\
+  \overname{\TDynError}{\DynErrorConfig} & \cup\\
+  \overname{\TDiverging}{\DivergingConfig} &
+  \end{array}
+  \right)
 \]
 updates the input environment and execution graph by initializing the global storage declarations.
-Otherwise, the evaluation terminates abnormally.
+\ProseOtherwiseAbnormal
 
 \ExampleDef{Evaluating a List of Global Declarations}
 Evaluating the global storage declarations in \listingref{EvalGlobals}
@@ -839,7 +846,7 @@ before having the chance to evaluate \verb|main|.
     \item $d$ is the AST node for declaring a global storage element with initial value $\ve$,
           name $\name$, and type $\vt$;
     \item $\envm$ is the environment-execution graph pair $(\env, \vgone)$;
-    \item the evaluation of the expression $\ve$ in $\env$ yields $\Normal((\vv, \vgtwo), \envtwo)$\ProseOrAbnormal;
+    \item the evaluation of the expression $\ve$ in $\env$ yields $\ResultExpr((\vv, \vgtwo), \envtwo)$\ProseOrAbnormal;
     \item declaring the global $\name$ with value $\vv$ in $\envtwo$ gives $\envthree$;
     \item evaluating the remaining global declarations $\vdecls'$ with the environment $\envthree$ and the execution graph
           that is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ label gives $C$;
@@ -858,7 +865,7 @@ before having the chance to evaluate \verb|main|.
 \inferrule[non\_empty]{
   \vd \eqname \DGlobalStorage(\{ \GDinitialvalue:\langle\ve\rangle, \GDname:\name, \ldots \})\\
   \envm \eqname (\env, \vgone)\\
-  \evalexpr{ \env, \ve} \evalarrow \Normal((\vv,\vgtwo), \envtwo) \OrAbnormal\\\\
+  \evalexpr{ \env, \ve} \evalarrow \ResultExpr((\vv,\vgtwo), \envtwo) \OrAbnormal\\\\
   \declareglobal(\name, \vv, \envtwo) \evalarrow \envthree\\
   \evalglobals(\vdecls', (\envthree, \ordered{\vgone}{\aslpo}{ \vgtwo })) \evalarrow C
 }{

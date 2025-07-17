@@ -23,24 +23,26 @@ of the ASL dynamic semantics appears in \chapref{FormalSystem} and \secref{seman
 
 \section{When Do ASL Specifications Have Meaning\label{sec:MeaningfulASLSpecifications}}
 The ASL dynamic semantics defined here assign meaning only to \emph{well-typed specifications}.
-That is, specifications for which the typechecker produces a static environment rather than
-a \typingerrorterm{}.
+More specifically, the semantics is only defined for a \typedast{} produced by the typechecker
+from some \untypedast{} (rather than a \typingerrorterm{}).
 Specifications that are not well-typed have no defined semantics.
 In the rest of this reference, we assume well-typed specifications.
 
-ASL admits non-determinism, for example via the \texttt{ARBITRARY} expression.
+ASL admits non-determinism, for example via the \ARBITRARY{} expression.
 This means that a given specification might have (potentially infinitely) many
-\hyperlink{def-derivationtree}{derivation trees}.
+(potentially infinite) \derivationtreesterm.
 
-An ASL specification is \emph{terminating} when \underline{all} of its derivation trees are finite.
+An ASL specification is \emph{terminating} when \underline{all} of its \derivationtreesterm{} are finite.
+An ASL specification is \emph{diverging} when \underline{some} of its \derivationtreesterm{} are
+infinite.
 
-Although ASL does not require specifications to terminate, the semantics defined in this
-reference assign meaning only to terminating specifications.
-A future version of this reference, will assign meaning to non-terminating specifications.
+\secref{Semantics of Diverging Specifications} explains how to interpret
+the ASL dynamic semantics rules to assign meaning to both terminating specifications
+and diverging specifications.
 
 \section{Basic Semantic Concepts}
-The ASL dynamic semantics are given by relations between \emph{semantic configurations},
-or \hyperlink{def-configuration}{\emph{semantic configurations}}~\cite{SemanticsWithApplicationsBook}, for short.
+The ASL dynamic semantics are given by relations between
+\hyperlink{def-configuration}{\emph{semantic configurations}}~\cite{SemanticsWithApplicationsBook}.
 We refer to relations between semantic configurations as \emph{semantic relations}.
 Semantic configurations encapsulate information needed to transition into other semantic configurations, such as:
 \begin{itemize}
@@ -55,7 +57,7 @@ These semantic rules are defined by induction over the typed AST.
 \paragraph{Execution:}
 A valid execution of an ASL specification transitions from an \emph{initial semantic configuration},
 which consists of the given specification and the standard library specification, to an output semantic configuration
-consisting of an output value and a concurrent execution graph.\\
+consisting of an output value and a concurrent execution graph.
 
 We define two types of semantics --- \emph{sequential semantics} and \emph{concurrent semantics}.
 
@@ -73,12 +75,11 @@ of execution; notice that ASL does not contain any concurrency constructs.
 Technically, the sequential semantics are defined by omitting the concurrent execution graph components
 from all semantic configurations.
 
-\section{Semantics Building Blocks}
-\label{sec:semanticsbuildingblocks}
+\section{Semantics Building Blocks\label{sec:semanticsbuildingblocks}}
 This section defines the mathematical types over which our semantics are defined.
 An \hyperlink{eval-example}{example} of semantic evaluation appears at the end.
 
-\section{Semantic Configurations\label{sec:SemanticConfigurations}}
+\subsection{Semantic Configurations\label{sec:SemanticConfigurations}}
 
 Semantic configurations express intermediate states related by \emph{semantic relations}.
 %
@@ -211,7 +212,7 @@ However, the typechecker renames each function uniquely so that it can be access
 on its name alone.)
 %
 The function $\typesat(\vt, \vs)$ returns true
-if the type $\vt$ \emph{type-satisfies} the type $\vs$
+if the type $\vt$ \emph{\typesatisfies} the type $\vs$
 (see \TypingRuleRef{TypeSatisfaction}).
 This is used in matching a raised exception to a corresponding catch clause.
 
@@ -338,17 +339,21 @@ should be semantically evaluated, yielding an output semantic configuration.
 
 ASL dynamic semantics mainly utilize the following types of output semantic configurations:
 \begin{description}
-  \item[Normal Values.] \hypertarget{def-normal}{}
+  \item[Normal Values.]\hypertarget{def-normal}{}
   Semantic configurations consisting of different combinations of values,
-  execution graphs, and environments, representing intermediate results
-  generated while evaluating statements:
+  execution graphs, and environments. These represent intermediate results
+  generated while evaluating various constructs such as
+  expressions, side-effect-free expressions, \assignableexpressions,
+  local declaration items, slices, and expression lists
+  (which are evaluated in two different ways for the purpose of concurrency):
   \begin{itemize}
-  \item $\Normal(\vals \times \XGraphs)$,
-  \item $\Normal((\vals \times \XGraphs), \envs)$,
-  \item $\Normal(((\vals \times \vals)^* \times \XGraphs), \envs)$,
-  \item $\Normal(\XGraphs, \envs)$,
-  \item $\Normal((\vals^* \times \XGraphs), \envs)$, and
-  \item $\Normal((\vals\times\XGraphs)^*, \envs)$.
+  \item $\ResultExpr((\vals \times \XGraphs), \envs)$,
+  \item $\ResultExprSEF(\vals, \XGraphs)$,
+  \item $\ResultLexpr(\XGraphs, \envs)$,
+  \item $\ResultLDI(\XGraphs, \envs)$,
+  \item $\ResultSlices(((\vals \times \vals)^* \times \XGraphs))$,
+  \item $\ResultExprList((\vals^* \times \XGraphs), \envs)$,
+  \item $\ResultExprListM((\vals\times\XGraphs)^*, \envs)$,
   \end{itemize}
 
   \hypertarget{def-throwing}{}
@@ -382,37 +387,55 @@ ASL dynamic semantics mainly utilize the following types of output semantic conf
   represent dynamic errors (for example, division by zero).
   The ASL dynamic semantics are set up such that when these \emph{error semantic configurations} appear,
   the evaluation of the entire specification terminates by outputting them.
+
+  \hypertarget{def-diverging}{}
+  \item[Diverging Configurations.] The semantic configuration $\Diverging$
+  represents a diverging evaluation.
 \end{description}
 Helper relations often have output semantic configurations that are just tuples, without an associated configuration domain.
 
 We define the following shorthand notations for types of output semantic configurations:
 \hypertarget{def-tnormal}{}
+\hypertarget{def-resultexpr}{}
+\hypertarget{def-resultexprlist}{}
+\hypertarget{def-resultexprlistm}{}
+\hypertarget{def-resultexprsef}{}
+\hypertarget{def-resultlexpr}{}
+\hypertarget{def-resultslices}{}
+\hypertarget{def-resultpattern}{}
+\hypertarget{def-resultldi}{}
+\hypertarget{def-resultsubprogram}{}
+\hypertarget{def-resultcall}{}
 \hypertarget{def-tcontinuing}{}
 \hypertarget{def-tthrowing}{}
 \hypertarget{def-treturning}{}
 \hypertarget{def-tdynerror}{}
+\hypertarget{def-tdiverging}{}
 \[
-  \begin{array}{rcl}
-    \TNormal          & \triangleq & \Normal(\vals, \XGraphs) \cup \Normal((\vals \times \XGraphs), \envs)\ \cup \\
-                      &            & \Normal(((\vals \times \vals)^* \times \XGraphs), \envs) \cup  \Normal(\XGraphs, \envs)\ \cup   \\
-                      &            & \Normal((\vals^* \times \XGraphs), \envs) \cup \Normal((\vals\times\XGraphs)^*, \envs)\\
-    \TThrowing        & \triangleq & \Throwing(\langle\vals \times \ty\rangle \times \XGraphs, \envs)\\
-    \TContinuing      & \triangleq & \Continuing(\XGraphs, \envs)\\
-    \TReturning       & \triangleq & \Returning((\vals^* \times \XGraphs), \envs)\\
-    \TDynError           & \triangleq & \Error(\Strings)\\
+  \begin{array}{rcll}
+    \TNormal          & \triangleq & \ResultExpr((\vals \times \XGraphs), \envs)\  & \cup \\
+                      &            & \ResultExprSEF(\vals, \XGraphs)  & \cup \\
+                      &            & \ResultLexpr(\XGraphs, \envs) & \cup\\
+                      &            & \ResultLDI(\XGraphs, \envs)  & \cup \\
+                      &            & \ResultSlices(((\vals \times \vals)^* \times \XGraphs), \envs) &  \cup\\
+                      &            & \ResultExprList((\vals^* \times \XGraphs), \envs)  & \cup \\
+                      &            & \ResultExprListM((\vals\times\XGraphs)^*, \envs) & \\
+    \TThrowing        & \triangleq & \Throwing(\langle\vals \times \ty\rangle \times \XGraphs, \envs) &\\
+    \TContinuing      & \triangleq & \Continuing(\XGraphs, \envs) &\\
+    \TReturning       & \triangleq & \Returning((\vals^* \times \XGraphs), \envs) &\\
+    \TDynError        & \triangleq & \Error(\Strings) &\\
+    \TDiverging       & \triangleq & \{ \Diverging \}&\\
   \end{array}
 \]
 
-We will say that a semantic transition \emph{terminates}:
+We will say that a semantic transition
 \begin{itemize}
-\item \emph{normally} when the output semantic configuration domain is
-$\Normal$,
-\item \emph{exceptionally} when the output semantic configuration domain is
-$\Throwing$,
-\item \emph{erroneously} when the output semantic configuration domain is
-$\Error$, and
-\item \emph{abnormally} when it either terminates exceptionally or
-erroneously.
+\item \emph{terminates normally} when the output semantic configuration is a member of \\
+      $\TNormal$,
+\item \emph{terminates exceptionally} when the output semantic configuration is a member of $\TThrowing$,
+\item \emph{terminates erroneously} when the output semantic configuration is a member of $\TDynError$,
+\item \emph{diverges} when the output semantic configuration is a member of $\TDiverging$,
+\item is \emph{abnormal} when it either terminates exceptionally, terminates erroneously, or diverges.
 \end{itemize}
 
 We introduce the following shorthand notations for semantic configurations where all variables
@@ -420,13 +443,15 @@ appearing are \hyperlink{def-freshvariables}{fresh}:
 \begin{itemize}
 \hypertarget{def-throwingconfig}{}
 \item $\ThrowingConfig \triangleq \Throwing((\vv, \vg), \newenv)$.
-\hypertarget{def-errorconfig}{}
+      \hypertarget{def-errorconfig}{}
 \item $\DynErrorConfig \triangleq \Error(\vs)$.
-\hypertarget{def-returningconfig}{}
+      \hypertarget{def-returningconfig}{}
 \item $\ReturningConfig \triangleq \Returning((\vvs,\newg), \newenv)$
-is an early return semantic configuration.
+      is an early return semantic configuration.
 \hypertarget{def-continuingconfig}{}
 \item $\ContinuingConfig \triangleq \Continuing(\newg, \newenv)$.
+      \hypertarget{def-divergingconfig}{}
+\item $\DivergingConfig \triangleq \Diverging$ is a diverging configuration.
 \end{itemize}
 
 \subsection{Extracting and Substituting Elements of Semantic configurations}
@@ -439,15 +464,18 @@ $\graphof{C}$, and the environment of the semantic configuration, $\environof{C}
 \begin{array}{lcc}
   C & \graphof{C} & \environof{C}\\
   \hline
-  \Normal(\vv,\vg) & \vg & \text{undefined}\\
-  \Normal((\vv,\vg), \env) & \vg & \env\\
-  \Normal(([i=1..k: (\va_i,\vb)],\vg), \env) & \vg & \env\\
-  \Normal(\vg, \env) & \vg & \env\\
-  \Normal([\vv_{1..k}], \vg) & \vg & \env\\
-  \Normal([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined} & \env\\
+  \ResultExpr((\vv, \vg), \env) & \vg & \env\\
+  \ResultExprSEF(\vv, \vg) & \vg & \text{undefined}\\
+  \ResultLexpr(\vg, \env) & \vg & \env \\
+  \ResultLDI(\vg, \env) & \vg & \env \\
+  \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \env) & \vg & \env \\
+  \ResultExprList(([i=1..k: \vv_i], \vg), \env) & \vg & \env \\
+  \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined} & \env\\
   \Throwing((\valuereadfrom(\vx,\vv),\vg), \env) & \vg & \env\\
   \Returning(([\vv_{1..k}],\vg), \env) & \vg & \env\\
   \Continuing(\vg, \env) & \vg & \env\\
+  \Error(\vs) & \text{undefined} & \text{undefined}\\
+  \Diverging & \text{undefined} & \text{undefined}\\
 \end{array}
 \]
 
@@ -458,17 +486,21 @@ like $C$ where the graph component is substituted with $\vgp$:
 \begin{array}{ll}
   C & \withgraph{C}{\vgp}\\
   \hline
-  \Normal(\vv,\vg) & \Normal(\vv,\vgp)\\
-  \Normal((\vv,\vg), \env) & \Normal((\vv,\vgp), \env)\\
-  \Normal((i=1..k: (\va_i,\vb),\vg), \env) & \Normal((i=1..k: (\va_i,\vb),\vgp), \env)\\
-  \Normal(\vg, \env) & \Normal(\vgp, \env)\\
-  \Normal(i=1..k: \vv_i, \vg) & \Normal(i=1..k: \vv_i, \vgp)\\
-  \Normal([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined}\\
+  \ResultExpr((\vv, \vg), \env) & \ResultExpr((\vv, \vgp), \env)\\
+  \ResultExprSEF(\vv, \vg) & \ResultExprSEF(\vv, \vgp)\\
+  \ResultLexpr(\vg, \env) & \ResultLexpr(\vgp, \env)\\
+  \ResultLDI(\vg, \env) & \ResultLDI(\vgp, \env)\\
+  \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \env) & \ResultSlices(([i=1..k: (\va_i,\vb)], \vgp), \env)\\
+  \ResultExprList(([i=1..k: \vv_i], \vg), \env) & \ResultExprList(([i=1..k: \vv_i], \vgp), \env)\\
+  \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined}\\
   \Throwing((\valuereadfrom(\vx,\vv),\vg), \env) & \Throwing((\valuereadfrom(\vx,\vv),\vgp), \env)\\
   \Returning((i=1..k: \vv_i,\vg), \env) & \Returning((i=1..k: \vv_i,\vgp), \env)\\
   \Continuing(\vg, \env) & \Continuing(\vgp, \env)\\
+  \Error(\vs) & \text{undefined}\\
+  \Diverging & \text{undefined} \\
 \end{array}
 \]
+
 \hypertarget{def-withenviron}{}
 Similarly, we define the $\withenviron{C}{\envp}$ to be a semantic configuration
 like $C$ where the environment component, if one exists, is substituted with $\envp$:
@@ -476,24 +508,28 @@ like $C$ where the environment component, if one exists, is substituted with $\e
 \begin{array}{ll}
   \textbf{Semantic configuration} & \withenviron{C}{\envp}\\
   \hline
-  \Normal(\vv,\vg) & \text{undefined}\\
-  \Normal((\vv,\vg), \env) & \Normal((\vv,\vg), \envp)\\
-  \Normal((i=1..k: (\va_i,\vb),\vg), \env) & \Normal((i=1..k: (\va_i,\vb),\vg), \envp)\\
-  \Normal(\vg, \env) & \Normal(\vg, \envp)\\
-  \Normal(i=1..k: \vv_i, \vg) & \Normal(i=1..k: \vv_i, \vg)\\
-  \Normal([i=1..k: (\vv_i,\vg_i)], \env) & \Normal([i=1..k: (\vv_i,\vg_i)], \envp)\\
+  \ResultExpr((\vv, \vg), \env) & \ResultExpr((\vv, \vg), \envp)\\
+  \ResultExprSEF(\vv, \vg) & \text{undefined}\\
+  \ResultLexpr(\vg, \env) & \ResultLexpr(\vg, \envp)\\
+  \ResultLDI(\vg, \env) & \ResultLDI(\vg, \envp)\\
+  \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \env) & \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \envp)\\
+  \ResultExprList(([i=1..k: \vv_i], \vg), \env) & \ResultExprList(([i=1..k: \vv_i], \vg), \envp)\\
+  \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \env) & \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \envp)\\
   \Throwing((\valuereadfrom(\vx,\vv),\vg), \env) & \Throwing((\valuereadfrom(\vx,\vv),\vg), \envp)\\
   \Returning((i=1..k: \vv_i,\vg), \env) & \Returning((i=1..k: \vv_i,\vg), \envp)\\
   \Continuing(\vg, \env) & \Continuing(\vg, \envp)\\
+  \Error(\vs) & \text{undefined}\\
+  \Diverging & \text{undefined} \\
 \end{array}
 \]
 
 \section{Semantic Evaluation}
 \hypertarget{def-evalrel}{}
 The semantics of ASL is given by the relation\footnote{The reason that a relation, rather than a function, is used is due to
-the non-determinism inherent in the \texttt{ARBITRARY} expression.}
+the non-determinism inherent in the \ARBITRARY{} expression.}
 \evalrel.
-The relation \evalrel\ is defined as the disjoint union of the relations defined in this reference.
+The relation \evalrel\ is defined as the disjoint union of the relations defined in this reference:
+$\evalexprname$, $\evalstmtname$, etc.
 
 \subsection{Natural Operational Semantics}
 We define the ASL dynamic semantics in the style of \emph{natural operational semantics}~\cite{SemanticsWithApplicationsBook}
@@ -509,8 +545,8 @@ the semantic configuration is \emph{stuck} and the ASL dynamic semantics are und
 input semantic configuration.
 
 The ASL dynamic semantics are defined for well-typed ASL specifications
-and gets stuck only in cases of non-terminating specifications
-(due to non-terminating loops, or infinite recursion).
+and gets stuck only in cases of diverging specifications
+(due to diverging loops, or infinite recursion).
 Otherwise, for every input semantic configuration there is at least one rule that can be used to take a semantic transition.
 
 \hypertarget{eval-example}{}
@@ -544,39 +580,36 @@ Finally, the transitions for both of the subexpressions are used as premises for
 rule, along with the rule for binary operator (for multiplication), to evaluate the entire expression.
 
 \begin{mathpar}
-  \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
-    \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr{\emptyenv, \veone} \evalarrow \Normal(\nvint(1), \emptyenv) } \\\\
-    \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr{\emptyenv, \vetwo} \evalarrow \Normal(\nvint(2), \emptyenv) } \\\\
-    \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\PLUS, \nvint(1), \nvint(2)) \evalarrow \nvint(3)}
-  }
-  {
-    \evalexpr{ \emptyenv, \veonetwo } \evalarrow
-    \Normal(\nvint(3), \emptyenv)
-  }
+\inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
+  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr{\emptyenv, \veone} \evalarrow \ResultExpr(\nvint(1), \emptyenv) } \\\\
+  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr{\emptyenv, \vetwo} \evalarrow \ResultExpr(\nvint(2), \emptyenv) } \\\\
+  \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\PLUS, \nvint(1), \nvint(2)) \evalarrow \nvint(3)}
+}{
+  \evalexpr{ \emptyenv, \veonetwo } \evalarrow
+  \ResultExpr(\nvint(3), \emptyenv)
+}
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
-    \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr{\emptyenv, \vefour} \evalarrow \Normal(\nvint(4), \emptyenv) } \\\\
-    \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr{\emptyenv, \vefive} \evalarrow \Normal(\nvint(5), \emptyenv) } \\\\
-    \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\PLUS, \nvint(4), \nvint(5)) \evalarrow \nvint(9)}
-  }
-  {
-    \evalexpr{ \emptyenv, \vefourfive } \evalarrow
-    \Normal(\nvint(9), \emptyenv)
-  }
+\inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
+  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr{\emptyenv, \vefour} \evalarrow \ResultExpr(\nvint(4), \emptyenv) } \\\\
+  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr{\emptyenv, \vefive} \evalarrow \ResultExpr(\nvint(5), \emptyenv) } \\\\
+  \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\PLUS, \nvint(4), \nvint(5)) \evalarrow \nvint(9)}
+}{
+  \evalexpr{ \emptyenv, \vefourfive } \evalarrow
+  \ResultExpr(\nvint(9), \emptyenv)
+}
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
-    \evalexpr{ \emptyenv, \veonetwo } \evalarrow \Normal(\nvint(3), \emptyenv)\\
-    \evalexpr{ \emptyenv, \vefourfive } \evalarrow \Normal(\nvint(9), \emptyenv)\\
-    \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\MUL, \nvint(3), \nvint(9)) \evalarrow \nvint(27)}
-  }
-  {
-    \evalexpr{ \emptyenv, \EBinop(\MUL, \veonetwo, \vefourfive) } \evalarrow
-    \Normal(\nvint(27), \emptyenv)
-  }
+\inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
+  \evalexpr{ \emptyenv, \veonetwo } \evalarrow \ResultExpr(\nvint(3), \emptyenv)\\
+  \evalexpr{ \emptyenv, \vefourfive } \evalarrow \ResultExpr(\nvint(9), \emptyenv)\\
+  \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\MUL, \nvint(3), \nvint(9)) \evalarrow \nvint(27)}
+}{
+  \evalexpr{ \emptyenv, \EBinop(\MUL, \veonetwo, \vefourfive) } \evalarrow
+  \ResultExpr(\nvint(27), \emptyenv)
+}
 \end{mathpar}
 
 \subsection{Evaluation Order\label{sec:EvaluationOrder}}
@@ -588,14 +621,14 @@ Further, the threading through of environments similarly impose an ordering.
 For example, \SemanticsRuleRef{ECond} is duplicated below:
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \econd} \evalarrow \Normal(\mcond, \envone) \OrAbnormal\\\\
+  \evalexpr{\env, \econd} \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\\\\
   \mcond \eqname (\nvbool(\vb), \vgone)\\
   \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\\\
-  \evalexpr{\envone, \vep} \evalarrow \Normal((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
+  \evalexpr{\envone, \vep} \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
   \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
 }{
   \evalexpr{\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}} \evalarrow
-  \Normal((\vv, \vg), \newenv)
+  \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
 The use of $\OrAbnormal$ rule macros here define an evaluation order:
@@ -653,3 +686,148 @@ For-loop start/end expressions:
 1234
 \end{Verbatim}
 % CONSOLE_END
+
+\section{Semantics of Diverging Specifications\label{sec:Semantics of Diverging Specifications}}
+While typical specifications are intended to always terminate,
+diverging specifications can be potentially useful.
+For example, simulating the fetch-decode-execute cycle of a given processor,
+which may look like the following partial specification:
+\begin{lstlisting}
+func main() => integer
+begin
+  while !stop_condition() do
+    let instr = fetch_next_instruction();
+    decode_and_execute(instr);
+  end;
+  return error_code;
+end;
+\end{lstlisting}
+
+\subsection{The Big-step Semantics of ASL}
+
+\begin{definition}[ASL Big-step Rules]
+The \emph{big-step semantics}\cite{SemanticsWithApplicationsBook} of terminating evaluations and diverging evaluations
+is given by two disjoint sets of rules:
+\begin{description}
+  \item[Inductive Rules] The set of \emph{inductive rules} are all dynamic semantics
+        rules that do not include configurations in $\TDiverging$; and
+  \item[Co-inductive Rules] The set of \emph{co-inductive rules}~\cite{LeroyG:IC09}
+       are all dynamic semantics rules whose output configurations are in $\TDiverging$.
+       Co-inductive rules have the property that, considering the list of premises that
+       are transition judgments, the last, and only the last one has an output configuration in $\TDiverging$.
+       This is ensured by the placement of $\DivergingConfig$ as short-circuiting alternatives
+       in macro rules.
+\end{description}
+\end{definition}
+
+As an example of an inductive rule, consider the following rule,
+obtained by expanding the macro rule for \SemanticsRuleRef{Loop}.CONTINUE:
+\begin{mathpar}
+\inferrule{
+  \evalexpr{\env, \econd} \evalarrow \ResultExpr(\condm, \envone)\\
+  \condm \eqname (\nvbool(\vb), \vgone)\\
+  \vb = \iswhile\\
+  \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp\\
+  \evalblock{\envone, \vbody} \evalarrow \Continuing(\vgtwo, \envtwo)\\
+  \evalloop{\envtwo, \iswhile, \vlimitoptp, \econd, \vbody} \evalarrow \Continuing(\vgthree, \newenv)\\
+  \newg \eqdef \ordered{\ordered{\vgone}{\aslctrl}{\vgtwo}}{\aslpo}{\vgthree}
+}{
+  \evalloop{\env, \iswhile, \vlimitopt, \econd, \vbody} \evalarrow \Continuing(\newg, \newenv)
+}
+\end{mathpar}
+
+As an example of a co-inductive rule, consider the following expansion
+for the same macro rule:
+\begin{mathpar}
+\inferrule{
+  \evalexpr{\env, \econd} \evalarrow \ResultExpr(\condm, \envone)\\
+  \condm \eqname (\nvbool(\vb), \vgone)\\
+  \vb = \iswhile\\
+  \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp\\
+  \evalblock{\envone, \vbody} \evalarrow \Continuing(\vgtwo, \envtwo)\\
+  \evalloop{\envtwo, \iswhile, \vlimitoptp, \econd, \vbody} \evalarrow \DivergingConfig\\
+  \newg \eqdef \ordered{\ordered{\vgone}{\aslctrl}{\vgtwo}}{\aslpo}{\vgthree}
+}{
+  \evalloop{\env, \iswhile, \vlimitopt, \econd, \vbody} \evalarrow \DivergingConfig
+}
+\end{mathpar}
+
+\begin{definition}[Meaning of ASL Big-step Rules]
+We say that a judgment\\
+$g = C \evalarrow D$ holds if and only if one of the following applies:
+\begin{itemize}
+  \item $D\not\in\TDiverging$ and there exists a \underline{finite} \derivationtreeterm{}
+        with root $g$, consisting of only inductive rules; or
+  \item $D\in\TDiverging$ and there exists an \underline{infinite} \derivationtreeterm{}
+        with root $g$, consisting of both inductive rules and co-inductive rules.
+\end{itemize}
+\end{definition}
+
+\ExampleDef{Diverging Evaluation of a Loop}
+
+To exemplify a diverging evaluation, consider the sequential semantics
+of the statement \verb|while TRUE do pass; end;| evaluated with
+an environment $\env$.
+The infinite \derivationtreeterm{} consists of vertices
+\[
+\{S_1, L_1, V_1\} \cup \{n \geq 2 \;|\; E_n, B_n, T_n, P_n, Q_n\} \enspace,
+\]
+which we use to annotate the vertices of the \derivationtreeterm{} defined below
+(we inline aliasing equalities and deconstructing equalities,
+leaving only asserting equalities and transitions, to simplify the presentation).
+
+The root of the infinite \derivationtreeterm{} is the following one:
+\begin{mathpar}
+\inferrule{
+  {
+  \begin{array}{rc}
+  L_1:& \evallimit(\env, \None) \evalarrow \None\\
+  V_1:& \evalloop{\env, \True, \None, \ETrue, \SPass} \evalarrow \Diverging
+  \end{array}
+  }
+}{
+  S_1: \evalstmt{\env, \SWhile(\ETrue, \None, \SPass)} \evalarrow \Diverging
+}
+\end{mathpar}
+
+and the rest of the \derivationtreeterm{} is given as:
+\begin{mathpar}
+\inferrule{
+  {
+  \begin{array}{rc}
+  E_{n+1}:& \evalexpr{\env, \ETrue} \evalarrow \ResultExpr(\nvbool(\vb), \env)\\
+  B_{n+1}:& \vb = \True\\
+  T_{n+1}:& \ticklooplimit(\None) \evalarrow \None\\
+          & \left(\inferrule{Q_{n+1}:\evalstmt{\env, \SPass}\evalarrow \Continuing(\env)}{P_{n+1}: \evalblock{\env, \SPass} \evalarrow \Continuing(\env)}\right)\\
+  V_{n+1}:& \evalloop{\env, \True, \None, \ETrue, \SPass} \evalarrow \Diverging
+  \end{array}
+  }
+}{
+  V_n: \evalloop{\env, \True, \None, \ETrue, \SPass} \evalarrow \Diverging
+}
+\end{mathpar}
+
+That is, the premise $V_{n+1}$ is given by copying the same sub-tree as above for each $n\geq 2$,
+which visually looks like the following:
+\begin{mathpar}
+\inferrule{
+  {
+  \begin{array}{rc}
+  E_{n+1}:& \evalexpr{\env, \ETrue} \evalarrow \ResultExpr(\nvbool(\vb), \env)\\
+  B_{n+1}:& \vb = \True\\
+  T_{n+1}:& \ticklooplimit(\None) \evalarrow \None\\
+  & \left(\inferrule{Q_{n+1}:\evalstmt{\env, \SPass}\evalarrow \Continuing(\env)}{P_{n+1}: \evalblock{\env, \SPass} \evalarrow \Continuing(\env)}\right)\\
+  &
+  \left(
+  \inferrule{
+    E_{n+2}\\ B_{n+2}\\ T_{n+2}\\ P_{n+2}\\ V_{n+2}\\ \inferrule{\vdots}{V_{n+2}}
+  }{
+    V_{n+1}: \evalloop{\env, \True, \None, \ETrue, \SPass} \evalarrow \Diverging
+  }
+  \right)
+  \end{array}
+  }
+}{
+  V_n: \evalloop{\env, \True, \None, \ETrue, \SPass} \evalarrow \Diverging
+}
+\end{mathpar}

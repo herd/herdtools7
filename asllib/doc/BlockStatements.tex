@@ -56,13 +56,19 @@ The relation
 \hypertarget{def-evalblock}{}
 \[
   \evalblock{\overname{\envs}{\env} \times \overname{\stmt}{\stm}} \;\aslrel\;
-  \overname{\TContinuing}{\Continuing(\newg, \newenv)} \cup
-  \overname{\TReturning}{\ReturningConfig} \cup
-  \overname{\TThrowing}{\ThrowingConfig} \cup
-  \overname{\TDynError}{\DynErrorConfig}
+  \left(
+  \begin{array}{cl}
+  \overname{\TContinuing}{\Continuing(\newg, \newenv)} &\cup\\
+  \overname{\TReturning}{\ReturningConfig} &\cup\\
+  \overname{\TThrowing}{\ThrowingConfig} &\cup\\
+  \overname{\TDynError}{\DynErrorConfig} &\cup\\
+  \overname{\TDiverging}{\DivergingConfig} &\cup\\
+  \end{array}
+  \right)
 \]
 evaluates a statement $\stm$ as a \emph{block}. That is, $\stm$ is evaluated in a fresh local environment,
 which drops back to the original local environment of $\env$ when the evaluation terminates.
+\ProseOtherwiseAbnormal
 
 \SemanticsRuleDef{Block}
 See \ExampleRef{Block Statements}.
@@ -82,7 +88,7 @@ The $\poplocalscope$ function is used below to effectively discard the bindings 
 \AllApply
 \begin{itemize}
     \item evaluating $\stm$ in $\env$, as per \chapref{Statements},
-          is $\vres$;
+          is $\vres$\ProseOrDynErrorDiverging;
     \item \OneApplies
       \begin{itemize}
         \item \AllApplyCase{returning}
@@ -112,7 +118,7 @@ The $\poplocalscope$ function is used below to effectively discard the bindings 
 \begin{mathpar}
 \inferrule[returning]{
   \env \eqname (\tenv,\denv)\\
-  \evalstmt{\env, \stm} \evalarrow \vres \\\\
+  \evalstmt{\env, \stm} \evalarrow \vres \OrDynErrorDiverging\\\\
   \commonprefixline \\\\
   \vres = \Returning((\vvs, \newg), \envret) \\
   \envret \eqname (\tenvone, \denvone) \\
@@ -125,7 +131,7 @@ The $\poplocalscope$ function is used below to effectively discard the bindings 
 \begin{mathpar}
 \inferrule[continuing]{
   \env \eqname (\tenv,\denv)\\
-  \evalstmt{\env, \stm} \evalarrow \vres \\\\
+  \evalstmt{\env, \stm} \evalarrow \vres \OrDynErrorDiverging\\\\
   \commonprefixline \\\\
   \vres = \Continuing(\newg, \envcont) \\
   \envcont \eqname (\tenvone, \denvone) \\
@@ -138,7 +144,7 @@ The $\poplocalscope$ function is used below to effectively discard the bindings 
 \begin{mathpar}
 \inferrule[throwing]{
   \env \eqname (\tenv,\denv)\\
-  \evalstmt{\env, \stm} \evalarrow \vres \\\\
+  \evalstmt{\env, \stm} \evalarrow \vres \OrDynErrorDiverging\\\\
   \commonprefixline \\\\
   \vres = \Throwing((\vv,\newg), \envthrow) \\
   \envthrow \eqname (\tenvone, \denvone) \\

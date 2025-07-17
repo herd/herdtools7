@@ -2258,7 +2258,8 @@ results in a \dynamicerrorterm.
     \item \AllApplyCase{normal}
     \begin{itemize}
       \item evaluating the subprogram \texttt{main} with an empty list of actual arguments and empty list of parameters
-      in $\env$ yields $\Normal([(\vv, \vgtwo)], \Ignore)$\ProseOrError;
+            in $\env$ yields \\
+            $\ResultSubprogram([(\vv, \vgtwo)], \Ignore)$\ProseOrDynErrorDiverging;
       \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ edge;
       \item the result of the entire evaluation is $(\vv, \vg)$.
     \end{itemize}
@@ -2266,7 +2267,7 @@ results in a \dynamicerrorterm.
     \item \AllApplyCase{throwing}
     \begin{itemize}
       \item evaluating the subprogram \texttt{main} with an empty list of actual arguments and empty list of parameters
-      in $\env$ yields $\Throwing(\vvopt, \Ignore)$, which is an uncaught exception;
+            in $\env$ yields $\Throwing(\vvopt, \Ignore)$, which is an uncaught exception\ProseOrDynErrorDiverging;
       \item the result of the entire evaluation is an error indicating that an exception was not caught.
     \end{itemize}
   \end{itemize}
@@ -2275,8 +2276,8 @@ results in a \dynamicerrorterm.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[normal]{
-  \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynError\\\\
-  \evalsubprogram(\env, \vmain, \emptylist, \emptylist)\evalarrow \Normal([(\vv, \vgtwo)], \Ignore) \OrDynError\\\\
+  \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynErrorDiverging\\\\
+  \evalsubprogram(\env, \vmain, \emptylist, \emptylist)\evalarrow \ResultSubprogram([(\vv, \vgtwo)], \Ignore) \OrDynErrorDiverging\\\\
   \vg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
 }{
   \evalspec(\tenv, \vspec) \evalarrow (\vv, \vg)
@@ -2285,8 +2286,8 @@ results in a \dynamicerrorterm.
 
 \begin{mathpar}
 \inferrule[throwing]{
-  \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynError\\\\
-  \evalsubprogram(\env, \vmain, \emptylist, \emptylist) \evalarrow \Throwing(\vvopt, \Ignore)
+  \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynErrorDiverging\\\\
+  \evalsubprogram(\env, \vmain, \emptylist, \emptylist) \evalarrow \Throwing(\vvopt, \Ignore) \OrDynErrorDiverging\\\\
 }{
   \evalspec(\tenv, \vspec) \evalarrow \DynamicErrorVal{\UncaughtException}
 }
@@ -2298,13 +2299,19 @@ The helper relation
 \hypertarget{def-buildgenv}{}
 \[
   \buildgenv(\overname{\staticenvs}{\tenv}, \overname{\spec}{\typedspec}) \;\aslrel\;
-  (\overname{\envs}{\newenv}\times\overname{\XGraphs}{\newg}) \cup \overname{\TDynError}{\DynErrorConfig}
+  \left(
+  \begin{array}{cl}
+  (\overname{\envs}{\newenv}\times\overname{\XGraphs}{\newg}) & \cup\\
+  \overname{\TDynError}{\DynErrorConfig} & \cup\\
+  \overname{\TDiverging}{\DivergingConfig} &
+  \end{array}
+  \right)
 \]
 populates the environment $\env$ and output execution graph $\newg$ with the global
 storage declarations in $\typedspec$, starting from the static environment $\tenv$.
 This works by traversing the global storage declarations
 and updating the environment accordingly.
-\ProseOtherwiseDynamicError
+\ProseOtherwiseDynamicErrorOrDiverging
 
 It is assumed that $\typedspec$ lists the declarations in reverse order with respect
 to the \defusedependencyterm\ order
@@ -2317,7 +2324,7 @@ See \ExampleRef{Evaluating a List of Global Declarations}.
 \begin{itemize}
   \item define the environment $\env$ as consisting of the static environment $\tenv$ and the empty dynamic environment $\emptydenv$;
   \item evaluating the global storage declarations in $\typedspec$ in $\env$ with the empty execution graph
-        is $(\newenv, \newg)$\ProseOrError.
+        is $(\newenv, \newg)$\ProseOrDynErrorDiverging.
   \item the result of the entire evaluation is $(\newenv, \newg)$.
 \end{itemize}
 
@@ -2325,7 +2332,7 @@ See \ExampleRef{Evaluating a List of Global Declarations}.
 \begin{mathpar}
 \inferrule{
   \env \eqdef (\tenv, \emptydenv)\\
-  \evalglobals(\typedspec, (\env, \emptygraph)) \evalarrow (\newenv, \newg) \OrDynError
+  \evalglobals(\typedspec, (\env, \emptygraph)) \evalarrow (\newenv, \newg) \OrDynErrorDiverging
 }{
   \buildgenv(\tenv, \typedspec) \evalarrow (\newenv, \newg)
 }

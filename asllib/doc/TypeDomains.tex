@@ -43,7 +43,7 @@ function $\annotatetype$.
 %
 Evaluation is defined by the relation $\evalexprsef\empty$.
 which evaluates side-effect-free expressions and either returns
-a configuration of the form $\Normal(\vv,\vg)$ or a dynamic error configuration $\DynErrorConfig$.
+a configuration of the form $\ResultExprSEF(\vv,\vg)$ or a dynamic error configuration $\DynErrorConfig$.
 In the first case, $\vv$ is a \nativevalue\ and $\vg$
 is an \emph{execution graph}. Execution graphs are related to the concurrent semantics
 and can be ignored in the context of defining dynamic domains.
@@ -110,10 +110,10 @@ by overloading $\dynamicdomain$:
     \item $\vd$ is the set containing the single native integer value for $n$.
   \end{itemize}
 
-  \item \AllApplyCase{constraint\_exact\_dynamic\_error}
+  \item \AllApplyCase{constraint\_exact\_abnormal}
   \begin{itemize}
     \item $\vc$ is a constraint consisting of a single side-effect-free expression $\ve$, that is, $\ConstraintExact(\ve)$;
-    \item evaluating $\ve$ in $\env$ results in a dynamic error configuration;
+    \item evaluating $\ve$ in $\env$ results in either a dynamic error configuration or diverges;
     \item $\vd$ is the empty set.
   \end{itemize}
 
@@ -125,18 +125,18 @@ by overloading $\dynamicdomain$:
     \item $\vd$ is the set containing all native integer values for integers greater or equal to $a$ and less than or equal to $b$.
   \end{itemize}
 
-  \item \AllApplyCase{constraint\_range\_dynamic\_error1}
+  \item \AllApplyCase{constraint\_range\_abnormal1}
   \begin{itemize}
     \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
-    \item evaluating $\veone$ in $\env$ results in a dynamic error configuration;
+    \item evaluating $\veone$ in $\env$ results in either a dynamic error configuration or diverges;
     \item $\vd$ is the empty set.
   \end{itemize}
 
-  \item \AllApplyCase{constraint\_range\_dynamic\_error2}
+  \item \AllApplyCase{constraint\_range\_abnormal2}
   \begin{itemize}
     \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
     \item evaluating $\veone$ in $\env$ results in a configuration with the native integer for $a$;
-    \item evaluating $\vetwo$ in $\env$ results in a dynamic error configuration;
+    \item evaluating $\vetwo$ in $\env$ results in either a dynamic error configuration or diverges;
     \item $\vd$ is the empty set.
   \end{itemize}
 
@@ -150,7 +150,7 @@ by overloading $\dynamicdomain$:
   \item \AllApplyCase{t\_bits\_dynamic\_error}
   \begin{itemize}
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
-    \item evaluating $\ve$ in $\env$ results in a dynamic error configuration;
+    \item evaluating $\ve$ in $\env$ results in either a dynamic error configuration or diverges;
     \item $\vd$ is the empty set.
   \end{itemize}
 
@@ -193,7 +193,7 @@ by overloading $\dynamicdomain$:
       \begin{itemize}
       \item \AllApplyCase{t\_array\_dynamic\_error}
       \begin{itemize}
-        \item evaluating $\ve$ in $\env$ results in a dynamic error configuration;
+        \item evaluating $\ve$ in $\env$ results in either a dynamic error configuration or diverges;
         \item $\vd$ is the empty set.
       \end{itemize}
 
@@ -269,13 +269,14 @@ by overloading $\dynamicdomain$:
 
 \begin{mathpar}
 \inferrule[constraint\_exact\_okay]{
-  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(n), \Ignore)
+  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\nvint(n), \Ignore)
 }{
   \dynamicdomain(\env, \overname{\ConstraintExact(\ve)}{\vc}) = \overname{\{ \nvint(n) \}}{\vd}
 }
 \and
-\inferrule[constraint\_exact\_dynamic\_error]{
-  \evalexprsef{\env, \ve} \evalarrow \DynErrorConfig
+\inferrule[constraint\_exact\_abnormal]{
+  \evalexprsef{\env, \ve} \evalarrow C\\
+  C \in \TDynError \cup \TDiverging
 }{
   \dynamicdomain(\env, \overname{\ConstraintExact(\ve)}{\vc}) = \overname{\emptyset}{\vd}
 }
@@ -283,21 +284,23 @@ by overloading $\dynamicdomain$:
 
 \begin{mathpar}
 \inferrule[constraint\_range\_okay]{
-  \evalexprsef{\env, \veone} \evalarrow \Normal(\nvint(a), \Ignore)\\
-  \evalexprsef{\env, \vetwo} \evalarrow \Normal(\nvint(b), \Ignore)
+  \evalexprsef{\env, \veone} \evalarrow \ResultExprSEF(\nvint(a), \Ignore)\\
+  \evalexprsef{\env, \vetwo} \evalarrow \ResultExprSEF(\nvint(b), \Ignore)
 }{
   \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\{ \nvint(n) \;|\;  a \leq n \land n \leq b\}}{\vd}
 }
 \and
-\inferrule[constraint\_range\_dynamic\_error1]{
-  \evalexprsef{\env, \veone} \evalarrow \DynErrorConfig
+\inferrule[constraint\_range\_abnormal1]{
+  \evalexprsef{\env, \veone} \evalarrow C\\
+  C \in \TDynError \cup \TDiverging
 }{
   \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\emptyset}{\vd}
 }
 \and
-\inferrule[constraint\_range\_dynamic\_error2]{
-  \evalexprsef{\env, \veone} \evalarrow \Normal(\Ignore, \Ignore)\\
-  \evalexprsef{\env, \vetwo} \evalarrow \DynErrorConfig
+\inferrule[constraint\_range\_abnormal2]{
+  \evalexprsef{\env, \veone} \evalarrow \ResultExprSEF(\Ignore, \Ignore)\\
+  \evalexprsef{\env, \vetwo} \evalarrow C\\
+  C \in \TDynError \cup \TDiverging
 }{
   \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\emptyset}{\vd}
 }
@@ -314,27 +317,28 @@ in the \emph{local dynamic environment} of $\denv$.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[t\_bits\_dynamic\_error]{
-  \evalexprsef{\env, \ve} \evalarrow \DynErrorConfig
+\inferrule[t\_bits\_abnormal]{
+  \evalexprsef{\env, \ve} \evalarrow C\\
+  C \in \TDynError \cup \TDiverging
 }{
   \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\emptyset}{\vd}
 }
 \and
 \inferrule[t\_bits\_negative\_width\_error]{
-  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
+  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
   k < 0
 }{
   \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\emptyset}{\vd}
 }
 \and
 \inferrule[t\_bits\_empty]{
-  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(0), \Ignore)
+  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\nvint(0), \Ignore)
 }{
   \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\{ \nvbitvector(\emptylist) \}}{\vd}
 }
 \and
 \inferrule[t\_bits\_non\_empty]{
-  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
+  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
   k > 0
 }{
   \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\{ \nvbitvector(\vb_{1..k}) \;|\; \vb_1,\ldots,\vb_k \in \{0,1\} \}}{\vd}
@@ -351,21 +355,22 @@ in the \emph{local dynamic environment} of $\denv$.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[t\_array\_dynamic\_error]{
-  \evalexprsef{\env, \ve} \evalarrow \DynErrorConfig
+\inferrule[t\_array\_abnormal]{
+  \evalexprsef{\env, \ve} \evalarrow C\\
+  C \in \TDynError \cup \TDiverging
 }{
   \dynamicdomain(\env, \overname{\TArray(\ArrayLengthExpr(\ve), \telem)}{\vt}) = \overname{\emptyset}{\vd}
 }
 \and
 \inferrule[t\_array\_negative\_length\_error]{
-  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
+  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
   k < 0
 }{
   \dynamicdomain(\env, \overname{\TArray(\ArrayLengthExpr(\ve), \telem)}{\vt}) = \overname{\emptyset}{\vd}
 }
 \and
 \inferrule[t\_array\_okay]{
-  \evalexprsef{\env, \ve} \evalarrow \Normal(\nvint(k), \Ignore)\\
+  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
   k \geq 0\\
   \dynamicdomain(\env, \telem) = D_\telem
 }{
