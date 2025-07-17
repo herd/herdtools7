@@ -23,6 +23,6 @@ end) : Value.AArch64 = struct
   module NoCst =
     SymbConstant.Make (NeonScalar) (PteVal.No)(AArch64Instr)
   module NoArchOp = ArchOp.No(NoCst)
-  module AArch64Op = AArch64Op.Make (NeonScalar)(NoArchOp)
+  module AArch64Op = AArch64Op.Make(NeonScalar)(NoArchOp)
   include SymbValue.Make (AArch64Cst) (AArch64Op)
 end

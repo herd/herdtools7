@@ -29,7 +29,7 @@ module BV = struct
 
   let compare = Z.compare
   let equal = Z.equal
-
+  let is_zero = Z.equal Z.zero
 
   let logor = Z.logor
   and logand = Z.logand

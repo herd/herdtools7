@@ -57,6 +57,7 @@ let ing2 _ _ = ()
 
 let not_found () = raise Not_found
 
+let some = Option.some
 let is_none = Option.is_none
 let is_some = Option.is_some
 let as_some = Option.get
