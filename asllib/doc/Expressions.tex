@@ -920,6 +920,14 @@ evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
 \end{itemize}
 
 \FormallyParagraph
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\internalcomment[1]{}
+
+\internalcomment{
+\paragraph{Condition evaluation rule with observations:}
+\newcommand\plusctrl[0]{\hyperlink{def-aslpo}{$+^\mathtt{ctrl}}$}
+\newcommand\plusdata[0]{\hyperlink{def-aslpo}{$+^\mathtt{data}}$}
 \begin{mathpar}
 \inferrule{
   \evalexpr{\env, \econd} \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\\\\
