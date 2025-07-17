@@ -23,20 +23,18 @@ of the ASL dynamic semantics appears in \chapref{FormalSystem} and \secref{seman
 
 \section{When Do ASL Specifications Have Meaning\label{sec:MeaningfulASLSpecifications}}
 The ASL dynamic semantics defined here assign meaning only to \emph{well-typed specifications}.
-That is, specifications for which the typechecker produces a static environment rather than
-a \typingerrorterm{}.
+More specifically, the semantics is only defined for a \typedast{} produced by the typechecker
+from some \untypedast{} (rather than a \typingerrorterm{}).
 Specifications that are not well-typed have no defined semantics.
 In the rest of this reference, we assume well-typed specifications.
 
 ASL admits non-determinism, for example via the \texttt{ARBITRARY} expression.
 This means that a given specification might have (potentially infinitely) many
-\hyperlink{def-derivationtree}{derivation trees}.
+\derivationtreesterm.
 
-An ASL specification is \emph{terminating} when \underline{all} of its derivation trees are finite.
-
-Although ASL does not require specifications to terminate, the semantics defined in this
-reference assign meaning only to terminating specifications.
-A future version of this reference, will assign meaning to non-terminating specifications.
+An ASL specification is \emph{terminating} when \underline{all} of its \derivationtreesterm{} are finite.
+An ASL specification is \emph{non-terminating} when \underline{some} of its \derivationtreesterm{} are
+infinite.
 
 \section{Basic Semantic Concepts}
 The ASL dynamic semantics are given by relations between \emph{semantic configurations},
@@ -55,7 +53,7 @@ These semantic rules are defined by induction over the typed AST.
 \paragraph{Execution:}
 A valid execution of an ASL specification transitions from an \emph{initial semantic configuration},
 which consists of the given specification and the standard library specification, to an output semantic configuration
-consisting of an output value and a concurrent execution graph.\\
+consisting of an output value and a concurrent execution graph.
 
 We define two types of semantics --- \emph{sequential semantics} and \emph{concurrent semantics}.
 
@@ -391,28 +389,27 @@ We define the following shorthand notations for types of output semantic configu
 \hypertarget{def-tthrowing}{}
 \hypertarget{def-treturning}{}
 \hypertarget{def-tdynerror}{}
+\hypertarget{def-tdiverging}{}
 \[
   \begin{array}{rcl}
-    \TNormal          & \triangleq & \Normal(\vals, \XGraphs) \cup \Normal((\vals \times \XGraphs), \envs)\ \cup \\
-                      &            & \Normal(((\vals \times \vals)^* \times \XGraphs), \envs) \cup  \Normal(\XGraphs, \envs)\ \cup   \\
+    \TNormal          & \triangleq & \ExprResult((\vals \times \XGraphs), \envs)\ \cup \ExprSEFResult(\vals, \XGraphs) \cup \LexprResult(\XGraphs, \envs) \cup\\
+                      &            & \Normal(((\vals \times \vals)^* \times \XGraphs), \envs) \cup  \StmtResult(\XGraphs, \envs)\ \cup   \\
                       &            & \Normal((\vals^* \times \XGraphs), \envs) \cup \Normal((\vals\times\XGraphs)^*, \envs)\\
     \TThrowing        & \triangleq & \Throwing(\langle\vals \times \ty\rangle \times \XGraphs, \envs)\\
     \TContinuing      & \triangleq & \Continuing(\XGraphs, \envs)\\
     \TReturning       & \triangleq & \Returning((\vals^* \times \XGraphs), \envs)\\
-    \TDynError           & \triangleq & \Error(\Strings)\\
+    \TDynError        & \triangleq & \Error(\Strings)\\
+    \TDiverging       & \triangleq & \Diverging\\
   \end{array}
 \]
 
-We will say that a semantic transition \emph{terminates}:
+We will say that a semantic transition
 \begin{itemize}
-\item \emph{normally} when the output semantic configuration domain is
-$\Normal$,
-\item \emph{exceptionally} when the output semantic configuration domain is
-$\Throwing$,
-\item \emph{erroneously} when the output semantic configuration domain is
-$\Error$, and
-\item \emph{abnormally} when it either terminates exceptionally or
-erroneously.
+\item \emph{terminates normally} when the output semantic configuration is a member of $\TNormal$,
+\item \emph{terminates exceptionally} when the output semantic configuration is a member of $\TThrowing$,
+\item \emph{terminates erroneously} when the output semantic configuration is a member of $\TDynError$,
+\item \emph{diverges} when the output semantic configuration is a member of $\TDiverging$,
+\item is \emph{abnormal} when it either terminates exceptionally, terminates erroneously, or diverges.
 \end{itemize}
 
 We introduce the following shorthand notations for semantic configurations where all variables
@@ -427,6 +424,9 @@ appearing are \hyperlink{def-freshvariables}{fresh}:
 is an early return semantic configuration.
 \hypertarget{def-continuingconfig}{}
 \item $\ContinuingConfig \triangleq \Continuing(\newg, \newenv)$.
+\hypertarget{def-divergingconfig}{}
+\item $\DivergingConfig \triangleq \Diverging$
+is a diverging configuration.
 \end{itemize}
 
 \subsection{Extracting and Substituting Elements of Semantic configurations}
@@ -588,14 +588,14 @@ Further, the threading through of environments similarly impose an ordering.
 For example, \SemanticsRuleRef{ECond} is duplicated below:
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \econd} \evalarrow \Normal(\mcond, \envone) \OrAbnormal\\\\
+  \evalexpr{\env, \econd} \evalarrow \ExprResult(\mcond, \envone) \OrAbnormal\\\\
   \mcond \eqname (\nvbool(\vb), \vgone)\\
   \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\\\
-  \evalexpr{\envone, \vep} \evalarrow \Normal((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
+  \evalexpr{\envone, \vep} \evalarrow \ExprResult((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
   \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
 }{
   \evalexpr{\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}} \evalarrow
-  \Normal((\vv, \vg), \newenv)
+  \ExprResult((\vv, \vg), \newenv)
 }
 \end{mathpar}
 The use of $\OrAbnormal$ rule macros here define an evaluation order:
@@ -653,3 +653,31 @@ For-loop start/end expressions:
 1234
 \end{Verbatim}
 % CONSOLE_END
+
+\section{Semantics for Non-terminating Specifications}
+
+To extend the dynamic semantics to non-terminating specifications,
+we introduce configurations of the form
+\hypertarget{def-diverging}{}
+\[
+\Diverging(\XGraphs)
+\]
+
+A configuration $\Diverging(g)$ means that the evaluation of a
+construct (expression, statement, etc.)
+diverges with the (potentially infinite) \executiongraph{} $g$.
+
+\begin{mathpar}
+\inferrule{
+  \evalstmt{\env, \vsone} \evalarrow \Continuing(\vgone, \envone) \terminateas \ReturningConfig,\ThrowingConfig,\DynErrorConfig,\DivergingConfig\\\\
+  \evalstmt{\envone, \vstwo} \evalarrow C \OrAbnormal,\DivergingConfig\\\\
+  \newg \eqdef \ordered{\vgone}{\aslpo}{\graphof{C}}\\
+  D \eqdef \withgraph{C}{\newg}
+}{
+  \evalstmt{\env, \SSeq(\vsone, \vstwo)} \evalarrow D
+}
+\end{mathpar}
+
+The problem with this definition is that if $\vstwo$ diverges
+with $\Diverging(\vgtwo)$, the result is $\Diverging(\vgtwo)$
+rather than $\Diverging(\ordered{\vgone}{\aslpo}{\vgtwo})$.

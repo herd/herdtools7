@@ -839,7 +839,7 @@ before having the chance to evaluate \verb|main|.
     \item $d$ is the AST node for declaring a global storage element with initial value $\ve$,
           name $\name$, and type $\vt$;
     \item $\envm$ is the environment-execution graph pair $(\env, \vgone)$;
-    \item the evaluation of the expression $\ve$ in $\env$ yields $\Normal((\vv, \vgtwo), \envtwo)$\ProseOrAbnormal;
+    \item the evaluation of the expression $\ve$ in $\env$ yields $\ExprResult((\vv, \vgtwo), \envtwo)$\ProseOrAbnormal;
     \item declaring the global $\name$ with value $\vv$ in $\envtwo$ gives $\envthree$;
     \item evaluating the remaining global declarations $\vdecls'$ with the environment $\envthree$ and the execution graph
           that is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ label gives $C$;
@@ -858,7 +858,7 @@ before having the chance to evaluate \verb|main|.
 \inferrule[non\_empty]{
   \vd \eqname \DGlobalStorage(\{ \GDinitialvalue:\langle\ve\rangle, \GDname:\name, \ldots \})\\
   \envm \eqname (\env, \vgone)\\
-  \evalexpr{ \env, \ve} \evalarrow \Normal((\vv,\vgtwo), \envtwo) \OrAbnormal\\\\
+  \evalexpr{ \env, \ve} \evalarrow \ExprResult((\vv,\vgtwo), \envtwo) \OrAbnormal\\\\
   \declareglobal(\name, \vv, \envtwo) \evalarrow \envthree\\
   \evalglobals(\vdecls', (\envthree, \ordered{\vgone}{\aslpo}{ \vgtwo })) \evalarrow C
 }{

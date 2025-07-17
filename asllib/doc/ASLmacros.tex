@@ -321,6 +321,9 @@
 \newcommand\Prosemapopt[3]{\hyperlink{def-mapopt}{applying} #1 to the optional value #2 via \hyperlink{def-mapopt}{\textsf{optional}}
   yields #3}
 
+\newcommand\derivationtreeterm[0]{\hyperlink{def-derivationtree}{derivation tree}}
+\newcommand\derivationtreesterm[0]{\hyperlink{def-derivationtree}{derivation trees}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Syntax macros
 \newcommand\nonterminal[1]{\texttt{#1}}
@@ -1078,16 +1081,22 @@
 \newcommand\ReturningConfig[0]{\hyperlink{def-returningconfig}{\texttt{\#R}}}
 \newcommand\ThrowingConfig[0]{\hyperlink{def-throwingconfig}{\texttt{\#T}}}
 \newcommand\DynErrorConfig[0]{\hyperlink{def-errorconfig}{\texttt{\#DE}}}
-\newcommand\OrAbnormal[0]{\;\terminateas \ThrowingConfig, \DynErrorConfig}
+\newcommand\DivergingConfig[0]{\hyperlink{def-divergingconfig}{\texttt{\#DIV}}}
+\newcommand\OrAbnormal[0]{\;\terminateas \ThrowingConfig, \DynErrorConfig, \DivergingConfig}
 \newcommand\OrDynError[0]{\;\terminateas \DynErrorConfig}
+\newcommand\OrDynErrorDiverging[0]{\;\terminateas \DynErrorConfig, \DivergingConfig}
+\newcommand\ProseOtherwiseAbnormal[0]{Otherwise, the result is abnormal.}
 \newcommand\ProseOtherwiseDynamicError[0]{Otherwise, the result is a \dynamicerrorterm.}
-\newcommand\ProseOrAbnormal[0]{\ProseTerminateAs{\ThrowingConfig, \DynErrorConfig}}
+\newcommand\ProseOtherwiseDynamicErrorOrDiverging[0]{Otherwise, the result is either a \dynamicerrorterm{} or the evaluation diverges.}
+\newcommand\ProseOrAbnormal[0]{\ProseTerminateAs{\ThrowingConfig, \DynErrorConfig, \DivergingConfig}}
 \newcommand\ProseOrError[0]{\ProseTerminateAs{\DynErrorConfig}}
+\newcommand\ProseOrDynErrorDiverging[0]{\ProseTerminateAs{\DynErrorConfig, \DivergingConfig}}
 \newcommand\TNormal[0]{\hyperlink{def-tnormal}{\textsf{TNormal}}}
 \newcommand\TDynError[0]{\hyperlink{def-tdynerror}{\textsf{TDynError}}}
 \newcommand\TThrowing[0]{\hyperlink{def-tthrowing}{\textsf{TThrowing}}}
 \newcommand\TContinuing[0]{\hyperlink{def-tcontinuing}{\textsf{TContinuing}}}
 \newcommand\TReturning[0]{\hyperlink{def-treturning}{\textsf{TReturning}}}
+\newcommand\TDiverging[0]{\hyperlink{def-tdiverging}{\textsf{TDiverging}}}
 \newcommand\TOutConfig[0]{\hyperlink{def-toutconfig}{\textsf{TOutConfig}}}
 
 \newcommand\evalexpr[1]{\hyperlink{def-evalexpr}{\textfunc{eval\_expr}}(#1)}
@@ -1179,6 +1188,15 @@
 \newcommand\Continuing[0]{\hyperlink{def-continuing}{\textsf{Continuing}}}
 \newcommand\Returning[0]{\hyperlink{def-returning}{\textsf{Returning}}}
 \newcommand\Error[0]{\hyperlink{def-error}{\textsf{DynError}}}
+\newcommand\Diverging[0]{\hyperlink{def-diverging}{\textsf{Diverging}}}
+
+\newcommand\ExprResult[0]{\hyperlink{def-normal}{\textsf{R\_Expr}}}
+\newcommand\ExprListResult[0]{\hyperlink{def-normal}{\textsf{R\_ExprList}}}
+\newcommand\ExprSEFResult[0]{\hyperlink{def-normal}{\textsf{R\_SEF\_Expr}}}
+\newcommand\LexprResult[0]{\hyperlink{def-normal}{\textsf{R\_LExpr}}}
+\newcommand\SlicesResult[0]{\hyperlink{def-normal}{\textsf{R\_Slices}}}
+\newcommand\PatternResult[0]{\hyperlink{def-normal}{\textsf{R\_Pattern}}}
+\newcommand\StmtResult[0]{\hyperlink{def-normal}{\textsf{R\_Stmt}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Typing macros

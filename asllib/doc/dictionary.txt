@@ -608,6 +608,8 @@ distinct
 distinction
 distinguish
 distinguishing
+diverges
+diverging
 divide
 divided
 dividing
@@ -1519,6 +1521,7 @@ prior
 priori
 priorities
 priority
+problem
 procedure
 procedures
 proceeds

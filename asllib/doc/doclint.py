@@ -162,7 +162,7 @@ def check_tododefines(latex_files: list[str]):
     Checks that there are no more than the expected number of \tododefine
     instances.
     """
-    MAX_TODODEFINE_INSTANCES = 6
+    MAX_TODODEFINE_INSTANCES = 5
     num_todo_define = 0
     for latex_source in latex_files:
         lines = read_file_lines(latex_source)
