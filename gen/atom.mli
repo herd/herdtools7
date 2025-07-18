@@ -25,13 +25,31 @@ module type SIMD = sig
     val reduce: int list list -> int
 end
 
+module type RMW = sig
+  type rmw
+  type atom
+  type value
+
+  val pp_rmw : bool (* backward compatibility *) -> rmw -> string
+  val is_one_instruction : rmw -> bool
+  val fold_rmw : (rmw -> 'a -> 'a) -> 'a -> 'a
+  (* Second round of fold, for rmw with back compatible name *)
+  val fold_rmw_compat : (rmw -> 'a -> 'a) -> 'a -> 'a
+  val applies_atom_rmw : rmw -> atom option -> atom option -> bool
+  val show_rmw_reg : rmw -> bool
+  val compute_rmw : rmw  -> value -> value -> value
+end
+
 module type S = sig
   val bellatom : bool (* true if bell style atoms *)
 
+  type atom
+
 (* SIMD writes and reads *)
   module SIMD : SIMD
+  module RMW : RMW
+  module Value : Value.S with type pte_atom = atom
 
-  type atom
   val default_atom : atom
   val instr_atom : atom option
   val applies_atom : atom -> Code.dir -> bool
@@ -52,9 +70,9 @@ module type S = sig
 (* Memory bank *)
   val atom_to_bank : atom -> SIMD.atom Code.bank
 (* Value computation, for mixed size *)
-  val tr_value : atom option -> Code.v -> Code.v
-  val overwrite_value : Code. v -> atom option -> Code.v -> Code.v
-  val extract_value : Code. v -> atom option -> Code.v
+  val tr_value : atom option -> Value.v -> Value.v
+  val overwrite_value : Value.v -> atom option -> Value.v -> Value.v
+  val extract_value : Value.v -> atom option -> Value.v
 (* Typing of wide accesses as arrays of integers *)
   val as_integers : atom option -> int option
 (* Typing of pair accesses is different, so check them *)
