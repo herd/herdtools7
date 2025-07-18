@@ -283,7 +283,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       let cs,st = emit_pair p st rR rW rA in
       rR,init,csv@cs,st
 
-    let emit_rmw () st p init er ew  =
+    let emit_rmw _ st p init er ew  =
       let rR,init,cs,st = emit_exch st p init er ew in
       Some rR,init,cs,st
 
@@ -376,7 +376,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     | DATA -> Warn.fatal "no data depency to RMW"
     | CTRL -> emit_exch_ctrl st p init er ew r1
 
-    let emit_rmw_dep () st p init er ew dp rd _n =
+    let emit_rmw_dep _ st p init er ew dp rd _n =
       let r,init,cs,st = emit_exch_dep  st p init er ew dp rd in
       Some r,init,cs,st
 

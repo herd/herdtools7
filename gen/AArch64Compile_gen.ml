@@ -2156,12 +2156,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let r,init,cs,st = f  st p init er ew in
       Some r,init,cs,st
 
-    let emit_rmw rmw = match rmw with
-    | LrSc -> map_some emit_exch
-    | Swp -> map_some emit_swp
-    | Cas -> map_some emit_cas
-    | LdOp op -> map_some (emit_ldop op)
-    | StOp op -> emit_stop op
+    let emit_rmw rmw =
+      let open A64.RMW in
+      match rmw with
+        | LrSc -> map_some emit_exch
+        | Swp -> map_some emit_swp
+        | Cas -> map_some emit_cas
+        | LdOp op -> map_some (emit_ldop op)
+        | StOp op -> emit_stop op
 
 (* Fences *)
     let emit_cachesync s isb r =
@@ -2795,12 +2797,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let r,init,cs,st = f  st p init er ew dp vdep rd in
       Some r,init,cs,st
 
-    let emit_rmw_dep rmw = match rmw with
-    | LrSc -> map_some_dp emit_exch_dep
-    | LdOp op -> map_some_dp (emit_ldop_dep (ldop op) (ldop_mixed op))
-    | Swp ->  map_some_dp (emit_ldop_dep swp swp_mixed)
-    | Cas -> map_some_dp emit_cas_dep
-    | StOp op -> emit_stop_dep op
+    let emit_rmw_dep rmw =
+      let open A64.RMW in
+      match rmw with
+        | LrSc -> map_some_dp emit_exch_dep
+        | LdOp op -> map_some_dp (emit_ldop_dep (ldop op) (ldop_mixed op))
+        | Swp ->  map_some_dp (emit_ldop_dep swp swp_mixed)
+        | Cas -> map_some_dp emit_cas_dep
+        | StOp op -> emit_stop_dep op
 
     let emit_fence_dp st p init n f (dp,csel) r1 n1 =
       let vdep = node2vdep n1 in

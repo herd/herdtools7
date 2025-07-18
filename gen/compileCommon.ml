@@ -34,7 +34,9 @@ module type S = sig
   and type dp = A.dp
   and module SIMD = A.SIMD
   and type atom = A.atom
-  and type rmw = A.rmw
+  and type rmw = A.RMW.rmw
+  and module Value = A.Value
+  and module RMW = A.RMW
 
   type check = E.edge list list -> bool
 
@@ -49,6 +51,7 @@ module type S = sig
    and module SIMD = A.SIMD
    and type atom = A.atom
    and module Value = A.Value
+   and module RMW = A.RMW
 end
 
 module Make(C:Config) (A:Arch_gen.S) = struct

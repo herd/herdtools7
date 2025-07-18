@@ -126,7 +126,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           match e.C.E.edge with
           | Rf _ | Fr _ | Ws _ | Hat
           | Back _|Leave _ -> true
-          | Rmw rmw -> C.A.show_rmw_reg rmw
+          | Rmw rmw -> C.A.RMW.show_rmw_reg rmw
           | Po _ | Fenced _ | Dp _ ->
               begin match C.E.loc_sd e with
               | Code.Same -> true

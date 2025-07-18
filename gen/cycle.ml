@@ -20,9 +20,11 @@ open Code
 module type S = sig
   type fence
   type edge
-  module SIMD : Atom.SIMD
+
   type atom
+  module SIMD : Atom.SIMD
   module Value : Value.S with type atom = atom
+  module RMW : Atom.RMW with type atom = atom and type value = Value.v
 
   (* TODO can be parametric by dir *)
   type event =
@@ -146,6 +148,7 @@ module Make (O:Config) (E:Edge.S) :
        and module SIMD = E.SIMD
        and type atom = E.atom
        and module Value = E.Value
+       and module RMW = E.RMW
   = struct
   let dbg = false
   let do_memtag = O.variant Variant_gen.MemTag
@@ -161,6 +164,7 @@ module Make (O:Config) (E:Edge.S) :
   module SIMD = E.SIMD
   type atom = E.atom
   module Value = E.Value
+  module RMW = E.RMW
 
   type event =
       { loc : loc ; ord : int; tag : int;

@@ -69,7 +69,4 @@ module type S = sig
   val fst_dp : dp -> dp list
   val sequence_dp : dp -> dp -> dp list
 
-(* Read-Modify-Write *)
-  include Rmw.S with type rmw_atom = atom and type rmw_value = Value.v
-
 end
