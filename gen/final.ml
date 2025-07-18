@@ -123,12 +123,12 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         let valid_edge m =
           let e = m.C.C.edge in
           let open C.E in
-          match e.C.E.edge with
+          match e.edge with
           | Rf _ | Fr _ | Ws _ | Hat
           | Back _|Leave _ -> true
-          | Rmw rmw -> C.A.show_rmw_reg rmw
+          | Rmw rmw -> RMW.show_rmw_reg rmw
           | Po _ | Fenced _ | Dp _ ->
-            Code.is_same_loc @@ C.E.loc_sd e
+            Code.is_same_loc @@ loc_sd e
           |Insert _|Store|Node _ -> false
           | Id -> assert false in
         let is_ord_event m =
