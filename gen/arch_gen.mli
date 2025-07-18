@@ -21,5 +21,6 @@ module type S =
     module ScopeGen:ScopeGen.S
     include Fence.S
     (* Value is `included` from `Fence.S` which includes `Atom.S` *)
-    include ArchExtra_gen.S with type arch_reg = reg and type arch_atom = atom and module Value_extra = Value
+    include ArchExtra_gen.S with type arch_reg = reg
+      and type arch_atom = atom and module Value_extra = Value
   end
