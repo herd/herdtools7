@@ -233,12 +233,13 @@ let pp_dp = function
 
 
 (* Read-Modify-Write *)
+module RMW = struct
 type rmw =
   | Exch
   | Add
 
-type rmw_atom = atom
-type rmw_value = Value.v
+type nonrec atom = atom
+type value = Value.v
 
 let pp_rmw compat = function
   | Exch -> if compat then "Rmw" else "Exch"
@@ -274,7 +275,8 @@ let applies_atom_rmw _ ar aw = match ar,aw with
 
 let show_rmw_reg _ = true
 
-let compute_rmw rmw old co =
+let compute_rmw rmw ~old ~operand =
   match rmw with
-  | Exch -> co
-  | Add -> old+co
+  | Exch -> operand
+  | Add -> old + operand
+end

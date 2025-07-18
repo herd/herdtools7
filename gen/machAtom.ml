@@ -32,6 +32,7 @@ module Make(C:Config) = struct
   let bellatom = false
 
   module SIMD = NoSIMD
+  module RMW = Rmw.LxSx(struct type nonrec atom = atom end)
 
 
   let default_atom = Atomic

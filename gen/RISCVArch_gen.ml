@@ -212,7 +212,7 @@ let pp_dp = function
   | CTRL -> "Ctrl"
   | CTRLISYNC -> "CtrlFenceI"
 
-include Exch.Exch(struct type arch_atom = atom end)
+module RMW = Rmw.Exch(struct type nonrec atom = atom end)
 
 include
     ArchExtra_gen.Make

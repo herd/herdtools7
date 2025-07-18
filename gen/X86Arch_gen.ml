@@ -116,7 +116,7 @@ let expand_dp_dir _ = assert false
 (* RWM *)
 (*******)
 
-include Exch.Exch(struct type arch_atom = atom end)
+module RMW = Rmw.Exch(struct type nonrec atom = atom end)
 
 include
     ArchExtra_gen.Make

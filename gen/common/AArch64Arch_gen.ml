@@ -993,9 +993,10 @@ let sequence_dp (d1,c1) (d2,c2) = match c1 with
 let expand_dp_dir (dir,_) = D.expand_dp_dir dir
 
 (* Read-Modify-Write *)
+module RMW = struct
 type rmw =  LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas | AllAmo
 
-type rmw_atom = atom (* Enforced by Rmw.S signature *)
+type nonrec atom = atom
 
 let pp_aop op =  Misc.capitalize (Misc.lowercase (pp_aop op))
 
@@ -1069,25 +1070,26 @@ let show_rmw_reg = function
 | LdOp _|Cas|Swp|LrSc -> true
 | AllAmo -> assert false
 
-let compute_rmw r old co =
+let compute_rmw r ~old ~operand =
     match r with
     | LdOp op | StOp op ->
       begin match op with
-        | A_ADD -> old + co
-        | A_SMAX -> if old > co then old else co
+        | A_ADD -> old + operand
+        | A_SMAX -> if old > operand then old else operand
         | A_UMAX ->
-           let o = Int64.of_int old and c = Int64.of_int co in
-           if Int64.unsigned_compare o c >  0 then old else co
-        | A_SMIN -> if old < co then old else co
+           let o = Int64.of_int old and c = Int64.of_int operand in
+           if Int64.unsigned_compare o c >  0 then old else operand
+        | A_SMIN -> if old < operand then old else operand
         | A_UMIN ->
-           let o = Int64.of_int old and c = Int64.of_int co in
-           if Int64.unsigned_compare o c <  0 then old else co
-        | A_EOR -> old lxor co
-        | A_SET -> old lor co
-        | A_CLR -> old land (lnot co)
+           let o = Int64.of_int old and c = Int64.of_int operand in
+           if Int64.unsigned_compare o c <  0 then old else operand
+        | A_EOR -> old lxor operand
+        | A_SET -> old lor operand
+        | A_CLR -> old land (lnot operand)
     end
-    | LrSc | Swp | Cas  -> co
+    | LrSc | Swp | Cas  -> operand
     | AllAmo -> assert false
+end
 
 include
     ArchExtra_gen.Make
