@@ -809,9 +809,11 @@ let sequence_dp (d1,c1) (d2,c2) = match c1 with
   | OkCsel -> []
 
 (* Read-Modify-Write *)
+module RMW = struct
 type rmw =  LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas
 
-type rmw_atom = atom (* Enforced by Rmw.S signature *)
+type _atom = atom
+type atom = _atom
 
 let pp_aop op =  Misc.capitalize (Misc.lowercase (pp_aop op))
 
@@ -857,7 +859,7 @@ let ok_w  ar aw =
     -> true
   | _ -> false
 
-let same_mixed (a1:atom option) (a2:atom option) =
+let same_mixed a1 a2 =
   let a1 = get_access_atom a1
   and a2 = get_access_atom a2 in
   Misc.opt_eq MachMixed.equal a1 a2
@@ -975,6 +977,8 @@ let to_rmw_operand rmw init counter =
     end
     (* Fail back the default `init + counter` value *)
     | _ -> init + counter
+
+end
 
 include
     ArchExtra_gen.Make

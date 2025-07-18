@@ -37,6 +37,8 @@ module type S = sig
   type rmw
   type value = Value.v
 
+  module RMW : Atom.RMW with type atom = atom
+
   val pp_atom : atom -> string
   val tr_value : atom option -> value -> value
   val overwrite_value : value -> atom option -> value -> value
@@ -177,11 +179,12 @@ module
 with
 type fence = F.fence
 and type dp = F.dp
-and module SIMD = F.SIMD
 and type atom = F.atom
+and module SIMD = F.SIMD
 and module Value = F.Value
 and type value = F.Value.v
-and type rmw = F.rmw = struct
+and module RMW = F.RMW
+and type rmw = F.RMW.rmw = struct
   let ()  = ignore (Cfg.naturalsize)
   let do_self = Cfg.variant Variant_gen.Self
   let do_mixed = Variant_gen.is_mixed Cfg.variant
@@ -197,16 +200,17 @@ and type rmw = F.rmw = struct
 
   module SIMD = F.SIMD
   module Value = F.Value
+  module RMW = F.RMW
 
   type atom = F.atom
-  type rmw = F.rmw
+  type rmw = F.RMW.rmw
   type value = F.Value.v
 
   let compute_rmw rmw old operand =
-    Value.from_int @@ F.compute_rmw rmw (Value.to_int old) (Value.to_int operand)
+    Value.from_int @@ RMW.compute_rmw rmw (Value.to_int old) (Value.to_int operand)
   let to_rmw_operand rmw init counter =
-    Value.from_int @@ F.to_rmw_operand rmw (Value.to_int init) counter
-  let valid_rmw = F.valid_rmw
+    Value.from_int @@ RMW.to_rmw_operand rmw (Value.to_int init) counter
+  let valid_rmw = RMW.valid_rmw
 
   let pp_atom = F.pp_atom
   let tr_value = F.tr_value
@@ -270,7 +274,7 @@ and type rmw = F.rmw = struct
   let init_val e = match e.edge with
     (* In the case of rmw, `e.a1` must be equal to `e.a2`.
      Function `tr_value` ensure correct value in mixed size access. *)
-    | Rmw rmw -> F.init_rmw rmw |> Value.from_int |> tr_value e.a1
+    | Rmw rmw -> RMW.init_rmw rmw |> Value.from_int |> tr_value e.a1
     | _ -> Value.from_int 0
 
   open Printf
@@ -337,7 +341,7 @@ and type rmw = F.rmw = struct
     | Dp (dp,sd,e) -> sprintf "Dp%s%s%s"
           (F.pp_dp dp) (pp_sd sd) (pp_extr e)
     | Hat -> "Hat"
-    | Rmw rmw-> F.pp_rmw compat   rmw
+    | Rmw rmw-> F.RMW.pp_rmw compat rmw
     | Leave c -> sprintf "%sLeave" (pp_com c)
     | Back c -> sprintf "%sBack" (pp_com c)
     | Id -> "Id"
@@ -431,14 +435,14 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 
 let fold_tedges_compat f r =
   let r = fold_ie (fun ie -> f (Ws ie)) r in
-  let r = F.fold_rmw_compat (fun rmw -> f (Rmw rmw)) r
+  let r = F.RMW.fold_rmw_compat (fun rmw -> f (Rmw rmw)) r
   in r
 
 let fold_tedges f r =
   let r = fold_ie (fun ie -> f (Rf ie)) r in
   let r = fold_ie (fun ie -> f (Fr ie)) r in
   let r = fold_ie (fun ie -> f (Ws ie)) r in
-  let r = F.fold_rmw (fun rmw -> f (Rmw rmw)) r in
+  let r = F.RMW.fold_rmw (fun rmw -> f (Rmw rmw)) r in
   let r = fold_sd_extr_extr (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
   let r = F.fold_all_fences (fun fe -> f (Insert fe)) r in
   let r = f Store r in
@@ -476,7 +480,7 @@ let fold_tedges f r =
   (* For rmw instruction any accesses is a priori.
      However identical accesses are forced for rmw instructions *)
   let ok_rmw rmw a1 a2 =
-    not (F.is_one_instruction rmw) || same_access_atoms a1 a2
+    not (F.RMW.is_one_instruction rmw) || same_access_atoms a1 a2
 
   let ok_non_rmw e a1 a2 =
     do_is_diff e || do_disjoint ||
@@ -502,7 +506,7 @@ let fold_tedges f r =
                (fun te k ->
                  match te with
                  | Rmw rmw -> (* Allowed source and target atomicity for rmw *)
-                     if F.applies_atom_rmw rmw a1 a2 then begin
+                     if F.RMW.applies_atom_rmw rmw a1 a2 then begin
                        let e =  {a1; a2; edge=te;} in
                        f e k
                      end else k

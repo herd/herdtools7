@@ -231,12 +231,14 @@ let pp_dp = function
 
 
 (* Read-Modify-Write *)
+module RMW = struct
 type rmw =
   | Exch
   | Add
 
-type rmw_atom = atom
-type rmw_value = Value.v
+type _atom = atom
+type atom = _atom
+type value = Value.v
 
 let pp_rmw compat = function
   | Exch -> if compat then "Rmw" else "Exch"
@@ -278,3 +280,4 @@ let compute_rmw rmw old co =
 let valid_rmw _ = true
 let init_rmw _ = 0
 let to_rmw_operand _ _ counter = counter
+end
