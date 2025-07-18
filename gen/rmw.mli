@@ -14,19 +14,15 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Signature of Rmw helper modules *)
+(** No rmw instruction *)
+module No(A:sig type atom type value end) :
+  Atom.RMW with type rmw = unit and type atom = A.atom and type value = A.value
 
-module type S = sig
-  type rmw
-  type rmw_atom
-  type rmw_value
+(** The only RMW is exchange *)
+(* Implemented as load reserve store conditional *)
+module LxSx(A:sig type atom type value end) :
+  Rmw.S with type rmw = unit and type atom = A.atom and type value = A.value
 
-  val pp_rmw : bool (* backward compatibility *) -> rmw -> string
-  val is_one_instruction : rmw -> bool
-  val fold_rmw : (rmw -> 'a -> 'a) -> 'a -> 'a
-  (* Second round of fold, for rmw with back compatible name *)
-  val fold_rmw_compat : (rmw -> 'a -> 'a) -> 'a -> 'a
-  val applies_atom_rmw : rmw -> rmw_atom option -> rmw_atom option -> bool
-  val show_rmw_reg : rmw -> bool
-  val compute_rmw : rmw  -> rmw_value -> rmw_value -> rmw_value
-end
+(* Implemented as exchange instruction *)
+module Exch(A:sig type atom type value end) :
+  Rmw.S with type rmw = unit and type atom = A.atom and type value = A.value

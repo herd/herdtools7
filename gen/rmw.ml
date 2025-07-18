@@ -15,11 +15,10 @@
 (****************************************************************************)
 
 (** No rmw instruction *)
-
-module Make(A:sig type arch_atom type rmw_value end) = struct
-  type rmw
-  type rmw_atom = A.arch_atom
-  type rmw_value = A.rmw_value
+module No(A:sig type atom type value end) = struct
+  type rmw = unit
+  type atom = A.atom
+  type value = A.value
 
   let pp_rmw _ _ = assert false
   let is_one_instruction _ = assert false
@@ -28,4 +27,54 @@ module Make(A:sig type arch_atom type rmw_value end) = struct
   let applies_atom_rmw _ _ _ = assert false
   let show_rmw_reg _ = assert false
   let compute_rmw _ _ _ = assert false
+end
+
+(** The only RMW is exchange *)
+module
+  Make
+    (I:
+      sig
+        type atom
+        type value
+        val pp : string
+        val is_one_instruction : bool
+      end) =
+  struct
+    type rmw = unit
+    type atom = I.atom
+    type value = I.value
+
+    let pp_rmw compat () = if compat then "Rmw" else I.pp
+
+    let is_one_instruction _ = I.is_one_instruction
+
+    let fold_rmw f r = f () r
+    let fold_rmw_compat f r = f () r
+
+    let applies_atom_rmw () ar aw = match ar,aw with
+      | None,None -> true
+      | _,_ -> false
+
+    let show_rmw_reg () = false
+
+    let compute_rmw () _old co_cell  = co_cell
+  end
+
+module LxSx(A:sig type atom type value end) = struct
+  include Make
+    (struct
+      type atom = A.atom
+      type value = A.value
+      let pp = "LxSx"
+      let is_one_instruction = false
+    end)
+end
+module Exch(A:sig type atom type value end) = struct
+  include Make
+    (struct
+      type atom = A.atom
+      type value = A.value
+      let pp = "Exch"
+      let is_one_instruction = true
+    end)
 end

@@ -25,6 +25,21 @@ module type SIMD = sig
     val reduce: int list list -> int
 end
 
+module type RMW = sig
+  type rmw
+  type atom
+  type value
+
+  val pp_rmw : bool (* backward compatibility *) -> rmw -> string
+  val is_one_instruction : rmw -> bool
+  val fold_rmw : (rmw -> 'a -> 'a) -> 'a -> 'a
+  (* Second round of fold, for rmw with back compatible name *)
+  val fold_rmw_compat : (rmw -> 'a -> 'a) -> 'a -> 'a
+  val applies_atom_rmw : rmw -> atom option -> atom option -> bool
+  val show_rmw_reg : rmw -> bool
+  val compute_rmw : rmw  -> value -> value -> value
+end
+
 module type S = sig
   val bellatom : bool (* true if bell style atoms *)
 
@@ -32,6 +47,7 @@ module type S = sig
 
 (* SIMD writes and reads *)
   module SIMD : SIMD
+  module RMW : RMW
   module Value : Value.S with type pte_atom = atom
 
   val default_atom : atom
