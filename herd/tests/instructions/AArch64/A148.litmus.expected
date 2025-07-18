@@ -1,0 +1,10 @@
+Test A148 Required
+States 1
+x[0]=0; x[1]=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x[0]=0 /\ x[1]=1)
+Observation A148 Always 1 0
+Hash=1ba42cef3307057b0ee0884acc7bf720
+
