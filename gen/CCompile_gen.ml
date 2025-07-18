@@ -166,13 +166,13 @@ module Make(O:Config) : Builder.S
       let exch_from rmw omo omo_w loc v = match omo,omo_w with
       | (None,_)|(_, None) -> Warn.fatal "Non atomic RMW"
       | Some _,Some _ ->
-          match A.tr_atom_rmw omo omo_w with
+          match A.RMW.tr_atom_rmw omo omo_w with
           | Some mo ->
               begin
                 match rmw.E.edge with
-                | E.Rmw A.Exch ->
+                | E.Rmw A.RMW.Exch ->
                     A.AtomicExch (mo,A.Load loc,v)
-                | E.Rmw A.Add ->
+                | E.Rmw A.RMW.Add ->
                     A.AtomicFetchOp (mo,A.Load loc,v)
                 | _ -> assert false
               end

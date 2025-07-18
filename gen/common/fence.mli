@@ -60,8 +60,4 @@ module type S = sig
 
 (* Expand wildcard `*` *)
   val expand_dp_dir: dp -> dir list
-
-(* Read-Modify-Write *)
-  include Rmw.S with type rmw_atom = atom
-
 end

@@ -80,11 +80,6 @@ let pp_dp = function
   | CTRL -> "Ctrl"
   | CTRLISYNC -> "CtrlIsb"
 
-(*******)
-(* RWM *)
-(*******)
-include Exch.LxSx(struct type arch_atom = atom end)
-
   include
     ArchExtra_gen.Make
     (struct
