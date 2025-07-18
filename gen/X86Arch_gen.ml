@@ -113,7 +113,7 @@ let sequence_dp _ _ = assert false
 (* RWM *)
 (*******)
 
-include Exch.Exch(struct type arch_atom = atom end)
+module RMW = Rmw.Exch(struct type arch_atom = atom end)
 
 include
     ArchExtra_gen.Make

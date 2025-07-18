@@ -14,11 +14,14 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** No rmw instruction *)
+module type RmwType = sig
+  type arch_atom
+end
 
-module Make(A:sig type arch_atom end) = struct
-  type rmw
-  type rmw_atom = A.arch_atom
+(** No rmw instruction *)
+module No(A:RmwType) = struct
+  type rmw = unit
+  type atom = A.arch_atom
 
   let pp_rmw _ _ = assert false
   let is_one_instruction _ = assert false
@@ -28,6 +31,55 @@ module Make(A:sig type arch_atom end) = struct
   let show_rmw_reg _ = assert false
   let compute_rmw _ _ _ = assert false
   let valid_rmw _ = assert false
-  let init_rmw _ = assert false
+  let init_rmw _  = assert false
   let to_rmw_operand _ _ _ = assert false
+end
+
+(** The only RMW is exchange *)
+module
+  Make
+    (I:
+      sig
+        include RmwType
+        val pp : string
+        val is_one_instruction : bool
+      end) =
+  struct
+    type rmw = unit
+    type atom = I.arch_atom
+
+    let pp_rmw compat () = if compat then "Rmw" else I.pp
+
+    let is_one_instruction _ = I.is_one_instruction
+
+    let fold_rmw f r = f () r
+    let fold_rmw_compat f r = f () r
+
+    let applies_atom_rmw () ar aw = match ar,aw with
+      | None,None -> true
+      | _,_ -> false
+
+    let show_rmw_reg () = false
+
+    let compute_rmw () _old co_cell  = co_cell
+    let valid_rmw _ = true
+    let init_rmw _  = 0
+    let to_rmw_operand _ _ counter = counter
+  end
+
+module LxSx(A:RmwType) = struct
+  include Make
+    (struct
+      type arch_atom = A.arch_atom
+      let pp = "LxSx"
+      let is_one_instruction = false
+    end)
+end
+module Exch(A:RmwType) = struct
+  include Make
+    (struct
+      type arch_atom = A.arch_atom
+      let pp = "Exch"
+      let is_one_instruction = true
+    end)
 end

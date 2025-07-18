@@ -37,7 +37,7 @@ end
 module Make
     (A:Fence.S)
     (E:Edge.S with
-     type dp = A.dp and type fence=A.fence and type atom = A.atom and type rmw = A.rmw) : S with type edge = E.edge = struct
+     type dp = A.dp and type fence=A.fence and type atom = A.atom and type rmw = A.RMW.rmw) : S with type edge = E.edge = struct
 
        type edge = E.edge
 
@@ -60,7 +60,7 @@ module Make
          | Fr Ext -> Some "fre"
          | Rmw rmw ->
             (* Note: backward compatible item ("rmw") in names *)
-            Some (Misc.lowercase (A.pp_rmw true rmw))
+            Some (Misc.lowercase (A.RMW.pp_rmw true rmw))
          | Leave c -> Some ("["^pp_com c)
          | Back c -> Some (pp_com c^"]")
          | Insert f -> Some (sprintf "[%s]" (Misc.lowercase (A.pp_fence f)))
