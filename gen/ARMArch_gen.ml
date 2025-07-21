@@ -83,8 +83,6 @@ let pp_dp = function
 (*******)
 (* RWM *)
 (*******)
-include NoEdge
-
   include
     ArchExtra_gen.Make
     (struct
