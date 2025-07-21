@@ -1211,7 +1211,8 @@ let do_set_read_v init =
     (fun ns k -> match ns with
     | [] -> k
     | n::_  ->
-        let init = List.assoc_opt (Code.as_data n.evt.loc) initvals
+        let init = if not (Code.is_data n.evt.loc) then 0
+                 else List.assoc_opt (Code.as_data n.evt.loc) initvals
                   |> Option.map Code.value_to_int
                   |> Option.value ~default:0 in
         let vf = do_set_read_v init ns in
