@@ -95,7 +95,7 @@ module Make(O:Config) (M:Builder.S) =
         | Some s -> fun n -> n ^ s
       in
       if O.norm then
-        let module Namer = Namer.Make(M.A)(M.E) in
+        let module Namer = Namer.Make(M.A)(M.A)(M.E) in
         fun _name es ->
 	  let es = M.E.resolve_edges es in
           let es,_ = M.C.resolve_edges es in

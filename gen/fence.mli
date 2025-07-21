@@ -25,10 +25,6 @@ module type Edge = sig
 end
 
 module type S = sig
-(* Atoms *)
-  include Atom.S
-
-(* Fences *)
   type fence
 
   val is_isync : fence -> bool

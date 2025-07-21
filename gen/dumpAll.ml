@@ -90,7 +90,7 @@ module Make(Config:Config)(T:Builder.S)
             let n = try Env.find base env with Not_found -> 0 in
             add_suffix (mk_fmt base n),Env.add base (n+1) env
         else
-          let module Namer = Namer.Make(T.A)(T.E) in
+          let module Namer = Namer.Make(T.A)(T.A)(T.E) in
           fun env base es -> add_suffix (Namer.mk_name base es),env
 
       exception DupName of string
