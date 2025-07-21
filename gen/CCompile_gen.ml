@@ -57,7 +57,7 @@ module Make(O:Config) : Builder.S
             let naturalsize = TypBase.get_size O.typ
             let wildcard = O.wildcard
           end)
-          (A)
+          (A)(A)
 
       let () = match O.show with
       | Some s -> begin E.show s ; exit 0 end

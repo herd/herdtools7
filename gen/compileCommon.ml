@@ -64,7 +64,7 @@ module Make(C:Config) (A:Arch_gen.S) = struct
         let naturalsize = TypBase.get_size C.typ
         let wildcard = C.wildcard
       end)
-      (A)
+      (A)(A)
 
   type check = E.edge list list -> bool
 

@@ -23,9 +23,9 @@ let arch = ref `PPC
 
 let opts = [Util.arch_opt arch]
 
-module Make (A:Fence.S) =
+module Make (F:Fence.S)(A:Atom.S) =
     struct
-      module E = Edge.Make(Edge.Config)(A)
+      module E = Edge.Make(Edge.Config)(F)(A)
 
       let is_atom es =
         List.exists
@@ -37,7 +37,7 @@ module Make (A:Fence.S) =
         List.for_all
           (fun e -> match e with
           | {E.edge=E.Po _; a1=None; a2=None; _} -> false
-          | {E.edge=E.Fenced (f,_,_,_); _ } -> not (A.is_isync f)
+          | {E.edge=E.Fenced (f,_,_,_); _ } -> not (F.is_isync f)
           | _ -> true)
           es
 
@@ -78,35 +78,33 @@ let () =
     (fun _ -> raise (Arg.Bad "No argument"))
 
 let () =
-  (match !arch with
-  | `X86 ->
-      let module M = Make(X86Arch_gen) in
-      M.zyva
-  | `X86_64 -> assert false
-  | `PPC ->
-      let module M = Make(PPCArch_gen.Make(PPCArch_gen.Config)) in
-      M.zyva
-  | `ARM ->
-      let module M = Make(ARMArch_gen.Make(ARMArch_gen.Config)) in
-      M.zyva
-  | `AArch64 ->
-      let module M = Make(AArch64Arch_gen.Make(AArch64Arch_gen.Config)) in
-      M.zyva
-  | `MIPS ->
-      let module M = Make(MIPSArch_gen.Make(MIPSArch_gen.Config)) in
-      M.zyva
- | `RISCV ->
-      let module M = Make(RISCVArch_gen.Make(RISCVArch_gen.Config)) in
-      M.zyva
-  | `LISA ->
-      let module BellConfig = Config.ToLisa(Config) in
-      let module M = Make(BellArch_gen.Make(BellConfig)) in
-      M.zyva
-  | `C ->
-      let module M = Make(CArch_gen) in
-      M.zyva
-  | `ASL -> Warn.fatal "ASL arch in atoms"
-  | `CPP -> Warn.fatal "CCP arch in atoms"
-  | `BPF -> Warn.fatal "BPF arch in atoms"
-  | `JAVA -> Warn.fatal "JAVA arch in atoms")
-     ()
+  let (module FenceImpl:Fence.S), (module AtomImpl:Atom.S) =
+    match !arch with
+    | `X86 -> (module X86Arch_gen),(module X86Arch_gen)
+    | `X86_64 -> assert false
+    | `PPC ->
+        let module M = PPCArch_gen.Make(PPCArch_gen.Config) in
+        (module M),(module M)
+    | `ARM ->
+        let module M = ARMArch_gen.Make(ARMArch_gen.Config) in
+        (module M),(module M)
+    | `AArch64 ->
+        let module M = AArch64Arch_gen.Make(AArch64Arch_gen.Config) in
+        (module M),(module M)
+    | `MIPS ->
+        let module M = MIPSArch_gen.Make(MIPSArch_gen.Config) in
+        (module M),(module M)
+    | `RISCV ->
+        let module M = RISCVArch_gen.Make(RISCVArch_gen.Config) in
+        (module M),(module M)
+    | `LISA ->
+        let module BellConfig = Config.ToLisa(Config) in
+        let module M = BellArch_gen.Make(BellConfig) in
+        (module M),(module M)
+    | `C -> (module CArch_gen),(module CArch_gen)
+    | `ASL -> Warn.fatal "ASL arch in atoms"
+    | `BPF -> Warn.fatal "BPF arch in atoms"
+    | `CPP -> Warn.fatal "CPP arch in atoms"
+    | `JAVA -> Warn.fatal "JAVA arch in atoms" in
+  let module M = Make(FenceImpl)(AtomImpl) in
+  M.zyva ()

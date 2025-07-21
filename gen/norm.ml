@@ -62,10 +62,10 @@ module type Config = sig
   val wildcard : bool
 end
 
-module Make(Co:Config) (A:Fence.S) = struct
-  module E = Edge.Make(Co)(A)
-  module R = Relax.Make(A)(E)
-  module N = Namer.Make(A)(E)
+module Make(Co:Config)(F:Fence.S)(A:Atom.S) = struct
+  module E = Edge.Make(Co)(F)(A)
+  module R = Relax.Make(F)(E)
+  module N = Namer.Make(F)(A)(E)
   module Norm = Normaliser.Make(Co)(E)
 
 
@@ -100,39 +100,35 @@ let () =
     let naturalsize = TypBase.get_size !typ
     let wildcard = false
   end in
-  let module Build = Make(Co) in
-  (match !arch with
-  | `X86 ->
-      let module M = Build(X86Arch_gen) in
-      M.zyva
-  | `X86_64 -> assert false
-  | `PPC ->
-      let module M = Build(PPCArch_gen.Make(PPCArch_gen.Config)) in
-      M.zyva
-  | `ARM ->
-      let module M = Build(ARMArch_gen.Make(ARMArch_gen.Config)) in
-      M.zyva
-  | `AArch64 ->
-      let module A =
+  let (module FenceImpl:Fence.S), (module AtomImpl:Atom.S) =
+    match !arch with
+    | `X86 -> (module X86Arch_gen),(module X86Arch_gen)
+    | `X86_64 -> assert false
+    | `PPC ->
+        let module M = PPCArch_gen.Make(PPCArch_gen.Config) in
+        (module M),(module M)
+    | `ARM ->
+        let module M = ARMArch_gen.Make(ARMArch_gen.Config) in
+        (module M),(module M)
+    | `AArch64 ->
+      let module M =
         AArch64Arch_gen.Make
           (struct
             include AArch64Arch_gen.Config
             let moreedges = !Config.moreedges
           end) in
-      let module M = Build(A) in
-      M.zyva
-  | `MIPS ->
-      let module M = Build(MIPSArch_gen.Make(MIPSArch_gen.Config)) in
-      M.zyva
-  | `RISCV ->
-      let module M = Build(RISCVArch_gen.Make(RISCVArch_gen.Config)) in
-      M.zyva
-  | `LISA ->
-      let module BellConfig = Config.ToLisa(Config) in
-      let module M = Build(BellArch_gen.Make(BellConfig)) in
-      M.zyva
-  | `C | `CPP ->
-      let module M = Build(CArch_gen) in
-      M.zyva
-  | `JAVA | `ASL | `BPF -> assert false)
-    args
+        (module M),(module M)
+    | `MIPS ->
+        let module M = MIPSArch_gen.Make(MIPSArch_gen.Config) in
+        (module M),(module M)
+    | `RISCV ->
+        let module M = RISCVArch_gen.Make(RISCVArch_gen.Config) in
+        (module M),(module M)
+    | `LISA ->
+        let module BellConfig = Config.ToLisa(Config) in
+        let module M = BellArch_gen.Make(BellConfig) in
+        (module M),(module M)
+    | `C | `CPP -> (module CArch_gen),(module CArch_gen)
+    | `JAVA | `ASL | `BPF -> assert false in
+  let module M = Make(Co)(FenceImpl)(AtomImpl) in
+  M.zyva args
