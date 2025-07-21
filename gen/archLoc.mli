@@ -19,6 +19,7 @@ module type S = sig
   type arch_reg
   module ScopeGen : ScopeGen.S
   include Fence.S
+  include Atom.S
   type location
   val of_loc : Code.loc -> location
   val of_reg : Code.proc -> arch_reg -> location

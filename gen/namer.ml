@@ -35,9 +35,10 @@ module type S = sig
 end
 
 module Make
-    (A:Fence.S)
+    (F:Fence.S)
+    (A:Atom.S)
     (E:Edge.S with
-     type dp = A.dp and type fence=A.fence and type atom = A.atom) : S with type edge = E.edge = struct
+     type dp = F.dp and type fence=F.fence and type atom = A.atom) : S with type edge = E.edge = struct
 
        type edge = E.edge
 
@@ -45,13 +46,17 @@ module Make
        open E
 
        let pp_com c = Misc.lowercase (pp_com c)
+       let pp_fence = F.pp_fence
+       let pp_dp = F.pp_dp
+       let pp_atom = A.pp_atom
+
        let edge_name = function
          | Po (Same,_,_) -> Some "pos"
          | Po (Diff,_,_) -> Some "po"
-         | Fenced (f,Same,_,_) -> Some (Misc.lowercase (A.pp_fence f) ^ "s")
-         | Fenced (f,Diff,_,_) -> Some (Misc.lowercase (A.pp_fence f))
-         | Dp (dp,Same,_) -> Some (Misc.lowercase (A.pp_dp dp) ^ "s")
-         | Dp (dp,Diff,_) -> Some (Misc.lowercase (A.pp_dp dp))
+         | Fenced (f,Same,_,_) -> Some (Misc.lowercase (pp_fence f) ^ "s")
+         | Fenced (f,Diff,_,_) -> Some (Misc.lowercase (pp_fence f))
+         | Dp (dp,Same,_) -> Some (Misc.lowercase (pp_dp dp) ^ "s")
+         | Dp (dp,Diff,_) -> Some (Misc.lowercase (pp_dp dp))
          | Rf Int -> Some "rfi"
          | Ws Int -> Some "coi"
          | Fr Int -> Some "fri"
@@ -63,7 +68,7 @@ module Make
             Some (Misc.lowercase (E.RMW.pp_rmw true rmw))
          | Leave c -> Some ("["^pp_com c)
          | Back c -> Some (pp_com c^"]")
-         | Insert f -> Some (sprintf "[%s]" (Misc.lowercase (A.pp_fence f)))
+         | Insert f -> Some (sprintf "[%s]" (Misc.lowercase (pp_fence f)))
          | Store -> Some "store"
          | Node _ -> assert false
          | _ -> None
@@ -87,7 +92,7 @@ module Make
 
        let atom_name = function
          | None ->  plain
-         | Some a -> Misc.lowercase (A.pp_atom a)
+         | Some a -> Misc.lowercase (pp_atom a)
 
        let atoms_name a1 a2 = match a1,a2 with
        | None,None -> ""
@@ -113,7 +118,7 @@ module Make
        let rec count_a = function
          | {edge=(Rf Ext|Fr Ext|Ws Ext); a2=Some a; _}::
            ({edge=(Rf Ext|Fr Ext|Ws Ext);a1=Some _; _}::_ as es) ->
-             A.pp_atom a::count_a es
+             pp_atom a::count_a es
          | {edge=(Rf Ext|Fr Ext|Ws Ext); a2=None; _}::
            ({edge=(Rf Ext|Fr Ext|Ws Ext);a1=None; _}::_ as es) ->
              Code.plain::count_a es
@@ -124,7 +129,7 @@ module Make
          | {edge=(Rf Ext|Fr Ext|Ws Ext);a1=Some a; _}::_ as es ->
              begin match Misc.last es with
              | {edge=(Rf Ext|Fr Ext|Ws Ext);a2=Some _; _} ->
-                 [A.pp_atom a]
+                 [pp_atom a]
              | _ -> []
              end
          | {edge=(Rf Ext|Fr Ext|Ws Ext);a1=None; _}::_ as es ->

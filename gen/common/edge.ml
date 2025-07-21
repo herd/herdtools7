@@ -31,14 +31,10 @@ module type S = sig
   type fence
   type dp
 
-  module SIMD : Atom.SIMD
+  include Atom.AtomType
 
-  type atom
-  module Value : Value_gen.S with type atom = atom
-  type value = Value.v
   val wildcard : bool
-
-  module RMW : Atom.RMW with type atom = atom
+  type value = Value.v
 
   val pp_atom : atom -> string
   val tr_value : atom option -> value -> value
@@ -169,15 +165,16 @@ module
          val naturalsize : MachSize.sz
          val wildcard : bool
        end)
-    (F:Fence.S) : S
+    (F:Fence.S)
+    (A:Atom.S): S
 with
 type fence = F.fence
 and type dp = F.dp
-and type atom = F.atom
-and module SIMD = F.SIMD
-and module Value = F.Value
-and type value = F.Value.v
-and module RMW = F.RMW = struct
+and type atom = A.atom
+and module SIMD = A.SIMD
+and module Value = A.Value
+and type value = A.Value.v
+and module RMW = A.RMW = struct
   let ()  = ignore (Cfg.naturalsize)
   let do_self = Cfg.variant Variant_gen.Self
   let do_mixed = Variant_gen.is_mixed Cfg.variant
@@ -192,34 +189,34 @@ and module RMW = F.RMW = struct
   type fence = F.fence
   type dp = F.dp
 
-  module SIMD = F.SIMD
-  module Value = F.Value
-  module RMW = F.RMW
+  type atom = A.atom
+  module Value = A.Value
+  module SIMD = A.SIMD
+  module RMW = A.RMW
 
-  type atom = F.atom
-  type value = F.Value.v
+  type value = A.Value.v
 
   let compute_rmw rmw old operand =
     Value.from_int @@ RMW.compute_rmw rmw ~old:(Value.to_int old) ~operand:(Value.to_int operand)
 
-  let pp_atom = F.pp_atom
-  let tr_value = F.tr_value
-  let overwrite_value = F.overwrite_value
-  let extract_value = F.extract_value
+  let pp_atom = A.pp_atom
+  let tr_value = A.tr_value
+  let overwrite_value = A.overwrite_value
+  let extract_value = A.extract_value
   let set_pteval ao p = match ao with
   | None -> fun _ -> p
-  | Some a -> F.Value.set_pteval a p
+  | Some a -> A.Value.set_pteval a p
 
   let applies_atom ao d = match ao,d with
   | (None,_)|(_,(Irr|NoDir)) -> true
-  | Some a,Dir d -> F.applies_atom a d
+  | Some a,Dir d -> A.applies_atom a d
 
-  let merge_atoms = F.merge_atoms
-  let is_ifetch = F.is_ifetch
+  let merge_atoms = A.merge_atoms
+  let is_ifetch = A.is_ifetch
 
   let atom_to_bank = function
     | None -> Ord
-    | Some a -> F.atom_to_bank a
+    | Some a -> A.atom_to_bank a
 
   let strong = F.strong
   let pp_fence = F.pp_fence
@@ -270,9 +267,12 @@ and module RMW = F.RMW = struct
 
   let plain_edge e = { a1=None; a2=None; edge=e; }
 
+  let pp_as_a = A.pp_as_a
+  let pp_plain = A.pp_plain
+
   let pp_atom_option = function
-    | None -> F.pp_plain
-    | Some a -> F.pp_atom a
+    | None -> pp_plain
+    | Some a -> pp_atom a
 
   let pp_one_or_two pp_a e a1 a2 = match e with
   | Id -> pp_a a1
@@ -283,10 +283,10 @@ and module RMW = F.RMW = struct
   | _,_ -> pp_one_or_two pp_atom_option e a1 a2
 
   let pp_a_ter = function
-    | None -> F.pp_plain
+    | None -> pp_plain
     | Some a as ao ->
-        if ao = F.pp_as_a then "A"
-        else F.pp_atom a
+        if ao = pp_as_a then "A"
+        else pp_atom a
 
   let pp_aa_ter e a1 a2 = match a1,a2 with
   | None,None  when not (is_id e) -> ""
@@ -304,16 +304,16 @@ and module RMW = F.RMW = struct
     | Po (sd,e1,e2) ->
       sprintf "Po%s%s%s" (pp_sd sd) (pp_extr e1) (pp_extr e2)
     | Fenced (f,sd,e1,e2) ->
-      sprintf "%s%s%s%s" (F.pp_fence f) (pp_sd sd) (pp_extr e1) (pp_extr e2)
+      sprintf "%s%s%s%s" (pp_fence f) (pp_sd sd) (pp_extr e1) (pp_extr e2)
     | Dp (dp,UnspecLoc,Irr) -> sprintf "Dp%s" (F.pp_dp dp)
     | Dp (dp,sd,e) ->
       sprintf "Dp%s%s%s"(F.pp_dp dp) (pp_sd sd) (pp_extr e)
     | Hat -> "Hat"
-    | Rmw rmw-> F.RMW.pp_rmw compat rmw
+    | Rmw rmw-> RMW.pp_rmw compat rmw
     | Leave c -> sprintf "%sLeave" (pp_com c)
     | Back c -> sprintf "%sBack" (pp_com c)
     | Id -> "Id"
-    | Insert f -> F.pp_fence f
+    | Insert f -> pp_fence f
     | Store -> "Store"
     | Node W -> "Write"
     | Node R -> "Read"
@@ -338,7 +338,7 @@ and module RMW = F.RMW = struct
 
   let pp_edge e = pp_edge_with_xx false e
 
-  let compare_atomo = Option.compare F.compare_atom
+  let compare_atomo = Option.compare A.compare_atom
 
   let compare e1 e2 = match compare_atomo e1.a1 e2.a1 with
   | 0 ->
@@ -396,14 +396,14 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 
 let fold_tedges_compat f r =
   let r = fold_ie wildcard (fun ie -> f (Ws ie)) r in
-  let r = F.RMW.fold_rmw_compat (fun rmw -> f (Rmw rmw)) r
+  let r = RMW.fold_rmw_compat (fun rmw -> f (Rmw rmw)) r
   in r
 
 let fold_tedges f r =
   let r = fold_ie wildcard (fun ie -> f (Rf ie)) r in
   let r = fold_ie wildcard (fun ie -> f (Fr ie)) r in
   let r = fold_ie wildcard (fun ie -> f (Ws ie)) r in
-  let r = F.RMW.fold_rmw wildcard (fun rmw -> f (Rmw rmw)) r in
+  let r = RMW.fold_rmw wildcard (fun rmw -> f (Rmw rmw)) r in
   let r = fold_sd_extr_extr wildcard (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
   let r = F.fold_all_fences (fun fe -> f (Insert fe)) r in
   let r = f Store r in
@@ -429,22 +429,24 @@ let fold_tedges f r =
   let r = fold_com (fun c r -> f (Back c) r) r in
   r
 
-  let fold_atomo f k = f None (F.fold_atom (fun a k -> f  (Some a) k) k)
-  let fold_mixed f k = F.fold_mixed (fun a k -> f  (Some a) k) k
+  let fold_atomo f k = f None (A.fold_atom (fun a k -> f  (Some a) k) k)
+  let fold_mixed f k = A.fold_mixed (fun a k -> f  (Some a) k) k
   let fold_atomo_list aos f k = List.fold_right (fun a k -> f a k) aos k
 
   let overlap_atoms a1 a2 =
     match a1,a2 with
     | (None,_)|(_,None) -> true
-    | Some a1,Some a2 -> F.overlap_atoms a1 a2
+    | Some a1,Some a2 -> A.overlap_atoms a1 a2
+
+  let get_access_atom = A.get_access_atom
 
   let same_access_atoms a1 a2 =
-    Misc.opt_eq MachMixed.equal (F.get_access_atom a1) (F.get_access_atom a2)
+    Misc.opt_eq MachMixed.equal (get_access_atom a1) (get_access_atom a2)
 
   (* For rmw instruction any accesses is a priori.
      However identical accesses are forced for rmw instructions *)
   let ok_rmw rmw a1 a2 =
-    not (F.RMW.is_one_instruction rmw) || same_access_atoms a1 a2
+    not (RMW.is_one_instruction rmw) || same_access_atoms a1 a2
 
   let ok_non_rmw e a1 a2 =
     (* `do_is_diff` is safe to call when `e` is not
@@ -473,15 +475,15 @@ let fold_tedges f r =
                (fun te k ->
                  match te with
                  | Rmw rmw -> (* Allowed source and target atomicity for rmw *)
-                     if F.RMW.applies_atom_rmw rmw a1 a2 then begin
+                     if RMW.applies_atom_rmw rmw a1 a2 then begin
                        let e =  {a1; a2; edge=te;} in
                        f e k
                      end else k
                  | Id -> begin
                      match a1,a2 with
                      | Some x1,Some x2 when
-                         F.compare_atom x1 x2=0
-                         && not (F.is_ifetch a1) ->
+                         A.compare_atom x1 x2=0
+                         && not (is_ifetch a1) ->
                          f { a1; a2;edge=te; } k
                      | None,None ->
                          let e =  { a1; a2;edge=te; } in
@@ -501,8 +503,8 @@ let fold_tedges f r =
                      if
                        applies_atom a1 d1 &&
                        applies_atom a2 d2 &&
-                       (Misc.is_none (F.get_access_atom a1) &&
-                        Misc.is_none (F.get_access_atom a2)||
+                       (Misc.is_none (get_access_atom a1) &&
+                        Misc.is_none (get_access_atom a2)||
                        ok_non_rmw te a1 a2)
                      then
                        f {a1; a2; edge=te;} k
@@ -545,7 +547,7 @@ let fold_tedges f r =
       let old = Hashtbl.find ta lxm in
       assert (compare_atomo old a = 0) ;
     with Not_found ->
-      if not (F.is_ifetch a) then Hashtbl.add ta lxm a
+      if not (is_ifetch a) then Hashtbl.add ta lxm a
 
   let () = iter_atom (fun a -> add_lxm_atom (pp_atom_option a) a)
 
@@ -595,7 +597,7 @@ let fold_tedges f r =
     iter_edges
       (fun e -> match e.a1,e.a2 with
       | (None,(Some _ as a))
-      | ((Some _ as a),None) when a = F.pp_as_a ->
+      | ((Some _ as a),None) when a = pp_as_a ->
           add_lxm_edge (pp_edge_with_a compat e) e
       | _,_ -> ())
 
@@ -625,13 +627,14 @@ let fold_tedges f r =
 (*Co aka Ws and LxSx aka Rmw*)
    four_times_iter_edges true (Misc.fold_to_iter (do_fold_edges fold_tedges_compat));
 (* Backward compatibility *)
-    if do_self && F.instr_atom != None then
+    let instr_atom = A.instr_atom in
+    if do_self && instr_atom != None then
       iter_ie
         (fun ie ->
-           add_lxm_edge (sprintf "Iff%s" (pp_ie ie)) { a1=None; a2=F.instr_atom; edge=(Rf ie); } ;
-           add_lxm_edge (sprintf "Irf%s" (pp_ie ie)) { a1=None; a2=F.instr_atom; edge=(Rf ie); } ;
-           add_lxm_edge (sprintf "Fif%s" (pp_ie ie)) { a1=F.instr_atom; a2=None; edge=(Fr ie); } ;
-           add_lxm_edge (sprintf "Ifr%s" (pp_ie ie)) { a1=F.instr_atom; a2=None; edge=(Fr ie); });
+           add_lxm_edge (sprintf "Iff%s" (pp_ie ie)) { a1=None; a2=instr_atom; edge=(Rf ie); } ;
+           add_lxm_edge (sprintf "Irf%s" (pp_ie ie)) { a1=None; a2=instr_atom; edge=(Rf ie); } ;
+           add_lxm_edge (sprintf "Fif%s" (pp_ie ie)) { a1=instr_atom; a2=None; edge=(Fr ie); } ;
+           add_lxm_edge (sprintf "Ifr%s" (pp_ie ie)) { a1=instr_atom; a2=None; edge=(Fr ie); });
     ()
 
   let fold_pp_edges f =
@@ -644,7 +647,7 @@ let fold_tedges f r =
 
   let fences_pp =
     F.fold_all_fences
-      (fun f k -> (F.pp_fence f,f)::k)
+      (fun f k -> (pp_fence f,f)::k)
       []
 
   let parse_fence s =
@@ -690,9 +693,9 @@ let fold_tedges f r =
   | Leave _|Back _ -> LeaveBack
   | _ -> IE (get_ie e)
 
-  let as_integers e = F.as_integers e.a1
+  let as_integers e = A.as_integers e.a1
 
-  let is_pair e = F.is_pair e.a1
+  let is_pair e = A.is_pair e.a1
 
   let can_precede_dirs  x y = match x.edge,y.edge with
   | (Store,Store) -> false
@@ -719,7 +722,7 @@ let fold_tedges f r =
   | Fr _ -> is_ifetch e.a1
   | _ -> is_ifetch e.a1 || ( loc_sd e = Same && is_ifetch e.a2)
 
-  let compat_atoms a1 a2 = match F.merge_atoms a1 a2 with
+  let compat_atoms a1 a2 = match merge_atoms a1 a2 with
   | None -> false
   | Some _ -> true
 
@@ -765,7 +768,7 @@ let fold_tedges f r =
     | Fr com -> expand_com com ( fun new_com -> f {e with edge = Fr(new_com)}) acc
     | Ws com -> expand_com com ( fun new_com -> f {e with edge = Ws(new_com)}) acc
     | Rmw rmw ->
-        let expand_rmw_list = F.RMW.expand_rmw rmw in
+        let expand_rmw_list = A.RMW.expand_rmw rmw in
         List.fold_left ( fun acc new_rmw -> f {e with edge=Rmw(new_rmw);} acc) acc expand_rmw_list
     | Dp (dp,sd,expr) ->
       expand_dp_dir dp expr (fun new_expr ->
@@ -822,7 +825,7 @@ let fold_tedges f r =
               Some { e1 with a1=a; a2=a; }
           | Some a1,Some a2 ->
               begin
-                match F.merge_atoms a1 a2 with
+                match merge_atoms a1 a2 with
                 | None -> None (* Merge impossible, will fail later *)
                 | Some _ as a ->
                     Some { e1 with a1=a; a2=a; }
@@ -882,11 +885,11 @@ let fold_tedges f r =
       match a1,a2 with
       | None,None -> e1,e2
       | None,Some a
-      | Some a,None when F.is_ifetch (Some a)-> e1, e2
+      | Some a,None when is_ifetch (Some a)-> e1, e2
       | None,Some _ -> set_a2 e1 a2,e2
       | Some _,None -> e1, set_a1 e2 a1
       | Some a1,Some a2 ->
-          begin match F.merge_atoms a1 a2 with
+          begin match merge_atoms a1 a2 with
           | None -> e1,e2
           | Some _ as a ->
               set_a2 e1 a,set_a1 e2 a
@@ -910,11 +913,11 @@ let fold_tedges f r =
   | Some _,None -> a1
   | None,None -> None
   | Some a1,Some a2 ->
-      begin match F.merge_atoms a1 a2 with
+      begin match merge_atoms a1 a2 with
       | None ->
           Warn.fatal
             "Atoms %s and %s *must* be mergeable"
-            (F.pp_atom a1) (F.pp_atom a2)
+            (pp_atom a1) (pp_atom a2)
       | Some _ as a -> a
       end
 
@@ -929,9 +932,9 @@ let fold_tedges f r =
 
   let default_access = Cfg.naturalsize,0
 
-  let replace_plain_atom a = match F.get_access_atom a with
+  let replace_plain_atom a = match get_access_atom a with
     | Some _ -> a
-    | None -> F.set_access_atom a default_access
+    | None -> A.set_access_atom a default_access
 
   let replace_plain e =
     let a1 = replace_plain_atom e.a1
@@ -1031,7 +1034,7 @@ let fold_tedges f r =
           | None ->
               begin match dir_src e with
               | Dir d ->
-                  F.varatom_dir d
+                  A.varatom_dir d
                     (fun a r -> var_rec ({e with a1=a}::ves)  es r)
                     r
               | NoDir ->  var_rec (e::ves) es r
@@ -1106,7 +1109,7 @@ let fold_tedges f r =
     k
 
   let get_machine_feature e =
-    StringSet.union (F.get_machine_feature e.a1) (F.get_machine_feature e.a2)
+    StringSet.union (A.get_machine_feature e.a1) (A.get_machine_feature e.a2)
 
   module Set =
     MySet.Make
@@ -1134,7 +1137,7 @@ let fold_tedges f r =
           let es =
             fold_atomo
               (fun ao k ->
-                if F.is_ifetch ao then k
+                if is_ifetch ao then k
                 else { edge=Id; a1=ao; a2=ao;}::k)
               [] in
           List.iter
@@ -1142,6 +1145,6 @@ let fold_tedges f r =
             es ;
           eprintf "\n%!"
       | Fences ->
-          F.fold_all_fences (fun f () -> eprintf " %s" (F.pp_fence f)) () ;
+          F.fold_all_fences (fun f () -> eprintf " %s" (pp_fence f)) () ;
           eprintf "\n%!"
 end

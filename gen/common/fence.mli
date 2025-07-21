@@ -14,10 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 module type S = sig
-(* Atoms *)
-  include Atom.S
-
-(* Fences *)
   type fence
 
   val is_isync : fence -> bool

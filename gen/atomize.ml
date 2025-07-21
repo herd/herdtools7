@@ -22,10 +22,10 @@ let arch = ref `PPC
 
 let opts = [Util.arch_opt arch]
 
-module Make (A:Fence.S) =
+module Make (F:Fence.S)(A:Atom.S) =
     struct
-      module E = Edge.Make(Edge.Config)(A)
-      module Namer = Namer.Make(A)(E)
+      module E = Edge.Make(Edge.Config)(F)(A)
+      module Namer = Namer.Make(F)(A)(E)
       module Normer =
         Normaliser.Make(struct let lowercase = false end)(E)
 
@@ -106,35 +106,33 @@ let () =
 let pp_es = List.rev !pp_es
 
 let () =
-  (match !arch with
-  | `X86 ->
-      let module M = Make(X86Arch_gen) in
-      M.zyva
-  | `X86_64 -> assert false
-  | `PPC ->
-      let module M = Make(PPCArch_gen.Make(PPCArch_gen.Config)) in
-      M.zyva
-  | `ARM ->
-      let module M = Make(ARMArch_gen.Make(ARMArch_gen.Config)) in
-      M.zyva
-  | `AArch64 ->
-      let module M = Make(AArch64Arch_gen.Make(AArch64Arch_gen.Config)) in
-      M.zyva
-  | `MIPS ->
-      let module M = Make(MIPSArch_gen.Make(MIPSArch_gen.Config)) in
-      M.zyva
-  | `RISCV ->
-      let module M = Make(RISCVArch_gen.Make(RISCVArch_gen.Config)) in
-      M.zyva
-  | `LISA ->
-      let module BellConfig = Config.ToLisa(Config) in
-      let module M = Make(BellArch_gen.Make(BellConfig)) in
-      M.zyva
-  | `C ->
-      let module M = Make(CArch_gen) in
-      M.zyva
-  | `ASL -> Warn.fatal "ASL arch in atoms"
-  | `BPF -> Warn.fatal "BPF arch in atomize"
-  | `CPP -> Warn.fatal "CCP arch in atomize"
-  | `JAVA -> Warn.fatal "JAVA arch in atomize")
-     pp_es
+  let (module FenceImpl:Fence.S), (module AtomImpl:Atom.S) =
+    match !arch with
+    | `X86 -> (module X86Arch_gen),(module X86Arch_gen)
+    | `X86_64 -> assert false
+    | `PPC ->
+        let module M = PPCArch_gen.Make(PPCArch_gen.Config) in
+        (module M),(module M)
+    | `ARM ->
+        let module M = ARMArch_gen.Make(ARMArch_gen.Config) in
+        (module M),(module M)
+    | `AArch64 ->
+        let module M = AArch64Arch_gen.Make(AArch64Arch_gen.Config) in
+        (module M),(module M)
+    | `MIPS ->
+        let module M = MIPSArch_gen.Make(MIPSArch_gen.Config) in
+        (module M),(module M)
+    | `RISCV ->
+        let module M = RISCVArch_gen.Make(RISCVArch_gen.Config) in
+        (module M),(module M)
+    | `LISA ->
+        let module BellConfig = Config.ToLisa(Config) in
+        let module M = BellArch_gen.Make(BellConfig) in
+        (module M),(module M)
+    | `C -> (module CArch_gen),(module CArch_gen)
+    | `ASL -> Warn.fatal "ASL arch in atomize"
+    | `BPF -> Warn.fatal "BPF arch in atomize"
+    | `CPP -> Warn.fatal "CPP arch in atomize"
+    | `JAVA -> Warn.fatal "JAVA arch in atomize" in
+  let module M = Make(FenceImpl)(AtomImpl) in
+  M.zyva pp_es
