@@ -62,9 +62,9 @@ module type Config = sig
   val naturalsize : MachSize.sz
 end
 
-module Make(Co:Config) (A:Fence.S) = struct
-  module E = Edge.Make(Co)(A)
-  module N = Namer.Make(A)(E)
+module Make(Co:Config)(A:Arch_gen.FenceAtom) = struct
+  module E = Edge.Make(Co)(A)(A)
+  module N = Namer.Make(A)(A)(E)
   module Norm = Normaliser.Make(Co)(E)
 
 

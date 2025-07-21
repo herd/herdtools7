@@ -51,15 +51,21 @@ module type RMW = sig
   val to_rmw_operand : rmw -> int (*init*) -> int (*counter*) -> int
 end
 
+module type AtomType = sig
+  (* The type for all annotations *)
+  type atom
+  (* The module and type `Value.v` for value. *)
+  module Value : Value.S with type atom = atom
+  (* SIMD writes and reads *)
+  module SIMD : SIMD
+  (* RMW operation *)
+  module RMW : RMW with type atom = atom
+end
+
 module type S = sig
   val bellatom : bool (* true if bell style atoms *)
 
-  type atom
-
-(* SIMD writes and reads *)
-  module SIMD : SIMD
-  module RMW : RMW with type atom = atom
-  module Value : Value.S with type atom = atom
+  include AtomType
 
   val default_atom : atom
   val instr_atom : atom option
