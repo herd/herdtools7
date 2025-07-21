@@ -35,8 +35,6 @@ module type S = sig
         vecreg: v list list ; (* Alternative for SIMD *)
         (* Pte value *)
         pte : PteVal.t ;
-        (* TODO instruction fetch related value, fold into value *)
-        ins : int ;
         dir : dir option ;
         proc : Code.proc ;
         atom : atom option ;
@@ -170,7 +168,6 @@ module Make (O:Config) (E:Edge.S) :
         v   : v ;
         vecreg: v list list ;
         pte : PteVal.t ;
-        ins : int ;
         dir : dir option ;
         proc : Code.proc ;
         atom : atom option ;
@@ -188,7 +185,7 @@ module Make (O:Config) (E:Edge.S) :
     { loc=Code.loc_none ; ord=0; tag=0;
       ctag=0; cseal=0; dep=0;
       vecreg= [];
-      v=Code.no_value ; ins=0;dir=None; proc=(-1); atom=None; rmw=false;
+      v=Code.no_value ; dir=None; proc=(-1); atom=None; rmw=false;
       cell=[||]; tcell=[||];
       bank=Code.Ord; idx=(-1);
       pte=pte_default;
@@ -915,11 +912,6 @@ let set_same_loc st n0 =
           let cseal = Code.value_to_int (CoSt.get_co st CapaSeal) in
           n.evt <- { n.evt with ord; ctag; cseal; }
         end
-      else (* TODO why update the instruction *)
-        begin
-          let ins = Code.value_to_int (CoSt.get_co st Instr) in
-          n.evt <- { n.evt with ins; }
-        end
  (*
           else if do_neon then (* set both fields, it cannot harm *)
             let ord = get_co st Ord in
@@ -1024,16 +1016,10 @@ let set_same_loc st n0 =
               ((!next_x_pred || next_x_ok), st)
             end (* END of match bank *)
           | Code _ ->
-            let ins = CoSt.get_co st Instr |> Code.value_to_int in
-            n.evt <- { n.evt with ins; check_value; } ;
+            n.evt <- { n.evt with check_value; } ;
             let bank = n.evt.bank in
             match bank with
             | Instr -> Warn.fatal "not letting instr write happen"
-            | Ord ->
-              let st = CoSt.next_co st bank in
-              let v = CoSt.get_co st bank in
-              n.evt <- { n.evt with ins = Code.value_to_int v;} ;
-              (next_x_ok, st)
             | _ -> (next_x_ok, st)
           end (* END of `Some W` *)
       | Some R |None -> (next_x_ok, st)
@@ -1197,16 +1183,14 @@ let do_set_read_v init =
               (* Record the cell value in `st` in
                memory access to a non-instruction value *)
             if Code.is_data n.evt.loc then CoSt.set_cell st n.evt.cell
-            else CoSt.set_co st bank n.evt.ins
-          | Instr ->
-            if Code.is_data n.evt.loc then st
-            else CoSt.set_co st bank n.evt.ins
+            else st
+          | Instr -> st
           |Pte ->
             (* Record the pte value in `st` in
               memory access to a non-instruction pte value *)
             if Code.is_data n.evt.loc then
                 CoSt.set_pte_value st n.evt.pte
-            else CoSt.set_co st bank n.evt.ins in
+            else st in
         st
       | None ->
         st

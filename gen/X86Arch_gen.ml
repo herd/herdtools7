@@ -114,7 +114,6 @@ let sequence_dp _ _ = assert false
 (*******)
 
 include Exch.Exch(struct type arch_atom = atom end)
-include NoEdge
 
 include
     ArchExtra_gen.Make
