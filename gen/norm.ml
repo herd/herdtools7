@@ -62,10 +62,10 @@ module type Config = sig
   val wildcard : bool
 end
 
-module Make(Co:Config) (A:Fence.S) = struct
-  module E = Edge.Make(Co)(A)
+module Make(Co:Config)(A:Arch_gen.FenceAtom) = struct
+  module E = Edge.Make(Co)(A)(A)
   module R = Relax.Make(A)(E)
-  module N = Namer.Make(A)(E)
+  module N = Namer.Make(A)(A)(E)
   module Norm = Normaliser.Make(Co)(E)
 
 
