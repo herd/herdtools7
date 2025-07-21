@@ -25,7 +25,7 @@ module type Config = sig
 end
 
 module Make(Co:Config) (A:Arch_gen.S) = struct
-  module E = Edge.Make(Edge.Config)(A)
+  module E = Edge.Make(Edge.Config)(A)(A)
 
   let parse_line s =
     try

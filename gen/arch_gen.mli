@@ -14,13 +14,18 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module type FenceAtom = sig
+  include Fence.S
+  include Atom.S
+end
+
 module type S =
   sig
     include ArchBase.S
     val tr_endian : int -> int
     module ScopeGen:ScopeGen.S
-    include Fence.S
-    (* Value is `included` from `Fence.S` which includes `Atom.S` *)
+    include FenceAtom
+    (* Value is `included` from `FenceAtom` *)
     include ArchExtra_gen.S with type arch_reg = reg
       and type arch_atom = atom and module Value_extra = Value
   end
