@@ -277,4 +277,3 @@ let compute_rmw rmw old co =
   | Add -> old+co in
   Code.value_of_int new_value
 
-include NoEdge
