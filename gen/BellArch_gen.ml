@@ -262,7 +262,6 @@ let var_fence f = match varatom with
 
 include ClassicDep
 module RMW = Rmw.No(struct type arch_atom = atom type value = Value.v end)
-include NoEdge
 include
     ArchExtra_gen.Make
     (struct

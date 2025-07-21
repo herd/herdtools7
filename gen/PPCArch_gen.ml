@@ -97,8 +97,6 @@ module Make(C:Config)  =
 (*******)
 (* RWM *)
 (*******)
-    include NoEdge
-
     include
         ArchExtra_gen.Make
         (struct

@@ -898,28 +898,6 @@ let show_rmw_reg = function
 | StOp _ -> false
 | LdOp _|Cas|Swp|LrSc -> true
 
-type arch_edge = IFF of ie | FIF of ie
-
-let pp_arch_edge = function
-  | IFF ie -> sprintf "Iff%s" (pp_ie ie)
-  | FIF ie -> sprintf "Fif%s" (pp_ie ie)
-
-
-let dir_tgt = function
-| IFF _ -> R
-| FIF _ -> W
-
-let dir_src = function
-| IFF _ -> W
-| FIF _ -> R
-
-let loc_sd (IFF _|FIF _) = Code.Same
-
-let get_ie e = match e with
-| IFF ie|FIF ie -> ie
-
-let fold_edge f r = Code.fold_ie (fun ie r -> f (IFF ie) (f (FIF ie) r)) r
-
 let compute_rmw r old co =
     let old = Value.to_int old in
     let co = Value.to_int co in

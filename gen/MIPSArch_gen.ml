@@ -89,8 +89,6 @@ let sequence_dp d1 d2 = match d1 with
 | ADDR -> [d2]
 | DATA|CTRL -> []
 
-include NoEdge
-
 include
     ArchExtra_gen.Make
     (struct

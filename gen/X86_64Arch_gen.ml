@@ -240,8 +240,6 @@ module Make
       (*******)
 
       module RMW = Rmw.Exch(struct type arch_atom = atom type value = Value.v end)
-      include NoEdge
-
       include
           ArchExtra_gen.Make
           (struct
