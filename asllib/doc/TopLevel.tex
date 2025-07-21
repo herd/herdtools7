@@ -366,8 +366,9 @@ yielding the type $\newty$.
 
   \item \AllApplyCase{t\_int\_parameterized}
   \begin{itemize}
-    \item $\tty$ is the \parameterizedintegertype.
-    \item this case is not implemented yet.
+    \item $\tty$ is the \parameterizedintegertype{} for the parameter $\paramname$;
+    \item \Proseeqdef{$\newty$}{is the \parameterizedintegertype{} for the renamed parameter
+          name obtained by applying $\renamelocalsname$ to $\paramname$}.
   \end{itemize}
 
   \item \AllApplyCase{t\_int\_wellconstrained}
@@ -391,10 +392,12 @@ yielding the type $\newty$.
     \item \Proseeqdef{$\newty$}{the \tupletypeterm\ for the list of types $\newli$}.
   \end{itemize}
 
-  \item \AllApplyCase{tarray}
+  \item \AllApplyCase{t\_array}
   \begin{itemize}
-    \item $\tty$ is the \arraytypeterm;
-    \item this case is not implemented yet
+    \item $\tty$ is the \arraytypeterm{} with index $\vindex$ and element type $\elemty$;
+    \item applying $\renamelocalsarrayindex$ to $\vindex$ yields $\newindex$;
+    \item applying $\renamelocalsty$ to $\elemty$ yields $\newty$;
+    \item \Proseeqdef{$\newty$}{the \arraytypeterm{} with index $\newindex$ and element type $\newty$}.
   \end{itemize}
 
   \item \AllApplyCase{structured}
@@ -421,10 +424,13 @@ yielding the type $\newty$.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[t\_int\_parameterized]{
-  \astlabel(\vc) = \parameterized
-}{
-  \renamelocalsty(\overname{\TInt(\vc)}{\tty}) \astarrow \tododefine{unimplemented}
+\inferrule[t\_int\_parameterized]{}{
+  {
+  \begin{array}{r}
+  \renamelocalsty(\overname{\TInt(\parameterized(\paramname))}{\tty}) \astarrow\\
+  \TInt(\parameterized(\renamelocalsname(\paramname)))
+  \end{array}
+  }
 }
 \end{mathpar}
 
@@ -454,9 +460,11 @@ yielding the type $\newty$.
 
 \begin{mathpar}
 \inferrule[t\_array]{
-  \astlabel(\tty) = \TArray
+  \renamelocalsarrayindex(\vindex) \astarrow \newindex\\
+  \renamelocalsty(\elemty) \astarrow \newty
 }{
-  \renamelocalsty(\tty) \astarrow \tododefine{unimplemented}
+  \renamelocalsty(\TArray(\vindex, \elemty)) \astarrow
+  \TArray(\newindex, \newty)
 }
 \end{mathpar}
 
@@ -579,8 +587,14 @@ yielding the statement $\news$.
 
   \item \AllApplyCase{s\_try}
   \begin{itemize}
-    \item $\vs$ is a \trystatementterm;
-    \item this case is not implemented.
+    \item $\vs$ is a \trystatementterm{} with statement $\vsone$, list of catch clauses $\catchers$,
+          and optional \Totherwise{} statement $\otherwiseopt$;
+    \item \Proserenamelocalsstmt{$\vsone$}{$\vsonep$};
+    \item \Proseeqdef{$\catchersp$}{the list of catchers obtained by applying \\
+          $\renamelocalscatcher$ to each catcher in $\catchers$};
+    \item \Prosemapopt{$\renamelocalsstmt$}{$\otherwiseopt$}{$\otherwiseoptp$};
+    \item \Proseeqdef{$\news$}{\trystatementterm{} with statement $\vsonep$, list of catch clauses \\
+          $\catchersp$, and optional \Totherwise{} statement  $\otherwiseoptp$}.
   \end{itemize}
 
   \item \AllApplyCase{s\_print}
@@ -771,9 +785,16 @@ yielding the statement $\news$.
 
 \begin{mathpar}
 \inferrule[s\_try]{
-  \astlabel(\vs) = \STry
+  \renamelocalsstmt(\vsone) \astarrow \vsonep\\
+  \catchersp \eqdef [\vc\in\catchers: \renamelocalscatcher(\vc)]\\
+  \mapopt{\renamelocalsstmt}(\otherwiseopt) \astarrow \otherwiseoptp
 }{
-  \renamelocalsstmt(\vs) \astarrow \tododefine{not implemented yet}
+  {
+  \begin{array}{r}
+  \renamelocalsstmt(\overname{\STry(\vsone, \catchers, \otherwiseopt)}{\vs}) \astarrow \\
+  \STry(\vsonep, \catchersp, \otherwiseoptp)
+  \end{array}
+  }
 }
 \end{mathpar}
 
@@ -938,8 +959,10 @@ yielding the expression $\newe$.
 
   \item \AllApplyCase{e\_pattern}
   \begin{itemize}
-    \item $\ve$ is a \patternexpressionterm;
-    \item this case is not implemented.
+    \item $\ve$ is a \patternexpressionterm{} with expression $\veone$ and pattern $\vp$;
+    \item \Proserenamelocals{$\ve$}{$\vep$};
+    \item applying $\renamelocalspattern$ to $\vp$ yields $\vpp$;
+    \item \Proseeqdef{$\newe$}{the \patternexpressionterm{} with expression $\veonep$ and pattern $\vpp$}.
   \end{itemize}
 \end{itemize}
 
@@ -1109,8 +1132,12 @@ yielding the expression $\newe$.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[e\_pattern]{}{
-  \renamelocalsexpr(\overname{\EPattern(\Ignore, \Ignore)}{\ve}) \astarrow \tododefine{not implemented yet}
+\inferrule[e\_pattern]{
+  \renamelocalsexpr(\veone) \astarrow \veonep\\
+  \renamelocalspattern(\vp) \astarrow \vpp
+}{
+  \renamelocalsexpr(\overname{\EPattern(\veone, \vp)}{\ve}) \astarrow
+  \EPattern(\veonep, \vpp)
 }
 \end{mathpar}
 
@@ -1391,8 +1418,173 @@ yielding the identifier $\newname$.
 }
 \end{mathpar}
 
+\ASTRuleDef{RenameLocalsArrayIndex}
+\hypertarget{def-renamelocalsarrayindex}{}
+The helper function
+\[
+\renamelocalsarrayindex(\overname{\arrayindex}{\vindex}) \aslto \overname{\arrayindex}{\newindex}
+\]
+renames the identifiers corresponding to local storage elements that appear in the
+array index $\vindex$, yielding the array index $\newindex$.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{enum}
+  \begin{itemize}
+    \item $\vindex$ is an index of an enumeration-indexed array type;
+    \item \Proseeqdef{$\newindex$}{$\vindex$}.
+  \end{itemize}
+
+  \item \AllApplyCase{expr}
+  \begin{itemize}
+    \item $\vindex$ is an index of an integer-indexed array type with length expression $\elength$;
+    \item \Proserenamelocalsexpr{$\elength$}{$\newelength$};
+    \item \Proseeqdef{$\newindex$}{index of an integer-indexed array type with length expression $\newelength$}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[enum]{
+  \astlabel(\vindex) = \ArrayLengthEnum
+}{
+  \renamelocalsarrayindex(\vindex) \astarrow \overname{\vindex}{\newindex}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[expr]{
+  \renamelocalsexpr(\elength) \astarrow \newelength
+}{
+  {
+  \begin{array}{r}
+  \renamelocalsarrayindex(\overname{\ArrayLengthExpr(\elength)}{\vindex}) \astarrow \\
+  \overname{\ArrayLengthExpr(\newelength)}{\newindex}
+  \end{array}
+  }
+}
+\end{mathpar}
+
+\ASTRuleDef{RenameLocalsPattern}
+\hypertarget{def-renamelocalspattern}{}
+The helper function
+\[
+\renamelocalspattern(\overname{\pattern}{\vp}) \aslto \overname{\pattern}{\newp}
+\]
+renames the identifiers corresponding to local storage elements that appear in the
+pattern $\vp$, yielding the pattern $\newp$.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{all\_mask}
+  \begin{itemize}
+    \item $\vp$ is either $\PatternAll$ or $\PatternMask$;
+    \item \Proseeqdef{$\newp$}{$\vp$}.
+  \end{itemize}
+
+  \item \AllApplyCase{pattern\_list}
+  \begin{itemize}
+    \item $\vp$ is a pattern with AST label $L$ and list of patterns $\pl$,
+          where $L$ is one of $\PatternAny$ and $\PatternTuple$;
+    \item \Proseeqdef{$\newpl$}{the list obtained by applying $\renamelocalspattern$ to each pattern in $\pl$};
+    \item the pattern with AST label $L$ and list of patterns $\newpl$.
+  \end{itemize}
+
+  \item \AllApplyCase{single\_expr}
+  \begin{itemize}
+    \item $\vp$ is a pattern with AST label $L$ and expression $\vpe$,
+          where $L$ is one of $\PatternGeq$, $\PatternLeq$, $\PatternNot$, and
+          $\PatternSingle$;
+    \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
+    \item \Proseeqdef{$\newp$}{the pattern with AST label $L$ and expression $\veonep$}.
+  \end{itemize}
+
+  \item \AllApplyCase{range}
+  \begin{itemize}
+    \item $\vp$ is the range pattern with expressions $\veone$ and $\vetwo$;
+    \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
+    \item \Proserenamelocalsexpr{$\vetwo$}{$\vetwop$};
+    \item \Proseeqdef{$\newp$}{the range pattern with expressions $\veonep$ and $\vetwop$}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[all\_mask]{
+  \astlabel(\vp) \in \{\PatternAll, \PatternMask\}
+}{
+  \renamelocalspattern(\vp) \astarrow \overname{\vp}{\newp}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[pattern\_list]{
+  \vp = L(\pl)\\
+  \astlabel(\vp) \in \{\PatternAny, \PatternTuple\}\\
+  \newpl \eqdef [ \vi\in\indices(\pl): \renamelocalspattern(\pl[\vi]) ]
+}{
+  \renamelocalspattern(\vp) \astarrow \overname{L(\newpl)}{\newp}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[single\_expr]{
+  \vp = L(\vpe)\\
+  \astlabel(\vp) \in \{\PatternGeq, \PatternLeq, \PatternNot, \PatternSingle\}\\
+  \renamelocalsexpr(\vpe) \astarrow \vnewpe
+}{
+  \renamelocalspattern(\vp) \astarrow \overname{L(\vnewpe)}{\newp}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range]{
+  \renamelocalsexpr(\veone) \astarrow \veonep\\
+  \renamelocalsexpr(\vetwo) \astarrow \vetwop\\
+}{
+  \renamelocalspattern(\overname{\PatternRange(\veone, \vetwo)}{\vp}) \astarrow \overname{\PatternRange(\veonep, \vetwop)}{\newp}
+}
+\end{mathpar}
+
+\ASTRuleDef{RenameLocalsCatcher}
+\hypertarget{def-renamelocalscatcher}{}
+The helper function
+\[
+\renamelocalscatcher(\overname{\catcher}{\vc}) \aslto \overname{\catcher}{\newc}
+\]
+renames the identifiers corresponding to local storage elements that appear in the
+catcher clause $\vc$, yielding the catcher clause $\newc$.
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item $\vc$ is a catcher clause with optional exception name $\optexnname$, exception type $\exnty$,
+        and \Twhen{} statement $\whenstmt$;
+  \item \Prosemapopt{$\renamelocalsname$}{$\optexnname$}{$\optexnnamep$};
+  \item \Proserenamelocalsty{$\exnty$}{$\exntyp$};
+  \item \Proserenamelocalsstmt{$\whenstmt$}{$\whenstmtp$}.
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{
+  \mapopt{\renamelocalsname}(\optexnname) \astarrow \optexnnamep\\
+  \renamelocalsty(\exnty) \astarrow \exntyp\\
+  \renamelocalsstmt(\whenstmt) \astarrow \whenstmtp
+}{
+  {
+  \begin{array}{r}
+  \renamelocalscatcher(\overname{(\optexnname, \exnty, \whenstmt)}{\vc}) \astarrow\\
+  (\optexnnamep, \exntyp, \whenstmtp)
+  \end{array}
+  }
+}
+\end{mathpar}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Beginning of rename locals-related functions
+%% End of rename locals-related functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Marking Standard Library Functions}
