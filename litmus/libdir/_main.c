@@ -13,6 +13,9 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+#ifdef SIFIVE_FREERTOS_ENABLE
+#include "FreeRTOS_POSIX.h"
+#endif
 
 /***************/
 /* Entry point */
@@ -147,7 +150,14 @@ int RUN(int argc,char **argv,FILE *out) {
 }
 
 #ifdef MAIN
-int main (int argc,char **argv) {
+#ifdef SIFIVE_FREERTOS_ENABLE
+void *sub_main(void *argv) {
+extern int argc;
+#else
+int main(int argc,char **argv) {
+#endif
+
+//int main (int argc,char **argv) {
 #ifdef KVM
   litmus_init();
 #endif

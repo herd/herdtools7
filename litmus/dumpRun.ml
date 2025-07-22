@@ -560,9 +560,17 @@ let dump_c xcode names =
         O.o "" ;
         O.o "@end"
       end else  begin
+        O.o "#ifdef SIFIVE_FREERTOS_ENABLE" ;
+        O.o "void *sub_main(void *argv) {" ;
+        O.o "extern int argc;" ;
+        O.o "#else" ;
         O.o"int main(int argc,char **argv) {" ;
+        O.o "#endif" ;
         if is_kvm then O.oi "litmus_init();" ;
         O.oi "run(argc,argv,stdout);" ;
+        O.o "#ifdef SIFIVE_FREERTOS_ENABLE" ;
+        O.o "sifive_exit(0);" ;
+        O.o "#endif" ;
         O.oi "return 0;" ;
         O.o"}"
       end ;

@@ -13,6 +13,10 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+#ifdef SIFIVE_FREERTOS_ENABLE
+#include "FreeRTOS_POSIX.h"
+#include "FreeRTOS.h"
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -21,7 +25,9 @@
 #include <errno.h>
 #include <stdint.h>
 #include <stdarg.h>
+#ifndef SIFIVE_FREERTOS_ENABLE
 #include <sys/mman.h>
+#endif
 #include "utils.h"
 
 /********/
@@ -29,6 +35,14 @@
 /********/
 
 FILE *errlog ;
+
+#ifdef SIFIVE_FREERTOS_ENABLE
+#undef free
+#define free vPortFree
+#undef malloc
+#define malloc pvPortMalloc
+int errno = 0;
+#endif
 
 static void checkerrlog(void) {
   if (!errlog) errlog = stderr ;
@@ -72,6 +86,7 @@ void *malloc_check(size_t sz) {
   return p ;
 }
 
+#ifndef SIFIVE_FREERTOS_ENABLE
 void *mmap_exec(size_t sz) {
   void * p = mmap(NULL, sz, PROT_READ|PROT_EXEC|PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
   if (p == MAP_FAILED) {
@@ -83,6 +98,7 @@ void *mmap_exec(size_t sz) {
 void munmap_exec(void *p,size_t sz) {
   if (munmap(p,sz)) errexit("munmap",errno);
 }
+#endif
 
 int max(int n, int m) { return n < m ? m : n ; }
 
@@ -1031,6 +1047,30 @@ void *op_get(op_t *p) {
 
 /* Thread launch and join */
 
+#ifdef SIFIVE_FREERTOS_ENABLE
+
+typedef struct {
+  int th_id; /* I am running on this thread */
+  int *cpu; /* On this cpu */
+//  ctx_t *_a;   /* In this context */
+} parg_t;
+
+void launch_affinity(pthread_t *th, f_t *f, void *a) {
+  int core_mask = 0;
+  int core = 0;
+  parg_t * parg = (parg_t *) a;
+  /* prevent parg->th_id is an invalid value */
+  if (parg->th_id < -1 || parg->th_id > 0xFF)
+    core = 0;
+  else
+    core = parg->cpu[parg->th_id];
+  core_mask = 1 << (core);
+
+  int e = pthread_create_affinity(th,NULL,f,a,core_mask);
+  if (e) errexit("pthread_create",e);
+}
+#endif
+
 void launch(pthread_t *th, f_t *f, void *a) {
   int e = pthread_create(th,NULL,f,a);
   if (e) errexit("pthread_create",e);
@@ -1306,9 +1346,12 @@ int check_shuffle(int **t, int *min, int sz) {
 /****************/
 /* Time counter */
 /****************/
-
+#ifdef SIFIVE_FREERTOS_ENABLE
+#include "FreeRTOS_POSIX/time.h"
+#else
 #include <sys/time.h>
 #include <time.h>
+#endif
 
 tsc_t timeofday(void) {
   struct timeval tv ;

@@ -13,6 +13,14 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+#ifdef SIFIVE_FREERTOS_ENABLE
+#include "FreeRTOS_POSIX.h"
+#undef free
+#define free vPortFree
+#undef malloc
+#define malloc pvPortMalloc
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include "outs.h"

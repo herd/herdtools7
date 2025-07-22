@@ -422,6 +422,9 @@ module Make
         end ;
         O.o "/* Includes */" ;
         Insert.insert_when_exists O.o "intrinsics.h" ;
+        O.o "#ifdef SIFIVE_FREERTOS_ENABLE" ;
+        O.o "#include \"FreeRTOS_POSIX.h\"" ;
+        O.o "#endif" ;
         O.o
           (if Cfg.stdio then "#include <stdio.h>"
           else "#include \"litmus_io.h\"") ;
@@ -438,6 +441,12 @@ module Make
         if do_affinity then begin
           O.o "#include \"affinity.h\""
         end ;
+        O.o "#ifdef SIFIVE_FREERTOS_ENABLE" ;
+        O.o "#undef free" ;
+        O.o "#define free vPortFree" ;
+        O.o "#undef malloc" ;
+        O.o "#define malloc pvPortMalloc" ;
+        O.o "#endif" ;
         O.o "" ;
         begin match Cfg.sysarch with
         | `AArch64 ->
@@ -2166,7 +2175,11 @@ module Make
         | Cached ->
             O.oiii "op[_p] = launch_cached(fun[_p],&parg[_p]);"
         | Std ->
-            O.oiii "launch(&thread[_p],fun[_p],&parg[_p]);"
+            O.oiii "#ifdef SIFIVE_FREERTOS_ENABLE" ;
+            O.oiii "launch_affinity(&thread[_p],fun[_p],&parg[_p]);" ;
+            O.oiii "#else" ;
+            O.oiii "launch(&thread[_p],fun[_p],&parg[_p]);" ;
+            O.oiii "#endif" ;
         end ;
         loop_proc_postlude indent2 ;
         if Cfg.cautious then O.oii "mbar();" ;

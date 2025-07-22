@@ -13,6 +13,9 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+#ifdef SIFIVE_FREERTOS_ENABLE
+#include "FreeRTOS_POSIX.h"
+#endif
 #include <stdio.h>
 #include <sched.h>
 #include <unistd.h>
@@ -23,6 +26,14 @@ typedef cpuset_t cpu_set_t;
 #endif
 #include "utils.h"
 #include "affinity.h"
+
+#ifdef SIFIVE_FREERTOS_ENABLE
+cpus_t *read_affinity(void) { }
+cpus_t *read_force_affinity(int n_avail, int verbose) {}
+void write_affinity(cpus_t *p) { }
+void write_one_affinity(int a) { }
+void force_one_affinity(int a, int sz,int verbose, char *name) { }
+#else
 
 #ifdef CPUS_DEFINED
 cpus_t *read_affinity(void) {
@@ -161,4 +172,5 @@ void force_one_affinity(int a, int sz,int verbose, char *name) {
     } while (r != 0) ;
   }
 }
+#endif
 #endif
