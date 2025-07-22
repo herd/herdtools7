@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module type S = sig
+module type PteType = sig
   type atom
   type pte
   val pp_pte : pte -> string
@@ -23,7 +23,10 @@ module type S = sig
   val set_pteval : atom -> pte -> (unit -> string) -> pte
   val can_fault : pte -> bool
   val refers_virtual : pte -> string option
+end
 
+module type S = sig
+  include PteType
   type v = NoValue | Plain of int | PteValue of pte
   type env = (string * v) list
   val pp_v : ?hexa:bool -> v -> string
@@ -35,46 +38,56 @@ module type S = sig
   val value_compare : v -> v -> int
 end
 
-module NoPte(A:sig type arch_atom end) = struct
-  type atom = A.arch_atom
-  type pte = string
-  let pp_pte _ = "[nopte]"
-  let default_pte s = s
-  let pte_compare _ _ = 0
-  let set_pteval _ p _ = p
-  let can_fault _t = false
-  let refers_virtual _ = None
+(* Default implement for many functions in signature `S`
+   use it by `include Make(...)` *)
+module Make(P:PteType) = struct
 
+  include P
   type v = NoValue | Plain of int | PteValue of pte
+  type env = (string * v) list
 
+  let no_value = NoValue
   let to_int = function
     | NoValue -> -1
     | Plain v -> v
     | _ -> Warn.user_error "Cannot convert to int"
-  let no_value = NoValue
   let from_int v = Plain v
-  let from_pte _ = Warn.user_error "Cannot convert from pte"
-  let to_pte _ = Warn.user_error "Cannot convert to pte"
+
+  (* NOTE to ensure this module satisfy the Value.S requirement,
+     implement the following separately.
+      let from_pte pte = (*...*)
+      let to_pte v = (*...*)
+  *)
 
   let value_compare lhs rhs =
     match lhs, rhs with
     | NoValue, NoValue -> 0
-    | NoValue, Plain _ -> -1
-    | NoValue, PteValue _ -> -1
-    | Plain _, NoValue -> 1
+    | NoValue, _ -> -1
     | Plain lhs, Plain rhs -> Misc.int_compare lhs rhs
-    | Plain _, PteValue _ -> -1
-    | PteValue _, NoValue -> 1
-    | PteValue _, Plain _ -> 1
+    | Plain _, NoValue -> 1
+    | Plain _, _ -> -1
     | PteValue lhs, PteValue rhs -> pte_compare lhs rhs
+    | PteValue _, _ -> 1
 
   let pp_v ?(hexa=false) = function
     | NoValue -> "**"
     | Plain v -> Printf.sprintf (if hexa then "0x%x" else "%d") v
     | PteValue p -> pp_pte p
-
-
-  type env = (string * v) list
 end
 
+module NoPte(A:sig type arch_atom end) = struct
+  include Make(struct
+    type atom = A.arch_atom
+    type pte = string
+    let pp_pte _ = "[nopte]"
+    let default_pte s = s
+    let pte_compare _ _ = 0
+    let set_pteval _ p _ = p
+    let can_fault _t = false
+    let refers_virtual _ = None
+  end)
+
+  let from_pte _ = Warn.user_error "Cannot convert from pte"
+  let to_pte _ = Warn.user_error "Cannot convert to pte"
+end
 
