@@ -505,8 +505,7 @@ let fold_tedges f r =
                  | Id -> begin
                      match a1,a2 with
                      | Some x1,Some x2 when
-                         F.compare_atom x1 x2=0
-                         && not (F.is_ifetch a1) ->
+                         F.compare_atom x1 x2=0 ->
                          f { a1; a2;edge=te; } k
                      | None,None ->
                          let e =  { a1; a2;edge=te; } in
@@ -570,7 +569,7 @@ let fold_tedges f r =
       let old = Hashtbl.find ta lxm in
       assert (F.compare_atom old a = 0) ;
     with Not_found ->
-      if not (F.is_ifetch (Some a)) then Hashtbl.add ta lxm a
+      Hashtbl.add ta lxm a
 
   let () = iter_atom (fun a -> add_lxm (pp_atom a) a)
 
@@ -898,8 +897,6 @@ let fold_tedges f r =
     let r =
       match a1,a2 with
       | None,None -> e1,e2
-      | None,Some a
-      | Some a,None when F.is_ifetch (Some a)-> e1, e2
       | None,Some _ -> set_a2 e1 a2,e2
       | Some _,None -> e1, set_a1 e2 a1
       | Some a1,Some a2 ->
@@ -1147,8 +1144,7 @@ let fold_tedges f r =
             F.fold_atom
               (fun a k ->
                 let ao = Some a in
-                if F.is_ifetch ao then k
-                else { edge=Id; a1=ao; a2=ao;}::k)
+                { edge=Id; a1=ao; a2=ao;}::k)
               [] in
           List.iter
             (fun e -> eprintf " %s" (pp_edge e))
