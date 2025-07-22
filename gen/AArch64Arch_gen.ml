@@ -204,78 +204,48 @@ type atom = atom_acc * MachMixed.t option
 
 module Value = struct
 
-  (* Do this on purpose since there is an outside `atom` type. *)
-  type _atom = atom
-  type atom = _atom
+  include Value.Make(struct
+    (* Do this on purpose since there is an outside `atom` type. *)
+    type _atom = atom
+    type atom = _atom
+    type pte = AArch64PteVal.t
+    let pp_pte = AArch64PteVal.pp_v
+    let default_pte = AArch64PteVal.default
+    let pte_compare = AArch64PteVal.compare
 
-  type pte = AArch64PteVal.t
+    let do_setpteval _a f p loc =
+      let open AArch64PteVal in
+      let fs = match f with
+        | Set f|SetRel f -> f
+        | Read|ReadAcq|ReadAcqPc ->
+           Warn.user_error "Atom is not a pteval write" in
+      WPTESet.fold
+        (fun f p ->
+          let open WPTE in
+          match f with
+          | AF -> { p with af = 1-p.af; }
+          | DB -> { p with db = 1-p.db; }
+          | DBM -> { p with dbm = 1-p.dbm; }
+          | VALID -> { p with valid = 1-p.valid; }
+          | OA -> { p with oa=OutputAddress.PHY (loc ()); })
+      fs p
 
-  let pp_pte = AArch64PteVal.pp_v
+    let set_pteval a p =
+      match a with
+      | Pte f,None -> do_setpteval a f p
+      | _ -> Warn.user_error "Atom is not a pteval write"
 
-  let default_pte = AArch64PteVal.default
+    let can_fault pte_val =
+      let open AArch64PteVal in
+      pte_val.valid = 0
 
-  let pte_compare = AArch64PteVal.compare
+    let refers_virtual p = OutputAddress.refers_virtual p.AArch64PteVal.oa
+  end)
 
-  let refers_virtual p = OutputAddress.refers_virtual p.AArch64PteVal.oa
-
-  type v = NoValue | Plain of int | PteValue of pte
-  type env = (string * v) list
-  let to_int = function
-      | NoValue -> -1
-      | Plain v -> v
-      |  _ -> Warn.user_error "Cannot convert to int"
-  let no_value = NoValue
-  let from_int v = Plain v
-  let _from_pte p = PteValue p
+  let from_pte p = PteValue p
   let to_pte = function
     | PteValue p -> p
     | _ -> Warn.user_error "Cannot convert to pte"
-
-  let value_compare lhs rhs =
-      match lhs, rhs with
-      | NoValue, NoValue -> 0
-      | NoValue, Plain _ -> -1
-      | NoValue, PteValue _ -> -1
-      | Plain _, NoValue -> 1
-      | Plain lhs, Plain rhs -> Misc.int_compare lhs rhs
-      | Plain _, PteValue _ -> -1
-      | PteValue _, NoValue -> 1
-      | PteValue _, Plain _ -> 1
-      | PteValue lhs, PteValue rhs -> pte_compare lhs rhs
-
-  let pp_v ?(hexa=false) = function
-    | NoValue -> "**"
-    | Plain v -> Printf.sprintf (if hexa then "0x%x" else "%d") v
-    | PteValue p -> pp_pte p
-
-  let do_setpteval _a f p loc =
-    let open AArch64PteVal in
-    let fs = match f with
-      | Set f|SetRel f -> f
-      | Read|ReadAcq|ReadAcqPc ->
-         Warn.user_error "Atom is not a pteval write" in
-    WPTESet.fold
-      (fun f p ->
-        let open WPTE in
-        match f with
-        | AF -> { p with af = 1-p.af; }
-        | DB -> { p with db = 1-p.db; }
-        | DBM -> { p with dbm = 1-p.dbm; }
-        | VALID -> { p with valid = 1-p.valid; }
-        | OA -> { p with oa=OutputAddress.PHY (loc ()); })
-    fs p
-
-  let set_pteval a p =
-    match a with
-    | Pte f,None -> do_setpteval a f p
-    | _ -> Warn.user_error "Atom is not a pteval write"
-
-  let can_fault pte_val =
-    let open AArch64PteVal in
-    pte_val.valid = 0
-
-  let from_pte p = PteValue p
-
 end
 
 (* Mixed size *)
