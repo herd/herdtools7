@@ -35,8 +35,6 @@ module type S = sig
         v   : Value.v ; (* Value read or written *)
         (* TODO fold into value *)
         vecreg: Value.v list list ; (* Alternative for SIMD *)
-        (* TODO instruction fetch related value, fold into value *)
-        ins : int ;
         dir : dir option ;
         proc : Code.proc ;
         atom : atom option ;
@@ -171,7 +169,6 @@ module Make (O:Config) (E:Edge.S) :
         ctag : int; cseal : int; dep : int;
         v   : Value.v ;
         vecreg: Value.v list list ;
-        ins : int ;
         dir : dir option ;
         proc : Code.proc ;
         atom : atom option ;
@@ -189,7 +186,7 @@ module Make (O:Config) (E:Edge.S) :
     { loc=Code.loc_none ; ord=0; tag=0;
       ctag=0; cseal=0; dep=0;
       vecreg= [];
-      v=Value.no_value ; ins=0;dir=None; proc=(-1); atom=None; rmw=false;
+      v=Value.no_value; dir=None; proc=(-1); atom=None; rmw=false;
       cell=[||]; tcell=[||];
       bank=Code.Ord; idx=(-1);
       check_fault=None;
@@ -510,14 +507,15 @@ module CoSt = struct
   let create init sz pte_value check_value check_fault =
     let map  =
       M.add Tag init <<  M.add CapaTag init <<
-      M.add CapaSeal init << M.add Ord init << M.add Instr init <! M.empty
+      M.add CapaSeal init << M.add Ord init (*<< M.add Instr init*) <! M.empty
     and co_cell = Array.make (if sz <= 0 then 1 else sz) (Value.from_int init) in
     { map; co_cell; pte_value; check_fault; check_value }
 
   let find_no_fail key map =
     try M.find key map with Not_found -> assert false
 
-  let get_co st bank = Value.from_int (find_no_fail bank st.map)
+  let get_co st bank =
+    Value.from_int @@ find_no_fail bank st.map
 
   let set_co st bank v =
     let b = match bank with VecReg _ -> Ord | _ -> bank in
@@ -974,7 +972,7 @@ let set_same_loc st n0 =
            (1) `next_x_pred` set to true, indicating a new variable
            is needed, and (2) a new `next_x` returns. *)
         let next_x_pred = ref false in
-        let next_loc () =
+        let next_var () =
           match n.evt.loc with
           | Code.Code _ -> Warn.fatal "Code location has no pte value."
           | Code.Data x ->
@@ -987,24 +985,16 @@ let set_same_loc st n0 =
         (* get the previous pte via get_pte_value
            and return the new pte value *)
         let pte_val = E.set_pteval n.evt.atom
-                        (CoSt.get_pte_value st) next_loc in
+                        (CoSt.get_pte_value st) next_var in
         let st = CoSt.set_pte_value st pte_val in
         let v = Value.from_pte pte_val in
         n.evt <- { n.evt with v; check_value; } ;
         ((!next_x_pred || next_x_ok), st)
       end (* END of match bank *)
     | Code _ ->
-      let ins = CoSt.get_co st Instr |> Value.to_int in
-      n.evt <- { n.evt with ins; check_value; } ;
-      let bank = n.evt.bank in
-      match bank with
-      | Instr -> Warn.fatal "not letting instr write happen"
-      | Ord ->
-        let st = CoSt.next_co st bank in
-        let v = CoSt.get_co st bank in
-        n.evt <- { n.evt with ins = Value.to_int v;} ;
-        (next_x_ok, st)
-      | _ -> (next_x_ok, st)
+      match n.evt.bank with
+      | Ord -> (next_x_ok, st)
+      | _ -> Warn.fatal "Only ordinary write is allowed to code location."
 
 (* Loop over every node and set the expected value from the previous node *)
 let set_dep_v nss =
@@ -1096,11 +1086,6 @@ let set_read_node n st =
           let ctag = Value.to_int (CoSt.get_co st CapaTag) in
           let cseal = Value.to_int (CoSt.get_co st CapaSeal) in
           n.evt <- { n.evt with ord; ctag; cseal; }
-        end
-      else
-        begin
-          let ins = Value.to_int (CoSt.get_co st Instr) in
-          n.evt <- { n.evt with ins; }
         end
  (*
           else if do_neon then (* set both fields, it cannot harm *)
