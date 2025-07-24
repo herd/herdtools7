@@ -50,6 +50,7 @@ module type S = sig
   val dump_pack : (string -> string) -> t -> string
   val as_physical : t -> string option
   val as_flags : t -> string option
+  val attrs_as_kvm_symbols : t -> string list
 end
 
 module No : S

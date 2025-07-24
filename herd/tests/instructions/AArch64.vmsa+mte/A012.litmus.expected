@@ -9,5 +9,5 @@ Positive: 1 Negative: 2
 Flag combining-vmsa-and-memtag-is-not-supported
 Condition exists ([x]=1 /\ not (fault(P0:L0,x)))
 Observation A012 Sometimes 1 2
-Hash=3fce4d56177b06c14bfd934326a0645b
+Hash=9592a0d1b0a4d3eb48961b300a635e90
 
