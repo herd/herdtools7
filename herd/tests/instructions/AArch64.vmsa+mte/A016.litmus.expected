@@ -1,0 +1,14 @@
+Test A016 Allowed
+States 4
+[PTE(x)]=(oa:PA(x), db:0, dbm:1, TaggedNormal);  ~Fault(P0,x);
+[PTE(x)]=(oa:PA(x), db:0, dbm:1, TaggedNormal); Fault(P0,x:red,TagCheck);
+[PTE(x)]=(oa:PA(x), dbm:1, TaggedNormal);  ~Fault(P0,x);
+[PTE(x)]=(oa:PA(x), dbm:1, TaggedNormal); Fault(P0,x:red,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 8
+Flag combining-vmsa-and-memtag-is-not-supported
+Condition exists (not (fault(P0,x)) /\ [PTE(x)]=(oa:PA(x), dbm:1, TaggedNormal))
+Observation A016 Sometimes 1 8
+Hash=0714f4288fc9631162d4741f8f2c4b9a
+
