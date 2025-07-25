@@ -22,10 +22,10 @@ let arch = ref `PPC
 
 let opts = [Util.arch_opt arch]
 
-module Make (A:Fence.S) =
+module Make (A:Arch_gen.FenceAtom) =
     struct
-      module E = Edge.Make(Edge.Config)(A)
-      module Namer = Namer.Make(A)(E)
+      module E = Edge.Make(Edge.Config)(A)(A)
+      module Namer = Namer.Make(A)(A)(E)
       module Normer =
         Normaliser.Make(struct let lowercase = false end)(E)
 

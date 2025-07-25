@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2019-present Institut National de Recherche en Informatique et *)
+(* Copyright 2021-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,19 +14,39 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** The only RMW is exchange *)
+module type RmwType = sig
+  type arch_atom
+  type value
+end
 
+(** No rmw instruction *)
+module No(A:RmwType) = struct
+  type rmw = unit
+  type atom = A.arch_atom
+  type value = A.value
+
+  let pp_rmw _ _ = assert false
+  let is_one_instruction _ = assert false
+  let fold_rmw _ r = r
+  let fold_rmw_compat _ r = r
+  let applies_atom_rmw _ _ _ = assert false
+  let show_rmw_reg _ = assert false
+  let compute_rmw _ _ _ = assert false
+end
+
+(** The only RMW is exchange *)
 module
   Make
     (I:
-       sig
-         type atom
-         val pp : string
-         val is_one_instruction : bool
-       end) =
+      sig
+        include RmwType
+        val pp : string
+        val is_one_instruction : bool
+      end) =
   struct
     type rmw = unit
-    type rmw_atom = I.atom
+    type atom = I.arch_atom
+    type value = I.value
 
     let pp_rmw compat () = if compat then "Rmw" else I.pp
 
@@ -44,18 +64,20 @@ module
     let compute_rmw () _old co_cell  = co_cell
   end
 
-module  LxSx(A:sig type arch_atom end) = struct
+module LxSx(A:RmwType) = struct
   include Make
     (struct
-      type atom = A.arch_atom
+      type arch_atom = A.arch_atom
+      type value = A.value
       let pp = "LxSx"
       let is_one_instruction = false
     end)
 end
-module  Exch(A:sig type arch_atom end) = struct
+module Exch(A:RmwType) = struct
   include Make
-  (struct
-      type atom = A.arch_atom
+    (struct
+      type arch_atom = A.arch_atom
+      type value = A.value
       let pp = "Exch"
       let is_one_instruction = true
     end)
