@@ -27,10 +27,16 @@ The relation
 \hypertarget{def-evalpattern}{}
 \[
   \evalpattern{\overname{\envs}{\env} \aslsep \overname{\vals}{\vv} \aslsep \overname{\pattern}{\vp}} \;\aslrel\;
-  \Normal(\overname{\tbool}{\vb}, \overname{\XGraphs}{\newg})
+  \left(
+  \begin{array}{ll}
+  \ResultPattern(\overname{\tbool}{\vb}, \overname{\XGraphs}{\newg}) & \cup\\
+  \overname{\TDynError}{\DynErrorConfig} & \cup\\
+  \overname{\TDiverging}{\DivergingConfig} &
+  \end{array}
+  \right)
 \]
 determines whether a value $\vv$ matches the pattern $\vp$ in an environment $\env$
-resulting in either $\Normal(\vb, \newg)$ or an abnormal configuration.
+resulting in either $\ResultPattern(\vb, \newg)$ or an abnormal configuration.
 
 The rest of this chapter defines the syntax, abstract syntax, typing rules,
 and semantics rules for the following kinds of patterns:
@@ -117,7 +123,7 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 \begin{mathpar}
 \inferrule{}
 {
-  \evalpattern{\env, \Ignore, \PatternAll} \evalarrow \Normal(\nvbool(\True), \emptygraph)
+  \evalpattern{\env, \Ignore, \PatternAll} \evalarrow \ResultPattern(\nvbool(\True), \emptygraph)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPAllBegin}{\EvalPAllEnd}{../Interpreter.ml}
@@ -267,17 +273,17 @@ whereas \\
   \item $\vp$ is the condition corresponding to being equal to the
     side-effect-free expression $\ve$, $\PatternSingle(\ve)$;
   \item the side-effect-free evaluation of $\ve$ in
-    environment $\env$ is \\ $\Normal(\vvone, \newg)$\ProseOrError;
+    environment $\env$ is \\ $\ResultExprSEF(\vvone, \newg)$\ProseOrDynErrorDiverging;
   \item $\vb$ is the Boolean value corresponding to whether $\vv$
     is equal to $\vvone$.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexprsef{\env, \ve} \evalarrow \Normal(\vvone, \newg) \OrDynError\\\\
+  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
   \binoprel(\EQOP, \vv, \vvone) \evalarrow \vb
 }{
-  \evalpattern{\env, \vv, \overname{\PatternSingle(\ve)}{\vp}} \evalarrow \Normal(\vb, \newg)
+  \evalpattern{\env, \vv, \overname{\PatternSingle(\ve)}{\vp}} \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPSingleBegin}{\EvalPSingleEnd}{../Interpreter.ml}
@@ -369,8 +375,8 @@ range given by \texttt{3..42}.
   \item $\vp$ is the condition corresponding to being greater than or equal
     to $\veone$, and lesser or equal to $\vetwo$, that is, $\PatternRange(\veone, \vetwo)$;
   \item $\veone$ and $\vetwo$ are side-effect-free expressions;
-  \item the side-effect-free evaluation of $\veone$ in $\env$ is $\Normal(\vvone, \vgone)$\ProseOrError;
-  \item the side-effect-free evaluation of $\vetwo$ in $\env$ is $\Normal(\vvtwo, \vgtwo)$\ProseOrError;
+  \item the side-effect-free evaluation of $\veone$ in $\env$ is $\ResultExprSEF(\vvone, \vgone)$\ProseOrDynErrorDiverging;
+  \item the side-effect-free evaluation of $\vetwo$ in $\env$ is $\ResultExprSEF(\vvtwo, \vgtwo)$\ProseOrDynErrorDiverging;
   \item $\vbone$ is the Boolean value corresponding to whether
     $\vv$ is greater than or equal to $\vvone$;
     \item $\vbtwo$ is the Boolean value corresponding to whether
@@ -382,14 +388,14 @@ range given by \texttt{3..42}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexprsef{\env, \veone} \evalarrow \Normal(\vvone, \vgone) \OrDynError\\\\
+  \evalexprsef{\env, \veone} \evalarrow \ResultExprSEF(\vvone, \vgone) \OrDynErrorDiverging\\\\
   \binoprel(\GEQ, \vv, \vvone) \evalarrow \vbone\\
-  \evalexprsef{\env, \veone} \evalarrow \Normal(\vvtwo, \vgtwo) \OrDynError\\\\
+  \evalexprsef{\env, \veone} \evalarrow \ResultExprSEF(\vvtwo, \vgtwo) \OrDynErrorDiverging\\\\
   \binoprel(\LEQ, \vv, \vvtwo) \evalarrow \vbtwo\\
   \binoprel(\BAND, \vbone, \vbtwo) \evalarrow \vb\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
-  \evalpattern{\env, \vv, \PatternRange(\veone, \vetwo)} \evalarrow \Normal(\vb, \newg)
+  \evalpattern{\env, \vv, \PatternRange(\veone, \vetwo)} \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPRangeBegin}{\EvalPRangeEnd}{../Interpreter.ml}
@@ -469,20 +475,21 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\vp$ is the condition corresponding to being less than or equal
-    to the side-effect-free expression $\ve$, $\PatternLeq(\ve)$;
-  \item the side-effect-free evaluation of $\ve$ is either
-  $\Normal(\vvone, \newg)$\ProseOrError;
-  \item $\vb$ is the Boolean value corresponding to whether $\vv$
-    is less than or equal to $\vvone$.
+\item $\vp$ is the condition corresponding to being less than or equal
+      to the side-effect-free expression $\ve$, $\PatternLeq(\ve)$;
+\item the side-effect-free evaluation of $\ve$ is
+      $\ResultExprSEF(\vvone, \newg)$\ProseOrDynErrorDiverging;
+\item $\vb$ is the Boolean value corresponding to whether $\vv$
+      is less than or equal to $\vvone$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexprsef{\env, \ve} \evalarrow \Normal(\vvone, \newg) \OrDynError\\\\
+  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
   \binoprel(\LEQ, \vv, \vvone) \evalarrow \vb
 }{
-  \evalpattern{\env, \vv, \PatternLeq(\ve)} \evalarrow \Normal(\vb, \newg)
+  \evalpattern{\env, \vv, \PatternLeq(\ve)} \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPLeqBegin}{\EvalPLeqEnd}{../Interpreter.ml}
@@ -561,20 +568,21 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\vp$ is the condition corresponding to being greater than or equal
-    than the side-effect-free expression $\ve$, $\PatternGeq(\ve)$;
-  \item the side-effect-free evaluation of $\ve$ is either
-  $\Normal(\vvone, \newg)$\ProseOrError;
-  \item $\vb$ is the Boolean value corresponding to whether $\vv$
-    is greater than or equal to $\vvone$.
+\item $\vp$ is the condition corresponding to being greater than or equal
+      than the side-effect-free expression $\ve$, $\PatternGeq(\ve)$;
+\item the side-effect-free evaluation of $\ve$ is either
+      $\ResultExprSEF(\vvone, \newg)$\ProseOrDynErrorDiverging;
+\item $\vb$ is the Boolean value corresponding to whether $\vv$
+      is greater than or equal to $\vvone$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexprsef{\env, \ve} \evalarrow \Normal(\vvone, \newg) \OrDynError\\\\
+  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
   \binoprel(\GEQ, \vv, \vvone) \evalarrow \vb
 }{
-  \evalpattern{\env, \vv, \PatternGeq(\ve)} \evalarrow \Normal(\vb, \newg)
+  \evalpattern{\env, \vv, \PatternGeq(\ve)} \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPGeqBegin}{\EvalPGeqEnd}{../Interpreter.ml}
@@ -681,7 +689,7 @@ is defined by the following table:
 
 \begin{mathpar}
 \inferrule[empty]{}{
-  \evalpattern{\env, \overname{\nvbitvector(\emptylist)}{\vv}, \PatternMask(\emptylist)} \evalarrow \Normal(\True, \emptygraph)
+  \evalpattern{\env, \overname{\nvbitvector(\emptylist)}{\vv}, \PatternMask(\emptylist)} \evalarrow \ResultPattern(\True, \emptygraph)
 }
 \end{mathpar}
 
@@ -691,7 +699,7 @@ is defined by the following table:
   \vv = \nvbitvector(\vu_{1..n})\\
   \vb \eqdef \nvbool(\bigwedge_{i=1..n} \maskmatch(\vm_i, \vu_i))
 }{
-  \evalpattern{\env, \vv, \PatternMask(\vm)} \evalarrow \Normal(\vb, \emptygraph)
+  \evalpattern{\env, \vv, \PatternMask(\vm)} \evalarrow \ResultPattern(\vb, \emptygraph)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPMaskBegin}{\EvalPMaskEnd}{../Interpreter.ml}
@@ -774,21 +782,22 @@ the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patt
   \item $\vp$ gives a list of patterns $\vps$ of length $k$, $\PatternTuple(\vps)$;
   \item $\vv$ gives a tuple of values $\vvs$ of length $k$;
   \item for all $1 \leq i \leq n$, $\vb_i$ is the evaluation result
-    of $\vp_i$ with respect to the value $\vv_i$ in
-    environment $\env$;
+        of $\vp_i$ with respect to the value $\vv_i$ in
+        environment $\env$\ProseOrDynErrorDiverging;
   \item $\vbs$ is the list of all $\vb_i$ for $1 \leq i \leq k$;
   \item $\vb$ is the conjunction of the Boolean values of $\vbs$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \vps \eqname \vp_{1..k}\\
   i=1..k: \getindex(i, \vv) \evalarrow \vvs_i\\
-  i=1..k: \evalpattern{\env, \vvs_i, \vp_i} \evalarrow \Normal(\nvbool(\vbs_i), \vg_i) \OrDynError\\\\
+  i=1..k: \evalpattern{\env, \vvs_i, \vp_i} \evalarrow \ResultPattern(\nvbool(\vbs_i), \vg_i) \OrDynErrorDiverging\\\\
   \vres \eqdef \nvbool(\bigwedge_{i=1..k} \vbs_i)\\
   \vg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k
 }{
-  \evalpattern{\env, \vv, \PatternTuple(\vps)} \evalarrow \Normal(\vres, \emptygraph)
+  \evalpattern{\env, \vv, \PatternTuple(\vps)} \evalarrow \ResultPattern(\vres, \emptygraph)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPTupleBegin}{\EvalPTupleEnd}{../Interpreter.ml}
@@ -899,19 +908,20 @@ any pattern in \verb|{3, 4}|.
 \begin{itemize}
   \item $\vp$ is a list of patterns, $\PatternAny(\vps)$;
   \item $\vps$ is $\vp_{1..k}$;
-  \item evaluating each pattern $\vp_i$ in $\env$ results in $\Normal(\nvbool(\vb_i), \vg_i)$\ProseOrAbnormal;
+  \item evaluating each pattern $\vp_i$ in $\env$ results in $\ResultPattern(\nvbool(\vb_i), \vg_i)$\ProseOrDynErrorDiverging;
   \item $\vb$ is the native Boolean which is the disjunction of $\vb_i$, for $i=1..k$;
   \item $\newg$ is the parallel composition of all execution graphs $\vg_i$, for $i=1..k$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \vps \eqname \vp_{1..k}\\
-  i=1..k : \evalpattern{\env, \vv, \vp_i} \evalarrow \Normal(\nvbool(\vb_i), \vg_i) \OrDynError\\\\
+  i=1..k : \evalpattern{\env, \vv, \vp_i} \evalarrow \ResultPattern(\nvbool(\vb_i), \vg_i) \OrDynErrorDiverging\\\\
   \vb \eqdef \nvbool(\bigvee_{i=1..k} \vb_i)\\
   \newg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k
 }{
-  \evalpattern{\env, \vv, \PatternAny(\vps)} \evalarrow \Normal(\vb, \newg)
+  \evalpattern{\env, \vv, \PatternAny(\vps)} \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPAnyBegin}{\EvalPAnyEnd}{../Interpreter.ml}
@@ -962,18 +972,18 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does match 
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\vp$ is a negation pattern, $\PatternNot(\vpone)$;
-  \item evaluating that pattern $\vpone$ in an environment $\env$ is \\
-  $\Normal(\vbone, \newg)$\ProseOrError;
-  \item $\vb$ is the Boolean negation of $\vbone$.
+\item $\vp$ is a negation pattern, $\PatternNot(\vpone)$;
+\item evaluating the pattern $\vpone$ in an environment $\env$ is \\
+      $\ResultPattern(\vbone, \newg)$\ProseOrDynErrorDiverging;
+\item $\vb$ is the Boolean negation of $\vbone$.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexprsef{\env, \vpone} \evalarrow \Normal(\vbone, \newg) \OrDynError\\\\
+  \evalexprsef{\env, \vpone} \evalarrow \ResultExprSEF(\vbone, \newg) \OrDynErrorDiverging\\\\
   \unoprel(\BNOT, \vbone) \evalarrow \vb
 }{
-  \evalpattern{\env, \vv, \PatternNot(\vpone)} \evalarrow \Normal(\vb, \newg)
+  \evalpattern{\env, \vv, \PatternNot(\vpone)} \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPNotBegin}{\EvalPNotEnd}{../Interpreter.ml}

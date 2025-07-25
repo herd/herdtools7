@@ -46,12 +46,12 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
   \begin{itemize}
     \item \AllApplyCase{normal\_literal}
     \begin{itemize}
-      \item evaluating $\ve$ in $\env$ yields $\Normal(\nvliteral{\vv}, \Ignore)$.
+      \item evaluating $\ve$ in $\env$ yields $\ResultExpr(\nvliteral{\vv}, \Ignore)$.
     \end{itemize}
 
     \item \AllApplyCase{normal\_non\_literal}
     \begin{itemize}
-      \item evaluating $\ve$ in $\env$ yields $\Normal(\vx, \Ignore)$
+      \item evaluating $\ve$ in $\env$ yields $\ResultExpr((\vx, \Ignore), \Ignore)$
             where $\vx$ is not a native value for a literal;
       \item the result is a \typingerrorterm{} indicating that $\ve$ cannot be statically evaluated to a literal.
     \end{itemize}
@@ -68,7 +68,7 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
 \begin{mathpar}
 \inferrule[normal\_literal]{
   \staticenvtoenv(\tenv) \typearrow \env\\
-  \evalexpr{\env, \ve} \evalarrow \Normal(\nvliteral{\vv}, \Ignore)
+  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\nvliteral{\vv}, \Ignore), \Ignore)
 }{
   \staticeval(\tenv, \ve) \typearrow \vv
 }
@@ -77,7 +77,7 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
 \begin{mathpar}
 \inferrule[normal\_non\_literal]{
   \staticenvtoenv(\tenv) \typearrow \env\\
-  \evalexpr{\env, \ve} \evalarrow \Normal(\vx, \Ignore)\\
+  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vx, \Ignore), \Ignore)\\
   \vx \neq \nvliteral{\Ignore}
 }{
   \staticeval(\tenv, \ve) \typearrow \TypeErrorVal{\StaticEvaluationFailure}

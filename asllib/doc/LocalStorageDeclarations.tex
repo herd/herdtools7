@@ -52,15 +52,15 @@ static environment.
     \overname{\localdeclitem}{\ldi} \aslsep
     \overname{\overname{\vals}{\vv}\times\overname{\XGraphs}{\vgone}}{\vm}
     } \;\aslrel\;
-    \Normal(\overname{\XGraphs}{\newg}, \overname{\envs}{\newenv})
+    \ResultLDI(\overname{\XGraphs}{\newg}, \overname{\envs}{\newenv})
 \]
 evaluates a \localdeclarationitem\ $\ldi$ in an environment
 $\env$ with an initialization value $\vm$.
 That is, the right-hand side of the declaration
 has already been evaluated, yielding $\vm$ (see, for example, \SemanticsRuleRef{SDeclSome}).
 Evaluation of the local variables $\ldi$
-in an environment $\env$ is either $\Normal(\vg, \newenv)$
-or an abnormal configuration.
+in an environment $\env$ is $\ResultLDI(\vg, \newenv)$.
+\ProseOtherwiseAbnormal
 
 While there are three different categories of local storage elements ---
 constants, mutable variables (declared via \texttt{var}), and immutable variables (declared via \texttt{let}) ---
@@ -301,7 +301,7 @@ to the evaluation of \texttt{3} in $\env$.
   \declarelocalidentifier(\env, \vx, \vv)\evalarrow(\newenv, \vgtwo)\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
 }{
-  \evallocaldecl{\env, \LDIVar(\vx), \vm} \evalarrow \Normal(\newg, \newenv)
+  \evallocaldecl{\env, \LDIVar(\vx), \vm} \evalarrow \ResultLDI(\newg, \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalLDVarBegin}{\EvalLDVarEnd}{../Interpreter.ml}
@@ -341,8 +341,12 @@ to the evaluation of \texttt{3} in $\env$.
   }\\\\
   \newtenv \eqdef \newtenv_0
 }{
+  {
+  \begin{array}{r}
   \annotatelocaldeclitem(\tenv, \tty, \ldk, \veopt, \overname{\LDITuple(\vids_{1..k})}{\ldi}) \typearrow \\
   \newtenv
+  \end{array}
+  }
 }
 \end{mathpar}
 \CodeSubsection{\LDTupleBegin}{\LDTupleEnd}{../Typing.ml}
@@ -387,7 +391,7 @@ evaluation of \texttt{3} in $\env$.
 The helper semantic relation
 \[
     \ldituplefolder(\overname{\envs}{\env} \aslsep \overname{\identifier^*}{\vids} \aslsep \overname{(\vals \times \XGraphs)^*}{\liv}) \;\aslrel\;
-     \Normal(\overname{\XGraphs}{\vg} \aslsep \overname{\envs}{\newenv})
+     \ResultLDI(\overname{\XGraphs}{\vg} \aslsep \overname{\envs}{\newenv})
 \]
 is defined as follows.
 
@@ -408,7 +412,7 @@ See \ExampleRef{Evaluation of Tuple Declarations}.
     \item $\vids$ is a list with \head{} $\id$ and \tail{} $\vids'$;
     \item $\liv$ is a list with \head{} $\vm$ and \tail{} $\liv'$;
     \item applying $\declarelocalidentifier$ to $\id$ and $\vv$ in $\env$ yields $(\envone, \vgtwo)$;
-    \item applying $\ldituplefolder$ to $\vids'$ and $\liv'$ in $\envone$ yields $\Normal(\vgthree, \newenv)$;
+    \item applying $\ldituplefolder$ to $\vids'$ and $\liv'$ in $\envone$ yields $\ResultLDI(\vgthree, \newenv)$;
     \item \Proseeqdef{$\newg$}{the parallel composition of the ordered composition of $\vgone$ and $\vgtwo$
           with the $\asldata$ edge, and $\vgthree$}.
   \end{itemize}
@@ -418,7 +422,7 @@ See \ExampleRef{Evaluation of Tuple Declarations}.
 \begin{mathpar}
 \inferrule[empty]{}
 {
-  \ldituplefolder(\env, \overname{\emptylist}{\vids}, \overname{\emptylist}{\liv}) \evalarrow \Normal(\emptygraph, \env)
+  \ldituplefolder(\env, \overname{\emptylist}{\vids}, \overname{\emptylist}{\liv}) \evalarrow \ResultLDI(\emptygraph, \env)
 }
 \end{mathpar}
 
@@ -428,9 +432,9 @@ See \ExampleRef{Evaluation of Tuple Declarations}.
   \liv = [\vm] \concat \liv'\\
   \vm \eqname (\vv, \vgone)\\\\
   \declarelocalidentifier(\env, \id, \vv) \evalarrow (\envone, \vgtwo)\\
-  \ldituplefolder(\envone, \vids', \liv') \evalarrow \Normal(\vgthree, \newenv)\\
+  \ldituplefolder(\envone, \vids', \liv') \evalarrow \ResultLDI(\vgthree, \newenv)\\
   \newg \eqdef (\ordered{\vgone}{\asldata}{\vgtwo}) \parallelcomp \vgthree\\
 }{
-  \ldituplefolder(\env, \vids, \liv) \evalarrow \Normal(\newg, \newenv)
+  \ldituplefolder(\env, \vids, \liv) \evalarrow \ResultLDI(\newg, \newenv)
 }
 \end{mathpar}

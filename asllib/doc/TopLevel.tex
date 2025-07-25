@@ -20,13 +20,14 @@ replaced with a translation to a hardware description language.
 \hypertarget{def-checkandinterpret}{}
 The relation
 \[
-\checkandinterpret(\overname{\Strings}{\vspectext}, \overname{\Strings}{\vstdtext}) \aslrel
+\checkandinterpret(\overname{\Strings}{\vspectext}, \overname{\Strings}{\vstdtext}) \;\aslrel\;
 \left(
     \begin{array}{cc}
         (\overname{\tint}{\vret} \times \overname{\XGraphs}{\vg})   & \cup\\
         \{\ \LexicalErrorConfig, \ParseErrorConfig, \BuildErrorConfig\ \}    & \cup\\
         \overname{\TTypeError}{\TypeErrorConfig}    & \cup\\
-        \overname{\TDynError}{\DynErrorConfig}      &
+        \overname{\TDynError}{\DynErrorConfig}      & \cup\\
+        \overname{\TDiverging}{\DivergingConfig} &
     \end{array}
 \right)
 \]
@@ -55,7 +56,7 @@ or a dynamic error.
     \item define $\vuntypedast$ as the concatenation of the AST $\vstdasbuiltin$ and
           the AST $\vspecast$ (both are lists of $\decl$);
     \item \Prosetypecheckast{$\vuntypedast$}{empty static global environment}{$\vtypedast$}{$\tenv$\ProseOrTypeError};
-    \item \Proseevalspec{$\vtypedast$}{$\tenv$}{the integer $\vret$ and the execution graph $\vg$\ProseOrError}.
+    \item \Proseevalspec{$\vtypedast$}{$\tenv$}{the integer $\vret$ and the execution graph $\vg$\ProseOrDynErrorDiverging}.
 \end{itemize}
 
 \FormallyParagraph
@@ -77,7 +78,7 @@ or a dynamic error.
     \buildast(\vspecparse) \astarrow \vspecast \terminateas \BuildErrorConfig\\\\
     \vuntypedast \eqdef \vstdasbuiltin \concat \vspecast\\
     \typecheckast(G^{\emptytenv}, \vuntypedast) \typearrow (\vtypedast, \tenv) \OrTypeError\\\\
-    \evalspec(\tenv, \vtypedast) \evalarrow (\nvint(\vret), \vg) \OrDynError
+    \evalspec(\tenv, \vtypedast) \evalarrow (\nvint(\vret), \vg) \OrDynErrorDiverging
 }{
     \checkandinterpret(\vspectext, \vstdtext) \longrightarrow (\nvint(\vret), \vg)
 }

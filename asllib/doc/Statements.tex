@@ -30,7 +30,8 @@ The relation
   \overname{\TReturning}{\Returning((\vvs,\newg), \newenv)} & \cup\\
   \overname{\TContinuing}{\Continuing(\newg,\newenv)} & \cup\\
   \overname{\TThrowing}{\ThrowingConfig} & \cup \\
-  \overname{\TDynError}{\DynErrorConfig} &
+  \overname{\TDynError}{\DynErrorConfig} & \cup \\
+  \overname{\TDiverging}{\DivergingConfig} & \\
   \end{array}
   \right)
 \]
@@ -221,9 +222,9 @@ $\nvint(2)$ to the mutable variable~\texttt{b}, and discards $\nvint(3)$.
   \item $\les$ is a list of \assignableexpressions, each of which is either \\ a variable ($\LEVar(\Ignore)$)
         or a discarded variable (\LEDiscard);
   \item evaluating the subprogram call as per \chapref{SubprogramCalls} is
-        $\Normal(\vms, \envone)$\ProseOrAbnormal;
+        $\ResultCall(\vms, \envone)$\ProseOrAbnormal;
   \item assigning each value in $\vms$ to the respective element of the tuple $\les$ is \\
-        $\Normal(\vgtwo, \newg)$\ProseOrAbnormal.
+        $\ResultLexpr(\vgtwo, \newg)$\ProseOrAbnormal.
 \end{itemize}
 
 \FormallyParagraph
@@ -244,8 +245,8 @@ from a subprogram call are as follows:
 \inferrule{
   \vles \eqdef \vle_{1..k}\\
   i=1..k: \lexprisvar(\vle_i) \evalarrow \True\\
-  \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \Normal(\vms, \envone) \OrAbnormal\\\\
-  \evalmultiassignment(\envone, \vles, \vms) \evalarrow \Normal(\newg, \newenv) \OrAbnormal
+  \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \ResultCall(\vms, \envone) \OrAbnormal\\\\
+  \evalmultiassignment(\envone, \vles, \vms) \evalarrow \ResultLexpr(\newg, \newenv) \OrAbnormal
 }{
   \evalstmt{\env, \SAssign(\LEDestructuring(\les),\ECall(\vcall))} \\
   \evalarrow \Continuing(\newg, \newenv)
@@ -272,9 +273,9 @@ $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
           nor a discarded variable.
   \end{itemize}
   \item evaluating the expression $\vre$ in $\env$ yields
-        $\Normal(\vm, \envone)$ (here, $\vm$ is a pair consisting of a value and an execution graph)\ProseOrAbnormal;
+        $\ResultExpr(\vm, \envone)$ (here, $\vm$ is a pair consisting of a value and an execution graph)\ProseOrAbnormal;
   \item evaluating the \assignableexpression\ $\vle$ with $\vm$ in $\envone$,
-        as per \chapref{AssignableExpressions}, yields $\Normal(\newg, \newenv)$\ProseOrAbnormal.
+        as per \chapref{AssignableExpressions}, yields $\ResultLexpr(\newg, \newenv)$\ProseOrAbnormal.
 \end{itemize}
 
 \FormallyParagraph
@@ -288,8 +289,8 @@ $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
   \end{array}
   \right)
   }\\
-  \evalexpr{\env, \vre} \evalarrow \Normal(\vm, \envone) \OrAbnormal\\
-  \evallexpr{\envone, \vle, \vm} \evalarrow \Normal(\newg, \newenv) \OrAbnormal
+  \evalexpr{\env, \vre} \evalarrow \ResultExpr(\vm, \envone) \OrAbnormal\\
+  \evallexpr{\envone, \vle, \vm} \evalarrow \ResultLexpr(\newg, \newenv) \OrAbnormal
 }{
   \evalstmt{\env, \SAssign(\vle, \vre)} \evalarrow \Continuing(\newg, \newenv)
 }
@@ -899,24 +900,26 @@ In \listingref{semantics-sdeclnone},
   \item \AllApplyCase{some}
   \begin{itemize}
     \item $\vs$ is a declaration with an initial value,
-    $\SDecl(\Ignore, \ldi, \Ignore, \langle\ve\rangle)$;
-    \item evaluating $\ve$ in $\env$ is $\Normal(\vm, \envone)$\ProseOrAbnormal;
+          $\SDecl(\Ignore, \ldi, \Ignore, \langle\ve\rangle)$;
+    \item evaluating $\ve$ in $\env$ is $\ResultExpr(\vm, \envone)$\ProseOrAbnormal;
     \item evaluating the local declaration $\ldi$ with $\vm$ as the initializing
-    value in $\envone$ as per \chapref{LocalStorageDeclarations} is $\Normal(\newg, \newenv)$;
+          value in $\envone$ as per \chapref{LocalStorageDeclarations} is
+          $\ResultLexpr(\newg, \newenv)$;
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
   \end{itemize}
 
   \item \AllApplyCase{none}
   \begin{itemize}
     \item $\vs$ is a declaration without an initial value, $\SDecl(\Ignore, \ldi, \Ignore, \None)$;
-    \item the result is a dynamic error.
+    \item the result is a \dynamicerrorterm.
   \end{itemize}
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[some]{
-  \evalexpr{\env, \ve} \evalarrow \Normal(\vm, \envone) \OrAbnormal\\
-  \evallocaldecl{\envone, \ldi, \vm} \evalarrow \Normal(\newg, \newenv)\\
+  \evalexpr{\env, \ve} \evalarrow \ResultExpr(\vm, \envone) \OrAbnormal\\
+  \evallocaldecl{\envone, \ldi, \vm} \evalarrow \ResultLexpr(\newg, \newenv)\\
 }{
   \evalstmt{\env, \SDecl(\Ignore, \ldi, \Ignore, \langle\ve\rangle)} \evalarrow \Continuing(\newg, \newenv)
 }
@@ -929,7 +932,7 @@ In \listingref{semantics-sdeclnone},
 \end{mathpar}
 \CodeSubsection{\EvalSDeclBegin}{\EvalSDeclEnd}{../Interpreter.ml}
 
-\section{Declaration statements with an elided parameter \label{sec:DeclarationStatementsElidedParameter}}
+\section{Declaration statements with an elided parameter\label{sec:DeclarationStatementsElidedParameter}}
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \
@@ -1184,27 +1187,28 @@ evaluates \texttt{let y = x + 1}.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\vs$ is a \emph{sequencing statement} \texttt{s1; s2}, that is, $\SSeq(\vsone, \vstwo)$;
+  \item $\vs$ is a \sequencingstatementterm{} \texttt{s1; s2}, that is, $\SSeq(\vsone, \vstwo)$;
   \item evaluating $\vsone$ in $\env$ is either $\Continuing(\vgone, \envone)$ in which case
-  the evaluation continues,
-  or a returning configuration ($\Returning((\vvs, \newg), \newenv)$)\ProseOrAbnormal;
+        the evaluation continues,
+        or a returning configuration ($\Returning((\vvs, \newg), \newenv)$)
+        or an abnormal configuration, which short-circuit the entire evaluation;
   \item evaluating $\vstwo$ in $\envone$ yields a non-abnormal configuration \\
-        (either $\Normal$ or $\Continuing$) $C$\ProseOrAbnormal;
+        (either $\Returning$ or $\Continuing$) $C$\ProseOrAbnormal;
   \item $\newg$ is the ordered composition of $\vgone$ and the execution graph of $C$ with the
-  $\aslpo$ edge;
+        $\aslpo$ edge;
   \item $D$ is the configuration $C$ with the execution graph component replaced with $\newg$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule{
-    \evalstmt{\env, \vsone} \evalarrow \Continuing(\vgone, \envone) \terminateas \ReturningConfig,\ThrowingConfig,\DynErrorConfig\\
-    \evalstmt{\envone, \vstwo} \evalarrow C \OrAbnormal\\
-    \newg \eqdef \ordered{\vgone}{\aslpo}{\graphof{C}}\\
-    D \eqdef \withgraph{C}{\newg}
-  }
-  {
-    \evalstmt{\env, \SSeq(\vsone, \vstwo)} \evalarrow D
-  }
+\inferrule{
+  \evalstmt{\env, \vsone} \evalarrow \Continuing(\vgone, \envone) \OrAbnormal,\ReturningConfig\\\\
+  \evalstmt{\envone, \vstwo} \evalarrow C \OrAbnormal\\\\
+  \newg \eqdef \ordered{\vgone}{\aslpo}{\graphof{C}}\\
+  D \eqdef \withgraph{C}{\newg}
+}{
+  \evalstmt{\env, \SSeq(\vsone, \vstwo)} \evalarrow D
+}
 \end{mathpar}
 \CodeSubsection{\EvalSSeqBegin}{\EvalSSeqEnd}{../Interpreter.ml}
 
@@ -1286,7 +1290,7 @@ can only be used for procedures, not functions.
 \begin{itemize}
   \item $\vs$ is a call statement, $\SCall(\vcall)$;
   \item evaluating the subprogram call as per \chapref{SubprogramCalls} is
-  \\ $\Normal(\newg, \newenv)$\ProseOrAbnormal;
+  \\ $\ResultCall(\newg, \newenv)$\ProseOrAbnormal;
   \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
 \end{itemize}
 
@@ -1296,7 +1300,7 @@ can only be used for procedures, not functions.
 {
 \begin{array}{r}
   \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \\
-  \Normal(\newg, \newenv) \OrAbnormal
+  \ResultCall(\newg, \newenv) \OrAbnormal
 \end{array}
 }
 }{
@@ -1429,13 +1433,13 @@ The specification in \listingref{semantics-scond4} does not result in any error.
 \AllApply
 \begin{itemize}
 \item $\vs$ is a condition statement, $\SCond(\ve, \vsone, \vstwo)$;
-\item evaluating $\ve$ in $\env$ is $\Normal(\vv, \vgone)$\ProseOrAbnormal;
+\item evaluating $\ve$ in $\env$ yields $\ResultExpr((\vv, \vgone), \envone)$\ProseOrAbnormal;
 \item $\vv$ is a native Boolean for $\vb$;
 \item the statement $\vsp$ is $\vsone$ is $\vb$ is $\True$ and $\vstwo$ otherwise
-(so that $\vsone$ will be evaluated if the condition evaluates to $\True$ and otherwise
-$\vstwo$ will be evaluated);
+      (so that $\vsone$ will be evaluated if the condition evaluates to $\True$ and otherwise
+      $\vstwo$ will be evaluated);
 \item evaluating $\vsp$ in $\envone$ as per \chapref{BlockStatements} is a non-abnormal configuration
-      (either $\Normal$ or $\Continuing$) $C$\ProseOrAbnormal;
+      (either $\Returning$ or $\Continuing$) $C$\ProseOrAbnormal;
 \item $\vg$ is the ordered composition of $\vgone$ and the execution graph of the configuration $C$;
 \item $D$ is the configuration $C$ with the execution graph component updated to be $\vg$.
 \end{itemize}
@@ -1443,7 +1447,7 @@ $\vstwo$ will be evaluated);
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \envone) \OrAbnormal\\
+  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vv, \vgone), \envone) \OrAbnormal\\\\
   \vv \eqname \nvbool(\vb)\\
   \vsp \eqdef \choice{\vb}{\vsone}{\vstwo}\\
   \evalblock{\envone, \vsp} \evalarrow C \OrAbnormal\\\\
@@ -1864,14 +1868,14 @@ evaluating \texttt{assert (42 == 3);} results in an \DynamicAssertionFailure{} e
   \begin{itemize}
     \item \AllApplyCase{okay}
     \begin{itemize}
-      \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \newg), \newenv)$\ProseOrAbnormal;
+      \item evaluating $\ve$ in $\env$ is $\ResultExpr((\vv, \newg), \newenv)$\ProseOrAbnormal;
       \item $\vv$ is a native Boolean value for $\True$;
       \item the resulting configuration is $\Continuing(\newg, \newenv)$.
     \end{itemize}
 
     \item \AllApplyCase{error}
     \begin{itemize}
-      \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \newg), \newenv)$;
+      \item evaluating $\ve$ in $\env$ is $\ResultExpr((\vv, \newg), \newenv)$;
       \item $\vv$ is a native Boolean value for $\False$;
       \item the result is a dynamic error indicating the assertion failure returned (\DynamicAssertionFailure).
     \end{itemize}
@@ -1881,7 +1885,7 @@ evaluating \texttt{assert (42 == 3);} results in an \DynamicAssertionFailure{} e
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[okay]{
-  \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \newg), \newenv) \OrAbnormal\\\\
+  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vv, \newg), \newenv) \OrAbnormal\\\\
   \vv \eqname \nvbool(\True)
 }{
   \evalstmt{\env, \SAssert(\ve)} \evalarrow \Continuing(\newg, \newenv)
@@ -1890,7 +1894,7 @@ evaluating \texttt{assert (42 == 3);} results in an \DynamicAssertionFailure{} e
 
 \begin{mathpar}
   \inferrule[error]{
-  \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \Ignore), \Ignore)\\
+  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vv, \Ignore), \Ignore)\\
   \vv \eqname \nvbool(\False)
 }{
   \evalstmt{\env, \SAssert(\ve)} \evalarrow \DynamicErrorVal{\DynamicAssertionFailure}
@@ -2097,10 +2101,10 @@ the output configuration $C$.
 \begin{itemize}
   \item $\vs$ is a \texttt{while} statement, $\SWhile(\ve, \velimitopt, \vbody)$;
   \item evaluating the optional limit expression $\velimitopt$ via $\evallimit$ in $\env$
-        yields $(\vlimitopt, \vgone)$\ProseOrError;
+        yields $(\vlimitopt, \vgone)$\ProseOrDynErrorDiverging;
   \item evaluating the loop as per \SemanticsRuleRef{Loop} in an environment $\env$,
   with the arguments $\True$ (which conveys that this is a \texttt{while} statement), $\vlimitopt$, $\ve$, and $\vbody$
-  yields the (non-error configuration) $C$\ProseOrError;
+  yields the (non-error configuration) $C$\ProseOrDynErrorDiverging;
   \item $\vgtwo$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge;
   \item the output configuration $D$ is the output configuration $C$ with its execution graph
         substituted with $\vgtwo$.
@@ -2108,8 +2112,8 @@ the output configuration $C$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evallimit(\env, \velimitopt) \evalarrow (\vlimitopt, \vgone) \OrDynError\\\\
-  \evalloop{\env, \True, \vlimitopt, \ve, \vbody} \evalarrow C \OrDynError\\\\
+  \evallimit(\env, \velimitopt) \evalarrow (\vlimitopt, \vgone) \OrDynErrorDiverging\\\\
+  \evalloop{\env, \True, \vlimitopt, \ve, \vbody} \evalarrow C \OrDynErrorDiverging\\\\
   \vgtwo \eqdef \ordered{\vgone}{\asldata}{\graphof{C}}\\
   D \eqdef \withgraph{C}{\vgtwo}
 }{
@@ -2158,7 +2162,7 @@ and the specification terminates with exit code $0$.
 \begin{itemize}
 \item \AllApplyCase{exit}
   \begin{itemize}
-    \item evaluating $\econd$ in $\env$ is $\Normal(\condm, \newenv)$\ProseOrAbnormal;
+    \item evaluating $\econd$ in $\env$ is $\ResultExpr(\condm, \newenv)$\ProseOrAbnormal;
     \item $\condm$ consists of a native Boolean for $\vb$ and an execution graph $\newg$;
     \item $\vb$ is not equal to $\iswhile$;
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$
@@ -2166,16 +2170,16 @@ and the specification terminates with exit code $0$.
   \end{itemize}
 \item \AllApplyCase{continue}
   \begin{itemize}
-    \item evaluating $\econd$ in $\env$ is $\Normal(\condm, \envone)$;
+    \item evaluating $\econd$ in $\env$ is $\ResultExpr(\condm, \envone)$\ProseOrAbnormal;
     \item $\mcond$ consists of a native Boolean for $\vb$ and an execution graph $\vgone$;
     \item $\vb$ is equal to $\iswhile$;
     \item \Proseticklooplimit{$\vlimitopt$}{$\vlimitoptp$}\ProseOrError;
     \item evaluating $\vbody$ in $\envone$ as per \SemanticsRuleRef{Block} is either \\
-    $\Continuing(\vgtwo, \envtwo)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
+          $\Continuing(\vgtwo, \envtwo)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig, \TDiverging};
     \item evaluating $(\iswhile, \vlimitoptp, \econd, \vbody)$ in $\envtwo$ as a loop is \\
-    $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
+          $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig, \TDiverging};
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label
-    and then the ordered composition of the result and $\vgthree$ with the $\aslpo$ edge;
+          and then the ordered composition of the result and $\vgthree$ with the $\aslpo$ edge;
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
   \end{itemize}
 \end{itemize}
@@ -2188,7 +2192,7 @@ The negation of the condition is used to decide whether to continue the loop ite
 
 \begin{mathpar}
 \inferrule[exit]{
-  \evalexpr{\env, \econd} \evalarrow \Normal(\condm, \newenv) \OrAbnormal\\
+  \evalexpr{\env, \econd} \evalarrow \ResultExpr(\condm, \newenv) \OrAbnormal\\\\
   \condm \eqname (\nvbool(\vb), \newg)\\
   \vb \neq \iswhile
 }{
@@ -2198,15 +2202,15 @@ The negation of the condition is used to decide whether to continue the loop ite
 
 \begin{mathpar}
 \inferrule[continue]{
-  \evalexpr{\env, \econd} \evalarrow \Normal(\condm, \envone)\\
+  \evalexpr{\env, \econd} \evalarrow \ResultExpr(\condm, \envone) \OrAbnormal\\\\
   \condm \eqname (\nvbool(\vb), \vgone)\\
   \vb = \iswhile\\
   \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp \OrDynError\\\\
-  \evalblock{\envone, \vbody} \evalarrow \Continuing(\vgtwo, \envtwo) \terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig\\
+  \evalblock{\envone, \vbody} \evalarrow \Continuing(\vgtwo, \envtwo) \OrAbnormal, \ReturningConfig\\\\
   {
     \begin{array}{r}
       \evalloop{\envtwo, \iswhile, \vlimitoptp, \econd, \vbody} \evalarrow \\
-      \Continuing(\vgthree, \newenv) \terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig\\
+      \Continuing(\vgthree, \newenv) \OrAbnormal, \ReturningConfig\\
     \end{array}
   }\\
   \newg \eqdef \ordered{\ordered{\vgone}{\aslctrl}{\vgtwo}}{\aslpo}{\vgthree}
@@ -2221,12 +2225,18 @@ The relation
 \hypertarget{def-evallimit}{}
 \[
 \evallimit(\overname{\env}{\envs} \aslsep \overname{\velimitopt}{\expr?})
-\aslto (\overname{\langle\N\rangle}{\vvopt}, \overname{\vg}{\XGraphs})
-\cup \overname{\TDynError}{\DynErrorConfig}
+\;\aslrel\;
+\left(
+\begin{array}{ll}
+(\overname{\langle\N\rangle}{\vvopt}, \overname{\XGraphs}{\vg}) & \cup\\
+\overname{\TDynError}{\DynErrorConfig} & \cup\\
+\overname{\TDiverging}{\DivergingConfig} & \\
+\end{array}
+\right)
 \]
 evaluates the optional expression $\velimitopt$ in the environment $\env$, yielding
 the optional integer value $\vvopt$ and execution graph $\vg$.
-\ProseOrError
+\ProseOtherwiseDynamicErrorOrDiverging
 
 The evaluation uses the function $\evalexprsef$ because limit expressions are
 guaranteed side-effect-free by the typechecker,
@@ -2249,8 +2259,8 @@ of the \whilestatementterm.
   \item \AllApplyCase{some}
   \begin{itemize}
     \item $\velimitopt$ is the expression $\velimit$;
-    \item evaluating the side-effect-free expression $\velimitopt$ in $denv$ yields the native integer for $\vv$ and
-          the execution graph $\vg$;
+    \item evaluating the side-effect-free expression $\velimitopt$ in $\denv$ yields the native integer for $\vv$ and
+          the execution graph $\vg$\ProseOrDynErrorDiverging;
     \item $\vvopt$ is $\langle\vv\rangle$.
   \end{itemize}
 \end{itemize}
@@ -2264,7 +2274,7 @@ of the \whilestatementterm.
 
 \begin{mathpar}
 \inferrule[some]{
-  \evalexprsef{\env, \velimit} \evalarrow (\nvint(\vv), \vg) \OrDynError
+  \evalexprsef{\env, \velimit} \evalarrow (\nvint(\vv), \vg) \OrDynErrorDiverging
 }{
   \evallimit(\env, \overname{\langle\velimit\rangle}{\velimitopt}) \evalarrow (\overname{\langle\vv\rangle}{\vvopt}, \vg)
 }
@@ -2433,10 +2443,10 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$.
 \begin{itemize}
   \item $\vs$ is a \texttt{repeat} statement, $\SRepeat(\ve, \vbody, \velimitopt)$;
   \item evaluating the optional limit expression $\velimitopt$ via $\evallimit$ in $\env$
-        yields $(\vlimitopt, \vgone)$\ProseOrError;
+        yields $(\vlimitopt, \vgone)$\ProseOrDynErrorDiverging;
   \item \Proseticklooplimit{$\vlimitoptone$}{$\vlimitopttwo$}\ProseOrError;
   \item evaluating $\vbody$ in $\env$ as per \chapref{BlockStatements}
-        yields $\Continuing(\vgtwo, \envone)$\ProseTerminateAs{\ReturningConfig,\ThrowingConfig,\DynErrorConfig};
+        yields $\Continuing(\vgtwo, \envone)$\ProseTerminateAs{\ReturningConfig,\ThrowingConfig,\DynErrorConfig,\DivergingConfig};
   \item evaluating the loop as per \secref{SemanticsRule.Loop} in an environment $\envone$,
         with the arguments $\False$ (which conveys that this is a \texttt{repeat} statement),
         $\vlimitopttwo$,
@@ -2451,9 +2461,9 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evallimit(\env, \velimitopt) \evalarrow (\vlimitoptone, \vgone) \OrDynError\\\\
+  \evallimit(\env, \velimitopt) \evalarrow (\vlimitoptone, \vgone) \OrDynErrorDiverging\\\\
   \ticklooplimit(\vlimitoptone) \evalarrow \vlimitopttwo \OrDynError\\\\
-  \evalblock{\env, \vbody} \evalarrow \Continuing(\vgtwo, \envone) \terminateas \ReturningConfig,\ThrowingConfig,\DynErrorConfig\\\\
+  \evalblock{\env, \vbody} \evalarrow \Continuing(\vgtwo, \envone) \OrAbnormal, \ReturningConfig\\\\
   \evalloop{\envone, \False, \vlimitopttwo, \ve, \vbody} \evalarrow C\\
   \vgthree \eqdef \ordered{\vgone}{\asldata}{\ordered{\vgtwo}{\aslpo}{\graphof{C}}}\\
   D \eqdef \withgraph{C}{\vgthree}
@@ -2784,14 +2794,16 @@ whose body does not evaluate since its lower bound is greater than its upper bou
     \Forbody &:& \vbody\\
     \Forlimit &:& \Ignore
   \end{array}\right\}$;
-  \item evaluating the side-effect-free expression $\vstarte$ in $\env$ yields
-        $\Normal(\vstartv, \vgone)$\ProseOrError;
-  \item evaluating the side-effect-free expression $\vende$ in $\env$ yields
-        $\Normal(\vendv, \vgtwo)$\ProseOrError;
-  \item \Proseevallimit{$\env$}{$\velimitopt$}{$\Normal(\vlimitopt, \vgthree)$}\ProseOrError;
+  \item evaluating the side-effect-free expression $\vstarte$ in $\env$ yields\\
+        $\ResultExprSEF(\vstartv, \vgone)$\ProseOrDynErrorDiverging;
+  \item evaluating the side-effect-free expression $\vende$ in $\env$ yields\\
+        $\ResultExprSEF(\vendv, \vgtwo)$\ProseOrError;
+  \item \Proseevallimit{$\env$}{$\velimitopt$}{$(\vlimitopt, \vgthree)$}\ProseOrDynErrorDiverging;
   \item declaring the local identifier $\vindexname$ in $\env$ with value $\vstartv$ is $(\vgfour, \envone)$;
-  \item evaluating the \texttt{for} loop with arguments $(\vindexname, \vlimitopt, \vstartv, \dir, \vendv, \vbody)$ in $\envone$,
-        as per \SemanticsRuleRef{EvalFor} yields $\Normal(\vgfive, \envtwo)$\ProseOrAbnormal;
+  \item applying the \texttt{for} loop with arguments \\
+        $(\vindexname, \vlimitopt, \vstartv, \dir, \vendv, \vbody)$ in $\envone$,
+        as per \\
+        \SemanticsRuleRef{EvalFor} yields $\Continuing(\vgfive, \envtwo)$\ProseReturningOrAbnormal;
   \item removing the local $\vindexname$ from $\envtwo$ is $\envthree$;
   \item $\newg$ is formed as follows:
         the parallel composition of $\vgone$, $\vgtwo$, and $\vgthree$;
@@ -2807,14 +2819,14 @@ side-effect-free, as guaranteed by \TypingRuleRef{SFor}, which is why
 they are evaluated via the rule for evaluating side-effect-free expressions.
 \begin{mathpar}
 \inferrule{
-  \evalexprsef{\env, \vstarte} \evalarrow \Normal(\vstartv, \vgone) \OrDynError\\\\
-  \evalexprsef{\env, \vende} \evalarrow \Normal(\vendv, \vgtwo) \OrDynError\\\\
-  \evallimit(\env, \velimitopt) \evalarrow \Normal(\vlimitopt, \vgthree) \OrDynError\\\\
+  \evalexprsef{\env, \vstarte} \evalarrow \ResultExprSEF(\vstartv, \vgone) \OrDynErrorDiverging\\\\
+  \evalexprsef{\env, \vende} \evalarrow \ResultExprSEF(\vendv, \vgtwo) \OrDynErrorDiverging\\\\
+  \evallimit(\env, \velimitopt) \evalarrow (\vlimitopt, \vgthree) \OrDynErrorDiverging\\\\
   \declarelocalidentifier(\env, \vindexname, \vstartv) \evalarrow (\vgfour,\envone)\\
   {
     \begin{array}{r}
       \evalfor(\envone, \vindexname, \vlimitopt, \vstartv, \dir, \vendv, \vbody) \evalarrow \\
-      \Normal(\vgfive, \envtwo) \OrAbnormal
+      \Continuing(\vgfive, \envtwo) \OrReturningOrAbnormal
     \end{array}
   }\\
   \removelocal(\envtwo, \vindexname) \evalarrow \envthree\\
@@ -2823,7 +2835,7 @@ they are evaluated via the rule for evaluating side-effect-free expressions.
 }{
   {
   \begin{array}{r}
-  \evalstmt{\env,
+  \evalstmtname\left(\env,
   \overname{
   \SFor\left\{\begin{array}{rcl}
     \Forindexname &:& \vindexname\\
@@ -2832,7 +2844,8 @@ they are evaluated via the rule for evaluating side-effect-free expressions.
     \Forende &:& \vende\\
     \Forbody &:& \vbody\\
     \Forlimit &:& \velimitopt\\
-  \end{array}\right\}}{\vs}} \evalarrow \\ \Continuing(\newg, \newenv)
+  \end{array}\right\}}{\vs}
+  \right) \evalarrow \\ \Continuing(\newg, \newenv)
   \end{array}
   }
 }
@@ -2843,21 +2856,25 @@ they are evaluated via the rule for evaluating side-effect-free expressions.
 The relation
 \hypertarget{def-evalfor}{}
 \[
-  \evalfor(
-    \overname{\envs}{\env} \aslsep
-    \overname{\Identifiers}{\vindexname} \aslsep
-    \overname{\langle\tint\rangle}{\vlimitopt} \aslsep
-    \overname{\tint}{\vstart} \aslsep
-    \overname{\{\UP, \DOWN\}}{\dir} \aslsep
-    \overname{\tint}{\vend} \aslsep
-    \overname{\stmt}{\vbody})
+  \evalfor\left(
+  \begin{array}{cl}
+    \overname{\envs}{\env}                      & \aslsep\\
+    \overname{\Identifiers}{\vindexname}        & \aslsep\\
+    \overname{\langle\tint\rangle}{\vlimitopt}  & \aslsep\\
+    \overname{\tint}{\vstart}                   & \aslsep\\
+    \overname{\{\UP, \DOWN\}}{\dir}             & \aslsep\\
+    \overname{\tint}{\vend}                     & \aslsep\\
+    \overname{\stmt}{\vbody}                    &
+  \end{array}
+  \right)
   \;\aslrel\;
   \left(
     \begin{array}{cl}
     \overname{\TReturning}{\ReturningConfig} & \cup\\
     \overname{\TContinuing}{\ContinuingConfig} & \cup\\
     \overname{\TThrowing}{\ThrowingConfig} & \cup\\
-    \overname{\TDynError}{\DynErrorConfig} &
+    \overname{\TDynError}{\DynErrorConfig} & \cup\\
+    \overname{\TDiverging}{\DivergingConfig} & \\
     \end{array}
     \right)
 \]
@@ -2872,36 +2889,52 @@ The evaluation utilizes two helper relations: $\evalforstep$ and $\evalforloop$.
 \hypertarget{def-evalforstep}{}
 The helper relation
 \[
-  \evalforstep(
-    \overname{\envs}{\env},
-    \overname{\Identifiers}{\vindexname},
-    \overname{\langle\tint\rangle}{\vlimitopt} \aslsep
-    \overname{\tint}{\vstart},
-    \overname{\{\UP,\DOWN\}}{\dir})
-    \;\aslrel\;
-    ((\overname{\tint}{\vstep} \times \overname{\envs}{\newenv}) \times \overname{\XGraphs}{\newg})
+  \evalforstep\left(
+  \begin{array}{cl}
+  \overname{\envs}{\env}                      & \aslsep\\
+  \overname{\Identifiers}{\vindexname}        & \aslsep\\
+  \overname{\langle\tint\rangle}{\vlimitopt}  & \aslsep\\
+  \overname{\tint}{\vstart}                   & \aslsep\\
+  \overname{\{\UP,\DOWN\}}{\dir}              &
+  \end{array}
+  \right)
+  \;\aslrel\;
+  \left(
+  \begin{array}{cl}
+  ((\overname{\tint}{\vstep} \times \overname{\envs}{\newenv}) \times \overname{\XGraphs}{\newg}) & \cup\\
+  \overname{\TReturning}{\ReturningConfig}  & \cup\\
+  \overname{\TThrowing}{\ThrowingConfig}    & \cup \\
+  \overname{\TDynError}{\DynErrorConfig}    & \cup\\
+  \overname{\TDiverging}{\DivergingConfig}  &
+  \end{array}
+  \right)
 \]
 either increments or decrements the index variable,
 returning the new value of the index variable, the modified environment,
 and the resulting execution graph.
+\ProseOtherwiseReturningOrAbnormal
 
 \hypertarget{def-evalforloop}{}
 The helper relation
 \[
-  \evalforloop(\overname{
-    \envs}{\env},
-    \overname{\Identifiers}{\vindexname},
-    \overname{\langle\tint\rangle}{\vlimitopt},
-    \overname{\tint}{\vstart},
-    \overname{\{\UP,\DOWN\}}{\dir},
-    \overname{\tint}{\vend},
-    \overname{\stmt}{\vbody}) \;\aslrel\;
+  \evalforloop\left(
+    \begin{array}{cl}
+    \overname{\envs}{\env} \aslsep &\\
+    \overname{\Identifiers}{\vindexname} \aslsep &\\
+    \overname{\langle\tint\rangle}{\vlimitopt} \aslsep &\\
+    \overname{\tint}{\vstart} \aslsep &\\
+    \overname{\{\UP,\DOWN\}}{\dir} \aslsep &\\
+    \overname{\tint}{\vend} \aslsep &\\
+    \overname{\stmt}{\vbody} &
+    \end{array}
+    \right) \;\aslrel\;
     \left(
     \begin{array}{cl}
-      \overname{\TContinuing}{\Continuing(\newg, \newenv)} & \cup\\
-      \overname{\TReturning}{\ReturningConfig} & \cup\\
+    \overname{\TContinuing}{\Continuing(\newg, \newenv)} & \cup\\
+    \overname{\TReturning}{\ReturningConfig} & \cup\\
     \overname{\TThrowing}{\ThrowingConfig} & \cup \\
-    \overname{\TDynError}{\DynErrorConfig} &
+    \overname{\TDynError}{\DynErrorConfig} & \cup\\
+    \overname{\TDiverging}{\DivergingConfig} &
     \end{array}
     \right)
 \]
@@ -2954,16 +2987,18 @@ or an abnormal configuration.
     \begin{itemize}
     \item \AllApplyCase{return}
     \begin{itemize}
-      \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native Boolean for $\True$;
+      \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native \\
+            Boolean for $\True$;
       \item $\newg$ is $\vgone$;
       \item $\newenv$ is $\env$;
       \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
     \end{itemize}
     \item \AllApplyCase{continue}
     \begin{itemize}
-      \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native Boolean for $\False$;
+      \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native \\
+            Boolean for $\False$;
       \item evaluating the loop body via $\evalforloop$ with \\ $(\vindexname, \vlimitopt, \vstart, \dir, \vend, \vbody)$
-      in $\env$ is \\ $\Continuing(\vgtwo, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
+      in $\env$ is \\ $\Continuing(\vgtwo, \newenv)$\ProseOrAbnormalReturning;
       \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label.
     \end{itemize}
   \end{itemize}
@@ -2993,12 +3028,12 @@ Advancing the loop counter one step towards the end of its range is achieved via
 Running the loop body is achieved via the following rule:
 \begin{mathpar}
 \inferrule{
-  \evalblock{\env, \vbody} \evalarrow \Continuing(\vgone, \envone) \terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig\\
+  \evalblock{\env, \vbody} \evalarrow \Continuing(\vgone, \envone) \OrAbnormalReturning\\\\
   \evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir) \evalarrow ((\vstep, \envtwo), \vgtwo)\\
   {
     \begin{array}{r}
       \evalfor(\envtwo, \vindexname, \vlimitopt, \vstep, \dir, \vend, \vbody) \evalarrow \\
-      \Continuing(\vgthree, \newenv) \terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig
+      \Continuing(\vgthree, \newenv) \OrAbnormalReturning
     \end{array}
   }\\
   \newg \eqdef \ordered{\ordered{\vgone}{\aslpo}{\vgtwo}}{\aslpo}{\vgthree}
@@ -3040,7 +3075,7 @@ $\evalforloop$ (the latter in a mutually recursive manner):
   \commonprefixline\\\\
   \binoprel(\compfordir, \vend, \vstart) \evalarrow \nvint(\False)\\
   \evalforloop(\env, \vindexname, \vnextlimitopt, \vstart, \dir, \vend, \vbody) \evalarrow \\
-  \Continuing(\vgtwo, \newenv) \terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig\\\\
+  \Continuing(\vgtwo, \newenv) \OrAbnormalReturning\\\\
   \newg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
 }{
   {
@@ -3119,7 +3154,7 @@ show examples of well-typed \throwstatementsterm.
   (\overname{\SThrow(\None)}{\news}, \overname{\tenv}{\newtenv}, \overname{\{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\}}{\vses})
 }
 \end{mathpar}
-\lrmcomment{Note that \identr{BRCJ} is done in~\cite[SemanticsRule.TopLevel]{ASLSemanticsReference}.}
+\identr{BRCJ}
 
 \begin{mathpar}
 \inferrule[some]{
@@ -3166,7 +3201,7 @@ terminates successfully. That is, no dynamic error occurs.
   \begin{itemize}
     \item $\vs$ is a \texttt{throw} statement that provides an expression and a type, \\
           $\SThrow(\langle(\ve, \vt)\rangle)$;
-    \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \vgone), \newenv)$\ProseOrAbnormal;
+    \item evaluating $\ve$ in $\env$ is $\ResultExpr((\vv, \vgone), \newenv)$\ProseOrAbnormal;
     \item $\name$ is a fresh identifier (which conceptually holds the exception value);
     \item $\vgtwo$ is a Write Effect to $\name$;
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge;
@@ -3185,7 +3220,7 @@ terminates successfully. That is, no dynamic error occurs.
 
 \begin{mathpar}
 \inferrule[some]{
-  \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \newenv) \OrAbnormal\\
+  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\
   \name\in\Identifiers \text{ is fresh}\\
   \vgtwo \eqdef \WriteEffect(\name)\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}\\
@@ -3358,14 +3393,15 @@ does not result in any Assertion error, and the specification terminates with th
 \begin{itemize}
   \item $\vs$ is a \texttt{try} statement, $\STry(\vs, \catchers, \otherwiseopt)$;
   \item evaluating $\vsone$ in $\env$ as per \chapref{BlockStatements}
-        yields the configuration $\sm$\ProseOrError;
+        yields the configuration $\sm$\ProseOrDynErrorDiverging;
   \item evaluating $(\catchers, \otherwiseopt, \sm)$ as per \chapref{CatchingExceptions}
         is $C$, which is the result of the entire evaluation.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalblock{\env, \vsone} \evalarrow \sm \OrDynError\\\\
+  \evalblock{\env, \vsone} \evalarrow \sm \OrDynErrorDiverging\\\\
   \evalcatchers{\env, \catchers, \otherwiseopt, \sm} \evalarrow C
 }{
   \evalstmt{\env, \STry(\vsone, \catchers, \otherwiseopt)} \evalarrow C
@@ -3507,7 +3543,7 @@ In \listingref{semantics-sreturntuple},
   \begin{itemize}
     \item $\vs$ is a \texttt{return} statement;
     \item $\vs$ is a \texttt{return} statement for a single expression, $\SReturn(\langle\ve\rangle)$;
-    \item evaluating $\ve$ in $\env$ is $\Normal((\vv, \vgone), \newenv)$\ProseOrAbnormal;
+    \item evaluating $\ve$ in $\env$ is $\ResultExpr((\vv, \vgone), \newenv)$\ProseOrAbnormal;
     \item $\vvs$ is $[\vv]$;
     \item $\vgtwo$ is the result of adding a Write Effect for a fresh identifier and the value $\vv$;
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
@@ -3517,7 +3553,7 @@ In \listingref{semantics-sreturntuple},
   \begin{itemize}
     \item $\vs$ is a \texttt{return} statement for a list of expressions, $\SReturn(\langle\ETuple(\es)\rangle)$;
     \item evaluating each expression in $\es$ separately as per \secref{SemanticsRule.EExprListM}
-    is \\ $\Normal(\ms, \newenv)$\ProseOrAbnormal;
+    is \\ $\ResultExprListM(\ms, \newenv)$\ProseOrAbnormal;
     \item writing the list of values in $\vms$ results in $(\vvs, \newg)$.
   \end{itemize}
 \end{itemize}
@@ -3532,7 +3568,7 @@ In \listingref{semantics-sreturntuple},
 
 \begin{mathpar}
 \inferrule[one]{
-  \evalexpr{\env, \ve} \evalarrow \Normal((\vv, \vgone), \newenv) \OrAbnormal\\\\
+  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\\\
   \wid \in \Identifiers\text{ is fresh}\\
   \writeidentifier(\wid, \vv) \evalarrow \vgtwo\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
@@ -3543,7 +3579,7 @@ In \listingref{semantics-sreturntuple},
 
 \begin{mathpar}
 \inferrule[tuple]{
-  \evalexprlistm(\env, \es) \evalarrow \Normal(\ms, \newenv) \OrAbnormal\\
+  \evalexprlistm(\env, \es) \evalarrow \ResultExprListM(\ms, \newenv) \OrAbnormal\\
   \writefolder(\ms) \evalarrow (\vvs, \newg)
 }{
   \evalstmt{\env, \SReturn(\langle\ETuple(\es)\rangle)} \evalarrow \Returning((\vvs, \newg), \newenv)
@@ -3555,9 +3591,15 @@ In \listingref{semantics-sreturntuple},
 \hypertarget{def-evalexprlistm}{}
 The helper relation
 \[
-  \evalexprlistm(\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vEs}) \;\aslrel\;
-          \Normal(\overname{(\vals\times\XGraphs)^* }{\vms} \aslsep \overname{\envs}{\newenv}) \cup
-          \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
+\evalexprlistm(\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vEs}) \;\aslrel\;
+\left(
+\begin{array}{cl}
+\ResultExprListM(\overname{(\vals\times\XGraphs)^* }{\vms} \aslsep \overname{\envs}{\newenv}) & \cup\\
+\overname{\TThrowing}{\ThrowingConfig} & \cup \\
+\overname{\TDynError}{\DynErrorConfig} & \cup \\
+\overname{\TDiverging}{\DivergingConfig}
+\end{array}
+\right)
 \]
 evaluates a list of expressions $\vEs$ in left-to-right in the initial environment $\env$
 and returns the list of values associated with graphs $\vms$ and the new environment $\newenv$.
@@ -3579,10 +3621,10 @@ are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
   \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\vEs$ is a list with \head\ $\ve$ and \tail\ $\vesone$;
-    \item evaluating $\ve$ in $\env$ yields $\Normal(\vmone, \envone)$\ProseOrAbnormal;
+    \item evaluating $\ve$ in $\env$ yields $\ResultExpr(\vmone, \envone)$\ProseOrAbnormal;
     \item evaluating $\vesone$ in $\envone$ via $\evalexprlistm$ yields \\
-          $\Normal(\vmsone, \newenv)$\ProseOrAbnormal;
-    \item the result is the normal configuration with the list consisting of $\vmone$ as its \head\ and $\vmsone$
+          $\ResultExprListM(\vmsone, \newenv)$\ProseOrAbnormal;
+    \item the result is a configuration consisting of a list with $\vmone$ as its \head\ and $\vmsone$
           as its \tail\ and $\newenv$.
   \end{itemize}
 \end{itemize}
@@ -3591,7 +3633,7 @@ are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
 \begin{mathpar}
 \inferrule[empty]{}
 {
-  \evalexprlistm(\env, \overname{\emptylist}{\vEs}) \evalarrow \Normal(\overname{\emptylist}{\vms}, \overname{\env}{\newenv})
+  \evalexprlistm(\env, \overname{\emptylist}{\vEs}) \evalarrow \ResultExprListM(\overname{\emptylist}{\vms}, \overname{\env}{\newenv})
 }
 \end{mathpar}
 
@@ -3599,10 +3641,10 @@ are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
 \begin{mathpar}
 \inferrule[non\_empty]{
   \vEs = [\ve] \concat \vesone\\
-  \evalexpr{\env, \ve} \evalarrow \Normal(\vmone, \envone) \OrAbnormal\\
-  \evalexprlistm(\envone, \vesone) \evalarrow \Normal(\vmsone, \newenv) \OrAbnormal
+  \evalexpr{\env, \ve} \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal\\
+  \evalexprlistm(\envone, \vesone) \evalarrow \ResultExprListM(\vmsone, \newenv) \OrAbnormal
 }{
-  \evalexprlistm(\env, \vEs) \evalarrow \Normal([\vmone]\concat\vmsone, \newenv)
+  \evalexprlistm(\env, \vEs) \evalarrow \ResultExprListM([\vmone]\concat\vmsone, \newenv)
 }
 \end{mathpar}
 
@@ -3763,17 +3805,18 @@ Notice that empty bitvectors are displayed as \verb|0x|.
 \begin{itemize}
   \item \AllApplyCase{print}
   \begin{itemize}
-    \item $\vs$ denotes a Print statement with arguments $\elist$ and newline indicator $\False$;
-    \item the evaluation of $\elist$ in $\env$ is $\Normal((\vlist, \vg), \newenv)$\ProseOrAbnormal;
+    \item $\vs$ denotes a \printstatementterm{} with arguments $\elist$ and newline indicator $\False$;
+    \item the evaluation of $\elist$ in $\env$ is $\ResultExprList((\vlist, \vg), \newenv)$\ProseOrAbnormal;
     \item \Proseoutputtoconsole{all the elements in $\elist$, without a separator,};
     \item if $\vnewline$ is $\True$, \Proseoutputtoconsole{a newline character};
   \end{itemize}
 
   \item \AllApplyCase{println}
   \begin{itemize}
-    \item $\vs$ denotes a Print statement with arguments $\elist$ and newline indicator $\True$;
+    \item $\vs$ denotes a \printstatementterm{} with arguments $\elist$ and newline indicator $\True$;
     \item the evaluation of the same statement with a newline indicator set to $\False$, that is,
-          $\SPrint(\elist, \False)$ yields the configuration $\Continuing(\vg, \envone)$\ProseOrAbnormal;
+          $\SPrint(\elist, \False)$ yields the configuration \\
+          $\Continuing(\vg, \envone)$\ProseOrAbnormal;
     \item \Proseoutputtoconsole{a newline character};
   \end{itemize}
   \item the resulting configuration is $\Continuing(\vg, \newenv)$.
@@ -3782,7 +3825,7 @@ Notice that empty bitvectors are displayed as \verb|0x|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[print]{
-  \evalexprlist{\env, \elist} \evalarrow \Normal((\vlist, \vg), \env_1) \OrAbnormal\\
+  \evalexprlist{\env, \elist} \evalarrow \ResultExprList((\vlist, \vg), \env_1) \OrAbnormal\\
   \vi\in\listrange(\vlist): \outputtoconsole(\env_\vi, \vlist[i]) \evalarrow \env_{\vi + 1} \\
   n \eqdef \listlen{\vlist}\\
   \newenv \eqdef \env_{n + 1}
@@ -3791,6 +3834,7 @@ Notice that empty bitvectors are displayed as \verb|0x|.
 }
 \end{mathpar}
 
+\hypertarget{def-newline}{}
 We define the newline character $\vnewline \triangleq \ascii{10}$.
 
 \begin{mathpar}

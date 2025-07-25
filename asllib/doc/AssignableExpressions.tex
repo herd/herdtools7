@@ -38,12 +38,12 @@ The relation
 \hypertarget{def-evallexpr}{}
 \[
   \evallexpr{\overname{\envs}{\env} \aslsep \overname{\lexpr}{\vle} \aslsep (\overname{\vals}{\vv} \times \overname{\XGraphs}{\vg})} \;\aslrel\;
-    \Normal(\overname{\XGraphs}{\newg},\overname{\envs}{\newenv}) \cup
+    \ResultLexpr(\overname{\XGraphs}{\newg},\overname{\envs}{\newenv}) \cup
     \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 evaluates the assignment of a value $\vv$
 to the left-hand-side expression $\vle$ in an environment $\env$,
-resulting in either a configuration $\Normal(\newg, \env)$ or an abnormal configuration.
+resulting in either a configuration $\ResultLexpr(\newg, \env)$ or an abnormal configuration.
 
 \paragraph{Semantics Rules Naming Convention:}
 In this chapter, variables containing $\vm$ range over $\vals\times\XGraphs$
@@ -555,7 +555,7 @@ In \listingref{semantics-lediscard}, the assignment \texttt{- = 42;} does not af
   \newg\eqdef\vg\\
   \newenv\eqdef\env
 }{
-  \evallexpr{\env, \LEDiscard, (\vv, \vg)} \evalarrow \Normal(\newg, \newenv)
+  \evallexpr{\env, \LEDiscard, (\vv, \vg)} \evalarrow \ResultLexpr(\newg, \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalLEDiscardBegin}{\EvalLEDiscardEnd}{../Interpreter.ml}
@@ -686,7 +686,7 @@ In \listingref{semantics-leglobalvar},
   \newenv \eqdef (\tenv, (G^\denv, L^\denv[\vx \mapsto \vv]))\\
   \newg \eqdef \ordered{\vg}{\asldata}{\WriteEffect(\vx)}
 }{
-  \evallexpr{\env, \LEVar(\vx), (\vv, \vg)} \evalarrow \Normal(\newg,\newenv)
+  \evallexpr{\env, \LEVar(\vx), (\vv, \vg)} \evalarrow \ResultLexpr(\newg,\newenv)
 }
 \end{mathpar}
 
@@ -697,7 +697,7 @@ In \listingref{semantics-leglobalvar},
   \newenv \eqdef(\tenv, (G^\denv.\storage[\vx \mapsto \vv], L^\denv))\\
   \newg \eqdef \ordered{\vg}{\asldata}{\WriteEffect(\vx)}
 }{
-  \evallexpr{\env, \LEVar(\vx), (\vv, \vg)} \evalarrow \Normal(\newg,\newenv)
+  \evallexpr{\env, \LEVar(\vx), (\vv, \vg)} \evalarrow \ResultLexpr(\newg,\newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalLEVarBegin}{\EvalLEVarEnd}{../Interpreter.ml}
@@ -788,7 +788,7 @@ The helper relation
 \hypertarget{def-evalmultiassign}{}
 \[
   \evalmultiassignment(\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vlelist} \aslsep \overname{(\vals \times \XGraphs)^*}{\vmlist}) \;\aslrel\;
-  \Normal(\overname{\XGraphs}{\newg} \aslsep \overname{\envs}{\newenv}) \cup
+  \ResultLexpr(\overname{\XGraphs}{\newg} \aslsep \overname{\envs}{\newenv}) \cup
   \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 evaluates multi-assignments.
@@ -811,10 +811,10 @@ See \ExampleRef{Multi-assignments}.
   \begin{itemize}
     \item $\vle$ is a \Proselist{$\vle$}{$\vlelistone$};
     \item $\vmlist$ is a \Proselist{$\vm$}{$\vmlistone$};
-    \item \Proseevallexpr{$\env$}{$\vle$}{$\vm$}{$\Normal(\envone, \vgone)$}\ProseOrAbnormal;
+    \item \Proseevallexpr{$\env$}{$\vle$}{$\vm$}{$\ResultLexpr(\vgone, \envone)$}\ProseOrAbnormal;
     \item applying $\evalmultiassignment$ to $\envone$, $\vlelistone$, and $\vmlistone$
           yields \\
-          $\Normal(\newenv, \vgtwo)$\ProseOrAbnormal;
+          $\ResultLexpr(\vgtwo, \newenv)$\ProseOrAbnormal;
     \item \Proseeqdef{$\newg$}{the ordered composition of $\vgone$ and $\vgtwo$
           with the edge $\aslpo$}.
   \end{itemize}
@@ -825,7 +825,7 @@ See \ExampleRef{Multi-assignments}.
 \inferrule[empty]{}
 {
   \evalmultiassignment(\env, \overname{\emptylist}{\vlelist}, \overname{\emptylist}{\vmlist}) \evalarrow
-  \Normal(\overname{\emptygraph}{\newg}, \overname{\env}{\newenv})
+  \ResultLexpr(\overname{\emptygraph}{\newg}, \overname{\env}{\newenv})
 }
 \end{mathpar}
 
@@ -833,11 +833,11 @@ See \ExampleRef{Multi-assignments}.
 \inferrule[non\_empty]{
   \vlelist = [\vle] \concat \vlelistone\\
   \vmlist = [\vm] \concat \vmlistone\\
-  \evallexpr{\env, \vle, \vm} \evalarrow \Normal(\envone, \vgone) \OrAbnormal\\\\
-  \evalmultiassignment(\envone, \vlelistone, \vmlistone) \evalarrow \Normal(\newenv, \vgtwo) \OrAbnormal\\\\
+  \evallexpr{\env, \vle, \vm} \evalarrow \ResultLexpr(\vgone, \envone) \OrAbnormal\\\\
+  \evalmultiassignment(\envone, \vlelistone, \vmlistone) \evalarrow \ResultLexpr(\vgtwo, \newenv) \OrAbnormal\\\\
   \newg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
 }{
-  \evalmultiassignment(\env, \vlelist, \vmlist) \evalarrow \Normal(\newg, \newenv)
+  \evalmultiassignment(\env, \vlelist, \vmlist) \evalarrow \ResultLexpr(\newg, \newenv)
 }
 \end{mathpar}
 Notice that this rule is only defined when the lists $\vlelist$ and $\vmlist$ have the same length.
@@ -989,8 +989,8 @@ of \\
 \begin{itemize}
   \item $\vle$ denotes an array update expression, $\LESetArray(\rearray, \eindex)$;
   \item evaluating the right-hand-side expression corresponding to $\rearray$ in $\env$
-  is \Normal(\rmarray, \envone)\ProseOrAbnormal;
-  \item evaluating $\eindex$ in $\envone$ is \Normal(\mindex, \envtwo)\ProseOrAbnormal;
+  is \ResultExpr(\rmarray, \envone)\ProseOrAbnormal;
+  \item evaluating $\eindex$ in $\envone$ is \ResultExpr(\mindex, \envtwo)\ProseOrAbnormal;
   \item $\mindex$ consists of the native integer $\vindex$ and the execution graph $\vgone$;
   \item $\vindex$ is the native integer for $\vi$;
   \item $\rmarray$ consists of the native vector $\rvarray$ and the execution graph $\vgtwo$;
@@ -1005,8 +1005,8 @@ of \\
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \torexpr(\rearray)} \evalarrow \Normal(\rmarray, \envone) \OrAbnormal\\
-  \evalexpr{\envone, \eindex} \evalarrow \Normal(\mindex, \envtwo) \OrAbnormal\\
+  \evalexpr{\env, \torexpr(\rearray)} \evalarrow \ResultExpr(\rmarray, \envone) \OrAbnormal\\
+  \evalexpr{\envone, \eindex} \evalarrow \ResultExpr(\mindex, \envtwo) \OrAbnormal\\
   \mindex \eqname (\vindex, \vgone)\\
   \vindex \eqname \nvint(\vi)\\
   \rmarray \eqname (\rvarray, \vgtwo)\\
@@ -1048,8 +1048,8 @@ cell of
 \begin{itemize}
   \item $\vle$ denotes an array update expression, $\LESetEnumArray(\rearray, \eindex)$;
   \item evaluating the right-hand-side expression corresponding to $\rearray$ in $\env$
-  is \Normal(\rmarray, \envone)\ProseOrAbnormal;
-  \item evaluating $\eindex$ in $\envone$ is \Normal(\mindex, \envtwo)\ProseOrAbnormal;
+  is \ResultExpr(\rmarray, \envone)\ProseOrAbnormal;
+  \item evaluating $\eindex$ in $\envone$ is \ResultExpr(\mindex, \envtwo)\ProseOrAbnormal;
   \item $\mindex$ consists of the native value $\vindex$ and the execution graph $\vgone$;
   \item $\vindex$ is the native label for $\vl$;
   \item $\rmarray$ consists of the native value $\rvarray$ and the execution graph $\vgtwo$;
@@ -1064,8 +1064,8 @@ cell of
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \torexpr(\rearray)} \evalarrow \Normal(\rmarray, \envone) \OrAbnormal\\
-  \evalexpr{\envone, \eindex} \evalarrow \Normal(\mindex, \envtwo) \OrAbnormal\\
+  \evalexpr{\env, \torexpr(\rearray)} \evalarrow \ResultExpr(\rmarray, \envone) \OrAbnormal\\
+  \evalexpr{\envone, \eindex} \evalarrow \ResultExpr(\mindex, \envtwo) \OrAbnormal\\
   \mindex \eqname (\vindex, \vgone)\\
   \vindex \eqname \nvlabel(\vl)\\
   \rmarray \eqname (\rvarray, \vgtwo)\\
@@ -1180,11 +1180,11 @@ in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
 \begin{itemize}
   \item $\vle$ denotes a left-hand-side slicing expression, $\LESlice(\ebv, \slices)$;
   \item evaluating the right-hand-side expression that corresponds to $\ebv$
-  (given by applying $\torexpr$ to $\ebv$) in $\env$
-    is $\Normal(\mbv,\envone)$\ProseOrAbnormal;
-  \item evaluating $\slices$ in $\envone$ is $\Normal(\msliceranges, \envtwo)$\ProseOrAbnormal;
+        (given by applying $\torexpr$ to $\ebv$) in $\env$
+        is $\ResultExpr(\mbv,\envone)$\ProseOrAbnormal;
+  \item evaluating $\slices$ in $\envone$ is $\ResultSlices(\msliceranges, \envtwo)$\ProseOrAbnormal;
   \item $\msliceranges$ consists of the execution graph $\vgone$ and the list of indices\\
-         $\sliceranges$;
+        $\sliceranges$;
   \item applying $\checknonoverlappingslices$ to $\sliceranges$ yields $\True$\ProseOrError;
   \item $\mbv$ consists of the native bitvector $\vbv$ and the execution graph $\vgtwo$;
   \item writing to the bitvector $\vbv$ at indices $\sliceranges$ using the values from $\vv$
@@ -1196,11 +1196,12 @@ in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
   Evaluating the left-hand-side expression $\ebv$ with
   $\newmbv$ in an environment $\envtwo$ is the output configuration $C$,
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \torexpr(\ebv)} \evalarrow \Normal(\mbv,\envone) \OrAbnormal\\
-  \evalslices(\envone, \slices) \evalarrow \Normal(\msliceranges, \envtwo) \OrAbnormal\\
+  \evalexpr{\env, \torexpr(\ebv)} \evalarrow \ResultExpr(\mbv,\envone) \OrAbnormal\\
+  \evalslices(\envone, \slices) \evalarrow \ResultSlices(\msliceranges, \envtwo) \OrAbnormal\\
   \msliceranges \eqname (\sliceranges, \vgone)\\
   \mbv \eqname (\vbv, \vgtwo)\\\\
   \checknonoverlappingslices(\sliceranges) \evalarrow \True \OrDynError\\\\
@@ -1234,11 +1235,11 @@ The helper function
 \[
   \checknonoverlappingslices(
     \overname{(\tint\times\tint)^*}{\valueranges}
-  ) \evalarrow \{\True\} \cup \overname{\TDynError}{\DynErrorConfig}
+  ) \aslto \{\True\} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 checks whether the sets of integers represented by the list of ranges $\valueranges$
 overlap, yielding $\True$.
-\ProseOtherwiseDynamicError
+\ProseOtherwiseDynamicErrorOrDiverging
 
 \ExampleDef{Checking Slices for Overlaps}
 In \listingref{semantics-checknonoverlappingslices},
@@ -1284,14 +1285,14 @@ The helper function
 \begin{array}{r}
   \checktworangesnonoverlapping(
     (\overname{\tint}{\vsone}\times\overname{\tint}{\vlone}) \aslsep
-    (\overname{\tint}{\vstwo}\times\overname{\tint}{\vltwo}) \aslsep
-  ) \evalarrow \\
+    (\overname{\tint}{\vstwo}\times\overname{\tint}{\vltwo})
+  ) \aslto \\
   \{\True\} \cup \overname{\TDynError}{\DynErrorConfig}
 \end{array}
 \]
 checks whether two sets of integers represented by the
 ranges $(\vsone, \vlone)$ and $(\vstwo, \vltwo)$ do not intersect, yielding $\True$.
-\ProseOrError
+\ProseOtherwiseDynamicErrorOrDiverging
 
 See \ExampleRef{Checking Slices for Overlaps}.
 
@@ -1823,7 +1824,7 @@ All of the collection field assignable expressions in
   \newenv \eqdef (\tenv, (G^\denv[\vx \mapsto \recordone], L^\denv))\\
   \newg \eqdef \ordered{\vg}{\asldata}{\vgzero} \\
 }{
-  \evallexpr{\env, \overname{\LESetCollectionFields(\vbase, \fields, \vslices)}{\vle}, (\vv,\vg)} \evalarrow \Normal(\newg,\newenv)
+  \evallexpr{\env, \overname{\LESetCollectionFields(\vbase, \fields, \vslices)}{\vle}, (\vv,\vg)} \evalarrow \ResultLexpr(\newg,\newenv)
 }
 \end{mathpar}
 
@@ -1979,7 +1980,7 @@ in the environment where \verb|my_record| is bound to \verb|{a: 3, b: 100}|.
 \begin{itemize}
   \item $\vle$ denotes a field update expression, $\LESetField(\rerecord, \fieldname)$;
   \item evaluating the right-hand-side expression corresponding to $\rerecord$
-  in $\env$ is $\Normal(\rmrecord, \envone)$\ProseOrAbnormal;
+  in $\env$ is $\ResultExpr(\rmrecord, \envone)$\ProseOrAbnormal;
   \item $\rmrecord$ is a pair consisting of the native record $\rvrecord$ and
   the execution graph $\vgone$;
   \item setting the field $\fieldname$ in the native record $\rvrecord$ to $\vv$
@@ -1995,7 +1996,7 @@ in the environment where \verb|my_record| is bound to \verb|{a: 3, b: 100}|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-    \evalexpr{\env, \torexpr(\rerecord)} \evalarrow \Normal(\rmrecord, \envone) \OrAbnormal\\
+    \evalexpr{\env, \torexpr(\rerecord)} \evalarrow \ResultExpr(\rmrecord, \envone) \OrAbnormal\\
     \rmrecord \eqname (\rvrecord, \vgone)\\
     \setfield(\fieldname, \vv, \rvrecord) \evalarrow \vvone\\
     \vmone \eqdef (\vvone, \vg \parallelcomp \vgone)\\

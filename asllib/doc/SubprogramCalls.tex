@@ -1793,21 +1793,24 @@ We also define the following helper rules:
 The relation
 \hypertarget{def-evalcall}{}
 \[
-  \begin{array}{c}
-    \evalcall(\overname{\envs}{\env} \aslsep
-    \overname{\Identifiers}{\name} \aslsep
-    \overname{\expr^*}{\params} \aslsep
-    \overname{\expr^*}{\args}) \;\aslrel\; \\
-    \Normal(\overbracket{(\vals\times\XGraphs)^*}^{\vmstwo}, \overname{\envs}{\newenv}) \cup
-    \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
+  \evalcall(\overname{\envs}{\env} \aslsep
+  \overname{\Identifiers}{\name} \aslsep
+  \overname{\expr^*}{\params} \aslsep
+  \overname{\expr^*}{\args}) \;\aslrel\;
+  \left(
+  \begin{array}{ll}
+  \ResultCall(\overbracket{(\vals\times\XGraphs)^*}^{\vmstwo}, \overname{\envs}{\newenv}) & \cup \\
+  \overname{\TDynError}{\DynErrorConfig} & \cup \\
+  \overname{\TDiverging}{\DivergingConfig} & \\
   \end{array}
+  \right)
 \]
 evaluates a call to the subprogram named $\name$ in the environment $\env$,
 with the parameter expressions $\params$ and the argument expressions
 $\args$.
 The evaluation results in either a list of returned values, each one associated
-with an execution graph, and a new environment;
-or an abnormal configuration.
+with an execution graph, and a new environment.
+\ProseOtherwiseAbnormal
 
 The evaluation first evaluates the expressions corresponding to the arguments
 and parameters and then passes their values in a resulting configuration
@@ -1815,16 +1818,17 @@ to the helper relation $\evalsubprogram$.
 
 \ExampleDef{Calling Subprograms}
 In \listingref{Call}, calling \verb|non_throwing_func| terminates normally,
-while calling \verb|throwing_func| terminates by throwing an exception.
+while calling \\
+\verb|throwing_func| terminates by throwing an exception.
 \ASLListing{Calling subprograms}{Call}{\semanticstests/SemanticsRule.Call.asl}
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
   \item evaluating each expression in $\params$ separately in $\env$ as per\\
-        \SemanticsRuleRef{EExprListM} is $\Normal(\vvparams, \envone)$\ProseOrAbnormal;
+        \SemanticsRuleRef{EExprListM} is $\ResultExprListM(\vvparams, \envone)$\ProseOrAbnormal;
   \item evaluating each expression in $\args$ separately in $\envone$ as per \\
-        \SemanticsRuleRef{EExprListM} is $\Normal(\vvargs, \envtwo)$\ProseOrAbnormal;
+        \SemanticsRuleRef{EExprListM} is $\ResultExprListM(\vvargs, \envtwo)$\ProseOrAbnormal;
   \item $\envtwo$ consists of the static environment $\tenv$ and the dynamic environment $\denvtwo$;
   \item applying $\incrstacksize$ to $G^\denvtwo$ and $\name$ yields $\genv$;
   \item the environment $\envtwo'$ is defined as the environment
@@ -1836,20 +1840,20 @@ while calling \verb|throwing_func| terminates by throwing an exception.
     \item \AllApplyCase{normal}
     \begin{itemize}
       \item evaluating the subprogram named $\name$ with parameters $\vvparams$ and arguments $\vvargs$ in
-      $\denvtwo'$ is $\Normal(\vms, (\vglobal, \Ignore))$ (that is, we ignore the local environment
-      of the callee)\ProseOrError;
+            $\denvtwo'$ is $\ResultSubprogram(\vms, (\vglobal, \Ignore))$ (that is, we ignore the local environment
+            of the callee)\ProseOrDynErrorDiverging;
       \item applying the helper relation $\readvaluefrom$ to each element of the list $\vms$ yields the list $\vmstwo$;
       \item applying $\decrstacksize$ to $\vglobal$ and $\name$ yields $\genvtwo$;
       \item define $\newenv$ as the environment where the static environment is $\tenv$ and the dynamic environment consists
             of the dynamic global environment $\genvtwo$ and the dynamic local environment is taken from $\denvtwo$
             (that is, we restore the local environment to that of the caller and drop the local environment of the callee).
-      \item the entire evaluation results in $\Normal(\vmstwo, \newenv)$.
+      \item the entire evaluation results in $\ResultCall(\vmstwo, \newenv)$.
     \end{itemize}
 
     \item \AllApplyCase{throwing}
     \begin{itemize}
       \item evaluating the subprogram named $\name$ with arguments $\vvargs$ and parameters $\vvparams$ in
-            $\denvtwo'$ is $\Throwing(\vv, \envthrow)$\ProseOrError;
+            $\denvtwo'$ is $\Throwing(\vv, \envthrow)$\ProseOrDynErrorDiverging;
       \item view $\envthrow$ as the environment consisting of the static environment $\tenv$,
             and the dynamic environment whose global component is $\vglobal$;
       \item applying the helper relation $\readvaluefrom$ to $\vms$ yields $\vmstwo$;
@@ -1857,7 +1861,7 @@ while calling \verb|throwing_func| terminates by throwing an exception.
       \item define $\newenv$ as the environment where the static environment is $\tenv$ and the dynamic environment consists
             of the dynamic global environment $\genvtwo$ and the dynamic local environment is taken from $\denvtwo$
             (that is, we restore the local environment to that of the caller and drop the local environment of the callee).
-      \item the entire evaluation results in $\Normal(\vmstwo, \newenv)$.
+      \item the entire evaluation results in $\ResultCall(\vmstwo, \newenv)$.
     \end{itemize}
   \end{itemize}
 \end{itemize}
@@ -1865,30 +1869,30 @@ while calling \verb|throwing_func| terminates by throwing an exception.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[normal]{
-  \evalexprlistm(\env, \params) \evalarrow \Normal(\vvparams, \envone)\OrAbnormal\\
-  \evalexprlistm(\envone, \args) \evalarrow \Normal(\vvargs, \envtwo)\OrAbnormal\\
+  \evalexprlistm(\env, \params) \evalarrow \ResultExprListM(\vvparams, \envone)\OrAbnormal\\\\
+  \evalexprlistm(\envone, \args) \evalarrow \ResultExprListM(\vvargs, \envtwo)\OrAbnormal\\\\
   \envtwo \eqname (\tenv, \denvtwo)\\
   \incrstacksize(G^\denvtwo, \name) \evalarrow \genv\\\\
   \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
   \commonprefixline\\\\
-  \evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \Normal(\vms, (\vglobal, \Ignore)) \OrDynError\\\\
+  \evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \ResultSubprogram(\vms, (\vglobal, \Ignore)) \OrDynErrorDiverging\\\\
   \vmstwo \eqdef [\vm \in \vms: \readvaluefrom(\vms)]\\
   \decrstacksize(\vglobal, \name) \evalarrow \genvtwo\\
   \newenv \eqdef (\tenv, (\genvtwo, L^{\denvtwo}))
 }{
-  \evalcall(\env, \name, \params, \args) \evalarrow \Normal(\vmstwo, \newenv)
+  \evalcall(\env, \name, \params, \args) \evalarrow \ResultCall(\vmstwo, \newenv)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[throwing]{
-  \evalexprlistm(\env, \args) \evalarrow \Normal(\vvargs, \envone)\OrAbnormal\\
-  \evalexprlistm(\envone, \params) \evalarrow \Normal(\vvparams, \envtwo)\OrAbnormal\\
+  \evalexprlistm(\env, \args) \evalarrow \ResultExprListM(\vvargs, \envone)\OrAbnormal\\\\
+  \evalexprlistm(\envone, \params) \evalarrow \ResultExprListM(\vvparams, \envtwo)\OrAbnormal\\\\
   \envtwo \eqname (\tenv, \denvtwo)\\
   \incrstacksize(G^\denvtwo, \name) \evalarrow \genv\\\\
   \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
   \commonprefixline\\\\
-  \evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \Throwing(\vv, \envthrow) \OrDynError\\\\
+  \evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \ResultSubprogram(\vv, \envthrow) \OrDynErrorDiverging\\\\
   \envthrow \eqname (\tenv, (\vglobal, \Ignore))\\
   \decrstacksize(\vglobal, \name) \evalarrow \genvtwo\\
   \newenv \eqdef (\tenv, (\genvtwo, L^{\denvtwo}))
@@ -1902,21 +1906,29 @@ while calling \verb|throwing_func| terminates by throwing an exception.
 The relation
 \hypertarget{def-evalsubprogram}{}
 \[
-  \begin{array}{c}
-    \evalsubprogram(\overname{\envs}{\env} \aslsep
-    \overname{\Identifiers}{\name} \aslsep
-    \overname{(\vals \times \XGraphs)^*}{\params} \aslsep
-    \overname{(\vals \times \XGraphs)^*}{\args}) \aslrel \\
-    \Normal(\overname{(\vals^* \aslsep \XGraphs)}{\vvs}, \overname{\envs}{\newenv}) \cup
-    \overname{\TThrowing}{\ThrowingConfig} \cup
-    \overname{\TDynError}{\DynErrorConfig}
+  \evalsubprogram\left(
+  \begin{array}{cl}
+  \overname{\envs}{\env} & \aslsep\\
+  \overname{\Identifiers}{\name} & \aslsep\\
+  \overname{(\vals \times \XGraphs)^*}{\params} & \aslsep\\
+  \overname{(\vals \times \XGraphs)^*}{\args} &
   \end{array}
+  \right)
+  \;\aslrel\;
+  \left(
+  \begin{array}{cl}
+  \ResultSubprogram(\overname{(\vals^* \aslsep \XGraphs)}{\vvs}, \overname{\envs}{\newenv}) & \cup\\
+  \overname{\TThrowing}{\ThrowingConfig} & \cup\\
+  \overname{\TDynError}{\DynErrorConfig} & \cup\\
+  \overname{\TDiverging}{\DivergingConfig} &
+  \end{array}
+  \right)
 \]
 evaluates the subprogram named $\name$ in the environment $\env$, with
 $\actualargs$ the list of actual arguments, and $\params$ the
 list of arguments deduced by type equality.
-The result is either a normal configuration or an abnormal configuration.
-In the case of a normal configuration, it consists of a list of pairs
+The result is either a \Prosenormalconfiguration{} or an abnormal configuration.
+In the case of a \Prosenormalconfiguration{}, it consists of a list of pairs
 with a value and an identifier, and a new environment $\newenv$.
 The values represent values returned by the subprogram call and the
 identifiers are used in generating execution graph constraints for the
@@ -1937,7 +1949,8 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
         $\vbody$, parameters $\paramdecls$, arguments $\argdecls$, and optional recursion limit expression $\vrecurselimit$;
   \item $\envone$ is the environment consisting of the static environment $\tenv$ and the dynamic
         environment consisting of the dynamic component from $\denv$ and an empty local component;
-  \item applying $\checkrecurselimit$ to $\name$ and $\vrecurselimit$ in $\envone$ yields $\vgone$\ProseOrError;
+  \item applying $\checkrecurselimit$ to $\name$ and $\vrecurselimit$ in $\envone$ yields \\
+        $\vgone$\ProseOrDynErrorDiverging;
   \item \Proseeqdef{$\argnames$}{the identifiers appearing as the first component of each pair in $\argdecls$};
   \item assigning the actual arguments with $((\envone, \emptygraph), \argnames, \args)$
         as per \SemanticsRuleRef{AssignArgs} gives $(\envtwo, \vgtwo)$ and ensures that each
@@ -1950,7 +1963,7 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
         locally bound to the corresponding actual value in $\params$;
   \item evaluating the body of the subprogram $\vbody$ as a statement in $\envthree$
         is $\vres$\ProseOrAbnormal;
-  \item matching the result $\vres$ to obtain a normal configuration as per \\
+  \item matching the result $\vres$ to obtain a \Prosenormalconfiguration{} as per \\
         \SemanticsRuleRef{MatchFuncRes} gives $C$;
   \item $\newg$ is the ordered composition of $\vgone$ with the $\asldata$ and $\vgtwo$ and $\vgthree$ with the $\aslpo$ edge;
   \item the result is $C$ with its graph substituted for $\newg$.
@@ -1972,7 +1985,7 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
       \right\}
   }\\
   \envone \eqdef (\tenv, (G^\denv, \emptyfunc))\\
-  \checkrecurselimit(\envone, \name, \vrecurselimit) \evalarrow \vgone \OrDynError\\\\
+  \checkrecurselimit(\envone, \name, \vrecurselimit) \evalarrow \vgone \OrDynErrorDiverging\\\\
   \argnames \eqdef [(\vx, \Ignore) \in \argdecls: \vx]\\
   \assignargs((\envone, \emptygraph), \argnames, \actualargs) \evalarrow (\envtwo, \vgtwo)\\
   \paramnames \eqdef [(\vx, \Ignore) \in \params: \vx]\\
@@ -2020,13 +2033,13 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 \begin{itemize}
   \item \AllApplyCase{none}
   \begin{itemize}
-    \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\None, \vg)$\ProseOrError;
+    \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\None, \vg)$\ProseOrDynErrorDiverging;
     \item define $\vg$ as the empty graph.
   \end{itemize}
 
   \item \AllApplyCase{some\_ok}
   \begin{itemize}
-    \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\langle\vlimit\rangle, \vg)$\ProseOrError;
+    \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\langle\vlimit\rangle, \vg)$\ProseOrDynErrorDiverging;
     \item view $\env$ as $(\tenv, \denv)$;
     \item applying $\getstacksize$ to $\name$ in $\denv$ yields $\vstacksize$;
     \item $\vstacksize$ is less than $\vlimit$.
@@ -2034,7 +2047,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 
   \item \AllApplyCase{limit\_exceeded}
   \begin{itemize}
-    \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\langle\vlimit\rangle, \vg)$\ProseOrError;
+    \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\langle\vlimit\rangle, \vg)$\ProseOrDynErrorDiverging;
     \item view $\env$ as $(\tenv, \denv)$;
     \item applying $\getstacksize$ to $\name$ in $\denv$ yields $\vstacksize$;
     \item $\vstacksize$ is greater or equal to $\vlimit$;
@@ -2045,7 +2058,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{
-  \evallimit(\env, \velimitopt) \evalarrow (\None, \vg) \OrDynError
+  \evallimit(\env, \velimitopt) \evalarrow (\None, \vg) \OrDynErrorDiverging
 }{
   \checkrecurselimit(\env, \name, \velimitopt) \evalarrow \overname{\emptygraph}{\vg}
 }
@@ -2053,7 +2066,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 
 \begin{mathpar}
 \inferrule[some\_ok]{
-  \evallimit(\env, \velimitopt) \evalarrow (\langle\vlimit\rangle, \vg) \OrDynError\\\\
+  \evallimit(\env, \velimitopt) \evalarrow (\langle\vlimit\rangle, \vg) \OrDynErrorDiverging\\\\
   \env \eqname (\tenv, \denv)\\
   \getstacksize(\denv, \name) \evalarrow \vstacksize\\
   \vstacksize < \vlimit
@@ -2064,7 +2077,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 
 \begin{mathpar}
 \inferrule[limit\_exceeded]{
-  \evallimit(\env, \velimitopt) \evalarrow (\langle\vlimit\rangle, \vg) \OrDynError\\\\
+  \evallimit(\env, \velimitopt) \evalarrow (\langle\vlimit\rangle, \vg) \OrDynErrorDiverging\\\\
   \env \eqname (\tenv, \denv)\\
   \getstacksize(\denv, \name) \evalarrow \vstacksize\\
   \vstacksize \geq \vlimit
@@ -2166,7 +2179,7 @@ The helper relation
 \hypertarget{def-matchfuncres}{}
 \[
     \matchfuncres(\TContinuing \cup \TReturning) \;\aslrel\;
-                  \Normal(((\Identifiers\times\vals)^*\times\XGraphs)\aslsep\envs)
+                  \ResultSubprogram(((\Identifiers\times\vals)^*\times\XGraphs)\aslsep\envs)
 \]
 converts continuing configurations and returning configurations
 into corresponding normal configurations that can be returned by a subprogram evaluation.
@@ -2190,7 +2203,7 @@ with the same value and a fresh identifier for it.
   \begin{itemize}
     \item the given configuration is $\Continuing(\vg, \env)$. This happens when,
     for example, the subprogram called is either a setter or a procedure;
-    \item the result is $\Normal((\emptylist, \vg), \env)$.
+    \item the result is $\ResultSubprogram((\emptylist, \vg), \env)$.
   \end{itemize}
 
   \item \AllApplyCase{returning}
@@ -2199,7 +2212,7 @@ with the same value and a fresh identifier for it.
     \item $\xs$ is the list $\vv_i$, for $i=1..k$;
     \item define the list of fresh identifiers $\id_i$, for $i=1..k$;
     \item define $\vvs$ to be $(\vv_i, \id_i)$, for $i=1..k$;
-    \item the result is $\Normal((\vvs, \emptygraph), \retenv)$.
+    \item the result is $\ResultSubprogram((\vvs, \emptygraph), \retenv)$.
   \end{itemize}
 \end{itemize}
 
@@ -2207,7 +2220,7 @@ with the same value and a fresh identifier for it.
 \begin{mathpar}
   \inferrule[continuing]{}
   {
-    \matchfuncres(\Continuing(\vg, \env)) \evalarrow \Normal((\emptylist, \vg), \env)
+    \matchfuncres(\Continuing(\vg, \env)) \evalarrow \ResultSubprogram((\emptylist, \vg), \env)
   }
   \and
   \inferrule[returning]{
@@ -2216,6 +2229,6 @@ with the same value and a fresh identifier for it.
     \vvs \eqdef [i=1..k: (\vv_i, \id_i)]
   }
   {
-    \matchfuncres(\Returning(\xs, \retenv)) \evalarrow \Normal((\vvs, \emptygraph), \retenv)
+    \matchfuncres(\Returning(\xs, \retenv)) \evalarrow \ResultSubprogram((\vvs, \emptygraph), \retenv)
   }
 \end{mathpar}

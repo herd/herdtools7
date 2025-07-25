@@ -251,6 +251,7 @@
 \newcommand\emptylist[0]{\hyperlink{def-emptylist}{[\ ]}}
 \newcommand\Proseemptylist[1]{#1 is the empty list}
 \newcommand\choice[3]{\hyperlink{def-choice}{\textsf{choice}}(#1,#2,#3)}
+\newcommand\choicename[0]{\hyperlink{def-choice}{\textfunc{choice}}}
 \newcommand\ifthenelse[3]{
   \left\{\begin{array}{ll}
   \hyperlink{def-choice}{\textbf{if}} & #1\\
@@ -320,6 +321,9 @@
 \newcommand\mapopt[1]{\hyperlink{def-mapopt}{\textsf{optional}}[#1]}
 \newcommand\Prosemapopt[3]{\hyperlink{def-mapopt}{applying} #1 to the optional value #2 via \hyperlink{def-mapopt}{\textsf{optional}}
   yields #3}
+
+\newcommand\derivationtreeterm[0]{\hyperlink{def-derivationtree}{derivation tree}}
+\newcommand\derivationtreesterm[0]{\hyperlink{def-derivationtree}{derivation trees}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Syntax macros
@@ -916,6 +920,7 @@
 \newcommand\Lang[0]{\hyperlink{def-lang}{\textsf{Lang}}}
 \newcommand\RegExp[0]{\hyperlink{def-regex}{\textsf{RegExp}}}
 \newcommand\ascii[1]{\hyperlink{def-ascii}{\textsf{ASCII}}\texttt{\{#1\}}}
+\newcommand\vnewline[0]{\hyperlink{def-newline}{\texttt{newline}}}
 
 \newcommand\spectoken[0]{\hyperlink{def-spectoken}{\textsc{spec\_token}}}
 \newcommand\specstring[0]{\hyperlink{def-specstring}{\textsc{spec\_string}}}
@@ -1078,19 +1083,31 @@
 \newcommand\ReturningConfig[0]{\hyperlink{def-returningconfig}{\texttt{\#R}}}
 \newcommand\ThrowingConfig[0]{\hyperlink{def-throwingconfig}{\texttt{\#T}}}
 \newcommand\DynErrorConfig[0]{\hyperlink{def-errorconfig}{\texttt{\#DE}}}
-\newcommand\OrAbnormal[0]{\;\terminateas \ThrowingConfig, \DynErrorConfig}
+\newcommand\DivergingConfig[0]{\hyperlink{def-divergingconfig}{\texttt{\#DIV}}}
+\newcommand\OrAbnormal[0]{\;\terminateas \ThrowingConfig, \DynErrorConfig, \DivergingConfig}
+\newcommand\OrAbnormalReturning[0]{\;\terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig, \DivergingConfig}
+\newcommand\OrReturningOrAbnormal[0]{\;\terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig, \DivergingConfig}
 \newcommand\OrDynError[0]{\;\terminateas \DynErrorConfig}
+\newcommand\OrDynErrorDiverging[0]{\;\terminateas \DynErrorConfig, \DivergingConfig}
+\newcommand\ProseOtherwiseReturningOrAbnormal[0]{Otherwise, the result is either a returning configuration or abnormal.}
+\newcommand\ProseOtherwiseAbnormal[0]{Otherwise, the result is abnormal.}
 \newcommand\ProseOtherwiseDynamicError[0]{Otherwise, the result is a \dynamicerrorterm.}
-\newcommand\ProseOrAbnormal[0]{\ProseTerminateAs{\ThrowingConfig, \DynErrorConfig}}
+\newcommand\ProseOtherwiseDynamicErrorOrDiverging[0]{Otherwise, the result is either a \dynamicerrorterm{} or the evaluation diverges.}
+\newcommand\ProseOrAbnormal[0]{\ProseTerminateAs{\ThrowingConfig, \DynErrorConfig, \DivergingConfig}}
+\newcommand\ProseOrAbnormalReturning[0]{\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig, \DivergingConfig}}
+\newcommand\ProseReturningOrAbnormal[0]{\ProseTerminateAs{\TReturning, \ThrowingConfig, \DynErrorConfig, \DivergingConfig}}
 \newcommand\ProseOrError[0]{\ProseTerminateAs{\DynErrorConfig}}
+\newcommand\ProseOrDynErrorDiverging[0]{\ProseTerminateAs{\DynErrorConfig, \DivergingConfig}}
 \newcommand\TNormal[0]{\hyperlink{def-tnormal}{\textsf{TNormal}}}
 \newcommand\TDynError[0]{\hyperlink{def-tdynerror}{\textsf{TDynError}}}
 \newcommand\TThrowing[0]{\hyperlink{def-tthrowing}{\textsf{TThrowing}}}
 \newcommand\TContinuing[0]{\hyperlink{def-tcontinuing}{\textsf{TContinuing}}}
 \newcommand\TReturning[0]{\hyperlink{def-treturning}{\textsf{TReturning}}}
+\newcommand\TDiverging[0]{\hyperlink{def-tdiverging}{\textsf{TDiverging}}}
 \newcommand\TOutConfig[0]{\hyperlink{def-toutconfig}{\textsf{TOutConfig}}}
 
-\newcommand\evalexpr[1]{\hyperlink{def-evalexpr}{\textfunc{eval\_expr}}(#1)}
+\newcommand\evalexprname[0]{\hyperlink{def-evalexpr}{\textfunc{eval\_expr}}}
+\newcommand\evalexpr[1]{\evalexprname(#1)}
 \newcommand\Proseevalexpr[3]{
     \hyperlink{def-evalexpr}{evaluating} the expression #2 in the environment #1 yields #3}
 \newcommand\evalexprsef[1]{\hyperlink{def-evalexprsef}{\textfunc{eval\_expr\_sef}}(#1)}
@@ -1105,7 +1122,8 @@
 \newcommand\writefolder[0]{\hyperlink{def-writefolder}{\textfunc{write\_folder}}}
 \newcommand\evalslices[0]{\hyperlink{def-evalslices}{\textfunc{eval\_slices}}}
 \newcommand\evalslice[0]{\hyperlink{def-evalslice}{\textfunc{eval\_slice}}}
-\newcommand\evalstmt[1]{\hyperlink{def-evalstmt}{\textfunc{eval\_stmt}}(#1)}
+\newcommand\evalstmtname[0]{\hyperlink{def-evalstmt}{\textfunc{eval\_stmt}}}
+\newcommand\evalstmt[1]{\evalstmtname(#1)}
 \newcommand\evalblock[1]{\hyperlink{def-evalblock}{\textfunc{eval\_block}}(#1)}
 \newcommand\poplocalscope[0]{\hyperlink{def-poplocalscope}{\textfunc{pop\_local\_scope}}}
 \newcommand\Prosepoplocalscope[2]{#2 after \hyperlink{def-poplocalscope}{restoring} the variable bindings of #1 with the updated values of #2}
@@ -1174,11 +1192,22 @@
 \newcommand\findfunc[0]{\hyperlink{def-findfunc}{\textfunc{find\_func}}}
 
 \newcommand\valuereadfrom[0]{\hyperlink{def-valuereadfrom}{\textsf{value\_read\_from}}}
-\newcommand\Normal[0]{\hyperlink{def-normal}{\textsf{Normal}}}
 \newcommand\Throwing[0]{\hyperlink{def-throwing}{\textsf{Throwing}}}
 \newcommand\Continuing[0]{\hyperlink{def-continuing}{\textsf{Continuing}}}
 \newcommand\Returning[0]{\hyperlink{def-returning}{\textsf{Returning}}}
 \newcommand\Error[0]{\hyperlink{def-error}{\textsf{DynError}}}
+\newcommand\Diverging[0]{\hyperlink{def-diverging}{\textsf{Diverging}}}
+
+\newcommand\ResultExpr[0]{\hyperlink{def-resultexpr}{\textsf{R\_Expr}}}
+\newcommand\ResultExprList[0]{\hyperlink{def-resultexprlist}{\textsf{R\_ExprList}}}
+\newcommand\ResultExprListM[0]{\hyperlink{def-resultexprlistm}{\textsf{R\_ExprListM}}}
+\newcommand\ResultExprSEF[0]{\hyperlink{def-resultexprsef}{\textsf{R\_Expr\_SEF}}}
+\newcommand\ResultLexpr[0]{\hyperlink{def-resultlexpr}{\textsf{R\_LExpr}}}
+\newcommand\ResultSlices[0]{\hyperlink{def-resultslices}{\textsf{R\_Slices}}}
+\newcommand\ResultPattern[0]{\hyperlink{def-resultpattern}{\textsf{R\_Pattern}}}
+\newcommand\ResultLDI[0]{\hyperlink{def-resultldi}{\textsf{R\_LDI}}}
+\newcommand\ResultSubprogram[0]{\hyperlink{def-resultsubprogram}{\textsf{R\_Subprogram}}}
+\newcommand\ResultCall[0]{\hyperlink{def-resultcall}{\textsf{R\_Call}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Typing macros
@@ -1475,6 +1504,7 @@
 
 % AST abbreviations
 \newcommand\abbrevfont[1]{\scriptscriptstyle{\textsf{#1}}}
+\newcommand{\ETrue}{\hyperlink{def-etrue}{\textsf{E\_True}}}
 \newcommand\ELInt[1]{\overbracket{#1}^{\hyperlink{def-elint}{\ELiteral(\lint)}}}
 \newcommand\AbbrevConstraintExact[1]{\overbracket{#1}^{\hyperlink{def-abbrevconstraintexact}{\abbrevfont{Constraint\_Exact}}}}
 \newcommand\AbbrevConstraintRange[2]{\overbracket{#1..#2}^{\hyperlink{def-abbrevconstraintrange}{\abbrevfont{Constraint\_Range}}}}
@@ -1710,7 +1740,7 @@
 \newcommand\tupleexpression[1]{\hyperlink{def-tupleexpressionterm}
   {tuple expression} for the list of expressions #1}
 \newcommand\arbitraryexpression[1]{\hyperlink{def-arbitraryexpressionterm}
-  {\texttt{ARBITRARY} expression} for the type #1}
+  {\ARBITRARY{} expression} for the type #1}
 \newcommand\patternexpressionterm[0]{\hyperlink{def-patternexpressionterm}{pattern expression}}
 
 %% Assignable expression macros
@@ -2724,7 +2754,6 @@
 \newcommand\vnonmatching[0]{\texttt{nonmatching}}
 \newcommand\vnormal[0]{\texttt{normal}}
 \newcommand\vnewargs[0]{\texttt{new\_args}}
-\newcommand\vnewline[0]{\texttt{newline}}
 \newcommand\voptlimit[0]{\texttt{opt\_limit}}
 \newcommand\votherwiseopt[0]{\texttt{otherwise\_opt}}
 \newcommand\vouterenv[0]{\texttt{outer\_env}}

@@ -211,9 +211,9 @@ That is, no dynamic error occurs.
   \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
   \item $\envthrow$ consists of the static environment $\tenv$ and dynamic environment \\ $\denvthrow$;
   \item finding the first catcher with the static environment $\tenv$, the exception type $\vvty$,
-  and the list of catchers $\catchers$ gives a catcher that does not declare a name ($\None$) and gives a statement $\vs$;
+        and the list of catchers $\catchers$ gives a catcher that does not declare a name ($\None$) and gives a statement $\vs$;
   \item evaluating $\vs$ in $\envthrow$ as a block (\SemanticsRuleRef{Block}) yields a (non-error)
-        configuration $C$\ProseOrError;
+        configuration $C$\ProseOrDynErrorDiverging;
   \item editing potential implicit throwing configurations via $\rethrowimplicit(\vv, \vvty, C)$
         gives the configuration $D$;
   \item $\newg$ is the ordered composition of $\sg$ and the graph of $D$;
@@ -227,7 +227,7 @@ That is, no dynamic error occurs.
   \env \eqname (\tenv, (G^\denv, L^\denv))\\
   \envthrow \eqname (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
   \findcatcher(\tenv, \vvty, \catchers) \eqname \langle (\None, \Ignore, \vs) \rangle\\
-  \evalblock{\envthrow, \vs} \evalarrow C \OrDynError\\\\
+  \evalblock{\envthrow, \vs} \evalarrow C \OrDynErrorDiverging\\\\
   D \eqdef \rethrowimplicit(\vv, \vvty, C)\\
   \newg \eqdef \ordered{\sg}{\aslpo}{\graphof{D}}
 }{
@@ -252,15 +252,15 @@ The specification in \listingref{semantics-catchnamed}, prints \texttt{My except
   \item applying $\readvaluefrom$ to $\vv$ yields $(\vv, \vgone)$;
   \item declaring a local identifier $\name$ with $(\vv, \vgone)$ in $\envthrow$ gives $(\envtwo, \vgtwo)$;
   \item evaluating $\vs$ in $\envtwo$ as a block (\SemanticsRuleRef{Block}) is not an error
-  configuration $C$\ProseOrError;
+        configuration $C$\ProseOrDynErrorDiverging;
   \item $\envthree$ is the environment of the configuration $C$;
   \item removing the binding for $\name$ from the local component of the dynamic environment in $\envthree$
-  gives $\envfour$;
+        gives $\envfour$;
   \item substituting the environment of $C$ with $\envfour$ gives $D$;
   \item editing potential implicit throwing configurations via $\rethrowimplicit(\vv, \vvty, D)$
-  gives the configuration $E$;
+        gives the configuration $E$;
   \item $\newg$ is the ordered composition of $\sg$, $\vgone$, $\vgtwo$, and the graph of $E$,
-  with the $\aslpo$ edges;
+        with the $\aslpo$ edges;
   \item the result of the entire evaluation is $E$ with its graph substituted with $\newg$.
 \end{itemize}
 \FormallyParagraph
@@ -272,7 +272,7 @@ The specification in \listingref{semantics-catchnamed}, prints \texttt{My except
   \findcatcher(\tenv, \vvty, \catchers) \eqname \langle (\langle\name\rangle, \Ignore, \vs) \rangle\\
   \readvaluefrom(\vv) \evalarrow (\vv, \vgone)\\
   \declarelocalidentifierm(\envthrow, \name, (\vv, \vgone)) \evalarrow (\envtwo, \vgtwo)\\
-  \evalblock{\envtwo, \vs} \evalarrow C \OrDynError\\\\
+  \evalblock{\envtwo, \vs} \evalarrow C \OrDynErrorDiverging\\\\
   \envthree \eqdef \environof{C}\\
   \removelocal(\envthree, \name) \evalarrow \envfour\\
   D \eqdef \withenviron{C}{\envfour}\\
@@ -296,14 +296,14 @@ The specification in \listingref{semantics-catchotherwise} prints \texttt{Otherw
   \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
   \item $\envthrow$ consists of the static environment $\tenv$ and dynamic environment \\ $\denvthrow$;
   \item finding the first catcher with the static environment $\tenv$, the exception type $\vvty$,
-  and the list of catchers $\catchers$ gives a catcher that declares the name $\name$ and gives $\None$
-  (that is, neither of the \texttt{catch} clauses matches the raised exception);
+        and the list of catchers $\catchers$ gives a catcher that declares the name $\name$ and gives $\None$
+        (that is, neither of the \texttt{catch} clauses matches the raised exception);
   \item evaluating the \texttt{otherwise} statement $\vs$ in $\envtwo$ as a block (\SemanticsRuleRef{Block})
-  is not an error configuration $C$\ProseOrError;
+        is not an error configuration $C$\ProseOrDynErrorDiverging;
   \item editing potential implicit throwing configurations via $\rethrowimplicit(\vv, \vvty, C)$
-  gives the configuration $D$;
+        gives the configuration $D$;
   \item $\newg$ is the ordered composition of $\sg$ and the graph of $D$,
-  with the $\aslpo$ edge;
+        with the $\aslpo$ edge;
   \item the result of the entire evaluation is $D$ with its graph substituted with $\newg$.
 \end{itemize}
 
@@ -314,7 +314,7 @@ The specification in \listingref{semantics-catchotherwise} prints \texttt{Otherw
   \env \eqname (\tenv, (G^\denv, L^\denv))\\
   \envthrow \eqname (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
   \findcatcher(\tenv, \vvty, \catchers) = \None\\
-  \evalblock{\envthrow, \vs} \evalarrow C \OrDynError\\\\
+  \evalblock{\envthrow, \vs} \evalarrow C \OrDynErrorDiverging\\\\
   D \eqdef \rethrowimplicit(\vv, \vvty, C)\\
   \vg \eqdef \ordered{\sg}{\aslpo}{\graphof{D}}
 }{
@@ -362,14 +362,14 @@ The specification in \listingref{semantics-nothrow} prints \texttt{No exception 
 \AllApply
 \begin{itemize}
 \item $\sm$ is either $\Throwing((\None, \sg), \envthrow)$ (that is, an implicit throw) or
-    $\sm$ is a normal configuration (that is, the domain of $\sm$ is $\Normal$);
+      $\sm$ is a \Prosenormalconfiguration;
 \item \Proseeqdef{$\smnew$}{$\sm$}.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \sm = \Throwing((\None, \sg), \envthrow) \lor \configdomain{\sm} = \Normal
+  \sm = \Throwing((\None, \sg), \envthrow) \lor \sm \in \TNormal
 }{
   \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
 }
