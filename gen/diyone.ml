@@ -53,7 +53,7 @@ module Make(O:Config) (M:Builder.S) =
       else sprintf "%s.litmus"
 
     let dump_file name ?scope es =
-      if O.verbose > 0 then eprintf "Test name: %s\n" name ;
+      Log.info 1 "Test name: %s\n" name ;
       let t = M.make_test name ~info:O.info ?scope es in
       let fname = litmus name in
       Misc.output_protect
@@ -135,16 +135,12 @@ module Make(O:Config) (M:Builder.S) =
         let pp_rs = List.map LexUtil.split pp_rs in
         let pp_rs = List.concat pp_rs in
         let rs = List.map M.R.parse_relax pp_rs in
-        if O.verbose > 0 then
-          Printf.eprintf
-            "Parsed relaxs: %s\n" (M.R.pp_relax_list rs) ;
+        Log.info 1 "Parsed relaxs: %s\n" (M.R.pp_relax_list rs) ;
         let es =
           List.fold_right
             (fun r k -> M.R.edges_of r @ k)
             rs [] in
-        if O.verbose > 0 then
-          Printf.eprintf
-            "Parsed edges: %s\n" (M.E.pp_edges es) ;
+        Log.info 1 "Parsed edges: %s\n" (M.E.pp_edges es) ;
         match es with
         | [] ->
             let dump_names =

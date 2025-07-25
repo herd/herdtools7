@@ -22,8 +22,6 @@ module Config =
     let naturalsize = TypBase.get_size TypBase.default
   end
 
-let dbg = 0
-
 module type S = sig
   open Code
 
@@ -574,7 +572,7 @@ let fold_tedges f r =
   let ta = Hashtbl.create  37
 
   let add_lxm lxm a =
-    if dbg > 1 then eprintf "ATOM: %s\n" lxm ;
+    Log.info 3 "ATOM: %s\n" lxm ;
     try
       let old = Hashtbl.find ta lxm in
       assert (A.compare_atom old a = 0) ;
@@ -611,7 +609,7 @@ let fold_tedges f r =
   let t = Hashtbl.create 40000
 
   let add_lxm lxm e =
-    if dbg > 1 then eprintf "LXM: %s\n" lxm ;
+    Log.info 3 "LXM: %s\n" lxm ;
     try
       let old = Hashtbl.find t lxm in
       if compare old e <> 0 then begin
@@ -893,9 +891,7 @@ let fold_tedges f r =
  e1 and e2 as they are...
 *)
   let resolve_pair e1 e2 =
-    if dbg > 0 then
-      eprintf
-        "Resolve pair <%s,%s> -> " (debug_edge e1)  (debug_edge e2) ;
+    Log.info 3 "Resolve pair <%s,%s> -> " (debug_edge e1)  (debug_edge e2) ;
     let e1,e2 =
       try
         let d1 = dir_tgt e1 and d2 = dir_src e2 in
@@ -916,10 +912,7 @@ let fold_tedges f r =
           | Some _ as a ->
               set_a2 e1 a,set_a1 e2 a
           end in
-    if dbg > 0 then begin
-      let e1,e2 = r in
-      eprintf "<%s,%s>\n" (debug_edge e1) (debug_edge e2)
-    end ;
+    Log.info 3 "<%s,%s>\n" (debug_edge @@ fst r) (debug_edge @@ snd r);
     r
 
   (* Function merge_pair merges two versions of the same edge with
@@ -1023,7 +1016,7 @@ let fold_tedges f r =
               raise exn in
       let es = remove_id (e::es) in
       let es = if do_mixed then List.map replace_plain es else es in
-      if dbg > 0 then eprintf "Check Mixed: %s\n" (pp_edges es) ;
+      Log.info 3 "Check Mixed: %s\n" (pp_edges es) ;
       check_mixed es ;
       es
 

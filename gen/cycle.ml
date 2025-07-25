@@ -133,7 +133,6 @@ end
 
 module type Config = sig
   val same_loc : bool
-  val verbose : int
 (* allow threads s.t. start -> end is against com+ *)
   val allow_back : bool
   val naturalsize : MachSize.sz
@@ -149,7 +148,6 @@ module Make (O:Config) (E:Edge.S) :
        and module Value = E.Value
        and module RMW = E.RMW
   = struct
-  let dbg = false
   let do_memtag = O.variant Variant_gen.MemTag
   let do_morello = O.variant Variant_gen.Morello
   let do_kvm = Variant_gen.is_kvm O.variant
@@ -288,6 +286,7 @@ module Make (O:Config) (E:Edge.S) :
       | [n] -> debug_node chan n
       | n::ns -> fprintf chan "%a,%a" debug_node n iter ns in
     iter chan ns
+
   let debug_cycle chan n =
     let rec do_rec m =
       fprintf chan "%a\n" debug_node m ;
@@ -362,10 +361,9 @@ let find_node_prev p n =
 
 (*  n and m are on the same thread, n being strictly before m *)
   let po_pred n m =
-    if dbg then
-      eprintf "po_pred: n=[%a], m=[%a]\n%!" debug_node n debug_node m ;
+    Log.info 3 "po_pred: n=[%a], m=[%a]\n%!" debug_node n debug_node m ;
   let rec do_rec p =
-    if dbg then eprintf "  pred_rec, node %a\n%!" debug_node p ;
+    Log.info 3 "  pred_rec, node %a\n%!" debug_node p ;
     if p == m then true
     else if E.is_ext p.edge || p.next == n then false
     else do_rec p.next in
@@ -373,9 +371,7 @@ let find_node_prev p n =
 
 let find_prev_code_write n =
   let rec do_rec m =
-    if dbg then
-      eprintf "find_prev_code_write, n=%a m=%a\n%!"
-        debug_node n debug_node m ;
+    Log.info 3 "find_prev_code_write, n=%a m=%a\n%!" debug_node n debug_node m ;
     let e = m.evt in
     match e.loc,E.safe_dir m.edge with
     | Code c,Some W ->
@@ -675,7 +671,7 @@ let patch_edges n =
         let e = n.edge in
         if non_insert_store e then begin
           let p = find_non_insert_store_prev n.prev in
-          if O.verbose > 0 then Printf.eprintf "Merge p=%a, n=%a\n"
+            Log.info 2 "Merge p=%a, n=%a\n"
             debug_node p debug_node n ;
           let pe = p.edge in
           let a2 = pe.E.a2 and a1 = e.E.a1 in
@@ -683,7 +679,7 @@ let patch_edges n =
             let a = merge2 a2 a1 in
             p.edge <- { pe with E.a2=a ; } ;
             n.edge <- { e  with E.a1=a ; } ;
-            if O.verbose > 1 then Printf.eprintf "    => p=%a, n=%a\n"
+              Log.info 2 "    => p=%a, n=%a\n"
               debug_node p debug_node n
           with FailMerge ->
             Warn.fatal "Impossible annotations: %s %s"
@@ -742,7 +738,7 @@ let remove_store n0 =
            Warn.fatal "Node pseudo edge %s appears in-between  %s..%s (one neighbour at least must be an external edge)"
            (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
       end ;
-(*    eprintf "p=%a, m=%a\n" debug_node p debug_node m; *)
+      Log.info 3 "p=%a, m=%a\n" debug_node p debug_node m;
       let prev_d = E.dir_tgt p.edge in
       let d = match prev_d,my_d with
       | Irr,Irr ->
@@ -771,7 +767,7 @@ let remove_store n0 =
     begin
       let p = find_non_pseudo_prev m.prev
       and n = find_non_pseudo m.next in
-(*      eprintf "[%a] in [%a]..[%a]\n" debug_node m debug_node p debug_node n ; *)
+      Log.info 3 "[%a] in [%a]..[%a]\n" debug_node m debug_node p debug_node n ;
       if not (E.is_com p.edge || E.is_com n.edge) then begin
         Warn.fatal "Insert pseudo edge %s appears in-between  %s..%s (at least one neighbour must be a communication edge)"
           (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
@@ -785,10 +781,7 @@ let remove_store n0 =
     if m.next != n0 then do_rec m.next in
   do_rec n0 ;
   patch_edges n0 ;
-  if O.verbose > 1 then begin
-    eprintf "DIRECTIONS\n" ;
-    debug_cycle stderr n0
-  end
+  Log.info 2 "DIRECTIONS\n%a" debug_cycle n0
 
 
 (***************************)
@@ -837,7 +830,7 @@ let set_diff_loc st n0 =
         with Not_found ->  m in
       next_loc n1.edge st in
     m.evt <- { m.evt with loc=loc ; bank=E.atom_to_bank m.evt.atom; } ;
-(*    eprintf "LOC SET: %a [p=%a]\n%!" debug_node m debug_node p; *)
+    Log.info 3 "LOC SET: %a [p=%a]\n%!" debug_node m debug_node p;
     if m.store != nil then begin
       m.store.evt <-
         { m.store.evt with loc=loc ; bank=Ord; }
@@ -1100,10 +1093,11 @@ let set_dep_v nss =
 let set_read_individual_v n cell check_value =
   let e = n.evt in
   let v = E.extract_value cell.(0) e.atom in
-(* eprintf "SET READ: cell=0x%x, v=0x%x\n" cell v ; *)
+  Log.info 3 "SET READ: cell=%s, v=%s\n"
+      (Value.pp_v ~hexa:true cell.(0)) (Value.pp_v ~hexa:true v) ;
   let e = { e with v=v; check_value } in
-  n.evt <- e
-(* eprintf "AFTER %a\n" debug_node n *)
+  n.evt <- e;
+  Log.info 3 "AFTER %a\n" debug_node n
 
 let set_read_pair_v n cell check_value =
   let e = n.evt in
@@ -1264,31 +1258,25 @@ let finish n =
     | Same -> set_same_loc st n in
 
   if not (valid_cycle n) then Warn.fatal "Invalid cycle.\n" ;
+  Log.info 2 "LOCATIONS\n%a" debug_cycle n;
 
-  if O.verbose > 1 then begin
-    eprintf "LOCATIONS\n" ;
-    debug_cycle stderr n
-  end ;
 (* Set values *)
   let start_node,by_loc = split_by_location n in
   let initvals,final_values = set_node_values by_loc in
   (if do_morello then set_dep_v by_loc) ;
-  if O.verbose > 1 then begin
-    eprintf "INITIAL VALUES: %s\n"
+    Log.info 2 "INITIAL VALUES: %s\n"
       ( List.map
         ( fun (loc,k) -> sprintf "%s->%d"
                  loc (Value.to_int k)
         ) initvals
         |> String.concat "; " );
-    eprintf "ASSIGNED VALUES\n" ;
-    debug_cycle stderr n;
-    eprintf "FINAL VALUES [%s]\n"
+    Log.info 2 "ASSIGNED VALUES\n%a" debug_cycle n;
+    Log.info 2 "FINAL VALUES [%s]\n"
       ( List.map
         ( fun (loc,(v,_pte)) -> sprintf "%s -> 0x%x"
                  (Code.pp_loc loc) (Value.to_int v)
         ) final_values
-        |> String.concat "," )
-  end ;
+    |> String.concat "," );
 (* Set dependency values *)
   if O.variant Variant_gen.Self then check_fetch start_node;
   start_node,initvals
@@ -1414,9 +1402,9 @@ let merge_changes n nss =
       e1.loc = e2.loc && value_before e2 e1
 
   let debug_proc ns =
-    String.concat " " (List.map (fun n -> sprintf "<%s>" (str_node n)) ns)
+    String.concat " " @@ List.map (fun n -> sprintf "<%s>" (str_node n)) ns
 
-  let debug_procs nss =  List.iter (fun ns -> eprintf "%s\n" (debug_proc ns)) nss
+  let debug_procs nss = String.concat "\n" @@ List.map (fun ns -> sprintf "%s" (debug_proc ns)) nss
 
   let split_procs n =
     let n =
@@ -1447,9 +1435,7 @@ let merge_changes n nss =
       not O.allow_back &&
       List.exists proc_back nss
     then Warn.fatal "Forbidden po vs. com";
-    if O.verbose > 1 then begin
-      eprintf "SPLITTED:\n" ; debug_procs nss
-    end ;
+    Log.info 2 "SPLITTED:\n%s\n" (debug_procs nss);
     nss
 
 (****************************)
@@ -1524,22 +1510,19 @@ let merge_changes n nss =
         let tag_ws = if do_memtag then
           List.map get_tag_locs (get_ord_writes n) else [] in
         let ws = ord_ws@tag_ws in
-        if O.verbose > 1 then
+          (* TODO find better way *)
           List.iter
-            (fun (loc,n) ->
-              eprintf "LOC=%s, node=%a\n" (Code.pp_loc loc) debug_node n)
-            ws ;
+            ( fun (loc,n) ->
+              Log.info 2 "LOC=%s, node=%a" (Code.pp_loc loc) debug_node n )
+            ws;
         let r = by_loc ws in
         List.fold_right
           (fun (loc,ws) k -> match ws with
           | [] -> k
           | [ns] ->
-             if O.verbose > 1 then
-               Printf.eprintf "Standard write sequence on %s: %s\n"
-                 (Code.pp_loc loc)
-                 (String.concat " "
-                    (List.map str_node ns)) ;
-             (loc,ws)::k
+            Log.info 2 "Standard write sequence on %s: %s\n"
+              (Code.pp_loc loc) (String.concat " " @@ List.map str_node ns) ;
+            (loc,ws)::k
           | _ ->
               (* Assume there is no consecutive writes to the same location *)
               List.iter

@@ -63,10 +63,8 @@ module Make(Config:Config)(T:Builder.S)
           let module Normer = Normaliser.Make(Config)(T.E) in
           fun cy ->
             let ncy = Normer.normalise (T.E.resolve_edges cy) in
-            if Config.verbose > 0 then
-              eprintf "Changed %s -> %s\n"
-                (T.E.pp_edges cy)
-                (T.E.pp_edges ncy) ;
+            Log.info 3 "Changed %s -> %s\n"
+               (T.E.pp_edges cy) (T.E.pp_edges ncy) ;
             ncy
         else fun cy -> cy
 
@@ -290,7 +288,7 @@ module Make(Config:Config)(T:Builder.S)
 (* And litmus file name in @all file *)
         if not Config.stdout then
           fprintf all_chan "%s\n" src ;
-        if Config.verbose > 0 then eprintf "Test: %s\n" n ;
+        Log.info 2 "Test: %s\n" n ;
 (*    printf "%s: %s\n" n (pp_edges cycle.orig) ; *)
         { res with ntests = res.ntests+1; }
 
@@ -390,20 +388,18 @@ module Make(Config:Config)(T:Builder.S)
               mk_info mk_name mk_scope c r
 
       let check_dump all_chan check es mk_info mk_name mk_scope res =
-        if Config.verbose > 0 then begin
-          eprintf "------------------------------------------------------\n" ;
-          eprintf "Cycle: %s\n" (T.E.pp_edges es) ;
-          let info,_ = mk_info es in
-          List.iter
-            (fun (tag,i) -> eprintf "%s: %s\n" tag i) info
-        end ;
+        Log.info 2 "------------------------------------------------------\nCycle: %s\n%s\n"
+          (T.E.pp_edges es)
+          ( String.concat "\n" @@
+            List.map (fun (tag,i) -> sprintf "%s: %s\n" tag i) (fst @@ mk_info es) );
+(*
+        List.iter (fun (tag,i) -> Log.info 0 "%s: %s\n" tag i) (fst @@ mk_info es);
+*)
         try
           check_dump all_chan check es mk_info mk_name mk_scope res
         with
         | Misc.Fatal msg ->
-            if Config.verbose > 0 then begin
-              eprintf "Compilation failed: %s\n" msg
-            end ;
+            Log.info 2 "Compilation failed: %s\n" msg;
             res
         | DupName name ->
             Warn.fatal
@@ -425,9 +421,8 @@ module Make(Config:Config)(T:Builder.S)
             res
         with
         | Misc.Fatal msg|Misc.UserError msg ->
-          if Config.verbose > 0 then
-            eprintf "Fatal ignored: %s\n" msg ;
-          res
+           Log.info 2 "Fatal ignored: %s\n" msg ;
+           res
         |Misc.Exit ->
             res
 (* Exported *)
