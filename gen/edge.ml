@@ -20,9 +20,8 @@ module Config =
   struct
     let variant _ = false
     let naturalsize = TypBase.get_size TypBase.default
+    module Debug = Debug_gen.Make(struct let debug = !Config.debug end)
   end
-
-let dbg = 0
 
 module type S = sig
   open Code
@@ -170,6 +169,7 @@ module
        sig
          val variant : Variant_gen.t -> bool
          val naturalsize : MachSize.sz
+         module Debug: Debug_gen.S
        end)
     (F:Fence.S)
     (A:Atom.S): S
@@ -189,7 +189,9 @@ and type rmw = A.RMW.rmw = struct
   let do_disjoint = Cfg.variant Variant_gen.MixedDisjoint
   let do_strict_overlap = Cfg.variant Variant_gen.MixedStrictOverlap
 
-  let debug = false
+  let debug_lxm fmt = Cfg.Debug.debug Debug_gen.Lexer fmt
+  let debug_cycle fmt = Cfg.Debug.debug Debug_gen.Cycle fmt
+
   open Code
 
   type fence = F.fence
@@ -541,8 +543,7 @@ let fold_tedges f r =
                      then
                        f {a1; a2; edge=te;} k
                      else begin
-                       if debug then
-                         eprintf "Not %s\n" (debug_edge  {a1; a2; edge=te;}) ;
+                       debug_lxm "Not %s\n" (debug_edge  {a1; a2; edge=te;}) ;
                        k
                      end ))))
 
@@ -574,7 +575,7 @@ let fold_tedges f r =
   let ta = Hashtbl.create  37
 
   let add_lxm lxm a =
-    if dbg > 1 then eprintf "ATOM: %s\n" lxm ;
+    debug_lxm "ATOM: %s\n" lxm ;
     try
       let old = Hashtbl.find ta lxm in
       assert (A.compare_atom old a = 0) ;
@@ -611,12 +612,12 @@ let fold_tedges f r =
   let t = Hashtbl.create 40000
 
   let add_lxm lxm e =
-    if dbg > 1 then eprintf "LXM: %s\n" lxm ;
+    debug_lxm "LXM: %s\n" lxm ;
     try
       let old = Hashtbl.find t lxm in
       if compare old e <> 0 then begin
         Warn.warn_always "ambiguous lexeme: %s" lxm ;
-        eprintf "%s\n%s\n" (debug_edge old) (debug_edge e) ;
+        debug_lxm "%s\n%s\n" (debug_edge old) (debug_edge e) ;
         assert false
       end
 
@@ -893,9 +894,7 @@ let fold_tedges f r =
  e1 and e2 as they are...
 *)
   let resolve_pair e1 e2 =
-    if dbg > 0 then
-      eprintf
-        "Resolve pair <%s,%s> -> " (debug_edge e1)  (debug_edge e2) ;
+    debug_cycle "Resolve pair <%s,%s> -> " (debug_edge e1)  (debug_edge e2) ;
     let e1,e2 =
       try
         let d1 = dir_tgt e1 and d2 = dir_src e2 in
@@ -916,10 +915,7 @@ let fold_tedges f r =
           | Some _ as a ->
               set_a2 e1 a,set_a1 e2 a
           end in
-    if dbg > 0 then begin
-      let e1,e2 = r in
-      eprintf "<%s,%s>\n" (debug_edge e1) (debug_edge e2)
-    end ;
+    debug_cycle "<%s,%s>\n" (debug_edge @@ fst r) (debug_edge @@ snd r);
     r
 
   (* Function merge_pair merges two versions of the same edge with
@@ -1023,7 +1019,7 @@ let fold_tedges f r =
               raise exn in
       let es = remove_id (e::es) in
       let es = if do_mixed then List.map replace_plain es else es in
-      if dbg > 0 then eprintf "Check Mixed: %s\n" (pp_edges es) ;
+      debug_cycle "Check Mixed: %s\n" (pp_edges es) ;
       check_mixed es ;
       es
 

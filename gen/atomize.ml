@@ -27,7 +27,10 @@ module Make (A:Arch_gen.FenceAtom) =
       module E = Edge.Make(Edge.Config)(A)(A)
       module Namer = Namer.Make(A)(A)(E)
       module Normer =
-        Normaliser.Make(struct let lowercase = false end)(E)
+        Normaliser.Make(struct
+          let lowercase = false
+          module Debug = Debug_gen.Make(struct let debug = !Config.debug end)
+        end)(E)
 
 
       let is_ext e = match E.get_ie e with

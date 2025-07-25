@@ -32,6 +32,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
           include C
           let naturalsize = naturalsize
           let moreedges = O.moreedges
+          module Debug = O.Debug
         end)
 
     include CompileCommon.Make(O)(PPC)
@@ -95,10 +96,8 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
         else k)
 
     let () =
-      if O.verbose > 0 then begin
-        eprintf "PPO is:\n" ;
-        ppo (fun r () -> eprintf "%s\n" (R.pp_relax r)) ()
-      end
+        O.Debug.verbose 2 "PPO is:\n" ;
+        ppo (fun r () -> O.Debug.verbose 2 "%s\n" (R.pp_relax r)) ()
 
 (*******)
 

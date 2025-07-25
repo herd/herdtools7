@@ -36,6 +36,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let moreedges = Cfg.moreedges
           let fullmixed = Cfg.variant Variant_gen.FullMixed
           let variant = Cfg.variant
+          module Debug = Cfg.Debug
         end)
     include CompileCommon.Make(Cfg)(A64)
 

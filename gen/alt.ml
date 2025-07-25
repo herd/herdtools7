@@ -41,13 +41,14 @@ module Make(C:Builder.S)
 
     =
   struct
+    let debug fmt = O.Debug.debug Debug_gen.Top fmt
+    let verbose = O.Debug.verbose
+
     let mixed = Variant_gen.is_mixed O.variant
     let do_kvm = Variant_gen.is_kvm  O.variant
     module D = DumpAll.Make(O) (C)
     open C.E
     open C.R
-
-    let dbg = false
 
     module RelaxSet = C.R.Set
 
@@ -102,8 +103,7 @@ module Make(C:Builder.S)
         match get_ie e1, get_ie e2 with
         | Int,Int -> false
         | Ext,_|_,Ext -> true  in
-      if dbg then
-        eprintf "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
+      debug "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
       r
 
     let choice_default e1 e2 =
@@ -123,8 +123,7 @@ module Make(C:Builder.S)
           match get_ie e1, get_ie e2 with
           | Int,Int -> false
           | Ext,_|_,Ext -> true  in
-      if dbg then
-        eprintf "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
+      debug "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
       r
 
 (* Check altenance of com/po *)
@@ -138,7 +137,7 @@ module Make(C:Builder.S)
         | (Rmw _,_)|(_,Rmw _) -> true
 (* Otherwise require alternance *)
         | _,_ ->  C.E.get_ie e1 <> C.E.get_ie e2 in
-(*      eprintf "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ; *)
+      debug "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
       r
     let choice_mixed e1 e2 =
       let r =
@@ -161,7 +160,7 @@ module Make(C:Builder.S)
             | Ext,Ext -> false
             | (Ext,Int) | (Int,Ext)
                 -> true  in
-(*      eprintf "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ; *)
+      debug "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
       r
     let choice_uni e1 e2 =  match e1.edge,e2.edge with
     | (Ws _,Ws _)
@@ -201,16 +200,14 @@ module Make(C:Builder.S)
       begin match  C.E.get_ie e1, C.E.get_ie e2 with
       | Int,Int ->
           let cs = C.E.compact_sequence xs ys e1 e2 in
-          if O.verbose > 0 then eprintf "COMPACT %s,%s -> [%s] -> "
-            (C.E.pp_edge e1) (C.E.pp_edge e2)
-            (String.concat ","
-               (List.map (fun es -> C.R.pp_relax (C.R.ERS es)) cs)) ;
-          let r =
-            not
-              (List.exists
+          let r = not (List.exists
                  (fun es -> C.R.Set.mem (C.R.ERS es) safes)
                  cs) in
-          if O.verbose > 0 then eprintf "%b\n" r ;
+          debug "COMPACT %s,%s -> [%s] -> %b\n"
+            (C.E.pp_edge e1) (C.E.pp_edge e2)
+            (String.concat ","
+               (List.map (fun es -> C.R.pp_relax (C.R.ERS es)) cs))
+            r ;
           r
       | _,_ -> true
       end
@@ -286,11 +283,8 @@ module Make(C:Builder.S)
               C.E.can_precede (hd_non_insert xs) (last_non_insert ys)
             else true
           end in
-      if O.verbose > 2 then begin
-        eprintf "do_compat '%s' '%s' = %b\n"
-          (C.E.pp_edges xs)
-          (C.E.pp_edges ys) r
-      end ;
+      debug "do_compat '%s' '%s' = %b\n"
+          (C.E.pp_edges xs) (C.E.pp_edges ys) r;
       r
 
 
@@ -340,7 +334,7 @@ module Make(C:Builder.S)
 
     let minprocs suff =
       let r = c_minprocs_suff 0 suff in
-      if O.verbose > 3 then eprintf "MIN [%s] => %i\n" (pp_ess suff) r ;
+      debug "MIN [%s] => %i\n" (pp_ess suff) r ;
       r
 
     let rec c_minint_es c = function
@@ -363,14 +357,8 @@ module Make(C:Builder.S)
 (* Prefix *)
     let prefix_expanded = List.flatten (List.map C.R.expand_relax_seq O.prefix)
 
-    let () =
-      if O.verbose > 0 && O.prefix <> [] then begin
-        eprintf "Prefixes:\n" ;
-        List.iter
-          (fun rs ->
-            eprintf "  %s\n" (C.R.pp_relax_list rs))
-          prefix_expanded
-      end
+    let () = debug "Prefixes: [%s]\n"
+      (String.concat "," @@ List.map C.R.pp_relax_list prefix_expanded)
 
     let prefixes = List.map edges_ofs prefix_expanded
 
@@ -404,7 +392,7 @@ module Make(C:Builder.S)
       then
         let suff = r::suff
         and n = n-sz r in
-        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess suff) ;
+        debug "CALL: %i %s\n" n (pp_ess suff) ;
         let k =
           if
             over &&
@@ -412,13 +400,12 @@ module Make(C:Builder.S)
             can_prefix prefix (can_precede safes po_safe) suff
           then begin
             let tr =  prefix@suff in
-            if O.verbose > 2 then
-            eprintf "TRY: '%s'\n"
+            debug "TRY: '%s'\n"
               (C.E.pp_edges (List.flatten (List.map snd tr))) ;
             try f0 po_safe tr k
             with  Misc.Exit -> k
             | Misc.Fatal msg |Misc.UserError msg ->
-                eprintf "Marche pas: '%s'\n" msg ;
+                debug "Marche pas: '%s'\n" msg ;
                 k
             | e ->
               eprintf "Exc in F0: '%s'\n" (Printexc.to_string e) ;
@@ -445,18 +432,14 @@ module Make(C:Builder.S)
               | ERS [{edge=Po (sd,e1,e2); _}] -> SdDir2Set.add (sd,e1,e2) k
               | _ -> k)
               rs SdDir2Set.empty in
-          if dbg then
-            eprintf
-              "PoSafe: {%s}\n"
-              (SdDir2Set.pp_str ","
-                 (fun (sd,e1,e2) -> pp_sd sd ^ "-" ^ pp_extr e1 ^ "-" ^ pp_extr e2)
-                 d2) ;
+          debug "PoSafe: {%s}\n"
+            (SdDir2Set.pp_str ","
+               (fun (sd,e1,e2) -> pp_sd sd ^ "-" ^ pp_extr e1 ^ "-" ^ pp_extr e2)
+               d2) ;
           fun sd e1 e2 -> SdDir2Set.mem (sd,e1,e2) d2
       | m ->
           fun _ _ _ ->
-            eprintf "Function po_safe called in mode %s\n%!"
-              (pp_check m) ;
-            assert false
+            Warn.fatal "Function po_safe called in mode %s\n" (pp_check m)
 
     let zyva prefix aset relax safe reject n f =
 (*      let safes = C.R.Set.of_list safe in *)
@@ -703,23 +686,15 @@ module Make(C:Builder.S)
       if Misc.nilp relax then if r_nempty then begin
         Warn.fatal "relaxations provided in relaxlist could not be used to generate cycles"
       end ;
-      if O.verbose > 0 then begin
-        eprintf "** Relax0 **\n" ;
-        debug_rs stderr relax ;
-        eprintf "** Safe0 **\n" ;
-        debug_rs stderr safe
-      end ;
+      verbose 1 "** Relax0 **\n%a** Safe0 **\n%a"
+        debug_rs relax debug_rs safe;
       let relax_set = C.R.Set.of_list relax
       and safe_set = C.R.Set.of_list safe in
       let relax = C.R.Set.elements relax_set
       and safe = C.R.Set.elements (C.R.Set.diff safe_set relax_set)
 (*      and reject = C.R.Set.elements reject_set *)in
-      if O.verbose > 0 then begin
-        eprintf "** Relax **\n" ;
-        debug_rs stderr relax ;
-        eprintf "** Safe **\n" ;
-        debug_rs stderr safe
-      end ;
+      verbose 1 "** Relax0 **\n%a** Safe0 **\n%a"
+        debug_rs relax debug_rs safe;
       do_gen relax safe reject n
 
 (**********************)

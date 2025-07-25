@@ -16,9 +16,10 @@
 
 module Config = struct
   let moreedges = false
+  module Debug = Debug_gen.Make(struct let debug = !Config.debug end)
 end
 
-module Make(C:sig val moreedges : bool end) = struct
+module Make(C:sig val moreedges : bool module Debug : Debug_gen.S end) = struct
 include MIPSBase
 module ScopeGen = ScopeGen.NoGen
 
@@ -28,6 +29,7 @@ include MachAtom.Make
       let naturalsize=None
       let endian = endian
       let fullmixed = C.moreedges
+      module Debug = Config.Debug
     end)
 
 

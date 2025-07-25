@@ -62,8 +62,6 @@ module Make (Co:Config) (A:Arch_gen.S) = struct
       let line = input_line chan in
       let name,es = parse_line line in
       let c = count_ext es in
-      if Co.verbose > 0 then
-        eprintf "%s: %i\n" name c ;
       if c = Co.nacc then
         printf "%s: %s\n"name (E.pp_edges es) ;
       do_rec () in

@@ -18,9 +18,7 @@ open Code
 open Printf
 
 module type Config = sig
-  val verbose : int
   val generator : string
-  val debug : Debug_gen.t
   val hout : Hint.out
   val cond : Config.cond
   val neg : bool
@@ -39,12 +37,15 @@ module type Config = sig
   val cycleonly: bool
   val metadata : bool
   val same_loc : bool
+  module Debug : Debug_gen.S
 end
 
 module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
 = struct
 
 (* Config *)
+
+  let verbose = O.Debug.verbose
 
   module A = Comp.A
   module E = Comp.E
@@ -206,7 +207,7 @@ let get_fence n =
   let rec compile_proc pref chk loc_writes st p ro_prev init ns = match ns with
   | [] -> init,pref [],(C.EventMap.empty,[]),st
   | n::ns ->
-      if O.verbose > 1 then eprintf "COMPILE PROC: <%s>\n" (C.str_node n);
+      verbose 2 "COMPILE PROC: <%s>\n" (C.str_node n);
       begin match  n.C.edge.E.edge with
       (* There are following fences *)
       | E.Node _ ->
@@ -358,14 +359,12 @@ let max_set = IntSet.max_elt
     let vs,f =
       if O.optcoherence && O.obs_type <> Config.Loop then
         let vs = opt_coherence vs in
-        if O.verbose > 1 then begin
-          eprintf "OPT:" ;
-          List.iter
+        verbose 2 "OPT:%s\n"
+          ( String.concat " " @@
+          List.map
             (fun vs ->
-              eprintf " {%s}" (IntSet.pp_str "," (sprintf "%i") vs))
-            vs ;
-          eprintf "\n%!"
-        end ;
+              sprintf "{%s}" (IntSet.pp_str "," (sprintf "%i") vs))
+            vs );
         match vs with
         | []|[_] -> raise NoObserver
         | _ ->
@@ -684,10 +683,7 @@ let max_set = IntSet.max_elt
   let do_kvm = Variant_gen.is_kvm O.variant
 
   let compile_cycle ok initvals n =
-    if O.verbose > 0 then begin
-      Printf.eprintf "COMPILE CYCLE:\n%a" C.debug_cycle n
-    end ;
-    let open Config in
+    verbose 2 "COMPILE CYCLE:\n%s\n" (C.debug_cycle n);
     Label.reset () ;
     let env_wide = C.get_wide n in
     let env_pair =
@@ -700,14 +696,12 @@ let max_set = IntSet.max_elt
     let cos = U.compute_cos cos0 in
     (* the post condition for checking PTE value *)
     let last_ptes = if do_kvm then C.last_ptes n else [] in
-    if O.verbose > 1 then
-      Printf.eprintf "Last_Ptes: %s\n"
-        (String.concat ","
-           (List.map
-              (fun (loc,v) ->
-                Printf.sprintf "%s->%s" loc (C.Value.pp_pte v)) last_ptes)) ;
+    verbose 2 "Last_Ptes:%s\n"
+      ( String.concat "," @@ List.map
+        (fun (loc,v) ->
+          Printf.sprintf "%s->%s" loc (C.Value.pp_pte v)) last_ptes ) ;
     let no_local_ptes = StringSet.of_list (List.map fst last_ptes) in
-    if O.verbose > 1 then U.pp_coherence cos0 ;
+    verbose 2 "COHERENCE:%s\n" (U.pp_coherence cos0);
     let loc_writes = U.comp_loc_writes n in
     (* `do_rec` compile individual instructions *)
     let rec do_rec p i = function
@@ -723,6 +717,7 @@ let max_set = IntSet.max_elt
               (fun f (r,v) -> F.add_final_v p r (IntSet.singleton v) f)
               f xenv in
           let i,c,f,st =
+            let open Config in
             match O.cond with
             | Unicond -> i,c,f,st
             | Cycle|Observe ->
@@ -749,6 +744,7 @@ let max_set = IntSet.max_elt
           env_p env in
     (* end of `do_rec` *)
     let i,obsc,f =
+      let open Config in
       match O.cond with
       | Unicond -> [],[],[]
       | Cycle|Observe ->
@@ -878,6 +874,7 @@ let max_set = IntSet.max_elt
           List.fold_left (fun f (x,p) -> F.cons_pteval (A.Loc x) p f) f last_ptes in
         (* `fc` converts faults `flts` and final values of registers `final_env` to final *)
         let fc =
+          let open Config in
           match O.cond with
           | Unicond ->
               let evts =
@@ -1070,8 +1067,8 @@ let test_of_cycle name
 
 let make_test name ?com ?info ?check ?scope es =
   try
-    if O.verbose > 1 then eprintf "**Test %s**\n" name ;
-    if O.verbose > 2 then eprintf "**Cycle %s**\n" (pp_edges es) ;
+    verbose 2 "**Test %s**\n" name ;
+    verbose 2 "**Cycle %s**\n" (pp_edges es) ;
     let es,c,init = C.make es in
     test_of_cycle name ?com ?info ?check ?scope ~init es c
   with

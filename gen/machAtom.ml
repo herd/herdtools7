@@ -19,6 +19,7 @@ module type Config = sig
   val naturalsize : MachSize.sz option
   val endian : Endian.t
   val fullmixed : bool
+  module Debug : Debug_gen.S
 end
 
 module Make(C:Config) = struct
@@ -104,6 +105,7 @@ module Make(C:Config) = struct
       (struct
         let naturalsize () = Misc.as_some C.naturalsize
         let endian = C.endian
+        module Debug = C.Debug
       end)(Value)
 
   let overwrite_value v ao w = match ao with

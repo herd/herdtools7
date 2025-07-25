@@ -17,6 +17,7 @@
 module type Config = sig
   val naturalsize : MachSize.sz option
   val fullmixed : bool
+  module Debug : Debug_gen.S
 end
 
 type offset = int
@@ -40,6 +41,7 @@ module Make :
 module type ValsConfig = sig
   val naturalsize : unit -> MachSize.sz
   val endian : Endian.t
+  module Debug : Debug_gen.S
 end
 
 module Vals :

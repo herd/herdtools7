@@ -19,7 +19,7 @@
 open Printf
 
 module type Config = sig
-  val verbose : int
+  module Debug : Debug_gen.S
 end
 
 module Make (O:Config) (C:ArchRun.S) :
@@ -31,6 +31,9 @@ module Make (O:Config) (C:ArchRun.S) :
     end
     =
   struct
+
+    let debug fmt = O.Debug.debug Debug_gen.Cycle fmt
+
     module A = C.A
     module C = C.C
 
@@ -165,7 +168,7 @@ module Make (O:Config) (C:ArchRun.S) :
                   else (wi,w)::k)
                 ws [] in
             let orders_loc = Rel.all_topos
-                (O.verbose > 1) ws (Rel.of_list vb_loc) in
+                (O.Debug.verbose_level > 1) ws (Rel.of_list vb_loc) in
             orders_loc::k)
           ws_by_loc [] in
 
@@ -226,10 +229,6 @@ module Make (O:Config) (C:ArchRun.S) :
               State.add reg v fs
             with Not_found -> fs)
           m fs in
-(*
-      pp_state stderr fs ;
-      eprintf "\n" ;
-*)
       StateSet.add fs k
 
     let run evts m =
@@ -238,7 +237,7 @@ module Make (O:Config) (C:ArchRun.S) :
       let process_co = process_co kont in
       let process_rfm = process_rfm process_co in
       let sts = gen_rfm process_rfm str StateSet.empty in
-(*      eprintf "Candidates: %i\n" (StateSet.cardinal sts) ; *)
+      debug "Candidates: %i\n" (StateSet.cardinal sts) ;
       List.map
         State.bindings
         (StateSet.elements sts)

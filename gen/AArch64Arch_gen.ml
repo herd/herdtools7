@@ -19,6 +19,7 @@ module Config = struct
   let moreedges = false
   let fullmixed = false
   let variant _ = false
+  module Debug = Debug_gen.Make(struct let debug = !Config.debug end)
 end
 
 module Make
@@ -27,6 +28,7 @@ module Make
       val moreedges : bool
       val fullmixed : bool
       val variant : Variant_gen.t -> bool
+      module Debug : Debug_gen.S
     end) = struct
 
 let do_self = C.variant Variant_gen.Self
@@ -254,6 +256,7 @@ module Mixed =
     (struct
       let naturalsize = Some C.naturalsize
       let fullmixed = C.fullmixed
+      module Debug = C.Debug
     end)(Value)
 
 let default_atom = Atomic PP,None
@@ -587,6 +590,7 @@ let is_ifetch a = match a with
        (struct
          let naturalsize () = C.naturalsize
          let endian = endian
+         module Debug = C.Debug
        end)(Value)
 
 let overwrite_value v ao w = match ao with

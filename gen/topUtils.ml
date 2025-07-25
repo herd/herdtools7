@@ -20,6 +20,7 @@ module type Config = sig
   val obs_type : Config.obs_type
   val poll : bool
   val hexa : bool
+  module Debug : Debug_gen.S
 end
 
 module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
@@ -27,7 +28,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 (* Coherence utilities *)
     type cos0 =  (string * (C.C.node * IntSet.t) list list) list
     type cos = (string * (C.C.Value.v array * IntSet.t) list list) list
-    val pp_coherence : cos0 -> unit
+    val pp_coherence : cos0 -> string
     val last_map : cos0 -> C.C.event StringMap.t
     val compute_cos : cos0 ->  cos
 (* prefetch *)
@@ -48,6 +49,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
   functor (O:Config) -> functor (C:ArchRun.S) ->
   struct
 
+    let debug fmt = O.Debug.debug Debug_gen.Cycle fmt
+
     type cos0 =  (string * (C.C.node * IntSet.t) list list) list
     type cos = (string * (C.C.Value.v array * IntSet.t) list list) list
 
@@ -67,22 +70,19 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
            (String.concat "," (List.map pp_v (Array.to_list t)))
 
     let pp_coherence cos0 =
-      eprintf "COHERENCE: " ;
-      Misc.pp_list stderr ""
-        (fun chan (x,vs) ->
-          fprintf chan "<%s:%a>" x
-            (fun chan ->
-              Misc.pp_list chan "|"
-                (fun chan ->
-                  Misc.pp_list chan ","
-                    (fun chan (n,obs) ->
-                      let pp chan = fprintf chan "%s{%s}" in
-                      pp chan (pp_cell n.C.C.evt.C.C.cell)
-                        (IntSet.pp_str "," (sprintf "%i") obs)
-                    )))
-            vs)
-        cos0 ;
-      eprintf "\n%!"
+      List.map ( fun (x,vs) ->
+        let vs_string =
+          List.map ( fun vss ->
+            (* pp the value and observable process *)
+            List.map ( fun (n,obs) ->
+              sprintf "%s{%s}"
+              (pp_cell n.C.C.evt.C.C.cell)
+                (IntSet.pp_str "," (sprintf "P%i") obs)
+            ) vss |> String.concat ","
+        ) vs |> String.concat "|" in
+        sprintf "<%s:%s>" x vs_string
+      ) cos0
+      |> String.concat " "
 
 (****************************)
 (* Last in coherence orders *)
@@ -189,7 +189,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     let write_after m =
       let rec do_rec n =
         let e = n.C.C.edge in
-(*        eprintf "After %s\n" (C.E.pp_edge e) ; *)
+        debug "After %s\n" (C.E.pp_edge e) ;
         begin match  n.C.C.evt.C.C.dir with
         | Some W -> true
         | None|Some R ->

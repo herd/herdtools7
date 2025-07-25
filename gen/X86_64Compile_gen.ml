@@ -59,6 +59,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
         (struct
           let naturalsize = naturalsize
           let fullmixed = Cfg.variant Variant_gen.FullMixed
+          module Debug = Cfg.Debug
         end)
     include CompileCommon.Make(Cfg)(X86_64)
     include X86_64

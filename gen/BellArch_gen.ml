@@ -39,8 +39,8 @@ let bi = match O.bell with
     let module R =
     ReadBell.Make
       (struct
-        let debug_lexer = O.debug.Debug_gen.lexer
-        let debug_model = O.debug.Debug_gen.model
+        let debug_lexer = Debug_gen.contain_flag Debug_gen.Lexer O.debug
+        let debug_model = Debug_gen.contain_flag Debug_gen.Model O.debug
         let debug_files = false
         let verbose = O.verbose
         let libfind =
@@ -50,7 +50,7 @@ let bi = match O.bell with
                 let includes = []
                 let env = None
                 let libdir = O.libdir
-                let debug = O.debug.Debug_gen.files
+                let debug = Debug_gen.contain_flag Debug_gen.Files O.debug
               end) in
           ML.find
         let compat = false
@@ -175,12 +175,12 @@ let varatom = match  O.varatom with
     let module P =
       Annot.Make
         (struct
-          let debug = O.debug.Debug_gen.lexer
+          let debug = Debug_gen.contain_flag Debug_gen.Lexer O.debug
         end) in
     Some
       begin
         let x = P.parse lines in
-        if O.debug.Debug_gen.generator then
+        if Debug_gen.contain_flag Debug_gen.Generator O.debug then
           eprintf "Variations:\n%s\n" (BellModel.pp_event_decs x) ;
         x
       end

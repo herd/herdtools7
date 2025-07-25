@@ -17,12 +17,14 @@
 module Config = struct
   let naturalsize = MachSize.Word
   let fullmixed = true
+  module Debug = Debug_gen.Make(struct let debug = !Config.debug end)
 end
 
 module Make
     (C:sig
       val naturalsize : MachSize.sz
       val fullmixed : bool
+      module Debug : Debug_gen.S
     end) = struct
 
       open Printf
@@ -41,6 +43,7 @@ module Make
           (struct
             let naturalsize = Some C.naturalsize
             let fullmixed = C.fullmixed
+            module Debug = C.Debug
           end)(Value)
 
       let bellatom = false
@@ -142,6 +145,7 @@ module Make
           (struct
             let naturalsize () = C.naturalsize
             let endian = endian
+            module Debug = C.Debug
           end)(Value)
 
       let overwrite_value v ao w = match ao with

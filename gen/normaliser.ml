@@ -21,6 +21,7 @@ exception CannotNormalise of string
 
 module type Config = sig
   val lowercase : bool
+  module Debug : Debug_gen.S
 end
 
 module Make : functor (C:Config) -> functor (E:Edge.S) ->
@@ -37,7 +38,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
     = functor (C:Config) -> functor (E : Edge.S) ->
   struct
 
-    let debug = false
+    let debug fmt = C.Debug.debug Debug_gen.Top fmt
 
 (* Cycles of edges *)
     module CE = struct
@@ -122,9 +123,9 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       let set_matches n =
         let rec do_rec m = match m.edge.E.edge with
         | E.Leave _ ->
-(*            eprintf "LEAVE [%s]\n" (_pp m); *)
+            debug "LEAVE [%s]\n" (_pp m);
             let matches = find_back m.next in
-(*            eprintf "BACK [%s]\n" (_pp matches); *)
+            debug "BACK [%s]\n" (_pp matches);
             m.matches <- matches ;
             matches.matches <- m ;
             do_next m
@@ -153,7 +154,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
 
         let r = patch ms in
         set_matches r ;
-        if debug then eprintf "CE.cycle returned [%s]\n%!" (_pp r) ;
+        debug "CE.cycle returned [%s]\n" (_pp r) ;
         r
 
 
@@ -169,7 +170,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
 (* Find skipping Leave/Back *)
       let find_node_out p n =
         let rec do_rec m =
-          if debug then eprintf "FIND NODE OUT [%s]\n" (_pp m) ;
+          debug "FIND NODE OUT [%s]\n" (_pp m) ;
           if p m then m
           else do_next m
 
@@ -199,8 +200,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
 (* Find node at outermost level *)
       let find_out n =
         let rec do_rec (n0,_ as c0) d m =
-          if debug then
-            eprintf "OUTER %i [%s]\n%!" n0 (_pp m) ;
+          debug "OUTER %i [%s]\n" n0 (_pp m) ;
           match m.edge.E.edge with
           | E.Leave _ -> do_next c0 (d+1) m
           | E.Back _ ->
@@ -208,8 +208,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
                 let d = d-1 in
                 let d0,n0 = c0 in
                 if d < d0 then begin
-                  if debug then
-                    eprintf "CHANGE: %s -> %s\n%!"
+                  debug "CHANGE: %s -> %s\n"
                       (E.pp_edge n0.edge) (E.pp_edge m.next.edge) ;
                   (d,m.next)
                 end else c0 in
@@ -235,9 +234,9 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
           |> List.fold_left (+) 0 in
         (* Reject cycle with precisely one external edge *)
         if ext_count = 1 then raise(CannotNormalise "only one external edge");
-        if debug then eprintf "Start proc [%s]\n%!" (_pp n) ;
+        debug "Start proc [%s]\n" (_pp n) ;
         let n = find_out n in
-        if debug then eprintf "Found out [%s]\n%!" (_pp n) ;
+        debug "Found out [%s]\n" (_pp n) ;
         let p = find_non_pseudo_prev n.prev in
         if
           ext_com p.edge
@@ -261,7 +260,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
           assert (ext_com n.prev.edge || int_com n.prev.edge) ;
 
           let rec do_rec m =
-            if debug then eprintf "REC: '%s'\n" (_pp m) ;
+            debug "REC: '%s'\n" (_pp m) ;
             let e = m in
             let o =
               try find_edge_out ext_com m
@@ -275,15 +274,11 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
             if o.next == n then [(e,o)]
             else (e,o)::do_rec o.next in
           let ns = do_rec n in
-          if debug then begin
-            if debug then eprintf "Split -> %!" ;
-            eprintf "[%i]\n" (List.length ns) ;
-            List.iter (fun n -> eprintf "  %s\n" (_pp_proc n)) ns
-          end ;
+          let pp_ns = List.map _pp_proc ns |> String.concat "\n  " in
+          debug "Split -> [%i]\n  %s\n" (List.length ns) pp_ns;
           ns
         with e ->
-          if debug then
-            eprintf "Exc in split_procs: '%s'\n" (Printexc.to_string e) ;
+          debug  "Exc in split_procs: '%s'\n" (Printexc.to_string e) ;
           raise e
 
       let compare_edges e1 e2 =
@@ -336,8 +331,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
           match d with
           | Code.W -> W
           | Code.R -> R in
-        if debug then
-          eprintf "%s[%s] -> %s\n"
+        debug "%s[%s] -> %s\n"
             (E.pp_edge e.CE.edge) (Code.pp_dir d)
             (pp r) ;
         r

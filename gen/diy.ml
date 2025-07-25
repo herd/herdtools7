@@ -113,10 +113,7 @@ let parse_fences fs = List.fold_right parse_fence fs []
     let lr = var_atom lr
     and ls = var_atom ls
     and rl = var_atom rl in
-    if O.verbose > 0 then begin
-      Printf.eprintf
-        "expanded relax=%s\n" (C.R.pp_relax_list lr)
-    end ;
+    O.Debug.verbose 1 "expanded relax=%s\n" (C.R.pp_relax_list lr);
     M.gen ~relax:lr ~safe:ls ~reject:rl n
 
   let er e = ERS [plain_edge e]
@@ -189,8 +186,8 @@ let exec_conf s =
   let prog = Sys.argv.(0) in
   let cmd = Array.to_list Sys.argv in
   let cmd = norm_cmd cmd in
-  if !Config.verbose > 1 then
-    eprintf "EXEC: %s %s\n%!" prog (String.concat " " (conf @ cmd)) ;
+  if !Config.debug.Debug_gen.verbose >= 2 then
+    eprintf "EXEC: %s %s\n" prog (String.concat " " (conf @ cmd)) ;
   ignore (Unix.execvp prog (Array.of_list (prog::conf@cmd))) ;
   ()
 
@@ -215,22 +212,18 @@ let () =
   and safe_list = split_cands !Config.safes
   and reject_list = split !Config.rejects in
 
-  let () =
-    if !Config.verbose > 0 then begin
-      let relaxs =
-        match relax_list with
-        | None -> []
-        | Some xs -> xs in
-      Printf.eprintf "parsed relax=%s\n"
-        (String.concat " " (List.map LexUtil.pp relaxs))
-    end in
+  let () = if !Config.debug.Debug_gen.verbose >= 1 then
+    eprintf "parsed relax=%s\n"
+      ( Option.value ~default:[] relax_list
+        |> List.map LexUtil.pp
+        |> String.concat " " )
+    in
   let cpp = match !Config.arch with `CPP -> true  |  _ -> false in
 
   let module Co = struct
 (* Dump all *)
-    let verbose = !Config.verbose
+    module Debug = Debug_gen.Make(struct let debug = !Config.debug end)
     let generator = Config.baseprog
-    let debug = !Config.debug
     let hout = match !Config.hout with
     | None -> Hint.none
     | Some n -> Hint.open_out n
@@ -279,7 +272,7 @@ let () =
     let same_loc = !Config.same_loc
  end in
   let module C = struct
-    let verbose = !Config.verbose
+    module Debug = Debug_gen.Make(struct let debug = !Config.debug end)
     let show = !Config.show
     let same_loc =
       !Config.same_loc ||

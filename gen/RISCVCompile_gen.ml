@@ -30,7 +30,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       RISCVArch_gen.Make
         (struct
           let naturalsize = naturalsize
-          let  moreedges = Cfg.moreedges
+          let moreedges = Cfg.moreedges
+          module Debug = Cfg.Debug
         end)
     include CompileCommon.Make(Cfg)(RISCV)
 

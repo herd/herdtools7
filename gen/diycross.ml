@@ -166,9 +166,8 @@ let () =
   try
     let module C = struct
 (* Dump all *)
-      let verbose = !Config.verbose
       let generator = Config.baseprog
-      let debug = !Config.debug
+      module Debug = Debug_gen.Make(struct let debug = !Config.debug end)
       let hout = match !Config.hout with
       | None -> Hint.none
       | Some n -> Hint.open_out n

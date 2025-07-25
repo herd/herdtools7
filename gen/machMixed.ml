@@ -17,6 +17,7 @@
 module type Config = sig
   val naturalsize : MachSize.sz option
   val fullmixed : bool
+  module Debug : Debug_gen.S
 end
 
 open MachSize
@@ -77,9 +78,12 @@ end
 module type ValsConfig = sig
   val naturalsize : unit -> MachSize.sz
   val endian : Endian.t
+  module Debug : Debug_gen.S
 end
 
 module Vals(C:ValsConfig)(Value:Value.S) = struct
+
+  let debug fmt = C.Debug.debug Debug_gen.Cycle fmt
 
   let correct_offset = match C.endian with
   | Little -> fun _ o -> o
@@ -89,7 +93,7 @@ module Vals(C:ValsConfig)(Value:Value.S) = struct
         let bsz = nbytes sz in
         let bo = o / bsz in
         let no = bsz * ((nbytes nsz/bsz)-bo-1) in
-(*            Printf.eprintf "tr: %i -> %i\n" o no ; *)
+        debug "tr: %i -> %i\n" o no ;
         no
 
   let overwrite_value v sz o w  =
@@ -116,8 +120,8 @@ module Vals(C:ValsConfig)(Value:Value.S) = struct
       | Quad -> -1
       | _ -> (1 lsl sz_bits) - 1 in
     let r = (v lsr nshift) land mask in
-(*      Printf.eprintf "EXTRACT (%s,%i)[0x%x]: 0x%x -> 0x%x\n"
-        (MachSize.pp sz) o mask v r ; *)
+    debug "EXTRACT (%s,%i)[0x%x]: 0x%x -> 0x%x\n"
+        (MachSize.pp sz) o mask v r ;
     Value.from_int r
 
 end

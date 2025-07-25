@@ -17,10 +17,15 @@
 module Config = struct
   let naturalsize = MachSize.Word
   let moreedges = false
+  module Debug = Debug_gen.Make(struct let debug = !Config.debug end)
 end
 
 module Make
- (C:sig val naturalsize : MachSize.sz val moreedges : bool end) = struct
+ (C:sig
+    val naturalsize : MachSize.sz
+    val moreedges : bool
+    module Debug : Debug_gen.S
+  end) = struct
 
    include RISCVBase
 
@@ -40,6 +45,7 @@ module Make
        (struct
          let naturalsize = Some C.naturalsize
          let fullmixed = C.moreedges
+        module Debug = C.Debug
        end)(Value)
 
    include NoWide
@@ -144,6 +150,7 @@ module Make
        (struct
          let naturalsize () = C.naturalsize
          let endian = endian
+         module Debug = C.Debug
        end)(Value)
 
    let overwrite_value v ao w = match ao with

@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 module type Config = sig
-  val verbose : int
+  module Debug: Debug_gen.S
   val cond : Config.cond
   val optcond : bool
   val hexa : bool
@@ -235,9 +235,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                add_to_fs r v
                  (List.fold_right2 add_to_fs (get_friends r) vs fs)
              with Invalid_argument _ ->
-               Printf.eprintf "Something wrong on %s\n"
-                  (C.C.str_node n) ;
-               assert false in
+               Warn.fatal "Something wrong on %s\n" (C.C.str_node n) in
            m,fs
         | None -> finals
         else finals
