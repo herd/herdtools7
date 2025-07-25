@@ -475,14 +475,11 @@ module Make(O:Config) : Builder.S
         let vs,f =
           if O.optcoherence && O.obs_type <> Config.Loop then
             let vs = opt_coherence vs in
-            if O.verbose > 1 then begin
-              eprintf "OPT:" ;
-              List.iter
+              Log.info 1 "OPT:%s\n%!"
+              ( String.concat " " @@ List.map
                 (fun vs ->
-                  eprintf " {%s}" (IntSet.pp_str "," (sprintf "%i") vs))
-                vs ;
-              eprintf "\n%!"
-            end ;
+                  sprintf "{%s}" (IntSet.pp_str "," (sprintf "%i") vs))
+                vs );
             match vs with
             | []|[_] -> raise NoObserver
             | _ ->
@@ -1154,8 +1151,8 @@ module Make(O:Config) : Builder.S
       let make_test name ?com ?info ?check ?scope es =
         ignore (scope) ;
         try
-          if O.verbose > 1 then eprintf "**Test %s**\n" name ;
-          if O.verbose > 2 then eprintf "**Cycle %s**\n" (E.pp_edges es) ;
+          Log.info 1 "**Test %s**\n" name ;
+          Log.info 2 "**Cycle %s**\n" (E.pp_edges es) ;
           let es,c,init = C.make es in
           test_of_cycle name ?com ?info ?check ~init es c
         with

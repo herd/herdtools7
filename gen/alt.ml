@@ -16,6 +16,7 @@
 
 open Printf
 open Code
+open Log
 
 
 module type AltConfig = sig
@@ -201,7 +202,7 @@ module Make(C:Builder.S)
       begin match  C.E.get_ie e1, C.E.get_ie e2 with
       | Int,Int ->
           let cs = C.E.compact_sequence xs ys e1 e2 in
-          if O.verbose > 0 then eprintf "COMPACT %s,%s -> [%s] -> "
+          Log.info 0 "COMPACT %s,%s -> [%s] -> "
             (C.E.pp_edge e1) (C.E.pp_edge e2)
             (String.concat ","
                (List.map (fun es -> C.R.pp_relax (C.R.ERS es)) cs)) ;
@@ -210,7 +211,7 @@ module Make(C:Builder.S)
               (List.exists
                  (fun es -> C.R.Set.mem (C.R.ERS es) safes)
                  cs) in
-          if O.verbose > 0 then eprintf "%b\n" r ;
+          Log.info 0 "%b\n" r ;
           r
       | _,_ -> true
       end
@@ -286,11 +287,8 @@ module Make(C:Builder.S)
               C.E.can_precede (hd_non_insert xs) (last_non_insert ys)
             else true
           end in
-      if O.verbose > 2 then begin
-        eprintf "do_compat '%s' '%s' = %b\n"
-          (C.E.pp_edges xs)
-          (C.E.pp_edges ys) r
-      end ;
+      Log.info 2 "do_compat '%s' '%s' = %b\n"
+          (C.E.pp_edges xs) (C.E.pp_edges ys) r;
       r
 
 
@@ -340,7 +338,7 @@ module Make(C:Builder.S)
 
     let minprocs suff =
       let r = c_minprocs_suff 0 suff in
-      if O.verbose > 3 then eprintf "MIN [%s] => %i\n" (pp_ess suff) r ;
+      Log.info 3 "MIN [%s] => %i\n" (pp_ess suff) r ;
       r
 
     let rec c_minint_es c = function
@@ -363,14 +361,8 @@ module Make(C:Builder.S)
 (* Prefix *)
     let prefix_expanded = List.flatten (List.map C.R.expand_relax_seq O.prefix)
 
-    let () =
-      if O.verbose > 0 && O.prefix <> [] then begin
-        eprintf "Prefixes:\n" ;
-        List.iter
-          (fun rs ->
-            eprintf "  %s\n" (C.R.pp_relax_list rs))
-          prefix_expanded
-      end
+    let () = Log.info 0 "Prefixes: [%s]\n"
+      (String.concat "," @@ List.map C.R.pp_relax_list prefix_expanded)
 
     let prefixes = List.map edges_ofs prefix_expanded
 
@@ -404,7 +396,7 @@ module Make(C:Builder.S)
       then
         let suff = r::suff
         and n = n-sz r in
-        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess suff) ;
+        Log.info 2 "CALL: %i %s\n%!" n (pp_ess suff) ;
         let k =
           if
             over &&
@@ -412,8 +404,7 @@ module Make(C:Builder.S)
             can_prefix prefix (can_precede safes po_safe) suff
           then begin
             let tr =  prefix@suff in
-            if O.verbose > 2 then
-            eprintf "TRY: '%s'\n"
+            Log.info 2 "TRY: '%s'\n"
               (C.E.pp_edges (List.flatten (List.map snd tr))) ;
             try f0 po_safe tr k
             with  Misc.Exit -> k
@@ -703,23 +694,15 @@ module Make(C:Builder.S)
       if Misc.nilp relax then if r_nempty then begin
         Warn.fatal "relaxations provided in relaxlist could not be used to generate cycles"
       end ;
-      if O.verbose > 0 then begin
-        eprintf "** Relax0 **\n" ;
-        debug_rs stderr relax ;
-        eprintf "** Safe0 **\n" ;
-        debug_rs stderr safe
-      end ;
+      Log.info 0 "** Relax0 **\n%a** Safe0 **\n%a"
+        debug_rs relax debug_rs safe;
       let relax_set = C.R.Set.of_list relax
       and safe_set = C.R.Set.of_list safe in
       let relax = C.R.Set.elements relax_set
       and safe = C.R.Set.elements (C.R.Set.diff safe_set relax_set)
 (*      and reject = C.R.Set.elements reject_set *)in
-      if O.verbose > 0 then begin
-        eprintf "** Relax **\n" ;
-        debug_rs stderr relax ;
-        eprintf "** Safe **\n" ;
-        debug_rs stderr safe
-      end ;
+      Log.info 0 "** Relax0 **\n%a** Safe0 **\n%a"
+        debug_rs relax debug_rs safe;
       do_gen relax safe reject n
 
 (**********************)

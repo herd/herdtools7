@@ -206,7 +206,7 @@ let get_fence n =
   let rec compile_proc pref chk loc_writes st p ro_prev init ns = match ns with
   | [] -> init,pref [],(C.EventMap.empty,[]),st
   | n::ns ->
-      if O.verbose > 1 then eprintf "COMPILE PROC: <%s>\n" (C.str_node n);
+      Log.info 1 "COMPILE PROC: <%s>\n" (C.str_node n);
       begin match  n.C.edge.E.edge with
       (* There are following fences *)
       | E.Node _ ->
@@ -358,14 +358,12 @@ let max_set = IntSet.max_elt
     let vs,f =
       if O.optcoherence && O.obs_type <> Config.Loop then
         let vs = opt_coherence vs in
-        if O.verbose > 1 then begin
-          eprintf "OPT:" ;
-          List.iter
+        Log.info 1 "OPT:%s\n%!"
+          ( String.concat " " @@
+          List.map
             (fun vs ->
-              eprintf " {%s}" (IntSet.pp_str "," (sprintf "%i") vs))
-            vs ;
-          eprintf "\n%!"
-        end ;
+              sprintf "{%s}" (IntSet.pp_str "," (sprintf "%i") vs))
+            vs );
         match vs with
         | []|[_] -> raise NoObserver
         | _ ->
@@ -673,9 +671,7 @@ let max_set = IntSet.max_elt
   let do_kvm = Variant_gen.is_kvm O.variant
 
   let compile_cycle ok initvals n =
-    if O.verbose > 0 then begin
-      Printf.eprintf "COMPILE CYCLE:\n%a" C.debug_cycle n
-    end ;
+    Log.info 1 "COMPILE CYCLE:\n%a" C.debug_cycle n;
     let open Config in
     Label.reset () ;
     let env_wide = C.get_wide n in
@@ -689,12 +685,10 @@ let max_set = IntSet.max_elt
     let cos = U.compute_cos cos0 in
     (* the post condition for checking PTE value *)
     let last_ptes = if do_kvm then C.last_ptes n else [] in
-    if O.verbose > 1 then
-      Printf.eprintf "Last_Ptes: %s\n"
-        (String.concat ","
-           (List.map
-              (fun (loc,v) ->
-                Printf.sprintf "%s->%s" loc (C.Value.pp_pte v)) last_ptes)) ;
+    Log.info 1 "Last_Ptes: %s\n"
+      ( String.concat "," @@ List.map
+        (fun (loc,v) ->
+          Printf.sprintf "%s->%s" loc (C.Value.pp_pte v)) last_ptes ) ;
     let no_local_ptes = StringSet.of_list (List.map fst last_ptes) in
     if O.verbose > 1 then U.pp_coherence cos0 ;
     let loc_writes = U.comp_loc_writes n in
@@ -1059,8 +1053,8 @@ let test_of_cycle name
 
 let make_test name ?com ?info ?check ?scope es =
   try
-    if O.verbose > 1 then eprintf "**Test %s**\n" name ;
-    if O.verbose > 2 then eprintf "**Cycle %s**\n" (pp_edges es) ;
+    Log.info 1 "**Test %s**\n" name ;
+    Log.info 2 "**Cycle %s**\n" (pp_edges es) ;
     let es,c,init = C.make es in
     test_of_cycle name ?com ?info ?check ?scope ~init es c
   with

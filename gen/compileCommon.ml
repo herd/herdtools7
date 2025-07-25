@@ -15,7 +15,6 @@
 (****************************************************************************)
 
 module type Config = sig
-  val verbose : int
   val show : ShowGen.t option
   val same_loc : bool
   val unrollatomic : int option
