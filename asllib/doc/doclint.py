@@ -156,31 +156,6 @@ def check_undefined_references_and_multiply_defined_labels():
         num_errors += 1
     return num_errors
 
-
-def check_tododefines(latex_files: list[str]):
-    r"""
-    Checks that there are no more than the expected number of \tododefine
-    instances.
-    """
-    MAX_TODODEFINE_INSTANCES = 5
-    num_todo_define = 0
-    for latex_source in latex_files:
-        lines = read_file_lines(latex_source)
-        for line in lines:
-            if DO_NOT_LINT_STR in line:
-                continue
-            num_todo_define += line.count("\\tododefine")
-    if num_todo_define > MAX_TODODEFINE_INSTANCES:
-        # Disallow adding new \tododefines
-        print(
-            f"ERROR: There are {num_todo_define} occurrences of \\tododefine,\
-               expected at most {MAX_TODODEFINE_INSTANCES}"
-        )
-        return num_todo_define
-    else:
-        print(f"WARNING: There are {num_todo_define} occurrences of \\tododefine")
-        return 0
-
 def check_repeated_lines(filename: str) -> int:
     r"""
     Checks whether `file` contains the same line appearing twice in a row.
@@ -704,7 +679,6 @@ def main():
     num_errors += num_spelling_errors
     num_errors += check_hyperlinks_and_hypertargets(all_latex_sources)
     num_errors += check_undefined_references_and_multiply_defined_labels()
-    num_errors += check_tododefines(content_latex_sources)
     num_errors += check_unused_latex_macros(all_latex_sources)
     num_errors += check_per_file(
         content_latex_sources,
