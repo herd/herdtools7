@@ -1,14 +1,42 @@
 \chapter{Pattern Matching\label{chap:PatternMatching}}
-Patterns are grammatically derived from $\Npattern$ and represented as an AST by $\pattern$.
 
-\hypertarget{build-pattern}{}
-The function
+The binary operator \Tin{} tests whether a value, which is referred to as the \emph{discriminant},
+matches a value specified by a \emph{pattern}.
+
+\ExampleDef{Patterns}
+\listingref{Patterns} shows examples of some patterns.
+\ASLListing{Examples of patterns}{Patterns}{\definitiontests/Patterns.asl}
+
+\ChapterOutline
+\begin{itemize}
+  \item \FormalRelationsRef{Patterns} defines the formal relations for patterns;
+  \item \secref{MatchingAllValues} defines the match-all-values pattern;
+  \item \secref{MatchingASingleValue} defines the match-a-single-value pattern;
+  \item \secref{MatchingARangeOfIntegers} defines the match-a-range-of-integers pattern;
+  \item \secref{MatchingAnUpperBoundedRangeOfIntegers} defines the match-integers-less-than pattern;
+  \item \secref{MatchingALowerBoundedRangeOfIntegers} defines the match-integers-greater-than pattern;
+  \item \secref{MatchingABitmask} defines the bitmask pattern;
+  \item \secref{MatchingATupleOfPatterns} defines the match-a-tuple pattern;
+  \item \secref{MatchingAnyPatternInASetOfPatterns} defines the match-any pattern;
+  \item \secref{MatchingANegatedPattern} defines the negation pattern;
+  \item \secref{ASTRulesForPatternExpressions} defines the expressions that may appear inside patterns.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\FormalRelationsDef{Patterns}
+\paragraph{Syntax:} Patterns are grammatically derived from $\Npattern$.
+
+\paragraph{Abstract Syntax:} Patterns are derived in the abstract grammar from $\pattern$
+  and generated from $\buildpattern$.
+  \hypertarget{build-pattern}{}
+  The function
 \[
   \buildpattern(\overname{\parsenode{\Npattern}}{\vparsednode}) \;\aslto\;
   \overname{\pattern}{\vastnode}
 \]
 transforms a pattern parse node $\vparsednode$ into a pattern AST node $\vastnode$.
 
+\paragraph{Typing:} Patterns are annotated by $\annotatepattern$.
 \hypertarget{def-annotatepattern}{}
 The function
 \[
@@ -23,6 +51,7 @@ resulting in $\newp$, which is the typed AST node for $\vp$
 and the inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError.
 
+\paragraph{Semantics:} Patterns are evaluated by $\evalpatternname$.
 The relation
 \hypertarget{def-evalpattern}{}
 \[
@@ -37,32 +66,6 @@ The relation
 \]
 determines whether a value $\vv$ matches the pattern $\vp$ in an environment $\env$
 resulting in either $\ResultPattern(\vb, \newg)$ or an abnormal configuration.
-
-The rest of this chapter defines the syntax, abstract syntax, typing rules,
-and semantics rules for the following kinds of patterns:
-\begin{itemize}
-\item Matching All Values (\secref{MatchingAllValues})
-\item Matching a Single Value (\secref{MatchingASingleValue})
-\item Matching a Range of Integers (\secref{MatchingARangeOfIntegers})
-\item Matching an Upper Bounded Range of Integers (\secref{MatchingAnUpperBoundedRangeOfIntegers})
-\item Matching a Lower Bounded Range of Integers (\secref{MatchingALowerBoundedRangeOfIntegers})
-\item Matching a Bitmask (\secref{MatchingABitmask})
-\item Matching a Tuple of Patterns (\secref{MatchingATupleOfPatterns})
-\item Matching Any Pattern in a Set of Patterns (\secref{MatchingAnyPatternInASetOfPatterns})
-\item Matching a Negated Pattern (\secref{MatchingANegatedPattern})
-\end{itemize}
-
-Finally, expressions appearing in patterns are grammatically derived from \\
-$\Nexprpattern$.
-The grammar is almost identical to that of $\Nexpr$, except that pattern expressions
-for matching a single values and for matching a range of values, exclude tuples
-(for which the tuple expression is used).
-The AST for these expressions is $\expr$ --- same as the AST for $\Nexpr$.
-The builders for $\Nexprpattern$ are identical to those of $\Nexpr$. For completeness,
-we list those in \secref{ASTRulesForPatternExpressions}.
-Those expressions are side-effect-free, as guaranteed by the checks to
-$\checksymbolicallyevaluable$, and thus in the semantics we can use
-$\evalexprsef\empty$.
 
 \section{Matching All Values\label{sec:MatchingAllValues}}
 \ASLListing{Matching any value}{semantics-pall}{\semanticstests/SemanticsRule.PAll.asl}
@@ -988,7 +991,28 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does match 
 \end{mathpar}
 \CodeSubsection{\EvalPNotBegin}{\EvalPNotEnd}{../Interpreter.ml}
 
-\section{AST Rules for Pattern Expressions\label{sec:ASTRulesForPatternExpressions}}
+\section{Pattern Expressions\label{sec:ASTRulesForPatternExpressions}}
+The set of expressions appearing inside patterns are grammatically derived
+from \\
+$\Nexprpattern$.
+These are slightly restricted with respect to the set of all expressions,
+which are grammatically derived from $\Nexpr$.
+%
+The grammar is almost identical to that of $\Nexpr$, except that pattern expressions
+for matching a single values and for matching a range of values, exclude tuples
+(for which the tuple expression is used).
+
+The AST for these expressions is $\expr$ --- same as the AST for $\Nexpr$.
+The builders for $\Nexprpattern$ are identical to those of $\Nexpr$. For completeness,
+we list them below.
+
+The type rules and dynamic semantics rules for both sets of expressions is the same,
+as the same AST is generated for both.
+
+Pattern expressions are side-effect-free, as guaranteed by the checks to \\
+$\checksymbolicallyevaluable$, and thus in the dynamic semantics
+they are evaluated via $\evalexprsefname$.
+
 \subsection{ASTRule.ExprPattern\label{sec:ASTRule.ExprPattern}}
 \hypertarget{build-exprpattern}{}
 The function

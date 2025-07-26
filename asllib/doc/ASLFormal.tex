@@ -1,11 +1,25 @@
 \chapter{Formal System \label{chap:FormalSystem}}
 
-In this part, we define the mathematical concepts and notations used throughout.
-We start by defining general mathematical concepts
-and then describe how sets of rules formally define functions and relations.
+This chapter defines the mathematical concepts and notations used throughout this
+reference.
 
-\section{Mathematical Definitions and Notations}
+\ChapterOutline
+\begin{itemize}
+  \item \secref{Mathematical Definitions and Notations} defines general mathematical concepts and notations;
+  \item \secref{Inference Rules} defines the concept of inference rules;
+  \item \secref{Transition Judgments} explains how \emph{transition judgments} can be used to represent
+        relations and functions;
+  \item \secref{Configurations} introduces \emph{configurations} as a way of representing compound data;
+  \item \secref{FlavoursOfEqualityInRules} explains the kinds of equality notations that are used to
+        convey intention in inference rules;
+  \item \secref{ASTNotations} introduces AST-related notations that are used in inference rules;
+  \item \secref{How to Parse Inference Rules Efficiently} explains how to efficiently parse inference rules,
+  \item \secref{ShortCircuitRuleMacros} defines rule macros, which compactly represent multiple rules;
+  \item \secref{ConventionallyUsedJudgments} presents conventionally-used judgments and notations; and
+  \item \secref{Rule Naming} explains the naming scheme for inference rules used in this reference.
+\end{itemize}
 
+\section{Mathematical Definitions and Notations\label{sec:Mathematical Definitions and Notations}}
 \hypertarget{def-triangleq}{}
 We use $\triangleq$ to define mathematical concepts.
 
@@ -315,24 +329,6 @@ The parametric function $\listrange : T^* \rightarrow \N^*$ returns the ($1$-bas
 \]
 \end{definition}
 
-% \hypertarget{def-filterlist}{}
-% \begin{definition}[Filtering a List]
-% The parametric function
-% \[
-% \filterlist : \overname{T^*}{l} \times \overname{(T \rightarrow \Bool)}{p} \rightarrow T^*
-% \]
-% retains the elements of the list $l$ for which the predicate $p$ returns $\True$:
-% \[
-% \begin{array}{rcl}
-% \filterlist(\emptylist, p) &\triangleq& \emptylist\\
-% \filterlist([h] \concat t, p) &\triangleq& \begin{cases}
-% [h]\concat \filterlist(t) & \text{if }p(h) = \True\\
-%  \filterlist(t) & \text{else}\\
-% \end{cases}\\
-% \end{array}
-% \]
-% \end{definition}
-
 \hypertarget{def-unziplist}{}
 \begin{definition}[Unzipping a List of Pairs]
 The parametric function
@@ -419,7 +415,7 @@ type $T$}, or shortly as an \emph{\optional}.
 \end{definition}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Inference Rules}
+\section{Inference Rules\label{sec:Inference Rules}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \hypertarget{def-inferencerule}{}
 An \emph{\inferencerule} (rule, for short) is an implication between a list of judgments,
@@ -525,14 +521,14 @@ Infinite derivation tree are used for defining diverging evaluations
 (see \secref{Semantics of Diverging Specifications}).
 \end{definition}
 
-\subsection{Transitions\label{sec:transitions}}
+\section{Transition Judgments\label{sec:Transition Judgments}}
 
 We use rules as a structured way for defining relations (and therefore functions, as a special case).
 
 To define a relation $R \subseteq X \cartimes Y$, we use judgments of the form $\termx \rulearrow \termy$
 where $\termx$ and $\termy$ are logical terms denoting sets of elements from $X$ and $Y$, respectively.
 %
-We call such judgments \emph{transitions}.
+We call such judgments \emph{transition judgments}.
 A set of rules $M$ with transition judgments defines the relation
 \[
     R = \{ (x,y) \;|\; x \rulearrow y \text{ can be derived from rules in } M\} \enspace.
@@ -552,7 +548,7 @@ rules. This makes it easy to determine the rule responsible
 for a given transition.
 
 \hypertarget{def-configuration}{}
-\subsection{Configurations}
+\section{Configurations\label{sec:Configurations}}
 
 \hypertarget{def-configdomain}{}
 Our relations range over compound values. That is, values that often nest tuples and lists inside other tuples and lists.
@@ -596,7 +592,7 @@ uses an ignore variable to stand for the value being matched by a \texttt{-} pat
 Since the rule does not need to refer to the value, we do not name it and use an ignore variable
 instead.
 
-\subsection{Flavors of Equality In Rules \label{sec:FlavoursOfEqualityInRules}}
+\section{Flavors of Equality In Rules\label{sec:FlavoursOfEqualityInRules}}
 This section explains the equality notations used in rules, two of which are used in \SemanticsRuleRef{ECond},
 shown here:
 \begin{mathpar}
@@ -660,13 +656,17 @@ by inlining their right-hand sides:
   \mcond \eqname (\nvbool(\vb), \vgone)\\
   \evalexpr{\envone, \choice{\vb}{\veone}{\vetwo}} \evalarrow \ResultExpr((\vv, \vgtwo), \newenv) \OrAbnormal
 }{
-  \evalexpr{\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}} \evalarrow
+  {
+  \begin{array}{r}
+  \evalexpr{\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}} \evalarrow\\
   \ResultExpr((\vv, \ordered{\vgone}{\aslctrl}{\vgtwo}), \newenv)
+  \end{array}
+  }
 }
 \end{mathpar}
 \end{description}
 
-\subsection{AST-related Notations}
+\section{AST-related Notations\label{sec:ASTNotations}}
 
 When deconstructing AST record nodes such as $\{f_1:t_1,\ldots,f_k:t_k\}$,
 we sometimes only care about a subset of the fields $\{f_{i_1},\ldots,f_{i_m}\} \subset \{f_{1..k}\}$.
@@ -676,7 +676,8 @@ where $\ldots$ stands for fields that are irrelevant for the rule.
 For example, the \func{} non-terminal is
 of a record type and has the following fields:
 $\funcname$, $\funcparameters$, $\funcargs$, $\funcbody$, $\funcreturntype$, $\funcsubprogramtype$,
-$\funcrecurselimit$, and $\funcbuiltin$.
+$\funcrecurselimit$, and \\
+$\funcbuiltin$.
 The notation $\{ \funcbody:\vbody,\ \funcargs:\vargdecls, \ldots \}$
 allows us to deconstruct a given \func\ node by matching only the $\funcbody$ and $\funcargs$ fields.
 
@@ -685,7 +686,7 @@ Recall that a subset of AST nodes are either labels or labelled tuples.
 The partial function $\astlabel$ returns the label $\vl\in\astlabels$ of an AST node, when it exists.
 For example, $\astlabel(\TBool) = \TBool$ and $\astlabel(\TNamed(\vx)) = \TNamed$.
 
-\subsection{How to Parse Rules Efficiently}
+\section{How to Parse Inference Rules Efficiently\label{sec:How to Parse Inference Rules Efficiently}}
 Consider the following examples, which is a simplified version of \SemanticsRuleRef{Binop}
 \begin{mathpar}
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
@@ -729,8 +730,7 @@ $\evalexpr{ \envone, \vetwo } \evalarrow \ResultExpr(\vmtwo, \newenv)$.
 Similarly, $\vg$ requires first assigning values to $\vgone$ and $\vgtwo$,
 which are components of the previously assigned variables $\vmone$ and $\vmtwo$.
 
-\subsection{Short-circuit Rule Macros\label{sec:ShortCircuitRuleMacros}}
-
+\section{Short-circuit Rule Macros\label{sec:ShortCircuitRuleMacros}}
 \emph{Short-circuit rule macros}, or \emph{rule macros}, for short, allow us to succinctly define sets of rules.
 Specifically, they allow us to capture situations where
 transitions have two alternative output configurations.
@@ -867,8 +867,8 @@ This corresponds to the following rule in the expanded macro:
 }
 \end{mathpar}
 
-Similarly, if the first transition judgment results in a \ErrorConfigurationTerm, the output configuration of
-the conclusion is \ErrorConfigurationTerm, which corresponds to the following rule in the expansion:
+Similarly, if the first transition judgment results in a \DynamicErrorConfigurationTerm, the output configuration of
+the conclusion is \DynamicErrorConfigurationTerm, which corresponds to the following rule in the expansion:
 \begin{mathpar}
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
   \evalexpr{ \env, \veone} \evalarrow \DynErrorConfig
@@ -938,17 +938,49 @@ Expanding the last transition judgment, gives us the case:
 
 All these cases are succinctly encoded in a single rule with the alternative output configurations.
 
+\section{Conventionally-used Judgments and Notations\label{sec:ConventionallyUsedJudgments}}
+We now present judgments used conventionally in this reference.
+
+\subsection{Checked Transitions\label{sec:Checked Transitions}}
+\hypertarget{def-checktrans}{}
+The function
+\[
+\checktransname(\overname{\Bool}{\vb}, \overname{\Strings}{\vcode}) \aslto \{\True\}
+\cup\ \overname{\TTypeError}{\TypeErrorConfig}\ \cup\ \overname{\TDynError}{\DynErrorConfig}
+\]
+takes a Boolean value $\vb$ and an error code $\vcode$
+and returns $\True$ when $\vb$ is $\True$.
+Otherwise, the result is either a \typingerrorterm{} or a \dynamicerrorterm{},
+based on the error code (see \chapref{Errors}).
+%
+This is used to assert that a condition that holds.
+
+\begin{mathpar}
+\inferrule[check\_trans\_true]{}{ \checktrans{\True}{\vcode} \checktransarrow \True }
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[check\_trans\_false\_type]{
+  \vcode\text{ is a \typingerrorterm{} code}
+}{ \checktrans{\False}{\vcode} \checktransarrow \TypeErrorVal{\vcode} }
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[check\_trans\_false\_dynamic]{
+  \vcode\text{ is a \dynamicerrorterm{} code}
+}{ \checktrans{\False}{\vcode} \checktransarrow \DynamicErrorVal{\vcode} }
+\end{mathpar}
+
 \subsection{Boolean Transition Judgments}
 \hypertarget{def-booltrans}{}
-We define the following rules to allow us to treat assertions as transition judgments:
+We define the following rules to allow us to treat Boolean values as transition judgments:
 \begin{mathpar}
 \inferrule[bool\_trans\_true]{}{ \booltrans{\True} \booltransarrow\True }
 \and
 \inferrule[bool\_trans\_false]{}{ \booltrans{\False} \booltransarrow\False }
 \end{mathpar}
-This is useful in that it allows us to use assertions in rule macros.
 
-\subsection{Assertions Over Optional Data Types}
+\subsection{Judgments Over Optional Data Types}
 \hypertarget{def-mapopt}{}
 Optional data types are prevalent in the AST.
 To facilitate transition judgments over optional data types,
@@ -989,7 +1021,20 @@ and applies it to an optional value $A?$:
 }
 \end{mathpar}
 
-\subsection{Rule Naming}
+\subsection{Conventional Notations}
+\hypertarget{def-wrapline}{}
+\begin{itemize}
+\item
+The notation $\wrappedline$ denotes that a line that is longer than the page width continues on the next line.
+
+\hypertarget{def-commonprefixline}{}
+\item The notation $\commonprefixline$ serves as a visual aid to delimit a common prefix of premises shared by rule cases.
+
+\hypertarget{def-commonsuffixline}{}
+\item The notation $\commonsuffixline$ serves as a visual aid to delimit a common suffix of premises shared by rule cases.
+\end{itemize}
+
+\section{Rule Naming\label{sec:Rule Naming}}
 To name a rule, we place it in a section with its name.
 However, some relations are defined by a group of rules.
 \hypertarget{def-caserules}{}
@@ -1019,16 +1064,3 @@ When explaining rules in English prose, we include the name of the case rules
 in parenthesis to make it easier to relate the prose to the corresponding mathematical
 definitions (see, for example, the Prose paragraph of \TypingRuleRef{BaseValue}
 or that of \TypingRuleRef{ApplyUnopType}).
-
-\subsection{Generic Notations}
-\hypertarget{def-wrapline}{}
-\begin{itemize}
-\item
-The notation $\wrappedline$ denotes that a line that is longer than the page width continues on the next line.
-
-\hypertarget{def-commonprefixline}{}
-\item The notation $\commonprefixline$ serves as a visual aid to delimit a common prefix of premises shared by rule cases.
-
-\hypertarget{def-commonsuffixline}{}
-\item The notation $\commonsuffixline$ serves as a visual aid to delimit a common suffix of premises shared by rule cases.
-\end{itemize}

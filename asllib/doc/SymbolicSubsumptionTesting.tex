@@ -1,5 +1,4 @@
 \chapter{Symbolic Domain Subset Testing\label{chap:SymbolicDomainSubsetTesting}}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Whether an assignment statement is well-typed depends on whether the dynamic domain of the
 right hand side type is contained in the dynamic domain of the left hand side type,
@@ -84,7 +83,14 @@ This is technically achieved by first transforming types (in the case of \intege
 and width expressions (in the case of \bitvectortypesterm{}) into symbolic representations
 that we refer to as \emph{symbolic domains} and then checking subsumption over the symbolic domains.
 
-\section{Symbolic Domains}
+\ChapterOutline
+\begin{itemize}
+  \item \secref{Symbolic Domains} defines a symbolic representation for sets of integers; and
+  \item \secref{Symbolic Reasoning} defines the symbolic reasoning used for domain subset
+        testing.
+\end{itemize}
+
+\section{Symbolic Domains\label{sec:Symbolic Domains}}
 \hypertarget{def-symbolicdomain}{}
 
 We define the \emph{symbolic domain} datatype, reusing $\intconstraint$ from the untyped AST,
@@ -109,9 +115,9 @@ as follows:
         which represents the set of all integers.
 \end{itemize}
 
-\section{Symbolic Reasoning}
+\section{Symbolic Reasoning\label{sec:Symbolic Reasoning}}
 
-The main rule is of this chapter is \TypingRuleRef{SymdomSubsetUnions}, which defines the function
+The main rule in this section is \TypingRuleRef{SymdomSubsetUnions}, which defines the function
 $\symdomsubsetunions$.
 
 Other helper rules are as follows:

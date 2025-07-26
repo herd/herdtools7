@@ -5,23 +5,26 @@
 This chapter defines the following helper relations for operating on \nativevalues,
 \hyperlink{def-envs}{environments}, and operations involving values and types:
 \begin{itemize}
-  \item \SemanticsRuleRef{GetStackSize}
-  \item \SemanticsRuleRef{SetStackSize}
-  \item \SemanticsRuleRef{IncrStackSize}
-  \item \SemanticsRuleRef{DecrStackSize}
-  \item \SemanticsRuleRef{RemoveLocal};
-  \item \SemanticsRuleRef{ReadIdentifier};
-  \item \SemanticsRuleRef{WriteIdentifier};
-  \item \SemanticsRuleRef{ConcatBitvectors};
-  \item \SemanticsRuleRef{ReadFromBitvector};
-  \item \SemanticsRuleRef{WriteToBitvector};
-  \item \SemanticsRuleRef{GetIndex};
-  \item \SemanticsRuleRef{SetIndex};
-  \item \SemanticsRuleRef{GetField};
-  \item \SemanticsRuleRef{SetField};
-  \item \SemanticsRuleRef{DeclareLocalIdentifier};
-  \item \SemanticsRuleRef{DeclareLocalIdentifierM};
-  \item \SemanticsRuleRef{DeclareLocalIdentifierMM};
+  \item \SemanticsRuleRef{GetStackSize} retrieves the value of the $\stacksize$ value from an environment;
+  \item \SemanticsRuleRef{SetStackSize} updates the value of the $\stacksize$ value in an environment;
+  \item \SemanticsRuleRef{IncrStackSize} updates the value of the $\stacksize$ value in an environment by incrementing it by one;
+  \item \SemanticsRuleRef{DecrStackSize} updates the value of the $\stacksize$ value in an environment by decrementing it by one;
+  \item \SemanticsRuleRef{RemoveLocal} removes a local storage element from a given environment;
+  \item \SemanticsRuleRef{ReadIdentifier} creates an \executiongraph{} representing a Read Effect for a given identifier;
+  \item \SemanticsRuleRef{WriteIdentifier} creates an \executiongraph{} representing a Write Effect for a given identifier;
+  \item \SemanticsRuleRef{ConcatBitvectors} concatenates a list of bitvector \nativevalues;
+  \item \SemanticsRuleRef{ReadFromBitvector} slices a bitvector \nativevalue{};
+  \item \SemanticsRuleRef{WriteToBitvector} updates a slice of a bitvector \nativevalue{};
+  \item \SemanticsRuleRef{GetIndex} reads a vector \nativevalue{} at a given index;
+  \item \SemanticsRuleRef{SetIndex} updates a vector \nativevalue{} at a given index;
+  \item \SemanticsRuleRef{GetField} reads a given field in a \nativevalue{} record;
+  \item \SemanticsRuleRef{SetField} updates a given field in a \nativevalue{} record;
+  \item \SemanticsRuleRef{DeclareLocalIdentifier} updates an environment by associating an identifier with a given \nativevalue{}
+        and also generating an \executiongraph{} with a corresponding Write Effect;
+  \item \SemanticsRuleRef{DeclareLocalIdentifierM} updates an environment by associating an identifier with a given \nativevalue{}
+        and also updating a given \executiongraph{} with a corresponding Write Effect and an $\asldata$ edge;
+  \item \SemanticsRuleRef{DeclareLocalIdentifierMM} updates an environment by associating an identifier with a given \nativevalue{}
+        and also updating a given \executiongraph{} with a corresponding Write Effect and an $\aslpo$ edge.
 \end{itemize}
 
 \SemanticsRuleDef{GetStackSize}
@@ -483,8 +486,6 @@ The relation
 overwrites the bits of $\dst$ at the positions given by $\slices$ with the bits of $\src$.
 
 See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobitvector$.
-
-\newcommand\bitfunc[0]{\textfunc{bit}}
 
 \ProseParagraph
 \AllApply

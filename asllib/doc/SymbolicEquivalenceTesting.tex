@@ -16,7 +16,7 @@ there are two possibilities:
   \item the expressions are equivalent, but the reasoning power of our rules
   is not enough to prove it, and so we conservatively answer negatively.
 \end{itemize}
-In proof-theoretic terms, we can say that our equivalence tests are \emph{sound} but \emph{incomplete}.
+In proof-theoretic terms, we say that our equivalence test is \emph{sound} but \emph{incomplete}.
 
 Notice that for a conservative test, it is always correct to return $\False$.
 
@@ -25,8 +25,11 @@ In this chapter, we use the special value $\CannotBeTransformed$
 to represent a failure in transforming an expression into a desired form (the specific
 desired form varies according to the functions utilizing this value).
 
-We first define symbolic expressions and operations over symbolic expressions in \secref{symbolicexpressions}
-and then define the rules for symbolic reduction and equivalence testing in \secref{SymbolicReductionAndEquivalenceTestingRules}.
+\ChapterOutline
+\begin{itemize}
+  \item \secref{symbolicexpressions} defines symbolic expressions and operations over symbolic expressions; and
+  \item \secref{SymbolicReductionAndEquivalenceTestingRules} defines rules for symbolic reduction and equivalence testing.
+\end{itemize}
 
 \section{Symbolic Expressions\label{sec:symbolicexpressions}}
 Our symbolic reduction and equivalence testing rules use \emph{symbolic expressions}, defined below:
@@ -1929,10 +1932,10 @@ in environment $\tenv$ and yields the result in $\vb$. \ProseOtherwiseTypeError
 
 This function operates both on \typedast{} nodes, where both slices are only
 of the form $\SliceLength(\ \cdot\ ,\ \cdot\ )$, as well as \untypedast{} nodes where all slice forms
-are possible. The latter is used during checking overriding subprograms (\secref{Overriding}).
+are possible. The latter is used during checking overriding subprograms (\secref{Overriding Subprograms}).
 This function operates both on \typedast{} nodes, where both slices are only
 of the form $\SliceLength(\ \cdot\ ,\ \cdot\ )$, as well as \untypedast{} nodes where all slice forms
-are possible. The latter is used during checking overriding subprograms (\secref{Overriding}).
+are possible. The latter is used during checking overriding subprograms (\secref{Overriding Subprograms}).
 
 \ExampleDef{Equivalent Slices}
 The specification in \listingref{SliceEqual} shows examples of equivalent slices.

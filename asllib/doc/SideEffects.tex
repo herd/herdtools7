@@ -8,8 +8,18 @@ Intuitively, a pure expression is one whose evaluation does not depend on dynami
 In other words, a pure expression can be evaluated during typechecking.
 A read-only expression is one whose evaluation does not affect the evaluation of any further expressions.
 In other words, a read-only expression can be evaluated multiple times (or not at all) with no effect on the overall specification.
-A \symbolicallyevaluable{} expression is compatible with symbolic reduction and equivalence testing (\chapref{SymbolicEquivalenceTesting}).
+A \symbolicallyevaluable{} expression is compatible with symbolic reduction and equivalence testing (see \chapref{SymbolicEquivalenceTesting}).
 
+\ChapterOutline
+\begin{itemize}
+  \item \secref{Purity} defines the concept of expression \purities{};
+  \item \secref{SideEffectDescriptors} defines \sideeffectdescriptorsetsterm, which the type system infers
+        for each kind of ASL construct;
+  \item \secref{SideEffectSets} defines functions used to construct, modify, and query sets
+        of \sideeffectdescriptorsetsterm{}.
+        These are used throughout the type system to infer \sideeffectdescriptorsetsterm{}
+        and to ensure each construct meets its requirements in terms of side effects.
+\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Purity\label{sec:Purity}}
@@ -83,7 +93,6 @@ an expression can be evaluated during type-checking.
 
 \ExampleDef{Pure, Read-only, and Symbolically Evaluable Side Effect Descriptors}
 The table below shows all possible \sideeffectdescriptorsterm{} and whether they are \pure{}, \readonly{}, and \symbolicallyevaluable{}.
-\newcommand\Effect[0]{\textsf{Effect}}
 Here, \Effect{} stands for either \LocalEffect{} or \GlobalEffect{}.
 
 \begin{center}

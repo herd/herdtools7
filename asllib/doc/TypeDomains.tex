@@ -48,11 +48,11 @@ In the first case, $\vv$ is a \nativevalue\ and $\vg$
 is an \emph{execution graph}. Execution graphs are related to the concurrent semantics
 and can be ignored in the context of defining dynamic domains.
 In the latter case (which can occur if, for example, an expression attempts to divide
-\texttt{8} by \texttt{0}), a \ErrorConfigurationTerm{}, for which we use the notation
+\texttt{8} by \texttt{0}), a \DynamicErrorConfigurationTerm{}, for which we use the notation
 $\DynErrorConfig$, is returned.
 %
 The dynamic domain is empty in cases where evaluating side-effect-free expressions
-results in a \ErrorConfigurationTerm{}.
+results in a \DynamicErrorConfigurationTerm{}.
 %
 The dynamic domain is undefined if the type $\vt$ is not well-typed in $\tenv$.
 That is, if $\annotatetype{\tenv, \vt} \typearrow \TypeErrorConfig$.

@@ -1,161 +1,42 @@
-\chapter{Bitvector Slicing\label{chap:BitvectorSlicing}}
+\chapter{Bitvector Slices\label{chap:BitvectorSlicing}}
 \hypertarget{bitsliceterm}{}
-\ExampleDef{Well-typed Bitvector Slices}
+Bitvector slices allow extracting a contiguous sub-range of bits out of a given bitvector to produce
+another bitvector.
+Lists of bitvector slices can extract several sub-ranges and arrange them in different orders in the
+output bitvector.
+
+\ExampleDef{Bitvector Slices}
 \listingref{BitvectorSlices} shows different ways of expressing bitvector slices
 and how they relate to one another in terms of the order of bits they represent.
 \ASLListing{Examples of bitvector slices and operations on slices}{BitvectorSlices}{\definitiontests/Bitvector_slices.asl}
 
-\section{A List of Slices}
-A list of bitvector slices is grammatically derived from $\Nslices$ and the AST
-is given by a list of $\slice$ AST nodes.
-%
-The function $\buildslices$ builds the AST for a list of slices.
-%
-The function $\annotateslices$ (see \TypingRuleRef{Slices}) annotates a list of slices.
-%
-The relation $\evalslices$ (see \SemanticsRuleRef{Slices}) evaluates a list of slices.
-
-\subsection{Syntax}
-\begin{flalign*}
-\Nslices \derives \ & \Tlbracket \parsesep \ClistZero{\Nslice} \parsesep \Trbracket &
-\end{flalign*}
-
-\subsection{Abstract Syntax}
-\ASTRuleDef{Slices}
-\hypertarget{build-slices}{}
-The function
-\[
-  \buildslices(\overname{\parsenode{\Nslices}}{\vparsednode}) \;\aslto\; \overname{\slice^+}{\vastnode}
-\]
-transforms a parse node for a list of slices $\vparsednode$ into an AST node for a list of slices $\vastnode$.
-
-\begin{mathpar}
-\inferrule{
-  \buildclist[\buildslice](\vslices) \astarrow \vsliceasts
-}{
-  \buildslices(\Nslices(\Tlbracket, \namednode{\vslices}{\ClistOne{\Nslice}}, \Trbracket)) \astarrow
-  \overname{\vsliceasts}{\vastnode}
-}
-\end{mathpar}
-
-\subsection{Typing}
-\TypingRuleDef{Slices}
-\hypertarget{def-annotateslices}{}
-The function
-\[
-\annotateslices(\overname{\staticenvs}{\tenv}, \overname{\slice^*}{\vslices}) \aslto
-(\overname{\slice^*}{\slicesp} \times \overname{\TSideEffectSet}{\vses})
-\]
-annotates a list of slices $\vslices$ in the static environment $\tenv$, yielding a list of annotated slices (that is,
-slices in the \typedast) and \sideeffectsetterm\ $\vses$.
-\ProseOtherwiseTypeError
-
-See \ExampleRef{Well-typed Bitvector Slices} for example of well-typed bitvector slices.
-
-\ExampleDef{An Ill-typed Bitvector Slice}
-In \listingref{ImpureBitvectorSlice}, the bit vector slice on \verb|x| is ill-typed, since the expression \verb|side_effecting()| is not \pure{}.
-\ASLListing{An ill-typed bitvector slice}{ImpureBitvectorSlice}{\typingtests/TypingRule.AnnotateSlices.bad-impure.asl}
-
-\ProseParagraph
-\AllApply
+\ChapterOutline
 \begin{itemize}
-  \item annotating the slice $\vslices[\vi]$ in $\tenv$, for each $\vi\in\listrange(\vslices)$, yields \\
-        $(\vs_\vi, \vxs_i)$\ProseOrTypeError;
-  \item define $\slicesp$ as the list of slices $\vs_\vi$, for each $\vi\in\listrange(\vslices)$;
-  \item define $\vses$ as the union of all $\vxs_i$, for every \Proselistrange{$i$}{$\vslices$}.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  i\in\listrange(\vslices): \annotateslice(\tenv, \vslices[i]) \typearrow (\vs_i, \vxs_i) \OrTypeError\\\\
-  \slicesp \eqdef [i\in\listrange(\vslices): \vs_i]\\
-  \vses \eqdef \bigcup_{i\in\listrange(\vslices)} \vxs_i
-}{
-  \annotateslices(\tenv, \vslices) \typearrow (\slicesp, \vses)
-}
-\end{mathpar}
-
-\subsection{Semantics}
-\SemanticsRuleDef{Slices}
-The relation
-\hypertarget{def-evalslices}{}
-\[
-  \evalslices(\overname{\envs}{\env} \aslsep \overname{\slice^*}{\slices}) \;\aslrel\;
-  \left(
-  \begin{array}{ll}
-  \ResultSlices((\overname{(\vals \times \vals)^*}{\ranges} \times \overname{\XGraphs}{\newg}), \overname{\envs}{\newenv}) & \cup\\
-  \overname{\TThrowing}{\ThrowingConfig}    & \cup\\
-  \overname{\TDynError}{\DynErrorConfig}    & \cup\\
-  \overname{\TDiverging}{\DivergingConfig}  & \\
-  \end{array}
-  \right)
-\]
-evaluates a list of slices $\slices$ in an environment $\env$, resulting in either \\
-$\ResultSlices((\ranges, \newg), \newenv)$.
-\ProseOtherwiseAbnormal
-
-\ProseParagraph
-$\evalslices(\env, \vslices)$ is the list of pairs \texttt{(start\_n, length\_n)} that
-correspond to the start (included) and the length of each slice in
-$\slices$.
-
-\ExampleDef{Evaluating a List of Slices}
-In \listingref{eval-slices}, evaluating the list of slices \verb|[2, 7:5, 0+:3]|
-yields the list of ranges $[(2,1), (5,2), (0,3)]$.
-
-\ASLListing{Evaluating a list of slices}{eval-slices}{\semanticstests/SemanticsRule.Slices.asl}
-
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item the list of slices is empty;
-    \item $\ranges$ is the empty list;
-    \item $\newg$ is the empty graph;
-    \item $\newenv$ is $\env$;
-  \end{itemize}
-
-  \item \AllApplyCase{nonempty}
-  \begin{itemize}
-    \item the list of slices has $\vslice$ as the head and $\slicesone$ as the tail;
-    \item evaluating the slice $\vslice$ in $\env$ results in \\
-          $\ResultSlices((\range, \vgone), \envone)$\ProseOrAbnormal;
-    \item evaluating the tail list $\slicesone$ in $\envone$ results in \\
-          $\ResultSlices((\rangesone, \vgtwo), \newenv)$\ProseOrAbnormal;
-    \item $\ranges$ is the concatenation of $\range$ to $\rangesone$;
-    \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
-  \end{itemize}
+  \item \FormalRelationsRef{Bitvector Slices} defines the formal relations for bitvector slices;
+  \item \SyntaxRef{Bitvector Slices} defines the syntax of bitvector slices;
+  \item \AbstractSyntaxRef{Bitvector Slices} defines the abstract syntax of bitvector slices;
+  \item \TypeRulesRef{Bitvector Slices} defines the type rules for bitvector slices;
+  \item \SemanticsRulesRef{Bitvector Slices} defines the dynamic semantics of bitvector slices;
+  \item \FormalRelationsRef{Lists of Bitvector Slices} defines the formal relations for lists of bitvector slices;
+  \item \SyntaxRef{Lists of Bitvector Slices} defines the syntax of lists of bitvector slices;
+  \item \AbstractSyntaxRef{Lists of Bitvector Slices} defines the abstract syntax of lists of bitvector slices;
+  \item \TypeRulesRef{Lists of Bitvector Slices} defines the type rules for lists of bitvector slices;
+  \item \FormalRelationsRef{Lists of Bitvector Slices} defines the dynamic semantics rules for lists of bitvector slices;
 \end{itemize}
 
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[empty]{}
-{
-  \evalslices(\env, \emptylist) \evalarrow \ResultSlices((\emptylist, \emptygraph), \env)
-}
-\end{mathpar}
-\begin{mathpar}
-\inferrule[nonempty]{
-  \slices \eqname [\vslice] \concat \slicesone\\
-  \evalslice(\env, \vslice) \evalarrow \ResultSlices((\range, \vgone), \envone) \OrAbnormal\\\\
-  \evalslices(\envone, \slicesone) \evalarrow \ResultSlices((\rangesone, \vgtwo), \newenv) \OrAbnormal\\\\
-  \ranges \eqdef [\range] \concat \rangesone\\
-  \newg \eqdef \vgone \parallelcomp \vgtwo
-}{
-  \evalslices(\env, \slices) \evalarrow \ResultSlices((\ranges, \newg), \newenv)
-}
-\end{mathpar}
-\CodeSubsection{\EvalSlicesBegin}{\EvalSlicesEnd}{../Interpreter.ml}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\FormalRelationsDef{Bitvector Slices}
+\paragraph{Syntax:} Bitvector slices are grammatically derived from $\Nslice$.
 
-\section{Slicing Constructs}
-An individual slice construct is grammatically derived from $\Nslice$ and
-represented as an AST by $\slice$.
-%
-The function $\buildslice$ (see \ASTRuleRef{Slice}) builds the AST for an individual slice construct.
-%
-the function $\annotateslice$ (see \TypingRuleRef{Slice}) annotates a single slice.
+\paragraph{Abstract Syntax:} Bitvector slices are derived in the abstract syntax from $\slice$,
+and generated by $\buildslice$ (see \ASTRuleRef{Slice}).
 
-\subsection{Syntax}
+\paragraph{Typing:} Bitvector slices are annotated by $\annotateslice$ (see \TypingRuleRef{Slice}).
+
+\paragraph{Semantics:} Bitvector slices are evaluated by $\evalslice$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\SyntaxDef{Bitvector Slices}
 \begin{flalign*}
 \Nslice \derives \ & \Nexpr &\\
             |\  & \Nexpr \parsesep \Tcolon \parsesep \Nexpr &\\
@@ -164,7 +45,8 @@ the function $\annotateslice$ (see \TypingRuleRef{Slice}) annotates a single sli
             |\  & \Tcolon \parsesep \Nexpr &
 \end{flalign*}
 
-\subsection{Abstract Syntax}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\AbstractSyntaxDef{Bitvector Slices}
 \begin{flalign*}
 \slice \derives\ & \SliceSingle(\overname{\expr}{\vi}) &\\
   |\ & \SliceRange(\overname{\expr}{\vj}, \overname{\expr}{\vi}) &\\
@@ -226,7 +108,8 @@ transforms a parse node for a slice $\vparsednode$ into an AST node for a slice 
 }
 \end{mathpar}
 
-\subsection{Typing}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\TypeRulesDef{Bitvector Slices}
 \TypingRuleDef{Slice}
 \hypertarget{def-annotateslice}{}
 the function
@@ -471,7 +354,7 @@ expressions (as noted by the comments) are not constrained as their \underlyingt
 the \unconstrainedintegertype.
 
 On the other hand, in \listingref{check-constrained-integer}
-all of the right-hand-side expressions of assignments are both symbolically
+all of the \rhsexpressions{} of assignments are both symbolically
 evaluable \underline{and} their \underlyingtypes{} are \constrainedinteger{} types,
 since they consist of \staticallyevaluable{} expressions (literals) and
 the parameter \verb|N|.
@@ -496,7 +379,8 @@ the parameter \verb|N|.
 \end{mathpar}
 \CodeSubsection{\SymbolicConstrainedIntegerBegin}{\SymbolicConstrainedIntegerEnd}{../Typing.ml}
 
-\subsection{Semantics}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\SemanticsRulesDef{Bitvector Slices}
 \SemanticsRuleDef{Slice}
 The relation
 \hypertarget{def-evalslice}{}
@@ -631,3 +515,151 @@ In \listingref{semantics-scaledfromzero},
   \evalslice(\env, \SliceStar(\efactor, \elength)) \evalarrow \\ \ResultSlices(((\vstart, \vlength), \newg), \newenv)
 }
 \end{mathpar}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\FormalRelationsDef{Lists of Bitvector Slices}
+\paragraph{Syntax:} Lists of bitvector slices are grammatically derived from $\Nslices$.
+
+\paragraph{Abstract Syntax:} Lists of bitvector slices are represented by a list of $\slice$
+  AST nodes, and are generated by $\buildslices$.
+
+\paragraph{Typing:} Lists of bitvector slices are annotated by $\annotateslices$ (see \TypingRuleRef{Slices}).
+
+\paragraph{Semantics:} Lists of bitvector slices are evaluated by $\evalslices$ (see \SemanticsRuleRef{Slices}).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\SyntaxDef{Lists of Bitvector Slices}
+\begin{flalign*}
+\Nslices \derives \ & \Tlbracket \parsesep \ClistZero{\Nslice} \parsesep \Trbracket &
+\end{flalign*}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\AbstractSyntaxDef{Lists of Bitvector Slices}
+\ASTRuleDef{Slices}
+\hypertarget{build-slices}{}
+The function
+\[
+  \buildslices(\overname{\parsenode{\Nslices}}{\vparsednode}) \;\aslto\; \overname{\slice^+}{\vastnode}
+\]
+transforms a parse node for a list of slices $\vparsednode$ into an AST node for a list of slices $\vastnode$.
+
+\begin{mathpar}
+\inferrule{
+  \buildclist[\buildslice](\vslices) \astarrow \vsliceasts
+}{
+  \buildslices(\Nslices(\Tlbracket, \namednode{\vslices}{\ClistOne{\Nslice}}, \Trbracket)) \astarrow
+  \overname{\vsliceasts}{\vastnode}
+}
+\end{mathpar}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\TypeRulesDef{Lists of Bitvector Slices}
+\TypingRuleDef{Slices}
+\hypertarget{def-annotateslices}{}
+The function
+\[
+\annotateslices(\overname{\staticenvs}{\tenv}, \overname{\slice^*}{\vslices}) \aslto
+(\overname{\slice^*}{\slicesp} \times \overname{\TSideEffectSet}{\vses})
+\]
+annotates a list of slices $\vslices$ in the static environment $\tenv$, yielding a list of annotated slices (that is,
+slices in the \typedast) and \sideeffectsetterm\ $\vses$.
+\ProseOtherwiseTypeError
+
+See \ExampleRef{Well-typed Bitvector Slices} for example of well-typed bitvector slices.
+
+\ExampleDef{An Ill-typed Bitvector Slice}
+In \listingref{ImpureBitvectorSlice}, the bit vector slice on \verb|x| is ill-typed, since the expression \\
+\verb|side_effecting()| is not \pure{}.
+\ASLListing{An ill-typed bitvector slice}{ImpureBitvectorSlice}{\typingtests/TypingRule.AnnotateSlices.bad-impure.asl}
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item annotating the slice $\vslices[\vi]$ in $\tenv$, for each $\vi\in\listrange(\vslices)$, yields \\
+        $(\vs_\vi, \vxs_i)$\ProseOrTypeError;
+  \item define $\slicesp$ as the list of slices $\vs_\vi$, for each $\vi\in\listrange(\vslices)$;
+  \item define $\vses$ as the union of all $\vxs_i$, for every \Proselistrange{$i$}{$\vslices$}.
+\end{itemize}
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{
+  i\in\listrange(\vslices): \annotateslice(\tenv, \vslices[i]) \typearrow (\vs_i, \vxs_i) \OrTypeError\\\\
+  \slicesp \eqdef [i\in\listrange(\vslices): \vs_i]\\
+  \vses \eqdef \bigcup_{i\in\listrange(\vslices)} \vxs_i
+}{
+  \annotateslices(\tenv, \vslices) \typearrow (\slicesp, \vses)
+}
+\end{mathpar}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\SemanticsRulesDef{Lists of Bitvector Slices}
+\SemanticsRuleDef{Slices}
+The relation
+\hypertarget{def-evalslices}{}
+\[
+  \evalslices(\overname{\envs}{\env} \aslsep \overname{\slice^*}{\slices}) \;\aslrel\;
+  \left(
+  \begin{array}{ll}
+  \ResultSlices((\overname{(\vals \times \vals)^*}{\ranges} \times \overname{\XGraphs}{\newg}), \overname{\envs}{\newenv}) & \cup\\
+  \overname{\TThrowing}{\ThrowingConfig}    & \cup\\
+  \overname{\TDynError}{\DynErrorConfig}    & \cup\\
+  \overname{\TDiverging}{\DivergingConfig}  & \\
+  \end{array}
+  \right)
+\]
+evaluates a list of slices $\slices$ in an environment $\env$, resulting in either \\
+$\ResultSlices((\ranges, \newg), \newenv)$.
+\ProseOtherwiseAbnormal
+
+\ProseParagraph
+$\evalslices(\env, \vslices)$ is the list of pairs \texttt{(start\_n, length\_n)} that
+correspond to the start (included) and the length of each slice in
+$\slices$.
+
+\ExampleDef{Evaluating a List of Slices}
+In \listingref{eval-slices}, evaluating the list of slices \verb|[2, 7:5, 0+:3]|
+yields the list of ranges $[(2,1), (5,2), (0,3)]$.
+
+\ASLListing{Evaluating a list of slices}{eval-slices}{\semanticstests/SemanticsRule.Slices.asl}
+
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{empty}
+  \begin{itemize}
+    \item the list of slices is empty;
+    \item $\ranges$ is the empty list;
+    \item $\newg$ is the empty graph;
+    \item $\newenv$ is $\env$;
+  \end{itemize}
+
+  \item \AllApplyCase{nonempty}
+  \begin{itemize}
+    \item the list of slices has $\vslice$ as the head and $\slicesone$ as the tail;
+    \item evaluating the slice $\vslice$ in $\env$ results in \\
+          $\ResultSlices((\range, \vgone), \envone)$\ProseOrAbnormal;
+    \item evaluating the tail list $\slicesone$ in $\envone$ results in \\
+          $\ResultSlices((\rangesone, \vgtwo), \newenv)$\ProseOrAbnormal;
+    \item $\ranges$ is the concatenation of $\range$ to $\rangesone$;
+    \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[empty]{}
+{
+  \evalslices(\env, \emptylist) \evalarrow \ResultSlices((\emptylist, \emptygraph), \env)
+}
+\end{mathpar}
+\begin{mathpar}
+\inferrule[nonempty]{
+  \slices \eqname [\vslice] \concat \slicesone\\
+  \evalslice(\env, \vslice) \evalarrow \ResultSlices((\range, \vgone), \envone) \OrAbnormal\\\\
+  \evalslices(\envone, \slicesone) \evalarrow \ResultSlices((\rangesone, \vgtwo), \newenv) \OrAbnormal\\\\
+  \ranges \eqdef [\range] \concat \rangesone\\
+  \newg \eqdef \vgone \parallelcomp \vgtwo
+}{
+  \evalslices(\env, \slices) \evalarrow \ResultSlices((\ranges, \newg), \newenv)
+}
+\end{mathpar}
+\CodeSubsection{\EvalSlicesBegin}{\EvalSlicesEnd}{../Interpreter.ml}

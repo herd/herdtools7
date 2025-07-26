@@ -1,5 +1,14 @@
 \chapter{Block Statements\label{chap:BlockStatements}}
-Block statements are statements executing in their own scope within the scope of their enclosing subprogram.
+Block statements are statements executing in their own scope when they appear
+in one of the following:
+\begin{itemize}
+  \item the body of a \whilestatementterm,
+  \item the body of a \repeatstatementsterm,
+  \item the body of a \forstatementterm,
+  \item one of the branches of a \conditionalstatementterm,
+  \item the body of a \trystatementterm, or
+  \item the statement executed by an exception catcher.
+\end{itemize}
 
 \ExampleDef{Block Statements}
 In \listingref{block},
@@ -12,7 +21,27 @@ variable~\texttt{x} persists after block end. However, observe that \texttt{x}
 is defined before the block and hence still exists after the block.
 \ASLListing{A conditional statement defining a block structure}{block}{\semanticstests/SemanticsRule.Block.asl}
 
-\section{Typing\label{sec:BlockStatementsTyping}}
+\ChapterOutline
+\begin{itemize}
+  \item \FormalRelationsRef{Block Statements} defines the formal relations for block statements;
+  \item \TypeRulesRef{Block Statements} defines the type rule for block statements; and
+  \item \SemanticsRulesRef{Block Statements} defines the semantics of block statements.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\FormalRelationsDef{Block Statements}
+\paragraph{Syntax:} Block statements are grammatically the same as other statements
+derived from $\Nstmt$.
+
+\paragraph{Abstract Syntax:} Block statements appear in the abstract syntax
+as statements $\stmt$.
+
+\paragraph{Typing:} Block statements are annotated by $\annotateblockname$.
+
+\paragraph{Semantics:} Block statements are evaluated by $\evalblockname$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\TypeRulesDef{Block Statements}
 \hypertarget{def-annotateblock}{}
 The function
 \[
@@ -50,7 +79,7 @@ an enclosing block, which has the effect of dropping bindings of the identifiers
 \identr{JBXQ}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Semantics\label{sec:BlockStatementsSemantics}}
+\SemanticsRulesDef{Block Statements}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 The relation
 \hypertarget{def-evalblock}{}

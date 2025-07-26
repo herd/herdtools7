@@ -7,13 +7,24 @@ and the ASL Reference mandates the different types of errors
 (corresponding to different types of bugs) that implementations must detect,
 including when these errors must be detected and reported to users.
 
-\section{How Implementations Should Handle Errors}
+\ChapterOutline
+\begin{itemize}
+  \item \secref{How Implementations Should Handle Errors} describes how implementations of ASL
+        should handle errors;
+  \item \secref{Error Kinds} defines a classification of ASL errors;
+  \item \secref{ErrorCodesSummary} summarises the error codes used throughout this reference;
+  \item \secref{BuildErrors} details \builderrorsterm;
+  \item \secref{TypingErrors} details \typingerrorsterm;
+  \item \secref{DynamicErrors} details \dynamicerrorsterm.
+\end{itemize}
+
+\section{How Implementations Should Handle Errors\label{sec:How Implementations Should Handle Errors}}
 
 \RequirementDef{StaticErrorCheck} Implementations should detect and report \staticerrorsterm. \\
 Specifically, \staticerrorsterm{} must never cause a \dynamicerrorterm{} or
 cause an exception to be raised.
 %
-\secref{ExampleInterpreter} shows how an interpreter detects \builderrorsterm{}
+\secref{Example Interpreter} shows how an interpreter detects \builderrorsterm{}
 and \typingerrorsterm{}.
 %
 \listingref{typing-error-reporting} shows a specification containing a \typingerrorterm,
@@ -97,7 +108,7 @@ ASL Dynamic error: unreachable reached.
 \end{Verbatim}
 % CONSOLE_END
 
-\section{Error Kinds}
+\section{Error Kinds\label{sec:Error Kinds}}
 \hypertarget{def-errorcodeterm}{}
 Each type of error has an \emph{\errorcodeterm}, which uniquely identifies it
 (see \secref{ErrorCodesSummary} for the full list of \errorcodesterm),

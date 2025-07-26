@@ -133,6 +133,7 @@ arising
 arithmetic
 arm
 around
+arrange
 array
 arrays
 artificial
@@ -142,6 +143,7 @@ ascii
 asl
 aslref
 aspects
+assert
 asserted
 asserting
 assertion
@@ -322,6 +324,7 @@ clashes
 clashing
 classed
 classes
+classification
 classified
 classifies
 classify
@@ -442,6 +445,7 @@ consists
 console
 constant
 constants
+constitutes
 constrained
 constraining
 constrains
@@ -460,6 +464,7 @@ containing
 contains
 content
 context
+contiguous
 continuation
 continue
 continues
@@ -469,12 +474,15 @@ contributes
 control
 convenient
 convention
+conventional
+conventionally
 conversion
 conversions
 convert
 converted
 converting
 converts
+convey
 conveying
 conveys
 copied
@@ -603,6 +611,7 @@ disclaimer
 disclosure
 discriminant
 discussed
+discusses
 discussion
 disjoint
 disjunction
@@ -642,6 +651,7 @@ dynamically
 each
 early
 easier
+easily
 easy
 echo
 edge
@@ -750,6 +760,7 @@ excluding
 exclusion
 executable
 executables
+executed
 executes
 executing
 execution
@@ -897,6 +908,7 @@ github
 give
 given
 gives
+giving
 global
 go
 goal
@@ -919,6 +931,7 @@ guarantee
 guaranteed
 guarantees
 guards
+guideline
 guidelines
 had
 hand
@@ -1092,6 +1105,7 @@ interval
 intervals
 into
 introduce
+introduced
 introduces
 introducing
 intuition
@@ -1101,6 +1115,7 @@ invalid
 invariant
 inverse
 invocation
+invocations
 invoke
 invoked
 invokes
@@ -1126,6 +1141,7 @@ judgments
 just
 justified
 keep
+key
 keys
 keyword
 keywords
@@ -1197,6 +1213,7 @@ look
 looked
 looking
 looks
+lookup
 loop
 looping
 loops
@@ -1392,6 +1409,7 @@ order
 ordered
 ordering
 orders
+organized
 origin
 original
 other
@@ -1522,6 +1540,7 @@ presence
 present
 presentation
 presented
+presents
 prevalent
 prevents
 previous
@@ -1720,6 +1739,7 @@ rest
 restore
 restoring
 restrict
+restricted
 restriction
 restrictions
 result
@@ -1777,6 +1797,7 @@ scan
 scanned
 scanning
 scans
+scheme
 schemes
 scope
 scoping
@@ -1873,6 +1894,7 @@ so
 solely
 some
 sometimes
+sort
 sorted
 sorting
 sorts

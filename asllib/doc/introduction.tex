@@ -6,12 +6,12 @@ used in Arm’s architecture reference manuals to describe the Arm architecture.
 ASL is designed and used to specify architectures. As a specification language, it is designed to be accessible,
 understandable, and unambiguous to programmers, hardware
 engineers, and hardware verification engineers, who collectively have quite a small intersection of languages they
-all understand. It can intentionally under specify behaviors in the architecture being described.
+all understand. It can intentionally under-specify behaviors in the architecture being described.
 
 ASL is:
 \begin{itemize}
-    \item a first-order language with strong static typechecking.
-    \item whitespace-insensitive.
+    \item a first-order language with strong static typechecking,
+    \item whitespace-insensitive, and
     \item imperative.
 \end{itemize}
 
@@ -101,9 +101,10 @@ Each construct is defined via a subset of the following:
     \item[Preamble] A high-level explanation of what the construct is intended for using
         prose and code examples;
     \item[Guidelines] Rules that provide informal high-level guidance.
-        These rules follow the naming convention \RequirementDefExample{Name};
+        That is, they under-specify ASL.
+        Guideline rules follow the naming convention \RequirementDefExample{Name};
     \item[Syntax] Rules that define how the construct is expressed in syntax;
-    \item[AST] Rules that define how the construct is expressed in the AST;
+    \item[AST] Rules that define how the construct is expressed in an abstract syntax tree (AST);
     \item[AST build rules] Rules for building an AST from parse trees.
         These rules follow the naming convention \ASTRuleDefExample{Name}
         and defined in terms of \inferencerules;
@@ -129,7 +130,8 @@ and formalizes them:
         throughout this document;
     \item \chapref{LexicalStructure} introduces the ASL lexical structure;
     \item \chapref{Syntax} introduces the ASL syntax;
-    \item \chapref{AbstractSyntax} introduces the abstract syntax (AST).
+    \item \chapref{AbstractSyntax} introduces the abstract syntax trees (AST)
+        that represent ASL constructs.
         Familiarity with the AST is \underline{essential} for understanding the
         type system and the dynamic semantics;
     \item \chapref{TypeChecking} and \chapref{Semantics} introduce basic
