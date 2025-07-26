@@ -33,7 +33,7 @@ transforms an $\Nspec$ node $\vparsednode$ into an AST specification node $\vast
 We define this function for subprogram declarations, type declarations, and global storage declarations in the corresponding chapters.
 
 \begin{mathpar}
-\inferrule[ast]{
+\inferrule{
     \buildlist[\builddecl](\vdecls) \astarrow \vdeclsone \\
     \concatlist(\vdeclsone) \astarrow \vadecls
 }{

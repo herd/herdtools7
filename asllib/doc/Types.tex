@@ -213,7 +213,7 @@ is a parameterized integer type, \underline{not} an unconstrained integer type.
 
 \ASTRuleDef{Ty.TInt}
 \begin{mathpar}
-\inferrule[integer]{}{
+\inferrule{}{
   \buildty(\Nty(\Tinteger, \punnode{\Nconstraintkindopt})) \astarrow
   \overname{\TInt(\astof{\vconstraintkindopt})}{\vastnode}
 }
@@ -1606,7 +1606,7 @@ A declared type can be an \enumerationtypeterm{}, a \recordtypeterm, an \excepti
 \subsection{Abstract Syntax}
 \ASTRuleDef{TyDecl}
 \begin{mathpar}
-\inferrule[ty]{}{
+\inferrule{}{
   \buildtydecl(\Ntydecl(\punnode{\Nty})) \astarrow
   \overname{\astof{\tty}}{\vastnode}
 }

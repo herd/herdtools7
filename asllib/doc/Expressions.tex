@@ -3251,7 +3251,7 @@ $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
 
 \ASTRuleDef{ETuple}
 \begin{mathpar}
-\inferrule[tuple]{
+\inferrule{
   \buildplist[\buildexpr](\vexprs) \astarrow \vexprasts
 }{
   \buildexpr(\overname{\Nexpr(\namednode{\vexprs}{\Plisttwo{\Nexpr}})}{\vparsednode}) \astarrow

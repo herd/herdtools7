@@ -86,145 +86,145 @@ The function
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[and]{}{
   \buildbinop(\Nbinop(\Tand)) \astarrow \overname{\AND}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[band]{}{
   \buildbinop(\Nbinop(\Tband)) \astarrow \overname{\BAND}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[bor]{}{
   \buildbinop(\Nbinop(\Tbor)) \astarrow \overname{\BOR}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[beq]{}{
   \buildbinop(\Nbinop(\Tbeq)) \astarrow \overname{\BEQ}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[div]{}{
   \buildbinop(\Nbinop(\Tdiv)) \astarrow \overname{\DIV}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[divrm]{}{
   \buildbinop(\Nbinop(\Tdivrm)) \astarrow \overname{\DIVRM}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[xor]{}{
   \buildbinop(\Nbinop(\Txor)) \astarrow \overname{\XOR}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[eqop]{}{
   \buildbinop(\Nbinop(\Teqop)) \astarrow \overname{\EQOP}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[neq]{}{
   \buildbinop(\Nbinop(\Tneq)) \astarrow \overname{\NEQ}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[gt]{}{
   \buildbinop(\Nbinop(\Tgt)) \astarrow \overname{\GT}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[geq]{}{
   \buildbinop(\Nbinop(\Tgeq)) \astarrow \overname{\GEQ}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[impl]{}{
   \buildbinop(\Nbinop(\Timpl)) \astarrow \overname{\IMPL}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[lt]{}{
   \buildbinop(\Nbinop(\Tlt)) \astarrow \overname{\LT}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[leq]{}{
   \buildbinop(\Nbinop(\Tleq)) \astarrow \overname{\LEQ}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[plus]{}{
   \buildbinop(\Nbinop(\Tplus)) \astarrow \overname{\PLUS}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[minus]{}{
   \buildbinop(\Nbinop(\Tminus)) \astarrow \overname{\MINUS}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[mod]{}{
   \buildbinop(\Nbinop(\Tmod)) \astarrow \overname{\MOD}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[mul]{}{
   \buildbinop(\Nbinop(\Tmul)) \astarrow \overname{\MUL}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[or]{}{
   \buildbinop(\Nbinop(\Tor)) \astarrow \overname{\OR}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[rdiv]{}{
   \buildbinop(\Nbinop(\Trdiv)) \astarrow \overname{\RDIV}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[shl]{}{
   \buildbinop(\Nbinop(\Tshl)) \astarrow \overname{\SHL}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[shr]{}{
   \buildbinop(\Nbinop(\Tshr)) \astarrow \overname{\SHR}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[pow]{}{
   \buildbinop(\Nbinop(\Tpow)) \astarrow \overname{\POW}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[]{}{
+\inferrule[concat]{}{
   \buildbinop(\Nbinop(\Tcoloncolon)) \astarrow \overname{\CONCAT}{\vastnode}
 }
 \end{mathpar}
