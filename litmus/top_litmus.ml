@@ -291,7 +291,7 @@ end = struct
                     nprocs; pac; self = O.variant Variant_litmus.Self; }
               end else begin
                 let cause = if limit_ok then "" else " (too many threads)" in
-                W.warn "%s test not compiled%s"
+                Warn.warn_always "%s test not compiled%s"
                   (Pos.str_pos0 doc.Name.file) cause ;
                 Absent
               end
