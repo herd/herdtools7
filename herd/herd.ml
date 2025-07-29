@@ -56,89 +56,57 @@ let gen_model_opt s =
        (pp_default_model riscv)
        (pp_default_model Archs.c))
 
-let general_options = [
-(* Basic *)
-  ("-version", Arg.Unit
-     (fun () -> printf "%s, Rev: %s\n" Version.version Version.rev ; exit 0),
-   " show version number and exit") ;
-  ("-libdir", Arg.Unit (fun () -> print_endline !Opts.libdir; exit 0),
-    " show installation directory and exit");
-  ("-set-libdir", Arg.String (fun s -> Opts.libdir := s),
-    "<path> set installation directory to <path>");
-  ("-v", Arg.Unit (fun _ -> incr verbose),
-   "<non-default> show various diagnostics, repeat to increase verbosity");
-  ("-q", Arg.Unit (fun _ -> verbose := -1; debug := Debug_herd.none),
-   "<default> do not show diagnostics");
-  ("-I", Arg.String (fun s -> includes := !includes @ [s]),
-   "<dir> add <dir> to search path");
-  parse_bool "-exit" Opts.exit_if_failed "exit in case of failure";
+
+
+let runmode_options = Arg.align ~limit:40 [
+  "-help", Arg.Unit (fun () -> ()), "" ;
+  "--help", Arg.Unit (fun () -> ()), "" ;
+ ("", Arg.Unit (fun () -> ()), "\n");
+ parse_tag "-speedcheck"
+    (fun tag -> match Speed.parse tag with
+    | None -> false
+    | Some t -> speedcheck := t ; true)
+    Speed.tags
+    "aim at checking condition in place of listing final states" ;
+  begin
+    let module ParseVariant = ParseTag.MakeS(Opts.OptS) in
+    ParseVariant.parse "-variant" variant
+      "select an architecture variation" end ;
+  begin 
+    let module ParseMachSize = ParseTag.Make(MachSize.Tag) in
+  ParseMachSize.parse "-machsize" byte "set basic machine size" end ;
+  begin 
+    let module ParseEndian = ParseTag.Make(Endian) in
+  ParseEndian.parse_opt "-endian" endian "set endianness" end ;
   parse_float_opt "-timeout" Opts.timeout "timeout (CPU time)";
-  ("-conf",
-   Arg.String load_config,
-   "<name> read configuration file <name>") ;
-  ("-bell",
-   Arg.String (fun x -> Opts.bell := (Some x)),
-   "<name> read bell file <name>") ;
-  ("-macros",
-   Arg.String (fun x -> Opts.macros := (Some x)),
-   "<name> read macro (.def) file <name>") ;
-  ("-o", Arg.String
-     (fun s -> match s with
-     | "-" -> outputdir := PrettyConf.StdoutOutput
-     | _ -> outputdir := PrettyConf.Outputdir s),
-   "<dir> generated files will go into <dir>, default: do not generate") ;
-  ("-suffix", Arg.String (fun s -> suffix := s),
-   "<suf> add <suf> at the end of the base of generated files") ;
-  parse_bool "-dumpes" Opts.dumpes "dump event structures";
-  begin let module ParseView = ParseTag.Make(View) in
-  ParseView.parse_opt "-view" PP.view
-    "fork specified viewer to show output graphs" end ;
-  ( "-gv",
-    Arg.Unit (fun _ -> PP.view := Some View.GV),
-    "<non-default>  alias for -view gv") ;
-  ( "-evince",
-    Arg.Unit (fun _ -> PP.view := Some View.Evince),
-    "<non-default>  alias for -view evince") ;
-  ( "-preview",
-    Arg.Unit (fun _ -> PP.view := Some View.Preview),
-    "<non-default>  alias for -view preview") ;
   ("-unroll",
    Arg.Int (fun x -> unroll := Some x),
    sprintf "<int> branch unrolling upper limit, default ASL: %i, others: %i"
      (unroll_default `ASL)  (unroll_default `Others));
-  parse_bool "-hexa" PP.hexa "print numbers in hexadecimal";
-  ("-web",
-   Arg.Unit (fun () -> load_config "web.cfg")," alias for -conf web.cfg");
-  ("-c11",
-   Arg.Unit (fun () -> load_config "cpp11.cfg")," alias for -conf cpp11.cfg");
-  (* Undocumented *)
+  parse_tag "-optace"
+    (fun tag -> match OptAce.parse tag with
+    | None -> false
+    | Some t -> optace := Some t ; true)
+    OptAce.tags
+    "optimize axiomatic candidate generation, default is iico";
+  parse_int_opt
+    "-maxphantom" maxphantom "maximum phantom update (per variable)";
+  parse_bool "-archcheck" archcheck "check compatibility of test and cat model architectures" ;
+    ("-switch",
+   Arg.Unit (fun () -> Misc.switch := true),
+   "switch something") ;
   parse_tag "-restrict"
     (fun tag -> match Restrict.parse tag with
     | None -> false
     | Some t -> restrict := t ; true)
     Restrict.tags
     (sprintf "restrict outcomes, default %s" (Restrict.pp !restrict));
- parse_tags
-    "-debug"
-    (fun tag -> match Debug_herd.parse !debug tag with
-    | None -> false
-    | Some t -> debug := t ; true)
-    Debug_herd.tags
-    "show debug messages for specific parts" ;
-  (* Undocumented *)
-  parse_bool "-candidates" candidates
-  "show complete candidate count in output" ;
-  parse_bool "-outcomereads" outcomereads "include all memory reads in outcomes" ;
- 
-]
+    ]
 
-let simulation_options = [
-(* undocumented *)
-  ("-switch",
-   Arg.Unit (fun () -> Misc.switch := true),
-   "switch something") ;
-  parse_bool "-morefences" (ref false) "does nothing (deprecated)" ;
-(* Simulation control *)
+let filter_options = Arg.align ~limit:40 [
+  "-help", Arg.Unit (fun () -> ()), "" ;
+  "--help", Arg.Unit (fun () -> ()), "" ;
+  ("", Arg.Unit (fun () -> ()), "\n");
   gen_model_opt "-model";
   gen_model_opt "-cat";
   parse_tag
@@ -159,26 +127,6 @@ let simulation_options = [
    "<name> do not apply check, cumulates") ;
   parse_stringset "-skipchecks" skipchecks "do not apply listed checks, cumulative" ;
   parse_bool "-strictskip" strictskip "retain outcomes allowed by ALL skipped checks" ;
-  parse_stringset "-cycles" cycles  "<name1,...,nameN> show failing checks as cycles, cumulates" ;
-
-(* Model control *)
-  begin
-    let module ParseVariant = ParseTag.MakeS(Opts.OptS) in
-    ParseVariant.parse "-variant" variant
-      "select an architecture variation" end ;
-  begin let module ParseMachSize = ParseTag.Make(MachSize.Tag) in
-  ParseMachSize.parse "-machsize" byte "set basic machine size" end ;
-  begin let module ParseEndian = ParseTag.Make(Endian) in
-  ParseEndian.parse_opt "-endian" endian "set endianness" end ;
-  parse_bool "-archcheck" archcheck "check compatibility of test and cat model architectures" ;
-  parse_tag "-optace"
-    (fun tag -> match OptAce.parse tag with
-    | None -> false
-    | Some t -> optace := Some t ; true)
-    OptAce.tags
-    "optimize axiomatic candidate generation, default is iico";
-  "-initwrites", Arg.Bool (fun b -> initwrites := Some b),
-    "<bool> represent init writes as write events, this option should not be used except for debugging model options";
   parse_tag "-show"
     (fun tag -> match PrettyConf.parse_show tag with
     | None -> false
@@ -191,58 +139,40 @@ let simulation_options = [
   "<string>  show executions flagged by string in figure" ;
   parse_bool "-badexecs" badexecs "give output for tests that have bad executions (see -badflag)" ;
   parse_string_opt "-badflag" badflag "executions with flag <string> are bad" ;
-  parse_int_opt
-    "-maxphantom" maxphantom "maximum phantom update (per variable)";
   "-statelessrc11",
   Arg.Bool (fun b -> if b then statelessrc11 := true),
   "<bool> enable stateless RC11 model checking, use with -variant normw, SC check can be skipped";
   "-dumpallfaults",
   Arg.Bool (fun b -> dumpallfaults := b),
   "Dump final states with all faults that that happenned regardless of the post-condition";
-]
-
-let discard_observations_options = [
-(* Discard some observations *)
-  parse_tag "-speedcheck"
-    (fun tag -> match Speed.parse tag with
-    | None -> false
-    | Some t -> speedcheck := t ; true)
-    Speed.tags
-    "aim at checking condition in place of listing final states" ;
   "-nshow",
   Arg.Int (fun n -> nshow := Some n),
   "<n> collect at most <n> pictures, default is to collect all (specified) pictures";
    parse_bool "-checkfilter" check_filter "discard outcomes that negate filter proposition (if any)" ;
-(* undocumented *)
   "-showone",
   Arg.Bool (fun b -> if b then nshow := Some 1),
   "<bool> alias for -nshow 1";
-]
+  ]
 
-(************************)
-(* Control dot pictures *)
-(************************)
-let dot_options = [ 
-(* General *)
-  parse_tag "-graph"
-    (fun tag -> match Graph.parse tag with
-    | None -> false
-    | Some t -> PP.graph := t ; true)
-     Graph.tags
-     (sprintf "select sort of graph, default %s" (Graph.pp !PP.graph)) ;
-  parse_tag "-dotmode"
-    (fun tag -> match PrettyConf.parse_dotmode tag with
-    | None -> false
-    | Some t -> PP.dotmode := t ; true)
-    PrettyConf.tags_dotmode
-    (sprintf "control text in dot figures, default %s"
-       (PrettyConf.pp_dotmode !PP.dotmode)) ;
-  parse_tag "-dotcom"
-    (fun tag -> match PrettyConf.parse_dotcom tag with
-    | None -> false
-    | Some _ as t -> PP.dotcom := t ; true)
-    PrettyConf.tags_dotcom
-    "select command to translate dot, default depends on other modes" ;
+let graph_content_options = Arg.align ~limit:40 [
+  "-help", Arg.Unit (fun () -> ()), "" ;
+  "--help", Arg.Unit (fun () -> ()), "" ;
+  (* Edges *)
+  ("", Arg.Unit (fun () -> ()), "\n");
+  ("Edge options", Arg.Unit (fun () -> ()), " ");
+  parse_bool "-showpo" PP.showpo "show po edges in pictures" ;
+  parse_bool "-showinitrf" PP.showinitrf "show read-from edges from initial state in pictures" ;
+  parse_bool "-showfinalrf" PP.showfinalrf "show read-from edges to final state in pictures" ;
+  parse_stringsetfun "-doshow" PP.add_doshow "show those edges";
+  parse_stringsetfun "-unshow" PP.add_unshow "do not show those edges" ;
+  parse_stringset "-symetric" PP.symetric "declare those edges as symetric" ;
+  parse_stringset "-noid" PP.noid "like -symetric, additionally do not show identity edges" ;
+  parse_stringset "-showraw" PP.showraw "do not perform transitivity removal on those edges" ;
+
+  (* Events *)
+  ("", Arg.Unit (fun () -> ()), "\n");
+  ("Event options", Arg.Unit (fun () -> ()), " ");
+  parse_bool "-oneinit" PP.oneinit "show an init writes pseudo-event, with all initial writes grouped" ;
   parse_tag "-showevents"
     (fun tag -> match PrettyConf.parse_showevents tag with
     | None -> false
@@ -250,98 +180,39 @@ let dot_options = [
      PrettyConf.tags_showevents
      (sprintf "select events shown in figures, default %s"
        (PrettyConf.pp_showevents !PP.showevents)) ;
-  parse_bool "-mono" PP.mono "monochrome figures" ;
-  parse_float "-scale" PP.scale "global scale factor for graphs" ;
-  parse_float "-xscale" PP.xscale
-    "global scale factor for graphs, x direction" ;
-  parse_float "-yscale" PP.yscale
-    "global scale factor for graphs, y direction" ;
-  parse_float "-dsiy" PP.dsiy "vertical variation for events generated by the same instruction" ;
-  parse_float "-siwidth" PP.siwidth "width occupied by events generated by the same instruction" ;
-  parse_float "-ptscale" PP.ptscale "scale factor for points" ;
-  parse_float "-boxscale" PP.ptscale "scale factor box width" ;
-  parse_bool "-showthread" PP.showthread
-    "show thread numbers in figures" ;
-  "-shift",
-  Arg.String
-    (fun tag ->
-      let fs = Misc.split_comma tag in
-      let fs =
-        List.map
-          (fun f ->
-            try float_of_string f with
-            | _ ->
-                raise
-                  (Arg.Bad
-                     (sprintf "bad argument for option -shift: '%s'" tag)))
-          fs in
-      PP.shift := Array.of_list fs),
-  "<float,...,float> add vertical space at thread start (column mode only)";
-  parse_bool "-texmacros" PP.texmacros "use latex commands in output";
-  parse_bool "-tikz" PP.tikz "generate dot files suitable for processing with TikZ";
-  parse_float "-threadposy" PP.threadposy
-    "thread number position in the y direction" ;
-  parse_bool "-relabel" PP.relabel
-    "merge power/arm labels(e.g sync -> sync/dmb)" ;
-  parse_bool "-withbox" PP.withbox
-    "box together events generated by the same instruction" ;
-  parse_bool "-labelbox" PP.labelbox
-    "label instruction instruction boxes with instruction" ;
-  parse_bool "-movelabel" PP.movelabel
-    "apply various tricks to enhance edge label placement in pictures" ;
-  ("-dotheader",Arg.String (fun s -> PP.dotheader := Some s),
-   "<name> insert the contents of <name> at the beginning of generated dot files");
-]
-
-let edge_options =[
-  parse_bool "-edgemerge" PP.edgemerge "merge edges, cppmem style" ;
-  (* Edge selection *)
-  parse_bool "-showpo" PP.showpo "show po edges in pictures" ;
-  parse_bool "-showinitrf" PP.showinitrf
-    "show read-from edges from initial state in pictures" ;
-  parse_bool "-showfinalrf" PP.showfinalrf
-    "show read-from edges to final state in pictures" ;
-  parse_stringsetfun "-doshow" PP.add_doshow "show those edges";
-  parse_stringsetfun "-unshow" PP.add_unshow "do not show those edges" ;
-  parse_stringset "-symetric" PP.symetric "declare those edges as symetric" ;
-  parse_stringset "-noid" PP.noid "like -symetric, additionally do not show identity edges" ;
+  parse_bool "-showinitwrites" PP.showinitwrites
+    "show init write events in pictures" ;
+ parse_stringset "-cycles" cycles  "<name1,...,nameN> show failing checks as cycles, cumulates" ;
+  parse_bool "-dumpes" Opts.dumpes "dump event structures";
+ "-initwrites", Arg.Bool (fun b -> initwrites := Some b),
+    "<bool> represent init writes as write events, this option should not be used except for debugging model options";
   parse_string_opt "-classes" PP.classes "show classes of this equivalence (no not cumulate)" ;
-  parse_stringset "-showraw" PP.showraw "do not perform transitivity removal on those edges" ;
 ]
-
-let node_options = [
-(* Node options *)
+let graph_presentation_options = Arg.align ~limit:40 [
+  "-help", Arg.Unit (fun () -> ()), "" ;
+  "--help", Arg.Unit (fun () -> ()), "" ;
+  ("", Arg.Unit (fun () -> ()), "\n");
+  parse_bool "-showobserved" PP.showobserved
+    "highlight observed memory reads in pictures" ;
+  parse_bool "-edgemerge" PP.edgemerge "merge edges, cppmem style" ;
+  parse_bool "-showlegend" PP.showlegend  "show legend in pictures" ;
+  parse_bool "-showkind" showkind  "show test kind in legends" ;
+  parse_bool "-shortlegend" shortlegend "show test name only in legends";
   parse_bool "-labelinit" PP.labelinit "show labels on the init node" ;
+  parse_bool "-showthread" PP.showthread "show thread numbers in figures" ;
   parse_bool "-squished" PP.squished "limit information in graph nodes" ;
   parse_bool "-fixedsize" PP.fixedsize
     "fixedsize attribute for nodes in graph" ;
   parse_float "-extrachars" PP.extrachars
     "additional space for computing node width, can be negative" ;
-  parse_bool "-showobserved" PP.showobserved
-    "highlight observed memory reads in pictures" ;
   parse_bool "-brackets" PP.brackets
     "show brackets around locations in pictures" ;
   parse_pos "-initrfpos" PP.initdotpos
     "position of pseudo source event for initial rf" ;
   parse_pos "-finalrfpos" PP.initdotpos
     "position of pseudo target event for final rf" ;
-  parse_bool "-oneinit" PP.oneinit
-    "show a init writes pseudo-event, with all initial writes grouped" ;
   parse_pos_opt "-initpos" PP.initpos
     "position of the init writes pseudo-event" ;
-  parse_bool "-showinitwrites" PP.showinitwrites
-    "show init write events in pictures" ;
-]
-
-let legend_options = [
-(* Legend *)
-  parse_bool "-showlegend" PP.showlegend  "show legend in pictures" ;
-  parse_bool "-showkind" showkind  "show test kind in legends" ;
-  parse_bool "-shortlegend" shortlegend "show test name only in legends";
-]
-  
-let graphviz_options = [
-(* DOT contents control *)
   parse_tag "-splines"
     (fun tag -> match Splines.parse tag with
     | None -> false
@@ -367,32 +238,160 @@ let graphviz_options = [
              (sprintf "bad argument for option -edgeattr: '%s'" tag))),
   "<label,attribute,value> specify an attribute for edges labelled by label";
   parse_string_opt "-overlap" PP.overlap "specify graph overlap attribute" ;
+   parse_tag "-graph"
+    (fun tag -> match Graph.parse tag with
+    | None -> false
+    | Some t -> PP.graph := t ; true)
+     Graph.tags
+     (sprintf "select sort of graph, default %s" (Graph.pp !PP.graph)) ;
+  parse_tag "-dotmode"
+    (fun tag -> match PrettyConf.parse_dotmode tag with
+    | None -> false
+    | Some t -> PP.dotmode := t ; true)
+    PrettyConf.tags_dotmode
+    (sprintf "control text in dot figures, default %s"
+       (PrettyConf.pp_dotmode !PP.dotmode)) ;
+  parse_bool "-mono" PP.mono "monochrome figures" ;
+  parse_float "-scale" PP.scale "global scale factor for graphs" ;
+  parse_float "-xscale" PP.xscale
+    "global scale factor for graphs, x direction" ;
+  parse_float "-yscale" PP.yscale
+    "global scale factor for graphs, y direction" ;
+  parse_float "-dsiy" PP.dsiy "vertical variation for events generated by the same instruction" ;
+  parse_float "-siwidth" PP.siwidth "width occupied by events generated by the same instruction" ;
+  parse_float "-ptscale" PP.ptscale "scale factor for points" ;
+  parse_float "-boxscale" PP.ptscale "scale factor box width" ;
+  "-shift",
+  Arg.String
+    (fun tag ->
+      let fs = Misc.split_comma tag in
+      let fs =
+        List.map
+          (fun f ->
+            try float_of_string f with
+            | _ ->
+                raise
+                  (Arg.Bad
+                     (sprintf "bad argument for option -shift: '%s'" tag)))
+          fs in
+      PP.shift := Array.of_list fs),
+  "<float,...,float> add vertical space at thread start (column mode only)";
+ parse_float "-threadposy" PP.threadposy
+    "thread number position in the y direction" ;
+  parse_bool "-relabel" PP.relabel
+    "merge power/arm labels(e.g sync -> sync/dmb)" ;
+  parse_bool "-withbox" PP.withbox
+    "box together events generated by the same instruction" ;
+  parse_bool "-labelbox" PP.labelbox
+    "label instruction instruction boxes with instruction" ;
+  parse_bool "-movelabel" PP.movelabel
+    "apply various tricks to enhance edge label placement in pictures" ;
   ]
 
-let input_options = 
-(* Select input *)
-  parse_noselect
-(* Change input *)
-  @[( "-kinds",
+let setup_options = Arg.align ~limit:40 [
+   "-help", Arg.Unit (fun () -> ()), "" ;
+  "--help", Arg.Unit (fun () -> ()), "";
+  ("", Arg.Unit (fun () -> ()), "\n");
+  ("-version", Arg.Unit
+     (fun () -> printf "%s, Rev: %s\n" Version.version Version.rev ; exit 0),
+   " show version number and exit") ;
+  ("-libdir", Arg.Unit (fun () -> print_endline !Opts.libdir; exit 0),
+    " show installation directory and exit");
+  ("-set-libdir", Arg.String (fun s -> Opts.libdir := s),
+    "<path> set installation directory to <path>");
+  ("-v", Arg.Unit (fun _ -> incr verbose),
+   "<non-default> show various diagnostics, repeat to increase verbosity");
+  ("-q", Arg.Unit (fun _ -> verbose := -1; debug := Debug_herd.none),
+   "<default> do not show diagnostics");
+  ("-I", Arg.String (fun s -> includes := !includes @ [s]),
+   "<dir> add <dir> to search path");
+  parse_bool "-exit" Opts.exit_if_failed "exit in case of failure";
+  ("-conf",
+   Arg.String load_config,
+   "<name> read configuration file <name>") ;
+  ("-bell",
+   Arg.String (fun x -> Opts.bell := (Some x)),
+   "<name> read bell file <name>") ;
+  ("-macros",
+   Arg.String (fun x -> Opts.macros := (Some x)),
+   "<name> read macro (.def) file <name>") ;
+  ("-o", Arg.String
+     (fun s -> match s with
+     | "-" -> outputdir := PrettyConf.StdoutOutput
+     | _ -> outputdir := PrettyConf.Outputdir s),
+   "<dir> generated files will go into <dir>, default: do not generate") ;
+  
+  begin let module ParseView = ParseTag.Make(View) in
+  ParseView.parse_opt "-view" PP.view
+    "fork specified viewer to show output graphs" end ;
+  ( "-gv",
+    Arg.Unit (fun _ -> PP.view := Some View.GV),
+    "<non-default>  alias for -view gv") ;
+  ( "-evince",
+    Arg.Unit (fun _ -> PP.view := Some View.Evince),
+    "<non-default>  alias for -view evince") ;
+  ( "-preview",
+    Arg.Unit (fun _ -> PP.view := Some View.Preview),
+    "<non-default>  alias for -view preview") ;
+  ("-web",
+   Arg.Unit (fun () -> load_config "web.cfg")," alias for -conf web.cfg");
+  ("-c11",
+   Arg.Unit (fun () -> load_config "cpp11.cfg")," alias for -conf cpp11.cfg");
+  parse_tag "-dotcom"
+    (fun tag -> match PrettyConf.parse_dotcom tag with
+    | None -> false
+    | Some _ as t -> PP.dotcom := t ; true)
+    PrettyConf.tags_dotcom
+    "select command to translate dot, default depends on other modes " ;
+  parse_tags
+    "-debug"
+    (fun tag -> match Debug_herd.parse !debug tag with
+    | None -> false
+    | Some t -> debug := t ; true)
+    Debug_herd.tags
+    "show debug messages for specific parts" ;
+
+  (* Input *)
+  ("", Arg.Unit (fun () -> ()), "\n");
+  ("Input options", Arg.Unit (fun () -> ()), " ");
+
+  ( "-kinds",
     Arg.String (fun s -> kinds := !kinds @ [s]),
     "<name> specify kind of tests (can be repeated)");
   ( "-conds",
     Arg.String  (fun s -> conds := !conds @ [s]),
     "<name> specify conditions of tests (can be repeated)");
-  ]
+    ]
+   @ parse_noselect @ [
+  (* Output *)
+  ("", Arg.Unit (fun () -> ()), "\n");
+  ("Output options", Arg.Unit (fun () -> ()), " ");
 
+  ("-dotheader",Arg.String (fun s -> PP.dotheader := Some s),
+   "<name> insert the contents of <name> at the beginning of generated dot files");
+  parse_bool "-tikz" PP.tikz "generate dot files suitable for processing with TikZ";
+  parse_bool "-texmacros" PP.texmacros "use latex commands in output";
+  ("-suffix", Arg.String (fun s -> suffix := s),
+   "<suf> add <suf> at the end of the base of generated files");
+  parse_bool "-candidates" candidates
+  "show complete candidate count in output" ;
+  parse_bool "-outcomereads" outcomereads "include all memory reads in outcomes" ;
+  parse_bool "-hexa" PP.hexa "print numbers in hexadecimal";
+   ]
+  let help_options = Arg.align ~limit:40 [
+  ("", Arg.Unit (fun () -> ()), "\n");
+  ("-help", Arg.Unit (fun () -> ()), "show option categories");
+  ("--help", Arg.Unit (fun () -> ()), "show all options" )
+]
 (*Usage messages*)
-let usg_general = (sprintf "\n Options that change the general behaviour:")
-let usg_simulation = (sprintf "\n Options that configure the herd simulator:")
-let usg_discard_observations = (sprintf"\n Options to filter execution graphs:")
-let usg_dot = (sprintf "\n Options that control the general content of DOT images:")
-let usg_edge = (sprintf "\n Options that control the display of edges in DOT images:")
-let usg_node = (sprintf "\n Options that control what is shown in nodes and their sizes in DOT images:")
-let usg_legend = (sprintf "\n Options that control picture legends:")
-let usg_graphviz = (sprintf "\n Options that control Graphviz attributes:")
-let usg_input = (sprintf "\n Options that filter tests to run:")
+let usg_setup = (sprintf "\n Control the command environment: paths, config, input and output handling")
+let usg_runmode = (sprintf "\n Configure herd")
+let usg_filter = (sprintf"\n Select model and control which executions are filtered or allowed")
+let usg_graph_content = (sprintf "\n Control what events and edges are included in the graph")
+let usg_graph_presentation = (sprintf "\n Control graph layout, sizing, annotations and visual clarity")
+
 let usg_default = String.concat "\n"
-  ["These are the most common options of herd7:
+  ["These are common herd options:
   -variant <variant_name>       Activate variations of models
   -showevents <all|mem|noregs>  Select which events are shown in diagrams,
                                 default: noregs 
@@ -419,18 +418,16 @@ let usg_default = String.concat "\n"
                                 example: -cat catalogue/aarch64/file.cat
 
 For advanced options, use `-help <category>`:
-  Simulator behaviour:
-    general      Control the general behaviour
-    simulation   Configure the herd simulator
-    discard      Filter execution graphs
-    input        Filter tests to run
-  Controlling DOT pictures:
-    dot          Control the general content of DOT images
-    edge         Control the display of edges in DOT images
-    node         Control what is shown in nodes and their sizes in DOT images
-    legend       Control picture legends in DOT images
-    graphviz     Control Graphviz attributes
-  Help shortcuts:
+  setup               Control the command environment: paths, config, input and
+                      output handling
+  runmode             Configure herd
+  filter              Select model and control which executions are filtered or 
+                      allowed
+  graph_content       Control what events and edges are included in the 
+                      graph
+  graph_presentation  Control graph layout, sizing, annotations, and visual 
+                      clarity
+  Help commands
     -help        Show this help message
     -help all    Show all available options
     --help       Show all available options
@@ -443,34 +440,22 @@ let show_short_help () =
 
 let show_long_help () =
   print_endline "Available options:";
-  Arg.usage general_options usg_general;
-  Arg.usage simulation_options usg_simulation;
-  Arg.usage discard_observations_options usg_discard_observations;
-  Arg.usage dot_options usg_dot;
-  Arg.usage edge_options usg_edge;
-  Arg.usage node_options usg_node;
-  Arg.usage legend_options usg_legend;
-  Arg.usage graphviz_options usg_graphviz;
-  Arg.usage input_options usg_input;
+  Printf.printf "%s" (Arg.usage_string setup_options usg_setup);
+  Printf.printf "%s" (Arg.usage_string runmode_options usg_runmode);
+  Printf.printf "%s" (Arg.usage_string filter_options usg_filter);
+  Printf.printf "%s" (Arg.usage_string graph_content_options usg_graph_content);
+  Printf.printf "%s" (Arg.usage_string graph_presentation_options usg_graph_presentation);
+  Printf.printf "%s" (Arg.usage_string help_options "\n Help commands");
   exit 0
 
 let help_exists () =
   Array.exists (fun s -> s = "-help" || s = "--help") Sys.argv
 
-let help_options =[
-  ("-help", Arg.Unit show_short_help, "show option categories");
-  ("--help", Arg.Unit show_long_help, "show all options" )
-]
-
-let options = general_options @
-  simulation_options @
-  discard_observations_options @
-  dot_options @
-  edge_options @
-  node_options @
-  legend_options @
-  graphviz_options @
-  input_options @
+let options = setup_options @
+  runmode_options @
+  filter_options @
+  graph_content_options @
+  graph_presentation_options @
   help_options
 
 (* Parse command line *)
@@ -480,24 +465,16 @@ let () =
   try
     if help_exists () then
     match arg with
-    | "general" ->
-        Arg.usage general_options usg_general; exit 0
-    | "simulation" ->
-        Arg.usage simulation_options usg_simulation; exit 0
-    | "discard" ->
-        Arg.usage discard_observations_options usg_discard_observations; exit 0
-    | "dot" ->
-        Arg.usage dot_options usg_dot; exit 0  
-    | "edge" ->
-        Arg.usage edge_options usg_edge; exit 0
-    | "node" ->
-        Arg.usage node_options usg_node; exit 0
-    | "legend" ->
-        Arg.usage legend_options usg_legend; exit 0
-    | "graphviz" ->
-        Arg.usage graphviz_options usg_graphviz; exit 0
-    | "input" ->
-        Arg.usage input_options usg_input; exit 0
+    | "setup" ->
+        Printf.printf "%s" (Arg.usage_string setup_options usg_setup); exit 0
+    | "runmode" ->
+        Printf.printf "%s" (Arg.usage_string runmode_options usg_runmode); exit 0
+    | "filter" ->
+        Printf.printf "%s" (Arg.usage_string filter_options usg_filter); exit 0
+    | "graph_content" ->
+        Printf.printf "%s" (Arg.usage_string graph_content_options usg_graph_content); exit 0  
+    | "graph_presentation" ->
+        Printf.printf "%s" (Arg.usage_string graph_presentation_options usg_graph_content); exit 0
     | "all" ->
         show_long_help ();
     |  _ -> 
