@@ -155,7 +155,6 @@
 \setlist[itemize,19]{label=\textendash}
 \setlist[itemize,20]{label=\textendash}
 
-\newcommand\tododefine[1]{\hyperlink{tododefine}{\color{red}{\texttt{#1}}}} % DO NOT LINT
 \newcommand\lrmcomment[1]{}
 \newcommand\textfunc[1]{\textit{#1}}
 \newcommand\ProseParagraph[0]{\subsubsection{Prose}}
@@ -1557,6 +1556,10 @@
   the local storage elements in the type #1 yields the type #2}
 \newcommand\renamelocalsslice[0]{\hyperlink{def-renamelocalsslice}{\textfunc{rename\_locals\_slice}}}
 \newcommand\renamelocalsconstraint[0]{\hyperlink{def-renamelocalsconstraint}{\textfunc{rename\_locals\_constraint}}}
+\newcommand\renamelocalsarrayindex[0]{\hyperlink{def-renamelocalsarrayindex}{\textfunc{rename\_locals\_array\_index}}}
+\newcommand\renamelocalspattern[0]{\hyperlink{def-renamelocalspattern}{\textfunc{rename\_locals\_pattern}}}
+\newcommand\renamelocalscatcher[0]{\hyperlink{def-renamelocalscatcher}{\textfunc{rename\_locals\_catcher}}}
+
 \newcommand\stdliblocalprefix[0]{\texttt{\_\_stdlib\_local\_}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2354,6 +2357,7 @@
 \newcommand\others[0]{\texttt{others}}
 \newcommand\otherwise[0]{\texttt{otherwise}}
 \newcommand\otherwiseopt[0]{\texttt{otherwise\_opt}}
+\newcommand\otherwiseoptp[0]{\texttt{otherwise\_opt'}}
 \newcommand\otherwisep[0]{\texttt{otherwise'}}
 \newcommand\pairs[0]{\texttt{pairs}}
 \newcommand\triples[0]{\texttt{triples}}
@@ -3091,3 +3095,17 @@
 \newcommand\otherwiseconfigs[0]{\texttt{otherwise\_configs}}
 \newcommand\otherwises[0]{\texttt{otherwise\_s}}
 \newcommand\catchconfigs[0]{\texttt{catch\_configs}}
+\newcommand\paramname[0]{\texttt{param\_name}}
+\newcommand\elemty[0]{\texttt{elem\_ty}}
+\newcommand\newindex[0]{\texttt{new\_index}}
+\newcommand\newelength[0]{\texttt{new\_e\_length}}
+\newcommand\pl[0]{\texttt{pl}}
+\newcommand\newpl[0]{\texttt{newpl}}
+\newcommand\vpe[0]{\texttt{p\_e}}
+\newcommand\vnewpe[0]{\texttt{new\_p\_e}}
+\newcommand\optexnname[0]{\texttt{opt\_exn\_name}}
+\newcommand\optexnnamep[0]{\texttt{opt\_exn\_name'}}
+\newcommand\whenstmt[0]{\texttt{when\_stmt}}
+\newcommand\whenstmtp[0]{\texttt{when\_stmt'}}
+\newcommand\exnty[0]{\texttt{exn\_ty}}
+\newcommand\exntyp[0]{\texttt{exn\_ty'}}

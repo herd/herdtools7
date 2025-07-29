@@ -1675,6 +1675,7 @@ removed
 removes
 removing
 rename
+renamed
 renames
 renaming
 repeat
