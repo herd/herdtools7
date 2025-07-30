@@ -28,6 +28,7 @@ module type S = sig
   val applies_atom_rmw : rmw -> rmw_atom option -> rmw_atom option -> bool
   val show_rmw_reg : rmw -> bool
   val compute_rmw : rmw  -> int (* old *) -> int (* operand *) -> int
+  val valid_rmw : rmw list -> bool
   (* NOTE To ensure unwanted value collision,
     the inital value of a `rmw` operation, if it appears in a cycle,
     returned by `init_rmw`, MUST work together with
