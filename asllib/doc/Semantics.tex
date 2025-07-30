@@ -2,12 +2,12 @@
 
 The dynamic semantics of ASL define all valid behaviors of a given ASL specification.
 More precisely, an ASL specification is first parsed into an \emph{abstract syntax tree},
-or AST, for short. Second, a typechecker analyzes the \emph{untyped AST} to determine whether it
-is well-typed and, if successful, returns a \emph{static environment} and a \emph{typed AST}.
+or AST, for short. Second, a typechecker analyzes the \emph{\untypedast} to determine whether it
+is well-typed and, if successful, returns a \emph{static environment} and a \emph{\typedast}.
 Otherwise, it returns a \typingerrorterm{}.
 
-Tools such as interpreters, Verilog simulators, and verifiers can operate over the typed AST, based on the definition
-of the semantics in this reference, to test and analyze a given specification.
+Tools such as interpreters, Verilog simulators, and verifiers can operate over the \typedast,
+based on the definition of the semantics in this reference, to test and analyze a given specification.
 
 We note that the dynamic semantics is only used to define the set of valid behaviors
 of a given specification without assigning any other quantification, such as the time
@@ -19,7 +19,19 @@ The ASL dynamic semantics is defined in terms of its AST,
 and as a consequence familiarity with the AST is required to understand the semantics.
 The few components of the type system needed to understand the ASL dynamic semantics are explained in context.
 The mathematical background needed to understand the mathematical formalization
-of the ASL dynamic semantics appears in \chapref{FormalSystem} and \secref{semanticsbuildingblocks}.
+of the ASL dynamic semantics appears in \chapref{FormalSystem}.
+
+\ChapterOutline
+\begin{itemize}
+  \item \secref{MeaningfulASLSpecifications} explains which ASL specifications that have a dynamic semantics
+        assigned to them;
+  \item \secref{Sequential Semantics and Dynamic Semantics} explains how this reference defines both the
+        sequential semantics and concurrent semantics for ASL;
+  \item \secref{Dynamic Semantics Configurations} defines the configurations used by the dynamic semantics;
+  \item \secref{nativevalues} defines the concept of \nativevalues{};
+  \item \secref{Semantic Evaluation} explains how the dynamic semantics rules are used to evaluate specifications; and
+  \item \secref{Semantics of Diverging Specifications} defines the semantics of diverging specifications.
+\end{itemize}
 
 \section{When Do ASL Specifications Have Meaning\label{sec:MeaningfulASLSpecifications}}
 The ASL dynamic semantics defined here assign meaning only to \emph{well-typed specifications}.
@@ -40,14 +52,14 @@ infinite.
 the ASL dynamic semantics rules to assign meaning to both terminating specifications
 and diverging specifications.
 
-\section{Basic Semantic Concepts}
+\section{Sequential Semantics and Dynamic Semantics\label{sec:Sequential Semantics and Dynamic Semantics}}
 The ASL dynamic semantics are given by relations between
 \hyperlink{def-configuration}{\emph{semantic configurations}}~\cite{SemanticsWithApplicationsBook}.
 We refer to relations between semantic configurations as \emph{semantic relations}.
 Semantic configurations encapsulate information needed to transition into other semantic configurations, such as:
 \begin{itemize}
   \item a \emph{dynamic environment}, which binds variables to values;
-  \item the typed AST node that needs to be evaluated;
+  \item the \typedast{} node that needs to be evaluated;
   \item a \emph{concurrent execution graph}, as per a given memory model; and
   \item values resulting from evaluating expressions.
 \end{itemize}
@@ -75,11 +87,9 @@ of execution; notice that ASL does not contain any concurrency constructs.
 Technically, the sequential semantics are defined by omitting the concurrent execution graph components
 from all semantic configurations.
 
-\section{Semantics Building Blocks\label{sec:semanticsbuildingblocks}}
-This section defines the mathematical types over which our semantics are defined.
+\section{Dynamic Semantics Configurations\label{sec:Dynamic Semantics Configurations}}
+This section defines the mathematical types over which our dynamic semantics are defined.
 An \hyperlink{eval-example}{example} of semantic evaluation appears at the end.
-
-\subsection{Semantic Configurations\label{sec:SemanticConfigurations}}
 
 Semantic configurations express intermediate states related by \emph{semantic relations}.
 %
@@ -93,7 +103,7 @@ Semantic configurations wrap together elements such as environments and AST node
 and associate them with a \emph{configuration domain}. Input semantic configuration domains
 determine the semantic relation they pertain to, while output semantic configuration
 domains distinguish between conceptually different kinds of outputs, for example
-ones where an exception was raised, ones when a dynamic error occurred, etc.
+ones where an exception was raised, ones when a \dynamicerrorterm{} occurred, etc.
 
 The rest of this section defines the components comprising semantic configurations:
 \begin{itemize}
@@ -327,12 +337,11 @@ which we refer to as \concurrentnativevalues.
 
 \subsection{Kinds of Semantic Configurations\label{sec:KindsOfSemanticConfigurations}}
 
-Recall that the ASL dynamic semantics define a relation between input semantic configurations and output semantic configurations
-(\secref{SemanticConfigurations}).
+Recall that the ASL dynamic semantics define a relation between input semantic configurations and output semantic configurations.
 Input semantic configuration domains are unique to the semantic relation that employs them.
 For that reason, we name semantic relations by the name of the corresponding configuration domain of the input semantic configuration.
-For example, the semantic relation that employs input semantic configurations with the domain $\texttt{eval\_expr}$
-is named $\texttt{eval\_expr}$.
+For example, the semantic relation that employs input semantic configurations with the domain $\evalexprname$
+is named $\evalexprname$.
 %
 We will often use the prefix \texttt{eval} for semantic relations with the intuition being that their input semantic configurations
 should be semantically evaluated, yielding an output semantic configuration.
@@ -369,7 +378,7 @@ ASL dynamic semantics mainly utilize the following types of output semantic conf
   an identifier to which the Read Effect is attributed, and an associated type.
   The type $\valuereadfrom(\vals,\Identifiers)$ is a semantic configuration nested inside an exception semantic configuration.
   The ASL dynamic semantics propagate these \emph{exceptional semantic configurations} to the nearest catch clause that matches
-  them, and otherwise they are caught at the top-level and reported as errors (see dynamic errors below).
+  them, and otherwise they are caught at the top-level and reported as errors (see \dynamicerrorsterm{} below).
 
   \hypertarget{def-returning}{}
   \item[Returned Values.] Semantic configurations in $\Returning((\vals^* \times \XGraphs), \envs)$
@@ -383,8 +392,8 @@ ASL dynamic semantics mainly utilize the following types of output semantic conf
   of the subprogram currently being evaluated.
 
   \hypertarget{def-error}{}
-  \item[Dynamic Errors.] Semantic configurations in $\Error(\Strings)$
-  represent dynamic errors (for example, division by zero).
+  \item[Dynamic Errors.] Semantic configurations in $\DynamicError(\Strings)$
+  represent \dynamicerrorsterm{} (for example, division by zero).
   The ASL dynamic semantics are set up such that when these \emph{error semantic configurations} appear,
   the evaluation of the entire specification terminates by outputting them.
 
@@ -423,7 +432,7 @@ We define the following shorthand notations for types of output semantic configu
     \TThrowing        & \triangleq & \Throwing(\langle\vals \times \ty\rangle \times \XGraphs, \envs) &\\
     \TContinuing      & \triangleq & \Continuing(\XGraphs, \envs) &\\
     \TReturning       & \triangleq & \Returning((\vals^* \times \XGraphs), \envs) &\\
-    \TDynError        & \triangleq & \Error(\Strings) &\\
+    \TDynError        & \triangleq & \DynamicError(\Strings) &\\
     \TDiverging       & \triangleq & \{ \Diverging \}&\\
   \end{array}
 \]
@@ -444,7 +453,7 @@ appearing are \hyperlink{def-freshvariables}{fresh}:
 \hypertarget{def-throwingconfig}{}
 \item $\ThrowingConfig \triangleq \Throwing((\vv, \vg), \newenv)$.
       \hypertarget{def-errorconfig}{}
-\item $\DynErrorConfig \triangleq \Error(\vs)$.
+\item $\DynErrorConfig \triangleq \DynamicError(\vs)$.
       \hypertarget{def-returningconfig}{}
 \item $\ReturningConfig \triangleq \Returning((\vvs,\newg), \newenv)$
       is an early return semantic configuration.
@@ -474,7 +483,7 @@ $\graphof{C}$, and the environment of the semantic configuration, $\environof{C}
   \Throwing((\valuereadfrom(\vx,\vv),\vg), \env) & \vg & \env\\
   \Returning(([\vv_{1..k}],\vg), \env) & \vg & \env\\
   \Continuing(\vg, \env) & \vg & \env\\
-  \Error(\vs) & \text{undefined} & \text{undefined}\\
+  \DynamicError(\vs) & \text{undefined} & \text{undefined}\\
   \Diverging & \text{undefined} & \text{undefined}\\
 \end{array}
 \]
@@ -496,7 +505,7 @@ like $C$ where the graph component is substituted with $\vgp$:
   \Throwing((\valuereadfrom(\vx,\vv),\vg), \env) & \Throwing((\valuereadfrom(\vx,\vv),\vgp), \env)\\
   \Returning((i=1..k: \vv_i,\vg), \env) & \Returning((i=1..k: \vv_i,\vgp), \env)\\
   \Continuing(\vg, \env) & \Continuing(\vgp, \env)\\
-  \Error(\vs) & \text{undefined}\\
+  \DynamicError(\vs) & \text{undefined}\\
   \Diverging & \text{undefined} \\
 \end{array}
 \]
@@ -518,12 +527,12 @@ like $C$ where the environment component, if one exists, is substituted with $\e
   \Throwing((\valuereadfrom(\vx,\vv),\vg), \env) & \Throwing((\valuereadfrom(\vx,\vv),\vg), \envp)\\
   \Returning((i=1..k: \vv_i,\vg), \env) & \Returning((i=1..k: \vv_i,\vg), \envp)\\
   \Continuing(\vg, \env) & \Continuing(\vg, \envp)\\
-  \Error(\vs) & \text{undefined}\\
+  \DynamicError(\vs) & \text{undefined}\\
   \Diverging & \text{undefined} \\
 \end{array}
 \]
 
-\section{Semantic Evaluation}
+\section{Semantic Evaluation\label{sec:Semantic Evaluation}}
 \hypertarget{def-evalrel}{}
 The semantics of ASL is given by the relation\footnote{The reason that a relation, rather than a function, is used is due to
 the non-determinism inherent in the \ARBITRARY{} expression.}
@@ -551,7 +560,6 @@ Otherwise, for every input semantic configuration there is at least one rule tha
 
 \hypertarget{eval-example}{}
 \subsubsection{Evaluation Example}
-\newcommand\elint[1]{\ELiteral(\lint(#1))}
 The following example shows how to utilize the rules for expression literals and binary operator expressions
 to derive a transition from an input semantic configuration with the expression $(1+2)*(4+5)$,
 given by the AST

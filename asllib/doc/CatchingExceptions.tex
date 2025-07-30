@@ -1,5 +1,16 @@
 \chapter{Catching Exceptions\label{chap:CatchingExceptions}}
 
+Catchers allow processing thrown exceptions.
+ASL allows specifying a list \emph{catch clauses}.
+Each catch clause, which starts with the \Twhen{} keyword,
+specifies a condition that specifies which exception
+should be caught, based on its type, and a statement to be executed
+when an exception is caught.
+Exception catchers also allow specifying an \Totherwise{} clause
+to allow evaluating a statement for exceptions that are not caught
+by an catch clause.
+
+\ExampleDef{Exception Catchers}
 \listingref{CatchingExceptions} shows examples of catching exceptions.
 \ASLListing{Catching exceptions}{CatchingExceptions}{\definitiontests/CatchingExceptions.asl}
 
@@ -8,16 +19,32 @@ The exception \verb|BAD_OPCODE| thrown in \verb|decode_instruction| is caught in
 subprogram \verb|top| where the catcher proceeds to call \verb|handle_exception|.
 \ASLListing{Catching exceptions}{CatchingExceptions2}{\definitiontests/CatchingExceptions2.asl}
 
-Exception catchers are grammatically derived from $\Ncatcher$ and represented
-in the \untypedast{} by $\catcher$.
+\ChapterOutline
+\begin{itemize}
+  \item \FormalRelationsRef{Exception Catchers} defines the formal relations for exception catchers;
+  \item \SyntaxRef{Exception Catchers} defines the syntax of exception catchers;
+  \item \AbstractSyntaxRef{Exception Catchers} defines the abstract syntax of exception catchers;
+  \item \TypeRulesRef{Exception Catchers} defines the type rules for exception catchers;
+  \item \SemanticsRulesRef{Exception Catchers} defines the dynamic semantics of exception catchers.
+\end{itemize}
 
-\section{Syntax}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\FormalRelationsDef{Exception Catchers}
+\paragraph{Syntax:} Exception catchers are grammatically derived from $\Ncatcher$.
+\paragraph{Abstract Syntax:} Exception catchers are derived in the abstract syntax by $\catcher$
+  and generated using $\buildcatcher$.
+\paragraph{Typing:} Exception catchers are annotated by $\annotatecatchername$.
+\paragraph{Semantics:} Exception catchers are evaluated via $\evalcatchersname$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\SyntaxDef{Exception Catchers}
 \begin{flalign*}
 \Ncatcher \derives      \ & \Twhen \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
           |\              & \Twhen \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
 \end{flalign*}
 
-\section{Abstract Syntax}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\AbstractSyntaxDef{Exception Catchers}
 \begin{flalign*}
 \catcher \derives\ & (\overtext{\identifier?}{exception to match}, \overtext{\ty}{guard type}, \overtext{\stmt}{statement to execute on match}) &
 \end{flalign*}
@@ -54,7 +81,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\section{Typing}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\TypeRulesDef{Exception Catchers}
 \hypertarget{def-annotatecatcher}{}
 The function
 \[
@@ -143,7 +171,8 @@ and a catch clause for the named exception value for the exception type \verb|Ex
 \CodeSubsection{\CatcherBegin}{\CatcherEnd}{../Typing.ml}
 \identr{SDJK} \identr{WVXS} \identi{FCGK}
 
-\section{Semantics}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\SemanticsRulesDef{Exception Catchers}
 The semantic relation for evaluating catchers employs an argument
 that is an output configuration. This argument corresponds to the result
 of evaluating a \trystatementterm{} and its type is defined as follows:
@@ -201,7 +230,7 @@ environment to evaluate \texttt{print(x, g)}, resulting in the output \texttt{2 
 \SemanticsRuleDef{Catch}
 \ExampleDef{Evaluation of a Catch}
 The specification in \listingref{semantics-catch} terminates successfully.
-That is, no dynamic error occurs.
+That is, no \dynamicerrorterm{} occurs.
 \ASLListing{Catching an exception}{semantics-catch}{\semanticstests/SemanticsRule.Catch.asl}
 
 \ProseParagraph

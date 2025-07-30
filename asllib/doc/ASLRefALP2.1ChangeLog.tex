@@ -33,7 +33,7 @@ Implemented the following functions:
 \end{itemize}
 
 \paragraph{ASL-767: \SemanticsRuleRef{EArbitrary}}
-Produced dynamic error when attempting to construct an arbitrary value of an empty type.
+Produced \dynamicerrorterm{} when attempting to construct an arbitrary value of an empty type.
 For example:
 \begin{verbatim}
 let x = ARBITRARY: integer {1..0};

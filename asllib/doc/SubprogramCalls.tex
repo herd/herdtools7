@@ -1,32 +1,39 @@
 \chapter{Subprogram Calls\label{chap:SubprogramCalls}}
 
 Subprograms can be called via an expression or as a statement.
+Subprogram calls include invocations of getters and setters.
 
-\section{Recursion}
+\ExampleDef{Recursive Subprogram Calls}
 Subprograms can call each other recursively.
 For example, in \listingref{MutualRecursion},
 the longest possible call path is \verb|foo->bar->foo->bar->foo->bar-foo->bar|.
 The final call to \verb|bar| is a \dynamicerrorterm.
 \ASLListing{Mutual recursion}{MutualRecursion}{\definitiontests/MutualRecursion.bad.asl}
 
-\section{Invoking Getters and Setters}
-
+\ExampleDef{Invoking Getters and Setters}
 \listingref{AccessorDeclaration} shows an example of declaring an accessor \verb|X|
-and of invoking its getter and its setter.
+and then invoking its getter and its setter.
 
-\section{Chapter Outline}
-This chapter is concerned with subprogram calls, which appear both in expressions
-and in statements. Specifically:
+\ChapterOutline
 \begin{itemize}
-\item how subprogram calls are represented in syntax (\secref{SubprogramCallsSyntax});
-\item how subprogram calls are represented in abstract syntax (\secref{SubprogramCallsAbstractSyntax});
-\item how subprogram calls are typed (\secref{SubprogramCallsTyping}),
-      including a discussion on parameter elision (\secref{ParameterElision}); and
-\item what is the dynamic semantics of subprogram calls (\secref{SubprogramCallsSemantics}).
+  \item \FormalRelationsRef{Subprogram Calls} defines the formal relations for subprogram calls;
+  \item \SyntaxRef{Subprogram Calls} defines the syntax of subprogram calls;
+  \item \AbstractSyntaxRef{Subprogram Calls} defines the abstract syntax of subprogram calls;
+  \item \TypeRulesRef{Subprogram Calls} defines the type rules for subprogram calls,
+        and includes a discussion on parameter elision (\secref{ParameterElision}); and
+  \item \SemanticsRulesRef{Subprogram Calls} defines the dynamic semantics of subprogram calls.
 \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Syntax\label{sec:SubprogramCallsSyntax}}
+\FormalRelationsDef{Subprogram Calls}
+\paragraph{Syntax:} Subprogram calls are grammatically derived from $\Nexpr$ and $\Nstmt$.
+\paragraph{Abstract Syntax:} Subprogram calls are derived in the abstract syntax by
+  $\ECall$ and $\SCall$;
+\paragraph{Typing:} Subprogram calls are annotated by $\annotatecall$;
+\paragraph{Semantics:} Subprogram calls are evaluated by $\evalcall$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\SyntaxDef{Subprogram Calls}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
 \Nexpr \derives\  & \Tidentifier \parsesep \PlistZero{\Nexpr} &\\
@@ -34,7 +41,7 @@ and in statements. Specifically:
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Abstract Syntax\label{sec:SubprogramCallsAbstractSyntax}}
+\AbstractSyntaxDef{Subprogram Calls}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
 \expr \derives\ & \ECall(\call) &\\
@@ -42,7 +49,7 @@ and in statements. Specifically:
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Typing\label{sec:SubprogramCallsTyping}}
+\TypeRulesDef{Subprogram Calls}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 The rule for typing calls is \TypingRuleRef{AnnotateCall}.
 
@@ -1777,7 +1784,7 @@ as an empty parameter list for a standard library function must be entirely omit
 \ASLListing{Erroneous parameter omission}{ParameterOmission-bad}{\definitiontests/ParameterOmission.bad.asl}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Semantics\label{sec:SubprogramCallsSemantics}}
+\SemanticsRulesDef{Subprogram Calls}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 The rule for evaluating subprogram calls is \SemanticsRuleRef{Call}.
 
@@ -2013,7 +2020,7 @@ The helper relation
 \]
 checks whether the value in the optional expression $\velimitopt$ has reached the limit associated with $\name$
 in $\env$, yielding the execution graph resulting from evaluating the optional expression in $\vg$.
-Otherwise, the result is a dynamic error indicating that the recursion limit has been reached.
+Otherwise, the result is a \DynamicErrorConfigurationTerm{} indicating that the recursion limit has been reached.
 
 \ExampleDef{Checking the Recursion Limit of a Subprogram Call}
 In \listingref{CheckRecurseLimit-nolimit}, the function \verb|factorial| is specified without a limit expression,

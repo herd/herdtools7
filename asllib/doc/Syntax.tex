@@ -20,17 +20,17 @@ That is, given a list of token, returned from $\aslscan$, it is possible to appl
 an LR(1) parser to obtain a parse tree if the list of tokens is in the formal language
 of the grammar and return a parse error otherwise.
 
-The outline of this chapter is as follows:
+\ChapterOutline
 \begin{itemize}
-  \item Definition of inlined derivations (see \secref{InlinedDerivations})
-  \item Definition of parametric productions (see \secref{ParametricProductions})
-  \item ASL Parametric Productions (see \secref{ASLParametricProductions})
-  \item Definition of the ASL grammar (see \secref{ASLGrammar})
-  \item Definition of parse trees (see \secref{ParseTrees})
-  \item Definition of priority and associativity of operators (see \secref{PriorityAndAssociativity})
+  \item \secref{InlinedDerivations} defines \emph{inlined derivations};
+  \item \secref{ParametricProductions} defines \emph{parametric productions};
+  \item \secref{ASLParametricProductions} introduces the parametric productions used for the ASL grammar;
+  \item \secref{ASLGrammar} defines the ASL grammar;
+  \item \secref{ParseTrees} defines parse trees; and
+  \item \secref{PriorityAndAssociativity} defines the priority and associativity of operators.
 \end{itemize}
 
-\section{Inlined Derivations \label{sec:InlinedDerivations}}
+\section{Inlined Derivations\label{sec:InlinedDerivations}}
 Context-free grammars consist of a list of \emph{derivations} $N \derives S^*$
 where $N$ is a non-terminal symbol and $S$ is a list of non-terminal symbols and terminal symbols,
 which correspond to tokens.
@@ -81,13 +81,12 @@ By defining the derivations of $\Nbinop$ as inlined, we achieve the same effect 
 Barring mutually-recursive derivations involving inlined derivations, it is possible to expand
 all inlined derivations to obtain a context-free grammar without any inlined derivations.
 
-\section{Parametric Productions \label{sec:ParametricProductions}}
+\section{Parametric Productions\label{sec:ParametricProductions}}
 A parametric production has the form
 $N(p_{1..m}) \derives R_1 \;|\; \ldots \;|\; R_k$
 where $p_{1..m}$ are place holders for grammar symbols and may appear in any of the alternatives $R_{1..k}$.
 We refer to $N(p_{1..m})$ as a \emph{parametric non-terminal}.
 
-\newcommand\uniquesymb[1]{\textsf{unique}(#1)}
 Given sentences $S_{1..m}$, we can expand $N(p_{1..m}) \derives R_1 \;|\; \ldots \;|\; R_k$
 by creating a unique symbol for $N(p_{1..m})$, denoted as $\uniquesymb{N(S_{1..m})}$, defining the
 derivations
@@ -110,7 +109,6 @@ It is defined via the parametric production for possibly-empty lists:
 \maybeemptylist{x}   \derives\ & \emptysentence \;|\; x \parsesep \maybeemptylist{x} &\\
 \end{flalign*}
 
-\newcommand\Ndecllist[0]{\nonterminal{decl\_list}}
 Expanding $\maybeemptylist{\Ndecl}$ produces the following derivations for a new unique symbol.
 That is, a symbol that does not appear anywhere else in the grammar.
 In this example we will choose $\uniquesymb{\maybeemptylist{\Ndecl}}$ to be the symbol $\Ndecllist$.
@@ -126,7 +124,7 @@ which results in the following derivation replacing the original derivation for 
 
 Expanding all instances of parametric productions results in a grammar without any parametric productions.
 
-\section{ASL Parametric Productions \label{sec:ASLParametricProductions}}
+\section{ASL Parametric Productions\label{sec:ASLParametricProductions}}
 We define the following parametric productions for various types of lists and optional productions.
 
 \paragraph{Optional Symbol}
@@ -662,7 +660,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon
 \end{flalign*}
 
-\section{Parse Trees \label{sec:ParseTrees}}
+\section{Parse Trees\label{sec:ParseTrees}}
 We now define \emph{parse trees} for the ASL expanded grammar. Those are later used for build Abstract Syntax Trees.
 
 \begin{definition}[Parse Trees]
@@ -725,7 +723,7 @@ The \emph{language of a grammar} $G$ is defined as follows:
 \Lang(G) = \{\yield(n) \;|\; n \text{ is a well-formed parse tree for }G\} \enspace.
 \]
 
-\section{Priority and Associativity \label{sec:PriorityAndAssociativity}}
+\section{Priority and Associativity\label{sec:PriorityAndAssociativity}}
 A context-free grammar $G$ is \emph{ambiguous} if there can be more than one parse tree for a given list of tokens
 $\ts \in \Lang(G)$.
 Indeed the expanded ASL grammar is ambiguous, for example, due to its definition of binary operation expressions.

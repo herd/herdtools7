@@ -1,75 +1,35 @@
 \chapter{Type System Utility Rules\label{chap:TypeSystemUtilityRules}}
 
-\subsection{Checked Transitions}
-\hypertarget{def-checktrans}{}
-We define the following rules to allow us asserting that a condition holds,
-returning a \typingerrorterm{} otherwise:
-\begin{mathpar}
-\inferrule[check\_trans\_true]{}{ \checktrans{\True}{\vcode} \checktransarrow \True }
-\end{mathpar}
+This chapter defines functions and relations used by the type system.
 
-\begin{mathpar}
-\inferrule[check\_trans\_false]{}{ \checktrans{\False}{\vcode} \checktransarrow \TypeErrorVal{\vcode} }
-\end{mathpar}
-
-\subsection{Converting a List of Pairs to a Map \label{sec:PairsToMap}}
-\hypertarget{def-pairstomap}{}
-The parametric function
-\[
-  \pairstomap(\overname{(\identifier\times T)^*}{\pairs}) \aslto \overname{(\identifier\partialto T)}{f} \cup \TTypeError
-\]
-converts a list of pairs --- $\pairs$ --- where each pair consists of an identifier and a value
-of type $T$ into a function mapping each identifier to its respective value in the list.
-If a duplicate identifier exists in $\pairs$ then a \typingerrorterm{} is returned.
-
-\ProseParagraph
-\OneApplies
+\ChapterOutline
 \begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item $\pairs$ is empty;
-    \item $f$ is the empty function.
-  \end{itemize}
-
-  \item \AllApplyCase{error}
-  \begin{itemize}
-    \item there exist two different positions in the list where the identifier is the same;
-    \item the result is a \typingerrorterm{} indicating the existence of a duplicate identifier.
-  \end{itemize}
-
-  \item \AllApplyCase{okay}
-  \begin{itemize}
-    \item all identifiers occurring in the list are unique;
-    \item $f$ is a function that associates to each identifier the value appearing with it in $\pairs$.
-  \end{itemize}
+  \item \TypingRuleRef{CheckNoDuplicates} enables checking for the absence of duplicate elements in a list;
+  \item \TypingRuleRef{Sort} allows sorting a list;
+  \item \TypingRuleRef{FindBitfieldOpt} a recursive lookup for a bitfield in a list of bitfields;
+  \item \TypingRuleRef{TypeOfArrayLength} returns the type associated with an array index;
+  \item \TypingRuleRef{AssocOpt} looks for the value associated with a key in a list of key-values pairs;
+  \item \TypingRuleRef{WithEmptyLocal} constructs a static environment out of a global static environment;
+  \item \TypingRuleRef{CheckVarNotInEnv} ensures that a variable is not in the static environment;
+  \item \TypingRuleRef{CheckVarNotInGEnv} ensures that a variable is not in the global static environment;
+  \item \TypingRuleRef{AddLocal} updates a static environment with a local storage element;
+  \item \TypingRuleRef{IsUndefined} checks whether an identifier is defined in a static environment;
+  \item \TypingRuleRef{IsGlobalUndefined} tests whether an identifier is defined in the global static environment;
+  \item \TypingRuleRef{IsLocalUndefined} tests whether an identifier is defined in the local static environment;
+  \item \TypingRuleRef{LookupConstant} looks up a static environment for a global constant;
+  \item \TypingRuleRef{AddGlobalConstant} updates a static environment for a global storage element;
+  \item \TypingRuleRef{LookupImmutableExpr} looks up the initializing expression associated with an immutable storage element;
+  \item \TypingRuleRef{AddGlobalImmutableExpr} updates a global static environment by associating a global immutable storage element
+        with its initializing expressions;
+  \item \TypingRuleRef{AddLocalImmutableExpr} updates a local static environment by associating a local immutable storage element
+        with its initializing expressions;
+  \item \TypingRuleRef{ShouldRememberImmutableExpression} tests whether to associate an immutable storage element
+        with its initializing expressions based on its \sideeffectdescriptorsetsterm;
+  \item \TypingRuleRef{AddImmutableExpr} conditionally updates a static environment by associating
+        a local immutable storage element with its initializing expressions;
+  \item \TypingRuleRef{AddSubprogram} updates a static environment with a subprogram;
+  \item \TypingRuleRef{AddType} updates a static environment with a new type.
 \end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[empty]{}{ \pairstomap(\emptylist) \typearrow \emptyfunc }
-\and
-\inferrule[error]{
-  i,j \in 1..k\\
-  i \neq j\\
-  \id_i = \id_j
-}{
-  \pairstomap([i=1..k: (\id_i,t_i)]) \typearrow \TypeErrorVal{\IdentifierAlreadyDeclared}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[okay]{
-  \forall i,j \in 1..k. \id_i \neq \id_j\\
-  {
-  f \eqdef \lambda \id.\ \begin{cases}
-    t_i & \text{ if }i\in1..k \land \id = \id_i\\
-    \bot & \text{ otherwise}
-  \end{cases}
-  }
-}{
-  \pairstomap([i=1..k: (\id_i,t_i)]) \typearrow f
-}
-\end{mathpar}
 
 \TypingRuleDef{CheckNoDuplicates}
 \hypertarget{def-checknoduplicates}{}

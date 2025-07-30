@@ -64,6 +64,7 @@ def extract_labels_from_line(line: str, left_delim: str, labels: set[str]):
         labels.add(label)
         label_pos = right_brace_pos + 1
 
+
 def check_unused_latex_macros(latex_files: list[str]):
     r"""
     Checks whether there are LaTeX macros that are defined but never used.
@@ -156,6 +157,7 @@ def check_undefined_references_and_multiply_defined_labels():
         num_errors += 1
     return num_errors
 
+
 def check_repeated_lines(filename: str) -> int:
     r"""
     Checks whether `file` contains the same line appearing twice in a row.
@@ -173,10 +175,17 @@ def check_repeated_lines(filename: str) -> int:
             inside_console_outout = True
         if r"CONSOLE_END" in line:
             inside_console_outout = False
-        if not inside_console_outout and line and line == last_line and line.strip() and line.strip() != "}":
+        if (
+            not inside_console_outout
+            and line
+            and line == last_line
+            and line.strip()
+            and line.strip() != "}"
+        ):
             print(f"./{filename} line {line_number}: repeated twice")
         last_line = line
     return num_errors
+
 
 def check_repeated_words(filename: str) -> int:
     r"""
@@ -373,8 +382,10 @@ def check_rule_prose_formally_structure(rule_block: RuleBlock) -> List[str]:
     by a single Formally paragraph, returning a list of error messages
     for all errors found.
     """
-    if not rule_block.type in [RuleBlock.TYPING_RULE, RuleBlock.SEMANTICS_RULE]:
-        return []
+    rule_must_have_prose_formally_paragraphs = rule_block.type in [
+        RuleBlock.TYPING_RULE,
+        RuleBlock.SEMANTICS_RULE,
+    ]
     num_prose_paragraphs = 0
     num_formally_paragraphs = 0
     block_errors: List[str] = []
@@ -394,11 +405,11 @@ def check_rule_prose_formally_structure(rule_block: RuleBlock) -> List[str]:
                 block_errors.append(
                     "encountered a Prose paragraph before Formally paragraph"
                 )
-    if num_prose_paragraphs == 0:
+    if rule_must_have_prose_formally_paragraphs and num_prose_paragraphs == 0:
         block_errors.append("missing a Prose paragraph")
     if num_prose_paragraphs > 1:
         block_errors.append("encountered more than one Prose paragraph")
-    if num_formally_paragraphs == 0:
+    if rule_must_have_prose_formally_paragraphs and num_formally_paragraphs == 0:
         block_errors.append("missing a Formally paragraph")
     if num_formally_paragraphs > 1:
         block_errors.append("encountered more than one Formally paragraph")
@@ -410,9 +421,6 @@ def check_rule_case_consistency(rule_block: RuleBlock) -> List[str]:
     Checks that the rule cases appearing in the Prose paragraph and Formally
     paragraph are equal and each paragraph does not contain duplicate cases.
     """
-    if not rule_block.type in [RuleBlock.TYPING_RULE, RuleBlock.SEMANTICS_RULE]:
-        return []
-
     prose_cases: Set[str] = set()
     formally_cases: Set[str] = set()
     prose_cases_pattern = re.compile(r".*\\AllApplyCase{(.*?)}")
@@ -447,7 +455,12 @@ def check_rule_case_consistency(rule_block: RuleBlock) -> List[str]:
     cases_only_in_formally = formally_cases.difference(prose_cases)
     if cases_only_in_prose:
         error_messages.append(f"cases only in Prose paragraph: {cases_only_in_prose}")
-    if cases_only_in_formally:
+    # AST rules can have inference rules but no prose paragraph.
+    must_have_prose_paragraph = rule_block.type in [
+        RuleBlock.TYPING_RULE,
+        RuleBlock.SEMANTICS_RULE,
+    ]
+    if must_have_prose_paragraph and cases_only_in_formally:
         error_messages.append(
             f"cases only in Formally paragraph: {cases_only_in_formally}"
         )
@@ -493,18 +506,6 @@ def check_rules(filename: str) -> int:
     Checks the AST/Typing/Semantics/Guide/Convention rules in 'filename'
     and returns the total number of errors.
     """
-    # Treat existing issues as warnings and new issues as errors.
-    file_to_num_expected_errors = {
-        "SymbolicSubsumptionTesting.tex" : 14
-    }
-    total_expected = 0
-    for num_expected in file_to_num_expected_errors.values():
-        total_expected += num_expected
-    if False and total_expected > 0:
-        print(f"#expected errors is {total_expected}")
-
-    max_error_for_filename = file_to_num_expected_errors.get(filename, 0)
-
     checks = [
         check_rule_prose_formally_structure,
         check_rule_case_consistency,
@@ -523,17 +524,11 @@ def check_rules(filename: str) -> int:
         if error_messages:
             error_messages_str = ", ".join(error_messages)
             num_errors += len(error_messages)
-            if num_errors > max_error_for_filename:
-                print(f"ERROR! {rule_block.filename} {rule_block.str()}: {error_messages_str}")
-            else:
-                print(f"WARNING! {rule_block.filename} {rule_block.str()}: {error_messages_str}")
+            print(
+                f"ERROR! {rule_block.filename} {rule_block.str()}: {error_messages_str}"
+            )
 
-    if num_errors > max_error_for_filename:
-        return num_errors
-    else:
-        if num_errors < max_error_for_filename:
-            print(f"WARNING! {rule_block.filename}: update number of expected errors to {num_errors}")
-        return 0
+    return num_errors
 
 
 def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:

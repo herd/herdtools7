@@ -198,3 +198,10 @@ Examples used in ASL High-level Definition:
   ASL Type error: a subtype of integer {1..10} was expected,
     provided integer {0..20}.
   [1]
+  $ aslref --no-exec PrimitiveOperations.asl
+  $ aslref Types.asl
+  $ aslref Expressions.asl
+  $ aslref Patterns.asl
+  $ aslref AssignableExpressions.asl
+  $ aslref Statements.asl
+  $ aslref --no-exec GlobalStorageDeclarations.asl
