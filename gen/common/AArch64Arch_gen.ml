@@ -1089,6 +1089,13 @@ let compute_rmw r ~old ~operand =
     end
     | LrSc | Swp | Cas  -> operand
     | AllAmo -> assert false
+
+(* Rule out `rmw_list` that contains the same type of atomic operation for a location. *)
+let is_valid_rmw rmw_list =
+  let atomic_st_list = List.filter_map ( function
+    | StOp op -> Some ( op )
+    | _ -> None ) rmw_list in
+  List.length atomic_st_list = List.length (Util.List.uniq ~eq:atomic_op_equal atomic_st_list)
 end
 
 include
