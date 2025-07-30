@@ -267,22 +267,22 @@ Check intrinsic dependencies for a simple LDR/STR with async MTE
   eiid1 [label="b: R[x]=0\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
   eiid5 [label="f: R0:X1q=x:red (addr)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
   eiid6 [label="g: Branching(pred)(color)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
-  eiid7 [label="h: W0:TFSR_ELxq=1\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
-  eiid8 [label="i: Fault(R,TagCheck)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
-  eiid9 [label="j: W0:X0q=0\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
+  eiid7 [label="h: W0:X0q=0\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
+  eiid8 [label="i: W0:TFSR_ELxq=1\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
+  eiid9 [label="j: Fault(R,TagCheck)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
   }
   
   /* the intra_causality_data edges */
   
   eiid0 -> eiid6 [label="iico_data", color="black", fontcolor="black"];
-  eiid1 -> eiid9 [label="iico_data", color="black", fontcolor="black"];
+  eiid1 -> eiid7 [label="iico_data", color="black", fontcolor="black"];
   eiid5 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
   eiid5 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
   eiid5 -> eiid6 [label="iico_data", color="black", fontcolor="black"];
   
   /* the intra_causality_control edges */
-  eiid6 -> eiid7 [label="iico_ctrl", color="grey", fontcolor="grey"];
   eiid6 -> eiid8 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid6 -> eiid9 [label="iico_ctrl", color="grey", fontcolor="grey"];
   
   /* the poi edges */
   /* the rfmap edges */
@@ -373,9 +373,9 @@ Check intrinsic dependencies for a simple LDR/STR with async MTE
   eiid1 [label="b: W[x]=1\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
   eiid6 [label="g: R0:X1q=x:red (addr)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
   eiid7 [label="h: Branching(pred)(color)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
-  eiid8 [label="i: W0:TFSR_ELxq=1\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
-  eiid9 [label="j: Fault(W,TagCheck)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
-  eiid10 [label="k: R0:X0q=1 (data)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
+  eiid8 [label="i: R0:X0q=1 (data)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
+  eiid9 [label="j: W0:TFSR_ELxq=1\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
+  eiid10 [label="k: Fault(W,TagCheck)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
   }
   
   /* the intra_causality_data edges */
@@ -384,11 +384,11 @@ Check intrinsic dependencies for a simple LDR/STR with async MTE
   eiid6 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
   eiid6 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
   eiid6 -> eiid7 [label="iico_data", color="black", fontcolor="black"];
-  eiid10 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
+  eiid8 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
   
   /* the intra_causality_control edges */
-  eiid7 -> eiid8 [label="iico_ctrl", color="grey", fontcolor="grey"];
   eiid7 -> eiid9 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid7 -> eiid10 [label="iico_ctrl", color="grey", fontcolor="grey"];
   
   /* the poi edges */
   eiid5 -> eiid6 [label="po", color="black", fontcolor="black"];
@@ -396,7 +396,7 @@ Check intrinsic dependencies for a simple LDR/STR with async MTE
   
   
   /* The viewed-before edges */
-  eiid5 -> eiid10 [label="rf-reg", color="brown", fontcolor="brown"];
+  eiid5 -> eiid8 [label="rf-reg", color="brown", fontcolor="brown"];
   }
   
   DOTEND STR-TagCheckFault
@@ -446,7 +446,6 @@ Check intrinsic dependencies for a simple LDR/STR with sync MTE with VMSA semant
   eiid2 -> eiid11 [label="iico_data", color="black", fontcolor="black"];
   eiid3 -> eiid12 [label="iico_data", color="black", fontcolor="black"];
   eiid7 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
-  eiid7 -> eiid11 [label="iico_data", color="black", fontcolor="black"];
   eiid9 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
   eiid9 -> eiid11 [label="iico_data", color="black", fontcolor="black"];
   
@@ -506,7 +505,6 @@ Check intrinsic dependencies for a simple LDR/STR with sync MTE with VMSA semant
   eiid1 -> eiid9 [label="iico_data", color="black", fontcolor="black"];
   eiid2 -> eiid10 [label="iico_data", color="black", fontcolor="black"];
   eiid6 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
-  eiid6 -> eiid10 [label="iico_data", color="black", fontcolor="black"];
   eiid8 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
   eiid8 -> eiid10 [label="iico_data", color="black", fontcolor="black"];
   
@@ -570,7 +568,6 @@ Check intrinsic dependencies for a simple LDR/STR with sync MTE with VMSA semant
   eiid1 -> eiid11 [label="iico_data", color="black", fontcolor="black"];
   eiid2 -> eiid12 [label="iico_data", color="black", fontcolor="black"];
   eiid8 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
-  eiid8 -> eiid12 [label="iico_data", color="black", fontcolor="black"];
   eiid10 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
   eiid10 -> eiid12 [label="iico_data", color="black", fontcolor="black"];
   eiid13 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
@@ -635,7 +632,6 @@ Check intrinsic dependencies for a simple LDR/STR with sync MTE with VMSA semant
   eiid1 -> eiid10 [label="iico_data", color="black", fontcolor="black"];
   eiid2 -> eiid11 [label="iico_data", color="black", fontcolor="black"];
   eiid7 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
-  eiid7 -> eiid11 [label="iico_data", color="black", fontcolor="black"];
   eiid9 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
   eiid9 -> eiid11 [label="iico_data", color="black", fontcolor="black"];
   
@@ -789,7 +785,8 @@ Check intrinsic dependencies for a simple LDR/STR with async MTE with VMSA seman
   eiid9 [label="j: R0:X1q=x:green (addr)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
   eiid10 [label="k: Branching(pred)(Tag, valid:1 && af:1)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
   eiid11 [label="l: Branching(pred)(color)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
-  eiid12 [label="m: W0:X0q=1\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
+  eiid12 [label="m: Empty\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
+  eiid13 [label="n: W0:X0q=1\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
   }
   
   /* the intra_causality_data edges */
@@ -799,16 +796,15 @@ Check intrinsic dependencies for a simple LDR/STR with async MTE with VMSA seman
   eiid1 -> eiid2 [label="iico_data", color="black", fontcolor="black"];
   eiid1 -> eiid10 [label="iico_data", color="black", fontcolor="black"];
   eiid2 -> eiid11 [label="iico_data", color="black", fontcolor="black"];
-  eiid3 -> eiid12 [label="iico_data", color="black", fontcolor="black"];
+  eiid3 -> eiid13 [label="iico_data", color="black", fontcolor="black"];
   eiid7 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
-  eiid7 -> eiid11 [label="iico_data", color="black", fontcolor="black"];
   eiid9 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
   eiid9 -> eiid11 [label="iico_data", color="black", fontcolor="black"];
   
   /* the intra_causality_control edges */
   eiid8 -> eiid3 [label="iico_ctrl", color="grey", fontcolor="grey"];
   eiid10 -> eiid2 [label="iico_ctrl", color="grey", fontcolor="grey"];
-  eiid11 -> eiid3 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid11 -> eiid12 [label="iico_ctrl", color="grey", fontcolor="grey"];
   
   /* the poi edges */
   /* the rfmap edges */
@@ -845,32 +841,34 @@ Check intrinsic dependencies for a simple LDR/STR with async MTE with VMSA seman
   eiid0 [label="a: R[PTE(x)]NExpq=(oa:PA(x), attrs:(TaggedNormal))\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
   eiid1 [label="b: R[PTE(x)]NExpq=(oa:PA(x), attrs:(TaggedNormal))\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
   eiid2 [label="c: R[tag(PA(x))]NExpq=:green\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
-  eiid6 [label="g: R0:X1q=x:red (addr)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
-  eiid7 [label="h: Branching(pred)(Data, valid:1 && af:1)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
-  eiid8 [label="i: R0:X1q=x:red (addr)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
-  eiid9 [label="j: Branching(pred)(Tag, valid:1 && af:1)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
-  eiid10 [label="k: Branching(pred)(color)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
-  eiid11 [label="l: W0:TFSR_ELxq=1\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
-  eiid12 [label="m: Fault(R,TagCheck)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
+  eiid3 [label="d: R[PA(x)]=0\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
+  eiid7 [label="h: R0:X1q=x:red (addr)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
+  eiid8 [label="i: Branching(pred)(Data, valid:1 && af:1)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
+  eiid9 [label="j: R0:X1q=x:red (addr)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
+  eiid10 [label="k: Branching(pred)(Tag, valid:1 && af:1)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
+  eiid11 [label="l: Branching(pred)(color)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
+  eiid12 [label="m: W0:X0q=0\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
+  eiid13 [label="n: W0:TFSR_ELxq=1\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
+  eiid14 [label="o: Fault(R,TagCheck)\lproc:P0 poi:0\lLDR W0,[X1]", shape="box", color="blue"];
   }
   
   /* the intra_causality_data edges */
   
-  eiid0 -> eiid7 [label="iico_data", color="black", fontcolor="black"];
+  eiid0 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
+  eiid0 -> eiid8 [label="iico_data", color="black", fontcolor="black"];
   eiid1 -> eiid2 [label="iico_data", color="black", fontcolor="black"];
-  eiid1 -> eiid9 [label="iico_data", color="black", fontcolor="black"];
-  eiid2 -> eiid10 [label="iico_data", color="black", fontcolor="black"];
-  eiid6 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
-  eiid6 -> eiid10 [label="iico_data", color="black", fontcolor="black"];
-  eiid8 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
-  eiid8 -> eiid10 [label="iico_data", color="black", fontcolor="black"];
+  eiid1 -> eiid10 [label="iico_data", color="black", fontcolor="black"];
+  eiid2 -> eiid11 [label="iico_data", color="black", fontcolor="black"];
+  eiid3 -> eiid12 [label="iico_data", color="black", fontcolor="black"];
+  eiid7 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
+  eiid9 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
+  eiid9 -> eiid11 [label="iico_data", color="black", fontcolor="black"];
   
   /* the intra_causality_control edges */
-  eiid7 -> eiid11 [label="iico_ctrl", color="grey", fontcolor="grey"];
-  eiid7 -> eiid12 [label="iico_ctrl", color="grey", fontcolor="grey"];
-  eiid9 -> eiid2 [label="iico_ctrl", color="grey", fontcolor="grey"];
-  eiid10 -> eiid11 [label="iico_ctrl", color="grey", fontcolor="grey"];
-  eiid10 -> eiid12 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid8 -> eiid3 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid10 -> eiid2 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid11 -> eiid13 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid11 -> eiid14 [label="iico_ctrl", color="grey", fontcolor="grey"];
   
   /* the poi edges */
   /* the rfmap edges */
@@ -914,7 +912,8 @@ Check intrinsic dependencies for a simple LDR/STR with async MTE with VMSA seman
   eiid10 [label="k: R0:X1q=x:green (addr)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
   eiid11 [label="l: Branching(pred)(Tag, valid:1 && af:1)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
   eiid12 [label="m: Branching(pred)(color)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
-  eiid13 [label="n: R0:X0q=1 (data)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
+  eiid13 [label="n: Empty\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
+  eiid14 [label="o: R0:X0q=1 (data)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
   }
   
   /* the intra_causality_data edges */
@@ -925,15 +924,14 @@ Check intrinsic dependencies for a simple LDR/STR with async MTE with VMSA seman
   eiid1 -> eiid11 [label="iico_data", color="black", fontcolor="black"];
   eiid2 -> eiid12 [label="iico_data", color="black", fontcolor="black"];
   eiid8 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
-  eiid8 -> eiid12 [label="iico_data", color="black", fontcolor="black"];
   eiid10 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
   eiid10 -> eiid12 [label="iico_data", color="black", fontcolor="black"];
-  eiid13 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
+  eiid14 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
   
   /* the intra_causality_control edges */
   eiid9 -> eiid3 [label="iico_ctrl", color="grey", fontcolor="grey"];
   eiid11 -> eiid2 [label="iico_ctrl", color="grey", fontcolor="grey"];
-  eiid12 -> eiid3 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid12 -> eiid13 [label="iico_ctrl", color="grey", fontcolor="grey"];
   
   /* the poi edges */
   eiid7 -> eiid8 [label="po", color="black", fontcolor="black"];
@@ -942,7 +940,7 @@ Check intrinsic dependencies for a simple LDR/STR with async MTE with VMSA seman
   
   
   /* The viewed-before edges */
-  eiid7 -> eiid13 [label="rf-reg", color="brown", fontcolor="brown"];
+  eiid7 -> eiid14 [label="rf-reg", color="brown", fontcolor="brown"];
   }
   
   DOTEND STR-ok
@@ -970,44 +968,47 @@ Check intrinsic dependencies for a simple LDR/STR with async MTE with VMSA seman
   
   /* the unlocked events */
   subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
-  eiid6 [label="g: W0:X0q=1\lproc:P0 poi:0\lMOV W0,#1", shape="box", color="blue"];
+  eiid7 [label="h: W0:X0q=1\lproc:P0 poi:0\lMOV W0,#1", shape="box", color="blue"];
   eiid0 [label="a: R[PTE(x)]NExpq=(oa:PA(x), attrs:(TaggedNormal))\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
   eiid1 [label="b: R[PTE(x)]NExpq=(oa:PA(x), attrs:(TaggedNormal))\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
   eiid2 [label="c: R[tag(PA(x))]NExpq=:green\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
-  eiid7 [label="h: R0:X1q=x:red (addr)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
-  eiid8 [label="i: Branching(pred)(Data, valid:1 && af:1 && db:1)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
-  eiid9 [label="j: R0:X1q=x:red (addr)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
-  eiid10 [label="k: Branching(pred)(Tag, valid:1 && af:1)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
-  eiid11 [label="l: Branching(pred)(color)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
-  eiid12 [label="m: W0:TFSR_ELxq=1\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
-  eiid13 [label="n: Fault(W,TagCheck)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
+  eiid3 [label="d: W[PA(x)]=1\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
+  eiid8 [label="i: R0:X1q=x:red (addr)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
+  eiid9 [label="j: Branching(pred)(Data, valid:1 && af:1 && db:1)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
+  eiid10 [label="k: R0:X1q=x:red (addr)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
+  eiid11 [label="l: Branching(pred)(Tag, valid:1 && af:1)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
+  eiid12 [label="m: Branching(pred)(color)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
+  eiid13 [label="n: R0:X0q=1 (data)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
+  eiid14 [label="o: W0:TFSR_ELxq=1\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
+  eiid15 [label="p: Fault(W,TagCheck)\lproc:P0 poi:1\lSTR W0,[X1]", shape="box", color="blue"];
   }
   
   /* the intra_causality_data edges */
   
-  eiid0 -> eiid8 [label="iico_data", color="black", fontcolor="black"];
+  eiid0 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
+  eiid0 -> eiid9 [label="iico_data", color="black", fontcolor="black"];
   eiid1 -> eiid2 [label="iico_data", color="black", fontcolor="black"];
-  eiid1 -> eiid10 [label="iico_data", color="black", fontcolor="black"];
-  eiid2 -> eiid11 [label="iico_data", color="black", fontcolor="black"];
-  eiid7 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
-  eiid7 -> eiid11 [label="iico_data", color="black", fontcolor="black"];
-  eiid9 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
-  eiid9 -> eiid11 [label="iico_data", color="black", fontcolor="black"];
+  eiid1 -> eiid11 [label="iico_data", color="black", fontcolor="black"];
+  eiid2 -> eiid12 [label="iico_data", color="black", fontcolor="black"];
+  eiid8 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
+  eiid10 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
+  eiid10 -> eiid12 [label="iico_data", color="black", fontcolor="black"];
+  eiid13 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
   
   /* the intra_causality_control edges */
-  eiid8 -> eiid12 [label="iico_ctrl", color="grey", fontcolor="grey"];
-  eiid8 -> eiid13 [label="iico_ctrl", color="grey", fontcolor="grey"];
-  eiid10 -> eiid2 [label="iico_ctrl", color="grey", fontcolor="grey"];
-  eiid11 -> eiid12 [label="iico_ctrl", color="grey", fontcolor="grey"];
-  eiid11 -> eiid13 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid9 -> eiid3 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid11 -> eiid2 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid12 -> eiid14 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid12 -> eiid15 [label="iico_ctrl", color="grey", fontcolor="grey"];
   
   /* the poi edges */
-  eiid6 -> eiid7 [label="po", color="black", fontcolor="black"];
-  eiid6 -> eiid9 [label="po", color="black", fontcolor="black"];
+  eiid7 -> eiid8 [label="po", color="black", fontcolor="black"];
+  eiid7 -> eiid10 [label="po", color="black", fontcolor="black"];
   /* the rfmap edges */
   
   
   /* The viewed-before edges */
+  eiid7 -> eiid13 [label="rf-reg", color="brown", fontcolor="brown"];
   }
   
   DOTEND STR-TagCheckFault
