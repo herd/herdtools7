@@ -1299,6 +1299,8 @@ type atomic_op =
   | A_ADD | A_EOR | A_SET | A_CLR
   | A_SMAX | A_SMIN | A_UMAX | A_UMIN
 
+let atomic_op_equal = (=)
+
 let pp_aop = function
   | A_ADD -> "ADD"
   | A_EOR -> "EOR"
