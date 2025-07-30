@@ -29,6 +29,7 @@ module No(A:sig
   let show_rmw_reg _ = assert false
   let compute_rmw _ ~old:_ ~operand:_ = assert false
   let expand_rmw r = [r]
+  let valid_rmw _ = assert false
 end
 
 (** The only RMW is exchange *)
@@ -60,6 +61,8 @@ module
     let compute_rmw _ ~old:_ ~operand  = operand
 
     let expand_rmw rmw = [rmw]
+
+    let valid_rmw _ = true
   end
 
 module LxSx(A:sig type atom end) = struct
