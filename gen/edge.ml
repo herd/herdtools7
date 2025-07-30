@@ -71,6 +71,7 @@ module type S = sig
   val is_dp_addr : tedge -> bool
   val compute_rmw : rmw -> Code.v -> Code.v -> Code.v
   val to_rmw_operand : rmw -> Code.v -> Code.v -> Code.v
+  val valid_rmw : rmw list -> bool
 
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
 
@@ -102,6 +103,7 @@ module type S = sig
 
   val parse_atom : string -> atom
   val parse_atoms : string list -> atom list
+  val get_access_atom: atom option -> MachMixed.t option
 
   val parse_fence : string -> fence
   val parse_edge : string -> edge
@@ -199,6 +201,7 @@ and type rmw = F.rmw = struct
 
   let compute_rmw = F.compute_rmw
   let to_rmw_operand = F.to_rmw_operand
+  let valid_rmw = F.valid_rmw
 
   module PteVal = F.PteVal
 
@@ -266,7 +269,9 @@ and type rmw = F.rmw = struct
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
 
   let init_val e = match e.edge with
-    | Rmw rmw -> F.init_rmw rmw
+    (* In the case of rmw, `e.a1` must be equal to `e.a2`.
+     Function `tr_value` ensure correct value in mixed size access. *)
+    | Rmw rmw -> F.init_rmw rmw |> tr_value e.a1
     | _ -> Code.value_of_int 0
 
   open Printf
@@ -588,6 +593,8 @@ let fold_tedges f r =
         [] xs
     with LexUtil.Error msg ->
       Warn.fatal "bad atoms list (%s)" msg
+
+  let get_access_atom = F.get_access_atom
 
 
 (**********)
