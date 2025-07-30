@@ -565,7 +565,6 @@ let is_ifetch a = match a with
 (**************)
 (* Mixed size *)
 (**************)
-
    let tr_value ao v = match ao with
    | None| Some (_,None) -> v
    | Some (_,Some (sz,_)) ->
@@ -874,6 +873,21 @@ let compute_rmw r old co =
     end
     | LrSc | Swp | Cas  -> co
     | AllAmo -> assert false
+
+(* Rule out `rmw_list` that contains the same type of atomic operation *)
+let valid_rmw rmw_list =
+  (* Treat sign and unsign the same *)
+  let convert_sign_to_unsign = function
+    | A_SMAX -> A_UMAX
+    | A_SMIN -> A_UMIN
+    | op -> op in
+  let atomic_list = List.filter_map ( function
+    | LdOp op -> Some ( LdOp ( convert_sign_to_unsign op ) )
+    | StOp op -> Some ( StOp ( convert_sign_to_unsign op ) )
+    | _ -> None ) rmw_list in
+  let module RmwSet =
+    MySet.Make(struct type t = rmw let compare = compare end) in
+  (List.length atomic_list) = (RmwSet.cardinal @@ RmwSet.of_list atomic_list)
 
 (* NOTE Assuming all variants of STR manipulates on
    bit 4 --- bit 0 (both included), the bit-wise

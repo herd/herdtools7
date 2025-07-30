@@ -45,6 +45,7 @@ module
 
     let expand_rmw rmw = [rmw]
 
+    let valid_rmw _ = true
     let init_rmw _  = 0
     let to_rmw_operand _ _ counter = counter
   end

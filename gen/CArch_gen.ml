@@ -277,5 +277,6 @@ let compute_rmw rmw old co =
   | Exch -> co
   | Add -> old+co
 
+let valid_rmw _ = true
 let init_rmw _ = 0
 let to_rmw_operand _ _ counter = counter
