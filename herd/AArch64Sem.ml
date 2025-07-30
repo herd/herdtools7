@@ -224,28 +224,22 @@ module Make
         | Some _ -> true
         | None -> false
 
+      let is_mte_sync dir =
+        let open Precision in
+        match C.mte_precision,dir with
+        | (Synchronous,_)|(Asymmetric,(Dir.R)) -> true
+        | (Asynchronous,_)|(Asymmetric,Dir.W) -> false
+
       let mk_fault a dir annot ii ft msg =
         let open FaultType.AArch64 in
         let fh = has_handler ii in
         let is_sync_exc_entry, ii, loc =
-          match ft with
-          | Some TagCheck ->
-              let is_async =
-                match C.mte_precision, dir with
-                | Precision.Asynchronous, _
-                | Precision.Asymmetric, Dir.W -> true
-                | _ -> false
-              in
-              let ii, loc =
-                if is_async then
-                  { ii with A.labels = Label.Set.empty }, None
-                else
-                  ii, Misc.map_opt (fun a -> A.Location_global a) a
-              in
-              (C.variant Variant.MemTag) && not is_async, ii, loc
-          | _ ->
-              true, ii, Misc.map_opt (fun a -> A.Location_global a) a
-        in
+          match ft, is_mte_sync dir with
+          | Some FaultType.AArch64.TagCheck, false ->
+            assert (C.variant Variant.MemTag) ;
+            false, { ii with A.labels = Label.Set.empty }, None
+          | _, _ ->
+            true, ii, Misc.map_opt (fun a -> A.Location_global a) a in
         M.mk_singleton_es
           (Act.Fault (ii,loc,dir,annot,fh || is_sync_exc_entry,ft,msg)) ii
 
@@ -1491,10 +1485,8 @@ module Make
 (*  memtag faults *)
       let lift_fault_memtag mfault mm dir ii =
         let lbl_v = get_instr_label ii.A.proc ii in
-        let open Precision in
-          match C.mte_precision, dir with
-          | (Synchronous, _)
-          | (Asymmetric, Dir.R) ->
+        match is_mte_sync dir with
+        | true ->
             let mexc _ =
               mfault >>| set_elr_el1 lbl_v ii >>!
               B.fault [AArch64Base.elr_el1, lbl_v] in
@@ -1502,8 +1494,7 @@ module Make
               fun ma -> M.bind_ctrldata ma mexc
             else
               fun ma -> ma >>*= mexc
-          | (Asynchronous,_)
-          | (Asymmetric,Dir.W) ->
+        | false -> 
             fun ma ->
               let set_tfsr = write_reg AArch64Base.tfsr V.one ii in
               let ma = ma >>*== (fun a -> (set_tfsr >>| mfault) >>! a) in
@@ -1630,13 +1621,12 @@ module Make
              let noact = M.mk_singleton_es Act.NoAction ii in
              delayed_check_tags a_virt None ma ii
                (fun ma ->
-                  let open Precision in
-                  let ma = match C.mte_precision, dir with
-                  | Asynchronous, _
-                  | Asymmetric, Dir.W -> ma >>*== (fun a -> noact >>! a)
-                  | _, _ -> ma in
-                  mm ma |> branch
-                )
+                 let ma =
+                   match is_mte_sync dir with
+                   | true -> ma
+                   | false -> ma >>*== (fun a -> noact >>! a)
+                 in
+                 mm ma |> branch)
                (lift_fault_memtag
                   (mk_fault (Some a_virt) dir an ii ft None) mm dir ii))
 
@@ -1772,10 +1762,7 @@ Arguments:
           else ma in
         lift_memop ~tag:"LD" rA Dir.R false checked
           (fun ac ma _mv -> (* value fake here *)
-            let open Precision in
-            let memtag_sync =
-              checked && (C.mte_precision = Synchronous ||
-                         C.mte_precision = Asymmetric) in
+            let memtag_sync = checked && (is_mte_sync Dir.R) in
             if memtag_sync || Access.is_physical ac || pac then
               M.bind_ctrldata ma (mop ac)
             else
@@ -1787,8 +1774,7 @@ Arguments:
       let do_str rA mop sz an ma mv ii =
         lift_memop ~tag:"ST" rA Dir.W true memtag
           (fun ac ma mv ->
-            let open Precision in
-            let memtag_sync = memtag && C.mte_precision = Synchronous in
+            let memtag_sync = memtag && (is_mte_sync Dir.W) in
             if pac || memtag_sync || (is_branching && Access.is_physical ac) then begin
               (* additional ctrl dep on address *)
               M.bind_ctrldata_data ma mv
