@@ -1497,7 +1497,7 @@ module Make
         | false -> 
             fun ma ->
               let set_tfsr = write_reg AArch64Base.tfsr V.one ii in
-              let ma = ma >>*== (fun a -> (set_tfsr >>| mfault) >>! a) in
+              let ma = ma >>**== (fun a -> (set_tfsr >>| mfault) >>! a) in
               mm ma >>! B.Next []
 
 (* KVM mode *)
@@ -1570,18 +1570,28 @@ module Make
 
       let lift_memtag_phy dir mop ma an ii mphy =
         let checked_op mpte_d a_virt =
-          let mok mpte_t =
-            let ma = M.para_bind_output_right mpte_t (fun _ -> mpte_d) in
+          (* mpte_d - the event structure contains the data op up to the
+             branching effect with the outcome of the translation *)
+          let mok mtag =
+            (* mtag - the event structure contains the tag op up to the
+               branching effect with the outcome of the tag comparison *)
+            let mtag =
+              match is_mte_sync dir with
+              | true -> mtag
+              | false ->
+                let noact = M.mk_singleton_es Act.NoAction ii in
+                mtag >>*= fun v -> noact >>= fun _ -> M.unitT v in
+            let ma = M.para_bind_output_right mtag (fun _ -> mpte_d) in
             mphy ma a_virt >>= M.ignore >>= B.next1T
-          and mno mpte_t =
-            let ma = M.para_bind_output_right mpte_t (fun _ -> mpte_d) in
+          and mno mtag =
+            (* mtag - the event structure contains the tag op up to the
+               branching effect with the outcome of the tag comparison *)
+            let ma = M.para_bind_output_right mtag (fun _ -> mpte_d) in
+            let mm ma = mphy ma a_virt >>= M.ignore >>= B.next1T in
             let ft = Some FaultType.AArch64.TagCheck in
-            let mm ma =
-              let branch = fun m -> m >>= M.ignore >>= B.next1T in
-              ma |> branch in
             let fault = lift_fault_memtag
                 (mk_fault (Some a_virt) dir an ii ft None) mm dir ii in
-            fault ma >>! B.fault [] in
+            fault ma in
           let check_tag moa a_virt =
             let do_check_tag a_phy moa =
               delayed_check_tags a_virt (Some a_phy) moa ii mok mno in
