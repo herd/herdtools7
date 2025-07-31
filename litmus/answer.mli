@@ -20,13 +20,15 @@
 type hash = { filename : string ;  hash : string ; }
 type hash_env = hash StringMap.t
 
+type completed = (* Answer for completed test *)
+  { arch : Archs.t ; (* Arch of test *)
+    doc : Name.t   ; (* Name of test *)
+    src : string   ; (* Name of emitted source file *)
+    fullhash : hash ; nprocs : int ; (* hash and numbre of threads *)
+    pac : bool     ; (* Requires pointer authentification *)
+  }
+
 type answer =
-  | Completed of
-      Archs.t * Name.t   (* Test arch and name *)
-        * string         (* C source file of test *)
-        * StringSet.t    (* cycles *)
-        * hash_env       (* name -> hash *)
-        * int            (* number of threads *)
-        * bool           (* require Pointer Authentication Code *)
-  | Interrupted of Archs.t * exn
-  | Absent of Archs.t
+  | Completed of completed
+  | Interrupted of exn (* Error *)
+  | Absent (* Test not compile for some reason under user control *)

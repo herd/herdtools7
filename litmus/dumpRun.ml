@@ -47,8 +47,7 @@ module type Config = sig
 end
 
 module type OneTest = sig
-  val from_file :
-      StringSet.t -> hash_env -> string -> out_channel -> answer
+  val from_file : hash_env -> string -> out_channel -> answer
 end
 
 
@@ -185,29 +184,52 @@ end = struct
 ;;
 
 (* Compile (and run in command line mode) tests *)
+type infos =
+  { one_arch: Archs.t option;
+    docs : Name.t list;
+    srcs : string list;
+    hashes : Answer.hash_env;
+    nthreads : IntSet.t;
+    some_pac : bool;
+  }
+
 let run_tests names out_chan =
+
   let exp = match Cfg.index with
   | None -> None
   | Some exp -> Some (open_out exp) in
-  let  arch,docs,sources,_,_,nts,some_pac =
+
+  let  {one_arch; docs; srcs; nthreads; some_pac; } =
     Misc.fold_argv_or_stdin
-      (fun name (a0,docs,srcs,cycles,hash_env,nts,some_pac) ->
-        let ans =
-          try CT.from_file cycles hash_env name out_chan
+      (fun name ({one_arch; docs; srcs; hashes; nthreads; some_pac;} as st) ->
+         let check_arch archo arch = match archo with
+           | None -> Some arch
+           | Some a ->
+               if a = arch then archo
+               else
+                 Warn.fatal "diferent architectures in the same batch: %s (file %s) vs. %s"
+                   (Archs.pp arch) name (Archs.pp a) in
+         let ans =
+          try CT.from_file hashes name out_chan
           with
           | e ->
               if Cfg.nocatch then raise e ;
-              Interrupted (a0,e) in
+              Interrupted e in
         match ans with
-        | Completed (a,doc,src,cycles,hash_env,nt,pac) ->
+        | Completed
+            {arch; doc; src; fullhash; nprocs; pac; } ->
             begin match exp with
             | None -> ()
             | Some exp -> fprintf exp "%s\n" name
             end ;
-            a,(doc::docs),(src::srcs),cycles,hash_env,
-            IntSet.add nt nts,(pac || some_pac)
-        | Absent a -> a,docs,srcs,cycles,hash_env,nts,some_pac
-        | Interrupted (a,e) ->
+            { one_arch = check_arch one_arch arch;
+              docs = doc::docs;
+              srcs = src::srcs;
+              hashes = StringMap.add doc.Name.name fullhash hashes;
+              nthreads = IntSet.add nprocs nthreads;
+              some_pac = pac || some_pac; }
+        | Absent -> st
+        | Interrupted e ->
             let msg =  match e with
             | Misc.Exit -> "None"
             | Misc.Fatal msg
@@ -220,12 +242,19 @@ let run_tests names out_chan =
                 eprintf "%a %s\n%!" Pos.pp_pos0 name msg ;
                 msg in
             report_failure name msg out_chan ;
-            a,docs,srcs,cycles,hash_env,nts,some_pac)
-      names (`X86,[],[],StringSet.empty,StringMap.empty,IntSet.empty,false) in
+            st)
+      names
+      { one_arch = None;
+        docs = []; srcs = []; hashes = StringMap.empty;
+        nthreads = IntSet.empty; some_pac = false; } in
   begin match exp with
   | None -> ()
   | Some exp -> close_out exp
   end ;
+  let arch =
+    match one_arch with
+    | None -> `X86 (* No tests compiled, arch is irrelevant *)
+    | Some arch -> arch in
   let utils =
     let module O = struct
       include Cfg
@@ -236,7 +265,7 @@ let run_tests names out_chan =
     end in
     let module Obj = ObjUtil.Make(O)(Tar) in
     Obj.dump some_pac in
-  arch,docs,sources,utils,nts,some_pac
+  arch,docs,srcs,utils,nthreads,some_pac
 
 (* Run tests (command line mode) *)
 let dump_command names =
