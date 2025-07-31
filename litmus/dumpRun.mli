@@ -38,7 +38,6 @@ module type Config = sig
   val asmcommentaslabel : bool
   include RunUtils.CommonConfig
   val mkopt : Option.opt -> Option.opt
-  val variant : Variant_litmus.t -> bool
   val nocatch : bool
   val smt : int
   val nsockets : int
