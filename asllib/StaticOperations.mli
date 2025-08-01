@@ -1,7 +1,7 @@
 open AST
 
 type int3_binop =
-  [ `PLUS | `MINUS | `DIV | `DIVRM | `SHR | `SHL | `POW | `MOD | `MUL ]
+  [ `ADD | `SUB | `DIV | `DIVRM | `SHR | `SHL | `POW | `MOD | `MUL ]
 
 val constraint_binop :
   int3_binop ->

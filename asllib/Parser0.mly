@@ -792,7 +792,7 @@ let unop ==
   | MINUS ; { AST.NEG }
   | NOT   ; { AST.NOT }
 
-let unimplemented_binop(x) == x ; { `PLUS }
+let unimplemented_binop(x) == x ; { `ADD }
 
 let abinop ==
   | AND        ; { `AND    }
@@ -800,13 +800,13 @@ let abinop ==
   | BAR_BAR    ; { `BOR    }
   | DIV        ; { `DIV    }
   | XOR        ; { `XOR    }
-  | EQ_EQ      ; { `EQ_OP  }
-  | BANG_EQ    ; { `NEQ    }
-  | GT_EQ      ; { `GEQ    }
+  | EQ_EQ      ; { `EQ     }
+  | BANG_EQ    ; { `NE     }
+  | GT_EQ      ; { `GE     }
   | IMPLIES    ; { `IMPL   }
-  | LT_EQ      ; { `LEQ    }
-  | PLUS       ; { `PLUS   }
-  | MINUS      ; { `MINUS  }
+  | LT_EQ      ; { `LE     }
+  | PLUS       ; { `ADD    }
+  | MINUS      ; { `SUB    }
   | MOD        ; { `MOD    }
   | STAR       ; { `MUL    }
   | OR         ; { `OR     }

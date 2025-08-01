@@ -46,7 +46,7 @@ module Untyped (C : Config.S) = struct
 
   let binop : binop gen option =
     [
-      (if C.Syntax.plus then Some `PLUS else None);
+      (if C.Syntax.plus then Some `ADD else None);
       (if C.Syntax.and_ then Some `AND else None);
       (if C.Syntax.band then Some `BAND else None);
       (if C.Syntax.beq then Some `BEQ else None);
@@ -54,16 +54,16 @@ module Untyped (C : Config.S) = struct
       (if C.Syntax.div then Some `DIV else None);
       (if C.Syntax.divrm then Some `DIVRM else None);
       (if C.Syntax.xor then Some `XOR else None);
-      (if C.Syntax.eq_op then Some `EQ_OP else None);
+      (if C.Syntax.eq_op then Some `EQ else None);
       (if C.Syntax.gt then Some `GT else None);
-      (if C.Syntax.geq then Some `GEQ else None);
+      (if C.Syntax.geq then Some `GE else None);
       (if C.Syntax.impl then Some `IMPL else None);
       (if C.Syntax.lt then Some `LT else None);
-      (if C.Syntax.leq then Some `LEQ else None);
+      (if C.Syntax.leq then Some `LE else None);
       (if C.Syntax.mod_ then Some `MOD else None);
-      (if C.Syntax.minus then Some `MINUS else None);
+      (if C.Syntax.minus then Some `SUB else None);
       (if C.Syntax.mul then Some `MUL else None);
-      (if C.Syntax.neq then Some `NEQ else None);
+      (if C.Syntax.neq then Some `NE else None);
       (if C.Syntax.or_ then Some `OR else None);
       (if C.Syntax.pow then Some `POW else None);
       (if C.Syntax.rdiv then Some `RDIV else None);
@@ -512,7 +512,7 @@ module Typed (C : Config.S) = struct
       let* op, t1, t2 =
         match ty.desc with
         | T_Int _ ->
-            [| `PLUS; `MINUS; `MUL; `DIV; `DIVRM; `MOD; `SHL; `SHR; `POW |]
+            [| `ADD; `SUB; `MUL; `DIV; `DIVRM; `MOD; `SHL; `SHR; `POW |]
             |> oneofa
             |> map (fun op -> (op, integer, integer))
         | T_Bool ->
@@ -520,23 +520,22 @@ module Typed (C : Config.S) = struct
               [| `BAND; `BOR; `BEQ; `IMPL |]
               |> oneofa
               |> map (fun op -> (op, boolean, boolean));
-              (let+ op = [| `EQ_OP; `NEQ |] |> oneofa
+              (let+ op = [| `EQ; `NE |] |> oneofa
                and+ t = [| integer; boolean; real |] |> oneofa in
                (op, t, t));
-              (let+ op = [| `LEQ; `GEQ; `GT; `LT |] |> oneofa
+              (let+ op = [| `LE; `GE; `GT; `LT |] |> oneofa
                and+ t = [| integer; real |] |> oneofa in
                (op, t, t));
             ]
             |> oneof
         | T_Real ->
-            [| `PLUS; `MINUS; `MUL |] |> oneofa
-            |> map (fun op -> (op, real, real))
+            [| `ADD; `SUB; `MUL |] |> oneofa |> map (fun op -> (op, real, real))
         | T_Bits _ ->
             [
               [| `AND; `OR; `XOR; `CONCAT |]
               |> oneofa
               |> map (fun op -> (op, ty, ty));
-              [| `PLUS; `MINUS |] |> oneofa |> map (fun op -> (op, ty, integer));
+              [| `ADD; `SUB |] |> oneofa |> map (fun op -> (op, ty, integer));
             ]
             |> oneof
         | _ -> assert false

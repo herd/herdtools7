@@ -79,11 +79,11 @@ let prec =
   let open AST in
   function
   | `BOR | `BAND | `IMPL | `BEQ -> 1
-  | `EQ_OP | `NEQ -> 2
-  | `PLUS | `MINUS | `OR | `XOR | `AND | `CONCAT -> 3
+  | `EQ | `NE -> 2
+  | `ADD | `SUB | `OR | `XOR | `AND | `CONCAT -> 3
   | `MUL | `DIV | `DIVRM | `RDIV | `MOD | `SHL | `SHR -> 4
   | `POW -> 5
-  | `GT | `GEQ | `LT | `LEQ -> 0 (* Non assoc *)
+  | `GT | `GE | `LT | `LE -> 0 (* Non assoc *)
 
 let check_not_same_prec loc op op' =
   if prec op = prec op' then Error.(fatal_from loc CannotParse)
@@ -211,15 +211,15 @@ let binop ==
   | DIV         ; { `DIV    }
   | DIVRM       ; { `DIVRM  }
   | XOR         ; { `XOR    }
-  | EQ_OP       ; { `EQ_OP  }
-  | NEQ         ; { `NEQ    }
+  | EQ_EQ       ; { `EQ     }
+  | NE          ; { `NE     }
   | GT          ; { `GT     }
-  | GEQ         ; { `GEQ    }
+  | GE          ; { `GE     }
   | IMPL        ; { `IMPL   }
   | LT          ; { `LT     }
-  | LEQ         ; { `LEQ    }
-  | PLUS        ; { `PLUS   }
-  | MINUS       ; { `MINUS  }
+  | LE          ; { `LE     }
+  | PLUS        ; { `ADD    }
+  | MINUS       ; { `SUB    }
   | MOD         ; { `MOD    }
   | MUL         ; { `MUL    }
   | OR          ; { `OR     }
@@ -263,8 +263,8 @@ let expr :=
     | ~=expr; AS; ~=implicit_t_int;                           < E_ATC                >
 
     | ~=expr; IN; ~=pattern_set;                              < E_Pattern            >
-    | ~=expr; EQ_OP; ~=pattern_mask;                          < E_Pattern            >
-    | e=expr; NEQ; p=pattern_mask;                            { E_Pattern (e, Pattern_Not (p) |> add_pos_from p) }
+    | ~=expr; EQ_EQ; ~=pattern_mask;                          < E_Pattern            >
+    | e=expr; NE; p=pattern_mask;                             { E_Pattern (e, Pattern_Not (p) |> add_pos_from p) }
     | ARBITRARY; COLON; ~=ty;                                 < E_Arbitrary        >
     | e=pared(expr);                                          { E_Tuple [ e ]        }
     | t=annotated(IDENTIFIER); LBRACE; MINUS; RBRACE;
@@ -316,8 +316,8 @@ let expr_pattern :=
     | ~=expr_pattern; AS; ~=implicit_t_int;                           < E_ATC                >
 
     | ~=expr_pattern; IN; ~=pattern_set;                              < E_Pattern            >
-    | ~=expr_pattern; EQ_OP; ~=pattern_mask;                          < E_Pattern            >
-    | e=expr_pattern; NEQ; p=pattern_mask;                            { E_Pattern (e, Pattern_Not (p) |> add_pos_from p) }
+    | ~=expr_pattern; EQ_EQ; ~=pattern_mask;                          < E_Pattern            >
+    | e=expr_pattern; NE; p=pattern_mask;                             { E_Pattern (e, Pattern_Not (p) |> add_pos_from p) }
 
     | ARBITRARY; COLON; ~=ty;                                         < E_Arbitrary        >
     | e=pared(expr_pattern);                                          { E_Tuple [ e ]        }
@@ -335,8 +335,8 @@ let pattern :=
     | ~=expr_pattern; < Pattern_Single >
     | e1=expr_pattern; SLICING; e2=expr; < Pattern_Range >
     | MINUS; { Pattern_All }
-    | LEQ; ~=expr; < Pattern_Leq >
-    | GEQ; ~=expr; < Pattern_Geq >
+    | LE; ~=expr; < Pattern_Leq >
+    | GE; ~=expr; < Pattern_Geq >
     | ~=plist2(pattern); < Pattern_Tuple >
   )
   | pattern_mask

@@ -57,9 +57,9 @@ let normalize () =
 
   List.iter do_one
     [
-      (binop `MINUS !$4 !$2, !$2, StaticEnv.empty);
-      ( binop `PLUS (binop `MINUS !%"N" !%"m") (binop `MINUS !%"m" !$1),
-        binop `MINUS !%"N" !$1,
+      (binop `SUB !$4 !$2, !$2, StaticEnv.empty);
+      ( binop `ADD (binop `SUB !%"N" !%"m") (binop `SUB !%"m" !$1),
+        binop `SUB !%"N" !$1,
         StaticEnv.add_local "m" integer LDK_Let env_with_N );
       (unop NEG !$3, !$(-3), StaticEnv.empty);
     ]

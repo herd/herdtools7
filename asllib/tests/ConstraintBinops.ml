@@ -32,7 +32,7 @@ let property (op : int3_binop) (x, y, cs1, cs2) =
   (match op with
   | `SHR | `SHL | `POW -> assert (Z.sign y >= 0)
   | `DIV | `DIVRM | `MOD -> assert (Z.sign y > 0)
-  | `MINUS | `PLUS | `MUL -> ());
+  | `SUB | `ADD | `MUL -> ());
   z_in_constraints (eval_binop x op y) (constraint_binop op cs1 cs2)
 
 let gen_xy op =
@@ -135,12 +135,12 @@ let test_acd (op : int3_binop) =
 let () =
   QCheck_runner.run_tests_main
     [
-      test_abcd `PLUS;
-      test_acd `PLUS;
-      test_abc `PLUS;
-      test_abcd `MINUS;
-      test_acd `MINUS;
-      test_abc `MINUS;
+      test_abcd `ADD;
+      test_acd `ADD;
+      test_abc `ADD;
+      test_abcd `SUB;
+      test_acd `SUB;
+      test_abc `SUB;
       test_abcd `MUL;
       test_acd `MUL;
       test_abc `MUL;
