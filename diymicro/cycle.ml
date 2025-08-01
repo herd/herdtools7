@@ -248,8 +248,8 @@ let set_significant_reads first_node =
     match node.prev.edge, node.edge with
     | Edge.Rf _, _
     | _, Edge.Fr _
-    | Edge.Iico Edge.{significant_dest = true}, _
-    | _, Edge.Iico Edge.{significant_source = true} ->
+    | Edge.Iico Edge.{significant_dest = true; _}, _
+    | _, Edge.Iico Edge.{significant_source = true; _} ->
         node.source_event.is_significant <- true
     | _ -> ()
   in

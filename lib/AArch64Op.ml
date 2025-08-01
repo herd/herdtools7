@@ -115,8 +115,8 @@ module
     (* Check that the PAC field of a virtual address is canonical *)
     let checkCanonical =
       let open Constant in function
-      | Symbolic (Virtual {pac}) ->
-          Some (boolToCst (PAC.is_canonical pac))
+      | Symbolic (Virtual a) ->
+          Some (boolToCst (PAC.is_canonical a.pac))
       | _ ->
           None
 
@@ -168,9 +168,9 @@ module
     let addOnePAC key pointer modifier =
       let open Constant in
       match pointer with
-      | Symbolic (Virtual {pac}) when not (PAC.is_canonical pac) ->
+      | Symbolic (Virtual a) when not (PAC.is_canonical a.pac) ->
           None
-      | Symbolic (Virtual ({pac; offset} as v)) ->
+      | Symbolic (Virtual ({pac; offset; _} as v)) ->
         let modifier = pp_cst true modifier in
         let pac = PAC.add key modifier offset pac in
         Some (Symbolic (Virtual {v with pac}))
@@ -184,7 +184,7 @@ module
     let addPAC key pointer modifier =
       let open Constant in
       match pointer with
-      | Symbolic (Virtual ({pac; offset} as v)) ->
+      | Symbolic (Virtual ({pac; offset; _} as v)) ->
         let modifier = pp_cst true modifier in
         let pac = PAC.add key modifier offset pac in
         Some (Symbolic (Virtual {v with pac}))
