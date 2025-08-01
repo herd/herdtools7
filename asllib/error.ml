@@ -106,6 +106,7 @@ type error_desc =
   | TooManyOverrideCandidates of func annotated list
   | PrecisionLostDefining
   | UnexpectedCollection
+  | BadPrimitiveArgument of identifier * string
 
 type error = error_desc annotated
 
@@ -219,6 +220,7 @@ let error_label = function
   | TooManyOverrideCandidates _ -> "TooManyOverrideCandidates"
   | PrecisionLostDefining -> "PrecisionLostDefining"
   | UnexpectedCollection -> "UnexpectedCollection"
+  | BadPrimitiveArgument _ -> "BadPrimitiveArgument"
 
 let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
@@ -607,7 +609,11 @@ module PPrint = struct
         fprintf f
           "ASL Type error:@ multiple@ `impdef`@ candidates@ for@ \
            `implementation`:@ %a"
-          (pp_print_list pp_pos) impdefs);
+          (pp_print_list pp_pos) impdefs
+    | BadPrimitiveArgument (name, reason) ->
+        pp_print_text f
+          ("ASL Execution error: " ^ name ^ " (primitive) expected an argument "
+         ^ reason));
     pp_close_box f ()
 
   let pp_warning_desc f w =
