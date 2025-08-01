@@ -82,7 +82,12 @@ module Build (I:I) = struct
           end else if c > 0 then begin
             loop i_ks (i_ts+1)
           end else (* c = 0 *) begin
-            out (I.fmt_cell col k.Key.info t) ;
+            begin
+              try
+                out (I.fmt_cell col k.Key.info t)
+              with
+              | Misc.Fatal msg -> Warn.fatal "test %s, %s" k.Key.name msg 
+            end ;
             loop (i_ks+1) (i_ts+1)
           end
         end
