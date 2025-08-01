@@ -3967,10 +3967,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let here x = add_pos_from ~loc:ty x in
     let+ () = check_var_not_in_genv ~loc genv name in
     let env = with_empty_local genv in
-    let env1, t1 =
+    let env1, t1, s' =
       match s with
       (* AnnotateExtraFields( *)
-      | None -> (env, ty)
+      | None -> (env, ty, None)
       | Some (super, extra_fields) ->
           let+ () =
            fun () ->
@@ -3988,7 +3988,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               | Some _ -> conflict ~loc [ T_Record []; T_Exception [] ] ty
               | None -> undefined_identifier ~loc super
           and env = add_subtype name super env in
-          (env, new_ty)
+          (* the extra_fields have already been incorporated into new_ty,
+             so we produce an empty list instead here *)
+          (env, new_ty, Some (super, []))
       (* AnnotateExtraFields) *)
     in
     let t2, ses_t = annotate_type ~decl:true ~loc env1 t1 in
@@ -4010,7 +4012,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | _ -> env2
     in
     let () = if false then Format.eprintf "Declared %s.@." name in
-    new_tenv.global
+    (new_tenv.global, t2, s')
   (* End *)
 
   (* Begin DeclareGlobalStorage *)
@@ -4136,8 +4138,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let new_d = D_GlobalStorage gsd' |> here in
           (new_d, new_genv) |: TypingRule.TypecheckDecl
       | D_TypeDecl (x, ty, s) ->
-          let new_genv = declare_type ~loc x ty s genv in
-          (d, new_genv) |: TypingRule.TypecheckDecl
+          let new_genv, ty', s' = declare_type ~loc x ty s genv in
+          let new_d = D_TypeDecl (x, ty', s') |> here in
+          (new_d, new_genv) |: TypingRule.TypecheckDecl
       (* End *)
       | D_Pragma _ -> assert false
     in
