@@ -1,3 +1,11 @@
+(env
+ (release
+  (flags
+   (:standard -w +a-3-4-9-29-33-41-45-60-67-70)))
+ (dev
+  (flags
+   (:standard -warn-error +A -w +a-3-4-9-29-33-41-45-60-67-70))))
+
 (rule
  (copy ../Version.ml Version.ml))
 
