@@ -230,6 +230,18 @@ test.kvm:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 KVM instructions tests: OK"
 
+test-asl-vmsa:: test.kvm.asl
+test.kvm.asl: asl-pseudocode
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.kvm \
+		-conf ./herd/tests/instructions/AArch64.kvm/asl-vmsa.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 KVM (ASL) instructions tests: OK"
+
 test:: test-c
 test-local:: test-c
 test-c:
@@ -255,7 +267,7 @@ test-ppc:
 
 test:: test-asl
 test-local:: test-asl
-test-asl:
+test-asl: asl-pseudocode
 	@ echo
 	$(HERD_REGRESSION_TEST) \
 		-nohash \
