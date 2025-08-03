@@ -1,7 +1,8 @@
 \chapter{Pattern Matching\label{chap:PatternMatching}}
 
-The binary operator \Tin{} tests whether a value, which is referred to as the \emph{discriminant},
-matches a value specified by a \emph{pattern}.
+The construct \texttt{$e$ IN $p$} tests whether the value calculated by the expression $e$,
+which is referred to as the \emph{discriminant},
+matches a value specified by the \emph{pattern} $p$.
 
 \ExampleDef{Patterns}
 \listingref{Patterns} shows examples of some patterns.
@@ -999,7 +1000,7 @@ These are slightly restricted with respect to the set of all expressions,
 which are grammatically derived from $\Nexpr$.
 %
 The grammar is almost identical to that of $\Nexpr$, except that pattern expressions
-for matching a single values and for matching a range of values, exclude tuples
+for matching a single value and for matching a range of values, exclude tuples
 (for which the tuple expression is used).
 
 The AST for these expressions is $\expr$ --- same as the AST for $\Nexpr$.
