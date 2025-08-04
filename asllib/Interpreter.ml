@@ -1271,7 +1271,6 @@ module Make (B : Backend.S) (C : Config) = struct
   and eval_for loop_msg undet env index_name limit_opt v_start dir v_end body :
       stmt_eval_type =
     (* Evaluate the condition: "has the for loop terminated?" *)
-    let* next_limit_opt = tick_loop_limit body limit_opt in
     let cond_m =
       let comp_for_dir = match dir with Up -> `LT | Down -> `GT in
       let* () = B.on_read_identifier index_name (IEnv.get_scope env) v_start in
@@ -1289,6 +1288,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let loop env =
       let loop_desc = ("for loop", body) in
       bind_maybe_unroll loop_desc undet (eval_block env body) @@ fun env1 ->
+      let* next_limit_opt = tick_loop_limit body limit_opt in
       let*| v_step, env2 = step env1 index_name v_start dir in
       eval_for loop_msg undet env2 index_name next_limit_opt v_step dir v_end
         body

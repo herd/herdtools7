@@ -114,11 +114,6 @@ For loops
   ASL Dynamic error: loop limit reached.
   [1]
   $ aslref for-exact.asl
-  File for-exact.asl, line 5, characters 4 to 26:
-      counter = counter + 1;
-      ^^^^^^^^^^^^^^^^^^^^^^
-  ASL Dynamic error: loop limit reached.
-  [1]
   $ aslref for-exact-minus-one.asl
   $ aslref for-no-limit.asl
 
