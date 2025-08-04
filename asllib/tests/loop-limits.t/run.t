@@ -116,6 +116,13 @@ For loops
   $ aslref for-exact.asl
   $ aslref for-exact-minus-one.asl
   $ aslref for-no-limit.asl
+  $ aslref while-for-repeat-comparison.asl
+  while loop:
+  1
+  repeat loop:
+  1
+  for loop:
+  1
 
 Recursion limits:
 =================
