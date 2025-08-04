@@ -143,7 +143,6 @@ module type ANNOTATE_CONFIG = sig
   val fine_grained_side_effects : bool
   val use_conflicting_side_effects_extension : bool
   val override_mode : override_mode
-  val control_flow_analysis : bool
 end
 
 module type S = sig
@@ -3804,10 +3803,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         f.qualifier
     in
     let ses = SES.set_purity_for_subprogram qualifier ses in
-    let () =
-      if C.control_flow_analysis then
-        ControlFlowAnalysis.check_control_flow env f new_body
-    in
+    let () = ControlFlowAnalysis.check_control_flow env f new_body in
     ({ f with qualifier; body = SB_ASL new_body }, ses) |: TypingRule.Subprogram
   (* End *)
 
@@ -4435,7 +4431,6 @@ module TypeCheckDefault = Annotate (struct
   let fine_grained_side_effects = false
   let use_conflicting_side_effects_extension = false
   let override_mode = Permissive
-  let control_flow_analysis = true
 end)
 
 let type_and_run ?instrumentation ast =

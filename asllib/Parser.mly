@@ -186,12 +186,7 @@ let list1(x) :=
   | ~=x; { [ x ] }
   | ~=x; l=list1(x); { x :: l }
 
-let end_semicolon ==
-  | END; SEMI_COLON; <>
-  | END [@internal true]; {
-      if not Config.allow_no_end_semicolon then
-          Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Missing ';' after 'end' keyword.";
-  }
+let end_semicolon == END; SEMI_COLON; <>
 
 
 (* ------------------------------------------------------------------------
@@ -247,13 +242,6 @@ let binop ==
 
 let field_assign := separated_pair(IDENTIFIER, EQ, expr)
 
-let e_else :=
-  | ELSE; expr
-  | annotated ( ELSIF [@internal true]; c=expr; THEN; e1=expr; e2=e_else; {
-      if Config.allow_expression_elsif then E_Cond (c, e1, e2)
-      else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Expression-level 'elsif'."
-    } )
-
 let expr :=
   annotated (
     (* A union of cexpr, cexpr_cmp, cexpr_add_sub, cepxr mul_div, cexpr_pow,
@@ -262,7 +250,7 @@ let expr :=
     | ~=IDENTIFIER ;                                              < E_Var                >
     | e1=expr; op=binop; e2=expr;                             < e_binop              >
     | op=unop; e=expr;                                            < E_Unop               > %prec UNOPS
-    | IF; e1=expr; THEN; e2=expr; ~=e_else;                       < E_Cond               >
+    | IF; e1=expr; THEN; e2=expr; ELSE; e3=expr;                  < E_Cond               >
     | ~=call;                                                     < e_call               >
     | e=expr; ~=slices;                                       < E_Slice              >
     | e1=expr; LLBRACKET; e2=expr; RRBRACKET;                 < E_GetArray           >
@@ -296,10 +284,6 @@ let expr :=
 let constraint_kind_opt := constraint_kind | { UnConstrained }
 let constraint_kind :=
   | cs=braced(clist1(int_constraint)); { WellConstrained (cs, Precision_Full) }
-  | braced(MINUS); {
-    if Config.allow_hyphenated_pending_constraint then PendingConstrained
-      else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Hyphenated pending constraint."
-  }
   | LBRACE; RBRACE; { PendingConstrained }
 
 let int_constraint :=
@@ -315,7 +299,7 @@ let expr_pattern :=
     | ~=IDENTIFIER ;                                              < E_Var                >
     | e1=expr_pattern; op=binop; e2=expr;                             < e_binop              >
     | op=unop; e=expr;                                            < E_Unop               > %prec UNOPS
-    | IF; e1=expr; THEN; e2=expr; ~=e_else;                       < E_Cond               >
+    | IF; e1=expr; THEN; e2=expr; ELSE; e3=expr;                  < E_Cond               >
     | ~=call;                                                     < e_call               >
     | e=expr_pattern; ~=slices;                                       < E_Slice              >
     | e1=expr_pattern; LLBRACKET; e2=expr; RRBRACKET;                 < E_GetArray           >
@@ -397,12 +381,6 @@ let ty :=
 let ty_decl := ty |
   annotated (
     | ENUMERATION; l=braced(tclist1(IDENTIFIER));       < T_Enum       >
-    | RECORD [@internal true];
-      { if Config.allow_empty_structured_type_declarations then T_Record []
-        else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Empty record type declaration." }
-    | EXCEPTION [@internal true];
-      { if Config.allow_empty_structured_type_declarations then T_Exception []
-        else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Empty exception type declaration." }
     | RECORD; l=fields;                                 < T_Record     >
     | EXCEPTION; l=fields;                              < T_Exception  >
   )
@@ -416,9 +394,6 @@ let as_ty := COLON; ty
 let ty_or_collection :=
   | ty
   | annotated (
-    | COLLECTION [@internal true];
-      { if Config.allow_empty_structured_type_declarations then T_Collection []
-        else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Empty collection type declaration." }
     | COLLECTION; l=fields;                         < T_Collection >
   )
 (* End *)
@@ -478,14 +453,10 @@ let discard_or_identifier :=
   | ~=IDENTIFIER;  <>
 
 let decl_item :=
-  | MINUS [@internal true]           ; {
-      if Config.allow_storage_discards then LDI_Var (local_ignored ())
-      else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Discarded storage declaration."
-    }
   | ~=IDENTIFIER                     ; < LDI_Var >
   | vs=plist2(discard_or_identifier) ; {
-      if List.for_all is_local_ignored vs && not Config.allow_storage_discards then
-        Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Discarded storage declaration."
+      if List.for_all is_local_ignored vs then
+        Error.fatal_here $startpos $endpos @@ Error.CannotParse
       else LDI_Tuple vs
     }
 
@@ -494,11 +465,6 @@ let decl_item :=
 
 let local_decl_keyword ==
   | LET       ; { LDK_Let       }
-  | CONSTANT[@internal true]; {
-    if not Config.allow_local_constants then
-        Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Local constant declaration."
-    else LDK_Constant
-  }
   | VAR       ; { LDK_Var       }
 
 let global_keyword_non_config ==
@@ -570,9 +536,6 @@ let stmt :=
       | PRINT; args=clist0(expr);                             { S_Print { args; newline = false; debug = false } }
       | DEBUG; args=plist0(expr);            { S_Print { args; newline = true; debug = true } }
       | UNREACHABLE;                                          { S_Unreachable }
-      | UNREACHABLE; LPAR; RPAR [@internal true];
-          { if Config.allow_function_like_statements then S_Unreachable
-            else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Function-like unreachable statement." }
       | REPEAT; ~=stmt_list; UNTIL; ~=expr; ~=loop_limit;    < S_Repeat >
       | THROW; e=expr;                                       { S_Throw (e, None) }
       | PRAGMA; x=IDENTIFIER; e=clist0(expr);                 < S_Pragma >
@@ -617,12 +580,6 @@ let elided_param_call :=
 let func_args := plist0(typed_identifier)
 let func_body == delimited(BEGIN, stmt_list, end_semicolon)
 let recurse_limit := ioption(RECURSELIMIT; expr)
-let ignored_or_identifier :=
-  | MINUS [@internal true]; {
-      if Config.allow_storage_discards then global_ignored ()
-      else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Discarded storage declaration."
-    }
-  | IDENTIFIER
 
 let qualifier ==
   ioption(
@@ -696,18 +653,18 @@ let decl :=
       | TYPE; x=IDENTIFIER; s=annotated(subtype);         < make_ty_decl_subtype >
       (* End *)
       (* Begin global_storage *)
-      | keyword=global_keyword_non_config; name=ignored_or_identifier;
+      | keyword=global_keyword_non_config; name=IDENTIFIER;
         ty=ioption(as_ty); EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword; name; ty; initial_value } }
-      | CONFIG; name=ignored_or_identifier;
+      | CONFIG; name=IDENTIFIER;
         ty=as_ty; EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword=GDK_Config; name; ty=Some ty; initial_value } }
-      | keyword=global_keyword; name=ignored_or_identifier;
+      | keyword=global_keyword; name=IDENTIFIER;
         ty=as_ty; EQ; call=annotated(elided_param_call);
         { D_GlobalStorage { keyword; name; ty=Some ty; initial_value=desugar_elided_parameter ty call } }
       (* End *)
       (* Begin global_uninit_var *)
-      | VAR; name=ignored_or_identifier; COLON; ty=some(ty_or_collection);
+      | VAR; name=IDENTIFIER; COLON; ty=some(ty_or_collection);
         { D_GlobalStorage { keyword=GDK_Var; name; ty; initial_value=None}}
       (* End *)
       (* Begin global_pragma *)

@@ -42,14 +42,6 @@ let run_asl code version exec =
         ];
       opn = None;
       (* … rest of the boolean flags left to their defaults … *)
-      allow_no_end_semicolon = false;
-      allow_expression_elsif = false;
-      allow_double_underscore = false;
-      allow_unknown = false;
-      allow_storage_discards = false;
-      allow_hyphenated_pending_constraint = false;
-      allow_local_constants = false;
-      allow_single_arrows = false;
       print_ast = false;
       print_lisp = false;
       print_serialized = false;
@@ -63,9 +55,6 @@ let run_asl code version exec =
       override_mode = Permissive;
       no_primitives = false;
       no_stdlib = false;
-      control_flow_analysis = true;
-      allow_empty_structured_type_declarations = false;
-      allow_function_like_statements = false;
     }
   in
 
