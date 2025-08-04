@@ -27,11 +27,6 @@ open Tokens
 open Error
 
 module type CONFIG = sig
-    (** Allow variables starting with a double underscore (__) *)
-    val allow_double_underscore : bool
-    val allow_unknown : bool
-    val allow_single_arrows : bool
-    val allow_function_like_statements : bool
 end
 
 let reserved_keywords = []
@@ -357,13 +352,7 @@ let tr_name s = match s with
 | "try"           -> TRY
 | "TRUE"          -> BOOL_LIT true
 | "type"          -> TYPE
-| "UNKNOWN"       ->
-    if Config.allow_unknown then ARBITRARY
-    else fatal_unknown_pos (Error.ObsoleteSyntax s)
 | "ARBITRARY"     -> ARBITRARY
-| "Unreachable"   ->
-    if Config.allow_function_like_statements then UNREACHABLE
-    else fatal_unknown_pos (Error.ObsoleteSyntax s)
 | "unreachable"   -> UNREACHABLE
 | "until"         -> UNTIL
 | "var"           -> VAR
@@ -373,8 +362,7 @@ let tr_name s = match s with
 | "with"          -> WITH
 (* Reserved identifiers *)
 | x when is_reserved_keyword x -> reserved_err x
-| x when not Config.allow_double_underscore
-         && ASTUtils.string_starts_with ~prefix:"__" x -> reserved_err x
+| x when ASTUtils.string_starts_with ~prefix:"__" x -> reserved_err x
 (* End of reserved identifiers *)
 | x               -> IDENTIFIER x
 }
@@ -467,7 +455,6 @@ and token = parse
     | '<'                      { LT                               }
     | ">>"                     { SHR                              }
     | "&&"                     { BAND                             }
-    | "-->"                    { if Config.allow_single_arrows then IMPL else fatal lexbuf (ObsoleteSyntax "implication with -->") }
     | "==>"                    { IMPL                             }
     | "<<"                     { SHL                              }
     | ']'                      { RBRACKET                         }
@@ -478,7 +465,6 @@ and token = parse
     | '{'                      { LBRACE                           }
     | "!="                     { NEQ                              }
     | '-'                      { MINUS                            }
-    | "<->"                    { if Config.allow_single_arrows then BEQ else fatal lexbuf (ObsoleteSyntax "equivalence with <->") }
     | "<=>"                    { BEQ                              }
     | '['                      { LBRACKET                         }
     | "[["                     { LLBRACKET                        }
