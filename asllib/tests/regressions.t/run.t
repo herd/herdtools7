@@ -76,7 +76,7 @@ Global ignored:
   File global_ignored.asl, line 1, characters 4 to 5:
   var - = 3 / 0;
       ^
-  ASL Grammar error: Obsolete syntax: Discarded storage declaration.
+  ASL Grammar error: Cannot parse.
   [1]
 
   $ aslref shadow-banning-bug.asl
@@ -512,10 +512,10 @@ Required tests:
   [1]
 
   $ aslref no-expression-elsif.asl
-  File no-expression-elsif.asl, line 12, characters 25 to 50:
+  File no-expression-elsif.asl, line 12, characters 25 to 30:
     let y = if TRUE then 1 elsif FALSE then 2 else 3;   // ERROR
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Grammar error: Obsolete syntax: Expression-level 'elsif'.
+                           ^^^^^
+  ASL Grammar error: Cannot parse.
   [1]
 
   $ aslref --gnu-errors gnu-errors.asl
@@ -601,8 +601,8 @@ Getters/setters
   [1]
 
 ASLRef Field getter extension
-  $ aslref --use-field-getter-extension setter_bitfields.asl
-  $ aslref --use-field-getter-extension pstate-exp.asl
+  $ aslref --v0-use-field-getter-extension setter_bitfields.asl
+  $ aslref --v0-use-field-getter-extension pstate-exp.asl
   $ aslref --no-exec atc-in-types.asl
   $ aslref single-slice.asl
 
@@ -644,33 +644,25 @@ Left-hand sides
   [1]
   $ aslref lhs-tuple-same-var.asl
   $ aslref lhs-expressivity.asl
-  $ aslref --allow-hyphenated-pending-constraint hyphenated-pending-constraint.asl
   $ aslref hyphenated-pending-constraint.asl
-  File hyphenated-pending-constraint.asl, line 3, characters 18 to 21:
+  File hyphenated-pending-constraint.asl, line 3, characters 20 to 21:
       let x: integer{-} = 5;
-                    ^^^
-  ASL Grammar error: Obsolete syntax: Hyphenated pending constraint.
+                      ^
+  ASL Grammar error: Cannot parse.
   [1]
   $ aslref local_constants.asl
   File local_constants.asl, line 8, characters 4 to 12:
       constant x = 32;
       ^^^^^^^^
-  ASL Grammar error: Obsolete syntax: Local constant declaration.
+  ASL Grammar error: Cannot parse.
   [1]
-  $ aslref --allow-local-constants local_constants.asl
 
 Outdated syntax
-  $ aslref --allow-single-arrows outdated-implication.asl
-  File outdated-implication.asl, line 6, characters 25 to 26:
-    let z: boolean = x --> z;
-                           ^
-  ASL Static error: Undefined identifier: 'z'
-  [1]
   $ aslref outdated-implication.asl
-  File outdated-implication.asl, line 6, characters 21 to 24:
+  File outdated-implication.asl, line 6, characters 23 to 24:
     let z: boolean = x --> z;
-                       ^^^
-  ASL Grammar error: Obsolete syntax: implication with -->
+                         ^
+  ASL Grammar error: Cannot parse.
   [1]
   $ aslref noreturn.asl
   File noreturn.asl, line 31, character 0 to line 34, character 4:
@@ -725,4 +717,10 @@ Bounds checks
   $ aslref bounds-checks-write-zero-width-slice.asl
   ASL Dynamic error: Mismatch type:
     value 100 does not belong to type integer {0..3}.
+  [1]
+  $ aslref no_end_semicolon.asl
+  File no_end_semicolon.asl, line 6, characters 2 to 8:
+    return 0;
+    ^^^^^^
+  ASL Grammar error: Cannot parse.
   [1]
