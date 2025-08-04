@@ -246,7 +246,7 @@ end = struct
 
       let compile
             parse count_procs compile allocate
-            cycles hash_env
+            hash_env
             name in_chan out_chan splitted =
         try begin
             check_variant Variant_litmus.Self splitted.Splitter.arch ;
@@ -263,13 +263,12 @@ end = struct
               cycle_ok && hash_ok && limit_ok
             then begin
                 warn_limit doc nprocs ;
-                let hash_env = StringMap.add tname hash hash_env in
                 let parsed = change_hint hint doc.Name.name parsed in
                 let allocated = allocate parsed in
                 let compiled = compile doc allocated in
-                let source = MyName.outname name ".c" in
+                let src = MyName.outname name ".c" in
                 let pac = O.variant Variant_litmus.Pac in
-                dump source doc compiled;
+                dump src doc compiled;
                 if not OT.is_out then begin
                     let _utils =
                       let module OO = struct
@@ -285,15 +284,17 @@ end = struct
                       Obj.dump pac in
                     ()
                   end ;
-                R.run name out_chan doc allocated source ;
-                Completed (A'.arch,doc,source,cycles,hash_env,nprocs,pac)
+                R.run name out_chan doc allocated src ;
+                Completed
+                  { arch = A'.arch; doc; src; fullhash = hash ;
+                    nprocs; pac; self = O.variant Variant_litmus.Self; }
               end else begin
                 let cause = if limit_ok then "" else " (too many threads)" in
                 W.warn "%s test not compiled%s"
                   (Pos.str_pos0 doc.Name.file) cause ;
-                Absent A'.arch
+                Absent
               end
-          end with e -> if OT.nocatch then raise e ; Interrupted (A'.arch,e)
+          end with e -> if OT.nocatch then raise e ; Interrupted e
     end
 
 
@@ -390,7 +391,7 @@ end = struct
 
   module SP = Splitter.Make(LexConfig)
 
-  let from_chan cycles hash_env name in_chan out_chan =
+  let from_chan hash_env name in_chan out_chan =
     (* First split the input file in sections *)
     let { Splitter.arch=arch ; _ } as splitted =
       SP.split name in_chan in
@@ -597,14 +598,14 @@ end = struct
              X.compile
           | `CPP | `LISA | `JAVA | `ASL | `BPF -> assert false
         in
-        aux arch cycles hash_env name in_chan out_chan splitted
+        aux arch hash_env name in_chan out_chan splitted
       end else begin (* Excluded explicitely, (check_tname), do not warn *)
-        Absent arch
+        Absent
       end
 
-  let from_file cycles hash_env name out_chan =
+  let from_file hash_env name out_chan =
     Misc.input_protect
-      (fun in_chan -> from_chan cycles hash_env name in_chan out_chan)
+      (fun in_chan -> from_chan hash_env name in_chan out_chan)
       name
 
   (* Call generic tar builder/runner *)

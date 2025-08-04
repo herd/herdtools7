@@ -39,7 +39,6 @@ module type Config = sig
   val asmcommentaslabel : bool
   include RunUtils.CommonConfig
   val mkopt : Option.opt -> Option.opt
-  val variant : Variant_litmus.t -> bool
   val nocatch : bool
   val smt : int
   val nsockets : int
@@ -47,8 +46,7 @@ module type Config = sig
 end
 
 module type OneTest = sig
-  val from_file :
-      StringSet.t -> hash_env -> string -> out_channel -> answer
+  val from_file : hash_env -> string -> out_channel -> answer
 end
 
 
@@ -95,9 +93,8 @@ end = struct
     (module M : ArchConf)
 
 (* Makefile utilities *)
-  let do_self = Cfg.variant Variant_litmus.Self
 
-  let makefile_vars chan infile arch pac sources =
+  let makefile_vars chan infile arch (pac,self) sources =
     let module O = struct
       include Cfg
       include (val (get_arch arch) : ArchConf)
@@ -107,7 +104,7 @@ end = struct
       (fun line -> fprintf chan "%s\n" line)
       Cfg.makevar ;
     let gcc_opts =
-      if do_self then LexO.tr RU.get_gcc_opts
+      if self then LexO.tr RU.get_gcc_opts
       else RU.get_gcc_opts in
     begin
       match Cfg.mode with
@@ -185,29 +182,55 @@ end = struct
 ;;
 
 (* Compile (and run in command line mode) tests *)
+type infos =
+  { one_arch: Archs.t option;
+    docs : Name.t list;
+    srcs : string list;
+    hashes : Answer.hash_env;
+    nthreads : IntSet.t;
+    some_pac : bool;
+    some_self : bool;
+  }
+
 let run_tests names out_chan =
+
   let exp = match Cfg.index with
   | None -> None
   | Some exp -> Some (open_out exp) in
-  let  arch,docs,sources,_,_,nts,some_pac =
+
+  let  {one_arch; docs; srcs; nthreads; some_pac; some_self; } =
     Misc.fold_argv_or_stdin
-      (fun name (a0,docs,srcs,cycles,hash_env,nts,some_pac) ->
-        let ans =
-          try CT.from_file cycles hash_env name out_chan
+      (fun name ({one_arch; docs; srcs; hashes;
+                  nthreads; some_pac; some_self; } as st) ->
+         let check_arch archo arch = match archo with
+           | None -> Some arch
+           | Some a ->
+               if a = arch then archo
+               else
+                 Warn.fatal "diferent architectures in the same batch: %s (file %s) vs. %s"
+                   (Archs.pp arch) name (Archs.pp a) in
+         let ans =
+          try CT.from_file hashes name out_chan
           with
           | e ->
               if Cfg.nocatch then raise e ;
-              Interrupted (a0,e) in
+              Interrupted e in
         match ans with
-        | Completed (a,doc,src,cycles,hash_env,nt,pac) ->
+        | Completed
+            {arch; doc; src; fullhash; nprocs; pac; self; } ->
             begin match exp with
             | None -> ()
             | Some exp -> fprintf exp "%s\n" name
             end ;
-            a,(doc::docs),(src::srcs),cycles,hash_env,
-            IntSet.add nt nts,(pac || some_pac)
-        | Absent a -> a,docs,srcs,cycles,hash_env,nts,some_pac
-        | Interrupted (a,e) ->
+            { one_arch = check_arch one_arch arch;
+              docs = doc::docs;
+              srcs = src::srcs;
+              hashes = StringMap.add doc.Name.name fullhash hashes;
+              nthreads = IntSet.add nprocs nthreads;
+              some_pac = pac || some_pac;
+              some_self = self || some_self; }
+        | Absent -> st
+        | Interrupted e ->
             let msg =  match e with
             | Misc.Exit -> "None"
             | Misc.Fatal msg
@@ -220,12 +243,20 @@ let run_tests names out_chan =
                 eprintf "%a %s\n%!" Pos.pp_pos0 name msg ;
                 msg in
             report_failure name msg out_chan ;
-            a,docs,srcs,cycles,hash_env,nts,some_pac)
-      names (`X86,[],[],StringSet.empty,StringMap.empty,IntSet.empty,false) in
+            st)
+      names
+      { one_arch = None;
+        docs = []; srcs = []; hashes = StringMap.empty;
+        nthreads = IntSet.empty;
+        some_pac = false; some_self = false; } in
   begin match exp with
   | None -> ()
   | Some exp -> close_out exp
   end ;
+  let arch =
+    match one_arch with
+    | None -> `X86 (* No tests compiled, arch is irrelevant *)
+    | Some arch -> arch in
   let utils =
     let module O = struct
       include Cfg
@@ -236,7 +267,7 @@ let run_tests names out_chan =
     end in
     let module Obj = ObjUtil.Make(O)(Tar) in
     Obj.dump some_pac in
-  arch,docs,sources,utils,nts,some_pac
+  arch,docs,srcs,utils,nthreads,(some_pac,some_self)
 
 (* Run tests (command line mode) *)
 let dump_command names =
@@ -326,7 +357,7 @@ let dump_shell names =
       end ;
       let sleep = Cfg.sleep in
       if sleep >= 0 then fprintf out_chan "SLEEP=%i\n" sleep ;
-      let arch,_,sources,utils,_,pac = run_tests names out_chan in
+      let arch,_,sources,utils,_,flags = run_tests names out_chan in
 
       let module O = struct
         include Cfg
@@ -338,10 +369,10 @@ let dump_shell names =
         output_line out_chan "sed '2q;d' comp.sh"
        end ;
       dump_shell_postfix out_chan ;
-      arch,sources,utils,pac)
+      arch,sources,utils,flags)
     (Tar.outname (MyName.outname "run" ".sh"))
 
-let dump_shell_cont arch pac sources utils =
+let dump_shell_cont arch flags sources utils =
   let sources = List.map Filename.basename  sources in
 (* Shell script for sequential compilation *)
   let module O = struct
@@ -398,7 +429,7 @@ let dump_shell_cont arch pac sources utils =
   Misc.output_protect
     (fun chan ->
 (* Variables *)
-      makefile_vars chan false arch pac sources ;
+      makefile_vars chan false arch flags sources ;
       fprintf chan "EXE=$(SRC:.c=%s)\n"
         (match Cfg.mode with
         | Mode.Std|Mode.PreSi -> ".exe"
@@ -472,7 +503,7 @@ let dump_c xcode names =
       end ;
       O.o "" ;
       O.o "/* Declarations of tests entry points */" ;
-      let arch,docs,srcs,utils,nts,pac =
+      let arch,docs,srcs,utils,nts,flags =
         run_tests names out_chan in
       let module C = struct
         include Cfg
@@ -566,11 +597,11 @@ let dump_c xcode names =
         O.oi "return 0;" ;
         O.o"}"
       end ;
-      arch,srcs,utils,nts,pac)
+      arch,srcs,utils,nts,flags)
     (Tar.outname (MyName.outname "run" (if xcode then ".m" else ".c")))
 
 
-let dump_c_cont xcode arch pac sources utils nts =
+let dump_c_cont xcode arch flags sources utils nts =
   let nts = IntSet.filter Param.mk_dsa nts in
   let shared_topology =  not (xcode || IntSet.is_empty nts) in
   let sources = List.map Filename.basename  sources in
@@ -581,7 +612,7 @@ let dump_c_cont xcode arch pac sources utils nts =
   let infile = not xcode in
   Misc.output_protect
     (fun chan ->
-      makefile_vars chan infile arch pac sources ;
+      makefile_vars chan infile arch flags sources ;
 (* Various intermediate targets *)
       fprintf chan "T=$(SRC:.c=.t)\n" ;
       fprintf chan "H=$(SRC:.c=.h)\n" ;
@@ -777,20 +808,20 @@ let from_files =
       let arch =
         match Cfg.driver with
         | Driver.Shell ->
-            let arch,sources,utils,pac = dump_shell names in
-            dump_shell_cont arch pac sources utils ;
+            let arch,sources,utils,flags = dump_shell names in
+            dump_shell_cont arch flags sources utils ;
             arch
         | Driver.C|Driver.XCode as d ->
             let xcode = match d with
             | Driver.XCode -> true
             | _ -> false in
-            let arch,sources,utils,nts,pac = dump_c xcode names in
+            let arch,sources,utils,nts,flags = dump_c xcode names in
             begin match Cfg.crossrun with
             | Crossrun.Kvm e ->
                dump_c_shell_kvm e
             | _ ->  ()
             end ;
-            dump_c_cont xcode arch pac sources utils nts ;
+            dump_c_cont xcode arch flags sources utils nts ;
             arch in
       if Cfg.cross then dump_cross arch
 end

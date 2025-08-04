@@ -38,7 +38,6 @@ module type Config = sig
   val asmcommentaslabel : bool
   include RunUtils.CommonConfig
   val mkopt : Option.opt -> Option.opt
-  val variant : Variant_litmus.t -> bool
   val nocatch : bool
   val smt : int
   val nsockets : int
@@ -47,8 +46,7 @@ end
 
 
 module type OneTest = sig
-  val from_file :
-      StringSet.t -> hash_env-> string -> out_channel -> answer
+  val from_file : hash_env -> string -> out_channel -> answer
 end
 
 module Make :
