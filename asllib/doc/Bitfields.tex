@@ -1,7 +1,7 @@
 \chapter{Bitfields\label{chap:Bitfields}}
 
 \hypertarget{bitfieldterm}{}
-Bitvector types allow defining slices, which we refer to as \emph{bitfields}.
+Bitvector types allow defining named slices, which we refer to as \emph{bitfields}.
 Bitfields can be read from and written to. \identi{KGMC}
 
 \ExampleDef{A bitvector type with bitfields}
@@ -92,7 +92,7 @@ defined for each bitfield.
 
 \paragraph{Typing:} Bitfields are annotated by $\annotatebitfields$.
 
-\paragraph{Semantics:} Bitfields are not directly associated with a dynamic semantic.
+\paragraph{Semantics:} Bitfields are not directly associated with a dynamic semantics.
   Their semantics is given as part of slicing expressions
   by $\evalexprname$ (see \secref{SlicingExpressions}) and
   $\evallexprname$ (see \secref{BitvectorSliceAssignmentExpressions}).

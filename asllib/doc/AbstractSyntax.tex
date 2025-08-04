@@ -20,11 +20,11 @@ generate a \typedast.
 
 \ChapterOutline
 \begin{itemize}
-  \item \secref{AbstractSyntaxTrees} defines the type of Abstract Syntax Trees used by ASL;
-  \item \secref{AbstractSyntaxGrammar} defines notations used for the AST grammar;
+  \item \secref{AbstractSyntaxTrees} defines the type of Abstract Syntax Trees (ASTs) used by ASL;
+  \item \secref{AbstractSyntaxGrammar} defines notations used to define the ASTs of ASL;
   \item \secref{UntypedAbstractGrammar} defines the AST nodes for the \untypedast:
   \begin{itemize}
-    \item \secref{Identifiers} defines the AST for Identifiers;
+    \item \secref{Identifiers} defines the AST for identifiers;
     \item \secref{ASTLiterals} defines the AST for literal values;
     \item \secref{BasicOperations} defines the AST for basic operations;
     \item \secref{Expressions} defines the AST for expressions;
@@ -33,7 +33,7 @@ generate a \typedast.
     \item \secref{SubprogramCalls} defines the AST for subprogram calls;
     \item \secref{Types} defines the AST for types;
     \item \secref{Constraints} defines the AST for constraints;
-    \item \secref{BitFields} defines the AST for bit Fields;
+    \item \secref{BitFields} defines the AST for bitfields;
     \item \secref{ArrayIndices} defines the AST for array indices;
     \item \secref{FieldsAndTypedIdentifiers} defines the AST for fields and typed identifiers;
     \item \secref{LeftHandSideExpressions} defines the AST for assignable expressions;
@@ -45,8 +45,8 @@ generate a \typedast.
     \item \secref{GlobalDeclarations} defines the AST for global declarations;
     \item \secref{Specifications} defines the AST for specifications;
   \end{itemize}
-  \item \secref{UntypedAbstractGrammar} presents the grammar rules for the \untypedast;
-  \item \secref{TypedAbstractSyntaxGrammar} presents the grammar rules for the \typedast;
+  \item \secref{UntypedAbstractGrammar} defines the \untypedast;
+  \item \secref{TypedAbstractSyntaxGrammar} defines the \typedast;
   \item \secref{BuildingAbstractSyntaxTrees} explains how we use inference rules to transform a parse tree into an \untypedast;
   \item \secref{BuildingParameterizedProductions} presents rules for building ASTs from parameterized productions;
   \item \secref{LeftToRight} maps \assignableexpressions{} to right hand side expressions;

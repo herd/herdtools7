@@ -266,6 +266,7 @@ but
 by
 byte
 calculate
+calculated
 calculation
 call
 called
@@ -290,6 +291,7 @@ cases
 catch
 catcher
 catchers
+catches
 catching
 categories
 caught
@@ -1522,6 +1524,7 @@ practice
 pragma
 pragmas
 precedence
+preceding
 precise
 precisely
 precision

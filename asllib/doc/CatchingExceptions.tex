@@ -1,14 +1,14 @@
 \chapter{Catching Exceptions\label{chap:CatchingExceptions}}
 
-Catchers allow processing thrown exceptions.
-ASL allows specifying a list \emph{catch clauses}.
-Each catch clause, which starts with the \Twhen{} keyword,
-specifies a condition that specifies which exception
-should be caught, based on its type, and a statement to be executed
-when an exception is caught.
-Exception catchers also allow specifying an \Totherwise{} clause
-to allow evaluating a statement for exceptions that are not caught
-by an catch clause.
+Catchers can be used to process thrown exceptions.
+ASL allows specifying a list of \emph{catch clauses}.
+Each catch clause starts with the \Twhen{} keyword,
+and specifies when an exception
+should be caught (based on its type), and a statement to be executed
+when an exception has been caught.
+A final optional \Totherwise{} clause
+catches all exceptions that have not been caught
+by a preceding catch clause.
 
 \ExampleDef{Exception Catchers}
 \listingref{CatchingExceptions} shows examples of catching exceptions.
