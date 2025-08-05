@@ -612,9 +612,8 @@ module PPrint = struct
            `implementation`:@ %a"
           (pp_print_list pp_pos) impdefs
     | BadPrimitiveArgument (name, reason) ->
-        pp_print_text f
-          ("ASL Execution error: " ^ name ^ " (primitive) expected an argument "
-         ^ reason));
+        fprintf f "ASL Execution error: %s (primitive) expected an argument %s"
+          name reason);
     pp_close_box f ()
 
   let pp_warning_desc f w =
