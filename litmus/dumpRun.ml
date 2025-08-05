@@ -189,18 +189,36 @@ type infos =
     srcs : string list;
     hashes : Answer.hash_env;
     nthreads : IntSet.t;
-    some_flags : Flags.t;
   }
 
-let run_tests names out_chan =
+let collect_flags names =
+    let devnull = if Sys.win32 then open_out "nul" else open_out "/dev/null" in
+    Misc.fold_argv_or_stdin
+      (fun name some_flags ->
+         let ans =
+          try CT.from_file StringMap.empty name devnull
+          with
+          | e ->
+              if Cfg.nocatch then raise e ;
+              Interrupted e in
+          match ans with
+          | Completed {flags; _} ->
+              let open Flags in
+              { pac = flags.pac || some_flags.pac;
+                self = flags.self || some_flags.self;}
+          | _ -> some_flags)
+      names
+      {Flags.pac=false; Flags.self=false;}
+
+let run_tests names flags out_chan =
 
   let exp = Misc.app_opt open_out Cfg.index
   and onames = Misc.app_opt open_out Cfg.outnames in
 
-  let  {one_arch; docs; srcs; nthreads; some_flags;  hashes=_; } =
+  let  {one_arch; docs; srcs; nthreads;  hashes=_; } =
     Misc.fold_argv_or_stdin
       (fun name ({one_arch; docs; srcs; hashes;
-                  nthreads; some_flags; } as st) ->
+                  nthreads } as st) ->
          let check_arch archo arch = match archo with
            | None -> Some arch
            | Some a ->
@@ -216,7 +234,7 @@ let run_tests names out_chan =
               Interrupted e in
         match ans with
         | Completed
-            {arch; doc; src; fullhash; nprocs; flags; } ->
+            {arch; doc; src; fullhash; nprocs; _} ->
             Misc.check_opt (fun out -> fprintf out "%s\n" name) exp ;
             Misc.check_opt
               (fun out -> fprintf out "%s\n" doc.Name.name)
@@ -227,7 +245,6 @@ let run_tests names out_chan =
               srcs = src::srcs;
               hashes = StringMap.add doc.Name.name fullhash hashes;
               nthreads = IntSet.add nprocs nthreads;
-              some_flags = {pac = flags.pac || some_flags.pac; self = flags.self || some_flags.self;}
                }
         | Absent -> st
         | Interrupted e ->
@@ -247,8 +264,7 @@ let run_tests names out_chan =
       names
       { one_arch = None;
         docs = []; srcs = []; hashes = StringMap.empty;
-        nthreads = IntSet.empty;
-        some_flags = {Flags.pac=false; Flags.self=false;}; } in
+        nthreads = IntSet.empty; } in
   Misc.check_opt close_out exp ;
   Misc.check_opt close_out onames ;
   let arch =
@@ -264,13 +280,14 @@ let run_tests names out_chan =
       let sysarch  = Archs.get_sysarch arch Cfg.carch
     end in
     let module Obj = ObjUtil.Make(O)(Tar) in
-    Obj.dump some_flags.Flags.pac in
-  arch,docs,srcs,utils,nthreads,some_flags
+    Obj.dump flags in
+  arch,docs,srcs,utils,nthreads
 
 (* Run tests (command line mode) *)
 let dump_command names =
   let out_chan = stdout in
-  let arch,_,_,utils,_,_ = run_tests names out_chan in
+  let flags = collect_flags names in
+  let arch,_,_,utils,_ = run_tests names flags out_chan in
   let module O = struct
       include Cfg
     include (val (get_arch arch) : ArchConf)
@@ -355,7 +372,8 @@ let dump_shell names =
       end ;
       let sleep = Cfg.sleep in
       if sleep >= 0 then fprintf out_chan "SLEEP=%i\n" sleep ;
-      let arch,_,sources,utils,_,flags = run_tests names out_chan in
+      let flags = collect_flags names in
+      let arch,_,sources,utils,_ = run_tests names flags out_chan in
 
       let module O = struct
         include Cfg
@@ -501,8 +519,9 @@ let dump_c xcode names =
       end ;
       O.o "" ;
       O.o "/* Declarations of tests entry points */" ;
-      let arch,docs,srcs,utils,nts,flags =
-        run_tests names out_chan in
+      let flags = collect_flags names in
+      let arch,docs,srcs,utils,nts =
+        run_tests names flags out_chan in
       let module C = struct
         include Cfg
         include (val (get_arch arch) : ArchConf)

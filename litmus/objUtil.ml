@@ -181,7 +181,7 @@ module Make(O:Config)(Tar:Tar.S) =
     | Mac as os ->
         Warn.fatal "Affinity not implemented for %s" (TargetOS.pp os)
 
-    let dump some_pac =
+    let dump flags =
       let fnames = [] in
       let fnames = match O.driver with
       | Driver.Shell -> fnames
@@ -263,7 +263,7 @@ module Make(O:Config)(Tar:Tar.S) =
             let fnames = cpy fnames "affinity" ".h" in
             fnames in
       let fnames =
-        if some_pac then
+        if flags.Flags.pac then
           let sub = dir_of_sysarch O.sysarch in
           let fnames = cpy ~sub:sub fnames "auth" ".c" in
           let fnames = cpy ~sub:sub fnames "auth" ".h" in
