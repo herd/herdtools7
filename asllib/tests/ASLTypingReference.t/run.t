@@ -38,8 +38,8 @@ ASL Typing Tests:
   File TypingRule.TypeSatisfaction.bad1.asl, line 3, characters 4 to 25:
       var a: integer{0..N};
       ^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: base value of type integer {0..N} cannot be statically
-    determined since it consists of N.
+  ASL Type error: base value of type integer {0..N} cannot be symbolically
+    reduced since it consists of N.
   [1]
   $ aslref --no-exec TypingRule.TypeClashes.asl
   $ aslref --no-exec TypingRule.TypeClashes.bad.asl
