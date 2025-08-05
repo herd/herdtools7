@@ -231,6 +231,7 @@ let run_tests names out_chan =
               some_self = self || some_self; }
         | Absent -> st
         | Interrupted e ->
+            if Cfg.nocatch then raise e ;
             let msg =  match e with
             | Misc.Exit -> "None"
             | Misc.Fatal msg
@@ -238,7 +239,6 @@ let run_tests names out_chan =
                 eprintf "%a %s\n%!" Pos.pp_pos0 name msg ;
                 msg
             | e ->
-                if Cfg.nocatch then raise e ;
                 let msg = sprintf "exception %s"  (Printexc.to_string e) in
                 eprintf "%a %s\n%!" Pos.pp_pos0 name msg ;
                 msg in

@@ -340,7 +340,7 @@ let () =
         match !mode with
         | Mode.Std -> !memory
         | Mode.(Kvm|PreSi) ->
-            (* Indirect memory does not applies here *)
+            (* Indirect memory does not apply here *)
             Memory.Direct
       let preload = !preload
       let safer = !safer

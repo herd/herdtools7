@@ -778,7 +778,7 @@ module A.FaultType = A.FaultType)
             match t,v with
             | (TestType.TyDef|TestType.TyDefPointer),
               Constant.Symbolic s ->
-                let a = G.tr_symbol s in
+                let a = G.get_base_symbol s in
                 begin try
                   let _ = G.Map.find a env in
                   env
