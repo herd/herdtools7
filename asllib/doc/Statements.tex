@@ -2992,7 +2992,6 @@ or an abnormal configuration.
 
 \AllApply
 \begin{itemize}
-  \item \Proseticklooplimit{$\vlimitopt$}{$\vnextlimitopt$}\ProseOrError;
   \item $\compfordir$ is either $\LT$ when $\dir$ is $\UP$ or $\GT$ when $\dir$ is $\DOWN$;
   \item reading $\vstart$ into the identifier $\vindexname$ gives $\vgone$;
   \item \OneApplies
@@ -3009,6 +3008,7 @@ or an abnormal configuration.
     \begin{itemize}
       \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native \\
             Boolean for $\False$;
+      \item \Proseticklooplimit{$\vlimitopt$}{$\vnextlimitopt$}\ProseOrError;
       \item evaluating the loop body via $\evalforloop$ with \\ $(\vindexname, \vlimitopt, \vstart, \dir, \vend, \vbody)$
       in $\env$ is \\ $\Continuing(\vgtwo, \newenv)$\ProseOrAbnormalReturning;
       \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label.
@@ -3064,7 +3064,6 @@ and \\
 $\evalforloop$ (the latter in a mutually recursive manner):
 \begin{mathpar}
 \inferrule[return]{
-  \ticklooplimit(\vlimitopt) \evalarrow \vnextlimitopt \OrDynError\\\\
   \compfordir \eqdef \choice{\dir = \UP}{\LT}{\GT}\\
   \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\\\
   \commonprefixline\\\\
@@ -3081,11 +3080,11 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 
 \begin{mathpar}
 \inferrule[continue]{
-  \ticklooplimit(\vlimitopt) \evalarrow \vnextlimitopt \OrDynError\\\\
   \compfordir \eqdef \choice{\dir = \UP}{\LT}{\GT}\\
   \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\\\
   \commonprefixline\\\\
   \binoprel(\compfordir, \vend, \vstart) \evalarrow \nvint(\False)\\
+  \ticklooplimit(\vlimitopt) \evalarrow \vnextlimitopt \OrDynError\\\\
   \evalforloop(\env, \vindexname, \vnextlimitopt, \vstart, \dir, \vend, \vbody) \evalarrow \\
   \Continuing(\vgtwo, \newenv) \OrAbnormalReturning\\\\
   \newg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
