@@ -363,11 +363,6 @@ end;
 //------------------------------------------------------------------------------
 // Standard bitvector functions and procedures
 
-// For most of these functions, some implicitly dependently typed version
-// exists in the specification. We do not yet support those.
-
-// Externals
-
 pure func ReplicateBit{N}(isZero: boolean) => bits(N)
 begin
   return if isZero then Zeros{N} else Ones{N};
