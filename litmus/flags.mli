@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* Copyright 2025-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,21 +14,10 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(* Answer of a test compilation or run *)
+(* All flags associated with a test *)
 
-
-type hash = { filename : string ;  hash : string ; }
-type hash_env = hash StringMap.t
-
-type completed = (* Answer for completed test *)
-  { arch : Archs.t ; (* Arch of test *)
-    doc : Name.t   ; (* Name of test *)
-    src : string   ; (* Name of emitted source file *)
-    fullhash : hash ; nprocs : int ; (* hash and numbre of threads *)
-    flags: Flags.t ;
+type t =
+  {
+    pac : bool     ; (* Requires pointer authentification *)
+    self : bool    ; (* Self modying code *)
   }
-
-type answer =
-  | Completed of completed
-  | Interrupted of exn (* Error *)
-  | Absent (* Test not compile for some reason under user control *)
