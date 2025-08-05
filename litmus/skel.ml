@@ -339,7 +339,11 @@ module Make
         ConstrGen.match_rloc
           (dump_ctx_loc pref)
           (fun loc i ->
-            sprintf "%s[%d]" (dump_ctx_loc pref loc) i)
+             let pp =
+               match memory with
+               | Direct -> sprintf "%s[%d]"
+               | Indirect -> sprintf "(%s)[%d]" in
+             pp (dump_ctx_loc pref loc) i)
 
       let dump_loc = dump_ctx_loc ""
 
