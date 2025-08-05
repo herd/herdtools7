@@ -496,16 +496,16 @@ Base values
   File base_values.asl, line 5, characters 2 to 28:
     var x: integer {N..M, 42};
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: base value of type integer {42, N..M} cannot be statically
-    determined since it consists of N.
+  ASL Type error: base value of type integer {42, N..M} cannot be symbolically
+    reduced since it consists of N.
   [1]
 
   $ aslref base_values_empty.asl
   File base_values_empty.asl, line 3, characters 2 to 24:
     var x: integer {N..M};
     ^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: base value of type integer {N..M} cannot be statically
-    determined since it consists of N.
+  ASL Type error: base value of type integer {N..M} cannot be symbolically
+    reduced since it consists of N.
   [1]
 
   $ aslref base_values_tuple.asl

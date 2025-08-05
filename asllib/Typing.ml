@@ -2410,7 +2410,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let here = add_pos_from ~loc in
     let lit v = here (E_Literal v) in
     let fatal_non_static e =
-      fatal_from ~loc (Error.BaseValueNonStatic (t, e))
+      fatal_from ~loc (Error.BaseValueNonSymbolic (t, e))
     in
     let fatal_is_empty () = fatal_from ~loc (Error.BaseValueEmptyType t) in
     let reduce_to_z e =
