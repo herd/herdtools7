@@ -288,7 +288,7 @@ end = struct
                 R.run name out_chan doc allocated src ;
                 Completed
                   { arch = A'.arch; doc; src; fullhash = hash ;
-                    nprocs; pac; self = O.variant Variant_litmus.Self; }
+                    nprocs; flags={Flags.pac; Flags.self = O.variant Variant_litmus.Self;}; }
               end else begin
                 let cause = if limit_ok then "" else " (too many threads)" in
                 Warn.warn_always "%s test not compiled%s"

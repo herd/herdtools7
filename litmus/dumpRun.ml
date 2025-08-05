@@ -95,7 +95,7 @@ end = struct
 
 (* Makefile utilities *)
 
-  let makefile_vars chan infile arch (pac,self) sources =
+  let makefile_vars chan infile arch flags sources =
     let module O = struct
       include Cfg
       include (val (get_arch arch) : ArchConf)
@@ -105,7 +105,7 @@ end = struct
       (fun line -> fprintf chan "%s\n" line)
       Cfg.makevar ;
     let gcc_opts =
-      if self then LexO.tr RU.get_gcc_opts
+      if flags.Flags.self then LexO.tr RU.get_gcc_opts
       else RU.get_gcc_opts in
     begin
       match Cfg.mode with
@@ -136,7 +136,7 @@ end = struct
            else
              "platform_io.o" :: "litmus_io.o" :: utils in
          let utils =
-           if pac then
+           if flags.Flags.pac then
              "auth.o"::utils
            else utils in
          fprintf chan "UTILS=%s\n"
@@ -189,8 +189,7 @@ type infos =
     srcs : string list;
     hashes : Answer.hash_env;
     nthreads : IntSet.t;
-    some_pac : bool;
-    some_self : bool;
+    some_flags : Flags.t;
   }
 
 let run_tests names out_chan =
@@ -198,10 +197,10 @@ let run_tests names out_chan =
   let exp = Misc.app_opt open_out Cfg.index
   and onames = Misc.app_opt open_out Cfg.outnames in
 
-  let  { one_arch; docs; srcs; nthreads; some_pac; some_self; hashes=_; } =
+  let  {one_arch; docs; srcs; nthreads; some_flags;  hashes=_; } =
     Misc.fold_argv_or_stdin
       (fun name ({one_arch; docs; srcs; hashes;
-                  nthreads; some_pac; some_self; } as st) ->
+                  nthreads; some_flags; } as st) ->
          let check_arch archo arch = match archo with
            | None -> Some arch
            | Some a ->
@@ -217,18 +216,19 @@ let run_tests names out_chan =
               Interrupted e in
         match ans with
         | Completed
-            {arch; doc; src; fullhash; nprocs; pac; self; } ->
+            {arch; doc; src; fullhash; nprocs; flags; } ->
             Misc.check_opt (fun out -> fprintf out "%s\n" name) exp ;
             Misc.check_opt
               (fun out -> fprintf out "%s\n" doc.Name.name)
               onames ;
+            let open Flags in
             { one_arch = check_arch one_arch arch;
               docs = doc::docs;
               srcs = src::srcs;
               hashes = StringMap.add doc.Name.name fullhash hashes;
               nthreads = IntSet.add nprocs nthreads;
-              some_pac = pac || some_pac;
-              some_self = self || some_self; }
+              some_flags = {pac = flags.pac || some_flags.pac; self = flags.self || some_flags.self;}
+               }
         | Absent -> st
         | Interrupted e ->
             if Cfg.nocatch then raise e ;
@@ -248,7 +248,7 @@ let run_tests names out_chan =
       { one_arch = None;
         docs = []; srcs = []; hashes = StringMap.empty;
         nthreads = IntSet.empty;
-        some_pac = false; some_self = false; } in
+        some_flags = {Flags.pac=false; Flags.self=false;}; } in
   Misc.check_opt close_out exp ;
   Misc.check_opt close_out onames ;
   let arch =
@@ -264,8 +264,8 @@ let run_tests names out_chan =
       let sysarch  = Archs.get_sysarch arch Cfg.carch
     end in
     let module Obj = ObjUtil.Make(O)(Tar) in
-    Obj.dump some_pac in
-  arch,docs,srcs,utils,nthreads,(some_pac,some_self)
+    Obj.dump some_flags.Flags.pac in
+  arch,docs,srcs,utils,nthreads,some_flags
 
 (* Run tests (command line mode) *)
 let dump_command names =
