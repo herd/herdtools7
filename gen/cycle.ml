@@ -955,6 +955,8 @@ let check_cycle c =
 
   let set_write_val_ord st n =
     let v,st = CoSt.next_co st n.prev.edge Ord in
+    if v = n.evt.v then
+      Warn.fatal "Updated value remains the same. An issue should be reported.";
     n.evt <- { n.evt with v = tr_value n.evt v; } ;
     (* Writing Ord resets morello tag *)
     let st = CoSt.set_co st CapaTag evt_null.ctag in
