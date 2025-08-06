@@ -1,13 +1,13 @@
 Test S+dmb.sytt+amo.ldaddal-polp Allowed
 States 4
-1:X4=0; [y]=1; [tag(x)]=:red;  ~Fault(P1:L01,y); ~Fault(P1:L00,x);
-1:X4=0; [y]=1; [tag(x)]=:red; Fault(P1:L00,x:green,TagCheck); ~Fault(P1:L01,y);
-1:X4=0; [y]=1; [tag(x)]=:red; Fault(P1:L00,x:green,TagCheck); Fault(P1:L01,y:red,TagCheck);
-1:X4=0; [y]=1; [tag(x)]=:red; Fault(P1:L01,y:red,TagCheck); ~Fault(P1:L00,x);
+1:X4=1824; [y]=1952; [tag(x)]=:red;  ~Fault(P1:L01,y); ~Fault(P1:L00,x);
+1:X4=1824; [y]=1952; [tag(x)]=:red; Fault(P1:L00,x:green,TagCheck); ~Fault(P1:L01,y);
+1:X4=1824; [y]=1952; [tag(x)]=:red; Fault(P1:L00,x:green,TagCheck); Fault(P1:L01,y:red,TagCheck);
+1:X4=1824; [y]=1952; [tag(x)]=:red; Fault(P1:L01,y:red,TagCheck); ~Fault(P1:L00,x);
 Ok
 Witnesses
 Positive: 1 Negative: 3
-Condition exists ([tag(x)]=:red /\ [y]=1 /\ 1:X4=0 /\ not (fault(P1:L00,x)) /\ not (fault(P1:L01,y)))
+Condition exists ([tag(x)]=:red /\ [y]=1952 /\ 1:X4=1824 /\ not (fault(P1:L00,x)) /\ not (fault(P1:L01,y)))
 Observation S+dmb.sytt+amo.ldaddal-polp Sometimes 1 3
-Hash=a8e9f7d819d43ed79fce1219bcf77d70
+Hash=e4a4ec2502538aed8eb41b9c0573fd99
 
