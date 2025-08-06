@@ -304,7 +304,7 @@ let setup_options = Arg.align ~limit:40 [
   ("-q", Arg.Unit (fun _ -> verbose := -1; debug := Debug_herd.none),
    "<default> do not show diagnostics");
   ("-I", Arg.String (fun s -> includes := !includes @ [s]),
-   "<dir> add <dir> to search path");
+   "<dir> add <dir> to the path used to search for the top level model and included .cat files, takes precedence over libdir ");
   parse_bool "-exit" Opts.exit_if_failed "exit in case of failure";
   ("-conf",
    Arg.String load_config,
@@ -326,13 +326,13 @@ let setup_options = Arg.align ~limit:40 [
     "fork specified viewer to show output graphs" end ;
   ( "-gv",
     Arg.Unit (fun _ -> PP.view := Some View.GV),
-    "<non-default>  alias for -view gv") ;
+    "alias for -view gv") ;
   ( "-evince",
     Arg.Unit (fun _ -> PP.view := Some View.Evince),
-    "<non-default>  alias for -view evince") ;
+    "alias for -view evince") ;
   ( "-preview",
     Arg.Unit (fun _ -> PP.view := Some View.Preview),
-    "<non-default>  alias for -view preview") ;
+    "alias for -view preview") ;
   ("-web",
    Arg.Unit (fun () -> load_config "web.cfg")," alias for -conf web.cfg");
   ("-c11",
