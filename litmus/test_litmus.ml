@@ -155,7 +155,8 @@ struct
                   MiscParser.dump_state_atom_no_init
                 else
                   MiscParser.dump_state_atom in
-              do_dump A.is_global A.pp_location dump_v
+              do_dump A.is_global A.pp_location
+                (Constant.check_pp_init dump_v)
 
             type state = A.fullstate
 

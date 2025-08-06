@@ -320,7 +320,7 @@ let () =
       let platform = "_linux"
       let affinity = match !mode with
       | Mode.Std|Mode.PreSi -> !affinity
-      | Mode.Kvm -> Affinity.No (* No effinity ever in kvm mode *)
+      | Mode.Kvm -> Affinity.No (* No affinity ever in kvm mode *)
       let logicalprocs = !logicalprocs
       let linkopt = !linkopt
       let barrier = !barrier
@@ -336,7 +336,12 @@ let () =
              | _,_ -> Alloc.Dynamic
            end
       let doublealloc = !doublealloc
-      let memory = !memory
+      let memory =
+        match !mode with
+        | Mode.Std -> !memory
+        | Mode.(Kvm|PreSi) ->
+            (* Indirect memory does not apply here *)
+            Memory.Direct
       let preload = !preload
       let safer = !safer
       let cautious = !cautious

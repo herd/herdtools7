@@ -119,6 +119,10 @@ let pp_index base o = match o with
 | 0 -> base
 | i -> sprintf "%s+%i" base i
 
+let pp_index_init base o = match o with
+| 0 -> base
+| i -> sprintf "%s[%i]" base i
+
 let pp_tagaddr t s o =
   let s =
     match t with
@@ -143,6 +147,9 @@ let pp_symbol = function
   | System (PTE,s) -> sprintf "PTE(%s)" s
   | System (PTE2,s) -> sprintf "PTE(PTE(%s))" s
 
+let pp_symbol_init = function
+  | Virtual s -> pp_index_init (pp_symbolic_data s) s.offset
+  | sym -> pp_symbol sym
 
 let compare_id_offset s1 o1 s2 o2 =
   match String.compare s1 s2 with
@@ -340,9 +347,14 @@ let collision s1 s2 = match s1,s2 with
 let pp pp_scalar pp_pteval pp_addrreg pp_instr =
   let pp_label = sprintf "label:\"P%i:%s\"" in
   mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_instr
+
 and pp_old pp_scalar pp_pteval pp_addrreg pp_instr =
   let pp_label = sprintf "%i:%s" in
   mk_pp pp_symbol_old pp_scalar pp_label pp_pteval pp_addrreg pp_instr
+
+let check_pp_init dump = function
+  | Symbolic sym -> pp_symbol_init sym
+  | c -> dump c
 
 let _debug = function
   | Concrete _ -> "Concrete _"

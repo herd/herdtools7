@@ -23,6 +23,7 @@ val pp : t -> string
 val compare : t -> t -> int
 val as_addr : t -> string (* assert false if not an addr *)
 val tr_symbol : Constant.symbol -> t
+val get_base_symbol : Constant.symbol -> t
 
 module Set : MySet.S with type elt = t
 module Map : MyMap.S with type key = t
