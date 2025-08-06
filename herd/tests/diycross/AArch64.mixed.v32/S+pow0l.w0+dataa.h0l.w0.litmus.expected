@@ -1,12 +1,12 @@
 Test S+pow0l.w0+dataa.h0l.w0 Allowed
 States 3
-1:X4=0x0; [x]=0x1010101;
-1:X4=0x0; [x]=0x2020202;
-1:X4=0x101; [x]=0x1010101;
+1:X4=0x0; [x]=0x10001;
+1:X4=0x0; [x]=0x20002;
+1:X4=0x1; [x]=0x10001;
 No
 Witnesses
 Positive: 0 Negative: 3
-Condition exists ([x]=0x2020202 /\ 1:X4=0x101)
+Condition exists ([x]=0x20002 /\ 1:X4=0x1)
 Observation S+pow0l.w0+dataa.h0l.w0 Never 0 3
-Hash=3756808f182dba33904645e1b59db079
+Hash=3946d9a84ae9b1722c09d4803daa8d76
 

@@ -1,11 +1,11 @@
 Test LB+dmb.sytt+amo.ldaddal-polp Allowed
 States 2
-0:X0=x:green; 1:X0=0; [y]=1;  ~Fault(P1:L00,y);
-0:X0=x:green; 1:X0=0; [y]=1; Fault(P1:L00,y:red,TagCheck);
+0:X0=x:green; 1:X0=1824; [y]=1952;  ~Fault(P1:L00,y);
+0:X0=x:green; 1:X0=1824; [y]=1952; Fault(P1:L00,y:red,TagCheck);
 Ok
 Witnesses
 Positive: 1 Negative: 1
-Condition exists ([y]=1 /\ 0:X0=x:green /\ 1:X0=0 /\ not (fault(P1:L00,y)))
+Condition exists ([y]=1952 /\ 0:X0=x:green /\ 1:X0=1824 /\ not (fault(P1:L00,y)))
 Observation LB+dmb.sytt+amo.ldaddal-polp Sometimes 1 1
-Hash=7c4a81d51e2c5873a9be10c395bb3b43
+Hash=ec585c8c44d98f84a3d01d2bf5f64791
 

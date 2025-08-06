@@ -1,15 +1,15 @@
 Test S+dmb.sytp+amo.ldaddal-polt Allowed
 States 6
-1:X2=0; [y]=1; [tag(x)]=:blue;
-1:X2=0; [y]=1; [tag(x)]=:red;
-1:X2=1; [y]=1; [tag(x)]=:blue;
-1:X2=1; [y]=1; [tag(x)]=:red;
-1:X2=1; [y]=3; [tag(x)]=:blue;
-1:X2=1; [y]=3; [tag(x)]=:red;
+1:X2=1824; [y]=1825; [tag(x)]=:blue;
+1:X2=1824; [y]=1825; [tag(x)]=:red;
+1:X2=1825; [y]=1825; [tag(x)]=:blue;
+1:X2=1825; [y]=1825; [tag(x)]=:red;
+1:X2=1825; [y]=2081; [tag(x)]=:blue;
+1:X2=1825; [y]=2081; [tag(x)]=:red;
 Ok
 Witnesses
 Positive: 1 Negative: 5
-Condition exists ([tag(x)]=:blue /\ [y]=3 /\ 1:X2=1)
+Condition exists ([tag(x)]=:blue /\ [y]=2081 /\ 1:X2=1825)
 Observation S+dmb.sytp+amo.ldaddal-polt Sometimes 1 5
-Hash=b7f10611e156a8e9a4301df8d030352c
+Hash=1254c22c515cd7eaf519cfa3887e239b
 

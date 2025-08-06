@@ -1,13 +1,13 @@
 Test S+dmb.sypt+amo.ldaddal-polp Allowed
 States 4
-1:X0=0; [x]=1; [y]=1;  ~Fault(P1:L00,y);
-1:X0=0; [x]=1; [y]=1; Fault(P1:L00,y:red,TagCheck);
-1:X0=0; [x]=2; [y]=1;  ~Fault(P1:L00,y);
-1:X0=0; [x]=2; [y]=1; Fault(P1:L00,y:red,TagCheck);
+1:X0=1824; [x]=1; [y]=1952;  ~Fault(P1:L00,y);
+1:X0=1824; [x]=1; [y]=1952; Fault(P1:L00,y:red,TagCheck);
+1:X0=1824; [x]=2; [y]=1952;  ~Fault(P1:L00,y);
+1:X0=1824; [x]=2; [y]=1952; Fault(P1:L00,y:red,TagCheck);
 Ok
 Witnesses
 Positive: 1 Negative: 3
-Condition exists ([x]=2 /\ [y]=1 /\ 1:X0=0 /\ not (fault(P1:L00,y)))
+Condition exists ([x]=2 /\ [y]=1952 /\ 1:X0=1824 /\ not (fault(P1:L00,y)))
 Observation S+dmb.sypt+amo.ldaddal-polp Sometimes 1 3
-Hash=dd831a0c4f5461ed515696e16effad5c
+Hash=3fe2530f11d1c13761703966857bf8a2
 

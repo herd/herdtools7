@@ -1,12 +1,12 @@
 Test LB+dmb.sytp+amo.ldaddal-polp Allowed
 States 3
-0:X0=x:green; 1:X0=0; [y]=1;
-0:X0=x:green; 1:X0=1; [y]=1;
-0:X0=x:green; 1:X0=1; [y]=3;
+0:X0=x:green; 1:X0=1824; [y]=1825;
+0:X0=x:green; 1:X0=1825; [y]=1825;
+0:X0=x:green; 1:X0=1825; [y]=2081;
 Ok
 Witnesses
 Positive: 1 Negative: 2
-Condition exists ([y]=3 /\ 0:X0=x:green /\ 1:X0=1)
+Condition exists ([y]=2081 /\ 0:X0=x:green /\ 1:X0=1825)
 Observation LB+dmb.sytp+amo.ldaddal-polp Sometimes 1 2
-Hash=348b6f967fec089f01a4c251afa0c470
+Hash=699e6644356f72d3c3b61ad2b5c4eb25
 
