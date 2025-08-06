@@ -107,7 +107,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_STOPBH _| I_STP _| I_STP_SIMD _| I_STR _ | I_STLUR_SIMD _
     | I_STR_SIMD _| I_STRBH _| I_STUR_SIMD _| I_STXP _| I_STXR _
     | I_STXRBH _| I_STZG _| I_STZ2G _
-    | I_SWP _| I_SWPBH _| I_SXTW _| I_TLBI _| I_UBFM _
+    | I_SWP _| I_SWPBH _| I_SXTW _| I_TLBI _ | I_AT _ | I_UBFM _
     | I_UDF _| I_UNSEAL _ | I_ADDSUBEXT _ | I_ABS _ | I_REV _ | I_EXTR _
     | I_MOPL _ | I_MOP _
     | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
@@ -130,7 +130,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | V.Val Instruction i -> is_cmodx_restricted_instruction i
       | V.Val
            (Symbolic _|Concrete _|ConcreteVector _|ConcreteRecord _|
-            Label _|Tag _|PteVal _|Frozen _)
+            Label _|Tag _|PteVal _|AddrReg _|Frozen _)
       | V.Var _ -> false
 
     let ifetch_value_sets = [("Restricted-CMODX",is_cmodx_restricted_value)]
@@ -312,6 +312,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_STCT _|I_UNSEAL _
       | I_SC _
       | I_TLBI (_,_)
+      | I_AT (_,_)
       | I_MOV_V _ | I_MOV_VE _ | I_MOV_S _ | I_MOV_TG _ | I_MOV_FG _
       | I_MOVI_S _ | I_MOVI_V _ | I_ADDV _ | I_DUP _ |  I_FMOV_TG _
       | I_OP3_SIMD _ | I_ADD_SIMD _ | I_ADD_SIMD_S _
@@ -355,7 +356,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_STRBH _ | I_STLRBH _
       | I_STOP _ | I_STOPBH _
       | I_FENCE _
-      | I_IC _|I_DC _|I_TLBI _
+      | I_IC _|I_DC _|I_TLBI _ | I_AT _
       | I_NOP|I_TBZ _|I_TBNZ _
       | I_BL _ | I_BLR _ | I_RET _ | I_ERET | I_SVC _ | I_UDF _
       | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
@@ -482,7 +483,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDOPBH _|I_STOP _|I_STOPBH _
       | I_MOV _|I_MOVZ _|I_MOVN _|I_MOVK _|I_SXTW _
       | I_OP3 _|I_ADR _|I_RBIT _|I_ABS _|I_REV _|I_EXTR _|I_FENCE _
-      | I_CSEL _|I_IC _|I_DC _|I_TLBI _|I_MRS _|I_MSR _
+      | I_CSEL _|I_IC _|I_DC _|I_TLBI _ | I_AT _ |I_MRS _|I_MSR _
       | I_STG _|I_STZG _|I_STZ2G _|I_LDG _|I_UDF _
       | I_ADDSUBEXT _|I_MOPL _ | I_MOP _
       | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _

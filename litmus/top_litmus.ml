@@ -533,7 +533,7 @@ end = struct
                   AArch64Instr.Make (* No morello (yet) *)
                     (struct let is_morello = false end) in
                 let module V =                  SymbConstant.Make
-                    (Int64Scalar)(AArch64PteVal)
+                    (Int64Scalar)(AArch64PteVal)(AArch64AddrReg)
                     (AArch64Instr) in
                 let module Arch' = AArch64Arch_litmus.Make(OC)(V) in
                 let module LexParse = struct

@@ -2,10 +2,10 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Luc Maranget, INRIA Paris, France.                                       *)
 (*                                                                          *)
-(* Copyright 2021-present Institut National de Recherche en Informatique et *)
-(* en Automatique and the authors. All rights reserved.                     *)
+(* Copyright 2020-present Institut National de Recherche en Informatique et *)
+(* en Automatique, ARM Ltd and the authors. All rights reserved.            *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
 (* abiding by the rules of distribution of free software. You can use,      *)
@@ -14,27 +14,19 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Constants as they are parsed, scalars still are strings, as present in file *)
+type t = { oa : OutputAddress.t; f : int; }
 
-type v = (string,ParsedPteVal.t,ParsedAddrReg.t,InstrLit.t) Constant.t
+val eq : t -> t -> bool
+val compare : t -> t -> int
 
-val zero : v
-val one : v
-val intToV : int -> v
+val default : t
 
-(* Comparison is used by locations, which should contain symbols only,
-   They fails on scalars *)
-val compare : v -> v -> int
-val eq : v -> v -> bool
+val tr : ParsedAddrReg.t -> t
+val pp_norm : ParsedAddrReg.t -> string
 
-val nameToV : string -> v
+val pp : 'a -> t -> string
+val pp_v : t -> string
 
-(* New and old style, id format differ *)
-val pp_v : v -> string
-val pp_v_old : v -> string
-
-(* Hexa parameter ignored... *)
-val pp : bool (* hexa *) -> v -> string
-
-(* Pass specific printer for pteval's *)
-val pp_norm : bool -> (ParsedPteVal.t -> string) -> (ParsedAddrReg.t -> string) -> v -> string
+val dump_pack : (string -> string) -> t -> string
+val fields : string list
+val default_fields : string list

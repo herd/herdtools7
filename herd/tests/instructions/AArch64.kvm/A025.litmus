@@ -1,0 +1,14 @@
+AArch64 A025
+Variant=vmsa
+{
+[PTE(x)]=(oa:PA(x),valid:1,dbm:0,db:0);
+0:X1=x;
+0:X2=0;
+}
+ P0             ;
+L0:             ;
+ AT S1E0W, X1   ;
+ ISB            ;
+ MRS X3, PAR_EL1;
+MOV X2,#1       ;
+forall(0:X3=parel1_t:(f:1) /\ 0:X2=1)

@@ -2,7 +2,7 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Luc Maranget, INRIA Paris, France.                                       *)
 (*                                                                          *)
 (* Copyright 2021-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
@@ -14,27 +14,43 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Constants as they are parsed, scalars still are strings, as present in file *)
+(** Abstract system register values *)
+module type S = sig
+  type t
 
-type v = (string,ParsedPteVal.t,ParsedAddrReg.t,InstrLit.t) Constant.t
+  val default : t
 
-val zero : v
-val one : v
-val intToV : int -> v
+  val pp : bool -> t -> string
+  val pp_v : t -> string
+  val tr : ParsedAddrReg.t -> t
+  val pp_norm : ParsedAddrReg.t -> string
 
-(* Comparison is used by locations, which should contain symbols only,
-   They fails on scalars *)
-val compare : v -> v -> int
-val eq : v -> v -> bool
+  val eq : t -> t -> bool
+  val compare : t -> t -> int
 
-val nameToV : string -> v
+  val dump_pack : (string -> string) -> t -> string
+  val fields : string list
+  val default_fields : string list
 
-(* New and old style, id format differ *)
-val pp_v : v -> string
-val pp_v_old : v -> string
+end
 
-(* Hexa parameter ignored... *)
-val pp : bool (* hexa *) -> v -> string
+module No = struct
+  type t = unit
 
-(* Pass specific printer for pteval's *)
-val pp_norm : bool -> (ParsedPteVal.t -> string) -> (ParsedAddrReg.t -> string) -> v -> string
+  let default = ()
+
+  let pp _ _ = "()"
+  let pp_v _ = "()"
+  let tr _ = ()
+  let pp_norm _ = "()"
+
+  let eq _ _ = true
+  let compare _ _ = 0
+
+    let dump_pack _ _ = "()"
+    let fields = []
+    let default_fields = []
+
+end
+
+module ASL = No

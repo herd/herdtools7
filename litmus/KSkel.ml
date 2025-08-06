@@ -337,8 +337,8 @@ module Make
           Warn.user_error "No record value for klitmus"
       | Label _ ->
           Warn.user_error "No label value for klitmus"
-      | Symbolic _|Tag _| PteVal _ ->
-          Warn.user_error "No tag, indexed access, nor pteval for klitmus"
+      | Symbolic _|Tag _| PteVal _| AddrReg _ ->
+          Warn.user_error "No tag, indexed access, pteval nor addrreg for klitmus"
       | Instruction _ ->
           Warn.fatal "FIXME: dump_a_v functionality for -variant self"
       | Frozen _ -> assert false

@@ -1,0 +1,10 @@
+AArch64 A024
+Variant=vmsa
+{
+    0:X1=x;
+}
+ P0             ;
+ AT S1E0R, X1   ;
+ ISB            ;
+ MRS X3, PAR_EL1;
+forall(0:X3=parel1_t:(oa:PA(x)))

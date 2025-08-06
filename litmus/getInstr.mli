@@ -22,7 +22,7 @@ module type S = sig
   val instr_name : t -> string
   val fun_name : t -> string
   val dump_instr :
-    (('a,'b,t) Constant.t -> string) -> ('a,'b,t) Constant.t -> string
+    (('a,'b,'c,t) Constant.t -> string) -> ('a,'b,'c,t) Constant.t -> string
 
   module Make : functor (O:Indent.S) -> sig val dump : t -> unit end
 end

@@ -37,7 +37,7 @@ module Top
     end
 
 
-    module Make(A:ArchBase.S)(Pte:PteVal.S) = struct
+    module Make(A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S) = struct
 
       let zyva name parsed =
         let prog = parsed.MiscParser.prog in

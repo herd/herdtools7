@@ -80,99 +80,103 @@ module SymbolMap : MyMap.S with type key = symbol
 
 (** [(s, p, i) t] is the type of constants with [s] the type of scalars, [p]
     the type of page table entries, and [i] the type of instructions. *)
-type ('scalar, 'pte, 'instr) t =
+type ('scalar, 'pte, 'addrreg, 'instr) t =
   | Concrete of 'scalar  (** A scalar, e.g. 3. *)
-  | ConcreteVector of ('scalar, 'pte, 'instr) t list
+  | ConcreteVector of ('scalar, 'pte, 'addrreg, 'instr) t list
       (** A vector of constants, e.g. [[3, x, NOP]]. *)
-  | ConcreteRecord of ('scalar, 'pte, 'instr) t StringMap.t
+  | ConcreteRecord of ('scalar, 'pte, 'addrreg, 'instr) t StringMap.t
       (** A record of constants, e.g. [{ addr: x; instr: NOP; index: 3 }] *)
   | Symbolic of symbol  (** A symbolic constant, e.g. [x] *)
   | Label of Proc.t * string  (** A label in code. *)
   | Tag of string
   | PteVal of 'pte  (** A page table entry. *)
+  | AddrReg of 'addrreg (** A register with fields *)
   | Instruction of 'instr  (** An instruction. *)
   | Frozen of int (** Frozen symbolic value. *)
 
-val as_scalar : ('scalar, 'pte, 'instr) t -> 'scalar option
+val as_scalar : ('scalar, 'pte, 'addrreg, 'instr) t -> 'scalar option
 
 val compare :
   ('scalar -> 'scalar -> int) ->
     ('pte -> 'pte -> int) ->
-      ('instr -> 'instr -> int) ->
-        ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t -> int
+      ('addrreg -> 'addrreg -> int) ->
+        ('instr -> 'instr -> int) ->
+          ('scalar,'pte,'addrreg,'instr) t -> ('scalar,'pte,'addrreg,'instr) t -> int
 val eq :
   ('scalar -> 'scalar -> bool) ->
     ('pte -> 'pte -> bool) ->
+      ('addrreg -> 'addrreg -> bool) ->
         ('instr -> 'instr -> bool) ->
-          ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t -> bool
+          ('scalar,'pte,'addrreg,'instr) t -> ('scalar,'pte,'addrreg,'instr) t -> bool
 
 (* Return if the collision of two PAC fields can imply equality of the two
    syntactically different constants *)
 val collision :
-  ('scalar, 'pte, 'instr) t ->
-    ('scalar, 'pte, 'instr) t ->
+  ('scalar, 'pte, 'addrreg, 'instr) t ->
+    ('scalar, 'pte, 'addrreg, 'instr) t ->
       (PAC.t * PAC.t) option
 
 (* New style: PTE(s), PHY(s), etc. *)
 val pp :
-  ('scalar -> string) -> ('pte -> string) -> ('instr -> string) ->
-    ('scalar,'pte,'instr) t  -> string
+  ('scalar -> string) -> ('pte -> string) -> ('addrreg -> string) -> ('instr -> string) ->
+    ('scalar,'pte, 'addrreg,'instr) t  -> string
 (* Old style: pte_s, phy_s, etc. *)
 val pp_old :
-  ('scalar -> string) ->  ('pte -> string) -> ('instr -> string) ->
-    ('scalar,'pte,'instr) t  -> string
+  ('scalar -> string) ->  ('pte -> string) -> ('addrreg -> string) -> ('instr -> string) ->
+    ('scalar,'pte, 'addrreg,'instr) t  -> string
 
 (* Do nothing on non-scalar *)
-val map_scalar : ('a -> 'b) -> ('a,'pte,'instr) t -> ('b,'pte,'instr) t
-val map_label : (Label.t -> Label.t) -> ('s,'pte,'instr) t -> ('s,'pte,'instr) t
+val map_scalar : ('a -> 'b) -> ('a,'pte, 'addrreg,'instr) t -> ('b,'pte, 'addrreg,'instr) t
+val map_label : (Label.t -> Label.t) -> ('s,'pte, 'addrreg,'instr) t -> ('s,'pte, 'addrreg,'instr) t
 val map :
-  ('a -> 'b) -> ('c -> 'd) -> ('e -> 'f) -> ('a,'c,'e) t -> ('b,'d,'f) t
+  ('a -> 'b) -> ('c -> 'd) -> ('e -> 'f) -> ('g -> 'h) -> ('a,'c,'e,'g) t -> ('b,'d,'f,'h) t
 
-val mk_sym_virtual : string -> ('scalar,'pte,'instr) t
-val mk_sym : string -> ('scalar,'pte,'instr) t
-val mk_sym_with_index : string -> int -> ('scalar, 'pte, 'instr) t
-val mk_sym_pte : string -> ('scalar,'pte,'instr) t
-val mk_sym_pte2 : string -> ('scalar,'pte,'instr) t
-val mk_sym_pa : string -> ('scalar,'pte,'instr) t
+val mk_sym_virtual : string -> ('scalar,'pte,'addrreg,'instr) t
+val mk_sym : string -> ('scalar,'pte,'addrreg,'instr) t
+val mk_sym_with_index : string -> int -> ('scalar, 'pte,'addrreg, 'instr) t
+val mk_sym_pte : string -> ('scalar,'pte,'addrreg,'instr) t
+val mk_sym_pte2 : string -> ('scalar,'pte,'addrreg,'instr) t
+val mk_sym_pa : string -> ('scalar,'pte,'addrreg,'instr) t
 val old2new : string -> string
 
-val mk_vec : int -> ('scalar,'pte,'instr) t list -> ('scalar,'pte,'instr) t
-val mk_replicate : int -> ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t
+val mk_vec : int -> ('scalar,'pte, 'addrreg,'instr) t list -> ('scalar,'pte,'addrreg,'instr) t
+val mk_replicate : int -> ('scalar,'pte, 'addrreg,'instr) t -> ('scalar,'pte,'addrreg,'instr) t
 
-val is_symbol : ('scalar,'pte,'instr) t -> bool
-val is_label : ('scalar,'pte,'instr) t -> bool
+val is_symbol : ('scalar,'pte,'addrreg,'instr) t -> bool
+val is_label : ('scalar,'pte,'addrreg,'instr) t -> bool
 (* Extract label, if any *)
-val as_label :  ('scalar,'pte,'instr)  t -> Label.Full.full option
+val as_label :  ('scalar,'pte,'addrreg,'instr)  t -> Label.Full.full option
 
 val is_non_mixed_symbol : symbol -> bool
 
-val default_tag : ('scalar,'pte,'instr) t
+val default_tag : ('scalar,'pte,'addrreg,'instr) t
 
 (* Check  non-concrete constant (and change type!) *)
-val check_sym : ('a,'pte,'instr) t -> ('b,'pte,'instr) t
+val check_sym : ('a,'pte,'addrreg,'instr) t -> ('b,'pte,'addrreg,'instr) t
 
-val is_virtual : ('scalar,'pte,'instr) t -> bool
-val as_virtual : ('scalar,'pte,'instr) t -> string option
-val as_symbol : ('scalar,'pte,'instr) t -> symbol option
-val as_fault_base :  ('scalar,'pte,'instr) t -> string option
-val as_symbolic_data : ('scalar,'pte,'instr) t -> symbolic_data option
-val of_symbolic_data : symbolic_data -> ('scalar,'pte,'instr) t
+val is_virtual : ('scalar,'pte,'addrreg,'instr) t -> bool
+val as_virtual : ('scalar,'pte,'addrreg,'instr) t -> string option
+val as_symbol : ('scalar,'pte,'addrreg,'instr) t -> symbol option
+val as_fault_base :  ('scalar,'pte,'addrreg,'instr) t -> string option
+val as_symbolic_data : ('scalar,'pte,'addrreg,'instr) t -> symbolic_data option
+val of_symbolic_data : symbolic_data -> ('scalar,'pte,'addrreg,'instr) t
 
-val as_pte : ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t option
-val is_pt : ('scalar,'pte,'instr)  t -> bool
+val as_pte : ('scalar,'pte,'addrreg,'instr) t -> ('scalar,'pte,'addrreg,'instr) t option
+val is_pt : ('scalar,'pte,'addrreg,'instr)  t -> bool
 
 (* Remove the Pac field of a virtual address *)
-val make_canonical : ('scalar,'pte,'instr) t -> ('scalar,'pte,'instr) t
+val make_canonical : ('scalar,'pte,'addrreg,'instr) t -> ('scalar,'pte,'addrreg,'instr) t
 
 module type S =  sig
 
   module Scalar : Scalar.S
   module PteVal : PteVal.S
+  module AddrReg: AddrReg.S
   module Instr : Instr.S
 
-  type v = (Scalar.t,PteVal.t,Instr.t) t
+  type v = (Scalar.t,PteVal.t,AddrReg.t,Instr.t) t
 
-  val tr : (string,ParsedPteVal.t,InstrLit.t) t -> v
+  val tr : (string,ParsedPteVal.t,ParsedAddrReg.t,InstrLit.t) t -> v
   val intToV  : int -> v
   val stringToV  : string -> v
   val nameToV  : string -> v

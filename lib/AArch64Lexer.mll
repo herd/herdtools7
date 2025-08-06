@@ -668,6 +668,13 @@ match name with
     A.TLBI.(TLBI_OP {typ=VMALLS12; level=A.E1; domain=IS; nXS=true; })
 | "vmalls12e1nxs"|"VMALLS12E1NXS" ->
     A.TLBI.(TLBI_OP {typ=VMALLS12; level=A.E1; domain=No; nXS=true; })
+(* Address translation and its operands *)
+(* Restricted to stage 1 only for EL1 and EL0; excludes <pan> and <ignore> fields *)
+| "at"|"AT" -> AT
+| "s1e0r" | "S1E0R" -> A.AT.(AT_OP {stages=S1; level=A.E0; rw=R; })
+| "s1e0w" | "S1E0W" -> A.AT.(AT_OP {stages=S1; level=A.E0; rw=W; })
+| "s1e1r" | "S1E1R" -> A.AT.(AT_OP {stages=S1; level=A.E1; rw=R; })
+| "s1e1w" | "S1E1W" -> A.AT.(AT_OP {stages=S1; level=A.E1; rw=W; })
 (* System registers *)
 | "mrs"|"MRS" -> MRS
 | "msr"|"MSR" -> MSR
