@@ -390,11 +390,11 @@
 \newcommand\Tenumeration[0]{\verbatimterminal{ENUMERATION}{enumeration}}
 \newcommand\Txor[0]{\verbatimterminal{XOR}{XOR}}
 \newcommand\Teq[0]{\verbatimterminal{EQ}{=}}
-\newcommand\Teqop[0]{\verbatimterminal{EQ\_OP}{==}}
+\newcommand\Teqop[0]{\verbatimterminal{EQ\_EQ}{==}}
 \newcommand\Texception[0]{\verbatimterminal{EXCEPTION}{exception}}
 \newcommand\Tfor[0]{\verbatimterminal{FOR}{for}}
 \newcommand\Tfunc[0]{\verbatimterminal{FUNC}{func}}
-\newcommand\Tgeq[0]{\verbatimterminal{GEQ}{>=}}
+\newcommand\Tgeq[0]{\verbatimterminal{GE}{>=}}
 \newcommand\Tgetter[0]{\verbatimterminal{GETTER}{getter}}
 \newcommand\Tgt[0]{\verbatimterminal{GT}{>}}
 \newcommand\Tif[0]{\verbatimterminal{IF}{if}}
@@ -406,14 +406,14 @@
 \newcommand\Tlbrace[0]{\verbatimterminal{LBRACE}{\{}}
 \newcommand\Tlbracket[0]{\verbatimterminal{LBRACKET}{[}}
 \newcommand\Tllbracket[0]{\verbatimterminal{LLBRACKET}{[[}}
-\newcommand\Tleq[0]{\verbatimterminal{LEQ}{<=}}
+\newcommand\Tleq[0]{\verbatimterminal{LE}{<=}}
 \newcommand\Tlet[0]{\verbatimterminal{LET}{let}}
 \newcommand\Tlpar[0]{\verbatimterminal{LPAR}{(}}
 \newcommand\Tlt[0]{\verbatimterminal{LT}{<}}
 \newcommand\Tminus[0]{\verbatimterminal{MINUS}{-}}
 \newcommand\Tmod[0]{\verbatimterminal{MOD}{MOD}}
 \newcommand\Tmul[0]{\verbatimterminal{MUL}{*}}
-\newcommand\Tneq[0]{\verbatimterminal{NEQ}{!=}}
+\newcommand\Tneq[0]{\verbatimterminal{NE}{!=}}
 \newcommand\Tnoreturn[0]{\verbatimterminal{NORETURN}{noreturn}}
 \newcommand\Tnot[0]{\verbatimterminal{NOT}{NOT}}
 \newcommand\Tof[0]{\verbatimterminal{OF}{of}}
@@ -575,18 +575,18 @@
 \newcommand\DIV[0]{\hyperlink{ast-div}{\textastlabel{DIV}}} % Integer division
 \newcommand\DIVRM[0]{\hyperlink{ast-divrm}{\textastlabel{DIVRM}}} % Inexact integer division, with rounding towards negative infinity.
 \newcommand\XOR[0]{\hyperlink{ast-xor}{\textastlabel{XOR}}} % Bitvector bitwise exclusive or
-\newcommand\EQOP[0]{\hyperlink{ast-eqop}{\textastlabel{EQ\_OP}}} % Equality on two base values of same type
+\newcommand\EQOP[0]{\hyperlink{ast-eqop}{\textastlabel{EQ}}} % Equality on two base values of same type
 \newcommand\GT[0]{\hyperlink{ast-gt}{\textastlabel{GT}}} % Greater than for int or reals
-\newcommand\GEQ[0]{\hyperlink{ast-geq}{\textastlabel{GEQ}}} % Greater or equal for int or reals
+\newcommand\GEQ[0]{\hyperlink{ast-geq}{\textastlabel{GE}}} % Greater or equal for int or reals
 \newcommand\IMPL[0]{\hyperlink{ast-impl}{\textastlabel{IMPL}}} % Boolean implication
 \newcommand\LT[0]{\hyperlink{ast-lt}{\textastlabel{LT}}} % Less than for int or reals
-\newcommand\LEQ[0]{\hyperlink{ast-leq}{\textastlabel{LEQ}}} % Less or equal for int or reals
+\newcommand\LEQ[0]{\hyperlink{ast-leq}{\textastlabel{LE}}} % Less or equal for int or reals
 \newcommand\MOD[0]{\hyperlink{ast-mod}{\textastlabel{MOD}}} % Remainder of integer division
-\newcommand\MINUS[0]{\hyperlink{ast-minus}{\textastlabel{MINUS}}} % Subtraction for int or reals or bitvectors
+\newcommand\MINUS[0]{\hyperlink{ast-minus}{\textastlabel{SUB}}} % Subtraction for int or reals or bitvectors
 \newcommand\MUL[0]{\hyperlink{ast-mul}{\textastlabel{MUL}}} % Multiplication for int or reals or bitvectors
-\newcommand\NEQ[0]{\hyperlink{ast-neq}{\textastlabel{NEQ}}} % Non equality on two base values of same type
+\newcommand\NEQ[0]{\hyperlink{ast-neq}{\textastlabel{NE}}} % Non equality on two base values of same type
 \newcommand\OR[0]{\hyperlink{ast-or}{\textastlabel{OR}}} % Bitvector bitwise or
-\newcommand\PLUS[0]{\hyperlink{ast-plus}{\textastlabel{PLUS}}} % Addition for int or reals or bitvectors
+\newcommand\PLUS[0]{\hyperlink{ast-plus}{\textastlabel{ADD}}} % Addition for int or reals or bitvectors
 \newcommand\POW[0]{\hyperlink{ast-pow}{\textastlabel{POW}}} % Exponentiation for integers
 \newcommand\RDIV[0]{\hyperlink{ast-rdiv}{\textastlabel{RDIV}}} % Division for reals
 \newcommand\SHL[0]{\hyperlink{ast-shl}{\textastlabel{SHL}}} % Shift left for integers

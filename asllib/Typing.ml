@@ -37,7 +37,7 @@ let add_pos_from ~loc = add_pos_from loc
 let conflict ~loc expected provided =
   fatal_from ~loc (Error.ConflictingTypes (expected, provided))
 
-let plus = binop `PLUS
+let plus = binop `ADD
 let t_bits_bitwidth e = T_Bits (e, [])
 
 let func_version f =
@@ -63,7 +63,7 @@ let sum = function [] -> !$0 | [ x ] -> x | h :: t -> List.fold_left plus h t
 
 (* Begin SlicesWidth *)
 let slices_width env =
-  let minus = binop `MINUS in
+  let minus = binop `SUB in
   let slice_width = function
     | Slice_Single _ -> one_expr
     | Slice_Star (_, e) | Slice_Length (_, e) -> e
@@ -643,9 +643,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   let binop_is_ordered : binop -> bool = function
     | `BAND | `BOR | `IMPL -> true
-    | `AND | `BEQ | `DIV | `DIVRM | `XOR | `EQ_OP | `GT | `GEQ | `LT | `LEQ
-    | `MOD | `MINUS | `MUL | `NEQ | `OR | `PLUS | `POW | `RDIV | `SHL | `SHR
-    | `CONCAT ->
+    | `AND | `BEQ | `DIV | `DIVRM | `XOR | `EQ | `GT | `GE | `LT | `LE | `MOD
+    | `SUB | `MUL | `NE | `OR | `ADD | `POW | `RDIV | `SHL | `SHR | `CONCAT ->
         false
 
   (* Begin TypeOfArrayLength *)
@@ -668,7 +667,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         and t2_anon = Types.make_anonymous env t2 in
         apply_binop_types ~loc env op t1_anon t2_anon
     | (`BAND | `BOR | `BEQ | `IMPL), (T_Bool, T_Bool) -> T_Bool |> here
-    | (`AND | `OR | `XOR | `PLUS | `MINUS), (T_Bits (w1, _), T_Bits (w2, _))
+    | (`AND | `OR | `XOR | `ADD | `SUB), (T_Bits (w1, _), T_Bits (w2, _))
       when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
         T_Bits (w1, []) |> here
     | `CONCAT, (T_Bits (w1, _), T_Bits (w2, _)) ->
@@ -683,17 +682,17 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           fatal_from ~loc (Error.ExpectedSingularType t2)
         in
         T_String |> here
-    | (`PLUS | `MINUS), (T_Bits (w, _), T_Int _) -> T_Bits (w, []) |> here
-    | (`LEQ | `GEQ | `GT | `LT), (T_Int _, T_Int _ | T_Real, T_Real)
-    | ( (`EQ_OP | `NEQ),
+    | (`ADD | `SUB), (T_Bits (w, _), T_Int _) -> T_Bits (w, []) |> here
+    | (`LE | `GE | `GT | `LT), (T_Int _, T_Int _ | T_Real, T_Real)
+    | ( (`EQ | `NE),
         (T_Int _, T_Int _ | T_Bool, T_Bool | T_Real, T_Real | T_String, T_String)
       ) ->
         T_Bool |> here
-    | (`EQ_OP | `NEQ), (T_Bits (w1, _), T_Bits (w2, _))
+    | (`EQ | `NE), (T_Bits (w1, _), T_Bits (w2, _))
       when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
         T_Bool |> here
-    | (`EQ_OP | `NEQ), (T_Enum li1, T_Enum li2)
-      when list_equal String.equal li1 li2 ->
+    | (`EQ | `NE), (T_Enum li1, T_Enum li2) when list_equal String.equal li1 li2
+      ->
         T_Bool |> here
     | (#StaticOperations.int3_binop as op), (T_Int c1, T_Int c2) -> (
         match (c1, c2) with
@@ -713,7 +712,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             with TypingAssumptionFailed ->
               fatal_from ~loc (Error.BadTypesForBinop (op, t1, t2))))
     | `MUL, (T_Real, T_Int _ | T_Int _, T_Real)
-    | (`PLUS | `MINUS | `MUL), (T_Real, T_Real)
+    | (`ADD | `SUB | `MUL), (T_Real, T_Real)
     | `POW, (T_Real, T_Int _)
     | `RDIV, (T_Real, T_Real) ->
         T_Real |> here
@@ -1467,7 +1466,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           (* LRM R_GXKG:
              The notation b[j:i] is syntactic sugar for b[i +: j-i+1].
           *)
-          let length = binop `MINUS j i |> binop `PLUS !$1 in
+          let length = binop `SUB j i |> binop `ADD !$1 in
           annotate_slice (Slice_Length (i, length)) |: TypingRule.Slice
       | Slice_Star (factor, length) ->
           (* LRM R_GXQG:

@@ -7,14 +7,14 @@ let exact e = Constraint_Exact e
 let range a b = Constraint_Range (a, b)
 
 type int3_binop =
-  [ `PLUS | `MINUS | `DIV | `DIVRM | `SHR | `SHL | `POW | `MOD | `MUL ]
+  [ `ADD | `SUB | `DIV | `DIVRM | `SHR | `SHL | `POW | `MOD | `MUL ]
 
-type extremities_binops = [ `PLUS | `MINUS | `DIV | `DIVRM | `SHR | `SHL | `MUL ]
+type extremities_binops = [ `ADD | `SUB | `DIV | `DIVRM | `SHR | `SHL | `MUL ]
 
 (* Begin ConstraintMod *)
 let constraint_mod = function
   | Constraint_Exact e | Constraint_Range (_, e) ->
-      range zero_expr (binop `MINUS e one_expr) |: TypingRule.ConstraintMod
+      range zero_expr (binop `SUB e one_expr) |: TypingRule.ConstraintMod
 (* End *)
 
 (* Begin PossibleExtremitiesLeft *)
@@ -33,7 +33,7 @@ let possible_extremities_left (op : extremities_binops) a b =
   (* All the following operations are left-increasing:
      for any operation op among those, if x < y, and c a valid value for the
      right-hand side of op, x op c < y op c *)
-  | `DIV | `DIVRM | `SHR | `SHL | `PLUS | `MINUS -> [ (a, b) ]
+  | `DIV | `DIVRM | `SHR | `SHL | `ADD | `SUB -> [ (a, b) ]
 (* End *)
 
 (* Begin PossibleExtremitiesRIght *)
@@ -43,10 +43,10 @@ let possible_extremities_left (op : extremities_binops) a b =
     [op]. *)
 let possible_extremities_right (op : extremities_binops) c d =
   match op with
-  (* PLUS is right-increasing. *)
-  | `PLUS -> [ (c, d) ] |: TypingRule.PossibleExtremitiesRight
-  (* MINUS simply reverse the intervals. *)
-  | `MINUS -> [ (d, c) ]
+  (* ADD is right-increasing. *)
+  | `ADD -> [ (c, d) ] |: TypingRule.PossibleExtremitiesRight
+  (* SUB simply reverse the intervals. *)
+  | `SUB -> [ (d, c) ]
   (* We need:
       - the normal interval if the left-hand-side value is positive
       - the reversed interval if the right-hand-side value is negative
@@ -273,7 +273,7 @@ module Make (C : CONFIG) = struct
     match op with
     | `SHL | `SHR | `POW -> filter_sign ~loc env op @@ fun x -> x >= 0
     | `MOD | `DIV | `DIVRM -> filter_sign ~loc env op @@ fun x -> x > 0
-    | `MINUS | `MUL | `PLUS -> Fun.id
+    | `SUB | `MUL | `ADD -> Fun.id
   (* End *)
 
   (* Begin RefineConstraintForDIV *)
@@ -344,7 +344,7 @@ module Make (C : CONFIG) = struct
   (** [binop_is_exploding op] returns [true] if [constraint_binop op] loses
       precision on intervals. *)
   let binop_is_exploding : int3_binop -> bool = function
-    | `PLUS | `MINUS -> false
+    | `ADD | `SUB -> false
     | `MUL | `SHL | `POW | `DIV | `DIVRM | `MOD | `SHR -> true
 
   let log_max_constraint_size = 17

@@ -485,7 +485,7 @@ let pow_expr e = function
 let div_expr e z = if Z.equal z Z.one then e else binop `DIV e (expr_of_z z)
 
 let add_expr e1 (s, e2) =
-  if s = 0 then e1 else if s > 0 then binop `PLUS e1 e2 else binop `MINUS e1 e2
+  if s = 0 then e1 else if s > 0 then binop `ADD e1 e2 else binop `SUB e1 e2
 
 let conj_expr e1 e2 =
   let lit_true = literal (L_Bool true) in

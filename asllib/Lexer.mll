@@ -85,11 +85,11 @@ let token_of_string =
  | "EOF"                -> s EOF
  | "XOR"                -> s XOR
  | "EQ"                 -> s EQ
- | "EQ_OP"              -> s EQ_OP
+ | "EQ_EQ"              -> s EQ_EQ
  | "EXCEPTION"          -> s EXCEPTION
  | "FOR"                -> s FOR
  | "FUNC"               -> s FUNC
- | "GEQ"                -> s GEQ
+ | "GE"                 -> s GE
  | "GETTER"             -> s GETTER
  | "GT"                 -> s GT
  | "IF"                 -> s IF
@@ -100,7 +100,7 @@ let token_of_string =
  | "INTEGER"            -> s INTEGER
  | "LBRACE"             -> s LBRACE
  | "LBRACKET"           -> s LBRACKET
- | "LEQ"                -> s LEQ
+ | "LE"                 -> s LE
  | "LET"                -> s LET
  | "LOOPLIMIT"          -> s LOOPLIMIT
  | "LPAR"               -> s LPAR
@@ -108,7 +108,7 @@ let token_of_string =
  | "MINUS"              -> s MINUS
  | "MOD"                -> s MOD
  | "MUL"                -> s MUL
- | "NEQ"                -> s NEQ
+ | "NE"                 -> s NE
  | "NORETURN"           -> s NORETURN
  | "NOT"                -> s NOT
  | "OF"                 -> s OF
@@ -172,18 +172,18 @@ let token_to_symbol = function
   | SLICING            -> ".."
   | EQ                 -> "="
   | LBRACE             -> "{"
-  | NEQ                -> "!="
+  | NE                -> "!="
   | MINUS              -> "-"
   | BEQ                -> "<=>"
   | LBRACKET           -> "["
   | LLBRACKET          -> "[["
   | LPAR               -> "("
   | DOT                -> "."
-  | LEQ                -> "<="
+  | LE                -> "<="
   | POW                -> "^"
   | MUL                -> "*"
   | RDIV               -> "/"
-  | EQ_OP              -> "=="
+  | EQ_EQ              -> "=="
   | BOR                -> "||"
   | PLUS               -> "+"
   | COLON              -> ":"
@@ -194,7 +194,7 @@ let token_to_symbol = function
   | PLUS_COLON         -> "+:"
   | STAR_COLON         -> "*:"
   | SEMI_COLON         -> ";"
-  | GEQ                -> ">="
+  | GE                -> ">="
   (* Keywords *)
   | ACCESSOR           -> "accessor"
   | AND                -> "AND"
@@ -476,7 +476,7 @@ and token = parse
     | ".."                     { SLICING                          }
     | '='                      { EQ                               }
     | '{'                      { LBRACE                           }
-    | "!="                     { NEQ                              }
+    | "!="                     { NE                              }
     | '-'                      { MINUS                            }
     | "<->"                    { if Config.allow_single_arrows then BEQ else fatal lexbuf (ObsoleteSyntax "equivalence with <->") }
     | "<=>"                    { BEQ                              }
@@ -484,11 +484,11 @@ and token = parse
     | "[["                     { LLBRACKET                        }
     | '('                      { LPAR                             }
     | '.'                      { DOT                              }
-    | "<="                     { LEQ                              }
+    | "<="                     { LE                              }
     | '^'                      { POW                              }
     | '*'                      { MUL                              }
     | '/'                      { RDIV                             }
-    | "=="                     { EQ_OP                            }
+    | "=="                     { EQ_EQ                            }
     | "||"                     { BOR                              }
     | '+'                      { PLUS                             }
     | ':'                      { COLON                            }
@@ -500,7 +500,7 @@ and token = parse
     | "+:"                     { PLUS_COLON                       }
     | "*:"                     { STAR_COLON                       }
     | ';'                      { SEMI_COLON                       }
-    | ">="                     { GEQ                              }
+    | ">="                     { GE                              }
     | "@looplimit"             { fatal lexbuf (ObsoleteSyntax "Loop limits with @looplimit") }
     | identifier as lxm        { tr_name lxm                      }
     | eof                      { EOF                              }

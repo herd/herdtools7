@@ -203,12 +203,12 @@ let rec to_ir env (e : expr) =
           | T_Int (WellConstrained ([ Constraint_Exact e ], _)) -> to_ir env e
           | T_Int _ -> Polynomial.of_var s
           | _ -> raise NotSupported)))
-  | E_Binop (`PLUS, e1, e2) ->
+  | E_Binop (`ADD, e1, e2) ->
       let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
       Polynomial.add ir1 ir2
-  | E_Binop (`MINUS, e1, e2) ->
+  | E_Binop (`SUB, e1, e2) ->
       let e2 = E_Unop (NEG, e2) |> ASTUtils.add_pos_from_st e2 in
-      E_Binop (`PLUS, e1, e2) |> ASTUtils.add_pos_from_st e |> to_ir env
+      E_Binop (`ADD, e1, e2) |> ASTUtils.add_pos_from_st e |> to_ir env
   | E_Binop (`MUL, { desc = E_Binop (`DIV, e1, e2); _ }, e3) ->
       to_ir env (binop `DIV (binop `MUL e1 e3) e2)
   | E_Binop (`MUL, e1, { desc = E_Binop (`DIV, e2, e3); _ }) ->

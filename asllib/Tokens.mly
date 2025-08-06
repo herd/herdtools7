@@ -60,11 +60,11 @@
 %token ENUMERATION
 %token EOF
 %token EQ
-%token EQ_OP
+%token EQ_EQ
 %token EXCEPTION
 %token FOR
 %token FUNC
-%token GEQ
+%token GE
 %token GETTER
 %token GT
 %token IF
@@ -75,7 +75,7 @@
 %token INTEGER
 %token LBRACE
 %token LBRACKET
-%token LEQ
+%token LE
 %token LET
 %token LLBRACKET
 %token LOOPLIMIT
@@ -84,7 +84,7 @@
 %token MINUS
 %token MOD
 %token MUL
-%token NEQ
+%token NE
 %token NORETURN
 %token NOT
 %token OF
@@ -189,8 +189,8 @@
 %left BOR BAND IMPL BEQ AS
 
 (* binop_comparison *)
-%left EQ_OP NEQ
-%nonassoc GT GEQ LT LEQ
+%left EQ_EQ NE
+%nonassoc GT GE LT LE
 
 (* binop_add_sub_logic *)
 %left PLUS MINUS OR XOR AND COLON_COLON

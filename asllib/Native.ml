@@ -320,7 +320,7 @@ module NativeBackend (C : Config) = struct
       let e_var x = E_Var x |> add_dummy_annotation in
       let eoi i = expr_of_int i in
       let binop = ASTUtils.binop in
-      let minus_one e = binop `MINUS e (eoi 1) in
+      let minus_one e = binop `SUB e (eoi 1) in
       let pow_2 = binop `POW (eoi 2) in
       let neg e = E_Unop (NEG, e) |> add_pos_from e in
       (* [t_bits "N"] is the bitvector type of length [N]. *)
@@ -362,7 +362,7 @@ module NativeBackend (C : Config) = struct
          let minus_two_pow_n_minus_one = neg two_pow_n_minus_one
          and two_pow_n_minus_one_minus_one = minus_one two_pow_n_minus_one in
          let if_0_then_0_else else_expr =
-           cond_expr (binop `EQ_OP var_N zero_expr) zero_expr else_expr
+           cond_expr (binop `EQ var_N zero_expr) zero_expr else_expr
          in
          let returns =
            integer_range

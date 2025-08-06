@@ -332,16 +332,16 @@ module Make (C : Config) = struct
       | `MOD -> M.op Op.Rem
       | `DIVRM -> M.op (Op.ArchOp ASLOp.Divrm)
       | `XOR -> M.op Op.Xor
-      | `EQ_OP -> M.op Op.Eq
+      | `EQ -> M.op Op.Eq
       | `GT -> M.op Op.Gt
-      | `GEQ -> M.op Op.Ge
+      | `GE -> M.op Op.Ge
       | `LT -> M.op Op.Lt
-      | `LEQ -> M.op Op.Le
-      | `MINUS -> M.op Op.Sub
+      | `LE -> M.op Op.Le
+      | `SUB -> M.op Op.Sub
       | `MUL -> M.op Op.Mul
-      | `NEQ -> M.op Op.Ne
+      | `NE -> M.op Op.Ne
       | `OR -> logor
-      | `PLUS -> M.op Op.Add
+      | `ADD -> M.op Op.Add
       | `SHL -> M.op Op.ShiftLeft
       | `SHR -> M.op Op.ShiftRight
       | `CONCAT -> concat
@@ -735,7 +735,7 @@ module Make (C : Config) = struct
       let bv_lit x = bv @@ lit x in
       let bv_64 = bv_lit 64 in
       let binop = Asllib.ASTUtils.binop in
-      let minus_one e = binop `MINUS e (lit 1) in
+      let minus_one e = binop `SUB e (lit 1) in
       let pow_2 = binop `POW (lit 2) in
       let t_named x = T_Named x |> with_pos in
       let side_effecting = true in
