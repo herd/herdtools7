@@ -175,7 +175,7 @@ See \ExampleRef{Types} for examples of well-typed type declarations.
   \item declaring the type described by $(\vx, \tty, \vs)$ in $\genv$
         as per \\
         \TypingRuleRef{DeclaredType} yields the modified global static environment \\
-        $\newgenv$\ProseOrTypeError;
+        $\newgenv$, annotated type $\ttyp$, and annotated \optional{} field initializers $\vsp$\ProseOrTypeError;
   \item define $\newd$ as $\vd$.
 \end{itemize}
 
@@ -183,9 +183,10 @@ See \ExampleRef{Types} for examples of well-typed type declarations.
 \begin{mathpar}
 \inferrule{
   \vd = \DTypeDecl(\vx, \tty, \vs)\\
-  \declaretype(\genv, \vx, \tty, \vs) \typearrow \newgenv \OrTypeError
+  \declaretype(\genv, \vx, \tty, \vs) \typearrow (\newgenv, \ttyp, \vsp) \OrTypeError \\
+  \newd \eqdef \DTypeDecl(\vx, \ttyp, \vsp)
 }{
-  \typecheckdecl(\genv, \vd) \typearrow (\overname{\vd}{\newd}, \newgenv)
+  \typecheckdecl(\genv, \vd) \typearrow (\newd, \newgenv)
 }
 \end{mathpar}
 
@@ -193,16 +194,21 @@ See \ExampleRef{Types} for examples of well-typed type declarations.
 \hypertarget{def-declaretype}{}
 The function
 \[
+\begin{array}{r}
 \declaretype(\overname{\globalstaticenvs}{\genv} \aslsep
             \overname{\identifier}{\name} \aslsep
             \overname{\ty}{\tty} \aslsep
             \overname{\langle(\identifier\times\field^*)\rangle}{\vs}
-) \aslto \overname{\globalstaticenvs}{\newgenv}
+) \aslto \\
+(\overname{\globalstaticenvs}{\newgenv} \times
+ \overname{\ty}{\vttwo} \times
+ \overname{\langle(\identifier\times\field^*)\rangle}{\vsp})
 \cup \overname{\TTypeError}{\TypeErrorConfig}
+\end{array}
 \]
 declares a type named $\name$ with type $\tty$ and \optional\ additional fields
 over another type $\vs$
-in the global static environment $\genv$, resulting in the modified global static environment $\newgenv$.
+in the global static environment $\genv$, resulting in the modified global static environment $\newgenv$, annotated type $\vttwo$, and annotated \optional{} additional fields $\vsp$.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Type Declarations}
@@ -220,7 +226,7 @@ $\GlobalEffect(\SEPure)$ and $\Immutability(\True)$.
   \item define $\tenv$ as the static environment whose global component is $\genv$ and its local component is the empty local
         static environment;
   \item annotating the \optional\ extra fields $\vs$ for $\tty$ in $\tenv$ yields via \\ $\annotateextrafields$
-        yields the modified environment $\tenvone$ and type $\vtone$\ProseOrTypeError;
+        yields the modified environment $\tenvone$, type $\vtone$, and annotated \optional{} extra fields $\vsp$\ProseOrTypeError;
   \item annotating $\vtone$ in $\tenvone$ yields $(\vttwo, \vsest)$\ProseOrTypeError;
   \item applying $\sesispure$ to $\vsest$ yields $\vb$;
   \item \Proseeqdef{$\vpurity$} as $\SEPure$ if $\vb$ is $\True$, otherwise $\SEReadonly$;
@@ -231,13 +237,13 @@ $\GlobalEffect(\SEPure)$ and $\Immutability(\True)$.
     \item \AllApplyCase{enum}
     \begin{itemize}
       \item $\vttwo$ is an \enumerationtypeterm{} with labels $\ids$, that is, $\TEnum(\ids)$;
-      \item applying $\declareenumlabels$ to $\vttwo$ in $\tenvtwo$ $\newtenv$\ProseOrTypeError.
+      \item applying $\declareenumlabels$ to $\vttwo$ in $\tenvtwo$ yields $\newgenv$\ProseOrTypeError.
     \end{itemize}
 
     \item \AllApplyCase{not\_enum}
     \begin{itemize}
       \item $\vttwo$ is not an \enumerationtypeterm{};
-      \item $\newtenv$ is $\tenvtwo$.
+      \item $\newgenv$ is $\tenvtwo$.
     \end{itemize}
   \end{itemize}
 \end{itemize}
@@ -247,16 +253,16 @@ $\GlobalEffect(\SEPure)$ and $\Immutability(\True)$.
 \inferrule[enum]{
   \checkvarnotingenv{\genv, \name} \typearrow \True \OrTypeError\\\\
   \withemptylocal(\genv) \typearrow \tenv\\\\
-  \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\tenvone, \vtone)\\
+  \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\tenvone, \vtone, \vsp)\\
   \annotatetype{\True, \tenvone, \vtone} \typearrow (\vttwo, \vsest) \OrTypeError\\\\
   \sesispure(\vsest) \typearrow \vb\\
   \vpurity \eqdef \choice{\vb}{\SEPure}{\SEReadonly}\\
   \addtype(\tenvone, \name, \vttwo, \vpurity) \typearrow \tenvtwo\\\\
   \commonprefixline\\\\
   \vttwo = \TEnum(\ids)\\
-  \declareenumlabels(\tenvtwo, \vttwo) \typearrow \newtenv \OrTypeError
+  \declareenumlabels(\tenvtwo, \vttwo) \typearrow \newgenv \OrTypeError
 }{
-  \declaretype(\genv, \name, \tty, \vs) \typearrow \newtenv
+  \declaretype(\genv, \name, \tty, \vs) \typearrow (\newgenv, \vttwo, \vsp)
 }
 \end{mathpar}
 
@@ -264,7 +270,7 @@ $\GlobalEffect(\SEPure)$ and $\Immutability(\True)$.
 \inferrule[not\_enum]{
   \checkvarnotingenv{\genv, \name} \typearrow \True \OrTypeError\\\\
   \withemptylocal(\genv) \typearrow \tenv\\\\
-  \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\tenvone, \vtone)\\
+  \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\tenvone, \vtone, \vsp)\\
   \annotatetype{\True, \tenvone, \vtone} \typearrow (\vttwo, \vsest) \OrTypeError\\\\
   \sesispure(\vsest) \typearrow \vb\\
   \vpurity \eqdef \choice{\vb}{\SEPure}{\SEReadonly}\\
@@ -272,7 +278,7 @@ $\GlobalEffect(\SEPure)$ and $\Immutability(\True)$.
   \commonprefixline\\\\
   \astlabel(\vttwo) \neq \TEnum
 }{
-  \declaretype(\genv, \name, \tty, \vs) \typearrow \overname{\tenvtwo}{\newtenv}
+  \declaretype(\genv, \name, \tty, \vs) \typearrow (\overname{\tenvtwo}{\newgenv}, \vttwo, \vsp)
 }
 \end{mathpar}
 \CodeSubsection{\DeclareTypeBegin}{\DeclareTypeEnd}{../Typing.ml}
@@ -294,7 +300,7 @@ The function
 \end{array}
 \]
 annotates the type $\tty$ with the \optional\ extra fields $\vs$ in $\tenv$, yielding
-the modified environment $\newtenv$ and type $\newty$.
+the modified environment $\newtenv$, type $\newty$, and \optional{} extra fields $\vsp$.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Type Declarations with Fields and Without Fields}
@@ -315,7 +321,8 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \begin{itemize}
     \item $\vs$ is $\None$;
     \item $\newtenv$ is $\tenv$;
-    \item $\newty$ is $\tty$.
+    \item $\newty$ is $\tty$;
+    \item $\vsp$ is $\None$.
   \end{itemize}
 
   \item \AllApplyCase{empty\_fields}
@@ -325,7 +332,8 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
           $\True$\ProseOrTypeError;
     \item $\extrafields$ is the empty list;
     \item $\newtenv$ is $\tenv$ with its $\subtypes$ component updated by binding $\name$ to $\vsuper$;
-    \item $\newty$ is $\tty$.
+    \item $\newty$ is $\tty$;
+    \item $\vsp$ is $\Some{\vsuper, \emptylist}$.
   \end{itemize}
 
   \item \AllApplyCase{no\_super}
@@ -349,14 +357,15 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
           indicating that a \structuredtype\ was expected, thereby short-circuiting the entire rule;
     \item $\vt$ has AST label $L$ and fields $\fields$;
     \item $\newty$ is the type with AST label $L$ and list fields that is the concatenation of $\fields$ and $\extrafields$;
-    \item $\newtenv$ is $\tenv$ with its $\subtypes$ component updated by binding $\name$ to $\vsuper$.
+    \item $\newtenv$ is $\tenv$ with its $\subtypes$ component updated by binding $\name$ to $\vsuper$;
+    \item $\vsp$ is $\Some{(\vsuper, \emptylist)}$.
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{}{
-  \annotateextrafields(\tenv, \name, \tty, \overname{\None}{\vs}) \typearrow (\overname{\tenv}{\newtenv}, \overname{\tty}{\newty})
+  \annotateextrafields(\tenv, \name, \tty, \overname{\None}{\vs}) \typearrow (\overname{\tenv}{\newtenv}, \overname{\tty}{\newty}, \overname{\None}{\vsp})
 }
 \end{mathpar}
 
@@ -365,9 +374,10 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \subtypesat(\tty, \TNamed(\vsuper)) \typearrow \vb\\
   \checktrans{\vb}{\UnexpectedType} \typearrow \True \OrTypeError\\\\
   \extrafields = \emptylist \\
-  \newtenv \eqdef (G^\tenv.\subtypes[\name\mapsto\vsuper], L^\tenv)
+  \newtenv \eqdef (G^\tenv.\subtypes[\name\mapsto\vsuper], L^\tenv) \\
+  \vsp \eqdef \Some{(\vsuper, \emptylist)}
 }{
-  \annotateextrafields(\tenv, \name, \tty, \overname{\langle(\vsuper, \extrafields)\rangle}{\vs}) \typearrow (\newtenv, \overname{\tty}{\newty})
+  \annotateextrafields(\tenv, \name, \tty, \overname{\langle(\vsuper, \extrafields)\rangle}{\vs}) \typearrow (\newtenv, \overname{\tty}{\newty}, \vsp)
 }
 \end{mathpar}
 
@@ -396,9 +406,10 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   }\\
   \vt \eqname L(\fields)\\
   \newty \eqdef L(\fields \concat \extrafields)\\
-  \newtenv \eqdef (G^\tenv.\subtypes[\name\mapsto\vsuper], L^\tenv)
+  \newtenv \eqdef (G^\tenv.\subtypes[\name\mapsto\vsuper], L^\tenv) \\
+  \vsp \eqdef \Some{(\vsuper, \emptylist)}
 }{
-  \annotateextrafields(\tenv, \name, \tty, \overname{\langle(\vsuper, \extrafields)\rangle}{\vs}) \typearrow (\newtenv, \newty)
+  \annotateextrafields(\tenv, \name, \tty, \overname{\langle(\vsuper, \extrafields)\rangle}{\vs}) \typearrow (\newtenv, \newty, \vsp)
 }
 \end{mathpar}
 
