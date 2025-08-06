@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2020-present Institut National de Recherche en Informatique et *)
+(* Copyright 2025-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,21 +14,11 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Global locations for litmus *)
+(* All flags associated with a test *)
 
-type t = Addr of string | Pte of string | Phy of string | AddrT of string * int | Tag of string * int
-
-val pp_old : t -> string
-val pp : t -> string
-val compare : t -> t -> int
-val as_addr : t -> string (* assert false if not an addr *)
-val tr_symbol : Constant.symbol -> t
-
-module Set : MySet.S with type elt = t
-module Map : MyMap.S with type key = t
-
-type displayed = string ConstrGen.rloc
-
-val dump_displayed : displayed -> string
-
-module DisplayedSet : MySet.S with type elt = displayed
+type t =
+  {
+    pac : bool     ; (* Requires pointer authentification *)
+    self : bool    ; (* Self modying code *)
+    memtag : bool  ; (* Requires memory tagging *)
+  }
