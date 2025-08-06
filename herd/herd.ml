@@ -61,8 +61,8 @@ let gen_model_opt s =
 let runmode_options = Arg.align ~limit:40 [
   "-help", Arg.Unit (fun () -> ()), "" ;
   "--help", Arg.Unit (fun () -> ()), "" ;
- ("", Arg.Unit (fun () -> ()), "\n");
- parse_tag "-speedcheck"
+  "", Arg.Unit (fun () -> ()), "\n";
+  parse_tag "-speedcheck"
     (fun tag -> match Speed.parse tag with
     | None -> false
     | Some t -> speedcheck := t ; true)
@@ -144,14 +144,14 @@ let filter_options = Arg.align ~limit:40 [
   "<bool> enable stateless RC11 model checking, use with -variant normw, SC check can be skipped";
   "-dumpallfaults",
   Arg.Bool (fun b -> dumpallfaults := b),
-  "Dump final states with all faults that that happenned regardless of the post-condition";
+  "<bool> show all faults in the output regardless of the post-condition";
   "-nshow",
   Arg.Int (fun n -> nshow := Some n),
-  "<n> collect at most <n> pictures, default is to collect all (specified) pictures";
-   parse_bool "-checkfilter" check_filter "discard outcomes that negate filter proposition (if any)" ;
+  "<n> generate at most <n> execution graph. By default all execution graphs specified by -show are generated.";
   "-showone",
   Arg.Bool (fun b -> if b then nshow := Some 1),
   "<bool> alias for -nshow 1";
+  parse_bool "-checkfilter" check_filter "discard outcomes that negate filter proposition (if any)" ;
   ]
 
 let graph_content_options = Arg.align ~limit:40 [
@@ -160,10 +160,10 @@ let graph_content_options = Arg.align ~limit:40 [
   (* Edges *)
   ("", Arg.Unit (fun () -> ()), "\n");
   ("Edge options", Arg.Unit (fun () -> ()), " ");
-  parse_bool "-showpo" PP.showpo "show po edges in pictures" ;
   parse_bool "-showinitrf" PP.showinitrf "show read-from edges from initial state in pictures" ;
   parse_bool "-showfinalrf" PP.showfinalrf "show read-from edges to final state in pictures" ;
   parse_stringsetfun "-doshow" PP.add_doshow "show those edges";
+  parse_bool "-showpo" PP.showpo "show po edges in pictures" ;
   parse_stringsetfun "-unshow" PP.add_unshow "do not show those edges" ;
   parse_stringset "-symetric" PP.symetric "declare those edges as symetric" ;
   parse_stringset "-noid" PP.noid "like -symetric, additionally do not show identity edges" ;
@@ -182,7 +182,7 @@ let graph_content_options = Arg.align ~limit:40 [
        (PrettyConf.pp_showevents !PP.showevents)) ;
   parse_bool "-showinitwrites" PP.showinitwrites
     "show init write events in pictures" ;
- parse_stringset "-cycles" cycles  "<name1,...,nameN> show failing checks as cycles, cumulates" ;
+  parse_stringset "-cycles" cycles  "<name1,...,nameN> show failing checks as cycles, cumulates" ;
   parse_bool "-dumpes" Opts.dumpes "dump event structures";
  "-initwrites", Arg.Bool (fun b -> initwrites := Some b),
     "<bool> represent init writes as write events, this option should not be used except for debugging model options";
@@ -193,13 +193,13 @@ let graph_presentation_options = Arg.align ~limit:40 [
   "--help", Arg.Unit (fun () -> ()), "" ;
   ("", Arg.Unit (fun () -> ()), "\n");
   parse_bool "-showobserved" PP.showobserved
-    "highlight observed memory reads in pictures" ;
+    "highlight observed memory reads in execution graphs" ;
   parse_bool "-edgemerge" PP.edgemerge "merge edges, cppmem style" ;
   parse_bool "-showlegend" PP.showlegend  "show legend in pictures" ;
   parse_bool "-showkind" showkind  "show test kind in legends" ;
   parse_bool "-shortlegend" shortlegend "show test name only in legends";
   parse_bool "-labelinit" PP.labelinit "show labels on the init node" ;
-  parse_bool "-showthread" PP.showthread "show thread numbers in figures" ;
+  parse_bool "-showthread" PP.showthread "show thread numbers in execution graphs" ;
   parse_bool "-squished" PP.squished "limit information in graph nodes" ;
   parse_bool "-fixedsize" PP.fixedsize
     "fixedsize attribute for nodes in graph" ;
@@ -296,11 +296,11 @@ let setup_options = Arg.align ~limit:40 [
      (fun () -> printf "%s, Rev: %s\n" Version.version Version.rev ; exit 0),
    " show version number and exit") ;
   ("-libdir", Arg.Unit (fun () -> print_endline !Opts.libdir; exit 0),
-    " show installation directory and exit");
+    "show the path used to search for the top level model and included .cat files");
   ("-set-libdir", Arg.String (fun s -> Opts.libdir := s),
-    "<path> set installation directory to <path>");
+    "<path> set the path used to search for the top level model and included .cat files to <path>");
   ("-v", Arg.Unit (fun _ -> incr verbose),
-   "<non-default> show various diagnostics, repeat to increase verbosity");
+   "show various diagnostics, repeat to increase verbosity");
   ("-q", Arg.Unit (fun _ -> verbose := -1; debug := Debug_herd.none),
    "<default> do not show diagnostics");
   ("-I", Arg.String (fun s -> includes := !includes @ [s]),
@@ -319,7 +319,7 @@ let setup_options = Arg.align ~limit:40 [
      (fun s -> match s with
      | "-" -> outputdir := PrettyConf.StdoutOutput
      | _ -> outputdir := PrettyConf.Outputdir s),
-   "<dir> generated files will go into <dir>, default: do not generate") ;
+   "<dir> generated files will go into <dir>. No default, if not set herd7 does not generate any files.") ;
   
   begin let module ParseView = ParseTag.Make(View) in
   ParseView.parse_opt "-view" PP.view
