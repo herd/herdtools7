@@ -40,6 +40,7 @@ type t =
   | CallsRecursive of identifier
   | PerformsAssertions
   | NonDeterministic
+  | Prints
 
 type side_effect = t
 
@@ -52,40 +53,44 @@ let equal (t1 : t) (t2 : t) : bool =
   | ThrowsException s1, ThrowsException s2
   | CallsRecursive s1, CallsRecursive s2 ->
       String.equal s1 s2
-  | PerformsAssertions, PerformsAssertions | NonDeterministic, NonDeterministic
-    ->
+  | PerformsAssertions, PerformsAssertions
+  | NonDeterministic, NonDeterministic
+  | Prints, Prints ->
       true
   | ( ReadsLocal _,
       ( WritesLocal _ | ReadsGlobal _ | WritesGlobal _ | ThrowsException _
-      | CallsRecursive _ | PerformsAssertions | NonDeterministic ) )
+      | CallsRecursive _ | PerformsAssertions | NonDeterministic | Prints ) )
   | ( WritesLocal _,
       ( ReadsGlobal _ | WritesGlobal _ | ThrowsException _ | CallsRecursive _
-      | PerformsAssertions | NonDeterministic ) )
+      | PerformsAssertions | NonDeterministic | Prints ) )
   | ( ReadsGlobal _,
       ( WritesGlobal _ | ThrowsException _ | CallsRecursive _
-      | PerformsAssertions | NonDeterministic ) )
+      | PerformsAssertions | NonDeterministic | Prints ) )
   | ( WritesGlobal _,
       ( ThrowsException _ | CallsRecursive _ | PerformsAssertions
-      | NonDeterministic ) )
-  | ThrowsException _, (CallsRecursive _ | PerformsAssertions | NonDeterministic)
-  | CallsRecursive _, (PerformsAssertions | NonDeterministic)
-  | PerformsAssertions, NonDeterministic
+      | NonDeterministic | Prints ) )
+  | ( ThrowsException _,
+      (CallsRecursive _ | PerformsAssertions | NonDeterministic | Prints) )
+  | CallsRecursive _, (PerformsAssertions | NonDeterministic | Prints)
+  | PerformsAssertions, (NonDeterministic | Prints)
+  | NonDeterministic, Prints
   | ( ( WritesLocal _ | ReadsGlobal _ | WritesGlobal _ | ThrowsException _
-      | CallsRecursive _ | PerformsAssertions | NonDeterministic ),
+      | CallsRecursive _ | PerformsAssertions | NonDeterministic | Prints ),
       ReadsLocal _ )
   | ( ( ReadsGlobal _ | WritesGlobal _ | ThrowsException _ | CallsRecursive _
-      | PerformsAssertions | NonDeterministic ),
+      | PerformsAssertions | NonDeterministic | Prints ),
       WritesLocal _ )
   | ( ( WritesGlobal _ | ThrowsException _ | CallsRecursive _
-      | PerformsAssertions | NonDeterministic ),
+      | PerformsAssertions | NonDeterministic | Prints ),
       ReadsGlobal _ )
   | ( ( ThrowsException _ | CallsRecursive _ | PerformsAssertions
-      | NonDeterministic ),
+      | NonDeterministic | Prints ),
       WritesGlobal _ )
-  | ( (CallsRecursive _ | PerformsAssertions | NonDeterministic),
+  | ( (CallsRecursive _ | PerformsAssertions | NonDeterministic | Prints),
       ThrowsException _ )
-  | (PerformsAssertions | NonDeterministic), CallsRecursive _
-  | NonDeterministic, PerformsAssertions ->
+  | (PerformsAssertions | NonDeterministic | Prints), CallsRecursive _
+  | (NonDeterministic | Prints), PerformsAssertions
+  | Prints, NonDeterministic ->
       false
 
 let compare (t1 : t) (t2 : t) : int =
@@ -97,41 +102,45 @@ let compare (t1 : t) (t2 : t) : int =
   | ThrowsException s1, ThrowsException s2
   | CallsRecursive s1, CallsRecursive s2 ->
       String.compare s1 s2
-  | PerformsAssertions, PerformsAssertions | NonDeterministic, NonDeterministic
-    ->
+  | PerformsAssertions, PerformsAssertions
+  | NonDeterministic, NonDeterministic
+  | Prints, Prints ->
       0
   | ( ReadsLocal _,
       ( WritesLocal _ | ReadsGlobal _ | WritesGlobal _ | ThrowsException _
-      | CallsRecursive _ | PerformsAssertions | NonDeterministic ) )
+      | CallsRecursive _ | PerformsAssertions | NonDeterministic | Prints ) )
   | ( WritesLocal _,
       ( ReadsGlobal _ | WritesGlobal _ | ThrowsException _ | CallsRecursive _
-      | PerformsAssertions | NonDeterministic ) )
+      | PerformsAssertions | NonDeterministic | Prints ) )
   | ( ReadsGlobal _,
       ( WritesGlobal _ | ThrowsException _ | CallsRecursive _
-      | PerformsAssertions | NonDeterministic ) )
+      | PerformsAssertions | NonDeterministic | Prints ) )
   | ( WritesGlobal _,
       ( ThrowsException _ | CallsRecursive _ | PerformsAssertions
-      | NonDeterministic ) )
-  | ThrowsException _, (CallsRecursive _ | PerformsAssertions | NonDeterministic)
-  | CallsRecursive _, (PerformsAssertions | NonDeterministic)
-  | PerformsAssertions, NonDeterministic ->
+      | NonDeterministic | Prints ) )
+  | ( ThrowsException _,
+      (CallsRecursive _ | PerformsAssertions | NonDeterministic | Prints) )
+  | CallsRecursive _, (PerformsAssertions | NonDeterministic | Prints)
+  | PerformsAssertions, (NonDeterministic | Prints)
+  | NonDeterministic, Prints ->
       1
   | ( ( WritesLocal _ | ReadsGlobal _ | WritesGlobal _ | ThrowsException _
-      | CallsRecursive _ | PerformsAssertions | NonDeterministic ),
+      | CallsRecursive _ | PerformsAssertions | NonDeterministic | Prints ),
       ReadsLocal _ )
   | ( ( ReadsGlobal _ | WritesGlobal _ | ThrowsException _ | CallsRecursive _
-      | PerformsAssertions | NonDeterministic ),
+      | PerformsAssertions | NonDeterministic | Prints ),
       WritesLocal _ )
   | ( ( WritesGlobal _ | ThrowsException _ | CallsRecursive _
-      | PerformsAssertions | NonDeterministic ),
+      | PerformsAssertions | NonDeterministic | Prints ),
       ReadsGlobal _ )
   | ( ( ThrowsException _ | CallsRecursive _ | PerformsAssertions
-      | NonDeterministic ),
+      | NonDeterministic | Prints ),
       WritesGlobal _ )
-  | ( (CallsRecursive _ | PerformsAssertions | NonDeterministic),
+  | ( (CallsRecursive _ | PerformsAssertions | NonDeterministic | Prints),
       ThrowsException _ )
-  | (PerformsAssertions | NonDeterministic), CallsRecursive _
-  | NonDeterministic, PerformsAssertions ->
+  | (PerformsAssertions | NonDeterministic | Prints), CallsRecursive _
+  | (NonDeterministic | Prints), PerformsAssertions
+  | Prints, NonDeterministic ->
       -1
 
 let pp_print f =
@@ -145,17 +154,19 @@ let pp_print f =
   | CallsRecursive s -> fprintf f "CallsRecursive %S" s
   | PerformsAssertions -> fprintf f "PerformsAssertions"
   | NonDeterministic -> fprintf f "NonDeterministic"
+  | Prints -> fprintf f "Prints"
 
 let time_frame = function
   | ReadsLocal { time_frame } | ReadsGlobal { time_frame } -> time_frame
   | WritesLocal _ | WritesGlobal _ | NonDeterministic | CallsRecursive _
-  | ThrowsException _ ->
+  | ThrowsException _ | Prints ->
       TimeFrame.Execution
   | PerformsAssertions -> TimeFrame.Constant
 
 let is_pure = function
   | ReadsLocal _ | ReadsGlobal _ | NonDeterministic | PerformsAssertions -> true
-  | WritesLocal _ | WritesGlobal _ | CallsRecursive _ | ThrowsException _ ->
+  | WritesLocal _ | WritesGlobal _ | CallsRecursive _ | ThrowsException _
+  | Prints ->
       false
 
 (* Begin IsSymbolicallyEvaluable *)
@@ -163,7 +174,7 @@ let is_symbolically_evaluable = function
   | ReadsLocal { immutable } | ReadsGlobal { immutable } -> immutable
   | PerformsAssertions -> true
   | WritesLocal _ | WritesGlobal _ | NonDeterministic | CallsRecursive _
-  | ThrowsException _ ->
+  | ThrowsException _ | Prints ->
       false
 (* End *)
 
@@ -200,6 +211,7 @@ module SES = struct
     calls_recursives : ISet.t;
     assertions_performed : bool;
     non_determinism : bool;
+    prints : bool;
     (* Invariants kept *)
     max_local_read_time_frame : TimeFrame.t * identifier;
     max_global_read_time_frame : TimeFrame.t * identifier;
@@ -219,6 +231,7 @@ module SES = struct
       calls_recursives = ISet.empty;
       assertions_performed = false;
       non_determinism = false;
+      prints = false;
       max_local_read_time_frame = (TimeFrame.Constant, "1");
       max_global_read_time_frame = (TimeFrame.Constant, "1");
       local_purity = SE_Pure;
@@ -235,7 +248,7 @@ module SES = struct
       && ISet.is_empty ses.global_writes
       && ISet.is_empty ses.thrown_exceptions
       && ISet.is_empty ses.calls_recursives
-      && not ses.non_determinism
+      && (not ses.non_determinism) && not ses.prints
     then
       TimeFrame.max
         (fst ses.max_global_read_time_frame)
@@ -261,6 +274,7 @@ module SES = struct
     && ISet.is_empty ses.global_writes
     && ISet.is_empty ses.thrown_exceptions
     && ISet.is_empty ses.calls_recursives
+    && not ses.prints
 
   let fine_grained_is_symbolically_evaluable ses =
     let all_reads_are_immutable ses =
@@ -358,6 +372,14 @@ module SES = struct
       is_immutable = false;
     }
 
+  let add_print ses =
+    {
+      ses with
+      prints = true;
+      local_purity = SE_Impure;
+      global_purity = SE_Impure;
+    }
+
   let add_side_effect se ses =
     match se with
     | ReadsLocal { name; time_frame; immutable } ->
@@ -370,6 +392,7 @@ module SES = struct
     | CallsRecursive s -> add_calls_recursive s ses
     | PerformsAssertions -> add_assertion ses
     | NonDeterministic -> add_non_determinism ses
+    | Prints -> add_print ses
 
   (* Constructors *)
   let reads_local s t immutable = add_local_read s t immutable empty
@@ -380,6 +403,7 @@ module SES = struct
   let calls_recursive s = add_calls_recursive s empty
   let performs_assertions = add_assertion empty
   let non_deterministic = add_non_determinism empty
+  let prints = add_print empty
 
   let equal ses1 ses2 =
     ses1 == ses2
@@ -400,6 +424,7 @@ module SES = struct
        && ses1.local_purity = ses2.local_purity
        && ses1.global_purity = ses2.global_purity
        && ses1.is_immutable = ses2.is_immutable
+       && ses1.prints = ses2.prints
 
   let union ses1 ses2 =
     if ses1 == empty then ses2
@@ -426,6 +451,7 @@ module SES = struct
         local_purity = purity_combine ses1.local_purity ses2.local_purity;
         global_purity = purity_combine ses1.global_purity ses2.global_purity;
         is_immutable = ses1.is_immutable && ses2.is_immutable;
+        prints = ses1.prints || ses2.prints;
       }
 
   (* Properties *)
@@ -451,6 +477,7 @@ module SES = struct
       && ISet.disjoint ses1.local_writes ses2.local_writes
       && ISet.disjoint ses1.local_writes ses2.local_reads
       && ISet.disjoint ses1.local_reads ses2.local_writes
+      && not (ses1.prints && ses2.prints)
 
   let choose_side_effect ses =
     if not (ISet.is_empty ses.global_writes) then
@@ -462,6 +489,7 @@ module SES = struct
     else if not (ISet.is_empty ses.calls_recursives) then
       CallsRecursive (ISet.choose ses.calls_recursives)
     else if ses.assertions_performed then PerformsAssertions
+    else if ses.prints then Prints
     else raise Not_found
 
   let make_reads name =
@@ -596,6 +624,7 @@ module SES = struct
     []
     |> add_if PerformsAssertions ses.assertions_performed
     |> add_if NonDeterministic ses.non_determinism
+    |> add_if Prints ses.prints
     |> add_from_tf
          (fun name time_frame ->
            ReadsGlobal { name; time_frame; immutable = true })

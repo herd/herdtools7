@@ -3770,7 +3770,7 @@ empty \executiongraph{}.
   \item checking for each \Proselistrange{$i$}{$\vargs$}, that $\vt_i$ is a singular type yields $\True$\ProseOrTypeError;
   \item $\news$ denotes the print statement with arguments $\vargsp$ and newline indicator $\vnewline$;
   \item $\newtenv$ is $\tenv$;
-  \item define $\vses$ as the union of $\vxs_i$, \Proselistrange{$i$}{$\vargs$}.
+  \item define $\vses$ as the union of the set containing a \GlobalEffectTerm{} with \purity{} $\SEImpure$ and a \LocalEffectTerm{} with \purity{} $\SEImpure$, and each set $\vxs_i$, for \Proselistrange{$i$}{$\vargs$}.
 \end{itemize}
 
 \FormallyParagraph
@@ -3778,7 +3778,7 @@ empty \executiongraph{}.
   \inferrule{%
     \vi\in\listrange(\vargs): \annotateexpr{\vargs[i], \tenv} \typearrow (\vt_i, \vargsp[i], \vxs_i)\OrTypeError \\\\
     \vi\in\listrange(\vargs): \checktrans{\issingular(\vt_i)}{\UnexpectedType} \typearrow \True \OrTypeError \\\\
-    \vses \eqdef \bigcup_{\vi\in\listrange(\vargs)} \vxs_i
+    \vses \eqdef \{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\} \cup \bigcup_{\vi\in\listrange(\vargs)} \vxs_i
   }{%
     \annotatestmt (\tenv, \overname{\SPrint(\vargs, \vnewline)}{\vs}) \typearrow (\SPrint(\vargsp, \vnewline), \tenv, \vses)
   }

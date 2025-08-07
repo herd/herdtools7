@@ -29,6 +29,7 @@ type t =
   | PerformsAssertions  (** Performs an assertion. *)
   | NonDeterministic
       (** Uses a non-deterministic construct such as [ARBITRARY: ty]. *)
+  | Prints  (** Prints via [print] or [println]. *)
 
 type side_effect = t
 
@@ -54,6 +55,7 @@ module SES : sig
   val calls_recursive : identifier -> t
   val performs_assertions : t
   val non_deterministic : t
+  val prints : t
 
   (* Properties *)
   val max_time_frame : t -> TimeFrame.t
@@ -75,6 +77,7 @@ module SES : sig
   val add_side_effect : side_effect -> t -> t
   val add_assertion : t -> t
   val add_non_determinism : t -> t
+  val add_print : t -> t
   val remove_pure : t -> t
   val remove_locals : t -> t
   val set_purity_for_subprogram : AST.func_qualifier option -> t -> t
