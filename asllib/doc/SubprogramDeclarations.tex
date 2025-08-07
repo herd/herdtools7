@@ -51,8 +51,8 @@ For example, this could model a register file consisting of 32 registers, each o
 \begin{flalign*}
 \Ndecl  \derives \ & \Npuritykeyword \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs &\\
     &\wrappedline \Nreturntype \parsesep \Nrecurselimit \parsesep \Nfuncbody\\
-|\ & \Npuritykeyword \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs &\\
-    &\wrappedline \Nfuncbody\\
+|\ & \Nqualifier \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs &\\
+    &\wrappedline \Nrecurselimit \parsesep \Nfuncbody &\\
 |\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbeq \parsesep \Tidentifier \parsesep \Nasty &\\
    & \wrappedline\ \Naccessorbody &\\
 \Naccessorbody \derives \ & \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon&
@@ -138,8 +138,8 @@ In particular, rather than directly building the abstract syntax for accessors, 
   \builddecl\left(
     \overname{\Ndecl\left(
       \begin{array}{l}
-    \namednode{\vp}{\Npuritykeyword}, \punnode{\Noverride}, \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \\
-    \wrappedline\ \punnode{\Nreturntype}, \punnode{\Nrecurselimit}, \punnode{\Nfuncbody}
+    \namednode{\vp}{\Npuritykeyword}, \punnode{\Noverride}, \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \\
+    \wrappedline\ \punnode{\Nfuncargs}, \punnode{\Nreturntype}, \punnode{\Nrecurselimit}, \punnode{\Nfuncbody}
       \end{array}
   \right)}{\vparsednode}\right)
 \astarrow \\
@@ -153,7 +153,7 @@ In particular, rather than directly building the abstract syntax for accessors, 
             \funcbody &:& \astof{\vfuncbody},\\
             \funcreturntype &:& \langle \astof{\vreturntype} \rangle,\\
             \funcsubprogramtype &:& \STFunction,\\
-            \funcrecurselimit   &:& \langle\astof{\vrecurselimit}\rangle\\
+            \funcrecurselimit   &:& \astof{\vrecurselimit}\\
             \funcbuiltin &:& \False\\
             \funcqualifier &:& \astversion{\vp}\\
             \funcoverride &:& \astof{\voverride}
@@ -165,9 +165,14 @@ In particular, rather than directly building the abstract syntax for accessors, 
 
 \begin{mathpar}
 \inferrule[procedure\_decl]{}{
-  \builddecl(
-    \overname{\Ndecl(\punnode{\Nqualifier}, \punnode{\Noverride}, \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \punnode{\Nfuncbody})}{\vparsednode}
-    )
+  \builddecl\left(
+    \overname{\Ndecl\left(
+      \begin{array}{l}
+      \punnode{\Nqualifier}, \punnode{\Noverride}, \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \\
+      \wrappedline\ \punnode{\Nfuncargs}, \punnode{\Nrecurselimit}, \punnode{\Nfuncbody}
+      \end{array}
+      \right)}{\vparsednode}
+    \right)
   \astarrow \\
   {
     \overname{
@@ -179,7 +184,7 @@ In particular, rather than directly building the abstract syntax for accessors, 
             \funcbody &:& \astof{\vfuncbody},\\
             \funcreturntype &:& \None,\\
             \funcsubprogramtype &:& \STProcedure,\\
-            \funcrecurselimit   &:& \None\\
+            \funcrecurselimit   &:& \astof{\vrecurselimit}\\
             \funcbuiltin &:& \False\\
             \funcqualifier &:& \astof{\vqualifier}\\
             \funcoverride &:& \astof{\voverride}
@@ -247,7 +252,7 @@ transforms a parse node $\vparsednode$ into an $\accessorpair$.
 \hypertarget{build-recurselimit}{}
 The function
 \[
-\buildrecurselimit(\overname{\parsenode{\Nrecurselimit}}{\vparsednode}) \aslto \overname{\accessorpair}{\vaccessorpair}
+\buildrecurselimit(\overname{\parsenode{\Nrecurselimit}}{\vparsednode}) \aslto \overname{\Some{\expr}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
