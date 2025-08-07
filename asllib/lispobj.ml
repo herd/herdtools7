@@ -248,7 +248,8 @@ let of_binop (x : binop) =
     | `RDIV -> "RDIV"
     | `SHL -> "SHL"
     | `SHR -> "SHR"
-    | `CONCAT -> "CONCAT")
+    | `BV_CONCAT -> "BV_CONCAT"
+    | `STR_CONCAT -> "STR_CONCAT")
 
 (* -------------------------------------------------------------------------
 

@@ -378,7 +378,7 @@ ASL Typing Tests / annotating types:
   eq_enum: RED == GREEN = FALSE
   eq_enum: RED != RED = FALSE
   eq_enum: RED != GREEN = TRUE
-  concat_string: 0 :: '1' :: 2.0 :: TRUE :: "foo" :: RED = 00x12TRUEfooRED
+  concat_string: 0 ++ '1' ++ 2.0 ++ TRUE ++ "foo" ++ RED = 00x12TRUEfooRED
 
   $ aslref TypingRule.EVar.asl
   $ aslref TypingRule.EVar.undefined.asl

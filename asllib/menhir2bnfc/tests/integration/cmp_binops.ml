@@ -28,7 +28,8 @@ let binops : AST.binop enum =
       `RDIV;
       `SHL;
       `SHR;
-      `CONCAT;
+      `BV_CONCAT;
+      `STR_CONCAT;
     ]
 
 let unops : AST.unop enum = finite AST.[ BNOT; NEG; NOT ]
