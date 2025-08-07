@@ -786,7 +786,12 @@ is not a constrained expression.
 \begin{mathpar}
 \inferrule{
   \withemptylocal(\genv) \typearrow \tenv\\
-  \annotatelimitexpr(\tenvone, \funcsig.\funcrecurselimit) \typearrow (\vrecurselimit, \vsesrecurselimit) \OrTypeError\\\\
+  {
+    \begin{array}{r}
+    \annotatelimitexpr(\tenvone, \funcsig.\funcrecurselimit) \typearrow \\
+    (\vrecurselimit, \vsesrecurselimit) \OrTypeError
+    \end{array}
+  }\\\\
   {
     \begin{array}{r}
     \annotateparams(\tenv, \funcsig.\funcparameters, (\tenv, \emptylist)) \typearrow \\
@@ -796,13 +801,23 @@ is not a constrained expression.
   \checkparamdecls(\tenv, \funcsig) \typearrow \True \OrTypeError \\
   {
     \begin{array}{r}
-    \annotateargs(\tenvwithparams, \funcsig.\funcargs, (\tenvwithparams, \emptylist), \vseswithparams) \typearrow \\
+    \annotateargs\left(
+      \begin{array}{l}
+        \tenvwithparams, \funcsig.\funcargs,\\
+        (\tenvwithparams, \emptylist), \vseswithparams
+      \end{array}
+      \right) \typearrow \\
     (\tenvwithargs, \vseswithargs, \vargs) \OrTypeError
       \end{array}
   }\\\\
   {
     \begin{array}{r}
-  \annotatereturntype(\tenvwithargs, \tenvwithparams, \funcsig.\funcreturntype, \vseswithargs) \typearrow \\
+    \annotatereturntype\left(
+      \begin{array}{l}
+        \tenvwithargs, \tenvwithparams, \\
+        \funcsig.\funcreturntype, \vseswithargs
+      \end{array}
+      \right) \typearrow \\
     (\newtenv, \vreturntype, \vseswithreturn) \OrTypeError
     \end{array}
   }\\\\
