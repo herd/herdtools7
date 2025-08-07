@@ -265,11 +265,9 @@ module NativeBackend (C : Config) = struct
 
     let ascii_integer = integer_range' !$0 !$127
 
-    let ascii_str =
-      let open! Z in
-      function
+    let ascii_str = function
       | [ NV_Literal (L_Int i) ] ->
-          if geq zero i && leq ~$127 i then
+          if Z.(zero <= i && i <= of_int 127) then
             L_String (char_of_int (Z.to_int i) |> String.make 1)
             |> nv_literal |> return_one
           else
