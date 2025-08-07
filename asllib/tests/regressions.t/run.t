@@ -324,6 +324,13 @@ Parameterized integers:
   ASL Error: Cannot parse.
   [1]
 
+  $ aslref binop-non-assoc.asl
+  File binop-non-assoc.asl, line 3, characters 6 to 11:
+    - = 3 - 2 - 1;
+        ^^^^^
+  ASL Error: Cannot parse.
+  [1]
+
   $ aslref rdiv_checks.asl
   File rdiv_checks.asl, line 3, characters 12 to 25:
       var x = 5.3 / "hello";

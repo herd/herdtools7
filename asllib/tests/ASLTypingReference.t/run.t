@@ -1049,9 +1049,9 @@ ASL Typing Tests / annotating types:
     provided array [[Color]] of integer.
   [1]
   $ aslref TypingRule.ReduceConstraint.asl
-  File TypingRule.ReduceConstraint.asl, line 6, characters 4 to 65:
-      var x : integer{3 * w, 0..5 * z - z - 2 * z,  w + z} = w + z;
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File TypingRule.ReduceConstraint.asl, line 6, characters 4 to 67:
+      var x : integer{3 * w, 0..(5 * z - z) - 2 * z,  w + z} = w + z;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: a subtype of integer {0..(2 * z), (z + w), (3 * w)}
     was expected, provided integer {0..2000}.
   [1]

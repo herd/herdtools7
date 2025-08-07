@@ -492,7 +492,7 @@ end;
 
 pure func CountLeadingZeroBits{N}(x: bits(N)) => integer{0..N}
 begin
-  return N - 1 - HighestSetBit(x);
+  return (N - 1) - HighestSetBit(x);
 end;
 
 // Leading sign bits in a bitvector. Count the number of consecutive
