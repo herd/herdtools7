@@ -168,8 +168,8 @@ module Make(A:Arch_herd.S) =
             IntMap.add addr (Label.Set.add lbl ins_lbls) res in
           Label.Map.fold one_label prog IntMap.empty in
         fun addr -> IntMap.safe_find Label.Set.empty addr instr2labels in
-      let init_state = A.build_state init in
       let type_env = A.build_type_env init in
+      let init_state = A.build_state type_env init in
       let flocs,ffaults = LocationsItem.locs_and_faults locs in
       let displayed =
         let flocs = A.RLocSet.of_list flocs in

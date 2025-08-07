@@ -144,45 +144,6 @@ module type S = sig
 (**********)
   include Fault.S with type loc_global := v and type fault_type := I.FaultType.t
 
-(*********)
-(* State *)
-(*********)
-  type state
-
-  val state_empty : state
-  val pp_state : state -> string
-  val do_dump_state : (string -> string) -> state -> string
-  val dump_state : state -> string
-  val pp_nice_state :
-      state -> string (* delim, as in String.concat  *)
-        -> (location -> v -> string) -> string
-  val map_state : (v -> v) -> state -> state
-
-  val build_state : (location * (TestType.t * v)) list -> state
-  val build_concrete_state : (location * int) list -> state
-
-  val state_is_empty : state -> bool
-  val state_add : state -> location -> v -> state
-  val state_add_if_undefined  : state -> location -> v -> state
-  val state_to_list : state -> (location * v) list
-  val state_size : state -> int
-  val state_fold : (location -> v -> 'a -> 'a) -> state -> 'a -> 'a
-  val state_filter : (location -> bool) -> state -> state
-
-  (* Exception raised when location is yet unknown *)
-  exception LocUndetermined
-  val look_address_in_state : state -> location -> v
-
-(******************)
-(* Register state *)
-(******************)
-
-  val build_reg_state : proc -> I.arch_reg list -> state -> reg_state
-  val look_reg : I.arch_reg -> reg_state -> I.V.v option
-  val set_reg : I.arch_reg -> v -> reg_state -> reg_state
-  val kill_regs : I.arch_reg list -> reg_state -> reg_state
-  val fold_reg_state : (I.arch_reg -> v -> 'a -> 'a) -> reg_state -> 'a -> 'a
-
 (****************)
 (* Environments *)
 (****************)
@@ -221,6 +182,45 @@ module type S = sig
 
   (* Set of final states *)
   module StateSet : MySet.S with type elt = final_state
+
+(*********)
+(* State *)
+(*********)
+  type state
+
+  val state_empty : state
+  val pp_state : state -> string
+  val do_dump_state : (string -> string) -> state -> string
+  val dump_state : state -> string
+  val pp_nice_state :
+      state -> string (* delim, as in String.concat  *)
+        -> (location -> v -> string) -> string
+  val map_state : (v -> v) -> state -> state
+
+  val build_state : type_env -> (location * (TestType.t * v)) list -> state
+  val build_concrete_state : (location * int) list -> state
+
+  val state_is_empty : state -> bool
+  val state_add : state -> location -> v -> state
+  val state_add_if_undefined  : state -> location -> v -> state
+  val state_to_list : state -> (location * v) list
+  val state_size : state -> int
+  val state_fold : (location -> v -> 'a -> 'a) -> state -> 'a -> 'a
+  val state_filter : (location -> bool) -> state -> state
+
+  (* Exception raised when location is yet unknown *)
+  exception LocUndetermined
+  val look_address_in_state : state -> location -> v
+
+(******************)
+(* Register state *)
+(******************)
+
+  val build_reg_state : proc -> I.arch_reg list -> state -> reg_state
+  val look_reg : I.arch_reg -> reg_state -> I.V.v option
+  val set_reg : I.arch_reg -> v -> reg_state -> reg_state
+  val kill_regs : I.arch_reg list -> reg_state -> reg_state
+  val fold_reg_state : (I.arch_reg -> v -> 'a -> 'a) -> reg_state -> 'a -> 'a
 
 (*****************************************)
 (* Size dependent items (for mixed-size) *)
@@ -599,7 +599,6 @@ module Make(C:Config) (I:I) : S with module I = I
 (****************)
 (* Environments *)
 (****************)
-
       let size_of_t = TestType.size_of I.V.Cst.Scalar.machsize
 
       let mem_access_size_of_t t =
@@ -622,26 +621,119 @@ module Make(C:Config) (I:I) : S with module I = I
         | TyDef -> true
         | TyDefPointer|Pointer _ -> false
 
-      let build_state bds =
+      (* Types *)
+
+      (* We might have accesses in the final state like v[2] *)
+      (* this depends on the size of the vector types in the initial state *)
+      (* e.g when uint64_t v, each elem is 8 bytes, so 2*8 is 16 bytes offset*)
+      (* This function scales the offset from type information, *)
+      (* Raises User_error, if not an array or pointer type or  *)
+      (* in case of out of bounds access.                       *)
+      let size_of_array t =
+        let open TestType in
+        match t with
+        | TyArray (t,sz) -> Some (size_of_t t,sz)
+        | TyDefPointer -> Some (MachSize.Word,1)
+        | Pointer t -> Some (size_of_t t,1)
+        | _ -> None
+
+      (*
+       * Fails with user error when t is not an array type
+       * or in case of out-of-bound access
+       *)
+      let scale_array_reference t loc os =
+        let sz_elt,n_elts =
+          match size_of_array t with
+          | Some (a,b) -> (a,b)
+          | None ->
+             Warn.user_error
+               "Location %s of type %s is used as an array"
+               (pp_location_old loc) (TestType.pp t) in
+        if os < 0 || os >= n_elts then
+          Warn.user_error
+            "Out of bounds access on array %s" (pp_location_old loc) ;
+        if os = 0 then loc
+        else
+          match symbolic_data loc with
+          | Some s ->
+              let s =
+                { s with Constant.offset = MachSize.nbytes sz_elt * os} in
+              of_symbolic_data s
+          | _ -> (* Excluded by parsing *)
+              Warn.fatal "Location %s is not global" (pp_location_old loc)
+
+      type type_env = TestType.t LocMap.t
+
+      let type_env_empty = LocMap.empty
+
+      let build_type_env bds =
+        List.fold_left
+          (fun m (loc,(t,_)) -> LocMap.add loc t m)
+          type_env_empty bds
+
+      let look_type m loc = LocMap.safe_find TestType.TyDef loc m
+
+      let look_rloc_type m rloc =
+        let open ConstrGen in
+        match rloc with
+        | Loc loc -> look_type m loc
+        | Deref (loc,_) ->
+           let t = look_type m loc in
+           TestType.Ty (TestType.get_array_primitive_ty t)
+
+      let loc_of_rloc tenv =
+        let open ConstrGen in
+        function
+        | Loc loc -> loc
+        | Deref (loc,o) ->
+            let t = look_type tenv loc in
+            scale_array_reference t loc o
+
+      let locs_of_rloc tenv rloc =
+        let open ConstrGen in
+        match rloc with
+        | Loc loc ->
+          begin
+            let t = look_type tenv loc in
+            match t with
+            | TestType.TyArray (_,sz) ->
+                let rec do_rec o =
+                  if o >= sz then []
+                  else
+                    scale_array_reference t loc o::do_rec (o+1) in
+                do_rec 0
+            | _ -> [loc]
+          end
+        | Deref (loc,o) ->
+            let t = look_type tenv loc in
+            [scale_array_reference t loc o]
+
+      let demote = function
+        | I.V.Var _ as v -> v
+        | I.V.Val c -> I.V.Val (Constant.map_scalar I.V.Cst.Scalar.demote c)
+
+      let val_of_rloc look tenv rloc =
+        match locs_of_rloc tenv rloc with
+        | [loc] -> look loc |> demote
+        | locs ->
+           let cs =
+             List.map
+               (fun loc ->
+                 match look loc|> demote  with
+                 | I.V.Val c -> c
+                 | I.V.Var v -> I.V.freeze v)
+              locs in
+          I.V.Val (Constant.ConcreteVector cs)
+
+      let build_state tenv bds =
         List.fold_left
           (fun st (loc,(t,v)) ->
-            match t with
-            | TestType.TyArray (array_prim,total_size) -> begin
+            match (t,v) with
+            | TestType.TyArray (array_prim,total_size), I.V.Val (Constant.ConcreteVector vs) when Misc.int_eq (List.length vs) total_size ->
+              begin
               (* we expand v[3] = {a,b,c} into v+0 = a; v+1 = b; v+2 = c*)
               (* where 1 is the sizeof the underlying primitive type *)
               (* e.g uint64_t -> 8 bytes, so the above is v, v+8, v+16 *)
-              let vs = match v with
-                | I.V.Val (Constant.ConcreteVector vs) ->
-                   if Misc.int_eq (List.length vs) total_size then
-                     vs
-                   else
-                     Warn.user_error
-                       "Vector size mismatch, %s (exepected size %d)\n"
-                       (I.V.pp_v v) total_size
-                | _ ->
-                   Warn.user_error
-                     "Unexpected scalar value %s, vector expected"
-                     (I.V.pp_v v) in
               let locval = match global loc with
               | Some x -> x
               | _ -> Warn.user_error "Non-global vector assignment in init" in
@@ -665,8 +757,32 @@ module Make(C:Config) (I:I) : S with module I = I
                 st
                 vs
             end
+            | TestType.TyArray (_,total_size), I.V.Val (Constant.ConcreteVector _) ->
+              Warn.user_error
+                "Vector size mismatch, %s (exepected size %d)\n"
+                (I.V.pp_v v) total_size
+            | TestType.TyArray _, _ ->
+              Warn.user_error
+                "Unexpected scalar value %s, vector expected"
+                (I.V.pp_v v)
+            | _, I.V.Val(Constant.Symbolic(Constant.Virtual s)) ->
+              (*
+               * We might use array on the right-hand size like _ = s[offset], where
+               * offset depends on the size of the vector type in the initial state.
+               *)
+              begin
+                let offset = s.Constant.offset in
+                let base = {s with Constant.offset = 0} in
+                let rloc = of_symbolic_data base in
+                let v = match look_type tenv rloc with
+                  | TestType.TyArray _ as ty -> scale_array_reference ty rloc offset
+                  | _ -> of_symbolic_data s in
+                match symbolic_data v with
+                | Some s -> state_add_if_undefined st loc (I.V.cstToV (Constant.of_symbolic_data s))
+                | _ -> assert false
+              end
             (* if we have a value, store it *)
-            | _ -> state_add_if_undefined st loc v)
+            | _, _ -> state_add_if_undefined st loc v)
           State.empty bds
 
       let build_concrete_state bds =
@@ -674,43 +790,6 @@ module Make(C:Config) (I:I) : S with module I = I
           (fun st (loc,v) ->
             State.add loc (I.V.intToV v) st)
           State.empty bds
-
-      (* We might have accesses in the final state like v[2] *)
-      (* this depends on the size of the vector types in the initial state *)
-      (* e.g when uint64_t v, each elem is 8 bytes, so 2*8 is 16 bytes offset*)
-      (* This function scales the offset from type information, *)
-      (* Raises User_error, if not an array or pointer type or  *)
-      (* in case of out of bounds access.                       *)
-
-      let size_of_array t =
-        let open TestType in
-        match t with
-        | TyArray (t,sz) -> Some (size_of_t t,sz)
-        | TyDefPointer -> Some (MachSize.Word,1)
-        | Pointer t -> Some (size_of_t t,1)
-        | _ -> None
-(* Fails with user error when t is not an array type
-   or in case of out-of-bound access *)
-      let scale_array_reference t loc os =
-        let sz_elt,n_elts =
-          match size_of_array t with
-          | Some (a,b) -> (a,b)
-          | None ->
-             Warn.user_error
-               "Location %s of type %s is used as an array"
-               (pp_location_old loc) (TestType.pp t) in
-        if os < 0 || os >= n_elts then
-          Warn.user_error
-            "Out of bounds access on array %s" (pp_location_old loc) ;
-        if os = 0 then loc
-        else
-          match symbolic_data loc with
-          | Some s ->
-              let s =
-                { s with Constant.offset = MachSize.nbytes sz_elt * os} in
-              of_symbolic_data s
-          | _ -> (* Excluded by parsing *)
-              Warn.fatal "Location %s is not global" (pp_location_old loc)
 
 (* To get protection against wandering undetermined locations,
    all loads from state are by this function *)
@@ -778,71 +857,6 @@ module Make(C:Config) (I:I) : S with module I = I
                 StringMap.add sym.Constant.name (mem_access_size_of_t t) m
             | _ -> m)
           size_env_empty bds
-
-      (* Types *)
-      type type_env = TestType.t LocMap.t
-
-      let type_env_empty = LocMap.empty
-
-      let build_type_env bds =
-        List.fold_left
-          (fun m (loc,(t,_)) -> LocMap.add loc t m)
-          type_env_empty bds
-
-      let look_type m loc = LocMap.safe_find TestType.TyDef loc m
-
-      let look_rloc_type m rloc =
-        let open ConstrGen in
-        match rloc with
-        | Loc loc -> look_type m loc
-        | Deref (loc,_) ->
-           let t = look_type m loc in
-           TestType.Ty (TestType.get_array_primitive_ty t)
-
-      let loc_of_rloc tenv =
-        let open ConstrGen in
-        function
-        | Loc loc -> loc
-        | Deref (loc,o) ->
-            let t = look_type tenv loc in
-            scale_array_reference t loc o
-
-    let locs_of_rloc tenv rloc =
-      let open ConstrGen in
-      match rloc with
-      | Loc loc ->
-         begin
-           let t = look_type tenv loc in
-           match t with
-           | TestType.TyArray (_,sz) ->
-              let rec do_rec o =
-                if o >= sz then []
-                else
-                 scale_array_reference t loc o::do_rec (o+1) in
-              do_rec 0
-           | _ -> [loc]
-         end
-      | Deref (loc,o) ->
-          let t = look_type tenv loc in
-          [scale_array_reference t loc o]
-
-    let demote = function
-      | I.V.Var _ as v -> v
-      | I.V.Val c -> I.V.Val (Constant.map_scalar I.V.Cst.Scalar.demote c)
-
-    let val_of_rloc look tenv rloc =
-      match locs_of_rloc tenv rloc with
-      | [loc] -> look loc |> demote
-      | locs ->
-         let cs =
-           List.map
-             (fun loc ->
-               match look loc|> demote  with
-               | I.V.Val c -> c
-               | I.V.Var v -> I.V.freeze v)
-             locs in
-         I.V.Val (Constant.ConcreteVector cs)
-
 
       (* Final (include faults) *)
       module RState = RLocMap
