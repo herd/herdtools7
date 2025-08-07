@@ -353,11 +353,12 @@ module PPrint = struct
           (pp_comma_list pp_type_desc)
           li
     | BadField (s, ty) ->
-        fprintf f "ASL Error: There is no field '%s'@ on type %a." s pp_ty ty
+        fprintf f "ASL Typing Error: There is no field '%s'@ on type %a." s
+          pp_ty ty
     | MissingField (fields, ty) ->
         fprintf f
-          "ASL Error: Fields mismatch for creating a value of type %a@ -- \
-           Passed fields are:@ %a"
+          "ASL Typing Error: Fields mismatch for creating a value of type %a@ \
+           -- Passed fields are:@ %a"
           pp_ty ty
           (pp_print_list ~pp_sep:pp_print_space pp_print_string)
           fields
@@ -416,8 +417,8 @@ module PPrint = struct
           expected
     | AssertionFailed e ->
         fprintf f "ASL Execution error: Assertion failed:@ %a." pp_expr e
-    | CannotParse -> pp_print_string f "ASL Error: Cannot parse."
-    | UnknownSymbol -> pp_print_string f "ASL Error: Unknown symbol."
+    | CannotParse -> pp_print_string f "ASL Grammar Error: Cannot parse."
+    | UnknownSymbol -> pp_print_string f "ASL Grammar Error: Unknown symbol."
     | NoCallCandidate (name, types) ->
         fprintf f
           "ASL Type error: No subprogram declaration matches the invocation:@ \
@@ -594,7 +595,7 @@ module PPrint = struct
            length@a: %i."
           pp_expr e_length length
     | MultipleWrites id ->
-        fprintf f "ASL Type error:@ multiple@ writes@ to@ %S." id
+        fprintf f "ASL Grammar error:@ multiple@ writes@ to@ %S." id
     | MultipleImplementations (impl1, impl2) ->
         fprintf f
           "ASL Type error:@ multiple@ overlapping@ `implementation`@ \

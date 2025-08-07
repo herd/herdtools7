@@ -222,7 +222,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.TNonDecl.asl, line 1, characters 5 to 6:
   func (x: record { a: integer, b: boolean }) => integer
        ^
-  ASL Error: Cannot parse.
+  ASL Grammar Error: Cannot parse.
   [1]
   $ aslref TypingRule.TBitField.asl
   $ aslref --no-exec TypingRule.AnnotateFuncSig.asl
@@ -393,20 +393,20 @@ ASL Typing Tests / annotating types:
   File TypingRule.EGetBadRecordField.asl, line 7, characters 10 to 36:
     var x = my_record.undeclared_field;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Error: There is no field 'undeclared_field' on type MyRecordType.
+  ASL Typing Error: There is no field 'undeclared_field' on type MyRecordType.
   [1]
   $ aslref TypingRule.EGetBitfield.asl
   $ aslref TypingRule.EGetBadBitField.asl
   File TypingRule.EGetBadBitField.asl, line 7, characters 12 to 33:
       var x = p.undeclared_bitfield;
               ^^^^^^^^^^^^^^^^^^^^^
-  ASL Error: There is no field 'undeclared_bitfield' on type Packet.
+  ASL Typing Error: There is no field 'undeclared_bitfield' on type Packet.
   [1]
   $ aslref TypingRule.EGetBadField.asl
   File TypingRule.EGetBadField.asl, line 6, characters 12 to 15:
       var x = a.f;
               ^^^
-  ASL Error: There is no field 'f' on type array [[5]] of integer.
+  ASL Typing Error: There is no field 'f' on type array [[5]] of integer.
   [1]
   $ aslref TypingRule.EGetFields.asl
   $ aslref --no-exec TypingRule.ATC.asl
@@ -487,7 +487,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.SDecl.bad2.asl, line 4, characters 18 to 19:
       let y: integer;
                     ^
-  ASL Error: Cannot parse.
+  ASL Grammar Error: Cannot parse.
   [1]
   $ aslref TypingRule.SAssert.bad.asl
   File TypingRule.SAssert.bad.asl, line 11, characters 10 to 23:
@@ -656,7 +656,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.CheckIsNotCollection.asl, line 3, characters 12 to 22:
     var test: collection {
               ^^^^^^^^^^
-  ASL Error: Cannot parse.
+  ASL Grammar Error: Cannot parse.
   [1]
   $ aslref TypingRule.LESetCollectionFields.asl
   $ aslref TypingRule.TypecheckDecl.asl
@@ -742,7 +742,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.DeclareGlobalStorage.bad3.asl, line 2, characters 37 to 38:
   config uninitialized_config : integer;
                                        ^
-  ASL Error: Cannot parse.
+  ASL Grammar Error: Cannot parse.
   [1]
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.non_config.asl
   $ aslref --no-exec TypingRule.UpdateGlobalStorage.constant.asl
@@ -871,7 +871,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.AnnotateReturnType.bad.asl, line 3, characters 24 to 34:
   func returns_value() => collection { foo: bits(32)};
                           ^^^^^^^^^^
-  ASL Error: Cannot parse.
+  ASL Grammar Error: Cannot parse.
   [1]
   $ aslref --no-exec TypingRule.AnnotateOneParam.asl
   $ aslref TypingRule.AnnotateOneParam.bad1.asl
@@ -896,7 +896,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.AnnotateOneArg.bad2.asl, line 2, characters 18 to 28:
   func arguments(b: collection {a: bits(7)})
                     ^^^^^^^^^^
-  ASL Error: Cannot parse.
+  ASL Grammar Error: Cannot parse.
   [1]
   $ aslref TypingRule.AnnotateRetTy.asl
   $ aslref TypingRule.AnnotateRetTy.bad.asl

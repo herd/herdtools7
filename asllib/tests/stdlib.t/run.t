@@ -47,8 +47,7 @@ Tests using ASLRef OCaml primitives for some stdlib functions
 Checking that --no-primitives option actually removes OCaml primitives
 (different errors are produced)
   $ aslref no-primitives-test.asl
-  ASL Execution error: FloorLog2 (primitive) expected an argument greater than
-    0
+  ASL Execution error: FloorLog2 (primitive) expected an argument greater than 0
   [1]
   $ aslref --no-primitives no-primitives-test.asl
   File ASL Standard Library, line 57, characters 11 to 16:
