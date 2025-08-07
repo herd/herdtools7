@@ -469,6 +469,7 @@ Required tests:
   $ aslref subprogram-local-name-clash.asl
   $ aslref string_concat.asl
   $ aslref approx-expr-binop.asl
+  $ aslref asciistr.asl
 
   $ aslref --no-type-check throw-local-env.asl
   File throw-local-env.asl, line 10, characters 13 to 14:
