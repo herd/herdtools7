@@ -3881,6 +3881,19 @@ let get_exported_label = function
   | I_ADR (_,bt) -> Some bt
   | _ -> None
 
+let is_branch = function
+  | I_B _ | I_BR _
+  | I_BC _
+  | I_CBZ _
+  | I_CBNZ _
+  | I_TBNZ _
+  | I_TBZ _
+  | I_BL _ | I_BLR _
+  | I_RET _
+  | I_ERET
+  | I_SVC _ -> true
+  | _ -> false
+
 module
   MakeInstr
     (C:
