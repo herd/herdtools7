@@ -59,7 +59,7 @@ on \nativevalues{} via $\unoprel$ and $\binoprel$.
 \Nunop \derivesinline\ & \Tbnot \;|\; \Tminus \;|\; \Tnot &\\
 \Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
                       |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
-                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon
+                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon \;|\; \Tplusplus
 \end{flalign*}
 
 \AbstractSyntaxDef{Primitive Operations}
@@ -77,7 +77,7 @@ on \nativevalues{} via $\unoprel$ and $\binoprel$.
         |\ & \overname{\MUL}{\texttt{"*"}} \;|\; \overname{\DIV}{\texttt{"DIV"}} \;|\; \overname{\DIVRM}{\texttt{"DIVRM"}}
         \;|\; \overname{\MOD}{\texttt{"MOD"}} \;|\; \overname{\SHL}{\shiftleftlexeme}  \;|\; \overname{\SHR}{\shiftrightlexeme}
         & \\
-        |\ & \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}} \;|\; \overname{\CONCAT}{\texttt{"::"}}
+        |\ & \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}} \;|\; \overname{\BVCONCAT}{\texttt{"::"}} \;|\; \overname{\STRCONCAT}{\texttt{"++"}}
         &
 \end{flalign*}
 
@@ -254,8 +254,14 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[concat]{}{
-  \buildbinop(\Nbinop(\Tcoloncolon)) \astarrow \overname{\CONCAT}{\vastnode}
+\inferrule[bvconcat]{}{
+  \buildbinop(\Nbinop(\Tcoloncolon)) \astarrow \overname{\BVCONCAT}{\vastnode}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[strconcat]{}{
+  \buildbinop(\Nbinop(\Tplusplus)) \astarrow \overname{\STRCONCAT}{\vastnode}
 }
 \end{mathpar}
 
@@ -755,7 +761,7 @@ eq_enum: RED == RED = TRUE
 eq_enum: RED == GREEN = FALSE
 eq_enum: RED != RED = FALSE
 eq_enum: RED != GREEN = TRUE
-concat_string: 0 :: '1' :: 2.0 :: TRUE :: "foo" :: RED = 00x12TRUEfooRED
+concat_string: 0 ++ '1' ++ 2.0 ++ TRUE ++ "foo" ++ RED = 00x12TRUEfooRED
 \end{Verbatim}
 % CONSOLE_END
 
@@ -812,8 +818,8 @@ and argument types of its operand literals:
   (\XOR       &,& \lbitvector &,& \lbitvector)&,\\
   (\MINUS     &,& \lbitvector &,& \lbitvector)&,\\
   (\PLUS      &,& \lbitvector &,& \lbitvector)&,\\
-  (\CONCAT    &,& \lbitvector &,& \lbitvector)&,\\
-  (\CONCAT    &,& \Ignore &,& \Ignore)&,\\
+  (\BVCONCAT  &,& \lbitvector &,& \lbitvector)&,\\
+  (\STRCONCAT &,& \Ignore &,& \Ignore)&,\\
   (\MINUS     &,& \lbitvector &,& \lint)&,\\
   (\PLUS      &,& \lbitvector &,& \lint)&\\
   (\EQOP      &,& \lstring &,& \lstring)&,\\
@@ -1143,7 +1149,7 @@ and argument types of its operand literals:
   \begin{itemize}
     \item $\vvone$ is a bitvector literal for $a_{1..k}$;
     \item $\vvtwo$ is a bitvector literal for $b_{1..l}$;
-    \item $\op$ is $\CONCAT$;
+    \item $\op$ is $\BVCONCAT$;
     \item define $\vr$ as the bitvector literal for $a_{1..k}b_{1..l}$.
   \end{itemize}
 
@@ -1182,7 +1188,7 @@ and argument types of its operand literals:
   \item \AllApplyCase{concat\_strings}
   \begin{itemize}
     \item $\vvone$ and $\vvtwo$ are not both bitvector literals;
-    \item $\op$ is $\CONCAT$;
+    \item $\op$ is $\STRCONCAT$;
     \item define $\vsone$ as $\literaltostring(\vvone)$;
     \item define $\vstwo$ as $\literaltostring(\vvtwo)$;
     \item define $\vr$ as the string literal for the concatenation of $\vsone$ and $\vstwo$.
@@ -1547,7 +1553,7 @@ of \texttt{width} bits.
 \inferrule[concat\_bits]{}{
   {
   \begin{array}{r}
-  \binopliterals(\overname{\CONCAT}{\op}, \overname{\lbitvector(a_{1..k})}{\vvone}, \overname{\lbitvector(b_{1..l})}{\vvtwo}) \typearrow \\
+  \binopliterals(\overname{\BVCONCAT}{\op}, \overname{\lbitvector(a_{1..k})}{\vvone}, \overname{\lbitvector(b_{1..l})}{\vvtwo}) \typearrow \\
   \overname{\lbitvector(a_{1..k})\lbitvector(b_{1..l})}{\vr}
   \end{array}
   }
@@ -1593,7 +1599,7 @@ of \texttt{width} bits.
 }{
   {
   \begin{array}{r}
-  \binopliterals(\overname{\CONCAT}{\op}, \vvone, \vvtwo) \typearrow
+  \binopliterals(\overname{\STRCONCAT}{\op}, \vvone, \vvtwo) \typearrow
   \overname{\vsone \concat \vstwo}{\vr}
   \end{array}
   }

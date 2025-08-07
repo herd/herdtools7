@@ -57,7 +57,7 @@ coupled with the derivation
 \begin{flalign*}
 \Nbinop \derives\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
                       |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
-                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon
+                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon \;|\; \Tplusplus
 \end{flalign*}
 
 A grammar containing these two derivations results in shift-reduce conflicts.
@@ -68,14 +68,14 @@ and creating a version of the first derivation for each binary operator:
               |\ & \Nexpr \parsesep \Tband \parsesep \Nexpr & \\
               |\ & \Nexpr \parsesep \Tbor \parsesep \Nexpr & \\
               \ldots \\
-              |\ & \Nexpr \parsesep \Tcoloncolon \parsesep \Nexpr &
+              |\ & \Nexpr \parsesep \Tplusplus \parsesep \Nexpr &
 \end{flalign*}
 
 By defining the derivations of $\Nbinop$ as inlined, we achieve the same effect more compactly:
 \begin{flalign*}
 \Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
                       |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
-                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon
+                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon \;|\; \Tplusplus
 \end{flalign*}
 
 Barring mutually-recursive derivations involving inlined derivations, it is possible to expand
@@ -658,7 +658,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 \begin{flalign*}
 \Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
                      |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
-                     |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon
+                     |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon \;|\; \Tplusplus
 \end{flalign*}
 
 \section{Parse Trees\label{sec:ParseTrees}}
@@ -759,7 +759,7 @@ $\Telse$ & $\nonassoc$\\
 $\Tbor$, $\Tband$, $\Timpl$, $\Tas$ & $\leftassoc$\\
 $\Teqop$, $\Tneq$ & $\leftassoc$\\
 $\Tgt$, $\Tgeq$, $\Tlt$, $\Tleq$ & $\nonassoc$\\
-$\Tplus$, $\Tminus$, $\Tor$, $\Txor$, $\Tand$, $\Tcoloncolon$ & $\leftassoc$\\
+$\Tplus$, $\Tminus$, $\Tor$, $\Txor$, $\Tand$, $\Tcoloncolon$, $\Tplusplus$ & $\leftassoc$\\
 $\Tmul$, $\Tdiv$, $\Tdivrm$, $\Trdiv$, $\Tmod$, $\Tshl$, $\Tshr$ & $\leftassoc$\\
 $\Tpow$ & $\leftassoc$\\
 $\Tunops$ & $\nonassoc$\\

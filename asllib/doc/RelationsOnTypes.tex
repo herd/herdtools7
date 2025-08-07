@@ -1146,7 +1146,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
   \item \AllApplyCase{bits\_concat}
   \begin{itemize}
-    \item $\op$ is $\CONCAT$;
+    \item $\op$ is $\BVCONCAT$;
     \item $\vtone$ is a bitvector type with width expression $\vwone$;
     \item $\vttwo$ is a bitvector type with width expression $\vwtwo$;
     \item define $\vw$ as the addition of $\vwone$ and $\vwtwo$;
@@ -1156,7 +1156,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
   \item \AllApplyCase{string\_concat}
   \begin{itemize}
-    \item $\op$ is $\CONCAT$;
+    \item $\op$ is $\STRCONCAT$;
     \item $\vtone$ and $\vttwo$ are not both bitvector types;
     \item checking that $\vtone$ is a \Prosesingulartype{} yields $\True$\ProseOrTypeError;
     \item checking that $\vttwo$ is a \Prosesingulartype{} yields $\True$\ProseOrTypeError;
@@ -1273,7 +1273,9 @@ range constraints. More precisely, they are a superset of the values for \verb|(
       \XOR     & \TBits  & \TBits\\
       \PLUS    & \TBits  & \TBits\\
       \MINUS   & \TBits  & \TBits\\
-      \CONCAT  & \vlone  & \vltwo\\
+      \BVCONCAT& \TBits  & \TBits\\
+      %
+      \STRCONCAT& \vlone  & \vltwo\\
       %
       \PLUS    & \TBits  & \TInt\\
       \MINUS   & \TBits  & \TInt\\
@@ -1364,7 +1366,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
   \vw \eqdef \EBinop(\PLUS, \vwone, \vwtwo) \\
   \normalize(\tenv, \vw) \typearrow \vwp
 }{
-  \applybinoptypes(\tenv, \CONCAT, \overname{\TBits(\vwone, \Ignore)}{\vtone}, \overname{\TBits(\vwtwo, \Ignore)}{\vttwo}) \typearrow
+  \applybinoptypes(\tenv, \BVCONCAT, \overname{\TBits(\vwone, \Ignore)}{\vtone}, \overname{\TBits(\vwtwo, \Ignore)}{\vttwo}) \typearrow
   \overname{\TBits(\vwp, \emptylist)}{\vt}
 }
 \end{mathpar}
@@ -1375,7 +1377,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
   \checktrans{\issingular(\vtone)}{\UnexpectedType} \typearrow \True \OrTypeError \\
   \checktrans{\issingular(\vttwo)}{\UnexpectedType} \typearrow \True \OrTypeError
 }{
-  \applybinoptypes(\tenv, \CONCAT, \vtone, \vttwo) \typearrow
+  \applybinoptypes(\tenv, \STRCONCAT, \vtone, \vttwo) \typearrow
   \overname{\TString}{\vt}
 }
 \end{mathpar}
@@ -1501,7 +1503,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
       (\XOR     &,& \TBits  &,& \TBits)\\
       (\PLUS    &,& \TBits  &,& \TBits)\\
       (\MINUS   &,& \TBits  &,& \TBits)\\
-      (\CONCAT  &,& \TBits  &,& \TBits)\\
+      (\BVCONCAT&,& \TBits  &,& \TBits)\\
       %
       (\PLUS    &,& \TBits  &,& \TInt)\\
       (\MINUS   &,& \TBits  &,& \TInt)\\
@@ -1545,7 +1547,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
       (\RDIV  &,& \TReal &,& \TReal)
     \end{array}
     \right\}\\
-    \cup \{ (\CONCAT, \astlabel(\vtone), \astlabel(\vttwo)) \;|\; \issingular(\vtone) \land \issingular(\vttwo)\}\\
+    \cup \{ (\STRCONCAT, \astlabel(\vtone), \astlabel(\vttwo)) \;|\; \issingular(\vtone) \land \issingular(\vttwo)\}\\
   \end{array}
   }
 }{
