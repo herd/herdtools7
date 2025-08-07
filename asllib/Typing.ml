@@ -3179,10 +3179,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             args
           |> List.split
         in
-        let ses =
-          SES.non_conflicting_unions sess
-            ~fail:(conflicting_side_effects_error ~loc)
-        in
+        let ses = ses_non_conflicting_unions ~loc sess in
+        let ses = SES.add_print ses in
         (S_Print { args = args'; newline; debug } |> here, env, ses)
         |: TypingRule.SPrint
     (* End *)
@@ -3190,10 +3188,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | S_Pragma (id, args) ->
         let () = warn_from ~loc (Error.PragmaUse id) in
         let _, _, sess = List.map (annotate_expr env) args |> list_split3 in
-        let ses =
-          SES.non_conflicting_unions sess
-            ~fail:(conflicting_side_effects_error ~loc)
-        in
+        let ses = ses_non_conflicting_unions ~loc sess in
         (S_Pass |> here, env, ses) |: TypingRule.SPragma
     (* End *)
     | S_Unreachable -> (s, env, SES.empty)

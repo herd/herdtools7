@@ -548,3 +548,10 @@
     ^^^^^^^^^^^^
   ASL Type error: expected a pure expression/subprogram.
   [1]
+
+  $ aslref print-non-readonly.asl
+  File print-non-readonly.asl, line 3, characters 2 to 10:
+    print 1;
+    ^^^^^^^^
+  ASL Type error: expected a readonly expression/subprogram.
+  [1]
