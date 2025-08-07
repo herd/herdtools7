@@ -68,3 +68,28 @@
   [1]
 
   $ aslref enum-fn-recursive.asl
+
+  $ aslref procedure-simple.asl
+  2
+  1
+  0
+
+  $ aslref --no-exec procedure-no-limit.asl
+  File procedure-no-limit.asl, line 1, character 0 to line 6, character 4:
+  func foo(x: integer)
+  begin
+    println x;
+    if x <= 0 then return; end;
+    foo(x - 1);
+  end;
+  ASL Warning: the recursive function foo has no recursive limit annotation.
+
+  $ aslref procedure-hits-limit.asl
+  3
+  2
+  1
+  File procedure-hits-limit.asl, line 6, characters 2 to 13:
+    foo(x - 1);
+    ^^^^^^^^^^^
+  ASL Dynamic error: recursion limit reached.
+  [1]

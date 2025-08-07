@@ -663,7 +663,7 @@ let decl :=
         }
     (* End *)
     (* Begin procedure_decl *)
-    | ~=qualifier; ~=override; FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; body=func_body;
+    | ~=qualifier; ~=override; FUNC; name=IDENTIFIER; ~=params_opt; ~=func_args; ~=recurse_limit; body=func_body;
         {
           D_Func {
             name;
@@ -672,7 +672,7 @@ let decl :=
             body = SB_ASL body;
             return_type = None;
             subprogram_type = ST_Procedure;
-            recurse_limit = None;
+            recurse_limit;
             qualifier;
             override;
             builtin = false;
