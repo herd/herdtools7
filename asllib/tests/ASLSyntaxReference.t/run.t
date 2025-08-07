@@ -59,6 +59,12 @@ Examples used to test syntax and AST building rules:
                         ^^^^^^
   ASL Error: Cannot parse.
   [1]
+  $ aslref ASTRule.EBinop.bad5.asl
+  File ASTRule.EBinop.bad5.asl, line 6, characters 24 to 29:
+          let p_sub_sub = a - b - c;
+                          ^^^^^
+  ASL Error: Cannot parse.
+  [1]
   $ aslref CaseStatement.bad.asl
   File CaseStatement.bad.asl, line 7, characters 8 to 12:
           when '11' => X[30] = 0;
