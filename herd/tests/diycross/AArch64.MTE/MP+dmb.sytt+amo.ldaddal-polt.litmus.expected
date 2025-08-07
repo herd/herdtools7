@@ -1,13 +1,13 @@
 Test MP+dmb.sytt+amo.ldaddal-polt Allowed
 States 4
-1:X4=0; 1:X6=x:green; [y]=1;  ~Fault(P1,y);
-1:X4=0; 1:X6=x:green; [y]=1; Fault(P1,y:red,TagCheck);
-1:X4=0; 1:X6=x:red; [y]=1;  ~Fault(P1,y);
-1:X4=0; 1:X6=x:red; [y]=1; Fault(P1,y:red,TagCheck);
+1:X4=0; 1:X6=x:green; [y]=1;  ~Fault(P1:L00,y);
+1:X4=0; 1:X6=x:green; [y]=1; Fault(P1:L00,y:red,TagCheck);
+1:X4=0; 1:X6=x:red; [y]=1;  ~Fault(P1:L00,y);
+1:X4=0; 1:X6=x:red; [y]=1; Fault(P1:L00,y:red,TagCheck);
 Ok
 Witnesses
 Positive: 1 Negative: 3
-Condition exists ([y]=1 /\ 1:X4=0 /\ 1:X6=x:green /\ not (fault(P1,y)))
+Condition exists ([y]=1 /\ 1:X4=0 /\ 1:X6=x:green /\ not (fault(P1:L00,y)))
 Observation MP+dmb.sytt+amo.ldaddal-polt Sometimes 1 3
-Hash=85d0ca95e4f431673db5f84fba4289ae
+Hash=857ed29ee2012790433c4786de0de1c2
 
