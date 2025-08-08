@@ -489,12 +489,6 @@ begin
   return;
 end;
 
-// Dubious...
-func EndOfInstruction()
-begin
-  return;
-end;
-
 // Type of underlying accesses (same order as lib/access.mli),
 // as recorder un events.
 
