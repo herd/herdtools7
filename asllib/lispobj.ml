@@ -666,7 +666,8 @@ let of_side_effect (x : SideEffect.t) =
     | ThrowsException i -> [ key "THROWSEXCEPTION"; of_identifier i ]
     | CallsRecursive i -> [ key "CALLSRECURSIVE"; of_identifier i ]
     | PerformsAssertions -> [ key "PERFORMSASSERTIONS" ]
-    | NonDeterministic -> [ key "NONDETERMINISTIC" ])
+    | NonDeterministic -> [ key "NONDETERMINISTIC" ]
+    | Prints -> [ key "PRINTS" ])
 
 let of_ses (x : SideEffect.SES.t) =
   of_list_map of_side_effect (SideEffect.SES.to_side_effect_list x)

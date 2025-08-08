@@ -82,14 +82,10 @@ Examples used in ASL High-level Definition:
   Array-indexing:
   1
   2
-  Slicing:
-  132345677
   Record construction:
   12
   Print statements:
   12341234
-  For-loop start/end expressions:
-  1234
   $ aslref --no-exec GuideRule.BitvectorWidthBounds.asl
   $ aslref GuideRule.TupleLength.asl
   $ aslref GuideRule.TupleElementAccess.asl

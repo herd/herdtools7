@@ -59,16 +59,10 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.SCond.asl
   $ aslref SemanticsRule.SCase.asl
   $ aslref SemanticsRule.SWhile.asl
-  evaluated limit = 4
-  testing 0 <= 3
   i = 0
-  testing 1 <= 3
   i = 1
-  testing 2 <= 3
   i = 2
-  testing 3 <= 3
   i = 3
-  testing 4 <= 3
   $ aslref SemanticsRule.SWhile.limit_reached.asl
   File SemanticsRule.SWhile.limit_reached.asl, line 4, character 2 to line 7,
     character 7:
