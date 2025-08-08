@@ -813,6 +813,7 @@ extremes
 facilitate
 fact
 factor
+factoring
 factors
 fail
 failed
@@ -1134,6 +1135,7 @@ it
 item
 items
 iterates
+iteration
 iterations
 its
 itself
@@ -1278,6 +1280,7 @@ minimal
 minimum
 minus
 mirroring
+mirrors
 mismatch
 missing
 model
@@ -2124,6 +2127,7 @@ trees
 trial
 tries
 trigger
+triggered
 triple
 triples
 trivial
