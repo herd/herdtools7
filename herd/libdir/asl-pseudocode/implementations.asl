@@ -490,10 +490,15 @@ begin
 end;
 
 // Dubious...
-func EndOfInstruction()
-begin
-  return;
-end;
+// Dead code ? Not called
+// type EndOf of exception {-};
+//
+//func EndOfInstruction()
+//begin
+//  throw EndOf {-};
+//  return;
+//end;
+
 
 // Type of underlying accesses (same order as lib/access.mli),
 // as recorder un events.
