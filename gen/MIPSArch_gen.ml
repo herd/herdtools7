@@ -30,7 +30,6 @@ include MachAtom.Make
       let fullmixed = C.moreedges
     end)
 
-module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
 
 (**********)
 (* Fences *)
@@ -90,9 +89,6 @@ let sequence_dp d1 d2 = match d1 with
 | ADDR -> [d2]
 | DATA|CTRL -> []
 
-include Exch.LxSx(struct type arch_atom = atom end)
-include NoEdge
-
 include
     ArchExtra_gen.Make
     (struct
@@ -103,6 +99,8 @@ include
       let pp_reg = pp_reg
       let pp_i _ = assert false
       let free_registers = allowed_for_symb
+      type arch_atom = atom
+      module Value = Value
       include NoSpecial
     end)
 end

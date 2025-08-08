@@ -26,8 +26,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
   sig
 (* Coherence utilities *)
     type cos0 =  (string * (C.C.node * IntSet.t) list list) list
-    type cos = (string * (Code.v array * IntSet.t) list list) list
-    val pp_coherence : cos0 -> unit
+    type cos = (string * (C.C.Value.v array * IntSet.t) list list) list
+    val pp_coherence : cos0 -> string
     val last_map : cos0 -> C.C.event StringMap.t
     val compute_cos : cos0 ->  cos
 (* prefetch *)
@@ -43,19 +43,19 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     val find_next_pte_write : C.C.node -> C.C.node option
     val check_here : C.C.node -> bool
     val do_poll : C.C.node -> bool
-    val fetch_val : C.C.node -> Code.v
+    val fetch_val : C.C.node -> C.C.Value.v
   end =
   functor (O:Config) -> functor (C:ArchRun.S) ->
   struct
 
     type cos0 =  (string * (C.C.node * IntSet.t) list list) list
-    type cos = (string * (Code.v array * IntSet.t) list list) list
+    type cos = (string * (C.C.Value.v array * IntSet.t) list list) list
 
     open Printf
     open Code
 
     let pp_v v =
-      let v = Code.value_to_int v in
+      let v = C.C.Value.to_int v in
       if O.hexa then sprintf "0x%x" v
       else sprintf "%i" v
 
@@ -67,22 +67,19 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
            (String.concat "," (List.map pp_v (Array.to_list t)))
 
     let pp_coherence cos0 =
-      eprintf "COHERENCE: " ;
-      Misc.pp_list stderr ""
-        (fun chan (x,vs) ->
-          fprintf chan "<%s:%a>" x
-            (fun chan ->
-              Misc.pp_list chan "|"
-                (fun chan ->
-                  Misc.pp_list chan ","
-                    (fun chan (n,obs) ->
-                      let pp chan = fprintf chan "%s{%s}" in
-                      pp chan (pp_cell n.C.C.evt.C.C.cell)
-                        (IntSet.pp_str "," (sprintf "%i") obs)
-                    )))
-            vs)
-        cos0 ;
-      eprintf "\n%!"
+      List.map ( fun (x,vs) ->
+        let vs_string =
+          List.map ( fun vss ->
+            (* pp the value and observable process *)
+            List.map ( fun (n,obs) ->
+              sprintf "%s{%s}"
+              (pp_cell n.C.C.evt.C.C.cell)
+                (IntSet.pp_str "," (sprintf "P%i") obs)
+            ) vss |> String.concat ","
+        ) vs |> String.concat "|" in
+        sprintf "<%s:%s>" x vs_string
+      ) cos0
+      |> String.concat " "
 
 (****************************)
 (* Last in coherence orders *)
@@ -143,7 +140,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     let io_of_detour _n = None
 
-    let add_data f loc k = if Code.is_data loc then f loc::k else k
+      let add_data f loc k = if Code.is_data loc then f loc::k else k
 
     let compile_prefetch_ios =
 
@@ -282,7 +279,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         Some r
       with Not_found -> None
 
-    let is_load_init e = e.C.C.dir = Some R && e.C.C.v = Plain 0
+    let is_load_init e = e.C.C.dir = Some R && e.C.C.v = C.C.Value.from_int 0
 
     let check_edge = function
       | C.E.Ws Ext
@@ -306,14 +303,15 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     let do_poll n =
       match O.poll,n.C.C.prev.C.C.edge.C.E.edge,n.C.C.evt.C.C.v with
       | true,
-        (C.E.Rf Ext|C.E.Leave CRf|C.E.Back CRf),Plain 1 -> true
+        (C.E.Rf Ext|C.E.Leave CRf|C.E.Back CRf),C.C.Value.Plain 1 -> true
       | _,_,_ -> false
 
     (* TODO is this simple lift from 2,1,0 to Plain * correct *)
     let fetch_val n =
       let n = C.C.find_node (fun n -> C.E.is_com n.C.C.edge) n.C.C.prev in
-      match n.C.C.edge.C.E.edge with
-      | C.E.Rf _-> Plain 2
-      | C.E.Fr _ -> Plain 1
-      | _ -> Plain 0
+      ( match n.C.C.edge.C.E.edge with
+      | C.E.Rf _-> 2
+      | C.E.Fr _ -> 1
+      | _ -> 0 )
+      |> C.C.Value.from_int
   end

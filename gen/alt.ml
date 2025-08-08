@@ -16,6 +16,7 @@
 
 open Printf
 open Code
+open Log
 
 
 module type AltConfig = sig
@@ -46,8 +47,6 @@ module Make(C:Builder.S)
     module D = DumpAll.Make(O) (C)
     open C.E
     open C.R
-
-    let dbg = false
 
     module RelaxSet = C.R.Set
 
@@ -102,8 +101,7 @@ module Make(C:Builder.S)
         match get_ie e1, get_ie e2 with
         | Int,Int -> false
         | Ext,_|_,Ext -> true  in
-      if dbg then
-        eprintf "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
+      Log.info 3 "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
       r
 
     let choice_default e1 e2 =
@@ -123,8 +121,7 @@ module Make(C:Builder.S)
           match get_ie e1, get_ie e2 with
           | Int,Int -> false
           | Ext,_|_,Ext -> true  in
-      if dbg then
-        eprintf "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
+      Log.info 3 "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
       r
 
 (* Check altenance of com/po *)
@@ -201,16 +198,14 @@ module Make(C:Builder.S)
       begin match  C.E.get_ie e1, C.E.get_ie e2 with
       | Int,Int ->
           let cs = C.E.compact_sequence xs ys e1 e2 in
-          if O.verbose > 0 then eprintf "COMPACT %s,%s -> [%s] -> "
-            (C.E.pp_edge e1) (C.E.pp_edge e2)
-            (String.concat ","
-               (List.map (fun es -> C.R.pp_relax (C.R.ERS es)) cs)) ;
-          let r =
-            not
-              (List.exists
+          let r = not (List.exists
                  (fun es -> C.R.Set.mem (C.R.ERS es) safes)
                  cs) in
-          if O.verbose > 0 then eprintf "%b\n" r ;
+          Log.info 2 "COMPACT %s,%s -> [%s] -> %b\n"
+            (C.E.pp_edge e1) (C.E.pp_edge e2)
+            (String.concat ","
+               (List.map (fun es -> C.R.pp_relax (C.R.ERS es)) cs))
+            r ;
           r
       | _,_ -> true
       end
@@ -286,11 +281,8 @@ module Make(C:Builder.S)
               C.E.can_precede (hd_non_insert xs) (last_non_insert ys)
             else true
           end in
-      if O.verbose > 2 then begin
-        eprintf "do_compat '%s' '%s' = %b\n"
-          (C.E.pp_edges xs)
-          (C.E.pp_edges ys) r
-      end ;
+      Log.info 2 "do_compat '%s' '%s' = %b\n"
+          (C.E.pp_edges xs) (C.E.pp_edges ys) r;
       r
 
 
@@ -305,14 +297,17 @@ module Make(C:Builder.S)
         | _ -> true
         end
 
-    let pp_ess ess =
-      String.concat " "
-        (List.fold_right
-           (fun (_,es) ->
-             List.fold_right
-               (fun e k -> pp_edge e::k)
-               es)
-           ess [])
+    (* List.is_empty only supports for ocaml 5.1 afterwards *)
+    let is_empty_list l = (l = [])
+
+    let pp_ess ?(simple_format=true) ess =
+      let list_sep,list_list_sep =
+        if simple_format then " ", " " else ", ", "+" in
+      ess |> List.map
+          ( fun (_,es) ->
+            es |> List.map (fun e -> pp_edge e)
+               |> String.concat list_list_sep )
+          |> String.concat list_sep
 
     let edges_ofs rs =
       List.map (fun r -> (r, edges_of r)) rs
@@ -322,27 +317,23 @@ module Make(C:Builder.S)
     let sz (_,es) =
       if List.for_all (fun e -> is_id e.edge) es then 0 else 1
 
+    let c_minprocs_es c =
+      List.fold_left ( fun c e ->
+        match e.C.E.edge with
+        | Back _|Leave _ -> c
+        | _ -> match get_ie e with
+          | Int -> c
+          (* only inc when `Ext` *)
+          | Ext -> c + 1
+      ) c
 
-    let rec c_minprocs_es c = function
-      | [] -> c
-      | e::es ->
-          let c = match e.C.E.edge with
-          | Back _|Leave _ -> c
-          | _ ->
-              match get_ie e with
-              | Int -> c
-              | Ext -> c+1 in
-          c_minprocs_es c es
-
-    let rec c_minprocs_suff c = function
-      | [] -> c
-      | (_,es)::suff -> c_minprocs_suff (c_minprocs_es c es) suff
+    let c_minprocs_suff c =
+      List.fold_left ( fun c (_,es) -> c_minprocs_es c es) c
 
     let minprocs suff =
       let r = c_minprocs_suff 0 suff in
-      if O.verbose > 3 then eprintf "MIN [%s] => %i\n" (pp_ess suff) r ;
+      Log.info 2 "MIN [%s] => %i\n" (pp_ess suff) r ;
       r
-
 
     let rec c_minint_es c = function
       | [] -> false,c
@@ -364,14 +355,8 @@ module Make(C:Builder.S)
 (* Prefix *)
     let prefix_expanded = List.flatten (List.map C.R.expand_relax_seq O.prefix)
 
-    let () =
-      if O.verbose > 0 && O.prefix <> [] then begin
-        eprintf "Prefixes:\n" ;
-        List.iter
-          (fun rs ->
-            eprintf "  %s\n" (C.R.pp_relax_list rs))
-          prefix_expanded
-      end
+    let () = Log.info 1 "Prefixes: [%s]\n"
+      (String.concat "," @@ List.map C.R.pp_relax_list prefix_expanded)
 
     let prefixes = List.map edges_ofs prefix_expanded
 
@@ -390,12 +375,13 @@ module Make(C:Builder.S)
 
 
     let check_cycle rsuff rl =
-      let rsuff = List.map (fun (_,rr) -> rr) rsuff in
+      let _,rsuff = List.split rsuff in
       let rsuff = List.concat rsuff in
-      not (List.exists (fun rl ->  is_prefix rsuff rl) rl)
+      not (List.exists (fun rl -> is_prefix rsuff rl) rl)
 
 
-    let call_rec prefix f0 safes po_safe over n r suff f_rec k ?(reject=[])=
+    (* This function is used `zyva` *)
+    let call_rec_base prefix f0 safes po_safe over n r suff f_rec k ?(reject=[])=
       if
         can_precede safes po_safe r suff &&
         minprocs suff <= O.nprocs &&
@@ -404,7 +390,7 @@ module Make(C:Builder.S)
       then
         let suff = r::suff
         and n = n-sz r in
-        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess suff) ;
+        Log.info 2 "CALL: %i %s\n%!" n (pp_ess suff) ;
         let k =
           if
             over &&
@@ -412,10 +398,8 @@ module Make(C:Builder.S)
             can_prefix prefix (can_precede safes po_safe) suff
           then begin
             let tr =  prefix@suff in
-(*
-            eprintf "TRY: '%s'\n"
+            Log.info 2 "TRY: '%s'\n"
               (C.E.pp_edges (List.flatten (List.map snd tr))) ;
-*)
             try f0 po_safe tr k
             with  Misc.Exit -> k
             | Misc.Fatal msg |Misc.UserError msg ->
@@ -428,6 +412,7 @@ module Make(C:Builder.S)
         if n <= 0 then k
         else f_rec n suff k
       else k
+    (* END of call_rec_base *)
 
     module SdDir2Set =
       MySet.Make
@@ -445,12 +430,10 @@ module Make(C:Builder.S)
               | ERS [{edge=Po (sd,e1,e2); _}] -> SdDir2Set.add (sd,e1,e2) k
               | _ -> k)
               rs SdDir2Set.empty in
-          if dbg then
-            eprintf
-              "PoSafe: {%s}\n"
-              (SdDir2Set.pp_str ","
-                 (fun (sd,e1,e2) -> pp_sd sd ^ "-" ^ pp_extr e1 ^ "-" ^ pp_extr e2)
-                 d2) ;
+          Log.info 3 "PoSafe: {%s}\n"
+            (SdDir2Set.pp_str ","
+               (fun (sd,e1,e2) -> pp_sd sd ^ "-" ^ pp_extr e1 ^ "-" ^ pp_extr e2)
+               d2) ;
           fun sd e1 e2 -> SdDir2Set.mem (sd,e1,e2) d2
       | m ->
           fun _ _ _ ->
@@ -464,43 +447,43 @@ module Make(C:Builder.S)
       let safe = edges_ofs safe in
       let po_safe = extract_po safe in
 
-      let rec choose_relax rs k = match rs with
-      | [] -> k
-      | r0::rs -> (* Build simple cycles for relaxation r0 *)
+      (* ********************************** *)
+      (* iterates over all relax edges `rs` *)
+      (* ********************************** *)
+      let choose_relax rs k =
+      List.fold_left (fun k relex_edge ->
+        (* Build simple cycles for relaxation `relex_edge` *)
+        (* Partially apply function `call_rec_base` *)
+        let call_rec_add_safe = call_rec_base prefix (f [fst relex_edge]) aset po_safe ~reject:reject in
+        (* Add safe edge to suffix *)
+        let rec add_safe over ss n suf k =
+          List.fold_left ( fun k s -> call_rec_add_safe over n s suf (add_relaxs over) k ) k ss
+        (* Addome relax edges `relex_edge` to suffix, or nothing *)
+        and add_relaxs over n suf k =
+          let k = call_rec_add_safe true n relex_edge suf (add_relaxs true) k in
+          add_safe over safe n suf k in
 
-          let call_rec = call_rec prefix (f [fst r0]) aset po_safe ~reject:reject in
+        (* Decide what is the accumulator `k` for the next iteration
+           based on if `prefix` is empty *)
+        if is_empty_list prefix then
+          (* Optimise: start with a relax edge `relex_edge` *)
+            call_rec_add_safe true n relex_edge [] (add_relaxs true) k
+        else
+            add_relaxs false n [] k
+      ) k rs in
 
-(* Add a safe edge to suffix *)
-          let rec add_safe over ss n suf k =
-            match ss with
-            | [] -> k
-            | s::ss ->
-                let k = call_rec over n s suf (add_relaxs over) k in
-                add_safe over ss n suf k
-
-(* Add some relax edges r0 to suffix, or nothing *)
-          and add_relaxs over n suf k =
-            let k = call_rec true n r0 suf (add_relaxs true) k in
-            add_safe over safe n suf k in
-
-          match prefix with
-          | [] -> (* Optimise: start with a relax edge r0 *)
-              let k = call_rec true n r0 [] (add_relaxs true) k in
-              choose_relax rs k
-          | _::_ ->
-              let k = add_relaxs false n [] k in
-              choose_relax rs k in
-
-(* Alternative: mix relaxation from relax list *)
-
+      (* ******************************************* *)
+      (* Alternative: mix relaxation from relax list *)
+      (* ******************************************* *)
       let all_relax k =
         let relax_set = RelaxSet.of_list (List.map fst relax) in
         let extract_relaxs suff =
           let suff_set = RelaxSet.of_list (List.map fst suff)  in
           RelaxSet.elements (RelaxSet.inter suff_set relax_set) in
 
-        let call_rec =
-          call_rec prefix
+        (* Partially apply function `call_rec_base` *)
+        let call_rec_all_relax =
+          call_rec_base prefix
             (fun po_safe suff k ->
               let rs = extract_relaxs suff in
               let nrs = List.length rs in
@@ -508,58 +491,54 @@ module Make(C:Builder.S)
               else f rs po_safe suff k)
             aset po_safe ~reject:reject in
 
-(* Add a one edge to suffix *)
-        let rec add_one over rs ss n suf k = match rs,ss with
-        | [],[] -> k
-        | [],s::ss ->
-            let k = call_rec over n s suf (add_one over relax safe) k in
-            add_one over rs ss n suf k
-        | r::rs,_ ->
-            let k = call_rec true n r suf (add_one true relax safe) k in
-            add_one over rs ss n suf k in
+        (* Add a one edge to suffix *)
+        let rec add_one over rs ss n suf k =
+          (* Consume `rs` first *)
+          let new_k = List.fold_left ( fun k r ->
+            call_rec_all_relax true n r suf (add_one true relax safe) k
+          ) k rs in
+          (* Then consume `ss` when `rs` is empty *)
+          List.fold_left ( fun k s ->
+            call_rec_all_relax over n s suf (add_one over relax safe) k
+          ) new_k ss in
 
+        (* Force first edge to be a relaxed one *)
+        let add_first rs k =
+          List.fold_left ( fun k r ->
+            call_rec_all_relax true n r [] (add_one true relax safe) k
+          ) k rs in
 
-(* Force first edge to be a relaxed one *)
-        let rec add_first rs k = match rs with
-        | [] -> k
-        | r::rs ->
-            let k = call_rec true n r [] (add_one true relax safe) k in
-            add_first rs k in
+        (* Function `all_relax` entry point depends on
+           if `prefix` is empty. *)
+        if is_empty_list prefix then add_first relax k
+        else add_one false relax safe n [] k in
 
-        match prefix with
-        | [] ->
-            add_first relax k
-        | _::_ ->
-            add_one false relax safe n [] k in
+     (* New relax that does not enforce the first edge to be a relax *)
 
-(* New relax that does not enforce the first edge to be a relax *)
+      (* ***************************************************** *)
+      (* As a safety check, generate cycles with no relaxation *)
+      (* ***************************************************** *)
+      let rec no_relax ss n suf k =
+        (* Partially apply function `call_rec_base` *)
+        let call_rec_no_relax = call_rec_base prefix (f []) aset po_safe ~reject:reject in
+        List.fold_left (fun k s ->
+          call_rec_no_relax true n s suf (no_relax safe) k
+        ) k ss in
 
-(* As a safety check, generate cycles with no relaxation *)
-      let call_rec = call_rec prefix (f []) aset po_safe ~reject:reject in
-      let rec no_relax ss n suf k = match ss with
-      | [] -> k
-      | s::ss ->
-          let k = call_rec true n s suf (no_relax safe) k in
-          no_relax ss n suf k in
+      (* *************************************************** *)
+      (* Function `zyva` starts after all the `let`-bindings *)
+      (* *************************************************** *)
+      fun k ->
+        if is_empty_list relax then no_relax safe n [] k
+        else if O.mix && O.max_relax < 1 then k (* Let us stay logical *)
+        else if O.mix && O.max_relax > 1 then all_relax k
+        else choose_relax relax k
+      (* END of overall `zyva` *)
 
-      fun k -> match relax with
-      | [] ->
-          no_relax safe n [] k
-      | _  ->
-         if O.mix && O.max_relax < 1 then k (* Let us stay logical *)
-          else if O.mix && O.max_relax > 1 then
-            all_relax k
-          else
-            choose_relax relax k
+    let all_int l = List.for_all is_int l
 
-    let rec all_int l =
-      match l with
-      | [] -> true
-      | a::s -> (is_int a)&&(all_int s)
-
-    let rec count_e ce = function
-      | [] -> ce
-      | e::es -> count_e (if is_int e then ce else ce+1) es
+    let count_e ce =
+      List.fold_left ( fun ce e -> if is_int e then ce else ce + 1 ) ce
 
 
     let count_ext es = count_e 0 es
@@ -569,10 +548,7 @@ module Make(C:Builder.S)
     | Diff -> true
 
     let count_p p =
-      let rec do_rec c = function
-        | [] -> c
-        | x::xs -> do_rec (if p x then c+1 else c) xs in
-      do_rec 0
+      List.fold_left ( fun acc x -> if p x then acc + 1 else acc ) 0
 
     let count_changes = count_p change_loc
 
@@ -609,9 +585,7 @@ module Make(C:Builder.S)
       rej
 
     let last_check_call rej aset f rs po_safe res k =
-      match res with
-      | [] -> k
-      | _ ->
+      if is_empty_list res then k else
           let lst = Misc.last res in
           if can_precede aset po_safe lst res then
             let es = List.map snd res in
@@ -685,12 +659,10 @@ module Make(C:Builder.S)
           | [] -> true
         end
 
-    let rec zyva_prefix prefixes aset relax safe reject n f k =
-      match prefixes with
-      | [] -> k
-      | pref::rem ->
-         zyva pref aset relax safe reject n f
-            (zyva_prefix rem aset relax safe reject n f k )
+    (* TODO: explain the parameter here.
+       Parameter `f` is a function check the result? *)
+    let zyva_prefix prefixes aset relax safe reject n f k =
+      List.fold_left ( fun k pref -> zyva pref aset relax safe reject n f k ) k prefixes
 
     let do_gen relax safe rej n =
       let sset = C.R.Set.of_list safe in
@@ -714,23 +686,15 @@ module Make(C:Builder.S)
       if Misc.nilp relax then if r_nempty then begin
         Warn.fatal "relaxations provided in relaxlist could not be used to generate cycles"
       end ;
-      if O.verbose > 0 then begin
-        eprintf "** Relax0 **\n" ;
-        debug_rs stderr relax ;
-        eprintf "** Safe0 **\n" ;
-        debug_rs stderr safe
-      end ;
+      Log.info 1 "** Relax0 **\n%a** Safe0 **\n%a"
+        debug_rs relax debug_rs safe;
       let relax_set = C.R.Set.of_list relax
       and safe_set = C.R.Set.of_list safe in
       let relax = C.R.Set.elements relax_set
       and safe = C.R.Set.elements (C.R.Set.diff safe_set relax_set)
 (*      and reject = C.R.Set.elements reject_set *)in
-      if O.verbose > 0 then begin
-        eprintf "** Relax **\n" ;
-        debug_rs stderr relax ;
-        eprintf "** Safe **\n" ;
-        debug_rs stderr safe
-      end ;
+      Log.info 1 "** Relax0 **\n%a** Safe0 **\n%a"
+        debug_rs relax debug_rs safe;
       do_gen relax safe reject n
 
 (**********************)
