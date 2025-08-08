@@ -166,16 +166,22 @@ end;
 // instruction fetches and translation table walks on instruction fetches
 // must be synchronous.
 // Luc: Dubious, FALSE or TRUE ?
-func
-  IsExternalAbortTakenSynchronously
-    (memstatus:PhysMemRetStatus,
-     iswrite:boolean,
-     desc:AddressDescriptor,
-     size:integer,
-     accdesc:AccessDescriptor) => boolean
-begin
-  return FALSE;
-end;
+// Luc: Dead code, never called
+
+// type Fatal of exception {-};
+
+//func
+//  IsExternalAbortTakenSynchronously
+//    (memstatus:PhysMemRetStatus,
+//     iswrite:boolean,
+//     desc:AddressDescriptor,
+//     size:integer,
+//     accdesc:AccessDescriptor) => boolean
+//begin
+//  __debug__(memstatus);
+//  throw Fatal {-};
+//  return FALSE;
+//end;
 
 // PendSErrorInterrupt()
 // =====================
