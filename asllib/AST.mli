@@ -96,7 +96,9 @@ type binop =
   | `SHL  (** Shift left for ints *)
   | `SHR  (** Shift right for ints *)
   | `BV_CONCAT  (** Bit vector concatenation *)
-  | `STR_CONCAT  (** String concatenation *) ]
+  | `STR_CONCAT  (** String concatenation *)
+  | `BIC  (** Bit clear operation: bitwise and with second argument inverted *)
+  ]
 (** Operations on base value of arity two. *)
 
 (* -------------------------------------------------------------------------

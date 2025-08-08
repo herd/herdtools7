@@ -646,7 +646,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | `BAND | `BOR | `IMPL -> true
     | `AND | `BEQ | `DIV | `DIVRM | `XOR | `EQ | `GT | `GE | `LT | `LE | `MOD
     | `SUB | `MUL | `NE | `OR | `ADD | `POW | `RDIV | `SHL | `SHR | `BV_CONCAT
-    | `STR_CONCAT ->
+    | `STR_CONCAT | `BIC ->
         false
 
   (* Begin TypeOfArrayLength *)
