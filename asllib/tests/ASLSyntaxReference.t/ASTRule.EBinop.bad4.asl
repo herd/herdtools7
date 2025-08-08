@@ -8,4 +8,4 @@ func operator_precedence(
         // Must be written as:
         let p_eq_eq_A1 = (a == b) != g;
         // Note: 'a == (b != g)' is not valid as it does not type satisfy.
-    end;ma
+    end;

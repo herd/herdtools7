@@ -116,6 +116,7 @@ let token_of_string =
  | "OTHERWISE"          -> s OTHERWISE
  | "PASS"               -> s PASS
  | "PLUS"               -> s PLUS
+ | "PLUS_PLUS"          -> s PLUS_PLUS
  | "PLUS_COLON"         -> s PLUS_COLON
  | "POW"                -> s POW
  | "PRAGMA"             -> s PRAGMA
@@ -190,6 +191,7 @@ let token_to_symbol = function
   | ARROW              -> "=>"
   | RBRACE             -> "}"
   | COLON_COLON        -> "::"
+  | PLUS_PLUS          -> "++"
   | GT                 -> ">"
   | PLUS_COLON         -> "+:"
   | STAR_COLON         -> "*:"
@@ -494,7 +496,7 @@ and token = parse
     | ':'                      { COLON                            }
     | "=>"                     { ARROW                            }
     | '}'                      { RBRACE                           }
-    | "++"                     { fatal lexbuf (ObsoleteSyntax "string concatenation with ++") }
+    | "++"                     { PLUS_PLUS                        }
     | "::"                     { COLON_COLON                      }
     | '>'                      { GT                               }
     | "+:"                     { PLUS_COLON                       }

@@ -345,7 +345,7 @@ Operator precedence is used to disambiguate binary expressions.
 
 Given two binary operators $\opone$ and $\optwo$, an expression of the form
 $x\ \opone\ y\ \optwo\ z$, is interpreted as
-$(x\ \opone\ y) \optwo\ z$
+$(x\ \opone\ y)\ \optwo\ z$
 if $\opone$ has higher precedence than $\optwo$ and as $x\ \opone\ (y\ \optwo\ z)$ if $\opone$ has lower precedence than $\optwo$.
 If $\opone$ is associative and $\opone$ = $\optwo$ then the expression may be interpreted as either
 $(x\ \opone\ y)\ \optwo\ z$ or as $x \opone\ (y\ \optwo\ z)$ since there is no difference.
@@ -361,9 +361,9 @@ The operator classes and precedence order is defined by the following table:
 7 (Highest) & \textbf{Membership} & \Tin\\
 6 & \textbf{Unary}                & \Tminus, \Tnot, \Tbnot\\
 5 & \textbf{Power}                & \Tpow\\
-4 & \textbf{Mul-Div-Shift}        & \Tmul, \Trdiv, \Trdiv, \Tdivrm, \Tmod, \Tshl, \Tshr\\
-3 & \textbf{Add-Sub-Logic}        & \Tplus, \Tminus, \Tand, \Tor, \Txor\\
-2 & \textbf{Equality-Inequality} & \Teq, \Tneq\\
+4 & \textbf{Mul-Div-Shift}        & \Tmul, \Tdiv, \Trdiv, \Tdivrm, \Tmod, \Tshl, \Tshr\\
+3 & \textbf{Add-Sub-Logic}        & \Tplus, \Tminus, \Tand, \Tor, \Txor, \Tcoloncolon, \Tplusplus\\
+2 & \textbf{Equality-Inequality}  & \Teq, \Tneq\\
 1 & \textbf{Boolean}              & \Tband, \Tbor, \Timpl, \Tbeq\\
 0 & \textbf{Relational}           & \Tgt, \Tgeq, \Tlt, \Tleq\\
 \hline
@@ -371,25 +371,16 @@ The operator classes and precedence order is defined by the following table:
 \end{center}
 
 The set of \emph{associative binary operators} consists of the following:
-$\BOR$,
-$\BAND$,
-$\IMPL$,
-$\BEQ$,
-$\EQOP$,
-$\NEQ$,
 $\PLUS$,
-$\MINUS$,
+$\MUL$,
+$\BAND$,
+$\BOR$,
+$\AND$,
 $\OR$,
 $\XOR$,
-$\AND$,
-$\MUL$,
-$\DIV$,
-$\DIVRM$,
-$\RDIV$,
-$\MOD$,
-$\SHL$,
-$\SHR$,
-$\POW$.
+$\BEQ$,
+$\BVCONCAT$,
+$\STRCONCAT$.
 
 The specification in \listingref{BinaryExpressions} shows examples of binary expressions
 and the effect of operator precedence.
@@ -416,14 +407,16 @@ shows examples where \RequirementRef{OperatorPrecedence} holds.
 The specifications in
 \listingref{EBinop-bad1},
 \listingref{EBinop-bad2},
-\listingref{EBinop-bad3}, and
-\listingref{EBinop-bad4}
+\listingref{EBinop-bad3},
+\listingref{EBinop-bad4}, and
+\listingref{EBinop-bad5}
 show examples that violate \RequirementRef{OperatorPrecedence},
 which results in a \builderrorterm.
 \ASLListing{Violation of operator precedence}{EBinop-bad1}{\syntaxtests/ASTRule.EBinop.bad1.asl}
 \ASLListing{Violation of operator precedence}{EBinop-bad2}{\syntaxtests/ASTRule.EBinop.bad2.asl}
 \ASLListing{Violation of operator precedence}{EBinop-bad3}{\syntaxtests/ASTRule.EBinop.bad3.asl}
 \ASLListing{Violation of operator precedence}{EBinop-bad4}{\syntaxtests/ASTRule.EBinop.bad4.asl}
+\ASLListing{Violation of operator precedence}{EBinop-bad5}{\syntaxtests/ASTRule.EBinop.bad5.asl}
 
 \begin{mathpar}
   \inferrule{
@@ -455,7 +448,12 @@ which assigns a precedence level to each binary operator $\op$, as defined below
   \begin{cases}
     5 & \text{if }\op = \POW\\
     4 & \text{if }\op \in \{\MUL, \DIV, \DIVRM, \RDIV, \MOD, \SHL, \SHR\}\\
-    3 & \text{if }\op \in \{\PLUS, \MINUS, \OR, \XOR, \AND\}\\
+    3 & \text{if }\op \in \left\{
+        \begin{array}{l}
+          \PLUS, \MINUS, \OR, \XOR, \\
+          \AND, \BVCONCAT, \STRCONCAT
+        \end{array}
+        \right\}\\
     2 & \text{if }\op \in \{\EQOP, \NEQ\}\\
     1 & \text{if }\op \in \{\BOR, \BAND, \IMPL, \BEQ \}\\
     0 & \text{if }\op \in \{\GT, \GEQ, \LT, \LEQ\}\\
@@ -470,14 +468,16 @@ The function
 \checknotsameprec(\overname{\binop}{\op} \aslsep \overname{\expr}{\ve})
 \aslto \{\True\} \cup \overname{\TBuildError}{\BuildErrorConfig}
 \]
-checks whether the expression AST node $\ve$ is a binary operator of the same
-\emph{precedence} as that of the binary operator $\op$. If so, it is considered
-an error. Surrounding $\ve$ by parenthesis fixes the error.
+checks whether the expression AST node $\ve$ is a binary operator, either with a different operator to $\op$ but the same \emph{precedence}, or the same non-associative operator $\op$.
+In either case, it is considered an error.
+Surrounding $\ve$ by parenthesis fixes the error.
 
 For example, \texttt{a + b + c} is considered legal, since the same binary operator (\texttt{+})
-is used, whereas \texttt{a + b - c} is considered illegal, since $\PLUS$ and $\MINUS$ have the
-same precedence ($3$). To fix this, we can surround one of the subexpressions with parenthesis,
-for example: \texttt{(a + b) - c}.
+is used, whereas \texttt{a - b - c} and \texttt{a + b - c} are considered illegal.
+For the first, this is because $\MINUS$ is not associative.
+For the second, this is because $\PLUS$ and $\MINUS$ have the
+same precedence ($3$). To fix these, we can surround one of the subexpressions with parenthesis,
+for example: \texttt{(a - b) - c} and \texttt{(a + b) - c}.
 
 \ProseParagraph
 \OneApplies
@@ -488,11 +488,18 @@ for example: \texttt{(a + b) - c}.
     \item the result is $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{binop}
+  \item \AllApplyCase{binop\_same}
   \begin{itemize}
     \item $\ve$ is a binary operation expression for the operator $\opp$;
-    \item checking whether $\op$ is different from $\opp$ implies that $\op$ and $\opp$ have different precedence levels
-          yields $\True$\ProseTerminateAs{\BinopPrecedence}.
+    \item $\opp$ is the same operator as $\op$;
+    \item checking whether $\op$ is an associative operator yields $\True$\ProseTerminateAs{\BinopPrecedence}.
+  \end{itemize}
+
+  \item \AllApplyCase{binop\_different}
+  \begin{itemize}
+    \item $\ve$ is a binary operation expression for the operator $\opp$;
+    \item $\opp$ is not the same operator as $\op$;
+    \item checking whether $\op$ and $\opp$ have different precedence levels yields $\True$\ProseTerminateAs{\BinopPrecedence}.
   \end{itemize}
 \end{itemize}
 
@@ -506,8 +513,25 @@ for example: \texttt{(a + b) - c}.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[binop]{
-  \checktrans{\op \neq \opp \Longrightarrow \binopprec(\op) \neq \binopprec(\opp)}{\BinopPrecedence} \checktransarrow \True \OrBuildError
+\inferrule[binop\_same]{
+  \op = \opp \\
+  {
+  \checktrans{\op \in \left\{
+    \begin{array}{l}
+      \PLUS, \MUL, \BAND, \BOR, \AND, \OR, \\
+      \XOR, \BEQ, \BVCONCAT, \STRCONCAT
+    \end{array}
+    \right\}}{\BinopPrecedence} \checktransarrow \True \OrBuildError
+  }
+}{
+  \checknotsameprec(\op, \overname{\EBinop(\opp, \Ignore, \Ignore)}{\ve}) \astarrow \True
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[binop\_different]{
+  \op \neq \opp \\
+  \checktrans{\binopprec(\op) \neq \binopprec(\opp)}{\BinopPrecedence} \checktransarrow \True \OrBuildError
 }{
   \checknotsameprec(\op, \overname{\EBinop(\opp, \Ignore, \Ignore)}{\ve}) \astarrow \True
 }

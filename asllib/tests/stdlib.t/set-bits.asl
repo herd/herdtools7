@@ -21,7 +21,7 @@ begin
 
         let q = HighestSetBit{n}(bv);
         assert q == p-1;
-        assert bv[n-1:q] == (Zeros{n-q-1} :: '1');
+        assert bv[n-1:q] == (Zeros{(n-q)-1} :: '1');
         assert HighestSetBitNZ{n}(bv) == q;
 
         let m = LowestSetBit{n}(bv);

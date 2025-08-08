@@ -80,17 +80,26 @@ let prec =
   function
   | `BOR | `BAND | `IMPL | `BEQ -> 1
   | `EQ | `NE -> 2
-  | `ADD | `SUB | `OR | `XOR | `AND | `CONCAT -> 3
+  | `ADD | `SUB | `OR | `XOR | `AND | `BV_CONCAT | `STR_CONCAT -> 3
   | `MUL | `DIV | `DIVRM | `RDIV | `MOD | `SHL | `SHR -> 4
   | `POW -> 5
   | `GT | `GE | `LT | `LE -> 0 (* Non assoc *)
+
+let check_is_associative ~loc (op : AST.binop) =
+  match op with
+  | `ADD | `AND | `BAND | `BEQ | `BOR | `MUL | `OR | `XOR | `BV_CONCAT
+  | `STR_CONCAT ->
+      ()
+  | _ -> Error.(fatal_from loc CannotParse)
 
 let check_not_same_prec loc op op' =
   if prec op = prec op' then Error.(fatal_from loc CannotParse)
 
 let check_not_binop_same_prec op e =
   match e.desc with
-  | E_Binop (op', _, _) when op != op' -> check_not_same_prec e op op'
+  | E_Binop (op', _, _) ->
+      if op = op' then check_is_associative ~loc:e op
+      else check_not_same_prec e op op'
   | _ -> ()
 
 let e_binop (e1, op, e2) =
@@ -227,7 +236,8 @@ let binop ==
   | SHL         ; { `SHL    }
   | SHR         ; { `SHR    }
   | POW         ; { `POW    }
-  | COLON_COLON ; { `CONCAT }
+  | COLON_COLON ; { `BV_CONCAT  }
+  | PLUS_PLUS   ; { `STR_CONCAT }
 
 (* ------------------------------------------------------------------------
 

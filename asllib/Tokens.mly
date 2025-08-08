@@ -93,6 +93,7 @@
 %token PASS
 %token PLUS
 %token PLUS_COLON
+%token PLUS_PLUS
 %token POW
 %token PRAGMA
 %token PRINT
@@ -193,7 +194,7 @@
 %nonassoc GT GE LT LE
 
 (* binop_add_sub_logic *)
-%left PLUS MINUS OR XOR AND COLON_COLON
+%left PLUS MINUS OR XOR AND COLON_COLON PLUS_PLUS
 
 (* binop_mul_div_shift *)
 %left MUL DIV DIVRM RDIV MOD SHL SHR

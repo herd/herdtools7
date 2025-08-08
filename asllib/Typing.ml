@@ -644,7 +644,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let binop_is_ordered : binop -> bool = function
     | `BAND | `BOR | `IMPL -> true
     | `AND | `BEQ | `DIV | `DIVRM | `XOR | `EQ | `GT | `GE | `LT | `LE | `MOD
-    | `SUB | `MUL | `NE | `OR | `ADD | `POW | `RDIV | `SHL | `SHR | `CONCAT ->
+    | `SUB | `MUL | `NE | `OR | `ADD | `POW | `RDIV | `SHL | `SHR | `BV_CONCAT
+    | `STR_CONCAT ->
         false
 
   (* Begin TypeOfArrayLength *)
@@ -670,9 +671,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | (`AND | `OR | `XOR | `ADD | `SUB), (T_Bits (w1, _), T_Bits (w2, _))
       when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
         T_Bits (w1, []) |> here
-    | `CONCAT, (T_Bits (w1, _), T_Bits (w2, _)) ->
+    | `BV_CONCAT, (T_Bits (w1, _), T_Bits (w2, _)) ->
         T_Bits (width_plus env w1 w2, []) |> here
-    | `CONCAT, _ ->
+    | `STR_CONCAT, _ ->
         let+ () =
           check_true (Types.is_singular env t1) @@ fun () ->
           fatal_from ~loc (Error.ExpectedSingularType t1)
