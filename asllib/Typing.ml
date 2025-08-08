@@ -645,7 +645,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let binop_is_ordered : binop -> bool = function
     | `BAND | `BOR | `IMPL -> true
     | `AND | `BEQ | `DIV | `DIVRM | `XOR | `EQ | `GT | `GE | `LT | `LE | `MOD
-    | `SUB | `MUL | `NE | `OR | `ADD | `POW | `RDIV | `SHL | `SHR | `CONCAT ->
+    | `SUB | `MUL | `NE | `OR | `ADD | `POW | `RDIV | `SHL | `SHR | `CONCAT
+    | `BIC ->
         false
 
   (* Begin TypeOfArrayLength *)

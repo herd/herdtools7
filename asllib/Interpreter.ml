@@ -513,6 +513,13 @@ module Make (B : Backend.S) (C : Config) = struct
         |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopImpl
     (* End *)
     (* Begin EvalBinop *)
+    | E_Binop (`AND, e1, {desc=E_Unop (NOT,e2)}) ->
+        let op = `BIC in
+        let*^ m1, env1 = eval_expr env e1 in
+        let*^ m2, new_env = eval_expr env1 e2 in
+        let* v1 = m1 and* v2 = m2 in
+        let* v = B.binop op v1 v2 in
+        return_normal (v, new_env) |: SemanticsRule.Binop
     | E_Binop (op, e1, e2) ->
         let*^ m1, env1 = eval_expr env e1 in
         let*^ m2, new_env = eval_expr env1 e2 in

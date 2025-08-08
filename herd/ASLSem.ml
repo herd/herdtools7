@@ -377,6 +377,7 @@ module Make (Conf : Config) = struct
       | `SHL -> M.op Op.ShiftLeft
       | `SHR -> M.op Op.ShiftRight
       | `CONCAT -> concat
+      | `BIC -> M.op Op.AndNot2
       | (`POW | `IMPL | `RDIV) as op ->
           Warn.fatal "ASL operation %s not yet implement in ASLSem."
             (Asllib.PP.binop_to_string op)

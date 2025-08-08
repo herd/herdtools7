@@ -95,7 +95,8 @@ type binop =
   | `RDIV  (** Division for reals *)
   | `SHL  (** Shift left for ints *)
   | `SHR  (** Shift right for ints *)
-  | `CONCAT  (** Bit vector or string concatenation *) ]
+  | `CONCAT  (** Bit vector or string concatenation *)
+  | `BIC (** Bit clear operation: bitwise and with second argument inverted *)]
 (** Operations on base value of arity two. *)
 
 (* -------------------------------------------------------------------------
