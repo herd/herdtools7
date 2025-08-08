@@ -75,7 +75,7 @@ type error_desc =
       (** name, expected, actual *)
   | BaseValueEmptyType of ty
   | ArbitraryEmptyType of ty
-  | BaseValueNonStatic of ty * expr
+  | BaseValueNonSymbolic of ty * expr
   | SettingIntersectingSlices of bitfield list
   | SetterWithoutCorrespondingGetter of func
   | NonReturningFunction of identifier
@@ -195,7 +195,7 @@ let error_label = function
   | BadParameterDecl _ -> "BadParameterDecl"
   | BaseValueEmptyType _ -> "BaseValueEmptyType"
   | ArbitraryEmptyType _ -> "ArbitraryEmptyType"
-  | BaseValueNonStatic _ -> "BaseValueNonStatic"
+  | BaseValueNonSymbolic _ -> "BaseValueNonSymbolic"
   | SettingIntersectingSlices _ -> "SettingIntersectingSlices"
   | SetterWithoutCorrespondingGetter _ -> "SetterWithoutCorrespondingGetter"
   | NonReturningFunction _ -> "NonReturningFunction"
@@ -353,11 +353,12 @@ module PPrint = struct
           (pp_comma_list pp_type_desc)
           li
     | BadField (s, ty) ->
-        fprintf f "ASL Error: There is no field '%s'@ on type %a." s pp_ty ty
+        fprintf f "ASL Typing Error: There is no field '%s'@ on type %a." s
+          pp_ty ty
     | MissingField (fields, ty) ->
         fprintf f
-          "ASL Error: Fields mismatch for creating a value of type %a@ -- \
-           Passed fields are:@ %a"
+          "ASL Typing Error: Fields mismatch for creating a value of type %a@ \
+           -- Passed fields are:@ %a"
           pp_ty ty
           (pp_print_list ~pp_sep:pp_print_space pp_print_string)
           fields
@@ -416,8 +417,8 @@ module PPrint = struct
           expected
     | AssertionFailed e ->
         fprintf f "ASL Execution error: Assertion failed:@ %a." pp_expr e
-    | CannotParse -> pp_print_string f "ASL Error: Cannot parse."
-    | UnknownSymbol -> pp_print_string f "ASL Error: Unknown symbol."
+    | CannotParse -> pp_print_string f "ASL Grammar Error: Cannot parse."
+    | UnknownSymbol -> pp_print_string f "ASL Grammar Error: Unknown symbol."
     | NoCallCandidate (name, types) ->
         fprintf f
           "ASL Type error: No subprogram declaration matches the invocation:@ \
@@ -494,10 +495,10 @@ module PPrint = struct
         fprintf f "ASL Execution error: ARBITRARY of empty type %a." pp_ty t
     | BaseValueEmptyType t ->
         fprintf f "ASL Type error: base value of empty type %a." pp_ty t
-    | BaseValueNonStatic (t, e) ->
+    | BaseValueNonSymbolic (t, e) ->
         fprintf f
-          "ASL Type error:@ base@ value@ of@ type@ %a@ cannot@ be@ statically@ \
-           determined@ since@ it@ consists@ of@ %a."
+          "ASL Type error:@ base@ value@ of@ type@ %a@ cannot@ be@ \
+           symbolically@ reduced@ since@ it@ consists@ of@ %a."
           pp_ty t pp_expr e
     | BadATC (t1, t2) ->
         fprintf f
@@ -594,7 +595,7 @@ module PPrint = struct
            length@a: %i."
           pp_expr e_length length
     | MultipleWrites id ->
-        fprintf f "ASL Type error:@ multiple@ writes@ to@ %S." id
+        fprintf f "ASL Grammar error:@ multiple@ writes@ to@ %S." id
     | MultipleImplementations (impl1, impl2) ->
         fprintf f
           "ASL Type error:@ multiple@ overlapping@ `implementation`@ \
@@ -611,9 +612,8 @@ module PPrint = struct
            `implementation`:@ %a"
           (pp_print_list pp_pos) impdefs
     | BadPrimitiveArgument (name, reason) ->
-        pp_print_text f
-          ("ASL Execution error: " ^ name ^ " (primitive) expected an argument "
-         ^ reason));
+        fprintf f "ASL Execution error: %s (primitive) expected an argument %s"
+          name reason);
     pp_close_box f ()
 
   let pp_warning_desc f w =

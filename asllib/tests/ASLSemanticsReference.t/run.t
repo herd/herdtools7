@@ -141,7 +141,7 @@ ASL Semantics Tests:
   File SemanticsRule.CatchNone.asl, line 15, characters 8 to 24:
     catch MyExceptionType1;
           ^^^^^^^^^^^^^^^^
-  ASL Error: Cannot parse.
+  ASL Grammar Error: Cannot parse.
   [1]
   $ aslref SemanticsRule.FUndefIdent.asl
   File SemanticsRule.FUndefIdent.asl, line 4, characters 5 to 12:

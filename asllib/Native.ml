@@ -261,26 +261,24 @@ module NativeBackend (C : Config) = struct
       | [ v ] -> mismatch_type v [ integer' ]
       | li ->
           Error.fatal_unknown_pos
-          @@ Error.BadArity (Dynamic, "DecStr", 1, List.length li)
+          @@ Error.BadArity (Dynamic, "HexStr", 1, List.length li)
 
     let ascii_integer = integer_range' !$0 !$127
 
-    let ascii_str =
-      let open! Z in
-      function
+    let ascii_str = function
       | [ NV_Literal (L_Int i) ] ->
-          if geq zero i && leq ~$127 i then
+          if Z.(zero <= i && i <= of_int 127) then
             L_String (char_of_int (Z.to_int i) |> String.make 1)
             |> nv_literal |> return_one
           else
             Error.fatal_unknown_pos
             @@ Error.BadPrimitiveArgument
-                 ( "DecStr",
+                 ( "AsciiStr",
                    "greater than or equal to 0 and less than or equal to 127" )
       | [ v ] -> mismatch_type v [ ascii_integer ]
       | li ->
           Error.fatal_unknown_pos
-          @@ Error.BadArity (Dynamic, "DecStr", 1, List.length li)
+          @@ Error.BadArity (Dynamic, "AsciiStr", 1, List.length li)
 
     let floor_log2 = function
       | [ NV_Literal (L_Int i) ] ->

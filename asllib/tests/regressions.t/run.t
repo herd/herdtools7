@@ -285,14 +285,14 @@ Parameterized integers:
   File setter_without_getter.asl, line 6, characters 0 to 3:
   end;
   ^^^
-  ASL Error: Cannot parse.
+  ASL Grammar Error: Cannot parse.
   [1]
 
   $ aslref getter_without_setter.asl
   File getter_without_setter.asl, line 6, characters 0 to 3:
   end;
   ^^^
-  ASL Error: Cannot parse.
+  ASL Grammar Error: Cannot parse.
   [1]
 
   $ aslref tuple_items.asl
@@ -301,7 +301,7 @@ Parameterized integers:
   File duplicated-otherwise.asl, line 7, characters 8 to 12:
           when 0.0 => println "2.0";
           ^^^^
-  ASL Error: Cannot parse.
+  ASL Grammar Error: Cannot parse.
   [1]
   $ aslref duplicate_expr_record.asl
   File duplicate_expr_record.asl, line 5, characters 12 to 27:
@@ -314,21 +314,21 @@ Parameterized integers:
   File same-precedence.asl, line 6, characters 10 to 15:
     let x = a + b - c;
             ^^^^^
-  ASL Error: Cannot parse.
+  ASL Grammar Error: Cannot parse.
   [1]
 
   $ aslref same-precedence2.asl
   File same-precedence2.asl, line 6, characters 10 to 17:
     let d = a ==> b <=> c;
             ^^^^^^^
-  ASL Error: Cannot parse.
+  ASL Grammar Error: Cannot parse.
   [1]
 
   $ aslref binop-non-assoc.asl
   File binop-non-assoc.asl, line 3, characters 6 to 11:
     - = 3 - 2 - 1;
         ^^^^^
-  ASL Error: Cannot parse.
+  ASL Grammar Error: Cannot parse.
   [1]
 
   $ aslref rdiv_checks.asl
@@ -416,7 +416,7 @@ Required tests:
   File asl0-patterns.asl, line 7, characters 25 to 29:
       if x[0+:4] IN '10x1' then // invalid
                            ^^^^
-  ASL Error: Cannot parse.
+  ASL Grammar Error: Cannot parse.
   [1]
   $ aslref -0 unreachable-v0.asl
   $ aslref assign1.asl
@@ -428,7 +428,7 @@ Required tests:
   File concat-empty.asl, line 3, characters 45 to 46:
     let empty_concatenation_should_not_parse = [];
                                                ^
-  ASL Error: Cannot parse.
+  ASL Grammar Error: Cannot parse.
   [1]
   $ aslref concat01.asl
   $ aslref concat02.asl
@@ -469,6 +469,7 @@ Required tests:
   $ aslref subprogram-local-name-clash.asl
   $ aslref string_concat.asl
   $ aslref approx-expr-binop.asl
+  $ aslref asciistr.asl
 
   $ aslref --no-type-check throw-local-env.asl
   File throw-local-env.asl, line 10, characters 13 to 14:
@@ -496,16 +497,16 @@ Base values
   File base_values.asl, line 5, characters 2 to 28:
     var x: integer {N..M, 42};
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: base value of type integer {42, N..M} cannot be statically
-    determined since it consists of N.
+  ASL Type error: base value of type integer {42, N..M} cannot be symbolically
+    reduced since it consists of N.
   [1]
 
   $ aslref base_values_empty.asl
   File base_values_empty.asl, line 3, characters 2 to 24:
     var x: integer {N..M};
     ^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: base value of type integer {N..M} cannot be statically
-    determined since it consists of N.
+  ASL Type error: base value of type integer {N..M} cannot be symbolically
+    reduced since it consists of N.
   [1]
 
   $ aslref base_values_tuple.asl
@@ -541,7 +542,7 @@ Getters/setters
   File pattern-masks-no-braces.asl, line 4, characters 19 to 24:
     assert ('111' IN '1xx') == TRUE;
                      ^^^^^
-  ASL Error: Cannot parse.
+  ASL Grammar Error: Cannot parse.
   [1]
 
 ASLRef Field getter extension
@@ -584,7 +585,7 @@ Left-hand sides
   File lhs-tuple-fields-same-field.asl, line 8, characters 2 to 4:
     bv.(fld, -, fld) = ('11', TRUE, '11');
     ^^
-  ASL Type error: multiple writes to "bv.fld".
+  ASL Grammar error: multiple writes to "bv.fld".
   [1]
   $ aslref lhs-tuple-same-var.asl
   $ aslref lhs-expressivity.asl
@@ -628,5 +629,5 @@ Outdated syntax
   File noreturn_function.asl, line 2, characters 26 to 28:
   noreturn func returning() => integer
                             ^^
-  ASL Error: Cannot parse.
+  ASL Grammar Error: Cannot parse.
   [1]
