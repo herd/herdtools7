@@ -197,7 +197,11 @@ and type special3 = I.special3
   let complete_init hexa iv i =
     let i =
       List.fold_left
-        (fun env (loc,v) -> (Loc loc,Some (S (Code.pp_v ~hexa:hexa v)))::env) i iv in
+        (fun env (loc,v) ->
+          (* Do not include if the value is default zero *)
+          if Code.value_to_int v = 0 then env else
+          (Loc loc,Some (S (Code.pp_v ~hexa:hexa v)))::env
+        ) i iv in
     let already_here =
       List.fold_left
         (fun k (loc,v) ->

@@ -1,12 +1,12 @@
 Test S+poq0l.q0+addra.w0l.w0 Allowed
 States 3
-1:X4=0x0; [x]=0x202020201010101;
-1:X4=0x0; [x]=0x202020202020202;
-1:X4=0x1010101; [x]=0x202020201010101;
+1:X4=0x0; [x]=0x2000200010001;
+1:X4=0x0; [x]=0x2000200020002;
+1:X4=0x10001; [x]=0x2000200010001;
 No
 Witnesses
 Positive: 0 Negative: 3
-Condition exists ([x]=0x202020202020202 /\ 1:X4=0x1010101)
+Condition exists ([x]=0x2000200020002 /\ 1:X4=0x10001)
 Observation S+poq0l.q0+addra.w0l.w0 Never 0 3
-Hash=a9d90a4b5ad140120e7e08ff135fbc4b
+Hash=e2543ad7de5ec7d4ea778ea482282bab
 
