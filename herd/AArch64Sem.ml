@@ -3305,22 +3305,20 @@ Arguments:
 
       let ldg rt rn k ii =
         let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii in
-        let do_ldg a_virt ac ma =
-          let _do_ldg a =
+        let mv = read_reg_ord rt ii >>= loc_extract in
+        let do_ldg ac ma mv =
+          let _do_ldg (a, v) =
             let* atag = M.op1 Op.TagLoc a in
             let* tag = do_read_tag atag ii in
-            let* v = M.op Op.SetTag a_virt tag in
+            let* v = M.op Op.SetTag v tag in
             let* () = write_reg rt v ii in
             B.nextT in
           if Access.is_physical ac then
-            M.bind_ctrldata ma _do_ldg
+            M.bind_ctrldata (ma >>| mv) _do_ldg
           else
-            ma >>= _do_ldg in
-        M.delay_kont "ldg" ma
-          (fun a_virt ma ->
-             let do_ldg = do_ldg a_virt in
-             lift_memop rn Dir.R false false (fun ac ma _mv -> do_ldg ac ma)
-               (to_perms "w" MachSize.S128) ma mzero Annot.N ii)
+            ma >>| mv >>= _do_ldg in
+        lift_memop rn Dir.R false false (fun ac ma mv -> do_ldg ac ma mv)
+        (to_perms "w" MachSize.S128) ma mv Annot.N ii
 
       type double = Once|Twice
 
