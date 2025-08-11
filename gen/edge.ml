@@ -68,6 +68,7 @@ module type S = sig
   val is_node : tedge -> bool
   val is_insert_store : tedge -> bool
   val is_non_pseudo : tedge -> bool
+  val is_dp_addr : tedge -> bool
   val compute_rmw : rmw -> Code.v -> Code.v -> Code.v
 
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
@@ -250,6 +251,10 @@ and type rmw = F.rmw = struct
     | Store|Insert _ |Id|Node _-> false
     | Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _ -> true
+
+  let is_dp_addr = function
+    |Dp (dp, _, _) -> F.is_addr dp
+    |_ -> false
 
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
 

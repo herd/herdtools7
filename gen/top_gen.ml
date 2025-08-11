@@ -786,43 +786,12 @@ let max_set = IntSet.max_elt
           (* TODO: the `if-else` pattern on flags is not a good idea as it may short circuit *)
             if O.variant Variant_gen.NoFault then
               F.FaultSet.empty,F.FaultSet.empty
-            else if do_memtag then
-              let tagchange =
-                (* Get all tag writes. *)
-                List.fold_left
-                  (fun tags n ->
-                     let evt = n.C.evt in
-                     match evt.C.dir,evt.C.loc,evt.C.bank with
-                     | Some W,Data x,Tag -> StringSet.add x tags
-                     | _ -> tags)
-                  StringSet.empty ns in
-              let neg_flts = List.fold_left
-                (fun flts n ->
-                   match n.C.evt.C.loc,n.C.evt.C.bank with
-                   | Data x,Ord when StringSet.mem x tagchange ->
-                     let proc = n.C.evt.C.proc in
-                     let flt = ((proc, Label.Set.empty), Some (A.Loc x), None, None) in
-                     F.FaultSet.add flt flts
-                   | _ -> flts) F.FaultSet.empty ns in
-               F.FaultSet.empty,neg_flts
-            else if do_morello then
-              let neg_flts = List.fold_left
-               (fun flts n ->
-                  let evt = n.C.evt in
-                  let proc = n.C.evt.C.proc in
-                  match n.C.prev.C.edge.edge,evt.C.loc,evt.C.bank with
-                  | Dp (dp,_,_),Data x,(CapaTag|CapaSeal) when A.is_addr dp ->
-                    let flt = ((proc, Label.Set.empty), Some (A.Loc x), None, None) in
-                    F.FaultSet.add flt flts
-                  | _ -> flts)
-               F.FaultSet.empty ns in
-               F.FaultSet.empty,neg_flts
-           else if do_kvm then
+           else if do_memtag || do_kvm || do_morello then
              List.fold_left
                (fun (pos_flts,neg_flts) n ->
                   let e = n.C.evt in
                   match e.C.check_fault,e.C.loc,e.C.bank with
-                  | Some (lbl, do_fault),Data x,Ord ->
+                  | Some (lbl, do_fault),Data x,(Ord|CapaTag|CapaSeal) ->
                     let proc = n.C.evt.C.proc in
                     let flt = ((proc, (Label.Set.singleton lbl)), Some (A.Loc x), None, None) in
                     (* Collect fault information based on `do_fault`,
