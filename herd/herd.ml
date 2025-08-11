@@ -59,9 +59,9 @@ let gen_model_opt s =
 
 
 let runmode_options = Arg.align ~limit:40 [
-  "-help", Arg.Unit (fun () -> ()), "" ;
-  "--help", Arg.Unit (fun () -> ()), "" ;
-  "", Arg.Unit (fun () -> ()), "\n";
+  "-help", Arg.Unit Fun.id, "" ;
+  "--help", Arg.Unit Fun.id, "" ;
+  "", Arg.Unit Fun.id, "\n";
   parse_tag "-speedcheck"
     (fun tag -> match Speed.parse tag with
     | None -> false
@@ -104,9 +104,9 @@ let runmode_options = Arg.align ~limit:40 [
     ]
 
 let filter_options = Arg.align ~limit:40 [
-  "-help", Arg.Unit (fun () -> ()), "" ;
-  "--help", Arg.Unit (fun () -> ()), "" ;
-  ("", Arg.Unit (fun () -> ()), "\n");
+  "-help", Arg.Unit Fun.id, "" ;
+  "--help", Arg.Unit Fun.id, "" ;
+  ("", Arg.Unit Fun.id, "\n");
   gen_model_opt "-model";
   gen_model_opt "-cat";
   parse_tag
@@ -155,11 +155,11 @@ let filter_options = Arg.align ~limit:40 [
   ]
 
 let graph_content_options = Arg.align ~limit:40 [
-  "-help", Arg.Unit (fun () -> ()), "" ;
-  "--help", Arg.Unit (fun () -> ()), "" ;
+  "-help", Arg.Unit (Fun.id), "" ;
+  "--help", Arg.Unit (Fun.id), "" ;
   (* Edges *)
-  ("", Arg.Unit (fun () -> ()), "\n");
-  ("Edge options", Arg.Unit (fun () -> ()), " ");
+  ("", Arg.Unit Fun.id, "\n");
+  ("Edge options", Arg.Unit Fun.id, " ");
   parse_bool "-showinitrf" PP.showinitrf "show read-from edges from initial state in pictures" ;
   parse_bool "-showfinalrf" PP.showfinalrf "show read-from edges to final state in pictures" ;
   parse_stringsetfun "-doshow" PP.add_doshow "show those edges";
@@ -170,8 +170,8 @@ let graph_content_options = Arg.align ~limit:40 [
   parse_stringset "-showraw" PP.showraw "do not perform transitivity removal on those edges" ;
 
   (* Events *)
-  ("", Arg.Unit (fun () -> ()), "\n");
-  ("Event options", Arg.Unit (fun () -> ()), " ");
+  ("", Arg.Unit Fun.id, "\n");
+  ("Event options", Arg.Unit Fun.id, " ");
   parse_bool "-oneinit" PP.oneinit "show an init writes pseudo-event, with all initial writes grouped" ;
   parse_tag "-showevents"
     (fun tag -> match PrettyConf.parse_showevents tag with
@@ -189,9 +189,9 @@ let graph_content_options = Arg.align ~limit:40 [
   parse_string_opt "-classes" PP.classes "show classes of this equivalence (no not cumulate)" ;
 ]
 let graph_presentation_options = Arg.align ~limit:40 [
-  "-help", Arg.Unit (fun () -> ()), "" ;
-  "--help", Arg.Unit (fun () -> ()), "" ;
-  ("", Arg.Unit (fun () -> ()), "\n");
+  "-help", Arg.Unit Fun.id, "" ;
+  "--help", Arg.Unit Fun.id, "" ;
+  ("", Arg.Unit Fun.id, "\n");
   parse_bool "-showobserved" PP.showobserved
     "highlight observed memory reads in execution graphs" ;
   parse_bool "-edgemerge" PP.edgemerge "merge edges, cppmem style" ;
@@ -289,22 +289,22 @@ let graph_presentation_options = Arg.align ~limit:40 [
   ]
 
 let setup_options = Arg.align ~limit:40 [
-   "-help", Arg.Unit (fun () -> ()), "" ;
-  "--help", Arg.Unit (fun () -> ()), "";
-  ("", Arg.Unit (fun () -> ()), "\n");
+   "-help", Arg.Unit Fun.id, "" ;
+  "--help", Arg.Unit Fun.id, "";
+  ("", Arg.Unit Fun.id, "\n");
   ("-version", Arg.Unit
      (fun () -> printf "%s, Rev: %s\n" Version.version Version.rev ; exit 0),
    " show version number and exit") ;
   ("-libdir", Arg.Unit (fun () -> print_endline !Opts.libdir; exit 0),
-    "show the path used to search for the top level model and included .cat files");
+    "show the default search path for .cat files and ASL pseudocode files");
   ("-set-libdir", Arg.String (fun s -> Opts.libdir := s),
-    "<path> set the path used to search for the top level model and included .cat files to <path>");
+    "<path> set the default search path for .cat files and ASL pseudocode files to <path>");
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "show various diagnostics, repeat to increase verbosity");
   ("-q", Arg.Unit (fun _ -> verbose := -1; debug := Debug_herd.none),
    "<default> do not show diagnostics");
   ("-I", Arg.String (fun s -> includes := !includes @ [s]),
-   "<dir> add <dir> to the path used to search for the top level model and included .cat files, takes precedence over libdir ");
+   "<dir> add <dir> to the search path for .cat files and ASL pseudocode files, takes precedence over libdir ");
   parse_bool "-exit" Opts.exit_if_failed "exit in case of failure";
   ("-conf",
    Arg.String load_config,
@@ -352,8 +352,8 @@ let setup_options = Arg.align ~limit:40 [
     "show debug messages for specific parts" ;
 
   (* Input *)
-  ("", Arg.Unit (fun () -> ()), "\n");
-  ("Input options", Arg.Unit (fun () -> ()), " ");
+  ("", Arg.Unit Fun.id, "\n");
+  ("Input options", Arg.Unit Fun.id, " ");
 
   ( "-kinds",
     Arg.String (fun s -> kinds := !kinds @ [s]),
@@ -364,8 +364,8 @@ let setup_options = Arg.align ~limit:40 [
     ]
    @ parse_noselect @ [
   (* Output *)
-  ("", Arg.Unit (fun () -> ()), "\n");
-  ("Output options", Arg.Unit (fun () -> ()), " ");
+  ("", Arg.Unit Fun.id, "\n");
+  ("Output options", Arg.Unit Fun.id, " ");
 
   ("-dotheader",Arg.String (fun s -> PP.dotheader := Some s),
    "<name> insert the contents of <name> at the beginning of generated dot files");
@@ -379,9 +379,9 @@ let setup_options = Arg.align ~limit:40 [
   parse_bool "-hexa" PP.hexa "print numbers in hexadecimal";
    ]
   let help_options = Arg.align ~limit:40 [
-  ("", Arg.Unit (fun () -> ()), "\n");
-  ("-help", Arg.Unit (fun () -> ()), "show option categories");
-  ("--help", Arg.Unit (fun () -> ()), "show all options" )
+  ("", Arg.Unit Fun.id, "\n");
+  ("-help", Arg.Unit Fun.id, "show option categories");
+  ("--help", Arg.Unit Fun.id, "show all options" )
 ]
 (*Usage messages*)
 let usg_setup = (sprintf "\n Control the command environment: paths, config, input and output handling")
