@@ -1,8 +1,10 @@
 AArch64 MTE-LDRSTGLDR
+variant=memtag
 {
 x=1;
 0:X0=x:red;
 0:X1=x:blue;
+0:X6=x:green;
 1:X0=x;
 1:X3=x:red;
 }

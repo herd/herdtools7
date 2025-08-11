@@ -7,6 +7,8 @@ Variant=memtag
 0:X3=x:blue;
 
 1:X0=x:green;
+1:X1=x:green;
+1:X3=x:green;
 }
 
   P0         |  P1         ;
