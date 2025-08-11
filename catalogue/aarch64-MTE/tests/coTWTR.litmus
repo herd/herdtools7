@@ -1,10 +1,11 @@
 AArch64 coTWTR 
-variant=async
+variant=memtag,async
 {
 0:X0=x:red; 0:X1=x:green;
 0:X3=x:red;
 }
  P0          ;
  STG X0,[X1] ;
+ MOV X2,X3   ;
  LDG X2,[X3] ;
 exists (0:X2=x:green)
