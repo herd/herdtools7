@@ -1,7 +1,8 @@
 AArch64 Wt+RtWtRt
+variant=memtag
 {
 0:X0=x; 0:X1=x:red;
-1:X0=x; 1:X3=x:blue
+1:X0=x; 1:X3=x:blue; 1:X1=x:green; 1:X2=x:green;
 }
 P0           | P1          ;
 STG X1, [X0] | LDG X1, [X0];

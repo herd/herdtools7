@@ -1,10 +1,11 @@
 AArch64 MTE-CoRW2+FAULT
-Variant=imprecise
+Variant=memtag,imprecise
 {
 x=1;
 0:X0=x:green;
 0:X1=x:green;
 0:X5=x:green;
+0:X7=x:green;
 1:X1=x:green;
 1:X5=x:blue;
 }

@@ -3,7 +3,7 @@ AArch64 MP+dmb.sy+addr-poloc-tagfault
 Variant=memtag,sync
 {
   0:X1=y; 0:X3=x;
-  1:X1=y; 1:X3=x; 1:X4=z:green; 1:X5=z:red;
+  1:X1=y; 1:X3=x; 1:X8=z:green; 1:X5=z:red;
 }
 P0         | P1               | P1.F          ;
 MOV W2,#1  | LDR W0,[X1]      | ADR X9,L0     ;

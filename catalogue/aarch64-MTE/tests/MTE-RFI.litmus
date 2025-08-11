@@ -4,6 +4,8 @@ Variant=memtag,precise
 x=1;
 0:X1=x:green;
 0:X2=x:red;
+0:X0=x:green;
+0:X4=x:green;
 }
 
   P0         ;
