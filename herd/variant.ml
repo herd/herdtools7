@@ -117,17 +117,98 @@ type t =
 (* Allow to use pac(pac(...)) using the XOR of two pac fields *)
   | ConstPacField
 
-let tags =
-  ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
-   "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
-   "mixed";"dontcheckmixed";"weakpredicated"; "lkmmv1"; "lkmmv2"; "memtag";"vmsa";"kvm";]@
-    Precision.tags @ Fault.Handling.tags @
-   ["CutOff"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
-   "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
-    "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"; "strict";
-    "warn"; "S128"; "ASLType+Warn";    "ASLType+Silence"; "ASLType+Check";
-    "ASL+AArch64+UDF"; "telechat"; "OldSolver"; "oota";
-    "pac"; "fpac"; "const-pac-field";]
+(* Identity function to prompt user to insert variant into list used for help message when adding a new variant*)
+let (mode_variants, feat_variants) : t list * t list =
+  let f = function 
+  | Success -> Success
+  | Instr -> Instr
+  | SpecialX0 -> SpecialX0
+  | NoRMW -> NoRMW
+  | AcqRelAsFence -> AcqRelAsFence
+  | BackCompat ->BackCompat
+  | FullScDepend -> FullScDepend
+  | SplittedRMW -> SplittedRMW
+  | SwitchDepScWrite -> SwitchDepScWrite
+  | SwitchDepScResult -> SwitchDepScResult
+  | LrScDiffOk -> LrScDiffOk
+  | Mixed -> Mixed
+  | Unaligned -> Unaligned
+  | DontCheckMixed -> DontCheckMixed
+  | NotWeakPredicated -> NotWeakPredicated
+  | LKMMVersion `lkmmv1 -> LKMMVersion `lkmmv1
+  | LKMMVersion `lkmmv2 -> LKMMVersion `lkmmv2
+  | MemTag -> MemTag
+  | MTEPrecision p -> MTEPrecision p
+  | FaultHandling p -> FaultHandling p 
+  | CutOff -> CutOff
+  | Morello -> Morello
+  | Neon -> Neon
+  | SVE -> SVE
+  | SVELength k ->  SVELength k 
+  | SME -> SME
+  | SMELength k ->  SMELength k 
+  | Deps -> Deps
+  | Instances -> Instances
+  | VMSA -> VMSA
+  | ETS -> ETS
+  | ETS2 -> ETS2
+  | ETS3 -> ETS3
+  | ExS -> ExS
+  | EIS -> EIS
+  | EOS -> EOS
+  | NoPteBranch -> NoPteBranch
+  | PTE2 -> PTE2
+  | PhantomOnLoad -> PhantomOnLoad
+  | OptRfRMW -> OptRfRMW
+  | ConstrainedUnpredictable -> ConstrainedUnpredictable
+  | Exp -> Exp
+  | Ifetch -> Ifetch
+  | DIC -> DIC
+  | IDC -> IDC
+  | CosOpt -> CosOpt
+  | Test -> Test
+  | T n -> T n 
+  | ASL -> ASL
+  | ASL_AArch64 -> ASL_AArch64
+  | ASLVersion `ASLv0 ->  ASLVersion `ASLv0
+  | ASLVersion `ASLv1 -> ASLVersion `ASLv1
+  | S128 -> S128
+  | Strict -> Strict
+  | Warn -> Warn
+  | ASLType `Warn -> ASLType `Warn 
+  | ASLType `Silence ->  ASLType `Silence 
+  | ASLType `TypeCheck -> ASLType `TypeCheck
+  | ASL_AArch64_UDF -> ASL_AArch64_UDF 
+  | Telechat -> Telechat
+  | NV2 -> NV2
+  | OldSolver -> OldSolver
+  | OOTA -> OOTA
+  | Pac -> Pac
+  | ConstPacField -> ConstPacField
+  | FPac -> FPac
+
+in 
+  (*Modes of operation*)
+ (List.map f 
+ [ Success;  Instr;  SpecialX0;  NoRMW;  AcqRelAsFence;
+   BackCompat;  FullScDepend;  SplittedRMW; SwitchDepScWrite;
+   SwitchDepScResult; LrScDiffOk; Mixed; Unaligned; DontCheckMixed; NotWeakPredicated;
+   LKMMVersion `lkmmv1; LKMMVersion `lkmmv2;
+  CutOff; Morello; Neon;  Deps; Instances; VMSA; 
+  NoPteBranch; PTE2;
+  PhantomOnLoad; OptRfRMW; ConstrainedUnpredictable;
+  Exp; Ifetch; CosOpt; Test; T 0; ASL;
+  ASL_AArch64; ASLVersion `ASLv0; ASLVersion `ASLv1; S128; Strict; Warn;
+  ASLType `Warn; ASLType `Silence; ASLType `TypeCheck; ASL_AArch64_UDF;
+  Telechat; OldSolver; OOTA], 
+  (*Architectural Features*)
+  List.map f 
+  [MemTag; MTEPrecision Precision.default; FaultHandling  Fault.Handling.default;
+  SVE; SVELength 128; SME; SMELength 128;
+  ETS; ETS2; ETS3; ExS; EIS; EOS;
+  DIC; IDC; NV2;
+  Pac; ConstPacField; FPac])
+
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -237,7 +318,7 @@ let pp = function
   | AcqRelAsFence -> "acqrelasfence"
   | BackCompat ->"backcompat"
   | FullScDepend -> "FullScDepend"
-  | SplittedRMW -> "SplittedRWM"
+  | SplittedRMW -> "SplittedRMW"
   | SwitchDepScWrite -> "SwitchDepScWrite"
   | SwitchDepScResult -> "SwitchDepScResult"
   | LrScDiffOk -> " LrScDiffOk"
@@ -297,6 +378,15 @@ let pp = function
   | ConstPacField -> "const-pac-field"
   | FPac -> "fpac"
 
+let mode_tags =
+  List.map( fun x-> if x = "T00" then "T [0-9]" else x) (List.map pp mode_variants)
+let feat_tags =
+  List.map pp feat_variants
+
+let helper_message =
+  Printf.sprintf "<tags> where:\n Mode tags:\n  {%s}\n Arch tags:\n {%s}" (String.concat "," mode_tags) (String.concat "," feat_tags) 
+
+let tags = mode_tags @ feat_tags
 let compare = compare
 let equal v1 v2 = compare v1 v2 = 0
 

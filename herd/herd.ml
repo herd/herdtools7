@@ -150,7 +150,7 @@ let options = [
   begin
     let module ParseVariant = ParseTag.MakeS(Opts.OptS) in
     ParseVariant.parse "-variant" variant
-      "select an architecture variation" end ;
+      Variant.helper_message end ;
   begin let module ParseMachSize = ParseTag.Make(MachSize.Tag) in
   ParseMachSize.parse "-machsize" byte "set basic machine size" end ;
   begin let module ParseEndian = ParseTag.Make(Endian) in
