@@ -410,8 +410,10 @@ let max_set = IntSet.max_elt
               i,c::cs,f@fs
         with NoObserver -> build_observers p i x vss
 
+  (* The function decides/returns the initial value `i`.
+     - `env_wide` is a lookup table for the widths of locations
+     - `atoms` is a set of all atoms which affects on the initial value *)
   let check_writes env_wide atoms proc init cos =
-
     let call_build_observers p i x vs =
       if StringMap.mem x env_wide then
         Warn.user_error "No observers on wide accesses"
@@ -983,11 +985,14 @@ let tr_labs m env =
 let do_self =  O.variant Variant_gen.Self
 
 let test_of_cycle name
-  ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) es c =
+  ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) ?(init_pte=[]) es c =
   let com = match com with None -> pp_edges es | Some com -> com in
   let (init,prog,final,env),(prf,coms) = compile_cycle check init c in
   let m_labs = num_labels prog in
-  let init = tr_labs m_labs init in
+  let init = (tr_labs m_labs init) @ List.map
+  (* Add the init pte value `init_pte` into `init`, so it will print
+  in the pre-condition of the final litmus test. *)
+    ( fun (loc, pte) -> (A.Loc ("pte_" ^ loc), Some (A.P pte)) ) init_pte in
   let info = info @
     ( Comp.get_archinfo c
     |> do_add_info "Orig" com
@@ -1004,8 +1009,8 @@ let make_test name ?com ?info ?check ?scope es =
   try
     if O.verbose > 1 then eprintf "**Test %s**\n" name ;
     if O.verbose > 2 then eprintf "**Cycle %s**\n" (pp_edges es) ;
-    let es,c,init = C.make es in
-    test_of_cycle name ?com ?info ?check ?scope ~init es c
+    let es,c,init,init_pte = C.make es in
+    test_of_cycle name ?com ?info ?check ?scope ~init ~init_pte es c
   with
   | Misc.Fatal msg|Misc.UserError msg ->
       Warn.fatal "Test %s [%s] failed:\n%s" name (pp_edges es) msg

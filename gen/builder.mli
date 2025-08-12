@@ -49,10 +49,11 @@ module type S = sig
 
 (* Build test from cycle *)
   val test_of_cycle :
-      string ->
-        ?com:string -> ?info:Code.info -> ?check:check ->
-          ?scope:BellInfo.scopes -> ?init:Code.env ->
-            edge list -> node -> test
+    string ->
+    ?com:string -> ?info:Code.info -> ?check:check ->
+    ?scope:BellInfo.scopes -> ?init:Code.env ->
+    ?init_pte:(string * C.PteVal.t) list ->
+    edge list -> node -> test
 
 (* Dump the given test *)
   val dump_test_channel : out_channel -> test -> unit

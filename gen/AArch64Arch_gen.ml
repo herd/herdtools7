@@ -163,38 +163,53 @@ type capa_opt = capa option
 
 module WPTE = struct
 
-  type t = AF | DB | OA | DBM | VALID
+  type pte_field = AF | DB | OA | DBM | VALID
+  let all_pte_field = [AF; DB; OA; DBM; VALID;]
+  let pp_pte_field = function
+    | AF -> "AF"
+    | DB -> "DB"
+    | DBM -> "DBM"
+    | VALID -> "VALID"
+    | OA -> "OA"
 
-  let all= [AF; DB; OA; DBM; VALID;]
-
-  let compare w1 w2 = match w1,w2 with
-  | (AF,AF) | (DB,DB) | (OA,OA) | (DBM,DBM) | (VALID,VALID)
-    -> 0
-  | (AF,(DB|OA|DBM|VALID))
-  | (DB,(OA|DBM|VALID))
-  | (OA,(DBM|VALID))
-  | (DBM,VALID)
-    -> -1
-  | ((DB|OA|DBM|VALID),AF)
-  | ((OA|DBM|VALID),DB)
-  | ((DBM|VALID),OA)
-  | (VALID,DBM)
-      -> 1
-
-   let pp = function
-     | AF -> "AF"
-     | DB -> "DB"
-     | DBM -> "DBM"
-     | VALID -> "VA"
-     | OA -> "OA"
+          (* Toggle the value between 0 and 1 *)
+  type t = Base of pte_field
+          (* Precise value of 0 to 1 *)
+          | One of pte_field
+          (* Precise value of 1 to 0 *)
+          | Zero of pte_field
+  let all =
+    List.map ( fun field -> [Base field; One field; Zero field;] ) all_pte_field
+    |> List.flatten
+  let compare = compare
+  let pp = function
+    | Base p -> pp_pte_field p
+    | One p -> "One" ^ pp_pte_field p
+    | Zero p -> "Zero" ^ pp_pte_field p
+  let get_pte_field = function
+    | Base p | One p | Zero p -> p
 end
 
 module WPTESet = MySet.Make(WPTE)
 
+(* Check the `set` contains the same field.
+   This rules out the situation where the set contains,
+   for example, two different `VALID` such as
+   `One VALID` and `Zero VALID` *)
+let contain_same_pte_field set =
+  let open WPTE in
+  (* Convert the set to all `Base` and check size equal *)
+  WPTESet.cardinal set <>
+  ( WPTESet.cardinal
+  @@ WPTESet.fold ( fun field acc ->
+    match field with
+    | Base p | One p | Zero p ->
+       WPTESet.add (Base p) acc ) set WPTESet.empty)
+
 type atom_pte =
   | Read|ReadAcq|ReadAcqPc
-  | Set of  WPTESet.t
-  | SetRel of  WPTESet.t
+  | Set of WPTESet.t
+  | SetRel of WPTESet.t
 
 type neon_opt = SIMD.atom
 
@@ -315,11 +330,10 @@ let is_ifetch a = match a with
 
    let fold_pte f r =
      if do_kvm then
-       let fold_wpte f r =
+       let fold_singleton_wpte f r =
          List.fold_left (fun acc pte -> f (WPTESet.singleton pte) acc) r WPTE.all in
-       let g fs r = r |> f (SetRel fs) |> f (Set fs) in
-       r |> fold_wpte g |> f Read |> f ReadAcq |> f ReadAcqPc
-
+       let fold_pte_set fs r = r |> f (SetRel fs) |> f (Set fs) in
+       r |> fold_singleton_wpte fold_pte_set |> f Read |> f ReadAcq |> f ReadAcqPc
      else r
 
    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
@@ -441,12 +455,15 @@ let is_ifetch a = match a with
    | ((Rel None,None),(Pte (Set set|SetRel set),None))
        -> Some (Pte (SetRel set),None)
    | (Pte (Set set1),None),(Pte (Set set2),None)
-       -> Some (Pte (Set (WPTESet.union  set1 set2)),None)
+     -> let set = WPTESet.union set1 set2 in
+        if contain_same_pte_field set then None
+        else Some (Pte (Set set),None)
    | ((Pte (Set set1),None),(Pte (SetRel set2),None))
    | ((Pte (SetRel set1),None),(Pte (Set set2),None))
    | ((Pte (SetRel set1),None),(Pte (SetRel set2),None))
-       ->
-         Some (Pte (SetRel (WPTESet.union set1 set2)),None)
+     -> let set = WPTESet.union set1 set2 in
+        if contain_same_pte_field set then None
+        else Some (Pte (SetRel set),None)
 (* Add size when (ordinary) annotation equal *)
    | ((Acq None as a,None),(Acq None,(Some _ as sz)))
    | ((Acq None as a,(Some _ as sz)),(Acq None,None))
@@ -545,31 +562,122 @@ let overwrite_value v ao w = match ao with
 
     let default = AArch64PteVal.default
 
+    let toggle_pte_field field pteval loc =
+      let open AArch64PteVal in
+      let open WPTE in
+      match field with
+      | AF -> { pteval with af = 1-pteval.af; }
+      | DB -> { pteval with db = 1-pteval.db; }
+      | DBM -> { pteval with dbm = 1-pteval.dbm; }
+      | VALID -> { pteval with valid = 1-pteval.valid; }
+      | OA -> { pteval with oa=OutputAddress.PHY (loc ()); }
+
+    (* toggle or flip the value of pte field *)
+    let toggle_pte flag_set pteval loc =
+      WPTESet.fold (fun f p ->
+        toggle_pte_field (WPTE.get_pte_field f) p loc
+      ) flag_set pteval
+
+    (* Decide the initial pte value for location `loc`
+       and align up with the atom_pte_list *)
+    let init loc pte_atom_list =
+      let open WPTE in
+      let default_pte = default loc in
+      let pte_atom_list = List.filter_map
+        ( fun (atom, _mach_size) -> match atom with
+          | Pte(pte_atom) -> Some(pte_atom)
+          | _ -> None
+        ) pte_atom_list in
+      (* A dummy function that return the default physical address `*` *)
+      let loc_fun () = "*" in
+      (* TODO: Check if the `field` in `pteval` is of `value`.
+         Upon mismatching  `value`, the initial value needs to change. *)
+      let precise_set_field field value (af,db,dbm,valid,pteval) =
+        let open AArch64PteVal in
+        let pteval = toggle_pte_field field pteval loc_fun in
+        match field with
+        | AF -> begin match value = pteval.af,af with
+          (* Either carry the previous `af` or set `af` to Some false,
+             i.e. no need to flip the initial value of `af` *)
+          | true,_ -> (Some (Option.value ~default:false af),db,dbm,valid,pteval)
+          (* Flip the initial `af` *)
+          | false,None -> (Some true,db,dbm,valid,{pteval with af = value})
+          (* Value collide, invalid cycle/anotation specification *)
+          | false,Some _ -> Warn.user_error "Fail to set AF."
+        end
+        | DB -> begin match value = pteval.db,db with
+          | true,_ -> (af,Some (Option.value ~default:false db),dbm,valid,pteval)
+          | false,None -> (af,Some true,dbm,valid,{pteval with db = value})
+          | false,Some _ -> Warn.user_error "Fail to set DB."
+        end
+        | DBM -> begin match value = pteval.dbm, dbm with
+          | true,_ -> (af,db,Some (Option.value ~default:false dbm),valid,pteval)
+          | false,None -> (af,db,Some true,valid,{pteval with dbm = value})
+          | false,Some _ -> Warn.user_error "Fail to set DBM."
+        end
+        | VALID -> begin match value = pteval.valid,valid with
+          | true,_ -> (af,db,dbm,Some (Option.value ~default:false valid),pteval)
+          | false,None -> (af,db,dbm,Some true,{pteval with valid = value})
+          | false,Some _ -> Warn.user_error "Fail to set VALID."
+        end
+        | OA -> Warn.user_error "precisely set OA is not supported." in
+      (* Check if the `field_set` is possible against `pteval` (in `acc`). *)
+      let check_init_pte acc field_set =
+        let open AArch64PteVal in
+        WPTESet.fold ( fun field acc ->
+          match field with
+          | One pte_field -> precise_set_field pte_field 1 acc
+          | Zero pte_field -> precise_set_field pte_field 0 acc
+          | Base pte_field ->
+            let (af,db,dbm,valid,pteval) = acc in
+            (af,db,dbm,valid,toggle_pte_field pte_field pteval loc_fun)
+        ) field_set acc in
+      (* The entire process decides if we want to flip the initial value of fields.
+         Field `valid,af,db,dbm` in accumulator `acc` track if the default
+         value is (not) needed to be flipped.
+         - None, all good,
+         - Some true, must flip
+         - Some false must not flip
+         Conflict initial values cause warning.
+         The final `pteval` should be throw away as of no meaning. *)
+      let (af,db,dbm,valid,_) =
+        List.fold_left ( fun acc atom_pte ->
+          (* Toggle values for further process *)
+          match atom_pte with
+          | Set(field_set)|SetRel(field_set) -> check_init_pte acc field_set
+          | _ -> acc
+        ) (None,None,None,None,default_pte) pte_atom_list in
+      (* Create a new WPTESet to adjust the inital value.
+         Collapse None to false as it means no need to change default value *)
+      let adjust_value =
+        let value_false = Option.value ~default:false in
+        WPTESet.empty
+        |> (if value_false af then WPTESet.add (Base AF) else Fun.id)
+        |> (if value_false db then WPTESet.add (Base DB) else Fun.id)
+        |> (if value_false dbm then WPTESet.add (Base DBM) else Fun.id)
+        |> (if value_false valid then WPTESet.add (Base VALID) else Fun.id) in
+      toggle_pte adjust_value default_pte loc_fun
+
+    let as_virtual p = AArch64PteVal.as_virtual p
+
     let compare = AArch64PteVal.compare
 
-    let do_setpteval a f p loc =
-      let open AArch64PteVal in
-      let fs = match f with
-        | Set f|SetRel f -> f
+    let do_setpteval a flags pte loc =
+      match flags with
+        (* In the case of `SetOne` and `SetZero`,
+          the `init` function above already ensure and assign
+          a valid inital value, hence here those two
+          will behave the same as `Set`, i.e.e toggle the pte value *)
+        | Set f|SetRel f -> toggle_pte f pte loc
         | Read|ReadAcq|ReadAcqPc ->
-           Warn.user_error "Atom %s is not a pteval write" (pp_atom a) in
-      WPTESet.fold
-        (fun f p ->
-          let open WPTE in
-          match f with
-          | AF -> { p with af = 1-p.af; }
-          | DB -> { p with db = 1-p.db; }
-          | DBM -> { p with dbm = 1-p.dbm; }
-          | VALID -> { p with valid = 1-p.valid; }
-          | OA -> { p with oa=OutputAddress.PHY (loc ()); })
-      fs p
+                Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
 
     let set_pteval a p =
       match a with
       | Pte f,None -> do_setpteval a f p
       | _ -> Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
 
-    let can_fault pte_val = 
+    let can_fault pte_val =
       let open AArch64PteVal in
       pte_val.valid = 0
 
@@ -917,6 +1025,7 @@ include
       let specials = vregs
       let specials2 = pregs
       let specials3 = zaslices
+      module PteVal_gen = PteVal
     end)
 
 end

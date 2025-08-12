@@ -260,5 +260,6 @@ module Make
             let specials = xmms
             let specials2 = []
             let specials3 = []
+            module PteVal_gen = PteVal
           end)
     end

@@ -366,6 +366,7 @@ let dump_pack pp_oa p =
     p.af p.db p.dbm p.valid p.el0
 
 let as_physical p = OutputAddress.as_physical p.oa
+let as_virtual p = OutputAddress.refers_virtual p.oa
 
 let as_flags p =
   if is_default p then None

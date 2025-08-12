@@ -49,6 +49,7 @@ module type S = sig
   val fields : string list
   val default_fields : string list
   val dump_pack : (string -> string) -> t -> string
+  val as_virtual : t -> string option
   val as_physical : t -> string option
   val as_flags : t -> string option
   val attrs_as_kvm_symbols : t -> string list
@@ -80,6 +81,7 @@ module No = struct
     let default_fields = []
     let dump_pack _ _ = "()"
     let as_physical _ = None
+    let as_virtual _ = None
     let as_flags _ = None
     let attrs_as_kvm_symbols _ = assert false
 end

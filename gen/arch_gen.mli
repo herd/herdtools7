@@ -20,5 +20,5 @@ module type S =
     val tr_endian : int -> int
     module ScopeGen:ScopeGen.S
     include Fence.S
-    include ArchExtra_gen.S with type arch_reg = reg
+    include ArchExtra_gen.S with type arch_reg = reg and type pte_value = PteVal.t
   end
