@@ -23,9 +23,11 @@
 ASL
 
 
+(*************)
 (* Renamings *)
+(*************)
 
-let NASLLocal = ~ASLLocal
+let AArch64 = ~ASLLocal
 
 let asl_iico_ctrl = iico_ctrl
 let asl_iico_data = iico_data
@@ -34,48 +36,61 @@ let asl_rf = rf
 (* Warning, partial_po is _implicitely_ transitive *)
 let asl_po = as_transitive (partial_po)
 
+
+(*********************)
 (* Working relations *)
+(*********************)
 
-let aarch64 = NASLLocal * NASLLocal
-
-let asl_fr_reg = asl_po & ([Rreg];loc;[Wreg]) (* loc extended to registers *)
-let asl_fr = asl_po & ([R] ; loc ; [W])
+let aarch64 = AArch64 * AArch64
 
 let asl_data = asl_iico_data | asl_rf_reg
-let asl_deps = asl_data (* | asl_iico_ctrl *)
-let asl_deps_restricted = id | (asl_deps ; ([ASLLocal] ; asl_deps)+)
+let asl_deps = asl_data+
 
-let aarch64_iico_data = ( asl_deps_restricted ; asl_data+ ) & aarch64
-let aarch64_iico_ctrl = ([B]; asl_iico_ctrl; asl_data*)+ & aarch64
-let aarch64_iico_order = ( asl_fr | asl_fr_reg ) & aarch64
+
+(**********************************)
+(* Intra-instruction dependencies *)
+(**********************************)
+
+(* Intra-instruction Data dependencies *)
+let aarch64_iico_data = asl_deps & aarch64
+
+(* Intra-instruction Control dependencies *)
+(* [asl_deps_aarch64] is just a faster way of writing [asl_deps?; [AArch64]] *)
+let asl_deps_aarch64 = (asl_deps; [AArch64]) | [AArch64]
+let aarch64_iico_ctrl = ([B]; asl_iico_ctrl; asl_deps_aarch64)+ & aarch64
+
+(* Intra-instruction Order dependencies *)
+let asl_fr = asl_po & ([R] ; loc ; [W])
+let aarch64_iico_order = asl_fr & aarch64
 
 let aarch64_intrinsic = aarch64_iico_ctrl | aarch64_iico_data | aarch64_iico_order
 
+(* Tests *)
+acyclic (aarch64_intrinsic | asl_po) as asl_determinism
+
+
+(**************)
 (* Event sets *)
+(**************)
 
 let restrict-finals s =
 (* Asumming that non-final writes are read internally *)
   let non-final = domain(rf-reg) in
   s \ non-final
 
-let AArch64 = NASLLocal
-let AArch64Finals =  restrict-finals(AArch64&Wreg)
+let AArch64_Finals =  restrict-finals(AArch64&Wreg)
 
 (* Compute AArch64 ADDR *)
-let to_addr = (asl_deps_restricted ; [ADDR] ; asl_iico_data ) & aarch64
+let extended_to_addr = (asl_deps; [ADDR]; asl_iico_data) & aarch64
+let to_addr = extended_to_addr \ (aarch64_iico_data; extended_to_addr)
 
 let AArch64_ADDR = AArch64 & domain (to_addr)
 let to_memwrite = aarch64_iico_data;aarch64_iico_ctrl?;[W]
 let AArch64_DATA = ((AArch64\M) & domain (to_memwrite)) \ AArch64_ADDR
 
-(* TODO *)
-(* B = write to PC *)
-(* BCC = range(aarch64_iico_ctrl) & B *)
-(* Pred = BranchTo(VBAR something) ??? *)
-(* F = call to (data memory ?) barrier *)
+(* Branching events to PC writes are of the branch conditional kind *)
+let AArch64_BCC = domain ([B]; aarch64_iico_ctrl; [WPC])
 
-(* Tests *)
-acyclic (aarch64_intrinsic | asl_po) as asl_determinism
 
 (***********)
 (* Display *)
@@ -93,16 +108,14 @@ let R = [B];asl_iico_ctrl;asl_data?
 let reachable = range ([AArch64NoB]; aarch64_iico_data; R?; [B])
 
 let AArch64B = reaching & reachable
-
-
 let AArch64 = AArch64NoB | AArch64B
 
-show AArch64,AArch64Finals,AArch64_ADDR,AArch64_DATA
-show aarch64_iico_ctrl as  aarch64_iico_ctrl
-show aarch64_iico_data, aarch64_iico_order
 
-(* Branching events to PC writes are of the branch conditional kind *)
-
-let AArch64_BCC = domain ([B]; aarch64_iico_ctrl; [WPC])
-
+show AArch64
+show aarch64_iico_ctrl
+show aarch64_iico_data
+show aarch64_iico_order
+show AArch64_Finals
+show AArch64_ADDR
+show AArch64_DATA
 show AArch64_BCC
