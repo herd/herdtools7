@@ -127,4 +127,5 @@ include
       let pp_i _ = assert false
       let free_registers = allowed_for_symb
       include NoSpecial
+      module PteVal_gen = PteVal
     end)
