@@ -377,3 +377,61 @@ let as_flags p =
 
 let attrs_as_kvm_symbols p =
   Attrs.as_kvm_symbols p.attrs
+
+(***************************************)
+(* PTE operation as bitwise operations *)
+(***************************************)
+
+let mask_valid = 1L
+let mask_el0 = Int64.shift_left 1L 6
+let mask_db = Int64.shift_left 1L 7
+let mask_af = Int64.shift_left 1L 10
+let mask_dbm = Int64.shift_left 1L 51
+let mask_all_neg =
+  Int64.lognot
+    (Int64.logor mask_el0
+       (Int64.logor
+          (Int64.logor mask_valid  mask_db)
+          (Int64.logor  mask_af  mask_dbm)))
+
+let is_zero v = Int64.equal 0L v
+let is_set v m = not (is_zero (Int64.logand v m))
+
+let orop p m =
+  if is_set m mask_all_neg then None
+  else
+    let p = if is_set m mask_valid then { p with valid=1; } else p in
+    let p = if is_set m mask_el0 then { p with el0=1; } else p in
+    let p = if is_set m mask_db then { p with db=0; } else p in
+    let p = if is_set m mask_af then { p with af=1; } else p in
+    let p = if is_set m mask_dbm then { p with dbm=1; } else p in
+    Some p
+
+and andnot2 p m =
+  if is_set m mask_all_neg then None
+  else
+    let p = if is_set m mask_valid then { p with valid=0; } else p in
+    let p = if is_set m mask_el0 then { p with el0=0; } else p in
+    let p = if is_set m mask_db then { p with db=1; } else p in
+    let p = if is_set m mask_af then { p with af=0; } else p in
+    let p = if is_set m mask_dbm then { p with dbm=0; } else p in
+    Some p
+
+and andop p m =
+  let r = Int64.zero in
+  let r =
+    if is_set m mask_valid && p.valid=1
+    then Int64.logor r mask_valid else r  in
+  let r =
+    if is_set m mask_el0 && p.el0=1
+    then Int64.logor r mask_el0 else r  in
+  let r =
+    if is_set m mask_db && p.db=0;
+    then Int64.logor r mask_db else r  in
+  let r =
+    if is_set m mask_af &&  p.af=1;
+    then Int64.logor r mask_af else r  in
+  let r =
+    if is_set m mask_dbm && p.dbm=1
+    then Int64.logor r mask_dbm else r  in
+  Some r

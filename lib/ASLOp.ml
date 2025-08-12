@@ -310,9 +310,13 @@ let do_op1 op cst =
   | OA -> None (* Delay always *)
 
 let shift_address_right _ _ = None
-let orop _ _ = None
-let andnot2 _ _ = None
-let andop _ _ = None
+
+let orop p m = AArch64PteVal.orop p @@ ASLScalar.to_int64 m
+and andnot2 p m = AArch64PteVal.andnot2 p @@ ASLScalar.to_int64 m
+and andop p m  =
+  AArch64PteVal.andop p @@ ASLScalar.to_int64 m
+  |> Misc.app_opt ASLScalar.int64_to_bv
+
 let mask _ _ = None
 
 let fromExtraPteVal pteval = pteval

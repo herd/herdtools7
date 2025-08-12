@@ -79,3 +79,11 @@ val dump_pack : (string -> string) -> t -> string
 val as_physical : t -> string option
 val as_flags : t -> string option
 val attrs_as_kvm_symbols : t -> string list
+
+(***************************************)
+(* PTE operation as bitwise operations *)
+(***************************************)
+
+val orop : t -> int64 -> t option
+val andnot2 : t -> int64 -> t option
+val andop : t -> int64 -> int64 option
