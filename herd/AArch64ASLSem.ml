@@ -922,6 +922,16 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                st
            else st)
       in
+      let () =
+        if _dbg then
+          let open Printf in
+          eprintf
+            "State: {%s}\n%!"
+          @@ ASLS.A.pp_nice_state
+            st ", "
+            (fun loc v ->
+               sprintf "%s -> %s"
+                 (ASLS.A.pp_location loc) (ASLS.A.V.pp true v)) in
       (st, eqs)
 
     let fake_test ii fname decode =
@@ -1323,7 +1333,10 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         let () =
           if _dbg then
             match branch with
-            | B.Next bds ->
+            | B.Next (_::_ as bds)
+            | B.Jump (_,(_::_ as bds))
+            | B.Fault (_,(_::_ as bds))
+              ->
                 let pp =
                   List.map
                     (fun (r, v) ->
@@ -1332,7 +1345,13 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                     bds
                 in
                 let pp = String.concat "; " pp in
-                Printf.eprintf "Next [%s]\n%!" pp
+                Printf.eprintf "%s [%s]\n%!"
+                  (match branch with
+                   | B.Next _ -> "Next"
+                   | B.Jump _ -> "Jump"
+                   | B.Fault _ -> "Fault"
+                   | _ -> assert false)
+                  pp
             | _ -> ()
         in
         let constraints =
