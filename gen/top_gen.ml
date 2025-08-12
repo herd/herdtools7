@@ -979,12 +979,15 @@ let tr_labs m env =
 let do_self =  O.variant Variant_gen.Self
 
 let test_of_cycle name
-  ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) es c =
+  ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) ?(init_pte=[]) es c =
   let com = match com with None -> pp_edges es | Some com -> com in
   let (init,prog,final,env),(prf,coms) = compile_cycle check init c in
   let archinfo = Comp.get_archinfo c in
   let m_labs = num_labels prog in
-  let init = tr_labs m_labs init in
+  let init = (tr_labs m_labs init) @ List.map
+  (* Add the init pte value `init_pte` into `init`, so it will print
+  in the pre-condition of the final litmus test. *)
+    ( fun (loc, pte) -> (A.Loc ("pte_" ^ loc), Some (A.P pte)) ) init_pte in
   let coms = String.concat " " coms in
   let info =
     let myinfo =
@@ -1003,8 +1006,8 @@ let make_test name ?com ?info ?check ?scope es =
   try
     if O.verbose > 1 then eprintf "**Test %s**\n" name ;
     if O.verbose > 2 then eprintf "**Cycle %s**\n" (pp_edges es) ;
-    let es,c,init = C.make es in
-    test_of_cycle name ?com ?info ?check ?scope ~init es c
+    let es,c,init,init_pte = C.make es in
+    test_of_cycle name ?com ?info ?check ?scope ~init ~init_pte es c
   with
   | Misc.Fatal msg|Misc.UserError msg ->
       Warn.fatal "Test %s [%s] failed:\n%s" name (pp_edges es) msg
