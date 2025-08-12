@@ -584,12 +584,8 @@ module CoSt = struct
       if not check_fault || do_no_fault then None
       (* Need to check fault *)
       else if do_kvm then label_pte_fault pte_val
-      (* In `memory tag` mode, when build cycling, it assumes observe
-         the up-to-dated tag values hence no fault should occur.
-         Therefore we take a short cut here by
-         always inject a negtive check, i.e. no fault.
-         The same applies to `morello`, where memory tag and seal update
-         is assumed up-to-date. *)
+      (* In variants `memtag` and `morello`, the cycles are constructed such that
+         no fault occurs *)
       else if do_memtag || do_morello then Some ((Label.next_label "L"), false)
       else None in
     fault, st
