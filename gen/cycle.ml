@@ -107,7 +107,7 @@ module type S = sig
  val resolve_edges : edge list -> edge list * node
 
 (* Finish edge cycle, adding complete events, returns initial environment *)
-  val finish : node -> (string * Value.v) list
+  val finish : node -> Value.env
 
 (* Composition of the two more basic steps above *)
   val make : edge list -> edge list * node * Value.env
@@ -178,6 +178,12 @@ module Make (O:Config) (E:Edge.S) :
         check_value : bool option }
 
   let pte_default = Value.default_pte "*"
+
+  let is_pte_default loc pte =
+    let rhs = match loc with
+    | Data loc -> Value.default_pte loc
+    | Code _ -> pte_default in
+    Value.pte_compare pte rhs = 0
 
   let evt_null =
     { loc=Code.loc_none ; ord=0; tag=0;
@@ -594,9 +600,14 @@ module CoSt = struct
     { st with co_cell=new_co_cell; map=M.add Ord lst st.map; }
 end
 
-let pte_val_init loc = match loc with
-| Code.Data loc when do_kvm -> Value.default_pte loc
-| _ -> pte_default
+(* Decide the initial pte value. *)
+let pte_val_init ns loc =
+  match loc with
+    | Code.Data loc when do_kvm ->
+      let atom_list = List.filter_map
+        ( fun node -> node.evt.atom ) ns in
+      Value.init_pte loc atom_list
+    | _ -> pte_default
 
 (****************************)
 (* Add events in edge cycle *)
@@ -1014,6 +1025,7 @@ let set_same_loc st n0 =
     (* END of do_set_write_val *)
 
   let set_all_write_val nss =
+    (* `initptes` contains the initial pte values, if they are non-default *)
     let _,initvals =
       List.fold_left
         (fun (k,env as r) ns ->
@@ -1025,7 +1037,7 @@ let set_same_loc st n0 =
               let loc = n.evt.loc in
               let sz = get_wide_list ns in
               let init_val = if do_kvm then k else 0 in
-              let pte_val = pte_val_init loc in
+              let pte_val = pte_val_init ns loc in
               (* Since it is a cycle, the initial value of `check_value`
                  and `check_fault` depend on if there are write to
                  the variable and pte respectively. *)
@@ -1035,13 +1047,20 @@ let set_same_loc st n0 =
               let next_x_ok,_st = do_set_write_val false init_st ns in
               let env = if init_val = 0 then env
                         else (Code.as_data loc,Value.from_int init_val)::env in
+              (* Add pte initial values when kvm and the value is not default *)
+              let env = if (not do_kvm) || is_pte_default loc pte_val then env
+                        else ((Misc.add_pte @@ Code.as_data loc),Value.from_pte pte_val)::env in
               if next_x_ok then
                 k+8,(next_x,Value.from_int (k+4))::env
               else
-                k+4,env)
-        (0,[]) nss in
+                k+4,env )
+        (* When in kvm mode, using initial value `1, 5, 9, ...,`
+           avoiding value `0`, which collides with
+           the default value of register. *)
+        (1,[]) nss in
     initvals
 
+  (* TODO carry back the pte init value *)
   let set_write_v n =
     let nss =
       try
@@ -1189,7 +1208,7 @@ let do_set_read_v init =
   | []   -> assert false
   | n::_ ->
     let sz = get_wide_list ns in
-    let pte_val = pte_val_init n.evt.loc in
+    let pte_val = pte_val_init ns n.evt.loc in
     let check_value = exist_plain_value_write ns in
     let check_fault = exist_fault_related_write ns in
     let init_st = CoSt.create init sz pte_val check_value check_fault in
@@ -1251,7 +1270,7 @@ let finish n =
     eprintf "INITIAL VALUES: %s\n"
       (String.concat "; "
          (List.map
-            (fun (loc,k) -> sprintf "%s->%d" loc (Value.to_int k))
+            (fun (loc,k) -> sprintf "%s->%s" loc (Value.pp_v k))
             initvals)) ;
     eprintf "WRITE VALUES\n" ;
     debug_cycle stderr n
@@ -1265,8 +1284,8 @@ let finish n =
     debug_cycle stderr n ;
     eprintf "FINAL VALUES [%s]\n"
       (vs |> List.map
-        ( fun (loc,(v,_pte)) -> sprintf "%s -> 0x%x"
-          (Code.pp_loc loc) (Value.to_int v) )
+        ( fun (loc,(v,_pte)) -> sprintf "%s -> %s"
+          (Code.pp_loc loc) (Value.pp_v v) )
         |> String.concat "," )
   end ;
   if O.variant Variant_gen.Self then check_fetch n;

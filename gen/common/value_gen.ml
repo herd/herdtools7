@@ -19,6 +19,8 @@ module type PteType = sig
   type pte
   val pp_pte : pte -> string
   val default_pte : string -> pte
+  (* Initialize a valid pte_value that can be used to process atom list `pte_atom` *)
+  val init_pte : string -> atom list -> pte
   val pte_compare : pte -> pte -> int
   val set_pteval : atom -> pte -> (unit -> string) -> pte
   val can_fault : pte -> bool
@@ -81,6 +83,7 @@ module NoPte(A:sig type arch_atom end) = struct
     type pte = string
     let pp_pte _ = "[nopte]"
     let default_pte s = s
+    let init_pte s _atom_list = default_pte s
     let pte_compare _ _ = 0
     let set_pteval _ p _ = p
     let can_fault _t = false
