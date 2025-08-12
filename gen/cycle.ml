@@ -110,10 +110,10 @@ module type S = sig
  val resolve_edges : edge list -> edge list * node
 
 (* Finish edge cycle, adding complete events, returns initial environment *)
-  val finish : node -> node * (string * Code.v) list
+  val finish : node -> node * (string * Code.v) list * (string * PteVal.t) list
 
 (* Composition of the two more basic steps above *)
-  val make : edge list -> edge list * node * Code.env
+  val make : edge list -> edge list * node * Code.env * (string * PteVal.t) list
 
 (* split cycle amoungst processors *)
   val split_procs : node -> node list list
@@ -183,6 +183,12 @@ module Make (O:Config) (E:Edge.S) :
         check_value : bool option }
 
   let pte_default = PteVal.default "*"
+
+  let is_pte_default loc pte =
+    let rhs = match loc with
+    | Data loc -> PteVal.default loc
+    | Code _ -> pte_default in
+    PteVal.compare pte rhs = 0
 
   let evt_null =
     { loc=Code.loc_none ; ord=0; tag=0;
@@ -641,9 +647,18 @@ module CoSt = struct
     { st with co_cell=new_co_cell; map=M.add Ord lst st.map; }
 end
 
-let pte_val_init loc = match loc with
-| Code.Data loc when do_kvm -> PteVal.default loc
-| _ -> pte_default
+(* Decide the initial pte value. *)
+let pte_val_init ns loc =
+  match loc with
+    | Code.Data loc when do_kvm ->
+      let atom_list = List.filter_map
+        ( fun node ->
+            match node.evt.atom with
+            | Some (atom) -> Some(atom)
+            | _ -> None
+         ) ns in
+      PteVal.init loc atom_list
+    | _ -> pte_default
 
 (****************************)
 (* Add events in edge cycle *)
@@ -1062,9 +1077,10 @@ let valid_cycle c =
     (* END of do_set_write_val *)
 
   let set_all_write_val nss =
-    let _,initvals =
-      List.fold_right
-        (fun ns (k,env as r) ->
+    (* `initptes` contains the initial pte values, if they are non-default *)
+    let _,initvals,initptes =
+      List.fold_left
+        (fun (k,env,pteenv as r) ns ->
           match ns with
           | [] -> r
           | n::_ ->
@@ -1082,7 +1098,7 @@ let valid_cycle c =
                  where different values are needed to distinct access
                  different locations especially in alias situation. *)
                 |> (+) (if do_kvm then k else 0) in
-              let pte_val = pte_val_init loc in
+              let pte_val = pte_val_init ns loc in
               (* Since it is a cycle, the initial value of `check_value`
                  and `check_fault` depend on if there are write to
                  the variable and pte respectively. *)
@@ -1090,15 +1106,22 @@ let valid_cycle c =
               let check_fault = exist_fault_related_write ns in
               let init_st = CoSt.create init_val sz pte_val check_value check_fault in
               let next_x_ok,_st = do_set_write_val false init_st ns in
+              (* Add pte initial values when kvm and the value is not default *)
+              let pteenv = if (not do_kvm) || is_pte_default loc pte_val then
+                pteenv else (Code.as_data loc,pte_val)::pteenv in
               let env = if init_val = 0 then env
                         else (Code.as_data loc,Code.value_of_int init_val)::env in
               if next_x_ok then
-                k+8,(next_x,Code.value_of_int (k+4))::env
+                k+8,(next_x,Code.value_of_int (k+4))::env,pteenv
               else
-                k+4,env)
-        nss (0,[]) in
-    initvals
+                k+4,env,pteenv )
+        (* When in kvm mode, using initial value `1, 5, 9, ...,`
+           avoiding value `0`, which collides with
+           the default value of register. *)
+        (1,[],[]) nss in
+    initvals,initptes
 
+  (* TODO carry back the pte init value *)
   let set_write_v n =
     let start_node,nss =
       try
@@ -1130,8 +1153,8 @@ let valid_cycle c =
         with Not_found -> Warn.fatal "cannot set write values" in
         start_node,split_one_loc start_node
       | Exit -> Warn.fatal "cannot set write values" in
-    let initvals = set_all_write_val nss in
-    start_node,nss,initvals
+    let initvals,initptes = set_all_write_val nss in
+    start_node,nss,initvals,initptes
 
 (* Loop over every node and set the expected value from the previous node *)
 let set_dep_v nss =
@@ -1238,7 +1261,7 @@ let do_set_read_v init =
   | []   -> assert false
   | n::_ ->
     let sz = get_wide_list ns in
-    let pte_val = pte_val_init n.evt.loc in
+    let pte_val = pte_val_init ns n.evt.loc in
     let check_value = exist_plain_value_write ns in
     let check_fault = exist_fault_related_write ns in
     let init_st = CoSt.create init sz pte_val check_value check_fault in
@@ -1295,7 +1318,7 @@ let finish n =
     debug_cycle stderr n
   end ;
 (* Set write values *)
-  let start_node,by_loc,initvals = set_write_v n in
+  let start_node,by_loc,initvals,initptes = set_write_v n in
   if O.verbose > 1 then begin
     eprintf "INITIAL VALUES: %s\n"
       (String.concat "; "
@@ -1319,7 +1342,8 @@ let finish n =
             (Code.pp_loc loc) (Code.value_to_int v)) vs))
   end ;
   if O.variant Variant_gen.Self then check_fetch start_node;
-  start_node,initvals
+  start_node,initvals,initptes
+(* END of finish *)
 
 
 (* Re-extract edges, with irelevant directions solved *)
@@ -1371,8 +1395,8 @@ let resolve_edges = function
 
 let make es =
   let es,c = resolve_edges es in
-  let c,initvals = finish c in
-  es,c,initvals
+  let c,initvals,initptes = finish c in
+  es,c,initvals,initptes
 
 (*************************)
 (* Gather events by proc *)
