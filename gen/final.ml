@@ -313,12 +313,12 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       match f with
       | Exists fs ->
           let exist_list = (dump_state_list fs) @ flts in
-          let exist_string = String.concat " /\\ " exist_list in
-          let if_neg = if !Config.neg then "~" else "" in
-          begin match List.length exist_list with
-            | 0 -> ()
-            | 1 -> fprintf chan "%sexists %s\n" if_neg exist_string
-            | _ -> fprintf chan "%sexists (%s)\n" if_neg exist_string
+          begin match exist_list with
+            | [] -> Warn.fatal "There is no `exist` condition check."
+            | _ ->
+              let exist_string = String.concat " /\\ " exist_list in
+              let if_neg = if !Config.neg then "~" else "" in
+              fprintf chan "%sexists (%s)\n" if_neg exist_string
           end
       | Forall ffs ->
           fprintf chan "forall %s%s\n" (Run.dump_cond ffs)
