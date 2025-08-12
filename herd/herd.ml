@@ -127,6 +127,26 @@ let filter_options = Arg.align ~limit:40 [
    "<name> do not apply check, cumulates") ;
   parse_stringset "-skipchecks" skipchecks "do not apply listed checks, cumulative" ;
   parse_bool "-strictskip" strictskip "retain outcomes allowed by ALL skipped checks" ;
+  parse_stringset "-cycles" cycles  "<name1,...,nameN> show failing checks as cycles, cumulates" ;
+
+(* Model control *)
+  begin
+    let module ParseVariant = ParseTag.MakeS(Opts.OptS) in
+    ParseVariant.parse "-variant" variant
+      Variant.helper_message end ;
+  begin let module ParseMachSize = ParseTag.Make(MachSize.Tag) in
+  ParseMachSize.parse "-machsize" byte "set basic machine size" end ;
+  begin let module ParseEndian = ParseTag.Make(Endian) in
+  ParseEndian.parse_opt "-endian" endian "set endianness" end ;
+  parse_bool "-archcheck" archcheck "check compatibility of test and cat model architectures" ;
+  parse_tag "-optace"
+    (fun tag -> match OptAce.parse tag with
+    | None -> false
+    | Some t -> optace := Some t ; true)
+    OptAce.tags
+    "optimize axiomatic candidate generation, default is iico";
+  "-initwrites", Arg.Bool (fun b -> initwrites := Some b),
+    "<bool> represent init writes as write events, this option should not be used except for debugging model options";
   parse_tag "-show"
     (fun tag -> match PrettyConf.parse_show tag with
     | None -> false

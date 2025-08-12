@@ -29,6 +29,7 @@ type t =
   | ConstPacField (* Bit 55 is used to compute the VA-range in ComputePAC *)
 
 val tags : string list
+val helper_message: string 
 val parse : string -> t option
 val pp : t -> string
 val ok : t -> Archs.t -> bool
