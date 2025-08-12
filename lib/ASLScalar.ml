@@ -348,6 +348,8 @@ let convert_to_bv sz = function
 (** Transform to bitvector, size fixed to 64 if transformation occurs. *)
 let as_bv = function S_BitVector _ as bv -> bv | v -> convert_to_bv 64 v
 
+let int64_to_bv v = of_int64 v |>  convert_to_bv 64
+
 let try_extract_slice s positions =
   match s with
   | S_BitVector bv ->
