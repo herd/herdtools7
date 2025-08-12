@@ -919,8 +919,10 @@ let dump_init chan inits env =
         if p <> q then fprintf chan "\n" else fprintf chan " " ;
         fprintf chan "%s%s%s;"
           (match loc with
-           | Some _ ->
-               begin
+           | Some _ -> begin
+               match left with
+               | A.Loc l when Misc.is_pte l -> ""
+               | _ -> begin
                  try
                    let t =
                      match A.LocMap.find left env with
@@ -929,6 +931,7 @@ let dump_init chan inits env =
                    TypBase.pp t ^ " "
                  with Not_found -> ""
                end
+           end
            | None -> "")
           (A.pp_location left)
           (match loc with
@@ -1016,7 +1019,7 @@ let tr_labs m env =
             loc,Some (A.S v)
           with Not_found -> bd
           end
-      | (_,(Some (A.P _)|None)) as bd -> bd)
+      | _ -> bd)
     env
 
 let do_self =  O.variant Variant_gen.Self
@@ -1027,7 +1030,7 @@ let test_of_cycle name
   let (init,prog,final,env),(prf,coms) = compile_cycle check init c in
   let archinfo = Comp.get_archinfo c in
   let m_labs = num_labels prog in
-  let init = tr_labs m_labs init in
+  let init = (tr_labs m_labs init) in
   let coms = String.concat " " coms in
   let info =
     let myinfo =

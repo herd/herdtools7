@@ -216,9 +216,10 @@ and module Value := I.Value
       (* Add the locs `loc` and values `v` inside `iv` to `i` *)
       List.fold_left
         (fun env (loc,v) ->
+          if Misc.is_pte loc then (Loc loc,Some (P (Value.to_pte v)))::env
           (* Do not include if the value is default zero *)
-          if Value.to_int v = 0 then env else
-          (Loc loc,Some (S (Value.pp_v ~hexa:hexa v)))::env
+          else if Value.to_int v = 0 then env
+          else (Loc loc,Some (S (Value.pp_v ~hexa:hexa v)))::env
         ) i iv in
     let already_here =
       List.fold_left
@@ -246,9 +247,7 @@ and module Value := I.Value
           (* Add value `s` into `k` if `s` is a pte or physical address *)
           | Some (S s) -> add_some (refers_virtual s) k
           (* Add the associated physical address in a pteval `p` into `k` *)
-          | Some (P p) ->
-             add_some
-               (Value.refers_virtual p) k
+          | Some (P p) -> add_some (Value.refers_virtual p) k
           | None -> k in
           k)
         StringSet.empty i in
