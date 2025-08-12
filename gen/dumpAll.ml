@@ -298,7 +298,7 @@ module Make(Config:Config)(T:Builder.S)
       let dump_test_st keep_name
           all_chan check init cycle info relaxed env n c mk_st res =
         (* Build test (we need number of procs...) *)
-        let t = T.test_of_cycle n ~info:info ~check:check ~init cycle.orig c in
+        let t = T.test_of_cycle n ~info ~check ~init cycle.orig c in
         let st = mk_st (T.get_nprocs t) in
         let n =
           if keep_name then n
@@ -326,7 +326,7 @@ module Make(Config:Config)(T:Builder.S)
         match Config.scope with
         | Scope.No ->
             let n,dup = dup_name res.dup n in
-            let t = T.test_of_cycle n ~info:info ~check:check ~init cycle.orig c in
+            let t = T.test_of_cycle n ~info ~check ~init cycle.orig c in
             let res =
               { res with
                 env; dup; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
@@ -344,7 +344,7 @@ module Make(Config:Config)(T:Builder.S)
               (fun _ -> st) res
         | Scope.Gen scs ->
             let t =
-              T.test_of_cycle n ~info:info ~check:check ~init cycle.orig c in
+              T.test_of_cycle n ~info ~check ~init cycle.orig c in
             let res =
               { res with
                 env; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
@@ -359,7 +359,7 @@ module Make(Config:Config)(T:Builder.S)
               res
         | Scope.All ->
             let t =
-              T.test_of_cycle n ~info:info ~check:check ~init cycle.orig c in
+              T.test_of_cycle n ~info ~check ~init cycle.orig c in
             let res =
               { res with
                 env; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
