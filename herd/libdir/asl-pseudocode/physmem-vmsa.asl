@@ -61,7 +61,7 @@ end;
 var RESADDR : bits(56) = Zeros{56};
 var _RegisteredAddress: bits(56);
 var _CheckRegisteredAddress: boolean = FALSE;
-var _SuccessPA : bool = FALSE;
+var _SuccessPA : boolean;
 
 func DoRegisterAddress(address:bits(56))
 begin
@@ -74,7 +74,6 @@ func DoCheckRegisteredAddress(address:bits(56))
 begin
   let registered = _RegisteredAddress;
   CheckProp(registered == address);
-  _CheckRegisteredAddress =  FALSE;
 end;
 
 // MarkExclusiveGlobal()
@@ -90,7 +89,7 @@ begin
   let paddr = paddress.address;
   RESADDR = paddr;
   DoRegisterAddress(paddr);
-  // __debug__(paddress.address);
+//  __debug__(RESADDR,paddr);
 end;
 
 
@@ -102,14 +101,14 @@ end;
 
 func IsExclusiveGlobal (paddress : FullAddress, processorid : integer, size : integer) => boolean
 begin
-  let _SuccessPA = SomeBoolean();
-  // __debug__(_SuccessPA);
+  _SuccessPA = SomeBoolean();
+//  __debug__(_SuccessPA);
 
-  let reserved = RESADDR;
   if _SuccessPA then
+    let reserved = RESADDR;
     let paddr = paddress.address;
     let cond_exclusive_global = paddr == reserved;
-    // __debug__(cond_exclusive_global);
+//    __debug__(paddr,reserved,cond_exclusive_global);
     CheckProp(cond_exclusive_global);
     DoRegisterAddress(paddr);
   end;
@@ -119,8 +118,7 @@ end;
 
 func ExclusiveMonitorsStatus() => bit
 begin
-  _CheckRegisteredAddress = FALSE;
-  // __debug__(_SuccessPA);
+//  __debug__(_SuccessPA);
   return if _SuccessPA then '0' else '1';
 end;
 
