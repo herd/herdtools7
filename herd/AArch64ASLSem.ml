@@ -1292,7 +1292,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 bds
             | _ -> bds in
           let bds = List.fold_left one_event [] event_list in
-          let finals = get_cat_show  Misc.identity "AArch64Finals" in
+          let finals = get_cat_show  Misc.identity "AArch64_Finals" in
           let pc =
             let n_pc = (* Count writes to PC *)
               List.fold_left
