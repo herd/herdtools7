@@ -33,6 +33,7 @@ type t = {
     profile_cat: bool ;
     profile_asl: bool ;
     asl_symb: bool ;
+    profile_mem: bool ;
     exc : bool ;
   }
 
@@ -54,6 +55,7 @@ let tags =
   "profile_cat";
   "profile_asl";
   "asl_symb";
+  "profile_mem";
   "exception";
 ]
 
@@ -75,6 +77,7 @@ let none =
    profile_cat = false;
    profile_asl = false;
    asl_symb = false;
+   profile_mem = false;
    exc = false ;
  }
 
@@ -97,4 +100,5 @@ let parse t tag = match tag with
   | "profile_cat" -> Some { t with profile_cat = true }
   | "profile_asl" -> Some { t with profile_asl = true }
   | "asl_symb" -> Some { t with asl_symb = true }
+  | "profile_mem" -> Some { t with profile_mem = true }
   | _ -> None
