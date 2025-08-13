@@ -92,6 +92,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           let showraw = aarch64_iico
         end
         let variant = function Variant.ASL_AArch64 -> true | c -> variant c
+        let debug = Debug_herd.{ TopConf.C.debug with monad = false }
       end
 
       let libfind = TopConf.C.libfind

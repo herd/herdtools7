@@ -139,6 +139,13 @@ end
 
 open Printf
 
+let end_profile t0 msg : unit =
+  let t1 = Sys.time () in
+  if t1 -. t0 > 1. (* We log only executions that took more than 1 second *)
+  then
+    Printf.eprintf "mem took %fs to evaluate %s.\n%!" (t1 -. t0)
+      msg
+
 module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
   struct
     module S = S
@@ -169,6 +176,18 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       match C.unroll with
       | None -> Opts.unroll_default A.arch
       | Some u -> u
+
+  let _profile = C.debug.Debug_herd.profile_asl
+  let start_profile = if _profile then Sys.time else fun () -> 0.
+  let end_profile = if _profile then end_profile else fun _ _ -> ()
+
+  let profile msg f =
+    if _profile then
+      let t0 = start_profile () in
+      let res = f () in
+      let () = end_profile t0 msg in
+      res
+    else f ()
 
 (*****************************)
 (* Event structure generator *)
@@ -299,6 +318,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         "Segmentation fault (kidding, label %s not found)"
 
     let glommed_event_structures (test:S.test) =
+      profile "glommed_event_structures" @@ fun () ->
       let prog = test.Test_herd.program in
       let starts = test.Test_herd.start_points in
       let code_segment = test.Test_herd.code_segment in
@@ -489,6 +509,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
 (* Call instruction semantics proper *)
         let wrap re_exec fetch_proc proc inst addr env m poi =
+          profile "build semantics" @@ fun () ->
         let ii =
            { A.program_order_index = poi;
              proc = proc; fetch_proc; inst = inst;
@@ -500,11 +521,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
              in_handler = re_exec;
            } in
         if dbg then
-          Printf.eprintf "%s env=%s\n"
+          Printf.eprintf "%s env=%s\n%!"
             (A.dump_instruction ii.A.inst)
             (A.pp_reg_state ii.A.env.A.regs) ;
         if dbg && not (Label.Set.is_empty ii.A.labels) then
-          eprintf "Instruction %s has labels {%s}\n"
+          eprintf "Instruction %s has labels {%s}\n%!"
             (A.dump_instruction inst)
             (Label.Set.pp_str ","  Label.pp ii.A.labels) ;
         m ii in
@@ -611,6 +632,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
 (* As name suggests, add events of one thread *)
       let add_events_for_a_processor env (proc,code,fh_code) evts =
+        profile (Printf.sprintf "Build semantics for proc %s" (Proc.pp proc)) @@ fun () ->
         let env =
           if A.opt_env then A.build_reg_state proc A.reg_defaults env
           else A.reg_state_empty in
@@ -1031,7 +1053,8 @@ let match_reg_events es =
             eprintf "Pairing {%a} with {%a}\n"
               E.debug_event load
               pp_read_froms stores)
-          m
+          m;
+        eprintf "%!"
       end ;
 (* Check for loads that cannot feed on some write *)
       if not do_deps && not asl then begin
