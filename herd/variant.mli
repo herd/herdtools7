@@ -123,7 +123,7 @@ type t =
 val compare : t -> t -> int
 val equal : t -> t -> bool
 val tags : string list
-val helper_message: string 
+val help_page: string 
 val parse : string -> t option
 val pp : t -> string
 

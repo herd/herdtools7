@@ -71,7 +71,7 @@ let runmode_options = Arg.align ~limit:40 [
   begin
     let module ParseVariant = ParseTag.MakeS(Opts.OptS) in
     ParseVariant.parse "-variant" variant
-      "select an architecture variation" end ;
+      "<tags> select an architecture variation, use '-help variant' for the list of tags" end ;
   begin 
     let module ParseMachSize = ParseTag.Make(MachSize.Tag) in
   ParseMachSize.parse "-machsize" byte "set basic machine size" end ;
@@ -133,7 +133,7 @@ let filter_options = Arg.align ~limit:40 [
   begin
     let module ParseVariant = ParseTag.MakeS(Opts.OptS) in
     ParseVariant.parse "-variant" variant
-      Variant.helper_message end ;
+      "<tag> select architecture variation, use '-help variant' for a list of variants" end ;
   begin let module ParseMachSize = ParseTag.Make(MachSize.Tag) in
   ParseMachSize.parse "-machsize" byte "set basic machine size" end ;
   begin let module ParseEndian = ParseTag.Make(Endian) in
@@ -412,7 +412,7 @@ let usg_graph_presentation = (sprintf "\n Control graph layout, sizing, annotati
 
 let usg_default = String.concat "\n"
   ["These are common herd options:
-  -variant <variant_name>       Activate variations of models
+  -variant <variant_name>       Activate variations of models | use '-help variant' for the list of variants
   -showevents <all|mem|noregs>  Select which events are shown in diagrams,
                                 default: noregs 
   -show <prop|neg|all|cond|wit|none> 
@@ -495,6 +495,8 @@ let () =
         Printf.printf "%s" (Arg.usage_string graph_content_options usg_graph_content); exit 0  
     | "graph_presentation" ->
         Printf.printf "%s" (Arg.usage_string graph_presentation_options usg_graph_content); exit 0
+    | "variant" ->
+        Printf.printf "%s" (Variant.help_page); exit 0
     | "all" ->
         show_long_help ();
     |  _ -> 

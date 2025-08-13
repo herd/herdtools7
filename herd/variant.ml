@@ -118,7 +118,7 @@ type t =
   | ConstPacField
 
 (* Identity function to prompt user to insert variant into list used for help message when adding a new variant*)
-let (mode_variants, feat_variants) : t list * t list =
+let (mode_variants, arch_variants) : t list * t list =
   let f = function 
   | Success -> Success
   | Instr -> Instr
@@ -195,6 +195,7 @@ in
    SwitchDepScResult; LrScDiffOk; Mixed; Unaligned; DontCheckMixed; NotWeakPredicated;
    LKMMVersion `lkmmv1; LKMMVersion `lkmmv2;
   CutOff; Morello; Neon;  Deps; Instances; VMSA; 
+  SVE; SVELength 128; SME; SMELength 128;
   NoPteBranch; PTE2;
   PhantomOnLoad; OptRfRMW; ConstrainedUnpredictable;
   Exp; Ifetch; CosOpt; Test; T 0; ASL;
@@ -204,7 +205,6 @@ in
   (*Architectural Features*)
   List.map f 
   [MemTag; MTEPrecision Precision.default; FaultHandling  Fault.Handling.default;
-  SVE; SVELength 128; SME; SMELength 128;
   ETS; ETS2; ETS3; ExS; EIS; EOS;
   DIC; IDC; NV2;
   Pac; ConstPacField; FPac])
@@ -321,7 +321,7 @@ let pp = function
   | SplittedRMW -> "SplittedRMW"
   | SwitchDepScWrite -> "SwitchDepScWrite"
   | SwitchDepScResult -> "SwitchDepScResult"
-  | LrScDiffOk -> " LrScDiffOk"
+  | LrScDiffOk -> "LrScDiffOk"
   | Mixed -> "mixed"
   | Unaligned -> "unaligned"
   | DontCheckMixed -> "DontCheckMixed"
@@ -378,15 +378,107 @@ let pp = function
   | ConstPacField -> "const-pac-field"
   | FPac -> "fpac"
 
+  let descriptions_on = false
+  let variant_descriptions = function
+  | Success -> "Riscv Model with explicit success dependency"
+  | Instr -> "Define instr (or same-instance) relation"
+  | SpecialX0 -> ""
+  | NoRMW -> ""
+  | AcqRelAsFence -> ""
+  | BackCompat ->""
+  | FullScDepend -> ""
+  | SplittedRMW -> ""
+  | SwitchDepScWrite -> ""
+  | SwitchDepScResult -> ""
+  | LrScDiffOk -> ""
+  | Mixed -> ""
+  | Unaligned -> ""
+  | DontCheckMixed -> ""
+  | NotWeakPredicated -> ""
+  | LKMMVersion `lkmmv1 -> ""
+  | LKMMVersion `lkmmv2 -> ""
+  | MemTag -> ""
+  | MTEPrecision _ -> ""
+  | FaultHandling _-> ""
+  | CutOff -> ""
+  | Morello -> ""
+  | Neon -> ""
+  | SVE -> ""
+  | SVELength _ -> ""
+  | SME -> ""
+  | SMELength _ -> ""
+  | Deps -> ""
+  | Instances -> ""
+  | VMSA -> ""
+  | ETS -> ""
+  | ETS2 -> ""
+  | ETS3 -> ""
+  | ExS -> ""
+  | EIS -> ""
+  | EOS -> ""
+  | NoPteBranch -> ""
+  | PTE2 -> ""
+  | PhantomOnLoad -> ""
+  | OptRfRMW -> ""
+  | ConstrainedUnpredictable -> ""
+  | Exp -> ""
+  | Ifetch -> ""
+  | DIC -> ""
+  | IDC -> ""
+  | CosOpt -> ""
+  | Test -> ""
+  | T _ -> ""
+  | ASL -> ""
+  | ASL_AArch64 -> ""
+  | ASLVersion `ASLv0 -> ""
+  | ASLVersion `ASLv1 -> ""
+  | S128 -> ""
+  | Strict -> ""
+  | Warn -> ""
+  | ASLType `Warn -> ""
+  | ASLType `Silence -> ""
+  | ASLType `TypeCheck -> ""
+  | ASL_AArch64_UDF -> ""
+  | Telechat -> ""
+  | NV2 -> ""
+  | OldSolver -> ""
+  | OOTA -> ""
+  | Pac -> ""
+  | ConstPacField -> ""
+  | FPac -> ""
+
 let mode_tags =
-  List.map( fun x-> if x = "T00" then "T [0-9]" else x) (List.map pp mode_variants)
-let feat_tags =
-  List.map pp feat_variants
+    List.map( fun x-> if x = "T00" then "T [0-9]" else x) (List.map pp mode_variants)
+let arch_tags =
+  List.map pp arch_variants
 
-let helper_message =
-  Printf.sprintf "<tags> where:\n Mode tags:\n  {%s}\n Arch tags:\n {%s}" (String.concat "," mode_tags) (String.concat "," feat_tags) 
+let mode_help_tags =
+  List.map2
+    (fun variant description ->
+      let variant_tag = if variant = "T00" then "T [0-9]" else variant in
+      variant_tag ^ ": " ^ description)
+    (List.map pp mode_variants)
+    (List.map variant_descriptions mode_variants)
 
-let tags = mode_tags @ feat_tags
+ let arch_help_tags =
+  List.map2 
+    (fun variant  description ->
+      variant ^ ": " ^ description)
+    (List.map pp arch_variants)
+    (List.map variant_descriptions arch_variants)
+
+let help_page =
+  if descriptions_on then
+    Printf.sprintf "\n Use -variant <tags> where:\n Mode of Operation tags:\n  %s 
+    \n Architecture Feature tags:\n  %s \n" 
+    (String.concat "\n  " mode_help_tags) (String.concat "\n  " arch_help_tags) 
+  else
+    Printf.sprintf "\n Use -variant <tags> where:\n Mode of Operation tags:\n  %s 
+    \n Architecture Feature tags:\n  %s \n" 
+    (String.concat ", " mode_tags) (String.concat ", " arch_tags) 
+
+
+let tags = mode_tags @ arch_tags
 let compare = compare
 let equal v1 v2 = compare v1 v2 = 0
 
