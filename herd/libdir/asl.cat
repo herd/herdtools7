@@ -44,8 +44,7 @@ let asl_po = as_transitive (partial_po)
 let aarch64 = AArch64 * AArch64
 
 let asl_data = asl_iico_data | asl_rf_reg
-let asl_deps = asl_data+
-
+let asl_deps = acyclic_transitive_closure(asl_data)
 
 (**********************************)
 (* Intra-instruction dependencies *)

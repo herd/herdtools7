@@ -1216,6 +1216,10 @@ module Make
       | V.TransRel _ as v -> v
       | _ -> arg_mismatch ()
 
+    let acyclic_transitive_closure = function
+      | V.Rel r -> V.Rel (E.EventRel.acyclic_transitive_closure r)
+      | _ -> arg_mismatch ()
+
     let add_primitives ks m =
       add_prims m
         [
@@ -1241,6 +1245,7 @@ module Make
          "fail",fail;
          "inter_transitive", inter_transitive;
           "as_transitive", as_transitive;
+         "acyclic_transitive_closure", acyclic_transitive_closure;
        ]
 
 
