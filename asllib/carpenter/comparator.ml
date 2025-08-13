@@ -31,7 +31,8 @@ let get_ref_result_instr =
   let open Native in
   let module B = Instrumentation.SemanticsSingleSetBuffer in
   let module C : Interpreter.Config = struct
-    let unroll = 0
+    let unroll = -1
+    let recursive_unroll = -1
     let error_handling_time = Error.Dynamic
     let log_nondet_choice = false
 

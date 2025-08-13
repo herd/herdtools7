@@ -83,6 +83,7 @@ module NativeBackend (C : Config) = struct
   let prod_par (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = (r1, r2)
   let return v = v
   let cutoffT _msg _v = assert false
+  let prune_execution () = assert false
   let bind_data = bind
   let bind_seq = bind
   let bind_ctrl = bind
@@ -521,7 +522,8 @@ let instrumentation_buffer = function
 let interpret ?instrumentation static_env ast =
   let module B = (val instrumentation_buffer instrumentation) in
   let module CI : Interpreter.Config = struct
-    let unroll = 0
+    let unroll = -1
+    let recursive_unroll = -1
     let error_handling_time = Error.Dynamic
     let log_nondet_choice = false
 

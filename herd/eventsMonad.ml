@@ -1759,4 +1759,7 @@ Monad type:
         let eiid,(evts,specs) = m eiid in
         List.iter (fun (_,_,es) -> eprintf "%s%a" s E.debug_event_structure es) (Evt.elements evts) ;
         eiid,(evts,specs)
+
+    let prune_execution (): 'a t =
+      fun eiid -> eiid,([],None)
   end

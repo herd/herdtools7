@@ -125,7 +125,7 @@ module Make (Conf : Config) = struct
   module ASLInterpreterConfig = struct
     let unroll =
       match Conf.C.unroll with None -> Opts.unroll_default `ASL | Some u -> u
-
+    let recursive_unroll = 2
     let error_handling_time = Asllib.Error.Dynamic
     let log_nondet_choice = false
 
@@ -1093,6 +1093,7 @@ module Make (Conf : Config) = struct
         let failT e v = M.failT e v
         let return = M.unitT
         let cutoffT msg v = cutoffT ii_env msg v
+        let prune_execution = M.prune_execution
         let on_write_identifier = on_write_identifier ii_env
         let on_read_identifier = on_read_identifier ii_env
         let binop = binop

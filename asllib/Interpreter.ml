@@ -65,6 +65,7 @@ module type Config = sig
   module Instr : Instrumentation.SEMINSTR
 
   val unroll : int
+  val recursive_unroll : int
   val error_handling_time : Error.error_handling_time
   val log_nondet_choice : bool
 end
@@ -1240,13 +1241,30 @@ module Make (B : Backend.S) (C : Config) = struct
               (Error.MismatchType (B.debug_value v_limit, [ integer' ])))
 
   and check_recurse_limit pos name env e_limit_opt =
-    let* limit_opt = eval_limit env e_limit_opt in
-    match limit_opt with
-    | None -> return ()
-    | Some limit ->
-        let stack_size = IEnv.get_stack_size name env in
-        if limit < stack_size then fatal_from pos Error.RecursionLimitReached
+    let check_recurse_cutoff =
+      let unroll = C.recursive_unroll in
+      if unroll <= 0 then fun _ -> return ()
+      else fun stack_size ->
+        let () =
+          if false then
+            Format.eprintf
+              "@[%a@ Got stack size of %a for %S (unroll is set to %d).@]@."
+              PP.pp_pos pos Z.pp_print stack_size name unroll
+        in
+        let comps = Z.compare (Z.of_int unroll) stack_size in
+        if comps = 0 then (* unroll == stack_size *)
+          B.cutoffT name ()
+        else if comps < 0 then (* unroll < stack_size *)
+          B.prune_execution ()
         else return ()
+    in
+    let* limit_opt = eval_limit env e_limit_opt in
+    let stack_size = IEnv.get_stack_size name env in
+    match limit_opt with
+    | None -> check_recurse_cutoff stack_size
+    | Some limit ->
+        if limit < stack_size then fatal_from pos Error.RecursionLimitReached
+        else check_recurse_cutoff stack_size
 
   and tick_loop_limit loc limit_opt =
     match limit_opt with
