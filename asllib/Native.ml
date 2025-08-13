@@ -193,9 +193,16 @@ module NativeBackend (C : Config) = struct
       positions
     |> slices_to_positions Fun.id
 
+  let max_pos_of_slices slices =
+    let max_pos (start, len) =
+      let start = as_int start and len = as_int len in
+      if len == 0 then start else start + len - 1
+    in
+    List.fold_left (fun acc slice -> int_max acc (max_pos slice)) 0 slices
+
   let read_from_bitvector ~loc slices v =
+    let max_pos = max_pos_of_slices slices in
     let positions = slices_to_positions slices in
-    let max_pos = List.fold_left int_max 0 positions in
     let () =
       List.iter
         (fun x -> if x < 0 then mismatch_type v [ default_t_bits ])
@@ -232,7 +239,7 @@ module NativeBackend (C : Config) = struct
           (v_of_int (List.length positions))
           [ integer_exact' (expr_of_int (Bitvector.length src)) ]
     in
-    let max_pos = List.fold_left int_max 0 positions in
+    let max_pos = max_pos_of_slices slices in
     let () =
       if not (max_pos < Bitvector.length dst) then
         bad_index max_pos (Bitvector.length dst)

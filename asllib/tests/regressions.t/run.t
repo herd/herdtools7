@@ -663,3 +663,11 @@ Bounds checks
   ASL Dynamic error: Mismatch type:
     value 4 does not belong to type integer {0..3}.
   [1]
+  $ aslref bounds-checks-read-zero-width-slice.asl
+  ASL Dynamic error: Mismatch type:
+    value 100 does not belong to type integer {0..3}.
+  [1]
+  $ aslref bounds-checks-write-zero-width-slice.asl
+  ASL Dynamic error: Mismatch type:
+    value 100 does not belong to type integer {0..3}.
+  [1]

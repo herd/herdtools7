@@ -380,6 +380,53 @@ is illegal for a slice.
 }
 \end{mathpar}
 
+\SemanticsRuleDef{MaxPosOfSlice}
+\hypertarget{def-maxposofslice}{}
+The relation
+\[
+  \maxposofslice(\overname{\tint}{\vs}\times\overname{\tint}{\vl}) \;\aslrel\;
+  (\overname{\tint}{\maxpos})
+\]
+returns the maximum position specified by the slices $\slices$,
+assuming that all slices consist only of non-negative integers.
+
+\ExampleDef{Maximum positions of slices}
+The slice \verb|1+:3| has maximum position 3.
+The slice \verb|42+:0| has maximum position 42.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{zero\_width}
+  \begin{itemize}
+    \item $\vl$ is zero;
+    \item \Proseeqdef{$\maxpos$}{$\vs$}.
+  \end{itemize}
+
+  \item \AllApplyCase{non\_zero\_width}
+  \begin{itemize}
+    \item $\vl$ is not zero;
+    \item \Proseeqdef{$\maxpos$}{$\vs + \vl - 1$}.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[zero\_width]{
+  \vl = 0
+}{
+  \maxposofslice(\vs, \vl) \evalarrow \vs
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[non\_zero\_width]{
+  \vl \neq 0
+}{
+  \maxposofslice(\vs, \vl) \evalarrow \vs + \vl - 1
+}
+\end{mathpar}
+
 \SemanticsRuleDef{ReadFromBitvector}
 \hypertarget{def-readfrombitvector}{}
 The relation
@@ -427,7 +474,7 @@ bv = 0xfdf0, bv_i = 0xfdf0
   \begin{itemize}
     \item $\vv$ is a native bitvector for the list of bits $\bv$;
     \item applying $\slicestopositions$ to $\slices$ yields the list $\positions$\ProseOrError;
-    \item \Proseeqdef{$\maxpos$}{the maximal index in $\positions$};
+    \item \Proseeqdef{$\maxpos$}{the maximal position in $\slices$};
     \item let $\bits$ be the sequence of bits $\bv[n] ... \bv[1]$;
     \item checking that $\maxpos$ is less than $n$ yields $\True$\ProseTerminateAs{\BadIndex};
     \item \Proseeqdef{$\newbits$}{the list of bits $\bits[j]$ for every \Proselistrange{$j$}{$\bits$}};
@@ -438,7 +485,7 @@ bv = 0xfdf0, bv_i = 0xfdf0
   \begin{itemize}
     \item $\vv$ is a native integer for the integer $\vi$;
     \item applying $\slicestopositions$ to $\slices$ yields the list $\positions$\ProseOrError;
-    \item \Proseeqdef{$\maxpos$}{the maximal index in $\positions$};
+    \item \Proseeqdef{$\maxpos$}{the maximal position in $\slices$};
     \item \Proseeqdef{$\bits$}{$\vi$  given as two's complement little endian form of $\maxpos + 1$ bits};
     \item \Proseeqdef{$\newbits$}{the list of bits $\bits[j]$ for every \Proselistrange{$j$}{$\bits$}};
     \item \Proseeqdef{$\vv$}{the native bitvector for the list of bits $\newbits$}.
@@ -449,7 +496,8 @@ bv = 0xfdf0, bv_i = 0xfdf0
 \begin{mathpar}
 \inferrule[bitvector]{
   \slicestopositions(\slices) \evalarrow \positions \OrDynError\\\\
-  \maxpos \eqdef \max(\ \{ \vj\in\listrange(\positions) : \positions[\vj] \}\ )\\\\
+  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\\\\
+  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\\\\
   \commonprefixline\\\\
   \bits \eqname \bv[n] ... \bv[1]\\
   \checktrans{\maxpos < n}{\BadIndex} \checktransarrow \OrDynError\\\\
@@ -464,7 +512,8 @@ bv = 0xfdf0, bv_i = 0xfdf0
 \begin{mathpar}
 \inferrule[integer]{
   \slicestopositions(\slices) \evalarrow \positions \OrDynError\\\\
-  \maxpos \eqdef \max(\ \{ \vj\in\listrange(\positions) : \positions[\vj] \}\ )\\\\
+  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\\\\
+  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\\\\
   \commonprefixline\\\\
   \bits \eqdef \vi\text{ given as two's complement little endian form of }(\maxpos + 1)\text{ bits}\\
   \commonsuffixline\\\\
@@ -493,7 +542,7 @@ See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobi
   \item $\dst$ is a native bitvector consisting of bits $\vd_n \ldots \vd_0$;
   \item applying $\slicestopositions$ to $\slices$ yields the list of indices $\positions$;
   \item checking that the length of $\positions$ is equal to the length of $\src$ yields $\True$\ProseTerminateAs{\BadIndex};
-  \item \Proseeqdef{$\maxpos$}{the maximal index in $\positions$};
+  \item \Proseeqdef{$\maxpos$}{the maximal position in $\slices$};
   \item checking that $\maxpos$ is less than the length of $\dst$ yields $\True$\ProseTerminateAs{\BadIndex};
   \item view $\positions$ as the list $I_m \ldots I_0$;
   \item define the function $\bitfunc$ as mapping an index $i$ in $0$ to $n$ to
@@ -511,7 +560,8 @@ See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobi
   \dst \eqname \nvbitvector(\vd_n \ldots \vd_0)\\
   \slicestopositions(\slices) \evalarrow \positions \OrDynError\\\\
   \checktrans{\listlen{\positions} = m + 1}{\BadIndex} \checktransarrow \OrDynError\\\\
-  \maxpos \eqdef \max(\ \{ \vj\in\listrange(\positions) : \positions[\vj] \}\ )\\\\
+  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\\\\
+  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\\\\
   \checktrans{\maxpos < n + 1}{\BadIndex} \checktransarrow \OrDynError\\\\
   \positions \eqname I_m \ldots I_0 \\
   {\bitfunc = \lambda i \in 0..n.\left\{ \begin{array}{ll}
