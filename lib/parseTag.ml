@@ -105,10 +105,9 @@ module MakeS (O:OptS)
 
       let parse_tag_set opt add =  do_parse_tag_set opt (add_tag add)
 
-      let parse opt add msg =
+      let parse opt add (msg:string) =
         let spec = do_parse_tag_set opt (add_tag add) in
-        opt,Arg.String spec,
-        Printf.sprintf "<tags> where tags in {%s}, %s" taglist msg
+        opt,Arg.String spec, msg
     end
 
 module type SArg = sig
