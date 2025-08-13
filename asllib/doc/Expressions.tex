@@ -1308,7 +1308,7 @@ resulting bitvector --- and the execution graph $\vgone$;
 \inferrule{
   \evalexpr{\env, \ebv} \evalarrow \ResultExpr(\mbv, \envone)  \OrAbnormal\\\\
   \mbv \eqname (\vbv,\vgone) \\
-  \evalslices(\envone, \slices) \evalarrow \ResultExpr(\mpositions, \newenv)  \OrAbnormal \\
+  \evalslices(\envone, \slices) \evalarrow \ResultSlices(\mpositions, \newenv)  \OrAbnormal \\
   \mpositions \eqname (\positions, \vgtwo) \\
   \readfrombitvector(\vbv, \positions) \evalarrow \vv \OrDynError\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
