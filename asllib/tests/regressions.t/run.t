@@ -631,3 +631,35 @@ Outdated syntax
                             ^^
   ASL Grammar Error: Cannot parse.
   [1]
+
+Bounds checks
+  $ aslref bounds-checks-read-bitvector-1.asl
+  ASL Dynamic error: Cannot extract from bitvector of length 0 slice -1+:1.
+  [1]
+  $ aslref bounds-checks-read-bitvector-2.asl
+  ASL Execution error: Mismatch type:
+    value 4 does not belong to type integer {0..3}.
+  [1]
+  $ aslref bounds-checks-write-bitvector-1.asl
+  ASL Dynamic error: Cannot extract from bitvector of length 0 slice -1+:1.
+  [1]
+  $ aslref bounds-checks-write-bitvector-2.asl
+  ASL Execution error: Mismatch type:
+    value 5 does not belong to type integer {0..3}.
+  [1]
+  $ aslref bounds-checks-read-array-1.asl
+  ASL Execution error: Mismatch type:
+    value -1 does not belong to type integer {0..3}.
+  [1]
+  $ aslref bounds-checks-read-array-2.asl
+  ASL Execution error: Mismatch type:
+    value 4 does not belong to type integer {0..3}.
+  [1]
+  $ aslref bounds-checks-write-array-1.asl
+  ASL Execution error: Mismatch type:
+    value -1 does not belong to type integer {0..3}.
+  [1]
+  $ aslref bounds-checks-write-array-2.asl
+  ASL Execution error: Mismatch type:
+    value 4 does not belong to type integer {0..3}.
+  [1]

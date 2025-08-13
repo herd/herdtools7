@@ -440,7 +440,6 @@ bv = 0xfdf0, bv_i = 0xfdf0
     \item applying $\slicestopositions$ to $\slices$ yields the list $\positions$\ProseOrError;
     \item \Proseeqdef{$\maxpos$}{the maximal index in $\positions$};
     \item \Proseeqdef{$\bits$}{$\vi$  given as two's complement little endian form of $\maxpos + 1$ bits};
-    \item checking that $\maxpos$ is less than $n$ yields $\True$\ProseTerminateAs{\BadIndex};
     \item \Proseeqdef{$\newbits$}{the list of bits $\bits[j]$ for every \Proselistrange{$j$}{$\bits$}};
     \item \Proseeqdef{$\vv$}{the native bitvector for the list of bits $\newbits$}.
   \end{itemize}
@@ -493,6 +492,9 @@ See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobi
   \item $\src$ is a native bitvector consisting of bits $\vs_m \ldots \vs_0$;
   \item $\dst$ is a native bitvector consisting of bits $\vd_n \ldots \vd_0$;
   \item applying $\slicestopositions$ to $\slices$ yields the list of indices $\positions$;
+  \item checking that the length of $\positions$ is equal to the length of $\src$ yields $\True$\ProseTerminateAs{\BadIndex};
+  \item \Proseeqdef{$\maxpos$}{the maximal index in $\positions$};
+  \item checking that $\maxpos$ is less than the length of $\dst$ yields $\True$\ProseTerminateAs{\BadIndex};
   \item view $\positions$ as the list $I_m \ldots I_0$;
   \item define the function $\bitfunc$ as mapping an index $i$ in $0$ to $n$ to
         $\vs_j$, if there exists an index $I_j$ in $\positions$ such that $I_j$ is equal to $i$,
@@ -508,6 +510,9 @@ See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobi
   \src \eqname \nvbitvector(\vs_m \ldots \vs_0)\\
   \dst \eqname \nvbitvector(\vd_n \ldots \vd_0)\\
   \slicestopositions(\slices) \evalarrow \positions \OrDynError\\\\
+  \checktrans{\listlen{\positions} = m + 1}{\BadIndex} \checktransarrow \OrDynError\\\\
+  \maxpos \eqdef \max(\ \{ \vj\in\listrange(\positions) : \positions[\vj] \}\ )\\\\
+  \checktrans{\maxpos < n + 1}{\BadIndex} \checktransarrow \OrDynError\\\\
   \positions \eqname I_m \ldots I_0 \\
   {\bitfunc = \lambda i \in 0..n.\left\{ \begin{array}{ll}
     \vs_j & \exists j\in 1..m.\ i = I_j\\
@@ -582,13 +587,13 @@ The specification in \listingref{GetIndex} shows examples of accessing indices o
 \begin{itemize}
   \item \AllApplyCase{ok}
   \begin{itemize}
-    \item $\vi$ is less than the number of elements in $\vvec$;
+    \item $\vi$ is greater than or equal to zero and less than the number of elements in $\vvec$;
     \item \Proseeqdef{$\vr$}{the element of $\vvec$ at index $\vi$}.
   \end{itemize}
 
   \item \AllApplyCase{error}
   \begin{itemize}
-    \item $\vi$ is greater or equal to the number of elements in $\vvec$;
+    \item $\vi$ is less than zero or greater than or equal to the number of elements in $\vvec$;
     \item the result is the \dynamicerrorterm{} for an out of bounds index (\BadIndex).
   \end{itemize}
 \end{itemize}
@@ -596,7 +601,7 @@ The specification in \listingref{GetIndex} shows examples of accessing indices o
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[ok]{
-  \vi < \listlen{\vvec}\\
+  0 \leq \vi < \listlen{\vvec}\\
 }{
   \getindex(\vi, \vvec) \evalarrow \overname{\vv[\vi]}{\vr}
 }
@@ -604,7 +609,7 @@ The specification in \listingref{GetIndex} shows examples of accessing indices o
 
 \begin{mathpar}
 \inferrule[error]{
-  \vi \geq \listlen{\vvec}\\
+  \vi < 0 \lor \vi \geq \listlen{\vvec}\\
 }{
   \getindex(\vi, \vvec) \evalarrow \DynamicErrorVal{\BadIndex}
 }
@@ -635,7 +640,7 @@ involves the following premise:
 \begin{itemize}
   \item \AllApplyCase{ok}
   \begin{itemize}
-    \item $\vi$ is less than the number of elements in $\vvec$;
+    \item $\vi$ is greater than or equal to zero and less than the number of elements in $\vvec$;
     \item $\vvec$ is the sequence $\vu_{0..k}$;
     \item $\vres$ is the sequence of values identical to $\vvec$,
           except that at index $\vi$ the value is $\vv$.
@@ -643,7 +648,7 @@ involves the following premise:
 
   \item \AllApplyCase{error}
   \begin{itemize}
-    \item $\vi$ is greater or equal to the number of elements in $\vvec$;
+    \item $\vi$ is less than zero or greater than or equal to the number of elements in $\vvec$;
     \item the result is the \dynamicerrorterm{} for an out of bounds index (\BadIndex).
   \end{itemize}
 \end{itemize}
@@ -651,7 +656,7 @@ involves the following premise:
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[ok]{
-  \vi \leq \listlen{\vvec}\\
+  0 \leq \vi < \listlen{\vvec}\\
   \vvec \eqname \vu_{0..k}\\
   \vres = \vw_{0..k}\\
   \vv = \vw_{\vi} \\
@@ -663,7 +668,7 @@ involves the following premise:
 
 \begin{mathpar}
 \inferrule[error]{
-  \vi > \listlen{\vvec}
+  \vi < 0 \lor \vi \geq \listlen{\vvec}
 }{
   \setindex(\vi, \vv, \vvec) \evalarrow \DynamicErrorVal{\BadIndex}
 }
