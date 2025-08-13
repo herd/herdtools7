@@ -217,20 +217,19 @@ module RunTime (C : RunTimeConf) = struct
   let get_stack_size name env =
     try IMap.find name env.global.stack_size with Not_found -> Z.zero
 
-  let set_stack_size name value global =
-    let stack_size = IMap.add name value global.stack_size in
+  let update_stack_size name global f =
+    let stack_size = IMap.update name f global.stack_size in
     { global with stack_size }
 
   let incr_stack_size name global =
-    let prev =
-      try IMap.find name global.stack_size with Not_found -> Z.zero
-    in
-    set_stack_size name (Z.succ prev) global
+    update_stack_size name global @@ function
+    | None -> Some Z.one
+    | Some pred -> Some (Z.succ pred)
 
   let decr_stack_size name global =
-    let prev =
-      try IMap.find name global.stack_size with Not_found -> assert false
-    in
-    assert (Z.sign prev > 0);
-    set_stack_size name (Z.pred prev) global
+    update_stack_size name global @@ function
+    | None -> assert false
+    | Some prev ->
+        assert (Z.sign prev > 0);
+        Some (Z.pred prev)
 end
