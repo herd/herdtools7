@@ -293,8 +293,6 @@ and module Elts = MySet.Make(O) =
 
       let add x y m = ME.add x (Elts.add y (succs x m)) m
 
-      let adds x ys m = ME.add x (Elts.union ys (succs x m)) m
-
       let exists_path (e1, e2) r =
         try ignore (do_is_reachable op_succs r e1 e2) ; false
         with Found -> true
@@ -330,21 +328,70 @@ and module Elts = MySet.Make(O) =
           true
         with Exit -> false
 
-(* Transitive closure the naive way,
-   not significantly worse than before... *)
+      (* Transitive Closure, adapted from Tarjan algorithm below,
+         itself adapted from R. Sedgwick's book "Algorithms". *)
+      module TRFromTarjan = struct
+        type node_data = int * Elts.t (* index x succs *)
+        type state = int * node_data ME.t * O.t list (* max used id x global_node_data x stack *)
+        type return = node_data * state (* current_node_data x state *)
 
-      let rec tr m0 =
-        let m1 =
-          ME.fold
-            (fun x ys m ->
-              let zs =
-                Elts.fold
-                  (fun y k -> succs y m::k)
-                  ys [] in
-              adds x (Elts.unions zs) m)
-            m0 m0 in
-        if ME.equal Elts.equal m0 m1 then m0
-        else tr m1
+        let pop_until =
+          let rec loop acc f = function
+            | [] -> assert false
+            | e :: rem ->
+                let acc = e :: acc in
+                if O.compare f e = 0 then (acc, rem) else loop acc f rem
+          in
+          loop []
+
+        let rec visit m i id wmap stack : return =
+          let id_i = id in
+          let succs_i = succs i m in
+          let id = id_i + 1
+          and wmap = ME.add i (id_i, succs_i) wmap
+          and stack = i :: stack in
+          (* Compute min of all ids of its neighboors, and compute the
+             successor set of all its neighboors. *)
+          let (id_min, succss), (id, wmap, stack) =
+            Elts.fold
+              (fun j ((min0, succss), (id, wmap, stack)) ->
+                let (min1, succs_j), s = maybe_visit m j id wmap stack in
+                ((Misc.min_int min0 min1, succs_j :: succss), s))
+              succs_i
+              ((id_i, [ succs_i ]), (id, wmap, stack))
+          in
+          let succs_i = Elts.unions succss in
+          let id_i, _ = try ME.find i wmap with Not_found -> assert false in
+          if Int.equal id_min id_i then
+            create_comp m i id_min succs_i id wmap stack
+          else
+            (* n is part of the scc being computed *)
+            ((id_min, succs_i), (id, wmap, stack))
+
+        and create_comp _m n id_min succs_i id wmap stack : return =
+          let scc, stack = pop_until n stack in
+          let wmap =
+            List.fold_left
+              (fun wmap n -> ME.add n (max_int, succs_i) wmap)
+              wmap scc
+          in
+          ((id_min, succs_i), (id, wmap, stack))
+
+        and maybe_visit m i id wmap stack : return =
+          try (ME.find i wmap, (id, wmap, stack))
+          with Not_found -> visit m i id wmap stack
+
+        let main m =
+          let _, (_, wmap, _) =
+            ME.fold
+              (fun i _ (_, (id, wmap, stack)) -> maybe_visit m i id wmap stack)
+              m
+              ((-1, Elts.empty), (0, ME.empty, []))
+          in
+          ME.map snd wmap
+      end
+
+      let tr = TRFromTarjan.main
 
 (* Acyclicity check *)
       exception Cycle of (Elts.elt list)
@@ -371,7 +418,6 @@ and module Elts = MySet.Make(O) =
               (fun x _ -> dfs [] Elts.empty x) m Elts.empty in
           None
         with Cycle e -> Some (List.rev e)
-
 
 (***************)
 (* Reachablity *)
@@ -451,9 +497,8 @@ and module Elts = MySet.Make(O) =
 
     end
 
-    let transitive_to_map r = M.to_map r |> M.tr
-
-    let transitive_closure r = transitive_to_map r |> M.of_map
+    let transitive_to_map r = M.to_map r |> M.tr 
+    let transitive_closure r = transitive_to_map r |> M.of_map 
 
 (* Acyclicity check *)
 
