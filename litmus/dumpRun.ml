@@ -198,7 +198,7 @@ let run_tests names out_chan =
   | None -> None
   | Some exp -> Some (open_out exp) in
 
-  let  {one_arch; docs; srcs; nthreads; some_pac; some_self; } =
+  let  { one_arch; docs; srcs; nthreads; some_pac; some_self; hashes=_; } =
     Misc.fold_argv_or_stdin
       (fun name ({one_arch; docs; srcs; hashes;
                   nthreads; some_pac; some_self; } as st) ->
