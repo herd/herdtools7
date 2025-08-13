@@ -22,13 +22,13 @@ ASL Semantics Tests:
   File SemanticsRule.ECondARBITRARY3or42.asl, line 10, characters 9 to 13:
     assert x==3;
            ^^^^
-  ASL Execution error: Assertion failed: (x == 3).
+  ASL Dynamic error: Assertion failed: (x == 3).
   [1]
   $ aslref SemanticsRule.ESlice.asl
   $ aslref SemanticsRule.ECall.asl
   $ aslref SemanticsRule.EGetArray.asl
   $ aslref SemanticsRule.EGetArrayTooSmall.asl
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 3 does not belong to type integer {0..2}.
   [1]
   $ aslref SemanticsRule.ERecord.asl
@@ -40,7 +40,7 @@ ASL Semantics Tests:
   File SemanticsRule.EArbitraryInteger3.asl, line 5, characters 9 to 13:
     assert x==3;
            ^^^^
-  ASL Execution error: Assertion failed: (x == 3).
+  ASL Dynamic error: Assertion failed: (x == 3).
   [1]
   $ aslref SemanticsRule.EArbitraryIntegerRange3-42-3.asl
   $ aslref SemanticsRule.EArbitraryIntegerRange3-42-42.asl
@@ -48,7 +48,7 @@ ASL Semantics Tests:
     characters 9 to 14:
     assert x==42;
            ^^^^^
-  ASL Execution error: Assertion failed: (x == 42).
+  ASL Dynamic error: Assertion failed: (x == 42).
   [1]
   $ aslref SemanticsRule.EArbitraryArray.asl
   $ aslref SemanticsRule.EPattern.asl
@@ -200,7 +200,7 @@ ASL Semantics Tests:
   File SemanticsRule.SAssertNo.asl, line 4, characters 10 to 17:
     assert (42 == 3);
             ^^^^^^^
-  ASL Execution error: Assertion failed: (42 == 3).
+  ASL Dynamic error: Assertion failed: (42 == 3).
   [1]
   $ aslref SemanticsRule.LEDiscard.asl
   $ aslref SemanticsRule.LDDiscard.asl
@@ -217,7 +217,7 @@ ASL Semantics Tests:
   File SemanticsRule.ATCVariousErrors.asl, line 8, characters 28 to 29:
     var c: integer{4, 5, 6} = 2 as integer{4, 5, 6}; // A dynamic error
                               ^
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 2 does not belong to type integer {4, 5, 6}.
   [1]
   $ aslref SemanticsRule.CatchNoThrow.asl
@@ -229,7 +229,7 @@ ASL Semantics Tests:
   File SemanticsRule.SCond3.asl, line 3, characters 9 to 14:
     assert FALSE;
            ^^^^^
-  ASL Execution error: Assertion failed: FALSE.
+  ASL Dynamic error: Assertion failed: FALSE.
   [1]
   $ aslref SemanticsRule.SCond4.asl
   $ aslref SemanticsRule.STry.asl
@@ -281,6 +281,6 @@ ASL Semantics Tests:
   File SemanticsRule.EvalGlobals.bad1.asl, line 10, characters 0 to 12:
   var x = f();
   ^^^^^^^^^^^^
-  ASL Execution error: unexpected exception MyException thrown during the
+  ASL Dynamic error: unexpected exception MyException thrown during the
     evaluation of the initialisation of the global storage element "x".
   [1]

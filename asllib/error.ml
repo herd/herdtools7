@@ -342,12 +342,12 @@ module PPrint = struct
     | InvalidExpr e -> fprintf f "ASL Error: invalid expression %a." pp_expr e
     | MismatchType (v, [ ty ]) ->
         fprintf f
-          "ASL Execution error: Mismatch type:@ value %s does not belong to \
-           type %a."
+          "ASL Dynamic error: Mismatch type:@ value %s does not belong to type \
+           %a."
           v pp_type_desc ty
     | MismatchType (v, li) ->
         fprintf f
-          "ASL Execution error: Mismatch type:@ value %s@ does not subtype any \
+          "ASL Dynamic error: Mismatch type:@ value %s@ does not subtype any \
            of those types:@ %a"
           v
           (pp_comma_list pp_type_desc)
@@ -416,7 +416,7 @@ module PPrint = struct
           (pp_comma_list pp_type_desc)
           expected
     | AssertionFailed e ->
-        fprintf f "ASL Execution error: Assertion failed:@ %a." pp_expr e
+        fprintf f "ASL Dynamic error: Assertion failed:@ %a." pp_expr e
     | CannotParse -> pp_print_string f "ASL Grammar Error: Cannot parse."
     | UnknownSymbol -> pp_print_string f "ASL Grammar Error: Unknown symbol."
     | NoCallCandidate (name, types) ->
@@ -492,7 +492,7 @@ module PPrint = struct
           (pp_comma_list pp_print_string)
           actual
     | ArbitraryEmptyType t ->
-        fprintf f "ASL Execution error: ARBITRARY of empty type %a." pp_ty t
+        fprintf f "ASL Dynamic error: ARBITRARY of empty type %a." pp_ty t
     | BaseValueEmptyType t ->
         fprintf f "ASL Type error: base value of empty type %a." pp_ty t
     | BaseValueNonSymbolic (t, e) ->
@@ -581,8 +581,8 @@ module PPrint = struct
     | UnexpectedInitialisationThrow (exception_ty, global_storage_element_name)
       ->
         fprintf f
-          "ASL Execution error:@ unexpected@ exception@ %a@ thrown@ during@ \
-           the@ evaluation@ of@ the@ initialisation@ of@ the global@ storage@ \
+          "ASL Dynamic error:@ unexpected@ exception@ %a@ thrown@ during@ the@ \
+           evaluation@ of@ the@ initialisation@ of@ the global@ storage@ \
            element@ %S."
           pp_ty exception_ty global_storage_element_name
     | PrecisionLostDefining ->
@@ -591,7 +591,7 @@ module PPrint = struct
            result@ of@ precision@ loss."
     | NegativeArrayLength (e_length, length) ->
         fprintf f
-          "ASL Execution error:@ array@ length@ expression@ %a@ has@ negative@ \
+          "ASL Dynamic error:@ array@ length@ expression@ %a@ has@ negative@ \
            length@a: %i."
           pp_expr e_length length
     | MultipleWrites id ->
@@ -612,7 +612,7 @@ module PPrint = struct
            `implementation`:@ %a"
           (pp_print_list pp_pos) impdefs
     | BadPrimitiveArgument (name, reason) ->
-        fprintf f "ASL Execution error: %s (primitive) expected an argument %s"
+        fprintf f "ASL Dynamic error: %s (primitive) expected an argument %s"
           name reason);
     pp_close_box f ()
 

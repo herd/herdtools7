@@ -175,7 +175,7 @@ Runtime checks:
   File runtime-type-sat1.asl, line 3, characters 23 to 24:
     let x: integer {1} = 2 as integer {1};
                          ^
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 2 does not belong to type integer {1}.
   [1]
 
@@ -194,7 +194,7 @@ Runtime checks:
   File runtime-type-sat2.asl, line 2, characters 10 to 18:
     let x = Zeros{4} as bits(size);
             ^^^^^^^^
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 0x0 does not belong to type bits(size).
   [1]
 
@@ -225,7 +225,7 @@ Parameterized integers:
   File bad-underconstrained-ctc.asl, line 3, characters 12 to 13:
     return x[(N as integer {N - 1})];
               ^
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 4 does not belong to type integer {(N - 1)}.
   [1]
   $ aslref bad-underconstrained-return.asl
@@ -354,7 +354,7 @@ Arrays indexed by enumerations
 
   $ aslref array-lca.asl
   $ aslref array-index-error.asl
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 14 does not belong to type integer {0..4}.
   [1]
 
@@ -637,29 +637,29 @@ Bounds checks
   ASL Dynamic error: Cannot extract from bitvector of length 0 slice -1+:1.
   [1]
   $ aslref bounds-checks-read-bitvector-2.asl
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 4 does not belong to type integer {0..3}.
   [1]
   $ aslref bounds-checks-write-bitvector-1.asl
   ASL Dynamic error: Cannot extract from bitvector of length 0 slice -1+:1.
   [1]
   $ aslref bounds-checks-write-bitvector-2.asl
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 5 does not belong to type integer {0..3}.
   [1]
   $ aslref bounds-checks-read-array-1.asl
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value -1 does not belong to type integer {0..3}.
   [1]
   $ aslref bounds-checks-read-array-2.asl
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 4 does not belong to type integer {0..3}.
   [1]
   $ aslref bounds-checks-write-array-1.asl
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value -1 does not belong to type integer {0..3}.
   [1]
   $ aslref bounds-checks-write-array-2.asl
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 4 does not belong to type integer {0..3}.
   [1]

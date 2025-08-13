@@ -43,7 +43,7 @@ Examples used in ASL High-level Definition:
   File AssertionStatement.asl, line 5, characters 11 to 22:
       assert a + b < 256;
              ^^^^^^^^^^^
-  ASL Execution error: Assertion failed: ((a + b) < 256).
+  ASL Dynamic error: Assertion failed: ((a + b) < 256).
   [1]
 
   $ aslref TypingErrorReporting.asl
