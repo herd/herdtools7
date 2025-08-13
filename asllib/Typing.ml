@@ -3180,7 +3180,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           |> List.split
         in
         let ses = ses_non_conflicting_unions ~loc sess in
-        let ses = SES.add_print ses in
+        let ses = if not debug then SES.add_print ses else ses in
         (S_Print { args = args'; newline; debug } |> here, env, ses)
         |: TypingRule.SPrint
     (* End *)
