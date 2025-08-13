@@ -31,7 +31,12 @@ module Make(Opt:Opt)(A:ArchBase.S) : CoreDumper.S
         module A = A
 
         type v = MiscParser.maybev
-        let dump_v = ParsedConstant.pp Opt.hexa
+
+        let dump_v =
+          if Opt.compat then
+            ParsedConstant.pp Opt.hexa
+          else
+            Constant.check_pp_init (ParsedConstant.pp Opt.hexa)
 
         let dump_loc = MiscParser.dump_location
 

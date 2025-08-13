@@ -186,9 +186,17 @@ maybev_notag:
 | NUM COLON NUM { Concrete ($1 ^ ":" ^ $3) }
 | NAME LBRK NUM RBRK { mk_sym_with_index $1 $3 }
 
+maybev_amper:
+| AMPER NAME { Constant.mk_sym $2 }
+| AMPER NAME LBRK NUM RBRK { mk_sym_with_index $2 $4 }
+
 maybev:
 | maybev_notag { $1 }
 | COLON NAME  { Tag $2 }
+
+%inline maybev_or_amper:
+| maybev { $1 }
+| maybev_amper { $1 }
 
 maybev_list:
 | maybev_notag COMMA maybev_list { $1::$3 }
@@ -200,9 +208,12 @@ maybev_label:
 | NUM COLON NAME { mk_lab (Misc.string_as_int $1, $3) }
 | l=LABEL { mk_lab l }
 
-%inline location_reg:
+%inline std_reg:
 | PROC COLON reg  {Location_reg ($1,$3)}
 | NUM COLON reg   {Location_reg (Misc.string_as_int $1,$3)}
+
+%inline location_reg:
+| std_reg { $1 }
 | PROC COLON SYMB_REG  {Location_reg ($1,$3)}
 | NUM COLON SYMB_REG   {Location_reg (Misc.string_as_int $1,$3)}
 | SYMB_REG        {Location_sreg $1 }
@@ -224,11 +235,11 @@ location_deref:
 main_location:
 | loc=location EOF { loc }
 
-location:
+%inline location:
 | location_reg { $1 }
 | location_global { Location_global $1 }
 
-left_loc:
+%inline left_loc:
 | loc=location { loc }
 | LBRK loc=location_global RBRK { Location_global loc }
 
@@ -239,8 +250,10 @@ atom:
 instr:
 | TOK_NOP { None }
 | i=INSTR { Some i }
+
 atom_init:
 | atom { let x,v = $1 in x,(TyDef,v) }
+| std_reg EQUAL maybev_amper { $1,(TyDefPointer,$3) }
 | typ=NAME loc=left_loc  { (loc, (Ty typ,ParsedConstant.zero)) }
 | ATOMIC typ=NAME loc=left_loc { loc,(Atomic typ,ParsedConstant.zero)}
 | loc=left_loc EQUAL i=instr  { (loc,(Ty "ins_t", mk_instr_val i)) }
@@ -265,18 +278,13 @@ atom_init:
 /* prohibit "v[i] = scalar" form in init allow only "v[i]={scalar_list}" */
 | locindex EQUAL maybev { raise Parsing.Parse_error }
 | typ=NAME STAR loc=left_loc { (loc,(Pointer typ,ParsedConstant.zero))}
-| typ=NAME STAR loc=left_loc EQUAL amperopt v=maybev { (loc,(Pointer typ,v))}
+| typ=NAME STAR loc=left_loc EQUAL v=maybev_or_amper { (loc,(Pointer typ,v))}
 | STAR loc=left_loc { (loc,(TyDefPointer,ParsedConstant.zero))}
-| STAR loc=left_loc EQUAL amperopt v=maybev { (loc,(TyDefPointer,v))}
+| STAR loc=left_loc EQUAL v=maybev_or_amper { (loc,(TyDefPointer,v))}
 | typ=NAME loc=left_loc EQUAL v=pteval
   { (loc,(Ty typ, MiscParser.add_oa_if_none loc v)) }
 | loc=left_loc EQUAL v=pteval
   { (loc,(Ty "pteval_t", MiscParser.add_oa_if_none loc v)) }
-
-amperopt:
-| AMPER { () }
-| { () }
-
 
 init_semi_list:
 | {[]}

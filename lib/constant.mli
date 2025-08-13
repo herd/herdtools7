@@ -66,6 +66,7 @@ type symbol =
 val get_index : symbol -> int option
 val pp_symbol_old : symbol -> string
 val pp_symbol : symbol -> string
+
 val compare_symbol : symbol -> symbol -> int
 val symbol_eq : symbol -> symbol -> bool
 val as_address : symbol -> string
@@ -120,10 +121,16 @@ val collision :
 val pp :
   ('scalar -> string) -> ('pte -> string) -> ('addrreg -> string) -> ('instr -> string) ->
     ('scalar,'pte, 'addrreg,'instr) t  -> string
+
 (* Old style: pte_s, phy_s, etc. *)
 val pp_old :
   ('scalar -> string) ->  ('pte -> string) -> ('addrreg -> string) -> ('instr -> string) ->
     ('scalar,'pte, 'addrreg,'instr) t  -> string
+
+(* Print symbol t+o as t[o], for init section *)
+val check_pp_init :
+  (('scalar,'pte, 'addrreg,'instr) t  -> string)
+  -> ('scalar,'pte, 'addrreg,'instr) t -> string
 
 (* Do nothing on non-scalar *)
 val map_scalar : ('a -> 'b) -> ('a,'pte, 'addrreg,'instr) t -> ('b,'pte, 'addrreg,'instr) t
