@@ -504,6 +504,7 @@ end
 
 module NativeConfig (I : Instrumentation.SEMINSTR) = struct
   let unroll = 0
+  let recursive_unroll _ = None
   let error_handling_time = Error.Dynamic
   let empty_branching_effects_optimization = true
   let log_nondet_choice = false

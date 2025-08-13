@@ -29,7 +29,8 @@ let ( |: ) = Instrumentation.TypingNoInstr.use_with
 module InterpConf = struct
   module Instr = Instrumentation.SemanticsNoInstr
 
-  let unroll = 0
+  let unroll = 1 lsl 12
+  let recursive_unroll _ = Some (1 lsl 12)
   let error_handling_time = Error.Static
   let empty_branching_effects_optimization = true
   let log_nondet_choice = false (* Not relevant here *)
@@ -62,7 +63,7 @@ let static_eval (senv : SEnv.env) (e : expr) : literal =
   match eval_from ~loc:e env e with
   | SI.Normal (Native.NV_Literal l, _env) ->
       l |: Instrumentation.TypingRule.StaticEval
-  | SI.Normal _ | SI.Throwing _ ->
+  | SI.Normal _ | SI.Throwing _ | SI.Cutoff ->
       Error.fatal_from e (UnsupportedExpr (Static, e))
 (* End *)
 

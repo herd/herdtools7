@@ -1,0 +1,1 @@
+Warning: File "./herd/tests/instructions/ASL-pseudo-arch/recurse-read-memory-too-far.litmus": unrolling limit exceeded at T0, legal outcomes may be missing.

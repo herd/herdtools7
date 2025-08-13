@@ -1,7 +1,7 @@
-ASL recurse-read-memory-too-far
+ASL recurse-read-memory-a-bit-too-far
 
 {
-  x = 10;
+  x = 6;
   0: X1= x;
 }
 
