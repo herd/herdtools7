@@ -45,6 +45,10 @@ module Make
     let const_pac_field = C.variant Variant.ConstPacField
     let fpac = C.variant Variant.FPac
 
+    let check_kvm ins =
+      if not kvm then
+        Warn.user_error "%s without -variant vmsa" ins
+
     let check_mixed ins =
       if not mixed then
         Warn.user_error "%s without -variant mixed" ins
@@ -107,6 +111,7 @@ module Make
       module Mixed = M.Mixed(SZ)
 
       let (>>=) = M.(>>=)
+      let (let*) = M.(>>=)
       let (>>==) = M.(>>==)
       let (>>*=) = M.(>>*=)
       let (>>*==) = M.(>>*==)
@@ -1381,7 +1386,12 @@ module Make
             fun (r,_) -> M.unitT r
         else m
 
-      let lift_kvm dir updatedb mop ma an ii mphy mfault =
+      let lift_kvm dir updatedb mop ma an ii mphy =
+        let lbl_v = get_instr_label ii in
+        let mfault ma a ft =
+          insert_commit_to_fault ma
+            (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
+            None ii >>! B.fault [AArch64Base.elr_el1, lbl_v] in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb false a ma an ii
             ((let m = mop Access.PTE ma in
@@ -1528,10 +1538,8 @@ Arguments:
 - mv:         Value to be stored (for write operations), represented as the value in the monad.
 - an:         Annotation for the event structure.
 - ii:         Instruction metadata.
-- mfault:     Fault handling function.
 *)
-      let lift_memop rA
-            dir updatedb checked mop perms ma mv an ii mfault =
+      let lift_memop rA dir updatedb checked mop perms ma mv an ii =
         if morello then
           lift_morello mop perms ma mv dir an ii
         else
@@ -1552,7 +1560,7 @@ Arguments:
               if checked then lift_memtag_phy dir mop ma an ii mphy
               else mphy
             in
-            let m = lift_kvm dir updatedb mop ma an ii mphy mfault in
+            let m = lift_kvm dir updatedb mop ma an ii mphy in
             (* M.short will add an iico_data only if memtag is enabled *)
             M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
           else if pac then
@@ -1564,32 +1572,37 @@ Arguments:
 
       (* Address translation instruction *)
       let do_at op rd ii =
+        check_kvm "AT";
         let open AArch64Base in
         let dir =
           match op.AArch64Base.AT.rw with
           | AArch64Base.AT.W -> Dir.W
           | AArch64Base.AT.R -> Dir.R in
-        let sreg = SysReg (AArch64Base.PAR_EL1) in
+        let sreg = SysReg AArch64Base.PAR_EL1 in
         let mfault ma _ _ =
-          ma >>= M.op1 (Op.ArchOp1 (AArch64Op.SetF)) >>=
-          fun v ->
+            let* a = ma in
+            let* v = M.op1 (Op.ArchOp1 AArch64Op.SetF) a in
             let set_par_el1 = write_reg AArch64Base.par_el1 v ii in
             set_par_el1 >>! B.Next [] in
-        lift_memop rd dir false memtag
-          (fun _ ma _ -> ma >>= (fun a ->
-            M.op1 (Op.ArchOp1 (AArch64Op.SetOA)) a >>= fun v -> write_reg_dest sreg v ii))
-          (to_perms "r" MachSize.Word) (read_reg_ord rd ii) mzero Annot.N ii mfault
+        let mop _ac ma =
+            let* a = ma in
+            let* v = M.op1 (Op.ArchOp1 AArch64Op.SetOA) a in
+            write_reg_dest sreg v ii in
+        let mphy ma a_virt =
+            let ma = get_oa a_virt ma in
+            mop Access.PHY ma >>= M.ignore >>= B.next1T in
+        let ma = read_reg_ord rd ii in
+        let maccess a ma =
+          check_ptw ii.AArch64.proc dir false false a ma Annot.N ii
+            ((let m = mop Access.PTE ma in
+              fire_spurious_af dir a m) >>= M.ignore >>= B.next1T)
+            mphy
+            mfault in
+        M.delay_kont "at::check_ptw" ma maccess
 
       let do_ldr rA sz an mop ma ii =
 (* Generic load *)
-        let dir = Dir.R in
-        let lbl_v = get_instr_label ii in
-        let mfault ma a ft =
-          insert_commit_to_fault ma
-            (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
-            None ii >>! B.fault [AArch64Base.elr_el1, lbl_v]
-        in
-        lift_memop rA dir false memtag
+        lift_memop rA Dir.R false memtag
           (fun ac ma _mv -> (* value fake here *)
             let open Precision in
             let memtag_sync =
@@ -1600,18 +1613,11 @@ Arguments:
             else
               ma >>= mop ac)
           (to_perms "r" sz)
-          ma mzero an ii mfault
+          ma mzero an ii
 
 (* Generic store *)
       let do_str rA mop sz an ma mv ii =
-        let dir = Dir.W in
-        let lbl_v = get_instr_label ii in
-        let mfault ma a ft =
-          insert_commit_to_fault ma
-            (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
-            None ii >>! B.fault [AArch64Base.elr_el1, lbl_v]
-        in
-        lift_memop rA dir true memtag
+        lift_memop rA Dir.W true memtag
           (fun ac ma mv ->
             let open Precision in
             let memtag_sync = memtag && C.mte_precision = Synchronous in
@@ -1626,7 +1632,7 @@ Arguments:
                 ii
             else
               (ma >>| mv) >>= fun (a,v) -> mop ac a v ii)
-          (to_perms "w" sz) ma mv an ii mfault
+          (to_perms "w" sz) ma mv an ii
 
 (***********************)
 (* Memory instructions *)
@@ -2002,13 +2008,7 @@ Arguments:
         let an = match t with
           | YY -> Annot.X
           | LY -> Annot.XL in
-        let dir = Dir.W in
-        let lbl_v = get_instr_label ii in
-        let mfault ma a ft =
-          insert_commit_to_fault ma
-            (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
-            None ii >>! B.fault [AArch64Base.elr_el1, lbl_v] in
-        lift_memop rd dir true memtag
+        lift_memop rd Dir.W true memtag
           (fun ac ma mv ->
             let must_fail =
               begin
@@ -2027,7 +2027,7 @@ Arguments:
               (mw an ac))
               (to_perms "w" sz)
               (read_reg_addr rd ii)
-              ms an ii mfault
+              ms an ii
 
       let stxr sz t rr rs rd ii =
         do_stxr
@@ -2075,14 +2075,7 @@ Arguments:
         | RMW_A | RMW_AL -> A
 
       let swp sz rmw r1 r2 r3 ii =
-        let an = rmw_to_read rmw in
-        let dir = Dir.W in
-        let lbl_v = get_instr_label ii in
-        let mfault ma a ft =
-          insert_commit_to_fault ma
-            (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
-            None ii >>! B.fault [AArch64Base.elr_el1, lbl_v] in
-        lift_memop r3 dir true (* swp is a write for the purpose of DB *)
+        lift_memop r3 Dir.W true (* swp is a write for the purpose of DB *)
           memtag
           (fun ac ma mv ->
             let noret = match r2 with | AArch64.ZR -> true | _ -> false in
@@ -2099,7 +2092,8 @@ Arguments:
           (to_perms "rw" sz)
           (read_reg_addr r3 ii)
           (read_reg_ord_sz sz r1 ii)
-          an ii mfault
+          (rmw_to_read rmw)
+          ii
 
       let cas sz rmw rs rt rn ii =
         let an = rmw_to_read rmw in
@@ -2140,37 +2134,25 @@ Arguments:
           M.aarch64_cas_ok (Access.is_physical ac) ma read_rs read_rt write_rs
                                 read_mem write_mem branch M.eqT
         in
-        let lbl_v = get_instr_label ii in
-        let mk_fault dir =
-          fun ma a ft ->
-            insert_commit_to_fault ma
-              (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
-              None ii >>! B.fault [AArch64Base.elr_el1, lbl_v] in
         M.altT (
           (* CAS succeeds and generates an Explicit Write Effect *)
           (* there must be an update to the dirty bit of the TTD *)
-          let dir = Dir.W in
-          let mfault = mk_fault dir in
-          lift_memop rn dir true memtag mop_success (to_perms "rw" sz)
-            (read_reg_addr rn ii) (read_reg_data_sz sz rt ii) an ii mfault
+          lift_memop rn Dir.W true memtag mop_success (to_perms "rw" sz)
+            (read_reg_addr rn ii) (read_reg_data_sz sz rt ii) an ii
         )( (* CAS fails *)
           M.altT (
             (* CAS generates an Explicit Write Effect              *)
             (* there must be an update to the dirty bit of the TTD *)
-            let dir = Dir.W in
-            let mfault = mk_fault dir in
-            lift_memop rn dir true memtag mop_fail_with_wb (to_perms "rw" sz)
-              (read_reg_addr rn ii) (read_reg_data_sz sz rt ii) an ii mfault
+            lift_memop rn Dir.W true memtag mop_fail_with_wb (to_perms "rw" sz)
+              (read_reg_addr rn ii) (read_reg_data_sz sz rt ii) an ii
           )(
             (* CAS does not generate an Explicit Write Effect          *)
             (* It is IMPLEMENTATION SPECIFIC if there is an update to  *)
             (*                                the dirty bit of the TTD *)
             (* Note: the combination of dir=Dir.R and updatedb=true    *)
             (*                    triggers an alternative in check_ptw *)
-            let dir = Dir.R in
-            let mfault = mk_fault dir in
             lift_memop rn Dir.R true memtag mop_fail_no_wb (to_perms "rw" sz)
-              (read_reg_addr rn ii) (read_reg_data_sz sz rt ii) an ii mfault
+              (read_reg_addr rn ii) (read_reg_data_sz sz rt ii) an ii
           )
         )
 
@@ -2231,43 +2213,31 @@ Arguments:
           M.aarch64_cas_ok (Access.is_physical ac) ma read_rs
               read_rt write_rs read_mem write_mem branch eqp
         in
-        let lbl_v = get_instr_label ii in
-        let mk_fault dir =
-          fun ma a ft ->
-            insert_commit_to_fault ma
-              (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
-              None ii >>! B.fault [AArch64Base.elr_el1, lbl_v] in
         M.altT (
           (* CASP succeeds and generates Explicit Write Effects  *)
           (* there must be an update to the dirty bit of the TTD *)
-          let dir = Dir.W in
-          let mfault = mk_fault dir in
-          lift_memop rn dir true memtag mop_success
+          lift_memop rn Dir.W true memtag mop_success
             (to_perms "rw" sz) (read_reg_addr rn ii)
             (read_reg_data_sz sz rt1 ii >>> fun _ -> read_reg_data_sz sz rt2 ii)
-            an ii mfault
+            an ii
         )( (* CASP fails *)
           M.altT (
             (* CASP generates Explicit Write Effects               *)
             (* there must be an update to the dirty bit of the TTD *)
-            let dir = Dir.W in
-            let mfault = mk_fault dir in
-            lift_memop rn dir true memtag mop_fail_with_wb
+            lift_memop rn Dir.W true memtag mop_fail_with_wb
               (to_perms "rw" sz) (read_reg_addr rn ii)
               (read_reg_data_sz sz rt1 ii >>> fun _ -> read_reg_data_sz sz rt2 ii)
-              an ii mfault
+              an ii
           )(
             (* CASP does not generate Explicit Write Effects           *)
             (* It is IMPLEMENTATION SPECIFIC if there is an update to  *)
             (*                                the dirty bit of the TTD *)
             (* Note: the combination of dir=Dir.R and updatedb=true    *)
             (*                    triggers an alternative in check_ptw *)
-            let dir = Dir.R in
-            let mfault = mk_fault dir in
-            lift_memop rn dir true memtag mop_fail_no_wb
+            lift_memop rn Dir.R true memtag mop_fail_no_wb
               (to_perms "rw" sz) (read_reg_addr rn ii)
               (read_reg_data_sz sz rt1 ii >>> fun _ -> read_reg_data_sz sz rt2 ii)
-              an ii mfault
+              an ii
           )
         )
 
@@ -2313,13 +2283,7 @@ Arguments:
           |A_ADD|A_EOR|A_SET|A_CLR|A_UMAX|A_UMIN -> M.unitT in
 
         let an = rmw_to_read rmw in
-        let dir = Dir.W in
-        let lbl_v = get_instr_label ii in
-        let mfault ma a ft =
-          insert_commit_to_fault ma
-            (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
-            None ii >>! B.fault [AArch64Base.elr_el1, lbl_v] in
-        lift_memop rn dir true memtag
+        lift_memop rn Dir.W true memtag
           (fun ac ma mv ->
             let noret = match rt with | ZR -> true | _ -> false in
             let op = match op with
@@ -2347,7 +2311,7 @@ Arguments:
           (to_perms "rw" sz)
           (read_reg_addr rn ii)
           (read_reg_data_sz sz rs ii >>= tr_input)
-          an ii mfault
+          an ii
 
       (* Neon/SVE/SME instructions *)
       let (let>*) = M.bind_control_set_data_input_first
@@ -3312,15 +3276,9 @@ Arguments:
         else begin
             (* TODO: The size for DC should be a cache line *)
             let mop _ac a = dc_loc op a ii in
-            let an = Annot.N in
             let dir = match op.AArch64Base.DC.funct with
               | AArch64Base.DC.I -> Dir.W
               | _ -> Dir.R in
-            let lbl_v = get_instr_label ii in
-            let mfault ma a ft =
-              insert_commit_to_fault ma
-                (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
-                None ii >>! B.fault [AArch64Base.elr_el1, lbl_v] in
             (* CMO by VA other than DC ZVA are Tag Unchecked *)
             lift_memop rd dir false false
               (fun ac ma _mv -> (* value fake here *)
@@ -3329,7 +3287,7 @@ Arguments:
                 else
                   ma >>= mop ac)
               (to_perms "r" MachSize.Word)
-              (read_reg_addr rd ii) mzero an ii mfault
+              (read_reg_addr rd ii) mzero Annot.N ii
           end
 
       let do_ic op rd ii =
@@ -3348,7 +3306,6 @@ Arguments:
       let ldg rt rn k ii =
         let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii in
         let do_ldg a_virt ac ma =
-          let ( let* ) = (>>=) in
           let _do_ldg a =
             let* atag = M.op1 Op.TagLoc a in
             let* tag = do_read_tag atag ii in
@@ -3362,16 +3319,8 @@ Arguments:
         M.delay_kont "ldg" ma
           (fun a_virt ma ->
              let do_ldg = do_ldg a_virt in
-             let an = Annot.N in
-             let dir = Dir.R in
-             let lbl_v = get_instr_label ii in
-             let mfault ma a ft =
-              insert_commit_to_fault ma
-                (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
-                None ii >>! B.fault [AArch64Base.elr_el1, lbl_v] in
-            (* CMO by VA other than DC ZVA are Tag Unchecked *)
-             lift_memop rn dir false false (fun ac ma _mv -> do_ldg ac ma)
-               (to_perms "w" MachSize.S128) ma mzero an ii mfault)
+             lift_memop rn Dir.R false false (fun ac ma _mv -> do_ldg ac ma)
+               (to_perms "w" MachSize.S128) ma mzero Annot.N ii)
 
       type double = Once|Twice
 
@@ -3396,38 +3345,24 @@ Arguments:
             M.bind_ctrldata_data ma mv _do_stg
           else
             (ma >>| mv) >>= fun (a,v) -> _do_stg a v in
-            let an = Annot.N in
-            let dir = Dir.W in
-            let lbl_v = get_instr_label ii in
-            let mfault ma a ft =
-             insert_commit_to_fault ma
-               (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
-               None ii >>! B.fault [AArch64Base.elr_el1, lbl_v] in
-        lift_memop rn dir true false (fun ac ma mv -> do_stg ac ma mv)
-          (to_perms "w" MachSize.granule) ma mv an ii mfault
+        lift_memop rn Dir.W true false (fun ac ma mv -> do_stg ac ma mv)
+          (to_perms "w" MachSize.granule) ma mv Annot.N ii
 
       let stz d rn k ii =
         let sz = MachSize.granule in
-        let an = Annot.N in
         let mop =
           match d with
           | Once ->
              do_write_mem sz Annot.N aexp
           | Twice ->
              fun ac a v ii ->
-               let mop1 = do_write_mem sz an aexp  ac a v ii
+               let mop1 = do_write_mem sz Annot.N aexp  ac a v ii
                and mop2 =
                  M.op1 (Op.AddK MachSize.granule_nbytes) a
-                 >>= fun a -> do_write_mem sz an aexp  ac a v ii in
+                 >>= fun a -> do_write_mem sz Annot.N aexp  ac a v ii in
                (mop1 >>| mop2) >>! () in
         let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii >>= loc_extract in
-        let dir = Dir.W in
-        let lbl_v = get_instr_label ii in
-        let mfault ma a ft =
-          insert_commit_to_fault ma
-            (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
-            None ii >>! B.fault [AArch64Base.elr_el1, lbl_v] in
-        lift_memop rn dir true false (* Unchecked *)
+        lift_memop rn Dir.W true false (* Unchecked *)
           (fun ac ma mv ->
             if Access.is_physical ac then begin
                 (* additional ctrl dep on address *)
@@ -3435,7 +3370,7 @@ Arguments:
                   (fun a v -> mop ac a v ii)
               end else
               (ma >>| mv) >>= fun (a,v) -> mop ac a v ii)
-          (to_perms "w" sz) ma mzero an ii mfault
+          (to_perms "w" sz) ma mzero Annot.N ii
 
       let do_stzg d rt rn k ii =
         let do_stz = stz d rn k ii in
