@@ -149,13 +149,14 @@ var IS_EL0:boolean;
 func
   AArch64_S1DirectBasePermissions
     (regime:Regime,walkstate:TTWState,
-     waltparams:S1TTWParams,accdesc:AccessDescriptor)
+     walkparams:S1TTWParams,accdesc:AccessDescriptor)
 => S1AccessControls
 begin
+  let IS_EL0 = accdesc.el == EL0;
   var s1perms : S1AccessControls;
-  var w = if walkstate.permissions.ap[2] == '1' then '0' else '1';
-  var w_el0 = if  walkstate.permissions.ap[2:1] == '01' then '1' else '0';
   s1perms.r   = if IS_EL0 then walkstate.permissions.ap[1] else '1';
+  let w = if walkstate.permissions.ap[2] == '1' then '0' else '1';
+  let w_el0 = if  walkstate.permissions.ap[2:1] == '01' then '1' else '0';
   s1perms.w   = if IS_EL0 then w_el0 else w;
   s1perms.x   = '0';
   s1perms.gcs = '0';
