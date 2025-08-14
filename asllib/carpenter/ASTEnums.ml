@@ -296,7 +296,7 @@ module Make (C : Config.S) = struct
     ]
     |> filter_none |> oneof |> map annot
 
-  let ldks = scaled_finite [ LDK_Constant; LDK_Var; LDK_Let ]
+  let ldks = scaled_finite [ LDK_Var; LDK_Let ]
 
   let ldis =
     let ldi_var =

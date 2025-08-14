@@ -18,10 +18,7 @@ module TimeFrame = struct
     | Execution, Constant -> false
 
   let max t1 t2 = if is_before t1 t2 then t2 else t1
-
-  let of_ldk =
-    let open AST in
-    function LDK_Constant -> Constant | LDK_Let | LDK_Var -> Execution
+  let of_ldk (_ : AST.local_decl_keyword) = Execution
 
   let of_gdk =
     let open AST in

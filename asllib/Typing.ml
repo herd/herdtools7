@@ -381,9 +381,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   end)
 
   (* Begin LDKIsImmutable *)
-  let ldk_is_immutable = function
-    | LDK_Constant | LDK_Let -> true
-    | LDK_Var -> false
+  let ldk_is_immutable = function LDK_Let -> true | LDK_Var -> false
   (* End *)
 
   (* Begin GDKIsImmutable *)
@@ -1926,16 +1924,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 PP.pp_pos e
           in
           try
-            match IMap.find x env.local.storage_types with
-            | ty, LDK_Constant when IMap.mem x env.local.constant_values ->
-                let v = IMap.find x env.local.constant_values in
-                (ty, E_Literal v |> here, SES.empty) |: TypingRule.EVar
-            | ty, ldk ->
-                let ses =
-                  SES.reads_local x (TimeFrame.of_ldk ldk)
-                    (ldk_is_immutable ldk)
-                in
-                (ty, e, ses) |: TypingRule.EVar
+            let ty, ldk = IMap.find x env.local.storage_types in
+            let ses =
+              SES.reads_local x (TimeFrame.of_ldk ldk) (ldk_is_immutable ldk)
+            in
+            (ty, e, ses) |: TypingRule.EVar
           with Not_found -> (
             try
               match IMap.find x env.global.storage_types with
@@ -2761,7 +2754,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* Begin AddImmutableExpression *)
   let add_immutable_expression env ldk typed_e_opt x =
     match (ldk, typed_e_opt) with
-    | (LDK_Constant | LDK_Let), Some (_, e, ses_e)
+    | LDK_Let, Some (_, e, ses_e)
       when should_remember_immutable_expression ses_e -> (
         match StaticModel.normalize_opt env e with
         | Some e' ->
@@ -2843,12 +2836,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             tys names env
         in
         new_env |: TypingRule.LDTuple
-  (* End *)
-
-  (* Begin DeclareLocalConstant *)
-  let declare_local_constant ~loc env v = function
-    | LDI_Var x -> add_local_constant x v env
-    | LDI_Tuple _ -> fatal_from ~loc UnrespectedParserInvariant
   (* End *)
 
   let rec annotate_stmt env s : stmt * env * SES.t =
@@ -3071,17 +3058,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   (env1, Some t', ses_t)
             in
             let ses = SES.union ses_e ses_ldi in
-            let new_env =
-              match ldk with
-              | LDK_Let | LDK_Var -> env1
-              | LDK_Constant -> (
-                  let+ () = check_is_pure ~loc:s typed_e in
-                  try
-                    let v = StaticInterpreter.static_eval env1 e in
-                    declare_local_constant ~loc:s env1 v ldi
-                  with Error.(ASLException _) -> env1)
-            in
-            (S_Decl (ldk, ldi, ty_opt', Some e') |> here, new_env, ses)
+            (S_Decl (ldk, ldi, ty_opt', Some e') |> here, env1, ses)
             |: TypingRule.SDecl
         (* SDecl.Some) *)
         (* SDecl.None( *)
@@ -3101,8 +3078,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   ses_t' )
                 |: TypingRule.LDUninitialisedTyped)
             |: TypingRule.SDecl
-        | (LDK_Constant | LDK_Let), None ->
-            fatal_from ~loc UnrespectedParserInvariant)
+        | LDK_Let, None -> fatal_from ~loc UnrespectedParserInvariant)
     (* SDecl.None) *)
     (* End *)
     (* Begin SThrow *)

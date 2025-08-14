@@ -255,7 +255,7 @@ module Untyped (C : Config.S) = struct
       ]
       |> filter_oneof
 
-  let ldk = oneofa [| LDK_Var; LDK_Constant; LDK_Let |]
+  let ldk = oneofa [| LDK_Var; LDK_Let |]
 
   let lexpr : lexpr sgen =
     let le_ignore = LE_Discard |> annot |> pure

@@ -269,11 +269,7 @@ let rec pp_lexpr =
   fun f le -> pp_annotated pp_desc f le
 
 let pp_local_decl_keyboard f k =
-  pp_string f
-    (match k with
-    | LDK_Var -> "LDK_Var"
-    | LDK_Constant -> "LDK_Constant"
-    | LDK_Let -> "LDK_Let")
+  pp_string f (match k with LDK_Var -> "LDK_Var" | LDK_Let -> "LDK_Let")
 
 let pp_local_decl_item f = function
   | LDI_Var s -> bprintf f "LDI_Var %S" s
