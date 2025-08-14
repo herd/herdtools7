@@ -46,7 +46,7 @@ Explicit parameter tests:
   File bad-elided-parameter.asl, line 8, characters 20 to 30:
     let x : bits(4) = Foo{,3}(0);
                       ^^^^^^^^^^
-  ASL Static Error: Arity error while calling 'Foo':
+  ASL Static error: Arity error while calling 'Foo':
     1 parameters expected and 2 provided
   [1]
 
@@ -54,7 +54,7 @@ Explicit parameter tests:
   File omit-output-stdlib-param.asl, line 3, characters 21 to 41:
     let x : bits(64) = Extend('1111', TRUE);
                        ^^^^^^^^^^^^^^^^^^^^
-  ASL Static Error: Arity error while calling 'Extend-1':
+  ASL Static error: Arity error while calling 'Extend-1':
     2 parameters expected and 1 provided
   [1]
 

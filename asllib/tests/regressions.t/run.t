@@ -285,14 +285,14 @@ Parameterized integers:
   File setter_without_getter.asl, line 6, characters 0 to 3:
   end;
   ^^^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
 
   $ aslref getter_without_setter.asl
   File getter_without_setter.asl, line 6, characters 0 to 3:
   end;
   ^^^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
 
   $ aslref tuple_items.asl
@@ -301,7 +301,7 @@ Parameterized integers:
   File duplicated-otherwise.asl, line 7, characters 8 to 12:
           when 0.0 => println "2.0";
           ^^^^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
   $ aslref duplicate_expr_record.asl
   File duplicate_expr_record.asl, line 5, characters 12 to 27:
@@ -314,21 +314,21 @@ Parameterized integers:
   File same-precedence.asl, line 6, characters 10 to 15:
     let x = a + b - c;
             ^^^^^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
 
   $ aslref same-precedence2.asl
   File same-precedence2.asl, line 6, characters 10 to 17:
     let d = a ==> b <=> c;
             ^^^^^^^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
 
   $ aslref binop-non-assoc.asl
   File binop-non-assoc.asl, line 3, characters 6 to 11:
     - = 3 - 2 - 1;
         ^^^^^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
 
   $ aslref rdiv_checks.asl
@@ -416,7 +416,7 @@ Required tests:
   File asl0-patterns.asl, line 7, characters 25 to 29:
       if x[0+:4] IN '10x1' then // invalid
                            ^^^^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
   $ aslref -0 unreachable-v0.asl
   $ aslref assign1.asl
@@ -428,7 +428,7 @@ Required tests:
   File concat-empty.asl, line 3, characters 45 to 46:
     let empty_concatenation_should_not_parse = [];
                                                ^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
   $ aslref concat01.asl
   $ aslref concat02.asl
@@ -475,14 +475,14 @@ Required tests:
   File throw-local-env.asl, line 10, characters 13 to 14:
         assert y == 5; // y should not be found in dynamic environment here
                ^
-  ASL Error: Undefined identifier: 'y'
+  ASL Dynamic error: Undefined identifier: 'y'
   [1]
 
   $ aslref undeclared-variable.asl
   File undeclared-variable.asl, line 3, characters 2 to 5:
     bar = (32 - 46) * 0;
     ^^^
-  ASL Error: Undefined identifier: 'bar'
+  ASL Static error: Undefined identifier: 'bar'
   [1]
 
   $ aslref no-expression-elsif.asl
@@ -517,13 +517,13 @@ Getters/setters
   File nonempty-getter-called-without-slices.asl, line 14, characters 10 to 12:
     let x = f1;
             ^^
-  ASL Error: Undefined identifier: 'f1'
+  ASL Static error: Undefined identifier: 'f1'
   [1]
   $ aslref nonempty-setter-called-without-slices.asl
   File nonempty-setter-called-without-slices.asl, line 14, characters 2 to 4:
     f1 = 4;
     ^^
-  ASL Error: Undefined identifier: 'f1'
+  ASL Static error: Undefined identifier: 'f1'
   [1]
   $ aslref setter_subfield.asl
   $ aslref setter_subslice.asl
@@ -542,7 +542,7 @@ Getters/setters
   File pattern-masks-no-braces.asl, line 4, characters 19 to 24:
     assert ('111' IN '1xx') == TRUE;
                      ^^^^^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
 
 ASLRef Field getter extension
@@ -609,7 +609,7 @@ Outdated syntax
   File outdated-implication.asl, line 6, characters 25 to 26:
     let z: boolean = x --> z;
                            ^
-  ASL Error: Undefined identifier: 'z'
+  ASL Static error: Undefined identifier: 'z'
   [1]
   $ aslref outdated-implication.asl
   File outdated-implication.asl, line 6, characters 21 to 24:
@@ -629,7 +629,7 @@ Outdated syntax
   File noreturn_function.asl, line 2, characters 26 to 28:
   noreturn func returning() => integer
                             ^^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
 
 Bounds checks

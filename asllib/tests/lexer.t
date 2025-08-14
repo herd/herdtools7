@@ -37,7 +37,7 @@
   File println5.asl, line 1, characters 32 to 33:
   constant msg = "Something with \p bad characters.";
                                   ^
-  ASL Grammar Error: Unknown symbol.
+  ASL Lexical error: Unknown symbol.
   [1]
   $ cat >println6.asl <<EOF
   > constant msg = "Some unterminated string;
@@ -80,7 +80,7 @@ C-Style comments
   File comments2.asl, line 11, characters 8 to 9:
   let a = b;
           ^
-  ASL Error: Undefined identifier: 'b'
+  ASL Static error: Undefined identifier: 'b'
   [1]
 
 Some problems with bitvectors and bitmasks:
@@ -134,7 +134,7 @@ Forbidden patterns
   File forbiddenhex01.asl, line 1, characters 8 to 11:
   let x = 0xh12;
           ^^^
-  ASL Grammar Error: Unknown symbol.
+  ASL Lexical error: Unknown symbol.
   [1]
 
   $ cat >forbiddenhex02.asl <<EOF
@@ -144,7 +144,7 @@ Forbidden patterns
   File forbiddenhex02.asl, line 1, characters 8 to 11:
   let x = 0x_12;
           ^^^
-  ASL Grammar Error: Unknown symbol.
+  ASL Lexical error: Unknown symbol.
   [1]
 
   $ cat >forbiddenhex03.asl <<EOF
@@ -154,7 +154,7 @@ Forbidden patterns
   File forbiddenhex03.asl, line 1, characters 8 to 13:
   let x = 0x12h12;
           ^^^^^
-  ASL Grammar Error: Unknown symbol.
+  ASL Lexical error: Unknown symbol.
   [1]
 
   $ cat >forbiddenhex04.asl <<EOF
@@ -165,7 +165,7 @@ Forbidden patterns
   File forbiddenhex04.asl, line 2, characters 8 to 11:
   let x = 0x_foo;
           ^^^
-  ASL Grammar Error: Unknown symbol.
+  ASL Lexical error: Unknown symbol.
   [1]
 
   $ cat >forbiddenreal01.asl <<EOF
@@ -175,7 +175,7 @@ Forbidden patterns
   File forbiddenreal01.asl, line 1, characters 8 to 11:
   let x = 1.h12;
           ^^^
-  ASL Grammar Error: Unknown symbol.
+  ASL Lexical error: Unknown symbol.
   [1]
 
   $ cat >forbiddenreal02.asl <<EOF
@@ -185,7 +185,7 @@ Forbidden patterns
   File forbiddenreal02.asl, line 1, characters 8 to 11:
   let x = 1._12;
           ^^^
-  ASL Grammar Error: Unknown symbol.
+  ASL Lexical error: Unknown symbol.
   [1]
 
   $ cat >forbiddenreal03.asl <<EOF
@@ -195,7 +195,7 @@ Forbidden patterns
   File forbiddenreal03.asl, line 1, characters 8 to 13:
   let x = 1.12h12;
           ^^^^^
-  ASL Grammar Error: Unknown symbol.
+  ASL Lexical error: Unknown symbol.
   [1]
 
   $ cat >forbiddenreal04.asl <<EOF
@@ -206,5 +206,5 @@ Forbidden patterns
   File forbiddenreal04.asl, line 2, characters 8 to 11:
   let x = 1._foo;
           ^^^
-  ASL Grammar Error: Unknown symbol.
+  ASL Lexical error: Unknown symbol.
   [1]

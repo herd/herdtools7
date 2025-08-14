@@ -32,7 +32,7 @@ module TypingRule = Instrumentation.TypingRule
 let ( |: ) = Instrumentation.TypingNoInstr.use_with
 
 let undefined_identifier pos x =
-  Error.fatal_from pos (Error.UndefinedIdentifier x)
+  Error.fatal_from pos (Error.UndefinedIdentifier (Static, x))
 
 let thing_equal astutil_equal env = astutil_equal (StaticModel.equal_in_env env)
 let expr_equal = thing_equal expr_equal

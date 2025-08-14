@@ -460,7 +460,7 @@ module Make (B : Backend.S) (C : Config) = struct
         | Global v ->
             let* () = B.on_read_identifier x (B.Scope.global ~init:false) v in
             return_normal (v, env)
-        | NotFound -> fatal_from e @@ Error.UndefinedIdentifier x)
+        | NotFound -> fatal_from e @@ Error.UndefinedIdentifier (Dynamic, x))
         |: SemanticsRule.EVar
     (* End *)
     | E_Binop (((`BAND | `BOR | `IMPL) as op), e1, e2)
@@ -772,7 +772,7 @@ module Make (B : Backend.S) (C : Config) = struct
             match ver with
             (* Begin EvalLEUndefIdentOne *)
             | V1 ->
-                fatal_from le @@ Error.UndefinedIdentifier x
+                fatal_from le @@ Error.UndefinedIdentifier (Dynamic, x)
                 |: SemanticsRule.LEUndefIdentV1
             (* End *)
             (* Begin EvalLEUndefIdentZero *)
@@ -1412,7 +1412,7 @@ module Make (B : Backend.S) (C : Config) = struct
     match IMap.find_opt name genv.static.subprograms with
     (* Begin EvalFUndefIdent *)
     | None ->
-        fatal_from pos @@ Error.UndefinedIdentifier name
+        fatal_from pos @@ Error.UndefinedIdentifier (Dynamic, name)
         |: SemanticsRule.FUndefIdent
     (* End *)
     (* Begin EvalFPrimitive *)
@@ -1519,7 +1519,8 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     (match res with
     | Normal ([ v ], _genv) -> read_value_from v
-    | Normal _ -> Error.(fatal_unknown_pos (MismatchedReturnValue "main"))
+    | Normal _ ->
+        Error.(fatal_unknown_pos (MismatchedReturnValue (Dynamic, "main")))
     | Throwing (v_opt, _genv) ->
         let msg =
           match v_opt with

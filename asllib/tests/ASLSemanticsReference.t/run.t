@@ -12,7 +12,7 @@ ASL Semantics Tests:
   File SemanticsRule.EUndefIdent.asl, line 5, characters 9 to 10:
     assert y;
            ^
-  ASL Error: Undefined identifier: 'y'
+  ASL Static error: Undefined identifier: 'y'
   [1]
 //  $ aslref SemanticsRule.EBinopPlusPrint.asl
   $ aslref SemanticsRule.EBinopPlusAssert.asl
@@ -141,13 +141,13 @@ ASL Semantics Tests:
   File SemanticsRule.CatchNone.asl, line 15, characters 8 to 24:
     catch MyExceptionType1;
           ^^^^^^^^^^^^^^^^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
   $ aslref SemanticsRule.FUndefIdent.asl
   File SemanticsRule.FUndefIdent.asl, line 4, characters 5 to 12:
        foo ();
        ^^^^^^^
-  ASL Error: Undefined identifier: 'foo'
+  ASL Static error: Undefined identifier: 'foo'
   [1]
   $ aslref SemanticsRule.FCall.asl
   $ aslref SemanticsRule.PAll.asl
@@ -165,7 +165,7 @@ ASL Semantics Tests:
   File SemanticsRule.LEUndefIdentV1.asl, line 5, characters 2 to 3:
     y = 3;
     ^
-  ASL Error: Undefined identifier: 'y'
+  ASL Static error: Undefined identifier: 'y'
   [1]
   $ aslref SemanticsRule.LESlice.asl
   $ aslref SemanticsRule.LESetField.asl

@@ -1,7 +1,7 @@
 Examples used in ASL High-level Definition:
   $ aslref main0.asl
   $ aslref main_uncaught.asl
-  Uncaught exception: MyException {}.
+  ASL Dynamic error: Uncaught exception: MyException {}.
   [1]
   $ aslref --no-exec spec1.asl
   $ aslref --no-exec spec2.asl
@@ -93,13 +93,13 @@ Examples used in ASL High-level Definition:
   File GuideRule.TupleElementAccess.bad.asl, line 5, characters 18 to 25:
       x = (x.item1, x.item2);
                     ^^^^^^^
-  ASL Typing Error: There is no field 'item2' on type (integer, integer).
+  ASL Type error: There is no field 'item2' on type (integer, integer).
   [1]
   $ aslref GuideRule.AnonymousEnumerations.bad.asl
   File GuideRule.AnonymousEnumerations.bad.asl, line 4, characters 12 to 23:
       var x : enumeration {RED, GREEN, BLUE};
               ^^^^^^^^^^^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
   $ aslref GuideRule.TupleImmutability.asl
   File GuideRule.TupleImmutability.asl, line 7, characters 6 to 11:
@@ -113,14 +113,14 @@ Examples used in ASL High-level Definition:
   File ParameterElision.bad.asl, line 13, characters 25 to 35:
       var foo : bits(64) = X(data, n);
                            ^^^^^^^^^^
-  ASL Static Error: Arity error while calling 'X':
+  ASL Static error: Arity error while calling 'X':
     1 parameters expected and 0 provided
   [1]
   $ aslref ParameterOmission.bad.asl
   File ParameterOmission.bad.asl, line 6, characters 17 to 18:
       result = LSL{}(result, 3);
                    ^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
   $ aslref --no-exec NamedTypes.asl
   $ aslref --no-exec NamedTypes2.asl
