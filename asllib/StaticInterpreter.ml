@@ -52,9 +52,7 @@ let static_eval (senv : SEnv.env) (e : expr) : literal =
       global_from_static senv.global
         ~storage:(Storage.map SB.v_of_literal senv.SEnv.global.constant_values)
     and local =
-      local_empty_scoped
-        (SB.Scope.global ~init:true)
-        ~storage:(Storage.map SB.v_of_literal senv.SEnv.local.constant_values)
+      local_empty_scoped (SB.Scope.global ~init:true) ~storage:Storage.empty
     in
     { global; local }
   in
