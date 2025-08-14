@@ -323,8 +323,15 @@ type SCTLRType of bits(64) {
   [63] TIDCP,
 };
 
-// Cache enabled, the rest probably is inaccurate.
-var SCTLR_EL1 : SCTLRType = '0000000000000000000000000000000000000000000000000000000000000100';
+var SCTLR_EL1 : SCTLRType =
+// Bit number 2 -> cache enabled, the rest probably is inaccurate.
+// '0000000000000000000000000000000000000000000000000000000000000100';
+// Value found on Rasberry 4B, Ubuntu 20.04.2
+// uname -a:
+// Linux cheilly 5.4.0-1115-raspi #127-Ubuntu SMP PREEMPT Wed Aug 7 14:38:47 UTC 2024 aarch64 aarch64 aarch64 GNU/Linux
+   '0000000000000000000000000000000000000000110001010001100000111101';
+// Another value from the same machine
+// '0000000000000000000000000000000000110000110100000001100110000101';
 
 // Infered from manual
 
