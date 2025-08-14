@@ -470,6 +470,7 @@ Required tests:
   $ aslref string_concat.asl
   $ aslref approx-expr-binop.asl
   $ aslref asciistr.asl
+  $ aslref asl1-calls-asl0-accessor.asl -0 asl0-accessor.asl
 
   $ aslref --no-type-check throw-local-env.asl
   File throw-local-env.asl, line 10, characters 13 to 14:

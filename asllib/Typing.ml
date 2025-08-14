@@ -1638,9 +1638,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let+ () =
       check_true
         (func_sig.subprogram_type = call_type
+        ||
+        match (func_version func_sig, func_sig.subprogram_type, call_type) with
         (* Getters are syntactically identical to functions in V1 - so what
            looks like a function call may really be a getter call *)
-        || (func_sig.subprogram_type = ST_Getter && call_type = ST_Function))
+        | _, ST_Getter, ST_Function -> true
+        (* V0 compatibility: support for calling empty getters/setters *)
+        | V0, ST_EmptyGetter, ST_Function -> true
+        | V0, ST_EmptySetter, ST_Setter -> true
+        | _ -> false)
       @@ fun () -> fatal_from ~loc (MismatchedReturnValue (Static, name))
     in
     (* Insert omitted parameter for standard library call *)
