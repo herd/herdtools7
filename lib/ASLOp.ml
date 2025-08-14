@@ -264,10 +264,11 @@ let do_op1 op cst =
               Some (Constant.Concrete (ASLScalar.bv_of_string "10"))
             | [7;6;] -> (* AP *)
                 let db =  1-pte.AArch64PteVal.db in
-                Some (Constant.Concrete (ASLScalar.bv_of_bits [db;0;]))
+                let el0 = pte.AArch64PteVal.el0 in
+                Some (Constant.Concrete (ASLScalar.bv_of_bits [db;el0;]))
             | [5;] ->
-              (* EL0 *)
-                Some (Constant.Concrete ASLScalar.zeros_size_one)
+              (* NS *)
+                Some (Constant.Concrete (ASLScalar.zeros 1))
             | [4;3;2;] ->
               (* memattr *)
                 Some (Constant.Concrete (ASLScalar.zeros 3))
