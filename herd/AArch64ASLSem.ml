@@ -869,7 +869,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
            proc_state_fields
          |> StringMap.from_bindings)
 
-    let build_pstate_val ii =
+    let build_pstate_val is_el0 ii =
       let fields_to_update =
         [
           ("N", AArch64Base.PSTATE.N);
@@ -888,6 +888,12 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             | None -> (fields, eqs))
           (Lazy.force pstate_default_fields, []) fields_to_update
       in
+      let pstate_updated_fields =
+        StringMap.add "EL"
+          ((Constant.Concrete
+                (ASLScalar.bv_of_string
+                   (if is_el0 then "00" else "01"))))
+          pstate_updated_fields in
       (ASLS.A.V.Val (Constant.ConcreteRecord pstate_updated_fields), eqs)
 
     let is_vmsa = TopConf.C.variant Variant.VMSA
@@ -905,22 +911,26 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         add_reg_if_present reg (ASLBase.ArchReg reg)
       in
       let global_loc name = ASLBase.(ASLLocalId (Scope.Global true, name)) in
-      let pstate_val, eqs = build_pstate_val ii in
+      let is_el0 =
+        not is_vmsa ||
+        List.exists (Proc.equal ii.A.proc) TopConf.procs_user in
+      let pstate_val, eqs = build_pstate_val is_el0 ii in
       let st =
         ASLS.A.state_empty
         |> state_add (global_loc "PSTATE") pstate_val
         |> List.fold_right add_arch_reg_if_present ASLBase.gregs
         |> add_reg_if_present AArch64Base.ResAddr (global_loc "RESADDR")
         |> add_reg_if_present AArch64Base.SP (global_loc "SP_EL0")
+(*
         |>
         (fun st ->
            if is_vmsa then
-             let is_el0 =  List.exists (Proc.equal ii.A.proc) TopConf.procs_user in
              state_add
                (global_loc "IS_EL0")
                (ASLS.A.V.scalarToV ((ASLScalar.of_bool is_el0)))
                st
            else st)
+*)
       in
       let () =
         if _dbg then
