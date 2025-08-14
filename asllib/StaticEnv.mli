@@ -52,7 +52,6 @@ type global = {
 (** Store all the global environment information at compile-time. *)
 
 type local = {
-  constant_values : literal IMap.t;  (** Maps a local constant to its value. *)
   storage_types : (ty * local_decl_keyword) IMap.t;
       (** Maps an locally declared names to their type. *)
   expr_equiv : expr IMap.t;
@@ -80,8 +79,6 @@ val lookup_constant : env -> identifier -> literal
 
     @raise Not_found if it is not defined inside. *)
 
-val lookup_constant_opt : env -> identifier -> literal option
-
 val type_of : env -> identifier -> ty
 (** [type_of env "x"] is the type of ["x"] in the environment [env]. *)
 
@@ -97,7 +94,6 @@ val add_global_storage :
 
 val add_type : identifier -> ty -> SideEffect.TimeFrame.t -> env -> env
 val add_global_constant : identifier -> literal -> global -> global
-val add_local_constant : identifier -> literal -> env -> env
 
 val add_local_immutable_expr : identifier -> expr -> env -> env
 (** [add_local_immutable_expr x e env] binds [x] to [e] in [env]. [x] is assumed
