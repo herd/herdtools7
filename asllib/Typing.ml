@@ -30,7 +30,10 @@ module TimeFrame = SideEffect.TimeFrame
 
 let ( |: ) = Instrumentation.TypingNoInstr.use_with
 let fatal_from ~loc = Error.fatal_from loc
-let undefined_identifier ~loc x = fatal_from ~loc (Error.UndefinedIdentifier x)
+
+let undefined_identifier ~loc x =
+  fatal_from ~loc (Error.UndefinedIdentifier (Static, x))
+
 let invalid_expr e = fatal_from ~loc:e (Error.InvalidExpr e)
 let add_pos_from ~loc = add_pos_from loc
 
@@ -1638,7 +1641,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (* Getters are syntactically identical to functions in V1 - so what
            looks like a function call may really be a getter call *)
         || (func_sig.subprogram_type = ST_Getter && call_type = ST_Function))
-      @@ fun () -> fatal_from ~loc (MismatchedReturnValue name)
+      @@ fun () -> fatal_from ~loc (MismatchedReturnValue (Static, name))
     in
     (* Insert omitted parameter for standard library call *)
     let params = insert_stdlib_param ~loc env func_sig ~params ~arg_types in
@@ -1706,7 +1709,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       match (call_type, func_sig.return_type) with
       | (ST_Function | ST_Getter), Some ty -> Some (rename_ty_eqs env eqs ty)
       | (ST_Procedure | ST_Setter), None -> None
-      | _ -> fatal_from ~loc @@ Error.MismatchedReturnValue name
+      | _ -> fatal_from ~loc @@ Error.MismatchedReturnValue (Static, name)
     in
     ( {
         name;
@@ -1732,7 +1735,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let+ () =
       check_true (callee.subprogram_type = call_type) @@ fun () ->
-      fatal_from ~loc (MismatchedReturnValue name)
+      fatal_from ~loc (MismatchedReturnValue (Static, name))
     in
     let () =
       if false then
@@ -1880,7 +1883,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | (ST_Function | ST_Getter | ST_EmptyGetter), Some ty ->
           Some (rename_ty_eqs env eqs3 ty)
       | (ST_Setter | ST_EmptySetter | ST_Procedure), None -> None
-      | _ -> fatal_from ~loc @@ Error.MismatchedReturnValue name
+      | _ -> fatal_from ~loc @@ Error.MismatchedReturnValue (Static, name)
     in
     let () = if false then Format.eprintf "Annotated call to %S.@." name1 in
     let params =
@@ -3180,7 +3183,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           |> List.split
         in
         let ses = ses_non_conflicting_unions ~loc sess in
-        let ses = SES.add_print ses in
+        let ses = if not debug then SES.add_print ses else ses in
         (S_Print { args = args'; newline; debug } |> here, env, ses)
         |: TypingRule.SPrint
     (* End *)

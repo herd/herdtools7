@@ -11,7 +11,8 @@
   File binop-write-write.asl, line 11, characters 10 to 47:
     let y = set_and_return () + set_and_return ();
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: conflicting side effects WritesGlobal "X" and WritesGlobal "X"
+  ASL Type error:
+    conflicting side effects WritesGlobal "X" and WritesGlobal "X"
   [1]
   $ aslref binop-read-write-diff.asl
   $ aslref binop-write-write-diff.asl
@@ -28,7 +29,8 @@
   File binop-throw-write.asl, line 18, characters 12 to 43:
       let y = throwing () + set_and_return ();
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: conflicting side effects ThrowsException "E" and WritesGlobal "X"
+  ASL Type error:
+    conflicting side effects ThrowsException "E" and WritesGlobal "X"
   [1]
   $ aslref binop-throw-throw.asl
   E caught
@@ -36,7 +38,8 @@
   File binop-throw-throw.asl, line 11, characters 12 to 37:
       let y = throwing () + throwing ();
               ^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: conflicting side effects ThrowsException "E" and ThrowsException "E"
+  ASL Type error:
+    conflicting side effects ThrowsException "E" and ThrowsException "E"
   [1]
   $ aslref binop-throw-caught.asl
   E caught
@@ -46,7 +49,8 @@
   File binop-throw-not-caught.asl, line 21, characters 12 to 37:
       let x = throws_E () + caught_F ();
               ^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: conflicting side effects ThrowsException "E" and ThrowsException "E"
+  ASL Type error:
+    conflicting side effects ThrowsException "E" and ThrowsException "E"
   [1]
   $ aslref binop-throw-otherwised.asl
   E caught
@@ -62,13 +66,14 @@
   File binop-throw-atc.asl, line 16, characters 12 to 41:
       let y = throwing () + performs_atc ();
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: conflicting side effects ThrowsException "E" and PerformsAssertions
+  ASL Type error:
+    conflicting side effects ThrowsException "E" and PerformsAssertions
   [1]
   $ aslref binop-write-atc.asl
   File binop-write-atc.asl, line 5, characters 10 to 11:
     return (1 as integer {2});
             ^
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 1 does not belong to type integer {2}.
   [1]
 // We don't need to decide about the following:
@@ -223,7 +228,7 @@
   File config-uses-atc.asl, line 3, characters 9 to 10:
     return 0 as integer {10};
            ^
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 0 does not belong to type integer {10}.
   [1]
   $ aslref config-uses-unknown.asl
@@ -251,7 +256,7 @@
   File assert-atc.asl, line 3, characters 9 to 10:
     assert 0 as integer {3} == 2;
            ^
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 0 does not belong to type integer {3}.
   [1]
 
@@ -288,7 +293,7 @@
   File type-func-atc.asl, line 3, characters 9 to 10:
     assert 0 as integer {3} == 2;
            ^
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 0 does not belong to type integer {3}.
   [1]
   $ aslref type-func-local-var.asl
@@ -309,7 +314,7 @@
   File assert-atc.asl, line 3, characters 9 to 10:
     assert 0 as integer {3} == 2;
            ^
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 0 does not belong to type integer {3}.
   [1]
   $ aslref assert-read.asl
@@ -349,14 +354,15 @@
   File rec-binop-atc-throw.asl, line 15, characters 37 to 38:
     let x = throwing (n - 1, FALSE) * (2 as integer {3});
                                        ^
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 2 does not belong to type integer {3}.
   [1]
   $ aslref --use-conflicting-side-effects-extension rec-binop-atc-throw.asl
   File rec-binop-atc-throw.asl, line 15, characters 10 to 54:
     let x = throwing (n - 1, FALSE) * (2 as integer {3});
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: conflicting side effects CallsRecursive "throwing" and PerformsAssertions
+  ASL Type error:
+    conflicting side effects CallsRecursive "throwing" and PerformsAssertions
   [1]
   $ aslref rec-binop-read-throw.asl
   File rec-binop-read-throw.asl, line 4, character 0 to line 11, character 4:
@@ -374,7 +380,8 @@
   File rec-binop-read-throw.asl, line 22, characters 10 to 45:
     let x = throwing (n - 1, FALSE) * read_X ();
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: conflicting side effects CallsRecursive "throwing" and ReadsGlobal "X"
+  ASL Type error:
+    conflicting side effects CallsRecursive "throwing" and ReadsGlobal "X"
   [1]
   $ aslref rec-binop-unknown.asl
   $ aslref rec-binop-read.asl
@@ -389,7 +396,8 @@
   File rec-binop-read.asl, line 17, characters 10 to 42:
     let x = not_throwing (n - 1) * read_X ();
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: conflicting side effects CallsRecursive "not_throwing" and ReadsGlobal "X"
+  ASL Type error:
+    conflicting side effects CallsRecursive "not_throwing" and ReadsGlobal "X"
   [1]
   $ aslref rec-binop-read-local.asl
   $ aslref rec-binop-write.asl
@@ -404,7 +412,8 @@
   File rec-binop-write.asl, line 18, characters 10 to 43:
     let x = not_throwing (n - 1) * write_X ();
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: conflicting side effects CallsRecursive "not_throwing" and WritesGlobal "X"
+  ASL Type error:
+    conflicting side effects CallsRecursive "not_throwing" and WritesGlobal "X"
   [1]
   $ aslref rec-assert.asl
   File rec-assert.asl, line 1, character 0 to line 4, character 4:
@@ -417,14 +426,15 @@
   File rec-assert.asl, line 9, characters 34 to 35:
     let x = not_throwing (n - 1) * (2 as integer {3});
                                     ^
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 2 does not belong to type integer {3}.
   [1]
   $ aslref --use-conflicting-side-effects-extension rec-assert.asl
   File rec-assert.asl, line 9, characters 10 to 51:
     let x = not_throwing (n - 1) * (2 as integer {3});
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: conflicting side effects CallsRecursive "not_throwing" and PerformsAssertions
+  ASL Type error:
+    conflicting side effects CallsRecursive "not_throwing" and PerformsAssertions
   [1]
   $ aslref rec-binop-atc.asl
   File rec-binop-atc.asl, line 1, character 0 to line 4, character 4:
@@ -437,14 +447,15 @@
   File rec-binop-atc.asl, line 9, characters 34 to 35:
     let x = not_throwing (n - 1) * (2 as integer {3});
                                     ^
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 2 does not belong to type integer {3}.
   [1]
   $ aslref --use-conflicting-side-effects-extension rec-binop-atc.asl
   File rec-binop-atc.asl, line 9, characters 10 to 51:
     let x = not_throwing (n - 1) * (2 as integer {3});
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: conflicting side effects CallsRecursive "not_throwing" and PerformsAssertions
+  ASL Type error:
+    conflicting side effects CallsRecursive "not_throwing" and PerformsAssertions
   [1]
   $ aslref rec-binop-read-write.asl
   File rec-binop-read-write.asl, line 3, character 0 to line 6, character 4:
@@ -458,7 +469,8 @@
   File rec-binop-read-write.asl, line 17, characters 10 to 42:
     let x = not_throwing (n - 1) * read_X ();
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: conflicting side effects CallsRecursive "not_throwing" and ReadsGlobal "X"
+  ASL Type error:
+    conflicting side effects CallsRecursive "not_throwing" and ReadsGlobal "X"
   [1]
   $ aslref rec-binop-write-throw.asl
   File rec-binop-write-throw.asl, line 4, character 0 to line 11, character 4:
@@ -476,7 +488,8 @@
   File rec-binop-write-throw.asl, line 23, characters 10 to 46:
     let x = throwing (n - 1, FALSE) * write_X ();
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: conflicting side effects CallsRecursive "throwing" and WritesGlobal "X"
+  ASL Type error:
+    conflicting side effects CallsRecursive "throwing" and WritesGlobal "X"
   [1]
   $ aslref rec-constant.asl
   $ aslref constant-rec.asl
@@ -505,7 +518,8 @@
   File rec-binop-rec.asl, line 9, characters 10 to 35:
     let x = bar (n - 1) * bar (n - 2);
             ^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: conflicting side effects CallsRecursive "bar" and CallsRecursive "bar"
+  ASL Type error:
+    conflicting side effects CallsRecursive "bar" and CallsRecursive "bar"
   [1]
 
   $ aslref print-var.asl
@@ -524,8 +538,8 @@
   File global-throw-initialisation.asl, line 8, characters 0 to 29:
   let X: integer = throwing ();
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Execution error: unexpected exception E thrown during the evaluation of
-    the initialisation of the global storage element "X".
+  ASL Dynamic error: unexpected exception E thrown during the evaluation of the
+    initialisation of the global storage element "X".
   [1]
 
   $ aslref config-type-uses-let.asl

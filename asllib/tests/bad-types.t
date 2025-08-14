@@ -7,7 +7,7 @@ Bad enumeration
   File bad-types1.asl, line 1, characters 23 to 24:
   type t of enumeration {};
                          ^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
 
 Invalid bitfields
@@ -119,7 +119,7 @@ Arbitrary of empty type
   File bad-types7.asl, line 3, characters 38 to 52:
      let b: integer {1..0} = ARBITRARY: integer {1..0};
                                         ^^^^^^^^^^^^^^
-  ASL Execution error: ARBITRARY of empty type integer {1..0}.
+  ASL Dynamic error: ARBITRARY of empty type integer {1..0}.
   [1]
 
 Base value of empty type

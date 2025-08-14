@@ -29,7 +29,7 @@
   File recursive-constant.asl, line 1, characters 13 to 14:
   constant x = x + 3;
                ^
-  ASL Error: Undefined identifier: 'x'
+  ASL Static error: Undefined identifier: 'x'
   [1]
 
   $ aslref double-recursive-constant.asl
@@ -43,7 +43,7 @@
   File recursive-type.asl, line 1, characters 0 to 35:
   type tree of (tree, integer, tree);
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Error: Undefined identifier: 'tree'
+  ASL Static error: Undefined identifier: 'tree'
   [1]
 
   $ aslref double-recursive-types.asl

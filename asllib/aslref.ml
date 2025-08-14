@@ -181,10 +181,10 @@ let parse_args () =
       ( "--overriding-permissive",
         Arg.Unit (set_override_mode Permissive),
         " Allow both `impdef` and `implementation` functions (default)." );
-      ( "--overriding-no-implementations",
+      ( "--overriding-warn-implementations",
         Arg.Unit (set_override_mode NoImplementations),
         " Warn if any `implementation` functions are defined." );
-      ( "--overriding-all-impdefs-overridden",
+      ( "--overriding-warn-all-impdefs-overridden",
         Arg.Unit (set_override_mode AllImpdefsOverridden),
         " Warn if any `impdef` functions are not overridden by corresponding \
          `implementation`s." );

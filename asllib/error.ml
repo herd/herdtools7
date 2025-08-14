@@ -34,8 +34,8 @@ type error_desc =
   | BadSlice of slice
   | EmptySlice
   | TypeInferenceNeeded
-  | UndefinedIdentifier of identifier
-  | MismatchedReturnValue of string
+  | UndefinedIdentifier of error_handling_time * identifier
+  | MismatchedReturnValue of error_handling_time * string
   | BadArity of error_handling_time * identifier * int * int
   | BadParameterArity of error_handling_time * version * identifier * int * int
   | UnsupportedBinop of error_handling_time * binop * literal * literal
@@ -122,10 +122,6 @@ let fatal_here pos_start pos_end e =
 
 let fatal_unknown_pos e = fatal (ASTUtils.add_dummy_annotation e)
 let intercept f () = try Ok (f ()) with ASLException e -> Error e
-
-let error_handling_time_to_string = function
-  | Static -> "Static"
-  | Dynamic -> "Dynamic"
 
 type warning_desc =
   | NoRecursionLimit of identifier list
@@ -315,306 +311,276 @@ module PPrint = struct
 
   let pp_type_desc f ty = pp_ty f (ASTUtils.add_dummy_annotation ty)
 
+  let fprintf_err f kind =
+    kdprintf (fun msg -> fprintf f "@[<hov 2>ASL %s error:@ %t@]" kind msg)
+
+  let lexical = "Lexical"
+  let parse = "Grammar"
+  let static = "Static"
+  let typing = "Type"
+  let dynamic = "Dynamic"
+  let internal = "Internal"
+
+  let error_handling_time_to_string = function
+    | Static -> static
+    | Dynamic -> dynamic
+
   let pp_error_desc f e =
-    pp_open_hovbox f 2;
-    (match e.desc with
-    | ReservedIdentifier id ->
-        fprintf f "ASL Lexical error: %S is a reserved keyword." id
+    let pp_err s fmt = fprintf_err f s fmt in
+    match e.desc with
+    | ReservedIdentifier id -> pp_err lexical "%S is a reserved keyword." id
     | UnsupportedBinop (t, op, v1, v2) ->
-        fprintf f
-          "ASL %s error: Illegal application of operator %s for values@ %a@ \
-           and %a."
+        pp_err
           (error_handling_time_to_string t)
+          "Illegal application of operator %s for values@ %a@ and %a."
           (binop_to_string op) pp_literal v1 pp_literal v2
     | UnsupportedUnop (t, op, v) ->
-        fprintf f
-          "ASL %s error: Illegal application of operator %s for value@ %a."
+        pp_err
           (error_handling_time_to_string t)
+          "Illegal application of operator %s for value@ %a."
           (unop_to_string op) pp_literal v
     | UnsupportedExpr (t, e) ->
-        fprintf f "ASL %s Error: Unsupported expression %a."
+        pp_err
           (error_handling_time_to_string t)
-          pp_expr e
+          "Unsupported expression %a." pp_expr e
     | UnsupportedTy (t, ty) ->
-        fprintf f "ASL %s Error: Unsupported type %a."
-          (error_handling_time_to_string t)
-          pp_ty ty
-    | InvalidExpr e -> fprintf f "ASL Error: invalid expression %a." pp_expr e
+        pp_err (error_handling_time_to_string t) "Unsupported type %a." pp_ty ty
+    | InvalidExpr e -> fprintf_err f typing "invalid expression %a." pp_expr e
     | MismatchType (v, [ ty ]) ->
-        fprintf f
-          "ASL Execution error: Mismatch type:@ value %s does not belong to \
-           type %a."
-          v pp_type_desc ty
+        pp_err dynamic "Mismatch type:@ value %s does not belong to type %a." v
+          pp_type_desc ty
     | MismatchType (v, li) ->
-        fprintf f
-          "ASL Execution error: Mismatch type:@ value %s@ does not subtype any \
-           of those types:@ %a"
-          v
+        pp_err dynamic
+          "Mismatch type:@ value %s@ does not subtype any of those types:@ %a" v
           (pp_comma_list pp_type_desc)
           li
     | BadField (s, ty) ->
-        fprintf f "ASL Typing Error: There is no field '%s'@ on type %a." s
-          pp_ty ty
+        pp_err typing "There is no field '%s'@ on type %a." s pp_ty ty
     | MissingField (fields, ty) ->
-        fprintf f
-          "ASL Typing Error: Fields mismatch for creating a value of type %a@ \
-           -- Passed fields are:@ %a"
+        pp_err typing
+          "Fields mismatch for creating a value of type %a@ -- Passed fields \
+           are:@ %a"
           pp_ty ty
           (pp_print_list ~pp_sep:pp_print_space pp_print_string)
           fields
     | EmptySlice ->
         assert (e.version = V0);
-        pp_print_text f
-          "ASL Static Error: cannot slice with empty slicing operator. This \
-           might also be due to an incorrect getter/setter invocation."
+        pp_err static
+          "cannot slice with empty slicing operator. This might also be due to \
+           an incorrect getter/setter invocation."
     | BadSlices (t, slices, length) ->
-        fprintf f
-          "ASL %s error: Cannot extract from bitvector of length %d slice %a."
+        pp_err
           (error_handling_time_to_string t)
-          length pp_slice_list slices
-    | BadSlice slice ->
-        fprintf f "ASL Static error: invalid slice %a." pp_slice slice
+          "Cannot extract from bitvector of length %d slice %a." length
+          pp_slice_list slices
+    | BadSlice slice -> pp_err static "invalid slice %a." pp_slice slice
     | TypeInferenceNeeded ->
-        pp_print_text f
-          "ASL Internal error: Interpreter blocked. Type inference needed."
-    | UndefinedIdentifier s ->
-        fprintf f "ASL Error: Undefined identifier:@ '%s'" s
-    | MismatchedReturnValue s ->
-        fprintf f "ASL Error: Mismatched use of return value from call to '%s'."
-          s
-    | BadArity (t, name, expected, provided) ->
-        fprintf f
-          "ASL %s Error: Arity error while calling '%s':@ %d arguments \
-           expected and %d provided."
+        pp_err internal "Interpreter blocked. Type inference needed."
+    | UndefinedIdentifier (t, s) ->
+        pp_err (error_handling_time_to_string t) "Undefined identifier:@ '%s'" s
+    | MismatchedReturnValue (t, s) ->
+        pp_err
           (error_handling_time_to_string t)
+          "Mismatched use of return value from call to '%s'." s
+    | BadArity (t, name, expected, provided) ->
+        pp_err
+          (error_handling_time_to_string t)
+          "Arity error while calling '%s':@ %d arguments expected and %d \
+           provided."
           name expected provided
     | BadParameterArity (t, version, name, expected, provided) -> (
         match (t, version) with
         | Static, V0 ->
-            fprintf f
-              "ASL %s Error: Could not infer all parameters while calling \
-               '%s':@ %d parameters expected and %d inferred"
+            pp_err
               (error_handling_time_to_string t)
+              "Could not infer all parameters while calling '%s':@ %d \
+               parameters expected and %d inferred"
               name expected provided
         | _ ->
-            fprintf f
-              "ASL %s Error: Arity error while calling '%s':@ %d parameters \
-               expected and %d provided"
+            pp_err
               (error_handling_time_to_string t)
+              "Arity error while calling '%s':@ %d parameters expected and %d \
+               provided"
               name expected provided)
-    | NotYetImplemented s ->
-        pp_print_text f @@ "ASL Internal error: Not yet implemented: " ^ s
-    | ObsoleteSyntax s ->
-        fprintf f "%a@ %s" pp_print_text "ASL Grammar error: Obsolete syntax:" s
+    | NotYetImplemented s -> pp_err internal "Not yet implemented: %s" s
+    | ObsoleteSyntax s -> pp_err parse "Obsolete syntax: %s" s
     | ConflictingTypes ([ expected ], provided) ->
-        fprintf f
-          "ASL Type error:@ a subtype of@ %a@ was expected,@ provided %a."
+        pp_err typing "a subtype of@ %a@ was expected,@ provided %a."
           pp_type_desc expected pp_ty provided
     | ConflictingTypes (expected, provided) ->
-        fprintf f "ASL Type error:@ %a does@ not@ subtype@ any@ of:@ %a." pp_ty
-          provided
+        pp_err typing "%a does@ not@ subtype@ any@ of:@ %a." pp_ty provided
           (pp_comma_list pp_type_desc)
           expected
-    | AssertionFailed e ->
-        fprintf f "ASL Execution error: Assertion failed:@ %a." pp_expr e
-    | CannotParse -> pp_print_string f "ASL Grammar Error: Cannot parse."
-    | UnknownSymbol -> pp_print_string f "ASL Grammar Error: Unknown symbol."
+    | AssertionFailed e -> pp_err dynamic "Assertion failed:@ %a." pp_expr e
+    | CannotParse -> pp_err parse "Cannot parse."
+    | UnknownSymbol -> pp_err lexical "Unknown symbol."
     | NoCallCandidate (name, types) ->
-        fprintf f
-          "ASL Type error: No subprogram declaration matches the invocation:@ \
-           %s(%a)."
-          name (pp_comma_list pp_ty) types
+        pp_err typing
+          "No subprogram declaration matches the invocation:@ %s(%a)." name
+          (pp_comma_list pp_ty) types
     | BadTypesForBinop (op, t1, t2) ->
-        fprintf f
-          "ASL Type error: Illegal application of operator %s on types@ %a@ \
-           and %a."
+        pp_err typing "Illegal application of operator %s on types@ %a@ and %a."
           (binop_to_string op) pp_ty t1 pp_ty t2
     | CircularDeclarations x ->
-        fprintf f
+        pp_err dynamic
           "ASL Evaluation error: circular definition of constants, including \
            %S."
           x
     | ImpureExpression (e, ses) ->
-        fprintf f
-          "ASL Type error:@ a pure expression was expected,@ found %a,@ which@ \
-           produces@ the@ following@ side-effects:@ %a."
+        pp_err typing
+          "a pure expression was expected,@ found %a,@ which@ produces@ the@ \
+           following@ side-effects:@ %a."
           pp_expr e SideEffect.SES.pp_print ses
     | MismatchedPurity s ->
-        fprintf f "ASL Type error:@ expected@ a@ %s@ expression/subprogram." s
+        pp_err typing "expected@ a@ %s@ expression/subprogram." s
     | UnreconcilableTypes (t1, t2) ->
-        fprintf f
-          "ASL Type error:@ cannot@ find@ a@ common@ ancestor@ to@ those@ two@ \
-           types@ %a@ and@ %a."
+        pp_err typing
+          "cannot@ find@ a@ common@ ancestor@ to@ those@ two@ types@ %a@ and@ \
+           %a."
           pp_ty t1 pp_ty t2
     | AssignToImmutable x ->
-        fprintf f "ASL Type error:@ cannot@ assign@ to@ immutable@ storage@ %S."
-          x
+        pp_err typing "cannot@ assign@ to@ immutable@ storage@ %S." x
     | AssignToTupleElement tuple_e ->
-        fprintf f
-          "ASL Type error:@ cannot@ assign@ to@ the@ (immutable)@ tuple@ \
-           value@ %a."
+        pp_err typing "cannot@ assign@ to@ the@ (immutable)@ tuple@ value@ %a."
           pp_lexpr tuple_e
     | AlreadyDeclaredIdentifier x ->
-        fprintf f
-          "ASL Type error:@ cannot@ declare@ already@ declared@ element@ %S." x
+        pp_err typing "cannot@ declare@ already@ declared@ element@ %S." x
     | BadReturnStmt None ->
-        pp_print_text f
-          "ASL Type error: cannot return something from a procedure."
-    | UnexpectedSideEffect s -> fprintf f "Unexpected side-effect: %s." s
-    | UncaughtException s -> fprintf f "Uncaught exception: %s." s
+        pp_err typing "cannot return something from a procedure."
+    | UnexpectedSideEffect s -> pp_err dynamic "Unexpected side-effect: %s." s
+    | UncaughtException s -> pp_err dynamic "Uncaught exception: %s." s
     | OverlappingSlices (slices, t) ->
-        fprintf f "ASL %s error:@ overlapping slices@ @[%a@]."
+        pp_err
           (error_handling_time_to_string t)
-          pp_slice_list slices
+          "overlapping slices@ @[%a@]." pp_slice_list slices
     | BadLDI ldi ->
-        fprintf f "Unsupported declaration:@ @[%a@]." pp_local_decl_item ldi
+        pp_err typing "Unsupported declaration:@ @[%a@]." pp_local_decl_item ldi
     | BadRecursiveDecls decls ->
-        fprintf f "ASL Type error:@ multiple recursive declarations:@ @[%a@]."
+        pp_err typing "multiple recursive declarations:@ @[%a@]."
           (pp_comma_list (fun f -> fprintf f "%S"))
           decls
-    | UnrespectedParserInvariant -> fprintf f "Parser invariant broke."
+    | UnrespectedParserInvariant -> pp_err typing "Parser invariant broke."
     | ConstrainedIntegerExpected t ->
-        fprintf f
-          "ASL Type error:@ constrained@ integer@ expected,@ provided@ %a."
-          pp_ty t
+        pp_err typing "constrained@ integer@ expected,@ provided@ %a." pp_ty t
     | ParameterWithoutDecl s ->
-        fprintf f
-          "ASL Type error:@ explicit@ parameter@ %S@ does@ not@ have@ a@ \
-           corresponding@ defining@ argument."
+        pp_err typing
+          "explicit@ parameter@ %S@ does@ not@ have@ a@ corresponding@ \
+           defining@ argument."
           s
     | BadParameterDecl (name, expected, actual) ->
-        fprintf f
-          "ASL Type error:@ incorrect@ parameter@ declaration@ for@ %S,@ \
-           expected@ @[{%a}@]@ but@ @[{%a}@]@ provided"
+        pp_err typing
+          "incorrect@ parameter@ declaration@ for@ %S,@ expected@ @[{%a}@]@ \
+           but@ @[{%a}@]@ provided"
           name
           (pp_comma_list pp_print_string)
           expected
           (pp_comma_list pp_print_string)
           actual
     | ArbitraryEmptyType t ->
-        fprintf f "ASL Execution error: ARBITRARY of empty type %a." pp_ty t
+        pp_err dynamic "ARBITRARY of empty type %a." pp_ty t
     | BaseValueEmptyType t ->
-        fprintf f "ASL Type error: base value of empty type %a." pp_ty t
+        pp_err typing "base value of empty type %a." pp_ty t
     | BaseValueNonSymbolic (t, e) ->
-        fprintf f
-          "ASL Type error:@ base@ value@ of@ type@ %a@ cannot@ be@ \
-           symbolically@ reduced@ since@ it@ consists@ of@ %a."
+        pp_err typing
+          "base@ value@ of@ type@ %a@ cannot@ be@ symbolically@ reduced@ \
+           since@ it@ consists@ of@ %a."
           pp_ty t pp_expr e
     | BadATC (t1, t2) ->
-        fprintf f
-          "ASL Type error:@ cannot@ perform@ Asserted@ Type@ Conversion@ on@ \
-           %a@ by@ %a."
-          pp_ty t1 pp_ty t2
+        pp_err typing
+          "cannot@ perform@ Asserted@ Type@ Conversion@ on@ %a@ by@ %a." pp_ty
+          t1 pp_ty t2
     | SettingIntersectingSlices bitfields ->
-        fprintf f "ASL Type error:@ setting@ intersecting@ bitfields@ [%a]."
-          pp_bitfields bitfields
+        pp_err typing "setting@ intersecting@ bitfields@ [%a]." pp_bitfields
+          bitfields
     | SetterWithoutCorrespondingGetter func ->
         let ret, args =
           match func.args with
           | (_, ret) :: args -> (ret, List.map snd args)
           | _ -> assert false
         in
-        fprintf f
-          "ASL Type error:@ setter@ \"%s\"@ does@ not@ have@ a@ corresponding@ \
-           getter@ of@ signature@ @[@[%a@]@ ->@ %a@]."
+        pp_err typing
+          "setter@ \"%s\"@ does@ not@ have@ a@ corresponding@ getter@ of@ \
+           signature@ @[@[%a@]@ ->@ %a@]."
           func.name (pp_comma_list pp_ty) args pp_ty ret
-    | UnexpectedATC -> pp_print_text f "ASL Type error: unexpected ATC."
+    | UnexpectedATC -> pp_err typing "unexpected ATC."
     | BadPattern (p, t) ->
-        fprintf f
-          "ASL Type error:@ Erroneous@ pattern@ %a@ for@ expression@ of@ type@ \
-           %a."
+        pp_err typing "Erroneous@ pattern@ %a@ for@ expression@ of@ type@ %a."
           pp_pattern p pp_ty t
-    | UnreachableReached ->
-        pp_print_text f "ASL Dynamic error: unreachable reached."
+    | UnreachableReached -> pp_err dynamic "unreachable reached."
     | NonReturningFunction name ->
-        fprintf f
-          "ASL Type error:@ not all control flow paths of the function %S@ %a."
-          name pp_print_text
+        pp_err typing "not all control flow paths of the function %S@ %a." name
+          pp_print_text
           "are guaranteed to either return, raise an exception, or invoke \
            unreachable"
     | NoreturnViolation name ->
-        fprintf f "ASL Type error:@ the@ function %S@ %a." name pp_print_text
+        pp_err typing "the@ function %S@ %a." name pp_print_text
           "is qualified with noreturn but may return on some control flow path"
-    | RecursionLimitReached ->
-        pp_print_text f "ASL Dynamic error: recursion limit reached."
-    | LoopLimitReached ->
-        pp_print_text f "ASL Dynamic error: loop limit reached."
+    | RecursionLimitReached -> pp_err dynamic "recursion limit reached."
+    | LoopLimitReached -> pp_err dynamic "loop limit reached."
     | ConflictingSideEffects (s1, s2) ->
-        fprintf f "ASL Type error: conflicting side effects %a and %a"
-          SideEffect.pp_print s1 SideEffect.pp_print s2
+        pp_err typing "conflicting side effects %a and %a" SideEffect.pp_print
+          s1 SideEffect.pp_print s2
     | ConfigTimeBroken (e, ses) ->
-        fprintf f
-          "ASL Type error:@ expected@ config-time@ expression,@ got@ %a,@ \
-           which@ produces@ the@ following@ side-effects:@ %a."
+        pp_err typing
+          "expected@ config-time@ expression,@ got@ %a,@ which@ produces@ the@ \
+           following@ side-effects:@ %a."
           pp_expr e SideEffect.SES.pp_print ses
     | ConstantTimeBroken (e, ses) ->
-        fprintf f
-          "ASL Type error:@ expected@ constant-time@ expression,@ got@ %a,@ \
-           which@ produces@ the@ following@ side-effects:@ %a."
+        pp_err typing
+          "expected@ constant-time@ expression,@ got@ %a,@ which@ produces@ \
+           the@ following@ side-effects:@ %a."
           pp_expr e SideEffect.SES.pp_print ses
     | BadReturnStmt (Some t) ->
-        fprintf f
-          "ASL Type error:@ cannot@ return@ nothing@ from@ a@ function,@ an@ \
-           expression@ of@ type@ %a@ is@ expected."
+        pp_err typing
+          "cannot@ return@ nothing@ from@ a@ function,@ an@ expression@ of@ \
+           type@ %a@ is@ expected."
           pp_ty t
     | EmptyConstraints ->
-        pp_print_text f
-          "ASL Type error: a well-constrained integer cannot have empty \
-           constraints."
+        pp_err typing
+          "a well-constrained integer cannot have empty constraints."
     | ExpectedSingularType t ->
-        fprintf f "ASL Type error:@ %a@ %a." pp_print_text
-          "expected singular type, found" pp_ty t
+        pp_err typing "%a@ %a." pp_print_text "expected singular type, found"
+          pp_ty t
     | ExpectedNamedType t ->
-        fprintf f "ASL Type error:@ %a@ %a." pp_print_text
-          "expected a named type, found" pp_ty t
+        pp_err typing "%a@ %a." pp_print_text "expected a named type, found"
+          pp_ty t
     | UnexpectedPendingConstrained ->
-        pp_print_text f
-          "ASL Type error: a pending constrained integer is illegal here."
+        pp_err typing "a pending constrained integer is illegal here."
     | BitfieldsDontAlign
         { field1_absname; field2_absname; field1_absslices; field2_absslices }
       ->
-        fprintf f
-          "ASL Type error:@ bitfields `%s` and `%s` are in the same scope but \
-           define different slices of the containing bitvector type: %s and \
-           %s, respectively."
+        pp_err typing
+          "bitfields `%s` and `%s` are in the same scope but define different \
+           slices of the containing bitvector type: %s and %s, respectively."
           field1_absname field2_absname field1_absslices field2_absslices
     | UnexpectedInitialisationThrow (exception_ty, global_storage_element_name)
       ->
-        fprintf f
-          "ASL Execution error:@ unexpected@ exception@ %a@ thrown@ during@ \
-           the@ evaluation@ of@ the@ initialisation@ of@ the global@ storage@ \
-           element@ %S."
+        pp_err dynamic
+          "unexpected@ exception@ %a@ thrown@ during@ the@ evaluation@ of@ \
+           the@ initialisation@ of@ the global@ storage@ element@ %S."
           pp_ty exception_ty global_storage_element_name
     | PrecisionLostDefining ->
-        fprintf f
-          "ASL Type error:@ type@ used@ to@ define@ storage@ item@ is@ the@ \
-           result@ of@ precision@ loss."
+        pp_err typing
+          "type@ used@ to@ define@ storage@ item@ is@ the@ result@ of@ \
+           precision@ loss."
     | NegativeArrayLength (e_length, length) ->
-        fprintf f
-          "ASL Execution error:@ array@ length@ expression@ %a@ has@ negative@ \
-           length@a: %i."
-          pp_expr e_length length
-    | MultipleWrites id ->
-        fprintf f "ASL Grammar error:@ multiple@ writes@ to@ %S." id
+        pp_err dynamic
+          "array@ length@ expression@ %a@ has@ negative@ length@a: %i." pp_expr
+          e_length length
+    | MultipleWrites id -> pp_err parse "multiple@ writes@ to@ %S." id
     | MultipleImplementations (impl1, impl2) ->
-        fprintf f
-          "ASL Type error:@ multiple@ overlapping@ `implementation`@ \
-           functions@ for@ %s:@ %a"
+        pp_err typing
+          "multiple@ overlapping@ `implementation`@ functions@ for@ %s:@ %a"
           impl1.desc.name (pp_print_list pp_pos) [ impl1; impl2 ]
     | NoOverrideCandidate ->
-        fprintf f "@[%a@]" pp_print_text
-          "ASL Type error: no `impdef` for `implementation` function."
-    | UnexpectedCollection ->
-        pp_print_text f "ASL Type error: unexpected collection."
+        pp_err typing "no `impdef` for `implementation` function."
+    | UnexpectedCollection -> pp_err typing "unexpected collection."
     | TooManyOverrideCandidates impdefs ->
-        fprintf f
-          "ASL Type error:@ multiple@ `impdef`@ candidates@ for@ \
-           `implementation`:@ %a"
+        pp_err typing
+          "multiple@ `impdef`@ candidates@ for@ `implementation`:@ %a"
           (pp_print_list pp_pos) impdefs
     | BadPrimitiveArgument (name, reason) ->
-        fprintf f "ASL Execution error: %s (primitive) expected an argument %s"
-          name reason);
-    pp_close_box f ()
+        pp_err dynamic "%s (primitive) expected an argument %s" name reason
 
   let pp_warning_desc f w =
     match w.desc with

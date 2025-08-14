@@ -222,7 +222,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.TNonDecl.asl, line 1, characters 5 to 6:
   func (x: record { a: integer, b: boolean }) => integer
        ^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
   $ aslref TypingRule.TBitField.asl
   $ aslref --no-exec TypingRule.AnnotateFuncSig.asl
@@ -236,7 +236,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.ExtractParameters-bad1.asl, line 3, characters 15 to 36:
       arg0: bits(N as integer{8,16,32}),
                  ^^^^^^^^^^^^^^^^^^^^^
-  ASL Static Error: Unsupported expression N as integer {8, 16, 32}.
+  ASL Static error: Unsupported expression N as integer {8, 16, 32}.
   [1]
   $ aslref TypingRule.BuiltinAggregateTypes.asl
   $ aslref --no-exec TypingRule.BuiltinExceptionType.asl
@@ -385,7 +385,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.EVar.undefined.asl, line 3, characters 12 to 13:
       var x = t;
               ^
-  ASL Error: Undefined identifier: 't'
+  ASL Static error: Undefined identifier: 't'
   [1]
 
   $ aslref TypingRule.EGetRecordField.asl
@@ -393,20 +393,20 @@ ASL Typing Tests / annotating types:
   File TypingRule.EGetBadRecordField.asl, line 7, characters 10 to 36:
     var x = my_record.undeclared_field;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing Error: There is no field 'undeclared_field' on type MyRecordType.
+  ASL Type error: There is no field 'undeclared_field' on type MyRecordType.
   [1]
   $ aslref TypingRule.EGetBitfield.asl
   $ aslref TypingRule.EGetBadBitField.asl
   File TypingRule.EGetBadBitField.asl, line 7, characters 12 to 33:
       var x = p.undeclared_bitfield;
               ^^^^^^^^^^^^^^^^^^^^^
-  ASL Typing Error: There is no field 'undeclared_bitfield' on type Packet.
+  ASL Type error: There is no field 'undeclared_bitfield' on type Packet.
   [1]
   $ aslref TypingRule.EGetBadField.asl
   File TypingRule.EGetBadField.asl, line 6, characters 12 to 15:
       var x = a.f;
               ^^^
-  ASL Typing Error: There is no field 'f' on type array [[5]] of integer.
+  ASL Type error: There is no field 'f' on type array [[5]] of integer.
   [1]
   $ aslref TypingRule.EGetFields.asl
   $ aslref --no-exec TypingRule.ATC.asl
@@ -449,7 +449,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.LEVar.undefined.asl, line 3, characters 4 to 5:
       x = 42;
       ^
-  ASL Error: Undefined identifier: 'x'
+  ASL Static error: Undefined identifier: 'x'
   [1]
   $ aslref TypingRule.LESetBadField.asl
   File TypingRule.LESetBadField.asl, line 6, characters 4 to 5:
@@ -487,7 +487,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.SDecl.bad2.asl, line 4, characters 18 to 19:
       let y: integer;
                     ^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
   $ aslref TypingRule.SAssert.bad.asl
   File TypingRule.SAssert.bad.asl, line 11, characters 10 to 23:
@@ -530,7 +530,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.SFor.bad3.asl, line 7, characters 4 to 5:
       j = 0; // Illegal: 'j' is in scope only in the loop body.
       ^
-  ASL Error: Undefined identifier: 'j'
+  ASL Static error: Undefined identifier: 'j'
   [1]
   $ aslref TypingRule.SFor.bad4.asl
   File TypingRule.SFor.bad4.asl, line 11, characters 17 to 30:
@@ -569,7 +569,8 @@ ASL Typing Tests / annotating types:
       [3:0, 5+:3] data,
       [3*:5] value // Illegal: position 19 exceeds 15
   };
-  ASL Static error: Cannot extract from bitvector of length 16 slice (3 * 5)+:5.
+  ASL Static error:
+    Cannot extract from bitvector of length 16 slice (3 * 5)+:5.
   [1]
 
   $ aslref TypingRule.CheckNoPrecisionLoss.asl
@@ -656,7 +657,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.CheckIsNotCollection.asl, line 3, characters 12 to 22:
     var test: collection {
               ^^^^^^^^^^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
   $ aslref TypingRule.LESetCollectionFields.asl
   $ aslref TypingRule.TypecheckDecl.asl
@@ -715,14 +716,14 @@ ASL Typing Tests / annotating types:
   File TypingRule.AnnotateExtraFields.bad.asl, line 1, characters 15 to 39:
   type SubRecord subtypes Record with {-};
                  ^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Error: Undefined identifier: 'Record'
+  ASL Static error: Undefined identifier: 'Record'
   [1]
   $ aslref --no-exec TypingRule.DeclaredType.asl
   $ aslref --no-exec TypingRule.DeclaredType.bad.asl
   File TypingRule.DeclaredType.bad.asl, line 3, characters 12 to 23:
       var x = 20 as MyInt;
               ^^^^^^^^^^^
-  ASL Error: Undefined identifier: 'MyInt'
+  ASL Static error: Undefined identifier: 'MyInt'
   [1]
   $ aslref --no-exec TypingRule.DeclareConst.asl
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.config.asl
@@ -742,7 +743,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.DeclareGlobalStorage.bad3.asl, line 2, characters 37 to 38:
   config uninitialized_config : integer;
                                        ^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.non_config.asl
   $ aslref --no-exec TypingRule.UpdateGlobalStorage.constant.asl
@@ -809,7 +810,7 @@ ASL Typing Tests / annotating types:
     characters 8 to 17:
       - = add_10(5);
           ^^^^^^^^^
-  ASL Error: Undefined identifier: 'add_10'
+  ASL Static error: Undefined identifier: 'add_10'
   [1]
   $ aslref TypingRule.SubprogramForName.bad.no_candidates.asl
   File TypingRule.SubprogramForName.bad.no_candidates.asl, line 8,
@@ -828,7 +829,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.ParametersOfExpr.bad.asl, line 4, characters 15 to 27:
       z: integer{(D, E).item0}) => // Illegal expression in argument type
                  ^^^^^^^^^^^^
-  ASL Static Error: Unsupported expression (D, E).item0.
+  ASL Static error: Unsupported expression (D, E).item0.
   [1]
   $ aslref --no-exec TypingRule.FuncSigTypes.asl
   $ aslref --no-exec TypingRule.SubprogramTypesClash.asl
@@ -871,7 +872,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.AnnotateReturnType.bad.asl, line 3, characters 24 to 34:
   func returns_value() => collection { foo: bits(32)};
                           ^^^^^^^^^^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
   $ aslref --no-exec TypingRule.AnnotateOneParam.asl
   $ aslref TypingRule.AnnotateOneParam.bad1.asl
@@ -896,14 +897,14 @@ ASL Typing Tests / annotating types:
   File TypingRule.AnnotateOneArg.bad2.asl, line 2, characters 18 to 28:
   func arguments(b: collection {a: bits(7)})
                     ^^^^^^^^^^
-  ASL Grammar Error: Cannot parse.
+  ASL Grammar error: Cannot parse.
   [1]
   $ aslref TypingRule.AnnotateRetTy.asl
   $ aslref TypingRule.AnnotateRetTy.bad.asl
   File TypingRule.AnnotateRetTy.bad.asl, line 15, characters 4 to 17:
       flip{64}(bv); // Illegal: the returned value must be consumed.
       ^^^^^^^^^^^^^
-  ASL Error: Mismatched use of return value from call to 'flip'.
+  ASL Static error: Mismatched use of return value from call to 'flip'.
   [1]
   $ aslref --no-exec TypingRule.AnnotateCall.asl
   $ aslref --no-exec TypingRule.AnnotateCall2.asl
@@ -939,7 +940,7 @@ ASL Typing Tests / annotating types:
     characters 8 to 32:
       - = xor_extend{64}(bv1, bv2); // Illegal: missing parameter for `M`.
           ^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Static Error: Arity error while calling 'xor_extend':
+  ASL Static error: Arity error while calling 'xor_extend':
     2 parameters expected and 1 provided
   [1]
   $ aslref TypingRule.AnnotateCallActualsTyped.bad2.asl

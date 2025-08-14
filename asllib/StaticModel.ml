@@ -180,7 +180,7 @@ let rec make_anonymous (env : StaticEnv.env) (ty : ty) : ty =
   | T_Named x -> (
       match IMap.find_opt x env.global.declared_types with
       | Some (ty', _) -> make_anonymous env ty'
-      | None -> fatal_from ty (Error.UndefinedIdentifier x))
+      | None -> fatal_from ty (Error.UndefinedIdentifier (Static, x)))
   | _ -> ty
 
 let of_lit = function L_Int i -> Polynomial.of_int i | _ -> raise NotSupported
@@ -196,7 +196,8 @@ let rec to_ir env (e : expr) =
         with Not_found | NotSupported -> (
           let t =
             try StaticEnv.type_of env s
-            with Not_found -> Error.fatal_from e (UndefinedIdentifier s)
+            with Not_found ->
+              Error.fatal_from e (UndefinedIdentifier (Static, s))
           in
           let ty1 = make_anonymous env t in
           match ty1.desc with

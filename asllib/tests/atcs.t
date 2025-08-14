@@ -10,7 +10,7 @@ Deferred to execution ATCs
   File atcs1.asl, line 2, characters 11 to 12:
     let x = (3 as integer {42});
              ^
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value 3 does not belong to type integer {42}.
   [1]
 
@@ -79,7 +79,7 @@ ATCs on other types
   File atcs6.asl, line 3, characters 11 to 25:
     let x = ((42, Zeros{4}) as myty);
              ^^^^^^^^^^^^^^
-  ASL Execution error: Mismatch type:
+  ASL Dynamic error: Mismatch type:
     value [42, 0x0] does not belong to type (integer {0..10}, bits(4)).
   [1]
 

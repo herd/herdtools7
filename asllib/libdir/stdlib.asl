@@ -552,8 +552,10 @@ end;
 // integer and the resulting integer is represented by its first N bits.
 pure func AlignDownP2{N}(x: bits(N), p2: integer{0..N}) => bits(N)
 begin
-    if N == 0 then return x; end;
-    return x[N-1:p2] :: Zeros{p2};
+    if N == 0 then return x;
+    elsif N == p2 then return Zeros{N};
+    else return x[N-1:p2] :: Zeros{p2};
+    end;
 end;
 
 // AlignUpP2()

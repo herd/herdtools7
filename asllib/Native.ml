@@ -139,14 +139,14 @@ module NativeBackend (C : Config) = struct
     match vec with
     | NV_Vector li ->
         let n = List.length li in
-        if i >= n then bad_index i n else List.nth li i |> return
+        if i < 0 || i >= n then bad_index i n else List.nth li i |> return
     | v -> non_tuple_exception v
 
   let set_index i v vec =
     match vec with
     | NV_Vector li ->
         let n = List.length li in
-        if i >= n then bad_index i n
+        if i < 0 || i >= n then bad_index i n
         else list_update i (Fun.const v) li |> v_tuple
     | v -> non_tuple_exception v
 
@@ -193,9 +193,16 @@ module NativeBackend (C : Config) = struct
       positions
     |> slices_to_positions Fun.id
 
+  let max_pos_of_slices slices =
+    let max_pos (start, len) =
+      let start = as_int start and len = as_int len in
+      if len == 0 then start else start + len - 1
+    in
+    List.fold_left (fun acc slice -> int_max acc (max_pos slice)) 0 slices
+
   let read_from_bitvector ~loc slices v =
+    let max_pos = max_pos_of_slices slices in
     let positions = slices_to_positions slices in
-    let max_pos = List.fold_left int_max 0 positions in
     let () =
       List.iter
         (fun x -> if x < 0 then mismatch_type v [ default_t_bits ])
@@ -203,7 +210,9 @@ module NativeBackend (C : Config) = struct
     in
     let bv =
       match v with
-      | NV_Literal (L_BitVector bv) when Bitvector.length bv > max_pos -> bv
+      | NV_Literal (L_BitVector bv) ->
+          if max_pos < Bitvector.length bv then bv
+          else bad_index max_pos (Bitvector.length bv)
       | NV_Literal (L_Int i) -> Bitvector.of_z (max_pos + 1) i
       | _ ->
           let ( ~! ) = add_pos_from loc in
@@ -217,6 +226,24 @@ module NativeBackend (C : Config) = struct
     let dst = as_bitvector dst
     and src = as_bitvector src
     and positions = slices_to_positions slices in
+    let () =
+      List.iter
+        (fun x ->
+          if x < 0 then
+            mismatch_type (bitvector_to_value dst) [ default_t_bits ])
+        positions
+    in
+    let () =
+      if List.length positions != Bitvector.length src then
+        mismatch_type
+          (v_of_int (List.length positions))
+          [ integer_exact' (expr_of_int (Bitvector.length src)) ]
+    in
+    let max_pos = max_pos_of_slices slices in
+    let () =
+      if not (max_pos < Bitvector.length dst) then
+        bad_index max_pos (Bitvector.length dst)
+    in
     Bitvector.write_slice dst src positions |> bitvector_to_value
 
   let concat_bitvectors bvs =
