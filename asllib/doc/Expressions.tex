@@ -363,7 +363,7 @@ The operator classes and precedence order is defined by the following table:
 5 & \textbf{Power}                & \Tpow\\
 4 & \textbf{Mul-Div-Shift}        & \Tmul, \Tdiv, \Trdiv, \Tdivrm, \Tmod, \Tshl, \Tshr\\
 3 & \textbf{Add-Sub-Logic}        & \Tplus, \Tminus, \Tand, \Tor, \Txor, \Tcoloncolon, \Tplusplus\\
-2 & \textbf{Equality-Inequality}  & \Teq, \Tneq\\
+2 & \textbf{Equality-Inequality}  & \Teqop, \Tneq\\
 1 & \textbf{Boolean}              & \Tband, \Tbor, \Timpl, \Tbeq\\
 0 & \textbf{Relational}           & \Tgt, \Tgeq, \Tlt, \Tleq\\
 \hline
@@ -2830,7 +2830,7 @@ that expressions appearing in types are all side-effect-free.
 \hypertarget{def-patternexpressionterm}{}
 \section{Pattern Matching Expressions\label{sec:PatternMatchingExpressions}}
 The binary operator $\Tin$ tests whether a value (referred to as the discriminant) matches any item from a $\Npatternset$.
-Patterns can also be used to test whether an expression matches a bitmask (via $\Teq$) or does not match a bitmask (via $\Tneq$).
+Patterns can also be used to test whether an expression matches a bitmask (via $\Teqop$) or does not match a bitmask (via $\Tneq$).
 Lists of patterns are also used in case statements.
 %
 \chapref{PatternMatching} goes into the details of the various types of patterns that can be matched against.
@@ -2866,7 +2866,7 @@ Lists of patterns are also used in case statements.
 
 \begin{mathpar}
 \inferrule[eq]{}{
-  \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Teq, \Tmasklit(\vm))}{\vparsednode}) \astarrow
+  \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Teqop, \Tmasklit(\vm))}{\vparsednode}) \astarrow
   \overname{\EPattern(\astof{\vexpr}, \PatternMask(\vm))}{\vastnode}
 }
 \end{mathpar}
