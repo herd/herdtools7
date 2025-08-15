@@ -1644,7 +1644,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
            looks like a function call may really be a getter call *)
         | _, ST_Getter, ST_Function -> true
         (* V0 compatibility: support for calling empty getters/setters *)
-        | V0, ST_EmptyGetter, ST_Function -> true
+        | V0, ST_EmptyGetter, (ST_Getter | ST_Function) -> true
         | V0, ST_EmptySetter, ST_Setter -> true
         | _ -> false)
       @@ fun () -> fatal_from ~loc (MismatchedReturnValue (Static, name))
