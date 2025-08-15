@@ -1162,7 +1162,7 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
 \inferrule[pattern\_eq]{}{
   {
     \begin{array}{r}
-      \buildexprpattern(\overname{\Nexprpattern(\punnode{\Nexprpattern}, \Teq, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
+      \buildexprpattern(\overname{\Nexprpattern(\punnode{\Nexprpattern}, \Teqop, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
       \overname{\EPattern(\astof{\vexprpattern}, \PatternMask(\vm))}{\vastnode}
     \end{array}
   }
