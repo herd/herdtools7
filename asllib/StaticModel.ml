@@ -190,20 +190,17 @@ let rec to_ir env (e : expr) =
   match e.desc with
   | E_Literal l -> of_lit l
   | E_Var s -> (
-      try StaticEnv.lookup_constant env s |> of_lit
-      with Not_found -> (
-        try StaticEnv.lookup_immutable_expr env s |> to_ir env
-        with Not_found | NotSupported -> (
-          let t =
-            try StaticEnv.type_of env s
-            with Not_found ->
-              Error.fatal_from e (UndefinedIdentifier (Static, s))
-          in
-          let ty1 = make_anonymous env t in
-          match ty1.desc with
-          | T_Int (WellConstrained ([ Constraint_Exact e ], _)) -> to_ir env e
-          | T_Int _ -> Polynomial.of_var s
-          | _ -> raise NotSupported)))
+      try StaticEnv.lookup_immutable_expr env s |> to_ir env
+      with Not_found | NotSupported -> (
+        let t =
+          try StaticEnv.type_of env s
+          with Not_found -> Error.fatal_from e (UndefinedIdentifier (Static, s))
+        in
+        let ty1 = make_anonymous env t in
+        match ty1.desc with
+        | T_Int (WellConstrained ([ Constraint_Exact e ], _)) -> to_ir env e
+        | T_Int _ -> Polynomial.of_var s
+        | _ -> raise NotSupported))
   | E_Binop (`ADD, e1, e2) ->
       let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
       Polynomial.add ir1 ir2
