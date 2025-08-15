@@ -353,7 +353,7 @@ let parse_annots lines = match lines with
     let module P =
       Annot.Make
         (struct
-          let debug = !debug.Debug_gen.lexer
+          let debug = Debug_gen.contain_flag Debug_gen.Lexer !debug
         end) in
     Some (P.parse lines)
 

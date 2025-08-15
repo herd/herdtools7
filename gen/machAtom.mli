@@ -19,6 +19,7 @@ module type Config = sig
   val naturalsize : MachSize.sz option
   val endian : Endian.t
   val fullmixed : bool
+  module Debug : Debug_gen.S
 end
 
 

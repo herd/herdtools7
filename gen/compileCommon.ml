@@ -15,7 +15,6 @@
 (****************************************************************************)
 
 module type Config = sig
-  val verbose : int
   val show : ShowGen.t option
   val same_loc : bool
   val unrollatomic : int option
@@ -24,6 +23,7 @@ module type Config = sig
   val hexa : bool
   val moreedges : bool
   val variant : Variant_gen.t -> bool
+  module Debug : Debug_gen.S
 end
 
 module type S = sig
@@ -34,7 +34,9 @@ module type S = sig
   and type dp = A.dp
   and module SIMD = A.SIMD
   and type atom = A.atom
-  and type rmw = A.rmw
+  and type rmw = A.RMW.rmw
+  and module Value = A.Value
+  and module RMW = A.RMW
 
   type check = E.edge list list -> bool
 
@@ -48,7 +50,8 @@ module type S = sig
    and type edge=E.edge
    and module SIMD = A.SIMD
    and type atom = A.atom
-   and module PteVal = A.PteVal
+   and module Value = A.Value
+   and module RMW = A.RMW
 end
 
 module Make(C:Config) (A:Arch_gen.S) = struct
@@ -59,8 +62,9 @@ module Make(C:Config) (A:Arch_gen.S) = struct
       (struct
         let variant = C.variant
         let naturalsize = TypBase.get_size C.typ
+        module Debug = C.Debug
       end)
-      (A)
+      (A)(A)
 
   type check = E.edge list list -> bool
 

@@ -29,8 +29,8 @@ module Make(Cfg:Config)(BO:BellArch_gen.Config) : XXXCompile_gen.S =
 
     let ppo _f k = k
 
-    open Bell
-    open C
+    include Bell
+    include C
 
 (* Utilities *)
 
@@ -165,7 +165,7 @@ zz        (fun r lab -> bcc Ne r rP lab)
     | None -> Warn.fatal "BellCompile.emit_access"
     | Some d ->
         (* collapse the value `v` in event `e` to integer *)
-        let value = Code.value_to_int e.v in
+        let value = Value.to_int e.v in
         match d,e.atom,e.loc with
         | R,None,Data loc ->
             let r,init,cs,st = emit_load st p init loc in
@@ -221,7 +221,7 @@ let emit_rmw _ = assert false
       let idx,st = next_reg st in
       let cA = calc_zero idx r1 in
       (* collapse the value `v` in event `e` to integer *)
-      let value = Code.value_to_int e.v in
+      let value = Value.to_int e.v in
       begin match Misc.as_some e.dir,e.atom,e.loc with
       | R,None,Data loc ->
           let rC,init,cs,st = emit_load_idx st p init loc idx in
@@ -243,7 +243,7 @@ let emit_rmw _ = assert false
     | Some R,_ ->  Warn.fatal "data dependency to load"
     | Some W,Data loc ->
         let r2,st = next_reg st in
-        let cs2 =  [calc_zero r2 r1;Instruction (addk r2 r2 (Code.value_to_int e.v));] in
+        let cs2 =  [calc_zero r2 r1;Instruction (addk r2 r2 (Value.to_int e.v));] in
         begin match e.atom with
         | None ->
             let init,cs,st = emit_store_reg st p init loc r2 in
@@ -261,7 +261,7 @@ let emit_rmw _ = assert false
         let st = A.next_ok st in
         let rd,st = next_reg st in
         let c =
-          [Instruction (movne rd r1 (Code.value_to_int v1)) ;
+          [Instruction (movne rd r1 (Value.to_int v1)) ;
            Instruction (branchcc rd lab) ;
            Instruction (inc ok);] in
         let ropt,init,cs,st = emit_access st p init e in
@@ -290,7 +290,7 @@ let emit_rmw _ = assert false
     let do_check_load p st r e =
       let ok,st = A.ok_reg st in
       (fun k ->
-        Instruction (movne tempo1 r (Code.value_to_int e.v))::
+        Instruction (movne tempo1 r (Value.to_int e.v))::
         Instruction (branchcc tempo1 (Label.last p))::
         Instruction (inc ok)::k),
       A.next_ok st

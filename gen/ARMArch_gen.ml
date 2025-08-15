@@ -17,9 +17,10 @@
 open Printf
 module Config = struct
   let moreedges = false
+  module Debug = Debug_gen.Make(struct let debug = !Config.debug end)
 end
 
-module Make(C:sig val moreedges : bool end) = struct
+module Make(C:sig val moreedges : bool module Debug : Debug_gen.S end) = struct
 include ARMBase
 
 module ScopeGen = ScopeGen.NoGen
@@ -32,9 +33,8 @@ include MachAtom.Make
       let naturalsize=None
       let endian = endian
       let fullmixed = C.moreedges
+      module Debug = Config.Debug
     end)
-
-module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
 
 (**********)
 (* Fences *)
@@ -82,13 +82,6 @@ let pp_dp = function
   | CTRL -> "Ctrl"
   | CTRLISYNC -> "CtrlIsb"
 
-(*******)
-(* RWM *)
-(*******)
-include Exch.LxSx(struct type arch_atom = atom end)
-
-include NoEdge
-
   include
     ArchExtra_gen.Make
     (struct
@@ -101,6 +94,8 @@ include NoEdge
       let pp_reg = pp_reg
       let pp_i _ = assert false
       let free_registers = allowed_for_symb
+      type arch_atom = atom
+      module Value = Value
       include NoSpecial
     end)
 

@@ -13,25 +13,7 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
-module type Edge = sig
-  type arch_edge
-
-  val pp_arch_edge : arch_edge -> string
-  val dir_tgt : arch_edge -> Code.dir
-  val dir_src : arch_edge -> Code.dir
-  val loc_sd : arch_edge -> Code.sd
-  val get_ie : arch_edge -> Code.ie
-  val fold_edge : (arch_edge -> 'a -> 'a) -> 'a -> 'a
-end
-
 module type S = sig
-(* Atoms *)
-  include Atom.S
-
-(* Page table entry *)
-  module PteVal : PteVal_gen.S with type pte_atom = atom
-
-(* Fences *)
   type fence
 
   val is_isync : fence -> bool
@@ -71,8 +53,5 @@ module type S = sig
 (* Sequence dependencies *)
   val fst_dp : dp -> dp list
   val sequence_dp : dp -> dp -> dp list
-
-(* Read-Modify-Write *)
-  include Rmw.S with type rmw_atom = atom
 
 end

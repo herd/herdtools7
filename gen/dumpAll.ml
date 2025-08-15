@@ -42,11 +42,13 @@ module Make(Config:Config)(T:Builder.S)
       module Tar =
         Tar.Make
           (struct
-            let verbose = Config.verbose
+            let verbose = Config.Debug.verbose_level
            let outname = Config.tarfile
           end)
 
       type edge = T.edge
+      let verbose = Config.Debug.verbose
+      let debug fmt = Config.Debug.debug Debug_gen.Cycle fmt
 
 
 (* Families *)
@@ -63,10 +65,8 @@ module Make(Config:Config)(T:Builder.S)
           let module Normer = Normaliser.Make(Config)(T.E) in
           fun cy ->
             let ncy = Normer.normalise (T.E.resolve_edges cy) in
-            if Config.verbose > 0 then
-              eprintf "Changed %s -> %s\n"
-                (T.E.pp_edges cy)
-                (T.E.pp_edges ncy) ;
+            debug "Changed %s -> %s\n"
+               (T.E.pp_edges cy) (T.E.pp_edges ncy) ;
             ncy
         else fun cy -> cy
 
@@ -90,7 +90,7 @@ module Make(Config:Config)(T:Builder.S)
             let n = try Env.find base env with Not_found -> 0 in
             add_suffix (mk_fmt base n),Env.add base (n+1) env
         else
-          let module Namer = Namer.Make(T.A)(T.E) in
+          let module Namer = Namer.Make(T.A)(T.A)(T.E) in
           fun env base es -> add_suffix (Namer.mk_name base es),env
 
       exception DupName of string
@@ -124,7 +124,7 @@ module Make(Config:Config)(T:Builder.S)
  *)
 
 (* Signatures as strings, for the sake of compacity *)
-      module W = Warn.Make(Config)
+      module W = Warn.Make(struct let verbose = Config.Debug.verbose_level end)
 
       type sigs =
           { sig_next : int ; sig_map : int T.E.Map.t ; sig_set : StringSet.t}
@@ -290,7 +290,7 @@ module Make(Config:Config)(T:Builder.S)
 (* And litmus file name in @all file *)
         if not Config.stdout then
           fprintf all_chan "%s\n" src ;
-        if Config.verbose > 0 then eprintf "Test: %s\n" n ;
+        verbose 2 "Test: %s\n" n ;
 (*    printf "%s: %s\n" n (pp_edges cycle.orig) ; *)
         { res with ntests = res.ntests+1; }
 
@@ -379,31 +379,26 @@ module Make(Config:Config)(T:Builder.S)
             let es,c = T.C.resolve_edges es in
             let seen,nes,sigs = have_seen r.sigs es in
             if seen then Warn.fatal "Duplicate" ;
-            let init = T.C.finish c in
+            let c,init = T.C.finish c in
             dump_test all_chan check init { orig = es ; norm = nes }
               mk_info mk_name mk_scope c { r with sigs = sigs; }
         else
           fun all_chan check es mk_info mk_name mk_scope r ->
             let es,c = T.C.resolve_edges es in
-            let init = T.C.finish c in
+            let c,init = T.C.finish c in
             dump_test all_chan check init { orig = es ; norm = es ; }
               mk_info mk_name mk_scope c r
 
       let check_dump all_chan check es mk_info mk_name mk_scope res =
-        if Config.verbose > 0 then begin
-          eprintf "------------------------------------------------------\n" ;
-          eprintf "Cycle: %s\n" (T.E.pp_edges es) ;
-          let info,_ = mk_info es in
-          List.iter
-            (fun (tag,i) -> eprintf "%s: %s\n" tag i) info
-        end ;
+        verbose 2 "------------------------------------------------------\nCycle: %s\n%s\n"
+          (T.E.pp_edges es)
+          ( String.concat "\n" @@
+            List.map (fun (tag,i) -> sprintf "%s: %s\n" tag i) (fst @@ mk_info es) );
         try
           check_dump all_chan check es mk_info mk_name mk_scope res
         with
         | Misc.Fatal msg ->
-            if Config.verbose > 0 then begin
-              eprintf "Compilation failed: %s\n" msg
-            end ;
+            verbose 2 "Compilation failed: %s\n" msg;
             res
         | DupName name ->
             Warn.fatal
@@ -419,15 +414,13 @@ module Make(Config:Config)(T:Builder.S)
           T.E.varatom
             es
             (fun es res ->
-              if Config.debug.Debug_gen.generator then
-                eprintf "Atomic variation: %s\n" (T.E.pp_edges es) ;
+                debug "Atomic variation: %s\n" (T.E.pp_edges es) ;
               check_dump all_chan check es mk_info mk_name mk_scope res)
             res
         with
         | Misc.Fatal msg|Misc.UserError msg ->
-          if Config.verbose > 0 then
-            eprintf "Fatal ignored: %s\n" msg ;
-          res
+           verbose 2 "Fatal ignored: %s\n" msg ;
+           res
         |Misc.Exit ->
             res
 (* Exported *)

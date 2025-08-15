@@ -60,11 +60,12 @@ module type Config = sig
   val sufname : string option
   val variant : Variant_gen.t -> bool
   val naturalsize : MachSize.sz
+  module Debug : Debug_gen.S
 end
 
-module Make(Co:Config) (A:Fence.S) = struct
-  module E = Edge.Make(Co)(A)
-  module N = Namer.Make(A)(E)
+module Make(Co:Config)(A:Arch_gen.FenceAtom) = struct
+  module E = Edge.Make(Co)(A)(A)
+  module N = Namer.Make(A)(A)(E)
   module Norm = Normaliser.Make(Co)(E)
 
 
@@ -93,6 +94,7 @@ let () =
     let sufname = None
     let variant = !variant
     let naturalsize = TypBase.get_size !typ
+    module Debug = Debug_gen.Make(struct let debug = !Config.debug end)
   end in
   let module Build = Make(Co) in
   (match !arch with

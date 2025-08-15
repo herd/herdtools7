@@ -19,18 +19,22 @@ module type Config = sig
   val naturalsize : MachSize.sz option
   val endian : Endian.t
   val fullmixed : bool
+  module Debug : Debug_gen.S
 end
 
 module Make(C:Config) = struct
 
-  module Mixed = MachMixed.Make(C)
+  type hidden_atom = Atomic | Reserve | Mixed of MachMixed.t
+  type atom = hidden_atom
+  module Value = Value.NoPte(struct type arch_atom = atom end)
+
+  module Mixed = MachMixed.Make(C)(Value)
 
   let bellatom = false
 
   module SIMD = NoSIMD
+  module RMW = Rmw.LxSx(struct type arch_atom = atom end)
 
-  type hidden_atom = Atomic | Reserve | Mixed of MachMixed.t
-  type atom = hidden_atom
 
   let default_atom = Atomic
   let instr_atom = None
@@ -62,8 +66,8 @@ module Make(C:Config) = struct
     Some
       (match a with
        | None|Some (Mixed _) -> Mixed sz
-       | Some (Atomic|Reserve as a) -> a) 
-               
+       | Some (Atomic|Reserve as a) -> a)
+
   let fold_mixed f r = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) r
   let fold_non_mixed f r =  f Reserve (f Atomic r)
 
@@ -101,7 +105,8 @@ module Make(C:Config) = struct
       (struct
         let naturalsize () = Misc.as_some C.naturalsize
         let endian = C.endian
-      end)
+        module Debug = C.Debug
+      end)(Value)
 
   let overwrite_value v ao w = match ao with
   | None| Some (Atomic|Reserve) -> w (* total overwrite *)

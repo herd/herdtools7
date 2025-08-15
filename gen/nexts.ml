@@ -36,7 +36,7 @@ module type Config = sig
 end
 
 module Make (Co:Config) (A:Arch_gen.S) = struct
-  module E = Edge.Make(Edge.Config)(A)
+  module E = Edge.Make(Edge.Config)(A)(A)
 
   let parse_line s =
     try
@@ -62,8 +62,6 @@ module Make (Co:Config) (A:Arch_gen.S) = struct
       let line = input_line chan in
       let name,es = parse_line line in
       let c = count_ext es in
-      if Co.verbose > 0 then
-        eprintf "%s: %i\n" name c ;
       if c = Co.nacc then
         printf "%s: %s\n"name (E.pp_edges es) ;
       do_rec () in

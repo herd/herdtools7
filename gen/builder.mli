@@ -51,7 +51,7 @@ module type S = sig
   val test_of_cycle :
       string ->
         ?com:string -> ?info:Code.info -> ?check:check ->
-          ?scope:BellInfo.scopes -> ?init:Code.env ->
+          ?scope:BellInfo.scopes -> ?init:C.Value.env ->
             edge list -> node -> test
 
 (* Dump the given test *)

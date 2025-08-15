@@ -20,31 +20,30 @@ open Code
 module type S = sig
   type fence
   type edge
-  module SIMD : Atom.SIMD
+
   type atom
-  module PteVal : PteVal_gen.S with type pte_atom = atom
+  module SIMD : Atom.SIMD
+  module Value : Value.S with type atom = atom
+  module RMW : Atom.RMW with type atom = atom
 
   (* TODO can be parametric by dir *)
   type event =
       { loc : loc ; ord : int;
         (* TODO morello related value, fold into value *)
         tag : int ;
+        (* morello *)
         ctag : int; cseal : int; dep : int ;
-        v   : v ; (* Value read or written *)
+        v   : Value.v ; (* Value read or written *)
         (* TODO fold into value *)
-        vecreg: v list list ; (* Alternative for SIMD *)
-        (* Pte value *)
-        pte : PteVal.t ;
-        (* TODO instruction fetch related value, fold into value *)
-        ins : int ;
+        vecreg: Value.v list list ; (* Alternative for SIMD *)
         dir : dir option ;
         proc : Code.proc ;
         atom : atom option ;
         (* TODO why not put into dir ? *)
         rmw : bool ;
         (* TODO, cell and tcell fold together *)
-        cell : v array ; (* Content of memory, after event *)
-        tcell : v array ; (* value of tag memory after event *)
+        cell : Value.v array ; (* Content of memory, after event *)
+        tcell : Value.v array ; (* value of tag memory after event *)
         bank : SIMD.atom Code.bank ;
         idx : int ;
         (* If need to check this operation can fault.
@@ -59,10 +58,8 @@ module type S = sig
   val evt_null : event
   val make_wsi : int -> Code.loc -> event
 
-  (* TODO change v event *)
   val debug_evt : event -> string
 
-  (* TODO change v event *)
   module OrderedEvent : Set.OrderedType with type t = event
 
   module EventMap : MyMap.S with type key = event
@@ -77,7 +74,7 @@ module type S = sig
     }
   val nil : node
   val str_node : node -> string
-  val debug_cycle : out_channel ->  node -> unit
+  val debug_cycle : node -> string
 
 (* Find, may raise Not_found *)
   val find_node : (node -> bool) -> node -> node
@@ -110,10 +107,10 @@ module type S = sig
  val resolve_edges : edge list -> edge list * node
 
 (* Finish edge cycle, adding complete events, returns initial environment *)
-  val finish : node -> (string * Code.v) list
+  val finish : node -> node * (string * Value.v) list
 
 (* Composition of the two more basic steps above *)
-  val make : edge list -> edge list * node * Code.env
+  val make : edge list -> edge list * node * Value.env
 
 (* split cycle amoungst processors *)
   val split_procs : node -> node list list
@@ -122,10 +119,10 @@ module type S = sig
   val coherence : node -> (string * (node * IntSet.t) list list) list
 
 (* Return last pteval in pte accesses coherence *)
-  val last_ptes : node -> (string * PteVal.t) list
+  val last_ptes : node -> (string * Value.pte) list
 
 (* All locations *)
-  val get_globals : ?init:Code.env -> node -> string list
+  val get_globals : ?init:Value.env -> node -> string list
 
 (* All (modified) code labels *)
   val get_labels : node -> string list
@@ -134,12 +131,12 @@ end
 
 module type Config = sig
   val same_loc : bool
-  val verbose : int
 (* allow threads s.t. start -> end is against com+ *)
   val allow_back : bool
   val naturalsize : MachSize.sz
   val hexa : bool
   val variant : Variant_gen.t -> bool
+  module Debug : Debug_gen.S
 end
 
 module Make (O:Config) (E:Edge.S) :
@@ -147,9 +144,9 @@ module Make (O:Config) (E:Edge.S) :
        and type edge = E.edge
        and module SIMD = E.SIMD
        and type atom = E.atom
-       and module PteVal = E.PteVal
+       and module Value = E.Value
+       and module RMW = E.RMW
   = struct
-  let dbg = false
   let do_memtag = O.variant Variant_gen.MemTag
   let do_morello = O.variant Variant_gen.Morello
   let do_kvm = Variant_gen.is_kvm O.variant
@@ -162,40 +159,41 @@ module Make (O:Config) (E:Edge.S) :
   type edge = E.edge
   module SIMD = E.SIMD
   type atom = E.atom
-  module PteVal = E.PteVal
+  module Value = E.Value
+  module RMW = E.RMW
 
   type event =
       { loc : loc ; ord : int; tag : int;
         ctag : int; cseal : int; dep : int;
-        v   : v ;
-        vecreg: v list list ;
-        pte : PteVal.t ;
-        ins : int ;
+        v   : Value.v ;
+        vecreg: Value.v list list ;
         dir : dir option ;
         proc : Code.proc ;
         atom : atom option ;
         rmw : bool ;
-        cell : v array ; (* value of cell at node exit *)
-        tcell : v array ; (* value of tag cell at node exit *)
+        cell : Value.v array ; (* value of cell at node exit *)
+        tcell : Value.v array ; (* value of tag cell at node exit *)
         bank : SIMD.atom Code.bank ;
         idx : int ;
         check_fault : (Label.t * bool) option;
         check_value : bool option }
 
-  let pte_default = PteVal.default "*"
+  let pte_default = Value.default_pte "*"
 
   let evt_null =
     { loc=Code.loc_none ; ord=0; tag=0;
       ctag=0; cseal=0; dep=0;
       vecreg= [];
-      v=Code.no_value ; ins=0;dir=None; proc=(-1); atom=None; rmw=false;
+      v=Value.no_value; dir=None; proc=(-1); atom=None; rmw=false;
       cell=[||]; tcell=[||];
       bank=Code.Ord; idx=(-1);
-      pte=pte_default;
       check_fault=None;
       check_value=None; }
 
-  let make_wsi idx loc = { evt_null with dir=Some W ; loc=loc; idx=idx; v=Plain 0;}
+  let verbose = O.Debug.verbose
+  let debug fmt = O.Debug.debug Debug_gen.Cycle fmt
+
+  let make_wsi idx loc = { evt_null with dir=Some W ; loc=loc; idx=idx; v=Value.from_int 0;}
 
   module OrderedEvent = struct
     type t = event
@@ -217,6 +215,15 @@ module Make (O:Config) (E:Edge.S) :
       mutable store : node ;
     }
 
+(* generic scan *)
+  let fold f m k =
+    let rec fold_rec n k =
+      let k = f n k
+      and nxt = n.next in
+      if nxt == m then k
+      else fold_rec nxt k in
+    fold_rec m k
+
   let debug_dir d = match d with
          Some W -> "W" | Some R -> "R" | None -> "_"
 
@@ -235,29 +242,31 @@ module Make (O:Config) (E:Edge.S) :
   let debug_vector =
     if do_neon || do_sve || do_sme then
       let pp_one value = Code.add_vector O.hexa
-        (List.map Code.value_to_int value) in
+        (List.map Value.to_int value) in
       fun e ->
       sprintf " (vecreg={%s})"
         (String.concat "," (List.map pp_one e.vecreg))
     else fun _ -> ""
 
-  let debug_val = Code.pp_v ~hexa:O.hexa
+  let debug_val = Value.pp_v ~hexa:O.hexa
 
   let debug_vec v =
-    String.concat ", " (List.map debug_val (Array.to_list v))
+    String.concat ", " @@ List.map debug_val @@ Array.to_list v
 
   let debug_evt e =
-    let pp_v =
-      match e.bank with
-      | Pte -> PteVal.pp e.pte
-      | (Ord|Pair|Tag|CapaTag|CapaSeal|VecReg _|Instr) -> debug_val e.v in
-    sprintf "%s%s %s %s%s%s%s%s"
+    sprintf "#[%d] %s%s %s %s %s%s%s%s%s %s %s"
+      e.idx
       (debug_dir e.dir)
       (debug_atom e.atom)
       (Code.pp_loc e.loc)
+      ( if e.rmw then "rmw" else "" )
       (match debug_vec e.cell with
        | "" -> "" | s -> "cell=[" ^ s ^"] ")
-      pp_v (debug_tag e) (debug_morello e) (debug_vector e)
+      (debug_val e.v) (debug_tag e) (debug_morello e) (debug_vector e)
+      ( match e.check_fault with
+      | Some (_,b) -> sprintf "fault:%b" b | None -> "fault:none" )
+      ( match e.check_value with
+      | Some b -> sprintf "value:%b" b | None -> "value:none" )
 
   let debug_edge = E.pp_edge
 
@@ -271,30 +280,23 @@ module Make (O:Config) (E:Edge.S) :
      store = nil ;
     }
 
-  let  debug_node chan n =
-    if n.store != nil then begin
+  let debug_node n =
+    let pp_store = if n.store == nil then ""
+    else
       let n = n.store in
-      fprintf chan "[%s %s]"
-        (debug_edge n.edge) (debug_evt n.evt)
-    end ;
-    fprintf chan "%s -%s->"
-      (debug_evt n.evt) (debug_edge n.edge)
+      sprintf "[%s %s]" (debug_edge n.edge) (debug_evt n.evt) in
+    sprintf "%s%s -%s->"
+      pp_store (debug_evt n.evt) (debug_edge n.edge)
 
   let str_node n = sprintf "%s -%s->" (debug_evt n.evt) (debug_edge n.edge)
 
-  let debug_nodes chan ns =
-    let rec iter chan = function
-      | [] -> ()
-      | [n] -> debug_node chan n
-      | n::ns -> fprintf chan "%a,%a" debug_node n iter ns in
-    iter chan ns
-  let debug_cycle chan n =
-    let rec do_rec m =
-      debug_node chan m ;
-      output_char chan '\n' ;
-      if m.next != n then do_rec m.next in
-    do_rec n ;
-    flush chan
+  let debug_nodes ns = String.concat "," @@ List.map debug_node ns
+
+  let debug_cycle n =
+    fold ( fun node acc ->
+      acc @ [sprintf "%s" (debug_node node)]
+    ) n []
+    |> String.concat "\n"
 
 let do_alloc_node idx e =
   {
@@ -318,13 +320,11 @@ let cons_cycle n c =
   c.prev <- n ;
   n
 
-let check_balance =
-  let rec do_rec r = function
-    | [] -> r = 0
-    | e::es ->
-        do_rec (match e.E.edge with E.Back _ -> r-1 | E.Leave _ -> r+1 | _ -> r) es in
-  do_rec 0
-
+let check_balance es =
+  let count = es
+    |> List.map (fun e -> match e.E.edge with E.Back _ -> -1 | E.Leave _ -> 1 | _ -> 0)
+    |> List.fold_left ( + ) 0 in
+  count = 0
 
 let build_cycle =
 
@@ -365,10 +365,9 @@ let find_node_prev p n =
 
 (*  n and m are on the same thread, n being strictly before m *)
   let po_pred n m =
-    if dbg then
-      eprintf "po_pred: n=[%a], m=[%a]\n%!" debug_node n debug_node m ;
+    debug "po_pred: n=[%s], m=[%s]\n" (debug_node n) (debug_node m) ;
   let rec do_rec p =
-    if dbg then eprintf "  pred_rec, node %a\n%!" debug_node p ;
+    debug "  pred_rec, node %s\n" (debug_node p) ;
     if p == m then true
     else if E.is_ext p.edge || p.next == n then false
     else do_rec p.next in
@@ -376,9 +375,7 @@ let find_node_prev p n =
 
 let find_prev_code_write n =
   let rec do_rec m =
-    if dbg then
-      eprintf "find_prev_code_write, n=%a m=%a\n%!"
-        debug_node n debug_node m ;
+    debug "find_prev_code_write, n=%s m=%s\n" (debug_node n) (debug_node m) ;
     let e = m.evt in
     match e.loc,E.safe_dir m.edge with
     | Code c,Some W ->
@@ -403,15 +400,6 @@ let non_pseudo e = E.is_non_pseudo e.E.edge
 let find_non_pseudo m = find_edge non_pseudo m
 let find_non_pseudo_prev m = find_edge_prev non_pseudo m
 
-
-(* generic scan *)
-  let fold f m k =
-    let rec fold_rec n k =
-      let k = f n k
-      and nxt = n.next in
-      if nxt == m then k
-      else fold_rec nxt k in
-    fold_rec m k
 
 (* Get size (as integers) from annotations *)
 
@@ -502,33 +490,37 @@ module CoSt = struct
     MyMap.Make
       (struct type t = E.SIMD.atom Code.bank let compare = compare end)
 
+  (* - `map` tracks write counters for all banks, which are used to decide
+       the written values.
+     - `init_value_mask` is the initial value, which works together with `map`
+       to decide the written values.
+     - `co_cell`, `pte_value` are the current plain value, (could be pair or simd),
+       and pte value respectively.
+     - `check_fault` and `check_value` tracks if the next memory access
+       should be associated with fault or value check respectively. *)
   type t = { map : int M.t;
-             co_cell : Code.v array;
-             pte_value : PteVal.t;
+             init_value : int;
+             co_cell : Value.v array;
+             pte_value : Value.pte;
              check_fault : bool;
              check_value : bool; }
 
-  let (<<) f g = fun x -> f (g x)
-  and (<!) f x = f x
-
-  let create init sz pte_value check_value check_fault =
-    let map  =
-      M.add Tag init <<  M.add CapaTag init <<
-      M.add CapaSeal init << M.add Ord init << M.add Instr init <! M.empty
-    and co_cell = Array.make (if sz <= 0 then 1 else sz) (Code.value_of_int init) in
-    { map; co_cell; pte_value; check_fault; check_value }
+  let create init_value sz pte_value check_value check_fault =
+    let map = List.fold_left ( fun acc bank -> M.add bank 0 acc ) M.empty
+                  [Tag; CapaTag; CapaSeal; Ord; ]
+    and co_cell = Array.make (if sz <= 0 then 1 else sz) (Value.from_int init_value) in
+    { map; init_value; co_cell; pte_value; check_fault; check_value }
 
   let find_no_fail key map =
     try M.find key map with Not_found -> assert false
 
-  let get_co st bank = Code.value_of_int (find_no_fail bank st.map)
+  let get_co st bank = Value.from_int (find_no_fail bank st.map)
 
   let set_co st bank v =
     let b = match bank with VecReg _ -> Ord | _ -> bank in
     { st with map=M.add b v st.map; }
 
   let get_cell st = st.co_cell
-  let set_cell st co_cell = {st with co_cell; }
 
   (* Assume node `n` is a memory store event,
      assign a written value to `n`*)
@@ -548,14 +540,14 @@ module CoSt = struct
          | Ord ->
             co_cell.(0) <- E.overwrite_value old e.atom cell2
          | Pair -> (* No Rmw for pairs *)
-            let width = Code.value_of_int ((Code.value_to_int e.v) - 1) in
+            let width = Value.from_int ((Value.to_int e.v) - 1) in
             co_cell.(0) <- E.overwrite_value old e.atom width;
             let old = st.co_cell.(0) in
             co_cell.(1) <- E.overwrite_value old e.atom e.v
          | _ -> assert false
        end ;
        {e with cell=co_cell;},{ st with co_cell; }
-    end
+    end (* END of Ord|Pair *)
     | _ -> e,st
 
 
@@ -572,7 +564,7 @@ module CoSt = struct
 
   (* Check if `pte_val` might fault *)
   let label_pte_fault pte_val =
-    Some ( (Label.next_label "L"), (PteVal.can_fault pte_val) )
+    Some ( (Label.next_label "L"), (Value.can_fault pte_val) )
 
   (* Helper function returns a fresh label and a boolean for if it should fault,
      if a fault check is need. Otherwise return `None`. *)
@@ -592,26 +584,48 @@ module CoSt = struct
        {e with tcell=[| e.v; |];},st
     | _ -> e,st
 
-  let next_co st bank =
-   match bank with
-   | VecReg n ->
-      let v = find_no_fail Ord st.map in
-      { st with map=M.add Ord (v+E.SIMD.nregs n) st.map; }
-   | _ ->
-      let v = find_no_fail bank st.map in
-      { st with map=M.add bank (v+1) st.map; }
+  let next_co st edge bank =
+    match edge.E.edge,bank with
+    (* If it is a rmw operation, especially bit-wise operation,
+       the next value need to decide based on bit conditions. *)
+    | E.Rmw rmw, Ord ->
+      let counter = (find_no_fail bank st.map) + 1 in
+      let init = E.extract_value
+            (Value.from_int st.init_value) edge.E.a1 in
+      let v = E.to_rmw_operand rmw init counter in
+      (* NOTE st.map is NOT updated upon `rmw` with calculation
+         because `Ord` only tracks the value used for
+         various `STR` or rmw instruction *)
+      v,{ st with map=M.add Ord counter st.map; }
+    (* Only support rmw on ordinary, `Ord`, memory access *)
+    | E.Rmw _, _ -> assert false
+    (* The following is for none RMW operation *)
+    | _, VecReg n ->
+      let counter = (find_no_fail Ord st.map) + E.SIMD.nregs n in
+      let v = st.init_value + counter in
+      Value.from_int v,{ st with map=M.add Ord counter st.map; }
+    (* For memory tag or morello tags, it writes the counter
+       WITHOUT combine the initial value, since the latter is only
+       for the plain memory value *)
+    | _, (Tag|CapaSeal|CapaTag) ->
+      let counter = (find_no_fail bank st.map) + 1 in
+      Value.from_int counter,{ st with map=M.add bank counter st.map; }
+    | _, _ ->
+      let counter = (find_no_fail bank st.map) + 1 in
+      let v = st.init_value + counter in
+      Value.from_int v,{ st with map=M.add bank counter st.map; }
 
   let step_simd st n =
     let fst = find_no_fail Ord st.map in
     let lst = fst+E.SIMD.nregs n in
-    let new_co_cell = st.co_cell |> Array.map Code.value_to_int
+    let new_co_cell = st.co_cell |> Array.map Value.to_int
                       |> E.SIMD.step n fst
-                      |> Array.map Code.value_of_int in
+                      |> Array.map Value.from_int in
     { st with co_cell=new_co_cell; map=M.add Ord lst st.map; }
 end
 
 let pte_val_init loc = match loc with
-| Code.Data loc when do_kvm -> PteVal.default loc
+| Code.Data loc when do_kvm -> Value.default_pte loc
 | _ -> pte_default
 
 (****************************)
@@ -652,16 +666,16 @@ let patch_edges n =
         let e = n.edge in
         if non_insert_store e then begin
           let p = find_non_insert_store_prev n.prev in
-          if O.verbose > 0 then Printf.eprintf "Merge p=%a, n=%a\n"
-            debug_node p debug_node n ;
+            verbose 2 "Merge p=%s, n=%s\n"
+            (debug_node p) (debug_node n) ;
           let pe = p.edge in
           let a2 = pe.E.a2 and a1 = e.E.a1 in
           try
             let a = merge2 a2 a1 in
             p.edge <- { pe with E.a2=a ; } ;
             n.edge <- { e  with E.a1=a ; } ;
-            if O.verbose > 1 then Printf.eprintf "    => p=%a, n=%a\n"
-              debug_node p debug_node n
+              verbose 2 "    => p=%s, n=%s\n"
+              (debug_node p) (debug_node n)
           with FailMerge ->
             Warn.fatal "Impossible annotations: %s %s"
               (E.pp_edge pe) (E.pp_edge e)
@@ -719,7 +733,7 @@ let remove_store n0 =
            Warn.fatal "Node pseudo edge %s appears in-between  %s..%s (one neighbour at least must be an external edge)"
            (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
       end ;
-(*    eprintf "p=%a, m=%a\n" debug_node p debug_node m; *)
+      debug "p=%s, m=%s\n" (debug_node p) (debug_node m);
       let prev_d = E.dir_tgt p.edge in
       let d = match prev_d,my_d with
       | Irr,Irr ->
@@ -748,9 +762,9 @@ let remove_store n0 =
     begin
       let p = find_non_pseudo_prev m.prev
       and n = find_non_pseudo m.next in
-(*      eprintf "[%a] in [%a]..[%a]\n" debug_node m debug_node p debug_node n ; *)
-      if not (E.is_ext p.edge || E.is_ext n.edge) then begin
-        Warn.fatal "Insert pseudo edge %s appears in-between  %s..%s (at least one neighbour must be an external edge)"
+      debug "[%s] in [%s]..[%s]\n" (debug_node m) (debug_node p) (debug_node n) ;
+      if not (E.is_com p.edge || E.is_com n.edge) then begin
+        Warn.fatal "Insert pseudo edge %s appears in-between  %s..%s (at least one neighbour must be a communication edge)"
           (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
       end;
       match p.edge.E.edge with
@@ -762,10 +776,7 @@ let remove_store n0 =
     if m.next != n0 then do_rec m.next in
   do_rec n0 ;
   patch_edges n0 ;
-  if O.verbose > 1 then begin
-    eprintf "DIRECTIONS\n" ;
-    debug_cycle stderr n0
-  end
+  verbose 2 "DIRECTIONS\n%s\n" (debug_cycle n0)
 
 
 (***************************)
@@ -814,7 +825,7 @@ let set_diff_loc st n0 =
         with Not_found ->  m in
       next_loc n1.edge st in
     m.evt <- { m.evt with loc=loc ; bank=E.atom_to_bank m.evt.atom; } ;
-(*    eprintf "LOC SET: %a [p=%a]\n%!" debug_node m debug_node p; *)
+    debug "LOC SET: %s [p=%s]\n" (debug_node m) (debug_node p);
     if m.store != nil then begin
       m.store.evt <-
         { m.store.evt with loc=loc ; bank=Ord; }
@@ -846,29 +857,108 @@ let set_same_loc st n0 =
   do_rec n0 ;
   st
 
+(* For each continuous elements to location `x` in the input,
+  group those elements, accumulating through `ns`. *)
+let rec group_rec x ns = function
+  | [] -> [x,List.rev ns]
+  | (y,n)::rem ->
+      if Code.loc_compare x y = 0 then group_rec x (n::ns) rem
+      else (x,List.rev ns)::group_rec  y [n] rem
 
+  let group = function
+    | [] -> []
+    | (x,n)::rem -> group_rec x [n] rem
 
-(* Set the values of write events *)
+  let by_loc xvs =
+    let r = group xvs in
+    let r =  List.stable_sort (fun (x,_) (y,_) -> Code.loc_compare x y) r in
+    let r =
+      List.map
+        (fun (x,ns) -> match ns with
+        |  [] -> assert false
+        | _::_ -> (x,ns))
+        r in
+    group r
 
+let valid_cycle c =
+  (* Collect all the rmw edges, organise by location
+     and then check if all the rmw edges per locations are valid *)
+  fold ( fun n lst ->
+    match n.edge.E.edge with
+    | E.Rmw rmw ->
+      (* Encode the mixed size access into location, so reuse `by_loc` function.
+         This allows atomic operations on different bytes of a location. *)
+      let access_suffix = match E.get_access_atom n.edge.E.a1 with
+      | Some (sz, offset) -> (sprintf "%s%d" (MachSize.pp_short sz) offset)
+      | None -> "" in
+      let loc = match n.evt.loc with
+      | Data s -> Data (s ^ access_suffix)
+      | _ -> assert false in
+      (loc,rmw)::lst
+    | _ -> lst
+  ) c []
+  |> by_loc
+  |> List.for_all (fun e -> E.valid_rmw @@ List.flatten @@ snd e)
+
+  (* Split the cycle into node list per locations.
+     In the case of more than one location is needed,
+     the input node `n` MUST be a node of location change,
+     that is, `n.evt.loc <> n.prev.evt.loc`.
+     This avoids situation where two node list corresponding
+     to the same location. *)
   let split_by_loc n =
     let rec do_rec m =
-      let r =
-        if m.next == n then begin
-          assert (m.evt.loc <> m.next.evt.loc) ;
-          [[]]
-        end else do_rec m.next in
-      if m.evt.loc =  m.next.evt.loc then match r with
-      | ms::rem -> (m::ms)::rem
-      | [] -> assert false
-      else [m]::r in
+      (* Similar to deep first searching, i.e.
+         traverse to the immediate previous node of
+         the input node `n` first, and work backwards
+         to split into lists per location,
+         hence the base case is `m.next == n` *)
+      if m.next == n then [[m]]
+      else
+        (* recursive: `r` contains result from `n.prev` to `m.next`,
+           moving backwards via `.prev` *)
+        let r = do_rec m.next in
+        if m.evt.loc = m.next.evt.loc then match r with
+          | ms::rem -> (m::ms)::rem
+          (* empty list should not reach in recursive *)
+          | [] -> assert false
+        else [m]::r in
     do_rec n
 
-  let split_one_loc n =
-    let rec do_rec m =
-      m::
-      if m.next == n then []
-      else do_rec m.next in
-    [do_rec n]
+  (* Given a cycle starting from node `n`, split the cycle to
+     based on location, e.g. [[nodes for `x`] [nodes for `y`] ... ] *)
+  let split_by_location n =
+    let start_node,nss =
+      try
+        let start_node =
+          find_node
+            (fun m ->
+              m.prev.evt.loc <> m.evt.loc &&
+              m.next.evt.loc = m.evt.loc) n in
+        start_node,split_by_loc start_node
+      with
+      | Not_found ->
+        fold (fun n0 _ -> if E.is_id n0.edge.E.edge then assert false) n ();
+        let is_com_rmw n0 = E.is_com n0.edge || is_rmw_edge n0.edge in
+        let to_com_rmw n0 = not (is_com_rmw n0.prev) && is_com_rmw n0 in
+        let to_com n0 = not (E.is_com n0.prev.edge) && E.is_com n0.edge in
+        (* In the case of one location, the order on searching start node is:
+          - a read node, NOT preceded by a com/rmw node, is itself a com/rmw node
+          - a node, preceded by a non com/rmw node, is itself a com/rmw node
+          - a read node, NOT preceded by a com node, is itself a com node
+          - a node, preceded by a com node, is itself a com node.
+          This order ensures some consistency on the result litmus tests,
+          especially when a cycle contain rmw edge.
+          However in the situation with two rmw edges, the input cycle order
+          still affects the result litmus, e.g. "Amo.StEor Rfe Amo.StAdd Rfe". *)
+        let start_node = try find_node (fun m -> to_com_rmw m && m.evt.dir = Some R) n
+        with Not_found -> try find_node (fun m -> to_com_rmw m) n
+        with Not_found -> try find_node (fun m -> to_com m && m.evt.dir = Some R) n
+        with Not_found -> try find_node (fun m -> to_com m) n
+        with Not_found -> Warn.fatal "cannot set write values" in
+        start_node,split_by_loc start_node
+      | Exit -> Warn.fatal "cannot set write values" in
+    start_node,nss
 
   let exist_plain_value_write ns =
       List.exists
@@ -884,8 +974,9 @@ let set_same_loc st n0 =
   let tr_value e v = E.tr_value e.atom v
 
   let set_write_val_ord st n =
-    let st = CoSt.next_co st Ord in
-    let v = CoSt.get_co st Ord in
+    let v,st = CoSt.next_co st n.prev.edge Ord in
+    if v = n.evt.v then
+      Warn.fatal "Updated value remains the same. An issue should be reported.";
     n.evt <- { n.evt with v = tr_value n.evt v; } ;
     (* Writing Ord resets morello tag *)
     let st = CoSt.set_co st CapaTag evt_null.ctag in
@@ -893,28 +984,181 @@ let set_same_loc st n0 =
     n.evt <- e ;
     st
 
-  (* `do_set_write_val` returns true when variable next_x has been used
-     and should thus be initialised *)
-  let do_set_write_val next_x_ok st nss =
-    List.fold_left ( fun (next_x_ok, st) n ->
+  (* Assuming node `n` is a write event,
+     assign a appropriate value based on `n`
+     and the current machine state `st`.
+     Return the new `st` and `next_x_ok`.
+     When a new variable is introduced due to PTE operation,
+     e.g. writting a different physical address,
+     the `next_x_ok` is set. *)
+  let set_write_node n st next_x_ok =
+    let check_value = Some (CoSt.get_check_value st) in
+    (* No need to add fault check in read modify write situation,
+       as the label will be assigned in read *)
+    let fault_update_without_rmw st =
+      if n.evt.rmw then None,st else CoSt.fault_update st in
+    match n.evt.loc with
+    | Data _ ->
+      let bank = n.evt.bank in
+      begin match bank with
+      | Instr -> Warn.fatal "instruction annotation to data bank not possible?"
+      | Ord ->
+        let st = set_write_val_ord st n in
+        let check_fault, st = fault_update_without_rmw st in
+        n.evt <- { n.evt with check_fault; check_value; };
+        (next_x_ok, st)
+      | Pair ->
+        (* Same code as for Ord, however notice that
+           CoSet.set_cell has a case for pairs.
+           However increment of current value is by 2 *)
+        let cell = CoSt.get_cell st in
+        assert (Array.length cell>=2) ;
+        let _,st = CoSt.next_co st n.prev.edge Ord in (* Pre-increment *)
+        let st = set_write_val_ord st n in
+        let check_fault, st = fault_update_without_rmw st in
+        n.evt <- { n.evt with check_fault; check_value; };
+        (next_x_ok, st)
+      | Tag|CapaTag|CapaSeal ->
+        let v,st = CoSt.next_co st n.prev.edge bank in
+        n.evt <- { n.evt with v; check_value; } ;
+        let e,st = CoSt.set_tcell st n.evt in
+        n.evt <- e ;
+        (next_x_ok, st)
+      | VecReg a ->
+        let st = CoSt.step_simd st a in
+        let cell = CoSt.get_cell st
+                     |> Array.map Value.to_int in
+        let vecreg  = E.SIMD.read a cell
+                 |> List.map (List.map Value.from_int) in
+        let cell = Array.map Value.from_int cell in
+        let v =
+          match vecreg with
+            | (v::_)::_ -> v
+            | _ -> assert false in
+        n.evt <- { n.evt with vecreg; cell; v; check_value; } ;
+        (next_x_ok, st)
+      | Pte ->
+        (* Function `next_loc` will only be called in `E.set_pteval`
+           if a next location is needed. `next_loc` will check if there
+           are existing other variable in the cycle; otherwise the
+           (1) `next_x_pred` set to true, indicating a new variable
+           is needed, and (2) a new `next_x` returns. *)
+        let next_x_pred = ref false in
+        let next_loc () =
+          match n.evt.loc with
+          | Code.Code _ -> Warn.fatal "Code location has no pte value."
+          | Code.Data x ->
+            try let m = find_node ( fun m ->
+                match m.evt.loc with
+                | Code.Data y -> not (Misc.string_eq x y)
+                | _-> false ) n in
+              Code.as_data m.evt.loc
+            with Not_found -> next_x_pred := true ; next_x in
+        (* get the previous pte via get_pte_value
+           and return the new pte value *)
+        let pte_val = E.set_pteval n.evt.atom
+                        (CoSt.get_pte_value st) next_loc in
+        let st = CoSt.set_pte_value st pte_val in
+        let v = Value.from_pte pte_val in
+        n.evt <- { n.evt with v; check_value; } ;
+        ((!next_x_pred || next_x_ok), st)
+      end (* END of match bank *)
+      | Code _ ->
+        match n.evt.bank with
+        | Ord -> (next_x_ok, st)
+        | _ -> Warn.fatal "Only ordinary write is allowed to code location."
+
+(* Loop over every node and set the expected value from the previous node *)
+let set_dep_v nss =
+  let v = List.fold_left
+    (fun k ns ->
+      List.fold_left
+        (fun v n ->
+          n.evt <- { n.evt with dep=Value.to_int v; } ;
+          n.evt.v)
+        k ns)
+    (Value.from_int 0) nss in
+  (if List.length nss > 0 then
+    if List.length (List.hd nss) > 0 then
+      let n = (List.hd (List.hd nss)) in
+      n.evt <- { n.evt with dep=Value.to_int v; }) ;
+  ()
+
+(* TODO: this is wrong for Store CR's: consider Rfi Store PosRR *)
+let set_read_individual_v n cell check_value =
+  let e = n.evt in
+  let v = E.extract_value cell.(0) e.atom in
+  debug "SET READ: cell=%s, v=%s\n"
+      (Value.pp_v ~hexa:true cell.(0)) (Value.pp_v ~hexa:true v) ;
+  let e = { e with v=v; check_value } in
+  n.evt <- e;
+  debug "AFTER %s\n" (debug_node n)
+
+let set_read_pair_v n cell check_value =
+  let e = n.evt in
+  let v0 = E.extract_value cell.(0) e.atom |> Value.to_int
+  and v1 =  E.extract_value cell.(1) e.atom |> Value.to_int in
+  let v = v0 + v1 |> Value.from_int in
+  let e = { e with v=v; check_value } in
+  n.evt <- e
+
+let set_read_node n st =
+  (* If the result of this read need to be checked,
+     i.e. generating postcondition *)
+  let check_value = Some (CoSt.get_check_value st) in
+  let bank = n.evt.bank in
+  let cell = CoSt.get_cell st in
+  match bank with
+  | Ord | Instr->
+    set_read_individual_v n cell check_value;
+    let check_fault, st = CoSt.fault_update st in
+    n.evt <- { n.evt with check_fault };
+    st
+  | Pair ->
+    set_read_pair_v n cell check_value;
+    let check_fault, st = CoSt.fault_update st in
+    n.evt <- { n.evt with check_fault };
+    st
+  | VecReg a ->
+    let cell = Array.map Value.to_int cell in
+    let v = E.SIMD.read a cell
+             |> E.SIMD.reduce
+             |> Value.from_int in
+    let check_fault, st = CoSt.fault_update st in
+    n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
+    st
+  | Tag|CapaTag|CapaSeal ->
+    n.evt <- { n.evt with v = CoSt.get_co st bank; check_value; };
+    st
+  | Pte ->
+    let pte_val = CoSt.get_pte_value st in
+    let v = Value.from_pte pte_val in
+    n.evt <- { n.evt with v; };
+    st
+
+  (* Assume all nodes in `ns` are for the same location,
+     `set_values` assign values. Return includes:
+       - `new_x_ok`, `true` when a new variable `next_x` has been used
+          and should thus be initialised
+       - final `st`, which is liked to be thrown away,
+       - final plain value and pte value. *)
+  let set_values next_x_ok st nss =
+    (* `st` keeps track of tags and current state of memory,
+       - plain value => CoSt.get_cell, CoSt.set_cell,
+       - pte value => CoSt.get_pte_value, CoSt.set_pte_value *)
+    let new_x_ok,new_st = List.fold_left ( fun (next_x_ok, st) n ->
     (* Update the `cell` in `st` if there is a `.store *)
       let st = if n.store == nil then st else set_write_val_ord st n.store in
       (* Update tag and instruction value in `st` no matter `W`, `R` etc. *)
-      (* TODO: potentially rework the if-elseif-else here as it is confused *)
       begin if Code.is_data n.evt.loc then
         begin if do_memtag then
-          let tag = Code.value_to_int (CoSt.get_co st Tag) in
+          let tag = Value.to_int (CoSt.get_co st Tag) in
           n.evt <- { n.evt with tag; }
         else if do_morello then
-          let ord = Code.value_to_int (CoSt.get_co st Ord) in
-          let ctag = Code.value_to_int (CoSt.get_co st CapaTag) in
-          let cseal = Code.value_to_int (CoSt.get_co st CapaSeal) in
+          let ord = Value.to_int (CoSt.get_co st Ord) in
+          let ctag = Value.to_int (CoSt.get_co st CapaTag) in
+          let cseal = Value.to_int (CoSt.get_co st CapaSeal) in
           n.evt <- { n.evt with ord; ctag; cseal; }
-        end
-      else (* TODO why update the instruction *)
-        begin
-          let ins = Code.value_to_int (CoSt.get_co st Instr) in
-          n.evt <- { n.evt with ins; }
         end
  (*
           else if do_neon then (* set both fields, it cannot harm *)
@@ -926,281 +1170,56 @@ let set_same_loc st n0 =
       end ;
       (* END of `if Code.is_data n.evt.loc` *)
       match n.evt.dir with
-      | Some W ->
-          begin
-          let check_value = Some (CoSt.get_check_value st) in
-          (* No need to add fault check in read modify write situation,
-             as the label will be assigned in read *)
-          let fault_update_without_rmw st =
-            if n.evt.rmw then None,st else CoSt.fault_update st in
-          match n.evt.loc with
-          | Data _ ->
-            let bank = n.evt.bank in
-            begin match bank with
-            | Instr -> Warn.fatal "instruction annotation to data bank not possible?"
-            | Ord ->
-              let st = set_write_val_ord st n in
-              let check_fault, st = fault_update_without_rmw st in
-              n.evt <- { n.evt with check_fault; check_value; };
-              (next_x_ok, st)
-            | Pair ->
-              (* Same code as for Ord, however notice that
-                 CoSet.set_cell has a case for pairs.
-                 However increment of current value is by 2 *)
-              let cell = CoSt.get_cell st in
-              assert (Array.length cell>=2) ;
-              let st = CoSt.next_co st Ord in (* Pre-increment *)
-              let st = set_write_val_ord st n in
-              let check_fault, st = fault_update_without_rmw st in
-              n.evt <- { n.evt with check_fault; check_value; };
-              (next_x_ok, st)
-            | Tag|CapaTag|CapaSeal ->
-              let st = CoSt.next_co st bank in
-              let v = CoSt.get_co st bank in
-              n.evt <- { n.evt with v = v; check_value; } ;
-              let e,st = CoSt.set_tcell st n.evt in
-              n.evt <- e ;
-              (next_x_ok, st)
-            | VecReg a ->
-              let st = CoSt.step_simd st a in
-              let cell = CoSt.get_cell st
-                           |> Array.map Code.value_to_int in
-              let vecreg  = E.SIMD.read a cell
-                       |> List.map (List.map Code.value_of_int) in
-              let cell = Array.map Code.value_of_int cell in
-              let v =
-                match vecreg with
-                  | (v::_)::_ -> v
-                  | _ -> assert false in
-              n.evt <- { n.evt with vecreg; cell; v; check_value; } ;
-              (next_x_ok, st)
-            | Pte ->
-            (* TODO Rework here, esp the function `next_loc` and ref value `next_x_pred`.
-              They are all difficult to understand. *)
-              let next_x_pred = ref false in
-              (* get the previous `pte_value` *)
-              let pte_val = CoSt.get_pte_value st in
-              (* update the pte value in kvm variant *)
-              let pte_val =
-                if do_kvm then begin
-                    let next_loc () =
-                      match n.evt.loc with
-                      | Code.Data x ->
-                         begin try
-                             let m =
-                               find_node
-                                 (fun m ->
-                                   match m.evt.loc with
-                                   | Code.Data y ->
-                                      not (Misc.string_eq x y)
-                                   | _-> false) n in
-                             Code.as_data m.evt.loc
-                           with Not_found ->
-                             next_x_pred := true ; next_x end
-                      | Code.Code _ -> Warn.fatal "Code location has no pte value." in
-                    E.set_pteval n.evt.atom pte_val next_loc
-                  end else pte_val in
-              let st = CoSt.set_pte_value st pte_val in
-              n.evt <- { n.evt with pte = pte_val; check_value; } ;
-              ((!next_x_pred || next_x_ok), st)
-            end (* END of match bank *)
-          | Code _ ->
-            let ins = CoSt.get_co st Instr |> Code.value_to_int in
-            n.evt <- { n.evt with ins; check_value; } ;
-            let bank = n.evt.bank in
-            match bank with
-            | Instr -> Warn.fatal "not letting instr write happen"
-            | Ord ->
-              let st = CoSt.next_co st bank in
-              let v = CoSt.get_co st bank in
-              n.evt <- { n.evt with ins = Code.value_to_int v;} ;
-              (next_x_ok, st)
-            | _ -> (next_x_ok, st)
-          end (* END of `Some W` *)
-      | Some R |None -> (next_x_ok, st)
-    ) (* END of the function applying to `fold_left` *) (next_x_ok, st) nss
-    (* END of do_set_write_val *)
+      | Some W -> set_write_node n st next_x_ok
+      (* Assign the read value according to `cell` and `pte_cell` in `st`. *)
+      | Some R -> next_x_ok,set_read_node n st
+      | None -> next_x_ok,st
+    ) (* END of the function applying to `fold_left` *) (next_x_ok, st) nss in
+    let final_value_pte = ((CoSt.get_cell new_st).(0),CoSt.get_pte_value new_st) in
+    new_x_ok,new_st,final_value_pte
+    (* END of `set_values *)
 
-  let set_all_write_val nss =
-    let _,initvals =
+  (* Given a `nss` of type `node list list`, where each element list contains
+     node for the same locations. The function set all the value to nodes *)
+  let set_node_values nss =
+    let _,initvals,final_values =
       List.fold_right
-        (fun ns (k,env as r) ->
-          match ns with
-          | [] -> r
-          | n::_ ->
-              (* Assume all node in `ns` is the same location as `n`,
-                 process the nodes in list `ns` for the location `loc` *)
-              let loc = n.evt.loc in
-              let sz = get_wide_list ns in
-              let i = if do_kvm then k else 0 in
-              let pte_val = pte_val_init loc in
-              (* Since it is a cycle, the initial value of `check_value`
-                 and `check_fault` depend on if there are write to
-                 the variable and pte respectively. *)
-              let check_value = exist_plain_value_write ns in
-              let check_fault = exist_pte_value_write ns in
-              let init_st = CoSt.create i sz pte_val check_value check_fault in
-              let next_x_ok,_st = do_set_write_val false init_st ns in
-              let env = if do_kvm then (Code.as_data loc,Code.value_of_int k)::env else env in
-              if next_x_ok then
-                k+8,(next_x,Code.value_of_int (k+4))::env
-              else
-                k+4,env)
-        nss (0,[]) in
-    initvals
-
-  let set_write_v n =
-    let nss =
-      try
-        let m =
-          find_node
-            (fun m ->
-              m.prev.evt.loc <> m.evt.loc &&
-              m.next.evt.loc = m.evt.loc) n in
-        split_by_loc m
-      with
-      | Not_found ->
-        (*check if node is preceded by a non com node and is itself a com node*)
-        let to_com n0 = not (E.is_com n0.prev.edge) && E.is_com n0.edge in
-        fold (fun n0 _ -> if E.is_id n0.edge.E.edge then assert false) n ();
-        try
-          (* check for R ensures that we start on Fr if possible*)
-          let m = find_node (fun m -> to_com m && m.evt.dir = Some R) n in
-          split_one_loc m
-        with Not_found -> try
-          (* The previous search failed. This search will return the W node from
-             which an Rf edge starts, provided that the previous edge is not a
-             communication or a Rmw edge *)
-          let m = find_node (fun m -> to_com m) n in
-          split_one_loc m
-        with Not_found -> Warn.fatal "cannot set write values"
-      | Exit -> Warn.fatal "cannot set write values" in
-    let initvals = set_all_write_val nss in
-    nss,initvals
-
-(* Loop over every node and set the expected value from the previous node *)
-let set_dep_v nss =
-  let v = List.fold_left
-    (fun k ns ->
-      List.fold_left
-        (fun v n ->
-          n.evt <- { n.evt with dep=Code.value_to_int v; } ;
-          n.evt.v)
-        k ns)
-    (Code.value_of_int 0) nss in
-  (if List.length nss > 0 then
-    if List.length (List.hd nss) > 0 then
-      let n = (List.hd (List.hd nss)) in
-      n.evt <- { n.evt with dep=Code.value_to_int v; }) ;
-  ()
-
-(* TODO: this is wrong for Store CR's: consider Rfi Store PosRR *)
-let set_read_individual_v n cell check_value =
-  let e = n.evt in
-  let v = E.extract_value cell.(0) e.atom in
-(* eprintf "SET READ: cell=0x%x, v=0x%x\n" cell v ; *)
-  let e = { e with v=v; check_value } in
-  n.evt <- e
-(* eprintf "AFTER %a\n" debug_node n *)
-
-let set_read_pair_v n cell check_value =
-  let e = n.evt in
-  let v0 = E.extract_value cell.(0) e.atom |> Code.value_to_int
-  and v1 =  E.extract_value cell.(1) e.atom |> Code.value_to_int in
-  let v = v0 + v1 |> Code.value_of_int in
-  let e = { e with v=v; check_value } in
-  n.evt <- e
-
-(* Assume all the events are for the same location,
-   convert the node list, i.e., the first unnamed parameter,
-   to the final value `cell` and PTE value `pte_cell` *)
-let do_set_read_v init =
-  let do_rec st ns =
-    (* `st` keeps track of tags and current state of memory,
-       - plain value => CoSt.get_cell, CoSt.set_cell,
-       - pte value => CoSt.get_pte_value, CoSt.set_pte_value *)
-    List.fold_left ( fun st n ->
-      let st = if n.store == nil then st else CoSt.set_cell st n.store.evt.cell in
-      let cell = CoSt.get_cell st in
-      let bank = n.evt.bank in
-      begin match n.evt.dir with
-      (* Assign the read value according to `cell` and `pte_cell` *)
-      | Some R ->
-        (* If the result of this read need to be checked,
-           i.e. generating postcondition *)
-        let check_value = Some (CoSt.get_check_value st) in
-        begin match bank with
-        | Ord | Instr->
-          set_read_individual_v n cell check_value;
-          let check_fault, st = CoSt.fault_update st in
-          n.evt <- { n.evt with check_fault };
-          st
-        | Pair ->
-          set_read_pair_v n cell check_value;
-          let check_fault, st = CoSt.fault_update st in
-          n.evt <- { n.evt with check_fault };
-          st
-        | VecReg a ->
-          let cell = Array.map Code.value_to_int cell in
-          let v = E.SIMD.read a cell
-                   |> E.SIMD.reduce
-                   |> Code.value_of_int in
-          let check_fault, st = CoSt.fault_update st in
-          n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
-          st
-        | Tag|CapaTag|CapaSeal ->
-          n.evt <- { n.evt with v = CoSt.get_co st bank; check_value; };
-          st
-        | Pte ->
-          n.evt <- { n.evt with pte = CoSt.get_pte_value st; };
-          st
-        end
-      (* Update `st`, `cell` and `pte_cell` for future read events *)
-      | Some W ->
-        let st =
-          match bank with
-          | Tag|CapaTag|CapaSeal ->
-             CoSt.set_co st bank (Code.value_to_int n.evt.v)
-          |Ord|Pair|VecReg _ ->
-              (* Record the cell value in `st` in
-               memory access to a non-instruction value *)
-            if Code.is_data n.evt.loc then CoSt.set_cell st n.evt.cell
-            else CoSt.set_co st bank n.evt.ins
-          | Instr ->
-            if Code.is_data n.evt.loc then st
-            else CoSt.set_co st bank n.evt.ins
-          |Pte ->
-            (* Record the pte value in `st` in
-              memory access to a non-instruction pte value *)
-            if Code.is_data n.evt.loc then
-                CoSt.set_pte_value st n.evt.pte
-            else CoSt.set_co st bank n.evt.ins in
-        st
-      | None ->
-        st
-    end ) st ns in
-  fun ns -> match ns with
-  | []   -> assert false
-  | n::_ ->
-    let sz = get_wide_list ns in
-    let pte_val = pte_val_init n.evt.loc in
-    let check_value = exist_plain_value_write ns in
-    let check_fault = exist_pte_value_write ns in
-    let init_st = CoSt.create init sz pte_val check_value check_fault in
-    let final_st = do_rec init_st ns in
-    (CoSt.get_cell final_st).(0),CoSt.get_pte_value final_st
-
-  let set_read_v nss initvals =
-  List.fold_right
-    (fun ns k -> match ns with
-    | [] -> k
-    | n::_  ->
-        let init = List.assoc_opt (Code.as_data n.evt.loc) initvals
-                  |> Option.map Code.value_to_int
-                  |> Option.value ~default:0 in
-        let vf = do_set_read_v init ns in
-        (n.evt.loc,vf)::k)
-    nss []
+        (* In each iteration, it processes the nodes corresponding to the same locations.
+           - `init_value` tracks the next available initial values.
+           - `env` tracks the initial environment, noting that information
+              more than the initial value might be added into this `env`.
+           - `final_values` are the final value and pte value after building the cycle *)
+        ( fun ns (next_value,env,final_values) ->
+          let loc =
+            try (List.hd ns).evt.loc
+            with | _ -> Warn.fatal "Empty list for a location." in
+          let sz = get_wide_list ns in
+          let init_value =
+            List.map (fun n -> E.init_val n.edge) ns
+            |> List.fold_left (fun acc next -> acc lor (Value.to_int next)) 0
+          (* The `init_for_loc` assign different value for kvm with pte,
+             where different values are needed to distinct access
+             different locations especially in alias situation. *)
+            |> (+) (if do_kvm then next_value else 0) in
+          let pte_val = pte_val_init loc in
+          (* Since it is a cycle, the initial value of `check_value`
+             and `check_fault` depend on if there are write to
+             the variable and pte respectively. *)
+          let check_value = exist_plain_value_write ns in
+          let check_fault = exist_pte_value_write ns in
+          let init_st = CoSt.create init_value sz pte_val check_value check_fault in
+          let next_x_ok,_st,vf = set_values false init_st ns in
+          let env = if init_value = 0 then env
+                    else (Code.as_data loc,Value.from_int init_value)::env in
+          if next_x_ok then
+            (* If `next_x_ok`, this means a new variable has been introduced,
+               due to, e.g., introducing aliasing in page table operation.
+               `next_x` will be the new variable. *)
+            next_value+8,(next_x,Value.from_int (next_value+4))::env,(loc,vf)::final_values
+          else
+            next_value+4,env,(loc,vf)::final_values )
+        nss (0,[],[]) in
+    initvals,final_values
 
 (* zyva... *)
 
@@ -1233,36 +1252,31 @@ let finish n =
     | Diff -> set_diff_loc st n
     | Same -> set_same_loc st n in
 
-  if O.verbose > 1 then begin
-    eprintf "LOCATIONS\n" ;
-    debug_cycle stderr n
-  end ;
-(* Set write values *)
-  let by_loc,initvals = set_write_v n in
-  if O.verbose > 1 then begin
-    eprintf "INITIAL VALUES: %s\n"
-      (String.concat "; "
-         (List.map
-            (fun (loc,k) -> sprintf "%s->%d" loc (Code.value_to_int k))
-            initvals)) ;
-    eprintf "WRITE VALUES\n" ;
-    debug_cycle stderr n
-  end ;
-(* Set load values *)
-  let vs = set_read_v by_loc initvals in
-(* Set dependency values *)
+  if not (valid_cycle n) then Warn.fatal "Invalid cycle.\n" ;
+  verbose 2 "LOCATIONS\n%s\n" (debug_cycle n);
+
+  (* Set values *)
+  let start_node,by_loc = split_by_location n in
+  let initvals,final_values = set_node_values by_loc in
   (if do_morello then set_dep_v by_loc) ;
-  if O.verbose > 1 then begin
-    eprintf "READ VALUES\n" ;
-    debug_cycle stderr n ;
-    eprintf "FINAL VALUES [%s]\n"
-      (String.concat ","
-        (List.map
-          (fun (loc,(v,_pte)) -> sprintf "%s -> 0x%x"
-            (Code.pp_loc loc) (Code.value_to_int v)) vs))
-  end ;
-  if O.variant Variant_gen.Self then check_fetch n;
-  initvals
+  (* Debug print *)
+  let pp_init =
+    List.map ( fun (loc,k) -> sprintf "%s->0x%s"
+         loc (Value.pp_v ~hexa:true k)
+      ) initvals
+    |> String.concat "; " in
+  let pp_final =
+    List.map ( fun (loc,(v,_pte)) -> sprintf "%s->0x%s"
+        (Code.pp_loc loc) (Value.pp_v ~hexa:true v)
+      ) final_values
+    |> String.concat "," in
+    verbose 2 "INITIAL VALUES [%s]\nASSIGNED VALUES\n%s\nFINAL VALUES [%s]\n"
+      pp_init (debug_cycle n) pp_final;
+  (* END of bebug print *)
+  (* Set dependency values *)
+  if O.variant Variant_gen.Self then check_fetch start_node;
+  start_node,initvals
+  (* END of finish *)
 
 
 (* Re-extract edges, with irelevant directions solved *)
@@ -1315,7 +1329,7 @@ let resolve_edges = function
 
 let make es =
   let es,c = resolve_edges es in
-  let initvals = finish c in
+  let c,initvals = finish c in
   es,c,initvals
 
 (*************************)
@@ -1384,9 +1398,9 @@ let merge_changes n nss =
       e1.loc = e2.loc && value_before e2 e1
 
   let debug_proc ns =
-    String.concat " " (List.map (fun n -> sprintf "<%s>" (str_node n)) ns)
+    String.concat " " @@ List.map (fun n -> sprintf "<%s>" (str_node n)) ns
 
-  let debug_procs nss =  List.iter (fun ns -> eprintf "%s\n" (debug_proc ns)) nss
+  let debug_procs nss = String.concat "\n" @@ List.map (fun ns -> sprintf "%s" (debug_proc ns)) nss
 
   let split_procs n =
     let n =
@@ -1404,54 +1418,25 @@ let merge_changes n nss =
     let k1,k2 = do_rec n in
     let nss = cons_not_nil k1 k2 in
     let nss = merge_changes n nss in
-    let rec num_rec k = function
-      | [] -> ()
-      | ns::nss ->
-          List.iter
-            (fun n ->
-              if n.store != nil then begin
-                n.store.evt <-  { n.store.evt with proc = k; }
-              end ;
-              n.evt <- { n.evt with proc = k; })
-            ns ;
-          num_rec (k+1) nss in
+    let num_rec k =
+      List.iteri (fun index ns ->
+        List.iter (fun n ->
+          if n.store != nil then
+            n.store.evt <-  { n.store.evt with proc = index + k; };
+          n.evt <- { n.evt with proc = index + k; }
+        ) ns
+      ) in
     num_rec 0 nss ;
     if
       not O.allow_back &&
       List.exists proc_back nss
-    then Warn.fatal "Forbidden po vs. com" ;
-    if O.verbose > 1 then begin
-      eprintf "SPLITTED:\n" ; debug_procs nss
-    end ;
+    then Warn.fatal "Forbidden po vs. com";
+    verbose 2 "SPLITTED:\n%s\n" (debug_procs nss);
     nss
 
 (****************************)
 (* Compute coherence orders *)
 (****************************)
-
-(* For each continuous elements to location `x` in the input,
-  group those elements, accumulating through `ns`. *)
-let rec group_rec x ns = function
-  | [] -> [x,List.rev ns]
-  | (y,n)::rem ->
-      if Code.loc_compare x y = 0 then group_rec x (n::ns) rem
-      else (x,List.rev ns)::group_rec  y [n] rem
-
-  let group = function
-    | [] -> []
-    | (x,n)::rem -> group_rec x [n] rem
-
-  let by_loc xvs =
-    let r = group xvs in
-    let r =  List.stable_sort (fun (x,_) (y,_) -> Code.loc_compare x y) r in
-    let r =
-      List.map
-        (fun (x,ns) -> match ns with
-        |  [] -> assert false
-        | _::_ -> (x,ns))
-        r in
-    group r
-
 
 
 (* find changing location *)
@@ -1521,27 +1506,25 @@ let rec group_rec x ns = function
         let tag_ws = if do_memtag then
           List.map get_tag_locs (get_ord_writes n) else [] in
         let ws = ord_ws@tag_ws in
-        if O.verbose > 1 then
-          List.iter
-            (fun (loc,n) ->
-              eprintf "LOC=%s, node=%a\n" (Code.pp_loc loc) debug_node n)
-            ws ;
+        let pp_ws = List.map ( fun (loc,n) ->
+            sprintf "LOC=%s, node=%s" (Code.pp_loc loc) (debug_node n)
+          ) ws
+          |> String.concat "\n" in
+        debug "WRITE SET:\n%s\n" pp_ws;
         let r = by_loc ws in
         List.fold_right
-          (fun (loc,ws) k -> match ws with
+          ( fun (loc,ws) k -> match ws with
           | [] -> k
           | [ns] ->
-             if O.verbose > 1 then
-               Printf.eprintf "Standard write sequence on %s: %s\n"
-                 (Code.pp_loc loc)
-                 (String.concat " "
-                    (List.map str_node ns)) ;
-             (loc,ws)::k
+            debug "Standard write sequence on %s: %s\n"
+              (Code.pp_loc loc) (String.concat " " @@ List.map str_node ns) ;
+            (loc,ws)::k
           | _ ->
-              List.iter
-                (fun ns -> eprintf "[%a]\n" debug_nodes ns)
-                ws ;
-              assert false)
+              (* Assume there is no consecutive writes to the same location *)
+              let pp_ws = List.map ( fun ns ->
+                  sprintf "[%s]" (debug_nodes ns) ) ws
+                |> String.concat "\n" in
+              Warn.fatal "Error in coherence:%s\n" pp_ws )
           r []
     | None ->
         if O.same_loc then
@@ -1550,7 +1533,7 @@ let rec group_rec x ns = function
           | (loc,_)::_ as xs ->
               [loc,[List.map snd xs]]
         else
-          Warn.fatal "Unique location" in
+          Warn.fatal "Unique location, try to switch on -oneloc" in
     List.fold_right
       (fun (loc,ns) k ->
         match loc with
@@ -1571,7 +1554,7 @@ let rec group_rec x ns = function
           (fun (loc,ns) k -> match List.flatten ns with
           | []|[_]|_::_::_::_ -> k
           | [_;n;] ->
-              let p = n.evt.pte in
+              let p = Value.to_pte n.evt.v in
               (Misc.add_pte (Code.as_data loc),p)::k)
           r []
     | None ->  []

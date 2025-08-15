@@ -18,6 +18,7 @@ module type Config = sig
   val eieio : bool
   val naturalsize : MachSize.sz
   val moreedges : bool
+  module Debug : Debug_gen.S
 end
 
 (* Default: know about eieio and word size *)
@@ -27,6 +28,7 @@ module Config =
     let eieio = true
     let naturalsize = MachSize.Word
     let moreedges = false
+  module Debug = Debug_gen.Make(struct let debug = !Config.debug end)
   end
 
 module Make(C:Config)  =
@@ -41,9 +43,8 @@ module Make(C:Config)  =
           let naturalsize = Some C.naturalsize
           let endian = endian
           let fullmixed = C.moreedges
+          module Debug = C.Debug
         end)
-
-    module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
 
 (**********)
 (* Fences *)
@@ -96,11 +97,6 @@ module Make(C:Config)  =
       | DATA -> "Data"
       | CTRL -> "Ctrl"
       | CTRLISYNC -> "CtrlIsync"
-(*******)
-(* RWM *)
-(*******)
-    include Exch.LxSx(struct type arch_atom = atom end)
-    include NoEdge
 
     include
         ArchExtra_gen.Make
@@ -112,6 +108,8 @@ module Make(C:Config)  =
           let pp_reg = pp_reg
           let pp_i _ = assert false
           let free_registers = allowed_for_symb
+          type arch_atom = atom
+          module Value = Value
           include NoSpecial
         end)
   end

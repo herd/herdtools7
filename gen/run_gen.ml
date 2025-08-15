@@ -19,18 +19,21 @@
 open Printf
 
 module type Config = sig
-  val verbose : int
+  module Debug : Debug_gen.S
 end
 
 module Make (O:Config) (C:ArchRun.S) :
     sig
       val run : C.C.event list list -> C.A.location C.C.EventMap.t
-        -> (C.A.location * Code.v) list list
+        -> (C.A.location * C.C.Value.v) list list
 
-      val dump_cond :  (C.A.location * Code.v) list list -> string
+      val dump_cond :  (C.A.location * C.C.Value.v) list list -> string
     end
     =
   struct
+
+    let debug fmt = O.Debug.debug Debug_gen.Cycle fmt
+
     module A = C.A
     module C = C.C
 
@@ -105,8 +108,8 @@ module Make (O:Config) (C:ArchRun.S) :
     module StateSet =
       MySet.Make
         (struct
-          type t = Code.v State.t
-          let compare = State.compare Code.value_compare
+          type t = C.Value.v State.t
+          let compare = State.compare C.Value.value_compare
         end)
 
     let by_loc pred evts =
@@ -165,7 +168,7 @@ module Make (O:Config) (C:ArchRun.S) :
                   else (wi,w)::k)
                 ws [] in
             let orders_loc = Rel.all_topos
-                (O.verbose > 1) ws (Rel.of_list vb_loc) in
+                (O.Debug.verbose_level > 1) ws (Rel.of_list vb_loc) in
             orders_loc::k)
           ws_by_loc [] in
 
@@ -226,10 +229,6 @@ module Make (O:Config) (C:ArchRun.S) :
               State.add reg v fs
             with Not_found -> fs)
           m fs in
-(*
-      pp_state stderr fs ;
-      eprintf "\n" ;
-*)
       StateSet.add fs k
 
     let run evts m =
@@ -238,21 +237,21 @@ module Make (O:Config) (C:ArchRun.S) :
       let process_co = process_co kont in
       let process_rfm = process_rfm process_co in
       let sts = gen_rfm process_rfm str StateSet.empty in
-(*      eprintf "Candidates: %i\n" (StateSet.cardinal sts) ; *)
+      debug "Candidates: %i\n" (StateSet.cardinal sts) ;
       List.map
         State.bindings
         (StateSet.elements sts)
 
 (* Dump condition *)
     type cond =
-      | Atom of A.location * Code.v
+      | Atom of A.location * C.Value.v
       | Or of cond list
       | And of cond list
 
 
     module OV = struct
-      type t = Code.v
-      let compare = Code.value_compare
+      type t = C.Value.v
+      let compare = C.Value.value_compare
     end
 
     module VSet = MySet.Make(OV)
@@ -341,7 +340,7 @@ module Make (O:Config) (C:ArchRun.S) :
       | And [] -> "true"
       | Or fs -> do_dumps " \\/ " fs
       | And fs -> do_dumps " /\\ " fs
-      | Atom (loc,v) -> sprintf "%s=%s" (A.pp_location loc) (Code.pp_v v)
+      | Atom (loc,v) -> sprintf "%s=%s" (A.pp_location loc) (C.Value.pp_v v)
 
     let dump_cond fs = do_dump (cond_of_finals fs)
 

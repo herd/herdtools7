@@ -47,11 +47,12 @@ module type Config = sig
   val outmap : string option
   val lowercase : bool
   val sufname : string option
+  module Debug : Debug_gen.S
 end
 
-module Make(Co:Config) (A:Fence.S) = struct
-  module E = Edge.Make(Edge.Config)(A)
-  module N = Namer.Make(A)(E)
+module Make(Co:Config) (A:Arch_gen.FenceAtom) = struct
+  module E = Edge.Make(Edge.Config)(A)(A)
+  module N = Namer.Make(A)(A)(E)
   module Norm = Normaliser.Make(Co)(E)
   module P = LineUtils.Make(E)
 
@@ -142,6 +143,7 @@ let () =
     let outmap = !map
     let lowercase = !lowercase
     let sufname = None
+    module Debug = Debug_gen.Make(struct let debug = !Config.debug end)
   end in
   let module Build = Make(Co) in
   (match !arch with

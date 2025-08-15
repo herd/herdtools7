@@ -17,6 +17,7 @@
 module type Config = sig
   val naturalsize : MachSize.sz option
   val fullmixed : bool
+  module Debug : Debug_gen.S
 end
 
 type offset = int
@@ -27,28 +28,29 @@ val equal : t -> t -> bool
 val overlap : t -> t -> bool
 
 module Make :
-  functor (C:Config) ->
+  functor (C:Config) -> functor(Value : Value.S) ->
   sig
 
     val pp_mixed : t -> string
 
     val fold_mixed : (t -> 'a -> 'a) -> 'a -> 'a
 
-    val tr_value : MachSize.sz -> Code.v -> Code.v
+    val tr_value : MachSize.sz -> Value.v -> Value.v
   end
 
 module type ValsConfig = sig
   val naturalsize : unit -> MachSize.sz
   val endian : Endian.t
+  module Debug : Debug_gen.S
 end
 
 module Vals :
-  functor(C:ValsConfig) ->
+  functor(C:ValsConfig) -> functor(Value : Value.S) ->
   sig
     val overwrite_value :
-      Code.v (* old *) -> MachSize.sz -> offset -> Code.v (* write *) -> Code.v
+      Value.v (* old *) -> MachSize.sz -> offset -> Value.v (* write *) -> Value.v
 
-    val extract_value : Code.v -> MachSize.sz -> offset -> Code.v
+    val extract_value : Value.v -> MachSize.sz -> offset -> Value.v
 
   end
 
