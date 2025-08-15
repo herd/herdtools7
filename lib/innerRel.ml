@@ -72,6 +72,7 @@ module type S =  sig
 (* Does not detect cycles either *)
   val transitive_to_map : t -> Elts.t M.ME.t
   val transitive_closure : t -> t
+  val acyclic_transitive_closure : t -> t
 
 (* Direct cycles *)
   val is_reflexive : t -> bool
@@ -346,6 +347,26 @@ and module Elts = MySet.Make(O) =
         if ME.equal Elts.equal m0 m1 then m0
         else tr m1
 
+      let acyclic_tr m =
+        let rec visit ((visited : Elts.t), (res : map)) i =
+          let visited = Elts.add i visited in
+          Elts.fold (visit_one_neighboor i) (succs i m) (visited, res)
+        and visit_one_neighboor i j ((visited : Elts.t), (res : map)) =
+          let visited, res = maybe_visit (visited, res) j in
+          let si = succs i res and sj = succs j res in
+          let res = ME.add i (Elts.add j (Elts.union si sj)) res in
+          (visited, res)
+        and maybe_visit (visited, res) n =
+          if Elts.mem n visited then (visited, res) else visit (visited, res) n
+        in
+        let res0 = ME.map (fun _ -> Elts.empty) m and visited0 = Elts.empty in
+        let _, res =
+          ME.fold
+            (fun n _ (res, visited) -> maybe_visit (res, visited) n)
+            m (visited0, res0)
+        in
+        res
+
 (* Acyclicity check *)
       exception Cycle of (Elts.elt list)
 
@@ -455,6 +476,8 @@ and module Elts = MySet.Make(O) =
 
     let transitive_closure r = transitive_to_map r |> M.of_map
 
+    let acyclic_transitive_closure r =
+      M.to_map r |> M.acyclic_tr |> M.of_map
 (* Acyclicity check *)
 
     let get_cycle r = M.get_cycle (M.to_map r)

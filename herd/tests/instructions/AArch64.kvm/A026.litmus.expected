@@ -1,0 +1,10 @@
+Test A026 Required
+States 1
+0:X2=(oa:PA(x)); 0:X3=(oa:PA(x), af:0); 0:X4=(oa:PA(x)); 0:X6=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X2=(oa:PA(x)) /\ 0:X3=(oa:PA(x), af:0) /\ 0:X4=(oa:PA(x)) /\ 0:X6=1)
+Observation A026 Always 1 0
+Hash=7654bc63ae4473aeb91d42b341d6da35
+

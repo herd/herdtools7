@@ -17,7 +17,7 @@
 (** Debug tags *)
 
 type t = {
-  solver : bool ;
+  solver : int ;
   lexer : bool ;
   top : bool ;
   mem : bool ;
