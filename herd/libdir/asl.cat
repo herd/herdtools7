@@ -45,6 +45,7 @@ let aarch64 = AArch64 * AArch64
 
 let asl_data = asl_iico_data | asl_rf_reg
 let asl_deps = asl_data+
+let asl_ctrl_deps = (asl_data | asl_iico_ctrl)+
 
 
 (**********************************)
@@ -52,12 +53,10 @@ let asl_deps = asl_data+
 (**********************************)
 
 (* Intra-instruction Data dependencies *)
-let aarch64_iico_data = asl_deps & aarch64
+let aarch64_iico_data = [AArch64 \ B]; asl_deps; [AArch64]
 
 (* Intra-instruction Control dependencies *)
-(* [asl_deps_aarch64] is just a faster way of writing [asl_deps?; [AArch64]] *)
-let asl_deps_aarch64 = (asl_deps; [AArch64]) | [AArch64]
-let aarch64_iico_ctrl = ([B]; asl_iico_ctrl; asl_deps_aarch64)+ & aarch64
+let aarch64_iico_ctrl = [B]; asl_ctrl_deps; [AArch64]
 
 (* Intra-instruction Order dependencies *)
 let asl_fr = asl_po & ([R] ; loc ; [W])
