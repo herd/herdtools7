@@ -1092,6 +1092,19 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         let*| _i, vs = List.fold_left folder (return (0, [])) ms in
         return_return new_env (List.rev vs) |: SemanticsRule.SReturn
+    | S_Return (Some ({ desc = E_Call { name; params; args; _ }; _ } as e)) ->
+        let**| returned, new_env =
+          eval_call (to_pos e) name env ~params ~args
+        in
+        let scope = IEnv.get_scope new_env in
+        let folder acc m =
+          let*| i, vs = acc in
+          let* v = m in
+          let* () = B.on_write_identifier (return_identifier i) scope v in
+          return (i + 1, v :: vs)
+        in
+        let*| _i, vs = List.fold_left folder (return (0, [])) returned in
+        return_return new_env (List.rev vs) |: SemanticsRule.SReturn
     | S_Return (Some e) ->
         let** v, env1 = eval_expr env e in
         let* () =
