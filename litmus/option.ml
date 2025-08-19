@@ -186,6 +186,9 @@ let ppcopt =
 let armopt =
   { delay = 1024; gccopts = "-O2";
     word = Word.WXX; line = 64;} (* cortexa9 -> 32, cortex-a15 -> 64 *)
+let aarch64opt =
+  { delay = 32; gccopts = "-O2";
+    word = Word.WXX; line = 64;}
 let mipsopt =
   { delay = 1024; gccopts = "-O2";
     word = Word.WXX; line = 1024 ;} (* cache line size cannot be wrong... *)
@@ -196,7 +199,7 @@ let get_default arch = match arch with
 | `X86 |`X86_64 -> x86opt
 | `PPCGen
 | `PPC -> ppcopt
-| `AArch64
+| `AArch64 -> aarch64opt
 | `ARM -> armopt
 | `MIPS|`RISCV -> mipsopt
 | `C -> copt

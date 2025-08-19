@@ -79,10 +79,11 @@ let opts =
    "-delay", Arg.Int set_delay,
    begin let get_delay a = Option.get_delay (Option.get_default a) in
    sprintf
-     "set timebase delay (default X86=%i, PPC=%i, ARM=%i, C=%i)"
+     "set timebase delay (default X86=%i, PPC=%i, ARM=%i, AArch64=%i, C=%i)"
      (get_delay `X86)
      (get_delay `PPC)
      (get_delay `ARM)
+     (get_delay `AArch64)
      (get_delay `C)
    end ;
    argbool "-vb" Option.verbose_barrier
