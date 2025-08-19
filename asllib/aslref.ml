@@ -54,6 +54,14 @@ type args = {
   allow_function_like_statements : bool;
 }
 
+let safe_exit n =
+  (* In a js_of_ocaml runtime [exit] raises [Invalid_argument] because
+     there is no underlying OS process. Swallow that exception so that the
+     JavaScript module keeps initialising. *)
+  try exit n with Invalid_argument _ -> ()
+
+let running_in_jsoo : bool = false
+
 let push thing ref = ref := thing :: !ref
 
 let parse_args () =
@@ -253,14 +261,15 @@ let parse_args () =
 
   let () =
     let ensure_exists s =
-      if Sys.file_exists s then ()
-      else
-        let () = Printf.eprintf "%s cannot find file %S\n%!" prog s in
+      if running_in_jsoo then ()
+      else if Sys.file_exists s then ()
+      else (
+        Printf.eprintf "%s cannot find file %S\n%!" prog s;
         (* Arg.usage speclist usage_msg; *)
-        exit 1
+        safe_exit 1)
     in
     List.iter (fun (_, s) -> ensure_exists s) args.files;
-    Option.iter ensure_exists args.opn
+    if not running_in_jsoo then Option.iter ensure_exists args.opn
   in
 
   let () =
@@ -268,7 +277,7 @@ let parse_args () =
       let () =
         Printf.printf "aslref version %s rev %s\n%!" Version.version Version.rev
       in
-      exit 0
+      safe_exit 0
   in
   args
 
@@ -279,7 +288,134 @@ let or_exit f =
     | Ok res -> res
     | Error e ->
         Format.eprintf "%a@." Error.pp_error e;
-        exit 1
+        safe_exit 1;
+        (* Swallow the error: return a polymorphic dummy value. *)
+        Obj.magic ()
+
+(*--------------------------------------------------------------------------*)
+(*  External API – used by the browser‐side wrapper (jaslref.ml)            *)
+(*--------------------------------------------------------------------------*)
+
+let run_with ~(read_file : string -> string) (args : args) : unit =
+  (* Build the parser configuration from [args]. *)
+  let parser_config : Builder.parser_config =
+    let open Builder in
+    {
+      allow_no_end_semicolon                 = args.allow_no_end_semicolon;
+      allow_expression_elsif                 = args.allow_expression_elsif;
+      allow_double_underscore                = args.allow_double_underscore;
+      allow_unknown                          = args.allow_unknown;
+      allow_storage_discards                 = args.allow_storage_discards;
+      allow_hyphenated_pending_constraint    =
+        args.allow_hyphenated_pending_constraint;
+      allow_local_constants                  = args.allow_local_constants;
+      allow_single_arrows                    = args.allow_single_arrows;
+      allow_empty_structured_type_declarations =
+        args.allow_empty_structured_type_declarations;
+      allow_function_like_statements         =
+        args.allow_function_like_statements;
+    }
+  in
+
+  (* Helper: parse a file whose text we already have. *)
+  let parse_string ~filename ~version ~ast_type contents =
+    Builder.from_string ~filename ~ast_string:contents ~parser_config ~ast_type
+      version
+  in
+
+  (* Optional extra main specification from an OPN file. *)
+  let extra_main =
+    match args.opn with
+    | None -> []
+    | Some fname ->
+        let txt = read_file fname in
+        parse_string ~filename:fname ~version:`ASLv1 ~ast_type:`Opn txt
+  in
+
+  (* Parse the list of files, applying patches as required. *)
+  let ast =
+    let folder (ft, fname) acc =
+      let version =
+        match ft with
+        | NormalV0 | PatchV0 -> `ASLv0
+        | NormalV1 | PatchV1 -> `ASLv1
+      in
+      let txt       = read_file fname in
+      let this_ast  =
+        parse_string ~filename:fname ~version ~ast_type:`Ast txt
+      in
+      match ft with
+      | NormalV0 | NormalV1 -> List.rev_append this_ast acc
+      | PatchV0  | PatchV1  -> ASTUtils.patch ~src:acc ~patches:this_ast
+    in
+    List.fold_right folder args.files []
+  in
+  let ast = List.rev_append extra_main ast in
+
+  (* Optional printing / serialisation. *)
+  if args.print_ast       then Format.printf "%a@." PP.pp_t ast ;
+  if args.print_serialized then print_string (Serialize.t_to_string ast);
+
+  (* Add stdlib (+ primitives unless disabled). *)
+  let ast =
+    let open Builder in
+    let with_std = with_stdlib ast in
+    if args.no_primitives
+      then with_std
+      else with_primitives Native.DeterministicBackend.primitives with_std
+  in
+
+  (* CSV header if needed. *)
+  (match args.output_format with
+    | Error.CSV ->
+        Printf.eprintf
+          {|"File","Start line","Start col","End line","End col","Exception label","Exception"@.|}
+    | Error.HumanReadable -> ());
+
+  (* Type-check. *)
+  let typed_ast, static_env =
+    let module C = struct
+      let output_format = args.output_format
+      let check         = args.strictness
+      let print_typed   = args.print_typed || args.print_lisp
+      let use_field_getter_extension      = args.use_field_getter_extension
+      let override_mode                   = args.override_mode
+      let fine_grained_side_effects       =
+        args.use_fine_grained_side_effects
+        || args.use_conflicting_side_effects_extension
+      let use_conflicting_side_effects_extension =
+        args.use_conflicting_side_effects_extension
+      let control_flow_analysis           = args.control_flow_analysis
+    end in
+    let module T = Annotate (C) in
+    or_exit @@ fun () -> T.type_check_ast ast
+  in
+
+  (* Optional pretty-printing of typed AST / Lisp object. *)
+  if args.print_typed then
+    Format.printf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t typed_ast ;
+  if args.print_lisp  then
+    let lisp_ast        = Lispobj.of_ast typed_ast
+    and lisp_static_env = Lispobj.of_static_env_global static_env in
+    Lispobj.print_obj Format.std_formatter
+      (Lispobj.Cons (lisp_static_env, lisp_ast));
+
+  (* Execute if requested. *)
+  let _, used_rules =
+    if args.exec then
+      let instrumentation = args.show_rules in
+      or_exit @@ fun () ->
+      Native.interpret ~instrumentation static_env typed_ast
+    else (0, [])
+  in
+
+  (* Dump instrumentation (rule usage) if requested. *)
+  if args.show_rules then
+    Format.printf "@[<v 3>Used rules:@ %a@]@."
+      (Format.pp_print_list
+          ~pp_sep:Format.pp_print_cut
+          Instrumentation.SemanticsRule.pp)
+      used_rules
 
 let () =
   let args = parse_args () in
@@ -413,4 +549,4 @@ let () =
         used_rules
   in
 
-  exit exit_code
+  safe_exit exit_code
