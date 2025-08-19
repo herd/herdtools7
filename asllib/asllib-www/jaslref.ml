@@ -1,0 +1,96 @@
+(* asllib-www/jaslref.ml *)
+
+open Js_of_ocaml
+
+let dbg = false
+
+(* Redirect OCaml’s stdout/stderr into the web page *)
+let install_channel_flushers () =
+    let out s =
+    Js.Unsafe.fun_call (Js.Unsafe.pure_js_expr "asl_output")
+        [| Js.Unsafe.inject (Js.string s) |] in
+    Sys_js.set_channel_flusher stdout out ;
+    if not dbg then
+    let err s =
+        Js.Unsafe.fun_call (Js.Unsafe.pure_js_expr "asl_stderr")
+        [| Js.Unsafe.inject (Js.string s) |] in
+    Sys_js.set_channel_flusher stderr err
+
+(* The single entry point visible from JavaScript                 *)
+(*   – code   : string that contains the ASL program              *)
+(*   – version: "v0" | "v1" etc.                                  *)
+(*   – exec   : boolean, run or just parse/type-check             *)
+let run_asl code version exec =
+    install_channel_flushers ();
+
+    let code = Js.to_string code
+    and version = Js.to_string version
+    and exec = Js.to_bool   exec in
+
+    (* Build the “args” record expected by AslRef *)
+    let open Aslref in
+    let argv =
+    { exec ;
+        files =
+          [
+            ((if String.equal version "v0" then NormalV0 else NormalV1),
+             "web-input.asl")
+          ];
+        opn = None;
+        (* … rest of the boolean flags left to their defaults … *)
+        allow_no_end_semicolon = false;
+        allow_expression_elsif = false;
+        allow_double_underscore = false;
+        allow_unknown = false;
+        allow_storage_discards = false;
+        allow_hyphenated_pending_constraint = false;
+        allow_local_constants = false;
+        allow_single_arrows = false;
+        print_ast = false;
+        print_lisp = false;
+        print_serialized = false;
+        print_typed = false;
+        show_rules = false;
+        strictness =
+        (if String.equal version "v0" then Silence else TypeCheck);
+        output_format = Asllib.Error.HumanReadable;
+        use_field_getter_extension = false;
+        use_fine_grained_side_effects = false;
+        use_conflicting_side_effects_extension = false;
+        override_mode = Permissive;
+        no_primitives = false;
+        control_flow_analysis = true;
+        allow_empty_structured_type_declarations = false;
+        allow_function_like_statements = false;
+    }
+    in
+
+    let () =
+      try
+        Js_of_ocaml.Sys_js.create_file ~name:"web-input.asl" ~content:code
+      with Sys_error _ ->
+        Js_of_ocaml.Sys_js.update_file ~name:"web-input.asl" ~content:code
+    in
+
+    (* Minimal in-memory file-system for the lexer/parser. *)
+    let module WebFS = struct
+      module StringMap = Map.Make (String)
+
+      let files = ref (StringMap.singleton "web-input.asl" code)
+
+      let find name =
+        match StringMap.find_opt name !files with
+        | Some s -> s
+        | None -> failwith ("File not found: " ^ name)
+    end in
+
+    try
+      run_with ~read_file:WebFS.find argv;
+      if not exec then Printf.printf "ASL: type-check completed.\n%!"
+    with
+    | Asllib.Error.ASLException e ->
+        Printf.eprintf "%s\n%!" (Asllib.Error.error_to_string e)
+    | Exit _ -> ()
+
+(* Expose to JavaScript *)
+let () = Js.Unsafe.global##.runAsl := Js.wrap_callback run_asl
