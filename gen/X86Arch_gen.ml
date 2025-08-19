@@ -58,10 +58,13 @@ let varatom_dir _d f = f None
 
 let atom_to_bank _ = Code.Ord
 
+let is_pseudo _ = false
+
 include NoMixed
 include NoWide
 
 module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
+
 
 (**********)
 (* Fences *)

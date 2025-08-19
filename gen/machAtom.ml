@@ -114,5 +114,7 @@ module Make(C:Config) = struct
   | Some (Mixed (sz,o)) ->
       ValsMixed.extract_value v sz o
 
+  let is_pseudo _ = false
+
   include NoWide
 end

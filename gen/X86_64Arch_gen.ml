@@ -236,6 +236,8 @@ module Make
       let fst_dp _ = assert false
       let sequence_dp _ _ = assert false
 
+      let is_pseudo _ = false
+
       (*******)
       (* RWM *)
       (*******)

@@ -875,29 +875,23 @@ let fold_tedges f r =
     and a2 = replace_plain_atom e.a2 in
     { e with a1; a2; }
 
-  let remove_id = List.filter (fun e -> not (is_id e.edge))
-
-  let check_mixed =
-    if not do_mixed || do_disjoint then fun _ -> ()
-    else
-      List.iter
-        (fun e ->
-          if not (ok_mixed e.edge e.a1 e.a2) then begin
-              match e.edge with
-              | Rmw _ ->
-                  Warn.fatal
-                    "Illegal mixed-size Rmw edge: %s"
-                    (pp_edge e)
-              | _ ->
-                  if same_access_atoms e.a1 e.a2 then
-                    Warn.fatal
-                      "Identical mixed access in %s and `-variant MixedStrictOverlap` mode"
-                      (pp_edge e)
-                  else
-                    Warn.fatal
-                      "Non overlapping accesses in %s, allow with `-variant MixedDisjoint`"
-                      (pp_edge e)
-          end)
+  let validity_edges es =
+    (* Check mixed size memory access annotation *)
+    let check_mixed e =
+      if not (not do_mixed || do_disjoint || (ok_mixed e.edge e.a1 e.a2)) then
+        Warn.fatal
+          ( match e.edge,(same_access_atoms e.a1 e.a2) with
+          | Rmw _,_ -> "Illegal mixed-size Rmw edge: %s"
+          | _,true ->
+              "Identical mixed access in %s and `-variant MixedStrictOverlap` mode"
+          | _,false ->
+              "Non overlapping accesses in %s, allow with `-variant MixedDisjoint`" )
+          (pp_edge e) in
+    (* Check `Id` edge are all pseudo annotation *)
+    let check_pseudo e =
+      if not (not (is_id e.edge) || F.is_pseudo e.a1) then
+        Warn.fatal "Invalid annotation %s" (pp_edge e) in
+    List.iter (fun e -> check_mixed e; check_pseudo e) es
 
 
   let resolve_edges es0 =
@@ -937,10 +931,9 @@ let fold_tedges f r =
     let before,fst,es = find_first es0 in
     let fst,es = merge_es fst es in
     let es = before @ fst :: es in
-    let es = remove_id es in
     let es = if do_mixed then List.map replace_plain es else es in
     if dbg > 0 then eprintf "Check Mixed: %s\n" (pp_edges es) ;
-    check_mixed es ;
+    validity_edges es ;
     es
 
 (********************)

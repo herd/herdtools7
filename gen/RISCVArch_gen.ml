@@ -211,6 +211,8 @@ let pp_dp = function
   | CTRL -> "Ctrl"
   | CTRLISYNC -> "CtrlFenceI"
 
+let is_pseudo _ = false
+
 include Exch.Exch(struct type arch_atom = atom end)
 include NoEdge
 

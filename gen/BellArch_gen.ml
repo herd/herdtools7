@@ -208,6 +208,8 @@ include NoMixed
 
 include NoWide
 
+let is_pseudo _ = false
+
 (* End of atoms *)
 
 module PteVal = PteVal_gen.No(struct type arch_atom = atom end)

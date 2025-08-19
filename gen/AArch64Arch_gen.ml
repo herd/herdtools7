@@ -202,6 +202,10 @@ type atom_pte =
   | SetOne of WPTESet.t
   (* Precise value of 1 to 0 *)
   | SetZero of WPTESet.t
+  (* Toggle the inital vlaue *)
+  | Init of WPTESet.t
+  (* TTHM prelude *)
+  | TTHM of WPTESet.t
 
 type neon_opt = SIMD.atom
 
@@ -260,6 +264,8 @@ let is_ifetch a = match a with
      | SetRel set -> pp_w_pte set ^"L"
      | SetOne set -> "One" ^ pp_w_pte set
      | SetZero set -> "Zero" ^ pp_w_pte set
+     | Init set -> "Init" ^ pp_w_pte set
+     | TTHM set -> "TTHM" ^ pp_w_pte set
 
    let pp_pair_opt = function
      | Pa -> ""
@@ -346,7 +352,8 @@ let is_ifetch a = match a with
    let fold_pte f r =
      if do_kvm then
        let pte_toggle_f fs r =
-         r |> f (SetRel fs) |> f (Set fs) |> f (SetOne fs) |> f (SetZero fs) in
+         r |> f (SetRel fs) |> f (Set fs) |> f (SetOne fs) |> f (SetZero fs)
+           |> f (Init fs) |> f (TTHM fs) in
        r |> fold_subsets pte_toggle_f |> f Read |> f ReadAcq |> f ReadAcqPc
      else r
 
@@ -680,8 +687,8 @@ let overwrite_value v ao w = match ao with
           a valid inital value, hence here those two
           will behave the same as `Set`, i.e.e toggle the pte value *)
         | Set f|SetRel f|SetOne f|SetZero f -> toggle_pte f pte loc
-        | Read|ReadAcq|ReadAcqPc ->
-                Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
+        | Read|ReadAcq|ReadAcqPc|Init _|TTHM _ ->
+          Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
 
     let set_pteval a p =
       match a with
@@ -710,6 +717,10 @@ let overwrite_value v ao w = match ao with
      match a with
      | Some (Pair _,_) -> true
      | Some _|None -> false
+
+  let is_pseudo = function
+    | Some(Pte(Init _|TTHM _),_) -> true
+    | _ -> false
 
 (* End of atoms *)
 
