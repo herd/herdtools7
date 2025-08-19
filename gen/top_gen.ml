@@ -1015,22 +1015,19 @@ let test_of_cycle name
   ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) ?(init_pte=[]) es c =
   let com = match com with None -> pp_edges es | Some com -> com in
   let (init,prog,final,env),(prf,coms) = compile_cycle check init c in
-  let archinfo = Comp.get_archinfo c in
   let m_labs = num_labels prog in
   let init = (tr_labs m_labs init) @ List.map
   (* Add the init pte value `init_pte` into `init`, so it will print
   in the pre-condition of the final litmus test. *)
     ( fun (loc, pte) -> (A.Loc ("pte_" ^ loc), Some (A.P pte)) ) init_pte in
-  let coms = String.concat " " coms in
-  let info =
-    let myinfo =
-      (if do_self then fun k -> k else do_add_info "Prefetch" prf)
-        (do_add_info "Com" coms (do_add_info "Orig" com [])) in
-    let myinfo = match scope with
-    | None -> myinfo
-    | Some st -> ("Scopes",BellInfo.pp_scopes st)::myinfo in
-    let myinfo = ("Generator",O.generator)::myinfo in
-    info@myinfo@archinfo in
+  let info = info @
+    ( Comp.get_archinfo c
+    |> do_add_info "Orig" com
+    |> do_add_info "Com" (String.concat " " coms)
+    |> do_add_info "Prefetch" (if do_self then "" else prf)
+    |> do_add_info "Scopes"
+      ( match scope with | None -> "" | Some st -> BellInfo.pp_scopes st )
+    |> do_add_info "Generator" O.generator ) in
 
   { name=name ; info=info; com=com ;  edges = es ;
     init=init ; prog=prog ; scopes = scope; final=final ; env=env; }

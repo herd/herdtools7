@@ -663,6 +663,7 @@ let patch_edges n =
 
 
   let merge_annotations m =
+    eprintf "merge_annotations in cycle %a\n" debug_cycle m;
       let rec do_rec n =
         let e = n.edge in
         if non_insert_store e then begin
@@ -734,7 +735,7 @@ let remove_store n0 =
            Warn.fatal "Node pseudo edge %s appears in-between  %s..%s (one neighbour at least must be an external edge)"
            (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
       end ;
-(*    eprintf "p=%a, m=%a\n" debug_node p debug_node m; *)
+    eprintf "p=%a, m=%a\n" debug_node p debug_node m;
       let prev_d = E.dir_tgt p.edge in
       let d = match prev_d,my_d with
       | Irr,Irr ->
@@ -763,7 +764,7 @@ let remove_store n0 =
     begin
       let p = find_non_pseudo_prev m.prev
       and n = find_non_pseudo m.next in
-(*      eprintf "[%a] in [%a]..[%a]\n" debug_node m debug_node p debug_node n ; *)
+      eprintf "[%a] in [%a]..[%a]\n" debug_node m debug_node p debug_node n ;
       if not (E.is_ext p.edge || E.is_ext n.edge) then begin
         Warn.fatal "Insert pseudo edge %s appears in-between  %s..%s (at least one neighbour must be an external edge)"
           (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
@@ -1330,10 +1331,18 @@ let resolve_edges = function
   | [] -> Warn.fatal "No edges at all!"
   | es ->
       let c = build_cycle es in
+(*
       merge_annotations c ;
+*)
       let c = remove_store c in
       set_dir c ;
       extract_edges c,c
+(*
+      let es,c =  in
+      eprintf "resolve_edges in cycle %a\n" debug_cycle c;
+      es,c
+*)
+
 
 let make es =
   let es,c = resolve_edges es in
