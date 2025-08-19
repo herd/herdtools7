@@ -64,13 +64,14 @@ module type S = sig
     | Hat
     | Rmw of rmw      (* Various sorts of read-modify-write *)
 
-  val is_id : tedge -> bool
-  val is_node : tedge -> bool
-  val is_insert_store : tedge -> bool
-  val is_non_pseudo : tedge -> bool
   val compute_rmw : rmw -> Code.v -> Code.v -> Code.v
 
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
+
+  val is_id : edge -> bool
+  val is_node : edge -> bool
+  val is_memory_access : edge -> bool
+  val is_pseudo : edge -> bool
 
   val plain_edge : tedge -> edge
 
@@ -229,29 +230,31 @@ and type rmw = F.rmw = struct
     | Hat
     | Rmw of rmw
 
+  type edge = { edge: tedge;  a1:atom option; a2: atom option; }
 
-  let is_id = function
+  let is_id_tedge = function
     | Id -> true
     | Store|Insert _|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
+  let is_id e = is_id_tedge e.edge
 
-  let is_insert_store = function
-    | Store|Insert _ -> true
-    | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
-    | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
+  let is_memory_access e = match e.edge with
+    | Store|Insert _|Id -> false
+    | Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> true
 
-  let is_node = function
+  let is_node e = match e.edge with
     | Node _ -> true
     | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Insert _
     | Store -> false
 
-  let is_non_pseudo = function
-    | Store|Insert _ |Id|Node _-> false
+  let is_pseudo e = match e.edge with
+    | Store|Insert _ |Node _-> true
+    | Id -> F.is_pseudo e.a1
     | Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
-    | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _ -> true
+    | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _ -> false
 
-  type edge = { edge: tedge;  a1:atom option; a2: atom option; }
 
   open Printf
 
@@ -266,7 +269,7 @@ and type rmw = F.rmw = struct
   | _ -> sprintf "%s%s" (pp_a a1) (pp_a a2)
 
   let pp_archs e a1 a2 = match a1, a2 with
-  | None,None  when not (is_id e) -> ""
+  | None,None  when not (is_id_tedge e) -> ""
   | _,_ -> pp_one_or_two pp_arch e a1 a2
 
   let pp_a = function
@@ -276,7 +279,7 @@ and type rmw = F.rmw = struct
   let pp_atom_option = pp_a
 
   let pp_aa e a1 a2 = match a1, a2 with
-  | None,None when not (is_id e) -> ""
+  | None,None when not (is_id_tedge e) -> ""
   | _,_ ->  pp_one_or_two pp_a e a1 a2
 
   let pp_a_bis = function
@@ -284,7 +287,7 @@ and type rmw = F.rmw = struct
     | Some a -> F.pp_atom a
 
   let pp_aa_bis e a1 a2 = match a1,a2 with
-  | None,None  when not (is_id e) -> ""
+  | None,None  when not (is_id_tedge e) -> ""
   | _,_ -> pp_one_or_two pp_a_bis e a1 a2
 
   let pp_a_ter = function
@@ -294,7 +297,7 @@ and type rmw = F.rmw = struct
         else F.pp_atom a
 
   let pp_aa_ter e a1 a2 = match a1,a2 with
-  | None,None  when not (is_id e) -> ""
+  | None,None  when not (is_id_tedge e) -> ""
   | _,_ -> pp_one_or_two pp_a_ter e a1 a2
 
   let pp_a_qua = function
@@ -304,7 +307,7 @@ and type rmw = F.rmw = struct
         else F.pp_atom a
 
   let pp_aa_qua e a1 a2 = match a1,a2 with
-  | None,None  when not (is_id e) -> ""
+  | None,None  when not (is_id_tedge e) -> ""
   | _,_ -> pp_one_or_two pp_a_qua e a1 a2
 
   let do_pp_tedge compat = function
@@ -786,15 +789,13 @@ let fold_tedges f r =
   let expand_edges es f = do_expand_edges (List.rev es) f []
 
 (* resolve *)
-  let rec find_non_insert_store = function
+  let rec find_next_merge = function
     | [] -> raise Not_found
-    | e::es -> begin match e.edge with
-      | Insert _|Store ->
-          let bef,ni,aft = find_non_insert_store es in
-          e::bef,ni,aft
-      | _ ->
-          [],e,es
-    end
+    | e::es -> (* `Node` or Non-pseudo can be merged *)
+      if is_node e || (not @@ is_pseudo e) then [],e,es
+      else
+        let bef,ni,aft = find_next_merge es in
+        e::bef,ni,aft
 
   let set_a1 e a = match e.edge with
   | Node _|Id -> { e with a1=a; a2=a;}
@@ -846,7 +847,7 @@ let fold_tedges f r =
   let rec merge_left e es =
     let is_default e = e = { edge=Id; a1=None; a2=None; } in
     try
-      let store_insert,next,rest = find_non_insert_store es in
+      let store_insert,next,rest = find_next_merge es in
       (* throw away a default annotation *)
       if is_default e then true, None, store_insert @ next :: rest
       else if is_default next then merge_left e (store_insert @ rest)
@@ -854,14 +855,14 @@ let fold_tedges f r =
       else match merge_pair e next with
       | None -> true, Some e, (store_insert @ next :: rest)
       | Some (e, next) ->
-        match is_id e.edge, is_id next.edge with
+        match is_id e, is_id next with
         (* Erase `next` and continue merging *)
         | _,true -> merge_left e (store_insert @ rest)
         (* Indicate erasing `e` *)
         | true,false -> true, None, (store_insert @ next :: rest)
         (* Two non-`Id` *)
         | false,false -> true, Some(e), (store_insert @ next :: rest)
-    (* find_non_insert_store fails, no more node to process *)
+    (* find_next_merge fails, no more node to process *)
     with Not_found -> false, Some e, es
 
   let default_access = Cfg.naturalsize,0
@@ -889,7 +890,7 @@ let fold_tedges f r =
           (pp_edge e) in
     (* Check `Id` edge are all pseudo annotation *)
     let check_pseudo e =
-      if not (not (is_id e.edge) || F.is_pseudo e.a1) then
+      if not (not (is_id e) || is_pseudo e) then
         Warn.fatal "Invalid annotation %s" (pp_edge e) in
     List.iter (fun e -> check_mixed e; check_pseudo e) es
 
@@ -899,7 +900,7 @@ let fold_tedges f r =
        that is not `Id`, `Store` nor `Insert`. *)
     let rec find_first es =
       let before,fst,after =
-        try find_non_insert_store es
+        try find_next_merge es
         with Not_found -> Warn.user_error "No non-insert-store node in cycle" in
       let continuation,fst,after = merge_left fst after in
       match continuation,fst with
