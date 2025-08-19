@@ -960,26 +960,12 @@ module Make
                 set_afdb m in
             let add_setbits_af ipte m =
               add_setbits (is_zero ipte.af_v) "af:0" set_af m in
-            let setbits =
-              match dir with
-              | Dir.W ->
-                 if hd && updatedb then
-                   add_setbits_db ipte m
-                 else if ha then
-                   add_setbits_af ipte m
-                 else m
-              | Dir.R ->
-                  if hd && updatedb then
-                    (* The case of a failed CAS with no write, but with a db update *)
-                    M.altT (
-                      add_setbits_db ipte m
-                    )( (* no need to check ha, because hd implies ha *)
-                      add_setbits_af ipte m
-                    )
-                  else if ha then
-                    add_setbits_af ipte m
-                 else m in
-            setbits in
+            (* Write or failed CAS with no write, but with a db update *)
+            if hd && updatedb then
+              add_setbits_db ipte m
+            else if ha then
+              add_setbits_af ipte m
+            else m in
           mok m a in
 
 
@@ -1602,11 +1588,17 @@ Arguments:
 
       let do_ldr rA sz an mop ma ii =
 (* Generic load *)
-        lift_memop rA Dir.R false memtag
+        let checked = memtag && not C.mte_store_only in
+        let ma =
+          (* Extract location without a tag from an address *)
+          if memtag && C.mte_store_only then
+            ma >>= fun a -> loc_extract a
+          else ma in
+        lift_memop rA Dir.R false checked
           (fun ac ma _mv -> (* value fake here *)
             let open Precision in
             let memtag_sync =
-              memtag && (C.mte_precision = Synchronous ||
+              checked && (C.mte_precision = Synchronous ||
                          C.mte_precision = Asymmetric) in
             if memtag_sync || Access.is_physical ac || pac then
               M.bind_ctrldata ma (mop ac)
@@ -2149,10 +2141,40 @@ Arguments:
             (* CAS does not generate an Explicit Write Effect          *)
             (* It is IMPLEMENTATION SPECIFIC if there is an update to  *)
             (*                                the dirty bit of the TTD *)
-            (* Note: the combination of dir=Dir.R and updatedb=true    *)
-            (*                    triggers an alternative in check_ptw *)
-            lift_memop rn Dir.R true memtag mop_fail_no_wb (to_perms "rw" sz)
-              (read_reg_addr rn ii) (read_reg_data_sz sz rt ii) an ii
+            let proc = ii.AArch64.proc in
+            let tthm = dirty.DirtyBit.tthm proc
+            and hd = dirty.DirtyBit.hd proc in
+            let may_update_db = tthm && hd in
+            let ma = read_reg_addr rn ii
+            and action updatedb checked ma =
+              lift_memop rn Dir.R updatedb checked mop_fail_no_wb (to_perms "rw" sz)
+                ma (read_reg_data_sz sz rt ii) an ii in
+
+            if memtag && C.mte_store_only then
+              M.altT (
+                (* If FEAT_MTE_STORE_ONLY is implemented it is              *)
+                (* CONSTRAINED UNPREDICTABLE whether the Tag Check          *)
+                (* operation is performed.                                  *)
+                (*                                                          *)
+                (* No Tag Check                                             *)
+                (* Extract location without a tag from an address           *)
+                let ma = ma >>= fun a -> loc_extract a in
+                if may_update_db then
+                  M.altT (action true false ma) (action false false ma)
+                else
+                  action false false ma
+              )(
+                (* Tag Check *)
+                if may_update_db then
+                  M.altT (action true memtag ma) (action false memtag ma)
+                else
+                  action false memtag ma
+              )
+              else
+                if may_update_db then
+                  M.altT (action true memtag ma) (action false memtag ma)
+                else
+                  action false memtag ma
           )
         )
 
@@ -2232,12 +2254,42 @@ Arguments:
             (* CASP does not generate Explicit Write Effects           *)
             (* It is IMPLEMENTATION SPECIFIC if there is an update to  *)
             (*                                the dirty bit of the TTD *)
-            (* Note: the combination of dir=Dir.R and updatedb=true    *)
-            (*                    triggers an alternative in check_ptw *)
-            lift_memop rn Dir.R true memtag mop_fail_no_wb
-              (to_perms "rw" sz) (read_reg_addr rn ii)
-              (read_reg_data_sz sz rt1 ii >>> fun _ -> read_reg_data_sz sz rt2 ii)
-              an ii
+            let proc = ii.AArch64.proc in
+            let tthm = dirty.DirtyBit.tthm proc
+            and hd = dirty.DirtyBit.hd proc in
+            let may_update_db = tthm && hd in
+            let ma = read_reg_addr rn ii
+            and action updatedb checked ma =
+              lift_memop rn Dir.R updatedb checked mop_fail_no_wb
+                (to_perms "rw" sz) ma
+                (read_reg_data_sz sz rt1 ii >>> fun _ -> read_reg_data_sz sz rt2 ii)
+                an ii in
+
+            if memtag && C.mte_store_only then
+              M.altT (
+                (* If FEAT_MTE_STORE_ONLY is implemented it is              *)
+                (* CONSTRAINED UNPREDICTABLE whether the Tag Check          *)
+                (* operation is performed.                                  *)
+                (*                                                          *)
+                (* No Tag Check                                             *)
+                (* Extract location without a tag from an address           *)
+                let ma = ma >>= fun a -> loc_extract a in
+                if may_update_db then
+                  M.altT (action true false ma) (action false false ma)
+                else
+                  action false false ma
+              )(
+                (* Tag Check *)
+                if may_update_db then
+                  M.altT (action true memtag ma) (action false memtag ma)
+                else
+                  action false memtag ma
+              )
+            else
+              if may_update_db then
+                M.altT (action true memtag ma) (action false memtag ma)
+              else
+                action false memtag ma
           )
         )
 
