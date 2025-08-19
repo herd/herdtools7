@@ -443,6 +443,10 @@ module RegMap = A.RegMap)
         after_dump compile_out_reg chan indent proc t ;
         ()
 
+      let find_global_type x globEnv =
+        try List.assoc x globEnv
+        with Not_found -> Compile.base
+
       let debug_globEnv e =
         let pp =
           List.map
@@ -496,17 +500,35 @@ module RegMap = A.RegMap)
               else find_rec (k+1) rem in
         find_rec 0
 
+      let check_memory =
+        let open Memory in
+        match O.memory with
+        | Direct -> Misc.identity
+        | Indirect -> sprintf "*%s"
+
+      let compile_symbol_fun =
+        let open Constant in
+        let open Mode in
+        fun env sym ->
+          match sym with
+          | Virtual { name; tag=None; cap=0L; offset=0; _ } ->
+              check_memory name
+          | Virtual { name; tag=None; cap=0L; offset; _ } ->
+              let ty = find_global_type name env in
+              if CType.is_array ty then
+                let t = check_memory name in
+                sprintf "&(*%s)[%d]" t offset
+              else Constant.pp_symbol_old sym |> check_memory
+          | _ -> Constant.pp_symbol_old sym |> check_memory
+
       let compile_val_fun =
         let open Constant in
-        fun ptevalEnv parel1Env v -> match v with
+        fun globEnv ptevalEnv parel1Env v -> match v with
         | Symbolic (Virtual a)
           when not (PAC.is_canonical a.pac) ->
             Warn.user_error "Litmus cannot initialize a virtual address with a non-canonical PAC field"
         | Symbolic sym ->
-            let s = Constant.pp_symbol_old sym in
-            sprintf "%s%s"
-              (match O.memory with Memory.Direct -> "" | Memory.Indirect -> "*")
-              s
+            compile_symbol_fun globEnv sym
         | Concrete _ | ConcreteVector _ | Instruction _
           -> AL.GetInstr.dump_instr Tmpl.dump_v v
         | Label (p,lbl) -> OutUtils.fmt_lbl_var p lbl
@@ -563,9 +585,7 @@ module RegMap = A.RegMap)
         let addrs =
           List.map
             (fun x ->
-              let ty =
-                try List.assoc x globEnv
-                with Not_found -> Compile.base in
+              let ty = find_global_type x globEnv in
               let ty = SkelUtil.dump_global_type x ty in
               match O.memory with
               | Memory.Direct ->
@@ -623,7 +643,7 @@ module RegMap = A.RegMap)
         LangUtils.dump_code_def chan O.noinline O.mode proc params ;
         do_dump
           args0
-          (compile_init_val_fun ptevalEnv parel1Env)
+          (compile_init_val_fun globEnv ptevalEnv parel1Env)
           compile_addr_fun
           (fun sym -> compile_cpy_fun proc (Constant.as_address sym))
           (fun p r  -> sprintf "*%s" (Tmpl.dump_out_reg p r))
