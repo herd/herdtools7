@@ -10,6 +10,8 @@ Variant=memtag
 }
 
   P0         |  P1         ;
- STG X1,[X0] | LDG X1,[X0] ;
- STG X3,[X2] | LDG X3,[X0] ;
+ STG X1,[X0] | MOV X1,X0   ;
+ STG X3,[X2] | LDG X1,[X0] ;
+             | MOV X3,X0   ;
+             | LDG X3,[X0] ;
 exists 1:X1=x:blue /\ 1:X3=x:red

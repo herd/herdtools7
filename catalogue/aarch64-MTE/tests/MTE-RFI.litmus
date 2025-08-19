@@ -7,7 +7,9 @@ x=1;
 }
 
   P0         ;
+ MOV X0,X1   ;
  LDG X0,[X1] ;
  STG X2,[X1] ;
+ MOV X4,X1   ;
  LDG X4,[X1] ;
 forall 0:X0=x:green /\ 0:X4=x:red

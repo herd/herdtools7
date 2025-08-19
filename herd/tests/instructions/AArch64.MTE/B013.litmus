@@ -7,8 +7,9 @@ int x[8]={1,2,3,4,5,6,7,8};
 P0                ;
 STG X1,[X0,#16]   ;
 DSB SY            ;
+MOV X2,X0         ;
 LDG X2,[X0]       ;
+MOV X3,X0         ;
 LDG X3,[X0,#16]   ;
-SUB X3,X3,#16     ;
 
 forall 0:X2=x:green /\ 0:X3=x:red

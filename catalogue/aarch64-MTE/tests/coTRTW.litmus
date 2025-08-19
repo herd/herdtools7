@@ -1,10 +1,11 @@
 AArch64 coTRTW 
-variant=async
+variant=memtag,async
 (* Test LDG-STG *)
 {
 0:X1=x:green; 0:X2=x:red; 0:X3=x:red;
 }
  P0          ;
+ MOV X0,X3   ;
  LDG X0,[X3] ;
  STG X2,[X1] ;
 exists 0:X0=x:red;
