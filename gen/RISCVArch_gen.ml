@@ -211,6 +211,8 @@ let pp_dp = function
   | CTRL -> "Ctrl"
   | CTRLISYNC -> "CtrlFenceI"
 
+let is_pseudo _ = false
+
 include Exch.Exch(struct type arch_atom = atom end)
 include NoEdge
 
@@ -228,6 +230,7 @@ include
 
       let free_registers = allowed_for_symb
       include NoSpecial
+      module PteVal_gen = PteVal
     end)
 
  end

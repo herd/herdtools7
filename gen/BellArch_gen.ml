@@ -208,6 +208,8 @@ include NoMixed
 
 include NoWide
 
+let is_pseudo _ = false
+
 (* End of atoms *)
 
 module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
@@ -274,5 +276,6 @@ include
       let pp_i _ = assert false
       let free_registers = allowed_for_symb
       include NoSpecial
+      module PteVal_gen = PteVal
     end)
 end

@@ -89,8 +89,8 @@ module type S = sig
   val find_edge : (edge -> bool) -> node -> node
   val find_edge_prev : (edge -> bool) -> node -> node
 
-  val find_non_insert_store : node -> node
-  val find_non_insert_store_prev : node -> node
+  val find_memory_access : node -> node
+  val find_memory_access_prev : node -> node
 
   val find_non_pseudo : node -> node
   val find_non_pseudo_prev : node -> node
@@ -110,10 +110,10 @@ module type S = sig
  val resolve_edges : edge list -> edge list * node
 
 (* Finish edge cycle, adding complete events, returns initial environment *)
-  val finish : node -> (string * Code.v) list
+  val finish : node -> (string * Code.v) list * (string * PteVal.t) list
 
 (* Composition of the two more basic steps above *)
-  val make : edge list -> edge list * node * Code.env
+  val make : edge list -> edge list * node * Code.env * (string * PteVal.t) list
 
 (* split cycle amoungst processors *)
   val split_procs : node -> node list list
@@ -183,6 +183,12 @@ module Make (O:Config) (E:Edge.S) :
         check_value : bool option }
 
   let pte_default = PteVal.default "*"
+
+  let is_pte_default loc pte =
+    let rhs = match loc with
+    | Data loc -> PteVal.default loc
+    | Code _ -> pte_default in
+    PteVal.compare pte rhs = 0
 
   let evt_null =
     { loc=Code.loc_none ; ord=0; tag=0;
@@ -395,11 +401,11 @@ let find_prev_code_write n =
 let find_edge p = find_node (fun n -> p n.edge)
 let find_edge_prev p = find_node_prev (fun n -> p n.edge)
 
-let non_insert_store e = not (E.is_insert_store e.E.edge)
-let find_non_insert_store m = find_edge non_insert_store m
-let find_non_insert_store_prev m = find_edge_prev non_insert_store m
+let memory_access e = E.is_memory_access e
+let find_memory_access m = find_edge memory_access m
+let find_memory_access_prev m = find_edge_prev memory_access m
 
-let non_pseudo e = E.is_non_pseudo e.E.edge
+let non_pseudo e = not @@ E.is_pseudo e
 let find_non_pseudo m = find_edge non_pseudo m
 let find_non_pseudo_prev m = find_edge_prev non_pseudo m
 
@@ -610,9 +616,18 @@ module CoSt = struct
     { st with co_cell=new_co_cell; map=M.add Ord lst st.map; }
 end
 
-let pte_val_init loc = match loc with
-| Code.Data loc when do_kvm -> PteVal.default loc
-| _ -> pte_default
+(* Decide the initial pte value. *)
+let pte_val_init ns loc =
+  match loc with
+    | Code.Data loc when do_kvm ->
+      let atom_list = List.filter_map
+        ( fun node ->
+            match node.evt.atom with
+            | Some (atom) -> Some(atom)
+            | _ -> None
+         ) ns in
+      PteVal.init loc atom_list
+    | _ -> pte_default
 
 (****************************)
 (* Add events in edge cycle *)
@@ -648,10 +663,11 @@ let patch_edges n =
 
 
   let merge_annotations m =
+    eprintf "merge_annotations in cycle %a\n" debug_cycle m;
       let rec do_rec n =
         let e = n.edge in
-        if non_insert_store e then begin
-          let p = find_non_insert_store_prev n.prev in
+        if memory_access e then begin
+          let p = find_memory_access_prev n.prev in
           if O.verbose > 0 then Printf.eprintf "Merge p=%a, n=%a\n"
             debug_node p debug_node n ;
           let pe = p.edge in
@@ -681,14 +697,14 @@ let is_rmw d e = match d with
 
 let remove_store n0 =
   let n0 =
-    try find_non_insert_store n0
+    try find_memory_access n0
     with Not_found -> Warn.user_error "I cannot believe it" in
   let rec do_rec m =
     begin
       match m.edge.E.edge with
       | E.Store ->
-         let prev = find_non_insert_store_prev m
-         and next = find_non_insert_store m in
+         let prev = find_memory_access_prev m
+         and next = find_memory_access m in
          prev.next <- next ;
          next.prev <- prev ;
          m.evt <- { m.evt with dir = Some W; } ;
@@ -706,20 +722,20 @@ let remove_store n0 =
 
  let set_dir n0 =
   let rec do_rec m =
-    if non_insert_store m.edge then begin
+    if memory_access m.edge then begin
       let my_d =  E.dir_src m.edge in
-      let p = find_non_insert_store_prev m.prev in
-      if E.is_node m.edge.E.edge then begin (* perform sanity checks specific to Node pseudo-edge *)
-        if E.is_node p.edge.E.edge then begin
+      let p = find_memory_access_prev m.prev in
+      if E.is_node m.edge then begin (* perform sanity checks specific to Node pseudo-edge *)
+        if E.is_node p.edge then begin
           Warn.fatal "Double 'Node' pseudo edge %s %s"
           (E.pp_edge p.edge) (E.pp_edge m.edge)
         end ;
-        let n = find_non_insert_store m.next in
+        let n = find_memory_access m.next in
         if not (E.is_ext p.edge && E.is_ext n.edge) then
            Warn.fatal "Node pseudo edge %s appears in-between  %s..%s (one neighbour at least must be an external edge)"
            (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
       end ;
-(*    eprintf "p=%a, m=%a\n" debug_node p debug_node m; *)
+    eprintf "p=%a, m=%a\n" debug_node p debug_node m;
       let prev_d = E.dir_tgt p.edge in
       let d = match prev_d,my_d with
       | Irr,Irr ->
@@ -748,7 +764,7 @@ let remove_store n0 =
     begin
       let p = find_non_pseudo_prev m.prev
       and n = find_non_pseudo m.next in
-(*      eprintf "[%a] in [%a]..[%a]\n" debug_node m debug_node p debug_node n ; *)
+      eprintf "[%a] in [%a]..[%a]\n" debug_node m debug_node p debug_node n ;
       if not (E.is_ext p.edge || E.is_ext n.edge) then begin
         Warn.fatal "Insert pseudo edge %s appears in-between  %s..%s (at least one neighbour must be an external edge)"
           (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
@@ -1022,9 +1038,10 @@ let set_same_loc st n0 =
     (* END of do_set_write_val *)
 
   let set_all_write_val nss =
-    let _,initvals =
-      List.fold_right
-        (fun ns (k,env as r) ->
+    (* `initptes` contains the initial pte values, if they are non-default *)
+    let _,initvals,initptes =
+      List.fold_left
+        (fun (k,env,pteenv as r) ns ->
           match ns with
           | [] -> r
           | n::_ ->
@@ -1033,7 +1050,8 @@ let set_same_loc st n0 =
               let loc = n.evt.loc in
               let sz = get_wide_list ns in
               let i = if do_kvm then k else 0 in
-              let pte_val = pte_val_init loc in
+              (* Decide the initial state prior processing *)
+              let pte_val = pte_val_init ns loc in
               (* Since it is a cycle, the initial value of `check_value`
                  and `check_fault` depend on if there are write to
                  the variable and pte respectively. *)
@@ -1041,14 +1059,18 @@ let set_same_loc st n0 =
               let check_fault = exist_pte_value_write ns in
               let init_st = CoSt.create i sz pte_val check_value check_fault in
               let next_x_ok,_st = do_set_write_val false init_st ns in
+              (* Add pte initial values when kvm and the value is not default *)
+              let pteenv = if (not do_kvm) || is_pte_default loc pte_val then
+                pteenv else (Code.as_data loc,pte_val)::pteenv in
               let env = if do_kvm then (Code.as_data loc,Code.value_of_int k)::env else env in
               if next_x_ok then
-                k+8,(next_x,Code.value_of_int (k+4))::env
+                k+8,(next_x,Code.value_of_int (k+4))::env,pteenv
               else
-                k+4,env)
-        nss (0,[]) in
-    initvals
+                k+4,env,pteenv )
+        (0,[],[]) nss in
+    initvals,initptes
 
+  (* TODO carry back the pte init value *)
   let set_write_v n =
     let nss =
       try
@@ -1062,7 +1084,7 @@ let set_same_loc st n0 =
       | Not_found ->
         (*check if node is preceded by a non com node and is itself a com node*)
         let to_com n0 = not (E.is_com n0.prev.edge) && E.is_com n0.edge in
-        fold (fun n0 _ -> if E.is_id n0.edge.E.edge then assert false) n ();
+        fold (fun n0 _ -> if E.is_id n0.edge then assert false) n ();
         try
           (* check for R ensures that we start on Fr if possible*)
           let m = find_node (fun m -> to_com m && m.evt.dir = Some R) n in
@@ -1075,8 +1097,8 @@ let set_same_loc st n0 =
           split_one_loc m
         with Not_found -> Warn.fatal "cannot set write values"
       | Exit -> Warn.fatal "cannot set write values" in
-    let initvals = set_all_write_val nss in
-    nss,initvals
+    let initvals,initptes = set_all_write_val nss in
+    nss,initvals,initptes
 
 (* Loop over every node and set the expected value from the previous node *)
 let set_dep_v nss =
@@ -1183,7 +1205,7 @@ let do_set_read_v init =
   | []   -> assert false
   | n::_ ->
     let sz = get_wide_list ns in
-    let pte_val = pte_val_init n.evt.loc in
+    let pte_val = pte_val_init ns n.evt.loc in
     let check_value = exist_plain_value_write ns in
     let check_fault = exist_pte_value_write ns in
     let init_st = CoSt.create init sz pte_val check_value check_fault in
@@ -1238,7 +1260,7 @@ let finish n =
     debug_cycle stderr n
   end ;
 (* Set write values *)
-  let by_loc,initvals = set_write_v n in
+  let by_loc,initvals,initptes = set_write_v n in
   if O.verbose > 1 then begin
     eprintf "INITIAL VALUES: %s\n"
       (String.concat "; "
@@ -1262,7 +1284,8 @@ let finish n =
             (Code.pp_loc loc) (Code.value_to_int v)) vs))
   end ;
   if O.variant Variant_gen.Self then check_fetch n;
-  initvals
+  initvals,initptes
+(* END of finish *)
 
 
 (* Re-extract edges, with irelevant directions solved *)
@@ -1308,15 +1331,23 @@ let resolve_edges = function
   | [] -> Warn.fatal "No edges at all!"
   | es ->
       let c = build_cycle es in
+(*
       merge_annotations c ;
+*)
       let c = remove_store c in
       set_dir c ;
       extract_edges c,c
+(*
+      let es,c =  in
+      eprintf "resolve_edges in cycle %a\n" debug_cycle c;
+      es,c
+*)
+
 
 let make es =
   let es,c = resolve_edges es in
-  let initvals = finish c in
-  es,c,initvals
+  let initvals,initptes = finish c in
+  es,c,initvals,initptes
 
 (*************************)
 (* Gather events by proc *)
@@ -1473,7 +1504,7 @@ let rec group_rec x ns = function
       let k =  match e.dir with
       | Some W ->
           if
-            E.is_node m.edge.E.edge || not (pbank m.evt.bank)
+            E.is_node m.edge || not (pbank m.evt.bank)
           then k else (e.loc,m)::k
       | None| Some R -> k in
       if m.store == nil then k

@@ -236,6 +236,8 @@ module Make
       let fst_dp _ = assert false
       let sequence_dp _ _ = assert false
 
+      let is_pseudo _ = false
+
       (*******)
       (* RWM *)
       (*******)
@@ -259,5 +261,6 @@ module Make
             let specials = xmms
             let specials2 = []
             let specials3 = []
+            module PteVal_gen = PteVal
           end)
     end

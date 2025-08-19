@@ -59,4 +59,6 @@ module type S = sig
   val as_integers : atom option -> int option
 (* Typing of pair accesses is different, so check them *)
   val is_pair : atom option -> bool
+(* An pseudo annotation that is not associated to a memory access *)
+  val is_pseudo : atom option -> bool
 end
