@@ -89,8 +89,8 @@ module type S = sig
   val find_edge : (edge -> bool) -> node -> node
   val find_edge_prev : (edge -> bool) -> node -> node
 
-  val find_non_insert_store : node -> node
-  val find_non_insert_store_prev : node -> node
+  val find_memory_access : node -> node
+  val find_memory_access_prev : node -> node
 
   val find_non_pseudo : node -> node
   val find_non_pseudo_prev : node -> node
@@ -395,11 +395,11 @@ let find_prev_code_write n =
 let find_edge p = find_node (fun n -> p n.edge)
 let find_edge_prev p = find_node_prev (fun n -> p n.edge)
 
-let non_insert_store e = not (E.is_insert_store e.E.edge)
-let find_non_insert_store m = find_edge non_insert_store m
-let find_non_insert_store_prev m = find_edge_prev non_insert_store m
+let memory_access e = E.is_memory_access e
+let find_memory_access m = find_edge memory_access m
+let find_memory_access_prev m = find_edge_prev memory_access m
 
-let non_pseudo e = E.is_non_pseudo e.E.edge
+let non_pseudo e = not @@ E.is_pseudo e
 let find_non_pseudo m = find_edge non_pseudo m
 let find_non_pseudo_prev m = find_edge_prev non_pseudo m
 
@@ -647,14 +647,14 @@ let is_rmw d e = match d with
 
 let remove_store n0 =
   let n0 =
-    try find_non_insert_store n0
+    try find_memory_access n0
     with Not_found -> Warn.user_error "I cannot believe it" in
   let rec do_rec m =
     begin
       match m.edge.E.edge with
       | E.Store ->
-         let prev = find_non_insert_store_prev m
-         and next = find_non_insert_store m in
+         let prev = find_memory_access_prev m
+         and next = find_memory_access m in
          prev.next <- next ;
          next.prev <- prev ;
          m.evt <- { m.evt with dir = Some W; } ;
@@ -672,15 +672,15 @@ let remove_store n0 =
 
  let set_dir n0 =
   let rec do_rec m =
-    if non_insert_store m.edge then begin
+    if memory_access m.edge then begin
       let my_d =  E.dir_src m.edge in
-      let p = find_non_insert_store_prev m.prev in
-      if E.is_node m.edge.E.edge then begin (* perform sanity checks specific to Node pseudo-edge *)
-        if E.is_node p.edge.E.edge then begin
+      let p = find_memory_access_prev m.prev in
+      if E.is_node m.edge then begin (* perform sanity checks specific to Node pseudo-edge *)
+        if E.is_node p.edge then begin
           Warn.fatal "Double 'Node' pseudo edge %s %s"
           (E.pp_edge p.edge) (E.pp_edge m.edge)
         end ;
-        let n = find_non_insert_store m.next in
+        let n = find_memory_access m.next in
         if not (E.is_ext p.edge && E.is_ext n.edge) then
            Warn.fatal "Node pseudo edge %s appears in-between  %s..%s (one neighbour at least must be an external edge)"
            (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
@@ -1042,7 +1042,7 @@ let set_same_loc st n0 =
         start_node,split_by_loc start_node
       with
       | Not_found ->
-        fold (fun n0 _ -> if E.is_id n0.edge.E.edge then assert false) n ();
+        fold (fun n0 _ -> if E.is_id n0.edge then assert false) n ();
         let is_com_rmw n0 = E.is_com n0.edge || is_rmw_edge n0.edge in
         let to_com_rmw n0 = not (is_com_rmw n0.prev) && is_com_rmw n0 in
         let to_com n0 = not (E.is_com n0.prev.edge) && E.is_com n0.edge in
@@ -1473,7 +1473,7 @@ let rec group_rec x ns = function
       let k =  match e.dir with
       | Some W ->
           if
-            E.is_node m.edge.E.edge || not (pbank m.evt.bank)
+            E.is_node m.edge || not (pbank m.evt.bank)
           then k else (e.loc,m)::k
       | None| Some R -> k in
       if m.store == nil then k

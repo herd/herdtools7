@@ -189,7 +189,7 @@ module Make
 
 
        let mk_name base ?scope es =
-         let es = List.filter (fun e -> not (is_node e.E.edge)) es in
+         let es = List.filter (fun e -> not (is_node e)) es in
          let name =
            let xs = new_namer es in
            let ys = match isolated_writes es with
