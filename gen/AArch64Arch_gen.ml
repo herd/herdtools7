@@ -32,8 +32,7 @@ module Make
 let do_self = C.variant Variant_gen.Self
 let do_tag = C.variant Variant_gen.MemTag
 let do_morello = C.variant Variant_gen.Morello
-let do_fullkvm = C.variant Variant_gen.FullKVM
-let do_kvm = do_fullkvm || C.variant Variant_gen.KVM
+let do_kvm = C.variant Variant_gen.KVM
 let do_neon = C.variant Variant_gen.Neon
 let do_sve = C.variant Variant_gen.SVE
 let do_sme = C.variant Variant_gen.SME
@@ -314,32 +313,13 @@ let is_ifetch a = match a with
      else
        r
 
-   let fold_all_subsets f =
-     let rec fold_rec xs k r = match xs with
-       | [] -> if WPTESet.is_empty k then r else f k r
-       | x::xs ->
-          let r = fold_rec xs (WPTESet.add x k) r in
-          fold_rec xs k r in
-     fold_rec WPTE.all WPTESet.empty
-
-   let fold_small_subsets f =
-     let rec fold_rec xs r =
-       match xs with
-       | [] -> r
-       | x::xs ->
-          let sx = WPTESet.singleton x in
-          List.fold_right
-            (fun y r -> f (WPTESet.add y sx) r)
-            xs (f sx (fold_rec xs r)) in
-     fold_rec WPTE.all
-
-   let fold_subsets = if do_fullkvm then  fold_all_subsets else fold_small_subsets
-
    let fold_pte f r =
      if do_kvm then
-       let g fs r = f (Set fs) (f (SetRel fs) r) in
-       let r = fold_subsets g r in
-       f Read (f ReadAcq (f ReadAcqPc r))
+       let fold_wpte f r =
+         List.fold_left (fun acc pte -> f (WPTESet.singleton pte) acc) r WPTE.all in
+       let g fs r = r |> f (SetRel fs) |> f (Set fs) in
+       r |> fold_wpte g |> f Read |> f ReadAcq |> f ReadAcqPc
+
      else r
 
    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
