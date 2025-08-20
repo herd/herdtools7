@@ -152,11 +152,15 @@ func
      walkparams:S1TTWParams,accdesc:AccessDescriptor)
 => S1AccessControls
 begin
+  var permissions = walkstate.permissions;
+  if permissions.dbm == '1' && walkparams.hd == '1' then
+     permissions.ap[2] = '0';
+  end;
   let IS_EL0 = accdesc.el == EL0;
   var s1perms : S1AccessControls;
-  s1perms.r   = if IS_EL0 then walkstate.permissions.ap[1] else '1';
-  let w = if walkstate.permissions.ap[2] == '1' then '0' else '1';
-  let w_el0 = if  walkstate.permissions.ap[2:1] == '01' then '1' else '0';
+  s1perms.r   = if IS_EL0 then permissions.ap[1] else '1';
+  let w = if permissions.ap[2] == '0' then '1' else '0';
+  let w_el0 = if  permissions.ap[2:1] == '01' then '1' else '0';
   s1perms.w   = if IS_EL0 then w_el0 else w;
   s1perms.x   = '0';
   s1perms.gcs = '0';
@@ -173,7 +177,6 @@ end;
 func StageOA(ia:bits(64),d128:bit,tgx:TGx,walkstate:TTWState) => FullAddress
 begin
 var oa : FullAddress;
-//  __DEBUG__(ia,walkstate);
   oa.paspace = walkstate.baseaddress.paspace;
   oa.address = walkstate.baseaddress.address + OffsetPrimitive(ia);
   return oa;
@@ -213,7 +216,6 @@ type SilentExit of exception {-};
 
 func AArch64_DataAbort(fault:FaultRecord)
 begin
-//  __DEBUG__(fault.vaddress);
   DataAbortPrimitive(fault.vaddress,fault.write,fault.statuscode,fault.accessdesc);
   throw SilentExit {-};
 end;
@@ -225,7 +227,6 @@ end;
 
 func S1TranslationRegime(el:bits(2)) => bits(2)
 begin
-//  __DEBUG__(el);
   return EL1;
 end;
 
@@ -354,6 +355,20 @@ end;
 // causing a translation fault
 
 func AArch64_BlocknTFaults{N}(d128:bit,descriptor:bits(N)) => boolean
+begin
+  return FALSE;
+end;
+
+// EL2Enabled()
+// ============
+// Returns TRUE if EL2 is present and executing
+// - with the PE in Non-secure state when Non-secure EL2 is implemented, or
+// - with the PE in Realm state when Realm EL2 is implemented, or
+// - with the PE in Secure state when Secure EL2 is implemented and enabled, or
+// - when EL3 is not implemented.
+
+// Luc: Petty optimisation
+func EL2Enabled() => boolean
 begin
   return FALSE;
 end;
