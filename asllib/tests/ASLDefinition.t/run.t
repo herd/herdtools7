@@ -202,3 +202,5 @@ Examples used in ASL High-level Definition:
   $ aslref Statements.asl
   $ aslref --no-exec GlobalStorageDeclarations.asl
   $ aslref --no-exec IR.asl
+  $ aslref Bit.asl
+  $ aslref PrefixSlice.asl

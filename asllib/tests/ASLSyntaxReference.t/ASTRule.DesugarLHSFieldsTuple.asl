@@ -8,12 +8,8 @@ begin
   var x: MyBV;
   x.(fld1, -, fld2) = ('0000', '0101', '1111');
 
-  // The above left-hand side desugars to:
-  // LE_Destructuring (
-  //   LE_SetField(LE_Var("x"), "fld1"),
-  //   LE_Discard,
-  //   LE_SetField(LE_Var("x"), "fld2")
-  // )
+  // The above left-hand side desugars into
+  (x.fld1, -, x.fld2) = ('0000', '0101', '1111');
 
   return 0;
 end;

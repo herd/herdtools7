@@ -71,3 +71,5 @@ Examples used to test syntax and AST building rules:
           ^^^^
   ASL Grammar error: Cannot parse.
   [1]
+  $ aslref ASTRule.ReadModifyWriteSlice.asl
+  $ aslref ASTRule.ReadModifyWriteField.asl

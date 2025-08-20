@@ -17,8 +17,10 @@ begin
   assert   bv == '11(00)0';
   assert   bv == '11x(0)0';
 
-  assert !(bv IN {'11x00'});
+  // All of the following pattern matching expressions are equivalent:
+  assert !(bv IN {'11xx1'});
   assert !(bv IN {'11(00)1'});
+  assert bv != '11xx1';
 
   let match_true = 42 IN {0..3, 42};
   assert match_true == TRUE;

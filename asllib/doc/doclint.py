@@ -308,8 +308,7 @@ class RuleBlock:
     TYPING_RULE = "Typing"
     SEMANTICS_RULE = "Semantics"
     GUIDE_RULE = "Guide"
-    CONVENTION_RULE = "Convention"
-    GUIDE_RULE = "Guide"
+    SYNTACTIC_SUGAR_RULE = "SyntacticSugar"
     CONVENTION_RULE = "Convention"
 
     rule_begin_pattern = re.compile(
@@ -348,6 +347,8 @@ class RuleBlock:
             self.type = RuleBlock.SEMANTICS_RULE
         elif re.search(r"\\RequirementDef", begin_line):
             self.type = RuleBlock.GUIDE_RULE
+        elif re.search(r"\\SyntacticSugarDef", begin_line):
+            self.type = RuleBlock.SYNTACTIC_SUGAR_RULE
         elif re.search(r"\\ConventionDef", begin_line):
             self.type = RuleBlock.CONVENTION_RULE
         else:
@@ -479,6 +480,7 @@ def check_rule_has_example(rule_block: RuleBlock) -> List[str]:
         RuleBlock.TYPING_RULE,
         RuleBlock.SEMANTICS_RULE,
         RuleBlock.GUIDE_RULE,
+        RuleBlock.SYNTACTIC_SUGAR_RULE,
         RuleBlock.CONVENTION_RULE,
     ]:
         return []
@@ -564,6 +566,7 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\LexicalRuleDef{.*?}",
         r"\\LexicalRuleRef{.*?}",
         r"\\ASTRuleRef{.*?}",
+        r"\\ASTRuleCaseRef{.*?}{.*?}",
         r"\\ASTRuleDef{.*?}",
         r"\\TypingRuleRef{.*?}",
         r"\\TypingRuleDef{.*?}",
@@ -571,6 +574,7 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\SemanticsRuleDef{.*?}",
         r"\\RequirementDef{.*?}",
         r"\\RequirementRef{.*?}",
+        r"\\SyntacticSugarDef{.*?}",
         r"\\ConventionDef{.*?}",
         r"\\AllApplyCase{.*?}",
         r"\% CONSOLE_BEGIN.*\% CONSOLE_END",

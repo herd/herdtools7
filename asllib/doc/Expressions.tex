@@ -2830,10 +2830,16 @@ that expressions appearing in types are all side-effect-free.
 \hypertarget{def-patternexpressionterm}{}
 \section{Pattern Matching Expressions\label{sec:PatternMatchingExpressions}}
 The binary operator $\Tin$ tests whether a value (referred to as the discriminant) matches any item from a $\Npatternset$.
-Patterns can also be used to test whether an expression matches a bitmask (via $\Teqop$) or does not match a bitmask (via $\Tneq$).
+Patterns can also be used to test whether an expression matches a bitmask.
 Lists of patterns are also used in case statements.
 %
 \chapref{PatternMatching} goes into the details of the various types of patterns that can be matched against.
+
+\SyntacticSugarDef{MaskEquality}
+The syntax \texttt{x == $m$} is \syntacticsugar{} for \texttt{x IN \{$m$\}},
+and it is \desugared{} by \ASTRuleCaseRef{EPattern}{eq}.
+The syntax \texttt{x != $m$} is \syntacticsugar{} for \texttt{!x IN \{$m$\}},
+and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
 
 \ASLListing{Pattern expressions}{semantics-epattern}{\semanticstests/SemanticsRule.EPattern.asl}
 
