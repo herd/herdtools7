@@ -293,8 +293,6 @@ and module Elts = MySet.Make(O) =
 
       let add x y m = ME.add x (Elts.add y (succs x m)) m
 
-      let adds x ys m = ME.add x (Elts.union ys (succs x m)) m
-
       let exists_path (e1, e2) r =
         try ignore (do_is_reachable op_succs r e1 e2) ; false
         with Found -> true
@@ -330,21 +328,121 @@ and module Elts = MySet.Make(O) =
           true
         with Exit -> false
 
-(* Transitive closure the naive way,
-   not significantly worse than before... *)
+      (* Extended Tarjan algorithm for SCC. Adaptation from R. Sedgwick's book "Algorithms".
+         Two computing functions are provided:
+         - kont : node -> note -> 'a -> 'a
+         - kont_scc : node -> node list -> 'a -> 'a
+         The function kont is called for every tree edge discovered by dfs,
+         while the function kont_scc is called for every strongly connected
+         component. The first argument is teh "root" of the scc, the second
+         argument is the scc.
+           Those functions suffice to compute the transitive closure of
+         the input graph. See function "tr" below.
+      *)
+ 
+      module FullSCC = struct
 
-      let rec tr m0 =
-        let m1 =
-          ME.fold
-            (fun x ys m ->
-              let zs =
-                Elts.fold
-                  (fun y k -> succs y m::k)
-                  ys [] in
-              adds x (Elts.unions zs) m)
-            m0 m0 in
-        if ME.equal Elts.equal m0 m1 then m0
-        else tr m1
+        module NodeMap = ME
+
+        type state =
+          { id : int;
+            visit : int NodeMap.t;
+            stack : elt0 list; }
+
+        let rec pop_until n ns =
+          match ns with
+          | [] -> assert false
+          | m::ns ->
+              if O.compare n m = 0 then [m],ns
+              else
+                let ms,ns = pop_until n ns in
+                m::ms,ns
+
+        let dfs kont kont_scc m =
+          let rec dfs n ((res,s) as r) =
+            try
+              NodeMap.find n s.visit,r
+            with
+            | Not_found ->
+                let min = s.id in
+                let s = {
+                  id = min + 1;
+                  visit = NodeMap.add n min s.visit;
+                  stack = n :: s.stack;
+                } in
+                let min,(res,s) as r =
+                  Elts.fold
+                    (fun v (m0,r) ->
+                       let m1,(res,s) = dfs v r in
+                       Misc.min_int m0 m1,(kont n v res,s))
+                    (succs n m)
+                    (min,(res,s)) in
+                let valk =
+                  try NodeMap.find n s.visit with Not_found -> assert false in
+                if not (Misc.int_eq min valk) then
+                  r (* n is part of previously returned scc *)
+                else
+                  let scc,stack = pop_until n s.stack in
+                  let visit =
+                    List.fold_left
+                      (fun visit n -> NodeMap.add n max_int visit)
+                      s.visit scc in
+                  let res = kont_scc n scc res in
+                  min,(res,{ s with stack; visit; }) in
+          dfs
+
+(* Graph is already in "set of neighbours map" format *)
+        let scan_map kont kont_scc res m =
+          let dfs = dfs kont kont_scc m in
+          let (res,_) =
+            ME.fold
+              (fun n _ r -> let _,r = dfs n r in r)
+              m
+              (res,{id=0; visit=NodeMap.empty; stack=[];} ) in
+          res
+(* Graph is given as set of notes + relation *)
+        let scan_nodes_rel kont kont_scc res nodes edges =
+          let m = to_map edges in
+          let dfs = dfs kont kont_scc m in
+          let (res,_) =
+            Elts.fold
+              (fun n r -> let _,r = dfs n r in r)
+              nodes
+              (res,{id=0; visit=NodeMap.empty; stack=[];} ) in
+          res
+      end
+
+(*  Transitive closure by SCC scan. See for instance page 49 of:
+         NUUTILA, Esko.
+         Efficient transitive closure computation in large digraphs.
+         Doctor of technology dissertation,
+         Helsinki University of technology
+         1995.
+*)
+      let tr m =
+        let kont n m res =
+          ME.update n
+            (fun o ->
+             let vr =
+               try ME.find m res with Not_found -> Elts.empty in
+             match o with
+             | None ->
+                 Elts.add m vr |> Option.some
+             | Some vn ->
+                 Elts.add m (Elts.union vr vn) |> Option.some)
+            res
+
+        and kont_scc n scc res =
+          match scc with
+          | [] -> assert false
+          | [_] -> res
+          | ms ->
+              let vn =
+                try ME.find n res with Not_found -> assert false in
+              List.fold_left
+                (fun res m -> ME.add m vn res)
+                res ms in
+        FullSCC.scan_map kont kont_scc ME.empty m
 
 (* Acyclicity check *)
       exception Cycle of (Elts.elt list)
@@ -623,70 +721,11 @@ and module Elts = MySet.Make(O) =
       end ;
       nss
 
-(*
- * Strongly connected compponets, Tarjan's algorithm.
- * From R. Sedgwick's book "Algorithms".
- *)
-    module SCC = struct
-      module NodeMap = M.ME
-
-      type state =
-        { id : int;
-          visit : int NodeMap.t;
-          stack : elt0 list; }
-
-      let rec pop_until n ns =
-        match ns with
-        | [] -> assert false
-        | m::ns ->
-           if O.compare n m = 0 then [m],ns
-           else
-             let ms,ns = pop_until n ns in
-             m::ms,ns
-
-      let zyva kont res nodes edges =
-
-        let m = M.to_map edges in
-
-        let rec dfs n ((res,s) as r) =
-          try
-            NodeMap.find n s.visit,r
-          with
-          | Not_found ->
-             let min = s.id in
-             let s = {
-                 id = min + 1;
-                 visit = NodeMap.add n min s.visit;
-                 stack = n :: s.stack;
-               } in
-             let min,(res,s) as r =
-               Elts.fold
-                 (fun n (m0,r) ->
-                   let m1,r = dfs n r in  Misc.min_int m0 m1,r)
-                 (M.succs n m)
-                 (min,(res,s)) in
-             let valk =
-               try NodeMap.find n s.visit with Not_found -> assert false in
-             if not (Misc.int_eq min valk) then
-               r (* n is part of previously returned scc *)
-             else
-               let scc,stack = pop_until n s.stack in
-               let visit =
-                 List.fold_left
-                   (fun visit n -> NodeMap.add n max_int visit)
-                   s.visit scc in
-               let res = kont scc res in
-               min,(res,{ s with stack; visit; }) in
-
-        let (res,_) =
-          Elts.fold
-            (fun n r -> let _,r = dfs n r in r)
-            nodes
-            (res,{id=0; visit=NodeMap.empty; stack=[];} ) in
-        res
-    end
-
-    let scc_kont kont res nodes edges = SCC.zyva kont res nodes edges
+(* Function kont will be called on all SCC, including trivial ones *)    
+    let scc_kont kont res nodes edges =
+      let kont _ _ r = r
+      and kont_scc _ ns r = kont ns r in
+      M.FullSCC.scan_nodes_rel kont kont_scc res nodes edges
 
 (* Is the parent relation of a hierarchy *)
     let is_hierarchy nodes edges =
