@@ -35,7 +35,7 @@ type t =
 (* Morello C64 instruction set *)
   | Morello
 (* Explicit virtual memory *)
-  | KVM | FullKVM
+  | KVM
 (* Do not  observe faults, in KVM mode *)
   | NoFault
 (* Neon AArch64 extension *)
