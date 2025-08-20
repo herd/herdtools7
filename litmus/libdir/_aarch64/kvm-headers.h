@@ -114,7 +114,7 @@ static inline void unset_el0(pteval_t *p) {
 }
 
 static inline pteval_t litmus_set_pte_flags(pteval_t old,pteval_t flags) {
-  flags ^= msk_db; /* inverse dirty bit -> AF[2] */
+  flags ^= msk_db; /* inverse dirty bit -> AP[2] */
   old &= ~msk_full ;
   old |= flags ;
   return old ;
