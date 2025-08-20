@@ -899,6 +899,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       (ASLS.A.V.Val (Constant.ConcreteRecord pstate_updated_fields), eqs)
 
     let is_vmsa = TopConf.C.variant Variant.VMSA
+    let is_d128 = is_vmsa && TopConf.C.variant Variant.D128
 
     let build_test_init ii =
       let state_add loc v st =
@@ -923,16 +924,10 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         |> List.fold_right add_arch_reg_if_present ASLBase.gregs
         |> add_reg_if_present AArch64Base.ResAddr (global_loc "RESADDR")
         |> add_reg_if_present AArch64Base.SP (global_loc "SP_EL0")
-(*
-        |>
-        (fun st ->
-           if is_vmsa then
-             state_add
-               (global_loc "IS_EL0")
-               (ASLS.A.V.scalarToV ((ASLScalar.of_bool is_el0)))
-               st
-           else st)
-*)
+        |> (if is_vmsa then
+              state_add (global_loc "D128")
+                (ASLS.A.V.scalarToV (ASLScalar.of_bool is_d128))
+            else Fun.id)
       in
       let () =
         if _dbg then

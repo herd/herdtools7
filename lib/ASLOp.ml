@@ -249,7 +249,9 @@ let do_op1 op cst =
       | Constant.PteVal pte ->
           begin
             match positions with
-            | [(54|53|50);] -> (* XPN/UXPN/GP, all disabled *)
+            | [(54|53|50);]
+            | [(127|114|113);] (* 128 bit mode *)
+              -> (* XPN/UXPN/GP, all disabled *)
                 Some (Constant.Concrete ASLScalar.zeros_size_one)
             | [51;] -> (* dbm *)
                 let dbm = pte.AArch64PteVal.dbm in

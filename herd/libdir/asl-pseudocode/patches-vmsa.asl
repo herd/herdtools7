@@ -312,15 +312,30 @@ end;
 // Returns stage 1 translation table walk parameters from respective controlling
 // System registers.
 // Luc: we assume EL10 regime, return minimal parameters
+
+var D128:boolean;
+
 func AArch64_GetS1TTWParams
   (regime:Regime, el:bits(2), ss:SecurityState, va:bits(64))
   => S1TTWParams
 begin
   var walkparams : S1TTWParams;
   assert (regime == Regime_EL10);
+  walkparams.d128 = if D128 then '1' else '0'; // Much faster!
   walkparams.ha = GetHaPrimitive();
   walkparams.hd = GetHdPrimitive();
   return walkparams;
+end;
+
+// AArch64.ContiguousBit()
+// =======================
+// Get the value of the contiguous bit
+// Luc: Returns 0 to avoid faults in 128 bit mode
+
+func AArch64_ContiguousBit
+  (tgx:TGx, d128:bit,level:integer, descriptor:bits(N)) => bit
+begin
+  return '0';
 end;
 
 
