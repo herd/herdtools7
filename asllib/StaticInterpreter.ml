@@ -31,6 +31,7 @@ module InterpConf = struct
 
   let unroll = 0
   let error_handling_time = Error.Static
+  let empty_branching_effects_optimization = true
 end
 
 module SB = Native.StaticBackend
