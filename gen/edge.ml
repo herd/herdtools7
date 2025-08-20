@@ -64,13 +64,14 @@ module type S = sig
     | Hat
     | Rmw of rmw      (* Various sorts of read-modify-write *)
 
-  val is_id : tedge -> bool
-  val is_node : tedge -> bool
-  val is_insert_store : tedge -> bool
-  val is_non_pseudo : tedge -> bool
   val compute_rmw : rmw -> Code.v -> Code.v -> Code.v
 
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
+
+  val is_id : edge -> bool
+  val is_node : edge -> bool
+  val is_memory_access : edge -> bool
+  val is_pseudo : edge -> bool
 
   val plain_edge : tedge -> edge
 
@@ -229,31 +230,31 @@ and type rmw = F.rmw = struct
     | Hat
     | Rmw of rmw
 
+  type edge = { edge: tedge;  a1:atom option; a2: atom option; }
 
-  let is_id = function
+  let is_id_tedge = function
     | Id -> true
     | Store|Insert _|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
+  let is_id e = is_id_tedge e.edge
 
-  let is_insert_store = function
-    | Store|Insert _ -> true
-    | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
-    | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
+  let is_memory_access e = match e.edge with
+    | Store|Insert _|Id -> false
+    | Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> true
 
-  let is_node = function
+  let is_node e = match e.edge with
     | Node _ -> true
     | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Insert _
     | Store -> false
 
-  let is_non_pseudo = function
-    | Store|Insert _ |Id|Node _-> false
+  let is_pseudo e = match e.edge with
+    | Store|Insert _ |Id|Node _ -> true
     | Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
-    | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _ -> true
+    | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _ -> false
 
-  type edge = { edge: tedge;  a1:atom option; a2: atom option; }
-
-  let can_merge e = not @@ is_insert_store e.edge
+  let can_merge e = is_memory_access e || is_id e
 
   open Printf
 
@@ -268,7 +269,7 @@ and type rmw = F.rmw = struct
   | _ -> sprintf "%s%s" (pp_a a1) (pp_a a2)
 
   let pp_archs e a1 a2 = match a1, a2 with
-  | None,None  when not (is_id e) -> ""
+  | None,None  when not (is_id_tedge e) -> ""
   | _,_ -> pp_one_or_two pp_arch e a1 a2
 
   let pp_a = function
@@ -278,7 +279,7 @@ and type rmw = F.rmw = struct
   let pp_atom_option = pp_a
 
   let pp_aa e a1 a2 = match a1, a2 with
-  | None,None when not (is_id e) -> ""
+  | None,None when not (is_id_tedge e) -> ""
   | _,_ ->  pp_one_or_two pp_a e a1 a2
 
   let pp_a_bis = function
@@ -286,7 +287,7 @@ and type rmw = F.rmw = struct
     | Some a -> F.pp_atom a
 
   let pp_aa_bis e a1 a2 = match a1,a2 with
-  | None,None  when not (is_id e) -> ""
+  | None,None  when not (is_id_tedge e) -> ""
   | _,_ -> pp_one_or_two pp_a_bis e a1 a2
 
   let pp_a_ter = function
@@ -296,7 +297,7 @@ and type rmw = F.rmw = struct
         else F.pp_atom a
 
   let pp_aa_ter e a1 a2 = match a1,a2 with
-  | None,None  when not (is_id e) -> ""
+  | None,None  when not (is_id_tedge e) -> ""
   | _,_ -> pp_one_or_two pp_a_ter e a1 a2
 
   let pp_a_qua = function
@@ -306,7 +307,7 @@ and type rmw = F.rmw = struct
         else F.pp_atom a
 
   let pp_aa_qua e a1 a2 = match a1,a2 with
-  | None,None  when not (is_id e) -> ""
+  | None,None  when not (is_id_tedge e) -> ""
   | _,_ -> pp_one_or_two pp_a_qua e a1 a2
 
   let do_pp_tedge compat = function
@@ -854,7 +855,7 @@ let fold_tedges f r =
       else match merge_pair e next with
       | None -> true, Some e, (store_insert @ next :: rest)
       | Some (e, next) ->
-        match is_id e.edge, is_id next.edge with
+        match is_id e, is_id next with
         (* Erase `next` and continue merging *)
         | _,true -> merge_left e (store_insert @ rest)
         (* Indicate erasing `e` *)
@@ -889,7 +890,7 @@ let fold_tedges f r =
           (pp_edge e) in
     (* Check `Id` edge are all pseudo annotation *)
     let check_pseudo_id e =
-      if is_id e.edge then
+      if is_id e then
         Warn.fatal "Invalid extra annotation %s" (pp_edge e) in
     List.iter (fun e -> check_mixed e; check_pseudo_id e) es
 
