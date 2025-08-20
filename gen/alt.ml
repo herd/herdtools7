@@ -282,7 +282,7 @@ module Make(C:Builder.S)
       | [] -> assert false
       | [x] -> x
       | x::xs ->
-          if C.E.is_insert_store x.C.E.edge then hd_non_insert xs
+          if C.E.is_memory_access x then hd_non_insert xs
           else x
     let last_non_insert xs = hd_non_insert (List.rev xs)
 
@@ -332,7 +332,7 @@ module Make(C:Builder.S)
 (* Functional for recursive call of generators *)
 
     let sz (_,es) =
-      if List.for_all (fun e -> is_id e.edge) es then 0 else 1
+      if List.for_all (fun e -> is_id e) es then 0 else 1
 
 
     let rec c_minprocs_es c = function
