@@ -577,18 +577,18 @@ module CoSt = struct
     st.check_fault, {st with check_fault = false }
 
   (* Check if `pte_val` might fault *)
-  let label_pte_fault pte_val =
-    Some ( (Label.next_label "L"), (PteVal.can_fault pte_val) )
+  let label_pte_fault dir pte_val =
+    Some ( (Label.next_label "L"), (PteVal.can_fault dir pte_val) )
 
   (* Helper function returns a fresh label and a boolean for if it should fault,
      if a fault check is need. Otherwise return `None`. *)
-  let fault_update st =
+  let fault_update dir st =
     let check_fault, st = read_and_unset_check_fault st in
     let pte_val = get_pte_value st in
     let fault =
       if check_fault then
         if do_no_fault then None
-        else if do_kvm then label_pte_fault pte_val
+        else if do_kvm then label_pte_fault dir pte_val
         else None
       else None in
     fault, st
@@ -912,7 +912,7 @@ let set_same_loc st n0 =
           (* No need to add fault check in read modify write situation,
              as the label will be assigned in read *)
           let fault_update_without_rmw st =
-            if n.evt.rmw then None,st else CoSt.fault_update st in
+            if n.evt.rmw then None,st else CoSt.fault_update W st in
           match n.evt.loc with
           | Data _ ->
             let bank = n.evt.bank in
@@ -1020,7 +1020,9 @@ let set_same_loc st n0 =
                  and `check_fault` depend on if there are write to
                  the variable and pte respectively. *)
               let check_value = exist_plain_value_write ns in
-              let check_fault = exist_pte_value_write ns in
+              let check_fault = exist_pte_value_write ns
+                                || PteVal.can_fault R pte_val
+                                || PteVal.can_fault W pte_val in
               let init_st = CoSt.create i sz pte_val check_value check_fault in
               let next_x_ok,_st = do_set_write_val false init_st ns in
               (* Add pte initial values when kvm and the value is not default *)
@@ -1118,12 +1120,12 @@ let do_set_read_v init =
         begin match bank with
         | Ord | Instr->
           set_read_individual_v n cell check_value;
-          let check_fault, st = CoSt.fault_update st in
+          let check_fault, st = CoSt.fault_update R st in
           n.evt <- { n.evt with check_fault };
           st
         | Pair ->
           set_read_pair_v n cell check_value;
-          let check_fault, st = CoSt.fault_update st in
+          let check_fault, st = CoSt.fault_update R st in
           n.evt <- { n.evt with check_fault };
           st
         | VecReg a ->
@@ -1131,7 +1133,7 @@ let do_set_read_v init =
           let v = E.SIMD.read a cell
                    |> E.SIMD.reduce
                    |> Code.value_of_int in
-          let check_fault, st = CoSt.fault_update st in
+          let check_fault, st = CoSt.fault_update R st in
           n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
           st
         | Tag|CapaTag|CapaSeal ->

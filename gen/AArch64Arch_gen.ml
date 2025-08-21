@@ -698,9 +698,9 @@ let overwrite_value v ao w = match ao with
       | Pte f,None -> do_setpteval a f p
       | _ -> Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
 
-    let can_fault pte_val =
+    let can_fault dir pte_val =
       let open AArch64PteVal in
-      pte_val.valid = 0
+      pte_val.valid = 0 || pte_val.af = 0 || (dir = Code.W && pte_val.db = 0)
 
   end
 
