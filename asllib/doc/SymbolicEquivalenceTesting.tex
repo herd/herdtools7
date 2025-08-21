@@ -40,6 +40,12 @@ Our symbolic reduction and equivalence testing rules use \emph{symbolic expressi
   \end{array}
 \]
 
+These symbolic expressions provide a canonical representation for multivariate polynomials
+(that is, polynomials over multiple variables). The motivation for choosing this representation
+is examples similar to the one in \listingref{IR}, which requires representing the
+multivariate polynomials \verb|8*M*N| and \verb|M*N*8| in the same way.
+\ASLListing{Example requiring a canonical polynomial representation}{IR}{\definitiontests/IR.asl}
+
 We now explain each component of a symbolic expression and how it can be interpreted as a mathematical formula
 via the interpretation function $\alpha$.
 We also define operations over symbolic expressions.

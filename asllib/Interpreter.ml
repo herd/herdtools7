@@ -146,8 +146,8 @@ module Make (B : Backend.S) (C : Config) = struct
    *  [m_cond], evaluates to boolean condition,
    *  [msg], message to decorate the branching event,
    *  [v1 v2] alternative for choice.
-   *  [kont] contitinuation, takes choosed [v1] or [v2] as
-   *         input .
+   *  [kont] a continuation, takes the value chosen among [v1] or [v2]
+             as input.
    *)
 
   let choice_with_branch_effect_msg m_cond msg v1 v2 kont =

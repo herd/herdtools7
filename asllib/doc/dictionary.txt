@@ -1295,6 +1295,7 @@ monomial
 monomials
 more
 most
+motivation
 move
 multiple
 multiplication
@@ -1302,6 +1303,7 @@ multiplied
 multiplies
 multiply
 multiplying
+multivariate
 munch
 must
 mutable

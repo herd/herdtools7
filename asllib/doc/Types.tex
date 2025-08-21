@@ -669,8 +669,6 @@ See \ExampleRef{Well-typed Boolean Types} for examples of well-typed \booleantyp
 %
 The \texttt{bits(N)} type represents a bitvector of width \texttt{N},
 where \texttt{N} may specify a fixed width or a constrained width.
-%
-The \texttt{bit} type is syntactic sugar for \texttt{bits(1)} (see \ASTRuleRef{Ty.TBits}.\texttt{BIT}).
 
 \identr{RXYN}%
 Bitvectors can be converted to unsigned integers and signed integer
@@ -686,6 +684,13 @@ which allows specifying \emph{\bitfieldsterm} ---
 fields that can be read or written.
 \chapref{Bitfields} defines \bitfieldsterm{}
 and \chapref{BitvectorSlicing} defines \bitslicesterm{}.
+
+\SyntacticSugarDef{Bit}
+The \Tbit{} type is \syntacticsugar{} for \texttt{bits(1)},
+as exemplified by \listingref{Bit}.
+It is \desugared{} by \ASTRuleCaseRef{Ty.TBits}{BIT}.
+
+\ASLListing{Syntactic sugar for single bit bitvector types}{Bit}{\definitiontests/Bit.asl}
 
 \RequirementDef{BitvectorsMSB}
 In a bitvector literal, the most significant bit (\ProseMSB) is the leftmost value

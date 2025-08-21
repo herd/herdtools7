@@ -114,11 +114,22 @@ using $\texttt{eval\_expr}$ to evaluate it.
 \Ndiscardoridentifier \derives \ & \Tminus \;|\; \Tidentifier &
 \end{flalign*}
 
+\SyntacticSugarDef{MultiFieldAssignment}
+The syntax \\
+\texttt{x.(f1, ..., fk) = (v1, ..., vk);} is
+\syntacticsugar{} for \texttt{x.f1=v1; ... x.fk=vk;},
+modulo assignments to \discardvarstr{}.
+See \ExampleRef{Desugaring a left-hand side fields tuple}.
+It is \desugared{} by \ASTRuleRef{DesugarLHSFieldsTuple}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Assignable Expressions}
 
-We first define $\lhsaccess$, which we use in this section as an intermediate representation between some syntax forms of \assignableexpressions{} and their corresponding abstract syntax.
-In particular, rather than directly building the abstract syntax for these \assignableexpressions{}, we first build structures containing $\lhsaccess$, which we then desugar into abstract syntax in \secref{AssignableExpressionsDesugaring}.
+We first define $\lhsaccess$, which we use in this section as an intermediate representation
+between some syntax forms of \assignableexpressions{} and their corresponding abstract syntax.
+In particular, rather than directly building the abstract syntax for these \assignableexpressions{},
+we first build intermediate structures containing $\lhsaccess$,
+which we then desugar into abstract syntax in \secref{AssignableExpressionsDesugaring}.
 
 \hypertarget{ast-lhsaccess}{}
 \begin{flalign*}

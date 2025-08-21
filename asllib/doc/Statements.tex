@@ -321,6 +321,13 @@ $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
 |\ & \Tdot \parsesep \Tidentifier \parsesep \Nsetteraccess &
 \end{flalign*}
 
+\SyntacticSugarDef{Setter Calls Followed by a Slice or a Field Access}
+A call to a setter, followed by a slice or a field access is \syntacticsugar{}
+for a sequence of statements, which first call the corresponding getter,
+apply the corresponding slice of field, and then call the setter with the new value.
+See \ExampleRef{A Setter Call as a Read-Modify-Write}.
+Setter calls are desugared by \ASTRuleRef{DesugarSetter}.
+
 \ASTRuleDef{MakeSetter}
 \hypertarget{def-makesetter}{}
 The helper function
@@ -417,6 +424,15 @@ The helper function
   \overname{\stmt}{\vmodify}) \aslto \overname{\stmt}{\news}
 \]
 builds a sequence of statements to read from the getter invocation $\vcall.\callname$, modify the resulting value using $\vmodify$, and write it to a setter invocation $\vcall.\callname$.
+
+\ExampleDef{A Setter Call as a Read-Modify-Write}
+\listingref{ReadModifyWriteSlice} shows how a setter call followed by a slice is
+\desugared.
+\ASLListing{A Setter followed by a Slice}{ReadModifyWriteSlice}{\syntaxtests/ASTRule.ReadModifyWriteSlice.asl}
+
+\listingref{ReadModifyWriteSlice} shows how a setter call followed by a field access is
+\desugared.
+\ASLListing{A Setter followed by a Field Access}{ReadModifyWriteField}{\syntaxtests/ASTRule.ReadModifyWriteField.asl}
 
 \begin{mathpar}
 \inferrule{
@@ -944,7 +960,7 @@ In \listingref{semantics-sdeclnone},
 \end{mathpar}
 \CodeSubsection{\EvalSDeclBegin}{\EvalSDeclEnd}{../Interpreter.ml}
 
-\section{Declaration statements with an elided parameter\label{sec:DeclarationStatementsElidedParameter}}
+\section{Declaration Statements with an Elided Parameter\label{sec:DeclarationStatementsElidedParameter}}
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \
@@ -959,6 +975,11 @@ In \listingref{semantics-sdeclnone},
   |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \ClistOne{\Nexpr} \parsesep \Trbrace &\\
   |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \ClistOne{\Nexpr} \parsesep \Trbrace \parsesep \PlistZero{\Nexpr}&
 \end{flalign*}
+
+\SyntacticSugarDef{ParameterElision}
+In a call to a parameterized subprogram, a parameter can be elided,
+if it can be inferred from the left-hand-side type annotation,
+as detailed by \ASTRuleRef{ElidedParamCall} (See also \secref{ParameterElision}).
 
 \ASTRuleDef{ElidedParamCall}
 \hypertarget{build-elided-param-call}{}
@@ -1557,10 +1578,12 @@ where a \casealternativeterm{} is missing a statement.
 \ASLListing{Invalid case statement syntax}{CaseStatement-bad}{\syntaxtests/CaseStatement.bad.asl}
 
 \subsection{Abstract Syntax}
-Case statements are considered syntactic sugar and are \emph{desugared}.
-That is, they are transformed into an untyped AST node that does not have
-an explicit representation for \texttt{case} statements.
-This is achieved via \ASTRuleRef{DesugarCaseStmt}.
+
+\SyntacticSugarDef{CaseStatement}
+Case statements are considered \\ \syntacticsugar{}.
+That is, there is no explicit representation for \texttt{case} statements
+as they are represented in AST via a \conditionalstatementterm.
+Case statements are \desugared{} by \ASTRuleRef{DesugarCaseStmt}.
 
 \ExampleDef{Case Statement Desugaring}
 \listingref{ast-case1} shows an example of how a \texttt{case} statement can be transformed into a corresponding
