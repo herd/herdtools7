@@ -1916,6 +1916,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             | _ -> assert false in
             let r,init,cs,st = emit A64.V64 st p init (Misc.add_pte loc) in
             Some r,init,cs,st
+        | R,Some (Pte (TTHM _),None) ->
+            let r,init,cs,st = LDR.emit_load st p init loc in
+            Some r,init,cs,st
         | W,Some (Pte (Set _|SetOne _|SetZero _),None) ->
             let init,cs,st =
               emit_set_pteval false st p init e.C.pte (Misc.add_pte loc) in
@@ -1923,6 +1926,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (Pte (SetRel _),None) ->
             let init,cs,st =
               emit_set_pteval true st p init e.C.pte (Misc.add_pte loc) in
+            None,init,cs,st
+        | W,Some (Pte (TTHM _),None) ->
+            let init,cs,st =
+              STR.emit_store st p init loc value None C.evt_null in
             None,init,cs,st
         | d,Some (Pte _,_ as a) ->
             Warn.fatal
@@ -2882,5 +2889,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           List.rev_map (fun r -> r,0) rs
     | Some _|None -> fun _ -> []
 
-    include NoInfo
+    let get_archinfo n =
+      (* collect distinct tthm *)
+      C.fold ( fun node acc ->
+        match node.C.edge.E.a1 with
+        | Some(Pte(TTHM e), _) -> WPTESet.union e acc
+        | _ -> acc
+        ) n WPTESet.empty
+      |> WPTESet.map_list ( fun e -> "TTHM",(WPTE.pp_tthm e) )
   end
