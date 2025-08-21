@@ -144,8 +144,6 @@ end;
 // Computes the stage 1 direct base permissions
 // A choice of reasonable permissions
 
-var IS_EL0:boolean;
-
 func
   AArch64_S1DirectBasePermissions
     (regime:Regime,walkstate:TTWState,
@@ -200,12 +198,16 @@ end;
 // Modified -> write only
 
 func AArch64_MemSwapTableDesc
-  (fault_in:FaultRecord,prev_desc:bits(N),new_desc:bits(N),
+  {N}(fault_in:FaultRecord,prev_desc:bits(N),new_desc:bits(N),
    ee:bit,descaccess:AccessDescriptor,descpaddr:AddressDescriptor,n:integer)
 => (FaultRecord, bits(N))
 begin
    let addr = descpaddr.paddress.address;
-   WritePtePrimitive(addr,new_desc,descaccess.write);
+   let mem_desc = ReadPteAgainPrimitive{N}(addr,descaccess.write);
+//   __debug__(N,mem_desc,prev_desc);
+// For speed, using "if" construct us much more expensive
+   CheckProp(mem_desc == prev_desc);
+   WritePtePrimitive{N}(addr,new_desc,descaccess.write);
    return (fault_in,new_desc);
 end;
 
