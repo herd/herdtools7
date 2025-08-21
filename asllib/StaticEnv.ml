@@ -30,7 +30,7 @@ let ( |: ) = Instrumentation.TypingNoInstr.use_with
 
 type global = {
   declared_types : (ty * TimeFrame.t) IMap.t;
-  constant_values : literal Storage.t;
+  constant_values : literal IMap.t;
   storage_types : (ty * global_decl_keyword) IMap.t;
   subtypes : identifier IMap.t;
   subprograms : (AST.func * SES.t) IMap.t;
@@ -39,7 +39,7 @@ type global = {
 }
 
 type local = {
-  constant_values : literal Storage.t;
+  constant_values : literal IMap.t;
   storage_types : (ty * local_decl_keyword) IMap.t;
   expr_equiv : expr IMap.t;
   return_type : ty option;
@@ -71,7 +71,7 @@ module PPEnv = struct
     fprintf f
       "@[<v 2>Local with:@ - @[constants:@ %a@]@ - @[storage:@ %a@]@ - \
        @[return type:@ %a@]@ - @[expr equiv:@ %a@]@]"
-      (Storage.pp_print PP.pp_literal)
+      (IMap.pp_print PP.pp_literal)
       constant_values
       (pp_map (fun f (t, _) -> PP.pp_ty f t))
       storage_types
@@ -97,7 +97,7 @@ module PPEnv = struct
       "@[<v 2>Global with:@ - @[constants:@ %a@]@ - @[storage:@ %a@]@ - \
        @[types:@ %a@]@ - @[subtypes:@ %a@]@ - @[subprograms:@ %a@]@ - \
        @[overloaded_subprograms:@ %a@]@ - @[expr equiv:@ %a@]@]"
-      (Storage.pp_print PP.pp_literal)
+      (IMap.pp_print PP.pp_literal)
       constant_values
       (pp_map (fun f (t, _) -> PP.pp_ty f t))
       storage_types
@@ -119,7 +119,7 @@ let pp_local = PPEnv.pp_local
 let empty_global =
   {
     declared_types = IMap.empty;
-    constant_values = Storage.empty;
+    constant_values = IMap.empty;
     storage_types = IMap.empty;
     subtypes = IMap.empty;
     subprograms = IMap.empty;
@@ -130,7 +130,7 @@ let empty_global =
 (** An empty local static env. *)
 let empty_local =
   {
-    constant_values = Storage.empty;
+    constant_values = IMap.empty;
     storage_types = IMap.empty;
     return_type = None;
     expr_equiv = IMap.empty;
@@ -151,9 +151,9 @@ let with_empty_local global =
 (* Begin LookupConstant *)
       @raise Not_found if it is not defined inside. *)
 let lookup_constant env x =
-  try Storage.find x env.local.constant_values
+  try IMap.find x env.local.constant_values
   with Not_found ->
-    Storage.find x env.global.constant_values |: TypingRule.LookupConstant
+    IMap.find x env.global.constant_values |: TypingRule.LookupConstant
 (* End *)
 
 let lookup_constant_opt env x =
@@ -179,8 +179,7 @@ let lookup_immutable_expr_opt env x =
   try Some (lookup_immutable_expr env x) with Not_found -> None
 
 let mem_constants env x =
-  Storage.mem x env.global.constant_values
-  || Storage.mem x env.local.constant_values
+  IMap.mem x env.global.constant_values || IMap.mem x env.local.constant_values
 
 let add_subprogram name func_def ses env =
   let () =
@@ -235,14 +234,14 @@ let add_local_constant name v env =
     local =
       {
         env.local with
-        constant_values = Storage.add name v env.local.constant_values;
+        constant_values = IMap.add name v env.local.constant_values;
       };
   }
 (* End *)
 
 (* Begin AddGlobalConstant *)
 let add_global_constant name v (genv : global) =
-  { genv with constant_values = Storage.add name v genv.constant_values }
+  { genv with constant_values = IMap.add name v genv.constant_values }
 (* End *)
 
 let add_local x ty ldk env =

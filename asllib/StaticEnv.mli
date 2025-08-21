@@ -35,7 +35,7 @@ type global = {
         only to store the time-frame of the type, and not the whole side-effect
         set.
     *)
-  constant_values : literal Storage.t;
+  constant_values : literal IMap.t;
       (** Maps a global constant name to its value. *)
   storage_types : (ty * global_decl_keyword) IMap.t;
       (** Maps global declared storage elements to their types. *)
@@ -53,8 +53,7 @@ type global = {
 (** Store all the global environment information at compile-time. *)
 
 type local = {
-  constant_values : literal Storage.t;
-      (** Maps a local constant to its value. *)
+  constant_values : literal IMap.t;  (** Maps a local constant to its value. *)
   storage_types : (ty * local_decl_keyword) IMap.t;
       (** Maps an locally declared names to their type. *)
   expr_equiv : expr IMap.t;

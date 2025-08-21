@@ -1954,8 +1954,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           in
           try
             match IMap.find x env.local.storage_types with
-            | ty, LDK_Constant when Storage.mem x env.local.constant_values ->
-                let v = Storage.find x env.local.constant_values in
+            | ty, LDK_Constant when IMap.mem x env.local.constant_values ->
+                let v = IMap.find x env.local.constant_values in
                 (ty, E_Literal v |> here, SES.empty) |: TypingRule.EVar
             | ty, ldk ->
                 let ses =
@@ -1966,9 +1966,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           with Not_found -> (
             try
               match IMap.find x env.global.storage_types with
-              | ty, GDK_Constant when Storage.mem x env.global.constant_values
-                ->
-                  let v = Storage.find x env.global.constant_values in
+              | ty, GDK_Constant when IMap.mem x env.global.constant_values ->
+                  let v = IMap.find x env.global.constant_values in
                   (ty, E_Literal v |> here, SES.empty) |: TypingRule.EVar
               | ty, gdk ->
                   let ses =

@@ -672,9 +672,6 @@ let of_side_effect (x : SideEffect.t) =
 let of_ses (x : SideEffect.SES.t) =
   of_list_map of_side_effect (SideEffect.SES.to_side_effect_list x)
 
-let of_storage of_v (x : 'v Storage.t) =
-  of_seq_map (fun (k, v) -> Cons (String k, of_v v)) (Storage.to_seq x)
-
 let of_static_env_global (x : StaticEnv.global) =
   aslsym_alist
     [
@@ -682,7 +679,7 @@ let of_static_env_global (x : StaticEnv.global) =
         of_imap
           (fun (ty, tf) -> Cons (of_ty ty, of_timeframe tf))
           x.declared_types );
-      ("CONSTANT_VALUES", of_storage of_literal x.constant_values);
+      ("CONSTANT_VALUES", of_imap of_literal x.constant_values);
       ( "STORAGE_TYPES",
         of_imap
           (fun (ty, kw) -> Cons (of_ty ty, of_global_decl_keyword kw))
@@ -699,7 +696,7 @@ let of_static_env_global (x : StaticEnv.global) =
 let of_static_env_local (x : StaticEnv.local) =
   aslsym_alist
     [
-      ("CONSTANT_VALUES", of_storage of_literal x.constant_values);
+      ("CONSTANT_VALUES", of_imap of_literal x.constant_values);
       ( "STORAGE_TYPES",
         of_imap
           (fun (ty, kw) -> Cons (of_ty ty, of_local_decl_keyword kw))

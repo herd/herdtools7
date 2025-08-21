@@ -52,7 +52,7 @@ module type S = sig
 
   type global = {
     static : StaticEnv.global;  (** References the static environment. *)
-    storage : v Storage.t;  (** Binds global variables to their names. *)
+    storage : v IMap.t;  (** Binds global variables to their names. *)
     stack_size : Z.t IMap.t;
         (** Current number of recursive calls open for each subprogram. *)
   }
@@ -67,11 +67,11 @@ module type S = sig
   val to_static : env -> StaticEnv.env
   (** Builds a static environment, with an empty local part. *)
 
-  val local_empty_scoped : ?storage:v Storage.t -> Scope.t -> local
+  val local_empty_scoped : ?storage:v IMap.t -> Scope.t -> local
   (** [empty_scoped scope] is an empty local environment in the scope [scope].
   *)
 
-  val global_from_static : ?storage:v Storage.t -> StaticEnv.global -> global
+  val global_from_static : ?storage:v IMap.t -> StaticEnv.global -> global
   (** [global_from_static static_env] is an empty global environment with the
       static environment [static_env]. *)
 
