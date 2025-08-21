@@ -369,9 +369,24 @@ module Value = struct
       | Pte f,None -> do_setpteval f p
       | _ -> Warn.user_error "Atom is not a pteval write"
 
-    let can_fault pte_val =
+    let can_fault dir pte_val =
       let open AArch64PteVal in
-      pte_val.valid = 0
+      pte_val.valid = 0 || pte_val.af = 0 || (dir = Code.W && pte_val.db = 0)
+
+    let has_pte_field field pte_fields =
+      let open WPTE in
+      WPTESet.mem (Base field) pte_fields
+      || WPTESet.mem (One field) pte_fields
+      || WPTESet.mem (Zero field) pte_fields
+
+    let need_check_fault atom =
+      let open WPTE in
+      match atom with
+      | Some (Pte (Set pte_fields|SetRel pte_fields|TTHM pte_fields), None) ->
+        if has_pte_field AF pte_fields || has_pte_field VALID pte_fields then Irr
+        else if has_pte_field DB pte_fields then Dir W
+        else NoDir
+      | _ -> NoDir
 
     let refers_virtual p = OutputAddress.refers_virtual p.AArch64PteVal.oa
   end)
