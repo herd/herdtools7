@@ -156,6 +156,8 @@ module Make
 
    module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
 
+   let get_machine_feature _ = StringSet.empty
+
 (* End of atoms *)
 
    type fence = barrier

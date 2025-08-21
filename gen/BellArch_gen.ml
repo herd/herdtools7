@@ -155,6 +155,8 @@ let fold_atom = fold_non_mixed
 
 let worth_final _ = false
 
+let get_machine_feature _ = StringSet.empty
+
 (* Atomic variation *)
 
 (* No atomic variation *)

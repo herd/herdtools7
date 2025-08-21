@@ -758,6 +758,12 @@ let overwrite_value v ao w = match ao with
      | Some (Pair _,_) -> true
      | Some _|None -> false
 
+  let get_machine_feature = function
+    | Some(Pte(TTHM field), _) ->
+      WPTESet.map_list (fun f -> pp_atom_pte (TTHM(WPTESet.singleton f))) field
+      |> StringSet.of_list
+    | _ -> StringSet.empty
+
 (* End of atoms *)
 
 (**********)
