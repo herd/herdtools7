@@ -733,6 +733,17 @@ let overwrite_value v ao w = match ao with
       let open AArch64PteVal in
       pte_val.valid = 0 || pte_val.af = 0 || (dir = Code.W && pte_val.db = 0)
 
+    let implicit_set_pteval dir machine_feature p =
+      let open WPTE in
+      let open AArch64PteVal in
+      if StringSet.mem (pp_atom_pte (TTHM(WPTESet.singleton (Base AF)))) machine_feature
+        && p.af = 0 then
+          Some ({p with af = 1})
+      else if StringSet.mem (pp_atom_pte (TTHM(WPTESet.singleton (Base DB)))) machine_feature
+        && dir = Code.W && p.db = 0  && p.dbm = 1 then
+          Some ({p with db = 1})
+      else None
+
   end
 
 (* Wide accesses *)
