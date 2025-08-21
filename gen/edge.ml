@@ -141,6 +141,9 @@ module type S = sig
 (* Possible interpretation of edge sequence as an edge *)
   val compact_sequence : edge list -> edge list -> edge -> edge -> edge list list
 
+(* return if an edge switch on any machine feature *)
+  val get_machine_feature : edge -> StringSet.t
+
 (* Utilities *)
   val is_ext : edge -> bool
   val is_com : edge -> bool
@@ -1009,6 +1012,9 @@ let fold_tedges f r =
     let k = fst_dp e1 e2 k in
     let k = sequence_dp e1 e2 k in
     k
+
+  let get_machine_feature e =
+    StringSet.union (F.get_machine_feature e.a1) (F.get_machine_feature e.a2)
 
   module Set =
     MySet.Make
