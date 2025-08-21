@@ -40,10 +40,18 @@
 
 (local (in-theory (acl2::disable* (:ruleset asl-*t-equals-original-rules))))
 
+(local (defun replace-static-env (x)
+           (if (atom x)
+               x
+             (if (equal x '(global-env->static (env->global env)))
+                 '(static_env_global-fix static-env)
+               (cons (replace-static-env (car x))
+                     (replace-static-env (cdr x)))))))
+
 (with-output
   ;; makes it so it won't take forever to print the induction scheme
   :evisc (:gag-mode (evisc-tuple 3 4 nil nil))
   :off (event)
-  (make-event (append *static-env-preserved-form*
+  (make-event (append (replace-static-env *static-env-preserved-form*)
                       '(:hints ((vl::big-mutrec-default-hint 'eval_expr-*t-fn id nil world))
                         :mutual-recursion asl-interpreter-mutual-recursion-*t))))

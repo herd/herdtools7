@@ -126,6 +126,7 @@
 
 (defines expr_of_lexpr
   :ruler-extenders (expr)
+  :flag-local nil
   (define expr_of_lexpr ((x lexpr-p))
     :returns (res expr-p)
     :measure (lexpr-count x)
@@ -193,28 +194,6 @@
              (< (expr-count x) (maybe-expr-count x)))
     :rule-classes :linear))
 
-(define expr*maybe-ty-count ((x expr*maybe-ty-p))
-  :returns (count posp :rule-classes :type-prescription)
-  (b* (((expr*maybe-ty x)))
-    (+ 1 (expr-count x.expr) (maybe-ty-count x.ty)))
-  ///
-  (defthm expr*maybe-ty-count-linear
-    (b* (((expr*maybe-ty x)))
-      (< (+ (expr-count x.expr) (maybe-ty-count x.ty))
-         (expr*maybe-ty-count x)))
-    :rule-classes :linear))
-
-(define maybe-[expr*maybe-ty]-count ((x maybe-[expr*maybe-ty]-p))
-  :returns (count posp :rule-classes :type-prescription)
-  (if x (+ 1 (expr*maybe-ty-count x)) 1)
-  ///
-  (defthm maybe-[expr*maybe-ty]-count-linear
-    (implies x
-             (< (expr*maybe-ty-count x) (maybe-[expr*maybe-ty]-count x)))
-    :rule-classes ((:linear
-                    :trigger-terms
-                    ((maybe-[expr*maybe-ty]-count x)
-                     (expr*maybe-ty-count x))))))
 
 
 (defines stmt-count*
@@ -247,7 +226,8 @@
       :s_repeat (+ 1 (stmt-count* x.body)
                    (expr-count x.test)
                    (maybe-expr-count x.limit))
-      :s_throw (+ 1 (maybe-[expr*maybe-ty]-count x.val))
+      :s_throw (+ 1 (expr-count x.val)
+                  (maybe-ty-count x.ty))
       :s_try (+ 1 (stmt-count* x.body)
                 (catcherlist-count* x.catchers)
                 (maybe-stmt-count* x.otherwise))
@@ -377,7 +357,8 @@
   (defthm stmt_desc-count*-s_throw
     (implies (stmt_desc-case x :s_throw)
              (b* (((s_throw x)))
-               (< (maybe-[expr*maybe-ty]-count x.val)
+               (< (+ (expr-count x.val)
+                     (maybe-ty-count x.ty))
                   (stmt_desc-count* x))))
     :rule-classes :linear)
   

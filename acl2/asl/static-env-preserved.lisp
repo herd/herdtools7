@@ -25,17 +25,6 @@
 (include-book "interp")
 (include-book "std/util/defret-mutual-generate" :dir :System)
 
-(local
- (with-output
-   ;; makes it so it won't take forever to print the induction scheme
-   :evisc (:gag-mode (evisc-tuple 3 4 nil nil))
-   :off (event)
-   (make-event
-    (b* (((std::defines-guts guts)
-          (cdr (assoc 'asl-interpreter-mutual-recursion (std::get-defines-alist (w state))))))
-      `(flag::make-flag asl-interpreter-mutual-recursion-flag
-                        eval_expr-fn
-                        :flag-mapping ,guts.flag-mapping)))))
 
 
 (defret <fn>-static-env-preserved

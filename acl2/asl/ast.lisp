@@ -457,15 +457,6 @@ a bitvector slice"
 (defenum for_direction-p (:up :down))
 (defoption maybe-expr expr)
 
-(defprod expr*maybe-ty
-  :short "Indicates what should be thrown in a throw statement (see @(see s_throw))."
-  ((expr expr "Value of the exception object")
-   (ty maybe-ty "Type of exception. In well-typed code this must be a type, not nil."))
-  :layout :list
-  :measure (acl2::two-nats-measure (acl2-count x) 10))
-
-(defoption maybe-[expr*maybe-ty] expr*maybe-ty)
-
 (defoption maybe-identifier identifier)
 
 (deftypes stmt
@@ -507,7 +498,8 @@ a bitvector slice"
                 (limit maybe-expr))
      :short "Repeat-until loop statement. Body is evaluated once, then
  repeatedly until the test is true.")
-    (:s_throw ((val maybe-[expr*maybe-ty]))
+    (:s_throw ((val expr)
+               (ty maybe-ty))
      :short "Throw statement. @('val') gives the exception data to be thrown. If not
 present, this is a rethrow -- i.e. throw the same exception that was previously
 thrown within a catcher block.")

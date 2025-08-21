@@ -33,7 +33,9 @@
 (include-book "sqrtrounded")
 (include-book "uint")
 (include-book "shift")
-(include-book "no-trace")
+(include-book "../../trace-free")
+
+
 
 ;; Make sure there's a theorem for every stdlib function.
 
@@ -50,3 +52,111 @@
   (cw "## Proofs need adjustments                            ##~%")
   (cw "########################################################"))
   )
+
+
+(local
+ (defun my-get-thm (name state)
+   (declare (xargs :mode :program :stobjs state))
+   (er-let* ((ev-wrld
+              (acl2::er-decode-logical-name name (w state) 'my-get-thm state)))
+     (value (acl2::access-event-tuple-form (cddar ev-wrld))))))
+
+(local
+ (defun remove-hints (form)
+   (cond ((atom form) nil)
+         ((eq (car form) :hints)
+          (cddr form))
+         (t (cons (car form) (remove-hints (cdr form)))))))
+
+(local
+ (defun add-first-hyp (hyp form)
+   (if (atom form)
+       form
+     (case-match form
+       (('implies ('and . hyps) concl)
+        `(implies (and ,hyp . ,hyps) ,concl))
+       (& (cons (add-first-hyp hyp (car form))
+                (add-first-hyp hyp (cdr form))))))))
+        
+(local
+ (defun subst-subtree (new old form)
+   (cond ((equal form old) new)
+         ((atom form) form)
+         (t (cons (subst-subtree new old (car form))
+                  (subst-subtree new old (cdr form)))))))
+
+(local
+ (defun rename-defthm (name form)
+   (if (atom form)
+       form
+     (case-match form
+       (('defthm & . rest) `(defthm ,name . ,rest))
+       (& (cons (rename-defthm name (car form))
+                (rename-defthm name (cdr form))))))))
+
+(local
+ (defun conjoin-concl (concl form)
+   (if (atom form)
+       form
+     (case-match form
+       (('implies hyps ('b* bindings concl1))
+        `(implies ,hyps (b* ,bindings (and ,concl ,concl1))))
+       (& (cons (conjoin-concl concl (car form))
+                (conjoin-concl concl (cdr form))))))))
+
+(local
+ (defun def-stdlib-trace-thm-fn (thmname fn state)
+   (declare (xargs :mode :program :stobjs state))
+   (b* (((er thm) (my-get-thm thmname state))
+        (thm (remove-hints thm))
+        (thm (add-first-hyp `(and (trace-free-fnname-p ,fn)
+                                  (not (find-call-tracespec ,fn pos tracespec))
+                                  (trace-free-ty-timeframe-imap-p
+                                   (static_env_global->declared_types static-env)))
+                            thm))
+        (thm (subst 'eval_subprogram-*t 'eval_subprogram thm))
+        (thm (subst-subtree 'static-env '(GLOBAL-ENV->STATIC (ENV->GLOBAL ENV)) thm))
+        (thm (subst-subtree '(MV RES NEW-ORAC TRACE) '(MV RES NEW-ORAC) thm))
+        (thm (conjoin-concl '(equal trace nil) thm))
+        (thm (subst-subtree '(global-replace-static static-env (env->global env))
+                            '(env->global env)
+                            thm))
+        (thm (rename-defthm
+              (intern-in-package-of-symbol
+               (concatenate 'string (symbol-name thmname) "-*T")
+               thmname)
+              thm)))
+     (value thm))))
+
+(defmacro def-stdlib-trace-thm (thmname fn)
+  `(make-event (def-stdlib-trace-thm-fn ',thmname ',fn state)))
+
+
+
+(fty::deffixequiv subprograms-match
+  :omit (names)
+  :hints(("Goal" :in-theory (enable subprograms-match))))
+
+
+(local
+ (defun def-stdlib-trace-thms-aux (table)
+   (if (atom table)
+       nil
+     (b* (((list fn & & & thmname) (car table)))
+       (cons `(def-stdlib-trace-thm ,thmname ,fn)
+             (def-stdlib-trace-thms-aux (cdr table)))))))
+
+(defmacro def-stdlib-trace-thms (tablename)
+  `(make-event
+    (cons 'progn
+          (def-stdlib-trace-thms-aux
+            (table-alist ',tablename (w state))))))
+
+
+(local (in-theory (disable logext floor logapp mod loghead logbitp expt ceiling
+                           abs ash integer-length logtail logcount truncate min
+                           max logmask logbit evenp oddp)))
+
+(def-stdlib-trace-thms asl-subprogram-table)
+(def-stdlib-trace-thms asl-prim-subprogram-table)
+
