@@ -231,8 +231,8 @@ let applies_atom (a,_) d = match a,d with
 | Acq _,R
 | AcqPc _,R
 | Rel _,W
-| Pte (Read|ReadAcq|ReadAcqPc),R
-| Pte (Set _|SetRel _| SetOne _| SetZero _),W
+| Pte (Read|ReadAcq|ReadAcqPc|TTHM _),R
+| Pte (Set _|SetRel _| SetOne _| SetZero _|TTHM _),W
 | Instr, R
 | (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _),(R|W)
   -> true
@@ -582,7 +582,7 @@ let overwrite_value v ao w = match ao with
        and align up with the atom_pte_list *)
     let init loc pte_atom_list =
       let open WPTE in
-      let pte_val = default loc in
+      let default_pte = default loc in
       let pte_atom_list = List.filter_map
         ( fun (atom, _mach_size) -> match atom with
           | Pte(pte_atom) -> Some(pte_atom)
@@ -610,7 +610,7 @@ let overwrite_value v ao w = match ao with
             (* Flip the initial `af` *)
             | false,None -> (Some true,db,dbm,valid,{pteval with af = value})
             (* Value collide, invalid cycle/anotation specification *)
-            | false,Some _ -> Warn.user_error "Fail to set VA."
+            | false,Some _ -> Warn.user_error "Fail to set AF."
           end
           | DB -> begin match value = pteval.db,db with
             | true,_ -> (af,Some (Option.value ~default:false db),dbm,valid,pteval)
@@ -629,13 +629,29 @@ let overwrite_value v ao w = match ao with
           end
           | OA -> Warn.user_error "PTESetOneOA and PTESetZeroOA is not supported."
         ) field_set acc in
+      (* Direct set the initial value *)
+      let set_init_pte acc field_set =
+        WPTESet.fold ( fun field (af,db,dbm,valid,pteval) ->
+          let open AArch64PteVal in
+          match field with
+          | AF -> begin match af with
+            | None -> (Some (not (default_pte.af = 0)),db,dbm,valid,pteval)
+            | Some _ -> Warn.user_error "Fail to set AF."
+          end
+          | DB -> begin match db with
+            | None -> (af, Some (not (default_pte.db = 0)),dbm,valid,pteval)
+            | Some _ -> Warn.user_error "Fail to set DB."
+          end
+          (* TTHM for DBM, VALID, and OA should never happen *)
+          | DBM|VALID|OA -> assert false
+        ) field_set acc in
       (* The entire process decides if we want to flip the initial value of fields.
          Field `valid,af,db,dbm` in accumulator `acc` track if the default
          value is (not) needed to be flipped.
          - None, all good,
          - Some true, must flip
          - Some false must not flip
-         Conflict initial values cause warning.
+         Conflict initial values cause, i.e. Some true and Some false, warning.
          The final `pteval` should be throw away as of no meaning. *)
       let (af,db,dbm,valid,_) =
         List.fold_left ( fun acc atom_pte ->
@@ -643,13 +659,14 @@ let overwrite_value v ao w = match ao with
           let (af,db,dbm,valid,pteval) = match atom_pte with
           | SetOne(field_set) -> check_init_pte acc field_set 0
           | SetZero(field_set) -> check_init_pte acc field_set 1
+          | TTHM(field_set) -> set_init_pte acc field_set
           | _ -> acc in
           (* Toggle values for further process *)
           match atom_pte with
           | SetOne(field_set)|SetZero(field_set)|Set(field_set)|SetRel(field_set)
             -> (af,db,dbm,valid,toggle_pte_wrap field_set pteval)
           | _ -> (af,db,dbm,valid,pteval)
-        ) (None,None,None,None,pte_val) pte_atom_list in
+        ) (None,None,None,None,default_pte) pte_atom_list in
       (* Create a new WPTESet to adjust the inital value.
          Collapse None to false as it means no need to change default value *)
       let adjust_value =
@@ -658,7 +675,7 @@ let overwrite_value v ao w = match ao with
         |> (if Option.value ~default:false db then WPTESet.add DB else Fun.id)
         |> (if Option.value ~default:false dbm then WPTESet.add DBM else Fun.id)
         |> (if Option.value ~default:false valid then WPTESet.add VALID else Fun.id) in
-      toggle_pte adjust_value pte_val loc_fun
+      toggle_pte adjust_value default_pte loc_fun
 
     let as_virtual p = AArch64PteVal.as_virtual p
 
@@ -671,8 +688,10 @@ let overwrite_value v ao w = match ao with
           a valid inital value, hence here those two
           will behave the same as `Set`, i.e.e toggle the pte value *)
         | Set f|SetRel f|SetOne f|SetZero f -> toggle_pte f pte loc
-        | Read|ReadAcq|ReadAcqPc|TTHM _ ->
+        | Read|ReadAcq|ReadAcqPc ->
           Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
+        (* TODO Change *)
+        | TTHM _ -> pte
 
     let set_pteval a p =
       match a with
