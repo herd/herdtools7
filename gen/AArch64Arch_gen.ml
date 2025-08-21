@@ -188,6 +188,11 @@ module WPTE = struct
      | DBM -> "DBM"
      | VALID -> "VALID"
      | OA -> "OA"
+
+   let pp_tthm = function
+     | AF -> "HA"
+     | DB -> "HD"
+     | DBM|VALID|OA -> assert false
 end
 
 module WPTESet = MySet.Make(WPTE)
@@ -201,6 +206,8 @@ type atom_pte =
   | SetOne of WPTESet.t
   (* Precise value of 1 to 0 *)
   | SetZero of WPTESet.t
+  (* TTHM prelude *)
+  | TTHM of WPTESet.t
 
 type neon_opt = SIMD.atom
 
@@ -259,6 +266,7 @@ let is_ifetch a = match a with
      | SetRel set -> pp_w_pte set ^"L"
      | SetOne set -> "One" ^ pp_w_pte set
      | SetZero set -> "Zero" ^ pp_w_pte set
+     | TTHM set -> "TTHM" ^ WPTESet.pp_str "." WPTE.pp_tthm set
 
    let pp_pair_opt = function
      | Pa -> ""
@@ -328,6 +336,8 @@ let is_ifetch a = match a with
        let g fs r =
          r |> f (SetRel fs) |> f (Set fs) |> f (SetOne fs) |> f (SetZero fs) in
        r |> fold_wpte g |> f Read |> f ReadAcq |> f ReadAcqPc
+          |> f (TTHM (WPTESet.singleton WPTE.AF))
+          |> f (TTHM (WPTESet.singleton WPTE.DB))
      else r
 
    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
@@ -495,6 +505,7 @@ let is_ifetch a = match a with
 
    let atom_to_bank = function
    | Tag,None -> Code.Tag
+   | Pte (TTHM _),None -> Code.Ord
    | Pte _,None -> Code.Pte
    | CapaTag,None -> Code.CapaTag
    | CapaSeal,None -> Code.CapaSeal
@@ -669,8 +680,8 @@ let overwrite_value v ao w = match ao with
           a valid inital value, hence here those two
           will behave the same as `Set`, i.e.e toggle the pte value *)
         | Set f|SetRel f|SetOne f|SetZero f -> toggle_pte f pte loc
-        | Read|ReadAcq|ReadAcqPc ->
-                Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
+        | Read|ReadAcq|ReadAcqPc|TTHM _ ->
+          Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
 
     let set_pteval a p =
       match a with
