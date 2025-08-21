@@ -200,6 +200,12 @@ let get_fence n =
   | n::ns ->
       if O.verbose > 1 then eprintf "COMPILE PROC: <%s>\n" (C.str_node n);
       begin match  n.C.edge.E.edge with
+      | E.Id ->
+          if E.is_pseudo n.C.edge then
+            (* and skip a pseudo annotation `n` in compilation *)
+            compile_proc pref chk loc_writes st p ro_prev init ns
+          else
+            Warn.fatal "Reach a non-pseudo annotation %s.\n" (C.str_node n)
       | E.Node _ ->
           let fs,ns =  collect_inserts ns in
           compile_proc
@@ -980,19 +986,16 @@ let test_of_cycle name
   ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) es c =
   let com = match com with None -> pp_edges es | Some com -> com in
   let (init,prog,final,env),(prf,coms) = compile_cycle check init c in
-  let archinfo = Comp.get_archinfo c in
   let m_labs = num_labels prog in
   let init = tr_labs m_labs init in
-  let coms = String.concat " " coms in
-  let info =
-    let myinfo =
-      (if do_self then fun k -> k else do_add_info "Prefetch" prf)
-        (do_add_info "Com" coms (do_add_info "Orig" com [])) in
-    let myinfo = match scope with
-    | None -> myinfo
-    | Some st -> ("Scopes",BellInfo.pp_scopes st)::myinfo in
-    let myinfo = ("Generator",O.generator)::myinfo in
-    info@myinfo@archinfo in
+  let info = info @
+    ( Comp.get_archinfo c
+    |> do_add_info "Orig" com
+    |> do_add_info "Com" (String.concat " " coms)
+    |> do_add_info "Prefetch" (if do_self then "" else prf)
+    |> do_add_info "Scopes"
+      ( match scope with | None -> "" | Some st -> BellInfo.pp_scopes st )
+    |> do_add_info "Generator" O.generator ) in
 
   { name=name ; info=info; com=com ;  edges = es ;
     init=init ; prog=prog ; scopes = scope; final=final ; env=env; }
