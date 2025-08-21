@@ -521,13 +521,14 @@ module CoSt = struct
              co_cell : Code.v array;
              pte_value : PteVal.t;
              check_fault : bool;
-             check_value : bool; }
+             check_value : bool;
+             machine_feature: StringSet.t }
 
-  let create init_value sz pte_value check_value check_fault =
+  let create init_value sz pte_value check_value check_fault machine_feature =
     let map = List.fold_left ( fun acc bank -> M.add bank 0 acc ) M.empty
                   [Tag; CapaTag; CapaSeal; Ord; Instr; ]
     and co_cell = Array.make (if sz <= 0 then 1 else sz) (Code.value_of_int init_value) in
-    { map; init_value; co_cell; pte_value; check_fault; check_value }
+    { map; init_value; co_cell; pte_value; check_fault; check_value ; machine_feature }
 
   let find_no_fail key map =
     try M.find key map with Not_found -> assert false
@@ -1105,7 +1106,12 @@ let valid_cycle c =
               let check_value = exist_plain_value_write ns in
               let check_fault = exist_fault_related_write ns
                                 || PteVal.can_fault W pte_val in
-              let init_st = CoSt.create init_val sz pte_val check_value check_fault in
+              let machine_feature =
+                List.fold_left
+                  ( fun acc n ->
+                    StringSet.union acc (E.get_machine_feature n.edge)
+                  ) StringSet.empty ns in
+              let init_st = CoSt.create init_val sz pte_val check_value check_fault machine_feature in
               let next_x_ok,_st = do_set_write_val false init_st ns in
               (* Add pte initial values when kvm and the value is not default *)
               let pteenv = if (not do_kvm) || is_pte_default loc pte_val then
@@ -1263,7 +1269,12 @@ let do_set_read_v init =
     let check_value = exist_plain_value_write ns in
     let check_fault = exist_fault_related_write ns
                       || PteVal.can_fault R pte_val in
-    let init_st = CoSt.create init sz pte_val check_value check_fault in
+    let machine_feature =
+      List.fold_left
+        ( fun acc n ->
+          StringSet.union acc (E.get_machine_feature n.edge)
+        ) StringSet.empty ns in
+    let init_st = CoSt.create init sz pte_val check_value check_fault machine_feature in
     let final_st = do_rec init_st ns in
     (CoSt.get_cell final_st).(0),CoSt.get_pte_value final_st
 
