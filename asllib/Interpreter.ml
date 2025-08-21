@@ -224,7 +224,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | D_GlobalStorage { initial_value; name; _ } ->
         let* v, env2 =
           match IMap.find_opt name env0 with
-          | Some v -> return (v, IEnv.declare_global name v env)
+          | Some v -> return (v, env)
           | None -> (
               let init_expr =
                 match initial_value with
