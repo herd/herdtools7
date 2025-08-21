@@ -509,7 +509,11 @@ module CoSt = struct
   type t = { map : int M.t;
              co_cell : Code.v array;
              pte_value : PteVal.t;
-             check_fault : bool;
+             (* - Irr, checks both
+                - Dir R, only checks read
+                - Dir W, only checks write
+                - NoDir, no need to check *)
+             check_fault : Code.extr;
              check_value : bool; }
 
   let (<<) f g = fun x -> f (g x)
@@ -564,35 +568,38 @@ module CoSt = struct
 
 
  (* Record a new `pte_value`, and set `check_fault` *)
-  let set_pte_value st pte_value = { st with pte_value; check_fault = true }
+  let set_pte_value st check_fault pte_value = { st with pte_value; check_fault }
+
   let get_pte_value st = st.pte_value
 
   let get_check_value st = st.check_value
 
-  let set_check_fault st = {st with check_fault = true }
-
-  (* read the check_fault flag, and reset/clean it *)
-  let read_and_unset_check_fault st =
-    st.check_fault, {st with check_fault = false }
+  let set_check_fault st = {st with check_fault = Irr }
 
   (* Check if `pte_val` might fault *)
-  let label_pte_fault pte_val =
-    Some ( (Label.next_label "L"), (PteVal.can_fault pte_val) )
+  let label_pte_fault dir pte_val =
+    Some ( (Label.next_label "L"), (PteVal.can_fault dir pte_val) )
 
   (* Helper function returns a fresh label and a boolean for if it should fault,
      if a fault check is need. Otherwise return `None`. *)
-  let fault_update st =
-    let check_fault, st = read_and_unset_check_fault st in
+  let fault_update st dir =
+    let unset_check_fault st = {st with check_fault = NoDir } in
     let pte_val = get_pte_value st in
-    let fault = match () with
-    | _ when (not check_fault || do_no_fault) -> None
+    match () with
+    | _ when (st.check_fault = NoDir || do_no_fault) -> None,unset_check_fault st
       (* Need to check fault *)
-    | _ when do_kvm -> label_pte_fault pte_val
+    | _ when do_kvm ->
+      let fault,check_fault = match dir,st.check_fault with
+      | _,NoDir -> None,NoDir
+      | (R|W),Irr | W,Dir W | R,Dir R -> label_pte_fault dir pte_val,NoDir
+      | W,Dir R -> None,Dir R
+      | R,Dir W -> None,Dir W in
+      fault,{st with check_fault}
       (* In variants `memtag` and `morello`, the cycles are constructed such that
          no fault occurs *)
-    | _ when do_memtag || do_morello -> Some ((Label.next_label "L"), false)
-    |_ -> None in
-    fault, st
+    | _ when do_memtag || do_morello ->
+      Some ((Label.next_label "L"), false),unset_check_fault st
+    |_ -> None,unset_check_fault st
 
   let set_tcell st e = match e.bank with
     | Tag ->
@@ -858,10 +865,18 @@ let set_same_loc st n0 =
       |_ -> false ) ns
 
   let exist_fault_related_write ns =
-      List.exists
-      ( fun n -> match n.evt.bank,n.evt.dir with
-      |(Pte|Tag),Some W -> true
-      |_ -> false ) ns
+    List.fold_left ( fun acc n ->
+      let next = match n.evt.bank,n.evt.dir with
+        | Tag,Some W -> Irr
+        | Pte,Some W -> PteVal.need_check_fault n.evt.atom
+        | _ -> NoDir in
+      match acc,next with
+      | _,Irr | Irr, _
+      | Dir W,Dir R | Dir R,Dir W -> Irr
+      | NoDir,n | n,NoDir -> n
+      | Dir W,Dir W -> Dir W
+      | Dir R,Dir R -> Dir R
+    ) NoDir ns
 
   let tr_value e v = E.tr_value e.atom v
 
@@ -914,7 +929,7 @@ let set_same_loc st n0 =
           (* No need to add fault check in read modify write situation,
              as the label will be assigned in read *)
           let fault_update_without_rmw st =
-            if n.evt.rmw then None,st else CoSt.fault_update st in
+            if n.evt.rmw then None,st else CoSt.fault_update st W in
           match n.evt.loc with
           | Data _ ->
             let bank = n.evt.bank in
@@ -997,7 +1012,8 @@ let set_same_loc st n0 =
                       | Code.Code _ -> Warn.fatal "Code location has no pte value." in
                     E.set_pteval n.evt.atom pte_val next_loc
                   end else pte_val in
-              let st = CoSt.set_pte_value st pte_val in
+              let check_fault = PteVal.need_check_fault n.evt.atom in
+              let st = CoSt.set_pte_value st check_fault pte_val in
               n.evt <- { n.evt with pte = pte_val; check_value; } ;
               ((!next_x_pred || next_x_ok), st)
             end (* END of match bank *)
@@ -1144,12 +1160,16 @@ let do_set_read_v init =
           set_read_individual_v n cell check_value;
           let check_fault, st =
             if do_morello then None, st
-            else CoSt.fault_update st in
+            (* because `rmw` is treated as both read and write,
+               we should assign label to this read event.
+               Here we assume write is stronger than read. *)
+            else if n.evt.rmw then CoSt.fault_update st W
+            else CoSt.fault_update st R in
           n.evt <- { n.evt with check_fault };
           st
         | Pair ->
           set_read_pair_v n cell check_value;
-          let check_fault, st = CoSt.fault_update st in
+          let check_fault, st = CoSt.fault_update st R in
           n.evt <- { n.evt with check_fault };
           st
         | VecReg a ->
@@ -1157,7 +1177,7 @@ let do_set_read_v init =
           let v = E.SIMD.read a cell
                    |> E.SIMD.reduce
                    |> Code.value_of_int in
-          let check_fault, st = CoSt.fault_update st in
+          let check_fault, st = CoSt.fault_update st R in
           n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
           st
         | Tag ->
@@ -1196,7 +1216,8 @@ let do_set_read_v init =
             (* Record the pte value in `st` in
               memory access to a non-instruction pte value *)
             if Code.is_data n.evt.loc then
-                CoSt.set_pte_value st n.evt.pte
+              let check_fault = PteVal.need_check_fault n.evt.atom in
+              CoSt.set_pte_value st check_fault n.evt.pte
             else CoSt.set_co st bank n.evt.ins in
         st
       | None ->
