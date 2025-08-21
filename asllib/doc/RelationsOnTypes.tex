@@ -200,19 +200,19 @@ subtyping.
   \begin{itemize}
   \item $\vs$ has the \underlyingtype\ of an array with index $\vlengths$ and element type $\vtys$, that is $\TArray(\vlengths, \vtys)$;
   \item $\vt$ has the \underlyingtype\ of an array with index $\vlengtht$ and element type $\vtyt$, that is $\TArray(\vlengtht, \vtyt)$;
-  \item determining whether $\vtys$ and $\vtyt$ are equivalent in $\tenv$ is either $\True$
+  \item determining whether $\vtys$ and $\vtyt$ are \equivalenttypesterm{} in $\tenv$ is either $\True$
   or $\False$, which short-circuits the entire rule with $\vb=\False$;
   \item either the AST labels of $\vlengths$ and $\vlengtht$ are the same or the rule short-circuits with $\vb=\False$;
   \item $\vlengths$ is an array length expression with $\vlengthexprs$, that is \\ $\ArrayLengthExpr(\vlengthexprs)$;
   \item $\vlengtht$ is an array length expression with $\vlengthexprt$, that is \\ $\ArrayLengthExpr(\vlengthexprt)$;
-  \item determining whether expressions $\vlengthexprs$ and $\vlengthexprt$ are equivalent gives $\vb$.
+  \item determining whether $\vlengthexprs$ and $\vlengthexprt$ are \equivalentexprsterm{} gives $\vb$.
   \end{itemize}
 
   \item \AllApplyCase{t\_array\_enum}
   \begin{itemize}
   \item $\vs$ has the \underlyingtype\ of an array with index $\vlengths$ and element type $\vtys$, that is $\TArray(\vlengths, \vtys)$;
   \item $\vt$ has the \underlyingtype\ of an array with index $\vlengtht$ and element type $\vtyt$, that is $\TArray(\vlengtht, \vtyt)$;
-  \item determining whether $\vtys$ and $\vtyt$ are equivalent in $\tenv$ is either $\True$
+  \item determining whether $\vtys$ and $\vtyt$ are \equivalenttypesterm{} in $\tenv$ is either $\True$
   or $\False$, which short-circuits the entire rule with $\vb=\False$;
   \item either the AST labels of $\vlengths$ and $\vlengtht$ are the same or the rule short-circuits with $\vb=\False$;
   \item $\vlengths$ is an array with indices taken from the enumeration $\vnames$, that is $\ArrayLengthEnum(\vnames, \Ignore)$;
@@ -747,7 +747,7 @@ of different widths.
 \CodeSubsection{\LowestCommonAncestorBegin}{\LowestCommonAncestorEnd}{../types.ml}
 
 \FormallyParagraph
-Since we do not impose a canonical representation on types (e.g., \verb|integer {1, 2}| is equivalent to \verb|integer {1..2}|),
+Since we do not impose a canonical representation on types (e.g., \verb|integer {1, 2}| is \typeequivalent{} to \verb|integer {1..2}|),
 the lowest common ancestor is not unique.
 We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\ to the lowest common ancestor of $\vt$ and $\vs$.
 

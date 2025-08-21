@@ -165,7 +165,7 @@ The following rules correspond to unary operations and binary operations that ca
 
 \subsection{Expressions \label{sec:Expressions}}
 The following rules correspond to various types of expressions:
-literal expressions, variable expressions, typing assertions, binary operation expressions, unary operation expressions,
+literal expressions, variable expressions, type assertions, binary operation expressions, unary operation expressions,
 call expressions, slicing expressions, conditional expressions, array access expressions, single-field access expressions, multiple-field access expressions,
 record and exception construction expressions, tuple expressions, arbitrary-value expressions,
 and pattern matching expressions.
@@ -211,7 +211,7 @@ as indicated by respective comments.
 \begin{itemize}
   \item $\EVar(\vx)$ represents variables (\texttt{E\_Var}).
 
-  \item $\EATC(\ve, \vt)$ represents typing assertions. For example: \texttt{x as integer}.
+  \item $\EATC(\ve, \vt)$ represents type assertions. For example: \texttt{x as integer}.
   Here $\ve$ corresponds to \texttt{x} and $\vt$ corresponds to \texttt{integer}.
 
   \item $\ESlice(\ve, \vslices)$ represents slices of bitvectors (\texttt{E\_Slice 1}),

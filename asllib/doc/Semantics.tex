@@ -622,7 +622,7 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
 
 \subsection{Evaluation Order\label{sec:EvaluationOrder}}
 ASL specifies an evaluation order to ensure predictability of side-effects and exceptions.
-In particular, semantic rules use short-circuiting rule macros to
+In particular, semantic rules use \shortcircuitrulemacros{} to
 impose an ordering on premises and their associated side-effects, errors, and exceptions.
 Further, the threading through of environments similarly impose an ordering.
 
