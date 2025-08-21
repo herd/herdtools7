@@ -156,6 +156,8 @@ module Make
 
       include NoWide
 
+      let get_machine_feature _ = StringSet.empty
+
       (**********)
       (* Fences *)
       (**********)

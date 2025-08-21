@@ -58,6 +58,8 @@ let varatom_dir _d f = f None
 
 let atom_to_bank _ = Code.Ord
 
+let get_machine_feature _ = StringSet.empty
+
 include NoMixed
 include NoWide
 

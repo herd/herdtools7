@@ -501,13 +501,14 @@ module CoSt = struct
                 - Dir W, only checks write
                 - NoDir, no need to check *)
              check_fault : Code.extr;
-             check_value : bool; }
+             check_value : bool;
+             machine_feature: StringSet.t }
 
-  let create init_value sz pte_value check_value check_fault =
+  let create init_value sz pte_value check_value check_fault machine_feature =
     let map = List.fold_left ( fun acc bank -> M.add bank init_value acc ) M.empty
                   [Tag; CapaTag; CapaSeal; Ord; ]
     and co_cell = Array.make (if sz <= 0 then 1 else sz) (Value.from_int init_value) in
-    { map; co_cell; pte_value; check_fault; check_value }
+    { map; co_cell; pte_value; check_fault; check_value ; machine_feature }
 
   let find_no_fail key map =
     try M.find key map with Not_found -> assert false
@@ -1059,7 +1060,12 @@ let set_same_loc st n0 =
                  the variable and pte respectively. *)
               let check_value = exist_plain_value_write ns in
               let check_fault = exist_fault_related_write ns in
-              let init_st = CoSt.create init_val sz pte_val check_value check_fault in
+              let machine_feature =
+                List.fold_left
+                  ( fun acc n ->
+                    StringSet.union acc (E.get_machine_feature n.edge)
+                  ) StringSet.empty ns in
+              let init_st = CoSt.create init_val sz pte_val check_value check_fault machine_feature in
               let next_x_ok,_st = do_set_write_val false init_st ns in
               let env = if init_val = 0 then env
                         else (Code.as_data loc,Value.from_int init_val)::env in
@@ -1232,7 +1238,12 @@ let do_set_read_v init =
     let pte_val = pte_val_init ns n.evt.loc in
     let check_value = exist_plain_value_write ns in
     let check_fault = exist_fault_related_write ns in
-    let init_st = CoSt.create init sz pte_val check_value check_fault in
+    let machine_feature =
+      List.fold_left
+        ( fun acc n ->
+          StringSet.union acc (E.get_machine_feature n.edge)
+        ) StringSet.empty ns in
+    let init_st = CoSt.create init sz pte_val check_value check_fault machine_feature in
     let final_st = do_rec init_st ns in
     (CoSt.get_cell final_st).(0),CoSt.get_pte_value final_st
 
