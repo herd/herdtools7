@@ -23,8 +23,12 @@ module type PteType = sig
   val init_pte : string -> atom list -> pte
   val pte_compare : pte -> pte -> int
   val set_pteval : atom -> pte -> (unit -> string) -> pte
-  val can_fault : pte -> bool
+  val can_fault : Code.dir -> pte -> bool
   val refers_virtual : pte -> string option
+  (* check if the `pte_atom` trigger fault check for further access,
+     Dir W and Dir R for write and read, respectively.
+     and Irr for both, NoDir for none *)
+  val need_check_fault : atom option -> Code.extr
 end
 
 module type S = sig
@@ -86,8 +90,9 @@ module NoPte(A:sig type arch_atom end) = struct
     let init_pte s _atom_list = default_pte s
     let pte_compare _ _ = 0
     let set_pteval _ p _ = p
-    let can_fault _t = false
+    let can_fault _dir _t = false
     let refers_virtual _ = None
+    let need_check_fault _ = Code.NoDir
   end)
 
   let from_pte _ = Warn.user_error "Cannot convert from pte"
