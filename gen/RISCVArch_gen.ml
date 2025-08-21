@@ -156,6 +156,7 @@ module Make
    | Some (Mixed (sz,o)) ->
        ValsMixed.extract_value v sz o
 
+   let get_machine_feature _ = StringSet.empty
 (* End of atoms *)
 
    type fence = barrier
