@@ -594,6 +594,11 @@ module CoSt = struct
       else None in
     fault, st
 
+  let implicit_pte_update dir st =
+    match PteVal.implicit_set_pteval dir st.machine_feature st.pte_value with
+    | Some (pte_value) -> set_pte_value st pte_value
+    | None -> st
+
   let set_tcell st e = match e.bank with
     | Tag ->
        {e with tcell=[| e.v; |];},st
@@ -865,7 +870,7 @@ let set_same_loc st n0 =
   let tr_value e v = E.tr_value e.atom v
 
   let set_write_val_ord st n =
-    let st = CoSt.next_co st Ord in
+    let st =  CoSt.next_co st Ord |> CoSt.implicit_pte_update W in
     let v = CoSt.get_co st Ord in
     n.evt <- { n.evt with v = tr_value n.evt v; } ;
     (* Writing Ord resets morello tag *)
@@ -1125,16 +1130,19 @@ let do_set_read_v init =
         let check_value = Some (CoSt.get_check_value st) in
         begin match bank with
         | Ord | Instr->
+          let st = CoSt.implicit_pte_update R st in
           set_read_individual_v n cell check_value;
           let check_fault, st = CoSt.fault_update R st in
           n.evt <- { n.evt with check_fault };
           st
         | Pair ->
+          let st = CoSt.implicit_pte_update R st in
           set_read_pair_v n cell check_value;
           let check_fault, st = CoSt.fault_update R st in
           n.evt <- { n.evt with check_fault };
           st
         | VecReg a ->
+          let st = CoSt.implicit_pte_update R st in
           let cell = Array.map Code.value_to_int cell in
           let v = E.SIMD.read a cell
                    |> E.SIMD.reduce

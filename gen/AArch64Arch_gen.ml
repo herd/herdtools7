@@ -702,6 +702,17 @@ let overwrite_value v ao w = match ao with
       let open AArch64PteVal in
       pte_val.valid = 0 || pte_val.af = 0 || (dir = Code.W && pte_val.db = 0)
 
+    let implicit_set_pteval dir machine_feature p =
+      let open WPTE in
+      let open AArch64PteVal in
+      if StringSet.mem (pp_atom_pte (TTHM(WPTESet.singleton AF))) machine_feature
+        && p.af = 0 then
+          Some ({p with af = 1})
+      else if StringSet.mem (pp_atom_pte (TTHM(WPTESet.singleton DB))) machine_feature
+        && dir = Code.W && p.db = 0  && p.dbm = 1 then
+          Some ({p with db = 1})
+      else None
+
   end
 
 (* Wide accesses *)
@@ -724,7 +735,8 @@ let overwrite_value v ao w = match ao with
   let get_machine_feature = function
     | Some(Pte(TTHM field), _) ->
       WPTESet.to_list field
-      |> List.map (fun f -> "TTHM" ^ WPTE.pp_tthm f)
+      (* print the TTHM features individually *)
+      |> List.map (fun f -> pp_atom_pte (TTHM(WPTESet.singleton f)))
       |> StringSet.of_list
     | _ -> StringSet.empty
 
