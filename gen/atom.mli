@@ -59,4 +59,5 @@ module type S = sig
   val as_integers : atom option -> int option
 (* Typing of pair accesses is different, so check them *)
   val is_pair : atom option -> bool
+  val get_machine_feature : atom option -> StringSet.t
 end
