@@ -24,7 +24,11 @@ module type S = sig
   val compare : t -> t -> int
   val as_virtual: t -> string option
   val set_pteval : pte_atom -> t -> (unit -> string) -> t
-  val can_fault : t -> bool
+  val can_fault : Code.dir -> t -> bool
+  (* check if the `pte_atom` trigger fault check for further access,
+     Dir W and Dir R for write and read, respectively.
+     and Irr for both, NoDir for none *)
+  val need_check_fault : pte_atom option -> Code.extr
 end
 
 module No(A:sig type arch_atom end) = struct
@@ -36,7 +40,8 @@ module No(A:sig type arch_atom end) = struct
   let compare _ _ = 0
   let as_virtual _ = None
   let set_pteval _ p _ = p
-  let can_fault _t = false
+  let can_fault _ _t = false
+  let need_check_fault _ = Code.NoDir
 end
 
 
