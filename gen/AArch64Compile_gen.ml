@@ -2651,7 +2651,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (Pte (SetRel _),None) ->
               let init,cs,st = emit_set_pteval_reg true st p init r2 (Misc.add_pte loc) in
               None,init,cs2@cs,st
-          | Some ((Pte _,Some _)|(Pte (Read|ReadAcq|ReadAcqPc),_))
+          | Some ((Pte _,Some _)|(Pte (Read|ReadAcq|ReadAcqPc|TTHM _),_))
             -> assert false
           | Some (Plain _,None) -> assert false
           | Some (Tag,Some _) -> assert false
