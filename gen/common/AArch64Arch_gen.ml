@@ -211,6 +211,17 @@ type atom_pte =
   (* TTHM prelude *)
   | TTHM of WPTESet.t
 
+let pp_w_pte ws = WPTESet.pp_str "." WPTE.pp ws
+
+let pp_atom_pte = function
+  | Read -> ""
+  | ReadAcq -> "A"
+  | ReadAcqPc -> "Q"
+  | Set set -> pp_w_pte set
+  | SetRel set -> pp_w_pte set ^"L"
+  | TTHM set -> "TTHM" ^ WPTESet.pp_str "." WPTE.pp_tthm set
+
+
 type neon_opt = SIMD.atom
 
 type pair_idx = UnspecLoc
@@ -388,6 +399,17 @@ module Value = struct
         else NoDir
       | _ -> NoDir
 
+    let implicitly_set_pteval dir machine_feature p =
+      let open WPTE in
+      let open AArch64PteVal in
+      if StringSet.mem (pp_atom_pte (TTHM(WPTESet.singleton (Base AF)))) machine_feature
+        && p.af = 0 then
+          Some (Irr,{p with af = 1})
+      else if StringSet.mem (pp_atom_pte (TTHM(WPTESet.singleton (Base DB)))) machine_feature
+        && dir = Code.W && p.db = 0  && p.dbm = 1 then
+          Some (Dir W,{p with db = 1})
+      else None
+
     let refers_virtual p = OutputAddress.refers_virtual p.AArch64PteVal.oa
   end)
 
@@ -440,16 +462,6 @@ let is_tthm = function | TTHM _ -> true | _ -> false
    let pp_opt = function
      | None -> ""
      | Some Capability -> "c"
-
-   let pp_w_pte ws = WPTESet.pp_str "." WPTE.pp ws
-
-   let pp_atom_pte = function
-     | Read -> ""
-     | ReadAcq -> "A"
-     | ReadAcqPc -> "Q"
-     | Set set -> pp_w_pte set
-     | SetRel set -> pp_w_pte set ^"L"
-     | TTHM set -> "TTHM" ^ WPTESet.pp_str "." WPTE.pp_tthm set
 
    let pp_pair_opt = function
      | Pa -> ""
