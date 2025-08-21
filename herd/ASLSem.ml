@@ -145,6 +145,7 @@ module Make (Conf : Config) = struct
   let isync = None
   let atomic_pair_allowed _ _ = true
   let aneutral = AArch64Annot.N
+  let aatomic = AArch64Annot.X
   and aexp = AArch64Explicit.Exp
   and aifetch = AArch64Explicit.(NExp IFetch)
   and areg = Access.REG
@@ -642,26 +643,59 @@ module Make (Conf : Config) = struct
         (use_ii_with_poi ii poi)
       >>! []
 
-    let write_pte (iinst,_ as ii) addr_m val_m write_m =
-      let* is_write = write_m in
-      let is_write =
-        let (>>=) = Option.bind in
-        V.as_scalar is_write >>= ASLScalar.as_bool |> Misc.as_some in
-      let open AArch64Explicit in
+
+    (**************)
+    (* PTE update *)
+    (**************)
+
+(*
+ * To implement PTE update, we rely on special primitives,
+ * because those accesses have special explicit annotations.
+ * Those special annotations serve to build the AF and DB
+ * sets that appear in the aarch64.cat model source text.
+ *)
+
+    let as_bool b_m =
+      let* b =  b_m in
+      let (>>=) = Option.bind in
+      V.as_scalar b >>= ASLScalar.as_bool |>
+      fun b -> M.unitT (Misc.as_some b)
+
+    let pte_nexp_nat proc is_write =
       let open DirtyBit in
+      let open AArch64Explicit in
       let d =
         match Conf.dirty with
         | None -> soft
         | Some d -> d in
-      let nexp_nat =
-        if is_write then
-          if d.hd iinst.A.proc then AFDB
-          else if d.ha iinst.A.proc then AF
-          else Other
-        else if d.ha iinst.A.proc then AF
-        else Other in
-      do_write_memory ii addr_m (M.unitT (V.intToV 64)) val_m
-        aneutral (NExp nexp_nat) apte
+      NExp
+        (if is_write then
+           if d.hd proc then AFDB
+           else if d.ha proc then AF
+           else Other
+         else if d.ha proc then AF
+         else Other)
+
+    (* Always quad size, whatever parameter _N is *)
+    let size_m_64 =  M.unitT (V.intToV 64)
+
+    (* Second pte read, used for flag update *)
+    let read_pte_again (iinst,_ as ii) _N addr_m write_m =
+      let* is_write =  as_bool write_m in
+      let nexp_nat = pte_nexp_nat iinst.A.proc is_write in
+      do_read_memory  ii addr_m size_m_64
+        aatomic nexp_nat apte
+
+    (* Pte write for flag update *)
+    let write_pte (iinst,_ as ii) _N addr_m val_m write_m =
+      let* is_write =  as_bool write_m in
+      let nexp_nat = pte_nexp_nat iinst.A.proc is_write in
+      do_write_memory ii addr_m size_m_64 val_m
+        aatomic nexp_nat apte
+
+    (*********************)
+    (* End of PTE update *)
+    (*********************)
 
     let write_memory ii datasize_m addr_m value_m =
       do_write_memory ii addr_m datasize_m value_m aneutral aexp avir
@@ -813,9 +847,19 @@ module Make (Conf : Config) = struct
       in
       build_primitive ~args:[ arg1; arg2 ] ~side_effecting ?parameters name f
 
+    (** Build a primitive with arity 2 and a return value. *)
+    let p1a2r name param1 arg1 arg2 ~returns ?(side_effecting = false) f =
+      let f ii_env params args =
+        match params,args with
+        | [p1;],[ v1; v2;] -> return [ f ii_env p1 v1 v2 ]
+        | _ -> Warn.fatal "Arity error for function %s." name
+      in
+      build_primitive ?returns:(Some returns) ~args:[ arg1; arg2; ] ~parameters:[param1;]
+        ~side_effecting
+        name f
 
     (** Build a primitive with arity 3 and no return value. *)
-    let p3 name arg1 arg2 arg3 ?(side_effecting = false) ?parameters f =
+    let _p3 name arg1 arg2 arg3 ?(side_effecting = false) ?parameters f =
       let f ii_env _ = function
         | [ v1; v2; v3; ] -> f ii_env v1 v2 v3
         | _ -> Warn.fatal "Arity error for function %s." name
@@ -861,6 +905,17 @@ module Make (Conf : Config) = struct
       in
       build_primitive ?returns:(Some returns)
         ~args:[ arg1; arg2; arg3; ] ~parameters:[param1;]
+        ~side_effecting name f
+
+    let p1a3 name param1 arg1 arg2 arg3
+        ?(side_effecting = false) f =
+      let f ii_env params args =
+        match params,args with
+        | [p1;],[v1; v2; v3; ] -> f ii_env p1 v1 v2 v3
+        | _ -> Warn.fatal "Arity error for function %s." name in
+      build_primitive
+        ~args:[ arg1; arg2; arg3;]
+        ~parameters:[param1;]
         ~side_effecting name f
 
     let p1a4 name param1 arg1 arg2 arg3 arg4
@@ -949,8 +1004,14 @@ module Make (Conf : Config) = struct
           data_abort_fault;
         p0r "GetHaPrimitive" ~returns:(bv_lit 1) get_ha;
         p0r "GetHdPrimitive" ~returns:(bv_lit 1) get_hd;
-        p3 "WritePtePrimitive"
-          ("addr", bv_64)  ("data",bv_64) ("is_write",boolean) write_pte;
+        p1a2r ~side_effecting "ReadPteAgainPrimitive"
+          ("N",None) ("addr", bv_var "N")  ("is_write",boolean)
+          ~returns:(bv_var "N")
+          read_pte_again;
+        p1a3 "WritePtePrimitive"
+          ("N",None)
+          ("addr", bv_64)  ("data",bv_var "N")
+          ("is_write",boolean) write_pte;
 (* Translations *)
          p1r "UInt"
           ~parameters:[ ("N", None) ]
