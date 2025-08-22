@@ -38,7 +38,7 @@ module type S = sig
 
   type global = {
     static : StaticEnv.global;
-    storage : v Storage.t;
+    storage : v IMap.t;
     stack_size : Z.t IMap.t;
   }
 
@@ -46,8 +46,8 @@ module type S = sig
   type env = { global : global; local : local }
 
   val to_static : env -> StaticEnv.env
-  val local_empty_scoped : ?storage:v Storage.t -> Scope.t -> local
-  val global_from_static : ?storage:v Storage.t -> StaticEnv.global -> global
+  val local_empty_scoped : ?storage:v IMap.t -> Scope.t -> local
+  val global_from_static : ?storage:v IMap.t -> StaticEnv.global -> global
 
   type 'a env_result = Local of 'a | Global of 'a | NotFound
 
@@ -79,14 +79,14 @@ module RunTime (C : RunTimeConf) = struct
 
   type global = {
     static : StaticEnv.global;
-    storage : C.v Storage.t;
+    storage : C.v IMap.t;
     stack_size : Z.t IMap.t;
   }
 
   type int_stack = int list
 
   type local = {
-    storage : C.v Storage.t;
+    storage : C.v IMap.t;
     scope : Scope.t;
     unroll : int_stack;
     declared : identifier list;
@@ -94,10 +94,10 @@ module RunTime (C : RunTimeConf) = struct
 
   type env = { global : global; local : local }
 
-  let local_empty_scoped ?(storage = Storage.empty) scope =
+  let local_empty_scoped ?(storage = IMap.empty) scope =
     { scope; storage; unroll = []; declared = [] }
 
-  let global_from_static ?(storage = Storage.empty) static =
+  let global_from_static ?(storage = IMap.empty) static =
     { static; storage; stack_size = IMap.empty }
 
   let get_scope env = env.local.scope
@@ -141,16 +141,13 @@ module RunTime (C : RunTimeConf) = struct
 
   (* Begin SemanticsRule.EnvFind *)
   let find x env =
-    try Local (Storage.find x env.local.storage)
+    try Local (IMap.find x env.local.storage)
     with Not_found -> (
-      try Global (Storage.find x env.global.storage)
-      with Not_found -> NotFound)
+      try Global (IMap.find x env.global.storage) with Not_found -> NotFound)
   (* End *)
 
-  let find_global x env = Storage.find x env.global.storage
-
-  let mem x env =
-    Storage.mem x env.local.storage || Storage.mem x env.global.storage
+  let find_global x env = IMap.find x env.global.storage
+  let mem x env = IMap.mem x env.local.storage || IMap.mem x env.global.storage
 
   (* --------------------------------------------------------------------------*)
   (* Assignments utils *)
@@ -161,28 +158,39 @@ module RunTime (C : RunTimeConf) = struct
       local =
         {
           env.local with
-          storage = Storage.add x v env.local.storage;
+          storage = IMap.add x v env.local.storage;
           declared = x :: env.local.declared;
         };
     }
 
+  let _assign x v =
+    IMap.update x (function None -> raise Not_found | Some _ -> Some v)
+
+  let _declare x v =
+    IMap.update x (function
+      | None -> Some v
+      | Some _ ->
+          let () =
+            Printf.eprintf "Storage element %s already declared in env.\n%!" x
+          in
+          assert false)
+
   let assign_local x v env =
     {
       env with
-      local = { env.local with storage = Storage.assign x v env.local.storage };
+      local = { env.local with storage = _assign x v env.local.storage };
     }
 
   let declare_global x v env =
     {
       env with
-      global = { env.global with storage = Storage.add x v env.global.storage };
+      global = { env.global with storage = _declare x v env.global.storage };
     }
 
   let assign_global x v env =
     {
       env with
-      global =
-        { env.global with storage = Storage.assign x v env.global.storage };
+      global = { env.global with storage = _assign x v env.global.storage };
     }
 
   let remove_local x env =
@@ -191,7 +199,7 @@ module RunTime (C : RunTimeConf) = struct
       local =
         {
           env.local with
-          storage = Storage.remove x env.local.storage;
+          storage = IMap.remove x env.local.storage;
           declared =
             List.filter (fun s -> not (String.equal s x)) env.local.declared;
         };
@@ -207,9 +215,16 @@ module RunTime (C : RunTimeConf) = struct
 
   let push_scope env = { env with local = { env.local with declared = [] } }
 
+  (** [patch_mem ~t_env ~t_mem to_avoid] is the storage formed with the bindings
+    of [t_env], the memory of [t_mem] except for the cells bound to the
+    variables in [to_avoid]. *)
+  let patch_mem ~t_env ~t_mem to_avoid =
+    List.fold_left (fun t x -> IMap.remove x t) t_env to_avoid
+    |> IMap.mapi (fun x _ -> IMap.find x t_mem)
+
   let pop_scope parent child =
     let local_storage =
-      Storage.patch_mem ~t_env:parent.local.storage ~t_mem:child.local.storage
+      patch_mem ~t_env:parent.local.storage ~t_mem:child.local.storage
         child.local.declared
     in
     { child with local = { parent.local with storage = local_storage } }

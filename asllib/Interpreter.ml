@@ -66,6 +66,7 @@ module type Config = sig
 
   val unroll : int
   val error_handling_time : Error.error_handling_time
+  val empty_branching_effects_optimization : bool
 end
 
 module Make (B : Backend.S) (C : Config) = struct
@@ -152,11 +153,14 @@ module Make (B : Backend.S) (C : Config) = struct
 
   let choice_with_branch_effect_msg m_cond msg v1 v2 kont =
     choice m_cond v1 v2 >>= fun v ->
-    B.commit (Some msg) >>*= fun () -> kont v
+    B.commit msg >>*= fun () -> kont v
 
   let choice_with_branch_effect m_cond e_cond v1 v2 kont =
-    let pp_cond = Format.asprintf "%a@?" PP.pp_expr e_cond in
-    choice_with_branch_effect_msg m_cond pp_cond v1 v2 kont
+    let msg =
+      if C.empty_branching_effects_optimization then None
+      else Some (Format.asprintf "%a@?" PP.pp_expr e_cond)
+    in
+    choice_with_branch_effect_msg m_cond msg v1 v2 kont
 
   (* Exceptions *)
   let bind_exception binder m f =
@@ -220,7 +224,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | D_GlobalStorage { initial_value; name; _ } ->
         let* v, env2 =
           match IMap.find_opt name env0 with
-          | Some v -> return (v, IEnv.declare_global name v env)
+          | Some v -> return (v, env)
           | None -> (
               let init_expr =
                 match initial_value with
@@ -1132,11 +1136,13 @@ module Make (B : Backend.S) (C : Config) = struct
         let*| env1 = declare_local_identifier env index_name start_v in
         let env2 = if undet then IEnv.tick_push_bis env1 else env1 in
         let loop_msg =
-          if undet then Printf.sprintf "for %s" index_name
+          if C.empty_branching_effects_optimization then None
+          else if undet then Some (Printf.sprintf "for %s" index_name)
           else
             Printf.sprintf "for %s = %s %s %s" index_name
               (B.debug_value start_v) (PP.pp_for_direction dir)
               (B.debug_value end_v)
+            |> Option.some
         in
         let*> env3 =
           eval_for loop_msg undet env2 index_name limit_opt start_v dir end_v

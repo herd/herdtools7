@@ -55,6 +55,9 @@ module type Config = sig
 
   val error_handling_time : Error.error_handling_time
   (** When are error filed. *)
+
+  val empty_branching_effects_optimization : bool
+  (** Whether to produce meaningful branching effects. *)
 end
 
 module Make (B : Backend.S) (C : Config) : S with module B = B
