@@ -322,6 +322,7 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
     | _ :: _ ->
         (* If more than one candidate exists, the candidate signature should clash,
            which is detected when typechecking the corresponding declarations. *)
+        Printf.eprintf "Ambiguous function: %s\n%!" name;
         assert false
   (* End *)
 
@@ -648,7 +649,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | `BAND | `BOR | `IMPL -> true
     | `AND | `BEQ | `DIV | `DIVRM | `XOR | `EQ | `GT | `GE | `LT | `LE | `MOD
     | `SUB | `MUL | `NE | `OR | `ADD | `POW | `RDIV | `SHL | `SHR | `BV_CONCAT
-    | `STR_CONCAT ->
+    | `STR_CONCAT | `BIC ->
         false
 
   (* Begin TypeOfArrayLength *)

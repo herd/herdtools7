@@ -53,8 +53,14 @@ module type Config = sig
   val unroll : int
   (** Loop unrolling threshold *)
 
+  val recursive_unroll : int
+  (** Recursive function unrolling threshold *)
+
   val error_handling_time : Error.error_handling_time
   (** When are error filed. *)
+
+  val log_nondet_choice : bool
+  (** Log to stderr non-deterministic choices. *)
 end
 
 module Make (B : Backend.S) (C : Config) : S with module B = B

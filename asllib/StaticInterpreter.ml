@@ -29,8 +29,10 @@ let ( |: ) = Instrumentation.TypingNoInstr.use_with
 module InterpConf = struct
   module Instr = Instrumentation.SemanticsNoInstr
 
-  let unroll = 0
+  let unroll = 1 lsl 12
+  let recursive_unroll = 1 lsl 12
   let error_handling_time = Error.Static
+  let log_nondet_choice = false (* Not relevant here *)
 end
 
 module SB = Native.StaticBackend

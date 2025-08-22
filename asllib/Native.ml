@@ -83,6 +83,7 @@ module NativeBackend (C : Config) = struct
   let prod_par (r1 : 'a m) (r2 : 'b m) : ('a * 'b) m = (r1, r2)
   let return v = v
   let cutoffT _msg _v = assert false
+  let prune_execution () = assert false
   let bind_data = bind
   let bind_seq = bind
   let bind_ctrl = bind
@@ -97,7 +98,9 @@ module NativeBackend (C : Config) = struct
       | NV_Literal (L_Bool false) -> m_false
       | v -> mismatch_type v [ T_Bool ])
 
+  let choice_debug _pp c m1 m2 = choice c m1 m2
   let delay m k = k m m
+  let failT e _ = raise e
 
   let binop op v1 v2 =
     match (v1, v2) with
@@ -519,8 +522,10 @@ let instrumentation_buffer = function
 let interpret ?instrumentation static_env ast =
   let module B = (val instrumentation_buffer instrumentation) in
   let module CI : Interpreter.Config = struct
-    let unroll = 0
+    let unroll = -1
+    let recursive_unroll = -1
     let error_handling_time = Error.Dynamic
+    let log_nondet_choice = false
 
     module Instr = Instrumentation.SemMake (B)
   end in

@@ -376,4 +376,7 @@ module type S =
 
     (* Force executed only once. *)
     val force_once : 'a t -> 'a t
+
+    (* Squash this execution. Use with caution. *)
+    val prune_execution : unit -> 'a t
   end
