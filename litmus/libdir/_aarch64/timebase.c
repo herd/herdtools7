@@ -14,8 +14,14 @@
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
 
+#ifdef VIRTUALCOUNTER
+#define CNTPCT  "cntpct"
+#else
+#define CNTPCT  "cntvct"
+#endif
+
 inline static tb_t read_timebase(void) {
   tb_t val;
-  asm volatile("mrs %0, cntpct_el0" : "=r" (val));
+  asm volatile("mrs %0, " CNTPCT "_el0" : "=r" (val));
   return val;
 }

@@ -27,12 +27,13 @@ type t =
   | Pac (* Pointer authentication instructions *)
   | FPac (* Fault on pointer authentication *)
   | ConstPacField (* Bit 55 is used to compute the VA-range in ComputePAC *)
+  | VirtualCounter (* Use the virtual counter for timebase, in place of the physical counter *)
 
 let compare = compare
 
 let tags =
   "noinit"::"s128"::"self"::"mixed"::"vmsa"::"telechat"::"pac"
-  ::"const-pac-field"::"fpac"::Fault.Handling.tags
+  ::"const-pac-field"::"fpac"::"VirtualCounter"::Fault.Handling.tags
 
 let parse s = match Misc.lowercase s with
 | "noinit" -> Some NoInit
@@ -46,6 +47,7 @@ let parse s = match Misc.lowercase s with
 | "pac" -> Some Pac
 | "fpac" -> Some FPac
 | "const-pac-field" -> Some ConstPacField
+| "virtual"|"virtualcounter" -> Some VirtualCounter
 | tag ->
   match
    Misc.app_opt (fun p -> FaultHandling p) (Fault.Handling.parse tag)
@@ -78,6 +80,7 @@ let pp = function
   | Pac -> "pac"
   | FPac -> "fpac"
   | ConstPacField -> "const-pac-field"
+  | VirtualCounter -> "VirtualCounter"
 
 let ok v a = match v,a with
 | Self,`AArch64 -> true

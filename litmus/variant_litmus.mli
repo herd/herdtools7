@@ -27,6 +27,7 @@ type t =
   | Pac (* Pointer authentication instructions *)
   | FPac (* Fault on pointer authentication *)
   | ConstPacField (* Bit 55 is used to compute the VA-range in ComputePAC *)
+  | VirtualCounter (* Use the virtual counter for timebase, in place of the physical counter *)
 
 val tags : string list
 val parse : string -> t option
