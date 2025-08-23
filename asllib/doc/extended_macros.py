@@ -28,6 +28,7 @@ def get_latex_sources(exclude) -> list[str]:
         excluded_files = [
             "ASLReference.tex",
             "ASLmacros.tex",
+            "variable_name_macros.tex",
             "ASLRefALP2.1ChangeLog.tex",
             "ASLRefALP2ChangeLog.tex",
         ]
