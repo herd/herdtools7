@@ -17,12 +17,12 @@ Therefore, ASL specifies an evaluation order to ensure that the side-effects/exc
   \item \FormalRelationsRef{Expressions} defines the formal relations for expressions;
   \item \secref{LiteralExpressions} defines \literalexpressionsterm;
   \item \secref{VariablExpressions} defines \variableexpressionsterm;
-  \item \secref{BinaryExpressions} defines binary expressions;
-  \item \secref{UnaryExpressions} defines unary expressions;
-  \item \secref{ConditionalExpressions} defines conditional expressions;
-  \item \secref{CallExpressions} defines call expressions;
-  \item \secref{SlicingExpressions} defines slicing expressions;
-  \item \secref{ArrayAccessExpressions} defines array access expressions;
+  \item \secref{BinaryExpressions} defines \binopexpressionsterm;
+  \item \secref{UnaryExpressions} defines \unopexpressionsterm;
+  \item \secref{ConditionalExpressions} defines \condexpressionsterm;
+  \item \secref{CallExpressions} defines \callexpressionsterm;
+  \item \secref{SlicingExpressions} defines \slicingexpressionsterm;
+  \item \secref{ArrayAccessExpressions} defines \arrayaccessexpressionsterm;
   \item \secref{FieldReadingExpressions} defines field reading expressions;
   \item \secref{MultiFieldReadingExpressions} defines multi-field reading expressions;
   \item \secref{AssertingTypeConversionExpressions} defines asserting type conversion expressions;
@@ -337,6 +337,7 @@ and
 \TypingRuleRef{DeclareGlobalStorage} and \TypingRuleRef{DeclareOneFunc},
 both in the Chapter ``Typing of Global Declarations''.
 
+\hypertarget{def-binopexpressionterm}{}
 \section{Binary Expressions\label{sec:BinaryExpressions}}
 Binary expressions apply a binary operator to two sub-expressions.
 
@@ -726,7 +727,6 @@ However, note that relying on this short-circuit evaluation can be confusing
 for readers of ASL specifications and as a consequence it is recommended that
 an if-statement is used to achieve the same effect.
 
-\hypertarget{def-binopexpressionterm}{}
 \SemanticsRuleDef{Binop}
 \ExampleDef{Evaluation of Binary Expressions}
 In \listingref{semantics-binopassert},
@@ -1163,8 +1163,8 @@ and the values they evaluate to, as assertions on the values assigned.
 \end{mathpar}
 \CodeSubsection{\EvalECallBegin}{\EvalECallEnd}{../Interpreter.ml}
 
+\hypertarget{def-slicingexpressionsterm}{}
 \section{Slicing Expressions\label{sec:SlicingExpressions}}
-\hypertarget{def-sliceexpressionterm}{}
 This section details the high-level form of the syntax and abstract syntax of slicing expressions,
 and defines the semantics of bitvector slices.
 The details of the various types of bitvector slices are deferred to \chapref{BitvectorSlicing}.
@@ -1318,9 +1318,10 @@ resulting bitvector --- and the execution graph $\vgone$;
 \end{mathpar}
 \CodeSubsection{\EvalESliceBegin}{\EvalESliceEnd}{../Interpreter.ml}
 
-\section{Array Access Expressions\label{sec:ArrayAccessExpressions}}
+\hypertarget{def-arrayaccessexpressionsterm}{}
 \hypertarget{def-getarrayexpressionterm}{}
 \hypertarget{def-getenumarrayexpression}{}
+\section{Array Access Expressions\label{sec:ArrayAccessExpressions}}
 This section details the syntax, abstract syntax, semantics, and typing of array read expressions.
 In the untyped AST, a read from either an integer-indexed array or an enumeration-indexed arrays is represented
 the same way. The type system infers the kind of array and outputs a typed AST node differentiating

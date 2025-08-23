@@ -576,7 +576,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
   \item \AllApplyCase{ebinop\_other\_non\_literals}
   \begin{itemize}
-    \item $\ve$ is a binary expression with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, or $\SHL$,
+    \item $\ve$ is a \binopexpressionterm{} with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, or $\SHL$,
           applied to the operand expressions $\veone$ and $\vetwo$;
     \item at least one of $\veone$ and $\vetwo$ is not a literal expression;
     \item $\vp$ is $\CannotBeTransformed$.
@@ -584,7 +584,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
   \item \AllApplyCase{ebinop\_other\_literals\_non\_int\_result}
   \begin{itemize}
-    \item $\ve$ is a binary expression with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, $\DIV$, or $\SHL$,
+    \item $\ve$ is a \binopexpressionterm{} with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, $\DIV$, or $\SHL$,
           applied to the operand expressions $\veone$ and $\vetwo$;
     \item $\veone$ is the literal expression for literal $\vlone$;
     \item $\vetwo$ is the literal expression for literal $\vltwo$;
@@ -594,7 +594,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
   \item \AllApplyCase{ebinop\_other\_literals\_int\_result}
   \begin{itemize}
-    \item $\ve$ is a binary expression with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, or $\SHL$,
+    \item $\ve$ is a \binopexpressionterm{} with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, or $\SHL$,
           applied to the operand expressions $\veone$ and $\vetwo$;
     \item $\veone$ is the literal expression for literal $\vlone$;
     \item $\vetwo$ is the literal expression for literal $\vltwo$;

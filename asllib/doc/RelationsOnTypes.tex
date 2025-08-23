@@ -2315,7 +2315,7 @@ The function
   \overname{\intconstraint}{\vc}) \aslto
   \overname{\langle\intconstraint\rangle}{\vcopt}
 \]
-returns $\None$ if $\vc$ is an exact constraint for a binary expression for dividing two integer literals
+returns $\None$ if $\vc$ is an exact constraint for a b\binopexpressionterm{} for dividing two integer literals
 where the denominator does not divide the numerator, and an optional containing $\vc$ otherwise.
 The result is returned in $\vcopt$.
 This is used to conservatively test whether $\vc$ would always fail dynamically.
