@@ -174,6 +174,9 @@ module Attrs = struct
   let as_kvm_symbols = function
     | Normal n -> NormalAttrs.as_kvm_symbols n
     | Device d -> DeviceAttrs.as_kvm_symbols d
+
+  let is_default = eq default
+
 end
 
 
@@ -237,7 +240,9 @@ and pp_el0 hexa ok = pp_int_field hexa ok "el0" (fun p -> p.el0)
 and pp_attrs compat ok = pp_field ok
     (fun a -> sprintf (if compat then "%s" else "attrs:(%s)") (Attrs.pp a)) Attrs.eq (fun p -> p.attrs)
 
-let is_default t =  eq_props prot_default t
+let is_default t = eq_props prot_default t
+
+let is_default_attrs t = Attrs.is_default t.attrs
 
 (* If showall is true, field will always be printed.
    Otherwise, field will be printed only if non-default.
