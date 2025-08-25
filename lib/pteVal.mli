@@ -22,6 +22,8 @@ module type S = sig
   val default : string -> t
   val of_pte : string -> t
   val is_default : t -> bool
+  (* Attributes have the default values *)
+  val is_default_attrs : t -> bool
 
   val pp : bool -> t -> string
   val pp_v : t -> string
