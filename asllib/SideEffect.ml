@@ -21,7 +21,7 @@ module TimeFrame = struct
 
   let of_ldk =
     let open AST in
-    function LDK_Constant -> Constant | LDK_Let | LDK_Var -> Execution
+    function LDK_Let | LDK_Var -> Execution
 
   let of_gdk =
     let open AST in
