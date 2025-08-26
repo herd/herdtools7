@@ -79,6 +79,8 @@ Global ignored:
   ASL Grammar error: Obsolete syntax: Discarded storage declaration.
   [1]
 
+  $ aslref shadow-banning-bug.asl
+
 Constrained-type satisfaction:
   $ cat >type-sat1.asl <<EOF
   > func illegal_f1()
