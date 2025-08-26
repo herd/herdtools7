@@ -31,6 +31,7 @@ module InterpConf = struct
 
   let unroll = 0
   let error_handling_time = Error.Static
+  let empty_branching_effects_optimization = true
 end
 
 module SB = Native.StaticBackend
@@ -50,11 +51,11 @@ let static_eval (senv : SEnv.env) (e : expr) : literal =
     let open SI.IEnv in
     let global =
       global_from_static senv.global
-        ~storage:(Storage.map SB.v_of_literal senv.SEnv.global.constant_values)
+        ~storage:(IMap.map SB.v_of_literal senv.SEnv.global.constant_values)
     and local =
       local_empty_scoped
         (SB.Scope.global ~init:true)
-        ~storage:(Storage.map SB.v_of_literal senv.SEnv.local.constant_values)
+        ~storage:(IMap.map SB.v_of_literal senv.SEnv.local.constant_values)
     in
     { global; local }
   in

@@ -125,6 +125,7 @@ module Make (C : Config) = struct
       match C.unroll with None -> Opts.unroll_default `ASL | Some u -> u
 
     let error_handling_time = Asllib.Error.Dynamic
+    let empty_branching_effects_optimization = false
 
     module Instr = Asllib.Instrumentation.SemanticsNoInstr
   end
