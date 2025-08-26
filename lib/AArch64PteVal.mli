@@ -56,6 +56,9 @@ val of_pte : string -> t (* Default value for pte page table entry *)
 (* Flags have default values *)
 val is_default : t -> bool
 
+(* Attributes have the defaults values *)
+val is_default_attrs : t -> bool
+
 (* Finish parsing *)
 val tr : ParsedPteVal.t -> t
 val pp_norm : ParsedPteVal.t -> string

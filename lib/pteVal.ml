@@ -22,6 +22,8 @@ module type S = sig
   val default : string -> t
   val of_pte : string -> t
   val is_default : t -> bool
+  (*  Attributes have the default values *)
+  val is_default_attrs : t -> bool
 
   val pp : bool -> t -> string
   val pp_v : t -> string
@@ -58,6 +60,7 @@ module No = struct
     let default _ = ()
     let of_pte _ = ()
     let is_default _ = true
+    let is_default_attrs _ = true
     let pp _ _ = "()"
     let pp_v _ = "()"
     let pp_hash _ = "()"

@@ -1546,11 +1546,8 @@ module Make
 
       let memattrs_change a pte_init =
         match Misc.Simple.assoc_opt a pte_init with
-        | Some (V (_,pteval)) when not (A.V.PteVal.is_default pteval) -> begin
-            match A.V.PteVal.get_attrs pteval with
-            | _::_ -> true
-            | [] -> false
-        end
+        | Some (V (_,pteval)) ->
+            not (A.V.PteVal.is_default_attrs pteval)
         | _ -> false
 
       let init_mem_loc indent clean env test a =
