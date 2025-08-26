@@ -478,6 +478,12 @@ Required tests:
   $ aslref approx-expr-binop.asl
   $ aslref asciistr.asl
   $ aslref asl1-calls-asl0-accessor.asl -0 asl0-accessor.asl
+  $ aslref empty-function.asl
+  File empty-function.asl, line 3, characters 0 to 3:
+  end;
+  ^^^
+  ASL Grammar error: Cannot parse.
+  [1]
 
   $ aslref --no-type-check throw-local-env.asl
   File throw-local-env.asl, line 10, characters 13 to 14:

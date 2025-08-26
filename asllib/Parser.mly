@@ -615,8 +615,7 @@ let elided_param_call :=
   | name=IDENTIFIER; LBRACE; COMMA; params=clist1(expr); RBRACE; args=opt_call_args;
     { { name; params; args; call_type = ST_Function } }
 let func_args := plist0(typed_identifier)
-let maybe_empty_stmt_list := stmt_list | annotated({ S_Pass })
-let func_body == delimited(BEGIN, maybe_empty_stmt_list, end_semicolon)
+let func_body == delimited(BEGIN, stmt_list, end_semicolon)
 let recurse_limit := ioption(RECURSELIMIT; expr)
 let ignored_or_identifier :=
   | MINUS [@internal true]; {
@@ -646,11 +645,11 @@ let override ==
     | IMPLEMENTATION; { Implementation })
 
 let accessors :=
-  | ~=is_readonly; GETTER; getter=maybe_empty_stmt_list; end_semicolon;
-    SETTER; setter=maybe_empty_stmt_list; end_semicolon;
+  | ~=is_readonly; GETTER; getter=stmt_list; end_semicolon;
+    SETTER; setter=stmt_list; end_semicolon;
     { { is_readonly; getter; setter } }
-  | SETTER; setter=maybe_empty_stmt_list; end_semicolon;
-    ~=is_readonly; GETTER; getter=maybe_empty_stmt_list; end_semicolon;
+  | SETTER; setter=stmt_list; end_semicolon;
+    ~=is_readonly; GETTER; getter=stmt_list; end_semicolon;
     { { is_readonly; getter; setter } }
 
 let decl :=

@@ -292,14 +292,9 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
     \Nfuncargs          \derives \ & \PlistZero{\Ntypedidentifier} &
 \end{flalign*}
 
-\hypertarget{def-nmaybeemptystmtlist}{}
-\begin{flalign*}
-\Nmaybeemptystmtlist          \derives \ & \emptysentence \;|\; \Nstmtlist &
-\end{flalign*}
-
 \hypertarget{def-nfuncbody}{}
 \begin{flalign*}
-\Nfuncbody          \derives \ & \Tbegin \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &
+\Nfuncbody          \derives \ & \Tbegin \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &
 \end{flalign*}
 
 \hypertarget{def-nignoredoridentifier}{}
@@ -315,10 +310,10 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \hypertarget{def-naccessors}{}
 \begin{flalign*}
    \Naccessors \derives \ &
-      \Nisreadonly \parsesep \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
-      \Tsetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
-   |\ & \Tsetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
-        \Nisreadonly \parsesep \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+      \Nisreadonly \parsesep \Tgetter \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
+      \Tsetter \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+   |\ & \Tsetter \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
+        \Nisreadonly \parsesep \Tgetter \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
 \end{flalign*}
 
 \hypertarget{def-nqualifier}{}

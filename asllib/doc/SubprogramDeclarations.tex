@@ -66,13 +66,13 @@ For example, this could model a register file consisting of 32 registers, each o
 \Nopttypedidentifier \derives \ & \Tidentifier \parsesep \option{\Nasty} &\\
 \Nfuncargs          \derives \ & \Tlpar \parsesep \ClistZero{\Ntypedidentifier} \parsesep \Trpar &\\
 \Nreturntype        \derives \ & \Tarrow \parsesep \Nty &\\
-\Nfuncbody          \derives \ & \Tbegin \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
-\Nmaybeemptystmtlist \derives \ & \emptysentence \;|\; \Nstmtlist &\\
+\Nfuncbody          \derives \ & \Tbegin \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+\Nstmtlist \derives \ & \emptysentence \;|\; \Nstmtlist &\\
   \Naccessors \derives \ &
-    \Nisreadonly \parsesep \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
-    \Tsetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
-  |\ & \Tsetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
-      \Nisreadonly \parsesep \Tgetter \parsesep \Nmaybeemptystmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+    \Nisreadonly \parsesep \Tgetter \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
+    \Tsetter \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
+  |\ & \Tsetter \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon \parsesep \\ & \wrappedline
+      \Nisreadonly \parsesep \Tgetter \parsesep \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
 \Nqualifier \derivesinline\ & \emptysentence \;|\; \Tpure \;|\;\Treadonly \;|\;\Tnoreturn &\\
 \Npuritykeyword \derivesinline\ & \emptysentence \;|\; \Tpure \;|\;\Treadonly &\\
 \Nisreadonly \derivesinline\ & \emptysentence \;|\; \Treadonly &\\
@@ -365,29 +365,6 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\ASTRuleDef{MaybeEmptyStmtList}
-\hypertarget{build-maybeemptystmtlist}{}
-The function
-\[
-\buildmaybeemptystmtlist(\overname{\parsenode{\Nmaybeemptystmtlist}}{\vparsednode}) \aslto
-  \overname{\stmt}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
-\begin{mathpar}
-\inferrule[empty]{}{
-  \buildmaybeemptystmtlist(\overname{\Nmaybeemptystmtlist(\epsilonnode)}{\vparsednode}) \astarrow
-  \overname{\SPass}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{}{
-  \buildmaybeemptystmtlist(\overname{\Nmaybeemptystmtlist(\Nstmtlist)}{\vparsednode}) \astarrow
-  \overname{\astof{\vstmtlist}}{\vastnode}
-}
-\end{mathpar}
-
 \ASTRuleDef{FuncBody}
 \hypertarget{build-funcbody}{}
 The function
@@ -401,8 +378,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule{}{
   {
   \begin{array}{r}
-  \buildfuncbody(\overname{\Nfuncbody(\Tbegin, \namednode{\vstmts}{\Nmaybeemptystmtlist}, \Tend, \Tsemicolon)}{\vparsednode}) \astarrow \\
-  \overname{\astof{\vmaybeemptystmtlist}}{\vastnode}
+  \buildfuncbody(\overname{\Nfuncbody(\Tbegin, \namednode{\vstmts}{\Nstmtlist}, \Tend, \Tsemicolon)}{\vparsednode}) \astarrow \\
+  \overname{\astof{\vstmtlist}}{\vastnode}
   \end{array}
   }
 }
@@ -435,8 +412,8 @@ transforms a parse node $\vparsednode$ into an $\accessorpair$.
   {
   \begin{array}{r}
     \buildaccessors(
-      \punnode{\Nisreadonly}, \Tgetter, \namednode{\vgetter}{\Nmaybeemptystmtlist}, \Tend, \Tsemicolon, \\
-      \Tsetter, \namednode{\vsetter}{\Nmaybeemptystmtlist}, \Tend, \Tsemicolon
+      \punnode{\Nisreadonly}, \Tgetter, \namednode{\vgetter}{\Nstmtlist}, \Tend, \Tsemicolon, \\
+      \Tsetter, \namednode{\vsetter}{\Nstmtlist}, \Tend, \Tsemicolon
     ) \\
     \astarrow \vaccessorpair
   \end{array}
@@ -462,8 +439,8 @@ transforms a parse node $\vparsednode$ into an $\accessorpair$.
   {
   \begin{array}{r}
     \buildaccessors(
-      \Tsetter, \namednode{\vsetter}{\Nmaybeemptystmtlist}, \Tend, \Tsemicolon, \\
-      \punnode{\Nisreadonly}, \Tgetter, \namednode{\vgetter}{\Nmaybeemptystmtlist}, \Tend, \Tsemicolon
+      \Tsetter, \namednode{\vsetter}{\Nstmtlist}, \Tend, \Tsemicolon, \\
+      \punnode{\Nisreadonly}, \Tgetter, \namednode{\vgetter}{\Nstmtlist}, \Tend, \Tsemicolon
     ) \\
     \astarrow \vaccessorpair
   \end{array}
