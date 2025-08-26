@@ -1224,3 +1224,6 @@ ASL Typing Tests / annotating types:
   end;
   ASL Type error: cannot declare already declared element "h".
   [1]
+
+  $ aslref --no-exec TypingRule.UseLDI.asl
+
