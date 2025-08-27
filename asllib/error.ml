@@ -284,11 +284,8 @@ open struct
     and end_cnum = e.pos_end.pos_cnum
     and start_bol = e.pos_start.pos_bol
     and end_bol = e.pos_end.pos_bol in
-    if
-      e.pos_start <> dummy_pos && e.pos_end <> dummy_pos
-      && String.equal filename end_filename
-      && Sys.file_exists filename
-    then
+    if ASTUtils.is_dummy_annotated e then None
+    else if String.equal filename end_filename && Sys.file_exists filename then
       let lines = fetch_lines ~start_bol ~end_bol filename in
       let lines =
         if Int.equal start_lnum end_lnum then
@@ -625,11 +622,8 @@ module PPrint = struct
 
   let pp_pos_begin f pos =
     match display_error_context pos with
-    | None
-      when pos.pos_start <> Lexing.dummy_pos || pos.pos_end <> Lexing.dummy_pos
-      ->
-        fprintf f "@[<h>%a:@]@ " pp_pos pos
-    | None -> ()
+    | None when ASTUtils.is_dummy_annotated pos -> ()
+    | None -> fprintf f "@[<h>%a:@]@ " pp_pos pos
     | Some ctx -> fprintf f "@[<h>%a:@]@ %s@ " pp_pos pos ctx
 
   let pp_error f e = fprintf f "@[<v 0>%a%a@]" pp_pos_begin e pp_error_desc e

@@ -52,12 +52,12 @@ let nonstandard_constraint_compare c1 c2 =
 let pp_comma f () = fprintf f ",@ "
 let pp_comma_list pp_elt f = pp_print_list ~pp_sep:pp_comma pp_elt f
 
-let pp_pos f { pos_start; pos_end; _ } =
+let pp_pos f ({ pos_start; pos_end; _ } as x) =
   let open Lexing in
   let pp_char_num f { pos_cnum; pos_bol; _ } =
     pp_print_int f (pos_cnum - pos_bol)
   in
-  if pos_start = dummy_pos || pos_end = dummy_pos then ()
+  if ASTUtils.is_dummy_annotated x then ()
   else (
     pp_open_hovbox f 2;
     fprintf f "File %s,@ " pos_start.pos_fname;
