@@ -83,6 +83,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       end
 
       let variant = function Variant.ASL_AArch64 -> true | c -> variant c
+      let debug = Debug_herd.{ debug with monad = false }
     end
 
     module ASLS = ASLSem.Make (ASLConf)
