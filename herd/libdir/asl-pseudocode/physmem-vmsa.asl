@@ -8,6 +8,8 @@ func PhysMemWrite{N}(
   value:bits(N*8)
 ) => PhysMemRetStatus
 begin
+// No write when CAS reduces to a read
+  CheckProp(accdesc.write);
 // Event level access, they differ for standard (virtual) addresses
 // and PTE's.
 //   We cannot use conditional expresssion,

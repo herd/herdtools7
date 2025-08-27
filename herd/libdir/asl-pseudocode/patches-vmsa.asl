@@ -389,3 +389,28 @@ func EL2Enabled() => boolean
 begin
   return FALSE;
 end;
+
+// CreateAccDescAtomicOp()
+// =======================
+// Access descriptor for atomic read-modify-write memory accesses
+// Luc: A CAS can reduce to a load.
+func
+  CreateAccDescAtomicOp
+    (modop:MemAtomicOp, acquire:boolean, release:boolean,
+     tagchecked:boolean, privileged:boolean) => AccessDescriptor
+begin
+  var accdesc = NewAccDesc(AccessType_GPR);
+  accdesc.acqsc           = acquire;
+  accdesc.el              = if !privileged then EL0 else PSTATE.EL;
+  accdesc.relsc           = release;
+  accdesc.atomicop        = TRUE;
+  accdesc.modop           = modop;
+  accdesc.read            = TRUE;
+  accdesc.write           = modop != MemAtomicOp_CAS || SomeBoolean();
+  accdesc.pan             = TRUE;
+  accdesc.tagchecked      = tagchecked;
+  accdesc.transactional   = IsFeatureImplemented(FEAT_TME) && TSTATE.depth > 0;
+
+  return accdesc;
+end;
+
