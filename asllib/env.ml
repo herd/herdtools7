@@ -40,6 +40,7 @@ module type S = sig
     static : StaticEnv.global;
     storage : v IMap.t;
     stack_size : Z.t IMap.t;
+    call_stack : identifier annotated list;
   }
 
   type local
@@ -68,7 +69,7 @@ module type S = sig
   val push_scope : env -> env
   val pop_scope : env -> env -> env
   val get_stack_size : identifier -> env -> Z.t
-  val incr_stack_size : identifier -> global -> global
+  val incr_stack_size : pos:'a annotated -> identifier -> global -> global
   val decr_stack_size : identifier -> global -> global
 end
 
@@ -81,6 +82,7 @@ module RunTime (C : RunTimeConf) = struct
     static : StaticEnv.global;
     storage : C.v IMap.t;
     stack_size : Z.t IMap.t;
+    call_stack : identifier annotated list;
   }
 
   type int_stack = int list
@@ -98,7 +100,7 @@ module RunTime (C : RunTimeConf) = struct
     { scope; storage; unroll = []; declared = [] }
 
   let global_from_static ?(storage = IMap.empty) static =
-    { static; storage; stack_size = IMap.empty }
+    { static; storage; stack_size = IMap.empty; call_stack = [] }
 
   let get_scope env = env.local.scope
 
@@ -229,23 +231,38 @@ module RunTime (C : RunTimeConf) = struct
     in
     { child with local = { parent.local with storage = local_storage } }
 
+  (* --------------------------------------------------------------------------*)
+  (* Call stack utils *)
+
   let get_stack_size name env =
     try IMap.find name env.global.stack_size with Not_found -> Z.zero
 
-  let set_stack_size name value global =
-    let stack_size = IMap.add name value global.stack_size in
-    { global with stack_size }
+  let _incr_stack_size name =
+    IMap.update name @@ function
+    | None -> Some Z.one
+    | Some z -> Some (Z.succ z)
 
-  let incr_stack_size name global =
-    let prev =
-      try IMap.find name global.stack_size with Not_found -> Z.zero
-    in
-    set_stack_size name (Z.succ prev) global
+  let _decr_stack_size name =
+    IMap.update name @@ function
+    | None -> assert false
+    | Some z -> Some (Z.pred z)
+
+  let _push_call_stack ~pos name call_stack =
+    ASTUtils.add_pos_from pos name :: call_stack
+
+  let _pop_call_stack = function [] -> assert false | _ :: t -> t
+
+  let incr_stack_size ~pos name global =
+    {
+      global with
+      stack_size = _incr_stack_size name global.stack_size;
+      call_stack = _push_call_stack ~pos name global.call_stack;
+    }
 
   let decr_stack_size name global =
-    let prev =
-      try IMap.find name global.stack_size with Not_found -> assert false
-    in
-    assert (Z.sign prev > 0);
-    set_stack_size name (Z.pred prev) global
+    {
+      global with
+      stack_size = _decr_stack_size name global.stack_size;
+      call_stack = _pop_call_stack global.call_stack;
+    }
 end

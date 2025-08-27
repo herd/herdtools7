@@ -55,6 +55,9 @@ module type S = sig
     storage : v IMap.t;  (** Binds global variables to their names. *)
     stack_size : Z.t IMap.t;
         (** Current number of recursive calls open for each subprogram. *)
+    call_stack : identifier annotated list;
+        (** the call stack, with the name of the called program and the
+            position of the call. *)
   }
   (** The global part of an environment. *)
 
@@ -156,8 +159,8 @@ module type S = sig
   val get_stack_size : identifier -> env -> Z.t
   (** [get_stack_size name env] returns the [stack_size] for [name]. *)
 
-  val incr_stack_size : identifier -> global -> global
-  (** [incr_stack_size name env] increases the stack size for [name]. *)
+  val incr_stack_size : pos:'a annotated -> identifier -> global -> global
+  (** [incr_stack_size ~pos name env] increases the stack size for [name]. *)
 
   val decr_stack_size : identifier -> global -> global
   (** [decr_stack_size name env] decreases the stack size for [name]. *)
