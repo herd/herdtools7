@@ -27,6 +27,8 @@ end
 module NameSet = struct
   include Set.Make (Name)
 
+  let add_list li t = of_list li |> union t
+
   let pp_print f t =
     let open Format in
     let pp_comma f () = fprintf f ",@ " in
@@ -123,6 +125,10 @@ and use_constraint = function
 
 and use_constraints cs = use_list use_constraint cs
 
+let use_ldi = function
+  | LDI_Var x -> NameSet.add (Other x)
+  | LDI_Tuple li -> List.map (fun x -> Name.Other x) li |> NameSet.add_list
+
 let rec use_s s =
   match s.desc with
   | S_Pass | S_Return None -> Fun.id
@@ -136,7 +142,8 @@ let rec use_s s =
       use_option use_e limit $ use_e start_e $ use_e end_e $ use_s body
   | S_While (e, limit, s) | S_Repeat (s, e, limit) ->
       use_option use_e limit $ use_s s $ use_e e
-  | S_Decl (_, _, ty, e) -> use_option use_e e $ use_option use_ty ty
+  | S_Decl (_, ldi, ty, e) ->
+      use_ldi ldi $ use_option use_e e $ use_option use_ty ty
   | S_Throw (Some (e, _)) -> use_e e
   | S_Throw None -> Fun.id
   | S_Try (s, catchers, s') ->

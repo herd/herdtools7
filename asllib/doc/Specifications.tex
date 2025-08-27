@@ -2009,6 +2009,47 @@ appearing in comments to their right.
 }
 \end{mathpar}
 
+\TypingRuleDef{UseLDI}
+\hypertarget{def-useldi}{}
+The function
+\[ \useldi(\overname{\ldi}{\vl}) \aslto \overname{\pow{\defusename}}{\ids} \]
+returns the set of identifiers $\ids$ which the \localdeclarationitem{} $\vl$ depends on.
+
+\ExampleDef{The identifiers used by local declaration items}
+The specification in \listingref{UseLDI} shows examples of local declaration items
+and the identifiers used by them, appearing in the comments to their right.
+\ASLListing{Identifiers used by local declaration items}{UseLDI}{\typingtests/TypingRule.UseLDI.asl}
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{ldi\_var}
+    \begin{itemize}
+      \item $\vl$ is the declaration $\LDIVar(\vx)$ of a single local storage item $\vx$,
+      \item define $\ids$ as the singleton set for $\Other(\vx)$.
+    \end{itemize}
+  \item \AllApplyCase{ldi\_tuple}
+    \begin{itemize}
+      \item $\vl$ is the declaration $\LDITuple(\vli)$ of a tuple of storage items $\vli$,
+      \item define $\ids$ as the set containing $\Other(\vx)$ for all $\vx$ in $\vli$.
+    \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+  \inferrule[ldi\_var]{}{
+    \useldi(\overname{\LDIVar(\vx)}{\vl})
+     \typearrow
+     \overname{\{\Other(\vx)\}}{\ids}
+  }
+  \\
+  \inferrule[ldi\_tuple]{}{
+    \useldi(\overname{\LDITuple(\vli)}{\vl})
+    \typearrow
+    \{ \Other(\vx) \;|\; \vx \in \vli \}
+  }
+\end{mathpar}
+
 \TypingRuleDef{UseStmt}
 \hypertarget{def-usestmt}{}
 The function
@@ -2087,8 +2128,10 @@ and the identifiers used by them, appearing in comments to their right.
 
   \item \AllApplyCase{s\_decl}
   \begin{itemize}
-    \item $\vs$ is a declaration statement with \optional{} type annotation $\vt$ and \optional\ initialization expression $\ve$;
-    \item define $\ids$ as the union of applying $\usety$ to $\vt$ and $\useexpr$ to $\ve$.
+    \item $\vs$ is a declaration statement with \localdeclarationitem{} $\ldi$,
+      \optional{} type annotation $\vt$, and \optional\ initialization
+      expression $\ve$;
+    \item define $\ids$ as the union of applying $\useldi$ to $\ldi$, $\usety$ to $\vt$, and $\useexpr$ to $\ve$.
   \end{itemize}
 
   \item \AllApplyCase{s\_throw\_some}
@@ -2184,7 +2227,9 @@ and the identifiers used by them, appearing in comments to their right.
 
 \begin{mathpar}
 \inferrule[s\_decl]{}{
-  \usestmt(\overname{\SDecl(\Ignore, \Ignore, \vt, \ve)}\vs) \typearrow \overname{\usety(\vt) \cup \useexpr(\ve)}{\ids}
+  \usestmt(\overname{\SDecl(\Ignore, \ldi, \vt, \ve)}\vs)
+  \typearrow
+  \overname{\useldi(\ldi) \cup \usety(\vt) \cup \useexpr(\ve)}{\ids}
 }
 \end{mathpar}
 

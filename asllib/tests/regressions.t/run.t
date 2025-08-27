@@ -79,6 +79,13 @@ Global ignored:
   ASL Grammar error: Obsolete syntax: Discarded storage declaration.
   [1]
 
+  $ aslref shadow-banning-bug.asl
+  File shadow-banning-bug.asl, line 5, characters 4 to 16:
+      var g = 0.0;
+      ^^^^^^^^^^^^
+  ASL Type error: cannot declare already declared element "g".
+  [1]
+
 Constrained-type satisfaction:
   $ cat >type-sat1.asl <<EOF
   > func illegal_f1()
