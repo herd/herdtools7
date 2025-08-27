@@ -40,11 +40,8 @@ module SI = Interpreter.Make (Native.StaticBackend) (InterpConf)
 
 let eval_from ~loc env e =
   try SI.eval_expr env e
-  with
-  | Error.(ASLException { pos_start; pos_end; desc; _ })
-  when pos_start == dummy_pos && pos_end == dummy_pos
-  ->
-    Error.fatal_from loc desc
+  with Error.(ASLException exn) when is_dummy_annotated exn ->
+    Error.fatal_from loc exn.desc
 
 (* Begin StaticEval *)
 let static_eval (senv : SEnv.env) (e : expr) : literal =

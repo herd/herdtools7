@@ -74,6 +74,7 @@ let add_dummy_annotation ?(version = default_version) desc =
 
 let dummy_annotated = add_dummy_annotation ()
 let to_pos pos = { pos with desc = () }
+let is_dummy_annotated x = x.pos_end == dummy_pos || x.pos_start == dummy_pos
 
 let add_pos_from_st pos desc =
   if pos.desc == desc then pos else { pos with desc }

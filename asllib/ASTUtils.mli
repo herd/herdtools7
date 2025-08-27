@@ -69,6 +69,9 @@ val add_dummy_annotation : ?version:version -> 'a -> 'a annotated
 val dummy_annotated : unit annotated
 (** A dummy annotation *)
 
+val is_dummy_annotated : 'a annotated -> bool
+(** Returns true if its argument is annotated with [dummy_pos]. *)
+
 val to_pos : 'a annotated -> unit annotated
 (** Removes the value from an annotated record. *)
 
