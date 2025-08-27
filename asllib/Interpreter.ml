@@ -1402,7 +1402,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let*^ vparams, env1 = eval_expr_list_m env params in
     let*^ vargs, env2 = eval_expr_list_m env1 args in
     let* vargs = vargs and* vparams = vparams in
-    let genv = IEnv.incr_stack_size name env2.global in
+    let genv = IEnv.incr_stack_size ~pos name env2.global in
     let res = eval_subprogram genv name pos ~params:vparams ~args:vargs in
     B.bind_seq res @@ function
     | Throwing (v, env_throw) ->
@@ -1530,6 +1530,7 @@ module Make (B : Backend.S) (C : Config) = struct
   let run_typed_env env (static_env : StaticEnv.global) (ast : AST.t) :
       B.value m =
     let*| env = build_genv env eval_expr static_env ast in
+    let env = IEnv.incr_stack_size ~pos:dummy_annotated "main" env in
     let*| res =
       eval_subprogram env "main" dummy_annotated ~params:[] ~args:[]
     in
