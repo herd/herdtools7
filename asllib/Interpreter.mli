@@ -61,6 +61,9 @@ module type Config = sig
 
   val log_nondet_choice : bool
   (** Log to stderr non-deterministic choices. *)
+
+  val display_call_stack_on_error : bool
+  (** Displays call stack on errors or debugs. *)
 end
 
 module Make (B : Backend.S) (C : Config) : S with module B = B

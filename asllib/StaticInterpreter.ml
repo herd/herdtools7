@@ -33,6 +33,7 @@ module InterpConf = struct
   let error_handling_time = Error.Static
   let empty_branching_effects_optimization = true
   let log_nondet_choice = false (* Not relevant here *)
+  let display_call_stack_on_error = false
 end
 
 module SB = Native.StaticBackend
