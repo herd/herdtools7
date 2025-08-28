@@ -205,3 +205,10 @@ Examples used in ASL High-level Definition:
   $ aslref Bit.asl
   $ aslref PrefixSlice.asl
   $ aslref --no-exec GuideRule.NoEmptyBody.asl
+  $ aslref ParenthesizedTypes.asl
+  $ aslref EmptyTuple.asl
+  File EmptyTuple.asl, line 1, characters 11 to 12:
+  type T of ();
+             ^
+  ASL Grammar error: Cannot parse.
+  [1]
