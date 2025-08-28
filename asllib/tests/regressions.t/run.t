@@ -478,6 +478,14 @@ Required tests:
   $ aslref approx-expr-binop.asl
   $ aslref asciistr.asl
   $ aslref asl1-calls-asl0-accessor.asl -0 asl0-accessor.asl
+  $ aslref parsing-tuple-types-1.asl
+
+  $ aslref parsing-tuple-types-2.asl
+  File parsing-tuple-types-2.asl, line 1, characters 11 to 12:
+  type T of ();
+             ^
+  ASL Grammar error: Cannot parse.
+  [1]
 
   $ aslref --no-type-check throw-local-env.asl
   File throw-local-env.asl, line 10, characters 13 to 14:
