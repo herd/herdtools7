@@ -34,6 +34,7 @@ module InterpConf = struct
   let empty_branching_effects_optimization = true
   let log_nondet_choice = false (* Not relevant here *)
   let display_call_stack_on_error = false
+  let track_symbolic_path = false
 end
 
 module SB = Native.StaticBackend

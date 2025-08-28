@@ -67,6 +67,7 @@ module type Config = sig
   val empty_branching_effects_optimization : bool
   val log_nondet_choice : bool
   val display_call_stack_on_error : bool
+  val track_symbolic_path : bool
 end
 
 module Make (B : Backend.S) (C : Config) = struct
@@ -107,9 +108,9 @@ module Make (B : Backend.S) (C : Config) = struct
   let pp_pos fmt (pos, env) =
     let open Format in
     if C.display_call_stack_on_error then
+      let pp_sep fmt () = fprintf fmt ",@ " in
       let pp_stack fmt stack =
         let stack = List.rev stack in
-        let pp_sep fmt () = fprintf fmt ",@ " in
         let pp_call fmt call =
           if is_dummy_annotated call then pp_print_string fmt call.desc
           else
@@ -117,9 +118,25 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         pp_print_list ~pp_sep pp_call fmt stack
       in
+      let pp_spath fmt spath =
+        let spath = List.rev spath in
+        let pp_choice fmt choice =
+          let open IEnv in
+          if is_dummy_annotated choice.location then
+            fprintf fmt "%s<-%B" choice.description choice.decision
+          else
+            fprintf fmt "@[<2>%s<-%B@ decided@ at@ %a@]" choice.description
+              choice.decision PP.pp_pos choice.location
+        in
+        if C.track_symbolic_path && not (list_is_empty spath) then
+          fprintf fmt "@ and symbolic path@ @[<2>@;<2 0>%a@]"
+            (pp_print_list ~pp_sep pp_choice)
+            spath
+      in
       let stack = env.IEnv.call_stack in
-      fprintf fmt "@[<2>At %a,@ with call-stack:@ %a@]" PP.pp_pos pos pp_stack
-        stack
+      let spath = env.IEnv.symbolic_path in
+      fprintf fmt "@[<2>At %a,@ with call-stack:@ @[<2>@;<2 0>%a@]%a@]"
+        PP.pp_pos pos pp_stack stack pp_spath spath
     else fprintf fmt "@[At %a@]" PP.pp_pos pos
 
   let fatal_from_no_env pos = Error.fatal_from pos
@@ -166,15 +183,27 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Choice *)
   let choice ~pos env m v1 v2 =
-    if C.log_nondet_choice then
+    let next (res, decision, v) =
+      let env =
+        if C.track_symbolic_path && B.is_undetermined v then
+          let open IEnv in
+          let choice =
+            { description = B.debug_value v; location = to_pos pos; decision }
+          in
+          push_symbolic_choice choice env
+        else env
+      in
+      return (env, res)
+    in
+    if C.log_nondet_choice || C.track_symbolic_path then
       let* v = m in
       let () =
-        if B.is_undetermined v then
+        if C.log_nondet_choice && B.is_undetermined v then
           Format.eprintf "@[<2>%a:@ non-deterministic choice@]@." pp_pos
             (pos, env.IEnv.global)
       in
-      B.choice (return v) (return v1) (return v2)
-    else B.choice m (return v1) (return v2)
+      B.choice (return v) (next (v1, true, v)) (next (v2, false, v))
+    else B.choice m (return (env, v1)) (return (env, v2))
 
   (*
    * Choice with inserted branching (commit) effect/
@@ -452,7 +481,7 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         B.binop `BOR s1l1s2 s2l2s1
       in
-      let* b = choice ~pos env cond true false in
+      let* _, b = choice ~pos env cond true false in
       if b then return ()
       else
         Error.(
@@ -573,7 +602,8 @@ module Make (B : Backend.S) (C : Config) = struct
           in
           return_normal (v, env) |: SemanticsRule.ECondSimple
         else
-          choice_with_branch_effect env m_cond e_cond e1 e2 (eval_expr env1)
+          choice_with_branch_effect env1 m_cond e_cond e1 e2 (fun (env, v) ->
+              eval_expr env v)
           |: SemanticsRule.ECond
     (* End *)
     (* Begin EvalESlice *)
@@ -789,7 +819,8 @@ module Make (B : Backend.S) (C : Config) = struct
           List.fold_left fold (0, m_true) tys |> snd
       | _ -> fatal_from loc env TypeInferenceNeeded
     in
-    choice ~pos:loc env (in_values v ty) true false
+    choice ~pos:loc env (in_values v ty) true false >>= fun (_, res) ->
+    return res
   (* End *)
 
   (* Evaluation of Left-Hand-Side Expressions *)
@@ -1083,7 +1114,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [eval_stmt env s] evaluates [s] in [env]. This is either an interruption
       [Returning vs] or a continuation [env], see [eval_res]. *)
-  and eval_stmt (env : env) s : stmt_eval_type =
+  and eval_stmt (env : env) (s : stmt) : stmt_eval_type =
     (if false then
        match s.desc with
        | S_Seq _ -> ()
@@ -1143,15 +1174,16 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalSCond *)
     | S_Cond (e, s1, s2) ->
         let*^ v, env' = eval_expr env e in
-        choice_with_branch_effect env v e s1 s2 (eval_block env')
+        choice_with_branch_effect env' v e s1 s2 (fun (env, s) ->
+            eval_block env s)
         |: SemanticsRule.SCond
     (* Begin EvalSAssert *)
     | S_Assert e ->
         let*^ v, env1 = eval_expr env e in
-        let*= b = choice ~pos:s env v true false in
-        if b then return_continue env1
+        let*= env2, b = choice ~pos:s env1 v true false in
+        if b then return_continue env2
         else
-          fatal_from e env @@ Error.AssertionFailed e |: SemanticsRule.SAssert
+          fatal_from e env2 @@ Error.AssertionFailed e |: SemanticsRule.SAssert
     (* End *)
     (* Begin EvalSWhile *)
     | S_While (e, e_limit_opt, body) ->
@@ -1241,7 +1273,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Evaluation of Blocks *)
   (* -------------------- *)
   (* Begin EvalBlock *)
-  and eval_block env stm =
+  and eval_block env (stm : stmt) : stmt_eval_type =
     let block_env = IEnv.push_scope env in
     let*| res = eval_stmt block_env stm in
     match res with
@@ -1311,7 +1343,7 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Real logic: if condition is validated, we loop,
        otherwise we continue to the next statement. *)
     choice_with_branch_effect env cond_m e_cond loop return_continue
-      (binder (return_continue env))
+      (fun (env, f) -> binder (return_continue env) f)
     |: SemanticsRule.Loop
   (* End *)
 
@@ -1346,7 +1378,7 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Real logic: if the condition holds, we continue to the next
        loop iteration, otherwise we loop. *)
     choice_with_branch_effect_msg ~pos:body env cond_m loop_msg return_continue
-      loop (fun kont -> kont env)
+      loop (fun (env, kont) -> kont env)
     |: SemanticsRule.For
   (* End *)
 

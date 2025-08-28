@@ -50,6 +50,14 @@ module type S = sig
   (* -------------------------------------------------------------------------*)
   (** {2 Types and constructors.} *)
 
+  type symbolic_choice = {
+    description : string;
+        (** describe the choice made, could be a textual representation of an
+            equation for example. *)
+    decision : bool;  (** which side is taken *)
+    location : unit annotated;  (** Where the choice has been made. *)
+  }
+
   type global = {
     static : StaticEnv.global;  (** References the static environment. *)
     storage : v IMap.t;  (** Binds global variables to their names. *)
@@ -58,6 +66,7 @@ module type S = sig
     call_stack : identifier annotated list;
         (** the call stack, with the name of the called program and the
             position of the call. *)
+    symbolic_path : symbolic_choice list;  (** the symbolic path taken *)
   }
   (** The global part of an environment. *)
 
@@ -164,6 +173,9 @@ module type S = sig
 
   val decr_stack_size : identifier -> global -> global
   (** [decr_stack_size name env] decreases the stack size for [name]. *)
+
+  val push_symbolic_choice : symbolic_choice -> env -> env
+  (** [push_symbolic_choice choice env] registers the choice in the symbolic path. *)
 end
 
 module RunTime (C : RunTimeConf) :

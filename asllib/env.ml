@@ -36,11 +36,18 @@ module type S = sig
 
   module Scope : Backend.SCOPE
 
+  type symbolic_choice = {
+    description : string;
+    decision : bool;
+    location : unit annotated;
+  }
+
   type global = {
     static : StaticEnv.global;
     storage : v IMap.t;
     stack_size : Z.t IMap.t;
     call_stack : identifier annotated list;
+    symbolic_path : symbolic_choice list;
   }
 
   type local
@@ -71,6 +78,7 @@ module type S = sig
   val get_stack_size : identifier -> env -> Z.t
   val incr_stack_size : pos:'a annotated -> identifier -> global -> global
   val decr_stack_size : identifier -> global -> global
+  val push_symbolic_choice : symbolic_choice -> env -> env
 end
 
 module RunTime (C : RunTimeConf) = struct
@@ -78,11 +86,18 @@ module RunTime (C : RunTimeConf) = struct
 
   type v = C.v
 
+  type symbolic_choice = {
+    description : string;
+    decision : bool;
+    location : unit annotated;
+  }
+
   type global = {
     static : StaticEnv.global;
     storage : C.v IMap.t;
     stack_size : Z.t IMap.t;
     call_stack : identifier annotated list;
+    symbolic_path : symbolic_choice list;
   }
 
   type int_stack = int list
@@ -100,9 +115,13 @@ module RunTime (C : RunTimeConf) = struct
     { scope; storage; unroll = []; declared = [] }
 
   let global_from_static ?(storage = IMap.empty) static =
-    { static; storage; stack_size = IMap.empty; call_stack = [] }
-
-  let get_scope env = env.local.scope
+    {
+      static;
+      storage;
+      stack_size = IMap.empty;
+      call_stack = [];
+      symbolic_path = [];
+    }
 
   let to_static env =
     let global = env.global.static in
@@ -215,6 +234,7 @@ module RunTime (C : RunTimeConf) = struct
   (* --------------------------------------------------------------------------*)
   (* Scope swapping utils *)
 
+  let get_scope env = env.local.scope
   let push_scope env = { env with local = { env.local with declared = [] } }
 
   (** [patch_mem ~t_env ~t_mem to_avoid] is the storage formed with the bindings
@@ -264,5 +284,12 @@ module RunTime (C : RunTimeConf) = struct
       global with
       stack_size = _decr_stack_size name global.stack_size;
       call_stack = _pop_call_stack global.call_stack;
+    }
+
+  let push_symbolic_choice choice env =
+    {
+      env with
+      global =
+        { env.global with symbolic_path = choice :: env.global.symbolic_path };
     }
 end

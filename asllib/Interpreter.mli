@@ -64,6 +64,9 @@ module type Config = sig
 
   val display_call_stack_on_error : bool
   (** Displays call stack on errors or debugs. *)
+
+  val track_symbolic_path : bool
+  (** Keep track of symbolic paths during execution. *)
 end
 
 module Make (B : Backend.S) (C : Config) : S with module B = B

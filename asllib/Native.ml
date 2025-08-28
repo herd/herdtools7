@@ -508,6 +508,7 @@ module NativeConfig (I : Instrumentation.SEMINSTR) = struct
   let empty_branching_effects_optimization = true
   let log_nondet_choice = false
   let display_call_stack_on_error = false
+  let track_symbolic_path = false
 
   module Instr = I
 end
